@@ -35,6 +35,8 @@ La série couvre les **fondements théoriques** (bandits, MDP, équation de Bell
 
 Les kernels sont relevés dans les carnets eux-mêmes (`metadata.kernelspec.name`) : `python3` pour l'immense majorité, `coursia-ml-training` pour les carnets qui entraînent un modèle de langue. Les durées sont des ordres de grandeur pour une lecture active, exercices compris.
 
+> **Note de comptage.** Le bloc `CATALOG-STATUS` ci-dessus fait foi pour l'**agrégat** — il est régénéré par `catalog-cron.yml` et ne se corrige jamais à la main sur une branche de feature. La table ci-dessous fait foi pour l'**énumération**. Leurs totaux peuvent donc différer d'une unité, et cet écart ne se tranche ni ici ni par une retouche du marqueur : il se lit dans la prochaine régénération du catalogue.
+
 | # | Notebook | Kernel | Contenu | Durée |
 |---|----------|--------|---------|-------|
 | 01 | [RL-01-Premiers-Pas-Stable-Baselines3-Python](RL-01-Premiers-Pas-Stable-Baselines3-Python.ipynb) | python3 | Premier agent PPO sur CartPole avec Stable Baselines3 : boucle reset/step, évaluation avant/après, sauvegarde du modèle. L'usage avant la théorie | 25-30 min |
@@ -79,7 +81,7 @@ Les carnets `RL-17` et `RL-18` n'existent plus dans cette série : ce sont déso
 
 ## Contenu détaillé du parcours principal
 
-Les carnets du socle (01 à 13) sont détaillés ci-dessous, section par section, avec les figures extraites de leurs sorties réelles. Les carnets 14 à 21 et la sous-série `PostTraining/` sont décrits dans la table ci-dessus.
+Les carnets du socle (01 à 13) sont détaillés ci-dessous, section par section, avec les figures extraites de leurs sorties réelles — la provenance exacte de chaque figure (cellule source, poids, alt-text) est consignée dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md). Les carnets 14 à 21 et la sous-série `PostTraining/` sont décrits dans la table ci-dessus.
 ### Notebook 1 - Introduction avec PPO et CartPole
 
 | Section | Contenu |
@@ -309,7 +311,7 @@ Les accrétions de l'entrée (`01b` synthèse logique bitwise, `01c` distillatio
 | Découverte | 01 | Voir un agent apprendre, en une séance |
 | Fondations par la pratique | 01, 02, 03, 04 | Savoir entraîner et instrumenter un agent sur des problèmes jouets |
 | Théorie et algorithmes | 04, 05, 06, 06b, 06c | Comprendre Bellman, puis dériver PPO à la main |
-| Couverture du socle | 01 à 14 | La série entière du parcours principal, lettres comprises |
+| Couverture du socle | 01 à 14 | Le socle complet, lettres comprises ; les carnets 15 à 21 sont les phases de recherche, listées à la ligne suivante |
 | Alignement par préférences | 06e, RLPT-01, RLPT-00, RLPT-04 | La chaîne complète du RLHF, du reward model au DPO |
 | Recherche | 08, 12, 13, 14, 15, 16, 19, 20, 21 | Les carnets où chaque hypothèse est relâchée et mesurée |
 
@@ -317,7 +319,7 @@ Les accrétions de l'entrée (`01b` synthèse logique bitwise, `01c` distillatio
 
 | Kernel | Carnets | Environnement | Packages | Clés |
 |---|---|---|---|---|
-| `python3` | Tous les autres | Python 3.11, CPU suffisant | `stable-baselines3[extra]`, `gymnasium`, `torch`, `highway-env`, `pettingzoo[classic]`, `trl`, `transformers`, `datasets` | Aucune : tout s'exécute en local |
+| `python3` | Tous les autres | Python 3.11 à 3.13 selon le carnet (relevé dans les `language_info`), CPU suffisant | `stable-baselines3[extra]`, `gymnasium`, `torch`, `highway-env`, `pettingzoo[classic]`, `trl`, `transformers`, `datasets` | Aucune : tout s'exécute en local |
 | `coursia-ml-training` | RLPT-00c, RLPT-02, RLPT-03, RLPT-04 | Kernel d'entraînement du dépôt, modèle de langue local | Les mêmes, plus la pile d'entraînement du kernel | Aucune |
 
 Connaissances attendues : Python intermédiaire (classes, NumPy) ; notions de tenseurs et d'autograd pour les carnets `06` à `06e` et la sous-série ; probabilités élémentaires pour `04` et `11`.
@@ -457,7 +459,7 @@ Par l'espace d'actions et la contrainte d'échantillonnage. Espace discret et pe
 | **Q-MDP** | POMDP approximation | 11 | Q-learning sur états vrais, action via belief |
 | **Belief-state Q-learning** | POMDP | 11 | Discrétisation du belief, Q-table dans l'espace des croyances |
 | **C51 (Categorical DQN)** | Distributionnel (deep) | 12 | Distribution de retour sur support fixe, projection catégorielle |
-| **DQN** | Off-policy (deep) | 6 | Espaces continus |
+| **DQN** | Off-policy (deep) | 6 | Espaces discrets (le continu relève de DDPG et SAC) |
 | **REINFORCE** | Policy gradient | 6 | Politique directe |
 | **IQL** | Multi-agent | 7 | Apprentissage indépendant |
 | **RND** | Exploration intrinsèque (deep) | 13 | Récompense parcimonieuse, exploration profonde par nouveauté |
