@@ -13,6 +13,7 @@ sys.path.insert(0, str(CI_DIR))
 import ci_overflow_controller as ctl  # noqa: E402
 
 NOW = datetime(2026, 10, 27, 12, 0, tzinfo=timezone.utc)
+NOW_ISO = "2026-10-27T12:00:00+00:00"
 # Derniere ecriture de la variable, hors fenetre de dwell : le controleur
 # n'est pas bloque par son propre dwell dans ces tests de CLI.
 OLD = NOW - timedelta(hours=2)
@@ -167,7 +168,7 @@ def test_cli_dry_run_ne_bascule_pas(monkeypatch, capsys):
     written = []
     monkeypatch.setattr(ctl, "write_variable",
                         lambda *a, **k: (written.append(a), (True, "ok"))[1])
-    rc = ctl.main(["--repo", "jsboige/CoursIA", "--json"])
+    rc = ctl.main(["--repo", "jsboige/CoursIA", "--json", "--now", NOW_ISO])
     assert rc == ctl.EXIT_OK
     assert written == []
     report = json.loads(capsys.readouterr().out)
@@ -190,7 +191,7 @@ def test_cli_apply_bascule_et_ecrit(monkeypatch, capsys):
         return True, "variable mise a jour"
 
     monkeypatch.setattr(ctl, "write_variable", fake_write)
-    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json"])
+    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json", "--now", NOW_ISO])
     assert rc == ctl.EXIT_OK
     assert seen["value"] == "true"
     # L'ecriture passe par le jeton DEDIE, pas par le jeton de mesure.
@@ -210,7 +211,7 @@ def test_cli_ecriture_refusee_rend_refused(monkeypatch, capsys):
                         lambda *a, **k: local(free=7, online=14))
     monkeypatch.setattr(ctl, "write_variable",
                         lambda *a, **k: (False, "HTTP 403: Resource not accessible"))
-    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json"])
+    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json", "--now", NOW_ISO])
     assert rc == ctl.EXIT_REFUSED
     report = json.loads(capsys.readouterr().out)
     assert report["verdict"] == "REFUSED"
@@ -230,7 +231,7 @@ def test_cli_lecture_impossible_rend_le_verdict_sans_ecrire(monkeypatch, capsys)
                         lambda *a, **k: local(free=7, online=14))
     monkeypatch.setattr(ctl, "write_variable", lambda *a, **k: (_ for _ in ()).throw(
         AssertionError("aucune ecriture si l'etat de la variable est inconnu")))
-    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json"])
+    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json", "--now", NOW_ISO])
     report = json.loads(capsys.readouterr().out)
     assert report["verdict"] == "SWITCH_TRUE"
     assert report["written"] is False
@@ -254,7 +255,7 @@ def test_etat_inconnu_bloque_l_ecriture_meme_avec_le_secret_present(monkeypatch,
                         lambda *a, **k: local(free=7, online=14))
     monkeypatch.setattr(ctl, "write_variable", lambda *a, **k: (_ for _ in ()).throw(
         AssertionError("aucune ecriture si l'etat de la variable est inconnu")))
-    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json"])
+    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json", "--now", NOW_ISO])
     report = json.loads(capsys.readouterr().out)
     assert report["verdict"] == "SWITCH_TRUE"
     assert report["written"] is False
@@ -271,7 +272,7 @@ def test_cli_mesure_illisible_sort_en_1(monkeypatch, capsys):
                         lambda *a, **k: hosted(complete=False, reason="listing en echec"))
     monkeypatch.setattr(ctl, "collect_local",
                         lambda *a, **k: local(free=7, online=14))
-    rc = ctl.main(["--repo", "jsboige/CoursIA", "--json"])
+    rc = ctl.main(["--repo", "jsboige/CoursIA", "--json", "--now", NOW_ISO])
     assert rc == ctl.EXIT_UNREADABLE
     assert json.loads(capsys.readouterr().out)["verdict"] == "UNREADABLE"
 
@@ -348,7 +349,7 @@ def test_cli_sans_jeton_d_inventaire_sort_unreadable_nomme(monkeypatch, capsys):
         ctl.crs, "fetch_inventory",
         lambda repo, label, token: _inventory_unavailable(),
     )
-    rc = ctl.main(["--repo", "jsboige/CoursIA", "--json"])
+    rc = ctl.main(["--repo", "jsboige/CoursIA", "--json", "--now", NOW_ISO])
     assert rc == ctl.EXIT_UNREADABLE
     report = json.loads(capsys.readouterr().out)
     assert report["verdict"] == "UNREADABLE"
@@ -377,7 +378,7 @@ def test_secret_present_ecrit_avec_le_jeton_dedie(monkeypatch, capsys):
         return True, "variable mise a jour"
 
     monkeypatch.setattr(ctl, "write_variable", fake_write)
-    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json"])
+    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json", "--now", NOW_ISO])
     assert rc == ctl.EXIT_OK
     assert seen["value"] == "true"
     assert seen["token"] == "pat-variables"
@@ -396,7 +397,7 @@ def test_secret_absent_verdict_seul_et_aucune_ecriture(monkeypatch, capsys):
                         lambda *a, **k: local(free=7, online=14))
     monkeypatch.setattr(ctl, "write_variable", lambda *a, **k: (_ for _ in ()).throw(
         AssertionError("aucune ecriture sans jeton d'ecriture")))
-    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json"])
+    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json", "--now", NOW_ISO])
     assert rc == ctl.EXIT_OK
     report = json.loads(capsys.readouterr().out)
     # Le VERDICT est rendu...
@@ -420,7 +421,7 @@ def test_secret_absent_et_vide_est_traite_comme_absent(monkeypatch, capsys):
                         lambda *a, **k: local(free=7, online=14))
     monkeypatch.setattr(ctl, "write_variable", lambda *a, **k: (_ for _ in ()).throw(
         AssertionError("aucune ecriture avec un secret vide")))
-    ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json"])
+    ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json", "--now", NOW_ISO])
     report = json.loads(capsys.readouterr().out)
     assert report["written"] is False
     assert report["write_token_present"] is False
@@ -963,7 +964,7 @@ def test_cli_liste_de_cohorte_illisible_rend_unreadable(monkeypatch, capsys):
                         lambda root: (set(), "repertoire des workflows absent"))
     monkeypatch.setattr(ctl, "write_variable", lambda *a, **k: (_ for _ in ()).throw(
         AssertionError("aucune ecriture sur une cohorte non etablie")))
-    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json"])
+    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json", "--now", NOW_ISO])
     assert rc == ctl.EXIT_UNREADABLE
     report = json.loads(capsys.readouterr().out)
     assert report["verdict"] == "UNREADABLE"
@@ -1246,7 +1247,7 @@ def test_trente_runs_de_cohorte_et_huit_slots_libres_huit_sont_reorientes(
         ctl, "reorient_run",
         lambda repo, token, run_id: (reoriented.append(run_id), (True, "ok"))[1],
     )
-    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json"])
+    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json", "--now", NOW_ISO])
     report = json.loads(capsys.readouterr().out)
     assert rc == ctl.EXIT_OK
     assert report["verdict"] == "SWITCH_TRUE"
@@ -1278,7 +1279,7 @@ def test_un_run_statique_heberge_n_est_jamais_touche(monkeypatch, capsys):
         ctl, "reorient_run",
         lambda repo, token, run_id: (reoriented.append(run_id), (True, "ok"))[1],
     )
-    ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json"])
+    ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json", "--now", NOW_ISO])
     static_ids = {row["id"] for row in _queued_rows(5, path=STATIC_PATH, first_id=2000)}
     assert not (static_ids & set(reoriented))
 
@@ -1305,7 +1306,7 @@ def test_une_lecture_des_slots_tronquee_ne_reoriente_rien(monkeypatch, capsys):
     monkeypatch.setattr(ctl, "reorient_run", lambda *a, **k: (
         (_ for _ in ()).throw(AssertionError("aucune reorientation sans slots")))
     )
-    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json"])
+    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json", "--now", NOW_ISO])
     report = json.loads(capsys.readouterr().out)
     assert rc == ctl.EXIT_OK
     assert report["reorientation"]["reoriented"] == []
@@ -1328,7 +1329,7 @@ def test_le_dry_run_annonce_les_cibles_sans_reorienter(monkeypatch, capsys):
     monkeypatch.setattr(ctl, "reorient_run", lambda *a, **k: (
         (_ for _ in ()).throw(AssertionError("aucune reorientation en dry-run"))
     ))
-    rc = ctl.main(["--repo", "jsboige/CoursIA", "--json"])
+    rc = ctl.main(["--repo", "jsboige/CoursIA", "--json", "--now", NOW_ISO])
     report = json.loads(capsys.readouterr().out)
     assert rc == ctl.EXIT_OK
     assert len(report["reorientation"]["targets"]) == 8
@@ -1386,10 +1387,24 @@ def test_la_reorientation_annule_puis_relance(monkeypatch):
 
 def test_les_cibles_sont_les_plus_anciennes_et_respectent_le_seuil_d_age():
     rows = _queued_rows(3, minutes_old=60.0) + _queued_rows(2, minutes_old=5.0)
-    targets = ctl.select_reorientation_targets(rows, free_slots=10,
-                                               min_age_minutes=15.0, now=NOW)
+    targets, ghosts = ctl.select_reorientation_targets(
+        rows, free_slots=10, min_age_minutes=15.0, now=NOW
+    )
     assert len(targets) == 3
+    assert ghosts == 0
     assert all(row["age_min"] >= 15.0 for row in targets)
     assert [row["age_min"] for row in targets] == sorted(
         [row["age_min"] for row in targets], reverse=True
     )
+
+
+def test_les_fantomes_sont_exclus_et_ne_consomment_pas_la_borne():
+    """Un run de 45 jours (PR disparue) ne doit pas manger un slot local :
+    il est compte comme fantome, pas reoriente."""
+    rows = _queued_rows(2, minutes_old=60.0) + _queued_rows(45, minutes_old=45 * 24 * 60)
+    targets, ghosts = ctl.select_reorientation_targets(
+        rows, free_slots=2, min_age_minutes=15.0, now=NOW
+    )
+    assert ghosts == 45
+    assert len(targets) == 2
+    assert all(row["age_min"] <= 360.0 for row in targets)

@@ -364,6 +364,7 @@ variable. L'organe applique donc ce geste, dans ses bornes :
 | slots | la lecture des slots doit etre **complete et non tronquee** -- on ne borne pas par une borne qu'on n'a pas mesuree |
 | borne | **au plus le nombre de slots locaux libres** : chaque run reoriente occupe un slot ; 155 runs d'un coup sur 22 slots, c'est le symptome que l'organe combat |
 | age | un run en file depuis moins de `--reorient-min-age` (15 min) n'est pas reoriente : il se reparait tout seul |
+| fantome | un run de plus de `--reorient-max-age` (6 h) est **exclu** : sa PR a disparu. Mesure du 28/10 : sur 51 runs de cohorte en file, 45 avaient **45 jours** -- ils faussent le compte de file et consommeraient la borne des slots pour une PR qui n'existe plus |
 | perimetre | **seulement** les runs dont le workflow appartient a la cohorte (liste derivee du depot) : un workflow statique heberge n'entre pas dans la file de cohorte |
 | dry-run | `--apply` absent -> les cibles sont **annoncees**, aucune n'est executee |
 

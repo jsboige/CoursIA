@@ -227,6 +227,12 @@ DEFAULT_PANIC_MINUTES = 30.0
 # grandeur que le seuil d'age de saturation : un run plus jeune n'a pas
 # encore consommé d'attente.
 DEFAULT_REORIENT_MIN_AGE = 15.0
+# Age MAXIMAL d'un run reoriente. Au-dela, le run est un FANTOME : mesure
+# du 28/10, 51 runs de cohorte en file, dont 45 crees le 13/09 (45 jours) --
+# des runs de PR disparues, jamais servis. Ils faussent le compte de file
+# (coordinateur, 28/10) ET consommeraient la borne des slots libres pour
+# rien : on ne reressuscite pas une PR qui n'existe plus.
+DEFAULT_REORIENT_MAX_AGE = 360.0
 
 
 @dataclass
@@ -349,6 +355,8 @@ class Reorientation:
     failed: list = field(default_factory=list)
     free_slots: int = 0
     min_age_min: float = 0.0
+    max_age_min: float = 0.0
+    ghosts: int = 0
     reason: str = ""
 
 
@@ -1332,8 +1340,9 @@ def select_reorientation_targets(
     free_slots: int,
     min_age_minutes: float,
     now: datetime,
-) -> list[dict]:
-    """Cibles de la reorientation : les plus ANCIENS d'abord, bornées par les
+    max_age_minutes: float = DEFAULT_REORIENT_MAX_AGE,
+) -> tuple[list[dict], int]:
+    """Cibles de la reorientation : les plus ANCIENS d'abord, bornees par les
     slots locaux libres.
 
     La borne est le nombre de slots LIBRES mesure : chaque run reoriente
@@ -1341,13 +1350,23 @@ def select_reorientation_targets(
     declencherait 155 jobs locaux d'un coup sur un parc de 22 slots -- le
     parc local sature est exactement le symptome que le controleur combat.
 
-    Un run dont la date de creation est illisible est IGNORE (il ne peut
-    pas etre age) : reorienter un run d'age inconnu, c'est risquer de
-    reorienter un run qui vient de partir.
+    Deux filtres d'age, tous deux mesures :
+
+    - **plus vieux que `min_age_minutes`** : le run a deja consomme de
+      l'attente, c'est lui qu'il faut reparer ;
+    - **plus vieux que `max_age_minutes`** : le run est un **fantome** (sa PR
+      a disparu ; mesure du 28/10 : 45 des 51 runs de cohorte en file
+      avaient 45 jours). Le reorienter consommerait un slot pour une PR
+      qui n'existe plus, et ferait passer un vrai travail pour un fantome.
+
+    Rend `(cibles, fantomes_exclus)`. Un run dont la date de creation est
+    illisible est IGNORE (il ne peut pas etre age) : reorienter un run
+    d'age inconnu, c'est risquer de reorienter un run qui vient de partir.
     """
     if free_slots <= 0:
-        return []
+        return [], 0
     aged: list[dict] = []
+    ghosts = 0
     for line in lines:
         try:
             stamp = datetime.fromisoformat(
@@ -1358,9 +1377,12 @@ def select_reorientation_targets(
         age = (now - stamp).total_seconds() / 60.0
         if age < min_age_minutes:
             continue
+        if age > max_age_minutes:
+            ghosts += 1
+            continue
         aged.append({**line, "age_min": round(age, 1)})
     aged.sort(key=lambda row: (-row["age_min"], str(row["id"])))
-    return aged[:free_slots]
+    return aged[:free_slots], ghosts
 
 
 def reorient_run(repo: str, token: str | None, run_id) -> tuple[bool, str]:
@@ -1477,8 +1499,10 @@ def render_summary(report: dict, rc: int) -> str:
             f"run(s) de cohorte reoriente(s) vers le parc local, "
             f"{len(reorientation.get('failed') or [])} en echec, "
             f"{reorientation.get('candidates')} candidat(s) en file, "
-            f"{reorientation.get('free_slots')} slot(s) libre(s) "
-            f"(age seuil {reorientation.get('min_age_min')} min)"
+            f"{reorientation.get('free_slots')} slot(s) libre(s), "
+            f"{reorientation.get('ghosts')} fantome(s) exclu(s) "
+            f"(age seuil {reorientation.get('min_age_min')} min, "
+            f"max {reorientation.get('max_age_min')} min)"
         )
         if reorientation.get("reason"):
             lines.append(f"  - motif : {reorientation.get('reason')}")
@@ -1595,6 +1619,17 @@ def main(argv: list[str] | None = None) -> int:
             "(annulation puis relance) vers le parc local (volet (c)) : "
             "reorienter un run qui vient d'etre cree n'apporte rien, il "
             "reparait deja le run seul"
+        ),
+    )
+    parser.add_argument(
+        "--reorient-max-age",
+        type=float,
+        default=DEFAULT_REORIENT_MAX_AGE,
+        metavar="MINUTES",
+        help=(
+            "age maximal d'un run de cohorte pour etre reoriente : au-dela, "
+            "le run est un FANTOME (sa PR a disparu) -- le reorienter "
+            "consommerait un slot local pour rien"
         ),
     )
     parser.add_argument("--json", action="store_true")
@@ -1840,7 +1875,8 @@ def main(argv: list[str] | None = None) -> int:
     # slots est tronquee, ou en mode dry-run.
     effective = (decision.target if written else current) or ""
     reorientation = Reorientation(
-        free_slots=local.free, min_age_min=args.reorient_min_age
+        free_slots=local.free, min_age_min=args.reorient_min_age,
+        max_age_min=args.reorient_max_age,
     )
     if not cohort_paths:
         reorientation.reason = (
@@ -1868,10 +1904,12 @@ def main(argv: list[str] | None = None) -> int:
         if not complete:
             reorientation.reason = reason
         else:
-            targets = select_reorientation_targets(
-                lines, local.free, args.reorient_min_age, now
+            targets, ghosts = select_reorientation_targets(
+                lines, local.free, args.reorient_min_age, now,
+                args.reorient_max_age,
             )
             reorientation.targets = targets
+            reorientation.ghosts = ghosts
             if not targets:
                 reorientation.reason = (
                     "aucun run de cohorte en file depuis plus de "
@@ -1986,6 +2024,8 @@ def main(argv: list[str] | None = None) -> int:
             "failed": reorientation.failed,
             "free_slots": reorientation.free_slots,
             "min_age_min": reorientation.min_age_min,
+            "max_age_min": reorientation.max_age_min,
+            "ghosts": reorientation.ghosts,
             "reason": reorientation.reason,
         },
         "thresholds": {
