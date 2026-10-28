@@ -844,6 +844,11 @@ algorithme génétique (selection, reproduction, mutation, retour meilleur indiv
 
 <style scoped>
 .slidev-layout { font-size: 0.85em; }
+/* 190px = 380px pour 2 figures ; >210px sort du canvas à 720px (mesuré diapo 46).
+   À 190px : img_031 680x210 -> 615px de large, img_032 721x223 -> 614px ;
+   +150px de colonne libellé +12px de gap = ~777px de rangée. À 230px, le bloc
+   « Phénotype » était éjecté sous le canvas (commit 72c10a3e). Ne pas remonter
+   sans re-mesurer l'encre au bas de la diapo (scanner slidev_overflow). */
 .slidev-layout img { height: 190px !important; width: auto !important; }
 h2 { margin-top: 0.2em !important; margin-bottom: 0.1em !important; }
 </style>
