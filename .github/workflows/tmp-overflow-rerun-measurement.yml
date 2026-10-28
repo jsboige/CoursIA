@@ -1,0 +1,49 @@
+name: TMP -- mesure de relecture de vars au re-lancement (JETABLE)
+
+# MESURE JETABLE du 2026-10-28, volet (c) de #22937 : une RELANCE de run
+# relit-elle `vars.*` au moment de recreer les jobs ? Ce fichier est un
+# instrument de mesure, pas un livrable : il est supprime a la fin de la
+# mesure.
+#
+# Il ne touche PAS `CI_OVERFLOW_LOCAL` : il lit sa propre variable
+# jetable `CI_OVERFLOW_MEASURE`, posee et retiree par la lane.
+#
+# Deux jobs, deux lectures :
+#  - `echo-var` est STATIQUE sur le parc local : il s'execute vite et
+#    affiche la valeur lue ;
+#  - `hybrid` porte la FORME HYBRIDE de la cohorte (`vars.X == 'true'`
+#    -> `coursia-linux`, sinon `ubuntu-latest`) : ses `labels` disent ou
+#    il a ete cree.
+#
+# Le re-lancement recree les jobs : si `hybrid` atterrit sur le parc
+# local apres le basculement de la variable, c'est que la lecture est
+# refaite.
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  echo-var:
+    name: "valeur lue"
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    timeout-minutes: 10
+    steps:
+      - name: "Affiche la variable"
+        run: |
+          echo "MEASURE_VAR=${MEASURE_VAR}" | tee -a "$GITHUB_STEP_SUMMARY"
+        env:
+          MEASURE_VAR: ${{ vars.CI_OVERFLOW_MEASURE }}
+
+  hybrid:
+    name: "atterrissage hybride"
+    runs-on: ${{ vars.CI_OVERFLOW_MEASURE == 'true' && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    timeout-minutes: 10
+    steps:
+      - name: "Atterrissage"
+        run: echo "job hybrid cree sur ce runner"
