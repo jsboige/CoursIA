@@ -893,8 +893,9 @@ def astar_all_folds(max_crossings: int = 13, node_budget: int = 200_000,
         # parcourt la composante entiere en largeur et on verifie (a) sa
         # taille, (b) qu'elle ne contient aucune cible, (c) que les
         # composantes sont deux a deux disjointes — sans quoi epuiser un pli
-        # ne dirait rien des autres (mesure du 27/10 : 2157 etats, 0
-        # intersection, d'ou `expanded` = 2156 constant).
+        # ne dirait rien des autres (mesure du 27/10 : 3 plis sondes a 2157
+        # etats, 0 intersection ; `expanded` vaut 2156 ou 2205 selon le pli,
+        # identique sur les 3 strategies).
         sample = sorted({0, len(fs) // 2, len(fs) - 1})
         comps = []
         for i in sample:
