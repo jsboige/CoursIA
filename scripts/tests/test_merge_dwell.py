@@ -1566,3 +1566,224 @@ def test_22085_couleur_illisible_ne_deroge_pas():
                                 fetch=fetch)
     assert ok is False
     assert "condition non remplie" in msg
+
+
+# ---------------------------------------------------------------------------
+# #23089 -- un `fetch --depth=1` ne rend jamais superficiel un depot complet
+#
+# Le chemin est prove sur un clone REEL (bare origin local + clone), pas sur
+# un faux `run_git` : c'est le comportement de git qu'il faut epingler.
+# ---------------------------------------------------------------------------
+def _disposable_repo(tmp_path):
+    """(origin bare, clone complet, sha absent du clone).
+
+    Le clone est `--single-branch` : le commit du cote `side` n'y est pas,
+    donc `_ensure_commit_present` declenche vraiment un fetch.
+    """
+    origin = tmp_path / "origin.git"
+    work = tmp_path / "work"
+    _git_ok(_git(tmp_path, "init", "--bare", "-b", "main", str(origin)), "init bare")
+    work.mkdir()
+    _git_ok(_git(work, "init", "-b", "main"), "init work")
+    _git_ok(_git(work, "config", "user.email", "t@t.invalid"), "config email")
+    _git_ok(_git(work, "config", "user.name", "t"), "config name")
+    (work / "a.txt").write_text("1\n", encoding="utf-8")
+    _git_ok(_git(work, "add", "a.txt"), "add a.txt")
+    _git_ok(_git(work, "commit", "-m", "c1"), "commit c1")
+    _git_ok(_git(work, "remote", "add", "origin", str(origin)), "remote add")
+    _git_ok(_git(work, "push", "-q", "origin", "main"), "push main")
+    _git_ok(_git(work, "checkout", "-q", "-b", "side"), "checkout side")
+    (work / "s.txt").write_text("s\n", encoding="utf-8")
+    _git_ok(_git(work, "add", "s.txt"), "add s.txt")
+    _git_ok(_git(work, "commit", "-m", "side"), "commit side")
+    side = _git(work, "rev-parse", "HEAD").stdout.strip()
+    _git_ok(_git(work, "push", "-q", "origin", "side"), "push side")
+    _git_ok(_git(work, "checkout", "-q", "main"), "checkout main")
+    _git_ok(_git(work, "branch", "-q", "-D", "side"), "branch -D side")
+    clone = tmp_path / "clone"
+    _git_ok(
+        _git(
+            tmp_path, "clone", "-q", "--single-branch", "--branch", "main",
+            origin.as_uri(), str(clone),
+        ),
+        "clone complet",
+    )
+    _git_ok(_git(clone, "config", "user.email", "t@t.invalid"), "config email clone")
+    _git_ok(_git(clone, "config", "user.name", "t"), "config name clone")
+    return origin, clone, side
+
+
+def _spy(calls):
+    def run_git(args):
+        calls.append(list(args))
+        return merge_dwell._default_run_git(args)
+    return run_git
+
+
+def _fetches(calls):
+    return [c for c in calls if c and c[0] == "fetch"]
+
+
+def test_un_clone_complet_reste_complet_apres_ensure_commit_present(
+    tmp_path, monkeypatch
+):
+    """#23089, controle POSITIF : un clone complet ne doit jamais devenir
+    superficiel parce qu'un parent absent a ete ramene.
+
+    Le fetch `--depth=1` cree une borne : le depot passe shallow alors que
+    son historique etait complet, et les calculs `main..tete` voient alors des
+    commits deja merges comme « propres » (faux « stack top », #22244 et
+    #22252 rendues BLOCKED sur des squash deja merges le 2026-10-28).
+    """
+    _origin, clone, side = _disposable_repo(tmp_path)
+    monkeypatch.chdir(clone)
+    assert merge_dwell._default_run_git(
+        ["rev-parse", "--is-shallow-repository"]
+    )[1].strip() == "false"
+    calls: list[list[str]] = []
+    merge_dwell._ensure_commit_present(side, _spy(calls))
+    assert merge_dwell._default_run_git(
+        ["rev-parse", "--is-shallow-repository"]
+    )[1].strip() == "false"
+    fetches = _fetches(calls)
+    assert fetches, "le commit absent aurait du ete ramene"
+    assert "--depth" not in fetches[0], fetches[0]
+
+
+def test_un_clone_tronque_conserve_le_fetch_en_depth_1(tmp_path, monkeypatch):
+    """#23089 : le checkout du gate est shallow PAR CONSTRUCTION -- son
+    comportement ne change pas (le fetch reste en `--depth=1`, c'est la
+    seule maniere de ramener un commit sans telecharger son histoire)."""
+    origin, _clone, side = _disposable_repo(tmp_path)
+    shallow = tmp_path / "shallow-clone"
+    _git_ok(
+        _git(
+            tmp_path, "clone", "-q", "--depth=1", "--single-branch",
+            "--branch", "main", origin.as_uri(), str(shallow),
+        ),
+        "clone superficiel",
+    )
+    monkeypatch.chdir(shallow)
+    assert merge_dwell._default_run_git(
+        ["rev-parse", "--is-shallow-repository"]
+    )[1].strip() == "true"
+    calls: list[list[str]] = []
+    merge_dwell._ensure_commit_present(side, _spy(calls))
+    fetches = _fetches(calls)
+    assert fetches, "le commit absent aurait du ete ramene"
+    assert "--depth=1" in fetches[0], fetches[0]
+
+
+def test_des_bornes_etrangeres_ne_declenchent_pas_le_fetch_en_depth_1(
+    tmp_path, monkeypatch
+):
+    """#23089 (precision du coordinateur, mesuree sur ai-01) : un
+    `.git/shallow` qui ne porte que des bornes ETRANGERES a l'historique de
+    la base ne tronque PAS cet historique.
+
+    Le booleen `is-shallow-repository` reste `true` en permanence dans cet
+    etat -- une garde fondee sur ce booleen seul ne protegerait rien. Le
+    predicat mesure donc l'ANCESTRE de la base, pas le booleen.
+    """
+    _origin, clone, side = _disposable_repo(tmp_path)
+    monkeypatch.chdir(clone)
+    (clone / ".git" / "shallow").write_text(side + "\n", encoding="utf-8")
+    assert merge_dwell._default_run_git(
+        ["rev-parse", "--is-shallow-repository"]
+    )[1].strip() == "true"
+    assert merge_dwell.base_history_truncated() is False
+    calls: list[list[str]] = []
+    merge_dwell._ensure_commit_present(side, _spy(calls))
+    fetches = _fetches(calls)
+    assert fetches, "le commit absent aurait du ete ramene"
+    assert "--depth" not in fetches[0], fetches[0]
+
+
+def test_le_predicat_dit_tronque_quand_la_borne_tranche_la_base(
+    tmp_path, monkeypatch
+):
+    """Controle negatif du predicat : une borne qui EST un ancetre de la
+    base tronque reellement l'historique de la base -- c'est elle qui doit
+    etre vue, sinon la porte pile mesurerait sur une histoire incomplete."""
+    origin, _clone, side = _disposable_repo(tmp_path)
+    shallow = tmp_path / "shallow-clone"
+    _git(
+        tmp_path, "clone", "-q", "--depth=1", "--single-branch",
+        "--branch", "main", origin.as_uri(), str(shallow),
+    )
+    monkeypatch.chdir(shallow)
+    assert merge_dwell.base_history_truncated() is True
+    # la borne declaree n'est pas un ancetre de la base : le predicat dit
+    # non, meme avec un `.git/shallow` non vide.
+    (shallow / ".git" / "shallow").write_text(side + "\n", encoding="utf-8")
+    assert merge_dwell.base_history_truncated() is False
+
+
+def test_les_racines_shallow_mortes_sont_retirees(tmp_path, monkeypatch):
+    """#23089 : une racine shallow que aucune ref ne contient et dont le
+    parent est absent du depot ne masque rien -- elle rend pourtant le depot
+    "shallow" en permanence (le booleen `is-shallow-repository` reste
+    `true`), et toute garde fondee sur ce booleen croit l'historique tronque.
+
+    Le retrait ne change ni les refs ni l'historique de la base : seule la
+    reponse "shallow" du depot change.
+    """
+    origin, clone, _side = _disposable_repo(tmp_path)
+    # un commit etranger a l'historique de main, dont le parent n'existe pas
+    # dans le depot : c'est la signature d'un `fetch --depth=1` d'un SHA
+    # etranger (le defaut que #23089 corrige).
+    work = tmp_path / "work"
+    _git_ok(_git(work, "checkout", "-q", "-b", "orphan"), "checkout orphan")
+    _git_ok(_git(work, "checkout", "-q", "--orphan", "orpheline"), "orphan")
+    _git_ok(_git(work, "rm", "-rq", "--cached", "."), "rm cached")
+    (work / "o.txt").write_text("o\n", encoding="utf-8")
+    _git_ok(_git(work, "add", "o.txt"), "add o.txt")
+    _git_ok(_git(work, "commit", "-m", "orpheline"), "commit orpheline")
+    # un second commit : son parent (la racine orpheline) n'existe pas dans
+    # le clone, qui nefetchera que lui.
+    (work / "o2.txt").write_text("o2\n", encoding="utf-8")
+    _git_ok(_git(work, "add", "o2.txt"), "add o2.txt")
+    _git_ok(_git(work, "commit", "-m", "orpheline 2"), "commit orpheline 2")
+    _git_ok(_git(work, "push", "-q", "origin", "orpheline"), "push orpheline")
+    foreign = _git(work, "rev-parse", "HEAD").stdout.strip()
+    monkeypatch.chdir(clone)
+    _git_ok(_git(clone, "fetch", "--depth=1", "--quiet", "origin", foreign),
+            "fetch etranger")
+    assert merge_dwell._default_run_git(
+        ["rev-parse", "--is-shallow-repository"]
+    )[1].strip() == "true"
+    before = _git(clone, "for-each-ref", "--format=%(refname)").stdout
+    main_before = _git(clone, "rev-list", "--count",
+                       "refs/remotes/origin/main").stdout.strip()
+    dead = merge_dwell.prune_dead_shallow_roots()
+    assert dead == [foreign]
+    assert merge_dwell._default_run_git(
+        ["rev-parse", "--is-shallow-repository"]
+    )[1].strip() == "false"
+    after = _git(clone, "for-each-ref", "--format=%(refname)").stdout
+    assert after == before, "le retrait ne doit toucher aucune ref"
+    assert _git(clone, "rev-list", "--count",
+                "refs/remotes/origin/main").stdout.strip() == main_before
+
+
+def test_une_racine_shallow_vivante_n_est_pas_retiree(tmp_path, monkeypatch):
+    """Controle negatif : la racine d'un clone superficiel legitime (le tip
+    de `main`, contenu par `origin/main`) est VIVANTE -- elle tronque
+    reellement l'historique de la base. Le retrait ne la touche pas."""
+    origin, _clone, _side = _disposable_repo(tmp_path)
+    shallow = tmp_path / "shallow-clone"
+    _git_ok(
+        _git(
+            tmp_path, "clone", "-q", "--depth=1", "--single-branch",
+            "--branch", "main", origin.as_uri(), str(shallow),
+        ),
+        "clone superficiel",
+    )
+    monkeypatch.chdir(shallow)
+    assert merge_dwell._default_run_git(
+        ["rev-parse", "--is-shallow-repository"]
+    )[1].strip() == "true"
+    assert merge_dwell.prune_dead_shallow_roots() == []
+    assert merge_dwell._default_run_git(
+        ["rev-parse", "--is-shallow-repository"]
+    )[1].strip() == "true"
