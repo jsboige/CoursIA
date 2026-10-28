@@ -479,11 +479,19 @@ def test_voie_en_processus_rend_les_memes_codes_que_la_voie_cli(monkeypatch):
     solo = pig._claims_in_process([202], "myia-ai-01:CoursIA-2")
     assert solo is not None
     assert solo[202][0] == pig.CLAIM_CODE_BLOCKED
-    # La voie CLI BATCH (>= 2 issues) mappe la meme situation sur NOT_SCOPED
-    # (exit 2) -> ERROR : comportement HISTORIQUE du mode batch, reproduit a
-    # l'identique par la voie en processus. C'est le contrat #22630 --
-    # comportement CONSTANT, pas corrige au passage.
-    assert verdicts[202][0] == pig.CLAIM_CODE_ERROR
+    # #22983 -- CONTRAT CHANGE ICI, et non contourne (revue Hermes,
+    # point 5a). Le mode batch mappe desormais `exit 2` + `blocking_lanes`
+    # non vide sur BLOCKED, le verdict de la voie historique du picker : le
+    # resume JSON nomme les lanes bloquantes, alors que `NOT_SCOPED:` part
+    # sur stderr et n'a jamais ete lisible sur stdout. La version precedente
+    # de cette assertion affirmait ERROR -- le comportement HISTORIQUE du
+    # mode batch, qui rendait un grain tenu par une autre lane *servable*
+    # par le tapis (fail-open) : exactement la collision que la jambe
+    # IMPLICIT (#14300) existe pour empecher.
+    # Le contrat #22630 tient toujours : la voie en processus et la voie CLI
+    # rendent le MEME code, et cette assertion mesure la premiere tandis que
+    # celle du dessus (mono-issue) mesure deja BLOCKED sur la meme situation.
+    assert verdicts[202][0] == pig.CLAIM_CODE_BLOCKED
 
 
 def test_voie_en_processus_rend_none_si_le_lecteur_manque(monkeypatch):

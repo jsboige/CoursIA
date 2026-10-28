@@ -57,19 +57,21 @@ SNAPSHOT_VERSION = 1
 DEFAULT_TTL_SECONDS = 1800
 
 #: Fenetre maximale lue par le balayage des commentaires du depot, en
-#: secondes (2 h). Le balayage lit TOUS les commentaires modifies depuis
-#: `since` : son cout croit avec la fenetre, pas avec le nombre d'issues
-#: visees. Mesure du 27/10 (ce siege) : 417 commentaires sur 1,5 jour =
-#: 23,7 s de lecture (5 pages) ; au-dela, la lecture par issue est plus
-#: honnete. La fenetre de 24 h a depasse le budget du balayage (mesure :
-#: `TimeoutExpired`, l'instantane indisponible) -- d'ou la fenetre de 2 h,
-#: le balayage n'etant tente que sur une fenetre courte.
+#: secondes (2 h). Le balayage lit les commentaires MODIFIES depuis `since` :
+#: son cout croit avec la fenetre, pas avec le nombre d'issues visees.
+#: Mesure du 27/10 (ce siege) : 417 commentaires sur 1,5 jour = 23,7 s de
+#: lecture, 5 pages -- une fenetre de cet ordre tient dans le budget.
+#: La borne de 2 h est CONSERVATRICE et n'est etablie par aucune mesure : la
+#: « fenetre de 24 h qui depassait le budget » invoquee par la version
+#: precedente mesurait en realite un fil ENTIER, lu sans `since` effectif
+#: (argv casse, revue du 28/10). Au-dela de la borne, la lecture par issue
+#: prend le relais : la valeur exacte n'est donc pas critique.
 MAX_SWEEP_LOOKBACK_SECONDS = 2 * 3600
 
-#: Budget du balayage (le reste de la phase reseau garde 60 s). Le balayage
-#: lit TOUT le fil du depot depuis `since` : c'est 5 pages pour 1,5 jour
-#: (mesure du 27/10, 23,7 s), 10 pages pour 24 h -- le budget de 60 s
-#: produisait un `TimeoutExpired` et l'instantane indisponible.
+#: Budget du balayage, en secondes. Avec un `since` effectif, 1,5 jour de fil
+#: tient en 5 pages et 23,7 s (mesure du 27/10) : 60 s couvrent la fenetre de
+#: `MAX_SWEEP_LOOKBACK_SECONDS`. Le `TimeoutExpired` observe avant le
+#: correctif d'argv mesurait un fil entier, pas cette fenetre.
 SWEEP_TIMEOUT_SECONDS = 60.0
 
 #: Nombre de fils pour la lecture PARALLELE des commentaires d'issue.
@@ -157,7 +159,12 @@ def snapshot_lock(repo: str, timeout: float = 120.0) -> Iterator[Path]:
       les lanes de la machine ont attendu `LOCK_STALE_SECONDS` (15 min) ;
     - le verrou est **vieux** (age > `LOCK_STALE_SECONDS`).
 
-    Sans ce second cas, un processus mort bloquerait la machine jusqu'au
+    Un verrou dont le contenu ne porte pas un pid POSITIF (fichier vide,
+    contenu non numerique, lecture impossible) a un proprietaire **inconnu**,
+    pas mort : il est respecte jusqu'a la borne d'age. Un fichier vide est
+    l'etat normal entre la creation atomique et l'ecriture du pid (#22983).
+
+    Sans le cas d'age, un processus mort bloquerait la machine jusqu'au
     redemarrage.
     """
     directory = snapshot_dir(repo)
@@ -177,9 +184,24 @@ def snapshot_lock(repo: str, timeout: float = 120.0) -> Iterator[Path]:
                 age = 0.0
             holder = None
             try:
-                holder = int(lock_path.read_text(encoding="utf-8").strip() or 0)
-            except (OSError, ValueError):
-                holder = None
+                texte = lock_path.read_text(encoding="utf-8").strip()
+            except (OSError, UnicodeDecodeError):
+                texte = ""
+            if texte:
+                try:
+                    pid = int(texte)
+                except ValueError:
+                    pid = 0
+                if pid > 0:
+                    holder = pid
+            # #22983 -- un pid `<= 0` (fichier VIDE, contenu non numerique)
+            # est INCONNU, jamais MORT. Le fichier est vide par construction
+            # entre `O_CREAT|O_EXCL` et l'ecriture du pid (`os.fdopen`
+            # ci-dessus) : c'est la fenetre de course normale, et la lire
+            # comme un proprietaire disparu faisait VOLER le verrou -- deux
+            # processus entraient alors dans la section qui existe pour les
+            # exclure (mesure du 28/10 : acquisition en 0,00 s au lieu de
+            # l'attente). Un pid positif, lui, se verifie.
             dead_holder = holder is not None and not _pid_alive(holder)
             if age > LOCK_STALE_SECONDS or dead_holder:
                 try:
@@ -380,20 +402,34 @@ def fetch_issue(repo: str, number: int) -> dict:
 def _issue_number_from_url(issue_url: str) -> int | None:
     """Numero d'issue porte par l'`issue_url` d'un commentaire, ou None.
 
-    Un commentaire de PULL REQUEST porte une `issue_url` qui se termine par
-    `/pulls/<n>` : il est ECARTE. Issues et PRs partagent la meme numerotation
-    dans un depot, et le lecteur de claims raisonne sur des issues -- un
-    commentaire de PR ne doit donc jamais etrange le numero d'une issue.
+    Aucun filtre PR ici : l'exclusion d'un commentaire de PULL REQUEST se
+    fait sur `html_url` (`_is_pull_request_comment`), seule forme fiable.
+    #22983 -- l'API REST rend `/issues/<n>` dans `issue_url` pour TOUT
+    commentaire, y compris ceux des PRs : mesure du 28/10 sur 100
+    commentaires reels, 100/100 en `/issues/`, dont 37 commentaires de PR
+    (leur `html_url` porte `/pull/`). Un filtre `"/pulls/" in issue_url`
+    ne se declenchait donc jamais.
     """
     if not issue_url:
-        return None
-    if "/pulls/" in issue_url:
         return None
     tail = str(issue_url).rstrip("/").rsplit("/", 1)[-1]
     try:
         return int(tail)
     except ValueError:
         return None
+
+
+def _is_pull_request_comment(item: dict) -> bool:
+    """Vrai si le commentaire appartient a une PULL REQUEST.
+
+    #22983 -- `html_url` est la seule surface qui distingue les deux
+    formes : `/pull/<n>` pour une PR, `/issues/<n>` sinon (mesure du 28/10 :
+    37 commentaires de PR sur 100, tous en `/pull/`). Issues et PRs
+    partagent la numerotation du depot, et le lecteur de claims raisonne sur
+    des issues -- un commentaire de PR ne doit jamais etrangler le numero
+    d'une issue.
+    """
+    return "/pull/" in str((item or {}).get("html_url") or "")
 
 
 def fetch_repo_comments_since(repo: str, since: str | None = None, *,
@@ -407,7 +443,8 @@ def fetch_repo_comments_since(repo: str, since: str | None = None, *,
     le balayage en fait un seul, quel que soit le nombre d'issues visees.
 
     Rend `{numero_issue: [commentaires normalises]}` -- les commentaires de
-    PR sont exclus. Lève en cas d'echec de lecture : l'appelant decide.
+    PR sont exclus (sur `html_url`, voir `_is_pull_request_comment`). Lève en
+    cas d'echec de lecture : l'appelant decide.
     """
     # `-X GET` est OBLIGATOIRE : `gh api` bascule en POST des qu'un champ
     # `-f` est present, et un POST sur un point d'entree de liste rend
@@ -415,7 +452,16 @@ def fetch_repo_comments_since(repo: str, since: str | None = None, *,
     # `gh: Not Found (HTTP 404)` et tout le rafraichissement echouait).
     params: list[str] = ["--paginate", "-X", "GET"]
     if since:
-        params.append(f"-f since={since}")
+        # #22983 -- DEUX elements d'argv, jamais un seul. En un seul
+        # element (`"-f since=..."`), `gh` lit le nom de champ ` since`
+        # (espace initial) et l'encode en parametre de requete : la requete
+        # part en `?+since=...`, nom inconnu de GitHub, qui rend alors le
+        # fil ENTIER au lieu de filtrer -- ~30 000 commentaires, et le
+        # balayage meurt sur son propre timeout. Mesure du 28/10
+        # (`GH_DEBUG=api`) : un element -> `?+since=2026-10-28T00%3A00%3A00Z`,
+        # deux elements -> `?since=2026-10-28T00%3A00%3A00Z`. `fetch_open_issues`
+        # juste en dessous utilise deja la forme en deux elements.
+        params.extend(["-f", f"since={since}"])
     raw = _gh_api(f"repos/{repo}/issues/comments", params=params,
                    timeout=timeout)
     if isinstance(raw, dict):
@@ -423,6 +469,8 @@ def fetch_repo_comments_since(repo: str, since: str | None = None, *,
     grouped: dict[int, list[dict]] = {}
     for item in raw or []:
         if not isinstance(item, dict):
+            continue
+        if _is_pull_request_comment(item):
             continue
         number = _issue_number_from_url(str(item.get("issue_url") or ""))
         if number is None:
@@ -479,16 +527,18 @@ def sweep_repo_comments(repo: str, snapshot: dict, *, since: str | None = None,
     Le balayage est **incremental par construction** : `since` borne la
     lecture aux commentaires modifies apres cet horodatage. Un issue dont
     aucun commentaire n'a bouge depuis le dernier balayage garde sa liste
-    inchangee -- son horodatage de lecture avance quand meme, sans appel.
+    inchangee -- son horodatage de lecture avance quand meme, sans appel,
+    tant que son stamp est DANS la fenetre lue (voir la regle des stamps
+    ci-dessous).
 
     #22983 -- cette fonction ne ressuscite PAS la `sweep_comments` retiree
     par la revue ai-01 du 2026-10-27 (#22684, point 3). La retirement portait
     sur deux defauts precis : (1) une forme d'argv invalide
     (`params=f"--paginate&since={since}"` devenait UN argument que `gh`
-    refuse), (2) aucun appelant en production. Ici, l'argv est une LISTE
-    d'arguments (`["--paginate", "-f since=..."]`), et l'appelant existe :
-    `ensure_comments`, qui remplace la lecture a deux appels par issue.
-    Le nom reste different pour que la garde de la retirement
+    refuse), (2) aucun appelant en production. Ici, l'argv est une LISTE de
+    DEUX elements (`["--paginate", "-f", "since=..."]`), et l'appelant
+    existe : `ensure_comments`, qui remplace la lecture a deux appels par
+    issue. Le nom reste different pour que la garde de la retirement
     (`test_sweep_comments_est_retire`) continue de dire ce qu'elle dit.
 
     Rend `(snapshot, nb_appels_gh)`.
@@ -507,20 +557,40 @@ def sweep_repo_comments(repo: str, snapshot: dict, *, since: str | None = None,
             by_url[c.get("url")] = c
         comments[key] = sorted(by_url.values(),
                                key=lambda c: c.get("createdAt") or "")
-        stamps[key] = now
-    # Les issues balayes SANS changement (aucun commentaire nouveau) font
-    # partie de la lecture : leur horodatage de lecture avance aussi, sans
-    # appel. C'est ce qui evite de relire par issue une issue immobile.
+    # #22983 -- REGLE UNIQUE du stamp : il n'avance qu'a ce que le balayage a
+    # REELLEMENT couvert. Le balayage ne lit que `[since, now]` ; un stamp
+    # ANTERIEUR a `since` marque des commentaires qu'il n'a pas vus, et le
+    # trou `[stamp, since]` n'est rendu par personne d'autre que la lecture
+    # par issue. Avancer un tel stamp a `now` declare donc l'issue lue
+    # jusqu'a maintenant : un `[CLAIMED]` poste dans le trou n'est rendu NI
+    # par le balayage NI par la lecture par issue, et ne le sera plus jamais
+    # (temoin de la revue du 28/10 : 7 passes consecutives sans le voir).
+    # Un stamp `>= since` est, lui, couvert en entier (la lecture precedente
+    # allait jusqu'a `stamp`, le balayage couvre tout ce qui a bouge apres
+    # `since` <= `stamp`) : il avance a `now`, ce qui evite la lecture par
+    # issue pour une issue immobile.
+    complets = not since
+    since_epoch: float | None = None
     if since:
         try:
             since_epoch = datetime.fromisoformat(
                 str(since).replace("Z", "+00:00")).timestamp()
         except ValueError:
+            # `since` illisible : on ne SAIT pas ce que le balayage a couvert.
+            # Aucun stamp n'avance (fail-closed : la lecture par issue suit).
             since_epoch = None
-        if since_epoch is not None:
-            for key, stamp in list(stamps.items()):
-                if isinstance(stamp, (int, float)) and stamp <= since_epoch:
-                    stamps[key] = now
+    cibles = set(stamps) | {str(n) for n in grouped}
+    for key in cibles:
+        stamp = stamps.get(key)
+        if complets:
+            # Balayage complet : tout le fil a ete lu.
+            stamps[key] = now
+        elif (since_epoch is not None
+              and isinstance(stamp, (int, float)) and stamp >= since_epoch):
+            stamps[key] = now
+        # Sinon : trou non couvert (stamp < since), ou issue jamais lue sous
+        # un balayage partiel -- aucun stamp n'est pose, le lecteur reste
+        # fail-closed et relit l'issue.
     meta["comment_stamps"] = stamps
     meta["comments_swept_at"] = _utc_now()
     meta["comments_sweep_since"] = since
@@ -576,16 +646,24 @@ def ensure_comments(repo: str, numbers: list[int], snapshot: dict, *,
         # #22983 -- le balayage n'est tente que si sa FENETRE est courte.
         # Son cout croit avec l'ACTIVITE du depot, pas avec le nombre
         # d'issues visees : mesure du 27/10, 417 commentaires sur 1,5 jour
-        # = 23,7 s (5 pages), et la fenetre de 24 h a depasse le budget de
-        # 180 s. La lecture par issue, elle, coutait ~0,73 s par issue
-        # (median) -- soit ~15 s pour 150 issues, et elle est PARALLELISEE.
-        # Le balayage reste utile quand la fenetre est courte : il avance
-        # aussi les horodatages des issues immobiles, sans appel.
+        # = 23,7 s (5 pages). La lecture par issue, elle, coutait ~0,73 s par
+        # issue (median) -- soit ~15 s pour 150 issues, et elle est
+        # PARALLELISEE. Le balayage reste utile quand la fenetre est courte :
+        # il avance aussi les horodatages des issues immobiles, sans appel.
         if known:
             oldest = min(known)
-            bounded = max(oldest, now - MAX_SWEEP_LOOKBACK_SECONDS)
-            if (now - bounded) <= MAX_SWEEP_LOOKBACK_SECONDS:
-                since = datetime.fromtimestamp(bounded, UTC).strftime(
+            # #22983 -- la porte est REELLE : elle compare la fenetre NON
+            # rognee, `now - oldest`. La version precedente bornait d'abord
+            # (`bounded = max(oldest, now - MAX)`) puis comparait
+            # `(now - bounded) <= MAX` : tautologie par construction de
+            # `max()`, donc AUCUNE branche n'ecartait le balayage. Le
+            # balayage lisait alors `[now - MAX, now]` et laissait le trou
+            # `[oldest, now - MAX]` sans lecteur. Ici, une fenetre trop large
+            # ECARTE le balayage : la lecture par issue couvre chaque issue
+            # perimee en entier, et coute moins cher qu'un balayage de
+            # plusieurs jours.
+            if (now - oldest) <= MAX_SWEEP_LOOKBACK_SECONDS:
+                since = datetime.fromtimestamp(oldest, UTC).strftime(
                     "%Y-%m-%dT%H:%M:%SZ")
                 try:
                     snapshot, calls_sweep = sweep_repo_comments(

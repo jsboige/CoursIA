@@ -17,8 +17,6 @@ racine de l'instantane est redirigee vers `tmp_path`.
 import datetime as dt
 import json
 import os
-import re
-import subprocess
 import sys
 import time
 import types
@@ -62,14 +60,21 @@ def _commentaire(issue, body="[CLAIMED] lane a:b -- x", created="2026-10-27T10:0
 
 
 def _commentaire_pr(pr, body="x", created="2026-10-27T10:00:00Z"):
-    """Commentaire de PULL REQUEST : l'`issue_url` porte `/pulls/`."""
+    """Commentaire de PULL REQUEST, a la forme REELLE de l'API REST.
+
+    #22983 -- mesure du 28/10 sur 100 commentaires reels de
+    `repos/jsboige/CoursIA/issues/comments` : 100/100 portent
+    `/issues/<n>` dans `issue_url`, y compris les 37 commentaires de PR.
+    Seul `html_url` porte `/pull/`. La forme precedente de cette fabrique
+    (`issue_url` en `/pulls/`) n'existe pas : elle ne gardait rien.
+    """
     return {
         "body": body,
         "created_at": created,
         "updated_at": created,
         "user": {"login": "jsboige"},
-        "html_url": f"https://github.com/o/r/pull/{pr}#c",
-        "issue_url": f"https://api.github.com/repos/o/r/pulls/{pr}",
+        "html_url": f"https://github.com/o/r/pull/{pr}#issuecomment-1",
+        "issue_url": f"https://api.github.com/repos/o/r/issues/{pr}",
     }
 
 
@@ -77,40 +82,124 @@ def _commentaire_pr(pr, body="x", created="2026-10-27T10:00:00Z"):
 
 
 def test_le_balayage_exclut_les_pr_et_classe_par_issue(monkeypatch):
+    """Un commentaire de PR est ecarte sur `html_url`, pas sur `issue_url`."""
+    commentaire_pr = _commentaire_pr(1234)
+    # La forme est celle de l'API : un filtre `"/pulls/" in issue_url`
+    # (comportement du head avant #22983) ne l'aurait JAMAIS ecarte.
+    assert "/pulls/" not in commentaire_pr["issue_url"]
+    assert "/pull/" in commentaire_pr["html_url"]
     monkeypatch.setattr(gs, "_gh_api", lambda path, **kw: [
-        _commentaire(7), _commentaire(9), _commentaire_pr(1234)])
+        _commentaire(7), _commentaire(9), commentaire_pr])
     grouped = gs.fetch_repo_comments_since("o/r")
     assert set(grouped) == {7, 9}
     assert grouped[7][0]["body"].startswith("[CLAIMED]")
     assert grouped[9][0]["author"]["login"] == "jsboige"
 
 
+def _iso(epoch):
+    """Horodatage ISO 8601 UTC, la forme que `since` attend."""
+    return dt.datetime.fromtimestamp(epoch, dt.UTC).strftime(
+        "%Y-%m-%dT%H:%M:%SZ")
+
+
 def test_le_balayage_fusionne_sans_dupliquer_et_avance_les_stamps(monkeypatch):
+    """Une issue dont le stamp est DANS la fenetre lue est couverte en entier.
+
+    Son stamp avance donc a `now` : c'est ce qui evite la lecture par issue
+    pour une issue immobile (la lecture precedente allait jusqu'a `stamp`,
+    le balayage couvre tout ce qui a bouge depuis `since <= stamp`).
+    """
     deja = {"body": "ancien", "createdAt": "2026-10-20T00:00:00Z",
             "author": {"login": "x"}, "url": "u1"}
+    now = time.time()
+    ancien_stamp = now - 60
     snapshot = {
         "comments": {"7": [deja]},
-        "meta": {"comment_stamps": {"7": 1000.0}},
+        "meta": {"comment_stamps": {"7": ancien_stamp}},
     }
     monkeypatch.setattr(gs, "_gh_api", lambda path, **kw: [
         _commentaire(7, body="nouveau"),
         _commentaire(7, body="ancien", created="2026-10-20T00:00:00Z"),
     ])
-    out, calls = gs.sweep_repo_comments("o/r", snapshot, since="2026-10-01T00:00:00Z")
+    out, calls = gs.sweep_repo_comments("o/r", snapshot, since=_iso(now - 120))
     assert calls == 1
     bodies = [c["body"] for c in out["comments"]["7"]]
     assert "nouveau" in bodies and "ancien" in bodies
     # Le meme commentaire (meme url) n'est pas duplique.
     assert len(out["comments"]["7"]) == 2
     stamp = out["meta"]["comment_stamps"]["7"]
-    assert stamp > 1000.0
+    assert stamp > ancien_stamp
+
+
+def test_un_stamp_anterieur_a_la_borne_n_avance_pas_et_le_claim_reste_vu(
+        monkeypatch):
+    """#22983 -- un stamp ANTERIEUR a `since` marque un trou non lu.
+
+    Temoin de la revue, rejoue : stamp = now - 3,5 h, `since` = now - 3 h,
+    et un `[CLAIMED]` poste a now - 3,25 h, donc DANS le trou
+    `[stamp, since]`. Le balayage (qui filtre sur `updated_at >= since`) ne
+    le rend pas.
+
+    - avancer le stamp a `now` (comportement du head) declare l'issue lue
+      jusqu'a maintenant : le claim n'est rendu NI par le balayage NI par la
+      lecture par issue, et ne le sera plus jamais ;
+    - le laisser en place garde l'issue perimee, et la lecture par issue
+      comble le trou.
+
+    C'est le seul scenario ou cette branche mord : quand la porte du
+    balayage laisse passer (`now - oldest <= MAX`), `since` vaut `oldest` et
+    aucun stamp n'est anterieur. La fonction reste publique ; son contrat de
+    stamp ne doit pas dependre de son appelant.
+    """
+    now = time.time()
+    stamp_vieux = now - 3.5 * 3600
+    since_epoch = now - 3 * 3600
+    claim_epoch = now - 3.25 * 3600
+    claim = _commentaire(9, "[CLAIMED] lane a:b -- x", _iso(claim_epoch))
+
+    def faux_api(path, *, params="", timeout=30.0):
+        if path.endswith("/issues/comments"):
+            # Semantique reelle : seuls les commentaires MODIFIES depuis
+            # `since` sont rendus -- le claim du trou est exclu.
+            return [c for c in [claim]
+                    if c["updated_at"] >= _iso(since_epoch)]
+        if path.endswith("/issues/9/comments"):
+            return [claim]      # la lecture par issue lit TOUT
+        if path.endswith("/issues"):
+            return []
+        raise AssertionError(f"appel inattendu: {path}")
+
+    monkeypatch.setattr(gs, "_gh_api", faux_api)
+    snapshot = {"comments": {"9": []},
+                "meta": {"comment_stamps": {"9": stamp_vieux}}}
+    out, _ = gs.sweep_repo_comments("o/r", snapshot, since=_iso(since_epoch))
+    stamp = out["meta"]["comment_stamps"]["9"]
+    assert stamp == pytest.approx(stamp_vieux, abs=1.0), (
+        "le stamp a avance au-dela de la borne lue : le trou devient definitif")
+    assert (time.time() - stamp) > gs.DEFAULT_TTL_SECONDS, (
+        "l'issue n'est plus perimee : la lecture par issue ne la relira pas")
+    out2, _, stats = gs.ensure_comments("o/r", [9], out)
+    assert stats["lus"] == 1
+    assert any(c["body"].startswith("[CLAIMED]")
+               for c in out2["comments"]["9"]), (
+        "le claim du trou n'est jamais rendu")
 
 
 def test_l_argv_du_balayage_est_valide(monkeypatch):
-    """Le defaut qui avait fait RETIRER la precedente balayage.
+    """`since` doit tenir en DEUX elements d'argv : `-f`, puis `since=...`.
 
-    La forme `params=f"--paginate&since={since}"` devenait UN argument que
-    `gh` refuse. Ici, les parametres sont une LISTE d'arguments.
+    Deux defauts successifs sur cette ligne, tous deux mesures :
+
+    - `params=f"--paginate&since={since}"` (version retiree) devenait UN
+      argument que `gh` refuse ;
+    - `params.append(f"-f since={since}")` (head de #22983) produisait UN
+      seul element : `gh` y lit le nom de champ ` since` (espace initial) et
+      la requete part en `?+since=...` (mesure du 28/10 sous `GH_DEBUG=api`).
+      GitHub ne connait pas ce parametre et rend le fil ENTIER -- ~30 000
+      commentaires, et le balayage meurt sur son timeout de 60 s.
+
+    L'assertion porte donc sur les deux elements, et sur l'absence de
+    l'element fusionne.
     """
     captures = []
 
@@ -124,7 +213,14 @@ def test_l_argv_du_balayage_est_valide(monkeypatch):
     cmd = captures[0]
     assert cmd[:3] == ["gh", "api", "repos/o/r/issues/comments"]
     assert "--paginate" in cmd
-    assert "-f since=2026-10-01T00:00:00Z" in cmd
+    # DEUX elements : la forme que `fetch_open_issues` utilise deja.
+    assert "-f" in cmd, f"`-f` n'est pas un element d'argv a part : {cmd}"
+    index = cmd.index("-f")
+    assert cmd[index + 1] == "since=2026-10-01T00:00:00Z", (
+        f"`since=...` doit suivre `-f` comme element separe : {cmd}")
+    # Et surtout PAS la forme fusionnee, qui part en `?+since=...`.
+    assert "-f since=2026-10-01T00:00:00Z" not in cmd, (
+        f"forme fautive (un seul element) : {cmd}")
     # Aucun argument ne contient un `&` : c'est le defaut exact du retrait.
     assert not any("&" in part for part in cmd)
 
@@ -201,6 +297,11 @@ def test_ensure_comments_balaiage_borne_puis_lecture_par_issue(monkeypatch):
     snapshot = {"comments": {}, "issues": {}, "meta": {
         "comment_stamps": {"7": time.time() - 600}}}
     out, calls, stats = gs.ensure_comments("o/r", [7, 9], snapshot)
+    # Controle POSITIF de la porte : fenetre de 10 min, le balayage est bien
+    # tente (sinon ce test passerait aussi avec une porte toujours fermee).
+    assert stats.get("balayes") == 2
+    assert "repos/o/r/issues/comments" in appels, (
+        f"aucun balayage tente : {appels}")
     # 7 est couvert par le balayage ; 9 n'a pas d'horodatage connu, donc
     # le balayage ne peut pas le borner : il est lu par issue.
     assert stats["lus"] == 1
@@ -269,13 +370,19 @@ def test_ensure_comments_sur_entrees_fraiches_ne_bloque_aucun_appel(monkeypatch)
     assert stats["perimes"] == 0
 
 
-def test_le_balaiage_est_borne_par_la_fenetre_maximale(monkeypatch):
-    """Le balayage ne lit jamais plus de `MAX_SWEEP_LOOKBACK_SECONDS`.
+def test_la_porte_du_balayage_ecarte_une_fenetre_trop_large(monkeypatch):
+    """Une fenetre plus large que `MAX_SWEEP_LOOKBACK_SECONDS` ECARTE le balayage.
 
-    Son cout croit avec la FENETRE lue, pas avec le nombre d'issues
-    visees : un horodatage tres ancien le ferait relire des jours de
-    commentaires du depot. Au-dela de la borne, les issues trop anciennes
-    sont lues une par une.
+    #22983 -- la version precedente bornait d'abord
+    (`bounded = max(oldest, now - MAX)`) puis comparait
+    `(now - bounded) <= MAX` : tautologie par construction de `max()`, aucune
+    branche n'ecartait le balayage, et le test ne pouvait pas rougir. Le
+    balayage lisait alors `[now - MAX, now]` en laissant le trou
+    `[oldest, now - MAX]` sans lecteur.
+
+    Ici la comparaison porte sur la fenetre NON rognee : une issue trop
+    ancienne fait ecarter le balayage, et toutes les issues sont lues une par
+    une -- ce que la docstring annoncait deja avant le correctif.
     """
     captures = []
 
@@ -285,6 +392,9 @@ def test_le_balaiage_est_borne_par_la_fenetre_maximale(monkeypatch):
             return []
         if path.endswith("/issues"):
             return []
+        if path.endswith("/comments"):
+            numero = int(path.rsplit("/", 2)[-2])
+            return [_commentaire(numero)]
         raise AssertionError(f"appel inattendu: {path}")
 
     monkeypatch.setattr(gs, "_gh_api", faux_gh_api)
@@ -292,18 +402,10 @@ def test_le_balaiage_est_borne_par_la_fenetre_maximale(monkeypatch):
     snapshot = {"comments": {}, "issues": {}, "meta": {
         "comment_stamps": {"7": vieux, "9": vieux}}}
     out, calls, stats = gs.ensure_comments("o/r", [7, 9], snapshot)
-    sweep_params = [p for p in captures if "since=" in str(p)]
-    assert sweep_params, "aucun balayage"
-    joined = " ".join(str(p) for p in sweep_params)
-    match = re.search(r"since=([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:]+Z)", joined)
-    assert match, f"aucun horodatage de balayage dans {joined}"
-    since = match.group(1)
-    # `mktime` lit l'horodatage en HEURE LOCALE : l'ecart de fuseau
-    # (UTC+1 sur ce siege) gonflerait la fenetre mesuree d'une heure.
-    parsed = dt.datetime.fromisoformat(since.replace("Z", "+00:00")).timestamp()
-    age_s = time.time() - parsed
-    assert age_s <= gs.MAX_SWEEP_LOOKBACK_SECONDS + 60, (
-        f"la fenetre du balayage n'est pas bornee : {age_s / 3600:.1f} h")
+    assert not any("since=" in str(p) for p in captures), (
+        f"le balayage a ete tente sur une fenetre de 30 jours : {captures}")
+    assert stats["lus"] == 2, "les deux issues devaient etre lues une par une"
+    assert out["comments"]["7"] and out["comments"]["9"]
 
 
 def test_une_issue_trop_ancienne_est_lue_a_part(monkeypatch):
@@ -400,6 +502,46 @@ def test_un_verrou_tenu_par_un_processus_mort_est_casse(monkeypatch,
     with gs.snapshot_lock("jsboige/CoursIA", timeout=5):
         assert lock.read_text(encoding="utf-8") == str(os.getpid())
     assert not lock.exists()
+
+
+def test_un_verrou_vide_et_jeune_est_respecte(monkeypatch, tmp_path):
+    """Un fichier de verrou VIDE est un proprietaire INCONNU, pas un mort.
+
+    #22983 -- entre `O_CREAT|O_EXCL` et l'ecriture du pid, le fichier est
+    vide par construction : c'est la fenetre de course normale. Le head y
+    lisait `0`, `_pid_alive(0)` rendait `False`, et le verrou etait VOLE
+    (mesure du 28/10 : acquisition en 0,00 s au lieu de l'attente). Deux
+    processus entraient alors dans la section qui existe pour les exclure.
+    """
+    monkeypatch.setattr(gs, "snapshot_root", lambda: tmp_path / "snap")
+    monkeypatch.setattr(gs, "LOCK_STALE_SECONDS", 900)
+    directory = gs.snapshot_dir("jsboige/CoursIA")
+    directory.mkdir(parents=True, exist_ok=True)
+    lock = directory / "refresh.lock"
+    lock.write_text("", encoding="utf-8")            # verrou VIDE et jeune
+    with pytest.raises(gs.SnapshotLockTimeout), \
+            gs.snapshot_lock("jsboige/CoursIA", timeout=0.6):
+        pytest.fail("verrou VIDE vole : la section protegee n'est plus "
+                    "exclusive")
+    assert lock.exists(), "le verrou jeune a ete supprime"
+
+
+def test_un_verrou_vide_et_vieux_est_casse(monkeypatch, tmp_path):
+    """La borne d'age reste la soupape : un verrou vide VIEUX est casse.
+
+    Sans cette branche, un fichier de verrou orphelin et vide bloquerait la
+    machine jusqu'au redemarrage.
+    """
+    monkeypatch.setattr(gs, "snapshot_root", lambda: tmp_path / "snap")
+    monkeypatch.setattr(gs, "LOCK_STALE_SECONDS", 900)
+    directory = gs.snapshot_dir("jsboige/CoursIA")
+    directory.mkdir(parents=True, exist_ok=True)
+    lock = directory / "refresh.lock"
+    lock.write_text("", encoding="utf-8")
+    vieux = time.time() - 1000
+    os.utime(lock, (vieux, vieux))
+    with gs.snapshot_lock("jsboige/CoursIA", timeout=5):
+        assert lock.read_text(encoding="utf-8") == str(os.getpid())
 
 
 # --- les stamps servis par l'instantane --------------------------------------
@@ -587,6 +729,20 @@ def test_index_ne_se_melange_pas_entre_deux_listes(monkeypatch):
     assert clc._open_prs_by_referenced_issue(b).get(11) is None
 
 
+def _payload_injecte(issue="7"):
+    """Payload minimal servi a `check_issues_batch`, sans aucun appel reseau.
+
+    #22983 -- la version precedente des deux tests de verdict laissait la
+    SOURCE du payload intacte : `check_issues_batch` retombait sur
+    `_gh_issue_comments`, donc sur le vrai `gh`. Le test ne passait que sur
+    une machine authentifiee ; sans jeton, le payload venait d'un echec de
+    transport et le verdict teste n'etait jamais atteint (rejeu du 28/10 :
+    `'ERROR' != 'BLOCKED'`). Un test qui ne passe qu'authentifie n'est pas un
+    test.
+    """
+    return {"number": int(issue), "title": "t", "labels": [], "comments": []}
+
+
 def test_le_batch_dit_blocked_quand_le_resume_json_nomme_des_lanes(monkeypatch):
     """#22983 -- la voie BATCH doit rendre le meme verdict que le
     reduiteur historique du picker.
@@ -595,7 +751,7 @@ def test_le_batch_dit_blocked_quand_le_resume_json_nomme_des_lanes(monkeypatch):
     (`blocking_lanes`) part sur **stdout**. La voie batch ne lisait que le
     stdout a la recherche du mot `NOT_SCOPED` -- qui n'y est jamais : un
     grain tenu par 4 lanes rendait `ERROR`, verdict **servable** par le
-    tapis (fail-OPEN), alors que la voie historique rendait `BLOCKED`
+    tapis (fail-open), alors que la voie historique rendait `BLOCKED`
     (retenu). Mesure du 27/10 : 14 issues sur 150 dans ce cas.
     """
     clc = pig._claim_reader_module()
@@ -613,6 +769,7 @@ def test_le_batch_dit_blocked_quand_le_resume_json_nomme_des_lanes(monkeypatch):
         print(resume)
         return 2
 
+    monkeypatch.setattr(clc, "_gh_issue_comments", _payload_injecte)
     monkeypatch.setattr(clc, "_run_check", faux_run_check)
     resultat = clc.check_issues_batch(["7"], "ma:lane")
     res = resultat["results"]["7"]
@@ -631,6 +788,7 @@ def test_le_batch_garde_error_quand_aucune_lane_ne_bloque(monkeypatch):
         print(json.dumps({"blocking_lanes": [], "blocked": False}))
         return 2
 
+    monkeypatch.setattr(clc, "_gh_issue_comments", _payload_injecte)
     monkeypatch.setattr(clc, "_run_check", faux_run_check)
     resultat = clc.check_issues_batch(["7"], "ma:lane")
     assert resultat["results"]["7"]["code"] == "ERROR"
