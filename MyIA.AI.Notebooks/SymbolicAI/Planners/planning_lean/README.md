@@ -98,7 +98,9 @@ lake build Planning          # 8496 jobs, 0 sorry, exit 0
 ```
 
 Vérifié localement : `lake build Planning` SUCCESS, `grep -E '^\s*sorry\b' Planning/` = 0,
-CI `lean-planning.yml` (`sorry-baseline: "0"`, `sorry-filter-mode: standalone-tactic`).
+CI par la matrice Lean (`sorry-baseline: "0"`, `sorry-filter-mode: real`, entrée `planning`
+du manifeste `scripts/lean/ci_lakes.json` — le caller dédié `lean-planning.yml` n'existe
+plus, migré par #13751).
 
 ## Jalon ouvert (non sorry-backed)
 

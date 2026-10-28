@@ -39,5 +39,9 @@ relaxé optimal `h⁺` n'excède jamais le coût du plan réel optimal `h*`
 | `Planning/Relaxation` (FR + `_en`) | 0 | exécution relaxée : `run`, `runR`, `reaches`, `reachesR`, `run_mono` |
 | `Planning/Admissibility` (FR + `_en`) | 0 | théorème-phare : `relaxed_plan_admissible`, `relaxed_plan_witness` |
 
-**Câblage CI** : caller workflow [`lean-planning.yml`](../../../.github/workflows/lean-planning.yml)
-(push `main`, paths `MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/**.lean` + `lakefile.*`), pipeline `real` (baseline `0`).
+**Câblage CI** : la matrice Lean, [`lean-ci-matrix.yml`](../../../.github/workflows/lean-ci-matrix.yml),
+via l'entrée `planning` du manifeste [`scripts/lean/ci_lakes.json`](../../../scripts/lean/ci_lakes.json) —
+chemins `MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/**.lean`, `lakefile.lean`, `lean-toolchain`,
+`lake-manifest.json` — pipeline `real` (baseline `0`, prime d'axiomes `target-modules: "*"`,
+`fail-on-sorry: true`). Le caller dédié `lean-planning.yml` a été supprimé par la migration
+(#13751, item 4) : deux déclencheurs simultanés auraient produit un double build du même lake.
