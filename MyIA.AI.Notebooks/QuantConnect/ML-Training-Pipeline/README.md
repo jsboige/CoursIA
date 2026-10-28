@@ -300,6 +300,49 @@ Modules support : `har_model.py`, `realized_variance.py`, `intraday_loader.py`, 
 | eval_existing_checkpoints.py | Évaluation pipeline complet | WF + baselines + per-regime + coûts transaction pour tout checkpoint |
 | shadow_replay.py | Suivi en ombre des candidates | Gel par SHA, rejeu mensuel du code gelé (local, ou backtest QC via `plan-qc` puis `ingest-qc`), CSV en ajout seul ; règles et commandes dans `shadow/README.md` (#18923) |
 
+### Diagnostic du budget de completion (DAPO/GRPO)
+
+| Script | Purpose | Notes |
+|--------|---------|-------|
+| analyse_dapo_saturation.py | Saturation du budget de completion d'un bras GRPO | Lit les artefacts JSON de run, regroupe par bras (`model_key`), rend `SIGNAL_UTILE` / `SIGNAL_PARTIEL` / `SIGNAL_NUL` ; code de sortie 1 si tous les bras sont nuls (#15293) |
+
+Une generation tronquee au budget `max_completion_length` voit sa perte
+annulee par `mask_truncated_completions` : le run continue, le code de sortie
+reste nul, le log se remplit de metriques -- et l'echantillon utile se limite
+aux steps qui n'ont pas ete tronquees. L'organe mesure la fraction de steps
+saturees, le nombre de steps qui ont reellement porte un gradient, et le gain
+d'evaluation rapporte a ces steps : un bras qui n'a appris que sur deux steps
+ne se compare pas a un bras qui en a appris sur vingt-quatre.
+
+```bash
+python scripts/analyse_dapo_saturation.py scripts/results/m19_minicpm5_grpo/*_seed*.json scripts/results/m19_minicpm5_grpo/summary.json
+```
+
+L'agregat mesure par bras est versionne dans
+`scripts/results/m19_minicpm5_grpo/saturation_par_bras.json` ; il se regenere
+avec la commande ci-dessus (la liste est **explicite** : l'agregat lui-meme
+n'est pas un artefact de run, et le `summary.json` y est passe pour montrer
+la quarantaine des fichiers qui ne sont pas des graines). Le verdict par bras
+se lit la, la prose ne le refige pas.
+
+Deux conventions y sont explicites, parce qu'elles décident du verdict :
+
+- le seuil de saturation est **inclusif** -- une fraction de steps saturées
+  exactement égale à `0,95` est un `SIGNAL_NUL` (c'est le cas mesuré du bras
+  `qwen35`, graine 0) ;
+- à effectif **pair**, le bras suit le verdict le **moins grave** des deux
+  centraux (convention optimiste : un bras dont une graine sur deux sature
+  porte encore du signal). La convention est dans le code et épinglée par un
+  test.
+
+Le champ `gain_eval_par_step_avec_gradient` est la **médiane des ratios par
+graine**, chacun divisé par les steps qui ont porté un gradient *de cette
+graine* : il ne se rederive pas de `gain_eval_recompense / steps_avec_gradient`,
+dont le diviseur est une médiane de comptes. Quand cette médiane vaut moins de
+1 (le bras `qwen35` : `0,5`), la métrique vaut `null` et
+`gain_eval_par_step_comparable` vaut `false` — le gain par step n'y est pas
+comparable entre bras.
+
 ### Construction de dataset
 
 | Script | Purpose | Notes |
