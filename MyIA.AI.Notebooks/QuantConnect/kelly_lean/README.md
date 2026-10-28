@@ -124,13 +124,12 @@ périmètre du cadre canonique de Kelly (pari de Bernoulli).
 ## Notebooks compagnons
 
 Le lake est le livrable formel (`lake build` = preuve d'exécution, convention des
-lakes frères) ; six notebooks compagnons le rendent pédagogique :
+lakes frères) ; les notebooks compagnons le rendent pédagogique :
 
 | Notebook | Rôle |
 |---|---|
 | [`Kelly_companion-Python.ipynb`](Kelly_companion-Python.ipynb) | **Volet numérique (Python)** : montre, côte à côte avec les théorèmes prouvés, pourquoi `f*` maximise le taux de croissance espéré `g(f)` et pourquoi tout sur-pari (`f > f*`) ou sous-pari (`f < f*`) est strictement sous-optimal — narration économique, figures et lien trading. |
 | [`Kelly_companion-Lean.ipynb`](Kelly_companion-Lean.ipynb) | **Jumeau à kernel Lean 4** : chaque énoncé du lake est importé et vérifié par le noyau Lean lui-même (`#check`, `#print axioms`, exemples re-prouvés en cellule) — les énoncés qui compilent, pas la prose recopiée. |
-
 | [`Kelly_companion-Fractional-Python.ipynb`](Kelly_companion-Fractional-Python.ipynb) | **Carnet 1 — fraction de Kelly** : mesure le compromis que le module [`Kelly/Fractional.lean`](Kelly/Fractional.lean) prouve (`growth(c*f*) ≤ growth(f*)`, egalite seulement pour `c = 1`) — la fraction `c*f*` perd de la log-croissance esperee par rapport a `f*`, mais elle reduit fortement la variance du log-capital realise. C'est la reponse chiffree au « pourquoi demi-Kelly ». |
 | [`Kelly_companion-Optimist-Bias-Python.ipynb`](Kelly_companion-Optimist-Bias-Python.ipynb) | **Carnet 2 — biais de l'optimiste** : quand `p` est estime, le praticien applique `kellyFrac(p_hat)` a un `p_hat ~ N(p, sigma)` au lieu du `p` reel ; le carnet mesure la surexposition moyenne produite par cette erreur d'estimation. |
 | [`Kelly_companion-Multi-Issue-Python.ipynb`](Kelly_companion-Multi-Issue-Python.ipynb) | **Carnet 3 — multi-issue** : etend le critere a deux paris independants et verifie que l'allocation optimale `(f_1, f_2)` maximise la somme des log-croissances individuelles, en regard du module [`Kelly/MultiIssue.lean`](Kelly/MultiIssue.lean). |
