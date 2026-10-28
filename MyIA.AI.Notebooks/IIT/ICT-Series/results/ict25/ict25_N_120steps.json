@@ -3156,5 +3156,19 @@
       "records_total": 960,
       "records_sample_window": "head"
     }
-  ]
+  ],
+  "provenance": {
+    "git_commit_at_run": "f3efa5830a5e6e95e6d2b826d5a5ab8b1485c8ac",
+    "git_commit_at_run_reachable_on_remote": false,
+    "git_commit_pushed": "d1c885850ab8",
+    "git_branch": "feature/ict25-artefacts-par-graine",
+    "script_path": "MyIA.AI.Notebooks/IIT/ICT-Series/scripts/ict25_arms.py",
+    "script_sha256": "f1c8782978586b46a307381d801febd6d2e4a49af332369cc63bb602b51a70ee",
+    "script_identical_at": [
+      "f3efa5830a5e",
+      "d1c885850ab8",
+      "d24fdd4792e8"
+    ],
+    "note": "Le run a tourne sur un commit local f3efa58 (jamais pousse), jumeau pre-rebase du commit pousse d1c88585 : le contenu de ict25_arms.py est byte-identique aux trois refs citatrices (sha256 ci-dessus), donc le code producteur est reconstituable depuis la branche. Le champ git_commit d'origine est conserve intact."
+  }
 }
