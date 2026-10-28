@@ -1,0 +1,18 @@
+date: '2026-10-28'
+by: myia-po-2025:CoursIA
+python_sha: 5c2a0b4340600c4c3cf255c2e7851b209ba52676
+csharp_sha: 3dbe9fe85cdc68f7a1290c3e273e20c3bef4eddb
+content_python_sha: 58bec4f7293c608c512bc575578e0d79efc276e2df8858d2e4290dcddfe075a7
+content_csharp_sha: 9e0d3fb1921bdf8ca6553c8d8634d127e1864b660023378d5f76ea287088d224
+reason: >-
+  PR #23177 (#20381, lane myia-po-2025:CoursIA) : les DEUX cotes edites, markdown
+  seul -- la barre de navigation de la cellule 0 du jumeau Python est re-ancred
+  sur l'escalier reel du palier 06 (elle sautait de 5-ZeroSum a 7-ExtensiveForm en
+  laissant 06b..06k sans chemin depuis la porte), et le jumeau C# recoit la barre
+  qui lui manquait. Aucune cellule de code touchee : 23 cellules de code cote
+  Python et 16 cote C#, execution_count et outputs byte-identiques a la base, donc
+  aucune re-execution due (C.2). Diff mesure : 1+/1- sur le Python, 1+/0- sur le
+  C#. Rebaseline apres l'edit, sans normalisation outillee intermediaire (#8957) :
+  la derive vient d'une divergence editoriale voulue entre les deux jumeaux (chacun
+  nomme ses propres voisins dans la chaine), pas d'une perte de parite -- les 23
+  cellules de code Python et les 16 C# restent appariées, niveau `semantic` preserve.
