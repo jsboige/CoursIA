@@ -12,28 +12,21 @@
   },
   "verdict": {
     "verdict": "RECOVERABLE-LOCAL",
-    "motive": "alternative ouverte installee et invoquee localement (paquet MIT, semantique SetReplace exacte, aucun moteur Wolfram requis)"
+    "motive": "alternative ouverte installee et invoquee localement (paquet MIT, semantique SetReplace exacte, aucun moteur Wolfram requis) ; API sans enumeration multiway"
   },
   "capabilities": {
-    "public_names": [
-      "Event",
-      "HypergraphSystem",
-      "Plot",
-      "Rule",
-      "SetReplaceError",
-      "Token",
-      "enumerate_rules",
-      "evolve",
-      "layout",
-      "plot",
-      "set_replace",
-      "set_replace_all",
-      "set_replace_fixed_point",
-      "set_replace_list",
-      "setreplace"
-    ],
-    "multiway_surface": [],
-    "multiway_available": false
+    "scanned": {
+      "module": 15,
+      "class:Event": 4,
+      "class:HypergraphSystem": 17,
+      "class:Plot": 2,
+      "class:Rule": 3,
+      "class:SetReplaceError": 3,
+      "class:Token": 4
+    },
+    "multiway_surface": {},
+    "multiway_available": false,
+    "occurrence_frontier_available": true
   },
   "calibration": {
     "rule": "{{x, y}} -> {{x, y}, {y, z}}",
@@ -216,6 +209,12 @@
           "r2": 0.9925617161098041,
           "n": 7
         },
+        "power_law_raw": {
+          "slope": 0.8857106715616299,
+          "scale": 1.469149304229241,
+          "r2": 0.9981832372449315,
+          "n": 7
+        },
         "chosen": "affine",
         "classification": "affine (pente=1.000, ordonnee=1.000)"
       },
@@ -230,6 +229,12 @@
           "slope": 0.7971291974710808,
           "intercept": 0.579555228994425,
           "r2": 0.9925617161098041,
+          "n": 7
+        },
+        "power_law_raw": {
+          "slope": 0.8857106715616299,
+          "scale": 1.469149304229241,
+          "r2": 0.9981832372449315,
           "n": 7
         },
         "chosen": "affine",
@@ -250,6 +255,12 @@
           "r2": 0.9925617161098041,
           "n": 7
         },
+        "power_law_raw": {
+          "slope": 0.8857106715616299,
+          "scale": 2.938298608458482,
+          "r2": 0.9981832372449315,
+          "n": 7
+        },
         "chosen": "affine",
         "classification": "affine (pente=2.000, ordonnee=2.000)"
       },
@@ -266,28 +277,106 @@
           "r2": 0.9925617161098041,
           "n": 7
         },
+        "power_law_raw": {
+          "slope": 0.8857106715616299,
+          "scale": 1.469149304229241,
+          "r2": 0.9981832372449315,
+          "n": 7
+        },
         "chosen": "affine",
         "classification": "affine (pente=1.000, ordonnee=1.000)"
       }
     }
   },
-  "fanout": {
+  "occurrences": {
     "chaine": {
       "events": 13,
-      "tokens_consumed": 13,
-      "max_consumers": 1,
-      "branches": false
+      "generations": 5,
+      "rows": [
+        {
+          "generation": 0,
+          "edges": 1,
+          "applied_here": 1,
+          "distinct_next_states": 2
+        },
+        {
+          "generation": 1,
+          "edges": 2,
+          "applied_here": 1,
+          "distinct_next_states": 4
+        },
+        {
+          "generation": 2,
+          "edges": 4,
+          "applied_here": 1,
+          "distinct_next_states": 8
+        },
+        {
+          "generation": 3,
+          "edges": 8,
+          "applied_here": 1,
+          "distinct_next_states": 16
+        },
+        {
+          "generation": 4,
+          "edges": 14,
+          "applied_here": 1,
+          "distinct_next_states": 28
+        }
+      ],
+      "max_distinct_next_states": 28,
+      "note": "un evenement applique par generation alors que la frontiere en offre davantage : propriete structurelle du chemin unique, pas un temoin negatif ; cette serie est l'entree du grain B (enumeration multiway)"
     },
     "branchante": {
       "events": 13,
-      "tokens_consumed": 26,
-      "max_consumers": 1,
-      "branches": false
+      "generations": 6,
+      "rows": [
+        {
+          "generation": 0,
+          "edges": 2,
+          "applied_here": 1,
+          "distinct_next_states": 4
+        },
+        {
+          "generation": 1,
+          "edges": 4,
+          "applied_here": 1,
+          "distinct_next_states": 8
+        },
+        {
+          "generation": 2,
+          "edges": 8,
+          "applied_here": 1,
+          "distinct_next_states": 14
+        },
+        {
+          "generation": 3,
+          "edges": 14,
+          "applied_here": 1,
+          "distinct_next_states": 26
+        },
+        {
+          "generation": 4,
+          "edges": 26,
+          "applied_here": 1,
+          "distinct_next_states": 46
+        },
+        {
+          "generation": 5,
+          "edges": 28,
+          "applied_here": 1,
+          "distinct_next_states": 50
+        }
+      ],
+      "max_distinct_next_states": 50,
+      "note": "un evenement applique par generation alors que la frontiere en offre davantage : propriete structurelle du chemin unique, pas un temoin negatif ; cette serie est l'entree du grain B (enumeration multiway)"
     }
   },
   "limits": [
-    "l'API du moteur retenu n'expose aucune enumeration multiway : la question de la reductibilite du nombre de branches n'est pas tranchee par cette mesure, qui ne porte que sur un chemin unique",
+    "l'API du moteur retenu n'expose aucune enumeration multiway (sonde elargie au module ET aux classes, cf `capabilities.scanned`) : la question de la reductibilite du nombre de branches n'est pas tranchee par cette mesure, qui ne porte que sur un chemin unique",
+    "`set_replace_all` rend les etats suivants distincts d'un etat donne : c'est l'entree d'une enumeration multiway, pas l'enumeration elle-meme -- la frontiere mesuree (`occurrences`) n'est pas le nombre d'etats multiway",
     "un seul ordre d'evenements est mesure (LeastRecentEdge par defaut) : les autres ordres ne sont pas explores",
-    "sur un chemin unique la croissance est affine par construction (chaque evenement consomme k aretes et en produit m) ; un ajustement en loi de puissance y rend un exposant inferieur a 1 avec un R2 trompeur, ce que la selection de modele corrige"
+    "sur un chemin unique la croissance est affine par construction (chaque evenement consomme k aretes et en produit m) ; un ajustement en loi de puissance y rend un exposant inferieur a 1 avec un R2 trompeur, ce que la selection de modele corrige en comparant les deux modeles sur la meme variable reponse",
+    "le controle de coherence compare un modele ecrit a la main a des constantes ecrites a la main : il valide la coherence interne, pas l'adequation de la regle au moteur, et il discrimine une VALEUR fausse, pas un MODELE faux"
   ]
 }

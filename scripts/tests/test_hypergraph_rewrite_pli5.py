@@ -67,12 +67,64 @@ def test_invariants_du_chemin_unique():
         assert row["atoms"] == row["events_applied"] + 1
 
 
-def test_fanout_ne_branche_pas_sur_un_chemin_unique():
+def test_la_sonde_de_capacites_voit_les_membres_de_classe(monkeypatch):
+    """Falsification de la revue : une enumeration portee par la CLASSE doit etre vue.
+
+    La sonde d'origine ne lisait que `dir(module)` ; elle rendait `False` sur un
+    moteur qui exposait l'enumeration sur sa classe, c'est-a-dire sur un resultat
+    qu'elle annoncait mesurer sans le regarder.
+    """
+    import sys
+    import types
+
+    faux = types.ModuleType("setreplace")
+
+    class HypergraphSystem:  # noqa: D401 - doublure minimale
+        def all_events_multiway(self):
+            raise NotImplementedError
+
+        def enumerate_all_states(self):
+            raise NotImplementedError
+
+    faux.HypergraphSystem = HypergraphSystem
+    faux.set_replace = lambda *a, **k: None
+    monkeypatch.setitem(sys.modules, "setreplace", faux)
+    caps = engine.capabilities()
+    assert caps["multiway_available"] is True
+    assert "class:HypergraphSystem" in caps["multiway_surface"]
+    assert sorted(caps["multiway_surface"]["class:HypergraphSystem"]) == [
+        "all_events_multiway",
+        "enumerate_all_states",
+    ]
+
+
+def test_la_sonde_de_capacites_compte_les_surfaces_parcourues():
+    """La sonde rend ce qu'elle a regarde : module ET chaque classe publique."""
     pytest.importorskip("setreplace", reason="moteur setreplace absent")
-    for nom, spec in engine.RULES.items():
-        mesure = engine.fanout(spec["rule"], spec["initial"], n_events=8)
-        assert mesure["max_consumers"] <= engine.FANOUT_CAP, nom
-        assert mesure["branches"] is False, nom
+    caps = engine.capabilities()
+    assert caps["scanned"]["module"] >= 10
+    assert "class:HypergraphSystem" in caps["scanned"]
+    assert caps["scanned"]["class:HypergraphSystem"] >= 15
+
+
+def test_occurrences_mesure_une_frontiere_qui_varie():
+    """La frontiere d'occurrences VARIE : c'est une mesure, pas une identite.
+
+    L'ancien temoin (`max_consumers`) valait 1 sur toute regle ; celui-ci doit
+    rendre une serie qui n'est pas constante, sans quoi il ne mesure rien non plus.
+    """
+    pytest.importorskip("setreplace", reason="moteur setreplace absent")
+    chaine = engine.occurrences(engine.RULES["chaine"]["rule"], engine.RULES["chaine"]["initial"], n_events=8)
+    branchante = engine.occurrences(
+        engine.RULES["branchante"]["rule"], engine.RULES["branchante"]["initial"], n_events=8
+    )
+    serie_chaine = [r["distinct_next_states"] for r in chaine["rows"]]
+    assert len(set(serie_chaine)) > 1, serie_chaine
+    assert chaine["max_distinct_next_states"] > 1
+    assert branchante["max_distinct_next_states"] != chaine["max_distinct_next_states"]
+    # Le chemin applique reste unique : c'est une propriete structurelle, dite comme telle.
+    assert all(r["applied_here"] == 1 for r in chaine["rows"])
+    assert "pas un temoin" in chaine["note"]
 
 
 def test_moteur_absent_ne_produit_aucun_chiffre(monkeypatch):
@@ -113,10 +165,39 @@ def test_selection_de_modele_attrape_le_piege_de_la_loi_de_puissance():
     comparaison = engine.compare_models(xs, ys)
     assert comparaison["chosen"] == "affine"
     assert comparaison["affine"]["slope"] == pytest.approx(1.0, abs=1e-9)
-    # Le piege est bien present : la loi de puissance seule rendrait un exposant < 1.
+    # Le piege est bien present : la loi de puissance ajustee en log-log rend un exposant < 1.
     assert comparaison["power_law"]["slope"] < 1.0
     assert engine.classify_exponent(comparaison["power_law"]["slope"]) == "sous-lineaire"
     assert comparaison["classification"].startswith("affine")
+    # Et les deux R2 ne vivent pas dans le meme espace : celui du log est plus haut.
+    assert comparaison["power_law"]["r2"] != comparaison["power_law_raw"]["r2"]
+
+
+def test_selection_de_modele_compare_le_meme_espace():
+    """Le R2 compare est celui de `y` pour les deux modeles, jamais celui de `log(y)`.
+
+    Sur `y = 100 + x`, l'ancienne comparaison confrontait R2(log) = 0,865 au R2 brut
+    de l'affine (1,0000) : l'affine gagnait, mais pour une raison d'echelle. Ici les
+    deux R2 portent sur `y`, et l'affine gagne parce qu'elle decrit la serie.
+    """
+    xs = list(engine.EVENTS_SERIES)
+    ys = [100 + x for x in xs]
+    comparaison = engine.compare_models(xs, ys)
+    assert comparaison["chosen"] == "affine"
+    assert comparaison["affine"]["r2"] == pytest.approx(1.0, abs=1e-12)
+    assert comparaison["power_law_raw"]["r2"] < comparaison["affine"]["r2"]
+    # L'ecart d'espace reste lisible : les deux R2 de la loi de puissance different.
+    assert abs(comparaison["power_law"]["r2"] - comparaison["power_law_raw"]["r2"]) > 1e-3
+
+
+def test_egalite_donne_la_loi_de_puissance():
+    """Tie-break declare : a egalite la loi de puissance l'emporte (regle ecrite)."""
+    xs = [1, 2, 3, 5, 8, 13, 21]
+    ys = list(xs)  # y = x : les deux modeles rendent exactement R2 = 1
+    comparaison = engine.compare_models(xs, ys)
+    assert comparaison["affine"]["r2"] == pytest.approx(1.0, abs=1e-12)
+    assert comparaison["power_law_raw"]["r2"] == pytest.approx(1.0, abs=1e-9)
+    assert comparaison["chosen"] == "power-law"
 
 
 def test_selection_de_modele_retient_la_loi_de_puissance_si_elle_decrit_mieux():
@@ -143,3 +224,25 @@ def test_verdict_reste_dans_les_cinq_valeurs():
     faux_probe = {"setreplace_available": False, "wolfram": {"wolframscript": None, "wolfram_kernel": None, "install_dir_present": False}}
     assert engine.tool_verdict(faux_probe, None)["verdict"] == "RECOVERABLE-USER-HAND"
     assert engine.tool_verdict(faux_probe, None)["verdict"] in engine.VERDICTS
+
+
+def test_verdict_epuise_la_voie_sota_en_premier():
+    """Moteur Wolfram present ET alternative installee : la voie SOTA gagne.
+
+    L'ancienne version rendait `RECOVERABLE-LOCAL` des que le paquet etait la, donc
+    un verdict sous-optimal rendu en silence sur une machine Wolfram.
+    """
+    probe = {
+        "setreplace_available": True,
+        "wolfram": {"wolframscript": "C:/wolframscript.exe", "wolfram_kernel": None, "install_dir_present": True},
+    }
+    verdict = engine.tool_verdict(probe, {"multiway_available": False})
+    assert verdict["verdict"] == "SOTA-OK"
+    # Et `caps` entre dans le motif : la surface multiway mesuree est dite.
+    assert "sans enumeration multiway" in verdict["motive"]
+    # Sans Wolfram, l'alternative ouverte reprend la main.
+    probe_sans_wolfram = {
+        "setreplace_available": True,
+        "wolfram": {"wolframscript": None, "wolfram_kernel": None, "install_dir_present": False},
+    }
+    assert engine.tool_verdict(probe_sans_wolfram, {"multiway_available": False})["verdict"] == "RECOVERABLE-LOCAL"

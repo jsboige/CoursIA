@@ -27,10 +27,11 @@ autrement.
 | Mesure | Résultat |
 |---|---|
 | `setreplace` 0.2.0 sur PyPI | présent, licence MIT, `requires_python >= 3.9` |
-| Roue disponible pour cette machine | `setreplace-0.2.0-cp39-abi3-win_amd64.whl` |
+| Roues publiées (relevé PyPI du 2026-10-28) | quatre **abi3** (`>=3.9`) : `win_amd64`, `manylinux_2_17_x86_64`, `manylinux_2_17_aarch64`, `macosx` x86_64/arm64/universal2 — plus une source `.tar.gz` |
+| Roue utilisée sur ce siège | `setreplace-0.2.0-cp39-abi3-win_amd64.whl` |
 | Dépôt `kovasb/setreplace-py` | MIT (fichier `LICENSE` lu : « MIT License / Copyright (c) 2026 Kovas Boguta »), Rust/PyO3, 2 étoiles, dernier push 2026-06-11 |
 | Sémantique annoncée à la source | « hypergraph substitution with the exact semantics of Max Piskunov's SetReplace », mêmes valeurs par défaut d'ordre d'événements, même déterminisme |
-| Installation et invocation locales | faites, cible isolée, **contrôle de correction PASS** |
+| Installation et invocation locales | faites, cible isolée, **contrôle de cohérence PASS** |
 
 **Verdict : `RECOVERABLE-LOCAL`** — l'outil réel est installable et invoquable sur cette
 machine, sans moteur Wolfram et sans décision de mainteneur. Aucune réimplémentation
@@ -43,8 +44,13 @@ déclarée ».
   auteur est unique. Un accord avec la référence Wolfram est **déclaré** par sa
   documentation, pas vérifié ici — il ne peut pas l'être sans le moteur Wolfram ;
 - la surface exposée est celle de l'évolution à **chemin unique** : `evolve`,
-  `final_state`, `states_by_event`, `causal_graph_edges`. La sonde de capacités
-  (`MULTIWAY_HINTS`) ne trouve **aucune** énumération multiway ;
+  `final_state`, `states_by_event`, `causal_graph_edges`. La sonde de capacités ne
+  trouve **aucune** énumération multiway — et elle le mesure sur le module **et sur
+  chaque classe publique** (`HypergraphSystem` : 17 méthodes), pas sur le module seul ;
+- `set_replace_all` rend les **états suivants distincts** d'un état donné : c'est la
+  brique avec laquelle une énumération multiway se **construirait**, pas l'énumération
+  elle-même. `enumerate_rules` énumère des **règles** de même signature
+  (`EnumerateWolframModelRules`), pas des états : aucun des deux ne ferme le grain B ;
 - le compteur de graine (`random_seed`) est accepté et le déterminisme est vérifié à
   graine égale, mais aucune comparaison inter-moteurs n'est possible sans la référence.
 
@@ -58,18 +64,45 @@ défaut, graine 0.
 | `{{x,y}} -> {{x,y},{y,z}}` sur `{{1,1}}` | `n + 1` | `n + 1` | affine, pente 1,000, ordonnée 1,000, R² = 1,0000 |
 | `{{x,y},{x,z}} -> {{x,y},{x,w},{y,w},{z,w}}` sur `{{1,1},{1,1}}` | `2n + 2` | `n + 1` | affine, pente 2,000, ordonnée 2,000, R² = 1,0000 |
 
-Le fan-out du graphe causal vaut **1** sur les deux règles au terme de 13 événements :
-sur un chemin unique, aucun jeton n'est consommé par plus d'un événement, donc **le
-chemin unique ne branche pas** (témoin négatif déclaré avant la mesure, `FANOUT_CAP = 1`).
+**La frontière d'occurrences, elle, varie** — et c'est ce qui la distingue du témoin
+qu'elle remplace. Nombre d'états suivants distincts rendus par `set_replace_all` à
+chaque génération (13 événements) :
+
+| Règle | g0 | g1 | g2 | g3 | g4 | g5 |
+|---|---|---|---|---|---|---|
+| `chaine` | 2 | 4 | 8 | 16 | 28 | — |
+| `branchante` | 4 | 8 | 14 | 26 | 46 | 50 |
+
+Un seul événement est appliqué par génération dans les deux cas : c'est une propriété
+**structurelle** du chemin unique, pas un témoin négatif. La mesure précédente
+(`max_consumers`, seuil `FANOUT_CAP = 1`) valait 1 sur cinq règles différentes, y
+compris la branchante — elle ne pouvait pas rougir, donc elle ne prouvait rien. La
+série ci-dessus est l'**entrée** du grain B (combien d'occurrences une énumération
+multiway aurait à explorer) ; elle ne dit rien du nombre d'états multiway.
 
 ### Le piège que la mesure a attrapé
 
-Ajustées en loi de puissance, les deux séries rendent `alpha = 0,797` avec
+Ajustées en loi de puissance **log-log**, les deux séries rendent `alpha = 0,797` avec
 `R² = 0,9926` — et un classement naïf conclurait « croissance sous-linéaire » sur une
 série qui est **exactement affine**. L'instrument compare donc deux modèles de deux
-paramètres chacun et retient le R² le plus haut (`compare_models`) ; le classement
-d'exposant ne sert plus que lorsque la loi de puissance décrit réellement la série.
-Un test dédié fige ce piège.
+paramètres chacun (`compare_models`), et il les compare **sur la même variable
+réponse** : le R² de la loi de puissance est recalculé en espace brut
+(`fit_power_law_raw`), pas dans celui du logarithme. Sur la série `n + 1` cela donne
+`alpha = 0,886` et `R² brut = 0,9982` contre `R² = 1,0000` pour l'affine — l'affine
+gagne parce qu'elle décrit la série, et non parce que les deux nombres ne mesuraient
+pas la même chose. Les deux R² restent rendus côte à côte pour que l'écart d'espace
+soit lisible. Un test fige le piège, un autre vérifie l'égalité (à égalité, la loi de
+puissance l'emporte, conformément à la règle écrite).
+
+### Ce que le contrôle de cohérence prouve, et ce qu'il ne prouve pas
+
+Il rejoue le modèle écrit à la main dans `CALIBRATION` et compare chaque point aux
+constantes écrites à la main **avant** toute exécution : il attrape une erreur
+d'arithmétique du modèle (il l'a fait pendant la mise au point — l'attente « deux
+événements ⇒ quatre arêtes » était fausse), donc une **valeur** fausse. Il ne valide
+pas l'adéquation de la règle au moteur, et il ne discrimine pas un **modèle** faux :
+les deux côtés de la comparaison sont écrits par la même main. C'est une cohérence
+interne, ce que le nom du bloc dit désormais.
 
 Le même piège avait été attrapé en sens inverse pendant la mise au point : l'attente
 écrite à la main « deux événements ⇒ quatre arêtes » était fausse (un événement consomme
@@ -79,7 +112,9 @@ signalée avant tout commit.
 ## Ce que le pli garde à faire
 
 - **Grain B — la réductibilité du nombre de branches** n'est **pas** tranchée ici : elle
-  demande une énumération multiway que le moteur retenu n'expose pas. La mesure cidessus
+  demande une énumération multiway que le moteur retenu n'expose pas. La frontière
+  d'occurrences mesurée ci-dessus (`occurrences`) en est l'**entrée** : elle dit
+  combien de successeurs distincts chaque génération offre au chemin unique. La mesure cidessus
   porte sur un seul ordre d'événements et ne dit rien du nombre d'états multiway. Deux
   voies restent ouvertes : construire l'énumération au-dessus de l'API (toutes les
   paires règle/occurrence à chaque génération), ou rouvrir la question du moteur Wolfram
