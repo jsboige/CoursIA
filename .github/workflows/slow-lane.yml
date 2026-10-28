@@ -76,6 +76,26 @@ name: Slow lane (voie asynchrone, tranches 1-2 #12856)
 #
 #   Reversibilite tranche 2 : `git revert` du commit + reactiver le default
 #   setup restaurent le regime per-PR.
+#
+# TRANCHE 2 — JAMBE CODEQL RETIREE (issue #22548, 2026-10-25).
+#
+#   Le job `codeql-scheduled` ci-dessous n'existe plus : CodeQL passe en
+#   ADVANCED SETUP (`.github/workflows/codeql.yml`, decision mainteneur
+#   Q142 = c). Ce fichier porte desormais lui-meme le `schedule`
+#   hebdomadaire ET le `push: main`, avec la meme matrice x4 sur le runner
+#   heberge : garder les deux jambes aurait produit deux analyses de la meme
+#   tete de `main` sous la MEME categorie SARIF (`/language:<lang>`), donc
+#   des alertes qui se recouvrent. Le contenu du job a ete repris un a un
+#   dans `codeql.yml` — runner heberge, `timeout-minutes: 45`, permissions
+#   `security-events: write`, `fail-fast: false`, matrice x4, `init`/
+#   `analyze` et le verdict publie (`::notice`/`::error` sur l'outcome de
+#   l'analyse). Un seul ecart, deliberé : les langages interpretes et C#
+#   tournent en `build-mode: none` et `autobuild` n'est plus utilise (voir
+#   l'en-tete de `codeql.yml` : le default setup construisait le C#,
+#   ~6 min 34 s sur #14746 — le `none` est un arbitrage de cout, pas un
+#   portage iso-cout).
+#
+#   Le job `ict-tests-pilot` de la tranche 1 reste : il n'est pas concerne.
 
 on:
   # Schedule hebdo (mardi 02:30 UTC, apres le pic push europeen) — une seule
@@ -194,55 +214,3 @@ jobs:
             echo "::notice title=Slow-lane ICT-Series pilot (PASS)::La suite ICT-Series a reussi en mode slow-lane (tests/ exit=${RC_TESTS}, ict/tests/ exit=${RC_ICT}) (tranche 1 #12856). Ce job sera re-run chaque mardi 02:30 UTC."
           fi
 
-  # TRANCHE 2 (#12856) — CodeQL hebdomadaire contre main, meme matrice x4 que
-  # le default setup (actions, csharp, javascript-typescript, python). La
-  # suppression du per-PR vit cote settings (voir en-tete TRANCHE 2).
-  codeql-scheduled:
-    name: Slow-lane CodeQL (${{ matrix.language }})
-    # GitHub-hosted : CodeQL est gratuit sur repo public et ne concurrence pas
-    # le pool self-hosted (check_self_hosted_runner_policy : ubuntu-latest =
-    # baseline autorisee, hors allowlist). Declencheurs schedule/dispatch
-    # uniquement = refs possedees par le repo, aucune garde same-repo requise
-    # (cf en-tete du scanner).
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    # Job-level : le workflow reste contents: read ; seul ce job uploade du
-    # SARIF vers code scanning.
-    permissions:
-      contents: read
-      security-events: write
-    strategy:
-      fail-fast: false
-      matrix:
-        language: [actions, csharp, javascript-typescript, python]
-    steps:
-      - name: Checkout main
-        uses: actions/checkout@v4
-
-      - name: Init CodeQL
-        uses: github/codeql-action/init@v4
-        with:
-          languages: ${{ matrix.language }}
-
-      # Autobuild est un no-op documente pour les langues interpretees ;
-      # pour csharp il construit la solution (meme chemin que le default
-      # setup, dont les runs csharp passent deja, ex. 6m34s sur #14746).
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v4
-
-      - name: Analyze
-        id: analyze
-        uses: github/codeql-action/analyze@v4
-        with:
-          category: "/language:${{ matrix.language }}"
-
-      - name: Publish verdict
-        if: always()
-        env:
-          ANALYZE_OUTCOME: "${{ steps.analyze.outcome }}"
-        run: |
-          if [ "${ANALYZE_OUTCOME}" = "success" ]; then
-            echo "::notice title=Slow-lane CodeQL (${{ matrix.language }}) (PASS)::Analyse CodeQL ${{ matrix.language }} terminee en voie lente (tranche 2 #12856). Fournnee hebdo, mardi 02:30 UTC."
-          else
-            echo "::error title=Slow-lane CodeQL (${{ matrix.language }}) (rouge)::Analyse CodeQL ${{ matrix.language }} a echoue en voie lente (outcome=${ANALYZE_OUTCOME}). Verdict : a investiguer."
-          fi
