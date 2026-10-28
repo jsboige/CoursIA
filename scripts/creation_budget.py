@@ -92,6 +92,7 @@ import os
 import pathlib
 import re
 import subprocess
+import sys
 from collections.abc import Iterable, Sequence
 
 VERDICT_CREATION = "creation"
@@ -639,20 +640,233 @@ def creation_gate(pool: Sequence[dict],
     Et elle ne s'active QUE sur un depassement de budget mesure : le regime
     ralentit la creation, il ne l'arrete pas.
     """
-    st = state if state is not None else load_state()
-    trop, why = over_budget(st)
-    if not trop:
-        return {}
     cat = catalog if catalog is not None else NotebookCatalog.from_repo()
     if not cat.known:
         return {}
     index = build_children_index(pool)
+
+    # Le BUDGET : la porte principale, activee par un depassement mesure.
+    st = state if state is not None else load_state()
+    trop, why = over_budget(st)
     out: dict[int, str] = {}
-    for it in pool:
-        verdict, proof = classify_grain(it, cat, pool, index)
-        if verdict != VERDICT_CREATION:
-            continue
-        out[it["number"]] = (f"{CAUSE} : {why} -- la creation est ralentie, "
-                             f"pas arretee ; servir un grain de reparation "
-                             f"ou un grain de consolidation. Motif : {proof}")
+    if trop:
+        for it in pool:
+            verdict, proof = classify_grain(it, cat, pool, index)
+            if verdict != VERDICT_CREATION:
+                continue
+            out[it["number"]] = (
+                f"{CAUSE} : {why} -- la creation est ralentie, pas arretee ; "
+                f"servir un grain de reparation ou un grain de consolidation. "
+                f"Motif : {proof}")
+
+    # Le CLIQUET (#23175) : quand le registre anti-entropie dit que le
+    # chantier de padding RECULE, un carnet neuf au nom NON CONFORME est
+    # retenu — meme si le budget n'est pas depasse. C'est le lien que
+    # l'issue #23174 nomme : « le budget de #23174 lit le verdict RECULE de
+    # l'entree "padding et nommage" ».
+    if cliquet_actif():
+        for it in pool:
+            if it["number"] in out:
+                continue
+            verdict, proof = classify_grain(it, cat, pool, index)
+            if verdict != VERDICT_CREATION:
+                continue
+            non_conforme, motif = nom_non_conforme(it, cat)
+            if non_conforme:
+                out[it["number"]] = (
+                    f"{CAUSE_NOM} : le chantier de padding recule "
+                    f"(registre anti-entropie) -- un carnet neuf au nom non "
+                    f"conforme aggraverait le chantier. Motif : {motif}")
     return out
+
+
+# --- le cliquet anti-entropie (#23175) ---------------------------------------
+
+# L'etat des verdicts du registre anti-entropie. Il est ecrit par
+# `scripts/coordination/anti_entropy_register.py`.
+ENV_ANTI_ENTROPY = "COURSIA_ANTI_ENTROPY_FILE"
+
+# L'entree du registre qui parle de padding et de nommage.
+CLE_PADDING = "padding-nommage"
+
+# La cause nommee du cliquet.
+CAUSE_NOM = "NOM NON CONFORME"
+
+
+def _chemin_anti_entropie() -> pathlib.Path | None:
+    raw = os.environ.get(ENV_ANTI_ENTROPY, "").strip()
+    if raw:
+        return pathlib.Path(raw)
+    base = os.environ.get("LOCALAPPDATA") or str(pathlib.Path.home())
+    return pathlib.Path(base) / "CoursIA" / "anti_entropy_register.json"
+
+
+def cliquet_actif(chemin: str | None = None) -> bool:
+    """Le chantier de padding recule-t-il ?
+
+    Fail-OPEN : un etat absent, illisible, ou qui ne parle pas de padding
+    ne retient **rien**. L'absence de mesure n'est pas une sanction.
+    """
+    p = pathlib.Path(chemin) if chemin else _chemin_anti_entropie()
+    if p is None:
+        return False
+    try:
+        data = json.loads(p.read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001 - etat illisible = pas de cliquet
+        return False
+    if not isinstance(data, dict):
+        return False
+    entrees = data.get("entrees")
+    if not isinstance(entrees, dict):
+        return False
+    entree = entrees.get(CLE_PADDING)
+    if not isinstance(entree, dict):
+        return False
+    return str(entree.get("verdict") or "").upper() == "RECULE"
+
+
+def _organe_noms():
+    """L'organe d'inventaire des noms, ou None s'il est absent."""
+    try:
+        dossier = pathlib.Path(__file__).resolve().parent / "notebook_tools"
+        if str(dossier) not in sys.path:
+            sys.path.insert(0, str(dossier))
+        import inventory_notebook_names as inv
+    except Exception:  # noqa: BLE001 - organe absent = pas de classification
+        return None
+    return inv
+
+
+def _organe_renommage():
+    """L'organe de renommage canonique, ou None s'il est absent."""
+    try:
+        dossier = pathlib.Path(__file__).resolve().parent / "notebook_tools"
+        if str(dossier) not in sys.path:
+            sys.path.insert(0, str(dossier))
+        import rename_notebooks as rn
+    except Exception:  # noqa: BLE001 - organe absent = pas de renommage
+        return None
+    return rn
+
+
+def classer_nom(chemin: str) -> str:
+    """La classification du nom d'un carnet, par l'organe canonique.
+
+    L'organe est `scripts/notebook_tools/inventory_notebook_names.py` : on
+    l'appelle, on ne reimplement pas ses regles (organ-first). Si l'import
+    echoue, on ne classe rien — le cliquet ne retient alors personne.
+
+    Le noyau est passe a `None` : un carnet qui n'existe pas encore n'a pas
+    de noyau lisible. Cela ne fausse que les jugements qui en dependent, et
+    le cliquet n'actionne QUE la classe `rename_proposed` (un defaut de
+    zero-pad, independant du noyau) — voir `nom_non_conforme`.
+    """
+    inv = _organe_noms()
+    if inv is None:
+        return ""
+    try:
+        stem = re.sub(r"\.ipynb$", "", chemin, flags=re.IGNORECASE)
+        basename = chemin.rsplit("/", 1)[-1]
+        return inv._classify(chemin, stem, inv.index_key(basename), None,
+                             inv._suffix(stem), inv._index_zero_padded(basename))
+    except Exception:  # noqa: BLE001 - classification impossible = pas de verdict
+        return ""
+
+
+def defaut_zero_pad(chemin: str) -> str:
+    """Le nom porte-t-il un rang qui n'est PAS zero-pad ?
+
+    **Une seule des deux moities du defaut de padding.** Les deux
+   organes canoniques le voient chacun sur une forme de nom differente,
+    et cette fonction ne couvre que la seconde :
+
+      * l'organe d'inventaire (`inventory_notebook_names`) voit le rang
+        d'un nom a index EN TETE (`1_OpenAI_Intro`) et le rend
+        `rename_proposed` ;
+      * l'organe de renommage (`rename_notebooks`) voit le rang d'un nom
+        a PREFIXE DE SERIE (`ML-7-Recommendation`) et le rendrait
+        `ML-07-Recommendation`.
+
+    Mesure du 2026-10-28 : 708 des 813 `ambigu` de l'inventaire sont des
+    noms a prefixe de serie — son `INDEX_RE` ne lit qu'un index en tete.
+    L'inventaire les appelle donc `ambigu`, ce qui est un **verdict
+    d'INCERTITUDE**, pas un defaut : les retenir tous reviendrait a
+    bloquer 6 des 11 creations reelles du pool (#23142, #23140, #22810,
+    #21881, #21752) pour des noms parfaitement conformes.
+
+    On compare donc le rang du nom au rang que le renommage canonique
+    produirait : s'ils different, le nom sera renumerote — c'est le
+    chantier de padding qui grossit. Le calcul passe par
+    `canonical_target` de l'organe, on ne reimplement pas sa grammaire.
+    """
+    rn = _organe_renommage()
+    if rn is None:
+        return ""
+    try:
+        basename = chemin.rsplit("/", 1)[-1]
+        stem = re.sub(r"\.ipynb$", "", basename, flags=re.IGNORECASE)
+        m = rn.STEM_RE.match(stem)
+        if not m:
+            # Hors grammaire de serie (index en tete, separateur `_`) :
+            # ce n'est PAS le chantier du padding, c'est celui du prefixe.
+            return ""
+        rang = m.group("num")
+        # Le noyau est inconnu (fichier a creer) : il ne change que la
+        # queue du nom, jamais le rang. On compare donc les RANGS.
+        cible = rn.canonical_target(basename, "python")
+        m2 = rn.STEM_RE.match(re.sub(r"\.ipynb$", "", cible, flags=re.IGNORECASE))
+        if not m2:
+            return ""
+        rang_cible = m2.group("num")
+        if rang_cible and rang_cible != rang:
+            return (f"le rang {rang} n'est pas zero-pad : le renommage "
+                    f"canonique le donnerait {rang_cible} (convention `0N`)")
+    except Exception:  # noqa: BLE001 - mesure impossible = pas de verdict
+        return ""
+    return ""
+
+
+def nom_non_conforme(item: dict, catalog: NotebookCatalog) -> tuple[bool, str]:
+    """Le carnet que ce grain creerait porterait-il un nom non conforme ?
+
+    Une seule source : **le nom du fichier que l'issue nomme**. Un issue
+    qui ne nomme pas son fichier ne permet aucun jugement de nom — et le
+    cliquet ne retient que ce qu'il sait.
+
+    Deux organes canoniques, chacun sur sa forme de nom :
+
+      * `inventory_notebook_names` rend `rename_proposed` quand le rang
+        d'un nom a index EN TETE n'est pas zero-pad (`1_OpenAI_Intro`) ;
+      * `rename_notebooks` renumerote le rang d'un nom a PREFIXE DE SERIE
+        (`ML-7-Recommendation` -> `ML-07-Recommendation`).
+
+    Les deux sont lus, jamais reimplementes (organ-first).
+
+    **Ce qui n'est PAS un defaut** : la classe `ambigu` de l'inventaire.
+    Mesure du 2026-10-28 sur le pool reel : 708 des 813 `ambigu` sont des
+    noms a prefixe de serie (`Complexity-02b-...`), que l'inventaire ne
+    sait pas lire — son `INDEX_RE` ne voit qu'un index en tete. Les
+    retenir reviendrait a ecarter 6 des 11 creations reelles du pool
+    (#23142, #23140, #22810, #21881, #21752) alors que leurs noms sont
+    conformes : c'est un verdict d'INCERTITUDE, pas un defaut. Le cliquet
+    n'actionne que les DEUX defauts de zero-pad, mesures par l'organe.
+    """
+    title = item.get("title") or ""
+    body = item.get("body") or ""
+    cites = absent_notebooks(title + "\n" + body, catalog)
+    if not cites:
+        return False, ""
+    chemin = cites[0]
+
+    # 1. L'inventaire : zero-pad d'un index en tete.
+    classe = classer_nom(chemin)
+    if classe == "rename_proposed":
+        return True, (f"le carnet `{chemin}` a un rang non zero-pad "
+                      f"(l'inventaire le classe {classe})")
+
+    # 2. Le renommage : zero-pad d'un rang a prefixe de serie.
+    motif = defaut_zero_pad(chemin)
+    if motif:
+        return True, f"le carnet `{chemin}` : {motif}"
+
+    return False, ""

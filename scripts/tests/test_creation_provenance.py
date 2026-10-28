@@ -34,6 +34,7 @@ if str(SCRIPTS_CI) not in sys.path:
 _spec = importlib.util.spec_from_file_location(
     "check_creation_provenance", SCRIPTS_CI / "check_creation_provenance.py")
 cp = importlib.util.module_from_spec(_spec)
+sys.modules["check_creation_provenance"] = cp
 _spec.loader.exec_module(cp)
 
 

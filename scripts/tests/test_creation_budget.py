@@ -23,10 +23,10 @@ test porte le numero d'origine, pour qu'une regression puisse etre relue
 contre la realite et non contre une invention.
 """
 
-import pytest
+import json
 
 import creation_budget as cb
-
+import pytest
 
 # --- catalogue de test : trois series, quatre carnets ------------------------
 CATALOG_PATHS = [
@@ -44,6 +44,21 @@ CATALOG_PATHS = [
 @pytest.fixture
 def catalog():
     return cb.NotebookCatalog(CATALOG_PATHS)
+
+
+@pytest.fixture(autouse=True)
+def _isoler_l_etat_anti_entropie(monkeypatch, tmp_path):
+    """Le cliquet lit un chemin par DEFAUT : l'organe et le tapis sont deux
+    processus differents, et un chemin connu les relie.
+
+    Sans cet isolement, un test qui n'ecrit aucun etat lirait l'etat REEL
+    de la machine (verdict `RECULE` au 2026-10-28) — et le test passerait
+    pour une porte qui n'a rien retenu alors qu'elle en a retenu un.
+    `LOCALAPPDATA` isole le chemin par defaut, la variable d'environnement
+    surcharge le defaut.
+    """
+    monkeypatch.delenv(cb.ENV_ANTI_ENTROPY, raising=False)
+    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
 
 
 def issue(number=1, title="", body="", labels=None, parent=None):
@@ -332,3 +347,140 @@ def test_l_etat_est_absent_par_defaut(monkeypatch):
     monkeypatch.delenv(cb.ENV_STATE, raising=False)
     assert cb.state_path() is None
     assert cb.load_state() is None
+
+
+# --- le cliquet anti-entropie (#23175) ---------------------------------------
+
+def _ecrire_etat_anti_entropie(tmp_path, verdict):
+    etat = tmp_path / "anti_entropy.json"
+    etat.write_text(
+        json.dumps({"entrees": {"padding-nommage": {
+            "issue": 5081, "valeur": 813, "verdict": verdict}}}),
+        encoding="utf-8")
+    # L'etat est lu par `cliquet_actif()`, qui fail-OPEN sur un JSON
+    # illisible : un etat mal forme ne retient PERSONNE, et le test
+    # passerait pour une porte qui n'a rien retenu. On verifie donc que
+    # l'etat ecrit est bien lisible par l'organe.
+    json.loads(etat.read_text(encoding="utf-8"))
+    return etat
+
+
+def _grain_qui_cree(numeros=1, fichier=None, corps=""):
+    """Un grain de CREATION qui nomme le fichier qu'il veut creer."""
+    nom = fichier or "MyIA.AI.Notebooks/ML/ML.Net/ML-07-Recommendation.ipynb"
+    return issue(number=numeros,
+                 title="Add(ml,#19341): carnet ML-07 — systeme de recommandation",
+                 body=f"Livrable : `{nom}`\n{corps}")
+
+
+def test_le_cliquet_retient_un_carnet_au_nom_non_conforme(monkeypatch, catalog,
+                                                           tmp_path):
+    """Le cliquet de #23175 : quand le chantier de padding RECULE, un
+    carnet neuf au nom non conforme est retenu — meme si le budget n'est
+    pas depasse.
+
+    Le rang `7` n'est pas zero-pad : la convention du depot est `07`.
+
+    #19341 — `ML-7-Recommendation.ipynb` : c'est le defaut que le renommage
+    canonique (`rename_notebooks`) corrigerait — le chantier de padding
+    grossirait.
+    """
+    etat = _ecrire_etat_anti_entropie(tmp_path, "RECULE")
+    monkeypatch.setenv(cb.ENV_ANTI_ENTROPY, str(etat))
+    pool = [_grain_qui_cree(fichier="MyIA.AI.Notebooks/ML/ML.Net/"
+                                       "ML-7-Recommendation.ipynb")]
+    gate = cb.creation_gate(pool, catalog=catalog, state=None)
+    assert 1 in gate
+    assert cb.CAUSE_NOM in gate[1]
+    assert "zero-pad" in gate[1]
+
+
+def test_le_cliquet_retient_un_index_en_tete_non_zero_pad(monkeypatch, catalog,
+                                                          tmp_path):
+    """L'autre moitie du defaut, vue par l'inventaire : un index EN TETE
+    a 1 chiffre (`1_OpenAI_Intro`) est `rename_proposed`."""
+    etat = _ecrire_etat_anti_entropie(tmp_path, "RECULE")
+    monkeypatch.setenv(cb.ENV_ANTI_ENTROPY, str(etat))
+    pool = [_grain_qui_cree(fichier="MyIA.AI.Notebooks/GenAI/Texte/"
+                                       "1_Introduction-OpenAI.ipynb")]
+    gate = cb.creation_gate(pool, catalog=catalog, state=None)
+    assert 1 in gate
+    assert cb.CAUSE_NOM in gate[1]
+
+
+def test_le_cliquet_ignore_un_nom_conforme(monkeypatch, catalog, tmp_path):
+    """Le rang `07` EST conforme : le cliquet ne retient pas ce grain."""
+    etat = _ecrire_etat_anti_entropie(tmp_path, "RECULE")
+    monkeypatch.setenv(cb.ENV_ANTI_ENTROPY, str(etat))
+    pool = [_grain_qui_cree(fichier="MyIA.AI.Notebooks/ML/ML.Net/"
+                                       "ML-07-Recommendation.ipynb")]
+    gate = cb.creation_gate(pool, catalog=catalog, state=None)
+    assert gate == {}
+
+
+def test_le_cliquet_ne_reient_pas_sur_une_ambiguite(monkeypatch, catalog,
+                                                     tmp_path):
+    """Mesure du 2026-10-28 : 708 des 813 `ambigu` de l'inventaire sont des
+    noms a prefixe de serie (`Complexity-02b-...`) que l'inventaire ne sait
+    pas lire. Les retenir ecarterait 6 des 11 creations reelles du pool
+    pour des noms conformes : l'`ambigu` est une INCERTITUDE, pas un defaut."""
+    etat = _ecrire_etat_anti_entropie(tmp_path, "RECULE")
+    monkeypatch.setenv(cb.ENV_ANTI_ENTROPY, str(etat))
+    pool = [_grain_qui_cree(
+        fichier="MyIA.AI.Notebooks/Complexity/"
+                "Complexity-03e-Barrieres-WordRAM-Python.ipynb")]
+    gate = cb.creation_gate(pool, catalog=catalog, state=None)
+    assert gate == {}
+
+
+def test_le_cliquet_ne_juge_pas_sur_un_titre_sans_fichier(monkeypatch, catalog,
+                                                           tmp_path):
+    """Un issue qui ne nomme pas son fichier ne permet aucun jugement de
+    nom : le cliquet ne retient que ce qu'il sait."""
+    etat = _ecrire_etat_anti_entropie(tmp_path, "RECULE")
+    monkeypatch.setenv(cb.ENV_ANTI_ENTROPY, str(etat))
+    pool = [issue(number=1, title="NLP — carnet 7 : classification")]
+    gate = cb.creation_gate(pool, catalog=catalog, state=None)
+    assert gate == {}
+
+
+def test_le_cliquet_ignore_un_grain_de_reparation(monkeypatch, catalog, tmp_path):
+    """Le cliquet ne retient jamais un grain de reparation."""
+    etat = _ecrire_etat_anti_entropie(tmp_path, "RECULE")
+    monkeypatch.setenv(cb.ENV_ANTI_ENTROPY, str(etat))
+    pool = [issue(number=2, title="Fix(lean,#18408): aligner la prose de ANALYSE-04")]
+    assert cb.creation_gate(pool, catalog=catalog, state=None) == {}
+
+
+def test_sans_etat_anti_entropie_le_cliquet_neretient_rien(catalog):
+    """Fail-OPEN : pas de mesure du registre, pas de sanction.
+
+    L'isolement de l'etat par defaut est fait par la fixture
+    `_isoler_l_etat_anti_entropie` : ici, aucun etat n'est ecrit.
+    """
+    pool = [_grain_qui_cree(fichier="MyIA.AI.Notebooks/ML/ML.Net/"
+                                       "ML-7-Recommendation.ipynb")]
+    assert cb.creation_gate(pool, catalog=catalog, state=None) == {}
+
+
+def test_un_verdict_AVANCE_desactive_le_cliquet(monkeypatch, catalog, tmp_path):
+    """Quand le chantier avance, le cliquet ne retient plus rien : le
+    registre mesure, le cliquet agit sur la mesure."""
+    etat = _ecrire_etat_anti_entropie(tmp_path, "AVANCE")
+    monkeypatch.setenv(cb.ENV_ANTI_ENTROPY, str(etat))
+    pool = [_grain_qui_cree(fichier="MyIA.AI.Notebooks/ML/ML.Net/"
+                                       "ML-7-Recommendation.ipynb")]
+    assert cb.creation_gate(pool, catalog=catalog, state=None) == {}
+
+
+def test_le_cliquet_agit_meme_sans_depassement_de_budget(monkeypatch, catalog,
+                                                         tmp_path):
+    """Le cliquet est independant du budget : c'est le registre qui
+    decide, pas le compteur."""
+    etat = _ecrire_etat_anti_entropie(tmp_path, "RECULE")
+    monkeypatch.setenv(cb.ENV_ANTI_ENTROPY, str(etat))
+    sous_budget = {"carnets_neufs_demarres": 10, "budget": 50}
+    pool = [_grain_qui_cree(fichier="MyIA.AI.Notebooks/ML/ML.Net/"
+                                       "ML-7-Recommendation.ipynb")]
+    gate = cb.creation_gate(pool, catalog=catalog, state=sous_budget)
+    assert 1 in gate

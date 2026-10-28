@@ -34,6 +34,7 @@ if str(SCRIPTS) not in sys.path:
 _spec = importlib.util.spec_from_file_location(
     "pick_idle_grain_local", SCRIPTS / "pick_idle_grain.py")
 pig = importlib.util.module_from_spec(_spec)
+sys.modules["pick_idle_grain_local"] = pig
 _spec.loader.exec_module(pig)
 
 import creation_budget as cb  # noqa: E402
@@ -56,6 +57,19 @@ def catalog(monkeypatch):
     monkeypatch.setattr(cb.NotebookCatalog, "from_repo",
                         classmethod(lambda cls, *a, **k: cat))
     return cat
+
+
+@pytest.fixture(autouse=True)
+def _isoler_l_etat_anti_entropie(monkeypatch, tmp_path):
+    """Le cliquet anti-entropie (#23175) lit un chemin par DEFAUT : l'organe
+    et le tapis sont deux processus differents, un chemin connu les relie.
+
+    Sans cet isolement, la porte lirait l'etat REEL de la machine (verdict
+    `RECULE` au 2026-10-28) : un test qui attend un ecart mesurerait un
+    ecart qui n'est pas le sien.
+    """
+    monkeypatch.delenv(cb.ENV_ANTI_ENTROPY, raising=False)
+    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
 
 
 def test_sans_etat_la_porte_est_inerte(monkeypatch, catalog):

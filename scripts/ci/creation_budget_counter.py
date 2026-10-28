@@ -48,7 +48,7 @@ SCRIPTS_DIR = pathlib.Path(__file__).resolve().parent.parent
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
-import creation_budget as cb
+import creation_budget as cb  # noqa: E402
 
 REPO = "jsboige/CoursIA"
 DEFAULT_REF = "origin/main"

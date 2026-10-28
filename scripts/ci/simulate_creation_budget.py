@@ -47,7 +47,7 @@ SCRIPTS_DIR = pathlib.Path(__file__).resolve().parent.parent
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
-import creation_budget as cb
+import creation_budget as cb  # noqa: E402
 
 REPO = "jsboige/CoursIA"
 DEFAULT_REF = "origin/main"
@@ -166,17 +166,33 @@ def garde_provenance(since: dt.datetime, until: dt.datetime) -> dict:
                            "--json", "number,author,createdAt,body,files"]))
     fleet = [p for p in prs
              if (p.get("author") or {}).get("login", "").startswith(("jsboige", "myia-"))]
+    # Seules les PRs qui AJOUTENT un carnet neuf comptent. Le listing
+    # `gh pr list --json files` ne donne pas le statut ; c'est l'API des
+    # fichiers de la PR qui porte `status` (`added` / `renamed` / ...).
+    # Un carnet MODIFIE n'est pas un carnet neuf : le compter comme tel
+    # gonflerait le denominateur de la mesure (constate : 507 PRs au lieu
+    # de 126 sur la meme fenetre).
     avec_carnet = []
     for p in fleet:
-        fichiers = [f.get("path") for f in (p.get("files") or [])
-                    if (f.get("path") or "").endswith(".ipynb")]
-        if fichiers:
-            avec_carnet.append((p, fichiers))
+        if not any((f.get("path") or "").endswith(".ipynb")
+                   for f in (p.get("files") or [])):
+            continue
+        try:
+            fichiers = json.loads(_run(["gh", "api",
+                                        f"repos/{REPO}/pulls/{p['number']}/files"]))
+        except Exception:  # noqa: BLE001 - fichiers illisibles = PR non mesuree
+            continue
+        ajoutes = [f.get("filename") for f in fichiers
+                   if (f.get("filename") or "").endswith(".ipynb")
+                   and f.get("status") == "added"
+                   and not (f.get("filename") or "").endswith("_en.ipynb")]
+        if ajoutes:
+            avec_carnet.append((p, ajoutes))
 
     ages = {"moins_48h": 0, "plus_48h": 0, "sans_issue_servie": 0}
     sans_issue = 0
     prs_ajoutees = 0
-    for p, fichiers in avec_carnet:
+    for p, _fichiers in avec_carnet:
         prs_ajoutees += 1
         m = _SERVED_RE.search(p.get("body") or "")
         if not m:
