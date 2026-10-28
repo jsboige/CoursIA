@@ -967,3 +967,49 @@ def test_20120_compare_gate_still_fires_on_runtime_path_only():
             assert rows[0]["regressed"] is expected, head_line
     finally:
         m.read_notebook_at = orig
+
+
+# --- #21816: echec de workflow ComfyUI ------------------------------------
+# Le service repond une erreur et le carnet commite son repli a la place de
+# l'illustration (C.2). Les trois formes sont les lignes REELLES du blob
+# degrade de Barbie-Schreck, avant #21815.
+
+COMFY_LOG = ("ERROR:BarbieVsAne:Erreur generation image: Workflow execution "
+             "failed (server reported error): [")
+COMFY_SKIP = "WARNING:BarbieVsAne:Illustration indisponible pour cette replique"
+
+
+def test_21816_comfyui_fallback_fires():
+    for line in (COMFY_LOG, COMFY_SKIP):
+        got = scan(nb(cell("print(x)", line)))["TOOL_FAILURE"]
+        assert len(got) == 1, line
+
+
+def test_21816_comfyui_fallback_is_hard_even_when_source_declares_it():
+    # Le carnet degrade porte le message en LITTERAL dans le source de sa
+    # cellule de repli (c'est ainsi qu'il l'ecrit). L'exemption des modes
+    # demo (#18916 / #19697) ne doit pas l'absoudre : la banniere a remplace
+    # un rendu, c'est la degradation elle-meme.
+    src = ("try:\n"
+           "    generate()\n"
+           "except Exception as exc:\n"
+           "    logger.warning('Illustration indisponible pour cette replique')\n")
+    got = scan(nb(cell(src, COMFY_SKIP)))
+    assert got["TOOL_FAILURE"] and not got["DECLARED_FALLBACK"]
+
+
+def test_21816_declared_interactive_fallback_stays_out():
+    # Controle negatif : les deux cellules de mode interactif declarees du
+    # depot (DALL-E 1-1 cellule 23, Whisper 1-2 cellule 45) sont des branches
+    # de repli PREVUES. Elles restent des replis declares, jamais des echecs.
+    cases = (
+        ("print('[skip] Mode interactif non disponible (execution "
+         "automatisee)')",
+         "[skip] Mode interactif non disponible (execution automatisee)"),
+        ("print('Mode interactif non disponible (execution automatisee)')",
+         "Mode interactif non disponible (execution automatisee)"),
+    )
+    for src, out in cases:
+        got = scan(nb(cell(src, out)))
+        assert got["TOOL_FAILURE"] == [], out
+        assert len(got["DECLARED_FALLBACK"]) == 1, out

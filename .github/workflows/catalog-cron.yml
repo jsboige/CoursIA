@@ -11,6 +11,16 @@ name: Catalog Auto-Regen (main, scheduled)
 # cadence. The per-PR detector for that file (`quarto-render-list-freshness.yml`)
 # is ADVISORY and stays a detector; freshness is owned here.
 #
+# Since #22216 (review myia-ai-01, 2026-10-26) it also regenerates
+# `translations/translation_golden_set.json` -- the FR/EN pair index of
+# #22009 (notebooks, README.en.md, Lean `_en` siblings). Same model a third
+# time: drift enters through ANY merge that adds or removes a pair, the
+# per-PR guard `translation-golden-set-drift` (fast-lane registry, TRANCHE26)
+# is ADVISORY and stays a detector, branches never regenerate the JSON
+# (catalog-pr-hygiene model extended to this generated file -- a blocking
+# guard would force branch-side regeneration of a generated file and pit
+# parallel PRs into conflicts on it), freshness is owned here.
+#
 # Why a scheduled job is needed:
 #   The catalog embeds git-derived fields (last_validation, issue_pr_associee...)
 #   and a maturity heuristic that drift purely as commits land on main -- even
@@ -154,13 +164,18 @@ jobs:
           # freshness, it reads the PR head tree and never sees the merge, so
           # it was made advisory instead of mandatory.
           python scripts/regen_quarto_render.py
+          # Translation golden set (#22216, review 2026-10-26): FR/EN pair
+          # index -- same defect class as the catalogue, drift enters through
+          # any merge that adds or removes a pair. The per-PR guard is
+          # ADVISORY (TRANCHE26), freshness is owned here.
+          python scripts/translation/build_golden_set.py
 
       - name: Commit + push to chore/catalog-refresh-pending if the catalog drifted
         id: drift
         run: |
           set -euo pipefail
           BRANCH="chore/catalog-refresh-pending"
-          git add COURSE_CATALOG.generated.json COURSE_CATALOG.generated.md docs/archive/reference/HEALTH_DASHBOARD.md _quarto.yml
+          git add COURSE_CATALOG.generated.json COURSE_CATALOG.generated.md docs/archive/reference/HEALTH_DASHBOARD.md _quarto.yml translations/translation_golden_set.json
           # Stage the 5 generated curriculum (parcours) pages if they drifted.
           mapfile -t changed_parcours < <(git ls-files -m -- 'docs/curriculum/*.md')
           if [ "${#changed_parcours[@]}" -gt 0 ]; then
@@ -286,8 +301,8 @@ jobs:
               '',
               'Long-lived PR refreshed daily by `catalog-cron.yml` (schedule cron 03:37 UTC) to keep',
               '`COURSE_CATALOG.generated.{json,md}` + `CATALOG-STATUS` markers + the curriculum (`docs/curriculum/*.md`),',
-              'the health dashboard (`docs/archive/reference/HEALTH_DASHBOARD.md`) and the `project.render` list of',
-              '`_quarto.yml` canonical on `main`.',
+              'the health dashboard (`docs/archive/reference/HEALTH_DASHBOARD.md`), the `project.render` list of',
+              '`_quarto.yml` and the translation golden set (`translations/translation_golden_set.json`) canonical on `main`.',
               '',
               '**Maintainer review only — no direct push to `main`** (issue #10136). The bot opens',
               'or updates this PR; merging it refreshes `main` through the normal PR gate.',
@@ -300,6 +315,8 @@ jobs:
               '- `_quarto.yml` `project.render` stays in sync with the notebooks / READMEs / `docs/*.md` on `main`.',
               '  There are no counter lines in it any more (#19901): a total in a generated file either conflicts',
               '  between two concurrent PRs or merges a false value cleanly.',
+              '- `translations/translation_golden_set.json` (FR/EN pair fingerprints, #22216) only changes when',
+              '  pairs landed on `main` since the last merge; branches never regenerate it.',
               '',
               '## Close policy',
               '',
