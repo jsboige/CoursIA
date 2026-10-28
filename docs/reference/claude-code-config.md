@@ -74,6 +74,15 @@ Agents are auto-discovered by Claude Code. Each has YAML frontmatter with model,
 | `variation-protocol` | tag `Grain:`, gates G-VAR-1/2/3, merge-gate |
 | `lane-claim-protocol` | claim = commentaire d'issue, `paths:`, anti-collision cross-lane |
 | `cell-interpretation-ordering` | ancrage sémantique des cellules d'interprétation |
+| `consecutive-code-cells` | cellules de code consécutives : markdown intermédiaire ou fusion (advisory) |
+| `notebook-accretion-numbering` | renumérotation / reclassement (`renum()` / `reclass()`) : le canonique est ce qui n'a pas de lettre |
+| `codeql-suppressions-inertes` | un commentaire `# codeql[rule-id]` est inerte sur ce dépôt (default setup) |
+| `results-artifact-policy` | artefacts de `scripts/results/` : barre de 512 000 octets par artefact nouveau, série complète hors dépôt |
+| `gh-posting-hygiene` | jamais `-f body=@fichier` (chaîne littérale) : `--input` / `--body-file`, garde post-POST (longueur + piège payload JSON) |
+| `organ-first-implementation` | nommer l'organe natif d'une autre série avant de réimplémenter (5 questions dans le body) |
+| `submodule-maintenance` | les cinq sous-modules : mesure de dérive du gitlink, états de gate, droits `gh`, ordre du bump |
+
+**Deux classes, et la distinction change ce qu'un agent a en contexte.** Les règles **path-gated** ne se chargent que si la session touche les fichiers visés : `audit-cross-source-distillation`, `catalog-pr-hygiene`, `cell-interpretation-ordering`, `codeql-suppressions-inertes`, `consecutive-code-cells`, `exercise-example-labeling`, `genai-config`, `lean-merge-discipline`, `notebook-accretion-numbering`, `notebook-conventions`, `readme-french-first`, `results-artifact-policy`, `three-exercises-per-notebook`, `wsl-kernels`. Toutes les autres sont auto-chargées à chaque session ; la liste de cette phrase se recalcule (`grep -l '^paths:' .claude/rules/*.md`), elle ne se recopie pas d'une session à l'autre.
 
 ## Model Selection Strategy
 
