@@ -712,16 +712,24 @@ def main(argv: list[str] | None = None) -> int:
         par_issue.setdefault(e["issue"], []).append(e)
 
     publies = []
+    echecs = []
     for issue, lot in sorted(par_issue.items()):
         dernier = dernier_commentaire_issue(issue)
         due, motif = due_pour_publier(dernier, lot, now)
         corps = commentaire_du_jour(lot, mesure_le)
         poste = False
+        echec = False
         if due:
             poste = publier(issue, corps, dry_run=args.dry_run)
-            publies.append({"issue": issue, "poste": poste, "motif": motif})
-        else:
-            publies.append({"issue": issue, "poste": False, "motif": motif})
+            # Un echec de publication n'est pas « rien a publier » : la
+            # chaine des references se lit dans les commentaires publies,
+            # et une publication qui echoue en silence fait perdre la
+            # fenetre de sept jours SANS que personne ne le voie.
+            echec = not poste and not args.dry_run
+            if echec:
+                echecs.append(issue)
+        publies.append({"issue": issue, "poste": poste, "echec": echec,
+                        "motif": motif})
 
     etat = {
         "mesure_le": mesure_le,
@@ -739,9 +747,15 @@ def main(argv: list[str] | None = None) -> int:
               f"verdict={e['verdict']}"
               + (f"  ERREUR: {e['erreur']}" if e.get("erreur") else ""))
     for p in publies:
-        print(f"issue #{p['issue']} : "
-              + ("commentaire publie" if p["poste"]
-                 else ("publie (dry-run)" if args.dry_run else f"pas de publication — {p['motif']}")))
+        if p["poste"]:
+            etat_publication = "commentaire publie"
+        elif p.get("echec"):
+            etat_publication = f"ECHEC de publication — {p['motif']}"
+        elif args.dry_run:
+            etat_publication = "publie (dry-run)"
+        else:
+            etat_publication = f"pas de publication — {p['motif']}"
+        print(f"issue #{p['issue']} : {etat_publication}")
     print(f"etat ecrit : {chemin}" if not args.dry_run
           else f"etat NON ecrit (dry-run) : {chemin}")
 
@@ -750,6 +764,15 @@ def main(argv: list[str] | None = None) -> int:
             json.dumps({"mesure_le": mesure_le, "entrees": entrees,
                         "publications": publies}, ensure_ascii=False,
                        indent=2, default=str) + "\n", encoding="utf-8")
+    # Un echec de publication est un ECHEC du cycle : la reference se lit
+    # dans les commentaires publies, et une publication qui echoue en
+    # silence fait perdre la fenetre de sept jours sans que personne ne le
+    # voie. L'etat reste ecrit (le verdict est mesure, independamment de
+    # la publication) — mais le code de sortie le dit.
+    if echecs:
+        print(f"ECHEC de publication sur {len(echecs)} issue(s) : "
+              f"{', '.join('#' + str(i) for i in echecs)}", file=sys.stderr)
+        return 1
     return 0
 
 

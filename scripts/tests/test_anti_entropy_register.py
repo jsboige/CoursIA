@@ -424,3 +424,46 @@ def test_un_dry_run_n_ecrit_pas_l_etat(monkeypatch, tmp_path):
     aer.main([])
     assert cible.exists(), "le run reel n'a pas ecrit l'etat du cliquet"
     assert publie == [(5081, True), (5081, False)], publie
+
+
+def test_un_echec_de_publication_sort_en_echec(monkeypatch, tmp_path):
+    """Une publication qui echoue doit SORTIR en echec, pas en 0 muet.
+
+    La reference se lit dans les commentaires PUBLIES : une publication qui
+    echoue sans bruit fait perdre la fenetre de sept jours, et le verdict
+    se fige sur une premiere mesure. L'etat reste ecrit — le verdict est
+    mesure, independamment de la publication — mais le code de sortie le dit.
+    """
+    cible = tmp_path / "etat.json"
+    monkeypatch.setenv(aer.ENV_ETAT, str(cible))
+
+    mesure = [{"cle": "padding-nommage", "issue": 5081, "titre": "t",
+               "commande": ["cmd"], "sens": "descend", "valeur": 813.0,
+               "erreur": "", "reference": None, "verdict": "RECULE"}]
+    monkeypatch.setattr(aer, "mesurer_tout",
+                        lambda issue_filtre=None, now=None: mesure)
+    monkeypatch.setattr(aer, "dernier_commentaire_issue", lambda issue: None)
+    monkeypatch.setattr(aer, "publier",
+                        lambda issue, corps, dry_run=False: False)
+
+    rc = aer.main([])
+    assert rc == 1, "un echec de publication doit sortir en 1"
+    assert cible.exists(), "le verdict est mesure : l'etat reste ecrit"
+
+
+def test_un_dry_run_ne_signale_pas_d_echec(monkeypatch, tmp_path):
+    """Le dry-run ne publie rien PAR CONSTRUCTION : il ne doit donc pas
+    sortir en echec."""
+    cible = tmp_path / "etat.json"
+    monkeypatch.setenv(aer.ENV_ETAT, str(cible))
+
+    mesure = [{"cle": "padding-nommage", "issue": 5081, "titre": "t",
+               "commande": ["cmd"], "sens": "descend", "valeur": 813.0,
+               "erreur": "", "reference": None, "verdict": "RECULE"}]
+    monkeypatch.setattr(aer, "mesurer_tout",
+                        lambda issue_filtre=None, now=None: mesure)
+    monkeypatch.setattr(aer, "dernier_commentaire_issue", lambda issue: None)
+    monkeypatch.setattr(aer, "publier",
+                        lambda issue, corps, dry_run=False: False)
+
+    assert aer.main(["--dry-run"]) == 0
