@@ -76,20 +76,17 @@ class VerdictRegistry:
     ) -> bool:
         """Vrai si `raw_result` est un verdict emis par le moteur.
 
-        Comparaison exacte sur le couple (belief_set, query) ; a defaut, on
-        accepte un verdict deja emis pour ce meme belief set — le verdict
-        canonique embarque l'identifiant du belief set et la requete, donc
-        la correspondance reste verifiable a l'oeil.
+        Comparaison **stricte** sur le couple (belief_set, query) : c'est
+        l'invariant que la cle du registre annonce (« un verdict n'est
+        reutilisable que pour la requete sur laquelle il a ete produit »).
+        Le repli intra-belief-set a ete RETIRE : le verdict canonique est
+        une chaine autonome, donc un verdict emis pour la requete A aurait
+        aussi ete accepte si l'agent le consignait sous la requete B du
+        meme belief set — un verdict qui ne repond pas a la question posee.
+        Le refus est donc explicite, comme le veut le contrat.
         """
         expected = self.get(belief_set_id, query)
-        if expected is not None and normalize(raw_result) == normalize(expected):
-            return True
-        target = normalize(raw_result)
-        return any(
-            normalize(verdict) == target
-            for (bs_id, _query), verdict in self._verdicts.items()
-            if bs_id == belief_set_id
-        )
+        return expected is not None and normalize(raw_result) == normalize(expected)
 
     def issued(self) -> List[Tuple[str, str, str]]:
         """Liste des verdicts emis : (belief_set_id, query, verdict)."""

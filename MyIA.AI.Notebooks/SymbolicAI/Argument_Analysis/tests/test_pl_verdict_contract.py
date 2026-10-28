@@ -144,6 +144,19 @@ class TestVerdictRegistry:
             "bs_2", "q", format_verdict("bs_1", "q", True, "engine")
         )
 
+    def test_verdict_of_another_query_of_the_same_belief_set_is_refused(self):
+        """Le couplage est (belief_set, query), pas belief_set seul.
+
+        Controle NEGATIF du repli intra-belief-set : le verdict est une
+        chaine autonome, donc un verdict emis pour la requete A est
+        egalement « egal » a lui-meme — le registre doit le refuser quand
+        la garde est interrogee sur la requete B du meme belief set.
+        """
+        registry = VerdictRegistry()
+        verdict = format_verdict("bs_1", "qA", True, "engine")
+        registry.record("bs_1", "qA", verdict)
+        assert not registry.is_engine_verdict("bs_1", "qB", verdict)
+
     def test_format_verdict_starts_with_the_marker(self):
         verdict = format_verdict("bs_1", "q", True, "engine")
         assert verdict.startswith(ACCEPTED + ":")
@@ -193,6 +206,27 @@ class TestGuardedStateManager:
         result = plugin.log_query_result(bs_id, "q", verdict)
         assert result.startswith("FUNC_ERROR")
         assert state.query_log == []
+
+    def test_verdict_from_another_query_of_the_same_belief_set_is_refused(self, state):
+        """Meme controle negatif, au niveau de la garde de consignation."""
+        plugin = GuardedStateManagerPlugin(state)
+        bs_id = state.add_belief_set("Propositional", "p => q")
+        verdict = format_verdict(bs_id, "qA", True, "fake-engine")
+        registry_for(state).record(bs_id, "qA", verdict)
+        result = plugin.log_query_result(bs_id, "qB", verdict)
+        assert result.startswith("FUNC_ERROR")
+        assert state.query_log == []
+
+    def test_same_query_with_another_spelling_is_accepted(self, state):
+        """Controle POSITIF : le couplage strict ne doit pas casser
+        l'equivalent whitespace de la meme requete."""
+        plugin = GuardedStateManagerPlugin(state)
+        bs_id = state.add_belief_set("Propositional", "p => q")
+        verdict = format_verdict(bs_id, "q", True, "fake-engine")
+        registry_for(state).record(bs_id, "q", verdict)
+        log_id = plugin.log_query_result(bs_id, "  q \n", verdict)
+        assert not log_id.startswith("FUNC_ERROR")
+        assert len(state.query_log) == 1
 
 
 # --- Plugin solveur -------------------------------------------------------------
