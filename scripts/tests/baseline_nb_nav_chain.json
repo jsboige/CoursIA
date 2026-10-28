@@ -82,12 +82,22 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-CSharp.ipynb",
-      "series": "MyIA.AI.Notebooks/GameTheory"
+      "notebook": "MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-CSharp.ipynb",
+      "series": "MyIA.AI.Notebooks/GameTheory/Dynamics"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-06f-Bounded-Agents-Lean.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-05-Agents-Bornes-Lean.ipynb",
+      "series": "MyIA.AI.Notebooks/GameTheory/Dynamics"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-09-Biens-Publics-N-Personnes-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/GameTheory/Dynamics"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-06k-FairBot-Loeb-Lean.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
