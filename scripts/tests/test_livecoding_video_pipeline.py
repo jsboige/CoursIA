@@ -44,9 +44,13 @@ from scripts.livecoding_video_pipeline import (
     _build_arg_parser,
     _click_play,
     _resolve_capture_seconds,
+    _set_editor_code,
     build_repl_url,
+    capture_progressive_session,
     compose_narration,
+    compose_progressive_states,
     compose_strudel,
+    concat_wavs,
     cycles_for_duration,
     mix_final_ffmpeg,
     mux_ffmpeg,
@@ -1282,3 +1286,151 @@ class TestClickPlayRetry:
             _click_play(page, "https://strudel.cc/#HASH", attempts=3)
         assert page.clicks == 3
         assert page.gotos == 2
+
+
+class TestSetEditorCode:
+    """La saisie ramene le curseur au debut apres chaque remplacement."""
+
+    def test_insertion_puis_retour_au_debut_du_document(self):
+        events = []
+
+        class _Keyboard:
+            def press(self, key):
+                events.append(("press", key))
+
+            def insert_text(self, code):
+                events.append(("insert_text", code))
+
+        class _Page:
+            keyboard = _Keyboard()
+
+            def click(self, selector):
+                events.append(("click", selector))
+
+        code = "setcps(0.5)\n$: s('bd')"
+        _set_editor_code(_Page(), code)
+        assert events == [
+            ("click", ".cm-content"),
+            ("press", "Control+a"),
+            ("insert_text", code),
+            ("press", "Control+Home"),
+        ]
+
+
+class TestEtatsProgressifs:
+    """Critere 5a de #15604 : le code Strudel doit montrer au moins TROIS
+    etats visibles distincts dans la video.
+
+    Les tests couvrent la logique PURE (composition des etats, gardes,
+    commande de concatenation). La capture reelle (navigateur, saisie,
+    rendu WAV, ffmpeg) est prouvee par l'execution documentee dans le body
+    de la PR — un test qui simulerait le navigateur ne prouverait rien.
+    """
+
+    def test_au_moins_trois_etats_distincts(self):
+        etats = compose_progressive_states("trance", 180, voices=4)
+        assert len(etats) >= 3
+        assert len(dict.fromkeys(etats)) == len(etats)
+
+    def test_trois_voix_suffisent(self):
+        assert len(compose_progressive_states("trance", 180, voices=3)) == 3
+
+    @pytest.mark.parametrize("style", sorted(STYLES))
+    @pytest.mark.parametrize("visuals", [False, True])
+    def test_dernier_etat_egale_compose_strudel(self, style, visuals):
+        """Garde anti-derive : la progression converge vers le script canonique."""
+        etats = compose_progressive_states(style, 180, voices=4, visuals=visuals)
+        attendu = compose_strudel(style, 180, voices=4, visuals=visuals)
+        assert etats[-1] == attendu
+
+    def test_etats_strictement_cumulatifs(self):
+        etats = compose_progressive_states("techno", 180, voices=4, visuals=True)
+        precedents = None
+        for k, etat in enumerate(etats, start=1):
+            lignes = etat.splitlines()
+            voix = [l for l in lignes if l.startswith("$: ")]
+            assert len(voix) == k, f"etat {k} porte {len(voix)} voix"
+            if precedents is not None:
+                # Chaque etat reprend les voix du precedent, dans l'ordre :
+                # une progression qui reecrirait une voix ne serait pas une
+                # progression mais un remplacement.
+                assert voix[: k - 1] == precedents
+            precedents = voix
+
+    def test_chaque_etat_est_executable(self):
+        """Un etat partiel doit rester du code VALIDE, pas un texte tronque."""
+        for etat in compose_progressive_states("ambient", 120, voices=3, visuals=True):
+            assert "setcps(" in etat
+            assert etat.count("(") == etat.count(")"), etat
+            assert "$: " in etat
+
+    def test_visuals_places_sur_les_bonnes_voix(self):
+        sans = compose_progressive_states("trance", 180, voices=4, visuals=False)
+        avec = compose_progressive_states("trance", 180, voices=4, visuals=True)
+        assert ".scope()" not in sans[0]
+        # La voix 1 (basse) recoit .scope(), la voix 2 (lead) .pianoroll() :
+        # l'etat 2 est donc le premier a porter un visual.
+        assert ".scope()" in avec[1]
+        assert ".pianoroll()" in avec[2]
+
+    def test_rejette_moins_de_trois_voix(self):
+        with pytest.raises(ValueError, match="trois etats"):
+            compose_progressive_states("trance", 180, voices=2)
+
+    def test_rejette_style_et_duree(self):
+        with pytest.raises(ValueError, match="inconnu"):
+            compose_progressive_states("dubstep", 180)
+        with pytest.raises(ValueError, match="duration_seconds"):
+            compose_progressive_states("trance", 30)
+
+    def test_session_refuse_sans_visuals_avant_le_navigateur(self):
+        """Echec explicite AVANT tout import playwright (contrat CI sans navigateur)."""
+        with pytest.raises(ValueError, match="visuals=True requis"):
+            capture_progressive_session("trance", 120, voices=4, visuals=False)
+
+    def test_session_refuse_moins_de_trois_voix_avant_le_navigateur(self):
+        with pytest.raises(ValueError, match="trois etats"):
+            capture_progressive_session("trance", 120, voices=2)
+
+
+class TestConcatWavs:
+    """Concatenation des pistes d'etats : l'audio doit evoluer comme le code."""
+
+    def test_commande_et_liste(self, tmp_path):
+        wavs = [tmp_path / f"state_{i:02d}.wav" for i in range(3)]
+        sortie = tmp_path / "progressive.wav"
+        cmd = concat_wavs(wavs, sortie)
+        assert cmd[:2] == ["ffmpeg", "-y"]
+        assert "-f" in cmd and cmd[cmd.index("-f") + 1] == "concat"
+        assert "-safe" in cmd and cmd[cmd.index("-safe") + 1] == "0"
+        assert cmd[-1] == str(sortie)
+        liste = sortie.with_suffix(".txt")
+        assert liste.is_file()
+        lignes = liste.read_text(encoding="utf-8").strip().splitlines()
+        assert len(lignes) == 3
+        # Le demuxer concat n'accepte que des chemins en avant-slash, meme
+        # sous Windows (un backslash y est un caractere d'echappement).
+        assert all("\\" not in l for l in lignes)
+
+    def test_rejette_une_seule_piste(self, tmp_path):
+        with pytest.raises(ValueError, match="au moins 2 pistes"):
+            concat_wavs([tmp_path / "a.wav"], tmp_path / "out.wav")
+
+
+class TestCliProgressive:
+    """Le mode progressif s'active explicitement et refuse la combinaison vide."""
+
+    def test_flag_parse(self):
+        args = _build_arg_parser().parse_args(["--capture", "--progressive"])
+        assert args.progressive is True
+        assert args.capture is True
+
+    def test_defaut_desactive(self):
+        assert _build_arg_parser().parse_args([]).progressive is False
+
+    def test_progressive_sans_capture_rend_2(self, capsys):
+        from scripts.livecoding_video_pipeline import main
+
+        assert main(["--progressive"]) == 2
+        assert "requiert --capture" in capsys.readouterr().err
+

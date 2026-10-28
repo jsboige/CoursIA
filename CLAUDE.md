@@ -49,7 +49,7 @@ Cadre de travail (adapté de Karpathy + ajout user) : ces principes gouvernent *
 | [reference/scripts-reference.md](docs/reference/scripts-reference.md) | Catalogue scripts (notebook CLI, exécution, qualité, maintenance) |
 | [reference/architecture_mcp_roo.md](docs/reference/architecture_mcp_roo.md) | Cycle de vie, logs et diagnostic des serveurs MCP (inventaire des outils roo-state-manager : [HARNESS-OVERVIEW.md](https://github.com/jsboige/roo-extensions/blob/main/docs/harness/HARNESS-OVERVIEW.md) §2) |
 | [reference/regles-vigilance-detail.md](docs/reference/regles-vigilance-detail.md) · [regles-validation-detail.md](docs/reference/regles-validation-detail.md) | Détail G.1-G.9 et H.1-H.7 + incidents |
-| [reference/_archive-convention.md](docs/reference/_archive-convention.md) | Convention `_archive/` (11 emplacements) — modèle ML-Training-Pipeline généralisé, 4 critères d'éligibilité, header per-function |
+| [reference/_archive-convention.md](docs/reference/_archive-convention.md) | Convention `_archive/` — modèle ML-Training-Pipeline généralisé, 4 critères d'éligibilité, header per-function ; le recensement des emplacements se recalcule, il ne se recopie pas ici (commande dans le document) |
 | [reference/notebook-renumbering-detail.md](docs/reference/notebook-renumbering-detail.md) | Corpus des precedents de renumerotation — le geste `renum()`/`reclass()` est porte par `.claude/rules/notebook-accretion-numbering.md` |
 | [reference/env-python-reparation.md](docs/reference/env-python-reparation.md) | Réparation env Python (règle F) |
 | [reference/stale-tree-drift-scan.md](docs/reference/stale-tree-drift-scan.md) · [orphan-branch-scan-l576.md](docs/reference/orphan-branch-scan-l576.md) | Scans anti-phantom (drift, branche orpheline) |
@@ -245,7 +245,7 @@ docs/                       # Documentation déportée de ce fichier
 
 **Collision** : sous-agents read-only en parallèle OK ; sous-agents **éditeurs = un seul à la fois par notebook/série**.
 
-**Modèle explicite obligatoire** : tout `Agent()` DOIT spécifier `model: "sonnet"` ou `"haiku"`. `"opus"` **jamais sur les postes po-\***, sauf lane autorisée nommément (cf point 3, `myia-po-2024:CoursIA-3`) (mandat user 2026-10-10) — la tâche qui le justifierait remonte à ai-01 ; sur ai-01, justification écrite dans le prompt. Sous-agent sans `model` explicite = hérite d'opus = violation. Cf [model-delegation.md](.claude/rules/model-delegation.md).
+**Modèle explicite obligatoire** : tout `Agent()` DOIT porter un modèle explicite. Pour la lecture en volume, c'est `subagent_type: "swift-reader"`, sans argument `model` : le fichier d'agent fixe Swift, le vLLM local, qui est gratuit (mandat user 2026-10-27). Sinon, `model: "sonnet"` ou `"haiku"`. `"opus"` **jamais sur les postes po-\***, sauf lane autorisée nommément (cf point 3, `myia-po-2024:CoursIA-3`) (mandat user 2026-10-10) — la tâche qui le justifierait remonte à ai-01 ; sur ai-01, justification écrite dans le prompt. Sous-agent sans `model` explicite = hérite d'opus = violation. Cf [model-delegation.md](.claude/rules/model-delegation.md).
 
 ---
 
