@@ -12916,13 +12916,14 @@ MyIA.AI.Notebooks/Probas/Infer/Infer-05-Causal-Inference.ipynb,41d4daeba16c,mark
 ***
 
 [← Infer-10-Thompson-Sampling](../DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb) | [Retour a la serie](README.md)",,,,,,,,87d3b5021ded0abf,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,ac9ac32a,markdown,fr,53b68a719c02e486,"# Infer-6-Debugging : Troubleshooting et Bonnes Pratiques
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,ac9ac32a,markdown,fr,829f5c30595f375d,"# Infer-02b-Debugging-Bonnes-Pratiques : Troubleshooting et Bonnes Pratiques
 
-**Serie** : Programmation Probabiliste avec Infer.NET (6/19)  
+**Serie** : Programmation Probabiliste avec Infer.NET (2b/19)  
 **Duree estimee** : 45 minutes  
-**Prerequis** : Avoir explore plusieurs notebooks de la serie
+**Prerequis** : [Infer-02-Gaussian-Mixtures](Infer-02-Gaussian-Mixtures.ipynb)
+**Jumeau Python** : [PyMC-02b-Debugging-Python](../PyMC/PyMC-02b-Debugging-Python.ipynb)
 
----
+***
 
 ## Objectifs
 
@@ -12931,17 +12932,17 @@ MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,ac9ac32
 - Utiliser les outils de debug d'Infer.NET
 - Appliquer les bonnes pratiques de modelisation
 
----
+***
 
 ## Navigation
 
-| précédent | Suivant |
+| Précédent | Suivant |
 |-----------|--------|
-| [Infer-7-Skills-IRT](Infer-7-Skills-IRT.ipynb) | [Infer-9-Classification](Infer-9-Classification.ipynb) |
+| [Infer-02-Gaussian-Mixtures](Infer-02-Gaussian-Mixtures.ipynb) | [Infer-03-Factor-Graphs](Infer-03-Factor-Graphs.ipynb) |
 
----",,,,,,,,53b68a719c02e486,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,d07125c0,markdown,fr,e79ffbc6e4857f98,## 1. Configuration,,,,,,,,e79ffbc6e4857f98,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,44f53923,code,fr,fd31f5683405067d,"#r ""nuget: Microsoft.ML.Probabilistic""
+***",,,,,,,,829f5c30595f375d,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,d07125c0,markdown,fr,e79ffbc6e4857f98,## 1. Configuration,,,,,,,,e79ffbc6e4857f98,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,44f53923,code,fr,fd31f5683405067d,"#r ""nuget: Microsoft.ML.Probabilistic""
 #r ""nuget: Microsoft.ML.Probabilistic.Compiler""
 
 using Microsoft.ML.Probabilistic;
@@ -12953,7 +12954,7 @@ using Microsoft.ML.Probabilistic.Algorithms;
 using Microsoft.ML.Probabilistic.Compiler;
 
 Console.WriteLine(""Infer.NET pret !"");",,,,,,,,fd31f5683405067d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,a25ed2c0,markdown,fr,45e505466d710fa3,"### Packages charges
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,a25ed2c0,markdown,fr,45e505466d710fa3,"### Packages charges
 
 | Package | rôle |
 |---------|------|
@@ -12964,7 +12965,7 @@ Les namespaces importants pour le debugging sont :
 - `Algorithms` : contient `ExpectationPropagation`, `VariationalMessagePassing`, `GibbsSampling`
 - `Compiler` : options de compilation et generation de code
 - `Distributions` : tous les types de distributions (Gaussian, Gamma, Beta, etc.)",,,,,,,,45e505466d710fa3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,494e6908,markdown,fr,67148384d6b05a04,"> **Note technique** : Ce notebook est oriente *troubleshooting*. Il suppose que vous avez déjà explore plusieurs notebooks de la serie et rencontre des comportements inattendus. Les exemples sont volontairement simplifies pour isoler chaque type de problème.
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,494e6908,markdown,fr,67148384d6b05a04,"> **Note technique** : Ce notebook est oriente *troubleshooting*. Il suppose que vous avez déjà explore plusieurs notebooks de la serie et rencontre des comportements inattendus. Les exemples sont volontairement simplifies pour isoler chaque type de problème.
 
 Le debugging en programmation probabiliste differe du debugging classique :
 
@@ -12973,7 +12974,7 @@ Le debugging en programmation probabiliste differe du debugging classique :
 | Erreur = crash ou mauvaise valeur | Erreur = distribution inattendue ou divergence |
 | Cause souvent déterministe | Cause souvent liee aux priors ou a l'algorithme |
 | Solution : corriger le code | Solution : ajuster le modèle ou l'algorithme |",,,,,,,,67148384d6b05a04,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,dab43cc2,markdown,fr,bb007ed39f952f0a,"### Outil de visualisation
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,dab43cc2,markdown,fr,bb007ed39f952f0a,"### Outil de visualisation
 
 Le `FactorGraphHelper` est un utilitaire qui permet d'afficher les **graphes de facteurs** generes par Infer.NET directement dans le notebook. Ces graphes sont essentiels pour :
 
@@ -12982,13 +12983,13 @@ Le `FactorGraphHelper` est un utilitaire qui permet d'afficher les **graphes de 
 - **Comprendre le flux** des messages d'inference
 
 > **Prerequis** : Graphviz doit etre installe sur le système pour generer les visualisations SVG. Si Graphviz n'est pas disponible, le helper retournera `False` et les graphes ne seront pas affichés.",,,,,,,,bb007ed39f952f0a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,8b121887,code,fr,2f12d02d6daa9b7c,"// Chargement du helper pour afficher les graphes de facteurs inline
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,8b121887,code,fr,80bbd7d4955d01dd,"// Chargement du helper pour afficher les graphes de facteurs inline
 #load ""FactorGraphHelper.cs""
 
 Console.WriteLine(""FactorGraphHelper charge !"");
 Console.WriteLine($""Graphviz disponible : {FactorGraphHelper.IsGraphvizAvailable()}"");
-Console.WriteLine(""Usage: display(HTML(FactorGraphHelper.GetLatestFactorGraphHtml()))"");",,,,,,,,2f12d02d6daa9b7c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,a9dc8cd5,markdown,fr,894bdfd6381c017b,"## 2. Erreurs Courantes et Solutions
+Console.WriteLine(""Usage: FactorGraphHelper.GetLatestFactorGraphHtml().DisplayAs(\""text/html\"")"");",,,,,,,,80bbd7d4955d01dd,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,a9dc8cd5,markdown,fr,894bdfd6381c017b,"## 2. Erreurs Courantes et Solutions
 
 ### 2.1 Catalogue des Erreurs
 
@@ -12999,7 +13000,7 @@ MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,a9dc8cd
 | `Could not find method` | opération non supportee | Reformuler avec des opérations de base |
 | `Compilation timeout` | modèle trop complexe | Simplifier ou compiler separement |
 | `Memory exceeded` | Trop de variables | Reduire la taille ou utiliser des arrays |",,,,,,,,894bdfd6381c017b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,bf173d0e,code,fr,0ac5122dfe45c8f4,"// Exemple 1 : Erreur ""Model has no support""
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,bf173d0e,code,fr,0ac5122dfe45c8f4,"// Exemple 1 : Erreur ""Model has no support""
 
 Console.WriteLine(""=== Erreur : Model has no support ==="");
 Console.WriteLine();
@@ -13027,15 +13028,15 @@ x2.ObservedValue = 100;
 InferenceEngine engine2 = new InferenceEngine();
 engine2.Compiler.CompilerChoice = CompilerChoice.Roslyn;
 Console.WriteLine($""Resultat avec prior large : {engine2.Infer(x2)}"");",,,,,,,,0ac5122dfe45c8f4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,5253129a,markdown,fr,5cfc0c96d53064da,"**Interpretation des résultats** :
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,5253129a,markdown,fr,3d0a3d06457d8082,"**Interpretation des résultats** :
 
 Le résultat `Gaussian.PointMass(100)` signifie que le posterieur est une distribution degeneree concentree exactement sur la valeur observee. C'est le comportement attendu quand :
 
 1. L'observation est déterministe (`ObservedValue`)
 2. Le prior est suffisamment large pour ""accepter"" cette valeur
 
-> **règle pratique** : Si votre prior a une precision `prec`, alors les observations situees a plus de `3/sqrt(prec)` ecarts-types du centre auront un support quasi-nul. Avec `prec=1000`, cela represente environ `0.1` unites autour de la moyenne.",,,,,,,,5cfc0c96d53064da,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,0c43ebcb,code,fr,d6a8a05cc7176276,"// Visualisation du factor graph pour comprendre le probleme de support
+> **règle pratique** : Si votre prior a une precision `prec`, alors les observations situees a plus de `3/sqrt(prec)` unites (soit 3 ecarts-types) du centre auront un support quasi-nul. Avec `prec=1000`, cela represente environ `0.1` unites autour de la moyenne.",,,,,,,,3d0a3d06457d8082,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,0c43ebcb,code,fr,2f7b01c955b38630,"// Visualisation du factor graph pour comprendre le probleme de support
 
 Console.WriteLine(""=== Visualisation : Modele avec prior large ==="");
 
@@ -13052,14 +13053,14 @@ Console.WriteLine($""Resultat : {resultVis}"");
 Console.WriteLine();
 Console.WriteLine(""Le factor graph montre la structure simple : prior -> observation"");
 
-display(HTML(FactorGraphHelper.GetLatestFactorGraphHtml()));
-FactorGraphHelper.CleanupGeneratedFiles();",,,,,,,,d6a8a05cc7176276,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,b7352fbf,markdown,fr,2d07b3773697bf9b,"### 2.2 problème de convergence
+FactorGraphHelper.GetLatestFactorGraphHtml().DisplayAs(""text/html"");
+FactorGraphHelper.CleanupGeneratedFiles();",,,,,,,,2f7b01c955b38630,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,b7352fbf,markdown,fr,2d07b3773697bf9b,"### 2.2 problème de convergence
 
 Le deuxième type d'erreur courant concerne la **convergence vers des modes non désirés**. Cela se produit souvent dans les modèles de mélange où les variables ont des rôles symétriques.
 
 > **Choix de paramètre (transparence)** — la cellule suivante illustre la défaillance avec un prior symétrique de précision `prec=10`. Avec un prior beaucoup plus plat (`prec=0.01`, à peine informatif), EP **diverge numériquement** sur ces données bimodales : la magnitude des moyennes postérieures explosait (~1e71 à 1e74) et n'était **pas reproductible** d'un processus à l'autre (mesuré po-2026 c.743). `prec=10` rend le collapse symétrique **net et reproductible** (3 runs identiques sur 3) : le paramètre est changé pour rendre l'échec *démontrable et exploitable* pédagogiquement, pas pour le masquer. Le contraste qui suit (prior asymétrique) montre ensuite comment *réparer* cette convergence.",,,,,,,,2d07b3773697bf9b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,eec72b8b,code,fr,7690be7edaaed04d,"// Exemple 2 : Probleme de convergence — EP sur un melange gaussien bimodal.
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,eec72b8b,code,fr,7690be7edaaed04d,"// Exemple 2 : Probleme de convergence — EP sur un melange gaussien bimodal.
 // Demo mesurable (mesure po-2026 c.743) : on rend la defaillance reproductible
 // au lieu de se contenter de la decrire en prose.
 
@@ -13132,7 +13133,7 @@ Console.WriteLine(""--- Cas 2 : Prior asymetrique  means[0] ~ G(-5,1), means[1] 
     Console.WriteLine(""  -> Convergence : les deux modes sont separement identifies."");
 }
 ",,,,,,,,7690be7edaaed04d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,6e92fe00,markdown,fr,218938f4083095cd,"### Le problème du ""label switching""
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,6e92fe00,markdown,fr,218938f4083095cd,"### Le problème du ""label switching""
 
 Dans les modèles de melange, le problème des modes symetriques est connu sous le nom de **label switching**. Si les composantes sont echangeables (même prior), l'inference peut :
 
@@ -13146,7 +13147,7 @@ Les solutions incluent :
 | Priors asymetriques | Simple a implementer | Introduit un biais |
 | Contraintes d'ordre | Mathematiquement propre | Complexifie le modèle |
 | Post-traitement | Pas de biais | Necessite analyse manuelle |",,,,,,,,218938f4083095cd,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,1f0748dd,markdown,fr,8759d84f94ba5368,"## 3. Comparaison des Algorithmes d'Inference
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,1f0748dd,markdown,fr,8759d84f94ba5368,"## 3. Comparaison des Algorithmes d'Inference
 
 ### Quand utiliser quel algorithme ?
 
@@ -13155,7 +13156,7 @@ MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,1f0748d
 | **EP** | Rapide, bon pour melanges continus | Peut diverger, approximatif | modèles Gaussian, Probit |
 | **VMP** | Stable, bon pour discret | Sous-estime l'incertitude | LDA, melanges categoriques |
 | **Gibbs** | Exact asymptotiquement | Lent, diagnostics difficiles | Validation, petits modèles |",,,,,,,,8759d84f94ba5368,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,2ba52cb8,markdown,fr,3b164e400ea694ba,"La cellule suivante compare EP et VMP sur un problème simple d'estimation de moyenne avec precision inconnue.
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,2ba52cb8,markdown,fr,3b164e400ea694ba,"La cellule suivante compare EP et VMP sur un problème simple d'estimation de moyenne avec precision inconnue.
 
 **Configuration du test** :
 - 6 observations autour de 2.0
@@ -13163,7 +13164,7 @@ MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,2ba52cb
 - Prior informatif sur la precision : Gamma(2, 0.5)
 
 Ce type de modèle (données gaussiennes avec paramètres inconnus) est un cas classique ou EP et VMP donnent des résultats comparables mais avec des niveaux d'incertitude différents.",,,,,,,,3b164e400ea694ba,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,dc2083be,code,fr,c6e2091dad9acf4f,"// Comparaison EP vs VMP sur un modele simple
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,dc2083be,code,fr,c6e2091dad9acf4f,"// Comparaison EP vs VMP sur un modele simple
 
 Console.WriteLine(""=== Comparaison EP vs VMP ==="");
 Console.WriteLine();
@@ -13218,11 +13219,11 @@ Console.WriteLine($""EP  : {resultEP}"");
 Console.WriteLine($""VMP : {resultVMP}"");
 Console.WriteLine();
 Console.WriteLine(""Note : VMP tend a avoir une variance plus faible (sous-estime l'incertitude)"");",,,,,,,,c6e2091dad9acf4f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,b3cf74e4,markdown,fr,20ac8847f895ae8d,"**Interpretation des résultats EP vs VMP** :
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,b3cf74e4,markdown,fr,365e7a7422394558,"**Interpretation des résultats EP vs VMP** :
 
 Les deux algorithmes estiment la moyenne autour de 2.05 (proche de la moyenne empirique 2.05), mais avec des caractéristiques différentes :
 
-| Metrique | EP | VMP | Interpretation |
+| Métrique | EP | VMP | Interpretation |
 |----------|----|----|----------------|
 | Moyenne posterieure | ~2.05 | ~2.05 | Accord sur l'estimation ponctuelle |
 | Variance posterieure | Plus large | Plus etroite | VMP sous-estime l'incertitude |
@@ -13236,8 +13237,8 @@ Les deux algorithmes estiment la moyenne autour de 2.05 (proche de la moyenne em
 **Quand cela importe** : La sous-estimation de l'incertitude par VMP peut etre problematique pour :
 - La prise de decision sous incertitude
 - Les intervalles de prediction
-- La propagation de l'incertitude dans des modèles hiérarchiques",,,,,,,,20ac8847f895ae8d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,30ed2236,code,fr,18d3ab72fe0ec00b,"// Exercice : Diagnostic d'un modele de melange gaussien
+- La propagation de l'incertitude dans des modèles hiérarchiques",,,,,,,,365e7a7422394558,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,30ed2236,code,fr,18d3ab72fe0ec00b,"// Exercice : Diagnostic d'un modele de melange gaussien
 
 // Modele avec problemes (a corriger)
 double[] dataMelange = { -4.2, -3.8, -5.1, -4.5, -3.9, 5.3, 4.8, 5.1, 4.6, 5.5 };
@@ -13261,7 +13262,7 @@ int nComposantes = 2;
 // TODO 5 : Executer l'inference et verifier les posterieurs avec DiagnosticGaussian()
 
 Console.WriteLine(""Exercice a completer : diagnostiquer et corriger le melange gaussien"");",,,,,,,,18d3ab72fe0ec00b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,c3138f24,markdown,fr,24f0998d1fbc4b9f,"## Exercice 1 : Diagnostic d'un modèle de melange gaussien
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,c3138f24,markdown,fr,fdfd5547fb2c637d,"## Exercice 1 : Diagnostic d'un modèle de melange gaussien
 
 **Objectif** : Identifiez et corrigez les problemes dans un modèle de melange gaussien a 2 composantes.
 
@@ -13273,10 +13274,10 @@ MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,c3138f2
 3. Comparez les résultats obtenus avec EP et VMP sur votre modèle corrige
 
 **Indices** :
-- # Indice 1 : Les composantes d'un melange doivent avoir des priors distincts pour eviter le label switching
-- # Indice 2 : Testez avec `engine.ShowProgress = true` pour observer la convergence
-- # Indice 3 : Utilisez `DiagnosticGaussian()` pour verifier la sante des posterieurs",,,,,,,,24f0998d1fbc4b9f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,ae3b9309,code,fr,a78b182c47af59d0,"// Visualisation du factor graph du modele EP vs VMP
+- **Indice** 1 : Les composantes d'un melange doivent avoir des priors distincts pour eviter le label switching
+- **Indice** 2 : Testez avec `engine.ShowProgress = true` pour observer la convergence
+- **Indice** 3 : Utilisez `DiagnosticGaussian()` pour verifier la sante des posterieurs",,,,,,,,fdfd5547fb2c637d,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,ae3b9309,code,fr,6bc560832b6889cc,"// Visualisation du factor graph du modele EP vs VMP
 // Le graphe est identique pour les deux algorithmes - seul le calcul des messages differe
 
 // TODO etudiant : Implementer la visualisation du factor graph du modele EP vs VMP.
@@ -13285,10 +13286,10 @@ MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,ae3b930
 // Indice 2 : creer Variable<double> mean = ... .Named(""mean"") et Variable<double> prec = ... .Named(""precision"")
 // Indice 3 : creer VariableArray<double> obs[r] = Variable.GaussianFromMeanAndPrecision(mean, prec).ForEach(r)
 // Indice 4 : InferenceEngine engVis = new InferenceEngine(); engVis.ShowFactorGraph = true;
-// Indice 5 : afficher avec display(HTML(FactorGraphHelper.GetLatestFactorGraphHtml())) et nettoyer via FactorGraphHelper.CleanupGeneratedFiles()
+// Indice 5 : afficher avec FactorGraphHelper.GetLatestFactorGraphHtml().DisplayAs(""text/html"") et nettoyer via FactorGraphHelper.CleanupGeneratedFiles()
 
-Console.WriteLine(""Exercice a completer : visualiser le factor graph EP vs VMP"");",,,,,,,,a78b182c47af59d0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,b6eceb8b,markdown,fr,b0f62b7dbd89168b,"## 4. Outils de Debug Infer.NET
+Console.WriteLine(""Exercice a completer : visualiser le factor graph EP vs VMP"");",,,,,,,,6bc560832b6889cc,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,b6eceb8b,markdown,fr,b0f62b7dbd89168b,"## 4. Outils de Debug Infer.NET
 
 ### 4.1 Options du Moteur
 
@@ -13299,7 +13300,7 @@ engine.ShowFactorGraph = true;        // Genere le graphe de facteurs
 engine.Compiler.WriteSourceFiles = true;  // Sauvegarde le code genere
 engine.Compiler.ShowWarnings = true;  // Affiche les avertissements
 ```",,,,,,,,b0f62b7dbd89168b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,db40c3b5,code,fr,8d3916b0b1c1d206,"// Demonstration des outils de debug
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,db40c3b5,code,fr,8d3916b0b1c1d206,"// Demonstration des outils de debug
 
 Console.WriteLine(""=== Outils de Debug ==="");
 Console.WriteLine();
@@ -13323,7 +13324,7 @@ Console.WriteLine();
 
 var muPost = debugEngine.Infer<Gaussian>(mu);
 Console.WriteLine($""\nResultat : mu ~ {muPost}"");",,,,,,,,8d3916b0b1c1d206,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,9e8de416,markdown,fr,226ac5c1c5b7b5ab,"**Interpretation du résultat** :
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,9e8de416,markdown,fr,226ac5c1c5b7b5ab,"**Interpretation du résultat** :
 
 Le posterieur `Gaussian(2.5, 0.5)` resulte de la mise a jour bayesienne :
 
@@ -13332,10 +13333,10 @@ $$\mu_{\text{post}} = \frac{\tau_{\text{prior}} \cdot \mu_{\text{prior}} + \tau_
 $$\tau_{\text{post}} = \tau_{\text{prior}} + \tau_{\text{likelihood}} = 1 + 1 = 2 \quad \Rightarrow \quad \sigma^2_{\text{post}} = 0.5$$
 
 Ou $\tau$ represente la precision (inverse de la variance). Le posterieur est exactement a mi-chemin entre le prior (0) et l'observation (5), car les deux ont la même precision.",,,,,,,,226ac5c1c5b7b5ab,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,1bddf40b,markdown,fr,dad806c331de2eac,"### 4.2 Visualisation des Factor Graphs
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,1bddf40b,markdown,fr,dad806c331de2eac,"### 4.2 Visualisation des Factor Graphs
 
 L'option `ShowFactorGraph = true` genere des fichiers `.gv` (DOT) et `.svg` (si Graphviz est installe). Le helper `FactorGraphHelper` permet d'afficher ces graphes directement dans le notebook.",,,,,,,,dad806c331de2eac,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,2c02d077,code,fr,49b6bb61fabaf1eb,"// Demonstration de la visualisation du Factor Graph
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,2c02d077,code,fr,d900e15abd951176,"// Demonstration de la visualisation du Factor Graph
 
 Console.WriteLine(""=== Visualisation du Factor Graph ==="");
 Console.WriteLine();
@@ -13358,18 +13359,18 @@ var hyperMeanPost = fgEngine.Infer<Gaussian>(hyperMean);
 Console.WriteLine($""Resultat : hyperMean ~ {hyperMeanPost}"");
 
 // Afficher le factor graph inline
-display(HTML(FactorGraphHelper.GetLatestFactorGraphHtml()));
+FactorGraphHelper.GetLatestFactorGraphHtml().DisplayAs(""text/html"");
 
 // Nettoyer les fichiers generes
 int cleaned = FactorGraphHelper.CleanupGeneratedFiles();
-Console.WriteLine($""\nFichiers nettoyes : {cleaned}"");",,,,,,,,49b6bb61fabaf1eb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,8bb873fa,markdown,fr,c35b3d769469401e,"### Comment lire un Factor Graph ?
+Console.WriteLine($""\nFichiers nettoyes : {cleaned}"");",,,,,,,,d900e15abd951176,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,8bb873fa,markdown,fr,43587e6b51a05c50,"### Comment lire un Factor Graph ?
 
 Le graphe de facteurs visualise la structure du modèle probabiliste :
 
 | élément | Representation | Signification |
 |---------|----------------|---------------|
-| **Cercles** | Variables | Variables aleatoires du modèle |
+| **Cercles** | Variables | Variables aléatoires du modèle |
 | **Carres** | Facteurs | Distributions ou contraintes |
 | **Aretes** | Connexions | Dependances entre variables et facteurs |
 | **Couleur grise** | Observe | Variables avec valeurs fixees |
@@ -13382,8 +13383,8 @@ Le graphe de facteurs visualise la structure du modèle probabiliste :
 > 3. Il n'y a pas de composantes deconnectees
 > 4. La structure hiérarchique est correcte
 
-Dans le graphe ci-dessus, on voit que `hyperMean` et `hyperPrec` sont les hyperparametres partages par les deux observations `obs1` et `obs2`, formant un modèle hiérarchique classique.",,,,,,,,c35b3d769469401e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,789a576f,markdown,fr,a984ad3f08a37ca1,"## 5. Bonnes Pratiques de Modelisation
+Dans le graphe ci-dessus, on voit que `hyperMean` et `hyperPrec` sont les hyperparamètres partages par les deux observations `obs1` et `obs2`, formant un modèle hiérarchique classique.",,,,,,,,43587e6b51a05c50,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,789a576f,markdown,fr,a984ad3f08a37ca1,"## 5. Bonnes Pratiques de Modelisation
 
 ### 5.1 Nommage des Variables
 
@@ -13403,7 +13404,7 @@ Variable<double> x = Variable.GaussianFromMeanAndPrecision(0, 1);
 | Precision inconnue | Gamma(2, 0.5) ou plus concentre |
 | Probabilite | Beta(1, 1) pour uniforme, Beta(2, 2) pour centre |
 | Poids melange | Dirichlet(1, 1, ...) pour uniforme |",,,,,,,,a984ad3f08a37ca1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,a75ff186,markdown,fr,b55bc3cb96678a7e,"### Demonstration de l'impact des priors
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,a75ff186,markdown,fr,b55bc3cb96678a7e,"### Demonstration de l'impact des priors
 
 Le choix des priors est souvent la source principale de problemes en programmation probabiliste. Un prior mal choisi peut :
 
@@ -13412,7 +13413,7 @@ Le choix des priors est souvent la source principale de problemes en programmati
 3. **Ralentir la convergence** : si le prior est très différent des données
 
 La cellule suivante illustre l'impact de différents priors Beta sur l'estimation d'une probabilite binomiale avec seulement 5 observations.",,,,,,,,b55bc3cb96678a7e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,296b6925,code,fr,c145de2436fb250e,"// Demonstration de l'importance des priors
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,296b6925,code,fr,c145de2436fb250e,"// Demonstration de l'importance des priors
 
 Console.WriteLine(""=== Impact du choix des Priors ==="");
 Console.WriteLine();
@@ -13448,7 +13449,7 @@ foreach (var (nom, a, b) in priors)
 
 Console.WriteLine();
 Console.WriteLine(""Observation : Le prior influence le posterieur, surtout avec peu de donnees."");",,,,,,,,c145de2436fb250e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,0f63b0a3,markdown,fr,7ec7d8ec65c9ccee,"**Analyse detaillee des résultats** :
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,0f63b0a3,markdown,fr,7ec7d8ec65c9ccee,"**Analyse detaillee des résultats** :
 
 | Prior | Alpha | Beta | Moyenne prior | Moyenne posterieure | Ecart au MLE |
 |-------|-------|------|---------------|---------------------|--------------|
@@ -13470,24 +13471,24 @@ $$\mathbb{E}[p \mid \text{data}] = \frac{\alpha + \text{succes}}{\alpha + \beta 
 > - Le prior **biaise** (Beta(8,2)) domine les observations et maintient une estimation elevee
 >
 > La force de l'effet du prior depend du ratio entre les pseudo-observations du prior ($\alpha + \beta$) et les observations reelles (5 dans cet exemple).",,,,,,,,7ec7d8ec65c9ccee,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,16fa038a,code,fr,5734526b292791ad,"// Exercice : Test de depistage et impact du prior
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,16fa038a,code,fr,5734526b292791ad,"// Exercice : Test de depistage et impact du prior
 // TODO etudiant : Creer un modele pour un test medical avec sensibilite=0.9, faux_positifs=0.05
 // TODO etudiant : Observer un resultat positif et calculer P(malade | test+)
 // Indice : Utilisez Variable.Bernoulli pour la maladie et If/IfNot pour la vraisemblance du test
 Console.WriteLine(""Exercice a completer : test de depistage medical"");",,,,,,,,5734526b292791ad,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,835a51ef,markdown,fr,d30cdd8a787cb651,"### Exercice 2 : Impact du prior sur un diagnostic medical
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,835a51ef,markdown,fr,4e9c0f79c7235c5d,"### Exercice 2 : Impact du prior sur un diagnostic medical
 
 **Objectif** : Modeliser un test de depistage avec des priors différents et observer l'impact sur le diagnostic posterieur.
 
 **Contexte** : Un test medical a un taux de faux positifs de 5% et un taux de sensibilite de 90%. La prevalence de la maladie est de 1%. Vous observez un test positif. Quelle est la probabilite que le patient soit reellement malade ?
 
 **Indices** :
-- # Indice 1 : Modelisez la probabilite de maladie avec `Variable.Beta(alpha, beta)` ou `Variable.Bernoulli(prevalence)`
-- # Indice 2 : Testez avec `Beta(1, 99)` (prevalence 1%), puis `Beta(10, 90)` (prevalence 10%)
-- # étape 1 : définir le modèle avec la probabilite de maladie comme variable latente
-- # étape 2 : Ajouter la vraisemblance du test (sensibilite et taux de faux positifs)
-- # étape 3 : Observer un test positif et calculer le posterieur pour différentes prevalences",,,,,,,,d30cdd8a787cb651,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,68678e15,markdown,fr,8f3c76ba728b8564,"## 6. Checklist de Debugging
+- **Indice** 1 : Modelisez la probabilite de maladie avec `Variable.Beta(alpha, beta)` ou `Variable.Bernoulli(prevalence)`
+- **Indice** 2 : Testez avec `Beta(1, 99)` (prevalence 1%), puis `Beta(10, 90)` (prevalence 10%)
+- **Étape** 1 : définir le modèle avec la probabilite de maladie comme variable latente
+- **Étape** 2 : Ajouter la vraisemblance du test (sensibilite et taux de faux positifs)
+- **Étape** 3 : Observer un test positif et calculer le posterieur pour différentes prevalences",,,,,,,,4e9c0f79c7235c5d,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,68678e15,markdown,fr,8f3c76ba728b8564,"## 6. Checklist de Debugging
 
 Quand votre modèle ne fonctionne pas, verifiez :
 
@@ -13506,7 +13507,7 @@ Quand votre modèle ne fonctionne pas, verifiez :
 - [ ] Les posterieurs ne sont pas degeneres (variance > 0)
 - [ ] Les moyennes sont dans des plages raisonnables
 - [ ] Les predictions sur données connues sont correctes",,,,,,,,8f3c76ba728b8564,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,a9510f11,markdown,fr,7a25d0ec482ed18f,"### 6.1 Fonctions de diagnostic automatisees
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,a9510f11,markdown,fr,7a25d0ec482ed18f,"### 6.1 Fonctions de diagnostic automatisees
 
 Plutot que d'inspecter manuellement chaque posterieur, il est recommande de créer des fonctions de diagnostic reutilisables. Les fonctions ci-dessous verifient automatiquement les conditions de sante des posterieurs pour les trois types de distributions les plus courants : Gaussian, Gamma et Beta.
 
@@ -13514,7 +13515,7 @@ Ces fonctions peuvent etre integrees dans un pipeline de validation pour detecte
 - Les distributions degenerees (variance quasi-nulle)
 - Les inferences non informatives (variance très elevee)
 - Les valeurs hors plage attendue",,,,,,,,7a25d0ec482ed18f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,5debce5f,code,fr,959ce82394ceb2b2,"// Fonctions utilitaires de diagnostic pour differents types de distributions
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,5debce5f,code,fr,959ce82394ceb2b2,"// Fonctions utilitaires de diagnostic pour differents types de distributions
 
 void DiagnosticGaussian(Gaussian posterior, string nom)
 {
@@ -13570,7 +13571,7 @@ diagEngine.ShowProgress = false;
 
 var testPost = diagEngine.Infer<Gaussian>(test);
 DiagnosticGaussian(testPost, ""test"");",,,,,,,,959ce82394ceb2b2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,13549bb3,markdown,fr,8d79adeb3b04b1cd,"**Interpretation des diagnostics** :
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,13549bb3,markdown,fr,9bcc5edadd10e067,"**Interpretation des diagnostics** :
 
 Les fonctions de diagnostic ci-dessus verifient plusieurs conditions de sante du posterieur :
 
@@ -13585,7 +13586,7 @@ Pour l'exemple `test`, le diagnostic montre :
 
 > **Bonne pratique** : Integrez ces diagnostics dans vos pipelines d'inference pour detecter automatiquement les cas problematiques, surtout dans les modèles complexes avec de nombreuses variables latentes.
 
----
+***
 
 ## Tableau recapitulatif des concepts
 
@@ -13605,13 +13606,13 @@ Pour l'exemple `test`, le diagnostic montre :
 | **Gaussian** | (mean, precision) | Variables continues, estimations de moyennes |
 | **Gamma** | (shape, scale) | Precisions, variances, taux |
 | **Beta** | (alpha, beta) | Probabilites binomiales, proportions |
-| **Dirichlet** | (alpha_1, ..., alpha_k) | Proportions multinomiales, poids de melange |",,,,,,,,8d79adeb3b04b1cd,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,21f021ad,markdown,fr,98c5a9cd71ab132b,"## 7. Exemple guide : Debugger un modèle
+| **Dirichlet** | (alpha_1, ..., alpha_k) | Proportions multinomiales, poids de melange |",,,,,,,,9bcc5edadd10e067,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,21f021ad,markdown,fr,98c5a9cd71ab132b,"## 7. Exemple guide : Debugger un modèle
 
 ### Enonce
 
 Le modèle ci-dessous a plusieurs problemes. Identifiez et corrigez-les.",,,,,,,,98c5a9cd71ab132b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,1b5bc2d1,code,fr,da829d73fa679f67,"// Visualisation du factor graph du modele corrige
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,1b5bc2d1,code,fr,d820d6e0ad6b566d,"// Visualisation du factor graph du modele corrige
 // Utile pour verifier que la structure est correcte apres debugging
 
 Console.WriteLine(""=== Visualisation : Modele corrige ==="");
@@ -13634,10 +13635,10 @@ Console.WriteLine(""  - 'moyenne' avec prior Gaussian large"");
 Console.WriteLine(""  - 'precision' avec prior Gamma(2, 0.5)"");
 Console.WriteLine(""  - 'observation' conditionnee sur les deux parametres"");
 
-display(HTML(FactorGraphHelper.GetLatestFactorGraphHtml()));
-FactorGraphHelper.CleanupGeneratedFiles();",,,,,,,,da829d73fa679f67,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,184472ac,markdown,fr,55043e83399b5977,A votre tour : identifiez les problemes dans le modèle suivant.,,,,,,,,55043e83399b5977,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,7e3ddf44,code,fr,09d504acc3312bd0,"// Exemple guide : Trouvez les problemes dans ce modele
+FactorGraphHelper.GetLatestFactorGraphHtml().DisplayAs(""text/html"");
+FactorGraphHelper.CleanupGeneratedFiles();",,,,,,,,d820d6e0ad6b566d,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,184472ac,markdown,fr,55043e83399b5977,A votre tour : identifiez les problemes dans le modèle suivant.,,,,,,,,55043e83399b5977,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,7e3ddf44,code,fr,09d504acc3312bd0,"// Exemple guide : Trouvez les problemes dans ce modele
 
 Console.WriteLine(""=== Exercice : Debugger ce modele ==="");
 Console.WriteLine();
@@ -13673,7 +13674,7 @@ Console.WriteLine(""2. Prior sur precision : Gamma(2, 0.5) au lieu de Gamma(0.1,
 Console.WriteLine(""3. Variables nommees avec .Named()"");
 Console.WriteLine();
 Console.WriteLine($""Resultats : moyenne ~ {moyPost}, precision ~ {precPost}"");",,,,,,,,09d504acc3312bd0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,16c3f064,markdown,fr,f4dfe6d601718b5f,"**Analyse des corrections** :
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,16c3f064,markdown,fr,f4dfe6d601718b5f,"**Analyse des corrections** :
 
 | problème original | Consequence | Correction appliquee |
 |-------------------|-------------|----------------------|
@@ -13685,7 +13686,7 @@ MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,16c3f06
 Le résultat corrige montre :
 - **Moyenne ~49.5** : proche de l'observation (50) car le prior est large
 - **Precision ~0.98** : estime a partir d'une seule observation (incertitude elevee)",,,,,,,,f4dfe6d601718b5f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,26679033,markdown,fr,8583f3c093b0a72b,"### Points cles a retenir
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,26679033,markdown,fr,4d9060a4a00205b0,"### Points clés a retenir
 
 > **stratégie de debugging en 3 étapes** :
 >
@@ -13698,8 +13699,8 @@ La plupart des problemes d'inference proviennent de :
 - **Mauvais choix d'algorithme** (EP sur modèle discret, VMP sur correlations fortes)
 - **modèle trop complexe** (simplifier d'abord, complexifier ensuite)
 
----",,,,,,,,8583f3c093b0a72b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,7f896403,markdown,fr,b58f0aa7ce4f8991,"## 8. Resume
+***",,,,,,,,4d9060a4a00205b0,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,7f896403,markdown,fr,0559e69a40f16b5c,"## 8. Resume
 
 | problème | Symptome | Solution |
 |----------|----------|----------|
@@ -13708,14 +13709,14 @@ MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,7f89640
 | **Divergence** | Valeurs infinies ou NaN | Changer d'algorithme ou regulariser |
 | **Lenteur** | Compilation longue | Simplifier le modèle, cacher les types |
 
----
+***
 
 ## Ressources
 
 - [Documentation Infer.NET](https://dotnet.github.io/infer/)
 - [FAQ Troubleshooting](https://dotnet.github.io/infer/userguide/Frequently%20Asked%20Questions.html)
-- [GitHub Issues](https://github.com/dotnet/infer/issues)",,,,,,,,b58f0aa7ce4f8991,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,4064f203,markdown,fr,e28b465e1ab63aa2,"## Exercice 3 : Deboguer un modèle hiérarchique Casse
+- [GitHub Issues](https://github.com/dotnet/infer/issues)",,,,,,,,0559e69a40f16b5c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,4064f203,markdown,fr,e28b465e1ab63aa2,"## Exercice 3 : Deboguer un modèle hiérarchique Casse
 
 ### Enonce
 
@@ -13727,7 +13728,7 @@ Le modèle ci-dessous tente d'estimer les moyennes de performance de 3 groupes, 
 3. Un tableau de données doit etre indexe par l'indice de boucle courant
 
 Corrigez le code et verifiez que les posterieurs correspondent aux moyennes des groupes.",,,,,,,,e28b465e1ab63aa2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,9a8ffd00,code,fr,c45d358084df9902,"// Exercice : Corriger ce modele hierarchique bayesien (3 erreurs)
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,9a8ffd00,code,fr,c45d358084df9902,"// Exercice : Corriger ce modele hierarchique bayesien (3 erreurs)
 int nGroupes = 3;
 int nObs = 4;
 double[][] donneesGroupes = {
@@ -13772,7 +13773,7 @@ for (int g = 0; g < nGroupes; g++)
 // TODO 4 : Inferer et afficher les moyennes de chaque groupe et la moyenne de population
 Console.WriteLine(""Exercice a completer"");
 ",,,,,,,,c45d358084df9902,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,cb86da26,markdown,fr,b78162798cd848c6,"## Conclusion
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,cb86da26,markdown,fr,b78162798cd848c6,"## Conclusion
 
 Ce notebook a couvert les techniques essentielles pour diagnostiquer et corriger les modèles probabilistes Infer.NET.
 
@@ -13791,19 +13792,19 @@ Ce notebook a couvert les techniques essentielles pour diagnostiquer et corriger
 | Beta | Pseudo-observations du prior vs données reelles |
 
 > **Demarche systématique** : Support -> Algorithme -> Posterieurs. La plupart des problemes d'inference proviennent de priors mal specifies ou d'un mauvais choix d'algorithme.",,,,,,,,b78162798cd848c6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,b0c83d62,markdown,fr,59bec0be43c8fabe,"### Exercice 4 : Debugging d'un modèle de regression bayesienne
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,b0c83d62,markdown,fr,c24a7e8a6ebf620b,"### Exercice 4 : Debugging d'un modèle de regression bayesienne
 
 **Objectif** : Identifiez et corrigez les problemes dans un modèle de regression lineaire bayesienne qui produit des posterieurs degeneres.
 
 **Contexte** : Un chercheur tente d'etablir une relation lineaire entre les heures d'étude (`x`) et les scores d'examen (`y`). Le modèle utilise une pente `slope`, une ordonnee a l'origine `intercept` et un bruit `noise`. Malheureusement, les posterieurs sont inutilisables (variance quasi-nulle ou infinie).
 
 **Indices** :
-- # Indice 1 : Verifiez le prior sur la precision du bruit. Un shape < 1 produit une densite infinie en 0.
-- # Indice 2 : La precision du prior sur la pente est-elle adaptee a l'echelle des données (scores sur ~50-100) ?
-- # étape 1 : Identifiez les 2 problemes dans le modèle fourni (prior sur le bruit + precision de la pente)
-- # étape 2 : Corrigez les priors et relancez l'inference
-- # étape 3 : Utilisez `DiagnosticGaussian()` pour verifier la sante des posterieurs corriges",,,,,,,,59bec0be43c8fabe,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,a45745f5,code,fr,f68c31d854d33ed8,"// Exercice : Debugging d'un modele de regression bayesienne
+- **Indice** 1 : Verifiez le prior sur la precision du bruit. Un shape < 1 produit une densite infinie en 0.
+- **Indice** 2 : La precision du prior sur la pente est-elle adaptee a l'echelle des données (scores sur ~50-100) ?
+- **Étape** 1 : Identifiez les 2 problemes dans le modèle fourni (prior sur le bruit + precision de la pente)
+- **Étape** 2 : Corrigez les priors et relancez l'inference
+- **Étape** 3 : Utilisez `DiagnosticGaussian()` pour verifier la sante des posterieurs corriges",,,,,,,,c24a7e8a6ebf620b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,a45745f5,code,fr,f68c31d854d33ed8,"// Exercice : Debugging d'un modele de regression bayesienne
 
 // Donnees : heures d'etude (x) et scores d'examen (y)
 double[] xData = { 2, 4, 6, 8, 10 };
@@ -17207,7 +17208,7 @@ MyIA.AI.Notebooks/Probas/Infer/Infer-05-Causal-Inference.ipynb,cell-401fa4fc,mar
 **Concept** (cf. section 7) : un **renversement de Simpson** survient quand une conclusion s'inverse entre l'analyse agregee et l'analyse conditionnelle - typiquement parce qu'un confondeur `Z` favorise `X` tout en defavorisant `Y` (les patients graves, moins soignes, faussent la moyenne).
 
 **Objectif** : concevoir des CPT produisant un renversement (ex. traitement + age, ou genre + admission Berkeley 1973), puis montrer que `P(Y|X)` agrege **differere** de `P(Y|do(X))` et expliquer le mécanisme. C'est le cas ou la **conclusion naive** (agregee) est causalement **fausse** - le coeur de pourquoi l'ajustement causal importe.",,,,,,,,1d757f2590cbcf4d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,cell-ac3c02c4,markdown,fr,b0d08f849080d542,"## Synthese : la demarche du debuggeur probabiliste
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,cell-ac3c02c4,markdown,fr,6a2a27e298df5081,"## Synthese : la demarche du debuggeur probabiliste
 
 Les quatre exercices de fin illustrent une même realite : en programmation probabiliste, l'erreur se manifeste rarement par un crash, mais par un posterieur **degenere** (variance quasi-nulle ou infinie) ou **non informatif**. Le reflexe du debuggeur classique -- ou est le bug dans le code -- doit ceder la place a une demarche en trois temps, dont chaque exercice isole un symptome.
 
@@ -17225,12 +17226,12 @@ Dans toute la serie, les pannes se ramenent a deux familles :
 
 ### Le factor graph, juge de paix
 
-Quand un posterieur defie l'intuition, le factor graph tranche : il revele les composantes deconnectees, les observations mal indexees (Ex 3, indice 3), et les dependances manquantes. `engine.ShowFactorGraph = true` associe au `FactorGraphHelper` n'est pas une fioriture -- c'est l'equivalent du `print` du debuggeur classique.
+Quand un posterieur defie l'intuition, le factor graph tranche : il revele les composantes deconnectees, les observations mal indexees (Ex 3, indice 3), et les dependances manquantes. `engine.ShowFactorGraph = true` associe au `FactorGraphHelper` n'est pas une fioriture -- c'est l'équivalent du `print` du debuggeur classique.
 
 ### Ce quil faut emporter
 
 Le debugging probabiliste est avant tout un **changement de regard** : un mauvais résultat n'est pas un bug a corriger dans le code, mais un signal que le modèle ou l'algorithme ne correspond pas aux hypotheses implicites des données. La demarche systématique -- **Support, Algorithme, Posterieurs**, validee par les fonctions `DiagnosticGaussian` / `DiagnosticGamma` / `DiagnosticBeta` -- est transferable a tous les notebooks suivants de la serie (modèles hiérarchiques, series temporelles, modèles de recommandation). Gardez-la sous la main : les pannes se ressemblent, seules les distributions changent.
-",,,,,,,,b0d08f849080d542,,,,,,,,,,,,,,,
+",,,,,,,,6a2a27e298df5081,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/Infer/Infer-11-Topic-Models.ipynb,fixed-id-null,markdown,fr,03f1b8154e4104e0,"## Références
 
 | Référence | Section / Numéro | Lien au notebook |
@@ -17775,7 +17776,7 @@ Le sweep d'iterations qu'on a appris sur le collider discret devient, sur le non
 Le diagnostic precedent (cells 30-32) etait une **convergence triviale** sur un modele discret exact. Cette cellule est sa **contrepartie** : la ou EP est *vraiment* iterative et *vraiment* approximative, son etat de sante est mesurable et le diagnostic a une valeur reelle (le cas vague-prior est **un signal d'alarme operationnel**, pas un cas d'ecole). Le mini-batch `nObs=10` est volontairement petit pour rendre la divergence tres visible -- un mini-batch plus grand regulariserait naturellement la posterior et EP, mais le signal apprendrait moins bien.
 
 (Suite a l'issue `jsboige/CoursIA#8892` -- EP mixture collapse diagnostic, qui suit la piste `prec=10` symetrique dans `Infer-02b-Debugging-Bonnes-Pratiques.ipynb` -- le meme theme d'**instabilite d'EP** sous posterior multi-modale. Les deux notebooks se completent : #8892 montre le collapse sur discret, cette cellule montre la divergence sur continu.)",,,,,,,,94bc3431668965cb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,a8595e01,markdown,fr,7623af9bfe6c925e,"### Quand EP devient-elle vraiment instable ? Le cas non-conjugué
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,a8595e01,markdown,fr,7623af9bfe6c925e,"### Quand EP devient-elle vraiment instable ? Le cas non-conjugué
 
 L'exemple conjugué ci-dessus (estimation d'une moyenne gaussienne) est un régime **trop favorable** pour EP : la vraisemblance est gaussienne, donc le marginal exact est lui-même gaussien et EP le retrouve directement — aucune instabilité n'est possible. La ligne « **Peut diverger** » du tableau du §3 ne s'y manifeste pas, et c'est ce qui rend la comparaison ci-dessus trompeuse quant à la faiblesse réelle d'EP.
 
@@ -17783,7 +17784,7 @@ Pour observer le comportement distinctif d'EP, il faut un modèle **non-conjugu�
 
 La cellule suivante construit un tel modèle (2 features, 8 observations linéairement séparables) et mesure la moyenne postérieure du vecteur de poids `w` au fil des itérations, pour EP et VMP. On cherche à voir **comment** EP se comporte quand elle doit approximer : divergence franche (NaN/Inf) ? oscillation ? convergence monotone ?
 ",,,,,,,,7623af9bfe6c925e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,b8595c02,code,fr,4d9c1173f3ebaa47,"// Modèle NON-CONJUGUÉ : régression logistique bayésienne.
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,b8595c02,code,fr,4d9c1173f3ebaa47,"// Modèle NON-CONJUGUÉ : régression logistique bayésienne.
 // Vraisemblance BernoulliFromLogOdds(w.x) : EP doit approcher chaque message,
 // c'est ici que son instabilité (vs le cas conjugué du §3) devient observable.
 double[][] X = new double[][] {
@@ -17829,7 +17830,7 @@ foreach (var algo in new[]{""EP"",""VMP""}) foreach (var it in new[]{1,2,5,10,50
                       + ""   "" + flag);
 }
 ",,,,,,,,4d9c1173f3ebaa47,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,c8595d03,markdown,fr,032e3e0f2ba306d0,"**Lecture du résultat — ce que « EP peut diverger » signifie concrètement** :
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,c8595d03,markdown,fr,032e3e0f2ba306d0,"**Lecture du résultat — ce que « EP peut diverger » signifie concrètement** :
 
 | Algorithme | Itérations 1→2 | Itération ≥ 5 | Verdict mesuré |
 |------------|----------------|---------------|----------------|
@@ -17844,12 +17845,12 @@ Deux faits honnêtes, **mesurés dans la cellule précédente** :
 
 > **Leçon de debugging** : face à un résultat EP surprenant, **augmentez `NumberOfIterations` et observez la trajectoire** plutôt que le seul point final. Une oscillation précoce qui se stabilise (EP ici) se distingue d'une divergence franche (valeurs NaN/Inf, ou croissance monotone non bornée). Le réflexe « EP = instable » est juste mais doit être **diagnostiqué, jamais présupposé** : sur modèle conjugué EP est impeccable (cf. §3 ci-dessus), sur modèle non-conjugué elle oscille mais converge si le modèle est bien posé. C'est cette nuance que la simple ligne de tableau ne pouvait pas capturer.
 ",,,,,,,,032e3e0f2ba306d0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,infer6-debug-loop-8081-md,markdown,fr,ed3bd85f13bc3cbd,"### Étape manquante : faire TOURNER le modèle cassé pour le diagnostiquer
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,infer6-debug-loop-8081-md,markdown,fr,ed3bd85f13bc3cbd,"### Étape manquante : faire TOURNER le modèle cassé pour le diagnostiquer
 
 > **Note (#8081)** : la version initiale de cet exemple guidé laissait le modèle cassé **en commentaire** et passait directement à la version corrigée. Or le geste distinctif d'un notebook de *debugging* est précisément de **faire échouer l'inférence puis de la diagnostiquer** — pas seulement de décrire la panne. On exécute ici le modèle cassé (prior trop concentré, `Gamma` de shape < 1, observation à ~500 écarts-types du centre du prior) et on applique les fonctions `DiagnosticGaussian` / `DiagnosticGamma` du §6.1 pour voir le symptôme **apparaître dans la sortie**, avant d'appliquer les corrections de la cellule suivante.
 
 C'est la boucle *exécuter le modèle suspect → diagnostiquer le posterior → corriger* qui transforme un catalogue d'erreurs en une vraie démarche de débogueur.",,,,,,,,ed3bd85f13bc3cbd,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb,infer6-debug-loop-8081-code,code,fr,7d023cf797f57ada,"// #8081 — Faire TOURNER le modele casse pour voir le symptome (avant de corriger)
+MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,infer6-debug-loop-8081-code,code,fr,7d023cf797f57ada,"// #8081 — Faire TOURNER le modele casse pour voir le symptome (avant de corriger)
 // Le modele ci-dessous est celui laisse en commentaire dans la cellule suivante.
 // On l'execute vraiment pour observer ce que donne une inference mal specifiee,
 // puis on applique les fonctions de diagnostic du §6.1 (definies plus haut, cellule 35).
