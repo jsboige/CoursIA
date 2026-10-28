@@ -137,7 +137,7 @@ La dernière phase ouvre les frontières de la discipline : CFR pour les jeux à
 | 14 | Jeux différentiels — [Python](GameTheory-14-DifferentialGames-Python.ipynb) · [C#](GameTheory-14-DifferentialGames-CSharp.ipynb) | Jeux en temps continu, boucle ouverte et fermée, Stackelberg, poursuite-évasion | 60 min | Licence | — |
 | 15 | Jeux coopératifs — [Python](GameTheory-15-CooperativeGames-Python.ipynb) · [C#](GameTheory-15-CooperativeGames-CSharp.ipynb) | Valeur de Shapley, Core, condition de Bondareva-Shapley | 65 min | Licence | [15b](GameTheory-15b-Lean-CooperativeGames-Lean.ipynb) · [15c](GameTheory-15c-CooperativeGames-Python.ipynb) · [15d](GameTheory-15d-Mobius-Coalitions-Lean-Python.ipynb) · [15e](GameTheory-15e-Coalition-Power-SMT-Python.ipynb) · [15f](GameTheory-15f-Shapley-Groupes-Python.ipynb) · [15g](GameTheory-15g-AssistanceGames-2026-Python.ipynb) |
 | 16 | Conception de mécanismes — [Python](GameTheory-16-MechanismDesign-Python.ipynb) · [C#](GameTheory-16-MechanismDesign-CSharp.ipynb) | Principe de révélation, VCG et la non-monotonie de son revenu, appariement stable de Gale-Shapley | 65 min | Licence | [16b](GameTheory-16b-Automated-Mechanism-Design-Python.ipynb) · [16c](GameTheory-16c-Extraction-de-Revenu-DSIC-IR-Python.ipynb) · [16d](GameTheory-16d-Echange-de-Reins-Lean-Python.ipynb) · [16e](GameTheory-16e-LLM-Players-Othman-Sandholm-Python.ipynb) · [16h](GameTheory-16h-Cooperation-LLM-Python.ipynb) · [16i](GameTheory-16i-Appariage-Stable-Gale-Shapley-Python.ipynb) · [16j](GameTheory-16j-Screening-Loyer-Information-Python.ipynb) · [capstone 21](GameTheory-21-Capstone-Choix-Social-Python.ipynb) · sous-série [SocialChoice](SocialChoice/README.md) |
-| 17 | Apprentissage multi-agent — [Python (WSL)](GameTheory-17-MultiAgent-RL-Python.ipynb) · [C#](GameTheory-17-MultiAgent-RL-CSharp.ipynb) | Self-play, fictitious play, NFSP, PSRO, introduction à AlphaZero | 55 min | Licence | [17b](GameTheory-17b-Asymmetric-Information-Python.ipynb) · [17c](GameTheory-17c-Lean-Lemons-Certificat-Lean.ipynb) · [17c bis](GameTheory-17f-Market-to-Balance-Sheet-Python.ipynb) · [17d](GameTheory-17d-Lean-Screening-Signaling-Lean.ipynb) |
+| 17 | Apprentissage multi-agent — [Python (WSL)](GameTheory-17-MultiAgent-RL-Python.ipynb) · [C#](GameTheory-17-MultiAgent-RL-CSharp.ipynb) | Self-play, fictitious play, NFSP, PSRO, introduction à AlphaZero | 55 min | Licence | [17b](GameTheory-17b-Asymmetric-Information-Python.ipynb) · [17c](GameTheory-17c-Lean-Lemons-Certificat-Lean.ipynb) · [17d](GameTheory-17d-Lean-Screening-Signaling-Lean.ipynb) · [17f](GameTheory-17f-Market-to-Balance-Sheet-Python.ipynb) |
 | 21 | Capstone choix social — [Python](GameTheory-21-Capstone-Choix-Social-Python.ipynb) | La sous-série SocialChoice depuis la série mère : témoins d'Arrow et cycle de Condorcet par le code, Gale-Shapley vérifié, lecture mesurée du lake | 30 min | Licence | sous-série [SocialChoice](SocialChoice/README.md) |
 
 Les trois figures suivantes échantillonnent cette phase : l'apprentissage d'un équilibre en information imparfaite, la stabilité coopérative, la convergence d'agents en auto-apprentissage.
@@ -187,15 +187,15 @@ Une lettre creuse le palier dont elle porte le numéro. On l'ouvre pour aller pl
 
 ### Autour de 03 — géométrie ordinale des jeux
 
-Ces lettres prolongent la table périodique du 03 en une géométrie de l'espace des jeux : murs, distances, déformations, méta-actions. Lire 03b avant 03a et 03h, qui s'appuient sur ses murs ; 03e fait la synthèse.
+Ces lettres prolongent la table périodique du 03 en une géométrie de l'espace des jeux : murs, distances, déformations, méta-actions. Lire 03c avant 03b et 03f, qui s'appuient sur ses murs ; 03e fait la synthèse.
 
 | Lettre | Notebook | Ce qu'il ajoute | Noyau | Public |
 |--------|----------|-----------------|-------|--------|
-| 03b | [Chambres et murs](GameTheory-03c-Chambres-et-Murs-Python.ipynb) | Les jeux stricts comme chambres d'un arrangement, les égalités comme murs : incidence mur/chambre, graphe des chambres, swaps en longueurs de Coxeter | Python | Recherche |
-| 03a | [Chemins de swaps](GameTheory-03b-Chemins-de-Swaps-Lean-Python.ipynb) | À quelle distance sont deux jeux : parcours en largeur, théorème de décomposition, certificat Lean indépendant du plus court chemin | Python | Licence |
-| 03f | [Deux espèces de flèches](GameTheory-03f-Deux-Especes-de-Fleches-Python.ipynb) | Le théorème fini du chemin minimal : quand un swap traverse un mur ; la conjecture naïve réfutée, la condition exacte vérifiée | Python | Recherche |
-| 03c | [Le joueur LLM](GameTheory-03d-Le-Joueur-LLM-Python.ipynb) | Un modèle de langage placé dans la table périodique et confronté à ses transformations ordinales | Python | Licence |
+| 03b | [Chemins de swaps](GameTheory-03b-Chemins-de-Swaps-Lean-Python.ipynb) | À quelle distance sont deux jeux : parcours en largeur, théorème de décomposition, certificat Lean indépendant du plus court chemin | Python | Licence |
+| 03c | [Chambres et murs](GameTheory-03c-Chambres-et-Murs-Python.ipynb) | Les jeux stricts comme chambres d'un arrangement, les égalités comme murs : incidence mur/chambre, graphe des chambres, swaps en longueurs de Coxeter | Python | Recherche |
+| 03d | [Le joueur LLM](GameTheory-03d-Le-Joueur-LLM-Python.ipynb) | Un modèle de langage placé dans la table périodique et confronté à ses transformations ordinales | Python | Licence |
 | 03e | [Méta-actions tarifées](GameTheory-03e-Meta-Actions-Tarifees-Python.ipynb) | Changer les règles comme action payante : coût en échelons de rang, seuil de migration, méta-jeu ; puis le parcours complet, du jeu nommé au coût de la méta-action | Python | Recherche |
+| 03f | [Deux espèces de flèches](GameTheory-03f-Deux-Especes-de-Fleches-Python.ipynb) | Le théorème fini du chemin minimal : quand un swap traverse un mur ; la conjecture naïve réfutée, la condition exacte vérifiée | Python | Recherche |
 
 ### Autour de 04 — existence et nature de l'équilibre
 
@@ -304,9 +304,9 @@ L'agrégation des préférences (Arrow, vote, manipulation) se poursuit dans la 
 | 17b | [Information asymétrique](GameTheory-17b-Asymmetric-Information-Python.ipynb) | Les modèles fondateurs : Akerlof (marché des citrons), Spence (signal coûteux), Rothschild-Stiglitz (screening), Wilson-Miyazaki | Python | Licence |
 | 17c | [Certificat d'Akerlof en Lean](GameTheory-17c-Lean-Lemons-Certificat-Lean.ipynb) | Le certificat du lake `asymmetric_information_lean` exécuté : seuil de pooling exact, monotonie, spirale de prix | Lean | Recherche |
 | 17d | [Screening et signaling en Lean](GameTheory-17d-Lean-Screening-Signaling-Lean.ipynb) | Les autres modules du même lake : non-existence de Rothschild-Stiglitz, intervalle séparateur de Spence et minimalité de Riley, Wilson-Miyazaki, pont bayésien | Lean | Recherche |
-| 17c bis | [Du marché au bilan](GameTheory-17f-Market-to-Balance-Sheet-Python.ipynb) | L'équilibre de marché lu comme un bilan d'espérances : le pont vers la théorie de la décision | Python | Licence |
+| 17f | [Du marché au bilan](GameTheory-17f-Market-to-Balance-Sheet-Python.ipynb) | L'équilibre de marché lu comme un bilan d'espérances : le pont vers la théorie de la décision | Python | Licence |
 
-La lettre 17c est portée par deux notebooks ; la passe de renommage leur donnera des lettres distinctes.
+**17f est le capstone de la chaîne 17** : il relit l'équilibre de marché comme un bilan d'espérances et ouvre sur la théorie de la décision. La chaîne porte cinq lettres (b à f), dérogation documentée à la norme de quatre — le capstone est la cinquième, il ne peut pas être replié sur 17c.
 
 ### Escalier Dynamics — biens publics et dilemmes N-personnes
 
@@ -579,7 +579,7 @@ La série aligne simulation numérique et preuve formelle : les notebooks motive
 | `game_theory_lean` (module CooperativeGames) | Bondareva-Shapley sans `sorry` (#3954), Core non vide sous équilibrage | 15, 15b |
 | `game_theory_lean` (module StableMarriage) | Gale-Shapley : existence et optimalité côté proposant | 15b, 16 |
 | `game_theory_lean` (module RepeatedGames) | Grim trigger certifié sans `sorry` (#4880) ; le Folk Theorem complet reste ouvert (`Folk.lean`) | 06b, 06c |
-| `game_theory_lean` (module Swaps) | Certificat du plus court chemin de swaps | 03a |
+| `game_theory_lean` (module Swaps) | Certificat du plus court chemin de swaps | 03b |
 | `minimax_lean` | Théorème minimax de von Neumann, via Sion | 05b |
 | `lean_game_defs`, `lean_game_defs_ext` | Types de jeux partagés ; Vickrey sans `sorry` | 02b, 08b, 11b, 17d |
 | `conway_cgt_lean` | Visite de la théorie des jeux combinatoires de Conway (`vihdzp/combinatorial-games`) | 08d |
