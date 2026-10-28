@@ -421,7 +421,7 @@ theorem verifyR2Fwd_implies_verifyBigonDownAny {d D : KnotDiagram}
     | none => simp [verifyR2Fwd, hK₂, hK₁] at h
     | some K₁ =>
       simp only [verifyR2Fwd, hK₂, hK₁, Bool.and_eq_true] at h
-      obtain ⟨⟨⟨⟨⟨hwf1, hwf2⟩, hn⟩, hform₂⟩, hform₁⟩, hanyi⟩ := h
+      obtain ⟨⟨⟨hwf1, hwf2⟩, hn⟩, hform₂, hform₁, hanyi⟩ := h
       obtain ⟨hb2, hb3, hb4, ha1, han, hmem⟩ := of_decide_eq_true hform₂
       obtain ⟨hc1, hc2, hc3, hc4⟩ := of_decide_eq_true hform₁
       rw [List.any_eq_true] at hanyi
@@ -446,8 +446,14 @@ theorem verifyR2Fwd_implies_verifyBigonDownAny {d D : KnotDiagram}
       have hne₁ : D.crossings.dropLast ≠ [] := fun hc => by
         rw [hc] at hK₁; simp at hK₁
       have hlen : d.crossings.length + 2 = D.crossings.length := by
-        have h1 := List.length_dropLast hneD
-        have h2 := List.length_dropLast hne₁
+        have h1 : D.crossings.dropLast.length = D.crossings.length - 1 :=
+          List.length_dropLast
+        have h2 : D.crossings.dropLast.dropLast.length
+            = D.crossings.dropLast.length - 1 := List.length_dropLast
+        have hpD : 0 < D.crossings.length :=
+          List.length_pos_iff_ne_nil.mpr hneD
+        have hp₁ : 0 < D.crossings.dropLast.length :=
+          List.length_pos_iff_ne_nil.mpr hne₁
         omega
       -- the double fusion undoes the renaming, slot by slot: the fresh
       -- labels o1 = K1.e4, o2 = K2.e4 are first realigned with the
