@@ -1,10 +1,12 @@
 ---
-paths: MyIA.AI.Notebooks/GenAI/**/*
+paths: MyIA.AI.Notebooks/GenAI/**/*, docker-configurations/**
 ---
 
 # GenAI Configuration Rules
 
 **Documentation complète** (services, modèles, VRAM, quantizations par service, GPU allocation, ComfyUI Qwen Phase 29) : [docs/genai-services.md](../../docs/genai/genai-services.md).
+
+**Quantification et sleep** : un service s'héberge au plus petit quant disponible (communautaire compris) et dort quand il ne sert pas — recettes de recherche, piège du fork loader NF4 et précautions vLLM dans [genai-services.md](../../docs/genai/genai-services.md#quantification--mesures-du-2026-10-29), vérifiés par `python scripts/genai-stack/genai.py quant summary` (table de la doc contre quantification réellement chargée).
 
 ## Règles HARD
 
