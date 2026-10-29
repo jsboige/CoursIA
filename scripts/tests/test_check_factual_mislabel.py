@@ -485,14 +485,21 @@ def test_20035_broad_catches_stream_noun_form(tmp_path):
 
 
 def test_20035_broad_ratio_is_not_a_total(tmp_path):
-    """« sept carnets sur huit » : X est un SOUS-compte, pas le total.
+    """« Les sept carnets sur huit » : X est un SOUS-compte, pas le total.
 
     Faux positif mesure par la session cloud (13/10). Le mode `broad` doit
     l'ecarter.
+
+    Le determinant defini (« Les ») est OBLIGATOIRE dans la prose du test :
+    sans lui, le motif `broad` ne matche rien du tout et la garde `RATIO`
+    n'est jamais consultee. Mesure par mutation du 2026-10-29 (review
+    NanoClaw) : neutraliser `RATIO_SUFFIX_RE` laissait la suite verte sur
+    la phrase sans determinant, donc la garde n'etait couverte par aucun
+    test.
     """
     rc, out = _run(
         [_code("Carnets : 15\n"),
-         _md("Sept carnets sur huit couvrent les theoremes.")],
+         _md("Les sept carnets sur huit couvrent les theoremes.")],
         tmp_path,
         units="extended",
         forms="broad",
@@ -518,21 +525,32 @@ def test_20035_broad_enumeration_is_not_a_total(tmp_path):
         f"rc={rc}, out={out!r}")
 
 
-def test_20035_broad_composed_number_is_not_split(tmp_path):
-    """« dix-huit carnets » ne doit pas etre lu « huit carnets ».
+def test_20035_broad_determiner_after_a_separator_is_not_a_count(tmp_path):
+    """Un determinant colle a un separateur n'ouvre pas un compte.
 
-    La borne gauche `(?<![\\w.,-])` refuse une reprise apres un tiret.
-    Sans elle, le mot de queue du compose serait lu comme le compte.
+    La borne gauche `(?<![\\w.,-])` du motif prose refuse une reprise apres
+    un separateur : dans « 12.Les huit carnets » (liste numerotee markdown
+    sans espace apres le point), le « Les » est precede d'un point, donc le
+    compte ne doit pas etre lu. Sans la borne, le finding apparait (claimed
+    8 contre stream 15) -- mesure par mutation du 2026-10-29.
+
+    Ce test ne couvre PAS la classe « nombre compose », contrairement a ce
+    qu'annoncait sa premiere version : « Les dix-huit carnets » ne matche
+    deja pas sans la borne, parce que le motif exige un determinant juste
+    devant le mot-nombre et que « huit » y est precede d'un tiret. Et la
+    variante « 12-Les huit carnets » n'est pas discriminante non plus : la
+    garde de plage (`re.search(r"\\d\\s*-\\s*$", before)`) l'ecarte deja.
+    Le docstring annoncait donc un mecanisme que l'entree n'exercait pas.
     """
     rc, out = _run(
         [_code("Carnets : 15\n"),
-         _md("Les dix-huit carnets couvrent tout.")],
+         _md("12.Les huit carnets couvrent tout.")],
         tmp_path,
         units="extended",
         forms="broad",
     )
     assert rc == 0, (
-        f"un nombre compose ne doit pas etre coupe : rc={rc}, out={out!r}")
+        f"un determinant colle a un separateur ne compte pas : rc={rc}, out={out!r}")
 
 
 def test_20035_broad_value_range_is_not_a_count(tmp_path):
