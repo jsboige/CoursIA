@@ -29,5 +29,6 @@
         "activityBarTop.activeBorder": "#e7e7e7",
         "statusBar.inactiveBackground": "#dd0531"
     },
-    "peacock.color": "#dd0531"
+    "peacock.color": "#dd0531",
+    "python.terminal.useEnvFile": true
 }

@@ -1,0 +1,16 @@
+pyphi==1.2.0
+numpy<2.0,>=1.21
+scipy>=0.13.3
+matplotlib
+pandas
+cryptography<44,>=3.4
+
+[dev]
+pytest
+
+[extras]
+sympy
+
+[llm]
+torch
+transformers
