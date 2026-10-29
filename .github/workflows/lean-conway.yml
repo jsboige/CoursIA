@@ -95,7 +95,15 @@ concurrency:
 
 jobs:
   ci:
-    uses: jsboige/CoursIA/.github/workflows/lean-build.yml@main
+    # #23247 : reference LOCALE (./.github/workflows/...) et non @main.
+    # Ce workflow et lean-build.yml changent ENSEMBLE (l'input build-jobs
+    # n'existe que dans la meme PR) : un appel epingle a @main passerait un
+    # `with:` que le lean-build.yml de main ne declare pas encore, et GitHub
+    # rejette l'appel AVANT tout job -- startup_failure, 0 job, mesure
+    # 40854017279. Une reference locale resout la version de la tete, ce qui
+    # est aussi le comportement correct pour un couple appelant/appele modifie
+    # dans la meme PR. Precedent en depot : lean-ci-matrix.yml:390.
+    uses: ./.github/workflows/lean-build.yml
     with:
       project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean
       display-name: conway_lean
@@ -140,7 +148,8 @@ jobs:
   # (audit script: ``scripts/lean/audit_conway_blocking_gate_whitelist.py``).
   proof-integrity:
     needs: ci  # c.306 parity with knot_lean (#14922) -- serialize the two compiles; ordering edge only, no measured clone-halving (c.329, ai-01 re-review #15150)
-    uses: jsboige/CoursIA/.github/workflows/lean-axiom.yml@main
+    # #23247 : reference locale, meme raison que la jambe `ci` ci-dessus.
+    uses: ./.github/workflows/lean-axiom.yml
     with:
       project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean
       display-name: conway_lean
@@ -195,7 +204,8 @@ jobs:
   # this job runs, 2026-08-15) and the 21 build-enumerated names were added
   # one-by-one to allow-axioms below -- never a wildcard entry.
   proof-integrity-audit:
-    uses: jsboige/CoursIA/.github/workflows/lean-axiom.yml@main
+    # #23247 : reference locale, meme raison que la jambe `ci` ci-dessus.
+    uses: ./.github/workflows/lean-axiom.yml
     with:
       project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean
       # #8848: the advisory (fail-on-sorry: false) job carries the ' (audit)' suffix
