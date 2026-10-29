@@ -38,6 +38,7 @@ GUARDED_NOTEBOOKS = [
     "01-Solidity-Foundation/SC-03-Solidity-Basics-Python.ipynb",
     "01-Solidity-Foundation/SC-04-Functions-State-Python.ipynb",
     "01-Solidity-Foundation/SC-05-Inheritance-Python.ipynb",
+    "01-Solidity-Foundation/SC-06-Errors-Events-Python.ipynb",
     "02-Solidity-Advanced/SC-08-DeFi-Primitives-Python.ipynb",
 ]
 
