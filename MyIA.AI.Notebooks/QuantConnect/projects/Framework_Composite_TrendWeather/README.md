@@ -68,6 +68,26 @@ Cf. **c.1281-L3 / c.1282-L3 / c.1283-L3 ★★** (library clones) : le pattern �
 - `iter4_research.py` — Recherche yfinance locale (avertit 2-3× overstate cloud Sharpe, ligne 176)
 - `quantbook.ipynb` — Recherche Lean CLI Docker : 50/50 default + sweeps (allocation, stop-loss, rebalance freq, T×freq) avec outputs préservés
 
+## Non-régression du module partagé (#20188)
+
+Depuis #21134, `main.py` importe `MultiStrategyPouchesPCM` de `SharedPCM/pouches_pcm.py` au lieu de la copie locale `portfolio_construction.py`. Deux backtests QC Cloud du 2026-10-26, aux paramètres par défaut et sur la fenêtre 2015-01-01 → 2025-12-31, vérifient que ce changement ne modifie aucun ordre :
+
+- **A** : le code de `main` au commit `54f9b9eec1`, avec le module partagé ;
+- **B** : les mêmes `main.py` et `alpha_models.py`, avec l'ancienne copie `portfolio_construction.py` prise au commit qui précède la migration (`777f502a2a^`). Les deux arguments que l'ancienne copie ne connaît pas (`additive=True`, `algorithm=self`) sont retirés de l'appel. Les deux tranches n'ont aucun titre en commun : `additive=True` ne doit donc rien changer, et c'est ce que la mesure vérifie.
+
+A et B portent la même instrumentation, qui ne passe aucun ordre. Elle relève la valeur du portefeuille chaque jour à minuit, période de chauffe comprise (270 séances). En fin de backtest, elle calcule une empreinte SHA-256 par année des ordres (identifiant, date, titre, quantité, statut, prix) et des valeurs relevées.
+
+| | A (module partagé) | B (ancienne copie) |
+|---|---|---|
+| Ordres | 2 094 | 2 094 |
+| Valeurs relevées | 4 410 | 4 410 |
+| Dernière valeur relevée | 1 408 249,00 | 1 408 249,00 |
+| Sharpe (QC) | 1,148 | 1,148 |
+| CAGR | 27,121 % | 27,121 % |
+| Pire baisse | 27,6 % | 27,6 % |
+
+Les empreintes annuelles sont égales : 12 sur 12 pour les ordres, 13 sur 13 pour les valeurs. Les 27 statistiques de QC sont égales, rotation comprise. La migration ne change donc pas le comportement du projet. Traces hors dépôt : `QC-traces/20188-nr/`.
+
 ## Références
 
 - Commit `fa122ae7e` (2026-03-09, jsboige + Claude Opus) — ajout initial de la stratégie, message déclare « Iterated from v1.0 (Sharpe 0.622) to v1.5 (Sharpe 1.155) » — **source originelle du 1.155**, **pas d'artifacts préservés**.
