@@ -8,55 +8,126 @@
 
 Stratégie de retour à la moyenne basée sur le RSI(14) sur 11 ETF sectoriels GICS (XLK, XLF, XLE, XLV, XLI, XLY, XLP, XLU, XLB, XLRE, XLC). Trois variantes de sophistication croissante : v1 utilise des signaux bruts de survente/surachat du RSI ; v2 ajoute un filtre de régime SMA200 (ne trader qu'en marché haussier) ; v3 incorpore une règle de stop-loss à 8 %. Scan quotidien 30 minutes après l'ouverture du marché. Brokerage Interactive Brokers (frais réels), benchmark SPY.
 
+La variante v1, la seule mesurée ici, achète les ETF dont le RSI(14) passe sous 35, les plus survendus d'abord, au plus trois lignes à 1/3 du portefeuille chacune. Elle sort au-dessus de 55 ou après 20 séances de détention.
+
 ## Comment exécuter
 
 ### Lean CLI
+
 ```bash
 lean backtest --algorithm Cloud-MeanReversion-Sectors/main.py
 ```
 
 ### QC Cloud
-Projet 30822855. Téléverser `main.py`, compiler et lancer un backtest en passant le paramètre `version` (`v1`/`v2`/`v3`). Période codée en dur : **2018-01-01 → 2025-01-01** (alignée sur la baseline cross-stratégie #1630).
 
-> **Note** : le paramètre `version` doit être passé explicitement (`v1`, `v2` ou `v3`). Le défaut du code (`"1"`) ne correspond à aucune branche et lèverait une `AttributeError` au premier scan ; le paramètre explicite est obligatoire pour toute exécution.
+Projet 30822855. Téléverser `main.py`, compiler et lancer un backtest. Le paramètre `version` (`v1`/`v2`/`v3`) choisit la variante ; sans paramètre, le code prend `v1`. Période par défaut : **2018-01-01 → 2025-01-01** (alignée sur la baseline cross-stratégie #1630).
 
-## Métriques de backtest
+**Paramètres de mesure** (#23257) :
 
-Backtest frais via QC Cloud MCP, 2026-08-14 (`MeanReversion-v1-2018-2025-aligned-status-2026-08`, projet 30822855, compile `BuildSuccess`, paramètre `version=v1`, **1761 dates négociables — baseline #1630 alignée 2018-2025**, 273 ordres) :
+| Paramètre | Valeurs | Défaut |
+|-----------|---------|--------|
+| `mode` | `strategy` (la stratégie) ; `spy` (SPY 100 % détenu) ; `6040` (SPY 60 % / BND 40 %) ; `ew11` (les ETF sectoriels de l'univers à poids égal, parmi ceux qui cotent) | `strategy` |
+| `fix` | `on` (exécution corrigée, ci-dessous) ; `off` (code d'avant #23257, pour le contrôle) | `on` |
+| `start_date`, `end_date` | dates `AAAA-MM-JJ` | `2018-01-01`, `2025-01-01` |
 
-| Indicateur | Valeur | Lecture |
-|---|---|---|
-| Ratio de Sharpe | **0,067** | quasi nul |
-| CAGR | **3,793 %** | sous le buy-hold SPY sur la période |
-| Drawdown max | **41,700 %** | catastrophique (> 2× SPY) |
-| Profit net total | **29,789 %** (+35 082 $) | sur la période |
-| PSR (Probabilistic Sharpe Ratio) | **0,147 %** | non distinguable du bruit |
-| Ordres | 273 | backtest réel |
+Les trois modes de référence se rééquilibrent le premier jour de bourse du mois, 30 minutes après l'ouverture, à l'heure du scan de la stratégie. Le graphique `shadow` trace la valeur du portefeuille à chaque ouverture de séance du SPY. C'est l'entrée du calcul de significativité (`Paradox46Benchmarks/significance.py`). Trois statistiques d'exécution sont relevées :
 
-**Verdict : NO-BEATS.** Sharpe 0,067, CAGR ~3,8 % pour un drawdown de 41,7 %, PSR ≈ 0 : la stratégie sous-performe le buy-and-hold SPY (CAGR à deux chiffres sur 2018-2025) avec un risque bien supérieur.
+- `reentries` compte les ETF re-sélectionnés le jour même de leur sortie ;
+- `short_days` compte les ouvertures où une ligne est courte ;
+- `max_gross` donne l'exposition brute maximale lue à l'ouverture.
 
-> **Historique des mesures (traçabilité)** : (1) run du 2026-04-28 sur code pré-#1630 (2014-2025, 2768 j.) : v1 Sharpe 0,288 / DD 42,4 %, v2 0,214, **v3 0,278 / DD 14,7 %** ; (2) run du 2026-08-07 même code stale : v1 0,176 / DD 41,7 % ; (3) **run 2026-08-14 ci-dessus, premier sur le code aligné 2018-2025 (#1630)** : v1 0,067. L'alignement retire les années fastes 2014-2017 et dégrade le v1 ; les chiffres d'avant août 2024 cités dans d'anciens catalogues (0,278 / 14,7 %) sont ceux du **v3** sur période 2014-2025 — toujours NO-BEATS sur toutes les fenêtres et variantes, mais incomparables entre eux sans étiquette variante + période.
+## Correction de l'exécution (#23257)
 
-## Lecture honnête (variante v1)
+Le scan quotidien traitait d'abord les sorties par `self.liquidate(symbol)`, puis cherchait les entrées. Un ETF qui sortait après ses 20 séances de détention en restant sous 35 de RSI était re-sélectionné le jour même et recevait `self.set_holdings(symbol, 1/3)`. En résolution journalière, les deux ordres se remplissent à la clôture. `set_holdings`, calculé contre la position pas encore vendue, n'envoyait que l'écart : la ligne finissait à quelques parts. La stratégie la comptait pourtant comme une position pleine pendant 20 séances, et la place restait prise. Le même défaut a été corrigé sur `projects/MeanReversion` (#23199).
 
-Le v1 est le mean reversion RSI pur : acheter les 3 ETF sectoriels les plus survendus (RSI < 35), sortir au surachat (RSI > 55) ou après 20 jours de détention. Les faiblesses structurelles observées sur 2018-2025 :
+Le rejeu des ordres du code d'origine en compte **8 sur 2018-2024**, et chaque fois la ligne finit entre 0,5 % et 8,2 % du portefeuille au lieu de 33 % :
 
-- **Value trap en tendance baissière.** Le RSI reste oversold tant que la baisse se poursuit ; le signal « acheter la survente » accumule des perdants dans les bear markets (Q4 2018, COVID 2020, bear 2022). Sans filtre de régime, le v1 reste pleinement exposé, d'où le drawdown de 41,7 %.
-- **Allocation equal-weight des 3 plus oversold.** Les 3 ETF les plus survendus sont souvent les mêmes en chute libre ; concentrer dessus amplifie la queue de perte.
-- **PSR ≈ 0.** Le Sharpe 0,176 n'est pas statistiquement significatif : indistinguable du bruit. Tout claim de bord serait trompeur (règle C, PR-review-discipline §C).
+| Date | ETF | Parts vendues | Parts rachetées | Poids de la ligne après |
+|------|-----|---------------|-----------------|-------------------------|
+| 2018-12-26 | XLE | 1583 | 82 | 1,7 % |
+| 2019-06-03 | XLE | 1530 | 32 | 0,7 % |
+| 2020-03-24 | XLE | 1890 | 512 | 8,2 % |
+| 2020-10-07 | XLE | 2074 | 200 | 3,0 % |
+| 2022-10-04 | XLRE | 1041 | 40 | 1,2 % |
+| 2023-10-04 | XLP | 589 | 16 | 0,9 % |
+| 2023-10-20 | XLRE | 1249 | 29 | 0,8 % |
+| 2023-12-08 | XLE | 1032 | 17 | 0,5 % |
 
-Les variants v2 (+ filtre SMA200) et v3 (+ stop-loss 8 %) sont conçus pour adresser ces faiblesses mais ne sont pas backtestés ici : un honest-read documente le variant baseline et son verdict honnête, sans re-tuning. Re-optimiser les seuils RSI, le nombre de positions ou la période de détention pour récupérer un Sharpe positif sur cette seule fenêtre serait du surapprentissage jusqu'à preuve du contraire (EPIC #9768, D2 « fenêtre non figée »). La stratégie est livrée avec ses paramètres codés tels quels, verdict honnête rendu.
+Sur 2025 → mi-2026, il y en a deux : XLY le 2026-03-16 (4 parts gardées sur 340) et XLF le 2026-03-17 (15 sur 771). Aucune ne passe à découvert.
+
+**Correctif.** Les sorties sont liquidées une fois les entrées connues. Un ETF re-sélectionné le jour de sa sortie ne reçoit plus que `set_holdings(symbol, 1/3)`, et la ligne finit à 1/3. Les seuils, les variantes, la règle de sortie, le filtre de régime, le stop et la cadence ne changent pas. Au rejeu des ordres, le code corrigé n'a **aucune vente-rachat du même jour et aucune position courte** sur les deux fenêtres. Chaque ligne encore détenue après un ordre pèse au moins 31 % du portefeuille, et le code corrigé passe huit ordres de moins (265 contre 273).
+
+**Contrôle d'innocuité.** Le code de `main` (sha256 `6cda5ec4b0c7`) et le code instrumenté avec `fix=off` ont tourné le même jour sur la même fenêtre. Ils produisent les mêmes 273 ordres (date, symbole, quantité) et les mêmes statistiques QC. L'instrumentation ne change donc rien aux ordres. Le backtest publié le 2026-08-14 a les mêmes 273 ordres en date, symbole et sens. Les quantités diffèrent de quelques parts sur 257 d'entre eux, et le Sharpe passe de 0,067 à 0,069. La cause de ces écarts entre deux runs du même code n'est pas isolée ici.
+
+**L'exposition brute dépasse encore 1.** Elle atteint 1,039 avec le correctif, contre 1,032 avec le code d'origine. Ce dépassement n'est pas introduit par le correctif. À la lecture du code, il vient des nouvelles lignes, dimensionnées à 1/3 de la valeur du portefeuille alors que les lignes détenues ne sont jamais ramenées à 1/3. Cette explication n'a pas été mesurée date par date.
+
+## Métriques du backtest
+
+Backtests QC Cloud du 2026-10-29, `version=v1`, capital de départ 100 000, frais de courtage modélisés par Lean. Le code instrumenté porte le sha256 `9b9a01006f3a`. Résultats lus après `completed: true`.
+
+**w1 : 2018-01-01 → 2025-01-01** (1761 séances, du 2018-01-02 au 2024-12-31)
+
+| Bras | Sharpe QC | CAGR | Drawdown max | PSR | Profit net | Ordres |
+|------|-----------|------|--------------|-----|------------|--------|
+| **`strategy`** (corrigé) | **0.162** | **5.64 %** | **41.0 %** | 0.38 % | 46.9 % | 265 |
+| `strategy`, `fix=off` (code d'origine) | 0.069 | 3.79 % | 41.7 % | 0.15 % | 29.8 % | 273 |
+| `spy` (référence) | 0.496 | 13.58 % | 33.7 % | 4.54 % | 144.0 % | 3 |
+| `6040` (référence) | 0.378 | 8.66 % | 21.7 % | 2.16 % | 78.9 % | 147 |
+| `ew11` (diagnostic) | 0.393 | 10.91 % | 36.0 % | 2.36 % | 106.5 % | 459 |
+
+**w2 : 2025-01-01 → 2026-07-01** (373 séances, du 2025-01-02 au 2026-06-30)
+
+| Bras | Sharpe QC | CAGR | Drawdown max | PSR | Profit net | Ordres |
+|------|-----------|------|--------------|-----|------------|--------|
+| **`strategy`** (corrigé) | **0.418** | **11.92 %** | **7.7 %** | 17.0 % | 18.4 % | 52 |
+| `strategy`, `fix=off` (code d'origine) | 0.307 | 9.97 % | 7.2 % | 13.4 % | 15.3 % | 54 |
+| `spy` (référence) | 0.665 | 18.96 % | 18.7 % | 27.5 % | 29.7 % | 2 |
+| `6040` (référence) | 0.59 | 13.37 % | 11.2 % | 24.7 % | 20.7 % | 30 |
+| `ew11` (diagnostic) | 0.632 | 15.84 % | 14.9 % | 26.7 % | 24.6 % | 107 |
+
+Le Sharpe de QC retire un taux sans risque. Les tests ci-dessous utilisent un Sharpe à taux nul, calculé sur les rendements journaliers du graphique `shadow`.
+
+**Significativité** (Ledoit-Wolf, bootstrap stationnaire, Newey-West). La correction de Holm porte d'un côté sur les deux références du verdict, de l'autre sur le diagnostic :
+
+| Fenêtre | Comparaison | Sharpe à taux nul (stratégie / bras) | p de Holm, écart de Sharpe (Ledoit-Wolf ; bootstrap) |
+|---------|-------------|---------------------------------------|------------------------------------------------------|
+| w1 | vs `spy` | 0.40 / 0.76 | 0.64 ; 0.64 |
+| w1 | vs `6040` | 0.40 / 0.75 | 0.64 ; 0.64 |
+| w1 | vs `ew11` | 0.40 / 0.65 | 0.60 ; 0.60 |
+| w2 | vs `spy` | 0.93 / 1.05 | 1.0 ; 1.0 |
+| w2 | vs `6040` | 0.93 / 1.21 | 1.0 ; 1.0 |
+| w2 | vs `ew11` | 0.93 / 1.15 | 1.0 ; 1.0 |
+
+## Verdict : NO BEATS sur les deux fenêtres
+
+Le protocole (#23012, repris dans #23257) donne BEATS seulement si le Sharpe dépasse celui du SPY détenu **et** que l'écart reste significatif après Holm contre les deux références. Il donne NO BEATS si le Sharpe est inférieur à celui du SPY détenu, et INCONCLUSIVE sinon. Les paramètres de la v1 datent d'avant l'alignement de 2018 : w1 est dans l'échantillon de tout réglage, et son verdict n'est qu'indicatif. C'est w2, hors échantillon, qui tranche.
+
+- **w2 (2025 → mi-2026) : NO BEATS.** Sharpe 0.418 contre 0.665 pour SPY détenu, et CAGR de 11,9 % contre 19,0 %. Le drawdown est plus faible (7,7 % contre 18,7 %), mais le Sharpe à taux nul reste sous celui des trois bras (0,93 contre 1,05 pour SPY). Avec 373 séances, la puissance du test est faible.
+- **w1 (2018-2024) : NO BEATS.** Sharpe 0.162 contre 0.496 pour SPY détenu. La stratégie rend 5,6 % par an contre 13,6 % pour SPY, pour un drawdown plus profond (41,0 % contre 33,7 %).
+
+**Ce que mesure le diagnostic `ew11`.** Les onze ETF à poids égal font mieux que la stratégie sur les deux fenêtres (Sharpe à taux nul 0,65 contre 0,40 sur w1, 1,15 contre 0,93 sur w2), sans écart significatif après Holm. Choisir les secteurs les plus survendus n'apporte rien de mesurable par rapport à les détenir tous.
+
+**Ce que le correctif change.** Sur w1, le Sharpe passe de 0,069 à 0,162 et le CAGR de 3,8 % à 5,6 %. Le drawdown reste au même niveau (41,0 % contre 41,7 %). Les huit lignes résiduelles occupaient chacune une place pendant 20 séances avec presque rien d'investi, soit environ 3 % des places-séances de la fenêtre (8 × 20 sur 3 × 1761). La faible exposition que le registre qualifiait de « near-cash » vient donc surtout du signal : aux dates d'ordre, la stratégie ne détient le plus souvent que deux lignes sur trois (médiane au rejeu), avec ou sans correctif. Le verdict ne change pas. Pas de re-réglage des paramètres : un ajustement rétrospectif serait du surapprentissage (EPIC #9768).
+
+> **Historique des mesures (traçabilité)** : (1) run du 2026-04-28 sur code pré-#1630 (2014-2025, 2768 j.) : v1 Sharpe 0,288 / DD 42,4 %, v2 0,214, **v3 0,278 / DD 14,7 %** ; (2) run du 2026-08-07 même code stale : v1 0,176 / DD 41,7 % ; (3) run du 2026-08-14, premier sur le code aligné 2018-2025 (#1630) : v1 0,067 / DD 41,7 % ; (4) **mesure du 2026-10-29 ci-dessus** (#23257) : code d'origine 0,069, code corrigé 0,162 sur la même fenêtre, plus la fenêtre hors échantillon et les références détenues. Les chiffres d'avant août 2026 cités dans d'anciens catalogues (0,278 / 14,7 %) sont ceux du **v3** sur 2014-2025. Ils ne se comparent pas aux autres sans l'étiquette de variante et de période.
+
+## Lecture (variante v1)
+
+- **Piège de la valeur en tendance baissière.** Le RSI reste en survente tant que la baisse se poursuit, et le signal « acheter la survente » accumule des perdants dans les marchés baissiers (T4 2018, COVID 2020, 2022). Sans filtre de régime, la v1 reste pleinement exposée, d'où un drawdown de 41 % sur 2018-2024, plus profond que celui de SPY détenu.
+- **Concentration sur les trois plus survendus.** Les trois ETF les plus survendus sont souvent ceux qui chutent ensemble (XLE revient dans cinq des huit ré-entrées du tableau ci-dessus).
+- **Pas d'edge mesurable.** Ni contre SPY détenu, ni contre le 60/40, ni contre les onze secteurs à poids égal.
+
+Les variantes v2 (+ filtre SMA200) et v3 (+ stop-loss 8 %) sont conçues pour répondre à ces faiblesses mais ne sont pas mesurées ici. Le correctif d'exécution s'applique aux trois variantes.
 
 ## Fichiers
 
 | Fichier | Description |
 |---------|-------------|
-| `main.py` | Mean reversion RSI(14) avec 3 variantes (v1 RSI pur, v2 +régime SMA200, v3 +stop-loss 8 %) sur 11 ETF sectoriels GICS |
+| `main.py` | Mean reversion RSI(14) avec 3 variantes (v1 RSI pur, v2 +régime SMA200, v3 +stop-loss 8 %) sur 11 ETF sectoriels GICS ; re-entrée du même jour corrigée par #23257, modes de référence |
 
 ## Références
 
 - [Documentation QuantConnect](https://www.quantconnect.com/docs/)
 - EPIC de consolidation QC / Trading : #1621
 - Discipliné par l'EPIC #9768 (dérive des métriques de backtest à travers les révisions)
-
-See #1621 (contribution partielle : honest-read d'une stratégie non auditée).
+- Mesure contre références détenues et correction de l'exécution : #23257 (même défaut sur `projects/MeanReversion` : #23199)
