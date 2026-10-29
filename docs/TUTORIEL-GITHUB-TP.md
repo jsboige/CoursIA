@@ -82,12 +82,28 @@ Puis :
 
 ### Les clés d'API
 
-Les notebooks GenAI lisent leurs clés dans un fichier `.env`, jamais dans le code. Le modèle est [`MyIA.AI.Notebooks/GenAI/.env.example`](../MyIA.AI.Notebooks/GenAI/.env.example) :
+Les notebooks GenAI ne contiennent jamais de clé : ils la lisent dans l'environnement. La façon de la leur fournir dépend de l'endroit où vous travaillez.
 
-- **en local** (Jupyter, VS Code) : copiez ce modèle sous le nom `.env` dans le dossier où vous ouvrez le notebook (ou un dossier parent), puis remplacez la valeur de la clé par celle fournie par l'enseignant ;
-- **dans Colab** : déposez ce même fichier `.env` dans l'espace *Fichiers* de la session (icône dossier, à gauche) avant d'exécuter.
+**En local (Jupyter, VS Code)** — un fichier `.env`. Le modèle est [`MyIA.AI.Notebooks/GenAI/.env.example`](../MyIA.AI.Notebooks/GenAI/.env.example) :
 
-N'écrivez **jamais** une clé dans une cellule : elle partirait avec le notebook dans votre commit, et le dépôt est public.
+1. copiez ce modèle sous le nom `.env` dans le dossier où vous ouvrez le notebook, ou dans un dossier parent ;
+2. remplacez-y la valeur de la clé par celle fournie par l'enseignant ;
+3. relancez la cellule de configuration.
+
+Le dépôt ignore les fichiers `.env` (ils ne partent pas dans un commit) ; ne les ajoutez pas non plus à la main sur votre branche.
+
+**Dans Google Colab** — les *Secrets* du carnet, **pas** un fichier. Un `.env` déposé dans l'espace *Fichiers* de la session disparaît à sa fermeture, et le refaire à chaque connexion est une source d'erreur ; Colab prévoit pour cela un coffre de secrets, que le notebook peut lire directement :
+
+1. dans la barre de gauche, cliquez sur l'icône en forme de **clé** (panneau *Secrets*) ;
+2. **Add new secret** : donnez-lui le nom `OPENAI_API_KEY` et pour valeur la clé remise par l'enseignant. Si la clé remise est une clé OpenRouter, nommez-le `OPENROUTER_API_KEY` — le code accepte les deux et prend la seconde quand la première est absente ;
+3. basculez l'interrupteur **Notebook access** (*Accès au notebook*) sur **ON**. Sans lui, le secret existe mais reste illisible depuis le carnet : c'est la cause la plus fréquente d'un « clé absente » alors qu'elle est bien enregistrée ;
+4. relancez la cellule de configuration — il n'est pas nécessaire de redémarrer la session.
+
+Le secret n'apparaît alors dans aucune cellule et ne part donc jamais dans le fichier `.ipynb` que vous déposez.
+
+Les carnets les plus récents passent par [`MyIA.AI.Notebooks/GenAI/shared/helpers/genai_helpers.py`](../MyIA.AI.Notebooks/GenAI/shared/helpers/genai_helpers.py) : il lit l'environnement, puis les Secrets Colab, et affiche un message explicite quand aucune clé n'est trouvée — ce message rappelle les deux procédures ci-dessus. Un carnet plus ancien lit directement la variable `OPENAI_API_KEY` ; sous Colab, il suffit donc que le secret porte ce nom.
+
+N'écrivez **jamais** une clé dans une cellule : elle partirait avec le notebook dans votre commit, et le dépôt est public. C'est vrai aussi d'un `.env` ouvert et affiché dans une sortie.
 
 La clé fournie pour le cours passe par OpenRouter : elle couvre la génération de **texte**, pas les services OpenAI natifs (images DALL-E, voix TTS, transcription Whisper). Si une cellule échoue faute de clé (`401 Unauthorized`, clé absente), ne restez pas bloqués : exécutez tout ce qui peut l'être, déposez le notebook tel quel et indiquez dans la description de la PR les cellules qui n'ont pas pu tourner. Les mainteneurs ré-exécutent le notebook avec les clés du cours au moment de l'intégration.
 
@@ -175,6 +191,7 @@ Pour éviter l'aller-retour téléchargement/dépôt à chaque review :
 | Deux contributions sur le même exercice | PRs ouvertes non vérifiées | Vérifier les PR ouvertes avant de choisir l'exercice |
 | *Select Kernel* ne propose rien (VS Code) | Interpréteur ou kernel non installé | Installer Python ou le SDK .NET, rouvrir VS Code (variante ci-dessus, point 3) |
 | Sorties absentes du fichier déposé | Notebook exécuté mais non sauvegardé | *Run All* puis **Ctrl+S** avant le dépôt |
+| « Clé absente » sous Colab alors que le secret est bien enregistré | Interrupteur *Accès au notebook* laissé sur **OFF** (la clé existe mais n'est pas lisible) | Le passer sur **ON**, puis relancer la cellule de configuration |
 
 ## Rappel sécurité
 

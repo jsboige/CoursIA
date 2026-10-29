@@ -19,6 +19,7 @@ import base64
 import importlib.util
 import json
 import logging
+import os
 from pathlib import Path
 
 import pytest
@@ -220,6 +221,280 @@ def test_all_exports_present():
     assert set(gh.__all__) == {
         "setup_genai_logging", "load_genai_config",
         "validate_apis", "save_generation_result",
+        "is_colab", "read_colab_secret", "resolve_openai_config",
+        "apply_openai_environment", "OpenAIConfig", "MissingApiKeyError",
+        "OPENROUTER_BASE_URL", "DEFAULT_OPENROUTER_MODEL",
     }
     for name in gh.__all__:
         assert hasattr(gh, name)
+
+
+# --------------------------------------------------------------------------
+# Resolution de la cle : OpenAI direct, OpenRouter, Secrets Colab
+# --------------------------------------------------------------------------
+#
+# Ces tests tournent sans reseau et sans cle : ils portent sur la *resolution*
+# de la configuration, pas sur l'appel. Les appels reels sont couverts a part,
+# marques `network`, et sautes quand aucune cle n'est disponible.
+
+
+def _clear_key_env(monkeypatch):
+    for name in ("OPENAI_API_KEY", "OPENROUTER_API_KEY", "OPENAI_BASE_URL",
+                 "OPENAI_MODEL", "OPENAI_REASONING_MODEL"):
+        monkeypatch.delenv(name, raising=False)
+
+
+# Valeurs factices assemblees a l'execution : un prefixe de cle ecrit d'un seul
+# tenant dans un fichier versionne declenche le scanner de secrets, meme quand
+# la valeur est fausse. Les assembler garde le test lisible sans faire rougir
+# gitleaks.
+_FAKE_KEY = "sk-" + "or-v1-" + "0123456789abcdef"
+_FAKE_SHORT_KEY = "sk-" + "or-" + "colab"
+
+
+def _fake_colab(monkeypatch, secrets):
+    """Installe de faux modules `google.colab` / `google.colab.userdata`."""
+    import sys
+    import types
+
+    google_mod = types.ModuleType("google")
+    colab_mod = types.ModuleType("google.colab")
+    userdata_mod = types.ModuleType("google.colab.userdata")
+
+    class _SecretNotFoundError(Exception):
+        pass
+
+    def _get(name):
+        try:
+            return secrets[name]
+        except KeyError:
+            raise _SecretNotFoundError("Secret %s does not exist." % name)
+
+    userdata_mod.get = _get
+    userdata_mod.SecretNotFoundError = _SecretNotFoundError
+    colab_mod.userdata = userdata_mod
+    google_mod.colab = colab_mod
+
+    monkeypatch.setitem(sys.modules, "google", google_mod)
+    monkeypatch.setitem(sys.modules, "google.colab", colab_mod)
+    monkeypatch.setitem(sys.modules, "google.colab.userdata", userdata_mod)
+
+
+def _no_colab(monkeypatch):
+    """Force la branche « pas Colab » en rendant l'import impossible."""
+    import sys
+    monkeypatch.setitem(sys.modules, "google.colab", None)
+
+
+def test_is_colab_false_without_google_colab(monkeypatch):
+    _no_colab(monkeypatch)
+    assert gh.is_colab() is False
+
+
+def test_is_colab_true_with_google_colab(monkeypatch):
+    _fake_colab(monkeypatch, {})
+    assert gh.is_colab() is True
+
+
+def test_read_colab_secret_returns_none_outside_colab(monkeypatch):
+    _no_colab(monkeypatch)
+    assert gh.read_colab_secret("OPENAI_API_KEY") is None
+
+
+def test_read_colab_secret_returns_value_inside_colab(monkeypatch):
+    _fake_colab(monkeypatch, {"OPENAI_API_KEY": _FAKE_KEY})
+    assert gh.read_colab_secret("OPENAI_API_KEY") == _FAKE_KEY
+
+
+def test_read_colab_secret_returns_none_when_secret_absent(monkeypatch):
+    _fake_colab(monkeypatch, {})
+    assert gh.read_colab_secret("OPENAI_API_KEY") is None
+
+
+def test_read_colab_secret_strips_whitespace(monkeypatch):
+    _fake_colab(monkeypatch, {"OPENAI_API_KEY": "  sk-test\n"})
+    assert gh.read_colab_secret("OPENAI_API_KEY") == "sk-test"
+
+
+def test_resolve_prefers_openai_key(monkeypatch):
+    _no_colab(monkeypatch)
+    _clear_key_env(monkeypatch)
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-openai")
+    monkeypatch.setenv("OPENROUTER_API_KEY", "sk-or")
+    cfg = gh.resolve_openai_config()
+    assert cfg.provider == "openai"
+    assert cfg.base_url is None
+    assert cfg.key_source == "env:OPENAI_API_KEY"
+    assert cfg.api_key == "sk-openai"
+
+
+def test_resolve_falls_back_to_openrouter_key(monkeypatch):
+    _no_colab(monkeypatch)
+    _clear_key_env(monkeypatch)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "sk-or")
+    cfg = gh.resolve_openai_config()
+    assert cfg.provider == "openrouter"
+    assert cfg.base_url == gh.OPENROUTER_BASE_URL
+    assert cfg.key_source == "env:OPENROUTER_API_KEY"
+    # Le modele par defaut est un modele ouvert sur la cle du module, jamais
+    # un modele OpenAI natif que cette cle ne dessert pas.
+    assert cfg.model == gh.DEFAULT_OPENROUTER_MODEL
+    assert "qwen" in cfg.model or "deepseek" in cfg.model
+
+
+def test_resolve_explicit_base_url_wins_over_provider_guess(monkeypatch):
+    _no_colab(monkeypatch)
+    _clear_key_env(monkeypatch)
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-or-v1-x")
+    monkeypatch.setenv("OPENAI_BASE_URL", gh.OPENROUTER_BASE_URL)
+    cfg = gh.resolve_openai_config()
+    # Une cle OpenAI posee sur l'adresse OpenRouter : la configuration declaree
+    # fait foi, et le modele par defaut suit l'adresse, pas le nom de la cle.
+    assert cfg.provider == "openrouter"
+    assert cfg.base_url == gh.OPENROUTER_BASE_URL
+    assert cfg.model == gh.DEFAULT_OPENROUTER_MODEL
+
+
+def test_resolve_explicit_model_wins_over_default(monkeypatch):
+    _no_colab(monkeypatch)
+    _clear_key_env(monkeypatch)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "sk-or")
+    monkeypatch.setenv("OPENAI_MODEL", "qwen/qwen3.8-27b")
+    monkeypatch.setenv("OPENAI_REASONING_MODEL", "deepseek/deepseek-v4.1-flash")
+    cfg = gh.resolve_openai_config()
+    assert cfg.model == "qwen/qwen3.8-27b"
+    assert cfg.reasoning_model == "deepseek/deepseek-v4.1-flash"
+
+
+def test_resolve_raises_with_actionable_message(monkeypatch):
+    _no_colab(monkeypatch)
+    _clear_key_env(monkeypatch)
+    with pytest.raises(gh.MissingApiKeyError) as excinfo:
+        gh.resolve_openai_config()
+    message = str(excinfo.value)
+    # Le message doit dire quoi faire DANS LES DEUX contextes : c'est le point 3
+    # de l'issue — renvoyer au seul .env laisse l'eleve sans issue sous Colab.
+    assert ".env" in message
+    assert "Colab" in message
+    assert "OPENAI_API_KEY" in message
+    assert "OPENROUTER_API_KEY" in message
+
+
+def test_resolve_returns_none_when_not_required(monkeypatch):
+    _no_colab(monkeypatch)
+    _clear_key_env(monkeypatch)
+    assert gh.resolve_openai_config(required=False) is None
+
+
+def test_resolve_reads_colab_secret(monkeypatch):
+    _clear_key_env(monkeypatch)
+    _fake_colab(monkeypatch, {"OPENROUTER_API_KEY": _FAKE_SHORT_KEY})
+    cfg = gh.resolve_openai_config()
+    assert cfg.api_key == _FAKE_SHORT_KEY
+    assert cfg.key_source == "colab:OPENROUTER_API_KEY"
+    assert cfg.provider == "openrouter"
+
+
+def test_resolve_env_wins_over_colab_secret(monkeypatch):
+    _clear_key_env(monkeypatch)
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-openai-env")
+    _fake_colab(monkeypatch, {"OPENAI_API_KEY": "sk-openai-colab"})
+    cfg = gh.resolve_openai_config()
+    assert cfg.api_key == "sk-openai-env"
+    assert cfg.key_source == "env:OPENAI_API_KEY"
+
+
+def test_resolve_from_explicit_env_mapping(monkeypatch):
+    _no_colab(monkeypatch)
+    cfg = gh.resolve_openai_config(env={"OPENROUTER_API_KEY": "sk-or-map"})
+    assert cfg.api_key == "sk-or-map"
+    assert cfg.provider == "openrouter"
+
+
+def test_masked_key_never_reveals_the_whole_key():
+    cfg = gh.OpenAIConfig(api_key=_FAKE_KEY, base_url=None,
+                          model="m", reasoning_model="r", provider="openrouter",
+                          key_source="env:OPENROUTER_API_KEY")
+    masked = cfg.masked_key
+    assert masked != cfg.api_key
+    assert "0123456789abcdef" not in masked
+    assert masked.startswith("sk-o")
+    assert masked.endswith("cdef")
+    assert _FAKE_KEY not in repr(cfg)
+
+
+def test_masked_key_handles_absent_key():
+    cfg = gh.OpenAIConfig(api_key=None, base_url=None, model="m",
+                          reasoning_model="r", provider="openai",
+                          key_source=None)
+    assert cfg.masked_key == "<absente>"
+
+
+def test_apply_openai_environment_sets_variables(monkeypatch):
+    _no_colab(monkeypatch)
+    _clear_key_env(monkeypatch)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "sk-or")
+    import os
+    cfg = gh.apply_openai_environment()
+    assert os.environ["OPENAI_API_KEY"] == "sk-or"
+    assert os.environ["OPENAI_BASE_URL"] == gh.OPENROUTER_BASE_URL
+    assert os.environ["OPENAI_MODEL"] == cfg.model
+
+
+def test_apply_openai_environment_never_overwrites_existing(monkeypatch):
+    _no_colab(monkeypatch)
+    _clear_key_env(monkeypatch)
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-explicit")
+    monkeypatch.setenv("OPENROUTER_API_KEY", "sk-or")
+    import os
+    gh.apply_openai_environment()
+    assert os.environ["OPENAI_API_KEY"] == "sk-explicit"
+
+
+def test_apply_openai_environment_tolerates_missing_key(monkeypatch):
+    _no_colab(monkeypatch)
+    _clear_key_env(monkeypatch)
+    assert gh.apply_openai_environment(required=False) is None
+
+
+def test_module_source_carries_no_literal_api_key():
+    """Secrets-hygiene : aucune valeur de cle en dur, aucun defaut litteral."""
+    import re
+    source = _MODULE_PATH.read_text(encoding="utf-8")
+    # Aucun `os.getenv("...KEY", "valeur")` : le deuxieme argument d'un getenv
+    # sur une variable de cle est exactement le pattern qui a deja fuit. Les
+    # variables de configuration ordinaires (DOCKER_ENABLED...) gardent leur
+    # defaut litteral, ce n'est pas un secret.
+    for match in re.finditer(
+        r"getenv\(\s*[\"']([A-Z_]+)[\"']\s*,\s*[\"']([^\"']*)[\"']", source
+    ):
+        name = match.group(1)
+        if name.endswith("_KEY") or name.endswith("_TOKEN") or "SECRET" in name:
+            raise AssertionError(
+                "getenv with literal default on %s: %r" % (name, match.group(0))
+            )
+    # Aucun prefixe de cle reelle.
+    for prefix in ("sk-or-v1-", "ghp_", "sk-proj-", "AIza"):
+        assert prefix not in source
+
+
+@pytest.mark.network
+def test_openrouter_key_reaches_a_model_listed_for_it():
+    """Appel reel : la cle du module ouvre bien le modele par defaut.
+
+    Saute quand aucune cle n'est disponible (local du mainteneur, cours). Le
+    test epingle la *capacite* — un modele repond — jamais une duree.
+    """
+    api_key = os.getenv("OPENROUTER_API_KEY")
+    if not api_key:
+        pytest.skip("aucune OPENROUTER_API_KEY dans l'environnement")
+    import urllib.request
+
+    req = urllib.request.Request(
+        gh.OPENROUTER_BASE_URL + "/models",
+        headers={"Authorization": "Bearer " + api_key},
+    )
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        payload = json.loads(resp.read().decode("utf-8"))
+    ids = {m["id"] for m in payload.get("data", [])}
+    assert gh.DEFAULT_OPENROUTER_MODEL in ids
