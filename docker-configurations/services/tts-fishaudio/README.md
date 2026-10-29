@@ -63,10 +63,31 @@ FishAudio S2-Pro supports inline tags in text:
 
 ## VRAM Management
 
-Full inference requires ~24GB. Options:
-- `--half` flag (default): fp16, reduces to ~12GB
-- Stop `tts-qwen` container to free additional VRAM on GPU1
-- Use quantized model if available
+Mesures du 2026-10-29 sur la RTX 3090 (24 Go) de `po-2023` :
+
+| Poids | VRAM | Source |
+|---|---|---|
+| fp16 (`--half`, la configuration du compose) | **~20,3 Go** | warm-up mesuré le 2026-10-06 |
+| NF4 quantifié | **5,0 Go de fichiers**, cible annoncée « 12 Go+ » | `groxaxo/s2-pro-BnB-4Bits` |
+
+Le `--half` du compose n'aboutit donc pas au « ~12 Go » annoncé auparavant : le service occupe ~20,3 Go, soit la quasi-totalité d'une carte de 24 Go et aucune carte de 16 Go. Arrêter `tts-qwen` ne libère pas 12 Go.
+
+### Checkpoints quantifiés existants
+
+Tailles mesurées via l'API HuggingFace (`?blobs=true`) :
+
+| Dérivé | Total | Remarque |
+|---|---|---|
+| `groxaxo/s2-pro-BnB-4Bits` | 5,00 Go | NF4 — **exige le fork**, voir ci-dessous |
+| `scarxity/fish-speech-s2-pro-nf4` | 5,00 Go | NF4 |
+| `baicai1145/s2-pro-w4a16` | 6,13 Go | safetensors |
+| `drbaph/s2-pro-fp8` | 8,05 Go | fp8 |
+
+**Piège vérifié** : ajouter `bitsandbytes` et `accelerate` à l'image officielle ne suffit pas. Les deux paquets y sont absents (`ModuleNotFoundError` sur chacun), mais surtout le loader officiel construit des couches fp16 et ne sait pas lire un state dict préquantifié — le model card le dit explicitement : « not a legacy int4 or int8 export », « meant to be loaded through the fork's `bnb4` path ». Il faut `groxaxo/fish-speech-int4-patch`, dont `tools/api_server.py` transmet `bnb4=self.args.bnb4`.
+
+### Sleep
+
+Le sidecar `idle-monitor` **arrête** le conteneur, il ne l'endort pas : au redémarrage, les ~20 Go sont rechargés. Pour un usage ponctuel, c'est ce régime qu'il faut remplacer (cf `.claude/rules/model-quantization-and-sleep.md`).
 
 ## Integration
 

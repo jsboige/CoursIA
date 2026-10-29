@@ -303,7 +303,7 @@ BATCH_MODE=false
 | vllm-zimage | po-2023 | Z-Image-Turbo | bfloat16 (fp8 opt via `VLLM_QUANTIZATION=fp8`) | ~5-10 GB |
 | sd-forge-main | po-2023 | SD Forge SDXL | xformers fp16 | ~6-10 GB |
 | forge-turbo | po-2023 | SD Forge Turbo | xformers fp16 | ~6-10 GB |
-| tts-fishaudio | po-2023 | FishAudio S2-Pro | BnB 4-bit NF4 | ~5 GB |
+| tts-fishaudio | po-2023 | FishAudio S2-Pro | fp16 (`--half`) — 20,3 Go mesurés ; NF4 5 Go possible via le fork (voir README du service) | ~20 GB |
 | tts-kokoro | po-2023 | Kokoro TTS | fp32/fp16 default | ~1-2 GB |
 | musicgen-api | po-2023 | MusicGen-medium | fp16 | ~10 GB |
 | qwen-asr-api | po-2023 | Qwen3-ASR-1.7B | bfloat16 | ~3-4 GB |
