@@ -104,7 +104,14 @@ case "$icc_MACHINE" in
 esac
 
 # --- prereq -----------------------------------------------------------------
-[ "$(id -u)" -eq 0 ] || die "root requis (installation sous /etc/systemd/system/ et /etc/docker/)"
+# La garde de privilege ne porte que sur le mode REEL (#23342). Le dry-run d'un
+# geste UAC-touchant doit etre evaluable sans privilege : sinon l'operateur ouvre
+# une fenetre d'elevation pour la seule lecture de ce que le script installerait,
+# ce qui est exactement ce que la discipline de flotte interdit. L'evaluation
+# sans privilege est sure par construction : les six sites d'ecriture du script
+# (install x2 l.203/l.226, daemon-reload l.252, restart docker l.261, start slice
+# l.269, enable --now l.287) portent tous `[ "$icc_DRY_RUN" -eq 1 ] ||`.
+[ "$icc_DRY_RUN" -eq 1 ] || [ "$(id -u)" -eq 0 ] || die "root requis (installation sous /etc/systemd/system/ et /etc/docker/)"
 command -v systemctl >/dev/null 2>&1 || die "systemctl absent (systemd requis sur la machine cible)"
 command -v install    >/dev/null 2>&1 || die "install(1) absent (coreutils requis)"
 
@@ -290,6 +297,17 @@ while IFS='|' read -r icc_target _unused _desc; do
 done < <(collect_units)
 
 # --- verification A3 ---------------------------------------------------------
+# A3 verifie l'EFFET d'une installation qui vient d'avoir lieu. En DRY-RUN rien
+# n'a ete installe ni demarre : les etats lus sont ceux d'AVANT le geste, et un
+# echec y serait un faux rouge -- sur une machine neuve, le dry-run echouerait
+# pour une raison sans rapport avec sa question (#23342). Le mode s'arrete donc
+# ici, sur le plan evalue, sans revendiquer une installation qu'il n'a pas faite.
+if [ "$icc_DRY_RUN" -eq 1 ]; then
+  log "verification A3 : NON EVALUEE (mode DRY-RUN -- rien n'a ete installe ni demarre)"
+  log ""
+  log "OK -- machine=$icc_MACHINE : plan evalue en DRY-RUN, aucune ecriture."
+  exit 0
+fi
 log ""
 log "verification A3 (services : is-enabled + is-active ; slices : is-active seul) :"
 icc_verify_failed=0
@@ -326,7 +344,8 @@ while IFS='|' read -r icc_target _unused _desc; do
 done < <(collect_units)
 
 if [ "$icc_verify_failed" -ne 0 ]; then
-  die "verification A3 en echec (voir log ci-dessus) ; code de retour 2"
+  printf '[install-coursia-units][ECHEC A3] verification en echec (voir log ci-dessus) ; code de retour 2\n' >&2
+  exit 2
 fi
 
 log ""
