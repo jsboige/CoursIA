@@ -4878,7 +4878,7 @@ demo: **always demand the trivial baseline and out-of-sample evaluation** — he
 without it, the notebook displayed 92.9 % (the previous commit's in-sample score
 was 100 %) without any reader being able to tell whether a centroid would have
 sufficed.",,,,,,,425601cc5a39bfcb,c931c0892c2aeda0,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,bf51c29a,markdown,fr,a2e720832e347355,"### Comparaison : Merging vs Routing
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,bf51c29a,markdown,fr,3173fda3dfbc2b26,"### Comparaison : Merging vs Routing
 
 Les cinq approches des sections 3 à 6 sont implémentées ; comparons-les sur les
 critères qui décident en production — ce qu'elles coûtent, ce qu'elles préservent
