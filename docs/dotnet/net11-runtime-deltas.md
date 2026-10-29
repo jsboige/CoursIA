@@ -333,11 +333,18 @@ contournement antivirus). Conséquence : **une itération vaut exactement une in
 recommande, et qu'il réclame lui-même dans les journaux. À cette granularité, le bruit n'est pas
 réduit par une machine calme : il est structurel.
 
-La même mesure signale, sur son propre travail, qu'un job long (200 ms) ne corrige rien tant que
-`UnrollFactor` garde sa valeur par défaut de 16 : les temps par opération y chutent de 13× à 291×,
-rapport du même ordre que le facteur de déroulage — signature d'appels purs à argument constant
-fusionnés par le JIT. L'hypothèse n'est pas prouvée ; l'expérience qui la trancherait est nommée
-dans le commentaire cité.
+Ce que cette correction ne dit pas — et **deux mécanismes déjà publiés puis réfutés par la mesure**.
+La même lane a d'abord avancé deux explications de l'écart entre régimes, puis les a testées et
+écartées elle-même (`c.6506079066` sur #18695, après `c.6505273899`) : ni le `UnrollFactor` par
+défaut, ni une fusion d'appels purs par le JIT n'en rendent compte. Même job long avec
+`.WithUnrollFactor(1)` (6 runs) : `Serialize` 3,6-4,4 µs contre 4,29 avec le défaut 16, `Matches`
+13-18 ns contre 14 — le facteur de déroulage ne change rien. Et un benchmark à argument **variable**
+sur 8 jobs de contenu distinct, où le hissage est impossible par construction, ne ralentit rien :
+rapport variable/constant de 0,9× sur les trois runtimes. Ce qui subsiste est un **fait**, pas une
+explication — deux régimes de mesure du même appel diffèrent d'un facteur 13× à près de 300×, et le
+mécanisme en est **ouvert**. Le test qui départagerait « coût fixe par itération » de « coût réel »
+— `OperationsPerInvoke` fixe et croissant sur le même appel (N = 1, 100, 10 000) — n'est pas fait ;
+ce document ne cite donc aucun mécanisme.
 
 **Ce que cela change pour les chiffres de ce document.** Ni la direction ni les valeurs ne sont
 renversées ; c'est leur **solidité** qui n'est pas celle qui était écrite. Les deux régimes
@@ -346,10 +353,11 @@ disponibles se contredisent en signe sur `Serialize` 9→10 (ShortRun apparié �
 n'est donc **établi** : le drapeau INCONCLUSIF est confirmé, mais pour une raison de plus, et la
 re-mesure à programmer ne se réduit pas à « trouver une machine calme ».
 
-Le correctif réel porte sur la source des bancs — garder `UnrollFactor(1)` et faire porter le
-travail par itération via `OperationsPerInvoke` sur un argument variable, résultat consommé.
-Il touche `semantic-fleet` et `MetaGeneticSharp`, donc des sous-modules : il relève de la
-coordination `ai-01` et n'est pas ouvert par cette PR.
+Le correctif porte sur la source des bancs, `semantic-fleet` et `MetaGeneticSharp` — donc des
+sous-modules : il relève de la coordination `ai-01` et n'est pas ouvert par cette PR. Sa forme
+précise dépend du régime à N croissant, non encore mesuré. `UnrollFactor(1)` étant **déjà** la
+valeur du dépôt côté `ShortRun`, le changer n'est pas le correctif ; l'argument variable non plus,
+la mesure ci-dessus le montre inopérant.
 
 ## Provenance des journaux
 
