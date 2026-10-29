@@ -45,7 +45,9 @@ flowchart LR
     S["<b>Cas pratiques Search</b><br/>Puissance 4 :<br/>ConnectFour, Minimax, MCTS, AIMA"]
     C["<b>Cas pratiques CSP</b><br/>N-Queens, GraphColoring,<br/>Nurse/JobShop, Minesweeper,<br/>Wordle, Picross, WFC..."]
     H["<b>Cas pratiques Hybrides</b><br/>EdgeDetection, Portfolio,<br/>TSP, VRP, Hyperparameter,<br/>AlgorithmSelection, PRESENT/SAT..."]
+    I["<b>Cas pratiques Informed</b> (mono-agent)<br/>Rush Hour : BFS vs A* admissible<br/>vs glouton, à l'état près"]
     P1 --> S
+    P1 --> I
     P2 --> C
     P4 --> H
     P2 --> R
@@ -157,6 +159,16 @@ Quand l'espace est trop vaste ou l'objectif trop irrégulier pour les méthodes 
 
 ---
 
+## Cas pratiques Informed — Rush Hour
+
+Le terrain d'application le plus direct de la [Partie 1](../Part1-Foundations/README.md) : un puzzle en espace d'états où la recherche mono-agent s'applique sans solveur industriel en contrepoint — la stratégie non informée sert de baseline dans le même carnet. Le Rush Hour confronte les trois stratégies de base (BFS, A\* à heuristique admissible, recherche gloutonne) sur des instances générées par scramble, à l'état près, pour rendre mesurable le rendement de l'heuristique et le prix de l'abandon de l'optimalité.
+
+| # | Notebook | Durée | Contenu | Source |
+|---|----------|-------|---------|--------|
+| 1 | [App-33-RushHour-Admissible-Astar-Python](App-33-RushHour-Admissible-Astar-Python.ipynb) | ~40 min | Rush Hour 6x6 : BFS, A\* (heuristique admissible par comptage des voitures bloquantes) et recherche gloutonne *from-scratch* (stdlib Python seule), instances générées par scramble, benchmark à l'état près | Série Search (Partie 1) |
+
+---
+
 ## Prérequis par notebook
 
 ### Puissance 4 (Search)
@@ -221,6 +233,12 @@ Quand l'espace est trop vaste ou l'objectif trop irrégulier pour les méthodes 
 | App-22 AlgorithmSelection-Python | MGS-16 (Rice / No Free Lunch) | pandas, numpy, matplotlib |
 | App-23 PRESENT Differential Cryptanalysis | SAT, CNF, bit-vectors | python-sat, numpy, matplotlib |
 | App-27 Sparse Index Tracking Walk-Forward | CSP-3 (CP-SAT), CSP-5 (optimisation), App-10 (portefeuille) | ortools, pandas, numpy |
+
+### Cas pratiques Informed
+
+| Notebook | Fondations requises | Dépendances |
+|----------|--------------------|-------------|
+| App-33 RushHour | Search-1 (espace d'états), Search-2 (BFS), Search-3 (A*) | Python 3.10+ (stdlib seule) |
 
 ## Origine des projets
 

@@ -62,10 +62,27 @@ concurrency:
 jobs:
   guard:
     name: No local-path waiver bodies
-    runs-on: ubuntu-latest
+    # #22937 (volet (d), 2026-10-28) : la garde REJOINT LA COHORTE -- forme
+    # hybride auditee de `check_self_hosted_runner_policy.py` (#22461) :
+    # PR meme-depot ET `vars.CI_OVERFLOW_LOCAL == 'true'` -> jambe Linux
+    # locale ; tout le reste (fork, variable absente ou fausse,
+    # `workflow_dispatch`) retombe sur `ubuntu-latest`.
+    # La garde same-repo est DANS l'expression : un job de forme hybride ne
+    # porte pas de `if:` de garde (la forme est statiquement auditable).
+    # Retour arriere = remettre `runs-on: ubuntu-latest` + retirer l'entry
+    # de SELF_HOSTED_WORKFLOW_ALLOWLIST.
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
     steps:
       - uses: actions/checkout@v4
         with:
+          # Cone mode (le defaut) n'accepte que des REPERTOIRES : une entree
+          # de fichier fait echouer le checkout (`fatal: ... is not a
+          # directory`). Mesure : le runner local `myia-po-2027-linux-docker-1`
+          # (git 2.43.0) echoue la, alors que le runner heberge (git plus
+          # recent) passe -- la legende locale a fait apparaitre un defaut
+          # latent, pas un defaut de mon forme `runs-on`. Forme canonique du
+          # depot (17 workflows, ex. `concurrency-conj-guard.yml`).
+          sparse-checkout-cone-mode: false
           sparse-checkout: |
             .github/workflows/local-path-waiver-guard.yml
             scripts/check_local_path_waivers.py
