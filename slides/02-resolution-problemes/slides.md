@@ -844,13 +844,17 @@ algorithme génétique (selection, reproduction, mutation, retour meilleur indiv
 
 # Algorithme génétique pour les 8 reines
 
-<img src="./images/img_031.png" style="display:block; margin:8px auto; max-height:35vh;" alt="Algorithme génétique: population, fitness, sélection, crossover, mutation" />
+<img src="./images/img_031.png" style="display:block; margin:6px auto; max-height:27vh;" alt="Algorithme génétique: population, fitness, sélection, crossover, mutation" />
 
-<img src="./images/img_032.png" style="display:block; margin:8px auto; max-height:20vh;" alt="Croisement 8 reines" />
+<img src="./images/img_032.png" style="display:block; margin:6px auto; max-height:17vh;" alt="Croisement 8 reines" />
 
 ## Phenotype
 
 - Diagramme: 3 échiquiers (addition de deux, résultat)
+
+## Le but
+
+<img src="./images/img_ga_8queens_solution.png" style="position:absolute; top:150px; right:30px; width:230px;" alt="Solution du problème des 8 reines : huit reines dont aucune ne se menace" />
 
 ---
 layout: section
