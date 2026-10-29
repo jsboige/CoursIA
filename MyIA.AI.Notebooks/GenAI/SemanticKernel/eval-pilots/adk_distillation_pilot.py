@@ -58,6 +58,35 @@ PRODUCTEUR = "producteur"
 CRITIQUE = "critique"
 ARBITRE = "arbitre"
 
+# Le bandeau d'echec de litellm (sonde sur un modele inexistant) est COLORE :
+# capture tel quel, il laisse des sequences ANSI dans la trace commitee, et
+# `gh pr diff` REFUSE alors de rendre le diff de la PR (#23197 -- le garde de
+# perimetre n'a alors plus pu mesurer la PR, rc=2, verdict UNKNOWN). La trace
+# est le stdout du pilote : c'est donc le pilote qui le rend lisible.
+_ANSI_RE = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
+
+
+class _StdoutSansAnsi:
+    """stdout du pilote, sans sequences ANSI.
+
+    Delegue tout a l flujos reel et ne fait qu'un seul travail : retirer les
+    sequences ANSI. Le contenu est sinon inchange -- la trace reste le stdout
+    du pilote, pas une version retouchee apres coup.
+    """
+
+    def __init__(self, stream):
+        self._stream = stream
+
+    def write(self, text):
+        self._stream.write(_ANSI_RE.sub("", text))
+
+    def flush(self):
+        self._stream.flush()
+
+    def __getattr__(self, name):
+        return getattr(self._stream, name)
+
+
 llm_calls = 0
 call_log: list[dict] = []
 
@@ -316,6 +345,7 @@ def structure_decision(decision: str) -> tuple:
 
 
 async def main() -> int:
+    sys.stdout = _StdoutSansAnsi(sys.stdout)  # la trace commitee ne porte pas d'ANSI
     api_key = load_api_key()
     config = ProviderConfig(
         provider=ProviderType.OPENAI,

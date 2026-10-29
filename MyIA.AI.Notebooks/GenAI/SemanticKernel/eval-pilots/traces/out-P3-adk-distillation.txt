@@ -1,211 +1,24 @@
-Node execution failed with exception
-Traceback (most recent call last):
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\litellm\llms\openai\openai.py", line 985, in acompletion
-    headers, response = await self.make_openai_chat_completion_request(
-                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\litellm\litellm_core_utils\logging_utils.py", line 344, in async_wrapper
-    result: Final = await func(*args, **kwargs)
-                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\litellm\llms\openai\openai.py", line 539, in make_openai_chat_completion_request
-    raise e
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\litellm\llms\openai\openai.py", line 515, in make_openai_chat_completion_request
-    raw_response = await openai_aclient.chat.completions.with_raw_response.create(**data, timeout=timeout)
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\openai\_legacy_response.py", line 386, in wrapped
-    return cast(LegacyAPIResponse[R], await func(*args, **kwargs))
-                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\openai\resources\chat\completions\completions.py", line 2907, in create
-    return await self._post(
-           ^^^^^^^^^^^^^^^^^
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\openai\_base_client.py", line 1992, in post
-    return await self.request(cast_to, opts, stream=stream, stream_cls=stream_cls)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\openai\_base_client.py", line 1777, in request
-    raise self._make_status_error_from_response(err.response) from None
-openai.NotFoundError: Error code: 404 - {'error': {'message': 'The model `ce-modele-n-existe-pas` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}}
-
-During handling of the above exception, another exception occurred:
-
-Traceback (most recent call last):
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\litellm\main.py", line 687, in acompletion
-    response = await _resolve_dispatched_chat_response(init_response)
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\litellm\main.py", line 752, in _resolve_dispatched_chat_response
-    return await pending
-           ^^^^^^^^^^^^^
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\litellm\llms\openai\openai.py", line 1045, in acompletion
-    raise OpenAIError(
-litellm.llms.openai.common_utils.OpenAIError: Error code: 404 - {'error': {'message': 'The model `ce-modele-n-existe-pas` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}}
-
-During handling of the above exception, another exception occurred:
-
-Traceback (most recent call last):
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\google\adk\workflow\_node_runner.py", line 136, in run
-    await self._execute_node(ctx, node_input)
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\google\adk\workflow\_node_runner.py", line 274, in _execute_node
-    await self._run_node_loop(ctx, node_input)
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\google\adk\workflow\_node_runner.py", line 288, in _run_node_loop
-    async for event in agen:
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\google\adk\workflow\_base_node.py", line 170, in run
-    async for item in agen:
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\google\adk\agents\llm_agent.py", line 627, in _run_impl
-    async for event in agen:
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\google\adk\workflow\_llm_agent_wrapper.py", line 484, in run_llm_agent_as_node
-    async for event in run_iter:
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\google\adk\agents\base_agent.py", line 339, in run_async
-    async for event in agen:
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\google\adk\agents\base_agent.py", line 100, in _with_caller_context
-    async for item in a:
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\google\adk\agents\base_agent.py", line 326, in _run
-    async for event in agen:
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\google\adk\agents\llm_agent.py", line 576, in _run_async_impl
-    async for event in agen:
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\google\adk\flows\llm_flows\base_llm_flow.py", line 1278, in run_async
-    async for event in agen:
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\google\adk\flows\llm_flows\base_llm_flow.py", line 1359, in _run_one_step_async
-    async for llm_response in agen:
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\google\adk\flows\llm_flows\base_llm_flow.py", line 1836, in _call_llm_async
-    async for event in agen:
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\google\adk\flows\llm_flows\base_llm_flow.py", line 1814, in _call_llm_with_tracing
-    async for llm_response in agen:
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\google\adk\flows\llm_flows\base_llm_flow.py", line 1897, in _run_and_handle_error
-    async for response in agen:
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\google\adk\flows\llm_flows\base_llm_flow.py", line 465, in _run_and_handle_error
-    raise model_error
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\google\adk\flows\llm_flows\base_llm_flow.py", line 442, in _run_and_handle_error
-    async for llm_response in agen:
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\google\adk\models\lite_llm.py", line 3413, in generate_content_async
-    response = await self.llm_client.acompletion(**completion_args)
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\google\adk\models\lite_llm.py", line 888, in acompletion
-    return await acompletion(
-           ^^^^^^^^^^^^^^^^^^
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\litellm\chat_completions\dispatch.py", line 102, in acompletion
-    return await _ADISPATCH.arun(
-           ^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\litellm\rust_bridge\dispatch.py", line 114, in arun
-    return await python(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\litellm\utils.py", line 2297, in wrapper_async
-    raise e
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\litellm\utils.py", line 2112, in wrapper_async
-    result = await original_function(*args, **call_kwargs)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\litellm\main.py", line 740, in acompletion
-    raise exception_type(
-          ^^^^^^^^^^^^^^^
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\litellm\litellm_core_utils\exception_mapping_utils.py", line 2745, in exception_type
-    raise e  # it's already mapped
-    ^^^^^^^
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\litellm\litellm_core_utils\exception_mapping_utils.py", line 2492, in exception_type
-    _map_openai_exception(
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\litellm\litellm_core_utils\exception_mapping_utils.py", line 327, in _map_openai_exception
-    raise NotFoundError(
-litellm.exceptions.NotFoundError: litellm.NotFoundError: OpenAIException - The model `ce-modele-n-existe-pas` does not exist or you do not have access to it.
-Root node sonde_echec failed.
-Traceback (most recent call last):
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\google\adk\runners.py", line 748, in _drive_root_node
-    await root_ctx._run_node_internal(
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\google\adk\agents\context.py", line 608, in _run_node_internal
-    raise DynamicNodeFailError(
-google.adk.workflow._errors.DynamicNodeFailError: Dynamic node sonde_echec failed
-
-During handling of the above exception, another exception occurred:
-
-Traceback (most recent call last):
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\google\adk\runners.py", line 1061, in _cleanup_root_task
-    await task
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\google\adk\runners.py", line 757, in _drive_root_node
-    raise e.error
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\google\adk\workflow\_node_runner.py", line 136, in run
-    await self._execute_node(ctx, node_input)
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\google\adk\workflow\_node_runner.py", line 274, in _execute_node
-    await self._run_node_loop(ctx, node_input)
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\google\adk\workflow\_node_runner.py", line 288, in _run_node_loop
-    async for event in agen:
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\google\adk\workflow\_base_node.py", line 170, in run
-    async for item in agen:
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\google\adk\agents\llm_agent.py", line 627, in _run_impl
-    async for event in agen:
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\google\adk\workflow\_llm_agent_wrapper.py", line 484, in run_llm_agent_as_node
-    async for event in run_iter:
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\google\adk\agents\base_agent.py", line 339, in run_async
-    async for event in agen:
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\google\adk\agents\base_agent.py", line 100, in _with_caller_context
-    async for item in a:
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\google\adk\agents\base_agent.py", line 326, in _run
-    async for event in agen:
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\google\adk\agents\llm_agent.py", line 576, in _run_async_impl
-    async for event in agen:
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\google\adk\flows\llm_flows\base_llm_flow.py", line 1278, in run_async
-    async for event in agen:
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\google\adk\flows\llm_flows\base_llm_flow.py", line 1359, in _run_one_step_async
-    async for llm_response in agen:
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\google\adk\flows\llm_flows\base_llm_flow.py", line 1836, in _call_llm_async
-    async for event in agen:
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\google\adk\flows\llm_flows\base_llm_flow.py", line 1814, in _call_llm_with_tracing
-    async for llm_response in agen:
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\google\adk\flows\llm_flows\base_llm_flow.py", line 1897, in _run_and_handle_error
-    async for response in agen:
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\google\adk\flows\llm_flows\base_llm_flow.py", line 465, in _run_and_handle_error
-    raise model_error
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\google\adk\flows\llm_flows\base_llm_flow.py", line 442, in _run_and_handle_error
-    async for llm_response in agen:
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\google\adk\models\lite_llm.py", line 3413, in generate_content_async
-    response = await self.llm_client.acompletion(**completion_args)
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\google\adk\models\lite_llm.py", line 888, in acompletion
-    return await acompletion(
-           ^^^^^^^^^^^^^^^^^^
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\litellm\chat_completions\dispatch.py", line 102, in acompletion
-    return await _ADISPATCH.arun(
-           ^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\litellm\rust_bridge\dispatch.py", line 114, in arun
-    return await python(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\litellm\utils.py", line 2297, in wrapper_async
-    raise e
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\litellm\utils.py", line 2112, in wrapper_async
-    result = await original_function(*args, **call_kwargs)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\litellm\main.py", line 740, in acompletion
-    raise exception_type(
-          ^^^^^^^^^^^^^^^
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\litellm\litellm_core_utils\exception_mapping_utils.py", line 2745, in exception_type
-    raise e  # it's already mapped
-    ^^^^^^^
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\litellm\litellm_core_utils\exception_mapping_utils.py", line 2492, in exception_type
-    _map_openai_exception(
-  File "C:\Users\jsboi\AppData\Local\Temp\claude\d--dev-CoursIA\48c7f3bf-2708-4bfc-ab9c-eeacbf0c75d8\scratchpad\adk_venv\Lib\site-packages\litellm\litellm_core_utils\exception_mapping_utils.py", line 327, in _map_openai_exception
-    raise NotFoundError(
-litellm.exceptions.NotFoundError: litellm.NotFoundError: OpenAIException - The model `ce-modele-n-existe-pas` does not exist or you do not have access to it.
-Event from an unknown agent: producteur, event id: 272b0217-2a4a-41f0-98eb-d19ddd08773c
-Event from an unknown agent: critique, event id: 2e9a385a-b931-4f7e-8d28-b4bab6ffa91d
-Event from an unknown agent: producteur, event id: 272b0217-2a4a-41f0-98eb-d19ddd08773c
-Event from an unknown agent: producteur, event id: 81b52c03-5ad2-4c07-85eb-82b05fd0196c
-Event from an unknown agent: critique, event id: 176ec825-fd23-40a3-80ef-a7578856a4f6
-Event from an unknown agent: producteur, event id: 81b52c03-5ad2-4c07-85eb-82b05fd0196c
 probe gpt-4o-mini: OK -> OK
 ADK version: google-adk 2.8.0
 
-[1;31mGive Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new[0m
+Give Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new
 LiteLLM.Info: If you need to debug this error, use `litellm.turn_on_debug()'.
 
 sonde echec (modele inexistant): NotFoundError
 charge: distill_charge_fixture.md (4859 caracteres, fixture figee)
-[run 1] tours=1 verdict_critique=ACCEPTE wall=3.92s appels=3
+[run 1] tours=1 verdict_critique=ACCEPTE wall=4.03s appels=3
     sequence: producteur -> critique -> arbitre
     decision: DECISION: RESIDUEL tour 1: La cellule d'authentification est tronquée, ce qui empêche une distillati
-    appel[producteur]: latence=2.15s
-    appel[critique]: latence=0.6s
-    appel[arbitre]: latence=1.17s
-[run 2] tours=1 verdict_critique=ACCEPTE wall=4.07s appels=3
+    appel[producteur]: latence=2.21s
+    appel[critique]: latence=0.68s
+    appel[arbitre]: latence=1.14s
+[run 2] tours=1 verdict_critique=ACCEPTE wall=4.56s appels=3
     sequence: producteur -> critique -> arbitre
     decision: DECISION: RESIDUEL tour 1: La cellule d'authentification est tronquée, ce qui empêche une distillati
-    appel[producteur]: latence=1.9s
-    appel[critique]: latence=1.02s
-    appel[arbitre]: latence=1.15s
+    appel[producteur]: latence=2.87s
+    appel[critique]: latence=0.58s
+    appel[arbitre]: latence=1.11s
 DETERMINISME (tours, decision, tour d'arbitrage): OK (1, 'RESIDUEL', '1') vs (1, 'RESIDUEL', '1')
 LLM CALLS: 7/16
-LOC PILOT: 381 lignes
+LOC PILOT: 411 lignes
 PILOT OK orchestration=ADK(designation explicite, session partagee) charge=distillation

@@ -420,10 +420,10 @@ Relevé (deux runs, même process) :
 ADK version: google-adk 2.8.0
 sonde echec (modele inexistant): NotFoundError
 charge: distill_charge_fixture.md (4859 caracteres, fixture figee)
-[run 1] tours=1 verdict_critique=ACCEPTE wall=3.92s
+[run 1] tours=1 verdict_critique=ACCEPTE wall=4.03s
     sequence: producteur -> critique -> arbitre
     decision: DECISION: RESIDUEL tour 1: La cellule d'authentification est tronquee...
-[run 2] tours=1 verdict_critique=ACCEPTE wall=4.07s
+[run 2] tours=1 verdict_critique=ACCEPTE wall=4.56s
     sequence: producteur -> critique -> arbitre
     decision: DECISION: RESIDUEL tour 1: La cellule d'authentification est tronquee...
 DETERMINISME (tours, decision, tour d'arbitrage): OK (1, 'RESIDUEL', '1') vs (1, 'RESIDUEL', '1')

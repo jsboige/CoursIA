@@ -125,3 +125,17 @@ visible sans le stderr.
 
 Une trace committée **n'est pas** un contrôle : le contrôle est le pilote, rejouable
 par la commande ci-dessus. La trace est le témoin daté de ce qu'il a produit.
+
+Deuxième piège de capture, mesuré sur P3 : le bandeau d'échec de `litellm` part sur
+**stdout**, et il est **coloré**. Une trace qui le porte laisse des séquences ANSI dans
+le fichier committé, et `gh pr diff` refuse alors de rendre le diff de la PR — le garde
+de périmètre n'a plus rien à mesurer (`rc=2`, verdict `UNKNOWN`), donc un rouge qui
+n'accuse aucun défaut de périmètre. Le pilote neutralise ces séquences **dans son
+propre stdout** (`_StdoutSansAnsi`), la trace restant son stdout et non une version
+filtrée à la capture ; et la capture force l'UTF-8, sans quoi les accents sortent dans
+la page de code de la console :
+
+```bash
+PYTHONIOENCODING=utf-8 <venv-adk>/Scripts/python adk_distillation_pilot.py \
+    > traces/out-P3-adk-distillation.txt 2> /dev/null
+```
