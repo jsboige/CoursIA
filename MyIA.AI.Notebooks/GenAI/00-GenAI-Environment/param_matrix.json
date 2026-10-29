@@ -1,0 +1,611 @@
+{
+ "gpt-5-mini": {
+  "date": "2026-10-26T01:03:56Z",
+  "source": "https://api.openai.com/v1",
+  "parametres": {
+   "temperature": {
+    "verdict": "REFUSE",
+    "date": "2026-10-26T01:03:56Z",
+    "source": "https://api.openai.com/v1",
+    "note": "Unsupported value: 'temperature' does not support 0.0 with this model. Only the default (1) value is supported."
+   },
+   "top_p": {
+    "verdict": "REFUSE",
+    "date": "2026-10-26T01:03:57Z",
+    "source": "https://api.openai.com/v1",
+    "note": "Unsupported parameter: 'top_p' is not supported with this model."
+   },
+   "top_k": {
+    "verdict": "REFUSE",
+    "date": "2026-10-26T01:03:59Z",
+    "source": "https://api.openai.com/v1",
+    "note": "Unknown parameter: 'top_k'. Did you mean 'top_p'?"
+   },
+   "frequency_penalty": {
+    "verdict": "REFUSE",
+    "date": "2026-10-26T01:04:00Z",
+    "source": "https://api.openai.com/v1",
+    "note": "Unsupported parameter: 'frequency_penalty' is not supported with this model."
+   },
+   "presence_penalty": {
+    "verdict": "REFUSE",
+    "date": "2026-10-26T01:04:01Z",
+    "source": "https://api.openai.com/v1",
+    "note": "Unsupported parameter: 'presence_penalty' is not supported with this model."
+   },
+   "logprobs": {
+    "verdict": "NON_CONCLUABLE",
+    "date": "2026-10-26T01:04:02Z",
+    "source": "https://api.openai.com/v1",
+    "note": "You are not allowed to request logprobs from this model"
+   },
+   "seed": {
+    "verdict": "ACCEPTE",
+    "date": "2026-10-26T01:04:04Z",
+    "source": "https://api.openai.com/v1"
+   },
+   "max_tokens": {
+    "verdict": "REFUSE",
+    "date": "2026-10-26T01:04:05Z",
+    "source": "https://api.openai.com/v1",
+    "note": "Unsupported parameter: 'max_tokens' is not supported with this model. Use 'max_completion_tokens' instead."
+   },
+   "max_completion_tokens": {
+    "verdict": "ACCEPTE",
+    "date": "2026-10-26T01:04:08Z",
+    "source": "https://api.openai.com/v1"
+   },
+   "reasoning_effort": {
+    "verdict": "ACCEPTE",
+    "date": "2026-10-26T01:04:10Z",
+    "source": "https://api.openai.com/v1"
+   }
+  }
+ },
+ "meta-llama/llama-3.3-70b-instruct": {
+  "date": "2026-10-26T01:04:32Z",
+  "source": "https://openrouter.ai/api/v1",
+  "parametres": {
+   "temperature": {
+    "verdict": "ACCEPTE",
+    "date": "2026-10-26T01:04:32Z",
+    "source": "https://openrouter.ai/api/v1"
+   },
+   "top_p": {
+    "verdict": "ACCEPTE",
+    "date": "2026-10-26T01:04:33Z",
+    "source": "https://openrouter.ai/api/v1"
+   },
+   "top_k": {
+    "verdict": "ACCEPTE",
+    "date": "2026-10-26T01:04:35Z",
+    "source": "https://openrouter.ai/api/v1"
+   },
+   "frequency_penalty": {
+    "verdict": "ACCEPTE",
+    "date": "2026-10-26T01:04:37Z",
+    "source": "https://openrouter.ai/api/v1"
+   },
+   "presence_penalty": {
+    "verdict": "ACCEPTE",
+    "date": "2026-10-26T01:04:38Z",
+    "source": "https://openrouter.ai/api/v1"
+   },
+   "logprobs": {
+    "verdict": "ACCEPTE",
+    "date": "2026-10-26T01:04:40Z",
+    "source": "https://openrouter.ai/api/v1"
+   },
+   "seed": {
+    "verdict": "ACCEPTE",
+    "date": "2026-10-26T01:04:42Z",
+    "source": "https://openrouter.ai/api/v1"
+   },
+   "max_tokens": {
+    "verdict": "ACCEPTE",
+    "date": "2026-10-26T01:04:44Z",
+    "source": "https://openrouter.ai/api/v1"
+   },
+   "max_completion_tokens": {
+    "verdict": "ACCEPTE",
+    "date": "2026-10-26T01:04:45Z",
+    "source": "https://openrouter.ai/api/v1"
+   },
+   "reasoning_effort": {
+    "verdict": "ACCEPTE",
+    "date": "2026-10-26T01:04:47Z",
+    "source": "https://openrouter.ai/api/v1"
+   }
+  }
+ },
+ "openai/gpt-5-mini": {
+  "date": "2026-10-26T01:04:51Z",
+  "source": "https://openrouter.ai/api/v1",
+  "parametres": {
+   "temperature": {
+    "verdict": "IGNORE",
+    "date": "2026-10-26T01:04:51Z",
+    "source": "openrouter.ai + api.openai.com",
+    "note": "la passerelle repond 200 mais l'API directe refuse ce parametre pour gpt-5-mini (mesure du meme jour, api.openai.com) : le parametre est abandonne en route sans effet"
+   },
+   "top_p": {
+    "verdict": "IGNORE",
+    "date": "2026-10-26T01:04:54Z",
+    "source": "openrouter.ai + api.openai.com",
+    "note": "la passerelle repond 200 mais l'API directe refuse ce parametre pour gpt-5-mini (mesure du meme jour, api.openai.com) : le parametre est abandonne en route sans effet"
+   },
+   "top_k": {
+    "verdict": "IGNORE",
+    "date": "2026-10-26T01:04:57Z",
+    "source": "openrouter.ai + api.openai.com",
+    "note": "la passerelle repond 200 mais l'API directe refuse ce parametre pour gpt-5-mini (mesure du meme jour, api.openai.com) : le parametre est abandonne en route sans effet"
+   },
+   "frequency_penalty": {
+    "verdict": "IGNORE",
+    "date": "2026-10-26T01:05:00Z",
+    "source": "openrouter.ai + api.openai.com",
+    "note": "la passerelle repond 200 mais l'API directe refuse ce parametre pour gpt-5-mini (mesure du meme jour, api.openai.com) : le parametre est abandonne en route sans effet"
+   },
+   "presence_penalty": {
+    "verdict": "IGNORE",
+    "date": "2026-10-26T01:05:04Z",
+    "source": "openrouter.ai + api.openai.com",
+    "note": "la passerelle repond 200 mais l'API directe refuse ce parametre pour gpt-5-mini (mesure du meme jour, api.openai.com) : le parametre est abandonne en route sans effet"
+   },
+   "logprobs": {
+    "verdict": "REFUSE",
+    "date": "2026-10-26T01:05:05Z",
+    "source": "https://openrouter.ai/api/v1",
+    "note": "Provider returned error"
+   },
+   "seed": {
+    "verdict": "ACCEPTE",
+    "date": "2026-10-26T01:05:08Z",
+    "source": "https://openrouter.ai/api/v1"
+   },
+   "max_tokens": {
+    "verdict": "IGNORE",
+    "date": "2026-10-26T01:05:11Z",
+    "source": "openrouter.ai + api.openai.com",
+    "note": "la passerelle repond 200 mais l'API directe refuse ce parametre pour gpt-5-mini (mesure du meme jour, api.openai.com) : le parametre est abandonne en route sans effet"
+   },
+   "max_completion_tokens": {
+    "verdict": "ACCEPTE",
+    "date": "2026-10-26T01:05:15Z",
+    "source": "https://openrouter.ai/api/v1"
+   },
+   "reasoning_effort": {
+    "verdict": "ACCEPTE",
+    "date": "2026-10-26T01:05:17Z",
+    "source": "https://openrouter.ai/api/v1"
+   }
+  }
+ },
+ "deepseek/deepseek-r1": {
+  "date": "2026-10-26T01:03:56Z",
+  "source": "mesure #20682",
+  "parametres": {
+   "temperature": {
+    "verdict": "NON_CONCLUABLE",
+    "date": "2026-10-26T01:03:56Z",
+    "source": "mesure #20682",
+    "note": "plus servi par aucun fournisseur OpenRouter (404 'no provider serves this model anymore')"
+   },
+   "top_p": {
+    "verdict": "NON_CONCLUABLE",
+    "date": "2026-10-26T01:03:56Z",
+    "source": "mesure #20682",
+    "note": "plus servi par aucun fournisseur OpenRouter (404 'no provider serves this model anymore')"
+   },
+   "top_k": {
+    "verdict": "NON_CONCLUABLE",
+    "date": "2026-10-26T01:03:56Z",
+    "source": "mesure #20682",
+    "note": "plus servi par aucun fournisseur OpenRouter (404 'no provider serves this model anymore')"
+   },
+   "frequency_penalty": {
+    "verdict": "NON_CONCLUABLE",
+    "date": "2026-10-26T01:03:56Z",
+    "source": "mesure #20682",
+    "note": "plus servi par aucun fournisseur OpenRouter (404 'no provider serves this model anymore')"
+   },
+   "presence_penalty": {
+    "verdict": "NON_CONCLUABLE",
+    "date": "2026-10-26T01:03:56Z",
+    "source": "mesure #20682",
+    "note": "plus servi par aucun fournisseur OpenRouter (404 'no provider serves this model anymore')"
+   },
+   "logprobs": {
+    "verdict": "NON_CONCLUABLE",
+    "date": "2026-10-26T01:03:56Z",
+    "source": "mesure #20682",
+    "note": "plus servi par aucun fournisseur OpenRouter (404 'no provider serves this model anymore')"
+   },
+   "seed": {
+    "verdict": "NON_CONCLUABLE",
+    "date": "2026-10-26T01:03:56Z",
+    "source": "mesure #20682",
+    "note": "plus servi par aucun fournisseur OpenRouter (404 'no provider serves this model anymore')"
+   },
+   "max_tokens": {
+    "verdict": "NON_CONCLUABLE",
+    "date": "2026-10-26T01:03:56Z",
+    "source": "mesure #20682",
+    "note": "plus servi par aucun fournisseur OpenRouter (404 'no provider serves this model anymore')"
+   },
+   "max_completion_tokens": {
+    "verdict": "NON_CONCLUABLE",
+    "date": "2026-10-26T01:03:56Z",
+    "source": "mesure #20682",
+    "note": "plus servi par aucun fournisseur OpenRouter (404 'no provider serves this model anymore')"
+   },
+   "reasoning_effort": {
+    "verdict": "NON_CONCLUABLE",
+    "date": "2026-10-26T01:03:56Z",
+    "source": "mesure #20682",
+    "note": "plus servi par aucun fournisseur OpenRouter (404 'no provider serves this model anymore')"
+   }
+  }
+ },
+ "gpt-image-1": {
+  "date": "2026-10-26T01:05:50Z",
+  "source": "https://api.openai.com/v1",
+  "parametres": {
+   "style": {
+    "verdict": "REFUSE",
+    "date": "2026-10-26T01:05:50Z",
+    "source": "https://api.openai.com/v1",
+    "note": "Unknown parameter: 'style'."
+   },
+   "quality": {
+    "verdict": "NON_CONCLUABLE",
+    "date": "2026-10-26T01:08:56Z",
+    "source": "https://api.openai.com/v1",
+    "note": "The model 'gpt-image-1' does not exist. [acces cle/org au modele, pas un refus de parametre]"
+   },
+   "size": {
+    "verdict": "NON_CONCLUABLE",
+    "date": "2026-10-26T01:08:57Z",
+    "source": "https://api.openai.com/v1",
+    "note": "The model 'gpt-image-1' does not exist. [acces cle/org au modele, pas un refus de parametre]"
+   },
+   "response_format": {
+    "verdict": "REFUSE",
+    "date": "2026-10-26T01:05:53Z",
+    "source": "https://api.openai.com/v1",
+    "note": "Unknown parameter: 'response_format'."
+   }
+  }
+ },
+ "dall-e-3": {
+  "date": "2026-10-26T01:05:53Z",
+  "source": "https://api.openai.com/v1",
+  "parametres": {
+   "style": {
+    "verdict": "REFUSE",
+    "date": "2026-10-26T01:08:54Z",
+    "source": "https://api.openai.com/v1",
+    "note": "Unknown parameter: 'style'."
+   },
+   "response_format": {
+    "verdict": "REFUSE",
+    "date": "2026-10-26T01:08:54Z",
+    "source": "https://api.openai.com/v1",
+    "note": "Unknown parameter: 'response_format'."
+   },
+   "quality": {
+    "verdict": "NON_CONCLUABLE",
+    "date": "2026-10-26T01:08:55Z",
+    "source": "https://api.openai.com/v1",
+    "note": "The model 'dall-e-3' does not exist. [acces cle/org au modele, pas un refus de parametre]"
+   },
+   "size": {
+    "verdict": "NON_CONCLUABLE",
+    "date": "2026-10-26T01:05:53Z",
+    "source": "https://api.openai.com/v1",
+    "note": "modele absent de /v1/models"
+   }
+  }
+ },
+ "gpt-4o-mini": {
+  "date": "2026-10-26T01:08:31Z",
+  "source": "https://api.openai.com/v1",
+  "parametres": {
+   "temperature": {
+    "verdict": "ACCEPTE",
+    "date": "2026-10-26T01:08:31Z",
+    "source": "https://api.openai.com/v1"
+   },
+   "top_p": {
+    "verdict": "ACCEPTE",
+    "date": "2026-10-26T01:08:32Z",
+    "source": "https://api.openai.com/v1"
+   },
+   "top_k": {
+    "verdict": "REFUSE",
+    "date": "2026-10-26T01:08:33Z",
+    "source": "https://api.openai.com/v1",
+    "note": "Unrecognized request argument supplied: top_k"
+   },
+   "frequency_penalty": {
+    "verdict": "ACCEPTE",
+    "date": "2026-10-26T01:08:35Z",
+    "source": "https://api.openai.com/v1"
+   },
+   "presence_penalty": {
+    "verdict": "ACCEPTE",
+    "date": "2026-10-26T01:08:36Z",
+    "source": "https://api.openai.com/v1"
+   },
+   "logprobs": {
+    "verdict": "ACCEPTE",
+    "date": "2026-10-26T01:08:38Z",
+    "source": "https://api.openai.com/v1"
+   },
+   "seed": {
+    "verdict": "ACCEPTE",
+    "date": "2026-10-26T01:08:39Z",
+    "source": "https://api.openai.com/v1"
+   },
+   "max_tokens": {
+    "verdict": "ACCEPTE",
+    "date": "2026-10-26T01:08:41Z",
+    "source": "https://api.openai.com/v1"
+   },
+   "max_completion_tokens": {
+    "verdict": "ACCEPTE",
+    "date": "2026-10-26T01:08:42Z",
+    "source": "https://api.openai.com/v1"
+   },
+   "reasoning_effort": {
+    "verdict": "REFUSE",
+    "date": "2026-10-26T01:08:43Z",
+    "source": "https://api.openai.com/v1",
+    "note": "Unrecognized request argument supplied: reasoning_effort"
+   }
+  }
+ },
+ "o4-mini": {
+  "date": "2026-10-26T01:03:56Z",
+  "source": "mesure #20682",
+  "parametres": {
+   "temperature": {
+    "verdict": "NON_CONCLUABLE",
+    "date": "2026-10-26T01:03:56Z",
+    "source": "mesure #20682",
+    "note": "modele deprecate chez OpenAI (404 deprecation) -- plus mesurable en direct ; passer par OpenRouter ou un modele o* vivant pour re-mesurer"
+   },
+   "top_p": {
+    "verdict": "NON_CONCLUABLE",
+    "date": "2026-10-26T01:03:56Z",
+    "source": "mesure #20682",
+    "note": "modele deprecate chez OpenAI (404 deprecation) -- plus mesurable en direct ; passer par OpenRouter ou un modele o* vivant pour re-mesurer"
+   },
+   "top_k": {
+    "verdict": "NON_CONCLUABLE",
+    "date": "2026-10-26T01:03:56Z",
+    "source": "mesure #20682",
+    "note": "modele deprecate chez OpenAI (404 deprecation) -- plus mesurable en direct ; passer par OpenRouter ou un modele o* vivant pour re-mesurer"
+   },
+   "frequency_penalty": {
+    "verdict": "NON_CONCLUABLE",
+    "date": "2026-10-26T01:03:56Z",
+    "source": "mesure #20682",
+    "note": "modele deprecate chez OpenAI (404 deprecation) -- plus mesurable en direct ; passer par OpenRouter ou un modele o* vivant pour re-mesurer"
+   },
+   "presence_penalty": {
+    "verdict": "NON_CONCLUABLE",
+    "date": "2026-10-26T01:03:56Z",
+    "source": "mesure #20682",
+    "note": "modele deprecate chez OpenAI (404 deprecation) -- plus mesurable en direct ; passer par OpenRouter ou un modele o* vivant pour re-mesurer"
+   },
+   "logprobs": {
+    "verdict": "NON_CONCLUABLE",
+    "date": "2026-10-26T01:03:56Z",
+    "source": "mesure #20682",
+    "note": "modele deprecate chez OpenAI (404 deprecation) -- plus mesurable en direct ; passer par OpenRouter ou un modele o* vivant pour re-mesurer"
+   },
+   "seed": {
+    "verdict": "NON_CONCLUABLE",
+    "date": "2026-10-26T01:03:56Z",
+    "source": "mesure #20682",
+    "note": "modele deprecate chez OpenAI (404 deprecation) -- plus mesurable en direct ; passer par OpenRouter ou un modele o* vivant pour re-mesurer"
+   },
+   "max_tokens": {
+    "verdict": "NON_CONCLUABLE",
+    "date": "2026-10-26T01:03:56Z",
+    "source": "mesure #20682",
+    "note": "modele deprecate chez OpenAI (404 deprecation) -- plus mesurable en direct ; passer par OpenRouter ou un modele o* vivant pour re-mesurer"
+   },
+   "max_completion_tokens": {
+    "verdict": "NON_CONCLUABLE",
+    "date": "2026-10-26T01:03:56Z",
+    "source": "mesure #20682",
+    "note": "modele deprecate chez OpenAI (404 deprecation) -- plus mesurable en direct ; passer par OpenRouter ou un modele o* vivant pour re-mesurer"
+   },
+   "reasoning_effort": {
+    "verdict": "NON_CONCLUABLE",
+    "date": "2026-10-26T01:03:56Z",
+    "source": "mesure #20682",
+    "note": "modele deprecate chez OpenAI (404 deprecation) -- plus mesurable en direct ; passer par OpenRouter ou un modele o* vivant pour re-mesurer"
+   }
+  }
+ },
+ "qwen3.6-35b-a3b": {
+  "date": "2026-10-26T01:08:59Z",
+  "source": "https://api.medium.text-generation-webui.myia.io/v1",
+  "parametres": {
+   "temperature": {
+    "verdict": "ACCEPTE",
+    "date": "2026-10-26T01:08:59Z",
+    "source": "https://api.medium.text-generation-webui.myia.io/v1"
+   },
+   "top_p": {
+    "verdict": "ACCEPTE",
+    "date": "2026-10-26T01:09:01Z",
+    "source": "https://api.medium.text-generation-webui.myia.io/v1"
+   },
+   "top_k": {
+    "verdict": "ACCEPTE",
+    "date": "2026-10-26T01:09:03Z",
+    "source": "https://api.medium.text-generation-webui.myia.io/v1"
+   },
+   "frequency_penalty": {
+    "verdict": "ACCEPTE",
+    "date": "2026-10-26T01:09:04Z",
+    "source": "https://api.medium.text-generation-webui.myia.io/v1"
+   },
+   "presence_penalty": {
+    "verdict": "ACCEPTE",
+    "date": "2026-10-26T01:09:06Z",
+    "source": "https://api.medium.text-generation-webui.myia.io/v1"
+   },
+   "logprobs": {
+    "verdict": "ACCEPTE",
+    "date": "2026-10-26T01:09:08Z",
+    "source": "https://api.medium.text-generation-webui.myia.io/v1"
+   },
+   "seed": {
+    "verdict": "ACCEPTE",
+    "date": "2026-10-26T01:09:10Z",
+    "source": "https://api.medium.text-generation-webui.myia.io/v1"
+   },
+   "max_tokens": {
+    "verdict": "ACCEPTE",
+    "date": "2026-10-26T01:09:11Z",
+    "source": "https://api.medium.text-generation-webui.myia.io/v1"
+   },
+   "max_completion_tokens": {
+    "verdict": "ACCEPTE",
+    "date": "2026-10-26T01:09:14Z",
+    "source": "https://api.medium.text-generation-webui.myia.io/v1"
+   },
+   "reasoning_effort": {
+    "verdict": "ACCEPTE",
+    "date": "2026-10-26T01:09:16Z",
+    "source": "https://api.medium.text-generation-webui.myia.io/v1"
+   }
+  }
+ },
+ "gpt-5*": {
+  "date": "2026-10-26T01:03:56Z",
+  "source": "famille gpt-5, mesure sur gpt-5-mini (https://api.openai.com/v1)",
+  "parametres": {
+   "temperature": {
+    "verdict": "REFUSE",
+    "date": "2026-10-26T01:03:56Z",
+    "source": "famille gpt-5, mesure sur gpt-5-mini",
+    "note": "Unsupported value: 'temperature' does not support 0.0 with this model. Only the default (1) value is supported."
+   },
+   "top_p": {
+    "verdict": "REFUSE",
+    "date": "2026-10-26T01:03:57Z",
+    "source": "famille gpt-5, mesure sur gpt-5-mini",
+    "note": "Unsupported parameter: 'top_p' is not supported with this model."
+   },
+   "top_k": {
+    "verdict": "REFUSE",
+    "date": "2026-10-26T01:03:59Z",
+    "source": "famille gpt-5, mesure sur gpt-5-mini",
+    "note": "Unknown parameter: 'top_k'. Did you mean 'top_p'?"
+   },
+   "frequency_penalty": {
+    "verdict": "REFUSE",
+    "date": "2026-10-26T01:04:00Z",
+    "source": "famille gpt-5, mesure sur gpt-5-mini",
+    "note": "Unsupported parameter: 'frequency_penalty' is not supported with this model."
+   },
+   "presence_penalty": {
+    "verdict": "REFUSE",
+    "date": "2026-10-26T01:04:01Z",
+    "source": "famille gpt-5, mesure sur gpt-5-mini",
+    "note": "Unsupported parameter: 'presence_penalty' is not supported with this model."
+   },
+   "logprobs": {
+    "verdict": "NON_CONCLUABLE",
+    "date": "2026-10-26T01:04:02Z",
+    "source": "famille gpt-5, mesure sur gpt-5-mini",
+    "note": "You are not allowed to request logprobs from this model"
+   },
+   "seed": {
+    "verdict": "ACCEPTE",
+    "date": "2026-10-26T01:04:04Z",
+    "source": "famille gpt-5, mesure sur gpt-5-mini"
+   },
+   "max_tokens": {
+    "verdict": "REFUSE",
+    "date": "2026-10-26T01:04:05Z",
+    "source": "famille gpt-5, mesure sur gpt-5-mini",
+    "note": "Unsupported parameter: 'max_tokens' is not supported with this model. Use 'max_completion_tokens' instead."
+   },
+   "max_completion_tokens": {
+    "verdict": "ACCEPTE",
+    "date": "2026-10-26T01:04:08Z",
+    "source": "famille gpt-5, mesure sur gpt-5-mini"
+   },
+   "reasoning_effort": {
+    "verdict": "ACCEPTE",
+    "date": "2026-10-26T01:04:10Z",
+    "source": "famille gpt-5, mesure sur gpt-5-mini"
+   }
+  }
+ },
+ "gpt-4o*": {
+  "date": "2026-10-26T01:08:31Z",
+  "source": "famille gpt-4o, mesure sur gpt-4o-mini (https://api.openai.com/v1)",
+  "parametres": {
+   "temperature": {
+    "verdict": "ACCEPTE",
+    "date": "2026-10-26T01:08:31Z",
+    "source": "famille gpt-4o, mesure sur gpt-4o-mini"
+   },
+   "top_p": {
+    "verdict": "ACCEPTE",
+    "date": "2026-10-26T01:08:32Z",
+    "source": "famille gpt-4o, mesure sur gpt-4o-mini"
+   },
+   "top_k": {
+    "verdict": "REFUSE",
+    "date": "2026-10-26T01:08:33Z",
+    "source": "famille gpt-4o, mesure sur gpt-4o-mini",
+    "note": "Unrecognized request argument supplied: top_k"
+   },
+   "frequency_penalty": {
+    "verdict": "ACCEPTE",
+    "date": "2026-10-26T01:08:35Z",
+    "source": "famille gpt-4o, mesure sur gpt-4o-mini"
+   },
+   "presence_penalty": {
+    "verdict": "ACCEPTE",
+    "date": "2026-10-26T01:08:36Z",
+    "source": "famille gpt-4o, mesure sur gpt-4o-mini"
+   },
+   "logprobs": {
+    "verdict": "ACCEPTE",
+    "date": "2026-10-26T01:08:38Z",
+    "source": "famille gpt-4o, mesure sur gpt-4o-mini"
+   },
+   "seed": {
+    "verdict": "ACCEPTE",
+    "date": "2026-10-26T01:08:39Z",
+    "source": "famille gpt-4o, mesure sur gpt-4o-mini"
+   },
+   "max_tokens": {
+    "verdict": "ACCEPTE",
+    "date": "2026-10-26T01:08:41Z",
+    "source": "famille gpt-4o, mesure sur gpt-4o-mini"
+   },
+   "max_completion_tokens": {
+    "verdict": "ACCEPTE",
+    "date": "2026-10-26T01:08:42Z",
+    "source": "famille gpt-4o, mesure sur gpt-4o-mini"
+   },
+   "reasoning_effort": {
+    "verdict": "REFUSE",
+    "date": "2026-10-26T01:08:43Z",
+    "source": "famille gpt-4o, mesure sur gpt-4o-mini",
+    "note": "Unrecognized request argument supplied: reasoning_effort"
+   }
+  }
+ }
+}

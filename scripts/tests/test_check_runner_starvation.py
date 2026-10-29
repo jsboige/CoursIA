@@ -427,6 +427,58 @@ def test_fetch_inventory_auth_failure_returns_unavailable(monkeypatch):
     assert not inv.available
 
 
+def test_inventaire_busy_nest_pas_dans_les_slots_libres(monkeypatch):
+    # Un runner en ligne mais OCCUPE ne peut pas absorber un debordement :
+    # le confondre avec un slot libre ferait annoncer une capacite locale
+    # qui n'existe pas.
+    def fake_gh(args: list[str], token: str | None = None, stats=None):
+        return {"runners": [
+            {"name": "r-busy", "status": "online", "busy": True,
+             "labels": [{"name": "coursia-linux"}]},
+            {"name": "r-idle", "status": "online", "busy": False,
+             "labels": [{"name": "coursia-linux"}]},
+        ]}
+
+    monkeypatch.setattr(rs, "_gh_json", fake_gh)
+    inv = rs.fetch_inventory("jsboige/CoursIA", "coursia-linux", token="pat")
+    assert inv.busy == ["r-busy"]
+    assert inv.idle == ["r-idle"]
+    assert inv.unknown == []
+    assert inv.free == 1
+
+
+def test_inventaire_champ_busy_absent_ne_passe_pas_pour_un_slot_libre(monkeypatch):
+    # Un runner en ligne dont l'occupation est INCONNUE (champ `busy` absent
+    # de la reponse) n'est PAS comptabilise comme libre : fail-CLOSED vers
+    # « capacite disponible ». Le traitement du cas muet est explicite, et
+    # le runner est nomme pour que le rapport dise ce qu'il ignore.
+    def fake_gh(args: list[str], token: str | None = None, stats=None):
+        return {"runners": [
+            {"name": "r-muet", "status": "online",
+             "labels": [{"name": "coursia-linux"}]},
+        ]}
+
+    monkeypatch.setattr(rs, "_gh_json", fake_gh)
+    inv = rs.fetch_inventory("jsboige/CoursIA", "coursia-linux", token="pat")
+    assert inv.unknown == ["r-muet"]
+    assert inv.idle == []
+    assert inv.busy == []
+    assert inv.free == 0
+
+
+def test_budget_de_lecture_atteint_une_lecture_tronquee_pas_une_lecture_echouee():
+    # Deux proprietes, deux faits : `complete` dit si la lecture a SUCCEEDE
+    # (aucun listing en echec), `truncated` dit si elle a vu TOUT. Un run non
+    # lu est un run vieux : il peut porter des jobs affames. La consequence
+    # directionnelle est traitee par le controleur (#22946).
+    st = rs.Starvation()
+    assert st.complete is True and st.truncated is False
+    st.budget_unread.append(("wf", 42, 17.5))
+    assert st.truncated is True
+    # La lecture n'a pas ECHOUE : elle a ete arretee par le budget.
+    assert st.complete is True
+
+
 def test_job_queued_then_run_disappears_terminal_is_purged(monkeypatch):
     """Falsification du residu adjoint (po-2025:CoursIA-2, 2026-09-02 14:24Z) :
     le run ENTIER devient terminal entre les deux listing queries -- il

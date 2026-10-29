@@ -23,6 +23,7 @@
 | Position de base | Accrétion | Hommage fondateur | Matière |
 |---|---|---|---|
 | 02 | **02b** — Le seuil du 3-SAT, mesuré contre la densité | Cheeseman, Kanefsky & Taylor (*Where the really hard problems are*, IJCAI-91) ; Mitchell, Selman & Levesque (*Hard and easy distributions of SAT problems*, AAAI-92) | Balayage `m/n` à `n` fixe : `P(satisfaisable)` et coût DPLL, oracle d'énumération exhaustive, contrôle 2-SAT, affûtage avec `n` |
+| 02 | **02c** — Seuil sans mur, systèmes GF(2) | Mezard, Zecchina & Weisz (seuil des systèmes d'équations aléatoires sur GF(2)) | Transition de satisfaisabilité à $m/n = 1$ **sans** décollage de coût (Gauss $O(n^3)$ lisse), contrôle face au 3-SAT (coût DPLL qui décolle) |
 | 03 | **03b** — Hartmanis–Stearns 1965 | Juris Hartmanis & Richard Stearns (prix Turing 1993) | Théorème de hiérarchie en temps $\mathrm{TIME}(f) \subsetneq \mathrm{TIME}(f \log f)$, diagonalisation |
 | 03 | **03c** — Zoo et oracles | Scott Aaronson (fondateur Complexity Zoo 2004), Baker–Gill–Solovay 1975 | Navigation dans le Zoo, barrière de relativisation |
 | 04 | **04b** — Conjectures online 2026 | Sahil Singla, Christian Coester, Elias Koutsoupias, Marek Zbysiński | Secrétaire matroïdal, conjecture k-server |

@@ -3995,6 +3995,29 @@ STUB
   else
     ko "aucun plafond memoire sur le conteneur du miroir (un clone integral sans borne)"
   fi
+  # gc.auto=0 (mission ai-01 26/10, #18225) : le script MIRROR_SH voyage DANS
+  # l'argv (`-c "$script"`), donc le verifier ici couvre ce qui atteint
+  # REELLEMENT le conteneur, bootstrap et refresh d'un seul tenant -- un grep
+  # du source ne prouverait pas que le script epingle est celui qui tourne.
+  # Comptes attendus : 2x `config gc.auto 0` (epingle au bootstrap +
+  # re-epingle par le refresh, pour les miroirs bootstrapes avant la ligne) et
+  # 2x `-c gc.auto=0` (les DEUX fetch --prune). NB : la moitie CONSOMMATRICE
+  # de la meme mission (GIT_ALTERNATE_OBJECT_DIRECTORIES posee avec miroir,
+  # absente sinon) est comportementale et vit dans test_entrypoint_mirror.sh
+  # Test 8 -- la variable est exportee par le PROCESSUS entrypoint, elle n'a
+  # sa place dans AUCUN argv observe par cette suite.
+  n_cfg="$(printf '%s\n' "$argv" | grep -c -- 'config gc.auto 0')"
+  if [ "$n_cfg" = "2" ]; then
+    ok "gc.auto epingle au bootstrap ET re-epingle par le refresh"
+  else
+    ko "attendu 2 'config gc.auto 0' dans le script du conteneur, obtenu $n_cfg"
+  fi
+  n_fetch="$(printf '%s\n' "$argv" | grep -o -- '-c gc.auto=0' | wc -l | tr -d ' ')"
+  if [ "$n_fetch" = "2" ]; then
+    ok "gc.auto=0 en -c sur les DEUX fetch --prune (bootstrap + refresh)"
+  else
+    ko "attendu 2 '-c gc.auto=0' (bootstrap + refresh), obtenu $n_fetch"
+  fi
 )
 echo ""
 
