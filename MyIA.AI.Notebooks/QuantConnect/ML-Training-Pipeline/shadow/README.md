@@ -40,8 +40,8 @@ Colonnes de `passes.csv` :
 |---|---|
 | `candidate`, `sha`, `frozen_on` | l'identité gelée, recopiée du registre |
 | `pass_date` | date du passage |
-| `period_end` | dernière séance de la période rejouée |
-| `n_days` | nombre de séances, de D à `period_end` |
+| `period_end` | dernière séance clôturée rendue par la candidate pour `end = pass_date` ; bornée par le harnais à `frozen_on ≤ period_end ≤ pass_date`, sans décalage fixe — c'est la donnée disponible qui décide : un passage un lundi s'arrête au vendredi précédent, un passage en semaine peut atteindre la veille |
+| `n_days` | nombre de séances de D à `period_end` ; D est fixe au gel et la fenêtre ne se tronque jamais, donc `n_days` ne fait que croître — par blocs d'environ 21 séances par mois, au rythme des jours de semaine des passages (aucune fenêtre n'est sélectionnable) |
 | `sharpe_net` | moyenne / écart-type (ddof = 1) × √252 des rendements journaliers nets, taux sans risque nul ; vide si l'écart-type est nul |
 | `cagr` | produit des (1 + r) à la puissance 1 / années, moins 1 ; années = jours calendaires entre la première et la dernière séance, divisés par 365,25 |
 | `max_drawdown` | minimum de équité / maximum courant − 1 |
@@ -163,5 +163,7 @@ Un passage par mois, à la première séance du mois. Chaque passage est une PR 
 
 ## Ce qui n'est pas encore là
 
-- **Les premières inscriptions** (étape 2 de #18923) : les conventions `U` et `F` de `inverse_vol` se gèlent une fois ce point d'entrée sur `main`, au commit qui le porte ; leur premier passage a lieu à la première séance du mois suivant.
-- **Le rythme automatique** est l'étape 3 de #18923.
+- **Le premier passage des candidates QuantConnect** (étape 2 de #18923) : `mhm676`, `fs774`, `splits-lo`, `lsh-lag`, `tw-pit` et `btc-voltarget-base` sont gelées et `due`, mais un passage QC demande le MCP QuantConnect, absent de plusieurs sièges ; sur un siège sans MCP, elles restent dues. Les deux candidates locales (`ivol-U`, `ivol-F`) ont eu le leur le 2026-10-25, et l'organe ne les rend plus dues avant novembre.
+- **Le rythme automatique** (étape 3 de #18923) : le décideur existe (`scripts/shadow_schedule.py`), aucun déclencheur planifié ne l'appelle — la cadence est encore tenue à la main.
+
+Un passage pris en cours de mois plutôt qu'à la première séance ne fausse pas la lecture : la fenêtre hors échantillon ne fait que s'allonger de D à la date du passage, et `due` ne l'ouvre qu'une fois par mois et par candidate.

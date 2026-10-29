@@ -624,6 +624,14 @@ def _patch_belt_network(monkeypatch, prs, red_state):
     # un aller-retour d'auth lent. C'est de l'installation d'environnement,
     # pas le comportement sous test : on le neutralise.
     monkeypatch.setattr(pig.gh_identity, "pin_gh_token", lambda *a, **k: None)
+    # `snapshot_prime` (#22630) : le tapis rafraichit son instantane partage
+    # UNE FOIS par passe, ce qui emet un `gh api` par issue candidate. Le
+    # defaut de la boucle est INERTE (`belt_snapshot_prime_inert`) ; `main`
+    # injecte le vrai rafraichisseur. On enumere ici la surface, comme les
+    # autres : les tests qui gardent un pool vide n'ont aucun candidat a
+    # rafraichir, et l'ecriture du cache reste desactivee sous pytest
+    # (`_PASS_SNAPSHOT`).
+    monkeypatch.setattr(pig, "_belt_snapshot_prime", lambda repo, numbers: None)
 
 
 def test_belt_json_emits_single_document_when_red_present(monkeypatch, capsys):
@@ -699,6 +707,11 @@ def test_belt_loop_default_probes_are_inert(monkeypatch):
     et pendait (mesure 2026-10-09 : 99 s pour un seul test). Ce garde
     casse au premier retour d'un defaut reseau : les vraies sondes sont
     remplacees par des leveuses d'exception, la boucle doit completer.
+
+    Le rafraichissement d'instantane (#22630) est couvert de la meme facon :
+    le vrai ``_belt_snapshot_prime`` est une leveuse -- si la boucle
+    redevenait reseau par defaut, ce test echoue au lieu de pendre. Le
+    garde `_no_real_gh` attrape au passage tout `gh` residuel.
     """
     def raise_delivered(n, lane=None):
         raise _RealProbeReached(f"has_delivered_signal atteinte pour #{n}")
@@ -713,6 +726,10 @@ def test_belt_loop_default_probes_are_inert(monkeypatch):
     monkeypatch.setattr(pig, "has_delivered_signal", raise_delivered)
     monkeypatch.setattr(pig, "merged_pr_signal", raise_merged)
     monkeypatch.setattr(pig, "has_recent_delivery_marker", raise_recent)
+    monkeypatch.setattr(
+        pig, "_belt_snapshot_prime",
+        lambda repo, numbers: (_ for _ in ()).throw(
+            _RealProbeReached("_belt_snapshot_prime atteint hors injection")))
 
     pool = [_make_item(19001, age_days=50, idle=5, last=None),
             _make_item(19002, age_days=49, idle=5, last=None)]
@@ -755,9 +772,10 @@ def test_belt_main_json_path_never_reaches_real_probes(monkeypatch, capsys):
             "isDraft": False}]
     _patch_belt_network(monkeypatch, prs, red)
     # La fixture couvre fetch_visits (main l'appelle legitiment, sans
-    # reseau en test). Les sondes de livraison, elles, ne DOIVENT etre
-    # atteintes nulle part sur ce chemin -- defauts inertes de la boucle :
-    # si un defaut reseau revient, la leveuse fait echouer le test.
+    # reseau en test) ET le rafraichisseur d'instantane. Les sondes de
+    # livraison, elles, ne DOIVENT etre atteintes nulle part sur ce chemin
+    # -- defauts inertes de la boucle : si un defaut reseau revient, la
+    # leveuse fait echouer le test.
     monkeypatch.setattr(pig, "has_delivered_signal",
                         raise_real("has_delivered_signal"))
     monkeypatch.setattr(pig, "merged_pr_signal",
@@ -769,6 +787,43 @@ def test_belt_main_json_path_never_reaches_real_probes(monkeypatch, capsys):
     payload = json.loads(capsys.readouterr().out)
     assert payload["mode"] == "belt"
     assert payload["repair"]["grain"]["number"] == 18844
+
+
+def test_belt_main_injects_the_real_snapshot_prime(monkeypatch, capsys):
+    """Le cache reste utilise en production : `main` injecte le vrai prime.
+
+    Controle positif du defaut inerte : la boucle seule n'emet aucune
+    requete, mais le run complet rafraichit bien l'instantane partage UNE
+    FOIS pour les candidats de la fenetre. Le rafraichisseur est espionne
+    (aucune requete reelle), les candidats restent vides de claims pour
+    garder le run en memoire.
+    """
+    _patch_belt_network(monkeypatch, prs=[], red_state=_state_red())
+    pool = [_make_item(19101, age_days=50, idle=5, last=None)]
+    monkeypatch.setattr(pig, "fetch_pool", lambda **k: (list(pool), None))
+    # La mesure des dernieres visites (`latest_claim_stamp` / bulk GraphQL)
+    # n'est pas la surface sous test : elle est neutralisee comme dans les
+    # autres tests de la boucle, pour garder le run entierement en memoire.
+    monkeypatch.setattr(pig, "fetch_latest_claim_stamps_bulk",
+                        lambda *a, **k: ({}, None))
+    # Sondes de livraison : verdicts injectes, comme partout dans ce fichier
+    # -- seul le BRANCHEMENT du rafraichisseur est mesure ici.
+    monkeypatch.setattr(pig, "has_delivered_signal", lambda n, lane=None: False)
+    monkeypatch.setattr(pig, "merged_pr_signal", lambda n, lane=None: False)
+    monkeypatch.setattr(pig, "has_recent_delivery_marker", lambda n: False)
+    primed: list[list[int]] = []
+
+    def spy_prime(repo, numbers):
+        primed.append(list(numbers))
+
+    monkeypatch.setattr(pig, "_belt_snapshot_prime", spy_prime)
+    rc = pig.main(["--lane", "myia-po-2024:CoursIA-2", "--belt", "--json"])
+
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["mode"] == "belt"
+    assert primed, "main n'a pas branche le rafraichissement d'instantane"
+    assert primed == [[19101]], "une seule passe, sur les candidats tires"
 
 
 def test_non_belt_json_red_still_emits_standalone_repair(monkeypatch, capsys):
@@ -2255,6 +2310,14 @@ def test_check_claims_single_number_reads_mono_issue_output(monkeypatch):
     que leur claim soit lu.
     """
     monkeypatch.setattr(pig, "_build_open_prs_cache_for_belt", lambda lane: None)
+    # #22630 : la voie en processus (instantane local) est PRIORITAIRE dans
+    # `check_claims` -- sans ce shunt, elle consomme deux subprocess (`gh api`
+    # du rafraichissement, `gh issue view` du lecteur) avant la voie
+    # historique instrumentee ici, et le compte d'appels n'a plus de sens.
+    # La voie en processus a ses propres tests (test_gh_snapshot_22630.py) ;
+    # ces trois tests verifient le contrat de la voie subprocess.
+    monkeypatch.setattr(pig, "_claims_in_process",
+                        lambda numbers, lane, cache=None: None)
     calls, fake_run = _fake_run_recorder(lambda cmd: _SINGLE_ISSUE_STDOUT)
     monkeypatch.setattr(pig.subprocess, "run", fake_run)
 
@@ -2270,6 +2333,10 @@ def test_check_claims_unreadable_batch_falls_back_per_issue(monkeypatch):
     """Une sortie batch illisible ne rend plus ERROR : chaque issue est
     relue seule, comme le commentaire du code l'annoncait deja."""
     monkeypatch.setattr(pig, "_build_open_prs_cache_for_belt", lambda lane: None)
+    # #22630 : voie en processus ecartee -- ce test instrumente la voie
+    # subprocess historique (cf. test_check_claims_single_number_...).
+    monkeypatch.setattr(pig, "_claims_in_process",
+                        lambda numbers, lane, cache=None: None)
 
     def stdout_for(cmd):
         if cmd.count("--lane") and len(cmd) > 5:  # batch : 2 numeros ou plus
@@ -2557,6 +2624,11 @@ def test_check_claims_reads_the_belt_deadline(monkeypatch):
         return _Done()
 
     monkeypatch.setattr(pig.subprocess, "run", fake_run)
+    # #22630 : voie en processus ecartee -- le mur de temps se mesure sur le
+    # subprocess `check_lane_claim.py` de la voie historique, pas sur la voie
+    # en processus (qui n'ouvre aucun subprocess de ce nom).
+    monkeypatch.setattr(pig, "_claims_in_process",
+                        lambda numbers, lane, cache=None: None)
     pig._BELT_DEADLINE[0] = clock[0] + 2.0
     try:
         pig.check_claims([30031], "myia-po-2024:CoursIA")

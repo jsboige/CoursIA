@@ -59,6 +59,7 @@ jobs:
           # Le mode --pr-base fait un diff 3-points base...HEAD : il faut
           # l'historique.
           fetch-depth: 0
+          filter: blob:none
 
       - name: Set up Python
         uses: actions/setup-python@v5
