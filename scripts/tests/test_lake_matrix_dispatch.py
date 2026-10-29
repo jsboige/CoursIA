@@ -64,9 +64,11 @@ def test_nested_lean_file_matches_glob(dispatch_mod, manifest):
 
 
 def test_lakefile_toml_triggers(dispatch_mod, manifest):
+    # Filtre ancre sur un lakefile.toml REEL (lean_game_defs) depuis que les
+    # filtres morts (fichiers inexistants, ex discrepancy_lean) sont retires.
     lakes = dispatch_mod.changed_lakes(
-        ["MyIA.AI.Notebooks/Search/discrepancy_lean/lakefile.toml"], manifest)
-    assert [l["lake"] for l in lakes] == ["discrepancy"]
+        ["MyIA.AI.Notebooks/GameTheory/lean_game_defs/lakefile.toml"], manifest)
+    assert [l["lake"] for l in lakes] == ["gamedefs"]
 
 
 def test_two_lakes_selected_in_manifest_order(dispatch_mod, manifest):
