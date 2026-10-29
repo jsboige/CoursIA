@@ -239,7 +239,7 @@ project:
     - "MyIA.AI.Notebooks/ML/ML.Net/README.md"
     - "MyIA.AI.Notebooks/ML/README.md"
     - "MyIA.AI.Notebooks/NLP/README.md"
-    - "MyIA.AI.Notebooks/Probas/Applications/Integrales/README.md"
+    - "MyIA.AI.Notebooks/Physique/Integrales/README.md"
     - "MyIA.AI.Notebooks/Probas/Applications/Marches/README.md"
     - "MyIA.AI.Notebooks/Probas/Applications/Percolation/README.md"
     - "MyIA.AI.Notebooks/Probas/Applications/README.md"
@@ -830,7 +830,7 @@ project:
     # Notebooks rendus en HTML (EPIC #10921, pilote Search #10923).
     # Liste explicite — globs non etendus en Quarto 1.7.
     # Execution desactivee + echo: true au niveau racine (_quarto.yml).
-    # Sous-arbres rendus : MyIA.AI.Notebooks/CaseStudies/, MyIA.AI.Notebooks/Complexity/, MyIA.AI.Notebooks/Compression/, MyIA.AI.Notebooks/GameTheory/, MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/, MyIA.AI.Notebooks/GenAI/3D/, MyIA.AI.Notebooks/GenAI/Audio/, MyIA.AI.Notebooks/GenAI/CaseStudies/, MyIA.AI.Notebooks/GenAI/FallacyDetection/, MyIA.AI.Notebooks/GenAI/FineTuning/, MyIA.AI.Notebooks/GenAI/HumorDetection/, MyIA.AI.Notebooks/GenAI/Image/, MyIA.AI.Notebooks/GenAI/Integrations-DotNet/, MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/, MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/, MyIA.AI.Notebooks/GenAI/PostTraining/, MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/, MyIA.AI.Notebooks/GenAI/Security/, MyIA.AI.Notebooks/GenAI/SemanticKernel/, MyIA.AI.Notebooks/GenAI/Texte/, MyIA.AI.Notebooks/GenAI/Vibe-Coding/, MyIA.AI.Notebooks/GenAI/Video/, MyIA.AI.Notebooks/IIT/, MyIA.AI.Notebooks/ML/, MyIA.AI.Notebooks/NLP/, MyIA.AI.Notebooks/Probas/, MyIA.AI.Notebooks/QuantConnect/, MyIA.AI.Notebooks/RL/, MyIA.AI.Notebooks/Search/, MyIA.AI.Notebooks/Sudoku/, MyIA.AI.Notebooks/SymbolicAI/, MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/, MyIA.AI.Notebooks/SymbolicAI/Lean/, MyIA.AI.Notebooks/SymbolicAI/Planners/, MyIA.AI.Notebooks/SymbolicAI/SMT/, MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/, MyIA.AI.Notebooks/SymbolicAI/SmartContracts/, MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/, MyIA.AI.Notebooks/SymbolicAI/Tweety/, MyIA.AI.Notebooks/cross-series/.
+    # Sous-arbres rendus : MyIA.AI.Notebooks/CaseStudies/, MyIA.AI.Notebooks/Complexity/, MyIA.AI.Notebooks/Compression/, MyIA.AI.Notebooks/GameTheory/, MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/, MyIA.AI.Notebooks/GenAI/3D/, MyIA.AI.Notebooks/GenAI/Audio/, MyIA.AI.Notebooks/GenAI/CaseStudies/, MyIA.AI.Notebooks/GenAI/FallacyDetection/, MyIA.AI.Notebooks/GenAI/FineTuning/, MyIA.AI.Notebooks/GenAI/HumorDetection/, MyIA.AI.Notebooks/GenAI/Image/, MyIA.AI.Notebooks/GenAI/Integrations-DotNet/, MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/, MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/, MyIA.AI.Notebooks/GenAI/PostTraining/, MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/, MyIA.AI.Notebooks/GenAI/Security/, MyIA.AI.Notebooks/GenAI/SemanticKernel/, MyIA.AI.Notebooks/GenAI/Texte/, MyIA.AI.Notebooks/GenAI/Vibe-Coding/, MyIA.AI.Notebooks/GenAI/Video/, MyIA.AI.Notebooks/IIT/, MyIA.AI.Notebooks/ML/, MyIA.AI.Notebooks/NLP/, MyIA.AI.Notebooks/Physique/, MyIA.AI.Notebooks/Probas/, MyIA.AI.Notebooks/QuantConnect/, MyIA.AI.Notebooks/RL/, MyIA.AI.Notebooks/Search/, MyIA.AI.Notebooks/Sudoku/, MyIA.AI.Notebooks/SymbolicAI/, MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/, MyIA.AI.Notebooks/SymbolicAI/Lean/, MyIA.AI.Notebooks/SymbolicAI/Planners/, MyIA.AI.Notebooks/SymbolicAI/SMT/, MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/, MyIA.AI.Notebooks/SymbolicAI/SmartContracts/, MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/, MyIA.AI.Notebooks/SymbolicAI/Tweety/, MyIA.AI.Notebooks/cross-series/.
     - "MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb"
     - "MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb"
     - "MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb"
@@ -1552,8 +1552,10 @@ project:
     - "MyIA.AI.Notebooks/NLP/04_PCFG_CYK_Parsing.ipynb"
     - "MyIA.AI.Notebooks/NLP/05-HMM-Viterbi.ipynb"
     - "MyIA.AI.Notebooks/NLP/06-Recherche-Information-TFIDF-BM25.ipynb"
-    - "MyIA.AI.Notebooks/Probas/Applications/Integrales/Integrales-01-Triangle-Scalaire-Python.ipynb"
-    - "MyIA.AI.Notebooks/Probas/Applications/Integrales/Integrales-02-Sunrise-Masses-Egales-Python.ipynb"
+    - "MyIA.AI.Notebooks/Physique/Integrales/Integrales-01-Triangle-Scalaire-Python.ipynb"
+    - "MyIA.AI.Notebooks/Physique/Integrales/Integrales-02-Sunrise-Masses-Egales-Python.ipynb"
+    - "MyIA.AI.Notebooks/Physique/Integrales/Integrales-03-Bulle-Premiere-Divergence-Python.ipynb"
+    - "MyIA.AI.Notebooks/Physique/Integrales/Integrales-04-Sunrise-Courbe-Elliptique-Python.ipynb"
     - "MyIA.AI.Notebooks/Probas/Applications/Marches/Marches-01-Retour-Polya-Watson-Python.ipynb"
     - "MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-01-Supercritique-Python.ipynb"
     - "MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-02-Lean.ipynb"

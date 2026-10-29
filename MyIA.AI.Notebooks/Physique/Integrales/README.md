@@ -1,6 +1,6 @@
 # Intégrales de Feynman : du triangle scalaire au sunrise
 
-[← Série Probas](../../README.md) · [← Applications](../README.md)
+[← Racine des carnets](../../README.md) · [← Applications (Probas)](../../Probas/Applications/README.md)
 
 Le **triangle scalaire** à une boucle — trois propagateurs sans masse, un moment
 externe par sommet — en dimension 4 euclidienne, le **diagramme sunrise** à
@@ -35,7 +35,7 @@ précision ≠ bornes certifiées, identifiée ≠ dérivée.
 
 La série n'est pas née d'un carnet isolé : elle est la **veine V3** de la
 distillation [#20428](https://github.com/jsboige/CoursIA/issues/20428), son aînée
-V1 ([Marches](../Marches/README.md)) est déjà fusionnée, et son fil directeur est
+V1 ([Marches](../../Probas/Applications/Marches/README.md)) est déjà fusionnée, et son fil directeur est
 la classification du harnais BootLoops — polylogarithmes → elliptique → K3 →
 Calabi-Yau. Les carnets de la série ont été livrés comme des **candidats
 bornés**, arbitrés à l'usage — aucun n'était promis :
@@ -71,15 +71,18 @@ bornés**, arbitrés à l'usage — aucun n'était promis :
   pas une correction. L'étage suivant du classement (K3, Calabi–Yau) demanderait
   des graphes à trois boucles, hors du périmètre arbitré de la série.
 
-Le nom et le toit définitifs de la série restent un **point de décision ouvert**
-(#20428, point de décision 1 : la « série de physique numérique », question
-partagée avec [#19741](https://github.com/jsboige/CoursIA/issues/19741)) ;
-`Probas/Applications/Integrales/` est l'hôte intérimaire, cohérent avec l'aînée
-V1 dans `Applications/Marches/`.
+Le carnet habite désormais la série `Physique/` (EPIC
+[#23161](https://github.com/jsboige/CoursIA/issues/23161)) : les intégrales de
+Feynman ne sont pas des objets probabilistes, et `MyIA.AI.Notebooks/Physique/`
+est le toit commun des distillations de physique numérique
+([#19741](https://github.com/jsboige/CoursIA/issues/19741),
+[#20428](https://github.com/jsboige/CoursIA/issues/20428)). L'aînée V1 reste dans
+`Probas/Applications/Marches/` — la récurrence de Pólya est probabiliste native
+— mais les deux séries se touchent par les fonctions de Green.
 
 ## Ponts vers le reste du dépôt
 
-- **Marches** ([../Marches/](../Marches/README.md)) : les deux séries calculent
+- **Marches** ([../../Probas/Applications/Marches/](../../Probas/Applications/Marches/README.md)) : les deux séries calculent
   des fonctions de Green — sur $\mathbb{Z}^d$ discret chez Marches, sur des
   boucles continues ici — et les mêmes protocoles les traversent.
 - **Distillation Schwartz** ([issue #20428](https://github.com/jsboige/CoursIA/issues/20428)) :
