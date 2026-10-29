@@ -322,6 +322,12 @@ le passage : eteindre la soupape parce qu'on n'a pas su lire un ecart serait l'i
 sens. Un declenchement **manuel** passe `min_interval=0` : la decision de l'operateur est
 immediate.
 
+L'ecart au **dernier passage** est mesure avant la garde et **rapporte dans tous les
+cas** -- y compris quand aucune garde n'est posee (le passage manuel, le cron horaire du
+depot). Le resume affiche donc toujours `dernier passage : N min` : c'est l'instrument
+qui rend visible la mort du declencheur local (un ecart qui grandit) au lieu de la
+laisser silencieuse, et son cout est d'UN appel dans un passage qui en compte 313.
+
 ### Le cron horaire reste en filet
 
 Le workflow tourne **une fois par heure, minute 31** (`31 * * * *`) : hors `:00`/`:30` (jitter de la flotte) et distincte des autres crons horaires du depot. Le `23,53` d'origine etait **exactement** le cron de `linux-runner-version-pin-advisory.yml`, que ce dernier avait choisi pour ne pas collisionner (point 3 de la review du 27/10).

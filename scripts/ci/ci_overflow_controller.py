@@ -1154,6 +1154,12 @@ def render_summary(report: dict, rc: int) -> str:
         f"- code retour : {rc}",
         f"- verdict : {report.get('verdict')}",
         f"- raison : {report.get('reason')}",
+        f"- dernier passage : "
+        + (
+            f"{report.get('last_run_age_min')} min"
+            if report.get("last_run_age_min") is not None
+            else f"illisible ({report.get('last_run_age_reason')})"
+        ),
         f"- variable : {report.get('current')} -> {report.get('target')} "
         f"({'ECRIT' if report.get('written') else 'NON ECRIT'})",
         f"- hebergee : {hosted.get('queued')} job(s) en file, "
@@ -1336,14 +1342,18 @@ def main(argv: list[str] | None = None) -> int:
     # du parc local (le controleur tourne SUR ce parc) et en appels API. Le
     # controle est fait AVANT toute mesure : un passage ecarte ne doit rien
     # lire du tout.
+    # L'ecart au dernier passage est mesure AVANT la garde, et reporte dans
+    # TOUS les cas : c'est l'instrument qui rend visible la mort du
+    # declencheur local (un ecart qui grandit) au lieu de la laisser
+    # silencieuse. Il coute UN appel, dans un passage qui en compte 313.
+    age, age_reason = last_run_age_minutes(
+        args.repo,
+        CONTROLLER_WORKFLOW_FILE,
+        now,
+        token,
+        current_run_id=os.environ.get("GITHUB_RUN_ID"),
+    )
     if args.min_interval > 0:
-        age, age_reason = last_run_age_minutes(
-            args.repo,
-            CONTROLLER_WORKFLOW_FILE,
-            now,
-            token,
-            current_run_id=os.environ.get("GITHUB_RUN_ID"),
-        )
         if age is not None and age < args.min_interval:
             report = {
                 "verdict": "SKIPPED",
@@ -1529,6 +1539,8 @@ def main(argv: list[str] | None = None) -> int:
         "write_token_env": args.write_token_env,
         "write_token_present": bool(write_token),
         "write_blocked": write_blocked,
+        "last_run_age_min": round(age, 1) if age is not None else None,
+        "last_run_age_reason": age_reason,
         "state_known": not state_unknown,
         "state_reason": state_reason,
         "hosted": {
