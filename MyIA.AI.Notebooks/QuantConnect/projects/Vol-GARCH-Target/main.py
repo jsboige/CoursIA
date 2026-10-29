@@ -150,16 +150,22 @@ class GarchVolTargetAlgorithm(QCAlgorithm):
     def _daily_log_return(self, ticker, bar):
         """Rendement journalier dont la paire de clotures est verifiee (#21782).
 
-        `history(sym, 3, DAILY)` inclut ou non la seance courante selon l'heure de
-        l'appel. Prendre `iloc[-2]` sans le verifier peut former une paire a deux
-        seances comptee comme un pas journalier, ou une paire desalignee avec
-        `bar.close`. On aligne donc la paire sur `bar.end_time`, et on rejette un
-        ecart calendaire qui trahit une suspension : mieux vaut aucun rendement
-        qu'un faux pas de GARCH.
+        `history(sym, 2 * 3, DAILY)` inclut ou non la seance courante selon
+        l'heure de l'appel, et rend moins de barres que demandees sur une
+        demi-seance (#21471) : demander 3 avec une garde a 2 ne laissait qu'une
+        barre de marge, sous le raccourcissement mesure (21). On demande le
+        double puis on re-slice sur les 3 dernieres barres (motif #20286) :
+        hors demi-seance la paire retenue est celle d'avant, la paire reste
+        calculable sur demi-seance. Prendre `iloc[-2]` sans verifier peut
+        former une paire a deux seances comptee comme un pas journalier, ou
+        une paire desalignee avec `bar.close`. On aligne donc la paire sur
+        `bar.end_time`, et on rejette un ecart calendaire qui trahit une
+        suspension : mieux vaut aucun rendement qu'un faux pas de GARCH.
         """
-        hist = self.history(self.symbols[ticker], 3, Resolution.DAILY)
+        hist = self.history(self.symbols[ticker], 2 * 3, Resolution.DAILY)
         if hist is None or len(hist) < 2:
             return None
+        hist = hist.iloc[-3:]
         closes = hist["close"]
         # Un historique LEAN porte parfois un MultiIndex (symbole, horodatage) :
         # `list(hist.index)` rend alors des tuples, pas des dates. On prend le
