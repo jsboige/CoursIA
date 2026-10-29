@@ -269,7 +269,7 @@ flowchart TD
 
 ### IIT-07-Integration-Par-Coupes-Lean.ipynb
 
-Marche 1 de l'escalier qui expose le lake [`iit_lean`](iit_lean/README.md) (moitié formelle de l'objection Aaronson, Epic #16781) — kernel `lean4-wsl`, sans Mathlib.
+Marche 1 de l'escalier qui expose le lake [`iit_lean`](iit_lean/README.md) (moitié formelle de l'objection Aaronson) — kernel `lean4-wsl`, sans Mathlib.
 
 | Section | Contenu |
 |---------|---------|
@@ -284,7 +284,7 @@ Marche 1 de l'escalier qui expose le lake [`iit_lean`](iit_lean/README.md) (moit
 
 ### IIT-08-Parite-De-Bout-En-Bout-Lean.ipynb
 
-Marche 2 de l'escalier du lake [`iit_lean`](iit_lean/README.md) (issue #20414, moitié formelle de l'objection Aaronson, Epic #16781 ; l'issue #20649 couvre la variante 8b ci-dessous) — kernel `lean4-wsl`, sans Mathlib.
+Marche 2 de l'escalier du lake [`iit_lean`](iit_lean/README.md) (moitié formelle de l'objection Aaronson) — kernel `lean4-wsl`, sans Mathlib.
 
 | Section | Contenu |
 |---------|---------|
@@ -299,7 +299,7 @@ Marche 2 de l'escalier du lake [`iit_lean`](iit_lean/README.md) (issue #20414, m
 
 ### IIT-08b-Parite-et-Broadcast-Lean.ipynb
 
-Variante optionnelle de la marche 2 de l'escalier du lake [`iit_lean`](iit_lean/README.md) (issue #20649 — ouverte sous le titre « IIT-08 » avant l'arbitrage de nommage qui a fixé 08 = parité de bout en bout et 08b = Parite-et-Broadcast ; moitié formelle de l'objection Aaronson, Epic #16781) — kernel `lean4-wsl`, sans Mathlib. Elle porte les théorèmes B et C, là où le carnet 8 prépare le système et ses orbites ; elle se lit à la place de 8, jamais entre 8 et 9.
+Variante optionnelle de la marche 2 de l'escalier du lake [`iit_lean`](iit_lean/README.md) (moitié formelle de l'objection Aaronson) — kernel `lean4-wsl`, sans Mathlib. Elle porte les théorèmes B et C, là où le carnet 8 prépare le système et ses orbites ; elle se lit à la place de 8, jamais entre 8 et 9.
 
 | Section | Contenu |
 |---------|---------|
@@ -314,7 +314,7 @@ Variante optionnelle de la marche 2 de l'escalier du lake [`iit_lean`](iit_lean/
 
 ### IIT-09-Capstone-Integre-et-Trivial-Lean.ipynb
 
-Marche 3 — le capstone de l'escalier du lake [`iit_lean`](iit_lean/README.md) (issue #20652, escalier #20414, veine 5 de l'Epic #16781) : les deux premières marches assemblées en un seul énoncé — un système intégré au sens du proxy **pour toute coupe** (théorème B) dont la dynamique est triviale (théorème C), sur le **même** objet. Kernel `lean4-wsl`, sans Mathlib.
+Marche 3 — le capstone de l'escalier du lake [`iit_lean`](iit_lean/README.md) : les deux premières marches assemblées en un seul énoncé — un système intégré au sens du proxy **pour toute coupe** (théorème B) dont la dynamique est triviale (théorème C), sur le **même** objet. Kernel `lean4-wsl`, sans Mathlib.
 
 | Section | Contenu |
 |---------|---------|
@@ -486,7 +486,7 @@ Elle progresse en **sept strates** — le **tri auto-organisé** transparent (st
 réversibilisation outillée (strate 4, ICT-14 à ICT-20, prolongée par le banc de recollement ICT-34),
 et le **LLM comme substrat** — SAE, persona, workspace, inoculation RL (strate 5, ICT-21 à ICT-25,
 prolongée par ICT-35 à ICT-39). Les strates 6 (**argumentation**) et 7 (**freebits d'ordre 2**) sont
-**cadrées et non livrées**. Deux objets relèvent de l'**axe transverse** et non de l'échelle des
+**cadrées et non rédigées**. Deux objets relèvent de l'**axe transverse** et non de l'échelle des
 strates (arbitrage [#13908](https://github.com/jsboige/CoursIA/issues/13908)) : le **socle théorique**
 distillant la sémiophysique de René Thom, et la **coopération comme opérateur** — conventions,
 invention de symboles, adoption collective, inoculation de concept (**dimension D2**, cinq
@@ -495,9 +495,9 @@ expériences ICT-26 à ICT-30).
 Chaque strate est **complétée par des notebooks de raffinement / extension** (suffixes lettrés
 `b`/`c`/`d`… ou titres non-numérotés) qui approfondissent un aspect ou appliquent l'instrumentation
 d'un notebook principal à un nouveau cas. Quelques exemples représentatifs :
-[ICT-15b-SensitivityCanonicity-Python](ICT-Series/ICT-15b-SensitivityCanonicity-Python.ipynb)
+[ICT-15b-SensitivityCanonicity-Python](ICT-Series/ICT-15/ICT-15b-SensitivityCanonicity-Python.ipynb)
 (sensibilité du verdict Φ/F/K d'ICT-15 aux perturbations contrôlées du substrat, re-mesure multi-graines),
-[ICT-15c-MetaProxyObstruction-Python](ICT-Series/ICT-15c-MetaProxyObstruction-Python.ipynb) (obstructions adversariales au verdict
+[ICT-15c-MetaProxyObstruction-Python](ICT-Series/ICT-15/ICT-15c-MetaProxyObstruction-Python.ipynb) (obstructions adversariales au verdict
 de convergence — exploration des faux-positifs quand le triplet co-varie par construction),
 [ICT-17b-Grokking-CompressionProgress-Python](ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb) (grokking comme
 cas d'application de l'instrumentation ε-machine d'ICT-17 à la compression post-généralisation tardive, Power
@@ -510,8 +510,8 @@ La strate 5 est désormais **ancrée sur un substrat réel** : ICT-21 extrait de
 (*sparse autoencoders*) sur les activations d'un LLM (Qwen), et le module `ict/workspace.py` réalise
 un **pont falsifiable IIT ↔ GWT** — mesurer un « espace de travail global »
 (*ignition*, *broadcast*) sur les mêmes traces que celles où l'on mesure l'intégration. La
-confrontation empirique est livrée : [ICT-24](ICT-Series/ICT-24-WorkspaceIgnition-Python.ipynb) (Gates 22-23,
-#5875) conclut à une **dissociation** — les deux théories rivales de la section « Portée scientifique »
+confrontation empirique est établie dans [ICT-24](ICT-Series/ICT-24-WorkspaceIgnition-Python.ipynb) (Gates 22-23,
+#5875), qui conclut à une **dissociation** — les deux théories rivales de la section « Portée scientifique »
 ci-dessus ne co-localisent pas leurs prédictions sur S4 (négatif honnête).
 
 ICT vit dans le sous-répertoire [`ICT-Series/`](ICT-Series/README.md), placé sous IIT pour respecter
@@ -583,7 +583,7 @@ Voir la licence du repository principal.
 
 <!-- CATALOG-STATUS
 series: IIT
-pedagogical_count: 106
-breakdown: ICT-Series=96, root=10
-maturity: BETA=85, DRAFT=17, ALPHA=4
+pedagogical_count: 108
+breakdown: ICT-Series=98, root=10
+maturity: BETA=87, DRAFT=17, ALPHA=4
 -->

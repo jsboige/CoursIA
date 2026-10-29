@@ -570,3 +570,41 @@ def test_waiter_starvation_advisory_is_registered():
     assert entry is not None
     assert entry.declared_min == 30.0
     assert "11,41" in entry.note
+
+
+def test_ci_overflow_controller_is_registered():
+    """#22946, point 3 de la review ai-01 du 2026-10-27.
+
+    Le controleur de debordement declarait '23,53' -- exactement le cron de
+    linux-runner-version-pin-advisory.yml, que ce dernier avait choisi pour ne
+    pas collisionner. Sa cadence devient horaire, minute 31 (hors :00/:30), et
+    il entre dans le registre : son extinction se mesure au lieu de se
+    supposer. La cadence declaree ici est celle du fichier -- les deux
+    divergent silencieusement sinon, c'est la raison d'etre du registre.
+    """
+    entry = next(
+        (o for o in sl.REGISTRY if o.workflow == "ci-overflow-controller.yml"),
+        None,
+    )
+    assert entry is not None
+    assert entry.declared_min == 60.0
+    assert "31 * * * *" in entry.note
+
+
+def test_dwell_du_controleur_depasse_la_cadence_du_cron():
+    """Point Hermes du 2026-10-27 (12:53Z) : le dwell doit depasser la cadence.
+
+    Le dwell n'est opposable que s'il depasse l'ecart entre deux passages. Le
+    cron du controleur est horaire (60 min) : un dwell de 30 min ne pouvait
+    JAMAIS bloquer une bascule -- deux passages consecutifs sont toujours a
+    plus de 30 min -- et l'anti-oscillation etait un decor, pas une
+    protection. La coherence se mesure : dwell > cadence.
+    """
+    import ci_overflow_controller as ctl
+
+    entry = next(
+        (o for o in sl.REGISTRY if o.workflow == "ci-overflow-controller.yml"),
+        None,
+    )
+    assert entry is not None
+    assert ctl.DEFAULT_DWELL_MINUTES > entry.declared_min
