@@ -1656,11 +1656,45 @@ def _publish_phase_deadline(seconds: float | None) -> tuple:
                          getattr(nits, "_NITS_PASS_DEADLINE", None))
     if not seconds or float(seconds) <= 0:
         return (previous_belt, nits, previous_nits)
-    _BELT_DEADLINE[0] = time.monotonic() + float(seconds)
+    candidate = time.monotonic() + float(seconds)
+    # #23090 : une phase ne peut que RETRECIR le mur du run, jamais l'etendre.
+    # Sans ce `min`, chaque phase armee pendant un `--belt` repousserait
+    # l'echeance du run -- `red_backlog` a `--red-budget 300` rendrait 300 s
+    # de sursis a un run dont le budget est deja largement entame.
+    existing = _BELT_DEADLINE[0]
+    _BELT_DEADLINE[0] = candidate if existing is None else min(existing, candidate)
     if previous_nits is not None and previous_nits[0] is not None:
         nits.NITS_PASS_BUDGET_S = float(seconds)
         nits._NITS_PASS_DEADLINE = None  # la passe commence ici (cf. docstring)
     return (previous_belt, nits, previous_nits)
+
+
+def _arm_belt_run_clock(seconds: float | None) -> float | None:
+    """Arme l'echeance du RUN `--belt` et rend son origine.
+
+    #23090 -- l'echeance etait publiee dans la branche `--belt`, donc APRES
+    `fetch_pool` (chargement du pool : 258-648 s mesures sur ai-01, #22500),
+    apres l'ardoise de lane et apres la file de reparation. Une lane qui passe
+    `--belt-time-budget 900` croyait borner son run ; elle bornait ses deux
+    derniers tiers. Mesure sur ce siege (po-2025, clone superficiel) : un run
+    de cycle rend la main apres **plus de 40 min**, ou pas du tout.
+
+    Armer tot ne suffit pas seul : les phases d'amont publient leur propre
+    echeance via `_publish_phase_deadline`, qui ne peut desormais que
+    RETRECIR la fenetre (cf. le `min` qu'elle pose) -- sinon une phase armee
+    a `--red-budget 300` repousserait le mur du run a chaque appel.
+    """
+    t0 = time.monotonic()
+    # Sans budget : None explicite, comme la branche `--belt` d'avant. Ecrire
+    # None plutot que « ne pas toucher » evite qu'une echeance laissee par un
+    # appel precedent dans le meme process borne un run qui n'en a pas demande.
+    _BELT_DEADLINE[0] = t0 + float(seconds) if seconds and float(seconds) > 0 else None
+    return t0
+
+
+def _disarm_belt_run_clock() -> None:
+    """Retire l'echeance du run (#23090) : aucune fuite hors du run."""
+    _BELT_DEADLINE[0] = None
 
 
 def _restore_phase_deadline(token: tuple) -> None:
@@ -9822,6 +9856,17 @@ def main(argv: list[str] | None = None) -> int:
               "a reporter sur l'issue.")
         return 1
 
+    # #23090 -- le mur du tapis est arme ICI, avant la premiere phase chere du
+    # run, et pas dans la branche `--belt` trois cents lignes plus bas. Ce qu'il
+    # doit couvrir : l'export du tableau (sondes `live_check`), l'ardoise de
+    # lane, la file de reparation, `fetch_pool` et les stamps bulk, la fenetre
+    # de claims, la boucle. Armer dans la branche publiait l'echeance une fois
+    # le budget deja depense par ces phases d'amont (mesure dans le docstring
+    # de `_arm_belt_run_clock`).
+    _belt_t0 = None
+    if args.belt:
+        _belt_t0 = _arm_belt_run_clock(args.belt_time_budget)
+
     # #20053 consommateur : court-circuit AVANT tout fetch de pool. C'est tout
     # l'objet du chemin -- une tete lue sur un instantane frais coute un
     # processus local, pas les 258 s de sondes mesurees dans l'issue. Le garde
@@ -9849,6 +9894,8 @@ def main(argv: list[str] | None = None) -> int:
             if picks:
                 print_board_consumer(snapshot, picks, board_meta,
                                      age_min=age_min, as_json=args.json)
+                if args.belt:
+                    _disarm_belt_run_clock()
                 return 0
             print(f"(tableau du tapis sans candidat retenu : "
                   f"{board_meta.get('reason')} -- calcul local)",
@@ -9995,6 +10042,8 @@ def main(argv: list[str] | None = None) -> int:
         else:
             print(unmeasured)
             print()
+        if args.belt:
+            _disarm_belt_run_clock()  # #23090 : pas de fuite hors du run
         return RC_POOL_UNMEASURED
     visits, visits_err = fetch_visits(
         cache=payload_cache,
@@ -10161,24 +10210,30 @@ def main(argv: list[str] | None = None) -> int:
             metrics = belt_report_metrics(pool, closed_7d=None)
             print_belt_report(metrics,
                               elapsed_s=_time_pass.monotonic() - _pass_t0)
+            _disarm_belt_run_clock()  # #23090 : pas de fuite hors du run
             return 0
         # Phases tapees sur stderr au fil de l'eau (cf review ai-01
         # 5571014393, CHANGES_REQUESTED v2). Permettent a un run
         # interrompu par timeout de dire ou il en etait.
-        import time as _time_belt
-        _belt_t0 = _time_belt.monotonic()
-        # #21436 -- l'echeance du run entier, publiee AVANT la fenetre de
-        # claims. Le mur ne couvrait que la boucle de selection : la phase de
-        # claims demarre plus haut, et `check_claims` y paie un subprocess de
-        # 60 s + 10 s par numero -- mesure du 24/10 : `belt claims start: 8
-        # numeros` puis 275 s de silence, budget de 90 s. Une lane qui pose un
-        # budget attend une borne sur SON RUN, pas sur les deux tiers de son
-        # run. Les sondes lisent `_clamp_timeout` : le dernier appel entame
-        # avant l'echeance ne peut plus courir au-dela.
-        if args.belt_time_budget and args.belt_time_budget > 0:
-            _BELT_DEADLINE[0] = _belt_t0 + args.belt_time_budget
-        else:
-            _BELT_DEADLINE[0] = None
+        # L'horloge du run est celle de `main`, pas un module reimporte : garder
+        # `import time as _time_belt` a cote d'un `_belt_t0` pris sur `time`
+        # melangeait deux horloges des que l'une est substituee (les tests
+        # remplacent `pig.time`), et les `[t=...]` comme le reste-a-courir de
+        # la boucle se lisaient alors sur une echelle differente de l'origine.
+        _time_belt = time
+        # #23090 -- l'echeance du run n'est PAS reposee ici : elle a ete armee
+        # avant `fetch_pool` (cf. `_arm_belt_run_clock`), et la remettre a
+        # `now + budget` a l'entree du tapis rendrait au run les phases d'amont
+        # deja depensees -- le mur repartirait a zero une fois entame.
+        # `_belt_t0` est donc l'origine du RUN, ce qui rend les horodatages
+        # `[t=...]` plus honnetes : ils datent du debut du travail, pas de la
+        # fin des sondes de pool.
+        # #21436 reste vrai : le mur doit couvrir la fenetre de claims, qui est
+        # payee plus haut -- il la couvre desormais avec l'avance restante.
+        if _belt_t0 is None:  # main() non cable : comportement d'avant
+            _belt_t0 = _time_belt.monotonic()
+            if args.belt_time_budget and args.belt_time_budget > 0:
+                _BELT_DEADLINE[0] = _belt_t0 + args.belt_time_budget
         def _belt_phase(name: str) -> None:
             print(f"[t={_time_belt.monotonic() - _belt_t0:.2f}s] belt {name}",
                   file=sys.stderr, flush=True)

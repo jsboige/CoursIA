@@ -2689,6 +2689,72 @@ def test_belt_publishes_the_run_deadline_before_the_claims_phase(
     assert pig._BELT_DEADLINE[0] is None, "l'echeance fuit apres le run"
 
 
+def test_belt_arms_the_run_wall_before_the_pool_load(monkeypatch, capsys):
+    """#23090 : le mur est DEJA publie quand `fetch_pool` s'ouvre.
+
+    Mesure fondatrice (po-2025, clone superficiel) : `--belt --lane` lance en
+    debut de cycle n'a rien rendu dans les 900 s de son propre budget, puis
+    plus de 40 min. Le diagnostic de l'issue est exact -- `_BELT_DEADLINE`
+    etait arme dans la branche `--belt`, donc apres le chargement du pool, et
+    les phases d'amont couraient sans aucune borne.
+
+    Le predicat est l'INTERIEUR de `fetch_pool` : c'est la que la sonde doit
+    deja lire une echeance, et lire un timeout ramene au budget du run.
+    """
+    _patch_belt_network(monkeypatch, prs=[], red_state=_state_red())
+    clock = _patched_clock(monkeypatch, start=3000.0)
+    seen = {}
+
+    def spy_pool(**kwargs):
+        seen["deadline"] = pig._BELT_DEADLINE[0]
+        seen["clamped"] = pig._clamp_timeout(90)
+        return [], None
+
+    monkeypatch.setattr(pig, "fetch_pool", spy_pool)
+    pig._BELT_DEADLINE[0] = None
+    try:
+        rc = pig.main(["--lane", "myia-po-2025:CoursIA", "--belt",
+                       "--belt-time-budget", "60", "--json"])
+        assert rc == 0
+        assert seen["deadline"] == pytest.approx(3060.0), (
+            "le chargement du pool s'ouvre sans echeance publiee (#23090) : "
+            "le budget du run ne borne pas ses phases d'amont")
+        assert seen["clamped"] == pytest.approx(60.0), (
+            "la sonde de pool garde son timeout par defaut malgre un budget")
+        assert pig._BELT_DEADLINE[0] is None, "l'echeance fuit apres le run"
+    finally:
+        pig._BELT_DEADLINE[0] = None
+    _ = clock
+
+
+def test_phase_deadline_can_only_shrink_the_run_wall(monkeypatch):
+    """#23090 : une phase retrecit le mur du run, elle ne l'etend jamais.
+
+    Sans ce sens unique, armer le mur avant les phases d'amont n'aurait servi
+    a rien : `red_backlog` publie sa propre echeance (`--red-budget`, 300 s par
+    defaut) et l'aurait REPOUSSEE a chaque appel, rendant au run exactement le
+    sursis que #23090 veut lui retirer.
+    """
+    clock = _patched_clock(monkeypatch, start=4000.0)
+    pig._BELT_DEADLINE[0] = 4060.0  # mur du run : 60 s
+    try:
+        token = pig._publish_phase_deadline(300)  # phase plus genereuse
+        assert pig._BELT_DEADLINE[0] == pytest.approx(4060.0), (
+            "une phase a 300 s a repousse le mur du run")
+        pig._restore_phase_deadline(token)
+        assert pig._BELT_DEADLINE[0] == pytest.approx(4060.0)
+
+        token = pig._publish_phase_deadline(10)  # phase plus etroite
+        assert pig._BELT_DEADLINE[0] == pytest.approx(4010.0), (
+            "une phase plus etroite doit borner plus court")
+        pig._restore_phase_deadline(token)
+        assert pig._BELT_DEADLINE[0] == pytest.approx(4060.0), (
+            "le `finally` de la phase doit rendre le mur du run")
+    finally:
+        pig._BELT_DEADLINE[0] = None
+    _ = clock
+
+
 def test_publish_phase_deadline_bounds_probes_and_lends_its_budget(monkeypatch):
     """#21436 : la phase de reparation a sa PROPRE echeance.
 
