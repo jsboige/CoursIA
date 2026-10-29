@@ -199,6 +199,13 @@ DEFAULT_MIN_FREE_SLOTS = 2
 # inerte, un decor et non une protection. Regle appliquee : le dwell depasse
 # la cadence (90 > 60).
 DEFAULT_DWELL_MINUTES = 90.0
+# Annulation -> relance : l'annulation n'est pas instantanee. Un run passe
+# par l'etat `cancelling` avant `completed`, et une relance demandee pendant
+# la transition est refusee -- le run resterait alors annule SANS relance,
+# perdu pour la passe (reserve Hermes du 28/10). Bornes : 30 s d'attente de
+# l'etat, un seul essai supplementaire de relance.
+CANCEL_WAIT_TIMEOUT_S = 30.0
+CANCEL_POLL_S = 5.0
 # Plafond de concurrence de l'offre hebergee, en jobs. Mesure du 2026-10-16 :
 # 19 jobs heberges en concurrence au pic observe ; on retient 20 (arrondi
 # superieur de la mesure). La MARGE hebergee est ce plafond moins les jobs
@@ -1385,6 +1392,48 @@ def select_reorientation_targets(
     return aged[:free_slots], ghosts
 
 
+def _wait_for_completed(
+    repo: str,
+    token: str | None,
+    run_id,
+    timeout_s: float | None = None,
+) -> tuple[bool, str]:
+    """Attend la fin EFFECTIVE de l'annulation (etat `completed`).
+
+    L'etat se lit sur le run lui-meme. Un etat non atteint dans la borne
+    rend l'echec : la relance serait refusee, autant le dire plutot que de
+    la demander en vain. La borne est lue AU MOMENT de l'appel (pas en
+    argument par defaut) : les tests peuvent la raccourcir.
+    """
+    timeout_s = CANCEL_WAIT_TIMEOUT_S if timeout_s is None else timeout_s
+    deadline = time.monotonic() + timeout_s
+    while True:
+        rc, out, err = _gh_api(
+            [f"repos/{repo}/actions/runs/{run_id}"],
+            token=token,
+        )
+        if rc != 0:
+            message = (err or out or "").strip().splitlines()
+            return False, (
+                "etat du run illisible ("
+                + (message[-1] if message else "raison inconnue")
+                + ")"
+            )
+        try:
+            data = json.loads(out)
+        except json.JSONDecodeError:
+            return False, "etat du run illisible (reponse non-JSON)"
+        status = data.get("status") if isinstance(data, dict) else None
+        if status == "completed":
+            return True, ""
+        if time.monotonic() >= deadline:
+            return False, (
+                f"annulation non effective apres {timeout_s:.0f} s "
+                f"(etat {status})"
+            )
+        time.sleep(CANCEL_POLL_S)
+
+
 def reorient_run(repo: str, token: str | None, run_id) -> tuple[bool, str]:
     """ANNULE puis RELANCE un run : le job recree relit `vars.*`.
 
@@ -1409,13 +1458,30 @@ def reorient_run(repo: str, token: str | None, run_id) -> tuple[bool, str]:
         token=token,
         method="POST",
     )
+    if rc == 0:
+        return True, "run annule puis relance"
+    # La transition d'etat peut encore etre en cours cote serveur : on
+    # attend l'etat effectif de l'annulation, puis on retente UNE fois.
+    # Sans cette attente, un run annule resterait SANS relance -- perdu
+    # pour la passe (reserve Hermes du 28/10).
+    waited, why = _wait_for_completed(repo, token, run_id)
+    if not waited:
+        return False, "relance refusee : annulation non effective (" + why + ")"
+    rc, out, err = _gh_api(
+        [f"repos/{repo}/actions/runs/{run_id}/rerun"],
+        token=token,
+        method="POST",
+    )
     if rc != 0:
         message = (err or out or "").strip().splitlines()
         return False, (
-            "relance refusee : "
+            "relance refusee apres attente de l'annulation : "
             + (message[-1] if message else "raison inconnue")
         )
-    return True, "run annule puis relance"
+    return True, (
+        "run annule puis relance (relance refusee au premier essai, "
+        "reussie apres attente de l'annulation)"
+    )
 
 
 def render_summary(report: dict, rc: int) -> str:
