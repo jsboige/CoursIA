@@ -482,6 +482,126 @@ def test_un_commentaire_tiers_intercale_ne_provoque_pas_de_faux_echec(monkeypatc
     assert aer._verifier_publication(5081, corps) is True
 
 
+# --- la pagination (defauts de la relecture du 2026-10-29) -------------------
+
+def test_les_pages_du_fil_sont_collectees_et_non_une_seule(monkeypatch):
+    """`gh api --paginate` CONCATENE les pages : une page JSON par page de
+    reponse.
+
+    Un `json.loads` de la sortie entiere echoue des la deuxieme page, et
+    l'except rendait `[]` en silence : les references historiques
+    disparaissaient, et la detection de premiere publication etait
+    reactivee a chaque cycle.
+
+    Deux pages, dont une seule porte le marqueur : le commentaire
+    balise de la deuxieme page doit etre trouve, et le commentaire sans
+    marqueur de la premiere ne doit rien contribuer."""
+    import json as _json
+    page1 = _json.dumps([{"created_at": "2026-10-20T10:00:00Z",
+                          "body": "commentaire de fond, sans marqueur"}])
+    page2 = _json.dumps([{"created_at": "2026-10-21T10:00:00Z",
+                          "body": f"<!-- {aer.MARQUEUR} -->\n"
+                                  + "x" * 200}])
+    vus = {}
+
+    def _run(cmd, **k):
+        vus["cmd"] = cmd
+        return type("R", (), {"returncode": 0,
+                              "stdout": page1 + "\n" + page2 + "\n"})()
+
+    monkeypatch.setattr(aer.subprocess, "run", _run)
+    trouves = aer._commentaires_marques(5081)
+    assert len(trouves) == 1, trouves
+    assert aer.MARQUEUR in trouves[0]["body"]
+    assert "--paginate" in vus["cmd"], "la lecture doit paginer"
+
+
+def test_une_publication_au_dela_de_la_premiere_page_est_relu(monkeypatch):
+    """Une issue de plus de trente commentaires porte notre publication
+    RECENTE au-dela de la premiere page.
+
+    `.[-10:]` sans `--paginate` selectionnait les dix derniers elements
+    de la PREMIERE page : notre publication n'y etait pas, et une
+    publication reelle etait declaree en echec.
+
+    La relecture paginee doit trouver la publication, qu'elle soit
+    precedee de trente commentaires anciens sans notre corps.
+
+    Le temoin est **discriminant** : on verifie que la commande reellement
+    emise PAGINE, et pas seulement le verdict. Une relecture qui rend
+    `True` parce qu'elle n'a rien su lire (repli fail-open) passerait
+    sinon ce test sans avoir rien verifie."""
+    import json as _json
+    corps = f"<!-- {aer.MARQUEUR} -->\n" + "x" * 200
+    anciens = [{"created_at": "2026-10-20T10:00:00Z",
+                 "body": f"commentaire ancien {i}"} for i in range(30)]
+    # page 1 : les trente anciens ; page 2 : notre publication
+    page1 = _json.dumps(anciens)
+    page2 = _json.dumps([{"created_at": "2026-10-29T10:00:00Z", "body": corps}])
+    vus = []
+
+    def _run(cmd, **k):
+        vus.append(cmd)
+        return type("R", (), {"returncode": 0,
+                              "stdout": page1 + "\n" + page2 + "\n"})()
+
+    monkeypatch.setattr(aer.subprocess, "run", _run)
+    assert aer._verifier_publication(5081, corps) is True
+    assert vus, "la relecture doit avoir interroge l'API"
+    assert "--paginate" in vus[0], f"la relecture doit paginer : {vus[0]}"
+
+
+def test_la_publication_est_relue_par_son_identifiant_exact(monkeypatch):
+    """Quand le POST a rendu l'URL du commentaire, la relecture vise CE
+    commentaire : elle ne depend plus du volume de commentaires de
+    l'issue, ni d'un commentaire tiers intercale."""
+    import json as _json
+    corps = f"<!-- {aer.MARQUEUR} -->\n" + "x" * 200
+    vus = {}
+
+    def _run(cmd, **k):
+        vus["cmd"] = cmd
+        return type("R", (), {"returncode": 0,
+                              "stdout": _json.dumps([{"body": corps}])})()
+
+    monkeypatch.setattr(aer.subprocess, "run", _run)
+    assert aer._verifier_publication(5081, corps, 6480453395) is True
+    assert "issues/comments/6480453395" in " ".join(vus["cmd"]), vus["cmd"]
+
+
+def test_l_identifiant_du_commentaire_publie_est_lu_dans_la_sortie_du_post():
+    """`gh issue comment` rend l'URL du commentaire cree : elle porte son
+    identifiant, qui permet la relecture exacte."""
+    sortie = "https://github.com/jsboige/CoursIA/issues/5081#issuecomment-6480453395\n"
+    assert aer._identifiant_commentaire(sortie) == 6480453395
+    assert aer._identifiant_commentaire("") is None
+    assert aer._identifiant_commentaire("pas une URL") is None
+
+
+def test_le_post_publie_puis_relu_par_son_identifiant(monkeypatch):
+    """Le cycle complet : le POST rend une URL, la relecture vise le
+    commentaire designe. Aucun second parcours du fil n'est necessaire."""
+    corps = f"<!-- {aer.MARQUEUR} -->\n" + "x" * 200
+    import json as _json
+    appels = []
+
+    def _run(cmd, **k):
+        appels.append(cmd)
+        if cmd[1] == "issue":
+            return type("R", (), {
+                "returncode": 0,
+                "stdout": "https://github.com/jsboige/CoursIA/issues/5081"
+                          "#issuecomment-6480453395\n"})()
+        return type("R", (), {"returncode": 0,
+                              "stdout": _json.dumps([{"body": corps}])})()
+
+    monkeypatch.setattr(aer, "_token_gh", lambda: "jeton")
+    monkeypatch.setattr(aer.subprocess, "run", _run)
+    assert aer.publier(5081, corps) is True
+    relire = [c for c in appels if "issues/comments/" in " ".join(c)]
+    assert relire, "la relecture doit viser le commentaire par son identifiant"
+
+
 def test_publier_refuse_une_identite_non_verifiee(monkeypatch):
     """Sans jeton resolvable ET sans compte actif verifie, l'organe ne
     publie pas.

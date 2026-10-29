@@ -342,28 +342,71 @@ def vers_cible(valeur: float, reference: float, cible: float,
 _LIGNE_TABLE = re.compile(r"^\|\s*`(?P<cle>[^`]+)`\s*\|", re.MULTILINE)
 
 
+def _pages_json(sortie: str) -> list:
+    """Les valeurs JSON d'une sortie `gh api --paginate`.
+
+    `--paginate` **concatene les pages**, et le `--jq` est applique a
+    CHACUNE d'elles : la sortie porte donc **un tableau JSON par page**,
+    pas un tableau unique. Un `json.loads` de la sortie entiere echoue
+    des la deuxieme page — et l'except rendait `[]` en silence, ce qui
+    effacait silencieusement tout l'historique des references.
+
+    Le contournement mesure : `--slurp` est **incompatible avec `--jq`**
+    dans `gh` (message « the `--slurp` option is not supported with
+    `--jq` or `--template` », gh 2.83.2). On lit donc la sortie comme un
+    flux de documents JSON : `raw_decode` enchaîne les valeurs sans
+    dependre du decoupage en lignes, et tolere aussi bien un objet par
+    ligne (selection `.[] | ...`) qu'un tableau par page.
+    """
+    valeurs: list = []
+    decodeur = json.JSONDecoder()
+    texte = sortie or ""
+    index = 0
+    longueur = len(texte)
+    while index < longueur:
+        while index < longueur and texte[index].isspace():
+            index += 1
+        if index >= longueur:
+            break
+        try:
+            valeur, index = decodeur.raw_decode(texte, index)
+        except ValueError:
+            # Queue illisible : on s'arrete sur ce qui est deja lu.
+            break
+        if isinstance(valeur, list):
+            valeurs.extend(valeur)
+        else:
+            valeurs.append(valeur)
+    return valeurs
+
+
 def _commentaires_marques(issue: int) -> list[dict]:
     """Les commentaires `ANTI-ENTROPY-REGISTER` de l'issue, du plus ancien
     au plus recent. Vide si l'issue n'en porte pas ou si la lecture echoue.
+
+    La lecture **pagine** et aplatit les pages : une issue de plus de
+    trente commentaires porte ses publications au-dela de la premiere
+    page, et une lecture limitee a la premiere page perdrait les
+    references les plus anciennes — c'est-a-dire l'historique dont la
+    reference de sept jours est tiree.
     """
     try:
         raw = subprocess.run(
             ["gh", "api", f"repos/{REPO}/issues/{issue}/comments",
-             "--paginate", "--jq", (f"[.[] | select(.body | contains(\"{MARQUEUR}\")) | "
-             "{created_at, body}]")],
+             "--paginate", "--jq", (f".[] | select(.body | contains(\"{MARQUEUR}\")) | "
+             "{created_at, body}")],
             capture_output=True, text=True, encoding="utf-8", timeout=120,
             check=False)
     except Exception:  # noqa: BLE001 - reseau muet = pas de reference
         return []
     if raw.returncode != 0:
         return []
-    try:
-        data = json.loads(raw.stdout or "[]")
-    except Exception:  # noqa: BLE001 - payload illisible = pas de reference
-        return []
-    if not isinstance(data, list):
-        return []
-    return sorted(data, key=lambda c: c.get("created_at") or "")
+    data = [c for c in _pages_json(raw.stdout) if isinstance(c, dict)]
+    # Le `--jq` filtre deja cote serveur ; on re-filtre ici pour que la
+    # fonction tienne sa promesse meme si la requete change de forme
+    # (une page sans marqueur ne doit rien.contribuer).
+    marques = [c for c in data if MARQUEUR in (c.get("body") or "")]
+    return sorted(marques, key=lambda c: c.get("created_at") or "")
 
 
 def lire_reference(issue: int, cle: str,
@@ -618,7 +661,24 @@ def publier(issue: int, corps: str, dry_run: bool = False) -> bool:
             pass
     if out.returncode != 0:
         return False
-    return _verifier_publication(issue, corps)
+    return _verifier_publication(issue, corps,
+                                 _identifiant_commentaire(out.stdout))
+
+
+def _identifiant_commentaire(sortie: str) -> int | None:
+    """L'identifiant du commentaire publie, lu dans la sortie du POST.
+
+    `gh issue comment` rend l'URL du commentaire qu'il vient de creer :
+    `https://github.com/<repo>/issues/<n>#issuecomment-<id>`. Cet
+    identifiant permet une relecture **exacte** du commentaire publie,
+    sans parcourir le fil — donc sans dependre du nombre de commentaires
+    de l'issue. `None` quand la sortie ne porte pas d'URL : la relecture
+    retombe alors sur la lecture paginee du fil.
+    """
+    trouve = re.search(r"issuecomment-(\d+)", sortie or "")
+    if not trouve:
+        return None
+    return int(trouve.group(1))
 
 
 def _token_gh() -> str:
@@ -652,7 +712,8 @@ def _compte_actif_gh() -> str:
     return (raw.stdout or "").strip()
 
 
-def _verifier_publication(issue: int, corps: str) -> bool:
+def _verifier_publication(issue: int, corps: str,
+                          identifiant: int | None = None) -> bool:
     """Relire le corps PUBLIE et verifier deux predicats.
 
     1. **longueur** : un corps < 100 caracteres apres une publication depuis
@@ -661,18 +722,31 @@ def _verifier_publication(issue: int, corps: str) -> bool:
        portant une cle `body` — c'est le payload JSON complet passe comme
        corps, et la garde de longueur est structurellement aveugle a ce cas.
 
-    La relecture cherche **le commentaire balise parmi les derniers**
-    commentaires de l'issue, et non « le dernier commentaire de l'issue »
-    : le fil est actif et plusieurs lanes y ecrivent, donc un commentaire
-    tiers arrive entre le POST et la relecture. Lire `last` produirait alors
-    un faux echec — et un cliquet avance sur une publication reelle mais
-    non verifiee. Inversement, chercher par marqueur evite de rater la
-    publication : c'est notre corps qu'on compare, dans le lot recent.
+    La relecture se fait **par identifiant de commentaire** quand on le
+    sait : `gh issue comment` rend l'URL du commentaire publie, qui porte
+    son `id`. Relire exactement CE commentaire dispense de parcourir le
+    fil et rend la relecture insensible au volume de commentaires de
+    l'issue.
+
+    **Sans identifiant**, on retombe sur une lecture du fil, et cette
+    lecture **pagine** : `.[-10:]` sans `--paginate` selectionne les dix
+    derniers elements de la **premiere page** — sur une issue de plus de
+    trente commentaires, notre publication recente n'y est pas, et une
+    publication reelle est declaree en echec. On collecte donc toutes les
+    pages avant de selectionner.
+
+    Dans les deux cas, on cherche le commentaire **balise** et non « le
+    dernier commentaire » : le fil est actif et plusieurs lanes y
+    ecrivent, donc un commentaire tiers arrive entre le POST et la
+    relecture. Lire `last` produirait un faux echec — et un cliquet
+    avance sur une publication reelle mais non verifiee.
     """
+    if identifiant is not None:
+        return _verifier_par_identifiant(identifiant, corps)
     try:
         raw = subprocess.run(
             ["gh", "api", f"repos/{REPO}/issues/{issue}/comments",
-             "--jq", ".[-10:] | map({body, created_at})"],
+             "--paginate", "--jq", ".[-10:] | map({body, created_at})"],
             capture_output=True, text=True, encoding="utf-8", timeout=120,
             check=False)
     except Exception:  # noqa: BLE001 - relecture impossible = publie quand meme
@@ -681,12 +755,8 @@ def _verifier_publication(issue: int, corps: str) -> bool:
     if raw.returncode != 0:
         print("RELECTURE IMPOSSIBLE : publication non verifiee", file=sys.stderr)
         return True
-    try:
-        commentaires = json.loads(raw.stdout or "[]")
-    except Exception:  # noqa: BLE001 - payload illisible
-        print("RELECTURE ILLISIBLE : publication non verifiee", file=sys.stderr)
-        return True
-    if not isinstance(commentaires, list):
+    commentaires = _pages_json(raw.stdout)
+    if not commentaires:
         print("RELECTURE ILLISIBLE : publication non verifiee", file=sys.stderr)
         return True
     marques = [c for c in commentaires
@@ -694,6 +764,41 @@ def _verifier_publication(issue: int, corps: str) -> bool:
     if not marques:
         return False
     publie = marques[-1].get("body") or ""
+    return _corps_conforme(publie, corps)
+
+
+def _verifier_par_identifiant(identifiant: int, corps: str) -> bool:
+    """Relire le commentaire PUBLIE par son identifiant exact.
+
+    C'est la voie sans pagination : on lit le commentaire que le POST a
+    designe, pas « les derniers commentaires de l'issue ». Un fil de plus
+    de trente commentaires, ou un commentaire tiers intercale entre le
+    POST et la relecture, ne peuvent plus faire echouer une publication
+    reelle.
+    """
+    try:
+        raw = subprocess.run(
+            ["gh", "api", f"repos/{REPO}/issues/comments/{identifiant}",
+             "--jq", "{body, created_at}"],
+            capture_output=True, text=True, encoding="utf-8", timeout=120,
+            check=False)
+    except Exception:  # noqa: BLE001 - relecture impossible = publie quand meme
+        print("RELECTURE IMPOSSIBLE : publication non verifiee", file=sys.stderr)
+        return True
+    if raw.returncode != 0:
+        print("RELECTURE IMPOSSIBLE : publication non verifiee", file=sys.stderr)
+        return True
+    commentaires = _pages_json(raw.stdout)
+    if not commentaires:
+        print("RELECTURE ILLISIBLE : publication non verifiee", file=sys.stderr)
+        return True
+    publie = commentaires[-1].get("body") or ""
+    return _corps_conforme(publie, corps)
+
+
+def _corps_conforme(publie: str, corps: str) -> bool:
+    """Le corps publie est-il bien le notre, et conforme aux deux
+    predicats de transport (longueur, structure JSON) ?"""
     if publie.strip() != corps.strip():
         return False
     if len(publie) < 100:
