@@ -19,17 +19,15 @@ SYMBOLIC_AI_DIR = ARGUMENT_ANALYSIS_DIR.parent
 def get_tweety_jar_dir() -> Optional[pathlib.Path]:
     """Find the directory containing Tweety JAR files.
 
-    Search order:
-    1. Argument_Analysis/libs/ (local)
-    2. Tweety/libs/ (sibling series)
+    Only the sibling series directory holds JARs. The former first candidate,
+    ``Argument_Analysis/libs/``, was removed with the #23109 arbitration: it
+    carried the duplicated native libraries and no JAR at all (measured at base
+    ``7e1b735ab``: six ``native/*`` entries, zero ``*.jar``), so its ``*.jar``
+    guard never matched -- a pointer that looked alive and resolved to nothing.
     """
-    candidates = [
-        ARGUMENT_ANALYSIS_DIR / "libs",
-        SYMBOLIC_AI_DIR / "Tweety" / "libs",
-    ]
-    for d in candidates:
-        if d.exists() and any(d.glob("*.jar")):
-            return d
+    d = SYMBOLIC_AI_DIR / "Tweety" / "libs"
+    if d.exists() and any(d.glob("*.jar")):
+        return d
     return None
 
 
