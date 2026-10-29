@@ -2539,12 +2539,15 @@ def _consume_metrics(
 
 #: Nombre de lectures de PR en parallele dans la queue (#22938).
 #:
-#: La lecture est DOMINEE par le tour de reseau (~0,8 s par appel), pas par
-#: le processus `gh` (~17 ms de spawn mesure) : le levier est la concurrence,
-#: pas le nombre d'appels. Le defaut 8 reste sous le seuil ou le rate-limit
-#: secondaire de GitHub sanctionne les requetes concurrentes d'un meme
-#: client.
-QUEUE_WORKERS_DEFAULT = 8
+#: La lecture est DOMINEE par le tour de reseau (~1,7 s par appel mesure le
+#: 2026-10-29), pas par le processus `gh` (~17 ms de spawn) : le levier est
+#: la concurrence, pas le nombre d'appels.
+#:
+#: 12 lectures simultanees : mesure sur 100 PRs ouvertes, 333 appels REST,
+#: **45,2 s** (8 lectures : 63,0 s ; 100 PRs, 0 inconnue, aucune erreur de
+#: rate-limit secondaire observee). Le defaut reste expose (`--queue-workers`)
+#: pour redescendre sous la concurrence si GitHub sanctionne un client.
+QUEUE_WORKERS_DEFAULT = 12
 
 #: Signatures transitoires pour la relecture d'une PR (#22938). Meme famille
 #: que celle de `check_lane_claim.py` et `pr_gate.py` : ce qui est MOTIF
@@ -2692,10 +2695,11 @@ def build_queue(
     #22938 : la lecture est desormais en deux temps. (1) Les surfaces de
     discussion sont lues en GROUPE (une passe GraphQL par lot de 8 PRs au
     lieu de trois lectures par PR). (2) Le reste de chaque PR (metadonnees du
-    crochet d'identite, check-runs) est lu en PARALLELE borne. Le cout d'un
-    passage tombe de ~8 s par PR a ~0,4 s par PR : la queue de 100 PRs
-    passe de ~13 min (rc 124 mesure sur 74 PRs) a quelques dizaines de
-    secondes.
+    crochet d'identite, check-runs) est lu en PARALLELE borne, et chaque PR
+    est CLASSIFIEE des que SA lecture est finie (pipeline, pas de barriere
+    entre les deux temps). Le cout d'un passage tombe de ~8 s par PR a
+    ~0,45 s par PR : la queue de 100 PRs passe de ~13 min (rc 124 mesure
+    sur 74 PRs) a **45 s** (mesure du 2026-10-29, 100 PRs, 0 inconnue).
 
     ``time_budget_seconds`` borne le passage : a l'echeance, les PRs non
     lues partent dans ``unknown`` avec le motif du budget -- la queue
@@ -2760,12 +2764,6 @@ def build_queue(
         assert last is not None
         raise last
 
-    def _read_one(pr: int) -> tuple[int, dict[str, Any] | None, dict[str, Any] | None]:
-        try:
-            return pr, _read_with_retry(pr), None
-        except Exception as exc:  # noqa: BLE001 - une PR ne tue pas la queue
-            return pr, None, {"pr": pr, "error": str(exc)[:300]}
-
     entries: list[QueueEntry] = []
     unknown: list[dict[str, Any]] = []
     deadline = (
@@ -2790,28 +2788,23 @@ def build_queue(
                 # suivi ne doit pas interrompre la queue.
                 pass
 
-    # Phase 1 : les LECTURES, en parallele.
-    snapshots: dict[int, dict[str, Any]] = {}
-    read_results = _parallel_map(_read_one, unique, workers=workers, deadline=deadline)
-    read_attempted = {pr for pr, _snap, _err in read_results}
-    for pr, snap, err in read_results:
-        if snap is not None:
-            snapshots[pr] = snap
-        elif err is not None:
-            unknown.append(err)
-    for pr in unique:
-        if pr not in read_attempted:
-            unknown.append({"pr": pr, "error": BUDGET_EXHAUSTED_MARKER})
-
-    if stack_warm is not None:
-        stack_warm.join()
-
-    # Phase 2 : les CLASSEMENTS, en parallele (le probe B.0 de chaque
-    # candidate est un lecture reseau de plus).
-    def _classify_one(pr: int) -> tuple[int, QueueEntry | None, dict[str, Any] | None]:
+    # Phase 1 : la LECTURE puis le CLASSEMENT de chaque PR, dans le meme
+    # fil. Les deux temps sont separes par une BARRIERE quand ils sont
+    # deux phases : le classement d'une PR (et le probe B.0 d'une candidate,
+    # ~4,3 s) attend alors que TOUTES les lectures soient finies. En
+    # pipeline, le classement d'une PR demarre des que SA lecture est
+    # finie, et le probe B.0 court pendant que les autres lectures avancent.
+    # Mesure du 2026-10-29 : la barriere coutait ~17 s de queue.
+    def _read_and_classify(
+        pr: int,
+    ) -> tuple[int, QueueEntry | None, dict[str, Any] | None]:
+        try:
+            snapshot = _read_with_retry(pr)
+        except Exception as exc:  # noqa: BLE001 - une PR ne tue pas la queue
+            return pr, None, {"pr": pr, "error": str(exc)[:300]}
         try:
             return pr, classify_snapshot(
-                snapshots[pr],
+                snapshot,
                 now=now,
                 stale_after_minutes=stale_after_minutes,
                 probe=probe,
@@ -2819,15 +2812,22 @@ def build_queue(
         except Exception as exc:  # noqa: BLE001 - une PR ne tue pas la queue
             return pr, None, {"pr": pr, "error": str(exc)[:300]}
 
-    classify_results = _parallel_map(
-        _classify_one, list(snapshots), workers=workers, deadline=deadline
+    results = _parallel_map(
+        _read_and_classify, unique, workers=workers, deadline=deadline
     )
-    classified = {pr for pr, _entry, _err in classify_results}
-    for pr, entry, err in classify_results:
+    attempted = {pr for pr, _entry, _err in results}
+    for pr, entry, err in results:
         _record(pr, entry, err)
-    for pr in snapshots:
-        if pr not in classified:
+    for pr in unique:
+        if pr not in attempted:
             _record(pr, None, {"pr": pr, "error": BUDGET_EXHAUSTED_MARKER})
+
+    # La construction de l'index pile se termine avant la sortie : elle
+    # `fetch` les tetes de PR, et un `git fetch` interrompu peut laisser un
+    # verrou de ref derriere lui. Le classement qui a besoin de la pile
+    # attend de toute facon le verrou -- ici, on attend la FIN.
+    if stack_warm is not None:
+        stack_warm.join()
 
     entries.sort(key=lambda item: (
         _parse_ts(item.created_at) or datetime.max.replace(tzinfo=timezone.utc),
