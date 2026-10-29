@@ -96,11 +96,13 @@ EXEMPT_DOCUMENTED: dict[str, str] = {
     # discipline d'auto-couverture paths, ecrite dans le workflow : un seul
     # evenement manquant = la garde ne protege rien.
     "notebook-plan-loss-gate.yml": "#14391/#14429",
-    # garde de surface de commentaires (#16780) : le declencheur principal
-    # est issue_comment, qui n'a PAS de semantique de paths -- un commentaire
-    # peut deposer un chemin local sur une PR qui ne touche aucun fichier
-    # particulier. Un filtre paths rendrait la garde aveugle sur exactement
-    # les PRs ou le defect arrive ; l'exemption est la decision ecrite.
+    # garde de surface de commentaires (#16780) : la garde porte sur la SURFACE
+    # DES COMMENTAIRES, pas sur le diff -- un commentaire peut deposer un chemin
+    # local sur une PR qui ne touche aucun fichier particulier. Un filtre paths
+    # rendrait la garde aveugle sur exactement les PRs ou le defect arrive ;
+    # l'exemption est la decision ecrite. (Le declencheur `issue_comment` de ce
+    # workflow a ete retire en #22937 vague 2 -- son verdict s'attachait a
+    # `main` ; le declencheur `pull_request` couvre la meme surface.)
     "local-path-waiver-guard.yml": "#16780",
 }
 
