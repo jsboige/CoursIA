@@ -325,7 +325,37 @@ Dérivés quantifiés mesurés pour `fishaudio/s2-pro` (tailles réelles fichier
 
 Écart de référence : fp16 = 20,3 Go au warm-up contre 5,0 Go en NF4, soit **un facteur 4** — de quoi faire tomber un refus d'hébergement fondé sur le chiffre fp16. Le piège vérifié (ajouter `bitsandbytes` et `accelerate` ne suffit pas : le loader officiel ne lit pas un state dict préquantifié) est détaillé dans [`docker-configurations/services/tts-fishaudio/README.md`](../../docker-configurations/services/tts-fishaudio/README.md).
 
-Politique d'hébergement et recettes de recherche des quants : [`.claude/rules/model-quantization-and-sleep.md`](../../.claude/rules/model-quantization-and-sleep.md).
+### Politique d'hébergement — le plus petit quant, et le sleep
+
+Un service s'héberge dans la **plus petite quantification qui tient** ; fp16/bf16 est un dernier recours documenté, jamais le point de départ. Un modèle chargé qui ne sert pas consomme la ressource qu'il prétend économiser : le régime attendu est **chargement à la demande, endormissement ensuite**. Le geste de vérification est `python scripts/genai-stack/genai.py quant summary`, qui confronte la quantification configurée à celle que le service charge réellement.
+
+#### Chercher le quant communautaire avant de conclure qu'un modèle ne rentre pas
+
+L'absence de flag `--quantization` dans une image ne dit rien de ce que la communauté a publié : c'est une limite d'outillage, pas une impossibilité du modèle.
+
+```bash
+# dérivés quantifiés d'un modèle donné
+curl -s "https://huggingface.co/api/models?other=base_model:quantized:<org>/<model>&limit=50"
+# recherche large, puis filtrer int4|int8|awq|gptq|gguf|nf4|w4a16|fp8|bnb
+curl -s "https://huggingface.co/api/models?search=<model>&limit=60"
+# tailles réelles, fichier par fichier — le nom du repo n'est pas une mesure
+curl -s "https://huggingface.co/api/models/<repo>?blobs=true"
+```
+
+- Mesurer la **taille totale** (`siblings[].size`) et retenir le plus petit dérivé qui fait le travail.
+- **Écarter les dérivés MLX** (Apple) : nos machines sont NVIDIA.
+- Distinguer un `.pth`/`.safetensors` BnB d'un **GGUF** (runtime llama.cpp) : deux chemins d'exécution différents.
+- Un checkpoint quantifié peut exiger une dépendance absente de l'image : c'est **une couche à ajouter**, pas un moteur à reconstruire — `docker run --rm --entrypoint /app/.venv/bin/python <image> -c "import bitsandbytes"`.
+
+#### Le piège du loader : un state dict préquantifié n'est pas lu par le loader officiel
+
+Ajouter `bitsandbytes` et `accelerate` ne suffit pas. Sur `fishaudio/s2-pro`, charger le dérivé NF4 avec le loader upstream échoue : le loader reconstruit les poids depuis la configuration d'origine et ignore les tenseurs préquantifiés. Le chemin qui fonctionne est celui du **fork** qui accompagne le dérivé (`groxaxo/fish-speech-int4-patch` pour `groxaxo/s2-pro-BnB-4Bits`). Détail vérifié : [`docker-configurations/services/tts-fishaudio/README.md`](../../docker-configurations/services/tts-fishaudio/README.md).
+
+#### vLLM — trois précautions, pas une
+
+1. **Les endpoints n'existent qu'en mode dev.** `POST /sleep` et `/wake_up` ne sont servis qu'avec `VLLM_SERVER_DEV_MODE=1`, que la [doc vLLM](https://docs.vllm.ai/en/latest/features/sleep_mode.html) qualifie d'endpoints à ne pas exposer aux utilisateurs. Nos services sont publiés derrière des URLs `*.myia.io` : ils se pilotent **derrière le proxy**, jamais exposés.
+2. **Le niveau décide de ce qu'on libère.** **Niveau 1** décharge les poids **en RAM CPU** (la doc demande « enough CPU memory ») ; **niveau 2** les jette.
+3. **Le critère de choix est la RAM hôte, pas la VRAM.** Un sommeil de niveau 1 sur une machine dont la mémoire est déjà tendue **déplace la pression au lieu de la libérer** : il rend la carte et dépose le modèle dans la RAM que les runners ou le moteur voisin réclament.
 
 ### Idle Management
 
