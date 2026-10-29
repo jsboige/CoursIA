@@ -559,7 +559,7 @@
           }
         },
         {
-          "path": "ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-Quantization-SOTA.ipynb",
+          "path": "ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb",
           "title": "3.9e — Quantification SOTA : la même INT8, par l'écosystème torch.ao",
           "duration_minutes": 45,
           "kernel": "Python 3",
