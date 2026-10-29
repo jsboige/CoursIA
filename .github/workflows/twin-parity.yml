@@ -75,18 +75,37 @@ concurrency:
 jobs:
   twin-parity:
     name: "Twin parity audit (#8057)"
-    # Routage #14283 tranche 3c (ai-01 2026-09-02) : jambe Linux auto-hebergee.
-    # Garde anti-fork au niveau job + runs-on STATIQUE (une expression leverait
-    # DYNAMIC_RUNS_ON dans check_self_hosted_runner_policy.py).
-    # 2026-10-27 (mesure ai-01) : migration vers `ubuntu-latest` par Q35 etape 2
-    # (#17397) -- `scripts/ci/audit_self_hosted_needs.py` certifie ce workflow
-    # comme n'ayant besoin de RIEN qui n'existe que sur le parc local, et le parc
-    # local etait sature PAR SES CHECKOUTS (mesure 00:45Z : 11 des 12 slots
-    # occupes dans `actions/checkout`, 614 runs en file). La garde anti-fork
-    # ci-dessous est CONSERVEE : aucun code de fork ne change de surface.
-    # Retour arriere = revert du commit (et remise de l'entree d'allowlist).
-    runs-on: ubuntu-latest
+    # 2026-10-27 (#22461, phase A du debordement, appliquee ici dans un PR
+    # DISTINCT de #22921 -- ce workflow en avait ete explicitement exclu de
+    # #22921 pour cause de G-VAR-3, cf le commit d'exclusion) : forme
+    # hybride de debordement -- PR meme-depot ET
+    # vars.CI_OVERFLOW_LOCAL == 'true' -> jambe Linux locale ; tout le reste
+    # (variable absente ou fausse, fork, workflow_dispatch) retombe sur
+    # ubuntu-latest (l'etat du 27/10). Bascule :
+    # `gh variable set CI_OVERFLOW_LOCAL --body true|false --repo jsboige/CoursIA`.
+    # 2026-10-27 (apres le merge de #22921, squash 0c7affa2927) : la garde
+    # de debordement et l'instrument qui l'authentifie sont sur `main` ;
+    # l'exclusion PROVISOIRE de twin-parity.yml (commit d'exclusion, G-VAR-3)
+    # n'a jamais ete mergee -- ce workflow passe donc par une PR a part, dont
+    # le diff ne porte que ce fichier.
+    # La garde anti-fork ci-dessous est CONSERVEE : aucun code de fork ne
+    # change de surface.
+    # Limite : runs-on se resout a la creation du job, les runs deja en file
+    # ne bougent pas.
+    # Retour arriere = variable a `false` ou supprimee : routage 100 %
+    # heberge, sans toucher ce fichier.
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    # Borne de securite (incident du 15/10) : la forme hybride renvoie ce job
+    # sur nos slots ephemeres, ou un run fige (checkout `filter: blob:none`
+    # sans borne) tient un slot pendant 6 h -- le defaut d'Actions -- et le
+    # retire aux PR gates. 16 des 18 slots ephemeres etaient occupes de
+    # cette facon le 15/10, et le workflow a du etre desactive a 07:26Z
+    # pour liberer le parc (104 runs en file annules).
+    # Duree mesuree sur 20 runs verts heberges : mediane 1,3 min, max 4,7 min
+    # -> borne a 20 min (marge large pour le parc local, plus lent que
+    # l'heberge sur un clone `fetch-depth: 0`).
+    timeout-minutes: 20
 
     steps:
       - name: Checkout PR
@@ -245,11 +264,19 @@ jobs:
     # `exit 1` au lieu de `echo "::warning..."`. Cf twin-parity-drift-audit
     # pour le precedent advisory-then-blocking.
     name: "Twin parity SHA mismatch (#9399 volet b, advisory)"
-    # Routage #14283 tranche 3c (ai-01 2026-09-02) : jambe Linux auto-hebergee.
-    # Garde anti-fork au niveau job + runs-on STATIQUE (une expression leverait
-    # DYNAMIC_RUNS_ON dans check_self_hosted_runner_policy.py).
-    runs-on: ubuntu-latest
+    # 2026-10-27 (#22461, phase A du debordement) : meme forme hybride que le
+    # job `twin-parity` ci-dessus -- PR meme-depot ET
+    # vars.CI_OVERFLOW_LOCAL == 'true' -> jambe Linux locale, sinon
+    # ubuntu-latest. La garde anti-fork ci-dessous est CONSERVEE.
+    # Retour arriere = variable a `false` ou supprimee.
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    # Borne de securite (incident du 15/10) : sur nos slots ephemeres, un run
+    # fige sans borne tient un slot 6 h (defaut d'Actions) et le retire aux PR
+    # gates ; 16 des 18 slots etaient occupes de cette facon le 15/10.
+    # Duree mesuree sur 20 runs verts heberges : mediane 1,2 min, max 1,4 min
+    # -> borne a 20 min (marge large pour le parc local).
+    timeout-minutes: 20
 
     steps:
       - name: Checkout PR
