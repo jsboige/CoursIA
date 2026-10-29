@@ -12,7 +12,7 @@ Ce module présente des cas d'usage concrets et des workflows de production pour
 |-------------|--------|
 | Kernel | Python 3 |
 | Durée estimée | ~4-6h |
-| GPU requis | 0-14GB |
+| GPU requis | Selon le notebook (voir VRAM ci-dessous) |
 
 ## Notebooks
 
@@ -23,6 +23,7 @@ Ce module présente des cas d'usage concrets et des workflows de production pour
 | 3 | [04-3-Production-Integration](04-3-Production-Integration.ipynb) | Intégration production | Mixed | ~10GB |
 | 4 | [04-4-Cross-Stitch-Pattern-Maker-Legacy](04-4-Cross-Stitch-Pattern-Maker-Legacy.ipynb) | Point de croix (legacy) | Forge (SDXL, API REST) | Variable |
 | 5 | [04-5-MiniMax-Cloud-Image](04-5-MiniMax-Cloud-Image.ipynb) | Images par API cloud | MiniMax Hailuo | 0 |
+| 6 | [04-6-AesCode-Visual-Documents](04-6-AesCode-Visual-Documents.ipynb) | Documents visuels générés comme code | vLLM local (AesCode-8B) | ~6 Go (INT4) / ~17 Go (bf16) |
 
 ## Prérequis
 
@@ -69,6 +70,11 @@ pip install -r requirements-comfyui.txt
 - **Objectif** : Générer des images par l'API cloud Hailuo (texte vers image, image vers image) quand la licence des poids exclut l'auto-hébergement en UE
 - **Technologies** : API `image-01` via `urllib` + artefacts PNG et `metadata.json` commités
 - **Applications** : Illustration à la demande, transfert de style, comparaison des voies cloud et locale
+
+### 04-6 AesCode — documents visuels générés comme code
+- **Objectif** : Produire posters et dashboards en HTML/CSS éditable via un VLM local (base Qwen3-VL-8B), avec boucle de vérification mécanique du contenu
+- **Technologies** : vLLM local (conteneur `aescode_8b_server`, RTX 3090 ; checkpoint officiel bf16 sur carte dédiée, ou quantification AWQ INT4 sur carte partagée) + checklist de conformité parsant le HTML généré
+- **Applications** : Supports de cours éditables, infographies vérifiables, itération spec → génération → contrôle → correction
 
 ## Workflows
 

@@ -1,5 +1,6 @@
 # region imports
 from AlgorithmImports import *
+from datetime import datetime
 # endregion
 
 
@@ -18,8 +19,16 @@ class TrendFollowingAQR(QCAlgorithm):
     """
 
     def initialize(self):
-        self.set_start_date(2015, 1, 1)
-        self.set_end_date(2024, 12, 31)
+        # Mesure #22959 : mode `strategy` (defaut, decision inchangee), references
+        # detenues `spy` et `6040`, diagnostics `ew7` (sept ETF a poids egal) et
+        # `nobear` (regime baissier desactive) ; fenetre parametrable.
+        self._mode = self.get_parameter("mode", "strategy").lower()
+        if self._mode not in ("strategy", "spy", "6040", "ew7", "nobear"):
+            raise ValueError(f"unknown mode parameter: {self._mode} (strategy | spy | 6040 | ew7 | nobear)")
+        start = self.get_parameter("start_date", "2015-01-01")
+        end = self.get_parameter("end_date", "2024-12-31")
+        self.set_start_date(datetime.strptime(start, "%Y-%m-%d"))
+        self.set_end_date(datetime.strptime(end, "%Y-%m-%d"))
         self.set_cash(100_000)
 
         # Configurable brokerage for fee sweep (default: IBKR margin with real fees)
@@ -57,14 +66,55 @@ class TrendFollowingAQR(QCAlgorithm):
             self.rebalance,
         )
 
+        if self._mode in ("spy", "6040", "ew7"):
+            self.schedule.on(
+                self.date_rules.month_start("SPY"),
+                self.time_rules.after_market_open("SPY", 1),
+                self._rebalance_reference,
+            )
+
+        # Trace `shadow` : valeur du portefeuille a l'ouverture de chaque seance
+        # de SPY, entrelacee sur e0..e4 (contrat #18923).
+        self._closes = 0
+        self.schedule.on(
+            self.date_rules.every_day("SPY"),
+            self.time_rules.after_market_open("SPY", 0),
+            self._trace,
+        )
+
         self.set_warm_up(timedelta(days=300))
+
+    def _rebalance_reference(self):
+        if self.is_warming_up:
+            return
+        if self._mode == "spy":
+            targets = {"SPY": 1.0}
+        elif self._mode == "6040":
+            targets = {"SPY": 0.6, self.safe_ticker: 0.4}
+        else:
+            weight = 1.0 / len(self.all_tickers)
+            targets = {t: weight for t in self.all_tickers}
+        for ticker in self.all_tickers:
+            sym = self.symbols[ticker]
+            if ticker in targets:
+                self.set_holdings(sym, targets[ticker])
+            elif self.portfolio[sym].invested:
+                self.liquidate(sym)
+
+    def _trace(self):
+        if self.is_warming_up:
+            return
+        self.plot("shadow", f"e{self._closes % 5}", self.portfolio.total_portfolio_value)
+        self._closes += 1
 
     def rebalance(self):
         if self.is_warming_up:
             return
+        if self._mode not in ("strategy", "nobear"):
+            return
 
         bear_market = False
-        if self.spy_sma.is_ready:
+        if self.spy_sma.is_ready and self._mode != "nobear":
             spy_price = self.securities[self.spy_sym].price
             bear_market = spy_price < self.spy_sma.current.value
 
