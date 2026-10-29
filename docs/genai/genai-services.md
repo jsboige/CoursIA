@@ -303,7 +303,7 @@ BATCH_MODE=false
 | vllm-zimage | po-2023 | Z-Image-Turbo | bfloat16 (fp8 opt via `VLLM_QUANTIZATION=fp8`) | ~5-10 GB |
 | sd-forge-main | po-2023 | SD Forge SDXL | xformers fp16 | ~6-10 GB |
 | forge-turbo | po-2023 | SD Forge Turbo | xformers fp16 | ~6-10 GB |
-| tts-fishaudio | po-2023 | FishAudio S2-Pro | fp16 (`--half`) — 20,3 Go mesurés ; NF4 5 Go possible via le fork (voir README du service) | ~20 GB |
+| tts-fishaudio | po-2023 | FishAudio S2-Pro | fp16 (`--half`) — 20,3 Go de VRAM mesurés ; NF4 : 5,00 Go de **fichiers** via le fork, VRAM non mesurée (voir README du service) | ~20 GB |
 | tts-kokoro | po-2023 | Kokoro TTS | fp32/fp16 default | ~1-2 GB |
 | musicgen-api | po-2023 | MusicGen-medium | fp16 | ~10 GB |
 | qwen-asr-api | po-2023 | Qwen3-ASR-1.7B | bfloat16 | ~3-4 GB |
@@ -323,7 +323,7 @@ Dérivés quantifiés mesurés pour `fishaudio/s2-pro` (tailles réelles fichier
 | `baicai1145/s2-pro-w4a16` | 6,13 Go | safetensors |
 | `drbaph/s2-pro-fp8` | 8,05 Go | fp8 |
 
-Écart de référence : fp16 = 20,3 Go au warm-up contre 5,0 Go en NF4, soit **un facteur 4** — de quoi faire tomber un refus d'hébergement fondé sur le chiffre fp16. Le piège vérifié (ajouter `bitsandbytes` et `accelerate` ne suffit pas : le loader officiel ne lit pas un state dict préquantifié) est détaillé dans [`docker-configurations/services/tts-fishaudio/README.md`](../../docker-configurations/services/tts-fishaudio/README.md).
+Écart de référence — **attention, deux grandeurs de nature différente** : le fp16 occupe **20,3 Go de VRAM résidente** au warm-up (mesure du 2026-10-06), tandis que les **5,00 Go du NF4 sont une taille de fichiers** (somme des blobs du dépôt, `?blobs=true`), **pas une mémoire d'exécution**. Le « facteur 4 » est donc un rapport **poids-sur-VRAM contre poids-sur-disque**, pas un rapport VRAM/VRAM : la **VRAM résidente du NF4 n'est mesurée nulle part**, et la model card vise elle-même « 12 GB+ VRAM » pour ce dérivé. Ce qui est établi : le **poids téléchargé** tombe de 20,3 Go à 5,00 Go, et la cible de la model card rend l'hébergement en NF4 envisageable sur une carte de 12 Go et plus — à confirmer par un warm-up NF4 mesuré, qui n'est pas fait à ce jour. Le piège vérifié (ajouter `bitsandbytes` et `accelerate` ne suffit pas : le loader officiel ne lit pas un state dict préquantifié) est détaillé dans [`docker-configurations/services/tts-fishaudio/README.md`](../../docker-configurations/services/tts-fishaudio/README.md).
 
 ### Politique d'hébergement — le plus petit quant, et le sleep
 

@@ -87,7 +87,7 @@ Tailles mesurées via l'API HuggingFace (`?blobs=true`) :
 
 ### Sleep
 
-Le sidecar `idle-monitor` **arrête** le conteneur, il ne l'endort pas : au redémarrage, les ~20 Go sont rechargés. Pour un usage ponctuel, c'est ce régime qu'il faut remplacer (cf `.claude/rules/model-quantization-and-sleep.md`).
+Le sidecar `idle-monitor` **arrête** le conteneur, il ne l'endort pas : au redémarrage, les ~20 Go sont rechargés. Pour un usage ponctuel, c'est ce régime qu'il faut remplacer (cf [la politique d'hébergement et le sleep](../../../docs/genai/genai-services.md), § « Politique d'hébergement — le plus petit quant, et le sleep »).
 
 ## Integration
 
