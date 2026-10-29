@@ -20,6 +20,7 @@ import importlib.util
 import json
 import logging
 import os
+from contextlib import contextmanager
 from pathlib import Path
 
 import pytest
@@ -30,6 +31,11 @@ _MODULE_PATH = Path(__file__).resolve().parent / "genai_helpers.py"
 _spec = importlib.util.spec_from_file_location("genai_helpers", _MODULE_PATH)
 gh = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(gh)
+
+# Etat de l'environnement a l'import : la sonde anti-fuite de dotenv
+# (test_load_genai_config_does_not_leak_dotenv_key) doit distinguer une cle
+# apparue PENDANT la suite (fuite) d'une cle presente AVANT (lanceur).
+_HAD_KEY_AT_IMPORT = "OPENROUTER_API_KEY" in os.environ
 
 
 # --------------------------------------------------------------------------
@@ -94,8 +100,28 @@ def test_load_genai_config_returns_true_when_env_present(tmp_path, monkeypatch):
     env = tmp_path / ".env"
     env.write_text("OPENROUTER_API_KEY=sk-test\n", encoding="utf-8")
     monkeypatch.chdir(tmp_path)
-    result = gh.load_genai_config()
+    # dotenv ecrit la cle dans os.environ hors de toute tracabilite pytest :
+    # la garde _restore_env la retire a la sortie du bloc (mesure adjoint
+    # 29/10 -- sans elle, la cle factice fuyait vers toute la suite).
+    with _restore_env("OPENROUTER_API_KEY"):
+        result = gh.load_genai_config()
     assert result is True
+
+
+def test_load_genai_config_does_not_leak_dotenv_key():
+    """Sonde inter-tests : aucune cle ne doit APPARAITRE pendant la suite.
+
+    En memoire de la fuite mesuree (adjoint 29/10) : `dotenv` ecrivait
+    `sk-test` dans os.environ depuis le test du .env, et la cle survivait
+    jusqu'au test reseau, qui croyait alors en tenir une vraie. Rouge sur le
+    fichier d'avant-fix, vert avec la garde `_restore_env`.
+
+    La sonde ne rougit pas si le lanceur porte une vraie cle depuis le
+    depart : seule une cle apparue en cours de suite est une fuite.
+    """
+    if _HAD_KEY_AT_IMPORT:
+        pytest.skip("OPENROUTER_API_KEY presente des l'import : sonde muette")
+    assert "OPENROUTER_API_KEY" not in os.environ
 
 
 def test_load_genai_config_returns_false_when_no_env(tmp_path, monkeypatch):
@@ -235,13 +261,34 @@ def test_all_exports_present():
 #
 # Ces tests tournent sans reseau et sans cle : ils portent sur la *resolution*
 # de la configuration, pas sur l'appel. Les appels reels sont couverts a part,
-# marques `network`, et sautes quand aucune cle n'est disponible.
+# marques `network`, en opt-in explicite (RUN_NETWORK_TESTS=1).
 
 
 def _clear_key_env(monkeypatch):
     for name in ("OPENAI_API_KEY", "OPENROUTER_API_KEY", "OPENAI_BASE_URL",
                  "OPENAI_MODEL", "OPENAI_REASONING_MODEL"):
         monkeypatch.delenv(name, raising=False)
+
+
+@contextmanager
+def _restore_env(*names):
+    """Retablit les variables nommees apres le bloc, meme si le code sous test
+    les ecrit en direct.
+
+    `dotenv` (appele par `load_genai_config`) ne passe pas par monkeypatch :
+    sans cette garde, la cle factice du `.env` survit au test et fuit vers
+    toute la suite (mesure adjoint 29/10 -- le test reseau croyait alors
+    tenir une cle et ne sautait plus).
+    """
+    saved = {n: os.environ.get(n) for n in names}
+    try:
+        yield
+    finally:
+        for n, v in saved.items():
+            if v is None:
+                os.environ.pop(n, None)
+            else:
+                os.environ[n] = v
 
 
 # Valeurs factices assemblees a l'execution : un prefixe de cle ecrit d'un seul
@@ -534,21 +581,23 @@ def test_module_source_carries_no_literal_api_key():
 
 
 @pytest.mark.network
-def test_openrouter_key_reaches_a_model_listed_for_it():
-    """Appel reel : la cle du module ouvre bien le modele par defaut.
+def test_openrouter_catalog_lists_default_model():
+    """Catalogue PUBLIC d'OpenRouter : le modele par defaut du module y figure.
 
-    Saute quand aucune cle n'est disponible (local du mainteneur, cours). Le
-    test epingle la *capacite* — un modele repond — jamais une duree.
+    Ce GET /models ne prouve RIEN sur une cle : le catalogue est public et
+    repond sans autorisation. Prouver qu'une cle ouvre un modele est un test
+    distinct, explicitement autorise — il n'est pas necessaire a cette PR.
+
+    Opt-in effectif : ne tourne que si RUN_NETWORK_TESTS=1. Un pytest nu ne
+    touche jamais au reseau, y compris en CI (mesure adjoint 29/10 : avant
+    cette garde, la fuite dotenv faisait partir un appel avec une cle
+    factice a chaque passage de suite sans que personne l'ait demande).
     """
-    api_key = os.getenv("OPENROUTER_API_KEY")
-    if not api_key:
-        pytest.skip("aucune OPENROUTER_API_KEY dans l'environnement")
+    if os.getenv("RUN_NETWORK_TESTS") != "1":
+        pytest.skip("reseau opt-in : poser RUN_NETWORK_TESTS=1 pour l'executer")
     import urllib.request
 
-    req = urllib.request.Request(
-        gh.OPENROUTER_BASE_URL + "/models",
-        headers={"Authorization": "Bearer " + api_key},
-    )
+    req = urllib.request.Request(gh.OPENROUTER_BASE_URL + "/models")
     with urllib.request.urlopen(req, timeout=30) as resp:
         payload = json.loads(resp.read().decode("utf-8"))
     ids = {m["id"] for m in payload.get("data", [])}
