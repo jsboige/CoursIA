@@ -32,7 +32,7 @@ Projet 30822855. Téléverser `main.py`, compiler et lancer un backtest. Le para
 
 Les trois modes de référence se rééquilibrent le premier jour de bourse du mois, 30 minutes après l'ouverture, à l'heure du scan de la stratégie. Le graphique `shadow` trace la valeur du portefeuille à chaque ouverture de séance du SPY. C'est l'entrée du calcul de significativité (`Paradox46Benchmarks/significance.py`). Trois statistiques d'exécution sont relevées :
 
-- `reentries` compte les ETF re-sélectionnés le jour même de leur sortie ;
+- `reentries` compte les ETF re-sélectionnés le jour même de leur sortie (durée, ou stop en v3 avec `fix=off`). Avec `fix=on`, une sortie sur stop exclut l'ETF des candidats du jour ;
 - `short_days` compte les ouvertures où une ligne est courte ;
 - `max_gross` donne l'exposition brute maximale lue à l'ouverture.
 
@@ -55,11 +55,15 @@ Le rejeu des ordres du code d'origine en compte **8 sur 2018-2024**, et chaque f
 
 Sur 2025 → mi-2026, il y en a deux : XLY le 2026-03-16 (4 parts gardées sur 340) et XLF le 2026-03-17 (15 sur 771). Aucune ne passe à découvert.
 
-**Correctif.** Les sorties sont liquidées une fois les entrées connues. Un ETF re-sélectionné le jour de sa sortie ne reçoit plus que `set_holdings(symbol, 1/3)`, et la ligne finit à 1/3. Les seuils, les variantes, la règle de sortie, le filtre de régime, le stop et la cadence ne changent pas. Au rejeu des ordres, le code corrigé n'a **aucune vente-rachat du même jour et aucune position courte** sur les deux fenêtres. Chaque ligne encore détenue après un ordre pèse au moins 31 % du portefeuille, et le code corrigé passe huit ordres de moins (265 contre 273).
+**Correctif.** Les sorties sont liquidées une fois les entrées connues. Un ETF re-sélectionné le jour de sa sortie ne reçoit plus que `set_holdings(symbol, 1/3)`, et la ligne finit à 1/3. Les seuils, le filtre de régime et la cadence ne changent pas. En v3, une sortie sur stop est liquidée et exclue des candidats du jour : le même ETF ne peut pas être racheté immédiatement. Cette distinction est nécessaire pour que le stop ne devienne pas un renforcement. Au rejeu des ordres de la variante v1, le code corrigé n'a **aucune vente-rachat du même jour et aucune position courte** sur les deux fenêtres. Chaque ligne encore détenue après un ordre pèse au moins 31 % du portefeuille, et le code corrigé passe huit ordres de moins (265 contre 273).
 
-**Contrôle d'innocuité.** Le code de `main` (sha256 `6cda5ec4b0c7`) et le code instrumenté avec `fix=off` ont tourné le même jour sur la même fenêtre. Ils produisent les mêmes 273 ordres (date, symbole, quantité) et les mêmes statistiques QC. L'instrumentation ne change donc rien aux ordres. Le backtest publié le 2026-08-14 a les mêmes 273 ordres en date, symbole et sens. Les quantités diffèrent de quelques parts sur 257 d'entre eux, et le Sharpe passe de 0,067 à 0,069. La cause de ces écarts entre deux runs du même code n'est pas isolée ici.
+**Contrôle d'innocuité.** Le code de `main` (sha256 `6cda5ec4b0c7`) et le code instrumenté avec `fix=off` ont tourné le même jour sur la même fenêtre. Ils produisent les mêmes 273 ordres (date, symbole, quantité) et les mêmes statistiques QC. L'instrumentation ne change donc rien aux ordres. Le backtest publié le 2026-08-14 a les mêmes 273 ordres en date, symbole et sens. Par rapport au run du 2026-08-14, les quantités diffèrent de quelques parts sur 257 des 273 ordres, et le Sharpe passe de 0,067 à 0,069. La cause de ces écarts entre deux runs du même code n'est pas isolée ici. L'égalité exacte du contrôle porte seulement sur les deux runs lancés le même jour, pas sur la reproductibilité entre dates d'exécution.
 
 **L'exposition brute dépasse encore 1.** Elle atteint 1,039 avec le correctif, contre 1,032 avec le code d'origine. Ce dépassement n'est pas introduit par le correctif. À la lecture du code, il vient des nouvelles lignes, dimensionnées à 1/3 de la valeur du portefeuille alors que les lignes détenues ne sont jamais ramenées à 1/3. Cette explication n'a pas été mesurée date par date.
+
+**Contrôle de la sortie sur stop.** En v3, conserver seulement la cible après un stop pouvait renforcer la ligne au lieu de la solder. Le mode corrigé exclut maintenant le titre stoppé des candidats du jour, avant leur classement ; la place peut être prise par un autre ETF. Les sorties par durée conservent la ré-entrée normale. Le mode `fix=off` conserve le comportement d'origine, y compris ce défaut. Les seuils de stop ne changent pas, mais son effet est rétabli : il s'agit d'un changement de comportement v3, pas d'une simple clarification.
+
+Le code complété (sha256 `ff72ef038902`) a été compilé puis exécuté sur QC Cloud le 2026-10-29, projet 38620750. Deux runs terminés sur 2018-01-01 → 2025-01-01 : témoin v1 `ab01508b8e6af4a02396bfba8da0e352` (Sharpe 0,162, CAGR 5,644 %, MaxDD 41,0 %, 265 ordres, aucune séance courte), et v3 `fc9f80a1b77166b0e0abca00c96ed76d` (Sharpe 0,252, CAGR 6,187 %, MaxDD 10,9 %, 434 ordres, aucune séance courte, exposition brute maximale 1,019). Le témoin v1 retrouve les statistiques du tableau ; cette comparaison n'isole pas l'effet du correctif v3, faute de bras v3 avant correctif sur la même fenêtre. Aucun verdict de performance v3 n'en est déduit. Les tests locaux exécutent la méthode du fichier source : stop sans rachat, place réutilisée, sorties par durée et signal, invariance v1/v2 et fidélité de `fix=off` sur un chemin synthétique. Leur modèle simplifié de remplissage ne remplace pas Lean.
 
 ## Métriques du backtest
 
@@ -117,7 +121,7 @@ Le protocole (#23012, repris dans #23257) donne BEATS seulement si le Sharpe dé
 - **Concentration sur les trois plus survendus.** Les trois ETF les plus survendus sont souvent ceux qui chutent ensemble (XLE revient dans cinq des huit ré-entrées du tableau ci-dessus).
 - **Pas d'edge mesurable.** Ni contre SPY détenu, ni contre le 60/40, ni contre les onze secteurs à poids égal.
 
-Les variantes v2 (+ filtre SMA200) et v3 (+ stop-loss 8 %) sont conçues pour répondre à ces faiblesses mais ne sont pas mesurées ici. Le correctif d'exécution s'applique aux trois variantes.
+Les variantes v2 (+ filtre SMA200) et v3 (+ stop-loss 8 %) sont conçues pour répondre à ces faiblesses. Les tableaux et le verdict ci-dessus ne portent que sur v1 : ils ne prouvent pas la performance de v2/v3. Le code distingue les sorties sur stop des sorties par durée ; une ligne stoppée est soldée sans ré-entrée le même jour en mode corrigé.
 
 ## Fichiers
 

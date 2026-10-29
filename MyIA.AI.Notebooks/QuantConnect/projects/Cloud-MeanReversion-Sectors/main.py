@@ -137,6 +137,7 @@ class CloudMeanReversionSectors(QCAlgorithm):
 
         # Check exits
         to_exit = []
+        stopped = set()
         for etf in list(self.entry_days.keys()):
             days_held = self.day_count - self.entry_days[etf]
             rsi_val = self.rsi_indicators[etf].current.value
@@ -145,6 +146,7 @@ class CloudMeanReversionSectors(QCAlgorithm):
             if self.stop_loss_pct < 1 and etf in self.entry_prices:
                 dd = (current_price - self.entry_prices[etf]) / self.entry_prices[etf]
                 if dd < -self.stop_loss_pct:
+                    stopped.add(etf)
                     to_exit.append(etf)
                     continue
 
@@ -161,6 +163,9 @@ class CloudMeanReversionSectors(QCAlgorithm):
         candidates = []
         for etf in self.sector_etfs:
             if etf in self.entry_days:
+                continue
+            # Une sortie sur stop doit solder la ligne, sans rachat le meme jour.
+            if self._fix == "on" and etf in stopped:
                 continue
             rsi = self.rsi_indicators[etf]
             if not rsi.is_ready:
