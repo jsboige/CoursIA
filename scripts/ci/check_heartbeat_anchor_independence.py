@@ -18,24 +18,42 @@ Ce que fait cet organe, pour chaque advisory passee en argument :
   1. lit les noms de workflows cites par son bloc `workflow_run.workflows` ;
   2. pour chacun, resout l'identifiant du workflow, echantillonne ses `N`
      derniers runs termines et lit les jobs de chaque run ;
-  3. classe chaque job par la presence du label `self-hosted`, et lit les
-     declencheurs du workflow ;
+  3. classe chaque job par la presence du label `self-hosted`, et lit le bloc
+     `on:` DECLARE du fichier du workflow (en plus des evenements observes
+     dans la fenetre echantillonnee, qui restent rapportes) ;
   4. declare une JAMBE GitHub-hosted ssi (a) 100 % des jobs echantillonnes sont
-     GitHub-hosted et (b) le workflow est declenche par un evenement que GitHub
-     delivre sans le parc (`pull_request` ou `push`). La condition (b) n'est pas
+     GitHub-hosted et (b) le bloc `on:` declare un evenement que GitHub delivre
+     sans le parc (`pull_request` ou `push`). La condition (b) n'est pas
      cosmetique : un `workflow_dispatch` 100 % heberge ne se declenche jamais
      tout seul.
+
+     Le predicat (b) porte sur le bloc DECLARE, pas sur la fenetre observee :
+     les evenements d'une fenetre de 3 runs ne sont pas la propriete du
+     workflow. Mesure du defaut (review #23280) : sur 300 derniers runs de
+     « Secret Scan », 11 fenetres de 3 consecutifs sont 100 % `push` -- une
+     fenetre peut donc renverser le verdict d'un fait qui ne depend pas
+     d'elle. Si le bloc `on:` est illisible, l'ancre est en erreur (vers
+     UNKNOWN), jamais en faux `NO_HOSTED_LEG`.
 
 Verdicts : `ANCHOR_PROVED` (au moins une jambe), `NO_HOSTED_LEG` (aucune --
 le heartbeat ne survit pas a un parc eteint), `UNKNOWN` (API illisible : un
 instrument aveugle n'est pas un rouge, #14849).
 
-Cout borne : les pages de liste des workflows (2 au 2026-10-29, l'API en rend
-100 par page pour 169 workflows), puis par ancre `1 + N` appels (`runs`, puis
-`jobs` par run). Mesure du passage reel sur les deux advisories, `N=3` :
-**11 appels**. Le cout est imprime a chaque passage pour la porte de mesure
+Cout borne : les pages de liste des workflows pour resoudre les ancres par nom
+(3 appels au 2026-10-29 : l'ancre la plus tardive vit en page 2, l'API rend
+100 workflows par page pour 169), 1 appel pour `vars.CI_OVERFLOW_LOCAL`, puis
+par ancre `2 + N` appels (`contents` du fichier pour le bloc `on:`, `runs`,
+puis `jobs` par run). Mesure du passage reel sur les deux advisories, `N=3` :
+**14 appels**. Le cout est imprime a chaque passage pour la porte de mesure
 #22937 -- c'est lui qui a fait saturer le jeton de depot le 2026-10-28, donc
 il se mesure au lieu de s'estimer.
+
+Le verdict vit dans un monde ou les ancres bougent : depuis la vague #23016,
+les workflows a fort volume portent une forme hybride -- `CI_OVERFLOW_LOCAL`
+les deborde sur le parc self-hosted pendant la famine de runners (#13363).
+Dans ce mode la jambe est suspendue PAR DECISION (variable visible), pas
+perdue par routage (#21112) : l'organe lit la variable et la nomme dans le
+verdict, sans changer la semantique -- NO_HOSTED_LEG reste un fait.
 
 Usage :
     python scripts/ci/check_heartbeat_anchor_independence.py
@@ -48,6 +66,7 @@ Sortie : 0 = au moins une jambe prouvee, 1 = aucune, 2 = instrument aveugle.
 from __future__ import annotations
 
 import argparse
+import base64
 import json
 import re
 import sys
@@ -79,10 +98,18 @@ MAX_WORKFLOW_PAGES = 3
 class AnchorMeasure:
     name: str
     workflow_id: int | None = None
+    workflow_path: str | None = None
     runs_sampled: int = 0
     jobs_total: int = 0
     jobs_hosted: int = 0
     jobs_self_hosted: int = 0
+    # Evenements du bloc `on:` du fichier du workflow -- la propriete DECLAREE,
+    # celle qui fonde le predicat (review #23280 : une fenetre de 3 runs peut
+    # etre 100 % `push` sur une ancre declaree `pull_request`, et renverser un
+    # verdict qui ne depend pas d'elle).
+    declared_triggers: list[str] = field(default_factory=list)
+    # Evenements observes dans la fenetre echantillonnee -- rapportes pour la
+    # lecture, sans valeur decisionnelle.
     triggers: list[str] = field(default_factory=list)
     error: str | None = None
 
@@ -97,7 +124,7 @@ class AnchorMeasure:
         """Jambe GitHub-hosted : hebergee de fait ET declenchee sans le parc."""
         if self.jobs_total == 0 or self.jobs_self_hosted != 0:
             return False
-        return bool(PARK_INDEPENDENT_EVENTS & set(self.triggers))
+        return bool(PARK_INDEPENDENT_EVENTS & set(self.declared_triggers))
 
 
 @dataclass
@@ -106,6 +133,12 @@ class Verdict:
     anchors: list[AnchorMeasure]
     advisories: list[str]
     calls: int
+    # Mode debordement de la vague #23016 : quand `vars.CI_OVERFLOW_LOCAL`
+    # vaut true, les ancres a forme hybride basculent sur le parc self-hosted
+    # -- la jambe est alors SUSPENDUE par decision de flotte, pas perdue par
+    # un routage silencieux (#21112). L'organe lit et nomme le mode ; le
+    # verdict reste NO_HOSTED_LEG tant que la jambe n'existe pas.
+    ci_overflow_local: bool = False
 
 
 def _yaml_on_block(text: str) -> str:
@@ -115,24 +148,76 @@ def _yaml_on_block(text: str) -> str:
     toutes les machines, et `on` est un booleen en YAML 1.1 -- deux pieges pour
     une lecture dont on n'a besoin que d'une liste de noms.
     """
-    match = re.search(r"^on:\n(.*?)^(?:permissions|jobs|concurrency|env):",
-                      text, re.S | re.M)
+    match = re.search(
+        r"^on:\n(.*?)(?=^(?:permissions|jobs|concurrency|env):|\Z)",
+        text, re.S | re.M)
     return match.group(1) if match else ""
 
 
 def load_anchor_names(advisory_path: Path) -> list[str]:
-    """Noms de workflows cites par `workflow_run.workflows` de l'advisory."""
+    """Noms de workflows cites par `workflow_run.workflows` de l'advisory.
+
+    Les deux formes YAML sont lues : liste inline `workflows: ["A", "B"]` et
+    liste bloc `workflows:\\n  - "A"\\n  - "B"` -- la forme bloc est celle
+    qu'un `yaml.dump` produit (review #23280, cas C) : ne lire que l'inline
+    rend `[]` dessus, et un `[]` fait rendre l'organe UNKNOWN en silence.
+    """
     text = advisory_path.read_text(encoding="utf-8")
     block = _yaml_on_block(text)
     match = re.search(r"workflows:\s*\[(.*?)\]", block, re.S)
-    if not match:
-        return []
-    return [item.strip().strip("'\"") for item in match.group(1).split(",")
-            if item.strip()]
+    if match:
+        return [item.strip().strip("'\"") for item in match.group(1).split(",")
+                if item.strip()]
+    names: list[str] = []
+    in_list = False
+    for line in block.splitlines():
+        if not in_list:
+            if re.match(r"^\s*workflows:\s*$", line):
+                in_list = True
+            continue
+        item = re.match(r"^\s*-\s*(.+?)\s*$", line)
+        if not item:
+            break
+        names.append(item.group(1).strip().strip("'\""))
+    return names
 
 
-def resolve_workflow_id(repo: str, name: str, stats: CallStats) -> int | None:
-    """Identifiant du workflow par son `name:`.
+def _declared_events(workflow_text: str) -> list[str]:
+    """Evenements du bloc `on:` d'un fichier de workflow.
+
+    Sans parseur YAML (meme pari que `_yaml_on_block` : pas de dependance
+    garantie, et `on` est un booleen en YAML 1.1). Les trois formes lues :
+    scalaire (`on: push`), liste inline (`on: [push, pull_request]`) et bloc
+    (cles ou items au premier niveau d'indentation -- les sous-cles comme
+    `branches:` sont ignorees par le test d'indentation).
+    """
+    inline = re.search(r"^on:\s*(\[[^\]]*\]|[A-Za-z_][\w.-]*)\s*$",
+                       workflow_text, re.M)
+    if inline:
+        token = inline.group(1)
+        if token.startswith("["):
+            return [t.strip().strip("'\"") for t in token[1:-1].split(",")
+                    if t.strip()]
+        return [token]
+    block = _yaml_on_block(workflow_text)
+    events: list[str] = []
+    ref_indent: int | None = None
+    for line in block.splitlines():
+        if not line.strip():
+            continue
+        indent = len(line) - len(line.lstrip())
+        if ref_indent is None:
+            ref_indent = indent
+        if indent != ref_indent:
+            continue
+        item = re.match(r"^\s*(?:-\s*)?([A-Za-z_][\w.-]*):?", line.lstrip(" "))
+        if item:
+            events.append(item.group(1))
+    return events
+
+
+def resolve_workflow_id(repo: str, name: str, stats: CallStats) -> dict | None:
+    """Fiche du workflow par son `name:` (id + path).
 
     `/actions/workflows` pagine a 100 par page et le depot en compte 169 au
     2026-10-29 : une seule page rend « introuvable » pour un workflow qui
@@ -150,7 +235,7 @@ def resolve_workflow_id(repo: str, name: str, stats: CallStats) -> int | None:
         workflows = data.get("workflows") or []
         for wf in workflows:
             if wf.get("name") == name:
-                return int(wf.get("id")) if wf.get("id") is not None else None
+                return wf if wf.get("id") is not None else None
         if len(workflows) < 100:
             return None
     return None
@@ -167,19 +252,35 @@ def sample_run_jobs(repo: str, run_id: int, stats: CallStats) -> list[list[str]]
 def measure_anchor(repo: str, name: str, runs: int,
                    stats: CallStats) -> AnchorMeasure:
     measure = AnchorMeasure(name=name)
-    wf_id = resolve_workflow_id(repo, name, stats)
-    if wf_id is None:
+    wf = resolve_workflow_id(repo, name, stats)
+    if wf is None:
         measure.error = "workflow introuvable par nom"
         return measure
-    measure.workflow_id = wf_id
+    measure.workflow_id = int(wf["id"])
+    measure.workflow_path = wf.get("path")
+
+    # Bloc `on:` DECLARE : la propriete du workflow, independante de la
+    # fenetre echantillonnee (review #23280). Un fichier illisible met
+    # l'ancre en erreur (vers UNKNOWN), pas en faux NO_HOSTED_LEG.
+    wf_file = _gh_json(
+        [f"repos/{repo}/contents/{measure.workflow_path}"],
+        stats=stats,
+    )
+    if isinstance(wf_file, dict) and wf_file.get("encoding") == "base64":
+        text = base64.b64decode(wf_file["content"]).decode("utf-8", "replace")
+        measure.declared_triggers = _declared_events(text)
+        if not measure.declared_triggers:
+            measure.error = "bloc on: illisible"
+    else:
+        measure.error = "fichier du workflow illisible"
 
     runs_data = _gh_json(
-        [f"repos/{repo}/actions/workflows/{wf_id}/runs"
+        [f"repos/{repo}/actions/workflows/{measure.workflow_id}/runs"
          f"?per_page={max(1, runs)}&status=completed"],
         stats=stats,
     )
     if not isinstance(runs_data, dict):
-        measure.error = "runs illisibles"
+        measure.error = measure.error or "runs illisibles"
         return measure
 
     for run in (runs_data.get("workflow_runs") or [])[:runs]:
@@ -216,9 +317,13 @@ def evaluate(repo: str, advisories: list[Path], runs: int,
         verdict = "ANCHOR_PROVED"
     else:
         verdict = "NO_HOSTED_LEG"
+    overflow_raw = _gh_json(
+        [f"repos/{repo}/actions/variables/CI_OVERFLOW_LOCAL"], stats=stats)
+    ci_overflow = (isinstance(overflow_raw, dict)
+                   and str(overflow_raw.get("value", "")).lower() == "true")
     return Verdict(verdict=verdict, anchors=anchors,
                    advisories=[str(a) for a in advisories],
-                   calls=stats.calls)
+                   calls=stats.calls, ci_overflow_local=ci_overflow)
 
 
 def render_text(v: Verdict) -> str:
@@ -230,10 +335,14 @@ def render_text(v: Verdict) -> str:
         detail = (f"  {leg:5s} {a.name!r}: runs={a.runs_sampled} "
                   f"jobs={a.jobs_total} hosted={share} "
                   f"self_hosted={a.jobs_self_hosted} "
-                  f"triggers={','.join(a.triggers) or 'aucun'}")
+                  f"on_declare={','.join(a.declared_triggers) or 'illisible'} "
+                  f"fenetre={','.join(a.triggers) or 'aucun'}")
         if a.error:
             detail += f" erreur={a.error}"
         lines.append(detail)
+    if v.ci_overflow_local:
+        lines.append("  ci_overflow_local=true -- debordement #23016 : jambe "
+                     "suspendue par la vague, pas un routage perdu")
     return "\n".join(lines)
 
 
@@ -264,6 +373,7 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps({
             "verdict": verdict.verdict,
             "calls": verdict.calls,
+            "ci_overflow_local": verdict.ci_overflow_local,
             "advisories": verdict.advisories,
             "anchors": [asdict(a) | {"hosted_share": a.hosted_share,
                                      "is_leg": a.is_leg}

@@ -176,23 +176,39 @@ jobs:
       # declaree « jobs ubuntu-latest » a ete routee sur le parc sans que le
       # header bouge (mesure : 20/20 jobs self-hosted).
       #
-      # `schedule` seul : le fait mesure (qui heberge les jobs d'une ancre) ne
-      # change pas d'une PR a l'autre, alors qu'un run par fin d'ancre
-      # multiplierait les ~17 appels d'API du passage par la cadence des PRs --
-      # exactement la saturation du jeton que la porte de mesure #22937 borne.
+      # Meme porte que la mesure de starvation ci-dessus (#22937) : la mesure
+      # COMPLETE sur 1 run de l'advisory sur 4 (modulo en bash -- `%` n'est
+      # pas admis dans une expression `if:`), la jambe `schedule` mesure toujours.
+      # `schedule` seul ne mesurait que les jours ou le scheduler livre -- or
+      # c'est precisement la panne surveillee (#15332 : cadence servie ~4/48) ;
+      # un run par fin d'ancre sans porte serait la saturation du 2026-10-28,
+      # 1 sur 4 la borne au meme ordre que la porte de starvation.
       # UNKNOWN (rc 2) est un avertissement, jamais un rouge : une API
-      # illisible n'est pas une jambe perdue (#14849).
+      # illisible n'est pas une jambe perdue (#14849). Idem, en WARNING nomme,
+      # pour la jambe suspendue par le debordement #23016 (variable
+      # CI_OVERFLOW_LOCAL lue par l'organe) : c'est un etat gere par la
+      # flotte, pas une perte de routage silencieuse -- ce que le rouge doit
+      # attraper.
       - name: Verifier que le heartbeat a une jambe GitHub-hosted (#23195)
-        if: github.event_name == 'schedule'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          set -e
+          if [ "$GITHUB_EVENT_NAME" != "schedule" ] \
+             && [ $(( GITHUB_RUN_NUMBER % 4 )) -ne 0 ]; then
+            echo "passage sans mesure (1 complete sur 4, porte #22937) -- run $GITHUB_RUN_NUMBER"
+            exit 0
+          fi
           set +e
           python3 scripts/ci/check_heartbeat_anchor_independence.py --json > anchor.json
           rc=$?
           cat anchor.json
           if [ "$rc" -eq 2 ]; then
             echo "::warning::heartbeat anchor UNKNOWN (API illisible) -- instrument aveugle, pas un rouge"
+            exit 0
+          fi
+          if [ "$rc" -eq 1 ] && [ "$(jq -r '.ci_overflow_local // false' anchor.json)" = "true" ]; then
+            echo "::warning::heartbeat sans jambe hebergee -- debordement CI_OVERFLOW_LOCAL actif (#23016) : jambe suspendue par la vague, pas un routage perdu"
             exit 0
           fi
           exit "$rc"
