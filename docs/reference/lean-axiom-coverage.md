@@ -229,6 +229,31 @@ forbidden union : []
 
 Le câblage du gate sur les lacs non-pilotes est un travail séparé qui sort du scope #8738 (chaque workflow lake est un livrable à part avec son `target-modules` adapté). Voir #11699 pour la roadmap tranche-par-tranche des 15 restants (mimo_lean = tranche 1 livrée par PR de cette PR).
 
+### 4.1. `gamedefs` — sortie retenue pour la preuve d'Arrow (#23022, 2026-10-28)
+
+`gamedefs` figure parmi les 15 lacs **sans** clé `axiom-target-modules` : il n'a **aucun gate d'axiomes**. L'axiome `arrow_impossibility` de `SocialChoice.lean` n'apparaît donc dans aucune whitelist, et le laisser en place ne change rien à un gate qui ne le lit pas.
+
+Le port de sa preuve se fait **par étages**, et l'axiome reste déclaré tant que la réduction n'est pas achevée. Le renommer ou le retirer sans sa preuve serait un blanchiment, pas un progrès : c'est la raison pour laquelle le critère « l'axiome a disparu » de #23022 n'est pas encore satisfait.
+
+**Étages 1 à 3 livrés — neuf déclarations** en Lean core pur, le lac restant **sans dépendance** (donc sans `Finset`/`Fintype`, ce qui ferme l'argument combinatoire classique tel quel, et impose de construire les profils auxiliaires autrement) :
+
+| Déclaration | Étage | Contenu |
+|---|---|---|
+| `Decisive` | 1 | la notion d'Arrow : `D` décisive sur `(x, y)` si ses membres unanimes pour `x` l'emportent face à des non-membres unanimes pour `y` |
+| `rank3`, `prefOfUtility` | 1 | les profils auxiliaires, construits par **utilités entières** (toute fonction `A → Int` définit une préférence valide) — c'est ce qui rend les constructions disponibles sans bibliothèque |
+| `decisive_unanimous` | 1 | Pareto faible ⇒ la coalition de tous les agents est décisive sur toute paire |
+| `decisive_expand_right` | 1 | décisive sur `(x, y)` ⇒ décisive sur `(x, z)` (axe des alternatives) |
+| `decisive_expand_left` | 1 | décisive sur `(x, y)` ⇒ décisive sur `(z, y)` (axe des agents) |
+| `decisive_swap` | 2 | décisive sur `(x, y)` ⇒ décisive sur la paire renversée `(y, x)` — non gratuit : `IIA` porte sur la paire **ordonnée**, donc la preuve traverse `(x,y) → (x,z) → (y,z) → (y,x)` |
+| `decisive_field` | 2 | **fermeture du champ** : sur trois alternatives distinctes, la décisivité sur une paire vaut pour les six paires ordonnées — l'hypothèse dont la contraction a besoin pour lire une décision sur n'importe quelle paire |
+| `decisive_split` | 3 | **contraction** : toute partition `D = D₁ ⊎ D₂` d'une coalition décisive sur `(x, y)` rend l'une des deux décisive (`D₁` sur `(x, z)` ou `D₂` sur `(z, y)`), via le profil `x≻y≻z` / `z≻x≻y` / `y≻z≻x` |
+
+**Mesures des étages 1-3** : `lake build` du lac entier SUCCESS (14 jobs, WSL, toolchain `leanprover/lean4:v4.33.0`) ; `count_code_sorry.py` → `distinct_code_sorry = 0` (inchangé — l'axiome n'est pas un `sorry`) ; `check_i18n_siblings.py --all` → `0 drift | 0 orphan` sur la paire FR/EN, corps byte-identiques ; aucune classe d'axiome interdite en contrebande (`native_decide`, `sorryAx`, `Classical.choice`).
+
+**Ce qui reste** : la **récupération** — en itérant `decisive_split` sur un ensemble fini d'agents on obtient une coalition décisive minimale, dont la minimalité force un dictateur, et c'est cet assemblage final qui retirera `arrow_impossibility`. Les trois étages livrés fournissent les deux hypothèses qu'il consomme (décision lisible sur toute paire, coalitions strictement décroissantes) ; la marche restante est l'itération jusqu'au point fixe sur `Finset`, c'est-à-dire précisément la dépendance que ce lac évite encore. **Quand** l'axiome tombera, le câblage du gate sur ce lac deviendra possible avec une whitelist vide ; tant qu'il est là, un câblage exigerait de nommer `arrow_impossibility` dans `axiom-allow-axioms`. C'est cette ligne, et non une doctrine, qui autorise un axiome à passer le gate.
+
+**Où la preuve d'Arrow est déjà complète** : `game_theory_lean/SocialChoice/Arrow.lean` (`0` `sorry`, `CERTIFIED.txt`) porte la chaîne achevée `pivot_exists` → `pivot_is_dictator_except_b` → `partial_dictator_is_full_dictator`. Les deux lacs sont **distincts par construction** — celui-ci est zéro-dépendance (`Int`-utilitaires, aucune bibliothèque), l'autre s'appuie sur `Finset` — et ce port ne prétend pas le remplacer : il construit la même preuve dans le fragment de Lean qui n'a aucune dépendance. Ce renvoi est ici pour que le lecteur du registre sache que la preuve complète existe à côté, plutôt que de conclure d'un axiome encore en place que le dépôt n'a rien.
+
 ## 5. Acceptance step 3 — verdict
 
 - [x] **knot_lean re-mesuré** : GREEN post-#8725 (cf. [#8738](https://github.com/jsboige/CoursIA/issues/8738) body §« Mesure firsthand »)

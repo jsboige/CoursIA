@@ -164,6 +164,17 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   workflow_dispatch seulement). Son jumeau always-on-guards.yml ne l'est
     #   PAS -- il porte pull_request_review, classe FORK_REACHABLE (#14294).
     "always-on-metadata-guards.yml",
+    # #22937 (volet (d), 2026-10-28, lane myia-ai-01:CoursIA-2) : la garde
+    #   des waivers de chemins locaux REJOINT LA COHORTE (forme hybride
+    #   auditee #22461). Declencheurs `pull_request` (opened/synchronize/
+    #   reopened) + `workflow_dispatch` -- les DEUX sont dans
+    #   SAFE_SELF_HOSTED_TRIGGERS ; la jambe `issue_comment` avait ete
+    #   RETIREE (#23044, et son trigger est FORK_REACHABLE). Le job est
+    #   pure-Python, sparse-checkout de 2 fichiers, lecture seule des
+    #   commentaires de PR (`permissions: issues: read`,
+    #   `pull-requests: read`) : aucun besoin heberge specifique.
+    #   Rollback = remettre `runs-on: ubuntu-latest` + retirer l'entry.
+    "local-path-waiver-guard.yml",
     # tranche 4 (#14283, meme decision, meme owner) : balayages cron pur-Python.
     #   Declencheur `schedule` seul -- pas de contexte pull_request, donc aucune
     #   garde same-repo requise. 33 creneaux distincts, au plus 2 simultanes
@@ -283,6 +294,23 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   Rollback = revert de la PR (l'entree disparait de l'allowlist).
     "linux-runner-version-pin-advisory.yml",
     "linux-runner-starvation-advisory.yml",
+    # #22946 (owner myia-ai-01:CoursIA-2, review ai-01 du 2026-10-27) :
+    #   controleur du debordement CI_OVERFLOW_LOCAL (phase B de #22937). Meme
+    #   profil que les deux advisories ci-dessus : `schedule` +
+    #   `workflow_dispatch` UNIQUEMENT (advisory par construction, doctrine
+    #   #12817), runs-on STATIQUE [self-hosted, coursia-ephemeral,
+    #   coursia-linux], garde same-repo au niveau job malgre l'absence de
+    #   trigger `pull_request`. Pur-Python stdlib + `gh` binaire de l'image ;
+    #   le job est en LECTURE SEULE (aucun secret, aucune ecriture de
+    #   variable -- l'ecriture reste un geste d'operateur ai-01 en local,
+    #   arbitrage (b) du 2026-10-27), `permissions: actions: read` +
+    #   `contents: read` -- `variables` n'est PAS une portee admise sous
+    #   `permissions:` (une cle hors liste invalide le fichier entier).
+    #   La bascule vers le pool est le POINT 1 de la review : le job mesurait
+    #   la file hebergee en y faisant la queue (17 des 23 jobs en cours
+    #   etaient heberges). Rollback = revert de la PR (l'entree disparait de
+    #   l'allowlist, et le garde fail-closed refuse alors le runs-on).
+    "ci-overflow-controller.yml",
     # runner-starvation-advisory.yml (#14846, owner myia-po-2027:CoursIA-2) :
     #   jumeau de linux-runner-starvation-advisory.yml (#13378) etendu aux
     #   2 labels waiter + lean (matrice GitHub Actions, 2 entrees include).
@@ -581,6 +609,45 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "repo-size-advisory.yml",
     "testpaths-coverage-guard.yml",
     "notebook-outputs-required.yml",
+    # 2026-10-27 (#22461, lane myia-ai-01:CoursIA-2) : les 26 workflows
+    #   deports vers ubuntu-latest par #22820/#22821/#22822 REDEVIENNENT
+    #   porteurs d'une jambe self-hosted CONDITIONNELLE : la forme hybride
+    #   de debordement (garde meme-depot && vars.CI_OVERFLOW_LOCAL ==
+    #   'true' -> LINUX_RUNNER_LABELS, sinon ubuntu-latest). Par defaut
+    #   (variable absente ou != 'true'), chaque job resout sur ubuntu-latest
+    #   -- l'etat du 27/10 est conserve ; l'entree d'allowlist ne rend le
+    #   pool local atteignable QUE si la variable est basculee par un
+    #   operateur (phase A : gh variable set CI_OVERFLOW_LOCAL --body
+    #   true|false --repo jsboige/CoursIA, jeton jsboige). Rollback =
+    #   variable a false ou supprimee, sans toucher les fichiers.
+    #   scripts-tests.yml N'EST PAS reconcerne : sa migration avait ete
+    #   ANNULEE sur mesure (#22820 -- suite couplee a la forme du runner).
+    "always-on-guards.yml",
+    "always-on-guards-body.yml",
+    "arxiv-attributions-guard.yml",
+    "bios-companion-coverage.yml",
+    "catalog-drift.yml",
+    "docs-transients-guard.yml",
+    "harness-coauthor-guard.yml",
+    "label-paths-guard.yml",
+    "manifest-description-visuelle-gate.yml",
+    "notebook-cell-source-parses.yml",
+    "notebook-exec-sequence-ratchet.yml",
+    "notebook-kernel-drift-guard.yml",
+    "notebook-latex-control-chars.yml",
+    "notebook-link-render-check.yml",
+    "notebook-math-render.yml",
+    "notebook-papermill-ratchet.yml",
+    "organ-duplication-advisory.yml",
+    "orphaned-delivery-scan.yml",
+    "owui-playwright-check.yml",
+    "paragraph-length-advisory.yml",
+    "quantconnect-notebook-freshness.yml",
+    "scan-md-hierarchy-drift.yml",
+    "solution-leak-guard.yml",
+    "translation-drift.yml",
+    "twin-parity.yml",
+    "unique-check-run-names-guard.yml",
 }
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",
@@ -760,11 +827,12 @@ def _runner_selection(
     return False, None, set(), "runs-on has an unsupported type"
 
 
-# Audited hybrid runs-on (#13363 jambe B). Exactly ONE dynamic form is
-# statically provable: the self-hosted leg is reached ONLY when the exact
-# same-repo guard is true; everything else falls back to a GitHub-hosted
-# label. Guard, label set and fallback are enumerated -- any variation
-# (different guard, different labels, different fallback) stays an
+# Audited hybrid runs-on (#13363 jambe B). Exactly ONE shape is statically
+# provable, under TWO enumerated guards: the self-hosted leg is reached ONLY
+# when the exact same-repo guard is true -- the #22461 guard additionally
+# requires vars.CI_OVERFLOW_LOCAL == 'true'; everything else falls back to a
+# GitHub-hosted label. Guard, label set and fallback are enumerated -- any
+# variation (different guard, different labels, different fallback) stays an
 # unauditable expression and keeps the DYNAMIC_RUNS_ON rejection.
 #
 # c.509 (dispatch c.2180, owner myia-ai-01:CoursIA-2) : the audited label
@@ -779,10 +847,33 @@ def _runner_selection(
 # ratchet, outputs-required) routed to the containerized Linux leg
 # without forfeiting the same-repo guard or the github-hosted fallback.
 # Every other expression stays an unauditable DYNAMIC_RUNS_ON.
+#
+# #22461 (dispatch ai-01 2026-10-27) : SECONDE garde enumeree. La garde
+# meme-depot conjoine a la variable de debordement vars.CI_OVERFLOW_LOCAL
+# == 'true' -- le parc local ne recoit le job que si un operateur a bascule
+# la variable de depot (phase A du debordement : l'offre hebergee saturee
+# portait 28 des 29 jobs en file de l'echantillon, mesure #22461). Le nom
+# de la variable et sa valeur sont ENUMERES : toute autre variable, toute
+# autre valeur, toute autre expression reste hors audit (DYNAMIC_RUNS_ON,
+# refus inchange). Cette garde n'admet QUE le pool Linux ; la garde
+# d'origine conserve ses deux pools -- rien n'est retreci.
 HYBRID_RUNS_ON_GUARD = SAME_REPO_GUARD
 HYBRID_RUNS_ON_LABELS = WAITER_LABELS  # kept for backward compat (single set)
 HYBRID_RUNS_ON_LABEL_SETS = (WAITER_LABELS, LINUX_RUNNER_LABELS)
 HYBRID_RUNS_ON_FALLBACK = "ubuntu-latest"
+# Variable de depot de la seconde garde (phase A du debordement, #22461) :
+# nom et valeur ENUMERES -- cf. bloc de commentaire ci-dessus.
+CI_OVERFLOW_LOCAL_VAR = "CI_OVERFLOW_LOCAL"
+HYBRID_RUNS_ON_OVERFLOW_GUARD = (
+    f"{SAME_REPO_GUARD} && vars.{CI_OVERFLOW_LOCAL_VAR} == 'true'"
+)
+# Garde enumeree -> ensembles de labels admis pour la forme hybride. La
+# garde d'origine (#13363/c.509) garde exactement ses deux pools ; la garde
+# overflow (#22461) n'admet que LINUX_RUNNER_LABELS.
+HYBRID_RUNS_ON_GUARD_LABEL_SETS: dict[str, tuple[set[str], ...]] = {
+    HYBRID_RUNS_ON_GUARD: HYBRID_RUNS_ON_LABEL_SETS,
+    HYBRID_RUNS_ON_OVERFLOW_GUARD: (LINUX_RUNNER_LABELS,),
+}
 _HYBRID_PATTERN = re.compile(
     r"^\s*\("
     r"(?P<guard>[^()]+)"
@@ -793,8 +884,9 @@ _HYBRID_PATTERN = re.compile(
 
 def _hybrid_runs_on(runs_on: Any) -> dict[str, set[str]] | None:
     """Return the audited hybrid legs for ``runs_on``, or None if it is not
-    the exact #13363 form. The caller keeps the DYNAMIC_RUNS_ON rejection
-    for every other expression."""
+    one of the enumerated forms (#13363, then the #22461 overflow guard).
+    The caller keeps the DYNAMIC_RUNS_ON rejection for every other
+    expression."""
     if not isinstance(runs_on, str):
         return None
     text = runs_on.strip()
@@ -803,7 +895,9 @@ def _hybrid_runs_on(runs_on: Any) -> dict[str, set[str]] | None:
     match = _HYBRID_PATTERN.match(text[3:-2].strip())
     if match is None:
         return None
-    if " ".join(match.group("guard").split()) != HYBRID_RUNS_ON_GUARD:
+    guard = " ".join(match.group("guard").split())
+    allowed_label_sets = HYBRID_RUNS_ON_GUARD_LABEL_SETS.get(guard)
+    if allowed_label_sets is None:
         return None
     if match.group("fallback") != HYBRID_RUNS_ON_FALLBACK:
         return None
@@ -811,7 +905,7 @@ def _hybrid_runs_on(runs_on: Any) -> dict[str, set[str]] | None:
         labels = {str(item) for item in json.loads(match.group("labels"))}
     except json.JSONDecodeError:
         return None
-    if labels not in HYBRID_RUNS_ON_LABEL_SETS:
+    if labels not in allowed_label_sets:
         return None
     return {"labels": labels}
 
@@ -986,10 +1080,11 @@ def scan_workflows(workflows_dir: Path = DEFAULT_WORKFLOWS_DIR) -> ScanResult:
                     path.name,
                     str(job_name),
                     "DYNAMIC_RUNS_ON",
-                    "runs-on contains an expression other than the single audited "
-                    "hybrid form (same-repo guard -> self-hosted coursia-waiter, "
-                    "else ubuntu-latest; see #13363) and cannot be audited "
-                    "statically",
+                    "runs-on contains an expression other than the audited "
+                    "hybrid forms (same-repo guard, optionally && "
+                    "vars.CI_OVERFLOW_LOCAL == 'true', -> self-hosted pool, "
+                    "else ubuntu-latest; see #13363, #22461) and cannot be "
+                    "audited statically",
                 ))
                 continue
 

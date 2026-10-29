@@ -17,9 +17,12 @@ name: Twin Parity Check
 #
 # Per-pair semantics (#8264): the workflow runs in `--per-pair --base
 # <commit>` mode, comparing the registry + blob SHAs at the PR's HEAD vs
-# at the PR's base (#22292) -- `github.event.pull_request.base.sha`, the main
-# GitHub built the merge on; `origin/main` only when there is no PR base
-# (`workflow_dispatch`). The gate FAILS only on pairs that the PR
+# at the PR's base (#22292) -- the base the merge ref was BUILT ON, read from
+# the event: `github.sha^1`, the first parent of the merge commit. On a
+# stacked PR that parent is the parent BRANCH, not `main` -- so this is not
+# "the main GitHub built the merge on", it is "the base GitHub built the merge
+# on". `origin/main` only when there is no PR event (`workflow_dispatch`).
+# The gate FAILS only on pairs that the PR
 # itself has moved (base=OK, head=DRIFT/MISSING) or introduced/removed
 # without rebaseline. Drift already present at the base is reported as
 # `drift_pre_existing` but does NOT fail the gate -- it belongs to a
@@ -33,6 +36,20 @@ name: Twin Parity Check
 # mandatory, cf #8508; the write is surgical, cf #8570) -- OR split the edit so
 # the twin moves in lockstep on the same PR. The workflow tells them which side
 # has drifted.
+#
+# Two remediation lots, selected on the per-pair `head_status` (vocabulary
+# OK / DRIFT / NUMBERING-DRIFT / MISSING) and never on `verdict` alone:
+# a content drift (both notebooks present, blob SHA moved) gets the rebaseline
+# command; a DELETED notebook (base_status=OK, head_status=MISSING) gets an
+# explicit deletion notice and its two real fixes -- a rebaseline attests a
+# content fingerprint, it cannot restore a missing file.
+#
+# Third lot (#22920): STALE_BRANCH -- a pair MOVED by the base branch after the
+# PR forked (the PR tree's registry still declares the old path). The rebaseline
+# command would be WRONG here: it attests a path main has already abandoned, and
+# the attestation regresses the registry at merge. The remediation line is
+# `gh pr update-branch` + redo the work on the new paths. Stale pairs get their
+# own counter (`stale_branch`) and are never counted in `drift_introduced`.
 #
 # Paths watched:
 #   - scripts/notebook_tools/twin_pairs.d/** (registry file-per-entry, #8542)
@@ -61,18 +78,37 @@ concurrency:
 jobs:
   twin-parity:
     name: "Twin parity audit (#8057)"
-    # Routage #14283 tranche 3c (ai-01 2026-09-02) : jambe Linux auto-hebergee.
-    # Garde anti-fork au niveau job + runs-on STATIQUE (une expression leverait
-    # DYNAMIC_RUNS_ON dans check_self_hosted_runner_policy.py).
-    # 2026-10-27 (mesure ai-01) : migration vers `ubuntu-latest` par Q35 etape 2
-    # (#17397) -- `scripts/ci/audit_self_hosted_needs.py` certifie ce workflow
-    # comme n'ayant besoin de RIEN qui n'existe que sur le parc local, et le parc
-    # local etait sature PAR SES CHECKOUTS (mesure 00:45Z : 11 des 12 slots
-    # occupes dans `actions/checkout`, 614 runs en file). La garde anti-fork
-    # ci-dessous est CONSERVEE : aucun code de fork ne change de surface.
-    # Retour arriere = revert du commit (et remise de l'entree d'allowlist).
-    runs-on: ubuntu-latest
+    # 2026-10-27 (#22461, phase A du debordement, appliquee ici dans un PR
+    # DISTINCT de #22921 -- ce workflow en avait ete explicitement exclu de
+    # #22921 pour cause de G-VAR-3, cf le commit d'exclusion) : forme
+    # hybride de debordement -- PR meme-depot ET
+    # vars.CI_OVERFLOW_LOCAL == 'true' -> jambe Linux locale ; tout le reste
+    # (variable absente ou fausse, fork, workflow_dispatch) retombe sur
+    # ubuntu-latest (l'etat du 27/10). Bascule :
+    # `gh variable set CI_OVERFLOW_LOCAL --body true|false --repo jsboige/CoursIA`.
+    # 2026-10-27 (apres le merge de #22921, squash 0c7affa2927) : la garde
+    # de debordement et l'instrument qui l'authentifie sont sur `main` ;
+    # l'exclusion PROVISOIRE de twin-parity.yml (commit d'exclusion, G-VAR-3)
+    # n'a jamais ete mergee -- ce workflow passe donc par une PR a part, dont
+    # le diff ne porte que ce fichier.
+    # La garde anti-fork ci-dessous est CONSERVEE : aucun code de fork ne
+    # change de surface.
+    # Limite : runs-on se resout a la creation du job, les runs deja en file
+    # ne bougent pas.
+    # Retour arriere = variable a `false` ou supprimee : routage 100 %
+    # heberge, sans toucher ce fichier.
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    # Borne de securite (incident du 15/10) : la forme hybride renvoie ce job
+    # sur nos slots ephemeres, ou un run fige (checkout `filter: blob:none`
+    # sans borne) tient un slot pendant 6 h -- le defaut d'Actions -- et le
+    # retire aux PR gates. 16 des 18 slots ephemeres etaient occupes de
+    # cette facon le 15/10, et le workflow a du etre desactive a 07:26Z
+    # pour liberer le parc (104 runs en file annules).
+    # Duree mesuree sur 20 runs verts heberges : mediane 1,3 min, max 4,7 min
+    # -> borne a 20 min (marge large pour le parc local, plus lent que
+    # l'heberge sur un clone `fetch-depth: 0`).
+    timeout-minutes: 20
 
     steps:
       - name: Checkout PR
@@ -91,12 +127,17 @@ jobs:
 
       - name: Run twin parity check
         id: check
-        # `EVENT`/`PR_BASE` are read from the event, never derived from the shape of the
+        # `EVENT`/`PR_SHA` are read from the event, never derived from the shape of the
         # checkout: a branch whose tip happens to BE a merge commit passes a bare `HEAD^2`
-        # test, and HEAD^1 would then be that branch's first parent -- not main.
+        # test, and HEAD^1 would then be that branch's first parent -- not the base.
+        #
+        # `github.sha` IS the anchor: on `pull_request` it is the merge ref commit
+        # GitHub built for this event. `github.sha^1` is its first parent -- the base
+        # the merge was built on. Anchoring on the event (not on `HEAD`) means the
+        # resolution does not change if the checkout shape changes.
         env:
           EVENT: ${{ github.event_name }}
-          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_SHA: ${{ github.sha }}
         run: |
           set +e
           # Separate stdout (the JSON report, the machine contract) from stderr (diagnostics).
@@ -105,15 +146,45 @@ jobs:
           # so json.load crashed with "Extra data" and the gate failed with a raw traceback on
           # any PR where a warning fired -- masking the real drift verdict. Direct redirection
           # captures python's exit code correctly AND keeps the report pure JSON.
-          # Base = the main GitHub built the merge on (#22292). `origin/main` is re-fetched when
+          # Base = the base the merge ref was BUILT ON (#22292). `origin/main` is re-fetched when
           # the job STARTS; after hours in the queue it is newer than the merge ref, and every
           # pair rebaselined on main in between reads DRIFT here and OK there -- a
           # DRIFT_INTRODUCED on a PR that never touched it (#22218, 2026-10-24: 11 pairs,
           # 117 main commits between the two reads). A stack PR is also covered: its base is
           # the parent branch, which is the truth for a drift-introduced gate.
+          #
+          # 2026-10-27 (re-cadrage, apres #22293) : l'ANCRAGE de la base est
+          # l'EVENEMENT (`github.sha`), pas la forme du checkout. En
+          # `pull_request`, `github.sha` est le commit de fusion du merge ref ;
+          # `github.sha^1` en est le premier parent -- la base sur laquelle
+          # GitHub a construit le merge. Aucune deduction depuis la forme du
+          # checkout : `HEAD^1` dependrait de ce que le runner a extrait, alors
+          # que l'ancrage ci-dessous ne bouge pas si le checkout change. Les
+          # PRs empilees restent couvertes (leur premier parent est la branche
+          # parente, pas `main`). Repli inchange : `origin/main` quand
+          # l'evenement ne porte pas de merge ref (`workflow_dispatch`), quand
+          # `github.sha` n'est pas un commit de fusion, ou quand le parent
+          # n'est pas resolvable dans le checkout.
+          #
+          # Le mode `auto` de l'outil (`--base auto`) survit pour l'usage local
+          # sur un merge ref (tests test_check_twin_parity_base_auto.py) ; ce
+          # workflow ne l'utilise plus : il resout lui-meme, sur l'ancrage de
+          # l'evenement.
           BASE=origin/main
-          if [ "$EVENT" = "pull_request" ] && git rev-parse -q --verify "$PR_BASE^{commit}" >/dev/null; then
-            BASE="$PR_BASE"
+          if [ "$EVENT" = "pull_request" ]; then
+            # `github.sha` doit etre un commit de FUSION (>= 2 parents) : sinon
+            # son premier parent n'est PAS la base de la PR (c'est le parent
+            # ordinaire de la branche), et le gate comparerait chaque paire a
+            # un commit faux -- silencieusement. Meme garde que le mode `auto`
+            # de l'outil (`len(parents) < 3` -> `origin/main`) : le repli
+            # d'origine, jamais une base plus fausse que celle d'avant.
+            PARENTS="$(git rev-list --parents -n 1 "$PR_SHA" 2>/dev/null || true)"
+            if [ "$(printf '%s\n' "$PARENTS" | wc -w)" -ge 3 ]; then
+              CANDIDATE="$(git rev-parse -q --verify "${PR_SHA}^1^{commit}" 2>/dev/null || true)"
+              if [ -n "$CANDIDATE" ]; then
+                BASE="$CANDIDATE"
+              fi
+            fi
           fi
           # Resolved ONCE, and the commit id is what gets passed: every message below -- and the
           # tool's own "Impossible de lire le registre au base-ref '<ref>'" when a promisor blob
@@ -142,42 +213,62 @@ jobs:
           if [ $EXIT -eq 0 ]; then
             INTRO=$(python -c "import json; d=json.load(open('twin_parity_report.json')); print(d.get('drift_introduced',0))")
             PRE=$(python -c "import json; d=json.load(open('twin_parity_report.json')); print(d.get('drift_pre_existing',0))")
+            STALE=$(python -c "import json; d=json.load(open('twin_parity_report.json')); print(d.get('stale_branch',0))")
             echo "drift_introduced=$INTRO" >> "$GITHUB_OUTPUT"
             echo "drift_pre_existing=$PRE" >> "$GITHUB_OUTPUT"
+            echo "stale_branch=$STALE" >> "$GITHUB_OUTPUT"
             echo "Twin parity OK : $PRE paire(s) en DRIFT pre-existant (base=$BASE_SHA) ne fail pas le gate (rellevent d'une PR de rebaseline dediee, cf #8264)."
           elif [ $EXIT -eq 1 ]; then
             INTRO=$(python -c "import json; d=json.load(open('twin_parity_report.json')); print(d.get('drift_introduced',0))")
             PRE=$(python -c "import json; d=json.load(open('twin_parity_report.json')); print(d.get('drift_pre_existing',0))")
+            STALE=$(python -c "import json; d=json.load(open('twin_parity_report.json')); print(d.get('stale_branch',0))")
             echo "drift_introduced=$INTRO" >> "$GITHUB_OUTPUT"
             echo "drift_pre_existing=$PRE" >> "$GITHUB_OUTPUT"
+            echo "stale_branch=$STALE" >> "$GITHUB_OUTPUT"
             echo ""
             echo "--------------------------------------------------------------"
-            echo "  Twin parity : $INTRO paire(s) mise(s) en DRIFT par cette PR."
+            echo "  Twin parity : $INTRO paire(s) mise(s) en DRIFT ou SUPPRIMEE(S)"
+            echo "  par cette PR, et $STALE paire(s) de branche PERIMEE (paire"
+            echo "  deplacee sur la branche base apres le fork, cf #22920)."
             echo "  Le registre stocke le git blob SHA de chaque jumeau : TOUTE"
-            echo "  edition le deplace, y compris markdown-only. Tu rebaselines"
-            echo "  pour ATTESTER la parite, pas pour la reparer."
+            echo "  edition le deplace, y compris markdown-only."
+            echo "  Tu rebaselines pour ATTESTER la parite, pas pour la reparer."
+            echo "  Un carnet SUPPRIME n'est PAS une derive : le rebaseline ne"
+            echo "  restaure pas un fichier supprime (il echoue ou ne fait rien)."
+            echo "  Une paire STALE-BRANCH n'est PAS ta derive : le rebaseline y"
+            echo "  serait FAUX, le remede est gh pr update-branch (#22920)."
             echo ""
-            echo "  Re-audite la paire firsthand, puis lance exactement :"
+            echo "  Re-audite la paire firsthand, puis applique la remediation"
+            echo "  du lot qui la concerne ci-dessous :"
             echo ""
-            # Capture the rebaseline command(s) so we can put them INTO the
+            # Capture the remediation block so we can put it INTO the
             # ::error annotation (#10391). The annotation is the ONLY output a
             # lane sees without opening the job log -- four lanes stalled a
             # night on this gate because the annotation said "see the log above"
-            # instead of carrying the command. The python one-liner is unchanged
-            # (the log stays the authoritative copy + the artifact JSON stays
-            # the source); we capture + interpolate.
-            CMDS=$(python -c "import json; d=json.load(open('twin_parity_report.json')); ns=[p['name'] for p in d.get('pairs',[]) if p.get('verdict')=='DRIFT_INTRODUCED'] or ['<nom exact de l entree>']; [print('python scripts/notebook_tools/check_twin_parity.py --update --pair \"%s\" --by \"<machine:workspace>\"' % n) for n in ns]")
+            # instead of carrying the command.
+            #
+            # Three lots, selected in check_twin_parity.py (unit-tested there,
+            # never re-inlined here): content drift -> rebaseline command;
+            # DELETED notebook (head_status == "MISSING") -> deletion notice, a
+            # rebaseline cannot restore a file; STALE_BRANCH (#22920, pair moved
+            # by the base branch after the fork) -> `gh pr update-branch`, a
+            # rebaseline on the abandoned paths would regress the registry at
+            # merge. The selection lives in check_twin_parity.py
+            # (split_introduced_pairs / split_stale_pairs /
+            # render_introduced_remediation).
+            CMDS=$(python -c "import json,sys; sys.path.insert(0,'scripts/notebook_tools'); import check_twin_parity as ctp; d=json.load(open('twin_parity_report.json')); print('\n'.join(ctp.render_introduced_remediation(d.get('pairs',[]))))")
             echo "$CMDS" | sed 's/^/    /'
-            echo "  L'ecriture est chirurgicale (#8570) : seules les lignes"
-            echo "  last_audit de cette paire changent. Ajoute une ligne en tete"
-            echo "  de known_differences expliquant l'edition, puis commit."
+            echo "  Pour une paire en DRIFT de contenu, l'ecriture est"
+            echo "  chirurgicale (#8570) : seules les lignes last_audit de cette"
+            echo "  paire changent. Ajoute une ligne en tete de"
+            echo "  known_differences expliquant l'edition, puis commit."
             echo "--------------------------------------------------------------"
             echo ""
             # Workflow-command escaping for the annotation body: %0A = newline,
             # %25 = literal %, %0D = CR. Without %0A the annotation truncates at
             # the first newline and the multi-line command is lost.
             CMDS_ANN=${CMDS//$'\n'/%0A}
-            echo "::error title=Twin parity DRIFT INTRODUCED by this PR::La PR a introduit $INTRO paire(s) en DRIFT/MISSING qui etaient OK au base-ref $BASE_SHA. Lance EXACTEMENT (le selecteur --pair est obligatoire #8508, lecons L963/L974) :%0A%0A$CMDS_ANN%0A%0A--update va en DERNIER : si le DRIFT vient d'une normalisation outillee (strip_probe_banner.py / strip_machine_paths.py / scrub_papermill_paths.py), these strips deplacent le blob SHA -- attester PUIS stripper invalide l'attestation (#8957). L'ecriture est chirurgicale et preserve les commentaires du registre (#8570). Alternative : splitter la PR pour que chaque cote evolue separement. Drift pre-existant ($PRE paire(s)) releve d'une PR dediee cf #8264. Voir twin_parity_report.json dans les artifacts."
+            echo "::error title=Twin parity DRIFT INTRODUCED by this PR::La PR a introduit $INTRO paire(s) en DRIFT/MISSING qui etaient OK au base-ref $BASE_SHA, et $STALE paire(s) STALE-BRANCH (paire deplacee sur la branche base apres le fork #22920). Applique la remediation du lot qui la concerne (le selecteur --pair est obligatoire #8508, lecons L963/L974) :%0A%0A$CMDS_ANN%0A%0A--update va en DERNIER et ne concerne QUE les paires en DRIFT de contenu : si le DRIFT vient d'une normalisation outillee (strip_probe_banner.py / strip_machine_paths.py / scrub_papermill_paths.py), these strips deplacent le blob SHA -- attester PUIS stripper invalide l'attestation (#8957). Un carnet SUPPRIME ne se rebaseline pas : restaure-le dans la PR, ou retire l'entree du registre si la suppression est voulue. Une paire STALE-BRANCH ne se rebaseline PAS non plus : gh pr update-branch, puis rejoue le travail sur les nouveaux chemins -- un rebaseline sur les anciens chemins regresserait le registre au merge (#22920). L'ecriture est chirurgicale et preserve les commentaires du registre (#8570). Alternative : splitter la PR pour que chaque cote evolue separement. Drift pre-existant ($PRE paire(s)) releve d'une PR dediee cf #8264. Voir twin_parity_report.json dans les artifacts."
             exit 1
           else
             echo "::error title=Twin parity tool error::Erreur d'execution du check (exit $EXIT). Voir les logs ci-dessus."
@@ -211,11 +302,19 @@ jobs:
     # `exit 1` au lieu de `echo "::warning..."`. Cf twin-parity-drift-audit
     # pour le precedent advisory-then-blocking.
     name: "Twin parity SHA mismatch (#9399 volet b, advisory)"
-    # Routage #14283 tranche 3c (ai-01 2026-09-02) : jambe Linux auto-hebergee.
-    # Garde anti-fork au niveau job + runs-on STATIQUE (une expression leverait
-    # DYNAMIC_RUNS_ON dans check_self_hosted_runner_policy.py).
-    runs-on: ubuntu-latest
+    # 2026-10-27 (#22461, phase A du debordement) : meme forme hybride que le
+    # job `twin-parity` ci-dessus -- PR meme-depot ET
+    # vars.CI_OVERFLOW_LOCAL == 'true' -> jambe Linux locale, sinon
+    # ubuntu-latest. La garde anti-fork ci-dessous est CONSERVEE.
+    # Retour arriere = variable a `false` ou supprimee.
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    # Borne de securite (incident du 15/10) : sur nos slots ephemeres, un run
+    # fige sans borne tient un slot 6 h (defaut d'Actions) et le retire aux PR
+    # gates ; 16 des 18 slots etaient occupes de cette facon le 15/10.
+    # Duree mesuree sur 20 runs verts heberges : mediane 1,2 min, max 1,4 min
+    # -> borne a 20 min (marge large pour le parc local).
+    timeout-minutes: 20
 
     steps:
       - name: Checkout PR
