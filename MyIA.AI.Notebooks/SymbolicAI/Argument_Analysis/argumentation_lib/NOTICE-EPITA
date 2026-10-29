@@ -38,6 +38,28 @@ CoursIA copy
 | `_identification_models.py` (59 lines) | `argumentation_analysis/plugins/identification_models.py` | ecfd9b9c (2026-09-29, dep transitive de fallacy_workflow_plugin) |
 | `_delegating_selection.py` (204 lines) | `argumentation_analysis/core/strategies.py` (L134-L246, classe `DelegatingSelectionStrategy`) | ecfd9b9c (2026-09-29, ref pinned par issue #18393, NOT-VERBATIM : 1 token `ProjectManager` -> `ProjectManagerAgent` documente en en-tete du fichier, portee 3 PR #20338 review) |
 
+Package `ai_shield/` (garde-fous de pipeline LLM) — porte dans le cadre de l'issue #23163
+(serie `Argument_Analysis` completee sur CoursIA ; le depot EPITA reste le cadre
+experimental, pas la destination). Sous-module `ai_shield/` :
+
+| File in CoursIA `argumentation_lib/ai_shield/` | Upstream path in EPITA-IS | Upstream commit |
+|---------------------------------------|----------------------------|-----------------|
+| `shield.py` | `argumentation_analysis/services/ai_shield/shield.py` | 713927e1 (2026-10-28) — VERBATIM, aucune modification |
+| `presets.py` | `argumentation_analysis/services/ai_shield/presets.py` | 713927e1 (2026-10-28) — prefixe d'import seul |
+| `__init__.py` | `argumentation_analysis/services/ai_shield/__init__.py` | 713927e1 (2026-10-28) — prefixe d'import seul |
+| `layers/__init__.py` | `argumentation_analysis/services/ai_shield/layers/__init__.py` | 713927e1 (2026-10-28) — prefixe d'import seul |
+| `layers/heuristic.py` | `argumentation_analysis/services/ai_shield/layers/heuristic.py` | 713927e1 (2026-10-28) — prefixe d'import seul |
+| `layers/output_filter.py` | `argumentation_analysis/services/ai_shield/layers/output_filter.py` | 713927e1 (2026-10-28) — prefixe d'import seul |
+| `layers/llm_validator.py` | `argumentation_analysis/services/ai_shield/layers/llm_validator.py` | 713927e1 (2026-10-28) — prefixe d'import seul + 4 imports de services EPITA non vendoringes (`core.llm_service`, `core.reading_window`, `core.utils.llm_completion_guard`, `services.llm_cache`) rediriges vers `_llm_transport` (adaptation declaree) |
+| `_llm_transport.py` | **AUCUN equivalent amont** — adaptation CoursIA | ecrit pour ce portage ; raison et contrat dans l'en-tete du fichier |
+
+« Prefixe d'import seul » = `argumentation_analysis.services.ai_shield` est reecrit en
+`argumentation_lib.ai_shield` (shim du depot, cf `argumentation_lib/_paths.py`) ; aucune
+autre ligne n'est modifiee. `_llm_transport.py` est une **adaptation declaree** : aucun
+fournisseur LLM n'est cable dans CoursIA, donc la couche `LLMValidatorLayer` leve
+`LLMValidatorUnavailable` et la politique `fail_open` / `fail_closed` tranche — le carnet
+`Argumentation-09-Guardrails-AI-Shield-Python.ipynb` exerce ce chemin reel.
+
 Rationale for verbatim import
 -----------------------------
 
