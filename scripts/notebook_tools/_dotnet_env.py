@@ -28,6 +28,19 @@ def has_sdk(root):
         return False
 
 
+def _on_windows():
+    """True on Windows.
+
+    A module-level indirection rather than a bare ``os.name`` test at the call
+    site. Patching ``os.name`` is a *process-global* mutation: while it is
+    active, every ``Path(...)`` on a POSIX host raises ``NotImplementedError``
+    -- including the one pytest calls to format a failure report. The worker
+    then dies on a report it cannot format, so the real failure is never shown
+    and the whole xdist worker is lost (#23353). Tests patch this function.
+    """
+    return os.name == "nt"
+
+
 def sdk_root_candidates():
     """Roots worth probing for an SDK: the ``dotnet`` on PATH first (it is the
     one the CLI itself uses), then the per-user install location, then the
@@ -44,7 +57,7 @@ def sdk_root_candidates():
     dotnet_on_path = shutil.which("dotnet")
     if dotnet_on_path:
         candidates.append(str(Path(dotnet_on_path).resolve().parent))
-    if os.name == "nt":
+    if _on_windows():
         local_appdata = os.environ.get("LOCALAPPDATA")
         if local_appdata:
             candidates.append(str(Path(local_appdata) / "Microsoft" / "dotnet"))

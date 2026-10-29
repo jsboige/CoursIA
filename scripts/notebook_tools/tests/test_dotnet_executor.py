@@ -689,7 +689,7 @@ def test_candidates_include_the_per_user_install_root_on_windows(
     local = tmp_path / "localappdata"
     monkeypatch.setenv("LOCALAPPDATA", str(local))
     monkeypatch.setenv("ProgramFiles", str(tmp_path / "pf"))
-    monkeypatch.setattr(_dotnet_env.os, "name", "nt")
+    monkeypatch.setattr(_dotnet_env, "_on_windows", lambda: True)
     monkeypatch.setattr(_dotnet_env.shutil, "which", lambda name: None)
     assert str(local / "Microsoft" / "dotnet") in _dotnet_env.sdk_root_candidates()
 
@@ -700,11 +700,11 @@ def test_candidates_do_not_repeat_a_root(monkeypatch, tmp_path):
     read ``['C:\\\\Program Files\\\\dotnet', 'C:\\\\Program Files\\\\dotnet']``)."""
     root = _make_root(tmp_path, "dotnet", False)   # == ProgramFiles/dotnet
     monkeypatch.setenv("ProgramFiles", str(tmp_path))
-    monkeypatch.setattr(_dotnet_env.os, "name", "nt")
+    monkeypatch.setattr(_dotnet_env, "_on_windows", lambda: True)
     monkeypatch.setattr(_dotnet_env.shutil, "which",
                         lambda name: str(root / "dotnet"))
     candidates = _dotnet_env.sdk_root_candidates()
-    assert candidates.count(str(root)) == 1
+    assert candidates.count(str(root.resolve())) == 1
     assert len(candidates) == len(set(candidates))
 
 
