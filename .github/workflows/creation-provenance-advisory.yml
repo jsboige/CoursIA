@@ -1,0 +1,96 @@
+name: Creation provenance advisory
+
+# La moitie « provenance » du mandat de ralentissement de la creation
+# (#23174). Un carnet NEUF doit avoir attendu son tour : l'issue servie
+# doit avoir ete servie par un tirage du tapis (journal de tirage,
+# `draw_id`), ou avoir ete creee au moins 48 h avant l'ouverture de la PR.
+#
+# Le job est **ADVISORY** : il sort TOUJOURS en 0 et porte son verdict par
+# des annotations `::warning::` et par le resume de job. Un garde qui rouge
+# sur une PR ne doit jamais bloquer une livraison — et l'issue demande
+# explicitement « Advisory d'abord ».
+#
+# Ce que la garde mesure :
+#   - la PR ajoute-t-elle un carnet NEUF (statut `added`, hors deménagement,
+#     hors jumeau `_en`) ?
+#   - l'issue servie existe-t-elle, et depuis combien de temps ?
+#   - a-t-elle ete servie par un tirage nomme ?
+#
+# Le journal de tirage est un fichier LOCAL a la machine : en CI il est
+# generalement absent, et le critere du tirage est alors NON EVALUABLE. Le
+# script le dit ; il ne pretend jamais avoir mesure ce qu'il n'a pas mesure.
+#
+# Exemptions (posees par l'issue) : PRs étudiantes et externes,
+# demenagements, jumeaux `_en`.
+#
+# Declencheur : `pull_request` sur les PRs qui touchent un `.ipynb`. Le job
+# porte la garde same-repo universelle (forme acceptee par
+# `scripts/ci/check_self_hosted_runner_policy.py`) : il ne s'execute pas sur
+# le code d'un fork.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '**/*.ipynb'
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: 'Numero de PR a controler'
+        required: true
+
+permissions:
+  contents: read
+  pull-requests: read
+  issues: read
+
+concurrency:
+  group: creation-provenance-${{ github.event.pull_request.number || inputs.pr }}
+  cancel-in-progress: true
+
+jobs:
+  provenance:
+    name: "Provenance des carnets neufs (advisory)"
+    # Runner GitHub-hosted : la garde est du Python pur, elle n'a besoin
+    # d'aucun ressources local du parc (les jobs sans besoin local ont ete
+    # migres vers ubuntu-latest par Q35 etape 2 -- voir le journal de
+    # l'allowlist dans scripts/ci/check_self_hosted_runner_policy.py).
+    runs-on: ubuntu-latest
+    # Garde same-repo universelle : un fork n'atteint pas ce job.
+    if: >-
+      github.event.pull_request.head.repo.full_name == null
+      || github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - name: Checkout (sparse, scripts only)
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: scripts
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: "Controles positifs de l'organe (avant de croire sa sortie)"
+        run: |
+          python -m pip install --quiet pytest
+          python -m pytest scripts/tests/test_creation_provenance.py -q
+
+      - name: "Provenance des carnets neufs"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -o pipefail
+          PR="${{ github.event.pull_request.number || inputs.pr }}"
+          {
+            echo '## Provenance des carnets neufs'
+            echo
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          # Le job sort TOUJOURS en 0 : le verdict est porte par les
+          # annotations `::warning::` et par le resume, jamais par la
+          # conclusion du check (doctrine des advisories du depot).
+          python scripts/ci/check_creation_provenance.py --pr "$PR" 2>&1 \
+            | tee -a "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          exit 0
