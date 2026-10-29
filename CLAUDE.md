@@ -284,4 +284,4 @@ Structure complète : [quantconnect.md](docs/qc/quantconnect.md).
 
 CoursIA = plateforme éducative AI : Jupyter notebooks (C# .NET Interactive + Python), infrastructure Docker GenAI (ComfyUI + Qwen), GradeBookApp évaluation étudiants. Repository : https://github.com/jsboige/CoursIA. Documentation primaire en français ; commentaires code en français ou anglais.
 
-Stack : OpenAI/Anthropic APIs, Qwen 2.5-VL, Semantic Kernel, Python 3.10+ + .NET 9.0 Interactive, Papermill + MCP Jupyter, ComfyUI GPU (RTX 3090).
+Stack : OpenAI/Anthropic APIs, Semantic Kernel, Python + .NET Interactive, Papermill + MCP Jupyter, stack GenAI locale (ComfyUI, Qwen, Z-Image — [genai-services.md](docs/genai/genai-services.md)) ; GPU : [cluster-agents.md](docs/reference/cluster-agents.md) ; versions d'outillage : [kernels-runtime.md](docs/reference/kernels-runtime.md).
