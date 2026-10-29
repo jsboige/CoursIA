@@ -487,10 +487,133 @@ def ramp_alpha(n_tokens: int, cycles: int = 1, peak: float = 1.0) -> np.ndarray:
     return alpha.astype(np.float32)
 
 
+def ramp_band_mask(n_tokens: int, cycles: int, cycle_idx: int, branch: str,
+                   band: int, n_bands: int, peak: float = 1.0) -> np.ndarray:
+    """Masque des positions ou la rampe visite une bande donnee (temoin
+    negatif ICT-42e, #20772 / #20985).
+
+    Le temoin negatif exige un regime ou l'histoire ne peut pas jouer : le
+    clamp est reinitialise a chaque passe (pilote ICT-42), la perturbation
+    n'ayant lieu QUE sur la plage de tokens d'une bande de la rampe. Ce
+    masque est la geometrie de ce regime : il marque, pour la branche
+    ``montee`` ou ``descente`` du cycle ``cycle_idx`` de la rampe
+    :func:`ramp_alpha` (meme ``cycles``, meme ``peak``), les positions dont
+    l'intensite rampante tombe dans la bande ``band`` — l'intervalle
+    semi-ouvert ``[(band-1)*peak/n_bands, band*peak/n_bands)`` —
+    ferme en ``peak`` pour la bande haute (le sommet exact appartient a une
+    bande).
+
+    Le prefixe AVANT la bande est vierge par construction (alpha nul hors
+    bande au moment du temoin), et la bande porte une intensite constante
+    egale a ``band/n_bands`` (le niveau de la grille const-alpha du pilote
+    quand ``n_bands=4`` : {0.25, 0.5, 0.75, 1.0} — l'appariement de 42d sans
+    son arrondi +-0.125). L'aire d'hysterese mesuree sur des passes
+    reinitialisees doit etre NULLE si l'aire de 42c vient de l'histoire ;
+    non nulle, c'est la position qui la porte.
+
+    Parameters
+    ----------
+    n_tokens : int
+        Longueur du prompt (>= 1) — la geometrie est relative au prompt,
+        comme la rampe.
+    cycles : int
+        Nombre de cycles de la rampe de reference (>= 1), meme valeur que
+        le ``--clamp-ramp`` qui a produit la trace etudiee.
+    cycle_idx : int
+        Cycle vise, 1-based (``1`` = premier cycle, comme la prose de 42c).
+    branch : str
+        ``"montee"`` ou ``"descente"`` — premiere ou seconde moitie du
+        cycle, meme vocabulaire que les carnets.
+    band : int
+        Bande d'intensite visee, 1-based (1 = plus basse).
+    n_bands : int
+        Decoupage de [0, peak] en bandes (>= 2 : une seule bande serait la
+        rampe entiere, pas un temoin).
+    peak : float
+        Amplitude de la rampe de reference, dans (0, 1].
+
+    Returns
+    -------
+    numpy.ndarray
+        ``[n_tokens]`` bool.
+    """
+    if n_tokens < 1:
+        raise ValueError(f"n_tokens >= 1 requis (recu {n_tokens}).")
+    if int(cycles) != cycles or cycles < 1:
+        raise ValueError(f"cycles entier >= 1 requis (recu {cycles}).")
+    if not 0.0 < peak <= 1.0:
+        raise ValueError(f"peak dans (0, 1] requis (recu {peak}) : >1 "
+                         "sur-clampe, signe inverse de la contribution decodee.")
+    if int(cycle_idx) != cycle_idx or not 1 <= cycle_idx <= cycles:
+        raise ValueError(f"cycle_idx entier 1..{cycles} requis (recu {cycle_idx}).")
+    if branch not in ("montee", "descente"):
+        raise ValueError(f"branch in ('montee', 'descente') requis (recu {branch!r}).")
+    if int(n_bands) != n_bands or n_bands < 2:
+        raise ValueError(f"n_bands entier >= 2 requis (recu {n_bands}) : une "
+                         "seule bande couvrirait la rampe entiere, pas un temoin.")
+    if int(band) != band or not 1 <= band <= n_bands:
+        raise ValueError(f"band entier 1..{n_bands} requis (recu {band}).")
+    t = np.arange(n_tokens, dtype=np.float64)
+    phase = t * float(cycles) / float(n_tokens)          # cycles ecoules en t
+    u = np.mod(phase, 1.0)                               # phase dans le cycle
+    tri = peak * np.where(u < 0.5, 2.0 * u, 2.0 * (1.0 - u))
+    tri = np.clip(tri, 0.0, peak)
+    cycle_of_t = np.floor(phase).astype(int)
+    asc = u < 0.5
+    lo = (band - 1) * peak / float(n_bands)
+    hi = band * peak / float(n_bands)
+    # Bande haute FERMEE en peak : le sommet exact de la rampe (u = 0.5,
+    # tri = peak) doit appartenir a une bande, sinon la partition des passes
+    # temoins oublie le token le plus inocule de toutes.
+    in_band = (tri <= peak) if band == n_bands else (tri < hi)
+    mask = ((cycle_of_t == cycle_idx - 1)
+            & (asc if branch == "montee" else ~asc)
+            & (tri >= lo) & in_band)
+    return mask
+
+
+def witness_alpha(n_tokens: int, mask: np.ndarray, level: float) -> np.ndarray:
+    """Profil alpha du temoin negatif : constant sur le masque, nul ailleurs.
+
+    Complement d'execution de :func:`ramp_band_mask` : la passe temoin
+    inocule a intensite ``level`` UNIQUEMENT sur les positions masquees (la
+    bande), le reste du prompt reste vierge. Le niveau protocolaire est
+    ``band / n_bands`` (grille const-alpha du pilote), mais il reste un
+    parametre explicite pour ne pas lier la construction du profil a une
+    convention de numerotation.
+
+    Parameters
+    ----------
+    n_tokens : int
+        Longueur du prompt (>= 1).
+    mask : numpy.ndarray
+        ``[n_tokens]`` bool — typiquement la sortie de :func:`ramp_band_mask`.
+    level : float
+        Intensite appliquee sur la bande, dans (0, 1] (meme bornes que le
+        clamp : 0 rendrait la passe trivialement identique a la reference,
+        >1 sur-clamperait).
+
+    Returns
+    -------
+    numpy.ndarray
+        ``[n_tokens]`` float32, valeurs dans {0.0, level}.
+    """
+    if n_tokens < 1:
+        raise ValueError(f"n_tokens >= 1 requis (recu {n_tokens}).")
+    mask = np.asarray(mask)
+    if mask.shape != (n_tokens,) or mask.dtype != np.bool_:
+        raise ValueError(f"mask [n_tokens] bool requis (recu shape "
+                         f"{mask.shape}, dtype {mask.dtype}).")
+    if not 0.0 < level <= 1.0:
+        raise ValueError(f"level dans (0, 1] requis (recu {level}).")
+    return (mask * float(level)).astype(np.float32)
+
+
 def trace_filename(variant: str, layer: int, *, model: str = "",
                    default_model: str = "", n_layers: int | None = None,
                    n_clamp: int = 0, clamp_scale: float | None = None,
                    clamp_ramp: tuple[int, float] | None = None,
+                   clamp_witness: tuple[int, int, str, int, int] | None = None,
                    prefix: str = "ict21_sae") -> str:
     """Nom de fichier de trace **discriminant par echelle**.
 
@@ -514,9 +637,21 @@ def trace_filename(variant: str, layer: int, *, model: str = "",
     traces de rampes differentes ne doivent JAMAIS partager un nom (le
     protocole compare les passages entre eux). Mutuellement exclusif du
     suffixe ``_s`` : la rampe remplace l'intensite constante.
+
+    ``clamp_witness`` (temoin negatif ICT-42e, #20772) : ``(cycles, cycle_idx,
+    branch, band, n_bands)`` de la passe reinitialisee — cf
+    :func:`ramp_band_mask`. Le suffixe ``_witness{cycles}_{cycle}{m|d}b{band}n{n_bands}``
+    est insere au meme endroit que ``_ramp`` : deux passes temoins differentes
+    (bande, branche ou cycle) ne doivent jamais partager un nom, et une passe
+    temoin ne doit jamais se confondre avec la rampe ni avec un const. Mutuellement
+    exclusif de ``_ramp`` et de ``_s`` : le temoin REMPLACE la trajectoire.
     """
     clamp = f"_clamp{n_clamp}" if n_clamp else ""
-    if clamp_ramp is not None and n_clamp:
+    if clamp_witness is not None and n_clamp:
+        w_cycles, w_cycle, w_branch, w_band, w_n = clamp_witness
+        b = "m" if w_branch == "montee" else "d"
+        clamp += f"_witness{int(w_cycles)}_{int(w_cycle)}{b}b{int(w_band)}n{int(w_n)}"
+    elif clamp_ramp is not None and n_clamp:
         cycles, peak = int(clamp_ramp[0]), float(clamp_ramp[1])
         clamp += f"_ramp{cycles}p{peak:g}"
     elif clamp_scale is not None and n_clamp and abs(clamp_scale - 1.0) > 1e-9:
