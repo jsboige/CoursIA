@@ -489,16 +489,29 @@ CANONICAL_LANGUAGE_TRANSITIONS_SCOPED = {
         "en-tete (CPython 3.13, #18331/#18247) ; cas fondateur #22889 "
         "(2.8c, base 3.11.15 -> tete 3.13.14, memes kernelspec base/tete)",
     # Portee SERIE (#23187) : quatre carnets de 02-ML-Cours tournent sous ce
-    # kernelspec (2.8c, 2.9d, 2.9g, 2.14b) et le canon de la serie est 3.13
-    # pour tous (requirements.txt de la serie). Le prefixe -- un premier
-    # element termine par ``/`` -- limite la tolerance a ce repertoire : les
-    # carnets hors serie qui partagent le kernelspec gardent la direction
-    # rouge, ce que la reserve #22979 exigeait.
+    # kernelspec, releves le 2026-10-29 sur ``main`` -- 2.8c et 2.14b a
+    # ``language_info.version`` = 3.11.15, 2.9d et 2.9g a 3.10.19. Le canon
+    # de la serie est 3.13 pour les quatre (requirements.txt de la serie),
+    # d'ou DEUX directions : ``3.11 -> 3.13`` (2.14b, et 2.8c par son
+    # entree nominative) et ``3.10 -> 3.13`` (2.9d, 2.9g). Une seule
+    # direction aurait laisse la moitie de la serie rouge apres
+    # re-execution, en annoncant la couvrir (reserve de revue NanoClaw du
+    # 2026-10-29). Le prefixe -- un premier element termine par ``/`` --
+    # limite la tolerance a ce repertoire : les carnets hors serie qui
+    # partagent le kernelspec gardent la direction rouge, ce que la
+    # reserve #22979 exigeait (67 carnets hors serie mesures le
+    # 2026-10-29, contre 4 dans la serie).
     ("MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/",
      "coursia-ml-training", "3.11", "3.13"):
         "Python 3.11 -> 3.13 sous `coursia-ml-training` pour tout carnet de "
         "la serie 02-ML-Cours : convergence vers le canon 3.13 declare par "
         "le requirements.txt de la serie (#23187, suite de #22889)",
+    ("MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/",
+     "coursia-ml-training", "3.10", "3.13"):
+        "Python 3.10 -> 3.13 sous `coursia-ml-training` pour tout carnet de "
+        "la serie 02-ML-Cours : meme convergence vers le canon 3.13, pour "
+        "les carnets de la serie restes en 3.10 (2.9d et 2.9g mesures a "
+        "3.10.19 le 2026-10-29, #23187)",
 }
 
 
