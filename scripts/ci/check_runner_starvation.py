@@ -212,11 +212,28 @@ def _parse_iso(value: str | None) -> datetime | None:
 class RunnerInventory:
     online: list[str] = field(default_factory=list)
     offline: list[str] = field(default_factory=list)
+    # #22937 phase B : l'inventaire distingue le slot EN LIGNE du slot
+    # LIBRE. Un runner en ligne mais occupe ne peut pas absorber un
+    # debordement : confondre les deux ferait annoncer une capacite locale
+    # qui n'existe pas. `busy`/`idle` sont additifs (les appelants
+    # existants ne les lisent pas).
+    busy: list[str] = field(default_factory=list)
+    idle: list[str] = field(default_factory=list)
+    # Runner en ligne dont le champ `busy` est ABSENT de la reponse : son
+    # occupation est INCONNUE. Il n'est donc pas comptabilise comme libre
+    # (fail-CLOSED vers « capacite disponible »), mais il est nomme pour que
+    # le rapport dise ce qu'il ne sait pas.
+    unknown: list[str] = field(default_factory=list)
 
     @property
     def available(self) -> bool:
         """False = l'inventaire n'a pas pu etre lu (pas de droit admin/PAT)."""
         return True
+
+    @property
+    def free(self) -> int:
+        """Nombre de slots en ligne ET libres pour le label demande."""
+        return len(self.idle)
 
 
 @dataclass
@@ -236,6 +253,14 @@ class JobRow:
     job_name: str
     status: str
     age_min: float | None
+    # Chemin du workflow du run (`.github/workflows/<fichier>`), tel que
+    # `run.path` le rend dans le listing des runs. C'est ce champ qui permet
+    # de separer la COHORTE du debordement (workflows qui lisent
+    # `vars.CI_OVERFLOW_LOCAL`) des jobs STATIQUES qui portent le meme label
+    # sans jamais revenir sur l'offre hebergee (#22937 phase B).
+    # Defaut vide : une reponse sans `path` n'est JAMAIS un membre de la
+    # cohorte, et les consommateurs existants de `JobRow` sont inchanges.
+    run_path: str = ""
 
 
 @dataclass
@@ -259,6 +284,21 @@ class Starvation:
         """False = la lecture n'a pas vu tout ce qu'elle devait voir."""
         return not self.listing_failed and self.stats.failed == 0
 
+    @property
+    def truncated(self) -> bool:
+        """True = la lecture a ete arretee par le budget : les comptes sont
+        des BORNES INFERIEURES.
+
+        Distinct de `complete` : `complete` dit si la lecture a SUCCEEDE
+        (aucun listing en echec), `truncated` dit si elle a vu TOUT. Un run
+        non lu est un run vieux (les runs ages de moins que le seuil sont
+        ecartes sans cout) : il peut donc porter des jobs affames. La
+        consequence directionnelle : une lecture tronquee CONFIRME une
+        affirmation positive (« au moins N jobs affames ») mais n'etablit
+        aucune affirmation negative (« aucun job affame », « file videe »).
+        """
+        return bool(self.budget_unread)
+
 
 def fetch_inventory(repo: str, label: str, token: str | None) -> RunnerInventory:
     # Echec attendu sans droit admin : les echecs d'appel ne comptent PAS
@@ -278,7 +318,23 @@ def fetch_inventory(repo: str, label: str, token: str | None) -> RunnerInventory
         names = [l.get("name") for l in r.get("labels", [])]
         if label not in names:
             continue
-        (inv.online if r.get("status") == "online" else inv.offline).append(r.get("name", "?"))
+        name = r.get("name", "?")
+        if r.get("status") != "online":
+            inv.offline.append(name)
+            continue
+        inv.online.append(name)
+        # #22937 phase B : `busy` porte l'occupation reelle du slot.
+        # Le champ ABSENT laisse l'occupation INCONNUE : le runner n'est donc
+        # pas comptabilise comme libre (fail-CLOSED -- un `r.get("busy")`
+        # falsy placerait un runner muet dans `idle`, donc dans `free`, et
+        # annoncerait une capacite qui n'est pas etablie). Il est nomme
+        # dans `unknown` pour que le rapport dise ce qu'il ignore.
+        if "busy" not in r:
+            inv.unknown.append(name)
+        elif r.get("busy"):
+            inv.busy.append(name)
+        else:
+            inv.idle.append(name)
     return inv
 
 
@@ -435,6 +491,9 @@ def fetch_starvation(
             # serait un faux positif, sens inverse du fail-open de la fenetre.
             anchor = _parse_iso(job.get("created_at")) or created
             age_min = (now - anchor).total_seconds() / 60.0
+            # `run.path` peut manquer sur une reponse partielle : chaine
+            # vide, et une chaine vide ne compte jamais comme cohorte.
+            raw_path = run.get("path")
             row = JobRow(
                 workflow=run.get("name", "?"),
                 run_number=run.get("run_number", 0),
@@ -442,6 +501,7 @@ def fetch_starvation(
                 job_name=job.get("name", "?"),
                 status=job_status,
                 age_min=age_min,
+                run_path=raw_path if isinstance(raw_path, str) else "",
             )
             seen_jobs[key] = row
             if job_status == "queued":
