@@ -369,6 +369,29 @@ jobs:
           # et on publie les deux. Les valeurs de repli sont posees AVANT
           # l'appel : le step tourne sous `set -u`, une variable non initialisee
           # tuerait la branche avant son message.
+          # #22512 -- nettoyer les temporaires du passage avant de quitter le
+          # step : sur un runner ephemere la machine disparait avec eux, mais
+          # les runners persistants (#22418) accumuleraient ces fichiers a
+          # chaque passe. `${VAR:-}` : les affectations vivent dans des
+          # branches distinctes sous `set -u`, et `rm -f ''` echouerait dans
+          # un trap EXIT au point de changer le code de sortie du step.
+          # WF_ERR (#22285) est couvert par le meme geste, au point de la
+          # resolution du conflit de merge.
+          #
+          # Le trap est installe AVANT le premier `mktemp` -- correctif de la
+          # review 5697606524. Pose apres, il ne couvrait pas la branche du
+          # listing en echec : celle-ci rend `exit 1` des la ligne suivante,
+          # donc `$LIST_ERR` et `/tmp/openprs.txt` fuyaient a chaque listing
+          # rate. Le nettoyage doit couvrir precisement le chemin qui
+          # n'atteint jamais la fin du step.
+          #
+          # Les trois `mktemp` alloues plus bas dans CE step (`WFNAME_ERR`,
+          # `QUEUE_ERR`, `CAND_ERR`) entrent dans le meme nettoyage : ils
+          # naissaient hors de toute couverture, donc un echec survenu entre
+          # leur allocation et la fin du step les laissait derriere lui --
+          # exactement le defaut que la review reprochait a `LIST_ERR`.
+          # Tous les chemins fixes du step sont deja nommes ci-dessous.
+          trap 'rm -f "${LIST_ERR:-}" "${OMIT_ERR:-}" "${WF_ERR:-}" "${WFNAME_ERR:-}" "${QUEUE_ERR:-}" "${CAND_ERR:-}" /tmp/openprs.txt /tmp/runs.jsonl /tmp/mute.txt /tmp/wfnames.json /tmp/candidates.txt' EXIT
           LIST_ERR=$(mktemp)
           LIST_CODE='aucun code HTTP'
           LIST_DETAIL='aucun message de gh'
@@ -408,15 +431,6 @@ jobs:
           WFMAP_SHA='aucun'
           WFMAP_CODE='aucun code HTTP'
           WFMAP_DETAIL='aucun message de gh'
-          # #22512 -- nettoyer les temporaires du passage avant de quitter le
-          # step : sur un runner ephemere la machine disparait avec eux, mais
-          # les runners persistants (#22418) accumuleraient ces fichiers a
-          # chaque passe. `${VAR:-}` : les affectations vivent dans des
-          # branches distinctes sous `set -u`, et `rm -f ''` echouerait dans
-          # un trap EXIT au point de changer le code de sortie du step.
-          # WF_ERR (#22285) est couvert par le meme geste, au point de la
-          # resolution du conflit de merge.
-          trap 'rm -f "${LIST_ERR:-}" "${OMIT_ERR:-}" "${WF_ERR:-}" /tmp/openprs.txt /tmp/runs.jsonl /tmp/mute.txt /tmp/wfnames.json /tmp/candidates.txt' EXIT
           while read -r NUM SHA FORK MSTATE; do
             [ -z "${NUM:-}" ] && continue
             LISTED=$((LISTED+1))
