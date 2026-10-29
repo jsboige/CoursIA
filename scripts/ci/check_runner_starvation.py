@@ -253,6 +253,14 @@ class JobRow:
     job_name: str
     status: str
     age_min: float | None
+    # Chemin du workflow du run (`.github/workflows/<fichier>`), tel que
+    # `run.path` le rend dans le listing des runs. C'est ce champ qui permet
+    # de separer la COHORTE du debordement (workflows qui lisent
+    # `vars.CI_OVERFLOW_LOCAL`) des jobs STATIQUES qui portent le meme label
+    # sans jamais revenir sur l'offre hebergee (#22937 phase B).
+    # Defaut vide : une reponse sans `path` n'est JAMAIS un membre de la
+    # cohorte, et les consommateurs existants de `JobRow` sont inchanges.
+    run_path: str = ""
 
 
 @dataclass
@@ -483,6 +491,9 @@ def fetch_starvation(
             # serait un faux positif, sens inverse du fail-open de la fenetre.
             anchor = _parse_iso(job.get("created_at")) or created
             age_min = (now - anchor).total_seconds() / 60.0
+            # `run.path` peut manquer sur une reponse partielle : chaine
+            # vide, et une chaine vide ne compte jamais comme cohorte.
+            raw_path = run.get("path")
             row = JobRow(
                 workflow=run.get("name", "?"),
                 run_number=run.get("run_number", 0),
@@ -490,6 +501,7 @@ def fetch_starvation(
                 job_name=job.get("name", "?"),
                 status=job_status,
                 age_min=age_min,
+                run_path=raw_path if isinstance(raw_path, str) else "",
             )
             seen_jobs[key] = row
             if job_status == "queued":
