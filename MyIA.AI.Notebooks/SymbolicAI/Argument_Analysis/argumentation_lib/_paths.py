@@ -44,7 +44,25 @@ def get_data_dir() -> pathlib.Path:
 
 
 def get_ext_tools_dir() -> pathlib.Path:
-    """Return the external tools directory path."""
+    """Return the external tools directory path.
+
+    Search order:
+    1. Argument_Analysis/ext_tools/ (local)
+    2. SymbolicAI/ext_tools/ (shared, sibling series)
+
+    The shared directory is canonical since the #23109 arbitration: the two
+    EProver trees were byte-identical, so the series-local copy is on its way
+    out and this fallback keeps the accessor working during the transition.
+    Returns the local path when neither exists, so callers keep a writable
+    target and the failure stays where it was.
+    """
+    candidates = [
+        ARGUMENT_ANALYSIS_DIR / "ext_tools",
+        SYMBOLIC_AI_DIR / "ext_tools",
+    ]
+    for d in candidates:
+        if d.exists():
+            return d
     return ARGUMENT_ANALYSIS_DIR / "ext_tools"
 
 

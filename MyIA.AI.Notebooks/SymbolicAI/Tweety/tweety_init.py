@@ -156,8 +156,15 @@ def init_tweety(verbose=True):
             print("ERREUR: Aucun JAR trouve dans libs/")
         return False
 
-    # Recherche des bibliothèques natives (DLL/SO pour SAT solvers)
+    # Recherche des bibliothèques natives (DLL/SO pour SAT solvers).
+    # Ordre : libs/native de la série Tweety, puis le dossier natif partagé de
+    # SymbolicAI, puis l'ancien emplacement sous Argument_Analysis. Le dossier
+    # partagé est le canonique depuis l'arbitrage #23109 (les deux copies
+    # étaient byte-identiques) ; la dernière entrée reste pour ne pas casser un
+    # clone qui n'aurait pas encore la déduplication.
     native_libs_dir = lib_dir / "native"
+    if not native_libs_dir.exists():
+        native_libs_dir = pathlib.Path("../libs/native")
     if not native_libs_dir.exists():
         native_libs_dir = pathlib.Path("../Argument_Analysis/libs/native")
 
