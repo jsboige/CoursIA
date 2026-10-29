@@ -11,4 +11,4 @@ Sous-série Physique de la collection [MyIA.AI.Notebooks](../../README.md), ouve
 - **Jauge-02** — de la symétrie U(1) globale à la jauge locale : dérivée covariante, puis SU(2) non abélien où la courbure porte l'auto-interaction ;
 - **Jauge-03** — l'action de Wilson sur réseau : théorie de jauge en dimension 2 exactement soluble (moyenne de plaquette en forme fermée de β, vérité plantée confirmée contre la source archivée), puis loi de l'aire en dimension 3-4 par les rapports de Creutz, à hypothèse pré-enregistrée.
 
-Le résultat d'existence Yang–Mills annoncé par OpenAI le 26/10 reste en veille tant que sa publication formelle n'est pas sortie (#22844) : aucun carnet de cette sous-série ne l'énonce.
+Le résultat d'existence Yang–Mills annoncé par OpenAI le 26/10 reste en veille tant que sa publication formelle n'est pas sortie : aucun carnet de cette sous-série ne l'énonce. La veille est tracée dans l'EPIC #23161 ; elle n'a pas encore d'issue dédiée, et le commentaire qui l'a fait apparaître vit sur une issue dont le titre porte un autre sujet.
