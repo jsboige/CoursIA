@@ -86,6 +86,19 @@ on:
           ``strict-orphan-check: true``.
         type: string
         default: ""
+      build-jobs:
+        description: >-
+          #23247: parallelism cap passed to `lake build -j N`. Empty = lake
+          default (nproc), the historical behavior for every caller that does
+          not set it. Set "1" on a lake whose PARALLEL elaboration sum exceeds
+          the runner RAM ceiling (ubuntu-latest: 16 GB for 4 vCPU, and lake
+          -j nproc co-elaborates n processes each loading its full
+          environment). Distinct from #9840 (a SINGLE module over the
+          ceiling, fixed by splitting the module): here every module fits
+          alone, it is the co-elaboration that kills.
+        type: string
+        required: false
+        default: ""
 
 # A reusable workflow cannot request more than its caller grants. #8951 gave the
 # callers (lean-conway.yml, lean-knot.yml) `permissions: {contents: read}`, which
@@ -192,7 +205,11 @@ jobs:
         # 2026-06-14 pipefail invariant below are unchanged.
         (
           # On failure, surface the error lines the `tail` window loses (See #8915).
-          if lake -R build 2>&1 | tee "$RUNNER_TEMP/lake.log" | tail -10; then
+          # #23247 : cap -j optionnel. Sans l'input, JOBS_ARGS est vide et la
+          # commande est byte-identique a l'historique.
+          JOBS_ARGS=""
+          if [ -n "${{ inputs.build-jobs }}" ]; then JOBS_ARGS="-j ${{ inputs.build-jobs }}"; fi
+          if lake -R build $JOBS_ARGS 2>&1 | tee "$RUNNER_TEMP/lake.log" | tail -10; then
             :
           else
             rc=$?

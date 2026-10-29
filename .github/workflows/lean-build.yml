@@ -67,6 +67,11 @@ on:
         type: string
         required: false
         default: 'none'
+      build-jobs:
+        description: "Cap de parallelisme passe a `lake build -j N` (See #23247). Vide = defaut lake (nproc), comportement historique inchange pour tous les callers qui ne le posent pas. Poser '1' sur un lake dont la SOMME des elaborations paralleles depasse le plafond RAM du runner -- ubuntu-latest = 16 Go pour 4 vCPU, et lake -j nproc co-elabore n processus charges chacun de leur environnement complet. Distinct du cas #9840 (un SEUL module > plafond, se corrige en decoupant le module) : ici chaque module tient seul, c'est la co-elaboration qui tue."
+        type: string
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -290,7 +295,12 @@ jobs:
           # the error lines can be surfaced in a ::group:: on failure. `if cmd;` exempts
           # the pipeline from errexit, but pipefail still feeds `$?` here — this is what
           # preserves the 2026-06-14 invariant (FAILED build still exits != 0).
-          if lake -R build 2>&1 | tee "$RUNNER_TEMP/lake.log" | tail -20; then
+          # #23247 : cap -j optionnel. Sans l'input, JOBS_ARGS est vide et la
+          # commande est byte-identique a l'historique -- aucun effet sur les
+          # dispatchers qui ne posent pas build-jobs.
+          JOBS_ARGS=""
+          if [ -n "${{ inputs.build-jobs }}" ]; then JOBS_ARGS="-j ${{ inputs.build-jobs }}"; fi
+          if lake -R build $JOBS_ARGS 2>&1 | tee "$RUNNER_TEMP/lake.log" | tail -20; then
             :
           else
             rc=$?
