@@ -53,7 +53,7 @@ from pathlib import Path
 MOJIBAKE = re.compile(
     r"Ã[\u0080-¿]"  # Ã + 2e octet (é, è, à, …)
     r"|Â[\u0080-¿]"  # Â + 2e octet (nbsp, °, µ, ·, ¢)
-    r"|Å€"  # C5 80 (Š, Ž)
+    r"|Å€"  # C5 80 (ŀ, U+0140) ; Š et Ž donnent Å + U+00A0/U+00BD, deja couverts
     r"|â€"  # E2 80 (—, –, quotes, guillemets, …)
 )
 
