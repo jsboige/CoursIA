@@ -41,6 +41,7 @@ le meme fournisseur et la meme source pour les memes entrees.
 from __future__ import annotations
 
 import ast
+import importlib.util
 import json
 import sys
 import types
@@ -50,12 +51,12 @@ import pytest
 
 # --- Localisation des artefacts ------------------------------------------------
 
-FICHiers_TEST = Path(__file__).resolve()
+FICHIER_TEST = Path(__file__).resolve()
 
 
 def _racine_depot() -> Path:
     """Remonte jusqu'a la racine du depot (celle qui contient MyIA.AI.Notebooks)."""
-    for candidat in FICHiers_TEST.parents:
+    for candidat in FICHIER_TEST.parents:
         if (candidat / "MyIA.AI.Notebooks").is_dir():
             return candidat
     raise RuntimeError("racine de depot introuvable depuis %s" % FICHIER_TEST)
@@ -249,14 +250,48 @@ def test_les_valeurs_de_cle_ne_sont_jamais_printed(monkeypatch, capsys):
 # --- Parite avec l'organe de la serie -----------------------------------------
 
 def _organe():
-    """L'organe de la serie, ou None s'il n'est pas encore livre (#23269)."""
-    try:
-        import genai_helpers
-    except Exception:
+    """L'organe de la serie, ou None quand il n'est pas compose sur ce checkout.
+
+    Deux echecs distincts, et les confondre est le defaut que cette borne
+    repare (#23288) : un module **absent** du checkout (la composition #23269
+    n'a pas ete faite) est un skip honnete ; un module **present dont l'import
+    leve** est un import casse, et il doit faire echouer le test au lieu de
+    disparaitre derriere un skip.
+
+    `find_spec` tranche l'absence **sans importer** -- c'est ce qui permet de
+    separer les deux cas. `import_module` laisse donc remonter tout ce qui
+    casse, au lieu de l'avaler.
+    """
+    if importlib.util.find_spec("genai_helpers") is None:
         return None
-    if not hasattr(genai_helpers, "resolve_openai_config"):
-        return None
-    return genai_helpers
+    return importlib.import_module("genai_helpers")
+
+
+def test_absence_de_l_organe_rend_none(monkeypatch):
+    """L'absence du module est le SEUL cas ou la sonde de parite se saute."""
+    monkeypatch.setattr(importlib.util, "find_spec", lambda nom: None)
+    assert _organe() is None
+
+
+def test_un_import_casse_fait_echouer_au_lieu_de_skipper(monkeypatch, tmp_path):
+    """CONTROLE NEGATIF : un module present dont l'import leve ne se cache pas.
+
+    Sans ce controle, la borne de `_organe()` ne prouverait rien : un helper qui
+    rend `None` sur toute exception produirait exactement le meme skip, et un
+    import casse resterait invisible. Le faux module est place devant le vrai
+    par `syspath_prepend`, et purge de `sys.modules` pour qu'il soit reellement
+    importe.
+    """
+    (tmp_path / "genai_helpers.py").write_text(
+        "raise ImportError('dependance absente : import casse simule')\n",
+        encoding="utf-8",
+    )
+    monkeypatch.syspath_prepend(str(tmp_path))
+    monkeypatch.delitem(sys.modules, "genai_helpers", raising=False)
+    importlib.invalidate_caches()
+
+    with pytest.raises(ImportError, match="import casse simule"):
+        _organe()
 
 
 @pytest.mark.parametrize("env, secrets, source_attendue, fournisseur_attendu", CAS)
@@ -266,7 +301,9 @@ def test_parite_avec_l_organe_de_la_serie(
     """Le repli du carnet et l'organe de la serie tranchent pareil."""
     organe = _organe()
     if organe is None:
-        pytest.skip("l'organe resolve_openai_config n'est pas encore dans main (#23269)")
+        pytest.skip("genai_helpers absent du checkout : composition #23269 non faite")
+    if not hasattr(organe, "resolve_openai_config"):
+        pytest.skip("genai_helpers present mais sans resolve_openai_config : #23269 pas livre")
 
     _vider_environ(monkeypatch)
     for nom, valeur in env.items():
