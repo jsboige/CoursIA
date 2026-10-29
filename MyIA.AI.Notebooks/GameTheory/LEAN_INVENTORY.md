@@ -9,8 +9,8 @@ module-set réel du disque (issue #13138). Ligne `conway_cgt_lean` re-synchronis
 
 **Ré-derivation mécanique du 2026-10-29 (issue #21765).** La carte s'était arrêtée au 2026-08-26 :
 les `lean_lib` déclarées depuis — `Abstraction`, `ProgramGames`, `StackelbergBilevel` et les six
-`Approval*` de `social_choice_lean_peters` — n'y étaient jamais entrées, soit **9 bibliothèques et
-20 fichiers de preuve** invisibles pour qui lisait la carte. Les périmètres ci-dessous sont dès
+`Approval*` de `social_choice_lean_peters` — n'y étaient jamais entrées : **9 bibliothèques** et
+leurs fichiers de preuve restaient invisibles pour qui lisait la carte. Les périmètres ci-dessous sont dès
 lors re-dérivés des lakefiles par `scripts/lean/check_lean_inventory.py`, qui échoue dès qu'une
 bibliothèque déclarée n'est plus nommée par la carte (contrôle CI :
 `scripts/lean/tests/test_check_lean_inventory.py`).
