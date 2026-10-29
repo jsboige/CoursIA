@@ -125,6 +125,7 @@ Documentation détaillée de l'infrastructure GenAI (ComfyUI, Docker, modèles l
 | [genai/dm-jepa-local-validation.md](genai/dm-jepa-local-validation.md) | Validation locale du moteur DM-JEPA 1.7 — rang contre tri aléatoire, entrées adverses, latence et findings de l'artefact (#21997) |
 | [genai/model-mapping-openai.md](genai/model-mapping-openai.md) | Mapping des modèles OpenAI — génération courante |
 | [genai/model-mapping.md](genai/model-mapping.md) | Inventaire et table de correspondance — modèles GenAI/OpenAI |
+| [genai/parametres-par-modele.md](genai/parametres-par-modele.md) | Paramètres servis par modèle — table mesurée par appels réels et garde de cohérence (#20682) |
 | [genai/vibe-coding-workspace-map.md](genai/vibe-coding-workspace-map.md) | Vibe-Coding — Carte des workspaces GenAI |
 | [genai/3d-enveloppe-vram-8go.md](genai/3d-enveloppe-vram-8go.md) | Enveloppe GPU de la famille NeRF sur l'étage pionnier 8 Go — pic VRAM et débit mesurés |
 
