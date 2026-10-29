@@ -38,8 +38,8 @@ L'API z3-py expose l'intégralité du solveur Z3 en Python — `Solver`, `Optimi
 | Z3-13 | §3.13.2 Unsat core (p. 90), Ch. 3 Equations | UNSAT cores, `assert_and_track` |
 | Z3-13b | §3.13.2 Unsat core (p. 90), Ch. 3 Equations | MUS (Minimal Unsatisfiable Subset) |
 | Z3-14 | §5.1 Integer overflow (p. 132), Ch. 5 Verification | Bit-vectors, overflow, `ULT`/`UGE` |
-| Z3-15 | (mapping à confirmer R2+) | Nested arrays 2D, carré magique |
-| Z3-16 | (mapping à confirmer R2+) | Optimize, plan hebdomadaire |
+| Z3-15 | (mapping à confirmer en R2, cf. « Ouvrages-ancrage ») | Nested arrays 2D, carré magique |
+| Z3-16 | (mapping à confirmer en R2, cf. « Ouvrages-ancrage ») | Optimize, plan hebdomadaire |
 | Z3-17 | §3.13 Recalculating micro-spreadsheet (p. 88), Ch. 3 | Array theory général, `Select`/`Store` |
 | Z3-18 | §8.1 Sudoku (p. 205), Ch. 8 | Sudoku modes `Array` vs `Constants` |
 
@@ -237,24 +237,22 @@ La série manipule un vocabulaire précis (SMT, tactiques, MaxSAT, théories) h�
 
 ## Ouvrages-ancrage
 
-Issue de référence : #19278. Cette série s'ancre principalement sur un livre-ancrage pratique :
+Issue de référence : #19278. L'ouvrage-ancrage de la série est le Yurichev décrit en tête de fichier (section « Ouvrage de référence », avec l'index chapitré série ↔ livre) — la présente section y renvoie et n'en duplique pas l'entrée. La copie archivée (`G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf`) a été lue le 27/10/2026 sur ses 666 pages : les folios de l'index ci-dessus sont ancrés firsthand sur cette lecture.
 
-- **Yurichev, D., *SAT/SMT by Example* (édition publique, 12 février 2023, 666 pages)** — déposé à `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf` (identité vérifiée sur page de titre, 2026-10-05). Le compendium pratique de résolution SAT/SMT par l'exemple, centré Z3/PySMT.
+### Mapping carnet ↔ livre (mapping de l'issue #19278 pour les carnets Z3-Linq2Z3 ; confirmation due à la tranche R2)
 
-**Avertissement — défaut biblio au 2026-10-05** : le PDF Yurichev sur la machine worker po-2026 a une taille disque non-nulle mais une structure interne invalide (`fitz.open()` rend 0 page extractible, idem OR94 et Multiagent 2009 de GameTheory). Le livre est référencé en tant que tel (titre, auteur, année, dépot GDrive vérifié), mais les détails de chapitre ou d'exemple spécifique ne sont pas ancrés firsthand tant qu'une copie lisible n'est pas réacquise. Issue de suivi à ouvrir par le mainteneur (hors périmètre worker — c'est un geste bibliothèque, pas un geste de code).
-
-### Mapping carnet ↔ livre (mapping de l'issue #19278, à confirmer par lecture effective du PDF)
+Confirmation due à la **tranche R2 de #19278** : lecture effective des chapitres Yurichev correspondants contre les carnets `Z3-Linq2Z3`.
 
 | Thème du livre | Notebook porteur | Vérification |
 |----------------|------------------|--------------|
 | Solver API, theories, modèles | série Z3-API entière | OK (la série entière relève du livre ; pas d'inventaire chapitre-par-chapitre) |
-| Array theory, Nested arrays | `Z3-Linq2Z3/04_Array_Theory`, `05_Nested_Arrays_2D` | à_confirmer (PDF corrompu worker) |
-| Cryptarithmetic | `Z3-Linq2Z3/13_Cryptarithmetic_SMT` | à_confirmer |
-| MaxSAT / Optimize | `Z3-Linq2Z3/14_Optimize_MaxSAT` | à_confirmer |
-| Bit-vectors, overflow | `Z3-Linq2Z3/15_BitVectors_Overflow` | à_confirmer |
-| UNSAT cores | `Z3-Linq2Z3/17_UnsatCores` | à_confirmer |
-| Einstein's riddle & puzzles | `Z3-Linq2Z3/18_Einsteins_Riddle`, `02_Sudoku_Theorem_vs_Array` | à_confirmer |
-| Real arithmetic | `Z3-Linq2Z3/16_RealArithmetic` | à_confirmer |
+| Array theory, Nested arrays | `Z3-Linq2Z3/04_Array_Theory`, `05_Nested_Arrays_2D` | à_confirmer (R2) |
+| Cryptarithmetic | `Z3-Linq2Z3/13_Cryptarithmetic_SMT` | à_confirmer (R2) |
+| MaxSAT / Optimize | `Z3-Linq2Z3/14_Optimize_MaxSAT` | à_confirmer (R2) |
+| Bit-vectors, overflow | `Z3-Linq2Z3/15_BitVectors_Overflow` | à_confirmer (R2) |
+| UNSAT cores | `Z3-Linq2Z3/17_UnsatCores` | à_confirmer (R2) |
+| Einstein's riddle & puzzles | `Z3-Linq2Z3/18_Einsteins_Riddle`, `02_Sudoku_Theorem_vs_Array` | à_confirmer (R2) |
+| Real arithmetic | `Z3-Linq2Z3/16_RealArithmetic` | à_confirmer (R2) |
 
 ## FAQ / Troubleshooting
 
