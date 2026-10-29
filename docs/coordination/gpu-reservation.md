@@ -117,7 +117,7 @@ Les archives RooSync sont des **markdown verbatim** sur GDrive (`$ROOSYNC_SHARED
 
 Avant `nvidia-smi` (ou tout autre lancement GPU) :
 
-1. **Charge hôte** : `uptime`, `free -g`, `nvidia-smi` — la charge hôte doit rester **< 85 %** sous l'expérience. Au-delà, reporter l'expérience et poster une observation `held` une fois la charge retombée (réservation à venir, pas de geste de lancement).
+1. **Charge hôte** : `uptime`, `free -g`, `nvidia-smi` — la charge hôte doit rester **< 90 %** sous l'expérience (seuil relevé le 2026-10-29 par mandat user direct : 85 % était le **régime nominal** de la machine, pas le plafond d'admission). Au-delà, reporter l'expérience et poster une observation `held` une fois la charge retombée (réservation à venir, pas de geste de lancement).
 2. **CUDA devices** : `CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=<n>` sur la commande elle-même. Ne pas se fier au seul `CUDA_VISIBLE_DEVICES` (variable d'env du shell sans ordre PCI = risque d'allocation ambigu).
 3. **Ledger entry** : poster `[OBS]` (`state: held`) sur `CoursIA-gpu-reservation-ledger` **avant** le geste de lancement (pas après — sinon collision possible). Poster `[OBS]` (`state: released`) à la fin du run, avec `workload` court et `expected_end` réel. **Construire les deux avec `debt_ledger.py append`** : un envelope écrit à la main est rejeté au fold (les deux causes ci-dessus), et une libération rejetée laisse la ligne **`held` sur un device libre**.
 4. **GPU 0/1 réservé** : les GPU 0 et 1 de ai-01 portent le vLLM de la flotte et **ne se réservent pas**. Le GPU 2 est le seul slot GPU de cette machine pour les expériences.
