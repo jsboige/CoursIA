@@ -7250,8 +7250,14 @@ def epic_lane_delivery_counts(
             continue
         if merged < cutoff:
             continue
-        for number in _DELIVERY_CITED_RE.findall(pr.get("body") or ""):
-            n = int(number)
+        # UNE livraison = UNE PR. Un corps qui cite l'EPIC deux fois
+        # ("Part of #16334" en tete, "Closes #16334" en pied) ne compte
+        # qu'UNE fois : compter par occurrence faisait/refuser la lane
+        # apres une seule livraison reelle des que K=2 (famine
+        # fabriquee -- le module de tests interdit precisement ce
+        # refus sur une mesure gonflee).
+        cited = {int(x) for x in _DELIVERY_CITED_RE.findall(pr.get("body") or "")}
+        for n in cited:
             counts[n] = counts.get(n, 0) + 1
     return counts
 
@@ -7285,6 +7291,35 @@ def epic_lane_delivery_cause(
             f"{lane} sur {LANE_RECORD_WINDOW_DAYS} j (>= {cap}) -- le tapis "
             f"rend la tete suivante a cette lane ; l'EPIC reste tirable par "
             f"les autres.")
+
+
+def epic_delivery_cap_state(
+    lane_record: dict | None,
+    lane: str | None,
+) -> tuple[str, dict[int, int]]:
+    """#21067 correctif 2 -- l'etat du plafond, en TROIS cas et non deux.
+
+    ``epic_deliveries == {}`` veut dire deux choses opposees qu'un booleen
+    confondait :
+
+    - ``measured``   : la lecture de l'ardoise a abouti et la lane n'a livre
+      aucun EPIC sur la fenetre. Le garde EST evalue ; il n'ecarte rien.
+      Publier « non mesurees » ici etait faux, et ``active: false`` dans le
+      JSON faisait lire un garde inactif la ou il avait tourne.
+    - ``unmeasured`` : la lecture a echoue. Le garde doit rester inactif --
+      fail-OPEN, jamais un refus sur une absence de mesure.
+    - ``not-applicable`` : pas de lane. Le plafond est par lane ; sans lane
+      il n'a pas d'objet.
+
+    Le discriminant existe deja dans l'ardoise elle-meme
+    (``lane_record["measured"] = error is None``) : le plafond le lisait
+    simplement en moins.
+    """
+    if not lane or lane_record is None:
+        return "not-applicable", {}
+    if not lane_record.get("measured"):
+        return "unmeasured", {}
+    return "measured", dict(lane_record.get("epic_deliveries") or {})
 
 
 def apply_child_visits(pool: list[dict], targets: list[dict]) -> dict[int, str]:
@@ -7804,6 +7839,9 @@ def belt_filter(
 def draw_belt(
     admitted: list[dict],
     args,
+    *,
+    epic_deliveries: dict[int, int] | None = None,
+    drops: list[tuple[dict, str]] | None = None,
 ) -> list[dict]:
     """Mode --belt : trie le pool admissible et tire `args.grains` candidats.
 
@@ -7816,6 +7854,7 @@ def draw_belt(
     2. labels requis / exclus
     3. bornes d'age / idle
     4. urnes (memes que la voie ponderee)
+    5. plafond de livraisons EPIC (#21067), quand la mesure est fournie
 
     Les claims tenes par une autre lane ne sont pas elimines ici -- c'est
     le caller (`main`) qui les passe par `check_claims` sur la fenetre et
@@ -7827,8 +7866,15 @@ def draw_belt(
     quand la voie ponderee rendrait vide ou biaise vers le recent. Un DWELL
     ou un avis de zone ne vide pas la sortie : il figure en rappel dans la
     banniere texte, pas dans le predicat de selection.
+
+    `epic_deliveries` / `drops` : transmis a `belt_filter` pour que ce point
+    d'entree ne puisse pas contourner le plafond #21067. Aucun appelant ne
+    l'utilise aujourd'hui (mesure du 2026-10-29 : `draw_belt` n'est appele
+    nulle part hors d'un docstring de test) ; les parametres existent pour
+    que le prochain le fasse sans rouvrir le trou.
     """
-    filtered = belt_filter(admitted, args)
+    filtered = belt_filter(admitted, args, epic_deliveries=epic_deliveries,
+                           drops=drops)
     filtered.sort(key=belt_sort_key)
     return filtered[:args.grains]
 
@@ -8214,6 +8260,7 @@ def consume_board(
     urns: set[str] | None = None,
     lane: str | None = None,
     live_check: bool = True,
+    epic_deliveries: dict[int, int] | None = None,
 ) -> tuple[list[dict], dict]:
     """Retient les candidats d'un instantane, avec UN controle vivant.
 
@@ -8226,11 +8273,20 @@ def consume_board(
     Un candidat retenu tenu par une autre lane rend ``picks == []`` : le caller
     bascule alors sur le calcul local, qui est le comportement d'aujourd'hui --
     jamais une regression.
+
+    `epic_deliveries` : livraisons par EPIC de CETTE lane, pour que le plafond
+    #21067 s'applique ICI aussi (il ne l'etait que sur le calcul local --
+    ce chemin pouvait servir a une lane un EPIC qu'elle avait deja livre).
+    ``None`` = mesure absente : le plafond reste inactif, jamais un refus sur
+    une absence de mesure.
     """
     items = [board_item_decode(c) for c in (snapshot.get("items") or [])]
     withheld = {w.get("n") for w in (snapshot.get("withheld") or [])
                 if isinstance(w, dict)}
-    eligible = belt_filter(items, args, urns=urns)
+    epic_drops: list[tuple[dict, str]] = []
+    eligible = belt_filter(items, args, urns=urns,
+                            epic_deliveries=epic_deliveries,
+                            drops=epic_drops)
     eligible = [it for it in eligible if it["number"] not in withheld]
     eligible.sort(key=belt_sort_key)
     meta = {
@@ -8239,6 +8295,22 @@ def consume_board(
         "withheld_skipped": len(withheld),
         "retained": eligible[0]["number"] if eligible else None,
         "live_check": None,
+        # #21067 correctif 1 : ce que le plafond de livraisons a ecarte SUR
+        # CE CHEMIN. Nomme, jamais silencieux -- un plafond muet se lit
+        # comme une famine du pool.
+        # Correctif 3 : `state` dit POURQUOI, pas seulement si. Le chemin
+        # consommateur ne peut pas mesurer les livraisons de la lane sans
+        # payer le corpus de PRs mergees (`fetch_lane_record_prs`, 7,5 s /
+        # 3,7 Mo mesures) que l'acceptance #20053 interdit ici -- un seul
+        # controle vivant, aucun fetch de pool. L'etat est donc `unmeasured`
+        # et la sortie le dit ; un appelant qui A la mesure la passe.
+        "epic_delivery_cap": {
+            "state": ("measured" if epic_deliveries is not None
+                      else "unmeasured"),
+            "applied": epic_deliveries is not None,
+            "dropped": [{"number": it["number"], "title": it["title"],
+                         "cause": cause} for it, cause in epic_drops],
+        },
         "reason": "ok",
     }
     if not eligible:
@@ -8295,6 +8367,13 @@ def print_board_consumer(snapshot: dict, picks: list[dict], meta: dict,
               f"-- {live['human']}")
     print("   garde rouge NON evalue sur ce chemin (--board-export) : "
           "un rouge propre reste a traiter avant ce grain.")
+    cap = meta.get("epic_delivery_cap") or {}
+    if cap.get("dropped"):
+        print("   plafond de livraisons EPIC ecarte sur ce chemin : "
+              + ", ".join(f"#{d['number']}" for d in cap["dropped"][:6]))
+    elif not cap.get("applied"):
+        print("   plafond de livraisons EPIC NON evalue sur ce chemin "
+              "(mesure absente) : le garde reste inactif, il ne refuse pas.")
     if meta.get("reason") != "ok":
         print(f"   repli : {meta['reason']}")
     print()
@@ -10308,11 +10387,25 @@ def main(argv: list[str] | None = None) -> int:
         # sur le corpus de l'ardoise deja paye. Sans ardoise (pas de lane,
         # ou mesure en echec) le garde reste inactif et le dit -- jamais un
         # refus sur une absence de mesure.
-        _epic_deliveries = (lane_record or {}).get("epic_deliveries") or {}
+        # Correctif 2 : `epic_delivery_cap_state` separe « mesure a ZERO »
+        # de « pas mesure ». Les deux rendent un dict vide, et les confondre
+        # publiait « non mesurees » sur une mesure qui avait abouti.
+        _epic_cap_state, _epic_deliveries = epic_delivery_cap_state(
+            lane_record, args.lane)
         _epic_drops: list[tuple[dict, str]] = []
-        if not _epic_deliveries:
-            _belt_phase("plafond livraisons EPIC: INACTIF (livraisons de la "
-                        "lane non mesurees)")
+        if _epic_cap_state == "unmeasured":
+            _belt_phase("plafond livraisons EPIC: INACTIF (mesure de la lane "
+                        "en echec -- aucun refus sur une absence de mesure)")
+        elif _epic_cap_state == "not-applicable":
+            _belt_phase("plafond livraisons EPIC: INACTIF (pas de lane -- le "
+                        "plafond est par lane)")
+        elif not _epic_deliveries:
+            _belt_phase("plafond livraisons EPIC: MESURE, aucune livraison de "
+                        "la lane sur la fenetre (rien a ecarter)")
+        else:
+            _belt_phase(f"plafond livraisons EPIC: MESURE, "
+                        f"{sum(_epic_deliveries.values())} livraison(s) sur "
+                        f"{len(_epic_deliveries)} EPIC(s)")
         belt_pool = belt_filter(admitted, args, urns=selected_urns,
                                 epic_deliveries=_epic_deliveries,
                                 drops=_epic_drops)
@@ -10644,7 +10737,13 @@ def main(argv: list[str] | None = None) -> int:
                 # famine du pool.
                 "epic_delivery_cap": {
                     "cap": args.epic_delivery_cap,
-                    "active": bool(_epic_deliveries),
+                    # Correctif 2 : `state` porte le troisieme cas que le
+                    # booleen `active` ecrasait. `active: false` sur une
+                    # mesure a zero faisait lire un garde inactif la ou il
+                    # avait tourne ; `active` reste pour les consommateurs
+                    # existants et vaut « le garde a pu s'appliquer ».
+                    "state": _epic_cap_state,
+                    "active": _epic_cap_state == "measured",
                     "dropped": [{"number": it["number"],
                                  "title": it["title"],
                                  "cause": c} for it, c in _epic_drops],
