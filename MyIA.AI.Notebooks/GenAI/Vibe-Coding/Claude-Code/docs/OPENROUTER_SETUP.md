@@ -105,15 +105,17 @@ C'est l'étape la plus importante. Vous devez définir **3 variables obligatoire
 
 Sans les variables `ANTHROPIC_DEFAULT_*_MODEL`, Claude Code demande par defaut des **modeles Claude natifs** (`claude-sonnet-4-20250514`, etc.). Sur OpenRouter, ces noms-la **peuvent** ne pas exister pour la cle utilisee : le symptome attendu est alors une erreur "Model not found".
 
-> **Ce que depend de la cle, pas d'OpenRouter.** La disponibilite d'un modele est une question de **droits de la cle**, pas de fournisseur : deux cles OpenRouter n'ont pas les memes modeles ouverts. Le message ci-dessus decrit le cas courant, il n'est pas une loi. **Mesurez les droits de VOTRE cle** avant d'en conclure un modele inaccessible — la sonde est une ligne :
+> **Ce que depend de la cle, pas d'OpenRouter.** La disponibilite d'un modele est une question de **droits de la cle**, pas de fournisseur : deux cles OpenRouter n'ont pas les memes modeles ouverts. Le message ci-dessus decrit le cas courant, il n'est pas une loi.
+>
+> **Ce que le catalogue mesure, et ce qu'il ne mesure pas.** `GET /v1/models` rend les **identifiants annonces** — ni la validite de la cle, ni l'autorisation d'appeler un modele : ce catalogue repond **200 meme sans droits d'appel**. Il sert donc a verifier *quels identifiants existent* (et lesquels sont retires), pas a conclure qu'un modele est accessible.
 >
 > ```bash
 > curl -s https://openrouter.ai/api/v1/models -H "Authorization: Bearer $OPENROUTER_API_KEY"
 > ```
 >
-> Mesure faite le 2026-10-29 avec la cle du module `GenAI` : `anthropic/claude-haiku-5.5` et `anthropic/claude-sonnet-5.5` repondent HTTP 200, `qwen/qwen3.6-35b-a3b` et `minimax/minimax-m2.7` repondent HTTP 200 mais renvoient un **contenu vide** (a un budget de 16 tokens, un modele qui raisonne peut consommer son budget sans produire de texte : la mesure est un indice, pas un verdict d'indisponibilite). Conclusion retenue : **la table ci-dessous est un choix, pas une obligation** — alignez-la sur ce que votre cle rend reellement.
+> Pour la **capacite reelle**, la preuve est un **appel mesure et trace**, pas le catalogue. Mesures faites le 2026-10-29 avec la cle du module `GenAI` : `anthropic/claude-haiku-5.5` et `anthropic/claude-sonnet-5.5` repondent HTTP 200 **avec contenu** ; `qwen/qwen3.6-35b-a3b` et `minimax/minimax-m2.7` repondent HTTP 200 mais renvoient un **contenu vide** (a un budget de 16 tokens, un modele qui raisonne peut consommer son budget sans produire de texte : la mesure est un indice, pas un verdict d'indisponibilite). Conclusion retenue : **la table ci-dessous est un choix, pas une obligation** — alignez-la sur ce que votre cle rend reellement **en appel reel**, pas sur ce que le catalogue annonce.
 
-Le mapping dit a Claude Code : "quand on te demande 'sonnet', utilise MiniMax M2.7 sur OpenRouter au lieu de chercher un modele Anthropic". Si votre cle n'ouvre pas MiniMax M2.7, remplacez la valeur par un modele qu'elle a reellement rendu (sonde ci-dessus).
+Le mapping dit a Claude Code : "quand on te demande 'sonnet', utilise MiniMax M2.7 sur OpenRouter au lieu de chercher un modele Anthropic". Si votre cle n'ouvre pas MiniMax M2.7, remplacez la valeur par un modele qu'elle a reellement rendu (mesures ci-dessus).
 
 ### Méthode recommandée : fichier settings.json
 
@@ -381,7 +383,7 @@ Les deux produisent un **symptome muet**, et c'est ce qui rend le diagnostic dif
 
 Le premier cas est le piege : **une cellule qui tourne indefiniment n'est pas une cellule lente — c'est un symptome, pas un diagnostic.** L'absence de jeton est l'**hypothese la plus frequente** (elle est aussi la plus facile a verifier), mais un delai d'attente ne la **prouve** pas : un reseau lent, un `ANTHROPIC_MODEL` invalide, un endpoint injoignable ou un runtime Colab sature produisent le meme silence.
 
-> **Ce qu'un timeout permet de dire, et ce qu'il ne permet pas.** Il permet de dire : « l'appel n'a pas rendu dans le budget imparti ». Il ne permet **pas** de dire : « le jeton est absent ». Pour separer les deux, il faut une **mesure qui distingue** : soit un appel direct a l'API du fournisseur avec la meme cle (il repond 401 en une seconde si la cle est refusee), soit un `curl` sur `/v1/models` (il repond 200 meme sans droits d'appel). Un `claude -p` qui expire ne fait **pas** cette separation.
+> **Ce qu'un timeout permet de dire, et ce qu'il ne permet pas.** Il permet de dire : « l'appel n'a pas rendu dans le budget imparti ». Il ne permet **pas** de dire : « le jeton est absent ». La mesure qui separe les deux est l'**appel direct a l'API du fournisseur avec la meme cle** : il repond 401 en une seconde si la cle est refusee. Le catalogue `/v1/models`, lui, **ne separe rien** — il repond 200 meme sans droits d'appel, et ne dit donc rien de la validite du jeton. Un `claude -p` qui expire ne fait **pas** cette separation.
 
 Si un `claude -p` ne rend rien au bout d'une minute dans Colab, verifiez `ANTHROPIC_AUTH_TOKEN` **en premier** — c'est l'hypothese la plus probable et la plus rapide a ecarter — mais ne concluez pas sur le timeout seul.
 
