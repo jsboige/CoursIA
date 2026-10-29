@@ -102,7 +102,7 @@ Cliquez sur ce lien : [Installer Claude Code pour VS Code](vscode:extension/anth
 
 ### Étape 0 : rien à installer — OpenRouter parle le protocole Anthropic
 
-> **Mesure du 2026-10-29 (issue #23276, lane `myia-po-2023:CoursIA-2`).** La version précédente de ce guide demandait de cloner `openrouter-proxy` et de lancer `node proxy.js`, au motif que « les requêtes OpenRouter ne sont pas strictement compatibles avec le protocole Anthropic ». Ce n'est plus vrai : `POST https://openrouter.ai/api/v1/messages` existe et rend ses erreurs au format Anthropic.
+> **Mesure du 2026-10-29.** La version précédente de ce guide demandait de cloner `openrouter-proxy` et de lancer `node proxy.js`, au motif que « les requêtes OpenRouter ne sont pas strictement compatibles avec le protocole Anthropic ». Ce n'est plus vrai : `POST https://openrouter.ai/api/v1/messages` existe et rend ses erreurs au format Anthropic.
 >
 > | Sonde | Résultat | Ce qu'elle établit |
 > |---|---|---|

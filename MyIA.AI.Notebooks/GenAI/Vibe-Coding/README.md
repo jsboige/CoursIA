@@ -53,7 +53,7 @@ Assistant de codage agentique développé par Anthropic. Interface CLI + Extensi
 claude --version
 ```
 
-Configuration OpenRouter : `ANTHROPIC_BASE_URL` pointe **directement** vers `https://openrouter.ai/api` — OpenRouter sert nativement le protocole Anthropic, **aucun proxy local n'est a installer** (mesure du 2026-10-29, issue #23276). Le montage par `openrouter-proxy` que cette ligne decrivait auparavant est obsolete. Guide pas-a-pas dans [OPENROUTER_SETUP.md](Claude-Code/docs/OPENROUTER_SETUP.md). Alternative npm : `npm install -g @anthropic-ai/claude-code` (voir le [guide d'installation](Claude-Code/docs/INSTALLATION-CLAUDE-CODE.md)).
+Configuration OpenRouter : `ANTHROPIC_BASE_URL` pointe **directement** vers `https://openrouter.ai/api` — OpenRouter sert nativement le protocole Anthropic, **aucun proxy local n'est a installer**. Le montage par `openrouter-proxy` que cette ligne decrivait auparavant est obsolete. Guide pas-a-pas dans [OPENROUTER_SETUP.md](Claude-Code/docs/OPENROUTER_SETUP.md). Alternative npm : `npm install -g @anthropic-ai/claude-code` (voir le [guide d'installation](Claude-Code/docs/INSTALLATION-CLAUDE-CODE.md)).
 
 ## Roo Code - Ateliers
 

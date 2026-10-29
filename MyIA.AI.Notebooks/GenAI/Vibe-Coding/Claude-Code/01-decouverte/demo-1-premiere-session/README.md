@@ -24,7 +24,7 @@ C'est la méthode par défaut de la documentation officielle Anthropic — Node.
 
 - **Windows** : installateur depuis [claude.com/code](https://claude.com/code)
 - **macOS** : `brew install --cask claude-code`
-- **Linux / WSL** : `curl -fsSL https://claude.ai/install.sh | sh` (le domaine `install.claude.com` porte par cette ligne jusque-la n'existe pas — mesure du 2026-10-29, #23276)
+- **Linux / WSL** : `curl -fsSL https://claude.ai/install.sh | sh` (le domaine `install.claude.com` que cette ligne portait n'existe pas : la commande échouait avant d'installer quoi que ce soit)
 
 Alternative npm (uniquement si votre poste interdit les binaires hors gestionnaire de paquets) : voir le [guide d'installation canonique](../../docs/INSTALLATION-CLAUDE-CODE.md).
 
@@ -38,9 +38,9 @@ Vous devriez voir quelque chose comme : `claude-code v1.x.x`
 
 ### Étape 2 : Configuration OpenRouter (10 min)
 
-OpenRouter permet d'accéder à plusieurs modèles avec une clé unique. **Suivez le guide canonique** [Quickstart : Claude Code + OpenRouter](../../docs/OPENROUTER_SETUP.md) : il installe le proxy local, définit les variables d'environnement et mappe les modèles, étape par étape avec checkpoints.
+OpenRouter permet d'accéder à plusieurs modèles avec une clé unique. **Suivez le guide canonique** [Quickstart : Claude Code + OpenRouter](../../docs/OPENROUTER_SETUP.md) : il définit les variables d'environnement et mappe les modèles, étape par étape avec checkpoints.
 
-En résumé : la configuration pointe `ANTHROPIC_BASE_URL` **directement** vers `https://openrouter.ai/api`. Depuis la mesure du 2026-10-29 (issue #23276), OpenRouter sert nativement le protocole Anthropic : **aucun proxy local n'est à lancer**. Le montage par `openrouter-proxy` que ce README décrivait auparavant est obsolète.
+En résumé : la configuration pointe `ANTHROPIC_BASE_URL` **directement** vers `https://openrouter.ai/api`. OpenRouter sert nativement le protocole Anthropic : **aucun proxy local n'est à lancer**. Le montage par `openrouter-proxy` que ce README décrivait auparavant est obsolète.
 
 ### Étape 3 : Première session interactive (15 min)
 

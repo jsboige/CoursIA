@@ -14,7 +14,7 @@ Ce guide vous prend par la main pour configurer Claude Code avec OpenRouter comm
 
 **Il n'y a plus de proxy a lancer.** Le guide demandait jusqu'ici de cloner `openrouter-proxy` et de faire tourner `node proxy.js` sur le port 8899, au motif que « les requetes OpenRouter ne sont pas strictement compatibles avec le protocole Anthropic ». Ce n'est plus vrai.
 
-> **Mesure du 2026-10-29 (issue #23276, lane `myia-po-2023:CoursIA-2`).** OpenRouter expose desormais `POST https://openrouter.ai/api/v1/messages`, qui parle le protocole Anthropic et rend ses erreurs au **format Anthropic** :
+> **Mesure du 2026-10-29.** OpenRouter expose desormais `POST https://openrouter.ai/api/v1/messages`, qui parle le protocole Anthropic et rend ses erreurs au **format Anthropic** :
 >
 > | Sonde | Resultat | Ce que ca prouve |
 > |---|---|---|
@@ -30,7 +30,7 @@ Ce guide vous prend par la main pour configurer Claude Code avec OpenRouter comm
 
 ### Si vous aviez deja installe le proxy
 
-Vous pouvez l'arreter et supprimer le clone. Le seul geste a faire est de changer la valeur de `ANTHROPIC_BASE_URL` (Etape 3) : `https://openrouter.ai/api` devient `https://openrouter.ai/api`.
+Vous pouvez l'arreter et supprimer le clone. Le seul geste a faire est de changer la valeur de `ANTHROPIC_BASE_URL` (Etape 3) : `http://127.0.0.1:8899/api` devient `https://openrouter.ai/api`.
 
 ## Étape 1 : Installer Claude Code (3 min)
 
@@ -52,7 +52,7 @@ brew install --cask claude-code
 curl -fsSL https://claude.ai/install.sh | sh
 ```
 
-> **Corrige le 2026-10-29 (issue #23276) — repere par la lane `myia-po-2028:CoursIA-3`.** La commande que ce guide portait jusque-la, `curl -fsSL https://install.claude.com | sh`, **ne fonctionne pas** : le domaine `install.claude.com` n'existe pas. Mesure : `curl: (6) Could not resolve host`. Le point d'entree officiel est `https://claude.ai/install.sh` (HTTP 302 vers le script).
+> **Corrige le 2026-10-29 (issue #23276).** La commande que ce guide portait jusqu'ici, `curl -fsSL https://install.claude.com | sh`, **ne fonctionne pas** : le domaine `install.claude.com` n'existe pas. Mesure : `curl: (6) Could not resolve host`. Le point d'entree officiel est `https://claude.ai/install.sh` (HTTP 302 vers le script).
 
 ### Vérifier
 
@@ -103,9 +103,17 @@ C'est l'étape la plus importante. Vous devez définir **3 variables obligatoire
 
 ### Pourquoi le mapping des modèles ?
 
-Sans les variables `ANTHROPIC_DEFAULT_*_MODEL`, Claude Code essaie d'utiliser les modèles Claude natifs (`claude-sonnet-4-20250514`, etc.), qui **ne sont pas disponibles via OpenRouter**. Vous obtiendrez une erreur "Model not found".
+Sans les variables `ANTHROPIC_DEFAULT_*_MODEL`, Claude Code demande par defaut des **modeles Claude natifs** (`claude-sonnet-4-20250514`, etc.). Sur OpenRouter, ces noms-la **peuvent** ne pas exister pour la cle utilisee : le symptome attendu est alors une erreur "Model not found".
 
-Le mapping dit a Claude Code : "quand on te demande 'sonnet', utilise MiniMax M2.7 sur OpenRouter au lieu de chercher un modèle Anthropic".
+> **Ce que depend de la cle, pas d'OpenRouter.** La disponibilite d'un modele est une question de **droits de la cle**, pas de fournisseur : deux cles OpenRouter n'ont pas les memes modeles ouverts. Le message ci-dessus decrit le cas courant, il n'est pas une loi. **Mesurez les droits de VOTRE cle** avant d'en conclure un modele inaccessible — la sonde est une ligne :
+>
+> ```bash
+> curl -s https://openrouter.ai/api/v1/models -H "Authorization: Bearer $OPENROUTER_API_KEY"
+> ```
+>
+> Mesure faite le 2026-10-29 avec la cle du module `GenAI` : `anthropic/claude-haiku-5.5` et `anthropic/claude-sonnet-5.5` repondent HTTP 200, `qwen/qwen3.6-35b-a3b` et `minimax/minimax-m2.7` repondent HTTP 200 mais renvoient un **contenu vide** (a un budget de 16 tokens, un modele qui raisonne peut consommer son budget sans produire de texte : la mesure est un indice, pas un verdict d'indisponibilite). Conclusion retenue : **la table ci-dessous est un choix, pas une obligation** — alignez-la sur ce que votre cle rend reellement.
+
+Le mapping dit a Claude Code : "quand on te demande 'sonnet', utilise MiniMax M2.7 sur OpenRouter au lieu de chercher un modele Anthropic". Si votre cle n'ouvre pas MiniMax M2.7, remplacez la valeur par un modele qu'elle a reellement rendu (sonde ci-dessus).
 
 ### Méthode recommandée : fichier settings.json
 
@@ -262,14 +270,18 @@ Colab est une **machine Linux ephemere** avec un terminal et un acces Internet. 
 | Lancer `node proxy.js` | Le proxy ouvert dans une cellule meurt avec elle ; la cellule suivante ne le trouve plus. C'est une des causes plausibles de l'echec du TP, **non etablie** (cf. plus bas). |
 | `brew`, installateur `.exe` | Ce sont des voies macOS / Windows. |
 
-### La recette testee
+### La recette
 
-```bash
+Deux variantes selon le type de cellule. **Ne melangez pas les deux** : la fence doit contenir du `bash` quand elle contient des commandes shell, et du `python` quand elle contient du Python. Une fence `bash` qui contient `import os` n'est pas du bash — ni pour le lecteur, ni pour un executeur.
+
+**Variante A — cellule Python** (le defaut dans Colab) :
+
+```python
 # 1. Installer la CLI (Node est deja present dans Colab)
-npm install -g @anthropic-ai/claude-code
+!npm install -g @anthropic-ai/claude-code
 
 # 2. Verifier
-claude --version
+!claude --version
 
 # 3. Authentifier par JETON, jamais par navigateur
 import os
@@ -281,9 +293,82 @@ os.environ["ANTHROPIC_MODEL"]       = "anthropic/claude-haiku-5.5"
 !claude -p "Reponds uniquement: OK"
 ```
 
-En cellule `%%bash`, les trois `export` remplacent le bloc Python — **a condition d'appeler `claude` dans la meme cellule**. Un `!export ...` lance dans une cellule Jupyter ouvre un **sous-shell** : la variable meurt avec lui et la cellule suivante ne la voit pas. C'est une source d'echec silencieuse classique en Colab, et elle ressemble au symptome de jeton absent decrit ci-dessous. Pour une valeur qui doit survivre d'une cellule a l'autre, passez par `os.environ` (le runtime Python est partage entre cellules) et non par `!export`.
+**Variante B — cellule `%%bash`** : les trois `export` **remplacent** le bloc `os.environ` de la variante A, ils ne s'y ajoutent pas :
+
+```bash
+# 1. Installer la CLI et verifier
+npm install -g @anthropic-ai/claude-code
+claude --version
+
+# 2. Authentifier par JETON (les trois export, dans CETTE cellule)
+export ANTHROPIC_BASE_URL="https://openrouter.ai/api"
+export ANTHROPIC_AUTH_TOKEN="sk-or-v1-VOTRE_CLE"   # jamais en clair dans un notebook committe
+export ANTHROPIC_MODEL="anthropic/claude-haiku-5.5"
+
+# 3. Tester, dans la MEME cellule
+claude -p "Reponds uniquement: OK"
+```
+
+En cellule `%%bash`, les trois `export` valent **seulement dans la cellule qui les porte**. Un `!export ...` lance dans une cellule Jupyter ouvre un **sous-shell** : la variable meurt avec lui et la cellule suivante ne la voit pas. C'est une source d'echec silencieuse classique en Colab, et elle ressemble au symptome de jeton absent decrit plus bas — d'ou la regle : pour une valeur qui doit survivre d'une cellule a l'autre, passez par `os.environ` (le runtime Python est partage entre cellules) et non par `!export`.
 
 > **Ne mettez pas la cle dans le notebook.** Lisez-la depuis les *Secrets* Colab (`google.colab.userdata`) ou une variable d'environnement de session. Un notebook committe avec une cle en clair est un incident de securite (regle `secrets-hygiene`) — le secret est rotation a faire, pas un `revert`.
+
+### Le cycle agentique : un fichier, une modification, des tests
+
+La recette ci-dessus verifie que la CLI **repond**. Ce qu'un TP veut montrer, c'est que la CLI **modifie un fichier** et que les tests **passent apres**. Voici le cycle complet, et sa trace mesuree.
+
+**Ce qui a ete reellement execute, et ou.** Aucun runtime Colab n'etait joignable depuis le poste qui a produit cette section : Colab Enterprise exige un projet GCP + une ADC + la CLI `google-colab`, et le Colab gratuit exige un compte Google — aucune des deux voies n'existe sur ce poste. La trace ci-dessous a donc ete produite dans un **conteneur Linux**, qui est **le meme systeme d'exploitation que Colab**, mais **n'est pas un runtime Colab** : aucune cellule Jupyter, aucun `%%bash`, aucun *Secret* Colab n'y est declenche. Ce qui est mesure, c'est le cycle CLI ; ce qui ne l'est pas, c'est le comportement propre a Colab (cellules, quotas, secrets). **Ne qualifiez pas cette trace de « recette Colab testee »** : elle est une recette *Linux* testee, dont Colab est un cas particulier.
+
+**Le cycle (a executer dans un shell, pas dans une cellule)**
+
+```bash
+# 1. Installer la CLI (URL canonique mesuree)
+curl -fsSL https://claude.ai/install.sh -o /tmp/install.sh && bash /tmp/install.sh
+export PATH="$HOME/.local/bin:$PATH"
+
+# 2. Un fichier volontairement buggue, et son test
+cat > calc.py <<'PY'
+def moyenne(xs):
+    return sum(xs) / len(xs)
+PY
+cat > test_calc.py <<'PY'
+from calc import moyenne
+
+
+def test_moyenne_normale():
+    assert moyenne([2, 4, 6]) == 4
+
+
+def test_moyenne_vide():
+    assert moyenne([]) == 0
+PY
+
+# 3. L'etat initial doit ECHOUER -- sinon le test ne prouve rien
+python -m pytest test_calc.py -q
+
+# 4. La CLI corrige le fichier
+claude -p "Corrige la fonction moyenne de calc.py : pour une liste vide, elle doit renvoyer 0 au lieu de lever une ZeroDivisionError. Modifie calc.py, ne modifie rien d'autre." \
+  --permission-mode acceptEdits --allowedTools "Read,Edit,Write"
+
+# 5. Le test doit PASSER apres
+python -m pytest test_calc.py -q
+```
+
+**La trace mesuree (2026-10-29, conteneur Linux, aucun secret dans la trace)**
+
+```
+claude --version -> 2.1.312 (Claude Code)
+pytest AVANT : FAILED test_calc.py::test_moyenne_vide - ZeroDivisionError: division by zero
+                1 failed, 1 passed                    (code de sortie 1)
+claude -p    : code de sortie 0, le fichier calc.py est modifie
+pytest APRES : 2 passed in 0.04s                     (code de sortie 0)
+controle secret : OK -- aucune occurrence du jeton dans les artefacts produits
+```
+
+Deux details de la trace qui meritent d'etre lus :
+
+- la CLI **n'a pas execute les tests** (elle a repondu que la commande Python lui etait refusee) : le fichier a ete modifie, **la validation reste outside de l'agent** — c'est le harnais qui lance `pytest`. Une trace ou l'agent se valide lui-meme n'est pas une preuve ;
+- stderr porte `[claude-code:unrecognized_model] {"model":"anthropic/claude-haiku-5.5"}` : la requete part quand meme et la reponse est correcte (voir plus bas).
 
 ### Les deux modes d'echec, mesures
 
@@ -291,12 +376,16 @@ Les deux produisent un **symptome muet**, et c'est ce qui rend le diagnostic dif
 
 | Cause | Ce qu'on observe | Mesure |
 |---|---|---|
-| `ANTHROPIC_BASE_URL` pose **sans jeton** | La commande **ne rend jamais la main** et **n'affiche aucune erreur** | `claude -p` sans `ANTHROPIC_AUTH_TOKEN` : `rc=124` (arrete au bout de 60 s), stdout vide, une seule ligne sur stderr |
+| `ANTHROPIC_BASE_URL` pose **sans jeton** | La commande peut **ne pas rendre la main** et **n'afficher aucune erreur** | `claude -p` sans `ANTHROPIC_AUTH_TOKEN` : `rc=124` (arrete au bout de 60 s), stdout vide, une seule ligne sur stderr |
 | Ancien montage par proxy, proxy arrete | `fetch failed` / `connection refused` vers `127.0.0.1:8899` | erreur de connexion explicite, donc plus facile a diagnostiquer |
 
-Le premier cas est le piege : **une cellule qui tourne indefiniment n'est pas une cellule lente, c'est une authentification absente.** Si un `claude -p` ne rend rien au bout d'une minute dans Colab, verifiez `ANTHROPIC_AUTH_TOKEN` avant toute autre chose.
+Le premier cas est le piege : **une cellule qui tourne indefiniment n'est pas une cellule lente — c'est un symptome, pas un diagnostic.** L'absence de jeton est l'**hypothese la plus frequente** (elle est aussi la plus facile a verifier), mais un delai d'attente ne la **prouve** pas : un reseau lent, un `ANTHROPIC_MODEL` invalide, un endpoint injoignable ou un runtime Colab sature produisent le meme silence.
 
-**Ce que cette mesure n'etablit pas** : laquelle de ces causes a fait echouer le TP etudiant d'origine. L'issue #23276 le dit explicitement (« cause exacte a reproduire, non etablie »), et je ne tranche pas a sa place — les deux modes sont reproductibles, aucun temoignage ne les departage.
+> **Ce qu'un timeout permet de dire, et ce qu'il ne permet pas.** Il permet de dire : « l'appel n'a pas rendu dans le budget imparti ». Il ne permet **pas** de dire : « le jeton est absent ». Pour separer les deux, il faut une **mesure qui distingue** : soit un appel direct a l'API du fournisseur avec la meme cle (il repond 401 en une seconde si la cle est refusee), soit un `curl` sur `/v1/models` (il repond 200 meme sans droits d'appel). Un `claude -p` qui expire ne fait **pas** cette separation.
+
+Si un `claude -p` ne rend rien au bout d'une minute dans Colab, verifiez `ANTHROPIC_AUTH_TOKEN` **en premier** — c'est l'hypothese la plus probable et la plus rapide a ecarter — mais ne concluez pas sur le timeout seul.
+
+**Ce que cette mesure n'etablit pas** : laquelle de ces causes a fait echouer le TP etudiant d'origine. Le ticket d'origine le dit explicitement (« cause exacte a reproduire, non etablie »), et je ne tranche pas a sa place — les deux modes sont reproductibles, aucun temoignage ne les departage.
 
 ### Les lignes `unrecognized_model`
 
