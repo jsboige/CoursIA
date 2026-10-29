@@ -9,6 +9,11 @@ réelle multi-machines dans un AppHost unique** : endpoints externes référenc�
 « **Tests d'intégration modernes** : Testcontainers + TUnit + rollback — le
 paradigme de test absent du dépôt, démontré réel ».
 
+Le résiduel déclaré de l'axe **Copilot SDK** (« Aspire AppHost integration »,
+registre [des axes distillables](distilled-axes-registry.md)) est soldé par le
+grain **#22388** : le harness du notebook 09 devient une ressource d'un graphe
+orchestré (notebook 11).
+
 ## Contenu
 
 | Élément | Rôle |
@@ -29,8 +34,10 @@ paradigme de test absent du dépôt, démontré réel ».
 | [`07-Aspire-SemanticFleet-MultiConnector.ipynb`](07-Aspire-SemanticFleet-MultiConnector.ipynb) | Notebook de l'**axe 6** de l'Epic **#1210** (semantic-fleet) : rejoue dans le notebook le POC arithmétique du **MultiConnector** de 2023 (sous-module `semantic-fleet`, lu en référence, non importé) et le ré-instrumente sous **OpenTelemetry** — vetting en ligne (primaire et secondaires, offload par signature), double file à coalescence accumulation / remplacement, debounce ancré sur l'horodatage, pool de sockets et serveur de test — 3 exercices. Kernel .NET 9+, sans service externe ni Docker |
 | [`08-Aspire-AsyncFFI-Dotnet.ipynb`](08-Aspire-AsyncFFI-Dotnet.ipynb) | **Asynchrone aux frontières natives** : P/Invoke (types blittables, piège du `bool`), reverse P/Invoke (`UnmanagedCallersOnly`, callbacks), pont `TaskCompletionSource` + `GCHandle`, durées de vie (`SafeHandle`, `GC.KeepAlive`). La famine est **observée qualitativement** (un thread étranger simule un runtime natif de type Tokio), pas mesurée ; l'exemple natif `EnumWindows` de `user32.dll` ne tourne que sous **Windows** — 3 exercices |
 | [`09-Aspire-Harness-CopilotSdk.ipynb`](09-Aspire-Harness-CopilotSdk.ipynb) | Notebook #10473 (axe Copilot SDK, veille #10475) : **le harness des Copilot coding agents en C#** — `GitHub.Copilot.SDK` 1.0.13 (runtime agent embarqué, aucune CLI externe), `CopilotClient` avec auth héritée de `gh` (aucune clé dans le code), catalogue des 15 modèles servis (`ListModelsAsync`), tour complet `SendAndWaitAsync` (réponse réelle), cycle de vie `SessionEvent` observé (histogramme du tour + contenu ré-assemblé), 3 exercices |
-| [`CopilotHarness.App/`](CopilotHarness.App/) | Projet .NET 10 du notebook 09 : console à quatre modes (`auth`/`models`/`ask`/`events`) pilotant le harness réel — dépendance unique `GitHub.Copilot.SDK` 1.0.13 |
 | [`10-Aspire-AppHost-Frontend.ipynb`](10-Aspire-AppHost-Frontend.ipynb) | Notebook #22363 (axe *AppHost frontend*, différé par #10897) : **orchestrer un dev-server Vite/pnpm comme ressource de l'AppHost**. Le paysage NuGet mesuré (Aspire.Hosting 13.4.6 sans API Node ; `AddViteApp` réduit aux monorepos Nx/Turborepo ; la ligne 9.x qui le portait compile sous le SDK 13 mais sa ressource n'est jamais démarrée), la primitive native `AddExecutable`, le piège de résolution de commande (l'orchestrateur n'ouvre aucun shell : chemin absolu de `pnpm.cmd`), la règle d'endpoint d'une ressource non conteneur, sondes HTTP réelles sur le dev-server, table de parité avec `docker-compose`/frontend Python, 3 exercices |
+| [`11-Aspire-Copilot-Harness-AppHost.ipynb`](11-Aspire-Copilot-Harness-AppHost.ipynb) | Notebook #22388 (résiduel « Aspire AppHost integration » de l'axe Copilot SDK) : le harness du notebook 09 devient **une ressource d'un graphe Aspire** — mode `serve` (`/health`, `/config`, `/models`, `/ask`), AppHost file-based `AddExecutable` + `WithHttpEndpoint(targetPort)`, port **proxy dynamique** devant le port fixe, `/config` qui rend **observable ce que l'orchestrateur injecte** (environnement, répertoire de travail : `CopilotHarness.AppHost` contre `CopilotHarness.App` en lancement direct), arrêt `aspire stop` et comparaison avec `docker-compose` — 3 exercices |
+| [`CopilotHarness.App/`](CopilotHarness.App/) | Projet .NET 10 des notebooks 09 et 11 : console à quatre modes (`auth`/`models`/`ask`/`events`) pilotant le harness réel — dépendance unique `GitHub.Copilot.SDK` 1.0.13 — plus le mode `serve` du notebook 11, qui expose les mêmes capacités en HTTP sans changer de binaire |
+| [`CopilotHarness.AppHost/`](CopilotHarness.AppHost/) | AppHost du notebook 11 : `apphost.cs` (`#:sdk Aspire.AppHost.Sdk@13.4.6`) + `aspire.config.json`, déclarant le harness comme ressource `Executable` et lui injectant `PORT`, `COPILOT_RESOURCE_NAME` et `COPILOT_MODEL_ID` |
 | [`FrontendLab/`](FrontendLab/) | Lab du notebook 10 : AppHost file-based (`apphost.cs` + `aspire.config.json`) déclarant la ressource `frontend`, et `frontend/` (Vite 7 ; `pnpm-workspace.yaml` porte la table `allowBuilds` exigée par pnpm 11+ ; lockfile versionné). **Aucun Docker requis** |
 | [`assets/echantillon-test-fr.wav`](assets/echantillon-test-fr.wav) | Échantillon audio FR de test (synthèse SAPI Windows) envoyé au service orchestré |
 
@@ -44,6 +51,7 @@ paradigme de test absent du dépôt, démontré réel ».
 - Pour le notebook 04 (#11516) : **aucun Docker requis** — `StreamingAgent.App` compile avec le SDK .NET 10 seul (`dotnet build`), puis le notebook le lance et l'interroge (port local 5128)
 - Pour le notebook 05 / `IntegrationTests/` (#11516 Grain 2) : Docker suffit — l'image `postgres:18` est tirée au premier `dotnet test` (~30 s), les conteneurs de test s'auto-purgent
 - Pour le notebook 09 / `CopilotHarness.App/` (#10473) : **aucune installation** — le package embarque son runtime ; l'authentification passe par la session `gh` locale (abonnement Copilot requis) ; compter ~2 requêtes premium par passage complet du notebook
+- Pour le notebook 11 / `CopilotHarness.AppHost/` (#22388) : **aucun Docker requis**, mais le CLI `aspire` doit voir un SDK .NET 10. Sur un siège où le SDK est en portée utilisateur (`%LOCALAPPDATA%\Microsoft\dotnet`) et où l'hôte `Program Files` ne porte que des runtimes, `aspire run` sort en **code 11** (« requires .NET SDK version 10.0.100 or later. Detected: (not found) ») tant que ce dossier n'est pas dans le `PATH` — `DOTNET_ROOT` seul ne suffit pas. Les modes `auth`/`models`/`ask`/`events` du harness, eux, ne dépendent pas du CLI.
 - Pour le notebook 08 : **Windows** requis — l'exemple natif appelle `EnumWindows` de `user32.dll`
 - Pour le notebook 10 / `FrontendLab/` (#22363) : **aucun Docker requis** — Node.js et pnpm (`npm install -g pnpm`) suffisent, la cellule d'installation du carnet lance `pnpm install`. L'AppHost résout `pnpm.cmd` par un **chemin absolu** calculé à l'exécution (`%APPDATA%\npm`), parce que l'orchestrateur n'hérite pas du PATH de l'utilisateur
 
@@ -73,10 +81,15 @@ sans collision — ports randomisés, noms de conteneurs suffixés.
   répertoire ne coexistent pas (le CLI remplace l'instance précédente) — la
   forme authentique est **deux répertoires** (deux worktrees), démontrée dans
   le notebook §4.
+- **`aspire stop` est scopé au worktree** : lancé depuis un autre répertoire, il
+  répond « No running AppHost found in the current worktree » alors que
+  `aspire ps` liste l'AppHost. Il se lance donc depuis le dossier de l'AppHost —
+  et tuer le seul processus enfant laisse l'orchestrateur vivant (c'est lui qui
+  possède le cycle de vie de la ressource, cf. notebook 11 §5).
 
 ## Voir aussi
 
-- Issue [#10838](https://github.com/jsboige/CoursIA/issues/10838) · Issue [#10857](https://github.com/jsboige/CoursIA/issues/10857) · Epic [#10473](https://github.com/jsboige/CoursIA/issues/10473)
+- Issue [#10838](https://github.com/jsboige/CoursIA/issues/10838) · Issue [#10857](https://github.com/jsboige/CoursIA/issues/10857) · Epic [#10473](https://github.com/jsboige/CoursIA/issues/10473) · Issue [#22388](https://github.com/jsboige/CoursIA/issues/22388) (harness Copilot SDK orchestré)
 - Digestion [#11516](https://github.com/jsboige/CoursIA/issues/11516) (Parts 3-5 : streaming agent, tests d'intégration, observabilité) — série source [chrlschn.dev](https://chrlschn.dev/blog/2026/08/the-unexpected-ai-stack-csharp-dotnet-part-4/)
 - Grain #10474 : backend d'observabilité OTLP [`aspire-otel/`](../../SemanticKernel/aspire-otel/) (même pattern SDK file-based)
 - Observabilité de la série SemanticKernel : [`04-Filters-Observability.ipynb`](../../SemanticKernel/04-SemanticKernel-Filters-Observability.ipynb) (même famille A9, application directe au service streaming)
