@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: GenAI-Texte
-pedagogical_count: 44
-breakdown: Texte=44
-maturity: BETA=37, DRAFT=4, ALPHA=3
+pedagogical_count: 46
+breakdown: Texte=46
+maturity: BETA=39, DRAFT=4, ALPHA=3
 -->
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Semantic Kernel](../SemanticKernel/README.md)
@@ -142,6 +142,7 @@ Le notebook **23** franchit le dernier mur : le pipeline qui vivait dans des cel
 ### Configuration API
 1. Copier `.env.example` vers `.env`
 2. Ajouter votre clé API OpenAI : `OPENAI_API_KEY=sk-...`
+3. Les paramètres d'échantillonnage ne sont pas universels : `gpt-5-mini` refuse `temperature` (HTTP 400) quand `gpt-4o-mini` l'accepte. La table mesurée [docs/genai/parametres-par-modele.md](../../../docs/genai/parametres-par-modele.md) dit, par modèle utilisé dans les carnets, ce que chaque paramètre devient — et la garde `param_guard` (série 00-GenAI-Environment) le signale dans le carnet plutôt que de perdre le paramètre en silence.
 
 ### Pour les notebooks locaux (10, 10b et 11)
 - Docker avec support GPU pour servir le modèle réel avec vLLM
