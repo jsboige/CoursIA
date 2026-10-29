@@ -17,6 +17,16 @@ python scripts/lean/axiom_coverage.py --json     # pour dossier/CI
 
 Elle vérifie de surcroît que chaque module **explicitement** nommé existe sur disque (notation pointée du manifeste ↔ chemin `.lean`) — un `WIRED-DEAD` dénonce un vert hors-cible (cas #8782). L'état vivant est celui de la commande (le compte des wired/bare dérive à chaque câblage, il ne se recopie pas en prose — #9377) ; au 2026-09-27 il était de **2 wired** (`gametheory` à liste explicite vérifiée sur disque, `serre100` passe-partout `*`) et **18 bare** — gap de naissance constaté par #17097, câblage progressif suivi par #18038. Le triage statique §2-3 ci-dessous date de la pré-matrice (22 lakes sur disque, grep-firsthand) et reste valable comme exposition *par lake* ; la colonne « câblé » qu'il portait est supplantée par la commande.
 
+### 0.1 Câblage tranche par tranche (critère 2 de #18038)
+
+Une PR par lake. Chaque tranche rend le verdict **de son** lake ; un lake laissé nu doit porter une décision écrite (§critère 3).
+
+**`finiteness_lean` — câblé.** Le lake porte quatre fichiers `.lean` (`Finiteness.lean` + `Finiteness/`, plus le frère `.en`) ; mesure grep-firsthand sur `origin/main` : **0 `native_decide`, 0 `sorry`, 0 mention `Classical.choice`**. Verdict : **vert sans whitelist ni `allow-axioms`**, lu sur la PR de câblage.
+
+**Où le verdict se lit — et l'endroit où on le cherche en vain.** Sur un lake **matriciel**, la passe d'axiomes n'est pas un check-run : c'est une **étape** du job `lean-matrix / Lean CI (<lake>)` (`lean-build.yml`, composite `lean-axiom`, gardée par `if: matrix.axiom-target-modules != ''`). Chercher un check-run nommé `Proof integrity` ne rend rien et laisse croire à un gate absent. Les workflows mono-lake (`lean-knot.yml`, `lean-galois.yml`, …) ont eux un vrai job `proof-integrity` ; les deux formes coexistent, et c'est le nom du lake dans le manifeste qui décide laquelle s'applique.
+
+Un rouge éventuel part en **issue nommée** plutôt qu'en whitelist.
+
 ## 1. Portée et méthode
 
 **Axiomes cibles** (ce que `LeanVerifier.check_axioms` flagge désormais comme `forbidden` après le fix parser multiline #8740) :
@@ -218,6 +228,31 @@ forbidden union : []
 | **15 autres lacs du manifeste** (les 23 moins les 8 câblés) : `argumentation`, `assignment`, `calibration`, `conwaycgt`, `decisiontheory`, `discrepancy`, `erc20`, `finiteness`, `gamedefs`, `gamedefsext`, `iit`, `learningtheory`, `mathlibexamples`, `socialchoicepeters`, `tegmarkmuh` | matrice `ci_lakes.json`, **sans clé `axiom-target-modules`** — l'organe composite n'est jamais atteint (`lean-build.yml`, `if: matrix.axiom-target-modules != ''`) | **NON** | GREEN si câblés. Borderline connus sur `Classical.choice` : `learningtheory` et `decisiontheory` (tous deux **encore** non câblés ; `decisiontheory` porte en outre `sorry-baseline: "2"`, donc un câblage exige `fail-on-sorry: false` ou la décharge de ces 2 `sorry`). `sudoku` figurait dans cette liste — **périmé** : câblé par #18349 (EPIC #18038), il est désormais compté dans les 8 |
 
 Le câblage du gate sur les lacs non-pilotes est un travail séparé qui sort du scope #8738 (chaque workflow lake est un livrable à part avec son `target-modules` adapté). Voir #11699 pour la roadmap tranche-par-tranche des 15 restants (mimo_lean = tranche 1 livrée par PR de cette PR).
+
+### 4.1. `gamedefs` — sortie retenue pour la preuve d'Arrow (#23022, 2026-10-28)
+
+`gamedefs` figure parmi les 15 lacs **sans** clé `axiom-target-modules` : il n'a **aucun gate d'axiomes**. L'axiome `arrow_impossibility` de `SocialChoice.lean` n'apparaît donc dans aucune whitelist, et le laisser en place ne change rien à un gate qui ne le lit pas.
+
+Le port de sa preuve se fait **par étages**, et l'axiome reste déclaré tant que la réduction n'est pas achevée. Le renommer ou le retirer sans sa preuve serait un blanchiment, pas un progrès : c'est la raison pour laquelle le critère « l'axiome a disparu » de #23022 n'est pas encore satisfait.
+
+**Étages 1 à 3 livrés — neuf déclarations** en Lean core pur, le lac restant **sans dépendance** (donc sans `Finset`/`Fintype`, ce qui ferme l'argument combinatoire classique tel quel, et impose de construire les profils auxiliaires autrement) :
+
+| Déclaration | Étage | Contenu |
+|---|---|---|
+| `Decisive` | 1 | la notion d'Arrow : `D` décisive sur `(x, y)` si ses membres unanimes pour `x` l'emportent face à des non-membres unanimes pour `y` |
+| `rank3`, `prefOfUtility` | 1 | les profils auxiliaires, construits par **utilités entières** (toute fonction `A → Int` définit une préférence valide) — c'est ce qui rend les constructions disponibles sans bibliothèque |
+| `decisive_unanimous` | 1 | Pareto faible ⇒ la coalition de tous les agents est décisive sur toute paire |
+| `decisive_expand_right` | 1 | décisive sur `(x, y)` ⇒ décisive sur `(x, z)` (axe des alternatives) |
+| `decisive_expand_left` | 1 | décisive sur `(x, y)` ⇒ décisive sur `(z, y)` (axe des agents) |
+| `decisive_swap` | 2 | décisive sur `(x, y)` ⇒ décisive sur la paire renversée `(y, x)` — non gratuit : `IIA` porte sur la paire **ordonnée**, donc la preuve traverse `(x,y) → (x,z) → (y,z) → (y,x)` |
+| `decisive_field` | 2 | **fermeture du champ** : sur trois alternatives distinctes, la décisivité sur une paire vaut pour les six paires ordonnées — l'hypothèse dont la contraction a besoin pour lire une décision sur n'importe quelle paire |
+| `decisive_split` | 3 | **contraction** : toute partition `D = D₁ ⊎ D₂` d'une coalition décisive sur `(x, y)` rend l'une des deux décisive (`D₁` sur `(x, z)` ou `D₂` sur `(z, y)`), via le profil `x≻y≻z` / `z≻x≻y` / `y≻z≻x` |
+
+**Mesures des étages 1-3** : `lake build` du lac entier SUCCESS (14 jobs, WSL, toolchain `leanprover/lean4:v4.33.0`) ; `count_code_sorry.py` → `distinct_code_sorry = 0` (inchangé — l'axiome n'est pas un `sorry`) ; `check_i18n_siblings.py --all` → `0 drift | 0 orphan` sur la paire FR/EN, corps byte-identiques ; aucune classe d'axiome interdite en contrebande (`native_decide`, `sorryAx`, `Classical.choice`).
+
+**Ce qui reste** : la **récupération** — en itérant `decisive_split` sur un ensemble fini d'agents on obtient une coalition décisive minimale, dont la minimalité force un dictateur, et c'est cet assemblage final qui retirera `arrow_impossibility`. Les trois étages livrés fournissent les deux hypothèses qu'il consomme (décision lisible sur toute paire, coalitions strictement décroissantes) ; la marche restante est l'itération jusqu'au point fixe sur `Finset`, c'est-à-dire précisément la dépendance que ce lac évite encore. **Quand** l'axiome tombera, le câblage du gate sur ce lac deviendra possible avec une whitelist vide ; tant qu'il est là, un câblage exigerait de nommer `arrow_impossibility` dans `axiom-allow-axioms`. C'est cette ligne, et non une doctrine, qui autorise un axiome à passer le gate.
+
+**Où la preuve d'Arrow est déjà complète** : `game_theory_lean/SocialChoice/Arrow.lean` (`0` `sorry`, `CERTIFIED.txt`) porte la chaîne achevée `pivot_exists` → `pivot_is_dictator_except_b` → `partial_dictator_is_full_dictator`. Les deux lacs sont **distincts par construction** — celui-ci est zéro-dépendance (`Int`-utilitaires, aucune bibliothèque), l'autre s'appuie sur `Finset` — et ce port ne prétend pas le remplacer : il construit la même preuve dans le fragment de Lean qui n'a aucune dépendance. Ce renvoi est ici pour que le lecteur du registre sache que la preuve complète existe à côté, plutôt que de conclure d'un axiome encore en place que le dépôt n'a rien.
 
 ## 5. Acceptance step 3 — verdict
 

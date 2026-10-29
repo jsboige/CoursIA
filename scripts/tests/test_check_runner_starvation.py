@@ -44,7 +44,7 @@ def test_healthy_inventory_is_ok():
 
 
 def test_partial_loss_warns_but_does_not_error():
-    inv = inventory(["r1"], ["r2", "r3"])
+    inv = inventory(["r-1"], ["r-2", "r-3"])
     v = rs.evaluate(inv, rs.Starvation(), warn_floor=2)
     assert v.status == "OK"
     assert len(v.warnings) == 1 and "perte partielle" in v.warnings[0]
@@ -112,7 +112,7 @@ def test_fetch_starvation_filters_by_label_and_status(monkeypatch):
     created = now - timedelta(minutes=40)
     calls: list[str] = []
 
-    def fake_gh(args: list[str], token: str | None = None):
+    def fake_gh(args: list[str], token: str | None = None, stats=None):
         calls.append(args[0])
         if args[0].startswith("repos/jsboige/CoursIA/actions/runs?status=queued"):
             return _runs_payload("queued", created)
@@ -149,7 +149,7 @@ def test_starvation_beyond_first_page_is_seen(monkeypatch):
     pages 6-7, tous invisibles."""
     now = datetime(2026, 9, 2, 12, 0, tzinfo=timezone.utc)
 
-    def fake_gh(args: list[str], token: str | None = None):
+    def fake_gh(args: list[str], token: str | None = None, stats=None):
         url = args[0]
         if "status=queued" in url:
             # Pas de substring match : "page=1" est un prefixe de
@@ -188,7 +188,7 @@ def test_pagination_stops_when_page_older_than_window(monkeypatch):
     now = datetime(2026, 9, 2, 12, 0, tzinfo=timezone.utc)
     pages_fetched: list[int] = []
 
-    def fake_gh(args: list[str], token: str | None = None):
+    def fake_gh(args: list[str], token: str | None = None, stats=None):
         url = args[0]
         if "status=queued" in url:
             pages_fetched.append(1 if "page=1" in url else 2)
@@ -212,7 +212,7 @@ def test_job_created_at_anchors_age_over_run_created_at(monkeypatch):
     40 min : l'age run serait un faux positif, sens inverse du fail-open."""
     now = datetime(2026, 9, 2, 12, 0, tzinfo=timezone.utc)
 
-    def fake_gh(args: list[str], token: str | None = None):
+    def fake_gh(args: list[str], token: str | None = None, stats=None):
         url = args[0]
         if "status=queued" in url:
             return {"total_count": 1, "workflow_runs": [_run_row(80, 40.0, now)]}
@@ -239,7 +239,7 @@ def test_queued_job_inside_in_progress_run_is_seen(monkeypatch):
     OK possible sous extinction ciblee de la jambe Linux."""
     now = datetime(2026, 9, 2, 12, 0, tzinfo=timezone.utc)
 
-    def fake_gh(args: list[str], token: str | None = None):
+    def fake_gh(args: list[str], token: str | None = None, stats=None):
         url = args[0]
         if "status=queued" in url:
             return {"total_count": 0, "workflow_runs": []}
@@ -276,7 +276,7 @@ def test_run_transition_between_passes_replaces_classification(monkeypatch):
     # Pass 2 (in_progress, plus frais) : le job a demarre.
     state = {"pass": 0}
 
-    def fake_gh(args: list[str], token: str | None = None):
+    def fake_gh(args: list[str], token: str | None = None, stats=None):
         url = args[0]
         if "status=queued" in url or "status=in_progress" in url:
             state["pass"] += 1
@@ -301,7 +301,7 @@ def test_job_seen_in_both_passes_is_counted_once(monkeypatch):
     affame ne doit pas etre compte deux fois."""
     now = datetime(2026, 9, 2, 12, 0, tzinfo=timezone.utc)
 
-    def fake_gh(args: list[str], token: str | None = None):
+    def fake_gh(args: list[str], token: str | None = None, stats=None):
         url = args[0]
         if "status=queued" in url:
             return {"total_count": 1, "workflow_runs": [_run_row(90, 40.0, now)]}
@@ -332,7 +332,7 @@ def test_job_queued_then_completed_leaves_starved(monkeypatch):
     now = datetime(2026, 9, 2, 12, 0, tzinfo=timezone.utc)
     state = {"pass": 0}
 
-    def fake_gh(args: list[str], token: str | None = None):
+    def fake_gh(args: list[str], token: str | None = None, stats=None):
         url = args[0]
         if "status=queued" in url or "status=in_progress" in url:
             state["pass"] += 1
@@ -367,7 +367,7 @@ def test_job_queued_then_cancelled_leaves_starved(monkeypatch):
     now = datetime(2026, 9, 2, 12, 0, tzinfo=timezone.utc)
     state = {"pass": 0}
 
-    def fake_gh(args: list[str], token: str | None = None):
+    def fake_gh(args: list[str], token: str | None = None, stats=None):
         url = args[0]
         if "status=queued" in url or "status=in_progress" in url:
             state["pass"] += 1
@@ -405,7 +405,7 @@ def test_unexamined_old_runs_are_noted_not_red():
 
 
 def test_fetch_inventory_sorts_online_offline(monkeypatch):
-    def fake_gh(args: list[str], token: str | None = None):
+    def fake_gh(args: list[str], token: str | None = None, stats=None):
         return {"runners": [
             {"name": "r-live", "status": "online",
              "labels": [{"name": "coursia-linux"}]},
@@ -422,9 +422,61 @@ def test_fetch_inventory_sorts_online_offline(monkeypatch):
 
 
 def test_fetch_inventory_auth_failure_returns_unavailable(monkeypatch):
-    monkeypatch.setattr(rs, "_gh_json", lambda args, token=None: None)
+    monkeypatch.setattr(rs, "_gh_json", lambda args, token=None, stats=None: None)
     inv = rs.fetch_inventory("jsboige/CoursIA", "coursia-linux", token=None)
     assert not inv.available
+
+
+def test_inventaire_busy_nest_pas_dans_les_slots_libres(monkeypatch):
+    # Un runner en ligne mais OCCUPE ne peut pas absorber un debordement :
+    # le confondre avec un slot libre ferait annoncer une capacite locale
+    # qui n'existe pas.
+    def fake_gh(args: list[str], token: str | None = None, stats=None):
+        return {"runners": [
+            {"name": "r-busy", "status": "online", "busy": True,
+             "labels": [{"name": "coursia-linux"}]},
+            {"name": "r-idle", "status": "online", "busy": False,
+             "labels": [{"name": "coursia-linux"}]},
+        ]}
+
+    monkeypatch.setattr(rs, "_gh_json", fake_gh)
+    inv = rs.fetch_inventory("jsboige/CoursIA", "coursia-linux", token="pat")
+    assert inv.busy == ["r-busy"]
+    assert inv.idle == ["r-idle"]
+    assert inv.unknown == []
+    assert inv.free == 1
+
+
+def test_inventaire_champ_busy_absent_ne_passe_pas_pour_un_slot_libre(monkeypatch):
+    # Un runner en ligne dont l'occupation est INCONNUE (champ `busy` absent
+    # de la reponse) n'est PAS comptabilise comme libre : fail-CLOSED vers
+    # « capacite disponible ». Le traitement du cas muet est explicite, et
+    # le runner est nomme pour que le rapport dise ce qu'il ignore.
+    def fake_gh(args: list[str], token: str | None = None, stats=None):
+        return {"runners": [
+            {"name": "r-muet", "status": "online",
+             "labels": [{"name": "coursia-linux"}]},
+        ]}
+
+    monkeypatch.setattr(rs, "_gh_json", fake_gh)
+    inv = rs.fetch_inventory("jsboige/CoursIA", "coursia-linux", token="pat")
+    assert inv.unknown == ["r-muet"]
+    assert inv.idle == []
+    assert inv.busy == []
+    assert inv.free == 0
+
+
+def test_budget_de_lecture_atteint_une_lecture_tronquee_pas_une_lecture_echouee():
+    # Deux proprietes, deux faits : `complete` dit si la lecture a SUCCEEDE
+    # (aucun listing en echec), `truncated` dit si elle a vu TOUT. Un run non
+    # lu est un run vieux : il peut porter des jobs affames. La consequence
+    # directionnelle est traitee par le controleur (#22946).
+    st = rs.Starvation()
+    assert st.complete is True and st.truncated is False
+    st.budget_unread.append(("wf", 42, 17.5))
+    assert st.truncated is True
+    # La lecture n'a pas ECHOUE : elle a ete arretee par le budget.
+    assert st.complete is True
 
 
 def test_job_queued_then_run_disappears_terminal_is_purged(monkeypatch):
@@ -437,7 +489,7 @@ def test_job_queued_then_run_disappears_terminal_is_purged(monkeypatch):
     la derniere observation du job."""
     now = datetime(2026, 9, 2, 12, 0, tzinfo=timezone.utc)
 
-    def fake_gh(args: list[str], token: str | None = None):
+    def fake_gh(args: list[str], token: str | None = None, stats=None):
         url = args[0]
         if "status=queued" in url:
             return {"total_count": 1, "workflow_runs": [_run_row(90, 40.0, now)]}
@@ -469,7 +521,7 @@ def test_job_queued_run_still_queued_direct_preserved(monkeypatch):
     queued stable n'apparait jamais dans le listing in_progress)."""
     now = datetime(2026, 9, 2, 12, 0, tzinfo=timezone.utc)
 
-    def fake_gh(args: list[str], token: str | None = None):
+    def fake_gh(args: list[str], token: str | None = None, stats=None):
         url = args[0]
         if "status=queued" in url:
             return {"total_count": 1, "workflow_runs": [_run_row(90, 40.0, now)]}
@@ -498,7 +550,7 @@ def test_missing_run_after_failed_listing_is_preserved(monkeypatch):
     appelee (le pipeline s'arrete avant)."""
     now = datetime(2026, 9, 2, 12, 0, tzinfo=timezone.utc)
 
-    def fake_gh(args: list[str], token: str | None = None):
+    def fake_gh(args: list[str], token: str | None = None, stats=None):
         url = args[0]
         if "status=queued" in url:
             return {"total_count": 1, "workflow_runs": [_run_row(90, 40.0, now)]}
@@ -515,3 +567,124 @@ def test_missing_run_after_failed_listing_is_preserved(monkeypatch):
     monkeypatch.setattr(rs, "_gh_json", fake_gh)
     st = rs.fetch_starvation("jsboige/CoursIA", "coursia-linux", 15.0, now=now)
     assert len(st.starved) == 1
+
+
+# --- POOL LOSS PAR HOTE (#20697 point 4) ------------------------------------
+#
+# Le predicat global EXTINCTION ne rougit que si TOUS les online tombent
+# (les slots etaient OFFLINE cote GitHub pendant ~2 jours, mais d'autres hotes
+# du label restaient online ; l'extinction globale n'a jamais tire). La
+# detection par hote comble ce trou en alertant quand UN hote a online==0 et
+# offline>0, signe de la disjonction superviseur mort / conteneurs vivants
+# sur ce seul hote.
+
+def test_host_of_strips_numeric_suffix():
+    """Le format canonique est `<host>-<slot>` (suffixe '-N' jete)."""
+    assert rs._host_of("myia-ai-01-wsl-1") == "myia-ai-01-wsl"
+    assert rs._host_of("myia-po-2024-linux-docker-3") == "myia-po-2024-linux-docker"
+    assert rs._host_of("myia-po-2024-linux-docker-10") == "myia-po-2024-linux-docker"
+
+
+def test_host_of_keeps_unsuffixed_name_unchanged():
+    """Les noms qui ne portent pas le suffixe numerique (futur format) restent
+    tels quels -- la detection par hote est best-effort, le predicat EXTINCTION
+    global reste la borne dure."""
+    assert rs._host_of("myia-ai-01-wsl") == "myia-ai-01-wsl"
+    assert rs._host_of("po-2024-docker") == "po-2024-docker"
+    assert rs._host_of("") == ""
+
+
+def test_host_of_handles_single_digit_and_multi_digit():
+    """Tous les chiffres au-dela de 1 doivent etre jetes (re-#2 du test_1
+    quand le pool grandit) -- le suffixe est le DERNIER token numerique, pas
+    seulement 1 chiffre."""
+    assert rs._host_of("host-a-1") == "host-a"
+    assert rs._host_of("host-a-42") == "host-a"
+    assert rs._host_of("host-a-999") == "host-a"
+
+
+def test_evaluate_host_loss_founder_case():
+    """Cas fondateur (#20697, 12:45Z) : tous les slots d'UN hote offline,
+    AUCUN en ligne -> une alerte nommant cet hote, la seule."""
+    inv = inventory(
+        online=["myia-po-2024-linux-docker-1", "myia-po-2024-linux-docker-2"],
+        offline=[
+            "myia-ai-01-wsl-1", "myia-ai-01-wsl-2", "myia-ai-01-wsl-3",
+            "myia-ai-01-wsl-4", "myia-ai-01-wsl-5",
+        ],
+    )
+    warnings = rs.evaluate_host_loss(inv)
+    assert len(warnings) == 1
+    assert "myia-ai-01-wsl" in warnings[0]
+    assert "0 runner online" in warnings[0]
+    assert "5 offline" in warnings[0]
+    # L'hote en ligne ne doit PAS apparaitre dans les alertes.
+    assert "myia-po-2024-linux-docker" not in warnings[0]
+
+
+def test_evaluate_host_loss_partial_online_no_alert():
+    """Garde anti-FP : un hote avec online>0 ET offline>0 n'est PAS une perte
+    de pool -- certains slots sont en cours de redemarrage et le pool rend
+    des jobs. Mesure du jour : 1 online + 1 offline sur le meme hote -> 0
+    alerte."""
+    inv = inventory(
+        online=["myia-po-2024-linux-docker-1"],
+        offline=["myia-po-2024-linux-docker-3"],
+    )
+    warnings = rs.evaluate_host_loss(inv)
+    assert warnings == []
+
+
+def test_evaluate_host_loss_inventory_unavailable_returns_empty():
+    """Pas d'inventaire (pas de PAT) -> pas d'alerte de perte par hote. Le
+    predicat est strictement unaire sur l'inventaire, comme EXTINCTION."""
+    inv = rs.InventoryUnavailable(reason="pas de PAT")
+    warnings = rs.evaluate_host_loss(inv)
+    assert warnings == []
+
+
+def test_evaluate_host_loss_one_lost_host_among_healthy():
+    """Deux hotes, un seul perdu : l'alerte ne nomme QUE le perdu, pas
+    l'autre. Mesure : myia-ai-01-wsl 4 offline / 0 online, myia-po-2024
+    2 online / 0 offline -> 1 alerte ciblant le wsl."""
+    inv = inventory(
+        online=["myia-po-2024-linux-docker-1", "myia-po-2024-linux-docker-2"],
+        offline=[
+            "myia-ai-01-wsl-1", "myia-ai-01-wsl-2",
+            "myia-ai-01-wsl-3", "myia-ai-01-wsl-4",
+        ],
+    )
+    warnings = rs.evaluate_host_loss(inv)
+    assert len(warnings) == 1
+    assert "myia-ai-01-wsl" in warnings[0]
+    # L'hote sain NE doit PAS apparaitre dans l'alerte du perdu.
+    assert "myia-po-2024-linux-docker" not in warnings[0]
+
+
+def test_evaluate_host_loss_multiple_lost_hosts_each_named():
+    """Deux hotes perdus simultanement : 2 alertes distinctes, chacune nomme
+    son hote."""
+    inv = inventory(
+        online=[],
+        offline=[
+            "myia-ai-01-wsl-1", "myia-ai-01-wsl-2",
+            "myia-po-2024-linux-docker-1", "myia-po-2024-linux-docker-2",
+        ],
+    )
+    warnings = rs.evaluate_host_loss(inv)
+    assert len(warnings) == 2
+    hosts_named = {w.split("host ")[1].split(" ")[0] for w in warnings}
+    assert hosts_named == {"myia-ai-01-wsl", "myia-po-2024-linux-docker"}
+
+
+def test_evaluate_wires_host_loss_warnings():
+    """L'integration evaluate() doit etendre v.warnings avec les alertes de
+    pool loss, sans les faire passer en erreur -- un hote perdu reste un
+    WARN, pas un ERROR (le pool global n'est pas mort)."""
+    inv = inventory(
+        online=["po-2024-1"],
+        offline=["ai-01-wsl-1", "ai-01-wsl-2"],
+    )
+    v = rs.evaluate(inv, rs.Starvation(), warn_floor=2)
+    assert v.status == "OK"
+    assert any("POOL LOSS" in w and "ai-01-wsl" in w for w in v.warnings)

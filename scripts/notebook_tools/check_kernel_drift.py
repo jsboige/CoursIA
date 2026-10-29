@@ -403,6 +403,17 @@ def diff_kernel(base_info, head_info):
 #     (3.8.10, 3.9.0, 3.10.0, 3.10.11, 3.10.19, 3.11.0, 3.11.9, 3.11.14,
 #     3.11.15, 3.13.3, 3.13.7, 3.13.12, 3.13.14) ; 60 carnets ``python3`` + 2
 #     ``conda-torch``.
+#   - Python ``coursia-ml-training`` (serie 02-ML-Cours) : canon de serie
+#     declare CPython 3.13 par le requirements.txt de la serie (en-tete,
+#     #18331), mais les carnets committes historiques portent encore
+#     ``language_info`` 3.11.x -- la re-execution canonique derive donc
+#     3.11 -> 3.13 sous ce kernelspec (cas #22889, mesure 2026-10-27).
+#     Ce kernelspec est partage par une trentaine de carnets hors
+#     02-ML-Cours, qui n'ont pas de requirements.txt declarant 3.13 (reserve
+#     de revue sur #22979, mesuree) : la transition n'est donc PAS globale.
+#     Elle est nominative, dans ``CANONICAL_LANGUAGE_TRANSITIONS_SCOPED``,
+#     et ne vaut que pour le carnet qui la motive. Sous ce kernelspec,
+#     ``3.11 -> 3.13`` reste rouge globalement, comme l'inverse.
 #   - Decision duale sur le canon (coord. 2026-10-05T03:43:46Z, DM
 #     msg-20261005T034346-qyldsl) : **deux canons**, pas un seul --
 #     (a) **canon des algorithmes deployes sur QC Cloud = Python 3.11**,
@@ -463,6 +474,18 @@ CANONICAL_LANGUAGE_TRANSITIONS_SCOPED = {
      "python3", "3.8", "3.13"):
         "Python 3.8 -> 3.13 : re-execution selective du sous-ensemble local "
         "de QC-Py-16 (#19181, cas par cas)",
+    # 2.8c est le seul carnet dont la re-execution sous 3.13 est la
+    # convergence attendue vers le canon de SA serie. Le kernelspec
+    # ``coursia-ml-training`` est partage par une trentaine de carnets hors
+    # 02-ML-Cours qui ne declarent pas 3.13 : une entree globale les aurait
+    # tous rendus verts sur cette direction (reserve de revue sur #22979).
+    ("MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/"
+     "2.8c-Borne-Temoin-Concentration.ipynb",
+     "coursia-ml-training", "3.11", "3.13"):
+        "Python 3.11 -> 3.13 sous `coursia-ml-training` : convergence vers le "
+        "canon de la serie 02-ML-Cours, declare par son requirements.txt "
+        "en-tete (CPython 3.13, #18331/#18247) ; cas fondateur #22889 "
+        "(2.8c, base 3.11.15 -> tete 3.13.14, memes kernelspec base/tete)",
 }
 
 
@@ -679,7 +702,77 @@ def _git_show_head(rel, root):
     return shown.stdout
 
 
-def canonical_env_hint(nb_path, root="."):
+_VERSION_HEAD_RE = re.compile(r"^(\d+)(?:\.(\d+))?(?:\.(\d+))?")
+_CLAUSE_RE = re.compile(r"^(>=|<=|==|!=|>|<)\s*(.+)$")
+
+
+def _version_tuple(text):
+    """``"3.9.25"`` -> ``(3, 9, 25)`` ; ``"3.13"`` -> ``(3, 13)``.
+
+    Rend les composants REELLEMENT ecrits, sans remplissage : ``==3.9`` est une
+    correspondance de prefixe (PEP 440), pas l'egalite avec ``3.9.0``. Le
+    remplissage se fait au moment de la comparaison d'ordre, dans
+    ``_cmp_pad``. ``None`` quand le texte ne commence pas par un numero.
+    """
+    match = _VERSION_HEAD_RE.match(str(text or "").strip())
+    if not match:
+        return None
+    return tuple(int(part) for part in match.groups() if part is not None)
+
+
+def _cmp_pad(left, right):
+    """Deux tuples de version ramenes a la meme longueur, remplis de zeros."""
+    width = max(len(left), len(right))
+    return (left + (0,) * (width - len(left)),
+            right + (0,) * (width - len(right)))
+
+
+def _requires_python_allows(spec, version):
+    """Le ``requires-python`` epingle peut-il heberger ``version`` ?
+
+    Rend ``True``, ``False``, ou ``None`` quand la comparaison n'est pas
+    mesurable (spec absent, borne non numerique, operateur ``~=`` ou joker).
+    Le ``None`` est une absence de mesure : l'appelant ne doit pas le rendre
+    comme une autorisation -- il n'ajoute simplement aucun conflit.
+
+    #22297 : le garde nommait l'artefact epingle sans verifier que l'intervalle
+    qu'il porte peut heberger l'interpreteur de la BASE. Sur la serie ICT,
+    ``requires-python = ">=3.9,<3.10"`` est un conseil qu'on ne peut pas suivre
+    quand la base enregistre 3.13 : le rejeu sous 3.9 est une descente
+    major.minor, que ce meme garde refuse. L'indice produisait donc la panne
+    qu'il pretendait resoudre.
+    """
+    target = _version_tuple(version)
+    if target is None:
+        return None
+    clauses = [c.strip() for c in str(spec or "").split(",") if c.strip()]
+    if not clauses:
+        return None
+    for clause in clauses:
+        match = _CLAUSE_RE.match(clause)
+        if not match:
+            return None
+        op, raw = match.group(1), match.group(2).strip()
+        bound = _version_tuple(raw)
+        if bound is None:
+            return None
+        padded_target, padded_bound = _cmp_pad(target, bound)
+        if op == ">=" and not padded_target >= padded_bound:
+            return False
+        if op == ">" and not padded_target > padded_bound:
+            return False
+        if op == "<=" and not padded_target <= padded_bound:
+            return False
+        if op == "<" and not padded_target < padded_bound:
+            return False
+        if op == "==" and target[:len(bound)] != bound:
+            return False
+        if op == "!=" and target[:len(bound)] == bound:
+            return False
+    return True
+
+
+def canonical_env_hint(nb_path, root=".", base_language_version=None):
     """Nomme l'environnement epingle qui couvre ce notebook, s'il existe (#17185).
 
     Le garde nommait les CAUSES du drift (« un autre interpreteur, 3.11 ->
@@ -721,7 +814,21 @@ def canonical_env_hint(nb_path, root="."):
                 hint["from_object_store"] = True
             requires_python = _REQUIRES_PYTHON_RE.search(text)
             if requires_python:
-                hint["requires_python"] = requires_python.group(1)
+                spec = requires_python.group(1)
+                hint["requires_python"] = spec
+                # #22297 : un pointeur vers un intervalle qui ne peut pas
+                # heberger l'interpreteur de la base n'est pas un remede, c'est
+                # la panne d'a cote. On le dit dans le hint plutot que de
+                # laisser la lane decouvrir la descente au prochain passage.
+                if base_language_version:
+                    allowed = _requires_python_allows(spec, base_language_version)
+                    if allowed is False:
+                        hint["version_conflict"] = (
+                            f"the pinned range {spec} cannot host the base "
+                            f"interpreter {base_language_version}: re-executing "
+                            f"there would be a major.minor DOWNGRADE, which "
+                            f"this gate refuses -- the pinned environment is "
+                            f"not a followable remedy for this notebook")
             numpy_pin = _NUMPY_PIN_RE.search(text)
             if numpy_pin:
                 hint["numpy_pin"] = f"numpy{numpy_pin.group(1)}"
@@ -824,7 +931,9 @@ def _measure(base, args_obj):
                 # serie qui epingle le sien obtient ici le pointeur vers son
                 # artefact, pour que « aligner l'env » ne se lise pas comme une
                 # introspection a faire soi-meme.
-                env_hint = canonical_env_hint(nb_path)
+                env_hint = canonical_env_hint(
+                    nb_path,
+                    base_language_version=base_kernel["language_version"])
                 if env_hint:
                     detail = [f"the series pins a canonical environment at "
                               f"`{env_hint['artifact']}`"]
@@ -833,12 +942,20 @@ def _measure(base, args_obj):
                             f"requires-python {env_hint['requires_python']}")
                     if env_hint.get("numpy_pin"):
                         detail.append(env_hint["numpy_pin"])
-                    causes.append(
-                        " / ".join(detail)
-                        + "; re-executing under that environment keeps the "
-                          "committed repr stable, whereas a local interpreter "
-                          "reproduces this drift"
-                    )
+                    if env_hint.get("version_conflict"):
+                        causes.append(
+                            " / ".join(detail) + "; "
+                            + env_hint["version_conflict"]
+                            + " -- rebuild an interpreter of the base's "
+                              "major.minor that reproduces the pinned numpy, "
+                              "or document the drift (C.4)")
+                    else:
+                        causes.append(
+                            " / ".join(detail)
+                            + "; re-executing under that environment keeps the "
+                              "committed repr stable, whereas a local interpreter "
+                              "reproduces this drift"
+                        )
                 finding["probable_causes"] = causes
             findings.append(finding)
 

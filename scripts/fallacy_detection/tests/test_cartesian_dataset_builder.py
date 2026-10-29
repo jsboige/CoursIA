@@ -276,6 +276,15 @@ def test_real_build_matches_committed_manifest():
         assert hashlib.sha256(committed).hexdigest() == manifest["files"][f"{s}.csv"]["sha256"]
 
 
+@pytest.mark.skipif(not (PHASE2 / "manifest.json").exists(), reason="manifeste absent")
+def test_committed_manifest_declares_builder_licence():
+    # Le bloc licence est emis par build_manifest : le manifeste committe doit
+    # le porter a l'identique, sinon la regeneration le perdrait silencieusement.
+    manifest = json.loads((PHASE2 / "manifest.json").read_text(encoding="utf-8"))
+    assert manifest["licence"] == B.DATASET_LICENCE
+    assert manifest["licence"]["dataset"] == "CC-BY-SA-4.0"
+
+
 # --- ancrage cote depot (mesure po-2023 du 2026-10-08 sur #17578) -----------
 #
 # Le manifeste epingle le pin AMONT (0ab05d66) ; le gitlink du sous-module a
