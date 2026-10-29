@@ -35,6 +35,25 @@
 # conjonction de conditions), ce qui rend l'exemple canonique des ADF
 # (`a <-> b`, `c` accepte si `¬a` ou `¬b`) exprimable par l'API.
 #
+# Limite declaree de cette capacite : la composition est de **UN seul niveau**.
+# `or:` / `and:` prennent exactement deux conditions SIMPLES (`tautology`,
+# `contradiction`, `negation:<stmt>`) ; une condition composite ne peut pas
+# en contenir une autre. Motif (mesure, 2026-10-29) : le decoupage se fait sur
+# les virgules, donc `or:negation:a,or:negation:b,negation:c` se lit comme
+# trois fragments — la grammaire imbriquee serait ambigue sans parentheses.
+# L'organe leve une erreur explicite qui nomme la limite, au lieu de choisir
+# silencieusement un decoupage.
+#
+# Adaptation 5 (2026-10-29) : l'import de `jpype` est rendu **optionnel**.
+# Symptome mesure : sur le job `Scripts Tests (CPU)` (qui n'installe pas
+# jpype), ce module echouait a la COLLECTE — `ModuleNotFoundError: No module
+# named 'jpype'` — ce qui faisait echouer la totalite du job (21 846 tests
+# verts, 1 erreur de collecte, exit 1). Le module est donc importable sans
+# jpype ; l'absence de jpype est detectee au moment de l'INSTANTIATION
+# (`ADFHandler.__init__`), la ou le JVM est reellement requis. Meme convention
+# que le reste du paquet (cf `argumentation_lib/__init__.py`, dont l'alias
+# `get_adf_handler_symbol` degrade deja gracieusement sans jpype).
+#
 # Perimetre NON cable (gate-out explicite, pas de contournement) : la lecture
 # d'un fichier KPPADF. Mesure : `KppADFFormatParser(LinkStrategy, boolean)`
 # n'a plus de constructeur sans argument, et la lecture du fichier
@@ -97,9 +116,19 @@ upstream copy byte for byte. The adaptation block at the top of the file lists
 the four measured API drifts (Tweety 1.30) and the fix applied to each one.
 """
 
-import jpype
 import logging
 from typing import List, Dict, Any, Optional, Set, Tuple
+
+try:  # JPype is OPTIONAL at import time (adaptation 5, 2026-10-29).
+    import jpype
+
+    _JPYE_JEXCEPTIONS = (jpype.JException,)
+except ImportError:  # pragma: no cover - depends on the runner's wheels
+    jpype = None
+    # An empty tuple in an `except` clause catches nothing: without JPype
+    # there is no Java exception to catch, and the JVM-bound paths are
+    # unreachable anyway (the handler refuses to instantiate without it).
+    _JPYE_JEXCEPTIONS = ()
 
 logger = logging.getLogger(__name__)
 
@@ -118,6 +147,14 @@ class ADFHandler:
     }
 
     def __init__(self, initializer_instance=None):
+        if jpype is None:
+            raise RuntimeError(
+                "L'organe ADF a besoin de JPype pour interroger le jar "
+                "`adf-1.30.jar` : le module `jpype` n'est pas installe sur "
+                "cet environnement (`pip install JPype1`). L'import du module "
+                "reste possible sans JPype — seule l'instanciation, qui "
+                "amorce la JVM, est refusee."
+            )
         if initializer_instance and not initializer_instance.is_jvm_ready():
             raise RuntimeError("ADFHandler instantiated before JVM is ready.")
         self.ADF = jpype.JClass(
@@ -219,7 +256,10 @@ class ADFHandler:
                 if len(parts) != 2:
                     raise ValueError(
                         f"Condition '{spec}' : '{prefix}' attend exactement deux "
-                        f"conditions, {len(parts)} fournie(s)."
+                        f"conditions simples, {len(parts)} fournie(s). "
+                        "La composition est limitee a un seul niveau : une "
+                        "condition composite ne peut pas en contenir une autre "
+                        "(ecrivez par exemple 'and:negation:a,negation:b')."
                     )
                 left, left_deps = self._parse_condition(parts[0], arg_map)
                 right, right_deps = self._parse_condition(parts[1], arg_map)
@@ -321,7 +361,7 @@ class ADFHandler:
                     "interpretations_count": len(interp_list),
                 },
             }
-        except jpype.JException as e:
+        except _JPYE_JEXCEPTIONS as e:
             logger.error(f"Java exception in ADF analysis: {e}")
             raise RuntimeError(f"ADF analysis failed: {e}") from e
 
