@@ -164,6 +164,17 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   workflow_dispatch seulement). Son jumeau always-on-guards.yml ne l'est
     #   PAS -- il porte pull_request_review, classe FORK_REACHABLE (#14294).
     "always-on-metadata-guards.yml",
+    # #22937 (volet (d), 2026-10-28, lane myia-ai-01:CoursIA-2) : la garde
+    #   des waivers de chemins locaux REJOINT LA COHORTE (forme hybride
+    #   auditee #22461). Declencheurs `pull_request` (opened/synchronize/
+    #   reopened) + `workflow_dispatch` -- les DEUX sont dans
+    #   SAFE_SELF_HOSTED_TRIGGERS ; la jambe `issue_comment` avait ete
+    #   RETIREE (#23044, et son trigger est FORK_REACHABLE). Le job est
+    #   pure-Python, sparse-checkout de 2 fichiers, lecture seule des
+    #   commentaires de PR (`permissions: issues: read`,
+    #   `pull-requests: read`) : aucun besoin heberge specifique.
+    #   Rollback = remettre `runs-on: ubuntu-latest` + retirer l'entry.
+    "local-path-waiver-guard.yml",
     # tranche 4 (#14283, meme decision, meme owner) : balayages cron pur-Python.
     #   Declencheur `schedule` seul -- pas de contexte pull_request, donc aucune
     #   garde same-repo requise. 33 creneaux distincts, au plus 2 simultanes
@@ -283,6 +294,23 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   Rollback = revert de la PR (l'entree disparait de l'allowlist).
     "linux-runner-version-pin-advisory.yml",
     "linux-runner-starvation-advisory.yml",
+    # #22946 (owner myia-ai-01:CoursIA-2, review ai-01 du 2026-10-27) :
+    #   controleur du debordement CI_OVERFLOW_LOCAL (phase B de #22937). Meme
+    #   profil que les deux advisories ci-dessus : `schedule` +
+    #   `workflow_dispatch` UNIQUEMENT (advisory par construction, doctrine
+    #   #12817), runs-on STATIQUE [self-hosted, coursia-ephemeral,
+    #   coursia-linux], garde same-repo au niveau job malgre l'absence de
+    #   trigger `pull_request`. Pur-Python stdlib + `gh` binaire de l'image ;
+    #   le job est en LECTURE SEULE (aucun secret, aucune ecriture de
+    #   variable -- l'ecriture reste un geste d'operateur ai-01 en local,
+    #   arbitrage (b) du 2026-10-27), `permissions: actions: read` +
+    #   `contents: read` -- `variables` n'est PAS une portee admise sous
+    #   `permissions:` (une cle hors liste invalide le fichier entier).
+    #   La bascule vers le pool est le POINT 1 de la review : le job mesurait
+    #   la file hebergee en y faisant la queue (17 des 23 jobs en cours
+    #   etaient heberges). Rollback = revert de la PR (l'entree disparait de
+    #   l'allowlist, et le garde fail-closed refuse alors le runs-on).
+    "ci-overflow-controller.yml",
     # runner-starvation-advisory.yml (#14846, owner myia-po-2027:CoursIA-2) :
     #   jumeau de linux-runner-starvation-advisory.yml (#13378) etendu aux
     #   2 labels waiter + lean (matrice GitHub Actions, 2 entrees include).
