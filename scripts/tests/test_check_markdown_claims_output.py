@@ -355,6 +355,24 @@ class TestRoundsToClaim:
         """French outputs print the decimal comma: '1,7465' rounds to 1.75."""
         assert _rounds_to_claim("1.75", "SA | 1,7465 | 12,8907")
 
+    def test_thousands_group_with_decimal_is_one_number(self):
+        """A three-digit comma group followed by a decimal point is a
+        thousands separator, not a decimal comma: '1,234.5678' is one number.
+
+        This is the rule the #22827 fix introduced; the test pins it so that a
+        later simplification cannot quietly read the group as the decimal 1.234
+        and start flagging prose that quotes the output verbatim."""
+        assert _rounds_to_claim("1234.5678", "params 1,234.5678 total")
+        assert not _rounds_to_claim("1.2345678", "params 1,234.5678 total")
+
+    def test_bare_comma_groups_stay_decimal(self):
+        """Without a decimal point to arbitrate, a three-digit comma group keeps
+        its French decimal reading even when several such groups appear side by
+        side. The rule is decidable on its own terms ('no point, no
+        arbitration'), so it is pinned rather than left to drift."""
+        assert _rounds_to_claim("1.798", "1,798 2,798 3,798")
+        assert not _rounds_to_claim("1798", "1,798 2,798 3,798")
+
     def test_thousands_separator_is_not_a_decimal(self):
         """A comma group followed by a decimal point is a thousands separator
         (#22827): '19.80' must NOT be anchored on '19,798.0862', whose
