@@ -579,6 +579,28 @@ def _code_index_by_id(nb):
     return result
 
 
+def _code_source_by_id(nb):
+    """Map code-cell id -> its source text, whitespace-stripped.
+
+    The source is the stable identity of a cell across base and head: a
+    re-serialisation regenerates the nbformat ids and touches nothing else,
+    so an id-only comparison cannot tell "this cell was replaced" from
+    "this cell is new".
+    """
+    out = {}
+    for cell in nb.get("cells", []):
+        if cell.get("cell_type") != "code":
+            continue
+        cid = cell.get("id")
+        if not cid:
+            continue
+        src = cell.get("source", "")
+        if isinstance(src, list):
+            src = "".join(src)
+        out[cid] = src.strip()
+    return out
+
+
 def diff_signatures(base_sig, head_sig, base_nb=None, head_nb=None):
     """Return a list of cell identifiers whose float signature changed.
 
@@ -594,8 +616,11 @@ def diff_signatures(base_sig, head_sig, base_nb=None, head_nb=None):
     themselves nor shift code cells' indices.
 
     #17232: added code cells are no longer reported unconditionally --
-    only those carrying a non-empty float signature are (see the loop in
-    the id-aligned branch below).
+    only those carrying a non-empty float signature are.
+    #23364: and, among those, only when a base-only cell carries the same
+    source, i.e. when the cell was re-identified rather than added. A
+    genuinely added cell has no base signature to drift from (see the loop
+    in the id-aligned branch below).
     """
     # If we have notebooks with cell ids, align by id
     if base_nb is not None and head_nb is not None:
@@ -620,18 +645,39 @@ def diff_signatures(base_sig, head_sig, base_nb=None, head_nb=None):
             h = head_sig[h_idx] if h_idx < len(head_sig) else ()
             if b != h and not _signatures_equivalent(b, h):
                 diffs.append(cid)
-        # Added code cells (only in head), reported ONLY when they actually
-        # carry a float-array signature (#17232). An added cell with no
-        # signature cannot be a float-repr drift, and reporting it
-        # unconditionally made papermill's `injected-parameters` cell look
-        # like one: papermill replaces that cell on every re-execution and
-        # nbformat 4.5 hands the replacement a fresh cell id, so the
-        # (one id removed, one id added) pair is the normal fingerprint of a
-        # re-execution -- measured on PR #17145, where the added cell had 0
-        # outputs and every common cell had an identical signature.
+        # Added code cells: a cell present only in head. Two very different
+        # things hide here, and only one of them can drift.
+        #
+        #   * A cell RE-IDENTIFIED by a re-serialisation: nbformat hands it a
+        #     fresh id while its source is untouched (#17232 -- papermill's
+        #     `injected-parameters` cell is the measured case). Its source
+        #     still matches a base cell that disappeared, so a base signature
+        #     exists and the comparison is meaningful.
+        #   * A cell genuinely ADDED by the PR. It has no base counterpart and
+        #     therefore nothing to drift FROM. Reporting it unconditionally
+        #     reddened every PR whose new cell printed numbers shaped like a
+        #     float array -- Wilson intervals such as `[0.57,1.00]`, which
+        #     FLOAT_ARRAY_RE cannot tell from a 2-element ndarray (#23364,
+        #     measured on PR #23273: 8 -> 10 code cells, 0 id lost, the two
+        #     flagged cells had no base cell with the same source).
+        #
+        # So an added cell is reported ONLY when a base-only cell carries the
+        # same source; otherwise it is new content, not drift.
+        base_only = set(base_ids.keys()) - set(head_ids.keys())
+        base_src = _code_source_by_id(base_nb)
+        head_src = _code_source_by_id(head_nb)
         for cid in sorted(set(head_ids.keys()) - set(base_ids.keys())):
             h_idx = head_ids[cid]
-            if h_idx < len(head_sig) and head_sig[h_idx]:
+            if not (h_idx < len(head_sig) and head_sig[h_idx]):
+                continue
+            twin = next((b for b in sorted(base_only)
+                         if base_src.get(b) == head_src.get(cid)), None)
+            if twin is None:
+                continue
+            b_idx = base_ids[twin]
+            b = base_sig[b_idx] if b_idx < len(base_sig) else ()
+            if b != head_sig[h_idx] and not _signatures_equivalent(
+                    b, head_sig[h_idx]):
                 diffs.append(cid)
         return diffs
     return _diff_signatures_ordinal(base_sig, head_sig)
