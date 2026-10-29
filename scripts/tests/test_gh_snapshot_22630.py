@@ -480,10 +480,14 @@ def test_voie_en_processus_rend_les_memes_codes_que_la_voie_cli(monkeypatch):
     assert solo is not None
     assert solo[202][0] == pig.CLAIM_CODE_BLOCKED
     # La voie CLI BATCH (>= 2 issues) mappe la meme situation sur NOT_SCOPED
-    # (exit 2) -> ERROR : comportement HISTORIQUE du mode batch, reproduit a
-    # l'identique par la voie en processus. C'est le contrat #22630 --
-    # comportement CONSTANT, pas corrige au passage.
-    assert verdicts[202][0] == pig.CLAIM_CODE_ERROR
+    # (exit 2) -> BLOCKED depuis #22916. Le contrat #22630 avait gele le
+    # comportement HISTORIQUE du mode batch (`-> ERROR`) pour que la
+    # refonte « voie en processus » ne corrige rien au passage ; #22916
+    # leve explicitement ce gel : le resume ne lisait que stdout alors que
+    # `NOT_SCOPED` part sur stderr. La correction fait converger batch et
+    # solo, qui divergeaient sur la MEME situation -- c'est la ligne 481
+    # ci-dessus (solo -> BLOCKED) qui rend la divergence visible.
+    assert verdicts[202][0] == pig.CLAIM_CODE_BLOCKED
 
 
 def test_voie_en_processus_rend_none_si_le_lecteur_manque(monkeypatch):
