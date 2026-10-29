@@ -29,7 +29,7 @@ from typing import Dict, List, Any, Optional, Callable, Tuple
 from dataclasses import dataclass, field
 from datetime import datetime
 
-from _dotnet_env import sdk_bearing_dotnet_root
+from _dotnet_env import effective_root, sdk_bearing_dotnet_root
 from _papermill_meta import strip_stale_papermill_metadata
 
 
@@ -934,8 +934,11 @@ class NotebookExecutor:
             if sdk_root:
                 import os as _os
                 launch_kwargs["env"] = {**_os.environ, "DOTNET_ROOT": sdk_root}
-                print(f"  DOTNET_ROOT for the kernel: {_os.environ['DOTNET_ROOT']} "
-                      f"-> {sdk_root} (configured root has no SDK)")
+                # ``effective_root()`` rather than ``_os.environ['DOTNET_ROOT']``:
+                # the variable is absent in exactly the case where the repair
+                # now fires, and indexing it raised KeyError there.
+                print(f"  DOTNET_ROOT for the kernel: {effective_root()} "
+                      f"-> {sdk_root} (resolved root has no SDK)")
         try:
             km = jupyter_client.KernelManager(kernel_name=kernel_name)
             km.start_kernel(**launch_kwargs)
@@ -1071,8 +1074,11 @@ class NotebookExecutor:
             if sdk_root:
                 import os as _os
                 launch_kwargs["env"] = {**_os.environ, "DOTNET_ROOT": sdk_root}
-                print(f"  DOTNET_ROOT for the kernel: {_os.environ['DOTNET_ROOT']} "
-                      f"-> {sdk_root} (configured root has no SDK)")
+                # ``effective_root()`` rather than ``_os.environ['DOTNET_ROOT']``:
+                # the variable is absent in exactly the case where the repair
+                # now fires, and indexing it raised KeyError there.
+                print(f"  DOTNET_ROOT for the kernel: {effective_root()} "
+                      f"-> {sdk_root} (resolved root has no SDK)")
         try:
             km = jupyter_client.KernelManager(kernel_name=kernel_name)
             km.start_kernel(**launch_kwargs)
