@@ -8263,7 +8263,7 @@ Le **prompt engineering** est l'art de formuler des instructions efficaces pour 
 | Self-refine | Avancee | Code, textes critiques, haute qualite |
 
 > **Documentation officielle** : [OpenAI Prompt Engineering Guide](https://platform.openai.com/docs/guides/prompt-engineering)",,,,,,,,34ca5e961dcf2acd,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb,7b9f43da,code,fr,a365a9d1a9d0de28,"# Verification des dependances (import guards)
+MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb,7b9f43da,code,fr,e638feace13dca50,"# Verification des dependances (import guards)
 try:
     from openai import OpenAI
     openai_AVAILABLE = True
@@ -8313,13 +8313,18 @@ if not env_loaded:
     print(""Aucun .env trouve : la cle vient de l'environnement ou des Secrets Colab."")
 
 # --- Un seul point de resolution de la cle ---------------------------------
-# Ordre de resolution : variable d'environnement, puis Secret Colab
-# (google.colab.userdata), puis la cle OpenRouter du module -- avec son
-# adresse de base et un modele ouvert sur cette cle.
+# Ordre de resolution : **par fournisseur d'abord**, puis par source dans le
+# fournisseur -- la cle OpenAI (environnement, puis Secret Colab), puis la cle
+# OpenRouter (environnement, puis Secret Colab), qui implique son adresse de
+# base et un modele ouvert sur cette cle.
 #
 # L'organe de la serie est GenAI/shared/helpers/genai_helpers.py : meme
 # contrat, memes messages d'aide. Un carnet telecharge seul dans Colab ne
 # l'a pas sous la main, donc un repli autonome reprend ce contrat ci-dessous.
+# Les deux doivent choisir le MEME fournisseur quand ils sont tous deux
+# installes : c'est l'ordre par fournisseur (et non par emplacement) qui
+# l'assure. La parite est verifiee hors reseau par
+# shared/helpers/tests/test_colab_config_contract.py.
 AIDE_CLE = """"""Aucune cle d'API n'a ete trouvee.
 
 En local (Jupyter, VS Code) :
@@ -8360,13 +8365,24 @@ def _resoudre_config_autonome():
     des cles : la cle du module reste celle de l'environnement ou du Secret.
     """"""
     adresse_openrouter = ""https://openrouter.ai/api/v1""
-    cle, source = os.getenv(""OPENAI_API_KEY""), ""env:OPENAI_API_KEY""
+
+    def _lire(nom):
+        """"""Une cle, par fournisseur : l'environnement d'abord, puis le Secret
+        Colab. Meme ordre que `_read_key` de l'organe.""""""
+        valeur = os.getenv(nom)
+        if valeur and valeur.strip():
+            return valeur.strip(), ""env:%s"" % nom
+        valeur = _lire_secret_colab(nom)
+        if valeur:
+            return valeur, ""colab:%s"" % nom
+        return None, None
+
+    # Par fournisseur, puis par source : la cle OpenAI (env, puis Colab)
+    # avant la cle OpenRouter (env, puis Colab). Un ordre par emplacement
+    # choisirait un fournisseur different selon que l'organe soit importe.
+    cle, source = _lire(""OPENAI_API_KEY"")
     if not cle:
-        cle, source = os.getenv(""OPENROUTER_API_KEY""), ""env:OPENROUTER_API_KEY""
-    if not cle:
-        cle, source = _lire_secret_colab(""OPENAI_API_KEY""), ""colab:OPENAI_API_KEY""
-    if not cle:
-        cle, source = _lire_secret_colab(""OPENROUTER_API_KEY""), ""colab:OPENROUTER_API_KEY""
+        cle, source = _lire(""OPENROUTER_API_KEY"")
     if not cle:
         raise ValueError(AIDE_CLE)
     adresse = os.getenv(""OPENAI_BASE_URL"")
@@ -8452,7 +8468,7 @@ def is_interactive():
         return False
 
 BATCH_MODE = os.getenv(""BATCH_MODE"", ""false"").lower() == ""true"" or not is_interactive()
-print(f""Mode: {'BATCH' if BATCH_MODE else 'INTERACTIF'}"")",,,,,,,,a365a9d1a9d0de28,,,,,,,,,,,,,,,
+print(f""Mode: {'BATCH' if BATCH_MODE else 'INTERACTIF'}"")",,,,,,,,e638feace13dca50,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb,09a87bf8,markdown,fr,c40126c390dc37e5,"## Configuration de l'environnement
 
 Avant de commencer les expérimentations, nous devons configurer l'accès à l'API OpenAI et gérer les modes d'exécution.
