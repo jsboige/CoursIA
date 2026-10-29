@@ -27,7 +27,18 @@ class AdaptiveConformalRisk(QCAlgorithm):
     - Monthly rebalancing with ACI-adjusted weights
 
     Universe: 15 Large-Caps US (5 sectors)
-    Benchmark: SectorMomentum (Sharpe 0.57)
+
+    References of the verdict: the protocol of #21469 measures SPY held and
+    60/40 in this same algorithm, under the same brokerage model, at a zero
+    risk-free rate. Coded window 2015-01-02 -> 2025-12-31, 2766 sessions:
+    strategy Sharpe 0.888 against 0.803 (SPY held) and 0.837 (60/40),
+    INCONCLUSIVE. Out of sample 2026-01-02 -> 2026-07-21, 137 sessions:
+    0.198 against 1.255 and 1.173, NO BEATS. The QC-scale statistics of the
+    same runs (QC's own risk-free rate, a scale that does not compare with
+    the zero-rate protocol) read 0.583 / 0.535 / 0.451 on the coded window
+    and -0.086 / 0.865 / 0.570 out of sample: the 0.57 that an earlier
+    version of this docstring attributed to "SectorMomentum" is that last
+    number, the 60/40 reference out of sample.
     """
 
     UNIVERSE = {
