@@ -68,6 +68,20 @@ posée sur le builder :
 <venv-maf>/Scripts/python maf_distillation_pilot.py   # P2 — GroupChatBuilder + selection function, budget dur 16 appels
 ```
 
+Le pilote P3 (réplique **ADK** du même pilote identique) utilise un venv dédié
+portant `google-adk 2.8.0` + `openai` + `litellm` + `pydantic-settings` (le pilote
+réutilise l'organe du Track2 — `utils/adk_runtime.build_agent`, `config/providers`
+— qui importe ces dépendances). Même fixture figée, mêmes instructions, même
+modèle épinglé, même budget dur de 16 appels. Il n'y a **pas** de manager de
+group-chat en ADK : la politique de tour vit dans une boucle Python de
+**désignation explicite** sur une `InMemorySessionService` partagée ; chaque rôle
+est invoqué avec un prompt de désignation (passer `prompt=None` laisserait ADK
+router par handoff implicite et produirait des `Event from an unknown agent`) :
+
+```bash
+<venv-adk>/Scripts/python adk_distillation_pilot.py   # P3 — boucle de désignation explicite, budget dur 16 appels
+```
+
 Le pilote T3 (Google ADK) vit dans la série Track2 :
 
 ```bash

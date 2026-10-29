@@ -18,7 +18,7 @@
 | T8 | pt 2 — MAF, couche agents : `GroupChatBuilder` (selection function) + `MagenticBuilder` (manageur + ledger) exécutés (service LLM réel, temp 0) | livré |
 | P1 | pt 3 — pilote identique, réplique **SK** : charge de distillation figée + `GroupChatOrchestration` à manager custom, exécuté (service LLM réel, temp 0, 2 runs) | livré |
 | P2 | pt 3 — réplique **MAF** sur la même fixture, même politique de tour (`GroupChatBuilder` + selection function + termination condition) | livré |
-| P3 | pt 3 — réplique **ADK** sur la même fixture, même politique de tour | à venir |
+| P3 | pt 3 — réplique **ADK** sur la même fixture, même politique de tour (boucle Python de désignation explicite + `InMemorySessionService` partagée) | livré |
 | — | coût pour le dépôt (pt 5) | à venir |
 | — | pt 1 état de l'art | livré hors repo : note datée du 2026-10-05 sur [#19380](https://github.com/jsboige/CoursIA/issues/19380) ; mémo inventaire local du 2026-10-07 (po-2024:CoursIA-2) sur [#14499](https://github.com/jsboige/CoursIA/issues/14499) |
 | — | pts 3-6 (déterminisme, couverture langages, coût, verdict) | à venir |
@@ -409,6 +409,29 @@ Le pilote reporte aussi ses LOC self-mesurées dans la trace (ligne `LOC PILOT`)
 - **Deux pièges d'extraction, mesurés et corrigés** : (1) `GroupChatResponseReceivedEvent` ne porte **pas** le texte — seulement `round_index` et `participant_name` ; le texte vit dans l'event `executor_invoked` dont `data` est un `AgentExecutorResponse` (`executor_id` = nom de l'agent, `agent_response.text`/`.messages`). La séquence d'auteurs se lit donc sur les events `group_chat`, les textes sur les `AgentExecutorResponse`. (2) La selection function n'a **pas d'état terminal** : sans `termination_condition`, elle ré-élit l'arbitre jusqu'à `max_rounds`. La boucle se scelle donc par une `termination_condition` (`_apres_arbitre` : stop dès que le dernier auteur est l'arbitre), posée sur le builder — c'est l'homologue du `should_terminate` du manager SK de P1.
 - **Comparabilité avec P1** : même fixture figée, même politique, même réglage, organe différent — exactement ce que vise le point 3. Chez SK la boucle vit dans un `GroupChatManager` custom (deux méthodes `select_next_agent`/`should_terminate`), chez MAF dans une selection function + une termination condition posées sur le builder. Les deux répliques convergent sur la structure (même séquence d'auteurs, même type de décision) ; elles divergent sur la charge effective après réparation de la fixture — P1 a été mesuré sur la fixture **avant** documentation de la troncature (voie ACCEPTE seule), P2 **après** (voie RÉVISION → RESIDUEL). Pour une comparaison de verdict strictement à charge identique, P1 sera ré-exécuté sur la fixture réparée (même tête de fixture pour les trois moteurs) — c'est le pendant du point 5.
 
-### 3.4 P3 — à venir
+### 3.4 P3 — Google ADK : boucle Python de désignation explicite sur session partagée
 
-La réplique ADK (boucle) distillera la même fixture avec la même politique de tour, le même modèle épinglé et les mêmes mesures — c'est la comparabilité par construction qui fait la valeur du point 3.
+`VERIFIÉ` (pilote [`adk_distillation_pilot.py`](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/eval-pilots/adk_distillation_pilot.py), trace [`out-P3-adk-distillation.txt`](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/eval-pilots/traces/out-P3-adk-distillation.txt)) : la même politique de tour que P1/P2, mais **sans manager de group-chat ni selection function** — ADK n'a pas cet idiome dans notre setup. La politique vit dans une **boucle Python de désignation explicite** (contrat C4 de l'organe `AdkOrchestrator` du Track2, réutilisé tel quel) : notre code décide qui parle ensuite, invoque l'agent désigné via un `Runner` ADK sur une `InMemorySessionService` **partagée**, lit sa réponse, re-désigne. C'est exactement la différence de nature que le point 3 veut mesurer : là où SK/MAF exposent un point d'extension *orchestrateur* (manager, selection function), ADK expose des primitives (`Runner`, `SessionService`) et laisse la politique à l'appelant.
+
+Relevé (deux runs, même process) :
+
+```text
+ADK version: google-adk 2.8.0
+sonde echec (modele inexistant): NotFoundError
+charge: distill_charge_fixture.md (4859 caracteres, fixture figee)
+[run 1] tours=1 verdict_critique=ACCEPTE wall=3.92s
+    sequence: producteur -> critique -> arbitre
+    decision: DECISION: RESIDUEL tour 1: La cellule d'authentification est tronquee...
+[run 2] tours=1 verdict_critique=ACCEPTE wall=4.07s
+    sequence: producteur -> critique -> arbitre
+    decision: DECISION: RESIDUEL tour 1: La cellule d'authentification est tronquee...
+DETERMINISME (tours, decision, tour d'arbitrage): OK (1, 'RESIDUEL', '1') vs (1, 'RESIDUEL', '1')
+LLM CALLS: 7/16
+```
+
+Le pilote reporte ses LOC self-mesurées dans la trace (ligne `LOC PILOT`).
+
+- **Désignation explicite obligatoire, mesurée.** Passer `prompt=None` après le premier rôle (c'est-à-dire laisser ADK router par handoff implicite) produit des warnings `Event from an unknown agent` et des séquences d'auteurs instables — le routeur implicite ne connaît pas nos trois rôles. Le pilote passe donc à chaque tour un **prompt de désignation explicite** (« À toi de jouer, critique : … ») : la session partagée porte l'historique complet, le prompt ne fait que désigner. C'est l'équivalent ADK du contrat C4 de l'organe Track2, et c'est la condition de reproductibilité de la séquence.
+- **Deux verdicts distincts, non contradictoires.** Le critique porte sur la **qualité de la distillation** (exactitude, non-invention, concision — il accepte), l'arbitre sur la **recevabilité au regard de la charge** (la cellule d'authentification est tronquée, il scelle en RESIDUEL). Le résumé du pilote affiche donc `verdict_critique` et `decision` séparément : un `ACCEPTE` du critique suivi d'un `RESIDUEL` de l'arbitre est un comportement correct, pas un bug d'extraction.
+- **Variabilité inter-processus observée, honnêtement reportée.** Sur une exécution antérieure du même pilote, les deux runs ont divergé (`(1, RESIDUEL, 1)` vs `(2, ACCEPTE, 1)`) — un outlier LLM : la première critique a parfois demandé une RÉVISION au lieu d'accepter, changeant la structure du tour. Température 0 ne garantit donc pas l'identité structurelle inter-processus chez ADK, contrairement à ce que P1/P2 ont montré sur leur setup. La trace committée est la mesure **reproductible sur deux runs consécutifs du même process** ; l'outlier est documenté ici plutôt que masqué par une relance sélective. C'est un constat de moteur utile pour le point 3 (et cohérent avec §3.1 : la prose des spécialistes n'est pas byte-identique entre processus).
+- **Comparabilité avec P1/P2** : même fixture figée (4859 caractères), même politique, même modèle épinglé à température 0, même budget dur de 16 appels. Les trois répliques convergent sur la décision arbitrale (`RESIDUEL` lié à la troncature de la cellule 8) quand elles la mesurent sur la fixture réparée ; elles diffèrent sur l'**idiome d'orchestration** — manager custom (SK), selection function + termination condition (MAF), boucle de désignation de l'appelant (ADK). C'est précisément la mesure du point 3 : la même charge, trois organes, trois natures de contrôle du tour.
