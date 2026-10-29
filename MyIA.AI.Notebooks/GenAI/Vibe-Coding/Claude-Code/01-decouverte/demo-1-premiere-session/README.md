@@ -40,7 +40,7 @@ Vous devriez voir quelque chose comme : `claude-code v1.x.x`
 
 OpenRouter permet d'accéder à plusieurs modèles avec une clé unique. **Suivez le guide canonique** [Quickstart : Claude Code + OpenRouter](../../docs/OPENROUTER_SETUP.md) : il installe le proxy local, définit les variables d'environnement et mappe les modèles, étape par étape avec checkpoints.
 
-En résumé : la configuration passe par le proxy local `openrouter-proxy` (`ANTHROPIC_BASE_URL = http://127.0.0.1:8899/api`). Les requêtes OpenRouter ne sont pas strictement compatibles avec le protocole Anthropic utilisé par Claude Code (bug connu) — le proxy traduit les requêtes. Ne pointez pas `ANTHROPIC_BASE_URL` directement vers `https://openrouter.ai/api`.
+En résumé : la configuration pointe `ANTHROPIC_BASE_URL` **directement** vers `https://openrouter.ai/api`. Depuis la mesure du 2026-10-29 (issue #23276), OpenRouter sert nativement le protocole Anthropic : **aucun proxy local n'est à lancer**. Le montage par `openrouter-proxy` que ce README décrivait auparavant est obsolète.
 
 ### Étape 3 : Première session interactive (15 min)
 

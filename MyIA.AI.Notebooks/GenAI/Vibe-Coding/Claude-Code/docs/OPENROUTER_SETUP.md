@@ -6,60 +6,31 @@ Ce guide vous prend par la main pour configurer Claude Code avec OpenRouter comm
 
 > **Pourquoi OpenRouter ?** Au lieu d'utiliser l'API Anthropic (payante, compte obligatoire), OpenRouter vous donne accès a des modèles performants a moindre coût, avec une clé unique pour plusieurs modèles.
 >
-> **Compatibilité OpenRouter** : Les requêtes OpenRouter ne sont pas strictement compatibles avec le protocole Anthropic utilise par Claude Code (bug connu). L'installation du proxy [openrouter-proxy](https://github.com/ahaostudy/openrouter-proxy) résout le problème. La configuration ci-dessous inclut cette étape.
+> **Compatibilité OpenRouter** : OpenRouter expose son propre point d'entree compatible avec le protocole Anthropic (`https://openrouter.ai/api`), mesure le 2026-10-29 — **aucun proxy n'est a installer**. Le guide demandait auparavant de faire tourner [openrouter-proxy](https://github.com/ahaostudy/openrouter-proxy) en local ; cette etape est obsolete, et l'Etape 0 explique la mesure qui l'a etabli.
 
 ---
 
-## Étape 0 : Installer le proxy OpenRouter (2 min)
+## Etape 0 : rien a installer — OpenRouter sert nativement l'API Anthropic
 
-Claude Code utilise le protocole Anthropic pour communiquer avec les modèles. OpenRouter ne respecte pas strictement ce protocole, ce qui provoque des erreurs (réponses mal formatées, échecs d'authentification intermittents). Le proxy [openrouter-proxy](https://github.com/ahaostudy/openrouter-proxy) traduit les requêtes correctement.
+**Il n'y a plus de proxy a lancer.** Le guide demandait jusqu'ici de cloner `openrouter-proxy` et de faire tourner `node proxy.js` sur le port 8899, au motif que « les requetes OpenRouter ne sont pas strictement compatibles avec le protocole Anthropic ». Ce n'est plus vrai.
 
-### Installation
+> **Mesure du 2026-10-29 (issue #23276, lane `myia-po-2023:CoursIA-2`).** OpenRouter expose desormais `POST https://openrouter.ai/api/v1/messages`, qui parle le protocole Anthropic et rend ses erreurs au **format Anthropic** :
+>
+> | Sonde | Resultat | Ce que ca prouve |
+> |---|---|---|
+> | `POST /api/v1/nonexistent-xyz-42` (temoin) | **404** | un chemin absent rend bien 404 |
+> | `POST /api/v1/messages` sans cle | **401** | la route **existe**, elle demande une authentification |
+> | `POST /api/v1/messages` avec cle invalide | `{"type":"error","error":{"type":"authentication_error",...}}` | le format d'erreur est celui d'**Anthropic**, pas celui d'OpenAI |
+> | `GET /api/v1/messages` | **404** | la route est **POST seule**, comme chez Anthropic |
+> | `claude -p` avec `ANTHROPIC_BASE_URL=https://openrouter.ai/api` | **repond `OK`, code retour 0** | la chaine complete fonctionne **sans proxy** |
+>
+> Le temoin 404 est la piece qui rend la mesure valide : sans lui, un 401 sur `/messages` ne distinguerait pas « route presente » de « tout rend 401 ».
 
-> **Vérifié le 2026-09-09 (#15419)** : le paquet `openrouter-proxy` **n'existe pas sur le registre npm** (`npm install -g openrouter-proxy` → 404). L'installation réelle, conforme au dépôt upstream, est un clonage Git — zéro dépendance, seul Node.js (≥ 16) est requis.
+**Le proxy reste utile dans un seul cas** : si vous devez parler a un fournisseur qui n'implemente que l'API OpenAI. Pour OpenRouter, ce n'est pas le cas.
 
-```bash
-# Cloner le dépôt (emplacement au choix, il servira à chaque démarrage)
-git clone https://github.com/ahaostudy/openrouter-proxy.git
-```
+### Si vous aviez deja installe le proxy
 
-### Démarrage
-
-```bash
-# Lance le proxy sur le port 8899 par defaut
-cd openrouter-proxy
-node proxy.js
-```
-
-Le proxy tourne en arrière-plan et traduit les requêtes Claude Code vers OpenRouter. Gardez-le actif tant que vous utilisez Claude Code.
-
-### Lancement automatique (optionnel)
-
-Pour éviter de le lancer manuellement a chaque session :
-
-**Windows** - Ajoutez a votre profil PowerShell (`notepad $PROFILE`), en adaptant le chemin du clone :
-
-```powershell
-Start-Process -WindowStyle Hidden -FilePath "node" -ArgumentList "$HOME\openrouter-proxy\proxy.js"
-```
-
-**macOS / Linux** - Ajoutez a `~/.zshrc` ou `~/.bashrc` :
-
-```bash
-(node ~/openrouter-proxy/proxy.js &>/dev/null &)
-```
-
-**Checkpoint :** Vérifiez que le proxy tourne :
-
-```bash
-curl http://127.0.0.1:8899/api/v1/models
-```
-
-Si vous voyez une réponse JSON avec des modèles, le proxy fonctionne.
-
-**Symptôme si le proxy ne tourne pas** : chaque appel modèle de Claude Code échoue avec une erreur de connexion (`fetch failed` / `connection refused`) vers `http://127.0.0.1:8899`. Si vous aviez activé le lancement automatique détaché, un redémarrage du poste l'a arrêté sans message visible : relancez simplement `node proxy.js` dans le dossier du proxy, puis re-testez le `curl` ci-dessus.
-
----
+Vous pouvez l'arreter et supprimer le clone. Le seul geste a faire est de changer la valeur de `ANTHROPIC_BASE_URL` (Etape 3) : `https://openrouter.ai/api` devient `https://openrouter.ai/api`.
 
 ## Étape 1 : Installer Claude Code (3 min)
 
@@ -113,7 +84,7 @@ C'est l'étape la plus importante. Vous devez définir **3 variables obligatoire
 
 | Variable | Valeur | Role |
 |----------|--------|------|
-| `ANTHROPIC_BASE_URL` | `http://127.0.0.1:8899/api` | Passe par le proxy OpenRouter (Étape 0) au lieu d'Anthropic |
+| `ANTHROPIC_BASE_URL` | `https://openrouter.ai/api` | Va directement au point d'entree Anthropic d'OpenRouter (Etape 0), au lieu d'Anthropic |
 | `ANTHROPIC_AUTH_TOKEN` | `sk-or-v1-VOTRE_CLE` | Votre clé d'authentification OpenRouter |
 | `ANTHROPIC_API_KEY` | *(vide)* | Doit être vide pour ne pas conflit avec OpenRouter |
 | `ANTHROPIC_DEFAULT_OPUS_MODEL` | `qwen/qwen3.6-plus` | Modèle "opus" = Qwen 3.6 Plus (raisonnement complexe) |
@@ -139,7 +110,7 @@ Contenu (remplacez `sk-or-v1-VOTRE_CLE` par votre vraie clé) :
 ```json
 {
   "env": {
-    "ANTHROPIC_BASE_URL": "http://127.0.0.1:8899/api",
+    "ANTHROPIC_BASE_URL": "https://openrouter.ai/api",
     "ANTHROPIC_AUTH_TOKEN": "sk-or-v1-VOTRE_CLE",
     "ANTHROPIC_API_KEY": "",
     "ANTHROPIC_DEFAULT_OPUS_MODEL": "qwen/qwen3.6-plus",
@@ -161,7 +132,7 @@ Ajoutez a la fin :
 
 ```powershell
 # Configuration OpenRouter pour Claude Code
-$env:ANTHROPIC_BASE_URL = "http://127.0.0.1:8899/api"
+$env:ANTHROPIC_BASE_URL = "https://openrouter.ai/api"
 $env:ANTHROPIC_AUTH_TOKEN = "sk-or-v1-VOTRE_CLE"
 $env:ANTHROPIC_API_KEY = ""
 $env:ANTHROPIC_DEFAULT_OPUS_MODEL = "qwen/qwen3.6-plus"
@@ -187,7 +158,7 @@ Ajoutez a la fin :
 
 ```bash
 # Configuration OpenRouter pour Claude Code
-export ANTHROPIC_BASE_URL="http://127.0.0.1:8899/api"
+export ANTHROPIC_BASE_URL="https://openrouter.ai/api"
 export ANTHROPIC_AUTH_TOKEN="sk-or-v1-VOTRE_CLE"
 export ANTHROPIC_API_KEY=""
 export ANTHROPIC_DEFAULT_OPUS_MODEL="qwen/qwen3.6-plus"
@@ -205,11 +176,11 @@ source ~/.zshrc
 
 ```bash
 # Windows
-echo $env:ANTHROPIC_BASE_URL       # doit afficher: http://127.0.0.1:8899/api
+echo $env:ANTHROPIC_BASE_URL       # doit afficher: https://openrouter.ai/api
 echo $env:ANTHROPIC_AUTH_TOKEN      # doit afficher: sk-or-v1-...
 
 # macOS/Linux
-echo $ANTHROPIC_BASE_URL            # doit afficher: http://127.0.0.1:8899/api
+echo $ANTHROPIC_BASE_URL            # doit afficher: https://openrouter.ai/api
 echo $ANTHROPIC_AUTH_TOKEN          # doit afficher: sk-or-v1-...
 ```
 
@@ -266,6 +237,70 @@ claude --model haiku -p "Reponds 'Haiku OK'"
 3. Vous devez voir une réponse du modèle
 
 **Checkpoint :** Les 3 modèles répondent en CLI et l'extension VS Code fonctionne.
+
+---
+
+## Étape 5 bis : Depuis Google Colab (le cas qui echouait en TP)
+
+Colab est une **machine Linux ephemere** avec un terminal et un acces Internet. Claude Code y fonctionne, a condition de ne pas suivre les etapes concues pour un poste de travail.
+
+### Ce qui ne marche pas dans Colab
+
+| Geste | Pourquoi il echoue |
+|---|---|
+| `claude auth login` | Ouvre un **navigateur** et attend un retour par callback. La VM Colab n'en a pas : la commande reste suspendue. |
+| Lancer `node proxy.js` | Le proxy ouvert dans une cellule meurt avec elle ; la cellule suivante ne le trouve plus. C'est une des causes plausibles de l'echec du TP, **non etablie** (cf. plus bas). |
+| `brew`, installateur `.exe` | Ce sont des voies macOS / Windows. |
+
+### La recette testee
+
+```bash
+# 1. Installer la CLI (Node est deja present dans Colab)
+npm install -g @anthropic-ai/claude-code
+
+# 2. Verifier
+claude --version
+
+# 3. Authentifier par JETON, jamais par navigateur
+import os
+os.environ["ANTHROPIC_BASE_URL"]    = "https://openrouter.ai/api"
+os.environ["ANTHROPIC_AUTH_TOKEN"]  = "sk-or-v1-VOTRE_CLE"   # jamais en clair dans un notebook committe
+os.environ["ANTHROPIC_MODEL"]       = "anthropic/claude-haiku-5.5"
+
+# 4. Tester — doit rendre un mot et un code retour 0
+!claude -p "Reponds uniquement: OK"
+```
+
+En cellule shell pure, les trois `export` remplacent le bloc Python.
+
+> **Ne mettez pas la cle dans le notebook.** Lisez-la depuis les *Secrets* Colab (`google.colab.userdata`) ou une variable d'environnement de session. Un notebook committe avec une cle en clair est un incident de securite (regle `secrets-hygiene`) — le secret est rotation a faire, pas un `revert`.
+
+### Les deux modes d'echec, mesures
+
+Les deux produisent un **symptome muet**, et c'est ce qui rend le diagnostic difficile en TP :
+
+| Cause | Ce qu'on observe | Mesure |
+|---|---|---|
+| `ANTHROPIC_BASE_URL` pose **sans jeton** | La commande **ne rend jamais la main** et **n'affiche aucune erreur** | `claude -p` sans `ANTHROPIC_AUTH_TOKEN` : `rc=124` (arrete au bout de 60 s), stdout vide, une seule ligne sur stderr |
+| Ancien montage par proxy, proxy arrete | `fetch failed` / `connection refused` vers `127.0.0.1:8899` | erreur de connexion explicite, donc plus facile a diagnostiquer |
+
+Le premier cas est le piege : **une cellule qui tourne indefiniment n'est pas une cellule lente, c'est une authentification absente.** Si un `claude -p` ne rend rien au bout d'une minute dans Colab, verifiez `ANTHROPIC_AUTH_TOKEN` avant toute autre chose.
+
+**Ce que cette mesure n'etablit pas** : laquelle de ces causes a fait echouer le TP etudiant d'origine. L'issue #23276 le dit explicitement (« cause exacte a reproduire, non etablie »), et je ne tranche pas a sa place — les deux modes sont reproductibles, aucun temoignage ne les departage.
+
+### Les lignes `unrecognized_model`
+
+Claude Code affiche sur sa sortie d'erreur des lignes de la forme :
+
+```
+[claude-code:unrecognized_model] {"model":"anthropic/claude-haiku-5.5","query_source":"sdk"}
+```
+
+Elles signalent que le nom du modele n'appartient pas au registre interne de Claude Code. **La requete part quand meme et la reponse est correcte** (`rc=0`) — c'est du bruit, pas une panne. Ne les confondez pas avec l'absence de jeton ci-dessus, qui elle ne produit aucune reponse.
+
+### Modeles disponibles
+
+Verifie le 2026-10-29 aupres de `https://openrouter.ai/api/v1/models` : les modeles Anthropic courants y sont, sous la forme `anthropic/claude-haiku-5.5`, `anthropic/claude-sonnet-5.5`, `anthropic/claude-opus-5.5` (contexte annonce 1 000 000). Les identifiants plus anciens sont retires : `anthropic/claude-sonnet-4` repond desormais « retired on June 15, 2026 ». Epinglez un identifiant, et re-verifiez-le si une session se met a echouer sans raison apparente.
 
 ---
 

@@ -50,7 +50,7 @@ Alternative npm (uniquement si votre poste interdit les binaires hors gestionnai
 
 ### 2. Configurer OpenRouter
 
-Suivez le guide canonique **[Quickstart : Claude Code + OpenRouter](docs/OPENROUTER_SETUP.md)** (15 min, checkpoints à chaque étape). La configuration passe par le proxy local `openrouter-proxy` (`ANTHROPIC_BASE_URL = http://127.0.0.1:8899/api`) : les requêtes OpenRouter ne sont pas strictement compatibles avec le protocole Anthropic utilisé par Claude Code (bug connu). Ne pointez pas `ANTHROPIC_BASE_URL` directement vers `https://openrouter.ai/api`.
+Suivez le guide canonique **[Quickstart : Claude Code + OpenRouter](docs/OPENROUTER_SETUP.md)** (15 min, checkpoints à chaque étape). La configuration pointe `ANTHROPIC_BASE_URL` **directement** vers `https://openrouter.ai/api` : depuis la mesure du 2026-10-29 (issue #23276), OpenRouter sert nativement le protocole Anthropic et **aucun proxy local n'est à installer**. Le montage par `openrouter-proxy` que ce guide décrivait auparavant est obsolète.
 
 ### 3. Installer l'extension VS Code
 
