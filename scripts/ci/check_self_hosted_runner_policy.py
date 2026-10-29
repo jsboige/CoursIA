@@ -164,6 +164,17 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   workflow_dispatch seulement). Son jumeau always-on-guards.yml ne l'est
     #   PAS -- il porte pull_request_review, classe FORK_REACHABLE (#14294).
     "always-on-metadata-guards.yml",
+    # #22937 (volet (d), 2026-10-28, lane myia-ai-01:CoursIA-2) : la garde
+    #   des waivers de chemins locaux REJOINT LA COHORTE (forme hybride
+    #   auditee #22461). Declencheurs `pull_request` (opened/synchronize/
+    #   reopened) + `workflow_dispatch` -- les DEUX sont dans
+    #   SAFE_SELF_HOSTED_TRIGGERS ; la jambe `issue_comment` avait ete
+    #   RETIREE (#23044, et son trigger est FORK_REACHABLE). Le job est
+    #   pure-Python, sparse-checkout de 2 fichiers, lecture seule des
+    #   commentaires de PR (`permissions: issues: read`,
+    #   `pull-requests: read`) : aucun besoin heberge specifique.
+    #   Rollback = remettre `runs-on: ubuntu-latest` + retirer l'entry.
+    "local-path-waiver-guard.yml",
     # tranche 4 (#14283, meme decision, meme owner) : balayages cron pur-Python.
     #   Declencheur `schedule` seul -- pas de contexte pull_request, donc aucune
     #   garde same-repo requise. 33 creneaux distincts, au plus 2 simultanes
@@ -658,6 +669,42 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     # ------------------------------------------------------------------
     "lean-ci-matrix.yml",
     "lean-planning.yml",
+    # 2026-10-27 (#22937 vague 2, lane myia-ai-01:CoursIA-2) : meme forme
+    #   hybride de debordement que la phase A (#22461), appliquee aux
+    #   workflows a fort volume qui n'etaient PAS dans la phase A.
+    #   Les trois autres fichiers de la vague 2
+    #   (notebook-execution-required.yml, always-on-metadata-guards.yml,
+    #   notebook-validation.yml) sont deja dans l'allowlist -- ils y etaient
+    #   depuis la tranche 3c (#14283), avant leur deport Q35 du 27/10.
+    #   `twin-parity.yml` y est aussi, mais il est porte par une PR
+    #   dediee (#22944) : les deux PRs ne peuvent pas toucher le meme
+    #   workflow, et le perimetre accorde est « 5 workflows par volume
+    #   decroissant ».
+    #   Perimetre : 5 workflows, 6 jobs. Exclus, avec leur motif :
+    #   - codeql.yml : le setup par defaut de GitHub-heberge le job, la
+    #     ligne `runs-on` du fichier n'est pas honoree ;
+    #   - lean-ci-matrix.yml : la toolchain Lean vit dans une image distincte
+    #     (label `coursia-lean`), pas dans le pool `coursia-linux` ;
+    #     [2026-10-29, fusion de main dans #23053 famille (c) : ce motif vise
+    #     les jobs de BUILD, pas le dispatcher. Sur main, ce fichier n'a qu'un
+    #     job, `lean-matrix-changes`, qui checkout, calcule les fichiers
+    #     changes et appelle `scripts/lean/lake_matrix_dispatch.py` -- il
+    #     n'execute aucun `lake`. Le build reste delegue au workflow
+    #     reutilisable `lean-build.yml`, qui porte ses propres labels. Le
+    #     dispatcher est donc convertible vers `coursia-linux`, et il l'est
+    #     ci-dessous.]
+    #   - local-path-waiver-guard.yml et perimeter-review-guard.yml :
+    #     declencheurs `issue_comment` et `pull_request_review`, classes
+    #     FORK_REACHABLE par l'instrument (default-deny) ;
+    #   - les deux starvation-advisory : un chien de garde de la file ne
+    #     doit pas occuper la file qu'il observe ;
+    #   - ict-tests.yml : venv + pyphi/numpy/scipy, 8,1 min medianes -- le
+    #     debordement absorbe d'abord les jobs courts ;
+    #   - quarto-pages-deploy.yml : `build` et `deploy` dependent du
+    #     service GitHub Pages (upload-pages-artifact, deploy-pages + OIDC) ;
+    #     seul `validate-pr` est portable (Quarto par tarball curl).
+    "quarto-render-list-freshness.yml",
+    "enrich-quality-gate.yml",
 }
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",

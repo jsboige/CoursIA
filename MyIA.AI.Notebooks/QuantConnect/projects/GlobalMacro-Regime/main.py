@@ -1,5 +1,6 @@
 # region imports
 from AlgorithmImports import *
+from datetime import datetime
 # endregion
 
 
@@ -24,10 +25,24 @@ class GlobalMacroRegime(QCAlgorithm):
     MIN_TRENDING = 2
 
     def initialize(self):
+        # Mesure contre références détenues (#22869, protocole de #21594) :
+        # `strategy` (défaut) garde la décision du code ; `spy` (SPY détenu) et
+        # `6040` (SPY 60 %, BND 40 %) sont les deux références du verdict ;
+        # `ew7` (les 7 ETFs à poids égal) et `noregime` (la même règle, toujours
+        # dans la branche haussière) sont deux diagnostics.
+        self._mode = self.get_parameter("mode", "strategy").lower()
+        if self._mode not in ("strategy", "spy", "6040", "ew7", "noregime"):
+            raise ValueError(
+                f"unknown mode parameter: {self._mode} (strategy | spy | 6040 | ew7 | noregime)"
+            )
+
         # Aligned baseline period 2018-2025 (#1630). Original start was 2015;
         # standardized to 2018-01-01 for cross-strategy comparison.
-        self.set_start_date(2018, 1, 1)
-        self.set_end_date(2025, 1, 1)  # Fixed end date for reproducibility
+        # Dates paramétrables (backtests QC Cloud) ; les défauts sont les dates codées.
+        start = self.get_parameter("start_date", "2018-01-01")
+        end = self.get_parameter("end_date", "2025-01-01")
+        self.set_start_date(datetime.strptime(start, "%Y-%m-%d"))
+        self.set_end_date(datetime.strptime(end, "%Y-%m-%d"))
         self.set_cash(100_000)
         self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
         self.set_benchmark("SPY")
@@ -56,6 +71,47 @@ class GlobalMacroRegime(QCAlgorithm):
         )
 
         self.set_warm_up(timedelta(days=300))
+
+        # Références : aucune décision de stratégie (`rebalance` sort aussitôt),
+        # rééquilibrage au début de chaque mois, une minute après l'ouverture.
+        # Les 7 ETFs, BND compris, sont déjà abonnés : aucun mode n'en ajoute.
+        if self._mode in ("spy", "6040", "ew7"):
+            self.schedule.on(
+                self.date_rules.month_start(self.spy_sym),
+                self.time_rules.after_market_open(self.spy_sym, 1),
+                self._rebalance_reference,
+            )
+
+        # Trace journalière `shadow` (contrat #18923) : valeur du portefeuille à
+        # l'ouverture de chaque séance de SPY, hors préchauffage, répartie sur
+        # e0..e4. Tous les modes la prennent au même instant.
+        self._closes = 0
+        self.schedule.on(
+            self.date_rules.every_day(self.spy_sym),
+            self.time_rules.after_market_open(self.spy_sym, 0),
+            self._trace,
+        )
+
+    def _rebalance_reference(self):
+        if self.is_warming_up:
+            return
+        if self._mode == "spy":
+            self.set_holdings([PortfolioTarget(self.spy_sym, 1.0)])
+        elif self._mode == "6040":
+            self.set_holdings([
+                PortfolioTarget(self.spy_sym, 0.6),
+                PortfolioTarget(self.symbols["BND"], 0.4),
+            ])
+        else:
+            weight = 1.0 / len(self.ALL_TICKERS)
+            self.set_holdings([PortfolioTarget(self.symbols[ticker], weight)
+                               for ticker in self.ALL_TICKERS])
+
+    def _trace(self):
+        if self.is_warming_up:
+            return
+        self.plot("shadow", f"e{self._closes % 5}", self.portfolio.total_portfolio_value)
+        self._closes += 1
 
     def _is_bull_regime(self):
         if not self.spy_sma.is_ready:
@@ -88,8 +144,12 @@ class GlobalMacroRegime(QCAlgorithm):
     def rebalance(self):
         if self.is_warming_up:
             return
+        if self._mode not in ("strategy", "noregime"):
+            return
 
-        bull = self._is_bull_regime()
+        # Le mode `noregime` (diagnostic #22869) reste dans la branche haussière,
+        # repli défensif compris.
+        bull = True if self._mode == "noregime" else self._is_bull_regime()
         targets = {}
 
         if bull:
