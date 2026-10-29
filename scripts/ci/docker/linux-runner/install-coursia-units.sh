@@ -23,6 +23,11 @@
 #             coursia-waiters (pool d'attente PR-gate, label coursia-waiter),
 #             coursia-ci.slice (budget agrege) + daemon.json.
 # -- po-2024: coursia-runner, coursia-lean (leg Lean, label coursia-lean).
+# -- po-2028: coursia-runner (leg d'execution, label coursia-linux),
+#             coursia-ci.slice (budget agrege des conteneurs) + le drop-in
+#             docker qui epingle le daemon sur /var/run/docker-ce.sock.
+#             Inventaire releve sur la machine le 2026-10-29 (pour cette
+#             machine seule ; les autres gardent leurs propres listes).
 #
 # Ce script ne touche PAS a po-2026 (pas d'unite systemd ; voir
 # persist/po-2026/README.md pour la chaine de cette machine).
@@ -44,15 +49,18 @@ die() { printf '[install-coursia-units][ABANDON] %s\n' "$*" >&2; exit 1; }
 
 usage() {
   cat <<'EOF'
-Usage : install-coursia-units.sh [--machine ai-01|po-2024] [--dry-run]
+Usage : install-coursia-units.sh [--machine ai-01|po-2024|po-2028] [--dry-run]
 
 Detection automatique de la machine via le hostname court (myia-ai-01,
-myia-po-2024). Forcer via --machine si la machine est videe de son prefixe
-myia- ou si elle n'est pas listee.
+myia-po-2024, myia-po-2028). Forcer via --machine si la machine est videe de
+son prefixe myia- ou si elle n'est pas listee.
 
 Variables d'environnement reconnues :
   COURSIA_INSTALL_MACHINE  : force la machine cible (meme valeurs que --machine).
-  COURSIA_REPO_DIR          : chemin du depot sur la machine (defaut /mnt/d/CoursIA).
+  COURSIA_REPO_DIR          : chemin du depot sur la machine. Defaut dependant
+                              de la machine : /mnt/d/dev/CoursIA-2 sur po-2028
+                              (workspace migre sur D: le 2026-10-27), /mnt/d/CoursIA
+                              ailleurs.
   COURSIA_NO_DOCKER_RESTART : si definie, ne PAS lancer `systemctl restart
                               docker.service` (la cible docker-ce porte peut-etre
                               des conteneurs en vol ; voir persist/README.md l.264-270).
@@ -71,6 +79,7 @@ detect_machine() {
   case "${HOSTNAME:-$(hostname)}" in
     myia-ai-01|ai-01)            printf 'ai-01\n' ;;
     myia-po-2024|po-2024)        printf 'po-2024\n' ;;
+    myia-po-2028|po-2028)        printf 'po-2028\n' ;;
     *)                           printf '\n' ;;
   esac
 }
@@ -87,10 +96,10 @@ while [ $# -gt 0 ]; do
 done
 
 [ -n "$icc_MACHINE" ] || icc_MACHINE="$(detect_machine)"
-[ -n "$icc_MACHINE" ] || die "machine non detectee (hostname=${HOSTNAME:-inconnu}) ; passez --machine ai-01|po-2024"
+[ -n "$icc_MACHINE" ] || die "machine non detectee (hostname=${HOSTNAME:-inconnu}) ; passez --machine ai-01|po-2024|po-2028"
 case "$icc_MACHINE" in
-  ai-01|po-2024) ;;
-  *) die "machine non supportee par ce script : $icc_MACHINE (visees : ai-01, po-2024)" ;;
+  ai-01|po-2024|po-2028) ;;
+  *) die "machine non supportee par ce script : $icc_MACHINE (visees : ai-01, po-2024, po-2028)" ;;
 esac
 
 # --- prereq -----------------------------------------------------------------
@@ -98,7 +107,14 @@ esac
 command -v systemctl >/dev/null 2>&1 || die "systemctl absent (systemd requis sur la machine cible)"
 command -v install    >/dev/null 2>&1 || die "install(1) absent (coreutils requis)"
 
-icc_REPO_DIR="${COURSIA_REPO_DIR:-/mnt/d/CoursIA}"
+# Le defaut depend de la machine : po-2028 a migre son workspace sur D: le
+# 2026-10-27 (/mnt/d/dev/CoursIA-2), et /mnt/d/CoursIA n'y existe pas. Un
+# defaut unique faisait echouer la garde `[ -d ... ]` sur cette machine pour
+# une raison sans rapport avec le depot.
+case "$icc_MACHINE" in
+  po-2028) icc_REPO_DIR="${COURSIA_REPO_DIR:-/mnt/d/dev/CoursIA-2}" ;;
+  *)       icc_REPO_DIR="${COURSIA_REPO_DIR:-/mnt/d/CoursIA}" ;;
+esac
 [ -d "$icc_REPO_DIR" ] || die "depot introuvable : $icc_REPO_DIR"
 icc_PERSIST_DIR="$icc_REPO_DIR/scripts/ci/docker/linux-runner/persist"
 [ -d "$icc_PERSIST_DIR" ] || die "persist/ introuvable : $icc_PERSIST_DIR"
@@ -125,6 +141,19 @@ LIST
 /usr/local/bin/coursia-runner-start.sh|persist/coursia-runner-start.sh|wrapper de la leg d'execution
 /etc/systemd/system/coursia-lean.service|persist/coursia-lean.service|leg Lean (label coursia-lean)
 /usr/local/bin/coursia-lean-start.sh|persist/coursia-lean-start.sh|wrapper de la leg Lean
+LIST
+      ;;
+    po-2028)
+      # Releve sur la machine le 2026-10-29 : /etc/systemd/system/coursia-runner.service
+      # (enabled), /etc/systemd/system/coursia-ci.slice (static),
+      # /usr/local/bin/coursia-runner-start.sh (0755) et le drop-in docker
+      # /etc/systemd/system/docker.service.d/coursia-socket.conf. Il n'existe
+      # AUCUN drop-in coursia-runner.service.d/ sur cette machine.
+      cat <<'LIST'
+/etc/systemd/system/coursia-runner.service|persist/po-2028/coursia-runner.service|leg d'execution (label coursia-linux)
+/usr/local/bin/coursia-runner-start.sh|persist/po-2028/coursia-runner-start.sh|wrapper de la leg d'execution
+/etc/systemd/system/coursia-ci.slice|persist/po-2028/coursia-ci.slice|budget agrege des conteneurs
+/etc/systemd/system/docker.service.d/coursia-socket.conf|persist/po-2028/coursia-socket.conf|drop-in docker-ce : socket epingle sur /var/run/docker-ce.sock
 LIST
       ;;
   esac
