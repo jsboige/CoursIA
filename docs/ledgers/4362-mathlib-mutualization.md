@@ -14,11 +14,11 @@ Ce ledger porte les **mesures de couverture par machine** de l'état des checkou
 - **34** projets Lake avec dépendance Mathlib.
 - **Économie potentielle : 3.06 GB** (groupe dominant `v4.33.0-db584cd6`, 25 membres, « garder le plus gros comme donneur »).
 - **11 junctions PÉRIMÉES** — elles pointent vers l'ancien chemin `D:\Dev\CoursIA\.mathlib-cache\…` (le clone `CoursIA`, **pas** `CoursIA-2`) : liens morts dans ce clone ; un `Apply` frais les repointerait.
-- **6 checkouts physiques** dans le groupe dominant (0.51 GB chacun, `kelly_lean` 0.72 GB) — ceux qui porteraient les 3.06 GB si junctionnés.
+- **7 checkouts physiques** dans le groupe dominant (0.51 GB chacun, `kelly_lean` 0.72 GB — donneur le plus gros) — ceux qui porteraient les 3.06 GB si junctionnés (6 × 0.51 GB, le donneur restant physique).
 - **2 checkouts physiques de 6.66 GB** isolés sur `v4.32.1-520045ab` (`kls_lean` + `social_choice_lean_peters`) : 13.32 GB physiques, séparés en 2 groupes par une dépendance externe divergente (`SocialChoiceLean`) ; l'alignement des manifests (#2611 étape 2) les fusionnerait 2→1.
 - **Collision de groupId** : 3 groupes de manifests distincts partagent le groupId `db584cd6` (écart : dépendance locale `learning_theory_lean` + dépendance externe `slt`) ; aligner les manifests → **1 checkout au lieu de 27**.
 
-**Verdict / portée** : **MESURE** (scan lu-seul), **non Apply**. Aucune espace disque n'est libérée par cette entrée — l'économie 3.06 GB est **potentielle**. Résidu actionnable sur po-2023 : (a) repointer les 11 junctions périmes + junctionner les 6 checkouts physiques du groupe `db584cd6` (Apply + `lake build` par membre + `distinct_code_sorry` avant/après) ; (b) alignement des manifests `db584cd6` (27→1, #2611 étape 2) ; (c) fusion `520045ab` (2×6.66 GB → 1).
+**Verdict / portée** : **MESURE** (scan lu-seul), **non Apply**. Aucune espace disque n'est libérée par cette entrée — l'économie 3.06 GB est **potentielle**. Résidu actionnable sur po-2023 : (a) repointer les 11 junctions périmes + junctionner 6 des 7 checkouts physiques du groupe `db584cd6` (Apply + `lake build` par membre + `distinct_code_sorry` avant/après) ; (b) alignement des manifests `db584cd6` (27→1, #2611 étape 2) ; (c) fusion `520045ab` (2×6.66 GB → 1).
 
 Sortie du scan lu-seul (2026-10-26, po-2023, clone `CoursIA-2`) :
 
