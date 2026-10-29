@@ -32,6 +32,16 @@ CPUS=2
 OUT="${COURSIA_DRYRUN_OUT:-/var/tmp/coursia-dryrun-$(date -u +%Y%m%dT%H%M%SZ)}"
 ACK_ONE_SLOT=0
 
+# Seuil du temoin de throttling : secondes de throttling cumulees tolerees
+# sur 24 h de fenetre. 60 s est l'ordre de grandeur arbitre par le
+# coordinateur (dispatch `ai01-c2721-23037-budget`) : il ne s'agit pas d'un
+# seuil de performance, mais du seuil AU-DELA duquel le noyau a refuse du
+# temps CPU -- c'est-a-dire ou la declaration de budget cesse d'etre
+# theorique. Surchargeable pour les tests.
+THROTTLE_BUDGET_SPD="${COURSIA_DRYRUN_THROTTLE_BUDGET_SPD:-60}"
+THROTTLE_ALERT=0
+THROTTLE_VERDICT="INDISPONIBLE"
+
 # Points d'injection pour les tests : ils permettent d'exercer le script sur des
 # fixtures, sans machine reelle, sans systemd, sans redemarrage.
 ROOT="${COURSIA_DRYRUN_ROOT:-}"
@@ -68,13 +78,45 @@ Variables d'environnement (tests) :
   COURSIA_DRYRUN_ROOT        prefixe applique aux chemins systeme (fixtures)
   COURSIA_DRYRUN_SYSTEMCTL   commande a utiliser a la place de `systemctl`
   COURSIA_DRYRUN_OUT         repertoire du bundle
+  COURSIA_DRYRUN_UPTIME_S    uptime de l'hote, en secondes (borne SUPERIEURE
+                             de l'age de la slice). Sans cette variable, le
+                             mode fixture ne dispose d'aucune borne
+                             superieure : le temoin peut alors conclure «
+                             ALERTE CERTAINE », jamais « passe ».
+  COURSIA_DRYRUN_THROTTLE_BUDGET_SPD
+                             secondes de throttling tolerees par 24 h
+                             (defaut : 60). Sert au temoin de la section 4bis.
+
+Codes de sortie :
+  0  le controle est complet et la proposition franchit le garde
+  1  REFUS : une source requise manque, ou la proposition serait refusee
+  3  ALERTE : le temoin de throttling (4bis) contredit la declaration de
+     budget. distinct de 1 : le garde n'a pas refuse la proposition, c'est
+     la MESURE du noyau qui parle. L'alerte PRIME sur un refus concomitant :
+     si le temoin a alerte, la sortie est 3 meme si une autre source a refuse
+     ensuite (le motif du refus reste imprime).
 USAGE
 }
 
 say()   { printf '%s\n' "$*"; }
 head1() { printf '\n=== %s ===\n' "$*"; }
 warn()  { printf 'ATTENTION: %s\n' "$*" >&2; }
-die()   { printf 'REFUS: %s\n' "$*" >&2; exit 1; }
+# `die` respecte la priorite du temoin : si le noyau a refuse du temps CPU
+# (section 4bis), c'est la MESURE qui parle, et elle passe devant un refus
+# concomitant de configuration. Sans cela, un refus survenu AVANT la fin du
+# script porterait la sortie 1 et masquerait l'alerte -- le code de sortie
+# dirait « refus de configuration » alors qu'une mesure contredit la
+# declaration. Le motif du refus reste imprime : rien n'est cache.
+die() {
+  printf 'REFUS: %s\n' "$*" >&2
+  if [ "${THROTTLE_ALERT:-0}" -eq 1 ]; then
+    printf 'TEMOIN THROTTLING : %s -- la MESURE contredit la declaration (section 4bis).\n' \
+      "${THROTTLE_VERDICT:-ALERTE}" >&2
+    printf 'Sortie 3 : l alerte prime sur le refus.\n' >&2
+    exit 3
+  fi
+  exit 1
+}
 
 # --- Validation des entrees (fail-closed) -----------------------------------
 pos_int() {
@@ -323,6 +365,181 @@ if [ -d "$SLICE_CG" ]; then
   say "  leur difference ; ce script n'en prend qu'un."
 else
   warn "slice absente du cgroupfs ($SLICE_CG) -- section informative sautee."
+fi
+
+# --- 4bis. Le temoin de throttling (ce que le noyau a REELLEMENT refuse) ---
+#
+# CE QUE CE TEMOIN MESURE, ET CE QU'IL NE MESURE PAS.
+#
+# `cpu.stat` de la slice porte deux compteurs CUMULATIFS depuis la creation du
+# cgroup : `nr_throttled` (periodes pendant lesquelles la slice a ete
+# THROTTLEE) et `throttled_usec` (microsecondes cumulees de throttling).
+# Throttler, c'est le noyau qui RETIRE du temps CPU : la slice a demande plus
+# que son plafond `cpu.max` ne pouvait servir.
+#
+# C'est le seul signal qui dise si un budget DECLARE est realiste. Une
+# declaration est un cap ; le throttling dit si le cap a morde. Un budget
+# declare de 40 vCPU sur une slice de 32 coeurs ne se prouve pas en comparant
+# des nombres : il se prouve en montrant que la slice n'a pas ete throttlee.
+#
+# LA FENETRE, ET POURQUOI ELLE EST BORNEE DE DEUX COTES.
+#
+# Un taux exige une fenetre, et l'age de la slice n'est pas lisible : cgroup
+# v2 n'expose aucune date de creation. Le PIEGE deja note dans ce script vaut
+# aussi ici -- `/proc/uptime` et `journalctl --list-boots` ne concordent pas
+# sur cette machine (ecart mesure de 22 min le 2026-10-28, a cause des
+# « Clock change detected » du WSL). Deux bornes sont donc employees :
+#
+#   W_LO = nr_periods x periode -- duree pendant laquelle la slice a ete
+#           COMPTEE. Une slice ne peut etre comptee que dans des periodes
+#           ecoulees, donc W_LO <= age REEL : c'est une borne INFERIEURE.
+#   W_HI = uptime de l'hote      -- la slice est nee apres le boot, donc
+#           age REEL <= W_HI : c'est une borne SUPERIEURE.
+#
+# L'age reel est entre les deux. Ce que cela autorise, et ce que cela
+# n'autorise pas :
+#
+#   - « PASSE » exige T <= allocation(W_LO). L'age reel etant >= W_LO, son
+#     allocation est >= celle de W_LO : le PASS est donc SOUND.
+#   - « ALERTE CERTAINE » : T > allocation(W_HI) -- meme la borne la plus
+#     generouse est depassee, l'alerte est etablie.
+#   - entre les deux, l'alerte est INCERTAINE : elle est poussee quand meme,
+#     parce que l'orientation prudente est d'alerter, mais elle est nommee
+#     comme telle -- une alerte qui pretend etre certaine quand elle ne l'est
+#     pas reproduirait exactement le defaut que ce script combat.
+#
+# CE QUE LA MESURE NE DISE PAS : elle ne dit pas QUEL conteneur a consomme le
+# temps, ni quand. La ligne « slots » ci-dessous est informative : elle
+# rattache le throttling aux slots individuels, la ou il se produit.
+head1 "4bis. temoin de throttling (CPU)"
+THR_STAT="$SLICE_CG/cpu.stat"
+if [ ! -d "$SLICE_CG" ]; then
+  warn "slice absente du cgroupfs ($SLICE_CG) -- temoin de throttling INDISPONIBLE."
+  say "  TEMOIN THROTTLING : INDISPONIBLE (pas de slice) -- AUCUN verdict rendu."
+elif [ ! -r "$THR_STAT" ]; then
+  warn "cpu.stat absent ou illisible ($THR_STAT) -- temoin de throttling INDETERMINE."
+  say "  TEMOIN THROTTLING : INDETERMINE (cpu.stat absent ou illisible)."
+  say "  -> une panne d'instrument ne se confond pas avec une absence de"
+  say "     throttling : aucun « passe » n'est rendu ici."
+else
+  THR_NR="$(awk '/^nr_throttled /{print $2; exit}' "$THR_STAT" 2>/dev/null)"
+  THR_US="$(awk '/^throttled_usec /{print $2; exit}' "$THR_STAT" 2>/dev/null)"
+  THR_PER="$(awk '/^nr_periods /{print $2; exit}' "$THR_STAT" 2>/dev/null)"
+  THR_USE="$(awk '/^usage_usec /{print $2; exit}' "$THR_STAT" 2>/dev/null)"
+  PERIOD_US="$(awk '{print $2; exit}' "$SLICE_CG/cpu.max" 2>/dev/null)"
+
+  is_uint() { case "${1:-}" in ''|*[!0-9]*) return 1 ;; esac; return 0; }
+  if ! is_uint "$THR_US"; then
+    warn "throttled_usec illisible ($THR_STAT) -- temoin de throttling INDETERMINE."
+    say "  TEMOIN THROTTLING : INDETERMINE (throttled_usec illisible)."
+  elif ! is_uint "$PERIOD_US" || [ "$PERIOD_US" -le 0 ]; then
+    warn "periode de la slice illisible (cpu.max) -- temoin de throttling INDETERMINE."
+    say "  TEMOIN THROTTLING : INDETERMINE (periode de la slice inconnue)."
+  else
+    if [ -n "${COURSIA_DRYRUN_UPTIME_S:-}" ]; then
+      W_HI_S="$COURSIA_DRYRUN_UPTIME_S"
+    elif [ -n "$ROOT" ]; then
+      W_HI_S=""      # fixture : pas d'horloge hote, pas de borne superieure
+    else
+      W_HI_S="$(awk '{print int($1)}' /proc/uptime 2>/dev/null)"
+    fi
+    is_uint "$W_HI_S" || W_HI_S=""
+
+    W_LO_S=""
+    ALLOC_LO=""
+    # La borne INFERIEURE (fenetre minimale) exige `nr_periods`. S'il est
+    # illisible, aucune borne inferieure n'existe : le « passe » devient
+    # IMPOSSIBLE a etablir (une borne superieure ne suffirait pas -- elle
+    # donnerait un PASS non sound). Le temoin rend alors INDETERMINE plutot
+    # que de crier au throttling sur une panne d'instrument.
+    if is_uint "$THR_PER"; then
+      W_LO_S="$(awk -v p="$THR_PER" -v q="$PERIOD_US" 'BEGIN{printf "%.1f", p*q/1e6}')"
+      ALLOC_LO="$(awk -v s="$THROTTLE_BUDGET_SPD" -v w="$W_LO_S" 'BEGIN{printf "%.2f", s*w/86400}')"
+    fi
+    THR_S="$(awk -v u="$THR_US" 'BEGIN{printf "%.2f", u/1e6}')"
+    ALLOC_HI=""
+    [ -n "$W_HI_S" ] && ALLOC_HI="$(awk -v s="$THROTTLE_BUDGET_SPD" -v w="$W_HI_S" 'BEGIN{printf "%.2f", s*w/86400}')"
+
+    printf '  %-22s %s\n' "nr_throttled" "${THR_NR:-<absent>}"
+    printf '  %-22s %s\n' "throttled_usec" "${THR_US:-<absent>}  (${THR_S} s cumulees)"
+    printf '  %-22s %s\n' "nr_periods" "${THR_PER:-<absent>}"
+    printf '  %-22s %s\n' "usage_usec" "${THR_USE:-<absent>}"
+    printf '  %-22s %s\n' "periode (cpu.max)" "${PERIOD_US} us"
+    if [ -n "$W_LO_S" ]; then
+      printf '  %-22s %s s  %s\n' "fenetre minimale" "$W_LO_S" "(borne INFERIEURE de l'age de la slice)"
+    else
+      printf '  %-22s %s\n' "fenetre minimale" "INDETERMINEE (nr_periods illisible)"
+    fi
+    if [ -n "$W_HI_S" ]; then
+      printf '  %-22s %s s  %s\n' "fenetre maximale" "$W_HI_S" "(uptime de l'hote -- borne SUPERIEURE)"
+    else
+      printf '  %-22s %s\n' "fenetre maximale" "INDETERMINEE (pas d'uptime exploitable)"
+    fi
+    printf '  %-22s %s s / %s h\n' "allocation" "$THROTTLE_BUDGET_SPD" "24"
+    [ -n "$ALLOC_LO" ] && printf '  %-22s %s s\n' "  sur fenetre min" "$ALLOC_LO"
+    [ -n "$ALLOC_HI" ] && printf '  %-22s %s s\n' "  sur fenetre max" "$ALLOC_HI"
+
+    # Le verdict, dans cet ordre : la borne la plus generouse d'abord (alerte
+    # certaine), puis la borne la plus stricte (passe sound).
+    if [ -n "$ALLOC_HI" ] && awk -v t="$THR_S" -v a="$ALLOC_HI" 'BEGIN{exit !(t>a)}'; then
+      THROTTLE_VERDICT="ALERTE CERTAINE"
+      THROTTLE_ALERT=1
+    elif [ -n "$ALLOC_LO" ] && awk -v t="$THR_S" -v a="$ALLOC_LO" 'BEGIN{exit !(t>a)}'; then
+      THROTTLE_VERDICT="ALERTE INCERTAINE"
+      THROTTLE_ALERT=1
+    elif [ -n "$ALLOC_LO" ]; then
+      THROTTLE_VERDICT="passe"
+    else
+      THROTTLE_VERDICT="INDETERMINE (fenetre minimale inconnue -- aucun « passe » possible)"
+    fi
+    say "  TEMOIN THROTTLING : $THROTTLE_VERDICT"
+    case "$THROTTLE_VERDICT" in
+      ALERTE*)
+        say "  -> le noyau a refuse du temps CPU. La declaration de budget est"
+        say "     contredite par la MESURE : ce n'est pas une hypothese."
+        ;;
+      passe)
+        say "  -> la slice n'a pas ete throttlee au-dela du seuil de"
+        say "     ${THROTTLE_BUDGET_SPD} s / 24 h. La declaration de budget"
+        say "     n'est PAS contredite par la mesure. Cela ne prouve pas"
+        say "     qu'elle est optimale -- cela etablit qu'elle n'est pas"
+        say "     contredite par le noyau."
+        ;;
+    esac
+
+    # INFORMATIF : ou le throttling se produit. La slice agrege peut etre
+    # calme alors que des slots individuels sont satures -- c'est le cas
+    # mesure le 2026-10-28 sur ai-01 (slice : 7 evenements / 2,4 s ; un
+    # conteneur de slot : 3 688 evenements / 856 s). Le plafond agrege n'etait
+    # alors pas la contrainte : le cap PAR SLOT l'etait.
+    #
+    # UNE LIMITE DE CE TEMOIN PAR S LOT, a ne pas oublier : le compteur d'un
+    # conteneur est RECREE quand le slot est recycle (le superviseur remplace
+    # le conteneur a chaque job). Un slot qui a beaucoup throttle peut donc
+    # avoir un compteur revenu a zero le lendemain. Le temoin DUREL est celui
+    # de la slice, dont le cgroup n'est pas recree.
+    say "  slots (informatif) : throttling cumule par conteneur de la slice"
+    _slots=0
+    _list=""
+    for C in "$SLICE_CG"/docker-*.scope; do
+      [ -e "$C" ] || continue
+      _slots=$((_slots + 1))
+      _u="$(awk '/^throttled_usec /{print $2; exit}' "$C/cpu.stat" 2>/dev/null)"
+      is_uint "$_u" || _u=0
+      _list="$_list$_u	$(basename "$C")
+"
+    done
+    if [ "$_slots" -eq 0 ]; then
+      say "    (aucun scope docker-* lisible dans la slice)"
+    else
+      printf '    %s conteneur(s) ; les 5 plus throttles :\n' "$_slots"
+      printf '%s' "$_list" | sort -rn 2>/dev/null | head -5 | while IFS="$(printf '\t')" read -r u n; do
+        printf '    %-64s %s s\n' "$n" "$(awk -v u="$u" 'BEGIN{printf "%.2f", u/1e6}')"
+      done
+      say "    (compteur par conteneur : il repart a zero quand le slot est"
+      say "     recycle -- seul celui de la slice est durable)"
+    fi
+  fi
 fi
 
 # --- 5. L'arithmetique du garde ---------------------------------------------
@@ -694,4 +911,12 @@ WITNESS
 head1 "fin"
 say "Aucun fichier de /etc ni de /usr/local/bin n'a ete modifie par ce script."
 say "Bundle verifie et complet : $OUT"
+if [ "$THROTTLE_ALERT" -eq 1 ]; then
+  say ""
+  say "TEMOIN THROTTLING : $THROTTLE_VERDICT -- sortie 3."
+  say "  Le bundle est complet et la proposition franchit le garde ; c'est la"
+  say "  MESURE du noyau qui le contredit. Traiter l'alerte comme un fait, et"
+  say "  non comme une hypothèse a verifier."
+  exit 3
+fi
 exit 0
