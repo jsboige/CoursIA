@@ -144,9 +144,12 @@ import os
 import re
 import subprocess
 import sys
+import threading
+import time
+from concurrent.futures import Future, ThreadPoolExecutor, wait
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Any, Sequence
+from typing import Any, Callable, Sequence
 
 try:
     import gh_identity
@@ -336,6 +339,18 @@ class Dossier:
 
 API_USAGE: dict[str, int] = {"rest": 0, "graphql": 0}
 
+# #22938 : la queue lit plusieurs PRs en parallele, donc le compteur d'appels
+# est ecrit par plusieurs threads. `d[k] += 1` n'est PAS atomique en CPython
+# (lecture-modification-ecriture) : sans verrou, deux lectures simultanees
+# peuvent perdre une unite -- et le compteur est une PREUVE de cout (appels
+# par passe), donc il doit compter juste.
+_API_USAGE_LOCK = threading.Lock()
+
+
+def _count_api_call(kind: str) -> None:
+    with _API_USAGE_LOCK:
+        API_USAGE[kind] += 1
+
 
 def _gh_invoke(args: list[str]) -> str:
     proc = subprocess.run(
@@ -346,9 +361,9 @@ def _gh_invoke(args: list[str]) -> str:
     # reste (REST `api`, `pr view`, ...) paie le bucket core. Publie par
     # ``--json`` (cle ``api_usage``) et sur stderr en fin d'invocation.
     if len(args) >= 2 and args[0] == "api" and args[1] == "graphql":
-        API_USAGE["graphql"] += 1
+        _count_api_call("graphql")
     else:
-        API_USAGE["rest"] += 1
+        _count_api_call("rest")
     if proc.returncode != 0:
         raise RuntimeError(proc.stderr.strip() or "gh command failed")
     return proc.stdout
@@ -1223,7 +1238,8 @@ def build_stack_index() -> tuple[dict[int, StackEntry] | None, list[str]]:
     if incidents:
         return None, incidents
     index: dict[int, StackEntry] = {}
-    for p in fetched:
+
+    def _entry(p: int) -> tuple[int, StackEntry]:
         ref = f"{STACK_REF_PREFIX}{p}"
         commits, subjects = _own_ref_content(ref)
         # #20641 -- un cout de un appel git par PR (jusqu'a 50
@@ -1231,9 +1247,16 @@ def build_stack_index() -> tuple[dict[int, StackEntry] | None, list[str]]:
         # le seul ajout de la passe : sans lui, un rafraichissement
         # content-free (update-branch sans conflit) fait sortir la
         # base de la pile de l'ordre lineaire.
-        index[p] = StackEntry(
-            p, ref, commits, subjects, _author_ref(ref)
-        )
+        return p, StackEntry(p, ref, commits, subjects, _author_ref(ref))
+
+    # #22938 : les mesures par PR sont INDEPENDANTES (git en lecture seule)
+    # et coutent ~0,44 s chacune : mesure du 2026-10-29, ~165 s pour les 376
+    # PRs ouvertes, de loin le poste le plus cher d'un passage de queue.
+    # Elles se font donc en PARALLELE -- meme mesure, meme resultat, seule
+    # l'ordonnancement change (~20 s a 8 lectures simultanees).
+    with ThreadPoolExecutor(max_workers=STACK_INDEX_WORKERS) as pool:
+        for p, entry in pool.map(_entry, fetched):
+            index[p] = entry
     _prune_stack_refs(fetched)
     return index, []
 
@@ -1400,21 +1423,35 @@ def stack_reasons(target: int, index: dict[int, StackEntry]) -> list[str]:
 
 
 _STACK_INDEX_CACHE: dict[str, Any] = {"built": False, "index": None, "incidents": []}
+
+#: Lectures git simultanees pour la construction de l'index pile (#22938).
+#: Les mesures par PR sont independantes et ne font QUE de la lecture ; 8
+#: lectures simultanees laissent le disque et le CPU tranquilles.
+STACK_INDEX_WORKERS = 8
+
+#: Verrou de construction de l'index pile (#22938). La lecture en parallele
+#: de la queue fait appeler `default_stack_index` par plusieurs fils a la
+#: fois : sans verrou, chacun construisait son propre index -- huit
+#: constructions concurrentes se disputent le verrou git
+#: (« cannot lock ref 'refs/remotes/origin/main' ») et la porte pile se
+#: retrouve desactivee sans que l'incident se voie.
+_STACK_INDEX_LOCK = threading.Lock()
 # Sentinelle : distingue « pas d'argument » (mesure live, mise en cache) de
 # ``stack=None`` (desactivee explicitement, usage des tests).
 _STACK_AUTO = object()
 
 
 def default_stack_index() -> dict[int, StackEntry] | None:
-    if not _STACK_INDEX_CACHE["built"]:
-        index, incidents = build_stack_index()
-        _STACK_INDEX_CACHE.update(built=True, index=index, incidents=list(incidents))
-        for incident in incidents:
-            # Un incident se DIT et ne bloque pas : sortie stderr, verdict
-            # inchange. C'est la meme frontiere que l'organe #20250, ou une
-            # base illisible ne fabrique aucun finding.
-            print(f"STACK (WARN, mesure incomplete): {incident}", file=sys.stderr)
-    return _STACK_INDEX_CACHE["index"]
+    with _STACK_INDEX_LOCK:
+        if not _STACK_INDEX_CACHE["built"]:
+            index, incidents = build_stack_index()
+            _STACK_INDEX_CACHE.update(built=True, index=index, incidents=list(incidents))
+            for incident in incidents:
+                # Un incident se DIT et ne bloque pas : sortie stderr, verdict
+                # inchange. C'est la meme frontiere que l'organe #20250, ou une
+                # base illisible ne fabrique aucun finding.
+                print(f"STACK (WARN, mesure incomplete): {incident}", file=sys.stderr)
+        return _STACK_INDEX_CACHE["index"]
 
 
 def stack_measurement_state() -> str:
@@ -2492,6 +2529,136 @@ def _consume_metrics(
     }
 
 
+#: Nombre de lectures de PR en parallele dans la queue (#22938).
+#:
+#: La lecture est DOMINEE par le tour de reseau (~0,8 s par appel), pas par
+#: le processus `gh` (~17 ms de spawn mesure) : le levier est la concurrence,
+#: pas le nombre d'appels. Le defaut 8 reste sous le seuil ou le rate-limit
+#: secondaire de GitHub sanctionne les requetes concurrentes d'un meme
+#: client.
+QUEUE_WORKERS_DEFAULT = 8
+
+#: Signatures transitoires pour la relecture d'une PR (#22938). Meme famille
+#: que celle de `check_lane_claim.py` et `pr_gate.py` : ce qui est MOTIF
+#: D'ENVIRONNEMENT (reseau, quota, 5xx) se relit, tout le reste (PR
+#: introuvable, schema casse) echoue aussitot. Une erreur inconnue n'est
+#: PAS transitoire : le defaut reste fatal.
+_TRANSIENT_READ_MARKERS = (
+    "timed out",
+    "timeout",
+    "could not resolve host",
+    "connection",
+    "dial tcp",
+    "temporary failure",
+    "network",
+    "rate limit",
+    "http 429",
+    "http 500",
+    "http 502",
+    "http 503",
+    "http 504",
+    "server error",
+    "unexpected eof",
+    "tls handshake",
+)
+
+#: Relectures consecutives permises pour UNE PR. Trois absorbent un hoquet ;
+#: une panne de quota d'installation ne se franchit pas en quelques
+#: secondes -- la PR reste illisible et la queue la nomme dans `unknown`.
+_TRANSIENT_READ_ATTEMPTS = 3
+_TRANSIENT_READ_BACKOFF = (2.0, 5.0)
+
+#: Motif porte par les PRs non lues parce que le budget de temps est epuise.
+BUDGET_EXHAUSTED_MARKER = "budget de temps depasse"
+
+
+def _is_transient_read_error(exc: BaseException) -> bool:
+    text = str(exc).lower()
+    return any(marker in text for marker in _TRANSIENT_READ_MARKERS)
+
+
+def _parallel_map(
+    func: Callable[[Any], Any],
+    items: Sequence[Any],
+    *,
+    workers: int,
+    deadline: float | None = None,
+) -> list[Any]:
+    """Applique `func` a chaque element, en parallele borne, sous un budget.
+
+    Les resultats sont rendus dans l'ORDRE des elements. Un element non
+    traite (budget epuise) est ABSENT du resultat : l'appelant le nomme
+    dans `unknown` -- la partie reste exploitable et nomme son trou.
+    """
+    items = list(items)
+    if not items:
+        return []
+    if workers <= 1:
+        out: list[Any] = []
+        for item in items:
+            if deadline is not None and time.monotonic() >= deadline:
+                break
+            out.append(func(item))
+        return out
+    pool = ThreadPoolExecutor(max_workers=max(1, workers))
+    futures: dict[Future[Any], int] = {}
+    try:
+        for index, item in enumerate(items):
+            futures[pool.submit(func, item)] = index
+        remaining = (
+            None if deadline is None
+            else max(0.0, deadline - time.monotonic())
+        )
+        _done, not_done = wait(list(futures), timeout=remaining)
+        for future in not_done:
+            # Annule les travaux non encore commences ; ceux qui sont en cours
+            # finissent (leur resultat reste utilisable) et le budget deborde
+            # d'au plus un travail.
+            future.cancel()
+    finally:
+        pool.shutdown(wait=True)
+    pairs = [
+        (index, future.result())
+        for future, index in futures.items()
+        if not future.cancelled()
+    ]
+    pairs.sort(key=lambda pair: pair[0])
+    return [value for _index, value in pairs]
+
+
+def _discussion_batch_safe(batch: Sequence[int]) -> dict[int, dict[str, Any]]:
+    """`_discussion_batch` qui ne fait pas tomber le lot en entier."""
+    try:
+        return _discussion_batch(batch)
+    except Exception:  # noqa: BLE001 - les PRs du lot retombent sur REST
+        return {}
+
+
+def _discussion_bulk_parallel(
+    prs: Sequence[int], *, workers: int
+) -> dict[int, dict[str, Any]]:
+    """`discussion_bulk` avec les lots lus en parallele.
+
+    Un lot = une requete GraphQL ; les lots sont independants, donc ils se
+    lisent concurremment. La lecture reste GROUPEE (une passe par lot) :
+    seul l'ordonnancement des lots change.
+    """
+    prs = list(prs)
+    if not prs:
+        return {}
+    batches = [
+        prs[index:index + DISCUSSION_BATCH]
+        for index in range(0, len(prs), DISCUSSION_BATCH)
+    ]
+    if workers <= 1 or len(batches) == 1:
+        return discussion_bulk(prs)
+    results: dict[int, dict[str, Any]] = {}
+    with ThreadPoolExecutor(max_workers=min(workers, len(batches))) as pool:
+        for surfaces in pool.map(_discussion_batch_safe, batches):
+            results.update(surfaces)
+    return results
+
+
 def build_queue(
     prs: list[int],
     *,
@@ -2499,6 +2666,9 @@ def build_queue(
     stale_after_minutes: int = STALE_AFTER_MINUTES_DEFAULT,
     probe: Any = None,
     loader: Any = None,
+    workers: int = QUEUE_WORKERS_DEFAULT,
+    time_budget_seconds: float | None = None,
+    progress: Callable[[dict[str, Any]], None] | None = None,
 ) -> dict[str, Any]:
     """Queue oldest-first sur les PRs demandees, sans etat persistant.
 
@@ -2510,29 +2680,154 @@ def build_queue(
     critere 6) : compte par verdict, projections consume (attempts +
     success + rejets par cause), et timings (age du dossier au moment de
     la queue, delai dossier -> merge pour les PRs MERGED).
+
+    #22938 : la lecture est desormais en deux temps. (1) Les surfaces de
+    discussion sont lues en GROUPE (une passe GraphQL par lot de 8 PRs au
+    lieu de trois lectures par PR). (2) Le reste de chaque PR (metadonnees du
+    crochet d'identite, check-runs) est lu en PARALLELE borne. Le cout d'un
+    passage tombe de ~8 s par PR a ~0,4 s par PR : la queue de 100 PRs
+    passe de ~13 min (rc 124 mesure sur 74 PRs) a quelques dizaines de
+    secondes.
+
+    ``time_budget_seconds`` borne le passage : a l'echeance, les PRs non
+    lues partent dans ``unknown`` avec le motif du budget -- la queue
+    partielle reste exploitable et nomme son trou, comme le veut la
+    regle du fichier partiel.
     """
     now = now or datetime.now(timezone.utc)
-    load = loader or load_snapshot
     seen: set[int] = set()
-    entries: list[QueueEntry] = []
-    unknown: list[dict[str, Any]] = []
+    unique: list[int] = []
     for pr in prs:
         if pr in seen:
             continue
         seen.add(pr)
+        unique.append(pr)
+    started = time.monotonic()
+    calls_before = dict(API_USAGE)
+
+    # (1) Lecture GROUPEE des surfaces de discussion. Un `loader` injecte
+    # (tests) n'a pas de surface pregroupee : on ne prefetch pas.
+    discussion: dict[int, dict[str, Any]] = {}
+    if loader is None and unique:
+        discussion = _discussion_bulk_parallel(unique, workers=min(workers, 4))
+
+    if loader is None:
+        def _read(pr: int) -> dict[str, Any]:
+            return load_snapshot(pr, discussion=discussion.get(pr))
+    else:
+        def _read(pr: int) -> dict[str, Any]:
+            return loader(pr)
+
+    def _read_with_retry(pr: int) -> dict[str, Any]:
+        last: BaseException | None = None
+        for attempt in range(_TRANSIENT_READ_ATTEMPTS):
+            try:
+                return _read(pr)
+            except Exception as exc:
+                # Le motif decide : une erreur permanente est RELANCEE, une
+                # erreur transitoire est reessayee avec un recul.
+                if not _is_transient_read_error(exc):
+                    raise
+                last = exc
+                if attempt + 1 < _TRANSIENT_READ_ATTEMPTS:
+                    time.sleep(_TRANSIENT_READ_BACKOFF[
+                        min(attempt, len(_TRANSIENT_READ_BACKOFF) - 1)
+                    ])
+        assert last is not None
+        raise last
+
+    def _read_one(pr: int) -> tuple[int, dict[str, Any] | None, dict[str, Any] | None]:
         try:
-            entries.append(classify_snapshot(
-                load(pr),
+            return pr, _read_with_retry(pr), None
+        except Exception as exc:  # noqa: BLE001 - une PR ne tue pas la queue
+            return pr, None, {"pr": pr, "error": str(exc)[:300]}
+
+    entries: list[QueueEntry] = []
+    unknown: list[dict[str, Any]] = []
+    deadline = (
+        None if not time_budget_seconds
+        else started + float(time_budget_seconds)
+    )
+
+    def _record(pr: int, entry: QueueEntry | None, error: dict[str, Any] | None) -> None:
+        if entry is not None:
+            entries.append(entry)
+        if error is not None:
+            unknown.append(error)
+        if progress is not None:
+            try:
+                progress({
+                    "pr": pr,
+                    "verdict": entry.verdict if entry is not None else None,
+                    "elapsed_seconds": round(time.monotonic() - started, 2),
+                })
+            except Exception:  # noqa: BLE001, S110
+                # Le suivi ne doit rien casser : une erreur d'ecriture du
+                # suivi ne doit pas interrompre la queue.
+                pass
+
+    # La porte PILE est une mesure REPO-WIDE : elle lit l'etat de chaque PR
+    # OUVERTE (pas seulement celles de la file). Cout mesure le 2026-10-29 :
+    # ~0,44 s par PR ouverte (une lecture `git log --not origin/main` + la
+    # remontee first-parent), soit ~165 s pour les 376 PRs ouvertes -- de
+    # loin le poste le plus cher d'un passage de queue. Elle est PARTAGEE par
+    # toutes les PRs de la file, donc elle se construit UNE fois. Elle est
+    # lancee en TACHE DE FOND pendant les lectures : elle est prete quand la
+    # premiere candidate READY l'atteint, et elle ne bloque aucun lecteur.
+    stack_warm: threading.Thread | None = None
+    if loader is None and unique:
+        stack_warm = threading.Thread(
+            target=default_stack_index, name="stack-index-warm", daemon=True
+        )
+        stack_warm.start()
+
+    # Phase 1 : les LECTURES, en parallele.
+    snapshots: dict[int, dict[str, Any]] = {}
+    read_results = _parallel_map(_read_one, unique, workers=workers, deadline=deadline)
+    read_attempted = {pr for pr, _snap, _err in read_results}
+    for pr, snap, err in read_results:
+        if snap is not None:
+            snapshots[pr] = snap
+        elif err is not None:
+            unknown.append(err)
+    for pr in unique:
+        if pr not in read_attempted:
+            unknown.append({"pr": pr, "error": BUDGET_EXHAUSTED_MARKER})
+
+    if stack_warm is not None:
+        stack_warm.join()
+
+    # Phase 2 : les CLASSEMENTS, en parallele (le probe B.0 de chaque
+    # candidate est un lecture reseau de plus).
+    def _classify_one(pr: int) -> tuple[int, QueueEntry | None, dict[str, Any] | None]:
+        try:
+            return pr, classify_snapshot(
+                snapshots[pr],
                 now=now,
                 stale_after_minutes=stale_after_minutes,
                 probe=probe,
-            ))
+            ), None
         except Exception as exc:  # noqa: BLE001 - une PR ne tue pas la queue
-            unknown.append({"pr": pr, "error": str(exc)[:300]})
+            return pr, None, {"pr": pr, "error": str(exc)[:300]}
+
+    classify_results = _parallel_map(
+        _classify_one, list(snapshots), workers=workers, deadline=deadline
+    )
+    classified = {pr for pr, _entry, _err in classify_results}
+    for pr, entry, err in classify_results:
+        _record(pr, entry, err)
+    for pr in snapshots:
+        if pr not in classified:
+            _record(pr, None, {"pr": pr, "error": BUDGET_EXHAUSTED_MARKER})
+
     entries.sort(key=lambda item: (
         _parse_ts(item.created_at) or datetime.max.replace(tzinfo=timezone.utc),
         item.pr,
     ))
+    # Les trous sont nommes dans un ordre STABLE (par numero de PR) : la
+    # lecture en parallele les rend dans l'ordre d'arrivee, et deux passages
+    # sur le meme pool doivent produire le meme fichier.
+    unknown.sort(key=lambda item: item.get("pr") or 0)
     metrics: dict[str, Any] = {}
     for item in entries:
         metrics[item.verdict] = metrics.get(item.verdict, 0) + 1
@@ -2583,6 +2878,23 @@ def build_queue(
         "queue": [item.to_json() for item in entries],
         "unknown": unknown,
         "metrics": metrics,
+        # #22938 : le cout du passage, mesure DANS le passage -- un lecteur
+        # verifie la cible (100 PRs en moins de 60 s) sans repasser la
+        # commande.
+        "run": {
+            "workers": workers,
+            "elapsed_seconds": round(time.monotonic() - started, 2),
+            "time_budget_seconds": time_budget_seconds,
+            "budget_exhausted": any(
+                item.get("error") == BUDGET_EXHAUSTED_MARKER for item in unknown
+            ),
+            "prs_requested": len(unique),
+            "prs_classified": len(entries),
+            "api_calls": {
+                "rest": API_USAGE["rest"] - calls_before["rest"],
+                "graphql": API_USAGE["graphql"] - calls_before["graphql"],
+            },
+        },
     }
 
 
@@ -2794,6 +3106,147 @@ def review_threads(pr: int) -> list[dict[str, Any]]:
     return review_threads_bulk([pr])[pr]
 
 
+# --- Lecture groupee des surfaces de discussion (#22938) --------------------
+#
+# La queue lisait TROIS surfaces de discussion par PR en TROIS appels
+# separees (commentaires, reviews, threads), plus les deux lectures de
+# metadonnees (le crochet d'identite) et les check-runs : SIX appels par PR,
+# 600 appels pour 100 PRs. Chaque appel coute ~0,8 s de tour de reseau, donc
+# ~8 s par PR et ~13 min pour le pool ouvert -- mesure : `--queue` sur 74 PRs
+# n'a pas rendu en 600 s (rc 124).
+#
+# Les trois surfaces de discussion tiennent dans UNE passe GraphQL aliasee
+# (un lot de 8 PRs par requete). La forme rendue est BYTE-IDENTIQUE a celle
+# des lecteurs REST : c'est la condition pour que l'empreinte
+# (`surfaces-sha256`) des dossiers vivants reste valide. Mesure live du
+# 2026-10-29 (#23196, #23041, #23166) : commentaires, reviews et threads
+# identiques champ par champ et DANS L'ORDRE, normalisation `[bot]`
+# comprise (`github-actions[bot]`, type `Bot` via `__typename`).
+#
+# Les threads sont hashes tels quels dans l'empreinte : leur selection de
+# champs est donc reprise MOT POUR MOT de `_REVIEW_THREADS_FIELDS` -- un
+# champ de plus changerait le sha256 et perimerait les dossiers vivants.
+DISCUSSION_BATCH = 8
+
+_DISCUSSION_FIELDS = (
+    "comments(first:100){"
+    "nodes{id author{login __typename} createdAt body} "
+    "pageInfo{hasNextPage endCursor}} "
+    "reviews(first:100){"
+    "nodes{id author{login __typename} submittedAt state commit{oid} body} "
+    "pageInfo{hasNextPage endCursor}} "
+    + _REVIEW_THREADS_FIELDS
+)
+
+
+def _gq_author(row: dict[str, Any]) -> dict[str, Any]:
+    """Auteur GraphQL rendu dans la forme REST (login normalise, type)."""
+    author = row.get("author") or {}
+    return {
+        "login": gh_identity.normalize_author_login({
+            "login": author.get("login"),
+            "__typename": author.get("__typename"),
+        }),
+        "type": author.get("__typename") or "",
+    }
+
+
+def _gq_comments(node: dict[str, Any]) -> list[dict[str, Any]]:
+    return [
+        {
+            "id": row.get("id"),
+            "author": _gq_author(row),
+            "createdAt": row.get("createdAt"),
+            "body": row.get("body") or "",
+        }
+        for row in ((node.get("comments") or {}).get("nodes") or [])
+    ]
+
+
+def _gq_reviews(node: dict[str, Any]) -> list[dict[str, Any]]:
+    return [
+        {
+            "id": row.get("id"),
+            "author": _gq_author(row),
+            "submittedAt": row.get("submittedAt"),
+            "state": row.get("state"),
+            "commit": {"oid": (row.get("commit") or {}).get("oid")},
+            "body": row.get("body") or "",
+        }
+        for row in ((node.get("reviews") or {}).get("nodes") or [])
+    ]
+
+
+def _discussion_batch(batch: Sequence[int]) -> dict[int, dict[str, Any]]:
+    """UNE passe GraphQL aliasee pour les surfaces de discussion du lot.
+
+    Renvoie, par PR, les surfaces lues en entier. Une surface qui deborde
+    sa page (plus de 100 elements) est OMISE : le lecteur par PR la
+    relit alors par le chemin historique (REST pagine), seul chemin verifie
+    sur des donnees reelles. Une surface illisible (thread a plus de 100
+    commentaires) est omise de meme.
+    """
+    owner, repo = REPO.split("/", 1)
+    aliases = [f"p{i}" for i in range(len(batch))]
+    defs = "".join(f",${alias}:Int!" for alias in aliases)
+    body = "".join(
+        f"{alias}: repository(owner:$owner,name:$repo)"
+        f"{{pullRequest(number:${alias}){{{_DISCUSSION_FIELDS}}}}}"
+        for alias in aliases
+    )
+    query = f"query($owner:String!,$repo:String!{defs}){{{body}}}"
+    args = [
+        "api", "graphql", "-f", f"query={query}",
+        "-F", f"owner={owner}", "-F", f"repo={repo}",
+    ]
+    for alias, pr in zip(aliases, batch):
+        args.extend(["-F", f"{alias}={pr}"])
+    data = gh_json(args)
+    surfaces: dict[int, dict[str, Any]] = {}
+    for alias, pr in zip(aliases, batch):
+        node = ((data.get("data") or {}).get(alias) or {}).get("pullRequest")
+        if not isinstance(node, dict):
+            continue
+        entry: dict[str, Any] = {}
+        comments = node.get("comments") or {}
+        if not (comments.get("pageInfo") or {}).get("hasNextPage"):
+            entry["comments"] = _gq_comments(node)
+        reviews = node.get("reviews") or {}
+        if not (reviews.get("pageInfo") or {}).get("hasNextPage"):
+            entry["reviews"] = _gq_reviews(node)
+        threads = node.get("reviewThreads") or {}
+        if not (threads.get("pageInfo") or {}).get("hasNextPage"):
+            try:
+                _check_inline_pagination(threads.get("nodes") or [])
+            except RuntimeError:
+                pass
+            else:
+                entry["threads"] = threads.get("nodes") or []
+        surfaces[pr] = entry
+    return surfaces
+
+
+def discussion_bulk(prs: Sequence[int]) -> dict[int, dict[str, Any]]:
+    """Surfaces de discussion de N PRs, en ~N/8 appels au lieu de 3N.
+
+    Un lot dont la passe echoue ne condamne pas ses PRs : GraphQL rejette la
+    requete entiere quand un numero de PR ne resout pas, donc le lot retombe
+    sur les lecteurs par PR (chemin historique, une PR qui echoue reste
+    seule a echouer).
+    """
+    results: dict[int, dict[str, Any]] = {}
+    remaining = list(dict.fromkeys(prs))
+    while remaining:
+        batch = remaining[:DISCUSSION_BATCH]
+        del remaining[:DISCUSSION_BATCH]
+        try:
+            results.update(_discussion_batch(batch))
+        except Exception:  # noqa: BLE001 - un lot ne doit pas condamner ses PRs
+            for pr in batch:
+                results.setdefault(pr, {})
+    return results
+
+
 def _issue_comments(pr: int) -> list[dict[str, Any]]:
     rows = gh_json([
         "api", f"repos/{REPO}/issues/{pr}/comments", "--paginate",
@@ -2955,12 +3408,27 @@ def _metadata_identity(data: dict[str, Any]) -> str:
     )
 
 
-def load_snapshot(pr: int) -> dict[str, Any]:
+def load_snapshot(pr: int, *, discussion: dict[str, Any] | None = None) -> dict[str, Any]:
     before = _pr_metadata(pr)
     snapshot = dict(before)
-    snapshot["comments"] = _issue_comments(pr)
-    snapshot["reviews"] = _reviews(pr)
-    snapshot["threads"] = review_threads(pr)
+    # #22938 : les surfaces de discussion peuvent venir de la lecture
+    # GROUPEE (une passe GraphQL par lot de 8 PRs). La forme rendue est
+    # identique a celle des lecteurs REST -- l'empreinte ne bouge pas. Une
+    # surface absente du lot (page debordee, PR en erreur dans le lot) est
+    # relue par le lecteur par PR, chemin historique.
+    prefetched = discussion or {}
+    snapshot["comments"] = (
+        prefetched["comments"] if "comments" in prefetched
+        else _issue_comments(pr)
+    )
+    snapshot["reviews"] = (
+        prefetched["reviews"] if "reviews" in prefetched
+        else _reviews(pr)
+    )
+    snapshot["threads"] = (
+        prefetched["threads"] if "threads" in prefetched
+        else review_threads(pr)
+    )
     # Fetched inside the before/after bracket, keyed on the head read BEFORE
     # it: a push landing during the read moves headRefOid, the second metadata
     # read disagrees, and the snapshot is refused (transient UNKNOWN, the
@@ -3183,6 +3651,23 @@ def main() -> int:
         "Exit 0 iff READY.",
     )
     parser.add_argument(
+        "--queue-workers", type=int, default=QUEUE_WORKERS_DEFAULT,
+        help="#22938: number of pull requests read in parallel "
+             f"(default: {QUEUE_WORKERS_DEFAULT}; 1 = the sequential legacy "
+             "path, kept for the callers that compare orderings).",
+    )
+    parser.add_argument(
+        "--queue-time-budget", type=float, default=0.0, metavar="SECONDS",
+        help="#22938: wall-clock budget for the queue pass. On expiry the "
+             "partial queue is returned and the pull requests that were not "
+             "read are named in `unknown` (0 = no budget).",
+    )
+    parser.add_argument(
+        "--queue-progress", action="store_true",
+        help="#22938: print one JSON line per classified pull request on "
+             "stderr -- the payload on stdout stays complete and parseable.",
+    )
+    parser.add_argument(
         "--stale-after-minutes", type=int, default=STALE_AFTER_MINUTES_DEFAULT,
         help=f"dossier age beyond which a queue entry is STALE "
         f"(default: {STALE_AFTER_MINUTES_DEFAULT})",
@@ -3257,9 +3742,16 @@ def main() -> int:
             "exactly one of <pr>, --queue <PRs...>, --consume <PR> is required"
         )
     if args.queue is not None:
+        def _progress(item: dict[str, Any]) -> None:
+            print(json.dumps(item, ensure_ascii=False), file=sys.stderr, flush=True)
         result = build_queue(
             args.queue,
             stale_after_minutes=args.stale_after_minutes,
+            workers=max(1, args.queue_workers),
+            time_budget_seconds=(
+                args.queue_time_budget if args.queue_time_budget > 0 else None
+            ),
+            progress=_progress if args.queue_progress else None,
         )
         print(json.dumps(result, ensure_ascii=False, indent=2))
         # File partielle = exploitable (les trous sont nommes dans `unknown`) ;
