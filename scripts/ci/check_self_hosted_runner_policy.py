@@ -675,7 +675,11 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "docs-reference-guard.yml",
     "dryrun-sizing-control.yml",
     "twin-attestation-name-guard.yml",
-    "local-path-waiver-guard.yml",
+    # local-path-waiver-guard.yml n'est PAS ajoute ici : il figure deja plus
+    # haut dans l'allowlist. La branche #23053 l'y avait remis en doublon ; la
+    # fusion de main l'a revele, l'entree en double est retiree et seule la
+    # conversion du workflow (forme hybride, garde anti-fork dans `runs-on`)
+    # reste portee par cette PR.
     # #23053 (meme vague, meme lane, 2026-10-29) : `creation-provenance-advisory.yml`
     #   est un workflow NEUF -- il est arrive sur main par #23185 ("Feat(budget,
     #   #23174)", meme lane), donc APRES que le cliquet soit ecrit, et son job
@@ -687,6 +691,40 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   s'execute. Rollback = variable a `false` ou supprimee, sans toucher les
     #   fichiers.
     "creation-provenance-advisory.yml",
+    # 2026-10-27 (#22937 vague 2, lane myia-ai-01:CoursIA-2) : meme forme
+    #   hybride de debordement que la phase A (#22461), appliquee aux
+    #   workflows a fort volume qui n'etaient PAS dans la phase A.
+    #   Les trois autres fichiers de la vague 2
+    #   (notebook-execution-required.yml, always-on-metadata-guards.yml,
+    #   notebook-validation.yml) sont deja dans l'allowlist -- ils y etaient
+    #   depuis la tranche 3c (#14283), avant leur deport Q35 du 27/10.
+    #   `twin-parity.yml` y est aussi, mais il est porte par une PR
+    #   dediee (#22944) : les deux PRs ne peuvent pas toucher le meme
+    #   workflow, et le perimetre accorde est « 5 workflows par volume
+    #   decroissant ».
+    #   Perimetre : 5 workflows, 6 jobs. Exclus, avec leur motif :
+    #   - codeql.yml : le setup par defaut de GitHub-heberge le job, la
+    #     ligne `runs-on` du fichier n'est pas honoree ;
+    #   - lean-ci-matrix.yml : la toolchain Lean vit dans une image distincte
+    #     (label `coursia-lean`), pas dans le pool `coursia-linux` ;
+    #   - local-path-waiver-guard.yml et perimeter-review-guard.yml :
+    #     declencheurs `issue_comment` et `pull_request_review`, classes
+    #     FORK_REACHABLE par l'instrument (default-deny) ;
+    #     [2026-10-29, fusion de main dans #23053 : la premisse ne vaut plus
+    #     pour local-path-waiver-guard.yml -- son `on:` ne porte desormais que
+    #     `pull_request` (opened/synchronize/reopened) et `workflow_dispatch`,
+    #     aucun declencheur atteignable par un fork. Il entre donc dans
+    #     l'allowlist ci-dessous et passe en forme hybride, garde anti-fork
+    #     dans l'expression `runs-on`. perimeter-review-guard.yml reste exclu.]
+    #   - les deux starvation-advisory : un chien de garde de la file ne
+    #     doit pas occuper la file qu'il observe ;
+    #   - ict-tests.yml : venv + pyphi/numpy/scipy, 8,1 min medianes -- le
+    #     debordement absorbe d'abord les jobs courts ;
+    #   - quarto-pages-deploy.yml : `build` et `deploy` dependent du
+    #     service GitHub Pages (upload-pages-artifact, deploy-pages + OIDC) ;
+    #     seul `validate-pr` est portable (Quarto par tarball curl).
+    "quarto-render-list-freshness.yml",
+    "enrich-quality-gate.yml",
 }
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",
