@@ -14,7 +14,10 @@ mergees en 3 semaines au 2026-08-04, dont une (#9153) dont le titre avoue
 Le tri est celui de l'issue : **calcule = legitime, prose = interdit**.
 
   - Une cellule *code* qui compte et affiche est la bonne facon de porter un
-    chiffre : il se recalcule a chaque execution. On ne la regarde pas.
+    chiffre : il se recalcule a chaque execution. On ne la regarde pas --
+    ni ses sorties, ni son code source (docstrings et commentaires compris :
+    « forward 1 ligne » decrit un appel, « negligeables sur 1 ligne » une
+    empreinte memoire ; aucun des deux n'est une mesure figee, #22564 D3).
   - Une cellule *markdown* qui affirme « (140 lignes) » fige une mesure que
     rien ne remesure. Elle derive des qu'un tiers touche au fichier cite --
     y compris pour une raison sans rapport (sur game_theory_lean, 4 des 6
@@ -439,20 +442,40 @@ def scan_all(root: Path, classes: set[str]) -> list[tuple[str, str, str]]:
 # propre ligne, l'ouvrir ferait avaler tout le reste du fichier.
 OUTPUTS_OPEN_RE = re.compile(r'^(\s*)"outputs"\s*:\s*\[\s*$')
 
+# Un bloc "source" ouvre sur sa propre ligne : `"source": [` (un tableau vide
+# ou mono-ligne ne colle pas au motif et n'ouvre rien, comme `"outputs": []`).
+SOURCE_OPEN_RE = re.compile(r'^(\s*)"source"\s*:\s*\[\s*$')
+
+# Type de la cellule courante : le "source" d'une cellule code est du code
+# (region non-prose), celui d'une cellule markdown est LA prose visee.
+CELL_TYPE_RE = re.compile(r'^\s*"cell_type"\s*:\s*"(\w+)"')
+
 # En-tete de hunk : `@@ -<a>[,<b>] +<c>[,<d>] @@`. Seul <c> (numero de depart dans
 # le fichier NOUVEAU) nous interesse -- c'est lui qui ancre la numerotation.
 HUNK_RE = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@")
 
 
-def _ipynb_output_lines(rel: str) -> set[int]:
-    """Lignes (1-based) situees dans un bloc `outputs` d'un notebook.
+def _ipynb_non_prose_lines(rel: str) -> set[int]:
+    """Lignes (1-based) situees dans une region NON-PROSE d'un notebook.
 
-    La prose d'une cellule et une charge utile de sortie se ressemblent ligne a
-    ligne : toutes deux sont des chaines nues (`    "print(...)\\n",` contre
-    `      "  Angel.lean   65 lignes\\n",`). Le champ `"source"` et le champ
-    `"outputs"` sont en revanche a la MEME profondeur, et le bloc se referme sur
-    une ligne dont l'indentation est celle de la cle. C'est cette carte qui les
-    separe -- le filtre ligne-a-ligne de `scan_diff` ne peut pas le faire seul.
+    Deux regions :
+
+    - le bloc ``outputs`` d'une cellule : la prose d'une cellule et une charge
+      utile de sortie se ressemblent ligne a ligne (toutes deux sont des
+      chaines nues, `    "print(...)\\n",` contre `      "  Angel.lean   65
+      lignes\\n",`), et seul le bloc les separe ;
+    - le bloc ``source`` d'une cellule **code** (#22564 D3) : docstrings et
+      commentaires compris. « Une cellule code qui compte et affiche ... On
+      ne la regarde pas » (en-tete) : un commentaire Python qui decrit un
+      appel (« forward 1 ligne ») ou une empreinte memoire (« negligeables
+      sur 1 ligne ») est de la prose technique legitime, pas une mesure
+      figee en markdown. Le ``source`` d'une cellule markdown reste LA prose
+      visee et n'entre pas dans la carte.
+
+    Les champs `"source"` et `"outputs"` sont a la MEME profondeur, et chaque
+    bloc se referme sur une ligne dont l'indentation est celle de la cle.
+    C'est cette carte qui separe les regions -- le filtre ligne-a-ligne de
+    `scan_diff` ne peut pas le faire seul (il ignore ``cell_type``).
     """
     try:
         text = Path(rel).read_text(encoding="utf-8", errors="replace")
@@ -460,12 +483,22 @@ def _ipynb_output_lines(rel: str) -> set[int]:
         return set()
     inside: set[int] = set()
     base: int | None = None
+    cell_type: str | None = None
     for num, raw in enumerate(text.splitlines(), start=1):
         indent = len(raw) - len(raw.lstrip(" "))
         if base is None:
-            match = OUTPUTS_OPEN_RE.match(raw)
+            match = CELL_TYPE_RE.match(raw)
             if match:
-                base = len(match.group(1))
+                cell_type = match.group(1)
+            outputs_match = OUTPUTS_OPEN_RE.match(raw)
+            if outputs_match:
+                base = len(outputs_match.group(1))
+                continue
+            if cell_type == "code":
+                source_match = SOURCE_OPEN_RE.match(raw)
+                if source_match:
+                    base = len(source_match.group(1))
+                    continue
             continue
         if indent == base and raw.strip().startswith("]"):
             base = None
@@ -504,7 +537,7 @@ def scan_diff(diff_range: str, classes: set[str]) -> list[tuple[str, str, str]]:
 
     findings: list[tuple[str, str, str]] = []
     generated_cache: dict[str, bool] = {}
-    output_lines_cache: dict[str, set[int]] = {}
+    non_prose_cache: dict[str, set[int]] = {}
 
     def _is_generated_file(rel: str) -> bool:
         if rel not in generated_cache:
@@ -515,10 +548,10 @@ def scan_diff(diff_range: str, classes: set[str]) -> list[tuple[str, str, str]]:
                 generated_cache[rel] = False
         return generated_cache[rel]
 
-    def _in_outputs(rel: str, ln: int) -> bool:
-        if rel not in output_lines_cache:
-            output_lines_cache[rel] = _ipynb_output_lines(rel)
-        return ln in output_lines_cache[rel]
+    def _is_non_prose(rel: str, ln: int) -> bool:
+        if rel not in non_prose_cache:
+            non_prose_cache[rel] = _ipynb_non_prose_lines(rel)
+        return ln in non_prose_cache[rel]
 
     # Pour le mode diff, la verification seed par carnet est couteuse et le
     # contrat CI ne demande que la classe artifact par defaut : on applique le
@@ -547,13 +580,15 @@ def scan_diff(diff_range: str, classes: set[str]) -> list[tuple[str, str, str]]:
             continue
         if current.endswith(".md") and _is_generated_file(current):
             continue
-        # La charge utile d'une SORTIE de cellule ressemble a s'y meprendre a de
-        # la prose (`"      \"  Angel.lean   65 lignes\\n\","`) : elle est
-        # pourtant le compte-rendu d'une cellule *code* qui compte et affiche,
-        # que la doctrine de l'en-tete declare legitime ("On ne la regarde
-        # pas."). Le filtre ligne-a-ligne ne peut pas l'attribuer a un type de
-        # cellule ; la carte par fichier, si.
-        if current.endswith(".ipynb") and _in_outputs(current, new_ln):
+        # La charge utile d'une SORTIE et le SOURCE d'une cellule CODE
+        # ressemblent a s'y meprendre a de la prose (`"      \"  Angel.lean
+        # 65 lignes\\n\","` comme `"""... forward 1 ligne."""`) : le premier
+        # est le compte-rendu d'une cellule *code* qui compte et affiche, le
+        # second est du code -- docstrings et commentaires compris --, et la
+        # doctrine de l'en-tete declare les deux legitimes ("On ne la regarde
+        # pas."). Le filtre ligne-a-ligne ne peut pas les attribuer a un type
+        # de cellule ; la carte par fichier, si.
+        if current.endswith(".ipynb") and _is_non_prose(current, new_ln):
             continue
         # Dans un .ipynb, seule une valeur de "source" est de la prose. Les
         # champs de metadonnees (`"notes": "... 14/14 cells executed."`, ecrit
