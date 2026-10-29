@@ -36,7 +36,21 @@ jobs:
     # Routage #14283 tranche 3c (ai-01 2026-09-02) : jambe Linux auto-hebergee.
     # Garde anti-fork au niveau job + runs-on STATIQUE (une expression leverait
     # DYNAMIC_RUNS_ON dans check_self_hosted_runner_policy.py).
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # 2026-10-27 (mesure ai-01) : migration vers `ubuntu-latest` par Q35 etape 2
+    # (#17397) -- `scripts/ci/audit_self_hosted_needs.py` certifie ce workflow
+    # comme n'ayant besoin de RIEN qui n'existe que sur le parc local, et le parc
+    # local etait sature PAR SES CHECKOUTS (mesure 00:45Z : 11 des 12 slots
+    # occupes dans `actions/checkout`, 614 runs en file). La garde anti-fork
+    # ci-dessous est CONSERVEE : aucun code de fork ne change de surface.
+    # 2026-10-27 (#22461, phase A) : forme hybride de debordement -- PR
+    # meme-depot ET vars.CI_OVERFLOW_LOCAL == 'true' -> jambe Linux locale ;
+    # tout le reste (variable absente ou fausse, forks, push/schedule/
+    # dispatch) retombe sur ubuntu-latest (l'etat du 27/10). Bascule :
+    # `gh variable set CI_OVERFLOW_LOCAL --body true|false --repo jsboige/CoursIA`.
+    # Retour arriere = variable a `false` ou supprimee : routage 100 %
+    # heberge, sans toucher ce fichier. Limite : runs-on se resout a la
+    # creation du job, les runs deja en file ne bougent pas.
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - uses: actions/checkout@v4
