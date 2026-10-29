@@ -4,9 +4,9 @@
 
 <!-- CATALOG-STATUS
 series: RL
-pedagogical_count: 35
-breakdown: root=24, PostTraining=11
-maturity: BETA=30, ALPHA=3, DRAFT=2
+pedagogical_count: 37
+breakdown: root=26, PostTraining=11
+maturity: BETA=31, ALPHA=3, DRAFT=3
 -->
 
 > **Note éditoriale (counts)** : Le marqueur `CATALOG-STATUS` ci-dessus est autoritatif pour le compte agrégé. Pour la **décomposition langagière par kernel** (`metadata.kernelspec.language`), ce README reste autoritatif car la granularité kernel n'est pas dans le marqueur agrégé ; elle est documentée ici par lecture directe des kernelspecs au 23/09/2026 :
@@ -67,6 +67,7 @@ Le RL se comprend mieux en voyant l'agent apprendre. Six visualisations suivent 
 | 15 | [RL-15-GRPO-Comparatif-Multi-Graines-Python](RL-15-GRPO-Comparatif-Multi-Graines-Python.ipynb) | GRPO (Group Relative Policy Optimization) vs PPO sur CartPole-v1 — avantage relatif intra-groupe (sans critic) vs GAE bootstrapé, six graines appariées (0/1/7/42/99/123), verdict tri-conditionnel (|edge| ≥ 2σ, Wilcoxon apparié, IC95 % bootstrap des différences). Prong B discrimination moteur. Sous-grain #13436 de l'EPIC #1454. **Verdict du run committé : PPO BEATS GRPO** — PPO mène 6/6 graines (edge −3,43σ, p = 0,0312, IC95 % [−237,07 ; −106,16]) ; portée et limites documentées dans le carnet (plancher Wilcoxon à six paires, CartPole-v1 ≠ post-training de LLM, probe GPU synthétique) | 40-45 min |
 | 16 | [RL-16-Dream-RSI-Python](RL-16-Dream-RSI-Python.ipynb) | Dream-RSI (arXiv 2609.14858, preprint 14/09/2026) : exploration explicite **programmable** (politique = code), historique de découverte = simulateur-replay, **dreaming** = évaluation off-policy à coût zéro, boucle RSI avec incumbent (garantie non-régression replay-only) — monde jouet circle-packing stdlib (16 cercles), ablation replay brut vs guidance sémantique mesurée (3/2/7), chiffres du papier rapportés non canonisés. Distillation #16417 | 40-45 min |
 | 19 | [RL-19-Reward-Tampering-Python](RL-19-Reward-Tampering-Python.ipynb) | Reward tampering : l'agent qui peut **réécrire** sa récompense — *Rocks and Diamonds* à paramètre θ modifiable (exemple 2 d'Everitt et al., Synthese 2021), quatre agents résolus par **induction arrière exacte** sur 32 252 états (standard, oracle, *current-RF* TI-ignoring et TI-considering) : les trois prédictions du papier mesurées `conforme`. Au-delà du diagramme : **l'indifférence n'est pas la protection** — valeur de l'option de manipuler +16 (standard) contre +0 (TI-ignoring), mais départage aléatoire des égalités → manipulation 33/200 (H = 30) et 68/200 (H = 60), toujours après la tâche ; Q-learning standard 0/5 graines en initialisation nulle, 5/5 en optimiste. RF-input tampering (autocollants sur la caméra) : 88 observé / 0 réel contre 20 / 20 sous récompense sur croyance. Distillation #14468 | 35-40 min |
+| 21 | [RL-21-Auto-Jeu-AlphaZero-Python](RL-21-Auto-Jeu-AlphaZero-Python.ipynb) | AlphaZero depuis zéro sur CPU (Silver et al. 2017) — Puissance 4 réduit 6×5 : MCTS guidé réseau (PUCT, valeur de réseau au lieu des rollouts), auto-jeu dont les cibles politiques sont les distributions de visites de la recherche, entraînement deux têtes politique/valeur, tournoi round-robin à budget égal (`mcts_reseau` / `mcts_pur` / `reseau_seul` / `aleatoire`) ; duel direct multi-seed **à parité à ce budget** (0,517 ± 0,159, une graine sous la parité) — la boucle fermée fonctionne, l'avantage du guidage demande des budgets plus élevés | ~5-10 min |
 | pt-0 | [RLPT-00-Reward-Model-Bradley-Terry-Python](PostTraining/RLPT-00-Reward-Model-Bradley-Terry-Python.ipynb) | Reward model from scratch (Bradley-Terry) : apprendre r(x, y) depuis des paires de préférences sur le monde de RLPT-01 — MLE BT sans `trl.RewardTrainer`, évaluation honnête vs plafond de Bayes, calibration (ECE), identification affine, multi-seed 4 | 35-40 min |
 | pt-0b | [RLPT-00b-Biais-Dataset-Preferences-Python](PostTraining/RLPT-00b-Biais-Dataset-Preferences-Python.ipynb) | Biais d'un dataset de préférences, mesurés sur monde synthétique à longueurs variables : les trois biais classiques (longueur, position, annotateurs) injectés à paramètres connus, dégât mesuré contre le plafond de Bayes d'un juge **oracle non biaisé**, puis les mitigations du cahier des charges (length-controlled, swap-augmentation, annotator embedding) plus une quatrième qui sert de contrôle — verdict mesuré : aucune ne franchit 2σ, le length-controlled est **structurellement** sans effet sur une métrique de classement, l'orthogonalisation de longueur **aggrave** le biais | 40-45 min |
 | pt-0c | [RLPT-00c-Anatomie-Reward-Hacking-Python](PostTraining/RLPT-00c-Anatomie-Reward-Hacking-Python.ipynb) | Anatomie d'un reward hacking **qui prend** — le pendant de `RLPT-03` : reward model Bradley-Terry appris sur des préférences à biais de longueur, PPO from scratch sur ce proxy, puis **bras de contrôle** (récompense longueur-contrôlée + oracle) qui identifie le biais comme cause. Mesures : qualité vraie 0,4545 → 0,0170 sous le proxy biaisé, contre 0,9905 sous contrôle ; basculement situé sur l'action de tête du proxy (argmax non correct à α ≈ 2,0), stable sur 4 graines ; **diagnostic par canal** (le canal longueur capture +182 % de l'amélioration du proxy) et **bras 4 de normalisation par canal** (GDPO, AesCode) : qualité 0,875 sans retirer le canal — l'arbitrage, pas la chirurgie | 35-40 min |
@@ -602,6 +603,7 @@ RL/
 ├── RL-15-GRPO-Comparatif-Multi-Graines-Python.ipynb
 ├── RL-16-Dream-RSI-Python.ipynb
 ├── RL-19-Reward-Tampering-Python.ipynb
+├── RL-21-Auto-Jeu-AlphaZero-Python.ipynb
 ├── PostTraining/
 │   ├── RLPT-00-Reward-Model-Bradley-Terry-Python.ipynb
 │   ├── RLPT-00b-Biais-Dataset-Preferences-Python.ipynb

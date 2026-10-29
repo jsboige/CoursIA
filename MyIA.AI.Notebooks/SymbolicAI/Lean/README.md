@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI-Lean
-pedagogical_count: 125
-breakdown: Lean=125
-maturity: BETA=114, DRAFT=8, ALPHA=3
+pedagogical_count: 144
+breakdown: Lean=144
+maturity: BETA=130, DRAFT=11, ALPHA=3
 -->
 
 [← SemanticWeb](../SemanticWeb/README.md) | [↑ SymbolicAI](../README.md) | [Planners →](../Planners/README.md)
@@ -50,6 +50,16 @@ La série dédiée (companion `knot_lean`, Epic #2874) développe trois vues com
 <p align="center">
   <a href="Lean-17b-Knots-Invariants-Companion.ipynb"><img src="assets/readme/lean-knot-invariants.png" width="420" alt="Polynômes d'Alexander Δ(t) du trèfle, du nœud de huit et du couple Conway/Kinoshita-Terasaka (Δ(t) = 1, trivial comme l'unknot)."></a>
 </p>
+
+## Fil de lecture — « Le charme et la marée »
+
+Le travail Grothendieck de la série se lit aussi comme un parcours transversal, en cinq mouvements qui traversent les séries voisines : l'idée géométrique, le langage, les fragilités, les correspondances, puis le pont qui referme l'arc. Le récit complet — visuels, variantes et exercices — vit dans la section 9 de [Lean-15d](Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb) ; l'itinéraire :
+
+1. **L'idée** — quand une figure devient équation, puis preuve : [Geometry-01](Geometry/Geometry-01-From-Figure-To-Equation.ipynb) et [Geometry-02](Geometry/Geometry-02-From-Equation-To-Proof.ipynb).
+2. **Le langage** — le vocabulaire grothendieckien (cribles, topologies, faisceaux) : [Lean-15](Lean-15-Grothendieck-Tribute.ipynb), l'atelier [Lean-15b](Lean-15b-Lean-Grothendieck.ipynb), le companion formel [Lean-15c](Lean-15c-Lean-Grothendieck-Companion.ipynb), la visite visuelle [Lean-15d](Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb).
+3. **Les fragilités** — ce que le langage ne garantit pas : les trois fragilités de [Lean-15](Lean-15-Grothendieck-Tribute.ipynb), la frontière des zéros avec Terjanian ([Serre100/07](Serre100/07-zeros-fonctions-l-gaps-gue.ipynb)) et Serre dans Mathlib ([Serre100/08](Serre100/08-serre-dans-mathlib-Lean.ipynb)).
+4. **Les correspondances** — les liens qui dépassent le langage : formes modulaires ([Langlands 01](Langlands/01-formes-modulaires-sl2z-hecke.ipynb)), Moonshine et l'invariant j ([Langlands 02](Langlands/02-monstrous-moonshine-invariant-j.ipynb)), la chaîne Serre100 de [09](Serre100/09-congruences-tau-lacunarite-delta.ipynb) à [15](Serre100/15-quatre-carres-lagrange.ipynb).
+5. **Le pont** — de la géométrie à la cohomologie : Čech ([Serre100/03](Serre100/03-cohomologie-cech-espaces-finis.ipynb)), Yoneda ([Serre100/04](Serre100/04-lemme-yoneda-categories-finies.ipynb)), les lakes `grothendieck_lean` et `hecke_lean`, jusqu'au capstone [Lean-37](Lean-37-Capstone-Serre100.ipynb).
 
 ## Navigation
 

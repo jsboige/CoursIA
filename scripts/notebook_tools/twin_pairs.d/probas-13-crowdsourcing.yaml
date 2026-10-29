@@ -20,3 +20,24 @@
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
     Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
     (variationnel) sur backend PyTensor. Memes concepts, paradigmes d''inference differents.'
+  - '2026-10-23 (myia-po-2024) #14122 tranche famille A : REBASELINE cote C# -- purge CS1701. Fix causal
+    (cf #21727) : display(HTML(FactorGraphHelper.GetLatestFactorGraphHtml())) devient
+    FactorGraphHelper.GetLatestFactorGraphHtml().DisplayAs("text/html") sur 2 sites de code (cellules 16 et 23) --
+    meme HTML rendu sans lier IHtmlContent (Microsoft.AspNetCore.Html.Abstractions 2.2 vs hote 8.0). CS1701 en
+    sortie : 2 -> 0. Re-execution complete du carnet (15/15 cellules de code, 0 erreur, execution_count 1..15
+    sans trou, kernel .net-csharp, metadata.papermill 20,4 s) ; rendus HTML des graphes de facteurs conserves
+    (13317 et 7736 caracteres, identiques a la base) ; 9 bannieres probeAddresses retirees par l''outil canonique
+    post-re-exec. Churn de re-exec declare : les lignes de progression Infer.NET (Compiling model, Iterating) et
+    Installed Packages, vides dans la base, reviennent en stream (cells 2/11/14/29). Cote Python byte-identique
+    a main. Attestation 0010 = nouveau blob SHA + content_csharp_sha du cote C#.'
+  - '2026-10-23 (myia-po-2024) #14122 suite : le churn de re-exec declare ci-dessus butait sur le ratchet
+    Output-flood (CELL_CAP 50) -- cellules 25e1cfd8 (1 -> 64 objets) et e00aca9e (1 -> 114). DEUX correctifs de
+    SOURCE, aucun output edite a la main. (1) 25e1cfd8 : moteurHW.ShowProgress = false -- la barre de progression
+    Infer.NET ecrit un point par iteration et le kernel .net-csharp en fait un objet de sortie par point ; c''est le
+    cas fondateur documente dans l''en-tete du ratchet. Les lignes Compiling model / Iterating / dots de cette
+    cellule disparaissent donc, et la note ci-dessus ne vaut plus pour elle. (2) e00aca9e : tableau des
+    annotations, listes de predictions et matrices de confusion passes en StringBuilder ecrits en une fois ; texte
+    rendu IDENTIQUE a la base (991 caracteres, compare apres normalisation CRLF). Objets de sortie : 64 -> 10 et
+    114 -> 4, total du carnet 99 ; ratchets flood / failure-text / collapse tous a 0 regressed sur origin/main.
+    Re-execution complete (15/15 cellules, execution_count 1..15, 0 erreur, 19 s), strip probeAddresses puis
+    --update en DERNIERE operation. Attestation 0011.'

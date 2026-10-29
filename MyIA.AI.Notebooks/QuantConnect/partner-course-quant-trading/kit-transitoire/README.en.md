@@ -27,7 +27,40 @@ Each strategy includes a research notebook (QuantBook) documenting iterations an
 | Max positions | 4 (2 in bear market) |
 | Allocation | 95% |
 
-**Best backtest** : Sharpe 0.556, CAGR 11.43%, MaxDD 17.2%
+**Reference backtest** (fixed labels, seed 42): Sharpe 0.387, CAGR 9.92%, MaxDD 46.6%. Over seeds 0, 1, 7, 42 and 99: Sharpe 0.334 to 0.453, CAGR 8.86% to 11.52%, MaxDD 46.5% to 46.6%.
+
+`main.py` accepts two optional parameters:
+
+| Parameter | Default | Role |
+|---|---|---|
+| `label_mode` | `forward` | `forward` drops from training the sessions whose 20-session return is unknown; `legacy` restores the old labels |
+| `rf_seed` | `42` | random forest seed |
+
+#### Labels of the last 20 sessions: QC Cloud measurement (#22429), 2026-10-25
+
+The model learns to predict whether the 20-session return will be positive. For the last 20 sessions of each training window, that return does not exist yet. Since `NaN > 0` is `False`, the old code labelled them "down". Over all retrains, this affects 21,300 rows out of 1,054,312, or 2.0%. The fixed code drops these rows before training, and the share of "up" targets goes from 61.35% to 62.62%.
+
+The measurement rule was written in #22429 before the first backtest. Ten runs, on the same compile and the same day, cover the kit window, 2015-01-01 to 2024-12-31: both labelling modes, each under seeds 0, 1, 7, 42 and 99.
+
+**Non-regression.** In `legacy` mode, seed 42, the run recovers the published max drawdown, 17.2%, but not the Sharpe or the CAGR: 0.604 and 12.25%, against 0.556 and 11.43% published. The trading code of this mode is the pre-fix code. The gap remains unexplained: QC rewrites its adjusted prices from one measurement date to the next, which could be enough, but nothing here proves it.
+
+| Seed | Sharpe `legacy` | Sharpe `forward` | CAGR `legacy` | CAGR `forward` | Max drawdown `legacy` | Max drawdown `forward` |
+|---|---|---|---|---|---|---|
+| 0 | 0.245 | 0.423 | 6.76% | 10.73% | 50.7% | 46.5% |
+| 1 | 0.634 | 0.334 | 12.51% | 8.86% | 17.9% | 46.5% |
+| 7 | 0.275 | 0.453 | 7.46% | 11.52% | 50.7% | 46.5% |
+| 42 | 0.604 | 0.387 | 12.25% | 9.92% | 17.2% | 46.6% |
+| 99 | 0.223 | 0.368 | 6.30% | 9.50% | 50.7% | 46.5% |
+
+The Sharpe is the one shown by QC.
+
+**Reading.**
+- The sign of the effect is not established. The Sharpe difference `forward` - `legacy` is positive for 3 seeds out of 5, with a median of +0.145. The rule required the same sign on all 5 seeds: the effect is therefore not measurable at this resolution.
+- The seed weighs more than the fix. In `legacy` mode, the inter-seed standard deviation of the Sharpe is 0.204, above that median.
+- The 17.2% max drawdown published so far depended on the seed. In `legacy` mode, seeds 1 and 42 have their worst drawdown in late 2018, around 17%. The other three lose 50.7% during the February-March 2020 crash. In `forward` mode, all five seeds lose 46.5% to 46.6% during that same crash, more than SPY held over the window (-33.7%, section 03).
+- One observation outside the rule, given as descriptive only: in `forward` mode, the inter-seed standard deviation of the Sharpe drops to 0.046. With the fixed labels, the result depends much less on the seed. This mode also places more orders: 625 to 638, against 556 to 569.
+
+The run traces (plans, hashes, charts, statistics) are kept outside the repository, under `QC-traces/22429-kit-rf-labels/`.
 
 ### 02 - ML XGBoost Sector Rotation
 
@@ -39,10 +72,32 @@ Each strategy includes a research notebook (QuantBook) documenting iterations an
 | Trees / Depth / LR | 100 / 4 / 0.05 |
 | Training | 3-year rolling, bi-weekly train |
 | Bear filter | SPY < SMA200 -> max 2 positions |
-| Max positions | 5 (2 in bear market) |
+| Max positions | 4 (2 in bear market) |
 | Allocation | 95% |
+| Prediction threshold | 0.01 |
 
-**Best backtest** : Sharpe 0.521, CAGR 12.81%, MaxDD 39.1%
+**Reference backtest** (seed 42, measured 2026-10-25): Sharpe 0.66, CAGR 16.21%, MaxDD 24.7%, 837 orders.
+
+#### Code parameters and published figures: QC Cloud measurement (#22429), 2026-10-25
+
+The parameter table announced at most 5 positions, while `main.py` holds 4, with a 95% allocation and a prediction threshold of 0.01. The file header attributed the figure shown here until now (Sharpe 0.521, MaxDD 39.1%) to an earlier version: 5 positions, 90%, threshold 0.005.
+
+The measurement rule was written in #22429 before the first backtest. Two runs, on the same day, over the kit window (2015-01-01 to 2024-12-31): A is the current `main.py`, unchanged; B is the same file with the three constants of the earlier version. The current code is kept whatever the result: keeping the version with the better backtest would select on the evaluation window.
+
+| Version | Sharpe | CAGR | Max drawdown | Orders |
+|---|---|---|---|---|
+| A: current code (4 positions, 95%, threshold 0.01) | 0.66 | 16.21% | 24.7% | 837 |
+| B: earlier constants (5 positions, 90%, threshold 0.005) | 0.532 | 12.81% | 36.0% | 1109 |
+
+The Sharpe is the one shown by QC.
+
+**Reading.**
+- The published figure is not reproduced. The rule required B to match the Sharpe within three hundredths and the max drawdown within 2 points. Sharpe and CAGR agree, but the max drawdown is 3.1 points apart. The gap remains unexplained.
+- The header also gave, for the current code, Sharpe 0.442 and MaxDD 37.9%. A does not recover it either.
+- A's worst drop runs from May 2015 to February 2016; B's falls in the February-March 2020 crash.
+- One run per version, under a single seed: these figures describe the code, they do not compare two strategies.
+
+The CALIBRATION cells of the notebooks (RandomForest and XGBoost) still announce the earlier constants. They are code cells, to be re-executed on QC Cloud after editing: they will follow in a QC session (#22429).
 
 ### 03 - Framework Composite
 
@@ -138,6 +193,8 @@ The `research.ipynb` notebooks use `QuantBook` and require the QC Lab environmen
 | Retrain | Monthly | Bi-weekly | N/A (no ML) |
 | Max positions | 4 (2 in bear) | 4 (2 in bear) | Dynamic |
 | Learning | Model training | Model training | Expert rules |
-| Sharpe | 0.556 | 0.521 | 0.376 |
-| CAGR | 11.43% | 12.81% | 7.60% |
-| MaxDD | 17.2% | 39.1% | 20.6% |
+| Sharpe | 0.387 | 0.66 | 0.376 |
+| CAGR | 9.92% | 16.21% | 7.60% |
+| MaxDD | 46.6% | 24.7% | 20.6% |
+
+The RandomForest and XGBoost columns are the reference backtests (seed 42, measured 2026-10-25). The Framework column is the best published backtest for that strategy.

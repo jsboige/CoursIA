@@ -30,10 +30,26 @@ la flotte tant qu'aucune livraison (``[DELIVERED]``, reponse en prose) ou
 cloture (``[DONE]``) n'est postee. Relacher proprement reste le geste recommande
 (``[RELEASED]``), mais l'organe ne deserte plus l'issue en son absence.
 
+BALLE CHEZ LE VALIDATEUR (#21279) : quand le dernier message de TOUTES les issues
+``recette`` vient de la flotte, le validateur est muet et la balle est chez lui --
+un tour de lane ne produirait qu'une notification de plus pour une personne hors
+flotte. L'organe rend alors rc 0 avec une ligne explicite
+``WAITING-VALIDATOR #N depuis <ts>`` (ts = dernier message de flotte sur l'issue
+dont l'attente est la plus longue) au lieu de nommer une issue a servir.
+
 Le validateur se declare dans le body de l'issue par une ligne
 ``Validateur : @login`` ; a defaut, tout auteur hors flotte compte comme validateur.
 
-Sorties : rc 0 = rien a faire (tour fait, ou aucune issue ``recette``) ;
+LIMITE CLOSE (#21279, revue Hermes du 2026-10-22) : l'etat « balle chez le
+validateur » se lisait sur l'ORDRE DES MESSAGES, pas sur l'etat du claim, donc un
+``[CLAIMED]`` de flotte pose puis abandonne restait le dernier message de flotte
+et la balle demeurait chez le validateur alors que personne n'attendait. #22105 a
+livre le correctif durable : les marqueurs d'ouverture de claim sont exclus du
+calcul « la flotte a parle en dernier ». La resolution de ce merge a retire le
+paragraphe de limite et le test qui l'encodait.
+
+Sorties : rc 0 = rien a faire (tour fait, aucune issue ``recette``, ou balle chez
+le validateur sur toutes les issues) ;
 rc 1 = tour du, l'issue est nommee ; rc 2 = organe injoignable (fail-open : le
 cycle continue, la ligne ``UNKNOWN`` le dit).
 
@@ -138,6 +154,13 @@ def assess_issue(payload: dict, lane: str, now: datetime) -> dict:
         "last_lane_visit": last_lane,
         "lane_visit_age_days": _age_days(last_lane, now),
         "ball_in_fleet_court": bool(last_validator) and last_validator > last_fleet,
+        # La flotte a parle en dernier : le validateur doit repondre (#21279).
+        # Ni la flotte ni le validateur n'ont parle : la balle est libre, l'issue
+        # n'a jamais ete servie et la lane peut la prendre.
+        "ball_with_validator": bool(last_fleet) and not (bool(last_validator) and last_validator > last_fleet),
+        # Depuis quand le validateur attend : son dernier message de flotte, ou la
+        # creation de l'issue si la flotte n'y a jamais parle (#21279).
+        "waiting_since": last_fleet or payload.get("createdAt") or None,
         "held_by": held_by,
     }
 
@@ -163,6 +186,16 @@ def decide(states: list[dict], window_days: float) -> dict:
         return {"verdict": "OK", "issue": recent["number"],
                 "reason": f"dernier tour de recette il y a {last:.1f} j (#{recent['number']})"}
     target = min(states, key=service_key)
+    if all(s["ball_with_validator"] for s in states):
+        # Le validateur est muet sur TOUTES les issues : la balle est chez lui.
+        # Servir une issue ici ne produirait qu'une notification de plus pour une
+        # personne hors flotte (#21279) -- l'organe rend rc 0 et nomme l'attente.
+        waiter = min(states, key=lambda s: (s.get("waiting_since") or ""))
+        since = "jamais" if last is None else f"il y a {last:.1f} j"
+        return {"verdict": "WAITING-VALIDATOR", "issue": waiter["number"],
+                "reason": f"aucun tour de recette depuis {window_days:g} j (dernier : {since}) ; "
+                          f"la balle est chez le validateur sur les {len(states)} issue(s) de recette "
+                          f"-- un tour de lane n'y change rien"}
     if target["held_by"]:
         why = f"toutes les issues sont tenues ; celle-ci par {', '.join(target['held_by'])}, verifier le claim avant d'editer"
     elif target["ball_in_fleet_court"]:
@@ -188,7 +221,7 @@ def gh_list() -> list:
 
 def gh_issue(number: int) -> dict:
     return _gh_json(["issue", "view", str(number), "--repo", REPO,
-                     "--json", "number,title,body,comments"])
+                     "--json", "number,title,body,comments,createdAt"])
 
 
 def run(lane: str, window_days: float, now: datetime,
@@ -222,6 +255,11 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  #{s['number']} validateur {who} | derniere visite de la lane : {age} | balle : {ball}{held}")
         tail = f" #{result['issue']}" if result["verdict"] == "DUE" else ""
         print(f"VERDICT: {result['verdict']}{tail} -- {result['reason']}")
+        if result["verdict"] == "WAITING-VALIDATOR":
+            waiter = next((s for s in result.get("issues") or []
+                           if s.get("number") == result.get("issue")), {})
+            since = waiter.get("waiting_since") or "inconnue"
+            print(f"WAITING-VALIDATOR #{result.get('issue')} depuis {since}")
     return 1 if result["verdict"] == "DUE" else 0
 
 

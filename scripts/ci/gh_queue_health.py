@@ -34,6 +34,7 @@ import concurrent.futures
 import json
 import subprocess
 import sys
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -66,6 +67,22 @@ KNOWN_ZOMBIE_RUN_IDS = frozenset({
 # zombie. Below it, a queued run is ordinary pool saturation, not drift.
 DEFAULT_STALE_HOURS = 24.0
 
+# Third permanent class (issue #20249): runs of an event that carries no PR
+# by construction, wedged in `queued`, so the pr-closed class can never
+# claim them. Measured shape: 4 "Linux runner starvation advisory" runs
+# created 2026-10-07 15:08-15:11Z, identical across 4 consecutive daily
+# snapshots (~12 days queued) -- the same day the coursia-linux labels
+# were re-posed (08:04Z), i.e. the pre-labelling admission limbo. The live
+# API measures their `event` as `workflow_run` (NOT `schedule` -- the
+# workflow NAME says "advisory", the chaining event does not), so the
+# event set below covers both chained and cron-triggered runs. A fifth run
+# of the same workflow drained in the meantime, so the class is defined
+# *structurally* (event set + age), never by run IDs: a run of such an
+# event stuck past 7 days is treated as an explained ghost; below it stays
+# live and the watch alarms on it as a candidate new zombie.
+SCHEDULED_ORPHAN_EVENTS = frozenset({"schedule", "workflow_run"})
+SCHEDULED_ORPHAN_HOURS = 168.0
+
 
 class InstrumentError(RuntimeError):
     """The instrument cannot prove that its result is complete or coherent."""
@@ -80,28 +97,45 @@ def parse_date(value: str) -> datetime:
     return parsed.replace(tzinfo=timezone.utc)
 
 
-def _gh_api_json(endpoint: str):
+def _gh_api_json(endpoint: str, *, attempts: int = 2, backoff: float = 5.0):
     """Call `gh api <endpoint>` and return the parsed JSON payload.
 
     Shared transport for the queued-runs listing and the PR-state lookups,
     so both fail through the same InstrumentError channel.
+
+    A single bounded retry (``attempts`` total, ``backoff`` seconds apart)
+    absorbs a *transient* API hiccup -- a 429 rate-limit, a 5xx, a momentary
+    gh failure -- that would otherwise declare the whole watch BROKEN for the
+    day (the failure mode that opened #22186). A *structural* failure is not
+    retried: ``gh`` missing from PATH and a non-JSON body both fail on the
+    first attempt. A failure that persists after the retry still raises
+    InstrumentError, so the watch degrades to BROKEN exactly as before.
     """
-    try:
-        proc = subprocess.run(
-            ["gh", "api", endpoint],
-            capture_output=True, text=True, encoding="utf-8",
-            check=False,
+    last_error = "gh api failed (no attempt ran)"
+    for attempt in range(max(1, attempts)):
+        if attempt:
+            time.sleep(backoff)
+        try:
+            proc = subprocess.run(
+                ["gh", "api", endpoint],
+                capture_output=True, text=True, encoding="utf-8",
+                check=False,
+            )
+        except FileNotFoundError as exc:
+            # `gh` not on PATH is not transient -- fail immediately.
+            raise InstrumentError("gh CLI not on PATH") from exc
+        if proc.returncode == 0:
+            try:
+                return json.loads(proc.stdout)
+            except json.JSONDecodeError as exc:
+                # A non-JSON body is a structural failure, not transient.
+                raise InstrumentError(
+                    f"non-JSON response: {proc.stdout[:200]!r}") from exc
+        last_error = (
+            f"gh api failed (rc={proc.returncode}) "
+            f"after {attempt + 1} attempt(s): {proc.stderr.strip()}"
         )
-    except FileNotFoundError as exc:
-        raise InstrumentError("gh CLI not on PATH") from exc
-    if proc.returncode != 0:
-        raise InstrumentError(
-            f"gh api failed (rc={proc.returncode}): {proc.stderr.strip()}"
-        )
-    try:
-        return json.loads(proc.stdout)
-    except json.JSONDecodeError as exc:
-        raise InstrumentError(f"non-JSON response: {proc.stdout[:200]!r}") from exc
+    raise InstrumentError(last_error)
 
 
 def fetch_queued_runs(repo: str) -> list[dict]:
@@ -155,6 +189,7 @@ def fetch_pr_states(repo: str, branches: list[str]) -> dict[str, str]:
 
 def classify_runs(runs: list[dict], cutoff: datetime,
                   pr_states: dict[str, str] | None = None,
+                  now: datetime | None = None,
                   stale_runs_on: set[int] | None = None) -> dict:
     """Split queued runs into explained ghosts and live runs.
 
@@ -169,6 +204,15 @@ def classify_runs(runs: list[dict], cutoff: datetime,
       while its runs awaited admission, and the API refuses to cancel a
       run "that has not been queued yet"). Regardless of age: a closed PR
       can never be admitted.
+    * `scheduled-orphan` -- a run of an event that carries no PR by
+      construction (`SCHEDULED_ORPHAN_EVENTS`: `schedule`, `workflow_run`)
+      queued for more than `SCHEDULED_ORPHAN_HOURS` (issue #20249: the
+      2026-10-07 starvation advisories, event measured as `workflow_run`,
+      wedged in the label re-pose window). Structural (event set + age),
+      never by run IDs: a sibling run of the same workflow drained on its
+      own, so an ID set would drift. Only applied when `now` is provided; a
+      raw-shape replay without `now` keeps them live, and the prior-analysis
+      replay carries their `reason` through `_ghost_reason`.
     * `stale-runs-on` -- the workflow file at the run's `head_sha` declared
       a `runs-on` pool that no longer exists in the workflow file at the
       `main` HEAD (a tranche of #17397 migrated the workflow to
@@ -220,6 +264,11 @@ def classify_runs(runs: list[dict], cutoff: datetime,
         elif (run.get("event") == "pull_request"
               and pr_states.get(run.get("head_branch")) == "closed"):
             ghosts.append(entry(run, "pr-closed"))
+        elif (now is not None
+              and run.get("event") in SCHEDULED_ORPHAN_EVENTS
+              and (now - created).total_seconds() / 3600.0
+              > SCHEDULED_ORPHAN_HOURS):
+            ghosts.append(entry(run, "scheduled-orphan"))
         elif run.get("id") in stale_runs_on:
             ghosts.append(entry(run, "stale-runs-on"))
         else:
@@ -649,6 +698,22 @@ def main(argv: list[str] | None = None) -> int:
                 and run["created_at"] >= args.cutoff
             } - {None})
             pr_states = fetch_pr_states(args.repo, candidates) if candidates else {}
+        # Resolve the reference instant once, before classification. An
+        # explicit --now always wins (deterministic replay by instant). A
+        # live run resolves the wall clock. A snapshot replay without --now
+        # keeps now=None for classification: the scheduled-orphan age class
+        # (#20249) is inert offline, so the same snapshot renders the same
+        # verdict at D+0 and at D+10 -- the replay-fidelity property already
+        # guaranteed for parse_failures and _ghost_reason (#13966, #18215).
+        if args.now:
+            try:
+                now = datetime.fromisoformat(args.now.replace("Z", "+00:00"))
+            except ValueError as exc:
+                raise InstrumentError(f"invalid --now: {args.now!r}") from exc
+            if now.tzinfo is None:
+                now = now.replace(tzinfo=timezone.utc)
+        else:
+            now = None if args.input else datetime.now(timezone.utc)
 
         # stale-runs-on detection: requires --repo (live API), and only
         # for runs whose `path` (the workflow file) and `head_sha` are
@@ -678,7 +743,7 @@ def main(argv: list[str] | None = None) -> int:
                     args.repo, sorted(stale_runs_on),
                     max_workers=max(1, args.cancel_workers),
                 )
-        classification = classify_runs(raw_runs, cutoff, pr_states,
+        classification = classify_runs(raw_runs, cutoff, pr_states, now=now,
                                         stale_runs_on=stale_runs_on)
         # When the input was a prior analysis output, `classify_runs` cannot
         # re-derive the parse_failures from the synthesized runs -- they were
@@ -726,16 +791,13 @@ def main(argv: list[str] | None = None) -> int:
             # The watch alarms on live runs only when they are stale AND
             # unknown (#18131): the 2026-09-13 zombies and a saturated
             # pool's fresh backlog are reported, never alarmed on.
-            if args.now:
-                try:
-                    now = datetime.fromisoformat(args.now.replace("Z", "+00:00"))
-                except ValueError as exc:
-                    raise InstrumentError(f"invalid --now: {args.now!r}") from exc
-                if now.tzinfo is None:
-                    now = now.replace(tzinfo=timezone.utc)
-            else:
-                now = datetime.now(timezone.utc)
-            parts = split_live(classification["live"], now, args.stale_hours)
+            # The watch split measures report time: on a replay without an
+            # explicit --now the classification instant is None (frozen
+            # verdict above), so split_live ages runs against this
+            # rendering's wall clock.
+            parts = split_live(classification["live"],
+                               now or datetime.now(timezone.utc),
+                               args.stale_hours)
             result["stale_hours"] = args.stale_hours
             result["counts"].update({
                 "known_zombies": len(parts["known_zombies"]),
@@ -777,7 +839,24 @@ def main(argv: list[str] | None = None) -> int:
             return EXIT_BROKEN
         return EXIT_GHOST
     except InstrumentError as exc:
+        # Write the failure to the output file so the workflow's BROKEN step
+        # has a payload to surface -- before this the exception returned here
+        # with no file written, so the issue opened with "payload non produit"
+        # and no diagnosis (#22186).
         print(f"[queue-health] BROKEN INSTRUMENT: {exc}", file=sys.stderr)
+        if args.output:
+            try:
+                args.output.parent.mkdir(parents=True, exist_ok=True)
+                args.output.write_text(
+                    json.dumps(
+                        {"verdict_watch": "BROKEN",
+                         "verdict_measurement": "BROKEN",
+                         "instrument_error": str(exc)},
+                        indent=2, ensure_ascii=False) + "\n",
+                    encoding="utf-8")
+            except OSError as write_exc:
+                print(f"[queue-health] cannot write output on failure: {write_exc}",
+                      file=sys.stderr)
         return EXIT_BROKEN
 
 
