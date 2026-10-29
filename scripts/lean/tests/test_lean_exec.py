@@ -1501,16 +1501,21 @@ def test_kill_switch_wsl_off_refuses_pinned_wsl():
 def test_auto_pin_refused_with_orphan_cache():
     """Defaut 3 : premier epinglage auto sur un lake dont .lake/build
     existe SANS epingle connue = refus actionnable (origine du cache
-    inconnue, l'organe ne tranche pas ni ne purge). Apres purge, la
-    politique par defaut s'applique normalement."""
+    inconnue, l'organe ne tranche pas ni ne purge). Le refus exige une
+    ambiguite REELLE (deux backends declarables) : a backend unique,
+    l'auto-epinglage pose l'unique choix (runner CI posix, couvert par
+    test_unknown_cache_sole_backend_auto_pins dans le fichier stdin).
+    Apres purge, la politique par defaut s'applique normalement."""
     with tempfile.TemporaryDirectory() as td:
         state = Path(td) / "state"
         proj = _lake_fixture(Path(td), "t3lake")
         (proj / ".lake" / "build").mkdir(parents=True)
-        cap = dict(LEAN_EXEC_CAP=8, LEAN_EXEC_BUDGET=1,
-                   LEAN_EXEC_FORCE_BACKENDS="native")
+        cap_ambigu = dict(LEAN_EXEC_CAP=8, LEAN_EXEC_BUDGET=1,
+                          LEAN_EXEC_FORCE_BACKENDS="wsl,native")
+        cap_native = dict(LEAN_EXEC_CAP=8, LEAN_EXEC_BUDGET=1,
+                          LEAN_EXEC_FORCE_BACKENDS="native")
         rc = _run(state, ["run", "--json", "--", PY, "-c", "print('ok')"],
-                  cwd=proj, timeout=90, **cap)
+                  cwd=proj, timeout=90, **cap_ambigu)
         assert rc.returncode == le.EXIT_REFUSED, (
             rc.returncode, rc.stdout, rc.stderr)
         out = json.loads(rc.stdout[rc.stdout.index("{"):])
@@ -1519,10 +1524,11 @@ def test_auto_pin_refused_with_orphan_cache():
         assert "--backend" in reason, reason
         # Fail-closed : aucune epingle posee par-dessus le cache orphelin.
         assert _registry(state) == {}
-        # Purge = la porte : l'auto-epinglage redevient legal.
+        # Purge = la porte : l'auto-epinglage redevient legal (l'enfant
+        # PY Windows exige le backend natif ici).
         shutil.rmtree(proj / ".lake")
         rc2 = _run(state, ["run", "--json", "--", PY, "-c", "print('ok')"],
-                   cwd=proj, timeout=90, **cap)
+                   cwd=proj, timeout=90, **cap_native)
         assert rc2.returncode == 0, rc2.stderr
         out2 = json.loads(rc2.stdout[rc2.stdout.index("{"):])
         assert out2["lean_backend"] == "native", out2
@@ -1669,15 +1675,17 @@ def test_dry_run_cli_reports_and_leaves_no_trace():
 
 def test_dry_run_cli_refuses_orphan_cache_without_pinning():
     """Cache `.lake/build` present sans epingle connue : la politique
-    premier-ecrivain ne tranche PAS (bascule = 1-2 h de Mathlib). `dry-run`
-    doit le DIRE — verdict REFUS — et surtout ne pas epingler pour
-    « debloquer » : ce serait prendre la decision qu'il previsualise."""
+    premier-ecrivain ne tranche PAS (bascule = 1-2 h de Mathlib) — sous
+    ambiguite REELLE (deux backends declarables ; a backend unique le
+    verdict auto-epingle, cf test_lean_exec_stdin.py). `dry-run` doit
+    DIRE le refus — et surtout ne pas epingler pour « debloquer » :
+    ce serait prendre la decision qu'il previsualise."""
     with tempfile.TemporaryDirectory() as td:
         state = Path(td) / "state"
         proj = _lake_fixture(Path(td), "drylake")
         (proj / ".lake" / "build").mkdir(parents=True, exist_ok=True)
         rc = _run(state, ["dry-run", "--json", "--cwd", str(proj)],
-                  timeout=90, LEAN_EXEC_FORCE_BACKENDS="native")
+                  timeout=90, LEAN_EXEC_FORCE_BACKENDS="wsl,native")
         assert rc.returncode == 0, (rc.returncode, rc.stdout, rc.stderr)
         payload = json.loads(rc.stdout[rc.stdout.index("{"):])
         assert payload["backend"]["chosen"] is None, payload["backend"]
