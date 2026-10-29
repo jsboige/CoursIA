@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-10-25
+
 # Registre des rôles pédagogiques — `pedagogical_role`
 
 **Issue parente** : [#15080](https://github.com/jsboige/CoursIA/issues/15080) — critère 4 (le compteur d'exercices s'inverse)

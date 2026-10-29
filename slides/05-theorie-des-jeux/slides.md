@@ -274,7 +274,7 @@ layout: dense
 
 <img src="./images/img_017.png" alt="Se lier les mains : bruler le pont rend la menace credible" style="display:block; margin:6px auto 2px; max-height:90px; width:auto; max-width:100%; object-fit:contain;">
 
-*Notebooks : [GameTheory-09b-Commitment-Stackelberg-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-09b-Commitment-Stackelberg-Python.ipynb) (se lier les mains, menace credible) · [GameTheory-06c-RepeatedGames-FolkTheorem-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipynb) (strategies de punition).*
+*Notebooks : [GameTheory-09b-Commitment-Stackelberg-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-09b-Commitment-Stackelberg-Python.ipynb) (se lier les mains, menace credible) · [Dynamics-01-Jeux-Repetes-Folk-Theorem-Python](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb) (strategies de punition).*
 
 ---
 layout: dense
@@ -302,7 +302,7 @@ layout: dense
 <img src="./images/img_021.png" alt="Jeux repetes : punition perpetuelle et evolution de la confiance" style="width:100%; height:90px; object-fit:contain;">
 </div>
 
-*Notebooks : [GameTheory-06c-RepeatedGames-FolkTheorem-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipynb) (folk theorem) · [GameTheory-06-EvolutionTrust-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06-EvolutionTrust-Python.ipynb) (evolution de la confiance).*
+*Notebooks : [Dynamics-01-Jeux-Repetes-Folk-Theorem-Python](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb) (folk theorem) · [GameTheory-06-EvolutionTrust-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06-EvolutionTrust-Python.ipynb) (evolution de la confiance).*
 
 ---
 layout: dense
@@ -312,7 +312,7 @@ layout: dense
 
 ## Grim trigger certifie
 
-- [GameTheory-06b-Lean-RepeatedGames-Lean-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06b-Lean-RepeatedGames-Lean-Python.ipynb) : compagnon formel du 06c
+- [Dynamics-02-Jeux-Repetes-Lean-Python](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-02-Jeux-Repetes-Lean-Python.ipynb) : compagnon formel du 06c
   - Jeu de stage, flux actualises, `grim_trigger_is_NE`
   - Seuil de credibilite `delta >= (T-R)/(T-P)` certifie, zero `sorry`
 
@@ -410,8 +410,8 @@ layout: dense
 
 ## Parcours et extensions
 
-- [GameTheory-03f-Meta-Actions-Tarifees-Python (§4-8)](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03f-Meta-Actions-Tarifees-Python.ipynb) : versant d'integration (absorbé depuis l'ex-03f)
-  - [GameTheory-03f-Meta-Actions-Tarifees-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03f-Meta-Actions-Tarifees-Python.ipynb) · [GameTheory-03g-Deux-Especes-de-Fleches-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03g-Deux-Especes-de-Fleches-Python.ipynb) · [GameTheory-03d-Le-Joueur-LLM-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03d-Le-Joueur-LLM-Python.ipynb)
+- [GameTheory-03e-Meta-Actions-Tarifees-Python (§4-8)](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03e-Meta-Actions-Tarifees-Python.ipynb) : versant d'integration (absorbé depuis l'ex-03f)
+  - [GameTheory-03e-Meta-Actions-Tarifees-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03e-Meta-Actions-Tarifees-Python.ipynb) · [GameTheory-03f-Deux-Especes-de-Fleches-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03f-Deux-Especes-de-Fleches-Python.ipynb) · [GameTheory-03d-Le-Joueur-LLM-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03d-Le-Joueur-LLM-Python.ipynb)
 
 ---
 layout: default
@@ -995,7 +995,7 @@ layout: dense
 - Compagnon formel : module `ProgramGames.Bounded` du lake `game_theory_lean` -- code public, budget, interprete `act`
 - Oracles reflexifs (Fallenstein, Taylor, Christiano 2015) : decider sur sa propre decision sans paradoxe
 
-*Notebooks : [GameTheory-06e-Open-Source-Game-Theory-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06e-Open-Source-Game-Theory-Python.ipynb) · [GameTheory-06f-Bounded-Agents-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06f-Bounded-Agents-Python.ipynb) · [GameTheory-06j-Bounded-Proofs-Reasoning-Costs-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06j-Bounded-Proofs-Reasoning-Costs-Python.ipynb) (preuves bornees) · [GameTheory-06f-Bounded-Agents-Lean](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06f-Bounded-Agents-Lean.ipynb) · [GameTheory-06g-Simulation-Based-Program-Equilibria-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06g-Simulation-Based-Program-Equilibria-Python.ipynb) · [GameTheory-04e-Reflective-Oracles-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-04e-Reflective-Oracles-Python.ipynb).*
+*Notebooks : [Dynamics-04-Open-Source-Game-Theory-Python](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-04-Open-Source-Game-Theory-Python.ipynb) · [Dynamics-05-Agents-Bornes-Python](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-05-Agents-Bornes-Python.ipynb) · [Dynamics-06-Preuves-Bornees-Cout-du-Raisonnement-Python](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-06-Preuves-Bornees-Cout-du-Raisonnement-Python.ipynb) (preuves bornees) · [Dynamics-05-Agents-Bornes-Lean](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-05-Agents-Bornes-Lean.ipynb) · [Dynamics-07-Equilibres-par-Simulation-Python](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-07-Equilibres-par-Simulation-Python.ipynb) · [GameTheory-04e-Reflective-Oracles-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-04e-Reflective-Oracles-Python.ipynb).*
 
 ---
 layout: dense
