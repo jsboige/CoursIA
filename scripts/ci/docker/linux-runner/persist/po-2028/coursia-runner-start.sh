@@ -79,6 +79,20 @@ if ! docker info >/dev/null 2>&1; then
 fi
 
 SUPERVISE="$REPO_DIR/scripts/ci/docker/linux-runner/supervise.sh"
+
+# Garde d'existence du checkout (complement du delta 1, revue #23227) : coder
+# D: en dur repare la cause (purge de C:), mais ne dit rien si D: lui-meme
+# manque (clone deplace, disque non monte). Le service doit mourir en le
+# DISANT, pas en silence -- meme forme que la garde daemon #15095.
+if [ ! -d "$REPO_DIR" ]; then
+    echo "FATAL: checkout introuvable (REPO_DIR=$REPO_DIR absent ou non monte) -- verifier le clone/disque avant de relancer le service." >&2
+    exit 1
+fi
+if [ ! -x "$SUPERVISE" ]; then
+    echo "FATAL: superviseur introuvable ($SUPERVISE absent ou non executable) -- le checkout est-il complet ?" >&2
+    exit 1
+fi
+
 mkdir -p "$COURSIA_RUNNER_STATE_DIR"
 
 # --- PURGE SENTINELLE PERIMEE (#15163) --------------------------------------
