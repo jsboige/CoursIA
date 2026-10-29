@@ -7020,6 +7020,24 @@ def belt_visit_stamp(it: dict) -> str | None:
 CONSOLIDATION_TAG = "consolidation"
 CONSOLIDATION_LAG_H = 48
 UMBRELLA_VISIT_CAP_DAYS = 7
+# #21067 correctif 1 -- le plafond de VISITES (#22500, ci-dessus) regarde un
+# claim ou une sous-issue ; il ne voit pas les LIVRAISONS. Une lane qui
+# enchaine les sous-grains d'un meme EPIC sans repasser par le tapis ne pose
+# ni claim sur l'EPIC ni sous-issue : elle passe d'un carnet au suivant, et le
+# tapis la ressert. Mesure de l'issue (fenetre 2026-10-02 -> 2026-10-16) :
+# #16334 a recu 43 marqueurs en 14 j, dont 11 carnets issus d'un enchainement.
+# Le plafond K compte les PRs MERGEES de la lane qui citent l'EPIC ; K=2 est
+# le cap de veine que les lanes appliquent deja a la main (variation-protocol,
+# `vein_cap`). 0 desactive le garde (kill switch), et le tapis NOMME toujours
+# ce qu'il ecarte -- un plafond silencieux se lirait comme une famine.
+EPIC_LANE_DELIVERY_CAP_DEFAULT = 2
+# Les PRs de ce depot citent leur issue en trois familles (git-workflow.md :
+# `Closes #N` ferme, `See #N` / `Part of #N` lient sans fermer, `Refs` tolere
+# en heritage). La forme est celle des corps reels, pas une grammaire ideale :
+# un `#N` nu n'est PAS pris (il nommerait une PR ou un fil voisin, et
+# gonflerait le compte d'un EPIC que la lane n'a pas servi).
+_DELIVERY_CITED_RE = re.compile(
+    r"(?i)\b(?:part\s+of|closes?|fixed|fixes?|resolves?|see|refs?)\s*:?\s*#(\d+)")
 # Hermes 2026-10-25T13:55Z (#22504) : le motif d'origine `\bconsolidations?\b`
 # attrapait le MOT, pas le travail -- mesure sur le pool reel, 17 items
 # classes dont 4 ou « consolidation » nomme le SUJET d'un conteneur (#22500
@@ -7192,6 +7210,81 @@ def umbrella_visit_cause(it: dict, *, now=None) -> str | None:
             f"(< {UMBRELLA_VISIT_CAP_DAYS} j) -- un sous-grain par visite. "
             f"Servir un sous-grain ouvert existant, ou passer au candidat "
             f"suivant.")
+
+
+def epic_lane_delivery_counts(
+    prs: list[dict] | None,
+    lane: str,
+    *,
+    now: dt.datetime | None = None,
+    days: int | None = None,
+) -> dict[int, int]:
+    """``{numero d'issue: livraisons de `lane`}`` sur la fenetre de `days` jours.
+
+    Une livraison = une PR **mergee** dont le tag de lane (`parse_grain_tag`,
+    l'extracteur PARTAGE avec variation-tag-guard) nomme `lane`, qui cite
+    l'issue par `Closes` / `See` / `Part of` / `Refs`. L'attribution suit le
+    TAG, jamais `--author` : le compte GitHub est partage sur ce depot.
+
+    Fonction PURE (aucune requete) : elle lit le corpus que
+    `fetch_lane_record_prs` a deja paye pour l'ardoise de lane. Un corpus
+    absent rend un dict vide -- l'appelant doit alors laisser le garde
+    INACTIF (fail-OPEN) plutot que de lire « aucune livraison » la ou rien
+    n'a ete mesure.
+    """
+    moment = now or NOW
+    # `LANE_RECORD_WINDOW_DAYS` est declare plus bas dans le module (bloc de
+    # l'ardoise de lane) : la valeur se resout a l'APPEL, pas a l'import --
+    # un defaut d'argument la lirait avant sa definition.
+    window = LANE_RECORD_WINDOW_DAYS if days is None else days
+    cutoff = moment - dt.timedelta(days=window)
+    counts: dict[int, int] = {}
+    for pr in prs or []:
+        tag = parse_grain_tag(pr.get("body") or "")
+        if not tag or tag.get("lane") != lane:
+            continue
+        raw = pr.get("mergedAt") or ""
+        try:
+            merged = dt.datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        if merged < cutoff:
+            continue
+        for number in _DELIVERY_CITED_RE.findall(pr.get("body") or ""):
+            n = int(number)
+            counts[n] = counts.get(n, 0) + 1
+    return counts
+
+
+def epic_lane_delivery_cause(
+    it: dict,
+    deliveries: dict[int, int] | None,
+    cap: int,
+    lane: str | None,
+) -> str | None:
+    """#21067 correctif 1 -- EPIC deja livre `cap` fois par CETTE lane.
+
+    Rend la cause de refus quand l'item est une umbrella (hors classe
+    `consolidation`, dont c'est le travail de revenir) et que la lane y a
+    livre au moins `cap` grains sur la fenetre. ``None`` sinon : `cap <= 0`
+    desactive le garde, `deliveries` absent ou `lane` absente le laisse
+    inactif (fail-OPEN -- jamais un refus sur une mesure qu'on n'a pas).
+
+    Le refus porte sur la LANE, pas sur l'EPIC : les autres lanes le voient
+    toujours. C'est la difference avec le plafond de visites (#22500), qui
+    est global pendant 7 jours.
+    """
+    if cap <= 0 or not lane or not deliveries:
+        return None
+    if it.get("klass") != "umbrella" or is_consolidation(it):
+        return None
+    count = int(deliveries.get(it["number"], 0))
+    if count < cap:
+        return None
+    return (f"PLAFOND LIVRAISONS EPIC (#21067) : {count} livraison(s) de "
+            f"{lane} sur {LANE_RECORD_WINDOW_DAYS} j (>= {cap}) -- le tapis "
+            f"rend la tete suivante a cette lane ; l'EPIC reste tirable par "
+            f"les autres.")
 
 
 def apply_child_visits(pool: list[dict], targets: list[dict]) -> dict[int, str]:
@@ -7647,6 +7740,8 @@ def belt_filter(
     admitted: list[dict],
     args,
     urns: set[str] | None = None,
+    epic_deliveries: dict[int, int] | None = None,
+    drops: list[tuple[dict, str]] | None = None,
 ) -> list[dict]:
     """Filtre le pool admissible pour le mode --belt.
 
@@ -7688,6 +7783,18 @@ def belt_filter(
             return False
         urn = item.get("klass") or "grain"
         if urn not in selected_urns_set:
+            return False
+        # #21067 correctif 1 : l'EPIC deja livre `cap` fois par cette lane
+        # sort du tirage POUR ELLE (les autres lanes le voient). Applique
+        # apres les autres filtres pour que le rapport nomme une cause qui
+        # aurait vraiment ete servie.
+        cause = epic_lane_delivery_cause(
+            item, epic_deliveries,
+            getattr(args, "epic_delivery_cap", 0) or 0,
+            getattr(args, "lane", None))
+        if cause:
+            if drops is not None:
+                drops.append((item, cause))
             return False
         return True
 
@@ -8742,6 +8849,12 @@ def lane_delivery_record(lane: str, prs: list[dict] | None, *,
         "truncated": bool(truncated),
         "windows": buckets,
         "undated": undated,
+        # #21067 correctif 1 : les livraisons par EPIC, lues sur le MEME
+        # corpus (aucune requete de plus). Vide quand la mesure a echoue --
+        # le garde du tapis reste alors inactif, il ne refuse jamais sur une
+        # absence de mesure.
+        "epic_deliveries": ({} if error is not None
+                            else epic_lane_delivery_counts(prs, lane, now=now)),
     }
 
 
@@ -9550,6 +9663,14 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--dwell-hours", type=float, default=DWELL_HOURS_DEFAULT,
                     help="delai avant qu'une issue neuve soit consommable "
                          f"(defaut {DWELL_HOURS_DEFAULT:.0f} h ; 0 desactive le garde)")
+    ap.add_argument("--epic-delivery-cap", type=int,
+                    default=EPIC_LANE_DELIVERY_CAP_DEFAULT, metavar="K",
+                    help="#21067 correctif 1 : une umbrella sur laquelle cette "
+                         "lane a livre K grains (PRs mergees citant l'EPIC) sur "
+                         f"{LANE_RECORD_WINDOW_DAYS} j sort du tirage POUR ELLE "
+                         f"(defaut {EPIC_LANE_DELIVERY_CAP_DEFAULT} ; 0 "
+                         "desactive le garde). Les autres lanes la voient "
+                         "toujours, et le tapis nomme ce qu'il ecarte.")
     ap.add_argument("--delivery-boost-max", type=float, default=0.0,
                     help="#15491 Phase 1 : plafond du facteur d'age de derniere "
                          "livraison des umbrellas (defaut 0 = inactif, kill "
@@ -10183,10 +10304,27 @@ def main(argv: list[str] | None = None) -> int:
             print(f"[t={_time_belt.monotonic() - _belt_t0:.2f}s] belt {name}",
                   file=sys.stderr, flush=True)
         _belt_phase(f"start: grains={args.grains} lane={args.lane}")
-        belt_pool = belt_filter(admitted, args, urns=selected_urns)
+        # #21067 correctif 1 : les livraisons par EPIC de CETTE lane, lues
+        # sur le corpus de l'ardoise deja paye. Sans ardoise (pas de lane,
+        # ou mesure en echec) le garde reste inactif et le dit -- jamais un
+        # refus sur une absence de mesure.
+        _epic_deliveries = (lane_record or {}).get("epic_deliveries") or {}
+        _epic_drops: list[tuple[dict, str]] = []
+        if not _epic_deliveries:
+            _belt_phase("plafond livraisons EPIC: INACTIF (livraisons de la "
+                        "lane non mesurees)")
+        belt_pool = belt_filter(admitted, args, urns=selected_urns,
+                                epic_deliveries=_epic_deliveries,
+                                drops=_epic_drops)
         belt_pool.sort(key=belt_sort_key)
         _belt_phase(f"pool charge: {len(belt_pool)} candidates "
                     f"(apres belt_filter)")
+        if _epic_drops:
+            _belt_phase("plafond livraisons EPIC: "
+                        + ", ".join(f"#{it['number']} ({cause.split('(')[0].strip()})"
+                                    for it, cause in _epic_drops[:6])
+                        + (f" (+{len(_epic_drops) - 6})"
+                           if len(_epic_drops) > 6 else ""))
         # Verification des claims tenes par une autre lane : on regarde
         # plus large que `args.grains` pour tolerer un remplacement si
         # la tete de file est tenue. Cout borne : au plus `grains + 4`
@@ -10500,6 +10638,17 @@ def main(argv: list[str] | None = None) -> int:
                 } for it in belt_picks},
                 "withheld": [{"number": it["number"], "title": it["title"],
                               "cause": c} for it, c in belt_withheld],
+                # #21067 correctif 1 : ce que le plafond de livraisons a
+                # ecarte POUR CETTE LANE (les autres lanes le voient). Nomme,
+                # jamais silencieux -- un plafond muet se lit comme une
+                # famine du pool.
+                "epic_delivery_cap": {
+                    "cap": args.epic_delivery_cap,
+                    "active": bool(_epic_deliveries),
+                    "dropped": [{"number": it["number"],
+                                 "title": it["title"],
+                                 "cause": c} for it, c in _epic_drops],
+                },
                 # Volet livraison du tapis (#19390) : les trois etats ont
                 # trois messages distincts (ecarte / lecture en echec /
                 # non sonde), fail-OPEN sur les deux derniers -- meme
