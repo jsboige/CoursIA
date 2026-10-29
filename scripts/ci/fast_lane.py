@@ -44,7 +44,7 @@ from fast_lane_registry import (  # noqa: E402
     PILOT, TRANCHE1, TRANCHE2, TRANCHE3, TRANCHE4, TRANCHE5, TRANCHE6,
     TRANCHE7, TRANCHE8, TRANCHE9, TRANCHE10, TRANCHE11, TRANCHE12, TRANCHE13,
     TRANCHE14, TRANCHE15, TRANCHE16, TRANCHE17, TRANCHE18, TRANCHE19,
-    TRANCHE20, TRANCHE21, TRANCHE22, TRANCHE23, TRANCHE24, TRANCHE25,
+    TRANCHE20, TRANCHE21, TRANCHE22, TRANCHE23, TRANCHE24, TRANCHE25, TRANCHE26,
     TRANCHE27, TRANCHE28, TRANCHE29, Guard,
 )
 
@@ -392,7 +392,7 @@ def main(argv: list[str] | None = None) -> int:
               + TRANCHE10 + TRANCHE11 + TRANCHE12 + TRANCHE13 + TRANCHE14
               + TRANCHE15 + TRANCHE16 + TRANCHE17 + TRANCHE18 + TRANCHE19
               + TRANCHE20 + TRANCHE21 + TRANCHE22 + TRANCHE23 + TRANCHE24 + TRANCHE25
-              + TRANCHE27 + TRANCHE28 + TRANCHE29
+              + TRANCHE26 + TRANCHE27 + TRANCHE28 + TRANCHE29
               if not args.only or g.name == args.only]
     selected = [g for g in guards if guard_applies(g, changed)]
     for guard in guards:
@@ -409,7 +409,11 @@ def main(argv: list[str] | None = None) -> int:
     }
     results: dict[str, tuple[int, str]] = {}
     head_json: dict[str, str] = {}
-    tmp = Path(os.environ.get("RUNNER_TEMP") or (REPO_ROOT / ".fast-lane-tmp"))
+    # Repli hors CI : ecrire sous `.tmp/` (deja ignore par le motif `*.tmp`) et
+    # non a la racine du depot. Un dossier racine non ignore salit `git status`
+    # de tous les worktrees d'une machine et fait REFUSER la purge du worktree
+    # une fois sa PR mergee (`.tmp/` est tolere par prune_merged_worktrees).
+    tmp = Path(os.environ.get("RUNNER_TEMP") or (REPO_ROOT / ".tmp" / "fast-lane"))
     tmp.mkdir(parents=True, exist_ok=True)
 
     # -- phase 1 : HEAD, aucun garde ne mute l'arbre -------------------------
