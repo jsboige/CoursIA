@@ -367,13 +367,13 @@ Faits d'API mesurés sur orchestrations 1.3.1 :
 
 ### 2.10 À venir
 
-Reste de #14499 : la réplique **P3 (ADK)** du pilote de distillation (point 3, les répliques P1/SK et P2/MAF sont livrées au §3), et le coût pour le dépôt (point 5). L'emplacement `eval-pilots/` accueille les pilotes Python et la sonde C# ; l'idiome de référence du graphe MAF est l'organe du dépôt (`SymbolicAI/Lean/agent_tests/prover/workflow.py`).
+Le suivi des tranches vit dans le tableau **État du document** en tête de ce document, pas ici : le seul point du protocole encore ouvert est le **verdict par critère** (point 6), que le protocole réserve à l'arbitrage ai-01 + user. L'emplacement `eval-pilots/` accueille les pilotes Python et la sonde C# ; l'idiome de référence du graphe MAF est l'organe du dépôt (`SymbolicAI/Lean/agent_tests/prover/workflow.py`).
 
 ## 3. Pilote identique sur une vraie charge de distillation (point 3)
 
 ### 3.1 La charge partagée — fixture figée
 
-`VERIFIÉ` (fixture [`distill_charge_fixture.md`](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/eval-pilots/distill_charge_fixture.md)) : la charge est la **section réelle** d'ouverture de [`01-SemanticKernel-Intro.ipynb`](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/01-SemanticKernel-Intro.ipynb) (cellules 0-8 : objectifs, prérequis, sommaire, première cellule de code), extraite puis **figée** à la tête `8e9eaaaa0`. Les trois répliques (P1 SK, P2 MAF, P3 ADK) distillent **ce fichier**, pas le carnet vivant — la charge est byte-stable entre moteurs, entre exécutions et entre dates.
+`VERIFIÉ` (fixture [`distill_charge_fixture.md`](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/eval-pilots/distill_charge_fixture.md)) : la charge est la **section réelle** d'ouverture de [`01-SemanticKernel-Intro.ipynb`](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/01-SemanticKernel-Intro.ipynb) (cellules 0-8 : objectifs, prérequis, sommaire, première cellule de code), extraite puis **figée** à la tête `8e9eaaaa0`. Écart **déclaré** dans le header de la fixture : la cellule 8, l'unique cellule d'authentification de la section, est tronquée par le budget de fixture — la charge distillée ne couvre donc pas l'authentification, et c'est un choix de borne, pas une caractéristique du carnet. Les trois répliques (P1 SK, P2 MAF, P3 ADK) distillent **ce fichier**, pas le carnet vivant — la charge est byte-stable entre moteurs, entre exécutions et entre dates.
 
 ### 3.2 P1 — Semantic Kernel : `GroupChatOrchestration` à manager custom
 

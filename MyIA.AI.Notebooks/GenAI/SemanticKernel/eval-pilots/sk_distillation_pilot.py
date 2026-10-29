@@ -322,6 +322,9 @@ async def main() -> int:
     # Comportement en echec : un modele inexistant doit echouer fort, type nomme.
     failure = await probe_failure(api_key)
     print(f"sonde echec (modele inexistant): {failure}")
+    if failure.startswith("AUCUNE_ERREUR"):
+        print("Sonde d'echec non concluante : le faux modele n'a pas leve d'erreur (exit 3).")
+        return 3
 
     charge = FIXTURE.read_text(encoding="utf-8")
     print(f"charge: {FIXTURE.name} ({len(charge)} caracteres, fixture figee)")
