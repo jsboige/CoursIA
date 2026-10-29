@@ -42,9 +42,14 @@ class ForexCarryTradeStrategy(QCAlgorithm):
         self.set_end_date(2024, 12, 31)
         self.set_cash(100000)
 
-        # Brokerage: G10 FX traded via OANDA margin account
-        # Configurable brokerage for fee sweep (default: OANDA margin with real fees)
-        self._brokerage_mode = self.get_parameter("brokerage", "oanda")
+        # Brokerage: default = QC brokerage, the only mode where set_holdings
+        # FILLS in a cloud backtest. Under OANDA MARGIN every set_holdings order
+        # is submitted and NEVER filled (166 orders, $0 volume, flat $100k equity
+        # over 2015-2024) - a known QC cloud limitation (#21759). A plain
+        # backtest (no brokerage parameter) therefore uses the default brokerage
+        # and actually trades; pass brokerage="oanda" only for the fee sweep,
+        # where the no-fill is the expected behaviour.
+        self._brokerage_mode = self.get_parameter("brokerage", "none")
         if self._brokerage_mode != "none":
             self.set_brokerage_model(BrokerageName.OANDA_BROKERAGE, AccountType.MARGIN)
 

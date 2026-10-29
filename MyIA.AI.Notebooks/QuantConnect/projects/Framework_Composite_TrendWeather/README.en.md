@@ -46,7 +46,7 @@ Cf. **c.1281-L3 / c.1282-L3 / c.1283-L3 ★★** (library clones): the "misattri
 
 **Lean CLI (local research, default 50/50):** `lean research "MyIA.AI.Notebooks/QuantConnect/projects/Framework_Composite_TrendWeather" --notebook quantbook.ipynb`
 **Lean CLI (production T75/AW25 backtest):** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/Framework_Composite_TrendWeather"` runs `main.py`, which fixes `alpha_allocations={"TrendStocks": 0.75, "AllWeather": 0.25}`; the 50/50 default exists only in the quantbook. **But expect ~±30-50% variation on Sharpe** vs the 1.155 docstring because of (a) `INTERACTIVE_BROKERS_BROKERAGE` (`set_brokerage_model`) vs 0 fees in research, (b) `trend_tickers` (15 names) vs 15 identical names OK, (c) momentum-weighted TrendStocks vs equal-weight, (d) monthly 31d vs weekly default.
-**QC Cloud:** not deployed. Copy `main.py + alpha_models.py` to a new QC Cloud project with the `SharedPCM` library attached to run and preserve outputs in `lean-workspace/<project>/backtests/<timestamp>/`. **Anti-SUSPECT recommendation**: **re-execute** the cloud backtest with exact T75/AW25, **preserve the JSON output** in the worktree, and **compare** to the 1.155 docstring — the expected gap (cf. `iter4_research.py:176` 2-3× overstate) should bring Sharpe back to ~0.4-0.6 in the worst case (local overestimation) or confirm 1.155 (original one-shot backtest correct).
+**QC Cloud:** not deployed. Create a QC Cloud project, attach the `SharedPCM` project to it as a library ("Add Library", see the `SharedPCM` README), then copy `main.py + alpha_models.py` to run and preserve outputs in `lean-workspace/<project>/backtests/<timestamp>/`. **Anti-SUSPECT recommendation**: **re-execute** the cloud backtest with exact T75/AW25, **preserve the JSON output** in the worktree, and **compare** to the 1.155 docstring — the expected gap (cf. `iter4_research.py:176` 2-3× overstate) should bring Sharpe back to ~0.4-0.6 in the worst case (local overestimation) or confirm 1.155 (original one-shot backtest correct).
 
 **Note on Docker Lean variations**: `quantbook.ipynb` `In [11]` shows the same strategy run **monthly vs weekly** gives Sharpe **1.064** vs **0.674** (5bps fees) — the "less-frequent-rebalance" effect reduces turnover and preserves trends. `main.py` uses `rebalance=timedelta(days=31)` (monthly) — so **in the same vein as the 1.064**, **not 0.674**.
 
@@ -54,9 +54,29 @@ Cf. **c.1281-L3 / c.1282-L3 / c.1283-L3 ★★** (library clones): the "misattri
 
 - `main.py` — Composite strategy v1.5 production (T75/AW25, monthly rebalance, IBKR fees). **Its class docstring contains the `Allocation sweep results (2015-2026)` block, source of 1.155/27.4%/27.7%** ⚠️
 - `alpha_models.py` — TrendStocksAlpha (momentum-weighted) + AllWeatherAlpha (static)
-- `SharedPCM/pouches_pcm.py` (QC project library) — `MultiStrategyPouchesPCM`, imported by `main.py`
+- `SharedPCM/pouches_pcm.py` (QC project library) — `MultiStrategyPouchesPCM`, the canonical pouch PCM imported by `main.py` (extraction #19821 brick 1)
 - `iter4_research.py` — Local yfinance research (warns 2-3× overstate cloud Sharpe, line 176)
 - `quantbook.ipynb` — Lean CLI Docker research: 50/50 default + sweeps (allocation, stop-loss, rebalance freq, T×freq) with preserved outputs
+
+## Shared module non-regression (#20188)
+
+Since #21134, `main.py` imports `MultiStrategyPouchesPCM` from `SharedPCM/pouches_pcm.py` instead of the local copy `portfolio_construction.py`. Two QC Cloud backtests run on 2026-10-26, with the default parameters and the window 2015-01-01 → 2025-12-31, check that this change alters no order:
+
+- **A**: the `main` code at commit `54f9b9eec1`, with the shared module;
+- **B**: the same `main.py` and `alpha_models.py`, with the old `portfolio_construction.py` copy taken at the commit before the migration (`777f502a2a^`). The two arguments the old copy does not know (`additive=True`, `algorithm=self`) are removed from the call. The two slices share no security, so `additive=True` should change nothing, and this is what the measurement checks.
+
+A and B carry the same instrumentation, which places no order. It records the portfolio value every day at midnight, warm-up included (270 sessions). At the end of the backtest it computes a SHA-256 fingerprint per year of the orders (id, date, security, quantity, status, price) and of the recorded values.
+
+| | A (shared module) | B (old copy) |
+|---|---|---|
+| Orders | 2,094 | 2,094 |
+| Recorded values | 4,410 | 4,410 |
+| Last recorded value | 1,408,249.00 | 1,408,249.00 |
+| Sharpe (QC) | 1.148 | 1.148 |
+| CAGR | 27.121% | 27.121% |
+| Max drawdown | 27.6% | 27.6% |
+
+The yearly fingerprints are equal: 12 of 12 for the orders, 13 of 13 for the values. The 27 QC statistics are equal, turnover included. The migration therefore does not change the project's behaviour. Traces kept outside the repository: `QC-traces/20188-nr/`.
 
 ## References
 

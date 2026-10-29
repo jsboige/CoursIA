@@ -97,6 +97,16 @@
       "params": {},
       "fee_model": "modèle de frais par défaut de Lean pour ce courtier (Bitfinex crypto, IBKR equity)",
       "fingerprint": "653384a26fcaf8d3"
+    },
+    {
+      "id": "levetf-postfix",
+      "kind": "qc",
+      "sha": "51f26ad1bcbf9bcc325ca86a92fbc83662a3bfeb",
+      "frozen_on": "2026-10-27",
+      "entrypoint": "MyIA.AI.Notebooks/QuantConnect/projects/LeveragedETFMomentum-QC:38509957",
+      "params": {},
+      "fee_model": "modèle de frais par défaut de Lean pour ce courtier",
+      "fingerprint": "eb4d52901ef24b9d"
     }
   ]
 }
