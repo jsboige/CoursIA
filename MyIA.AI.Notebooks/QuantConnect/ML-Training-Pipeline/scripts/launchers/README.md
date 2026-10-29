@@ -57,7 +57,9 @@ qui fait tourner l'entrainement sous `scripts/ci/run_guarded.py` :
   enfants) : au-dela, les allocations **echouent** au lieu de faire swapper la
   machine ;
 - **garde d'admission** : le demarrage est refuse si la charge de commit de la
-  machine depasse 85 % ; une mesure illisible refuse aussi (fail-CLOSED) ;
+  machine depasse 90 % (seuil releve de 85 a 90 % le 2026-10-29 : 85 % est le
+  regime nominal de la machine, pas son plafond) ; une mesure illisible refuse
+  aussi (fail-CLOSED) ;
 - **exclusion N=1** : un seul entrainement CoursIA a la fois sur la machine
   (verrou exclusif) ;
 - **anti-orphelin** : le superviseur tient le Job Object, donc l'entrainement
