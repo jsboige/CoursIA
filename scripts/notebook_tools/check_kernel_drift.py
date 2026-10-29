@@ -476,8 +476,8 @@ CANONICAL_LANGUAGE_TRANSITIONS_SCOPED = {
         "de QC-Py-16 (#19181, cas par cas)",
     # 2.8c est le premier carnet dont la re-execution sous 3.13 est la
     # convergence attendue vers le canon de SA serie. Le kernelspec
-    # ``coursia-ml-training`` est partage par 67 carnets hors 02-ML-Cours
-    # (mesure du 2026-10-29) qui ne declarent pas 3.13 : une entree globale
+    # ``coursia-ml-training`` est partage par une cinquantaine de carnets
+    # hors 02-ML-Cours qui ne declarent pas 3.13 : une entree globale
     # les aurait tous rendus verts sur cette direction (reserve de revue sur
     # #22979). D'ou la portee par PREFIXE de repertoire ci-dessous, qui
     # couvre la serie entiere sans elargir au kernelspec (#23187).
@@ -492,7 +492,7 @@ CANONICAL_LANGUAGE_TRANSITIONS_SCOPED = {
     # kernelspec (2.8c, 2.9d, 2.9g, 2.14b) et le canon de la serie est 3.13
     # pour tous (requirements.txt de la serie). Le prefixe -- un premier
     # element termine par ``/`` -- limite la tolerance a ce repertoire : les
-    # 67 carnets hors serie qui partagent le kernelspec gardent la direction
+    # carnets hors serie qui partagent le kernelspec gardent la direction
     # rouge, ce que la reserve #22979 exigeait.
     ("MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/",
      "coursia-ml-training", "3.11", "3.13"):
