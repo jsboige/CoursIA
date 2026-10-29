@@ -5,6 +5,8 @@ import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+import pytest
+
 CI_DIR = Path(__file__).resolve().parents[1] / "ci"
 sys.path.insert(0, str(CI_DIR))
 
@@ -15,6 +17,15 @@ NOW_ISO = "2026-10-27T12:00:00+00:00"
 # Derniere ecriture de la variable, hors fenetre de dwell : le controleur
 # n'est pas bloque par son propre dwell dans ces tests de CLI.
 OLD = NOW - timedelta(hours=2)
+
+
+@pytest.fixture(autouse=True)
+def _ecart_du_dernier_passage_simule(monkeypatch):
+    """L'ecart au dernier passage se lit par un appel `gh` : aucun test de
+    cette suite ne doit l'atteindre, sinon la suite dependrait de l'etat
+    reseau de la machine (#21994). Les tests qui verifient la garde ou
+    l'ecart le simulent eux-memes -- celui-ci n'est que le filet."""
+    monkeypatch.setattr(ctl, "last_run_age_minutes", lambda *a, **k: (None, "simule"))
 
 
 def hosted(queued: int = 0, old: int = 0, oldest: float = 0.0,
@@ -1093,6 +1104,30 @@ def test_le_garde_de_cadence_laisse_passer_un_passage_ancien(monkeypatch, capsys
                     "--min-interval", "15"])
     report = json.loads(capsys.readouterr().out)
     assert report["verdict"] != "SKIPPED"
+
+
+def test_l_ecart_au_dernier_passage_est_rapporte_meme_sans_garde(monkeypatch, capsys):
+    """L'ecart au dernier passage est l'instrument qui rend visible la mort
+    du declencheur local (un ecart qui grandit) : il est donc mesure et
+    RAPPORTE dans tous les cas -- y compris quand aucune garde n'est posee
+    (le passage manuel et le cron horaire du depot)."""
+    monkeypatch.setenv("GH_TOKEN", "t")
+    monkeypatch.setattr(ctl, "last_run_age_minutes", lambda *a, **k: (42.0, ""))
+    _env(monkeypatch, write_token="pat-variables")
+    monkeypatch.setattr(ctl, "read_variable", lambda *a, **k: ("false", OLD, ""))
+    monkeypatch.setattr(ctl, "collect_hosted",
+                        lambda *a, **k: hosted(queued=0, old=0, oldest=0.0))
+    monkeypatch.setattr(ctl, "collect_local",
+                        lambda *a, **k: local(free=21, online=22))
+    monkeypatch.setattr(ctl, "derive_cohort_workflows",
+                        lambda root: ({".github/workflows/x.yml"}, ""))
+    monkeypatch.setattr(ctl, "collect_cohort_charge",
+                        lambda *a, **k: cohort(queued=0, in_progress=0))
+    monkeypatch.setattr(ctl, "write_variable", lambda *a, **k: (True, "ok"))
+    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json"])
+    report = json.loads(capsys.readouterr().out)
+    assert report["verdict"] != "SKIPPED"
+    assert report["last_run_age_min"] == 42.0
 
 
 def test_un_ecart_non_etabli_ne_bloque_pas_le_passage(monkeypatch, capsys):

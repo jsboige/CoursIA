@@ -307,8 +307,8 @@ Le declencheur est cable par `scripts/ci/install_overflow_trigger_task.py` (meme
 
 | | |
 |---|---|
-| tache | `CoursIA\overflow_trigger`, toutes les **15 min**, depart `00:07` (phase decalee du cron `:31` du depot) |
-| action | `gh workflow run ci-overflow-controller.yml -f min_interval=15` |
+| tache | `CoursIA\overflow_trigger`, toutes les **60 min**, depart `00:07` (phase decalee du cron `:31` du depot) |
+| action | `gh workflow run ci-overflow-controller.yml -f min_interval=30` |
 | identite | `gh auth token --user jsboige` lu **au moment du tir** -- aucun jeton n'est ecrit sur disque |
 | fenetre | masquee (lanceur VBS), comme le geste de l'audit de flotte du 24/09 |
 | journal | `%LOCALAPPDATA%\CoursIA\overflow_trigger\logs\overflow_trigger.log` |
@@ -322,13 +322,19 @@ le passage : eteindre la soupape parce qu'on n'a pas su lire un ecart serait l'i
 sens. Un declenchement **manuel** passe `min_interval=0` : la decision de l'operateur est
 immediate.
 
+L'ecart au **dernier passage** est mesure avant la garde et **rapporte dans tous les
+cas** -- y compris quand aucune garde n'est posee (le passage manuel, le cron horaire du
+depot). Le resume affiche donc toujours `dernier passage : N min` : c'est l'instrument
+qui rend visible la mort du declencheur local (un ecart qui grandit) au lieu de la
+laisser silencieuse, et son cout est d'UN appel dans un passage qui en compte 313.
+
 ### Le cron horaire reste en filet
 
 Le workflow tourne **une fois par heure, minute 31** (`31 * * * *`) : hors `:00`/`:30` (jitter de la flotte) et distincte des autres crons horaires du depot. Le `23,53` d'origine etait **exactement** le cron de `linux-runner-version-pin-advisory.yml`, que ce dernier avait choisi pour ne pas collisionner (point 3 de la review du 27/10).
 
 Le controleur est desormais inscrit dans le registre de `scripts/ci/check_scheduler_liveness.py`, avec la cadence declaree lue dans ce fichier : un cron qui meurt se **mesure** (`LATE` / `DEAD`), il ne se suppose pas.
 
-L'horaire suffit, et c'est le cout qui le fixe : ~295 appels par passage toutes les 30 minutes feraient environ 14 000 appels par jour pour un organe de controle, exactement ce que le volet 5 de #22937 interdit. A l'inverse, une cadence plus lente ne coute rien en justesse : le controleur est **une machine a etat sur une variable**, un passage tardif agit sur l'etat courant et n'accumule aucun retard. La **livraison** des crons du depot est d'ailleurs tardive et irreguliere (mesure : 22 % des tics horaires servis, mediane 289 min pour une cadence declaree de 60 min sur `pr-gate-stale-sweep` -- cf volet 6 de [#22937](https://github.com/jsboige/CoursIA/issues/22937)).
+L'horaire suffit, et c'est le cout qui le fixe : une mesure coute **313 appels `gh`** (mesure du 2026-10-27) et le jeton du depot (`github.token`) plafonne a **1 000 appels/h pour le repo**, partage avec les autres jobs. Le cron horaire consomme 313 appels/h ; la minuterie locale sur ai-01 en ajoute **un passage par heure** -- soit **~630 appels/h, soit 63 % du plafond**. Une cadence locale a 15 min aurait porte le seul declencheur local a ~1 250 appels/h : au-dessus du plafond, l'organe se serait affame lui-meme, et son etat rendu serait devenu illisible (sur mais muet). Ce que la minuterie locale apporte n'est donc pas de la frequence mais de la **fiabilite** : la livraison des crons du depot est d'ailleurs tardive et irreguliere (mesure : 22 % des tics horaires servis, mediane 289 min pour une cadence declaree de 60 min sur `pr-gate-stale-sweep` -- cf volet 6 de [#22937](https://github.com/jsboige/CoursIA/issues/22937)). A l'inverse, une cadence plus lente ne coute rien en justesse : le controleur est **une machine a etat sur une variable**, un passage tardif agit sur l'etat courant et n'accumule aucun retard.
 
 Le dwell est passe de 30 a **90 min** (point Hermes du 2026-10-27, 12:53Z) : le dwell n'est opposable que s'il **depasse la cadence**, sinon il ne peut jamais bloquer quoi que ce soit. Deux passages consecutifs d'un cron horaire sont a 60 min : un dwell de 30 min etait donc **inerte**, et l'anti-oscillation qu'il pretendait assurer n'existait pas. A 90 min, une bascule peut encore etre revoquee au tic suivant (60 min < 90 min) mais pas au tic d'apres (120 min > 90 min) : l'oscillation rapide est arretee, la machine a etat reste lente. La coherence se **mesure** (`test_dwell_du_controleur_depasse_la_cadence_du_cron`), elle ne se suppose pas.
 

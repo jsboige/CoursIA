@@ -52,6 +52,10 @@ on:
     # une execution mesuree coute 313 appels `gh` (cf
     # docs/coordination/ci-overflow-controller.md), et l'organe est une
     # machine a etat -- une livraison tardive agit sur l'etat courant.
+    # Le plafond du jeton du depot (`github.token`) est de 1 000 appels/h
+    # pour le repo, partage avec les autres jobs : ce cron horaire
+    # consomme 313 appels/h, et la minuterie locale sur ai-01 en ajoute
+    # un passage par heure -- soit ~630 appels/h, 63 % du plafond.
     - cron: '31 * * * *'
   workflow_dispatch:
     inputs:
@@ -59,9 +63,9 @@ on:
         description: >-
           Intervalle minimal entre deux passages, en minutes. 0 = pas de
           garde (comportement d'un declenchement manuel : la decision est
-          prise immediatement). La cadence locale sur ai-01 (#22937 volet
-          "declencheur") passe 15 : les passages qui se chevauchent sont
-          ecartes SANS mesure.
+          prise immediatement). La minuterie locale sur ai-01 (#22937 volet
+          "declencheur") tire toutes les 60 min avec une garde de 30 min :
+          les passages qui se chevauchent sont ecartes SANS mesure.
         required: false
         default: '0'
         type: string

@@ -23,10 +23,29 @@ def test_le_dry_run_imprime_la_commande_schtasks_exacte_sans_ecrire(monkeypatch,
     assert "schtasks /Create /F" in out
     assert str(inst.TASK_NAME) in out
     assert "/SC MINUTE" in out
-    assert "/MO 15" in out
+    assert f"/MO {inst.DEFAULT_INTERVAL_MINUTES}" in out
     assert not inst.CMD_PATH.exists()
     assert not inst.VBS_PATH.exists()
     assert not inst.BASE_DIR.exists()
+
+
+def test_la_cadence_par_defaut_respecte_le_plafond_d_appels_de_gh():
+    """La cadence n'est pas une preference, elle est bornee par le cout.
+
+    Mesure du 2026-10-27 : **313 appels `gh` par passage**. Le jeton du
+    depot (`github.token`) plafonne a **1 000 appels/h pour le repo**,
+    partage avec les autres jobs ; le cron horaire du depot en consomme
+    deja 313/h. La minuterie locale ne peut donc pas faire plus d'UN
+    passage par heure sans passer au-dessus du plafond (le declencheur
+    affamerait l'organe qu'il pilote -- reserve Hermes du 28/10).
+
+    La garde (`min_interval`) reste STRICTEMENT inferieure a la cadence :
+    l'ecart se lit sur le dernier passage, run confondu, et le cron du
+    depot mesure a :31 -- soit 36 min avant le tic local de :07. Une garde
+    egale a la cadence ecarterait ce tic-la.
+    """
+    assert inst.DEFAULT_INTERVAL_MINUTES >= 60
+    assert inst.DEFAULT_MIN_INTERVAL_MINUTES < inst.DEFAULT_INTERVAL_MINUTES
 
 
 def test_le_lanceur_ditribue_le_jeton_au_moment_du_tir_sans_l_ecrire(monkeypatch):

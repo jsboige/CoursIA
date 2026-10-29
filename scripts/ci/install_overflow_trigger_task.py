@@ -90,16 +90,30 @@ DEFAULT_WORKFLOW = "ci-overflow-controller.yml"
 # Compte sous lequel le declenchement est pose. Le jeton est lu dans le
 # trousseau du siege AU MOMENT de l'execution ; il n'est jamais ecrit.
 DEFAULT_ACCOUNT = "jsboige"
-# Cadence : 15 min. Assez pour reagir dans la fenetre de saturation, assez
-# peu pour ne pas occuper le parc local (le controleur tourne SUR ce parc).
-DEFAULT_INTERVAL_MINUTES = 15
-# Phase de depart : 00:07 -> 07, 22, 37, 52. Le cron du depot est a :31
-# (le workflow `ci-overflow-controller.yml` porte `cron: '31 * * * *'`) :
+# Cadence : 60 min. Elle est fixee par le COUT, pas par une preference :
+# une mesure coute 313 appels `gh` (mesure du 2026-10-27) et le jeton du
+# depot (`github.token`) plafonne a 1 000 appels/h pour le repo -- plafond
+# partage avec les autres jobs. Le cron horaire du depot consomme deja
+# 313 appels/h : la minuterie locale ne peut donc ajouter qu'UN passage par
+# heure (313/h) pour tenir sous ~630 appels/h, soit 63 % du plafond. Ce
+# que la minuterie locale apporte n'est pas de la frequence mais de la
+# FIABILITE : la livraison des crons du depot est mesuree a 22 % des tics
+# servis (mediane 289 min de retard), la minuterie locale garantit une
+# decision au moins horaire.
+DEFAULT_INTERVAL_MINUTES = 60
+# Phase de depart : 00:07 -> 07 de chaque heure. Le cron du depot est a
+# :31 (le workflow `ci-overflow-controller.yml` porte `cron: '31 * * * *'`) :
 # une phase decalee evite de faire decide deux fois en une minute.
 DEFAULT_START = "00:07"
 # Intervalle minimal passe au workflow : deux declenchements qui se
-# chevauchent ne declenchent qu'une decision.
-DEFAULT_MIN_INTERVAL_MINUTES = 15
+# chevauchent ne declenchent qu'une decision. Il vaut 30 min, soit la MOITIE
+# de la cadence : l'ecart se lit sur le dernier PASSAGE (run confondu --
+# mesure ou ecarte), donc une garde egale a la cadence rendrait la minuterie
+# locale dependante du cron du depot -- qui mesure a :31, soit 36 min avant
+# le tic local de :07 : le tic local serait alors ecarte. Avec 30 min, le
+# tic local passe toujours (36 min d'ecart), et le cron du depot -- qui
+# mesure sans garde -- reste le filet horaire si la minuterie locale meurt.
+DEFAULT_MIN_INTERVAL_MINUTES = 30
 
 
 def _run(cmd: list[str], **kw) -> subprocess.CompletedProcess:

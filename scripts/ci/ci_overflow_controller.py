@@ -117,6 +117,17 @@ preference. Le budget local a ete aligne sur le budget hebergee (40 -> 120)
 pour que la lecture locale soit **complete** dans le regime nominal : un
 budget trop bas produit une troncature systematique, donc une lecture
 locale toujours « non etablie », donc une bascule vers `true` impossible.
+
+Le plafond du jeton du depot (`github.token`) est de **1 000 appels/h pour
+le repo**, partage avec les autres jobs : c'est lui qui borne la cadence,
+et non une preference. Le cron horaire du depot consomme 313 appels/h ; la
+minuterie locale sur ai-01 en ajoute **un passage par heure** -- soit
+**~630 appels/h, 63 % du plafond**. Une cadence locale a 15 min aurait porte
+le seul declencheur local a ~1 250 appels/h : au-dessus du plafond, l'organe
+se serait affame lui-meme, et son etat rendu serait devenu illisible
+(UNREADABLE -- sur mais muet). Ce que la minuterie locale apporte n'est donc
+pas de la frequence mais de la fiabilite : la livraison des crons du depot
+est mesuree a 22 % des tics servis (mediane 289 min de retard).
 """
 
 from __future__ import annotations
@@ -1330,6 +1341,12 @@ def render_summary(report: dict, rc: int) -> str:
         f"- code retour : {rc}",
         f"- verdict : {report.get('verdict')}",
         f"- raison : {report.get('reason')}",
+        f"- dernier passage : "
+        + (
+            f"{report.get('last_run_age_min')} min"
+            if report.get("last_run_age_min") is not None
+            else f"illisible ({report.get('last_run_age_reason')})"
+        ),
         f"- variable : {report.get('current')} -> {report.get('target')} "
         f"({'ECRIT' if report.get('written') else 'NON ECRIT'})",
         f"- hebergee : {hosted.get('queued')} job(s) en file, "
@@ -1549,14 +1566,18 @@ def main(argv: list[str] | None = None) -> int:
     # du parc local (le controleur tourne SUR ce parc) et en appels API. Le
     # controle est fait AVANT toute mesure : un passage ecarte ne doit rien
     # lire du tout.
+    # L'ecart au dernier passage est mesure AVANT la garde, et reporte dans
+    # TOUS les cas : c'est l'instrument qui rend visible la mort du
+    # declencheur local (un ecart qui grandit) au lieu de la laisser
+    # silencieuse. Il coute UN appel, dans un passage qui en compte 313.
+    age, age_reason = last_run_age_minutes(
+        args.repo,
+        CONTROLLER_WORKFLOW_FILE,
+        now,
+        token,
+        current_run_id=os.environ.get("GITHUB_RUN_ID"),
+    )
     if args.min_interval > 0:
-        age, age_reason = last_run_age_minutes(
-            args.repo,
-            CONTROLLER_WORKFLOW_FILE,
-            now,
-            token,
-            current_run_id=os.environ.get("GITHUB_RUN_ID"),
-        )
         if age is not None and age < args.min_interval:
             report = {
                 "verdict": "SKIPPED",
@@ -1810,6 +1831,8 @@ def main(argv: list[str] | None = None) -> int:
         "write_token_env": args.write_token_env,
         "write_token_present": bool(write_token),
         "write_blocked": write_blocked,
+        "last_run_age_min": round(age, 1) if age is not None else None,
+        "last_run_age_reason": age_reason,
         "state_known": not state_unknown,
         "state_reason": state_reason,
         "hosted": {
