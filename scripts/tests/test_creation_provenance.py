@@ -164,3 +164,52 @@ def test_la_frontiere_du_seuil_est_exacte(age, attendu):
     verdict, _ = cp.decide(1, age, {"disponible": True, "vues": 0,
                                     "retenue": None})
     assert verdict == attendu
+
+
+# --- la panne d'instrument n'est pas un rouge --------------------------------
+
+def _gh_rate_limited(args, timeout=120):
+    raise RuntimeError(
+        "gh api repos/jsboige/CoursIA/pulls/1/files a echoue : gh: API rate "
+        "limit exceeded for installation.")
+
+
+def test_un_instrument_injoignable_rend_unknown_et_sort_0(monkeypatch, capsys):
+    """Mesure du 2026-10-29 (PR #23282, run 40868243719).
+
+    `gh api .../files` a rendu `API rate limit exceeded for installation` :
+    le script levait une RuntimeError, le step sortait 1, et la PR portait
+    un rouge de TRANSPORT alors que son contenu etait conforme (verdict
+    local : « aucun carnet neuf dans la PR »). Un organe injoignable rend
+    UNKNOWN, jamais un rouge (#14849).
+    """
+    monkeypatch.setattr(cp, "_gh", _gh_rate_limited)
+
+    rc = cp.main(["--pr", "1"])
+
+    assert rc == 0, "une panne d'instrument ne doit jamais faire rougir le job"
+    sortie = capsys.readouterr().out
+    assert "UNKNOWN" in sortie
+    assert "NON EVALUEE" in sortie
+
+
+def test_strict_ne_convertit_pas_une_panne_d_instrument_en_constat(
+        monkeypatch, capsys):
+    """`--strict` sanctionne un VERDICT. Une panne n'en produit aucun : elle
+    ne doit pas devenir un constat sous le seul effet du drapeau."""
+    monkeypatch.setattr(cp, "_gh", _gh_rate_limited)
+
+    assert cp.main(["--pr", "1", "--strict"]) == 0
+    assert "UNKNOWN" in capsys.readouterr().out
+
+
+def test_un_bug_de_code_n_est_pas_avale_par_la_garde(monkeypatch):
+    """Le try n'attrape que la panne d'instrument : un defaut de code doit
+    remonter, sinon la garde masquerait ses propres regressions."""
+    def gh_buggue(args, timeout=120):
+        raise ValueError("defaut de code, pas une panne de transport")
+
+    monkeypatch.setattr(cp, "_gh", gh_buggue)
+
+    with pytest.raises(ValueError):
+        cp.main(["--pr", "1"])

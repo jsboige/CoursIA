@@ -190,8 +190,26 @@ def main(argv: list[str] | None = None) -> int:
     def note(texte: str) -> None:
         print(f"::warning::creation-provenance: {texte}")
 
-    meta = pr_meta(args.pr)
-    files = pr_files(args.pr)
+    try:
+        meta = pr_meta(args.pr)
+        files = pr_files(args.pr)
+    except (RuntimeError, OSError, subprocess.TimeoutExpired) as exc:
+        # Panne d'INSTRUMENT (rate limit de l'installation, reseau, `gh`
+        # absent) : le job est advisory et sort TOUJOURS 0. Un organe
+        # injoignable rend UNKNOWN, jamais un rouge (#14849) -- sans quoi
+        # une famine d'API accuse la PR d'un defaut qu'elle n'a pas. Le
+        # `--strict` ne convertit pas davantage une panne en constat : il
+        # sanctionne un verdict, et il n'y a pas de verdict ici.
+        detail = str(exc).strip()[:240]
+        rapport["statut"] = "UNKNOWN"
+        rapport["instrument"] = detail
+        motif = ("instrument injoignable (gh/API) : provenance NON EVALUEE "
+                 f"-- {detail}")
+        rapport["exemptions"].append(motif)
+        note(motif)
+        _emit(rapport, args)
+        return 0
+
     rapport["pr_meta"] = {"titre": meta.get("title"),
                           "auteur": (meta.get("author") or {}).get("login"),
                           "creee": meta.get("createdAt")}
@@ -316,6 +334,9 @@ def _emit(rapport: dict, args) -> None:
         print(f"- issue servie : #{rapport['issue_servie']}")
     if rapport.get("age_heures") is not None:
         print(f"- age de l'issue : {rapport['age_heures']:.1f} h")
+    if rapport.get("statut") == "UNKNOWN":
+        print("- **verdict : UNKNOWN** (instrument injoignable : la "
+              "provenance n'a pas ete mesuree)")
     if rapport.get("verdict"):
         print(f"- **verdict : {rapport['verdict']}**")
     for e in rapport.get("exemptions", []):
