@@ -408,6 +408,23 @@ def is_credited_example_code(cells: list[dict], idx: int) -> bool:
     sous `### Exemple ... (credite #PR)` le code est un exemple resolu ;
     sous `### Exercice N` il reste un stub. L'ATTRIBUTION est exigee : un
     simple `### Exemple` sans credit ne dit rien du role du code.
+
+    LIMITE ASSUMEE -- le lien de section s'arrete a la PREMIERE cellule de
+    code (`_governing_header`), donc un exemple credite qui porte plusieurs
+    cellules de code n'est blanchi que sur la premiere ; les suivantes
+    restent classees « exercice ». La limite est codifiee par
+    `test_carveout_code_avant_titre_ne_rattache_pas`, et l'elargir changerait
+    cette semantique (une cellule de code sans titre ouvre une nouvelle
+    section : sans cela, un exercice pose apres un code quelconque serait
+    blanchi).
+
+    Mesure du 2026-10-29 sur le depot (151 en-tetes credites) : 133 sections
+    portent une seule cellule de code, 15 en portent deux, 3 en portent trois
+    -- soit 18 sections hors du carve-out. Aucune ne produit le faux positif :
+    sur ces 18 sections, aucune cellule non blanchie n'est classee « exercice »
+    par `is_exercise_cell` en etant suivie d'une lecture. La limite est donc
+    REELLE EN FORME et SANS INSTANCE mesuree : la documenter suffit, l'elargir
+    serait un changement de semantique non motive par une mesure.
     """
     header = _governing_header(cells, idx)
     return header is not None and is_credited_example_header(header)
