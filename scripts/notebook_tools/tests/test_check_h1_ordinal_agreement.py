@@ -181,9 +181,35 @@ def test_json_shape_is_stable(tmp_path, monkeypatch, capsys):
                         ["check_h1_ordinal_agreement.py", "--paths", str(p), "--json"])
     assert organ.main() == 0
     payload = json.loads(capsys.readouterr().out)
-    assert set(payload["counts"]) == {"drift", "generic", "ambiguous", "missing_h1"}
+    assert set(payload["counts"]) == {"drift", "generic", "ambiguous", "missing_h1", "unreadable"}
+    assert payload["counts"]["unreadable"] == 0
+    assert payload["unreadable"] == []
     assert payload["counts"]["drift"] == 1
     assert payload["drift"][0]["file"].endswith("Dynamics-03-Sympathie-vs-Engagement-Python.ipynb")
+
+
+def test_unreadable_notebook_is_counted_not_dropped(tmp_path, monkeypatch, capsys):
+    """Silence must be measurable: a corrupt notebook leaves the denominator.
+
+    Before this counter, `scan()` did `except Exception: continue` and a
+    truncated JSON simply disappeared -- the exact failure the repo-invariant
+    test warns about ("an empty result must mean a clean tree, not a bad glob").
+    """
+    _write(tmp_path, "Dynamics-03-Sympathie-vs-Engagement-Python.ipynb",
+           _notebook("# GameTheory-06d : Sympathie"))
+    broken = tmp_path / "Dynamics-04-Nav-Python.ipynb"
+    broken.write_text('{"cells": [', encoding="utf-8")
+
+    monkeypatch.setattr(sys, "argv",
+                        ["check_h1_ordinal_agreement.py", "--paths",
+                         str(tmp_path / "Dynamics-03-Sympathie-vs-Engagement-Python.ipynb"),
+                         str(broken), "--json"])
+    assert organ.main() == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["counts"]["drift"] == 1
+    assert payload["counts"]["unreadable"] == 1
+    assert payload["unreadable"][0]["file"].endswith("Dynamics-04-Nav-Python.ipynb")
+    assert "JSONDecodeError" in payload["unreadable"][0]["error"]
 
 
 # ----------------------------------------------------------- repo invariants
@@ -191,7 +217,9 @@ def test_json_shape_is_stable(tmp_path, monkeypatch, capsys):
 
 @pytest.fixture(scope="module")
 def repo_findings():
-    return organ.scan()
+    findings, unreadable = organ.scan()
+    assert not unreadable, f"unparsable notebooks on the tree: {unreadable[:5]}"
+    return findings
 
 
 def test_the_organ_scans_the_repository_at_all(repo_findings):

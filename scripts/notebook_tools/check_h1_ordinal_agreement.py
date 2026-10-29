@@ -52,13 +52,46 @@ geste :
   (`Lean 4 - Installation ...` sur `Lean-01-...`). Le « 4 » peut etre la
   version du langage et non un ordinal. Compte a part, jamais comme derive :
   c'est un cas a trancher par ecrit, ce que #22291 a fait pour `Lean-01`.
-- `missing_h1` : le carnet n'a **aucun** heading de niveau 1. Le libelle genere
-  replie alors sur le nom de fichier — lisible, mais muet sur le contenu.
+- `missing_h1` : le carnet n'a **aucun** heading de niveau 1. Ce n'est **pas**
+  une lacune de libelle : `extract_title` accepte un heading de **n'importe
+  quel niveau**, donc un carnet qui porte `## ICT-22b — ...` publie deja un
+  libelle riche, et le repli sur le nom de fichier
+  (`"title": title or nb_path.stem`, `generate_catalog.py:1301`) ne se
+  declenche que sur un libelle **vide** — cas inexistant dans le corpus (1676
+  carnets sur 1677 ont un libelle). Ce que la classe signale est donc une
+  **incoherence de niveau** : un `## ` la ou la convention du depot attend
+  `# `. Les cinq carnets concernes (`ICT-22b`, `ICT-35`, `ICT-35b`, `ICT-35c`,
+  `ICT-35d`) en sont l'illustration exacte.
 
 Un H1 en prose libre (« Capstone Geometry — l'escalier ... ») ne declenche
 rien : l'absence d'identifiant n'est pas un desaccord. Le H1 est cherche dans
 **toutes** les cellules markdown, pas seulement la premiere : la convention du
 depot place le bloc de navigation avant le titre.
+
+Ce que l'outil ne voit pas, et qu'il faut savoir avant de s'y fier
+------------------------------------------------------------------
+Deux restrictions deliberees, mesurees sur le corpus du 2026-10-29. Aucune ne
+produit de faux verdict aujourd'hui, mais toutes deux cadrent la portee :
+
+- **Le niveau 1 seulement, quand le catalogue lit tous les niveaux.** Un carnet
+  dont le `## ` nomme une autre identite que le fichier passe ici pour
+  `missing_h1` (ou pour rien si un `# ` correct le precede), alors que le
+  libelle publie, lui, vient du `## `. Mesure : **0 cas vivant** sur les 1677
+  carnets. La branche est ecrite pour le futur, et c'est le futur qui decidera
+  s'il faut lire les headings comme `extract_title` le fait.
+- **Les fences ne sont pas suivis** : un `# ` a l'interieur d'un bloc de code
+  est pris pour un H1. `generate_catalog.py` a le meme angle mort, donc les
+  deux ne divergent pas — fragilite commune, pas un desaccord a detecter.
+
+**Denominateur et couverture.** Le balayage par defaut couvre **1677** carnets
+sous `MyIA.AI.Notebooks/` (1689 fichiers `.ipynb` moins 12 sous un
+`_archive/`). Sur ces 1677, **930 seulement** portent une identite de fichier
+exploitable au sens de `FILE_ID_RE` : les 747 autres, dont **168** dont le
+second segment est alphabetique (`QC-Py-01-…`, `Argumentation-Obs-03-…`,
+`Probas-KLS-…`), sont hors perimetre **par construction** et ne peuvent
+produire aucun verdict. Un carnet illisible (JSON tronque) sortait du
+denominateur en silence ; la sortie `--json` porte desormais un compteur
+`unreadable`, pour que ce silence soit mesurable.
 
 Usage
 -----
@@ -175,16 +208,27 @@ def iter_notebooks(paths):
 
 
 def scan(paths=None):
+    """Rend `(findings, unreadable)`.
+
+    `unreadable` compte les carnets qui n'ont pas pu etre parses. Sans ce
+    compteur, un JSON tronque disparaissait du denominateur **en silence** —
+    exactement ce que `test_the_organ_scans_the_repository_at_all` interdit par
+    ailleurs (« un resultat vide doit vouloir dire un arbre propre, pas un
+    mauvais glob »). Mesure du 2026-10-29 : 0 echec sur 1677, aucun effet
+    aujourd'hui ; le compteur rend le silence mesurable pour la suite.
+    """
     findings = []
+    unreadable = []
     for p in iter_notebooks(paths):
         try:
             nb = json.loads(p.read_text(encoding="utf-8"))
-        except Exception:
+        except Exception as exc:
+            unreadable.append({"file": str(p), "error": f"{type(exc).__name__}: {exc}"})
             continue
         rec = classify(p, nb)
         if rec:
             findings.append(rec)
-    return findings
+    return findings, unreadable
 
 
 def self_test() -> int:
@@ -246,7 +290,7 @@ def main() -> int:
     if args.self_test:
         return self_test()
 
-    findings = scan(args.paths)
+    findings, unreadable = scan(args.paths)
     drifts = [f for f in findings if f["kind"] == "drift"]
     generic = [f for f in findings if f["kind"] == "generic"]
     ambiguous = [f for f in findings if f["kind"] == "ambiguous"]
@@ -255,8 +299,10 @@ def main() -> int:
     if args.json:
         print(json.dumps(
             {"drift": drifts, "generic": generic, "ambiguous": ambiguous, "missing_h1": missing,
+             "unreadable": unreadable,
              "counts": {"drift": len(drifts), "generic": len(generic),
-                        "ambiguous": len(ambiguous), "missing_h1": len(missing)}},
+                        "ambiguous": len(ambiguous), "missing_h1": len(missing),
+                        "unreadable": len(unreadable)}},
             ensure_ascii=False, indent=2))
     else:
         print(f"derive d'identite (serie ou ordinal) : {len(drifts)}")
@@ -271,6 +317,10 @@ def main() -> int:
         print(f"carnets sans H1 : {len(missing)}")
         for f in missing:
             print(f"  {f['file']}")
+        if unreadable:
+            print(f"carnets illisibles (hors denominateur) : {len(unreadable)}")
+            for f in unreadable:
+                print(f"  {f['file']}\n      {f['error']}")
 
     if args.fail and drifts:
         return 1
