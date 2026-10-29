@@ -435,6 +435,16 @@ def train_moe_regimes_walk_forward(
         # a Diebold-Mariano test on a precision loss (#21054 case 4, regle C).
         oos_sq_errors = ((oos_preds - y_test) ** 2).tolist()
 
+        # Biais OOS signe (demande de changements ai-01 sur #23171, point 3).
+        # mean(e) = mean(pred - y) est la composante directionnelle de la perte
+        # que le MSE seul ne separe pas : un bras peut "gagner" au DM en
+        # precision tout en portant un biais plus fort. Le signe n'est pas
+        # reconstituable depuis oos_sq_errors, d'ou les scalaires ci-dessous.
+        # `sign_bias` place le MoE dans le meme espace que la baseline majorite
+        # (qui predit une CLASSE, pas une valeur) : sign(pred) - sign(y).
+        signed_bias = float(np.mean(oos_preds - y_test))
+        sign_bias = float(np.mean(np.sign(oos_preds) - np.sign(y_test)))
+
         fold_results.append({
             "fold": fold,
             "train_end": train_end,
@@ -446,6 +456,11 @@ def train_moe_regimes_walk_forward(
             "expert_stats": expert_stats,
             "regime_pred_counts": regime_pred_counts,
             "oos_sq_errors": oos_sq_errors,
+            "mean_target": round(float(np.mean(y_test)), 10),
+            "mean_pred": round(float(np.mean(oos_preds)), 10),
+            "signed_bias": round(signed_bias, 10),
+            "sign_bias": round(sign_bias, 10),
+            "sign_target_mean": round(float(np.mean(np.sign(y_test))), 10),
         })
 
         log.info(

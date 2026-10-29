@@ -52,6 +52,22 @@ def _pooled_sq_errors(seed_result: dict) -> np.ndarray:
     return np.concatenate([np.asarray(p, dtype=float) for p in parts])
 
 
+def _pooled_mean(seed_result: dict, key: str) -> float:
+    """Mean of a per-fold scalar, weighted by that fold's test_size.
+
+    Le biais signe se moyenne sur les observations, pas sur les folds : les
+    folds n'ont pas tous le meme nombre de tests sur la derniere fenetre.
+    """
+    folds = seed_result.get("fold_details", [])
+    if not folds or key not in folds[0]:
+        raise ValueError(
+            f"seed result carries no '{key}' (re-run with the #23171 bias recorder)"
+        )
+    weights = np.asarray([f["test_size"] for f in folds], dtype=float)
+    values = np.asarray([f[key] for f in folds], dtype=float)
+    return float(np.sum(values * weights) / np.sum(weights))
+
+
 def _check_compatible(vit: dict, fil: dict) -> None:
     sv, sf = vit["summary"], fil["summary"]
     for key in ("symbol", "expert_type", "regime_method", "seeds"):
@@ -83,6 +99,13 @@ def compare(viterbi_path: Path, filter_path: Path) -> dict:
                 f"{len(e_fil)}) -- runs must share folds and data"
             )
         dm = diebold_mariano_test(e_fil, e_vit, loss_fn="mse", alternative="two-sided")
+
+        # Biais signe (#23171 point 3) : mean(e) par bras, et la meme mesure
+        # ramenee dans l'espace des signes pour etre comparable a la baseline
+        # majorite, qui predit une CLASSE et non une valeur.
+        sign_target = _pooled_mean(rv, "sign_target_mean")
+        baseline_sign = 1.0 if rv.get("majority_class") == 1 else -1.0
+
         per_seed.append({
             "seed": seed,
             "n_observations": int(dm.n_observations),
@@ -91,6 +114,15 @@ def compare(viterbi_path: Path, filter_path: Path) -> dict:
             "mean_sqerr_filter": round(float(np.mean(e_fil)), 8),
             "mean_sqerr_viterbi": round(float(np.mean(e_vit)), 8),
             "mean_loss_diff_filter_minus_viterbi": round(float(dm.mean_loss_diff), 8),
+            "mean_err_filter": round(_pooled_mean(rf, "signed_bias"), 8),
+            "mean_err_viterbi": round(_pooled_mean(rv, "signed_bias"), 8),
+            "mean_err_diff_filter_minus_viterbi": round(
+                _pooled_mean(rf, "signed_bias") - _pooled_mean(rv, "signed_bias"), 8
+            ),
+            "sign_bias_filter": round(_pooled_mean(rf, "sign_bias"), 6),
+            "sign_bias_viterbi": round(_pooled_mean(rv, "sign_bias"), 6),
+            "sign_bias_baseline": round(baseline_sign - sign_target, 6),
+            "sign_target_mean": round(sign_target, 6),
             "diracc_filter": rf["moe_mean_diracc"],
             "diracc_viterbi": rv["moe_mean_diracc"],
             "beats_majority_filter": rf["beats_majority"],
@@ -113,12 +145,99 @@ def compare(viterbi_path: Path, filter_path: Path) -> dict:
         "per_seed": per_seed,
         "dm_p_median": round(median_p, 6),
         "verdict": verdict,
+        "mean_err_filter": round(float(np.mean([s["mean_err_filter"] for s in per_seed])), 8),
+        "mean_err_viterbi": round(float(np.mean([s["mean_err_viterbi"] for s in per_seed])), 8),
+        "sign_bias_filter": round(float(np.mean([s["sign_bias_filter"] for s in per_seed])), 6),
+        "sign_bias_viterbi": round(float(np.mean([s["sign_bias_viterbi"] for s in per_seed])), 6),
+        "sign_bias_baseline": round(float(np.mean([s["sign_bias_baseline"] for s in per_seed])), 6),
         "note": (
             "Paired DM on pooled per-observation OOS squared errors, per seed; "
             "verdict from the median p (regle C). INCONCLUSIVE means the "
             "regime-routed MoE's precision is indistinguishable between the "
-            "retrospective and causal decodes."
+            "retrospective and causal decodes. mean_err_* is the signed OOS "
+            "bias mean(pred - y) of each arm; sign_bias_* is the same bias in "
+            "sign space (sign(pred) - sign(y)), the scale on which the "
+            "majority baseline -- a class predictor, not a value predictor -- "
+            "is comparable."
         ),
+    }
+
+
+def build_aggregate(vit: dict, fil: dict, comparison: dict,
+                    commands: dict | None = None) -> dict:
+    """Agregat falsifiable et commitable des deux bras (#23171 point 1).
+
+    Les multiseed JSON portent la serie complete des erreurs OOS (300 Ko par
+    bras) : elle n'a pas sa place dans le depot. Cet agregat garde tout ce qui
+    permet de RECOMPTER les nombres du body -- provenance, configuration
+    d'entrainement, scalaires par fold (mse, biais signe, cible moyenne),
+    diracc par seed et verdict DM -- et cite la serie complete hors depot.
+    """
+    _FOLD_KEYS = (
+        "fold", "test_size", "direction_accuracy", "mse", "n_experts",
+        "mean_target", "mean_pred", "signed_bias", "sign_bias",
+        "sign_target_mean",
+    )
+    _RUN_KEYS = (
+        "symbol", "expert_type", "regime_method", "regime_decode",
+        "regime_decode_causal", "regime_lookback", "regime_n_states",
+        "lookahead_note", "device", "data_hash", "n_folds", "n_samples",
+        "n_features", "seq_len", "majority_baseline_acc", "majority_class",
+        "target_balance",
+    )
+
+    def _arm(data: dict) -> dict:
+        first = data["seeds"][0]
+        summary = data["summary"]
+        # La provenance vit par seed dans les runs reels ; la forme condensee
+        # ne la porte que dans le summary -- on accepte les deux.
+        return {
+            "provenance": {k: first.get(k, summary.get(k)) for k in _RUN_KEYS},
+            "train_config": first.get("config"),
+            "summary": {
+                k: summary.get(k) for k in (
+                    "n_seeds", "seeds", "mean_diracc", "std_diracc",
+                    "majority_baseline", "improvement_pct", "t_stat",
+                    "p_value", "significant", "per_seed_diraccs",
+                )
+            },
+            "per_seed": [
+                {
+                    "seed": sr["config"]["seed"],
+                    "moe_mean_diracc": sr.get("moe_mean_diracc"),
+                    "moe_std_diracc": sr.get("moe_std_diracc"),
+                    "beats_majority": sr.get("beats_majority"),
+                    "folds": [
+                        {k: f.get(k) for k in _FOLD_KEYS}
+                        for f in sr.get("fold_details", [])
+                    ],
+                }
+                for sr in data["seeds"]
+            ],
+        }
+
+    return {
+        "case": "#21054 case 4 -- regime decode viterbi vs filter (regle C)",
+        "falsifiability": (
+            "Chaque nombre du body de la PR se recompte depuis ce fichier : "
+            "diracc par seed et par fold, mse, biais signe mean(pred-y) et "
+            "biais en espace de signe, cible moyenne, p-value DM et p median. "
+            "La serie complete par observation (oos_sq_errors, ~300 Ko/bras) "
+            "reste hors depot : chemin GDrive cite dans le body de la PR."
+        ),
+        "commands": commands or {},
+        "viterbi": _arm(vit),
+        "filter": _arm(fil),
+        "comparison": {
+            "per_seed": comparison["per_seed"],
+            "dm_p_median": comparison["dm_p_median"],
+            "verdict": comparison["verdict"],
+            "mean_err_filter": comparison["mean_err_filter"],
+            "mean_err_viterbi": comparison["mean_err_viterbi"],
+            "sign_bias_filter": comparison["sign_bias_filter"],
+            "sign_bias_viterbi": comparison["sign_bias_viterbi"],
+            "sign_bias_baseline": comparison["sign_bias_baseline"],
+        },
     }
 
 
@@ -132,6 +251,12 @@ def main() -> int:
                         help="multiseed JSON produced with --regime-decode filter")
     parser.add_argument("--out", type=Path, default=None,
                         help="optional output JSON for the comparison")
+    parser.add_argument("--aggregate", type=Path, default=None,
+                        help="optional compact, committable aggregate of both arms")
+    parser.add_argument("--command", action="append", default=None,
+                        metavar="LABEL=CMD",
+                        help="exact command line that produced an arm (repeatable), "
+                             "recorded verbatim in the aggregate")
     args = parser.parse_args()
 
     result = compare(args.viterbi, args.filter)
@@ -144,7 +269,9 @@ def main() -> int:
         print(
             f"seed {s['seed']:>3}: DM p={s['dm_p_value']:.4f}  "
             f"sqerr filter={s['mean_sqerr_filter']:.6f} viterbi={s['mean_sqerr_viterbi']:.6f}  "
-            f"diracc filter={s['diracc_filter']:.4f} viterbi={s['diracc_viterbi']:.4f}"
+            f"diracc filter={s['diracc_filter']:.4f} viterbi={s['diracc_viterbi']:.4f}  "
+            f"bias filter={s['mean_err_filter']:+.6f} viterbi={s['mean_err_viterbi']:+.6f} "
+            f"baseline={s['sign_bias_baseline']:+.4f}"
         )
     print(f"\ndm_p_median = {result['dm_p_median']:.4f}")
     print(f"VERDICT: {result['verdict']}")
@@ -154,6 +281,22 @@ def main() -> int:
         args.out.parent.mkdir(parents=True, exist_ok=True)
         args.out.write_text(json.dumps(result, indent=2), encoding="utf-8")
         print(f"Saved: {args.out}")
+
+    if args.aggregate:
+        commands = {}
+        for item in args.command or []:
+            label, _, cmd = item.partition("=")
+            if not cmd:
+                raise SystemExit(f"--command expects LABEL=CMD, got {item!r}")
+            commands[label] = cmd
+        aggregate = build_aggregate(
+            _load(args.viterbi), _load(args.filter), result, commands
+        )
+        args.aggregate.parent.mkdir(parents=True, exist_ok=True)
+        args.aggregate.write_text(
+            json.dumps(aggregate, indent=2, ensure_ascii=False), encoding="utf-8"
+        )
+        print(f"Saved aggregate: {args.aggregate}")
     return 0
 
 
