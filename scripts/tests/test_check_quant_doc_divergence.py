@@ -198,22 +198,68 @@ def test_verdict_orphelin_row_et_orphelin_service(tmp_path: Path) -> None:
 
 
 def test_resolution_par_appartenance_evite_un_faux_orphelin(tmp_path: Path) -> None:
-    """`tts-kokoro` vit dans `services/tts-api/` : pas un orphelin.
+    """`tts-kokoro` n'a pas de répertoire homonyme : pas un orphelin pour autant.
 
-    Le nom n'y est pas un répertoire mais un service du compose hybride : c'est
-    exactement la forme rencontrée dans l'arbre réel, et c'est elle qui rend le
-    faux `ORPHAN-ROW` d'une résolution 1:1.
+    Forme RÉELLE de l'arbre (corrigée le 2026-10-29, revue #23343) : le service
+    vit dans `services/tts-multi/` (clé `tts-kokoro:` du compose) et
+    `services/tts-api/` ne fait que le **mentionner** (commentaire d'en-tête,
+    `DEFAULT_TTS_MODEL=kokoro`). La version précédente de ce test faisait
+    déclarer le service par `tts-api` — elle consacrait la fausse prémisse au
+    lieu de la mesurer.
     """
     repo = _make_repo(
         tmp_path,
-        {"tts-api": "services:\n  s:\n    command:\n      - --half\n"},
+        {"tts-api": "services:\n  api:\n    command:\n      - --half\n",
+         "tts-multi": "services:\n  tts-kokoro:\n    build:\n"
+                      "      context: ./kokoro\n"},
         "| tts-kokoro | po-2023 | Kokoro | fp16 | ~1 GB |\n",
     )
-    hybrid = repo / "docker-configurations" / "services" / "tts-api" / "docker-compose-hybrid.yml"
+    hybrid = (repo / "docker-configurations" / "services" / "tts-api"
+              / "docker-compose-hybrid.yml")
     hybrid.write_text(
-        "services:\n  tts-kokoro:\n    image: kokoro:latest\n    command:\n      - --fp16\n",
+        "# TTS API - Text-to-Speech with Kokoro (Hybrid Configuration)\n"
+        "services:\n  api:\n    environment:\n"
+        "      - DEFAULT_TTS_MODEL=kokoro\n"
+        "      - KOKORO_SERVICE_URL=http://tts-kokoro:8000\n",
         encoding="utf-8",
     )
     findings = organ.evaluate(organ.Loader(repo))
     assert findings[0]["verdict"] != "ORPHAN-ROW"
-    assert "tts-api" in findings[0]["source"]
+    assert findings[0]["source"].startswith(
+        "docker-configurations/services/tts-multi/")
+
+
+def test_une_mention_ne_fait_pas_un_proprietaire(tmp_path: Path) -> None:
+    """« Mentionner » et « posséder » se distinguent, et c'est le propriétaire
+    déclarant qui gagne — même quand son nom vient APRÈS alphabétiquement.
+
+    Sans cette discrimination, `resolve_service` retenait `owners[0]` : sur
+    l'arbre réel, `tts-api` (mention) battait `tts-multi` (propriétaire) et
+    l'organe lisait la quantification du mauvais compose.
+    """
+    repo = _make_repo(
+        tmp_path,
+        {"aaa-mention": "services:\n  api:\n    environment:\n"
+                        "      - SERVICE_URL=http://tts-kokoro:8000\n",
+         "zzz-owner": "services:\n  tts-kokoro:\n    build:\n"
+                      "      context: ./kokoro\n    command:\n"
+                      "      - --fp16\n"},
+        "| tts-kokoro | po-2023 | Kokoro | fp16 | ~1 GB |\n",
+    )
+    service_dir, resolution = organ.resolve_service(
+        organ.Loader(repo), "tts-kokoro")
+    assert service_dir == "zzz-owner", f"resolution={resolution}"
+    assert "zzz-owner" in resolution
+
+
+def test_un_depends_on_n_est_pas_une_declaration(tmp_path: Path) -> None:
+    """Contrôle négatif de l'ancre d'indentation : une entrée de `depends_on:`
+    nomme un service sans en être le propriétaire."""
+    repo = _make_repo(
+        tmp_path,
+        {"consommateur": "services:\n  front:\n    depends_on:\n"
+                         "      tts-kokoro:\n        condition: service_started\n"},
+        "| tts-kokoro | po-2023 | Kokoro | fp16 | ~1 GB |\n",
+    )
+    assert organ.Loader(repo).declares_service("consommateur", "tts-kokoro") is False
+

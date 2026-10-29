@@ -108,6 +108,49 @@ class Loader:
             return []
         return sorted(p.name for p in base.iterdir() if p.is_dir())
 
+    def list_subdirs(self, owner: str) -> list[str]:
+        """Les sous-répertoires d'un service — ce qui distingue « contient » de
+        « mentionne » (`resolve_service`)."""
+        rel = f"{SERVICES_PATH}/{owner}"
+        if self.as_of:
+            proc = subprocess.run(
+                ["git", "-C", str(self.repo), "ls-tree", "-d", "--name-only",
+                 f"{self.as_of}:{rel}"],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+            )
+            return sorted(p.strip() for p in proc.stdout.splitlines() if p.strip())
+        base = self.repo / rel
+        if not base.is_dir():
+            return []
+        # Meme precaution que `grep_services` : ne pas resoudre les liens.
+        return sorted(p.name for p in base.iterdir()
+                      if p.is_dir() and not p.is_symlink())
+
+    def declares_service(self, owner: str, name: str) -> bool:
+        """Un compose de `owner` **déclare-t-il** `name` comme clé de service ?
+
+        C'est le signal d'appartenance autoritaire, et il se distingue d'une
+        simple mention : `services/tts-api/docker-compose-hybrid.yml` parle de
+        Kokoro dans un commentaire d'en-tête et dans `DEFAULT_TTS_MODEL=kokoro`,
+        sans jamais déclarer de service `tts-kokoro:` ; `services/tts-multi/`
+        le déclare (`docker-compose.yml:55`).
+
+        L'ancre est l'**indentation de 2 espaces** : sous `services:`, une clé
+        de service y est posée, alors qu'une occurrence plus profonde est une
+        entrée de `depends_on:` (l.47 et l.152 du même fichier), qui nomme un
+        service sans en être le propriétaire.
+        """
+        rx = re.compile(rf"^  {re.escape(name)}\s*:\s*(?:#.*)?$", re.MULTILINE)
+        for fname in ("docker-compose.yml", "docker-compose.yaml",
+                      "docker-compose-hybrid.yml"):
+            text = self.read(f"{SERVICES_PATH}/{owner}/{fname}")
+            if text and rx.search(text):
+                return True
+        return False
+
     def grep_services(self, pattern: str) -> list[str]:
         """Chemins (relatifs au dépôt) où `pattern` apparaît sous `services/`."""
         if self.as_of:
@@ -284,8 +327,18 @@ def resolve_service(loader: Loader, name: str) -> tuple[str | None, str]:
     """Répertoire du service, et comment il a été résolu.
 
     `homonyme` : le répertoire porte le nom de la ligne.
-    `appartenance` : le nom vit à l'intérieur d'un autre service (`tts-kokoro`
-    dans `services/tts-api/`) — la correspondance ligne <-> répertoire n'est pas 1:1.
+    `appartenance` : le nom vit à l'intérieur d'un autre service — la
+    correspondance ligne <-> répertoire n'est pas 1:1.
+
+    **Mentionner n'est pas posséder** (#23343, revue du 2026-10-29). Le
+    propriétaire est celui qui **porte un sous-répertoire du nom** ; à défaut
+    seulement, un simple hit de `grep` fait candidat. La distinction n'est pas
+    cosmétique : c'est le répertoire retenu dont `read_effective` lit la
+    quantification. Sur l'arbre réel, `tts-kokoro` est **mentionné** par
+    `services/tts-api/` (et par `tts-multi`), mais il **vit** dans
+    `services/tts-multi/kokoro/` (`context: ./kokoro`,
+    `tts-multi/docker-compose.yml:57`) : l'ancien `owners[0]` alphabétique
+    rendait `tts-api` et faisait lire la quantification du mauvais service.
     """
     dirs = loader.list_service_dirs()
     if name in dirs:
@@ -294,8 +347,35 @@ def resolve_service(loader: Loader, name: str) -> tuple[str | None, str]:
     owners = sorted({h.split("/")[2] for h in hits if h.startswith(SERVICES_PATH + "/")
                      and len(h.split("/")) > 3})
     if owners:
-        return owners[0], f"appartenance ({', '.join(owners[:3])})"
+        proprietaire = owner_par_sous_repertoire(loader, owners, name)
+        if proprietaire is not None:
+            return proprietaire, f"appartenance ({proprietaire}, declare {name}:)"
+        return owners[0], (f"appartenance ({', '.join(owners[:3])}) "
+                           "— propriétaire non tranché (aucun sous-répertoire)")
     return None, "introuvable"
+
+
+def owner_par_sous_repertoire(loader: Loader, owners: list[str],
+                              name: str) -> str | None:
+    """Le propriétaire du nom, par ordre de force décroissante.
+
+    1. celui dont un compose **déclare la clé de service** `name:` — signal
+       autoritaire : c'est ce fichier que `read_effective` lira ;
+    2. celui qui **porte un sous-répertoire** du nom (utile quand le nom du
+       dossier diffère de celui du service).
+
+    « Mentionner » ne suffit pas : `services/tts-api/` ne contient que des
+    commentaires et des variables d'environnement parlant de Kokoro, et
+    pourtant `owners[0]` alphabétique le retenait.
+    """
+    for owner in owners:
+        if loader.declares_service(owner, name):
+            return owner
+    for owner in owners:
+        if name in loader.list_subdirs(owner):
+            return owner
+    return None
+
 
 
 def evaluate(loader: Loader) -> list[dict[str, str]]:
