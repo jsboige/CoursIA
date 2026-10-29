@@ -54,6 +54,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          filter: blob:none
       # #17407 / #17444 : `python` nu n'est pas expose par les slots natifs du
       # parc coursia-linux (contrat image seulement). Sans interpreteur, le scan
       # ne tourne pas -- et `rc=127` n'est teste par AUCUNE branche du script
