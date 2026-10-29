@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -690,6 +691,12 @@ def test_evaluate_wires_host_loss_warnings():
     assert any("POOL LOSS" in w and "ai-01-wsl" in w for w in v.warnings)
 
 
+# --- RESOLUTION DU CONFLIT (main <- PR #23148) --------------------------
+# Les deux sides sont ADDITIFS : le side PR porte le « FILTRE DE CHEMIN
+# (#22937 phase A) », le side main porte la « PORTE DE MESURE (#22937) ».
+# Aucun nom de niveau module en collision (LOCAL_PATH / HOSTED_PATH /
+# _path_run d'un cote, 8 tests de l'autre) -> l'union conservee, rien
+# masque.
 # --- FILTRE DE CHEMIN (#22937 phase A) ------------------------------------
 #
 # La lecture locale du controleur de debordement ne doit pas consommer son
@@ -787,3 +794,111 @@ def test_le_filtre_laisse_passer_le_job_local_du_perimetre(monkeypatch):
     assert st.skipped_other_workflow == 0
     assert len(st.starved) == 1
     assert st.starved[0].run_path == LOCAL_PATH
+# --- PORTE DE MESURE (#22937) ----------------------------------------------
+# Le heartbeat workflow_run declenche sur CHAQUE fin d'ancre (721 fins/24 h
+# mesurees -> 60 runs/h pour la paire d'advisories -> ~480 appels API/h sur
+# le jeton de depot, sature le 2026-10-28 22:04Z). La porte borne la
+# MESURE, pas le RUN : l'observateur survit et son rapport de cadence servie
+# (#15332) est emis a chaque passage.
+
+def test_gate_is_inactive_by_default():
+    measure, reason = rs.gate_measurement(every_n=0, run_number=7,
+                                          event_name="workflow_run")
+    assert measure is True
+    assert "inactive" in reason
+
+
+def test_gate_every_n_one_is_inactive():
+    measure, _ = rs.gate_measurement(every_n=1, run_number=7,
+                                     event_name="workflow_run")
+    assert measure is True
+
+
+def test_gate_never_gates_the_schedule_leg():
+    # La jambe schedule est la cadence de REFERENCE de l'advisory : la
+    # gater, ce serait supprimer la reference qu'on veut conserver.
+    measure, reason = rs.gate_measurement(every_n=4, run_number=3,
+                                          event_name="schedule")
+    assert measure is True
+    assert "schedule" in reason
+
+
+def test_gate_never_gates_a_manual_dispatch():
+    measure, _ = rs.gate_measurement(every_n=4, run_number=3,
+                                     event_name="workflow_dispatch")
+    assert measure is True
+
+
+def test_gate_measures_one_workflow_run_in_n():
+    measured, _ = rs.gate_measurement(every_n=4, run_number=8,
+                                      event_name="workflow_run")
+    assert measured is True
+    for run_number in (9, 10, 11):
+        measured, _ = rs.gate_measurement(every_n=4, run_number=run_number,
+                                          event_name="workflow_run")
+        assert measured is False
+
+
+def test_gate_measures_when_the_run_number_is_unknown():
+    # Hors Actions (GITHUB_RUN_NUMBER absent) : une lecture qui ne sait pas
+    # ou elle est ne doit pas s'arreter.
+    measure, reason = rs.gate_measurement(every_n=4, run_number=None,
+                                          event_name="workflow_run")
+    assert measure is True
+    assert "inconnu" in reason
+
+
+def test_gate_reason_names_the_run_it_refuses_to_measure():
+    _, reason = rs.gate_measurement(every_n=4, run_number=17,
+                                    event_name="workflow_run")
+    assert "17" in reason
+    assert "CADENCE SEULE" in reason
+
+
+def test_env_int_reads_and_refuses_garbage(monkeypatch):
+    monkeypatch.setenv("RS_TEST_INT", " 42 ")
+    assert rs._env_int("RS_TEST_INT") == 42
+    monkeypatch.setenv("RS_TEST_INT", "pas-un-entier")
+    assert rs._env_int("RS_TEST_INT") is None
+    monkeypatch.delenv("RS_TEST_INT", raising=False)
+    assert rs._env_int("RS_TEST_INT") is None
+
+
+def test_main_cadence_only_pass_still_reports_the_scheduler_silence(
+        monkeypatch, capsys):
+    # Le devoir #15332 ne doit SURVIVRE a la porte : un passage econome
+    # reste un passage, et il dit toujours si le scheduler se tait.
+    seen = {"inventory": 0, "starvation": 0}
+
+    def fake_scheduled(repo, workflow, limit=3, stats=None):
+        # La vraie lecture compte 1 appel dans le compteur du passage.
+        if stats is not None:
+            stats.calls += 1
+        return []
+
+    def fake_inventory(repo, label, token):
+        seen["inventory"] += 1
+        return rs.RunnerInventory()
+
+    def fake_starvation(*args, **kwargs):
+        seen["starvation"] += 1
+        return rs.Starvation()
+
+    monkeypatch.setattr(rs, "fetch_scheduled_runs", fake_scheduled)
+    monkeypatch.setattr(rs, "fetch_inventory", fake_inventory)
+    monkeypatch.setattr(rs, "fetch_starvation", fake_starvation)
+    monkeypatch.setattr(sys, "argv", [
+        "check_runner_starvation.py", "--json",
+        "--self-workflow", "advisory.yml",
+        "--measure-every-n-runs", "4",
+    ])
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "workflow_run")
+    monkeypatch.setenv("GITHUB_RUN_NUMBER", "17")
+
+    assert rs.main() == 0
+    out = capsys.readouterr().out
+    payload = json.loads(out)
+    assert payload["measurement"] == "cadence-only"
+    assert payload["gh_calls"] == 1
+    assert seen == {"inventory": 0, "starvation": 0}
+    assert any("SCHEDULER MUET" in w for w in payload["warnings"])

@@ -223,6 +223,27 @@ repos:
         files: '^MyIA\.AI\.Notebooks/SymbolicAI/Lean/KNOTS/.*\.ipynb$'
         stages: [pre-commit]
 
+      - id: vendored-data-consumers
+        name: '#20628 — list notebooks reading a changed vendored taxonomy (advisory)'
+        description: |
+          A vendored data file (Argumentum OWL/CSV taxonomy) can change without
+          any notebook being re-executed: committed outputs then describe the
+          data as it was before, and the prose that comments on them too. The
+          founding case is #20628 (Obs-04 measured: 1513 classes / 7825 IRI
+          annotations on the old blob versus 1536 / 6632 on the current one).
+          This hook runs only when such a file is staged, prints every
+          notebook whose source cites that file, and marks the ones absent
+          from the same change. Advisory on purpose: it consumes no CI queue
+          slot (#13097 famine) and never blocks a legitimate commit; the
+          blocking verdict is available by running the script without
+          ``--advisory`` (a PR reviewer, or the author who wants the check).
+          Acceptance path chosen for #20628: the "organ" one, this hook.
+        entry: python scripts/notebook_tools/list_data_consumers.py --advisory
+        language: system
+        pass_filenames: false
+        files: '^MyIA\.AI\.Notebooks/SymbolicAI/Argument_Analysis/(ontologies/.*\.owl|data/.*taxonomy.*\.csv)$'
+        stages: [pre-commit]
+
       - id: knots-extracts-class23
         name: '#21007 — refuse stale node identities and stale TODOs in KNOTS notebooks (classes 2, 3)'
         description: |
