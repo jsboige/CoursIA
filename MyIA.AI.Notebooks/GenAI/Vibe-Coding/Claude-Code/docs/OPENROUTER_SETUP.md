@@ -82,8 +82,10 @@ brew install --cask claude-code
 ### Linux / WSL
 
 ```bash
-curl -fsSL https://install.claude.com | sh
+curl -fsSL https://claude.ai/install.sh | sh
 ```
+
+> **Corrigé le 2026-10-29 (#23276).** La commande que ce guide portait jusque-là — `curl -fsSL https://install.claude.com | sh` — **ne fonctionne pas** : le domaine `install.claude.com` n'existe pas (`nslookup` → *Non-existent domain*, et `curl: (6) Could not resolve host` depuis un conteneur). Le point d'entrée officiel est `https://claude.ai/install.sh`. Mesuré sur `debian:bookworm-slim` : l'installateur rend `rc=0` et installe la version **2.1.312** dans `~/.local/bin`.
 
 ### Vérifier
 
@@ -91,7 +93,15 @@ curl -fsSL https://install.claude.com | sh
 claude --version
 ```
 
-**Checkpoint :** Vous devez voir un numero de version. Sinon, redémarrez votre terminal et réessayez.
+**Checkpoint :** Vous devez voir un numero de version.
+
+> **Sous Linux, `claude --version` peut répondre « command not found » alors que l'installation a réussi.** L'installateur place le binaire dans `~/.local/bin`, qui n'est **pas** dans le `PATH` par défaut — il le signale lui-même : *« Native installation exists but ~/.local/bin is not in your PATH »*. Ajoutez-le une fois pour toutes :
+>
+> ```bash
+> echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc && source ~/.bashrc
+> ```
+>
+> Sans cette ligne, la CLI fonctionne depuis le shell où l'installation a eu lieu mais disparaît dans tout nouveau shell — c'est la cause la plus fréquente du « je l'ai installé mais ça ne marche pas ». Sous Colab, la VM étant éphémère, cette ligne est à rejouer après chaque redémarrage.
 
 ---
 
@@ -360,15 +370,20 @@ runtime changent la donne — trois sont des faits du runtime, la quatrième res
 
 | Point | Ce qui est établi | Conséquence pour ce guide |
 |---|---|---|
-| Système | Colab est un **Linux**, pas un poste Windows | suivre l'installation Linux de l'Étape 1 (`curl -fsSL https://install.claude.com \| sh`), pas les commandes PowerShell |
+| Système | Colab est un **Linux**, pas un poste Windows | suivre l'installation Linux de l'Étape 1 (`curl -fsSL https://claude.ai/install.sh \| sh` — **pas** `install.claude.com`, domaine inexistant), puis ajouter `~/.local/bin` au `PATH` ; ne pas reprendre les commandes PowerShell |
 | Durée de vie | la VM est **éphémère** : une déconnexion ou un redémarrage du runtime efface les installations | réinstaller la CLI **et** recloner le proxy après chaque redémarrage ; ce n'est pas une panne |
 | Secrets | `google.colab.userdata` n'existe **que** dans Colab ; un `!export ...` lancé dans une cellule **ne persiste pas**, chaque `!` ouvre un sous-shell | poser la clé dans `os.environ` depuis `userdata`, puis la passer explicitement au sous-processus. Ne jamais l'imprimer, ni la mettre dans `argv`, une cellule ou une sortie. Le helper partagé de la série (`GenAI/shared/helpers/genai_helpers.py`, livré par #23269) porte ce chargement |
 | Terminal interactif | `claude -p` (non interactif) est le mode utilisable par un notebook ; l'interface plein écran suppose un TTY | borner l'essai sur `claude -p`, et ne pas conclure de son succès qu'une interface interactive fonctionne |
 
 **Ce qui n'est pas mesuré ici, et qu'il ne faut pas présumer** : que le proxy démarre bien dans un
 runtime Colab, que `claude -p` y atteigne effectivement OpenRouter avec la clé du module, et le
-comportement exact du PATH entre deux cellules puis après redémarrage. Ces trois points demandent
+comportement exact du PATH *entre deux cellules* puis après redémarrage. Ces trois points demandent
 un runtime Colab réel — ils ne se déduisent pas d'un test sous Windows ou sous Linux local.
+
+Une précision sur le troisième point, pour ne pas confondre deux mesures : le fait que `~/.local/bin`
+ne soit **pas** dans le `PATH` par défaut est mesuré (Debian bookworm, CLI 2.1.312) ; ce qui reste
+inconnu, c'est ce que devient ce `PATH` dans une cellule Colab (`!` ouvre un sous-shell à chaque
+appel) et après un redémarrage de la VM.
 
 ---
 
