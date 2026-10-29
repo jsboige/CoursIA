@@ -504,14 +504,21 @@ def test_check_navlinks_argv_carries_the_pr_diff_scope_issue_21016():
 def test_self_hosted_policy_guard_is_wired_fail_closed():
     guard = {item.name: item for item in PILOT}["self-hosted-runner-policy"]
     assert guard.source == "fast-lane-shadow.yml"
+    # #22954 : `--check-timeouts` ajoute le cliquet des bornes de job. Il est
+    # ici en egalite stricte pour qu'un retrait soit un rouge, pas une
+    # desactivation silencieuse du cliquet.
     assert guard.argv == [
         "python",
         "scripts/ci/check_self_hosted_runner_policy.py",
         "--check",
+        "--check-timeouts",
     ]
     assert ".github/workflows/*.yml" in guard.paths
     assert ".github/workflows/*.yaml" in guard.paths
     assert "scripts/ci/check_self_hosted_runner_policy.py" in guard.paths
+    assert "scripts/ci/self_hosted_timeout_baseline.txt" in guard.paths, (
+        "une PR qui reecrit la baseline doit relancer le cliquet (#22954)"
+    )
     assert "scripts/ci/fast_lane_registry.py" in guard.paths
 
 
