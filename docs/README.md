@@ -6,17 +6,27 @@ Ce répertoire centralise la documentation projet déportée du CLAUDE.md. Chaqu
 
 ## Racine (docs/)
 
-Fichiers présents directement à la racine du répertoire `docs/`. Triage initial #7422 (c.805, po-2024 — audité par lecture disque + cross-check liens).
+**Règle de la racine** : la racine ne porte que des **fichiers d'entrée** — ceux qu'un lecteur qui découvre le dépôt ouvre *avant* de savoir où chercher. Quatre rôles y sont admis, un seul par rôle : l'**index** de la documentation, le **portail** Quarto, le **parcours** de maturité, le **tutoriel** du contributeur débutant. Tout autre document rejoint son foyer thématique — `transients/` s'il est transient ; le critère de classement est [Pérenne vs transient](#pérenne-vs-transient--où-chercher-quoi), et `archive/` reste ce que disent les lignes qui le décrivent plus bas : un stock à résorber, jamais une destination — ses sorties obéissent au contrat de [transients/README.md §Sortie d'archive](transients/README.md#sortie-darchive-docsarchive). Un fichier racine qui ne tient aucun de ces quatre rôles est un défaut à traiter, pas une exception. L'historique de ce qui est sorti de la racine est tenu plus bas, [Sorties de la racine](#sorties-de-la-racine).
 
-| Fichier | Verdict | Raison |
-|---------|---------|--------|
-| [README.md](README.md) (ce fichier) | **KEEP** | Index vivant — tous les `*.md` live sous `docs/` (hors `archive/`, figée à dessein) sont **atteignables** depuis cet index, directement ou via un index de sous-répertoire. L'atteignabilité est la bonne métrique : un doc cité par `lean/README.md` ou `ict/README.md` est dans l'index, pas absent. L'invariant n'est plus un compte écrit ici — ce chiffre avait dérivé de plus de soixante fichiers — mais la sortie de `python scripts/check_docs_index.py`, qui rend `exit 1` dès qu'un doc vivant devient inatteignable |
-| [index.qmd](index.qmd) | **KEEP + repair** | Portail Quarto miroir du `index.md` racine — 3 liens cassés détectés (lean/README.md → lean/coordinator-workflow.md ; ../parcours.qmd → ../../parcours.qmd ; ../COURSE_CATALOG.generated.md → ../../COURSE_CATALOG.generated.md) — corrigés c.805 |
-| [cadrage/](cadrage/README.md) | **index dédié** | Documents épistémiques de cadrage — **un document par communauté interlocutrice** (mathématique, autorité morale, sûreté IA, fondateurs), la veille y figure : ces documents sont indexés par [cadrage/README.md](cadrage/README.md), renvoi unique (#17525). Provenance : grothendieckian-lens et leiden-declaration-position migrés par #19022 (tranche 2), magnifica-humanitas-dialogue par #19283 (tranche 1 résiduelle) |
-| [PARCOURS.md](PARCOURS.md) | **KEEP** | Schéma maturité 3 axes (éditorial / reproductibilité / revue scientifique) — décompose le `maturity` monolithique du catalogue (5 valeurs mélangées) en 3 préoccupations orthogonales auditables indépendamment. ACCEPTÉ 2026-07-23, pilote c.763 critères 1-3. Linked #8051. 110 lignes. Triage #7422 (c.911, po-2023) |
-| qc-research-issue-template.md | ~~**doublon** supprimé~~ (#19283) | Ébauche racinaire dupliquée par [qc/qc-research-issue-template.md](qc/qc-research-issue-template.md). La copie racine n'était référencée par aucun script ni lien entrant — supprimée pour réduire la surface de désynchronisation (la version `qc/` est l'unique source). EPIC #11698 inchangé |
-| [data-policy.md](cadrage/data-policy.md) | **nouveau** (2026-09-02) | Politique de données (statut cadrage, pas doctrine exécutable) : 4 catégories (curée / brute téléchargeable + fetch / checkpoint documenté / trace régénérable) + arbitrage par cas. Migré #19283 vers `cadrage/` — le cadrage agrégateur n'indexe pas les politiques techniques ; le sommaire `cadrage/README.md` ne le porte pas non plus (communauté interlocutrice ≠ règle de dépôt). #13742 |
-| [TUTORIEL-GITHUB-TP.md](TUTORIEL-GITHUB-TP.md) | **nouveau** (2026-10-14) | Tutoriel pas à pas « clic par clic » pour soumettre une correction d'exercice par PR sans connaître GitHub (compte, fork, branche, notebook via Jupyter/Colab, dépôt par Upload files, PR, review) — version débutante du mode 2 de [CONTRIBUTING.md](../CONTRIBUTING.md) — parcours de base 100 % navigateur, avec variante locale VS Code (extensions Jupyter / Polyglot Notebooks) |
+| Fichier | Rôle d'entrée | Ce qu'il apporte |
+|---------|---------------|------------------|
+| [README.md](README.md) (ce fichier) | index | Index vivant — tous les `*.md` live sous `docs/` (hors `archive/`, figée à dessein) sont **atteignables** depuis cet index, directement ou via un index de sous-répertoire. L'atteignabilité est la bonne métrique : un doc cité par `lean/README.md` ou `ict/README.md` est dans l'index, pas absent. L'invariant n'est plus un compte écrit ici — ce chiffre avait dérivé de plus de soixante fichiers — mais la sortie de `python scripts/check_docs_index.py`, qui rend `exit 1` dès qu'un doc vivant devient inatteignable |
+| [index.qmd](index.qmd) | portail Quarto | Portail miroir du `index.md` racine — 3 liens cassés détectés (lean/README.md → lean/coordinator-workflow.md ; ../parcours.qmd → ../../parcours.qmd ; ../COURSE_CATALOG.generated.md → ../../COURSE_CATALOG.generated.md) — corrigés c.805 |
+| [PARCOURS.md](PARCOURS.md) | parcours | Schéma maturité 3 axes (éditorial / reproductibilité / revue scientifique) — décompose le `maturity` monolithique du catalogue (5 valeurs mélangées) en 3 préoccupations orthogonales auditables indépendamment. ACCEPTÉ 2026-07-23, pilote c.763 critères 1-3. Linked #8051. Triage #7422 (c.911, po-2023) |
+| [TUTORIEL-GITHUB-TP.md](TUTORIEL-GITHUB-TP.md) | tutoriel d'entrée | Tutoriel pas à pas « clic par clic » pour soumettre une correction d'exercice par PR sans connaître GitHub (compte, fork, branche, notebook via Jupyter/Colab, dépôt par Upload files, PR, review) — version débutante du mode 2 de [CONTRIBUTING.md](../CONTRIBUTING.md) ; parcours de base 100 % navigateur, avec variante locale VS Code (extensions Jupyter / Polyglot Notebooks). Ajouté 2026-10-14 |
+
+### Sorties de la racine
+
+La racine portait encore six fichiers hétérogènes en plus de cet index à la mesure d'ouverture de #19283 (2026-10-05) ; le triage initial #7422 (c.805, po-2024 — audité par lecture disque + cross-check liens) en avait décrit l'état antérieur. Ce qui en est sorti, et où :
+
+| Ancien fichier racine | Destination | Geste |
+|---|---|---|
+| `claim-implicit-check.md` | [reference/claim-implicit-check.md](reference/claim-implicit-check.md) | relocalisé, références mises à jour — tranche 1 de #19283 ([#19318](https://github.com/jsboige/CoursIA/pull/19318)) |
+| `qc-research-issue-template.md` | — (supprimé) | doublon de [qc/qc-research-issue-template.md](qc/qc-research-issue-template.md). La copie racine n'était référencée par aucun script ni lien entrant — supprimée pour réduire la surface de désynchronisation ; la version `qc/` est l'unique source. EPIC #11698 inchangé (#19283) |
+| `data-policy.md` (ajouté 2026-09-02) | [cadrage/data-policy.md](cadrage/data-policy.md) | migré #19283 — le cadrage agrégateur n'indexe pas les politiques techniques, et son sommaire ne le porte pas non plus (communauté interlocutrice ≠ règle de dépôt). Reste un statut *cadrage*, pas une doctrine exécutable : 4 catégories (curée / brute téléchargeable + fetch / checkpoint documenté / trace régénérable) + arbitrage par cas. #13742 |
+| `suivis/iit-ict-transition.md` | [reference/iit-ict-transition.md](reference/iit-ict-transition.md) | reclassé pérenne : le suivi est tenu à jour au fil des livraisons — tranche 2 de #19283 ([#21564](https://github.com/jsboige/CoursIA/pull/21564)) |
+
+Trois autres documents racine ont rejoint `cadrage/` par les tranches de #17525 — `grothendieckian-lens.md` et `leiden-declaration-position.md` (#19022), puis `magnifica-humanitas-dialogue.md` (#19283) ; provenance et règle d'agrégation : [Cadrage épistémique](#cadrage-épistémique-docscadrage).
 
 ## Référence (docs/reference/)
 
@@ -125,6 +135,7 @@ Documentation détaillée de l'infrastructure GenAI (ComfyUI, Docker, modèles l
 | [genai/dm-jepa-local-validation.md](genai/dm-jepa-local-validation.md) | Validation locale du moteur DM-JEPA 1.7 — rang contre tri aléatoire, entrées adverses, latence et findings de l'artefact (#21997) |
 | [genai/model-mapping-openai.md](genai/model-mapping-openai.md) | Mapping des modèles OpenAI — génération courante |
 | [genai/model-mapping.md](genai/model-mapping.md) | Inventaire et table de correspondance — modèles GenAI/OpenAI |
+| [genai/parametres-par-modele.md](genai/parametres-par-modele.md) | Paramètres servis par modèle — table mesurée par appels réels et garde de cohérence (#20682) |
 | [genai/vibe-coding-workspace-map.md](genai/vibe-coding-workspace-map.md) | Vibe-Coding — Carte des workspaces GenAI |
 | [genai/3d-enveloppe-vram-8go.md](genai/3d-enveloppe-vram-8go.md) | Enveloppe GPU de la famille NeRF sur l'étage pionnier 8 Go — pic VRAM et débit mesurés |
 
@@ -191,9 +202,12 @@ Index de découvrabilité pour la série Probabilités (`MyIA.AI.Notebooks/Proba
 
 Documentation de cadrage et de synthèse de la série ICT (strate 7) — tous **grade C-documentaire** (positionnement/consolidation/cartographie, aucun résultat démontré). Index thématique et parcours suggéré dans [`ict/README.md`](ict/README.md). Epic umbrella [#4588](https://github.com/jsboige/CoursIA/issues/4588), méta-proxy [#7395](https://github.com/jsboige/CoursIA/issues/7395).
 
+Suivi d'origine, par livrable : grille des trois régimes de lecture #7399 · matrice canonique de dissociations #7734 · pivot N2 « trajectoires de représentations » #7396 · généalogie backward de `p̂` #7735. Le suivi complet de l'arc IIT → ICT est pérenne dans [reference/iit-ict-transition.md](reference/iit-ict-transition.md).
+
 | Fichier | Rôle |
 |---------|------|
 | [ict/README.md](ict/README.md) | **Index** — cartographie des 10 docs par mode (vertical / horizontal / méta) + parcours suggéré |
+| [ict/palier10-ict15-note-de-conception.md](ict/palier10-ict15-note-de-conception.md) | Note de conception du palier 10 (famille ICT-15, capstone Φ/F/K, obstruction et recollement) — cadrage arbitré et décision du 11/10, portée par la PR de déplacement #20298 |
 | [ict/synthese-invariants-dissociations-obstructions.md](ict/synthese-invariants-dissociations-obstructions.md) | Fils 1–3 : trois régimes de lecture (invariants / dissociations / obstructions) |
 | [ict/genealogy-representation-interne.md](ict/genealogy-representation-interne.md) | 4e fil : généalogie de `p̂` (représentation interne, ICT-10 → ICT-17) |
 | [ict/dissolution-scalaires.md](ict/dissolution-scalaires.md) | 5e fil : dissolution successive des scalaires Φ / F / K |
@@ -304,6 +318,7 @@ Documents de recherche durables fondant les EPICs de R&D (grade A-recherche). Di
 | [research/percolation-03c-critique-results.md](research/percolation-03c-critique-results.md) | Extension du palier 03 à `L = 512` (#19494, c.1106) — pousse le sweep au plus grand réseau du plan. Verdict : `β/ν` mesuré dans la barre de la cible corrigée `5/48` ; `τ'` reste biaisé par le bulk. |
 | [research/percolation-04-sharpness-scoping.md](research/percolation-04-sharpness-scoping.md) | Mémo de cadrage du palier 04 sharpness (#19494, c.1107) — mesure de la vitesse de disparition du géant en régime supercritique au regard du théorème de Diskin–Easo–Radhakrishnan–Sudakov–Tassion (arXiv:2603.03257). Définit l'architecture du sweep et les critères d'acceptation du palier. |
 | [research/percolation-04-sharpness-results.md](research/percolation-04-sharpness-results.md) | Résultats du palier 04 sharpness (#19494, c.1108) — queue supérieure `Ψ(n) = P(|C_o| ≥ n)` sur tores finis supercritiques. Verdict **honnête** : la décroissance exponentielle n'est pas visible dans la fenêtre de seuils accessible à `L ≤ 512` ; trois causes identifiées, plan #19494 clos par ce palier. |
+| [research/cooperation-llm-16h-protocole.md](research/cooperation-llm-16h-protocole.md) | Mémo de gel du protocole `GameTheory-16h` (coopération LLM sur IPD, #20884, carnet livré par #21021) — ce qui est figé avant le premier appel d'agent (payoffs, 4 hétérogénéités, seeds `{0,1,7,42,99}`, seuils H0/H1, modèle nul, contrôle négatif), les chiffres tels que les sorties du carnet les portent, et **ce qu'ils ne disent pas** (proxy scripté ⇒ les 1,0000 sont un point fixe trivial). c.2344 |
 
 ## Audit sémantique cross-famille (docs/audit/)
 
@@ -321,17 +336,6 @@ Exception assumée au préambule ci-dessus, et la distinction vaut d'être nomm�
 |---------|-------------|
 | [audit/workflow-path-filters/latest.md](audit/workflow-path-filters/latest.md) | **Généré** — dernier état de couverture `pull_request.paths` / `paths-ignore` des workflows, horodaté en tête. Ne pas éditer à la main : la prochaine exécution l'écrase |
 | [transients/2026-08-14-audit-workflow-path-filters.md](transients/2026-08-14-audit-workflow-path-filters.md) | Compagnon rédigé du précédent (#10600). Consigne surtout que la prémisse fondatrice — « 74 workflows se déclenchent sur chaque PR, 0 filtre de chemin » — s'est révélée **partiellement fausse** à la mesure (62/72 déjà filtrés, 10 non) : le document garde la réfutation plutôt que la prémisse |
-
-## ICT (docs/ict/)
-
-Synthèses transversales de la série IIT → ICT (Epic #4588, grade C-documentaire).
-
-| Fichier | Description |
-|---------|-------------|
-| [ict/synthese-invariants-dissociations-obstructions.md](ict/synthese-invariants-dissociations-obstructions.md) | Grille 3 régimes de lecture d'une trajectoire (#7399, #4588) |
-| [ict/dissociations-matrix.md](ict/dissociations-matrix.md) | Matrice canonique `notebook × claim × proxy × contrôle × seeds × verdict × portée` (grade C-documentaire, #7734, #4588) |
-| [ict/cadrage-trajectoires-representations.md](ict/cadrage-trajectoires-representations.md) | Cadrage « trajectoires de représentations » — pivot états → représentations (échelle LLM, strate 5). Grade C-documentaire, livrable N2 de #7396, See #4588. 169 lignes |
-| [ict/genealogy-representation-interne.md](ict/genealogy-representation-interne.md) | 4ᵉ fil de lecture ICT — généalogie backward de `p̂` (ICT-10 → ICT-17), 6 maillons diachroniques. Grade C-documentaire, #7735 + Part of #7396, See #4588. 96 lignes |
 
 ## Ledgers cumulatifs (docs/ledgers/)
 
@@ -379,6 +383,7 @@ Protocoles opérationnels de la coordination flotte (registres, tenanciers, liai
 | Fichier | Description |
 |---------|-------------|
 | [coordination/gpu-reservation.md](coordination/gpu-reservation.md) | Protocole de réservation GPU — schéma du ledger, garde 85 % charge hôte, CUDA devices explicites, GPU 2 dédié ai-01, fold hebdomadaire, liaison picker / file #1454. Chantier #16737. |
+| [coordination/ci-overflow-controller.md](coordination/ci-overflow-controller.md) | Contrôleur automatique de la variable de dépôt `CI_OVERFLOW_LOCAL` (phase B du débordement CI) — file hébergeuse saturée → `true`, file drainée → `false`, mesure illisible → aucune écriture ; le job automatisé **écrit** la variable via le secret dédié `ACTIONS_VARIABLES_PAT` (canal séparé du jeton de mesure, aucun repli : secret absent → verdict rendu, rien d'écrit, cause nommée dans le résumé du job). Chantier #22937. |
 
 ## Cadrage épistémique (docs/cadrage/)
 
@@ -493,6 +498,7 @@ docs/
   transients/        Rapports transients datés (en-tête gelé) — convention + organe (#14623)
   cadrage/           Documents épistémiques de cadrage — index par communauté interlocutrice (#17525)
   PARCOURS.md        Schéma maturité 3 axes (éditorial / reproductibilité / revue) — #8051
+  TUTORIEL-GITHUB-TP.md  Tutoriel débutant : soumettre une correction d'exercice par PR
   archive/           Documents inactifs (ex-_archives)
 ```
 
