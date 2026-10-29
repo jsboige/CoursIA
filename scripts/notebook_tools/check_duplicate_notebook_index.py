@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Refuser un notebook AJOUTE dont l'index de serie est deja pris dans son repertoire.
 
-Origine -- #12753. Le 2026-08-24, la sous-serie `03-DeepLearning` a recu deux
+Origine -- #12753. Le 2026-08-24, la sous-serie `03-Deep-Learning` a recu deux
 notebooks `3.1` a vingt-neuf minutes d'intervalle : `3.1-Retropropagation.ipynb`
 (#12736) puis `3.1-Retropropagation-From-Scratch.ipynb` (#12468). Meme lane, meme
 issue, et les deux mergés par le coordinateur. La lane n'avait pas faute : elle avait
