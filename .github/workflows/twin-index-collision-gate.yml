@@ -45,16 +45,30 @@ name: Twin index collision gate
 # -------------
 #   - scripts/notebook_tools/twin_pairs.d/** (le registre lui-meme)
 #   - scripts/notebook_tools/check_twin_index_collisions.py (l'organe)
+#   - scripts/notebook_tools/check_twin_parity.py (la source de `audit_index`,
+#     que l'organe importe : une evolution de ce module change le verdict)
 #
-# Limite connue et assumee : un workflow ajoute par une PR ne se declenche
-# QUE sur la branche par defaut. La porte ne protege donc les PRs qu'APRES le
-# merge de ce workflow sur `main` -- c'est la mecanique GitHub, pas un choix.
+# Limite connue et assumee
+# -----------------------
+# Le declencheur `pull_request` est resolu depuis la **branche par defaut** :
+# une PR **de fork** ne peut donc pas declencher une porte qui n'est pas
+# encore sur `main`. Mesure : sur la PR **same-repo** qui a introduit ce
+# fichier (#23208), le gate a bien tourne sur la PR elle-meme (check-run
+# `Twin index collision gate`, vert) -- la regle "un workflow ajoute par une
+# PR ne se declenche jamais" est donc **fausse** pour une PR same-repo, et
+# c'est la limite **fork** qui reste reelle.
+#
+# Ce qui demeure vrai apres le merge sur `main` : la porte lit la base
+# (`pull_request.base.sha`), pas la tete du moment du push -- une collision
+# introduite sur `main` **entretemps** par une autre PR n'est pas vue ici.
+# Le garde de merge reste donc necessaire.
 
 on:
   pull_request:
     paths:
       - 'scripts/notebook_tools/twin_pairs.d/**'
       - 'scripts/notebook_tools/check_twin_index_collisions.py'
+      - 'scripts/notebook_tools/check_twin_parity.py'
   workflow_dispatch:
 
 permissions:
