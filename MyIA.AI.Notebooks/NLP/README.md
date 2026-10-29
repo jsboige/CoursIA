@@ -35,10 +35,12 @@ Origine : EPIC [#16271](https://github.com/jsboige/CoursIA/issues/16271) — mig
 3. **La séquence et ses étiquettes** (03) : la structured prediction par CRF linéaire — du local au global par la log-partition.
 4. **La syntaxe et ses arbres** (04) : grammaires probabilistes et parsing CYK — l'ambiguïté quantifiée, la dérivation la plus probable.
 5. **La chaîne d'états cachés** (05) : le HMM génératif et le décodage de Viterbi — le contexte de séquence qui renverse la décision, pont historique du n-gramme (02) vers le CRF discriminatif (03).
+6. **La question inversée** (06) : TF-IDF et BM25 — de « quelle est la probabilité de ce texte ? » à « quel document répond à cette requête ? », la pondération par rareté qui fait tomber le terme omniprésent.
+7. **La frontière apprise** (11) : la régression logistique discriminative — softmax et entropie croisée en numpy pur, la précision hors échantillon mesurée contre une baseline, et une régularisation qui, sur ce banc précis, dégrade au lieu d'améliorer.
 
 ## Prérequis
 
-- Python 3.10+ (les cinq notebooks sont **CPU-only**)
+- Python 3.10+ (les notebooks de la série sont **CPU-only**)
 - `spaCy` + modèle `fr_core_news_sm` (notebook 01)
 - `sklearn-crfsuite` (témoin du notebook 03), `nltk` (témoin des notebooks 04 et 05), `hmmlearn` (témoin du notebook 05)
 - Aucune clé API requise
