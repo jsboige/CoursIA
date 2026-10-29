@@ -19,9 +19,10 @@
 | P1 | pt 3 — pilote identique, réplique **SK** : charge de distillation figée + `GroupChatOrchestration` à manager custom, exécuté (service LLM réel, temp 0, 2 runs) | livré |
 | P2 | pt 3 — réplique **MAF** sur la même fixture, même politique de tour (`GroupChatBuilder` + selection function + termination condition) | livré |
 | P3 | pt 3 — réplique **ADK** sur la même fixture, même politique de tour (boucle Python de désignation explicite + `InMemorySessionService` partagée) | livré |
-| — | coût pour le dépôt (pt 5) | à venir |
+| — | coût pour le dépôt (pt 5) | livré (§4) |
 | — | pt 1 état de l'art | livré hors repo : note datée du 2026-10-05 sur [#19380](https://github.com/jsboige/CoursIA/issues/19380) ; mémo inventaire local du 2026-10-07 (po-2024:CoursIA-2) sur [#14499](https://github.com/jsboige/CoursIA/issues/14499) |
-| — | pts 3-6 (déterminisme, couverture langages, coût, verdict) | à venir |
+| — | pts 3-5 (déterminisme, couverture langages, coût) | livrés (§2-§4) |
+| — | pt 6 verdict par critère | réservé à ai-01 + user |
 
 ## 2. Modes d'orchestration — exemples exécutés
 
@@ -372,7 +373,7 @@ Reste de #14499 : la réplique **P3 (ADK)** du pilote de distillation (point 3, 
 
 ### 3.1 La charge partagée — fixture figée
 
-`VERIFIÉ` (fixture [`distill_charge_fixture.md`](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/eval-pilots/distill_charge_fixture.md), 4 487 caractères, 9 cellules) : la charge est la **section réelle** d'ouverture de [`01-SemanticKernel-Intro.ipynb`](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/01-SemanticKernel-Intro.ipynb) (cellules 0-8 : objectifs, prérequis, sommaire, première cellule de code), extraite puis **figée** à la tête `8e9eaaaa0`. Les trois répliques (P1 SK, P2 MAF, P3 ADK) distillent **ce fichier**, pas le carnet vivant — la charge est byte-stable entre moteurs, entre exécutions et entre dates.
+`VERIFIÉ` (fixture [`distill_charge_fixture.md`](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/eval-pilots/distill_charge_fixture.md)) : la charge est la **section réelle** d'ouverture de [`01-SemanticKernel-Intro.ipynb`](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/01-SemanticKernel-Intro.ipynb) (cellules 0-8 : objectifs, prérequis, sommaire, première cellule de code), extraite puis **figée** à la tête `8e9eaaaa0`. Les trois répliques (P1 SK, P2 MAF, P3 ADK) distillent **ce fichier**, pas le carnet vivant — la charge est byte-stable entre moteurs, entre exécutions et entre dates.
 
 ### 3.2 P1 — Semantic Kernel : `GroupChatOrchestration` à manager custom
 
@@ -435,3 +436,37 @@ Le pilote reporte ses LOC self-mesurées dans la trace (ligne `LOC PILOT`).
 - **Deux verdicts distincts, non contradictoires.** Le critique porte sur la **qualité de la distillation** (exactitude, non-invention, concision — il accepte), l'arbitre sur la **recevabilité au regard de la charge** (la cellule d'authentification est tronquée, il scelle en RESIDUEL). Le résumé du pilote affiche donc `verdict_critique` et `decision` séparément : un `ACCEPTE` du critique suivi d'un `RESIDUEL` de l'arbitre est un comportement correct, pas un bug d'extraction.
 - **Variabilité inter-processus observée, honnêtement reportée.** Sur une exécution antérieure du même pilote, les deux runs ont divergé (`(1, RESIDUEL, 1)` vs `(2, ACCEPTE, 1)`) — un outlier LLM : la première critique a parfois demandé une RÉVISION au lieu d'accepter, changeant la structure du tour. Température 0 ne garantit donc pas l'identité structurelle inter-processus chez ADK, contrairement à ce que P1/P2 ont montré sur leur setup. La trace committée est la mesure **reproductible sur deux runs consécutifs du même process** ; l'outlier est documenté ici plutôt que masqué par une relance sélective. C'est un constat de moteur utile pour le point 3 (et cohérent avec §3.1 : la prose des spécialistes n'est pas byte-identique entre processus).
 - **Comparabilité avec P1/P2** : même fixture figée (4859 caractères), même politique, même modèle épinglé à température 0, même budget dur de 16 appels. Les trois répliques convergent sur la décision arbitrale (`RESIDUEL` lié à la troncature de la cellule 8) quand elles la mesurent sur la fixture réparée ; elles diffèrent sur l'**idiome d'orchestration** — manager custom (SK), selection function + termination condition (MAF), boucle de désignation de l'appelant (ADK). C'est précisément la mesure du point 3 : la même charge, trois organes, trois natures de contrôle du tour.
+
+## 4. Coût pour le dépôt (point 5)
+
+Le point 5 demande trois choses : ce qui existe déjà, la dette de migration, et la valeur pédagogique. Mesures firsthand sur l'arbre à la tête de cette PR.
+
+### 4.1 Ce qui existe déjà (inventaire mesuré)
+
+| Moteur | Présence dans le dépôt | Mesure |
+|---|---|---|
+| **Semantic Kernel** | série pédagogique complète, **C# et Python** | `GenAI/SemanticKernel/` — la seule série véritablement bi-langage du chantier (kernels .NET Interactive et Python ; compte exact = catalogue, non recopié ici) |
+| **Google ADK** | série pédagogique dédiée + organe d'orchestration réutilisable | `ML/DataScienceWithAgents/Track2-GoogleADK/`, plus `utils/adk_runtime.py` (`build_agent`, `run_agent_turn`) et `utils/adk_orchestrator.py` (contrat C4) — réutilisés tels quels par le pilote P3 |
+| **Microsoft Agent Framework** | **aucune série pédagogique** — présent uniquement dans les pilotes d'évaluation de ce chantier | `grep` sur `agent-framework`/`Microsoft.Agents.AI` dans les `.ipynb` ne retourne que les pilotes ; MAF n'apparaît que dans `eval-pilots/` |
+| **semantic-fleet** | sous-module épinglé | `MyIntelligenceAgency/semantic-fleet`, branche `stable-from-v0343` (`.gitmodules`) — infrastructure de flotte SK, hors série pédagogique |
+| **pilotes d'évaluation** | pilotes autonomes + traces committées | `eval-pilots/` : SK (T1/T2/T4/P1), MAF (T5/T7/T8/P2), ADK (P3) — chacun exécutable firsthand, traces dans `traces/` |
+
+Le constat structurel : **le dépôt enseigne déjà deux des trois moteurs** (SK en C# et Python, ADK en Python via Track2), et le troisième (MAF) n'a **pas** de série — il n'existe chez nous que comme objet de mesure. C'est le déséquilibre que le point 5 doit nommer.
+
+### 4.2 Dette de migration
+
+`VERIFIÉ` contre l'inventaire : la dette n'est **pas** symétrique.
+
+- **Pas de migration à proprement parler** : SK et ADK ont chacun leur série et leurs idiomes, stables. Rien à porter d'un moteur à l'autre — les séries coexistent sans se concurrencer.
+- **La dette réelle est un manque, pas un portage** : MAF n'a pas de série pédagogique. Le combler signifierait **écrire** une série (au moins un carnet couche agents : `HandoffBuilder`, `GroupChatBuilder`, `MagenticBuilder` — les trois idiomes déjà exécutés en T7/T8), pas migrer du contenu existant. Le coût est donc celui d'une **création**, bornée par ce que T5/T7/T8/P2 ont déjà mesuré et documenté (les pièges d'extraction, la termination condition, la ligne de versions `core 1.21.0` + `orchestrations 1.3.1` + connecteur résolu).
+- **Dette d'environnement déclarée** : les trois moteurs exigent des venv **distincts** (SK 1.41.3 ; MAF core 1.21.0 + orchestrations 1.3.1 ; ADK 2.8.0 + litellm + pydantic-settings). Ce n'est pas une dette de code mais une dette de **reproductibilité** : un étudiant qui veut rejouer les trois pilotes doit monter trois environnements. Le README `eval-pilots/` documente chacun.
+
+### 4.3 Valeur pédagogique — enseigner les trois est la bonne réponse pour un cours
+
+Le point 3 a mesuré la chose décisive : **à charge identique, les trois moteurs produisent la même structure et le même verdict** (P1 ré-exécuté = P2 = P3, `RESIDUEL tour 1`). Ce qui diffère, c'est **l'idiome de contrôle du tour**, pas le résultat. C'est exactement ce qui fait la valeur d'un enseignement multi-moteurs :
+
+- **Le concept transférable est la politique d'orchestration** (producteur → critique → [révision] → arbitre), et elle se ré-encode dans trois idiomes : un manager à deux méthodes (SK), une selection function + une termination condition (MAF), une boucle de désignation de l'appelant (ADK). Un étudiant qui a vu les trois sait que l'orchestration est un **choix de conception**, pas une propriété du moteur.
+- **La différence de nature est elle-même le cours** : SK et MAF exposent un **point d'extension orchestrateur** (le moteur appelle votre code pour savoir qui parle ensuite), ADK expose des **primitives** (`Runner`, `SessionService`) et laisse la politique à l'appelant. C'est une distinction architecturale réelle, mesurée, qu'on ne peut pas enseigner avec un seul moteur.
+- **L'expertise multi-moteurs de la flotte est un atout, pas un coût** : les trois séries (et les pilotes) sont déjà écrites et exécutées. Le coût marginal d'enseigner les trois est faible une fois les organes en place ; la valeur — un étudiant capable de lire une orchestration quel que soit le moteur — est élevée.
+
+**Réserve d'honnêteté** : la couverture C# n'existe que pour SK (§2.7) — ADK est Python-only, MAF a une couche C# mesurée par les assemblages mais pas de série. Un cours bi-langage ne peut donc pas être symétrique sur les trois moteurs ; c'est une borne à déclarer, pas à masquer. Le verdict par critère (quel moteur pour quel usage) reste au point 6, réservé à ai-01 + user.
