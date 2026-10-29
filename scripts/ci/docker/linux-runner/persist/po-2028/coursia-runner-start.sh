@@ -3,7 +3,9 @@
 # Deploiement po-2028 (2026-10-20, mandat user runners via ai-01:CoursIA) --
 # adapte de persist/coursia-runner-start.sh (po-2024, 2026-09-02). L'original
 # vit dans la distro Ubuntu sous /usr/local/bin/coursia-runner-start.sh ; ce
-# fichier est la copie de reference (C:\dev\CoursIA-runners-p0\).
+# fichier est la copie de reference (D:\dev\CoursIA-runners-p0\ -- la copie
+# C:\dev\CoursIA-runners-p0\ du 20/10 est un heritage de la pose initiale,
+# purgeable avec son disque ; cf delta 1).
 #
 # DELTAS po-2028 vs po-2024 (tous deux pesees du 2026-10-20) :
 #   1. REPO_DIR=/mnt/d/dev/CoursIA-2 -- le checkout de cette machine (po-2024 :
@@ -31,7 +33,10 @@
 #      porte l'agrege (200 Mo/s write / 400 Mo/s read sur /var/lib/docker).
 set -euo pipefail
 
-REPO_DIR="/mnt/d/dev/CoursIA-2"
+# Convention des quatre wrappers freres (po-2024/po-2025/po-2027/ai-01) :
+# le checkout est surchargeable par l'environnement, la constante n'est que
+# le defaut de cette machine.
+REPO_DIR="${COURSIA_REPO_DIR:-/mnt/d/dev/CoursIA-2}"
 
 # --- TOKEN (doctrine po-2024 : relu a chaque invocation, jamais persistant) ---
 GH_WIN="/mnt/c/Program Files/GitHub CLI/gh.exe"
