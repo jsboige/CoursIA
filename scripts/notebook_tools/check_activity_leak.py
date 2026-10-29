@@ -156,7 +156,16 @@ _DM_OK_CONTEXT = re.compile(
     # caracteres dans ces trois formes : la garde etait donc muette, et six
     # passages denses sur six d'un carnet §C valide ont ete declares recit
     # d'activite alors qu'ils ne portent que le test de Diebold-Mariano.
-    r"|p\s*[=<>≤≥]|recentr|re-centr|loss_fn",
+    #
+    # `DM-JEPA` (#22252) : le nom du modele de prediction latente contient
+    # « DM », que le motif `\bDM\b` prend pour le test de Diebold-Mariano.
+    # L'allowlist porte donc le NOM DU MODELE, pas le mot « JEPA » seul :
+    # elargir au mot seul rendait la garde muette sur « Le DM publie par
+    # l'equipe JEPA hier soir. », mesure le 2026-10-27 (controle negatif
+    # dans scripts/tests/test_check_activity_leak.py). Le bigrame laisse la
+    # mention isolee muette (« Demo DM-JEPA 1.7 ») tout en gardant la garde
+    # sensible au reste.
+    r"|p\s*[=<>≤≥]|recentr|re-centr|loss_fn|DM-JEPA",
     re.IGNORECASE,
 )
 _DISPATCH_OK_CONTEXT = re.compile(
