@@ -29,7 +29,8 @@ from typing import Dict, List, Any, Optional, Callable, Tuple
 from dataclasses import dataclass, field
 from datetime import datetime
 
-from _dotnet_env import effective_root, sdk_bearing_dotnet_root
+from _dotnet_env import (effective_root, repair_launch_env,
+                         sdk_bearing_dotnet_root)
 from _papermill_meta import strip_stale_papermill_metadata
 
 
@@ -924,20 +925,22 @@ class NotebookExecutor:
         # Bound OpenMP/BLAS pools: native training cells oversubscribe many-core
         # hosts and look frozen (#11111). Kernel inherits env.
         bound_native_thread_pools()
-        # .NET kernels restore `#r "nuget:"` through the DOTNET_ROOT host: a
-        # root without an SDK cannot restore at all (#17361). Repair it for
-        # the kernel subprocess only, and say so -- a silent repair is
+        # .NET kernels restore `#r "nuget:"` through the host resolved for the
+        # subprocess: a root without an SDK cannot restore at all (#17361). The
+        # variable alone is not enough -- the muxer finds its SDKs next to
+        # itself -- so the repair also moves PATH (see ``repair_launch_env``).
+        # Kernel subprocess only, and said out loud -- a silent repair is
         # indistinguishable from an env that was fine.
         launch_kwargs = {}
         if ".net" in kernel_name or kernel_name in ("csharp", "fsharp"):
             sdk_root = sdk_bearing_dotnet_root()
             if sdk_root:
                 import os as _os
-                launch_kwargs["env"] = {**_os.environ, "DOTNET_ROOT": sdk_root}
+                launch_kwargs["env"] = repair_launch_env(sdk_root)
                 # ``effective_root()`` rather than ``_os.environ['DOTNET_ROOT']``:
                 # the variable is absent in exactly the case where the repair
                 # now fires, and indexing it raised KeyError there.
-                print(f"  DOTNET_ROOT for the kernel: {effective_root()} "
+                print(f"  DOTNET_ROOT+PATH for the kernel: {effective_root()} "
                       f"-> {sdk_root} (resolved root has no SDK)")
         try:
             km = jupyter_client.KernelManager(kernel_name=kernel_name)
@@ -1073,11 +1076,11 @@ class NotebookExecutor:
             sdk_root = sdk_bearing_dotnet_root()
             if sdk_root:
                 import os as _os
-                launch_kwargs["env"] = {**_os.environ, "DOTNET_ROOT": sdk_root}
+                launch_kwargs["env"] = repair_launch_env(sdk_root)
                 # ``effective_root()`` rather than ``_os.environ['DOTNET_ROOT']``:
                 # the variable is absent in exactly the case where the repair
                 # now fires, and indexing it raised KeyError there.
-                print(f"  DOTNET_ROOT for the kernel: {effective_root()} "
+                print(f"  DOTNET_ROOT+PATH for the kernel: {effective_root()} "
                       f"-> {sdk_root} (resolved root has no SDK)")
         try:
             km = jupyter_client.KernelManager(kernel_name=kernel_name)

@@ -1,8 +1,8 @@
 """DOTNET_ROOT repair for .NET Interactive kernel launches (#17361).
 
-``#r "nuget: ..."`` restores shell out to ``dotnet restore`` through the
-``DOTNET_ROOT`` host (``FSharp.DependencyManager.Nuget``). A root that ships
-runtimes but no ``sdk/`` cannot restore at all: the kernel surfaces
+``#r "nuget: ..."`` restores shell out to ``dotnet restore`` through the host
+resolved for the kernel. A root that ships runtimes but no ``sdk/`` cannot
+restore at all: the kernel surfaces
 ``PackageRestoreResult..ctor`` ("Must provide errors when succeeded is false")
 and nothing reaches the NuGet cache. A warm global cache hides the defect --
 the restore short-circuits -- so the failure reads as package-dependent and
@@ -80,6 +80,29 @@ def effective_root():
     if dotnet_on_path:
         return str(Path(dotnet_on_path).resolve().parent)
     return None
+
+
+def repair_launch_env(root, base_env=None):
+    """Environment that makes ``root`` the one the host actually resolves.
+
+    ``DOTNET_ROOT`` alone is **not** enough, and believing it was is the trap
+    this helper exists to close. The muxer finds its SDKs relative to its own
+    directory, not relative to ``DOTNET_ROOT``: measured 2026-10-29 on
+    myia-po-2028 (.NET 10.0.402), the ``C:\\\\Program Files\\\\dotnet`` muxer
+    answered ``aka.ms/dotnet/sdk-not-found`` to ``new`` and ``add package``
+    with ``DOTNET_ROOT`` pointing at the SDK-bearing root, and restored
+    normally as soon as that root came first on ``PATH``. A repair that only
+    set the variable would announce a fixed root while the subprocess kept
+    failing -- worse than no repair, because the announcement reads as proof.
+
+    So both levers are set: the variable (runtime resolution) and ``PATH``
+    (muxer resolution), the SDK-bearing root ahead of whatever was there.
+    """
+    env = dict(os.environ if base_env is None else base_env)
+    env["DOTNET_ROOT"] = str(root)
+    existing = env.get("PATH", "")
+    env["PATH"] = str(root) + (os.pathsep + existing if existing else "")
+    return env
 
 
 def sdk_bearing_dotnet_root():

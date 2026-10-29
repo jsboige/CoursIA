@@ -750,8 +750,10 @@ def test_kernel_gets_the_repaired_root_and_says_so(
 
     env = km.start_kernel.call_args.kwargs["env"]
     assert env["DOTNET_ROOT"] == str(good)
-    # The whole environment is forwarded, not just the repaired variable.
-    assert env["PATH"] == os.environ["PATH"]
+    # The whole environment is forwarded, not just the repaired variable, and
+    # the repaired root goes *first* on PATH: the muxer finds its SDKs next to
+    # itself, so PATH is the lever that actually moves the resolution.
+    assert env["PATH"] == str(good) + os.pathsep + os.environ["PATH"]
     assert str(runtime_only) in capsys.readouterr().out
 
 
@@ -775,8 +777,41 @@ def test_kernel_launch_announces_the_repair_without_dotnet_root_set(
 
     env = km.start_kernel.call_args.kwargs["env"]
     assert env["DOTNET_ROOT"] == str(good)
+    assert env["PATH"].startswith(str(good) + os.pathsep)
     out = capsys.readouterr().out
     assert str(runtime_only) in out and str(good) in out
+
+
+def test_repair_launch_env_moves_the_resolution_with_path_not_the_variable(
+        tmp_path, monkeypatch):
+    """``DOTNET_ROOT`` alone does not move the SDK resolution (#23352).
+
+    Measured 2026-10-29 on myia-po-2028 (.NET 10.0.402): the ProgramFiles
+    muxer answered ``aka.ms/dotnet/sdk-not-found`` to ``new`` and ``add
+    package`` with ``DOTNET_ROOT`` pointing at the SDK-bearing root, and
+    restored normally once that root came first on ``PATH``. A repair that
+    set only the variable would announce a fixed root while the subprocess
+    kept failing -- the announcement would read as proof.
+    """
+    good = _make_root(tmp_path, "good", True)
+    monkeypatch.setenv("PATH", os.pathsep.join(["/usr/bin", "/bin"]))
+    monkeypatch.delenv("DOTNET_ROOT", raising=False)
+
+    env = _dotnet_env.repair_launch_env(str(good))
+
+    assert env["PATH"] == os.pathsep.join([str(good), "/usr/bin", "/bin"])
+    assert env["DOTNET_ROOT"] == str(good)
+    # The caller's env is not mutated: the repair is scoped to the subprocess.
+    assert os.environ["PATH"] == os.pathsep.join(["/usr/bin", "/bin"])
+    assert "DOTNET_ROOT" not in os.environ
+
+
+def test_repair_launch_env_tolerates_an_empty_path(tmp_path):
+    """No inherited PATH must not produce a trailing separator, which some
+    loaders read as "current directory first"."""
+    good = _make_root(tmp_path, "good", True)
+    env = _dotnet_env.repair_launch_env(str(good), base_env={"PATH": ""})
+    assert env["PATH"] == str(good)
 
 
 def test_kernel_launch_unchanged_when_root_is_healthy(
