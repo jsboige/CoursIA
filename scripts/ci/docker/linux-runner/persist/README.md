@@ -21,13 +21,14 @@ n'a pas ete remplacee. Un `git pull` ne deploie pas `persist/`.
 | `coursia-lean.service` | **po-2024** | `/etc/systemd/system/coursia-lean.service` | reference |
 | `coursia-lean-start.sh` | **po-2024** | `/usr/local/bin/coursia-lean-start.sh` | reference |
 | `coursia-waiters.service` | ai-01 (execute telle quelle par po-2024, qui la dimensionne par son propre drop-in) | `/etc/systemd/system/coursia-waiters.service` | **reference partagee** -- 12 slots, prefixe par defaut de `supervise.sh`. NE PAS confondre avec `ai-01/coursia-waiters.service` (famille B, deposee le 2026-10-28) : les deux portent le meme nom vivant, sur deux sieges differents |
-| `coursia-waiters-start.sh` | **ai-01** | `/usr/local/bin/coursia-waiters-start.sh` | reference -- la copie `/usr/local/bin` n'est plus l'appelee par l'unite vivante d'ai-01 (son `ExecStart` pointe le wrapper du clone, `/mnt/d/CoursIA/scripts/ci/docker/linux-runner/persist/coursia-waiters-start.sh`) ; les deux copies portent la purge de sentinelle #15163 |
+| `coursia-waiters-start.sh` | **ai-01** | `/usr/local/bin/coursia-waiters-start.sh` | **deploye et vivant** (2026-10-28, arbitrage `ai01-c2721-23037-budget` point 3) -- le wrapper est **PINLE hors arbre de travail** : l'unite vivante l'appelle desormais par `/usr/local/bin`, et non plus par le clone de travail partage `/mnt/d/CoursIA/scripts/ci/docker/linux-runner/persist/coursia-waiters-start.sh`. Un checkout de branche dans `D:\CoursIA` ne change donc plus le code du pool au prochain redemarrage. Les deux copies portent la purge de sentinelle #15163. **Ce que le pin ne couvre pas** : le wrapper est un lanceur mince, il fait `cd $REPO_DIR` puis `exec $SUPERVISE_SH` -- le code du SUPERVISEUR reste lu dans l'arbre de travail partage (le chemin est devenu explicite et surchargeable par `COURSIA_SUPERVISE_SH`) |
 | `coursia-ci.slice` | **ai-01** | `/etc/systemd/system/coursia-ci.slice` | **deploye et vivant** -- 7235 octets, documente, et il etait **en avance sur le depot** : c'est le depot qui a ete synchronise depuis le vivant, pas l'inverse (cf. correction 6) |
 | `daemon.json` | **ai-01** | `/etc/docker/daemon.json` | **deploye et vivant** -- 155 octets, **byte-identique** a la copie du depot (`sha256:1ef80038e470...`, mesure le 2026-09-08). **Ne se recopie PAS sur un autre daemon** : il ne sert que le daemon `systemd` -- cf. « Le nom plat de `cgroup-parent` » ci-dessous |
 | `ai-01/coursia-runner.service` | **ai-01** | `/etc/systemd/system/coursia-runner.service` | **a deployer** (corrige, cf. correction 3) -- **jamais seul**, cf. correction 4 |
 | `ai-01/coursia-runner.service.d/10-sizing.conf` | **ai-01** | `/etc/systemd/system/coursia-runner.service.d/10-sizing.conf` | **deploye et vivant** -- necessaire mais **pas suffisant** : il borne la memoire et laisse le CPU au defaut (cf. corrections 4 et 5) |
 | `ai-01/coursia-runner-start.sh` | **ai-01** | `/usr/local/bin/coursia-runner-start.sh` | **a deployer** (corrige, cf. correction 3) |
-| `ai-01/coursia-waiters.service` | **ai-01** | `/etc/systemd/system/coursia-waiters.service` | **deploye et vivant** (2026-10-28) -- unite PERSISTANTE du pool d'attente PR-gate (label `coursia-waiter`), famille B : 10 slots, prefixe `myia-ai-01-wsl-waiterb`, state dir `/var/lib/coursia-waiters-b`, `enable`d. Remplace l'unite TRANSITOIRE `coursia-waiters-b.service` (memes parametres, releves a l'identique), qui disparaitait au reboot. Le bandeau « DEPRECATED » qui figurait ici (2026-10-15, #20835) est REFUTE : `pr-gate.yml` l.172 consomme le label depuis #21063 (2026-10-16) |
+| `ai-01/coursia-waiters.service` | **ai-01** | `/etc/systemd/system/coursia-waiters.service` | **deploye et vivant** (2026-10-28) -- unite PERSISTANTE du pool d'attente PR-gate (label `coursia-waiter`), famille B : 10 slots, prefixe `myia-ai-01-wsl-waiterb`, state dir `/var/lib/coursia-waiters-b`, `enable`d. Remplace l'unite TRANSITOIRE `coursia-waiters-b.service` (memes parametres, releves a l'identique), qui disparaitait au reboot. **Depuis le 2026-10-28**, `ExecStart`/`ExecStop` pointent vers le wrapper PINLE `/usr/local/bin/coursia-waiters-start.sh` (arbitrage `ai01-c2721-23037-budget` point 3) et non plus vers le wrapper du clone de travail partage. Le bandeau « DEPRECATED » qui figurait ici (2026-10-15, #20835) est REFUTE : `pr-gate.yml` l.172 consomme le label depuis #21063 (2026-10-16) |
+| `ai-01/coursia-runner.service.d/40-scale-14.conf` | **ai-01** | `/etc/systemd/system/coursia-runner.service.d/40-scale-14.conf` | **deploye et vivant** (2026-10-28) -- drop-in de SCALAGE et de BUDGET (le `10-sizing.conf` porte le dimensionnement : memoire, cap par slot, nombre de slots). `ExecStart` du runner a 14 slots, `COURSIA_RUNNER_BUDGET_GB=80`, et **`COURSIA_RUNNER_CPU_BUDGET=40`** (arbitrage `ai01-c2721-23037-budget` : 32 -> 40, sans couper aucune famille). La mesure qui fonde la decision -- 38 vCPU de demande declaree (14 x 2 + 10 x 1), slice a 32 coeurs, `cpu.stat` a 7 evenements / 2,4 s sur ~25 h -- est ecrite dans le fichier meme et dans la section « Le budget CPU : 32 -> 40 » ci-dessous |
 | `ai-01/coursia-waiters.service.d/10-sizing.conf` | **ai-01** | `/etc/systemd/system/coursia-waiters.service.d/10-sizing.conf` | **deploye et vivant** (2026-10-28) -- caps des slots waiters (1 vCPU, 512m, 128 pids, mesures sur le pool transitoire) + budget CPU **arme** a 10 vCPU : la famille waiters n'en declarait aucun, donc `assert_cpu_budget` y etait inactif |
 | `po-2026/pool.sh` | **po-2026** | `/home/jesse/CoursIA-runners-p0/pool.sh` (WSL Ubuntu) | **deploye et vivant** -- superviseur du pool, **8 slots** et **borne depuis le 2026-09-22** (cf. `po-2026/README.md`) |
 | `po-2026/run-pool-po2026.sh` | **po-2026** (hote Windows) | `C:\dev\CoursIA-runners-p0\run-pool-po2026.sh` | **deploye et vivant** -- lanceur de la tache planifiee, porte la borne CPU/memoire. **Attention : ce fichier vit sous `C:\dev\...`, pas sous `D:\Dev\CoursIA-runners-p0\`** (cf. `po-2026/README.md`) |
@@ -743,3 +744,124 @@ fichiers vivants, ce qui laisse entendre que la copie fait autorite. Elle ne la
 fait pas : la derive va dans les deux sens, et c'est le fichier vivant qui tient
 la machine debout pendant que la copie dort dans le depot. Avant tout `install`
 vers un chemin vivant, la regle est donc : **`diff` d'abord, et lire le diff**.
+
+## Le budget CPU : 32 -> 40 vCPU, et le temoin qui le surveille (2026-10-28)
+
+**L'arbitrage** `ai01-c2721-23037-budget` (coordinateur `myia-ai-01:CoursIA`) :
+porter la declaration de budget CPU de **32 a 40 vCPU**, sans couper aucune
+famille, a deux conditions -- (1) ecrire ici la mesure qui fonde la decision,
+(2) ajouter un **temoin de throttling** dans `ai-01/dryrun-sizing-control.sh`.
+Point 3 de l'arbitrage : epingler une copie du wrapper **hors arbre de travail**
+(`/usr/local/bin`), dans la meme PR.
+
+### La mesure
+
+Relevee sur ai-01 (WSL Ubuntu) le 2026-10-28 ~02:40Z :
+
+| quoi | valeur | ou |
+|---|---|---|
+| demande DECLAREE | `start 14 x 2 = 28` + `waiters 10 x 1 = 10` = **38 vCPU** | `COURSIA_RUNNER_CPU_BUDGET` du drop-in `40-scale-14.conf` (32) et du drop-in waiters (10) |
+| slice | `cpu.max = 3200000 100000` -> **32 coeurs** ; hote `nproc = 32` | `/sys/fs/cgroup/coursia.slice/coursia-ci.slice/cpu.max` |
+| noyau | `nr_throttled 7`, `throttled_usec 2 417 700` (**2,42 s** cumulees) | `cpu.stat` de la slice |
+| slots individuels | un conteneur a **3 688 evenements / 856 s** de throttling | `cpu.stat` des `docker-*.scope` de la slice |
+
+Lecture : la contrainte qui mordait etait le **cap par slot**, pas le plafond
+agrege. Le plafond agrege n'a pas mordu -- 2,42 s en ~25 h. C'est ce qui rend
+tenable une declaration de 38 vCPU sur une slice de 32 coeurs : une declaration
+de caps n'est pas une reservation de CPU.
+
+**Une limite de la ligne « slots individuels »** : le compteur d'un conteneur
+est RECREE quand le slot est recycle (le superviseur remplace le conteneur a
+chaque job). Le conteneur qui portait les 856 s a ete remplace dans la
+demi-heure qui a suivi la releve -- le temoin 4bis, rejoue apres, ne voyait
+plus que 1,51 s au maximum. Le temoin **durable** est celui de la slice, dont
+le cgroup n'est pas recree ; le par-slot sert a SITUER la contrainte, pas a la
+mesurer dans la duree.
+
+### Ce que la declaration change, et ce qu'elle ne change pas
+
+- Elle **ne donne pas un CPU de plus** a la machine : la slice plafonne a 32
+  coeurs, l'hote en a 32.
+- Elle **ne change pas l'arithmetique du garde vivant** : depuis #15574
+  (arbitrage du 2026-10-01), la famille `waiters` est **exclue** de la somme --
+  un waiter est oisif la quasi-totalite du temps, son cap `--cpus` est un
+  PLAFOND, pas une reservation. La somme du garde reste 28 vCPU, contre un
+  plafond qui passe de 32 a 40 : toujours franchi.
+- Elle change une chose de **verifiable** : l'**instrument** de dimensionnement,
+  qui compte les waiters, rendait un `REFUSE` permanent (38 > 32) sur une
+  composition qui tourne depuis deux semaines et que le noyau dessert sans
+  peine. Le verdict permanent etait un fait de l'instrument, pas un etat de la
+  machine.
+
+### Le temoin (section 4bis de `ai-01/dryrun-sizing-control.sh`)
+
+Le seul instrument qui dise si une declaration de budget est realiste est le
+**throttling mesure** : `nr_throttled` et `throttled_usec` de la slice. Le
+temoin lit ces deux compteurs et alerte au-dela de **60 s cumulees par 24 h**
+(seuil de l'arbitrage, surchargeable par `COURSIA_DRYRUN_THROTTLE_BUDGET_SPD`).
+
+La **fenetre** est le point delicat : l'age de la slice n'est pas lisible
+(cgroup v2 n'expose aucune date de creation ; et sur cette machine
+`/proc/uptime` et `journalctl --list-boots` ne concordent pas -- ecart de 22 min
+mesure le 2026-10-28, a cause des « Clock change detected » du WSL). Deux bornes
+sont donc employees :
+
+- `W_LO = nr_periods x periode` -- duree pendant laquelle la slice a ete
+  **comptee**. Une slice ne peut etre comptee que dans des periodes ecoulees,
+  donc `W_LO <= age reel` : borne **inferieure** ;
+- `W_HI = uptime de l'hote` -- la slice est nee apres le boot, donc
+  `age reel <= W_HI` : borne **superieure**.
+
+Ce que cela autorise, et ce que cela n'autorise pas :
+
+- `passe` exige `T <= allocation(W_LO)`. L'age reel etant `>= W_LO`, son
+  allocation est `>=` : le PASS est **sound**.
+- `ALERTE CERTAINE` : `T > allocation(W_HI)` -- meme la borne la plus generouse
+  est depassee, l'alerte est etablie.
+- Entre les deux, l'alerte est **incertaine**, et le dit : une alerte qui
+  pretend etre certaine quand elle ne l'est pas reproduirait exactement le
+  defaut que ce script combat depuis son premier jour.
+
+Trois etats, jamais confondus : `passe` ; `ALERTE CERTAINE` / `ALERTE
+INCERTAINE` (sortie **3**, distincte de la sortie 1 qui est le `REFUS` du
+garde -- ici c'est la **mesure** du noyau qui parle, pas le garde) ; et
+`INDETERMINE` / `INDISPONIBLE` quand l'instrument manque. Un `cpu.stat` absent
+ou un `nr_periods` illisible ne rendent **ni** « passe » **ni** alerte : une
+panne d'instrument ne se confond pas avec une absence de throttling.
+
+Les sept cas du temoin sont exerces dans `ai-01/test-dryrun-sizing-control.sh`
+(section L) : cumul faible, depassement de la borne superieure, depassement
+entre les deux bornes, seuil abaisse (controle negatif du seuil reellement
+lu), `cpu.stat` absent, `nr_periods` illisible.
+
+### Le pin du wrapper
+
+`ai-01/coursia-waiters.service` appelle desormais
+`/usr/local/bin/coursia-waiters-start.sh` au lieu du wrapper du **clone de
+travail partage** (`/mnt/d/CoursIA/scripts/ci/docker/linux-runner/persist/coursia-waiters-start.sh`).
+Un checkout de branche dans `D:\CoursIA` ne change plus le code du pool a son
+prochain redemarrage, et des sessions concurrentes ne partagent plus un arbre
+dont le contenu n'etait pas identifie.
+
+**Ce que le pin ne couvre pas**, a lire avant de le prendre pour un correctif
+complet : le wrapper est un lanceur mince. Il fait `cd $REPO_DIR` puis `exec
+$SUPERVISE_SH waiters "$ARG"`. Le code du **superviseur** reste donc lu dans
+l'arbre de travail partage. Le pin fixe l'ENTREE du pool ; il ne fige pas le
+corps du superviseur. Le chemin du superviseur est devenu explicite et
+surchargeable (`COURSIA_SUPERVISE_SH`), pour que l'epinglage complet soit un
+geste de configuration et non une modification du wrapper -- mais le geste
+lui-meme (epingler `supervise.sh` ET sa fermeture de dependances, image de
+runner comprise) n'est pas fait, et n'est pas mesure.
+
+### Reproduire la mesure
+
+```bash
+# cote WSL d'ai-01
+cat /sys/fs/cgroup/coursia.slice/coursia-ci.slice/cpu.max
+grep -E 'nr_throttled|throttled_usec|nr_periods' \
+     /sys/fs/cgroup/coursia.slice/coursia-ci.slice/cpu.stat
+systemctl show coursia-runner.service -p Environment --value | tr ' ' '\n' | grep CPU_BUDGET
+# l'instrument complet (verdict + temoin + bundle de preuve) :
+bash /mnt/d/CoursIA/scripts/ci/docker/linux-runner/persist/ai-01/dryrun-sizing-control.sh \
+     --slots 14 --cpus 2 --ack-one-slot
+```
