@@ -25,6 +25,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from scripts.notebook_tools.execute_qcpy_docker import (  # noqa: E402
     _build_outputs,
     _stream_output,
+    _summarize_cell,
 )
 
 
@@ -76,3 +77,33 @@ def test_success_includes_result_and_display_data():
         "display_data",
     ]
     assert outs[1]["execution_count"] == 1
+
+
+def test_outputs_count_counts_display_data():
+    """`outputs_count` derive du constructeur, `display_data` compris.
+
+    Reserve du contre-audit NanoClaw sur #22181 : la metrique du rapport etait
+    une somme recomposee a la main, donc aveugle aux `display_data`. Elle vaut
+    desormais la longueur de la MEME liste que celle ecrite dans la cellule.
+    """
+    res = _result(streams=["a"], result={"text/plain": "1"},
+                  display_data=[{"image/png": "iVBOR"}, {"text/html": "<b>x</b>"}])
+    outputs, summary = _summarize_cell(7, res, 3)
+
+    assert summary["outputs_count"] == len(outputs) == 4
+    assert [o["output_type"] for o in outputs] == [
+        "stream", "execute_result", "display_data", "display_data"
+    ]
+    assert summary["cell_index"] == 7
+    assert summary["exec_count"] == 3
+    assert summary["status"] == "ok"
+
+
+def test_outputs_count_on_timeout_still_matches_written_outputs():
+    """Sur un timeout, le rapport annonce ce qui a ete ecrit -- pas zero."""
+    res = _result(streams=["debut"])
+    res["status"] = "timeout"
+    outputs, summary = _summarize_cell(25, res, 8)
+
+    assert summary["status"] == "error"
+    assert summary["outputs_count"] == len(outputs) == 1

@@ -97,6 +97,32 @@ def _build_outputs(result: dict, exec_count: int) -> list:
         })
     return outputs
 
+
+def _summarize_cell(cell_index: int, result: dict, exec_count: int
+                    ) -> tuple[list, dict]:
+    """Sorties et ligne de rapport d'une cellule, issues du MEME constructeur.
+
+    `outputs_count` vaut `len(_build_outputs(...))` par construction : la
+    metrique du rapport ne peut plus diverger de ce qui est ecrit dans le
+    notebook. C'est la reserve du contre-audit NanoClaw sur #22181, qui
+    portait exactement sur cette divergence — la liste etait recomposee a la
+    main pour le rapport, donc aveugle aux `display_data`.
+
+    Extraire ce calcul de la boucle d'execution est ce qui le rend testable
+    sans kernel : c'est le seul point de la reprise qui n'exige ni websocket
+    ni conteneur.
+    """
+    outputs = _build_outputs(result, exec_count)
+    is_error = (result["status"] == "error" or result["status"] == "timeout"
+                or len(result["errors"]) > 0)
+    summary = {
+        "cell_index": cell_index,
+        "status": "error" if is_error else "ok",
+        "exec_count": exec_count,
+        "outputs_count": len(outputs),
+    }
+    return outputs, summary
+
 # Shared session for XSRF token handling
 _http_session = None
 
@@ -254,19 +280,12 @@ def execute_notebook(nb_path: Path, base_url: str, kernel_id: str,
         src = "".join(cell.get("source", []))
         result = exec_code(ws, src, ws_session, timeout=timeout)
 
-        is_error = (result["status"] == "error" or result["status"] == "timeout"
-                    or len(result["errors"]) > 0)
-
         # Le rapport et la cellule relevent du MEME constructeur : la metrique
         # ne peut plus diverger de ce qui est ecrit (display_data compris).
-        outputs = _build_outputs(result, exec_count)
+        outputs, summary = _summarize_cell(i, result, exec_count)
+        is_error = summary["status"] == "error"
 
-        cell_results.append({
-            "cell_index": i,
-            "status": "error" if is_error else "ok",
-            "exec_count": exec_count,
-            "outputs_count": len(outputs)
-        })
+        cell_results.append(summary)
 
         if not is_error:
             cells_ok += 1
