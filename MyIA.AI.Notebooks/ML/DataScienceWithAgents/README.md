@@ -108,8 +108,9 @@ DataScienceWithAgents/
 │   ├── 2.13-Analyse-Erreurs.ipynb
 │   └── 2.14-Explicabilite-SHAP-LIME-Contrefactuels.ipynb
 │
-├── 03-DeepLearning/            # Deep learning from scratch
+├── 03-Deep-Learning/            # Deep learning from scratch
 │   ├── 3.0-Theorie-Information.ipynb
+│   ├── 3.0b-Tenseurs-Strides-Vues-Python.ipynb
 │   ├── 3.1-Retropropagation.ipynb
 │   ├── 3.2-Optimisateurs.ipynb
 │   ├── 3.3-Regularisation.ipynb
@@ -193,28 +194,29 @@ Le socle machine learning canonique avec scikit-learn, posé à la main entre le
 
 Documentation complète : [02-ML-Cours/README.md](02-ML-Cours/README.md)
 
-## Deep Learning (03-DeepLearning)
+## Deep Learning (03-Deep-Learning)
 
 Le prolongement direct du socle : là où [2.2](02-ML-Cours/2.2-Descente-de-gradient.ipynb) ouvre `fit()` sur une droite et [2.9](02-ML-Cours/2.9-Grokking-Generalisation.ipynb) entraîne un réseau PyTorch en boîte noire, cette série écrit la mécanique intermédiaire **à la main** — chaque mécanisme implémenté en NumPy pur, vérifié (gradient numérique, parité pas-à-pas avec PyTorch), puis relié à l'API `torch` que consomment les séries RL/PostTraining.
 
 | Notebook | Sujet | Concept-phare |
 |----------|-------|---------------|
-| [3.0-Theorie-Information](03-DeepLearning/3.0-Theorie-Information.ipynb) | Entropie, cross-entropy et KL from scratch sur texte français, MSE vs CE sur classifieur, température softmax, pont DPO/GRPO | **La loss qui fait apprendre** : pourquoi la CE et pas la MSE ; KL comme mesure de décalage entre distributions |
-| [3.1-Retropropagation](03-DeepLearning/3.1-Retropropagation.ipynb) | Le MLP et la rétropropagation à la main (NumPy pur, sans autograd) | **Le gradient vérifié** (différence finie 1,3e-11 ; parité exacte avec PyTorch ; init nulle = gradient nul) |
-| [3.2-Optimisateurs](03-DeepLearning/3.2-Optimisateurs.ipynb) | Momentum, Adagrad, RMSProp, Adam et schedules, écrits puis validés pas à pas contre `torch.optim` | **La parité exacte** (5 mises à jour identiques à ≤2,2e-16 ; Beale 5 trajectoires ; MLP 3 graines ; schedules : coût en déterministe, gain en bruité) |
-| [3.3-Regularisation](03-DeepLearning/3.3-Regularisation.ipynb) | Dropout, weight decay et early stopping écrits à la main sur un MLP construit pour surapprendre (17 000 paramètres, 100 points, 12 étiquettes fausses) | **Corriger la variance sans changer le modèle** : trois remèdes appliqués au même surapprentissage fabriqué |
-| [3.4-Attention-Transformer-From-Scratch](03-DeepLearning/3.4-Attention-Transformer-From-Scratch.ipynb) | De l'attention mono-tête lisible sur l'inversion de séquence au mini-GPT de 1,25 M entraîné dans le notebook | **L'attention jusqu'au bout, sur CPU** : attention + masque causal + multi-têtes + bloc pré-norme, mini-GPT char-level (117 s, *Le Horla*) |
-| [3.5-Phenomenes-de-Generalisation](03-DeepLearning/3.5-Phenomenes-de-Generalisation.ipynb) | Grokking et double descente reproduits en NumPy pur (MLP à embeddings + Adam à la main), confrontés à la borne PAC du 2.8 | **Le phénomène sans la boîte noire** : mémorisation → transition abrupte, et le W de la double descente (pic au seuil M ≈ n, 20 graines) |
-| [3.6-Modeles-Generatifs](03-DeepLearning/3.6-Modeles-Generatifs.ipynb) | VAE, GAN et diffusion (DDPM) écrits en NumPy pur, même cible (huit modes sur un cercle), même budget, face à une baseline GMM | **Trois objectifs, trois échecs** : VAE couvre mais moyenne, GAN s'effondre, diffusion raffine au prix de 100 passes |
-| [3.6b-Modeles-Generatifs-PyTorch](03-DeepLearning/3.6b-Modeles-Generatifs-PyTorch.ipynb) | *Versant framework* du 3.6 : VAE, GAN et DDPM entraînés sur cible 2D à 4 modes (PyTorch CPU) | **Le compromis qualité/diversité** : 4 mécanismes sur mêmes métriques, verdict nuancé, pas de « gagnant » unique |
-| [3.7-Distillation-Maitre-Eleve](03-DeepLearning/3.7-Distillation-Maitre-Eleve.ipynb) | Distillation teacher/student : maître entraîné distille son savoir vers un élève ~9× plus petit | **Le facteur T² vérifié** : la KL brute chute en ~1/T², la KL scalée reste constante ; verdict INCONCLUSIVE au seuil strict |
-| [3.8-Representations-Contrastives](03-DeepLearning/3.8-Representations-Contrastives.ipynb) | Pré-entraînement contrastif moderne : vues continues, encodeur MLP et loss InfoNCE from scratch, pont vers skip-gram | **Apprendre des représentations sans étiquettes** : deux vues attirent leurs embeddings, les autres repoussent |
+| [3.0-Theorie-Information](03-Deep-Learning/3.0-Theorie-Information.ipynb) | Entropie, cross-entropy et KL from scratch sur texte français, MSE vs CE sur classifieur, température softmax, pont DPO/GRPO | **La loss qui fait apprendre** : pourquoi la CE et pas la MSE ; KL comme mesure de décalage entre distributions |
+| [3.0b-Tenseurs-Strides-Vues](03-Deep-Learning/3.0b-Tenseurs-Strides-Vues-Python.ipynb) | Le support mémoire du tenseur à la main : buffer, offset, forme et strides en NumPy pur, parité mesurée avec PyTorch (vues, `expand`, `view`, gradient), fenêtres glissantes et im2col | **L'adresse comme formule** : toute opération « sans copie » ne fait que réécrire les pas |
+| [3.1-Retropropagation](03-Deep-Learning/3.1-Retropropagation.ipynb) | Le MLP et la rétropropagation à la main (NumPy pur, sans autograd) | **Le gradient vérifié** (différence finie 1,3e-11 ; parité exacte avec PyTorch ; init nulle = gradient nul) |
+| [3.2-Optimisateurs](03-Deep-Learning/3.2-Optimisateurs.ipynb) | Momentum, Adagrad, RMSProp, Adam et schedules, écrits puis validés pas à pas contre `torch.optim` | **La parité exacte** (5 mises à jour identiques à ≤2,2e-16 ; Beale 5 trajectoires ; MLP 3 graines ; schedules : coût en déterministe, gain en bruité) |
+| [3.3-Regularisation](03-Deep-Learning/3.3-Regularisation.ipynb) | Dropout, weight decay et early stopping écrits à la main sur un MLP construit pour surapprendre (17 000 paramètres, 100 points, 12 étiquettes fausses) | **Corriger la variance sans changer le modèle** : trois remèdes appliqués au même surapprentissage fabriqué |
+| [3.4-Attention-Transformer-From-Scratch](03-Deep-Learning/3.4-Attention-Transformer-From-Scratch.ipynb) | De l'attention mono-tête lisible sur l'inversion de séquence au mini-GPT de 1,25 M entraîné dans le notebook | **L'attention jusqu'au bout, sur CPU** : attention + masque causal + multi-têtes + bloc pré-norme, mini-GPT char-level (117 s, *Le Horla*) |
+| [3.5-Phenomenes-de-Generalisation](03-Deep-Learning/3.5-Phenomenes-de-Generalisation.ipynb) | Grokking et double descente reproduits en NumPy pur (MLP à embeddings + Adam à la main), confrontés à la borne PAC du 2.8 | **Le phénomène sans la boîte noire** : mémorisation → transition abrupte, et le W de la double descente (pic au seuil M ≈ n, 20 graines) |
+| [3.6-Modeles-Generatifs](03-Deep-Learning/3.6-Modeles-Generatifs.ipynb) | VAE, GAN et diffusion (DDPM) écrits en NumPy pur, même cible (huit modes sur un cercle), même budget, face à une baseline GMM | **Trois objectifs, trois échecs** : VAE couvre mais moyenne, GAN s'effondre, diffusion raffine au prix de 100 passes |
+| [3.6b-Modeles-Generatifs-PyTorch](03-Deep-Learning/3.6b-Modeles-Generatifs-PyTorch.ipynb) | *Versant framework* du 3.6 : VAE, GAN et DDPM entraînés sur cible 2D à 4 modes (PyTorch CPU) | **Le compromis qualité/diversité** : 4 mécanismes sur mêmes métriques, verdict nuancé, pas de « gagnant » unique |
+| [3.7-Distillation-Maitre-Eleve](03-Deep-Learning/3.7-Distillation-Maitre-Eleve.ipynb) | Distillation teacher/student : maître entraîné distille son savoir vers un élève ~9× plus petit | **Le facteur T² vérifié** : la KL brute chute en ~1/T², la KL scalée reste constante ; verdict INCONCLUSIVE au seuil strict |
+| [3.8-Representations-Contrastives](03-Deep-Learning/3.8-Representations-Contrastives.ipynb) | Pré-entraînement contrastif moderne : vues continues, encodeur MLP et loss InfoNCE from scratch, pont vers skip-gram | **Apprendre des représentations sans étiquettes** : deux vues attirent leurs embeddings, les autres repoussent |
 
-Documentation complète : [03-DeepLearning/README.md](03-DeepLearning/README.md)
+Documentation complète : [03-Deep-Learning/README.md](03-Deep-Learning/README.md)
 
 ## Vision par ordinateur (04-Vision)
 
-[`03-DeepLearning`](#deep-learning-03-deeplearning) a ouvert la rétropropagation sur des **vecteurs** tabulaires (MLP, gradient vérifié, parité NumPy ↔ torch). Le passage à l'image demande une primitive nouvelle : le neurone **convolutif**, qui partage ses poids spatialement. Cette série reprend la **même discipline** (from scratch PUIS framework, parité epsilon machine) et l'applique à la convolution, l'empilement profond, et au skip-connection qui rend les réseaux entraînables.
+[`03-Deep-Learning`](#deep-learning-03-deeplearning) a ouvert la rétropropagation sur des **vecteurs** tabulaires (MLP, gradient vérifié, parité NumPy ↔ torch). Le passage à l'image demande une primitive nouvelle : le neurone **convolutif**, qui partage ses poids spatialement. Cette série reprend la **même discipline** (from scratch PUIS framework, parité epsilon machine) et l'applique à la convolution, l'empilement profond, et au skip-connection qui rend les réseaux entraînables.
 
 | Notebook | Sujet | Concept-phare |
 |----------|-------|---------------|
@@ -454,7 +456,7 @@ La thèse est honnête : les agents LLM ne remplacent pas le data scientist, ils
 ### Prochaines étapes
 
 - **Approfondir le ML sous-jacent** : la série [ML](../README.md) (et son pendant C# [ML.Net](../ML.Net/README.md)) reprend les algorithmes (LightGBM, SSA, évaluation PFI/ROC) sous l'angle de l'implémentation — utile pour comprendre ce que l'agent exécute quand il génère du code scikit-learn.
-- **Démarrer par les fondations visuelles** : la sous-série [`04-Vision`](04-Vision/README.md) prolonge [03-DeepLearning](03-DeepLearning/README.md) sur les images (Conv2d from scratch + ConvNet profonde + résiduelles, parité NumPy/torch à epsilon machine, puis transfer learning ResNet gelé vs fine-tuné). Prérequis utile avant d'orchestrer un agent sur des données image.
+- **Démarrer par les fondations visuelles** : la sous-série [`04-Vision`](04-Vision/README.md) prolonge [03-Deep-Learning](03-Deep-Learning/README.md) sur les images (Conv2d from scratch + ConvNet profonde + résiduelles, parité NumPy/torch à epsilon machine, puis transfer learning ResNet gelé vs fine-tuné). Prérequis utile avant d'orchestrer un agent sur des données image.
 - **Aller vers l'évaluation et la robustesse** : les Labs 13-15 (Web-Search-SOTA, Ablation-Refinement, Kaggle-Challenge) introduisent l'évaluation rigoureuse des agents ML (MLE-bench, métriques cross-compétition) ; le prolongement naturel est la **robustesse multi-seed** et la **walk-forward validation**, traitées dans le pipeline [QuantConnect](../../QuantConnect/README.md).
 - **Franchir le cap production** : le Day 7 (BigQuery, BQML, Vertex AI) ouvre sur le déploiement réel. Le pont vers [GenAI](../../GenAI/README.md) relie ces agents data aux pipelines de génération (image, audio, texte) et aux architectures Qwen/Lumina auto-hébergées.
 - Pour la pratique : reprenez le Lab 7 (agent DataFrame) et posez-lui une question qu'il *ne peut pas* répondre avec les seules colonnes présentes — comment réagit-il ? Confrontez cette limite au Lab 11 (boucle planner-coder) : qu'apporte vraiment le multi-agent ? C'est la tension vivante de la série : la puissance de l'agent *vs* la nécessité de l'encadrer.
