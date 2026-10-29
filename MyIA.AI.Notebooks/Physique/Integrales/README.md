@@ -71,6 +71,23 @@ bornés**, arbitrés à l'usage — aucun n'était promis :
   pas une correction. L'étage suivant du classement (K3, Calabi–Yau) demanderait
   des graphes à trois boucles, hors du périmètre arbitré de la série.
 
+**Le toit `Physique/` se monte par tranches, et cette sous-série en est la
+première.** Cette veine est la tranche **T1** de l'EPIC
+[#23161](https://github.com/jsboige/CoursIA/issues/23161) ; les tranches
+voisines sont **T2** `Jauge/` (théorème de Noether en sympy,
+[PR #23169](https://github.com/jsboige/CoursIA/pull/23169)) et **T3**
+`Numerique/` (Burgers, volumes finis, solveur de Riemann,
+[PR #23172](https://github.com/jsboige/CoursIA/pull/23172)) — toutes deux encore
+ouvertes au moment de cette livraison. Le **T0** (README de série
+`Physique/README.md`, `Physique/index.qmd`, les listes codées en dur du
+catalogue) appartient à l'EPIC et n'est **pas** dans cette tranche : l'ordre
+prévu est **T1 → T0**, et le T0 devra donc énumérer les trois sous-séries
+(`Integrales/`, `Jauge/`, `Numerique/`) pour que le toit ne reste pas dispersé.
+En attendant, les seuls liens de voisinage sont donc ceux qui existent déjà :
+les carnets voisins de `Integrales/` sont listés ci-dessus, et `Jauge/` comme
+`Numerique/` n'apparaissent ici que comme tranches annoncées, sans lien vers
+un dossier qui n'existe pas encore.
+
 Le carnet habite désormais la série `Physique/` (EPIC
 [#23161](https://github.com/jsboige/CoursIA/issues/23161)) : les intégrales de
 Feynman ne sont pas des objets probabilistes, et `MyIA.AI.Notebooks/Physique/`
