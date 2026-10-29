@@ -47,11 +47,12 @@ KIND_LEAN = "lean"
 
 
 def _sha1(path: Path) -> str:
-    h = hashlib.sha1()
-    with path.open("rb") as f:
-        for chunk in iter(lambda: f.read(1 << 16), b""):
-            h.update(chunk)
-    return h.hexdigest()
+    # Empreinte canonique LF : un checkout Windows (core.autocrlf=true)
+    # materialise les CRLF ; sans normalisation, l'empreinte depend de la
+    # plateforme qui regenere (mesure #22261 : scripts/datasets/README.md =
+    # 5ee6ceb071… en LF, d2247a88bc… en CRLF).
+    raw = path.read_bytes().replace(b"\r\n", b"\n")
+    return hashlib.sha1(raw).hexdigest()
 
 
 def _iter_files() -> list[Path]:

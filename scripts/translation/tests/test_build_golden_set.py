@@ -105,3 +105,18 @@ def test_regeneration_is_deterministic(tmp_path, gen):
     _, text1 = gen()
     _, text2 = gen()
     assert text1 == text2, "la regeneration doit etre byte-identique"
+
+
+def test_sha1_is_platform_independent(tmp_path):
+    """Critere 4 (#22261) : l'empreinte d'un meme contenu est la meme en LF
+    qu'en CRLF — sinon une regeneration Windows fabrique des shas absents du
+    depot (mesure : scripts/datasets/README.md = 5ee6ceb071… en LF vs
+    d2247a88bc… en CRLF, contre une prémisse « arbre brassé »)."""
+    import hashlib
+
+    lf = tmp_path / "a_lf.md"
+    crlf = tmp_path / "a_crlf.md"
+    content = b"un texte\navec deux lignes\n"
+    lf.write_bytes(content)
+    crlf.write_bytes(content.replace(b"\n", b"\r\n"))
+    assert bgs._sha1(lf) == bgs._sha1(crlf) == hashlib.sha1(content).hexdigest()
