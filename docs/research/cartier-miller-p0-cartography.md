@@ -207,16 +207,21 @@ référence [7] : « Une nouvelle opération sur les formes différentielles
 auteur et de ses lecteurs (*AST* 2002, *MSMF* 2000, *SB* 1956-1958)
 redonnent la même mention.
 
-**Statut d'accès : texte original non consulté.** Recherche du
-2026-10-29 : la note n'est ni numérisée en accès libre sur Numdam, ni
-présente dans les collections Wikisource des *C. R. Acad. Sci.*, ni
-remontée par la recherche plein texte Gallica pour l'année 1957. Elle
-n'existe que dans le périodique *C. R. Acad. Sci.* (Gallica, série
-`cb343481087`, tome 244, p. 426-428) ; le parcours par date de ce
-périodique redirige vers l'authentification BnF (mesuré le 2026-10-29),
-donc l'accès aux fascicules n'est pas ouvert par défaut. Le dépôt au
-gisement partagé (rayon `Symbolic/`,
-`G:\Mon Drive\MyIA\IA\Bibliographie IA\`) reste donc **à effectuer**, et
-la citation ci-dessus est **sans consultation du texte original** — elle
-est établie sur la donnée bibliographique, pas sur une lecture de la
-note.
+**Statut d'accès : texte original consulté et archivé (2026-10-29).**
+La note n'est ni numérisée en accès libre sur Numdam, ni présente dans
+les collections Wikisource des *C. R. Acad. Sci.*, ni indexée par la
+recherche plein texte Gallica pour l'année 1957 (les fascicules de 1957
+n'ont pas de couche OCR). Elle n'existe que dans le périodique
+*C. R. Acad. Sci.* (Gallica, série `cb343481087`, tome 244, p. 426-428) ;
+le parcours par date de ce périodique passe par un accès BnF, et les
+images de page ne sont servies qu'en session authentifiée.
+
+Les trois pages (p. 426-428) ont été **extraites et déposées au
+gisement** : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\1957 - Cartier - Une nouvelle operation sur les formes differentielles (C. R. Acad. Sci., t. 244, p. 426-428).pdf`
+(496 320 octets, sha256 `195953e928bdf6d52b0e1f3a4f495ddb5807bf5ae151b75a57d2da4b07e3994f`).
+
+**Identité vérifiée sur la première page** : « ALGEBRE. — Une nouvelle
+opération sur les formes différentielles. Note de M. Pierre Cartier,
+présentée par M. Jacques Hadamard », p. 426 ; la p. 427 porte la mention
+« SÉANCE DU 21 JANVIER 1957 ». Le texte est donc désormais **lu**, et
+non plus cité sur la seule donnée bibliographique.
