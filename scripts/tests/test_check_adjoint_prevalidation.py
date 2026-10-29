@@ -4990,13 +4990,18 @@ def test_stack_door_is_silent_on_the_merge_path_when_not_a_stack_top(monkeypatch
 
 
 def _author_ref_synthetic_git(*, parents=(), ancestors=(), trees=(), auto_merges=()):
-    """`git` simule repondant aux 4 questions de `_author_ref`.
+    """`git` simule repondant aux questions de `_author_ref`.
 
     `parents` : sha -> "<first> <second>" (sortie de `log -1 --format=%P`).
     `ancestors` : paires (second, base) pour lesquelles merge-base rc=0.
     `trees` : sha -> tree_sha (sortie de `log -1 --format=%T`).
     `auto_merges` : (first, second) -> tree_sha (sortie de
     `merge-tree --write-tree`).
+
+    #22938 : `_author_ref` lit les parents ET l'arbre dans UN seul appel
+    (`--format=%P%x09%T`) -- une requete de moins par etape de remontee. Le
+    faux git repond a cette forme la ; les deux formes simples restent
+    reconnues pour les tests qui les appellent directement.
     """
     anc = set(ancestors)
     par = dict(parents)
@@ -5004,6 +5009,12 @@ def _author_ref_synthetic_git(*, parents=(), ancestors=(), trees=(), auto_merges
     auto = dict(auto_merges)
 
     def fake(args, check=True):
+        if args[:3] == ["log", "-1", "--format=%P%x09%T"]:
+            sha = args[3]
+            return subprocess.CompletedProcess(
+                ["git", *args], 0,
+                f"{par.get(sha, '')}\t{tre.get(sha, '')}", ""
+            )
         if args[:3] == ["log", "-1", "--format=%P"]:
             return subprocess.CompletedProcess(
                 ["git", *args], 0, par.get(args[3], ""), ""
@@ -5077,6 +5088,46 @@ def test_author_ref_stops_at_conflict_resolution(monkeypatch):
         ),
     )
     assert mod._author_ref(top, base_ref=base) == top
+
+
+def test_author_ref_reads_parents_and_tree_in_one_git_call(monkeypatch):
+    """#22938 -- parents et arbre sortent d'UN seul appel git.
+
+    `_author_ref` coute 0,63 s par PR (237,5 s cumules pour 377 PRs) :
+    c'est le poste le plus cher de la porte pile. Chaque etape de remontee
+    interrogeait le meme commit deux fois (`--format=%P` puis `--format=%T`).
+    Les deux lectures sont desormais fusionnees en un appel
+    (`--format=%P%x09%T`) -- meme mesure, un processus de moins.
+
+    Le test compte les appels : sans la fusion, la remontee d'une fusion
+    content-free en ferait deux par etape.
+    """
+    base = "refs/remotes/origin/main"
+    main_sha = "1" * 40
+    feature_sha = "2" * 40
+    top = "3" * 40
+    inner = _author_ref_synthetic_git(
+        parents={top: f"{feature_sha} {main_sha}"},
+        ancestors={(main_sha, base)},
+        trees={top: "tree_top"},
+        auto_merges={(feature_sha, main_sha): "tree_top"},
+    )
+    calls: list[list[str]] = []
+
+    def counting(args, check=True):
+        calls.append(list(args))
+        return inner(args, check=check)
+
+    monkeypatch.setattr(mod, "_git", counting)
+    assert mod._author_ref(top, base_ref=base) == feature_sha
+    log_calls = [c for c in calls if c[:2] == ["log", "-1"]]
+    assert log_calls, calls
+    # UNE lecture par ETAPE de remontee, et toujours la forme fusionnee.
+    assert all(c[2] == "--format=%P%x09%T" for c in log_calls), log_calls
+    assert not [
+        c for c in calls
+        if c[:3] in (["log", "-1", "--format=%P"], ["log", "-1", "--format=%T"])
+    ], calls
 
 
 def test_author_ref_returns_on_non_merge_commit(monkeypatch):

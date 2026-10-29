@@ -1092,10 +1092,18 @@ def _author_ref(ref: str, base_ref: str = _STACK_BASE_REF) -> str:
     """
     current = ref
     for _ in range(_AUTHOR_REF_MAX_WALK):
-        parents_proc = _git(["log", "-1", "--format=%P", current], check=False)
-        if parents_proc.returncode != 0:
+        # #22938 : parents ET arbre de tete dans UN seul appel git. Les deux
+        # lectures portaient sur le MEME commit ; les fusionner retire un
+        # processus git par etape de remontee, sans changer la mesure.
+        # Mesure : `_author_ref` coute 0,63 s par PR (237,5 s cumules pour
+        # 377 PRs), soit les deux tiers du cout de la porte pile.
+        info_proc = _git(["log", "-1", "--format=%P%x09%T", current], check=False)
+        if info_proc.returncode != 0:
             return current
-        parents = (parents_proc.stdout or "").strip().split()
+        fields = (info_proc.stdout or "").strip().split("\t")
+        if len(fields) != 2:
+            return current
+        parents = fields[0].split()
         if len(parents) != 2:
             return current
         first, second = parents
@@ -1109,10 +1117,7 @@ def _author_ref(ref: str, base_ref: str = _STACK_BASE_REF) -> str:
             return current
         # L'arbre du merge doit etre l'auto-merge des parents (meme
         # condition que `last_authoritative_sha`).
-        tree_proc = _git(["log", "-1", "--format=%T", current], check=False)
-        if tree_proc.returncode != 0:
-            return current
-        current_tree = (tree_proc.stdout or "").strip()
+        current_tree = fields[1].strip()
         if not current_tree:
             return current
         # `git merge-tree --write-tree` (Git >= 2.38) ecrit l'arbre de
@@ -1425,9 +1430,12 @@ def stack_reasons(target: int, index: dict[int, StackEntry]) -> list[str]:
 _STACK_INDEX_CACHE: dict[str, Any] = {"built": False, "index": None, "incidents": []}
 
 #: Lectures git simultanees pour la construction de l'index pile (#22938).
-#: Les mesures par PR sont independantes et ne font QUE de la lecture ; 8
-#: lectures simultanees laissent le disque et le CPU tranquilles.
-STACK_INDEX_WORKERS = 8
+#: Les mesures par PR sont independantes et ne font QUE de la lecture (aucun
+#: `fetch`, aucune ecriture de ref) : 16 lectures simultanees sur une machine
+#: a 32 coeurs laissent le disque et le CPU tranquilles. Mesure du
+#: 2026-10-29 (375 PRs ouvertes) : 52,6 s a 8 lectures, **32,3 s a 16** --
+#: la construction est donc le poste le plus cher d'un passage de queue.
+STACK_INDEX_WORKERS = 16
 
 #: Verrou de construction de l'index pile (#22938). La lecture en parallele
 #: de la queue fait appeler `default_stack_index` par plusieurs fils a la
@@ -2705,6 +2713,22 @@ def build_queue(
     started = time.monotonic()
     calls_before = dict(API_USAGE)
 
+    # La porte PILE est une mesure REPO-WIDE : elle lit l'etat de chaque PR
+    # OUVERTE (pas seulement celles de la file). Cout mesure le 2026-10-29 :
+    # ~0,44 s par PR ouverte (une lecture `git log --not origin/main` + la
+    # remontee first-parent), soit ~165 s pour les 376 PRs ouvertes -- de
+    # loin le poste le plus cher d'un passage de queue. Elle est PARTAGEE par
+    # toutes les PRs de la file, donc elle se construit UNE fois. Elle est
+    # lancee EN TACHE DE FOND des le depart : elle se construit pendant les
+    # lectures, elle est prete quand la premiere candidate READY l'atteint,
+    # et elle ne bloque aucun lecteur.
+    stack_warm: threading.Thread | None = None
+    if loader is None and unique:
+        stack_warm = threading.Thread(
+            target=default_stack_index, name="stack-index-warm", daemon=True
+        )
+        stack_warm.start()
+
     # (1) Lecture GROUPEE des surfaces de discussion. Un `loader` injecte
     # (tests) n'a pas de surface pregroupee : on ne prefetch pas.
     discussion: dict[int, dict[str, Any]] = {}
@@ -2765,21 +2789,6 @@ def build_queue(
                 # Le suivi ne doit rien casser : une erreur d'ecriture du
                 # suivi ne doit pas interrompre la queue.
                 pass
-
-    # La porte PILE est une mesure REPO-WIDE : elle lit l'etat de chaque PR
-    # OUVERTE (pas seulement celles de la file). Cout mesure le 2026-10-29 :
-    # ~0,44 s par PR ouverte (une lecture `git log --not origin/main` + la
-    # remontee first-parent), soit ~165 s pour les 376 PRs ouvertes -- de
-    # loin le poste le plus cher d'un passage de queue. Elle est PARTAGEE par
-    # toutes les PRs de la file, donc elle se construit UNE fois. Elle est
-    # lancee en TACHE DE FOND pendant les lectures : elle est prete quand la
-    # premiere candidate READY l'atteint, et elle ne bloque aucun lecteur.
-    stack_warm: threading.Thread | None = None
-    if loader is None and unique:
-        stack_warm = threading.Thread(
-            target=default_stack_index, name="stack-index-warm", daemon=True
-        )
-        stack_warm.start()
 
     # Phase 1 : les LECTURES, en parallele.
     snapshots: dict[int, dict[str, Any]] = {}
