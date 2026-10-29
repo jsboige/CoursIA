@@ -77,3 +77,83 @@ def test_arbre_non_comparable_garde_le_refus_conservateur(capsys):
     assert FORMULE_BLOB not in out
     assert ANCIENNE_FORMULE not in out
     assert out.splitlines()[0].startswith("  [!] NON LEVE")
+
+
+# --- residuel de #20066 : le TROISIEME etat (aucun blob compare) -----------
+#
+# `tree_differs` dit que les deux arbres sont connus et differents ; il ne dit
+# pas qu'un blob a ete compare. Quand `rewound_files_map` n'a pas d'entree
+# pour le SHA, `sha_files` est vide et aucune comparaison n'a lieu : annoncer
+# « blob modifie depuis la levee » est alors une affirmation que l'organe n'a
+# pas mesuree.
+
+AUCUN_BLOB = "aucun blob comparable"
+
+
+def _levee_avec_etat(tree_differs: bool, blob_state) -> dict:
+    """Resultat minimal portant l'etat de comparaison des blobs."""
+    result = _levee_rembobinee(tree_differs)
+    result["voided_lifts"][0]["blob_state"] = blob_state
+    return result
+
+
+def test_aucun_blob_comparable_n_annonce_pas_un_blob_modifie(capsys):
+    """Le cas du commentaire de suivi du 2026-10-16 : arbres connus,
+    `sha_files` vide, donc zero blob compare. Le refus reste, le mot change."""
+    out = _sortie(capsys, _levee_avec_etat(True, mod._BLOB_UNCOMPARABLE))
+    assert AUCUN_BLOB in out
+    assert FORMULE_BLOB not in out
+    assert out.splitlines()[0].startswith("  [!] NON LEVE")
+
+
+def test_blob_compare_et_different_garde_la_formule_mesuree(capsys):
+    """Etat explicite `differs` : au moins un blob a ete compare, la formule
+    de la piste 1 reste celle qui decrit la mesure."""
+    out = _sortie(capsys, _levee_avec_etat(True, mod._BLOB_DIFFERS))
+    assert FORMULE_BLOB in out
+    assert AUCUN_BLOB not in out
+
+
+def test_entree_sans_etat_garde_le_libelle_historique(capsys):
+    """Compatibilite : un resultat produit avant ce correctif (pas de cle
+    `blob_state`) garde exactement le libelle de la piste 1."""
+    out = _sortie(capsys, _levee_rembobinee(tree_differs=True))
+    assert FORMULE_BLOB in out
+    assert AUCUN_BLOB not in out
+
+
+# --- l'etat lui-meme, sans passer par le libelle --------------------------
+
+def test_etat_uncomparable_sur_donnee_absente():
+    """Aucune donnee : rien n'a pu etre compare, et ce n'est pas un
+    « different »."""
+    assert mod._rebase_blob_state([], {"a": "x"}) == mod._BLOB_UNCOMPARABLE
+    assert mod._rebase_blob_state([("a", "x", "modified", "")], {}) == mod._BLOB_UNCOMPARABLE
+    # liste tronquee par l'API : une identite demi-prouvee n'est pas une preuve
+    tronquee = [(f"f{i}", "b", "modified", "") for i in range(300)]
+    assert mod._rebase_blob_state(tronquee, {"f0": "b"}) == mod._BLOB_UNCOMPARABLE
+    # statut inconnu : refus conservateur, et aucun blob juge sur cette entree
+    assert mod._rebase_blob_state([("a", "x", "weird", "")], {"a": "x"}) == mod._BLOB_UNCOMPARABLE
+
+
+def test_etat_preserved_et_differs_sur_donnee_complete():
+    """Controle positif des deux autres etats : identite prouvee vs blob
+    reellement different."""
+    assert mod._rebase_blob_state(
+        [("a", "x", "modified", "")], {"a": "x"}) == mod._BLOB_PRESERVED
+    assert mod._rebase_blob_state(
+        [("a", "x", "modified", "")], {"a": "y"}) == mod._BLOB_DIFFERS
+    # Une deletion arrive de l'API sans `sha` (champ vide) : la garde
+    # « entree incomplete » rend `uncomparable`, jamais `preserved`. C'est le
+    # comportement d'avant #20066 (`False`), et c'est le plus honnete -- aucun
+    # blob de deletion n'est comparable. Le refus ne bouge donc pas.
+    assert mod._rebase_blob_state(
+        [("a", "", "removed", "")], {}) == mod._BLOB_UNCOMPARABLE
+
+
+def test_contrat_booleen_de_15973_inchange():
+    """`_rebase_preserved_by_path` reste un booleen : seul `preserved` est
+    vrai, les deux autres etats refusent comme avant."""
+    assert mod._rebase_preserved_by_path([("a", "x", "modified", "")], {"a": "x"}) is True
+    assert mod._rebase_preserved_by_path([("a", "x", "modified", "")], {"a": "y"}) is False
+    assert mod._rebase_preserved_by_path([], {"a": "x"}) is False
