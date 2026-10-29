@@ -2200,8 +2200,24 @@ def _pr_diff_text_without_renderer(pr: int) -> Optional[str]:
        offers for exactly this refusal. Older ``gh`` does not know it and
        answers "unknown flag", which is a miss, not a failure.
     2. ``gh api repos/<owner>/<repo>/pulls/<pr>`` with the diff Accept
-       header -- the raw unified diff, no renderer involved, so the refusal
-       cannot happen.
+       header -- the raw unified diff, no ``pr diff`` renderer.
+
+       Whether THAT transport needs ``--allow-escape-sequences`` depends
+       on the ``gh`` version, and both cases are measured (2026-10-29,
+       #22341) rather than assumed:
+
+       - ``gh`` 2.102.0 (new, the CI runner): refuses the API call too
+         ("the response contains terminal escape sequences; pass
+         --allow-escape-sequences to output it anyway") and honours the
+         same flag -- with it, rc=0 and a diff byte-identical to
+         transport 1;
+       - ``gh`` 2.83.2 (old): does NOT know the flag ("unknown flag"),
+         but does NOT refuse either -- the flag-less API call returns
+         rc=0 with the 69 672-byte diff and its 11 ESC bytes.
+
+       So the flag is tried FIRST (new ``gh``), and the flag-less call
+       is the fallback for an old ``gh`` that answers "unknown flag" --
+       a MISS, not a failure, exactly like transport 1.
 
     Returns None when every transport misses: the caller then keeps the
     fail-closed verdict (exit 2) it would have had without this function.
@@ -2214,14 +2230,14 @@ def _pr_diff_text_without_renderer(pr: int) -> Optional[str]:
     except (SystemExit, ValueError, KeyError, TypeError):
         repo = None
     if repo:
-        attempts.append(
-            [
-                "api",
-                f"repos/{repo}/pulls/{pr}",
-                "-H",
-                "Accept: application/vnd.github.v3.diff",
-            ]
-        )
+        api_base = [
+            "api",
+            f"repos/{repo}/pulls/{pr}",
+            "-H",
+            "Accept: application/vnd.github.v3.diff",
+        ]
+        attempts.append([*api_base, "--allow-escape-sequences"])
+        attempts.append(list(api_base))
     for args in attempts:
         rc, stdout, stderr = _run_gh_rc(args)
         if rc == 0:

@@ -4341,7 +4341,12 @@ _ESCAPE_REFUSAL = (
 
 def test_escape_sequence_refusal_is_retried_over_a_renderer_free_transport(monkeypatch):
     """`gh pr diff` refuse d'IMPRIMER un diff porte par des codes ANSI ; le
-    diff, lui, se lit. Le garde ne doit pas perdre sa mesure (#22341)."""
+    diff, lui, se lit. Le garde ne doit pas perdre sa mesure (#22341).
+
+    Le transport REST n'est PAS dispensé du drapeau : `gh api` refuse le
+    meme diff et honore le meme drapeau (mesure de la review Hermes). Le
+    mock reproduit ce comportement reel : sans le drapeau, l'API repond
+    rc=1 -- ce qui serait un chemin mort."""
     perim = __import__("check_pr_perimeter")
     calls = []
 
@@ -4352,7 +4357,9 @@ def test_escape_sequence_refusal_is_retried_over_a_renderer_free_transport(monke
                 return 1, "", "unknown flag: --allow-escape-sequences"
             return 1, "", _ESCAPE_REFUSAL
         if args[0] == "api":
-            return 0, "diff --git a/x b/x\n+ok\n", ""
+            if "--allow-escape-sequences" in args:
+                return 0, "diff --git a/x b/x\n+ok\n", ""
+            return 1, "", _ESCAPE_REFUSAL
         return 1, "", "transport inattendu"
 
     monkeypatch.setattr(perim, "_run_gh_rc", fake_run_gh_rc)
@@ -4364,7 +4371,11 @@ def test_escape_sequence_refusal_is_retried_over_a_renderer_free_transport(monke
     assert any(
         c[:2] == ["pr", "diff"] and "--allow-escape-sequences" in c for c in calls
     ), "le drapeau dedie doit etre tente"
-    assert any(c[0] == "api" for c in calls), "le diff REST sans rendu doit etre tente"
+    api_calls = [c for c in calls if c[0] == "api"]
+    assert api_calls, "le diff REST sans rendu doit etre tente"
+    assert any(
+        "--allow-escape-sequences" in c for c in api_calls
+    ), "le transport REST doit porter le drapeau, sans lui il echoue aussi"
 
 
 def test_escape_sequence_refusal_survives_a_gh_without_the_flag(monkeypatch):
@@ -4378,7 +4389,9 @@ def test_escape_sequence_refusal_survives_a_gh_without_the_flag(monkeypatch):
                 return 1, "", "unknown flag: --allow-escape-sequences"
             return 1, "", _ESCAPE_REFUSAL
         if args[0] == "api":
-            return 0, "diff --git a/y b/y\n", ""
+            if "--allow-escape-sequences" in args:
+                return 0, "diff --git a/y b/y\n", ""
+            return 1, "", _ESCAPE_REFUSAL
         return 1, "", "transport inattendu"
 
     monkeypatch.setattr(perim, "_run_gh_rc", fake_run_gh_rc)
@@ -4386,6 +4399,58 @@ def test_escape_sequence_refusal_survives_a_gh_without_the_flag(monkeypatch):
         perim, "_run_gh", lambda args: '{"nameWithOwner": "jsboige/CoursIA"}'
     )
     assert perim._pr_diff_text(22341) == "diff --git a/y b/y\n"
+
+
+def test_the_rest_transport_falls_back_to_the_flagless_call_on_an_old_gh(monkeypatch):
+    """Un `gh` ancien ne connait pas le drapeau ("unknown flag") mais ne
+    refuse PAS l'API : l'appel sans drapeau est alors le transport qui
+    reussit (mesure : gh 2.83.2, rc=0, 69 672 octets, 11 ESC)."""
+    perim = __import__("check_pr_perimeter")
+    calls = []
+
+    def fake_run_gh_rc(args):
+        calls.append(list(args))
+        if args[0] == "pr" and args[1] == "diff":
+            if "--allow-escape-sequences" in args:
+                return 1, "", "unknown flag: --allow-escape-sequences"
+            return 1, "", _ESCAPE_REFUSAL
+        if args[0] == "api":
+            if "--allow-escape-sequences" in args:
+                return 1, "", "unknown flag: --allow-escape-sequences"
+            return 0, "diff --git a/z b/z\n", ""
+        return 1, "", "transport inattendu"
+
+    monkeypatch.setattr(perim, "_run_gh_rc", fake_run_gh_rc)
+    monkeypatch.setattr(
+        perim, "_run_gh", lambda args: '{"nameWithOwner": "jsboige/CoursIA"}'
+    )
+    assert perim._pr_diff_text(22341) == "diff --git a/z b/z\n"
+    api_calls = [c for c in calls if c[0] == "api"]
+    assert any("--allow-escape-sequences" in c for c in api_calls)
+    assert any("--allow-escape-sequences" not in c for c in api_calls)
+
+
+def test_the_rest_transport_without_the_flag_measures_nothing(monkeypatch):
+    """Controle NEGATIF du filet : si le transport REST perd le drapeau, il
+    echoue comme le refuse l'ecrit le reelle -- le garde ne doit alors
+    RIEN mesurer (fail-closed, rc=2), et non fabriquer une reponse
+    d'API que l'instrument reel ne rend pas (#22341, review Hermes)."""
+    perim = __import__("check_pr_perimeter")
+
+    def fake_run_gh_rc(args):
+        if args[0] == "pr" and args[1] == "diff":
+            return 1, "", _ESCAPE_REFUSAL
+        if args[0] == "api":
+            return 1, "", _ESCAPE_REFUSAL
+        return 1, "", "transport inattendu"
+
+    monkeypatch.setattr(perim, "_run_gh_rc", fake_run_gh_rc)
+    monkeypatch.setattr(
+        perim, "_run_gh", lambda args: '{"nameWithOwner": "jsboige/CoursIA"}'
+    )
+    with pytest.raises(SystemExit) as exc:
+        perim._pr_diff_text(22341)
+    assert exc.value.code == 2
 
 
 def test_an_unrelated_gh_failure_stays_fail_closed(monkeypatch):
