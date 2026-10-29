@@ -561,7 +561,6 @@ Toulmin_Model  (indépendant, racine propre)
 | `Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb` | **Fondation (socle ontologique)** : CSV canonique complémentaire |
 | `Argumentation-Onto-03-Vertus-SKOS-Python.ipynb` | **Fondation (socle ontologique)** : pôle vertus, thésaurus SKOS (2 897 triplets) |
 | `groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb` | **Hors-arc (travail de groupe)** : sous-répertoire `groupe-I2-contre-arguments-aspic/`, production autonome (contre-arguments ASPIC), n'est pas un jalon de la progression |
-| `Argumentation-06c-Revision-Croyances-Python.ipynb` | **Jalon (extension du rung 06)** : la révision AGM sur ensemble de croyances — contraction de noyau, expansion, révision de Levi — prolonge la ligne « raisonnement non-monotone » du rung `06` (JTMS booléen) vers l'ensemble révisable (Tweety/JVM) |
 
 ### Synthèse — comment lire la série
 
