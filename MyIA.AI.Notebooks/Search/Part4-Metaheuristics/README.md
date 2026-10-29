@@ -1,6 +1,6 @@
 # Partie 4 : Metaheuristiques Composables (MetaGeneticSharp)
 
-[↑ Série Search](../README.md) | [← Partie 1 : Fondations](../Part1-Foundations/README.md) | [Notebooks MGS →](MGS-01-Introduction.ipynb)
+[↑ Série Search](../README.md) | [← Partie 3 : Cas pratiques](../Part3-Cas-pratiques/README.md) | [Notebooks MGS →](MGS-01-Introduction.ipynb)
 
 Comment passer de l'application *d'une* métaheuristique à la **composition** de plusieurs ? Cette partie ouvre la voie à [MetaGeneticSharp](https://github.com/jsboige/MetaGeneticSharp) — une bibliothèque .NET qui reconstruit les métaheuristiques publiées (Whale Optimization, Equilibrium Optimizer, Differential Evolution, Bare-Bones PSO, modèle insulaire...) à partir de **primitives réutilisables** plutôt que comme des monolithes opaques. Les notebooks .NET Interactive (C#) de la partie en sont le fil conducteur : un algorithme doit pouvoir s'énoncer en quelques lignes déclaratives, et chaque brique (sélection, croisement, mutation, réinsertion) doit pouvoir être interceptée et recomposée.
 
@@ -127,7 +127,7 @@ flowchart LR
 
 ## Applications spécialisées
 
-Les notebooks d'application GA (détection de bords, optimisation de portefeuille — variants PyGAD Python et GeneticSharp C#) sont rassemblés dans la section [`Applications/Hybrid/`](../Applications/README.md) : **App-9 / App-9b** (EdgeDetection) et **App-10 / App-10b** (Portfolio). La série MGS numérotée (MGS-1 à MGS-21, plus la trilogie de ponts MGS-7b/7c/7d de projection N-D) constitue le cœur propre à la Partie 4. La **campagne MGS vs mealpy** (notebooks comparatifs MGS-22 à MGS-31) vit dans la sous-série dédiée [`MGS-vs-mealpy/`](MGS-vs-mealpy/README.md), avec son sommaire, son protocole commun et sa synthèse croisée.
+Les notebooks d'application GA (détection de bords, optimisation de portefeuille — variants PyGAD Python et GeneticSharp C#) sont rassemblés dans la section [`Part3-Cas-pratiques/`](../Part3-Cas-pratiques/README.md) : **App-9 / App-9b** (EdgeDetection) et **App-10 / App-10b** (Portfolio). La série MGS numérotée (MGS-1 à MGS-21, plus la trilogie de ponts MGS-7b/7c/7d de projection N-D) constitue le cœur propre à la Partie 4. La **campagne MGS vs mealpy** (notebooks comparatifs MGS-22 à MGS-31) vit dans la sous-série dédiée [`MGS-vs-mealpy/`](MGS-vs-mealpy/README.md), avec son sommaire, son protocole commun et sa synthèse croisée.
 
 ## Sous-série MGS vs mealpy
 

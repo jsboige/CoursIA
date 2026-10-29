@@ -1,6 +1,6 @@
 # Partie 2 : Programmation par Contraintes
 
-[← Partie 1 : Search](../Part1-Foundations/README.md) | [↑ Série Search](../README.md) | [Partie 4 : Métaheuristiques →](../Part4-Metaheuristics/README.md)
+[← Partie 1 : Search](../Part1-Foundations/README.md) | [↑ Série Search](../README.md) | [Partie 3 : Cas pratiques →](../Part3-Cas-pratiques/README.md)
 
 Au lieu de concevoir un algorithme d'exploration, que se passe-t-il si l'on déclare les contraintes du problème et que l'on laisse le solveur trouver les solutions ? La programmation par contraintes (CSP) représente ce changement de paradigme : on ne cherche plus, on contraint. Ce modèle déclaratif est au coeur des outils industriels (ordonnancement, logistique, vérification) et s'applique naturellement aux problèmes NP-difficiles.
 
@@ -120,7 +120,7 @@ Pour le setup complet, voir le [README de la série Search](../README.md).
 | Solveur CP-SAT trop lent sur les grandes instances | Préférer les contraintes globales (AllDifferent, Cumulative) aux contraintes binaires équivalentes ; utiliser LNS (CSP-3) |
 | Comment choisir entre CP-SAT et un solveur SAT ? | CP-SAT pour les contraintes globales et l'optimisation (objectif), SAT pour la décision pure ; CSP-6 détaille les compromis |
 | CSP-9 : les algorithmes distribués ne convergent pas | Vérifier que le réseau de contraintes est un arbre, ou utiliser AWC (Weak-Commitment) au lieu d'ABT |
-| Où sont les applications concrètes ? | Voir [Applications](../Applications/README.md) : notebooks d'application (N-Queens, Nurse Scheduling, VRP, TSP...) |
+| Où sont les applications concrètes ? | Voir [Applications](../Part3-Cas-pratiques/README.md) : notebooks d'application (N-Queens, Nurse Scheduling, VRP, TSP...) |
 
 ## Ponts vers SymbolicAI
 
@@ -160,7 +160,7 @@ CSP-1 (Fundamentals) ──> CSP-2 (Consistency) ──> CSP-3 (Advanced)
 | Série | Lien | Relation |
 | ------- | ------ | ---------- |
 | [Partie 1 : Search](../Part1-Foundations/README.md) | Fondamentaux | Prérequis : backtracking, heuristiques |
-| [Applications](../Applications/README.md) | Notebooks d'application | Mise en pratique des CSP |
+| [Applications](../Part3-Cas-pratiques/README.md) | Notebooks d'application | Mise en pratique des CSP |
 | [Search (parent)](../README.md) | Vue d'ensemble | Contexte et parcours global |
 | [Sudoku](../../Sudoku/) | Résolution par contraintes | Application directe des CSP |
 | [SymbolicAI/SMT/Z3-Linq2Z3](../../SymbolicAI/SMT/Z3-Linq2Z3/README.md) | Solveur SMT | CSP-6 (LCG) et automates symboliques |
@@ -220,10 +220,10 @@ Le véritable enseignement est une **sensibilité à la modélisation** : le mê
 
 ### Prochaines étapes
 
-- **Les applications** : les [notebooks d'application](../Applications/README.md) (N-Queens, Nurse Scheduling, VRP, TSP, Picross, Minesweeper CSP) mettent en pratique CP-SAT sur des problèmes concrets avec benchmark baseline-comparison.
+- **Les applications** : les [notebooks d'application](../Part3-Cas-pratiques/README.md) (N-Queens, Nurse Scheduling, VRP, TSP, Picross, Minesweeper CSP) mettent en pratique CP-SAT sur des problèmes concrets avec benchmark baseline-comparison.
 - **Vers le raisonnement symbolique** : la modélisation déclarative de cette partie est le premier contact avec un mode de raisonnement qu'approfondissent [Z3/SMT](../../SymbolicAI/SMT/Z3-Linq2Z3/README.md) (SMT solving), les [Planners](../../SymbolicAI/Planners/) (PDDL, HTN) et [Tweety](../../SymbolicAI/Tweety/) (logique formelle) côté SymbolicAI. CSP-6 (LCG) fait explicitement le pont vers SAT.
 - **Retour aux fondamentaux** : après avoir vu la puissance de la propagation, reprendre [Search-2 (backtracking)](../Part1-Foundations/Search-02-Uninformed.ipynb) — le DFS y apparaît comme un cas particulier de CSP sans propagation, et l'on mesure le saut qu'apportent AC-3/MAC.
-- **La série dans son ensemble** : le [sommaire Search](../README.md) cartographie les quatre parties et les applications — celle-ci est le socle déclaratif qui prolonge la Partie 1 (recherche) et prépare la Partie 4 (métaheuristiques) et les Applications.
+- **La série dans son ensemble** : le [sommaire Search](../README.md) cartographie les quatre parties et les applications — celle-ci est le socle déclaratif qui prolonge la Partie 1 (recherche) et prépare la Partie 4 (métaheuristiques) et la Partie 3 (cas pratiques).
 
 ### Le fil rouge
 
@@ -231,4 +231,4 @@ La programmation par contraintes propose un changement de regard sur la résolut
 
 ## Navigation
 
-[<- Partie 1 : Search Fondamental](../Part1-Foundations/README.md) | [Retour à la série Search](../README.md) | [Partie 4 : Métaheuristiques ->](../Part4-Metaheuristics/README.md)
+[<- Partie 1 : Search Fondamental](../Part1-Foundations/README.md) | [Retour à la série Search](../README.md) | [Partie 3 : Cas pratiques ->](../Part3-Cas-pratiques/README.md)

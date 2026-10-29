@@ -1,7 +1,7 @@
 - name: App-18 HyperparameterTuning
-  family: Search/Applications
-  python: MyIA.AI.Notebooks/Search/Applications/Hybrid/App-18-HyperparameterTuning.ipynb
-  csharp: MyIA.AI.Notebooks/Search/Applications/Hybrid/App-18b-HyperparameterTuning-CSharp.ipynb
+  family: Search/Part3-Cas-pratiques
+  python: MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-18-HyperparameterTuning.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-18b-HyperparameterTuning-CSharp.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Python = `sklearn` (RandomForestClassifier, GradientBoostingClassifier, SVC, cross_val_score, Pipeline, StandardScaler) + `optuna` (optimisation d'hyperparametres SOTA) + `scipy.optimize`/`scipy.stats`. C# = tranche 1 BCL pure (grid/random/bayes/GA/PSO from-scratch) + tranche 2 (2026-08-15) branche **ML.NET AutoML 0.23.0** (`CreateBinaryClassificationExperiment(30).Execute`): le jumeau C# dispose d'un moteur de production qui cherche dans l'espace des modeles (FastTree, LightGBM, SDCA, reg. logistique, perceptron) ET de leurs hyperparametres — parite lib-vs-lib atteinte (sklearn+Optuna <-> ML.NET AutoML). Mesures : split deterministe TrainTestSplit(0.2, seed 424242) = 165/35, AutoML 405 essais/30 s, meilleur entraineur SdcaLogisticRegressionBinary, accuracy test 0.7714 / AUC 0.7467 vs meilleure config k-NN from-scratch (Grid, k=49) 0.7143 sur le MEME split — AutoML devant de 0.0571. Env repare (regle F) : dotnet-interactive 1.0.712001 (Roslyn 5.0.0.0) requis par AutoML 0.23.0 (CodeAnalysis.CSharp 4.13). parity_level: native-both (les deux twins branchent une lib SOTA)."
