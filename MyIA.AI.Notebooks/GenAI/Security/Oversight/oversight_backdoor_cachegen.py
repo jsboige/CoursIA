@@ -57,6 +57,8 @@ import ast
 import json
 import subprocess
 import sys
+import time
+import urllib.error
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -226,7 +228,8 @@ def load_keys() -> dict[str, str]:
     return keys
 
 
-def call_model(model_key: str, system: str, user: str, keys: dict[str, str]) -> str:
+def call_model(model_key: str, system: str, user: str, keys: dict[str, str],
+               max_tokens: int | None = None) -> dict:
     spec = MODELS[model_key]
     payload = {
         "model": spec["id"],
@@ -234,7 +237,7 @@ def call_model(model_key: str, system: str, user: str, keys: dict[str, str]) -> 
             {"role": "system", "content": system},
             {"role": "user", "content": user},
         ],
-        "max_tokens": MAX_TOKENS,
+        "max_tokens": max_tokens or MAX_TOKENS,
         "temperature": TEMPERATURE,
     }
     if spec["route"] == "openrouter":
@@ -249,12 +252,33 @@ def call_model(model_key: str, system: str, user: str, keys: dict[str, str]) -> 
     req = urllib.request.Request(
         url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST"
     )
-    with urllib.request.urlopen(req, timeout=120) as resp:
-        body = json.load(resp)
+    # Un timeout ou une coupure reseau ne doit pas tuer la campagne : sans ce filet, une
+    # seule lecture de socket expiree remonte a travers le ThreadPoolExecutor et emporte
+    # tout le lot avant la premiere ecriture de trace (mesure du 29/10, campagne H.4
+    # tuee a l'appel ~10 sur 180). Deux essais, puis un verdict explicite.
+    body, derniere = None, None
+    for tentative in range(2):
+        try:
+            with urllib.request.urlopen(req, timeout=120) as resp:
+                body = json.load(resp)
+            break
+        except (urllib.error.URLError, TimeoutError, OSError, ValueError) as exc:
+            derniere = exc
+            if tentative == 0:
+                time.sleep(2)
+    if body is None:
+        return {"texte": "", "fin": "erreur_reseau", "refus": None,
+                "erreur": str(derniere)[:200]}
     choix = body["choices"][0]
     message = choix["message"]
+    # Un `finish_reason` de `content_filter` ou `error` rend un contenu vide et ne
+    # consomme aucun token : sans ces deux champs, un refus du fournisseur serait
+    # indiscernable d'un modele qui a repondu a cote (mesure du 29/10 : 4 tentatives sur
+    # 5 du prompt H.4.1 filtrees par Gemini, classees a tort « echoue le critere 1 »).
     return {"texte": (message.get("content") or "").strip(),
-            "fin": choix.get("finish_reason")}
+            "fin": choix.get("finish_reason"),
+            "refus": message.get("refusal"),
+            "erreur": body.get("error")}
 
 
 # --- Execution isolee et classification -------------------------------------
