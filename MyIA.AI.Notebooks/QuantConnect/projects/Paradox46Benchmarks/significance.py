@@ -32,7 +32,7 @@ SCRIPTS = Path(__file__).resolve().parents[2] / "ML-Training-Pipeline" / "script
 if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 
-from diebold_mariano import newey_west_variance  # noqa: E402
+from dm_test import newey_west_variance  # noqa: E402
 from m11c_sharpe_test import (  # noqa: E402
     ledoit_wolf_sharpe_diff_se,
     stationary_bootstrap_sharpe_diff,

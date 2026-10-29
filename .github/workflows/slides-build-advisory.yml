@@ -72,7 +72,6 @@ name: Slides Build Advisory
 
 on:
   pull_request:
-    branches: [ main ]
     types: [ opened, synchronize, reopened ]
     # #15835 -- the build was cron-only, so a PR could break a deck and stay
     # green end to end. #15808 wrote it down: "slidev build NOT RUN this cycle
@@ -129,7 +128,8 @@ jobs:
     # `runs-on` reste STATIQUE : une expression dynamique leverait
     # DYNAMIC_RUNS_ON. Retour arriere = remettre `runs-on: ubuntu-latest`
     # + retrait de l'allowlist + retrait du declencheur pull_request.
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # Offre GitHub d'abord (#17397, consigne user du 2026-10-25) : le CI local pallie ses limites. Retour = remettre le label.
+    runs-on: ubuntu-latest
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     # Newly blocking on the PR leg, so it must not be able to hang one: the
     # worst case is a cold `npm ci` (~12 min, #15835 body) plus one build per

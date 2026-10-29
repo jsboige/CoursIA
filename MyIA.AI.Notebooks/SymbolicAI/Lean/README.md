@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI-Lean
-pedagogical_count: 98
-breakdown: Lean=98
-maturity: BETA=94, DRAFT=3, ALPHA=1
+pedagogical_count: 144
+breakdown: Lean=144
+maturity: BETA=130, DRAFT=11, ALPHA=3
 -->
 
 [← SemanticWeb](../SemanticWeb/README.md) | [↑ SymbolicAI](../README.md) | [Planners →](../Planners/README.md)
@@ -17,7 +17,7 @@ Six visualisations extraites des notebooks illustrent l'arc de la série : de l'
 
 ### Assistance aux preuves et vérification formelle
 
-L'état de l'art de la série : un LLM génère des preuves Lean, dont on mesure la performance sur un banc de théorèmes ([Lean-7b](Lean-07b-Examples-Python.ipynb)), puis [Lean-11b](Lean-11b-TorchLean-Python.ipynb) **borne numériquement** la robustesse d'un petit MLP via IBP et CROWN en Python ; [Lean-11](Lean-11-TorchLean.ipynb) présente la formalisation Lean **illustrative** de TorchLean (architecture cible, types locaux, code `#eval`-able, preuves `#sorry` signalées) — la chaîne « implémentation numérique vérifiable → certificats formels » n'est pas tenue bout-en-bout dans la série.
+L'état de l'art de la série : un LLM génère des preuves Lean, dont on mesure la performance sur un banc de théorèmes ([Lean-7b](Lean-07b-Examples-Python.ipynb)), puis [Lean-11b](Lean-11b-TorchLean-Python.ipynb) **borne numériquement** la robustesse d'un petit MLP via IBP et CROWN en Python ; [Lean-11](Lean-11-TorchLean.ipynb) importe le **vrai paquet [TorchLean](https://github.com/lean-dojo/TorchLean)** (public, MIT) via le lake `torchlean_lean/` de la série — tenseurs, `nn.Sequential!`, chaîne IBP prouvée (`runIBP_encloses_evalGraphRec`), export/import PyTorch — et la boucle est close bout-en-bout : Lean-11b exporte son `state_dict`, le CLI `lake exe torchlean_serie` le recharge et le recertifie côté Lean (bornes coïncidantes).
 
 <p align="center">
   <a href="Lean-07b-Examples-Python.ipynb"><img src="assets/readme/lean-llm-examples.png" width="420" alt="Génération de preuves par LLM sur dix théorèmes Lean : 0 succès / 10 échecs — itérations, temps d'exécution et tokens consommés par théorème."></a>
@@ -50,6 +50,16 @@ La série dédiée (companion `knot_lean`, Epic #2874) développe trois vues com
 <p align="center">
   <a href="Lean-17b-Knots-Invariants-Companion.ipynb"><img src="assets/readme/lean-knot-invariants.png" width="420" alt="Polynômes d'Alexander Δ(t) du trèfle, du nœud de huit et du couple Conway/Kinoshita-Terasaka (Δ(t) = 1, trivial comme l'unknot)."></a>
 </p>
+
+## Fil de lecture — « Le charme et la marée »
+
+Le travail Grothendieck de la série se lit aussi comme un parcours transversal, en cinq mouvements qui traversent les séries voisines : l'idée géométrique, le langage, les fragilités, les correspondances, puis le pont qui referme l'arc. Le récit complet — visuels, variantes et exercices — vit dans la section 9 de [Lean-15d](Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb) ; l'itinéraire :
+
+1. **L'idée** — quand une figure devient équation, puis preuve : [Geometry-01](Geometry/Geometry-01-From-Figure-To-Equation.ipynb) et [Geometry-02](Geometry/Geometry-02-From-Equation-To-Proof.ipynb).
+2. **Le langage** — le vocabulaire grothendieckien (cribles, topologies, faisceaux) : [Lean-15](Lean-15-Grothendieck-Tribute.ipynb), l'atelier [Lean-15b](Lean-15b-Lean-Grothendieck.ipynb), le companion formel [Lean-15c](Lean-15c-Lean-Grothendieck-Companion.ipynb), la visite visuelle [Lean-15d](Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb).
+3. **Les fragilités** — ce que le langage ne garantit pas : les trois fragilités de [Lean-15](Lean-15-Grothendieck-Tribute.ipynb), la frontière des zéros avec Terjanian ([Serre100/07](Serre100/07-zeros-fonctions-l-gaps-gue.ipynb)) et Serre dans Mathlib ([Serre100/08](Serre100/08-serre-dans-mathlib-Lean.ipynb)).
+4. **Les correspondances** — les liens qui dépassent le langage : formes modulaires ([Langlands 01](Langlands/01-formes-modulaires-sl2z-hecke.ipynb)), Moonshine et l'invariant j ([Langlands 02](Langlands/02-monstrous-moonshine-invariant-j.ipynb)), la chaîne Serre100 de [09](Serre100/09-congruences-tau-lacunarite-delta.ipynb) à [15](Serre100/15-quatre-carres-lagrange.ipynb).
+5. **Le pont** — de la géométrie à la cohomologie : Čech ([Serre100/03](Serre100/03-cohomologie-cech-espaces-finis.ipynb)), Yoneda ([Serre100/04](Serre100/04-lemme-yoneda-categories-finies.ipynb)), les lakes `grothendieck_lean` et `hecke_lean`, jusqu'au capstone [Lean-37](Lean-37-Capstone-Serre100.ipynb).
 
 ## Navigation
 
@@ -165,9 +175,10 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | ANALYSE-04 | [ANALYSE-04-PFR-Primitives-Python](ANALYSE/ANALYSE-04-PFR-Primitives-Python.ipynb) | Trois primitives de PFR, et l'endroit exact où elles cessent de valoir — companion de digestion de ANALYSE-03 : ce qui se transporte hors du cadre d'origine (#12214) | 30 min |
 | ANALYSE-05 | [ANALYSE-05-KLS-Lean-Python](ANALYSE/ANALYSE-05-KLS-Lean-Python.ipynb) | La conjecture KLS démontrée (Bizeul–Klartag–Lehec 2026) : énoncé, chaîne de la preuve en cinq maillons, lac local `kls_lean` (six définitions, deux théorèmes prouvés, 0 sorry, axiomes vérifiés), thin-shell en Monte-Carlo avec saturation exacte à 8n par l'exponentielle produit, banc 1-lipschitzien minorant `poincareConstant` (#19729) | 45 min |
 | ANALYSE-09 | [ANALYSE-09-Tuilage-Aperiodique](ANALYSE/ANALYSE-09-Tuilage-Aperiodique.ipynb) (+ [jumeau _en](ANALYSE/ANALYSE-09-Tuilage-Aperiodique_en.ipynb)) | Contre-exemple au pavage périodique en dimension 3 (famille 155 du corpus openai/math) : un carreau fini de ℤ³ qui pave par translations sans **aucun** pavage totalement périodique — définitions (tuile, couverture exacte, rang du groupe de périodes), moteur borné exact-cover ancré sur la sémantique de `sudoku_lean`, quatre expériences mesurées dont deux pièges de fenêtre (rang mesuré 0 ou 2 pour des tuiles prouvées périodiques) et un théorème de non-pavage (prisme en L) | 30 min |
-| 21 | [Lean-21-MIMO-Detection-Flips](Lean-21-MIMO-Detection-Flips.ipynb) | Détection MIMO par flips de coordonnées (Papailiopoulos 2026) : le seuil 2·log N — descente simulée et comptage de flips, probabilité d'échappement du bruit (Monte-Carlo vs `e^{−np}`), `#check` réels des quatre phases et du converse complet `ml_error_prob_ge_threshold` (P(erreur ML) ≥ 1 − e^{−(2·log N − log log N)}) du companion `mimo_lean` (sorry-free, lake externe SLT pour Hanson–Wright) | 45 min |
-| 21b | [Lean-21b-MIMO-Converse-Native](Lean-21b-MIMO-Converse-Native.ipynb) | Compagnon **natif** (kernel `lean4-wsl`) du lac `mimo_lean` : le lac importé et exécuté dans un kernel Lean 4 réel — la frontière SLT exhibée par `#check` (ce qui est prouvé vs emprunté à `YuanheZ/lean-stat-learning-theory`), les six déclarations de `NormTails` (concentration de Lipschitz gaussienne), les seize briques du converse Hanson–Wright (dont `hanson_wright_noise` et la queue chi-carré `chisq_norm_concentration`), les treize du pont ML (`Bridge`), `#print axioms` sur les théorèmes clés — uniquement les axiomes standards, zéro `sorry` | 40 min |
-| 21c | [Lean-21c-Descente-Budget](Lean-21c-Descente-Budget.ipynb) | Le budget de descente : quand la décroissance borne le nombre de flips — l'analyse qui fonde le seuil 2·log N de la détection MIMO (#12219) | 35 min |
+| MIMO-01 | [MIMO-01-Descente-Budget-Lean-Python](MIMO/MIMO-01-Descente-Budget-Lean-Python.ipynb) | Le budget de descente : quand la décroissance borne le nombre de flips — l'analyse qui fonde le seuil 2·log N de la détection MIMO (#12219) | 35 min |
+| MIMO-02 | [MIMO-02-Detection-Flips-Lean-Python](MIMO/MIMO-02-Detection-Flips-Lean-Python.ipynb) | Détection MIMO par flips de coordonnées (Papailiopoulos 2026) : le seuil 2·log N — descente simulée et comptage de flips, probabilité d'échappement du bruit (Monte-Carlo vs `e^{−np}`), `#check` réels des quatre phases et du converse complet `ml_error_prob_ge_threshold` (P(erreur ML) ≥ 1 − e^{−(2·log N − log log N)}) du companion `mimo_lean` (sorry-free, lake externe SLT pour Hanson–Wright) | 45 min |
+| MIMO-03 | [MIMO-03-Converse-Native-Lean](MIMO/MIMO-03-Converse-Native-Lean.ipynb) | Compagnon **natif** (kernel `lean4-wsl`) du lac `mimo_lean` : le lac importé et exécuté dans un kernel Lean 4 réel — la frontière SLT exhibée par `#check` (ce qui est prouvé vs emprunté à `YuanheZ/lean-stat-learning-theory`), les six déclarations de `NormTails` (concentration de Lipschitz gaussienne), les seize briques du converse Hanson–Wright (dont `hanson_wright_noise` et la queue chi-carré `chisq_norm_concentration`), les treize du pont ML (`Bridge`), `#print axioms` sur les théorèmes clés — uniquement les axiomes standards, zéro `sorry` | 40 min |
+| MIMO-04 | [MIMO-04-Capstone-Digestion-Python](MIMO/MIMO-04-Capstone-Digestion-Python.ipynb) | **Capstone** de la sous-série [MIMO](MIMO/README.md), et sa sortie : les énoncés du lac exécutés à la main sur une instance réelle — les cinq faits de `Descent.lean` vérifiés un par un (le coût **entier** est ce qui rend `run_length_le_cost` vraie), le témoin d'échec `DescentFailure` exhibé sur un canal identité sans bruit (la règle stricte n'accepte aucun flip, la règle relâchée cycle de période 2), la borne de queue de `NormTails` vérifiée par Monte-Carlo sur douze couples `(M, t)`, le seuil `√(2·log(2N/ε))` dérivé du union bound, et la **surface du lac recomptée depuis les sources** — où l'organe canonique rend `56` là où les sources en portent `57`, son motif de nom s'arrêtant au premier caractère grec — kernel `python3`, 3 exercices | 35 min |
 | 22 | [Lean-22-Galois-Probleme-Inverse-M23](Lean-22-Galois-Probleme-Inverse-M23.ipynb) | Le problème inverse de Galois refermé (arXiv:2608.08538, 9 août 2026) : M₂₃ prouvé simple d'ordre 10 200 960 **à l'écran** (`card_M23`/`simple_M23` exécutés, `#print axioms` = liste blanche), design de Witt S(4,7,23) vérifié des deux côtés (253 heptades), polynôme f₁ de degré 23 manipulé pour de vrai (empreinte, irréductibilité, discriminant 383 chiffres, Frobenius mod p) — les deux énoncés distingués : prouvé vs cité | 45 min |
 | 23 | [Lean-23-ERC20-Invariant-Companion](Lean-23-ERC20-Invariant-Companion.ipynb) | L'invariant de conservation d'un jeton ERC-20 (`Σ balances = totalSupply`) : traces jouets en Python, lectures statiques des 17 déclarations du lake `erc20_lean`, propreté axiomatique par absence de `sorry`, Monte-Carlo sur la tolérance numérique (#11710) | 40 min |
 | 23b | [Lean-23b-Lean-ERC20-Native-Companion](Lean-23b-Lean-ERC20-Native-Companion.ipynb) | Compagnon **natif** (kernel `lean4-wsl`) du lake `erc20_lean` : les 17 déclarations **résolues par le kernel** (`#check`), l'invariant et les transitions `mint`/`burn`/`transfer` **évalués** sur un état concret (`by decide`), `#print axioms` natif sur les 5 théorèmes phares, la pyramide op → trace `Reachable` → invariant type-checkée avec ses gardes (#11721) | 30 min |
@@ -191,6 +202,7 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 38 | [Lean-38-Capstone-Geometry-Lean-Python](Lean-38-Capstone-Geometry-Lean-Python.ipynb) | **Capstone (escalier)** vers la sous-série [Geometry](Geometry/README.md) (EPIC #18601) : le fil rouge du milieu de l'hypoténuse monté par cinq marches de garantie croissante — figure numérique, identité symbolique `sympy`, témoin négatif (triangle non rectangle), lecture du lake companion [`geometry_lean/`](Geometry/geometry_lean/) comme un consommateur (fichier réel, pas une copie), audit des axiomes interdits (`sorry`, `native_decide` : 0) — la réponse incarnée à la position 05 du programme gradué ([#17544](https://github.com/jsboige/CoursIA/issues/17544)) : que garantit « prouvé par Gröbner » ? Kernel `python3`, exécuté sans erreur, 3 exercices | 15 min |
 | 39 | [Lean-39-Capstone-GOL](Lean-39-Capstone-GOL.ipynb) | **Capstone (escalier)** vers la sous-série [GOL](GOL/README.md) (réorg #20204, filière Conway de l'EPIC #1647) : l'échelle des témoins du Jeu de la Vie — règle, mémoire (canons), calcul (translateur, Hashlife) — survolée en une marche ; **surface de la sous-série mesurée** plutôt que déclarée : 9 carnets, 3 kernels (les trois `lean4-wsl` sans importation Python — leurs cellules illisibles par `ast` sont du Lean —, deux `python3-lean`, quatre `python3`), lake [`conway_lean/`](conway_lean/) lu par ses fichiers réels (modules `.lean` FR et miroirs `_en` dans `Conway/Life/`, moteur `scripts/hashlife.py`, patterns RLE dont `gemini.rle`) ; 3 exercices sur le moteur du lake (périodes, canon Gosper, concordance du README) | 15 min |
 | 40 | [Lean-40-Capstone-Langlands-Python](Lean-40-Capstone-Langlands-Python.ipynb) | **Capstone (escalier)** vers la sous-série [Langlands](Langlands/README.md) (EPIC #17969) : la relation de Hecke sur les coefficients de Δ montée par six marches de garantie croissante — table de Ramanujan exacte par convolution entière (13 valeurs publiées, concordance 13/13), identité τ(pn) + p¹¹τ(n/p) = τ(p)τ(n) vérifiée sur 9 cas (p = 2, 3, 5), témoin négatif (la suite perturbée τ+n la viole 9 fois sur 9), lecture du lac [`hecke_lean`](hecke_lean/) comme un consommateur (définition `coeffHeckeT`, preuve de `coeffHeckeT_of_dvd`, audit `sorry`/`native_decide` : 0), et le pont Moonshine (j = E₄³/Δ recalculé, 196884 = 1 + 196883) — kernel `python3`, exécuté sans erreur, 3 exercices | 25 min |
+| 41 | [Lean-41-Capstone-MIMO-Python](Lean-41-Capstone-MIMO-Python.ipynb) | **Capstone (escalier)** vers la sous-série [MIMO](MIMO/README.md) (EPIC #17545) : la détection MIMO par flips de coordonnées, le budget de descente et sa digestion — table de routage des quatre carnets (MIMO-01 à MIMO-04), citation du lac [`mimo_lean/`](mimo_lean/README.md) par ses modules réels (`Descent`, `Objective`, `Lmmse`, `Converse`, `Bridge`, `NormTails` + miroirs `_en`, baseline 0 sorry en code-only mesurée par l'organe canonique `count_code_sorry.py` — champ `distinct_code_sorry`), prérequis d'entrée (Lean 1-6 pour le formel, NumPy seul pour la digestion), **surface de la sous-série mesurée plutôt que déclarée** — kernel `python3`, exécuté sans erreur, 3 exercices | 25 min |
 
 > Numérotation : le notebook Confiance-Preuves-Native — initialement prévu en 35 — est livré en 24b (accrétion du palier 24 Calibration, décision #17545) par la PR #17530 (issue #17520) ; l'annexe A de Tegmark arrive donc en 36.
 
@@ -278,9 +290,10 @@ Pour l'état formel détaillé des modules support (preuves résolues vs `sorry`
 | 19 | Analysis-I-Tao-Workflow | ~18 | 3 | 0 | **NOUVEAU** |
 | 20 | PFR-Entropy-Method | ~23 | 3 | 0 | **NOUVEAU** |
 | 20b | PFR-Primitives-Transportables | ~6 | 0 | - | **NOUVEAU** |
-| 21 | MIMO-Detection-Flips | ~34 | 6 | 0 | **NOUVEAU** |
-| 21b | MIMO-Converse-Native | ~30 | 0 | - | **NOUVEAU** (kernel `lean4-wsl`) |
-| 21c | Descente-Budget | ~9 | 8 | 0 | **NOUVEAU** |
+| MIMO-01 | Descente-Budget | ~24 | 4 | 0 | **NOUVEAU** (#12219) |
+| MIMO-02 | MIMO-Detection-Flips | ~41 | 4 | 0 | **NOUVEAU** |
+| MIMO-03 | MIMO-Converse-Native | ~34 | 4 | - | **NOUVEAU** (kernel `lean4-wsl`) |
+| MIMO-04 | Capstone-Digestion | ~26 | 3 | 0 | **NOUVEAU** (kernel python3, capstone de la sous-série #17545) |
 | 22 | Galois-Probleme-Inverse-M23 | ~25 | 3 | 0 | **NOUVEAU** (exécution Lean + sympy) |
 | 23 | ERC20-Invariant-Companion | ~21 | 3 | 0 | **NOUVEAU** (lecture statique Python du lake) |
 | 23b | Lean-ERC20-Native-Companion | ~30 | 2 | - | **NOUVEAU** (kernel `lean4-wsl`) |
@@ -396,9 +409,9 @@ cp .env.example .env
 
 ### TorchLean
 
-- [TorchLean Documentation](https://leandojo.org/torchlean.html)
-- [TorchLean GitHub](https://github.com/lean-dojo/TorchLean)
+- [TorchLean GitHub](https://github.com/lean-dojo/TorchLean) (public, MIT, toolchain Lean `v4.35.0`)
 - [Papers: IBP, CROWN, LiRPA](https://github.com/lean-dojo/TorchLean#references)
+- Lake de la série : `torchlean_lean/` (dépendance git épinglée, sibling des carnets 11/11b)
 
 ### Références académiques
 
@@ -494,9 +507,6 @@ Lean/
 ├── Lean-17b-Knots-Invariants-Companion.ipynb # Python kernel - invariants de nœuds (PD-codes, Reidemeister, Fox tricolorability), compagnon knot_lean
 ├── Lean-17c-Knots-Companion-Formel.ipynb # Python kernel - companion formel knot_lean (modules non cités par 17b, murs R2/R3, miroir i18n)
 ├── Lean-20-Capstone-Digestions-Tao-Python.ipynb # Python kernel - escalier capstone vers la sous-série ANALYSE : digestion du travail formel de T. Tao, règle de chaîne, distance de Ruzsa
-├── Lean-21-MIMO-Detection-Flips.ipynb # Python kernel - détection MIMO par flips (seuil 2·log N, companion mimo_lean)
-├── Lean-21b-MIMO-Converse-Native.ipynb # Lean4 (WSL) kernel - converse MIMO natif (NormTails, Hanson-Wright, #print axioms)
-├── Lean-21c-Descente-Budget.ipynb # Python kernel - budget de descente (décroissance borne les flips, #12219)
 ├── Lean-22-Galois-Probleme-Inverse-M23.ipynb # Python kernel - problème inverse de Galois (M₂₃ simple prouvé, f₁ degré 23 vérifié)
 ├── Lean-23-ERC20-Invariant-Companion.ipynb # Python kernel - invariant ERC-20 (lecture statique du lake erc20_lean, Monte-Carlo)
 ├── Lean-23b-Lean-ERC20-Native-Companion.ipynb # Lean4 (WSL) kernel - ERC-20 natif (17 déclarations résolues par le kernel)
@@ -516,6 +526,7 @@ Lean/
 ├── Lean-37-Capstone-Serre100.ipynb # Python kernel - escalier capstone vers la sous-série Serre 100 : entrée, démos, prérequis de la série distillations
 ├── Lean-38-Capstone-Geometry-Lean-Python.ipynb # Python kernel - escalier capstone vers la sous-série Geometry : le fil rouge (milieu de l'hypoténuse) monté de la figure numérique au noyau du lac geometry_lean
 ├── Lean-40-Capstone-Langlands-Python.ipynb # Python kernel - escalier capstone vers la sous-série Langlands : la relation de Hecke de la table de Ramanujan au lac hecke_lean, et le pont Moonshine
+├── Lean-41-Capstone-MIMO-Python.ipynb # Python kernel - escalier capstone vers la sous-série MIMO : table de routage des quatre carnets (MIMO-01..04), lac mimo_lean (13 .lean, 0 sorry mesuré par l'organe canonique), prérequis d'entrée, surface mesurée, écart 56/57 expliqué
 ├── _run_lean_snippet.sh            # Helper WSL : run Lean snippet avec cache Mathlib
 ├── lean_runner.py                  # Module Python multi-backend
 ├── README.md
@@ -561,6 +572,12 @@ Lean/
 │   ├── 09-congruences-tau-lacunarite-delta.ipynb
 │   ├── serre100_lean/             # Lake Serre 100 (Hasse, MZV, Yoneda, caractères — modules FR + jumeaux _en)
 │   └── README.md
+├── MIMO/                          # Sous-série détection MIMO par flips (budget de descente, seuil 2·log N, converse natif) — gradation #17545 : [README](MIMO/README.md)
+│   ├── MIMO-01-Descente-Budget-Lean-Python.ipynb # Python kernel - budget de descente (décroissance borne les flips, #12219)
+│   ├── MIMO-02-Detection-Flips-Lean-Python.ipynb # Python kernel - détection MIMO par flips (seuil 2·log N, companion mimo_lean)
+│   ├── MIMO-03-Converse-Native-Lean.ipynb # Lean4 (WSL) kernel - converse MIMO natif (NormTails, Hanson-Wright, #print axioms)
+│   ├── MIMO-04-Capstone-Digestion-Python.ipynb # Python kernel - capstone : les énoncés exécutés à la main, surface du lac recomptée
+│   └── README.md
 ├── assets/                        # Images des README de la série ([MANIFEST](assets/readme/MANIFEST.md))
 ├── scripts/                       # Helpers de maintenance de la série ([README](scripts/README.md), _archive/)
 ├── sensitivity_lean/               # Théorème de sensibilité (Huang 2019) + algèbre TPR (companions Lean-12/12b/12c) - 0 sorry 0 axiome, Lake build natif (jonction Mathlib)
@@ -573,7 +590,7 @@ Lean/
 ├── hecke_lean/                     # Opérateurs de Hecke T_p/U_p (port pédagogique de anthropics/fermats-last-theorem, Apache-2.0, toolchain pinée v4.33.0) - 0 sorry, Lake build ; companion du notebook Lean-29
 ├── formal_groups_lean/             # Groupes formels multivariés (port de anthropics/fermats-last-theorem, Apache-2.0) - 0 sorry, Lake build ; companion du notebook Lean-30
 ├── formal_logic_lean/              # Logique formelle : Foundation piné + ProvabilityLogic (CONSUMER_PINNÉ) - 0 sorry, Lake build ; companion des notebooks Lean-3b/34/34b (Epic #15066)
-├── mimo_lean/                      # Détection MIMO et borne converse Hanson-Wright (brique SLT empruntée à YuanheZ/lean-stat-learning-theory) - 0 sorry, Lake build ; companion du notebook Lean-21b
+├── mimo_lean/                      # Détection MIMO et borne converse Hanson-Wright (brique SLT empruntée à YuanheZ/lean-stat-learning-theory) - 0 sorry, Lake build ; compagnons MIMO (relation plusieurs-a-plusieurs avec les carnets de la sous-série, sans attribution exclusive a un seul notebook)
 ├── tegmark_muh_lean/               # Annexe A de Tegmark 2007 (arXiv:0704.0646) : structures finies, encodage, C₃/C₂/NAND, Aut(S), squelette décideur déclaré - **sans dépendance Mathlib**, 0 sorry, Lake build ; companion du notebook Lean-36
 ├── mathlib_examples/               # Smoke test Mathlib (ring/linarith/omega/rw, 4 buts) - 0 sorry, Lake build
 ├── agent_tests/                    # Prover daemon (autonomous Lean proof)

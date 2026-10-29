@@ -63,8 +63,10 @@ la Gemini publie une auto-réplication complète en 33 699 586).
   un **tore 500 × 500** (première répétition gen 11324 == gen 5564), ce qui
   valide à la fois le nom du fichier source et la ligne « 5 760 » de
   `patterns/README.md`.
-  La formaliser demande un moteur **torique**, absent du lac : c'est la suite
-  naturelle de cette tranche.
+  La formaliser demande un moteur **torique** : il existe depuis cette tranche
+  (`Conway.Life.Torus`), mais la période 5 760 reste un résultat **mesuré** et
+  non un théorème (5 760 générations sur 250 000 cellules, hors de portée de
+  `decide`).
 - **L'OTCA : confinement observé sur la fenêtre mesurée — mesure du
   2026-10-09 (#19989, tranche 3), qui ne réfute rien** : sur 1 800
   générations, l'étendue reste **strictement** 2058 × 2058 (aucune
@@ -101,6 +103,34 @@ la Gemini publie une auto-réplication complète en 33 699 586).
   sont encore vides, où un négatif ne mesurerait rien de réel.
 - **Futur** : le CPU (une fois son RLE chargé par le même mécanisme) — sa
   question du bord reste à trancher par la même méthode de mesure.
+
+### Politique d'ancrage `native_decide` (#21833)
+
+Chaque déclaration `native_decide` crée un axiome **nommé**
+(`<thm>._native.native_decide.ax_1_1`) : le gate `proof-integrity-audit`
+les liste **par nom**, jamais par un joker.
+
+| Fichier | Ancres avant #21833 | Ancres après | Déclarations redevenues dérivées |
+|---|---|---|---|
+| `Conway.Life.Pillars` | 7 | 5 | `otca_initial_nonempty`, `unitcell_initial_nonempty` |
+| `Conway.Life.Pillars_en` | 7 | 5 | les deux siblings `_en` |
+
+Les 5 ancres **retenues** par fichier sont les certifications **indépendantes**
+du noyau : `pulsar_period3` (positif — période 3), `pulsar_period1_negative`
+et `pulsar_period2_negative` (négatifs appariés), `otca_initial_population`
+(64 691 cellules) et `unitcell_initial_population` (4 761 cellules) — chacune
+porte une affirmation que rien d'autre ne porte.
+
+Les 2 déclarations retirées ne perdent rien : `otca_initial_nonempty` et
+`unitcell_initial_nonempty` se **déduisent** de la population mesurée
+(`omega` sur la longueur). Un théorème qui dépend d'un autre ancrage n'en
+crée pas de nouveau — c'est `#print axioms` qui fait foi, pas la présence
+d'un `native_decide` dans le texte.
+
+Mesure : 7 déclarations par fichier avant, **5 ancres mesurées par
+`#print axioms`** après (14 → 10 pour la paire FR/`_en`), build
+`Build completed successfully (3014 jobs)` (`Conway.Life.Pillars` : 804 s,
+`Conway.Life.Pillars_en` : 803 s), toolchain épinglé `v4.33.0`.
 
 ### Pourquoi un fichier séparé ?
 
@@ -287,9 +317,20 @@ theorem otca_initial_population : otcaInitial.length = 64691 := by
 
 /-- La grille OTCA chargée n'est pas vide. Contrôle croisé indépendant :
     la même population (64 691) est mesurée par comptage Python direct des
-    runs `o` du RLE source. -/
+    runs `o` du RLE source.
+
+    **La preuve est dérivée, pas réévaluée** : la non-vacuité découle de la
+    population mesurée par `otca_initial_population` — une population non
+    nulle exclut la liste vide. Ce théorème ne porte donc plus d'ancrage
+    `native_decide` propre : il hérite de celui de la population, et le
+    module perd une certification native indépendante au profit d'une
+    déduction arithmétique sur le noyau. -/
 theorem otca_initial_nonempty : otcaInitial ≠ ([] : Grid) := by
-  native_decide
+  intro h
+  have hpop := otca_initial_population
+  have hl := congrArg List.length h
+  simp only [List.length_nil] at hl
+  omega
 
 /-- **UnitCell** — Nicolay Beluchenko 2011.
 
@@ -309,8 +350,14 @@ theorem otca_initial_nonempty : otcaInitial ≠ ([] : Grid) := by
 
     La période est réelle, mais elle appartient à la lecture **pavée** :
     mesurée *sans bord* sur un tore 500 × 500 (première répétition
-    gen 11324 == gen 5564, soit 5 760). La formaliser demande un moteur
-    torique, qui n'existe pas dans le lac — c'est la suite de cette tranche.
+    gen 11324 == gen 5564, soit 5 760). Le moteur torique que cette
+    formalisation demandait existe désormais : `Conway.Life.Torus`. Il porte
+    ses propres témoins, dont `Torus.blinker_torus3_dies` — le blinker qui
+    oscille éternellement sur le plan s'éteint en deux générations sur un tore
+    3 × 3 : c'est le modèle de bord, et non le motif, qui décide du destin.
+    La période 5 760 elle-même reste hors de portée d'une preuve par `decide`
+    (5 760 générations sur 250 000 cellules) : c'est un résultat **mesuré**,
+    pas un théorème.
 
     Ce qui est prouvable ici, et **non vacuous**, c'est que la grille chargée
     est réelle : c'est exactement ce que fermait la route
@@ -322,9 +369,20 @@ theorem unitcell_initial_population : unitcellInitial.length = 4761 := by
     `evolveHashlifeFastMemo_empty` est donc **fermée** pour ce motif, ce qui
     rend le témoin de période impossible *a fortiori*. Contrôle croisé
     indépendant : la même population (4 761) est mesurée par
-    `scripts/lean/rle_to_lean_grid.py`. -/
+    `scripts/lean/rle_to_lean_grid.py`.
+
+    **La preuve est dérivée, pas réévaluée** : la non-vacuité découle de la
+    population mesurée par `unitcell_initial_population` — une population non
+    nulle exclut la liste vide. Ce théorème ne porte donc plus d'ancrage
+    `native_decide` propre : il hérite de celui de la population, et le
+    module perd une certification native indépendante au profit d'une
+    déduction arithmétique sur le noyau. -/
 theorem unitcell_initial_nonempty : unitcellInitial ≠ ([] : Grid) := by
-  native_decide
+  intro h
+  have hpop := unitcell_initial_population
+  have hl := congrArg List.length h
+  simp only [List.length_nil] at hl
+  omega
 
 /-- **Témoin Gemini** — Andrew Wade 2010.
 

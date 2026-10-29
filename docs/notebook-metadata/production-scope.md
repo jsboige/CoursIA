@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-10-27
+
 # Périmètre PRODUCTION — dérivation mécanique v1
 
 > **Epic [#11259](https://github.com/jsboige/CoursIA/issues/11259) — tâches T1 + T1b.**
@@ -318,7 +320,7 @@ l'Epic) ; un dossier de revue est alors préparé (T2).*
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-01-Sendov-Lean-Python.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-02-Tao-Lean-Python.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-03-PFR-Lean.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-MIMO-Detection-Flips.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-02-Detection-Flips-Lean-Python.ipynb`
 <!-- MyIA.AI.Notebooks/SymbolicAI/SemanticWeb -->
 
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-4-CSharp-SPARQL.ipynb`
@@ -350,7 +352,7 @@ Chaque série non recensée ci-dessus, et pourquoi (contestable sur l'Epic sans 
 |-------|----------------------------|
 | `ML/` (ML.NET) | cursus .NET non rattaché aux 4 écoles in-scope ; le ML enseigné passe par QC-Py (ECE) et GenAI (EPF) |
 | `Search/Part4-Metaheuristics/` | au-delà du programme PrCon — Part1+Part2 couvrent le cours référencé |
-| `Search/Applications/`, `Search/MetaGeneticSharp/` | applications dérivées non citées par le calendrier des cours |
+| `Search/Part3-Cas-pratiques/`, `Search/MetaGeneticSharp/` | applications dérivées non citées par le calendrier des cours |
 | `Sudoku/` | série .NET autonome, non rattachée à un cours du calendrier |
 | `Probas/` (Infer.NET) | idem — non rattachée à une des 4 écoles |
 | `GameTheory/` | les preuves Lean associées sont du code (i18n #4980), non des notebooks à signer ; les `.ipynb` ne sont pas cités nommément par le calendrier |

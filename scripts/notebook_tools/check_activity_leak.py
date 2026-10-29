@@ -120,6 +120,21 @@ _TRANCHE_RE = re.compile(
 _COMMIT_REF_RE = re.compile(r"\b(?:commit|t[eê]te)\s+`?[0-9a-f]{7,12}`?", re.IGNORECASE)
 _ISO_TS_RE = re.compile(r"\b20\d\d-\d\d-\d\dT\d\d:\d\d")
 _LESSON_TAG_RE = re.compile(r"\bL\d{3,4}(?:-L\d)?\b")
+# Fragment d'ancre de ligne dans un permalien GitHub (« ...cs#L171 »,
+# « #L217-L236 ») : meme forme que le renvoi aux lecons, sens inverse. Un
+# carnet cite legitimement sa source par permalien -- la table des trois
+# canaux d'Aspire-07 (#21024) en portait sept d'affilee. Mesure du
+# 2026-10-20 sur 1553 carnets : 30 des 65 occurrences de _LESSON_TAG_RE
+# etaient des fragments d'URL (46 %). Le marqueur etant FORT (poids 2),
+# deux ancres dans un paragraphe suffisaient a le declarer dense.
+#
+# Le predicat est « toute forme #Lddd », PAS « un fragment dans une URL » :
+# le masque s'applique sans regarder le contexte, donc une prose qui ecrirait
+# « la ligne #L261 du fichier » est masquee elle aussi. Aucune occurrence de
+# ce cas n'est mesuree sur le corpus ; l'ecart est assume et fige par
+# test_url_fragment_mask_is_context_free_by_design, pour qu'il ne se
+# decouvre pas par surprise si un carnet se met a ecrire des ancres en prose.
+_URL_FRAGMENT_RE = re.compile(r"#L\d{3,4}(?:-L\d{3,4})?")
 _DM_RE = re.compile(r"\bDM\b")
 
 _LANE_RE = re.compile(r"\blanes?\b", re.IGNORECASE)
@@ -133,7 +148,25 @@ _PR_REF_RE = re.compile(r"\bPR\s*#\d+\b")
 
 # Fenetres de garde anti-FP : le contexte autour du match decide.
 _DM_OK_CONTEXT = re.compile(
-    r"Diebold|Mariano|momentum|p-value|p_valeur|statistique|test", re.IGNORECASE
+    r"Diebold|Mariano|momentum|p-value|p_valeur|statistique|test"
+    # Formes COMPACTES du meme test, mesurees le 2026-10-25 sur la serie
+    # ML-Training-Pipeline (#20250) : « +19,97σ avec DM p = 0,236 »,
+    # « ## 8. Re-validation ... + DM recentree », « conjonction multi-seed +
+    # DM `loss_fn="linear"` ». Le nom etendu n'apparait pas a moins de 60
+    # caracteres dans ces trois formes : la garde etait donc muette, et six
+    # passages denses sur six d'un carnet §C valide ont ete declares recit
+    # d'activite alors qu'ils ne portent que le test de Diebold-Mariano.
+    #
+    # `DM-JEPA` (#22252) : le nom du modele de prediction latente contient
+    # « DM », que le motif `\bDM\b` prend pour le test de Diebold-Mariano.
+    # L'allowlist porte donc le NOM DU MODELE, pas le mot « JEPA » seul :
+    # elargir au mot seul rendait la garde muette sur « Le DM publie par
+    # l'equipe JEPA hier soir. », mesure le 2026-10-27 (controle negatif
+    # dans scripts/tests/test_check_activity_leak.py). Le bigrame laisse la
+    # mention isolee muette (« Demo DM-JEPA 1.7 ») tout en gardant la garde
+    # sensible au reste.
+    r"|p\s*[=<>≤≥]|recentr|re-centr|loss_fn|DM-JEPA",
+    re.IGNORECASE,
 )
 _DISPATCH_OK_CONTEXT = re.compile(
     r"dynamique|dynamic|[eé]conomique|[eé]lectrique", re.IGNORECASE
@@ -267,7 +300,12 @@ def markers_in_text(text: str) -> list[tuple[str, str, int]]:
     """
     out: list[tuple[str, str, int]] = []
     for name, rx, weight in ALL_MARKERS:
-        for m in rx.finditer(text):
+        haystack = text
+        if name == "lesson_tag":
+            # Masque de meme longueur (les offsets ne servent pas ici) : une
+            # ancre de ligne de permalien n'est pas un renvoi aux lecons.
+            haystack = _URL_FRAGMENT_RE.sub(lambda m: " " * len(m.group(0)), text)
+        for m in rx.finditer(haystack):
             if name == "dm" and _context_guarded(text, m.start(), m.end(), _DM_OK_CONTEXT):
                 continue
             if name == "dispatch" and _context_guarded(text, m.start(), m.end(), _DISPATCH_OK_CONTEXT):

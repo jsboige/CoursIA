@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: GenAI-Texte
-pedagogical_count: 42
-breakdown: Texte=42
-maturity: BETA=37, DRAFT=3, ALPHA=2
+pedagogical_count: 46
+breakdown: Texte=46
+maturity: BETA=39, DRAFT=4, ALPHA=3
 -->
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Semantic Kernel](../SemanticKernel/README.md)
@@ -20,7 +20,7 @@ La maîtrise des LLMs constitue la pierre angulaire de toute expertise en Géné
 - **Raisonnement avancé** : modèles o4-mini, gpt-5-thinking
 - **Production enterprise** : gestion de sessions, retry, batch processing
 - **Déploiement local** : vLLM, quantification, optimisation des coûts
-- **Test-time scaling (ICR)** : routeur agentique, mémoire persistante, Tree-of-Thoughts sur CSP, courbes de scaling, raisonnement natif, plugins Semantic Kernel (notebooks 13 à 18, arc approfondi au-delà de NB-12)
+- **Test-time scaling (ICR)** : routeur agentique, évaluation d'agents (succès, coût, ablation, sûreté), mémoire persistante, Tree-of-Thoughts sur CSP, courbes de scaling, raisonnement natif, plugins Semantic Kernel (notebooks 13 à 18, arc approfondi au-delà de NB-12)
 - **Analyse linguistique (TAL)** : lemmatisation, dépendances syntaxiques, entités nommées avec spaCy, et leur comparaison à la tokenisation BPE (notebook 23)
 
 ## Contenu détaillé
@@ -39,6 +39,7 @@ La maîtrise des LLMs constitue la pierre angulaire de toute expertise en Géné
 | 3 | `3_Structured_Outputs.ipynb` | JSON Schema, Pydantic, mode strict, extraction de données | 55 min |
 | 3b | `3b_Typed_Decisions_System1.ipynb` | Décisions typées « système 1 » : contrat choice/score/noul, LLM gelé lu sur ses logits, tête d'attention fine-tunée (jevlike) et moteur de décision pré-entraîné (laya : zéro-shot puis fine-tuné) contre témoin classique, calibration (NLL, Brier, ECE, température), escalade, banc tiers CC0 hors domaine (v1/v2, chute mesurée) | 60 min |
 | 3c | `3c_Constrained_Decoding_Python.ipynb` | Décodage contraint au niveau du token : automate fini (DFA) codé à la main pour le format date ISO `\d{4}-\d{2}-\d{2}`, dérivation du masque de logits depuis les états de l'automate, génération pas à pas d'une date valide — le complément token-level du 3 (JSON Schema agit au niveau API, le masque agit sur la distribution elle-même) | — |
+| 3d | `3d_JEPA_PredictionLatente_System1.ipynb` | Prédiction latente sans génération : DM-JEPA 1.7 (moteur non-autorégressif, 349 M paramètres) exécuté via le harnais de validation local (#21997) — le distracteur qui partage l'ancre coule (rang moyen 5,7 sur 6), la négation reste au rang du hasard (3,75 contre 3,5), baseline du tri aléatoire à côté ; les chiffres de la page de validation reproduits en direct | 35 min |
 | 4 | `4_Function_Calling.ipynb` | Tools API, appels parallèles, boucle agentique | 60 min |
 
 ### Tier 3 : Augmentation (Intermédiaire)
@@ -59,10 +60,10 @@ La maîtrise des LLMs constitue la pierre angulaire de toute expertise en Géné
 | 10 | `10_LocalLlama.ipynb` | Serveur OpenAI-compatible auto-hébergé (vLLM) : 3 étages honnêtement nommés (local étudiant / auto-hébergé du cours / repli distant OpenRouter), multi-endpoints, benchmarking | 60 min |
 | 10b | `10b_Inference_Mechanics.ipynb` | KV-cache from scratch, exactitude des logits, speedup/mémoire, TTFT et ITL mesurés sur vLLM | 75 min |
 | 10c | `10c_Long_Context_Strategies.ipynb` | Stratégies pour contextes longs : budget de tokens (comptage avec le tokenizer réel), biais de position, map-reduce, prefix caching — quatre mesures sur notre vLLM | 50 min |
-| 10d | `10d_TensorSharp_DotNet_Inference.ipynb` | Pilote diagnostique .NET : TensorSharp CUDA charge Gemma 4 E4B et répond en OpenAI-compatible, mais le contrôle qualitatif détecte une répétition de `<pad>` (`RECOVERABLE-LOCAL`, adoption différée) | 55 min |
+| 10d | `10d_TensorSharp_DotNet_Inference.ipynb` | Bake-off bindings .NET en deux parties : pilote TensorSharp (défaut `<pad>` rendu falsifiable, `RECOVERABLE-LOCAL`), puis jambe ORT GenAI (ONNX int4, EP CUDA prouvée) qui rejoue le protocole commun, dresse le tableau à trois moteurs et tranche le go/no-go par axe | 100 min |
 | 10e | `10e_LLamaSharp_DotNet_BakeOff.ipynb` | Bake-off Phase 2 du [#12353](https://github.com/jsboige/CoursIA/issues/12353) : binding .NET de `llama.cpp` 0.27.0, charge Qwen3-4B Q4_K_M en local sur RTX 3080 Ti 16 Go, produit 4 réponses Phase 1 en français avec 0% pad à 70,11 tok/s GPU (vs 99.4% pad TensorSharp) — subprocess .NET 8 self-contained, harnais versionné `tools/llamasharp-bakeoff/` (#15570) | 50 min |
-| 10f | `10f_ORTGenAI_DotNet_BakeOff.ipynb` | Phase 3 du bake-off : ONNX Runtime GenAI 0.15.2 charge Qwen3-4B ONNX int4 avec l’EP CUDA prouvée, rejoue les quatre invites communes et tranche le go/no-go par axe face à TensorSharp et LLamaSharp | 45 min |
 | 11 | `11_Quantization.ipynb` | AWQ, GPTQ, llmcompressor, modèles vision, déploiement vLLM | 60 min |
+| 11b | `11b_Materiel_Debit_Cout.ipynb` | Ferme la chaîne format → VRAM → bande passante → coût : roofline construit sur les débits et pics **mesurés** de la carte (stream triad, matmul fp16/fp32), empreinte VRAM par format (fp32/fp16/bf16 natifs + int8/int4 `bitsandbytes`), débits préfill/décodage relevés des timings Ollama (`qwen3.5:4b`), fermeture du toit (débit prédit par `bande passante / taille des poids` vs débit observé, écart lu), coût local par million de jetons (watts `nvidia-smi` mesurés + hypothèses déclarées, seuil de bascule face aux grilles API) — chaque grandeur étiquetée Mesuré/Cité, 3 exercices C.1 | 60 min |
 | 12 | `12_Test_Time_Scaling.ipynb` | Best-of-N, Tree-of-Thoughts (BFS/DFS), Reflexion, routeur adaptatif (cf ICR) | 60 min |
 
 ### Tier 5 : Test-Time Scaling approfondi (ICR)
@@ -72,6 +73,7 @@ Le notebook 12 introduit en Python pur les quatre moteurs d'inférence au moment
 | # | Notebook | Description | Durée |
 |---|----------|-------------|-------|
 | 13 | `13_Agentic_Orchestration.ipynb` | Routeur agentique : function calling (pont NB-04) pour laisser un LLM choisir le moteur par sous-tâche (mode "Agentic" d'ICR) | 60 min |
+| 13b | `13b_Agent_Evaluation.ipynb` | Versant **mesure** du 13 : taux de succès par correcteur déterministe, coût par trajectoire (tours/appels/tokens/latence), delta d'ablation (retrait d'un moteur de la boîte à outils) et sûreté (instruction hostile dissimulée dans le contenu d'un outil) ; route LLM déclarée à l'exécution (routeur DeepSeek self-hosted, repli OpenAI gpt-5.2 affiché), juge LLM avec garde-fou anti-biais A/B puis B/A, 3 exercices C.1 | 45 min |
 | 14 | `14_Persistent_Memory.ipynb` | Mémoire vectorielle persistante (baseline BoW + cosine, pont NB-05 RAG) qui rétrocède les leçons aux runs suivants (agent "Memory" d'ICR) | 55 min |
 | 14b | `14b_Paginated_Memory-Python.ipynb` | Mémoire paginée d'agent (Python) — fenêtre glissante, résumé progressif, éviction LRU/MRU, mémoire vectorielle paginée, mémoire multi-domaine ; 3 exercices (#18330) | 70 min |
 | 15 | `15_Tree_of_Thoughts_Search.ipynb` | Tree-of-Thoughts sur cryptarithmes (SEND+MORE=MONEY) : recherche DFS colonne par colonne avec propagation de retenue (pont séries Search/Sudoku) | 60 min |
@@ -140,6 +142,7 @@ Le notebook **23** franchit le dernier mur : le pipeline qui vivait dans des cel
 ### Configuration API
 1. Copier `.env.example` vers `.env`
 2. Ajouter votre clé API OpenAI : `OPENAI_API_KEY=sk-...`
+3. Les paramètres d'échantillonnage ne sont pas universels : `gpt-5-mini` refuse `temperature` (HTTP 400) quand `gpt-4o-mini` l'accepte. La table mesurée [docs/genai/parametres-par-modele.md](../../../docs/genai/parametres-par-modele.md) dit, par modèle utilisé dans les carnets, ce que chaque paramètre devient — et la garde `param_guard` (série 00-GenAI-Environment) le signale dans le carnet plutôt que de perdre le paramètre en silence.
 
 ### Pour les notebooks locaux (10, 10b et 11)
 - Docker avec support GPU pour servir le modèle réel avec vLLM
@@ -250,9 +253,9 @@ Le fil rouge de cette série est la progression de l'interaction basique avec un
 
 3. **Tier 3** (augmentation) : [5_RAG_Modern](05_RAG_Modern.ipynb) et [6_PDF_Web_Search](06_PDF_Web_Search.ipynb) enrichissent le LLM avec des sources externes. [7_Code_Interpreter](07_Code_Interpreter.ipynb) lui donne la capacité d'exécuter du code.
 
-4. **Tier 4** (production et local) : [8_Reasoning_Models](08_Reasoning_Models.ipynb) exploite les modèles raisonnants. [9_Production_Patterns](09_Production_Patterns.ipynb) couvre les patterns enterprise, complété par son **versant adversarial** [9b_Prompt_Security_RedTeam](09b_Prompt_Security_RedTeam.ipynb) qui attaque puis défend la stack self-hosted (injection directe/indirecte RAG, jailbreak, exfiltration). [10_LocalLlama](10_LocalLlama.ipynb) déploie le service (3 étages honnêtement nommés : local chez l'étudiant, auto-hébergé du cours, repli distant OpenRouter), [10b_Inference_Mechanics](10b_Inference_Mechanics.ipynb) construit le KV-cache puis relie son coût aux TTFT/ITL réels, et [11_Quantization](11_Quantization.ipynb) réduit l'empreinte des poids servis par vLLM.
+4. **Tier 4** (production et local) : [8_Reasoning_Models](08_Reasoning_Models.ipynb) exploite les modèles raisonnants. [9_Production_Patterns](09_Production_Patterns.ipynb) couvre les patterns enterprise, complété par son **versant adversarial** [9b_Prompt_Security_RedTeam](09b_Prompt_Security_RedTeam.ipynb) qui attaque puis défend la stack self-hosted (injection directe/indirecte RAG, jailbreak, exfiltration). [10_LocalLlama](10_LocalLlama.ipynb) déploie le service (3 étages honnêtement nommés : local chez l'étudiant, auto-hébergé du cours, repli distant OpenRouter), [10b_Inference_Mechanics](10b_Inference_Mechanics.ipynb) construit le KV-cache puis relie son coût aux TTFT/ITL réels, [11_Quantization](11_Quantization.ipynb) réduit l'empreinte des poids servis par vLLM, et [11b_Materiel_Debit_Cout](11b_Materiel_Debit_Cout.ipynb) referme la chaîne jusqu'au coût : format → VRAM mesurée → bande passante → débit observé (toit fermé) → prix par million de jetons sur le matériel de la flotte.
 
-5. **Tier 5** (test-time scaling approfondi) : partant de [12_Test_Time_Scaling](12_Test_Time_Scaling.ipynb) (les quatre moteurs en Python pur), l'arc NB-13..18 décompose chaque facette de l'inférence au moment du test — orchestration agentique via function calling ([13](13_Agentic_Orchestration.ipynb)), mémoire persistante par similarité ([14](14_Persistent_Memory.ipynb)), mémoire paginée d'agent ([14b](14b_Paginated_Memory-Python.ipynb) : fenêtre glissante, résumé progressif, éviction, mémoire vectorielle paginée, mémoire multi-domaine), Tree-of-Thoughts sur des problèmes de recherche ([15](15_Tree_of_Thoughts_Search.ipynb)), courbes de scaling de Snell ([16](16_Scaling_Test_Time_Compute.ipynb)), raisonnement natif vs scaling hand-rolled ([17](17_Native_Reasoning_vs_Scaling.ipynb)), puis intégration Semantic Kernel ([18](18_Semantic_Kernel_Plugins.ipynb)).
+5. **Tier 5** (test-time scaling approfondi) : partant de [12_Test_Time_Scaling](12_Test_Time_Scaling.ipynb) (les quatre moteurs en Python pur), l'arc NB-13..18 décompose chaque facette de l'inférence au moment du test — orchestration agentique via function calling ([13](13_Agentic_Orchestration.ipynb)), évaluation d'agents — succès, coût, ablation, sûreté ([13b](13b_Agent_Evaluation.ipynb)), mémoire persistante par similarité ([14](14_Persistent_Memory.ipynb)), mémoire paginée d'agent ([14b](14b_Paginated_Memory-Python.ipynb) : fenêtre glissante, résumé progressif, éviction, mémoire vectorielle paginée, mémoire multi-domaine), Tree-of-Thoughts sur des problèmes de recherche ([15](15_Tree_of_Thoughts_Search.ipynb)), courbes de scaling de Snell ([16](16_Scaling_Test_Time_Compute.ipynb)), raisonnement natif vs scaling hand-rolled ([17](17_Native_Reasoning_vs_Scaling.ipynb)), puis intégration Semantic Kernel ([18](18_Semantic_Kernel_Plugins.ipynb)).
 
 Le schéma ci-dessous résume comment les cinq tiers s'enchaînent pour maîtriser les LLMs : du prompt one-shot (tier 1) aux patterns de production puis à l'arc test-time scaling approfondi (tiers 4-5), en passant par les sorties structurées (tier 2) et l'augmentation RAG/code interpreter (tier 3).
 
@@ -273,7 +276,7 @@ flowchart TD
     subgraph T4["Tier 4 · Avancé & production"]
         D1["8-9 : Reasoning & Production"]
         D1b["9b : Red-team sécurité LLM (sibling adversarial de 9)"]
-        D2["10-11 : Local, KV-cache & Quantization"]
+        D2["10-11b : Local, KV-cache, Quantization & coût"]
         D3["12 : Test-Time Scaling"]
     end
     subgraph T5["Tier 5 · Test-time scaling approfondi (ICR)"]

@@ -94,7 +94,7 @@ Cette série ne propose pas de choisir l'un ou l'autre, mais de **comprendre les
 | Kernel | Python 3 (JPype/Java) |
 | Version Tweety | 1.30 recommandée |
 | Solveurs externes | Clingo, SPASS, EProver, Z3, PySAT |
-| JARs Java | 42 (39 modules Tweety 1.30 + 3 deps externes) |
+| JARs Java | modules Tweety 1.30 + deps externes (args4j, commons-math, sat4j) |
 
 ## Parcours d'apprentissage
 
@@ -343,7 +343,7 @@ La signature du do-calculus — **P(rain | drops) ≠ P(rain | do(drops))** — 
 
 Tweety raisonne sur le do-calculus en **logique propositionnelle** : `do(X)` y est *qualitatif* — un atome forcé, un SCM réécrit, une réponse vrai/faux. C'est idéal pour *voir* la différence entre `observe` et `do` sans nombres, mais Tweety **ne chiffre pas** un effet causal ni ne lève quantitativement un paradoxe de Simpson. Les séries probabilistes du dépôt reprennent **exactement ce notebook** avec des distributions :
 
-- [Infer-5-Causal-Inference](../../Probas/Infer/Infer-5-Causal-Inference.ipynb) — le **jumeau distributionnel par message passing** : `P(Y|do(X))` calculé par mutilation de graphe en Infer.NET (EP/VMP), ajustements backdoor / front-door, paradoxe de Simpson résolu numériquement.
+- [Infer-05-Causal-Inference](../../Probas/Infer/Infer-05-Causal-Inference.ipynb) — le **jumeau distributionnel par message passing** : `P(Y|do(X))` calculé par mutilation de graphe en Infer.NET (EP/VMP), ajustements backdoor / front-door, paradoxe de Simpson résolu numériquement.
 - [PyMC-05-Causal-Inference](../../Probas/PyMC/PyMC-05-Causal-Inference.ipynb) — la version **MCMC** avec l'opérateur natif `pm.do` et le contrefactuel par abduction.
 - [ICT-05-CausalEmergence-Python](../../IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb) — le même `do` monte d'un cran : à **quelle échelle** un système fait-il le plus de travail causal ?
 
@@ -414,7 +414,7 @@ jupyter notebook Tweety-01-Setup-Python.ipynb
 # 3. Exécuter toutes les cellules, puis passer à Tweety-2
 ```
 
-JDK 17 et les 42 JARs (39 modules TweetyProject 1.30 + 3 dépendances externes : args4j, commons-math, sat4j) sont téléchargés automatiquement par le notebook de setup. Aucune installation système requise.
+JDK 17 et les JARs (modules TweetyProject 1.30 + dépendances externes : args4j, commons-math, sat4j) sont téléchargés automatiquement par le notebook de setup. Aucune installation système requise.
 
 ## Prérequis
 
@@ -475,7 +475,7 @@ cd scripts
 python verify_all_tweety.py --quick
 ```
 
-JDK 17 et les 42 JARs (39 modules TweetyProject 1.30 + 3 dépendances externes : args4j, commons-math, sat4j) sont téléchargés automatiquement par le notebook de setup. Aucune installation système requise.
+JDK 17 et les JARs (modules TweetyProject 1.30 + dépendances externes : args4j, commons-math, sat4j) sont téléchargés automatiquement par le notebook de setup. Aucune installation système requise.
 
 ## Architecture
 
@@ -522,7 +522,7 @@ Tweety/
 ├── requirements.txt                               # Dépendances Python (JPype1, etc.)
 ├── org.tweetyproject.tweety-*.dll                 # 19 assemblages .NET (shades IKVM, EPIC #4667)
 ├── dotnet-build/                                  # Build Maven/.csproj des shades IKVM (EPIC #4667)
-├── libs/                                          # JARs Tweety (42 : 39 modules 1.30 + 3 deps) — téléchargé
+├── libs/                                          # JARs Tweety (modules 1.30 + deps externes) — téléchargé
 ├── jdk-17-portable/                               # JDK Zulu — téléchargé auto par le setup
 ├── ext_tools/                                     # Solveurs externes (Clingo, SPASS, EProver) — téléchargé
 ├── resources/                                     # Fichiers d'exemples — téléchargé
@@ -535,7 +535,7 @@ Tweety/
 │   ├── test_*.py                                  # 4 tests unitaires (sat_calibration, sat_comparison_demo, validate_syntax, verify_tweety_iopub)
 │   └── _archive/                                  # Scripts archivés (reorganize_tweety.py)
 ├── _probes/                                       # Smoke-tests (1 nb : Tweety-IKVM-Init-Probe)
-├── argumentation_lean/                            # Lake Lean 4 (6 modules .lean + 6 siblings _en, i18n #4980)
+├── argumentation_lean/                            # Lake Lean 4 (modules .lean + siblings _en, i18n #4980)
 └── README.md                                      # Ce fichier
 ```
 

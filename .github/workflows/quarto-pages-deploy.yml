@@ -60,13 +60,34 @@ on:
       - "scripts/quarto_render_scope.py"
   workflow_dispatch:
 
-# Annule les runs obsolètes pour économiser des minutes CI (mêmes pushes en rafale)
+# Concurrence par evenement : une PR repoussee n'a pas besoin de l'ancien
+# build, un push sur main si (voir ci-dessous).
 concurrency:
   # Cle portee par github.ref pour eviter qu'un push sur main n'annule un run
   # PR en cours (hazard de production : sans la reference, les runs push et PR
   # partagent la meme cle et s'annulent entre eux). #11616 rouge 2.
   group: pages-deploy-${{ github.event_name }}-${{ github.ref }}
-  cancel-in-progress: true
+  # #22088 : la voie push sur main ne s'annule PLUS. Pendant une rafale de
+  # merges, le push suivant annulait `Build Quarto site` et `Deploy to GitHub
+  # Pages` du push precedent (jambes `cancelled`), et GitHub compte une
+  # annulation comme un echec dans le rollup du commit : un vrai rouge devenait
+  # indiscernable d'une annulation, et les organes qui lisent la couleur de
+  # main devaient ecarter les `cancelled` a la main (#22085).
+  #
+  # Pas de compte fige ici : il depend de la fenetre de commits lue, et les
+  # jambes Quarto ne sont pas seules en cause -- les memes rafales annulaient
+  # aussi des jambes CodeQL `Analyze (*)` par leur propre concurrence, et les
+  # advisories sont `cancelled` par conception. Instantane du 23/10 sur les
+  # 40 derniers commits de main, advisories exclues : 24 portaient au moins une
+  # jambe Quarto `cancelled`, 12 n'avaient QUE ces jambes en non-vert, et 35
+  # portaient au moins une jambe non verte. `scripts/ci/check_concurrency_conj.py`
+  # rejoue la lecture ; c'est lui qui fait foi, pas ce commentaire.
+  #
+  # Sur push, les builds se SERIALISENT : l'en cours se termine, le dernier
+  # en attente s'execute ensuite, et le site deploye reste celui du dernier
+  # commit. La voie PR garde l'annulation : une PR repoussee n'a pas besoin
+  # de son build precedent.
+  cancel-in-progress: ${{ github.event_name != 'push' }}
 
 permissions:
   contents: read
@@ -127,7 +148,7 @@ jobs:
         env:
           RUNNERS_READ_PAT: ${{ secrets.RUNNERS_READ_PAT }}
           GITHUB_TOKEN: ${{ github.token }}
-        run: python scripts/quarto_render_timing.py --sample-occupation occupation.json
+        run: python3 scripts/quarto_render_timing.py --sample-occupation occupation.json
 
       - name: Set up Quarto
         # Routage #14283 (feu vert ai-01 2026-09-02) : PAS quarto-dev/quarto-actions/setup@v2 —
@@ -153,7 +174,7 @@ jobs:
         # nouveaux fichiers apparaissent sur le site sans commit manuel de
         # _quarto.yml (Axe C #4211). Idempotent ; archives et libs vendored
         # exclues (cf. scripts/regen_quarto_render.py).
-        run: python scripts/regen_quarto_render.py
+        run: python3 scripts/regen_quarto_render.py
 
       - name: Normalize .NET kernel language for Quarto (C# -> csharp)
         # Quarto derive la classe pandoc du code-block depuis kernelspec.language.
@@ -166,7 +187,7 @@ jobs:
         # render et le restore APRES. kernelspec.language est informationnel :
         # l'execution Jupyter/papermill utilise kernelspec.name ".net-csharp"
         # (inchange) -> le patch n'affecte jamais l'execution.
-        run: python scripts/quarto_csharp_kernel_fix.py apply
+        run: python3 scripts/quarto_csharp_kernel_fix.py apply
 
       - name: Escape YAML-ambiguous `---` separators (issue #11611)
         # Les cellules markdown commencant par `---` (separateur visuel avant
@@ -178,7 +199,7 @@ jobs:
         # standalone en `***` (autre syntaxe de regle horizontale markdown, NON
         # reconnue comme separateur YAML). Round-trip byte-level propre, restore
         # via le meme script en fin de job.
-        run: python scripts/quarto_yaml_safe.py apply
+        run: python3 scripts/quarto_yaml_safe.py apply
 
       - name: Render Quarto site
         # `freeze: auto` (dans _quarto.yml) => Quarto n'exécute PAS les notebooks
@@ -204,19 +225,19 @@ jobs:
         # --occupation : busy/online echantillonne au demarrage (step amont) ;
         # --runner-name implicite via $RUNNER_NAME. Imprime aussi la ligne
         # greppable "#14597-covariates:" pour la moisson multi-runs.
-        run: python scripts/quarto_render_timing.py render-timed.log --occupation occupation.json
+        run: python3 scripts/quarto_render_timing.py render-timed.log --occupation occupation.json
 
       - name: Restore kernel language (hygiene)
         # Le checkout CI est ephemere : le restore n'est pas indispensable, mais il
         # garde le worktree coherent si un step futur relit les notebooks sources.
-        run: python scripts/quarto_csharp_kernel_fix.py restore
+        run: python3 scripts/quarto_csharp_kernel_fix.py restore
 
       - name: Restore YAML-safe separators
         # Restore les `***` en `---` dans les notebooks sources pour ne pas laisser
         # le worktree dans un etat different de la branche. Le checkout CI est
         # ephemere (meme remarque que ci-dessus), mais le restore garde les
         # outputs `git diff` propres pour les etapes suivantes.
-        run: python scripts/quarto_yaml_safe.py restore
+        run: python3 scripts/quarto_yaml_safe.py restore
 
       - name: Check output
         # Sécurité : vérifie que _site/ existe (sinon le deploy échouera avec une
@@ -265,7 +286,8 @@ jobs:
     # STATIQUE — une expression leverait DYNAMIC_RUNS_ON dans
     # check_self_hosted_runner_policy.py.
     if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && github.event_name == 'pull_request'
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # Offre GitHub d'abord (#17397, consigne user du 2026-10-25) : le CI local pallie ses limites. Retour = remettre le label.
+    runs-on: ubuntu-latest
     # 60 et non 30 depuis #14283 : le meme rendu prend 19-24 min sur
     # `ubuntu-latest` et 25-31 min sur le pool auto-heberge. Le plafond de 30
     # etait calibre sur la machine d'avant la bascule ; apres elle, il tombe

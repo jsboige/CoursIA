@@ -93,6 +93,29 @@ jobs:
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     timeout-minutes: 5
     steps:
+      # 2026-10-27 (#22722) : la commande qui echoue est le `git checkout --force -B`
+      # final d'actions/checkout, pas son clean/reset interne (run 40476005592 :
+      # clean et reset passent, "HEAD is now at eb8ab03489", puis le checkout
+      # refuse le carnet JEPA "not uptodate; will not remove from working tree").
+      # Ce refus est la verification de retrait du retrecissement sparse
+      # (apply_sparse_checkout, WARNING_SPARSE_NOT_UPTODATE_FILE, git 2.43.0) :
+      # a blob inchange, elle compare le fichier au blob de l'index ; ni --force
+      # ni le reset interne ne la contournent. Mitigation EMPIRIQUE, mecanisme
+      # NON TRANCHE : sur git 2.43.0 tout etat residuel reproduit localement est
+      # deja nettoye par le clean+reset du built-in (ce step rejoue la meme
+      # commande, sans effet ajoute), et l'etat qui a survecu a son reset n'est
+      # pas reproduit (mutation entre reset et checkout ? checkout interrompu ?).
+      - name: Restore the warm work tree before the sparse checkout
+        run: |
+          set -u
+          if [ -d "$GITHUB_WORKSPACE/.git" ]; then
+            dirty=$(git -C "$GITHUB_WORKSPACE" -c safe.directory="$GITHUB_WORKSPACE" status --porcelain 2>/dev/null | head -n 1)
+            if ! git -C "$GITHUB_WORKSPACE" -c safe.directory="$GITHUB_WORKSPACE" reset --hard --quiet; then
+              echo "::warning::[heal-worktree] reset --hard a echoue -- le retrecissement sparse peut refuser (#22722)"
+            elif [ -n "$dirty" ]; then
+              echo "::notice::[heal-worktree] arbre restaure -- le job precedent avait laisse un etat sale (${dirty}) -- le retrecissement sparse passe (#22722)"
+            fi
+          fi
       - uses: actions/checkout@v4
         with:
           # Cone mode (le defaut) n'accepte que des REPERTOIRES : une entree de
@@ -130,9 +153,9 @@ jobs:
           # verdict de l'organe est inchange : seule la severite imprimee ici
           # change.
           if [ "${EVENT_NAME}" = "push" ]; then
-            python scripts/ci/check_scheduler_liveness.py --repo "$REPO" --dead-exit warning
+            python3 scripts/ci/check_scheduler_liveness.py --repo "$REPO" --dead-exit warning
           else
-            python scripts/ci/check_scheduler_liveness.py --repo "$REPO"
+            python3 scripts/ci/check_scheduler_liveness.py --repo "$REPO"
           fi
 
       - name: Check age of last successful sweep run
@@ -159,7 +182,7 @@ jobs:
           # mode ne remplace pas la sonde, il lui retire un faux positif ; il ne
           # peut donc pas masquer un sweep vraiment mort pour ce commit.
           if [ "${EVENT_NAME}" = "push" ]; then
-            if python scripts/ci/check_scheduler_liveness.py --repo "$REPO" --sweep-alive-for-sha "${GITHUB_SHA}"; then
+            if python3 scripts/ci/check_scheduler_liveness.py --repo "$REPO" --sweep-alive-for-sha "${GITHUB_SHA}"; then
               echo "[sweep-health] sweep vivant pour ce commit -- age non juge (course, #18292)"
               exit 0
             fi
@@ -183,7 +206,7 @@ jobs:
           # No successful run at all -> that absence IS the state this exists
           # to catch (history purged or scheduler dead). Fail visibly but, being
           # advisory, non-blocking.
-          AGE_S=$(python - "$RUN" <<'PY'
+          AGE_S=$(python3 - "$RUN" <<'PY'
           import json, sys
           from datetime import datetime, timezone
           runs = json.loads(sys.argv[1])

@@ -542,7 +542,7 @@ Famille `MyIA.AI.Notebooks/Probas/Infer/` = 19 notebooks `Infer-{1..19}-*.ipynb`
 
 ### Disclosures honnêtes vérifiées
 
-- (a) `Infer-5-Causal-Inference.ipynb` cellules 0/13/36/37 (markdown) = commentaires pédagogiques "cross-check avec PyMC-4" pointant `../PyMC/PyMC-04-Bayesian-Networks.ipynb`. Cellule 14 (code) contient côte à côte une comparaison `pm.sample()` PyMC et `Variable<bool> cloudySpr = Variable.Bernoulli(0.5)` Infer.NET sur le même réseau bayésien `Cloudy → Sprinkler → WetGrass`. **Le moteur primaire reste Infer.NET** (9 appels `.Infer<>()` avec outputs réels dans ce notebook). Ce n'est **pas** un fallback, c'est une **validation croisée cross-family** — force pédagogique, à discloser honnêtement dans le ledger mais **SOTA-OK (Infer.NET autonome)**.
+- (a) `Infer-05-Causal-Inference.ipynb` cellules 0/13/36/37 (markdown) = commentaires pédagogiques "cross-check avec PyMC-4" pointant `../PyMC/PyMC-04-Bayesian-Networks.ipynb`. Cellule 14 (code) contient côte à côte une comparaison `pm.sample()` PyMC et `Variable<bool> cloudySpr = Variable.Bernoulli(0.5)` Infer.NET sur le même réseau bayésien `Cloudy → Sprinkler → WetGrass`. **Le moteur primaire reste Infer.NET** (9 appels `.Infer<>()` avec outputs réels dans ce notebook). Ce n'est **pas** un fallback, c'est une **validation croisée cross-family** — force pédagogique, à discloser honnêtement dans le ledger mais **SOTA-OK (Infer.NET autonome)**.
 
 **Cross-check double-vérifié** : (1) audit sub-agent a identifié la présence de `PyMC` dans 4 markdown cells + 1 code cell mixt ; (2) vérification firsthand worker via `python -c` confirme ces 5 cellules — claim confirmée.
 
@@ -552,15 +552,15 @@ Chaque notebook pose un problème de **probabilistic programming** avancé qui e
 
 | Notebook | Problème posé (cellule-clef) | Capacité Infer.NET distinctive |
 |----------|------------------------------|--------------------------------|
-| Infer-1-Setup | Installation + sanity-check import | Setup — exception légitime Prong B |
-| Infer-2-Gaussian-Mixtures | Mélange de Gaussiennes, inférence de composantes | EP sur modèle mixte + BIC |
-| Infer-3-Factor-Graphs | Affaire Auburn/Grey, `Variable.Bernoulli(0.7)` | Marginal inference sur factor graph explicite |
-| Infer-4-Bayesian-Networks | Explaining-away diagnostic médical | Réseau bayésien, inférence causale |
-| Infer-5-Causal-Inference | **do-calculus Pearl** : observationnel vs interventionnel | Observationnel vs interventionnel — discriminant net |
-| Infer-2b-Debugging-Bonnes-Pratiques | Pédagogie debug "Model has no support" | Debugging — exception légitime Prong B |
-| Infer-7-Skills-IRT | IRT 2-PL, capacité par étudiant | EP sur modèle de traits latents |
-| Infer-8-TrueSkill | TrueSkill (Xbox Live), inférence de skill | Application canonique Microsoft Infer.NET |
-| Infer-9-Classification | Régression logistique bayésienne + multi-features | Posterior sur poids avec incertitude |
+| Infer-01-Setup | Installation + sanity-check import | Setup — exception légitime Prong B |
+| Infer-02-Gaussian-Mixtures | Mélange de Gaussiennes, inférence de composantes | EP sur modèle mixte + BIC |
+| Infer-03-Factor-Graphs | Affaire Auburn/Grey, `Variable.Bernoulli(0.7)` | Marginal inference sur factor graph explicite |
+| Infer-04-Bayesian-Networks | Explaining-away diagnostic médical | Réseau bayésien, inférence causale |
+| Infer-05-Causal-Inference | **do-calculus Pearl** : observationnel vs interventionnel | Observationnel vs interventionnel — discriminant net |
+| Infer-02b-Debugging-Bonnes-Pratiques | Pédagogie debug "Model has no support" | Debugging — exception légitime Prong B |
+| Infer-07-Skills-IRT | IRT 2-PL, capacité par étudiant | EP sur modèle de traits latents |
+| Infer-08-TrueSkill | TrueSkill (Xbox Live), inférence de skill | Application canonique Microsoft Infer.NET |
+| Infer-09-Classification | Régression logistique bayésienne + multi-features | Posterior sur poids avec incertitude |
 | Infer-10-Model-Selection | **Model evidence** : log evidence comparé | Evidence de modèle — capacité signature Infer.NET |
 | Infer-11-Topic-Models | LDA asymétrique, theta par doc | VMP sur modèle à composantes |
 | Infer-12-Modeles-Hierarchiques | Pooling partiel `theta[c] ~ N(mu, tau)` | Shrinkage hiérarchique |
@@ -2722,7 +2722,7 @@ Part of #3801, #1385
 
 | Métrique | Valeur |
 |----------|--------|
-| Famille | `MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb` (1 .ipynb — causalité bayésienne + do-calculus, parité Infer-5-Causal-Inference entry #006) |
+| Famille | `MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb` (1 .ipynb — causalité bayésienne + do-calculus, parité Infer-05-Causal-Inference entry #006) |
 | Kernel | `python3` |
 | Owner-lane | **po-2025 strict** (lane Python bayésienne native ; entry #028 PyMC 1-15 c.411 + Infer-extension #018 PyMC-16..19) |
 | Date audit | 2026-07-16 (c.538) |
@@ -2881,6 +2881,48 @@ La brique `evaluations` (matches complets) exige le bootstrap externe PerfectDou
 | SOTA Prong A | **SOTA-OK** | organ-first : la sémantique update-equiv du patron 13f est remplacée par l'organe officiel ici (questions 1-3 répondues par construction) |
 | SOTA Prong B | **CONFORME** | échelle de budgets + témoin négatif non-monotonie mesuré, hétérogénéité par donne affichée |
 
+## Entry #033 — GameTheory/13h-Ataraxos-DynamicDamping (owner po-2027, grain C #20408)
+
+| Métrique | Valeur |
+|----------|--------|
+| Famille | `MyIA.AI.Notebooks/GameTheory/GameTheory-13h-Ataraxos-DynamicDamping-Python.ipynb` (1 .ipynb — ablation de la coordination temporelle d'Ataraxos, mesurée sur Kuhn par exploitabilité exacte ; satellite Recherche tier 13h, précédents 13d/13f/13g) |
+| Kernel | `python3` |
+| Owner-lane | **po-2027** (`myia-po-2027:CoursIA` ; création du notebook) |
+| Date | 2026-10-21 |
+| PR | #21824 — branche `feature/20408-13h-dynamic-damping` (grain C de #20408) |
+| Verdict agrégé | **SOTA-OK (périmètre jouet déclaré)** — instrument exact, témoin négatif mesuré, résultat négatif documenté |
+
+### Synthèse
+
+| Nb | Cells | Code | EXEC | Err | Stubs C.1 | Kernel | Outils SOTA | Verdict |
+|-----|-------|------|------|-----|-----------|--------|-------------|---------|
+| GameTheory-13h-Ataraxos-DynamicDamping-Python | 20 | 9 | 9/9 | 0 | 0 (3 ex.) | python3 | CFR (regret matching, regrets contrefactuels) + exploitabilité exacte par énumération des 64 stratégies pures + témoin analytique `-1/18` | **SOTA-OK (déclaré)** |
+
+- **EXEC_PROVED** : 9/9 (100%) — `execution_count` 1–9 contigus, 0 erreur, papermill 41,85 s, `exception: None`.
+- **Violations C.1** : 0 (3 stubs `print("Exercice N a completer")` + `None  # TODO etudiant` conformes, le carnet s'exécute de bout en bout).
+
+### Ce que le carnet mesure
+
+Ablation à **budget égal** de quatre régimes de mise à jour (gap de Nash exact de la politique moyenne, six jalons) : `plain` (témoin négatif), `cfrplus`, `linavg`, `sched` (coordination planifiée des deux leviers). **Trois convergent** vers `-1/18` à `4e-4` près (`plain` et `linavg` à `6e-6`, `cfrplus` à `3,6e-4`) ; `sched` **n'y converge pas dans ce budget** — valeur finale `-0.05331`, écart `2,2e-3`, meilleur jalon à 400 : c'est une valeur de **budget fini**, pas un point fixe atteint. Mesures committées : à 200 itérations `linavg` 0,00900 contre `plain` 0,01225 (−26,5 %) ; à 2000 itérations `linavg` 0,00303 (−29,7 %), `sched` 0,03899 (+804 %). Reproductibilité : tous les chiffres se rejouent à l'identique, sauf le dernier jalon de `sched`, sensible aux ulp de plateforme au 4ᵉ décimale (0,03899 committé / 0,03895 en rejeu indépendant) — aucun verdict n'en dépend.
+
+### Témoin négatif (Prong B — honnêteté mesurée)
+
+Le régime « coordination planifiée » mène **très tôt** (25 itérations : 0,01755 contre 0,04494 pour `plain`), puis **perd** en fin de budget : son gap descend jusqu'à 0,00647 à 400 itérations, puis **remonte** à 0,03899 à 2000 — l'actualisation des regrets détruit l'accumulation qui fait converger le CFR. Le carnet enseigne ce résultat négatif au lieu du récit « coordination = mieux » ; `cfrplus` (agressivité constante) est le plus lent à 2000 itérations (+12,3 %).
+
+### Organe natif nommé (organ-first)
+
+Organe de référence pour Kuhn : `pyspiel` / OpenSpiel (CFR). Non invoqué ici : les quatre régimes mesurés sont des **variantes d'actualisation** que la librairie n'expose pas, et la validation de l'instrument passe par le **témoin analytique** `-1/18` (Kuhn 1950), indépendant de l'algorithme — plus fort qu'un second passage du même solveur. La sémantique Ataraxos elle-même reste portée par 13f (patron) et 13g (organe natif `AtaraxosAI/doudizhu`).
+
+### Conformité aux règles
+
+| Règle | Statut | Preuve |
+|-------|--------|--------|
+| C.1 | **CONFORME** | 3 stubs `print` + `None` + `# TODO etudiant` ; 0 erreur d'exécution |
+| C.2 | **CONFORME** | 9/9 exec_count réels, sorties mesurées committées |
+| Stop & Repair | **CONFORME** | 0 hand-edit de sortie ; l'arbre faux (`cbb`) a été corrigé à la source puis ré-exécuté |
+| SOTA Prong A | **SOTA-OK** | instrument exact, organe natif nommé, copie déclarée justifiée |
+| SOTA Prong B | **CONFORME** | problème non dégénéré (information imparfaite, 64 stratégies pures), témoin négatif et résultat négatif mesurés |
+
 ## Cumul entries (registre axe-2 SOTA)
 
 Tableau cumulatif unique du registre : une ligne par entry `## Entry #NNN`. Toute nouvelle entry doit etre ajoutee ici dans la meme PR (regle #14562).
@@ -2919,5 +2961,6 @@ Tableau cumulatif unique du registre : une ligne par entry `## Entry #NNN`. Tout
 | 030 | Probas/PyMC-05-Causal-Inference (1 nb) | po-2025 strict | 2026-07-16 | SOTA-OK 1/1 | #6808 MERGED |
 | 031 | GameTheory/13f-Ataraxos-Patron-Python (1 nb) | po-2027 | 2026-10-12 | SOTA-OK 1/1 (copie pédagogique déclarée) | #20435 |
 | 032 | GameTheory/13g-Ataraxos-Organe-Natif (1 nb) | po-2027 | 2026-10-12 | SOTA-OK 1/1 (organe natif invoqué, limite PerfectDou documentée) | #20446 |
+| 033 | GameTheory/13h-Ataraxos-DynamicDamping (1 nb) | po-2027 | 2026-10-21 | SOTA-OK 1/1 (instrument exact, résultat négatif mesuré) | #21824 — branche `feature/20408-13h-dynamic-damping` |
 
-**Mesure** : `grep -c '^## Entry #' docs/ledgers/3801-sota-axe2.md` = **32** (verifie le 2026-10-13 ; l'entree #032 arrive avec #20446). Ce tableau unique remplace les deux tableaux dupliques (huit lignes, entry #005 ; vingt-deux lignes, entry #008) supprimes par #14562.
+**Mesure** : `grep -c '^## Entry #' docs/ledgers/3801-sota-axe2.md` = **33** (vérifié le 2026-10-21 ; l'entrée #033 arrive avec le grain C de #20408 ; l'entrée #032 était arrivée avec #20446). Ce tableau unique remplace les deux tableaux dupliqués (huit lignes, entry #005 ; vingt-deux lignes, entry #008) supprimés par #14562.

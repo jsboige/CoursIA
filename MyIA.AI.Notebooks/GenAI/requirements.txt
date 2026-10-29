@@ -45,6 +45,10 @@ diffusers>=0.24.0
 accelerate>=0.25.0
 safetensors>=0.4.0
 
+# Few-step generative models (Image/02-Advanced/02-6 -- IMM & TVM)
+jaxtyping>=0.3.0                # importe par le code officiel TVM (reseau DiT)
+pyarrow>=14.0.0                 # lecture du dataset CIFAR-10 au format parquet
+
 # Video upscale (Real-ESRGAN, Video/03-2 Pipeline 2)
 # NB : basicsr 1.4.2 importe torchvision.transforms.functional_tensor, supprime en
 # torchvision>=0.17 -> patch post-install requis dans basicsr/data/degradations.py :

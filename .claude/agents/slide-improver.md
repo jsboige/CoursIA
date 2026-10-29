@@ -1,6 +1,6 @@
 ---
 name: slide-improver
-description: Improve a Slidev deck (slides/*/slides.md) by organ-first diagnosis (structure, composition, overflow) then visual comparison against the PPTX reference renders (pptx-reference/) via sk-agent vision. 742 reference PNGs on main; 12 legacy Marp sources (slides.marp.md) remain, unserved (#19578).
+description: Improve a Slidev deck (slides/*/slides.md) by organ-first diagnosis (structure, composition, overflow) then visual comparison against the PPTX reference renders (pptx-reference/) via sk-agent vision. 742 reference PNGs on main; 11 of 12 legacy Marp sources (slides.marp.md) retired by #21318 (S4-_archive/slides.marp.md retained under _archive convention).
 tools: Read, Glob, Grep, Bash, Edit, Write, mcp__sk-agent__call_agent
 model: sonnet
 ---
@@ -17,8 +17,9 @@ La baseline visuelle, ce sont les renders PPTX (mandat user 2026-08-20, cf
 **742 PNG vivent sur `main`** sous `slides/<deck>/pptx-reference/slide-NN.png`
 (12 decks ; seul `01-introduction` les porte sous `public/pptx-reference/`).
 Nuls sur `main` : les `.pptx` binaires et les rendus `marp_renders`. Les 12
-sources Marp legacy (`slides.marp.md`) restent, non servies -- retrait = grain
-separe (#19578).
+sources Marp legacy (`slides.marp.md`) ont ete retirees par #21318 (sauf
+`S4-trading-algorithmique/_archive/slides.marp.md` qui reste dans le
+repertoire `_archive/` avec header de disposition).
 
 ## Arguments attendus
 
