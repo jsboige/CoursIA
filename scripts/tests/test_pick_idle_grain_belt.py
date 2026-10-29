@@ -2755,6 +2755,67 @@ def test_phase_deadline_can_only_shrink_the_run_wall(monkeypatch):
     _ = clock
 
 
+def test_each_rest_page_pays_the_remaining_wall_not_its_default(monkeypatch):
+    """#23090 : la boucle REST clampe CHAQUE page, pas la boucle entiere.
+
+    Armer le mur avant `fetch_pool` ne servait a rien tant que les transports
+    d'amont lisaient leur defaut : `_rest_pages` payait 120 s par page, soit
+    600 s pour cinq pages, sous un budget de 120 s. C'est la moitie « rendre la
+    borne effective » du fix -- l'autre moitie (armer tot) est mesuree
+    au-dessus.
+    """
+    clock = _patched_clock(monkeypatch, start=5000.0)
+    seen = []
+
+    class _Stop(Exception):
+        pass
+
+    def fake_run(cmd, **kwargs):
+        seen.append(kwargs.get("timeout"))
+        raise _Stop
+
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+    pig._BELT_DEADLINE[0] = 5020.0  # 20 s de mur
+    try:
+        with pytest.raises(_Stop):
+            pig._rest_pages("repos/jsboige/CoursIA/issues", max_pages=5)
+        assert seen == [pytest.approx(20.0)], (
+            "la premiere page a garde son defaut de 120 s sous un mur de 20 s")
+    finally:
+        pig._BELT_DEADLINE[0] = None
+    _ = clock
+
+
+def test_pool_transports_honour_the_run_wall(monkeypatch):
+    """#23090 : les DEUX transports de `fetch_pool` paient le reste du mur.
+
+    Le premier est `gh issue list` (defaut 120 s), le second le listing REST
+    pagine. Le predicat ne depend pas de l'ordre : aucun appel ne peut
+    demander plus que le reste a courir.
+    """
+    clock = _patched_clock(monkeypatch, start=6000.0)
+    seen = []
+
+    def fake_run(cmd, **kwargs):
+        seen.append(kwargs.get("timeout"))
+        raise RuntimeError("transport tombe")
+
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+    pig._BELT_DEADLINE[0] = 6030.0  # 30 s de mur
+    try:
+        try:
+            pig.fetch_pool(cache=None, cache_mode="off", cache_status=None,
+                           probe=None)
+        except pig.TransportUnavailable:
+            pass
+        assert seen, "aucun transport sollicite"
+        assert all(t == pytest.approx(30.0) for t in seen), (
+            f"un transport a depasse le mur du run : {seen}")
+    finally:
+        pig._BELT_DEADLINE[0] = None
+    _ = clock
+
+
 def test_publish_phase_deadline_bounds_probes_and_lends_its_budget(monkeypatch):
     """#21436 : la phase de reparation a sa PROPRE echeance.
 

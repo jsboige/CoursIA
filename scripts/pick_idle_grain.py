@@ -1082,7 +1082,10 @@ def _rest_pages(path: str, *, max_pages: int,
         out = subprocess.run(
             ["gh", "api", f"{path}{sep}per_page={POOL_REST_PAGE}&page={page}"],
             capture_output=True, text=True, encoding="utf-8", check=True,
-            timeout=timeout,
+            # #23090 : une page REST de plus coute un `gh api` ; sans ce clamp,
+            # la boucle payait le defaut (120 s) par page -- 600 s pour cinq
+            # pages sous un budget de 120 s.
+            timeout=_clamp_timeout(timeout),
         ).stdout
         chunk = json.loads(out)
         if not isinstance(chunk, list) or not chunk:
@@ -1143,7 +1146,10 @@ def fetch_pool(
             out = subprocess.run(
                 command,
                 capture_output=True, text=True, encoding="utf-8", check=True,
-                timeout=120,
+                # #23090 : la lecture du pool est la part dominante du run
+                # (258-648 s mesurees, #22500) ; elle lisait son defaut de
+                # 120 s sans consulter le mur.
+                timeout=_clamp_timeout(120),
             ).stdout
             return json.loads(out)
         except Exception as exc:  # noqa: BLE001 - on TENTE l'autre transport
@@ -7549,7 +7555,7 @@ def fetch_latest_claim_stamps_bulk(
         r = subprocess.run(
             ["gh", "api", "graphql", "-f", f"query={query}"],
             capture_output=True, text=True, encoding="utf-8",
-            check=True, timeout=30,
+            check=True, timeout=_clamp_timeout(30),  # #23090 : stamps bulk
         )
         try:
             data = json.loads(r.stdout)
@@ -8681,7 +8687,7 @@ def fetch_lane_record_prs(
         out = subprocess.run(
             command,
             capture_output=True, text=True, encoding="utf-8", errors="replace",
-            check=True, timeout=60,
+            check=True, timeout=_clamp_timeout(60),  # #23090 : ardoise pre-tapis
         ).stdout
         return json.loads(out)
 
