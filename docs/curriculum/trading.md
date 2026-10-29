@@ -94,8 +94,8 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 63 | [3.9a — Compression par quantification INT8 : le réseau…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9a-Compression-Quantization-INT8.ipynb) | BETA | Non |
 | 64 | [3.9b — Compression par élagage : le réseau amputé qui…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9b-Compression-Pruning-from-scratch.ipynb) | BETA | Non |
 | 65 | [3.9c — Pruning from scratch sur CPU : le compagnon…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9c-Pruning-From-Scratch.ipynb) | BETA | Non |
-| 66 | [3.9e — Quantification SOTA : la même INT8, par…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-Quantization-SOTA.ipynb) | BETA | Non |
-| 67 | [3.9f — Élagage SOTA : les mêmes masques, par…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9f-Compression-Pruning-SOTA.ipynb) | BETA | Non |
+| 66 | [3.9e — Quantification SOTA : la même INT8, par…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb) | BETA | Non |
+| 67 | [3.9f — Élagage SOTA : les mêmes masques, par…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/_archive/3.9f-Compression-Pruning-SOTA.ipynb) | BETA | Non |
 | 68 | [3.9g — Comparatif compression : from scratch (Bloc A)…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9g-Compression-Comparatif-A-vs-B.ipynb) | BETA | Non |
 | 69 | [4.1 — Le neurone convolutif from scratch : kernel…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.1-Conv-NumPy-Torch-Allclose.ipynb) | BETA | Oui |
 | 70 | [4.2 — ConvNet profonde : pourquoi les résiduelles](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.2-ConvNet-Profonde-Residuelles.ipynb) | BETA | Non |
