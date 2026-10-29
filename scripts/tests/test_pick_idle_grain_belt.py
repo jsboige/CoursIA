@@ -2860,3 +2860,42 @@ def test_belt_cover_probe_shares_the_delivery_budget():
     assert state["budget_hit"] is True
     # Fail-OPEN : les candidats restent servis.
     assert [p["number"] for p in picks] == [19001, 19002, 19003, 19004]
+
+
+def test_belt_cover_probe_budget_exhausts_mid_hand():
+    """Le plafond partage s'epuise AU MILIEU d'une poignee, pas a sa frontiere.
+
+    Le test precedent prouve le partage a ``probe_budget=1`` : l'unite est
+    consommee par la sonde de livraison, la couverture rend ``UNPROBED`` sans
+    etre appelee. C'est une frontiere. Ici le plafond couvre plusieurs
+    candidats et le cout se cumule : chaque candidat paie sa sonde de
+    livraison PUIS sa sonde de couverture, et la couverture cesse d'etre
+    sonder alors que des candidats restent servables -- l'endroit ou le
+    double cout de ``counted_cover_probe`` devient reel (reserve Hermes,
+    #22986).
+
+    Cout mesure sur cette poignee de 4, plafond -> nombre de sondes de
+    couverture effectivement emises : 2 -> 0, 3 a 5 -> 1, 6 et plus -> 2.
+    Un candidat entierement servi coute donc 3 unites, et c'est ce chiffre
+    qui dit ou le plafond mord.
+    """
+    pool = [_make_item(19011 + i, age_days=50 - i, idle=5, last=None)
+            for i in range(4)]
+    seen = []
+
+    def cover(n):
+        seen.append(n)
+        return ""
+
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        pool, _free_claims(pool), _belt_args(grains=4), probe_budget=3,
+        cover_probe=cover)
+
+    # Plafond 3 pour une poignee de 4 : la couverture s'arrete apres le
+    # PREMIER candidat, alors que trois restent servables.
+    assert seen == [19011]
+    assert state["budget_hit"] is True
+    # Fail-OPEN : les 4 candidats restent servis malgre le plafond atteint.
+    assert [p["number"] for p in picks] == [19011, 19012, 19013, 19014]
+    # Le contrat d'etat porte la cle de couverture des le depart (#22986).
+    assert state["cover_failures"] == []

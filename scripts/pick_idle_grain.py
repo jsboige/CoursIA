@@ -8617,7 +8617,8 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     illisibles], "budget_hit": bool, "claim_unread": [numeros servis sur une
     lecture de claim en echec], "container_unread": [numeros servis sur une
     lecture du DERNIER COMMENTAIRE en echec], "marker_unread": [numeros servis
-    sur une lecture du marqueur RECENT en echec], "time_budget_hit": bool}``.
+    sur une lecture du marqueur RECENT en echec], "cover_failures": [numeros
+    dont la sonde de couverture a echoue], "time_budget_hit": bool}``.
     ``claim_unread``
     est le pendant du ``failures`` de livraison : deux lectures qui n'ont pas
     ABOUTI, servies quand meme (fail-OPEN) et rapportees a la lane (#20265).
@@ -8643,7 +8644,7 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     budget = [int(probe_budget)]
     state = {"failures": [], "budget_hit": False, "recent_filtered": 0,
              "claim_unread": [], "container_unread": [], "marker_unread": [],
-             "time_budget_hit": False}
+             "cover_failures": [], "time_budget_hit": False}
     # #22630 -- l'instantane local est rafraichi UNE FOIS pour les candidats
     # de la fenetre : toutes les sondes de commentaires (filtre recent et
     # sonde pleine de livraison) le lisent ensuite sans requete GitHub par
