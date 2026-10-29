@@ -57,6 +57,9 @@ La maîtrise des LLMs constitue la pierre angulaire de toute expertise en Géné
 | 8 | `8_Reasoning_Models.ipynb` | o4-mini, gpt-5-thinking, reasoning_effort, comparaisons | 60 min |
 | 9 | `9_Production_Patterns.ipynb` | Conversations API, background mode, retry, batch processing | 70 min |
 | 9b | `9b_Prompt_Security_RedTeam.ipynb` | Versant **adversarial** du 9 : taxonomie de l'injection (directe / indirecte RAG / jailbreak / exfiltration), 3 attaques mesurées sur le routeur DeepSeek self-hosted (≥1 réussie avant défense), défenses testées + tableau attaque × défense, suite de tests rejouable (propriété « PWNED jamais délivré »), 3 exercices stubs C.1 | 70 min |
+| 9c | `09c_Production_Routage_Repli.ipynb` | **Routage et repli** : quand on dispose de plusieurs modèles et fournisseurs, qui répond à quelle question — et que fait-on quand l'un échoue. Routage multi-fournisseurs, sélection du bon modèle au bon moment, stratégie de repli | 60 min |
+| 9d | `09d_Production_Caches.ipynb` | **Caches** : payer une fois, servir mille fois. Deux familles mesurées sur le terrain réel — cache exact, sémantique et de préfixe : *quand* réutiliser sans se tromper | 60 min |
+| 9e | `09e_Production_Exploitation.ipynb` | **Exploitation** : coût, budget, déploiement, SLO. Le volet de l'exploitant — combien ça coûte, quand prévenir, comment mettre une nouvelle version en production sans perdre la qualité | 60 min |
 | 10 | `10_LocalLlama.ipynb` | Serveur OpenAI-compatible auto-hébergé (vLLM) : 3 étages honnêtement nommés (local étudiant / auto-hébergé du cours / repli distant OpenRouter), multi-endpoints, benchmarking | 60 min |
 | 10b | `10b_Inference_Mechanics.ipynb` | KV-cache from scratch, exactitude des logits, speedup/mémoire, TTFT et ITL mesurés sur vLLM | 75 min |
 | 10c | `10c_Long_Context_Strategies.ipynb` | Stratégies pour contextes longs : budget de tokens (comptage avec le tokenizer réel), biais de position, map-reduce, prefix caching — quatre mesures sur notre vLLM | 50 min |
@@ -177,31 +180,23 @@ dépôt.
 
 ## Parcours suggéré
 
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│                                                                 │
-│  1_OpenAI_Intro ─────► 2_PromptEngineering                     │
-│        │                      │                                 │
-│        │                      └──────► 8_Reasoning_Models       │
-│        │                                                        │
-│        └──────► 3_Structured_Outputs                           │
-│                       │                                         │
-│                       └──────► 4_Function_Calling              │
-│                                      │                          │
-│                    ┌─────────────────┼─────────────────┐       │
-│                    │                 │                 │       │
-│                    ▼                 ▼                 ▼       │
-│           5_RAG_Modern      7_Code_Interpreter  9_Production   │
-│                 │                                    │          │
-│                 └──────► 6_PDF_Web_Search     9b_RedTeam       │
-│                                                       │         │
-│                                                       └─attack/defend stack self-hosted
-│                                                                 │
-│  10_LocalLlama (indépendant, prérequis: 1)                     │
-│        └──────► 10b_Inference_Mechanics                        │
-│                         └──────► 11_Quantization               │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart LR
+    N1["1_OpenAI_Intro"] --> N2["2_PromptEngineering"]
+    N1 --> N3["3_Structured_Outputs"]
+    N2 --> N8["8_Reasoning_Models"]
+    N3 --> N4["4_Function_Calling"]
+    N4 --> N5["5_RAG_Modern"]
+    N4 --> N7["7_Code_Interpreter"]
+    N4 --> N9["9_Production"]
+    N5 --> N6["6_PDF_Web_Search"]
+    N9 --> N9b["9b_RedTeam<br/>(attack/defend stack self-hosted)"]
+    N9 --> N9c["09c_Routage_Repli"]
+    N9c --> N9d["09d_Caches"]
+    N9d --> N9e["09e_Exploitation"]
+    N10["10_LocalLlama<br/>(indépendant, prérequis: 1)"] --> N10b["10b_Inference_Mechanics"]
+    N10b --> N10c["10c_Long_Context_Strategies"]
+    N10b --> N11["11_Quantization"]
 ```
 
 ## APIs couvertes
