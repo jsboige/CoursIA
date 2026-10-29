@@ -911,6 +911,71 @@ class TestDuplicateRenderEntries:
         assert rqr.duplicate_render_entries() == [("readmes", "a/README.md")]
 
 
+class TestEmissionDedup:
+    """`build_render_block` emet chaque chemin au plus une fois (#22274).
+
+    Un ``docs/**.README.md`` satisfait deux sections a la fois (motif
+    ``*README.md`` et motif ``docs/*.md``). Quarto ne rend le document qu'une
+    fois, mais la liste generee portait deux lignes : elle ne satisfaisait donc
+    pas son propre critere de fraicheur (« autant d'entrees que d'entrees
+    uniques »).
+
+    Le dedup porte sur l'**emission**. ``duplicate_render_entries`` garde son
+    role distinct -- signaler un index non resolu *intra*-section (#20055) -- et
+    ``main()`` refuse avant d'ecrire (cf. ``TestMainRefusesUnsafeInput``) : le
+    doublon d'index ne peut donc pas etre avale en silence par ce dedup.
+    """
+
+    P = "docs/reference/branch-cleanup-manifest.README.md"
+
+    @staticmethod
+    def _entries(block):
+        """Les lignes d'entree du bloc, sans indentation ni commentaire."""
+        return [ln.strip() for ln in block if ln.strip().startswith('- "')]
+
+    @staticmethod
+    def _sections(**over):
+        base = {"landing": [], "readmes": ["README.md"], "docs": [], "notebooks": []}
+        base.update(over)
+        return base
+
+    def test_cross_section_path_is_emitted_once(self):
+        entries = self._entries(rqr.build_render_block(
+            self._sections(readmes=["README.md", self.P], docs=[self.P])))
+        assert entries.count(f'- "{self.P}"') == 1
+
+    def test_first_section_wins(self):
+        """La section qui vient en premier dans l'ordre d'emission gagne, donc
+        l'entree reste dans le bloc READMEs et ne reapparait pas dans docs."""
+        entries = self._entries(rqr.build_render_block(
+            self._sections(readmes=["README.md", self.P],
+                           docs=[self.P, "docs/a.md"])))
+        entry = f'- "{self.P}"'
+        assert entries.count(entry) == 1
+        assert entries.index(entry) < entries.index('- "docs/a.md"')
+
+    def test_no_duplicate_entry_in_a_full_build(self):
+        """Le critere de l'issue, mesure sur une enumeration synthetique."""
+        block = rqr.build_render_block(self._sections(
+            landing=["*.qmd"],
+            readmes=["README.md", "docs/x.README.md"],
+            docs=["docs/x.README.md", "docs/y.md"],
+            notebooks=["a.ipynb", "b.ipynb"],
+        ))
+        entries = self._entries(block)
+        assert len(entries) == len(set(entries)), entries
+
+    def test_distinct_paths_are_all_kept(self):
+        """Le dedup ne supprime que les repetitions : aucune entree unique ne
+        disparait."""
+        entries = self._entries(rqr.build_render_block(self._sections(
+            readmes=["README.md", "a/README.md"],
+            docs=["docs/a.md"],
+        )))
+        for p in ("README.md", "a/README.md", "docs/a.md"):
+            assert f'- "{p}"' in entries
+
+
 class TestMainRefusesUnsafeInput:
     """`main()` : les deux refus sont branches avant toute ecriture."""
 

@@ -172,6 +172,16 @@ Sur les 21 lakes : **484 faux `sorry` pour 21 réels (23×)** — `grep -c sorry
 - #3473 (juin 2026) : famille ~15 filles de bannières d'échec passées sous la détection d'erreurs Python classique.
 - #11693 (18/08) et #11685 : remplacements de rendus SVG/figures par des bannières « program is not installed ».
 
+### D.7 — #15209 : l'effondrement de sortie vert sur toutes les gates
+
+`Lean-7b-Examples.ipynb`, `6b327a9bf` → `56d98429a` (#15209) : **nombre de cellules inchangé, 0 erreur, `execution_count` réels partout** — et **10637 → 2985** caractères de sortie (cellules `2195 → 147`, `2568 → 38`, `2074 → 42`). Tous les organes d'exécition verts (`exec_count`, grep d'erreurs volontaires) : la perte réelle leur était invisible. C'est le contre-exemple fondateur du ratchet `Output-collapse` (bloquant, T2 de #21424/#15327) : une perte de sortie d'un ordre de grandeur ne déclenche **aucune** gate d'exécution, d'où le verdict `SIGNATURE` — la dégradation gracieuse (`if api_ok:`) est le contournement de C.2 par la porte de secours, pas une exécution réussie.
+
+### D.8 — #15862 / #16097 : la perte de source invisible aux ratchets de sortie
+
+**#15862** — `GameTheory-06e-Open-Source-Game-Theory-Python.ipynb`, `244c7c54f032` → `7a355873de32`, cellule `c989_independent_v2` : **8425 → 5309** caractères de source (−37,0 %, 3116 perdus). Une table déclarative et un `assert` avaient disparu, **aucun organe rouge** : une table supprimée et un `assert` reduit ne produisent **aucune sortie**, la perte est invisible par construction aux ratchets de sortie. Fondation du ratchet `Source-collapse` (advisory, #15901).
+
+**#16097** — `ANALYSE-01-Sendov-Lean-Python.ipynb`, cellule `40cb37d5` : **1132 → 1728** caractères (la cellule **grossit** — la même écriture qui a retiré le code a ajouté une note de récupération) et `ast.parse(...).body` **10 → 0** : tout le code replié en un seul commentaire. Le ratchet de volume ne pouvait pas le voir (le gate s'arrête avant tout plancher quand la tête est plus longue) et `notebook-cell-source-parses` non plus (une cellule intégralement commentée se **parse** proprement). D'où le second mécanisme `STRUCTURE` (#16110) : `emptied` et `orphan-output` ne consultent que la cellule, aucune exemption ne les blanchit — restaurer la source ou retirer la sortie.
+
 ## Incident fondateur B.0 — PR #10761 (récit déporté de CLAUDE.md, 2026-08-21)
 
 **Incident fondateur — PR #10761** : mergée le 2026-08-14T04:15Z sous `myia-ai-01` malgré 2 nits user du 2026-08-13T11:07 (**17 h avant**) et une review Hermes `COMMENT_WITH_CONCERNS` confirmant ces 2 nits + 3 points neufs. `mergeStateStatus: CLEAN`, `reviews[].state: COMMENTED` : les deux champs qu'un merge-gate lit d'ordinaire étaient verts, et le notebook a été mergé en attribuant à tort le théorème de Sendov à T. Tao (la preuve est de **Lech Mazur** ; Tao en signe la digestion, il l'écrit lui-même). Epic de reprise : **#11044**.
