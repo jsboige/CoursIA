@@ -295,7 +295,7 @@ Les ateliers Claude Code et Roo Code utilisent OpenRouter comme fournisseur LLM.
 
 ```powershell
 # Verifier les variables d'environnement
-$env:ANTHROPIC_BASE_URL    # doit etre "http://127.0.0.1:8899/api" (proxy local, cf OPENROUTER_SETUP.md)
+$env:ANTHROPIC_BASE_URL    # doit etre "https://openrouter.ai/api" (direct, sans proxy local, cf OPENROUTER_SETUP.md)
 $env:ANTHROPIC_AUTH_TOKEN   # doit commencer par "sk-or-v1-..."
 ```
 
