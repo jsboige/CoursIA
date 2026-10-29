@@ -47,6 +47,16 @@ Le pilote T8 (MAF couche agents — GroupChat et Magentic) est mesuré sur une
 <venv>/Scripts/python maf_groupchat_magentic_pilot.py   # T8 — GroupChat + Magentic, budget dur 60 appels
 ```
 
+Le pilote P1 (issue #14499, point 3 — réplique SK du **pilote identique** sur une
+vraie charge) utilise la même ligne SK que T2/T4. La charge n'est pas un scénario
+écrit pour l'occasion mais la **fixture figée** `distill_charge_fixture.md` :
+cellules 0..8 du carnet `01-SemanticKernel-Intro.ipynb`, figées à une tête — les
+répliques P2 (MAF) et P3 (ADK) distilleront ce même fichier, byte-stable :
+
+```bash
+py -3.11 sk_distillation_pilot.py   # P1 — GroupChat à manager custom, budget dur 16 appels
+```
+
 Le pilote T3 (Google ADK) vit dans la série Track2 :
 
 ```bash
@@ -77,7 +87,7 @@ fusionnent), et elle dépend de ce que le projet hôte a restauré.
 
 ## Traces committées
 
-`traces/out-T*.txt` sont les **stdout** des pilotes, telles quelles. Elles sont
+`traces/out-*.txt` sont les **stdout** des pilotes, telles quelles. Elles sont
 committées pour qu'une affirmation `VÉRIFIÉ` du doc soit une propriété du dépôt et
 non du poste de l'auteur.
 

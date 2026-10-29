@@ -16,7 +16,9 @@
 | T6 | pt 4 — couverture C# mesurée par les assemblages (SK 1.81.0, MAF 1.24.0, ADK absent), contrôles positif et négatif | livré |
 | T7 | pt 2 — MAF, couche agents : `HandoffBuilder` exécuté (service LLM réel, temp 0), contrôle positif des cinq topologies Python | livré |
 | T8 | pt 2 — MAF, couche agents : `GroupChatBuilder` (selection function) + `MagenticBuilder` (manageur + ledger) exécutés (service LLM réel, temp 0) | livré |
-| — | pt 2 — pilote identique dans les trois moteurs sur une vraie charge de distillation (pt 3) ; coût pour le dépôt (pt 5) | à venir |
+| P1 | pt 3 — pilote identique, réplique **SK** : charge de distillation figée + `GroupChatOrchestration` à manager custom, exécuté (service LLM réel, temp 0, 2 runs) | livré |
+| P2/P3 | pt 3 — répliques **MAF** et **ADK** sur la même fixture, même politique de tour | à venir |
+| — | coût pour le dépôt (pt 5) | à venir |
 | — | pt 1 état de l'art | livré hors repo : note datée du 2026-10-05 sur [#19380](https://github.com/jsboige/CoursIA/issues/19380) ; mémo inventaire local du 2026-10-07 (po-2024:CoursIA-2) sur [#14499](https://github.com/jsboige/CoursIA/issues/14499) |
 | — | pts 3-6 (déterminisme, couverture langages, coût, verdict) | à venir |
 
@@ -363,4 +365,24 @@ Faits d'API mesurés sur orchestrations 1.3.1 :
 
 ### 2.10 À venir
 
-Reste de #14499 : le pilote identique dans les trois moteurs sur une **vraie charge de distillation** (point 3), et le coût pour le dépôt (point 5). L'emplacement `eval-pilots/` accueille les pilotes Python et la sonde C# ; l'idiome de référence du graphe MAF est l'organe du dépôt (`SymbolicAI/Lean/agent_tests/prover/workflow.py`).
+Reste de #14499 : les répliques **P2 (MAF)** et **P3 (ADK)** du pilote de distillation (point 3, la réplique P1/SK est livrée au §3), et le coût pour le dépôt (point 5). L'emplacement `eval-pilots/` accueille les pilotes Python et la sonde C# ; l'idiome de référence du graphe MAF est l'organe du dépôt (`SymbolicAI/Lean/agent_tests/prover/workflow.py`).
+
+## 3. Pilote identique sur une vraie charge de distillation (point 3)
+
+### 3.1 La charge partagée — fixture figée
+
+`VERIFIÉ` (fixture [`distill_charge_fixture.md`](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/eval-pilots/distill_charge_fixture.md), 4 487 caractères, 9 cellules) : la charge est la **section réelle** d'ouverture de [`01-SemanticKernel-Intro.ipynb`](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/01-SemanticKernel-Intro.ipynb) (cellules 0-8 : objectifs, prérequis, sommaire, première cellule de code), extraite puis **figée** à la tête `8e9eaaaa0`. Les trois répliques (P1 SK, P2 MAF, P3 ADK) distillent **ce fichier**, pas le carnet vivant — la charge est byte-stable entre moteurs, entre exécutions et entre dates.
+
+### 3.2 P1 — Semantic Kernel : `GroupChatOrchestration` à manager custom
+
+`VERIFIÉ` (pilote [`sk_distillation_pilot.py`](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/eval-pilots/sk_distillation_pilot.py), 364 lignes, trace [`out-P1-sk-distillation.txt`](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/eval-pilots/traces/out-P1-sk-distillation.txt), sk 1.41.3, gpt-4o-mini temp 0, budget dur 16) :
+
+- **La politique de tour vit dans le moteur** : trois `ChatCompletionAgent` (producteur ≤ 120 mots, critique à verdict imposé `VERDICT: ACCEPTE|REVISION:`, arbitre à `DECISION:`) reliés par `GroupChatOrchestration`, dont le manager custom `DistillationGroupChatManager` encode producteur → critique → [révision → producteur → critique] → arbitre dans `select_next_agent`, et scelle dans `should_terminate`. C'est la pièce que P2/P3 ré-encoderont dans l'idiome de leur moteur (graphe typé / boucle) — **même politique, organe différent**.
+- **Mesures** (2 exécutions complètes) : 3 appels LLM/run, latences 1,82/0,69/0,83 s puis 1,83/0,72/0,77 s, mur 3,46/3,42 s, total 8/16 appels (sondes comprises). **Déterminisme OK** : (tours, décision, tour d'arbitrage) = (1, ACCEPTE, 1) identique sur les deux runs.
+- **Comportement en échec** : une sonde sur un modèle inexistant échoue fort (`ServiceResponseException`, type nommé, clé jamais affichée) — aucun repli, aucune tentative masquée.
+- **Deux constats de moteur, pas des trous du pilote** : (1) l'orchestration GroupChat appelle les agents **en streaming** — le compteur d'appels doit surcharger `get_streaming_chat_message_contents`, pas seulement la voie non-streaming (première version du pilote : 6 appels invisibles au compteur) ; (2) les chunks streaming n'exposent **pas** l'usage de jetons (l'API ne le rend que sur `stream_options.include_usage`, que SK ne positionne pas) — la mesure « tokens par appel » exige la voie non-streaming ; sur ce banc, la latence et le compte d'appels sont mesurés, les jetons sont `n/d` pour les tours d'agents. C'est une **différence d'observabilité par mode d'invocation**, audible pour le point 6.
+- **Réserve de couverture** : la branche RÉVISION du manager n'a pas été exercée — le critique a accepté au tour 1 sur les deux runs (temp 0, charge facile). Le code de la branche est dérivé de la même lecture d'historique que la voie ACCEPTE ; sa mise à l'épreuve réelle attend une charge que le critique rejette, ce que P2/P3 pourront provoquer avec une fixture plus difficile (le même défi vaudra pour eux).
+
+### 3.3 P2/P3 — à venir
+
+Les répliques MAF (graphe typé, arête conditionnelle de révision) et ADK (boucle) distillent la même fixture avec la même politique de tour, le même modèle épinglé et les mêmes mesures — c'est la comparabilité par construction qui fait la valeur du point 3.
