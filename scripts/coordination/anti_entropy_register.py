@@ -51,6 +51,7 @@ import pathlib
 import re
 import subprocess
 import sys
+import tempfile
 
 RACINE = pathlib.Path(__file__).resolve().parent.parent.parent
 if str(RACINE) not in sys.path:
@@ -62,10 +63,17 @@ REPO = "jsboige/CoursIA"
 # disparait a la lecture, et il se retrouve par une recherche exacte.
 MARQUEUR = "ANTI-ENTROPY-REGISTER"
 
+# Le compte sous lequel l'organe publie. Le trousseau `gh` de la machine
+# est partage et le compte actif bascule : une ecriture faite sous le
+# mauvais compte n'est plus levable par le coordinateur. L'organe
+# refuse donc de publier si l'identite n'est pas etablie.
+COMPTE_EPINGLE = "jsboige"
+
 # L'etat local des verdicts (lu par le budget de creation, cf #23174).
 ENV_ETAT = "COURSIA_ANTI_ENTROPY_FILE"
 
-VERDICTS = ("AVANCE", "STAGNE", "RECULE", "PREMIERE MESURE")
+VERDICTS = ("AVANCE", "STAGNE", "RECULE", "PREMIERE MESURE",
+            "INSTRUMENT ILLEGIBLE")
 
 # Le fichier d'etat, par defaut sous LOCALAPPDATA (le meme perimetre que
 # l'etat du budget de creation).
@@ -154,16 +162,18 @@ REGISTRE: tuple[Entree, ...] = (
         titre="GameTheory/Dynamics — carnets materialises de l'escalier 01-08",
         commande=("git", "ls-tree", "-r", "--name-only", "origin/main", "--",
                   "MyIA.AI.Notebooks/GameTheory/Dynamics/"),
-        extraction=("lignes",),
+        extraction=("lignes", ".ipynb"),
         sens="ascend",
         cible=11.0,
         note="Le carnet est la valeur : l'escalier doit se materialiser. "
              "Cible 11 = les 8 marches de l'escalier (01 a 08) + les deux "
              "jumeaux qui ne comptent pas comme marche (01 C#, 05 Lean) + "
              "le carnet 09 greffe apres GT-03 — le perimetre annonce par "
-             "#20381 (« 11 carnets + README »). Mesure au 2026-10-28 : 1 "
-             "(seul `Dynamics-09` est reel ; la descente T3 #20374 n'a "
-             "jamais ete mergee).",
+             "#20381 (« 11 carnets + README »). La mesure ne compte que "
+             "les FICHIERS `.ipynb` : la cible est en carnets, et un README "
+             "de plus ne doit pas faire bouger l'escalier. Mesure au "
+             "2026-10-28 : 1 (seul `Dynamics-09` etait alors present ; la "
+             "descente T3 #20374 n'avait pas ete mergee).",
     ),
 )
 
@@ -195,6 +205,8 @@ def extraire(sortie: str, spec: tuple, maintenant: dt.datetime | None = None):
     """La valeur de l'instrument, lue par sa specification.
 
       * `("lignes",)` — le nombre de lignes non vides ;
+      * `("lignes", ".ipynb")` — idem, **filtre par suffixe** : seules les
+        lignes qui se terminent par ce suffixe comptent ;
       * `("chemin", "a.b.c")` — un chemin dans un JSON ;
       * `("somme_listes", ("a.b", "c.d"))` — la somme des longueurs de deux
         listes d'un JSON ;
@@ -203,7 +215,9 @@ def extraire(sortie: str, spec: tuple, maintenant: dt.datetime | None = None):
     """
     kind = spec[0]
     if kind == "lignes":
-        return float(sum(1 for ln in sortie.splitlines() if ln.strip()))
+        suffixe = spec[1] if len(spec) > 1 else ""
+        return float(sum(1 for ln in sortie.splitlines()
+                          if ln.strip() and ln.strip().endswith(suffixe)))
     if kind == "age_jours":
         # La valeur est POSITIVE : le nombre de jours ecoules depuis le
         # timestamp. Un timestamp dans le futur (horloge de la machine
@@ -271,7 +285,7 @@ def mesurer(entree: Entree,
 # Le verdict
 # ---------------------------------------------------------------------------
 
-def verdict(valeur: float, reference: float | None, sens: str) -> str:
+def verdict(valeur: float | None, reference: float | None, sens: str) -> str:
     """Le verdict, en fonction pure — elle se teste sans reseau.
 
     `sens` = le sens du progres :
@@ -282,7 +296,17 @@ def verdict(valeur: float, reference: float | None, sens: str) -> str:
     `AVANCE` : la valeur se rapproche de la cible. `STAGNE` : elle ne bouge
     pas. `RECULE` : elle s'en eloigne. Sans reference, `PREMIERE MESURE` :
     l'organe constate qu'il n'a pas encore de point de comparaison.
+
+    **Une valeur absente n'est pas une valeur** : l'instrument a ete muet
+    (absent, casse, sortie illisible), et la mesure n'a pas ete faite. Le
+    verdict est alors `INSTRUMENT ILLEGIBLE` — jamais une comparaison, et
+    surtout jamais un `None` compare a une reference (le `TypeError` que
+    cela produisait cassait le cycle entier au premier instrument muet,
+    alors qu'une reference existe presque toujours : c'est le cas de
+    `padding-nommage`, dont la reference de repli est portee par l'issue).
     """
+    if valeur is None:
+        return "INSTRUMENT ILLEGIBLE"
     if reference is None:
         return "PREMIERE MESURE"
     if sens == "descend":
@@ -546,26 +570,52 @@ def publier(issue: int, corps: str, dry_run: bool = False) -> bool:
       * **l'identite est epinglee** (`GH_TOKEN` sous le compte `jsboige`) :
         le trousseau `gh` de la machine est partage et le compte actif
         bascule ; une ecriture faite sous le mauvais compte n'est plus
-        levable par le coordinateur.
+        levable par le coordinateur. Si l'identite ne peut pas etre
+        etablie (ni jeton resolvable, ni compte actif verifie), l'organe
+        **refuse** de publier : il prefere un cycle sans publication a une
+        publication sous une identite inconnue.
       * **le corps vient d'un fichier** (`--body-file`), jamais de `-f
         body=@fichier` : le prefixe `@` n'est expandu que par `-F`, et
-        l'echec est SILENCIEUX (le corps atterrit litteral).
+        l'echec est SILENCIEUX (le corps atterrit litteral). Le fichier est
+        un **temporaire** : un nom fixe laisse des debris quand `TEMP` est
+        absent, et se fait ecraser par une execution concurrente.
     """
     if dry_run:
         return False
-    payload = pathlib.Path(os.environ.get("TEMP", ".")) / "anti_entropy_comment.md"
-    try:
-        payload.write_text(corps, encoding="utf-8")
-    except Exception:  # noqa: BLE001
-        return False
-    env = dict(os.environ)
     token = _token_gh()
+    env = dict(os.environ)
     if token:
         env["GH_TOKEN"] = token
-    out = subprocess.run(["gh", "issue", "comment", str(issue), "--repo", REPO,
-                          "--body-file", str(payload)],
-                         capture_output=True, text=True, encoding="utf-8",
-                         timeout=120, check=False, env=env)
+    elif _compte_actif_gh() != COMPTE_EPINGLE:
+        # L'identite n'est PAS etablie : le trousseau `gh` de la machine
+        # est partage et le compte actif bascule. Publier sous une identite
+        # non verifiee, c'est publier sous le mauvais compte -- et une
+        # reserve levee par le mauvais compte n'est pas leveable par le
+        # coordinateur. On refuse (fail-CLOSED) plutot que publier muet.
+        print(f"IDENTITE NON EPINGLEE : ni jeton '{COMPTE_EPINGLE}' ni "
+              f"compte actif '{COMPTE_EPINGLE}' -- publication refusee.",
+              file=sys.stderr)
+        return False
+    # Le payload est un fichier TEMPORAIRE : un nom fixe dans `TEMP` laisse
+    # des debris quand `TEMP` est absent (Linux), et se fait ecraser par
+    # une execution concurrente (organe cron + relance manuelle) entre
+    # l'ecriture et le POST.
+    fd, chemin = tempfile.mkstemp(prefix="anti_entropy_", suffix=".md")
+    payload = pathlib.Path(chemin)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8", newline="") as fh:
+            fh.write(corps)
+        out = subprocess.run(["gh", "issue", "comment", str(issue), "--repo", REPO,
+                              "--body-file", str(payload)],
+                             capture_output=True, text=True, encoding="utf-8",
+                             timeout=120, check=False, env=env)
+    except Exception:  # noqa: BLE001 - l'ecriture du payload a echoue
+        return False
+    finally:
+        try:
+            payload.unlink(missing_ok=True)
+        except Exception:  # noqa: BLE001, S110 - le fichier temporaire reste, sans consequence
+            pass
     if out.returncode != 0:
         return False
     return _verifier_publication(issue, corps)
@@ -574,10 +624,28 @@ def publier(issue: int, corps: str, dry_run: bool = False) -> bool:
 def _token_gh() -> str:
     """Le jeton `gh` du compte de la flotte, ou vide si introuvable."""
     try:
-        raw = subprocess.run(["gh", "auth", "token", "--user", "jsboige"],
+        raw = subprocess.run(["gh", "auth", "token", "--user", COMPTE_EPINGLE],
                              capture_output=True, text=True, encoding="utf-8",
                              timeout=60, check=False)
-    except Exception:  # noqa: BLE001 - pas de jeton = env par defaut
+    except Exception:  # noqa: BLE001 - pas de jeton = on verifie l'identite autrement
+        return ""
+    if raw.returncode != 0:
+        return ""
+    return (raw.stdout or "").strip()
+
+
+def _compte_actif_gh() -> str:
+    """Le compte `gh` actif, ou vide si la lecture echoue.
+
+    C'est le **repli** de l'identite : quand le jeton du compte de la
+    flotte n'est pas resolvable, on verifie que le compte actif EST ce
+    compte. Une identite non verifiable ne publie rien.
+    """
+    try:
+        raw = subprocess.run(["gh", "api", "user", "--jq", ".login"],
+                             capture_output=True, text=True, encoding="utf-8",
+                             timeout=60, check=False)
+    except Exception:  # noqa: BLE001 - identite illisible
         return ""
     if raw.returncode != 0:
         return ""
@@ -592,21 +660,42 @@ def _verifier_publication(issue: int, corps: str) -> bool:
     2. **structure** : le corps publie ne doit pas parser en objet JSON
        portant une cle `body` — c'est le payload JSON complet passe comme
        corps, et la garde de longueur est structurellement aveugle a ce cas.
+
+    La relecture cherche **le commentaire balise parmi les derniers**
+    commentaires de l'issue, et non « le dernier commentaire de l'issue »
+    : le fil est actif et plusieurs lanes y ecrivent, donc un commentaire
+    tiers arrive entre le POST et la relecture. Lire `last` produirait alors
+    un faux echec — et un cliquet avance sur une publication reelle mais
+    non verifiee. Inversement, chercher par marqueur evite de rater la
+    publication : c'est notre corps qu'on compare, dans le lot recent.
     """
     try:
         raw = subprocess.run(
             ["gh", "api", f"repos/{REPO}/issues/{issue}/comments",
-             "--jq", "last | {body}"],
+             "--jq", ".[-10:] | map({body, created_at})"],
             capture_output=True, text=True, encoding="utf-8", timeout=120,
             check=False)
     except Exception:  # noqa: BLE001 - relecture impossible = publie quand meme
+        print("RELECTURE IMPOSSIBLE : publication non verifiee", file=sys.stderr)
         return True
     if raw.returncode != 0:
+        print("RELECTURE IMPOSSIBLE : publication non verifiee", file=sys.stderr)
         return True
     try:
-        publie = json.loads(raw.stdout or "{}").get("body") or ""
+        commentaires = json.loads(raw.stdout or "[]")
     except Exception:  # noqa: BLE001 - payload illisible
+        print("RELECTURE ILLISIBLE : publication non verifiee", file=sys.stderr)
         return True
+    if not isinstance(commentaires, list):
+        print("RELECTURE ILLISIBLE : publication non verifiee", file=sys.stderr)
+        return True
+    marques = [c for c in commentaires
+               if isinstance(c, dict) and MARQUEUR in (c.get("body") or "")]
+    if not marques:
+        return False
+    publie = marques[-1].get("body") or ""
+    if publie.strip() != corps.strip():
+        return False
     if len(publie) < 100:
         return False
     try:

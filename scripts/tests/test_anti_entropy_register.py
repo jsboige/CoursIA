@@ -74,6 +74,20 @@ def test_sans_reference_le_verdict_dit_premiere_mesure():
     assert aer.verdict(813.0, None, "descend") == "PREMIERE MESURE"
 
 
+def test_une_valeur_absente_ne_compare_pas_a_une_reference():
+    """Une valeur absente n'est pas une valeur : l'instrument a ete muet.
+
+    Comparer `None` a une reference levait un `TypeError` qui cassait le
+    cycle entier — et la reference existe presque toujours (celle portee
+    par l'issue), donc le premier instrument muet suffisait.
+    """
+    assert aer.verdict(None, PADDING_REFERENCE, "descend") == \
+        "INSTRUMENT ILLEGIBLE"
+    assert aer.verdict(None, None, "descend") == "INSTRUMENT ILLEGIBLE"
+    assert aer.verdict(None, PADDING_REFERENCE, "ascend") == \
+        "INSTRUMENT ILLEGIBLE"
+
+
 def test_un_sens_inconnu_est_une_erreur():
     with pytest.raises(ValueError):
         aer.verdict(1.0, 2.0, "baisse")
@@ -107,6 +121,15 @@ def test_extraire_un_chemin_dans_un_json():
 
 def test_extraire_le_nombre_de_lignes():
     assert aer.extraire("a\n\nb\nc\n", ("lignes",)) == 3.0
+
+
+def test_extraire_le_nombre_de_lignes_filtrees_par_suffixe():
+    """Le filtre par suffixe aligne l'instrument sur sa cible : la cible
+    de l'escalier est en CARNETS, donc un README de plus ne doit pas
+    faire bouger la valeur."""
+    sortie = "a.ipynb\nb.md\nc.ipynb\n"
+    assert aer.extraire(sortie, ("lignes", ".ipynb")) == 2.0
+    assert aer.extraire(sortie, ("lignes",)) == 3.0
 
 
 def test_extraire_la_somme_de_deux_listes():
@@ -184,6 +207,27 @@ def test_un_code_de_sortie_non_nul_ne_rend_pas_la_mesure_invalide():
     assert valeur == 7.0
     assert erreur == ""
     assert "rc=1" in note
+
+
+def test_le_chemin_reel_ne_crashe_pas_quand_l_instrument_est_muet(monkeypatch):
+    """Le chemin REEL (`mesurer_tout`), avec un instrument muet ET une
+    reference presente : le verdict doit etre `INSTRUMENT ILLEGIBLE`.
+
+    C'est le `TypeError` constate a la relecture : `verdict(None, …)`
+    comparait `None` a une reference. Comme la reference de repli est
+    portee par l'issue, elle existe presque toujours — le premier
+    instrument muet suffisait a casser le cycle entier (traceback, aucune
+    publication, aucun etat).
+    """
+    e = aer.Entree(cle="cas", issue=1, titre="x",
+                   commande=(sys.executable, "-c", "import sys; sys.exit(3)"),
+                   extraction=("lignes",), sens="descend",
+                   reference=aer.Reference(776.0, "2026-10-21"))
+    monkeypatch.setattr(aer, "_commentaires_marques", lambda issue: [])
+    out = aer.mesurer_tout(registre=(e,),
+                           now=dt.datetime(2026, 10, 29, 3, 0, tzinfo=dt.UTC))
+    assert out[0]["valeur"] is None
+    assert out[0]["verdict"] == "INSTRUMENT ILLEGIBLE"
 
 
 # --- le commentaire ----------------------------------------------------------
@@ -278,10 +322,29 @@ def test_le_registre_a_des_instruments_reels():
 
 
 def test_les_instruments_du_registre_existent_dans_le_depot():
+    """L'instrument de chaque entree existe dans le depot.
+
+    Le test doit porter sur l'ENTREE, pas sur le fait que le premier mot
+    de la commande soit litteralement « python » : le registre y met
+    `sys.executable` (un chemin absolu), donc la condition n'etait jamais
+    vraie et le corps du test ne s'executait pas — un test qui passe sans
+    rien verifier.
+    """
     for e in aer.REGISTRE:
-        if e.commande[0] == "python":
-            chemin = pathlib.Path(e.commande[1])
+        if pathlib.Path(str(e.commande[0])).name.startswith("python"):
+            assert len(e.commande) > 1, f"{e.cle} : commande sans script"
+            chemin = pathlib.Path(str(e.commande[1]))
+            if not chemin.is_absolute():
+                chemin = aer.RACINE / chemin
             assert chemin.exists(), f"{e.cle} : {chemin} introuvable"
+
+
+def test_l_escalier_compte_les_carnets_et_non_les_fichiers():
+    """La cible de l'escalier est en CARNETS : l'instrument ne doit pas
+    compter un README de plus comme une marche de l'escalier."""
+    e = entree("dynamics-escalier")
+    assert e.extraction == ("lignes", ".ipynb"), e.extraction
+    assert ".ipynb" in e.note
 
 
 def test_la_reference_du_padding_est_celle_de_l_issue():
@@ -369,31 +432,98 @@ def test_la_publication_echoue_si_le_corpus_publie_est_trop_court(monkeypatch):
     """Un corps < 100 caracteres apres une publication depuis un fichier =
     le piege `-f body=@` a tire. La publication doit etre signalee KO."""
     import json as _json
+    publie = f"<!-- {aer.MARQUEUR} -->\n@C:/tmp/f.md"
     monkeypatch.setattr(aer.subprocess, "run", lambda *a, **k: type(
         "R", (), {"returncode": 0,
-                  "stdout": _json.dumps({"body": "@C:/tmp/f.md"})})())
-    assert aer._verifier_publication(5081, "x" * 200) is False
+                  "stdout": _json.dumps([{"body": publie}])})())
+    assert aer._verifier_publication(5081, publie) is False
 
 
 def test_la_publication_echoue_si_le_corpus_publie_est_un_payload_json(monkeypatch):
-    """Le corps publie ne doit pas parser en objet JSON portant une cle
-    `body` : c'est le payload complet passe comme corps, et la garde de
-    longueur est structurellement aveugle a ce cas (le corps est long)."""
+    """Le corps publie ne doit pas etre le PAYLOAD JSON complet passe
+    comme corps : c'est le piege de transport, et il est long — la garde
+    de longueur est structurellement aveugle a ce cas.
+
+    Il ne porte pas le marqueur : la relecture, qui cherche le commentaire
+    balise parmi les derniers commentaires, ne le trouve donc pas, et la
+    publication est signalee KO."""
     import json as _json
     payload = _json.dumps({"body": "x" * 200})
     monkeypatch.setattr(aer.subprocess, "run", lambda *a, **k: type(
         "R", (), {"returncode": 0,
-                  "stdout": _json.dumps({"body": payload})})())
+                  "stdout": _json.dumps([{"body": payload}])})())
     assert aer._verifier_publication(5081, "x" * 200) is False
 
 
 def test_la_publication_reussit_si_le_corpus_publie_est_le_bon(monkeypatch):
     import json as _json
-    corps = "x" * 200
+    corps = f"<!-- {aer.MARQUEUR} -->\n" + "x" * 200
     monkeypatch.setattr(aer.subprocess, "run", lambda *a, **k: type(
         "R", (), {"returncode": 0,
-                  "stdout": _json.dumps({"body": corps})})())
+                  "stdout": _json.dumps([{"body": corps}])})())
     assert aer._verifier_publication(5081, corps) is True
+
+
+def test_un_commentaire_tiers_intercale_ne_provoque_pas_de_faux_echec(monkeypatch):
+    """Le fil de l'issue est actif et plusieurs lanes y ecrivent : un
+    commentaire tiers peut arriver ENTRE le POST et la relecture.
+
+    Lire « le dernier commentaire de l'issue » produirait alors un faux
+    echec — et le cliquet avancerait sur une publication reelle mais non
+    verifiee. La relecture cherche le commentaire BALISE parmi les
+    derniers."""
+    import json as _json
+    corps = f"<!-- {aer.MARQUEUR} -->\n" + "x" * 200
+    tiers = "commentaire d'une autre lane, sans marqueur"
+    monkeypatch.setattr(aer.subprocess, "run", lambda *a, **k: type(
+        "R", (), {"returncode": 0,
+                  "stdout": _json.dumps([{"body": corps},
+                                          {"body": tiers}])})())
+    assert aer._verifier_publication(5081, corps) is True
+
+
+def test_publier_refuse_une_identite_non_verifiee(monkeypatch):
+    """Sans jeton resolvable ET sans compte actif verifie, l'organe ne
+    publie pas.
+
+    Le trousseau `gh` de la machine est partage et le compte actif
+    bascule : une ecriture faite sous une identite non verifiee n'est pas
+    levable par le coordinateur. Aucune ecriture ne doit partir."""
+    monkeypatch.setattr(aer, "_token_gh", lambda: "")
+    monkeypatch.setattr(aer, "_compte_actif_gh", lambda: "autre-compte")
+    appels = []
+
+    def _run(cmd, **k):
+        appels.append(cmd)
+        return type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})()
+
+    monkeypatch.setattr(aer.subprocess, "run", _run)
+    assert aer.publier(5081, "x" * 200) is False
+    assert appels == [], "aucune ecriture ne doit partir"
+
+
+def test_le_payload_de_publication_est_un_fichier_temporaire(monkeypatch):
+    """Le payload est un fichier TEMPORAIRE : un nom fixe laisse des debris
+    quand `TEMP` est absent (Linux), et se fait ecraser par une execution
+    concurrente (organe cron + relance manuelle) entre l'ecriture et le
+    POST."""
+    monkeypatch.setattr(aer, "_token_gh", lambda: "jeton")
+    vus = {}
+
+    def _run(cmd, **k):
+        if "--body-file" in cmd:
+            chemin = cmd[cmd.index("--body-file") + 1]
+            vus["chemin"] = chemin
+            vus["corps"] = pathlib.Path(chemin).read_text(encoding="utf-8")
+        return type("R", (), {"returncode": 0, "stdout": "[]",
+                              "stderr": ""})()
+
+    monkeypatch.setattr(aer.subprocess, "run", _run)
+    aer.publier(5081, "x" * 200)
+    assert vus["corps"] == "x" * 200
+    assert not pathlib.Path(vus["chemin"]).exists(), \
+        "le fichier temporaire doit etre retire"
+    assert vus["chemin"] != "anti_entropy_comment.md"
 
 
 def test_un_dry_run_n_ecrit_pas_l_etat(monkeypatch, tmp_path):
