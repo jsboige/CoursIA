@@ -108,7 +108,23 @@ jobs:
       - name: Run sweep
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Fenetre tournante (#10466, mesure du 2026-10-27) : le depot portait
+          # 588 issues ouvertes alors que la lecture s'arretait a 200 -- les 388
+          # du dessous n'etaient JAMAIS classifiees, donc jamais etiquetees, donc
+          # re-servies indefiniment aux lanes (#20078 -> #20079, #19241 -> #22454,
+          # #22715 -> #22719). Lire tout d'un coup ne tient pas dans le plafond
+          # GITHUB_TOKEN (1000 appels/h, ~2 par issue) : on garde une fenetre
+          # bornee et on fait tourner son point de depart a chaque run.
+          # CE QUE LA ROTATION EST, dit sans l'embellir : un ECHANTILLONNAGE, pas
+          # une couverture. Le depart avance de WINDOW modulo le nombre d'issues
+          # ouvertes ; a N=590 et WINDOW=400 la suite revient sur elle-meme tous
+          # les 59 runs, soit 59 jours au cron quotidien, et deux fenetres
+          # consecutives se recouvrent. La queue est ATTEINTE (c'est le defaut
+          # corrige), elle n'est pas balayee de facon exhaustive.
+          WINDOW: '400'
         run: |
           DRY=""
           if [ "${{ inputs.dry_run }}" = "true" ]; then DRY="--dry-run"; fi
-          python scripts/candidate_delivered.py $DRY --sleep 2.0
+          OFFSET=$(( ${{ github.run_number }} * WINDOW ))
+          python scripts/candidate_delivered.py $DRY --sleep 2.0 \
+            --limit "$WINDOW" --offset "$OFFSET"
