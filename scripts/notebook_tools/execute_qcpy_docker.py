@@ -257,13 +257,15 @@ def execute_notebook(nb_path: Path, base_url: str, kernel_id: str,
         is_error = (result["status"] == "error" or result["status"] == "timeout"
                     or len(result["errors"]) > 0)
 
+        # Le rapport et la cellule relevent du MEME constructeur : la metrique
+        # ne peut plus diverger de ce qui est ecrit (display_data compris).
+        outputs = _build_outputs(result, exec_count)
+
         cell_results.append({
             "cell_index": i,
             "status": "error" if is_error else "ok",
             "exec_count": exec_count,
-            "outputs_count": (len(result["streams"]) +
-                              len(result["errors"]) +
-                              (1 if result["result"] else 0))
+            "outputs_count": len(outputs)
         })
 
         if not is_error:
@@ -273,7 +275,7 @@ def execute_notebook(nb_path: Path, base_url: str, kernel_id: str,
         # Meme constructeur dans les deux branches : sur echec (dont le
         # timeout) les flux capturables avant l'interruption sont conserves.
         cell["execution_count"] = exec_count
-        cell["outputs"] = _build_outputs(result, exec_count)
+        cell["outputs"] = outputs
 
         exec_count += 1
         cells_executed += 1
