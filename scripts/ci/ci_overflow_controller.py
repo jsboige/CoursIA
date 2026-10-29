@@ -117,6 +117,17 @@ preference. Le budget local a ete aligne sur le budget hebergee (40 -> 120)
 pour que la lecture locale soit **complete** dans le regime nominal : un
 budget trop bas produit une troncature systematique, donc une lecture
 locale toujours « non etablie », donc une bascule vers `true` impossible.
+
+Le plafond du jeton du depot (`github.token`) est de **1 000 appels/h pour
+le repo**, partage avec les autres jobs : c'est lui qui borne la cadence,
+et non une preference. Le cron horaire du depot consomme 313 appels/h ; la
+minuterie locale sur ai-01 en ajoute **un passage par heure** -- soit
+**~630 appels/h, 63 % du plafond**. Une cadence locale a 15 min aurait porte
+le seul declencheur local a ~1 250 appels/h : au-dessus du plafond, l'organe
+se serait affame lui-meme, et son etat rendu serait devenu illisible
+(UNREADABLE -- sur mais muet). Ce que la minuterie locale apporte n'est donc
+pas de la frequence mais de la fiabilite : la livraison des crons du depot
+est mesuree a 22 % des tics servis (mediane 289 min de retard).
 """
 
 from __future__ import annotations
