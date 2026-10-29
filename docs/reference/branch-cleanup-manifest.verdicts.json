@@ -1,0 +1,112 @@
+{
+  "_doc": "Preuve chiffree des 21 branches de classe E jugees superseded, mesuree le 2026-10-25 par comparaison de contenu contre main. La prose de branch-cleanup-manifest.README.md ne porte que le predicat ; les mesures vivent ici, pour que le verdict reste falsifiable sans figer un compte dans une phrase. Champs numeriques : added = lignes ajoutees par la branche, deleted = lignes supprimees par la branche, on_main_ratio = part des ajouts dont le contenu est deja present sur main, cells_added / cells_on_main = cellules de carnet.",
+  "_measured_at": "2026-10-25",
+  "_measured_against": "origin/main",
+  "_lane": "myia-po-2025:CoursIA",
+  "verdict": "superseded",
+  "branches": [
+    {
+      "branch": "fix/13633-parse-grain-require-key-v2",
+      "added": 123,
+      "on_main_ratio": 1.0,
+      "note": "contenu integralement present sur main"
+    },
+    {
+      "branch": "fix/13712-triplets-markdown",
+      "added": 1112,
+      "on_main_ratio": 0.991,
+      "note": "contenu present a 99.1 pour cent"
+    },
+    {
+      "branch": "pr13712",
+      "added": 1112,
+      "on_main_ratio": 0.991,
+      "note": "meme travail que fix/13712-triplets-markdown sous un autre nom"
+    },
+    {
+      "branch": "fix/13904-persona-alias-regex",
+      "on_main_ratio": 0.98,
+      "deleted": 2416,
+      "note": "ajouts presents a 98 pour cent ; la branche supprime encore du contenu que main porte"
+    },
+    {
+      "branch": "feature/11601-qcpycloud02-density",
+      "added": 185,
+      "on_main_ratio": 0.978,
+      "note": "contenu present a 97.8 pour cent"
+    },
+    {
+      "branch": "fix/13723-quarto-dedup",
+      "on_main_ratio": 0.996,
+      "note": "ratio mesure sur CausalBridges-02-Dowhy ; entrees de table et _quarto.yml presentes"
+    },
+    {
+      "branch": "fix/14558-three-lines-table",
+      "note": "bloc ajoute present dans .claude/rules/submodule-maintenance.md"
+    },
+    {
+      "branch": "feature/13156-cell-order-papermill-ratchet",
+      "note": "connaissance en section 6.4 ; rejouer regresserait les sorties"
+    },
+    {
+      "branch": "fix/11315-rebase-conflict",
+      "note": "residu = downgrade de pin v4.32.0 contre v4.33.0"
+    },
+    {
+      "branch": "fix/11417-m15-notebook-papermill-block",
+      "note": "cellule loader results_path (#11417/#11574) presente"
+    },
+    {
+      "branch": "fix/13717-body-amend",
+      "note": "cellule seed 20260822 / p_true = 0.3 presente"
+    },
+    {
+      "branch": "fix/13727-exp-naive-assert",
+      "note": "EV(P1) et Zinkevich presents dans GameTheory-13-ImperfectInfo-CFR-Python"
+    },
+    {
+      "branch": "fix/14070-position-g-anti-negation",
+      "note": "l'organe porte (?-i: et [A-Z][A-Z_]{3,}"
+    },
+    {
+      "branch": "fix/14422-phase-g-attribution",
+      "cells_added": 0,
+      "lines_absent_from_main": 0,
+      "note": "aucune cellule ni ligne absente de main"
+    },
+    {
+      "branch": "fix/c932-pr14137-if",
+      "note": "le workflow porte orphan, schedule, workflow_dispatch"
+    },
+    {
+      "branch": "pr-13601",
+      "cells_added": 0,
+      "note": "aucune cellule neuve ; residu = tables de statut README"
+    },
+    {
+      "branch": "pr13724",
+      "cells_added": 2,
+      "note": "les cellules ajoutees et leurs lignes README sont sur main"
+    },
+    {
+      "branch": "feature/14466-c233-prongb",
+      "note": "meme carnet que Frontieres-02, historique --follow commun"
+    },
+    {
+      "branch": "fix/13797-update-branch",
+      "cells_on_branch": 29,
+      "cells_on_main": 25,
+      "note": "carnet Search-02c-QuikGraph au meme chemin ; contenu de la branche inclus dans celui de main"
+    },
+    {
+      "branch": "fix/13932-fold-individaux-rebase",
+      "note": "main remplace le SKIP par des budgets signal.alarm"
+    },
+    {
+      "branch": "fix/c699-narrow-sustained",
+      "cells_added": 0,
+      "lines_absent_from_main": 0,
+      "note": "aucune cellule ni ligne absente de main"
+    }
+  ]
+}
