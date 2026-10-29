@@ -1061,6 +1061,141 @@ def vein_runs(
     return out
 
 
+# Chaining outside the belt (#21067 correctif 2, 2026-10-29). The vein axis
+# counts how many PRs of a lane cite the same issue; this axis counts how
+# many of those are chained onto EACH OTHER through `prev:`. The two measure
+# different defects: a vein can be fed by unrelated grains (the lane draws
+# the same EPIC twice in a day, belt or not), whereas a chain is the lane
+# walking from one grain to the next INSIDE the same EPIC -- `prev:` cites
+# the previous grain and no draw from the belt happened in between. That
+# walk is what #21067 measured: #16334 absorbed 43 markers from 8 lanes,
+# and 7 of its notebooks 10..18 came from a chain, not from a draw.
+_PREV_CHAIN_CAP = 2
+
+
+def prev_chain_runs(
+    merged_prs: list[dict],
+    target_lane: str,
+    chain_cap: int = _PREV_CHAIN_CAP,
+    candidate: dict | None = None,
+) -> list[dict]:
+    """Chains of `>= chain_cap` consecutive `prev:` links on the SAME issue.
+
+    A LINK is a pair (a, b) of merged PRs of `target_lane` where `b`'s
+    `prev:` cites `a` AND the two cite the same issue (`extract_vein_key`).
+    `chain_cap=2` therefore means "three grains in a row on the same EPIC",
+    which is the walk #21067 §Correctif 2 asks the organ to surface.
+
+    `candidate` (`{"number": N, "body": "..."}`) is the OPEN PR being
+    assessed -- the "nouveau grain" of the correctif, which is by
+    construction NOT in the merged set. When supplied it is appended as the
+    last link, so the signal fires on the PR that EXTENDS the chain rather
+    than one day later on the next merged grain. A candidate whose `Grain:`
+    tag declares another lane is ignored (this organ audits one lane).
+
+    Silences, each because the alternative would invent an attribution:
+
+      * `b` carries no readable `prev:` -- that is a fresh draw, the very
+        gesture the correctif wants, so it BREAKS the chain and is clean;
+      * the cited PR is outside the loaded set (another day, another page):
+        its issue citation is unknown here, and unknown is not chained;
+      * either side has no readable issue citation (`vein_key is None`);
+      * the two cite DIFFERENT issues -- a rotation between EPICs, which is
+        legitimate variety, not a chain;
+      * the cited PR carries a different lane (that is `prev_lane_mismatches`,
+        #13383, a separate defect).
+
+    A chain is broken by any of the above: the walk restarts at the next
+    link, so a run of `n` consecutive links reports `count = n + 1` PRs
+    (the first PR of a chain is cited by the second, never by itself).
+
+    Returns one entry per chain: `{vein_key, count, numbers,
+    includes_candidate}`, ordered by descending count then ascending
+    vein_key (same convention as `vein_runs`). Pure and offline: it reads
+    only the bodies already loaded, so it adds no `gh` call and cannot
+    spend quota.
+    """
+    records = _candidate_record(merged_prs, target_lane)
+    candidate_number = None
+    if candidate is not None:
+        cand_number = candidate.get("number", -1)
+        cand_body = candidate.get("body", "") or ""
+        cand_tag = parse_grain_tag(cand_body)
+        if cand_tag is not None and cand_tag.get("lane") == target_lane:
+            candidate_number = cand_number
+            records.append({
+                "number": cand_number,
+                "lane": target_lane,
+                "tier": None,
+                "genre": cand_tag.get("genre"),
+                "canonical_genre": canonicalize_genre(cand_tag.get("genre")),
+                "genre_resolved": genre_resolves(cand_tag.get("genre")),
+                "is_light_genre": False,
+                "vein_key": extract_vein_key(
+                    {"number": cand_number, "body": cand_body}),
+                # Sorts after every ISO timestamp: the open candidate is the
+                # last link of the walk by construction.
+                "mergedAt": "~",
+            })
+    by_number = {r["number"]: r for r in records if isinstance(r["number"], int)}
+    body_by_number = {
+        pr["number"]: pr.get("body", "") or ""
+        for pr in merged_prs
+        if isinstance(pr.get("number"), int)
+    }
+    if candidate_number is not None:
+        body_by_number[candidate_number] = candidate.get("body", "") or ""
+
+    chains: list[dict] = []
+    current_key: int | None = None
+    current_numbers: list[int] = []
+    links = 0
+
+    def _close() -> None:
+        nonlocal current_key, current_numbers, links
+        if current_key is not None and links >= chain_cap:
+            chains.append({
+                "vein_key": current_key,
+                "count": links + 1,
+                "numbers": list(current_numbers),
+                "includes_candidate": (
+                    candidate_number is not None
+                    and candidate_number in current_numbers
+                ),
+            })
+        current_key, current_numbers, links = None, [], 0
+
+    for record in records:
+        number = record["number"]
+        match = _PREV_CLAUSE_RE.search(body_by_number.get(number, ""))
+        if not match:
+            _close()
+            continue
+        prev_number = int(match.group(1))
+        prev = by_number.get(prev_number)
+        key = record["vein_key"]
+        linked = (
+            prev is not None
+            and prev_number != number
+            and key is not None
+            and prev["vein_key"] == key
+        )
+        if not linked:
+            _close()
+            continue
+        if current_key == key:
+            links += 1
+            current_numbers.append(number)
+        else:
+            _close()
+            current_key = key
+            current_numbers = [prev_number, number]
+            links = 1
+    _close()
+    chains.sort(key=lambda c: (-c["count"], c["vein_key"]))
+    return chains
+
+
 # Picker-call helper (#11343 tranche 2, amendement ai-01 2026-08-16T22:53Z) :
 # when VEINE-RUN trips, the cap is no longer advisory. The lane must
 # DRAW the next grain from `pick_idle_grain.py`, the same posture as
@@ -1162,6 +1297,8 @@ def compute_signals(
     candidate_genre: str | None = None,
     candidate_files: list[str] | None = None,
     files_by_pr: dict[int, set[str]] | None = None,
+    candidate_number: int | None = None,
+    candidate_body: str | None = None,
 ) -> dict:
     """Compute the four advisory G-VAR-2/3-by-GENRE signals for `target_lane`.
 
@@ -1198,6 +1335,20 @@ def compute_signals(
                                     defect the axis catches). The list of
                                     veins is returned for the workflow to
                                     label, the same posture as `long_runs`.
+      * `PREV-CHAIN-RUN`         -- ANY chain in `prev_chain_runs()` of
+                                    `count >= 3` PRs (i.e. `chain_cap=2`
+                                    consecutive `prev:` links on the SAME
+                                    issue). The 6th axis (#21067 correctif 2):
+                                    a VEIN says "the lane cited this EPIC
+                                    twice today", a CHAIN says "the lane
+                                    walked from grain to grain inside that
+                                    EPIC without drawing from the belt". The
+                                    chain is what the correctif sends back to
+                                    the belt; the vein alone is compatible
+                                    with two independent draws. Like
+                                    VEIN-RUN, it is a LANE-DAY aggregate; the
+                                    chains are returned for the workflow to
+                                    comment and label.
       * `PREV-LANE-MISMATCH`     -- `prev_lane_mismatches()` found, among the
                                     merged set, a PR of `target_lane` whose
                                     `prev:` cites a PR carrying a DIFFERENT
@@ -1300,6 +1451,23 @@ def compute_signals(
     # the GENRE-RUN threshold, the same adjacency convention.
     vein_list = vein_runs(merged_prs, target_lane)
 
+    # PREV-CHAIN-RUN (#21067 correctif 2): independent of the vein. Two draws
+    # on the same EPIC are a vein and are legitimate; a `prev:` that cites the
+    # previous grain INSIDE that EPIC is a walk, and the walk is what keeps a
+    # lane off the belt. The correctif sends the NEXT grain of such a chain to
+    # the picker, so the organ must see the chain, not only the vein. The OPEN
+    # candidate rides along as the last link when its body is supplied: the
+    # correctif names "un nouveau grain", which is by construction not merged.
+    chain_list = prev_chain_runs(
+        merged_prs,
+        target_lane,
+        candidate=(
+            {"number": candidate_number if candidate_number is not None else -1,
+             "body": candidate_body}
+            if candidate_body is not None else None
+        ),
+    )
+
     # GENRE-UNKNOWN (#12158): the canonical folding produced a word that is
     # NOT in the closed enumeration. By construction such a word can never
     # equal the previous genre, so it silently defeats G-VAR-3 adjacency --
@@ -1329,12 +1497,14 @@ def compute_signals(
             "CAP-EXCEEDED-BY-GENRE": cap_exceeded,
             "GENRE-MISMATCH": genre_mismatch,
             "VEIN-RUN": bool(vein_list),
+            "PREV-CHAIN-RUN": bool(chain_list),
             "GENRE-UNKNOWN": genre_unknown,
             "PREV-LANE-MISMATCH": bool(prev_mismatches),
         },
         "long_runs": long_runs,
         "exempt_runs": exempt_runs,
         "vein_runs": vein_list,
+        "prev_chain_runs": chain_list,
         "prev_lane_mismatches": prev_mismatches,
         "inferred_genre_from_paths": inferred,
         "candidate_genre_canonical": can_canon,
@@ -1559,6 +1729,8 @@ def main(argv: list[str] | None = None) -> int:
                     merged, lane,
                     files_by_pr=_files_map_for_runs(
                         merged, lane, fetch=not args.no_fetch_files) or None,
+                    candidate_number=args.check_pr,
+                    candidate_body=body,
                 )
                 vein_early = sig_early.get("vein_runs", [])
                 if vein_early:
@@ -1573,6 +1745,20 @@ def main(argv: list[str] | None = None) -> int:
                     out["vein_key"] = None
                     out["vein_count"] = 0
                     out["picker_command"] = None
+                # PREV-CHAIN-RUN (#21067 correctif 2) : meme posture que la
+                # veine -- le signal est independant du tier et du genre, et
+                # une branche non-LIGHT le porte aussi. Une chaine dit que la
+                # lane a ENCHAiNE dans le meme EPIC ; le grain suivant se tire
+                # au tapis. Informatif ici : le correctif ne HOLD pas la
+                # tranche en cours (meme amendement que #11343).
+                chain_early = sig_early.get("prev_chain_runs", [])
+                out["prev_chain_exceeded"] = bool(chain_early)
+                out["prev_chain_key"] = (
+                    chain_early[0]["vein_key"] if chain_early else None
+                )
+                out["prev_chain_count"] = (
+                    chain_early[0]["count"] if chain_early else 0
+                )
             print(json.dumps(out))
             return 0
         if not lane:
@@ -1618,6 +1804,8 @@ def main(argv: list[str] | None = None) -> int:
             merged, lane,
             files_by_pr=_files_map_for_runs(
                 merged, lane, fetch=not args.no_fetch_files) or None,
+            candidate_number=args.check_pr,
+            candidate_body=body,
         )
         vein_runs_list = sig.get("vein_runs", [])
         picker_cmd = None
@@ -1660,6 +1848,11 @@ def main(argv: list[str] | None = None) -> int:
             "vein_exceeded": sig["signals"]["VEIN-RUN"],
             "vein_key": vein_runs_list[0]["vein_key"] if vein_runs_list else None,
             "vein_count": vein_runs_list[0]["count"] if vein_runs_list else 0,
+            "prev_chain_exceeded": sig["signals"]["PREV-CHAIN-RUN"],
+            "prev_chain_key": (sig["prev_chain_runs"][0]["vein_key"]
+                               if sig["prev_chain_runs"] else None),
+            "prev_chain_count": (sig["prev_chain_runs"][0]["count"]
+                                 if sig["prev_chain_runs"] else 0),
             "picker_command": picker_cmd,
             "budget": status["budget"],
             "spent": status["spent"],
@@ -1698,6 +1891,7 @@ def main(argv: list[str] | None = None) -> int:
             candidate_files=cand_files,
             files_by_pr=_files_map_for_runs(
                 merged, args.lane, fetch=not args.no_fetch_files) or None,
+            candidate_body=cand_body,
         )
         # Picker-call wiring (#11343 tranche 2) : the signals are
         # advisory, but the FIRST tripped vein (highest count, lowest
