@@ -64,31 +64,89 @@ AGE_MIN_H = 48.0
 FLEET_PREFIXES = ("jsboige", "myia-")
 
 
+class InstrumentError(RuntimeError):
+    """Panne d'INSTRUMENT : le defaut vient de `gh` ou du reseau, pas du code.
+
+    C'est la seule classe que la garde a le droit d'absorber en UNKNOWN
+    (#14849). Un defaut de code, lui, doit remonter.
+    """
+
+
+class GhError(RuntimeError):
+    """`gh` a echoue SANS signature de transport : argument invalide, PR
+    inexistante, depot non autorise. C'est un **verdict sur l'entree**, pas
+    une panne de transport -- le motif ne doit donc pas annoncer un
+    « instrument injoignable »."""
+
+
+# Les signatures d'une panne de TRANSPORT, dans le stderr de `gh`.
+#
+# `could not resolve HOST` (DNS) -- et surtout PAS `Could not resolve to a
+# PullRequest`, qui est le message d'un 404 GraphQL : un verdict sur l'entree.
+# Le motif a ete mesure trop large a la premiere ecriture, et le test
+# `test_gh_discrimine_le_transport_du_verdict_d_entree` l'a attrape.
+_TRANSPORT_RE = re.compile(
+    r"rate limit|timeout|timed out|could not resolve host|"
+    r"connection (?:refused|reset|aborted)|temporary failure|"
+    r"bad gateway|service unavailable|\b50[234]\b",
+    re.IGNORECASE)
+
+
 def _gh(args: list[str], timeout: int = 120) -> str:
     out = subprocess.run(["gh", *args], capture_output=True, text=True,
                          encoding="utf-8", timeout=timeout, check=False)
     if out.returncode != 0:
-        raise RuntimeError(f"gh {' '.join(args[:3])} a echoue : "
-                           f"{(out.stderr or '').strip()[:300]}")
+        err = (out.stderr or "").strip()
+        message = f"gh {' '.join(args[:3])} a echoue : {err[:300]}"
+        classe = InstrumentError if _TRANSPORT_RE.search(err) else GhError
+        raise classe(message)
     return out.stdout
+
+
+def _gh_json(args: list[str], timeout: int = 120):
+    """Le JSON rendu par `gh`.
+
+    Un stdout illisible est un defaut de l'**instrument**, pas du code : une
+    reponse tronquee ou polluee par un message d'erreur pendant une famine
+    leve `JSONDecodeError`, qui est une `ValueError` et echapperait donc au
+    `try` de `main()` -- produisant exactement le rouge de transport que
+    cette garde existe pour supprimer. Le discriminant n'est pas la classe
+    d'exception, c'est la **provenance** du defaut (revue du 2026-10-29,
+    PR #23283).
+    """
+    raw = _gh(args, timeout)
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise InstrumentError(
+            f"gh {' '.join(args[:3])} a rendu un JSON illisible : "
+            f"{exc}") from exc
 
 
 def pr_files(pr: int) -> list[dict]:
     """Les fichiers de la PR avec leur STATUT GitHub (`added`, `renamed`...)."""
-    raw = _gh(["api", f"repos/{REPO}/pulls/{pr}/files", "--paginate"])
-    return json.loads(raw)
+    return _gh_json(["api", f"repos/{REPO}/pulls/{pr}/files", "--paginate"])
 
 
 def pr_meta(pr: int) -> dict:
-    return json.loads(_gh(["pr", "view", str(pr), "--repo", REPO, "--json",
-                           "number,title,author,createdAt,body,headRepositoryOwner"]))
+    return _gh_json(["pr", "view", str(pr), "--repo", REPO, "--json",
+                     "number,title,author,createdAt,body,headRepositoryOwner"])
 
 
 def issue_created(number: int) -> str | None:
+    """La date de creation de l'issue, ou `None` si elle n'existe pas.
+
+    `None` veut dire « gh a rendu un verdict : cette issue est introuvable ».
+    Une panne d'INSTRUMENT, elle, **remonte** : la confondre avec un 404
+    transformait une famine d'API en constat ferme -- « d'age non mesure » --
+    et la PR conforme etait accusee d'avoir court-circuite la file, par une
+    requete posterieure au correctif cense le supprimer (revue du
+    2026-10-29, PR #23283).
+    """
     try:
-        data = json.loads(_gh(["issue", "view", str(number), "--repo", REPO,
-                               "--json", "createdAt"]))
-    except Exception:  # noqa: BLE001 - issue illisible = age non mesure
+        data = _gh_json(["issue", "view", str(number), "--repo", REPO,
+                         "--json", "createdAt"])
+    except GhError:
         return None
     return data.get("createdAt")
 
@@ -190,25 +248,43 @@ def main(argv: list[str] | None = None) -> int:
     def note(texte: str) -> None:
         print(f"::warning::creation-provenance: {texte}")
 
-    try:
-        meta = pr_meta(args.pr)
-        files = pr_files(args.pr)
-    except (RuntimeError, OSError, subprocess.TimeoutExpired) as exc:
-        # Panne d'INSTRUMENT (rate limit de l'installation, reseau, `gh`
-        # absent) : le job est advisory et sort TOUJOURS 0. Un organe
-        # injoignable rend UNKNOWN, jamais un rouge (#14849) -- sans quoi
-        # une famine d'API accuse la PR d'un defaut qu'elle n'a pas. Le
-        # `--strict` ne convertit pas davantage une panne en constat : il
-        # sanctionne un verdict, et il n'y a pas de verdict ici.
-        detail = str(exc).strip()[:240]
+    def non_evalue(detail: str, genre: str) -> int:
+        """Sortie UNKNOWN : le job est advisory et sort TOUJOURS 0.
+
+        Un organe injoignable rend UNKNOWN, jamais un rouge (#14849) --
+        sans quoi une famine d'API accuse la PR d'un defaut qu'elle n'a
+        pas. Le `--strict` ne convertit pas davantage une panne en
+        constat : il sanctionne un verdict, et il n'y a pas de verdict ici.
+        """
         rapport["statut"] = "UNKNOWN"
         rapport["instrument"] = detail
-        motif = ("instrument injoignable (gh/API) : provenance NON EVALUEE "
-                 f"-- {detail}")
+        motif = f"{genre} : provenance NON EVALUEE -- {detail}"
         rapport["exemptions"].append(motif)
         note(motif)
         _emit(rapport, args)
         return 0
+
+    try:
+        meta = pr_meta(args.pr)
+        files = pr_files(args.pr)
+    except InstrumentError as exc:
+        return non_evalue(str(exc).strip()[:240],
+                          "instrument injoignable (gh/API)")
+    except GhError as exc:
+        # `gh` a rendu un verdict sur l'entree (PR inexistante, argument
+        # refuse). Rien n'a ete mesure, mais l'instrument n'est pas
+        # injoignable : le motif le dit tel quel.
+        return non_evalue(str(exc).strip()[:240],
+                          "gh a echoue sans signature de transport "
+                          "(verdict d'entree ou invocation)")
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return non_evalue(str(exc).strip()[:240],
+                          "instrument injoignable (gh/API)")
+    except RuntimeError as exc:
+        # Panne non classee : on reste conservateur (UNKNOWN, pas de rouge),
+        # mais on n'affirme pas qu'elle est de transport.
+        return non_evalue(str(exc).strip()[:240],
+                          "panne d'instrument non classee")
 
     rapport["pr_meta"] = {"titre": meta.get("title"),
                           "auteur": (meta.get("author") or {}).get("login"),
@@ -218,6 +294,7 @@ def main(argv: list[str] | None = None) -> int:
     if not is_fleet(meta):
         motif = ("PR etudiante ou externe (auteur "
                  f"{(meta.get('author') or {}).get('login')}) : hors perimetre")
+        rapport["statut"] = "EXEMPTE"
         rapport["exemptions"].append(motif)
         note(motif)
         _emit(rapport, args)
@@ -237,6 +314,7 @@ def main(argv: list[str] | None = None) -> int:
                  + (f" ({len(demenages)} deménagement(s) exempté(s))"
                     if demenages else "")
                  + (f" ({len(jumeaux)} jumeau(x) `_en`)" if jumeaux else ""))
+        rapport["statut"] = "EXEMPTE"
         rapport["exemptions"].append(motif)
         note(motif)
         _emit(rapport, args)
@@ -249,6 +327,7 @@ def main(argv: list[str] | None = None) -> int:
         motif = ("aucune issue servie identifiee dans le body "
                  "(Closes/See/Part of/Fixes #N) : la provenance du carnet "
                  "neuf n'est pas etablie")
+        rapport["statut"] = "SIGNALE"
         rapport["constats"].append(motif)
         note(motif)
         _emit(rapport, args)
@@ -257,7 +336,21 @@ def main(argv: list[str] | None = None) -> int:
     rapport["issue_servie"] = issue
 
     # 4. L'issue a-t-elle attendu son tour ?
-    created = issue_created(issue)
+    #    La lecture de l'age est un SECOND appel reseau, posterieur au `try`
+    #    ci-dessus : sans ce garde-fou, une famine qui epargne `pr_files`
+    #    mais frappe `issue_created` rendait `age non mesure` -- un constat
+    #    ferme -- au lieu d'un UNKNOWN. Revu le 2026-10-29 (PR #23283).
+    try:
+        created = issue_created(issue)
+    except InstrumentError as exc:
+        return non_evalue(str(exc).strip()[:240],
+                          "instrument injoignable (gh/API)")
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return non_evalue(str(exc).strip()[:240],
+                          "instrument injoignable (gh/API)")
+    except RuntimeError as exc:
+        return non_evalue(str(exc).strip()[:240],
+                          "panne d'instrument non classee")
     age_h = None
     if created and meta.get("createdAt"):
         age_h = (dt.datetime.fromisoformat(meta["createdAt"])
@@ -271,6 +364,11 @@ def main(argv: list[str] | None = None) -> int:
 
     verdict, motif = decide(issue, age_h, tirage)
     rapport["verdict"] = verdict
+    # `statut` est pose sur TOUS les chemins : un consommateur de `--json`
+    # doit pouvoir distinguer CONFORME de « pas de statut » sans repliquer
+    # la logique de `decide` (revue du 2026-10-29, PR #23283).
+    rapport["statut"] = ("SIGNALE" if verdict.startswith("SIGNALE")
+                         else "CONFORME")
     if verdict.startswith("SIGNALE"):
         rapport["constats"].append(motif)
         note(motif)
