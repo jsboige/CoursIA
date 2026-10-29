@@ -304,7 +304,9 @@ def _split_organ_json(stdout: str) -> Tuple[Optional[dict], str]:
 
 
 def _organ_run(
-    project_path: str, cmd_args: list, timeout: int
+    project_path: str, cmd_args: list, timeout: int,
+    stdin_file: str | None = None,
+    organ: str | Path | None = None,
 ) -> Tuple[int, str, str]:
     """Execute ``cmd_args`` via l'organe confine depuis ``project_path``.
 
@@ -316,9 +318,14 @@ def _organ_run(
     ``(rc_enfant, out, err)`` avec Timeout -> ``(-1, "", "TIMEOUT after Ns")``
     et organe injoignable / refus -> ``(-2, ..., raison)``. Le ``tail``
     historique du mode WSL est applique PAR L'APPELANT.
+
+    ``stdin_file`` (capacite stdin, #15666) : fichier branche sur l'entree
+    standard de l'enfant — le mode ``lake env lean --stdin`` de lean_server
+    lit un snippet. ``organ`` : chemin de l'organe deja resolu par un
+    appelant deleguant (lean_server) ; defaut : decouvert ici.
     """
     _require_str("project_path", project_path)
-    organ = _find_lean_exec()
+    organ = Path(organ) if organ is not None else _find_lean_exec()
     host_cwd = _host_cwd_of(project_path)
     out_f = tempfile.NamedTemporaryFile('wb', delete=False, suffix='.out')
     err_f = tempfile.NamedTemporaryFile('wb', delete=False, suffix='.err')
@@ -330,8 +337,10 @@ def _organ_run(
         "--timeout", str(timeout), "--caller", _ORGAN_CALLER,
         "--cwd", host_cwd,
         "--stdout-file", out_path, "--stderr-file", err_path,
-        "--", *cmd_args,
     ]
+    if stdin_file is not None:
+        argv += ["--stdin-file", str(stdin_file)]
+    argv += ["--", *cmd_args]
     try:
         try:
             _rc, organ_out, organ_err = _run_capture(argv, timeout + 60)

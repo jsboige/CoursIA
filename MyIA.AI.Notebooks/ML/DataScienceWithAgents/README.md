@@ -110,6 +110,7 @@ DataScienceWithAgents/
 │
 ├── 03-Deep-Learning/            # Deep learning from scratch
 │   ├── 3.0-Theorie-Information.ipynb
+│   ├── 3.0b-Tenseurs-Strides-Vues-Python.ipynb
 │   ├── 3.1-Retropropagation.ipynb
 │   ├── 3.2-Optimisateurs.ipynb
 │   ├── 3.3-Regularisation.ipynb
@@ -200,6 +201,7 @@ Le prolongement direct du socle : là où [2.2](02-ML-Cours/2.2-Descente-de-grad
 | Notebook | Sujet | Concept-phare |
 |----------|-------|---------------|
 | [3.0-Theorie-Information](03-Deep-Learning/3.0-Theorie-Information.ipynb) | Entropie, cross-entropy et KL from scratch sur texte français, MSE vs CE sur classifieur, température softmax, pont DPO/GRPO | **La loss qui fait apprendre** : pourquoi la CE et pas la MSE ; KL comme mesure de décalage entre distributions |
+| [3.0b-Tenseurs-Strides-Vues](03-Deep-Learning/3.0b-Tenseurs-Strides-Vues-Python.ipynb) | Le support mémoire du tenseur à la main : buffer, offset, forme et strides en NumPy pur, parité mesurée avec PyTorch (vues, `expand`, `view`, gradient), fenêtres glissantes et im2col | **L'adresse comme formule** : toute opération « sans copie » ne fait que réécrire les pas |
 | [3.1-Retropropagation](03-Deep-Learning/3.1-Retropropagation.ipynb) | Le MLP et la rétropropagation à la main (NumPy pur, sans autograd) | **Le gradient vérifié** (différence finie 1,3e-11 ; parité exacte avec PyTorch ; init nulle = gradient nul) |
 | [3.2-Optimisateurs](03-Deep-Learning/3.2-Optimisateurs.ipynb) | Momentum, Adagrad, RMSProp, Adam et schedules, écrits puis validés pas à pas contre `torch.optim` | **La parité exacte** (5 mises à jour identiques à ≤2,2e-16 ; Beale 5 trajectoires ; MLP 3 graines ; schedules : coût en déterministe, gain en bruité) |
 | [3.3-Regularisation](03-Deep-Learning/3.3-Regularisation.ipynb) | Dropout, weight decay et early stopping écrits à la main sur un MLP construit pour surapprendre (17 000 paramètres, 100 points, 12 étiquettes fausses) | **Corriger la variance sans changer le modèle** : trois remèdes appliqués au même surapprentissage fabriqué |
