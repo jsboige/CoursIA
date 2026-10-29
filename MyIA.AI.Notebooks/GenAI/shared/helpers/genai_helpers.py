@@ -122,7 +122,9 @@ class OpenAIConfig:
         """Cle masquee, sure a afficher dans une sortie de cellule."""
         if not self.api_key:
             return '<absente>'
-        if len(self.api_key) <= 8:
+        # Seuil large (revue 23269) : sur une cle courte, prefixe+suffixe
+        # revelent l'essentiel (8 caracteres visibles sur 9) -- on masque tout.
+        if len(self.api_key) < 20:
             return '*' * len(self.api_key)
         return '%s...%s' % (self.api_key[:4], self.api_key[-4:])
 

@@ -477,6 +477,18 @@ def test_masked_key_handles_absent_key():
     assert cfg.masked_key == "<absente>"
 
 
+def test_masked_key_masks_short_keys_entirely():
+    # Revue 23269 : une cle courte ne doit rien montrer du tout -- prefixe et
+    # suffixe reveleraient l'essentiel (8 caracteres visibles sur 9 avec un
+    # seuil a 8).
+    short = "sk-court-1234"
+    cfg = gh.OpenAIConfig(api_key=short, base_url=None, model="m",
+                          reasoning_model="r", provider="openai",
+                          key_source="test")
+    assert set(cfg.masked_key) == {"*"}
+    assert len(cfg.masked_key) == len(short)
+
+
 def test_apply_openai_environment_sets_variables(monkeypatch):
     _no_colab(monkeypatch)
     _clear_key_env(monkeypatch)
