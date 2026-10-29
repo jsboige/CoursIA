@@ -7,9 +7,9 @@ Instrumentation pour mesurer la **complexite de trajectoire** (compression LZ fe
 | Fichier | Role |
 |---------|------|
 | `k_trajectory.py` | CLI principal -- modes `measure`, `verify-corpus`, `bounds`, `wolfram`, `wolfram-4classes`, `wolfram-ksf`, `wolfram-blocks`, `wolfram-seed-test` |
-| `hashlife_speedup.py` | Rapport d'acceleration HashLife vs simulation naive par classe de motif -- exposant d'echelle `alpha` (pli 3 de l'Epic #19742) |
-| `hashlife_speedup_results.json` | Verbatim mesure d'acceleration (mediane de 3 repetitions, un sous-processus froid par point) |
-| `HASHLIFE-SPEEDUP-VERDICT.md` | Verdict falsifiable `REDUCIBLE` / `IRREDUCIBLE` par motif |
+| `hashlife_speedup.py` | Rapport d'acceleration HashLife vs simulation naive par classe de motif -- exposant d'echelle `alpha` avec son R2 et son enveloppe de repetitions, et temoin d'etat final (empreinte) sur les deux voies (pli 3 de l'Epic #19742) |
+| `hashlife_speedup_results.json` | Verbatim mesure d'acceleration (mediane de 3 repetitions, un sous-processus froid par point, empreinte d'etat final par point) |
+| `HASHLIFE-SPEEDUP-VERDICT.md` | Verdict falsifiable `REDUCIBLE` / `IRREDUCIBLE` par motif, et sa robustesse sous incertitude |
 | `wolfram_cross_classes_results.json` | Verbatim mesure 4 classes Wolframe (pli 4) |
 | `wolfram_ksf_results.json` | Verbatim KSF 4 classes (pli 7) |
 | `wolfram_blocks_results.json` | Verbatim block decomposition 4 classes (pli 8) |
