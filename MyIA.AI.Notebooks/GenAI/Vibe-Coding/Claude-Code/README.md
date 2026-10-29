@@ -39,7 +39,7 @@ Cette formation vous permettra de :
 
 - **Windows** : installateur depuis [claude.com/code](https://claude.com/code)
 - **macOS** : `brew install --cask claude-code`
-- **Linux / WSL** : `curl -fsSL https://install.claude.com | sh`
+- **Linux / WSL** : `curl -fsSL https://claude.ai/install.sh | sh` — le domaine `install.claude.com` que cette ligne portait n'existe pas (`Could not resolve host`, mesure du 2026-10-29, #23276). Sous Linux, le binaire atterrit dans `~/.local/bin` : s'il n'est pas dans votre `PATH`, `claude --version` repond `command not found` alors que l'installation a reussi.
 
 ```bash
 # Vérifier l'installation

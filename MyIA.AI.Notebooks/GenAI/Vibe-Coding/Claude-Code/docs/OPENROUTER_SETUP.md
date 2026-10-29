@@ -49,8 +49,10 @@ brew install --cask claude-code
 ### Linux / WSL
 
 ```bash
-curl -fsSL https://install.claude.com | sh
+curl -fsSL https://claude.ai/install.sh | sh
 ```
+
+> **Corrige le 2026-10-29 (issue #23276) — repere par la lane `myia-po-2028:CoursIA-3`.** La commande que ce guide portait jusque-la, `curl -fsSL https://install.claude.com | sh`, **ne fonctionne pas** : le domaine `install.claude.com` n'existe pas. Mesure : `curl: (6) Could not resolve host`. Le point d'entree officiel est `https://claude.ai/install.sh` (HTTP 302 vers le script).
 
 ### Vérifier
 
@@ -58,7 +60,15 @@ curl -fsSL https://install.claude.com | sh
 claude --version
 ```
 
-**Checkpoint :** Vous devez voir un numero de version. Sinon, redémarrez votre terminal et réessayez.
+**Checkpoint :** Vous devez voir un numero de version.
+
+**Si vous lisez `command not found: claude`, l'installation a pourtant reussi.** L'installateur place le binaire dans `~/.local/bin`, qui n'est pas dans le `PATH` par defaut sous Linux. Ajoutez-le une fois pour toutes, puis rouvrez le terminal :
+
+```bash
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc && source ~/.bashrc
+```
+
+Sans cette ligne, la CLI fonctionne dans le shell ou l'installation a eu lieu et disparait dans tout nouveau shell — c'est la cause la plus frequente du « je l'ai installe mais ca ne marche pas ».
 
 ---
 
@@ -271,7 +281,7 @@ os.environ["ANTHROPIC_MODEL"]       = "anthropic/claude-haiku-5.5"
 !claude -p "Reponds uniquement: OK"
 ```
 
-En cellule shell pure, les trois `export` remplacent le bloc Python.
+En cellule `%%bash`, les trois `export` remplacent le bloc Python — **a condition d'appeler `claude` dans la meme cellule**. Un `!export ...` lance dans une cellule Jupyter ouvre un **sous-shell** : la variable meurt avec lui et la cellule suivante ne la voit pas. C'est une source d'echec silencieuse classique en Colab, et elle ressemble au symptome de jeton absent decrit ci-dessous. Pour une valeur qui doit survivre d'une cellule a l'autre, passez par `os.environ` (le runtime Python est partage entre cellules) et non par `!export`.
 
 > **Ne mettez pas la cle dans le notebook.** Lisez-la depuis les *Secrets* Colab (`google.colab.userdata`) ou une variable d'environnement de session. Un notebook committe avec une cle en clair est un incident de securite (regle `secrets-hygiene`) — le secret est rotation a faire, pas un `revert`.
 

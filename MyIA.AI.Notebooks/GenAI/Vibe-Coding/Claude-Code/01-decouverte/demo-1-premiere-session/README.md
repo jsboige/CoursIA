@@ -24,7 +24,7 @@ C'est la méthode par défaut de la documentation officielle Anthropic — Node.
 
 - **Windows** : installateur depuis [claude.com/code](https://claude.com/code)
 - **macOS** : `brew install --cask claude-code`
-- **Linux / WSL** : `curl -fsSL https://install.claude.com | sh`
+- **Linux / WSL** : `curl -fsSL https://claude.ai/install.sh | sh` (le domaine `install.claude.com` porte par cette ligne jusque-la n'existe pas — mesure du 2026-10-29, #23276)
 
 Alternative npm (uniquement si votre poste interdit les binaires hors gestionnaire de paquets) : voir le [guide d'installation canonique](../../docs/INSTALLATION-CLAUDE-CODE.md).
 
