@@ -1088,6 +1088,22 @@ scripts/ci/snapshots/
 # pour risquer un ignore non-intentionnel.
 MyIA.AI.Notebooks/GenAI/PostTraining/_measurements/pt11c_multiseed_output/
 
+# PT-11d RLVR training scratch (issue #23290) : `PT_11d_multiseed_qwen35_4x100.ipynb`
+# ecrit `pt11b_multiseed_output/` (checkpoints LoRA + trainer state, ~Mo/seed),
+# `pt11_grpo_output/` et `pt11_reward_log.jsonl` dans son repertoire courant a chaque
+# run. Le `pt11b_per_seed_metrics.jsonl` re-generable est tracke dans `_measurements/`.
+# Patterns ANCRES aux deux emplacements que la convention de CWD du carnet produit
+# reellement : `OUTPUT_DIR = "./pt11b_multiseed_output"` et le journal de reward sont
+# relatifs au dossier du carnet, tandis que les chemins `MyIA.AI.Notebooks/...` des
+# cellules de plot et d'import sont relatifs a la racine du depot. Hors de ces deux
+# ancres, `pt11b_multiseed_output` est trop generique pour risquer un ignore
+# non-intentionnel (meme raisonnement que PT-11c ci-dessus).
+MyIA.AI.Notebooks/GenAI/PostTraining/pt11b_multiseed_output/
+MyIA.AI.Notebooks/GenAI/PostTraining/pt11_grpo_output/
+MyIA.AI.Notebooks/GenAI/PostTraining/pt11_reward_log.jsonl
+/pt11b_multiseed_output/
+/pt11_grpo_output/
+
 # Tranche 2 #15002 measurement artifacts (issue #15002 / PR upcoming):
 # the live VoiceDesign WAV/MP3 + results.json used to verify acceptance
 # criterion #2 (motion/motifs3) live on disk during a run; re-generated
