@@ -245,24 +245,55 @@ def resolve_openai_config(required=True, env=None):
 
 
 def apply_openai_environment(config=None, required=True):
-    """Pose OPENAI_API_KEY / OPENAI_BASE_URL / OPENAI_MODEL dans l'environnement.
+    """Pose la configuration resolue dans l'environnement du processus.
 
-    Le client `openai` 2.x lit ces variables tout seul : un carnet qui fait
-    `OpenAI()` n'a donc rien d'autre a changer. Une valeur deja posee dans
-    l'environnement n'est jamais ecrasee, sauf par `config` explicite.
+    Deux contrats distincts, selon que `config` est fournie ou non :
+
+    * **`config=None`** — la configuration est *resolue* (environnement puis
+      Secrets Colab) puis *posee* : chaque variable absente de l'environnement
+      est ecrite (`setdefault`). Une valeur deja exportee n'est jamais ecrasee,
+      l'auteur du carnet a pu la poser deliberement.
+    * **`config` explicite** — l'appelant affirme cette configuration : elle
+      *remplace* l'environnement. Les quatre variables sont ecrites, et
+      `OPENAI_BASE_URL` est **retiree** quand la configuration ne porte pas de
+      `base_url` — sinon une adresse OpenRouter residuelle re-route
+      silencieusement une cle OpenAI native.
+
+    Ce que le client `openai` 2.x lit tout seul : `OPENAI_API_KEY` et
+    `OPENAI_BASE_URL`. Il ne lit **pas** `OPENAI_MODEL` : le nom du modele
+    reste un argument d'appel, `client.chat.completions.create(model=cfg.model)`.
+    Poser `OPENAI_MODEL` sert a ce que le carnet le relise (`os.getenv`), pas a
+    le faire consommer par le client.
 
     Returns:
         OpenAIConfig (ou None si required=False et aucune cle).
     """
+    explicit = config is not None
     if config is None:
         config = resolve_openai_config(required=required)
     if config is None:
         return None
-    os.environ.setdefault('OPENAI_API_KEY', config.api_key)
+
+    variables = (
+        ('OPENAI_API_KEY', config.api_key),
+        ('OPENAI_MODEL', config.model),
+        ('OPENAI_REASONING_MODEL', config.reasoning_model),
+    )
+    for name, value in variables:
+        if explicit:
+            os.environ[name] = value
+        else:
+            os.environ.setdefault(name, value)
+
     if config.base_url:
-        os.environ.setdefault('OPENAI_BASE_URL', config.base_url)
-    os.environ.setdefault('OPENAI_MODEL', config.model)
-    os.environ.setdefault('OPENAI_REASONING_MODEL', config.reasoning_model)
+        if explicit:
+            os.environ['OPENAI_BASE_URL'] = config.base_url
+        else:
+            os.environ.setdefault('OPENAI_BASE_URL', config.base_url)
+    elif explicit:
+        # Configuration sans base_url : l'adresse residuelle doit partir,
+        # sinon la cle native part chez le fournisseur precedent.
+        os.environ.pop('OPENAI_BASE_URL', None)
     return config
 
 # Sauvegarde resultats

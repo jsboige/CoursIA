@@ -95,13 +95,39 @@ Le dépôt ignore les fichiers `.env` (ils ne partent pas dans un commit) ; ne l
 **Dans Google Colab** — les *Secrets* du carnet, **pas** un fichier. Un `.env` déposé dans l'espace *Fichiers* de la session disparaît à sa fermeture, et le refaire à chaque connexion est une source d'erreur ; Colab prévoit pour cela un coffre de secrets, que le notebook peut lire directement :
 
 1. dans la barre de gauche, cliquez sur l'icône en forme de **clé** (panneau *Secrets*) ;
-2. **Add new secret** : donnez-lui le nom `OPENAI_API_KEY` et pour valeur la clé remise par l'enseignant. Si la clé remise est une clé OpenRouter, nommez-le `OPENROUTER_API_KEY` — le code accepte les deux et prend la seconde quand la première est absente ;
+2. **Add new secret** : donnez-lui le nom `OPENROUTER_API_KEY` et pour valeur la clé remise par l'enseignant — c'est le nom que le module du cours essaie en premier après `OPENAI_API_KEY`, et la clé du cours est une clé OpenRouter. Si l'enseignant vous a remis une clé OpenAI directe, nommez le secret `OPENAI_API_KEY` : le code accepte les deux et essaie `OPENAI_API_KEY` d'abord, `OPENROUTER_API_KEY` ensuite ;
 3. basculez l'interrupteur **Notebook access** (*Accès au notebook*) sur **ON**. Sans lui, le secret existe mais reste illisible depuis le carnet : c'est la cause la plus fréquente d'un « clé absente » alors qu'elle est bien enregistrée ;
 4. relancez la cellule de configuration — il n'est pas nécessaire de redémarrer la session.
 
 Le secret n'apparaît alors dans aucune cellule et ne part donc jamais dans le fichier `.ipynb` que vous déposez.
 
-Les carnets les plus récents passent par [`MyIA.AI.Notebooks/GenAI/shared/helpers/genai_helpers.py`](../MyIA.AI.Notebooks/GenAI/shared/helpers/genai_helpers.py) : il lit l'environnement, puis les Secrets Colab, et affiche un message explicite quand aucune clé n'est trouvée — ce message rappelle les deux procédures ci-dessus. Un carnet plus ancien lit directement la variable `OPENAI_API_KEY` ; sous Colab, il suffit donc que le secret porte ce nom.
+Les carnets qui s'appuient sur l'aide [`MyIA.AI.Notebooks/GenAI/shared/helpers/genai_helpers.py`](../MyIA.AI.Notebooks/GenAI/shared/helpers/genai_helpers.py) n'ont rien d'autre à faire : `resolve_openai_config()` lit l'environnement, puis les Secrets Colab, et lève un message explicite quand aucune clé n'est trouvée — ce message rappelle les deux procédures ci-dessus.
+
+**Un carnet plus ancien lit directement `os.getenv("OPENAI_API_KEY")`, et là le Secret Colab ne suffit pas** : `userdata.get()` rend la valeur au code qui l'appelle, il ne peuple **pas** `os.environ`. Tant que la clé n'est pas recopiée dans l'environnement, ce carnet croit qu'aucune clé n'existe. La recopie se fait une fois, dans une cellule de configuration, et n'imprime jamais la valeur :
+
+```python
+import os
+from google.colab import userdata
+
+def _secret(nom):
+    try:
+        return (userdata.get(nom) or "").strip() or None
+    except Exception:
+        return None
+
+# `userdata.get` ne peuple pas `os.environ` : recopie explicite, sans affichage.
+if not os.environ.get("OPENAI_API_KEY"):
+    cle_openrouter = _secret("OPENROUTER_API_KEY")
+    if cle_openrouter:
+        # La cle du cours est une cle OpenRouter : il lui faut aussi son
+        # adresse, sinon le client `openai` l'envoie a api.openai.com (401).
+        os.environ["OPENAI_API_KEY"] = cle_openrouter
+        os.environ.setdefault("OPENAI_BASE_URL", "https://openrouter.ai/api/v1")
+    else:
+        cle_openai = _secret("OPENAI_API_KEY")
+        if cle_openai:
+            os.environ["OPENAI_API_KEY"] = cle_openai
+```
 
 N'écrivez **jamais** une clé dans une cellule : elle partirait avec le notebook dans votre commit, et le dépôt est public. C'est vrai aussi d'un `.env` ouvert et affiché dans une sortie.
 

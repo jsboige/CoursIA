@@ -457,6 +457,61 @@ def test_apply_openai_environment_tolerates_missing_key(monkeypatch):
     assert gh.apply_openai_environment(required=False) is None
 
 
+def test_apply_openai_environment_explicit_config_replaces_environment(monkeypatch):
+    """Une config explicite REMPLACE l'environnement, elle ne le complete pas.
+
+    Le contrat du docstring : `config=None` pose par `setdefault` (une valeur
+    exportee survit), `config=<objet>` affirme la configuration et l'emporte.
+    Sans cette distinction, un appelant qui construit un `OpenAIConfig` a la
+    main se faisait silencieusement ignorer par une cle deja presente.
+    """
+    _no_colab(monkeypatch)
+    _clear_key_env(monkeypatch)
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-stale")
+    monkeypatch.setenv("OPENAI_BASE_URL", gh.OPENROUTER_BASE_URL)
+    monkeypatch.setenv("OPENAI_MODEL", "modele-perime")
+    import os
+    cfg = gh.OpenAIConfig(
+        api_key="sk-fresh", base_url=None, model="gpt-5-mini",
+        reasoning_model="gpt-5.6-sol", provider="openai",
+        key_source="explicit",
+    )
+    returned = gh.apply_openai_environment(config=cfg)
+    assert returned is cfg
+    assert os.environ["OPENAI_API_KEY"] == "sk-fresh"
+    assert os.environ["OPENAI_MODEL"] == "gpt-5-mini"
+    assert os.environ["OPENAI_REASONING_MODEL"] == "gpt-5.6-sol"
+    # Pas de base_url dans la config : l'adresse residuelle doit avoir disparu,
+    # sinon la cle native part chez le fournisseur precedent.
+    assert "OPENAI_BASE_URL" not in os.environ
+
+
+def test_apply_openai_environment_explicit_config_sets_base_url(monkeypatch):
+    _no_colab(monkeypatch)
+    _clear_key_env(monkeypatch)
+    monkeypatch.setenv("OPENAI_BASE_URL", "https://exemple.invalid/v1")
+    import os
+    cfg = gh.OpenAIConfig(
+        api_key="sk-or", base_url=gh.OPENROUTER_BASE_URL,
+        model=gh.DEFAULT_OPENROUTER_MODEL,
+        reasoning_model="deepseek/deepseek-v4.1-flash",
+        provider="openrouter", key_source="explicit",
+    )
+    gh.apply_openai_environment(config=cfg)
+    assert os.environ["OPENAI_BASE_URL"] == gh.OPENROUTER_BASE_URL
+
+
+def test_apply_openai_environment_resolved_keeps_stale_base_url(monkeypatch):
+    """`config=None` ne touche pas a une base_url deja exportee (contrat 1)."""
+    _no_colab(monkeypatch)
+    _clear_key_env(monkeypatch)
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-explicit")
+    monkeypatch.setenv("OPENAI_BASE_URL", "https://exemple.invalid/v1")
+    import os
+    gh.apply_openai_environment()
+    assert os.environ["OPENAI_BASE_URL"] == "https://exemple.invalid/v1"
+
+
 def test_module_source_carries_no_literal_api_key():
     """Secrets-hygiene : aucune valeur de cle en dur, aucun defaut litteral."""
     import re
