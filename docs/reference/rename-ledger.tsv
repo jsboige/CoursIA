@@ -231,7 +231,6 @@ ancien	nouveau	date	lane
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb	MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb	2026-10-03	myia-po-2027:CoursIA
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb	MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42b-InoculationBifurcation-9B-Python.ipynb	2026-10-04	myia-po-2023:CoursIA
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09d-Lean-Discrepancy-Komlos.ipynb	MyIA.AI.Notebooks/Search/Discrepancy/Discrepancy-02-Komlos-Lean.ipynb	2026-10-04	myia-po-2027:CoursIA
-
 MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Csharp.ipynb	MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-CSharp.ipynb	2026-10-04	myia-po-2024:CoursIA
 MyIA.AI.Notebooks/RL/rl_1_intro_cartpole.ipynb	MyIA.AI.Notebooks/RL/RL-01-Premiers-Pas-Stable-Baselines3-Python.ipynb	2026-10-05	myia-po-2027:CoursIA
 MyIA.AI.Notebooks/RL/rl_1b_bitwise_logic_synthesis.ipynb	MyIA.AI.Notebooks/RL/RL-01b-Synthese-Logique-Bitwise-Python.ipynb	2026-10-05	myia-po-2027:CoursIA
@@ -321,7 +320,6 @@ MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere.ipynb	MyIA.AI.Notebooks/II
 MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations.ipynb	MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations-Python.ipynb	2026-10-12	myia-ai-01:CoursIA-2
 MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb	MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb	2026-10-12	myia-ai-01:CoursIA-2
 MyIA.AI.Notebooks/GameTheory/GameTheory-23a-Biens-Publics-Plan-Deformation-Python.ipynb	MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-09-Biens-Publics-N-Personnes-Python.ipynb	2026-10-11	myia-po-2023:CoursIA-2
-
 MyIA.AI.Notebooks/ML/ML.Net/ML-1-Introduction-Python.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction-Python.ipynb	2026-10-10	myia-po-2023:CoursIA-2
 MyIA.AI.Notebooks/ML/ML.Net/ML-1-Introduction.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction.ipynb	2026-10-10	myia-po-2023:CoursIA-2
 MyIA.AI.Notebooks/ML/ML.Net/ML-2-Data&Features-Python.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-02-Data&Features-Python.ipynb	2026-10-10	myia-po-2023:CoursIA-2
@@ -382,6 +380,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15j-NerveDiscriminant-Python.ipynb	MyIA.AI.
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15j-ceb1-by-substrat.png	MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15/ICT-15j-ceb1-by-substrat.png	2026-10-24	myia-po-2027:CoursIA-2
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15k-RecollementMacroCells-Python.ipynb	MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15/ICT-15k-RecollementMacroCells-Python.ipynb	2026-10-24	myia-po-2027:CoursIA-2
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15l-IndependanceGenerateur-Python.ipynb	MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15/ICT-15l-IndependanceGenerateur-Python.ipynb	2026-10-24	myia-po-2027:CoursIA-2
+MyIA.AI.Notebooks/Search/Applications/Informed/App-33-RushHour-Admissible-Astar-Python.ipynb	MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-33-RushHour-Admissible-Astar-Python.ipynb	2026-10-28	myia-po-2023:CoursIA-2
 MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction-CSharp.ipynb	2026-10-27	myia-po-2023:CoursIA-2
 MyIA.AI.Notebooks/ML/ML.Net/ML-02-Data&Features.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-02-Data-Features-CSharp.ipynb	2026-10-27	myia-po-2023:CoursIA-2
 MyIA.AI.Notebooks/ML/ML.Net/ML-02-Data&Features-Python.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-02-Data-Features-Python.ipynb	2026-10-27	myia-po-2023:CoursIA-2
