@@ -37230,7 +37230,7 @@ Il ne prouve ni l'équivalence de Gotsman–Linial, ni la borne Nisan–Szegedy,
 ### 10.3 Pour aller plus loin
 
 Le carnet [Lean-12](../Lean-12-Sensitivity-Theorem.ipynb) développe la preuve spectrale de Huang ; le [12b](../Lean-12b-Lean-Sensitivity-Theorem.ipynb) la variation constructiviste ; l'exercice 3 du §9 ouvre la voie à la formalisation d'un des 24 témoins $n = 4$ — un candidat naturel pour un prochain ajout additif au lac.",,,,,,,,d9dad4b423e641ce,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean.ipynb,an06-00,markdown,fr,e12131e7e3c322e2,"# ANALYSE-06 — Sensibilité 2026 : notre lac face aux familles d'openai/math (companion natif)
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06b-Sensibilite-2026-Lean.ipynb,an06-00,markdown,fr,e12131e7e3c322e2,"# ANALYSE-06 — Sensibilité 2026 : notre lac face aux familles d'openai/math (companion natif)
 
 Sous-série **ANALYSE** (gradation #17545) — Pli 2 de la digestion **Origami** (#19898) : les résultats de combinatoire booléenne publiés par `openai/math` en 2026, lus depuis **notre** lac `Sensitivity` — le portage du théorème de Huang (2019).
 
@@ -37245,7 +37245,7 @@ Ce carnet est un companion **natif** : kernel Lean 4 sous WSL, chaque `#check` i
 | Notebook précédent | Notebook suivant |
 |---|---|
 | [ANALYSE-04 — Trois primitives de PFR](ANALYSE-04-PFR-Primitives-Python.ipynb) | [ANALYSE-06 — version anglaise](ANALYSE-06-Sensibilite-2026-Lean_en.ipynb) |",,,,,,,,e12131e7e3c322e2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean.ipynb,an06-01,markdown,fr,4b56cd499591bbf7,"## 0. Statut épistémique — la règle de ce carnet
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06b-Sensibilite-2026-Lean.ipynb,an06-01,markdown,fr,4b56cd499591bbf7,"## 0. Statut épistémique — la règle de ce carnet
 
 La digestion Origami exige un **statut déclaré** pour chaque énoncé. Trois statuts existent : **nôtre** (prouvé dans notre lac), **formalisée** (prouvée par les auteurs d'openai/math, squelette Lean publié), **non formalisée** (aucune preuve formelle). La règle : jamais « OpenAI a prouvé X, donc X » — ce carnet distingue à chaque ligne ce que **nous prouvons et exécutons** de ce que **nous citons**.
 
@@ -37256,27 +37256,27 @@ La digestion Origami exige un **statut déclaré** pour chaque énoncé. Trois s
 | `sensitivity_le_blockSensitivity`, `orOfAnds_strict_separation`, `or3_blockSensitivity` | **nôtre** | `#check` + `#print axioms` + `#eval`, section 3 |
 
 Ce que ce carnet **ne fait pas** : re-prouver les résultats 2026. Leur échelle (des centaines de pages par manuscrit) met la re-preuve hors de portée de ce dépôt — c'est précisément pourquoi le statut « formalisée » existe et pourquoi les squelettes restent la référence.",,,,,,,,4b56cd499591bbf7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean.ipynb,an06-02,markdown,fr,d5e417a709c2f9e7,"## 1. Le socle : Huang 2019, prouvé chez nous
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06b-Sensibilite-2026-Lean.ipynb,an06-02,markdown,fr,d5e417a709c2f9e7,"## 1. Le socle : Huang 2019, prouvé chez nous
 
 Le point de départ du lac `Sensitivity` est le théorème de Huang (2019) et sa résolution de la conjecture de sensibilité : dans l'hypercube $Q_{m+1}$, si l'on colorie plus de la moitié des sommets ($|H| \ge 2^m + 1$), alors l'un des sommets coloriés a au moins $\sqrt{m+1}$ voisins coloriés. La conséquence centrale pour nous : la sensibilité de bloc d'une fonction booléenne est bornée **quartiquement** par sa sensibilité, $bs(f) \le s(f)^4$ (**théorème 1.5** de Huang), corollaire de $s(f) \ge \sqrt{\deg f}$ (**théorème 1.4**, **sharp**, atteint par une fonction AND-of-ORs) combiné à $bs(f) \le \deg f^2$ (Tal) — d'où $\deg f \le s(f)^2$ puis $bs(f) \le s(f)^4$. La borne **quadratique** $bs(f) \lesssim s(f)^2$ n'est **pas** une borne générale établie : c'est la meilleure **séparation** connue, et la famille 132 réfute toute borne quadratique **universelle** (section 2.1). Huang l'atteste **textuellement** (p. 3) : « For every boolean function f, $bs(f) \le s(f)^4$ » ; et (p. 5) : « Theorem 1.5 only shows a quartic upper bound ».
 
 Importons le lac. Ses globs couvrent les **sous-modules** (pas la racine) : nous importons donc explicitement les modules que ce carnet utilise — l'agrégateur racine `Sensitivity.lean` n'est pas un module compilé du lac :",,,,,,,,d5e417a709c2f9e7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean.ipynb,an06-03,code,fr,da66ce3a79c6b913,"import Sensitivity.Hypercube
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06b-Sensibilite-2026-Lean.ipynb,an06-03,code,fr,da66ce3a79c6b913,"import Sensitivity.Hypercube
 import Sensitivity.MainTheorem
 import Sensitivity.Fourier
 import Sensitivity.Separations
 
 open Sensitivity",,,,,,,,da66ce3a79c6b913,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean.ipynb,an06-04,code,fr,8fcc4394f2f39865,"#check Sensitivity.huang_degree_theorem
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06b-Sensibilite-2026-Lean.ipynb,an06-04,code,fr,8fcc4394f2f39865,"#check Sensitivity.huang_degree_theorem
 #check Sensitivity.exists_eigenvalue",,,,,,,,8fcc4394f2f39865,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean.ipynb,an06-05,markdown,fr,3a960671270d9cc8,"### Lecture du résultat
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06b-Sensibilite-2026-Lean.ipynb,an06-05,markdown,fr,3a960671270d9cc8,"### Lecture du résultat
 
 `huang_degree_theorem` est l'énoncé porteur : la borne spectrale $d^2$ sur le degré du sous-graphe induit. `exists_eigenvalue` en est le lemme spectral pivot (existence d'une valeur propre de module $\sqrt{d}$ pour l'opérateur $f_n$ de Huang sur l'espace libre $V_n$). L'arc complet — espace $V_n$, opérateur $f_n$, nilpotence, théorème principal — est parcouru dans [Lean-12b](../Lean-12b-Lean-Sensitivity-Theorem.ipynb) ; ici nous prenons le théorème comme socle et vérifions son empreinte logique :",,,,,,,,3a960671270d9cc8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean.ipynb,an06-06,code,fr,fd7e330efdbb25f7,#print axioms Sensitivity.huang_degree_theorem,,,,,,,,fd7e330efdbb25f7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean.ipynb,an06-07,markdown,fr,2332263444fcbb14,"### Sans `sorry`, empreinte minimale
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06b-Sensibilite-2026-Lean.ipynb,an06-06,code,fr,fd7e330efdbb25f7,#print axioms Sensitivity.huang_degree_theorem,,,,,,,,fd7e330efdbb25f7,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06b-Sensibilite-2026-Lean.ipynb,an06-07,markdown,fr,2332263444fcbb14,"### Sans `sorry`, empreinte minimale
 
 `[propext, Classical.choice, Quot.sound]` — les trois axiomes standards de Mathlib, aucun `sorryAx`, aucun `native_decide`. Le théorème phare est **nôtre** au sens plein : prouvé dans le lac, vérifiable par cette commande à tout instant.",,,,,,,,2332263444fcbb14,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean.ipynb,an06-08,markdown,fr,4afdc4388beb59eb,"## 2. Ce qui a bougé en 2026 — quatre familles, citées avec leur statut
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06b-Sensibilite-2026-Lean.ipynb,an06-08,markdown,fr,4afdc4388beb59eb,"## 2. Ce qui a bougé en 2026 — quatre familles, citées avec leur statut
 
 Le dépôt `openai/math` publie 242 familles de résultats avec squelettes Lean (`lean/docs/NNN.md`). Notre carte de résonance (distillation Origami, `30-resonance.md`) en identifie quatre dont les objets sont **littéralement les nôtres** — sensibilité, influences, coefficients de Fourier, degré. Statut des quatre : **formalisée** — par les auteurs, pas par nous. Nous citons leurs énoncés (repris de leurs résumés) ; leurs preuves ne sont pas exécutées ici.
 
@@ -37288,25 +37288,25 @@ Le dépôt `openai/math` publie 242 familles de résultats avec squelettes Lean 
 | **192** | Réfute la borne en racine liant coefficients de Fourier linéaires et degré : pour tout $C > 0$ il existe $f$ à valeurs signes avec $\sum_i \widehat f(\{i\}) > C\sqrt{\deg f}$ | Mêmes coefficients $\widehat f$ que notre module `Fourier` (section 4) |
 
 Deux de ces familles sont des **réfutations** (132, 192) : la mode 2026 n'est pas seulement de prouver des bornes, mais de montrer que des bornes **naturelles** sont fausses. C'est exactement le geste que nous reproduisons à notre échelle en section 3 : exhiber un contre-exemple concret à l'égalité $s = bs$.",,,,,,,,4afdc4388beb59eb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean.ipynb,an06-09,markdown,fr,d227a3d34f6009ca,"### 2.1 Famille 132 — la question suivante naturelle après Huang
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06b-Sensibilite-2026-Lean.ipynb,an06-09,markdown,fr,d227a3d34f6009ca,"### 2.1 Famille 132 — la question suivante naturelle après Huang
 
 Huang donne $bs(f) \le s(f)^4$ : c'est le **théorème 1.5** de son article (arXiv 1907.00847), corollaire de $s(f) \ge \sqrt{\deg f}$ (**théorème 1.4**, **sharp**, atteint par une fonction AND-of-ORs) combiné à $bs(f) \le \deg f^2$ (Tal) — d'où $\deg f \le s(f)^2$ puis $bs(f) \le s(f)^4$. La borne est donc **quartique**, pas quadratique. La question ouverte devient : **l'exposant est-il 2 ou 4 ?** La meilleure **séparation** connue est **quadratique** (des fonctions totales avec $bs(f) \asymp s(f)^2$, Ambainis–Sun), mais Huang n'établit que la borne **quartique** ; et la famille 132 répond « non » à toute borne quadratique **universelle** — sans contredire Huang : elle construit des fonctions totales non constantes où le rapport **global** $bs(f)/s(f)^2$ est non borné (croissant en $2^d/(4(d+2)^2)$), ce qui réfute l'espérance d'une borne quadratique **universelle** ; ses énoncés parlent bien des versions **globales** de $s$ et $bs$, comme le théorème de Huang. Les deux énoncés de la famille 132, cités **mot pour mot** du squelette amont [`lean/docs/132.md`](https://github.com/openai/math/blob/main/lean/docs/132.md) (section *Scope*) : « For every integer $d \ge 1$, it constructs a nonconstant function with $\mathrm{bs}(f)/s(f)^2 \ge 2^d/(4(d+2)^2)$, making the ratio unbounded. » et « The formalization also gives a fixed exponent $\alpha > 2$ and a sequence with $s(f)^\alpha \le \mathrm{bs}(f,0)$ while the latter tends to infinity; here $\mathrm{bs}(f,0)$ is block sensitivity at the all-zero input. » Deux points de lecture : le premier énoncé montre que le rapport **global** $bs(f)/s(f)^2$ n'est **pas borné** ; le second porte sur la sensibilité **globale** $s(f)$ (et non la sensibilité locale $s(f,0)$) à la base d'une inégalité dont le membre de droite est la sensibilité de bloc **au sommet nul** $bs(f,0)$ — avec un $\alpha \in (2, 4)$ fixé, ce qui situe le résultat **à l'intérieur** de la borne quartique $s^4$ de Huang, pas en dehors. L'énoncé exact fait autorité : le squelette `lean/docs/132.md` est la référence.
 
 Ce que **nous** prouvons, et qui est le socle pedagogique de cette question : la séparabilité est **réelle** — il existe des fonctions et des points où $s(f, x) < bs(f, x)$ strictement. C'est l'objet de la section 3 :",,,,,,,,d227a3d34f6009ca,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean.ipynb,an06-10,code,fr,b37e82a4bb325574,"#check Sensitivity.sensitivity_le_blockSensitivity
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06b-Sensibilite-2026-Lean.ipynb,an06-10,code,fr,b37e82a4bb325574,"#check Sensitivity.sensitivity_le_blockSensitivity
 #check Sensitivity.orOfAnds_strict_separation",,,,,,,,b37e82a4bb325574,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean.ipynb,an06-11,markdown,fr,79b80ca6f6150bdf,"### Lecture — ce que nous avons prouvé
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06b-Sensibilite-2026-Lean.ipynb,an06-11,markdown,fr,79b80ca6f6150bdf,"### Lecture — ce que nous avons prouvé
 
 - `sensitivity_le_blockSensitivity` : retourner une coordonnée, c'est retourner un bloc singleton — donc $s(f, x) \le bs(f, x)$ **toujours**. C'est la borne plancher : les deux quantités ne peuvent pas se croiser.
 - `orOfAnds_strict_separation` : sur un exemple explicite en dimension 4, l'inégalité est **stricte** — $s < bs$ en un point concret. L'écart entre $s$ et $bs$ n'est pas une curiosité théorique : c'est un phénomène calculable de bout en bout, et nous allons le calculer.",,,,,,,,79b80ca6f6150bdf,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean.ipynb,an06-12,markdown,fr,69a33e5c3c735208,"## 3. Nos définitions — le module `Sensitivity.Separations`
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06b-Sensibilite-2026-Lean.ipynb,an06-12,markdown,fr,69a33e5c3c735208,"## 3. Nos définitions — le module `Sensitivity.Separations`
 
 Le module ajouté par le Pli 2 définit les deux quantités et l'exemple séparateur. Toutes vivent dans le lac (namespace `Sensitivity`) :",,,,,,,,69a33e5c3c735208,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean.ipynb,an06-13,code,fr,806442826c7dbc87,"#check Sensitivity.sensitivity
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06b-Sensibilite-2026-Lean.ipynb,an06-13,code,fr,806442826c7dbc87,"#check Sensitivity.sensitivity
 #check Sensitivity.blockSensitivity
 #check Sensitivity.flipBlock
 #check Sensitivity.orOfAnds",,,,,,,,806442826c7dbc87,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean.ipynb,an06-14,markdown,fr,3aecceb38c266aa2,"### Lecture des définitions
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06b-Sensibilite-2026-Lean.ipynb,an06-14,markdown,fr,3aecceb38c266aa2,"### Lecture des définitions
 
 Sur le cube $Q_n = (\mathbb{Z}/2)^n$ (type `Q n = Fin n → Bool` dans le lac) :
 
@@ -37317,13 +37317,13 @@ Sur le cube $Q_n = (\mathbb{Z}/2)^n$ (type `Q n = Fin n → Bool` dans le lac) :
 
 Un singleton est un bloc : $s \le bs$. La question est de savoir si l'inégalité peut être **stricte** — et `orOfAnds` y répond au sommet nul $x = 0000$ : aucune coordonnée seule n'allume $F$ ($s = 0$), mais le bloc $\{0, 1\}$ l'allume ($bs \ge 1$).
 ",,,,,,,,3aecceb38c266aa2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean.ipynb,an06-15,markdown,fr,934326f47dab743c,"### 3.1 Expérience numérique — `#eval` natif
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06b-Sensibilite-2026-Lean.ipynb,an06-15,markdown,fr,934326f47dab743c,"### 3.1 Expérience numérique — `#eval` natif
 
 Le calcul se fait **en Lean**, sur la définition **même** du lac : chaque `#eval blockSensitivity ...` ci-dessous appelle `Sensitivity.blockSensitivity` — le maximum sur les familles disjointes — et non une réimplémentation de comptage. Une subtilité honnête, visible dans le code : `Finset.toList` est non calculable dans Mathlib ; les **profils** de $s$ et $bs$ sur le cube se lisent donc en **histogrammes** — pour chaque valeur $k$, combien de sommets ont $s(x) = k$ (resp. $bs(x) = k$).
 
 Six mesures : la sensibilité locale de `orOfAnds` au sommet nul ; l'histogramme de $s$ sur les 16 sommets de $Q_4$ ; la sensibilité de bloc au sommet nul ; l'histogramme de $bs$ ; puis, sur `or3` au sommet nul, la valeur standard de $bs$ **contre** le compte brut des blocs sensibles — le témoin qui distingue les deux lectures de la définition :
 ",,,,,,,,934326f47dab743c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean.ipynb,an06-16,code,fr,1b405b9d7f5c5134,"#eval sensitivity orOfAnds (fun _ => false)
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06b-Sensibilite-2026-Lean.ipynb,an06-16,code,fr,1b405b9d7f5c5134,"#eval sensitivity orOfAnds (fun _ => false)
 
 #eval ((List.range 3).map fun k =>
   ((Finset.univ : Finset (Q 4)).filter (fun x => sensitivity orOfAnds x = k)).card)
@@ -37339,7 +37339,7 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean.ipynb
     (fun S : Finset (Fin 3) => 0 < S.card ∧
       or3 (flipBlock (fun _ => false) S) ≠ or3 (fun _ => false))).card
 ",,,,,,,,1b405b9d7f5c5134,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean.ipynb,an06-17,markdown,fr,da823d726defc93a,"### Lecture du résultat
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06b-Sensibilite-2026-Lean.ipynb,an06-17,markdown,fr,da823d726defc93a,"### Lecture du résultat
 
 - Au sommet nul $0000$ : $s = 0$ et $bs = 2$. Les blocs qui allument la fonction contiennent la paire $\{0,1\}$ ou la paire $\{2,3\}$ — ils sont nombreux (7 en tout), mais **deux au maximum peuvent être disjoints** : $\{0,1\}$ et $\{2,3\}$. La séparation stricte de `orOfAnds_strict_separation`, calculée sur la définition standard.
 - Histogramme de $s$ (pour $k = 0, 1, 2$) : `[2, 4, 10]` — $s = 0$ en exactement deux sommets, le sommet nul $0000$ **et** le sommet tout-un $1111$ (retourner une coordonnée y préserve la valeur : l'autre paire reste saturée) ; $s$ culmine à **2** sur dix sommets. La sensibilité de `orOfAnds` est partout petite.
@@ -37348,7 +37348,7 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean.ipynb
 
 C'est **la même expérience** que celle qu'un lecteur ferait en Python par force brute (énumérer $2^4$ sommets et $2^4$ blocs), mais exécutée par le compilateur Lean sur les définitions **mêmes** du lac — une seule source de vérité, pas une réimplémentation.
 ",,,,,,,,da823d726defc93a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean.ipynb,an06-18,code,fr,24b5eeabb8345ef6,"#check Sensitivity.orOfAnds_sensitivity_zero
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06b-Sensibilite-2026-Lean.ipynb,an06-18,code,fr,24b5eeabb8345ef6,"#check Sensitivity.orOfAnds_sensitivity_zero
 #check Sensitivity.orOfAnds_blockSensitivity_pos
 #check Sensitivity.orOfAnds_strict_separation
 #check Sensitivity.or3_blockSensitivity
@@ -37356,24 +37356,24 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean.ipynb
 
 #print axioms Sensitivity.orOfAnds_strict_separation
 ",,,,,,,,24b5eeabb8345ef6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean.ipynb,an06-19,markdown,fr,6f528840924fdc60,"### La séparation stricte, formellement
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06b-Sensibilite-2026-Lean.ipynb,an06-19,markdown,fr,6f528840924fdc60,"### La séparation stricte, formellement
 
 Les trois théorèmes disent exactement ce que le calcul a montré : $s(\texttt{orOfAnds}, 0000) = 0$, $0 < bs(\texttt{orOfAnds}, 0000)$, donc $s < bs$ sur cet exemple. Les théorèmes du témoin `or3` — `or3_blockSensitivity : bs = 3` et `or3_sensitive_blocks_card : compte brut = 7` — énoncent la différence des deux lectures. L'empreinte d'axiomes de `orOfAnds_strict_separation` est **identique à celle du théorème de Huang** (`[propext, Classical.choice, Quot.sound]`) : aucune dette logique nouvelle, le module `Separations` s'ajoute au lac sans en dégrader la garantie.
 ",,,,,,,,6f528840924fdc60,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean.ipynb,an06-20,markdown,fr,687dee4bc269f891,"## 4. Familles 127, 186, 192 — le vocabulaire Fourier
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06b-Sensibilite-2026-Lean.ipynb,an06-20,markdown,fr,687dee4bc269f891,"## 4. Familles 127, 186, 192 — le vocabulaire Fourier
 
 Les trois autres familles parlent un dialecte voisin : sensibilité **moyenne** (127), influences et seuils (186), coefficients de Fourier **linéaires** (192). Notre lac porte exactement ce vocabulaire dans son module `Fourier` — ce sont les objets que ces familles bornent ou réfutent :",,,,,,,,687dee4bc269f891,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean.ipynb,an06-21,code,fr,900c3bdebbab43e4,"#check Sensitivity.χ
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06b-Sensibilite-2026-Lean.ipynb,an06-21,code,fr,900c3bdebbab43e4,"#check Sensitivity.χ
 #check Sensitivity.fourierCoeff
 #check Sensitivity.influence",,,,,,,,900c3bdebbab43e4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean.ipynb,an06-22,markdown,fr,b4e0e4463ff94098,"### Lecture — un vocabulaire, des statuts
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06b-Sensibilite-2026-Lean.ipynb,an06-22,markdown,fr,b4e0e4463ff94098,"### Lecture — un vocabulaire, des statuts
 
 - **$\chi$** : les caractères de $Q_n$, la base de Fourier du cube ;
 - **`fourierCoeff`** : le coefficient $\widehat F(\xi)$ sur le caractère $\xi$ — c'est la quantité que la famille **192** déclare pouvoir dépasser $C\sqrt{\deg f}$ pour tout $C$ ;
 - **`influence`** : l'influence d'une coordonnée, $\Pr_{x}[F(x \oplus e_i) \ne F(x)]$ — la brique dont la famille **127** borne la somme (sensibilité moyenne $\le 8d\sqrt n$ pour les fonctions à seuil polynomiales) et dont la famille **186** tire ses largeurs de seuil.
 
 Statut des trois familles : **formalisée** (par les auteurs). Nous exécutons **leurs objets** dans **notre** lac — les définitions ci-dessus sont les nôtres et tournent ; leurs théorèmes restent des citations renvoyées à leurs squelettes.",,,,,,,,b4e0e4463ff94098,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean.ipynb,an06-23,markdown,fr,d141537c7f1c5cd7,"## 5. Exercices
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06b-Sensibilite-2026-Lean.ipynb,an06-23,markdown,fr,d141537c7f1c5cd7,"## 5. Exercices
 
 ### Exercice 1 — Le ET est localement maximalement sensible
 
@@ -37386,7 +37386,7 @@ Sur $Q_2$, trouvez : (a) une fonction où $s(x) = bs(x)$ en **tout** point ; (b)
 ### Exercice 3 — Jusqu'où la séparation ? (sur papier)
 
 Généralisez `orOfAnds` : $F_k$ = le OU de $k$ blocs AND de $k$ bits chacun, en dimension $k^2$, pour $k \ge 2$. Montrez sur papier que $s(F_k, 0) = 0$ et $bs(F_k, 0) = k$ : la séparation **locale au sommet nul** grandit sans borne avec $k$. Poursuivez l'analyse : au sommet où exactement un bloc AND est saturé, montrez que $s = k$ (les $k$ singletons de ce bloc) et qu'une famille de blocs sensibles disjoints y compte au plus $k$ membres (indice, selon la valeur de $F$ : si $F(x) = 0$, un bloc sensible doit saturer un bloc AND entier — deux membres disjoints ne peuvent saturer le même ; si $F(x) = 1$, un bloc sensible doit rencontrer chaque bloc AND saturé, qui n'a que $k$ bits) ; au sommet nul, les $k$ blocs AND entiers réalisent $bs = k$. Conclusion : $s(F_k) = bs(F_k) = k$ — le rapport des maxima globaux vaut **1 pour toute la famille**. Cette construction sépare $s$ et $bs$ en un point, jamais globalement : la séparation est un phénomène **local**, et le rapport global des maxima reste 1. Sur papier toujours : pourquoi l'argument « singleton » ne donne-t-il que $s \le bs$ et jamais mieux ?",,,,,,,,d141537c7f1c5cd7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean.ipynb,an06-24,markdown,fr,3f44f867e2bab705,"## Conclusion
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06b-Sensibilite-2026-Lean.ipynb,an06-24,markdown,fr,3f44f867e2bab705,"## Conclusion
 
 Ce carnet a tenu les trois registres de la digestion Origami :
 
