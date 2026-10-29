@@ -102,7 +102,7 @@ S'y ajoutent : 5 fichiers de tests (`test_darksnail.py`, `test_darksnail_arc3.py
 
 **Non prouvé (et non prouvable par un build)** :
 1. **La fidélité des énoncés** à la physique et à l'architecture revendiquées (MHD/stellarator, MRxMHD/KAM, rotors SO(6) Kelvin-Mandel) : un build prouve que les preuves des énoncés *tels qu'écrits* sont complètes, pas que ces énoncés formalisent le système Python. C'est une revue de fond, humaine.
-2. **La reproductibilité côté upstream** : l'enveloppe de build reste la nône ; upstream ne fournit toujours pas de structure de build. Le claim « L1–L982 » du README est d'ailleurs déjà périmé sur son propre fichier (999 lignes au HEAD mesuré).
+2. **La reproductibilité côté upstream** : l'enveloppe de build reste la nône ; upstream ne fournit toujours pas de structure de build. Le claim « L1–L982 » du README est d'ailleurs déjà périmé sur son propre fichier (il a presque doublé au HEAD mesuré).
 3. **Le comportement du code Python** : inventaire structurel seulement dans ce cycle ; aucune exécution des tests amont.
 
 ## 4. Assessment d'extension dans CoursIA
@@ -111,7 +111,7 @@ Ce que la mesure débloque, sans déplier quoi que ce soit (Pli 2 gelé par arbi
 
 - **La branche Lean amont redevient falsifiable par tiers** : l'option (c) « la branche Lean upstream est close sans regret » reposait sur « l'upstream n'est pas falsifiable » — cette raison-là est tombée. La décision de rouvrir ou non Pli 2 appartient au coordinateur (la page Pli 2 prévoyait elle-même la ré-ouverture dans ce cas de figure, option (d)).
 - **Matériel pédagogique candidat** (si le coordinateur déplie) : le fichier amont est un exemple réel, extérieur au cours, de formalisation Mathlib pure (analyse, SO(6), invariants MHD) vérifiable en ~20 s sur cache chaud — profil d'un carnet `notebook-lean` d'étude de preuve externe, sur le précédent du Pli 1.2.
-- **Le pont BlockBridge** (`DarkSnail.BlockBridge`, 289 lignes, autonome, 5 théorèmes sans aucun axiome) est le morceau le plus proche du code Python (budget causal par bloc, retargeting NB2) : c'est lui qui matérialise le « geste ébauché » que le Concern demande de « valider et prolonger ».
+- **Le pont BlockBridge** (`DarkSnail.BlockBridge`, autonome, 5 théorèmes sans aucun axiome) est le morceau le plus proche du code Python (budget causal par bloc, retargeting NB2) : c'est lui qui matérialise le « geste ébauché » que le Concern demande de « valider et prolonger ».
 
 ## 5. Statut grain
 
@@ -135,6 +135,6 @@ Ce que la mesure débloque, sans déplier quoi que ce soit (Pli 2 gelé par arbi
 | `formalization/OcclusionTriad.lean` | 999 lignes, blob `a2d3605daf113206c34e242cb29888b0a1d06b33`, namespace `Ultrametric.Analysis.OcclusionTriad` |
 | `formalization/BlockBridge.lean` | 289 lignes, blob `3353d3dc087c559ed3b1d76f672d2f9eedb95b4d`, namespace `DarkSnail.BlockBridge` |
 | Licence amont | CC0-1.0 |
-| Environnement de build | WSL Ubuntu, Lean `v4.33.0` (elan), Mathlib `v4.33.0` épinglée, cache 8 690 fichiers |
+| Environnement de build | WSL Ubuntu, Lean `v4.33.0` (elan), Mathlib `v4.33.0` épinglée, cache Mathlib chaud |
 
 Aucune copie du code amont n'est livrée dans ce dépôt : le document cite et laisse à sa source (convention établie par la page Pli 2).
