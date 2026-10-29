@@ -68,10 +68,10 @@ def _free_claims(items):
     return {it["number"]: (pig.CLAIM_CODE_FREE, "libre") for it in items}
 
 
-def _run(pool, *, event_probe=None, **kw):
+def _run(pool, *, event_probe=None, probe_budget=8, **kw):
     return pig.belt_pick_with_replacements(
         pool, _free_claims(pool), _belt_args(grains=len(pool) + 2),
-        probe_budget=8, delivery_event_probe=event_probe, **kw)
+        probe_budget=probe_budget, delivery_event_probe=event_probe, **kw)
 
 
 # --- point 1 : une consolidation livree n'ecarte que 48 h ------------------
@@ -129,16 +129,99 @@ def test_le_marqueur_neutralise_ne_touche_pas_le_label():
     assert withheld and "candidate-delivered" in withheld[0][1]
 
 
-def test_le_marqueur_neutralise_ne_touche_pas_la_pr_mergee():
-    """Meme chose pour la surface « PR MERGEE < 90 j » : une consolidation
-    accumule les PRs, son etat de livraison ne se lit pas dans le merge d'une
-    tranche. La regle des 48 h neutralise le marqueur, rien d'autre."""
+def test_consolidation_pr_mergee_72h_est_servie():
+    """Une consolidation dont la derniere livraison par PR a plus de 48 h
+    n'est plus ecartee par la surface « PR MERGEE < 90 j » : une tranche
+    mergee depuis 72 h ne dit pas « la consolidation est finie ».
+
+    L'age se lit sur `last_delivery_stamp`, deja calcule en amont par le
+    corpus `fetch_merged` partage : la sonde PR n'a alors plus rien a
+    mesurer, et elle ne doit meme pas etre appelee (une requete `gh` de
+    moins, et aucune consommation du budget de sonde). La sonde ci-dessous
+    rend True, c'est-a-dire le veto historique des 90 jours : sur la version
+    anterieure, elle etait appelee et la consolidation restait invisible."""
     item = _consol(5005, visit_h=72)
+    appels = []
+
+    def _sonde_pr(n, lane=None):
+        appels.append(n)
+        return True
+
     picks, withheld, _state = _run(
         [item], event_probe=lambda n: (True, True, _iso(72)),
-        merged_pr_probe=lambda n, lane=None: True)
-    assert picks == []
-    assert withheld and "PR MERGEE" in withheld[0][1]
+        merged_pr_probe=_sonde_pr)
+    assert [p["number"] for p in picks] == [5005], (
+        "la consolidation doit etre servie, "
+        f"withheld={[w[1] for w in withheld]}")
+    assert withheld == []
+    assert appels == [], (
+        "la sonde PR ne doit pas etre appelee pour une consolidation dont "
+        "la derniere livraison par PR depasse 48 h")
+
+
+def test_consolidation_pr_mergee_2h_est_retenue():
+    """Le veto « PR MERGEE » joue encore tant que la derniere livraison par
+    PR a moins de 48 h : une tranche vient d'etre mergee, la consolidation
+    n'est pas a re-servir.
+
+    La lecture d'evenement rend ici un marqueur ANCIEN (72 h) alors que la
+    derniere PR date de 2 h : le filtre recent ne retient donc pas l'issue,
+    et c'est bien la surface PR seule qui est mesuree. Le grain libre en
+    second sert de temoin : la consolidation retenue est remplacee, et elle
+    n'est PAS re-servie derriere -- « retenue » veut dire qu'elle reste
+    invisible pour CE tirage, pas seulement qu'un motif est affiche."""
+    item = _consol(5008, visit_h=2)
+    libre = _item(5011, visit_h=24 * 40)
+    pool = sorted([libre, item], key=lambda it: pig.belt_sort_key(it, now=NOW))
+    picks, withheld, _state = _run(
+        pool, event_probe=lambda n: (True, True, _iso(72)),
+        merged_pr_probe=lambda n, lane=None: n == 5008, probe_budget=12)
+    assert [p["number"] for p in picks] == [5011], (
+        "seul le grain libre doit etre servi ; la consolidation retenue ne "
+        "doit pas revenir comme remplacement")
+    reasons = [w[1] for w in withheld if w[0]["number"] == 5008]
+    assert reasons and all("PR MERGEE" in r for r in reasons), (
+        f"la consolidation doit etre retenue par le veto PR : {reasons}")
+
+
+def test_grain_ordinaire_pr_mergee_72h_est_toujours_retenu():
+    """La regle des 90 jours ne change pas pour un grain ordinaire : une PR
+    mergee il y a 72 h reste un veto, meme quand le marqueur de commentaire
+    est ancien. La neutralisation des 48 h est propre a la consolidation.
+
+    Le grain libre en second sert de temoin : le grain ordinaire retenu est
+    remplace sans etre re-servi derriere, exactement comme avant."""
+    item = _item(5009, visit_h=72)
+    libre = _item(5012, visit_h=24 * 40)
+    pool = sorted([libre, item], key=lambda it: pig.belt_sort_key(it, now=NOW))
+    picks, withheld, _state = _run(
+        pool, recent_marker_probe=lambda n: False,
+        merged_pr_probe=lambda n, lane=None: n == 5009, probe_budget=12)
+    assert [p["number"] for p in picks] == [5012]
+    reasons = [w[1] for w in withheld if w[0]["number"] == 5009]
+    assert reasons and all("PR MERGEE" in r for r in reasons)
+
+
+def test_label_candidate_delivered_retenu_quel_que_soit_l_age():
+    """Le label `candidate-delivered` n'est pas touche par la regle des 48 h :
+    il continue d'ecarter l'issue, quel que soit l'age de la derniere
+    livraison par PR, et sans qu'aucune sonde soit necessaire. Le grain
+    libre en second sert de temoin : l'issue labellisee est remplacee sans
+    etre re-servie derriere, a 2 h comme a 72 h."""
+    for age in (2, 72):
+        item = _item(5010 + age, visit_h=age,
+                     labels=["consolidation", "candidate-delivered"])
+        libre = _item(5100 + age, visit_h=24 * 40)
+        pool = sorted([libre, item],
+                      key=lambda it: pig.belt_sort_key(it, now=NOW))
+        picks, withheld, _state = _run(
+            pool, event_probe=lambda n, a=age: (True, True, _iso(a)),
+            merged_pr_probe=lambda n, lane=None, a=age: n == 5010 + a,
+            probe_budget=12)
+        assert [p["number"] for p in picks] == [5100 + age], (
+            f"age={age} h : le label doit retenir l'issue")
+        reasons = [w[1] for w in withheld if w[0]["number"] == 5010 + age]
+        assert reasons and all("candidate-delivered" in r for r in reasons)
 
 
 def test_une_lecture_en_echec_ne_neutralise_aucun_marqueur():
@@ -253,3 +336,38 @@ def test_delivery_event_rend_none_quand_la_lecture_echoue(monkeypatch):
         raise RuntimeError("reseau")
     monkeypatch.setattr(pig.subprocess, "run", _boom)
     assert pig.delivery_event(5003) is None
+
+
+# --- le mur de temps ne doit pas faire tomber le tapis ----------------------
+
+def test_le_mur_de_temps_ne_tombe_pas_sur_une_consolidation():
+    """REGRESSION (26/10, tire reel) : le budget de temps de la boucle etait
+    epuise AVANT la boucle de service (`settle_belt_head` 341 s + claims 38 s
+    pour 240 s de budget). Le code de la consolidation formait alors le
+    verdict `False` -- un booleen nu -- et le decomposait en trois :
+    `TypeError: cannot unpack non-iterable bool object`.
+
+    Consequence mesuree : le tirage entier rendait ZERO grain, et la
+    classe `consolidation` (le mandat user du 25/10) n'etait jamais servie.
+
+    Le comportement attendu quand le temps est epuise : fail-OPEN -- aucune
+    sonde lue, AUCUN marqueur neutralise, le candidat reste servable."""
+    item = _consol(7001, visit_h=72)
+    picks, withheld, _state = _run(
+        [item], event_probe=lambda n: (True, True, _iso(72)),
+        time_budget_s=0)
+    assert [p["number"] for p in picks] == [7001], (
+        "mur de temps atteint : rien n'est neutralise, le candidat reste "
+        f"servable (withheld={[w[1] for w in withheld]})")
+
+
+def test_le_mur_de_temps_ne_tombe_pas_non_plus_sur_un_grain_ordinaire():
+    """Le meme mur, hors classe consolidation : le filtre recent ne doit pas
+    non plus lever une exception (il renvoie un booleen, il le decompose
+    normalement -- le test verrouille le voisinage)."""
+    item = _item(7002, visit_h=72)
+    picks, withheld, _state = _run(
+        [item], recent_marker_probe=lambda n: True, time_budget_s=0)
+    assert [p["number"] for p in picks] == [7002], (
+        f"mur de temps atteint sur un grain ordinaire (withheld="
+        f"{[w[1] for w in withheld]})")
