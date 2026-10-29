@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -73,7 +74,50 @@ def test_run_check_reports_broken_404(monkeypatch) -> None:
     assert result.instrument_errors == []
     assert result.checked == 2
     assert result.ok == 1
-    assert result.broken == [{"url": BASE + "/gone.html", "status": 404}]
+    assert result.broken == [{
+        "url": BASE + "/gone.html",
+        "status": 404,
+        "source_pages": [BASE + "/"],
+    }]
+
+
+def test_run_check_keeps_every_source_and_probes_target_once(monkeypatch) -> None:
+    """Two referrers of one broken target survive URL deduplication."""
+    mod = _load()
+    pages = {
+        BASE + "/": '<a href="gone.html">g</a>',
+        BASE + "/parcours.html": '<a href="gone.html">g</a>',
+    }
+    probed = []
+    monkeypatch.setattr(mod, "fetch_text", lambda url, timeout=None: pages[url])
+    monkeypatch.setattr(mod, "probe_status",
+                        lambda url, timeout=None: probed.append(url) or 404)
+    result = mod.run_check(BASE, ("/", "/parcours.html"))
+    assert result.broken == [{
+        "url": BASE + "/gone.html",
+        "status": 404,
+        "source_pages": [BASE + "/", BASE + "/parcours.html"],
+    }]
+    assert probed == [BASE + "/gone.html"]
+
+
+def test_main_names_sources_in_text_and_json(monkeypatch, capsys) -> None:
+    """Both operator-facing reports carry the same source attribution."""
+    mod = _load()
+    monkeypatch.setattr(mod, "fetch_text",
+                        lambda url, timeout=None: '<a href="gone.html">g</a>')
+    monkeypatch.setattr(mod, "probe_status", lambda url, timeout=None: 404)
+    argv = ["--base-url", BASE, "--page", "/", "--page", "/parcours.html"]
+
+    assert mod.main(argv) == 1
+    text = capsys.readouterr().out
+    assert f"(source: {BASE}/, {BASE}/parcours.html)" in text
+
+    assert mod.main([*argv, "--json"]) == 1
+    report = json.loads(capsys.readouterr().out)
+    assert report["broken"][0]["source_pages"] == [
+        BASE + "/", BASE + "/parcours.html",
+    ]
 
 
 def test_run_check_instrument_error_when_critical_page_unreachable(monkeypatch) -> None:
