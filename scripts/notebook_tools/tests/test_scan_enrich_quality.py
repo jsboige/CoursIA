@@ -160,6 +160,54 @@ class TestSurvival:
         head = [_md("\n".join([line] * 6 + ["Nouvelle interpretation ajoutee par l'enrichissement."]))]
         assert scan_survival(head, base) == []
 
+    # -- accentuation must not read as a rewrite (#23268, ruling #16638) -----
+
+    BASE_ACCENTS = [
+        "La theorie de l'apprentissage supervise etait mesuree sur ce jeu.",
+        "Le score de reference depend de la fonction de cout choisie.",
+        "Une heuristique admissible ne surestime jamais le cout restant.",
+        "La frontiere separe les noeuds atteints des noeuds restants.",
+    ]
+
+    def test_accentuation_only_is_silent(self):
+        # Head adds the diacritics the base lacked: `check_accent_restoration_
+        # invariants.py` proves base == head once stripped, so class (b) must
+        # not see a rewrite here. Measured false positive on #23268.
+        # NOTE: ligatures (oe/ae) are not diacritics and stay out of scope --
+        # NFD does not decompose them, so this fixture spells them "oe".
+        head_lines = [
+            "La théorie de l'apprentissage supervisé était mesurée sur ce jeu.",
+            "Le score de référence dépend de la fonction de coût choisie.",
+            "Une heuristique admissible ne surestime jamais le coût restant.",
+            "La frontière sépare les noeuds atteints des noeuds restants.",
+        ]
+        base = [_md("\n".join(self.BASE_ACCENTS))]
+        head = [_md("\n".join(head_lines))]
+        assert scan_survival(head, base) == []
+
+    def test_accentuation_plus_rewording_still_fires(self):
+        # Negative control: neutralising diacritics must not blunt the metric.
+        # Same accents, different words -> no line survives -> rewrite.
+        head_lines = [
+            "Un tout autre propos sur les reseaux de neurones profonds.",
+            "La regularisation change la facon dont le modele generalise.",
+            "Les courbes d'apprentissage montrent une convergence lente.",
+            "Ce paragraphe ne reprend aucune des quatre phrases de depart.",
+        ]
+        base = [_md("\n".join(self.BASE_ACCENTS))]
+        head = [_md("\n".join(head_lines))]
+        f = scan_survival(head, base)
+        assert _cats(f) == {"MD_REWRITE"} and f[0]["severity"] == "HIGH"
+
+    def test_case_change_is_not_neutralised(self):
+        # The comparison drops combining marks, never case: a line that came
+        # back in a different case is a change, and a wholesale case change
+        # still reads as a rewrite.
+        base = [_md("\n".join(self.BASE_ACCENTS))]
+        head = [_md("\n".join(ln.upper().replace("E", "É") for ln in self.BASE_ACCENTS))]
+        f = scan_survival(head, base)
+        assert _cats(f) == {"MD_REWRITE"}
+
 
 # ---------------------------------------------------------------------------
 # Class (e): hrefs

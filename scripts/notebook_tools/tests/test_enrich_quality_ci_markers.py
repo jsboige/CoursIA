@@ -27,8 +27,8 @@ MARKER = (
 )
 MD_REWRITE = (
     "MD_REWRITE",
-    "only 13/83 substantive markdown lines of the base survive verbatim (16%)"
-    " -- announced extension is a rewrite",
+    "only 13/83 substantive markdown lines of the base survive (16%,"
+    " accent-neutral comparison) -- announced extension is a rewrite",
 )
 MD_ANCHOR = ("MD_ANCHOR", "markdown cites output of code[2] but that cell has no output")
 

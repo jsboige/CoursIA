@@ -17,10 +17,18 @@ Defect classes and their mechanical checks:
                                notebook's code sources or text outputs
   Class (b) "extended cells" must not become rewrites
     HIGH  MD_REWRITE           < 25% of the base's substantive markdown lines
-                               survive verbatim in head (vs --base only)
+                               survive in head (vs --base only)
     MED   MD_SURVIVAL_LOW      < 50% survive -- the rewrite-more-than-extend
                                signature of the wave (#14161 measured 30%,
                                #14166 20%, #14164 31%)
+                               Survival is accent-neutral, case-sensitive: a
+                               line counts as surviving when it appears
+                               verbatim, or when it appears once combining
+                               marks are dropped on BOTH sides. An accentuation
+                               pass (recurring grain, ruling #16638) rewrites
+                               every accented line, so verbatim-only read it
+                               as a rewrite (#23268: 9/44 and 17/101 while
+                               strip_accents(base) == strip_accents(head)).
   Class (c) accents must survive enrichment
     HIGH  DIACRITICS_LOSS      a markdown line survives enrichment only as
                                its de-accented skeleton (#14166 measured
@@ -352,6 +360,24 @@ def scan_diacritics(head_cells: list[dict], base_cells: list[dict] | None) -> li
     }]
 
 
+def _strip_diacritics_keep_case(text: str) -> str:
+    """Drop combining marks, WITHOUT the case folding `_deaccent` applies.
+
+    Class (b) compares base against head. An accentuation pass -- a recurring
+    grain of this repository, ruling #16638 -- rewrites every line that
+    carries a diacritic, so a verbatim-only comparison reads a pure
+    accentuation as a full rewrite (measured on #23268: 9/44 and 17/101 lines
+    "survived" while `check_accent_restoration_invariants.py` proved
+    `strip_accents(base) == strip_accents(head)` cell by cell).
+
+    Only the diacritic dimension is neutralised: wording, punctuation,
+    spacing and CASE must still match. Class (c) `scan_diacritics` keeps its
+    own, sharper signal for the opposite defect (accents REMOVED).
+    """
+    return "".join(ch for ch in unicodedata.normalize("NFD", text)
+                   if not unicodedata.combining(ch))
+
+
 def scan_survival(head_cells: list[dict], base_cells: list[dict] | None) -> list[dict]:
     """Class (b): extended cells keep their substance; rewrites get flagged."""
     if base_cells is None:
@@ -364,21 +390,28 @@ def scan_survival(head_cells: list[dict], base_cells: list[dict] | None) -> list
     if not lines:
         return []
     head_text = "\n".join(_src(c) for _, c in _md_cells(head_cells))
-    survived = sum(1 for ln in lines if ln in head_text)
+    head_flat = _strip_diacritics_keep_case(head_text)
+    survived = sum(
+        1 for ln in lines
+        if ln in head_text
+        or _strip_diacritics_keep_case(ln) in head_flat
+    )
     pct = survived / len(lines)
     if pct < 0.25:
         return [{
             "cell_index": 0, "category": "MD_REWRITE", "severity": "HIGH",
             "evidence": f"{survived}/{len(lines)} base lines survive",
             "message": f"only {survived}/{len(lines)} substantive markdown lines of the base "
-                       f"survive verbatim ({pct:.0%}) -- announced extension is a rewrite",
+                       f"survive ({pct:.0%}, accent-neutral comparison) -- announced "
+                       f"extension is a rewrite",
         }]
     if pct < 0.5:
         return [{
             "cell_index": 0, "category": "MD_SURVIVAL_LOW", "severity": "MED",
             "evidence": f"{survived}/{len(lines)} base lines survive",
-            "message": f"{survived}/{len(lines)} substantive markdown lines survive verbatim "
-                       f"({pct:.0%}) -- rewrite-more-than-extend signature",
+            "message": f"{survived}/{len(lines)} substantive markdown lines survive "
+                       f"({pct:.0%}, accent-neutral comparison) -- rewrite-more-than-extend "
+                       f"signature",
         }]
     return []
 
