@@ -6,9 +6,11 @@
 # fichier est la copie de reference (C:\dev\CoursIA-runners-p0\).
 #
 # DELTAS po-2028 vs po-2024 (tous deux pesees du 2026-10-20) :
-#   1. REPO_DIR=/mnt/c/dev/CoursIA-2 -- le checkout de cette machine (po-2024 :
-#      /mnt/d/Dev/CoursIA). Suivra la migration C:\dev -> D:\dev quand le SSD
-#      2 To sera pose.
+#   1. REPO_DIR=/mnt/d/dev/CoursIA-2 -- le checkout de cette machine (po-2024 :
+#      /mnt/d/Dev/CoursIA). La bascule C:\dev -> D:\dev annoncee ici a eu lieu le
+#      2026-10-27 ; l'ancien chemin C: n'est plus qu'un clone residuel, que les
+#      mandats disque peuvent purger. Coder C: en dur faisait mourir le service
+#      au premier redemarrage apres purge, sans rien dire.
 #   2. TOKEN : pas de master.env sur cette machine. Le token admin GitHub est
 #      relu a CHAQUE invocation depuis gh.exe cote Windows via l'interop WSL
 #      (--with-token doctrine inchangee : jamais persistant dans la distro,
@@ -29,7 +31,7 @@
 #      porte l'agrege (200 Mo/s write / 400 Mo/s read sur /var/lib/docker).
 set -euo pipefail
 
-REPO_DIR="/mnt/c/dev/CoursIA-2"
+REPO_DIR="/mnt/d/dev/CoursIA-2"
 
 # --- TOKEN (doctrine po-2024 : relu a chaque invocation, jamais persistant) ---
 GH_WIN="/mnt/c/Program Files/GitHub CLI/gh.exe"
