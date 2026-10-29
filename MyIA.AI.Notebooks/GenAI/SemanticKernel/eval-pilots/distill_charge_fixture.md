@@ -5,6 +5,12 @@ cellules 0..8 a la tete 8e9eaaaa0 (figees : les repliques
 P2/MAF et P3/ADK distillent CE fichier, pas le carnet vivant -- la charge est
 byte-stable entre moteurs et entre executions).
 
+Ecart declare : la cellule 8 (l'unique cellule d'authentification de la section,
+`import os / load_dotenv() / api_key = os.getenv("OPENAI_API_KEY")...`) est
+TRONQUEE par le budget de fixture -- les 8 autres cellules sont reprises
+verbatim. La section distillee ne couvre donc pas l'authentification ; c'est un
+choix de borne, pas une caracteristique de la charge reelle.
+
 ---
 
 ## [cellule 0 | markdown]

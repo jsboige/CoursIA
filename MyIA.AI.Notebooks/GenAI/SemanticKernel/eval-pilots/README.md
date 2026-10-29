@@ -57,6 +57,17 @@ répliques P2 (MAF) et P3 (ADK) distilleront ce même fichier, byte-stable :
 py -3.11 sk_distillation_pilot.py   # P1 — GroupChat à manager custom, budget dur 16 appels
 ```
 
+Le pilote P2 (réplique **MAF** du même pilote identique) utilise le venv MAF de
+T7/T8 (`agent-framework-core 1.21.0` + `orchestrations 1.3.1` ; connecteur
+`agent-framework-openai` résolu par pip, 1.16.0 mesuré — la 1.21.0 n'existe pas
+sur PyPI). Même fixture figée, mêmes instructions, même modèle épinglé, même
+budget dur de 16 appels ; la boucle est scellée par une `termination_condition`
+posée sur le builder :
+
+```bash
+<venv-maf>/Scripts/python maf_distillation_pilot.py   # P2 — GroupChatBuilder + selection function, budget dur 16 appels
+```
+
 Le pilote T3 (Google ADK) vit dans la série Track2 :
 
 ```bash
