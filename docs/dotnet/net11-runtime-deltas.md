@@ -274,7 +274,7 @@ calme ». Cette section est la réponse mesurée à ce drapeau.
 | `Pipeline_EvilRegex` : le drapeau INCONCLUSIF du 02/10 | **non reproduit** — le signal +27,5 % et le rapport StdDev élevé du 02/10 n'apparaissent pas dans la fenêtre du 20/10 ; une non-reproduction affaiblit le drapeau, sans le trancher |
 | `Pipeline_ConvertDeterminizeMinimize`, `Matching_DotNetDelegate` | **toujours non concluants** — dispersion inter-passes 47–69 % (écart max−min rapporté à la moyenne des deux bornes) |
 | Les 3 autres bancs encore marqués INCONCLUSIF (`RandomSearch_Sphere10D_50k` (MGS), `PromptSignature.Matches` et `PromptTransform.InterpolateKeys` (semantic-fleet)) | **non re-mesurés** dans ce cycle : même travail de préparation (clone depth-1 + build Release) sur des sous-modules dont les bancs amont relèvent de la coordination ai-01 — **tentative du 29/10 sur `myia-ai-01` : non concluante (fenêtre chargée), cf. « Tentative du 2026-10-29 sur myia-ai-01 »** |
-| Une fenêtre **calme** (runner CI de la machine au repos) avec n ≥ 5 passes | **non obtenue** sur cette machine ; c'est la condition qui reste pour serrer la dispersion inter-passes — **non obtenue non plus sur `myia-ai-01` le 29/10 (charge d'hôte mesurée à 62-91 %), cf. la même section** |
+| Une fenêtre **calme** (runner CI de la machine au repos) avec n ≥ 5 passes | **non obtenue** sur cette machine — **non obtenue non plus sur `myia-ai-01` le 29/10 (charge d'hôte mesurée à 62-91 %), cf. la même section**. Elle n'est pas pour autant la condition **suffisante** : le protocole des bancs est une seconde cause, plus fondamentale, cf. « Le protocole du banc, seconde cause » |
 
 ### Tentative du 2026-10-29 sur `myia-ai-01` — les 3 bancs restants, et la charge de l'hôte
 
@@ -316,6 +316,40 @@ CI auto-hébergés — **charge processeur 91 % à 18:05Z, 62 % à 18:15Z, 76 % 
 
 Les trois drapeaux INCONCLUSIF **restent donc posés** : cette tentative n'apporte pas de verdict, elle apporte la
 preuve que la condition manquante (une fenêtre calme) n'est pas accessible depuis ce poste.
+
+### Le protocole du banc, seconde cause — et elle est plus fondamentale que la fenêtre
+
+Cette section corrige une lecture trop courte de ce document. Jusqu'ici, la dispersion résiduelle
+était attribuée à l'hôte : charge CI, fenêtre non calme, dispersion inter-séances. Une mesure
+indépendante de la lane `myia-po-2023:CoursIA-2` (dashboard #18695, commentaire `c.6505273899`)
+établit qu'une seconde cause, **inscrite dans la configuration des bancs**, suffit à elle seule à
+empêcher la conclusion — et qu'un hôte au repos ne la lèverait pas.
+
+`InProcessShortConfig` épingle `.WithInvocationCount(1).WithUnrollFactor(1)`
+(`semantic-fleet/benchmarks/SemanticFleet.Benchmarks/PromptSettingsBenchmarks.cs:33-34` ; même
+choix dans `MetaGeneticSharp.Benchmarks/OptimizerBenchmarks.cs`, justifié au fichier par un
+contournement antivirus). Conséquence : **une itération vaut exactement une invocation**, soit
+3,7 à 90 µs selon la cellule — deux à quatre ordres de grandeur sous les ~100 ms que BDN
+recommande, et qu'il réclame lui-même dans les journaux. À cette granularité, le bruit n'est pas
+réduit par une machine calme : il est structurel.
+
+La même mesure signale, sur son propre travail, qu'un job long (200 ms) ne corrige rien tant que
+`UnrollFactor` garde sa valeur par défaut de 16 : les temps par opération y chutent de 13× à 291×,
+rapport du même ordre que le facteur de déroulage — signature d'appels purs à argument constant
+fusionnés par le JIT. L'hypothèse n'est pas prouvée ; l'expérience qui la trancherait est nommée
+dans le commentaire cité.
+
+**Ce que cela change pour les chiffres de ce document.** Ni la direction ni les valeurs ne sont
+renversées ; c'est leur **solidité** qui n'est pas celle qui était écrite. Les deux régimes
+disponibles se contredisent en signe sur `Serialize` 9→10 (ShortRun apparié −27,4 %, job long
++17,0 % puis +19,8 %) et sur `RoundTrip`. Aucun des quatre écarts inter-versions de cette série
+n'est donc **établi** : le drapeau INCONCLUSIF est confirmé, mais pour une raison de plus, et la
+re-mesure à programmer ne se réduit pas à « trouver une machine calme ».
+
+Le correctif réel porte sur la source des bancs — garder `UnrollFactor(1)` et faire porter le
+travail par itération via `OperationsPerInvoke` sur un argument variable, résultat consommé.
+Il touche `semantic-fleet` et `MetaGeneticSharp`, donc des sous-modules : il relève de la
+coordination `ai-01` et n'est pas ouvert par cette PR.
 
 ## Provenance des journaux
 
