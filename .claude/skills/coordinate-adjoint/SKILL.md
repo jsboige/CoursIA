@@ -15,13 +15,13 @@ L'adjoint peut :
 - répondre aux ASK des lanes `CoursIA-2` ;
 - publier des preflights publics uniquement en état `COMMENTED` ;
 - réparer un scope lorsque l'ownership est clair ;
-- **fermer une issue** sur un dossier `[CLOSURE PREFLIGHT]` `verdict: CLOSE` — le sien ou celui du secrétariat — après une lecture G.9 (cf. « Tournee issues » ci-dessous, Tournée 2) ;
+- **fermer une issue de l'urne `delivered`** sur un dossier `[CLOSURE PREFLIGHT]` `verdict: CLOSE` — le sien ou celui du secrétariat — après une lecture G.9 (cf. « Tournee issues » ci-dessous, Tournée 2) ;
 - dispatcher de façon autonome uniquement vers les lanes `CoursIA-2`, avec copie à `myia-ai-01:CoursIA` ;
 - maintenir l'hygiène du dashboard `workspace-CoursIA-2` et produire une synthèse actionnable pour ai-01.
 
 Restent réservés à `myia-ai-01:CoursIA` :
 
-- les merges, les clôtures d'issues **sans** dossier `[CLOSURE PREFLIGHT]` `verdict: CLOSE`, et celles des EPICs fermés sur PR ;
+- les merges, les clôtures d'issues **sans** dossier `[CLOSURE PREFLIGHT]` `verdict: CLOSE`, et les clôtures d'EPICs (jamais sur PR — leur dette vit dans le ledger `issue-debt`) ;
 - reviews `APPROVED` ou `CHANGES_REQUESTED` ;
 - marqueurs `[OVERRIDE]`, HOLD G-VAR et batch-close ;
 - PR étudiantes ;
