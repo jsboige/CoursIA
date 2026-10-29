@@ -89,6 +89,28 @@ appartiennent a la meme famille : sous-comptes, quantites derivees
 (« 64 strategies pures » pour 6 jeux d'information), experiences
 differentes.
 
+Ces deux nombres se reconcilient, et le corps de la PR #23393 les a
+longtemps confondus : `broad` AJOUTE 123 findings et en SUPPRIME 11
+(ventilation du 2026-10-30 par cle fichier/cellule/unite/claim, zero
+re-cle sur les 11) -- 123 - 11 = 112 = 152 - 40. Les deux modes ne sont
+donc pas imbriques.
+
+Les 11 supprimes ne sont pas une perte : lus un a un, ce sont des
+quantites dependantes du contexte que les gardes du mode `broad` tuent
+precisement -- plages (« 1-2 iterations attendues », « 4-6 iterations »,
+« 12-18 iterations »), enumerations (« 1 lemme, 25 sous-mots », « 24
+slots (36 intersections...) »), decoupes train/test (« Train : 382
+echantillons » contre « Test : 164 echantillons »), exemples
+algorithmiques (« en 1 etape au lieu de 2 »). `broad` echange donc du
+rappel contre de la precision dans les deux sens : +123 de rappel,
+-11 de faux positifs de `strict`.
+
+Re-mesure mecanique du partage lettres/chiffres (2026-10-30, predicat
+« contexte portant un determinant defini suivi d'un mot-nombre ») :
+27 / 96, contre 25 / 98 a la lecture manuelle. Les deux lectures
+tombent d'accord sur le total (123) et different de 2 sur le partage --
+l'ecart est dans le predicat, pas dans le corpus.
+
 Le cas fondateur est, lui, attrape : sur la tete d'avant correction
 (`6986f3f43b`), `--units extended --forms broad` rend 1 finding --
 « huit carnets » contre `15 carnets dans Serre100/` -- la ou
@@ -575,7 +597,11 @@ def main(argv: list[str] | None = None) -> int:
                          "17 findings en scope `core` contre 13, et 152 en "
                          "scope `extended` contre 40 ; les 123 ajoutes ont ete "
                          "lus un a un, tous faux positifs (sous-comptes, "
-                         "quantites derivees). `broad` est donc un INSTRUMENT "
+                         "quantites derivees). `broad` en SUPPRIME aussi 11 "
+                         "(plages, enumerations, decoupes train/test) -- delta "
+                         "NET +112 en `extended`, les deux modes ne sont pas "
+                         "imbriques (ventilation du 2026-10-30). `broad` est "
+                         "donc un INSTRUMENT "
                          "D'AUDIT CIBLE (une serie, un dossier de domaine), "
                          "jamais un gate.")
     ap.add_argument("notebooks", nargs="+", type=Path)
