@@ -25,7 +25,8 @@
 # -- po-2024: coursia-runner, coursia-lean (leg Lean, label coursia-lean).
 # -- po-2028: coursia-runner (leg d'execution, label coursia-linux),
 #             coursia-ci.slice (budget agrege des conteneurs) + le drop-in
-#             docker qui epingle le daemon sur /var/run/docker-ce.sock.
+#             docker qui epingle le daemon sur /var/run/docker-ce.sock,
+#             et /etc/docker/daemon.json (cgroup-parent + log-driver).
 #             Inventaire releve sur la machine le 2026-10-29 (pour cette
 #             machine seule ; les autres gardent leurs propres listes).
 #
@@ -146,14 +147,32 @@ LIST
     po-2028)
       # Releve sur la machine le 2026-10-29 : /etc/systemd/system/coursia-runner.service
       # (enabled), /etc/systemd/system/coursia-ci.slice (static),
-      # /usr/local/bin/coursia-runner-start.sh (0755) et le drop-in docker
-      # /etc/systemd/system/docker.service.d/coursia-socket.conf. Il n'existe
-      # AUCUN drop-in coursia-runner.service.d/ sur cette machine.
+      # /usr/local/bin/coursia-runner-start.sh (0755), le drop-in docker
+      # /etc/systemd/system/docker.service.d/coursia-socket.conf et
+      # /etc/docker/daemon.json (0644). Il n'existe AUCUN drop-in
+      # coursia-runner.service.d/ sur cette machine.
+      #
+      # daemon.json fait partie de l'inventaire, et pas seulement de la
+      # liste ai-01 : c'est lui qui porte `cgroup-parent: coursia-ci.slice`,
+      # donc ce qui fait atterrir les conteneurs DANS la slice dont
+      # supervise.sh lit le budget agrege. Sans lui, une machine
+      # reconstruite installe la slice mais aucun conteneur n'y tombe, et
+      # `supervise.sh` refuse au demarrage avec « budget agrege
+      # coursia-ci.slice INTROUVABLE ou sans io.max » (supervise.sh:1335,
+      # garde l.1308-1340). La source est une copie PROPRE A CETTE MACHINE
+      # (`persist/po-2028/daemon.json`, sha256 8265130873c6...), et non le
+      # `persist/daemon.json` generique d'ai-01 : les deux sont equivalents
+      # en semantique mais pas byte-identiques (mise en forme de
+      # `log-opts`), et la garde d'installation compare par sha256 — sourcer
+      # le fichier d'ai-01 aurait rendu un DIFF permanent sur cette machine.
+      # La copie est byte-identique au fichier en service (verifie le
+      # 2026-10-29), donc l'installation rend SKIP et non DIFF.
       cat <<'LIST'
 /etc/systemd/system/coursia-runner.service|persist/po-2028/coursia-runner.service|leg d'execution (label coursia-linux)
 /usr/local/bin/coursia-runner-start.sh|persist/po-2028/coursia-runner-start.sh|wrapper de la leg d'execution
 /etc/systemd/system/coursia-ci.slice|persist/po-2028/coursia-ci.slice|budget agrege des conteneurs
 /etc/systemd/system/docker.service.d/coursia-socket.conf|persist/po-2028/coursia-socket.conf|drop-in docker-ce : socket epingle sur /var/run/docker-ce.sock
+/etc/docker/daemon.json|persist/po-2028/daemon.json|cgroup-parent coursia-ci.slice + log-driver local
 LIST
       ;;
   esac
