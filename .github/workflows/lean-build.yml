@@ -67,8 +67,8 @@ on:
         type: string
         required: false
         default: 'none'
-      build-jobs:
-        description: "Cap de parallelisme passe a `lake build -j N` (See #23247). Vide = defaut lake (nproc), comportement historique inchange pour tous les callers qui ne le posent pas. Poser '1' sur un lake dont la SOMME des elaborations paralleles depasse le plafond RAM du runner -- ubuntu-latest = 16 Go pour 4 vCPU, et lake -j nproc co-elabore n processus charges chacun de leur environnement complet. Distinct du cas #9840 (un SEUL module > plafond, se corrige en decoupant le module) : ici chaque module tient seul, c'est la co-elaboration qui tue."
+      build-threads:
+        description: "Borne de parallelisme d'elaboration, posee en variable d'environnement `LEAN_NUM_THREADS` (See #23247). Vide = comportement historique inchange pour tous les callers qui ne la posent pas. Poser '1' sur un lake dont la SOMME des elaborations paralleles depasse le plafond RAM du runner -- ubuntu-latest = 16 Go pour 4 vCPU. Le `lake` de ce toolchain N'EXPOSE PAS de drapeau -j/--jobs : mesure, « unknown short option '-j' » au run CI 40857014456 et « unknown long option '--jobs' » en local. Le levier disponible est donc la variable, dont la serialisation des elaborations est mesuree en depot (#14821, run 35175031202, lean-knot.yml:148). Distinct du cas #9840 (un SEUL module > plafond, se corrige en decoupant le module) : ici chaque module tient seul, c'est la co-elaboration qui tue."
         type: string
         required: false
         default: ''
@@ -295,12 +295,12 @@ jobs:
           # the error lines can be surfaced in a ::group:: on failure. `if cmd;` exempts
           # the pipeline from errexit, but pipefail still feeds `$?` here — this is what
           # preserves the 2026-06-14 invariant (FAILED build still exits != 0).
-          # #23247 : cap -j optionnel. Sans l'input, JOBS_ARGS est vide et la
-          # commande est byte-identique a l'historique -- aucun effet sur les
-          # dispatchers qui ne posent pas build-jobs.
-          JOBS_ARGS=""
-          if [ -n "${{ inputs.build-jobs }}" ]; then JOBS_ARGS="-j ${{ inputs.build-jobs }}"; fi
-          if lake -R build $JOBS_ARGS 2>&1 | tee "$RUNNER_TEMP/lake.log" | tail -20; then
+          # #23247 : borne de parallelisme optionnelle, posee en LEAN_NUM_THREADS.
+          # Sans l'input, THREADS_ENV est vide et la commande est byte-identique a
+          # l'historique -- aucun effet sur les dispatchers qui ne posent pas build-threads.
+          THREADS_ENV=""
+          if [ -n "${{ inputs.build-threads }}" ]; then THREADS_ENV="LEAN_NUM_THREADS=${{ inputs.build-threads }}"; fi
+          if env $THREADS_ENV lake -R build 2>&1 | tee "$RUNNER_TEMP/lake.log" | tail -20; then
             :
           else
             rc=$?

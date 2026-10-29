@@ -96,7 +96,7 @@ concurrency:
 jobs:
   ci:
     # #23247 : reference LOCALE (./.github/workflows/...) et non @main.
-    # Ce workflow et lean-build.yml changent ENSEMBLE (l'input build-jobs
+    # Ce workflow et lean-build.yml changent ENSEMBLE (l'input build-threads
     # n'existe que dans la meme PR) : un appel epingle a @main passerait un
     # `with:` que le lean-build.yml de main ne declare pas encore, et GitHub
     # rejette l'appel AVANT tout job -- startup_failure, 0 job, mesure
@@ -133,7 +133,7 @@ jobs:
       # 300 min (maximum legitime knot_lean : 215 min). A retirer quand le
       # programme de decoupe (#23234) aura ramene tous les pics sous ~7 GiB --
       # alors -j2 redevient sur.
-      build-jobs: "1"
+      build-threads: "1"
 
   # c.8133 (#8782 reconciliation): the blocking gate's allow-axioms list was
   # a fossil -- 18 ``Conway.Life.*`` names that the gate's target closure
@@ -156,7 +156,7 @@ jobs:
       target-modules: "Conway.KochenSpecker,Conway.FreeWillTheorem"
       allow-axioms: "Classical.choice,propext,funext,Quot.lift,Quot.mk,Quot.sound"
       fail-on-sorry: true
-      build-jobs: "1"  # #23247, voir le commentaire du job ci
+      build-threads: "1"  # #23247, voir le commentaire du job ci
 
   # Advisory proof-integrity AUDIT -- option (b) of #8782 (decision c.50,
   # assigned to po-2023, taken up by po-2026 after 4 days idle + no WIP). The
@@ -327,7 +327,7 @@ jobs:
       # new red"), the property the no-wildcard rule preserves.
       allow-axioms: "Conway.Life.hashlife_correct_implies_block_2._native.native_decide.ax_1_1,Conway.Life.hashlife_correct_implies_toad_2._native.native_decide.ax_1_1,Conway.Life.hashlife_correct_implies_glider_2._native.native_decide.ax_1_1,Conway.Life.hashlife_correct_implies_blinker_h_2._native.native_decide.ax_1_1,Conway.Life.hashlife_correct_implies_beacon_2._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_single_cell._native.native_decide.ax_1_4,Conway.Life.box_assez_grandN_single_cell._native.native_decide.ax_1_2,Conway.Life.box_assez_grandN_single_cell._native.native_decide.ax_1_3,Conway.Life.box_assez_grandN_single_cell._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_single_cell_8._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_single_cell_3._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_block_8._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_glider_8._native.native_decide.ax_1_1,Conway.Life.boxAssezGrandN_block_8._native.native_decide.ax_1_1,Conway.Life.boxAssezGrandN_glider_8._native.native_decide.ax_1_1,Conway.Life.box_assez_grand_single_cell_3_false._native.native_decide.ax_1_1,Conway.Life.box_assez_grand_single_cell_8_false._native.native_decide.ax_1_1,Conway.Life.box_assez_grand_single_cell_2._native.native_decide.ax_1_1,Conway.Life.box_assez_grand_not_vacuous._native.native_decide.ax_1_1,Conway.Life.p4_wf_witness_k2._native.native_decide.ax_1_1,Conway.Life.p4_wf_witness_k1._native.native_decide.ax_1_1,Conway.Life.p4at_witness_k1._native.native_decide.ax_1_1,Conway.Life.p4at_witness_k2._native.native_decide.ax_1_1,Conway.Life.p4_base_exhaustive._native.native_decide.ax_1_1✝,Conway.Life.p4_base_blinker._native.native_decide.ax_1_1,Conway.Life.p4_base_block._native.native_decide.ax_1_1,Conway.Life.p4_base_glider._native.native_decide.ax_1_1,Conway.Life.p4_base_dead._native.native_decide.ax_1_1,Conway.Life.p4_unrestricted_counterexample._native.native_decide.ax_1_1,Conway.Life.padCenter2_correct_block_level1._native.native_decide.ax_1_1,Conway.Life.pulsar_period_three._native.native_decide.ax_1_1,Conway.Life.pentadecathlon_period_15._native.native_decide.ax_1_1,Conway.Life.RLE.glider_parse_ok._native.native_decide.ax_1_1,Conway.Life.RLE.lwss_parse_ok._native.native_decide.ax_1_1,Conway.Life.RLE.pulsar_parse_ok._native.native_decide.ax_1_1,Conway.Life.RLE.gosper_gun_parse_ok._native.native_decide.ax_1_1,Conway.Life.RLE.lwss_rle_roundtrip._native.native_decide.ax_1_1,Conway.Life.RLE.pulsar_rle_roundtrip._native.native_decide.ax_1_1,Conway.Life.RLE.gosper_gun_cell_count._native.native_decide.ax_1_1,Conway.Life.RLE.glider_parsed_cell_count._native.native_decide.ax_1_1,Conway.Life.jumpCaptured_block._native.native_decide.ax_1_1,Conway.Life.jumpCaptured_glider._native.native_decide.ax_1_1,Conway.Life.jumpCaptured_not_trivial._native.native_decide.ax_1_1,Conway.Life.jumpCaptured_beehive._native.native_decide.ax_1_1,Conway.Life.jumpCaptured_beehive._native.native_decide.ax_1_2,Conway.Life.jumpCaptured_blinker._native.native_decide.ax_1_1,Conway.Life.jumpCaptured_blinker._native.native_decide.ax_1_3,Conway.Life.jumpCaptured_blinker._native.native_decide.ax_1_4,Conway.Life.jumpCaptured_block_of_class._native.native_decide.ax_1_1,Conway.Life.jumpCaptured_block_of_class._native.native_decide.ax_1_2,Conway.Life.jumpCaptured_block_of_class._native.native_decide.ax_1_3,Conway.Life.pulsar_is_oscillator._native.native_decide.ax_1_1,Conway.Life.Pillars.pulsar_period3._native.native_decide.ax_1_1,Conway.Life.Pillars.unitcell_initial_population._native.native_decide.ax_1_1,Conway.Life.Pillars.pulsar_period1_negative._native.native_decide.ax_1_1,Conway.Life.Pillars.pulsar_period2_negative._native.native_decide.ax_1_1,Conway.Life.Pillars.otca_initial_population._native.native_decide.ax_1_1,Conway.digitsToNat_example._native.native_decide.ax_1_1,Conway.lookAndSay_4._native.native_decide.ax_1_1,Conway_en.Life_en.pulsar_period_three._native.native_decide.ax_1_1,Conway_en.Life_en.pentadecathlon_period_15._native.native_decide.ax_1_1,Conway_en.Life_en.pulsar_is_oscillator._native.native_decide.ax_1_1,Conway.Life.Pillars_en.pulsar_period3._native.native_decide.ax_1_1,Conway.Life.Pillars_en.unitcell_initial_population._native.native_decide.ax_1_1,Conway.Life.Pillars_en.pulsar_period1_negative._native.native_decide.ax_1_1,Conway.Life.Pillars_en.pulsar_period2_negative._native.native_decide.ax_1_1,Conway.Life.Pillars_en.otca_initial_population._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.glider_parse_ok._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.lwss_parse_ok._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.pulsar_parse_ok._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.gosper_gun_parse_ok._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.lwss_rle_roundtrip._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.pulsar_rle_roundtrip._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.gosper_gun_cell_count._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.glider_parsed_cell_count._native.native_decide.ax_1_1,Conway_en.digitsToNat_example._native.native_decide.ax_1_1,Conway_en.lookAndSay_4._native.native_decide.ax_1_1"
       fail-on-sorry: false
-      build-jobs: "1"  # #23247, voir le commentaire du job ci
+      build-threads: "1"  # #23247, voir le commentaire du job ci
 
   # Advisory proof-integrity coverage (See #8782). The `target-modules` lists
   # above are hand-maintained while the lakefile glob (.submodules Conway,
