@@ -52,7 +52,7 @@ Commandes :
 
 **Choix quant = arbitrage VRAM** : sur un GPU 8GB, Nunchaku INT4 (~4GB) est obligatoire ; FP8 (~29GB) demande un GPU haut de gamme. Documenter le choix par service.
 
-**Plus petit quant, communautaire compris, et sleep quand le service ne sert pas** — recettes de recherche HF, piège du fork loader NF4, précautions vLLM (modes/niveaux, RAM hôte) : [docs/genai/genai-services.md](../../docs/genai/genai-services.md#quantification--mesures-du-2026-10-29) ; confrontation doc/service par `python genai.py quant summary`.
+**Plus petit quant, communautaire compris, et sleep quand le service ne sert pas** — recettes de recherche HF, piège du fork loader NF4, précautions vLLM (modes/niveaux, RAM hôte) : [docs/genai/genai-services.md](../../docs/genai/genai-services.md#quantification--mesures-du-2026-10-29) ; table de quantification **déclarée** par service via `python genai.py quant summary` (la confrontation à l'état réellement chargé est l'organe de #23252).
 
 ## GPU / VRAM ventilation
 
