@@ -1328,6 +1328,61 @@ def test_la_reorientation_annule_puis_relance(monkeypatch):
     assert [method for _path, method in calls] == ["POST", "POST"]
 
 
+def test_la_relance_refusee_est_reessayee_apres_attente_de_l_annulation(monkeypatch):
+    """La transition d'etat peut refuser une relance lancee trop tot : le
+    run resterait annule SANS relance, perdu pour la passe. On attend l'etat
+    effectif, puis on retente une fois."""
+    calls = []
+
+    def fake(args, token=None, method=None, payload=None):
+        path = args[-1]
+        calls.append((path, method))
+        if path.endswith("/cancel"):
+            return (0, "", "")
+        if path.endswith("/rerun"):
+            # premier essai refuse, second accepte
+            if sum(1 for p, _m in calls if p.endswith("/rerun")) == 1:
+                return (1, "", "run is still in progress")
+            return (0, "", "")
+        if path.endswith("/actions/runs/4242"):
+            return (0, json.dumps({"status": "completed"}), "")
+        raise AssertionError(f"appel inattendu : {path}")
+
+    monkeypatch.setattr(ctl, "_gh_api", fake)
+    ok, reason = ctl.reorient_run("jsboige/CoursIA", "t", 4242)
+    assert ok is True
+    assert "reussie apres attente" in reason
+    paths = [p for p, _m in calls]
+    assert paths[0].endswith("/actions/runs/4242/cancel")
+    assert paths[1].endswith("/actions/runs/4242/rerun")
+    assert paths[2].endswith("/actions/runs/4242")
+    assert paths[3].endswith("/actions/runs/4242/rerun")
+
+
+def test_une_annulation_non_effective_ne_declenche_pas_de_relance_inutile(monkeypatch):
+    """Si l'annulation n'aboutit pas dans la borne, on ne relance pas : le
+    motif est nomme, et le run reste pour la passe suivante."""
+    monkeypatch.setattr(ctl, "CANCEL_WAIT_TIMEOUT_S", 0.01)
+    monkeypatch.setattr(ctl, "CANCEL_POLL_S", 0.01)
+    calls = []
+
+    def fake(args, token=None, method=None, payload=None):
+        path = args[-1]
+        calls.append((path, method))
+        if path.endswith("/cancel"):
+            return (0, "", "")
+        if path.endswith("/rerun"):
+            return (1, "", "run is still in progress")
+        return (0, json.dumps({"status": "cancelling"}), "")
+
+    monkeypatch.setattr(ctl, "_gh_api", fake)
+    ok, reason = ctl.reorient_run("jsboige/CoursIA", "t", 4242)
+    assert ok is False
+    assert "annulation non effective" in reason
+    # une seule relance demandee : celle qui a ete refusee
+    assert sum(1 for p, _m in calls if p.endswith("/rerun")) == 1
+
+
 def test_les_cibles_sont_les_plus_anciennes_et_respectent_le_seuil_d_age():
     rows = _queued_rows(3, minutes_old=60.0) + _queued_rows(2, minutes_old=5.0)
     targets, ghosts = ctl.select_reorientation_targets(
