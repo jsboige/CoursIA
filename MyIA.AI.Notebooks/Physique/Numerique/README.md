@@ -9,7 +9,7 @@ relèverait d'une preuve — sans jamais écrire « vérifié de bout en bout »
 
 ### [Numerique-01-Burgers-Volumes-Finis-Python.ipynb](Numerique-01-Burgers-Volumes-Finis-Python.ipynb)
 
-**Ce qu'il démontre.** La condition de Rankine-Hugoniot dérivée de la forme intégrale, la solution
+**Ce qu'il mesure.** La condition de Rankine-Hugoniot dérivée de la forme intégrale, la solution
 exacte du problème de Riemann de Burgers (choc et raréfaction), les schémas de Godunov et Rusanov
 avec leur condition CFL, le taux de convergence L1 mesuré par régression log-log, et le temps de
 formation d'un choc mesuré directement sur les caractéristiques puis confronté à la prédiction
