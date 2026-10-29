@@ -96,15 +96,32 @@ def analyse_lake(lake: Path, cache: dict[str, int]) -> dict:
     # l'inverse de la verite (14 jonctions po-2025, cf junctions-scan-po-2024.md §4, seconde occurrence).
     # `islink()` est False sur une junction Windows : c'est la divergence de chemin
     # qui la revele, pas l'API dediee (`is_junction()` n'existe qu'a partir de 3.12).
-    real = Path(os.path.realpath(mathlib))
-    result["junction"] = str(real) != str(mathlib.resolve(strict=False)) or real != mathlib
+    try:
+        real = Path(os.path.realpath(mathlib))
+        result["junction"] = str(real) != str(mathlib.resolve(strict=False)) or real != mathlib
+        # `exists()` leve sur la MEME jonction, et la stdlib n'y peut rien : `Path.exists()`
+        # ne rattrape que `ValueError`, pas `OSError` (verifie sur 3.13, trace du
+        # 2026-10-27 citant `_abc.py:450`). Les deux sondes vivent donc sous le meme
+        # `try` -- garder la premiere seule laissait le scan planter une ligne plus bas.
+        reachable = mathlib.exists()
+    except OSError as exc:
+        # Un `.lake/packages/mathlib` que Windows refuse de suivre
+        # (`[WinError 1920] Le systeme ne peut pas acceder au fichier`, mesure le
+        # 2026-10-27 sur `.claude/worktrees/agent-a6758d2be08682240/.../calibration_lean`).
+        # Sans ce garde, UN lake illisible annulait tout le scan : l'organe se taisait
+        # exactement quand le store partage etait casse, c'est-a-dire au moment ou il
+        # sert. Un lake non mesurable est desormais rendu `unreadable`, jamais muet.
+        result["status"] = "unreadable"
+        result["oleans"] = None
+        result["unreadable_error"] = f"{type(exc).__name__}: {exc}"
+        return result
     if result["junction"]:
         # Cible du lien, meme morte : elle sert au diagnostic. Cle distincte de
         # `realpath`, qui designe un cache PHYSIQUE et alimente le dedoublonnage --
         # une cible disparue n'est pas un cache physique et ne doit pas y entrer.
         result["junction_target"] = str(real)
 
-    if not mathlib.exists():
+    if not reachable:
         if result["junction"]:
             # Le lien existe, sa cible a disparu : etat distinct de « aucun checkout »
             # et strictement pire que `cold` -- le chemin se presente comme un paquet
@@ -119,7 +136,15 @@ def analyse_lake(lake: Path, cache: dict[str, int]) -> dict:
 
     key = str(real)
     if key not in cache:
-        cache[key] = count_oleans(real)
+        try:
+            cache[key] = count_oleans(real)
+        except OSError as exc:
+            # Meme raison que ci-dessus : un arbre illisible ne doit pas annuler
+            # le verdict des autres lakes, et ne doit pas passer pour un zero.
+            result["status"] = "unreadable"
+            result["oleans"] = None
+            result["unreadable_error"] = f"{type(exc).__name__}: {exc}"
+            return result
     result["oleans"] = cache[key]
     result["shared_with"] = None  # rempli par l'appelant
 
@@ -140,7 +165,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--include-worktrees", action="store_true",
                         help="inclure .claude/worktrees (exclus par defaut)")
     parser.add_argument("--strict", action="store_true",
-                        help="sortir 1 si un lake declarant mathlib est froid")
+                        help="sortir 1 si un lake declarant mathlib est froid, "
+                             "partiel, pendant ou illisible")
     args = parser.parse_args(argv)
 
     root = Path(args.repo_path).resolve()
@@ -177,19 +203,33 @@ def main(argv: list[str] | None = None) -> int:
         if r["status"] == "no_mathlib_dep":
             continue
         flag = "junction" if r.get("junction") else "reel    "
-        print(f"  {r['status']:8}  {name}  {r['oleans']:>6} olean  {flag}")
+        # `oleans` vaut None pour un lake non mesurable : formater None avec `:>6`
+        # leverait et ferait taire le rapport entier, c'est-a-dire reproduirait le
+        # defaut que `unreadable` corrige, un cran plus loin.
+        count = "  n/a " if r["oleans"] is None else f"{r['oleans']:>6}"
+        print(f"  {r['status']:8}  {name}  {count} olean  {flag}")
 
     cold = [r for r in results if r["status"] == "cold"]
     partial = [r for r in results if r["status"] == "partial"]
     ok = [r for r in results if r["status"] == "ok"]
     absent = [r for r in results if r["status"] == "absent"]
     dangling = [r for r in results if r["status"] == "dangling"]
+    unreadable = [r for r in results if r["status"] == "unreadable"]
 
     print()
     print(f"Lakes: {len(lakes)} | mathlib ok: {len(ok)} | froid: {len(cold)} | "
           f"partiel: {len(partial)} | non installe: {len(absent)} | "
           f"jonctions pendantes: {len(dangling)} | "
+          f"illisibles: {len(unreadable)} | "
           f"caches physiques distincts: {len(by_real)}")
+
+    if unreadable:
+        print("\nLakes ILLISIBLES -- le verdict n'a pas pu etre rendu :")
+        for r in unreadable:
+            print(f"  {r['lake']}")
+            print(f"      {r.get('unreadable_error', 'inconnu')}")
+        print("  Ni `ok` ni `froid` : ces lakes sont hors mesure. Corriger l'acces")
+        print("  (jonction cassee, droits, worktree disparu) puis relancer.")
 
     if dangling:
         print("\nJonctions PENDANTES -- le lien existe, sa cible a disparu :")
@@ -214,7 +254,10 @@ def main(argv: list[str] | None = None) -> int:
     # installe et n'atteint rien -- un `lake build` peut tenter de repeupler le
     # store partage a travers elle (incident fondateur #13962, docstring de
     # setup_shared_mathlib.ps1).
-    return 1 if (args.strict and (cold or partial or dangling)) else 0
+    # `unreadable` rougit aussi, et c'est un choix fail-CLOSED : `--strict` sert de
+    # gate, et un lake qu'on n'a pas su lire n'est pas un lake sain -- le compter
+    # vert reviendrait a recompenser la panne de l'instrument.
+    return 1 if (args.strict and (cold or partial or dangling or unreadable)) else 0
 
 
 if __name__ == "__main__":
