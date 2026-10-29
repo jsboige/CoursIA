@@ -198,6 +198,19 @@ def test_resolve_cited_path_prefers_the_repository_root(tmp_path):
     assert resolve_cited_path("RL/x.md", tmp_path) == root_file
 
 
+def test_missing_paths_accepts_a_series_homonym_when_the_root_path_is_gone(tmp_path):
+    # Reserve 2 de la review NanoClaw du 2026-10-29 : l'arbitrage de
+    # precedence est fige ici plutot que laisse implicite. Une citation qui
+    # visait la RACINE, dont le fichier a ete supprime alors qu'un homonyme
+    # survit sous les series, est declaree PRESENTE. Cout accepte : une
+    # sous-declaration d'avertissement (missing_paths n'alimente que des
+    # warnings, jamais le code de sortie) -- preferee a un faux « path not
+    # found », la classe de faux positif qui a fait publier un constat errone
+    # sur #10643 (6 faux positifs sur 10 avertissements).
+    _series_file(tmp_path, "RL/x.md")
+    assert missing_paths(["RL/x.md"], tmp_path) == []
+
+
 def test_missing_paths_still_reports_a_genuinely_absent_series_path(tmp_path):
     # Controle negatif : la resolution ne doit pas blanchir une vraie absence.
     # `Lean-1-Setup.ipynb` a ete renumerote en `Lean-01-Setup-Lean-Python.ipynb`.

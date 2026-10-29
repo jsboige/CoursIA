@@ -359,6 +359,15 @@ def resolve_cited_path(path: str, repo_root: Path) -> Path:
     La forme repo-relative **gagne** quand elle existe, pour qu'un chemin qui
     vit reellement a la racine ne soit jamais prefixe a tort.
 
+    Ce choix a un **revers assume** : une citation qui visait la racine, dont
+    le fichier a ete supprime alors qu'un **homonyme** survit sous les series,
+    est declaree presente -- et symetriquement, une citation vouee aux series
+    peut etre satisfaite par un homonyme a la racine. Le cout est une
+    **sous-declaration d'avertissement**, jamais un faux rouge :
+    `missing_paths` n'alimente que `warnings`, le code de sortie restant
+    reserve a `SATURATED`. L'arbitrage est fige par
+    `test_missing_paths_accepts_a_series_homonym_when_the_root_path_is_gone`.
+
     Meme regle que `scripts/notebook_tools/extract_readme_figures.py` ->
     `resolve_repo_path` (organ-first : ce helper est un module CLI qui importe
     nbformat/PIL ; la regle de trois lignes est redite ici plutot que de tirer
