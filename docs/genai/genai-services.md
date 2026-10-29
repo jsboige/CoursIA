@@ -310,6 +310,23 @@ BATCH_MODE=false
 | comfyui-video | po-2023 | HunyuanVideoWrapper | fp16 | varies |
 | whisper-webui | po-2023 | Whisper WebUI | unknown | varies |
 
+### Quantification — mesures du 2026-10-29
+
+Relevé de départ de la RTX 3090 de `po-2023` (24 576 MiB) : **23 419 MiB occupés**, avec `vllm-zimage` en fp8, `tts-fishaudio` en fp16 (`--half`), la pile `tts-multi`, Whisper et un serveur d'embeddings. Chaque ligne du tableau ci-dessus est donc une question de quantification, pas une fatalité.
+
+Dérivés quantifiés mesurés pour `fishaudio/s2-pro` (tailles réelles fichier par fichier, `api/models/<repo>?blobs=true`) :
+
+| Dérivé | Total | Remarque |
+|---|---|---|
+| `groxaxo/s2-pro-BnB-4Bits` | **5,00 Go** | NF4 — **exige le fork** `groxaxo/fish-speech-int4-patch` |
+| `scarxity/fish-speech-s2-pro-nf4` | 5,00 Go | NF4 |
+| `baicai1145/s2-pro-w4a16` | 6,13 Go | safetensors |
+| `drbaph/s2-pro-fp8` | 8,05 Go | fp8 |
+
+Écart de référence : fp16 = 20,3 Go au warm-up contre 5,0 Go en NF4, soit **un facteur 4** — de quoi faire tomber un refus d'hébergement fondé sur le chiffre fp16. Le piège vérifié (ajouter `bitsandbytes` et `accelerate` ne suffit pas : le loader officiel ne lit pas un state dict préquantifié) est détaillé dans [`docker-configurations/services/tts-fishaudio/README.md`](../../docker-configurations/services/tts-fishaudio/README.md).
+
+Politique d'hébergement et recettes de recherche des quants : [`.claude/rules/model-quantization-and-sleep.md`](../../.claude/rules/model-quantization-and-sleep.md).
+
 ### Idle Management
 
 **Built-in lazy loading (auto-unload after 5 min idle):**
