@@ -39,6 +39,35 @@ Sorties : rc 0 = rien d'invisible ; rc 1 = au moins une PR ``UNSEEN`` ou une
 ``DERIVE`` ; rc 2 = au moins un depot illisible (``UNKNOWN``) et rien de rouge
 par ailleurs. Un depot illisible n'est jamais compte comme vide.
 
+Mode ``--drift-only`` (Regle 2 seule, sans lecture de PRs)
+---------------------------------------------------------
+La veille ci-dessus suppose un jeton GraphQL et se joue au rythme des cycles de
+coordination. Or la derive de gitlink a un proprietaire naturel -- Dependabot --
+qui peut silencieusement disparaitre : le 2026-10-29, Dependabot n'a produit
+**aucune** PR (tous ecosystemes) depuis le 27/10, alors que le sous-module
+Argumentum avait derape de 26 commits. Raison mesuree : le pin de ``main`` a ete
+avance a la main de 84 commits (PR #22958, 20:57Z), soit 5 minutes avant que
+Dependabot n'auto-cloture sa propre PR (#22823, 21:02Z, « up-to-date now ») :
+Dependabot n'avait alors plus de cible a proposer, et son resolution de branche
+s'est figee sur une ref du 23/10. Un depot dont l'automatisation est muette a
+besoin d'un **autre** regard, et ce regard doit etre quotidien.
+
+``--drift-only`` ne lit que la Regle 2 (``git ls-tree`` + ``git ls-remote``, plus
+l'API ``compare`` pour la distance), sans toucher aux PRs : il tourne sans jeton
+et sans GraphQL, donc en CI comme en local.
+
+Seuil ``--max-ahead N``
+-----------------------
+Une derive de **quelques** commits est normale : le sous-module avance tous les
+jours et le pin suit au rythme des bumps. Un garde qui rougit sur toute derive
+serait rouge en permanence, donc ignore (le piege des gardes sur ``main``). Le
+seuil porte sur la **distance** de derive, mesuree par ``ahead_by`` de l'API
+``compare`` (nombre de commits dont la branche declaree s'est avancee depuis le
+gitlink epingle). rc 1 = au moins un sous-module derive de plus de ``N``
+commits (bump en retard, actionnable) ; rc 2 = mesure impossible (depot
+injoignable ou ``compare`` muet) : une mesure absente n'est jamais un zero, et
+elle ne fait pas rougir une CI sur un incident de reseau.
+
 Lecture seule. Le jeton s'epingle par commande (Regle 5), jamais par
 ``gh auth switch`` :
 
@@ -49,15 +78,21 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_MAX_AGE_HOURS = 24.0
+# Distance de derive au-dela de laquelle le bump est en retard : sous ce seuil,
+# la derive est le fonctionnement normal (le pin suit au rythme des bumps).
+DEFAULT_MAX_AHEAD = 10
 MAX_PAGES = 20  # 2 000 PRs ouvertes par depot : au-dela, le depot est declare illisible
 # Gel declare dans le titre : la PR est comptee, elle ne rougit pas l'organe.
 _HOLD_RE = re.compile(r"^\s*\[(HOLD|WIP)\b", re.IGNORECASE)
@@ -284,7 +319,45 @@ def fetch_prs(slug: str, run: Runner = _run) -> list[dict]:
     return nodes
 
 
-def gitlink_drift(sub: dict, ref: str, run: Runner = _run) -> dict:
+def compare_ahead(slug: str | None, base: str | None, head: str | None, opener=None) -> int | None:
+    """Distance de derive : combien de commits la tete a gagne depuis le gitlink.
+
+    L'egalite des SHA ne dit pas *combien* le sous-module a derive : une derive
+    de 2 commits et une derive de 26 ne se traitent pas de la meme facon. L'API
+    ``compare`` de GitHub repond ``ahead_by`` : le nombre de commits dont la
+    tete de branche est en avance sur le gitlink epingle.
+
+    Appel REST stdlib (pas de ``gh``, pas de jeton obligatoire) : les depots de
+    sous-modules sont publics, et le mode ``--drift-only`` doit tourner en CI
+    sans dependre du binaire ``gh`` ni d'un secret. Un jeton est utilise quand
+    il est present dans l'environnement (rate limit plus large).
+
+    Un ``compare`` muet, en erreur, ou une reponse illisible donne ``None`` : une
+    mesure absente n'est jamais un zero, et elle ne fait jamais passer une
+    derive pour une egalite.
+    """
+    if not slug or not base or not head:
+        return None
+    url = f"https://api.github.com/repos/{slug}/compare/{base}...{head}"
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "User-Agent": "coursia-submodule-watch",
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
+    token = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN")
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    open_fn = opener or urlopen
+    try:
+        with open_fn(Request(url, headers=headers), timeout=30) as resp:
+            payload = json.loads(resp.read().decode("utf-8"))
+    except (OSError, ValueError, HTTPError, URLError):
+        return None
+    value = payload.get("ahead_by") if isinstance(payload, dict) else None
+    return value if isinstance(value, int) and not isinstance(value, bool) else None
+
+
+def gitlink_drift(sub: dict, ref: str, run: Runner = _run, opener=None) -> dict:
     """Regle 2 : gitlink de ``ref`` contre la tete de la branche declaree."""
     remote_ref = f"refs/heads/{sub['branch']}" if sub.get("branch") else "HEAD"
     tree = run(["git", "ls-tree", ref, sub["path"]])
@@ -297,14 +370,31 @@ def gitlink_drift(sub: dict, ref: str, run: Runner = _run) -> dict:
         state = "OK"
     else:
         state = "DERIVE"
-    return {"state": state, "remote_ref": remote_ref, "gitlink": local, "remote_head": remote}
+    ahead = compare_ahead(sub.get("slug"), local, remote, opener) if state == "DERIVE" else 0
+    return {
+        "state": state,
+        "remote_ref": remote_ref,
+        "gitlink": local,
+        "remote_head": remote,
+        "ahead_by": ahead,
+    }
 
 
-def watch(max_age_hours: float, ref: str, now: datetime, run: Runner = _run) -> dict:
+def watch(
+    max_age_hours: float,
+    ref: str,
+    now: datetime,
+    run: Runner = _run,
+    with_prs: bool = True,
+    opener=None,
+) -> dict:
     report = {"generated_at": now.isoformat(), "max_age_hours": max_age_hours, "ref": ref, "repos": []}
     for sub in read_submodules(run):
         entry = {"path": sub["path"], "slug": sub["slug"], "branch": sub["branch"]}
-        entry["drift"] = gitlink_drift(sub, ref, run)
+        entry["drift"] = gitlink_drift(sub, ref, run, opener)
+        if not with_prs:
+            report["repos"].append(entry)
+            continue
         if sub["slug"] is None:
             entry["prs_error"] = "url hors GitHub"
             entry["prs"] = None
@@ -318,6 +408,49 @@ def watch(max_age_hours: float, ref: str, now: datetime, run: Runner = _run) -> 
                 entry["prs"] = None
         report["repos"].append(entry)
     return report
+
+
+def drift_exit_code(report: dict, max_ahead: int) -> int:
+    """rc du mode ``--drift-only`` : 1 = derive en retard, 2 = mesure impossible.
+
+    Une derive dont la distance n'a pas pu etre mesuree ne fait pas rougir : elle
+    est signalee dans la sortie et dans l'artefact, mais un incident de reseau ne
+    doit pas transformer une CI de veille en garde permanent rouge. Une derive
+    **mesuree** au-dela du seuil, elle, est un bump en retard et vaut rc 1.
+    """
+    overdue = False
+    unknown = False
+    for repo in report["repos"]:
+        drift = repo["drift"]
+        if drift["state"] == "INJOIGNABLE":
+            unknown = True
+        elif drift["state"] == "DERIVE":
+            ahead = drift.get("ahead_by")
+            if ahead is None:
+                unknown = True
+            elif ahead > max_ahead:
+                overdue = True
+    return 1 if overdue else (2 if unknown else 0)
+
+
+def render_drift(report: dict, max_ahead: int) -> str:
+    lines = [
+        f"Derive de gitlink ({report['generated_at'][:16]}Z, ref={report['ref']}, "
+        f"bump en retard au-dela de {max_ahead} commits)"
+    ]
+    for repo in report["repos"]:
+        d = repo["drift"]
+        if d["state"] == "OK":
+            state = "OK"
+        elif d["state"] == "INJOIGNABLE":
+            state = "INJOIGNABLE (depot muet : jamais une egalite)"
+        else:
+            ahead = d.get("ahead_by")
+            distance = f"{ahead} commits" if ahead is not None else "distance non mesuree"
+            state = f"DERIVE {str(d['gitlink'])[:10]} -> {str(d['remote_head'])[:10]} ({distance})"
+        lines.append(f"== {repo['slug']} ({repo['path']}) -- vs {d['remote_ref']} : {state}")
+    lines.append(f"\nrc={drift_exit_code(report, max_ahead)} (0 = rien, 1 = derive en retard, 2 = mesure impossible)")
+    return "\n".join(lines)
 
 
 def exit_code(report: dict) -> int:
@@ -370,12 +503,31 @@ def main(argv: list | None = None) -> int:
     parser.add_argument("--max-age-hours", type=float, default=DEFAULT_MAX_AGE_HOURS)
     parser.add_argument("--ref", default="origin/main", help="arbre CoursIA dont on lit les gitlinks")
     parser.add_argument("--json", action="store_true")
+    parser.add_argument(
+        "--drift-only",
+        action="store_true",
+        help="Regle 2 seule : aucune lecture de PRs, aucun jeton GraphQL requis",
+    )
+    parser.add_argument(
+        "--max-ahead",
+        type=int,
+        default=DEFAULT_MAX_AHEAD,
+        help="distance de derive (commits) au-dela de laquelle le bump est en retard",
+    )
     args = parser.parse_args(argv)
     try:
-        report = watch(args.max_age_hours, args.ref, datetime.now(timezone.utc))
+        report = watch(args.max_age_hours, args.ref, datetime.now(timezone.utc), with_prs=not args.drift_only)
     except RuntimeError as exc:
         print(f"UNKNOWN : {exc}", file=sys.stderr)
         return 2
+    if args.drift_only:
+        report["max_ahead"] = args.max_ahead
+        print(
+            json.dumps(report, ensure_ascii=False, indent=2)
+            if args.json
+            else render_drift(report, args.max_ahead)
+        )
+        return drift_exit_code(report, args.max_ahead)
     print(json.dumps(report, ensure_ascii=False, indent=2) if args.json else render(report))
     return exit_code(report)
 
