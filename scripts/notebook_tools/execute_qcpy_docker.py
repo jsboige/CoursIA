@@ -58,6 +58,45 @@ def _stream_output(text: str) -> dict:
     return {"output_type": "stream", "name": "stdout",
             "text": text.splitlines(keepends=True)}
 
+
+def _build_outputs(result: dict, exec_count: int) -> list:
+    """Sorties nbformat d'un resultat d'execution, quel que soit son statut.
+
+    Le meme constructeur sert la reussite ET l'echec. Ce n'est pas une
+    factorisation cosmetique : la branche d'echec construisait sa liste a
+    partir des seules erreurs, donc un flux deja collecte etait **jete**.
+    Un `timeout` (cellule plus longue que `--timeout`) n'emet aucune entree
+    `error` : la cellule sortait avec un `execution_count` conserve et
+    `outputs == []`, c'est-a-dire l'aspect exact d'une sortie effacee a la
+    main (#22181, QC-Py-32 cellule de boucle DQN : 1337 -> 0 caracteres,
+    reproduit au defaut de 120 s puis a 900 s). Les flux captures avant
+    l'interruption sont une preuve, pas un dechet : ils sont ecrits.
+    """
+    outputs = []
+    for text in result["streams"]:
+        outputs.append(_stream_output(text))
+    for err in result["errors"]:
+        outputs.append({
+            "output_type": "error",
+            "ename": err["ename"],
+            "evalue": err["evalue"],
+            "traceback": err.get("traceback", [])
+        })
+    if result["result"]:
+        outputs.append({
+            "output_type": "execute_result",
+            "execution_count": exec_count,
+            "data": result["result"],
+            "metadata": {}
+        })
+    for dd in result["display_data"]:
+        outputs.append({
+            "output_type": "display_data",
+            "data": dd,
+            "metadata": {}
+        })
+    return outputs
+
 # Shared session for XSRF token handling
 _http_session = None
 
@@ -229,46 +268,12 @@ def execute_notebook(nb_path: Path, base_url: str, kernel_id: str,
 
         if not is_error:
             cells_ok += 1
-            cell["execution_count"] = exec_count
-
-            # Build outputs
-            outputs = []
-            for text in result["streams"]:
-                outputs.append(_stream_output(text))
-            for err in result["errors"]:
-                outputs.append({
-                    "output_type": "error",
-                    "ename": err["ename"],
-                    "evalue": err["evalue"],
-                    "traceback": err.get("traceback", [])
-                })
-            if result["result"]:
-                outputs.append({
-                    "output_type": "execute_result",
-                    "execution_count": exec_count,
-                    "data": result["result"],
-                    "metadata": {}
-                })
-            for dd in result["display_data"]:
-                outputs.append({
-                    "output_type": "display_data",
-                    "data": dd,
-                    "metadata": {}
-                })
-            cell["outputs"] = outputs
         else:
             cells_err += 1
-            # Keep execution_count even on error
-            cell["execution_count"] = exec_count
-            outputs = []
-            for err in result["errors"]:
-                outputs.append({
-                    "output_type": "error",
-                    "ename": err["ename"],
-                    "evalue": err["evalue"],
-                    "traceback": err.get("traceback", [])
-                })
-            cell["outputs"] = outputs
+        # Meme constructeur dans les deux branches : sur echec (dont le
+        # timeout) les flux capturables avant l'interruption sont conserves.
+        cell["execution_count"] = exec_count
+        cell["outputs"] = _build_outputs(result, exec_count)
 
         exec_count += 1
         cells_executed += 1
