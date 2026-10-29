@@ -676,6 +676,17 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "dryrun-sizing-control.yml",
     "twin-attestation-name-guard.yml",
     "local-path-waiver-guard.yml",
+    # #23053 (meme vague, meme lane, 2026-10-29) : `creation-provenance-advisory.yml`
+    #   est un workflow NEUF -- il est arrive sur main par #23185 ("Feat(budget,
+    #   #23174)", meme lane), donc APRES que le cliquet soit ecrit, et son job
+    #   etait nu sur `ubuntu-latest` (violation `HOSTED_PR_JOB_UNEXCEPTED`).
+    #   Conversion en forme hybride dans la meme PR : meme expression que les
+    #   workflows ci-dessus, meme `if:` anti-fork conserve, `timeout-minutes: 10`.
+    #   La variable vaut `false` au 29/10 : le routage est donc INCHANGE (100 %
+    #   heberge) -- la conversion retire la violation sans changer ou le job
+    #   s'execute. Rollback = variable a `false` ou supprimee, sans toucher les
+    #   fichiers.
+    "creation-provenance-advisory.yml",
 }
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",
