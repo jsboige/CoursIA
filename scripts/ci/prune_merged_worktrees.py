@@ -1107,6 +1107,21 @@ def classify_worktree_lock(reason: Optional[str]) -> tuple[Optional[str], Option
     return ("optout", None)
 
 
+def _on_windows() -> bool:
+    """True sous Windows.
+
+    Une indirection de module plutot qu'un test `os.name` ecrit au point
+    d'appel : patcher `os.name` est une mutation *globale au process*. Tant
+    qu'elle est active sur un hote POSIX, tout `Path(...)` leve
+    `NotImplementedError: cannot instantiate 'WindowsPath'` -- y compris celui
+    que pytest appelle pour formater le rapport d'un test en echec. Le worker
+    xdist meurt alors sur un rapport qu'il ne sait pas ecrire, et l'echec reel
+    n'est jamais montre (#23353, ou ce patch a coute le diagnostic entier).
+    Les tests patchent cette fonction, pas la plateforme.
+    """
+    return os.name == "nt"
+
+
 def pid_is_alive(pid: int) -> bool:
     """Le pid est-il vivant ? Fail-safe : indeterminable = vivant.
 
@@ -1122,7 +1137,7 @@ def pid_is_alive(pid: int) -> bool:
     verrouille un cycle de trop qu'un deverrouillage sur une mesure
     impossible.
     """
-    if os.name == "nt":
+    if _on_windows():
         try:
             out = subprocess.run(
                 ["tasklist", "/FI", f"PID eq {pid}", "/FO", "CSV", "/NH"],
