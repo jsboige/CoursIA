@@ -2302,18 +2302,38 @@ def test_le_defaut_de_publication_designe_le_depot_prive_dedie():
     assert gate_args.remote == dl.GIT_LEDGER_REMOTE_DEFAULT
 
 
+def _interdit_local(tmp_path):
+    """Un depot LOCAL dont le slug normalise vaut `jsboige/coursia`.
+
+    La garde compare des **slugs** (`owner/repo`), pas des URL litterales.
+    Un chemin local dont les deux derniers segments sont `jsboige/coursia`
+    produit exactement ce slug -- sans qu'un test puisse pousser vers le
+    depot public reel. C'est ce qui rend la suite sure SOUS MUTATION : une
+    garde desarmee ecrirait ici, pas sur GitHub.
+    """
+    target = tmp_path / "jsboige" / "coursia"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    _run_git(["git", "init", "-q", "--bare", str(target)])
+    return str(target).replace("\\", "/")
+
+
 def test_publication_refusee_vers_le_depot_public(tmp_path, capsys):
     """Un remote qui vise `jsboige/CoursIA` est REFUSE, sans rien pousser.
 
     L'etat GPU de la flotte ne sort pas d'un depot public : la garde est
     dans le CODE, pas dans une convention de saisie.
+
+    La cible du test est un depot LOCAL au slug `jsboige/coursia` (voir
+    `_interdit_local`) : la propriete verifiee est la meme, et une garde
+    desarmee ecrirait dans le bac a sable, jamais sur le depot public.
     """
     remote, work = _git_sandbox(tmp_path)
+    interdit = _interdit_local(tmp_path)
     state_dir = _gpu_state(tmp_path)
     assert _append_hold(state_dir) == 0
     _run_git([
         "git", "-C", str(work), "remote", "set-url",
-        dl.GIT_LEDGER_REMOTE_DEFAULT, "https://github.com/jsboige/CoursIA.git",
+        dl.GIT_LEDGER_REMOTE_DEFAULT, interdit,
     ])
     capsys.readouterr()
     rc = dl.main([
@@ -2330,6 +2350,49 @@ def test_publication_refusee_vers_le_depot_public(tmp_path, capsys):
         capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
     assert proc.returncode != 0
+    proc = subprocess.run(
+        ["git", "--git-dir", interdit, "rev-parse", "--verify", "-q",
+         f"refs/heads/{dl.GIT_LEDGER_BRANCH}"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    assert proc.returncode != 0
+
+
+def test_publication_refusee_vers_une_pushurl_publique(tmp_path, capsys):
+    """Une ``pushurl`` interdite est refusee, meme si l'URL de fetch est privee.
+
+    ``git remote get-url`` rend l'URL de **fetch** ; c'est la ``pushurl``
+    qui porte la cible reelle d'ecriture. Une garde qui ne regarde que la
+    premiere laisse passer un depot interdit, et l'observation atterrit
+    alors hors de la governance. La garde refuse des que L'UNE des deux
+    URL est interdite.
+    """
+    remote, work = _git_sandbox(tmp_path)
+    interdit = _interdit_local(tmp_path)
+    state_dir = _gpu_state(tmp_path)
+    assert _append_hold(state_dir) == 0
+    _run_git([
+        "git", "-C", str(work), "remote", "set-url", "--push",
+        dl.GIT_LEDGER_REMOTE_DEFAULT, interdit,
+    ])
+    capsys.readouterr()
+    rc = dl.main([
+        "publish", "--git", "--emit", "--state-dir", str(state_dir),
+        "--repo", str(work), "--machine", "myia-ai-01",
+    ])
+    err = capsys.readouterr().err
+    assert rc == 1
+    assert "GIT_LEDGER_FORBIDDEN_TARGET" in err
+    # Le refus nomme l'URL incrimintee : c'est la pushurl qui porte l'ecriture.
+    assert "URL de push" in err
+    # Aucune branche n'a ete creee ni cote cible de fetch, ni cote pushurl.
+    for depot in (remote, interdit):
+        proc = subprocess.run(
+            ["git", "--git-dir", str(depot), "rev-parse", "--verify", "-q",
+             f"refs/heads/{dl.GIT_LEDGER_BRANCH}"],
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+        )
+        assert proc.returncode != 0
 
 
 def test_remote_de_cible_non_configure_donne_le_geste(tmp_path, capsys):

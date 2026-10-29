@@ -2424,6 +2424,27 @@ def _normalise_repo_slug(url: str) -> str:
     return text.lower()
 
 
+def _git_remote_urls(repo: Path, remote: str) -> tuple[str, str]:
+    """Les DEUX URL d'un remote : celle de fetch et celle de push.
+
+    ``git remote get-url`` rend l'URL de **fetch** ; ``git push`` utilise la
+    ``pushurl`` quand elle est definie. Une garde qui ne regarde que la
+    premiere ne voit donc jamais la cible reelle d'ecriture -- et le refus
+    qu'elle prononce porte sur un depot qui n'est pas celui qui recevra la
+    poussee. Les deux sont donc resolues ici.
+
+    Renvoie ``("", "")`` si le remote n'est pas configure.
+    """
+    rc, fetch_url, _ = _git(["remote", "get-url", remote], cwd=repo)
+    if rc != 0 or not fetch_url.strip():
+        return "", ""
+    push_url = fetch_url.strip()
+    rc_push, pushed, _ = _git(["remote", "get-url", "--push", remote], cwd=repo)
+    if rc_push == 0 and pushed.strip():
+        push_url = pushed.strip()
+    return fetch_url.strip(), push_url
+
+
 def ensure_git_ledger_remote(repo: Path, remote: str) -> str:
     """Resout la cible de publication ; refuse la cible interdite.
 
@@ -2434,26 +2455,29 @@ def ensure_git_ledger_remote(repo: Path, remote: str) -> str:
 
     Une cible qui designerait le depot de travail **public** est refusee
     (fail-CLOSED) : le registre des reservations GPU ne sort pas d'un depot
-    public, quel que soit le `--remote` passe.
+    public, quel que soit le `--remote` passe. Les **deux** URL du remote
+    sont verifiees (fetch et push) : c'est la ``pushurl`` qui porte la
+    cible reelle d'ecriture, une URL de fetch privee ne dit rien d'elle.
     """
-    rc, url, _ = _git(["remote", "get-url", remote], cwd=repo)
-    if rc != 0 or not url.strip():
+    fetch_url, push_url = _git_remote_urls(repo, remote)
+    if not fetch_url:
         raise LedgerError(
             "GIT_LEDGER_REMOTE_UNKNOWN",
             f"remote git {remote!r} non configure dans {repo} ; la reference du "
             f"registre GPU est le depot PRIVE "
             f"git remote add {remote} {GIT_LEDGER_REPO_URL}",
         )
-    slug = _normalise_repo_slug(url)
-    if slug in GIT_LEDGER_FORBIDDEN_TARGETS:
-        raise LedgerError(
-            "GIT_LEDGER_FORBIDDEN_TARGET",
-            f"la cible de publication {slug!r} est interdite : le registre des "
-            "reservations GPU ne se publie pas dans le depot de travail "
-            "(public) ; reference attendue : "
-            f"{GIT_LEDGER_REMOTE_DEFAULT} -> {GIT_LEDGER_REPO_URL}",
-        )
-    return url.strip()
+    for label, url in (("fetch", fetch_url), ("push", push_url)):
+        slug = _normalise_repo_slug(url)
+        if slug in GIT_LEDGER_FORBIDDEN_TARGETS:
+            raise LedgerError(
+                "GIT_LEDGER_FORBIDDEN_TARGET",
+                f"la cible de publication {slug!r} (URL de {label}) est "
+                "interdite : le registre des reservations GPU ne se publie pas "
+                "dans le depot de travail (public) ; reference attendue : "
+                f"{GIT_LEDGER_REMOTE_DEFAULT} -> {GIT_LEDGER_REPO_URL}",
+            )
+    return fetch_url
 
 
 def _git_reason(stderr: str) -> str:
@@ -2869,7 +2893,17 @@ def _drain_published(
         return []
     try:
         archive_posted(spool_dir, drainable)
-    except LedgerError:
+    except LedgerError as exc:
+        # Un drain impossible ne doit pas faire perdre la publication -- mais
+        # il ne doit pas etre SILENT : la distinction "rien a drainer" et
+        # "drain impossible" se lit ici, sinon le gate repond UNPOSTED
+        # indefiniment sans que rien ne dise pourquoi.
+        print(
+            f"[debt-ledger] drain impossible ({exc.reason}) : les observations "
+            "publiees restent dans le spool ; le gate peut repondre UNPOSTED "
+            "autant de fois que le spool n'est pas vide",
+            file=sys.stderr,
+        )
         return []
     return drainable
 
