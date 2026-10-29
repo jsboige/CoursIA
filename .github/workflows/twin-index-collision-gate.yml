@@ -50,18 +50,26 @@ name: Twin index collision gate
 #
 # Limite connue et assumee
 # -----------------------
-# Le declencheur `pull_request` est resolu depuis la **branche par defaut** :
-# une PR **de fork** ne peut donc pas declencher une porte qui n'est pas
-# encore sur `main`. Mesure : sur la PR **same-repo** qui a introduit ce
-# fichier (#23208), le gate a bien tourne sur la PR elle-meme (check-run
-# `Twin index collision gate`, vert) -- la regle "un workflow ajoute par une
-# PR ne se declenche jamais" est donc **fausse** pour une PR same-repo, et
-# c'est la limite **fork** qui reste reelle.
+# 1. LE DECLENCHEUR. L'evenement `pull_request` execute le fichier de workflow
+#    **tire du commit de merge de la PR** (documentation GitHub, "Securely
+#    using pull_request_target" : "it runs the workflow file from the merge
+#    commit of the pull request") -- **fork compris**. La porte ajoutee par
+#    une PR s'applique donc a cette PR meme : c'est mesure ici, le check-run
+#    `Twin index collision gate (#23208)` est vert sur la PR same-repo qui
+#    introduit ce fichier. C'est `pull_request_target` qui lit la branche
+#    par defaut.
 #
-# Ce qui demeure vrai apres le merge sur `main` : la porte lit la base
-# (`pull_request.base.sha`), pas la tete du moment du push -- une collision
-# introduite sur `main` **entretemps** par une autre PR n'est pas vue ici.
-# Le garde de merge reste donc necessaire.
+#    Les limites reelles d'une PR de **fork** sont ailleurs, et aucune
+#    n'atteint cette porte, qui ne fait que lire : l'evenement attend
+#    l'**approbation** d'un mainteneur quand l'auteur est un contributeur de
+#    premiere fois, et le `GITHUB_TOKEN` d'une PR de fork est en **lecture
+#    seule**.
+#
+# 2. LA BASE LUE. La porte compare `pull_request.base.sha`, c'est-a-dire
+#    `main` **au moment du push**. Une collision introduite sur `main`
+#    **entretemps** par une autre PR n'est pas vue ici : la porte referme la
+#    course au push suivant, pas au merge. Le garde de merge reste donc
+#    necessaire.
 
 on:
   pull_request:
