@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: GenAI-Texte
-pedagogical_count: 44
-breakdown: Texte=44
-maturity: BETA=37, DRAFT=4, ALPHA=3
+pedagogical_count: 46
+breakdown: Texte=46
+maturity: BETA=39, DRAFT=4, ALPHA=3
 -->
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Semantic Kernel](../SemanticKernel/README.md)

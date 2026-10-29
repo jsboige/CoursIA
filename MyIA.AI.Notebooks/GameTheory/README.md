@@ -4,9 +4,9 @@
 
 <!-- CATALOG-STATUS
 series: GameTheory
-pedagogical_count: 127
-breakdown: root=111, SocialChoice=14, Dynamics=1, gateway=1
-maturity: BETA=113, DRAFT=8, ALPHA=6
+pedagogical_count: 134
+breakdown: root=117, SocialChoice=15, Dynamics=1, gateway=1
+maturity: BETA=117, DRAFT=10, ALPHA=7
 -->
 
 La théorie des jeux est le langage mathématique de la stratégie. Elle modélise les situations où des agents rationnels prennent des décisions dont le résultat dépend des choix des autres : enchères, négociations, élections, poker, allocation de ressources. Cette tension entre coopération et compétition traverse l'économie, les sciences politiques et l'informatique (mécanismes de vote, contrats, réseaux), et le prix Nobel d'économie a récompensé des théoriciens des jeux à sept reprises entre 1994 et 2020.
@@ -98,7 +98,7 @@ On apprend à représenter un jeu sous forme normale, puis à le résoudre : dom
 | 03 | Topologie des jeux 2×2 — [Python](GameTheory-03-Topology2x2-Python.ipynb) · [C#](GameTheory-03-Topology2x2-CSharp.ipynb) | La table périodique de Robinson-Goforth : classer tous les jeux 2×2 ordinaux et dériver leur quotient | 80 min | Licence | [03b](GameTheory-03b-Chemins-de-Swaps-Lean-Python.ipynb) · [03c](GameTheory-03c-Chambres-et-Murs-Python.ipynb) · [03d](GameTheory-03d-Le-Joueur-LLM-Python.ipynb) · [03e](GameTheory-03e-Meta-Actions-Tarifees-Python.ipynb) · [03f](GameTheory-03f-Deux-Especes-de-Fleches-Python.ipynb) |
 | 04 | Équilibre de Nash — [Python](GameTheory-04-NashEquilibrium-Python.ipynb) · [C#](GameTheory-04-NashEquilibrium-CSharp.ipynb) | Nash pur et mixte, Lemke-Howson, analyse paramétrique | 60 min | Découverte | [04b](GameTheory-04b-Lean-NashExistence-Lean.ipynb) · [04c](GameTheory-04c-NashExistence-Python.ipynb) · [04d](GameTheory-04d-Marchandage-Asymetrique-Python.ipynb) · [04e](GameTheory-04e-Reflective-Oracles-Python.ipynb) · [04f](GameTheory-04f-Theories-Decision-Predicteur-Python.ipynb) · [04g](GameTheory-04g-Supermodularite-Python.ipynb) · [04h](GameTheory-04h-Routing-PriceOfAnarchy-Python.ipynb) · [04i](GameTheory-04i-Utilite-Esperee-Risque-Python.ipynb) · [04j](GameTheory-04j-Rationalisabilite-Python.ipynb) |
 | 05 | Jeux à somme nulle — [Python](GameTheory-05-ZeroSum-Minimax-Python.ipynb) · [C#](GameTheory-05-ZeroSum-Minimax-CSharp.ipynb) | Théorème minimax de von Neumann, programmation linéaire primal/dual | 40 min | Découverte | [05b](GameTheory-05b-Lean-Minimax-Lean.ipynb) · [05c](GameTheory-05c-KKT-Dualite-Lagrangienne-Python.ipynb) |
-| 06 | Évolution de la confiance — [Python](GameTheory-06-EvolutionTrust-Python.ipynb) · [C#](GameTheory-06-EvolutionTrust-CSharp.ipynb) | Tournoi d'Axelrod, tit-for-tat, dynamique du réplicateur, processus de Moran en population finie | 65 min | Découverte | [06b](Dynamics/Dynamics-02-Jeux-Repetes-Lean-Python.ipynb) · [06c](Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb) · [06d](Dynamics/Dynamics-03-Sympathie-vs-Engagement-Python.ipynb) · [06e](Dynamics/Dynamics-04-Open-Source-Game-Theory-Python.ipynb) · [06f](Dynamics/Dynamics-05-Agents-Bornes-Python.ipynb) · [06f bis](Dynamics/Dynamics-06-Preuves-Bornees-Cout-du-Raisonnement-Python.ipynb) · [06g](Dynamics/Dynamics-05-Agents-Bornes-Lean.ipynb) · [06g bis](Dynamics/Dynamics-07-Equilibres-par-Simulation-Python.ipynb) · [06h](Dynamics/Dynamics-08-Institutions-Transparentes-Python.ipynb) · [06k](GameTheory-06k-FairBot-Loeb-Lean.ipynb) |
+| 06 | Évolution de la confiance — [Python](GameTheory-06-EvolutionTrust-Python.ipynb) · [C#](GameTheory-06-EvolutionTrust-CSharp.ipynb) | Tournoi d'Axelrod, tit-for-tat, dynamique du réplicateur, processus de Moran en population finie | 65 min | Découverte | [06b](Dynamics/Dynamics-02-Jeux-Repetes-Lean-Python.ipynb) · [06c](Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb) · [06d](Dynamics/Dynamics-03-Sympathie-vs-Engagement-Python.ipynb) · [06e](Dynamics/Dynamics-04-Open-Source-Game-Theory-Python.ipynb) · [06f](Dynamics/Dynamics-05-Agents-Bornes-Python.ipynb) · [06f bis](Dynamics/Dynamics-06-Preuves-Bornees-Cout-du-Raisonnement-Python.ipynb) · [06g](Dynamics/Dynamics-05-Agents-Bornes-Lean.ipynb) · [06g bis](Dynamics/Dynamics-07-Equilibres-par-Simulation-Python.ipynb) · [06h](Dynamics/Dynamics-08-Institutions-Transparentes-Python.ipynb) · [06k](Dynamics/Dynamics-04b-FairBot-Loeb-Lean.ipynb) |
 
 Les deux figures suivantes, bâties sur le Dilemme du Prisonnier, illustrent les deux gestes fondateurs de cette phase : **représenter** un jeu, puis le **résoudre**.
 
@@ -233,7 +233,7 @@ Ces lettres prolongent la table périodique du 03 en une géométrie de l'espace
 | 06g | [Agents bornés en Lean](Dynamics/Dynamics-05-Agents-Bornes-Lean.ipynb) | La borne de raisonnement formalisée et exécutée en Lean | Lean | Recherche |
 | 06g bis | [Équilibres par simulation](Dynamics/Dynamics-07-Equilibres-par-Simulation-Python.ipynb) | Équilibres de programmes qui se simulent mutuellement | Python | Recherche |
 | 06h | [Institutions transparentes](Dynamics/Dynamics-08-Institutions-Transparentes-Python.ipynb) | La transparence du code comme mécanisme d'engagement institutionnel | Python | Recherche |
-| 06k | [FairBot par Löb](GameTheory-06k-FairBot-Loeb-Lean.ipynb) | Le module `ProgramGames.FairBot` du lake exécuté : coopération mutuelle FairBot × FairBot par le théorème de Löb, inexploitabilité sous fiabilité, le contraste L1/L2 avec `probeBot` | Lean | Recherche |
+| 06k | [FairBot par Löb](Dynamics/Dynamics-04b-FairBot-Loeb-Lean.ipynb) | Le module `ProgramGames.FairBot` du lake exécuté : coopération mutuelle FairBot × FairBot par le théorème de Löb, inexploitabilité sous fiabilité, le contraste L1/L2 avec `probeBot` | Lean | Recherche |
 
 ### Autour de 08 — jeux combinatoires
 
