@@ -1124,9 +1124,9 @@ de résoudre de nouveaux problèmes, mais il faut le **prouver**, pas seulement 
 programmes. L'approfondissement 03b conserve le théorème de Hartmanis et Stearns (1965).
 
 **Suite** : [Complexity-03 — Plus de temps, plus de problèmes >>](Complexity-03-TimeHierarchy.ipynb)",,,,,,,,0bf93941cb956f66,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb,intro-hierarchy,markdown,fr,eac0279e9c048b04,"# Complexity-03 — Plus de temps, plus de problèmes
+MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb,intro-hierarchy,markdown,fr,bfd2d7bfa2d356cc,"# Complexity-03 — Plus de temps, plus de problèmes
 
-**Navigation** : [Index](README.md) | [02 — Vérifier ou trouver](Complexity-02-P-NP-Reduction.ipynb) | [03b — Hartmanis–Stearns](Complexity-03b-HartmanisStearns-TimeHierarchy.ipynb) | [03c — Zoo navigable](Complexity-03c-ComplexityZoo-Navigation-Python.ipynb)
+**Navigation** : [Index](README.md) | [02 — Vérifier ou trouver](Complexity-02-P-NP-Reduction.ipynb) | [03b — Hartmanis–Stearns](Complexity-03b-HartmanisStearns-TimeHierarchy.ipynb) | [03c — Zoo navigable](Complexity-03c-ComplexityZoo-Navigation-Python.ipynb) | [English →](Complexity-03-TimeHierarchy_en.ipynb)
 
 > **Public : Licence.** La démonstration historique et sa simulation multitête sont conservées dans l'approfondissement 03b.
 
@@ -1135,21 +1135,50 @@ MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb,intro-hierarchy,m
 - [01 — Compter des pas](Complexity-01-StepCounting.ipynb) : taille et budget de pas ;
 - [02 — Vérifier ou trouver](Complexity-02-P-NP-Reduction.ipynb) : problème de décision et algorithme.
 
-**Objectifs** : distinguer inclusion et séparation stricte de classes, comprendre une diagonale finie et expliquer pourquoi une table n'est pas une preuve de hiérarchie. **Durée estimée** : 35 minutes.",,,,,,,,eac0279e9c048b04,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb,budgets-intro,markdown,fr,f45d42651b9dbe73,"## 1. Des budgets imbriqués
+**Objectifs** : distinguer inclusion et séparation stricte de classes, comprendre une diagonale finie et expliquer pourquoi une table n'est pas une preuve de hiérarchie. **Durée estimée** : 35 minutes.
 
-Si un programme répond en n pas, il répond aussi dans un budget de n² pas. Cela montre une **inclusion** des budgets, pas une séparation des classes de problèmes : deux programmes différents sur un même problème ne prouvent pas qu'aucun programme rapide ne peut le résoudre. Comparons les budgets sur cinq tailles.",,,,,,,,f45d42651b9dbe73,,,,,,,,
+**Le théorème en une phrase.** Le théorème de hiérarchie temporelle (Hartmanis–Stearns, 1965) affirme que, pour des budgets raisonnables, disposer de strictement plus de temps permet de décider strictement plus de problèmes : certaines tâches exigent réellement plus de pas, et aucun algorithme rapide ne peut les simuler. Ce carnet illustre les **mécanismes** de cette preuve — budgets imbriqués, diagonalisation, simulation bornée — sur des tables finies ; il ne prétend pas la démontrer, ce que rappelle chaque lecture.","# Complexity-03 — More time, more problems
+
+**Navigation**: [Index](README.md) | [02 — Verify or find](Complexity-02-P-NP-Reduction.ipynb) | [03b — Hartmanis–Stearns](Complexity-03b-HartmanisStearns-TimeHierarchy.ipynb) | [03c — Navigable zoo](Complexity-03c-ComplexityZoo-Navigation-Python.ipynb) | [Français →](Complexity-03-TimeHierarchy.ipynb)
+
+> **Audience: Licence.** The historical demonstration and its multi-tape simulation are kept in the 03b deep dive.
+
+## What this notebook assumes
+
+- [01 — Counting steps](Complexity-01-StepCounting.ipynb): step size and budget;
+- [02 — Verify or find](Complexity-02-P-NP-Reduction.ipynb): decision problem and algorithm.
+
+**Objectives**: distinguish inclusion from strict separation of classes, understand a finite diagonal and explain why a table is not a proof of hierarchy. **Estimated duration**: 35 minutes.
+
+**The theorem in one sentence.** The time hierarchy theorem (Hartmanis–Stearns, 1965) states that, for reasonable budgets, having strictly more time allows one to decide strictly more problems: some tasks genuinely require more steps, and no fast algorithm can simulate them. This notebook illustrates the **mechanisms** of that proof — nested budgets, diagonalization, bounded simulation — on finite tables; it does not claim to prove it, as every reading reminds.",,,,,,,bfd2d7bfa2d356cc,3b2c4fdba7245b59,,,,,,,
+MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb,budgets-intro,markdown,fr,1fc2c979f10b72fe,"## 1. Des budgets imbriqués
+
+Si un programme répond en n pas, il répond aussi dans un budget de n² pas. Cela montre une **inclusion** des budgets, pas une séparation des classes de problèmes : deux programmes différents sur un même problème ne prouvent pas qu'aucun programme rapide ne peut le résoudre. Comparons les budgets sur cinq tailles.
+
+L'inclusion est triviale : un programme qui s'arrête en n pas s'arrête aussi avant n² pas. La difficulté est ailleurs — montrer qu'un problème exige *plus* que n² pas demande d'écarter **tous** les programmes rapides, pas seulement celui qu'on a sous la main. C'est ce fossé entre « j'ai un exemple » et « j'ai épuisé les possibilités » que ce carnet creuse.","## 1. Nested budgets
+
+If a program answers in n steps, it also answers within a budget of n² steps. This shows an **inclusion** of budgets, not a separation of problem classes: two different programs on the same problem do not prove that no fast program can solve it. Let us compare the budgets over five sizes.
+
+The inclusion is trivial: a program that halts within n steps also halts within n² steps. The difficulty lies elsewhere — showing that a problem requires *more* than n² steps means ruling out **all** fast programs, not just the one at hand. That gap between ""I have an example"" and ""I have exhausted the possibilities"" is precisely what this notebook digs into.",,,,,,,1fc2c979f10b72fe,8705b8e22560e6e8,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb,budgets-code,code,fr,527c8f18e333496a,"tailles = (2, 4, 8, 16, 32)
 print(f""{'n':>3} | {'n²':>5} | {'2ⁿ':>12}"")
 for n in tailles:
     print(f""{n:>3} | {n * n:>5} | {2 ** n:>12}"")
 assert all(n * n <= 2 ** n for n in tailles)
 ",,,,,,,,527c8f18e333496a,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb,budgets-reading,markdown,fr,9625cb3b5d27f820,"**Lecture du résultat.** Les coûts s'ordonnent pour les tailles affichées. Pour conclure qu'une classe possède un problème absent de l'autre, il faudrait écarter **tous** les algorithmes au petit budget. La table numérique ne le fait pas.
+MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb,budgets-reading,markdown,fr,a54ed3fb85809528,"**Lecture du résultat.** Les coûts s'ordonnent pour les tailles affichées : à n = 32, le budget n² vaut 1 024 pas contre 4 294 967 296 pour 2ⁿ — l'écart se creuse à chaque taille. Pour conclure qu'une classe possède un problème absent de l'autre, il faudrait écarter **tous** les algorithmes au petit budget. La table numérique ne le fait pas.
 
 ## 2. L'idée de diagonalisation
 
-Énumérons quelques machines candidates. À la ligne i, la construction D choisit l'opposé de la réponse de la machine numéro i sur l'entrée i. D diffère donc de chaque machine listée sur au moins une entrée. La liste ci-dessous n'est qu'une expérience **finie** : elle ne représente pas toutes les machines possibles.",,,,,,,,9625cb3b5d27f820,,,,,,,,
+Énumérons quelques machines candidates. À la ligne i, la construction D choisit l'opposé de la réponse de la machine numéro i sur l'entrée i. D diffère donc de chaque machine listée sur au moins une entrée. La liste ci-dessous n'est qu'une expérience **finie** : elle ne représente pas toutes les machines possibles.
+
+La diagonalisation inverse le sens de la question : au lieu de chercher un algorithme rapide, on construit un problème D qui contredit chaque machine candidate sur son propre terrain — l'entrée i. Contre une liste finie, cela marche ; contre l'infinité des machines, il faudrait une construction et une borne universelles, ce que la section 4 discute.","**Reading the result.** The costs are ordered for the sizes shown: at n = 32, the n² budget is worth 1,024 steps against 4,294,967,296 for 2ⁿ — the gap widens at every size. To conclude that one class has a problem absent from the other, one would have to rule out **all** algorithms within the smaller budget. The numerical table does not do that.
+
+## 2. The diagonalization idea
+
+Let us enumerate a few candidate machines. At row i, construction D chooses the opposite of machine number i's answer on input i. D therefore differs from every listed machine on at least one input. The list below is only a **finite** experiment: it does not represent all possible machines.
+
+Diagonalization reverses the direction of the question: instead of looking for a fast algorithm, one builds a problem D that contradicts each candidate machine on its own ground — input i. Against a finite list, this works; against the infinity of machines, one would need a universal construction and bound, which section 4 discusses.",,,,,,,a54ed3fb85809528,0eadf9a219a091ae,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb,diagonal-code,code,fr,0ce92530bf6bc66d,"machines = (
     lambda i: i % 2 == 0,
     lambda i: i < 2,
@@ -1162,11 +1191,19 @@ for i, machine in enumerate(machines):
     print(f""{i:>2} | {str(machine(i)):>6} | {str(diagonale[i]):>5} | {diagonale[i] != machine(i)}"")
 assert all(diagonale[i] != machine(i) for i, machine in enumerate(machines))
 ",,,,,,,,0ce92530bf6bc66d,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb,diagonal-reading,markdown,fr,8768b5cf623b9d7a,"**Lecture du résultat.** Chaque ligne porte une opposition vérifiée. Il reste une infinité de machines non listées ; ce tableau ne prouve donc aucune séparation de classes.
+MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb,diagonal-reading,markdown,fr,c66f72fe34fea1f8,"**Lecture du résultat.** Les quatre lignes affichent `True` dans la colonne « différents » : D(i) vaut l'opposé de M_i(i) sur chacune des entrées listées (0, 1, 2 et 3). Il reste une infinité de machines non listées ; ce tableau ne prouve donc aucune séparation de classes.
 
 ## 3. Le budget de simulation
 
-Une machine qui ne répond pas avant la limite ne peut pas bloquer indéfiniment le constructeur diagonal. Ici les coûts sont **déclarés** par un modèle fini : ce ne sont pas des pas mesurés par un simulateur universel. Une réponse non observée n'est pas un verdict faux.",,,,,,,,8768b5cf623b9d7a,,,,,,,,
+Une machine qui ne répond pas avant la limite ne peut pas bloquer indéfiniment le constructeur diagonal. Ici les coûts sont **déclarés** par un modèle fini : ce ne sont pas des pas mesurés par un simulateur universel. Une réponse non observée n'est pas un verdict faux.
+
+Dans la preuve réelle, cette limite est gérée par une **horloge universelle** : on simule chaque machine candidate pas à pas et on la stoppe au-delà du budget. Payer à la fois la machine et son simulateur est précisément le surcoût qui fait tenir la hiérarchie — et que le modèle fini ici ne rend pas.","**Reading the result.** The four rows display `True` in the ""different"" column: D(i) is the opposite of M_i(i) on each of the listed inputs (0, 1, 2 and 3). Infinitely many machines remain unlisted; this table therefore proves no separation of classes.
+
+## 3. The simulation budget
+
+A machine that does not answer before the limit cannot block the diagonal constructor indefinitely. Here the costs are **declared** by a finite model: they are not steps measured by a universal simulator. An unobserved answer is not a false verdict.
+
+In the real proof, this limit is handled by a **universal clock**: each candidate machine is simulated step by step and stopped beyond the budget. Paying for both the machine and its simulator is precisely the overhead that makes the hierarchy hold — and which the finite model here does not capture.",,,,,,,c66f72fe34fea1f8,10393236d21308a9,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb,bounded-code,code,fr,415999deaee15d43,"candidates = ((True, 1), (False, 3), (True, 12), (False, 40))
 def budget(i):
     return 2 * i + 4
@@ -1177,12 +1214,22 @@ for i, (verdict, pas) in enumerate(candidates):
     diagonal = not observe if observe is not None else True
     print(f""{i:>2} | {pas:>3} | {budget(i):>6} | {str(observe):>7} | {str(diagonal):>5}"")
 ",,,,,,,,415999deaee15d43,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb,bounded-reading,markdown,fr,9483330aca0a6dd2,"**Lecture du résultat.** `None` signifie « non observé dans le budget », jamais « faux ». Une machine dépassant ce budget sur une entrée ne satisfait pas la borne uniforme sur **toutes** les entrées, mais le tableau ne caractérise aucune classe entière.
+MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb,bounded-reading,markdown,fr,48761f8f9eb13f84,"**Lecture du résultat.** `None` signifie « non observé dans le budget », jamais « faux » : aux lignes 2 et 3, les coûts déclarés (12 et 40) dépassent le budget (8 et 10), la simulation s'interrompt et la réponse n'est pas observée. Une machine dépassant ce budget sur une entrée ne satisfait pas la borne uniforme sur **toutes** les entrées, mais le tableau ne caractérise aucune classe entière.
 
 ## 4. Le théorème, sans raccourci expérimental
 
-Le théorème de hiérarchie temporelle établit, sous des hypothèses techniques, qu'il existe des problèmes décidables avec un budget suffisamment plus grand mais impossibles avec le plus petit. Il faut énumérer toutes les machines admissibles, construire une horloge et payer le coût de simulation universelle. Les tables finies n'accomplissent aucune de ces preuves. [03b — Hartmanis–Stearns](Complexity-03b-HartmanisStearns-TimeHierarchy.ipynb) détaille le modèle historique. Ce résultat ne résout pas P contre NP.",,,,,,,,9483330aca0a6dd2,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb,exercise-one,markdown,fr,6c224d584a6a5329,"## Exercices
+Le théorème de hiérarchie temporelle établit, sous des hypothèses techniques, qu'il existe des problèmes décidables avec un budget suffisamment plus grand mais impossibles avec le plus petit. Il faut énumérer toutes les machines admissibles, construire une horloge et payer le coût de simulation universelle. Les tables finies n'accomplissent aucune de ces preuves. [03b — Hartmanis–Stearns](Complexity-03b-HartmanisStearns-TimeHierarchy.ipynb) détaille le modèle historique. Ce résultat ne résout pas P contre NP.
+
+Concrètement, la séparation s'obtient en construisant un problème D qui simule chaque machine candidate M_i sur son entrée i, répond l'opposé, et le fait dans un budget à peine supérieur à celui de M_i — d'où une classe strictement plus grande quand le budget croît. Le prix est connu : énumérer toutes les machines, les doter d'une horloge universelle, et simuler chacune en payant la machine et son simulateur.","**Reading the result.** `None` means ""not observed within the budget"", never ""false"": on rows 2 and 3, the declared costs (12 and 40) exceed the budget (8 and 10), the simulation stops and the answer is not observed. A machine exceeding this budget on one input does not satisfy the uniform bound on **all** inputs, but the table does not characterize any entire class.
+
+## 4. The theorem, without an experimental shortcut
+
+The time hierarchy theorem establishes, under technical assumptions, that there exist decidable problems solvable with a sufficiently larger budget but impossible with the smaller one. One must enumerate all admissible machines, build a clock and pay the cost of universal simulation. Finite tables accomplish none of these proofs. [03b — Hartmanis–Stearns](Complexity-03b-HartmanisStearns-TimeHierarchy.ipynb) details the historical model. This result does not settle P versus NP.
+
+Concretely, the separation is obtained by building a problem D that simulates each candidate machine M_i on its input i, answers the opposite, and does so within a budget only slightly larger than M_i's — hence a strictly larger class as the budget grows. The price is known: enumerate all machines, equip them with a universal clock, and simulate each one while paying for both the machine and its simulator.",,,,,,,48761f8f9eb13f84,4b41195934995020,,,,,,,
+MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb,exercise-one,markdown,fr,4b87cb2d8fd2251a,"## Exercices
+
+Les trois exercices prolongent les démonstrations sur les mêmes objets finis. Ils ne demandent pas de prouver la hiérarchie — hors de portée d'une table — mais de **sentir** ce que chaque table montre et ce qu'elle laisse ouvert, en manipulant budgets, diagonale et borne de simulation.
 
 ### Exercice 1 — Inclusion ou séparation ?
 
@@ -1190,7 +1237,17 @@ Comparez n² et n³ pour n = 2, 4, 8, 16. Expliquez pourquoi ces nombres ne prou
 
 - **Indice :** une table de nombres n'écarte aucun autre algorithme.
 - **Etape 1 :** produire les quatre couples.
-- **Etape 2 :** distinguer inclusion et séparation.",,,,,,,,6c224d584a6a5329,,,,,,,,
+- **Etape 2 :** distinguer inclusion et séparation.","## Exercises
+
+The three exercises extend the demonstrations on the same finite objects. They do not ask you to prove the hierarchy — beyond the reach of a table — but to **feel** what each table shows and what it leaves open, by manipulating budgets, the diagonal and the simulation bound.
+
+### Exercise 1 — Inclusion or separation?
+
+Compare n² and n³ for n = 2, 4, 8, 16. Explain why these numbers do not prove that a problem becomes solvable only with the second budget.
+
+- **Hint:** a table of numbers rules out no other algorithm.
+- **Step 1:** produce the four pairs.
+- **Step 2:** distinguish inclusion from separation.",,,,,,,4b87cb2d8fd2251a,460e5103bf097563,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb,exercise-one-code,code,fr,26f12f6120714580,"comparaison_budgets = None  # TODO etudiant : couples (n², n³)
 print('Exercice a completer : inclusion et separation')
 ",,,,,,,,26f12f6120714580,,,,,,,,
@@ -1200,7 +1257,13 @@ Ajoutez une cinquième fonction à `machines`, puis reconstruisez D et expliquez
 
 - **Indice :** évaluer la nouvelle fonction sur son propre indice.
 - **Etape 1 :** ajouter une machine.
-- **Etape 2 :** recalculer les cinq oppositions.",,,,,,,,27c1416e06194bac,,,,,,,,
+- **Etape 2 :** recalculer les cinq oppositions.","### Exercise 2 — Another diagonal
+
+Add a fifth function to `machines`, then rebuild D and explain why this finite table is still not a general proof.
+
+- **Hint:** evaluate the new function on its own index.
+- **Step 1:** add a machine.
+- **Step 2:** recompute the five oppositions.",,,,,,,27c1416e06194bac,78c6e253150c3340,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb,exercise-two-code,code,fr,3f4e4bd00d81af3d,"nouvelle_diagonale = None  # TODO etudiant : cinquieme machine et nouvelle diagonale
 print('Exercice a completer : nouvelle diagonale')
 ",,,,,,,,3f4e4bd00d81af3d,,,,,,,,
@@ -1210,7 +1273,13 @@ Repérez les lignes dont le coût déclaré dépasse `budget(i)`. Proposez un bu
 
 - **Indice :** comparer les deux colonnes numériques.
 - **Etape 1 :** produire un nouveau budget.
-- **Etape 2 :** énoncer la limite de ce modèle fini.",,,,,,,,23711b33a07b0521,,,,,,,,
+- **Etape 2 :** énoncer la limite de ce modèle fini.","### Exercise 3 — Overrunning the budget
+
+Find the rows whose declared cost exceeds `budget(i)`. Propose a budget that covers all four costs and explain why this does not build a bound for all machines.
+
+- **Hint:** compare the two numerical columns.
+- **Step 1:** produce a new budget.
+- **Step 2:** state the limit of this finite model.",,,,,,,23711b33a07b0521,7f7b53469a920431,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb,exercise-three-code,code,fr,fd91552f13ecaf89,"budget_etendu = None  # TODO etudiant : couvrir les quatre couts
 print('Exercice a completer : budget etendu')
 ",,,,,,,,fd91552f13ecaf89,,,,,,,,
@@ -1224,7 +1293,17 @@ MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb,conclusion,markdo
 
 Le théorème affirme l'existence de problèmes demandant réellement plus de temps, et non seulement de programmes lents. L'approfondissement [03b](Complexity-03b-HartmanisStearns-TimeHierarchy.ipynb) travaille le résultat historique.
 
-**Référence** : Hartmanis, J. et Stearns, R. E. (1965), *On the computational complexity of algorithms*, Transactions of the American Mathematical Society 117, 285–306.",,,,,,,,201caaa8dc42f33e,,,,,,,,
+**Référence** : Hartmanis, J. et Stearns, R. E. (1965), *On the computational complexity of algorithms*, Transactions of the American Mathematical Society 117, 285–306.","## Conclusion
+
+| Move | Verified here | Not demonstrated here |
+|---|---|---|
+| Budgets | Numerical inclusion | Strict separation of classes |
+| Diagonal | Four finite contradictions | All admissible machines |
+| Simulation | Halt on overrun | Bounded universal clock and cost |
+
+The theorem asserts the existence of problems genuinely requiring more time, not merely of slow programs. The deep dive [03b](Complexity-03b-HartmanisStearns-TimeHierarchy.ipynb) works through the historical result.
+
+**Reference**: Hartmanis, J. and Stearns, R. E. (1965), *On the computational complexity of algorithms*, Transactions of the American Mathematical Society 117, 285–306.",,,,,,,201caaa8dc42f33e,5dd8142b8f5174f8,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-TimeHierarchy.ipynb,c00,markdown,fr,b0866c3fe3da3966,"# Complexity-03b — Le théorème de hiérarchie temporelle de Hartmanis et Stearns (1965)
 
 **Approfondissement de [03 — Plus de temps, plus de problèmes](Complexity-03-TimeHierarchy.ipynb)** | [Index de la série](README.md)
