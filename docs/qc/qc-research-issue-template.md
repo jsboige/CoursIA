@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-10-30
+
 # Template de sous-issue — Moissonnage quantconnect.com/research/
 
 > **Epic parent** : [#11698](https://github.com/jsboige/CoursIA/issues/11698)
