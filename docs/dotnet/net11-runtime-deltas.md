@@ -76,9 +76,11 @@
 
 Le 9→10 de Rule.LoadFromContent 50 (+25 %) est contre-intuitif et non confirmé par la variante
 500 règles (+3,7 %). **Contrôlé le 29/10** : le delta 9→10 de ce banc **n'est pas établi** — sous un
-ordre équilibré, net10 et net9 se chevauchent, et l'écart entre positions atteint ±38,6 % pour un
-**même** runtime, soit le même ordre de grandeur que l'écart net9→net10 lui-même. Ce banc reste
-interprétable **en 10→11**, pas en 9→10 — voir « Contrôle du banc 5 ».
+ordre équilibré, net10 et net9 se chevauchent ; sous cet ordre, le biais de position **résiduel**
+tombe à **+11,2 %** (moyennes agrégées sur les 18 jambes : 213,6 → 237,5 → 236,1 µs), du même ordre
+que l'écart net9→net10 (+6,9 %) ; sur un runtime isolé et à n = 2 par position, l'étendue brute
+atteint 38,6 % (net10) — c'est ce que le carré latin neutralise. Ce banc reste interprétable
+**en 10→11**, pas en 9→10 — voir « Contrôle du banc 5 ».
 
 > **Banc 5 contrôlé le 29/10.** Les valeurs ci-dessus sont celles de la session du 02/10 (ordre
 > **fixe** : net9, net10, net11) et ne sont **pas réécrites**. Le contrôle du 29/10 (18 jambes,
@@ -206,8 +208,9 @@ python scripts/notebook_tools/notebook_tools.py execute MyIA.AI.Notebooks/GenAI/
 
 ## Synthèse pour la décision P2 (LTS vs GA, escalade user)
 
-1. **Le vrai levier mesuré est le saut .NET 9 → 10** : −5 à −43 % selon la charge (JSON,
-   DateTime.Now et marshaling en tête). C'est aussi ce que le kernel canon impose déjà.
+1. **Le vrai levier mesuré est le saut .NET 9 → 10** : −5 à −43 % selon la charge (JSON et
+   marshaling sur nos bancs ; `DateTime.Now` **hors banc 5**, dont le 9→10 est non établi — voir
+   « Contrôle du banc 5 »). C'est aussi ce que le kernel canon impose déjà.
 2. **.NET 11 RC ajoute, sur nos charges réelles, deux gains mesurés** : JSON (−15 à −22 %
    10→11) et DateTime.Now/timestamps (**−41 %** 10→11, l'axe le mieux vérifié du digest — gain
    **confirmé séparable** par le contrôle du 29/10) ; le parsing de règles Argumentum (−13/−16 %)
@@ -297,6 +300,11 @@ variante 500 règles (+3,7 %) : à re-mesurer fenêtre calme » (prose du banc 5
 variante 50 règles à re-mesurer fenêtre calme » (tableau « Verdicts par axe »). Cette section est
 la réponse mesurée à ces deux drapeaux.
 
+**Source de la mesure** : PR amont [ArgumentumGames/Argumentum#2056](https://github.com/ArgumentumGames/Argumentum/pull/2056) —
+**non mergée à ce jour** ; le fichier de mesures `benchmarks/MULTI-RUNTIME-net9-net10-net11-RECHECK.md`
+**n'existe que sur sa branche** (`feature/benchmarkdotnet-multiruntime-recheck`), pas sur
+`Argumentum/main`. Les valeurs citées ici sont donc susceptibles de changer si la PR amont évolue.
+
 **Ce que ce contrôle est, et ce qu'il n'est pas.** Ce n'est **pas** une ré-exécution de la
 session du 02/10 : il tourne sur une **autre machine**, avec une **autre version RC** et un
 protocole de harness légèrement différent (apphost lancé directement, pas le job BDN du 02/10).
@@ -345,9 +353,15 @@ l'étendue intra-runtime étant elle-même de cet ordre.
 ### Le confound, mesuré et non supposé
 
 Dans l'ordre fixe du banc 5, la position est confondue avec le runtime. **L'amplitude de cet
-artefact est mesurée sur ce banc** : les moyennes par position de l'axe timestamping s'étalent de
-**238,3 µs** (1re position) à **330,2 µs** (3e position) **pour un même runtime**, soit
-**+38,6 %** — **du même ordre de grandeur que l'écart net9→net10 lui-même**. Une réplication
+artefact est mesurée sur ce banc** : sur un runtime isolé et à n = 2 par position, les moyennes
+par position de l'axe timestamping s'étalent de **238,3 µs** (1re position) à **330,2 µs**
+(3e position) pour **net10**, soit **+38,6 %** — une **étendue brute**, dans un seul sens
+(net10 : 238,3 < 330,2), pas une dispersion symétrique, et **non représentative** : sur net9
+l'étendue ne vaut que +3,4 %, sur net11 +27,9 %. C'est précisément ce que le **carré latin
+neutralise** : le protocole étant équilibré (chaque runtime occupe chaque position exactement
+deux fois), le biais **résiduel** sur les moyennes agrégées des 18 jambes tombe à **+11,2 %**
+(213,6 → 237,5 → 236,1 µs, puis plat de p2 à p3), soit **le même ordre que l'écart net9→net10
+(+6,9 %)**. Une réplication
 « 9,10,11 ×3 » peut donc lire un net10 plus lent que net9 alors que l'ordre équilibré montre
 qu'ils sont **indiscernables** : c'est l'artefact de l'ordre, pas un effet de runtime. La suite
 monotone du document amont (#2054 : 565 → 381 → 245 µs) **ne se reproduit pas** sous cet ordre
@@ -390,7 +404,7 @@ monotone du document amont (#2054 : 565 → 381 → 245 µs) **ne se reproduit p
 
 ### Origine et reproduction
 
-- **Contrôle amont** : [ArgumentumGames/Argumentum#2056](https://github.com/ArgumentumGames/Argumentum/pull/2056) — branche `feature/benchmarkdotnet-multiruntime-recheck`, fichier `benchmarks/MULTI-RUNTIME-net9-net10-net11-RECHECK.md`, scripts versionnés `benchmarks/recheck-multiruntime.ps1` (matrice équilibrée) et `benchmarks/recheck-multiruntime-aggregate.py` (agrégation + test de séparabilité) : la conclusion repose sur une **matrice rejouable**, pas sur une lecture de trois nombres.
+- **Contrôle amont** : [ArgumentumGames/Argumentum#2056](https://github.com/ArgumentumGames/Argumentum/pull/2056) — **PR ouverte, non mergée à ce jour** ; branche `feature/benchmarkdotnet-multiruntime-recheck`, fichier `benchmarks/MULTI-RUNTIME-net9-net10-net11-RECHECK.md` (présent sur cette branche seule, absent de `Argumentum/main`), scripts versionnés `benchmarks/recheck-multiruntime.ps1` (matrice équilibrée) et `benchmarks/recheck-multiruntime-aggregate.py` (agrégation + test de séparabilité) : la conclusion repose sur une **matrice rejouable**, pas sur une lecture de trois nombres.
 - **Nature de la relation avec ce document** : ce contrôle est **produit par la même lane** que la
   présente correction ; il est le relais amont de l'EPIC .NET 11 côté CoursIA (#18770) et de
   l'EPIC #18695. Le document amont d'origine (#2054) **n'est pas réécrit** : ses mesures restent
