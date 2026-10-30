@@ -4610,10 +4610,72 @@ def _summarize_run_check_output(stdout_text: str, returncode: int) -> str:
         # n'agit pas sur un verdict 2 (sortie du chemin "free" du
         # picker), donc on le note sans le confondre avec un BLOCKED
         # d'une autre lane.
+        #
+        # #23098 : la classe `NOT_SCOPED` **nomme** son bloquant (le
+        # champ `Blocked-by (legacy blocking_lanes field...)` et la
+        # liste des scopes revendiques). Ce n'est donc pas un verdict
+        # muet : le reducer doit le lire comme un blocage, sinon un
+        # grain occupe reste servable (`ERROR` est servable par
+        # defaut, cf pick_idle_grain.py). Le texte peut arriver sur
+        # stdout OU stderr selon la branche -- les deux flux sont
+        # concatenees par l'appelant.
         if "NOT_SCOPED" in text or "OPEN PR(s) of other lanes touch" in text:
             return "BLOCKED"
         return "ERROR"
     return f"EXIT_{returncode}"
+
+
+def _names_a_blocker(evidence: str, stdout_json: str = "") -> bool:
+    """Le verdict nomme-t-il un bloquant ? (predicat #23098)
+
+    `ERROR` est **servable par defaut** cote tapis : on ne refuse pas un
+    grain faute d'avoir pu verifier son claim. Ce fail-open est assume et
+    doit rester entier la ou l'organe est reellement muet.
+
+    Mais un verdict qui **nomme** son bloquant n'est pas muet : `NOT_SCOPED`
+    porte le champ `Blocked-by (legacy blocking_lanes field, taken at face
+    value)` et les scopes revendiques ; `BLOCKED` porte la phrase
+    `BLOCKED: another lane holds an active claim`. Traiter ces deux classes
+    comme `ERROR` laissait un grain **occupe** au fond de l'urne -- mesure
+    du 2026-10-30 (c.746) : #20035, #19741 et #14318 sortaient tous
+    `code=ERROR, human=(ERROR)` du batch alors que le meme appel unitaire
+    rendait `NOT_SCOPED` + `Blocked-by ...` (voir le test du depot
+    `assert "NOT_SCOPED" in captured.err`).
+
+    Ce predicat separe les deux classes : il ne dit PAS que le grain est
+    libre, il dit que l'organe **a repondu** -- donc qu'il n'a pas le droit
+    de le servir en fail-open.
+
+    Sources de preuve :
+    - le JSON de synthese porte `blocking_lanes` (liste non vide = bloquant
+      nomme) ;
+    - le texte porte `Blocked-by (legacy `blocking_lanes` field` ou la
+      phrase `BLOCKED: another lane holds an active claim`.
+    """
+    text = evidence or ""
+    if stdout_json:
+        brace = stdout_json.find("{")
+        if brace != -1:
+            try:
+                data, _ = json.JSONDecoder().raw_decode(stdout_json[brace:])
+            except json.JSONDecodeError:
+                data = None
+            if isinstance(data, dict):
+                if data.get("blocking_lanes"):
+                    return True
+                # Un claim actif d'une autre lane, meme sans
+                # `blocking_lanes` (le champ legacy est parfois vide
+                # alors que `active_claims` est peuple) : le verdict
+                # `BLOCKED:` le dit aussi sur la sortie humaine.
+                if data.get("blocked") is True and data.get("active_claims"):
+                    return True
+    if "Blocked-by (legacy `blocking_lanes` field" in text:
+        return True
+    if "BLOCKED: another lane holds an active claim" in text:
+        return True
+    if "OPEN PR(s) of other lanes touch" in text:
+        return True
+    return False
 
 
 def check_issues_batch(
@@ -4703,18 +4765,36 @@ def check_issues_batch(
                 )
             result["exit"] = rc
             captured = buf_out.getvalue()
-            result["code"] = _summarize_run_check_output(captured, rc)
+            # #23098 -- le verdict n'est PAS toujours sur stdout : la
+            # classe `NOT_SCOPED` (exit 2) est ecrite sur **stderr** par
+            # `_run_check`, et le test du depot l'y lit
+            # (`assert "NOT_SCOPED" in captured.err`). Ne reduire que
+            # stdout faisait donc classer `ERROR` un verdict qui NOMAIT
+            # son bloquant -- et `ERROR` est servable par defaut cote
+            # tapis : un grain occupe etait retenu. Mesure du 2026-10-30
+            # (c.746) : #20035, #19741, #14318 -> `code=ERROR`,
+            # `human=(ERROR)`, alors que le meme appel unitaire rend
+            # `NOT_SCOPED` + `Blocked-by` sur stderr.
+            captured_err = buf_err.getvalue()
+            evidence = captured + "\n" + captured_err
+            result["code"] = _summarize_run_check_output(evidence, rc)
+            # Le bloquant est-il NOMME, quel que soit le code de sortie ?
+            # C'est le predicat que le tapis consomme (#23098, acceptance
+            # 2) : un `ERROR` muet reste servable (fail-open assume), un
+            # `ERROR` qui nomme un bloquant ne l'est plus.
+            result["blocker_named"] = _names_a_blocker(
+                evidence, stdout_json=captured)
             # Human: on cherche la ligne-verdict parmi les dernieres non
-            # vides du stdout. Le stdout contient d'abord un JSON
+            # vides des deux flux. Le stdout contient d'abord un JSON
             # summary (`print(json.dumps(summary, ...))` ~L3209) puis
             # la phrase verdict `CLEAR: ...` / `BLOCKED: ...` /
             # `IMPLICIT: ...` / `LOCKED (v2): ...` / `DEAD-SCOPE LOCK
-            # ...` / `NOT_SCOPED: ...`. Le pattern prioritaire est
-            # ^CLEAR: / ^BLOCKED: / ^IMPLICIT: / ^LOCKED / ^DEAD-SCOPE
-            # / ^NOT_SCOPED : on parcourt les lignes de la fin vers le
-            # debut pour eviter le bruit du JSON.
+            # ...` ; `NOT_SCOPED: ...` sort sur **stderr**. Le pattern
+            # prioritaire est ^CLEAR: / ^BLOCKED: / ^IMPLICIT: / ^LOCKED
+            # / ^DEAD-SCOPE / ^NOT_SCOPED : on parcourt les lignes de la
+            # fin vers le debut pour eviter le bruit du JSON.
             verdict_line = ""
-            for line in reversed(captured.splitlines()):
+            for line in reversed(evidence.splitlines()):
                 stripped = line.strip()
                 if not stripped:
                     continue

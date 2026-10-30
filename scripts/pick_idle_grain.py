@@ -3851,6 +3851,15 @@ def _summarize_claim_from_batch(json_payload: dict, n: int) -> tuple[str, str]:
     if code == "IMPLICIT":
         return CLAIM_CODE_IMPLICIT, human
     if code == "ERROR":
+        # #23098 -- un `ERROR` qui **nomme** son bloquant n'est pas un
+        # verdict muet : l'organe a repondu, et sa reponse dit qu'une
+        # autre lane tient le grain. Le fail-open (servable par defaut)
+        # ne couvre que la classe reellement muette -- refuseroit un grain
+        # faute d'avoir pu le verifier. Ici il a ete verifie, et la
+        # reponse est negative : le grain est bloque.
+        if res.get("blocker_named"):
+            return (CLAIM_CODE_BLOCKED,
+                    "bloquant nomme par l'organe : " + human)
         return CLAIM_CODE_ERROR, human
     return CLAIM_CODE_ERROR, f"(batch: code {code} inconnu)"
 
