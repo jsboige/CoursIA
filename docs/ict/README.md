@@ -57,6 +57,17 @@ du cadrage rendu à sa place.
 | [`feuille-de-route-notebooks.md`](feuille-de-route-notebooks.md) | Inventaire notebook par notebook : sujet, strate (axe vertical), état de livraison, issues de rattachement et slots réservés. |
 | [`extensions-2026-07.md`](extensions-2026-07.md) | Les quatre fronts ouverts par le cadrage stratégique de 2026-07 (fin de la réversibilisation, canonicité des scalaires, secret/identité, discours) et la décision de numérotation par suffixe `b` ([#7260](https://github.com/jsboige/CoursIA/issues/7260)). |
 
+### Consolidation par paliers de la série de carnets
+
+Le réagencement du corpus ICT en sous-séries est servi par paliers successifs
+([#20298](https://github.com/jsboige/CoursIA/issues/20298)). Chaque note de
+palier porte le plateau mesuré, l'argument pédagogique du déplacement et les
+liens de navigation rétablis après la descente d'un niveau.
+
+| Document | Rôle |
+|----------|------|
+| [`palier14-ict19-note-de-conception.md`](palier14-ict19-note-de-conception.md) | Palier 14 « Enjeu » : déplacement de `ICT-19` et `ICT-19b` vers la sous-série `ICT-19/`, périmètre choisi contre les paliers 11-13, et réparation des liens entrants comme sortants. |
+
 ## Parcours suggéré
 
 - **Entrée par les fils** (lecture verticale) : [`synthese-invariants-dissociations-obstructions.md`](synthese-invariants-dissociations-obstructions.md) → [`genealogy-representation-interne.md`](genealogy-representation-interne.md) → [`dissolution-scalaires.md`](dissolution-scalaires.md) → [`strate7-boussole-myth.md`](strate7-boussole-myth.md).

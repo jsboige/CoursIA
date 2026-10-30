@@ -27,6 +27,7 @@ they are already delivered by PR #19510 (P1 integration, 7 paper primes).
 import argparse
 import hashlib
 import json
+import os
 import platform
 import subprocess
 import sys
@@ -75,6 +76,99 @@ class HarveyWorker:
 
 def sha256_file(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+PIN_MANIFEST = Path(__file__).resolve().parent / "harvey_sources_pin.json"
+
+# Sous-arborescences possibles du clone local des sources amont :
+# <clone>/ et <clone>/Cartier_Miller_Benchmark/.
+SOURCE_ROOT_CANDIDATES = ("", "Cartier_Miller_Benchmark")
+
+# Code de sortie propre a la garde du pin : distinct de 2 (executable absent),
+# pour que l'ordre des deux controles soit observable dans le rc seul.
+PIN_FAILURE_EXIT = 3
+
+
+def sha256_source(path: Path) -> str:
+    """SHA-256 canonique d'une source : fins de ligne normalisees en LF.
+
+    Le pin doit etre independant de core.autocrlf : sur un clone Windows, le
+    fichier de travail porte CRLF alors que le blob Git porte LF. On normalise
+    donc avant de hacher, et le manifeste documente les deux formes.
+    """
+    data = path.read_bytes().replace(b"\r\n", b"\n")
+    return hashlib.sha256(data).hexdigest()
+
+
+def load_pin_manifest(path: Path) -> dict:
+    """Charge le manifeste de pin ; son absence est une erreur (fail-closed)."""
+    if not path.is_file():
+        raise FileNotFoundError(f"manifeste de pin introuvable : {path}")
+    manifest = json.loads(path.read_text(encoding="utf-8"))
+    if not manifest.get("files"):
+        raise ValueError(f"manifeste de pin sans fichier : {path}")
+    return manifest
+
+
+def resolve_sources_root(explicit: Path | None, executable: Path) -> Path | None:
+    """Racine du clone des sources : option, variable d'env, puis auto-decouverte."""
+    if explicit is not None:
+        return explicit
+    env = os.environ.get("HARVEY_SOURCES_ROOT")
+    if env:
+        return Path(env)
+    bases = [Path.cwd(), executable.resolve().parent, executable.resolve().parent.parent]
+    for base in bases:
+        for suffix in SOURCE_ROOT_CANDIDATES:
+            candidate = base / suffix if suffix else base
+            if (candidate / "harvey_adapter.cpp").is_file() and (
+                candidate / "upstream" / "recurrences_ntl.cpp"
+            ).is_file():
+                return candidate
+    return None
+
+
+def verify_sources(root: Path, manifest: dict) -> dict:
+    """Recalcule les empreintes des sources vendorisees ; echoue au premier ecart.
+
+    Retourne le rapport ; ``verified`` est False des qu'un fichier manque ou
+    differe du pin. Les sources ne sont jamais reecrites.
+    """
+    measured = {}
+    problems = []
+    for entry in manifest["files"]:
+        path = root / entry["path"]
+        if not path.is_file():
+            problems.append(
+                {"path": entry["path"], "reason": "absent", "expected_sha256": entry["sha256"]}
+            )
+            continue
+        digest = sha256_source(path)
+        measured[entry["path"]] = digest
+        if digest != entry["sha256"]:
+            problems.append(
+                {
+                    "path": entry["path"],
+                    "reason": "sha256",
+                    "expected_sha256": entry["sha256"],
+                    "measured_sha256": digest,
+                }
+            )
+    return {
+        "verified": not problems,
+        "measured_sha256": measured,
+        "problems": problems,
+        "commit": manifest.get("commit"),
+    }
+
+
+def pin_allows_passed(sources_report: dict | None) -> bool:
+    """Une validation ne peut etre 'passed' que si le pin a ete verifie.
+
+    Le mode debug (--no-verify-sources) rend ``sources_report`` a None : il
+    court-circuite la garde, il ne dispense jamais du statut.
+    """
+    return bool(sources_report and sources_report.get("verified"))
 
 
 def check_prime_stopping_indices(worker: HarveyWorker, p: int) -> tuple[int, int]:
@@ -127,7 +221,54 @@ def main() -> int:
         default=199,
         help="quarter-points of primes <= this value re-checked with --force-big",
     )
+    parser.add_argument(
+        "--pin-manifest",
+        type=Path,
+        default=PIN_MANIFEST,
+        help="manifeste de pin des sources vendorisees (sha256 canonique par fichier)",
+    )
+    parser.add_argument(
+        "--sources-root",
+        type=Path,
+        default=None,
+        help="racine du clone des sources amont ; par defaut HARVEY_SOURCES_ROOT ou auto-decouverte",
+    )
+    parser.add_argument(
+        "--no-verify-sources",
+        action="store_true",
+        help=(
+            "desactive le controle du pin (debug uniquement) : le rapport portera alors "
+            "sources_pin.skipped=true et la validation ne pourra pas etre 'passed'"
+        ),
+    )
     args = parser.parse_args()
+
+    # Garde de pin : fail-closed, AVANT tout lancement du binaire et toute requete.
+    sources_report = None
+    if not args.no_verify_sources:
+        try:
+            manifest = load_pin_manifest(args.pin_manifest)
+        except (FileNotFoundError, ValueError, json.JSONDecodeError) as exc:
+            print(f"pin des sources : {exc}", file=sys.stderr)
+            return PIN_FAILURE_EXIT
+        root = resolve_sources_root(args.sources_root, args.executable)
+        if root is None:
+            print(
+                "pin des sources : racine introuvable ; passe --sources-root <racine du clone> "
+                "ou pose HARVEY_SOURCES_ROOT",
+                file=sys.stderr,
+            )
+            return PIN_FAILURE_EXIT
+        sources_report = verify_sources(root, manifest)
+        if not sources_report["verified"]:
+            print(
+                "pin des sources : ecart avec le commit "
+                f"{manifest.get('commit')} ({manifest.get('commit_short')}) ; aucun appel au binaire",
+                file=sys.stderr,
+            )
+            for problem in sources_report["problems"]:
+                print(f"  - {problem}", file=sys.stderr)
+            return PIN_FAILURE_EXIT
 
     if not args.executable.is_file():
         print(f"harvey_adapter not found: {args.executable}", file=sys.stderr)
@@ -142,6 +283,13 @@ def main() -> int:
         # produit le resultat. L'empreinte ci-dessous est la provenance verifiable.
         "executable": args.executable.name,
         "executable_sha256": sha256_file(args.executable),
+        "sources_pin": {
+            "manifest": args.pin_manifest.name,
+            "commit": sources_report["commit"] if sources_report else None,
+            "verified": bool(sources_report and sources_report["verified"]),
+            "measured_sha256": sources_report["measured_sha256"] if sources_report else {},
+            "skipped": bool(args.no_verify_sources),
+        },
     }
 
     version = json.loads(
@@ -202,12 +350,14 @@ def main() -> int:
         "forced_big_cross_checks": forced_big_checks,
         "forced_big_mismatches": forced_big_mismatches,
         "invalid_input_checks": invalid_input_checks,
+        "sources_pin_verified": bool(sources_report and sources_report["verified"]),
         "status": "passed"
         if (
             mismatch_total == 0
             and forced_big_mismatches == 0
             and stopping_total == 10809
             and invalid_input_checks == 3
+            and pin_allows_passed(sources_report)
         )
         else "failed",
     }

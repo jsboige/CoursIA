@@ -4753,6 +4753,11 @@ _ORGAN_BANNER_RE = re.compile(r"Organes bloquants en echec\s*:\s*([a-z_ ]+?)\s*(
 _PR_STATE_FRAGMENT = """
   p%(n)d: pullRequest(number:%(n)d) {
     number mergeable
+    # #22362 : depot d'origine != depot de base (fork, PR etudiante). Lu ici
+    # parce que c'est le seul endroit ou les deux transports de
+    # `fetch_open_prs` convergent sur une forme commune, et parce que
+    # `blocking_causes` a deja paye cette requete quand on en a besoin.
+    isCrossRepository
     reviews(last:40) { nodes { state submittedAt author { login } body } }
     commits(last:1) { nodes { commit { statusCheckRollup {
       state   # #12830 : SUCCESS/FAILURE/PENDING/NEUTRAL au niveau rollup, pour le 3e etat file-saturation
@@ -6321,6 +6326,34 @@ def is_out_of_fleet_pr(pr: dict) -> bool:
     return head_ref.startswith("claude/") and "Hors flotte" in (pr.get("body") or "")
 
 
+# #22362 — PRs CROSS-REPOSITORY (fork) exclues de la file d'orphelines. Une
+# contribution publique — TP etudiant, ~95 forks, cf student-pr-reviews.md — a
+# pour forme NORMALE un body sans le moindre marqueur de lane : le gate de tag
+# le dit par construction (variation_tag_required.py, regle 4 de sa docstring :
+# « Forks are excluded ... the workflow does this before invoking us; we never
+# see a fork body »), et le workflow applique cette exemption en amont sur
+# `head.repo.fork` (variation-tag-guard.yml). L'absence de tag y est donc la
+# forme attendue, pas un defaut a reparer : la presenter comme telle, c'est
+# inventer une imputabilite et envoyer une lane sur une PR qui n'appartient a
+# aucune. Mesure fondatrice : #22362 (auteur `snakechoc`, tete
+# `snakechoc/CoursIA` -> base `jsboige/CoursIA`), seule PR listee sous ce
+# paragraphe le 2026-10-26.
+# Le predicat est le champ GitHub `isCrossRepository` — deja lu tel quel par
+# `scripts/ci/update_stale_pr_branches.py:608` et
+# `scripts/ci/sweep_stale_pr_branches.py:142` — et non un second critere
+# invente ici. Il se lit sur le noeud `pullRequest` (`_PR_STATE_FRAGMENT`),
+# deja paye par `unattributed_blocked_prs`.
+def is_cross_repository_pr(state: dict | None) -> bool:
+    """Vrai si la PR vient d'un depot d'origine different (fork, PR etudiante).
+
+    Champ absent (forme partielle, mock ancien) -> `False` : le garde garde sa
+    capacite sur une donnee manquante. L'inverse — traiter l'inconnu comme un
+    fork — retirerait de la file de vraies PRs du depot a reparer, c'est-a-dire
+    le sens dangereux.
+    """
+    return bool((state or {}).get("isCrossRepository"))
+
+
 def unattributed_blocked_prs(prs: list[dict] | None = None) -> list[dict]:
     """PRs ouvertes bloquees sans tag `Grain:` lisible, AVEC leur route.
 
@@ -6346,6 +6379,13 @@ def unattributed_blocked_prs(prs: list[dict] | None = None) -> list[dict]:
     depuis l'exterieur du cluster, et le gate `tag_required` les exempte deja
     (#17715) — router l'une d'elles rejouerait la contradiction que #17713
     ferme.
+
+    Les PRs CROSS-REPOSITORY (fork, contribution publique ou TP etudiant,
+    #22362) sont exclues pour la meme raison, portee par le MEME organe : le
+    gate `variation_tag_required.py` ne lit jamais un body de fork (regle 4 de
+    sa docstring), donc l'absence de tag y est la forme normale. Les lister
+    comme « tag manquant a reparer » inventerait une imputabilite ; ce constat
+    n'appartient a aucune lane.
     """
     if prs is None:
         prs = fetch_open_prs()
@@ -6359,6 +6399,8 @@ def unattributed_blocked_prs(prs: list[dict] | None = None) -> list[dict]:
     for pr in untagged:
         state = untagged_states.get(pr["number"])
         if state is None or not blocking_causes(state):
+            continue
+        if is_cross_repository_pr(state):
             continue
         out.append({"number": pr["number"], "title": pr["title"],
                     "author": ((pr.get("author") or {}).get("login")) or "inconnu",
@@ -9354,6 +9396,29 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     return belt_picks, belt_withheld, state
 
 
+def creation_budget_gate(pool: list[dict]) -> dict[int, str]:
+    """#23174 -- les grains de creation a ecarter, avec la cause nommee.
+
+    Rend ``{numero: cause}``. Vide quand rien n'est ecarte.
+
+    Le contrat est **fail-OPEN a triple** : module absent, etat absent ou
+    illisible, catalogue du depot inconnu -> aucun grain n'est ecarte. Un
+    `git` muet ou un compteur qui n'a pas tourne ne doivent JAMAIS vider le
+    tapis : le regime ralentit la creation, il ne l'arrete pas.
+
+    La cause nommee est `BUDGET CRÉATION` (accent compris) : elle doit se
+    retrouver telle quelle dans le journal de tirage et dans la sortie JSON.
+    """
+    try:
+        import creation_budget as cb
+    except Exception:  # noqa: BLE001 - module absent = porte inactive
+        return {}
+    try:
+        return cb.creation_gate(pool)
+    except Exception:  # noqa: BLE001 - une porte qui leve n'ecarte personne
+        return {}
+
+
 def _log_tirage_safe(*, lane, candidates, retained, urn, mode):
     """Geste 5 #18203 : consigner le tirage dans le journal inter-process.
 
@@ -9549,6 +9614,12 @@ def main(argv: list[str] | None = None) -> int:
                          "selection (steer inclus).")
     ap.add_argument("--ignore-red", action="store_true",
                     help="passer outre le garde -- exige une justification ECRITE sur la PR concernee")
+    ap.add_argument("--ignore-creation-budget", action="store_true",
+                    help="#23174 : passer outre le BUDGET DE CREATION "
+                         "(la porte `BUDGET CRÉATION`). Exige une justification "
+                         "ECRITE : le regime ralentit la creation, il ne "
+                         "l'arrete pas -- on ne le contourne que par ecrit, "
+                         "jamais en silence.")
     ap.add_argument("--ignore-wip", action="store_true",
                     help="passer outre le plafond de WIP (Q41) -- exige "
                          "--wip-reason '<justification ECRITE>' : contrairement "
@@ -10066,15 +10137,50 @@ def main(argv: list[str] | None = None) -> int:
     # deja livree fait REFLUER le pool, c'est l'inverse de l'emballement.
     withheld: list[tuple[dict, str]] = []
     admitted = []
+    # #23174 -- budget de creation de carnets, a l'echelle de la flotte.
+    # La porte est lue AVANT l'admission : un grain de creation ecarte ne
+    # doit pas apparaitre dans le tirage. Elle est fail-OPEN a triple
+    # (module absent, etat absent, catalogue du depot inconnu) et elle ne
+    # s'active QUE sur un depassement de budget MESURE -- le regime ralentit
+    # la creation, il ne l'arrete pas.
+    budget_gate = ({} if args.ignore_creation_budget
+                   else creation_budget_gate(pool))
+    creation_withheld: list[tuple[dict, str]] = []
     for it in pool:
         if it["klass"] == "delivered":
             admitted.append(it)
+            continue
+        budget_cause = budget_gate.get(it["number"])
+        if budget_cause:
+            creation_withheld.append((it, budget_cause))
+            withheld.append((it, budget_cause))
             continue
         cause = admissibility(it, balance, issue_to_family, args.dwell_hours)
         if cause and not args.admit_reason:
             withheld.append((it, cause))
         else:
             admitted.append(it)
+    if creation_withheld:
+        print(f"   BUDGET CRÉATION : {len(creation_withheld)} grain(s) de "
+              f"creation écarté(s) du tirage — {creation_withheld[0][1]}")
+    filter_active = {
+        "exclude_issue": sorted(excluded_issues),
+        "require_label": sorted(required_labels, key=str.casefold),
+        "exclude_label": sorted(excluded_labels, key=str.casefold),
+        "min_age_days": args.min_age_days,
+        "max_age_days": args.max_age_days,
+        "min_idle_days": args.min_idle_days,
+        "max_idle_days": args.max_idle_days,
+        "urns": sorted(selected_urns),
+        # #23174 -- le garde de creation laisse une trace dans l'etat du
+        # tirage : sans lui, un tapis qui ecarte des grains de creation
+        # parait ne rien avoir refuse.
+        "creation_budget": {
+            "active": bool(budget_gate),
+            "ecartes": sorted(budget_gate),
+            "ignore": bool(args.ignore_creation_budget),
+        },
+    }
     filter_active = {
         "exclude_issue": sorted(excluded_issues),
         "require_label": sorted(required_labels, key=str.casefold),
