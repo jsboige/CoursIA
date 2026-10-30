@@ -1265,6 +1265,14 @@ def check_notebook(path: Path) -> dict:
 
 _DECIMAL_TOKEN_RE = re.compile(r"(?<![\d.,])\d+[.,]\d+(?![\d,])")
 
+# A number that carries BOTH a comma group and a decimal point uses the comma
+# as a thousands separator: French decimals never take a second separator
+# after a three-digit group ('19,798.0862' is 19798.0862, not 19.7980862).
+# The bare three-digit group ('1,798') stays a decimal -- without a decimal
+# point to disambiguate, both readings are legitimate and the francophone
+# decimal reading is the dominant one.
+_THOUSANDS_WITH_DECIMAL_RE = re.compile(r"(\d{1,3}(?:,\d{3})+)(\.\d+)")
+
 
 def _rounds_to_claim(norm: str, out_text: str) -> bool:
     """True when an output number rounds to the claimed value.
@@ -1284,15 +1292,13 @@ def _rounds_to_claim(norm: str, out_text: str) -> bool:
     except ValueError:
         return False
     half_ulp = 0.5 * 10 ** -decimals
+    out_text = _THOUSANDS_WITH_DECIMAL_RE.sub(
+        lambda m: m.group(1).replace(",", "") + m.group(2), out_text
+    )
     for match in _DECIMAL_TOKEN_RE.finditer(out_text):
         token = match.group(0).replace(",", ".")
         # An output coarser than the claim cannot round UP to it: '1.7'
         # never satisfies '1.75'.
-        # Known limitation, measured: the comma is read as a decimal point,
-        # so a thousand separator is matched as one -- '19.80' matches
-        # '19,798.0862' through the token '19,798' read as 19.798. The two
-        # readings are genuinely ambiguous in French output ('1,798' may be
-        # 1.798 or 1,798); deciding it needs its own change, not this one.
         if len(token.split(".", 1)[1]) < decimals:
             continue
         try:

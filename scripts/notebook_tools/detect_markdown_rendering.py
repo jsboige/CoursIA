@@ -162,6 +162,33 @@ RULE_SEVERITY = {
     # #3966") -- et #3966 a ete FERMEE sans que le suivi soit fait. C'est ce
     # trou qui a laisse passer #12009.
     "heading_in_list": ERROR,
+    # #23306: ERROR (bloquant). Un titre de marqueur d'exercice NU (`# Indice :
+    # ...`, hors de tout conteneur) n'a pas plus d'usage legitime que sa forme
+    # imbriquee promue par #12109 : il rend un <h1> a la plus grosse police de
+    # la page pour un commentaire Python recopie.
+    #
+    # C'est la classe que le fixer `fix_hint_headings.py` repare depuis #22477
+    # (forme nue). `oversized_hint` en couvre une PARTIE seulement, et ne peut
+    # pas etre elargie : sa liste de mots est `indice|astuce|hint`, et il tire
+    # des h1-h3 -- or les marqueurs `Etape`/`Step`/`Solution`/`Note`/`TODO`
+    # apparaissent legitimement en h3 comme titres de section (`### Solution :
+    # Plugins`). Le discriminant qui les separe est celui du fixer : **h1** ET
+    # un **deux-points**. Une regle qui encode ce discriminant existe donc pour
+    # ce qu'`oversized_hint` ne peut pas dire, pas pour doubler son compte.
+    #
+    # Mesure du 2026-10-29 sur `main` -- et le piege qu'elle portait. Le compte
+    # brut du fixer (`--scan`, 1701 carnets) rend 141 titres nus dans 17
+    # carnets ; **130 de ces 141 sont DANS un bloc de code** (`# Etape 1 :` en
+    # commentaire Python d'un squelette d'exercice), donc du code legitime. Le
+    # vrai compte hors fence est de **11 occurrences dans 4 cellules / 2
+    # carnets**, et 3 de ces 4 cellules sont deja routees vers le meme fixer par
+    # `oversized_hint` (elles portent une ligne `# Indice` que `_HINT_RE` voit).
+    # La « croissance 49 -> 141 » qui motivait la regle etait donc de la
+    # croissance de COMMENTAIRES DANS LES FENCES : la classe mesurable ne croit
+    # pas de la facon qu'on croyait. Voir aussi le defaut jumeau corrige dans le
+    # fixer (il n'etait pas fence-aware : `--apply` sur le corpus reecrivait ces
+    # 130 commentaires de code en prose backtickee).
+    "naked_marker_heading": ERROR,
     # #12112: WARN-first -- the class is measured at 16 cells corpus-wide; the
     # drift gate on new hits is the issue's acceptance. A stray '**' is a
     # cosmetic rendering defect, not a page-breaking one (unlike the ERRORs).
@@ -313,6 +340,13 @@ RULE_REPAIR = {
     "heading_in_list": (
         "python scripts/notebook_tools/fix_hint_headings.py --apply <notebook>"
     ),
+    # #23306 : meme fixer, autre forme. Le script couvre les DEUX depuis #22477
+    # (`--scan` les liste, `--apply` les repare dans le meme passage), et le
+    # predicat de la regle est le sien -- signaler une cellule qu'aucune
+    # commande ne repare serait le defaut que cette table existe pour eviter.
+    "naked_marker_heading": (
+        "python scripts/notebook_tools/fix_hint_headings.py --apply <notebook>"
+    ),
     # #17380 : promue ERROR dans la meme PR que son fixer (precedent #12109) --
     # la conversion \( -> $ / \) -> $ est deterministe sur les cellules
     # markdown, et le fixer porte l'invariant de round-trip qui la prouve.
@@ -401,6 +435,33 @@ _CONTAINER_HEADING_RE = re.compile(
 # a `-`/`*`/`+`/`1.`/`>` on the same line). Fondeur: PR #16888 cell-015
 # (base e17f600a, fix c34d5e88d rewrapped the cell to drop the indent).
 _CONTINUATION_HEADING_RE = re.compile(r"^\s{2,}(#{1,6})[^\s#]")
+
+# #23306 -- a NAKED exercise-marker heading: `# Indice : ...`, `# Etape 2 : ...`,
+# `# TODO: ...` at column 0, outside any container. CommonMark renders it as a
+# real <h1> (the largest font of the page) for what is a Python comment pasted
+# into a markdown cell -- the same defect as `heading_in_list` (#12109), one
+# level up: the container is not a bullet, it is absent.
+#
+# The predicate is DELIBERATELY the fixer's (`fix_hint_headings._fix_naked`),
+# character for character -- three discriminants, and each was measured:
+#
+#  1. `^#\s+` -- h1 ONLY, at column 0. `### Indices` and `## Etape 2` are
+#     legitimate sections: measure of 2026-10-25 on the corpus, all 20 h2-h4
+#     candidates are real sections, and backticking one turns a section into a
+#     code line -- a rendering regression, not a repair.
+#  2. the marker whitelist -- the colon alone is not enough (`# Introduction :
+#     vue d'ensemble` is a section). The list is the fixer's, so the rule can
+#     never fire where the repair command cannot act.
+#  3. `:` after the marker (and an optional number) -- separates `# Indice : X`
+#     (marker + body) from a bare marker heading.
+#
+# A rule broader than its fixer is the anti-pattern this pairing avoids: it
+# would signal cells no command can repair (cf RULE_REPAIR's doctrine).
+_NAKED_MARKER_HEADING_RE = re.compile(
+    r"^#\s+(Indice|Indices|Astuce|Hint|TODO|Note|Etape|Étape|Step|Solution)"
+    r"(?:\s+\d+)?\s*:",
+    re.IGNORECASE,
+)
 
 # #12110 -- a CJK (Chinese-Japanese-Korean) character in a markdown cell whose
 # source is otherwise French prose. The defect pattern: a model-generated cell
@@ -1133,6 +1194,54 @@ def _selfcheck() -> int:
           "separator, table continuation, fenced adjacency and non-table "
           "predecessors")
 
+    # ---- naked_marker_heading (#23306) ------------------------------------------
+    # The predicate is the FIXER's (`fix_hint_headings.py`), so the controls of
+    # the two organs must agree or the detector sends a notebook to a fixer that
+    # will not touch it. Three positives = the three observed shapes on the
+    # corpus (with counter, bare marker, TODO). Negatives = the four shapes the
+    # fixer deliberately leaves alone: `###` (legit section), `##` (level 2 is
+    # not the giant one), an already-backticked marker, and a marker-word
+    # heading with no colon (`# Note sur ...` is prose, not a marker line).
+    # Plus a fenced control: `# Indice` inside a code block is literal code.
+    naked_fixtures: list[tuple[str, str, bool]] = [
+        ("bare marker with counter and colon",
+         "# Etape 1 : ouvrir le fichier de donnees\n\nPuis lire la colonne.\n",
+         True),
+        ("bare marker without counter",
+         "# Indice : la formule se simplifie en divisant par deux.\n",
+         True),
+        ("bare TODO with colon",
+         "# TODO: completer la fonction ci-dessous.\n",
+         True),
+        ("h3 section (legit)",
+         "### Indices\n\nCorps de la section.\n",
+         False),
+        ("h2 section (legit level, not the giant one)",
+         "## Etape 2\n\nCorps de la section.\n",
+         False),
+        ("already backticked marker",
+         "`# Indice` : la formule se simplifie.\n",
+         False),
+        ("marker word but no colon (prose heading)",
+         "# Note sur les indices de la colonne\n\nCorps.\n",
+         False),
+        ("marker inside a fence is literal code",
+         "Exemple de commentaire :\n\n```python\n# Indice : ceci est du code\n```\n",
+         False),
+    ]
+    for name, src, expected in naked_fixtures:
+        got = _fired("naked_marker_heading", src)
+        if got != expected:
+            failed.append(f"{name}: naked_marker_heading fired={got}, expected={expected}")
+    if failed:
+        print("selfcheck FAIL:", file=sys.stderr)
+        for f in failed:
+            print(f"  !! {f}", file=sys.stderr)
+        return 1
+    print("selfcheck OK: naked_marker_heading fires on the 3 observed shapes "
+          "(counter / bare marker / TODO) and is silent on h3, h2, backticked "
+          "markers, colon-less prose headings and fenced code")
+
     return 0
 
 
@@ -1503,6 +1612,33 @@ def scan_cell(cell) -> list[dict]:
             "rule": rule,
             "severity": RULE_SEVERITY[rule],
             "message": f"heading nested in a list/blockquote (renders as giant H{level})",
+            "evidence": ln.strip()[:100],
+            "hash": _cell_hash(rule, text),
+        })
+        break
+
+    # ---- NAKED exercise-marker heading (#23306) ---------------------------------
+    # Sibling of the heading_in_list loop above, one level up: the container is
+    # not a bullet, it is ABSENT. `# Indice : ...` at column 0 renders an <h1>
+    # at the largest font of the page, for a Python comment pasted into a
+    # markdown cell. Same fence-awareness (a `# comment` inside a code block is
+    # literal code), same one-finding-per-cell discipline.
+    #
+    # Disjoint of the three sibling patterns by construction: `_HEADING_RE` sees
+    # the line but has no marker predicate, `_CONTAINER_HEADING_RE` requires a
+    # container marker on the same line, `_CONTINUATION_HEADING_RE` requires 2+
+    # spaces of indent. The predicate here is the FIXER's (see the constant).
+    for idx, ln in enumerate(lines):
+        if idx in fenced:
+            continue
+        if not _NAKED_MARKER_HEADING_RE.match(ln):
+            continue
+        rule = "naked_marker_heading"
+        findings.append({
+            "rule": rule,
+            "severity": RULE_SEVERITY[rule],
+            "message": ("exercise marker written as a bare H1 (renders larger "
+                        "than body text); backtick the marker"),
             "evidence": ln.strip()[:100],
             "hash": _cell_hash(rule, text),
         })
