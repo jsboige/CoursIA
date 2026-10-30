@@ -211,20 +211,20 @@ donc validé, et il ne coûtait aucun téléchargement : le bon fichier était d
 Ce que ce cycle **établit** est structurel : le pipeline va au bout, l'artefact est un h264
 832×480 de 33 frames à 16 fps, conforme à la requête passée, et la 3090 est bien la carte visée.
 
-Ce que ce cycle **n'établit pas**, et qu'il ne faut pas lire dans ces lignes :
+Les sections suivantes distinguent les compléments apportés après ce premier verdict, et leurs
+limites respectives :
 
-- **L'inspection visuelle du clip.** L'acceptance 2 de l'issue la route explicitement vers « une
-  lane MiniMax ou ai-01 ». La lane po-2023 est animée par un modèle sans vision : elle ne juge
-  pas le rendu, elle établit que le fichier existe, qu'il est bien formé et qu'il correspond aux
-  paramètres demandés. Le contenu (fidélité au prompt, cohérence temporelle) reste à regarder.
-- **La comparaison de parité avec le stack Python/Docker (acceptance 4).** Aucune mesure de
-  parité ComfyUI-Wan n'a été prise dans ce cycle, contrairement à l'axe Image où #14549 l'avait
-  faite. Ce qui est mesuré ici est un coût et une chaîne, pas un écart de qualité entre moteurs.
-- **La reproductibilité.** `--seed` étant ignoré, deux runs ne se comparent pas à graine fixée.
+- **L'inspection visuelle du clip** : **établie au §8** par le modèle vision de la session courante,
+  directement sur les MP4 originaux. Les limites de l'inspection par images extraites y sont
+  explicitées, notamment pour le mouvement de caméra.
+- **La comparaison de parité avec le stack Python/Docker (acceptance 4)** : **établie au §7**,
+  sur la même RTX 3090, avec le même prompt et les formats de poids réellement comparables.
+- **La reproductibilité TensorSharp.** `--seed` étant ignoré, deux runs ne se comparent pas à
+  graine fixée. ComfyUI fournit en revanche une preuve de déterminisme byte-level au §7.
 
-Le grain reste donc partiellement ouvert sur ces trois points (QA visuel routé, parité non
-mesurée), mais le blocage technique qui fondait le `NON MESURÉ` de c.419 est levé, et le verdict
-passe de « non mesuré » à **mesuré, artefact produit**.
+Le blocage technique qui fondait le `NON MESURÉ` de c.419 est levé, les quatre critères de
+l'issue sont désormais couverts par les sections 5, 7 et 8, et la reproductibilité TensorSharp
+reste un défaut distinct, décrit sans être maquillé.
 
 ## 7. Parité ComfyUI-Wan même-machine/même-prompt (critère 4) — mesure livrée
 
@@ -308,13 +308,74 @@ re-doublés (coût GPU, apport informationnel nul après la preuve à cfg 1).
 - **Verdict critère 4** : **mesuré** — comparaison honnête même-machine/même-prompt livrée, avec
   split de format VAE documenté et écart débit/VRAM chiffré. Pas de gagnant absolu : TensorSharp
   = débit + efficacité VRAM + exécution quantifiée fidèle au fichier ; ComfyUI = déterminisme
-  byte-level + écosystème de nœuds. La QA visuelle (critère 2) reste routée vers une lane vision.
+  byte-level + écosystème de nœuds. La QA visuelle du critère 2 est établie au §8, dans les
+  limites d'une inspection par images extraites.
 
-### QA visuel (critère 2) — routage préparé
+### Contrôle objectif et provenance du QA
 
 Les 2 clips TensorSharp §5 + les 4 clips ComfyUI ci-dessus passent le contrôle objectif de
 non-dégénérescence (std luma par frame : 75,03-75,28 clip 3090 · 68,59-72,26 clip 3080 Ti ·
 69,81-71,90 q4 cfg 1 · 72,04-73,07 fp16 cfg 1 · 95,20-96,00 q4 cfg 6 · 91,41-92,01 fp16 cfg 6 —
-un rendu NaN/uniforme serait à 0). Les 6 MP4 + frames PNG + stats sont stageés pour une lane
-vision : `G:\Mon Drive\MyIA\IA\wan-video-qa-15159\`. La lane exécutante (GLM, sans vision) ne
-juge pas le rendu — fidélité au prompt et cohérence temporelle restent à regarder.
+un rendu NaN/uniforme serait à 0). Le bundle `G:\Mon Drive\MyIA\IA\wan-video-qa-15159\` avait
+été préparé pour une lane vision, mais ses copies se sont révélées incomplètes : il n'est **pas**
+la provenance des jugements du §8. Ceux-ci portent exclusivement sur les six MP4 originaux
+locaux, revérifiés intégralement avant inspection ; le bundle existant n'a été ni écrasé ni
+réparé par des images tronquées.
+
+## 8. QA visuel des six originaux (critère 2) — inspection directe
+
+**Date** : 2026-10-26, lane `myia-po-2023:CoursIA`, modèle vision de la session courante. Aucun
+clip n'a été régénéré et le service ComfyUI n'a pas été sollicité. Le prompt relu dans
+`C:/Users/jsboi/tensorsharp-investigation/out/prompt.txt` est :
+
+> A serene mountain lake at sunrise, gentle ripples on the water, distant pine forest, warm
+> golden light, cinematic slow camera drift, high detail
+
+### Intégrité avant jugement
+
+Chaque MP4 original a été mesuré par taille et SHA-256, sondé par `ffprobe -count_frames`, puis
+décodé intégralement par FFmpeg avec `-xerror`. Le décodage a produit 33 PNG par clip, avec
+code retour 0 et `stderr` vide ; les 198 PNG ont ensuite passé `Pillow.Image.verify()`.
+
+| Clip original | Octets | SHA-256 | Décodage intégral |
+|---|---:|---|---|
+| `wan21_t2v_probe_3090.mp4` | 775 132 | `e25e70f8325de1929bc782690c8260388bc38d00d72ed5fb335b889b1ac65387` | 33/33 images vérifiées |
+| `wan21_t2v_probe.mp4` | 531 651 | `e58f42aac191e636be79b63cb17eccdb463f71970726ffb8a8cf3aa1d121c2e7` | 33/33 images vérifiées |
+| `wan21_parity_q4_00001_.mp4` (q4, cfg 1) | 1 488 189 | `f1e7276e99b2d0063f75b5a9256e6cf545d0fd4d4090e5ff05d44ae69c983f18` | 33/33 images vérifiées |
+| `wan21_parity_q4_00003_.mp4` (q4, cfg 6) | 680 711 | `eca6ea628292cad0a0f4068b2fdf8edda8616e6fda753c81fdc2ad7ab90a7209` | 33/33 images vérifiées |
+| `wan21_parity_fp16_00001_.mp4` (fp16, cfg 1) | 1 275 473 | `69ef7e9d3d86c18fef76317c54903d657cf50277678e751c3242492ebb816530` | 33/33 images vérifiées |
+| `wan21_parity_fp16_00002_.mp4` (fp16, cfg 6) | 611 538 | `06e0047b0d3327766dd77c3ed65b3bea02c6e3fdf4c6fae64d5094da545d9591` | 33/33 images vérifiées |
+
+Les six ont les mêmes propriétés mesurées : h264, 832×480, 16 images/s, 33 images lues et
+2,0625 s. Le run de déterminisme `wan21_parity_q4_00002_.mp4` est également byte-identique au
+q4 cfg 1 original (même taille et même SHA-256), ce qui confirme le contrôle du §7 sans servir de
+septième clip au QA.
+
+### Ce qui est visible
+
+Les 33 images de chacun des six clips ont été inspectées en planches, puis les images 1, 17 et 33
+de chaque clip ont été relues en pleine résolution. Le constat porte donc sur les six séquences
+complètes image par image, et non sur une vignette ou quelques images choisies.
+
+- Les six clips représentent un **lac bordé d'une rive boisée sous une lumière dorée**. Les pins,
+  les ripples et les reflets à la surface de l'eau sont visibles ; la scène reste reconnaissable
+  et cohérente sur les images inspectées.
+- **Aucun effondrement progressif, bande noire de troncature ou disparition de l'image** n'est
+  visible dans les MP4 originaux. Ce constat visuel est cohérent avec le décodage intégral sans
+  erreur, sans s'y substituer.
+- Le q4 cfg 1 présente notamment un **flare vert marqué**. Les runs cfg 6 sont plus contrastés et
+  saturés, avec une ligne de pins nette. Ces différences descriptives ne constituent pas un
+  classement de qualité entre poids ou moteurs.
+- Le « mountain lake » est davantage rendu comme un **lac au pied d'un relief boisé** que comme
+  un paysage de hautes montagnes. La fidélité au prompt est donc bonne sur le sujet, la rive, les
+  pins, l'eau et la lumière, mais seulement partielle sur le relief montagneux.
+
+### Limite du verdict
+
+Cette inspection est une lecture **d'images extraites**, pas une lecture vidéo native : elle ne
+démontre pas le « cinematic slow camera drift » et ne certifie pas la fluidité du mouvement.
+Le verdict temporel est borné à **« aucune rupture visible sur les images inspectées »**. Le
+critère 2 est ainsi couvert par une observation directe et falsifiable des artefacts réels, sans
+transformer cette inspection en benchmark de qualité ou en preuve de parité sémantique : un seul
+prompt, deux secondes et des seeds TensorSharp non contrôlées ne permettraient pas ce dernier
+saut.
