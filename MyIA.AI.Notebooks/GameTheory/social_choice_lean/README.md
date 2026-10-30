@@ -7,7 +7,8 @@
 > (FR canonique + miroirs `_en.lean` Pattern A [#4980](https://github.com/jsboige/CoursIA/issues/4980)),
 > qui est désormais le home canonique (`@[default_target] lean_lib SocialChoice` dans le lakefile de
 > `game_theory_lean`). La certification no-sorry et le build Lake y sont repris via
-> `.github/workflows/lean-social-choice.yml`.
+> `.github/workflows/lean-ci-matrix.yml` (le wrapper `lean-social-choice.yml` a été absorbé dans
+> la matrice par #17374).
 >
 > **Ce répertoire n'est plus un lake.** La coquille technique (`lakefile.lean`, `lean-toolchain`,
 > `lake-manifest.json`) a été retirée (follow-up #4365) : elle faisait passer le dossier pour un lake
@@ -166,7 +167,7 @@ au-delà du choix social pur vers la **théorie des mécanismes** (incitations e
 social_choice_lean/                     (tombstone documentaire — plus un lake)
 ├── README.md                          # Documentation historique (cette tombstone)
 ├── STATUS.md                          # Statut (historique, figé à l'absorption)
-├── NOTICE.md                          # Licence MIT (DominikPeters)
+├── NOTICE.md                          # Provenance et état de licence des sources amont
 ├── LEAN_PREREQUISITES.md              # Prérequis pédagogiques Lean 4 / Mathlib
 │
 │   ── retiré (follow-up #4365) : lakefile.lean, lean-toolchain, lake-manifest.json ──
@@ -213,9 +214,9 @@ Le paradoxe de Sen (`Sen.lean`) utilise `is_decisive_over` comme décisivité **
 | Median Voter | Black (1948), "On the Rationale of Group Decision-making" | Comptage majoritaire sur single-peaked |
 | Split Cycle | Holliday & Pacuit (2023) | Élimination des défaites dans les cycles |
 
-### Port depuis Lean 3
+### Reprise depuis Lean 3 — partielle et mesurée
 
-Ce projet est un port depuis [asouther4/lean-social-choice](https://github.com/asouther4/lean-social-choice) (Lean 3). Les adaptations principales :
+Ce répertoire n'est pas un portage intégral de [asouther4/lean-social-choice](https://github.com/asouther4/lean-social-choice) : seuls `Basic.lean` (25 noms de déclarations repris sur 29) et `Arrow.lean` (19 sur 29) sont des portages ; `Voting.lean` (4 sur 53) est une réécriture, et `Sen.lean` (0 sur 4 — le paradoxe libéral est absent de l'amont, qui porte le théorème de Sen sur la fonction de choix), `MechanismDesign.lean`, `AMD.lean` et `SortedListCounting.lean` (0 chacun) sont des ajouts CoursIA. Taux complets et règle de comptage : [NOTICE.md](NOTICE.md) (mesures du 2026-10-25). Sur la partie réellement portée, les adaptations principales :
 
 - Remplacement des `definition` Lean 3 par `def` Lean 4
 - Migration des tactiques Lean 3 vers Lean 4 (syntaxe `split_ifs`, `rcases`)

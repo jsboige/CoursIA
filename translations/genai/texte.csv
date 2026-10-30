@@ -212,19 +212,19 @@ response = client.chat.completions.create(
 
 print(""Reponse du modele :"")
 print(response.choices[0].message.content)",,,,,,,,49a4a2478636c620,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,5d2bbe0b,markdown,fr,5a8888ae52d63099,"### Interprétation du résultat
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,5d2bbe0b,markdown,fr,f7bf8a41770ebe84,"### Interprétation du résultat
 
-Le prompt « Allons enfants de la Patrie, » est le premier vers de **La Marseillaise**, l'hymne national français. Le modèle reconnaît la référence, mais ce qu'il en fait **varie d'une exécution à l'autre**. Lors d'une exécution précédente de ce carnet, il avait chanté le premier couplet et le refrain, puis proposé la suite, une traduction ou l'histoire de l'hymne. À cette exécution, il ne continue rien et demande directement ce que l'on attend de lui (voir la sortie ci-dessus). Trois points à retenir :
+Le prompt « Allons enfants de la Patrie, » est le premier vers de **La Marseillaise**, l'hymne national français. Le modèle reconnaît la référence, mais ce qu'il en fait **varie d'une exécution à l'autre**. À cette exécution, il chante la suite du premier couplet et le refrain, puis propose les autres couplets, une traduction ou l'histoire de l'hymne (voir la sortie ci-dessus). Lors d'une exécution précédente du même code, il ne continuait rien et demandait directement ce que l'on attendait de lui. Trois points à retenir :
 
 1. **Mémoire culturelle** : dans les deux cas, le modèle identifie l'hymne sans qu'on le lui nomme. Il a été entraîné sur de vastes corpus de textes et reconnaît les références culturelles célèbres.
 
 2. **Un modèle de chat n'est pas un modèle de complétion** : `gpt-5-mini` est entraîné à répondre à une demande. Un début de phrase sans consigne est une demande ambiguë, que le modèle peut compléter ou faire préciser. Les modèles de complétion (l'API `completions`, antérieure à l'API Chat) prolongent le texte par construction : ils prédisent la suite du prompt.
 
-3. **Non-déterminisme** : sans consigne ni paramètre de contrôle, deux appels identiques peuvent produire des **comportements** différents, pas seulement des formulations différentes. Pour obtenir une continuation, il faut la demander explicitement (« Continue les paroles : … »).
+3. **Non-déterminisme** : sans consigne ni paramètre de contrôle, deux appels identiques peuvent produire des **comportements** différents, pas seulement des formulations différentes. Pour obtenir une continuation à coup sûr, il faut la demander explicitement (« Continue les paroles : … »).
 
 **Paramètres utilisés** :
 - `model=""gpt-5-mini""` : Version économique et rapide du modèle GPT-5
-- Pas de limitation de tokens : Le modèle génère jusqu'à ce qu'il considère la réponse complète",,,,,,,,5a8888ae52d63099,,,,,,,,,,,,,,,
+- Pas de limitation de tokens : Le modèle génère jusqu'à ce qu'il considère la réponse complète",,,,,,,,f7bf8a41770ebe84,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,22a3d9b1,markdown,fr,ca1ffc588e2d1b61,"### Les rôles d'un message : `system`, `user`, `assistant`
 
 Cette section illustre l'importance du **rôle 'system'** dans les conversations avec les LLMs.
@@ -365,7 +365,7 @@ usage = response_ex1.usage
 details = getattr(usage, ""completion_tokens_details"", None)
 print(f""Tokens de sortie : {usage.completion_tokens} ""
       f""(dont raisonnement : {getattr(details, 'reasoning_tokens', 'n/a')})"")",,,,,,,,5165684542b9a7a1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,4e6b17ae,markdown,fr,1bda0d3487adc108,"### Analyse comparative de la tokenisation
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,27a62472,markdown,fr,1bda0d3487adc108,"### Analyse comparative de la tokenisation
 
 Les résultats ci-dessus révèlent des **différences importantes** entre les tokenizers :
 
@@ -383,7 +383,7 @@ Les résultats ci-dessus révèlent des **différences importantes** entre les t
 Sur la même phrase, `text-davinci-003` et `gpt-5-mini` peuvent produire un **nombre identique** de tokens (cf. la sortie ci-dessous : 5 tokens chacun) mais avec des **indices de vocabulaire différents** (`[5812, 910, 460, 345, 766]` vs `[18009, 2891, 665, 481, 1921]`) : chaque modèle possède son propre vocabulaire BPE. Sur des textes plus longs ou multilingues, le compte peut diverger (cf. l'exemple guidé ci-dessous).
 
 **Recommandation** : Toujours vérifier la tokenisation avant d'envoyer de longs documents pour estimer le coût réel.",,,,,,,,1bda0d3487adc108,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,f05a283e,markdown,fr,6ef1989d19d485c3,"## Notions de Base : Tokenisation
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,2ebb7faa,markdown,fr,6ef1989d19d485c3,"## Notions de Base : Tokenisation
 
 Lorsque nous envoyons un prompt à un LLM, le texte est converti en une séquence de **tokens**.  
 - Un **token** est généralement un morceau de mot, un caractère spécial ou un sous-mot.  
@@ -401,7 +401,7 @@ Lorsque nous envoyons un prompt à un LLM, le texte est converti en une séquenc
 Dans la bibliothèque `tiktoken` d'OpenAI, on peut directement encoder et décoder les tokens pour comprendre la segmentation.  
 Ci-dessous, un exemple détaillé de la façon dont la phrase « Oh say can you see » est découpée différemment selon le modèle.
 ",,,,,,,,6ef1989d19d485c3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,8c2dd909,code,fr,b24035037d469c8c,"# ============================
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,d07132b7,code,fr,b24035037d469c8c,"# ============================
 # Cellule 5 : Analyse de la Tokenisation
 # ============================
 
@@ -437,7 +437,7 @@ decoded_default = [encoder_default.decode([t]) for t in tokens_default]
 print(f""\nDecodage token par token ({DEFAULT_MODEL}) :"")
 for i, token in enumerate(decoded_default):
     print(f""Token {i}: '{token}'"")",,,,,,,,b24035037d469c8c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,f6ba785d,markdown,fr,9ae8d9e71f308453,"### Analyse des résultats de tokenisation
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,1e48e638,markdown,fr,9ae8d9e71f308453,"### Analyse des résultats de tokenisation
 
 L'exécution du code ci-dessus révèle des informations importantes sur la **tokenisation** selon les modèles :
 
@@ -467,7 +467,7 @@ encoder = tiktoken.encoding_for_model(""gpt-5-mini"")
 prompt_tokens = len(encoder.encode(""votre long prompt...""))
 cout_estimé = prompt_tokens * PRIX_PAR_TOKEN
 ```",,,,,,,,9ae8d9e71f308453,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,3ab548dc,markdown,fr,0be129ffc302ffcb,"### Exemple guidé : Comparer la tokenisation de textes multilingues
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,46721114,markdown,fr,0be129ffc302ffcb,"### Exemple guidé : Comparer la tokenisation de textes multilingues
 
 *Contribution étudiante du groupe de la PR #21012, intégrée comme exemple guidé.*
 
@@ -480,7 +480,7 @@ L'exemple reprend la phrase « L'intelligence artificielle transforme le monde �
 - **aucune conclusion n'est écrite en dur** : la langue la plus économique et la plus coûteuse sont cherchées par le code (`min`/`max` sur le ratio), l'écart en pourcent est calculé, et deux cas limites sont vérifiés par assertion — un texte vide produit 0 token, et décoder les tokens redonne exactement le texte de départ.
 
 La cellule affiche enfin le découpage token par token de chaque phrase : on y voit *où* la coupe tombe, pas seulement combien elle coûte.",,,,,,,,0be129ffc302ffcb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,43159264,code,fr,bc1bf53d9d860620,"# Exemple guide : Comparer la tokenisation de textes multilingues
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,a35c9b0f,code,fr,bc1bf53d9d860620,"# Exemple guide : Comparer la tokenisation de textes multilingues
 # Objectif : compter les tokens d'une meme phrase en francais, anglais et espagnol
 # pour voir si toutes les langues ""coutent"" le meme nombre de tokens.
 # Remarque : tiktoken decoupe le texte EN LOCAL, sur la machine.
@@ -555,7 +555,7 @@ assert len(encoder.encode("""")) == 0
 #    (le decoupage ne perd aucune information).
 assert all(encoder.decode(encoder.encode(t)) == t for t in phrases.values())
 print(""\nCas limites OK : texte vide = 0 token, encodage/decodage sans perte"")",,,,,,,,bc1bf53d9d860620,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,788b886b,markdown,fr,b5e50a6cb58c84ef,"### Analyse du phénomène d'hallucination
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,fc9ea21e,markdown,fr,b5e50a6cb58c84ef,"### Analyse du phénomène d'hallucination
 
 Le résultat ci-dessus est très instructif sur les **limites des LLMs** :
 
@@ -573,7 +573,7 @@ Le résultat ci-dessus est très instructif sur les **limites des LLMs** :
 - **Temperature basse** : Réduire la créativité pour des tâches factuelles
 
 **Leçon importante** : Ne jamais faire confiance aveuglément aux réponses d'un LLM, surtout sur des faits historiques, médicaux, juridiques ou scientifiques. Toujours **vérifier les sources**.",,,,,,,,b5e50a6cb58c84ef,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,b352cfa1,markdown,fr,20dc31198191ecbe,"## Exemple guide : Impact de la Température — ce que ce modèle mesure
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,acd73f7a,markdown,fr,20dc31198191ecbe,"## Exemple guide : Impact de la Température — ce que ce modèle mesure
 
 La température est, sur la plupart des modèles, le curseur de créativité : basse (~0.0) =
 réponses strictes et répétables ; haute (~1.0 ou plus) = plus de diversité, au prix de la
@@ -593,7 +593,7 @@ du décodage** (même prompt, réponses différentes) et la **formulation du pro
 > servi sont deux choses distinctes — sur un modèle de la génération « reasoning »,
 > **mesurez avant de prescrire**.
 ",,,,,,,,20dc31198191ecbe,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,85650cc6,markdown,fr,9730a74d25625369,"## Exemple de Fabrication (ou ""Hallucination"")
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,79cd0809,markdown,fr,9730a74d25625369,"## Exemple de Fabrication (ou ""Hallucination"")
 
 Les modèles de langage peuvent parfois générer des informations inventées ou inexactes.  
 Pour illustrer ce phénomène, nous allons utiliser un prompt ambigu ou factuellement erroné et observer la réponse du modèle.
@@ -604,7 +604,7 @@ Pour illustrer ce phénomène, nous allons utiliser un prompt ambigu ou factuell
 
 L'objectif est d'analyser comment le modèle invente des détails ou admet son ignorance.
 ",,,,,,,,9730a74d25625369,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,0493bf98,code,fr,03d5f2b59e8ad4ea,"# ============================
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,fa7504ba,code,fr,03d5f2b59e8ad4ea,"# ============================
 # Cellule 7 : Test de Fabrication (Hallucination)
 # ============================
 
@@ -621,7 +621,7 @@ response_fabrication = client.chat.completions.create(
 
 print(""Reponse du modele :\n"")
 print(response_fabrication.choices[0].message.content)",,,,,,,,03d5f2b59e8ad4ea,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,0128076b,markdown,fr,2344e16e5d4617a7,"### Interprétation du test d'hallucination
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,90cc9610,markdown,fr,2344e16e5d4617a7,"### Interprétation du test d'hallucination
 
 L'exécution de ce code révèle un comportement typique des LLMs face à des **prompts fictionnels** :
 
@@ -642,7 +642,7 @@ L'exécution de ce code révèle un comportement typique des LLMs face à des **
 - Réduire la `temperature` pour des tâches factuelles (ex: 0.1-0.3)
 
 **Leçon clé** : Les LLMs sont excellents pour générer du texte cohérent, mais ne distinguent pas intrinsèquement le vrai du faux. La vérification humaine reste essentielle.",,,,,,,,2344e16e5d4617a7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,038d8330,markdown,fr,207de640a0eb2277,"### Exercice 3 : Detecter et corriger une hallucination
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,f6b6f896,markdown,fr,207de640a0eb2277,"### Exercice 3 : Detecter et corriger une hallucination
 
 L'exemple ci-dessus montre comment un modèle peut inventer des details plausibles. Votre mission est de créer un prompt qui demande au modèle de decrire un événement reel ET un événement fictif, puis d'identifier lequel est invente.
 
@@ -652,7 +652,7 @@ L'exemple ci-dessus montre comment un modèle peut inventer des details plausibl
 - Choisissez un événement reel peu connu (ex: ""La première transmission radio transatlantique, 1901"")
 - Inventez un événement similaire mais faux (ex: ""La première communication telephonique sous-marine, 1898"")
 - Demandez au modèle : ""Lequel de ces deux événements est invente ? Justifie.""",,,,,,,,207de640a0eb2277,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,4fd36c5b,code,fr,9b0192b2d5efcdf3,"# Exercice 3 : Detecter et corriger une hallucination
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,a2e177a3,code,fr,9b0192b2d5efcdf3,"# Exercice 3 : Detecter et corriger une hallucination
 # TODO etudiant : Creez un prompt avec 2 evenements (1 vrai, 1 faux)
 # et demandez au modele d'identifier l'imposteur
 
@@ -674,7 +674,7 @@ MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,4fd36c5b,code,fr,9b0192b2d5e
 # print(response_detect.choices[0].message.content)
 
 print(""Exercice a completer"")",,,,,,,,9b0192b2d5efcdf3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,51fae5b9,markdown,fr,303a4641d05b5db9,"## Responses API : La Nouvelle Génération (2025)
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,7afa27c6,markdown,fr,303a4641d05b5db9,"## Responses API : La Nouvelle Génération (2025)
 
 OpenAI a introduit la **Responses API** comme nouvelle approche recommandée pour interagir avec les modèles. Elle offre plusieurs avantages par rapport à Chat Completions :
 
@@ -694,7 +694,7 @@ OpenAI a introduit la **Responses API** comme nouvelle approche recommandée pou
 | Outils | Support | Support + boucle agentique |
 
 **Note** : Chat Completions reste supporté et fonctionnel. La Responses API est recommandée pour les nouveaux projets.",,,,,,,,303a4641d05b5db9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,882da348,code,fr,64e2aa3c21152926,"# ============================
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,a461ae8f,code,fr,64e2aa3c21152926,"# ============================
 # Cellule : Exemple Responses API
 # ============================
 
@@ -737,7 +737,7 @@ except Exception as e:
     print(f""Note: {type(e).__name__}: {e}"")
     print(""   La Responses API necessite un acces direct a l'API OpenAI."")
     print(""   Via OpenRouter, seule la Chat Completions API est disponible."")",,,,,,,,64e2aa3c21152926,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,6772082c,markdown,fr,cb5a4fa153478e28,"### Interprétation des résultats Responses API
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,8dd58735,markdown,fr,cb5a4fa153478e28,"### Interprétation des résultats Responses API
 
 L'exécution ci-dessus démontre les **capacités de chaînage** de la Responses API :
 
@@ -752,7 +752,7 @@ L'exécution ci-dessus démontre les **capacités de chaînage** de la Responses
 - **Traçabilité** : Chaque réponse a un ID unique pour le debugging et l'audit
 
 **Note** : Si vous voyez l'avertissement ""n'est pas disponible"", c'est que votre version d'OpenAI ou votre compte ne supporte pas encore cette API. Chat Completions reste fonctionnel pour tous les cas d'usage.",,,,,,,,cb5a4fa153478e28,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,03d41848,markdown,fr,066ece94d75bedcc,"## Conclusion de cette Introduction
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,6d92e405,markdown,fr,066ece94d75bedcc,"## Conclusion de cette Introduction
 
 Nous avons couvert les points suivants :
 - Les bases de l'IA générative et des LLMs
@@ -8263,7 +8263,7 @@ Le **prompt engineering** est l'art de formuler des instructions efficaces pour 
 | Self-refine | Avancee | Code, textes critiques, haute qualite |
 
 > **Documentation officielle** : [OpenAI Prompt Engineering Guide](https://platform.openai.com/docs/guides/prompt-engineering)",,,,,,,,34ca5e961dcf2acd,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb,7b9f43da,code,fr,a24b0b0e03b64735,"# Verification des dependances (import guards)
+MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb,7b9f43da,code,fr,e638feace13dca50,"# Verification des dependances (import guards)
 try:
     from openai import OpenAI
     openai_AVAILABLE = True
@@ -8310,12 +8310,149 @@ for _ in range(10):
         break
     current_path = current_path.parent
 if not env_loaded:
-    print(""WARNING: .env non trouve, utilisation variables environnement"")
+    print(""Aucun .env trouve : la cle vient de l'environnement ou des Secrets Colab."")
 
-# Recupere la cle d'API
-api_key = os.getenv(""OPENAI_API_KEY"")
-if not api_key:
-    raise ValueError(""Cle API introuvable. Verifie ton fichier .env."")
+# --- Un seul point de resolution de la cle ---------------------------------
+# Ordre de resolution : **par fournisseur d'abord**, puis par source dans le
+# fournisseur -- la cle OpenAI (environnement, puis Secret Colab), puis la cle
+# OpenRouter (environnement, puis Secret Colab), qui implique son adresse de
+# base et un modele ouvert sur cette cle.
+#
+# L'organe de la serie est GenAI/shared/helpers/genai_helpers.py : meme
+# contrat, memes messages d'aide. Un carnet telecharge seul dans Colab ne
+# l'a pas sous la main, donc un repli autonome reprend ce contrat ci-dessous.
+# Les deux doivent choisir le MEME fournisseur quand ils sont tous deux
+# installes : c'est l'ordre par fournisseur (et non par emplacement) qui
+# l'assure. La parite est verifiee hors reseau par
+# shared/helpers/tests/test_colab_config_contract.py.
+AIDE_CLE = """"""Aucune cle d'API n'a ete trouvee.
+
+En local (Jupyter, VS Code) :
+  1. copiez MyIA.AI.Notebooks/GenAI/.env.example en .env, dans le dossier du
+     carnet ou dans un dossier parent ;
+  2. remplacez-y la valeur de OPENAI_API_KEY par la cle fournie en cours ;
+  3. relancez la cellule.
+
+Sous Google Colab, il n'y a pas de fichier .env : utilisez les Secrets du
+carnet (icone cle dans la barre de gauche) :
+  1. ajoutez un secret nomme OPENAI_API_KEY -- ou OPENROUTER_API_KEY si la cle
+     qui vous a ete remise est une cle OpenRouter ;
+  2. basculez l'interrupteur « Acces au notebook » sur ON ;
+  3. relancez la cellule, sans redemarrer la session.
+
+Ne collez jamais une cle dans une cellule : le carnet partirait avec elle dans
+un commit, et le depot est public.""""""
+
+
+def _lire_secret_colab(nom):
+    """"""Lit un Secret de notebook Colab ; None hors Colab ou si absent.""""""
+    try:
+        from google.colab import userdata
+    except Exception:
+        return None
+    try:
+        valeur = userdata.get(nom)
+    except Exception:
+        return None
+    return valeur.strip() if isinstance(valeur, str) and valeur.strip() else None
+
+
+def _resoudre_config_autonome():
+    """"""Repli autonome du carnet seul : meme contrat que l'organe de la serie.
+
+    Appele quand l'organe n'est pas importable (carnet telecharge seul) ou
+    quand il echoue. Les valeurs par defaut sont des NOMS de modeles, jamais
+    des cles : la cle du module reste celle de l'environnement ou du Secret.
+    """"""
+    adresse_openrouter = ""https://openrouter.ai/api/v1""
+
+    def _lire(nom):
+        """"""Une cle, par fournisseur : l'environnement d'abord, puis le Secret
+        Colab. Meme ordre que `_read_key` de l'organe.""""""
+        valeur = os.getenv(nom)
+        if valeur and valeur.strip():
+            return valeur.strip(), ""env:%s"" % nom
+        valeur = _lire_secret_colab(nom)
+        if valeur:
+            return valeur, ""colab:%s"" % nom
+        return None, None
+
+    # Par fournisseur, puis par source : la cle OpenAI (env, puis Colab)
+    # avant la cle OpenRouter (env, puis Colab). Un ordre par emplacement
+    # choisirait un fournisseur different selon que l'organe soit importe.
+    cle, source = _lire(""OPENAI_API_KEY"")
+    if not cle:
+        cle, source = _lire(""OPENROUTER_API_KEY"")
+    if not cle:
+        raise ValueError(AIDE_CLE)
+    adresse = os.getenv(""OPENAI_BASE_URL"")
+    if adresse:
+        fournisseur = ""openrouter"" if ""openrouter"" in adresse.lower() else ""openai""
+    elif source.endswith(""OPENROUTER_API_KEY""):
+        adresse, fournisseur = adresse_openrouter, ""openrouter""
+    else:
+        fournisseur = ""openai""
+    if fournisseur == ""openrouter"":
+        modele = os.getenv(""OPENAI_MODEL"") or ""qwen/qwen3.8-flash""
+        raisonnement = os.getenv(""OPENAI_REASONING_MODEL"") or ""deepseek/deepseek-v4.1-flash""
+    else:
+        modele = os.getenv(""OPENAI_MODEL"") or ""gpt-5-mini""
+        raisonnement = os.getenv(""OPENAI_REASONING_MODEL"") or ""gpt-5.6-sol""
+    return {
+        ""api_key"": cle,
+        ""base_url"": adresse,
+        ""model"": modele,
+        ""reasoning_model"": raisonnement,
+        ""provider"": fournisseur,
+        ""key_source"": source,
+    }
+
+
+# L'organe de la serie d'abord : il porte deja ce contrat.
+for _base in [Path.cwd(), *Path.cwd().parents]:
+    if (_base / ""shared"" / ""helpers"" / ""genai_helpers.py"").exists():
+        if str(_base / ""shared"" / ""helpers"") not in sys.path:
+            sys.path.insert(0, str(_base / ""shared"" / ""helpers""))
+        break
+
+config = None
+organe = ""repli autonome du carnet""
+try:
+    from genai_helpers import resolve_openai_config, apply_openai_environment
+except Exception:
+    resolve_openai_config = None
+    apply_openai_environment = None
+
+if resolve_openai_config is not None:
+    try:
+        _cfg = resolve_openai_config(required=True)
+        apply_openai_environment(_cfg)
+        config = {
+            ""api_key"": _cfg.api_key,
+            ""base_url"": _cfg.base_url,
+            ""model"": _cfg.model,
+            ""reasoning_model"": _cfg.reasoning_model,
+            ""provider"": _cfg.provider,
+            ""key_source"": _cfg.key_source,
+        }
+        organe = ""genai_helpers (GenAI/shared/helpers)""
+    except Exception as exc:
+        if type(exc).__name__ == ""MissingApiKeyError"":
+            raise
+        organe = ""repli autonome du carnet (organe indisponible : %s)"" % type(exc).__name__
+
+if config is None:
+    config = _resoudre_config_autonome()
+    os.environ.setdefault(""OPENAI_API_KEY"", config[""api_key""])
+    if config[""base_url""]:
+        os.environ.setdefault(""OPENAI_BASE_URL"", config[""base_url""])
+    os.environ.setdefault(""OPENAI_MODEL"", config[""model""])
+    os.environ.setdefault(""OPENAI_REASONING_MODEL"", config[""reasoning_model""])
+
+api_key = config[""api_key""]
+print(""Configuration : %s | fournisseur : %s | source de la cle : %s""
+      % (organe, config[""provider""], config[""key_source""]))
+print(""Modele par defaut : %s"" % config[""model""])
 
 # Mode batch pour execution non-interactive (Papermill, tests automatises)
 def is_interactive():
@@ -8331,10 +8468,23 @@ def is_interactive():
         return False
 
 BATCH_MODE = os.getenv(""BATCH_MODE"", ""false"").lower() == ""true"" or not is_interactive()
-print(f""Mode: {'BATCH' if BATCH_MODE else 'INTERACTIF'}"")",,,,,,,,a24b0b0e03b64735,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb,09a87bf8,markdown,fr,61463de4c21275b6,"## Configuration de l'environnement
+print(f""Mode: {'BATCH' if BATCH_MODE else 'INTERACTIF'}"")",,,,,,,,e638feace13dca50,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb,09a87bf8,markdown,fr,c40126c390dc37e5,"## Configuration de l'environnement
 
 Avant de commencer les expérimentations, nous devons configurer l'accès à l'API OpenAI et gérer les modes d'exécution.
+
+### Où se trouve la clé ?
+
+La clé se cherche toujours au même endroit, dans cet ordre : la variable d'environnement `OPENAI_API_KEY`, puis un **Secret Colab** (`google.colab.userdata`), puis la clé `OPENROUTER_API_KEY` remise en cours — celle-ci est une clé **OpenRouter**, et le carnet bascule alors sur l'adresse OpenRouter avec un modèle ouvert (`qwen/qwen3.8-flash`).
+
+| Où vous travaillez | Comment faire |
+|---|---|
+| **Local** (Jupyter, VS Code) | copiez `MyIA.AI.Notebooks/GenAI/.env.example` en `.env` (dans le dossier du carnet ou dans un dossier parent) et remplacez `OPENAI_API_KEY` par la clé du cours |
+| **Google Colab** | pas de `.env` : icône clé → *Secrets* → ajoutez `OPENAI_API_KEY` (ou `OPENROUTER_API_KEY`), **basculez « Accès au notebook » sur ON**, puis relancez la cellule |
+
+La cellule de configuration affiche la source de la clé qu'elle a retenue (`env:…`, `colab:…`) et le fournisseur choisi — **jamais la clé elle-même**. Si aucune clé n'est trouvée, le message d'erreur donne la marche à suivre dans les deux cas.
+
+**Attention :** ne collez jamais une clé dans une cellule — le carnet partirait avec elle dans un commit, et le dépôt est public.
 
 ### Mode batch vs mode interactif
 
@@ -8343,8 +8493,8 @@ Le notebook supporte deux modes d'exécution :
 - **Mode interactif** : Pour l'apprentissage, avec saisie utilisateur et expérimentation libre
 - **Mode batch** : Pour l'exécution automatisée (Papermill, tests, CI/CD), sans interaction
 
-La détection est automatique, mais vous pouvez forcer le mode batch via la variable d'environnement `BATCH_MODE=true` dans le fichier `.env`.",,,,,,,,61463de4c21275b6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb,5abdf011,markdown,fr,2521f4630286f60f,"### Initialisation du client OpenAI
+La détection est automatique, mais vous pouvez forcer le mode batch via la variable d'environnement `BATCH_MODE=true` dans le fichier `.env`.",,,,,,,,c40126c390dc37e5,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb,5abdf011,markdown,fr,5dfe567a324507ac,"### Initialisation du client OpenAI
 
 Le client OpenAI moderne (>=1.0.0) utilise une API orientée objet :
 
@@ -8354,11 +8504,11 @@ response = client.chat.completions.create(...)
 ```
 
 **Paramètres importants** :
-- `model` : Le modèle à utiliser (gpt-5-mini, o4-mini, etc.)
+- `model` : Le modèle à utiliser (gpt-5-mini pour le chat, gpt-5.6-sol pour le raisonnement, etc.)
 - `max_tokens` : Longueur maximale de la réponse (évite les réponses trop longues et coûteuses)
 - `temperature` : Contrôle la créativité (0.0 = déterministe, 2.0 = très créatif)
 
-Par défaut, nous utilisons `gpt-5-mini` configuré dans le fichier `.env`.",,,,,,,,2521f4630286f60f,,,,,,,,,,,,,,,
+Par défaut, le carnet utilise le modèle **résolu par la configuration** : `gpt-5-mini` en local, ou un modèle ouvert (`qwen/qwen3.8-flash`) si la clé du cours est une clé OpenRouter.",,,,,,,,5dfe567a324507ac,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb,1830e31c,markdown,fr,461c2b7c41ff363d,"## Partie 1 : Zero-shot Prompting
 
 Le **zero-shot prompting** est la technique la plus directe : on pose une question sans fournir d'exemples préalables.
@@ -8371,24 +8521,28 @@ Le **zero-shot prompting** est la technique la plus directe : on pose une questi
 - Budget tokens limité
 
 Testons avec une demande simple : générer des idées de recettes végétariennes.",,,,,,,,461c2b7c41ff363d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb,ddcaa015,code,fr,159a8b833ef90673,"# ============================
+MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb,ddcaa015,code,fr,24865d35db2403a3,"# ============================
 # Cellule 3 : Client OpenAI
 # ============================
 
 import openai
 from openai import OpenAI
 
-# Charger le modèle depuis .env ou utiliser gpt-5-mini par défaut
-DEFAULT_MODEL = os.getenv(""OPENAI_MODEL"", ""gpt-5-mini"")
+# Modele par defaut : celui resolu par la configuration (variable
+# d'environnement, Secret Colab, ou cle OpenRouter du module).
+DEFAULT_MODEL = config[""model""]
 MODEL_NAME = DEFAULT_MODEL
 
-# Instanciation du client
+# Instanciation du client. base_url vaut None en local (adresse OpenAI) et
+# l'adresse OpenRouter quand la cle du module est une cle OpenRouter.
 client = OpenAI(
-    api_key=api_key,
+    api_key=config[""api_key""],
+    base_url=config[""base_url""],
 )
 
 print(""Client OpenAI initialisé avec succès !"")
-print(f""Modèle par défaut: {MODEL_NAME}"")",,,,,,,,159a8b833ef90673,,,,,,,,,,,,,,,
+print(f""Modèle par défaut: {MODEL_NAME}"")
+print(f""Fournisseur: {config['provider']}"")",,,,,,,,24865d35db2403a3,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb,94oe4gyr61r,markdown,fr,51cc4c1ef5b5b053,"Le client OpenAI étant initialisé, un correctif de compatibilité Pydantic 2.x est appliqué avant tout appel à l'API. Ce patch corrige un comportement de `model_dump()` qui provoque des erreurs dans certaines versions de la bibliothèque.",,,,,,,,51cc4c1ef5b5b053,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb,1f2da5ad,code,fr,f2b8c397f7ca2839,"# === WORKAROUND: Pydantic 2.x by_alias bug ===
 # Ce patch corrige le problème ""TypeError: argument 'by_alias': 'NoneType' object cannot be converted to 'PyBool'""
@@ -8674,9 +8828,11 @@ La cellule suivante introduit un mécanisme de **mémoire de conversation** esse
 - Tronquer les messages anciens
 - Résumer l'historique périodiquement
 - Utiliser des techniques de compression (embeddings, résumés automatiques)",,,,,,,,11fe11f8276a7155,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb,c6d2c7b0,markdown,fr,eda5a2990b0e6e4a,"## Partie 6 : Modèles de raisonnement (2025)
+MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb,c6d2c7b0,markdown,fr,d4dcfbd4698fd906,"## Partie 6 : Modèles de raisonnement (2025)
 
-Les **modèles de raisonnement** (reasoning models) comme `o4-mini` et `o1` représentent une évolution majeure des LLMs.
+Les **modèles de raisonnement** (reasoning models) comme `gpt-5.6-sol` représentent une évolution majeure des LLMs.
+
+> **Choix du modèle et fin de vie.** Un identifiant de modèle n'est pas éternel : OpenAI a retiré `o4-mini` et `o1`, et l'API répond désormais `404 model_not_found` — le modèle « reasoning » de démonstration dans ce carnet est donc `gpt-5.6-sol`. Un appel qui s'appuie sur un modèle déprécié n'échoue jamais franchement : il faut le vérifier (`GET /v1/models`) avant de l'écrire dans une démonstration.
 
 ### Différence fondamentale
 
@@ -8701,7 +8857,7 @@ Les modèles de raisonnement n'utilisent plus le rôle `system`. Le rôle `devel
 
 ### Comparaison pratique
 
-Testons le même problème avec un modèle chat (gpt-5-mini) et un modèle de raisonnement (o4-mini).",,,,,,,,eda5a2990b0e6e4a,,,,,,,,,,,,,,,
+Testons le même problème avec un modèle chat (gpt-5-mini) et un modèle de raisonnement (gpt-5.6-sol).",,,,,,,,d4dcfbd4698fd906,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb,12d1544b,code,fr,a9bedee0f375f811,"# ============================
 # Cellule 7 : Chain-of-thought
 # ============================
@@ -9158,13 +9314,13 @@ current_messages = [
 - **Court terme** : Garder tout l'historique (comme ici)
 - **Long terme** : Tronquer les messages anciens ou résumer périodiquement
 - **Tokens** : Attention au coût - chaque tour envoie TOUT l'historique à l'API",,,,,,,,0fc5707181ac7132,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb,35585119,markdown,fr,ec56443aca813f9a,"## Prompting pour Modèles de Raisonnement (2025)
+MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb,35585119,markdown,fr,d9442da71e033a79,"## Prompting pour Modèles de Raisonnement (2025)
 
-Les modèles de raisonnement (o4-mini, o1) représentent une évolution majeure. Contrairement aux modèles de chat, ils prennent le temps de ""réfléchir"" avant de répondre.
+Les modèles de raisonnement (gpt-5.6-sol) représentent une évolution majeure. Contrairement aux modèles de chat, ils prennent le temps de ""réfléchir"" avant de répondre.
 
 ### Différences clés avec les modèles chat
 
-| Aspect | Modèles Chat (gpt-5-mini) | Modèles Raisonnement (o4-mini) |
+| Aspect | Modèles Chat (gpt-5-mini) | Modèles Raisonnement (gpt-5.6-sol) |
 |--------|----------------------|-------------------------------|
 | Temps de réponse | Rapide | Plus lent (réflexion) |
 | Prompts | Détaillés, structurés | **Simples et directs** |
@@ -9182,8 +9338,8 @@ Les modèles raisonnants sont capables de :
 - Demander des clarifications si nécessaire
 
 **Éviter** : ""Analyse ce problème en détaillant chaque étape de ton raisonnement...""
-**Préférer** : ""Résous ce problème.""",,,,,,,,ec56443aca813f9a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb,fbc4a0e1,code,fr,fb50faabcfff6114,"# ============================
+**Préférer** : ""Résous ce problème.""",,,,,,,,d9442da71e033a79,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb,fbc4a0e1,code,fr,0d71e36ff90271de,"# ============================
 # Cellule : Comparaison Chat vs Reasoning
 # ============================
 
@@ -9208,12 +9364,13 @@ response_chat = client.chat.completions.create(
 print(f""Temps: {time.time() - start:.2f}s"")
 print(response_chat.choices[0].message.content[:3000] + ""..."")
 
-# Test avec o4-mini (reasoning model) - si disponible
-print(""\n=== o4-mini (Reasoning Model) ==="")
+# Test avec un modele de raisonnement vivant (serie 5.6)
+REASONING_MODEL = os.getenv(""OPENAI_REASONING_MODEL"", ""gpt-5.6-sol"")
+print(f""\n=== {REASONING_MODEL} (Reasoning Model) ==="")
 try:
     start = time.time()
     response_reason = client.chat.completions.create(
-        model=""o4-mini"",
+        model=REASONING_MODEL,
         messages=[
             {""role"": ""developer"", ""content"": ""Formatting re-enabled""},
             {""role"": ""user"", ""content"": probleme_complexe}
@@ -9223,24 +9380,26 @@ try:
     print(f""Temps: {time.time() - start:.2f}s"")
     print(response_reason.choices[0].message.content[:3000] + ""..."")
 except Exception as e:
-    print(f""o4-mini non disponible: {type(e).__name__}"")
-    print(""Les modeles de raisonnement necessitent un acces specifique."")",,,,,,,,fb50faabcfff6114,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb,629e7835,markdown,fr,3c4e05f2b6f2085e,"### Analyse des résultats : Chat vs Reasoning
+    print(f""Appel en echec sur {REASONING_MODEL} : {type(e).__name__} : {e}"")
+    print(""Le detail de l'erreur ci-dessus dit pourquoi : un modele deprecie"")
+    print(""(o4-mini, o1) renvoie 404, une cle absente renvoie 401, un quota epuise 429."")
+",,,,,,,,0d71e36ff90271de,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb,629e7835,markdown,fr,ed26bca7a8b1e8b8,"### Analyse des résultats : Chat vs Reasoning
 
 **Observations (mesurées sur cette exécution)** :
 
 1. **Temps de réponse** :
-   - Chat (gpt-5-mini) : **9,73 s**
-   - Reasoning (o4-mini) : **4,24 s**
-   - *Contrairement à l'intuition, le modèle de raisonnement est ici plus rapide — et c'est même lui qui produit la sortie la plus longue (étapes annotées rive par rive). La latence ne se lit donc pas dans la longueur de la réponse seule : la charge des serveurs et le modèle comptent aussi. Le ralentissement caractéristique des modèles de raisonnement apparaît sur des problèmes difficiles, où ils consacrent de nombreux tokens à une délibération interne — pas sur un puzzle classique déjà maîtrisé.*
+   - Chat (gpt-5-mini) : **8,06 s**
+   - Reasoning (gpt-5.6-sol, `reasoning_effort=""medium""`) : **2,16 s**
+   - *Sur ce puzzle classique, l'appel « raisonnement » a répondu plus vite que l'appel chat. La latence ne se lit donc pas dans l'étiquette du modèle : elle dépend du problème, du budget de raisonnement et de la charge des serveurs. Le surcoût typique des modèles de raisonnement se voit sur des problèmes où la délibération interne est longue, pas sur un puzzle déjà maîtrisé. Une seule exécution donne un ordre de grandeur, pas une loi.*
 
 2. **Qualité de la solution** :
-   - Chat : Solution optimale (les 7 traversées), formulation compacte (liste numérotée)
-   - Reasoning : Solution optimale également, formulation détaillée (état des rives annoté à chaque étape)
+   - Chat : solution optimale (les 7 traversées), formulation exposée — une ligne numérotée par étape, avec une justification
+   - Reasoning : solution optimale également (les 7 traversées), formulation plus compacte, étapes dont les éléments décisifs sont mis en valeur
 
-3. **Robustesse** :
-   - Chat : Peut parfois donner des solutions incorrectes sur des variantes complexes
-   - Reasoning : Vérifie sa solution avant de répondre, taux d'erreur plus faible
+3. **Ce que cette exécution ne prouve pas** :
+   - Sur une tâche aussi connue, les deux appels trouvent la solution optimale : l'écart de qualité n'est pas visible ici
+   - Un taux d'erreur plus faible pour les modèles de raisonnement supposerait une mesure répétée sur des variantes (plusieurs exécutions, comparaison des erreurs), pas une exécution unique — c'est un protocole à part entière
 
 ### Quand utiliser les modèles de raisonnement ?
 
@@ -9249,13 +9408,13 @@ MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb,629e7835,markdown,fr,3c
 - Tâches simples et courantes
 - Budget temps/coût limité
 
-**Préférer Reasoning** (o4-mini, o1) :
+**Préférer Reasoning** (gpt-5.6-sol) :
 - Mathématiques avancées
 - Problèmes de logique complexes
 - Code critique nécessitant validation
 - Analyse approfondie
 
-**Note** : Les modèles de raisonnement sont plus coûteux en tokens et en temps, mais offrent une qualité supérieure pour les tâches complexes.",,,,,,,,3c4e05f2b6f2085e,,,,,,,,,,,,,,,
+**Note** : `reasoning_effort` arbitre entre tokens de délibération et latence — `low` répond vite, `high` approfondit la réflexion. Sur une tâche dure, ce surcoût se paie en tokens et en temps ; sur une tâche déjà maîtrisée, il peut répondre plus vite que l'appel chat, comme ici.",,,,,,,,ed26bca7a8b1e8b8,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb,zesyf308uqp,markdown,fr,42d64b5f946d1c97,"***
 
 ## EXEMPLE CORRIGÉ - Prompts en Cascade pour Génération Créative
@@ -16654,7 +16813,7 @@ print(f""Contenu: {content2}"")
 
 # Vérifier les tokens
 print(f""\nTokens utilisés: {response2.usage.prompt_tokens} input / {response2.usage.completion_tokens} output"")",,,,,,,,9d4ca85b54cec06a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,c63aa632,markdown,fr,5b5f8717c6ddbaa9,"### Interprétation des Résultats
+MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,c63aa632,markdown,fr,c792d41c969e9976,"### Interprétation des Résultats
 
 **Observations importantes :**
 
@@ -16663,8 +16822,9 @@ MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,c63aa632,markdown,fr,
    accès aux échanges précédents. La réponse 2 restitue correctement les
    informations mémorisées (""Vous vous appelez Jean et vous habitez à Paris.""),
    preuve que le contexte est bien transmis entre les tours.
-3. **Consommation de tokens** : Les tokens d'entrée augmentent avec la taille de l'historique
-   (118 tokens d'entrée au second tour, d'après la sortie ci-dessus, qui inclut tout le contexte accumulé).
+3. **Consommation de tokens** : La ligne `Tokens utilisés` de la sortie ci-dessus
+   distingue les tokens d'entrée et de sortie du second appel. Comme l'entrée inclut
+   tout l'historique accumulé, sa taille augmente avec les tours de conversation.
 
 > **Note technique (issue #3571)** : `gpt-5-mini` est un modèle de raisonnement :
 > les tokens de raisonnement sont déduits de `max_completion_tokens`. Le budget
@@ -16690,7 +16850,7 @@ conversation_history.append({""rôle"": ""assistant"", ""content"": response.cho
 **Optimisation :** Pour les longues conversations, envisagez de :
 - Limiter l'historique aux N derniers échanges
 - Résumer le contexte périodiquement
-- Utiliser un système RAG pour les contextes très longs",,,,,,,,5b5f8717c6ddbaa9,,,,,,,,,,,,,,,
+- Utiliser un système RAG pour les contextes très longs",,,,,,,,c792d41c969e9976,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,0a558f7d,markdown,fr,4f9a3154aa827099,"## 2. Conversations Multi-Tours
 
 La gestion des **conversations multi-tours** avec Chat Completions repose sur :
@@ -16846,7 +17006,7 @@ t=6s    : Retry #2 → Succès ✅
 **Limites :**
 - ⚠️ Ne résout pas les erreurs permanentes (authentification, prompt invalide)
 - ⚠️ Peut augmenter la latence totale (jusqu'à 2+4+8+16+32 = 62s)",,,,,,,,1a5e4c9f1ea119b8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,cab779be,code,fr,68683af98979f6ae,"# Background Mode non disponible avec Chat Completions standard
+MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,cab779be,code,fr,b503eafdfd33b6a3,"# Background Mode non disponible avec Chat Completions standard
 # Alternative: utiliser l'API Batch d'OpenAI pour les tâches longues
 
 if not BATCH_MODE:
@@ -16872,14 +17032,24 @@ if not BATCH_MODE:
         max_completion_tokens=300
     )
     
-    print(""Réponse progressive: "", end="""", flush=True)
+    # Consommer le flux réel sans fabriquer un objet de sortie par fragment.
+    # Un aperçu court rafraîchit la même ligne ; la réponse entière est ensuite
+    # reconstituée à partir des fragments effectivement reçus de l'API.
+    print(""Réponse progressive (aperçu rafraîchi pendant la réception) :"")
+    fragments = []
     for chunk in stream:
-        if chunk.choices[0].delta.content:
-            print(chunk.choices[0].delta.content, end="""", flush=True)
-    print(""\n"")
+        texte = chunk.choices[0].delta.content
+        if texte:
+            fragments.append(texte)
+            apercu = """".join(fragments)[-60:].replace(""\n"", "" "")
+            print(f""\r{len(fragments)} fragments | {apercu}"", end="""", flush=True)
+    print()
+    reponse_stream = """".join(fragments)
+    print(""Réponse complète reconstituée :"")
+    print(reponse_stream)
 else:
     print(""[BATCH_MODE] Simulation de streaming:"")
-    print(""Réponse progressive: Les microservices offrent 3 avantages majeurs..."")",,,,,,,,68683af98979f6ae,,,,,,,,,,,,,,,
+    print(""Réponse progressive: Les microservices offrent 3 avantages majeurs..."")",,,,,,,,b503eafdfd33b6a3,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,0f1f3b15,markdown,fr,c76c6d6691c7f4e5,"### Comportement du Rate Limiter
 
 **Analyse de l'exécution :**
@@ -16942,7 +17112,7 @@ La bibliothèque **tenacity** permet d'implémenter facilement un retry automati
 - `RateLimitError` : Limite de requêtes dépassée (429)
 - `APIError` : Erreur serveur temporaire (500, 502, 503)
 - `Timeout` : Délai d'attente dépassé",,,,,,,,d0f633b75232adb7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,eeaaf1eb,markdown,fr,462eb839f23d69cd,"### Comparaison des Résultats
+MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,eeaaf1eb,markdown,fr,eb694ddd5db2cbca,"### Comparaison des Résultats
 
 **Analyse coût/bénéfice :**
 
@@ -16950,13 +17120,13 @@ Pour ces deux requêtes similaires (résumé en 3 points), observons :
 
 | Métrique | Test 1 (Python) | Test 2 (JavaScript) |
 |----------|-----------------|---------------------|
-| Tokens input | 17 | 18 |
-| Tokens output | 285 | 452 |
-| Coût | $0.000174 | $0.000274 |
+| Tokens input | lus dans la sortie du test 1 | lus dans la sortie du test 2 |
+| Tokens output | lus dans la sortie du test 1 | lus dans la sortie du test 2 |
+| Coût estimé | affiché par le test 1 | affiché par le test 2 |
 
 **Analyse des coûts :**
 - `optimized_completion` est un simple Chat Completions (pas de cache activé)
-- Le Test 2 (JavaScript) génère davantage de tokens de sortie (452 vs 285), d'où un coût légèrement supérieur
+- Les sorties des deux tests permettent de comparer leurs tokens et leurs coûts : une réponse plus longue coûte davantage, les autres paramètres restant identiques
 - Le prompt caching OpenAI nécessite un préfixe identique répété, ce qui n'est
   pas le cas ici (""Python"" vs ""JavaScript"")
 
@@ -16973,7 +17143,7 @@ resp2 = optimized_completion(""Contexte: Documentation Python. Question: Qu'est-
 **Ordres de grandeur indicatifs (non mesurés dans ce carnet) :**
 - Conversations longues : 40-60% économie
 - RAG avec contexte fixe : 60-80% économie
-- Requêtes isolées : 0% (aucun préfixe commun)",,,,,,,,462eb839f23d69cd,,,,,,,,,,,,,,,
+- Requêtes isolées : 0% (aucun préfixe commun)",,,,,,,,eb694ddd5db2cbca,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,f48d928a,code,fr,9115f631b5eb8ea7,"from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from openai import RateLimitError, APIError
 
@@ -17399,15 +17569,15 @@ print(cached_completion('Question', _fake_completion))
 print(cached_completion('Question', _fake_completion))
 print('Appels au fournisseur simulé :', len(_cache_calls))
 ",,,,,,,,e77216624f4d3c66,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,f6b48655,markdown,fr,9c8408b28339390b,"### Interprétation des Résultats d'Optimisation
+MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,f6b48655,markdown,fr,a8575f06941418d2,"### Interprétation des Résultats d'Optimisation
 
-**Observation sur l'exécution :** les deux appels (`optimized_completion`)
-produisent des coûts légèrement différents selon la longueur de la réponse
-(Test 1 : 17 input / 285 output ≈ $0.000174 ; Test 2 : 18 input / 452 out ≈ $0.000274).
-La fonction `optimized_completion` est un simple wrapper Chat Completions avec
-calcul de coût — elle **n'active pas de cache** (`store=True` n'est pas utilisé
-dans cette fonction). Le coût varie donc uniquement avec le nombre de tokens
-effectivement générés, non à cause d'un cache.
+**Observation sur l'exécution :** la section 5 ci-dessus affiche, pour chacun
+des deux appels à `optimized_completion`, les tokens d'entrée et de sortie ainsi
+que le coût estimé. Comparer ces lignes montre comment la longueur de la réponse
+influe sur le coût. La fonction `optimized_completion` est un simple wrapper
+Chat Completions avec calcul de coût — elle **n'active pas de cache**
+(`store=True` n'est pas utilisé dans cette fonction). À modèle et tarif identiques,
+la différence de coût vient donc des tokens effectivement comptabilisés.
 
 > **Note technique (issue #3571)** : `gpt-5-mini` étant un modèle de raisonnement,
 > le nombre de tokens de sortie inclut les tokens de raisonnement (déduits de
@@ -17437,7 +17607,7 @@ q2 = context + "" Question: Comment le configurer?""
 
 1. ✅ **Répéter un préfixe identique** : Le cache ne fonctionne que sur les préfixes exacts
 2. ⚠️ **Attention aux modifications** : Changer 1 mot au début du contexte invalide tout le cache
-3. ⚠️ **Durée de vie** : Le cache expire après une période d'inactivité",,,,,,,,9c8408b28339390b,,,,,,,,,,,,,,,
+3. ⚠️ **Durée de vie** : Le cache expire après une période d'inactivité",,,,,,,,a8575f06941418d2,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,592abcc5,markdown,fr,4b0f15c4ea6a3df4,"## 6. Monitoring et Logging
 
 Bonnes pratiques pour le monitoring en production :
@@ -17586,26 +17756,26 @@ def demo():
 # Démonstration autonome de la correction EX-0435.
 demo()
 ",,,,,,,,0193bc92c7fdc328,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,2b9f7577,markdown,fr,e6a7a06a76abf45c,"### Interprétation des Logs de Production
+MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,2b9f7577,markdown,fr,ec34aebc3104f767,"### Interprétation des Logs de Production
 
-**Analyse des logs générés :**
-
-```
-2026-10-16 08:07:22 | OpenAI_Production | INFO | SUCCESS | Model: gpt-5-mini | Duration: 5.20s | Tokens: 615 (in: 11, out: 604)
-2026-10-16 08:07:22 | OpenAI_Production | ERROR | FAILED | Model: gpt-invalid-model | Duration: 0.41s | Error: NotFoundError
-```
+**Analyse des logs générés :** le journal de la cellule de monitoring ci-dessus
+est la seule référence pour les horodatages, durées et comptes de tokens de cette
+exécution. Il comporte une ligne `SUCCESS` pour le modèle configuré et une ligne
+`FAILED` pour le modèle volontairement invalide.
 
 **Points clés observés :**
 
 1. **Latence** :
-   - Requête réussie : 5.20s (plus élevée qu'un modèle non-raisonnement car
-     gpt-5-mini produit d'abord un raisonnement interne avant la réponse visible)
-   - Requête échouée : 0.41s (échec rapide = bon signe, pas de timeout)
+   - La ligne `SUCCESS` donne la durée end-to-end de la requête aboutie.
+   - La ligne `FAILED` donne celle de l'échec ; comparer les deux renseigne sur
+     le coût temporel d'une erreur, sans confondre cette mesure avec un timeout.
 
 2. **Consommation de tokens** :
-   - Input : 11 tokens (prompt court)
-   - Output : 604 tokens (réponse complète, incluant les tokens de raisonnement)
-   - Total : 615 tokens ≈ $0.000364 (gpt-5-mini @ $0.15/1M input, $0.60/1M output)
+   - La ligne `SUCCESS` sépare le total, l'entrée et la sortie ; ces trois comptes
+     décrivent uniquement la requête aboutie.
+   - Le coût se calcule en appliquant séparément les tarifs d'entrée et de sortie,
+     comme le fait `optimized_completion`, plutôt qu'en figeant un montant dans
+     cette lecture.
 
 3. **Gestion d'erreur** :
    - Exception capturée et loggée (pas de crash)
@@ -17621,7 +17791,7 @@ MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,2b9f7577,markdown,fr,
 | **Coût moyen/requête** | Somme(tokens × prix) / nb_requêtes | > $0.01 |
 | **Requêtes/minute** | Count(logs) sur fenêtre 1min | > 80% de la limite |
 
-> **Production tip** : Exporter les logs vers un système centralisé (ELK, Datadog) pour analyser les tendances sur plusieurs jours et détecter les anomalies (ex: latence soudainement × 3).",,,,,,,,e6a7a06a76abf45c,,,,,,,,,,,,,,,
+> **Production tip** : Exporter les logs vers un système centralisé (ELK, Datadog) pour analyser les tendances sur plusieurs jours et détecter les anomalies (ex: latence soudainement × 3).",,,,,,,,ec34aebc3104f767,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,672a7799,markdown,fr,a10e666547aec7aa,"## 7. Patterns Avancés : Streaming et Modération
 
 ### Streaming pour UX Réactive
@@ -18727,61 +18897,131 @@ print(""\n=== Meme question, budget de 2000 jetons ==="")
 print(texte_large[:500], ""[...]"")
 print(""finish_reason :"", sans_large.choices[0].finish_reason)
 print(""Tokens de sortie :"", sans_large.usage.completion_tokens, ""| caracteres :"", len(texte_large))",,,,,,,,dc2cc21061183c3e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,eg-sys-lecture,markdown,fr,cc04d82615adced7,"### Lecture du résultat — exemple guidé (system prompt)
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,eg-sys-lecture,markdown,fr,1ac9c7e740f66fbd,"### Lecture du résultat — exemple guidé (system prompt)
 
-- **Les consignes vérifiables par le code tiennent** : 5 puces exactement (la vérification automatique affiche `OK`), sans introduction ni conclusion, avec `finish_reason : stop`. Chaque puce suit en outre un gabarit que la consigne n'imposait pas : un nom de bibliothèque, un tiret long, une description, puis un exemple entre parenthèses (`ex. groupby, merge, pivot_table`).
-- **Deux consignes ne se vérifient qu'à la lecture** : le français, respecté, et la source par puce. À cette exécution, le modèle satisfait la consigne 4 par des **exemples concrets** ; lors d'une exécution précédente du même code, il citait des **URL** de documentation. La consigne laissait le choix (« une source ou un exemple »), et le modèle ne fait pas le même choix d'un appel à l'autre. Le compteur de puces ne voit rien de tout cela : un vérificateur automatique ne couvre que ce qu'on lui a appris à compter.
-- **Sans message `system`, la réponse est trois fois plus longue** : 766 jetons et 3 371 caractères, organisés en sections numérotées qui contiennent chacune plusieurs puces, contre 249 jetons avec le message `system`. Celui-ci ne règle donc pas seulement le style : il divise ici par trois le coût de la réponse.
-- **Le piège du budget** : avec 300 jetons, l'appel sans message `system` ne renvoie **rien**. L'affichage est vide, `finish_reason` vaut `length`, et l'API compte les 300 jetons comme du raisonnement alors que `reasoning_effort=""minimal""`. Quand la réponse ne tient pas dans le budget, `gpt-5-mini` ne la tronque pas, il la perd. Le groupe, qui exécutait le carnet avec un autre modèle, obtenait au contraire une réponse coupée au milieu d'un mot. Le même paramètre n'a pas le même effet selon le modèle : vérifier `finish_reason` à chaque appel est le seul moyen de savoir si la réponse affichée est complète.",,,,,,,,cc04d82615adced7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,t01-ex1-contradiction-md,markdown,fr,212ad59b1ce76aec,"### Exercice 1 : Le system prompt face à un utilisateur qui le contredit
+- **Les consignes vérifiables par le code tiennent** : 5 puces exactement (la vérification automatique affiche `OK`), sans introduction ni conclusion, avec `finish_reason : stop`. Chaque puce suit en outre un gabarit que la consigne n'imposait pas : une description, puis ses sources entre parenthèses (`voir documentation NumPy/pandas: https://numpy.org, ...`).
+- **Deux consignes ne se vérifient qu'à la lecture** : le français, respecté, et la source par puce. À cette exécution, le modèle satisfait la consigne 4 par des **URL** de documentation ; lors d'une exécution précédente du même code, il donnait des **exemples concrets** (`ex. groupby, merge, pivot_table`). La consigne laissait le choix (« une source ou un exemple »), et le modèle ne fait pas le même choix d'un appel à l'autre. Le compteur de puces ne voit rien de tout cela : un vérificateur automatique ne couvre que ce qu'on lui a appris à compter.
+- **Sans message `system`, la réponse est environ 2,6 fois plus longue** : 729 jetons et 3 246 caractères, organisés en sections numérotées qui contiennent chacune plusieurs puces, contre 282 jetons avec le message `system`. Celui-ci ne règle donc pas seulement le style : il divise ici par plus de deux et demi le coût de la réponse.
+- **Le piège du budget** : avec 300 jetons, l'appel sans message `system` ne renvoie **rien**. L'affichage est vide, `finish_reason` vaut `length`, et l'API compte les 300 jetons comme du raisonnement alors que `reasoning_effort=""minimal""`. Quand la réponse ne tient pas dans le budget, `gpt-5-mini` ne la tronque pas, il la perd. Le groupe, qui exécutait le carnet avec un autre modèle, obtenait au contraire une réponse coupée au milieu d'un mot. Le même paramètre n'a pas le même effet selon le modèle : vérifier `finish_reason` à chaque appel est le seul moyen de savoir si la réponse affichée est complète.",,,,,,,,1ac9c7e740f66fbd,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,t01-ex1-contradiction-md,markdown,fr,c50876a4e2fde03a,"### Exemple guidé : Le system prompt face à un utilisateur qui le contredit
 
-L'exemple guidé vérifie les consignes du message `system` sur une question **coopérative**. Un assistant déployé reçoit aussi des messages qui demandent le contraire : une réponse en anglais, un paragraphe rédigé, dix points au lieu de cinq. Quand les messages `system` et `user` se contredisent, lequel l'emporte, et pour quelle consigne ?
+*Contribution étudiante de bangui-bangui (PR #22578), intégrée comme exemple guidé.*
 
-**Objectif** : mesurer, consigne par consigne, ce qui résiste quand l'utilisateur demande l'inverse.
+L'exemple guidé précédent vérifie les consignes du message `system` sur une question **coopérative**. Un assistant déployé reçoit aussi des messages qui demandent le contraire : une réponse en anglais, un paragraphe rédigé, dix points au lieu de cinq. Quand les messages `system` et `user` se contredisent, lequel l'emporte, et pour quelle consigne ?
 
-**Étapes** :
-1. Réutiliser `system_prompt` de l'exemple guidé, sans le modifier.
-2. Écrire `verifier(reponse)`, qui renvoie trois booléens : `puces` (toutes les lignes non vides sont des puces), `max_5` (au plus 5 puces) et `francais` (la réponse est en français).
-3. Envoyer chacun des trois messages de `messages_contradictoires` `N_ESSAIS = 3` fois, avec le même `system_prompt`.
-4. Afficher un tableau : une ligne par message, une colonne par consigne, et dans chaque case le nombre de réponses conformes sur 3.
+L'exemple mesure, consigne par consigne, ce qui résiste quand l'utilisateur demande l'inverse. Il réutilise `system_prompt` sans le modifier et envoie chacun des trois messages de `messages_contradictoires` trois fois (9 appels). Quatre choix de code le portent :
 
-**Indices** :
-- Le comptage des puces de l'exemple guidé se réutilise tel quel ; une ligne numérotée (`1.`) n'est pas une puce.
-- Pour la langue, compter quelques mots-outils (` le `, ` les `, ` est `, contre ` the `, ` is `, ` and `) suffit. L'heuristique est approximative : relire au moins une réponse à la main pour la valider.
-- Garder `max_completion_tokens=1000` et `reasoning_effort=""minimal""`, comme dans l'exemple guidé. Une réponse qui dépasse le budget revient **vide** (`finish_reason` égal à `""length""`) : ce n'est ni un respect ni une violation des consignes, c'est une mesure perdue, à compter à part.
+- **le vérificateur est testé avant toute dépense** : `verifier(reponse)` renvoie trois booléens (`puces`, `max_5`, `francais`), et trois assertions sur des réponses écrites à la main le valident avant le premier appel API ;
+- **la définition d'une puce est précise** : le motif `^\s*(?:[-•]|\*(?!\*))\s+` accepte `-`, `•` et `*`, mais refuse le gras Markdown (`**Titre**`) et les lignes numérotées (`1.`) ;
+- **la langue se juge par mots-outils** : une réponse compte comme française si elle contient plus de mots-outils français (`le`, `les`, `est`…) qu'anglais (`the`, `is`, `and`…). L'heuristique est approximative, et l'extrait imprimé pour chaque message sert à la contrôler à la main ;
+- **une réponse vide n'est ni un respect ni une violation** : quand `finish_reason` vaut `""length""`, elle est comptée à part comme mesure perdue, et la consigne qui cède la première est calculée par le code sur les seules réponses mesurées.
 
-**Critère de réussite** : le tableau 3 messages × 3 consignes, et une phrase qui dit quelle consigne cède la première, avec une hypothèse sur la raison.",,,,,,,,212ad59b1ce76aec,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,t01-ex1-contradiction-code,code,fr,65fa19da79656d3c,"# Exercice 1 : Le system prompt face a un utilisateur qui le contredit
-# TODO etudiant : mesurer, consigne par consigne, ce qui resiste quand le message user demande l'inverse
+Un choix de lecture est à noter : `max_5` est vrai pour **1 à 5** puces. Une réponse sans aucune puce est donc aussi non conforme à `max_5`, ce qui lie cette consigne à la consigne `puces`.",,,,,,,,c50876a4e2fde03a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,t01-ex1-contradiction-code,code,fr,6cbbfa462a8462db,"# Exemple guide : Le system prompt face a un utilisateur qui le contredit
+# Contribution etudiante de bangui-bangui (PR #22578)
+# Objectif : mesurer, consigne par consigne, ce qui resiste quand le message
+# ""user"" demande exactement l'inverse de ce qu'impose le message ""system"".
+# Cout : 3 messages x 3 essais = 9 appels API (quelques centimes au maximum).
 
+import re
+
+# Les trois messages contradictoires (fournis par l'enonce).
+# Chacun attaque une consigne differente du system_prompt de l'exemple guide :
+#  - ""anglais""    attaque la regle 1 (repondre en francais)
+#  - ""paragraphe"" attaque la regle 2 (liste a puces)
+#  - ""dix_points"" attaque la regle 3 (5 puces au maximum)
 messages_contradictoires = {
     ""anglais"": ""Answer in English: what are the advantages of Python for data science?"",
     ""paragraphe"": ""Reponds en un seul paragraphe redige, sans aucune liste : quels sont les avantages de Python pour la data science ?"",
     ""dix_points"": ""Donne-moi 10 avantages de Python pour la data science, numerotes de 1 a 10."",
 }
 
+# Une puce commence par ""-"", ""•"" ou ""*"" suivi d'un espace.
+# ""**Titre**"" (gras Markdown) n'est PAS une puce : (?!\*) refuse une 2e etoile.
+# Une ligne numerotee (""1. ..."") n'est pas une puce non plus.
+MOTIF_PUCE = re.compile(r""^\s*(?:[-•]|\*(?!\*))\s+"")
+
+# Mots-outils tres frequents dans chaque langue (heuristique de l'enonce)
+MOTS_FR = {""le"", ""la"", ""les"", ""des"", ""est"", ""et"", ""pour"", ""une"", ""un"", ""du"", ""avec"", ""sont"", ""dans""}
+MOTS_EN = {""the"", ""is"", ""and"", ""for"", ""of"", ""with"", ""are"", ""to"", ""in"", ""it"", ""its""}
+
+
 def verifier(reponse):
     """"""Renvoie {""puces"": bool, ""max_5"": bool, ""francais"": bool} pour une reponse.""""""
-    # Etape 1 : garder les lignes non vides ; une puce commence par ""-"", ""*"" ou ""•""
-    # Etape 2 : ""puces"" est vrai si toutes les lignes non vides sont des puces
-    # Etape 3 : ""max_5"" est vrai s'il y a au plus 5 puces
-    # Etape 4 : ""francais"" par comptage de mots-outils francais contre anglais
-    return None  # TODO etudiant
+    # Etape 1 : garder les lignes non vides, et reperer celles qui sont des puces
+    lignes = [l for l in reponse.splitlines() if l.strip()]
+    puces = [l for l in lignes if MOTIF_PUCE.match(l)]
+    # Etape 2 : ""puces"" est vrai si TOUTES les lignes non vides sont des puces
+    tout_en_puces = len(lignes) > 0 and len(puces) == len(lignes)
+    # Etape 3 : ""max_5"" est vrai s'il y a entre 1 et 5 puces
+    au_plus_5 = 0 < len(puces) <= 5
+    # Etape 4 : ""francais"" si plus de mots-outils francais qu'anglais
+    mots = re.findall(r""[a-zàâçéèêëîïôûùüÿœ']+"", reponse.lower())
+    n_fr = sum(m in MOTS_FR for m in mots)
+    n_en = sum(m in MOTS_EN for m in mots)
+    return {""puces"": tout_en_puces, ""max_5"": au_plus_5, ""francais"": n_fr > n_en}
 
+
+# Test de verifier() sur 3 reponses ecrites a la main, AVANT de depenser des appels
+assert verifier(""- NumPy est rapide\n- pandas pour les tableaux"") == {""puces"": True, ""max_5"": True, ""francais"": True}
+assert verifier(""Python is great for data science and it is easy to learn."") == {""puces"": False, ""max_5"": False, ""francais"": False}
+assert verifier(""**Avantages**\n1. La syntaxe est simple\n2. Les bibliotheques"") == {""puces"": False, ""max_5"": False, ""francais"": True}
+print(""Tests de verifier() OK (3 cas ecrits a la main)\n"")
+
+# Etape 5 : pour chaque message, N_ESSAIS appels avec le MEME system_prompt
 N_ESSAIS = 3
-resultats = {}  # TODO etudiant : {nom_du_message: {consigne: nombre de reponses conformes sur N_ESSAIS}}
+CONSIGNES = [""puces"", ""max_5"", ""francais""]
+resultats = {nom: {c: 0 for c in CONSIGNES} for nom in messages_contradictoires}  # conformes sur N_ESSAIS
+perdues = {nom: 0 for nom in messages_contradictoires}   # reponses vides (finish_reason ""length"")
+exemples = {}                                              # une reponse par message, a relire
 
-# Etape 5 : pour chaque message, N_ESSAIS appels avec system_prompt, puis verifier(reponse)
-# Etape 6 : afficher le tableau message x consigne, et les finish_reason ""length""
+for nom, message_user in messages_contradictoires.items():
+    for essai in range(N_ESSAIS):
+        r = client.chat.completions.create(
+            messages=[
+                {""role"": ""system"", ""content"": system_prompt},   # system_prompt de l'exemple guide, non modifie
+                {""role"": ""user"", ""content"": message_user},
+            ],
+            model=DEFAULT_MODEL,
+            max_completion_tokens=1000,      # meme budget que l'exemple guide
+            reasoning_effort=""minimal"",      # laisse le budget a la reponse visible
+        )
+        texte = r.choices[0].message.content or """"
+        # Reponse vide (budget epuise) : ni respect ni violation -> mesure perdue
+        if not texte.strip():
+            perdues[nom] += 1
+            continue
+        exemples.setdefault(nom, texte)
+        for consigne, ok in verifier(texte).items():
+            resultats[nom][consigne] += int(ok)
 
-print(""Exercice a completer"")",,,,,,,,65fa19da79656d3c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,e9371ef8,markdown,fr,1afaff560061b9f3,"### Lecture du résultat — exemple guidé (tokenisation multilingue)
+# Etape 6 : tableau message x consigne, plus les mesures perdues
+print(f""{'Message':<11} | {'puces':>5} | {'max_5':>5} | {'francais':>8} | {'perdues':>7}"")
+print(""-"" * 49)
+for nom in messages_contradictoires:
+    v = resultats[nom]
+    print(f""{nom:<11} | {v['puces']:>3}/{N_ESSAIS} | {v['max_5']:>3}/{N_ESSAIS} | ""
+          f""{v['francais']:>6}/{N_ESSAIS} | {perdues[nom]:>7}"")
+
+# Conclusion calculee : la consigne la moins respectee sur l'ensemble des essais
+total = {c: sum(resultats[n][c] for n in messages_contradictoires) for c in CONSIGNES}
+mesures = N_ESSAIS * len(messages_contradictoires) - sum(perdues.values())
+plus_fragile = min(total, key=total.get)
+print(f""\nConformite globale sur {mesures} reponses mesurees : ""
+      + "", "".join(f""{c} {total[c]}/{mesures}"" for c in CONSIGNES))
+print(f""Consigne qui cede la premiere : {plus_fragile}"")
+
+# Relecture humaine (l'heuristique de langue est approximative)
+print(""\nDebut d'une reponse par message, a relire a la main :"")
+for nom, texte in exemples.items():
+    print(f""--- {nom} ---\n{texte[:250]}...\n"")",,,,,,,,6cbbfa462a8462db,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,b7a984d3,markdown,fr,1afaff560061b9f3,"### Lecture du résultat — exemple guidé (tokenisation multilingue)
 
 - **La même idée ne coûte pas le même prix selon la langue** : l'anglais donne 6 tokens pour 6 mots (1,00 token/mot), l'espagnol 8 pour 7 (1,14), le français 8 pour 5 (1,60). Rapporté au mot, le français coûte ici 60 % de tokens de plus que l'anglais — un écart calculé par le code, pas écrit à la main.
 - **Le ratio, pas le compte brut** : le français et l'espagnol totalisent autant de tokens (8), mais l'espagnol les répartit sur 7 mots et le français sur 5. Le compte brut les dirait ex æquo ; le ratio les départage. Normaliser par mot est ce qui rend la comparaison équitable.
 - **Où la coupe tombe** : le découpage détaillé montre la cause de l'écart. En anglais, chaque mot est un token unique (`' intelligence'`, `' transforming'`). En français, « L'intelligence » éclate en `L` + `'int` + `elligence` — l'apostrophe coupe le mot en plein milieu — et « artificielle » en `' artific'` + `'ielle'`. En espagnol, « inteligencia » reste entière, mais « transformando » se coupe en `' transform'` + `'ando'` : chaque langue paie ses mots rares au token près.
 - **Le tokeniseur est exact, pas approximatif** : les deux assertions de fin de cellule passent. Un texte vide produit 0 token ; décoder la séquence de tokens redonne la phrase au caractère près. La tokenisation est un découpage **réversible** : elle ne perd aucune information, elle en change seulement le prix.",,,,,,,,1afaff560061b9f3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,fa0426ef,markdown,fr,71fca70de68711a9,"### Exercice 2 : Combien coûtent les accents français ?
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,ab8eebfe,markdown,fr,71fca70de68711a9,"### Exercice 2 : Combien coûtent les accents français ?
 
 L'exemple guidé compare des **langues** ; cet exercice reste dans une seule langue et fait varier le **texte** : la même phrase française écrite trois fois — telle quelle, puis sans accents, puis sans accents ni apostrophe. Les diacritiques (`é`, `è`, `à`…) et l'apostrophe sont-ils gratuits pour le tokeniseur, ou chaque signe rare paie-t-il des tokens supplémentaires ?
 
@@ -18799,7 +19039,7 @@ L'exemple guidé compare des **langues** ; cet exercice reste dans une seule lan
 - Piège de mesure : supprimer l'apostrophe **fusionne** deux mots (`L'intelligence` → `Lintelligence`), donc le nombre de mots change. Le ratio `tokens/mot` reste-t-il comparable pour cette variante ? Répondre dans la conclusion.
 
 **Critère de réussite** : le tableau 3 versions × (tokens, mots, ratio), l'économie en pourcent calculée par le code, et une phrase de conclusion qui départage : est-ce la rareté des **lettres accentuées** ou la **découpe des mots** qui coûte le plus cher ?",,,,,,,,71fca70de68711a9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,5db5db2f,code,fr,a64ccddcc35a9335,"# Exercice 2 : Combien coutent les accents francais ?
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,71185964,code,fr,a64ccddcc35a9335,"# Exercice 2 : Combien coutent les accents francais ?
 # TODO etudiant : mesurer le cout en tokens des diacritiques et de l'apostrophe
 
 # Etape 1 : la phrase d'origine (avec accents) et ses deux variantes
@@ -18817,7 +19057,7 @@ MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,5db5db2f,code,fr,a64ccddcc35
 # Etape 4 : decoder les tokens de chaque variante et reperer ou la coupe change
 
 print(""Exercice a completer"")",,,,,,,,a64ccddcc35a9335,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,t01-temperature-mesuree,code,fr,4c0c31228c5157b0,"# ============================================================
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,b97678e3,code,fr,4c0c31228c5157b0,"# ============================================================
 # Mesure : que accepte reellement le modele sur le curseur temperature ?
 # ============================================================
 
@@ -20443,9 +20683,9 @@ print(""Exercice a completer : regle de detection choisie par le modele selon la
 MyIA.AI.Notebooks/GenAI/Texte/08_Reasoning_Models.ipynb,b8ab76a7,code,fr,d8cfd07b7b0f3965,"# Parameters
 BATCH_MODE = ""true""
 ",,,,,,,,d8cfd07b7b0f3965,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,c503d2bb,code,fr,d8cfd07b7b0f3965,"# Parameters
-BATCH_MODE = ""true""
-",,,,,,,,d8cfd07b7b0f3965,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,c503d2bb,code,fr,74eb8fe1a10de768,"# Parameters
+BATCH_MODE = ""false""
+",,,,,,,,74eb8fe1a10de768,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,ex1bis-md,markdown,fr,ad8170224631a584,"### Exercice 1bis - Réessais sélectifs : ne retenter que le transitoire
 
 L'exemple guidé 1 retente **toutes** les exceptions — sa propre docstring le signale comme une limite de production. En pratique, un `ValueError` de validation ne se corrige pas en attendant : le retenter facture des appels pour rien.
@@ -21495,3 +21735,325 @@ MyIA.AI.Notebooks/GenAI/Texte/21_LoRA_FineTuning.ipynb,6c4075f1-945a-4d16-a568-0
 ",,,,,,,,0bdc48b193e4d43d,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/21_LoRA_FineTuning.ipynb,6276fb4f-0e92-408b-873f-a832d5db9e53,markdown,fr,cf67264c37c2aad8,"La comparaison avant/après montre que le modèle LoRA produit des reponses structurees au format balise demande. Alors que le modèle de base generait du HTML non structure, le modèle adapte par LoRA respecte le format ⟦T⟧terme⟦/T⟧⟦D⟧definition⟦/D⟧⟦E⟧exemple⟦/E⟧. Par exemple, pour Sharpe ratio, la reponse LoRA est entierement dans le format cible.
 ",,,,,,,,cf67264c37c2aad8,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,d85f13d1,markdown,fr,060c836cd1bf9851,"### Lecture du résultat — exemple guidé (system prompt contredit)
+
+- **Avec `gpt-5-mini`, la forme tient et c'est le nombre qui cède** : les puces et le français sont respectés sur les 9 réponses, y compris quand l'utilisateur demande un paragraphe ou une réponse en anglais. La consigne qui cède est `max_5` : sur les trois demandes de dix points, le modèle donne à chaque fois plus de cinq puces, une par point, numérotées « - 1. », « - 2. »… Il garde le format imposé par le message `system`, mais accorde à l'utilisateur la quantité qu'il demande.
+- **Le groupe obtenait l'inverse avec un autre modèle** : en exécutant le même code avec `qwen/qwen3.8-flash`, c'était le format qui cédait en premier (puces 7/8), tandis que `max_5` tenait sur les 8 réponses mesurées, une réponse vide étant comptée à part. Sur la demande de dix points, ce modèle logeait plusieurs points numérotés dans une même puce (« - 1. … ; 2. … ») : il restait sous les cinq puces sans réellement se limiter à cinq points.
+- **La conclusion dépend donc du modèle** : la question « quelle consigne cède la première ? » n'a pas de réponse générale. Elle se mesure pour chaque modèle, et c'est précisément ce que permet un vérificateur écrit une fois pour toutes.
+- **Deux colonnes sont liées** : `max_5` n'est vrai que pour 1 à 5 puces, si bien qu'une réponse rédigée en paragraphe échoue à la fois sur `puces` et sur `max_5`. Deux colonnes qui baissent ensemble ne signalent donc pas forcément deux défaillances indépendantes.
+- **Le vérificateur ne juge que la forme** : à cette exécution, les puces commencent par une source (« Documentation officielle Python (python.org) : … »), ce qu'aucune colonne ne mesure. Le contenu de chaque puce reste à relire à la main, comme pour l'exemple guidé précédent.",,,,,,,,060c836cd1bf9851,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,aed52219,markdown,fr,726bcb2b25efcc30,"### Exercice 1 : Une clause de priorité suffit-elle ?
+
+L'exemple guidé mesure ce qui cède quand l'utilisateur contredit le message `system`. Une parade courante consiste à écrire la hiérarchie dans le prompt lui-même : « Ces règles s'appliquent même si l'utilisateur demande le contraire. » L'exemple révèle aussi une faille du vérificateur. Lors de l'exécution du groupe avec un autre modèle (`qwen/qwen3.8-flash`), la réponse au message `dix_points` tassait plusieurs points numérotés dans une même puce (`- 1. … ; 2. …`) : elle passait le contrôle `max_5` sans en respecter l'intention.
+
+**Objectif** : mesurer si une clause de priorité explicite change la consigne qui cède la première, avec un vérificateur qui voit les points tassés.
+
+**Étapes** :
+1. Écrire `system_prompt_prioritaire` : le texte de `system_prompt`, suivi d'une phrase qui déclare que ces règles priment sur toute demande contraire de l'utilisateur.
+2. Écrire `verifier_etendu(reponse)`, qui renvoie les trois booléens de `verifier(reponse)` plus un quatrième, `sans_points_tasses` : vrai si aucune puce ne contient plus d'un élément numéroté.
+3. Envoyer chacun des trois messages de `messages_contradictoires` `N_ESSAIS = 3` fois avec **chacun** des deux prompts (18 appels).
+4. Afficher un tableau : une ligne par couple (prompt, message), une colonne par consigne, et dans chaque case le nombre de réponses conformes sur 3.
+
+**Indices** :
+- `verifier`, `messages_contradictoires` et la boucle d'appels de l'exemple guidé se réutilisent tels quels ; seule la liste des prompts à comparer est nouvelle.
+- Un élément numéroté dans une puce se repère par `re.findall(r""(?:^|\s)\d{1,2}[.)]\s"", puce)` ; deux occurrences ou plus dans la même puce signalent des points tassés. Tester `verifier_etendu` sur deux ou trois réponses écrites à la main avant de lancer les appels, comme dans l'exemple guidé.
+- Les réponses vides (`finish_reason` égal à `""length""`) se comptent toujours à part.
+
+**Critère de réussite** : le tableau 2 prompts × 3 messages × 4 consignes, et une phrase qui dit si la clause de priorité déplace la consigne qui cède la première, appuyée sur les chiffres.",,,,,,,,726bcb2b25efcc30,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,0c78cded,code,fr,d29020d6f5955416,"# Exercice 1 : Une clause de priorite suffit-elle ?
+# TODO etudiant : comparer system_prompt et une variante qui declare sa priorite,
+# avec un verificateur qui voit les points numerotes tasses dans une meme puce
+
+system_prompt_prioritaire = None  # TODO etudiant : system_prompt + une phrase de priorite
+
+
+def verifier_etendu(reponse):
+    """"""Renvoie les trois booleens de verifier(reponse) plus ""sans_points_tasses"".""""""
+    # Etape 1 : partir de verifier(reponse)
+    # Etape 2 : pour chaque puce, compter les elements numerotes qu'elle contient
+    # Etape 3 : ""sans_points_tasses"" est vrai si aucune puce n'en contient plus d'un
+    return None  # TODO etudiant
+
+
+prompts_a_comparer = {}  # TODO etudiant : {""original"": ..., ""prioritaire"": ...}
+resultats_ex1 = {}       # TODO etudiant : {(nom_du_prompt, nom_du_message): {consigne: conformes sur N_ESSAIS}}
+
+# Etape 4 : pour chaque prompt et chaque message, N_ESSAIS appels, puis verifier_etendu(reponse)
+# Etape 5 : afficher le tableau (prompt, message) x consigne, et les reponses vides a part
+
+print(""Exercice a completer"")",,,,,,,,d29020d6f5955416,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,ex1b-md,markdown,fr,e74ab18b35d84c75,"### Exemple guidé 1b (crédité #22362) : la même consigne, une autre plume
+
+La consigne est celle de l'exemple guidé 1 ; la solution ci-dessous vient d'un **second groupe d'étudiants**, conservée quasi verbatim — seule la première ligne est retitrée, et l'auto-test, qui vivait dans la cellule de l'exercice 2 de la livraison d'origine, est déplacé ici (écarts déclarés dans la PR d'intégration).
+
+La lecture la plus instructive est la comparaison des deux versions : même consigne, même décorateur, **deux sémantiques de `max_retries`**. Ici, `max_retries` compte les tentatives **au total** (3 par défaut = 3 appels, donc 2 attentes) ; l'exemple guidé 1 compte les **reprises après la première tentative** (3 par défaut = 4 appels, donc 3 attentes). Les deux lectures sont fidèles à l'énoncé — et ce groupe épinglera la sienne dans sa docstring, là où l'ambiguïté se niche.",,,,,,,,e74ab18b35d84c75,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,ex1b-code,code,fr,37f2b61139c9c127,"# Exemple guide 1b (credite #22362) : Retry decorateur avec logging
+# Consigne d'origine, conservee comme contexte de cette resolution guidee :
+# implementer @retry_with_log avec max_retries=3 et backoff_base=2 par defaut ;
+# intercepter les exceptions et retenter ; journaliser chaque tentative avec son
+# horodatage, son numero, le type d'exception et le delai avant l'essai suivant ;
+# retourner le resultat en cas de succes et relever la derniere exception sinon.
+# La solution complete et son auto-test suivent ce rappel de la consigne.
+
+import functools
+import time
+from datetime import datetime
+
+
+def retry_with_log(max_retries=3, backoff_base=2):
+    """"""
+    Decorateur : retente automatiquement la fonction en cas d'exception.
+    max_retries : nombre total de tentatives (defaut 3)
+    backoff_base : base du delai exponentiel (delai = backoff_base ** n_tentative
+    -> 2s, 4s, 8s... avec la base 2)
+    Log chaque tentative : timestamp, n_tentative, duree, type d'exception, delai
+    Retourne le resultat en cas de succes, leve la derniere exception si echec total
+    """"""
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            last_exception = None
+            for attempt in range(1, max_retries + 1):
+                start = time.time()
+                try:
+                    result = func(*args, **kwargs)
+                    duration = time.time() - start
+                    print(f""{datetime.now():%Y-%m-%d %H:%M:%S} | {func.__name__} | ""
+                          f""Tentative {attempt}/{max_retries} | SUCCES | ""
+                          f""Duree: {duration:.2f}s"")
+                    return result
+                except Exception as e:
+                    duration = time.time() - start
+                    last_exception = e
+                    ts = f""{datetime.now():%Y-%m-%d %H:%M:%S}""
+                    if attempt < max_retries:
+                        delay = backoff_base ** attempt
+                        print(f""{ts} | {func.__name__} | ""
+                              f""Tentative {attempt}/{max_retries} | ECHEC | ""
+                              f""Duree: {duration:.2f}s | {type(e).__name__}: {str(e)[:80]} | ""
+                              f""Nouvel essai dans {delay}s"")
+                        time.sleep(delay)
+                    else:
+                        print(f""{ts} | {func.__name__} | ""
+                              f""Tentative {attempt}/{max_retries} | ECHEC DEFINITIF | ""
+                              f""Duree: {duration:.2f}s | {type(e).__name__}: {str(e)[:80]}"")
+            raise last_exception
+        return wrapper
+    return decorator
+
+
+# Variante de test avec l'API, laissee en commentaire : sans cle OpenAI,
+# l'appel reel echouerait. L'auto-test sans API ci-dessous rejoue le decorateur
+# sur des fonctions locales.
+# @retry_with_log(max_retries=3, backoff_base=2)
+# def call_api(prompt):
+#     return safe_completion(prompt)
+#
+# resultat = call_api(""Test retry decorateur"")
+# print(resultat)
+
+
+# Auto-test local du decorateur : il n'exerce que les reprises, sans appel API.
+
+if __name__ == ""__main__"":
+    print(""--- Auto-test de l exemple guide 1b ---"")
+    calls = {""n"": 0}
+
+    @retry_with_log(max_retries=3, backoff_base=1)  # base 1 -> delais courts pour le test
+    def flaky():
+        calls[""n""] += 1
+        if calls[""n""] < 3:
+            raise ConnectionError(""erreur transitoire simulee"")
+        return ""OK""
+
+    print(""Resultat:"", flaky())
+
+    @retry_with_log(max_retries=2, backoff_base=1)
+    def always_fails():
+        raise ValueError(""erreur permanente"")
+
+    try:
+        always_fails()
+    except ValueError as e:
+        print(""Exception finale levee:"", e)
+",,,,,,,,37f2b61139c9c127,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,ex1b-lecture,markdown,fr,7621558391d3fae1,"### Lecture du résultat — exemple guidé 1b
+
+Le journal ci-dessus est celui de **cette exécution**. On y lit les deux scénarios côte à côte :
+
+- `flaky` échoue aux tentatives 1 et 2, réussit à la 3 : chaque échec affiche l'heure, le type d'exception (`ConnectionError`), la durée et le **délai annoncé avant l'essai suivant** — ici 1 s, puis 1 s (`backoff_base=1`, donc `1**n`), choisi pour ne pas ralentir le test.
+- `always_fails` échoue une première fois, réessaie 1 s plus tard, et s'arrête sur `ECHEC DEFINITIF` à la tentative 2/2 ; l'exception d'origine (`ValueError: erreur permanente`) est **relevée telle quelle** et récupérée par l'appelant : c'est bien la *dernière* exception, pas une exception générique qui masquerait sa cause.
+
+**Comparer avec l'exemple guidé 1.** Ici `flaky` réussit en exactement **3 appels** avec `max_retries=3` ; le même scénario dans l'exemple 1 aurait toléré un échec de plus, car `max_retries` y désigne les **reprises après la première tentative**. Les deux lectures de la consigne cohabitent dans ce carnet : la valeur du groupe est donc surtout dans la docstring, qui **énonce explicitement la sémantique choisie** (« nombre total de tentatives ») — c'est ce qu'un appelant lit avant de brancher son appel facturé dessus.
+
+Deux limites du groupe, conservées telles quelles dans le code et à corriger en exercice : le message de la docstring `2s, 4s, 8s` décrit un backoff `base**n` à partir de 0, alors que la boucle commence à 1 (`base**1 = 2` pour la base 2) ; et `raise last_exception` devient `raise None` (un `TypeError`) si `max_retries=0`. L'exercice **1ter** part précisément de ce cas limite : un budget de temps implique de renoncer *proprement*, y compris avant toute tentative.",,,,,,,,7621558391d3fae1,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,ex1ter-md,markdown,fr,7415278fb66f5eba,"### Exercice 1ter - Retry budgeté : renoncer à temps
+
+Le décorateur ci-dessus retente jusqu'à épuisement des tentatives, même quand la somme des délais dépasse toute attente raisonnable. Écrire `retry_with_budget(max_retries=5, budget_seconds=3)` qui :
+
+- retente avec le même backoff exponentiel, mais **renonce avant** toute tentative dont le délai annoncé ne tiendrait plus dans le budget restant (temps écoulé + délai > budget) ;
+- lève alors la dernière exception en précisant dans le message `budget épuisé après N tentatives` ;
+- ne lève jamais `None` : vérifier que `max_retries=0` lève bien l'exception de la fonction, et non un `TypeError` — le piège de la variante ci-dessus.
+
+**Indices :**
+- `# Étape 1` : repartir du squelette de `retry_with_log` (décorateur paramétré)
+- `# Étape 2` : mesurer le budget restant avec `time.monotonic()` (l'horloge murale utilisée ci-dessus peut reculer)
+- `# Étape 3` : avant chaque tentative, comparer délai annoncé et budget restant ; renoncer proprement sinon
+- `# Étape 4` : tester `max_retries=0` sur une fonction qui échoue toujours",,,,,,,,7415278fb66f5eba,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,ex1ter-code,code,fr,cc0781b2c482a169,"# Exercice 1ter - Retry budgete : renoncer a temps
+# TODO etudiant
+# Etape 1 : reproduire le squelette de retry_with_log (decorateur parametre)
+# Etape 2 : mesurer le temps restant avec time.monotonic() avant chaque tentative
+# Etape 3 : si le delai annonce ne tient plus dans le budget, arreter et lever
+#           la derniere exception avec un message explicite
+# Etape 4 : verifier que max_retries=0 leve l'exception de la fonction (pas None)
+
+import functools
+import time
+
+
+def retry_with_budget(max_retries=5, budget_seconds=3.0, backoff_base=2):
+    """"""Retente la fonction dans un budget de temps total ; renonce avant la
+    tentative dont le delai annonce ne tiendrait plus dans le budget restant.""""""
+    pass  # TODO etudiant
+
+
+# Auto-test attendu (a decommenter une fois complete) :
+# @retry_with_budget(max_retries=5, budget_seconds=3, backoff_base=2)
+# def never_succeeds():
+#     raise ConnectionError(""panne durable"")
+#
+# try:
+#     never_succeeds()
+# except ConnectionError as e:
+#     print(""Levee dans le budget:"", e)
+
+print(""Exercice a completer"")",,,,,,,,cc0781b2c482a169,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,ex2b-md,markdown,fr,d22295b4c5656085,"### Exemple guidé 2b (crédité #22362) : le même cache, une autre main
+
+Deuxième solution créditée pour la même consigne que l'exemple guidé 2, quasi verbatim. Ce groupe ajoute un **compteur de hits/misses directement dans le cache** (`stats()`), expire les entrées paresseusement au `get`, et signale chaque échange réseau par un simple `print`.
+
+Là où l'exemple guidé 2 rend la fonction de completion **injectable** (`completion_fn`) pour rester testable hors ligne, cette version appelle le `safe_completion` global du carnet — et son auto-test le stubait en **rebindant le nom global**, ce qui changerait le comportement des cellules suivantes : le stub est donc renommé et le global sauvegardé puis restauré autour des appels de test (écart déclaré).",,,,,,,,d22295b4c5656085,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,ex2b-code,code,fr,ffa1211f46fc05e9,"# Exemple guide 2b (credite #22362) : Cache simple pour prompts repetes
+# Consigne d'origine, conservee comme contexte de cette resolution guidee :
+# implementer un cache memoire optimise par SimpleCache ; stocker pour chaque cle
+# le couple (valeur, horodatage d'expiration) ; get rend la valeur presente et non
+# expiree, sinon None ; set accepte un TTL de 300 secondes par defaut ;
+# cached_completion consulte le cache avant d'appeler safe_completion, puis stocke
+# la nouvelle reponse ; la cle utilisee ici est hash(prompt).
+# La solution complete et son auto-test suivent ce rappel de la consigne.
+
+
+class SimpleCache:
+    """"""Cache memoire avec expiration (TTL) : {cle: (valeur, timestamp_expiration)}""""""
+
+    def __init__(self):
+        self._store = {}
+        self.hits = 0
+        self.misses = 0
+
+    def get(self, key):
+        """"""Retourne la valeur si presente et non expiree, sinon None.""""""
+        entry = self._store.get(key)
+        if entry is None:
+            self.misses += 1
+            return None
+        value, expiry = entry
+        if time.time() > expiry:
+            del self._store[key]  # entree expiree -> on la supprime
+            self.misses += 1
+            return None
+        self.hits += 1
+        return value
+
+    def set(self, key, value, ttl_seconds=300):
+        """"""Stocke la valeur avec un TTL (defaut : 5 minutes).""""""
+        self._store[key] = (value, time.time() + ttl_seconds)
+
+    def stats(self):
+        total = self.hits + self.misses
+        rate = (self.hits / total * 100) if total else 0
+        return {""hits"": self.hits, ""misses"": self.misses, ""hit_rate_%"": round(rate, 1)}
+
+
+cache = SimpleCache()
+
+
+def cached_completion(prompt: str, ttl_seconds: int = 300) -> str:
+    """"""Check le cache ; si miss -> appelle safe_completion -> stocke -> retourne.""""""
+    key = hash(prompt)  # suffisant pour un cache en memoire (le hash change entre sessions Python)
+    cached = cache.get(key)
+    if cached is not None:
+        print(""[CACHE HIT]"")
+        return cached
+    print(""[CACHE MISS] appel API..."")
+    result = safe_completion(prompt)  # definie plus haut dans le notebook
+    cache.set(key, result, ttl_seconds)
+    return result
+
+
+# Test (avec l'API) -- laisse en commentaire : sans cle OpenAI, l'appel reel
+# echouerait ; le bloc d'auto-test ci-dessous rejoue les deux appels avec un stub.
+# r1 = cached_completion(""Quelle est la capitale de la France?"")
+# r2 = cached_completion(""Quelle est la capitale de la France?"")  # utilise le cache
+# print(f""Cache hit? {r1 == r2}"")
+# print(cache.stats())
+
+# Auto-test local du cache. Le fournisseur simule porte un nom distinct de
+# safe_completion ; le nom global du carnet est sauvegarde puis restaure autour
+# des appels de test pour ne pas modifier les exemples suivants.
+
+if __name__ == ""__main__"":
+    print(""--- Auto-test de l exemple guide 2b ---"")
+
+    def _safe_completion_stub(prompt):  # renomme depuis safe_completion
+        return f""reponse a: {prompt}""
+
+    _api_completion = safe_completion
+    safe_completion = _safe_completion_stub
+    try:
+        r1 = cached_completion(""Quelle est la capitale de la France?"")
+        r2 = cached_completion(""Quelle est la capitale de la France?"")
+    finally:
+        safe_completion = _api_completion
+    print(""Cache hit?"", r1 == r2, cache.stats())
+
+    cache.set(""k"", ""v"", ttl_seconds=1)
+    time.sleep(1.1)
+    print(""Apres expiration:"", cache.get(""k""))
+",,,,,,,,ffa1211f46fc05e9,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,ex2b-lecture,markdown,fr,489a5812572147dc,"### Lecture du résultat — exemple guidé 2b
+
+Sorties de cette exécution : le premier appel imprime `[CACHE MISS] appel API...`, le second — **même prompt** — imprime `[CACHE HIT]` ; la vérification `r1 == r2` vaut `True` et `stats()` affiche `{'hits': 1, 'misses': 1, 'hit_rate_%': 50.0}`. Enfin, après `set(""k"", ""v"", ttl_seconds=1)` puis une attente de 1,1 s, `get(""k"")` rend `None` : l'entrée expirée a été supprimée au passage du `get`.
+
+Le taux de hit de 50 % n'est **pas** une mesure d'efficacité : c'est le compte d'un test de deux appels identiques. Ce qu'il démontre, c'est que le deuxième appel n'a **pas** déclenché de réseau (le stub local, substitué à `safe_completion` le temps du test, n'est appelé qu'une fois) et que l'expiration est réelle. Pour mesurer ce qu'un cache **économise** sur un trafic réel, voir l'exercice 2bis ci-dessus, qui fait varier la distribution des prompts.
+
+Deux différences de conception avec l'exemple guidé 2 méritent d'être nommées plutôt que choisies d'office :
+
+- **Expiration paresseuse vs horloge** : cette version utilise `time.time()` (horloge murale) pour le TTL ; l'exemple guidé 2 prend `time.monotonic()` — le seul choix qui garantisse qu'une entrée ne « dé-expire » pas si l'horloge système recule.
+- **Sentinelle `None`** : `get` rend `None` pour « absent ou expiré », et `cached_completion` traite donc une valeur `None` stockée comme un miss (elle serait re-facturée à chaque appel). Ici c'est bénin — `safe_completion` retourne une chaîne — mais la distinction *présent-avec-valeur-None* / *absent* devient nécessaire dès que le résultat mis en cache peut être `None`.
+
+Et la limite structurelle, qui fait l'objet de l'exercice **2ter** : la clé est `hash(prompt)` seul. Elle ignore le modèle, la température, le message système — tout ce qui, à prompt identique, change la réponse. Un cache de production met ces paramètres **dans la clé**.
+",,,,,,,,489a5812572147dc,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,ex2ter-md,markdown,fr,08947245a4fc61dd,"### Exercice 2ter - Faire échouer le cache
+
+Le cache ci-dessus semble inoffensif : il ne fait que répondre plus vite. Lui faire servir une **mauvaise réponse** :
+
+1. **Clé amnésique** : `cached_completion` ne connaît que le prompt. Écrire une `cached_completion_v2(prompt, model)` naïve (même clé de cache), l'appeler avec le même prompt et deux « modèles » simulés par deux stubs qui répondent différemment — montrer la mauvaise réponse servie depuis le cache.
+2. **Collision** : remplacer la clé par les 8 premiers caractères du prompt (`key = prompt[:8]`), puis construire deux prompts distincts qui entrent en collision — montrer la réponse de l'un servie à l'autre.
+3. **Réparation** : clé composite `(prompt, model)` — et mesure : taux de hit avant/après, que perd-on à compter plus fin ?
+
+**Indices :**
+- `# Étape 1` : pour les stubs, s'inspirer du save/restore de l'exemple guidé 2b
+- `# Étape 2` : la clé amnésique se démontre en deux appels, la collision en trois
+- `# Étape 3` : réutiliser `cache.stats()` pour chiffrer ce que la clé composite coûte
+- `# Étape 4` : conclure — quelles clés un cache de production doit-elle porter ?",,,,,,,,08947245a4fc61dd,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,ex2ter-code,code,fr,186d571fe8918375,"# Exercice 2ter - Faire echouer le cache
+# TODO etudiant
+# Etape 1 : ecrire cached_completion_v2 naif (cle = hash du prompt seul) et deux
+#           stubs de completion qui repondent differemment
+# Etape 2 : montrer la mauvaise reponse servie (meme prompt, modeles differents)
+# Etape 3 : construire une collision sur une cle faible (prompt[:8]) et la montrer
+# Etape 4 : reparer avec une cle composite (prompt, model) et comparer cache.stats()
+
+print(""Exercice a completer"")",,,,,,,,186d571fe8918375,,,,,,,,,,,,,,,

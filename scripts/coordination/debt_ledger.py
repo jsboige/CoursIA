@@ -478,6 +478,9 @@ def digest_of(payload: Any) -> str:
     return hashlib.sha256(canonical_json(payload).encode("utf-8")).hexdigest()
 
 
+_OBSERVATION_DIGEST_ID_RE = re.compile(r"^obs-[0-9a-f]{16}$")
+
+
 def observation_id_for(observation: dict[str, Any]) -> str:
     """Content-derived stable id -- the same observation always gets the same id.
 
@@ -795,12 +798,16 @@ def parse_observation(
     ledger: str,
     *,
     defaults: dict[str, Any] | None = None,
+    warnings: list[str] | None = None,
 ) -> dict[str, Any]:
     """Validate one observation envelope and return its canonical form.
 
     ``defaults`` supplies the fields a journal message carries outside the
     envelope (``actor`` from the message author, ``observed_at`` from its
     timestamp, ``message_id`` from its id) and the baseline header defaults.
+    Un identifiant manuscrit est re-clé sur l'empreinte du contenu ; lorsque
+    ``warnings`` est fourni, le re-cléage y est consigné au lieu de passer
+    inaperçu. Une empreinte déclarée mais différente reste refusée.
     """
     defaults = defaults or {}
     if not isinstance(raw, dict):
@@ -909,8 +916,22 @@ def parse_observation(
         if legacy is not None and declared_id == legacy:
             observation["observation_id"] = computed
             return observation
-        # Otherwise the id really does not match the content: the journal is
-        # not append-only here.
+        if not isinstance(declared_id, str) or not _OBSERVATION_DIGEST_ID_RE.fullmatch(
+            declared_id
+        ):
+            # Un libellé manuscrit ne prétend pas être une empreinte : le contenu
+            # reste vérifiable et sa nouvelle clé converge entre toutes les lanes.
+            # Conserver le re-cléage dans les avertissements évite qu'il soit muet.
+            observation["observation_id"] = computed
+            if warnings is not None:
+                warnings.append(
+                    "observation_id_rekeyed: "
+                    f"declared {declared_id!r} is not digest-shaped; "
+                    f"re-keyed to {computed!r}"
+                )
+            return observation
+        # Une empreinte bien formée mais différente accuse un autre contenu :
+        # c'est le cas de falsification que la garantie append-only refuse.
         raise ObservationError(
             "observation_id_mismatch",
             f"declared {declared_id!r} but content digests to {computed!r}",
@@ -972,6 +993,28 @@ class Record:
 #: RELEASED: terminal state -- the workload ended; the GPU is free to take.
 #: STALE: `held` past expected_end with no release; needs a follow-up observation.
 GPU_PENDING_VERDICTS: tuple[str, ...] = ("OK_TO_RUN", "NO_OBS", "HOLD", "RELEASED", "STALE")
+
+#: Verdicts rendus par la GATE elle-meme, avant toute lecture du snapshot.
+#: UNREADABLE_SPOOL : un fichier de l'outbox est illisible ; il peut porter une
+#: reservation, donc le ledger est illisible, pas libre.
+#: UNPOSTED : l'outbox porte des observations qui n'ont jamais atteint le
+#: dashboard ; un verdict reduit d'un snapshot ne voit pas ce qui n'a pas voyag.
+VERDICT_UNREADABLE_SPOOL = "UNREADABLE_SPOOL"
+VERDICT_UNPOSTED = "UNPOSTED"
+GPU_GATE_VERDICTS: tuple[str, ...] = (VERDICT_UNREADABLE_SPOOL, VERDICT_UNPOSTED)
+
+#: Code de sortie par verdict -- source unique, reprise telle quelle par le
+#: tableau de ``docs/coordination/gpu-reservation.md``. Un verdict qui refuse
+#: porte 1, un etat perime porte 2 (l'appelant decide), un verdict neutre 0.
+GPU_VERDICT_EXIT_CODES: dict[str, int] = {
+    "OK_TO_RUN": 0,
+    "NO_OBS": 0,
+    "RELEASED": 0,
+    "HOLD": 1,
+    VERDICT_UNREADABLE_SPOOL: 1,
+    VERDICT_UNPOSTED: 1,
+    "STALE": 2,
+}
 
 
 def evaluate_gpu_pending(
@@ -1322,8 +1365,17 @@ def _actor_from(value: Any) -> str | None:
     return None
 
 
-def parse_journal_export(raw: Any, ledger: str) -> tuple[dict[str, Any], list[Record], list[dict]]:
-    """Parse an export into ``(window, records, rejections)``."""
+def parse_journal_export(
+    raw: Any,
+    ledger: str,
+    *,
+    warnings: list[str] | None = None,
+) -> tuple[dict[str, Any], list[Record], list[dict]]:
+    """Parse an export into ``(window, records, rejections)``.
+
+    ``warnings`` reçoit notamment les re-cléages d'identifiants manuscrits ;
+    le tuple de retour et la politique de rejet restent inchangés.
+    """
     window_declared: dict[str, Any] = {}
     if isinstance(raw, dict):
         declared = raw.get("schema")
@@ -1409,7 +1461,9 @@ def parse_journal_export(raw: Any, ledger: str) -> tuple[dict[str, Any], list[Re
         if message_id is not None:
             defaults["message_id"] = str(message_id)
         try:
-            observation = parse_observation(parse_envelope(content), ledger, defaults=defaults)
+            observation = parse_observation(
+                parse_envelope(content), ledger, defaults=defaults, warnings=warnings
+            )
         except ObservationError as exc:
             rejections.append({"source": label, "reason": exc.reason, "detail": exc.detail})
             continue
@@ -1548,7 +1602,9 @@ def reduce_ledger(
     rejections: list[dict[str, Any]] = []
     warnings: list[str] = []
     if export is not None:
-        window, journal_records, rejections = parse_journal_export(export, ledger)
+        window, journal_records, rejections = parse_journal_export(
+            export, ledger, warnings=warnings
+        )
 
     # The baseline is a configuration input, not a journal: a misconfigured one
     # is fatal and is reported as such even when the journal is a tail.
@@ -2105,33 +2161,73 @@ def spool_path(spool_dir: Path, observation: dict[str, Any]) -> Path:
     return spool_dir / f"{observation['observation_id']}.json"
 
 
+def _read_spool_envelope(path: Path) -> tuple[dict[str, Any] | None, str | None]:
+    """Lire une enveloppe sans qu'un seul fichier bloque tout le spool.
+
+    Le couple ``(enveloppe, motif)`` contient exactement une valeur non nulle.
+    Un mauvais ``ledger`` ou un ``observation_id`` absent rend le fichier
+    illisible pour TOUS les consommateurs : il ne peut pas être compté comme
+    en attente ni publié, mais son motif reste visible via ``spool_unreadable``.
+    """
+    try:
+        observation = parse_envelope(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, ObservationError) as exc:
+        return None, str(exc)
+    ledger = observation.get("ledger")
+    if ledger not in LEDGERS:
+        return None, "missing or unknown ledger"
+    if not observation.get("observation_id"):
+        return None, "missing observation_id"
+    return observation, None
+
+
+def _scan_spool(spool_dir: Path) -> list[tuple[Path, dict[str, Any] | None, str | None]]:
+    """Le scan unique et trié partagé par les lectures du spool."""
+    if not spool_dir.exists():
+        return []
+    return [
+        (path, *_read_spool_envelope(path))
+        for path in sorted(spool_dir.glob("*.json"))
+        if not path.name.startswith(".superseded-")
+    ]
+
+
+def spool_unreadable(spool_dir: Path) -> list[dict[str, str]]:
+    """Fichiers du spool illisibles, avec leur chemin et leur motif.
+
+    Ces fichiers restent sur disque : les écarter de l'index de publication ne
+    les supprime pas et préserve la trace exigée par #22456.
+    """
+    return [
+        {"path": str(path), "reason": reason or "unknown reason"}
+        for path, _observation, reason in _scan_spool(spool_dir)
+        if reason is not None
+    ]
+
+
 def spool_status(spool_dir: Path) -> dict[str, dict[str, Any]]:
-    """Count pending envelopes by their contents, never by filename."""
+    """Compter les enveloppes lisibles, sans masquer les fichiers illisibles.
+
+    La forme de retour reste strictement ``{ledger: {pending, oldest...}}`` ;
+    ``spool_unreadable`` porte séparément le diagnostic des fichiers écartés.
+    """
     oldest: dict[str, datetime | None] = {ledger: None for ledger in LEDGERS}
     counts = dict.fromkeys(LEDGERS, 0)
-    if spool_dir.exists():
-        for path in spool_dir.glob("*.json"):
-            if path.name.startswith(".superseded-"):
-                continue
+    for path, observation, reason in _scan_spool(spool_dir):
+        if reason is not None:
+            continue
+        assert observation is not None
+        ledger = observation["ledger"]
+        try:
+            moment = parse_utc_timestamp(observation.get("observed_at"))
+        except ObservationError:
             try:
-                observation = parse_envelope(path.read_text(encoding="utf-8"))
-            except (OSError, UnicodeError, ObservationError) as exc:
-                raise LedgerError("INVALID_SPOOL", f"{path}: {exc}") from exc
-            if not isinstance(observation, dict):
-                raise LedgerError("INVALID_SPOOL", f"{path}: envelope must be a JSON object")
-            ledger = observation.get("ledger")
-            if ledger not in counts or not observation.get("observation_id"):
-                raise LedgerError("INVALID_SPOOL", f"{path}: missing ledger or observation_id")
-            try:
-                moment = parse_utc_timestamp(observation.get("observed_at"))
-            except ObservationError:
-                try:
-                    moment = datetime.fromtimestamp(path.stat().st_mtime, timezone.utc)
-                except OSError as exc:
-                    raise LedgerError("UNREADABLE_INPUT", f"{path}: {exc}") from exc
-            counts[ledger] += 1
-            if oldest[ledger] is None or moment < oldest[ledger]:
-                oldest[ledger] = moment
+                moment = datetime.fromtimestamp(path.stat().st_mtime, timezone.utc)
+            except OSError as exc:
+                raise LedgerError("UNREADABLE_INPUT", f"{path}: {exc}") from exc
+        counts[ledger] += 1
+        if oldest[ledger] is None or moment < oldest[ledger]:
+            oldest[ledger] = moment
     return {
         ledger: {
             "pending": counts[ledger],
@@ -2160,6 +2256,146 @@ def spool_observation(spool_dir: Path, observation: dict[str, Any]) -> tuple[Pat
         stream.flush()
         os.fsync(stream.fileno())
     return path, True
+
+
+def spool_pending(spool_dir: Path, *, ledger: str) -> list[dict[str, Any]]:
+    """Enveloppes lisibles de ``ledger``, de la plus ancienne à la plus récente.
+
+    ``spool_status`` répond « combien » et cette fonction « lesquelles », avec
+    le même scan et les mêmes critères. Un fichier illisible n'est pas publiable
+    et n'interrompt plus le lot ; son chemin et son motif sont rapportés par
+    ``spool_unreadable`` afin qu'aucune observation ne disparaisse sans trace.
+    """
+    pending: list[dict[str, Any]] = []
+    for path, observation, reason in _scan_spool(spool_dir):
+        if reason is not None:
+            continue
+        assert observation is not None
+        if observation["ledger"] != ledger:
+            continue
+        try:
+            moment = parse_utc_timestamp(observation.get("observed_at"))
+        except ObservationError:
+            try:
+                moment = datetime.fromtimestamp(path.stat().st_mtime, timezone.utc)
+            except OSError as exc:
+                raise LedgerError("UNREADABLE_INPUT", f"{path}: {exc}") from exc
+        pending.append({"path": path, "moment": moment, "observation": observation})
+    pending.sort(key=lambda item: (item["moment"], item["observation"]["observation_id"]))
+    return pending
+
+
+def flush_manifest(ledger: str, pending: Sequence[dict[str, Any]]) -> dict[str, Any]:
+    """The postable batch: one dashboard ``content`` per pending observation.
+
+    ``content`` is byte-identical to the spool file, so what an agent posts is
+    what the organ wrote -- no re-serialisation step where a field can drift.
+    """
+    return {
+        "ledger": ledger,
+        "workspace": LEDGER_WORKSPACES[ledger],
+        "count": len(pending),
+        "calls": [
+            {
+                "observation_id": item["observation"]["observation_id"],
+                "observed_at": format_utc(item["moment"]),
+                "content": envelope_line(item["observation"]),
+            }
+            for item in pending
+        ],
+    }
+
+
+def _index_spool(directory: Path, *, strict: bool) -> dict[str, Path]:
+    """Map observation id -> envelope file, for BOTH keying conventions.
+
+    ``flush_manifest`` publie l'``observation_id`` de l'enveloppe ; le nom du
+    fichier est une seconde convention, plus ancienne. Les deux sont indexés,
+    en donnant priorité à l'identifiant déclaré par l'enveloppe.
+
+    Le côté EN ATTENTE n'échoue plus pour un seul fichier illisible : celui-ci
+    n'est simplement pas publiable. Sa trace est préservée parce que le fichier
+    reste sur disque et que ``spool_unreadable`` rapporte son chemin et son
+    motif. ``strict=True`` conserve son refus explicite pour un appelant qui
+    demande ce mode ; ``archive_posted`` choisit ``strict=False`` des deux
+    côtés afin que l'archivage des bonnes enveloppes reste possible. Le côté
+    ARCHIVE reste tolérant comme auparavant (#22456).
+    """
+    index: dict[str, Path] = {}
+    scanned = _scan_spool(directory)
+    for path, _observation, reason in scanned:
+        if reason is None:
+            index[path.stem] = path
+    for path, observation, reason in scanned:
+        if reason is not None and strict:
+            raise LedgerError("INVALID_SPOOL", f"{path}: {reason}")
+        if reason is None:
+            assert observation is not None
+            index[str(observation["observation_id"])] = path
+    return index
+
+
+def archive_posted(spool_dir: Path, observation_ids: Sequence[str]) -> dict[str, list[str]]:
+    """Move posted envelopes out of the pending set; idempotent by id.
+
+    All-or-nothing: an unknown id refuses the whole call rather than
+    archiving half a batch, because a partially drained outbox is exactly the
+    state that makes ``check_pending`` lie.
+    """
+    posted_dir = spool_dir / "posted"
+    pending_index = _index_spool(spool_dir, strict=False)
+    posted_index = _index_spool(posted_dir, strict=False)
+    moved: list[str] = []
+    already: list[str] = []
+    missing: list[str] = []
+    plan: dict[str, Path] = {}
+    for observation_id in observation_ids:
+        source = pending_index.get(observation_id)
+        if source is not None:
+            plan.setdefault(observation_id, source)
+        elif observation_id in posted_index:
+            already.append(observation_id)
+        else:
+            missing.append(observation_id)
+    if missing:
+        raise LedgerError(
+            "UNKNOWN_OBSERVATION",
+            "no pending or posted envelope for: " + ", ".join(sorted(set(missing))),
+        )
+    for observation_id, source in plan.items():
+        posted_dir.mkdir(parents=True, exist_ok=True)
+        os.replace(source, posted_dir / source.name)
+        moved.append(observation_id)
+    return {"moved": moved, "already": already}
+
+
+_NOW_SENTINEL = re.compile(r"^now\s*(?:([+-])\s*(\d+)\s*([mh]))?$")
+
+
+def resolve_now_sentinels(fields: dict[str, Any], *, moment: datetime) -> dict[str, Any]:
+    """Resolve ``now`` / ``now+30m`` / ``now-2h`` in hold timestamps.
+
+    The 2026-10-25 skew (#22456) came from a caller formatting its own clock:
+    a local time labelled ``Z`` is well-formed, so nothing downstream can
+    detect it. The organ offers the alternative -- it writes the stamp itself
+    from an aware ``moment`` -- so no caller has a reason to format one.
+    """
+    resolved = dict(fields)
+    for name in ("started_at", "expected_end"):
+        value = resolved.get(name)
+        if not isinstance(value, str):
+            continue
+        match = _NOW_SENTINEL.match(value.strip())
+        if match is None:
+            continue
+        sign, amount, unit = match.groups()
+        delta = timedelta(0)
+        if sign is not None:
+            delta = timedelta(minutes=int(amount)) if unit == "m" else timedelta(hours=int(amount))
+            if sign == "-":
+                delta = -delta
+        resolved[name] = format_utc(moment + delta)
+    return resolved
 
 
 # ---------------------------------------------------------------------------
@@ -2400,6 +2636,9 @@ def _cli_append(args: argparse.Namespace) -> int:
             raise LedgerError(
                 "MISSING_INPUT", "append needs --observation-file, or --entity with --fields-json"
             )
+        fields = resolve_now_sentinels(
+            _loads_object(args.fields_json, where="--fields-json"), moment=utcnow()
+        )
         raw = {
             "schema": OBSERVATION_SCHEMA,
             "ledger": args.ledger,
@@ -2409,11 +2648,14 @@ def _cli_append(args: argparse.Namespace) -> int:
             "evidence": args.evidence,
             "entity": _parse_entity_argument(args.entity, args.ledger),
             "head_transition": False,
-            "fields": _loads_object(args.fields_json, where="--fields-json"),
+            "fields": fields,
         }
         if args.note:
             raw["note"] = args.note
-    observation = parse_observation(raw, args.ledger)
+    warnings: list[str] = []
+    observation = parse_observation(raw, args.ledger, warnings=warnings)
+    for warning in warnings:
+        print(f"WARNING {warning}", file=sys.stderr)
     line = envelope_line(observation)
     if args.json:
         payload = {
@@ -2508,6 +2750,11 @@ def _cli_check_pending(args: argparse.Namespace) -> int:
     Reads the latest snapshot, finds the latest observation for the entity,
     and returns the verdict the picker needs:
 
+      * UNREADABLE_SPOOL -- un fichier de l'outbox ne peut pas être lu ; la
+                            gate refuse car il pourrait porter un `held`.
+      * UNPOSTED  -- the local outbox still holds observations that never
+                     reached the dashboard; the reduced snapshot cannot be
+                     trusted until they are posted (#22456).
       * NO_OBS    -- no record; the picker skips the GPU-bound grain.
       * HOLD      -- held by another lane, or by us but outside the window.
       * OK_TO_RUN -- held by us (or matching) and now is in the run window.
@@ -2515,7 +2762,8 @@ def _cli_check_pending(args: argparse.Namespace) -> int:
       * RELEASED  -- terminal; the GPU is free to take.
 
     Exit code is 0 for OK_TO_RUN, 0 for NO_OBS (we surface a clear verdict
-    and let the caller branch), 0 for RELEASED, 1 for HOLD (the gate refuses),
+    and let the caller branch), 0 for RELEASED, 1 for HOLD, UNPOSTED ou
+    UNREADABLE_SPOOL (un état illisible n'est jamais un périphérique libre),
     2 for STALE (the caller decides whether to refresh or to hold). All exit
     codes are documented in gpu-reservation.md -- a wrapper that maps them
     to skip/hold/escalate lives one layer up.
@@ -2544,6 +2792,53 @@ def _cli_check_pending(args: argparse.Namespace) -> int:
     base = state_dir / args.ledger
     snapshot_path = Path(args.snapshot) if args.snapshot else base / "snapshots" / "snapshot.json"
 
+    if args.now is not None:
+        now = parse_utc_timestamp(args.now, where="--now")
+    else:
+        now = utcnow()
+
+    # Un fichier illisible peut porter une réservation : la gate répond un
+    # verdict explicite, nomme chaque fichier et refuse le lancement. Ce verdict
+    # précède UNPOSTED afin que le défaut à réparer ne soit pas masqué par le
+    # décompte des enveloppes saines.
+    unreadable = spool_unreadable(base / "spool")
+    if unreadable:
+        reason = "; ".join(f"{item['path']} ({item['reason']})" for item in unreadable)
+        if args.json_output:
+            print(json.dumps({
+                "verdict": VERDICT_UNREADABLE_SPOOL,
+                "reason": reason,
+                "entity": args.entity,
+                "now": format_utc(now),
+            }))
+        else:
+            print(f"{VERDICT_UNREADABLE_SPOOL}  {args.entity}  {reason}")
+        return GPU_VERDICT_EXIT_CODES[VERDICT_UNREADABLE_SPOOL]
+
+    # An observation still sitting in the local outbox never reached the
+    # ledger, so a verdict reduced from the snapshot is blind to it: the gate
+    # answers "RELEASED" with the aplomb of a measurement while a live hold
+    # waits in the spool, and two lanes launch on the same device (#22456).
+    # Name the unread state instead of answering around it.
+    spooled = spool_status(base / "spool")[args.ledger]
+    if spooled["pending"]:
+        reason = (
+            f"{spooled['pending']} observation(s) still pending in {base / 'spool'} "
+            f"(oldest {spooled['oldest_observed_at'] or 'unknown'}) -- post them "
+            "(debt_ledger.py flush) before trusting any verdict"
+        )
+        if args.json_output:
+            print(json.dumps({
+                "verdict": VERDICT_UNPOSTED,
+                "reason": reason,
+                "entity": args.entity,
+                "pending": spooled["pending"],
+                "now": format_utc(now),
+            }))
+        else:
+            print(f"{VERDICT_UNPOSTED}  {args.entity}  {reason}")
+        return GPU_VERDICT_EXIT_CODES[VERDICT_UNPOSTED]
+
     if not snapshot_path.exists():
         if args.json_output:
             print(json.dumps({
@@ -2561,11 +2856,6 @@ def _cli_check_pending(args: argparse.Namespace) -> int:
     # checkpoint records (#20077).
     records = record_views_from_snapshot(snapshot, args.ledger)
 
-    if args.now is not None:
-        now = parse_utc_timestamp(args.now, where="--now")
-    else:
-        now = utcnow()
-
     verdict, reason = evaluate_gpu_pending(records, entity, now, args.my_lane)
 
     if args.json_output:
@@ -2579,18 +2869,15 @@ def _cli_check_pending(args: argparse.Namespace) -> int:
         print(f"{verdict}  {args.entity}  {reason}")
 
     if verdict == "HOLD":
-        return 1
+        return GPU_VERDICT_EXIT_CODES["HOLD"]
     if verdict == "STALE":
-        return 2
-    return 0
+        return GPU_VERDICT_EXIT_CODES["STALE"]
+    return GPU_VERDICT_EXIT_CODES.get(verdict, 0)
 
 
 def _cli_spool_status(args: argparse.Namespace) -> int:
     if args.out_dir:
-        # Explicit --out-dir: the caller named the spool dir, so a missing dir
-        # means "nothing pending here" -- same as a fresh `--out-dir` for append,
-        # not an uninitialised state-dir. We do not refuse here.
-        status = spool_status(Path(args.out_dir))
+        spool_dirs = [Path(args.out_dir)]
     else:
         state_dir = Path(args.state_dir) if args.state_dir else default_state_dir()
         # Default path: mirror ``_cli_append`` -- a state-dir that has not run
@@ -2608,12 +2895,96 @@ def _cli_spool_status(args: argparse.Namespace) -> int:
                 "run `debt_ledger.py init --apply --state-dir <dir>` first, "
                 "or pass --out-dir explicitly to inspect an arbitrary dir",
             )
-        status = {
-            ledger: spool_status(state_dir / ledger / "spool")[ledger]
-            for ledger in LEDGERS
-        }
+        spool_dirs = [state_dir / ledger / "spool" for ledger in LEDGERS]
+    unreadable: list[dict[str, str]] = []
+    status = {ledger: {"pending": 0, "oldest_observed_at": None} for ledger in LEDGERS}
+    for spool_dir in spool_dirs:
+        unreadable.extend(spool_unreadable(spool_dir))
+        counts = spool_status(spool_dir)
+        for ledger, row in counts.items():
+            status[ledger]["pending"] += row["pending"]
+            if row["oldest_observed_at"] is not None and (
+                status[ledger]["oldest_observed_at"] is None
+                or row["oldest_observed_at"] < status[ledger]["oldest_observed_at"]
+            ):
+                status[ledger]["oldest_observed_at"] = row["oldest_observed_at"]
     for ledger, row in status.items():
         print(f"{ledger}: pending={row['pending']} oldest_observed_at={row['oldest_observed_at'] or '-'}")
+    if unreadable:
+        for item in unreadable:
+            print(f"UNREADABLE_SPOOL: {item['path']} ({item['reason']})", file=sys.stderr)
+        return 1
+    return 0
+
+
+def _manifest_ids(path: Path) -> list[str]:
+    payload = _read_json(path)
+    calls = payload.get("calls") if isinstance(payload, dict) else None
+    if not isinstance(calls, list):
+        raise LedgerError(
+            "INVALID_MANIFEST", f"{path}: expected an object carrying a 'calls' list"
+        )
+    ids: list[str] = []
+    for entry in calls:
+        if not isinstance(entry, dict) or not entry.get("observation_id"):
+            raise LedgerError(
+                "INVALID_MANIFEST", f"{path}: every call needs an observation_id"
+            )
+        ids.append(str(entry["observation_id"]))
+    return ids
+
+
+def _cli_flush(args: argparse.Namespace) -> int:
+    """Drain the local outbox towards the ledger's dashboard.
+
+    The transport is an MCP call made by an agent, not a subprocess, so this
+    command has two halves and neither is optional. Without ``--mark-posted``
+    it prints the batch to post and moves nothing (dry-run). With it, it
+    archives the ids the agent has actually posted -- which is what lets a
+    later ``check_pending`` trust the ledger again instead of reporting a
+    backlog it cannot see (#22456).
+    """
+    ledger = args.ledger
+    if args.out_dir:
+        spool_dir = Path(args.out_dir)
+    else:
+        state_dir = Path(args.state_dir) if args.state_dir else default_state_dir()
+        spool_dir = state_dir / ledger / "spool"
+    pending = spool_pending(spool_dir, ledger=ledger)
+    manifest = flush_manifest(ledger, pending)
+
+    if args.mark_posted or args.mark_posted_from:
+        ids = list(args.mark_posted or [])
+        if args.mark_posted_from:
+            ids.extend(_manifest_ids(Path(args.mark_posted_from)))
+        outcome = archive_posted(spool_dir, ids)
+        remaining = spool_status(spool_dir)[ledger]
+        if args.json:
+            print(
+                json.dumps(
+                    {**manifest, "archived": outcome, "remaining": remaining},
+                    ensure_ascii=False,
+                    indent=2,
+                )
+            )
+        else:
+            print(f"posted: moved={len(outcome['moved'])} already={len(outcome['already'])}")
+            print(
+                f"{ledger}: pending={remaining['pending']} "
+                f"oldest_observed_at={remaining['oldest_observed_at'] or '-'}"
+            )
+        return 0
+
+    if args.emit:
+        target = Path(args.emit)
+        assert_local_output(target, what="--emit")
+        _write_text_atomic(target, json.dumps(manifest, ensure_ascii=False, indent=2) + "\n")
+    if args.json:
+        print(json.dumps(manifest, ensure_ascii=False, indent=2))
+    else:
+        for call in manifest["calls"]:
+            print(f"{call['observed_at']}  {call['observation_id']}")
+        print(f"{ledger}: pending={manifest['count']} (dry-run -- nothing archived)")
     return 0
 
 
@@ -2734,6 +3105,28 @@ def build_parser() -> argparse.ArgumentParser:
     spool.add_argument("--status", action="store_true", required=True, help="count pending envelopes")
     spool.add_argument("--out-dir", help="inspect the same local spool dir used by append")
     spool.set_defaults(func=_cli_spool_status)
+
+    flush = sub.add_parser(
+        "flush",
+        parents=[common],
+        help="drain the local outbox (dry-run; --mark-posted archives what was posted)",
+    )
+    flush.add_argument("--ledger", choices=list(LEDGERS), default=GPU_RESERVATION)
+    flush.add_argument("--out-dir", help="inspect this spool dir instead of the state-dir one")
+    flush.add_argument("--emit", help="write the postable batch to this local JSON file")
+    flush.add_argument(
+        "--mark-posted",
+        nargs="+",
+        metavar="ID",
+        help="archive these observation ids, already posted on the dashboard",
+    )
+    flush.add_argument(
+        "--mark-posted-from",
+        metavar="MANIFEST",
+        help="archive every observation id of a manifest written by --emit",
+    )
+    flush.add_argument("--json", action="store_true", help="emit the manifest as JSON")
+    flush.set_defaults(func=_cli_flush)
 
     reduce_ = sub.add_parser("reduce", parents=[common], help="fold journal + checkpoint")
     reduce_.add_argument("--ledger", choices=list(LEDGERS), required=True)

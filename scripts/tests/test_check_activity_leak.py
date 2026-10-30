@@ -225,6 +225,81 @@ class TestNegativeControls(unittest.TestCase):
         v = judge_passage(0, url_ts)
         self.assertIn("iso_ts", {n for n, _, _ in v.markers})
 
+    def test_link_file_target_is_not_a_lesson_tag(self):
+        """FP mesure #23004 : tailles de reseau dans des liens de navigation.
+
+        Cellule « Pour aller plus loin » de Percolation-05 (PR #22153) : des
+        liens vers les carnets voisins de la serie. ``Percolation-03b-Critique-
+        L128-L256.ipynb`` porte L128 + L256 (4 points) et ``Percolation-03c-
+        Critique-L512.ipynb`` porte L512 (2 points) : 6 points sur 665
+        caracteres, densite 9/1000 au-dessus du seuil de 8 -- alors que le
+        passage ne contient aucune reference a un cycle de travail. C'est le
+        geste meme que la navigation d'une serie recommande.
+        """
+        para = (
+            "Pour aller plus loin : la transition vers la dimension 2 est "
+            "mesuree dans [Percolation-03b-Critique-L128-L256.ipynb]"
+            "(Percolation-03b-Critique-L128-L256.ipynb), et l'effondrement "
+            "a la plus grande taille dans [Percolation-03c-Critique-L512.ipynb]"
+            "(Percolation-03c-Critique-L512.ipynb)."
+        )
+        v = judge_passage(0, para)
+        self.assertNotIn("lesson_tag", {n for n, _, _ in v.markers})
+        self.assertFalse(v.dense)
+
+    def test_file_target_mask_scoped_to_lesson_tag(self):
+        """Calibrage #23004 : le masque fichier ne touche aucun autre marqueur.
+
+        Voie 1 de l'issue : la cible du lien est masquee pour ``lesson_tag``
+        seulement. Un marqueur de coordination present dans le MEME passage
+        continue de compter -- le masque ne doit pas blanchir du recit de
+        cycle qui cacherait ses lecons derriere un nom de fichier.
+        """
+        para = (
+            "La lane a livre la tranche, voir "
+            "Percolation-03b-Critique-L128-L256.ipynb pour le compte rendu."
+        )
+        v = judge_passage(0, para)
+        self.assertNotIn("lesson_tag", {n for n, _, _ in v.markers})
+        self.assertIn("lane", {n for n, _, _ in v.markers})
+
+    def test_file_target_mask_leaves_bare_tag(self):
+        """Controle positif du fix #23004 : la forme NUE reste comptee.
+
+        Le masque couvre les CIBLES DE LIENS, pas la prose : un « L512 » ecrit
+        hors de tout nom de fichier reste un renvoi potentiel aux lecons et
+        doit continuer de compter. Sans ce test, un elargissement accidentel
+        du masque (par exemple a tout le texte autour d'un lien) eteindrait
+        le marqueur en silence.
+        """
+        para = (
+            "Nous avons applique les lecons L512 et L721 du registre avant "
+            "de livrer cette tranche."
+        )
+        v = judge_passage(0, para)
+        self.assertIn("lesson_tag", {n for n, _, _ in v.markers})
+
+    def test_file_target_mask_is_span_local(self):
+        """Calibrage (revue Hermes du 2026-10-28) : le masque ne couvre QUE le nom.
+
+        La revue designait un risque de faux NEGATIF : un masque trop large
+        cacherait un renvoi aux lecons ecrit a cote d'un nom de fichier. Le
+        masque substitue le seul span du nom par des espaces de meme longueur,
+        donc un « L<n> » de prose reste compte dans le meme passage. Mesure du
+        corpus au 2026-10-28 : aucune unite markdown ne cache un tel renvoi
+        derriere un nom de fichier -- l'ecart est assume, pas observe.
+        """
+        para = (
+            "Voir Percolation-03b-Critique-L128-L256.ipynb pour le detail : "
+            "nous appliquons les lecons L512 avant de livrer."
+        )
+        v = judge_passage(0, para)
+        tags = sorted(extrait for n, extrait, _ in v.markers if n == "lesson_tag")
+        # L512 est de la prose, et il vient APRES le nom de fichier -- un masque
+        # qui deborderait sur la fin de phrase l'eteindrait, et c'est ce que ce
+        # test interdit. L128/L256 sont DANS le nom : tailles de systeme.
+        self.assertEqual(["L512"], tags)
+
     def test_course_prose_clean(self):
         para = (
             "Monroe propose une regle proportionnelle stricte ou chaque elu "
@@ -241,6 +316,8 @@ class TestNegativeControls(unittest.TestCase):
             "Le test de Diebold-Mariano rend DM p = 0.032 sur 4 seeds, sous le seuil.",
             "La statistique DM compare les pertes MSE des deux modeles.",
             "Le dual momentum (DM) combine momentum absolu et relatif.",
+            "Demo DM-JEPA 1.7 : prediction latente sans generation.",
+            "Le modele DM-JEPA apprend une representation par masquage.",
         ):
             with self.subTest(text=text):
                 self.assertFalse(
@@ -248,9 +325,71 @@ class TestNegativeControls(unittest.TestCase):
                     f"DM Diebold-Mariano/momentum signale a tort: {text}",
                 )
 
+    def test_dm_jepa_elargissement_porte_le_nom_du_modele(self):
+        """#22252 -- l'allowlist porte « DM-JEPA », pas « JEPA ».
+
+        Le nom du modele de prediction latente contient « DM », que le motif
+        `\\bDM\\b` prend pour le test de Diebold-Mariano. Elargir l'allowlist au
+        mot « JEPA » seul rendait la garde muette sur toute mention « DM »
+        voisine d'un « JEPA » isole : c'est une garde affaiblie en silence.
+        Le bigrame garde la mention du modele muette et laisse la garde
+        sensible au reste -- controle negatif mesure le 2026-10-27.
+        """
+        muet = "Demo DM-JEPA 1.7 : prediction latente sans generation."
+        self.assertFalse(
+            any(n == "dm" for n, _, _ in markers_in_text(muet)),
+            f"nom de modele DM-JEPA signale a tort: {muet}",
+        )
+        for text in (
+            "Le DM publie par l'equipe JEPA hier soir.",
+            "Le DM de l'equipe a publie apres la sortie de JEPA, en mars.",
+        ):
+            with self.subTest(text=text):
+                self.assertTrue(
+                    any(n == "dm" for n, _, _ in markers_in_text(text)),
+                    f"mention DM proche d'un JEPA isole doit rester detectee: {text}",
+                )
+
+    def test_dm_formes_compactes_du_test_ne_sont_pas_du_recit(self):
+        """#20250 -- les trois formes mesurees le 2026-10-25 sur la serie
+        ML-Training-Pipeline. Le nom etendu n'apparait pas a moins de 60
+        caracteres : la garde etait muette, et six passages denses sur six de
+        ``m15_lstm_rv_sc_validation.ipynb`` etaient declares recit d'activite
+        alors qu'ils ne portent que le test de Diebold-Mariano (part mesuree
+        13,7 % -> 0,0 % apres l'elargissement)."""
+        for text in (
+            # renvoi a la jambe de perte, sans le mot « test »
+            'entree du registre (conjonction multi-seed + DM `loss_fn="linear"`)',
+            # p-valeur ecrite en prose courte
+            "pas la significativite (piege mesure : +19,97σ avec DM p = 0,236) ;",
+            # titre de section : le test sur erreurs recentrees
+            "## 8. Re-validation M15 BTC debiaisee + DM recentree",
+        ):
+            with self.subTest(text=text):
+                self.assertFalse(
+                    any(n == "dm" for n, _, _ in markers_in_text(text)),
+                    f"forme compacte du test DM signalee a tort: {text}",
+                )
+
     def test_dm_coordination_still_flagged(self):
         text = "Le coordinateur a envoye un DM HIGH a la lane po-2025."
         self.assertTrue(any(n == "dm" for n, _, _ in markers_in_text(text)))
+
+    def test_dm_coordination_recentre_et_p_valeur_ne_blanchi_pas_le_reel(self):
+        """Controle negatif de l'elargissement : les trois nouveaux motifs sont
+        etroits, un DM de coordination reste signale. « recent » (masculin) ne
+        contient pas « recentr », et « p » n'est accepte qu'avant un operateur
+        de comparaison."""
+        for text in (
+            "J'ai recu un DM de po-2024 ce matin, sans suite.",
+            "Un DM recent, mais important, est arrive sur ma lane.",
+            "Le coordinateur a envoye un DM a la lane po-2025.",
+        ):
+            with self.subTest(text=text):
+                self.assertTrue(
+                    any(n == "dm" for n, _, _ in markers_in_text(text)),
+                    f"DM de coordination blanchi a tort: {text}",
+                )
 
     def test_adjoint_mathematical_not_flagged(self):
         for text in (

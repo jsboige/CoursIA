@@ -85,25 +85,25 @@ OpenRouter НЕ поддерживает endpoint `/v1/images/generations`.
 
 
 **Научная привязка.** У DALL-E 3 нет отдельной научной статьи; OpenAI анонсировала его в записи блога (октябрь 2023), сопровождаемой официальной *System Card*. Его главная инновация -- **автоматическое переписывание prompts** (знаменитая prompt revision, рассматриваемая ниже) -- происходит от языковой модели (GPT-4), которая уплотняет описание, и от **обучения на улучшенных captions** (recaptioning): см. *DALL-E 3 System Card* (OpenAI, 2023) и, для архитектурной преемственности (CLIP latents + diffusion), статью DALL-E 2 [Ramesh et al. 2022, arXiv:2204.06125].",,6ef113cf62204ca4,31e2de5245f1297a,,,,,ad347d002848efb9,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,02190507,code,fr,d52f2bacce950345,"# Parametres Papermill - JAMAIS modifier ce commentaire
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,02190507,code,fr,58bec2d4319d6420,"# Parametres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration generation
 notebook_mode = ""interactive""        # ""interactive"" ou ""batch""
 skip_widgets = False               # True pour mode batch MCP
 debug_level = ""INFO""               
 
-# Parametres DALL-E 3
-model_name = ""gpt-image-1""         # Modele OpenAI actuel (dall-e-3 retire, pas OpenRouter)
+# Parametres generation d'images (famille gpt-image)
+model_name = ""gpt-image-1.5""       # gpt-image-1 retire du compte le 2026-10-28 (400 a la generation), pas OpenRouter
 image_size = ""1024x1024""           # ""1024x1024"", ""1536x1024"", ""1024x1536""
 image_quality = ""medium""           # ""low"", ""medium"", ""high"", ""auto""
-image_style = ""vivid""              # concept pedagogique (gpt-image-1 ignore ""style"", le controle se fait via le prompt)
+image_style = ""vivid""              # concept pedagogique (la famille gpt-image ignore ""style"", le controle se fait via le prompt)
 n_images = 1                       # Nombre d'images (1 pour DALL-E 3)
 
 # Configuration sauvegarde
 generate_images = True             # Generer les images (False pour validation structurelle seule)
 save_images = True                 # Sauvegarder images generees
 generate_variations = False        # Creer variations du prompt
-export_metadata = True             # Exporter metadonnees generation",,,,,,,,d52f2bacce950345,,,,,,,,,,,,,,,
+export_metadata = True             # Exporter metadonnees generation",,,,,,,,58bec2d4319d6420,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,m2r7m8j3kkb,markdown,fr,3cc2cbe9854ecb9a,"## Setup de l'environnement
 
 Installation des dependances, chargement de la configuration API, et preparation des utilitaires de generation.","## Environment setup
@@ -186,16 +186,16 @@ logger = logging.getLogger('dalle3_generation')
 print(f""🎨 OpenAI DALL-E 3 - Génération d'Images"")
 print(f""📅 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"")
 print(f""🔧 Mode: {notebook_mode}, Qualité: {image_quality}, Style: {image_style}"")",,,,,,,,69bb179c12242405,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,gtgdldnbxwh,markdown,fr,4109f009c7882a4a,"L'environnement Python est initialise. La cellule suivante configure l'authentification aupres de l'API OpenAI directe et **verifie que la famille gpt-image (le modele de generation d'images actuel d'OpenAI, qui a succede a DALL-E 3 en 2025) est accessible** via `/v1/images/generations`.
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,gtgdldnbxwh,markdown,fr,d8cdb8f9ebafa383,"L'environnement Python est initialise. La cellule suivante configure l'authentification aupres de l'API OpenAI directe et **verifie que la famille gpt-image (le modele de generation d'images actuel d'OpenAI, qui a succede a DALL-E 3 en 2025) est accessible** via `/v1/images/generations`.
 
-> **Note de cadrage (issue #8474, EPIC #8052).** Le titre historique de ce notebook mentionne DALL-E 3 -- ce nom reste un **fil conducteur pedagogique** (le concept de reecriture automatique des prompts, le mapping des parametres `size`/`quality`/`style` viennent de l'ere DALL-E 3). En pratique, toutes les generations de ce notebook utilisent la famille `gpt-image` (modele par defaut `gpt-image-1`) parce que DALL-E 3 a ete retraite par OpenAI. Voir la cellule de doc-honesty plus bas pour le detail du fallback automatique.","The Python environment is initialized. The next cell configures authentication with the direct OpenAI API and **checks that the gpt-image family (OpenAI's current image generation model, which succeeded DALL-E 3 in 2025) is accessible** via `/v1/images/generations`.
+> **Note de cadrage (issue #8474, EPIC #8052).** Le titre historique de ce notebook mentionne DALL-E 3 -- ce nom reste un **fil conducteur pedagogique** (le concept de reecriture automatique des prompts, le mapping des parametres `size`/`quality`/`style` viennent de l'ere DALL-E 3). En pratique, toutes les generations de ce notebook utilisent la famille `gpt-image` (modele par defaut `gpt-image-1.5`) parce que DALL-E 3 a ete retraite par OpenAI. Voir la cellule de doc-honesty plus bas pour le detail du fallback automatique.","The Python environment is initialized. The next cell configures authentication with the direct OpenAI API and **checks that the gpt-image family (OpenAI's current image generation model, which succeeded DALL-E 3 in 2025) is accessible** via `/v1/images/generations`.
 
-> **Scoping note (issue #8474, EPIC #8052).** The historical title of this notebook mentions DALL-E 3 -- that name remains a **pedagogical through-line** (the concept of automatic prompt rewriting, the mapping of the `size`/`quality`/`style` parameters come from the DALL-E 3 era). In practice, all generations in this notebook use the `gpt-image` family (default model `gpt-image-1`) because DALL-E 3 has been retired by OpenAI. See the doc-honesty cell below for the details of the automatic fallback.",,,,,"Среда Python инициализирована. Следующая ячейка настраивает аутентификацию в прямом API OpenAI и проверяет, что модель DALL-E 3 доступна.",,4109f009c7882a4a,4cb955ada076260f,,,,,2829765925f146c8,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,a11e36a0,code,fr,349266f32f7d59a2,"# Configuration API OpenAI pour DALL-E 3
+> **Scoping note (issue #8474, EPIC #8052).** The historical title of this notebook mentions DALL-E 3 -- that name remains a **pedagogical through-line** (the concept of automatic prompt rewriting, the mapping of the `size`/`quality`/`style` parameters come from the DALL-E 3 era). In practice, all generations in this notebook use the `gpt-image` family (default model `gpt-image-1`) because DALL-E 3 has been retired by OpenAI. See the doc-honesty cell below for the details of the automatic fallback.",,,,,"Среда Python инициализирована. Следующая ячейка настраивает аутентификацию в прямом API OpenAI и проверяет, что модель DALL-E 3 доступна.",,d8cdb8f9ebafa383,4cb955ada076260f,,,,,2829765925f146c8,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,a11e36a0,code,fr,6abb8579cc9d6adf,"# Configuration API OpenAI pour la generation d'images
 # IMPORTANT: DALL-E 3 necessite l'API OpenAI directe (pas OpenRouter)
 # OpenRouter ne supporte PAS le endpoint /v1/images/generations
 
-print(""\n--- CONFIGURATION API DALL-E 3 ---"")
+print(""\n--- CONFIGURATION API GENERATION D'IMAGES ---"")
 print(""="" * 40)
 
 # Verification cle API OpenAI
@@ -259,7 +259,7 @@ print(f""\nModele selectionne: {model_name}"")
 print(f""Resolution: {image_size}"")
 print(f""Style: {image_style}, Qualite: {image_quality}"")
 print(f""API: {api_base_url}"")
-",,,,,,,,349266f32f7d59a2,,,,,,,,,,,,,,,
+",,,,,,,,6abb8579cc9d6adf,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,dwxu8jge49o,markdown,fr,a7cd5f6e16f36702,"### Fonction de generation et prompts
 
 Definissons la fonction d'appel a l'API DALL-E 3, puis preparons un ensemble de prompts optimises illustrant différents styles (photorealiste, artistique, technique).","### Generation function and prompts
@@ -267,9 +267,9 @@ Definissons la fonction d'appel a l'API DALL-E 3, puis preparons un ensemble de 
 Let us define the function that calls the DALL-E 3 API, then prepare a set of optimized prompts illustrating different styles (photorealistic, artistic, technical).",,,,,"### Функция генерации и промпты
 
 Определим функцию вызова API DALL-E 3, затем подготовим набор оптимизированных промптов, иллюстрирующих различные стили (фотореалистичный, художественный, технический).",,a7cd5f6e16f36702,3e0b46fa6588f8e2,,,,,ae0dafc647d7955b,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,7087aa90,code,fr,a965e1c04efc561d,"# Fonction de génération d'image via l'API OpenAI (famille gpt-image)
-# - Migration DALL-E 3 -> gpt-image-1 (cf. issue #8474, EPIC #8052).
-# - Le modele `model_name` (cfg Papermill) pointe deja sur gpt-image-1 (post-PR #4230).
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,7087aa90,code,fr,024d46d602043d47,"# Fonction de génération d'image via l'API OpenAI (famille gpt-image)
+# - Migration DALL-E 3 -> famille gpt-image (cf. issue #8474, EPIC #8052 ; gpt-image-1.5 depuis le 2026-10-28).
+# - Le modele `model_name` (cfg Papermill) pointe sur gpt-image-1.5 depuis le 2026-10-28.
 # - L'endpoint /v1/images/generations est commun aux deux familles.
 # - Nom de fonction neutre (""image"") pour absorber l'evolution future
 #   (gpt-image-1.5/2/... ou retour d'un successeur DALL-E).
@@ -297,7 +297,7 @@ def generate_image(prompt: str,
         ""prompt"": prompt,
         ""n"": 1,  # gpt-image-1 : une image par requête
         ""size"": size,
-        ""quality"": quality  # gpt-image-1 : pas de ""style"" ni ""response_format"" (params DALL-E 3 -> 400)
+        ""quality"": quality  # famille gpt-image : pas de ""style"" ni ""response_format"" (params DALL-E 3 -> 400)
     }
 
     try:
@@ -350,7 +350,7 @@ def generate_image(prompt: str,
             ""prompt"": prompt
         }
 
-print(""[ok] Fonction generate_image() prête (famille gpt-image via OpenAI directe)"")",,,,,,,,a965e1c04efc561d,,,,,,,,,,,,,,,
+print(""[ok] Fonction generate_image() prête (famille gpt-image via OpenAI directe)"")",,,,,,,,024d46d602043d47,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,hvtdmnal8gg,markdown,fr,4944bd73d9e5200e,"### Generation et analyse des résultats
 
 Lancons la generation d'images avec les prompts optimises ci-dessus, puis analysons la qualite des résultats et les stratégies d'amelioration iterative des prompts.","### Generation and analysis of results
@@ -543,7 +543,7 @@ else:
     print(""\n[info] Generation non executee ou incomplete : ""
           ""affichage des images ignore."")",,,,,,,,35c71cc5d4dd23ed,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,o127drbt8o,markdown,fr,1df32d1d6efb4aef,Les exemples de prompts précédents illustrent les différentes catégories stylistiques. Passons maintenant a la generation effective : la cellule suivante envoie la requête a l'API DALL-E 3 et affiche l'image produite.,The previous prompt examples illustrate the different stylistic categories. Now let us move on to actual generation: the next cell sends the request to the DALL-E 3 API and displays the produced image.,,,,,Предыдущие примеры промптов иллюстрируют различные стилистические категории. Теперь перейдём к фактической генерации: следующая ячейка отправляет запрос к API DALL-E 3 и отображает полученное изображение.,,1df32d1d6efb4aef,a218022812ed88b2,,,,,b7221fb54cb01ab9,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,82075ed6,code,fr,40cc4a7800e56664,"# Generation d'images avec les exemples
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,82075ed6,code,fr,f3dedfa41be1c423,"# Generation d'images avec les exemples
 print(""\n[generate_image] DEMONSTRATION"")
 print(""="" * 50)
 
@@ -600,7 +600,7 @@ if result['success']:
             plt.figure(figsize=(12, 8))
             plt.imshow(image)
             plt.axis('off')
-            plt.title(f""{_ascii_title} - gpt-image-1"", fontsize=16, pad=20)
+            plt.title(f""{_ascii_title} - {model_name}"", fontsize=16, pad=20)
             plt.tight_layout()
             plt.show()
 
@@ -633,7 +633,7 @@ if result['success']:
 else:
     print(f""\n[err] Echec de la generation"")
     print(f""[err] Erreur: {result['error']}"")
-    print(f""[hint] Prompt teste: {result['prompt'][:100]}..."")",,,,,,,,40cc4a7800e56664,,,,,,,,,,,,,,,
+    print(f""[hint] Prompt teste: {result['prompt'][:100]}..."")",,,,,,,,f3dedfa41be1c423,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,c244fd12,markdown,fr,9224b2182f586c27,"### Exemple guidé 2 : `vivid` contre `natural` — prompt engineering, pas `style=`
 
 **Contexte** : un client hésite entre un visuel « vif et créatif » et un visuel « naturel et réaliste ». DALL-E 3 exposait pour cela un paramètre `style` à deux valeurs : `vivid` (couleurs saturées, rendu dramatique) et `natural` (rendu photographique plus discret). La cellule 18 d'origine utilisait `style=""vivid""` et `style=""natural""` avec un prompt identique.
@@ -2259,27 +2259,27 @@ if notebook_mode == ""interactive"" and not skip_widgets:
 else:
     print(""\n🤖 Mode batch - Interface interactive désactivée"")
     print(""💡 Pour mode interactif: notebook_mode = 'interactive'"")",,,,,,,,5bb341f4638450f9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,gkk2vqpxov,markdown,fr,92fb9089c9f4fc4e,"Le mode interactif etant traite, la cellule suivante presente les principaux cas d'usage applicatifs de l'analyse visuelle par GPT-5 dans un contexte professionnel et pedagogique.
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,gkk2vqpxov,markdown,fr,97a6bbacd3d789b8,"Le mode interactif etant traite, la cellule suivante presente les principaux cas d'usage applicatifs de l'analyse visuelle par GPT-5 dans un contexte professionnel et pedagogique.
 
 
 ### Lecture du résultat — matrice domaine × prompt
 
 La cellule précédente catalogue cinq domaines d'application (Histoire, Sciences, Géographie, Art et Culture, Médecine) avec pour chacun un `prompt_template` prédéfini qui peut être passé directement à `analyze_image_with_gpt5()`. Chaque template impose un rôle disciplinaire, un format de sortie, et un ton adapté au domaine — par exemple, le prompt `Médecine` spécifie *Analyse cette image médicale pour des étudiants en médecine. Explique l'anatomie visible et les points d'intérêt clinique.*
 
-L'output ne contient pas de sortie GPT-5 visible — la cellule a uniquement *annoncé* les cas d'usage, sans encore les exécuter. L'exemple guidé qui suit en exécute un pour la géographie, et les exercices de fin de notebook demandent de recombiner ces ingrédients. C'est une inversion pédagogique intéressante : la cellule 24 montre les templates, les exercices demandent de les recombiner.","With the interactive mode handled, the next cell presents the main application use cases of visual analysis by GPT-5 in a professional and pedagogical context.
+L'output ne contient pas de sortie GPT-5 visible — la cellule a uniquement *annoncé* les cas d'usage, sans encore les exécuter. L'exemple guidé qui suit en exécute un pour la géographie, et les exercices de fin de notebook réutilisent la même fonction d'analyse sur d'autres questions : stabilité d'une sortie répétée, fidélité d'un alt text, notation structurée en JSON. C'est une inversion pédagogique intéressante : la cellule 24 montre les templates, les exercices demandent d'appliquer la fonction d'analyse à d'autres questions.","With the interactive mode handled, the next cell presents the main application use cases of visual analysis by GPT-5 in a professional and pedagogical context.
 
 
 ### Reading the result — domain × prompt matrix
 
 The previous cell catalogs five application domains (History, Science, Geography, Art and Culture, Medicine) with for each a predefined `prompt_template` that can be passed directly to `analyze_image_with_gpt5()`. Each template imposes a disciplinary role, an output format, and a tone suited to the domain — for example, the `Médecine` prompt specifies *Analyse cette image médicale pour des étudiants en médecine. Explique l'anatomie visible et les points d'intérêt clinique.*
 
-The output contains no visible GPT-5 output — the cell only *announced* the use cases, without executing them yet. The guided example that follows runs one of them for geography, and the exercises at the end of the notebook ask to recombine these ingredients. This is an interesting pedagogical inversion: cell 24 shows the templates, the exercises ask to recombine them.",,,,,"Интерактивный режим рассмотрен, и следующая ячейка представляет основные прикладные сценарии использования визуального анализа GPT-5 в профессиональном и педагогическом контексте.
+The output contains no visible GPT-5 output — the cell only *announced* the use cases, without executing them yet. The guided example that follows runs one of them for geography, and the exercises at the end of the notebook reuse the same analysis function on other questions: stability of a repeated response, fidelity of an alt text, structured scoring in JSON. This is an interesting pedagogical inversion: cell 24 shows the templates, the exercises ask to apply the analysis function to other questions.",,,,,"Интерактивный режим рассмотрен, и следующая ячейка представляет основные прикладные сценарии использования визуального анализа GPT-5 в профессиональном и педагогическом контексте.
 
 ### Чтение результата — матрица домен × промпт
 
 Предыдущая ячейка каталогизирует пять доменов применения (История, Науки, География, Искусство и культура, Медицина), каждому из которых соответствует предустановленный `prompt_template`, который можно передать напрямую в `analyze_image_with_gpt5()`. Каждый шаблон задаёт дисциплинарную роль, формат вывода и тон, адаптированный к домену, — например, промпт `Médecine` задаёт *Analyse cette image médicale pour des étudiants en médecine. Explique l'anatomie visible et les points d'intérêt clinique.*
 
-Вывод не содержит видимого результата GPT-5 — ячейка лишь *анонсировала* сценарии использования, не исполняя их. Фактические выполнения оставлены упражнению 3 (ячейка 27), где студент сам составляет свой шаблон, комбинируя наблюдаемые здесь ингредиенты. Это интересная педагогическая инверсия: ячейка 24 показывает шаблоны, упражнение требует их рекомбинировать.",,92fb9089c9f4fc4e,9a360728c63231fa,,,,,11d0972728d5abb5,,,,,,,,,
+Вывод не содержит видимого результата GPT-5 — ячейка лишь *анонсировала* сценарии использования, не исполняя их. Фактические выполнения оставлены упражнению 3 (ячейка 27), где студент сам составляет свой шаблон, комбинируя наблюдаемые здесь ингредиенты. Это интересная педагогическая инверсия: ячейка 24 показывает шаблоны, упражнение требует их рекомбинировать.",,97a6bbacd3d789b8,6473fa1e2834a273,,,,,11d0972728d5abb5,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,03146442,code,fr,583bd43216b1385e,"# Cas d'usage pédagogiques avec GPT-5
 print(""\n🎓 CAS D'USAGE PÉDAGOGIQUES GPT-5"")
 print(""="" * 45)
@@ -2499,16 +2499,15 @@ The `print('Cas d'usage pédagogiques')` above is a **static catalog**, not an e
 1. API OpenRouter выставляет 26 различных моделей GPT-5 — номенклатура шире официальной номенклатуры OpenAI, и выбор делается по компромиссу `контекст × стоимость × возможности` (зрение, tools и т.д.).
 2. Три режима анализа (quick/detailed/educational) не взаимозаменяемы: quick оптимизирован под alt-text WCAG, educational даёт наводящие вопросы для ученика — это единственный режим, дающий готовый педагогический результат.
 3. Мультимодальный пайплайн (encode → POST → parse) одинаков для любого изображения — сложность живёт в промпте, а не в транспорте.",,fdb32ce3796d93f1,0f434e59eed8ba0c,,,,,2de15031478a994d,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,ubm6sfxypqb,markdown,fr,ff3fc815c4cb740d,"***
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,ubm6sfxypqb,markdown,fr,2c703bc7de7a4b02,"***
 
-## Exercices à compléter
+## Exemples guidés : trois gestes mesurés
 
-Les trois exercices suivants prolongent les exemples guidés de ce notebook : sensibilité de l'analyse à la formulation du prompt, adaptation d'un alt text à son contexte de publication, et comparaison de deux images d'un même domaine. Chaque squelette s'exécute sans erreur tel quel — à vous de remplir les `TODO etudiant`.
-","***
+Trois exemples guidés issus d'une contribution étudiante closent la partie « analyse » du carnet : mesurer la sensibilité d'une analyse à la formulation du prompt (similarité lexicale entre deux sorties à format constant), adapter un alt text à son contexte de publication sous une limite de longueur vérifiée par mesure, et comparer deux images d'un même domaine avec un prompt d'analyse identique. Le code est conservé tel qu'il a été rendu — il s'exécute et imprime ses propres contrôles.","***
 
-## Exercises to complete
+## Guided examples: three measured gestures
 
-The following three exercises extend the guided examples of this notebook: sensitivity of the analysis to the wording of the prompt, adapting an alt text to its publication context, and comparing two images from the same domain. Each skeleton runs without error as is — it is up to you to fill in the `TODO etudiant`.",,,,,"### Упражнение 3: Синтез — полный workflow мультимодального анализа
+Three guided examples from a student contribution close the « analysis » part of the notebook: measuring the sensitivity of an analysis to the prompt wording (lexical similarity between two texts at constant format), adapting an alt text to its publication context under a length limit verified by measurement, and comparing two images from the same domain with an identical analysis prompt. The code is kept as it was delivered — it runs and prints its own checks.",,,,,"### Упражнение 3: Синтез — полный workflow мультимодального анализа
 
 **Оценочная продолжительность:** 15-20 минут
 
@@ -2528,85 +2527,121 @@ The following three exercises extend the guided examples of this notebook: sensi
 
 - Подсказка 1: Используйте функцию `analyze_image_with_gpt5()` с параметром `prompt` для вашего персонализированного prompt
 - Подсказка 2: Режим ""educational"" автоматически генерирует 3 вопроса для размышления для студентов
-- Подсказка 3: Адаптируйте лексику prompt к уровню (elementary, secondary, university)",,ff3fc815c4cb740d,4a927ff5835987b2,,,,,6b20b97c4063d231,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,tvhxa6pat2h,code,fr,9a0d91072759ecc9,"# Exercice 3 : Comparateur d'images -- deux images du meme domaine cote a cote
-# TODO etudiant : implementer compare_images() pour deux images d'un meme domaine
+- Подсказка 3: Адаптируйте лексику prompt к уровню (elementary, secondary, university)",,2c703bc7de7a4b02,a92d4639ec2c4d76,,,,,6b20b97c4063d231,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,tvhxa6pat2h,code,fr,e9d75f2b8f0e0ae6,"# Exemple guide : comparateur d'images -- deux images du meme domaine cote a cote
+# (contribution etudiante, PR #23305 -- github.com/Perr1neF0)
+import pprint, time
 
 # 1. Selection des deux images
-image_a = example_images[0]['url']  # TODO etudiant : premiere image du domaine choisi
-image_b = example_images[3]['url']  # TODO etudiant : remplacer par une image du MEME domaine
+domaine = ""Géographie""
+image_a = example_images[3]['url']  # Paysage naturel (Géographie/Environnement)
+image_b = ""https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRPQ_gGhRNQdk5gxBqyA9diGOVps2ZliOpWX2ifjfPSPg&s=10""  # carte de France (image deja utilisee plus haut)
 
 # 2. Prompt d'analyse pour chaque image
-# TODO etudiant : redigez un prompt qui impose une structure comparable entre les deux analyses
-# Indice : meme format de sortie pour les deux images -- sinon la comparaison est arbitraire
+prompt_analyse = f""""""Tu es professeur de {domaine}. Réponds en {language}.
+Analyse cette image avec exactement cette structure :
+**Type d'image** : (photo, carte, schéma...) en une ligne
+**Éléments principaux** : 3 à 5 puces
+**Information géographique** : 3 lignes maximum
+**Intérêt pédagogique** : une phrase""""""
 
 # 3. Fonction de comparaison
 def compare_images(url_a, url_b, prompt):
     """"""
     Analyse deux images du meme domaine et produit une comparaison structuree.
 
-    Args:
-        url_a: URL de la premiere image
-        url_b: URL de la seconde image
-        prompt: prompt d'analyse (format identique pour les deux images)
-
     Returns:
-        Dict avec les deux analyses et leur comparaison
+        Dict avec les deux analyses, leur comparaison et le temps total.
     """"""
+    debut = time.time()
     comparaison = {}
 
-    # TODO etudiant : analyser chaque image individuellement avec analyze_image_with_gpt5
-    # TODO etudiant : croiser les resultats -- points communs, differences, verdict
-    # Indice : le texte de la premiere analyse peut etre injecte dans le prompt de la seconde
+    # a) Analyse individuelle, meme prompt pour les deux images
+    for cle, url in [(""analyse_a"", url_a), (""analyse_b"", url_b)]:
+        r = analyze_image_with_gpt5(url, prompt=prompt)
+        if not r['success']:
+            comparaison[cle] = None
+            comparaison[""erreur""] = f""{cle} : {r['error']}""
+            return comparaison  # inutile de croiser si une analyse manque
+        comparaison[cle] = r['analysis']
 
-    pass  # Remplacer par votre implementation
+    # b) Croisement : on injecte les deux analyses dans le prompt, et on joint
+    #    l'image B pour que GPT-5 puisse verifier les affirmations sur l'image visible
+    prompt_croisement = f""""""Tu compares deux images de {domaine}. Réponds en {language}.
+Voici l'analyse de l'image A :
+\""\""\""{comparaison['analyse_a']}\""\""\""
 
+Voici l'analyse de l'image B (l'image jointe) :
+\""\""\""{comparaison['analyse_b']}\""\""\""
+
+Produis exactement ces trois sections :
+**Points communs** : 3 puces
+**Différences** : 3 puces
+**Verdict** : laquelle des deux images est la plus utile pour introduire le domaine à des étudiants, et pourquoi (3 lignes maximum).""""""
+
+    r = analyze_image_with_gpt5(url_b, prompt=prompt_croisement)
+    comparaison[""comparaison""] = r['analysis'] if r['success'] else f""ERREUR : {r['error']}""
+    comparaison[""temps_total_s""] = round(time.time() - debut, 1)
     return comparaison
 
 # 4. Executer et afficher
-# Indice : pprint.pprint pour un affichage lisible du dict
-resultat_comparaison = None  # TODO etudiant : compare_images(image_a, image_b, prompt)
+resultat_comparaison = compare_images(image_a, image_b, prompt_analyse)
+pprint.pprint(resultat_comparaison, width=100)",,,,,,,,e9d75f2b8f0e0ae6,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,cuqkx7t59ob,markdown,fr,93e5b853cd3d92a9,"### Critères de succès
 
-print(""Exercice a completer"")
-",,,,,,,,9a0d91072759ecc9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,cuqkx7t59ob,markdown,fr,68468125c9faf6c6,"### Critères de succès
+**Exercice 1 — reproductibilité**
+- [ ] Trois analyses identiques lancées, et leurs similarités deux à deux mesurées (pas estimées), présentées comme **descriptives**
+- [ ] Les `supported_parameters` du modèle consultés, la conclusion limitée au support **annoncé** de `temperature` — aucun comportement (ignoration, rejet, normalisation) inféré des seules métadonnées
+- [ ] Toute comparaison d'échantillons additionnels (facultative, payante) reste descriptive, jamais présentée comme preuve causale ; `temperature` est remise à `0.7` en fin de cellule si l'expérience est faite
 
-- [ ] Les deux images appartiennent au même domaine et les analyses utilisent le même format
-- [ ] `compare_images()` retourne un dictionnaire avec les deux analyses et la comparaison
-- [ ] La comparaison distingue points communs et différences de façon structurée
-- [ ] Les résultats sont présentés clairement (`pprint` ou affichage formaté)
-- [ ] Le temps de réponse total reste raisonnable (2 analyses + croisement)
+**Exercice 2 — audit de fidélité**
+- [ ] Inventaire et alt text produits par deux appels **séparés**, chacun sous une consigne unique
+- [ ] Les termes de l'alt text sont confrontés à l'inventaire par un calcul, avec la liste des termes non étayés
+- [ ] Le verdict dit « à réviser » et nomme la limite de la vérification lexicale
+
+**Exercice 3 — évaluation structurée**
+- [ ] La rubrique compte trois critères notés de 0 à 2
+- [ ] Le JSON est parsé et validé (clés présentes, entiers, bornes) — un échec de parsing est signalé, jamais contourné
+- [ ] La note totale et les cas d'échec sont affichés, avec la nature **indicative** de la note rappelée
 
 ### Extension (optionnelle)
 
 Pour les étudiants avancés :
-- Implémenter une **évaluation** des réponses étudiant avec GPT-5
+- Exposer `seed` dans `analyze_image_with_gpt5()` (adaptation explicite du payload) et mesurer si deux exécutions à `seed` fixé se rapprochent
 - Créer un **quiz interactif** basé sur les questions générées
 - Étendre le comparateur à **trois images** ou plus (matrice de comparaison)
+- Rejouer l'exercice 3 avec une seconde évaluation indépendante (même rubrique, prompt différent) et mesurer l'accord entre les deux notes
 
+### Lecture du résultat — les exercices en synthèse
 
-### Lecture du résultat — exercice 3 (synthèse)
+Les trois exemples guidés de la section précédente montrent chacun un geste mesuré : comparer deux formulations à format constant, adapter un alt text à son contexte sous contrainte de longueur, croiser deux analyses avec un prompt identique. Les trois exercices qui les complètent portent sur ce que ces gestes ne mesurent pas encore : la **stabilité** d'une sortie répétée, la **fidélité** d'un alt text aux éléments visibles, et la **structuration** d'une note en JSON validable. Le carnet s'exécute de bout en bout tant que les exercices restent des stubs.","### Success criteria
 
-La cellule précédente pose un exercice de synthèse structurant : choisir un domaine parmi les cinq catalogués dans la cellule *Cas d'usage pédagogiques*, sélectionner deux images de ce domaine, imposer un format d'analyse identique, et implémenter `compare_images()` qui croise les résultats. Le squelette fourni se contente de `pass` et renvoie un dictionnaire vide : le carnet s'exécute de bout en bout tant que l'exercice n'est pas complété. Les exercices 1 et 2, plus courts, se préparent avec les exemples guidés du corps du notebook : le premier mesure la sensibilité à la formulation, le second adapte un alt text à son contexte de publication.
-","### Success criteria
+**Exercise 1 — reproducibility**
+- [ ] Three identical analyses run, and their pairwise similarities measured (not estimated), presented as **descriptive**
+- [ ] The model's `supported_parameters` consulted, the conclusion limited to the **advertised** support of `temperature` — no behavior (ignoring, rejection, normalization) inferred from the metadata alone
+- [ ] Any comparison of additional samples (optional, paid) remains descriptive, never presented as causal proof; `temperature` is restored to `0.7` at the end of the cell if the experiment is done
 
-- [ ] Both images belong to the same domain and the analyses use the same format
-- [ ] `compare_images()` returns a dictionary with both analyses and the comparison
-- [ ] The comparison separates common points and differences in a structured way
-- [ ] The results are clearly presented (`pprint` or formatted display)
-- [ ] The total response time stays reasonable (2 analyses + cross-comparison)
+**Exercise 2 — fidelity audit**
+- [ ] Inventory and alt text produced by two **separate** calls, each under a single instruction
+- [ ] The terms of the alt text are checked against the inventory by a computation, with the list of unsupported terms
+- [ ] The verdict says « to revise » and names the limit of the lexical verification
+
+**Exercise 3 — structured evaluation**
+- [ ] The rubric has three criteria scored from 0 to 2
+- [ ] The JSON is parsed and validated (keys present, integers, bounds) — a parsing failure is reported, never worked around
+- [ ] The total score and the failure cases are displayed, with the **indicative** nature of the score recalled
 
 ### Extension (optional)
 
 For advanced students:
-- Implement an **evaluation** of student answers with GPT-5
+- Expose `seed` in `analyze_image_with_gpt5()` (explicit payload adaptation) and measure whether two runs with a fixed `seed` get closer
 - Create an **interactive quiz** based on the generated questions
 - Extend the comparator to **three images** or more (comparison matrix)
+- Replay exercise 3 with a second independent evaluation (same rubric, different prompt) and measure the agreement between the two scores
 
+### Reading the result — the exercises in synthesis
 
-### Reading the result — exercise 3 (synthesis)
-
-The previous cell poses a structuring synthesis exercise: choose a domain among the five cataloged in the *Pedagogical use cases* cell, select two images from this domain, impose an identical analysis format, and implement `compare_images()`, which cross-compares the results. The provided skeleton only contains `pass` and returns an empty dictionary: the notebook runs end to end as long as the exercise is not completed. Exercises 1 and 2, which are shorter, build on the guided examples in the body of the notebook: the first measures sensitivity to wording, the second adapts an alt text to its publication context.",,,,,,,68468125c9faf6c6,20e792b9b1b6cb7c,,,,,,,,,,,,,,
+The three guided examples of the previous section each show a measured gesture: comparing two wordings at constant format, adapting an alt text to its context under a length constraint, crossing two analyses with an identical prompt. The three exercises that complete them address what these gestures do not yet measure: the **stability** of a repeated response, the **fidelity** of an alt text to the visible elements, and the **structuring** of a score into validatable JSON. The notebook runs end to end as long as the exercises remain stubs.",,,,,,,93e5b853cd3d92a9,f6be807159e14745,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb,c7eec602,markdown,fr,b4d84fb200146d2f,"**Navigation** : [Index](../../README.md) | [<< Précédent](01-2-GPT-5-Image-Generation.ipynb) | [Suivant >>](01-4-Forge-SD-XL-Turbo.ipynb)
 
 # Opérations de Base sur les Images
@@ -6645,55 +6680,128 @@ print(""✅ Fonctions comparaison avant/après définies"")
 print(""   - compare_before_after(): Affichage side-by-side + métriques"")
 print(""   - create_difference_map(): Carte visuelle différences"")
 print(""\n💡 Décommentez les exemples ci-dessus pour tester avec vos images"")",,,,,,,,b12353713f4b13ed,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,0d4cff52,markdown,fr,e4c4869c8eed1052,"### Exercice 2 : Carte de différences et analyse qualitative
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,0d4cff52,markdown,fr,07290a2e2b2871e5,"### Exemple guidé (Exercice 2 résolu) : Carte de différences et analyse qualitative
 
-L'objectif de cet exercice est d'utiliser les fonctions `compare_before_after` et `create_difference_map` pour analyser quantitativement l'impact du paramètre `denoise` sur une edition d'image.
+Résolu par un étudiant (PR #22599) et conservé ici en exemple guidé. Le protocole : une **référence Text-to-Image générée avec la graine 42**, puis le **même prompt d'édition aquarelle** appliqué à trois forces de `denoise` (0.2, 0.5, 0.8) — seul `denoise` varie, tout le reste est fixé. Les métriques **PSNR / MAE** sont calculées pixel par pixel et validées sur deux cas limites (images identiques, noir/blanc), les **cartes de différences amplifiées x5** localisent les zones modifiées, et l'ensemble est exporté (`metriques.csv`, `configuration.json`).
 
-**Contexte** : Les metriques PSNR et MAE permettent de mesurer objectivement l'amplitude des modifications. Combiner ces metriques avec l'analyse visuelle de la carte de différences donne une comprehension complete du comportement du modèle.
+> Assistance déclarée par l'auteur : code préparé avec ChatGPT, résultats et analyse vérifiés par le groupe.
+> Adaptation lors de l'intégration : la référence était réutilisée depuis la démo hello-world alors que la graine venait d'être posée sur le workflow (graine inerte). La référence est désormais **générée** avec la graine, ce qui rend la série reproductible.
 
-**Instructions** :
-1. Generez une image de base avec le workflow Text-to-Image
-2. Editez cette image avec 3 valeurs de denoise différentes (0.2, 0.5, 0.8)
-3. Calculez les metriques PSNR et MAE pour chaque edition
-4. Affichez les cartes de différences et tirez des conclusions
+La cellule suivante exécute ce protocole de bout en bout ; la lecture du résultat suit.",,,,,,,,07290a2e2b2871e5,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,03b10863,code,fr,b8829e86890ca509,"# Exemple guide (Exercice 2 resolu) : Carte de differences et analyse qualitative
+# Credit : exercice resolu par un etudiant (PR #22599), conserve et adapte en exemple guide.
+# Assistance declaree par l'auteur : code prepare avec ChatGPT ; resultats verifies par le groupe.
+# Adaptation : la reference etait reutilisee depuis la demo hello-world alors que la graine
+# venait d'etre posee sur le workflow (graine inerte) -- elle est desormais GENEREE avec la graine.
+from copy import deepcopy
+import csv
+import json
+import tempfile
+from pathlib import Path
+from io import BytesIO
 
-**Indices** :
-- `# Indice` : Un PSNR eleve signifie peu de différences (edition subtile)
-- `# Indice` : La carte de différences amplifiee (x5 ou x10) revele les zones modifiees
-- `# Étape 1` : Commencez par generer l'image de reference avec le workflow hello world
-- `# Étape 2` : Uploadez l'image generee, puis appliquez un même prompt d'edition avec 3 denoise différents
-- `# Étape 3` : Utilisez `compare_before_after` et `create_difference_map` pour chaque paire",,,,,,,,e4c4869c8eed1052,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,03b10863,code,fr,748ed8f50aa2b1c4,"# Exercice 2 : Carte de differences et analyse qualitative
+import numpy as np
+from PIL import Image
 
-# TODO etudiant : choisissez un prompt d'edition (ex: ""convert to watercolor painting style"")
-prompt_edition_ex2 = ""Votre prompt d'edition ici""  # TODO etudiant
+prompt_edition_ex2 = ""Convert this image to a watercolor painting. Preserve the cat, its pose, the windowsill and the composition.""
+denoise_values_ex2 = [0.2, 0.5, 0.8]
+seed_ex2 = 42
+output_ex2 = Path(""resultats_exemple_ex2"")
+output_ex2.mkdir(exist_ok=True)
 
-# TODO etudiant : definissez les valeurs de denoise a comparer
-denoise_values_ex2 = [0.2, 0.5, 0.8]  # TODO etudiant : ajustez si souhaite
 
-# Etape 1 : generer l'image de reference (Text-to-Image)
-# Indice : utilisez workflow_hello defini precedemment, puis executez avec client.execute_workflow()
-# result_ref = client.execute_workflow(workflow_hello)
-# Sauvegardez l'image de reference localement
+def enregistrer_image_ex2(resultat, chemin):
+    images = resultat.get(""images"") or []
+    if not images:
+        raise RuntimeError(""Aucune image recue de Qwen : verifier le service et le workflow."")
+    with Image.open(BytesIO(images[0][""data""])) as image:
+        image.convert(""RGB"").save(chemin)
+    return str(chemin)
 
-# Etape 2 : pour chaque valeur de denoise, editez l'image
-# Indice : utilisez create_simple_edit_workflow() avec le meme prompt mais different denoise
-resultats_denoise = {}
-for d in denoise_values_ex2:
-    print(f""Denoise = {d}"")
-    # TODO etudiant : creez le workflow d'edition
-    # wf = create_simple_edit_workflow(image_name=..., edit_prompt=prompt_edition_ex2, denoise=d)
-    # TODO etudiant : executez le workflow et sauvegardez l'image
-    resultats_denoise[d] = None  # TODO etudiant : remplacer par le resultat
 
-# Etape 3 : comparaison quantitative
-for d in denoise_values_ex2:
-    print(f""\n--- Denoise = {d} ---"")
-    # TODO etudiant : appelez compare_before_after(reference, editee)
-    # TODO etudiant : appelez create_difference_map(reference, editee, amplification=5.0)
+def metriques_ex2(reference, edition):
+    with Image.open(reference) as image:
+        a = np.asarray(image.convert(""RGB""), dtype=np.float64)
+    with Image.open(edition) as image:
+        b = np.asarray(image.convert(""RGB""), dtype=np.float64)
+    if a.shape != b.shape:
+        raise ValueError(""Les images doivent avoir les memes dimensions ; ne pas les redimensionner en silence."")
+    diff = a - b
+    mae = float(np.mean(np.abs(diff)))
+    mse = float(np.mean(diff ** 2))
+    psnr = float(""inf"") if mse == 0 else float(10 * np.log10(255.0 ** 2 / mse))
+    return {""MAE"": mae, ""PSNR_dB"": psnr}
 
-# Question : quel denoise donne le meilleur compromis qualite/fidelite ?
-print(""Exercice a completer"")",,,,,,,,748ed8f50aa2b1c4,,,,,,,,,,,,,,,
+
+# Verification de deux cas limites, sans appel a Qwen.
+with tempfile.TemporaryDirectory() as dossier_test:
+    noir = Path(dossier_test) / ""noir.png""
+    blanc = Path(dossier_test) / ""blanc.png""
+    Image.new(""RGB"", (8, 8), ""black"").save(noir)
+    Image.new(""RGB"", (8, 8), ""white"").save(blanc)
+    identiques = metriques_ex2(noir, noir)
+    extremes = metriques_ex2(noir, blanc)
+    assert identiques[""MAE""] == 0 and np.isinf(identiques[""PSNR_dB""])
+    assert extremes[""MAE""] == 255 and np.isclose(extremes[""PSNR_dB""], 0)
+print(""Tests des metriques : OK"")
+
+if not api_available:
+    print(""Service Qwen indisponible : generation sautee ; les tests locaux des metriques restent valides."")
+else:
+    # 1. Reference Text-to-Image GENEREE avec la graine (independante des demos precedentes).
+    workflow_reference_ex2 = deepcopy(workflow_hello)
+    workflow_reference_ex2[""9""][""inputs""][""seed""] = seed_ex2
+    resultat_reference_ex2 = client.execute_workflow(workflow_reference_ex2, max_wait=3600)
+    reference_ex2 = enregistrer_image_ex2(resultat_reference_ex2, output_ex2 / ""reference.png"")
+    nom_image_ex2 = upload_image_to_comfyui(reference_ex2)
+
+    # 2. Meme image, meme prompt, meme seed et memes reglages ; seul denoise varie.
+    resultats_denoise = {}
+    tableau_ex2 = []
+    for d in denoise_values_ex2:
+        print(f""\n--- Denoise = {d} ---"")
+        workflow = create_simple_edit_workflow(
+            image_name=nom_image_ex2, edit_prompt=prompt_edition_ex2, denoise=d
+        )
+        workflow[""10""][""inputs""][""seed""] = seed_ex2
+        resultat = client.execute_workflow(workflow, max_wait=3600)
+        suffixe = str(d).replace(""."", ""_"")
+        edition = enregistrer_image_ex2(resultat, output_ex2 / f""edition_{suffixe}.png"")
+        resultats_denoise[d] = edition
+        mesures = metriques_ex2(reference_ex2, edition)
+        tableau_ex2.append({""denoise"": d, **mesures})
+        compare_before_after(reference_ex2, edition, title_edited=f""Aquarelle - denoise {d}"")
+        create_difference_map(reference_ex2, edition, amplification=5.0)
+        with Image.open(reference_ex2) as image:
+            a = np.asarray(image.convert(""RGB""), dtype=np.float64)
+        with Image.open(edition) as image:
+            b = np.asarray(image.convert(""RGB""), dtype=np.float64)
+        carte = np.clip(np.abs(a - b) * 5, 0, 255).astype(np.uint8)
+        Image.fromarray(carte).save(output_ex2 / f""differences_{suffixe}.png"")
+
+    # 3. Tableau des valeurs effectivement mesurees.
+    print(""\ndenoise | MAE (0-255) | PSNR (dB)"")
+    for ligne in tableau_ex2:
+        print(f""{ligne['denoise']:.1f}     | {ligne['MAE']:.4f}     | {ligne['PSNR_dB']:.4f}"")
+    with (output_ex2 / ""metriques.csv"").open(""w"", newline="""", encoding=""utf-8"") as fichier:
+        writer = csv.DictWriter(fichier, fieldnames=[""denoise"", ""MAE"", ""PSNR_dB""])
+        writer.writeheader()
+        writer.writerows(tableau_ex2)
+    configuration_ex2 = {
+        ""prompt_reference"": workflow_reference_ex2[""6""][""inputs""][""prompt""],
+        ""prompt_edition"": prompt_edition_ex2,
+        ""denoise_values"": denoise_values_ex2,
+        ""seed"": seed_ex2,
+        ""steps"": 20,
+        ""cfg"": 1.0,
+        ""sampler"": ""euler"",
+        ""scheduler"": ""beta"",
+    }
+    (output_ex2 / ""configuration.json"").write_text(
+        json.dumps(configuration_ex2, indent=2, ensure_ascii=False), encoding=""utf-8""
+    )
+    print(""\nMAE faible / PSNR eleve : plus de ressemblance pixel par pixel avec la reference."")
+    print(""Ces mesures ne suffisent pas a juger la reussite artistique du style aquarelle."")",,,,,,,,b8829e86890ca509,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,a6db2fc7,markdown,fr,c93209694549842d,"## ⚙️ Bonnes Pratiques ComfyUI
 
 ### 1. Gestion des Erreurs Courantes
@@ -20882,30 +20990,32 @@ print(""   ../../tutorials/gpt5-image-analysis-guide.md"")
 print(""   ../../tutorials/educational-workflows.md"")
 print(""\nProchaine étape : corriger les défauts relevés, régénérer et revalider"")
 print(""="" * 50)",,,,,,,,7639a93fe7a1cc56,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,dalle3-gpt-image1-disclosure,markdown,fr,bb3351d68dd11e7b,"### Sur le modèle réellement utilisé : DALL-E 3 -> gpt-image-1
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,dalle3-gpt-image1-disclosure,markdown,fr,6c42e190a6120bce,"### Sur le modèle réellement utilisé : DALL-E 3 -> gpt-image-1.5
 
-> **Note d'honnêteté documentaire (EPIC #8052).** La cellule précédente vérifie la
-> disponibilité de DALL-E 3 auprès de l'API OpenAI. Le résultat commité montre
-> `Connexion API OpenAI reussie - 0 modeles DALL-E disponibles`, puis une
-> **repli (fallback) automatique** vers `gpt-image-1` — le modèle de génération
-> d'images actuel d'OpenAI. Les sorties commitées dans ce notebook (durée de
-> génération, image encodée en data-URI) ont donc été produites par **gpt-image-1**,
-> et non par DALL-E 3.
+> **Note d'honnêteté documentaire (EPIC #8052, repli renouvelé le 2026-10-28).** La cellule
+> précédente vérifie la disponibilité de DALL-E 3 auprès de l'API OpenAI. Le résultat commité
+> montre `Connexion API OpenAI reussie - 0 modeles DALL-E disponibles`. Le carnet a d'abord
+> replété sur `gpt-image-1` ; **ce modèle ne génère plus sur le compte utilisé** : le
+> 2026-10-28, `POST /v1/images/generations` avec `model=""gpt-image-1""` rend
+> `HTTP 400 - The model 'gpt-image-1' does not exist`, alors que `/v1/models` le liste encore.
+> Le repli courant est donc **`gpt-image-1.5`** (vérifié HTTP 200 le même jour, ainsi que
+> `gpt-image-1-mini` et `gpt-image-2`). Les sorties commitées dans ce notebook ont été produites
+> par ce modèle, et non par DALL-E 3.
 
 Pourquoi garde-t-on le cadrage « DALL-E 3 » dans le titre et les commentaires ?
 
-- **Ancrage pédagogique** : DALL-E 3 est le nom historiquement enseigné pour cette
-  famille de modèles de génération d'images ; le conserver comme fil conducteur
-  facilite la lecture.
-- **L'API est identique** : l'endpoint `/v1/images/generations` et les paramètres
-  (`size`, `quality`, `style`) sont communs, seul le nom du modèle change.
-- **Transparence** : la présente note explicite le repli afin que la prose ne
-**contredise pas** silencieusement les sorties commitées (principe doc-honesty de
-  l'Epic #8052).
+- **Ancrage pédagogique** : DALL-E 3 est le nom historiquement enseigné pour cette famille de
+  modèles de génération d'images ; le conserver comme fil conducteur facilite la lecture.
+- **L'API est identique** : l'endpoint `/v1/images/generations` et les paramètres (`size`,
+  `quality`) sont communs à la famille, seul le nom du modèle change. Le paramètre `style`
+  (vivid/natural) est un héritage DALL-E 3 que la famille gpt-image ignore : le contrôle se fait
+  via le prompt, ce que l'exemple guidé 2 démontre.
+- **Transparence** : la présente note explicite le repli afin que la prose ne contredise pas
+  silencieusement les sorties commitées (principe doc-honesty de l'Epic #8052).
 
-Si DALL-E 3 redevient disponible (ou pour basculer sur un autre modèle), il suffit
-d'ajuster la sélection du modèle dans la cellule de configuration puis de ré-exécuter ;
-la structure du notebook reste valable.
+Pour basculer sur un autre modèle de la famille, il suffit d'ajuster `model_name` dans la cellule
+de paramètres puis de ré-exécuter : la structure du notebook reste valable. Le nom du modèle est
+un paramètre, pas une constante — c'est la leçon de cette succession de replis.
 ","### On the model actually used: DALL-E 3 -> gpt-image-1
 
 > **Documentary honesty note (EPIC #8052).** The previous cell checks the
@@ -20929,7 +21039,7 @@ Why keep the ""DALL-E 3"" framing in the title and the comments?
 
 If DALL-E 3 becomes available again (or to switch to another model), it suffices
 to adjust the model selection in the configuration cell and re-run;
-the notebook structure remains valid.",,,,,,,bb3351d68dd11e7b,7063c69da9300932,,,,,,,,,,,,,,
+the notebook structure remains valid.",,,,,,,6c42e190a6120bce,7063c69da9300932,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb,ctx-serie-013,markdown,fr,df0a75aead0164a5,"Ce troisième volet de la fondation Image assume un rôle précis dans la série : après la découverte de la génération par modèle (01-1, 01-2), il installe la **boîte à outils déterministe** qui entoure tout pipeline génératif. Avant d'envoyer une image à un moteur, il faut la charger, la redresser, la recadrer, l'encoder au bon format et au bon poids — autant d'opérations PIL que ce notebook exécute et mesure une à une. La règle de lecture des sections qui suivent : chaque sortie chiffrée (dimensions, poids, ratios) est une décision d'ingénierie en puissance, pas une anecdote.",,,,,,,,df0a75aead0164a5,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb,interp-env-013,markdown,fr,ed5f4dbe24b4508f,"**Lecture du résultat.** L'environnement est vérifié en tête d'exécution : toutes les dépendances sont disponibles et PIL signale sa version — c'est elle qui a produit les encodages mesurés plus bas. Le mode d'exécution est `batch`, avec écriture des artefacts vers un répertoire de sorties dédié.
 
@@ -21043,24 +21153,18 @@ BATCH_MODE = _os_params.getenv(""BATCH_MODE"", ""false"")
 # les parameters au kernel subprocess). Vide = fallback sur recherche parent.
 PAPERMILL_ENV_FILE = _os_params.getenv(""PAPERMILL_ENV_FILE"", """")
 ",,,,,,,,744a375939e86ee1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,763083b2,markdown,fr,3125fe228698ecf5,"## Exercices à compléter
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,763083b2,markdown,fr,1d66e2af43278269,"## Exercices à compléter
 
-### Exercice 4 : Le prompt tient-il ses promesses ? Mesurer sur les pixels
+Trois exercices non résolus (7, 8, 9) sont proposés à la fin du carnet. Les trois sections qui suivent sont des **exemples guidés** : ils conservent, avec leur attribution, les résolutions rendues pour les exercices 4, 5 et 6.
 
-Écrire un prompt riche est une chose ; vérifier que le modèle a réellement obéi en est une autre. L'exemple guidé ci-dessus conclut que le style et l'éclairage sont « les leviers les plus impactants » -- mais comment le **prouver** plutôt que le croire ? Plutôt que de juger à l'œil, on peut **mesurer** : `PIL` donne un accès direct aux statistiques des pixels (teinte moyenne, saturation, luminosité).
+### Exemple guidé 5 : Densité de détail — le prompt tient-il ses promesses ?
 
-**Objectif** : choisir UN axe visuel binaire, générer deux images qui ne diffèrent QUE par cet axe, puis mesurer sur les pixels si la différence promise est réellement observable.
+*Contribution etudiante de @hellsgame14-create (PR #23121), integree comme exemple guide.*
 
-**Étapes** :
-1. Choisissez un axe visuel binaire (exemples : palette chaude vs froide, scène diurne vs nocturne, couleurs saturées vs désaturées, éclairage doux vs dramatique)
-2. Rédigez deux prompts identiques SAUF la mention de cet axe -- une seule variable change, comme dans une expérience contrôlée
-3. Générez les deux images via `generate_image()` (`quality=""low""` suffit pour cette mesure)
-4. Calculez pour chaque image une statistique PIL pertinente pour votre axe
-5. Concluez : la mesure confirme-t-elle la différence promise ? De combien ? Un seul couple d'images suffit-il à conclure ?
+L'exemple guidé 4 mesure une **palette** ; celui-ci mesure une **densité de détail**, avec un instrument différent : la moyenne des pixels d'un filtre de contours (`FIND_EDGES`). Une image minimaliste est faite de grands aplats, donc de peu de contours ; une image détaillée en accumule.
 
-**Indice 1** : `img.convert(""HSV"")` sépare teinte (H), saturation (S) et luminosité (V) ; `ImageStat.Stat(img_hsv).mean` donne la moyenne de chaque canal. **Attention aux unités** : Pillow encode H sur **0-255** (pas 0-360°) ; un bleu pur donne H ≈ 170, pas 240. **Attention à la circularité** : la teinte est un angle — deux rouges de part et d'autre de la coupure (H=254 et H=0) donnent une moyenne arithmétique de 127 (cyan), alors que la moyenne circulaire reste rouge. **Masquez les pixels peu saturés** (S < 30) : un gris a H=0 et ne doit pas compter comme rouge. Pour une palette chaude vs froide, mesurez une **proportion de pixels** dans des secteurs H (chaud : 0-60 et 200-255, froid : 100-180) plutôt qu'une moyenne seule. Diurne vs nocturne se lit surtout sur V ; saturée vs désaturée sur S.
-
-**Indice 2** : pour décoder l'image depuis le résultat de `generate_image()` : `Image.open(BytesIO(base64.b64decode(result[""image_url""].split("","", 1)[1])))`.","## Exercises to complete
+Le point de méthode est le même que pour la palette : **figer le sujet** (un petit port de pêche, ses bateaux, ses collines) et le style, pour que seule la mention du niveau de détail change. Sans cela, la mesure confondrait la consigne et la scène décrite — un ciel est vide, une foule est dense, quel que soit le prompt.
+","## Exercises to complete
 
 ### Exercise 4 : Does the prompt keep its promises? Measuring on the pixels
 
@@ -21077,39 +21181,69 @@ Writing a rich prompt is one thing; checking that the model actually obeyed is a
 
 **Hint 1** : `img.convert(""HSV"")` separates hue (H), saturation (S) and brightness (V); `ImageStat.Stat(img_hsv).mean` gives the mean of each channel. **Mind the units**: Pillow encodes H on **0-255** (not 0-360°); a pure blue gives H ≈ 170, not 240. **Beware of circularity**: hue is an angle — two reds on either side of the wrap-around (H=254 and H=0) give an arithmetic mean of 127 (cyan), while the circular mean stays red. **Mask low-saturation pixels** (S < 30): a gray has H=0 and must not count as red. For a warm vs cold palette, measure a **proportion of pixels** in H sectors (warm: 0-60 and 200-255, cold: 100-180) rather than a mean alone. Daytime vs night reads mostly on V; saturated vs desaturated on S.
 
-**Hint 2** : to decode the image from the result of `generate_image()`: `Image.open(BytesIO(base64.b64decode(result[""image_url""].split("","", 1)[1])))`.",,,,,,,3125fe228698ecf5,2895e19875e1992b,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,ccb08b37,code,fr,2a9dfbff3fef64d1,"# Exercice 4 : Le prompt tient-il ses promesses ? (densite de detail, mesure sur les pixels)
+**Hint 2** : to decode the image from the result of `generate_image()`: `Image.open(BytesIO(base64.b64decode(result[""image_url""].split("","", 1)[1])))`.",,,,,,,1d66e2af43278269,2895e19875e1992b,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,ccb08b37,code,fr,ef08a391d9a75f16,"# Exemple guide 5 : densite de detail, mesuree sur les pixels
+# Contribution etudiante de @hellsgame14-create (PR #23121)
+import matplotlib.pyplot as plt
+from PIL import ImageFilter, ImageStat
 
 # Etape 1 : Axe visuel binaire choisi
-axe_choisi = None  # TODO etudiant : ""minimaliste vs detaille""
+axe_choisi_ex5 = ""minimaliste vs detaille""
 
-# Etape 2 : Deux prompts identiques sauf la mention de l'axe
-prompt_axe_a = ""...""  # TODO etudiant : version A (ex. ""minimalist composition, few large flat shapes"")
-prompt_axe_b = ""...""  # TODO etudiant : version B (ex. ""highly detailed, intricate scene"")
-# Indice : ne changez QUE la mention du niveau de detail, gardez sujet et style identiques
+# Etape 2 : Les prompts gardent le meme sujet et le meme style
+prompt_ex5_a = (
+    ""A small fishing harbor with boats and hills in the background, ""
+    ""wide shot, digital painting, minimalist composition, few large flat shapes.""
+)
+prompt_ex5_b = (
+    ""A small fishing harbor with boats and hills in the background, ""
+    ""wide shot, digital painting, highly detailed composition, intricate ropes, ""
+    ""wooden textures, small objects and detailed reflections.""
+)
 
-# Etape 3 : Generation des deux images (quality=""low"" suffit pour mesurer)
-# result_a = generate_image(prompt=prompt_axe_a, size=""1024x1024"", quality=""low"")
-# result_b = generate_image(prompt=prompt_axe_b, size=""1024x1024"", quality=""low"")
-# Indice : decoder l'image comme dans l'exemple guide 4 (data: URL ou https)
+# Etape 3 : Generation des deux images
+result_ex5_a = generate_image(prompt=prompt_ex5_a, size=""1024x1024"", quality=""low"")
+result_ex5_b = generate_image(prompt=prompt_ex5_b, size=""1024x1024"", quality=""low"")
+img_ex5_a = decoder_image(result_ex5_a)
+img_ex5_b = decoder_image(result_ex5_b)
 
-# Etape 4 : Mesure PIL sur chaque image
-# from PIL import ImageFilter
-mesure_a = None  # TODO etudiant : statistique PIL pour l'image A
-mesure_b = None  # TODO etudiant : meme statistique pour l'image B
-# Indice : deux familles de mesures possibles --
-# - densite de contours : img.convert(""L"").filter(ImageFilter.FIND_EDGES), puis
-#   moyenne des pixels ; une image minimaliste a de grands aplats -> peu de contours ;
-# - richesse de couleurs : img.quantize(colors=64).getcolors() puis nombre de
-#   couleurs reellement utilisees (et pas seulement demandees).
-# ATTENTION au piege : la densite de contours depend aussi du SUJET (un ciel est
-# vide, une foule est dense). Figez le meme sujet dans les deux prompts, sinon la
-# mesure confond le niveau de detail demande et la scene decrite.
+fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+for ax, img, titre in [(axes[0], img_ex5_a, ""A : minimaliste""),
+                       (axes[1], img_ex5_b, ""B : detaille"")]:
+    if img is not None:
+        ax.imshow(img)
+    else:
+        ax.text(0.5, 0.5, ""Generation echouee"", ha=""center"", va=""center"")
+    ax.set_title(titre)
+    ax.axis(""off"")
+plt.tight_layout()
+plt.show()
+
+# Etape 4 : Mesure de la densite moyenne de contours
+# Cette mesure est un indicateur simple : elle depend aussi du contenu de l'image.
+def mesurer_contours_ex5(img):
+    contours = img.convert(""L"").filter(ImageFilter.FIND_EDGES)
+    return ImageStat.Stat(contours).mean[0]
+
+mesure_ex5_a = mesurer_contours_ex5(img_ex5_a) if img_ex5_a is not None else None
+mesure_ex5_b = mesurer_contours_ex5(img_ex5_b) if img_ex5_b is not None else None
 
 # Etape 5 : Conclusion chiffree
-conclusion_ex4 = None  # TODO etudiant : la mesure confirme-t-elle l'axe ? de combien ?
+if mesure_ex5_a is not None and mesure_ex5_b is not None:
+    ecart_ex5 = mesure_ex5_b - mesure_ex5_a
+    conclusion_ex5_detail = (
+        f""Image minimaliste : densite de contours = {mesure_ex5_a:.2f}. ""
+        f""Image detaillee : densite de contours = {mesure_ex5_b:.2f}. ""
+        f""Ecart detaillee - minimaliste = {ecart_ex5:+.2f}. ""
+        + (""La mesure va dans le sens attendu."" if mesure_ex5_b > mesure_ex5_a else
+           ""La mesure ne confirme pas clairement l'hypothese pour ces deux images."")
+        + "" Une seule image par prompt ne suffit pas pour conclure de maniere generale.""
+    )
+else:
+    conclusion_ex5_detail = ""Au moins une generation a echoue : comparaison impossible.""
 
-print(""Exercice a completer"")",,,,,,,,2a9dfbff3fef64d1,,,,,,,,,,,,,,,
+print(conclusion_ex5_detail)
+",,,,,,,,ef08a391d9a75f16,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,aa0a8773,markdown,fr,64fd592dbbe12823,"## Conclusion
 
 gpt-image (la famille de generation d'images d'OpenAI utilisee depuis 2025, qui a succede a DALL-E 3) via l'API OpenAI directe illustre l'approche **boite noire managée** : on delègue entierement le pipeline de generation a un service heberge et on consomme le resultat via `generate_image(prompt, size, quality, style)`. Les parametres exposes (`size`, `quality`, `style`) restent volontairement restreints -- l'optimisation fine (sampler, scheduler, CFG) est inaccessible, ce qui est coherent avec le public vise (createurs de contenu, prototypage rapide).
@@ -21211,24 +21345,14 @@ What stands out: the **content** and **style** instructions (palette, light, obj
 This is the methodological point of this example: two visual claims of comparable appearance — ""the lighting changes"", ""the palette changes"" — separate as soon as one measures, one carried by a gap of **49 points**, the other by **4.1** on a 255 scale. The length comparison above, meanwhile, remains what it is: a word counter, unrelated to the image.
 
 **A methodological caveat, and it matters.** These values are those of **this run**. Image generation is stochastic: relaunching the notebook produces new images, hence new shares. Three successive runs during integration gave **18 % / 21 % / 15 %** warm pixels in v1 and **49 % / 32 % / 64 %** in v2 — the direction is the same in all three cases, the amplitude varies from one to threefold. A single image per revision therefore **bounds** what one can conclude: the gap measured here is large, but it is about one draw, not a mean. This is exactly what exercise 6 invites you to address.",,,,,,,f4ee84f9f780248f,1cb012a84046ecb6,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,t01-ex5-md,markdown,fr,a93332ef98cf55af,"### Exercice 5 : Effet d'un paramètre, ou bruit du tirage ?
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,t01-ex5-md,markdown,fr,f1fd6ee62c1ebace,"### Exemple guidé 6 : Effet de `quality`, ou bruit du tirage ?
 
-L'exemple guidé 2 compare deux images générées à partir de deux prompts distincts, dont les adjectifs diffèrent : les deux images diffèrent, mais un écart observé sur un seul tirage ne prouve pas un effet. Toute comparaison A/B d'un générateur d'images doit donc répondre à une question préalable : **la différence entre A et B dépasse-t-elle celle qui sépare deux tirages de A ?**
+*Contribution etudiante de @hellsgame14-create (PR #23121), integree comme exemple guide.*
 
-*D'où cette précaution ?* Une version antérieure de cet exemple comparait deux images dont la seule différence formelle était un paramètre `style` que `generate_image()` n'envoie pas à `gpt-image-1` : les deux requêtes transmises étaient identiques, et l'écart visible ne pouvait être que le hasard du tirage. Détecter ce type d'illusion demande précisément le protocole de l'exercice : comparer l'écart entre deux conditions à l'écart entre deux tirages d'une même condition.
+Un écart observé entre deux images ne prouve rien tant qu'on ne l'a pas comparé à l'écart entre **deux tirages du même prompt**. C'est le protocole de cet exemple : deux images en `quality=""low""`, deux en `quality=""high""`, même prompt riche en détails fins (un jardin botanique), et la même mesure de densité de contours que l'exemple précédent.
 
-**Objectif** : mesurer l'effet d'un paramètre réellement envoyé à l'API, `quality`, en le comparant au bruit du tirage.
-
-**Étapes** :
-1. Choisissez un prompt riche en détails fins (texture, feuillage, foule, objets nombreux)
-2. Générez 2 images en `quality=""low""` et 2 en `quality=""high""`, avec le même prompt et la même taille
-3. Choisissez une mesure qui devrait dépendre de la qualité : densité de contours, taille du PNG en octets, temps de réponse (`result[""response_time""]`)
-4. Calculez le **bruit** (l'écart entre les deux images `low`, puis entre les deux `high`) et l'**effet** (l'écart entre la moyenne `low` et la moyenne `high`)
-5. Concluez : l'effet dépasse-t-il le bruit, et pour quelle mesure ? Deux images par condition suffisent-elles pour l'affirmer ?
-
-**Indice 1** : `ImageStat.Stat(img.convert(""L"").filter(ImageFilter.FIND_EDGES)).mean[0]` donne une densité de contours moyenne : une image plus détaillée a davantage de contours.
-
-**Indice 2** : `quality=""high""` coûte nettement plus cher que `low`. Quatre générations suffisent pour cet exercice ; ne lancez pas de boucle plus longue sans raison.","### Exercise 5 : Effect of a parameter, or draw noise?
+Le **bruit** est l'écart entre les deux images d'une même condition ; l'**effet** est l'écart entre les moyennes des deux conditions. La conclusion ne s'autorise à parler d'effet que si celui-ci dépasse le bruit — et deux images par condition restent un petit échantillon, ce que la conclusion dit explicitement.
+","### Exercise 5 : Effect of a parameter, or draw noise?
 
 Guided example 2 compares two images generated from two distinct prompts, whose adjectives differ: the two images differ, but a gap observed on a single draw does not prove an effect. Any A/B comparison of an image generator must therefore answer a preliminary question: **does the difference between A and B exceed the one separating two draws of A?**
 
@@ -21245,46 +21369,70 @@ Guided example 2 compares two images generated from two distinct prompts, whose 
 
 **Hint 1** : `ImageStat.Stat(img.convert(""L"").filter(ImageFilter.FIND_EDGES)).mean[0]` gives a mean edge density: a more detailed image has more edges.
 
-**Hint 2** : `quality=""high""` costs significantly more than low. Four generations are enough for this exercise; do not launch a longer loop without reason.",,,,,,,a93332ef98cf55af,a486c1fa19d4a98b,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,t01-ex5-code,code,fr,eb3a0e64bc0bdb4b,"# Exercice 5 : Effet d'un parametre, ou bruit du tirage ?
+**Hint 2** : `quality=""high""` costs significantly more than low. Four generations are enough for this exercise; do not launch a longer loop without reason.",,,,,,,f1fd6ee62c1ebace,a486c1fa19d4a98b,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,t01-ex5-code,code,fr,59a56a280ca0d873,"# Exemple guide 6 : effet d'un parametre, ou bruit du tirage ?
+# Contribution etudiante de @hellsgame14-create (PR #23121)
+import statistics
 from PIL import ImageFilter, ImageStat
 
 # Etape 1 : Prompt riche en details fins
-prompt_ex5 = ""...""  # TODO etudiant : votre prompt en anglais
+prompt_ex6_quality = (
+    ""A crowded botanical garden with hundreds of leaves, detailed flowers, ""
+    ""tiny insects, stone paths, intricate textures and realistic lighting.""
+)
 
 # Etape 2 : Deux generations par valeur de quality
-# resultats_low = [generate_image(prompt=prompt_ex5, size=""1024x1024"", quality=""low"") for _ in range(2)]
-# resultats_high = [generate_image(prompt=prompt_ex5, size=""1024x1024"", quality=""high"") for _ in range(2)]
+# Attention : ces quatre appels consomment du budget API.
+resultats_ex6_low = [
+    generate_image(prompt=prompt_ex6_quality, size=""1024x1024"", quality=""low"")
+    for _ in range(2)
+]
+resultats_ex6_high = [
+    generate_image(prompt=prompt_ex6_quality, size=""1024x1024"", quality=""high"")
+    for _ in range(2)
+]
 
+# Etape 3 : Une mesure par image : densite moyenne de contours
+def mesure_ex6_quality(img):
+    contours = img.convert(""L"").filter(ImageFilter.FIND_EDGES)
+    return ImageStat.Stat(contours).mean[0]
 
-# Etape 3 : Une mesure par image
-def mesure_ex5(img):
-    return None  # TODO etudiant : densite de contours, taille du PNG, ...
+images_ex6_low = [decoder_image(r) for r in resultats_ex6_low]
+images_ex6_high = [decoder_image(r) for r in resultats_ex6_high]
+mesures_ex6_low = [mesure_ex6_quality(img) for img in images_ex6_low if img is not None]
+mesures_ex6_high = [mesure_ex6_quality(img) for img in images_ex6_high if img is not None]
 
-
-# Etape 4 : Bruit (entre deux tirages d'une meme valeur) et effet (entre valeurs)
-bruit_low = None   # TODO etudiant : ecart entre les deux images low
-bruit_high = None  # TODO etudiant : ecart entre les deux images high
-effet = None       # TODO etudiant : ecart entre la moyenne low et la moyenne high
+# Etape 4 : Bruit intra-condition et effet entre les moyennes
+bruit_ex6_low = abs(mesures_ex6_low[0] - mesures_ex6_low[1]) if len(mesures_ex6_low) == 2 else None
+bruit_ex6_high = abs(mesures_ex6_high[0] - mesures_ex6_high[1]) if len(mesures_ex6_high) == 2 else None
+effet_ex6 = (abs(statistics.mean(mesures_ex6_high) - statistics.mean(mesures_ex6_low))
+             if mesures_ex6_low and mesures_ex6_high else None)
 
 # Etape 5 : Conclusion chiffree
-conclusion_ex5 = None  # TODO etudiant : l'effet depasse-t-il le bruit ? pour quelle mesure ?
+if effet_ex6 is not None and bruit_ex6_low is not None and bruit_ex6_high is not None:
+    bruit_ex6_max = max(bruit_ex6_low, bruit_ex6_high)
+    conclusion_ex6_quality = (
+        f""Densite contours low = {[round(m, 2) for m in mesures_ex6_low]}; ""
+        f""high = {[round(m, 2) for m in mesures_ex6_high]}. ""
+        f""Bruit low = {bruit_ex6_low:.2f}; bruit high = {bruit_ex6_high:.2f}; ""
+        f""effet entre moyennes = {effet_ex6:.2f}. ""
+        + (""L'effet depasse le bruit observe dans ces tirages."" if effet_ex6 > bruit_ex6_max else
+           ""L'effet ne depasse pas le bruit observe dans ces tirages."")
+        + "" Avec seulement deux images par condition, le resultat reste indicatif.""
+    )
+else:
+    conclusion_ex6_quality = ""Generation echouee ou resultats incomplets : comparaison impossible.""
 
-print(""Exercice a completer"")",,,,,,,,eb3a0e64bc0bdb4b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,t01-ex6-md,markdown,fr,34e476aa8ce567b9,"### Exercice 6 : Une consigne de mise en page est-elle respectée ?
+print(conclusion_ex6_quality)
+",,,,,,,,59a56a280ca0d873,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,t01-ex6-md,markdown,fr,6df1160f40776d80,"### Exemple guidé 7 : Une consigne de mise en page est-elle respectée ?
 
-Dans l'exemple guidé 3, le groupe demande « plenty of negative space on the left for homepage text » et constate, à l'œil, que la consigne n'est pas clairement respectée. Une consigne de composition se vérifie pourtant sur les pixels : une zone vide est une zone où l'image varie peu.
+*Contribution etudiante de @hellsgame14-create (PR #23121), integree comme exemple guide.*
 
-**Objectif** : mesurer, sur plusieurs générations, si une consigne de placement est respectée, et à quelle fréquence.
+L'exemple guidé 3 concluait à l'œil que « negative space on the left » n'était pas respecté. Cet exemple le **mesure** : la bannière est découpée en trois tiers verticaux, et le tiers gauche — celui qui doit rester vide — est comparé au tiers droit, qui porte le sujet, par le rapport de leurs écarts-types de luminosité.
 
-**Étapes** :
-1. Rédigez un prompt de bannière qui place explicitement le sujet d'un côté et laisse l'autre côté vide (fond uni), en format paysage `size=""1536x1024""`
-2. Définissez un critère mesurable : par exemple, découper l'image en trois tiers verticaux et comparer la variabilité de luminosité du tiers censé être vide à celle du tiers qui porte le sujet
-3. Fixez le seuil **avant** de générer : à partir de quel rapport considérez-vous le tiers comme vide ?
-4. Générez 3 images avec ce prompt (`quality=""low""`) et appliquez le critère à chacune
-5. Concluez : combien d'images sur 3 respectent la consigne ? Reformulez le prompt une fois (position du sujet, fond, expressions comme « copy space ») et comparez le taux de réussite
-
-**Indice** : `img.crop((0, 0, largeur // 3, hauteur))` isole le tiers gauche ; `ImageStat.Stat(tiers.convert(""L"")).stddev[0]` mesure sa variabilité de luminosité.","### Exercise 6 : Is a layout instruction respected?
+Deux précautions de méthode, toutes deux dans le code : le **seuil est fixé avant la génération** (0,35), et le prompt est **reformulé** pour comparer les taux de réussite sur trois nouveaux tirages, plutôt que de conclure sur une seule image. La limite de l'instrument est dite : un écart-type faible ne garantit pas l'absence d'objet, seulement une faible variabilité de luminosité.
+","### Exercise 6 : Is a layout instruction respected?
 
 In guided example 3, the group asks for ""plenty of negative space on the left for homepage text"" and observes, by eye, that the instruction is not clearly respected. A composition instruction can however be checked on the pixels: an empty area is an area where the image varies little.
 
@@ -21297,29 +21445,85 @@ In guided example 3, the group asks for ""plenty of negative space on the left f
 4. Generate 3 images with this prompt (`quality=""low""`) and apply the criterion to each
 5. Conclude: how many images out of 3 respect the instruction? Reformulate the prompt once (subject position, background, expressions like ""copy space"") and compare the success rate
 
-**Hint** : `img.crop((0, 0, largeur // 3, hauteur))` isolates the left third; `ImageStat.Stat(tiers.convert(""L"")).stddev[0]` measures its brightness variability.",,,,,,,34e476aa8ce567b9,f2dc49c2d6c99675,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,t01-ex6-code,code,fr,7252021ea6e64399,"# Exercice 6 : Une consigne de mise en page est-elle respectee ?
+**Hint** : `img.crop((0, 0, largeur // 3, hauteur))` isolates the left third; `ImageStat.Stat(tiers.convert(""L"")).stddev[0]` measures its brightness variability.",,,,,,,6df1160f40776d80,f2dc49c2d6c99675,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,t01-ex6-code,code,fr,b2d5af24a3c48ced,"# Exemple guide 7 : une consigne de mise en page est-elle respectee ?
+# Contribution etudiante de @hellsgame14-create (PR #23121)
+import matplotlib.pyplot as plt
 from PIL import ImageStat
 
-# Etape 1 : Prompt de banniere (sujet d'un cote, l'autre cote vide)
-prompt_ex6 = ""...""  # TODO etudiant : votre prompt en anglais
+# Etape 1 : Prompt de banniere : sujet a droite, tiers gauche vide
+prompt_ex7 = (
+    ""Wide landscape website banner, 1536x1024. A friendly humanoid robot ""
+    ""standing on the far right. The entire left third must remain empty, ""
+    ""with a plain light blue background and no objects or text. Clean modern ""
+    ""digital illustration, clear empty copy space on the left.""
+)
 
-# Etape 2 et 3 : Critere et seuil, fixes AVANT de generer
-seuil_ex6 = None  # TODO etudiant : rapport de variabilite en dessous duquel le tiers est ""vide""
+# Etape 2 et 3 : Critere et seuil fixes AVANT la generation
+# Le tiers gauche est considere comme vide si sa variabilite est inferieure
+# ou egale a 35 % de celle du tiers droit, qui contient le sujet.
+seuil_ex7 = 0.35
 
+def ratio_variabilite_tiers_ex7(img):
+    largeur, hauteur = img.size
+    gauche = img.crop((0, 0, largeur // 3, hauteur)).convert(""L"")
+    droite = img.crop((2 * largeur // 3, 0, largeur, hauteur)).convert(""L"")
+    std_gauche = ImageStat.Stat(gauche).stddev[0]
+    std_droite = ImageStat.Stat(droite).stddev[0]
+    return std_gauche / max(std_droite, 1e-6)
 
-def tiers_vide(img):
-    return None  # TODO etudiant : True si le tiers vise est vide selon votre critere
-
+def tiers_vide_ex7(img):
+    return ratio_variabilite_tiers_ex7(img) <= seuil_ex7
 
 # Etape 4 : Trois generations et application du critere
-# resultats_ex6 = [generate_image(prompt=prompt_ex6, size=""1536x1024"", quality=""low"") for _ in range(3)]
-verdicts_ex6 = []  # TODO etudiant : un booleen par image
+resultats_ex7 = [
+    generate_image(prompt=prompt_ex7, size=""1536x1024"", quality=""low"")
+    for _ in range(3)
+]
+images_ex7 = [decoder_image(r) for r in resultats_ex7]
+verdicts_ex7 = [tiers_vide_ex7(img) for img in images_ex7 if img is not None]
 
-# Etape 5 : Taux de reussite, puis second prompt reformule
-conclusion_ex6 = None  # TODO etudiant : combien sur 3 ? la reformulation aide-t-elle ?
+fig, axes = plt.subplots(1, len(images_ex7), figsize=(6 * len(images_ex7), 4))
+for ax, img, verdict in zip(axes, images_ex7, verdicts_ex7):
+    if img is not None:
+        ax.imshow(img)
+        ax.axvline(img.size[0] // 3, color=""red"", linewidth=1)
+    ax.set_title(f""tiers gauche vide : {verdict}"")
+    ax.axis(""off"")
+plt.tight_layout()
+plt.show()
 
-print(""Exercice a completer"")",,,,,,,,7252021ea6e64399,,,,,,,,,,,,,,,
+# Etape 5 : Reformulation et comparaison sur trois nouveaux tirages
+prompt_ex7_v2 = (
+    ""Website hero banner, landscape 1536x1024. Place one small friendly ""
+    ""humanoid robot entirely within the far-right third. Keep the entire ""
+    ""left two-thirds as a completely plain, uniform pale blue background, ""
+    ""with absolutely no objects, patterns, shadows or text there. Strong ""
+    ""visual separation, generous empty copy space on the left, clean modern illustration.""
+)
+resultats_ex7_v2 = [
+    generate_image(prompt=prompt_ex7_v2, size=""1536x1024"", quality=""low"")
+    for _ in range(3)
+]
+images_ex7_v2 = [decoder_image(r) for r in resultats_ex7_v2]
+verdicts_ex7_v2 = [tiers_vide_ex7(img) for img in images_ex7_v2 if img is not None]
+
+if verdicts_ex7 and verdicts_ex7_v2:
+    taux_ex7_v1 = sum(verdicts_ex7) / len(verdicts_ex7)
+    taux_ex7_v2 = sum(verdicts_ex7_v2) / len(verdicts_ex7_v2)
+    conclusion_ex7 = (
+        f""Prompt initial : {sum(verdicts_ex7)}/{len(verdicts_ex7)} images conformes ""
+        f""({taux_ex7_v1:.0%}). Prompt reformule : {sum(verdicts_ex7_v2)}/""
+        f""{len(verdicts_ex7_v2)} images conformes ({taux_ex7_v2:.0%}). ""
+        ""Le critere repose sur la variabilite de luminosite : il est indicatif et ""
+        ""ne garantit pas que la zone ne contienne aucun objet. Trois images par version ""
+        ""restent un petit echantillon.""
+    )
+else:
+    conclusion_ex7 = ""Generation echouee ou resultats incomplets : comparaison impossible.""
+
+print(conclusion_ex7)
+",,,,,,,,b2d5af24a3c48ced,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb,bd9f3275,code,fr,06c484f9b7560109,"# Parameters
 notebook_mode = ""batch""
 skip_widgets = ""True""
@@ -21336,9 +21540,9 @@ SD XL Turbo via Forge WebUI (Automatic1111 fork) illustre l'approche **open weig
 
 **Pour aller plus loin** : le pipeline ComfyUI sous-jacent à Forge est directement exploitable par les notebooks 02-Advanced (FLUX, Qwen 2509) et 03-Orchestration — la maîtrise de l'API ComfyUI est un prérequis transverse.
 ",,,,,,,,6d251de1374e4603,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,2905ccc5,code,fr,74eb8fe1a10de768,"# Parameters
-BATCH_MODE = ""false""
-",,,,,,,,74eb8fe1a10de768,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,2905ccc5,code,fr,d8cfd07b7b0f3965,"# Parameters
+BATCH_MODE = ""true""
+",,,,,,,,d8cfd07b7b0f3965,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,3217bab9,markdown,fr,27da071c58027a6b,"### Exercice 4 : Politique de retry et timeout adaptatif pour le client ComfyUI
 
 L'objectif de cet exercice est de fiabiliser l'appel au service en implementant une politique de retry a backoff exponentiel, en distinguant les erreurs transitoires des erreurs definitives.
@@ -21861,7 +22065,7 @@ GPT-5 image generation (via OpenRouter) embodies the **native multimodal** appro
 **Positioning in the ecosystem**: GPT-5 completes the course's palette by covering the *comprehension + generation* axis, where DALL-E 3 focuses on generation alone and SD XL Turbo exposes the internal workings. The large family of GPT-5 models exposed by the OpenRouter API opens a wide comparative experimentation ground but introduces a strong dependency on the routing provider.
 
 **To go further**: explore the `04-1-Educational-Content-Generation` notebook which orchestrates several models to produce a complete pedagogical deliverable (image + alt text + structured metadata).",,,,,,,52999168987cebf9,163ad7407b7aaac6,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,32bae159,code,fr,d8cfd07b7b0f3965,"# Parameters
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,d19f9c6c,code,fr,d8cfd07b7b0f3965,"# Parameters
 BATCH_MODE = ""true""
 ",,,,,,,,d8cfd07b7b0f3965,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,nv-exemple-3modes-md,markdown,fr,b667b1b68a05e661,"### Exemple guidé : analyse personnalisée à trois modes pour un domaine
@@ -21934,133 +22138,388 @@ import pprint
 results = analyse_complete(image_source, custom_prompt, domain)
 pprint.pprint(results)
 ",,,,,,,,9c488597d8da6e0b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,nv-exo1-md,markdown,fr,6f2e3887c3ff7ae7,"### Exercice 1 : Prompt neutre vs prompt orienté — mesurer la sensibilité de la formulation
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,nv-exo1-md,markdown,fr,5a143c138393c776,"### Exemple guidé : prompt neutre vs prompt orienté — mesurer la sensibilité de la formulation
 
-Une même image analysée par GPT-5 peut produire des réponses très différentes selon la formulation du prompt. L'objectif est de **mesurer** cette sensibilité au lieu de la subir : deux prompts qui ne diffèrent que par leur angle (neutre vs orienté vers un cadre de lecture), même image, même format de sortie.
+*Contribution étudiante (PR #23305, github.com/Perr1neF0), intégrée comme exemple guidé.*
 
-**Étapes** :
-1. Choisissez une image parmi `example_images`
-2. Rédigez un `prompt_neutre` : description objective, sans orientation théorique
-3. Rédigez un `prompt_oriente` : même format de sortie, mais qui oriente l'analyse vers un cadre (historique, esthétique, technique...)
-4. Lancez les deux analyses et comparez : éléments cités, vocabulaire, structure
-5. Concluez en une phrase : quelle formulation sert quel usage pédagogique ?
+Une même image analysée par GPT-5 peut produire des réponses très différentes selon la formulation du prompt. L'exemple mesure cette sensibilité au lieu de la subir : deux prompts qui ne diffèrent que par leur **angle** (neutre vs orienté vers l'histoire des sciences), même image, même format de sortie imposé.
 
-**Indice** : ne changez QUE la consigne d'orientation entre les deux prompts — si le format de sortie diffère aussi, la comparaison ne mesure plus la formulation.
-","### Exercise 1 : Neutral prompt vs oriented prompt — measuring the sensitivity to wording
+**Points clés** :
+- Le format de sortie est factorisé dans une seule variable (`format_sortie`) — si le format différait aussi, la comparaison ne mesurerait plus la formulation
+- La comparaison est **chiffrée** : un Jaccard lexical sur les mots de cinq lettres et plus, calculé par `mots_cles()`, remplace l'estimation à l'œil
+- Un contrôle vérifie que les trois sections demandées sont présentes dans chaque sortie ; sans lui, un écart pourrait n'être qu'un non-respect du format
+- La conclusion imprimée relie chaque formulation à un usage : inventaire visuel d'un côté, cours disciplinaire de l'autre","### Guided example: neutral prompt vs oriented prompt — measuring the sensitivity to wording
 
-The same image analyzed by GPT-5 can produce very different answers depending on how the prompt is worded. The goal is to **measure** this sensitivity instead of undergoing it: two prompts that differ only in their angle (neutral vs oriented toward a reading frame), same image, same output format.
+*Student contribution (PR #23305, github.com/Perr1neF0), integrated as a guided example.*
 
-**Steps**:
-1. Choose an image from `example_images`
-2. Write a `prompt_neutre`: objective description, without theoretical orientation
-3. Write a `prompt_oriente`: same output format, but it orients the analysis toward a frame (historical, aesthetic, technical...)
-4. Run both analyses and compare: elements mentioned, vocabulary, structure
-5. Conclude in one sentence: which wording serves which pedagogical use?
+The same image analyzed by GPT-5 can produce very different answers depending on the prompt wording. The example measures this sensitivity instead of suffering it: two prompts differing only in their **angle** (neutral vs oriented toward the history of science), same image, same imposed answer format.
 
-**Hint**: change ONLY the orientation instruction between the two prompts — if the output format also differs, the comparison no longer measures the wording.",,,,,,,6f2e3887c3ff7ae7,71ca99cb1e66f5f8,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,nv-exo1-code,code,fr,5fb17155d5ea3bc3,"# Exercice 1 : Prompt neutre vs prompt oriente -- mesurer la sensibilite de la formulation
-# TODO etudiant : comparer deux analyses de la MEME image sous deux formulations
+**Key points**:
+- The answer format is factored into a single variable (`format_sortie`) — if the format also differed, the comparison would no longer measure the wording
+- The comparison is **quantified**: a lexical Jaccard over words of five letters and more, computed by `mots_cles()`, replaces eyeball estimation
+- A check verifies that the three requested sections are present in each text; without it, a gap could be a mere format violation
+- The printed conclusion links each wording to a use: visual inventory on one side, disciplinary course on the other",,,,,,,5a143c138393c776,7152123ec67866a4,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,nv-exo1-code,code,fr,65d7b11a5fb4915f,"# Exemple guide : prompt neutre vs prompt oriente -- mesurer la sensibilite de la formulation
+# (contribution etudiante, PR #23305 -- github.com/Perr1neF0)
+import re
 
 # Etape 1 : Choix de l'image
 image_exo1 = example_images[1]['url']  # Laboratoire (Science et Technologie)
 
 # Etape 2 : Redaction des deux prompts
-prompt_neutre = ""...""   # TODO etudiant : description objective, format de sortie en sections
-prompt_oriente = ""...""  # TODO etudiant : meme format, mais oriente vers UN cadre de lecture
+format_sortie = f""""""Réponds en {language}, avec exactement ces 3 sections :
+**1. Éléments visibles** : liste à puces (5 à 8 éléments)
+**2. Analyse** : 5 lignes maximum
+**3. Conclusion** : une seule phrase""""""
+prompt_neutre = (
+    ""Décris cette image de façon objective, sans cadre théorique particulier.\n\n""
+    + format_sortie
+)
+prompt_oriente = (
+    ""Analyse cette image sous l'angle de l'histoire des sciences : ""
+    ""instruments, méthodes de travail et évolution des pratiques de laboratoire.\n\n""
+    + format_sortie
+)
 # Indice : seul l'angle change -- le format de sortie reste identique
 
 # Etape 3 : Lancement des deux analyses
-# TODO etudiant : resultat_neutre = analyze_image_with_gpt5(image_exo1, prompt=prompt_neutre)
-# TODO etudiant : resultat_oriente = analyze_image_with_gpt5(image_exo1, prompt=prompt_oriente)
+resultat_neutre = analyze_image_with_gpt5(image_exo1, prompt=prompt_neutre)
+resultat_oriente = analyze_image_with_gpt5(image_exo1, prompt=prompt_oriente)
 
 # Etape 4 : Comparaison mesuree
-# TODO etudiant : les deux analyses citent-elles les memes elements visuels ?
-# TODO etudiant : quels termes apparaissent chez l'une et pas chez l'autre ?
+def mots_cles(texte, taille_min=5):
+    """"""Ensemble des mots significatifs (hors mots courts) d'un texte.""""""
+    return {m for m in re.findall(r""[a-zàâçéèêëîïôûùüÿœ'-]+"", texte.lower())
+            if len(m) >= taille_min}
 
-resultat_neutre = None   # TODO etudiant : remplacer par l'appel a analyze_image_with_gpt5
-resultat_oriente = None  # TODO etudiant
+if resultat_neutre['success'] and resultat_oriente['success']:
+    t_neutre = resultat_neutre['analysis']
+    t_oriente = resultat_oriente['analysis']
+    m_neutre, m_oriente = mots_cles(t_neutre), mots_cles(t_oriente)
 
-print(""Exercice a completer"")
-",,,,,,,,5fb17155d5ea3bc3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,nv-exo2-md,markdown,fr,00cd7ee3c99af9d4,"### Exercice 2 : Alt text contextuel — une image, trois contextes
+    print(f""Longueur : neutre={len(t_neutre)} car. | orienté={len(t_oriente)} car."")
+    print(f""Mots communs : {len(m_neutre & m_oriente)}"")
+    print(f""Jaccard (similarité lexicale) : ""
+          f""{len(m_neutre & m_oriente) / len(m_neutre | m_oriente):.2f}"")
+    print(""\nSeulement dans le NEUTRE  :"", sorted(m_neutre - m_oriente)[:15])
+    print(""Seulement dans l'ORIENTÉ  :"", sorted(m_oriente - m_neutre)[:15])
 
-L'exemple guidé d'accessibilité a généré trois **longueurs** de description pour une même image. Le niveau suivant : la même image publiée dans trois **contextes** différents demande trois alt texts différents, même si la limite de 125 caractères reste la même. Un alt text pertinent dépend de ce que le lecteur est venu chercher.
+    # Sections respectees ? (le format doit etre identique pour que la comparaison soit valide)
+    for nom, t in [(""neutre"", t_neutre), (""orienté"", t_oriente)]:
+        ok = all(s in t.lower() for s in [""éléments visibles"", ""analyse"", ""conclusion""])
+        print(f""Format respecté ({nom}) : {'OUI' if ok else 'NON'}"")
 
-**Étapes** :
-1. Choisissez une image parmi `example_images` (ou votre propre URL)
-2. Définissez trois contextes de publication : article de vulgarisation scientifique, réseau social, manuel scolaire
-3. Rédigez un prompt par contexte : même limite ≤ 125 caractères, mais l'angle d'information s'adapte au contexte
-4. Générez les trois textes et vérifiez : chacun ≤ 125 caractères, et les trois textes sont bien **distincts**
+    print(""\n--- NEUTRE ---\n"", t_neutre)
+    print(""\n--- ORIENTÉ ---\n"", t_oriente)
 
-**Indice** : posez-vous la question « que vient faire le lecteur sur cette page ? » — c'est elle qui détermine quoi garder dans les 125 caractères.
-","### Exercise 2 : Contextual alt text — one image, three contexts
+    print(""\nConclusion : le prompt neutre convient à un inventaire visuel (observation, ""
+          ""alt text, premier contact avec l'image) ; le prompt orienté convient à un ""
+          ""cours disciplinaire, car il fait émerger interprétation et vocabulaire du cadre choisi."")
+else:
+    for nom, r in [(""neutre"", resultat_neutre), (""orienté"", resultat_oriente)]:
+        if not r['success']:
+            print(f""Échec ({nom}) : {r['error']}"")",,,,,,,,65d7b11a5fb4915f,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,nv-exo2-md,markdown,fr,cb5bbe45db5bee54,"### Exemple guidé : alt text contextuel — une image, trois contextes
 
-The accessibility guided example generated three description **lengths** for the same image. The next level: the same image published in three different **contexts** calls for three different alt texts, even if the 125-character limit stays the same. A relevant alt text depends on what the reader came looking for.
+*Contribution étudiante (PR #23305, github.com/Perr1neF0), intégrée comme exemple guidé.*
 
-**Steps**:
-1. Choose an image from `example_images` (or your own URL)
-2. Define three publication contexts: popular-science article, social network, school textbook
-3. Write one prompt per context: same ≤ 125-character limit, but the information angle adapts to the context
-4. Generate the three texts and check: each one is ≤ 125 characters, and the three texts are indeed **distinct**
+L'exemple guidé d'accessibilité a montré trois **longueurs** de description pour une même image. Ici, c'est le **contexte de publication** qui change à longueur constante : un alt text pertinent dépend de ce que le lecteur est venu chercher.
 
-**Hint**: ask yourself ""what did the reader come to do on this page?"" — that question determines what to keep in the 125 characters.",,,,,,,00cd7ee3c99af9d4,d4133e2e75d3e7d3,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,nv-exo2-code,code,fr,a82719dd72ed6dd5,"# Exercice 2 : Alt text contextuel -- une image, trois contextes
-# TODO etudiant : produire trois alt texts DIFFERENTS pour la meme image
+**Points clés** :
+- Les trois consignes de contexte vivent dans un dictionnaire `contextes`, la contrainte de longueur est partagée (`LIMITE = 125`)
+- La contrainte est **vérifiée par mesure** (`len(texte)`), pas à l'œil, avec une relance qui durcit la consigne quand la sortie dépasse la limite
+- Deux contrôles terminaux : chaque texte tient sous la limite, et les trois textes sont **distincts** — sans le second, trois reformulations interchangeables passeraient le test","### Guided example: contextual alt text — one image, three contexts
+
+*Student contribution (PR #23305, github.com/Perr1neF0), integrated as a guided example.*
+
+The accessibility guided example showed three **lengths** of description for the same image. Here, it is the **publication context** that changes at constant length: a relevant alt text depends on what the reader came for.
+
+**Key points**:
+- The three context instructions live in a `contextes` dictionary, the length constraint is shared (`LIMITE = 125`)
+- The constraint is **verified by measurement** (`len(texte)`), not by eye, with a retry that hardens the instruction when the text exceeds the limit
+- Two final checks: each text fits under the limit, and the three texts are **distinct** — without the second, three interchangeable rephrasings would pass the test",,,,,,,cb5bbe45db5bee54,20616386eb07729b,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,nv-exo2-code,code,fr,b17fda52c5ba5857,"# Exemple guide : alt text contextuel -- une image, trois contextes
+# (contribution etudiante, PR #23305 -- github.com/Perr1neF0)
 
 # Etape 1 : Choix de l'image
 image_exo2 = example_images[3]['url']  # Paysage naturel
 
 # Etape 2 : Definition des trois contextes de publication
-contexte_article = ""article de vulgarisation scientifique""  # TODO etudiant : affiner le lectorat vise
-contexte_social = ""publication sur un reseau social""        # TODO etudiant
-contexte_manuel = ""manuel scolaire de geographie""           # TODO etudiant
+contextes = {
+    ""article de vulgarisation scientifique"": (
+        ""Contexte : article de vulgarisation scientifique pour un public curieux ""
+        ""mais non spécialiste. Privilégie le phénomène naturel ou géologique visible ""
+        ""(relief, eau, végétation, climat).""
+    ),
+    ""publication sur un reseau social"": (
+        ""Contexte : publication sur un réseau social. Privilégie l'ambiance, la ""
+        ""lumière et l'impression d'ensemble, avec un ton vivant mais factuel.""
+    ),
+    ""manuel scolaire de geographie"": (
+        ""Contexte : manuel scolaire de géographie pour des élèves. Privilégie le ""
+        ""vocabulaire géographique précis (type de paysage, composantes, échelle).""
+    ),
+}
 
 # Etape 3 : Redaction d'un prompt par contexte
-# TODO etudiant : chaque prompt exige une description <= 125 caracteres ADAPTEE au contexte
-# Indice : meme limite partout -- seul l'angle d'information change
+LIMITE = 125
+
+def prompt_alt(consigne_contexte, limite=LIMITE):
+    return (
+        f""Génère un alt text en {language} pour cette image.\n""
+        f""{consigne_contexte}\n""
+        f""Contraintes : {limite} caractères MAXIMUM (espaces compris), ""
+        ""description factuelle, une seule phrase, aucune interprétation subjective.\n""
+        ""Réponds UNIQUEMENT avec le texte, sans guillemets ni préambule.""
+    )
+
+def generer_alt_text(consigne_contexte, tentatives=3):
+    """"""Appelle GPT-5 et relance si la limite de 125 caracteres est depassee.""""""
+    prompt = prompt_alt(consigne_contexte)
+    texte = """"
+    for _ in range(tentatives):
+        r = analyze_image_with_gpt5(image_exo2, prompt=prompt)
+        if not r['success']:
+            return f""ERREUR : {r['error']}""
+        texte = r['analysis'].strip().strip('""\'«» ')
+        if len(texte) <= LIMITE:
+            return texte
+        # On renforce la contrainte avec la longueur reelle constatee
+        prompt = prompt_alt(consigne_contexte, limite=LIMITE - 20) + (
+            f""\nTa version précédente faisait {len(texte)} caractères : raccourcis-la.""
+        )
+    return texte  # derniere version, meme si trop longue (signalee plus bas)
 
 # Etape 4 : Generation et verification
-# TODO etudiant : alt_texts = {contexte: texte} rempli par les appels a analyze_image_with_gpt5
-# TODO etudiant : verifier len(texte) <= 125 pour chacun, et que les trois textes different
+alt_texts = {ctx: generer_alt_text(consigne) for ctx, consigne in contextes.items()}
 
-alt_texts = {}  # TODO etudiant
+print(""--- Alt texts générés ---"")
+for ctx, texte in alt_texts.items():
+    statut = ""OK"" if len(texte) <= LIMITE else ""TROP LONG""
+    print(f""[{statut}] ({len(texte):3d} car.) {ctx}\n    -> {texte}\n"")
 
-print(""Exercice a completer"")
-",,,,,,,,a82719dd72ed6dd5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,nv-exo3-md,markdown,fr,275eaceb6f66a2d9,"### Exercice 3 : Comparateur d'images — deux images du même domaine côte à côte
+# Les trois textes doivent etre distincts
+textes = [t.lower() for t in alt_texts.values()]
+print(""Trois textes distincts :"", ""OUI"" if len(set(textes)) == len(textes) else ""NON"")
+print(""Tous <= 125 caractères  :"", ""OUI"" if all(len(t) <= LIMITE for t in alt_texts.values()) else ""NON"")",,,,,,,,b17fda52c5ba5857,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,nv-exo3-md,markdown,fr,1dd753d734ab9829,"### Exemple guidé : comparateur d'images — deux images du même domaine côte à côte
 
-**Durée estimée :** 15-20 minutes
+*Contribution étudiante (PR #23305, github.com/Perr1neF0), intégrée comme exemple guidé.*
 
-**Objectif** : comparer deux images d'une même catégorie en un seul workflow — analyses individuelles avec un format identique, puis croisement des résultats.
+Comparer deux images d'un même domaine en un seul workflow : analyse individuelle de chaque image, puis croisement des deux analyses.
 
-**Instructions** :
-1. **Choisissez un domaine** parmi les cas d'usage pédagogiques présentés plus haut
-2. **Sélectionnez deux images** pertinentes pour ce domaine (URLs publiques ou images locales)
-3. **Rédigez un prompt d'analyse** qui impose une structure identique pour les deux images
-4. **Implémentez `compare_images()`** : analyse de chaque image, puis croisement — points communs, différences, verdict
-5. **Affichez le résultat** de façon lisible (dictionnaire + `pprint`)
+**Points clés** :
+- Le prompt d'analyse est **le même** pour les deux images — c'est la condition qui rend la comparaison mécanique plutôt qu'arbitraire
+- Le croisement est un troisième appel qui reçoit les deux analyses et **joint l'image B**, pour que le modèle vérifie ses affirmations sur l'image visible
+- Une analyse en échec interrompt le croisement (`return` immédiat) : croiser une analyse absente produirait un verdict inventé
+- Le temps total est mesuré et renvoyé avec le résultat
+","### Guided example: image comparator — two images from the same domain side by side
 
-> **Indices :**
-- Indice 1 : `analyze_image_with_gpt5()` accepte n'importe quelle URL — appelez-la une fois par image
-- Indice 2 : pour croiser, injectez le texte de la première analyse dans le prompt de la seconde — GPT-5 comparera l'image visible au texte fourni
-- Indice 3 : un même format de sortie pour les deux analyses rend la comparaison mécanique
-","### Exercise 3 : Image comparator — two images from the same domain side by side
+*Student contribution (PR #23305, github.com/Perr1neF0), integrated as a guided example.*
 
-**Estimated duration :** 15-20 minutes
+Comparing two images from the same domain in a single workflow: individual analysis of each image, then cross-comparison of the two analyses.
 
-**Objective**: compare two images from the same category in a single workflow — individual analyses with an identical format, then cross-comparison of the results.
+**Key points**:
+- The analysis prompt is **the same** for both images — this is the condition that makes the comparison mechanical rather than arbitrary
+- The cross-comparison is a third call that receives both analyses and **joins image B**, so that the model checks its claims against the visible image
+- A failed analysis interrupts the cross-comparison (immediate `return`): crossing a missing analysis would produce an invented verdict
+- The total time is measured and returned with the result",,,,,,,1dd753d734ab9829,b0cbe829d3e2b2a9,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,67e3bf57,markdown,fr,d28690d38e9d7e8f,"## Exercices à compléter
 
-**Instructions**:
-1. **Choose a domain** among the pedagogical use cases presented above
-2. **Select two images** relevant to this domain (public URLs or local images)
-3. **Write an analysis prompt** that imposes an identical structure for both images
-4. **Implement `compare_images()`**: analysis of each image, then cross-comparison — common points, differences, verdict
-5. **Display the result** in a readable way (dictionary + `pprint`)
+Les trois exercices qui suivent portent sur ce que ces exemples ne mesurent pas encore : la **stabilité** d'une sortie répétée à prompt constant, la **fidélité** d'un alt text aux éléments réellement visibles, et la **structuration** d'une note d'évaluation en JSON validable. Chaque squelette s'exécute sans erreur tel quel — à vous de remplir les `TODO etudiant`.","## Exercises to complete
 
-> **Hints:**
-- Hint 1 : `analyze_image_with_gpt5()` accepts any URL — call it once per image
-- Hint 2 : to cross-compare, inject the text of the first analysis into the prompt of the second — GPT-5 will compare the visible image to the provided text
-- Hint 3 : the same output format for both analyses makes the comparison mechanical",,,,,,,275eaceb6f66a2d9,72a9f5c422432eaf,,,,,,,,,,,,,,
+The three exercises that follow address what these examples do not yet measure: the **stability** of a repeated response at constant prompt, the **fidelity** of an alt text to the elements actually visible, and the **structuring** of an evaluation score into validatable JSON. Each skeleton runs without error as is — it is up to you to fill in the `TODO etudiant`.",,,,,,,d28690d38e9d7e8f,74d7205bcbd60f42,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,53b4a16d,markdown,fr,6cb14879167345ca,"### Exercice 1 : Reproductibilité — la même question posée trois fois
+
+L'exemple guidé *prompt neutre vs prompt orienté* mesurait l'effet de l'**angle** du prompt. Ici, tout est figé : même image, même prompt, même modèle. La question devient donc *la sortie est-elle stable ?* Un modèle d'inférence échantillonne, et deux appels identiques peuvent ne pas rendre le même texte.
+
+**Objectif** : mesurer la dispersion de trois analyses identiques, puis examiner ce que l'API **annonce** comme levier de stabilisation.
+
+**Un fait à connaître avant l'étape 4** — vérifié sur l'API : `openai/gpt-5` ne liste **ni `temperature` ni `top_p`** dans ses paramètres supportés (champ `supported_parameters` de `GET /models/openai/gpt-5/endpoints` : `reasoning`, `seed`, `max_tokens`…). Cela établit une **absence de support annoncé**, pas un comportement : les métadonnées ne disent pas ce que le fournisseur fait d'une valeur `temperature` envoyée quand même (rejet, routage, normalisation) — ce comportement réel se vérifie dans la réponse API, pas dans les métadonnées. Le paramètre de stabilisation **annoncé** est `seed`.
+
+**Étapes** :
+1. Choisissez une image et un prompt court à sections fixes
+2. Lancez **trois** analyses identiques et conservez les trois textes
+3. Mesurez la similarité deux à deux — un Jaccard lexical comme dans l'exemple guidé (réutilisez `mots_cles`), ou un simple taux de sections communes — et présentez le résultat comme **descriptif**
+4. Consultez les `supported_parameters` du modèle et concluez sur le support **annoncé** de `temperature`, sans en inférer un comportement
+5. Concluez en une phrase : quel levier l'API annonce-t-elle pour rapprocher deux exécutions, et pour quel usage faut-il une sortie stable ?
+
+**Facultatif — deux appels payants sur un paramètre non annoncé** : le squelette propose en étape 4 de réassigner `temperature = 0.0` puis de relancer. L'expérience est faisable mais **non concluante en l'état** : comparer la dispersion de trois échantillons à celle de deux échantillons ne prouve ni honoration ni non-honoration du paramètre — c'est une observation descriptive, à présenter comme telle. Si vous la faites, remettez `temperature = 0.7` en fin de cellule.
+
+**Extension — le levier annoncé** : `seed` n'est pas exposé par `analyze_image_with_gpt5()`. L'utiliser suppose d'**adapter explicitement la fonction** (ajouter `""seed"": ...` au payload de la requête), puis de mesurer si deux exécutions à `seed` fixé se rapprochent effectivement.
+
+**Indices** :
+- `analyze_image_with_gpt5()` lit `temperature` dans les variables globales du carnet : une réaffectation en cellule suffit, sans modifier la fonction
+- paramètres supportés d'un modèle : `GET https://openrouter.ai/api/v1/models/openai/gpt-5/endpoints`, champ `supported_parameters`
+- trois appels identiques coûtent trois fois le prix d'un appel — gardez un prompt court (`analysis_type=""quick""` ou peu de sections)
+- un Jaccard proche de 1 signale deux sorties quasi identiques, un Jaccard bas une reformulation complète","### Exercise 1 : Reproducibility — the same question asked three times
+
+The guided example *neutral prompt vs oriented prompt* measured the effect of the prompt's **angle**. Here, everything is frozen: same image, same prompt, same model. The question becomes *is the answer stable?* An inference model samples, and two identical calls may not return the same text.
+
+**Goal**: measure the dispersion of three identical analyses, then examine what the API **advertises** as a stabilization lever.
+
+**A fact to know before step 4** — verified on the API: `openai/gpt-5` lists **neither `temperature` nor `top_p`** among its supported parameters (`supported_parameters` field of `GET /models/openai/gpt-5/endpoints`: `reasoning`, `seed`, `max_tokens`…). This establishes an **absence of advertised support**, not a behavior: the metadata does not say what the provider does with a `temperature` value sent anyway (rejection, routing, normalization) — that actual behavior is verified in the API response, not in the metadata. The **advertised** stabilization parameter is `seed`.
+
+**Steps**:
+1. Choose an image and a short prompt with fixed sections
+2. Run **three** identical analyses and keep the three texts
+3. Measure the pairwise similarity — a lexical Jaccard as in the guided example (reuse `mots_cles`), or a simple rate of common sections — and present the result as **descriptive**
+4. Consult the model's `supported_parameters` and conclude on the **advertised** support for `temperature`, without inferring a behavior
+5. Conclude in one sentence: which lever does the API advertise to bring two runs closer, and for which use is a stable answer needed?
+
+**Optional — two paid calls on a non-advertised parameter**: the skeleton suggests in step 4 reassigning `temperature = 0.0` then running again. The experiment is feasible but **not conclusive as it stands**: comparing the dispersion of three samples with that of two samples proves neither honoring nor non-honoring of the parameter — it is a descriptive observation, to be presented as such. If you do it, restore `temperature = 0.7` at the end of the cell.
+
+**Extension — the advertised lever**: `seed` is not exposed by `analyze_image_with_gpt5()`. Using it requires **explicitly adapting the function** (adding `""seed"": ...` to the request payload), then measuring whether two runs with a fixed `seed` actually get closer.
+
+**Hints**:
+- `analyze_image_with_gpt5()` reads `temperature` from the notebook's global variables: a reassignment in a cell is enough, without modifying the function
+- supported parameters of a model: `GET https://openrouter.ai/api/v1/models/openai/gpt-5/endpoints`, field `supported_parameters`
+- three identical calls cost three times the price of one call — keep the prompt short (`analysis_type=""quick""` or few sections)
+- a Jaccard close to 1 signals two nearly identical texts, a low Jaccard a complete rephrasing",,,,,,,6cb14879167345ca,42240f9b672c0b9a,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,3e36808f,code,fr,1475266f6ffaffe4,"# Exercice 1 : Reproductibilite -- la meme question posee trois fois
+# TODO etudiant : mesurer la dispersion de trois analyses identiques, puis a temperature = 0.0
+
+# Etape 1 : Image et prompt fixes (aucune variation d'angle ici)
+image_exo1_rep = example_images[3]['url']
+prompt_repete = f""""""Réponds en {language}, avec exactement ces 2 sections :
+**1. Éléments visibles** : 3 puces
+**2. Conclusion** : une seule phrase""""""
+
+# Etape 2 : Trois analyses identiques
+# TODO etudiant : construire une liste de trois analyses via
+#                 analyze_image_with_gpt5(image_exo1_rep, prompt=prompt_repete)
+analyses_repetees = []  # TODO etudiant
+
+# Etape 3 : Similarite deux a deux
+# TODO etudiant : calculer la similarite de chaque paire (Jaccard lexical via mots_cles,
+#                 ou taux de sections communes) et afficher les valeurs
+similarites = []  # TODO etudiant
+
+# Etape 4 : Effet de la temperature
+# TODO etudiant : reassigner temperature = 0.0, relancer deux analyses, comparer la dispersion,
+#                 puis restaurer temperature = 0.7
+analyses_froides = []  # TODO etudiant
+
+# Etape 5 : Conclusion en une phrase (a afficher)
+print(""Exercice a completer"")",,,,,,,,1475266f6ffaffe4,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,733f0bd9,markdown,fr,baf0ef6166bfe93e,"### Exercice 2 : Audit de fidélité — un alt text n'affirme que ce qui est visible
+
+L'exemple guidé *alt text contextuel* produisait trois textes conformes à une limite de longueur et à un contexte. Une qualité échappe à ces deux contrôles : la **fidélité**. Un alt text court et bien tourné peut citer une couleur, un objet ou un lieu que l'image ne contient pas — et le lecteur d'écran ne peut pas le contredire.
+
+**Objectif** : construire un audit en deux temps — un inventaire des éléments visibles, puis un alt text vérifié terme à terme contre cet inventaire.
+
+**Étapes** :
+1. Choisissez une image parmi `example_images`
+2. Demandez un **inventaire** : liste à puces des éléments visibles, sans interprétation
+3. Demandez un **alt text** de 125 caractères maximum pour la même image
+4. Extrayez les termes significatifs de l'alt text (réutilisez `mots_cles`) et relevez ceux qui n'apparaissent pas dans l'inventaire
+5. Affichez le verdict et rappelez la limite de la méthode
+
+**Pourquoi deux appels séparés ?** Les appels à `analyze_image_with_gpt5()` sont **indépendants** : aucun historique conversationnel ne circule de l'un à l'autre, et l'ordre des deux demandes n'a donc pas d'effet causal. L'intérêt de la séparation est ailleurs : deux prompts courts et ciblés, au lieu d'un prompt fusionné où le modèle verrait l'alt text au moment de dresser l'inventaire — et répondrait en conséquence à sa propre conclusion.
+
+**Indices** :
+- un terme absent de l'inventaire n'est pas nécessairement inventé (synonyme, reformulation) : le verdict dit « à réviser », pas « faux »
+- l'inventaire et l'alt text sont deux **mesures distinctes** de la même image : les comparer n'a de sens que si chacune a été produite sous une consigne unique","### Exercise 2 : Fidelity audit — an alt text claims only what is visible
+
+The guided example *contextual alt text* produced three texts compliant with a length limit and a context. One quality escapes these two controls: **fidelity**. A short, well-turned alt text can cite a color, an object or a place the image does not contain — and the screen reader cannot contradict it.
+
+**Goal**: build an audit in two steps — an inventory of the visible elements, then an alt text checked term by term against that inventory.
+
+**Steps**:
+1. Choose an image among `example_images`
+2. Ask for an **inventory**: bulleted list of the visible elements, without interpretation
+3. Ask for an **alt text** of 125 characters maximum for the same image
+4. Extract the significant terms of the alt text (reuse `mots_cles`) and note those that do not appear in the inventory
+5. Display the verdict and recall the limit of the method
+
+**Why two separate calls?** Calls to `analyze_image_with_gpt5()` are **independent**: no conversational history circulates from one to the other, and the order of the two requests therefore has no causal effect. The point of separating them lies elsewhere: two short, targeted prompts, instead of a merged prompt where the model would see the alt text while drawing up the inventory — and would answer its own conclusion accordingly.
+
+**Hints**:
+- a term absent from the inventory is not necessarily invented (synonym, rephrasing): the verdict says « to revise », not « false »
+- the inventory and the alt text are two **distinct measurements** of the same image: comparing them only makes sense if each was produced under a single instruction",,,,,,,baf0ef6166bfe93e,f60a127d022f1792,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,11f6adc1,code,fr,6baac784813e8f66,"# Exercice 2 : Audit de fidelite -- un alt text n'affirme que ce qui est visible
+# TODO etudiant : inventaire des elements visibles, alt text, puis verification terme a terme
+
+# Etape 1 : Image
+image_exo2_audit = example_images[2]['url']
+
+# Etape 2 : Inventaire des elements visibles (demande AVANT l'alt text)
+prompt_inventaire = f""""""Liste en {language} les éléments visibles de cette image.
+Réponds uniquement par une liste à puces de 5 à 8 éléments factuels, sans interprétation.""""""
+# TODO etudiant : inventaire = analyze_image_with_gpt5(image_exo2_audit, prompt=prompt_inventaire)
+inventaire = None  # TODO etudiant
+
+# Etape 3 : Alt text soumis a l'audit
+prompt_alt_audit = f""""""Génère un alt text en {language} de 125 caractères maximum,
+une seule phrase factuelle, sans interprétation subjective.""""""
+# TODO etudiant : alt_text_audit = analyze_image_with_gpt5(image_exo2_audit, prompt=prompt_alt_audit)
+alt_text_audit = None  # TODO etudiant
+
+# Etape 4 : Verification terme a terme contre l'inventaire
+# TODO etudiant : termes de l'alt text (mots_cles) absents de l'inventaire (mots_cles)
+termes_non_etayes = []  # TODO etudiant
+
+# Etape 5 : Verdict
+# TODO etudiant : afficher la liste des termes non etayes et rappeler la limite de la
+#                 verification lexicale (un synonyme n'est pas une invention)
+print(""Exercice a completer"")",,,,,,,,6baac784813e8f66,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,009bfc93,markdown,fr,3e80b20b0b47449e,"### Exercice 3 : Évaluation structurée — noter une réponse en JSON validable
+
+Les exemples guidés produisent des analyses en texte libre. Un usage courant en enseignement est l'inverse : **noter** une réponse selon des critères explicites, et rendre cette note exploitable par un programme. La difficulté n'est pas la note elle-même, c'est d'obtenir une réponse **structurée et validable** — un modèle qui rend une phrase d'appréciation ne rend pas une note.
+
+**Objectif** : écrire une fonction qui évalue un alt text selon trois critères et retourne un JSON strict, puis **valider** ce JSON (parsing, clés, bornes).
+
+**Étapes** :
+1. Choisissez l'image et la réponse à noter (un alt text généré plus haut convient)
+2. Définissez une rubrique de trois critères, chacun noté de 0 à 2
+3. Rédigez un prompt qui exige **uniquement** un objet JSON avec les clés attendues — sans préambule ni bloc de code markdown
+4. Parsez la réponse (`json.loads`) et validez : trois critères présents, chaque note entière et comprise entre 0 et 2
+5. Affichez la note totale, et **signalez** les cas où le parsing échoue au lieu de les contourner
+
+**Indices** :
+- `json.loads()` échoue sur un bloc de code markdown : demandez le texte brut, sans balises
+- une validation stricte (`isinstance(..., int)` et bornes) transforme « ça a l'air bon » en verdict binaire
+- l'évaluateur est un modèle **stochastique** : la note est indicative, pas une vérité — sa propre répétabilité se mesure (relancez l'évaluation à l'identique et comparez les deux notes)
+","### Exercise 3 : Structured evaluation — grading a response into validatable JSON
+
+The guided examples produce free-text analyses. A common use in teaching is the opposite: **grade** a response against explicit criteria, and make that score usable by a program. The difficulty is not the score itself, it is obtaining a **structured and validatable** response — a model that returns a sentence of appreciation does not return a score.
+
+**Goal**: write a function that grades an alt text against three criteria and returns a strict JSON, then **validate** that JSON (parsing, keys, bounds).
+
+**Steps**:
+1. Choose the image and the response to grade (an alt text generated above will do)
+2. Define a rubric of three criteria, each scored from 0 to 2
+3. Write a prompt that requires **only** a JSON object with the expected keys — no preamble, no markdown code block
+4. Parse the response (`json.loads`) and validate: three criteria present, each score an integer between 0 and 2
+5. Display the total score, and **report** the cases where parsing fails instead of working around them
+
+**Hints**:
+- `json.loads()` fails on a markdown code block: ask for the raw text, without tags
+- strict validation (`isinstance(..., int)` and bounds) turns « looks fine » into a binary verdict
+- the grader is a **stochastic** model: the score is indicative, not a truth — its own repeatability can be measured (run the evaluation again identically and compare the two scores)",,,,,,,3e80b20b0b47449e,c8d5d35eda01d7a7,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,1f6e23c5,code,fr,a1740e798a35f9a0,"# Exercice 3 : Evaluation structuree -- noter un alt text avec une rubrique, en JSON
+# TODO etudiant : obtenir une note JSON valide (3 criteres, chacun de 0 a 2)
+
+# Etape 1 : La reponse a evaluer
+reponse_a_noter = ""Vue aérienne d'une ville au crépuscule avec un dôme doré et des montagnes.""  # TODO etudiant : votre propre alt text
+image_eval = example_images[0]['url']
+
+# Etape 2 : La rubrique (3 criteres, notes de 0 a 2)
+RUBRIQUE = {
+    ""fidelite"": ""0-2 : chaque element de l'alt text est visible sur l'image"",
+    ""longueur"": ""0-2 : respecte la limite de 125 caracteres"",
+    ""objectivite"": ""0-2 : aucune interpretation subjective"",
+}
+
+# Etape 3 : Prompt exigeant un JSON strict
+# TODO etudiant : rediger le prompt (rubrique + reponse + format JSON exact, sans preambule)
+
+# Etape 4 : Appel, parsing et validation
+# TODO etudiant : note = json.loads(reponse) puis verifier les cles, le type entier et les bornes
+note_json = None  # TODO etudiant
+
+# Etape 5 : Affichage du verdict
+print(""Exercice a completer"")",,,,,,,,a1740e798a35f9a0,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb,ex1-vignettes-md,markdown,fr,ff695ea94ad6158a,"### Exercice 1 : Vignettes sans déformation
 
 L'exemple guidé 1 force chaque variante dans une vignette de `250 x 188` pixels. Une image dont le rapport largeur / hauteur diffère de celui de la vignette est alors étirée : la rotation de 90° en est le cas extrême. PIL propose trois stratégies qui conservent les proportions, chacune avec son prix :
@@ -22208,7 +22667,7 @@ Un prompt qui demande une « palette chaude » tient-il sa promesse, ou l'impres
 *Student contribution from the group of PR #20957, integrated as a guided example.*
 
 Does a prompt that asks for a ""warm palette"" keep its promise, or does the visual impression alone tempt us to believe it? The method: two identical prompts except for the axis mention (warm vs. cool), generation at `quality=""low""`, then measurement on the pixels — hue-sector shares over saturated pixels only (greys have no hue), circular mean of the hue together with its concentration, and the arithmetic mean displayed solely to show the trap it is on an angle.",,,,,,,46717c89b080f7f7,1f87f3ee8d6632ef,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,8b5d44bb,code,fr,a41a53b559aac651,"# Exemple guide 4 : Le prompt tient-il ses promesses ? (mesure sur les pixels)
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,8b5d44bb,code,fr,80479ab3a5acea7f,"# Exemple guide 4 : Le prompt tient-il ses promesses ? (mesure sur les pixels)
 # Contribution etudiante du groupe de la PR #20957
 import base64
 from io import BytesIO
@@ -22238,8 +22697,8 @@ if ""generate_image"" not in globals():
     _headers = {""Authorization"": f""Bearer {_cle}"", ""Content-Type"": ""application/json""}
 
     def generate_image(prompt, size=""1024x1024"", quality=""medium"", style=""vivid""):
-        """"""Version autonome, meme interface que celle du notebook (style ignore par gpt-image-1).""""""
-        payload = {""model"": ""gpt-image-1"", ""prompt"": prompt, ""n"": 1, ""size"": size, ""quality"": quality}
+        """"""Version autonome, meme interface que celle du notebook (style ignore par la famille gpt-image).""""""
+        payload = {""model"": ""gpt-image-1.5"", ""prompt"": prompt, ""n"": 1, ""size"": size, ""quality"": quality}
         try:
             print(f""[generate_image] Prompt: {prompt[:100]}..."")
             r = requests.post(f""{_api_base}/images/generations"", headers=_headers, json=payload, timeout=180)
@@ -22382,7 +22841,7 @@ if mesure_a and mesure_b:
 else:
     conclusion_ex4 = ""Au moins une generation a echoue : impossible de conclure.""
 
-print(""\nConclusion :"", conclusion_ex4)",,,,,,,,a41a53b559aac651,,,,,,,,,,,,,,,
+print(""\nConclusion :"", conclusion_ex4)",,,,,,,,80479ab3a5acea7f,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,1e7b8e69,markdown,fr,160a278511e6575f,"### Lecture du résultat — exemple guidé 4
 
 À cette exécution, la promesse est tenue de façon nette, et la mesure la chiffre :
@@ -23112,3 +23571,247 @@ MyIA.AI.Notebooks/GenAI/Image/examples/science-diagrams.ipynb,518607c9,markdown,
 MyIA.AI.Notebooks/GenAI/Image/examples/science-diagrams.ipynb,7c56404f,markdown,fr,f6f51626eb2fdd11,"**Lecture du contrôle Vision** — La cellule précédente imprime l'analyse de l'image réellement générée. Pour cette exécution, elle signale notamment des flèches pointant vers un autre organite que celui de leur légende. Les scores, les éléments manquants et les recommandations se lisent dans cette sortie : ils décrivent **cette image**, et ne sont pas des constantes à recopier pour les générations suivantes.
 
 **Conséquence pédagogique** : ne pas présenter un diagramme comportant des légendes erronées comme un support de référence. La composition générale et les couleurs ne compensent pas une attribution incorrecte. Corriger le prompt, régénérer puis vérifier chaque flèche avec une source disciplinaire ou une personne compétente avant réutilisation. Une autre exécution peut produire une autre image et exige une nouvelle lecture de son analyse.",,,,,,,,f6f51626eb2fdd11,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,ex2-lecture,markdown,fr,6609da62526c3590,"### Lecture du résultat
+
+Le protocole ci-dessus est **reproductible** : une même référence Text-to-Image est générée avec la graine 42, puis éditée trois fois avec le même prompt aquarelle, la même graine et les mêmes réglages ; seul `denoise` varie. Les deux tests locaux confirment d'abord que les métriques elles-mêmes sont correctes : deux images identiques donnent MAE = 0 et PSNR infini, une image noire comparée à une image blanche donne MAE = 255 et PSNR ≈ 0 dB.
+
+**Mesures de cette exécution** (à lire avec les cartes de différences) :
+
+| denoise | MAE (0-255) | PSNR (dB) | Lecture |
+|---|---|---|---|
+| 0,2 | 4,6003 | 31,8027 | Retouche timide : structure, pose et décor intacts, textures à peine adoucies ; la carte ×5 s'allume surtout sur les contours et le pelage. |
+| 0,5 | 11,6781 | 24,8219 | MAE plus que doublée, mais l'effet reste discret à l'œil : scène intacte, aucun trait de pinceau lisible ; 76,7 % des pixels sont touchés, avec une amplitude faible partout. |
+| 0,8 | 30,2854 | 16,3190 | Le style apparaît enfin — lavis, halos d'aquarelle — mais la scène est repeinte en profondeur : détail photographique perdu, couleurs inventées (lavis rose sur le bord droit, plante presque effacée) ; 85 % des pixels modifiés. |
+
+La progression des métriques est régulière — MAE est à peu près multipliée par 2,6 à chaque palier, PSNR perd 7 puis 8,5 dB — mais **la perception ne suit pas la même courbe** : à 0,2 comme à 0,5, l'image reste visuellement très proche d'une photographie ; l'effet aquarelle ne devient lisible qu'à 0,8, précisément là où la fidélité pixel est la plus faible. C'est la limite de MAE et PSNR : elles mesurent un écart, pas une réussite stylistique, et l'écart ne se déclenche pas en même temps que le style.
+
+**Confrontation avec le rendu de l'étudiant (PR #22599).** L'étudiant rapportait, pour ses propres exécutions : à 0,2, MAE = 4,6003 et PSNR = 31,8027 dB ; à 0,5, MAE = 11,6781 et PSNR = 24,8219 dB. Il observait davantage de différences pixel par pixel à 0,5, une pose du chat et une composition générale conservées, mais un **effet aquarelle peu visible**. Son essai à 0,8 avait été accepté par le serveur sans que le résultat soit récupéré ; il n'avait volontairement inventé aucune mesure pour compléter ce manque.
+
+Ce rejeu reproduit exactement ses mesures — 4,6003 / 31,8027 dB à 0,2 et 11,6781 / 24,8219 dB à 0,5, identiques à quatre décimales : même graine, même modèle et même prompt rendent la chaîne déterministe, et les chiffres rapportés étaient exacts. Son observation visuelle est elle aussi confirmée : à 0,5, l'effet reste discret. Et le palier qui lui manquait est précisément celui où le style apparaît : à 0,8, MAE = 30,2854 et PSNR = 16,3190 dB, la scène reste lisible mais repeinte. Ces valeurs coïncident parce que tout le pipeline est déterministe ; sur un service mis à jour ou avec une autre graine, elles différeraient — c'est la **tendance** et la **lecture visuelle** qui se comparent, jamais une décimale isolée.
+
+Enfin, MAE et PSNR mesurent une distance pixel par pixel, pas la réussite artistique. Une édition peut rester très proche numériquement de la référence tout en étant trop timide stylistiquement ; à l'inverse, une transformation plus affirmée augmente mécaniquement l'écart. Le bon compromis se juge donc avec trois éléments ensemble : le tableau, les images avant/après et les zones éclairées par les cartes de différences.",,,,,,,,6609da62526c3590,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,ex2b-enonce,markdown,fr,23d69089e682312d,"### Exercice 2 : Deux prompts, un denoise — que voient MAE et PSNR ?
+
+L'exemple guidé ci-dessus fait varier `denoise` à prompt fixe. Cet exercice inverse la question : **à `denoise` fixe, deux directions d'édition différentes produisent-elles le même écart de métriques ?**
+
+**Instructions** :
+1. Générez une image de référence avec le workflow Text-to-Image (graine 42, comme dans l'exemple)
+2. Choisissez **deux prompts d'édition de natures différentes** : un changement **local ou subtil** (par exemple l'éclairage) et un changement **global** (par exemple un transfert de style)
+3. Éditez la même référence avec les deux prompts à `denoise = 0.5`, même graine
+4. Mesurez MAE et PSNR pour chaque édition, affichez les cartes de différences
+5. Répondez : quel prompt déplace le plus MAE ? La carte de différences raconte-t-elle la même histoire que les métriques ? Qu'est-ce que PSNR **ne voit pas** (composition, style, sens) ?
+
+**Indices** :
+- `# Indice` : réutilisez `metriques_ex2`, `compare_before_after` et `create_difference_map` définis dans l'exemple guidé
+- `# Indice` : un prompt qui déplace tous les pixels un peu (filtre global) et un prompt qui déplace peu de pixels beaucoup (objet ajouté) peuvent donner des MAE proches — la carte de différences les distingue",,,,,,,,23d69089e682312d,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,ex2b-stub,code,fr,d1a26875ffccd955,"# Exercice 2 : Deux prompts, un denoise -- que voient MAE et PSNR ?
+
+# TODO etudiant : deux prompts d'edition de natures differentes (local/subtil vs global)
+prompts_ex2b = [""Votre prompt local ou subtil ici"", ""Votre prompt global ici""]  # TODO etudiant
+denoise_ex2b = 0.5
+seed_ex2b = 42
+
+# Etape 1 : generer la reference Text-to-Image avec la graine
+# Indice : reprenez le motif de l'exemple guide (deepcopy de workflow_hello, seed sur le noeud ""9"", execute_workflow)
+reference_ex2b = None  # TODO etudiant : chemin de l'image de reference sauvegardee
+
+# Etape 2 : editer la reference avec chaque prompt a denoise fixe
+# Indice : create_simple_edit_workflow(image_name=..., edit_prompt=..., denoise=denoise_ex2b)
+editions_ex2b = {}
+for prompt in prompts_ex2b:
+    print(f""Prompt : {prompt[:60]}..."")
+    # TODO etudiant : creez le workflow, posez la graine sur le noeud ""10"", executez, sauvegardez
+    editions_ex2b[prompt] = None  # TODO etudiant : remplacer par le chemin de l'image editee
+
+# Etape 3 : mesures et cartes de differences pour chaque prompt
+for prompt, edition in editions_ex2b.items():
+    if edition is None:
+        continue
+    print(f""\n--- {prompt[:50]} ---"")
+    # TODO etudiant : appelez metriques_ex2(reference_ex2b, edition)
+    # TODO etudiant : appelez compare_before_after(...) puis create_difference_map(..., amplification=5.0)
+
+# Question : quel prompt deplace le plus MAE, et que PSNR ne voit-il pas ?
+print(""Exercice a completer"")",,,,,,,,d1a26875ffccd955,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,eg5-lecture,markdown,fr,4eeec79433a3541f,"### Lecture du résultat — exemples guidés 5, 6 et 7
+
+Ces trois exemples forment une progression, et c'est elle qu'il faut retenir plutôt que les chiffres d'une exécution :
+
+- **Exemple 5** — une mesure, un tirage par condition. La densité de contours chiffre l'écart entre « minimaliste » et « détaillé », mais un seul couple d'images ne sépare pas l'effet du prompt du hasard du tirage. La conclusion le dit elle-même.
+- **Exemple 6** — le remède à cette limite. En générant **deux** images par condition, on obtient un bruit de référence : l'écart entre conditions ne veut dire quelque chose que s'il dépasse l'écart intra-condition. C'est le même raisonnement que celui de l'exemple guidé 2, appliqué à un paramètre réellement transmis à l'API.
+- **Exemple 7** — la mesure appliquée à une consigne de **placement**, avec un seuil décidé avant de générer et une reformulation comparée sur de nouveaux tirages. C'est le protocole le plus complet des trois, et aussi celui dont l'instrument est le plus fruste : un écart-type de luminosité ne voit pas un objet uni sur fond uni.
+
+Les valeurs affichées sont celles de l'exécution ci-dessus ; relancer le carnet régénère toutes les images, donc toutes les mesures. Ce qui se transmet, c'est le protocole — figer le sujet, fixer le seuil avant, comparer l'effet au bruit — pas les nombres.
+","### Reading the result — guided examples 5, 6 and 7
+
+These three examples form a progression, and it is the progression you should remember rather than the numbers of any single run:
+
+- **Example 5** — one measurement, one draw per condition. Edge density quantifies the gap between ""minimalist"" and ""detailed"", but a single pair of images cannot separate the prompt's effect from the randomness of the draw. The conclusion says so itself.
+- **Example 6** — the remedy to that limitation. By generating **two** images per condition, we obtain a reference noise: the gap between conditions only means something if it exceeds the intra-condition spread. This is the same reasoning as guided example 2, applied to a parameter actually passed to the API.
+- **Example 7** — the measurement applied to a **placement** instruction, with a threshold decided before generating and a reworded prompt compared on new draws. It is the most complete protocol of the three, and also the one whose instrument is the crudest: a luminance standard deviation cannot see a uniform object on a uniform background.
+
+The displayed values are those of the run above; re-running the notebook regenerates every image, hence every measurement. What carries over is the protocol — freeze the subject, fix the threshold beforehand, compare the effect against the noise — not the numbers.
+",,,,,,,4eeec79433a3541f,f5aa59e8fd5418b6,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,t01-ex7-md,markdown,fr,9132a2ae11e89c15,"### Exercice 7 : La consigne de luminosité est-elle tenue ?
+
+Les exemples guidés 4 et 5 mesurent une palette et une densité de détail. Un troisième axe, annoncé dans les consignes de l'exercice 4 mais jamais mesuré ici, est la **luminosité** : « scène diurne » contre « scène nocturne ».
+
+**Objectif** : vérifier sur les pixels qu'un prompt « jour » produit bien une image plus lumineuse qu'un prompt « nuit », et mesurer de combien.
+
+**Étapes** :
+1. Rédigez deux prompts identiques sauf la mention jour/nuit (même sujet, même cadrage, même style)
+2. Générez les deux images en `quality=""low""`
+3. Mesurez la luminosité moyenne de chacune (`ImageStat.Stat(img.convert(""L"")).mean[0]`) et l'écart
+4. Ajoutez un **témoin** : la saturation moyenne du canal S. Une image de nuit n'est pas seulement plus sombre — elle est souvent moins saturée. Votre mesure de luminosité capture-t-elle les deux ?
+5. Concluez : l'écart de luminosité va-t-il dans le sens attendu ? Est-il grand devant l'échelle (0-255) ?
+
+**Indice** : attention au piège déjà rencontré dans l'exemple guidé 3 — une lumière « chaude » ou « froide » n'est pas une lumière plus forte. Ne confondez pas l'axe mesuré avec celui que l'œil remarque.
+","### Exercise 7 : Is the brightness instruction respected?
+
+Guided examples 4 and 5 measure a palette and a density of detail. A third axis, announced in the instructions of exercise 4 but never measured here, is **brightness**: ""daytime scene"" versus ""night scene"".
+
+**Objective**: verify on the pixels that a ""day"" prompt indeed produces a brighter image than a ""night"" prompt, and measure by how much.
+
+**Steps**:
+1. Write two identical prompts except for the day/night mention (same subject, same framing, same style)
+2. Generate both images with `quality=""low""`
+3. Measure the average brightness of each (`ImageStat.Stat(img.convert(""L"")).mean[0]`) and the gap
+4. Add a **control**: the average saturation of the S channel. A night image is not only darker — it is often less saturated. Does your brightness measurement capture both?
+5. Conclude: does the brightness gap go in the expected direction? Is it large relative to the scale (0-255)?
+
+**Hint**: watch out for the trap already met in guided example 3 — a ""warm"" or ""cold"" light is not a stronger light. Do not confuse the axis you measure with the one the eye notices.
+",,,,,,,9132a2ae11e89c15,1e91b444e4184628,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,t01-ex7-code,code,fr,cbf8b2e1b013ed7e,"# Exercice 7 : la consigne de luminosite est-elle tenue ?
+from PIL import ImageStat
+
+# Etape 1 : Deux prompts identiques sauf la mention jour / nuit
+prompt_ex7_jour = ""...""  # TODO etudiant : version diurne
+prompt_ex7_nuit = ""...""  # TODO etudiant : version nocturne
+
+# Etape 2 : Generation des deux images (quality=""low"" suffit)
+# result_jour = generate_image(prompt=prompt_ex7_jour, size=""1024x1024"", quality=""low"")
+# result_nuit = generate_image(prompt=prompt_ex7_nuit, size=""1024x1024"", quality=""low"")
+# Indice : decoder avec decoder_image(), defini dans l'exemple guide 4
+
+# Etape 3 : Luminosite moyenne de chaque image
+lum_jour = None  # TODO etudiant : ImageStat.Stat(img.convert(""L"")).mean[0]
+lum_nuit = None  # TODO etudiant : idem pour l'image de nuit
+
+# Etape 4 : Temoin de saturation (canal S de HSV)
+sat_jour = None  # TODO etudiant : saturation moyenne
+sat_nuit = None  # TODO etudiant : idem
+
+# Etape 5 : Conclusion chiffree
+conclusion_ex7 = None  # TODO etudiant : ecart de luminosite, sens, amplitude, et le temoin
+
+print(""Exercice a completer"")
+",,,,,,,,cbf8b2e1b013ed7e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,t01-ex8-md,markdown,fr,58f5fb13724bd604,"### Exercice 8 : L'effet `quality` se voit-il aussi dans le poids du fichier ?
+
+L'exemple guidé 6 compare `low` et `high` avec une densité de contours. Cette mesure a un biais connu : elle dépend du contenu autant que de la qualité. Le poids du PNG en octets est un second indicateur, indépendant du premier — une image plus détaillée se compresse moins bien.
+
+**Objectif** : refaire la comparaison bruit/effet avec une **autre mesure**, et vérifier si les deux instruments racontent la même chose.
+
+**Étapes** :
+1. Reprenez le prompt de l'exemple guidé 6, ou écrivez le vôtre (riche en détails fins)
+2. Générez 2 images en `quality=""low""` et 2 en `quality=""high""`, même taille
+3. Mesurez pour chacune le **poids du PNG** : encodez l'image dans un `BytesIO` (`img.save(buf, format=""PNG"")`) et lisez `buf.tell()`
+4. Calculez bruit et effet comme dans l'exemple guidé 6
+5. Concluez : l'effet dépasse-t-il le bruit avec cette mesure ? Le verdict est-il le même qu'avec la densité de contours ? Que dire s'ils divergent ?
+
+**Indice** : `quality` agit sur la génération, pas sur l'encodage : les deux images sont des PNG dans les deux cas. Un écart de poids reflète donc la complexité du contenu, pas un choix de format.
+","### Exercise 8 : Does the `quality` effect also show in the file size?
+
+Guided example 6 compares `low` and `high` with edge density. That measurement has a known bias: it depends on content as much as on quality. The PNG size in bytes is a second indicator, independent of the first — a more detailed image compresses less well.
+
+**Objective**: redo the noise/effect comparison with a **different measurement**, and check whether both instruments tell the same story.
+
+**Steps**:
+1. Reuse the prompt of guided example 6, or write your own (rich in fine detail)
+2. Generate 2 images with `quality=""low""` and 2 with `quality=""high""`, same size
+3. Measure the **PNG size** of each: encode the image into a `BytesIO` (`img.save(buf, format=""PNG"")`) and read `buf.tell()`
+4. Compute noise and effect as in guided example 6
+5. Conclude: does the effect exceed the noise with this measurement? Is the verdict the same as with edge density? What if they disagree?
+
+**Hint**: `quality` acts on generation, not on encoding: both images are PNGs either way. A size gap therefore reflects content complexity, not a format choice.
+",,,,,,,58f5fb13724bd604,bd9e779beb09cc6a,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,t01-ex8-code,code,fr,12c76db5aec7577f,"# Exercice 8 : effet de quality mesure par le poids du PNG
+from io import BytesIO
+
+# Etape 1 : Prompt riche en details fins
+prompt_ex8 = ""...""  # TODO etudiant : votre prompt en anglais
+
+# Etape 2 : Deux generations par valeur de quality
+# resultats_ex8_low = [generate_image(prompt=prompt_ex8, size=""1024x1024"", quality=""low"") for _ in range(2)]
+# resultats_ex8_high = [generate_image(prompt=prompt_ex8, size=""1024x1024"", quality=""high"") for _ in range(2)]
+
+# Etape 3 : Poids du PNG en octets
+def poids_png_ex8(img):
+    return None  # TODO etudiant : encoder dans un BytesIO puis buf.tell()
+
+poids_low = []   # TODO etudiant : un poids par image low
+poids_high = []  # TODO etudiant : un poids par image high
+
+# Etape 4 : Bruit (intra-condition) et effet (entre moyennes)
+bruit_ex8_low = None   # TODO etudiant
+bruit_ex8_high = None  # TODO etudiant
+effet_ex8 = None       # TODO etudiant
+
+# Etape 5 : Conclusion chiffree, comparee a celle de la densite de contours
+conclusion_ex8 = None  # TODO etudiant : l'effet depasse-t-il le bruit ? meme verdict qu'a l'exemple 6 ?
+
+print(""Exercice a completer"")
+",,,,,,,,12c76db5aec7577f,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,t01-ex9-md,markdown,fr,2eceaca4b4e609a6,"### Exercice 9 : Le critère de « zone vide » voit-il un objet uni ?
+
+L'exemple guidé 7 juge un tiers vide à son **écart-type de luminosité**. Cet instrument a un angle mort, et cet exercice consiste à le démontrer : un objet **parfaitement uni**, posé sur un fond uni de la même luminosité moyenne, ne fait quasiment pas varier l'écart-type — le critère le déclarerait « vide ».
+
+**Objectif** : construire un contre-exemple synthétique qui fait échouer le critère, puis proposer une mesure complémentaire qui le rattrape.
+
+**Étapes** :
+1. Construisez avec PIL une image `1536x1024` au fond uni, et dessinez dans le tiers gauche un rectangle uni d'une couleur **proche** du fond (`ImageDraw.Draw(img).rectangle(...)`)
+2. Appliquez-lui `ratio_variabilite_tiers_ex7()` : le critère déclare-t-il le tiers vide, alors qu'un objet y figure ?
+3. Proposez une mesure complémentaire qui détecte ce cas (par exemple le nombre de couleurs distinctes de la zone via `getcolors()`, ou la présence de contours via `FIND_EDGES` sur la zone)
+4. Vérifiez que votre mesure complémentaire ne redresse pas le verdict sur une zone **réellement** vide : le témoin négatif compte autant que le positif
+5. Concluez : que faut-il exiger d'un critère de « zone vide » pour qu'il soit fiable ?
+
+**Indice** : ce contre-exemple ne coûte aucun appel API — il se fabrique en local. C'est la manière la moins chère de tester un instrument de mesure avant de lui faire juger des images générées.
+","### Exercise 9 : Can the ""empty zone"" criterion see a uniform object?
+
+Guided example 7 judges a third empty by its **luminance standard deviation**. That instrument has a blind spot, and this exercise consists in demonstrating it: a **perfectly uniform** object, placed on a uniform background of the same average brightness, barely moves the standard deviation — the criterion would declare it ""empty"".
+
+**Objective**: build a synthetic counter-example that makes the criterion fail, then propose a complementary measurement that catches it.
+
+**Steps**:
+1. Build with PIL a `1536x1024` image with a uniform background, and draw in the left third a uniform rectangle of a color **close** to the background (`ImageDraw.Draw(img).rectangle(...)`)
+2. Apply `ratio_variabilite_tiers_ex7()` to it: does the criterion declare the third empty, even though an object sits there?
+3. Propose a complementary measurement that detects this case (for instance the number of distinct colors in the zone via `getcolors()`, or the presence of edges via `FIND_EDGES` on the zone)
+4. Check that your complementary measurement does not flip the verdict on a **genuinely** empty zone: the negative control counts as much as the positive one
+5. Conclude: what should be required of an ""empty zone"" criterion for it to be reliable?
+
+**Hint**: this counter-example costs no API call — it is built locally. That is the cheapest way to test a measurement instrument before letting it judge generated images.
+",,,,,,,2eceaca4b4e609a6,18870edf0da68858,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,t01-ex9-code,code,fr,178b799a2acd0593,"# Exercice 9 : un contre-exemple pour le critere de zone vide
+from PIL import Image, ImageDraw
+
+# Etape 1 : Image synthetique : fond uni + rectangle uni dans le tiers gauche
+# img_test = Image.new(""RGB"", (1536, 1024), color=(200, 220, 240))
+# Indice : ImageDraw.Draw(img_test).rectangle([(x0, y0), (x1, y1)], fill=(...))
+
+# Etape 2 : Le critere de l'exemple guide 7 s'y trompe-t-il ?
+ratio_test = None    # TODO etudiant : ratio_variabilite_tiers_ex7(img_test)
+verdict_test = None  # TODO etudiant : tiers_vide_ex7(img_test)
+
+# Etape 3 : Mesure complementaire qui detecte l'objet uni
+def detecte_objet_ex9(img):
+    return None  # TODO etudiant : votre mesure sur le tiers gauche
+
+# Etape 4 : Temoin negatif : la meme mesure sur une zone reellement vide
+# img_vide = Image.new(""RGB"", (1536, 1024), color=(200, 220, 240))
+temoin_vide = None  # TODO etudiant : la mesure ne doit PAS signaler un objet ici
+
+# Etape 5 : Conclusion
+conclusion_ex9 = None  # TODO etudiant : que faut-il exiger d'un critere de zone vide ?
+
+print(""Exercice a completer"")
+",,,,,,,,178b799a2acd0593,,,,,,,,,,,,,,,

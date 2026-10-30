@@ -127,6 +127,10 @@ import time
 from typing import Iterable
 
 import issue_containers
+# The coverage predicate is imported, not re-implemented: `[RELEASED]` means
+# two different things and the picker is the organ that already tells them
+# apart (see the block above `_is_protocol_attestation`).
+from pick_idle_grain import _released_covers_acceptance
 
 LABEL_DEFAULT = "candidate-delivered"
 LABEL_COLOR = "5319e7"  # purple -- "delivered, awaiting close triage"
@@ -180,20 +184,73 @@ def _is_bot(actor: str) -> bool:
     return (actor or "").endswith("[bot]")
 
 
-# Attestation marker of the lane protocol (proactive-coordination.md R5),
-# same string as pick_idle_grain.DELIVERED_COMMENT_MARKER. A comment whose
-# body STARTS with it is the remedy the protocol prescribes, not activity:
-# counting it in ``last_activity`` destroyed the silence precondition
-# (#17759 mecanisme B -- the loop closed on #15689, two attestations, still
-# unlabeled). STARTS-WITH only: a quote or a discussion of the marker is an
-# ordinary comment and still reads as active; a comment without a body key
-# (old fixtures, unreadable payloads) also reads as active -- fail-safe,
-# never label on unreadable data.
-_INFO_MARKER_RE = re.compile(r"^\s*\[INFO\] candidate-delivered\b")
+# Which protocol comments count as ATTESTATIONS -- i.e. do not break the
+# silence precondition -- is NOT a decision this module gets to make alone.
+# `pick_idle_grain.py` already draws that line on the same markers, and a
+# second, independently written rule diverged from it on the very first real
+# comment (measured 2026-10-27, Hermes review of this PR): `[RELEASED]` has
+# TWO senses -- a lane hands the item back on a real barrier, or it reports
+# the acceptance as already covered. The picker separates them with
+# ``_released_covers_acceptance``; this module now IMPORTS that predicate
+# instead of re-deriving it, so the label decision and the belt decision
+# cannot disagree on the same comment (class #17956, the same argument the
+# ``issue_containers`` branch below invokes for itself).
+#
+#   `[INFO] candidate-delivered`         attestation -- the label's own idiom
+#   `[DELIVERED] lane ... -- PR #N`      attestation -- closes the item
+#   `[RELEASED] lane ... -- <coverage>`  attestation -- delivered, per picker
+#   `[RELEASED] lane ... -- <barrier>`   ACTIVITY -- nothing was delivered;
+#                                        the item becomes servable again
+#   `[CLAIMED]` / `[CLAIMED-AMEND]`      ACTIVITY -- a claim OPENS work.
+#                                        `check_lane_claim.py` classifies it
+#                                        as "opens a claim", the opposite of a
+#                                        closure, and it is the only signal
+#                                        saying a lane works there right now
+#
+# Two measured instances stay the motivation for the narrower rule:
+# - #17759 mecanisme B: the loop closed on #15689 -- delivered 2026-09-14,
+#   two `[INFO] candidate-delivered` attestations (09-15, 09-21), never
+#   labeled. Arbitrage ai-01 2026-09-25: the comment the protocol PRESCRIBES
+#   cannot destroy the precondition it exists to serve.
+# - #20078 (measured 2026-10-27): delivered by merged #20079, then protocol
+#   markers after the merge, none recognized.
+#   NOTE, mesure sur cette meme issue : it currently reads ``no_delivery``, not
+#   ``active``. Merged #20079 writes ``See #20078`` in its body, and yet the
+#   timeline of #20078 carries NO cross-referenced event for it (measured
+#   2026-10-27: the four events are #19464, #20246 and nothing else). The same
+#   PR's ``Part of #19093`` DID produce one on #19093, so this is not "the
+#   marker was not written" -- the asymmetry is observed and UNEXPLAINED.
+#   Two independent defects, one per axis: this change closes the marker axis,
+#   and the missing cross-reference is reported separately as an open question
+#   rather than attributed to an unverified cause.
+#   SCOPE, dit plutot que sous-entendu : the marker axis it closes is now the
+#   NARROW one. `[CLAIMED]` deliberately no longer counts as bookkeeping, so
+#   #20078's own `[CLAIMED]` comments keep it active -- and `[RELEASED] ... deja
+#   livre, rien a reprendre` reads as a bare release for the picker too, since
+#   that wording is not one of its coverage motifs. The two organs agree, which
+#   is the point; whether "deja livre" ought to BE a coverage motif is a
+#   question for the picker's grammar, not for this sweep.
+#
+# STARTS-WITH only: a quote or a discussion of a marker is an ordinary
+# comment and still reads as active; a comment without a body key (old
+# fixtures, unreadable payloads) also reads as active -- fail-safe, never
+# label on unreadable data.
+_CLOSING_MARKER_RE = re.compile(
+    r"^\s*(?:\[INFO\]\s*candidate-delivered\b|\[DELIVERED\])"
+)
+_RELEASED_HEADER_RE = re.compile(r"^\s*\[RELEASED\]")
 
 
 def _is_protocol_attestation(comment: dict) -> bool:
-    return bool(_INFO_MARKER_RE.search(comment.get("body") or ""))
+    """Does this comment attest a CLOSURE (hence not activity)?"""
+    body = comment.get("body") or ""
+    if _CLOSING_MARKER_RE.search(body):
+        return True
+    if _RELEASED_HEADER_RE.search(body):
+        # The picker's predicate, not a local copy: a bare `[RELEASED]` is a
+        # hand-back on a barrier and leaves the item servable.
+        return _released_covers_acceptance(body)
+    return False
 
 
 def human_retraction(label_events: list[dict] | None) -> dict | None:
@@ -330,9 +387,10 @@ def classify(
                 f"(no See/Part of/Closes/Fixes marker in their body) -- not a delivery")
 
     # ISO 8601 timestamps sort lexicographically; string max is correct.
-    # #17759 mecanisme B: the protocol's `[INFO] candidate-delivered`
-    # attestations are the REMEDY the protocol prescribes, not activity --
-    # they do not break the silence precondition. Anything else still does.
+    # #17759 mecanisme B: the comments the protocol PRESCRIBES to attest a
+    # closure are not activity -- they do not break the silence precondition.
+    # Which forms those are is decided by `_is_protocol_attestation` above,
+    # on the picker's grammar, not on a list repeated here.
     latest_merge = max(r["merged_at"] for r in declared)
 
     comment_dates = [
@@ -363,12 +421,53 @@ def _gh_json(args: list[str]) -> object:
     return json.loads(proc.stdout)
 
 
-def list_open_issues(repo: str) -> list[dict]:
-    """Open issues (excludes PRs) with the fields classify() needs."""
-    return list(_gh_json([  # type: ignore[return-value]
-        "issue", "list", "--repo", repo, "--state", "open", "--limit", "200",
+# Plafond de lecture de la liste ouverte. Ce n'est pas un reglage de confort :
+# le depot portait **588** issues ouvertes (hors PRs) le 2026-10-27, et un
+# plafond a 200 ne voyait que les plus recentes (#21858..#22881). Tout ce qui
+# tombait sous cette fenetre n'etait jamais classifie -- donc jamais etiquete --
+# donc jamais retire de l'assiette du tapis. C'est la cause racine mesuree de
+# #20078 / #19241 / #22715, servis comme neufs alors que leur livraison etait
+# deja mergee (#20079 / #22454 / #22719).
+LIST_LIMIT = 1000
+
+
+def list_open_issues(repo: str, limit: int = LIST_LIMIT) -> list[dict]:
+    """Open issues (excludes PRs) with the fields classify() needs.
+
+    A truncated read that looks complete est le defaut, pas la troncature :
+    quand la lecture ATTEINT la limite (``len(issues) >= limit``), la fonction
+    le DIT au lieu de rendre une liste partielle indiscernable d'une liste
+    entiere (fail-visible). Le seuil est ``>=`` et non ``>`` : a 590 issues
+    lues pour ``limit=590`` la lecture est probablement complete, mais on ne
+    peut pas la distinguer d'une page coupee, donc on avertit -- un
+    avertissement superflu coute une ligne de log, une troncature tue coute
+    une issue jamais etiquetee.
+    """
+    issues = list(_gh_json([  # type: ignore[return-value]
+        "issue", "list", "--repo", repo, "--state", "open",
+        "--limit", str(limit),
         "--json", "number,title,labels",
     ]))
+    if len(issues) >= limit:
+        print(f"[candidate-delivered] WARN: page pleine ({limit} issues) -- "
+              f"elargir LIST_LIMIT : des issues ouvertes ne sont pas vues, "
+              f"et une issue non vue ne peut jamais etre etiquetee")
+    return issues
+
+
+def _rotate_window(issues: list[dict], offset: int, limit: int) -> list[dict]:
+    """Rotating window over the open list: start at ``offset`` (wrapping) then cap.
+
+    Rotation, not truncation, is what keeps the sweep honest under a fixed API
+    budget: the same head every run would starve the tail forever, and a tail
+    that is never classified is never labelled -- the exact shape of #20078.
+    Wrapping (rather than a plain slice) guarantees no issue is ever dropped
+    from the pass, whatever the offset.
+    """
+    if offset and issues:
+        off = offset % len(issues)
+        issues = issues[off:] + issues[: off]
+    return issues[:limit] if limit else issues
 
 
 def issue_detail(repo: str, number: int) -> dict:
@@ -601,6 +700,15 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--repo", default=None, help="repo (default: gh default / GITHUB_REPOSITORY)")
     ap.add_argument("--label", default=LABEL_DEFAULT, help=f"label name (default: {LABEL_DEFAULT})")
     ap.add_argument("--limit", type=int, default=0, help="cap issues processed (0 = all)")
+    ap.add_argument("--offset", type=int, default=0,
+                    help="rotate the starting point of the window (modulo the open "
+                         "count); the sweep costs ~2 API calls per issue against "
+                         "GITHUB_TOKEN's 1000/hour, so a full pass does not fit one "
+                         "run. Rotation SAMPLES, it does not cover: the start "
+                         "advances by `limit` each run, so the sequence repeats "
+                         "every N/gcd(limit,N) runs (59 days at N=590, limit=400, "
+                         "daily cron) and consecutive windows overlap. The tail is "
+                         "reached; it is not exhaustively swept.")
     ap.add_argument("--sleep", type=float, default=1.5,
                     help="seconds between issues (timeline API is REST-rate-limited)")
     args = ap.parse_args(argv)
@@ -612,9 +720,7 @@ def main(argv: list[str] | None = None) -> int:
 
     ensure_label(repo, args.label, args.dry_run)
 
-    issues = list_open_issues(repo)
-    if args.limit:
-        issues = issues[: args.limit]
+    issues = _rotate_window(list_open_issues(repo), args.offset, args.limit)
 
     counts = {"candidate": 0, "active": 0, "in_flight": 0, "no_delivery": 0,
               "epic": 0, "retracted": 0}
