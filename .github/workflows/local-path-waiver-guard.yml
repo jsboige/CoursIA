@@ -72,6 +72,10 @@ jobs:
     # Retour arriere = remettre `runs-on: ubuntu-latest` + retirer l'entry
     # de SELF_HOSTED_WORKFLOW_ALLOWLIST.
     runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
+    # #22954 : borne explicite. Mesure du 2026-10-29 sur les 4 derniers
+    # runs verts de ce job : max 0.1 min. Marge large (le defaut
+    # d'Actions est 6 h, et un job fige tient son slot tout ce temps).
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
