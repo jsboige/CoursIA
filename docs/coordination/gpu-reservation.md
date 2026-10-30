@@ -136,16 +136,33 @@ Le tenancier (`myia-ai-01:CoursIA-2`) :
 
 Le picker (`scripts/pick_idle_grain.py`) croise l'urne `delivered` avec un signal **pre-launch** :
 
-1. Avant de tirer un grain `training` ou `genai` marqué **GPU-bound** (heuristique : à définir), le picker vérifie qu'une observation `[OBS]` existe dans le ledger pour l'entité ciblée via la sous-commande `check_pending --entity <m>#gpu<n>`.
+1. Avant de tirer un grain `training` ou `genai` marqué **GPU-bound**, le picker vérifie qu'une observation `[OBS]` existe dans le ledger pour l'entité ciblée via la sous-commande `check_pending --entity <m>#gpu<n>`. **L'heuristique « GPU-bound » est fixée** : un candidat est GPU-borne si son genre est `training` ou `genai` — le genre retenu par le picker est celui que l'auteur a déclaré (tag `Grain:`) quand il existe, sinon celui inféré du titre et des labels (`GENRE_RULES`, qui reste « une aide au tri, pas un verdict »). **L'entité ciblée se résout** dans cet ordre : (1) la **ligne dédiée** `GPU: <machine>#gpu<n>` du **corps** du candidat — la seule forme qui distingue une *déclaration* d'une mention en prose ; (2) **une seule** entité `<machine>#gpu<n>` citée en prose dans le corps ; (3) l'option `--gpu-entity` du tirage (répétable) — la cible que la lane qui tire peut offrir. **Deux entités distinctes** dans la même source rendent la cible **ambiguë** : le grain est alors écarté avec le motif `[DEFER gpu-reservation target-ambiguous]` — le picker ne choisit pas à la place de l'auteur. **Aucune cible** n'est pas un device tenu : le grain est alors **servi**, et le fait est nommé dans la sortie du tirage (`[INFO gpu-reservation target-unresolved]`) — la porte n'avait aucun device à protéger, et rien n'a été vérifié.
 2. **Pas d'observation `[OBS]`** (`verdict: NO_OBS`) → le picker saute le grain et log `[SKIP gpu-reservation missing]`. La lane worker qui rencontre ce skip doit poster l'observation OU prendre un grain non-GPU.
 3. **Observation `held` par une autre lane** (`verdict: HOLD`) → le picker signale `[DEFER gpu-reservation hold]` et passe au suivant.
 4. **Observation `held` par ma lane, dans la fenêtre** (`verdict: OK_TO_RUN`) → le picker tire normalement.
 5. **Observation `released`** (`verdict: RELEASED`) → le GPU est libre, le picker peut tirer.
 6. **Observation `stale`** (`verdict: STALE`) → cas d'erreur, la lane tenancière doit poster un `[OBS]` de réparation.
 
-Le script `scripts/coordination/debt_ledger.py check_pending --entity <m>#gpu<n>` rend le verdict (`OK_TO_RUN`, `NO_OBS`, `HOLD`, `RELEASED`, `STALE`, `UNPOSTED`) en ~50 ms (cache local). **Implémentation 4e livrable : [PR #19855](https://github.com/jsboige/CoursIA/pull/19855)**, merge de la sous-commande et de `evaluate_gpu_pending()` (113/113 tests passent).
+Le script `scripts/coordination/debt_ledger.py check_pending --entity <m>#gpu<n>` rend le verdict (`OK_TO_RUN`, `NO_OBS`, `HOLD`, `RELEASED`, `STALE`, `UNPOSTED`, `UNREADABLE_SPOOL`) en ~50 ms (cache local). **Implémentation 4e livrable : [PR #19855](https://github.com/jsboige/CoursIA/pull/19855)**, merge de la sous-commande et de `evaluate_gpu_pending()` (113/113 tests passent).
 
-**Codes de sortie** (promis par la docstring de la sous-commande, `debt_ledger.py:2419`) :
+### Ce que le picker en fait (c.2431, #22747)
+
+La section ci-dessus était une **promesse du protocole que le code ne tenait pas** : mesuré le 2026-10-27, `git grep -n check_pending scripts/` ne renvoyait que le ledger, ses tests et cette page — **zéro appelant** du côté du picker. Le gate est maintenant câblé :
+
+- **Où** : au moment de **servir** un candidat, sur les deux chemins de tirage — la voie pondérée (`draw_unclaimed`) et le tapis (`belt_pick_with_replacements`, celui que le cycle `/continue` emprunte). Le gate n'est donc consulté que pour une poignée de candidats, jamais pour tout le pool.
+- **Doctrine : fail-CLOSED.** Une observation de device tenu est un fait de **contention matérielle** — deux lanes qui lancent sur le même device se marchent dessus (#22456 : le premier essai de `po-2024` n'a pas été vu par la régie). Un gate **illisible** ne rend donc jamais « libre » : il rend `GATE_UNREAD`, et le grain est écarté avec un motif nommé. C'est l'inverse du fail-OPEN des sondes de claim (là, une lecture ratée ne doit pas inventer un blocage).
+- **Le verdict est lu dans le JSON, jamais dans le code de sortie** : `NO_OBS` sort 0 et doit pourtant écarter, `STALE` et une erreur d'usage sortent tous deux 2 — le code de sortie ne décide de rien.
+- **Le motif est nommé** : un grain écarté est un grain **dit**, pas un grain absent. Marqueurs : `[SKIP gpu-reservation missing]` (aucune observation), `[DEFER gpu-reservation hold]` (device tenu), `[DEFER gpu-reservation stale]`, `[DEFER gpu-reservation unposted]` (spool non drainé), `[DEFER gpu-reservation gate-unreadable]` (gate illisible), `[DEFER gpu-reservation unreadable]` (le transport git n'a pas pu lire le ledger — siège sans remote `gpu-ledger`), `[DEFER gpu-reservation target-ambiguous]` (plusieurs cibles GPU distinctes, aucune ne fait foi). Un grain **servi sans cible déclarée** laisse une trace d'un autre genre : `[INFO gpu-reservation target-unresolved]` — ce n'est pas un écart, c'est l'absence de device à protéger.
+- **Déclarer sa cible** : la forme canonique est une **ligne dédiée** dans le **corps de l'issue** :
+
+  ```text
+  GPU: myia-ai-01#gpu2
+  ```
+
+  Cette ligne **prime** sur toute mention en prose — une mention en prose est un **contexte**, pas une **déclaration** (« po-2024 avait lancé sur `myia-po-2024#gpu0` […] ce grain tourne sur `myia-ai-01#gpu2` »). Si le corps porte **deux** entités distinctes en prose et **aucune** ligne dédiée, la cible est **ambiguë** : le grain est écarté (`[DEFER gpu-reservation target-ambiguous]`). Lever l'ambiguïté n'est pas choisir à la place de l'auteur : c'est écrire la ligne dédiée.
+- **Tests** : `scripts/tests/test_pick_idle_grain_gpu_gate.py` couvre les trois cas d'acceptation de #22747 (device libre → proposé, device tenu → écarté avec motif, gate indisponible → écarté avec motif), les deux non-régressions (verdict lu dans le JSON ; un grain non GPU-borne ne consulte jamais le gate) et les deux chemins de tirage.
+
+**Codes de sortie** (promis par la docstring de la sous-commande, `debt_ledger.py:2663`) :
 
 | Verdict | Code | Lecture |
 |---|---|---|
@@ -155,10 +172,13 @@ Le script `scripts/coordination/debt_ledger.py check_pending --entity <m>#gpu<n>
 | `HOLD` | **1** | la gate refuse : tenu par une autre lane, ou par nous hors fenêtre |
 | `STALE` | **2** | `held` dépassé sans release — l'appelant décide (rafraîchir ou bloquer) |
 | `UNPOSTED` | **1** | le spool local porte des observations **jamais postées** : le ledger est illisible, pas libre — poster (`flush`) avant de conclure |
+| `UNREADABLE_SPOOL` | **1** | un fichier du spool local est **illisible** : il peut porter une réservation, donc le ledger est illisible, pas libre — le verdict nomme chaque fichier et son motif |
 
 Le code 2 est aussi rendu sur un usage invalide (`--entity` absent, ledger ≠ `gpu-reservation`) : là, il signale une **erreur d'appel**, pas un verdict.
 
 `UNPOSTED` prime sur les autres verdicts : il est rendu **avant** la lecture du snapshot, parce qu'un verdict réduit d'un snapshot ne voit pas ce qui n'a jamais voyagé (deux réservations `held` vivantes, quatre-vingt-quatre heures de spool, et un `RELEASED` rendu avec aplomb — #22456).
+
+`UNREADABLE_SPOOL` prime sur `UNPOSTED` : un fichier illisible peut porter un `held`, et un décompte d'enveloppes saines ne le dirait pas. Le fichier reste sur disque et le verdict en nomme le chemin et le motif — l'archivage des bonnes enveloppes reste possible, la conclusion « libre » ne l'est pas.
 
 **Le drainage du spool est en deux temps, et aucun n'est optionnel** : `debt_ledger.py flush` liste (ou `--emit` écrit) le lot à poster — le `content` de chaque appel est l'octet du fichier de spool, sans re-sérialisation — puis `flush --mark-posted <id>...` archive les observations effectivement postées. L'archivage est idempotent (l'`observation_id` est la clé) et tout-ou-rien : un id inconnu refuse le lot entier plutôt que d'archiver la moitié, parce qu'un spool à moitié drainé est précisément l'état qui fait mentir `check_pending`.
 

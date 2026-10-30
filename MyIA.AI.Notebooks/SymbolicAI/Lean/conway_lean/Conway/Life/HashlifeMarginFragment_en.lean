@@ -3785,6 +3785,83 @@ theorem hashlife_correct_margin_of_union_periodic_singleton (c : MacroCell) (k :
   rw [hsplit]
   exact hcap_of_union_periodic_singleton hTi g₁ g₂ hfix₁ hcan hg₂ hspan t
 
+/-! ### Link 5 — ships in formation (union of two synchronous spaceships)
+
+Links 1 to 4 covered **periodic** unions (fixed points of `evolve T`). A
+spaceship is not a fixed point: `evolve p g = shift v g` moves it, and
+`hcap_of_union_periodic` does not apply. But two spaceships with the **same
+period** `p` and the **same displacement** `v` whose trajectories stay
+3-separated themselves form a spaceship: the union reappears after `p`
+steps, translated by `v`. Capture via the spaceship route
+(`hcap_of_spaceship`) then applies to the whole union — two synchronous
+gliders separated by three cells are covered by the same proof as each one
+in isolation. -/
+
+/-- **Derived periodicity of the union of two synchronous spaceships.** Two
+    spaceships with the same period `p > 0` and the same displacement `v`,
+    whose trajectories stay 3-separated, form a union which is itself a
+    spaceship of period `p` and displacement `v` — in the strong sense of
+    the list equality required by `hcap_of_spaceship`, and **with no
+    canonicity hypothesis** (unlike `evolve_period_union`: both sides of
+    the `Canonical.ext` bridge are unconditionally canonical —
+    `canonical_evolve_of_pos` on the left, `canonical_shift` on the
+    right). Membership by `mem_evolve_union_sep` then the two spaceship
+    legs, the translation absorbed by `mem_shift` on all three sides. -/
+theorem evolve_ship_union {p : Nat} (hp0 : 0 < p) (g₁ g₂ : Grid)
+    (hsep : ∀ s, ∀ q ∈ evolve s g₁, ∀ r ∈ evolve s g₂, 3 ≤ chebDist q r)
+    (v : Int × Int) (hship₁ : evolve p g₁ = shift v g₁)
+    (hship₂ : evolve p g₂ = shift v g₂) :
+    evolve p (g₁ ++ g₂) = shift v (g₁ ++ g₂) := by
+  apply Canonical.ext (canonical_evolve_of_pos hp0 _) (canonical_shift v _)
+  intro q
+  rw [mem_evolve_union_sep g₁ g₂ hsep p q, hship₁, hship₂,
+    mem_shift v g₁ q, mem_shift v g₂ q, mem_shift v (g₁ ++ g₂) q]
+  exact List.mem_append.symm
+
+/-- **hcap for spaceship formations — link 5.** For two synchronous
+    spaceships (same `p > 0`, same `v`), with 3-separated trajectories,
+    whose every phase of the union has a reconstruction level divisible by
+    `p` and whose velocity satisfies `2·|v.i| ≤ p`, every time `t` of the
+    union trajectory is captured: the union is a spaceship
+    (`evolve_ship_union`), and capture via the spaceship route
+    (`hcap_of_spaceship`) applies to it as is. -/
+theorem hcap_of_spaceship_formation {p : Nat} (hp0 : 0 < p) (g₁ g₂ : Grid)
+    (hsep : ∀ s, ∀ q ∈ evolve s g₁, ∀ r ∈ evolve s g₂, 3 ≤ chebDist q r)
+    (v : Int × Int) (hship₁ : evolve p g₁ = shift v g₁)
+    (hship₂ : evolve p g₂ = shift v g₂) (hcan : Canonical (g₁ ++ g₂))
+    (hdiv : ∀ i, i < p →
+      p ∣ 2 ^ (gridToMacroCellWithOffset (evolve i (g₁ ++ g₂))).2.level)
+    (hspd1 : -(p : Int) ≤ 2 * v.1 ∧ 2 * v.1 ≤ (p : Int))
+    (hspd2 : -(p : Int) ≤ 2 * v.2 ∧ 2 * v.2 ≤ (p : Int)) :
+    ∀ t, jumpCapturedF (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).2 = true :=
+  hcap_of_spaceship (g₁ ++ g₂) hcan hp0 v
+    (evolve_ship_union hp0 g₁ g₂ hsep v hship₁ hship₂) hdiv hspd1 hspd2
+
+/-- **L3 closed for synchronous spaceship formations.** Assembly
+    corollary mirroring `hashlife_correct_margin_of_union_periodic`: a
+    MacroCell whose grid rendered at the origin splits into two spaceships
+    with the same period `p > 0` and the same displacement `v`, with
+    3-separated trajectories, satisfies the Hashlife equality at any
+    horizon `2 ^ k` under `centralCorrect`. Second **composed** L3 case
+    after the periodic unions: two synchronous gliders separated by three
+    cells — each spaceship covered alone already was, their formation was
+    not. -/
+theorem hashlife_correct_margin_of_spaceship_formation (c : MacroCell) (k : Nat)
+    (h_central : centralCorrect c k) {p : Nat} (hp0 : 0 < p) (v : Int × Int)
+    (g₁ g₂ : Grid) (hsplit : c.toGrid (0, 0) = g₁ ++ g₂)
+    (hsep : ∀ s, ∀ q ∈ evolve s g₁, ∀ r ∈ evolve s g₂, 3 ≤ chebDist q r)
+    (hship₁ : evolve p g₁ = shift v g₁) (hship₂ : evolve p g₂ = shift v g₂)
+    (hcan : Canonical (g₁ ++ g₂))
+    (hdiv : ∀ i, i < p →
+      p ∣ 2 ^ (gridToMacroCellWithOffset (evolve i (c.toGrid (0, 0)))).2.level)
+    (hspd1 : -(p : Int) ≤ 2 * v.1 ∧ 2 * v.1 ≤ (p : Int))
+    (hspd2 : -(p : Int) ≤ 2 * v.2 ∧ 2 * v.2 ≤ (p : Int)) :
+    evolveHashlifeFast (2 ^ k) (c.toGrid (0, 0)) = evolve (2 ^ k) (c.toGrid (0, 0)) := by
+  refine hashlife_correct_margin_of_hcap c k h_central ?_
+  intro t _
+  rw [hsplit]
+  exact hcap_of_spaceship_formation hp0 g₁ g₂ hsep v hship₁ hship₂ hcan (hsplit ▸ hdiv) hspd1 hspd2 t
+
 /-! ### Slice 15 — mixed-period unions (mod route, containment)
 
 Links 2-4 of the union chain require both parts to share the **same** period `T`
@@ -3991,6 +4068,148 @@ theorem hcap_of_union_mixed_of_box {T T₁ T₂ : Nat} (hT : 0 < T)
     evolve_period_union_mul hT hdv₁ hdv₂ g₁ g₂ hsep hfix₁ hfix₂ hcan
   exact hcap_of_union_mixed hT hdv₁ hdv₂ g₁ g₂ hsep hfix₁ hfix₂ hcan
     (hwin_of_orbit_box hT (g₁ ++ g₂) hperU a₁ a₂ b₁ b₂ hbox hframe)
+
+/-! ### Slice 24 — capture by the static mid-frame box (aperiodic)
+
+The slice-3 scoping (c.5551593604) identified the hcap-reachable classes as
+periodic (`T ∣ 2^k`), then 8a/8b relaxed them to phase containment; slice 17
+closed the dilated-corridor route (it can only capture emptiness). This slice
+opens the **confined aperiodic** class: no periodicity or divisibility
+assumption at all — only a **static box** the whole trajectory never leaves,
+placed in the mid-frame `[2^(lvl-1), 3·2^(lvl-1))²` of the origin framing. The
+arithmetic is exactly that of the `jumpCapturedF` test (shifted reading by
+`3·2^(lvl-1)`, cf `padCenter2_toGrid_shift`): the box `[u, 3u)²` with
+`u = 2^(lvl-1)` maps back through the shift into `[4u, 6u)² = [2^lvl, 3·2^lvl)²`
+— the exact window of the predicate, with no drift over-approximation. It is
+the exact-position counterpart of the corridor: where slice 17 bounded the
+drift by ±2^lvl (forcing a zero-width box), here the box records the actual
+trajectory positions. The class subsumes the existing ones (still lifes,
+oscillators, unions) without assuming them, and covers confined trajectories
+with no fixed point and no period — finite transients, late-stabilising
+patterns.
+
+Chain mirroring 8a/8b: cell → reconstruction → hcap → framework statement. -/
+
+/-- **Slice 24, link 1 — the static mid-frame box captures the jump.** If the
+    trajectory of the origin grid of `c` lives entirely in the box
+    `[2^(lvl-1), 3·2^(lvl-1))²` (coordinates of the `(0, 0)` framing), the jump
+    is captured — with no periodicity assumption. The padded → origin transport
+    (`padCenter2_toGrid_shift` + `evolve_shift`) reduces the window test to a
+    linear inclusion: the box read through the `3·2^(lvl-1)` shift lands in
+    `[2^lvl, 3·2^lvl)²`, the exact window of `jumpCapturedF`. No wf hypothesis:
+    the box replaces the frame's content bound. -/
+theorem jumpCapturedF_of_static_frame (c : MacroCell)
+    (hlvl : 1 ≤ c.level)
+    (hbox : ∀ s : Nat, ∀ p ∈ evolve s (c.toGrid (0, 0)),
+      (2 ^ (c.level - 1) : Int) ≤ p.1 ∧ p.1 < 3 * (2 ^ (c.level - 1) : Int) ∧
+      (2 ^ (c.level - 1) : Int) ≤ p.2 ∧ p.2 < 3 * (2 ^ (c.level - 1) : Int)) :
+    jumpCapturedF c = true := by
+  rw [jumpCapturedF_iff]
+  intro p hp
+  rw [padCenter2_toGrid_shift c hlvl, ← evolve_shift, mem_shift] at hp
+  obtain ⟨b1, b2, b3, b4⟩ := hbox (2 ^ c.level) _ hp
+  dsimp only at b1 b2 b3 b4
+  -- Test bounds: `2^lvl ≤ p.i < 2^lvl + 2^(lvl+1)`; content shifted by
+  -- `3·2^(lvl-1)` within `[2^(lvl-1), 3·2^(lvl-1))` — linear in the atom.
+  have hpow : (2 ^ c.level : Int) = 2 * (2 ^ (c.level - 1) : Int) := by
+    have hsplit : c.level = (c.level - 1) + 1 := by omega
+    conv_lhs => rw [hsplit]
+    rw [pow_succ]
+    ring
+  have hnext : ((2 ^ (c.level + 1) : Nat) : Int)
+      = (2 ^ c.level : Int) + (2 ^ c.level : Int) := by
+    rw [Nat.cast_pow, pow_succ]
+    ring
+  omega
+
+/-- **Slice 24, link 2 — capture of the reconstruction by a static box.** Grid
+    variant of link 1: the box is stated in absolute coordinates, relative to
+    the reconstruction frame of `g` (offset + mid-frame). The transport to the
+    origin framing (`toGrid_shift_grid` + `toGrid_gridToMacroCellWithOffset_eq`)
+    mirrors the 8b chain. -/
+theorem jumpCapturedF_reconstruction_of_static_frame (g : Grid) (hg : Canonical g)
+    (hbox : ∀ i : Nat, ∀ p ∈ evolve i g,
+      (gridToMacroCellWithOffset g).1.1
+          + (2 ^ ((gridToMacroCellWithOffset g).2.level - 1) : Int) ≤ p.1 ∧
+        p.1 < (gridToMacroCellWithOffset g).1.1
+          + 3 * (2 ^ ((gridToMacroCellWithOffset g).2.level - 1) : Int) ∧
+      (gridToMacroCellWithOffset g).1.2
+          + (2 ^ ((gridToMacroCellWithOffset g).2.level - 1) : Int) ≤ p.2 ∧
+        p.2 < (gridToMacroCellWithOffset g).1.2
+          + 3 * (2 ^ ((gridToMacroCellWithOffset g).2.level - 1) : Int)) :
+    jumpCapturedF (gridToMacroCellWithOffset g).2 = true := by
+  by_cases hne : g = []
+  · subst hne
+    decide
+  · have hlvl : 1 ≤ (gridToMacroCellWithOffset g).2.level := by
+      have hN := gridToMacroCellWithOffsetN_level_gt_n 2 g hne
+      rw [gridToMacroCellWithOffsetN_le_two_eq 2 g (by omega)] at hN
+      cases hL : (gridToMacroCellWithOffset g).2.level with
+      | zero => rw [hL] at hN; exact absurd hN (by decide)
+      | succ m => omega
+    have hshift : (gridToMacroCellWithOffset g).2.toGrid (0, 0)
+        = shift (0 - (gridToMacroCellWithOffset g).1.1,
+            0 - (gridToMacroCellWithOffset g).1.2)
+            ((gridToMacroCellWithOffset g).2.toGrid (gridToMacroCellWithOffset g).1) :=
+      toGrid_shift_grid _ 0 0 _ _
+    have hrt : (gridToMacroCellWithOffset g).2.toGrid (gridToMacroCellWithOffset g).1
+        = g := toGrid_gridToMacroCellWithOffset_eq g hg
+    have hwin' : ∀ i : Nat, ∀ p ∈
+        evolve i ((gridToMacroCellWithOffset g).2.toGrid (0, 0)),
+      (2 ^ ((gridToMacroCellWithOffset g).2.level - 1) : Int) ≤ p.1 ∧
+        p.1 < 3 * (2 ^ ((gridToMacroCellWithOffset g).2.level - 1) : Int) ∧
+      (2 ^ ((gridToMacroCellWithOffset g).2.level - 1) : Int) ≤ p.2 ∧
+        p.2 < 3 * (2 ^ ((gridToMacroCellWithOffset g).2.level - 1) : Int) := by
+      intro i p hp
+      rw [hshift, ← evolve_shift, mem_shift, hrt] at hp
+      obtain ⟨hb1, hb2, hb3, hb4⟩ := hbox i _ hp
+      dsimp only at hb1 hb2 hb3 hb4
+      omega
+    exact jumpCapturedF_of_static_frame _ hlvl hwin'
+
+/-- **Slice 24, link 3 — hcap of the confined aperiodic class.** Each state
+    `g_t` of the trajectory carries its own box (the mid-frame of ITS
+    reconstruction): the premise `hwin` is indexed by the departure state `r`
+    and the elapsed time `i`, with no time bound — there is no phase left to
+    reduce, the box is checked state by state. -/
+theorem hcap_of_static_frame (g : Grid) (hg : Canonical g)
+    (hwin : ∀ r i : Nat, ∀ p ∈ evolve i (evolve r g),
+      (gridToMacroCellWithOffset (evolve r g)).1.1
+          + (2 ^ ((gridToMacroCellWithOffset (evolve r g)).2.level - 1) : Int) ≤ p.1 ∧
+        p.1 < (gridToMacroCellWithOffset (evolve r g)).1.1
+          + 3 * (2 ^ ((gridToMacroCellWithOffset (evolve r g)).2.level - 1) : Int) ∧
+      (gridToMacroCellWithOffset (evolve r g)).1.2
+          + (2 ^ ((gridToMacroCellWithOffset (evolve r g)).2.level - 1) : Int) ≤ p.2 ∧
+        p.2 < (gridToMacroCellWithOffset (evolve r g)).1.2
+          + 3 * (2 ^ ((gridToMacroCellWithOffset (evolve r g)).2.level - 1) : Int)) :
+    ∀ t, jumpCapturedF (gridToMacroCellWithOffset (evolve t g)).2 = true := by
+  intro t
+  have hcan : Canonical (evolve t g) := by
+    rcases Nat.eq_zero_or_pos t with h0 | hpos
+    · rw [h0]
+      simpa using hg
+    · exact canonical_evolve_of_pos hpos _
+  exact jumpCapturedF_reconstruction_of_static_frame _ hcan (hwin t)
+
+/-- **Slice 24 — L3 closed for the confined aperiodic class: Hashlife
+    correctness of static-box trajectories.** Under median containment of the
+    states (no periodicity, no divisibility), the global equality applies at
+    any horizon `2^k` under `centralCorrect` — mirror of
+    `hashlife_correct_margin_of_period_mod` without its period hypothesis. -/
+theorem hashlife_correct_margin_of_static_frame (c : MacroCell) (k : Nat)
+    (h_central : centralCorrect c k)
+    (hwin : ∀ r i : Nat, ∀ p ∈ evolve i (evolve r (c.toGrid (0, 0))),
+      (gridToMacroCellWithOffset (evolve r (c.toGrid (0, 0)))).1.1
+          + (2 ^ ((gridToMacroCellWithOffset (evolve r (c.toGrid (0, 0)))).2.level - 1) : Int) ≤ p.1 ∧
+        p.1 < (gridToMacroCellWithOffset (evolve r (c.toGrid (0, 0)))).1.1
+          + 3 * (2 ^ ((gridToMacroCellWithOffset (evolve r (c.toGrid (0, 0)))).2.level - 1) : Int) ∧
+      (gridToMacroCellWithOffset (evolve r (c.toGrid (0, 0)))).1.2
+          + (2 ^ ((gridToMacroCellWithOffset (evolve r (c.toGrid (0, 0)))).2.level - 1) : Int) ≤ p.2 ∧
+        p.2 < (gridToMacroCellWithOffset (evolve r (c.toGrid (0, 0)))).1.2
+          + 3 * (2 ^ ((gridToMacroCellWithOffset (evolve r (c.toGrid (0, 0)))).2.level - 1) : Int)) :
+    evolveHashlifeFast (2^k) (c.toGrid (0, 0)) = evolve (2^k) (c.toGrid (0, 0)) :=
+  hashlife_correct_margin_of_hcap c k h_central
+    (fun t _ => hcap_of_static_frame _ (canonical_sortDedup _) hwin t)
 
 /-! ### Slice 23 — public restitution of the SW wall (`wall_sw_agreement`)
 

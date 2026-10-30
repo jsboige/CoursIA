@@ -25,6 +25,7 @@ Recherche indépendante utilisant des données locales (yfinance, pandas, sklear
 | `research_m12_hf_dm_test.ipynb` | M12-HF : test de significativité Diebold-Mariano | (c) Standalone | BTC tick Bitstamp |
 | `research_quality_lowvol.ipynb` | Facteur Quality + Low Vol | (c) Standalone | yfinance |
 | `research_risk_parity.ipynb` | Allocation risk parity | (c) Standalone | yfinance |
+| `research_turn_of_month.ipynb` | Effet de calendrier turn of the month (brut, net de coûts, walk-forward + DM, verdict NO BEATS) | (c) Standalone | yfinance (SPY/QQQ/EFA) |
 | `research_rl_grpo.ipynb` | Agent de trading RL GRPO | (c) Standalone | yfinance |
 | `research_rl_intro.ipynb` | Introduction au RL | (c) Standalone | yfinance |
 | `research_rl_multi_asset.ipynb` | Allocation multi-actifs RL | (c) Standalone | yfinance |
