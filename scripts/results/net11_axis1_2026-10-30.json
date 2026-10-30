@@ -1,0 +1,139 @@
+{
+  "notebook": "./MyIA.AI.Notebooks\\GenAI\\Integrations-DotNet\\Aspire\\08-Aspire-AsyncFFI-Dotnet.ipynb",
+  "reps": 5,
+  "apphost": "~/.dotnet\\tools\\dotnet-interactive.EXE",
+  "arms": [
+    {
+      "label": "net10",
+      "kernel": ".net-csharp",
+      "generated": false,
+      "dotnet_root": null,
+      "runtime": ".NET 10.0.13",
+      "reps": [
+        {
+          "returncode": 0,
+          "cells_total": 9,
+          "cells_ok": 9,
+          "cells_errors": 0,
+          "total_seconds": 12.5,
+          "stdout_tail": "[i]   Kernel override: .net-csharp\n\n[08-Aspire-AsyncFFI-Dotnet.ipynb] (kernel: .net-csharp)\n  [+] Executed 9 cells: 9 OK, 0 errors\n\n============================================================\n                     EXECUTION SUMMARY                      \n============================================================\n\n  Success: 1\n  Failed: 0\n  Total time: 12.5s",
+          "rep": 1
+        },
+        {
+          "returncode": 0,
+          "cells_total": 9,
+          "cells_ok": 9,
+          "cells_errors": 0,
+          "total_seconds": 13.2,
+          "stdout_tail": "[i]   Kernel override: .net-csharp\n\n[08-Aspire-AsyncFFI-Dotnet.ipynb] (kernel: .net-csharp)\n  [+] Executed 9 cells: 9 OK, 0 errors\n\n============================================================\n                     EXECUTION SUMMARY                      \n============================================================\n\n  Success: 1\n  Failed: 0\n  Total time: 13.2s",
+          "rep": 2
+        },
+        {
+          "returncode": 0,
+          "cells_total": 9,
+          "cells_ok": 9,
+          "cells_errors": 0,
+          "total_seconds": 12.6,
+          "stdout_tail": "[i]   Kernel override: .net-csharp\n\n[08-Aspire-AsyncFFI-Dotnet.ipynb] (kernel: .net-csharp)\n  [+] Executed 9 cells: 9 OK, 0 errors\n\n============================================================\n                     EXECUTION SUMMARY                      \n============================================================\n\n  Success: 1\n  Failed: 0\n  Total time: 12.6s",
+          "rep": 3
+        },
+        {
+          "returncode": 0,
+          "cells_total": 9,
+          "cells_ok": 9,
+          "cells_errors": 0,
+          "total_seconds": 12.6,
+          "stdout_tail": "[i]   Kernel override: .net-csharp\n\n[08-Aspire-AsyncFFI-Dotnet.ipynb] (kernel: .net-csharp)\n  [+] Executed 9 cells: 9 OK, 0 errors\n\n============================================================\n                     EXECUTION SUMMARY                      \n============================================================\n\n  Success: 1\n  Failed: 0\n  Total time: 12.6s",
+          "rep": 4
+        },
+        {
+          "returncode": 0,
+          "cells_total": 9,
+          "cells_ok": 9,
+          "cells_errors": 0,
+          "total_seconds": 12.9,
+          "stdout_tail": "[i]   Kernel override: .net-csharp\n\n[08-Aspire-AsyncFFI-Dotnet.ipynb] (kernel: .net-csharp)\n  [+] Executed 9 cells: 9 OK, 0 errors\n\n============================================================\n                     EXECUTION SUMMARY                      \n============================================================\n\n  Success: 1\n  Failed: 0\n  Total time: 12.9s",
+          "rep": 5
+        }
+      ],
+      "times_seconds": [
+        12.5,
+        13.2,
+        12.6,
+        12.6,
+        12.9
+      ],
+      "median_seconds": 12.6,
+      "min_seconds": 12.5,
+      "max_seconds": 13.2,
+      "all_cells_ok": true,
+      "stdout_tail": ""
+    },
+    {
+      "label": "net11",
+      "kernel": ".net-csharp-net11",
+      "generated": true,
+      "dotnet_root": "C:/Users/jsboi/.dotnet-r11",
+      "runtime": ".NET 11.0.0-rc.3.26522.148",
+      "reps": [
+        {
+          "returncode": 0,
+          "cells_total": 9,
+          "cells_ok": 9,
+          "cells_errors": 0,
+          "total_seconds": 12.6,
+          "stdout_tail": "[i]   Kernel override: .net-csharp-net11\n\n[08-Aspire-AsyncFFI-Dotnet.ipynb] (kernel: .net-csharp-net11)\n  [+] Executed 9 cells: 9 OK, 0 errors\n\n============================================================\n                     EXECUTION SUMMARY                      \n============================================================\n\n  Success: 1\n  Failed: 0\n  Total time: 12.6s",
+          "rep": 1
+        },
+        {
+          "returncode": 0,
+          "cells_total": 9,
+          "cells_ok": 9,
+          "cells_errors": 0,
+          "total_seconds": 12.5,
+          "stdout_tail": "[i]   Kernel override: .net-csharp-net11\n\n[08-Aspire-AsyncFFI-Dotnet.ipynb] (kernel: .net-csharp-net11)\n  [+] Executed 9 cells: 9 OK, 0 errors\n\n============================================================\n                     EXECUTION SUMMARY                      \n============================================================\n\n  Success: 1\n  Failed: 0\n  Total time: 12.5s",
+          "rep": 2
+        },
+        {
+          "returncode": 0,
+          "cells_total": 9,
+          "cells_ok": 9,
+          "cells_errors": 0,
+          "total_seconds": 12.3,
+          "stdout_tail": "[i]   Kernel override: .net-csharp-net11\n\n[08-Aspire-AsyncFFI-Dotnet.ipynb] (kernel: .net-csharp-net11)\n  [+] Executed 9 cells: 9 OK, 0 errors\n\n============================================================\n                     EXECUTION SUMMARY                      \n============================================================\n\n  Success: 1\n  Failed: 0\n  Total time: 12.3s",
+          "rep": 3
+        },
+        {
+          "returncode": 0,
+          "cells_total": 9,
+          "cells_ok": 9,
+          "cells_errors": 0,
+          "total_seconds": 12.5,
+          "stdout_tail": "[i]   Kernel override: .net-csharp-net11\n\n[08-Aspire-AsyncFFI-Dotnet.ipynb] (kernel: .net-csharp-net11)\n  [+] Executed 9 cells: 9 OK, 0 errors\n\n============================================================\n                     EXECUTION SUMMARY                      \n============================================================\n\n  Success: 1\n  Failed: 0\n  Total time: 12.5s",
+          "rep": 4
+        },
+        {
+          "returncode": 0,
+          "cells_total": 9,
+          "cells_ok": 9,
+          "cells_errors": 0,
+          "total_seconds": 12.5,
+          "stdout_tail": "[i]   Kernel override: .net-csharp-net11\n\n[08-Aspire-AsyncFFI-Dotnet.ipynb] (kernel: .net-csharp-net11)\n  [+] Executed 9 cells: 9 OK, 0 errors\n\n============================================================\n                     EXECUTION SUMMARY                      \n============================================================\n\n  Success: 1\n  Failed: 0\n  Total time: 12.5s",
+          "rep": 5
+        }
+      ],
+      "times_seconds": [
+        12.6,
+        12.5,
+        12.3,
+        12.5,
+        12.5
+      ],
+      "median_seconds": 12.5,
+      "min_seconds": 12.3,
+      "max_seconds": 12.6,
+      "all_cells_ok": true,
+      "stdout_tail": ""
+    }
+  ]
+}
