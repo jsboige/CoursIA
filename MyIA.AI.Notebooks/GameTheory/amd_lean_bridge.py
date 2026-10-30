@@ -104,6 +104,12 @@ def strip_lean_comments(source: str) -> str:
     d'ou le compteur de profondeur. Les sauts de ligne traverses sont recopies
     tels quels : sans cela, retirer un commentaire collerait deux declarations
     sur une meme ligne et fausserait le decoupage.
+
+    **Limite connue** : les litteraux de chaine (`"..."`) ne sont pas traites —
+    un `--` ou un `/-` a l'interieur d'une chaine casserait le decoupage.
+    Mesure sur le corpus vise : `AMD.lean` ne contient aucune chaine (0
+    occurrence de `"`), et un fichier de preuves n'a pas de raison d'en
+    introduire.
     """
     out: list[str] = []
     depth = 0
