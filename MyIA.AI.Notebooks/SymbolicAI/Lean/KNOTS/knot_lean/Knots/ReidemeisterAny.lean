@@ -1019,4 +1019,171 @@ private theorem canonSlots_faithful {seen : List (Nat × Nat)} {xs : List Nat}
     canonSlots_vals_nodup hv hb,
     canonSlots_vals_bounded hb⟩
 
+
+/-! ## 10. Stabilité du rang (tranche 5)
+
+L'extraction a besoin d'une propriété que les tranches précédentes n'énoncent
+pas : **le rang d'une étiquette est le même partout où elle apparaît**. Tant
+que le fil est filé d'un croisement à l'autre, une étiquette déjà vue garde son
+rang ; c'est ce qui rend le renommage `π` bien défini — l'extraction porte sur
+les étiquettes, pas sur les positions.
+
+La clef est que le fil ne fait que **s'agrandir** : `canonLabel` ajoute une
+association nouvelle, ou rend l'association existante, sans jamais changer la
+valeur portée par une clé déjà présente.
+
+- `ThreadExt` : deux fils compatibles ;
+- `lookup_append_ne` / `lookup_append_self` : ce que l'ajout d'une association
+  fait aux autres clés, et à la sienne ;
+- `canonSlots_ext` : le fil rendu par `canonSlots` étend le fil reçu ;
+- `canonSlots_ranks` : **caractérisation** — les numéros produits par
+  `canonSlots` sont, pour chaque étiquette, la valeur que le fil final lui
+  porte.
+
+Deux détails de Lean core gouvernent la rédaction (mesurés, cf. les sondes) :
+`List.lookup` compare la **requête** à la clé stockée (`x == p.1`) et se
+déploie en un `match` booléen ; `List.append` est une définition à
+récursion bien fondée (`appendTR`), que `simp` ne unfolds pas — la tête
+d'une liste appendue s'expose donc par `show` (définitionnelle), pas par `rw`.
+Enfin les hypothèses sont réduites par `simp only` : le `simp` complet
+réécrit `lookup … = none` en forme d'appartenance, ce qui masquerait la
+forme `lookup` attendue par l'hypothèse de récurrence.
+
+Le théorème d'extraction lui-même reste le résidu de la tranche.
+-/
+
+/-- Deux fils sont compatibles si toute association portée par le premier est
+    encore portée par le second, avec la même valeur. -/
+private def ThreadExt (seen seen' : List (Nat × Nat)) : Prop :=
+  ∀ x v, seen.lookup x = some v → seen'.lookup x = some v
+
+/-- Le rang canonique d'une étiquette dans un fil : la valeur que le fil lui
+    porte, `0` si le fil ne la porte pas. -/
+private def threadRank (seen : List (Nat × Nat)) (x : Nat) : Nat :=
+  match seen.lookup x with
+  | some v => v
+  | none => 0
+
+/-- Une clé étrangère à l'ajout ne bouge pas : `lookup` sur la liste étendue
+    répond comme sur la liste d'origine. -/
+private theorem lookup_append_ne {l : List (Nat × Nat)} {x a : Nat} {v w : Nat}
+    (h : l.lookup x = some v) (_hne : x ≠ a) :
+    (l ++ [(a, w)]).lookup x = some v := by
+  induction l with
+  | nil => simp at h
+  | cons p t ih =>
+    simp only [List.lookup] at h
+    by_cases hk : x == p.1
+    · simp only [hk] at h
+      have hv : p.2 = v := Option.some.inj h
+      show List.lookup x (p :: (t ++ [(a, w)])) = some v
+      simp only [List.lookup]
+      simp only [hk]
+      exact congrArg some hv
+    · have hk' : (x == p.1) = false := by
+        cases hb : x == p.1 with
+        | true => exact False.elim (hk hb)
+        | false => rfl
+      simp only [hk'] at h
+      show List.lookup x (p :: (t ++ [(a, w)])) = some v
+      simp only [List.lookup]
+      simp only [hk']
+      exact ih h
+
+/-- Une clé absente du fil est trouvée dans l'ajout qui la porte. -/
+private theorem lookup_append_self {l : List (Nat × Nat)} {x : Nat} {w : Nat}
+    (h : l.lookup x = none) :
+    (l ++ [(x, w)]).lookup x = some w := by
+  induction l with
+  | nil => simp
+  | cons p t ih =>
+    simp only [List.lookup] at h
+    by_cases hk : x == p.1
+    · simp only [hk] at h
+      cases h
+    · have hk' : (x == p.1) = false := by
+        cases hb : x == p.1 with
+        | true => exact False.elim (hk hb)
+        | false => rfl
+      simp only [hk'] at h
+      show List.lookup x (p :: (t ++ [(x, w)])) = some w
+      simp only [List.lookup]
+      simp only [hk']
+      exact ih h
+
+/-- Le fil rendu par `canonSlots` étend le fil reçu : aucune association déjà
+    portée ne change de valeur. -/
+private theorem canonSlots_ext (seen : List (Nat × Nat)) (xs : List Nat) :
+    ThreadExt seen (canonSlots seen xs).2 := by
+  induction xs generalizing seen with
+  | nil =>
+    intro x v h
+    exact h
+  | cons x xs ih =>
+    cases hlk : seen.lookup x with
+    | some v =>
+      rw [canonSlots_cons_of_some hlk]
+      intro y w hy
+      exact ih seen y w hy
+    | none =>
+      rw [canonSlots_cons_of_none hlk]
+      intro y w hy
+      have hne : y ≠ x := by
+        intro hyx
+        subst hyx
+        rw [hlk] at hy
+        simp at hy
+      have hy' : (seen ++ [(x, seen.length + 1)]).lookup y = some w :=
+        lookup_append_ne hy hne
+      exact ih (seen ++ [(x, seen.length + 1)]) y w hy'
+
+/-- **Caractérisation des numéros émis.** Les numéros que `canonSlots` produit
+    sont, pour chaque étiquette, la valeur que le fil final lui porte : le
+    rang d'une étiquette ne dépend donc pas du moment où elle apparaît. -/
+private theorem canonSlots_ranks (seen : List (Nat × Nat)) (xs : List Nat) :
+    (canonSlots seen xs).1 = xs.map (fun x => threadRank (canonSlots seen xs).2 x) := by
+  induction xs generalizing seen with
+  | nil => rfl
+  | cons x xs ih =>
+    cases hlk : seen.lookup x with
+    | some v =>
+      have hpair : canonSlots seen (x :: xs) =
+          (v :: (canonSlots seen xs).1, (canonSlots seen xs).2) :=
+        canonSlots_cons_of_some hlk
+      have h1 : (canonSlots seen (x :: xs)).1 = v :: (canonSlots seen xs).1 := by
+        rw [hpair]
+      have h2 : (canonSlots seen (x :: xs)).2 = (canonSlots seen xs).2 := by
+        rw [hpair]
+      rw [h1, h2]
+      rw [List.map_cons]
+      rw [ih seen]
+      have hext := canonSlots_ext (seen := seen) (xs := xs)
+      have hx : (canonSlots seen xs).2.lookup x = some v := hext x v hlk
+      have hrank : threadRank (canonSlots seen xs).2 x = v := by
+        simp only [threadRank, hx]
+      rw [hrank]
+    | none =>
+      have hpair : canonSlots seen (x :: xs) =
+          ((seen.length + 1) :: (canonSlots (seen ++ [(x, seen.length + 1)]) xs).1,
+            (canonSlots (seen ++ [(x, seen.length + 1)]) xs).2) :=
+        canonSlots_cons_of_none hlk
+      have h1 : (canonSlots seen (x :: xs)).1 =
+          (seen.length + 1) :: (canonSlots (seen ++ [(x, seen.length + 1)]) xs).1 := by
+        rw [hpair]
+      have h2 : (canonSlots seen (x :: xs)).2 =
+          (canonSlots (seen ++ [(x, seen.length + 1)]) xs).2 := by
+        rw [hpair]
+      rw [h1, h2]
+      rw [List.map_cons]
+      rw [ih (seen ++ [(x, seen.length + 1)])]
+      have hx' : (seen ++ [(x, seen.length + 1)]).lookup x = some (seen.length + 1) :=
+        lookup_append_self hlk
+      have hext := canonSlots_ext (seen := seen ++ [(x, seen.length + 1)]) (xs := xs)
+      have hx : (canonSlots (seen ++ [(x, seen.length + 1)]) xs).2.lookup x =
+          some (seen.length + 1) := hext x (seen.length + 1) hx'
+      have hrank : threadRank (canonSlots (seen ++ [(x, seen.length + 1)]) xs).2 x =
+          seen.length + 1 := by
+        simp only [threadRank, hx]
+      rw [hrank]
+
 end Knots.AnyMoves
