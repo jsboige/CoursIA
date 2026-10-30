@@ -13,6 +13,13 @@ that reproduces the S^6 complex-structure proof on this machine:
     lake build Solution         # 248,818-line monolith (single file)
     lake exe comparator comparator/config.json   # Lean + nanoda kernels
 
+Le comparator tourne sous le bac a sable Landrun : `full` lit le type de ce
+binaire dans son en-tete ELF AVANT de lancer le comparator, et refuse
+l'etape s'il est absent, non executable ou d'une autre architecture --
+`check` publie le meme type (`landrun_type`) et sort en echec s'il n'est
+pas `elf64-x86-64`. Un chemin present dans une variable d'environnement
+n'est pas un binaire disponible.
+
 The notebook Lean-28-Complex-Structure-S6.ipynb consumes the JSON emitted by
 `check` so that every committed output traces back to a real artifact on disk
 (build.log, comparator.log written by the actual runs -- never hand-edited).
@@ -52,6 +59,7 @@ BUILD_LOG = f"{HOPF_DIR}/build.log"
 COMPARATOR_LOG = f"{HOPF_DIR}/comparator.log"
 TOOLCHAIN = "leanprover/lean4:v4.33.0"
 PERMITTED_AXIOMS = ["propext", "Classical.choice", "Quot.sound"]
+LANDRUN_BIN = "$HOME/bin/landrun"
 
 
 def rotate_if_present(log: str) -> str:
@@ -153,12 +161,70 @@ def toolchain_step(toolchain: str = TOOLCHAIN) -> str:
     )
 
 
+def _landrun_probe_sh(path: str = LANDRUN_BIN) -> str:
+    """Fragment shell qui pose ``landrun_type`` en lisant l'en-tete ELF.
+
+    ``od`` est dans coreutils : pas de dependance nouvelle a ``file`` ni a
+    ``readelf``. Les vingt premiers octets sont aplatis en une chaine
+    hexadecimale contigue (``tr -d``), puis decoupes par ``cut`` aux champs
+    qui portent le type : 1-8 magie ELF, 9-10 classe (``02`` = 64 bits),
+    37-40 ``e_machine`` (``3e00`` = x86-64 en petit-boutiste).
+
+    Les parametres positionnels sont evites deliberement : ``$19`` se lit
+    ``${1}9`` (parametre 1 suivi du litteral ``9``), ce qui rendait la lecture
+    de ``e_machine`` silencieusement fausse -- mesure sur ``/bin/true`` le
+    2026-10-24 (``$19$20`` rendait ``7f9450``). Une longueur hexadecimale
+    inferieure a 40 caracteres signale un fichier trop court pour porter un
+    en-tete ELF : c'est un etat distinct, jamais un refus generique.
+    """
+    return (
+        "if [ ! -e " + path + " ]; then landrun_type=missing; "
+        "elif [ ! -f " + path + " ]; then landrun_type=not-a-file; "
+        "elif [ ! -x " + path + " ]; then landrun_type=not-executable; "
+        "else h=$(od -An -tx1 -N20 " + path + " 2>/dev/null | tr -d ' \\n'); "
+        'if [ "$(printf %s "$h" | wc -c)" -lt 40 ]; then '
+        "landrun_type=too-short; "
+        'elif [ "$(printf %s "$h" | cut -c1-8)" != "7f454c46" ]; then '
+        "landrun_type=not-elf; "
+        'elif [ "$(printf %s "$h" | cut -c9-10)" != "02" ]; then '
+        "landrun_type=elf-not-64bit; "
+        'elif [ "$(printf %s "$h" | cut -c37-40)" != "3e00" ]; then '
+        "landrun_type=elf64-not-x86-64; "
+        "else landrun_type=elf64-x86-64; fi; fi"
+    )
+
+
+LANDRUN_PROBE = _landrun_probe_sh()
+
+
+def landrun_gate() -> str:
+    """Garde fail-closed : le binaire Landrun, lu, avant le comparator.
+
+    Le nom de la variable ``COMPARATOR_LANDRUN`` ne prouve rien : un chemin
+    absent, un fichier homonyme non executable ou un binaire d'une autre
+    architecture laissait le comparator s'executer et rendait, au mieux, un
+    echec tardif au milieu du protocole. Le type est donc lu dans l'en-tete
+    ELF (cf. ``LANDRUN_PROBE``) et un type inattendu coupe l'etape avant
+    ``lake exe comparator``. Le message de refus part sur stderr, donc dans
+    ``comparator.log`` via le ``2>&1`` de ``captured_step`` -- la trace du
+    refus survit a l'execution qui l'a produit.
+    """
+    return (
+        LANDRUN_PROBE + "; "
+        'if [ "$landrun_type" != "elf64-x86-64" ]; then '
+        'echo "refus: binaire Landrun attendu (ELF64 x86-64 executable) en '
+        + LANDRUN_BIN + ' -- lu: $landrun_type" >&2; exit 1; fi; '
+        'echo "landrun: $landrun_type"; '
+    )
+
+
 COMPARATOR_WORK = (
-    "COMPARATOR_LANDRUN=$HOME/bin/landrun "
+    "{gate}"
+    "COMPARATOR_LANDRUN=" + LANDRUN_BIN + " "
     "COMPARATOR_LEAN4EXPORT={d}/.lake/packages/lean4export/.lake/build/bin/lean4export "
     "COMPARATOR_NANODA=$HOME/nanoda_lib/target/release/nanoda_bin "
     "lake exe comparator comparator/config.json"
-).format(d=HOPF_DIR)
+).format(d=HOPF_DIR, gate=landrun_gate())
 
 FULL_PROTOCOL = [
     prepare_checkout_step(),
@@ -189,6 +255,18 @@ def sh(cmd: str, default: str = "") -> str:
         return wsl(cmd)
     except (RuntimeError, subprocess.TimeoutExpired):
         return default
+
+
+def landrun_probe(path: str = LANDRUN_BIN) -> str:
+    """Type mesure du binaire Landrun (cf. ``_landrun_probe_sh``) ; "" si muet.
+
+    Une chaine vide n'est pas un verdict : ``cmd_check`` la rend ``None`` et
+    l'absence de lecture ne valide jamais le protocole (meme discipline que
+    pour les comptes ``grep`` nuls lus avec ``|| true``).
+    """
+    return sh(
+        _landrun_probe_sh(path) + '; printf "%s" "$landrun_type"', default=""
+    )
 
 
 def parse_build_log(log: str) -> dict:
@@ -254,6 +332,11 @@ def cmd_check() -> int:
         "native_decide_count": sh_int(
             rf"grep -cw native_decide {HOPF_DIR}/Solution.lean || true"),
         "license": sh(f"head -1 {HOPF_DIR}/LICENSE", default=""),
+        # Critere 2 de #21442 : le binaire Landrun se verifie, il ne se nomme
+        # pas. Le type est lu dans l'en-tete ELF ; une sonde muette rend None,
+        # jamais une valeur par defaut presentee comme conforme.
+        "landrun_path": LANDRUN_BIN,
+        "landrun_type": landrun_probe() or None,
     }
     build_log = sh(f"cat {BUILD_LOG}", default="")
     comp_log = sh(f"cat {COMPARATOR_LOG}", default="")
@@ -282,6 +365,8 @@ def cmd_check() -> int:
         # checkout et pin
         out["pinned_sha"] is not None,
         out["sha_matches_pin"],
+        # binaire Landrun : un type MESURE, pas un chemin suppose (#21442)
+        out["landrun_type"] == "elf64-x86-64",
         # artefacts de build : sources presentes et non vides
         out["solution_present"],
         (out["solution_lines"] or 0) > 0,

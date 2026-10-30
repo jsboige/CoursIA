@@ -1178,11 +1178,26 @@ def test_cli_spool_status_out_dir_still_tolerates_missing_dir(tmp_path, capsys):
 
 
 def test_cli_spool_status_refuses_malformed_envelope(tmp_path, capsys):
+    """Attente changée volontairement : le mauvais fichier n'abandonne plus le lot.
+
+    Le refus global ``INVALID_SPOOL`` était le défaut #22456. Le CLI affiche
+    maintenant les comptes des enveloppes saines, nomme le fichier illisible et
+    continue de refuser (exit 1) pour ne jamais certifier un spool propre.
+    """
     spool = tmp_path / "spool"
     spool.mkdir()
-    (spool / "bad.json").write_text("[OBS] []", encoding="utf-8")
+    good = dl.parse_observation(issue_obs(state_class="open-blocked"), dl.ISSUE_DEBT)
+    dl.spool_observation(spool, good)
+    bad = spool / "bad.json"
+    bad.write_text("[OBS] []", encoding="utf-8")
+
     assert dl.main(["spool", "--status", "--out-dir", str(spool)]) == 1
-    assert "INVALID_SPOOL" in capsys.readouterr().err
+    captured = capsys.readouterr()
+    assert "issue-debt: pending=1 oldest_observed_at=2026-09-17T19:00:00Z" in captured.out
+    assert "gpu-reservation: pending=0 oldest_observed_at=-" in captured.out
+    assert "UNREADABLE_SPOOL" in captured.err
+    assert str(bad) in captured.err
+    assert "content JSON is not an object" in captured.err
 
 
 def test_cli_reduce_writes_snapshot_summary_and_status(tmp_path, capsys):

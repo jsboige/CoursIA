@@ -23,6 +23,12 @@
 #             coursia-waiters (pool d'attente PR-gate, label coursia-waiter),
 #             coursia-ci.slice (budget agrege) + daemon.json.
 # -- po-2024: coursia-runner, coursia-lean (leg Lean, label coursia-lean).
+# -- po-2028: coursia-runner (leg d'execution, label coursia-linux),
+#             coursia-ci.slice (budget agrege des conteneurs) + le drop-in
+#             docker qui epingle le daemon sur /var/run/docker-ce.sock,
+#             et /etc/docker/daemon.json (cgroup-parent + log-driver).
+#             Inventaire releve sur la machine le 2026-10-29 (pour cette
+#             machine seule ; les autres gardent leurs propres listes).
 #
 # Ce script ne touche PAS a po-2026 (pas d'unite systemd ; voir
 # persist/po-2026/README.md pour la chaine de cette machine).
@@ -44,15 +50,18 @@ die() { printf '[install-coursia-units][ABANDON] %s\n' "$*" >&2; exit 1; }
 
 usage() {
   cat <<'EOF'
-Usage : install-coursia-units.sh [--machine ai-01|po-2024] [--dry-run]
+Usage : install-coursia-units.sh [--machine ai-01|po-2024|po-2028] [--dry-run]
 
 Detection automatique de la machine via le hostname court (myia-ai-01,
-myia-po-2024). Forcer via --machine si la machine est videe de son prefixe
-myia- ou si elle n'est pas listee.
+myia-po-2024, myia-po-2028). Forcer via --machine si la machine est videe de
+son prefixe myia- ou si elle n'est pas listee.
 
 Variables d'environnement reconnues :
   COURSIA_INSTALL_MACHINE  : force la machine cible (meme valeurs que --machine).
-  COURSIA_REPO_DIR          : chemin du depot sur la machine (defaut /mnt/d/CoursIA).
+  COURSIA_REPO_DIR          : chemin du depot sur la machine. Defaut dependant
+                              de la machine : /mnt/d/dev/CoursIA-2 sur po-2028
+                              (workspace migre sur D: le 2026-10-27), /mnt/d/CoursIA
+                              ailleurs.
   COURSIA_NO_DOCKER_RESTART : si definie, ne PAS lancer `systemctl restart
                               docker.service` (la cible docker-ce porte peut-etre
                               des conteneurs en vol ; voir persist/README.md l.264-270).
@@ -71,6 +80,7 @@ detect_machine() {
   case "${HOSTNAME:-$(hostname)}" in
     myia-ai-01|ai-01)            printf 'ai-01\n' ;;
     myia-po-2024|po-2024)        printf 'po-2024\n' ;;
+    myia-po-2028|po-2028)        printf 'po-2028\n' ;;
     *)                           printf '\n' ;;
   esac
 }
@@ -87,18 +97,32 @@ while [ $# -gt 0 ]; do
 done
 
 [ -n "$icc_MACHINE" ] || icc_MACHINE="$(detect_machine)"
-[ -n "$icc_MACHINE" ] || die "machine non detectee (hostname=${HOSTNAME:-inconnu}) ; passez --machine ai-01|po-2024"
+[ -n "$icc_MACHINE" ] || die "machine non detectee (hostname=${HOSTNAME:-inconnu}) ; passez --machine ai-01|po-2024|po-2028"
 case "$icc_MACHINE" in
-  ai-01|po-2024) ;;
-  *) die "machine non supportee par ce script : $icc_MACHINE (visees : ai-01, po-2024)" ;;
+  ai-01|po-2024|po-2028) ;;
+  *) die "machine non supportee par ce script : $icc_MACHINE (visees : ai-01, po-2024, po-2028)" ;;
 esac
 
 # --- prereq -----------------------------------------------------------------
-[ "$(id -u)" -eq 0 ] || die "root requis (installation sous /etc/systemd/system/ et /etc/docker/)"
+# La garde de privilege ne porte que sur le mode REEL (#23342). Le dry-run d'un
+# geste UAC-touchant doit etre evaluable sans privilege : sinon l'operateur ouvre
+# une fenetre d'elevation pour la seule lecture de ce que le script installerait,
+# ce qui est exactement ce que la discipline de flotte interdit. L'evaluation
+# sans privilege est sure par construction : les six sites d'ecriture du script
+# (install x2 l.203/l.226, daemon-reload l.252, restart docker l.261, start slice
+# l.269, enable --now l.287) portent tous `[ "$icc_DRY_RUN" -eq 1 ] ||`.
+[ "$icc_DRY_RUN" -eq 1 ] || [ "$(id -u)" -eq 0 ] || die "root requis (installation sous /etc/systemd/system/ et /etc/docker/)"
 command -v systemctl >/dev/null 2>&1 || die "systemctl absent (systemd requis sur la machine cible)"
 command -v install    >/dev/null 2>&1 || die "install(1) absent (coreutils requis)"
 
-icc_REPO_DIR="${COURSIA_REPO_DIR:-/mnt/d/CoursIA}"
+# Le defaut depend de la machine : po-2028 a migre son workspace sur D: le
+# 2026-10-27 (/mnt/d/dev/CoursIA-2), et /mnt/d/CoursIA n'y existe pas. Un
+# defaut unique faisait echouer la garde `[ -d ... ]` sur cette machine pour
+# une raison sans rapport avec le depot.
+case "$icc_MACHINE" in
+  po-2028) icc_REPO_DIR="${COURSIA_REPO_DIR:-/mnt/d/dev/CoursIA-2}" ;;
+  *)       icc_REPO_DIR="${COURSIA_REPO_DIR:-/mnt/d/CoursIA}" ;;
+esac
 [ -d "$icc_REPO_DIR" ] || die "depot introuvable : $icc_REPO_DIR"
 icc_PERSIST_DIR="$icc_REPO_DIR/scripts/ci/docker/linux-runner/persist"
 [ -d "$icc_PERSIST_DIR" ] || die "persist/ introuvable : $icc_PERSIST_DIR"
@@ -125,6 +149,37 @@ LIST
 /usr/local/bin/coursia-runner-start.sh|persist/coursia-runner-start.sh|wrapper de la leg d'execution
 /etc/systemd/system/coursia-lean.service|persist/coursia-lean.service|leg Lean (label coursia-lean)
 /usr/local/bin/coursia-lean-start.sh|persist/coursia-lean-start.sh|wrapper de la leg Lean
+LIST
+      ;;
+    po-2028)
+      # Releve sur la machine le 2026-10-29 : /etc/systemd/system/coursia-runner.service
+      # (enabled), /etc/systemd/system/coursia-ci.slice (static),
+      # /usr/local/bin/coursia-runner-start.sh (0755), le drop-in docker
+      # /etc/systemd/system/docker.service.d/coursia-socket.conf et
+      # /etc/docker/daemon.json (0644). Il n'existe AUCUN drop-in
+      # coursia-runner.service.d/ sur cette machine.
+      #
+      # daemon.json fait partie de l'inventaire, et pas seulement de la
+      # liste ai-01 : c'est lui qui porte `cgroup-parent: coursia-ci.slice`,
+      # donc ce qui fait atterrir les conteneurs DANS la slice dont
+      # supervise.sh lit le budget agrege. Sans lui, une machine
+      # reconstruite installe la slice mais aucun conteneur n'y tombe, et
+      # `supervise.sh` refuse au demarrage avec « budget agrege
+      # coursia-ci.slice INTROUVABLE ou sans io.max » (supervise.sh:1335,
+      # garde l.1308-1340). La source est une copie PROPRE A CETTE MACHINE
+      # (`persist/po-2028/daemon.json`, sha256 8265130873c6...), et non le
+      # `persist/daemon.json` generique d'ai-01 : les deux sont equivalents
+      # en semantique mais pas byte-identiques (mise en forme de
+      # `log-opts`), et la garde d'installation compare par sha256 — sourcer
+      # le fichier d'ai-01 aurait rendu un DIFF permanent sur cette machine.
+      # La copie est byte-identique au fichier en service (verifie le
+      # 2026-10-29), donc l'installation rend SKIP et non DIFF.
+      cat <<'LIST'
+/etc/systemd/system/coursia-runner.service|persist/po-2028/coursia-runner.service|leg d'execution (label coursia-linux)
+/usr/local/bin/coursia-runner-start.sh|persist/po-2028/coursia-runner-start.sh|wrapper de la leg d'execution
+/etc/systemd/system/coursia-ci.slice|persist/po-2028/coursia-ci.slice|budget agrege des conteneurs
+/etc/systemd/system/docker.service.d/coursia-socket.conf|persist/po-2028/coursia-socket.conf|drop-in docker-ce : socket epingle sur /var/run/docker-ce.sock
+/etc/docker/daemon.json|persist/po-2028/daemon.json|cgroup-parent coursia-ci.slice + log-driver local
 LIST
       ;;
   esac
@@ -242,6 +297,17 @@ while IFS='|' read -r icc_target _unused _desc; do
 done < <(collect_units)
 
 # --- verification A3 ---------------------------------------------------------
+# A3 verifie l'EFFET d'une installation qui vient d'avoir lieu. En DRY-RUN rien
+# n'a ete installe ni demarre : les etats lus sont ceux d'AVANT le geste, et un
+# echec y serait un faux rouge -- sur une machine neuve, le dry-run echouerait
+# pour une raison sans rapport avec sa question (#23342). Le mode s'arrete donc
+# ici, sur le plan evalue, sans revendiquer une installation qu'il n'a pas faite.
+if [ "$icc_DRY_RUN" -eq 1 ]; then
+  log "verification A3 : NON EVALUEE (mode DRY-RUN -- rien n'a ete installe ni demarre)"
+  log ""
+  log "OK -- machine=$icc_MACHINE : plan evalue en DRY-RUN, aucune ecriture."
+  exit 0
+fi
 log ""
 log "verification A3 (services : is-enabled + is-active ; slices : is-active seul) :"
 icc_verify_failed=0
@@ -278,7 +344,8 @@ while IFS='|' read -r icc_target _unused _desc; do
 done < <(collect_units)
 
 if [ "$icc_verify_failed" -ne 0 ]; then
-  die "verification A3 en echec (voir log ci-dessus) ; code de retour 2"
+  printf '[install-coursia-units][ECHEC A3] verification en echec (voir log ci-dessus) ; code de retour 2\n' >&2
+  exit 2
 fi
 
 log ""

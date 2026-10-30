@@ -503,6 +503,9 @@ def digest_of(payload: Any) -> str:
     return hashlib.sha256(canonical_json(payload).encode("utf-8")).hexdigest()
 
 
+_OBSERVATION_DIGEST_ID_RE = re.compile(r"^obs-[0-9a-f]{16}$")
+
+
 def observation_id_for(observation: dict[str, Any]) -> str:
     """Content-derived stable id -- the same observation always gets the same id.
 
@@ -820,12 +823,16 @@ def parse_observation(
     ledger: str,
     *,
     defaults: dict[str, Any] | None = None,
+    warnings: list[str] | None = None,
 ) -> dict[str, Any]:
     """Validate one observation envelope and return its canonical form.
 
     ``defaults`` supplies the fields a journal message carries outside the
     envelope (``actor`` from the message author, ``observed_at`` from its
     timestamp, ``message_id`` from its id) and the baseline header defaults.
+    Un identifiant manuscrit est re-clé sur l'empreinte du contenu ; lorsque
+    ``warnings`` est fourni, le re-cléage y est consigné au lieu de passer
+    inaperçu. Une empreinte déclarée mais différente reste refusée.
     """
     defaults = defaults or {}
     if not isinstance(raw, dict):
@@ -934,8 +941,22 @@ def parse_observation(
         if legacy is not None and declared_id == legacy:
             observation["observation_id"] = computed
             return observation
-        # Otherwise the id really does not match the content: the journal is
-        # not append-only here.
+        if not isinstance(declared_id, str) or not _OBSERVATION_DIGEST_ID_RE.fullmatch(
+            declared_id
+        ):
+            # Un libellé manuscrit ne prétend pas être une empreinte : le contenu
+            # reste vérifiable et sa nouvelle clé converge entre toutes les lanes.
+            # Conserver le re-cléage dans les avertissements évite qu'il soit muet.
+            observation["observation_id"] = computed
+            if warnings is not None:
+                warnings.append(
+                    "observation_id_rekeyed: "
+                    f"declared {declared_id!r} is not digest-shaped; "
+                    f"re-keyed to {computed!r}"
+                )
+            return observation
+        # Une empreinte bien formée mais différente accuse un autre contenu :
+        # c'est le cas de falsification que la garantie append-only refuse.
         raise ObservationError(
             "observation_id_mismatch",
             f"declared {declared_id!r} but content digests to {computed!r}",
@@ -997,6 +1018,34 @@ class Record:
 #: RELEASED: terminal state -- the workload ended; the GPU is free to take.
 #: STALE: `held` past expected_end with no release; needs a follow-up observation.
 GPU_PENDING_VERDICTS: tuple[str, ...] = ("OK_TO_RUN", "NO_OBS", "HOLD", "RELEASED", "STALE")
+
+#: Verdicts rendus par la GATE elle-meme, avant toute lecture du snapshot.
+#: UNREADABLE_SPOOL : un fichier de l'outbox est illisible ; il peut porter une
+#: reservation, donc le ledger est illisible, pas libre.
+#: UNPOSTED : l'outbox porte des observations qui n'ont jamais atteint le
+#: dashboard ; un verdict reduit d'un snapshot ne voit pas ce qui n'a pas voyag.
+VERDICT_UNREADABLE_SPOOL = "UNREADABLE_SPOOL"
+VERDICT_UNPOSTED = "UNPOSTED"
+VERDICT_UNREADABLE = "UNREADABLE"
+GPU_GATE_VERDICTS: tuple[str, ...] = (
+    VERDICT_UNREADABLE_SPOOL,
+    VERDICT_UNPOSTED,
+    VERDICT_UNREADABLE,
+)
+
+#: Code de sortie par verdict -- source unique, reprise telle quelle par le
+#: tableau de ``docs/coordination/gpu-reservation.md``. Un verdict qui refuse
+#: porte 1, un etat perime porte 2 (l'appelant decide), un verdict neutre 0.
+GPU_VERDICT_EXIT_CODES: dict[str, int] = {
+    "OK_TO_RUN": 0,
+    "NO_OBS": 0,
+    "RELEASED": 0,
+    "HOLD": 1,
+    VERDICT_UNREADABLE_SPOOL: 1,
+    VERDICT_UNPOSTED: 1,
+    VERDICT_UNREADABLE: 1,
+    "STALE": 2,
+}
 
 
 def evaluate_gpu_pending(
@@ -1361,8 +1410,17 @@ def _actor_from(value: Any) -> str | None:
     return None
 
 
-def parse_journal_export(raw: Any, ledger: str) -> tuple[dict[str, Any], list[Record], list[dict]]:
-    """Parse an export into ``(window, records, rejections)``."""
+def parse_journal_export(
+    raw: Any,
+    ledger: str,
+    *,
+    warnings: list[str] | None = None,
+) -> tuple[dict[str, Any], list[Record], list[dict]]:
+    """Parse an export into ``(window, records, rejections)``.
+
+    ``warnings`` reçoit notamment les re-cléages d'identifiants manuscrits ;
+    le tuple de retour et la politique de rejet restent inchangés.
+    """
     window_declared: dict[str, Any] = {}
     if isinstance(raw, dict):
         declared = raw.get("schema")
@@ -1448,7 +1506,9 @@ def parse_journal_export(raw: Any, ledger: str) -> tuple[dict[str, Any], list[Re
         if message_id is not None:
             defaults["message_id"] = str(message_id)
         try:
-            observation = parse_observation(parse_envelope(content), ledger, defaults=defaults)
+            observation = parse_observation(
+                parse_envelope(content), ledger, defaults=defaults, warnings=warnings
+            )
         except ObservationError as exc:
             rejections.append({"source": label, "reason": exc.reason, "detail": exc.detail})
             continue
@@ -1587,7 +1647,9 @@ def reduce_ledger(
     rejections: list[dict[str, Any]] = []
     warnings: list[str] = []
     if export is not None:
-        window, journal_records, rejections = parse_journal_export(export, ledger)
+        window, journal_records, rejections = parse_journal_export(
+            export, ledger, warnings=warnings
+        )
 
     # The baseline is a configuration input, not a journal: a misconfigured one
     # is fatal and is reported as such even when the journal is a tail.
@@ -2144,33 +2206,73 @@ def spool_path(spool_dir: Path, observation: dict[str, Any]) -> Path:
     return spool_dir / f"{observation['observation_id']}.json"
 
 
+def _read_spool_envelope(path: Path) -> tuple[dict[str, Any] | None, str | None]:
+    """Lire une enveloppe sans qu'un seul fichier bloque tout le spool.
+
+    Le couple ``(enveloppe, motif)`` contient exactement une valeur non nulle.
+    Un mauvais ``ledger`` ou un ``observation_id`` absent rend le fichier
+    illisible pour TOUS les consommateurs : il ne peut pas être compté comme
+    en attente ni publié, mais son motif reste visible via ``spool_unreadable``.
+    """
+    try:
+        observation = parse_envelope(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, ObservationError) as exc:
+        return None, str(exc)
+    ledger = observation.get("ledger")
+    if ledger not in LEDGERS:
+        return None, "missing or unknown ledger"
+    if not observation.get("observation_id"):
+        return None, "missing observation_id"
+    return observation, None
+
+
+def _scan_spool(spool_dir: Path) -> list[tuple[Path, dict[str, Any] | None, str | None]]:
+    """Le scan unique et trié partagé par les lectures du spool."""
+    if not spool_dir.exists():
+        return []
+    return [
+        (path, *_read_spool_envelope(path))
+        for path in sorted(spool_dir.glob("*.json"))
+        if not path.name.startswith(".superseded-")
+    ]
+
+
+def spool_unreadable(spool_dir: Path) -> list[dict[str, str]]:
+    """Fichiers du spool illisibles, avec leur chemin et leur motif.
+
+    Ces fichiers restent sur disque : les écarter de l'index de publication ne
+    les supprime pas et préserve la trace exigée par #22456.
+    """
+    return [
+        {"path": str(path), "reason": reason or "unknown reason"}
+        for path, _observation, reason in _scan_spool(spool_dir)
+        if reason is not None
+    ]
+
+
 def spool_status(spool_dir: Path) -> dict[str, dict[str, Any]]:
-    """Count pending envelopes by their contents, never by filename."""
+    """Compter les enveloppes lisibles, sans masquer les fichiers illisibles.
+
+    La forme de retour reste strictement ``{ledger: {pending, oldest...}}`` ;
+    ``spool_unreadable`` porte séparément le diagnostic des fichiers écartés.
+    """
     oldest: dict[str, datetime | None] = {ledger: None for ledger in LEDGERS}
     counts = dict.fromkeys(LEDGERS, 0)
-    if spool_dir.exists():
-        for path in spool_dir.glob("*.json"):
-            if path.name.startswith(".superseded-"):
-                continue
+    for path, observation, reason in _scan_spool(spool_dir):
+        if reason is not None:
+            continue
+        assert observation is not None
+        ledger = observation["ledger"]
+        try:
+            moment = parse_utc_timestamp(observation.get("observed_at"))
+        except ObservationError:
             try:
-                observation = parse_envelope(path.read_text(encoding="utf-8"))
-            except (OSError, UnicodeError, ObservationError) as exc:
-                raise LedgerError("INVALID_SPOOL", f"{path}: {exc}") from exc
-            if not isinstance(observation, dict):
-                raise LedgerError("INVALID_SPOOL", f"{path}: envelope must be a JSON object")
-            ledger = observation.get("ledger")
-            if ledger not in counts or not observation.get("observation_id"):
-                raise LedgerError("INVALID_SPOOL", f"{path}: missing ledger or observation_id")
-            try:
-                moment = parse_utc_timestamp(observation.get("observed_at"))
-            except ObservationError:
-                try:
-                    moment = datetime.fromtimestamp(path.stat().st_mtime, timezone.utc)
-                except OSError as exc:
-                    raise LedgerError("UNREADABLE_INPUT", f"{path}: {exc}") from exc
-            counts[ledger] += 1
-            if oldest[ledger] is None or moment < oldest[ledger]:
-                oldest[ledger] = moment
+                moment = datetime.fromtimestamp(path.stat().st_mtime, timezone.utc)
+            except OSError as exc:
+                raise LedgerError("UNREADABLE_INPUT", f"{path}: {exc}") from exc
+        counts[ledger] += 1
+        if oldest[ledger] is None or moment < oldest[ledger]:
+            oldest[ledger] = moment
     return {
         ledger: {
             "pending": counts[ledger],
@@ -2202,31 +2304,27 @@ def spool_observation(spool_dir: Path, observation: dict[str, Any]) -> tuple[Pat
 
 
 def spool_pending(spool_dir: Path, *, ledger: str) -> list[dict[str, Any]]:
-    """Return the pending envelopes of ``ledger``, oldest first.
+    """Enveloppes lisibles de ``ledger``, de la plus ancienne à la plus récente.
 
-    ``spool_status`` answers "how many"; this answers "which ones", so
-    ``flush`` can hand them to the agent that owns the dashboard transport.
-    Same parser and same refusal on a corrupt envelope: a half-read outbox
-    would let an observation disappear without a trace (#22456).
+    ``spool_status`` répond « combien » et cette fonction « lesquelles », avec
+    le même scan et les mêmes critères. Un fichier illisible n'est pas publiable
+    et n'interrompt plus le lot ; son chemin et son motif sont rapportés par
+    ``spool_unreadable`` afin qu'aucune observation ne disparaisse sans trace.
     """
-    if not spool_dir.exists():
-        return []
     pending: list[dict[str, Any]] = []
-    for path in spool_dir.glob("*.json"):
-        if path.name.startswith(".superseded-"):
+    for path, observation, reason in _scan_spool(spool_dir):
+        if reason is not None:
             continue
-        try:
-            observation = parse_envelope(path.read_text(encoding="utf-8"))
-        except (OSError, UnicodeError, ObservationError) as exc:
-            raise LedgerError("INVALID_SPOOL", f"{path}: {exc}") from exc
-        if not isinstance(observation, dict):
-            raise LedgerError("INVALID_SPOOL", f"{path}: envelope must be a JSON object")
-        if observation.get("ledger") != ledger or not observation.get("observation_id"):
+        assert observation is not None
+        if observation["ledger"] != ledger:
             continue
         try:
             moment = parse_utc_timestamp(observation.get("observed_at"))
         except ObservationError:
-            moment = datetime.fromtimestamp(path.stat().st_mtime, timezone.utc)
+            try:
+                moment = datetime.fromtimestamp(path.stat().st_mtime, timezone.utc)
+            except OSError as exc:
+                raise LedgerError("UNREADABLE_INPUT", f"{path}: {exc}") from exc
         pending.append({"path": path, "moment": moment, "observation": observation})
     pending.sort(key=lambda item: (item["moment"], item["observation"]["observation_id"]))
     return pending
@@ -2256,39 +2354,28 @@ def flush_manifest(ledger: str, pending: Sequence[dict[str, Any]]) -> dict[str, 
 def _index_spool(directory: Path, *, strict: bool) -> dict[str, Path]:
     """Map observation id -> envelope file, for BOTH keying conventions.
 
-    ``flush_manifest`` publishes the ENVELOPE's ``observation_id``; the spool
-    FILE NAME is a second, older convention (``obs-release-15294.json`` holds
-    an envelope whose id is ``obs-b2d72...``). Resolving ids by file name
-    alone made the publisher and the archiver disagree: a file written by the
-    pre-envelope organ could be posted and then never archived, so the pending
-    count never reached zero and ``check_pending`` answered ``UNPOSTED``
-    forever -- the very failure this drain exists to prevent (#22456, measured
-    2026-10-25 on two raw ``[OBS]`` files from 2026-10-09 and 2026-10-19).
+    ``flush_manifest`` publie l'``observation_id`` de l'enveloppe ; le nom du
+    fichier est une seconde convention, plus ancienne. Les deux sont indexés,
+    en donnant priorité à l'identifiant déclaré par l'enveloppe.
 
-    File names go in first, envelope ids second, so an id always resolves to
-    the file that DECLARES it. ``strict`` is for the pending set (a corrupt
-    outbox entry must raise, exactly as ``spool_pending`` does); the archive
-    side is read leniently, since a damaged archived file cannot make the
-    gate lie about what is still pending.
+    Le côté EN ATTENTE n'échoue plus pour un seul fichier illisible : celui-ci
+    n'est simplement pas publiable. Sa trace est préservée parce que le fichier
+    reste sur disque et que ``spool_unreadable`` rapporte son chemin et son
+    motif. ``strict=True`` conserve son refus explicite pour un appelant qui
+    demande ce mode ; ``archive_posted`` choisit ``strict=False`` des deux
+    côtés afin que l'archivage des bonnes enveloppes reste possible. Le côté
+    ARCHIVE reste tolérant comme auparavant (#22456).
     """
     index: dict[str, Path] = {}
-    if not directory.exists():
-        return index
-    paths = [
-        path
-        for path in sorted(directory.glob("*.json"))
-        if not path.name.startswith(".superseded-")
-    ]
-    for path in paths:
-        index[path.stem] = path
-    for path in paths:
-        try:
-            observation = parse_envelope(path.read_text(encoding="utf-8"))
-        except (OSError, UnicodeError, ObservationError) as exc:
-            if strict:
-                raise LedgerError("INVALID_SPOOL", f"{path}: {exc}") from exc
-            continue
-        if isinstance(observation, dict) and observation.get("observation_id"):
+    scanned = _scan_spool(directory)
+    for path, _observation, reason in scanned:
+        if reason is None:
+            index[path.stem] = path
+    for path, observation, reason in scanned:
+        if reason is not None and strict:
+            raise LedgerError("INVALID_SPOOL", f"{path}: {reason}")
+        if reason is None:
+            assert observation is not None
             index[str(observation["observation_id"])] = path
     return index
 
@@ -2301,7 +2388,7 @@ def archive_posted(spool_dir: Path, observation_ids: Sequence[str]) -> dict[str,
     state that makes ``check_pending`` lie.
     """
     posted_dir = spool_dir / "posted"
-    pending_index = _index_spool(spool_dir, strict=True)
+    pending_index = _index_spool(spool_dir, strict=False)
     posted_index = _index_spool(posted_dir, strict=False)
     moved: list[str] = []
     already: list[str] = []
@@ -3407,7 +3494,10 @@ def _cli_append(args: argparse.Namespace) -> int:
         }
         if args.note:
             raw["note"] = args.note
-    observation = parse_observation(raw, args.ledger)
+    warnings: list[str] = []
+    observation = parse_observation(raw, args.ledger, warnings=warnings)
+    for warning in warnings:
+        print(f"WARNING {warning}", file=sys.stderr)
     line = envelope_line(observation)
     if args.json:
         payload = {
@@ -3556,11 +3646,7 @@ def _check_pending_snapshot(
     records = record_views_from_snapshot(snapshot, args.ledger)
     verdict, reason = evaluate_gpu_pending(records, entity, now, args.my_lane)
     _print_pending_verdict(args, verdict, reason, now, source=source)
-    if verdict == "HOLD":
-        return 1
-    if verdict == "STALE":
-        return 2
-    return 0
+    return GPU_VERDICT_EXIT_CODES.get(verdict, 0)
 
 
 def _cli_check_pending(args: argparse.Namespace) -> int:
@@ -3586,6 +3672,8 @@ def _cli_check_pending(args: argparse.Namespace) -> int:
                      unreachable, the verdict is ``UNREADABLE`` (fail-CLOSED) :
                      a stale cache must not render a device free.
 
+      * UNREADABLE_SPOOL -- un fichier de l'outbox ne peut pas etre lu ; la
+                            gate refuse car il pourrait porter un ``held``.
     Verdicts:
 
       * UNPOSTED   -- the local outbox still holds observations that never
@@ -3604,9 +3692,11 @@ def _cli_check_pending(args: argparse.Namespace) -> int:
                       and only a possibly stale tracking ref remains.
                       Fail-closed: an unreadable ledger is never a free device.
 
-    Exit code is 0 for OK_TO_RUN, 0 for NO_OBS (we surface a clear verdict
-    and let the caller branch), 0 for RELEASED, 1 for HOLD, UNPOSTED or
-    UNREADABLE (the gate refuses -- an unread ledger is not a free device),
+    Exit codes come from ``GPU_VERDICT_EXIT_CODES`` (single source, mirrored
+    by the table of ``docs/coordination/gpu-reservation.md``): 0 for
+    OK_TO_RUN, NO_OBS and RELEASED, 1 for HOLD, UNPOSTED, UNREADABLE and
+    UNREADABLE_SPOOL (the gate refuses -- an unread ledger is not a free
+    device), 2 for STALE (the caller decides).
     2 for STALE (the caller decides whether to refresh or to hold). All exit
     codes are documented in gpu-reservation.md -- a wrapper that maps them
     to skip/hold/escalate lives one layer up.
@@ -3640,6 +3730,24 @@ def _cli_check_pending(args: argparse.Namespace) -> int:
     else:
         now = utcnow()
 
+    # Un fichier illisible peut porter une réservation : la gate répond un
+    # verdict explicite, nomme chaque fichier et refuse le lancement. Ce verdict
+    # précède UNPOSTED afin que le défaut à réparer ne soit pas masqué par le
+    # décompte des enveloppes saines.
+    unreadable = spool_unreadable(base / "spool")
+    if unreadable:
+        reason = "; ".join(f"{item['path']} ({item['reason']})" for item in unreadable)
+        if args.json_output:
+            print(json.dumps({
+                "verdict": VERDICT_UNREADABLE_SPOOL,
+                "reason": reason,
+                "entity": args.entity,
+                "now": format_utc(now),
+            }))
+        else:
+            print(f"{VERDICT_UNREADABLE_SPOOL}  {args.entity}  {reason}")
+        return GPU_VERDICT_EXIT_CODES[VERDICT_UNREADABLE_SPOOL]
+
     # An observation still sitting in the local outbox never reached the
     # ledger, so a verdict reduced from any source is blind to it: the gate
     # answers "RELEASED" with the aplomb of a measurement while a live hold
@@ -3655,7 +3763,7 @@ def _cli_check_pending(args: argparse.Namespace) -> int:
         )
         if args.json_output:
             print(json.dumps({
-                "verdict": "UNPOSTED",
+                "verdict": VERDICT_UNPOSTED,
                 "reason": reason,
                 "entity": args.entity,
                 "pending": spooled["pending"],
@@ -3663,9 +3771,9 @@ def _cli_check_pending(args: argparse.Namespace) -> int:
                 "source": "local (outbox non vide)",
             }))
         else:
-            print(f"UNPOSTED  {args.entity}  {reason}")
+            print(f"{VERDICT_UNPOSTED}  {args.entity}  {reason}")
             print("source=local (outbox non vide)")
-        return 1
+        return GPU_VERDICT_EXIT_CODES[VERDICT_UNPOSTED]
 
     source = getattr(args, "source", "auto") or "auto"
     if source == "local":
@@ -3704,7 +3812,7 @@ def _cli_check_pending(args: argparse.Namespace) -> int:
                 now,
                 source=f"git (cible inutilisable : {unavailable})",
             )
-            return 1
+            return GPU_VERDICT_EXIT_CODES[VERDICT_UNREADABLE]
         fetch_error = fetch_git_ledger_branch(repo, remote=args.remote)
         if not git_ledger_ref_available(repo, remote=args.remote):
             unavailable = (
@@ -3761,13 +3869,9 @@ def _cli_check_pending(args: argparse.Namespace) -> int:
                         }
                     },
                 )
-                return 1
+                return GPU_VERDICT_EXIT_CODES[VERDICT_UNREADABLE]
             _print_pending_verdict(args, verdict, reason, now, source="git")
-            if verdict == "HOLD":
-                return 1
-            if verdict == "STALE":
-                return 2
-            return 0
+            return GPU_VERDICT_EXIT_CODES.get(verdict, 0)
 
     # Branche git injoignable.
     if source == "git":
@@ -3778,7 +3882,7 @@ def _cli_check_pending(args: argparse.Namespace) -> int:
             now,
             source=f"git (indisponible : {unavailable})",
         )
-        return 1
+        return GPU_VERDICT_EXIT_CODES[VERDICT_UNREADABLE]
     # auto : repli sur le cache local -- mais SEULEMENT quand la branche
     # n'existe PAS (mesure par `ls-remote`). Un cache perime n'a pas le
     # droit d'autoriser un lancement : si la branche existe (elle porte
@@ -3798,7 +3902,7 @@ def _cli_check_pending(args: argparse.Namespace) -> int:
             now,
             source=f"git (indisponible : {unavailable})",
         )
-        return 1
+        return GPU_VERDICT_EXIT_CODES[VERDICT_UNREADABLE]
     # La branche n'existe pas : rien n'a jamais ete publie, aucun hold
     # n'existe nulle part : le cache local peut repondre.
     return _check_pending_snapshot(
@@ -3898,10 +4002,7 @@ def _cli_publish(args: argparse.Namespace) -> int:
 
 def _cli_spool_status(args: argparse.Namespace) -> int:
     if args.out_dir:
-        # Explicit --out-dir: the caller named the spool dir, so a missing dir
-        # means "nothing pending here" -- same as a fresh `--out-dir` for append,
-        # not an uninitialised state-dir. We do not refuse here.
-        status = spool_status(Path(args.out_dir))
+        spool_dirs = [Path(args.out_dir)]
     else:
         state_dir = Path(args.state_dir) if args.state_dir else default_state_dir()
         # Default path: mirror ``_cli_append`` -- a state-dir that has not run
@@ -3919,12 +4020,25 @@ def _cli_spool_status(args: argparse.Namespace) -> int:
                 "run `debt_ledger.py init --apply --state-dir <dir>` first, "
                 "or pass --out-dir explicitly to inspect an arbitrary dir",
             )
-        status = {
-            ledger: spool_status(state_dir / ledger / "spool")[ledger]
-            for ledger in LEDGERS
-        }
+        spool_dirs = [state_dir / ledger / "spool" for ledger in LEDGERS]
+    unreadable: list[dict[str, str]] = []
+    status = {ledger: {"pending": 0, "oldest_observed_at": None} for ledger in LEDGERS}
+    for spool_dir in spool_dirs:
+        unreadable.extend(spool_unreadable(spool_dir))
+        counts = spool_status(spool_dir)
+        for ledger, row in counts.items():
+            status[ledger]["pending"] += row["pending"]
+            if row["oldest_observed_at"] is not None and (
+                status[ledger]["oldest_observed_at"] is None
+                or row["oldest_observed_at"] < status[ledger]["oldest_observed_at"]
+            ):
+                status[ledger]["oldest_observed_at"] = row["oldest_observed_at"]
     for ledger, row in status.items():
         print(f"{ledger}: pending={row['pending']} oldest_observed_at={row['oldest_observed_at'] or '-'}")
+    if unreadable:
+        for item in unreadable:
+            print(f"UNREADABLE_SPOOL: {item['path']} ({item['reason']})", file=sys.stderr)
+        return 1
     return 0
 
 
