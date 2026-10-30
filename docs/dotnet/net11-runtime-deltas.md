@@ -59,6 +59,14 @@
 
 ## Banc 4 — semantic-fleet (unités : us)
 
+> « Re-mesure du banc 4 » — les deux drapeaux INCONCLUSIF de ce banc
+> (`PromptSignature.Matches`, `PromptTransform.InterpolateKeys`) ont été re-mesurés le 30/10
+> sur un modèle de CPU distinct (i7-11800H) : **les deux drapeaux sont maintenus** — une
+> session à 5 passes (#23326) mesure sur `Matches` le signe opposé au mien, et le protocole
+> du banc (une invocation par itération) rend cette cellule structurellement bruitée ; les
+> deux lignes JSON sont en revanche reproduites en signe et en amplitude. Les valeurs de ce
+> tableau restent celles de la session du 02/10.
+
 | Benchmark | net9 | net10 | net11 | 9→10 | 9→11 | 10→11 | Alloc 9/10/11 |
 |---|---:|---:|---:|---:|---:|---:|---|
 | JsonSerializer.Serialize (DTO settings) | 68.24 | 39.04 | 33.35 | **−42.8 %** | **−51.1 %** | **−14.6 %** | 35.69 KB / 36.5 KB / 36.9 KB |
@@ -292,6 +300,101 @@ calme ». Cette section est la réponse mesurée à ce drapeau.
 | Les 3 autres bancs encore marqués INCONCLUSIF (`RandomSearch_Sphere10D_50k` (MGS), `PromptSignature.Matches` et `PromptTransform.InterpolateKeys` (semantic-fleet)) | **non re-mesurés** dans ce cycle : même travail de préparation (clone depth-1 + build Release) sur des sous-modules dont les bancs amont relèvent de la coordination ai-01 |
 | Une fenêtre **calme** (runner CI de la machine au repos) avec n ≥ 5 passes | **non obtenue** sur cette machine ; c'est la condition qui reste pour serrer la dispersion inter-passes |
 
+## Re-mesure du banc 4 (semantic-fleet) — fenêtre du 30/10 (myia-po-2024)
+
+Objet : les deux drapeaux INCONCLUSIF posés le 02/10 sur le banc 4 — `PromptSignature.Matches`
+(« µs, variance > delta ») et `PromptTransform.InterpolateKeys` (« passes dispersées »).
+Cette section est la réponse mesurée à ces deux drapeaux : première re-mesure d'un banc
+semantic-fleet depuis la session du 02/10, sur un modèle de CPU distinct de celles du 02/10
+et du 20/10.
+
+### Protocole (config BDN identique à celle du 02/10, portée par la classe de banc)
+
+| Paramètre | Valeur |
+|---|---|
+| Machine | `myia-po-2024` — i7-11800H (8 cœurs), X64 RyuJIT AVX-512 — **modèle de CPU distinct** des sessions du 02/10 et du 20/10 (i7-12700H toutes deux) |
+| Runtimes | .NET **9.0.22** (9.0.2226.52218) · .NET **10.0.14** (10.0.1426.52326) · .NET **11.0.0-rc.1.26425.128** (affiché `11.0.0`, 11.0.26.42628) — patchs plus récents que les sessions précédentes (9.0.21 / 10.0.13) |
+| Preuve du runtime effectif | ligne `[Host] : .NET X.Y.Z` de chacun des 9 rapports BDN, vérifiée fichier par fichier (9.0.22 / 10.0.14 / 11.0.0) ; le rc.1 exige le host autonome `~/.dotnet/dotnet.exe` — le host système n'a pas résolu le rc.1 installé côté user (`DOTNET_ROOT` exporté, deux formes de chemin testées : le résolveur ne liste que `C:\Program Files\dotnet`) |
+| Config BDN | celle portée par la classe : `[Config(typeof(InProcessShortConfig))]` = `InProcessEmitToolchain`, ShortRun, 1 invocation / unroll 1, 5 warmup / 15 itérations — **lancée sans flags de job CLI** : les flags (`-i -j short --warmupCount…`) ajoutent un second job et exécutent 8 bancs au lieu de 4 |
+| Passes | 3 passes complètes, ordre net9 → net10 → net11 ; **médiane des 3 moyennes** par (banc × runtime) |
+| Artefact mesuré | clone depth-1 de `feature/benchmarkdotnet-baseline` @ `6f965904854b` — **SHA distinct** de la session du 02/10 (`ff0dfb47c052`) : le fichier de banc est inchangé entre les deux (diff vide sur `benchmarks/`), mais le **code sous test** a bougé (fichiers touchés : 58 ; +1105/−3801 : retrait du connecteur Oobabooga au profit du connecteur OpenAI-compatible, `MultiConnector.Configuration` concerné) — les valeurs absolues ne sont **pas** comparables d'une session à l'autre |
+| Journaux | gist secret [8839f288](https://gist.github.com/jsboige/8839f288b803fbe77e5cfd8282dc1e35) — 9 rapports BDN + `SHA256SUMS.txt` (empreinte SHA-256 du manifeste `6d9b8c88fd9a73a5ca04ce8a631354b7c3127663803f75fd9268245a11ce713d`) |
+
+### Mesures (médiane des 3 moyennes, en µs)
+
+| Benchmark | net9 | net10 | net11 | 9→10 | 9→11 | 10→11 | Alloc 9/10/11 |
+|---|---:|---:|---:|---:|---:|---:|---|
+| JsonSerializer.Serialize (DTO settings) | 186.9 | 130.9 | 124.6 | **−29.9 %** | **−33.3 %** | −4.9 % | 35.7 / 35.7 / 36.0 KB — identiques à ~1 % près |
+| FromRequestSettings (round-trip) | 259.6 | 164.9 | 134.5 | **−36.5 %** | **−48.2 %** | **−18.5 %** | 38.6 / 38.6 / 38.9 KB — identiques à ~1 % près |
+| PromptSignature.Matches | 11.59 | 9.96 | 8.34 | **−14.1 %** | **−28.1 %** | **−16.3 %** | 2.11–2.77 KB (net9) ; non rendu par MemoryDiagnoser sur 10/11 (tiret BDN) |
+| PromptTransform.InterpolateKeys (regex) | 55.0 | 57.4 | 62.5 | +4.4 % | +13.5 % | +8.8 % | 21.6–23.4 KB — dispersion allocs intra-runtime du même ordre que le delta |
+
+### Lecture (quatre points, sans arrondi favorable)
+
+1. **Les deux lignes JSON confirment — signe et amplitude — ce que la session du 02/10 avait
+   établi.** À CPU, patchs de runtime et code sous test tous distincts, les deltas
+   reproduisent : −33.3 % / −48.2 % en 9→11 ici contre −51.1 % / −52.0 % au 02/10, et le
+   rattrapage porte encore l'essentiel du gain (9→10 : −30 % / −36 %, le 10→11 ajoutant
+   −5 % / −18 %). Les allocations identiques au Ko près sur les deux lignes confirment que
+   le gain est runtime (JIT/writer), pas un effet d'allocation.
+2. **`PromptSignature.Matches` : le drapeau du 02/10 n'est pas levé — la première lecture
+   de cette session était trop favorable.** Les trois passes net10 (9.84–10.08 µs, écart
+   2.4 %) sont toutes sous les trois passes net9 (10.61–13.69 µs) : sur **cette** session,
+   le 9→10 à −14.1 % paraît propre, et le 9→11 atteint −28.1 % en médiane. Mais une
+   session à 5 passes sur un autre siège (#23326) mesure sur la même cellule un 9→10 à
+   **+22.2 %** et un 9→11 à **+1.7 %**, avec une dispersion inter-passes de 42 à 102 % :
+   les deux sessions se contredisent **en signe**. Les valeurs ci-dessus restent des
+   mesures ; elles ne portent pas de verdict — voir « Contrôle croisé » ci-dessous.
+3. **`PromptTransform.InterpolateKeys` : le drapeau tient.** Les deltas (+4.4 % / +13.5 % /
+   +8.8 %) sont inférieurs à la dispersion inter-passes de chaque runtime (19 % / 12 % /
+   38 %, écart max−min rapporté à la moyenne des deux bornes) et les ranges se chevauchent
+   (49.0–72.4 µs sur l'ensemble des passes). Aucun gain n'est mesuré non plus : regex
+   compilée + `string.Format` ne profitent pas des gains writer. Le drapeau
+   « passes dispersées » du 02/10 est **confirmé par une seconde machine**, et la session à
+   5 passes (#23326) conclut de même (dispersion de 123 % sur net9).
+4. **Les valeurs absolues restent incomparables entre sessions** — banc inchangé mais code
+   sous test distinct (retrait Oobabooga), CPU distinct, patchs distincts. La règle de
+   lecture du 20/10 s'applique : on compare une session à elle-même.
+
+### Contrôle croisé — ma session à 3 passes contre la session à 5 passes (#23326)
+
+Une session indépendante, conduite sur un autre siège et avec **cinq** passes entrelacées au
+lieu de trois (#23326, `myia-ai-01:CoursIA-2`), a mesuré les mêmes cellules du même fichier
+de banc (`semantic-fleet/benchmarks/SemanticFleet.Benchmarks/PromptSettingsBenchmarks.cs`).
+Ce qui est comparable est le **signe et l'amplitude des deltas**, pas les valeurs absolues :
+le code sous test et le CPU diffèrent des deux côtés.
+
+| Cellule | Cette session (3 passes, i7-11800H) | Session #23326 (5 passes) | Lecture |
+|---|---:|---:|---|
+| `JsonSerializer.Serialize` | 9→10 −29.9 % · 9→11 −33.3 % | 9→10 −27.4 % (régime apparié) | **accord** — même signe, même amplitude |
+| `PromptSignature.Matches` | 9→10 −14.1 % · 9→11 −28.1 % | 9→10 +22.2 % · 9→11 +1.7 % (dispersion 42–102 %) | **opposition de signe** — cellule bruitée, aucun verdict |
+| `PromptTransform.InterpolateKeys` | 9→10 +4.4 % · 9→11 +13.5 % (dispersion 19 / 12 / 38 %) | 9→10 +20.6 % · 9→11 −21.8 % (dispersion 123 %) | les deux sessions concluent « non concluant » |
+
+**Pourquoi ce désaccord n'est pas un désaccord de code.** Le fichier de banc porte une config
+de classe, `InProcessShortConfig`, qui épingle `.WithInvocationCount(1)` et
+`.WithUnrollFactor(1)` : **une itération vaut une invocation**, soit quelques µs à quelques
+dizaines de µs selon la cellule — deux à quatre ordres de grandeur sous la durée que
+BenchmarkDotNet recommande, et qu'il réclame lui-même dans ses journaux. À ce grain, le bruit
+est **structurel** : une machine au repos ne le réduit pas, et une séparation nette sur trois
+passes peut n'être que le hasard d'un échantillon — mes propres journaux en montrent la
+trace, avec une dispersion de 46 % sur net11 pour `Matches` (7.14 / 8.34 / 11.47 µs).
+#23326 mesure cette même granularité par un second canal (job long, argument variable) sans
+non plus établir d'écart inter-versions : c'est cette mesure, et non l'absence de fenêtre
+calme, qui fonde le verdict « non concluant ».
+
+Ce que ma session apporte malgré tout, et qui tient : les **deux lignes JSON** sont
+reproduites en signe et en amplitude par la session à 5 passes (−27.4 % contre −29.9 % en
+9→10), et les allocations y sont identiques au Ko près des deux côtés — le gain y est runtime,
+pas allocation.
+
+### Ce que cette re-mesure règle, et ce qu'elle ne règle pas
+
+| Point | État après le 30/10 |
+|---|---|
+| `PromptSignature.Matches` : drapeau INCONCLUSIF du 02/10 | **maintenu** — la lecture « levé en tendance » portée par la première version de cette section est **infirmée** par une session à 5 passes qui mesure le signe opposé sur 9→10 (+22.2 %) avec une dispersion de 42 à 102 % (#23326) ; cause de l'écart au 02/10 non tracée (code sous test distinct) |
+| `PromptTransform.InterpolateKeys` : drapeau INCONCLUSIF du 02/10 | **maintenu, confirmé sur seconde machine** — dispersion inter-passes ≥ deltas sur les trois runtimes, aucun gain mesuré |
+| Lignes JSON (Serialize / round-trip) | **reproduites en signe et amplitude** sur i7-11800H à patchs plus récents — le rattrapage 9→10 porte l'essentiel, allocations identiques au Ko près |
+| `RandomSearch_Sphere10D_50k` (MGS) | **non re-mesuré par cette session** — la session à 5 passes (#23326) l'a mesuré (9→11 à −0.5 % pour une dispersion de 28 à 38 %) et le laisse **non concluant** ; le banc reste donc ouvert |
 ## Contrôle du banc 5 — l'ordre fixe rend le delta 9→10 ininterprétable (myia-ai-01:CoursIA-2, 29/10)
 
 Objet : les **deux** drapeaux que ce document pose sur le banc 5 et laisse ouverts depuis le
