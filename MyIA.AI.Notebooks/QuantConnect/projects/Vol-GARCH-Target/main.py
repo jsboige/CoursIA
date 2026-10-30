@@ -150,17 +150,22 @@ class GarchVolTargetAlgorithm(QCAlgorithm):
     def _daily_log_return(self, ticker, bar):
         """Rendement journalier dont la paire de clotures est verifiee (#21782).
 
-        `history(sym, 2 * 3, DAILY)` inclut ou non la seance courante selon
-        l'heure de l'appel, et rend moins de barres que demandees sur une
-        demi-seance (#21471) : demander 3 avec une garde a 2 ne laissait qu'une
-        barre de marge, sous le raccourcissement mesure (21). On demande le
-        double puis on re-slice sur les 3 dernieres barres (motif #20286) :
-        hors demi-seance la paire retenue est celle d'avant, la paire reste
-        calculable sur demi-seance. Prendre `iloc[-2]` sans verifier peut
-        former une paire a deux seances comptee comme un pas journalier, ou
-        une paire desalignee avec `bar.close`. On aligne donc la paire sur
-        `bar.end_time`, et on rejette un ecart calendaire qui trahit une
-        suspension : mieux vaut aucun rendement qu'un faux pas de GARCH.
+        `history(sym, N, DAILY)` inclut ou non la seance courante selon l'heure
+        de l'appel, et rend moins de barres que demandees sur une demi-seance
+        (#21471 : 16,7 % de raccourcissement mesure en amont, 105 barres pour 126
+        demandees). A N = 3 il reste donc ~2 barres : la paire reste formable,
+        mais la marge tombe a une barre. Ce correctif **elargit la marge** ; il
+        ne repare pas un echec observe sur ce projet : demander `2 * 3` puis
+        garder les 3 dernieres barres porte la marge de 1 a 4 barres (motif
+        #20286, meme couple que la reference Cloud-SectorRotation-Momentum).
+        Le re-slice ne cree aucun invariant : **2 barres suffisent a la paire**,
+        c'est le nombre demande qui porte le correctif, pas le slice.
+
+        Prendre `iloc[-2]` sans verifier peut former une paire a deux seances
+        comptee comme un pas journalier, ou une paire desalignee avec
+        `bar.close`. On aligne donc la paire sur `bar.end_time`, et on rejette
+        un ecart calendaire qui trahit une suspension : mieux vaut aucun
+        rendement qu'un faux pas de GARCH.
         """
         hist = self.history(self.symbols[ticker], 2 * 3, Resolution.DAILY)
         if hist is None or len(hist) < 2:
