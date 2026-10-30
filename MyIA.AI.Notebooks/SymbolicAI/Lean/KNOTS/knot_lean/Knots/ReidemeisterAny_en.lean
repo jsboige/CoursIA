@@ -893,4 +893,138 @@ private theorem canonSlots_keys_nodup {seen : List (Nat × Nat)} {xs : List Nat}
       rw [canonSlots_cons_of_none hlk]
       exact ih hk'
 
+
+/-! ## 9. Faithfulness of the VALUES (slice 4, in progress)
+
+The extraction half needs more than key preservation: the **values** of the
+thread must be faithful too — one rank per label, and ranks inside
+`1 … size`. These are the `SeenValsNodup` and `SeenValsBounded` invariants
+introduced in §8.
+
+The hinge of the argument is the **freshness of the added rank**: `canonLabel`
+adds the rank `size + 1`, and `SeenValsBounded` places every rank already
+carried inside `1 … size` — so `size + 1` is fresh. Once that point is
+established, the addition preserves the faithfulness of the thread, and
+threading a sequence of labels preserves it as well.
+
+The extraction theorem itself (`canon l = canon l'` ⇒ there is an injective
+renaming of `l` into `l'`) remains the residual of the slice.
+-/
+
+/-- A rank carried by the thread is at most the size of the thread. -/
+private theorem snd_mem_le_length {seen : List (Nat × Nat)}
+    (hb : SeenValsBounded seen) {v : Nat} (hv : v ∈ seen.map Prod.snd) :
+    v ≤ seen.length := by
+  obtain ⟨p, hp, hpv⟩ := List.mem_map.mp hv
+  rw [← hpv]
+  exact (hb p hp).2
+
+/-- The added rank is fresh: `size + 1` is carried by no label of the thread
+    yet. -/
+private theorem fresh_rank_not_mem {seen : List (Nat × Nat)}
+    (hb : SeenValsBounded seen) :
+    seen.length + 1 ∉ seen.map Prod.snd := by
+  intro hv
+  have hle := snd_mem_le_length hb hv
+  omega
+
+/-- `canonLabel` preserves value faithfulness: the new rank is fresh, so it
+    collides with no rank already carried. -/
+private theorem canonLabel_vals_nodup {seen : List (Nat × Nat)} {x : Nat}
+    (hn : SeenValsNodup seen) (hb : SeenValsBounded seen) :
+    SeenValsNodup (canonLabel seen x).2 := by
+  cases hlk : seen.lookup x with
+  | some v =>
+    simp only [canonLabel, hlk]
+    exact hn
+  | none =>
+    have hlab : (canonLabel seen x).2 = seen ++ [(x, seen.length + 1)] := by
+      unfold canonLabel; rw [hlk]
+    rw [hlab]
+    unfold SeenValsNodup
+    rw [List.map_append, List.map_singleton]
+    refine List.Nodup.append hn (by simp) ?_
+    intro a ha hmem
+    simp only [List.mem_singleton] at hmem
+    subst hmem
+    exact absurd ha (fresh_rank_not_mem hb)
+
+/-- `canonLabel` preserves rank boundedness: the ranks already carried stay
+    inside `1 … size`, and the new rank equals the size of the enriched
+    thread. -/
+private theorem canonLabel_vals_bounded {seen : List (Nat × Nat)} {x : Nat}
+    (hb : SeenValsBounded seen) :
+    SeenValsBounded (canonLabel seen x).2 := by
+  cases hlk : seen.lookup x with
+  | some v =>
+    simp only [canonLabel, hlk]
+    exact hb
+  | none =>
+    have hlab : (canonLabel seen x).2 = seen ++ [(x, seen.length + 1)] := by
+      unfold canonLabel; rw [hlk]
+    rw [hlab]
+    intro p hp
+    rw [List.mem_append] at hp
+    rcases hp with hp | hp
+    · obtain ⟨hpos, hle⟩ := hb p hp
+      simp only [List.length_append]
+      omega
+    · simp only [List.mem_singleton] at hp
+      rcases hp with rfl
+      simp only [List.length_append, List.length_singleton]
+      omega
+
+/-- Threading a sequence of labels preserves value faithfulness (induction on
+    the sequence, arbitrary initial state). -/
+private theorem canonSlots_vals_nodup {seen : List (Nat × Nat)} {xs : List Nat}
+    (hn : SeenValsNodup seen) (hb : SeenValsBounded seen) :
+    SeenValsNodup (canonSlots seen xs).2 := by
+  induction xs generalizing seen with
+  | nil => exact hn
+  | cons y ys ih =>
+    cases hlk : seen.lookup y with
+    | some v =>
+      rw [canonSlots_cons_of_some hlk]
+      exact ih hn hb
+    | none =>
+      have hlab : (canonLabel seen y).2 = seen ++ [(y, seen.length + 1)] := by
+        unfold canonLabel; rw [hlk]
+      have hn' := canonLabel_vals_nodup (seen := seen) (x := y) hn hb
+      have hb' := canonLabel_vals_bounded (seen := seen) (x := y) hb
+      rw [hlab] at hn' hb'
+      rw [canonSlots_cons_of_none hlk]
+      exact ih hn' hb'
+
+/-- Threading a sequence of labels preserves rank boundedness (induction on
+    the sequence, arbitrary initial state). -/
+private theorem canonSlots_vals_bounded {seen : List (Nat × Nat)} {xs : List Nat}
+    (hb : SeenValsBounded seen) :
+    SeenValsBounded (canonSlots seen xs).2 := by
+  induction xs generalizing seen with
+  | nil => exact hb
+  | cons y ys ih =>
+    cases hlk : seen.lookup y with
+    | some v =>
+      rw [canonSlots_cons_of_some hlk]
+      exact ih hb
+    | none =>
+      have hlab : (canonLabel seen y).2 = seen ++ [(y, seen.length + 1)] := by
+        unfold canonLabel; rw [hlk]
+      have hb' := canonLabel_vals_bounded (seen := seen) (x := y) hb
+      rw [hlab] at hb'
+      rw [canonSlots_cons_of_none hlk]
+      exact ih hb'
+
+/-- **Faithful thread.** A thread with distinct keys, distinct values and
+    bounded values: this is the state threading between two crossings
+    produces, and it is the condition the extraction half consumes. -/
+private theorem canonSlots_faithful {seen : List (Nat × Nat)} {xs : List Nat}
+    (hk : SeenKeysNodup seen) (hv : SeenValsNodup seen) (hb : SeenValsBounded seen) :
+    SeenKeysNodup (canonSlots seen xs).2 ∧
+      SeenValsNodup (canonSlots seen xs).2 ∧
+      SeenValsBounded (canonSlots seen xs).2 := by
+  exact ⟨canonSlots_keys_nodup hk,
+    canonSlots_vals_nodup hv hb,
+    canonSlots_vals_bounded hb⟩
+
 end Knots_en.AnyMoves

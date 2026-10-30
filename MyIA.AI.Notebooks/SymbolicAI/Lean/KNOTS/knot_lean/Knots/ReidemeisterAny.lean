@@ -885,4 +885,138 @@ private theorem canonSlots_keys_nodup {seen : List (Nat × Nat)} {xs : List Nat}
       rw [canonSlots_cons_of_none hlk]
       exact ih hk'
 
+
+/-! ## 9. La fidélité des VALEURS (tranche 4, en cours)
+
+La moitié « extraction » a besoin de plus que la préservation des clés : il
+faut que les **valeurs** du fil soient, elles aussi, fidèles — un rang par
+étiquette, et des rangs dans `1 … taille`. Ce sont les invariants
+`SeenValsNodup` et `SeenValsBounded` posés en §8.
+
+La clef du raisonnement est la **fraîcheur du rang ajouté** : `canonLabel`
+ajoute le rang `taille + 1`, et `SeenValsBounded` place tous les rangs déjà
+portés dans `1 … taille` — donc `taille + 1` est frais. Une fois ce point
+établi, l'ajout préserve la fidélité du fil, et le filage d'une suite
+d'étiquettes la préserve aussi.
+
+Le théorème d'extraction lui-même (`canon l = canon l'` ⇒ il existe un
+renommage injectif de `l` vers `l'`) reste le résidu de la tranche.
+-/
+
+/-- Un rang porté par le fil est au plus la taille du fil. -/
+private theorem snd_mem_le_length {seen : List (Nat × Nat)}
+    (hb : SeenValsBounded seen) {v : Nat} (hv : v ∈ seen.map Prod.snd) :
+    v ≤ seen.length := by
+  obtain ⟨p, hp, hpv⟩ := List.mem_map.mp hv
+  rw [← hpv]
+  exact (hb p hp).2
+
+/-- Le rang ajouté est frais : `taille + 1` n'est déjà porté par aucune
+    étiquette du fil. -/
+private theorem fresh_rank_not_mem {seen : List (Nat × Nat)}
+    (hb : SeenValsBounded seen) :
+    seen.length + 1 ∉ seen.map Prod.snd := by
+  intro hv
+  have hle := snd_mem_le_length hb hv
+  omega
+
+/-- `canonLabel` préserve la fidélité des valeurs : le rang nouveau est frais,
+    donc n'entre en collision avec aucun rang déjà porté. -/
+private theorem canonLabel_vals_nodup {seen : List (Nat × Nat)} {x : Nat}
+    (hn : SeenValsNodup seen) (hb : SeenValsBounded seen) :
+    SeenValsNodup (canonLabel seen x).2 := by
+  cases hlk : seen.lookup x with
+  | some v =>
+    simp only [canonLabel, hlk]
+    exact hn
+  | none =>
+    have hlab : (canonLabel seen x).2 = seen ++ [(x, seen.length + 1)] := by
+      unfold canonLabel; rw [hlk]
+    rw [hlab]
+    unfold SeenValsNodup
+    rw [List.map_append, List.map_singleton]
+    refine List.Nodup.append hn (by simp) ?_
+    intro a ha hmem
+    simp only [List.mem_singleton] at hmem
+    subst hmem
+    exact absurd ha (fresh_rank_not_mem hb)
+
+/-- `canonLabel` préserve le bornage des rangs : les rangs déjà portés restent
+    dans `1 … taille`, et le rang nouveau vaut la taille du fil enrichi. -/
+private theorem canonLabel_vals_bounded {seen : List (Nat × Nat)} {x : Nat}
+    (hb : SeenValsBounded seen) :
+    SeenValsBounded (canonLabel seen x).2 := by
+  cases hlk : seen.lookup x with
+  | some v =>
+    simp only [canonLabel, hlk]
+    exact hb
+  | none =>
+    have hlab : (canonLabel seen x).2 = seen ++ [(x, seen.length + 1)] := by
+      unfold canonLabel; rw [hlk]
+    rw [hlab]
+    intro p hp
+    rw [List.mem_append] at hp
+    rcases hp with hp | hp
+    · obtain ⟨hpos, hle⟩ := hb p hp
+      simp only [List.length_append]
+      omega
+    · simp only [List.mem_singleton] at hp
+      rcases hp with rfl
+      simp only [List.length_append, List.length_singleton]
+      omega
+
+/-- Le filage d'une suite d'étiquettes préserve la fidélité des valeurs
+    (induction sur la suite, état initial arbitraire). -/
+private theorem canonSlots_vals_nodup {seen : List (Nat × Nat)} {xs : List Nat}
+    (hn : SeenValsNodup seen) (hb : SeenValsBounded seen) :
+    SeenValsNodup (canonSlots seen xs).2 := by
+  induction xs generalizing seen with
+  | nil => exact hn
+  | cons y ys ih =>
+    cases hlk : seen.lookup y with
+    | some v =>
+      rw [canonSlots_cons_of_some hlk]
+      exact ih hn hb
+    | none =>
+      have hlab : (canonLabel seen y).2 = seen ++ [(y, seen.length + 1)] := by
+        unfold canonLabel; rw [hlk]
+      have hn' := canonLabel_vals_nodup (seen := seen) (x := y) hn hb
+      have hb' := canonLabel_vals_bounded (seen := seen) (x := y) hb
+      rw [hlab] at hn' hb'
+      rw [canonSlots_cons_of_none hlk]
+      exact ih hn' hb'
+
+/-- Le filage d'une suite d'étiquettes préserve le bornage des rangs
+    (induction sur la suite, état initial arbitraire). -/
+private theorem canonSlots_vals_bounded {seen : List (Nat × Nat)} {xs : List Nat}
+    (hb : SeenValsBounded seen) :
+    SeenValsBounded (canonSlots seen xs).2 := by
+  induction xs generalizing seen with
+  | nil => exact hb
+  | cons y ys ih =>
+    cases hlk : seen.lookup y with
+    | some v =>
+      rw [canonSlots_cons_of_some hlk]
+      exact ih hb
+    | none =>
+      have hlab : (canonLabel seen y).2 = seen ++ [(y, seen.length + 1)] := by
+        unfold canonLabel; rw [hlk]
+      have hb' := canonLabel_vals_bounded (seen := seen) (x := y) hb
+      rw [hlab] at hb'
+      rw [canonSlots_cons_of_none hlk]
+      exact ih hb'
+
+/-- **Fil fidèle.** Un fil dont les clés sont distinctes, dont les valeurs
+    sont distinctes et bornées : c'est l'état que le filage entre deux
+    croisements produit, et c'est la condition que la moitié « extraction »
+    consomme. -/
+private theorem canonSlots_faithful {seen : List (Nat × Nat)} {xs : List Nat}
+    (hk : SeenKeysNodup seen) (hv : SeenValsNodup seen) (hb : SeenValsBounded seen) :
+    SeenKeysNodup (canonSlots seen xs).2 ∧
+      SeenValsNodup (canonSlots seen xs).2 ∧
+      SeenValsBounded (canonSlots seen xs).2 := by
+  exact ⟨canonSlots_keys_nodup hk,
+    canonSlots_vals_nodup hv hb,
+    canonSlots_vals_bounded hb⟩
+
 end Knots.AnyMoves
