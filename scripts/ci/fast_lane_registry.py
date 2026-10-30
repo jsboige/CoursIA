@@ -574,11 +574,16 @@ PILOT: list[Guard] = [
             ".github/workflows/*.yml",
             ".github/workflows/*.yaml",
             "scripts/ci/check_self_hosted_runner_policy.py",
+            "scripts/ci/self_hosted_timeout_baseline.txt",
             "scripts/tests/test_check_self_hosted_runner_policy.py",
             "scripts/ci/fast_lane_registry.py",
         ],
+        # #22954 : `--check-timeouts` ajoute le cliquet qui refuse un job
+        # auto-heberge sans `timeout-minutes` (defaut d'Actions : 6 h, et un job
+        # fige tient son slot tout ce temps). La dette existante est nommee dans
+        # `self_hosted_timeout_baseline.txt`, qui ne doit jamais grossir.
         argv=["python", "scripts/ci/check_self_hosted_runner_policy.py",
-              "--check"],
+              "--check", "--check-timeouts"],
         blocking=True,
         shadow_reason=PILOT_SHADOW_SANS_EMETTEUR,
     ),
@@ -2577,6 +2582,51 @@ TRANCHE28: list[Guard] = [
             "scripts/tests/test_dwell_rule_matches_organ.py",
         ],
         blocking=True,
+        absorbed=True,
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 29 -- confrontation doc <-> quantification reellement chargee (#23252).
+#
+# Defaut ferme : la table « Quantization Settings per Service » de
+# ``docs/genai/genai-services.md`` annoncait ``tts-fishaudio`` en « BnB 4-bit
+# NF4 ~5 GB » alors que le service tourne en ``--half`` (fp16, 20,3 Go
+# mesures). Rien ne confrontait la table a ce que les services chargent : la
+# doc pouvait annoncer une quantification que personne n'applique, sans qu'un
+# seul garde ne rougisse -- et un lecteur y lit un budget VRAM qui n'existe pas.
+#
+# L'organe est ADVISORY d'abord (``blocking=False``) : il rend des verdicts
+# ``ORPHAN-SERVICE`` sur six services GPU absents de la table, et ces trous de
+# doc se corrigent service par service, pas en bloquant les PRs qui n'y
+# touchent pas. Le passage en bloquant se fera quand le stock de ``failing``
+# sera vide sur ``main`` -- c'est le critere de bascule, ecrit ici, pas un
+# « plus tard ».
+#
+# Forme : garde NON-delta. Il lit l'arbre entier (la table d'un cote, tous les
+# composes de l'autre) et son verdict est absolu, donc heritable de ``main`` :
+# ``diff_bounded`` reste faux, et un rouge corrobore sur ``main`` ne doit pas
+# etre impute a la PR. ``paths`` borne en revanche le DECLENCHEMENT -- la doc,
+# les composes et l'organe lui-meme, sinon le garde tournerait a vide sur
+# chaque PR de notebook.
+# ---------------------------------------------------------------------------
+TRANCHE29: list[Guard] = [
+    Guard(
+        name="quant-doc-divergence advisory (non-blocking)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "docs/genai/genai-services.md",
+            "docker-configurations/services/**/docker-compose*.yml",
+            "docker-configurations/services/**/docker-compose*.yaml",
+            "scripts/genai-stack/check_quant_doc_divergence.py",
+            "scripts/tests/test_check_quant_doc_divergence.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python", "scripts/genai-stack/check_quant_doc_divergence.py",
+        ],
+        blocking=False,
         absorbed=True,
     ),
 ]

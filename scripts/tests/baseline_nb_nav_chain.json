@@ -36,6 +36,11 @@
       "series": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical"
     },
     {
+      "kind": "independent_chain",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE"
+    },
+    {
       "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm-Part2-Python.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
@@ -1259,6 +1264,66 @@
       "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-Onto-03-Vertus-SKOS-Python.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/Geometry-01-From-Figure-To-Equation.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/Geometry-02-From-Equation-To-Proof.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-07b-Examples-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-08b-Erdos-Formal-Conjectures-Lean.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-14b-Finiteness-Lean-Companion.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-23-ERC20-Invariant-Companion.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-23b-Lean-ERC20-Native-Companion.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-24-Calibration-Native-Companion.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-27-EdgeColoring-Tutte-Companion.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-14-Euler-Navier-Stokes-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-36-Structures-Finies-MUH-Lean.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-39-Capstone-GOL.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
     },
     {
       "kind": "orphan_entry",
