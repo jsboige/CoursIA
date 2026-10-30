@@ -120,6 +120,12 @@ Usage
     # compte dans `drift_introduced`.
     python check_twin_parity.py --check --per-pair --base origin/main
     python check_twin_parity.py --check --per-pair --base HEAD~1
+    # en CI sur une PR, `auto` est la base juste : actions/checkout extrait le
+    # merge ref de GitHub, dont le premier parent est le main de l'evenement.
+    # Comparer a `origin/main` (refetch au demarrage du job) classe en
+    # DRIFT_INTRODUCED les paires rebaselinees sur main pendant l'attente en
+    # file (#22292).
+    python check_twin_parity.py --check --per-pair --base auto
     # mode CI cron (volet b #9399) : fleet-wide SANS base ref, breakdown 4 categories.
     # Distinct du check historique : rouge sur N'IMPORTE QUEL drift (legacy ou content),
     # pas seulement DRIFT_or_MISSING. Utilise par .github/workflows/twin-parity-cron.yml.
@@ -1567,7 +1573,8 @@ def _dump_audit_yaml(audit: dict) -> str:
 
 def _write_audit_file(registry_dir: Path, name: str, audit: dict,
                       used_names: set[str] | None = None,
-                      index: int | None = None) -> Path:
+                      index: int | None = None,
+                      floor: int = 0) -> Path:
     """Ecrit un audit dans un fichier separe `<pair>/<idx>-<date>-<lane>.yaml`.
 
     Nouvelle forme (#14911). `index` (optionnel) place l'audit dans l'ordre
@@ -1576,6 +1583,11 @@ def _write_audit_file(registry_dir: Path, name: str, audit: dict,
     trier en derniere position (= plus recent). `used_names` suit les noms
     deja pris pour suffixer `-2`, `-3`... en secours si un index venait a
     collider. Retourne le chemin.
+
+    `floor` (#22299) est le plus grand index deja PUBLIE pour la paire sur la
+    ref d'integration : l'index alloue reste strictement au-dessus. Le max
+    local ne suffit pas -- deux branches issues du meme `main` lisent le meme
+    disque, calculent le meme max et emettent le meme `NNNN`.
     """
     slug = _slug(name)
     d = _audit_dir(registry_dir, slug)
@@ -1583,7 +1595,7 @@ def _write_audit_file(registry_dir: Path, name: str, audit: dict,
     date = str(audit.get("date") or _dt.date.today().isoformat())
     by = audit.get("by")
     if index is None:
-        index = _next_audit_index(d)
+        index = max(_next_audit_index(d), floor + 1)
     base = _audit_filename(date, by, index)
     stem = base[:-5]  # retire ".yaml"
     used = used_names if used_names is not None else set()
@@ -1627,6 +1639,80 @@ def _next_audit_index(d: Path) -> int:
     idxs = [int(audit_index(f.name)) for f in d.glob("*.yaml")
             if audit_index(f.name).isdigit()]
     return max(idxs, default=0) + 1
+
+
+def _audit_indexes_at_ref(repo_root: Path, git_ref: str, registry_dir: Path,
+                          name: str) -> set[int]:
+    """Index `NNNN` deja publies pour cette paire sur `git_ref` (#22299).
+
+    `_next_audit_index` ne lit que le disque local : deux branches issues du
+    meme `main` calculent le meme max, donc le meme prefixe, et le garde
+    d'integrite les refuse apres merge (5 paires mesurees le 2026-10-24). Ce
+    plancher lit la ref d'integration pour qu'une branche qui re-atteste
+    APRES que la ref a gagne un audit n'emette jamais un `NNNN` deja pris.
+
+    Un ref illisible, un repertoire absent ou un `registry_dir` hors depot
+    rendent l'ensemble VIDE : c'est un plancher, pas une mesure -- ne rien
+    trouver ne doit jamais bloquer une ecriture.
+    """
+    slug = _slug(name)
+    try:
+        reg_rel = registry_dir.resolve().relative_to(repo_root.resolve()).as_posix()
+    except ValueError:
+        return set()
+    try:
+        r = _run_git(
+            ["git", "ls-tree", "-r", "--name-only", git_ref, "--",
+             f"{reg_rel}/{slug}/"],
+            cwd=str(repo_root),
+        )
+    except GitTimeoutError:
+        # Un ls-tree qui expire degrade comme une ref illisible : un garde
+        # ne doit jamais transformer un remote lent en ecriture refusee.
+        return set()
+    if r.returncode != 0:
+        return set()
+    out: set[int] = set()
+    for line in (r.stdout or "").splitlines():
+        idx = audit_index(line.rsplit("/", 1)[-1])
+        if idx.isdigit():
+            out.add(int(idx))
+    return out
+
+
+def _audit_floor(repo_root: Path, registry_dir: Path, name: str,
+                 ref: str | None) -> int:
+    """Plus grand index deja publie pour la paire sur `ref` (0 si inutilisable)."""
+    if not ref:
+        return 0
+    return max(_audit_indexes_at_ref(repo_root, ref, registry_dir, name), default=0)
+
+
+def _refresh_allocate_ref(repo_root: Path, ref: str | None) -> None:
+    """Rafraichit `<remote>/<branche>` avant la lecture du plancher (#22547).
+
+    `ls-tree` lit la ref LOCALE : sans ce fetch, `origin/main` designe ce que
+    le clone connaissait a son dernier fetch, et la collision que le plancher
+    doit fermer reste atteignable des qu'un autre worker a pousse depuis
+    (reproduction Hermes : worker B clone avant le push de C, sans fetch ->
+    floor 5, prefixe 0006 deja pris par C ; apres fetch -> floor 8).
+
+    Bornee (_GIT_TIMEOUT_S via `_run_git`, EAGAIN borne) et **jamais
+    bloquante** : toute erreur (remote absent, ref non remote, hors ligne,
+    timeout) retombe silencieusement sur la ref locale -- meme philosophie
+    que le plancher lui-meme, un garde ne bloque jamais une ecriture. Les
+    refs non `<remote>/<branche>` (ex. `main`, SHA) ne sont pas fetchees.
+    """
+    if not ref or "/" not in ref:
+        return
+    remote, branch = ref.split("/", 1)
+    try:
+        _run_git(["git", "fetch", "--quiet", remote, branch],
+                 cwd=str(repo_root))
+    except Exception:
+        # Repli sur la ref locale : un plancher perime reste preferable a
+        # une ecriture refusee.
+        return
 
 
 def migrate_registry_files_per_audit(registry_dir: Path,
@@ -1937,6 +2023,59 @@ def _paire_inconnue(nom: str, pairs: list) -> None:
     )
 
 
+# --- base de comparaison lue a l'execution (#22292) --------------------------
+# En CI, `actions/checkout` extrait `refs/pull/N/merge` : un commit de fusion
+# dont le PREMIER parent est le `main` tel qu'il etait a l'evenement, le second
+# etant la tete de la PR. `origin/main` est refetch au demarrage du job. Sous
+# famine de runners, `main` avance entre les deux lectures : toute paire
+# rebaselinee dans l'intervalle est DRIFT au merge ref et OK a `origin/main`,
+# donc classee DRIFT_INTRODUCED sur une PR qui ne la touche pas (instance
+# mesuree : #22218, 11 paires dont aucune n'etait touchee ; 22 des 256 PRs
+# ouvertes portaient ce rouge a leur tete).
+#
+# `--base auto` repond a la question que ce gate pose vraiment -- « qu'a
+# introduit CETTE PR ? » -- en comparant au main dont le merge ref est issu :
+# le choix ne depend plus du temps d'attente en file.
+_AUTO_BASE = "auto"
+# Sujet exact du commit de fusion fabrique par GitHub :
+#   Merge 1ad73da1e3 into e0964ecf4a
+# Le motif est un DISCRIMINANT, pas une dependance : s'il ne matche pas (sujet
+# reecrit, commit de fusion pousse par l'auteur sur sa branche), on retombe sur
+# `origin/main`, c'est-a-dire le comportement d'avant ce fix -- jamais une base
+# plus fausse que l'ancienne.
+_GITHUB_MERGE_SUBJECT = re.compile(r"^Merge [0-9a-f]{7,40} into [0-9a-f]{7,40}")
+
+
+def resolve_base_ref(repo_root: Path, base: str) -> str:
+    """Resout la sentinelle `auto` en une ref git reelle (#22292).
+
+    `HEAD^1` quand `HEAD` est un commit de fusion GitHub (`refs/pull/N/merge`),
+    `origin/main` sinon. Toute autre valeur est rendue inchangee : cette
+    fonction n'interprete que la sentinelle.
+
+    Un `HEAD` d'un seul parent (branche ordinaire), ou dont le sujet n'a pas la
+    forme `Merge <sha> into <sha>`, n'est pas un merge ref : la base reste
+    `origin/main`, soit exactement le comportement anterieur au fix.
+    """
+    if base != _AUTO_BASE:
+        return base
+    # `rev-list --parents -n 1 HEAD` : le commit puis ses parents. Deux parents
+    # ou plus -> commit de fusion. Aucune exception n'est avalee ici : une pause
+    # git (`GitTimeoutError`) doit interrompre la mesure en rc 3, pas se
+    # deguiser en base par defaut.
+    parents = _run_git(
+        ["git", "rev-list", "--parents", "-n", "1", "HEAD"], cwd=repo_root
+    ).stdout.split()
+    if len(parents) < 3:
+        return "origin/main"
+    subject = _run_git(
+        ["git", "log", "-1", "--format=%s", "HEAD"], cwd=repo_root
+    ).stdout.strip()
+    if _GITHUB_MERGE_SUBJECT.match(subject):
+        return "HEAD^1"
+    return "origin/main"
+
+
 def main(argv=None) -> int:
     """Point d'entree CLI. Un appel git qui depasse sa borne de delai interrompt la
     mesure : message explicite sur stderr et rc 3 (distinct de 1 = drift et de
@@ -1987,7 +2126,9 @@ def _main(argv=None) -> int:
                    help="Mode per-pair : compare HEAD vs --base <ref>. Ne FAIL que "
                         "le drift INTRODUIT par la PR, jamais le drift pre-existant.")
     p.add_argument("--base", default=None,
-                   help="Ref git de base pour le mode --per-pair (ex. origin/main, HEAD~1).")
+                   help="Ref git de base pour le mode --per-pair (ex. origin/main, "
+                        "HEAD~1, ou 'auto' : HEAD^1 quand HEAD est un merge ref "
+                        "GitHub, origin/main sinon -- cf #22292).")
     p.add_argument("--ci-strict", action="store_true",
                    help="Mode CI cron (#9399 volet b) : check fleet-wide SANS base ref, "
                         "avec breakdown 4 categories (ok_legacy / ok_content / drift_blob / "
@@ -2020,6 +2161,24 @@ def _main(argv=None) -> int:
                         "est l'opt-in explicite pour forcer la nouvelle entree "
                         "malgre le no-op, avec un avertissement explicite sur "
                         "stdout. Sans effet sur les modes non --update.")
+    p.add_argument("--allocate-against", default="origin/main", metavar="REF",
+                   help="Avec --update : plancher d'allocation du prefixe NNNN, lu "
+                        "sur cette ref (defaut 'origin/main', vide = desactive). "
+                        "L'index ne peut plus etre <= au max deja publie pour la "
+                        "paire sur cette ref (#22299) : sans ce plancher, deux "
+                        "branches issues du meme main calculent le meme max et "
+                        "emettent le meme prefixe, que le garde d'integrite refuse "
+                        "apres merge. Avant la lecture, un `git fetch` borne "
+                        "rafraichit la ref <remote>/<branche> (#22547) : sans lui, "
+                        "le plancher lirait la ref telle que le clone la connaissait "
+                        "a son dernier fetch et la collision resterait possible. Si "
+                        "le fetch echoue ou si la ref est illisible, repli sur la ref "
+                        "locale -- cela ne bloque jamais l'ecriture (le plancher est "
+                        "un garde, pas une mesure).")
+    p.add_argument("--no-allocate-against", action="store_true",
+                   help="Desactive le plancher d'allocation (comportement "
+                        "historique : max local + 1). Utile dans un depot sans "
+                        "remote, ou pour reproduire un registre ancien.")
     p.add_argument("--verify-recorded-sha", action="store_true",
                    help="Gate CI #9399 volet b : verifie que les SHA enregistres "
                         "dans le YAML (last_audit legacy OU audits[-1] append-only) "
@@ -2081,7 +2240,7 @@ def _main(argv=None) -> int:
         p.error("--summary-by-verdict est un mode de recensement integral : "
                 "--pair/--family n'y designent rien (compte les paires par "
                 "bridge_verdict). Retirer le selecteur.")
-    # Garde anti-derive MERGE_HEAD / REBASE_HEAD (#11732) : pendant un merge non
+    # Garde anti-derive merge/rebase en cours (#11732) : pendant un merge non
     # commite, `git ls-tree HEAD` lit l'ANCIENNE tete de branche (pas le resultat
     # du merge). --update atteste alors des blob SHAs qui ne refletent pas l'etat
     # final du notebook -- au commit du merge, les notebooks obtiennent de
@@ -2098,20 +2257,47 @@ def _main(argv=None) -> int:
         except SystemExit:
             repo_root_for_state = None
         if repo_root_for_state is not None:
-            # git rev-parse -q --verify MERGE_HEAD/REBASE_HEAD : rc=0 si le
-            # depot est en cours de merge/rebase interactif. Le check precede
-            # `_repo_root()` final pour economiser un subprocess en cas d'erreur
-            # deja connue (mais apres args.repo_root parse, qui peut etre override
-            # dans les tests --repo-root sur tmp_path).
-            for state_file, label in (("MERGE_HEAD", "merge"), ("REBASE_HEAD", "rebase")):
+            # Le check precede `_repo_root()` final pour economiser un subprocess
+            # en cas d'erreur deja connue (mais apres args.repo_root parse, qui
+            # peut etre override dans les tests --repo-root sur tmp_path).
+            #
+            # Merge en cours : `git rev-parse -q --verify MERGE_HEAD` (rc=0 si
+            # et seulement si un merge est non commite) -- detection inchangee.
+            r = _run_git(
+                ["git", "rev-parse", "-q", "--verify", "MERGE_HEAD"],
+                cwd=str(repo_root_for_state),
+            )
+            if r.returncode == 0:
+                p.error("--update pendant un merge non committe : HEAD ne contient pas "
+                        "le resultat du merge. Commitez d'abord, puis re-attestez "
+                        "(cf #11732, variante operationnelle de #8957).")
+            # Rebase en cours : l'indicateur fiable est l'existence du repertoire
+            # `rebase-merge` (interactif/merge backend) ou `rebase-apply`
+            # (backend am), PAS le ref REBASE_HEAD. Git peut y laisser un
+            # REBASE_HEAD orphelin apres un rebase interrompu : un clone qui en
+            # porte un sans rebase en cours voyait alors --update refuse a tort
+            # (signale par le coordinateur 2026-10-27 : REBASE_HEAD du 20/09,
+            # ni rebase-merge ni rebase-apply, 3 tests update_guard rouges).
+            # `git rev-parse --git-path <name>` resout le chemin dans le git dir
+            # du depot (worktree compris) ; la sortie est relative au cwd dans
+            # le clone principal (`.git/rebase-merge`) et absolue dans un
+            # worktree -- d'ou la resolution explicite ci-dessous.
+            for state_dir in ("rebase-merge", "rebase-apply"):
                 r = _run_git(
-                    ["git", "rev-parse", "-q", "--verify", state_file],
+                    ["git", "rev-parse", "--git-path", state_dir],
                     cwd=str(repo_root_for_state),
                 )
-                if r.returncode == 0:
-                    p.error(f"--update pendant un {label} non committe : HEAD ne contient pas "
-                            f"le resultat du {label}. Commitez d'abord, puis re-attestez "
-                            f"(cf #11732, variante operationnelle de #8957).")
+                raw = r.stdout.strip() if r.returncode == 0 else ""
+                if not raw:
+                    continue
+                state_path = Path(raw)
+                if not state_path.is_absolute():
+                    state_path = repo_root_for_state / state_path
+                if state_path.exists():
+                    p.error("--update pendant un rebase non termine : HEAD ne contient pas "
+                            "le resultat du rebase. Terminez ou annulez le rebase "
+                            "(git rebase --continue / --abort), puis re-attestez "
+                            "(cf #11732, variante operationnelle de #8957).")
     if args.pair and args.family:
         p.error("--pair et --family sont mutuellement exclusifs avec --update.")
     if args.ci_strict and args.per_pair:
@@ -2132,6 +2318,16 @@ def _main(argv=None) -> int:
 
     repo_root = Path(args.repo_root) if args.repo_root else _repo_root()
     reg_path = Path(args.registry)
+
+    # #22292 : la base du mode --per-pair se resout a l'execution. `--base` exige
+    # deja `--per-pair` (validation ci-dessus), donc la sentinelle ne peut pas
+    # s'inviter dans un mode qui n'en fait rien.
+    if args.base == _AUTO_BASE:
+        args.base = resolve_base_ref(repo_root, args.base)
+        origine = ("merge ref GitHub : comparaison au main dont il est issu"
+                   if args.base == "HEAD^1"
+                   else "HEAD n'est pas un merge ref GitHub")
+        print(f"--base auto -> '{args.base}' ({origine}, #22292)", file=sys.stderr)
 
     # --- Mode --summary-by-verdict (#10439) : denominateur actionnable sans
     # soustraction manuelle. Compte les paires par bridge_verdict ; les paires
@@ -2458,6 +2654,13 @@ def _main(argv=None) -> int:
         # (append chirurgical au bloc d'audit inline).
         if reg_path.is_dir():
             written = 0
+            # Plancher d'allocation (#22299) : resolu une fois, lu par paire.
+            allocate_ref = None if args.no_allocate_against else args.allocate_against
+            # #22547 : la ref d'integration vaut ce que vaut son dernier
+            # fetch. Un seul fetch borne avant la boucle (pas un par paire),
+            # repli silencieux sur la ref locale si le remote ne repond pas.
+            if updates:
+                _refresh_allocate_ref(repo_root, allocate_ref)
             for name, audit in updates.items():
                 pfile = _pair_file(reg_path, name)
                 if not pfile.exists():
@@ -2488,7 +2691,14 @@ def _main(argv=None) -> int:
                     _write_audit_file(reg_path, name, audit,
                                       used_names=used, index=len(inline) + 1)
                 else:
-                    _write_audit_file(reg_path, name, audit)
+                    floor = _audit_floor(repo_root, reg_path, name, allocate_ref)
+                    if floor >= _next_audit_index(_audit_dir(reg_path, _slug(name))):
+                        # Observabilite : l'index retenu n'est pas le max local,
+                        # c'est le plancher publie. Sans cette ligne, le worker
+                        # lirait la numerotation comme un trou inexplique.
+                        print(f"  '{name}' : prefixe alloue au-dessus de "
+                              f"{allocate_ref} (max publie = {floor})")
+                    _write_audit_file(reg_path, name, audit, floor=floor)
                 new_raw = _strip_audits_from_yaml(raw)
                 if new_raw != raw:
                     write_registry_text(pfile, new_raw)

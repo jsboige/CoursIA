@@ -32,6 +32,7 @@ déclaré).
 
 | CSV | en | es | ar | fa | zh | ru | pt | Source |
 |---|---|---|---|---|---|---|---|---|
+| `translations/complexity/complexity.csv` | **en** | - | - | - | - | - | - | #1650 (en) |
 | `translations/genai/audio.csv` | - | - | - | - | - | - | - | (pre-T3) |
 | `translations/genai/casestudies.csv` | **en** | - | - | - | - | **ru** | - | #10017/#10018 (en) + POC ru (cf §ru-orphans) |
 | `translations/genai/finetuning.csv` | **en** | - | - | - | - | - | - | #10017/#10018 (en) |

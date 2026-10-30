@@ -46,6 +46,7 @@ LANDING_PAGES = [
     "MyIA.AI.Notebooks/Sudoku/index.qmd",
     "MyIA.AI.Notebooks/GameTheory/index.qmd",
     "MyIA.AI.Notebooks/Probas/index.qmd",
+    "MyIA.AI.Notebooks/Physique/index.qmd",
     "docs/index.qmd",
     # COURSE_CATALOG.generated.md est lie depuis index.qmd (L64) mais servi en
     # texte brut sinon : on le REND en HTML (verifie firsthand #10925 Q2 —
@@ -117,6 +118,7 @@ NOTEBOOK_SUBTREES = (
     "MyIA.AI.Notebooks/SymbolicAI/Lean/",             # tranche 13 #10923 (33 notebooks .ipynb pedagogique Lean)
     "MyIA.AI.Notebooks/cross-series/",                # tranche 13 #10923 (1)
     "MyIA.AI.Notebooks/Compression/",                 # tranche finale #18423 (1, codes prefixes Shannon-Fano -> Huffman)
+    "MyIA.AI.Notebooks/Physique/",                     # serie Physique #23161 (Jauge : Noether, jauge U(1)/SU(2), reseau de Wilson)
     # Prefix famille : couvre OR-tools-Stiegler.ipynb au niveau racine de
     # SymbolicAI/ (38 cellules, pedagogique). Les sous-repertoires deja
     # couverts par leurs entrees individuelles ci-dessus restent dedup
@@ -489,6 +491,25 @@ def duplicate_render_entries(
     return dupes
 
 
+def _emit_entry(lines: list[str], emitted: set[str], path: str) -> None:
+    """Ajoute ``- "path"`` sauf si le chemin est deja emis (#22274).
+
+    Le meme fichier peut apparaitre dans deux sections : un
+    ``docs/reference/*.README.md`` satisfait le motif ``*README.md`` **et** le
+    motif ``docs/*.md``. Quarto ne rend le document qu'une fois, mais la liste
+    generee portait les deux lignes, et le doublon faisait echouer toute
+    comparaison « nombre d'entrees == nombre d'entrees uniques ». La premiere
+    section gagne (ordre d'emission : landing, readmes, docs, notebooks) ; le
+    dedup ne s'applique qu'a l'**emission**, jamais a
+    ``duplicate_render_entries``, qui garde son role de signal d'index non
+    resolu *intra*-section (#20055).
+    """
+    if path in emitted:
+        return
+    emitted.add(path)
+    lines.append(f'    - "{path}"')
+
+
 def build_render_block(sections: dict[str, list[str]] | None = None) -> list[str]:
     """Build the YAML lines for the project.render list.
 
@@ -496,18 +517,24 @@ def build_render_block(sections: dict[str, list[str]] | None = None) -> list[str
     (cf. ``render_sections``) : la garde anti-doublon et l'emission portent
     alors sur la meme liste, au lieu de deux enumerations qui pourraient
     diverger entre deux appels a git.
+
+    Chaque chemin est emis **au plus une fois** (#22274) : un fichier present
+    dans deux sections n'est rendu qu'une fois par Quarto, et la liste generee
+    doit le refleter, sinon elle ne satisfait pas son propre critere de
+    fraicheur (« autant d'entrees que d'entrees uniques »).
     """
     if sections is None:
         sections = render_sections()
     readmes = sections["readmes"]
     docs_md = sections["docs"]
     notebooks = sections["notebooks"]
+    emitted: set[str] = set()
 
     lines = ["project:", "  type: site", "  output-dir: _site", "  render:"]
     # Landing pages (qmd) + catalogue genere (rendu HTML, cf. LANDING_PAGES)
     lines.append("    # Landing pages (.qmd) + COURSE_CATALOG.generated.md (rendu HTML).")
     for entry in sections["landing"]:
-        lines.append(f'    - "{entry}"')
+        _emit_entry(lines, emitted, entry)
     # READMEs (explicit list — globs do not expand in Quarto 1.7, see header)
     lines.append("    # README.md rendus en HTML (Axe C #4211). Liste explicite")
     lines.append("    # (regeneree par scripts/regen_quarto_render.py) car Quarto 1.7")
@@ -519,7 +546,7 @@ def build_render_block(sections: dict[str, list[str]] | None = None) -> list[str
     # #19901, cas mesure #19579). La liste triee qui suit fusionne sans conflit.
     lines.append("    # Archives et libs vendored EXCLUES (history interne, non pedagogique).")
     for p in readmes:
-        lines.append(f'    - "{p}"')
+        _emit_entry(lines, emitted, p)
     # docs/*.md (non-README) rendus en HTML (issue #18422, etend Axe C #4211).
     # Meme mecanisme que les READMEs : liste explicite par garde de Quarto 1.7
     # (cf. header). Les fichiers avec `---` hr sont exclus (garde #11451,
@@ -530,7 +557,7 @@ def build_render_block(sections: dict[str, list[str]] | None = None) -> list[str
         lines.append("    # que les READMEs : liste explicite (globs non etendus en Quarto 1.7).")
         lines.append("    # Garde `---` (#11451) appliquee auto-resorbante.")
         for p in docs_md:
-            lines.append(f'    - "{p}"')
+            _emit_entry(lines, emitted, p)
     # Notebooks rendered to HTML (EPIC #10921, pilote Search #10923). Explicit
     # list (globs do not expand in Quarto 1.7, see README comment above).
     if notebooks:
@@ -539,7 +566,7 @@ def build_render_block(sections: dict[str, list[str]] | None = None) -> list[str
         lines.append("    # Execution desactivee + echo: true au niveau racine (_quarto.yml).")
         lines.append("    # Sous-arbres rendus : " + ", ".join(sorted(NOTEBOOK_SUBTREES)) + ".")
         for p in notebooks:
-            lines.append(f'    - "{p}"')
+            _emit_entry(lines, emitted, p)
     return lines
 
 
