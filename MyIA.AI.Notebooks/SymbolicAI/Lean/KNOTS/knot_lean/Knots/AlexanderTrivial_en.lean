@@ -43,7 +43,13 @@ import Knots.ConwayPD_en
 import Knots.ArcPartition_en
 
 import Mathlib.Algebra.Polynomial.Basic
+import Mathlib.Algebra.Polynomial.AlgebraMap
+import Mathlib.Analysis.Complex.Basic
+import Mathlib.GroupTheory.OrderOfElement
 import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
+import Mathlib.RingTheory.RootsOfUnity.PrimitiveRoots
+import Mathlib.Tactic.IntervalCases
+import Mathlib.Tactic.LinearCombination
 
 namespace Knots_en
 
@@ -188,6 +194,81 @@ theorem alexander_trefoil :
   simp only [Matrix.of_apply]
   simp (config := { decide := true }) [alexanderEntry]
   ring
+
+/-- Knot-catastrophe bridge, verified form: the complex roots of the
+trefoil's Alexander polynomial, `t² − t + 1`, are exactly the **primitive**
+sixth roots of unity — the prose assertion of the positive control
+`alexander_trefoil` above, here established by the kernel. This is the
+formal bridge to the cuspidal cubic `y² = x³` of the cusp catastrophe: the
+discriminant `4a³ + 27b² = 0` and the order-6 monodromy count the six
+sectors these roots delimit (item G.α.3 of plan #19333; Python replay in
+`IIT/ICT-Series/ICT-23`, module `ict/catastrophe.py`). -/
+theorem alexander_trefoil_roots_primitive_sixth (z : ℂ) :
+    Polynomial.aeval z (alexanderPolynomial trefoil) = 0 ↔ IsPrimitiveRoot z 6 := by
+  rw [alexander_trefoil]
+  simp only [Polynomial.aeval_X, map_add, map_sub, map_pow, map_one]
+  constructor
+  · -- z² − z + 1 = 0 → order exactly 6
+    intro h
+    have hz3 : z ^ 3 = -1 := by linear_combination (z + 1) * h
+    have hz6 : z ^ 6 = 1 := by
+      calc z ^ 6 = (z ^ 3) ^ 2 := by ring
+        _ = (-1 : ℂ) ^ 2 := by rw [hz3]
+        _ = 1 := by norm_num
+    refine IsPrimitiveRoot.iff_orderOf.mpr ?_
+    have hdvd : orderOf z ∣ 6 := orderOf_dvd_of_pow_eq_one hz6
+    have hpos : 0 < orderOf z :=
+      (isOfFinOrder_iff_pow_eq_one.mpr ⟨6, by norm_num, hz6⟩).orderOf_pos
+    have hle : orderOf z ≤ 6 := Nat.le_of_dvd (by norm_num) hdvd
+    have hcases : orderOf z = 1 ∨ orderOf z = 2 ∨ orderOf z = 3 ∨ orderOf z = 6 := by
+      interval_cases ho : orderOf z <;> simp_all
+    rcases hcases with h1 | h2 | h3 | h6
+    · -- order 1: z = 1, but 1 − 1 + 1 ≠ 0
+      have hz1 : z = 1 := by
+        have hp := pow_orderOf_eq_one z
+        rw [h1] at hp
+        simpa using hp
+      rw [hz1] at h
+      norm_num at h
+    · -- order 2: z² = 1 and h force z = 2, absurd
+      have hz2 : z ^ 2 = 1 := by
+        have hp := pow_orderOf_eq_one z
+        rw [h2] at hp
+        simpa using hp
+      have hz : z = 2 := by linear_combination hz2 - h
+      rw [hz] at hz2
+      norm_num at hz2
+    · -- order 3: z³ = 1 contradicts z³ = −1
+      have h31 : z ^ 3 = 1 := by
+        have hp := pow_orderOf_eq_one z
+        rw [h3] at hp
+        simpa using hp
+      rw [h31] at hz3
+      norm_num at hz3
+    · exact h6
+  · -- primitive sixth root → z² − z + 1 = 0
+    intro hprim
+    have ho6 : orderOf z = 6 := (IsPrimitiveRoot.eq_orderOf hprim).symm
+    have hz6 : z ^ 6 = 1 := by rw [← ho6]; exact pow_orderOf_eq_one z
+    have hexp : (z ^ 3 - 1) * (z ^ 3 + 1) = 0 := by linear_combination hz6
+    rcases mul_eq_zero.mp hexp with h31 | h3m1
+    · -- branch z³ = 1: would give 6 ∣ 3
+      have h31' : z ^ 3 = 1 := sub_eq_zero.mp h31
+      exact absurd (show (6 : ℕ) ∣ 3 by
+        rw [← ho6]
+        exact orderOf_dvd_of_pow_eq_one h31') (by decide)
+    · have hfac : (z + 1) * (z ^ 2 - z + 1) = 0 := by linear_combination h3m1
+      rcases mul_eq_zero.mp hfac with hzp1 | hz2
+      · -- branch z = −1: would give 6 ∣ 2
+        exfalso
+        have hz' : z = -1 := by linear_combination hzp1
+        have hd2 : orderOf z ∣ 2 := by
+          rw [hz']
+          exact orderOf_dvd_of_pow_eq_one (by norm_num : ((-1 : ℂ)) ^ 2 = 1)
+        obtain ⟨c, hc⟩ := hd2
+        rw [ho6] at hc
+        omega
+      · exact hz2
 
 /-- Discrimination corollary: the Alexander polynomial distinguishes the
 trefoil from the unknot — first non-triviality of the development,
@@ -3628,6 +3709,90 @@ theorem conwayMutant_trivial_alexander :
   rw [conwayMutant_matrix_eq, ← conwayMutant_elim1, ← conwayMutant_elim2,
     ← conwayMutant_elim3, Matrix.det_of_isUpperTriangular conwayMutant_upperTri,
     conwayMutant_diag]
+
+
+/-! ### Link 5: the redraw certificate — the KT census is the sphere mutant of the Conway census
+
+The NOTE in `Knots.Mutation_en` (limit of the canonical witness) called for
+an intermediate diagram: no one-shot map superposes the designated PDs. The
+c165 Python probe (engine controlled against the proven values −t⁶/11n34 and
+t⁵/11n42) swept the family of 96 sphere mutations of the Conway census
+(4 rotations × 24 re-attachments of the 4 boundary points) against the KT
+census under full combinatorial isomorphism (list reordering + label
+renaming, positions preserved). Measured outcome: **exactly one** member of
+the family is isomorphic to the KT census — the designated mutant of link 4
+itself (r13, (8 ↔ 11) (13 ↔ 22)).
+
+The bridge splits into two purely combinatorial identities, both by
+evaluation: the sphere mutation of link 4
+(`conwayMutant_eq_sphereMutate`), then the **redraw** below — the KT census
+is the mutant's list reordered by the position transpositions (5 ↔ 7) and
+(8 ↔ 10), every label renamed by the interior involution
+(9 10)(14 21)(15 20)(16 19)(17 18), the outside being fixed.
+
+Why this bridge is honest: the order of the crossing list and the label
+names carry no drawing information — a PD code is a set of crossings on
+abstract edges. The redraw is thus an identity of combinatorial diagrams,
+not a Reidemeister move. However, `AreMutants` (§`Knots.Mutation_en`)
+requires `ReidemeisterEquiv` on the representatives: until the redraw is
+formally related to `ReidemeisterEquiv` (later link), the gap stays
+documented — but it is now purely definitional, no longer geometric.
+
+Negative control unchanged: no (ρ, perm, boundary-σ) combination superposes
+the designated lists (link-4 measurement) — it is the interior renaming of
+the redraw that carries the bridge.
+-/
+
+/-- Reordering of the mutant's crossings into the KT census order: the five
+outside crossings (list heads) are unchanged, the six interior crossings are
+permuted by the position transpositions (5 ↔ 7) and (8 ↔ 10). Outside the
+11-crossing case: identity. -/
+def ktRedrawOrder : List PDCrossing → List PDCrossing
+  | [c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10] =>
+      [c0, c1, c2, c3, c4, c7, c6, c5, c10, c9, c8]
+  | cs => cs
+
+/-- Renaming of the mutant's labels into the KT census ones: the twelve
+outside labels (1-8, 11-13, 22) are fixed, the ten interior ones are
+swapped by five transpositions. Involution on the labels in use. -/
+def ktRedrawRelabel : Nat → Nat :=
+  fun e =>
+    if e = 9 then 10
+    else if e = 10 then 9
+    else if e = 14 then 21
+    else if e = 21 then 14
+    else if e = 15 then 20
+    else if e = 20 then 15
+    else if e = 16 then 19
+    else if e = 19 then 16
+    else if e = 17 then 18
+    else if e = 18 then 17
+    else e
+
+/-- Global renaming of a PD code: every label of every crossing is rewritten
+by σ, positions preserved. -/
+def relabelCrossings (σ : Nat → Nat) (cs : List PDCrossing) : List PDCrossing :=
+  cs.map (fun c => ⟨σ c.e1, σ c.e2, σ c.e3, σ c.e4⟩)
+
+/-- **Link 5: the redraw certificate.** The Kinoshita-Terasaka census is the
+sphere mutant of the Conway census, read in another list order and under
+other label names — a combinatorial identity by evaluation (c165 probe,
+composed certificate verified by probe before emission). -/
+theorem conwayMutant_redraws_kinoshitaTerasaka :
+    relabelCrossings ktRedrawRelabel (ktRedrawOrder conwayMutantDiagram.crossings)
+      = kinoshitaTerasakaDiagram.crossings := by
+  rfl
+
+/-- The complete chain of link 5: Conway census → sphere mutation (link 4)
+→ redraw = KT census. The intermediate diagram of the NOTE in
+`Knots.Mutation_en` is the designated mutant itself. -/
+theorem conway_sphereMutate_redraws_kinoshitaTerasaka :
+    relabelCrossings ktRedrawRelabel
+        (ktRedrawOrder (sphereMutate conwayKnotDiagram.crossings 5 11 KleinRot.r13
+          conwayJunctionSwap)) =
+      kinoshitaTerasakaDiagram.crossings := by
+  rw [← conwayMutant_eq_sphereMutate]
+  exact conwayMutant_redraws_kinoshitaTerasaka
 
 
 end Knots_en

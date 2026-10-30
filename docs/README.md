@@ -52,6 +52,7 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 | [reference/finition-de-serie.md](reference/finition-de-serie.md) | Critères de sortie du régime de finition de série (#19297) |
 | [reference/iit-ict-transition.md](reference/iit-ict-transition.md) | Transition IIT → ICT — état narratif et architectural de la série ICT-Series (#4588, plan de partition #5081), tenue à jour au fil des livraisons ; reclassée pérenne depuis `suivis/` (tranche 2 #19283) |
 | [reference/agentic-engines-deep-eval.md](reference/agentic-engines-deep-eval.md) | Évaluation en profondeur des moteurs agentiques (Semantic Kernel, Google ADK, Microsoft Agent Framework) sur la série DataScienceWithAgents — couverture réelle du corpus, pilotes reproductibles, faits d'API mesurés |
+| [reference/ws-probes-repro.md](reference/ws-probes-repro.md) | Reproduction hors carnet des sondes wavelet scattering (WS-00c, WS-03) — graine fixe, valeurs citées vs mesurées, écart 1 item (#21823) |
 
 ### Règles détaillées (docs/reference/)
 
@@ -313,6 +314,7 @@ Documents de recherche durables fondant les EPICs de R&D (grade A-recherche). Di
 | [research/cartier-miller-p1-pilot.md](research/cartier-miller-p1-pilot.md) | Lecture ligne-par-ligne de pilot.py (P1 elliptic curve Cartier-Miller, EPIC #19452) — orchestration, hash, per-call math, validation cross-prime 7 premiers, garde flush-après-chaque-prime. Suite PRs #19487 / #19488. |
 | [research/cartier-miller-p1-point-count.md](research/cartier-miller-p1-point-count.md) | Lecture ligne-par-ligne de `point_count.py` (P1 Schoof + BSGS, EPIC #19452) — stdlib only, 0 import, 9 composants documentés. Suite des PRs #19487 (P0 cartography), #19488 (P1 elliptic_prefix), #19493 (P1 pilot). |
 | [research/cartier-miller-p1-integration.md](research/cartier-miller-p1-integration.md) | Cross-check 4 backends de la P1 Cartier-Miller (EPIC #19452) : elliptic_prefix + pilot + point_count + C++ pseudocode, confrontation littérale aux `output.json` du pin reproductible `37a9b72`. P1+ à venir (P2 Lean Mathlib, P3+ multi-cycle) |
+| [research/cartier-miller-p2-mathlib-survey.md](research/cartier-miller-p2-mathlib-survey.md) | Enquête d'organes Mathlib 4 et arbitrage des candidats de formalisation pour la P2 Cartier-Miller (EPIC #19452) — couverture des trois piliers du papier (courbes elliptiques, Frobenius, opérateur de Cartier) mesurée sur le **contenu commit** du Mathlib vendé (`git grep … HEAD -- Mathlib/`, citations `file:line`), les fichiers working-tree étant purgés pour cause de crise disque. Verdict d'arbitrage et garde de portée : le papier reste un draft non relu, la validation numérique est une corroboration et non une preuve |
 | [research/percolation-03-critique-scoping.md](research/percolation-03-critique-scoping.md) | Scoping du carnet `Percolation-03-Critique-Python.ipynb` (palier 3 *finite-size scaling*) — plan 4 phases ~70 min wall-clock, ~700 l. carnet + 250 l. rapport, 640 simulations `L × p × seeds`. Suite directe de #19494. c.1103 |
 | [research/slide-agents-marptoslidev-scoping.md](research/slide-agents-marptoslidev-scoping.md) | Scoping Marp→Slidev pour les agents de slides (c.1110, #19578) — inventaire firsthand (12 Marp coexistants avec 18 Slidev, configs et outils legacy), diagnostic des fronts communs (format Marp, PNG rendering mort-né, sk-agent vision périmé), 4 voies arbitrées (réécrire/fusionner/retirer/legacy), recommandation voie 1 (réécrire pour Slidev, 3 raisons mesurées). **Statut post-#21318 (2026-10-19) : voie 1 retenue et exécutée — 11 sources Marp retirées, 1 conservée en `_archive/`, config + outils Marp retirés.** |
 | [research/percolation-03-critique-results.md](research/percolation-03-critique-results.md) | Résultats d'exécution du palier 03 critique Percolation (#19494, c.1104) — mesure des exposants critiques (`β/ν`, `τ'`, `p_c(L) → 1/2`) par sweep `L × p × seeds` sur `networkx`. Verdict : tendances conformes mais convergence asymptotique non atteinte, corrections d'échelle finie dominantes. |
@@ -346,6 +348,7 @@ Tables d'audit cumulatives par Epic (mandat user, format longue durée).
 | Fichier | Description |
 |---------|-------------|
 | [ledgers/3801-sota-axe2.md](ledgers/3801-sota-axe2.md) | Ledger axe-2 SOTA par famille, 5 verdicts (EPIC #3801) |
+| [ledgers/4362-mathlib-mutualization.md](ledgers/4362-mathlib-mutualization.md) | EPIC #4362 — états de couverture Mathlib par machine, chaque entrée citant la sortie du scan lu-seul (`setup_shared_mathlib.ps1 -Mode Scan`) ; po-2023 : 34 lakes, 3.06 Go d'économie potentielle, 13 junctions périmées |
 | [ledgers/10466-candidate-delivered-cleanup.md](ledgers/10466-candidate-delivered-cleanup.md) | EPIC #10466 — apurement du label `candidate-delivered`, cluster par cluster. Une table par cycle worker : ratio du cluster, issues traitées, leçons. Le compte d'issues ne baisse que si quelqu'un tient la trace de ce qui a été vérifié |
 | [transients/2026-08-13-10678-interp-positioning-audit.md](transients/2026-08-13-10678-interp-positioning-audit.md) | EPIC #10678 Phase 1 — audit des cellules d'interprétation mal positionnées. La table nomme chaque cas : c'est ce qui rend la règle [cell-interpretation-ordering](../.claude/rules/cell-interpretation-ordering.md) applicable au lieu d'être un principe |
 | [transients/2026-08-15-10678-orphan-interp-scan.md](transients/2026-08-15-10678-orphan-interp-scan.md) | EPIC #10678 Phase 1b — interprétations orphelines en fin de notebook. Prolonge le précédent : cellules `MISPLACED` relevées au scan c.237 |
@@ -438,6 +441,7 @@ Deltas runtime et digests de performance .NET, mesurés sur les bancs et les car
 | Fichier | Description |
 |---------|-------------|
 | [dotnet/net11-runtime-deltas.md](dotnet/net11-runtime-deltas.md) | .NET 9 → 10 → 11 — Deltas runtime mesurés sur les bancs et carnets types du dépôt |
+| [dotnet/net11-async-ffi-deltas.md](dotnet/net11-async-ffi-deltas.md) | .NET 10 → 11 — Delta runtime mesuré sur l'axe 1 (awaits profonds) du carnet Aspire AsyncFFI — compatibilité .NET 11 établie, verdict à n=25 |
 | [dotnet/net11-toub-digest.md](dotnet/net11-toub-digest.md) | .NET 11 — Digest de performance |
 
 
