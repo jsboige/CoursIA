@@ -14,6 +14,10 @@ Ce guide vous prend par la main pour configurer Claude Code avec OpenRouter comm
 
 Claude Code utilise le protocole Anthropic pour communiquer avec les modèles. OpenRouter ne respecte pas strictement ce protocole, ce qui provoque des erreurs (réponses mal formatées, échecs d'authentification intermittents). Le proxy [openrouter-proxy](https://github.com/ahaostudy/openrouter-proxy) traduit les requêtes correctement.
 
+> **Cette étape reste nécessaire — re-vérifié le 2026-10-29 (#23276) sur la CLI 2.1.311.** Une version récente de Claude Code aurait pu rendre le proxy inutile en acceptant un fournisseur compatible OpenAI. Mesuré : le schéma de réglages de la version en service (`claude-code-settings.schema.json`) ne contient **aucune** occurrence de `openrouter` ni de fournisseur OpenAI-compatible, alors qu'il porte Bedrock et Vertex en natif. La bascule vers un autre fournisseur passe donc toujours par `ANTHROPIC_BASE_URL` + `ANTHROPIC_AUTH_TOKEN`, c'est-à-dire par un proxy traducteur. Le paquet npm `openrouter-proxy` reste absent du registre (404, cf. note du 2026-09-09) : **l'installation par clone Git ci-dessous est la seule valide**. Le dépôt upstream est vivant mais dormant (dernier commit 2026-07-30, documentation seule) — il fonctionne, il n'évolue plus.
+>
+> *Portée du non-vérifié : ces mesures sont faites sous Windows. Elles n'établissent pas que le proxy démarre ni que `claude -p` atteint OpenRouter dans un runtime Colab — c'est le test qui reste à faire dans Colab.*
+
 ### Installation
 
 > **Vérifié le 2026-09-09 (#15419)** : le paquet `openrouter-proxy` **n'existe pas sur le registre npm** (`npm install -g openrouter-proxy` → 404). L'installation réelle, conforme au dépôt upstream, est un clonage Git — zéro dépendance, seul Node.js (≥ 16) est requis.
@@ -78,8 +82,10 @@ brew install --cask claude-code
 ### Linux / WSL
 
 ```bash
-curl -fsSL https://install.claude.com | sh
+curl -fsSL https://claude.ai/install.sh | bash
 ```
+
+> **Corrigé le 2026-10-29 (#23276), précisé le 2026-10-30.** La commande que ce guide portait jusque-là — `curl -fsSL https://install.claude.com | sh` — **ne fonctionne pas** : le domaine `install.claude.com` n'existe pas (`nslookup` → *Non-existent domain*, et `curl: (6) Could not resolve host` depuis un conteneur). Le point d'entrée officiel est `https://claude.ai/install.sh`. **L'interpréteur est `bash`, pas `sh`** : le script utilise `[[ … ]]` et `=~` (ligne 9), des extensions bash que `/bin/sh` — `dash` sur Debian/Ubuntu — refuse ; `sh -n` rend `Syntax error: "(" unexpected (expecting "then")`, `bash -n` rend `rc=0` (mesuré sur Debian ; le script affiche lui-même `… | bash` dans son propre message d'erreur sudo). Mesuré sur `debian:bookworm-slim` : l'installateur rend `rc=0` **via `bash`** et installe la version **2.1.312** dans `~/.local/bin` (le poste qui a mesuré sert la 2.1.311 — l'objet installé et l'objet en service sont deux versions distinctes).
 
 ### Vérifier
 
@@ -87,7 +93,15 @@ curl -fsSL https://install.claude.com | sh
 claude --version
 ```
 
-**Checkpoint :** Vous devez voir un numero de version. Sinon, redémarrez votre terminal et réessayez.
+**Checkpoint :** Vous devez voir un numero de version.
+
+> **Sous Linux, `claude --version` peut répondre « command not found » alors que l'installation a réussi.** L'installateur place le binaire dans `~/.local/bin`, qui n'est **pas** dans le `PATH` par défaut. Le script d'installation ne porte pas cet avertissement lui-même (0 occurrence dans `bootstrap.sh`, 9 704 octets) : c'est le **binaire installé**, qu'il lance en fin de script (`"$binary_path" install`), qui l'affiche — *« Native installation exists but ~/.local/bin is not in your PATH »*. Ajoutez-le une fois pour toutes :
+>
+> ```bash
+> echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc && source ~/.bashrc
+> ```
+>
+> Sans cette ligne, la CLI fonctionne depuis le shell où l'installation a eu lieu mais disparaît dans tout nouveau shell — c'est la cause la plus fréquente du « je l'ai installé mais ça ne marche pas ». Sous Colab, la VM étant éphémère, cette ligne est à rejouer après chaque redémarrage.
 
 ---
 
@@ -346,6 +360,30 @@ VS Code ne lit pas toujours les variables du shell.
 Preferez le fichier settings.json (Methode recommandee, Etape 3).
 Sinon, redemarrez VS Code COMPLETEMENT (pas juste recharger la fenetre).
 ```
+
+---
+
+## Cas particulier : Google Colab
+
+Le guide ci-dessus vise une machine personnelle. Dans un runtime Colab, quatre propriétés du
+runtime changent la donne — trois sont des faits du runtime, la quatrième reste à mesurer.
+
+| Point | Ce qui est établi | Conséquence pour ce guide |
+|---|---|---|
+| Système | Colab est un **Linux**, pas un poste Windows | suivre l'installation Linux de l'Étape 1 (`curl -fsSL https://claude.ai/install.sh \| bash` — **pas** `install.claude.com`, domaine inexistant, et **pas** `sh` : le script exige les extensions bash que `dash` refuse), puis ajouter `~/.local/bin` au `PATH` ; ne pas reprendre les commandes PowerShell |
+| Durée de vie | la VM est **éphémère** : une déconnexion ou un redémarrage du runtime efface les installations | réinstaller la CLI **et** recloner le proxy après chaque redémarrage ; ce n'est pas une panne |
+| Secrets | `google.colab.userdata` n'existe **que** dans Colab ; un `!export ...` lancé dans une cellule **ne persiste pas**, chaque `!` ouvre un sous-shell | poser la clé dans `os.environ` depuis `userdata`, puis la passer explicitement au sous-processus. Ne jamais l'imprimer, ni la mettre dans `argv`, une cellule ou une sortie. Le helper partagé de la série (`GenAI/shared/helpers/genai_helpers.py`, livré par #23269) porte ce chargement |
+| Terminal interactif | `claude -p` (non interactif) est le mode utilisable par un notebook ; l'interface plein écran suppose un TTY | borner l'essai sur `claude -p`, et ne pas conclure de son succès qu'une interface interactive fonctionne |
+
+**Ce qui n'est pas mesuré ici, et qu'il ne faut pas présumer** : que le proxy démarre bien dans un
+runtime Colab, que `claude -p` y atteigne effectivement OpenRouter avec la clé du module, et le
+comportement exact du PATH *entre deux cellules* puis après redémarrage. Ces trois points demandent
+un runtime Colab réel — ils ne se déduisent pas d'un test sous Windows ou sous Linux local.
+
+Une précision sur le troisième point, pour ne pas confondre deux mesures : le fait que `~/.local/bin`
+ne soit **pas** dans le `PATH` par défaut est mesuré (Debian bookworm, CLI 2.1.312) ; ce qui reste
+inconnu, c'est ce que devient ce `PATH` dans une cellule Colab (`!` ouvre un sous-shell à chaque
+appel) et après un redémarrage de la VM.
 
 ---
 
