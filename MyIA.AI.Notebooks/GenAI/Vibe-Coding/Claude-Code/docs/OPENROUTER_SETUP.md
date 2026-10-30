@@ -6,7 +6,7 @@ Ce guide vous prend par la main pour configurer Claude Code avec OpenRouter comm
 
 > **Pourquoi OpenRouter ?** Au lieu d'utiliser l'API Anthropic (payante, compte obligatoire), OpenRouter vous donne accès a des modèles performants a moindre coût, avec une clé unique pour plusieurs modèles.
 >
-> **Compatibilité OpenRouter** : OpenRouter expose son propre point d'entree compatible avec le protocole Anthropic (`https://openrouter.ai/api`), mesure le 2026-10-29 — **aucun proxy n'est a installer**. Le guide demandait auparavant de faire tourner [openrouter-proxy](https://github.com/ahaostudy/openrouter-proxy) en local ; cette etape est obsolete, et l'Etape 0 explique la mesure qui l'a etabli.
+> **Compatibilité OpenRouter** : OpenRouter expose son propre point d'entree compatible avec le protocole Anthropic (`https://openrouter.ai/api`), mesure le 2026-10-29 et re-mesure le 2026-10-30 — **aucun proxy n'est a installer**. Le guide demandait auparavant de faire tourner [openrouter-proxy](https://github.com/ahaostudy/openrouter-proxy) en local ; cette etape est obsolete, et l'Etape 0 explique la mesure qui l'a etabli.
 
 ---
 
@@ -14,23 +14,75 @@ Ce guide vous prend par la main pour configurer Claude Code avec OpenRouter comm
 
 **Il n'y a plus de proxy a lancer.** Le guide demandait jusqu'ici de cloner `openrouter-proxy` et de faire tourner `node proxy.js` sur le port 8899, au motif que « les requetes OpenRouter ne sont pas strictement compatibles avec le protocole Anthropic ». Ce n'est plus vrai.
 
-> **Mesure du 2026-10-29.** OpenRouter expose desormais `POST https://openrouter.ai/api/v1/messages`, qui parle le protocole Anthropic et rend ses erreurs au **format Anthropic** :
+> **Mesures du 2026-10-29, re-mesurees le 2026-10-30.** OpenRouter expose desormais `POST https://openrouter.ai/api/v1/messages`, qui parle le protocole Anthropic et rend ses erreurs au **format Anthropic** :
 >
 > | Sonde | Resultat | Ce que ca prouve |
 > |---|---|---|
 > | `POST /api/v1/nonexistent-xyz-42` (temoin) | **404** | un chemin absent rend bien 404 |
-> | `POST /api/v1/messages` sans cle | **401** | la route **existe**, elle demande une authentification |
-> | `POST /api/v1/messages` avec cle invalide | `{"type":"error","error":{"type":"authentication_error",...}}` | le format d'erreur est celui d'**Anthropic**, pas celui d'OpenAI |
+> | `POST /api/v1/messages` sans cle | **401**, corps `{"type":"error","error":{"type":"authentication_error",...}}` | la route **existe**, elle demande une authentification, et l'erreur est au format **Anthropic** (pas OpenAI) |
 > | `GET /api/v1/messages` | **404** | la route est **POST seule**, comme chez Anthropic |
-> | `claude -p` avec `ANTHROPIC_BASE_URL=https://openrouter.ai/api` | **repond `OK`, code retour 0** | la chaine complete fonctionne **sans proxy** |
+> | `claude -p --model anthropic/claude-haiku-5.5` avec `ANTHROPIC_BASE_URL=https://openrouter.ai/api` | **repond `OK`, code retour 0** | la chaine complete fonctionne **sans proxy** (mesure refaite le 2026-10-30 : meme resultat) |
 >
 > Le temoin 404 est la piece qui rend la mesure valide : sans lui, un 401 sur `/messages` ne distinguerait pas « route presente » de « tout rend 401 ».
+>
+> **Ce que la CLI permet, et pourquoi cela ne demande aucun traducteur.** Le schema de reglages de la CLI en service (`claude-code-settings.schema.json`) ne contient **aucune** occurrence de `openrouter` ni de fournisseur compatible OpenAI, alors qu'il porte Bedrock et Vertex en natif : la bascule vers un autre fournisseur passe donc par `ANTHROPIC_BASE_URL` + `ANTHROPIC_AUTH_TOKEN`. C'est exactement la voie mesuree ci-dessus — et elle aboutit a OpenRouter **directement**, sans passer par un proxy : `ANTHROPIC_BASE_URL=https://openrouter.ai/api` *est* le point d'entree Anthropic d'OpenRouter. L'absence de fournisseur OpenAI-compatible dans la CLI n'oblige donc pas a installer un traducteur ; elle oblige a passer par le protocole Anthropic — qu'OpenRouter parle nativement.
+>
+> *Portee du non-verifie : ces mesures sont faites sous Windows. Elles n'etablissent pas qu'un `claude -p` atteint OpenRouter dans un runtime Colab — c'est le test qui reste a faire la-bas (cf. l'Etape 5 bis).*
 
-**Le proxy reste utile dans un seul cas** : si vous devez parler a un fournisseur qui n'implemente que l'API OpenAI. Pour OpenRouter, ce n'est pas le cas.
+**Le proxy reste utile dans un seul cas** : si vous devez parler a un fournisseur qui n'implemente que l'API OpenAI. Pour OpenRouter, ce n'est pas le cas — la marche a suivre est en annexe.
 
 ### Si vous aviez deja installe le proxy
 
 Vous pouvez l'arreter et supprimer le clone. Le seul geste a faire est de changer la valeur de `ANTHROPIC_BASE_URL` (Etape 3) : `http://127.0.0.1:8899/api` devient `https://openrouter.ai/api`.
+
+### Annexe : le proxy `openrouter-proxy` (fournisseur compatible OpenAI uniquement)
+
+Les blocs ci-dessous ont ete ecrits pour l'etat anterieur du guide, ou le proxy passait pour obligatoire. Ils restent **valides pour un fournisseur qui n'implemente que l'API OpenAI** — ils ne s'appliquent pas a OpenRouter, dont le point d'entree Anthropic est natif (voir la mesure ci-dessus).
+
+> **Le paquet npm `openrouter-proxy` n'existe pas sur le registre** (`npm install -g openrouter-proxy` → 404, verifie le 2026-09-09, cf. #15419). L'installation reelle, conforme au depot upstream, est un clonage Git — zero dependance, seul Node.js (>= 16) est requis. Le depot upstream est vivant mais dormant (dernier commit 2026-07-30, documentation seule) : il fonctionne, il n'evolue plus.
+
+### Installation
+
+```bash
+# Cloner le depot (emplacement au choix, il servira a chaque demarrage)
+git clone https://github.com/ahaostudy/openrouter-proxy.git
+```
+
+### Demarrage
+
+```bash
+# Lance le proxy sur le port 8899 par defaut
+cd openrouter-proxy
+node proxy.js
+```
+
+Le proxy tourne en arriere-plan et traduit les requetes Claude Code vers le fournisseur. Gardez-le actif tant que vous utilisez Claude Code.
+
+### Lancement automatique (optionnel)
+
+Pour eviter de le lancer manuellement a chaque session :
+
+**Windows** - Ajoutez a votre profil PowerShell (`notepad $PROFILE`), en adaptant le chemin du clone :
+
+```powershell
+Start-Process -WindowStyle Hidden -FilePath "node" -ArgumentList "$HOME\openrouter-proxy\proxy.js"
+```
+
+**macOS / Linux** - Ajoutez a `~/.zshrc` ou `~/.bashrc` :
+
+```bash
+(node ~/openrouter-proxy/proxy.js &>/dev/null &)
+```
+
+**Checkpoint :** Verifiez que le proxy tourne :
+
+```bash
+curl http://127.0.0.1:8899/api/v1/models
+```
+
+Si vous voyez une reponse JSON avec des modeles, le proxy fonctionne.
+
+**Symptome si le proxy ne tourne pas** : chaque appel modele de Claude Code echoue avec une erreur de connexion (`fetch failed` / `connection refused`) vers `http://127.0.0.1:8899`. Si vous aviez active le lancement automatique detache, un redemarrage du poste l'a arrete sans message visible : relancez simplement `node proxy.js` dans le dossier du proxy, puis re-testez le `curl` ci-dessus.
 
 ## Étape 1 : Installer Claude Code (3 min)
 
@@ -49,10 +101,10 @@ brew install --cask claude-code
 ### Linux / WSL
 
 ```bash
-curl -fsSL https://claude.ai/install.sh | sh
+curl -fsSL https://claude.ai/install.sh | bash
 ```
 
-> **Corrige le 2026-10-29 (issue #23276).** La commande que ce guide portait jusqu'ici, `curl -fsSL https://install.claude.com | sh`, **ne fonctionne pas** : le domaine `install.claude.com` n'existe pas. Mesure : `curl: (6) Could not resolve host`. Le point d'entree officiel est `https://claude.ai/install.sh` (HTTP 302 vers le script).
+> **Corrige le 2026-10-29 (issue #23276), precise le 2026-10-30.** La commande que ce guide portait jusqu'ici, `curl -fsSL https://install.claude.com | sh`, **ne fonctionne pas** : le domaine `install.claude.com` n'existe pas (`nslookup` → *Non-existent domain*, et `curl: (6) Could not resolve host` depuis un conteneur). Le point d'entree officiel est `https://claude.ai/install.sh`. **L'interpreteur est `bash`, pas `sh`** : le script utilise `[[ … ]]` et `=~` (ligne 9), des extensions bash que `/bin/sh` — `dash` sur Debian/Ubuntu — refuse ; `sh -n` rend `Syntax error: "(" unexpected (expecting "then")`, `bash -n` rend `rc=0` (mesure sur Debian ; le script affiche lui-meme `… | bash` dans son propre message d'erreur sudo). Mesure sur `debian:bookworm-slim` : l'installateur rend `rc=0` **via `bash`** et installe la version **2.1.312** dans `~/.local/bin` (le poste qui a mesure sert la 2.1.311 — l'objet installe et l'objet en service sont deux versions distinctes).
 
 ### Vérifier
 
@@ -62,13 +114,13 @@ claude --version
 
 **Checkpoint :** Vous devez voir un numero de version.
 
-**Si vous lisez `command not found: claude`, l'installation a pourtant reussi.** L'installateur place le binaire dans `~/.local/bin`, qui n'est pas dans le `PATH` par defaut sous Linux. Ajoutez-le une fois pour toutes, puis rouvrez le terminal :
-
-```bash
-echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc && source ~/.bashrc
-```
-
-Sans cette ligne, la CLI fonctionne dans le shell ou l'installation a eu lieu et disparait dans tout nouveau shell — c'est la cause la plus frequente du « je l'ai installe mais ca ne marche pas ».
+> **Sous Linux, `claude --version` peut repondre « command not found » alors que l'installation a reussi.** L'installateur place le binaire dans `~/.local/bin`, qui n'est **pas** dans le `PATH` par defaut. Le script d'installation ne porte pas cet avertissement lui-meme (0 occurrence dans `bootstrap.sh`, 9 704 octets) : c'est le **binaire installe**, qu'il lance en fin de script (`"$binary_path" install`), qui l'affiche — *« Native installation exists but ~/.local/bin is not in your PATH »*. Ajoutez-le une fois pour toutes :
+>
+> ```bash
+> echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc && source ~/.bashrc
+> ```
+>
+> Sans cette ligne, la CLI fonctionne depuis le shell ou l'installation a eu lieu mais disparait dans tout nouveau shell — c'est la cause la plus frequente du « je l'ai installe mais ca ne marche pas ». Sous Colab, la VM etant ephemere, cette ligne est a rejouer apres chaque redemarrage.
 
 ---
 
@@ -269,8 +321,9 @@ Colab est une **machine Linux ephemere** avec un terminal et un acces Internet. 
 | Geste | Pourquoi il echoue |
 |---|---|
 | `claude auth login` | Ouvre un **navigateur** et attend un retour par callback. La VM Colab n'en a pas : la commande reste suspendue. |
-| Lancer `node proxy.js` | Le proxy ouvert dans une cellule meurt avec elle ; la cellule suivante ne le trouve plus. C'est une des causes plausibles de l'echec du TP, **non etablie** (cf. plus bas). |
+| Lancer `node proxy.js` | Le proxy ouvert dans une cellule meurt avec elle ; la cellule suivante ne le trouve plus. C'est une des causes plausibles de l'echec du TP, **non etablie** (cf. plus bas). Ce montage est de plus **obsolete pour OpenRouter** depuis l'Etape 0 : la recette ci-dessous ne lance aucun proxy. |
 | `brew`, installateur `.exe` | Ce sont des voies macOS / Windows. |
+| L'interface plein ecran de la CLI | Elle suppose un TTY : depuis un notebook, le mode utilisable est `claude -p` (non interactif). Un succes de `claude -p` ne dit rien de l'interface interactive. |
 
 ### La recette
 
