@@ -46,6 +46,7 @@ LANDING_PAGES = [
     "MyIA.AI.Notebooks/Sudoku/index.qmd",
     "MyIA.AI.Notebooks/GameTheory/index.qmd",
     "MyIA.AI.Notebooks/Probas/index.qmd",
+    "MyIA.AI.Notebooks/Physique/index.qmd",
     "docs/index.qmd",
     # COURSE_CATALOG.generated.md est lie depuis index.qmd (L64) mais servi en
     # texte brut sinon : on le REND en HTML (verifie firsthand #10925 Q2 —
