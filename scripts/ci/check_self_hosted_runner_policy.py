@@ -691,6 +691,33 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   s'execute. Rollback = variable a `false` ou supprimee, sans toucher les
     #   fichiers.
     "creation-provenance-advisory.yml",
+
+    # ------------------------------------------------------------------
+    # 2026-10-28 (#23053 famille b -- « les tests », lane
+    #   myia-ai-01:CoursIA-2) : ces 6 suites de tests n'avaient AUCUNE jambe
+    #   self-hosted sur main ; elles recoivent une jambe CONDITIONNELLE, la
+    #   forme hybride de debordement deja auditee (#22461 phase A : garde
+    #   meme-depot && vars.CI_OVERFLOW_LOCAL == 'true' -> LINUX_RUNNER_LABELS,
+    #   sinon ubuntu-latest). Par defaut (variable absente ou != 'true'),
+    #   chaque job resout sur ubuntu-latest : l'etat du 27/10 est conserve, et
+    #   cette entree ne rend le pool local atteignable QUE si un operateur
+    #   bascule la variable (gh variable set CI_OVERFLOW_LOCAL --body
+    #   true|false --repo jsboige/CoursIA, jeton jsboige). Rollback = variable
+    #   a false ou supprimee, sans toucher les fichiers.
+    #   Deja presents dans l'ensemble ci-dessus, donc NON reajoutes :
+    #   ict-tests.yml, ml-tests.yml, scripts-tests.yml, validation-matrix.yml.
+    #   Sur scripts-tests.yml, seul le job `adk-contracts` est reconcerne -- le
+    #   job `scripts-tests` reste sur la jambe locale STATIQUE (suite couplee a
+    #   la forme du runner, #22820). Sur validation-matrix.yml, le job
+    #   `validate` reste STATIQUE local : le basculer sur ubuntu-latest par
+    #   defaut serait un recul, il ne recoit donc pas la forme hybride.
+    # ------------------------------------------------------------------
+    "dotnet-AgentSafetyAnalyzer.yml",
+    "dotnet-ArgumentAnalysis.yml",
+    "dotnet-OrphanApps.yml",
+    "dotnet-Shared.Tests.yml",
+    "gametheory-tests.yml",
+    "genai-helpers-tests.yml",
     # 2026-10-27 (#22937 vague 2, lane myia-ai-01:CoursIA-2) : meme forme
     #   hybride de debordement que la phase A (#22461), appliquee aux
     #   workflows a fort volume qui n'etaient PAS dans la phase A.
@@ -930,6 +957,35 @@ HOSTED_PR_JOB_EXCEPTIONS_BASELINE: frozenset[str] = frozenset({
     "slides-build-advisory.yml",
 })
 
+# -- #22954: ratchet baseline for job-level timeout-minutes ------------------
+# A job that can reach a self-hosted runner without `timeout-minutes` can hold
+# its slot for six hours (the Actions default) if it freezes; that slot is then
+# missing from the PR gates. The rule is measured on `origin/main` 2f1291f01
+# (2026-10-29): **138 self-hosted jobs, 75 without a job-level bound** -- 12 in
+# the audited hybrid/overflow form (#22461) and **63 static**. The 12 are bound
+# by the PR that introduced this ratchet; the 63 static ones are the debt this
+# baseline names, so the guard can be green at merge while refusing to let the
+# set GROW. Retire a line as soon as its job is bound; `--update-baseline`
+# rewrites the file from what is measured.
+BASELINE_NAME = "self_hosted_timeout_baseline.txt"
+DEFAULT_BASELINE = Path(__file__).with_name(BASELINE_NAME)
+
+
+def load_baseline(path: Path) -> set[str]:
+    """Read the tolerated `workflow.yml:job` keys.
+
+    The key is `workflow:job`, never `workflow:line`: a line-anchored key
+    expires as soon as anything is inserted above it, and a guard that reddens
+    on an unchanged site is the fastest way to get itself disabled.
+    """
+    if not path.is_file():
+        return set()
+    return {
+        line.strip()
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if line.strip() and not line.startswith("#")
+    }
+
 
 @dataclass(frozen=True)
 class Violation:
@@ -956,6 +1012,12 @@ class ScanResult:
     # pour que le verdict -- texte et JSON -- ne mente pas quand un test
     # injecte ses propres listes.
     hosted_pr_exceptions_baseline: list[str] = field(default_factory=list)
+    # -- #22954: job-level timeout-minutes ratchet ---------------------------
+    # Defaults keep every existing reader (and every synthetic-workflow test)
+    # working unchanged: the ratchet is only engaged by --check-timeouts.
+    timeouts_checked: bool = False
+    timeout_missing: int = 0
+    timeout_baselined: int = 0
 
 
 def _load_yaml():
@@ -1135,6 +1197,141 @@ def _hybrid_runs_on(runs_on: Any) -> dict[str, set[str]] | None:
     if labels not in allowed_label_sets:
         return None
     return {"labels": labels}
+
+
+# --- Parc local mesure par le controleur de debordement (#22937 phase A) ----
+#
+# Le controleur mesure l'occupation du parc LOCAL (label `coursia-linux`) et
+# celle de l'offre HEBERGEE (label `ubuntu-latest`). Sa lecture locale doit
+# viser les runs qui PEUVENT porter un job local : sinon elle consomme son
+# budget de lectures sur des runs qui n'en portent pas (mesure du
+# coordinateur, 2026-10-28 16:55Z : 250 runs anciens en file, presque tous en
+# attente d'`ubuntu-latest`, budget 120 lectures -> la lecture locale se
+# tronque avant d'etablir quoi que ce soit, et la soupape se ferme exactement
+# dans le regime ou elle doit s'ouvrir).
+#
+# Ce module possede la connaissance « quel workflow peut atterrir sur quel
+# runner » : la liste est donc derivee ICI, pas reecrite dans le controleur.
+LOCAL_PARK_LABEL = "coursia-linux"
+
+
+def _job_can_reach_local_park(runs_on: Any) -> bool:
+    """True si un job portant ce `runs-on` peut atterrir sur le parc local.
+
+    - selection STATIQUE (scalaire, liste ou mapping) : il suffit qu'un de
+      ses labels soit celui du parc local ;
+    - forme hybride auditee : la jambe locale y est atteinte quand la garde
+      est vraie -> capable ;
+    - expression dynamique NON auditee : traitee comme CAPABLE. Une
+      expression non auditee peut atterrir n'importe ou ; l'ignorer
+      cacherait une affamescence locale -- c'est le piege que cet organe
+      combat partout ailleurs.
+    """
+    hybrid = _hybrid_runs_on(runs_on)
+    if hybrid is not None:
+        return LOCAL_PARK_LABEL in hybrid["labels"]
+    if _contains_expression(runs_on):
+        return True
+    _is_self_hosted, _group, labels, _error = _runner_selection(runs_on)
+    return LOCAL_PARK_LABEL in labels
+
+
+def local_capable_workflows(
+    workflows_dir: Path = DEFAULT_WORKFLOWS_DIR,
+) -> tuple[set[str], str]:
+    """Derive les workflows capables de porter un job sur le parc local.
+
+    Rend `(chemins, motif)`. Les chemins portent la forme de `run.path` dans
+    l'API des runs (`.github/workflows/<fichier>`). Le motif est VIDE quand la
+    derivation a reussi, et NON VIDE sinon.
+
+    Echec -- repertoire absent, PyYAML absent, fichier illisible, YAML
+    invalide, aucun workflow -- : ensemble VIDE et motif. Un ensemble vide ne
+    se lit JAMAIS « aucun workflow local » (ce serait une affirmation de
+    NON-affamescence locale) : il se lit « la liste n'est pas etablie »
+    (fail-CLOSED, meme convention que `derive_cohort_workflows`).
+
+    Un job dont le `runs-on` n'est pas analysable n'est jamais traite comme
+    absent : il est traite comme CAPABLE. Seule la LECTURE du fichier peut
+    faire echouer la derivation.
+
+    Les APPELS de workflow reutilisable sont propages : le `run.path` d'un run
+    est le workflow APPELANT, pas le workflow appele. Un appelant qui
+    appelle un workflow local est donc capable lui aussi (sinon ses jobs
+    locaux seraient invisibles) ; un appelant d'un workflow reutilisable
+    MEME-REPO est traite comme capable (le contenu distant n'est pas
+    analysable ici, et l'ignorer cacherait une affamescence).
+    """
+    yaml = _load_yaml()
+    if yaml is None:
+        return set(), "PyYAML est indisponible"
+
+    workflows_dir = Path(workflows_dir)
+    if not workflows_dir.is_dir():
+        return set(), f"repertoire des workflows absent ({workflows_dir})"
+    try:
+        files = sorted(
+            list(workflows_dir.glob("*.yml")) + list(workflows_dir.glob("*.yaml"))
+        )
+    except OSError as exc:
+        return set(), f"enumeration des workflows impossible ({exc})"
+    if not files:
+        return set(), f"aucun workflow dans {workflows_dir}"
+
+    parsed: dict[str, dict[str, Any]] = {}
+    for path in files:
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError as exc:
+            return set(), f"lecture de {path.name} impossible ({exc})"
+        data = _parse_workflow(text, yaml)
+        if data is None:
+            return set(), f"YAML de {path.name} invalide"
+        parsed[path.name] = data
+
+    capable: set[str] = set()
+    calls: dict[str, set[str]] = {}
+    for name, data in parsed.items():
+        jobs = data.get("jobs")
+        if not isinstance(jobs, dict):
+            continue
+        for job in jobs.values():
+            if not isinstance(job, dict):
+                continue
+            if "uses" in job:
+                reusable = str(job["uses"])
+                if reusable.startswith(LOCAL_REUSABLE_PREFIX):
+                    calls.setdefault(name, set()).add(
+                        reusable[len(LOCAL_REUSABLE_PREFIX):].split("@", 1)[0]
+                    )
+                elif SAME_REPO_REUSABLE_PATTERN.fullmatch(reusable):
+                    # Contenu distant non analysable ici : l'appelant est
+                    # traite comme capable (fail-safe).
+                    capable.add(name)
+                continue
+            runs_on = job.get("runs-on")
+            if runs_on is None:
+                continue
+            if _job_can_reach_local_park(runs_on):
+                capable.add(name)
+                break
+
+    # Propagation : un appelant d'un workflow capable l'est aussi. Le
+    # `run.path` designe l'APPELANT -- sans cette propagation, les jobs d'un
+    # workflow reutilisable local seraient invisibles pour la mesure locale.
+    changed = True
+    while changed:
+        changed = False
+        for caller, callees in calls.items():
+            if caller in capable:
+                continue
+            for callee in callees:
+                if callee in capable:
+                    capable.add(caller)
+                    changed = True
+                    break
+
+    return {f".github/workflows/{name}" for name in capable}, ""
 
 
 def _normalise_condition(value: Any) -> str:
@@ -1318,7 +1515,28 @@ def scan_workflows(
     *,
     hosted_pr_exceptions: dict[str, str] | None = None,
     hosted_pr_exceptions_baseline: frozenset[str] | None = None,
+    check_timeouts: bool = False,
+    baseline: set[str] | None = None,
 ) -> ScanResult:
+    """Scan ``workflows_dir`` and return the isolation verdict.
+
+    ``check_timeouts`` engages the #22954 ratchet: every job that can reach a
+    self-hosted runner must carry a job-level ``timeout-minutes``. It is opt-in
+    so that the ~60 synthetic-workflow tests that build a job on the fly keep
+    testing one invariant at a time; the blocking fast-lane entry passes the
+    flag, so the rule is enforced where it matters.
+
+    ``hosted_pr_exceptions`` / ``hosted_pr_exceptions_baseline`` carry the
+    #23053 ratchet: a workflow whose ``pull_request`` job is left naked on
+    ``ubuntu-latest`` must be named in the exception list, and that list may
+    only shrink.
+
+    The two ``baseline`` notions are distinct and never share a name: the
+    #23053 one is a set of *workflow names*, the #22954 one a set of
+    ``workflow.yml:job`` keys. Merging the two features without renaming
+    would compare the exception list against job keys -- a mismatch that
+    silently empties the ratchet.
+    """
     yaml = _load_yaml()
     if yaml is None:
         return ScanResult(0, 0, 0, [], ["PyYAML is unavailable"])
@@ -1328,7 +1546,7 @@ def scan_workflows(
         if hosted_pr_exceptions is None
         else hosted_pr_exceptions
     )
-    baseline = (
+    exceptions_baseline = (
         HOSTED_PR_JOB_EXCEPTIONS_BASELINE
         if hosted_pr_exceptions_baseline is None
         else hosted_pr_exceptions_baseline
@@ -1337,6 +1555,11 @@ def scan_workflows(
     paths = sorted([*workflows_dir.glob("*.yml"), *workflows_dir.glob("*.yaml")])
     if not paths:
         return ScanResult(0, 0, 0, [], [f"no workflows in {workflows_dir}"])
+
+    if baseline is None:
+        baseline = load_baseline(DEFAULT_BASELINE) if check_timeouts else set()
+    timeout_missing = 0
+    timeout_baselined = 0
 
     violations: list[Violation] = []
     broken: list[str] = []
@@ -1432,6 +1655,29 @@ def scan_workflows(
                 if not is_self_hosted:
                     continue
             self_hosted_jobs += 1
+
+            if check_timeouts:
+                # #22954: GitHub's default job timeout is SIX HOURS. A frozen
+                # job then holds a slot the PR gates need -- measured on
+                # 2026-10-15, where frozen `Twin parity audit` runs (#22944)
+                # held 16 of 18 ephemeral slots overnight and 104 runs had to
+                # be cancelled by hand. The baseline names the debt that
+                # predates the rule; it must never grow.
+                if job.get("timeout-minutes") is None:
+                    timeout_missing += 1
+                    key = f"{path.name}:{job_name}"
+                    if key in baseline:
+                        timeout_baselined += 1
+                    else:
+                        violations.append(Violation(
+                            path.name,
+                            str(job_name),
+                            "MISSING_TIMEOUT",
+                            "a job that can reach a self-hosted runner must "
+                            "carry a job-level timeout-minutes: the Actions "
+                            "default is 6 hours, and a frozen job holds its "
+                            "slot that long (#22954)",
+                        ))
 
             if "pull_request_target" in triggers:
                 violations.append(Violation(
@@ -1542,7 +1788,7 @@ def scan_workflows(
 
     # Invariant « la liste ne fait que retrecir » : une passe globale, elle ne
     # depend d'aucun workflow du dossier scanne.
-    violations.extend(_exception_list_violations(exceptions, baseline))
+    violations.extend(_exception_list_violations(exceptions, exceptions_baseline))
 
     return ScanResult(
         len(paths),
@@ -1551,7 +1797,10 @@ def scan_workflows(
         violations,
         broken,
         sorted(exceptions),
-        sorted(baseline),
+        sorted(exceptions_baseline),
+        timeouts_checked=check_timeouts,
+        timeout_missing=timeout_missing,
+        timeout_baselined=timeout_baselined,
     )
 
 
@@ -1565,6 +1814,9 @@ def _payload(result: ScanResult) -> dict[str, Any]:
         "broken": result.broken,
         "hosted_pr_job_exceptions": result.hosted_pr_exceptions,
         "hosted_pr_job_exceptions_baseline": result.hosted_pr_exceptions_baseline,
+        "timeouts_checked": result.timeouts_checked,
+        "timeout_missing": result.timeout_missing,
+        "timeout_baselined": result.timeout_baselined,
     }
 
 
@@ -1574,6 +1826,13 @@ def _print_text(result: ScanResult) -> None:
         f"workflows={result.workflows_scanned} jobs={result.jobs_scanned} "
         f"self_hosted={result.self_hosted_jobs}"
     )
+    if result.timeouts_checked:
+        print(
+            "[self-hosted-policy] timeouts: "
+            f"sans job-level timeout-minutes={result.timeout_missing} "
+            f"(dont {result.timeout_baselined} en baseline #22954, "
+            f"{result.timeout_missing - result.timeout_baselined} nouveaux)"
+        )
     for item in result.violations:
         print(
             f"  VIOLATION {item.code}: {item.workflow}:{item.job}: "
@@ -1608,9 +1867,51 @@ def main(argv: list[str] | None = None) -> int:
         default=DEFAULT_WORKFLOWS_DIR,
         help="workflow directory (used by tests and offline audits)",
     )
+    parser.add_argument(
+        "--check-timeouts",
+        action="store_true",
+        help="engage the #22954 ratchet: every job that can reach a "
+             "self-hosted runner must carry a job-level timeout-minutes",
+    )
+    parser.add_argument(
+        "--baseline",
+        type=Path,
+        default=DEFAULT_BASELINE,
+        help="known tolerated jobs for the timeout ratchet (workflow.yml:job)",
+    )
+    parser.add_argument(
+        "--update-baseline",
+        action="store_true",
+        help="rewrite the timeout baseline from what is measured",
+    )
     args = parser.parse_args(argv)
 
-    result = scan_workflows(args.workflows_dir)
+    if args.update_baseline:
+        measured = scan_workflows(
+            args.workflows_dir, check_timeouts=True, baseline=set()
+        )
+        keys = sorted({
+            f"{item.workflow}:{item.job}"
+            for item in measured.violations
+            if item.code == "MISSING_TIMEOUT"
+        })
+        header = (
+            "# Jobs auto-heberges sans `timeout-minutes` au niveau du job (#22954).\n"
+            "# Cle = `workflow.yml:job`, jamais `workflow:ligne` : une cle ancree\n"
+            "# sur une ligne perime des qu'on insere au-dessus, et un garde qui\n"
+            "# rougit sur un site inchange finit desactive.\n"
+            "# Dette mesuree le 2026-10-29 sur origin/main 2f1291f01 : 63 jobs\n"
+            "# STATIQUES. Les 12 jobs HYBRIDES (#22461), eux, sont bornes par la PR\n"
+            "# qui a introduit ce cliquet -- la forme hybride n'a AUCUNE tolerance.\n"
+            "# Retirer une ligne des que son job est borne.\n"
+        )
+        args.baseline.write_text(
+            header + "\n".join(keys) + "\n", encoding="utf-8", newline="\n"
+        )
+        print(f"baseline reecrite : {args.baseline} ({len(keys)} jobs)")
+        return EXIT_OK
+
+    result = scan_workflows(args.workflows_dir, check_timeouts=args.check_timeouts)
     if args.json:
         print(json.dumps(_payload(result), indent=2, ensure_ascii=False))
     else:

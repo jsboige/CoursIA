@@ -49,7 +49,7 @@ Restent au titulaire (`myia-po-2025:CoursIA-2`, cf [coordinate-adjoint](../coord
 - la réponse aux ASK des lanes, les dispatchs de NOUVEAUX grains, les réparations de scope ;
 - l'hygiène de `workspace-CoursIA-2`.
 
-Restent au coordinateur (`myia-ai-01:CoursIA`) : merges, clôtures, reviews `APPROVED`/`CHANGES_REQUESTED`, marqueurs `[OVERRIDE]`, HOLD G-VAR, batch-close, PR étudiantes, arbitrages inter-lanes.
+Restent au coordinateur (`myia-ai-01:CoursIA`) : merges, clôtures d'issues **sans** dossier `[CLOSURE PREFLIGHT]` `verdict: CLOSE` et celles des EPICs fermés sur PR (une clôture **sur** dossier est le geste de l'adjoint titulaire, cf « Tournée issues » ci-dessous), reviews `APPROVED`/`CHANGES_REQUESTED`, marqueurs `[OVERRIDE]`, HOLD G-VAR, batch-close, PR étudiantes, arbitrages inter-lanes.
 
 **Interdits du secrétaire** : merger, fermer une issue d'autrui, poster une synthèse au nom du titulaire, dispatcher un grain non assigné, toucher aux PR étudiantes, attester une PR que sa lane porte (le gate le refuse de toute façon).
 

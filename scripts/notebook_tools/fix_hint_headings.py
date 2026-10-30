@@ -61,6 +61,11 @@ import re
 import sys
 from pathlib import Path
 
+# L'oracle de fence du detecteur -- meme fichier de regles, une seule definition
+# (cf. scan_cell). Importe sans repli : mieux vaut ne pas reparer que reparer
+# avec un oracle devine.
+from detect_markdown_rendering import _inside_fence_lines
+
 # Un titre ATX imbrique dans une puce ou une citation : "- # X", "* ## X",
 # "1. # X", "> # X". Le groupe 1 est le conteneur, 2 les diese, 3 le texte.
 CONTAINER_HEADING = re.compile(r"^(\s{0,3}(?:[-*+]\s+|\d+[.)]\s+|>\s+)+)(#{1,6})\s+(.+?)\s*$")
@@ -141,8 +146,25 @@ def _strip_backticks(s: str) -> str:
 
 
 def scan_cell(src: str) -> list[tuple[int, str, str]]:
+    """Lignes de la cellule a reparer, hors blocs de code.
+
+    **Fence-aware (#23306)** : un ``# Etape 1 : ...`` dans un bloc ``` est un
+    commentaire Python, pas un titre mal rendu. Le fixer ne le voyait pas et le
+    reecrivait (``--apply`` sur le corpus : 130 commentaires de code dans 15
+    carnets transformes en prose backtickee). Le predicat de fence est celui du
+    detecteur -- une seule definition, importee : deux oracles qui divergent
+    feraient ecrire au fixer ce qu'aucune regle ne signale.
+
+    L'import est en tete de module et sans repli : si l'oracle de fence est
+    indisponible, le fixer ne doit pas tourner du tout. Un repli silencieux
+    rendrait exactement le defaut qu'on corrige.
+    """
+    lines = src.split("\n")
+    fenced = _inside_fence_lines(lines)
     out = []
-    for i, line in enumerate(src.split("\n")):
+    for i, line in enumerate(lines):
+        if i in fenced:
+            continue
         fixed = _fix_line(line)
         if fixed is not None:
             out.append((i, line, fixed))
@@ -227,6 +249,19 @@ assert _fix_line("`# Indice` : calculez X") is None, "CONTROLE: nu deja protege"
 assert _fix_line(_CTRL_NAKED_SECTION) is None, "CONTROLE: tire sur une section nue non-marqueur"
 for _s in _CTRL_LEGIT_SECTIONS:
     assert _fix_line(_s) is None, "CONTROLE: backticke une section legitime h2-h4 : %r" % _s
+
+# #23306 : la garde de fence. Un marqueur dans un bloc de code est un
+# commentaire Python ; sans ces controles, `--apply` reecrit 130 commentaires de
+# code du corpus en prose backtickee. Le dernier controle est le faux negatif de
+# la garde : la prose qui SUIT un bloc ferme doit redevenir visible.
+assert scan_cell("```python\n# Etape 1 : ouvrir le fichier\n```") == [], \
+    "CONTROLE: backticke un commentaire Python dans une fence"
+assert scan_cell("```\n# Indice : calculez X") == [], \
+    "CONTROLE: fence non fermee (court jusqu'a la fin du document)"
+assert scan_cell("~~~\n# Indice : calculez X\n~~~") == [], \
+    "CONTROLE: fence tilde"
+assert len(scan_cell("```python\nx = 1\n```\n\n# Indice : calculez X")) == 1, \
+    "CONTROLE: la garde de fence avale la prose qui suit un bloc ferme"
 
 
 def main() -> int:

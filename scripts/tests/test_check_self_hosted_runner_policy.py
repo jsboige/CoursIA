@@ -1475,6 +1475,138 @@ def test_real_repository_hosted_pr_jobs_are_all_excepted():
     assert result.hosted_pr_exceptions_baseline == sorted(baseline)
 
 
+# -- #22954 : cliquet `timeout-minutes` sur les jobs auto-heberges -----------
+# Un job qui peut atteindre un runner auto-heberge sans borne au niveau du job
+# peut tenir son slot six heures (defaut d'Actions) s'il fige ; le slot manque
+# alors aux PR gates. Mesure du 2026-10-29 sur `origin/main` 2f1291f01 : 138
+# jobs auto-heberges, 75 sans borne -- 12 hybrides et 63 statiques. La PR qui a
+# introduit le cliquet borne les 12 ; les 63 restants vivent dans la baseline
+# `scripts/ci/self_hosted_timeout_baseline.txt`, qui ne doit JAMAIS grossir.
+
+
+def _hybrid_workflow(tmp_path: Path, timeout_minutes: int | None = None) -> Path:
+    """Un workflow synthetique a un job hybride, avec ou sans borne #22954."""
+    bound = "" if timeout_minutes is None else f"\n            timeout-minutes: {timeout_minutes}"
+    body = f"""
+        name: always-on-guards
+        on:
+          pull_request:
+            branches: [main]
+          workflow_dispatch:
+        jobs:
+          overflow:
+            name: "Overflow"{bound}
+            runs-on: {HYBRID_RUNS_ON_OVERFLOW}
+            steps:
+              - run: echo overflow
+        """
+    return write_workflow(tmp_path, "always-on-guards", body)
+
+
+def test_22954_hybrid_job_without_timeout_is_reported(tmp_path):
+    """#22954 : la forme hybride sans borne est refusee, sans aucune tolerance.
+
+    Controle POSITIF du cliquet : la meme forme que
+    `test_hybrid_runs_on_overflow_form_is_accepted`, a qui l'on retire la seule
+    borne `timeout-minutes`.
+    """
+    _hybrid_workflow(tmp_path)
+    result = policy.scan_workflows(tmp_path, check_timeouts=True, baseline=set())
+    assert result.broken == []
+    assert codes(result) == {"MISSING_TIMEOUT"}
+    assert result.self_hosted_jobs == 1
+    assert result.timeout_missing == 1
+    assert result.timeout_baselined == 0
+    assert policy.main(["--check", "--check-timeouts",
+                        "--workflows-dir", str(tmp_path),
+                        "--baseline", str(tmp_path / "absent.txt")]) == policy.EXIT_VIOLATION
+
+
+def test_22954_hybrid_job_with_timeout_is_accepted(tmp_path):
+    """#22954 : controle NEGATIF -- la borne au niveau du job suffit."""
+    _hybrid_workflow(tmp_path, timeout_minutes=10)
+    result = policy.scan_workflows(tmp_path, check_timeouts=True, baseline=set())
+    assert result.broken == []
+    assert result.violations == []
+    assert result.timeouts_checked is True
+    assert result.timeout_missing == 0
+
+
+def test_22954_baselined_job_is_tolerated_but_named_in_the_report(tmp_path):
+    """#22954 : la dette nommee passe, et le rapport dit combien elle pese.
+
+    Une ligne de baseline est une date, pas un blanc-seing : le compte
+    `timeout_baselined` doit rester visible pour que la dette ne disparaisse
+    pas du rapport.
+    """
+    _hybrid_workflow(tmp_path)
+    baseline = {"always-on-guards.yml:overflow"}
+    result = policy.scan_workflows(tmp_path, check_timeouts=True, baseline=baseline)
+    assert result.violations == []
+    assert result.timeout_missing == 1
+    assert result.timeout_baselined == 1
+
+
+def test_22954_ratchet_is_opt_in_so_synthetic_workflows_stay_single_purpose(tmp_path):
+    """#22954 : sans le drapeau, le cliquet ne parle pas.
+
+    Les tests de ce fichier construisent des workflows synthetiques pour
+    eprouver UN invariant a la fois (garde meme-depot, jeu de labels, ...). Le
+    cliquet est donc opt-in cote API, et engage cote garde bloquant : c'est
+    `scripts/ci/fast_lane_registry.py` qui passe le drapeau, et le test suivant
+    l'y verifie.
+    """
+    _hybrid_workflow(tmp_path)
+    result = policy.scan_workflows(tmp_path)
+    assert result.violations == []
+    assert result.timeouts_checked is False
+
+
+def test_22954_repository_passes_the_ratchet_with_zero_new_jobs():
+    """#22954 : `main` passe le cliquet -- 0 nouveau, la dette en baseline."""
+    result = policy.scan_workflows(check_timeouts=True)
+    assert result.broken == []
+    assert [v for v in result.violations if v.code == "MISSING_TIMEOUT"] == []
+    assert result.timeouts_checked is True
+    assert policy.main(["--check", "--check-timeouts"]) == policy.EXIT_OK
+
+
+def test_22954_fast_lane_entry_actually_enforces_the_ratchet():
+    """#22954 : le garde BLOQUANT passe le drapeau, et surveille sa baseline.
+
+    Un cliquet opt-in ne vaut que si l'appel bloquant passe le drapeau. Ce test
+    est le garde du garde : retirer `--check-timeouts` de l'entree fast-lane, ou
+    oublier la baseline dans ses `paths`, rougit ici au lieu de desactiver le
+    cliquet en silence.
+    """
+    import fast_lane_registry as registry
+
+    # Le lot d'accueil d'un garde peut changer au fil des tranches : on cherche
+    # dans TOUTE liste de `Guard` du module, pas dans un lot nomme.
+    entries = [
+        guard
+        for value in vars(registry).values()
+        if isinstance(value, list)
+        for guard in value
+        if isinstance(guard, registry.Guard)
+        and guard.name == "self-hosted-runner-policy"
+    ]
+    assert len(entries) == 1, (
+        f"attendu exactement une entree fast-lane 'self-hosted-runner-policy', "
+        f"trouve {len(entries)}"
+    )
+    entry = entries[0]
+    assert "--check-timeouts" in entry.argv, (
+        "l'entree fast-lane doit passer --check-timeouts : sans le drapeau, "
+        "MISSING_TIMEOUT n'est jamais evalue (#22954)"
+    )
+    assert entry.blocking is True
+    assert "scripts/ci/self_hosted_timeout_baseline.txt" in entry.paths, (
+        "la baseline doit etre dans les paths du garde : sinon une PR qui la "
+        "reecrit ne relance pas le cliquet (#22954)"
+    )
+
+
 # #13960 : garde anti-regression sur les doublons de def dans ce fichier.
 # Le defaut fondateur (mesure 2026-09-01) : 4 paires byte-identiques
 # (`test_missing_trigger_breaks_instrument`, `test_empty_runs_on_list_breaks_instrument`,
@@ -1500,3 +1632,58 @@ def test_13960_no_duplicate_test_function_definitions() -> None:
         f"doublons de def au top-level : {duplicates} "
         f"(cf #13960 fondateur : la 2e def eclipse la 1re silencieusement)"
     )
+
+
+# --- LISTE DES WORKFLOWS PORTEURS D'UN JOB LOCAL (#22937 phase A) ----------
+#
+# La lecture locale du controleur de debordement ne doit viser que les runs
+# qui PEUVENT porter un job du parc local. C'est cet organe qui possede la
+# connaissance « quel workflow atterrit sur quel runner » : la liste est
+# derivee ici, jamais recopiee dans le controleur.
+
+def _wf(tmp_path: Path, name: str, runs_on: str) -> None:
+    write_workflow(tmp_path, name, f"""
+on: push
+jobs:
+  job:
+    runs-on: {runs_on}
+""")
+
+
+def test_le_parc_local_statique_est_dans_la_liste(tmp_path):
+    _wf(tmp_path, "local", "[self-hosted, coursia-ephemeral, coursia-linux]")
+    paths, reason = policy.local_capable_workflows(tmp_path)
+    assert reason == ""
+    assert paths == {".github/workflows/local.yml"}
+
+
+def test_un_workflow_heberge_est_hors_de_la_liste(tmp_path):
+    _wf(tmp_path, "heberge", "ubuntu-latest")
+    paths, reason = policy.local_capable_workflows(tmp_path)
+    assert reason == ""
+    assert paths == set()
+
+
+def test_une_expression_non_auditee_est_traitee_comme_capable(tmp_path):
+    """Fail-safe : une expression qu'on ne sait pas lire peut atterrir
+    n'importe ou. L'ignorer cacherait une affamescence locale."""
+    _wf(tmp_path, "dynamique", "${{ matrix.os }}")
+    paths, reason = policy.local_capable_workflows(tmp_path)
+    assert reason == ""
+    assert paths == {".github/workflows/dynamique.yml"}
+
+
+def test_un_yaml_invalide_fait_echouer_la_derivation(tmp_path):
+    """Fail-CLOSED : la liste n'est pas etablie -> l'ensemble est VIDE et un
+    motif est rendu. Un ensemble vide ne se lit jamais « aucun workflow
+    local »."""
+    write_workflow(tmp_path, "casse", "on: push\njobs:\n  job:\n   runs-on: [\n")
+    paths, reason = policy.local_capable_workflows(tmp_path)
+    assert paths == set()
+    assert reason != ""
+
+
+def test_un_repertoire_absent_fait_echouer_la_derivation(tmp_path):
+    paths, reason = policy.local_capable_workflows(tmp_path / "absent")
+    assert paths == set()
+    assert "absent" in reason
