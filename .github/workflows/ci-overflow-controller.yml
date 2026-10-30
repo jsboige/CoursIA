@@ -42,7 +42,19 @@ name: CI overflow controller (phase B)
 # qu'aucun declencheur ne porte de fork (schedule + workflow_dispatch) :
 # meme profil, meme forme et meme garde same-repo au niveau job que
 # `linux-runner-version-pin-advisory.yml`, deja sur ce pool. L'image du
-# runner porte `gh` et `python3` -- aucune dependance ajoutee.
+# runner porte `gh` et `python3`.
+#
+# DEPENDANCE (revue ai-01 du 2026-10-29 sur #23148, point bloquant) :
+# l'organe `ci_overflow_controller.py` appelle
+# `check_self_hosted_runner_policy.local_capable_workflows()`, qui rend
+# `(set(), "PyYAML est indisponible")` si l'import de `yaml` echoue
+# (`check_self_hosted_runner_policy.py:734-739`, :978). Sans PyYAML,
+# `local_paths_reason` est non vide a chaque passage -> `collect_local`
+# rend `complete=False` -> UNREADABLE -> **la soupape ne s'ouvre jamais**.
+# La legende « aucune dependance ajoutee » etait donc fausse : le job
+# installe PyYAML, comme ses workflow freres (forme identique a
+# `always-on-metadata-guards.yml` : import-test en dry-run, fallback pip
+# install silencieux).
 
 on:
   schedule:
@@ -82,15 +94,29 @@ jobs:
         uses: actions/checkout@v4
         with:
           filter: blob:none
-          # L'organe ne lit que scripts/ci : clone partiel, meme forme que le
-          # voisin ci-dessus (ce pool est sature par ses checkouts).
+          # L'organe lit `scripts/ci` ET `.github/workflows` : la liste de la
+          # cohorte (les workflows qui lisent `vars.CI_OVERFLOW_LOCAL`) est
+          # DERIVEE du depot a chaque passage, jamais recopiee. Sans les
+          # fichiers de workflow dans le checkout, la liste serait vide --
+          # donc la mesure illisible, donc aucune liberation (fail-CLOSED).
+          # Clone partiel, meme forme que le voisin (ce pool est sature par
+          # ses checkouts).
           sparse-checkout: |
             scripts/ci
+            .github/workflows
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+
+      - name: Install PyYAML if absent
+        # Pattern partage avec l'umbrella #13384 et les workflow freres
+        # (`always-on-metadata-guards.yml`, `always-on-guards.yml`) :
+        # import-test en dry-run, fallback pip install silencieux. Sans
+        # cette etape, l'organe rend UNREADABLE a chaque passage et la
+        # soupape reste fermee (revue ai-01 du 2026-10-29 sur #23148).
+        run: python -c "import yaml" 2>/dev/null || pip install --quiet pyyaml
 
       # UNE seule mesure : l'organe mesure, rend un VERDICT, et -- si le
       # verdict est une bascule ET le jeton d'ecriture est present -- ecrit

@@ -4,8 +4,9 @@ Le pré-enregistrement (bandes P1-P4, nulls N1-N3, verdict attendu) est scellé 
 fichier scratchpad ``hoffman_toy_design.md`` AVANT ce module — pattern case 8/10.
 
 La case teste la dissociation Hoffman (Prakash, Stephens, Hoffman, Singh & Fields
-2017, *Fitness Beats Truth in the Evolution of Perception*) en toy jouet 2-bit.
-Le setup suit le §4 du papier : deux stratégies utilisent **la même** map
+2021, *Fitness Beats Truth in the Evolution of Perception*, Acta Biotheoretica
+69(3):319-341, doi:10.1007/s10441-020-09400-0) en toy jouet 2-bit.
+Le setup suit le §4 du préprint : deux stratégies utilisent **la même** map
 perceptive p, mais différent dans **comment** elles choisissent leur action.
 
 - 4 ontic states ``W = {0, 1, 2, 3}``.
