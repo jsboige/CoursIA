@@ -52,7 +52,7 @@ L'axe de 5ter — le **contrôle** (principe de Conant-Ashby appliqué à l'atte
 | Bras | Règle d'allocation |
 |---|---|
 | `reactive` | Attention sans modèle interne : le foyer suit l'argmax d'une EMA courte (α = 0,3) de la saillance observée. Aucun état maintenu au-delà de l'EMA. |
-| `schema` | Mêmes entrées. Le contrôleur maintient un **schéma attentionnel appauvri** : position du foyer quantifiée (grille 0,01), confiance, vitesse estimée du foyer — mis à jour lentement (EMA α = 0,1) **et** corrigé par la prédiction 1-pas (position + vitesse estimée). L'allocation lit le schéma ; la saillance brute ne sert qu'à la mise à jour du schéma. |
+| `schema` | Mêmes entrées. Le contrôleur maintient un **schéma attentionnel appauvri** : estimation de saillance (EMA α = 0,1 ; v2, cf §6), position du foyer quantifiée (grille 0,01), confiance, vitesse estimée du foyer — mis à jour lentement (EMA α = 0,1) **et** corrigé par la prédiction 1-pas (position + vitesse estimée). L'allocation lit le schéma ; l'observation de position qui alimente l'updater est l'argmax de l'estimation de saillance du schéma (jamais l'argmax brut). |
 | `schema_shuffled` | Identique à `schema`, mais l'updater du schéma est alimenté par les saillances **permutées** entre items (null : un schéma mal informé ne doit rien apporter). |
 | `schema_distorted` | Identique à `schema`, avec offset `d` injecté dans l'**encodage** de la position du schéma : position stockée = position réelle du foyer + d, pour d ∈ {0, w/4, w/2}. Le « rapport » = décodage de la position stockée ; le contrôle = allocation résultante. |
 
@@ -91,3 +91,15 @@ Toutes portent sur les graines d'étude `(0, 1, 7, 42, 99)` ; les bandes sont **
 - Aucune généralisation à la constructibilité de la conscience ni à la phénoménologie (grade C, citation « emphatically does not explain »).
 - Aucune prétention d'isomorphisme avec le TPJ ou le schéma attentionnel neurobiologique : le jouet teste le principe de contrôle (citations 1–3) et la lecture du modèle par le rapport (citations 4–6), rien d'autre.
 - Le terrain, les bras, les perturbations et les seuils sont écrits avant le module et ne dépendent pas des résultats ; le module est l'exécutant, pas le designer.
+
+---
+
+## 6. Révision v2 (2026-10-30, post-pilote, pré-étude)
+
+**Ce qui a changé.** Le bras `schema` porte désormais une **estimation de saillance EMA α = 0,1** dans son état, et l'observation de position alimentant son updater est l'argmax de cette estimation (et non l'argmax de la saillance brute). Le bras `schema_shuffled` reçoit la même révision : la permutation frappe l'entrée brute **avant** l'EMA de saillance du schéma (le null garde sa force — l'estimation devient une bouillie uniforme et son argmax erre). Tout le reste (terrain, perturbations, métriques, bandes P1a..P5, graines d'étude, verdict) est inchangé.
+
+**Valeurs v1 et le constat du pilote (graine 1000, disjointe, jamais comptée).** Sous v1 (« la saillance brute ne sert qu'à la mise à jour du schéma », lue comme : argmax brut = observation de position) : `reactive` stabilité = 0,0055, correction = 5,8 ; `schema` stabilité = 0,1484, correction = 8,2 ; `erreur_pred(schema)` = 0,089 ≈ persistance = 0,073 — les deux dominés par les bascules d'argmax. Mécanisme : à σ_s = 0,3, l'argmax **brut** bascule entre items ~25–30 % des pas (cible capturée 2,0 ± 0,3 vs distracteur capturé 1,6 ± 0,3), alors que l'argmax de l'EMA du bras reactive bascule rarement (σ_effectif ≈ 0,3·√(α/(2−α)) ≈ 0,13). Les deux bras ne recevaient donc **pas des entrées comparables** — le reactive observait « position de la cible + jitter minuscule », le schema « position d'un item quasi aléatoire + jitter énorme » — en violation de la clause de contrôle du §3 (« même budget de calcul — **seule l'organisation de l'état diffère** »). Le pilote v1 est committé comme preuve (`ict/results/attention_schema_control_pilot_v1_seed1000.json`).
+
+**Pourquoi cette révision plutôt qu'une autre.** La citation 1 du §1 définit le schéma comme « a coherent set of information that represents basic stable properties of attention, reflects ongoing changes in the state of attention, makes predictions about where attention can be usefully directed » — une estimation de saillance est littéralement une pièce de cet ensemble (« reflects ongoing changes »). L'EMA α = 0,1 la maintient **plus lente** que l'EMA α = 0,3 du bras reactive : le schéma reste l'organisation appauvrie/lente, le reactive le suiveur rapide — la comparaison teste toujours l'organisation de l'état, sur des entrées désormais de même nature. Aucune bande n'est retouchée : si le schéma v2 perd encore, le verdict REFUTED se publie tel quel.
+
+**Protocole.** Une seule révision (celle-ci), avant l'étude held-out, en commit distinct nommant les valeurs v1 (fait ci-dessus) ; le texte v1 reste visible dans l'historique git. La graine 1000 reste disjointe ; son rejeu sous v2 est calibration, jamais preuve.

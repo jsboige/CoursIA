@@ -20,10 +20,13 @@ archive au gisement, empreinte 58a1a461e5d6fc5a) :
 Anti-HARKing — le pre-enregistrement est scelle AVANT ce module
 ----------------------------------------------------------------
 ``docs/ict/attention-schema-control-pre-enregistrement.md`` (commit
-``fb74ec445``) fixe terrain, bras, perturbations, metriques, bandes P1a..P5,
-graines d'etude (0, 1, 7, 42, 99) et pilote disjoint (graine 1000) **avant**
-toute ligne de ce fichier. Ce module est l'EXECUTANT, pas le designer : les
-constantes ci-dessous reprennent le document verbatim. Quatre micro-choix
+``fb74ec445``, **revisé v2 post-pilote** — le bras schema porte une
+estimation de saillance EMA alpha = 0,1 et son updater lit l'argmax de
+cette estimation, cf §6 du document) fixe terrain, bras, perturbations,
+metriques, bandes P1a..P5, graines d'etude (0, 1, 7, 42, 99) et pilote
+disjoint (graine 1000) **avant** toute ligne de ce fichier. Ce module est
+l'EXECUTANT, pas le designer : les constantes ci-dessous reprennent le
+document verbatim. Quatre micro-choix
 operationnels que le document ne fixe pas numeriquement sont NOMMES ici
 (grade C), verifiables au pilote, et une unique revision v2 du document
 (commit separe nommant les valeurs v1) reste ouverte avant l'etude :
@@ -33,7 +36,8 @@ operationnels que le document ne fixe pas numeriquement sont NOMMES ici
   bruit d'observation sigma_s = 0.3.
 * **a2** — initialisation des bras : l'annonce initiale de la cible charge
   l'EMA reactive et l'etat du schema avec la saillance vraie (foyer initial
-  = position de la cible a t=0, vitesse estimee nulle, confiance 1.0).
+  = position de la cible a t=0, estimation de saillance = saillance vraie,
+  vitesse estimee nulle, confiance 1.0).
 * **a3** — bras distordu : l'etat interne ``pos_s`` est maintenu par
   l'updater comme au bras schema ; le STOCKAGE ajoute ``d`` et l'allocation
   lit le stockage. ``erreur_rapport`` mesure |stocke - pos_s| : sous cette
@@ -214,6 +218,7 @@ def run_schema(terrain: Terrain, seed: int, distorted_d: float = 0.0,
            else "schema_distorted" if distorted_d > 0 else "schema")
     rng = np.random.default_rng(seed + ARM_OFFSETS[arm])
     pos_s = terrain.positions[0, terrain.target_idx]      # annonce initiale (choix a2)
+    sal_est = terrain.salience_true.copy()   # estimation de saillance du schema (v2, choix a2)
     vel_s = 0.0
     conf = 1.0
     focus = np.zeros(STEPS)
@@ -232,13 +237,16 @@ def run_schema(terrain: Terrain, seed: int, distorted_d: float = 0.0,
         prev = stored
         stored_series[t] = stored
         pos_series[t] = pos_s          # etat qui a genere le stockage alloue
-        # 2. observer via la saillance (gain au foyer alloue)
+        # 2. observer : l'updater lit l'argmax de l'estimation de saillance du
+        # schema (EMA alpha = 0,1, revision v2 du document scelle -- l'argmax
+        # brut a sigma_s = 0.3 bascule ~25-30% des pas et rendait les entrees
+        # des bras non comparables, voir doc §6) ; le null shuffled permutte
+        # l'entree BRUTE avant l'EMA
         s_eff = effective_salience(terrain, t, prev)
         if shuffled:
-            perm = rng.permutation(N_ITEMS)
-            obs_pos = terrain.positions[t, perm[int(np.argmax(s_eff))]]
-        else:
-            obs_pos = terrain.positions[t, int(np.argmax(s_eff))]
+            s_eff = s_eff[rng.permutation(N_ITEMS)]
+        sal_est = sal_est + EMA_SCHEMA * (s_eff - sal_est)
+        obs_pos = terrain.positions[t, int(np.argmax(sal_est))]
         obs_series[t] = obs_pos
         pred_series[t] = pred = circ_wrap(pos_s + vel_s)
         innovation = circ_delta(obs_pos, pred)

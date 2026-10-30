@@ -132,6 +132,16 @@ def test_schema_prediction_bat_persistance_sur_flux_lisse():
     assert r.metrics["erreur_pred"] <= r.metrics["baseline_persistance"]
 
 
+def test_shuffled_derange_plus_que_schema():
+    # null v2 : permuter l'entree brute avant l'EMA de saillance du schema
+    # degrader l'estimation -> l'erreur de prediction doit etre pire que
+    # celle du bras schema sur le meme terrain
+    t = asc.build_terrain(3)
+    r_schema = asc.run_schema(t, 3)
+    r_shuf = asc.run_schema(t, 3, shuffled=True)
+    assert r_shuf.metrics["erreur_pred"] > r_schema.metrics["erreur_pred"]
+
+
 # --- Metriques ----------------------------------------------------------------
 
 def test_correction_cas_connus():
