@@ -230,6 +230,20 @@ SHARED_GITHUB_LOGIN = "jsboige"
 # The gate's only consumer. Every worker lane signs SHARED_GITHUB_LOGIN, so this
 # login is the one surface author the coordinator can recognise as itself.
 COORDINATOR_LOGIN = "myia-ai-01"
+# #17437: the coordinator's GitHub App identity, once its lane signs with an
+# installation token instead of a PAT (the six lane Apps are created and
+# installed; the switch is the remaining operational step). Written as a
+# literal rather than derived from `gh_identity.APP_LOGIN_PREFIX` so this module
+# keeps importing when that organ is unavailable; a test pins the two together.
+COORDINATOR_APP_LOGIN = "coursia-lane-ai-01[bot]"
+# The coordinator's ONE voice, in every spelling it can reach the API under.
+# Deliberately NOT `gh_identity.ACCEPTED_DOSSIER_AUTHORS`: that set holds every
+# lane's App, and neutralising a worker lane's row would delete the control
+# `_is_own_later_act` exists to enforce. A worker's App must still expire the
+# dossier -- a negative-control test holds that line.
+COORDINATOR_IDENTITIES = frozenset(
+    (COORDINATOR_LOGIN, SHARED_GITHUB_LOGIN, COORDINATOR_APP_LOGIN)
+)
 
 VERDICT_READY = "READY"
 VERDICT_BLOCKED = "BLOCKED"
@@ -645,7 +659,11 @@ def _is_own_later_act(
     if not neutral_after:
         return False
     author = _login(row)
-    if author not in (COORDINATOR_LOGIN, SHARED_GITHUB_LOGIN):
+    # #17437: normalisation defensive et idempotente. Les constructeurs de ce
+    # gate normalisent deja les auteurs REST ; la forme canonique vit dans
+    # gh_identity, et le correctif fonctionnel est l'ajout de l'App au voisinage
+    # ferme du coordinateur (pas cette seconde normalisation).
+    if gh_identity.normalize_author_login(row.get("author") or {}) not in COORDINATOR_IDENTITIES:
         return False
     if row_kind == "review" and _review_body_has_reserve_marker(author, row.get("body") or ""):
         return False
@@ -1202,6 +1220,32 @@ def _prune_stack_refs(keep: list[int]) -> None:
             _git(["update-ref", "-d", ref], check=False)
 
 
+#: Cause nommee rendue quand l'historique de la base est tronque dans le
+#: clone de l'appelant (#23089). Le texte est celui de l'issue : il nomme le
+#: symptome ET le geste qui le leve.
+STACK_UNAVAILABLE_SHALLOW = (
+    "stack check unavailable: shallow clone — git fetch --unshallow "
+    "(racines mortes : python scripts/ci/merge_dwell.py --prune-shallow)"
+)
+
+
+def _base_history_truncated() -> bool:
+    """L'historique de la base est-il tronque dans le clone de l'appelant ?
+
+    La question est posee a `merge_dwell` (c'est la qu'un `fetch --depth=1`
+    pouvait creer une borne) : meme predicat, meme source de verite. Lecture
+    indisponible -> `False` : on ne refuse pas la mesure sur un doute.
+    """
+    try:
+        from ci.merge_dwell import base_history_truncated
+    except Exception:  # noqa: BLE001 - lecteur optionnel, fail-open
+        return False
+    try:
+        return bool(base_history_truncated())
+    except Exception:  # noqa: BLE001 - idem
+        return False
+
+
 def build_stack_index() -> tuple[dict[int, StackEntry] | None, list[str]]:
     """Une passe : ce que chaque PR ouverte apporte par rapport a `main`.
 
@@ -1210,6 +1254,28 @@ def build_stack_index() -> tuple[dict[int, StackEntry] | None, list[str]]:
     porte (cf la porte B.0, dont l'echec de mesure est fail-closed a l'inverse,
     parce qu'elle infirme une affirmation -- ici on ne peut que constater).
     """
+    # #23089 : la porte pile compare `main..tete`. Sur un clone dont
+    # l'historique de `main` est REELLEMENT tronque, la comparaison est
+    # fausse : des commits deja merges apparaissent comme « propres », et la
+    # porte invente des piles (mesure ai-01 du 2026-10-28 : #22244 et #22252
+    # rendues BLOCKED sur des squash deja merges, `47b09bc383f` pour
+    # #22011). La passe refuse donc de mesurer et rend une cause NOMINEE --
+    # jamais un faux « stack top ».
+    #
+    # Le predicat est celui de `merge_dwell` (c'est la qu'un `fetch --depth=1`
+    # pouvait creer une borne) : meme question, meme source. Une lecture
+    # indisponible ne bloque pas la mesure -- elle la laisse au comportement
+    # d'avant (fail-open de la porte, jamais un refus fabrique).
+    #
+    # #23110 (reserve ai-01 du 2026-10-28) : la passe LIT, elle n'ECRIT pas.
+    # Elle appelait `merge_dwell.prune_dead_shallow_roots()` ici, donc une
+    # garde reecrivait `.git/shallow` du clone de l'appelant a chaque passe --
+    # un fichier que seul le transport (clone/fetch) a le droit d'ecrire. Le
+    # nettoyage des racines mortes est devenu la commande explicite
+    # `merge_dwell.py --prune-shallow` ; le message d'incident la nomme.
+    if _base_history_truncated():
+        return None, [STACK_UNAVAILABLE_SHALLOW]
+
     try:
         numbers = [
             int(line) for line in gh_lines([
@@ -2078,7 +2144,7 @@ _PR_GATE_CONTRADICTION_PREFIX = (
 #: Voix dont un APPROVED sur la tete exacte ouvre la porte du merge. La queue
 #: expose cette porte a titre d'information : l'autorite de merge reste le
 #: 2ter de ``merge_ready`` (approbation coordinateur), jamais ce champ.
-COORDINATOR_REVIEW_LOGINS = frozenset({"myia-ai-01", "jsboige"})
+COORDINATOR_REVIEW_LOGINS = COORDINATOR_IDENTITIES
 
 
 def _parse_ts(value: Any) -> datetime | None:
@@ -2150,7 +2216,7 @@ def _review_disposition(
         oid = ((latest.get("commit") or {}).get("oid")) or ""
         if oid != (snapshot.get("headRefOid") or ""):
             return "approval-not-on-head", False
-        login = (latest.get("author") or {}).get("login", "")
+        login = gh_identity.normalize_author_login(latest.get("author") or {})
         return "approved-exact-head", login in COORDINATOR_REVIEW_LOGINS
     return "reviewed-without-disposition", False
 
