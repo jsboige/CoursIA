@@ -35,8 +35,11 @@ import os
 import sys
 from urllib.error import HTTPError
 
+import yaml
+
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 MODULE_PATH = os.path.join(ROOT, "scripts", "coordination", "submodule_watch.py")
+WORKFLOW_PATH = os.path.join(ROOT, ".github", "workflows", "submodule-drift.yml")
 
 _spec = importlib.util.spec_from_file_location("submodule_watch", MODULE_PATH)
 assert _spec and _spec.loader
@@ -213,3 +216,61 @@ def test_branch_declared_is_used_not_head():
     except AssertionError:
         pass
     assert seen["remote_ref"] == "refs/heads/master"
+
+
+# --- le contrat du JSON, et le workflow qui le lit ------------------------
+
+
+def test_unreachable_repo_has_no_distance():
+    """Un depot muet n'a pas de distance : ``None``, jamais le ``0`` rassurant.
+
+    Releve par la review du 2026-10-29 : ``INJOIGNABLE`` portait ``ahead_by: 0``,
+    ce qu'un consommateur qui ne lit que ce champ traduit « pas de derive ». Le
+    ``0`` est reserve a l'etat ``OK``, ou il est le resultat d'une mesure.
+    """
+    sub = {"path": "p", "url": "https://github.com/o/r", "branch": "master", "slug": "o/r"}
+    out = submodule_watch.gitlink_drift(sub, "HEAD", _fake_git("aaaa", None))
+    assert out["state"] == "INJOIGNABLE"
+    assert out["ahead_by"] is None
+
+
+def _drift_job():
+    with open(WORKFLOW_PATH, encoding="utf-8") as fh:
+        return yaml.safe_load(fh)["jobs"]["drift"]
+
+
+def test_workflow_threshold_matches_the_module_default():
+    """Le seuil du YAML et celui du script ne peuvent pas diverger en silence."""
+    assert int(_drift_job()["env"]["MAX_AHEAD"]) == submodule_watch.DEFAULT_MAX_AHEAD
+
+
+def test_workflow_never_decides_on_the_exit_code():
+    """Python rend ``1`` sur une exception : le verdict ne doit pas lire ``rc``.
+
+    C'est le defaut releve le 2026-10-29 : un plantage du script publiait
+    « derive de gitlink au-dela du seuil » sur un artefact vide. La decision se
+    prend sur ``drift.json``, et une mesure absente est une panne, pas une
+    derive.
+    """
+    steps = _drift_job()["steps"]
+    for step in steps:
+        assert "outputs.rc" not in str(step.get("if", "")), step.get("name")
+        assert "outputs.rc" not in (step.get("run") or ""), step.get("name")
+
+    verdict = [s for s in steps if "verdict" in (s.get("name") or "").lower()]
+    assert len(verdict) == 1, "un seul step de verdict : deux decisions divergeraient"
+    body = verdict[0]["run"]
+    assert "drift.json" in body
+    assert "jq" in body
+    # Le verdict distingue un artefact absent d'une derive mesuree.
+    assert "! -s drift.json" in body
+
+
+def test_workflow_is_advisory_on_pull_request_only():
+    """Une derive anterieure a une PR n'est pas imputable a son auteur."""
+    steps = _drift_job()["steps"]
+    body = [s for s in steps if "verdict" in (s.get("name") or "").lower()][0]["run"]
+    assert "GITHUB_EVENT_NAME" in body
+    assert '"pull_request"' in body
+    assert "::warning::" in body
+    assert "::error::" in body

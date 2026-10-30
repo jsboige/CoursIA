@@ -68,6 +68,24 @@ commits (bump en retard, actionnable) ; rc 2 = mesure impossible (depot
 injoignable ou ``compare`` muet) : une mesure absente n'est jamais un zero, et
 elle ne fait pas rougir une CI sur un incident de reseau.
 
+Le seuil de 10 a ete porte a 40 sur une mesure : Argumentum, la plus active des
+cinq, prend **16 commits par jour actif** (100 commits sur 6 jours actifs, 24-29
+octobre 2026). A 10, le garde rougissait donc apres **une seule** journee
+d'activite amont -- tous les jours pour un cron quotidien, donc jamais lu. La
+valeur se lit comme une duree : 40 commits ~ 2,5 jours actifs medians.
+
+Deux consequences pour qui consomme le JSON, et c'est le contrat :
+
+- ``ahead_by`` vaut ``0`` en etat ``OK`` (mesure : pas de derive), ``None`` en
+  etat ``DERIVE`` dont la distance n'a pas pu etre mesuree, et ``None`` en etat
+  ``INJOIGNABLE``. Un consommateur ne doit **jamais** lire ``ahead_by`` sans lire
+  ``state`` : ``0`` signifie « mesure et nulle », pas « je ne sais pas » ;
+- ``rc`` est un confort **local**. La CI ne decide pas sur lui : Python rend
+  ``1`` aussi bien sur une derive que sur une exception non rattrapee, et un
+  artefact vide concluerait alors « bump en retard ». Le workflow lit le JSON,
+  qui est la seule source de verite, et traite un artefact absent ou illisible
+  comme une panne de mesure -- pas comme une derive.
+
 Lecture seule. Le jeton s'epingle par commande (Regle 5), jamais par
 ``gh auth switch`` :
 
@@ -92,7 +110,16 @@ ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_MAX_AGE_HOURS = 24.0
 # Distance de derive au-dela de laquelle le bump est en retard : sous ce seuil,
 # la derive est le fonctionnement normal (le pin suit au rythme des bumps).
-DEFAULT_MAX_AHEAD = 10
+#
+# Pourquoi 40, et pas 10. Mesure du 2026-10-30 sur la branche declaree
+# d'Argumentum (la plus active des cinq) : 100 commits sur 6 jours actifs entre
+# le 24 et le 29/10, mediane **16 commits par jour actif**. Le seuil est donc une
+# **duree deguisee** : a 10, il etait franchi par une seule journee d'activite
+# amont, c'est-a-dire presque chaque jour pour un cron quotidien -- exactement le
+# rouge permanent qu'on apprend a ignorer. 40 correspond a ~2,5 jours actifs
+# medians : le pin peut prendre un jour de retard sans bruit, et un bump
+# reellement oublie rougit en trois jours au lieu de trois semaines.
+DEFAULT_MAX_AHEAD = 40
 MAX_PAGES = 20  # 2 000 PRs ouvertes par depot : au-dela, le depot est declare illisible
 # Gel declare dans le titre : la PR est comptee, elle ne rougit pas l'organe.
 _HOLD_RE = re.compile(r"^\s*\[(HOLD|WIP)\b", re.IGNORECASE)
@@ -358,7 +385,12 @@ def compare_ahead(slug: str | None, base: str | None, head: str | None, opener=N
 
 
 def gitlink_drift(sub: dict, ref: str, run: Runner = _run, opener=None) -> dict:
-    """Regle 2 : gitlink de ``ref`` contre la tete de la branche declaree."""
+    """Regle 2 : gitlink de ``ref`` contre la tete de la branche declaree.
+
+    ``ahead_by`` ne vaut ``0`` que sur une **mesure** (etat ``OK``) : en etat
+    ``INJOIGNABLE`` il vaut ``None``, pour qu'un consommateur qui ne lit que ce
+    champ ne conclue pas « pas de derive » sur un depot muet.
+    """
     remote_ref = f"refs/heads/{sub['branch']}" if sub.get("branch") else "HEAD"
     tree = run(["git", "ls-tree", ref, sub["path"]])
     local = tree.stdout.split()[2] if tree.returncode == 0 and len(tree.stdout.split()) >= 3 else None
@@ -370,7 +402,12 @@ def gitlink_drift(sub: dict, ref: str, run: Runner = _run, opener=None) -> dict:
         state = "OK"
     else:
         state = "DERIVE"
-    ahead = compare_ahead(sub.get("slug"), local, remote, opener) if state == "DERIVE" else 0
+    if state == "DERIVE":
+        ahead = compare_ahead(sub.get("slug"), local, remote, opener)
+    elif state == "OK":
+        ahead = 0
+    else:
+        ahead = None
     return {
         "state": state,
         "remote_ref": remote_ref,
