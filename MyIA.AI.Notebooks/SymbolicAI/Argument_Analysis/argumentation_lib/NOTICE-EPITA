@@ -38,6 +38,28 @@ CoursIA copy
 | `_identification_models.py` (59 lines) | `argumentation_analysis/plugins/identification_models.py` | ecfd9b9c (2026-09-29, dep transitive de fallacy_workflow_plugin) |
 | `_delegating_selection.py` (204 lines) | `argumentation_analysis/core/strategies.py` (L134-L246, classe `DelegatingSelectionStrategy`) | ecfd9b9c (2026-09-29, ref pinned par issue #18393, NOT-VERBATIM : 1 token `ProjectManager` -> `ProjectManagerAgent` documente en en-tete du fichier, portee 3 PR #20338 review) |
 
+Package `ai_shield/` (garde-fous de pipeline LLM) — porte dans le cadre de l'issue #23163
+(serie `Argument_Analysis` completee sur CoursIA ; le depot EPITA reste le cadre
+experimental, pas la destination). Sous-module `ai_shield/` :
+
+| File in CoursIA `argumentation_lib/ai_shield/` | Upstream path in EPITA-IS | Upstream commit |
+|---------------------------------------|----------------------------|-----------------|
+| `shield.py` | `argumentation_analysis/services/ai_shield/shield.py` | 713927e1 (2026-10-28) — VERBATIM, aucune modification |
+| `presets.py` | `argumentation_analysis/services/ai_shield/presets.py` | 713927e1 (2026-10-28) — prefixe d'import seul |
+| `__init__.py` | `argumentation_analysis/services/ai_shield/__init__.py` | 713927e1 (2026-10-28) — prefixe d'import seul |
+| `layers/__init__.py` | `argumentation_analysis/services/ai_shield/layers/__init__.py` | 713927e1 (2026-10-28) — prefixe d'import seul |
+| `layers/heuristic.py` | `argumentation_analysis/services/ai_shield/layers/heuristic.py` | 713927e1 (2026-10-28) — prefixe d'import seul |
+| `layers/output_filter.py` | `argumentation_analysis/services/ai_shield/layers/output_filter.py` | 713927e1 (2026-10-28) — prefixe d'import seul |
+| `layers/llm_validator.py` | `argumentation_analysis/services/ai_shield/layers/llm_validator.py` | 713927e1 (2026-10-28) — prefixe d'import seul + 4 imports de services EPITA non vendoringes (`core.llm_service`, `core.reading_window`, `core.utils.llm_completion_guard`, `services.llm_cache`) rediriges vers `_llm_transport` (adaptation declaree) |
+| `_llm_transport.py` | **AUCUN equivalent amont** — adaptation CoursIA | ecrit pour ce portage ; raison et contrat dans l'en-tete du fichier |
+
+« Prefixe d'import seul » = `argumentation_analysis.services.ai_shield` est reecrit en
+`argumentation_lib.ai_shield` (shim du depot, cf `argumentation_lib/_paths.py`) ; aucune
+autre ligne n'est modifiee. `_llm_transport.py` est une **adaptation declaree** : aucun
+fournisseur LLM n'est cable dans CoursIA, donc la couche `LLMValidatorLayer` leve
+`LLMValidatorUnavailable` et la politique `fail_open` / `fail_closed` tranche — le carnet
+`Argumentation-09-Guardrails-AI-Shield-Python.ipynb` exerce ce chemin reel.
+
 Rationale for verbatim import
 -----------------------------
 
@@ -80,11 +102,12 @@ below the header.
 documented in this NOTICE before commit.** CoursIA-original code that extends
 or wraps the verbatim content lives in separate files (NOT prefixed with `_`).
 
-**Fins de ligne (seule divergence documentee).** L'amont livre `_fallacy_workflow_plugin.py`
-et `_taxonomy_navigator.py` en CRLF. Le depot impose `*.py text eol=lf` (`.gitattributes`) :
-ces deux fichiers sont stockes en LF. Un blob CRLF sous `eol=lf` fait apparaitre le fichier
-modifie apres chaque checkout et bloque tout organe qui exige un arbre propre. Le contenu reste
-identique a l'amont aux fins de ligne pres : `git diff --ignore-cr-at-eol` est vide.
+**Fins de ligne (seule divergence documentee).** L'amont livre `_fallacy_workflow_plugin.py`,
+`_taxonomy_navigator.py`, `_atms_core.py` et `_conflict_resolution.py` en CRLF. Le depot impose
+`*.py text eol=lf` (`.gitattributes`) : ces quatre fichiers sont stockes en LF. Un blob CRLF
+sous `eol=lf` fait apparaitre le fichier modifie apres chaque checkout et bloque tout organe
+qui exige un arbre propre. Le contenu reste identique a l'amont aux fins de ligne pres :
+`git diff --ignore-cr-at-eol` est vide.
 L'identite SHA256 octet a octet se verifie donc apres conversion CRLF -> LF du fichier amont.
 
 Partial copies (See #14026)
@@ -852,6 +875,26 @@ shortcut), on the synthetic text of `Argumentation-02`:
 These are single-run figures: the funnel calls a live LLM, so counts vary
 between runs while the structure of the evidence does not. Reproduce with
 `Argumentation-02-Fallacies-Detection-Python.ipynb` section 5.
+
+Moteurs de revision de croyance — ATMS et resolution de conflits (28/10/2026, issue #23163)
+-------------------------------------------------------------------------------------------
+
+Tranche de portage dans le cadre de l'issue #23163 (serie `Argument_Analysis` completee
+sur CoursIA ; le depot EPITA reste le cadre experimental, pas la destination). Deux
+moteurs du service `jtms` d'EPITA-IS, portes dans `argumentation_lib/` :
+
+| File in CoursIA `argumentation_lib/` | Upstream path in EPITA-IS | Upstream commit |
+|---------------------------------------|----------------------------|-----------------|
+| `_atms_core.py` (242 lines) | `argumentation_analysis/services/jtms/atms_core.py` | 713927e1 (2026-10-28) — VERBATIM, aucune modification |
+| `_conflict_resolution.py` (305 lines) | `argumentation_analysis/services/jtms/conflict_resolution.py` | 713927e1 (2026-10-28) — VERBATIM, aucune modification |
+
+Les deux fichiers amont n'importent que la bibliotheque standard : aucun prefixe
+`argumentation_analysis.*` n'a donc pas eu a etre reecrit, et le corps est
+**byte-for-byte** identique a l'amont (seule l'entete de provenance est ajoutee, qui
+cite le fichier amont, son SHA1 et la ligne concernee). Le carnet
+`Argumentation-06b-ATMS-Conflits-Python.ipynb` exerce les deux moteurs : etiquettes
+par environnements, invalidation, nogood non durable, cinq strategies de resolution
+de conflits, replis nommes et garde-fous bruyants.
 
 What this NOTICE does NOT cover
 -------------------------------

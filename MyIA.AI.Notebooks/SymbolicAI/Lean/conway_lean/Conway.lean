@@ -80,6 +80,7 @@ import Conway.Angel
 import Conway.Life
 import Conway.Life.GridCanonical
 import Conway.Life.Spaceships
+import Conway.Life.Translateur
 import Conway.Life.Oscillators
 import Conway.Life.RLE
 import Conway.Life.MacroCell

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -112,7 +113,7 @@ def test_fetch_starvation_filters_by_label_and_status(monkeypatch):
     created = now - timedelta(minutes=40)
     calls: list[str] = []
 
-    def fake_gh(args: list[str], token: str | None = None):
+    def fake_gh(args: list[str], token: str | None = None, stats=None):
         calls.append(args[0])
         if args[0].startswith("repos/jsboige/CoursIA/actions/runs?status=queued"):
             return _runs_payload("queued", created)
@@ -149,7 +150,7 @@ def test_starvation_beyond_first_page_is_seen(monkeypatch):
     pages 6-7, tous invisibles."""
     now = datetime(2026, 9, 2, 12, 0, tzinfo=timezone.utc)
 
-    def fake_gh(args: list[str], token: str | None = None):
+    def fake_gh(args: list[str], token: str | None = None, stats=None):
         url = args[0]
         if "status=queued" in url:
             # Pas de substring match : "page=1" est un prefixe de
@@ -188,7 +189,7 @@ def test_pagination_stops_when_page_older_than_window(monkeypatch):
     now = datetime(2026, 9, 2, 12, 0, tzinfo=timezone.utc)
     pages_fetched: list[int] = []
 
-    def fake_gh(args: list[str], token: str | None = None):
+    def fake_gh(args: list[str], token: str | None = None, stats=None):
         url = args[0]
         if "status=queued" in url:
             pages_fetched.append(1 if "page=1" in url else 2)
@@ -212,7 +213,7 @@ def test_job_created_at_anchors_age_over_run_created_at(monkeypatch):
     40 min : l'age run serait un faux positif, sens inverse du fail-open."""
     now = datetime(2026, 9, 2, 12, 0, tzinfo=timezone.utc)
 
-    def fake_gh(args: list[str], token: str | None = None):
+    def fake_gh(args: list[str], token: str | None = None, stats=None):
         url = args[0]
         if "status=queued" in url:
             return {"total_count": 1, "workflow_runs": [_run_row(80, 40.0, now)]}
@@ -239,7 +240,7 @@ def test_queued_job_inside_in_progress_run_is_seen(monkeypatch):
     OK possible sous extinction ciblee de la jambe Linux."""
     now = datetime(2026, 9, 2, 12, 0, tzinfo=timezone.utc)
 
-    def fake_gh(args: list[str], token: str | None = None):
+    def fake_gh(args: list[str], token: str | None = None, stats=None):
         url = args[0]
         if "status=queued" in url:
             return {"total_count": 0, "workflow_runs": []}
@@ -276,7 +277,7 @@ def test_run_transition_between_passes_replaces_classification(monkeypatch):
     # Pass 2 (in_progress, plus frais) : le job a demarre.
     state = {"pass": 0}
 
-    def fake_gh(args: list[str], token: str | None = None):
+    def fake_gh(args: list[str], token: str | None = None, stats=None):
         url = args[0]
         if "status=queued" in url or "status=in_progress" in url:
             state["pass"] += 1
@@ -301,7 +302,7 @@ def test_job_seen_in_both_passes_is_counted_once(monkeypatch):
     affame ne doit pas etre compte deux fois."""
     now = datetime(2026, 9, 2, 12, 0, tzinfo=timezone.utc)
 
-    def fake_gh(args: list[str], token: str | None = None):
+    def fake_gh(args: list[str], token: str | None = None, stats=None):
         url = args[0]
         if "status=queued" in url:
             return {"total_count": 1, "workflow_runs": [_run_row(90, 40.0, now)]}
@@ -332,7 +333,7 @@ def test_job_queued_then_completed_leaves_starved(monkeypatch):
     now = datetime(2026, 9, 2, 12, 0, tzinfo=timezone.utc)
     state = {"pass": 0}
 
-    def fake_gh(args: list[str], token: str | None = None):
+    def fake_gh(args: list[str], token: str | None = None, stats=None):
         url = args[0]
         if "status=queued" in url or "status=in_progress" in url:
             state["pass"] += 1
@@ -367,7 +368,7 @@ def test_job_queued_then_cancelled_leaves_starved(monkeypatch):
     now = datetime(2026, 9, 2, 12, 0, tzinfo=timezone.utc)
     state = {"pass": 0}
 
-    def fake_gh(args: list[str], token: str | None = None):
+    def fake_gh(args: list[str], token: str | None = None, stats=None):
         url = args[0]
         if "status=queued" in url or "status=in_progress" in url:
             state["pass"] += 1
@@ -405,7 +406,7 @@ def test_unexamined_old_runs_are_noted_not_red():
 
 
 def test_fetch_inventory_sorts_online_offline(monkeypatch):
-    def fake_gh(args: list[str], token: str | None = None):
+    def fake_gh(args: list[str], token: str | None = None, stats=None):
         return {"runners": [
             {"name": "r-live", "status": "online",
              "labels": [{"name": "coursia-linux"}]},
@@ -422,9 +423,61 @@ def test_fetch_inventory_sorts_online_offline(monkeypatch):
 
 
 def test_fetch_inventory_auth_failure_returns_unavailable(monkeypatch):
-    monkeypatch.setattr(rs, "_gh_json", lambda args, token=None: None)
+    monkeypatch.setattr(rs, "_gh_json", lambda args, token=None, stats=None: None)
     inv = rs.fetch_inventory("jsboige/CoursIA", "coursia-linux", token=None)
     assert not inv.available
+
+
+def test_inventaire_busy_nest_pas_dans_les_slots_libres(monkeypatch):
+    # Un runner en ligne mais OCCUPE ne peut pas absorber un debordement :
+    # le confondre avec un slot libre ferait annoncer une capacite locale
+    # qui n'existe pas.
+    def fake_gh(args: list[str], token: str | None = None, stats=None):
+        return {"runners": [
+            {"name": "r-busy", "status": "online", "busy": True,
+             "labels": [{"name": "coursia-linux"}]},
+            {"name": "r-idle", "status": "online", "busy": False,
+             "labels": [{"name": "coursia-linux"}]},
+        ]}
+
+    monkeypatch.setattr(rs, "_gh_json", fake_gh)
+    inv = rs.fetch_inventory("jsboige/CoursIA", "coursia-linux", token="pat")
+    assert inv.busy == ["r-busy"]
+    assert inv.idle == ["r-idle"]
+    assert inv.unknown == []
+    assert inv.free == 1
+
+
+def test_inventaire_champ_busy_absent_ne_passe_pas_pour_un_slot_libre(monkeypatch):
+    # Un runner en ligne dont l'occupation est INCONNUE (champ `busy` absent
+    # de la reponse) n'est PAS comptabilise comme libre : fail-CLOSED vers
+    # « capacite disponible ». Le traitement du cas muet est explicite, et
+    # le runner est nomme pour que le rapport dise ce qu'il ignore.
+    def fake_gh(args: list[str], token: str | None = None, stats=None):
+        return {"runners": [
+            {"name": "r-muet", "status": "online",
+             "labels": [{"name": "coursia-linux"}]},
+        ]}
+
+    monkeypatch.setattr(rs, "_gh_json", fake_gh)
+    inv = rs.fetch_inventory("jsboige/CoursIA", "coursia-linux", token="pat")
+    assert inv.unknown == ["r-muet"]
+    assert inv.idle == []
+    assert inv.busy == []
+    assert inv.free == 0
+
+
+def test_budget_de_lecture_atteint_une_lecture_tronquee_pas_une_lecture_echouee():
+    # Deux proprietes, deux faits : `complete` dit si la lecture a SUCCEEDE
+    # (aucun listing en echec), `truncated` dit si elle a vu TOUT. Un run non
+    # lu est un run vieux : il peut porter des jobs affames. La consequence
+    # directionnelle est traitee par le controleur (#22946).
+    st = rs.Starvation()
+    assert st.complete is True and st.truncated is False
+    st.budget_unread.append(("wf", 42, 17.5))
+    assert st.truncated is True
+    # La lecture n'a pas ECHOUE : elle a ete arretee par le budget.
+    assert st.complete is True
 
 
 def test_job_queued_then_run_disappears_terminal_is_purged(monkeypatch):
@@ -437,7 +490,7 @@ def test_job_queued_then_run_disappears_terminal_is_purged(monkeypatch):
     la derniere observation du job."""
     now = datetime(2026, 9, 2, 12, 0, tzinfo=timezone.utc)
 
-    def fake_gh(args: list[str], token: str | None = None):
+    def fake_gh(args: list[str], token: str | None = None, stats=None):
         url = args[0]
         if "status=queued" in url:
             return {"total_count": 1, "workflow_runs": [_run_row(90, 40.0, now)]}
@@ -469,7 +522,7 @@ def test_job_queued_run_still_queued_direct_preserved(monkeypatch):
     queued stable n'apparait jamais dans le listing in_progress)."""
     now = datetime(2026, 9, 2, 12, 0, tzinfo=timezone.utc)
 
-    def fake_gh(args: list[str], token: str | None = None):
+    def fake_gh(args: list[str], token: str | None = None, stats=None):
         url = args[0]
         if "status=queued" in url:
             return {"total_count": 1, "workflow_runs": [_run_row(90, 40.0, now)]}
@@ -498,7 +551,7 @@ def test_missing_run_after_failed_listing_is_preserved(monkeypatch):
     appelee (le pipeline s'arrete avant)."""
     now = datetime(2026, 9, 2, 12, 0, tzinfo=timezone.utc)
 
-    def fake_gh(args: list[str], token: str | None = None):
+    def fake_gh(args: list[str], token: str | None = None, stats=None):
         url = args[0]
         if "status=queued" in url:
             return {"total_count": 1, "workflow_runs": [_run_row(90, 40.0, now)]}
@@ -636,3 +689,113 @@ def test_evaluate_wires_host_loss_warnings():
     v = rs.evaluate(inv, rs.Starvation(), warn_floor=2)
     assert v.status == "OK"
     assert any("POOL LOSS" in w and "ai-01-wsl" in w for w in v.warnings)
+
+
+# --- PORTE DE MESURE (#22937) ----------------------------------------------
+# Le heartbeat workflow_run declenche sur CHAQUE fin d'ancre (721 fins/24 h
+# mesurees -> 60 runs/h pour la paire d'advisories -> ~480 appels API/h sur
+# le jeton de depot, sature le 2026-10-28 22:04Z). La porte borne la
+# MESURE, pas le RUN : l'observateur survit et son rapport de cadence servie
+# (#15332) est emis a chaque passage.
+
+def test_gate_is_inactive_by_default():
+    measure, reason = rs.gate_measurement(every_n=0, run_number=7,
+                                          event_name="workflow_run")
+    assert measure is True
+    assert "inactive" in reason
+
+
+def test_gate_every_n_one_is_inactive():
+    measure, _ = rs.gate_measurement(every_n=1, run_number=7,
+                                     event_name="workflow_run")
+    assert measure is True
+
+
+def test_gate_never_gates_the_schedule_leg():
+    # La jambe schedule est la cadence de REFERENCE de l'advisory : la
+    # gater, ce serait supprimer la reference qu'on veut conserver.
+    measure, reason = rs.gate_measurement(every_n=4, run_number=3,
+                                          event_name="schedule")
+    assert measure is True
+    assert "schedule" in reason
+
+
+def test_gate_never_gates_a_manual_dispatch():
+    measure, _ = rs.gate_measurement(every_n=4, run_number=3,
+                                     event_name="workflow_dispatch")
+    assert measure is True
+
+
+def test_gate_measures_one_workflow_run_in_n():
+    measured, _ = rs.gate_measurement(every_n=4, run_number=8,
+                                      event_name="workflow_run")
+    assert measured is True
+    for run_number in (9, 10, 11):
+        measured, _ = rs.gate_measurement(every_n=4, run_number=run_number,
+                                          event_name="workflow_run")
+        assert measured is False
+
+
+def test_gate_measures_when_the_run_number_is_unknown():
+    # Hors Actions (GITHUB_RUN_NUMBER absent) : une lecture qui ne sait pas
+    # ou elle est ne doit pas s'arreter.
+    measure, reason = rs.gate_measurement(every_n=4, run_number=None,
+                                          event_name="workflow_run")
+    assert measure is True
+    assert "inconnu" in reason
+
+
+def test_gate_reason_names_the_run_it_refuses_to_measure():
+    _, reason = rs.gate_measurement(every_n=4, run_number=17,
+                                    event_name="workflow_run")
+    assert "17" in reason
+    assert "CADENCE SEULE" in reason
+
+
+def test_env_int_reads_and_refuses_garbage(monkeypatch):
+    monkeypatch.setenv("RS_TEST_INT", " 42 ")
+    assert rs._env_int("RS_TEST_INT") == 42
+    monkeypatch.setenv("RS_TEST_INT", "pas-un-entier")
+    assert rs._env_int("RS_TEST_INT") is None
+    monkeypatch.delenv("RS_TEST_INT", raising=False)
+    assert rs._env_int("RS_TEST_INT") is None
+
+
+def test_main_cadence_only_pass_still_reports_the_scheduler_silence(
+        monkeypatch, capsys):
+    # Le devoir #15332 ne doit SURVIVRE a la porte : un passage econome
+    # reste un passage, et il dit toujours si le scheduler se tait.
+    seen = {"inventory": 0, "starvation": 0}
+
+    def fake_scheduled(repo, workflow, limit=3, stats=None):
+        # La vraie lecture compte 1 appel dans le compteur du passage.
+        if stats is not None:
+            stats.calls += 1
+        return []
+
+    def fake_inventory(repo, label, token):
+        seen["inventory"] += 1
+        return rs.RunnerInventory()
+
+    def fake_starvation(*args, **kwargs):
+        seen["starvation"] += 1
+        return rs.Starvation()
+
+    monkeypatch.setattr(rs, "fetch_scheduled_runs", fake_scheduled)
+    monkeypatch.setattr(rs, "fetch_inventory", fake_inventory)
+    monkeypatch.setattr(rs, "fetch_starvation", fake_starvation)
+    monkeypatch.setattr(sys, "argv", [
+        "check_runner_starvation.py", "--json",
+        "--self-workflow", "advisory.yml",
+        "--measure-every-n-runs", "4",
+    ])
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "workflow_run")
+    monkeypatch.setenv("GITHUB_RUN_NUMBER", "17")
+
+    assert rs.main() == 0
+    out = capsys.readouterr().out
+    payload = json.loads(out)
+    assert payload["measurement"] == "cadence-only"
+    assert payload["gh_calls"] == 1
+    assert seen == {"inventory": 0, "starvation": 0}
+    assert any("SCHEDULER MUET" in w for w in payload["warnings"])
