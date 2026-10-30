@@ -4753,6 +4753,11 @@ _ORGAN_BANNER_RE = re.compile(r"Organes bloquants en echec\s*:\s*([a-z_ ]+?)\s*(
 _PR_STATE_FRAGMENT = """
   p%(n)d: pullRequest(number:%(n)d) {
     number mergeable
+    # #22362 : depot d'origine != depot de base (fork, PR etudiante). Lu ici
+    # parce que c'est le seul endroit ou les deux transports de
+    # `fetch_open_prs` convergent sur une forme commune, et parce que
+    # `blocking_causes` a deja paye cette requete quand on en a besoin.
+    isCrossRepository
     reviews(last:40) { nodes { state submittedAt author { login } body } }
     commits(last:1) { nodes { commit { statusCheckRollup {
       state   # #12830 : SUCCESS/FAILURE/PENDING/NEUTRAL au niveau rollup, pour le 3e etat file-saturation
@@ -6321,6 +6326,34 @@ def is_out_of_fleet_pr(pr: dict) -> bool:
     return head_ref.startswith("claude/") and "Hors flotte" in (pr.get("body") or "")
 
 
+# #22362 — PRs CROSS-REPOSITORY (fork) exclues de la file d'orphelines. Une
+# contribution publique — TP etudiant, ~95 forks, cf student-pr-reviews.md — a
+# pour forme NORMALE un body sans le moindre marqueur de lane : le gate de tag
+# le dit par construction (variation_tag_required.py, regle 4 de sa docstring :
+# « Forks are excluded ... the workflow does this before invoking us; we never
+# see a fork body »), et le workflow applique cette exemption en amont sur
+# `head.repo.fork` (variation-tag-guard.yml). L'absence de tag y est donc la
+# forme attendue, pas un defaut a reparer : la presenter comme telle, c'est
+# inventer une imputabilite et envoyer une lane sur une PR qui n'appartient a
+# aucune. Mesure fondatrice : #22362 (auteur `snakechoc`, tete
+# `snakechoc/CoursIA` -> base `jsboige/CoursIA`), seule PR listee sous ce
+# paragraphe le 2026-10-26.
+# Le predicat est le champ GitHub `isCrossRepository` — deja lu tel quel par
+# `scripts/ci/update_stale_pr_branches.py:608` et
+# `scripts/ci/sweep_stale_pr_branches.py:142` — et non un second critere
+# invente ici. Il se lit sur le noeud `pullRequest` (`_PR_STATE_FRAGMENT`),
+# deja paye par `unattributed_blocked_prs`.
+def is_cross_repository_pr(state: dict | None) -> bool:
+    """Vrai si la PR vient d'un depot d'origine different (fork, PR etudiante).
+
+    Champ absent (forme partielle, mock ancien) -> `False` : le garde garde sa
+    capacite sur une donnee manquante. L'inverse — traiter l'inconnu comme un
+    fork — retirerait de la file de vraies PRs du depot a reparer, c'est-a-dire
+    le sens dangereux.
+    """
+    return bool((state or {}).get("isCrossRepository"))
+
+
 def unattributed_blocked_prs(prs: list[dict] | None = None) -> list[dict]:
     """PRs ouvertes bloquees sans tag `Grain:` lisible, AVEC leur route.
 
@@ -6346,6 +6379,13 @@ def unattributed_blocked_prs(prs: list[dict] | None = None) -> list[dict]:
     depuis l'exterieur du cluster, et le gate `tag_required` les exempte deja
     (#17715) — router l'une d'elles rejouerait la contradiction que #17713
     ferme.
+
+    Les PRs CROSS-REPOSITORY (fork, contribution publique ou TP etudiant,
+    #22362) sont exclues pour la meme raison, portee par le MEME organe : le
+    gate `variation_tag_required.py` ne lit jamais un body de fork (regle 4 de
+    sa docstring), donc l'absence de tag y est la forme normale. Les lister
+    comme « tag manquant a reparer » inventerait une imputabilite ; ce constat
+    n'appartient a aucune lane.
     """
     if prs is None:
         prs = fetch_open_prs()
@@ -6359,6 +6399,8 @@ def unattributed_blocked_prs(prs: list[dict] | None = None) -> list[dict]:
     for pr in untagged:
         state = untagged_states.get(pr["number"])
         if state is None or not blocking_causes(state):
+            continue
+        if is_cross_repository_pr(state):
             continue
         out.append({"number": pr["number"], "title": pr["title"],
                     "author": ((pr.get("author") or {}).get("login")) or "inconnu",
