@@ -813,4 +813,84 @@ theorem verifyKinkDownAny_rejects_crossRewire :
       { crossings := [⟨1, 2, 3, 4⟩, ⟨3, 4, 1, 2⟩], numEdges := 4 } = false := by
   decide
 
+
+/-! ## 8. Groundwork for the extraction half (slice 4, in progress)
+
+The converse of `canon_map_eq` — same canonical form means the target is a
+renaming of the source — requires the seen-state to be a **faithful** state:
+distinct keys (one label, one rank), distinct and bounded values (one rank,
+one label; ranks live between `1` and the state size). These invariants hold
+by construction: `canonLabel` only adds a key when absent, and the rank
+added is `size + 1`, hence fresh. This section introduces the vocabulary and
+key preservation; value preservation and the extraction theorem itself
+follow (next slices).
+-/
+
+/-- `List.lookup` only fails on an absent key — by induction, to avoid
+    depending on uncertain core lemma names. -/
+private theorem lookup_none_iff_not_mem_key (x : Nat) :
+    ∀ seen : List (Nat × Nat),
+      seen.lookup x = none ↔ x ∉ seen.map Prod.fst := by
+  intro seen
+  induction seen with
+  | nil => simp
+  | cons p t ih =>
+    by_cases hpx : x = p.1
+    · subst hpx
+      simp
+    · have hb : (x == p.1) = false := by
+        rw [beq_eq_false_iff_ne]; exact hpx
+      simp only [List.lookup, hb, List.map_cons, List.mem_cons, not_or]
+      exact ⟨fun h => ⟨hpx, ih.mp h⟩, fun h => ih.mpr h.2⟩
+
+/-- Faithful state, keys: a label has exactly one rank (the seen-state never
+    duplicates keys). -/
+private def SeenKeysNodup (seen : List (Nat × Nat)) : Prop :=
+  (seen.map Prod.fst).Nodup
+
+/-- Faithful state, values: a rank belongs to exactly one label. -/
+private def SeenValsNodup (seen : List (Nat × Nat)) : Prop :=
+  (seen.map Prod.snd).Nodup
+
+/-- Faithful state, boundedness: ranks live between `1` and the state
+    size. -/
+private def SeenValsBounded (seen : List (Nat × Nat)) : Prop :=
+  ∀ p ∈ seen, 0 < p.2 ∧ p.2 ≤ seen.length
+
+/-- `canonLabel` preserves key faithfulness: a present key is not re-added,
+    an absent key is added exactly once. -/
+private theorem canonLabel_keys_nodup {seen : List (Nat × Nat)} {x : Nat}
+    (h : SeenKeysNodup seen) : SeenKeysNodup (canonLabel seen x).2 := by
+  unfold canonLabel
+  cases hlk : seen.lookup x with
+  | some v => exact h
+  | none =>
+    have hx : x ∉ seen.map Prod.fst :=
+      (lookup_none_iff_not_mem_key x seen).mp hlk
+    unfold SeenKeysNodup
+    rw [List.map_append, List.map_singleton]
+    exact List.Nodup.append h (by simp)
+      (by intro a ha
+          simp only [List.mem_singleton]
+          exact fun hax => hx (hax ▸ ha))
+
+/-- Threading a slot sequence preserves key faithfulness (induction on the
+    sequence, arbitrary initial state). -/
+private theorem canonSlots_keys_nodup {seen : List (Nat × Nat)} {xs : List Nat}
+    (h : SeenKeysNodup seen) : SeenKeysNodup (canonSlots seen xs).2 := by
+  induction xs generalizing seen with
+  | nil => exact h
+  | cons y ys ih =>
+    cases hlk : seen.lookup y with
+    | some v =>
+      rw [canonSlots_cons_of_some hlk]
+      exact ih h
+    | none =>
+      have hlab : (canonLabel seen y).2 = seen ++ [(y, seen.length + 1)] := by
+        unfold canonLabel; rw [hlk]
+      have hk' := canonLabel_keys_nodup (seen := seen) (x := y) h
+      rw [hlab] at hk'
+      rw [canonSlots_cons_of_none hlk]
+      exact ih hk'
+
 end Knots_en.AnyMoves

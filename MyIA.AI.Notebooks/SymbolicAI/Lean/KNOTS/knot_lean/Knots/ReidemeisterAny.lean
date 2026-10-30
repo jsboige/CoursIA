@@ -806,4 +806,83 @@ theorem verifyKinkDownAny_rejects_crossRewire :
       { crossings := [⟨1, 2, 3, 4⟩, ⟨3, 4, 1, 2⟩], numEdges := 4 } = false := by
   decide
 
+
+/-! ## 8. Socle de la moitié extraction (tranche 4, en cours)
+
+La réciproque de `canon_map_eq` — même forme canonique ⇒ la cible est un
+renommage de la source — exige que le fil des vues soit un état **fidèle** :
+clés distinctes (une étiquette, un rang), valeurs distinctes et bornées (un
+rang, une étiquette ; les rangs vivent entre `1` et la taille du fil). Ces
+invariants sont de construction : `canonLabel` n'ajoute une clé que si elle
+est absente, et le rang ajouté est `taille + 1`, donc frais. Cette section
+pose le vocabulaire et la préservation des clés ; la préservation des valeurs
+puis le théorème d'extraction suivent (tranches suivantes).
+-/
+
+/-- `List.lookup` n'échoue que sur une clé absente — par induction, pour ne
+    dépendre d'aucun lemme socle au nom incertain. -/
+private theorem lookup_none_iff_not_mem_key (x : Nat) :
+    ∀ seen : List (Nat × Nat),
+      seen.lookup x = none ↔ x ∉ seen.map Prod.fst := by
+  intro seen
+  induction seen with
+  | nil => simp
+  | cons p t ih =>
+    by_cases hpx : x = p.1
+    · subst hpx
+      simp
+    · have hb : (x == p.1) = false := by
+        rw [beq_eq_false_iff_ne]; exact hpx
+      simp only [List.lookup, hb, List.map_cons, List.mem_cons, not_or]
+      exact ⟨fun h => ⟨hpx, ih.mp h⟩, fun h => ih.mpr h.2⟩
+
+/-- État fidèle, clés : une étiquette n'a qu'un rang (le fil ne duplique pas
+    les clés). -/
+private def SeenKeysNodup (seen : List (Nat × Nat)) : Prop :=
+  (seen.map Prod.fst).Nodup
+
+/-- État fidèle, valeurs : un rang n'appartient qu'à une étiquette. -/
+private def SeenValsNodup (seen : List (Nat × Nat)) : Prop :=
+  (seen.map Prod.snd).Nodup
+
+/-- État fidèle, bornage : les rangs vivent entre `1` et la taille du fil. -/
+private def SeenValsBounded (seen : List (Nat × Nat)) : Prop :=
+  ∀ p ∈ seen, 0 < p.2 ∧ p.2 ≤ seen.length
+
+/-- `canonLabel` préserve la fidélité des clés : une clé présente n'est pas
+    réajoutée, une clé absente est ajoutée une seule fois. -/
+private theorem canonLabel_keys_nodup {seen : List (Nat × Nat)} {x : Nat}
+    (h : SeenKeysNodup seen) : SeenKeysNodup (canonLabel seen x).2 := by
+  unfold canonLabel
+  cases hlk : seen.lookup x with
+  | some v => exact h
+  | none =>
+    have hx : x ∉ seen.map Prod.fst :=
+      (lookup_none_iff_not_mem_key x seen).mp hlk
+    unfold SeenKeysNodup
+    rw [List.map_append, List.map_singleton]
+    exact List.Nodup.append h (by simp)
+      (by intro a ha
+          simp only [List.mem_singleton]
+          exact fun hax => hx (hax ▸ ha))
+
+/-- Le filage d'une suite d'étiquettes préserve la fidélité des clés
+    (induction sur la suite, état initial arbitraire). -/
+private theorem canonSlots_keys_nodup {seen : List (Nat × Nat)} {xs : List Nat}
+    (h : SeenKeysNodup seen) : SeenKeysNodup (canonSlots seen xs).2 := by
+  induction xs generalizing seen with
+  | nil => exact h
+  | cons y ys ih =>
+    cases hlk : seen.lookup y with
+    | some v =>
+      rw [canonSlots_cons_of_some hlk]
+      exact ih h
+    | none =>
+      have hlab : (canonLabel seen y).2 = seen ++ [(y, seen.length + 1)] := by
+        unfold canonLabel; rw [hlk]
+      have hk' := canonLabel_keys_nodup (seen := seen) (x := y) h
+      rw [hlab] at hk'
+      rw [canonSlots_cons_of_none hlk]
+      exact ih hk'
+
 end Knots.AnyMoves
