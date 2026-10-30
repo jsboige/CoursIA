@@ -61,9 +61,11 @@
 
 > « Re-mesure du banc 4 » — les deux drapeaux INCONCLUSIF de ce banc
 > (`PromptSignature.Matches`, `PromptTransform.InterpolateKeys`) ont été re-mesurés le 30/10
-> sur un modèle de CPU distinct (i7-11800H) : `Matches` lève en tendance (9→11 −28 %),
-> `InterpolateKeys` maintient son drapeau, et les deux lignes JSON sont reproduites en signe
-> et en amplitude. Les valeurs de ce tableau restent celles de la session du 02/10.
+> sur un modèle de CPU distinct (i7-11800H) : **les deux drapeaux sont maintenus** — une
+> session à 5 passes (#23326) mesure sur `Matches` le signe opposé au mien, et le protocole
+> du banc (une invocation par itération) rend cette cellule structurellement bruitée ; les
+> deux lignes JSON sont en revanche reproduites en signe et en amplitude. Les valeurs de ce
+> tableau restent celles de la session du 02/10.
 
 | Benchmark | net9 | net10 | net11 | 9→10 | 9→11 | 10→11 | Alloc 9/10/11 |
 |---|---:|---:|---:|---:|---:|---:|---|
@@ -319,31 +321,64 @@ et du 20/10.
    rattrapage porte encore l'essentiel du gain (9→10 : −30 % / −36 %, le 10→11 ajoutant
    −5 % / −18 %). Les allocations identiques au Ko près sur les deux lignes confirment que
    le gain est runtime (JIT/writer), pas un effet d'allocation.
-2. **`PromptSignature.Matches` : le drapeau du 02/10 lève en tendance.** Les trois passes
-   net10 (9.84–10.08 µs, écart 2.4 %) sont toutes sous les trois passes net9
-   (10.61–13.69 µs) : le 9→10 à −14.1 % est propre. En 9→11, deux passes net11 (7.14 et
-   8.34 µs) sont sous tout le range net9, la troisième (11.47 µs) dedans — médiane à
-   −28.1 %, dispersion résiduelle 46 % sur net11. La tendance est nette, la certitude
-   n'est pas totale : le drapeau INCONCLUSIF est levé pour cette fenêtre, sans que l'écart
-   au 02/10 (−3.3 %) soit tracé — le code sous test a changé entre les deux.
+2. **`PromptSignature.Matches` : le drapeau du 02/10 n'est pas levé — la première lecture
+   de cette session était trop favorable.** Les trois passes net10 (9.84–10.08 µs, écart
+   2.4 %) sont toutes sous les trois passes net9 (10.61–13.69 µs) : sur **cette** session,
+   le 9→10 à −14.1 % paraît propre, et le 9→11 atteint −28.1 % en médiane. Mais une
+   session à 5 passes sur un autre siège (#23326) mesure sur la même cellule un 9→10 à
+   **+22.2 %** et un 9→11 à **+1.7 %**, avec une dispersion inter-passes de 42 à 102 % :
+   les deux sessions se contredisent **en signe**. Les valeurs ci-dessus restent des
+   mesures ; elles ne portent pas de verdict — voir « Contrôle croisé » ci-dessous.
 3. **`PromptTransform.InterpolateKeys` : le drapeau tient.** Les deltas (+4.4 % / +13.5 % /
    +8.8 %) sont inférieurs à la dispersion inter-passes de chaque runtime (19 % / 12 % /
    38 %, écart max−min rapporté à la moyenne des deux bornes) et les ranges se chevauchent
    (49.0–72.4 µs sur l'ensemble des passes). Aucun gain n'est mesuré non plus : regex
    compilée + `string.Format` ne profitent pas des gains writer. Le drapeau
-   « passes dispersées » du 02/10 est **confirmé par une seconde machine**.
+   « passes dispersées » du 02/10 est **confirmé par une seconde machine**, et la session à
+   5 passes (#23326) conclut de même (dispersion de 123 % sur net9).
 4. **Les valeurs absolues restent incomparables entre sessions** — banc inchangé mais code
    sous test distinct (retrait Oobabooga), CPU distinct, patchs distincts. La règle de
    lecture du 20/10 s'applique : on compare une session à elle-même.
+
+### Contrôle croisé — ma session à 3 passes contre la session à 5 passes (#23326)
+
+Une session indépendante, conduite sur un autre siège et avec **cinq** passes entrelacées au
+lieu de trois (#23326, `myia-ai-01:CoursIA-2`), a mesuré les mêmes cellules du même fichier
+de banc (`semantic-fleet/benchmarks/SemanticFleet.Benchmarks/PromptSettingsBenchmarks.cs`).
+Ce qui est comparable est le **signe et l'amplitude des deltas**, pas les valeurs absolues :
+le code sous test et le CPU diffèrent des deux côtés.
+
+| Cellule | Cette session (3 passes, i7-11800H) | Session #23326 (5 passes) | Lecture |
+|---|---:|---:|---|
+| `JsonSerializer.Serialize` | 9→10 −29.9 % · 9→11 −33.3 % | 9→10 −27.4 % (régime apparié) | **accord** — même signe, même amplitude |
+| `PromptSignature.Matches` | 9→10 −14.1 % · 9→11 −28.1 % | 9→10 +22.2 % · 9→11 +1.7 % (dispersion 42–102 %) | **opposition de signe** — cellule bruitée, aucun verdict |
+| `PromptTransform.InterpolateKeys` | 9→10 +4.4 % · 9→11 +13.5 % (dispersion 19 / 12 / 38 %) | 9→10 +20.6 % · 9→11 −21.8 % (dispersion 123 %) | les deux sessions concluent « non concluant » |
+
+**Pourquoi ce désaccord n'est pas un désaccord de code.** Le fichier de banc porte une config
+de classe, `InProcessShortConfig`, qui épingle `.WithInvocationCount(1)` et
+`.WithUnrollFactor(1)` : **une itération vaut une invocation**, soit quelques µs à quelques
+dizaines de µs selon la cellule — deux à quatre ordres de grandeur sous la durée que
+BenchmarkDotNet recommande, et qu'il réclame lui-même dans ses journaux. À ce grain, le bruit
+est **structurel** : une machine au repos ne le réduit pas, et une séparation nette sur trois
+passes peut n'être que le hasard d'un échantillon — mes propres journaux en montrent la
+trace, avec une dispersion de 46 % sur net11 pour `Matches` (7.14 / 8.34 / 11.47 µs).
+#23326 mesure cette même granularité par un second canal (job long, argument variable) sans
+non plus établir d'écart inter-versions : c'est cette mesure, et non l'absence de fenêtre
+calme, qui fonde le verdict « non concluant ».
+
+Ce que ma session apporte malgré tout, et qui tient : les **deux lignes JSON** sont
+reproduites en signe et en amplitude par la session à 5 passes (−27.4 % contre −29.9 % en
+9→10), et les allocations y sont identiques au Ko près des deux côtés — le gain y est runtime,
+pas allocation.
 
 ### Ce que cette re-mesure règle, et ce qu'elle ne règle pas
 
 | Point | État après le 30/10 |
 |---|---|
-| `PromptSignature.Matches` : drapeau INCONCLUSIF du 02/10 | **levé pour cette fenêtre** — 9→10 séparé net (toutes les passes net10 sous le range net9), 9→11 à −28.1 % en médiane ; cause de l'écart au 02/10 non tracée (code sous test distinct) |
+| `PromptSignature.Matches` : drapeau INCONCLUSIF du 02/10 | **maintenu** — la lecture « levé en tendance » portée par la première version de cette section est **infirmée** par une session à 5 passes qui mesure le signe opposé sur 9→10 (+22.2 %) avec une dispersion de 42 à 102 % (#23326) ; cause de l'écart au 02/10 non tracée (code sous test distinct) |
 | `PromptTransform.InterpolateKeys` : drapeau INCONCLUSIF du 02/10 | **maintenu, confirmé sur seconde machine** — dispersion inter-passes ≥ deltas sur les trois runtimes, aucun gain mesuré |
 | Lignes JSON (Serialize / round-trip) | **reproduites en signe et amplitude** sur i7-11800H à patchs plus récents — le rattrapage 9→10 porte l'essentiel, allocations identiques au Ko près |
-| `RandomSearch_Sphere10D_50k` (MGS) | **reste le seul banc INCONCLUSIF non re-mesuré** de l'article |
+| `RandomSearch_Sphere10D_50k` (MGS) | **non re-mesuré par cette session** — la session à 5 passes (#23326) l'a mesuré (9→11 à −0.5 % pour une dispersion de 28 à 38 %) et le laisse **non concluant** ; le banc reste donc ouvert |
 
 ## Provenance des journaux
 
