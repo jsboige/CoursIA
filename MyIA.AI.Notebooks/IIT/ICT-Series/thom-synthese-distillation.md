@@ -62,7 +62,7 @@ récupérer — avec le distinguo explicite matrice (c.728y+34) vs synthèse
 |---|---|---|---|
 | **Saillance** $s$ | Ce qui est perceptiblement présent dans l'écoulement | conceptuel, déjà nommé | socle strate 6 (Nom = saillance 0-valent) |
 | **Prégnance** $\pi$ | Ce qui donne de l'importance (charge, valence) | conceptuel, déjà nommé | socle strate 6 (Verbe = prégnance 1-4 actants) |
-| **Représentation** $q$ | Ce que le système croit de la cause/du futur ; `p̂` = cas simple (croyance réduite à un point) | [ICT-10](ICT-10-CatastropheGrammar-Python.ipynb), [ICT-12](ICT-12-ValenceFieldsAndAnimats-Python.ipynb), [ICT-14](ICT-14-FreeEnergySurprise-Python.ipynb) | déjà mesurée (cf. lacet de prédation Ch.4 §C) |
+| **Représentation** $q$ | Ce que le système croit de la cause/du futur ; `p̂` = cas simple (croyance réduite à un point) | [ICT-10](ICT-10-CatastropheGrammar-Python.ipynb), [ICT-12](ICT-12-ValenceFieldsAndAnimats-Python.ipynb), [ICT-14](ICT-14-FreeEnergySurprise/ICT-14-FreeEnergySurprise-Python.ipynb) | déjà mesurée (cf. lacet de prédation Ch.4 §C) |
 | **Workspace** $W$ | Ce qui rend des composantes disponibles à d'autres mécanismes | [ICT-24](ICT-24-WorkspaceIgnition-Python.ipynb) (livré Gates 22-23, dissociation documentée) | transversal |
 
 Le présent document ne reproduit pas la matrice
@@ -973,7 +973,7 @@ $h(Z)$ est une courbe du plan BP.
    *prêt à être investi* par une prégnance (stimulus saillant) qui s'y
    propagera. Un substrat n'est pas passif, il est **pré-formé** par les
    arcs lents qui l'attendent. Pont
-   [ICT-14](ICT-14-FreeEnergySurprise-Python.ipynb)
+   [ICT-14](ICT-14-FreeEnergySurprise/ICT-14-FreeEnergySurprise-Python.ipynb)
    (représentation = capture d'un saillant par un champ réceptif).
 3. **Pathologie = collapsus d'attracteur.** « Une pathologie est une
    simplification : un attracteur de faible dimension prenant la place
@@ -1358,7 +1358,7 @@ extension, pas une redite.
   — animats actantiels, mesure de la valence.
 - [ICT-13](ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb)
   — préprogrammes morphologiques du dilemme itéré.
-- [ICT-14](ICT-14-FreeEnergySurprise-Python.ipynb)
+- [ICT-14](ICT-14-FreeEnergySurprise/ICT-14-FreeEnergySurprise-Python.ipynb)
   — jambe représentationnelle (surprise, free energy).
 - [ICT-17b](ICT-17b-Grokking-CompressionProgress-Python.ipynb)
   — compression progressive et dissociations.
