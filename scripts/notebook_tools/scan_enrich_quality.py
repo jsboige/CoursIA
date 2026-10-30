@@ -306,6 +306,18 @@ def _deaccent(text: str) -> str:
                    if not unicodedata.combining(ch))
 
 
+def _skeleton(text: str) -> str:
+    """Case-preserving skeleton: the accents and the ligatures drop out.
+
+    NFKD (not NFD) so the oe/ae ligatures decompose -- ``noeuds`` and
+    ``nœuds`` then share a skeleton. The case is kept on purpose:
+    lowercasing would let a rewrite that only changes the case pass for a
+    surviving line.
+    """
+    return "".join(ch for ch in unicodedata.normalize("NFKD", text)
+                   if not unicodedata.combining(ch))
+
+
 def scan_diacritics(head_cells: list[dict], base_cells: list[dict] | None) -> list[dict]:
     """Class (c): surviving markdown lines must keep their accents.
 
@@ -353,7 +365,16 @@ def scan_diacritics(head_cells: list[dict], base_cells: list[dict] | None) -> li
 
 
 def scan_survival(head_cells: list[dict], base_cells: list[dict] | None) -> list[dict]:
-    """Class (b): extended cells keep their substance; rewrites get flagged."""
+    """Class (b): extended cells keep their substance; rewrites get flagged.
+
+    Survival is counted on the skeleton (accents and ligatures disregarded,
+    the case still significant): a tranche that only adds diacritics keeps the
+    substance of the base, and the accents are already the business of class
+    (c). Counting the diacritics twice made the two classes contradict each
+    other -- measured on #23268 (2026-10-30), a carnet whose 44 markdown
+    cells were all identical on the skeleton was reported as rewritten
+    (survival 9/44, 20 %).
+    """
     if base_cells is None:
         return []
     lines = []
@@ -364,21 +385,31 @@ def scan_survival(head_cells: list[dict], base_cells: list[dict] | None) -> list
     if not lines:
         return []
     head_text = "\n".join(_src(c) for _, c in _md_cells(head_cells))
-    survived = sum(1 for ln in lines if ln in head_text)
+    # Survival is measured on the SKELETON. A tranche that only ADDS
+    # diacritics keeps the substance of the base, and the accent question is
+    # already the business of class (c) (scan_diacritics). Counting it twice
+    # made the two classes contradict each other: measured on #23268
+    # (2026-10-30), 44 markdown cells identical on the NFKD skeleton and zero
+    # differing beyond the diacritics, survival counted verbatim 9/44 (20 %)
+    # -- MD_REWRITE on a carnet that had changed nothing but its diacritics.
+    head_skeleton = _skeleton(head_text)
+    survived = sum(1 for ln in lines if _skeleton(ln) in head_skeleton)
     pct = survived / len(lines)
     if pct < 0.25:
         return [{
             "cell_index": 0, "category": "MD_REWRITE", "severity": "HIGH",
             "evidence": f"{survived}/{len(lines)} base lines survive",
             "message": f"only {survived}/{len(lines)} substantive markdown lines of the base "
-                       f"survive verbatim ({pct:.0%}) -- announced extension is a rewrite",
+                       f"survive (diacritics and ligatures disregarded) ({pct:.0%}) "
+                       f"-- announced extension is a rewrite",
         }]
     if pct < 0.5:
         return [{
             "cell_index": 0, "category": "MD_SURVIVAL_LOW", "severity": "MED",
             "evidence": f"{survived}/{len(lines)} base lines survive",
-            "message": f"{survived}/{len(lines)} substantive markdown lines survive verbatim "
-                       f"({pct:.0%}) -- rewrite-more-than-extend signature",
+            "message": f"{survived}/{len(lines)} substantive markdown lines survive "
+                       f"(diacritics and ligatures disregarded) ({pct:.0%}) "
+                       f"-- rewrite-more-than-extend signature",
         }]
     return []
 
