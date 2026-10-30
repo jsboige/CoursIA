@@ -1358,4 +1358,76 @@ private theorem canonThreaded_row_ranks {c : PDCrossing} {cs : List PDCrossing}
   rw [hct, hranks]
   exact congrArg (fun l => l :: (canonThreaded cs (canonSlots seen [c.e1, c.e2, c.e3, c.e4]).2).1)
     (map_eq_of_pointwise (l := [c.e1, c.e2, c.e3, c.e4]) hrank)
+
+/-! ## 12. L'injectivité du rang (tranche 7)
+
+L'extraction a besoin que le renommage `π` soit **bien défini** : une étiquette
+ne doit correspondre qu'à un seul rang, et un rang à une seule étiquette. La
+première moitié est `SeenKeysNodup` (§8) ; celle-ci est la seconde — un rang
+donné n'est porté que par une seule étiquette.
+
+- `mem_of_lookup` : ce que `lookup` retourne est effectivement porté par le fil ;
+- `pair_eq_of_mem_of_snd_eq` : dans un fil dont les **valeurs** sont distinctes,
+  deux associations de même valeur sont la même association ;
+- `threadRank_inj` : **le rang est injectif** sur les étiquettes portées.
+-/
+
+/-- Ce que `lookup` retourne est effectivement porté par le fil. -/
+private theorem mem_of_lookup {l : List (Nat × Nat)} {x v : Nat}
+    (h : l.lookup x = some v) : (x, v) ∈ l := by
+  induction l with
+  | nil => simp at h
+  | cons p t ih =>
+    simp only [List.lookup] at h
+    by_cases hk : x == p.1
+    · simp only [hk] at h
+      have hx : x = p.1 := by simpa using hk
+      have hv : p.2 = v := Option.some.inj h
+      have hp : (x, v) = p := by
+        rcases p with ⟨a, b⟩
+        simp only at hx hv
+        subst hx
+        subst hv
+        rfl
+      rw [hp]
+      exact List.mem_cons_self
+    · simp only [hk] at h
+      exact List.mem_cons_of_mem p (ih h)
+
+/-- Dans un fil dont les valeurs sont distinctes, deux associations de même
+    valeur sont la même association. -/
+private theorem pair_eq_of_mem_of_snd_eq {l : List (Nat × Nat)}
+    (hv : SeenValsNodup l) {x y v : Nat}
+    (hx : (x, v) ∈ l) (hy : (y, v) ∈ l) : x = y := by
+  unfold SeenValsNodup at hv
+  induction l with
+  | nil => simp at hx
+  | cons p t ih =>
+    simp only [List.map_cons, List.nodup_cons] at hv
+    obtain ⟨hnotin, hnodup⟩ := hv
+    simp only [List.mem_cons] at hx hy
+    rcases hx with hxp | hxt
+    · rcases hy with hyp | hyt
+      · exact congrArg Prod.fst (hxp.trans hyp.symm)
+      · exfalso
+        have hp2 : p.2 = v := by rw [← hxp]
+        have hmem : v ∈ t.map Prod.snd := List.mem_map_of_mem hyt
+        rw [← hp2] at hmem
+        exact hnotin hmem
+    · rcases hy with hyp | hyt
+      · exfalso
+        have hp2 : p.2 = v := by rw [← hyp]
+        have hmem : v ∈ t.map Prod.snd := List.mem_map_of_mem hxt
+        rw [← hp2] at hmem
+        exact hnotin hmem
+      · exact ih hnodup hxt hyt
+
+/-- **Le rang est injectif** sur les étiquettes portées : deux étiquettes
+    portées par le fil avec le même rang sont la même étiquette. -/
+private theorem threadRank_inj {seen : List (Nat × Nat)} (hv : SeenValsNodup seen)
+    {x y vx vy : Nat} (hx : seen.lookup x = some vx) (hy : seen.lookup y = some vy)
+    (h : threadRank seen x = threadRank seen y) : x = y := by
+  have h2 : vx = vy := by simpa only [threadRank, hx, hy] using h
+  have hy' : seen.lookup y = some vx := by rw [h2]; exact hy
+  exact pair_eq_of_mem_of_snd_eq hv (mem_of_lookup hx) (mem_of_lookup hy')
 end Knots.AnyMoves
