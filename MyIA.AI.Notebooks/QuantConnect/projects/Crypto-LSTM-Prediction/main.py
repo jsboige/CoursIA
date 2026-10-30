@@ -510,7 +510,7 @@ class CryptoLSTMPredictionAlgorithm(QCAlgorithm):
             self.SetRuntimeStatistic(key, str(value))
 
     def InitializeLegacy(self):
-        """Code d'origine (fix=off), inchange : temoin des trois verrous de #23563."""
+        """Code d'origine (fix=off), inchange : temoin des quatre verrous de #23563."""
         # Configuration backtest
         self.SetStartDate(self.BACKTEST_START.year, self.BACKTEST_START.month, self.BACKTEST_START.day)
         self.SetEndDate(self.BACKTEST_END.year, self.BACKTEST_END.month, self.BACKTEST_END.day)
