@@ -36,8 +36,8 @@ The organ runs in TWO modes (review of #22527, squash-merge convention):
 
   coverage    (both modes) a monotone ratchet over the whole perennial set: the
               number of documents carrying the header must not drop below
-              ``--baseline`` (default the first wave of 9,
-              ``docs/notebook-metadata/``). Coverage may only grow; it is
+              ``--baseline`` (default 25 = wave 1 ``docs/notebook-metadata/``
+              9 + wave 3 ``docs/genai/`` 16). Coverage may only grow; it is
               deliberately NOT required to be 100% on day one, so the lane is
               adopted wave by wave and the floor is raised as waves land.
 
@@ -73,9 +73,10 @@ TRANSIENTS_REL = Path("docs") / "transients"
 ARCHIVE_REL = Path("docs") / "archive"
 
 # Default coverage floor = wave 1 (docs/notebook-metadata/, 9 documents)
-# + wave 2 (docs/qc/, 8 documents, hors qc-strategies-status chaud par PRs).
-# Raise it as perenne waves land; it is a monotone floor, never a target.
-DEFAULT_BASELINE = 17
+# + wave 2 (docs/qc/, 8 documents, hors qc-strategies-status chaud par PRs)
+# + wave 3 (docs/genai/, 16 documents). Raise it as perenne waves land;
+# it is a monotone floor, never a target.
+DEFAULT_BASELINE = 33
 
 # "> REFERENCE -- 2026-10-25 -- vivante -- derniere revision <date>"
 # (marker + "vivante" + "derniere revision" + trailing date; dash and accent
