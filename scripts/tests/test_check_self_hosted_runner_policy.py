@@ -1456,3 +1456,58 @@ def test_13960_no_duplicate_test_function_definitions() -> None:
         f"doublons de def au top-level : {duplicates} "
         f"(cf #13960 fondateur : la 2e def eclipse la 1re silencieusement)"
     )
+
+
+# --- LISTE DES WORKFLOWS PORTEURS D'UN JOB LOCAL (#22937 phase A) ----------
+#
+# La lecture locale du controleur de debordement ne doit viser que les runs
+# qui PEUVENT porter un job du parc local. C'est cet organe qui possede la
+# connaissance « quel workflow atterrit sur quel runner » : la liste est
+# derivee ici, jamais recopiee dans le controleur.
+
+def _wf(tmp_path: Path, name: str, runs_on: str) -> None:
+    write_workflow(tmp_path, name, f"""
+on: push
+jobs:
+  job:
+    runs-on: {runs_on}
+""")
+
+
+def test_le_parc_local_statique_est_dans_la_liste(tmp_path):
+    _wf(tmp_path, "local", "[self-hosted, coursia-ephemeral, coursia-linux]")
+    paths, reason = policy.local_capable_workflows(tmp_path)
+    assert reason == ""
+    assert paths == {".github/workflows/local.yml"}
+
+
+def test_un_workflow_heberge_est_hors_de_la_liste(tmp_path):
+    _wf(tmp_path, "heberge", "ubuntu-latest")
+    paths, reason = policy.local_capable_workflows(tmp_path)
+    assert reason == ""
+    assert paths == set()
+
+
+def test_une_expression_non_auditee_est_traitee_comme_capable(tmp_path):
+    """Fail-safe : une expression qu'on ne sait pas lire peut atterrir
+    n'importe ou. L'ignorer cacherait une affamescence locale."""
+    _wf(tmp_path, "dynamique", "${{ matrix.os }}")
+    paths, reason = policy.local_capable_workflows(tmp_path)
+    assert reason == ""
+    assert paths == {".github/workflows/dynamique.yml"}
+
+
+def test_un_yaml_invalide_fait_echouer_la_derivation(tmp_path):
+    """Fail-CLOSED : la liste n'est pas etablie -> l'ensemble est VIDE et un
+    motif est rendu. Un ensemble vide ne se lit jamais « aucun workflow
+    local »."""
+    write_workflow(tmp_path, "casse", "on: push\njobs:\n  job:\n   runs-on: [\n")
+    paths, reason = policy.local_capable_workflows(tmp_path)
+    assert paths == set()
+    assert reason != ""
+
+
+def test_un_repertoire_absent_fait_echouer_la_derivation(tmp_path):
+    paths, reason = policy.local_capable_workflows(tmp_path / "absent")
+    assert paths == set()
+    assert "absent" in reason

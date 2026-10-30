@@ -5,6 +5,9 @@ import json
 import os
 import subprocess
 import sys
+import threading
+import time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import pytest
@@ -3527,6 +3530,365 @@ def test_build_queue_metrics_count_verdicts():
     assert metrics["consume"]["rejects_by_cause"][mod.QUEUE_VERDICT_STALE] == 1
 
 
+# --- #22938 : lecture groupee, lecture parallele, budget, sortie pas-a-pas --
+
+
+def test_queue_reads_pull_requests_in_parallel():
+    """Le passage lit plusieurs PRs a la fois (le cout est le tour de reseau)."""
+    lock = threading.Lock()
+    state = {"live": 0, "peak": 0}
+
+    def loader(pr):
+        with lock:
+            state["live"] += 1
+            state["peak"] = max(state["peak"], state["live"])
+        time.sleep(0.05)
+        with lock:
+            state["live"] -= 1
+        return {**_reviewed_snapshot(), "number": pr}
+
+    result = mod.build_queue(
+        list(range(1, 9)), now=QUEUE_NOW, probe=_clear_probe, loader=loader,
+        workers=8,
+    )
+    assert state["peak"] > 1
+    assert len(result["queue"]) == 8
+
+
+def test_queue_reads_sequentially_when_one_worker_is_asked():
+    lock = threading.Lock()
+    state = {"live": 0, "peak": 0}
+
+    def loader(pr):
+        with lock:
+            state["live"] += 1
+            state["peak"] = max(state["peak"], state["live"])
+        time.sleep(0.02)
+        with lock:
+            state["live"] -= 1
+        return {**_reviewed_snapshot(), "number": pr}
+
+    mod.build_queue(
+        list(range(1, 5)), now=QUEUE_NOW, probe=_clear_probe, loader=loader,
+        workers=1,
+    )
+    assert state["peak"] == 1
+
+
+def test_queue_groups_the_discussion_surfaces_in_one_pass(monkeypatch):
+    """#22938 : les surfaces de discussion sont lues en groupe, pas par PR."""
+    calls = {"groups": 0}
+    seen: dict[int, dict] = {}
+
+    def fake_bulk(prs, *, workers):
+        calls["groups"] += 1
+        return {
+            pr: {"comments": [_comment("groupe")], "reviews": [], "threads": []}
+            for pr in prs
+        }
+
+    def fake_load_snapshot(pr, *, discussion=None):
+        seen[pr] = discussion
+        return {
+            **_reviewed_snapshot(),
+            "number": pr,
+            "comments": (discussion or {}).get("comments", []),
+        }
+
+    monkeypatch.setattr(mod, "_discussion_bulk_parallel", fake_bulk)
+    monkeypatch.setattr(mod, "load_snapshot", fake_load_snapshot)
+    result = mod.build_queue(
+        list(range(1, 21)), now=QUEUE_NOW, probe=_clear_probe, workers=4
+    )
+    assert calls["groups"] == 1
+    assert len(seen) == 20
+    assert all(entry is not None for entry in seen.values())
+    assert len(result["queue"]) == 20
+
+
+def test_discussion_bulk_survives_a_failing_batch(monkeypatch):
+    """Un lot dont la passe echoue ne condamne pas ses PRs."""
+
+    def boom(batch):
+        raise RuntimeError("Could not resolve to a PullRequest with the number")
+
+    monkeypatch.setattr(mod, "_discussion_batch", boom)
+    assert mod.discussion_bulk([1, 2, 3]) == {1: {}, 2: {}, 3: {}}
+
+
+def test_discussion_batch_omits_an_overflowing_surface(monkeypatch):
+    """Une surface qui deborde sa page est omise : le lecteur par PR la relit."""
+    payload = {"data": {"p0": {"pullRequest": {
+        "comments": {
+            "nodes": [],
+            "pageInfo": {"hasNextPage": True, "endCursor": "x"},
+        },
+        "reviews": {
+            "nodes": [],
+            "pageInfo": {"hasNextPage": False, "endCursor": None},
+        },
+        "reviewThreads": {
+            "nodes": [],
+            "pageInfo": {"hasNextPage": False, "endCursor": None},
+        },
+    }}}}
+    monkeypatch.setattr(mod, "gh_json", lambda args: payload)
+    surfaces = mod._discussion_batch([7])
+    assert "comments" not in surfaces[7]
+    assert surfaces[7]["reviews"] == []
+    assert surfaces[7]["threads"] == []
+
+
+def test_discussion_mapping_matches_the_rest_readers(monkeypatch):
+    """#22938 : la lecture groupee rend la MEME forme que les lecteurs REST.
+
+    L'empreinte (`surfaces-sha256`) hache l'identifiant, l'auteur, l'horodatage
+    et le corps des commentaires et des reviews : une forme differente
+    perimerait les dossiers vivants. Le controle LIVE est dans le corps de la
+    PR (#23196 -> #22938) ; ce test verrouille leMapping.
+    """
+    rest_rows = [{
+        "node_id": "IC_1", "id": 1,
+        "user": {"login": "github-actions", "type": "Bot"},
+        "created_at": "2026-10-28T22:04:33Z", "body": "un corps",
+    }]
+    graph_rows = [{
+        "id": "IC_1",
+        "author": {"login": "github-actions", "__typename": "Bot"},
+        "createdAt": "2026-10-28T22:04:33Z", "body": "un corps",
+    }]
+    monkeypatch.setattr(
+        mod, "_issue_comments", lambda pr: [
+            {
+                "id": row.get("node_id") or row.get("id"),
+                "author": {
+                    "login": mod.gh_identity.normalize_author_login(
+                        row.get("user") or {}
+                    ),
+                    "type": (row.get("user") or {}).get("type") or "",
+                },
+                "createdAt": row.get("created_at"),
+                "body": row.get("body") or "",
+            }
+            for row in rest_rows
+        ],
+    )
+    rest = mod._issue_comments(1)
+    graph = mod._gq_comments({
+        "comments": {"nodes": graph_rows}
+    })
+    assert rest == graph
+    assert graph[0]["author"]["login"] == "github-actions[bot]"
+
+
+def test_load_snapshot_uses_the_prefetched_surfaces(monkeypatch):
+    """#22938 : la lecture groupee alimente le snapshot, sans relecture REST."""
+    calls = {"comments": 0, "reviews": 0, "threads": 0}
+    meta = {
+        "number": 5, "title": "t", "body": "", "state": "OPEN",
+        "isDraft": False, "baseRefName": "main", "baseLiveness": "main",
+        "headRefOid": HEAD, "headRefName": "b",
+        "updatedAt": "2026-10-08T10:00:00Z",
+        "createdAt": "2026-10-01T00:00:00Z", "mergedAt": None,
+        "changedFiles": 1, "additions": 1, "deletions": 0,
+    }
+    monkeypatch.setattr(mod, "_pr_metadata", lambda pr: dict(meta))
+    monkeypatch.setattr(
+        mod, "_issue_comments",
+        lambda pr: calls.__setitem__("comments", calls["comments"] + 1) or [],
+    )
+    monkeypatch.setattr(
+        mod, "_reviews",
+        lambda pr: calls.__setitem__("reviews", calls["reviews"] + 1) or [],
+    )
+    monkeypatch.setattr(
+        mod, "review_threads",
+        lambda pr: calls.__setitem__("threads", calls["threads"] + 1) or [],
+    )
+    monkeypatch.setattr(mod, "_head_check_runs", lambda sha: [])
+
+    snapshot = mod.load_snapshot(5, discussion={
+        "comments": [_comment("c")], "reviews": [], "threads": [],
+    })
+    assert snapshot["comments"][0]["body"] == "c"
+    assert calls == {"comments": 0, "reviews": 0, "threads": 0}
+
+    # Une surface absente du lot est relue par le lecteur par PR.
+    mod.load_snapshot(5, discussion={"comments": []})
+    assert calls == {"comments": 0, "reviews": 1, "threads": 1}
+
+
+def test_queue_budget_names_the_unread_pull_requests():
+    """#22938 : le budget borne le passage et la queue nomme son trou."""
+
+    def slow(pr):
+        time.sleep(0.2)
+        return {**_reviewed_snapshot(), "number": pr}
+
+    result = mod.build_queue(
+        list(range(1, 21)), now=QUEUE_NOW, probe=_clear_probe, loader=slow,
+        workers=2, time_budget_seconds=0.05,
+    )
+    assert result["run"]["budget_exhausted"] is True
+    assert result["unknown"]
+    assert all(
+        row["error"] == mod.BUDGET_EXHAUSTED_MARKER for row in result["unknown"]
+    )
+    assert len(result["unknown"]) + len(result["queue"]) == 20
+
+
+def test_queue_without_budget_keeps_every_pull_request():
+    result = mod.build_queue(
+        list(range(1, 6)), now=QUEUE_NOW, probe=_clear_probe,
+        loader=lambda pr: {**_reviewed_snapshot(), "number": pr},
+        workers=4,
+    )
+    assert result["unknown"] == []
+    assert result["run"]["budget_exhausted"] is False
+    assert len(result["queue"]) == 5
+
+
+def test_transient_read_error_is_retried(monkeypatch):
+    """Un hoquet de reseau se relit ; la PR ne part pas dans `unknown`."""
+    monkeypatch.setattr(mod.time, "sleep", lambda seconds: None)
+    state = {"calls": 0}
+
+    def loader(pr):
+        state["calls"] += 1
+        if state["calls"] == 1:
+            raise RuntimeError("gh: API rate limit exceeded (HTTP 403)")
+        return _reviewed_snapshot()
+
+    result = mod.build_queue(
+        [9], now=QUEUE_NOW, probe=_clear_probe, loader=loader, workers=1
+    )
+    assert state["calls"] == 2
+    assert len(result["queue"]) == 1
+    assert result["unknown"] == []
+
+
+def test_permanent_read_error_is_not_retried():
+    """Une erreur permanente n'est pas relue : le defaut reste fatal."""
+    state = {"calls": 0}
+
+    def loader(pr):
+        state["calls"] += 1
+        raise RuntimeError("gh: HTTP 404: Not Found (pull request not found)")
+
+    result = mod.build_queue(
+        [9], now=QUEUE_NOW, probe=_clear_probe, loader=loader, workers=1
+    )
+    assert state["calls"] == 1
+    assert [row["pr"] for row in result["unknown"]] == [9]
+
+
+def test_queue_progress_reports_each_classified_pull_request():
+    seen: list[dict] = []
+    mod.build_queue(
+        [3, 4], now=QUEUE_NOW, probe=_clear_probe,
+        loader=lambda pr: {**_reviewed_snapshot(), "number": pr},
+        workers=2, progress=seen.append,
+    )
+    assert {item["pr"] for item in seen} == {3, 4}
+    assert all("verdict" in item for item in seen)
+    assert all("elapsed_seconds" in item for item in seen)
+
+
+def test_queue_run_block_reports_the_cost():
+    """#22938 : le cout du passage est mesure DANS le passage."""
+    result = mod.build_queue(
+        [7], now=QUEUE_NOW, probe=_clear_probe,
+        loader=lambda pr: _reviewed_snapshot(), workers=4,
+    )
+    run = result["run"]
+    assert run["workers"] == 4
+    assert run["prs_requested"] == 1
+    assert run["prs_classified"] == 1
+    assert run["elapsed_seconds"] >= 0
+    assert set(run["api_calls"]) == {"rest", "graphql"}
+
+
+def test_stack_index_builds_the_same_entries_in_parallel(monkeypatch):
+    """#22938 : la mesure pile est la MEME, seule l'ordonnancement change."""
+    monkeypatch.setattr(mod, "gh_lines", lambda args: ["1", "2", "3"])
+    monkeypatch.setattr(mod, "_fetch_pr_heads", lambda numbers: (list(numbers), []))
+    monkeypatch.setattr(
+        mod, "_git",
+        lambda args, check=True: subprocess.CompletedProcess(args, 0, "", ""),
+    )
+    index, incidents = mod.build_stack_index()
+    assert incidents == []
+    assert sorted(index) == [1, 2, 3]
+    assert all(entry.ref.startswith(mod.STACK_REF_PREFIX) for entry in index.values())
+
+
+def test_default_stack_index_builds_once_under_concurrency(monkeypatch):
+    """#22938 : la lecture en parallele ne construit pas huit index.
+
+    Sans verrou, chaque fil construisait son propre index : huit
+    constructions concurrentes se disputent le verrou git et la porte pile
+    se retrouve desactivee sans que l'incident se voie.
+    """
+    # Le garde d'hermeticite remplace `default_stack_index` par une souche :
+    # ce test mesure le VRAI code (verrou + cache), donc on le restaure.
+    monkeypatch.setattr(mod, "default_stack_index", _REAL_DEFAULT_STACK_INDEX)
+    monkeypatch.setattr(
+        mod, "_STACK_INDEX_CACHE",
+        {"built": False, "index": None, "incidents": []},
+    )
+    builds = []
+
+    def fake_build():
+        builds.append(1)
+        time.sleep(0.05)
+        return {"marker": True}, []
+
+    monkeypatch.setattr(mod, "build_stack_index", fake_build)
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        results = list(pool.map(lambda _i: mod.default_stack_index(), range(8)))
+    assert len(builds) == 1
+    assert all(result == {"marker": True} for result in results)
+
+
+def test_queue_isolates_a_classification_failure(monkeypatch):
+    """Un classement qui echoue ne tue pas les autres PRs de la file."""
+    real = mod.classify_snapshot
+
+    def flaky(snapshot, **kwargs):
+        if snapshot.get("number") == 2:
+            raise RuntimeError("classement casse")
+        return real(snapshot, **kwargs)
+
+    monkeypatch.setattr(mod, "classify_snapshot", flaky)
+    result = mod.build_queue(
+        [1, 2, 3], now=QUEUE_NOW, probe=_clear_probe,
+        loader=lambda pr: {**_reviewed_snapshot(), "number": pr},
+    )
+    assert [row["pr"] for row in result["unknown"]] == [2]
+    assert sorted(item["pr"] for item in result["queue"]) == [1, 3]
+
+
+def test_queue_budget_names_the_prs_not_classified(monkeypatch):
+    """#22938 : le budget vaut aussi pour la phase de classement."""
+    real = mod.classify_snapshot
+
+    def slow(snapshot, **kwargs):
+        time.sleep(0.2)
+        return real(snapshot, **kwargs)
+
+    monkeypatch.setattr(mod, "classify_snapshot", slow)
+    result = mod.build_queue(
+        list(range(1, 21)), now=QUEUE_NOW, probe=_clear_probe,
+        loader=lambda pr: {**_reviewed_snapshot(), "number": pr},
+        workers=2, time_budget_seconds=0.05,
+    )
+    assert result["run"]["budget_exhausted"] is True
+    assert len(result["unknown"]) + len(result["queue"]) == 20
+    assert all(
+        row["error"] == mod.BUDGET_EXHAUSTED_MARKER for row in result["unknown"]
+    )
+
+
 def test_consume_refuses_mutation_after_dossier():
     snapshot = _reviewed_snapshot()
     snapshot["comments"].append(_comment("posted after dossier"))
@@ -4708,13 +5070,18 @@ def test_stack_door_is_silent_on_the_merge_path_when_not_a_stack_top(monkeypatch
 
 
 def _author_ref_synthetic_git(*, parents=(), ancestors=(), trees=(), auto_merges=()):
-    """`git` simule repondant aux 4 questions de `_author_ref`.
+    """`git` simule repondant aux questions de `_author_ref`.
 
     `parents` : sha -> "<first> <second>" (sortie de `log -1 --format=%P`).
     `ancestors` : paires (second, base) pour lesquelles merge-base rc=0.
     `trees` : sha -> tree_sha (sortie de `log -1 --format=%T`).
     `auto_merges` : (first, second) -> tree_sha (sortie de
     `merge-tree --write-tree`).
+
+    #22938 : `_author_ref` lit les parents ET l'arbre dans UN seul appel
+    (`--format=%P%x09%T`) -- une requete de moins par etape de remontee. Le
+    faux git repond a cette forme la ; les deux formes simples restent
+    reconnues pour les tests qui les appellent directement.
     """
     anc = set(ancestors)
     par = dict(parents)
@@ -4722,6 +5089,12 @@ def _author_ref_synthetic_git(*, parents=(), ancestors=(), trees=(), auto_merges
     auto = dict(auto_merges)
 
     def fake(args, check=True):
+        if args[:3] == ["log", "-1", "--format=%P%x09%T"]:
+            sha = args[3]
+            return subprocess.CompletedProcess(
+                ["git", *args], 0,
+                f"{par.get(sha, '')}\t{tre.get(sha, '')}", ""
+            )
         if args[:3] == ["log", "-1", "--format=%P"]:
             return subprocess.CompletedProcess(
                 ["git", *args], 0, par.get(args[3], ""), ""
@@ -4795,6 +5168,46 @@ def test_author_ref_stops_at_conflict_resolution(monkeypatch):
         ),
     )
     assert mod._author_ref(top, base_ref=base) == top
+
+
+def test_author_ref_reads_parents_and_tree_in_one_git_call(monkeypatch):
+    """#22938 -- parents et arbre sortent d'UN seul appel git.
+
+    `_author_ref` coute 0,63 s par PR (237,5 s cumules pour 377 PRs) :
+    c'est le poste le plus cher de la porte pile. Chaque etape de remontee
+    interrogeait le meme commit deux fois (`--format=%P` puis `--format=%T`).
+    Les deux lectures sont desormais fusionnees en un appel
+    (`--format=%P%x09%T`) -- meme mesure, un processus de moins.
+
+    Le test compte les appels : sans la fusion, la remontee d'une fusion
+    content-free en ferait deux par etape.
+    """
+    base = "refs/remotes/origin/main"
+    main_sha = "1" * 40
+    feature_sha = "2" * 40
+    top = "3" * 40
+    inner = _author_ref_synthetic_git(
+        parents={top: f"{feature_sha} {main_sha}"},
+        ancestors={(main_sha, base)},
+        trees={top: "tree_top"},
+        auto_merges={(feature_sha, main_sha): "tree_top"},
+    )
+    calls: list[list[str]] = []
+
+    def counting(args, check=True):
+        calls.append(list(args))
+        return inner(args, check=check)
+
+    monkeypatch.setattr(mod, "_git", counting)
+    assert mod._author_ref(top, base_ref=base) == feature_sha
+    log_calls = [c for c in calls if c[:2] == ["log", "-1"]]
+    assert log_calls, calls
+    # UNE lecture par ETAPE de remontee, et toujours la forme fusionnee.
+    assert all(c[2] == "--format=%P%x09%T" for c in log_calls), log_calls
+    assert not [
+        c for c in calls
+        if c[:3] in (["log", "-1", "--format=%P"], ["log", "-1", "--format=%T"])
+    ], calls
 
 
 def test_author_ref_returns_on_non_merge_commit(monkeypatch):

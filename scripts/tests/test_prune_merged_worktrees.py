@@ -2671,6 +2671,39 @@ class TestRefusalReport3895:
         assert "myia-po-2026:CoursIA-2" in owners
         assert "[WARN][prune-task]" in captured.err
 
+    def test_mute_flag_distinguishes_silent_from_clean(
+            self, monkeypatch, capsys):
+        """#127 : un organe qui n'a diagnostique AUCUN worktree (scanned=0)
+        est MUET, pas propre. Le flag JSON `mute` et la ligne stderr rendent
+        un silence discriminable d'une passe propre -- avant, `scanned=0`,
+        stdout vide et rc=0 etaient indiscernables d'une ferme saine (classe
+        #86, 8 nuits sur ai-01)."""
+        # scanned=0 -> mute True, et l'avertissement part sur stderr
+        # (stdout reste du JSON pur pour json.loads).
+        assert self._run_main(monkeypatch, [], argv_extra=["--json"]) == 0
+        cap = capsys.readouterr()
+        out = json.loads(cap.out)
+        assert out["scanned"] == 0
+        assert out["mute"] is True
+        # reserve Hermes #22440 : le cas mute n'a rien sous la main -- refus
+        # et retraits restent a 0 (implicite jusqu'ici, desormais epingle).
+        assert out["refused"] == 0
+        assert out["removable"] == 0
+        assert "MUTE" in cap.err
+        # reserve Hermes #22440 (complement symetrique) : en mode TEXTE, un
+        # passage scanned=0 doit aussi laisser une ligne sur stdout -- sans
+        # elle, un appelant qui ne lit que stdout voit un silence blanc.
+        assert self._run_main(monkeypatch, []) == 0
+        cap_text = capsys.readouterr()
+        assert "scanned=0" in cap_text.out
+        assert "MUTE" in cap_text.err
+        # controle negatif : un scan non vide n'est JAMAIS mute.
+        assert self._run_main(
+            monkeypatch, [_make_status()], argv_extra=["--json"]) == 0
+        out2 = json.loads(capsys.readouterr().out)
+        assert out2["scanned"] == 1
+        assert out2["mute"] is False
+
     def test_apply_error_still_exits_two(self, monkeypatch):
         """Le rc=2 des echecs d'application survit au changement : un
         REMOVE annonce que git refuse reste une erreur, pas un refus."""
