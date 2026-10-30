@@ -391,6 +391,47 @@ def apply_sweep(reps: list[tuple[str, str]], paths: list[str]) -> int:
 # son atteinte se detecte et se refuse -- cf. report_gating.
 GH_PR_LIST_LIMIT = 1000
 
+# Plafond de la liste `files` de `gh pr list --json files` : GraphQL ramene
+# 100 entrees par PR. Une PR qui en tient plus perd la fin de sa liste, et un
+# fichier du plan qu'elle detient serait alors declare LIBRE sans que rien ne
+# le dise -- la classe de defaut que ce mode corrige. On repasse donc par
+# l'API REST paginee des que la liste GraphQL atteint ce plafond ; si cette
+# mesure echoue, la porte refuse (None), comme pour tout echec de mesure.
+GH_PR_FILES_GRAPHQL_CAP = 100
+
+
+def pr_files_via_rest(pr_number: int) -> list[str] | None:
+    """Chemins des fichiers d'une PR via l'API REST paginee.
+
+    None = mesure impossible (gh absent, gh en echec, reponse illisible,
+    pagination sans fin). Une liste tronquee serait pire qu'un echec : elle
+    ferait passer un fichier tenu pour un fichier libre.
+    """
+    paths: list[str] = []
+    for page in range(1, 31):
+        try:
+            r = subprocess.run(
+                ["gh", "api",
+                 f"repos/jsboige/CoursIA/pulls/{pr_number}/files?per_page=100&page={page}"],
+                capture_output=True, text=True, encoding="utf-8", errors="replace",
+                cwd=str(REPO_ROOT))
+        except FileNotFoundError:
+            return None
+        if r.returncode != 0:
+            return None
+        try:
+            batch = json.loads(r.stdout or "[]")
+        except json.JSONDecodeError:
+            return None
+        if not isinstance(batch, list):
+            return None
+        if not batch:
+            break
+        paths.extend(f["path"] for f in batch if isinstance(f, dict) and f.get("path"))
+        if len(batch) < 100:
+            break
+    return paths
+
 
 def report_gating(concerned: set[str]) -> dict[str, list[str]] | None:
     """Fichiers du plan retenus par des PRs ouvertes, PAR PR (best-effort via gh).
@@ -401,9 +442,10 @@ def report_gating(concerned: set[str]) -> dict[str, list[str]] | None:
     presence d'un fichier dans le hub, qui ne se levait jamais.
 
     Rend {"#N": [chemins retenus tries]} ; {} = mesure faite, aucun fichier
-    tenu. None = mesure impossible : gh absent, gh en echec, ou **liste
-    tronquee** (GH_PR_LIST_LIMIT atteinte). L'appelant refuse --apply sur
-    None (fail-closed).
+    tenu. None = mesure impossible : gh absent, gh en echec, **liste
+    tronquee** (GH_PR_LIST_LIMIT atteinte), ou PR dont la liste de fichiers
+    atteint le plafond GraphQL et dont la re-mesure REST echoue. L'appelant
+    refuse --apply sur None (fail-closed).
 
     La troncature est fail-closed pour la meme raison que l'echec gh : une
     PR hors fenetre est indiscernable d'une PR inexistante, donc un fichier
@@ -427,7 +469,16 @@ def report_gating(concerned: set[str]) -> dict[str, list[str]] | None:
         return None
     holding: dict[str, list[str]] = {}
     for pr in prs:
-        held = sorted({f["path"] for f in pr.get("files", []) if f["path"] in concerned})
+        files = [f["path"] for f in (pr.get("files") or [])
+                 if isinstance(f, dict) and f.get("path")]
+        if len(files) >= GH_PR_FILES_GRAPHQL_CAP:
+            rest = pr_files_via_rest(pr["number"])
+            if rest is None:
+                print(f"[gating] PR #{pr['number']} : {GH_PR_FILES_GRAPHQL_CAP} fichiers ou plus, "
+                      "mesure REST paginee impossible -- mesure incomplete")
+                return None
+            files = rest
+        held = sorted({p for p in files if p in concerned})
         if held:
             holding[f"#{pr['number']}"] = held
     return holding

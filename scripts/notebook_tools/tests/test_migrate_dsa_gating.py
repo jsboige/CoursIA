@@ -134,3 +134,74 @@ def test_le_contrat_tient_sur_les_trois_formes(value):
     if isinstance(value, dict):
         assert all(isinstance(k, str) and k.startswith("#") for k in value)
         assert all(isinstance(v, list) for v in value.values())
+
+
+# --- Plafond GraphQL sur la liste des fichiers d'une PR --------------------
+#
+# `gh pr list --json files` ramene 100 entrees par PR : au-dela, la fin de la
+# liste disparait. Un fichier du plan tenu par une PR au-dela du plafond
+# serait alors declare LIBRE, sans que rien ne le dise. La porte repasse par
+# REST dans ce cas, et refuse si la re-mesure echoue.
+
+
+def test_pr_au_plafond_graphql_est_re_mesuree_en_rest(monkeypatch):
+    """100 fichiers vus par GraphQL : la liste est re-mesuree, paginee, en REST."""
+    graphql_files = [{"path": f"g{i}.py"} for i in range(99)] + [{"path": PLAN_A}]
+    rest_page1 = [{"path": f"r{i}.py"} for i in range(100)]
+    rest_page2 = [{"path": PLAN_A}, {"path": PLAN_B}]
+    calls = []
+
+    def run(argv, **kwargs):
+        calls.append(argv)
+        if argv[1] == "api":
+            page = argv[2].rsplit("page=", 1)[-1]
+            batch = rest_page1 if page == "1" else rest_page2
+            return SimpleNamespace(returncode=0, stdout=json.dumps(batch), stderr="")
+        return SimpleNamespace(
+            returncode=0,
+            stdout=json.dumps([{"number": 500, "files": graphql_files}]),
+            stderr="")
+
+    monkeypatch.setattr(migration, "subprocess", SimpleNamespace(run=run))
+
+    gating = migration.report_gating(CONCERNED)
+
+    # Le fichier plan visible seulement par REST est bien retenu
+    assert gating == {"#500": [PLAN_A, PLAN_B]}
+    assert any(argv[1] == "api" for argv in calls)
+
+
+def test_rest_echoue_au_plafond_rend_none(monkeypatch, capsys):
+    """Re-mesure REST impossible : la porte refuse, elle ne se tait pas."""
+    graphql_files = [{"path": f"g{i}.py"} for i in range(100)]
+
+    def run(argv, **kwargs):
+        if argv[1] == "api":
+            return SimpleNamespace(returncode=1, stdout="", stderr="HTTP 502")
+        return SimpleNamespace(
+            returncode=0,
+            stdout=json.dumps([{"number": 501, "files": graphql_files}]),
+            stderr="")
+
+    monkeypatch.setattr(migration, "subprocess", SimpleNamespace(run=run))
+
+    assert migration.report_gating(CONCERNED) is None
+    assert "REST" in capsys.readouterr().out
+
+
+def test_sous_le_plafond_graphql_aucun_appel_rest(monkeypatch):
+    """Temoin negatif : une PR sous le plafond ne declenche pas de re-mesure."""
+    calls = []
+
+    def run(argv, **kwargs):
+        calls.append(argv)
+        return SimpleNamespace(
+            returncode=0,
+            stdout=json.dumps([{"number": 502,
+                                "files": [{"path": PLAN_A}] * 99}]),
+            stderr="")
+
+    monkeypatch.setattr(migration, "subprocess", SimpleNamespace(run=run))
+
+    assert migration.report_gating(CONCERNED) == {"#502": [PLAN_A]}
+    assert not any(argv[1] == "api" for argv in calls)
