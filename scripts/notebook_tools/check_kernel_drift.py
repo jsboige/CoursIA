@@ -499,8 +499,11 @@ CANONICAL_LANGUAGE_TRANSITIONS_SCOPED = {
     # 2026-10-29). Le prefixe -- un premier element termine par ``/`` --
     # limite la tolerance a ce repertoire : les carnets hors serie qui
     # partagent le kernelspec gardent la direction rouge, ce que la
-    # reserve #22979 exigeait (67 carnets hors serie mesures le
-    # 2026-10-29, contre 4 dans la serie).
+    # reserve #22979 exigeait (une cinquantaine de carnets hors
+    # 02-ML-Cours partagent ce kernelspec, contre 4 dans la serie --
+    # forme non exacte deliberee, comme a l'entree 2.8c ci-dessus, pour
+    # que la valeur ne pourrisse pas au rythme des ajouts de carnets ;
+    # la mesure exacte et sa commande sont consignees dans #23187).
     ("MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/",
      "coursia-ml-training", "3.11", "3.13"):
         "Python 3.11 -> 3.13 sous `coursia-ml-training` pour tout carnet de "
