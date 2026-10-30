@@ -854,72 +854,34 @@ DEFAULT_WORKFLOWS_DIR = Path(__file__).resolve().parents[2] / ".github" / "workf
 # jobs changent de nom plus souvent que les workflows) sans fermer cette
 # limite sur le fond.
 HOSTED_PR_JOB_EXCEPTIONS: dict[str, str] = {
-    # --- convertis par #23016 (vague 2), non encore merges sur main ---
-    "always-on-metadata-guards.yml": (
-        "#23016 (vague 2) : converti en hybride, PR non encore mergee sur main"
-    ),
-    "enrich-quality-gate.yml": (
-        "#23016 (vague 2) : converti en hybride, PR non encore mergee sur main"
-    ),
-    "notebook-execution-required.yml": (
-        "#23016 (vague 2) : converti en hybride, PR non encore mergee sur main"
-    ),
-    "notebook-validation.yml": (
-        "#23016 (vague 2) : converti en hybride, PR non encore mergee sur main"
-    ),
-    "quarto-render-list-freshness.yml": (
-        "#23016 (vague 2) : converti en hybride, PR non encore mergee sur main"
-    ),
-    # --- familles suivantes de #23053, converties par leurs propres PRs ---
-    "dotnet-AgentSafetyAnalyzer.yml": (
-        "famille (b) tests .NET : conversion portee par la PR #23058"
-    ),
-    "dotnet-ArgumentAnalysis.yml": (
-        "famille (b) tests .NET : conversion portee par la PR #23058"
-    ),
-    "dotnet-OrphanApps.yml": (
-        "famille (b) tests .NET : conversion portee par la PR #23058"
-    ),
-    "dotnet-Shared.Tests.yml": (
-        "famille (b) tests .NET : conversion portee par la PR #23058"
-    ),
-    "gametheory-tests.yml": (
-        "famille (b) tests : conversion portee par la PR #23058"
-    ),
-    "genai-helpers-tests.yml": (
-        "famille (b) tests : conversion portee par la PR #23058"
-    ),
-    "ict-tests.yml": (
-        "famille (b) tests : conversion portee par la PR #23058"
-    ),
-    "ml-tests.yml": (
-        "famille (b) tests ML : conversion portee par la PR #23058"
-    ),
-    "scripts-tests.yml": (
-        "famille (b) tests : conversion portee par la PR #23058"
-    ),
+    # --- famille (c) : conversion en vol dans la PR #23059 (ouverte) --------
     "lean-ci-matrix.yml": (
-        "famille (c) Lean : conversion portee par la PR #23059"
+        "famille (c) : le dispatcher `changes` reste nu, sa conversion est "
+        "portee par la PR #23059 (ouverte au 2026-10-30)"
     ),
-    "lean-planning.yml": (
-        "famille (c) Lean : conversion portee par la PR #23059"
-    ),
-    "quarto-pages-deploy.yml": (
-        "famille (c) Quarto : conversion portee par la PR #23059"
-    ),
-    "slides-build-advisory.yml": (
-        "famille (c) slides : conversion portee par la PR #23059"
-    ),
-    # --- exceptions durables, hors perimetre de conversion ---
+    # --- jobs heberges pour une raison propre, mesuree dans le fichier -----
     "codeql.yml": (
         "CodeQL en advanced setup (#22548) : `analyze` telecharge le bundle "
         "CodeQL, lance l'analyse et televerse du SARIF (`security-events: "
         "write`), ~14 min/run heberge ; son routage sur le conteneur ephemere "
         "n'est pas verifie -- #23053 laisse la question ouverte"
     ),
+    "ml-tests.yml": (
+        "job `prover-tests` heberge : offre GitHub d'abord (consigne user "
+        "#17397 du 2026-10-25, note portee par le fichier)"
+    ),
+    "notebook-execution-required.yml": (
+        "job `golden-set-execute` heberge : offre GitHub d'abord (consigne "
+        "user #17397 du 2026-10-25, note portee par le fichier)"
+    ),
     "perimeter-review-guard.yml": (
         "declencheur `pull_request_review` classe FORK_REACHABLE (#14201) : le "
         "runner local est interdit, le garde refuse la jambe self-hosted"
+    ),
+    "quarto-pages-deploy.yml": (
+        "`build` : OOM du rendu complet mesuree sur le pool (1145/1276 "
+        "notebooks, run 34217750689, #15202) ; `deploy` : push-only, "
+        "OIDC/PAGES ; `validate-pr` : offre GitHub d'abord (#17397)"
     ),
     "secret-scan.yml": (
         "jambe `gitleaks-fork` : elle n'existe QUE pour les PRs de fork (son "
@@ -927,32 +889,27 @@ HOSTED_PR_JOB_EXCEPTIONS: dict[str, str] = {
         "socket manque au pool conteneur (uid 1001, no-new-privileges) ; la "
         "jambe self-hosted voisine couvre les runs du depot"
     ),
+    "slides-build-advisory.yml": (
+        "job `slides-build-advisory` heberge : offre GitHub d'abord (consigne "
+        "user #17397 du 2026-10-25) ; le fichier documente le nocturne "
+        "(#12817) et son runs-on statique"
+    ),
 }
 
-# Figee a la creation du cliquet (#23053, 2026-10-28) : les workflows qui
-# restaient figes sur `ubuntu-latest` nu ce jour-la. Elle NE S'ELARGIT PAS --
+# Figee a la creation du cliquet (#23053, 2026-10-28) a 21 entrees, puis
+# reduite le 2026-10-30 aux 8 exceptions vivantes : les conversions #23016
+# (merge 2026-10-29) et #23058 famille (b) (merge 2026-10-30) sont arrivees
+# sur main et leurs entrees sont retirees avec elle, ainsi que celle de
+# lean-planning.yml, supprime par #23467. Elle NE S'ELARGIT PAS --
 # seule une decision de review peut le faire, et la PR qui nomme une nouvelle
 # exception retire au moins autant d'entrees dans le meme commit.
 HOSTED_PR_JOB_EXCEPTIONS_BASELINE: frozenset[str] = frozenset({
-    "always-on-metadata-guards.yml",
     "codeql.yml",
-    "dotnet-AgentSafetyAnalyzer.yml",
-    "dotnet-ArgumentAnalysis.yml",
-    "dotnet-OrphanApps.yml",
-    "dotnet-Shared.Tests.yml",
-    "enrich-quality-gate.yml",
-    "gametheory-tests.yml",
-    "genai-helpers-tests.yml",
-    "ict-tests.yml",
     "lean-ci-matrix.yml",
-    "lean-planning.yml",
     "ml-tests.yml",
     "notebook-execution-required.yml",
-    "notebook-validation.yml",
     "perimeter-review-guard.yml",
     "quarto-pages-deploy.yml",
-    "quarto-render-list-freshness.yml",
-    "scripts-tests.yml",
     "secret-scan.yml",
     "slides-build-advisory.yml",
 })
