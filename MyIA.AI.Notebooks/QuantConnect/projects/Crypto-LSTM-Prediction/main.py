@@ -298,6 +298,9 @@ class CryptoLSTMPredictionAlgorithm(QCAlgorithm):
     - Position sizing basé sur la confiance de la prédiction
 
     Basé sur: QC-Py-22 (Deep Learning for Time Series)
+
+    Depuis #23563 : fix=on (par défaut) exécute le classement BTC/ETH de research.ipynb
+    (InitializeRanking et suivantes) ; fix=off rejoue le code d'origine décrit ci-dessus.
     """
 
     # Paramètres du modèle
@@ -389,11 +392,31 @@ class CryptoLSTMPredictionAlgorithm(QCAlgorithm):
         self.ref_month = None
         self.counts = {"trainings": 0, "train_failures": 0, "train_samples": 0,
                        "predictions": 0, "days_btc": 0, "days_eth": 0,
-                       "switches": 0, "history_gaps": 0}
+                       "switches": 0, "history_gaps": 0, "missing_bars": 0,
+                       "invalid_orders": 0}
+        # Pas de tache planifiee : la decision part de OnData, a l'arrivee de la barre de t.
 
-        self.Schedule.On(self.DateRules.EveryDay(self.btc),
-                         self.TimeRules.AfterMarketOpen(self.btc, 30),
-                         self.RankRebalance)
+    def OnData(self, data):
+        """fix=on : decision et ordres a l'arrivee des barres journalieres de t (00:00 UTC).
+
+        Un ordre envoye ici est rempli a l'instant, au cours de t : la position encaisse le
+        rendement de t a t+1, celui que le modele predit. Envoye depuis une tache planifiee,
+        il n'etait rempli qu'a la barre suivante, au cours de t+1, et l'achat etait controle
+        avant que la vente soit creditee (deuxieme passage de #23563).
+        """
+        if self.fix == "off":
+            return
+        has_btc = data.Bars.ContainsKey(self.btc)
+        has_eth = data.Bars.ContainsKey(self.eth)
+        if not (has_btc and has_eth):
+            if has_btc or has_eth:
+                self.counts["missing_bars"] += 1
+            return
+        self.RankRebalance()
+
+    def OnOrderEvent(self, order_event):
+        if self.fix != "off" and order_event.Status == OrderStatus.Invalid:
+            self.counts["invalid_orders"] += 1
 
     def RankHistory(self, start=None, bars=None):
         """Historique journalier BTC et ETH sur les dates communes ; None si indisponible."""
