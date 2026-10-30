@@ -43,11 +43,11 @@ Guide comparatif détaillé pour comprendre les différences entre Claude Code e
 
 ### Configuration des modèles
 
-**Claude Code avec OpenRouter :** la configuration passe par le proxy local `openrouter-proxy` (les requêtes OpenRouter ne sont pas strictement compatibles avec le protocole Anthropic — bug connu ; guide complet : [Quickstart OpenRouter](../Claude-Code/docs/OPENROUTER_SETUP.md)) :
+**Claude Code avec OpenRouter :** la configuration est **directe**, sans rien installer. OpenRouter expose son propre point d'entrée compatible avec le protocole Anthropic (`https://openrouter.ai/api`) : la bascule se fait par ces deux variables, sans proxy traducteur (mesure et tableau des sondes : [Quickstart OpenRouter](../Claude-Code/docs/OPENROUTER_SETUP.md), étape 0) :
 
 ```bash
 # Via variables d'environnement
-export ANTHROPIC_BASE_URL="http://127.0.0.1:8899/api"
+export ANTHROPIC_BASE_URL="https://openrouter.ai/api"
 export ANTHROPIC_AUTH_TOKEN="sk-or-v1-VOTRE_CLE"
 export ANTHROPIC_API_KEY=""
 ```
@@ -57,12 +57,14 @@ Ou via `~/.claude/settings.json` :
 ```json
 {
   "env": {
-    "ANTHROPIC_BASE_URL": "http://127.0.0.1:8899/api",
+    "ANTHROPIC_BASE_URL": "https://openrouter.ai/api",
     "ANTHROPIC_AUTH_TOKEN": "sk-or-v1-VOTRE_CLE",
     "ANTHROPIC_API_KEY": ""
   }
 }
 ```
+
+**Limite :** un proxy traducteur reste utile face à un fournisseur qui n'implémente **que** l'API OpenAI. Ce n'est pas le cas d'OpenRouter, dont le point d'entrée Anthropic est natif — la doctrine du proxy local ne lui est donc pas applicable, et son annexe du quickstart ne vaut que pour ce cas.
 
 **Roo Code avec OpenRouter :**
 
