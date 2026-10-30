@@ -24,6 +24,7 @@ Two things are pinned here:
 """
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -141,6 +142,84 @@ def test_absent_deck_dir_is_not_an_error(tmp_path, monkeypatch):
 def test_self_test_still_passes():
     """The organ's own #13645 control is untouched by the scope widening."""
     assert organ.self_test() == 0
+
+
+def test_unreadable_path_is_reported_not_fatal(tmp_path, monkeypatch):
+    """WinError 1920 must not abort the sweep.
+
+    Measured 2026-10-26 on Windows: `p.is_file()` raised `OSError` on
+    `erc20_lean/.lake/packages/batteries/docs/README.md` and killed the whole
+    loop, so the organ returned `rc=1` with no verdict at all -- the same code
+    `--fail` uses for a real disagreement.
+    """
+    (tmp_path / "keep.md").write_text("[A-1](A-1-x.ipynb)", encoding="utf-8")
+    (tmp_path / "boom.md").write_text("[A-2](A-2-x.ipynb)", encoding="utf-8")
+    real_is_file = Path.is_file
+
+    def fake_is_file(self):
+        if self.name == "boom.md":
+            raise OSError(1920, "simulated: cannot access the file")
+        return real_is_file(self)
+
+    monkeypatch.setattr(Path, "is_file", fake_is_file)
+    unreadable = []
+    scanned = list(organ.iter_scan_files(tmp_path, ("*.md",), unreadable))
+    assert [p.name for p in scanned] == ["keep.md"]
+    assert [u["path"] for u in unreadable] == ["boom.md"]
+    assert "simulated" in unreadable[0]["error"]
+
+
+def test_excluded_paths_are_never_stat_ed(tmp_path, monkeypatch):
+    """Exclusion is lexical and comes FIRST -- `.lake` is in EXCLUDE_PARTS.
+
+    The founding measurement: the path that crashed the sweep was inside
+    `.lake`, which the scan excludes. Because `is_file()` was evaluated before
+    the exclusion test, the organ died on a path it was never meant to read.
+    """
+    lake_docs = tmp_path / ".lake" / "packages" / "batteries" / "docs"
+    lake_docs.mkdir(parents=True)
+    (lake_docs / "README.md").write_text("x", encoding="utf-8")
+    (tmp_path / "keep.md").write_text("x", encoding="utf-8")
+    real_is_file = Path.is_file
+
+    def fake_is_file(self):
+        if ".lake" in self.parts:
+            raise AssertionError("an excluded path was stat-ed")
+        return real_is_file(self)
+
+    monkeypatch.setattr(Path, "is_file", fake_is_file)
+    unreadable = []
+    assert [p.name for p in organ.iter_scan_files(tmp_path, ("**/*.md",), unreadable)] == [
+        "keep.md"
+    ]
+    assert unreadable == []
+
+
+def test_main_surfaces_unreadable_paths_without_changing_rc(tmp_path, monkeypatch, capsys):
+    """An unreadable path is visible in `--json` and on stderr, and keeps rc=0.
+
+    Visibility without a red: rc=1 belongs to `--fail`, and stealing it would
+    re-create the ambiguity this fix removes.
+    """
+    nb_dir = tmp_path / "MyIA.AI.Notebooks" / "Serie"
+    nb_dir.mkdir(parents=True)
+    (nb_dir / "README.md").write_text("[Serie-1](Serie-1-x.ipynb)", encoding="utf-8")
+    real_is_file = Path.is_file
+
+    def fake_is_file(self):
+        if self.name == "README.md":
+            raise OSError(1920, "simulated: cannot access the file")
+        return real_is_file(self)
+
+    monkeypatch.setattr(Path, "is_file", fake_is_file)
+    monkeypatch.setattr(organ, "REPO_ROOT", tmp_path)
+    monkeypatch.setattr(sys, "argv", ["check_link_label_agreement.py", "--json"])
+    assert organ.main() == 0
+    captured = capsys.readouterr()
+    payload = json.loads(captured.out)
+    assert [u["path"] for u in payload["unreadable"]] == ["MyIA.AI.Notebooks/Serie/README.md"]
+    assert payload["findings"] == []
+    assert "chemin illisible" in captured.err
 
 
 if __name__ == "__main__":
