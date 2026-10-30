@@ -223,6 +223,7 @@ Suivi d'origine, par livrable : grille des trois régimes de lecture #7399 · ma
 | [ict/hoffman-interface-distillation-case13.md](ict/hoffman-interface-distillation-case13.md) | Case 13 — Hoffman interface theory : toy N=16 RÉFUTE la mise à l'échelle monotone de la dissociation FBT |
 | [ict/hoffman-interface-distillation-case14.md](ict/hoffman-interface-distillation-case14.md) | Case 14 — Hoffman interface theory : toy N=8, M=2, compression bit2 → NULL INSTRUMENTAL |
 | [ict/hoffman-interface-distillation.md](ict/hoffman-interface-distillation.md) | Case 11 — Hoffman interface theory : toy falsifiable en 2-bit |
+| [ict/ict14-freenergy-note-de-conception.md](ict/ict14-freenergy-note-de-conception.md) | Note de conception du palier 09 (ICT-14) — déplacement de la famille ICT-14 en sous-série `ICT-Series/ICT-14-FreeEnergySurprise/` (#20298) |
 
 ### Pré-enregistrements, distillations et prototypes (docs/ict/)
 
@@ -241,6 +242,7 @@ Grade distinct des synthèses ci-dessus : ces documents sont **grade T-pré-enre
 | [ict/butlin-indicators-pre-enregistrement.md](ict/butlin-indicators-pre-enregistrement.md) | Case 19 — le mot « using » de RPT-1 (Butlin et al. 2023) : protocole scellé avant écriture du banc, dissociation procédurale entre inspection structurelle et sonde causale |
 | [ict/assembly-theory-pre-enregistrement.md](ict/assembly-theory-pre-enregistrement.md) | Case 20 — l'assembly index mesuré (Sharma et al. 2023) contre la lecture « compression LZ » (Abrahão et al. 2024) : solveur exact à deux implémentations, échelle périodique certifiée `ai = log2 n`, règle de décision scellée par pentes |
 | [ict/stv-valence-symmetry-v2-pre-enregistrement.md](ict/stv-valence-symmetry-v2-pre-enregistrement.md) | Case 17bis — seconde opérationnalisation STV scellée avant le banc : observable d'entropie des classes de ratio du lock (correctif de l'aveuglement `CV` mesuré au case 17), drive découplé de la structure de verrouillage |
+| [ict/vervaeke-insight-pre-enregistrement.md](ict/vervaeke-insight-pre-enregistrement.md) | Réalisation de pertinence (Jaeger, Riedl, Djedovic, Vervaeke, Walsh 2024, *Front Psychol* 15:1362658) — protocole scellé avant codage du module : engagement adverse, heuristiques antagonistes, re-commitment ; opérationnalisation déclarée grade C, thèse de non-formalisabilité de l'article non testée |
 
 ## Curriculum (docs/curriculum/)
 
@@ -360,6 +362,7 @@ Tables d'audit cumulatives par Epic (mandat user, format longue durée).
 | [ledgers/13746-tests-eclates-dissipation.md](ledgers/13746-tests-eclates-dissipation.md) | EPIC #13746 — Ledger dissipation câblage tests éclatés |
 | [ledgers/14169-g1-recouvrement.md](ledgers/14169-g1-recouvrement.md) | Ledger G1 — Recouvrement 28 PRs amont endjin/Z3.Linq vs fork MyIntelligenceAgency/Z3.Linq |
 | [ledgers/14169-z3linq-upstream-overlap.md](ledgers/14169-z3linq-upstream-overlap.md) | Z3.Linq — recouvrement fork / amont |
+| [ledgers/14442-chronology-sweep-2026-10-26.md](ledgers/14442-chronology-sweep-2026-10-26.md) | Issue #14442 (défaut 3) — sweep de la chronologie de livraison Git dans les carnets GameTheory : mesure, classification contextuelle provenance / chronologie, cas analogues nommés |
 | [ledgers/14549-tensorsharp-multimodal.md](ledgers/14549-tensorsharp-multimodal.md) | Issue #14549 — TensorSharp multimodal axe Image/Vidéo — ledger unique c.257→c.259 |
 | [ledgers/14591-volet-bc-mesure.md](ledgers/14591-volet-bc-mesure.md) | 14591 Volets B + C — mesure chiffrée |
 | [ledgers/14598-ict-tests-timeout-dissipation.md](ledgers/14598-ict-tests-timeout-dissipation.md) | EPIC #14598 — Ledger dissipation timeout ICT tests/ |
