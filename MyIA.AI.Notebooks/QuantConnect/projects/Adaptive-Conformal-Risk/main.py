@@ -222,12 +222,15 @@ class AdaptiveConformalRisk(QCAlgorithm):
                    return and confidence is a 0-1 scale.
         """
         symbol = self.symbols[ticker]
-        history = self.history(symbol, self.MOM_WINDOWS[-1] + 5,
+        # Demande le double de la fenetre visee : sur une demi-seance (cloture 13:00),
+        # history(N, DAILY) rend ~21 barres de moins (#20286). Garder les N dernieres
+        # laisse le verdict inchange quand la fenetre est servie entiere.
+        history = self.history(symbol, 2 * self.MOM_WINDOWS[-1] + 10,
                               Resolution.DAILY)
         if history.empty or len(history) < self.MOM_WINDOWS[-1] + 2:
             return 0.0, 0.0
 
-        close = history["close"].values
+        close = history["close"].values[-(self.MOM_WINDOWS[-1] + 5):]
 
         # Multi-window momentum
         signals = []
