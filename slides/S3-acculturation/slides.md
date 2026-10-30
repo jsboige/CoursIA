@@ -11,22 +11,37 @@ layout: cover
 ---
 
 
-<div class="h-full flex flex-col items-center justify-center text-center">
+<!-- Couverture calquee sur pptx-reference/slide-01.png : deux zones separees par une
+     regle pointillee portant le numero de page, bande bleu-gris portant l'auteur,
+     l'adresse et la liste des affiliations, logos repartis DNN / myIA / engrenage.
+     Geometrie exprimee sur le canevas Slidev 980x552 ; marges negatives = annulation
+     du padding du theme (28px 40px) pour que les bandes touchent les bords. -->
 
-  <h1 class="text-7xl font-serif text-rose-800 leading-tight">Intelligence(s)</h1>
+<div style="position:relative; margin:-28px -40px; width:980px; height:552px; background:#FFFFFF; font-family:Georgia,'Times New Roman',serif;">
 
-  <div class="w-32 h-px bg-rose-800/40 my-8"></div>
+  <div style="position:absolute; left:0; right:0; top:196px; bottom:34px; background:#C9D2D8;"></div>
 
-  <div class="text-xl tracking-widest uppercase text-slate-500">Une introduction à l'IA pour décideurs</div>
+  <h1 style="position:absolute; left:0; right:0; top:112px; margin:0; text-align:center; font-size:52px; font-weight:400; line-height:1.1; color:#C8552F;">Intelligence(s)</h1>
 
-  <div class="mt-16 text-lg tracking-wide">Jean-Sylvain Boige</div>
-  <div class="text-sm text-slate-500 mt-1">jsboige@myia.org — Telecom Bretagne — Cogs Brighton UK</div>
+  <div style="position:absolute; left:18px; right:18px; top:196px; border-top:2px dashed #8FA6BD;"></div>
 
-  <div class="mt-16 flex justify-center gap-16 items-center">
-    <img src="./images/img_003.png" class="h-12" alt="DNN" />
-    <img src="./images/img_001.png" class="h-14" alt="myIA" />
-    <img src="./images/img_002.png" class="h-10" alt="Cogs" />
-  </div>
+  <div style="position:absolute; left:50%; top:196px; transform:translate(-50%,-50%); width:44px; height:44px; border-radius:50%; background:#FFFFFF; border:1px solid #B8C4CE; box-shadow:0 2px 5px rgba(0,0,0,0.15); display:flex; align-items:center; justify-content:center; font-size:19px; color:#5B7382;">1</div>
+
+  <div style="position:absolute; left:0; right:0; top:230px; text-align:center; font-size:16px; letter-spacing:0.22em; color:#5B7382;">JEAN-SYLVAIN BOIGE</div>
+
+  <div style="position:absolute; left:0; right:0; top:272px; text-align:center; font-size:16px; letter-spacing:0.14em; color:#1A7FC1; text-decoration:underline; text-underline-offset:4px;">JSBOIGE@MYIA.ORG</div>
+
+  <ul style="position:absolute; left:392px; top:320px; margin:0; padding:0; list-style:none; font-size:19px; line-height:1.55; color:#5B7382;">
+    <li><span style="color:#D4C24A; font-size:20px; margin-right:10px;">&bull;</span>Telecom Bretagne</li>
+    <li><span style="color:#D4C24A; font-size:20px; margin-right:10px;">&bull;</span>Cogs, Brighton UK</li>
+    <li><span style="color:#D4C24A; font-size:20px; margin-right:10px;">&bull;</span>Aricie - DNN - PKP</li>
+  </ul>
+
+  <img src="./images/img_003.png" alt="DNN" style="position:absolute; left:133px; top:348px; height:56px; width:auto; object-fit:contain;" />
+  <img src="./images/img_001.png" alt="myIA" style="position:absolute; left:343px; top:430px; height:72px; width:auto; object-fit:contain;" />
+  <img src="./images/img_002.png" alt="Engrenage DNN" style="position:absolute; left:735px; top:337px; height:60px; width:auto; object-fit:contain;" />
+
+  <div style="position:absolute; left:0; right:0; bottom:0; height:34px; background:#A9BEC4;"></div>
 
 </div>
 
@@ -84,25 +99,33 @@ layout: section
 
 # Qu'est-ce que l'intelligence artificielle?
 
-<div class="grid grid-cols-2 gap-x-10 -mt-1">
+<div class="grid grid-cols-2 gap-x-10 items-start">
 
-- Définitions multiples
-- Notre angle :
-  - « Agir de façon rationnelle »
+<div v-click>
+
+**Définitions multiples**
+
+- Notre angle : « Agir de façon rationnelle »
 - Conception d'agents
+
+</div>
+
+<div v-click>
 
 **Fondements**
 
 - Philosophie · Maths · Économie
 - Biologie · Neurosciences
+
+<img src="./images/img_005.png" class="max-h-[150px] w-auto object-contain mx-auto my-2" alt="Neurone biologique : dendrites, soma, axone, synapse — l'inspiration des réseaux de neurones artificiels" />
+
 - Psychologie · Informatique
 - Théorie du contrôle · Linguistique
 
 </div>
 
-<div class="flex justify-center mt-2">
-  <img src="./images/img_005.png" class="max-h-[190px] w-auto object-contain" alt="Neurone biologique : dendrites, soma, axone, synapse — l'inspiration des réseaux de neurones artificiels" />
 </div>
+
 <div class="text-xs text-slate-500 italic text-center mt-1 px-10">
   Modèle biologique (neurone de McCulloch & Pitts, 1943) — source d'inspiration directe pour le perceptron de Rosenblatt (1958).
 </div>
@@ -112,9 +135,20 @@ layout: section
 
 **Histoire succincte**
 
+<div class="grid grid-cols-[1fr_280px] gap-6 items-start">
+
+<div v-click="1">
+
 - 1940-70 : Enthousiasme des débuts
   - Turing, Dartmouth, Lisp
   - Samuel, Newell & Simon
+
+</div>
+
+<img v-click="1" src="./images/img_006.png" class="w-full max-h-[135px] object-contain mt-1" alt="Test de Turing : interrogateur humain, sujet humain et système IA" />
+
+</div>
+
 - 1970s : Complexité calculatoire
   - Réseaux de neurones en pause
   - Systèmes experts
@@ -123,17 +157,6 @@ layout: section
 - 1990s : L'IA devient une science
 
 > **État de l'art** : voir la slide « Développement (2/2) » pour la chronologie moderne (1997 → 2025).
-
-<div class="flex justify-between items-end gap-6 mt-2 px-6">
-  <img src="./images/img_006.png" class="max-h-[104px] w-[52%] object-contain" alt="Repères historiques" />
-  <div class="flex gap-5 items-center pb-2">
-    <img src="./images/img_007.jpg" class="h-12 object-contain" alt="Logo DARPA" />
-    <img src="./images/img_008.jpg" class="h-10 object-contain" alt="Logo ImageNet" />
-  </div>
-</div>
-<div class="text-xs text-slate-500 italic text-center mt-0.5 px-10">
-  Repères fondateurs de l'IA moderne — financement (DARPA) et benchmark (ImageNet) qui ont catalysé l'apprentissage profond.
-</div>
 
 ---
 
@@ -146,6 +169,15 @@ layout: section
   - 2017 : Transformers ("Attention is All You Need")
   - 2018 : AlphaZero (échecs, Go, shogi sans connaissances humaines)
   - 2019 : Pluribus (poker), AlphaStar (Starcraft 2)
+
+<div v-click class="flex gap-5 items-center justify-center my-1">
+  <img src="./images/img_007.jpg" class="h-8 object-contain" alt="Logo DARPA" />
+  <img src="./images/img_008.jpg" class="h-7 object-contain" alt="Logo ImageNet" />
+</div>
+<div class="text-xs text-slate-500 italic text-center">
+  Financement (DARPA) et benchmark (ImageNet) qui ont catalysé l'apprentissage profond.
+</div>
+
 - **2020s** : LLMs et IA générative deviennent grand public
   - GPT-3 (2020), ChatGPT (2022), GPT-4 (2023), Claude 3 (2024), GPT-4o (2024), Claude 3.5 Sonnet (2024), Gemini 1.5/2 (2024-2025)
   - Stable Diffusion, Midjourney, DALL-E : génération d'images
@@ -184,40 +216,63 @@ layout: section
 
 # Les agents
 
+<div class="grid grid-cols-2 gap-6 items-start mt-1">
+
+<div v-click="1">
 
 **Définition**
 
-- L'agent rationnel
-  - Entité qui perçoit par des capteurs
+- Entité qui
+  - perçoit par des capteurs
   - agit par des effecteurs.
-- Dans un environnement
-  - Fait la bonne action
+  - Dans un environnement
+
+<img src="./images/img_009.png" class="w-full max-h-[225px] object-contain mt-2" alt="Boucle perception-action : l'agent perçoit par des capteurs et agit sur l'environnement par des effecteurs" />
+
+</div>
+
+<div v-click="2">
+
+**L'agent rationnel**
+
+- Fait la bonne action
   - Maximise son succès.
-  - Pas omniscient
+- Pas omniscient
   - Réactif, proactif, interactif, autonome
 - Limitations
   - ressources disponibles
 
-<div class="flex justify-center mt-2">
-  <img src="./images/img_009.png" class="max-h-[130px] w-auto object-contain" alt="Les agents" />
+</div>
+
 </div>
 ---
 
 # Conception d'agents
 
+<div class="grid grid-cols-2 gap-6 items-start mt-1">
 
-**Environnement de tache**
+<div v-click="1">
+
+**Environnement de tâche**
 
 - Description PEAS : Performance, Environnement, Actionneurs, Senseurs
+
+<img src="./images/img_010.png" class="w-full max-h-[230px] object-contain mt-2" alt="Tableau PEAS : cinq types d'agents avec mesure de performance, environnement, effecteurs, capteurs" />
+
+</div>
+
+<div v-click="2">
 
 **Agent réflexe**
 
 - Pas de mémoire, réagit aux percepts courants
-- Regles condition → action (si obstacle, alors freiner)
+- Règles condition → action (si obstacle, alors freiner)
 
-<img src="./images/img_010.png" class="w-[260px] max-w-full max-h-[220px] object-contain" alt="Tableau PEAS : cinq types d'agents avec mesure de performance, environnement, effecteurs, capteurs" />
+<img src="./images/img_011.png" class="w-full max-h-[215px] object-contain mt-2" alt="Agent réflexe" />
 
-<img src="./images/img_011.png" class="absolute top-[290px] right-[20px] w-[360px] max-w-full max-h-[240px] object-contain" alt="Agent réflexe" />
+</div>
+
+</div>
 
 
 
@@ -243,6 +298,9 @@ layout: section
 
 # Agent réflexe fondé sur un modèle
 
+<div class="grid grid-cols-[1fr_340px] gap-6 items-start">
+
+<div v-click="1">
 
 **Agent réflexe avec modèle**
 
@@ -254,8 +312,10 @@ layout: section
 
 - Flexibilité vs complexité
 
-<div class="flex justify-center mt-4">
-  <img src="./images/img_012.png" class="max-h-[230px] w-auto object-contain" alt="Agent réflexe fondé sur un modèle" />
+</div>
+
+<img v-click="1" src="./images/img_012.png" class="w-full max-h-[230px] object-contain mt-6" alt="Agent réflexe fondé sur un modèle" />
+
 </div>
 
 <p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace.ipynb">Search-01-StateSpace.ipynb</a> (agents à état interne).</p>
@@ -264,15 +324,62 @@ layout: section
 
 # Intelligences
 
-- **Procédurale** : automates et algorithmes déterministes (instructions pas à pas)
-- **Exploratoire** : recherche dans un espace d'états (parcours de graphes, A*)
-- **Symbolique** : raisonnement logique, bases de connaissances, planification
-- **Probabiliste** : gestion de l'incertitude, réseaux bayésiens, décision
-- **Apprentissage** : amélioration par l'expérience (supervisé, renforcement, deep learning)
+<div class="flex flex-col gap-2 text-sm mt-2">
 
-<div class="flex justify-center items-center gap-12 mt-8">
-  <img src="./images/img_015.jpg" class="h-[190px] max-w-[42%] object-contain" alt="Recherche de chemin dans un réseau : intelligence exploratoire" />
-  <img src="./images/img_014.png" class="h-[190px] max-w-[42%] object-contain" alt="Processus de décision markovien : intelligence probabiliste" />
+<div v-click class="flex items-center gap-5">
+
+<div class="flex-1">
+
+**Procédurale** : automates et algorithmes déterministes (instructions pas à pas)
+
+</div>
+
+</div>
+
+<div v-click class="flex items-center gap-5">
+
+<div class="flex-1">
+
+**Exploratoire** : recherche dans un espace d'états (parcours de graphes, A*)
+
+</div>
+
+<img src="./images/img_015.jpg" class="h-[135px] w-auto object-contain" alt="Recherche de chemin dans un réseau : intelligence exploratoire" />
+
+</div>
+
+<div v-click class="flex items-center gap-5">
+
+<div class="flex-1">
+
+**Symbolique** : raisonnement logique, bases de connaissances, planification
+
+</div>
+
+</div>
+
+<div v-click class="flex items-center gap-5">
+
+<div class="flex-1">
+
+**Probabiliste** : gestion de l'incertitude, réseaux bayésiens, décision
+
+</div>
+
+<img src="./images/img_014.png" class="h-[135px] w-auto object-contain" alt="Processus de décision markovien : intelligence probabiliste" />
+
+</div>
+
+<div v-click class="flex items-center gap-5">
+
+<div class="flex-1">
+
+**Apprentissage** : amélioration par l'expérience (supervisé, renforcement, deep learning)
+
+</div>
+
+</div>
+
 </div>
 
 
