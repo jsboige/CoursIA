@@ -140,7 +140,15 @@ Deux circuits asynchrones tournent **pendant** que le cycle merge. Ce sont deux 
 ### Phase 5 - Fin de cycle (obligatoire)
 
 1. **Commit + PR AVANT le rapport** — ne jamais annoncer un travail non commite.
-2. `[DONE]` lane-specific sur **les deux** dashboards (jamais un miroir copie-colle).
+2. `[DONE]` lane-specific sur **les deux** dashboards (jamais un miroir copie-colle). Chaque bilan **ouvre sur l'heure explicite du cycle**, relevee a la source au moment de la redaction -- jamais reprise d'un cycle precedent :
+
+   ```
+   Heure de cycle : 2026-07-02 14:37 UTC / 16:37 locale (UTC+02:00)
+   ```
+
+   L'exemple est date d'un jour en **heure d'ete** (Europe/Paris, UTC+02:00) : le couple y est vrai. En heure d'hiver (UTC+01:00), le meme 14:37 UTC vaut 15:37 locale -- un couple (date, decalage) recopie a l'aveugle est faux une fois sur deux.
+
+   L'heure locale porte **son decalage** (l'heure de la machine, plus le decalage -- `date -u` d'un cote, heure locale de l'autre), parce que c'est cette double lecture qui distingue « le cron a tire et n'a rien trouve a merger » de « le cron n'a pas tire » : sans elle, un bilan sans merge est **indistinguable** d'un cron muet (#14728, item 3). La duree totale du cycle (mesuree a l'entree et a la sortie de chaque phase) **accompagne** l'heure, elle ne la remplace pas.
 3. **Filet Concerns issues (#20183)** : le `[DONE]` porte une ligne `[CONCERNS] <synthese>` produite par `python scripts/ci/check_issue_concerns.py` (sortie texte : la 2e ligne est la synthese, les numeros d'issues non resolus suivent). Chaque constat non resolu que l'organe nomme est un grain du cycle suivant — y repondre soi-meme ou dispatcher la reponse a la lane concernee. L'organe est relance a chaque restitution et reste la **seule source** : jamais de registre parallele, jamais de copie du detail dans le post.
 4. **Bloqueurs user** : restituer en un bloc les questions ouvertes du registre durable ; aucun re-poke intermédiaire ni liste parallèle ([user-blocker-signaling](../../rules/user-blocker-signaling.md)).
 5. MAJ `coordinator-durable-state.md` si l'etat durable a change (PR#/SHA ephemeres → dashboard, pas la memoire).
