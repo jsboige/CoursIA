@@ -648,6 +648,61 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "translation-drift.yml",
     "twin-parity.yml",
     "unique-check-run-names-guard.yml",
+
+    # ------------------------------------------------------------------
+    # 2026-10-28 (#23053 famille b -- « les tests », lane
+    #   myia-ai-01:CoursIA-2) : ces 6 suites de tests n'avaient AUCUNE jambe
+    #   self-hosted sur main ; elles recoivent une jambe CONDITIONNELLE, la
+    #   forme hybride de debordement deja auditee (#22461 phase A : garde
+    #   meme-depot && vars.CI_OVERFLOW_LOCAL == 'true' -> LINUX_RUNNER_LABELS,
+    #   sinon ubuntu-latest). Par defaut (variable absente ou != 'true'),
+    #   chaque job resout sur ubuntu-latest : l'etat du 27/10 est conserve, et
+    #   cette entree ne rend le pool local atteignable QUE si un operateur
+    #   bascule la variable (gh variable set CI_OVERFLOW_LOCAL --body
+    #   true|false --repo jsboige/CoursIA, jeton jsboige). Rollback = variable
+    #   a false ou supprimee, sans toucher les fichiers.
+    #   Deja presents dans l'ensemble ci-dessus, donc NON reajoutes :
+    #   ict-tests.yml, ml-tests.yml, scripts-tests.yml, validation-matrix.yml.
+    #   Sur scripts-tests.yml, seul le job `adk-contracts` est reconcerne -- le
+    #   job `scripts-tests` reste sur la jambe locale STATIQUE (suite couplee a
+    #   la forme du runner, #22820). Sur validation-matrix.yml, le job
+    #   `validate` reste STATIQUE local : le basculer sur ubuntu-latest par
+    #   defaut serait un recul, il ne recoit donc pas la forme hybride.
+    # ------------------------------------------------------------------
+    "dotnet-AgentSafetyAnalyzer.yml",
+    "dotnet-ArgumentAnalysis.yml",
+    "dotnet-OrphanApps.yml",
+    "dotnet-Shared.Tests.yml",
+    "gametheory-tests.yml",
+    "genai-helpers-tests.yml",
+    # 2026-10-27 (#22937 vague 2, lane myia-ai-01:CoursIA-2) : meme forme
+    #   hybride de debordement que la phase A (#22461), appliquee aux
+    #   workflows a fort volume qui n'etaient PAS dans la phase A.
+    #   Les trois autres fichiers de la vague 2
+    #   (notebook-execution-required.yml, always-on-metadata-guards.yml,
+    #   notebook-validation.yml) sont deja dans l'allowlist -- ils y etaient
+    #   depuis la tranche 3c (#14283), avant leur deport Q35 du 27/10.
+    #   `twin-parity.yml` y est aussi, mais il est porte par une PR
+    #   dediee (#22944) : les deux PRs ne peuvent pas toucher le meme
+    #   workflow, et le perimetre accorde est « 5 workflows par volume
+    #   decroissant ».
+    #   Perimetre : 5 workflows, 6 jobs. Exclus, avec leur motif :
+    #   - codeql.yml : le setup par defaut de GitHub-heberge le job, la
+    #     ligne `runs-on` du fichier n'est pas honoree ;
+    #   - lean-ci-matrix.yml : la toolchain Lean vit dans une image distincte
+    #     (label `coursia-lean`), pas dans le pool `coursia-linux` ;
+    #   - local-path-waiver-guard.yml et perimeter-review-guard.yml :
+    #     declencheurs `issue_comment` et `pull_request_review`, classes
+    #     FORK_REACHABLE par l'instrument (default-deny) ;
+    #   - les deux starvation-advisory : un chien de garde de la file ne
+    #     doit pas occuper la file qu'il observe ;
+    #   - ict-tests.yml : venv + pyphi/numpy/scipy, 8,1 min medianes -- le
+    #     debordement absorbe d'abord les jobs courts ;
+    #   - quarto-pages-deploy.yml : `build` et `deploy` dependent du
+    #     service GitHub Pages (upload-pages-artifact, deploy-pages + OIDC) ;
+    #     seul `validate-pr` est portable (Quarto par tarball curl).
+    "quarto-render-list-freshness.yml",
+    "enrich-quality-gate.yml",
 }
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",
