@@ -43,7 +43,7 @@ Le signal reste calculé sur les seuls contrats à 90 jours dans les deux bras. 
 
 ## Résultats (#23594)
 
-Six backtests QC Cloud du 2026-10-30 (projet 38682809), lus à `completed: true`, journal des ordres relu pour chacun. Le protocole et les règles de verdict ont été fixés sur l'issue avant toute exécution. Le Sharpe est calculé à taux nul (√252) sur les séances communes à la stratégie et à la référence ; la significativité vient de `Paradox46Benchmarks/significance.py` (Ledoit-Wolf, bootstrap stationnaire).
+Six backtests QC Cloud du 2026-10-30 (projet 38682809), lus à `completed: true`, journal des ordres relu pour chacun. Le protocole et les règles de verdict ont été fixés sur l'issue avant toute exécution. Le Sharpe est calculé à taux nul (√252) sur les jours ouvrés communs à la stratégie et à la référence, avec la dernière valeur de chaque jour à l'heure de New York : le week-end est écarté, et le mouvement du dimanche soir des contrats à terme est compté dans le lundi ; la significativité vient de `Paradox46Benchmarks/significance.py` (Ledoit-Wolf, bootstrap stationnaire).
 
 ### Diagnostic du dimensionnement (w1, 2018-01-01 → 2025-01-01)
 
@@ -58,12 +58,12 @@ Le compteur est relevé 90 minutes après chaque rééquilibrage. Le rejeu du jo
 
 | Fenêtre | Bras | Sharpe taux nul | CAGR | MaxDD | PSR | Écart de Sharpe contre DBC (p Ledoit-Wolf) | Verdict |
 |---|---|---|---|---|---|---|---|
-| w1 : 2018-01-01 → 2025-01-01 | `on` | −0,21 | −7,36 % | 57,9 % | 0,001 % | −0,53 (p = 0,20) | **NO BEATS** |
-| | `off` (pour information) | −0,08 | −26,04 % | 95,5 % | 0,010 % | −0,40 (p = 0,32) | — |
-| | DBC détenu | 0,32 | 5,56 % | 41,7 % | 0,35 % | — | — |
-| w2 : 2025-01-01 → 2026-07-31 | `on` | 0,12 | 1,29 % | 29,3 % | 5,55 % | −0,93 (p = 0,16) | **NO BEATS** |
-| | `off` (pour information) | 0,66 | 25,79 % | 43,4 % | 21,41 % | −0,40 (p = 0,59) | — |
-| | DBC détenu | 1,05 | 24,32 % | 16,5 % | 37,27 % | — | — |
+| w1 : 2018-01-01 → 2025-01-01 | `on` | −0,25 | −7,36 % | 57,9 % | 0,001 % | −0,63 (p = 0,19) | **NO BEATS** |
+| | `off` (pour information) | −0,10 | −26,04 % | 95,5 % | 0,010 % | −0,48 (p = 0,31) | — |
+| | DBC détenu | 0,38 | 5,56 % | 41,7 % | 0,35 % | — | — |
+| w2 : 2025-01-01 → 2026-07-31 | `on` | 0,14 | 1,29 % | 29,3 % | 5,55 % | −1,10 (p = 0,16) | **NO BEATS** |
+| | `off` (pour information) | 0,77 | 25,79 % | 43,4 % | 21,41 % | −0,47 (p = 0,59) | — |
+| | DBC détenu | 1,24 | 24,32 % | 16,5 % | 37,27 % | — | — |
 
 CAGR, MaxDD et PSR sont ceux de QuantConnect. Le bootstrap stationnaire (2000 tirages, blocs de 10 séances) donne un intervalle à 95 % de l'écart de Sharpe qui contient zéro dans les quatre comparaisons.
 
@@ -77,6 +77,7 @@ CAGR, MaxDD et PSR sont ceux de QuantConnect. Le bootstrap stationnaire (2000 ti
 
 - Le bras `on` porte trois corrections à la fois. La comparaison `on` contre `off` ne mesure donc pas le seul effet du dimensionnement ; seul le diagnostic du notionnel lui est attribuable.
 - Dans `on`, le signal reste lu sur les contrats à 90 jours, mais la position est prise sur un contrat plus lointain (au moins 35 jours). Le rendement de roulement encaissé n'est donc pas exactement celui qui a classé la racine.
+- Le graphique de valeur des bras à terme est échantillonné toutes les 23 heures environ, à une heure qui dérive. Le rendement quotidien n'y est donc qu'approximativement aligné sur celui de DBC, pris à la clôture, ce qui tire la corrélation vers zéro. CAGR, MaxDD et PSR viennent des statistiques de QuantConnect et n'en dépendent pas.
 - Un seul jeu de paramètres est mesuré : quintiles sur 21 racines, soit quatre contrats par côté, rééquilibrage mensuel.
 - Le bras `off` ne reproduit pas exactement la mesure de la tranche 15 : −87,9 % contre −92,9 %, et 516 ordres contre 468, sur la même fenêtre. L'écart n'est pas expliqué ici.
 
