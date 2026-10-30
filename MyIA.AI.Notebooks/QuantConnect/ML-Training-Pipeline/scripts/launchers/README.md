@@ -59,7 +59,9 @@ qui fait tourner l'entrainement sous `scripts/ci/run_guarded.py` :
 - **garde d'admission** : le demarrage est refuse si la charge de commit de la
   machine depasse 90 % (seuil releve de 85 a 90 % le 2026-10-29 : 85 % est le
   regime nominal de la machine, pas son plafond) ; une mesure illisible refuse
-  aussi (fail-CLOSED) ;
+  aussi (fail-CLOSED) ; **le seuil est porte par le lanceur** —
+  `run_guarded.py` appele seul n'active pas la garde, son
+  `--max-commit-charge-pct` valant 0 par defaut (desactive) ;
 - **exclusion N=1** : un seul entrainement CoursIA a la fois sur la machine
   (verrou exclusif) ;
 - **anti-orphelin** : le superviseur tient le Job Object, donc l'entrainement
