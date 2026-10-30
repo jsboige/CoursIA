@@ -6833,7 +6833,20 @@ def red_backlog(lane: str, threshold_hours: float,
                                for name, nums in sorted(base_undecided.items())],
             # #14567 : quand un agregateur n'a pas pu etre tranche, le dire --
             # sinon l'absence d'imputation se lirait comme une acquittement.
-            "base_unresolved": [{"check": name, "prs": sorted(nums)}
+            #
+            # Revue `myia-po-2023` (30/10) : la sortie ne distinguait pas les
+            # PRs **de la lane** des PRs **etrangeres** dans le meme
+            # agregateur, et annoncait pour les deux « le rouge RESTE a la
+            # lane ». La phrase ne vaut que pour les premieres : une lane qui
+            # lisait six numeros etrangers (chacun avec le tag d'une autre
+            # lane) est alle chercher un defaut d'attribution inexistant.
+            # La decoupe est faite ici, ou le tag de lane de chaque PR est
+            # connu (`lane_by`), pas au moment de l'affichage.
+            "base_unresolved": [{"check": name, "prs": sorted(nums),
+                                 "prs_lane": sorted(n for n in nums
+                                                   if lane_by.get(n) == lane),
+                                 "prs_foreign": sorted(n for n in nums
+                                                      if lane_by.get(n) != lane)}
                                 for name, nums in sorted(unresolved_by_name.items())],
             # #15910 : les agregateurs rouges par DWELL. Ni un defaut a
             # reparer, ni un rouge impute a la base : un minuteur qu'aucune
@@ -6875,10 +6888,28 @@ def print_base_inherited(backlog: dict) -> None:
     # pas pu etre lu ne corrobore RIEN -- le rouge reste a la lane, seul cote
     # qui peut le reparer ; le taire ferait de l'echec de mesure une acquittement.
     for item in unresolved:
-        prs = ", ".join(f"#{n}" for n in item["prs"][:6])
-        print(f"  - {item['check']} : organe non lisible sur {prs} -- pas pu")
-        print(f"    trancher, le rouge RESTE a la lane (relancer le run ou lire")
-        print(f"    l'annotation du check-run avant d'invoquer la base).")
+        check = item["check"]
+        # Revue `myia-po-2023` (30/10) : les deux lots sont separes. Un rouge
+        # non lisible **de la lane** reste a la lane (seul cote qui peut le
+        # reparer) ; un rouge non lisible **d'une autre lane** ne lui est pas
+        # imputable, et le dire evite d'envoyer la lane chercher un defaut
+        # dans une PR qui n'est pas la sienne.
+        lane_prs = item.get("prs_lane")
+        foreign_prs = item.get("prs_foreign")
+        if lane_prs is None:
+            # Entree produite ailleurs (retro-compatibilite) : pas de decoupe.
+            lane_prs, foreign_prs = item.get("prs") or [], []
+        if lane_prs:
+            prs = ", ".join(f"#{n}" for n in lane_prs[:6])
+            print(f"  - {check} : organe non lisible sur {prs} -- pas pu")
+            print(f"    trancher, le rouge RESTE a la lane (relancer le run ou lire")
+            print(f"    l'annotation du check-run avant d'invoquer la base).")
+        if foreign_prs:
+            prs = ", ".join(f"#{n}" for n in foreign_prs[:6])
+            print(f"  - {check} : organe non lisible sur {prs} -- ces PRs sont")
+            print(f"    d'AUTRES lanes : ce rouge n'est pas imputable a votre lane,")
+            print(f"    la mesure est a refaire par la lane porteuse. Ne pas y")
+            print(f"    chercher un defaut de vos PRs.")
     print()
 
 
