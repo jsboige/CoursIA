@@ -1679,10 +1679,13 @@ jobs en vol, puis relancer."
 }
 
 fetch_token() {
-  # Le registration token vaut 1 h et est jetable : un par demarrage de
-  # conteneur. C'est la raison pour laquelle la boucle vit sur l'HOTE et non
-  # dans l'image -- `gh` et ses credentials ne descendent jamais dans le
-  # conteneur.
+  # Le registration token vaut 1 h et ne se consomme pas a l'usage. Avant
+  # #21527 il etait re-demande a chaque demarrage de conteneur (155 appels
+  # REST/h sur le pool, mesure ai-01 du 26/10) : c'est la raison pour
+  # laquelle la boucle vit sur l'HOTE et non dans l'image -- `gh` et ses
+  # credentials ne descendent jamais dans le conteneur. Le jeton est desormais
+  # partage par le cache `$REGISTRATION_TOKEN_CACHE` (STATE_DIR) : un fetch
+  # par fenetre de validite, quel que soit le nombre de demarrages.
   #
   # #14259 epinglage : GH_TOKEN ambiant est honore tel quel par gh ;
   # COURSIA_RUNNER_GH_ACCOUNT (plus specifique) le surpasse en resolvant
