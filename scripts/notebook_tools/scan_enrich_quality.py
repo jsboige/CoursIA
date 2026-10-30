@@ -17,7 +17,16 @@ Defect classes and their mechanical checks:
                                notebook's code sources or text outputs
   Class (b) "extended cells" must not become rewrites
     HIGH  MD_REWRITE           < 25% of the base's substantive markdown lines
-                               survive verbatim in head (vs --base only)
+                               survive in head (vs --base only). The comparison
+                               is neutral on the diacritics (NFKD, then the
+                               combining marks are dropped) and on the Latin
+                               ligatures (explicit fold: Unicode gives them NO
+                               decomposition mapping, so NFKD leaves them
+                               untouched), significant on the case: an
+                               accentuation pass rewrites every accented line,
+                               so a verbatim-only read calls it a rewrite
+                               (#23268: 9/44 lines "survived" while the base
+                               and the head were identical on the skeleton)
     MED   MD_SURVIVAL_LOW      < 50% survive -- the rewrite-more-than-extend
                                signature of the wave (#14161 measured 30%,
                                #14166 20%, #14164 31%)
@@ -306,15 +315,59 @@ def _deaccent(text: str) -> str:
                    if not unicodedata.combining(ch))
 
 
+# Latin ligature LETTERS have no Unicode decomposition mapping: measured
+# 2026-10-30, ``unicodedata.decomposition("œ")`` returns the empty
+# string, and NFKD/NFD both leave the letter untouched. So neither
+# normalization unifies ``noeud`` and ``nœud`` -- they are folded
+# explicitly here. NFKD is still used for the diacritics and for the
+# compatibility forms (the presentation ligatures such as ``ﬁ``, the
+# superscripts), which DO have a decomposition.
+#
+# The capital ligature expands to the French convention, and the context
+# decides: ``Œuvre`` is a capitalised word, so the expansion capitalises
+# the pair on its first letter only (``Oeuvre``), while an all-caps word
+# (``ŒUVRE``) expands to ``OEUVRE``. The corpus carries both forms.
+_LIGATURES = ("œ", "Œ", "æ", "Æ")
+
+
+def _fold_ligatures(text: str) -> str:
+    """Unify the Latin ligature letters with their two-letter expansion.
+
+    The capital ligature takes its expansion from the character that
+    follows it: a lowercase follower means the word is capitalised and the
+    pair is expanded on its first letter only (``Œuvre`` -> ``Oeuvre``), an
+    uppercase follower means an all-caps word (``ŒUVRE`` -> ``OEUVRE``).
+    """
+    if not any(ligature in text for ligature in _LIGATURES):
+        return text
+    out: list[str] = []
+    for index, char in enumerate(text):
+        if char == "œ":
+            out.append("oe")
+        elif char == "æ":
+            out.append("ae")
+        elif char == "Œ":
+            follower = text[index + 1] if index + 1 < len(text) else ""
+            out.append("OE" if follower.isupper() else "Oe")
+        elif char == "Æ":
+            follower = text[index + 1] if index + 1 < len(text) else ""
+            out.append("AE" if follower.isupper() else "Ae")
+        else:
+            out.append(char)
+    return "".join(out)
+
+
 def _skeleton(text: str) -> str:
     """Case-preserving skeleton: the accents and the ligatures drop out.
 
-    NFKD (not NFD) so the oe/ae ligatures decompose -- ``noeuds`` and
-    ``nœuds`` then share a skeleton. The case is kept on purpose:
-    lowercasing would let a rewrite that only changes the case pass for a
-    surviving line.
+    The diacritics drop out through NFKD (a compatibility form is kept as
+    its base letter plus its combining marks, which are then stripped); the
+    Latin ligature letters need the explicit fold above, NFKD leaving them
+    untouched. The case is kept on purpose: lowercasing would let a rewrite
+    that only changes the case pass for a surviving line.
     """
-    return "".join(ch for ch in unicodedata.normalize("NFKD", text)
+    folded = _fold_ligatures(text)
+    return "".join(ch for ch in unicodedata.normalize("NFKD", folded)
                    if not unicodedata.combining(ch))
 
 

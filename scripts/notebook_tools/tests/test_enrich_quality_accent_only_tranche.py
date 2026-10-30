@@ -116,3 +116,66 @@ def test_accent_removal_still_raises_diacritics_loss(tmp_path):
     head = _write(tmp_path / "head.ipynb", DEACCENTED_LINES)
     categories = _categories(base, head)
     assert "DIACRITICS_LOSS" in categories
+
+
+# Base ou la ligature est ecrite "oe", tete ou elle est ecrite "oe" : la
+# ligature n'est pas un diacritique, et NFD ne la decompose pas. C'est le
+# point qui distingue la normalisation NFKD employee ici d'une simple
+# suppression des marques combinantes : sur ce jeu de lignes, la variante NFD
+# ne voit AUCUNE ligne survivre et l'organe annonce MD_REWRITE sur un carnet
+# qui n'a change que sa typographie.
+LIGATURE_BASE_LINES = [
+    "Le graphe contient un noeud racine et ses voisins.",
+    "L'oeuvre complete demande une relecture attentive.",
+    "La manoeuvre collective repose sur des efforts cumules.",
+    "Le coeur du modele bat sur un noeud central.",
+    "L'Oeuvre Collective explore une autre structure.",
+]
+LIGATURE_HEAD_LINES = [
+    "Le graphe contient un nœud racine et ses voisins.",
+    "L'œuvre complète demande une relecture attentive.",
+    "La manœuvre collective repose sur des efforts cumulés.",
+    "Le cœur du modèle bat sur un nœud central.",
+    "L'Œuvre Collective explore une autre structure.",
+]
+
+
+def test_ligature_only_change_is_not_a_rewrite(tmp_path):
+    """Une tranche qui change une ligature n'est pas une reecriture.
+
+    CONTROLE NEGATIF IMPLICITE : ce test echoue sur une normalisation qui
+    ne decompose que les diacritiques (NFD) -- les quatre lignes cessent
+    alors de survivre et MD_REWRITE part sur un carnet qui n'a change que
+    sa typographie.
+    """
+    base = _write(tmp_path / "base.ipynb", LIGATURE_BASE_LINES)
+    head = _write(tmp_path / "head.ipynb", LIGATURE_HEAD_LINES)
+    categories = _categories(base, head)
+    assert "MD_REWRITE" not in categories
+    assert "MD_SURVIVAL_LOW" not in categories
+
+
+def test_ligature_only_change_is_not_a_regression(tmp_path):
+    """Le meme jeu, passe par le point d'entree du gate : aucun finding."""
+    base = _write(tmp_path / "base.ipynb", LIGATURE_BASE_LINES)
+    head = _write(tmp_path / "head.ipynb", LIGATURE_HEAD_LINES)
+    assert regressions(base, head, Path(base).parent) == []
+
+
+def test_genuine_rewrite_with_ligature_is_still_flagged(tmp_path):
+    """CONTROLE NEGATIF : le pli ne doit pas devenir un angle mort.
+
+    Une reecriture reelle qui CONTIENT une ligature doit toujours etre
+    signalee -- le repli des ligatures porte sur la typographie, pas sur le
+    fond, et ne doit pas rendre une vraie reecriture invisible.
+    """
+    base = _write(tmp_path / "base.ipynb", LIGATURE_BASE_LINES)
+    head = _write(tmp_path / "head.ipynb", [
+        "Le cœur de l'oeuvre ne se laisse pas deviner ainsi.",
+        "La manœuvre collective repose sur d'autres efforts.",
+        "Un texte entierement neuf remplace les phrases de base.",
+        "Le modèle bat sur un nœud tout autre.",
+        "L'oeuvre Collective explore une autre structure.",
+    ])
+    categories = _categories(base, head)
+    assert "MD_REWRITE" in categories
