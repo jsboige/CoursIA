@@ -40,7 +40,7 @@ Origine : EPIC [#16271](https://github.com/jsboige/CoursIA/issues/16271) — mig
 
 ## Prérequis
 
-- Python 3.10+ (les sept notebooks sont **CPU-only**)
+- Python 3.10+ (tous les notebooks de la série sont **CPU-only**)
 - `spaCy` + modèle `fr_core_news_sm` (notebook 01)
 - `sklearn-crfsuite` (témoin du notebook 03), `nltk` (témoin des notebooks 04 et 05), `hmmlearn` (témoin du notebook 05)
 - Aucune clé API requise
