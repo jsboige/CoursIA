@@ -209,6 +209,33 @@ def test_conic_parabolic_double_line():
 
 
 # ---------------------------------------------------------------------------
+# Coefficients non rationnels : refus explicite, jamais un verdict faux
+#
+# Review Hermes #23018 : `_poly_to_z3` tronquait un coefficient non rationnel
+# en int() (√2 → 1, π → 3) et `decide_real` certifiait un théorème FAUX.
+# Le module refuse désormais, au lieu de mentir. Défaut latent sur `main`
+# jusqu'ici (aucun test n'y passait de coefficient irrationnel).
+# ---------------------------------------------------------------------------
+
+def test_non_rational_coefficient_is_refused_not_truncated():
+    # x = √2 ne force pas x = 2 : le théorème est FAUX. Avant la garde, la
+    # troncation √2 → 1 faisait de `x - 1` une hypothèse *autrement fausse*
+    # et le système renvoyait un faux VALID, sans témoin. Le refus est
+    # l'issue honnête d'un décideur QF_NIA à coefficients rationnels.
+    x = sp.symbols('x')
+    with pytest.raises(ValueError, match="non rationnel"):
+        rbg.decide_real([x - sp.sqrt(2), x ** 2 - 2], x - 2, [x])
+
+
+def test_non_rational_coefficient_invalid_side_also_refused():
+    # Même garde, côté invalid : √2·x − 1 ne doit plus produire un témoin
+    # tronqué certifié exact=True ; la conversion refuse avant le solveur.
+    x = sp.symbols('x')
+    with pytest.raises(ValueError, match="non rationnel"):
+        rbg.decide_real([sp.sqrt(2) * x - 1], 2 * x ** 2 - 1, [x])
+
+
+# ---------------------------------------------------------------------------
 # Critere 5 -- degenerescences : deux perpendiculaires sans / avec exclusion
 #
 # A l'origine, B, C, D tels que AB _|_ AC et AB _|_ AD. Sans exclusion, les
