@@ -479,11 +479,20 @@ def test_voie_en_processus_rend_les_memes_codes_que_la_voie_cli(monkeypatch):
     solo = pig._claims_in_process([202], "myia-ai-01:CoursIA-2")
     assert solo is not None
     assert solo[202][0] == pig.CLAIM_CODE_BLOCKED
-    # La voie CLI BATCH (>= 2 issues) mappe la meme situation sur NOT_SCOPED
-    # (exit 2) -> ERROR : comportement HISTORIQUE du mode batch, reproduit a
-    # l'identique par la voie en processus. C'est le contrat #22630 --
-    # comportement CONSTANT, pas corrige au passage.
-    assert verdicts[202][0] == pig.CLAIM_CODE_ERROR
+    # La voie CLI BATCH (>= 2 issues) rend la MEME chose : la sonde y ecrit
+    # son verdict `NOT_SCOPED` sur **stderr** (le test du depot l'y lit :
+    # `assert "NOT_SCOPED" in captured.err`), et le reducer la reduisait
+    # **stdout seul** -> `ERROR`, servable par defaut -> le tapis retenait un
+    # grain **occupe**. C'etait exactement la divergence reprodutee par
+    # #23098, et son acceptance dit : « le tirage ne retient plus un grain
+    # dont la sonde a NOMME un bloquant, quel que soit le code de sortie ».
+    #
+    # L'assertion d'ici verifie donc la **convergence** des deux voies --
+    # ce que le nom du test annonce depuis le debut (« rend les MEMES codes
+    # que la voie CLI »). Elle ne fige plus la divergence : ce que ce test
+    # appelait « comportement HISTORIQUE » etait le defaut.
+    assert verdicts[202][0] == pig.CLAIM_CODE_BLOCKED
+    assert verdicts[202][0] == solo[202][0]
 
 
 def test_voie_en_processus_rend_none_si_le_lecteur_manque(monkeypatch):
