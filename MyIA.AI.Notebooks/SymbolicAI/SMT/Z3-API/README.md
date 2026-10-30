@@ -15,6 +15,36 @@ L'API z3-py expose l'intégralité du solveur Z3 en Python — `Solver`, `Optimi
 
 **À qui s'adresse cette série** : étudiants en IA, développeurs Python souhaitant découvrir la programmation par contraintes, et tout curieux voulant comprendre comment exprimer un problème non pas comme un algorithme de résolution, mais comme un ensemble de contraintes que le solveur satisfait automatiquement. Aucun prérequis en logique formelle n'est supposé : les notebooks partent de la syntaxe de base de z3-py pour monter progressivement vers l'optimisation et la modélisation de problèmes combinatoires.
 
+## Ouvrage de référence
+
+**Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)** — l'ouvrage-ancrage de la série. Compendium pratique de résolution SAT/SMT par l'exemple, centré Z3 et PySMT, organisé en chapitres thématiques (théories, tactiques, optimisation, puzzles, UNSAT cores, bit-vectors, arithmétique réelle, etc.) qui correspondent chapitre par chapitre aux notebooks de cette série. Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`).
+
+### Index chapitré (série Z3-API ↔ Yurichev)
+
+| Carnet | Section Yurichev | Thème |
+|--------|-----------------|-------|
+| Z3-01, Z3-01ᶜˢ | Ch. 1 Introduction (p. 11) + Ch. 2 Basics (p. 14) | Solver API, théories de base, modèles |
+| Z3-01b | Ch. 9 Graph coloring (p. 317) | `assert_and_track`, coloration de graphe (Australie) |
+| Z3-02, Z3-02ᶜˢ | §8.1 Sudoku (p. 205), Ch. 8 Recreational mathematics and puzzles | Sudoku comme CSP, visualisation |
+| Z3-03, Z3-03ᶜˢ | Ch. 16 Toy decompiler (Tactic, p. 469) + Ch. 5 Verification (BitVec, p. 132) | `Tactic`, `BitVec`, `Array` |
+| Z3-04, Z3-04ᶜˢ | Ch. 6 Regular expressions (p. 166) | `String`, `Re` (théorie des chaînes) |
+| Z3-05, Z3-05ᶜˢ | Ch. 20 First-Order Logic (p. 559) | `ForAll`, `Exists`, réfutation, `unknown` |
+| Z3-06, Z3-06ᶜˢ | Ch. 14 MaxSAT/MaxSMT (p. 383) | `Optimize`, MaxSAT, Pareto |
+| Z3-08 | Ch. 10 Knapsack problems (p. 332) | `Optimize.minimize`, ordonnancement |
+| Z3-09 | §8.2 Zebra puzzle (p. 232), Ch. 8 | Einstein's riddle / Zebra puzzle |
+| Z3-10 | §8.10 Alphametics (p. 276), Ch. 8 | Cryptarithmetic SEND + MORE = MONEY |
+| Z3-11 | Ch. 9 Graph coloring (p. 317) | Coloration de graphe, nombre chromatique |
+| Z3-12 | Ch. 4 Proofs (p. 106) | Real arithmetic, irrationnels algébriques |
+| Z3-13 | §3.13.2 Unsat core (p. 90), Ch. 3 Equations | UNSAT cores, `assert_and_track` |
+| Z3-13b | §3.13.2 Unsat core (p. 90), Ch. 3 Equations | MUS (Minimal Unsatisfiable Subset) |
+| Z3-14 | §5.1 Integer overflow (p. 132), Ch. 5 Verification | Bit-vectors, overflow, `ULT`/`UGE` |
+| Z3-15 | (mapping à confirmer en R2, cf. « Ouvrages-ancrage ») | Nested arrays 2D, carré magique |
+| Z3-16 | (mapping à confirmer en R2, cf. « Ouvrages-ancrage ») | Optimize, plan hebdomadaire |
+| Z3-17 | §3.13 Recalculating micro-spreadsheet (p. 88), Ch. 3 | Array theory général, `Select`/`Store` |
+| Z3-18 | §8.1 Sudoku (p. 205), Ch. 8 | Sudoku modes `Array` vs `Constants` |
+
+Les notebooks qui reprennent un exemple numéroté du livre (énigme d'Einstein, cryptarithmes, coloriage de graphe) créditent la source dans leur cellule d'introduction. À noter : « Z3: An Efficient SMT Solver » (de Moura & Bjørner, TACAS 2008) est le **papier de référence** du solveur, déjà référencé dans le dépôt. Le **livre pratique** de Yurichev, distinct du papier, est désormais référencé comme ouvrage-ancrage de la série.
+
 ## Présentation
 
 **Z3** (Microsoft Research) est un solveur SMT (*Satisfiability Modulo Theories*) qui résout des systèmes de contraintes sur des entiers, des réels, des booléens, des vecteurs de bits, des tableaux et des chaînes. Cette série utilise **z3-py** (package pip `z3-solver`), le binding Python officiel qui expose **l'intégralité** de l'API Z3 : `Solver`, `Optimize`, théories (BitVec, Array, String, Real), tactiques et quantificateurs.
@@ -209,24 +239,22 @@ La série manipule un vocabulaire précis (SMT, tactiques, MaxSAT, théories) h�
 
 ## Ouvrages-ancrage
 
-Issue de référence : #19278. Cette série s'ancre principalement sur un livre-ancrage pratique :
+Issue de référence : #19278. L'ouvrage-ancrage de la série est le Yurichev décrit en tête de fichier (section « Ouvrage de référence », avec l'index chapitré série ↔ livre) — la présente section y renvoie et n'en duplique pas l'entrée. La copie archivée (`G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf`) a été lue le 27/10/2026 sur ses 666 pages : les folios de l'index ci-dessus sont ancrés firsthand sur cette lecture.
 
-- **Yurichev, D., *SAT/SMT by Example* (édition publique, 12 février 2023, 666 pages)** — déposé à `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf` (identité vérifiée sur page de titre, 2026-10-05). Le compendium pratique de résolution SAT/SMT par l'exemple, centré Z3/PySMT.
+### Mapping carnet ↔ livre (mapping de l'issue #19278 pour les carnets Z3-Linq2Z3 ; confirmation due à la tranche R2)
 
-**Avertissement — défaut biblio au 2026-10-05** : le PDF Yurichev sur la machine worker po-2026 a une taille disque non-nulle mais une structure interne invalide (`fitz.open()` rend 0 page extractible, idem OR94 et Multiagent 2009 de GameTheory). Le livre est référencé en tant que tel (titre, auteur, année, dépot GDrive vérifié), mais les détails de chapitre ou d'exemple spécifique ne sont pas ancrés firsthand tant qu'une copie lisible n'est pas réacquise. Issue de suivi à ouvrir par le mainteneur (hors périmètre worker — c'est un geste bibliothèque, pas un geste de code).
-
-### Mapping carnet ↔ livre (mapping de l'issue #19278, à confirmer par lecture effective du PDF)
+Confirmation due à la **tranche R2 de #19278** : lecture effective des chapitres Yurichev correspondants contre les carnets `Z3-Linq2Z3`.
 
 | Thème du livre | Notebook porteur | Vérification |
 |----------------|------------------|--------------|
 | Solver API, theories, modèles | série Z3-API entière | OK (la série entière relève du livre ; pas d'inventaire chapitre-par-chapitre) |
-| Array theory, Nested arrays | `Z3-Linq2Z3/04_Array_Theory`, `05_Nested_Arrays_2D` | à_confirmer (PDF corrompu worker) |
-| Cryptarithmetic | `Z3-Linq2Z3/13_Cryptarithmetic_SMT` | à_confirmer |
-| MaxSAT / Optimize | `Z3-Linq2Z3/14_Optimize_MaxSAT` | à_confirmer |
-| Bit-vectors, overflow | `Z3-Linq2Z3/15_BitVectors_Overflow` | à_confirmer |
-| UNSAT cores | `Z3-Linq2Z3/17_UnsatCores` | à_confirmer |
-| Einstein's riddle & puzzles | `Z3-Linq2Z3/18_Einsteins_Riddle`, `02_Sudoku_Theorem_vs_Array` | à_confirmer |
-| Real arithmetic | `Z3-Linq2Z3/16_RealArithmetic` | à_confirmer |
+| Array theory, Nested arrays | `Z3-Linq2Z3/04_Array_Theory`, `05_Nested_Arrays_2D` | à_confirmer (R2) |
+| Cryptarithmetic | `Z3-Linq2Z3/13_Cryptarithmetic_SMT` | à_confirmer (R2) |
+| MaxSAT / Optimize | `Z3-Linq2Z3/14_Optimize_MaxSAT` | à_confirmer (R2) |
+| Bit-vectors, overflow | `Z3-Linq2Z3/15_BitVectors_Overflow` | à_confirmer (R2) |
+| UNSAT cores | `Z3-Linq2Z3/17_UnsatCores` | à_confirmer (R2) |
+| Einstein's riddle & puzzles | `Z3-Linq2Z3/18_Einsteins_Riddle`, `02_Sudoku_Theorem_vs_Array` | à_confirmer (R2) |
+| Real arithmetic | `Z3-Linq2Z3/16_RealArithmetic` | à_confirmer (R2) |
 
 ## FAQ / Troubleshooting
 

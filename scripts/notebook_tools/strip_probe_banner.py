@@ -51,6 +51,12 @@ import sys
 # output as the banner (verified on .NET notebooks produced by
 # dotnet-interactive 1.0.x — also covers ``probingAddresses`` and the
 # ``loadDotnetInteractiveApi`` bootstrap helper the script calls).
+# NB : la variante « discovery » du bootstrap (fetch `${rootUrl}discovery` +
+# require.js, sans aucun des trois tokens) existe, mais son div porteur
+# ``dotnet-interactive-this-cell`` figure deja dans ~176 carnets committes :
+# l'ajouter ici ferait rougir le garde --scan-all sur un residu herite, pas
+# sur la PR. Couvrir cette variante exige un sweep dedie (voir issue), pas
+# un elargissement de signature.
 BANNER_SIGNATURES = ("probeAddresses", "probingAddresses", "loadDotnetInteractiveApi")
 
 

@@ -3914,40 +3914,63 @@ def _resolve_absent_sha_state(data: dict, cap: int = 5) -> dict[str, dict]:
 # carte vide, arbre tronque, statut non reconnu) y retombe.
 
 
-def _rebase_preserved_by_path(rewound_files, head_blobs) -> bool:
+# #20066 -- trois etats, pas deux. « blob different » et « aucun blob
+# comparable » appellent le MEME refus, mais pas la meme lecture : le premier
+# dit que le travail a bouge, le second dit seulement que l'organe n'a pas pu
+# regarder. Les confondre fait affirmer a l'organe une comparaison qu'il n'a
+# pas faite.
+_BLOB_PRESERVED = "preserved"
+_BLOB_DIFFERS = "differs"
+_BLOB_UNCOMPARABLE = "uncomparable"
+
+
+def _rebase_blob_state(rewound_files, head_blobs) -> str:
     """#15973 : chaque chemin touche par le commit rembobine doit se
     retrouver dans la tete, byte pour byte -- modification presente au meme
     blob, deletion toujours absente, rename installe au nouveau chemin et
-    parti de l'ancien. Fail-closed sur toute donnee manquante ou statut non
-    reconnu : un organe de merge-gate ne devient jamais permissif sur un
-    doute, c'est le refus #15556 qui reste la reponse par defaut.
+    parti de l'ancien.
+
+    Rend `_BLOB_PRESERVED` (identite prouvee), `_BLOB_DIFFERS` (au moins un
+    blob compare et different) ou `_BLOB_UNCOMPARABLE` (aucun blob compare :
+    donnee absente, carte vide, liste tronquee, statut inconnu). Fail-closed
+    dans les trois cas autres que `preserved` : un organe de merge-gate ne
+    devient jamais permissif sur un doute, c'est le refus #15556 qui reste la
+    reponse par defaut. #20066 : le troisieme etat existe pour que le LIBELLE
+    du refus n'annonce jamais une mesure qui n'a pas eu lieu.
     """
     if not rewound_files or not head_blobs:
-        return False
+        return _BLOB_UNCOMPARABLE
     # L'API commits plafonne `files` a 300 entrees sans drapeau de
     # troncature : au-dela, la verification ne porterait qu'un sous-ensemble
     # -- une identite demi-prouvee est un fail-open, pas une preuve.
     if len(rewound_files) >= 300:
-        return False
+        return _BLOB_UNCOMPARABLE
     for filename, blob, status, previous in rewound_files:
         if not filename or not blob:
-            return False
+            return _BLOB_UNCOMPARABLE
         if status == "removed":
             if filename in head_blobs:
-                return False
+                return _BLOB_DIFFERS
             continue
         if status == "renamed":
             if not previous or previous in head_blobs:
-                return False
+                return _BLOB_DIFFERS
             if head_blobs.get(filename) != blob:
-                return False
+                return _BLOB_DIFFERS
             continue
         if status in ("added", "modified", "changed", "copied"):
             if head_blobs.get(filename) != blob:
-                return False
+                return _BLOB_DIFFERS
             continue
-        return False  # statut inconnu : refus conservateur
-    return True
+        return _BLOB_UNCOMPARABLE  # statut inconnu : refus conservateur
+    return _BLOB_PRESERVED
+
+
+def _rebase_preserved_by_path(rewound_files, head_blobs) -> bool:
+    """Contrat booleen de #15973, conserve : `True` seulement si l'identite
+    par chemin est PROUVEE. Les deux etats non prouvables (`differs`,
+    `uncomparable`) rendent `False`, comme avant #20066."""
+    return _rebase_blob_state(rewound_files, head_blobs) == _BLOB_PRESERVED
 
 
 def _pr_head_oid(data: dict) -> str:
@@ -5086,6 +5109,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         for (t, lifter, lift_body) in explicit_lifts:
             refused = None
             refused_known_change = False
+            refused_blob_state = None
             warned = None
             artifact = None
             for sha in sorted(_cited_shas(lift_body)):
@@ -5118,11 +5142,13 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
                     # la tete). Fail-closed : sans donnees ou sans identite,
                     # le refus #15556 reste la reponse.
                     sha_files = rewound_files_map.get(sha) or []
-                    if _rebase_preserved_by_path(sha_files, head_blobs):
+                    blob_state = _rebase_blob_state(sha_files, head_blobs)
+                    if blob_state == _BLOB_PRESERVED:
                         if artifact is None:
                             artifact = (sha, "rebase_preserved")
                         continue
                     refused = sha
+                    refused_blob_state = blob_state
                     if tree and head_tree:
                         refused_known_change = True
                     break
@@ -5130,7 +5156,8 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
             if refused:
                 voided_lifts.append(
                     {"author": lifter, "at": t.isoformat(), "sha": refused,
-                     "tree_differs": refused_known_change})
+                     "tree_differs": refused_known_change,
+                     "blob_state": refused_blob_state})
             else:
                 kept_lifts.append((t, lifter, lift_body))
                 if artifact:
@@ -5592,9 +5619,18 @@ def _print_sha_notes(result: dict) -> None:
               f"rembobiné par un push muet ({why}) — preuve conservée, "
               f"non bloquant")
     for v in result.get("voided_lifts") or []:
-        detail = (" — l'arbre DIFFÈRE de la tête : blob modifié depuis la levée, fond non vérifié"
-                  if v.get("tree_differs")
-                  else " — arbre non comparable, refus conservateur")
+        # #20066 -- `tree_differs` dit que les deux arbres sont connus et
+        # differents ; il ne dit pas qu'un BLOB a ete compare. Quand
+        # `sha_files` est vide (pas d'entree pour ce SHA), ou la carte de la
+        # tete vide, `_rebase_blob_state` rend `uncomparable` : le refus est
+        # le meme, le libelle doit dire qu'aucun blob n'a ete regarde.
+        if not v.get("tree_differs"):
+            detail = " — arbre non comparable, refus conservateur"
+        elif v.get("blob_state") == _BLOB_UNCOMPARABLE:
+            detail = (" — l'arbre DIFFÈRE de la tête : aucun blob comparable, "
+                      "refus conservateur")
+        else:
+            detail = (" — l'arbre DIFFÈRE de la tête : blob modifié depuis la levée, fond non vérifié")
         print(f"  [!] NON LEVE — levee de {v['author']} à {v['at']} : cite "
               f"{v['sha']}, absent des commits de la PR (résolu côté serveur, "
               f"mais rembobiné par un push ultérieur){detail}")
