@@ -64,7 +64,8 @@ Vérifié sur QC Cloud (project 28433748, 2018-01-01 → 2024-12-31). Backtest d
 
 - `main.py` — Stratégie (classe `OptimizedCryptoAlgorithm`).
 - `config.json` — Configuration.
-- `quantbook.ipynb`, `research.ipynb` — Recherche (analyse des signaux).
+- `research.ipynb` — Recherche sur la stratégie crypto déployée (périodes EMA, seuils RSI et Bollinger, stops, allocation BTC/ETH/LTC).
+- `quantbook.ipynb` — Variante actions des mêmes filtres, sur SPY, QQQ et IWM. Elle est adaptée à l'environnement Lean Research local, qui n'a pas les données crypto. Ses Sharpe ne mesurent donc pas la stratégie déployée.
 - `ml_ema_analysis.png` — Figure d'analyse.
 
 ## Concepts enseignés
