@@ -230,6 +230,53 @@ def test_body_red_is_liftable_by_an_edition_alone():
         )
 
 
+# ------------------- 6. la FRAICHEUR du body vu par les gardes absorbes
+
+# #23146 : ces trois canaux alimentent des gardes ABSORBES depuis l'etape
+# fast-lane. Ils portaient la photographie du payload (`github.event.
+# pull_request.body`), figee a l'evenement declencheur -- mesure #23047,
+# 28/10 : 9543 caracteres lus la ou le body en portait 10759, `0 justified
+# in body` sur une justification presente et valide, et un rouge bloquant
+# qu'aucun geste de lane ne pouvait lever (le job de contenu ignore `edited`,
+# `gh run rerun` rejoue le meme payload).
+LIVE_BODY_CHANNELS = (
+    "MD_CONTENT_LOSS_PR_BODY",
+    "COLLAPSE_PR_BODY",
+    "LEAN_CLIQUET_PR_BODY",
+)
+
+
+def _content_steps() -> list[dict]:
+    return _load(CONTENT_WF)["jobs"][CONTENT_JOB]["steps"]
+
+
+def test_content_job_still_reads_the_body_live():
+    """La promotion ci-dessous n'a de source que si l'etape de bootstrap
+    continue d'ecrire `PR_BODY` (lecture API, #15697)."""
+    live = [s for s in _content_steps() if s.get("name", "").startswith("Body live")]
+    assert len(live) == 1, "l'etape de lecture live du body a disparu"
+    assert "PR_BODY<<" in str(live[0].get("run", "")), (
+        "l'etape de bootstrap n'exporte plus PR_BODY"
+    )
+
+
+def test_fastlane_promotes_the_live_body_over_the_payload_snapshot():
+    """Ces trois canaux doivent etre alimentes par le corps COURANT, le
+    payload ne restant que le repli quand la lecture API a echoue."""
+    step = [_s for _s in _content_steps() if _s.get("id") == "fastlane"]
+    assert len(step) == 1, "l'etape fast-lane a disparu ou a ete dedoublee"
+    run = str(step[0].get("run", ""))
+    env = step[0].get("env", {})
+    for channel in LIVE_BODY_CHANNELS:
+        assert channel in env, "%s n'est plus cable dans l'etape fast-lane" % channel
+        assert '%s="${PR_BODY:-$%s}"' % (channel, channel) in run, (
+            "%s n'est pas promu depuis le body live" % channel
+        )
+        assert re.search(r"^export[^\n]*\b%s\b" % channel, run, re.MULTILINE), (
+            "%s est reassigne mais pas exporte vers le garde" % channel
+        )
+
+
 def test_pr_gate_fold_still_makes_a_skipped_run_shadow_a_red():
     """La premisse de conception, epinglee a sa source.
 
