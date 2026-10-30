@@ -8,7 +8,7 @@ L'IA générative a transformé la création de contenu en 2024-2026. Un dévelo
 
 ## À qui s'adresse cette série
 
-Étudiants en IA, développeurs full-stack souhaitant monter en compétence sur les modèles génératifs multi-modaux, enseignants cherchant un parcours structuré clé-en-main (Docker Compose, credentials préconfigurés, ~141 notebooks balisés), et ingénieurs R&D explorant l'orchestration d'agents LLM en production. Prérequis : Python intermédiaire, containers Docker de base, et une familiarité avec les API REST.
+Étudiants en IA, développeurs full-stack souhaitant monter en compétence sur les modèles génératifs multi-modaux, enseignants cherchant un parcours structuré clé-en-main (Docker Compose, credentials préconfigurés, notebooks balisés), et ingénieurs R&D explorant l'orchestration d'agents LLM en production. Prérequis : Python intermédiaire, containers Docker de base, et une familiarité avec les API REST.
 
 ## Objectifs d'apprentissage
 
@@ -150,17 +150,17 @@ GenAI/
 ├── FallacyDetection/        # Taxonomie + datasets + couverture cross-notebooks fallacy
 ├── Integrations-DotNet/     # Hub d'intégrations .NET GenAI (EFCore + CopilotSDK, voir PR #14431)
 ├── Plateformes-Conversationnelles/  # Interfaces GenAI conversationnelles (nommées par fonction)
-│   ├── Open-WebUI/          # Tour guidé plateforme + série QA Playwright (6 modules, 30+ tests)
+│   ├── Open-WebUI/          # Tour guidé plateforme + série QA Playwright (30+ tests)
 │   └── AI-Engine-WordPress/ # WordPress comme surface GenAI (Copilot, RAG, serveur MCP)
 ├── Vibe-Coding/             # Tutoriels Claude Code et Roo Code
 └── RAG-et-Memoire-Semantique/  # Mémoire sémantique : Qdrant, embeddings, grounding (SDDD)
 ```
 
-> **Note d'arborescence (mars 2026)** : `EFCore/` et `CopilotSDK/` (mono-notebook chacun) seront absorbés dans `Integrations-DotNet/` via [PR #14431](https://github.com/jsboige/CoursIA/pull/14431) — **répertoire pas encore créé sur `main` à la rédaction de cette note** (en attente du merge de #14431). Le hub Integrations-DotNet sera le point de chute canonique des futurs bindings .NET GenAI. `Aspire/` reste au niveau racine : 8 notebooks, série pédagogique majeure avec sous-série catalog. La provenance des réalisations étudiantes EPF est portée par la section « Généalogie » de [`CaseStudies/README.md`](CaseStudies/README.md).
+> **Note d'arborescence (mars 2026)** : `EFCore/` et `CopilotSDK/` (mono-notebook chacun) seront absorbés dans `Integrations-DotNet/` via [PR #14431](https://github.com/jsboige/CoursIA/pull/14431) — **répertoire pas encore créé sur `main` à la rédaction de cette note** (en attente du merge de #14431). Le hub Integrations-DotNet sera le point de chute canonique des futurs bindings .NET GenAI. `Aspire/` reste au niveau racine, série pédagogique majeure avec sous-série catalog. La provenance des réalisations étudiantes EPF est portée par la section « Généalogie » de [`CaseStudies/README.md`](CaseStudies/README.md).
 
 ### 00-GenAI-Environment - Votre point de départ
 
-Avant de générer la moindre image ou le moindre son, il faut configurer l'environnement : clés API, services Docker, et validation que tout fonctionne. Ces 6 notebooks sont le passage obligatoire. Ils couvrent le setup Python, la gestion des conteneurs Docker (ComfyUI, Whisper, MusicGen), la configuration des endpoints API, et un test complet de validation.
+Avant de générer la moindre image ou le moindre son, il faut configurer l'environnement : clés API, services Docker, et validation que tout fonctionne. Ces notebooks sont le passage obligatoire. Ils couvrent le setup Python, la gestion des conteneurs Docker (ComfyUI, Whisper, MusicGen), la configuration des endpoints API, et un test complet de validation.
 
 ### Image - Générer, éditer et orchestrer des images
 
@@ -184,15 +184,15 @@ Semantic Kernel est le SDK Microsoft pour construire des applications agentiques
 
 ### FineTuning - Adapter un modèle à votre tâche
 
-Un modèle généraliste ne connaît pas votre domaine, et le ré-entraîner de zéro coûterait des millions. Le fine-tuning l'adapte à moindre frais. Cette série progressive de 5 notebooks part des adaptateurs légers — LoRA, puis QLoRA qui quantifie le modèle en 4 bits pour tenir sur un GPU grand public (T4/V100) —, passe par le supervised fine-tuning (SFT) au format ChatML qui transforme un *base model* en modèle conversationnel, l'alignement sur les préférences humaines (RLHF/DPO), et culmine avec la fusion de plusieurs modèles spécialisés en un seul (TIES, DARE, routage MoE). C'est la boîte à outils **pratique** pour spécialiser un LLM.
+Un modèle généraliste ne connaît pas votre domaine, et le ré-entraîner de zéro coûterait des millions. Le fine-tuning l'adapte à moindre frais. Cette série progressive part des adaptateurs légers — LoRA, puis QLoRA qui quantifie le modèle en 4 bits pour tenir sur un GPU grand public (T4/V100) —, passe par le supervised fine-tuning (SFT) au format ChatML qui transforme un *base model* en modèle conversationnel, l'alignement sur les préférences humaines (RLHF/DPO), et culmine avec la fusion de plusieurs modèles spécialisés en un seul (TIES, DARE, routage MoE). C'est la boîte à outils **pratique** pour spécialiser un LLM.
 
 ### PostTraining - La chaîne SOTA du post-entraînement
 
-Là où FineTuning donne la boîte à outils, PostTraining en est le **pendant théorique et SOTA (2024-2025)** : il remonte toute la chaîne conceptuelle du post-entraînement — SFT vers RLHF, DPO, GRPO, puis RLVR. Ces 7 notebooks prennent le parti d'expliquer d'abord la *mathématique du loss*, puis l'intuition, puis l'implémentation (TRL/HuggingFace) — l'ordre inverse des tutoriels habituels. Le fil rouge reproduit les techniques récentes, jusqu'au raisonnement à la Deepseek-R1 (janvier 2025), sur de **petits** modèles qui tiennent sur un GPU 8 Go, avec évaluation comparative et détection du *reward hacking* — la série migre progressivement de Qwen2.5-0.5B/1.5B vers Qwen3.5-0.8B (PT-03 déjà migré, #5078 : évaluation DPO en vraie *forward pass* au lieu d'une métrique codée en dur). À suivre après FineTuning pour la profondeur méthodologique.
+Là où FineTuning donne la boîte à outils, PostTraining en est le **pendant théorique et SOTA (2024-2025)** : il remonte toute la chaîne conceptuelle du post-entraînement — SFT vers RLHF, DPO, GRPO, puis RLVR. Ces notebooks prennent le parti d'expliquer d'abord la *mathématique du loss*, puis l'intuition, puis l'implémentation (TRL/HuggingFace) — l'ordre inverse des tutoriels habituels. Le fil rouge reproduit les techniques récentes, jusqu'au raisonnement à la Deepseek-R1 (janvier 2025), sur de **petits** modèles qui tiennent sur un GPU 8 Go, avec évaluation comparative et détection du *reward hacking* — la série migre progressivement de Qwen2.5-0.5B/1.5B vers Qwen3.5-0.8B (PT-03 déjà migré, #5078 : évaluation DPO en vraie *forward pass* au lieu d'une métrique codée en dur). À suivre après FineTuning pour la profondeur méthodologique.
 
 ### Vibe-Coding - Développer avec des agents IA
 
-Le "vibe coding" est la compétence la plus demandée de 2026 : décrire ce qu'on veut à un agent IA et le laisser écrire, tester et déployer le code. Cette série couvre les deux outils majeurs du marché : Claude Code (Anthropic) et Roo Code (communautaire), chacun abordé en 5 modules, de la découverte à l'automatisation avancée. Deux modules d'infrastructure complètent le tableau : **Claw-Systems** (agents autonomes conteneurisés — les bots reviewers Hermes/NanoClaw qui auditent réellement les PRs de ce dépôt) et **Claudish** (proxy multi-provider qui fait tourner Claude Code sur des modèles alternatifs).
+Le "vibe coding" est la compétence la plus demandée de 2026 : décrire ce qu'on veut à un agent IA et le laisser écrire, tester et déployer le code. Cette série couvre les deux outils majeurs du marché : Claude Code (Anthropic) et Roo Code (communautaire), chacun abordé en plusieurs modules, de la découverte à l'automatisation avancée. Deux modules d'infrastructure complètent le tableau : **Claw-Systems** (agents autonomes conteneurisés — les bots reviewers Hermes/NanoClaw qui auditent réellement les PRs de ce dépôt) et **Claudish** (proxy multi-provider qui fait tourner Claude Code sur des modèles alternatifs).
 
 ### RAG et Mémoire Sémantique - Le backend de grounding des agents
 
@@ -212,7 +212,7 @@ Série récente (2026) qui s'attaque à un angle mort de l'évaluation GenAI : l
 
 ### Aspire - Hosting et observabilité .NET
 
-Série pédagogique sur [.NET Aspire](https://learn.microsoft.com/en-us/dotnet/aspire/) appliquée à l'IA générative : AppHost (composition de services), OpenTelemetry (traces distribuées), health-checks, intégration avec les services GenAI locaux (ComfyUI, vLLM, Qdrant). 8 notebooks — la série la plus technique du hub, à aborder avec un bagage C#/.NET 9 ou après les notebooks SemanticKernel C#.
+Série pédagogique sur [.NET Aspire](https://learn.microsoft.com/en-us/dotnet/aspire/) appliquée à l'IA générative : AppHost (composition de services), OpenTelemetry (traces distribuées), health-checks, intégration avec les services GenAI locaux (ComfyUI, vLLM, Qdrant) — la série la plus technique du hub, à aborder avec un bagage C#/.NET 9 ou après les notebooks SemanticKernel C#.
 
 ### Integrations-DotNet - Hub d'intégrations .NET GenAI
 
@@ -419,7 +419,7 @@ Trois sous-dossiers complètent la série sans être des notebooks :
 
 <!-- CATALOG-STATUS
 series: GenAI
-pedagogical_count: 292
-breakdown: Texte=44, Audio=41, Image=29, Plateformes-Conversationnelles=28, PostTraining=23, SemanticKernel=23, Video=22, FineTuning=15, Integrations-DotNet=15, RAG-et-Memoire-Semantique=14, Vibe-Coding=8, 00-GenAI-Environment=7, Security=7, CaseStudies=6, 3D=5, FallacyDetection=5
-maturity: BETA=240, ALPHA=29, DRAFT=20, TEMPLATE=3
+pedagogical_count: 297
+breakdown: Texte=46, Audio=41, Image=29, Plateformes-Conversationnelles=28, PostTraining=23, SemanticKernel=23, Video=22, Integrations-DotNet=17, FineTuning=15, RAG-et-Memoire-Semantique=14, Vibe-Coding=8, 00-GenAI-Environment=7, Security=7, CaseStudies=6, 3D=5, FallacyDetection=5, HumorDetection=1
+maturity: BETA=244, ALPHA=30, DRAFT=20, TEMPLATE=3
 -->

@@ -226,8 +226,13 @@ NOTE (limite du témoin canonique) : les diagrammes désignés
 `conwayKnotDiagram` et `kinoshitaTerasakaDiagram` (codes PD census corrigés,
 cf. §2) partagent leurs cinq premiers croisements et diffèrent aux
 croisements 6 à 11 — aucun envoi one-shot ne les superpose.
-`AreMutants conwayKnot kinoshitaTerasakaKnot` exigera un diagramme
-intermédiaire (isotopie de Reidemeister) — sous-grain ultérieur.
+NOTE MAJ (maillon 5, c165) : le diagramme intermédiaire est livré — le
+mutant de sphère du census Conway (`conwayMutantDiagram`) est un **redraw**
+du census KT (réordonnancement + renommage explicites, cf. `Knots.Conway`
+`conwayMutant_redraws_kinoshitaTerasaka`). L'envoi one-shot reste impossible
+sur les désignés ; il reste à relier formellement le redraw à
+`ReidemeisterEquiv` pour fermer `AreMutants conwayKnot kinoshitaTerasakaKnot`
+— sous-grain ultérieur.
 -/
 
 /-- Contrôle négatif : trèfle et nœud trivial ne sont pas mutants (la

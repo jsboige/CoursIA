@@ -268,4 +268,42 @@ theorem isZero_stalk_homology_godementCanonicalComplex
     ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).mapIso
       (ShortComplex.homologyMapIso e))
 
+/-- **Partie 94 — flascuité de la tour canonique** : chaque étage du complexe
+canonique de Godement est flasque, sans aucune hypothèse sur `F`. C'est
+l'étape 1 de la lecture « résolution flasque » de [God58] II Th. 5.2.1 :
+tous les étages sont des préfaisceaux de Godement (`C⁰F` en degré 0,
+`C⁰(coker dⁿ)` en degré `n+1` via `godementStep`), et la flascuité
+générique de `godementPresheaf` — `isFlasque_godementPresheaf`,
+prolongement par zéro des familles de germes : une famille de germes sur
+`V` se relève sur tout ouvert `U ⊇ V` en prolongeant par `0` hors de `V` —
+transporte à la tour entière.
+
+Les trois cas de la récursion `godementCanonicalObj` sont chacun
+définitionnels : degré 0 (`godementCanonicalObj_zero` : l'étage est
+`godementPresheaf F`), degré 1 (l'étage est `godementPresheaf (coker μ)`,
+définition du chaînon `godementDChain` en 1), degré `n+2`
+(`godementCanonicalObj_succ` : l'étage est `godementPresheaf (coker dⁿ)`).
+L'assemblage est un tri-cas `exact` — aucune récurrence à écrire, la
+flascuité de chaque étage est celle du préfaisceau de Godement qu'il est.
+
+Note de cadrage (2026-10-18) : `TopCat.Presheaf.IsFlasque` existe bien dans
+Mathlib (Topology/Sheaves/Flasque.lean) — l'addendum c.6242821964 sur #2159
+le disait à tort « faisceau-only » ; le fichier porte les deux versions,
+préfaisceau et faisceau. Le corollaire faisceau de [God58] II Th. 5.2.1
+(nullité de `Hⁿ` dans la catégorie des faisceaux) reste derrière la
+faisceification abélienne, absente de Mathlib au pin du lake :
+`sheafify`/`sheafifyStalkIso` Type-valued seulement, `HasSheafify`/
+`HasSheafCompose (forget A)` hypothèses sans instance pour
+`(AddCommGrpCat, TopCat)`. La voie préfaisceau — acyclicité en tige
+(Partie 93(b)), flascuité des étages (cette Partie) — avance sans elle ;
+la résolution flasque (suite exacte longue, Partie 95+) consommera la
+brique livrée ici. -/
+theorem isFlasque_godementCanonicalComplex
+    (F : X.Presheaf AddCommGrpCat.{u}) (n : ℕ) :
+    ((godementCanonicalComplex F).X n).IsFlasque := by
+  match n with
+  | 0 => exact isFlasque_godementPresheaf F
+  | 1 => exact isFlasque_godementPresheaf (cokernel (toGodement F))
+  | (n + 2) => exact isFlasque_godementPresheaf (cokernel (godementCanonicalD F n))
+
 end Grothendieck

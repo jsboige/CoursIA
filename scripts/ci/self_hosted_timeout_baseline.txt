@@ -1,0 +1,71 @@
+# Jobs auto-heberges sans `timeout-minutes` au niveau du job (#22954).
+# Cle = `workflow.yml:job`, jamais `workflow:ligne` : une cle ancree
+# sur une ligne perime des qu'on insere au-dessus, et un garde qui
+# rougit sur un site inchange finit desactive.
+# Dette mesuree le 2026-10-29 sur origin/main 2f1291f01 : 63 jobs
+# STATIQUES. Les 12 jobs HYBRIDES (#22461), eux, sont bornes par la PR
+# qui a introduit ce cliquet -- la forme hybride n'a AUCUNE tolerance.
+# Retirer une ligne des que son job est borne.
+bare-cross-dir-load-gate.yml:bare-cross-dir-load
+base-not-main-advisory.yml:signal
+bash-syntax-advisory.yml:runner-script-tests
+bash-syntax-advisory.yml:shebang-dry-run-advisory
+bash-syntax-advisory.yml:syntax-check
+candidate-delivered-advisory.yml:sweep
+catalog-cron.yml:regen
+check-resync-only.yml:resync-only-advisory
+cjk-residue-advisory.yml:cjk-residue-advisory
+consecutive-code-cells-advisory.yml:consecutive-code-cells-advisory
+degenerate-figure-gate.yml:degenerate-figure
+detect-dup-selftest.yml:self-test
+docs-link-check.yml:check-links
+dotnet-nuget-block-advisory.yml:dotnet-nuget-block-advisory
+epic-charter-advisory.yml:charter
+epic-neglect-sweep.yml:sweep
+exercises-advisory.yml:exercises-advisory
+fabricated-output-gate.yml:fabricated-output
+grain-orphans-sweep.yml:sweep
+lane-claim-epic-wide-advisory.yml:sweep
+lane-claim-guard.yml:check-lane-claim-advisory
+lane-claim-guard.yml:check-lane-claim-required
+lean-conway.yml:target-coverage
+lean-formal-logic.yml:target-coverage
+lean-i18n-drift.yml:i18n-drift
+lean-visibility-advisory.yml:lean-visibility-advisory
+live-read-freshness.yml:freshness
+machine-dep-timing-advisory.yml:machine-dep-timing
+machine-dep-timing-inventory.yml:inventory
+markdown-claims-output-advisory.yml:claims-output-advisory
+markdown-deaccent-advisory.yml:markdown-deaccent-advisory
+markdown-table-guard.yml:md-table-syntax-advisory
+md-content-loss-gate.yml:md-content-loss
+mermaid-fill-color-advisory.yml:mermaid-fill-color-advisory
+notebook-output-collapse-ratchet.yml:ratchet
+notebook-output-failure-ratchet.yml:ratchet
+notebook-output-flood-ratchet.yml:ratchet
+notebook-outputs-required.yml:detect-changes
+notebook-outputs-required.yml:validate
+orphan-branch-scan.yml:sweep
+outputs-text-fragmentation-advisory.yml:outputs-text-fragmentation-advisory
+pedagogy-density-advisory.yml:pedagogy-density-advisory
+pr-gate-rerun.yml:resolve
+qc-research-monitor.yml:monitor
+regression-guard.yml:guard
+repeated-prose-advisory.yml:repeated-prose-advisory
+repo-size-advisory.yml:large-blob-advisory
+review-coverage-advisory.yml:sweep
+source-output-ratchet.yml:ratchet
+split-reading-advisory.yml:split-reading-advisory
+stale-base-warning.yml:check-base-age
+svg-broken-geometry-gate.yml:svg-broken-geometry
+svg-decimal-comma-gate.yml:svg-decimal-comma
+svg-empty-display-gate.yml:svg-empty-display
+svg-offscreen-flat-gate.yml:svg-offscreen-flat
+translation-guard.yml:guard
+translation-hot-drift-advisory.yml:advisory
+translation-parity.yml:parity
+translation-sync.yml:translation-sync
+twin-parity-cron.yml:twin-parity-cron
+twin-parity-drift-audit.yml:drift-audit
+validation-matrix.yml:validate
+variation-light-genre.yml:check-light-genre-signals
