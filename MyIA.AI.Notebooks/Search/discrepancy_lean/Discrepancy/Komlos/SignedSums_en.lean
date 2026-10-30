@@ -17,6 +17,14 @@ assembly itself (k2.6c): the real square `snocReal`, the hull transport
 `exists_colouring_aux` (closure `S` + exact support `E` — the `Finset`
 price of the oracle's canonical `Finsupp` support) and the public statement
 `exists_isColouring_mean_add_sum_mem_convexHull`.
+
+Scope caveat (measurement k5.2, tracked by #21417): this public statement is
+only instantiable for an identically zero family `v` — the contention
+hypotheses on a `Finset` force `v i = 0` (`contention_stability_forces_zero`,
+further down in this file, with the measured argument). k2 is therefore closed
+as a **proof**; it is not closed as an instantiable statement, and the fix goes
+through contention on the functional shift-distance side (route k4.2c). See the
+k5.2 row of `FORMAL_STATUS.md`.
 -/
 
 import Discrepancy.Basic_en

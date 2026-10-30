@@ -2650,6 +2650,13 @@ GPU_VERDICT_MARKER = {
     "STALE": "[DEFER gpu-reservation stale]",
     "UNPOSTED": "[DEFER gpu-reservation unposted]",
     "GATE_UNREAD": "[DEFER gpu-reservation gate-unreadable]",
+    # `UNREADABLE` est le verdict que le transport git rend ROUTINIER sur
+    # un siege sans remote `gpu-ledger` (#22755) : le gate refuse de repondre
+    # autour d'une source qu'il n'a pas pu lire. Sans marqueur nomme, ce
+    # verdict tombeait dans le repli `unknown-verdict` -- un motif qui
+    # pretend qu'on ne sait pas, alors que le ledger nomme tres bien son
+    # propre verdict et son remede.
+    "UNREADABLE": "[DEFER gpu-reservation unreadable]",
     "TARGET_AMBIGUOUS": "[DEFER gpu-reservation target-ambiguous]",
     # Defensif : la resolution rend `TARGET_UNRESOLVED` SANS appeler le gate
     # (cf `gpu_gate_target`), ce marqueur ne sert donc qu'a une sonde qui
@@ -2661,6 +2668,30 @@ GPU_VERDICT_MARKER = {
 #: confondre avec le marqueur d'ecart ci-dessus : le premier dit « servi,
 #: sans reservation a verifier », le second « ecarte ». Un motif qui dit
 #: l'inverse de ce qui s'est passe est pire qu'aucun motif.
+#: Remede des lectures "gate illisible" (timeout, exception, sortie non-JSON).
+#: Il est ecrit pour rester vrai AVANT et APRES #22755 : le cache local est
+#: l'autorite tant que le transport git n'est pas en vigueur, et cesse de
+#: l'etre quand il l'est. Un remede qui n'affirmerait qu'un des deux etats
+#: serait faux dans l'autre -- et le cache n'est plus consultable sur un
+#: siege qui n'a pas de remote.
+GPU_GATE_READ_REMEDY = (
+    "Remede : verifier d'abord que le remote `gpu-ledger` est configure sur "
+    "ce siege (`git remote get-url gpu-ledger`) -- apres #22755 c'est la "
+    "source primaire et le cache local n'est plus une autorite ; avant, "
+    "rafraichir le cache local (debt_ledger.py reduce)."
+)
+
+#: Remede propre au verdict `UNREADABLE` : la source primaire n'a pas pu
+#: etre lue, et la seule action utile est le geste de siege.
+GPU_VERDICT_REMEDY = {
+    "UNREADABLE": (
+        "Remede : configurer le remote `gpu-ledger` du siege "
+        "(`git remote add gpu-ledger <url>`) puis rejouer le tirage -- le "
+        "cache local n'est pas une source de remplacement de la branche "
+        "`ops/gpu-ledger`."
+    ),
+}
+
 GPU_UNRESOLVED_NOTE = (
     "[INFO gpu-reservation target-unresolved] aucune cible GPU declaree "
     "pour ce grain : la porte n'a aucun device a proteger et le grain est "
@@ -2819,13 +2850,12 @@ def gpu_gate_probe(item, args):
     except subprocess.TimeoutExpired:
         return ("GATE_UNREAD",
                 f"{entity} : le gate (check_pending) n'a pas repondu dans le "
-                "delai. Remede : rafraichir le snapshot local du ledger "
-                "(debt_ledger.py reduce) sur ce siege")
+                "delai. " + GPU_GATE_READ_REMEDY)
     except Exception as exc:  # noqa: BLE001 - diagnostic best-effort
         return ("GATE_UNREAD",
                 f"{entity} : gate illisible ({type(exc).__name__}). Remede : "
                 "verifier que scripts/coordination/debt_ledger.py est "
-                "executable et que le snapshot local existe sur ce siege")
+                "executable. " + GPU_GATE_READ_REMEDY)
     try:
         payload = json.loads(proc.stdout or "")
     except Exception:  # noqa: BLE001 - sortie non-JSON = gate illisible
@@ -2833,9 +2863,7 @@ def gpu_gate_probe(item, args):
     if not isinstance(payload, dict) or not payload.get("verdict"):
         return ("GATE_UNREAD",
                 f"{entity} : reponse illisible du gate (rc={proc.returncode}). "
-                "Remede : rafraichir le snapshot local du ledger, et "
-                "configurer le remote `gpu-ledger` du siege si #22755 a "
-                "change la source par defaut")
+                + GPU_GATE_READ_REMEDY)
     verdict = str(payload["verdict"])
     reason = str(payload.get("reason") or "").strip()
     return (verdict, f"{entity} : {verdict} -- {reason}".rstrip(" -"))
@@ -2885,11 +2913,13 @@ def gpu_gate_reason(item, args, probe=None, notes=None) -> str | None:
         return None
     marker = GPU_VERDICT_MARKER.get(
         verdict, "[DEFER gpu-reservation unknown-verdict]")
+    remedy = GPU_VERDICT_REMEDY.get(verdict, "")
+    tail = f" {remedy}" if remedy else ""
     return (f"{marker} {reason}. Source du verdict : ledger "
             "gpu-reservation (`check_pending`). Une experience GPU ne part "
             "pas sur un device dont l'etat n'est pas etabli ("
             "docs/coordination/gpu-reservation.md, « Liaison picker <-> file "
-            "#1454 »). Candidat remplace dans la meme urne.")
+            "#1454 »). Candidat remplace dans la meme urne." + tail)
 
 
 def open_cover_inert(issue_number: int) -> str:
@@ -9199,7 +9229,15 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                 merged_pr_expired = bool(
                     delivery_age_h is not None
                     and delivery_age_h >= CONSOLIDATION_LAG_H)
-                verdict = (False if expired()
+                # Le mur de temps est atteint : la sonde n'est pas lue (elle
+                # coute) et rien n'est neutralise -- fail-OPEN explicite.
+                # Le TUPLE est forme ici : un `False` nu n'est pas
+                # decomposable en trois. Mesure du 26/10 : le tapis levait
+                # `TypeError: cannot unpack non-iterable bool object`
+                # des que le budget de temps etait epuise -- donc des que
+                # la boucle de service demarrait, et le tirage entier
+                # rendait zero grain (aucune consolidation servie).
+                verdict = ((False, False, None) if expired()
                            else user_delivery_event_probe(n))
                 if verdict is None:
                     # Lecture en echec : fail-OPEN, rien n'est neutralise --
@@ -9314,6 +9352,29 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     # hors tapis) retrouvent leur timeout plein.
     _BELT_DEADLINE[0] = _previous_belt_deadline
     return belt_picks, belt_withheld, state
+
+
+def creation_budget_gate(pool: list[dict]) -> dict[int, str]:
+    """#23174 -- les grains de creation a ecarter, avec la cause nommee.
+
+    Rend ``{numero: cause}``. Vide quand rien n'est ecarte.
+
+    Le contrat est **fail-OPEN a triple** : module absent, etat absent ou
+    illisible, catalogue du depot inconnu -> aucun grain n'est ecarte. Un
+    `git` muet ou un compteur qui n'a pas tourne ne doivent JAMAIS vider le
+    tapis : le regime ralentit la creation, il ne l'arrete pas.
+
+    La cause nommee est `BUDGET CRÉATION` (accent compris) : elle doit se
+    retrouver telle quelle dans le journal de tirage et dans la sortie JSON.
+    """
+    try:
+        import creation_budget as cb
+    except Exception:  # noqa: BLE001 - module absent = porte inactive
+        return {}
+    try:
+        return cb.creation_gate(pool)
+    except Exception:  # noqa: BLE001 - une porte qui leve n'ecarte personne
+        return {}
 
 
 def _log_tirage_safe(*, lane, candidates, retained, urn, mode):
@@ -9511,6 +9572,12 @@ def main(argv: list[str] | None = None) -> int:
                          "selection (steer inclus).")
     ap.add_argument("--ignore-red", action="store_true",
                     help="passer outre le garde -- exige une justification ECRITE sur la PR concernee")
+    ap.add_argument("--ignore-creation-budget", action="store_true",
+                    help="#23174 : passer outre le BUDGET DE CREATION "
+                         "(la porte `BUDGET CRÉATION`). Exige une justification "
+                         "ECRITE : le regime ralentit la creation, il ne "
+                         "l'arrete pas -- on ne le contourne que par ecrit, "
+                         "jamais en silence.")
     ap.add_argument("--ignore-wip", action="store_true",
                     help="passer outre le plafond de WIP (Q41) -- exige "
                          "--wip-reason '<justification ECRITE>' : contrairement "
@@ -10028,15 +10095,50 @@ def main(argv: list[str] | None = None) -> int:
     # deja livree fait REFLUER le pool, c'est l'inverse de l'emballement.
     withheld: list[tuple[dict, str]] = []
     admitted = []
+    # #23174 -- budget de creation de carnets, a l'echelle de la flotte.
+    # La porte est lue AVANT l'admission : un grain de creation ecarte ne
+    # doit pas apparaitre dans le tirage. Elle est fail-OPEN a triple
+    # (module absent, etat absent, catalogue du depot inconnu) et elle ne
+    # s'active QUE sur un depassement de budget MESURE -- le regime ralentit
+    # la creation, il ne l'arrete pas.
+    budget_gate = ({} if args.ignore_creation_budget
+                   else creation_budget_gate(pool))
+    creation_withheld: list[tuple[dict, str]] = []
     for it in pool:
         if it["klass"] == "delivered":
             admitted.append(it)
+            continue
+        budget_cause = budget_gate.get(it["number"])
+        if budget_cause:
+            creation_withheld.append((it, budget_cause))
+            withheld.append((it, budget_cause))
             continue
         cause = admissibility(it, balance, issue_to_family, args.dwell_hours)
         if cause and not args.admit_reason:
             withheld.append((it, cause))
         else:
             admitted.append(it)
+    if creation_withheld:
+        print(f"   BUDGET CRÉATION : {len(creation_withheld)} grain(s) de "
+              f"creation écarté(s) du tirage — {creation_withheld[0][1]}")
+    filter_active = {
+        "exclude_issue": sorted(excluded_issues),
+        "require_label": sorted(required_labels, key=str.casefold),
+        "exclude_label": sorted(excluded_labels, key=str.casefold),
+        "min_age_days": args.min_age_days,
+        "max_age_days": args.max_age_days,
+        "min_idle_days": args.min_idle_days,
+        "max_idle_days": args.max_idle_days,
+        "urns": sorted(selected_urns),
+        # #23174 -- le garde de creation laisse une trace dans l'etat du
+        # tirage : sans lui, un tapis qui ecarte des grains de creation
+        # parait ne rien avoir refuse.
+        "creation_budget": {
+            "active": bool(budget_gate),
+            "ecartes": sorted(budget_gate),
+            "ignore": bool(args.ignore_creation_budget),
+        },
+    }
     filter_active = {
         "exclude_issue": sorted(excluded_issues),
         "require_label": sorted(required_labels, key=str.casefold),

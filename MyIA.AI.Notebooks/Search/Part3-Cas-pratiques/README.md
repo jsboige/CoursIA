@@ -45,7 +45,9 @@ flowchart LR
     S["<b>Cas pratiques Search</b><br/>Puissance 4 :<br/>ConnectFour, Minimax, MCTS, AIMA"]
     C["<b>Cas pratiques CSP</b><br/>N-Queens, GraphColoring,<br/>Nurse/JobShop, Minesweeper,<br/>Wordle, Picross, WFC..."]
     H["<b>Cas pratiques Hybrides</b><br/>EdgeDetection, Portfolio,<br/>TSP, VRP, Hyperparameter,<br/>AlgorithmSelection, PRESENT/SAT..."]
+    I["<b>Cas pratiques Informed</b> (mono-agent)<br/>Rush Hour : BFS vs A* admissible<br/>vs glouton, à l'état près"]
     P1 --> S
+    P1 --> I
     P2 --> C
     P4 --> H
     P2 --> R
@@ -118,7 +120,7 @@ La génération procédurale de niveaux (App-19) encode le Wave Function Collaps
 | 7b | [App-7b-Wordle-CSharp](App-7b-Wordle-CSharp.ipynb) | ~35 min | **Jumeau C#** — filtrage simple, CSP par propagation de domaines, solveur par entropie de Shannon from-scratch, parité #4956 | Jumeau .NET |
 | 8 | [App-8-MiniZinc](App-8-MiniZinc.ipynb) | ~50 min | Syntaxe MiniZinc, contraintes globales | Nouveau |
 | 8 | [App-8-MiniZinc-CSharp](App-8-MiniZinc-CSharp.ipynb) | ~50 min | **Jumeau C#** — Google.OrTools CP-SAT (Prong A #3801), modèles déclaratifs équivalents MiniZinc (MiniZinc n'a pas de binding .NET), parité #4956 | Jumeau .NET |
-| 9 | [App-11-Picross](App-11-Picross.ipynb) | ~40 min | Nonogrammes : 27Mx speedup CP-SAT | Projet étudiant |
+| 9 | [App-11-Picross](App-11-Picross.ipynb) | ~40 min | Nonogrammes : speedup mesuré 17.4x (10x10) à 4.64e+24x (15x15, extrapolé) | Projet étudiant |
 | 9b | [App-11b-Picross-CSharp](App-11b-Picross-CSharp.ipynb) | ~40 min | Twin C# : énumération de motifs, propagation par intersection (point fixe), naïf vs propagation | Classique |
 | 10 | [App-15-SportsScheduling](App-15-SportsScheduling.ipynb) | ~55 min | Calendrier sportif : contraintes TV, équité, déplacements | Projet étudiant |
 | 10b | [App-15b-SportsScheduling-CSharp](App-15b-SportsScheduling-CSharp.ipynb) | ~55 min | **Jumeau C#** — Google.OrTools CP-SAT natif .NET, round-robin + équilibre D/E + déplacements, parité #4956 | Jumeau .NET |
@@ -154,6 +156,16 @@ Quand l'espace est trop vaste ou l'objectif trop irrégulier pour les méthodes 
 | 8 | [App-22-AlgorithmSelection-Python](App-22-AlgorithmSelection-Python.ipynb) | ~45 min | Sélection empirique d'algorithmes : 3 jeux (Sudoku, Puissance 4, Wordle), 13 familles conceptuelles / 14 étiquettes mesurées, non-commensurabilité des métriques + frontières de Pareto + choix sous préférences — hommage PR IS #42 (Théodore Deguest) | Projet étudiant (IS PR #42) |
 | 9 | [App-23-PRESENT-Differential-Cryptanalysis-SAT](App-23-PRESENT-Differential-Cryptanalysis-SAT.ipynb) | ~55 min | PRESENT : DDT, compression d'implicants, CNF pondérée, frontière SAT/UNSAT du meilleur trail et limites de certification — distillation PrCon F2 (Théodore Deguest) | Projet étudiant (PrCon PR #49) |
 | 10 | [App-27-Sparse-Index-Tracking-Walk-Forward](App-27-Sparse-Index-Tracking-Walk-Forward.ipynb) | ~75 min | Sparse index tracking : modèle CP-SAT vérifiable, walk-forward sans fuite et lecture pédagogique des résultats QuantConnect réels — une recherche, deux lectures — distillation PrCon M2 (Godric Bouteloup) | Projet étudiant (PrCon PR #52) |
+
+---
+
+## Cas pratiques Informed — Rush Hour
+
+Le terrain d'application le plus direct de la [Partie 1](../Part1-Foundations/README.md) : un puzzle en espace d'états où la recherche mono-agent s'applique sans solveur industriel en contrepoint — la stratégie non informée sert de baseline dans le même carnet. Le Rush Hour confronte les trois stratégies de base (BFS, A\* à heuristique admissible, recherche gloutonne) sur des instances générées par scramble, à l'état près, pour rendre mesurable le rendement de l'heuristique et le prix de l'abandon de l'optimalité.
+
+| # | Notebook | Durée | Contenu | Source |
+|---|----------|-------|---------|--------|
+| 1 | [App-33-RushHour-Admissible-Astar-Python](App-33-RushHour-Admissible-Astar-Python.ipynb) | ~40 min | Rush Hour 6x6 : BFS, A\* (heuristique admissible par comptage des voitures bloquantes) et recherche gloutonne *from-scratch* (stdlib Python seule), instances générées par scramble, benchmark à l'état près | Série Search (Partie 1) |
 
 ---
 
@@ -221,6 +233,12 @@ Quand l'espace est trop vaste ou l'objectif trop irrégulier pour les méthodes 
 | App-22 AlgorithmSelection-Python | MGS-16 (Rice / No Free Lunch) | pandas, numpy, matplotlib |
 | App-23 PRESENT Differential Cryptanalysis | SAT, CNF, bit-vectors | python-sat, numpy, matplotlib |
 | App-27 Sparse Index Tracking Walk-Forward | CSP-3 (CP-SAT), CSP-5 (optimisation), App-10 (portefeuille) | ortools, pandas, numpy |
+
+### Cas pratiques Informed
+
+| Notebook | Fondations requises | Dépendances |
+|----------|--------------------|-------------|
+| App-33 RushHour | Search-1 (espace d'états), Search-2 (BFS), Search-3 (A*) | Python 3.10+ (stdlib seule) |
 
 ## Origine des projets
 
