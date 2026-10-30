@@ -4,7 +4,7 @@ Knots.ReidemeisterAny — langue de moves étendue : kink/bigon sans fraîcheur
 
 Issue #22359 (parent Epic #1453, suite désignée de #18611 dont l'organe est
 livré par #22240). Tranche 1 du grain multi-cycle : **la langue** et ses
-vérificateurs, l'embedding R1/R3 de la langue existante, des témoins kernel,
+vérificateurs, l'embedding R1/R2/R3 de la langue existante, des témoins kernel,
 et le cadre de décision borné. La recherche de témoin / certificat négatif
 étendu sur le corpus 11n102 (réplique Python, bornes ≤ 13 croisements,
 excursions ≤ +2) est la tranche suivante, pas ce fichier.
@@ -34,8 +34,8 @@ présents dans tout état atteint) mesurent exactement cette clôture.
 3. `AnyMove` + `verifyAnyMove` + `verifyAnyMoves` + `movesConnectsAny` — la
    chaîne certifiée Bool sur la langue étendue (R3 réutilisé tel quel : il ne
    connaît pas la fraîcheur) ;
-4. l'**embedding R1/R3** : tout pas R1 ou R3 accepté par l'ancien vérificateur
-   est accepté par le nouveau (théorème, pas mesure) ;
+4. l'**embedding R1/R2/R3** : tout pas R1, R2 ou R3 accepté par l'ancien
+   vérificateur est accepté par le nouveau (théorème, pas mesure) ;
 5. des **témoins kernel** : une descente `_any` authentique à labels non frais
    (labels mourants {2, 3} ≠ deux plus grands {3, 4}, compaction 4 → 2), les
    descentes au diagramme vide (kink dégénéré côté R1, paire de bigons
@@ -46,8 +46,6 @@ présents dans tout état atteint) mesurent exactement cette clôture.
 
 ## Résidus déclarés (tranches suivantes du grain, pas des angles morts)
 
-- **embedding R2** : le théorème `verifyR2Fwd_implies_verifyBigonDownAny`
-  (double renommage, plomberie voisine de R1) — première item de la tranche 2 ;
 - **soundness `_any` → `ReidemeisterEquiv`** : un retrait `_any` est un R1/R2
   à renommage près ; le sceller exige « le renommage préserve le type du
   nœud » (une `AnyEquiv` + lemme de pont) ;
@@ -232,14 +230,15 @@ def verifyAnyMoves : List AnyMove → KnotDiagram → KnotDiagram → Bool
 def movesConnectsAny (ms : List AnyMove) (d₁ d₂ : KnotDiagram) : Prop :=
   verifyAnyMoves ms d₁ d₂ = true
 
-/-! ## 4. Embedding R1/R3 — la langue connectée est une sous-langue
+/-! ## 4. Embedding R1/R2/R3 — la langue connectée est une sous-langue
 
 L'ancien vérificateur R1 exige les égalités de fraîcheur `K.e2 = m + 1`,
 `K.e3 = K.e4 = m + 2` ; la silhouette `_any` (`K.e3 = K.e4`) en est une
 conséquence immédiate, et la chirurgie littérale de l'ancien retrait rend le
 résultat **inchangé** (renumérotation identité), donc `canon`-égal. Tout
-maillon R1 ou R3 connecté est donc un maillon `_any`. L'embedding R2 (double
-renommage) est le premier item de la tranche 2.
+maillon R1 ou R3 connecté est donc un maillon `_any`. Le cas R2 est prouvé
+ci-dessous, dans la même section : le schéma de fraîcheur y est un double
+renommage, défait en une seule passe par `subLabel2`.
 -/
 
 /-- Fusion d'un slot : si `v` est le label frais `b` là où l'original portait
@@ -384,6 +383,114 @@ theorem verifyR1_implies_verifyAnyMove (s t : KnotDiagram)
     quel). -/
 theorem verifyR3_implies_verifyAnyMove (s t : KnotDiagram)
     (h : verifyR3 s t = true) : verifyAnyMove (.r3Any s t) = true := h
+
+/-- Fusion double d'un slot : si `v` est l'un des labels frais `o₁`/`o₂` là où
+    l'original portait `a`, la fusion le rend à `a` ; sinon il était inchangé.
+    Brique générique de l'embedding R2 (quatre slots, même preuve que
+    `slot_merge` pour R1). -/
+private theorem slot_merge2 {v w a o₁ o₂ : Nat}
+    (hr : v = w ∨ (v = o₁ ∧ w = a) ∨ (v = o₂ ∧ w = a))
+    (hw₁ : w ≠ o₁) (hw₂ : w ≠ o₂) (ho : o₂ ≠ o₁) :
+    (if v = o₁ then a else if v = o₂ then a else v) = w := by
+  rcases hr with h | ⟨h1, h2⟩ | ⟨h1, h2⟩
+  · rw [h, if_neg hw₁, if_neg hw₂]
+  · rw [h1, if_pos rfl, h2]
+  · rw [if_neg (by omega), h1, if_pos rfl, h2]
+
+/-- **Embedding R2** : tout pas accepté par `verifyR2Fwd` (petit `d`, grand
+    `D`) est un retrait `_any` accepté. La preuve déplie l'ancien
+    vérificateur, lit les silhouettes des bigons terminaux (conséquence des
+    égalités de fraîcheur), et montre que la double fusion
+    `K₁.e4 → K₂.e1` / `K₂.e4 → K₂.e1` défait exactement le double renommage
+    `isDoubleRenameOf` — le croisement réécrit redevient littéralement celui
+    du petit diagramme, donc le reste réécrit est `canon`-égal à la cible.
+    Le double arc `a` vit dans un seul croisement du petit diagramme, et la
+    passe simple `subLabel2` (chaque slot testé contre les deux cibles de
+    fusion) suffit à défaire le renommage des deux slots. -/
+theorem verifyR2Fwd_implies_verifyBigonDownAny {d D : KnotDiagram}
+    (h : verifyR2Fwd d D = true) : verifyBigonDownAny D d = true := by
+  cases hK₂ : D.crossings.getLast? with
+  | none => simp [verifyR2Fwd, hK₂] at h
+  | some K₂ =>
+    cases hK₁ : D.crossings.dropLast.getLast? with
+    | none => simp [verifyR2Fwd, hK₂, hK₁] at h
+    | some K₁ =>
+      simp only [verifyR2Fwd, hK₂, hK₁, Bool.and_eq_true] at h
+      obtain ⟨⟨⟨hwf1, hwf2⟩, hn⟩, hform₂, hform₁, hanyi⟩ := h
+      obtain ⟨hb2, hb3, hb4, ha1, han, hmem⟩ := of_decide_eq_true hform₂
+      obtain ⟨hc1, hc2, hc3, hc4⟩ := of_decide_eq_true hform₁
+      rw [List.any_eq_true] at hanyi
+      obtain ⟨i, hi_mem, hbody⟩ := hanyi
+      have hi : i < d.crossings.length := List.mem_range.mp hi_mem
+      have hY2 : d.crossings[i]? = some d.crossings[i] :=
+        List.getElem?_eq_some_iff.mpr ⟨hi, rfl⟩
+      simp only [Bool.and_eq_true, crossingAt, hY2, Option.getD_some] at hbody
+      obtain ⟨hsurg, hrename⟩ := hbody
+      -- les silhouettes bigon sont conséquence de la fraîcheur
+      have hsil₂ : K₂.e2 = K₂.e3 := by omega
+      have hsil₁ : K₁.e2 = K₁.e3 := by omega
+      -- chirurgie et longueur (deux dropLast retirent la paire terminale)
+      have hrest : D.crossings.dropLast.dropLast
+          = d.crossings.set i (crossingAt D.crossings.dropLast.dropLast i) :=
+        of_decide_eq_true hsurg
+      have hrestlen : D.crossings.dropLast.dropLast.length
+          = d.crossings.length := by
+        rw [hrest, List.length_set]
+      have hneD : D.crossings ≠ [] := fun hc => by
+        rw [hc] at hK₂; simp at hK₂
+      have hne₁ : D.crossings.dropLast ≠ [] := fun hc => by
+        rw [hc] at hK₁; simp at hK₁
+      have hlen : d.crossings.length + 2 = D.crossings.length := by
+        have h1 : D.crossings.dropLast.length = D.crossings.length - 1 :=
+          List.length_dropLast
+        have h2 : D.crossings.dropLast.dropLast.length
+            = D.crossings.dropLast.length - 1 := List.length_dropLast
+        have hpD : 0 < D.crossings.length :=
+          List.length_pos_iff_ne_nil.mpr hneD
+        have hp₁ : 0 < D.crossings.dropLast.length :=
+          List.length_pos_iff_ne_nil.mpr hne₁
+        omega
+      -- la double fusion défait le renommage, slot par slot : les labels
+      -- frais o1 = K1.e4, o2 = K2.e4 sont d'abord recalés sur l'épellation
+      -- numérotée du renommage (n+2 / n+4), puis chaque slot fusionne
+      have hsub : subLabel2 (crossingAt D.crossings.dropLast.dropLast i)
+            K₁.e4 K₂.e1 K₂.e4 K₂.e1 = d.crossings[i] := by
+        rw [hc4, hb4]
+        have hmemi : d.crossings[i] ∈ d.crossings := by simp
+        have hbounds := label_le_of_wf hwf1 hmemi
+        obtain ⟨_, b2, _, b4, _, b6, _, b8⟩ := hbounds
+        have hrn := of_decide_eq_true hrename
+        unfold PDCrossing.isDoubleRenameOf at hrn
+        obtain ⟨r1, r2, r3, r4⟩ := hrn
+        unfold subLabel2 subLabel2.sub1
+        have hec : (d.crossings[i] : PDCrossing) =
+            ⟨d.crossings[i].e1, d.crossings[i].e2, d.crossings[i].e3,
+              d.crossings[i].e4⟩ := rfl
+        rw [hec, PDCrossing.mk.injEq]
+        exact ⟨slot_merge2 r1 (by omega) (by omega) (by omega),
+          slot_merge2 r2 (by omega) (by omega) (by omega),
+          slot_merge2 r3 (by omega) (by omega) (by omega),
+          slot_merge2 r4 (by omega) (by omega) (by omega)⟩
+      -- assemblage du vérificateur _any
+      simp only [verifyBigonDownAny, hK₂, hK₁, hwf2, hwf1, Bool.true_and]
+      rw [Bool.and_eq_true, decide_eq_true_eq, Bool.or_eq_true, List.any_eq_true]
+      refine ⟨⟨hsil₂, hsil₁, hc1, hlen⟩, Or.inr ⟨i, ?_, ?_⟩⟩
+      · rw [hrestlen]
+        exact hi_mem
+      · show decide (canon ((D.crossings.dropLast.dropLast).set i
+            (subLabel2 (crossingAt D.crossings.dropLast.dropLast i)
+              K₁.e4 K₂.e1 K₂.e4 K₂.e1)) = canon d.crossings) = true
+        rw [hrest, crossingAt_set_self _ _ _ hi, List.set_set, hsub,
+          set_self_mem hi]
+        simp
+
+/-- Embedding du pas R2, orientation-neutral. -/
+theorem verifyR2_implies_verifyAnyMove (s t : KnotDiagram)
+    (h : verifyR2 s t = true) : verifyAnyMove (.r2Any s t) = true := by
+  simp only [verifyAnyMove]
+  rcases Bool.or_eq_true_iff.mp h with h' | h'
+  · exact Bool.or_eq_true_iff.mpr (Or.inl (verifyR2Fwd_implies_verifyBigonDownAny h'))
+  · exact Bool.or_eq_true_iff.mpr (Or.inr (verifyR2Fwd_implies_verifyBigonDownAny h'))
 
 /-! ## 5. Témoins kernel
 

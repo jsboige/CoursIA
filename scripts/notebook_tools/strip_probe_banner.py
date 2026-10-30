@@ -51,7 +51,12 @@ import sys
 # output as the banner (verified on .NET notebooks produced by
 # dotnet-interactive 1.0.x — also covers ``probingAddresses`` and the
 # ``loadDotnetInteractiveApi`` bootstrap helper the script calls).
-BANNER_SIGNATURES = ("probeAddresses", "probingAddresses", "loadDotnetInteractiveApi")
+# ``dotnet-interactive-this-cell`` couvre la variante « discovery » du meme
+# bootstrap (fetch `${rootUrl}discovery` + require.js) qui n'appelle aucune
+# des trois fonctions : le div porteur de cet id est pose par le kernel dans
+# toutes les variantes observees (Search-02 C#, re-exec 2026-10-30).
+BANNER_SIGNATURES = ("probeAddresses", "probingAddresses", "loadDotnetInteractiveApi",
+                     "dotnet-interactive-this-cell")
 
 
 def has_banner(blob):

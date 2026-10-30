@@ -1,8 +1,7 @@
 # iit_lean — intégration par coupes, proxy relationnel (Phase 1)
 
-Premier lake Lean de la série IIT. Sous-grain de l'Epic Aaronson
-[#16781](https://github.com/jsboige/CoursIA/issues/16781) (veine 5, moitié
-formelle), livré par [#18599](https://github.com/jsboige/CoursIA/issues/18599).
+Premier lake Lean de la série IIT : il formalise la moitié formelle de
+l'objection Aaronson.
 
 ## Ce que le lake formalise
 
@@ -52,4 +51,4 @@ byte-identiques hors docstrings, vérifiées par
 Lake enregistré dans `scripts/lean/ci_lakes.json` (`sorry-baseline: "0"`,
 `sorry-filter-mode: "real"`), déclenché par les filtres de chemins de
 `.github/workflows/lean-ci-matrix.yml` — voir
-[`LEAN_INVENTORY.md`](../../SymbolicAI/Lean/LEAN_INVENTORY.md) pour l'inventaire des lakes.
+[`LEAN_INVENTORY.md`](../LEAN_INVENTORY.md) pour l'inventaire des lakes de la série IIT.

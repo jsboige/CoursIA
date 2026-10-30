@@ -363,6 +363,39 @@ class TestBaseline:
         assert loaded is None
 
 
+class TestGeneratedSourceExcuse:
+    """#22651: a generated page cannot be repaired on a content branch."""
+
+    @staticmethod
+    def _result(source: str) -> ScanResult:
+        return ScanResult(broken=[LinkRef(
+            source=source,
+            target="../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/"
+                   "04-17-Basic-Pitch-Transcription.ipynb",
+            line=78, text="Transcription Note a Note : basic-pitch",
+        )])
+
+    def test_real_generated_curriculum_link_is_excused(self):
+        """Positive control: the #22556 rename on the real generated page."""
+        source = "docs/curriculum/genai.md"
+        assert check_docs_links._is_generated_source(REPO_ROOT / source)
+        assert check_regression(self._result(source), {}) == []
+        report = check_docs_links.format_generated_excuses(
+            self._result(source).broken)
+        assert "Excused: 1 generated source" in report
+        assert "04-17-Basic-Pitch-Transcription.ipynb" in report
+
+    def test_same_broken_link_in_manual_page_remains_regression(self, tmp_path, monkeypatch):
+        """Negative control: no header, no exemption."""
+        source = "docs/curriculum/manual.md"
+        page = tmp_path / source
+        page.parent.mkdir(parents=True)
+        page.write_text("# Parcours rédigé à la main\n", encoding="utf-8")
+        monkeypatch.setattr(check_docs_links, "REPO_ROOT", tmp_path)
+        assert check_docs_links._is_generated_source(page) is False
+        assert len(check_regression(self._result(source), {})) == 1
+
+
 class TestRegressionDetection:
     """Test regression detection vs baseline."""
 
