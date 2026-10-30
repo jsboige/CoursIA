@@ -266,8 +266,8 @@ Une preuve complète de `gittins_optimality` requiert :
 4. Une **espérance formelle** sur la distribution de récompense.
 
 Mathlib (v4.31.0-rc1) n'a **aucune formalisation de MDP, de bandit ou d'équation de
-Bellman**, ni d'API d'espérance mesurée-théorique adaptée ici. Une preuve complète est
-estimée à ~2000–5000 lignes de définitions support — de niveau recherche, au-delà
+Bellman**, ni d'API d'espérance mesurée-théorique adaptée ici. Une preuve complète exigerait un volume
+de définitions support de niveau recherche, au-delà
 d'une seule PR. Le théorème est donc **énoncé** (avec l'énoncé précis préservé dans
 son docstring) plutôt qu'affaibli silencieusement.
 
