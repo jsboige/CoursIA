@@ -1041,14 +1041,52 @@ def _synthesize_fishaudio_path(
         # Multi-chunk: synthesize SEQUENTIALLY (FishAudio is single-threaded)
         audio_results: list[bytes | None] = []
         attempts = 0
-        for req in tts_requests:
+        failed_chunks: list[int] = []
+        for i, req in enumerate(tts_requests, start=1):
             audio = fishaudio_tts(**req)
             attempts += 1
             if audio is None:
                 thermal_wait()
                 audio = fishaudio_tts(**req)
                 attempts += 1
+            if not audio:
+                # A falsy render is a failed render: the single-chunk branch
+                # below already treats an empty body as a failure ("[audio] if
+                # audio else []"), so b"" must not count as a delivered chunk.
+                failed_chunks.append(i)
             audio_results.append(audio)
+
+        if failed_chunks:
+            # A failed chunk used to be silently DROPPED: the remaining chunks
+            # were concatenated, the segment was written and reported
+            # "generated", and the audiobook simply lost up to ~220 characters
+            # of dialogue with nothing anywhere saying so. That is the exact
+            # opposite of the contract the other render paths hold -- the Qwen
+            # client returns None "so a partial passage is never silently
+            # measured", and the single-chunk branch here fails the segment.
+            # A missing segment is visible in the report; a hole is not, so
+            # the segment fails as a whole when any of its chunks failed.
+            logger.error(
+                "[P5] seg %s: %d chunk(s) failed (%s) - segment failed, "
+                "no partial passage is shipped",
+                seg.seg_index, len(failed_chunks), failed_chunks,
+            )
+            print(
+                f"  [P5] seg {seg.seg_index} FAILED: {len(failed_chunks)} "
+                f"chunk(s) failed {failed_chunks} of {len(tts_requests)} - "
+                f"no partial passage is shipped"
+            )
+            return TTSResult(
+                seg_index=seg.seg_index,
+                speaker=seg.speaker,
+                reference_id=reference_id,
+                mp3_path="",
+                duration_s=0.0,
+                seed=seed,
+                status="failed",
+                attempts=attempts,
+                text_hash=current_hash,
+            )
 
         audio_parts = [a for a in audio_results if a is not None]
 
