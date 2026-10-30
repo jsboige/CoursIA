@@ -3415,6 +3415,12 @@ STUB
   export STUB_RATE_RESET=$(( $(date +%s) + 180 ))
   . "$SCRIPT_DIR/supervise.sh" status >/dev/null 2>&1
   FETCH_TOKEN_STATE_FILE="$TEST_DIR/state-70/token_state"; mkdir -p "$TEST_DIR/state-70"
+  # #21527 critere 5 : le source ci-dessus a evalue STATE_DIR depuis
+  # l'ENVIRONNEMENT de la machine -- le cache de jeton pointerait donc vers le
+  # STATE_DIR REEL du poste, dont un jeton encore frais ferait reussir le
+  # fetch SANS toucher gh : le test de quota perdrait son sujet. On l'isole
+  # comme le fichier d'etat.
+  REGISTRATION_TOKEN_CACHE="$TEST_DIR/state-70/rt_cache"
   # Sentinelle du TEST, pas celle de l'instance : `supervise.sh` en definit une
   # a la source, et une sentinelle reelle presente sur l'hote ferait echouer
   # l'assertion sans qu'aucun quota n'ait ete touche.
@@ -3445,7 +3451,7 @@ STUB
   export STUB_STOP_FILE="$STOP_FILE"; rm -f "$STOP_FILE"
   reset_epoch="$(awk -F= '$1=="RESET"{print $2; exit}' "$FETCH_TOKEN_STATE_FILE" 2>/dev/null)"
   printf 'HTTP=RATE\nACCOUNT=tester\nRESET=%s\nERR=gh: API rate limit exceeded (HTTP 403)\n' "${reset_epoch:-0}" > "$FETCH_TOKEN_STATE_FILE"
-  out="$( (timeout 30 env GH_TOKEN=dummy FETCH_TOKEN_STATE_FILE="$FETCH_TOKEN_STATE_FILE" bash -c '. "$0" status >/dev/null 2>&1; slot_loop 99 gh-quota-test d d 4096m "" 4096' "$SCRIPT_DIR/supervise.sh") 2>&1 )"; rc=$?
+  out="$( (timeout 30 env GH_TOKEN=dummy FETCH_TOKEN_STATE_FILE="$FETCH_TOKEN_STATE_FILE" REGISTRATION_TOKEN_CACHE="$REGISTRATION_TOKEN_CACHE" bash -c '. "$0" status >/dev/null 2>&1; slot_loop 99 gh-quota-test d d 4096m "" 4096' "$SCRIPT_DIR/supervise.sh") 2>&1 )"; rc=$?
   if [ "$rc" = "124" ] && [ ! -f "$STOP_FILE" ] \
      && printf '%s' "$out" | grep -q "HTTP RATE" \
      && ! printf '%s' "$out" | grep -q "ABANDON"; then
@@ -4017,6 +4023,109 @@ STUB
     ok "gc.auto=0 en -c sur les DEUX fetch --prune (bootstrap + refresh)"
   else
     ko "attendu 2 '-c gc.auto=0' (bootstrap + refresh), obtenu $n_fetch"
+  fi
+)
+echo ""
+
+# --- Test 73 : cache partage du registration token (#21527, critere 5, voie (a))
+# Mesure ai-01 du 26/10 : un fetch par demarrage de conteneur = 155 appels
+# REST/h pour le pool -- la consommation meme qui a epuise le quota de la
+# flotte le 2026-10-20. Le jeton vaut 1 h : le re-servir depuis STATE_DIR
+# fait tomber la consommation a <= 1 fetch par fenetre. Quatre comportements
+# eprouves, chacun par un appel DIRECT a fetch_token (pas de superviseur) :
+#   (1) cache frais, cle identique  -> servi SANS aucun appel gh
+#   (2) cache perime (TTL ecoule)   -> re-fetch, cache re-ecrit
+#   (3) cle differente (compte epingle change) -> re-fetch, jamais l'ancien
+#   (4) cache corrompu (forme invalide) -> miss silencieuse, re-fetch
+echo "Test 73 : le registration token se partage entre demarrages (#21527)"
+(
+  mkdir -p "$TEST_DIR/bin73" "$TEST_DIR/state-73"
+  cat > "$TEST_DIR/bin73/gh" <<'STUB'
+#!/usr/bin/env bash
+# Tout appel gh est journalise : un cache frais doit servir SANS passer ici.
+echo "$*" >> "$GH_CALLS_LOG"
+if printf '%s' "$*" | grep -q 'registration-token'; then
+  printf 'FRESHSTUBTOKEN0123456789XY\n'
+  exit 0
+fi
+exit 0
+STUB
+  chmod +x "$TEST_DIR/bin73/gh"
+  export PATH="$TEST_DIR/bin73:$PATH"
+  # COURSIA_RUNNER_REPO (pas REPO) : le source reassigne REPO depuis cette
+  # variable -- l'export direct de REPO serait ecrase a la ligne 103.
+  export COURSIA_RUNNER_REPO="test/test"
+  export GH_CALLS_LOG="$TEST_DIR/gh73.calls"
+  . "$SCRIPT_DIR/supervise.sh" status >/dev/null 2>&1
+  # Isolation au meme titre que FETCH_TOKEN_STATE_FILE : le source a evalue
+  # STATE_DIR depuis l'environnement de la machine.
+  FETCH_TOKEN_STATE_FILE="$TEST_DIR/state-73/token_state"
+  REGISTRATION_TOKEN_CACHE="$TEST_DIR/state-73/rt_cache"
+
+  # (1) cache frais, cle identique -> servi, ZERO appel gh
+  printf 'ACCOUNT=ambient\nREPO=test/test\nTOKEN=CACHEDTOKEN0123456789AB\nFETCHED_AT=%s\n' \
+    "$(date +%s)" > "$REGISTRATION_TOKEN_CACHE"
+  : > "$GH_CALLS_LOG"
+  out="$( (GH_TOKEN=dummy fetch_token) 2>/dev/null )"; rc=$?
+  if [ "$rc" = "0" ] && [ "$out" = "CACHEDTOKEN0123456789AB" ] && [ ! -s "$GH_CALLS_LOG" ]; then
+    ok "cache frais : jeton servi sans AUCUN appel gh"
+  else
+    ko "cache frais : rc=$rc out='$out' appels='$(cat "$GH_CALLS_LOG")'"
+  fi
+  if grep -q '^SOURCE=cache$' "$FETCH_TOKEN_STATE_FILE" 2>/dev/null; then
+    ok "etat du fetch marque SOURCE=cache (diagnostic lisible hors subshell)"
+  else
+    ko "SOURCE=cache absent de l'etat : $(cat "$FETCH_TOKEN_STATE_FILE" 2>/dev/null)"
+  fi
+
+  # (2) cache perime (TTL de 3300 s ecoule) -> re-fetch + re-ecriture
+  printf 'ACCOUNT=ambient\nREPO=test/test\nTOKEN=CACHEDTOKEN0123456789AB\nFETCHED_AT=%s\n' \
+    "$(( $(date +%s) - 4000 ))" > "$REGISTRATION_TOKEN_CACHE"
+  : > "$GH_CALLS_LOG"
+  out="$( (GH_TOKEN=dummy fetch_token) 2>/dev/null )"; rc=$?
+  if [ "$rc" = "0" ] && [ "$out" = "FRESHSTUBTOKEN0123456789XY" ] \
+     && grep -q 'registration-token' "$GH_CALLS_LOG" \
+     && grep -q '^TOKEN=FRESHSTUBTOKEN0123456789XY$' "$REGISTRATION_TOKEN_CACHE"; then
+    ok "cache perime : re-fetch effectue et cache re-ecrit"
+  else
+    ko "cache perime : rc=$rc out='$out' cache='$(tr '\n' ';' < "$REGISTRATION_TOKEN_CACHE" 2>/dev/null)'"
+  fi
+
+  # (3) cle differente (compte epingle change) -> l'ancien jeton n'est pas servi
+  printf 'ACCOUNT=autre-compte\nREPO=test/test\nTOKEN=OLDACCOUNTTOKEN012345Z\nFETCHED_AT=%s\n' \
+    "$(date +%s)" > "$REGISTRATION_TOKEN_CACHE"
+  : > "$GH_CALLS_LOG"
+  out="$( (COURSIA_RUNNER_GH_ACCOUNT=encore-autre fetch_token) 2>/dev/null )"; rc=$?
+  if [ "$rc" = "0" ] && [ "$out" = "FRESHSTUBTOKEN0123456789XY" ] \
+     && grep -q '^ACCOUNT=encore-autre$' "$REGISTRATION_TOKEN_CACHE"; then
+    ok "changement de compte epingle : re-fetch, jamais le jeton de l'ancienne cle"
+  else
+    ko "cle differente : rc=$rc out='$out' cache='$(tr '\n' ';' < "$REGISTRATION_TOKEN_CACHE" 2>/dev/null)'"
+  fi
+
+  # (4) cache corrompu (corps JSON comme TOKEN) -> miss, re-fetch, reparation
+  printf 'ACCOUNT=ambient\nREPO=test/test\nTOKEN={"token":"x"}\nFETCHED_AT=%s\n' \
+    "$(date +%s)" > "$REGISTRATION_TOKEN_CACHE"
+  : > "$GH_CALLS_LOG"
+  out="$( (GH_TOKEN=dummy fetch_token) 2>/dev/null )"; rc=$?
+  if [ "$rc" = "0" ] && [ "$out" = "FRESHSTUBTOKEN0123456789XY" ] \
+     && grep -q '^TOKEN=FRESHSTUBTOKEN0123456789XY$' "$REGISTRATION_TOKEN_CACHE"; then
+    ok "cache corrompu : miss silencieuse, re-fetch, cache repare"
+  else
+    ko "cache corrompu : rc=$rc out='$out' cache='$(tr '\n' ';' < "$REGISTRATION_TOKEN_CACHE" 2>/dev/null)'"
+  fi
+
+  # Depot propre : permissions privees, aucun tmp residuel de l'ecriture atomique
+  mode="$(stat -c %a "$REGISTRATION_TOKEN_CACHE" 2>/dev/null || echo '?')"
+  if [ "$mode" = "600" ]; then
+    ok "cache depose en mode 600 (le jeton ne depasse pas STATE_DIR)"
+  else
+    ko "mode du cache = '$mode', attendu 600"
+  fi
+  if ! ls "$TEST_DIR/state-73"/rt_cache.tmp.* >/dev/null 2>&1; then
+    ok "aucun fichier .tmp residuel de l'ecriture atomique"
+  else
+    ko "tmp residuels : $(ls "$TEST_DIR/state-73"/rt_cache.tmp.* 2>/dev/null)"
   fi
 )
 echo ""
