@@ -114,10 +114,10 @@ def _conway_file_names() -> list[str]:
     return parse_allow("@scripts/lean/allow_axioms_conway.txt", REPO)
 
 
-def test_conway_file_parses_to_77_unique_names():
+def test_conway_file_parses_to_79_unique_names():
     names = _conway_file_names()
-    assert len(names) == 77
-    assert len(set(names)) == 77
+    assert len(names) == 79
+    assert len(set(names)) == 79
     assert all(n for n in names)
 
 
@@ -264,7 +264,7 @@ def test_workflow_audit_job_points_at_the_file():
     text = CONWAY_WF.read_text(encoding="utf-8")
     refs = re.findall(r'allow-axioms:\s*"([^"]+)"', text)
     assert "@scripts/lean/allow_axioms_conway.txt" in refs
-    # le bloc proof-integrity-audit (le job des 77 noms) pointe au fichier
+    # le bloc proof-integrity-audit (le job des 79 noms) pointe au fichier
     m = re.search(
         r"proof-integrity-audit:.*?allow-axioms:\s*\"([^\"]+)\"",
         text,

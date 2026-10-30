@@ -7,8 +7,10 @@
 # nom, ne pas le retirer (le gate normalise les deux cotes avant de comparer,
 # donc la decoration ne change pas l'ancre retenue --
 # docs/lean/lean-anchor-naming.md).
-# 77 entrees mesurees au move (le commentaire workflow disait 81 : derive
 # posterieure a #21833, jamais suivie).
+# 79 entrees : les 77 mesurees au move (#21905) + les 2 ancres du
+# temoin de machine de Turing ajoutees sur `main` par #17465
+# (Conway.Life.Pillars.turingmachine_facts et son jumeau _en).
 Conway.Life.hashlife_correct_implies_block_2._native.native_decide.ax_1_1
 Conway.Life.hashlife_correct_implies_toad_2._native.native_decide.ax_1_1
 Conway.Life.hashlife_correct_implies_glider_2._native.native_decide.ax_1_1
@@ -86,3 +88,5 @@ Conway_en.Life_en.RLE_en.gosper_gun_cell_count._native.native_decide.ax_1_1
 Conway_en.Life_en.RLE_en.glider_parsed_cell_count._native.native_decide.ax_1_1
 Conway_en.digitsToNat_example._native.native_decide.ax_1_1
 Conway_en.lookAndSay_4._native.native_decide.ax_1_1
+Conway.Life.Pillars.turingmachine_facts._native.native_decide.ax_1_1
+Conway.Life.Pillars_en.turingmachine_facts._native.native_decide.ax_1_1

@@ -239,8 +239,10 @@ jobs:
       # construction now.
       target-modules: "*"
       include-i18n-siblings: "true"
-      # allow-axioms: 77 native_decide axioms (81 avant #21833, compte non
-      # suivi -- corrige au move #21905) = the 38 HashlifeCorrectness-era
+      # allow-axioms: 79 native_decide axioms (liste dans le fichier, #21905 --
+      # source de verite deplacee ; 77 mesurees au move + les 2 ancres du
+      # temoin de machine de Turing ajoutees par #17465) = the 38
+      # HashlifeCorrectness-era
       # empirical footprint (revealed by this job's first CI run, #8782/#9341,
       # shrunk by the #9571 still-life + #9595 spaceship decide flips) + 21
       # build-enumerated entries added by the #10889 "*" widening (probe: this
@@ -252,12 +254,15 @@ jobs:
       # enumerated from the PR's own local `#print axioms`, never derived
       # by rule) + 8 entries added by #20004 (tranche 2 of #19989) + 4
       # entries added by the OTCA tranche 3 of #19989 (the 165 KB
-      # include_str load), attributed at the Pillars / Pillars_en lines
-      # below. All 77 are `native_decide` reduction axioms
+      # include_str load) - 4 Pillars `_initial_nonempty` entries derived
+      # (not native_decide) by #21833 + 2 entries added by #17465 (the
+      # Turing-machine witness, ONE anchor per file), attributed at the
+      # Pillars / Pillars_en lines below. All 79 are `native_decide` reduction
+      # axioms
       # (`._native.native_decide.ax_1_N` is the kernel-side witness emitted
       # by `native_decide`; these are NOT `decide`-kernel certificates --
       # `decide` itself emits no anchor, only `native_decide` does).
-      # Note for the operator: one of the 77 entries carries a Lean-4
+      # Note for the operator: one of the 79 entries carries a Lean-4
       # diagnostic-artifact suffix on the declaration name as reported by
       # `#print axioms` (`Conway.Life.p4_base_exhaustive._native.native_decide.
       # ax_1_1` + the `U+2020` dagger `✝`). The comparison against the env
@@ -323,6 +328,13 @@ jobs:
       #     the 8 RLE entries of the 38)
       #   Conway.LookAndSayLemmas_en (2): Conway_en.digitsToNat_example,
       #     Conway_en.lookAndSay_4
+      #   Conway.Life.Pillars (1): Conway.Life.Pillars.turingmachine_facts --
+      #     the single anchor of the Turing-machine witness (#17465): the four
+      #     measured facts are grouped in ONE conjunction, so the RLE parse +
+      #     sort of the 36 549 cells is evaluated once instead of four times.
+      #   Conway.Life.Pillars_en (1): Conway.Life.Pillars_en.turingmachine_facts
+      #     -- the _en twin of the above (the EN module keeps the FR namespace
+      #     path, like the other Pillars_en entries).
       # Names stay explicit -- no wildcard entry in allow-axioms: a NEW
       # native_decide anywhere in the lake = a new red ("new native_decide =
       # new red"), the property the no-wildcard rule preserves.

@@ -183,7 +183,7 @@ Une lettre creuse le palier dont elle porte le numéro. On l'ouvre pour aller pl
 | 02b | [Définitions en Lean](GameTheory-02b-Lean-Definitions-Lean.ipynb) | Formaliser un jeu 2×2, les stratégies mixtes et la définition de Nash en Lean 4 | Lean | Licence |
 | 02c | Dilemme du voyageur — [Python](GameTheory-02c-Travelers-Dilemma-Python.ipynb) · [C#](GameTheory-02c-Travelers-Dilemma-CSharp.ipynb) | Basu (1994) : l'élimination itérée des stratégies dominées mène à (2, 2), que contredit le comportement humain ; le bonus r* = 1 où le paradoxe se dissout | Python · C# | Licence |
 | 02d | [Annexe épistémique — connaissance commune et croyances](GameTheory-02d-Epistemique-Connaissance-Commune-Python.ipynb) | Ce qu'un joueur *sait*, plutôt que ce qu'il joue : modèle à partitions et opérateur `K_i(E)`, vérification des axiomes S5, `CK(E)` comme plus grand point fixe, théorème d'Aumann (1976) sur l'accord impossible vérifié par énumération exhaustive, et l'élimination itérée relue comme conséquence de la connaissance commune de la rationalité | Python | Licence |
-| 02e | [IESDS et rationalisabilité — Python](GameTheory-02e-IESDS-Rationalisation-Python.ipynb) | L'élimination itérée des stratégies dominées : indépendance à l'ordre (mesurée sur 4096 jeux), contre-exemple en dominance faible, admissibilité et rationalisabilité | Python | Licence |
+| 02e | IESDS et rationalisabilité — [Python](GameTheory-02e-IESDS-Rationalisation-Python.ipynb) · [C#](GameTheory-02e-IESDS-Rationalisation-CSharp.ipynb) | L'élimination itérée des stratégies dominées : indépendance à l'ordre (mesurée sur 4096 jeux), contre-exemple en dominance faible, admissibilité et rationalisabilité ; le jumeau C# réimplémente les mêmes algorithmes from scratch, dont un simplex à deux phases qui remplace `scipy.linprog` | Python · C# | Licence |
 
 ### Autour de 03 — géométrie ordinale des jeux
 
@@ -394,7 +394,7 @@ change de substrat en lisant le lake [`assignment_lean/`](assignment_lean/).
 
 ## Extensions au-delà du parcours
 
-Les notebooks numérotés de 18 à 25 — hormis le [capstone 21](GameTheory-21-Capstone-Choix-Social-Python.ipynb), escalier de la [sous-série SocialChoice](#sous-série-socialchoice) — ne prolongent pas le parcours principal. Ce sont des extensions autonomes : chacune isole un geste qui modifie l'espace des jeux (composition, abstraction, témoin d'impossibilité) plutôt qu'une solution dans un jeu donné. Leur numéro nu est un héritage de leur livraison, pas une étape du parcours ; leur rattachement aux paliers est à l'étude avec la gradation de la série (#15615).
+Les notebooks numérotés de 18 à 26 — hormis le [capstone 21](GameTheory-21-Capstone-Choix-Social-Python.ipynb), escalier de la [sous-série SocialChoice](#sous-série-socialchoice) — ne prolongent pas le parcours principal. Ce sont des extensions autonomes : chacune isole un geste qui modifie l'espace des jeux (composition, abstraction, témoin d'impossibilité) plutôt qu'une solution dans un jeu donné. Leur numéro nu est un héritage de leur livraison, pas une étape du parcours ; leur rattachement aux paliers est à l'étude avec la gradation de la série (#15615).
 
 | # | Notebook | Ce qu'on y apprend | Noyau | Public |
 |---|----------|--------------------|-------|--------|
@@ -410,6 +410,7 @@ Les notebooks numérotés de 18 à 25 — hormis le [capstone 21](GameTheory-21-
 | — | [Affectation de Kuhn-Munkres → sous-série Coalitions](Coalitions/README.md) | L'affectation optimale en arithmétique entière exacte, certifiée par dualité LP, et sa version Lean exécutée depuis le lake `assignment_lean` — carnets 04 et 05 du dossier (ex-23 et 23b, dont les numéros d'affichage ne désignaient aucune étape du parcours) | Python · Lean | Licence |
 | 24 | [Banc humour](GameTheory-18c-Humour-Banc-Python.ipynb) | Banc de calibration (forme partagée contre stimulus, matrice de confusion) puis passage à l'échelle consolidé : corpus Argumentum 120 instances, comparaison LLM, circularité, paires minimales (#14032) | Python | Recherche |
 | 25 | [Persuasion bayésienne](GameTheory-17e-Bayesian-Persuasion-Python.ipynb) | La concavification évaluée par deux méthodes indépendantes (programme linéaire et enveloppe concave) dont l'accord est vérifié, avec un contrôle négatif | Python | Recherche |
+| 26 | [Jeux stochastiques](GameTheory-26-Jeux-Stochastiques-Shapley-Python.ipynb) | La valeur d'un jeu à états, calculée par itération de valeur (théorème de Shapley, 1953) : l'écart au jeu myope vaut exactement 2γ, et l'adversaire qui conteste la transition le capte | Python | Recherche |
 
 ## Installation
 
