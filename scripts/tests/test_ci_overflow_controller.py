@@ -901,3 +901,151 @@ def test_cli_liste_de_cohorte_illisible_rend_unreadable(monkeypatch, capsys):
     assert report["verdict"] == "UNREADABLE"
     assert report["written"] is False
     assert "cohorte" in report["reason"]
+
+
+# --- (a) LECTURE LOCALE CIBLEE (#22937 phase A) ---------------------------
+#
+# Mesure du coordinateur (2026-10-28 16:55Z, run 40730110344) : 129 job(s)
+# heberge(s) en file au-dela de 15 min, 16 slot(s) local(aux) libre(s), et la
+# LECTURE LOCALE TRONQUEE -- 67 run(s) non lu(s), budget de 120 atteint.
+# Les runs anciens de la file etaient presque tous des runs qui attendent
+# `ubuntu-latest` : ils consommaient SEULS le budget de lecture, et la
+# soupave se fermait exactement dans le regime ou elle devait s'ouvrir.
+#
+# Le correctif : la lecture locale ne lit QUE les runs dont le workflow PEUT
+# porter un job local (liste derivee des fichiers de workflow, jamais
+# recopiee). Les runs des workflows statiquement heberges ne coutent alors
+# AUCUNE lecture.
+
+LOCAL_WORKFLOW = ".github/workflows/guard-local.yml"
+HOSTED_WORKFLOW = ".github/workflows/guard-heberge.yml"
+
+
+def _queue_payload(count: int, path: str, created: datetime) -> dict:
+    return {"workflow_runs": [
+        {"id": 1000 + i, "name": f"Run {i}", "run_number": i,
+         "created_at": created.isoformat(), "path": path}
+        for i in range(count)
+    ]}
+
+
+def _inventory_payload(free: int) -> dict:
+    return {"runners": [
+        {"name": f"slot-{i}", "status": "online",
+         "labels": [{"name": "coursia-linux"}], "busy": False}
+        for i in range(free)
+    ]}
+
+
+def test_file_hebergee_saturee_250_runs_et_16_slots_libres_le_controleur_s_enclenche(monkeypatch):
+    """Le test nomme par le coordinateur (c2725) : sous saturation de
+    l'offre hebergee, la lecture locale n'est plus tronquee -> le controleur
+    s'enclenche."""
+    now = datetime(2026, 10, 28, 16, 55, tzinfo=timezone.utc)
+    created = now - timedelta(minutes=63)
+    job_reads: list[str] = []
+
+    def fake_gh(args, token=None, stats=None):
+        if "actions/runners" in args[0]:
+            return _inventory_payload(16)
+        if "status=queued" in args[0]:
+            return _queue_payload(250, HOSTED_WORKFLOW, created)
+        if "status=in_progress" in args[0]:
+            return {"workflow_runs": []}
+        if "/jobs" in args[0]:
+            job_reads.append(args[0])
+            return {"jobs": []}
+        return None
+
+    monkeypatch.setattr(ctl.crs, "_gh_json", fake_gh)
+    sample = ctl.collect_local("jsboige/CoursIA", 15.0, 120, now, None,
+                                local_paths={LOCAL_WORKFLOW})
+    decision = ctl.evaluate(hosted(queued=250, old=250, oldest=63.2),
+                             sample, current="false", now=now)
+    # Le VERDICT d'abord : c'est lui qui est le temoin, pas le mecanisme.
+    assert decision.action == "SWITCH_TRUE"
+    # Aucun run heberge n'a coute une lecture, et la lecture n'est PAS
+    # tronquee : « le parc local n'est pas affame » EST etablie.
+    assert job_reads == []
+    assert sample.complete is True
+    assert sample.truncated is False
+    assert sample.free == 16
+
+
+def test_un_job_local_statiquement_file_depuis_plus_de_15_min_tient(monkeypatch):
+    """Le second test nomme par le coordinateur : un job STATIQUEMENT local en
+    file depuis plus de 15 min est vu, et le controleur NE deborde pas vers un
+    parc qui est lui-meme affame."""
+    now = datetime(2026, 10, 28, 16, 55, tzinfo=timezone.utc)
+    created = now - timedelta(minutes=63)
+
+    def fake_gh(args, token=None, stats=None):
+        if "actions/runners" in args[0]:
+            return _inventory_payload(16)
+        if "status=queued" in args[0]:
+            return _queue_payload(1, LOCAL_WORKFLOW, created)
+        if "status=in_progress" in args[0]:
+            return {"workflow_runs": []}
+        if "/jobs" in args[0]:
+            return {"jobs": [
+                {"name": "guard-on-label", "status": "queued",
+                 "labels": ["self-hosted", "coursia-linux"],
+                 "created_at": created.isoformat()},
+            ]}
+        return None
+
+    monkeypatch.setattr(ctl.crs, "_gh_json", fake_gh)
+    sample = ctl.collect_local("jsboige/CoursIA", 15.0, 120, now, None,
+                                local_paths={LOCAL_WORKFLOW})
+    assert sample.starved == 1
+    decision = ctl.evaluate(hosted(queued=250, old=250, oldest=63.2),
+                             sample, current="false", now=now)
+    assert decision.action != "SWITCH_TRUE"
+    assert "affame" in decision.reason
+
+
+def test_liste_des_workflows_illisible_ou_vide_rend_unreadable_et_jamais_un_enclenchement(monkeypatch, tmp_path):
+    """Le troisieme test nomme par le coordinateur : liste des workflows
+    illisible ou vide -> UNREADABLE, jamais un enclenchement."""
+    paths, reason = ctl.derive_local_capable_workflows(tmp_path)
+    assert paths == set()
+    assert reason != ""
+    now = datetime(2026, 10, 28, 16, 55, tzinfo=timezone.utc)
+
+    def fake_gh(args, token=None, stats=None):
+        if "actions/runners" in args[0]:
+            return _inventory_payload(16)
+        return None
+
+    monkeypatch.setattr(ctl.crs, "_gh_json", fake_gh)
+    sample = ctl.collect_local("jsboige/CoursIA", 15.0, 120, now, None,
+                                local_paths=None, local_paths_reason=reason)
+    assert sample.complete is False
+    decision = ctl.evaluate(hosted(queued=250, old=250, oldest=63.2),
+                             sample, current="false", now=now)
+    assert decision.action == "UNREADABLE"
+
+
+def test_derive_local_capable_workflows_separe_le_local_du_heberge(tmp_path):
+    _workflow(tmp_path, "local.yml",
+              "on: push\njobs:\n  j:\n    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]\n")
+    _workflow(tmp_path, "heberge.yml",
+              "on: push\njobs:\n  j:\n    runs-on: ubuntu-latest\n")
+    paths, reason = ctl.derive_local_capable_workflows(tmp_path)
+    assert reason == ""
+    assert ".github/workflows/local.yml" in paths
+    assert ".github/workflows/heberge.yml" not in paths
+
+
+def test_derive_local_capable_workflows_propage_un_appel_reutilisable(tmp_path):
+    """Le `run.path` d'un run designe le workflow APPELANT : un appelant
+    d'un workflow local est donc capable lui aussi (sinon ses jobs locaux
+    seraient invisibles a la mesure)."""
+    _workflow(tmp_path, "appele.yml",
+              "on: push\njobs:\n  j:\n    runs-on: [self-hosted, coursia-linux]\n")
+    _workflow(tmp_path, "appelant.yml",
+              "on: push\njobs:\n  j:\n    uses: ./.github/workflows/appele.yml\n")
+    paths, reason = ctl.derive_local_capable_workflows(tmp_path)
+    assert reason == ""
+    assert ".github/workflows/appele.yml" in paths
+    assert ".github/workflows/appelant.yml" in paths
