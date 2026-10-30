@@ -83,6 +83,24 @@ repos:
         files: '\.ipynb$'
         stages: [pre-commit]
 
+      - id: check-encoding-corruption
+        name: Block double-encoding UTF-8/cp1252 artifacts in staged notebooks
+        description: |
+          Detects the UTF-8→cp1252/latin-1 double-encoding artifact family
+          (`é` → `Ã©`, `—` → `â€”`, nbsp → `Â `) in staged notebooks — point 3
+          of #23021, the corruption class that hit RL-05 and TV-03. It is a
+          whole-file rewrite invisible to content-loss organs (volumes
+          unchanged). Full check on staged .ipynb; the CI guard form
+          (--base <ref>) checks added lines only. Block, never auto-fix: the
+          repair is a deterministic per-source-element cp1252 reversion
+          followed by a real re-execution (rule 6), which a hook must not
+          silently perform.
+        entry: python scripts/notebook_tools/check_encoding_corruption.py
+        language: system
+        pass_filenames: true
+        files: '\.ipynb$'
+        stages: [pre-commit]
+
       - id: fix-hr-separator
         name: Auto-fix decorative '---' cell openers (yaml_block_open_no_close)
         description: |
@@ -214,12 +232,62 @@ repos:
           Catches the "stale path" class measured in KNOTS-01 (post-#20134 V5.3)
           where a cell cites a module that has moved, been renamed, or never
           existed at the claimed location. Pre-commit refuses the commit on
-          any mismatch; KNOTS-01 currently passes (paths resolved at head
-          `b73a74cc3f94`). Scope is KNOTS-01 only (filter `Lean/KNOTS/`);
-          generalisation to KNOTS-02+ and other Lean series is the (B) arm
-          (audit NanoClaw, follow-up). See #21007.
+          any mismatch. Scope is KNOTS-01 only (filter `Lean/KNOTS/`); the
+          classes 2 and 3 of the same issue are carried by the sibling hook
+          `knots-extracts-class23` below. See #21007.
         entry: python scripts/notebook_tools/check_knots_extracts.py
         language: system
         pass_filenames: true
         files: '^MyIA\.AI\.Notebooks/SymbolicAI/Lean/KNOTS/.*\.ipynb$'
+        stages: [pre-commit]
+
+      - id: vendored-data-consumers
+        name: '#20628 — list notebooks reading a changed vendored taxonomy (advisory)'
+        description: |
+          A vendored data file (Argumentum OWL/CSV taxonomy) can change without
+          any notebook being re-executed: committed outputs then describe the
+          data as it was before, and the prose that comments on them too. The
+          founding case is #20628 (Obs-04 measured: 1513 classes / 7825 IRI
+          annotations on the old blob versus 1536 / 6632 on the current one).
+          This hook runs only when such a file is staged, prints every
+          notebook whose source cites that file, and marks the ones absent
+          from the same change. Advisory on purpose: it consumes no CI queue
+          slot (#13097 famine) and never blocks a legitimate commit; the
+          blocking verdict is available by running the script without
+          ``--advisory`` (a PR reviewer, or the author who wants the check).
+          Acceptance path chosen for #20628: the "organ" one, this hook.
+        entry: python scripts/notebook_tools/list_data_consumers.py --advisory
+        language: system
+        pass_filenames: false
+        files: '^MyIA\.AI\.Notebooks/SymbolicAI/Argument_Analysis/(ontologies/.*\.owl|data/.*taxonomy.*\.csv)$'
+        stages: [pre-commit]
+
+      - id: knots-extracts-class23
+        name: '#21007 — refuse stale node identities and stale TODOs in KNOTS notebooks (classes 2, 3)'
+        description: |
+          Implements the (B) arm of #21007 (KNOTS), the two classes the
+          class-1 hook above cannot see: a cell that attributes to a Lean
+          module a node identity that module does not model (class 2,
+          founder instance: KNOTS-01 cell 16 claimed "FigureEight.lean
+          (noeud 8_1)" while the module models 4_1), and a cell that asserts
+          a name is not yet defined while the head defines it (class 3,
+          founder instance: KNOTS-01 cell 23 declared 11n102's PD-code "pas
+          encore entre" while ``knot_11n102_diagram`` exists with
+          ``numEdges := 22``). The organ derives ground truth from the Lean
+          tree itself (declarations and node numbers per module), so it
+          detects the class, not just its two founder instances. Compared
+          against the real tree, the founder claims both fire and the 4
+          KNOTS notebooks are clean; a naive identifier rule would have
+          produced 2 false positives on 2 candidates (``trefoil`` and
+          ``existe`` are ordinary words that are also ``def`` names), hence
+          the underscore discriminant, and cell-scoped node matching would
+          have flagged KNOTS-01 cell 16's architecture tree, hence line
+          scoping. It fires on notebook edits AND on Lean edits, because a
+          module change can stale an untouched notebook. Read-only; run
+          ad hoc with ``python scripts/notebook_tools/scan_knots_extracts.py``.
+          See #21007.
+        entry: python scripts/notebook_tools/scan_knots_extracts.py
+        language: system
+        pass_filenames: false
+        files: '^MyIA\.AI\.Notebooks/SymbolicAI/Lean/KNOTS/.*\.(ipynb|lean)$'
         stages: [pre-commit]
