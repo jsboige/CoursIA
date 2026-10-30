@@ -52391,7 +52391,7 @@ La lignée détection s'arrête ici pour l'instant côté attaque : la défense 
 - Thys, Van Ranst, Goedemé — *Fooling automated surveillance cameras: adversarial patches to person-detection* (CVPR Workshops 2019) — la méthode du patch paramétrable.
 - Harvey, Adam — *CV Dazzle: camouflage from computer vision* (2010-2013) — le dazzle porté, maquillage et coiffure, dont ce notebook est l'écho génératif.
 ",,,,,,,,5b739361ea0f2c98,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch.ipynb,7c98dd73,markdown,fr,4a93e1ddc979ab78,"# WS-00a — Ondelettes 1D *from scratch* : analyse multi-résolution, débruitage, et le duel avec Fourier
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch.ipynb,7c98dd73,markdown,fr,df2854326a013488,"# WS-00a — Ondelettes 1D *from scratch* : analyse multi-résolution, débruitage, et le duel avec Fourier
 
 **Série `05-Wavelet-Scattering`** — bloc A.1 de l'issue #16055. Ce notebook réimplémente la transformée en ondelettes 1D **à la main** (Haar par paires, puis moteur général par filtrage + sous-échantillonnage), l'utilise pour **débruitager par seuillage dur**, et confronte le résultat à un **passe-bas Fourier** sur trois signaux de référence du domaine (Doppler, HeaviSine, Stationnaire — banc canonique Donoho–Johnstone).
 
@@ -52407,7 +52407,7 @@ MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-00a-Ondelett
 
 **Pédagogie sans image** : ce notebook ne génère aucune figure ; toutes les lectures sont ancrées sur des **nombres mesurés** (erreurs de reconstruction, SNR, énergie par échelle). C'est un choix documenté de la tranche — la dimension visuelle des ondelettes (écriture des coefficients, damiers 2D) arrive avec le bloc A.2 (ondelettes 2D et compression d'image).
 
-*See #16055 (bloc A.1).*",,,,,,,,4a93e1ddc979ab78,,,,,,,,,,,,,,,
+*See #16055 (bloc A.1).*",,,,,,,,df2854326a013488,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch.ipynb,6a00cf76,markdown,fr,cb8f9de1f9bd2f18,"## 0. Le problème : une base parcimonieuse adaptée au signal
 
 Débruitager, c'est **projeter** le signal observé $y = x + \varepsilon$ sur une base où le signal $x$ est **parcimonieux** (peu de coefficients grands) et le bruit **uniformément étal** (tous les coefficients petits), puis couper les petits. Toute la question est : *quelle base* ?
@@ -52465,7 +52465,7 @@ d_cos = float(
 )
 print(f""provenance HeaviSine vs pywt.data : maxdiff = {h_err:.2e}  (bit-exact)"")
 print(f""provenance Doppler    vs pywt.data : similarite cosinus = {d_cos:.4f}"")",,,,,,,,bb57af3146860df6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch.ipynb,813abab8,markdown,fr,1b95b91ecc2e70e6,"**Lecture — provenance des signaux de test.** HeaviSine est **bit-exact** (`maxdiff = 0.0`) contre la référence `pywt.data.demo_signal` : notre formule *from scratch* reproduit exactement le signal canonique de Donoho–Johnstone. Le Doppler, lui, n'est que *la même famille* (similarité cosinus $\approx 0{,}97$) : la convention de grille de PyWavelets diffère légèrement de la formule Wavelab historique que nous implémentons. C'est une leçon de rigueur plutôt qu'un échec : chaque fois qu'on compare deux implémentations, il faut distinguer **erreur** (les coefficients diffèrent alors que la convention est la même) et **convention** (chacun est cohérent, mais les choix de phase/grille diffèrent). Nous allons recontrer exactement cette distinction deux fois dans la suite — une fois sur l'ordre des coefficients de filtre, une fois sur le signe du filtre passe-haut.",,,,,,,,1b95b91ecc2e70e6,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch.ipynb,813abab8,markdown,fr,823077984fb6b1c7,"**Lecture — provenance des signaux de test.** HeaviSine est **bit-exact** (`maxdiff = 0.0`) contre la référence `pywt.data.demo_signal` : notre formule *from scratch* reproduit exactement le signal canonique de Donoho–Johnstone. Le Doppler, lui, n'est que *la même famille* (similarité cosinus $\approx 0{,}97$) : la convention de grille de PyWavelets diffère légèrement de la formule Wavelab historique que nous implémentons. C'est une leçon de rigueur plutôt qu'un échec : chaque fois qu'on compare deux implémentations, il faut distinguer **erreur** (les coefficients diffèrent alors que la convention est la même) et **convention** (chacun est cohérent, mais les choix de phase/grille diffèrent). Nous allons recontrer exactement cette distinction deux fois dans la suite — une fois sur la convention de phase du §2 (l'offset $\lfloor n/2 \rfloor$ dans l'indice d'analyse), une fois sur le signe du filtre passe-haut.",,,,,,,,823077984fb6b1c7,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch.ipynb,ab4b7301,markdown,fr,1f88220a7b4f3c5f,"## 1. Haar à la main : la moyenne et la différence
 
 Avant le moteur général, la plus petite ondelette du monde. Haar regarde le signal **par paires adjacentes** $(x_{2k}, x_{2k+1})$ et calcule :
@@ -52635,14 +52635,14 @@ MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-00a-Ondelett
 - **HeaviSine** : presque tout dans l'approximation (les deux sinus sont très basse fréquence), quelques pour cents dans les détails — l'essentiel de ces détails étant concentré sur les **deux sauts**, répartis sur toutes les échelles (un échelon a un spectre en $1/f$).
 
 Cette lecture prépare le débruitage : le seuillage coupe les petits coefficients **à toutes les échelles** ; il préservera ce qui est concentré (les tons, les sauts) et combattra le bruit qui, lui, s'étale uniformément. Et le cas Doppler explique pourquoi Fourier va souffrir : son information est **partagée** entre les échelles, donc entre les bandes — couper une bande, c'est l'amputer.",,,,,,,,68ceda0d814851e7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch.ipynb,a5e3ac5f,markdown,fr,a1c2299cd00ffc41,"## 4. Débruitage par seuillage : le protocole, et son asymétrie
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch.ipynb,a5e3ac5f,markdown,fr,2655a6c40a84d0c5,"## 4. Débruitage par seuillage : le protocole, et son asymétrie
 
 **Estimateur ondelette (sans oracle).** On décompose $y$, on estime le bruit par le **MAD du détail le plus fin** ($\hat\sigma = \mathrm{MAD}(d_1)/0{,}6745$ — robuste car un signal parcimonieux y dépose peu d'énergie), et on coupe tous les détails sous le **seuil universel** $\lambda = \hat\sigma\sqrt{2 \ln N}$. L'intuition : $N$ coefficients de bruit gaussien ont un maximum espéré $\approx \sigma\sqrt{2\ln N}$, donc ce seuil *devrait* tuer presque tout le bruit en épargnant les coefficients porteurs de signal. Le seuil dur garde les coefficients intacts ; le seuil doux les rétracte de $\lambda$ (biais, mais pas de seuil de décision brutal).
 
-**Estimateur Fourier (avec oracle).** On applique un passe-bas idéal à une coupure $f_c$. Nous en mesurons **trois variantes**, toutes avec connaissance du signal propre : *étroit* ($f_c$ sous la plus haute fréquence des tons — sacrifie le large bande), *garde-tout* (la plus petite $f_c$ retenant 99,9 % de l'énergie propre), et *libre* (la $f_c$ qui maximise le SNR global — la plus généreuse possible envers Fourier). Chaque variante incarne un **choix de ce qu'on accepte de détruire** ; l'ondelette, elle, ne choisit pas : un seul seuil, aucune coupure, aucune connaissance du signal.
+**Estimateur Fourier (avec oracle).** On applique un passe-bas idéal à une coupure $f_c$. Nous en mesurons **trois variantes**, toutes avec connaissance du signal propre : *étroit* (une coupure **fixe** $f_c = 0{,}05$ : elle passe **au-dessus** des tons des deux bancs tonaux — 8 et 21 cycles sur 2048 pour Stationnaire, 2 cycles pour HeaviSine — donc elle ne sacrifie aucun de ces tons ; c'est le chirp Doppler, dont le spectre monte plus haut, qui perd son large bande), *garde-tout* (la plus petite $f_c$ dont la bande retient **au moins** 99,9 % de l'énergie propre — la sortie ci-dessous imprime le pourcentage exact retenu), et *libre* (la $f_c$ qui maximise le SNR global — la plus généreuse possible envers Fourier). Chaque variante incarne un **choix de ce qu'on accepte de détruire** ; l'ondelette, elle, ne choisit pas : un seul seuil, aucune coupure, aucune connaissance du signal.
 
-Le SNR local (fenêtre autour du transitoire), le pic du burst reconstruit et l'amputation d'énergie propre complètent le SNR global — car nous allons voir qu'un SNR global peut **récompenser une distorsion**.",,,,,,,,a1c2299cd00ffc41,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch.ipynb,7cdc6a2b,code,fr,b606b43c04e8c874,"def shrink(coeffs, threshold, soft=False):
+Le SNR local (fenêtre autour du transitoire), le pic du burst reconstruit et l'amputation d'énergie propre complètent le SNR global — car nous allons voir qu'un SNR global peut **récompenser une distorsion**.",,,,,,,,2655a6c40a84d0c5,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch.ipynb,7cdc6a2b,code,fr,cd2c09451005053e,"def shrink(coeffs, threshold, soft=False):
     """"""Seuillage des coefficients de detail (l'approximation est toujours gardee).""""""
     out = [coeffs[0]]
     for c in coeffs[1:]:
@@ -52684,7 +52684,9 @@ def bench(name, clean, seed, burst_pos=None, burst_len=16, burst_amp=1.2):
     freqs = np.fft.rfftfreq(N)
     tot_f = np.sum(np.abs(Cf) ** 2)
     cum = np.cumsum(np.abs(Cf) ** 2) / tot_f
-    fc_keep = freqs[int(np.searchsorted(cum, 0.999)) + 1]
+    j_keep = min(int(np.searchsorted(cum, 0.999)) + 1, len(freqs) - 1)
+    fc_keep = freqs[j_keep]
+    energie_keep = 100 * float(cum[j_keep])
     xk = fourier_lowpass(y, fc_keep)
     xn = fourier_lowpass(y, 0.05)  # etroit : garde les tons, sacrifie le large-bande
     best = (-np.inf, None)
@@ -52701,7 +52703,8 @@ def bench(name, clean, seed, burst_pos=None, burst_len=16, burst_amp=1.2):
         ""doux"": snr(clean, xh_soft), ""doux_local"": snr(clean[w], xh_soft[w]),
         ""garde_tout"": snr(clean, xk), ""garde_tout_local"": snr(clean[w], xk[w]),
         ""etroit"": snr(clean, xn), ""etroit_local"": snr(clean[w], xn[w]),
-        ""fc_keep"": fc_keep, ""libre"": snr_free, ""fc_free"": fc_free,
+        ""fc_keep"": fc_keep, ""energie_keep"": energie_keep,
+        ""libre"": snr_free, ""fc_free"": fc_free,
         ""amputation"": 100 * amp, ""lam"": lam, ""gardes"": kept,
         ""total_det"": N - len(coeffs[0]),
         ""xh"": xh_hard, ""clean"": clean, ""y"": y, ""w"": w,
@@ -52720,9 +52723,9 @@ R[""HeaviSine""] = bench(""HeaviSine"", signals[""HeaviSine""], seed=202)
 R[""Stationnaire""] = bench(""Stationnaire"", signals[""Stationnaire""], seed=303, burst_pos=1000)
 for k, r in R.items():
     print(f""{k:13s} bruite {r['bruite']:6.2f} dB | dur {r['dur']:6.2f} (local {r['dur_local']:6.2f})""
-          f"" | doux {r['doux']:6.2f} | F garde-tout {r['garde_tout']:6.2f} @fc={r['fc_keep']:.4f}""
+          f"" | doux {r['doux']:6.2f} | F garde-tout {r['garde_tout']:6.2f} @fc={r['fc_keep']:.4f} ({r['energie_keep']:.2f}% energie)""
           f"" | F etroit {r['etroit']:6.2f} | F libre {r['libre']:6.2f} @fc={r['fc_free']:.4f}""
-          f"" (amput {r['amputation']:.2f}%) | lam={r['lam']:.3f}, gardes {r['gardes']}/{r['total_det']}"")",,,,,,,,b606b43c04e8c874,,,,,,,,,,,,,,,
+          f"" (amput {r['amputation']:.2f}%) | lam={r['lam']:.3f}, gardes {r['gardes']}/{r['total_det']}"")",,,,,,,,cd2c09451005053e,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch.ipynb,0ddefbe0,markdown,fr,871d273df7acaf83,"**Lecture — Doppler : le terrain non stationnaire, victoire nette de l'ondelette (sans oracle).** Le seuillage dur atteint **17,83 dB** (+8,86 dB sur le bruité), contre **13,36 dB** pour le meilleur Fourier — le cutoff *libre*, choisi en connaissant le signal — soit **+4,47 dB d'avance sans oracle**. Toutes les variantes Fourier s'effondrent ensemble (11,95 à 13,36 dB) parce que le problème est structurel : le §3 a montré que l'énergie du chirp est étalée sur toutes les échelles (top-3 détails = 32,9 % seulement). Un passe-bas doit donc choisir ce qu'il ampute : le cutoff libre sacrifie **1,70 % de l'énergie propre** — le début du chirp, précisément la partie haute fréquence — et le cutoff étroit (11,95 dB) ampute plus fort encore tout en gardant du bruit dans sa bande.
 
 Côté ondelette, la parcimonie est extrême : **51 coefficients de détail sur 2040** (2,5 %) survivent au seuil $\lambda = 1{,}369$. Un chirp dont l'information occupe tout le spectre se représente par 51 nombres, parce que chaque portion temporelle du signal trouve *son* échelle — c'est exactement le troc temps-fréquence du §0.
@@ -52831,16 +52834,16 @@ MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-00a-Ondelett
 # print(""SNR seuil global  :"", snr(signals[""Doppler""], R[""Doppler""][""xh""]))
 # print(""SNR seuil/echelle :"", snr(signals[""Doppler""], xh))
 print(""Exercice a completer"")",,,,,,,,76c58548d54c36c2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch.ipynb,612c039d,markdown,fr,dad5d0b737bcf9e7,"## 7. Exercice 3 — localiser un transitoire sans Fourier
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch.ipynb,612c039d,markdown,fr,bc48ef24c8922cd4,"## 7. Exercice 3 — localiser un transitoire sans Fourier
 
 **Contexte.** Au §4, le burst du banc Stationnaire était *connu* (position 1000). En pratique on ne le connaît pas : on veut **détecter** où il est. Les détails fins $d_1, d_2$ d'une DWT répondent fort et **localement** aux discontinuités — c'est la contrepartie temps-fréquence que Fourier n'offre pas (une détection par transformée de Fourier nécessite une fenêtre glissante, c'est-à-dire... une décomposition temps-fréquence).
 
 **Objectif.** Écrire `localise_burst(y)` qui retourne la position estimée du transitoire d'un signal $y$ bruité, en n'utilisant que l'énergie locale des détails fins : reconstruire l'énergie glissante de $d_1$ (et éventuellement $d_2$), chercher son maximum. Valider sur le banc Stationnaire : l'erreur de localisation doit être de l'ordre de la dizaine d'échantillons.
 
 **Indices.**
-- `# Etape 1` : un coefficient $d_1$ se calcule sur **deux** échantillons adjacents — la position temporelle du coefficient $k$ est environ $2k$ ;
+- `# Etape 1` : avec le moteur **db4** du §2, un coefficient $d_1[k]$ agrège **huit** taps — et non deux comme pour Haar en §1 : il prélève les échantillons d'indices $2k-3 \dots 2k+4$, donc la position temporelle du coefficient $k$ reste environ $2k$ ;
 - `# Etape 2` : sommer $|d_1|^2$ dans une fenêtre glissante (par exemple `np.convolve` sur les carrés) pour lisser le bruit ;
-- `# Etape 3` : `np.argmax` de l'énergie glissante, convertir l'indice coefficient → indice échantillon, comparer à 1000.",,,,,,,,dad5d0b737bcf9e7,,,,,,,,,,,,,,,
+- `# Etape 3` : `np.argmax` de l'énergie glissante, convertir l'indice coefficient → indice échantillon, comparer à 1000.",,,,,,,,bc48ef24c8922cd4,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch.ipynb,16d691bf,code,fr,597146d5db0f3dd1,"def localise_burst(y):
     """"""Position estimee du transitoire d'un signal bruite, par energie locale des details fins.
 
@@ -52861,10 +52864,10 @@ MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-00a-Ondelett
 # pos = localise_burst(y)
 # print(""position estimee :"", pos, ""| erreur :"", abs(pos - 1000))
 print(""Exercice a completer"")",,,,,,,,597146d5db0f3dd1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch.ipynb,9e8341e7,markdown,fr,4e3bc1b283a592c7,"## 8. Récapitulatif et suite de la série
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch.ipynb,9e8341e7,markdown,fr,10213fd9285b9a8c,"## 8. Récapitulatif et suite de la série
 
 **Ce que ce notebook a établi, par la mesure.**
-1. La DWT orthonormale se réimplémente en une trentaine de lignes lisibles (gather/scatter adjoints), reconstruit à l'erreur machine, et s'accorde **coefficient par coefficient** avec la bibliothèque de référence — à condition d'épingler **deux conventions** (l'ordre des coefficients publiés, le signe du miroir alterné) que le test de reconstruction seul ne détecte pas.
+1. La DWT orthonormale se réimplémente en une trentaine de lignes lisibles (gather/scatter adjoints), reconstruit à l'erreur machine, et s'accorde **coefficient par coefficient** avec la bibliothèque de référence — à condition d'épingler **deux conventions** (la convention de phase — l'offset $\lfloor n/2 \rfloor$ dans l'indice —, le signe du miroir alterné) que le test de reconstruction seul ne détecte pas.
 2. Le profil d'énergie par échelle est une **empreinte** lisible : tons concentrés, chirp étalé, sauts dilués sur toutes les échelles.
 3. Le débruitage par seuillage dur réalise **sans aucun oracle** ce qu'un passe-bas Fourier ne réalise qu'**avec** oracle sur le terrain non stationnaire (Doppler), et perd sur le terrain stationnaire — il n'existe pas de base universellement parcimonieuse, et le choix de base encode une hypothèse sur la structure du signal.
 4. Le seuillage doux paie son biais (−3,4 à −5,6 dB mesurés) ; le seuil universel est conservateur — les raffinements (par échelle : exercice 2 ; SURE, Bayesian shrinkage : littérature) sont le pont vers le bloc B.
@@ -52874,7 +52877,7 @@ MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-00a-Ondelett
 - **A.3 — Scattering** : cascade ondelette → module → moyenne, invariance par translation *garantie par construction* ;
 - **B — SOTA** : PyWavelets pour le débruitage industriel (BayesShrink, SureShrink), `kymatio` pour le Scattering GPU, et le tableau comparatif from scratch vs SOTA.
 
-*Voir `README.md` de la série pour l'état d'avancement.*",,,,,,,,4e3bc1b283a592c7,,,,,,,,,,,,,,,
+*Voir `README.md` de la série pour l'état d'avancement.*",,,,,,,,10213fd9285b9a8c,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-00b-Ondelettes-2D-from-scratch.ipynb,ws00b-00,markdown,fr,1c072ac2c808ef27,"# WS-00b — Ondelettes 2D *from scratch* : bandes orientées, reconstruction parfaite, et le duel compression
 
 Suite directe de [`WS-00a-Ondelettes-1D-from-scratch`](WS-00a-Ondelettes-1D-from-scratch.ipynb).
@@ -53319,11 +53322,13 @@ for frac in [0.002, 0.01, 0.05, 0.25]:
 print(f""\ntaille de l'approximation seule : {coeffs[0].size} coefficients""
       f"" ({100 * coeffs[0].size / img.size:.2f}% du total)"")
 ",,,,,,,,b6eec51ff767657e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-00b-Ondelettes-2D-from-scratch.ipynb,ws00b-19,markdown,fr,4a7563da3fa949a8,"### Ce que la mesure départage
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-00b-Ondelettes-2D-from-scratch.ipynb,ws00b-19,markdown,fr,9e17006eaff20690,"### Ce que la mesure départage
 
 C'est la **seconde** lecture qui est la bonne, et l'écart est franc. L'approximation n'est que **0,02 %**
-de la pyramide (64 coefficients sur 262 144, six niveaux) : elle est donc intégralement conservée dès que
-le budget dépasse 0,02 %, et sa part du budget ne cesse ensuite de fondre — 12 % d'un budget de 0,2 %,
+de la pyramide (64 coefficients sur 262 144, six niveaux) : elle est donc conservée **quasi
+intégralement** — **63 coefficients sur 64** au budget de 0,2 %, le plus petit d'entre eux passant sous
+le seuil top-k — puis **intégralement** à partir de 1 % de budget, et sa part du
+budget ne cesse ensuite de fondre — 12 % d'un budget de 0,2 %,
 2,4 % à 1 %, 0,5 % à 5 %, 0,1 % à 25 %.
 
 Autrement dit : **le duel de compression ne se joue pas sur la structure grossière, il se joue sur les
@@ -53338,7 +53343,7 @@ Un mot d'honnêteté sur ce que ce tableau **ne** dit pas : la part de l'approxi
 *budget*, pas à l'énergie. Cela ne signifie pas que l'approximation soit perceptuellement secondaire — au
 contraire, c'est elle qui porte la luminance moyenne de l'image. Un top-k par module n'est pas un critère
 perceptif, et l'exercice 2 invite précisément à en sortir.
-",,,,,,,,4a7563da3fa949a8,,,,,,,,,,,,,,,
+",,,,,,,,9e17006eaff20690,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-00b-Ondelettes-2D-from-scratch.ipynb,ws00b-20,markdown,fr,9dddd4b337bbbdf9,"## 6. Exercice 1 — conservation de l'énergie en 2D (Parseval)
 
 La transformée 2D est orthonormale : elle ne change pas l'énergie. En 1D, `WS-00a` l'a vérifié ; en 2D, la
@@ -53369,24 +53374,30 @@ else:
     print(f""energie coefficients = {e_coef:.6f} | ecart relatif = {ecart:.2e}"")
     print(""attendu : ecart de l'ordre de 1e-13 (orthonormalite en flottant)"")
 ",,,,,,,,3641d71df5ec2b95,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-00b-Ondelettes-2D-from-scratch.ipynb,ws00b-22,markdown,fr,04689b848559eebd,"## 7. Exercice 2 — le budget par bande plutôt que global
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-00b-Ondelettes-2D-from-scratch.ipynb,ws00b-22,markdown,fr,7d6f5b4e946ec65b,"## 7. Exercice 2 — le budget par bande plutôt que global
 
 Le top-k global traite tous les coefficients à égalité. Or les bandes n'ont pas la même importance
 perceptive : garder un coefficient d'approximation vaut mieux, visuellement, que garder un coefficient
 diagonal.
 
-**Objectif** : garder `k` coefficients **par bande** (même nombre dans l'approximation et dans chacune des
-trois bandes de chaque niveau) au lieu du top-k global, puis comparer le PSNR obtenu pour un budget total
-comparable.
+**Objectif** : garder un **même quota** de coefficients dans l'approximation et dans chacune des trois
+bandes de chaque niveau au lieu du top-k global, puis comparer le PSNR obtenu pour un budget **total**
+comparable. Le budget total reste `frac * total` : c'est le quota de **chaque** bande qui est divisé par le
+nombre de bandes — jamais le budget qui se retrouve multiplié. (Le quota de l'approximation est plafonné
+par les 64 coefficients qu'elle contient.)
 
-**Indice** : le nombre total de coefficients est `coeffs[0].size + somme(...)` ; pour un budget `frac`, la
-part par bande vaut `frac * total / nombre_de_bandes`. `np.partition` évite un tri complet.
+**Indice** : le nombre total de coefficients est `coeffs[0].size + somme(...)` ; pour un budget `frac`, le
+quota par bande vaut `frac * total / nombre_de_bandes`, où `nombre_de_bandes` compte **toutes** les bandes,
+approximation comprise. `np.partition` évite un tri complet.
 
 **Question à trancher par la mesure** : le budget par bande fait-il mieux ou moins bien que le budget
 global ? Les deux réponses sont défendables *a priori* — c'est la mesure qui décide.
-",,,,,,,,04689b848559eebd,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-00b-Ondelettes-2D-from-scratch.ipynb,ws00b-23,code,fr,8bec88de8a62dac6,"def ondelette_budget_par_bande(coeffs, lo, frac):
-    """"""Garde frac*total coefficients PAR BANDE (au lieu du top-k global) et reconstruit.
+",,,,,,,,7d6f5b4e946ec65b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-00b-Ondelettes-2D-from-scratch.ipynb,ws00b-23,code,fr,fa2a278aac7bcb62,"def ondelette_budget_par_bande(coeffs, lo, frac):
+    """"""Garde un quota EGAL par bande (au lieu du top-k global) et reconstruit.
+
+    Le budget TOTAL reste frac*total : le quota de chaque bande vaut
+    frac*total/nombre_de_bandes (approximation comprise) -- et non frac*total par bande.
 
     TODO etudiant : compter les bandes, repartir le budget, seuiller chaque bande, reconstruire.
     """"""
@@ -53405,7 +53416,7 @@ else:
     print(f""budget par bande : {p_bande:.2f} dB ({gardes} coefficients)"")
     print(f""budget global    : {p_global:.2f} dB"")
     print(f""ecart            : {p_bande - p_global:+.2f} dB"")
-",,,,,,,,8bec88de8a62dac6,,,,,,,,,,,,,,,
+",,,,,,,,fa2a278aac7bcb62,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-00b-Ondelettes-2D-from-scratch.ipynb,ws00b-24,markdown,fr,3fecdcafaf030508,"## 8. Exercice 3 — détecter l'orientation d'un contour inconnu
 
 On a mesuré au §2 que chaque bande répond à une orientation. On peut donc **classer** un bord sans le
@@ -53937,7 +53948,7 @@ MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-00c-Scatteri
 - [WS-00b — Ondelettes 2D](WS-00b-Ondelettes-2D-from-scratch.ipynb) : bandes orientées et duel de compression — ce que la base sait faire quand on veut *reconstruire*
 - **Bruna & Mallat (2013)**, *Invariant Scattering Convolution Networks* — la source primaire ; Mallat, *Group Invariant Scattering* (2012), pour la théorie de la stabilité lipschitzienne
 - **Bloc B de la feuille de route** : kymatio en mode production (backend torch, échelle GPU) — le pendant SOTA de ce notebook",,,,,,,,5ca3887b4d22760b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-01-Denoising-SOTA.ipynb,b8ef6d83,markdown,fr,60c9eb0cd5a00015,"# WS-01 — Débruitage d'images : du seuillage *from scratch* aux estimateurs SOTA
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-01-Denoising-SOTA.ipynb,b8ef6d83,markdown,fr,dc9b7c97588262b8,"# WS-01 — Débruitage d'images : du seuillage *from scratch* aux estimateurs SOTA
 
 Bloc B.5 de la série ([#16055](https://github.com/jsboige/CoursIA/issues/16055)). Suite directe de
 [`WS-00a-Ondelettes-1D-from-scratch`](WS-00a-Ondelettes-1D-from-scratch.ipynb) (seuil MAD, seuillage dur/doux)
@@ -53950,15 +53961,18 @@ que l'on affronte sur le même banc.
 
 **Ce que ce notebook établit :**
 
-1. À transformée identique (db4, 4 niveaux, péridiodisation — vérifiée par parité `allclose`), **tout l'écart de
-   débruitage vient de l'estimation du seuil**, pas de la transformée. Le SOTA à l'œuvre ici est un *estimateur*,
-   pas un moteur.
+1. À transformée identique — db4, 4 niveaux, et l'extension **périodisation** vérifiée par parité `allclose`
+   entre le moteur from scratch et `pywt` — **tout l'écart dominant de débruitage vient de l'estimation du
+   seuil**, pas de la transformée. Côté bibliothèque, l'extension n'est pas la même : `skimage` laisse
+   PyWavelets à son défaut `symmetric`, et l'écart ainsi introduit, mesuré en §3, ne pèse que quelques
+   dixièmes de dB — une fraction des 2 à 3 dB que le banc attribue à l'estimation. Le SOTA à l'œuvre ici est
+   un *estimateur*, pas un moteur.
 2. **BayesShrink** (seuil adaptatif par sous-bande, Chang-Yu-Vetterli) domine nettement le seuil universel global
    de WS-00a : **+2,2 à +3,0 dB** sur le banc complet (moyenne 4 images, à chaque régime de bruit).
 3. **SureShrink** n'est pas dans scikit-image : on l'implémente à la main (minimisation du risque SURE de
-   Donoho-Johnstone) sur les coefficients que `pywt` fournit — la frontière exacte entre *ce que la lib sait faire*
-   et *ce qui relève de l'estimation*.
-",,,,,,,,60c9eb0cd5a00015,,,,,,,,,,,,,,,
+   Donoho-Johnstone) sur les coefficients que `pywt` fournit, en seuil **doux** — l'opérateur que la formule
+   estime — la frontière exacte entre *ce que la lib sait faire* et *ce qui relève de l'estimation*.
+",,,,,,,,dc9b7c97588262b8,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-01-Denoising-SOTA.ipynb,eb23938b,code,fr,a4b1a0ca6f85e358,"import numpy as np
 import pywt
 import matplotlib.pyplot as plt
@@ -54124,11 +54138,11 @@ def denoise_scratch(img, soft):
     kept = sum(int(np.count_nonzero(b)) for det in shrinked[1:] for b in det)
     total = sum(b.size for det in coeffs[1:] for b in det)
     return np.clip(waverec2(shrinked, DB4), 0, 255), kept, total",,,,,,,,8a6392432f94916f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-01-Denoising-SOTA.ipynb,ea116c93,markdown,fr,ec95a4dad6376bc2,"## 3. Les estimateurs SOTA — trois façons de choisir le seuil
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-01-Denoising-SOTA.ipynb,ea116c93,markdown,fr,080e0d0cec2dd0f9,"## 3. Les estimateurs SOTA — trois façons de choisir le seuil
 
-La transformée est réglée une fois pour toutes (db4, 4 niveaux, periodization — les mêmes réglages des deux
-côtés, from scratch et lib). Reste la seule vraie question du débruitage par ondelettes : **quel seuil, sur
-quelles bandes ?**
+La transformée est réglée une fois pour toutes : db4, 4 niveaux, et la périodisation côté moteur from scratch
+comme côté `pywt` (parité `allclose` en §2). Reste la seule vraie question du débruitage par ondelettes :
+**quel seuil, sur quelles bandes ?**
 
 | Estimateur | Origine | Seuil | Portée |
 |---|---|---|---|
@@ -54142,16 +54156,30 @@ en est riche (seuil prudent). C'est l'inverse du seuil universel, identique part
 
 SureShrink minimise le risque **SURE** (*Stein's Unbiased Risk Estimate*) — une estimation sans oracle du risque
 quadratique, évaluable pour chaque seuil candidat sur les seuls coefficients observés. scikit-image ne le fournit
-pas : la cellule ci-dessous l'écrit en $O(n \log n)$ par tri (formule vectorisée), et le **valide contre une
-recherche par force brute** sur un signal synthétique — la série exige la parité mesurée, y compris pour le code
-écrit ici.
+pas : la cellule ci-dessous l'écrit en $O(n \log n)$ par tri (formule vectorisée), et la **valide deux fois** —
+par recherche par force brute (l'implémentation est-elle juste ?), puis **contre le risque réel** d'un seuil
+effectivement appliqué (la formule est-elle bien un estimateur de risque ?) — la série exige la parité mesurée,
+y compris pour le code écrit ici.
 
-**Équité** : les trois estimateurs reçoivent le même $\hat\sigma$ (MAD, cellule §2) via `sigma=`, `rescale_sigma=False`.
-",,,,,,,,ec95a4dad6376bc2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-01-Denoising-SOTA.ipynb,e2982a09,code,fr,c89ab4911ebfaf77,"def sure_lambda(band, sigma):
+**L'opérateur est dicté par la formule, pas l'inverse.** Le SURE de Donoho-Johnstone est écrit pour le seuil
+**doux** : il estime le risque de $f_t(d) = \mathrm{signe}(d)\max(|d| - t, 0)$. On seuille donc en doux — et les
+trois estimateurs du tableau seuillent alors tous en doux : la comparaison porte sur la seule *loi du seuil*,
+pas sur l'opérateur. La cellule de validation le montre par la mesure, pas par l'affirmation : la formule
+reproduit le risque du seuil doux à moins de 1 % près, et s'écarte de plus de 60 % du risque du seuil dur.
+
+**Équité** : les trois estimateurs reçoivent le même $\hat\sigma$ (MAD, cellule §2) via `sigma=`,
+`rescale_sigma=False`, et seuillent tous en doux.
+",,,,,,,,080e0d0cec2dd0f9,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-01-Denoising-SOTA.ipynb,e2982a09,code,fr,e48f2df6e4802466,"def sure_lambda(band, sigma):
     """"""Seuil SURE par minimisation du risque de Stein, en O(n log n) par tri.
 
     SURE(t) = n + somme_i min(|d_i|, t)^2 - 2 * #{ |d_i| <= t }   (unites : d/sigma)
+
+    Cette formule est le SURE de Donoho-Johnstone du seuil DOUX : elle estime
+    sans oracle le risque quadratique E||f_t(d) - theta||^2 de l'operateur
+    f_t(d) = signe(d) * max(|d| - t, 0). L'operateur applique doit donc etre
+    le seuil doux -- la validation 2 ci-dessous verifie l'egalite contre le
+    risque REEL, et montre que la meme formule decrit mal le risque du seuil dur.
 
     Pour t = xs[k] (les |d| tries par ordre decroissant) :
       somme min(|d_i|, t)^2 = (k+1) * t^2 + (total - somme des k+1 plus grands carres)
@@ -54167,7 +54195,7 @@ MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-01-Denoising
     return xs[int(np.argmin(sure))] * sigma
 
 
-# --- validation contre une recherche par force brute (signal spikes + bruit) ---
+# --- validation 1 : la formule vectorisee retrouve-t-elle la force brute ? ---
 rng_val = np.random.default_rng(7)
 x_val = rng_val.standard_normal(512)
 x_val[np.arange(0, 500, 100)] += np.array([6.0, -5.0, 8.0, 4.0, -7.0])
@@ -54178,6 +54206,39 @@ lam_brute = grille[int(np.argmin(risques))]
 lam_trie = sure_lambda(x_val, 1.0)
 print(f""validation SURE : force brute {lam_brute:.3f} vs tri vectorise {lam_trie:.3f} ""
       f""(ecart {abs(lam_brute - lam_trie):.1e})"")
+
+
+# --- validation 2 : la formule estime-t-elle le risque REEL de l'operateur applique ? ---
+# Signal connu (theta) + bruit gaussien : le risque quadratique se calcule exactement,
+# coefficient par coefficient. On compare E[SURE] a ce risque oracle, pour les deux operateurs.
+rng_or = np.random.default_rng(11)
+theta = np.zeros(512)
+theta[np.arange(0, 500, 100)] = np.array([6.0, -5.0, 8.0, 4.0, -7.0])
+sigma_or = 1.0
+grille_or = np.linspace(0.0, 8.0, 33)
+risque_doux = np.zeros(len(grille_or))
+risque_dur = np.zeros(len(grille_or))
+sure_moyen = np.zeros(len(grille_or))
+N_OR = 400
+for _ in range(N_OR):
+    d_or = theta + sigma_or * rng_or.standard_normal(theta.size)
+    ad_or = np.abs(d_or)
+    for i, t in enumerate(grille_or):
+        f_doux = np.sign(d_or) * np.maximum(ad_or - t, 0.0)
+        f_dur = np.where(ad_or > t, d_or, 0.0)
+        risque_doux[i] += np.sum((f_doux - theta) ** 2)
+        risque_dur[i] += np.sum((f_dur - theta) ** 2)
+        sure_moyen[i] += (theta.size + np.sum(np.minimum(ad_or, t) ** 2)
+                          - 2 * np.count_nonzero(ad_or <= t))
+risque_doux /= N_OR
+risque_dur /= N_OR
+sure_moyen /= N_OR
+ecart_doux = np.mean(np.abs(sure_moyen - risque_doux))
+ecart_dur = np.mean(np.abs(sure_moyen - risque_dur))
+print(f""validation risque : |E[SURE] - risque DOUX reel| = {ecart_doux:.3f} ""
+      f""({100 * ecart_doux / np.mean(risque_doux):.1f} %) | ""
+      f""meme formule vs risque DUR reel = {ecart_dur:.3f} ""
+      f""({100 * ecart_dur / np.mean(risque_dur):.1f} %)"")
 
 
 def denoise_visu(img, sigma):
@@ -54195,7 +54256,11 @@ def denoise_bayes(img, sigma):
 
 
 def denoise_sure(img, sigma):
-    """"""SureShrink a la main : pywt fournit la transformee, nous l'estimation (dur).""""""
+    """"""SureShrink a la main : pywt fournit la transformee, nous l'estimation (doux).
+
+    Le seuil applique est DOUX : c'est l'operateur dont le risque la formule SURE
+    estime (validation 2). Un seuil dur exigerait une autre formule.
+    """"""
     coeffs = pywt.wavedec2(img, ONDELETTE_LIB, mode=""periodization"", level=NIVEAUX)
     out = [coeffs[0]]
     kept = 0
@@ -54203,16 +54268,17 @@ def denoise_sure(img, sigma):
     for det in coeffs[1:]:
         bands = []
         for b in det:
-            tb = pywt.threshold(b, sure_lambda(b, sigma), mode=""hard"")
+            tb = pywt.threshold(b, sure_lambda(b, sigma), mode=""soft"")
             kept += int(np.count_nonzero(tb))
             total += b.size
             bands.append(tb)
         out.append(tuple(bands))
     rec = pywt.waverec2(out, ONDELETTE_LIB, mode=""periodization"")
-    return np.clip(rec[: img.shape[0], : img.shape[1]], 0, 255), kept, total",,,,,,,,c89ab4911ebfaf77,,,,,,,,,,,,,,,
+    return np.clip(rec[: img.shape[0], : img.shape[1]], 0, 255), kept, total
+",,,,,,,,e48f2df6e4802466,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-01-Denoising-SOTA.ipynb,aea2598c,markdown,fr,161491c63e441cb3,"Un premier tour sur `camera` à $\sigma = 20$, graine 0 — pour vérifier chaque brique avant le banc complet
 et regarder ce que chaque estimateur fait du budget de coefficients.",,,,,,,,161491c63e441cb3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-01-Denoising-SOTA.ipynb,91ec484f,code,fr,188a429046080af7,"img = IMAGES[""camera""]
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-01-Denoising-SOTA.ipynb,91ec484f,code,fr,6875f78205b46adf,"img = IMAGES[""camera""]
 noisy = img + 20.0 * np.random.default_rng(0).standard_normal(img.shape)
 sig = sigma_hat_mad(noisy)
 
@@ -54228,14 +54294,15 @@ print(f""{'bruite (reference)':28s} {psnr(img, noisy):10.2f} {'100.0%':>13s}"")
 print(f""{'scratch dur (lambda univ.)':28s} {psnr(img, dure):10.2f} {f'{100*kd/td:.1f}%':>13s}"")
 print(f""{'scratch doux (lambda univ.)':28s} {psnr(img, doux):10.2f}"")
 print(f""{'VisuShrink (skimage, doux)':28s} {psnr(img, visu):10.2f}"")
-print(f""{'SureShrink (main, dur)':28s} {psnr(img, sure):10.2f} {f'{100*ks/ts:.1f}%':>13s}"")
-print(f""{'BayesShrink (skimage, doux)':28s} {psnr(img, bayes):10.2f}"")",,,,,,,,188a429046080af7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-01-Denoising-SOTA.ipynb,0d357815,markdown,fr,a4ea40ce54ca7419,"## 4. Le benchmark complet
+print(f""{'SureShrink (main, doux)':28s} {psnr(img, sure):10.2f} {f'{100*ks/ts:.1f}%':>13s}"")
+print(f""{'BayesShrink (skimage, doux)':28s} {psnr(img, bayes):10.2f}"")",,,,,,,,6875f78205b46adf,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-01-Denoising-SOTA.ipynb,0d357815,markdown,fr,ca62e90a65bc72f3,"## 4. Le benchmark complet
 
 4 images × 3 sigmas × 3 graines × 5 débruiteurs (+ la référence bruitée). Chaque cellule du tableau est la
 moyenne ± écart-type du PSNR sur les trois graines. La transformée est identique partout ; seuls le seuil et
-sa portée changent d'une ligne à l'autre.
-",,,,,,,,a4ea40ce54ca7419,,,,,,,,,,,,,,,
+sa portée changent d'une ligne à l'autre — à l'extension près, mesurée en §3, qui ne pèse que quelques
+dixièmes de dB.
+",,,,,,,,ca62e90a65bc72f3,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-01-Denoising-SOTA.ipynb,b68850ca,code,fr,3e53c9a469832c9d,"SIGMAS = [10.0, 20.0, 30.0]
 GRAINES = [0, 1, 7]
 
@@ -54332,24 +54399,31 @@ for ax, (titre, v) in zip(axes, [
     ax.axis(""off"")
 plt.tight_layout()
 plt.show()",,,,,,,,42a92838b702e9fc,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-01-Denoising-SOTA.ipynb,3548e116,markdown,fr,f45b5f74194b0b85,"## 5. Ce que le SOTA achète — et ce qu'il n'achète pas
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-01-Denoising-SOTA.ipynb,3548e116,markdown,fr,e70731cd5c836822,"## 5. Ce que le SOTA achète — et ce qu'il n'achète pas
 
 1. **Le gain vient de l'estimation, pas de la transformée.** Les six lignes du banc partagent la même db4,
    la même pyramide, le même $\hat\sigma$ — et s'étalent pourtant sur plusieurs dB. Entre la baseline
    from scratch (moteur WS-00b, seuil WS-00a) et BayesShrink, il n'y a **aucune différence de moteur** :
    seulement la portée du seuil (global → par sous-bande) et sa loi ($\sqrt{2\ln N}$ → $\hat\sigma^2/\hat\sigma_x$).
+   Le seul écart du banc qui ne soit pas un choix d'estimation est l'extension (§3) : 0,25 dB, soit une dizaine
+   de fois moins que le gain mesuré.
 2. **L'adaptativité est le levier dominant.** Le seuil universel est calibré pour le pire cas (bruit pur) :
    sur une bande riche en contours, il massacre des coefficients porteurs de signal — d'où le lissage visible
-   dans le duel. BayesShrink resserre le seuil exactement là où la variance empirique atteste du signal.
+   dans le duel. BayesShrink resserre le seuil exactement là où la variance empirique atteste du signal — et
+   les deux estimateurs par sous-bande occupent le haut du banc, devant tous les seuils globaux.
 3. **Dur vs doux à seuil universel : l'écart mesuré.** À seuil identique, le doux rétracte *tous* les
    coefficients survivants (biais), le dur les laisse intacts (variance). Sur ce banc, le dur gagne
    systématiquement à régime de seuil universel — mais BayesShrink *doux adaptatif* fait mieux que les deux :
    c'est le couple (loi du seuil, portée adaptative) qui compte, pas le dur ou le doux en soi.
-4. **SureShrink, écrit ici, dessine un compromis** : il gagne à faible bruit (31,0 vs 30,2 dB à $\sigma=10$
-   sur la moyenne des images) mais cède à fort bruit (25,9 vs 26,4 à $\sigma=30$) — le risque minimisé sans oracle
-   récompense les images texturées et se montre prudent quand le bruit domine. Sa validation contre la force
-   brute (§3) est la parité mesurée que la série exige de tout code écrit à la main.
-",,,,,,,,f45b5f74194b0b85,,,,,,,,,,,,,,,
+4. **SureShrink, écrit ici, tient la promesse du risque sans oracle.** Il minimise un risque qu'il ne connaît
+   pas — l'estimation de Stein sur les seuls coefficients observés — et il **gagne à tous les régimes de bruit** :
+   33,4 dB à $\sigma=10$, 30,2 à $\sigma=20$, 28,6 à $\sigma=30$ (moyenne des quatre images), contre 30,2 /
+   27,8 / 26,4 dB pour le seuil universel de la baseline. Il devance même BayesShrink (30,7 dB contre 30,6 sur
+   l'ensemble du banc) : à portée adaptative égale, l'estimation du risque par formule l'emporte sur la loi
+   empirique de Chang-Yu-Vetterli. Ses **deux** validations (§3) — la parité de l'implémentation avec la force
+   brute, et l'égalité de la formule au risque **réel** du seuil appliqué — sont la mesure que la série exige
+   de tout code écrit à la main.
+",,,,,,,,e70731cd5c836822,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-01-Denoising-SOTA.ipynb,d76bca4c,markdown,fr,f1702d3319bc1c12,"### Exercice 1 — BayesShrink à la main
 
 scikit-image le cache derrière un appel ; réécrivez-le. Sur les sous-bandes `pywt.wavedec2`, le seuil de
@@ -54374,14 +54448,16 @@ def denoise_bayes_main(img, sigma):
     # TODO etudiant (meme squelette que denoise_sure : wavedec2 -> seuil par bande -> waverec2)
     print(""Exercice a completer"")
     return None",,,,,,,,98361f194f152c94,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-01-Denoising-SOTA.ipynb,37b2712e,markdown,fr,7edbb00e79f8c0cc,"### Exercice 2 — L'ondelette change-t-elle le verdict ?
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-01-Denoising-SOTA.ipynb,37b2712e,markdown,fr,5c592f9cc592fe2b,"### Exercice 2 — L'ondelette change-t-elle le verdict ?
 
-Le banc est réglé sur db4. Refaites le tour `camera` / $\sigma=20$ avec `sym8` (8 taps, plus symétrique)
-des deux côtés à la fois (moteur from scratch via les constantes publiées *et* lib via `wavelet=""sym8""`).
+Le banc est réglé sur db4. Refaites le tour `camera` / $\sigma=20$ avec `sym8` (l'ordre 8 de la famille sym
+donne un filtre de **16 taps**, plus symétrique) des deux côtés à la fois (moteur from scratch via les constantes
+publiées *et* lib via `wavelet=""sym8""`).
 
-**Indice** : pour le moteur, remplacez la constante `DB4` par les 8 coefficients de `sym8` (publiés dans la
-doc pywt) ; la structure de `dwt_axis` ne change pas. Le verdict d'adaptativité (BayesShrink vs universel)
-survit-il au changement de base ?",,,,,,,,7edbb00e79f8c0cc,,,,,,,,,,,,,,,
+**Indice** : pour le moteur, remplacez la constante `DB4` par les **16** coefficients de `sym8` (publiés dans la
+doc pywt) ; la structure de `dwt_axis` ne change pas — elle est déjà écrite pour un filtre de longueur
+quelconque (le décalage utilisé est `len(lo)//2`). Le verdict d'adaptativité (BayesShrink vs universel) survit-il
+au changement de base ?",,,,,,,,5c592f9cc592fe2b,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-01-Denoising-SOTA.ipynb,484396cc,code,fr,e8d50f9e17115f54,"def un_tour_sym8(img, sigma, graine=0):
     """"""Meme banc que un_tour, mais ondelette sym8 des deux cotes (lib + from scratch).
 
@@ -54411,14 +54487,14 @@ MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-01-Denoising
     # TODO etudiant
     print(""Exercice a completer"")
     return None",,,,,,,,581411ae893c1456,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-01-Denoising-SOTA.ipynb,a980c3f1,markdown,fr,2bb9ff7295dea6b4,"## Conclusion
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-01-Denoising-SOTA.ipynb,a980c3f1,markdown,fr,2b0041b9271ca9b6,"## Conclusion
 
 | Politique de seuil | Portée | Ce que le banc en dit |
 |---|---|---|
 | universel dur/doux (WS-00a/00b, *from scratch*) | global | la baseline honnête : transformée parfaite (parité `allclose`), seuil calibré pire-cas |
 | VisuShrink (scikit-image) | global | le même universel en doux, packaging lib (26,8 dB) — colle à la baseline douce from scratch (26,6 dB), rien de plus |
-| SureShrink (à la main, SURE validé) | par bande | risque minimisé sans oracle, entre les deux mondes |
-| **BayesShrink (scikit-image)** | par bande | **le SOTA du banc** : l'adaptativité par sous-bande paie en dB sur tous les régimes |
+| **SureShrink (à la main, SURE validé)** | par bande | **le meilleur du banc** : le risque minimisé sans oracle, 30,7 dB — devant BayesShrink, et +2,2 à +3,2 dB sur la baseline |
+| BayesShrink (scikit-image) | par bande | le SOTA de la bibliothèque : l'adaptativité par sous-bande paie en dB sur tous les régimes (30,6 dB) |
 
 **Le concept-phare** : à transformée identique, le débruitage SOTA n'achète pas un meilleur *moteur* —
 il achète une meilleure *décision* sur chaque coefficient. Le from scratch des WS-00 n'est pas perdu :
@@ -54430,7 +54506,7 @@ comparatif final) arrive dans les grains suivants de [#16055](https://github.com
 
 Références : Donoho & Johnstone, *Ideal spatial adaptation by wavelet shrinkage* (Biometrika, 1994) ;
 Chang, Yu & Vetterli, *Adaptive wavelet thresholding for image denoising and compression* (IEEE TIP, 2000) ;
-documentation `pywt` et `skimage.restoration`.",,,,,,,,2bb9ff7295dea6b4,,,,,,,,,,,,,,,
+documentation `pywt` et `skimage.restoration`.",,,,,,,,2b0041b9271ca9b6,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-02-Scattering-SOTA.ipynb,m-titre,markdown,fr,3b60086c4e83f653,"# WS-02 — Scattering SOTA : kymatio contre le moteur from-scratch, mêmes données, même classifieur
 
 Ce notebook est le pendant industriel du bloc A de la série : la même transformée de Scattering 2D, implémentée cette fois par **`kymatio`** (l'implémentation SOTA maintenue, backend PyTorch, batchée), confrontée au **moteur from-scratch de WS-00c** repris ici à l'identique — mêmes données, même classifieur, même machine. Il ferme aussi l'epic : le **tableau récapitulatif Bloc A vs Bloc B** (item 6 de l'issue) vit dans ce notebook final.",,,,,,,,3b60086c4e83f653,,,,,,,,,,,,,,,
@@ -54677,13 +54753,13 @@ MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-02-Scatterin
 MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-02-Scattering-SOTA.ipynb,m-tableau,markdown,fr,32c61162e38ecddf,"## 6. Le tableau final — Bloc A vs Bloc B (item 6 de l'epic)
 
 La synthèse de toute la série, dans le notebook final comme demandé par l'issue. Les lignes A sont citées depuis les **outputs committés** de WS-00a/WS-00b/WS-00c sur `main` (vérifiables de première main en rouvrant les notebooks), la ligne B.5 depuis les **outputs committés de WS-01 sur `main`**, la ligne B.4 depuis **l'exécution ci-dessus**. Les lignes de code sont **calculées à l'exécution** en lisant les notebooks voisins sur le disque — le tableau ne peut pas dériver de la réalité des fichiers.",,,,,,,,32c61162e38ecddf,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-02-Scattering-SOTA.ipynb,c-tableau,code,fr,b0a873a0cf6bb11d,"def chemin_serie():
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-02-Scattering-SOTA.ipynb,c-tableau,code,fr,b1ca135202a8f0ca,"def chemin_serie():
     candidats = [""."",
                  ""MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering""]
     for c in candidats:
         if os.path.isfile(os.path.join(c, ""WS-00c-Scattering-from-scratch.ipynb"")):
             return c
-    raise FileNotFoundError(""serie 04b introuvable depuis "" + os.getcwd())
+    raise FileNotFoundError(""serie 05 introuvable depuis "" + os.getcwd())
 
 
 def loc_code(path):
@@ -54711,7 +54787,7 @@ print(f""{'notebook':>28} | {'LOC':>5} | preuve (source chiffre) | dependances""
 for nom, fich, preuve, deps in filles:
     p = os.path.join(SERIE, fich)
     locs = str(loc_code(p)) if os.path.isfile(p) else ""absent du disque""
-    print(f""{nom:>28} | {locs:>5} | {preuve} | {deps}"")",,,,,,,,b0a873a0cf6bb11d,,,,,,,,,,,,,,,
+    print(f""{nom:>28} | {locs:>5} | {preuve} | {deps}"")",,,,,,,,b1ca135202a8f0ca,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-02-Scattering-SOTA.ipynb,m-tableau-lecture,markdown,fr,812f7007c522680f,"**Lecture — pourquoi le from scratch, quand le SOTA.** Les lignes A coûtent des lignes de code et du temps machine, mais chaque coefficient, chaque seuil, chaque moyenne locale est **montrable du doigt** — c'est le geste qui rend l'invariance *comprise* plutôt que consommée ; c'est aussi le seul côté où un bug serait trouvable à la lecture. Les lignes B achètent l'**échelle** : des décennies d'ingénierie de vectorisation (BayesShrink calibré au plus près, kymatio batché) pour le prix d'un `pip install`. La règle de décision qui se dégage des mesures de la §4 : *comprendre en Bloc A, produire en Bloc B* — et la frontière est réelle mais asymétrique : à budget d'échantillon borné, le from-scratch gagne les deux accuracy (0,825/0,770 contre 0,775/0,645 — §3 : sélectivité des morlets anisotropes) quand kymatio gagne la latence et la mémoire ; chaque moteur gagne sa colonne, aucun ne domine les deux.",,,,,,,,812f7007c522680f,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-02-Scattering-SOTA.ipynb,m-ex1,markdown,fr,a961ce80450712eb,"## Exercice 1 — Une troisième échelle
 
@@ -56514,3 +56590,34 @@ pertes_finales = {}  # TODO étudiant : lr -> perte finale après 200 itération
 meilleur_lr = None  # TODO étudiant : le lr qui donne la plus petite perte finale
 print(f""Exercice 3 à compléter : pertes finales = {pertes_finales}, meilleur lr = {meilleur_lr}"")
 ",,,,,,,,3943e00c2b92d272,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-01-Denoising-SOTA.ipynb,e1c0de01,markdown,fr,b86b74a201180638,"### Le même mot, deux conventions : l'extension
+
+Le banc compare deux moteurs, et les deux n'utilisent pas la même extension du signal :
+notre moteur from scratch impose la **périodisation** (convention WS-00a/WS-00b, celle de `pywt` en
+`mode=""periodization""`), et notre SureShrink aussi ; mais `skimage.restoration.denoise_wavelet` appelle
+`pywt.wavedecn(image, wavelet, level)` **sans argument `mode`** — PyWavelets applique alors son extension par
+défaut, `symmetric`, et l'API de scikit-image n'expose pas ce choix.
+
+Ce n'est pas un détail de forme : l'extension décide du traitement des bords de l'image, donc de l'énergie des
+bandes de détail, donc du seuil. La cellule ci-dessous mesure l'ampleur de l'écart en isolant ce seul facteur —
+**la même** règle de seuil (universel, dur) appliquée aux **deux** extensions.
+
+",,,,,,,,b86b74a201180638,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-01-Denoising-SOTA.ipynb,e1c0de02,code,fr,26647c22e7219d1e,"# --- controle : l'extension n'est pas la meme des deux cotes (from scratch vs lib) ---
+def univ_pywt(im, mode, lam):
+    """"""Seuil universel (regle de la baseline) sur les coefficients pywt, extension au choix.""""""
+    co = pywt.wavedec2(im, ONDELETTE_LIB, mode=mode, level=NIVEAUX)
+    out = [co[0]] + [tuple(pywt.threshold(b, lam, mode=""hard"") for b in det) for det in co[1:]]
+    rec = pywt.waverec2(out, ONDELETTE_LIB, mode=mode)[: im.shape[0], : im.shape[1]]
+    return np.clip(rec, 0, 255)
+
+
+lam_univ = sig * np.sqrt(2.0 * np.log(noisy.size))
+p_per = psnr(img, univ_pywt(noisy, ""periodization"", lam_univ))
+p_sym = psnr(img, univ_pywt(noisy, ""symmetric"", lam_univ))
+print(f""extension : meme seuil universel, periodization {p_per:.2f} dB vs symmetric ""
+      f""{p_sym:.2f} dB -> ecart {abs(p_per - p_sym):.2f} dB"")
+print(""           cote lib, skimage.denoise_wavelet impose 'symmetric' (pywt.wavedecn sans mode) ;"")
+print(""           cote from scratch et SureShrink, nous imposons 'periodization'."")
+
+",,,,,,,,26647c22e7219d1e,,,,,,,,,,,,,,,
