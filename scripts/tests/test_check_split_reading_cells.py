@@ -2074,3 +2074,143 @@ def test_cli_ratchet_rend_les_exemptions_dans_le_resume(tmp_path):
     assert "0 en regression" in proc.stdout
     assert "EXEMPT-source-notice" in proc.stdout
     assert "id=meta-1" in proc.stdout
+
+
+# --- 6. Carve-out #23378 : exemple guide credite vs exercice ---------------
+#
+# La digestion des travaux etudiants (#15042) convertit l'exercice d'un
+# etudiant en exemple guide credite : le titre de section porte
+# `### Exemple ... (credite #PR)` et le code de l'etudiant est conserve
+# VERBATIM -- en-tete `# Exercice N` compris. Le jeton « Exercice » est donc
+# present par construction dans un exemple, et la lecture posee apres
+# l'exemple etait signalee EXERCISE_READING (faux positif mesure sur #23378,
+# instance reelle PR #23368, cellule 37 de 01-Hands-On-Grounding.ipynb).
+#
+# Les tests ci-dessous sont des CONTROLES POSITIFS ET NEGATIFS : chacun
+# verifie qu'un cas continue de mordre, ou qu'un cas continue de ne pas
+# mordre. Un carve-out sans controle negatif est une amnese.
+
+
+def _credited_example_header(credit="#23248"):
+    """En-tete markdown d'exemple guide CREDITE (forme canonique)."""
+    return md(f"### Exemple guide 3 - Comparer deux modeles (credite {credit})\n\n"
+              + "Le choix du modele d'embeddings change la qualite du retrieval.")
+
+
+def _student_solution_verbatim():
+    """Code etudiant conserve VERBATIM par la digestion : l'en-tete d'origine
+    porte le jeton « Exercice », la cellule est executee et a des sorties.
+    """
+    return {
+        "cell_type": "code",
+        "source": ["# Exercice 3 - Changez de modele d'embeddings et comparez les scores.\n",
+                   "MODELE_B = \"BAAI/bge-small-en-v1.5\"\n",
+                   "client_b = QdrantClient(\":memory:\")\n",
+                   "print(client_b.get_collections())"],
+        "outputs": [{"name": "stdout", "output_type": "stream",
+                     "text": ["Collections: 1"]}],
+        "execution_count": 12,
+    }
+
+
+def test_carveout_exemple_credite_nest_pas_signale_exercise_reading():
+    """POSITIF : la lecture d'un exemple guide CREDITE n'est pas signalee.
+
+    Instance reelle (#23368) : en-tete d'exemple credite, code etudiant
+    verbatim (jeton « Exercice » conserve), lecture posee apres.
+    """
+    base = nb(
+        md("### Exercice 1 - Un premier passage\n\nUn enonce."),
+        _stub_exercise(),
+    )
+    head = nb(
+        md("### Exercice 1 - Un premier passage\n\nUn enonce."),
+        _stub_exercise(),
+        _credited_example_header(),
+        _student_solution_verbatim(),
+        md("### Lecture du resultat : egalite sur les classements\n\n"
+           + "Les deux collections contiennent les memes points."),
+    )
+    findings = detect_added_readings(head, base)
+    assert [f["type"] for f in findings] == [], findings
+
+
+def test_carveout_exercice_non_credite_reste_signale():
+    """NEGATIF : un exemple SANS attribution reste un exercice.
+
+    L'ATTRIBUTION est ce qui distingue l'exemple guide digere d'un simple
+    `### Exemple` : sans elle, l'organe n'a rien qui dise le role du code.
+    """
+    base = nb(
+        md("### Exercice 1 - Un premier passage\n\nUn enonce."),
+        _stub_exercise(),
+    )
+    head = nb(
+        md("### Exercice 1 - Un premier passage\n\nUn enonce."),
+        _stub_exercise(),
+        md("### Exemple guide 3 - Comparer deux modeles\n\nSans attribution."),
+        _student_solution_verbatim(),
+        md("### Lecture du resultat : egalite sur les classements\n\n"
+           + "Les deux collections contiennent les memes points."),
+    )
+    findings = detect_added_readings(head, base)
+    assert [f["type"] for f in findings] == ["EXERCISE_READING"], findings
+
+
+def test_carveout_stub_sous_exercice_nest_pas_blanchi():
+    """NEGATIF : le carve-out ne dispense pas le vrai stub d'exercice.
+
+    Le role se lit dans l'en-tete ; sous `### Exercice N`, le code reste un
+    exercice, meme si sa source porte le mot « Exercice ».
+    """
+    base = nb(
+        md("### Exercice 1 - Un premier passage\n\nUn enonce."),
+        _stub_exercise(),
+    )
+    head = nb(
+        md("### Exercice 1 - Un premier passage\n\nUn enonce."),
+        _stub_exercise(),
+        md("### Exercice 2 - Un second passage\n\nUn enonce."),
+        _student_solution_verbatim(),
+        md("### Lecture du resultat : egalite sur les classements\n\n"
+           + "Les deux collections contiennent les memes points."),
+    )
+    findings = detect_added_readings(head, base)
+    assert [f["type"] for f in findings] == ["EXERCISE_READING"], findings
+
+
+def test_carveout_sortie_litterale_inachevee_reste_exercice():
+    """NEGATIF : le carve-out porte sur le JETON, pas sur le role pedagogique.
+
+    Une cellule qui affiche « Exercice a completer » signale un travail NON
+    acheve : elle reste un exercice, meme sous un en-tete d'exemple credite.
+    """
+    cells = [_credited_example_header(), _stub_exercise()]
+    assert is_exercise_cell(cells[1], cells, 1) is True
+
+
+def test_carveout_en_tete_credite_par_metadata():
+    """POSITIF : l'attribution par metadata vaut comme l'attribution inline.
+
+    Les deux formes sont acceptees par `check_credited_examples` ; le carve-out
+    doit suivre la meme convention, sinon il depend du gout de l'auteur.
+    """
+    header = md("### Exemple guide 3 - Comparer deux modeles\n\nLe role du code.")
+    header["metadata"] = {"credited_from": "#23248"}
+    cells = [header, _student_solution_verbatim()]
+    assert is_exercise_cell(cells[1], cells, 1) is False
+
+
+def test_carveout_code_avant_titre_ne_rattache_pas():
+    """NEGATIF : une cellule de CODE interrompt la remontee vers l'en-tete.
+
+    Le lien de section est rompu : on ne rattache pas une cellule a un titre
+    qui precede une autre section de code.
+    """
+    cells = [
+        _credited_example_header(),
+        _student_solution_verbatim(),
+        code("print('autre section')"),
+        _student_solution_verbatim(),
+    ]
+    assert is_exercise_cell(cells[3], cells, 3) is True
