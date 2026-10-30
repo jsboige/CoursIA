@@ -60,7 +60,15 @@ def _poly_to_z3(expr, symbols: List, zvars: Dict) -> "_z3.ExprRef":
         if coef.is_Rational:
             fr = Fraction(int(coef.p), int(coef.q))
         else:
-            fr = Fraction(int(coef), 1)
+            # Un coefficient non rationnel (√2, π, …) ne se représente pas
+            # exactement en QF_NIA (coefficients rationnels). L'ancien
+            # `Fraction(int(coef), 1)` le TRONQUAIT (√2 → 1, π → 3) et
+            # produisait des verdicts faux, dont un faux VALID (review Hermes
+            # #23018). On refuse donc explicitement ; supporter √2 exactement
+            # (z3.RealVal / nombre algébrique) est un jalon à part.
+            raise ValueError(
+                f"coefficient non rationnel {coef!r} : Z3 ne le "
+                f"représenterait qu'après troncature entière")
         term: "_z3.ExprRef" = fr
         for sym, power in zip(symbols, monom):
             if power:
