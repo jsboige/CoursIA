@@ -19,12 +19,16 @@ Mesure first-hand 2026-09-14T04:10Z :
 - 2 caches sur 11 (18 %) sont des MISS purs (jamais hit, 208 + 208 Mo),
   occupant du quota qui pourrait revenir a des caches reutilisables.
 
-Le defaut n'est pas reparable cote configuration (CodeQL default setup ne
-suit pas un fichier `.github/workflows/codeql.yml`, il est gere par GitHub,
-cf. .github/workflows absent de `codeql*` -- mesure 2026-09-14). Le remede
-est cote REPO : eviction periodique des caches dont le SHA n'est plus
-ancetre de `main`, ET/OU dont le `last_accessed_at` est anterieur a une
-fenetre de retention choisie.
+Le defaut n'est pas reparable cote configuration. Etat mesure le 2026-09-14 :
+CodeQL tournait en default setup, qui ne suit aucun fichier
+`.github/workflows/codeql.yml` (gere par GitHub, absent de `codeql*`). Depuis
+#22548 (2026-10-25) le depot porte un workflow advanced setup : **le format de
+cle peut avoir change** et le pattern ci-dessous, mesure sur le default setup,
+n'a pas encore ete revalide sur une analyse advanced. Un balayage en dry-run
+apres la bascule est la mesure a faire ; tout cache non reconnu sort en REFUSE
+(`not_codeql_overlay`), jamais en silence. Le remede reste cote REPO :
+eviction periodique des caches dont le SHA n'est plus ancetre de `main`, ET/OU
+dont le `last_accessed_at` est anterieur a une fenetre de retention choisie.
 
 ## What it does
 
@@ -73,6 +77,31 @@ Criteres d'eviction (cf. issue #16088 acceptance) :
    ET celle de `--main-branch` (le repli des branches sans copie propre), on
    evince les autres. Mesure du 2026-10-25 : 76 entrees `setup-python-*` pour
    5 cles distinctes, 4,85 Go du quota de 10 Go, dont 4,48 Go de doublons.
+5. **Ou cle que plus aucun workflow de `main` ne demande** (#19658,
+   decision A du coordinateur, 2026-10-26) : une cle
+   `setup-python-<...>-python-<version>-<pm>-<hash>` n'est relisible que par un
+   run dont le workflow **de `main`** pose le meme `cache:` ET resout la meme
+   version. Le couple `(cache, version)` demande est derive **a la lecture des
+   workflows** (jamais d'une liste figee dans le script) ; quand aucun
+   workflow de `main` ne demande plus ce couple, la cle est prouvee orpheline
+   et evincee, **meme sur une PR ouverte** : la regle fail-closed « copie de
+   PR ouverte » ne protege que les cles encore demandees.
+
+   Ce que la mesure dit du plafond de ce critere : la resolution de la version
+   depend du **runner**, pas du YAML (`3.12` se resout en `3.12.14` sur l'image
+   du pool). Le critere compare donc la version **resolue** de la cle a la
+   version **declaree** dans les workflows -- une spec de minor (`3.12`)
+   couvre toutes les patchs de cette minor. Une cle dont la version n'est
+   couverte par aucune spec de `main` est donc evincee ; une cle encore
+   couverte est conservee, quelle que soit sa PR.
+
+6. **Ou cache TRAP CodeQL supersede** (#22937) : les cles
+   `codeql-trap-<ver>-<toolchain>-<lang>-<sha40>` ne sont adressables que
+   par restore-key, qui rend la plus RECENTE entree du prefixe -- jamais
+   une autre. On garde les `--keep-latest-traps` plus recentes par
+   famille sur la branche par defaut (defaut 1), on evince le reste.
+   Mesure du 2026-10-27 : 77 entrees / 2 222 Mo, toutes sur `main`, dont
+   22 jamais lues ; cf. section « Format de cle TRAP CodeQL ».
 
 ## Garde de surete (defense en profondeur)
 
@@ -85,13 +114,67 @@ Criteres d'eviction (cf. issue #16088 acceptance) :
   quota (lean, dotnet, node) qui est reutilise. La seule famille ouverte est
   `DEDUPE_KEY_PREFIXES`, et seulement pour ses **doublons de cle** : la
   nouvelle entree et celle de la branche par defaut survivent toujours.
+- **Le critere « non demandee par main » est fail-CLOSED** : si les workflows
+  de `main` ne sont pas lisibles (checkout incomplet, repertoire absent), la
+  demande est **inconnue** et aucune cle `setup-python` n'est evincee -- la
+  passe le dit dans sa raison (`unrequested_check_failed`) au lieu de
+  presumer une absence. Une spec de version illisible (`${{ matrix.x }}`)
+  couvre toutes les versions : une demande qu'on ne sait pas lire ne peut
+  pas etre niee.
 - **Pas d'appel DELETE sans confirmation visuelle** : le dry-run affiche
   l'identifiant de cache, la cle tronquee, la raison, et la taille. Le
   `--apply` ne supprime que les evictables listes au dry-run.
 
+## Format de cle TRAP CodeQL (mesure 2026-10-26/27, #22937)
+
+    codeql-trap-1-2.27.3-javascript-<sha40>
+
+- `1` : version du format de cache TRAP cote codeql-action.
+- `2.27.3` : version du bundle CodeQL.
+- `javascript` : langage de l'extracteur CodeQL (pas le nom de matrice
+  `javascript-typescript` de la CI).
+- `<sha40>` : SHA du commit analyse. Une cle par commit : chaque push sur
+  `main` ecrit une entree neuve (~28,9 Mo) et rend la precedente
+  inadressable.
+
+Le lecteur est unique et partiel, mesure dans les journaux du 2026-10-27 :
+
+- **La branche par defaut ne restaure jamais** : « Analyzing default
+  branch. Skipping downloading of TRAP caches. » (run 40512896186, job
+  Analyze (javascript-typescript)). `main` ne fait qu'ECRIRE.
+- **Les analyses de PR restaurent par restore-key uniquement** : la cle
+  exacte demandee est `codeql-trap-1-2.27.3-javascript-unknown` (job
+  122140111550) -- jamais un SHA -- et la restore-key prefixee rend la
+  plus recente entree visible. Aucune requete ne peut donc adresser une
+  entree autre que la plus recente de sa famille : garder 1 entree par
+  famille preserve exactement 100 % des restaurations possibles.
+- **Le gain de la restauration est mesure** : extraction + import TRAP
+  12,1 s avec cache restaure (job 122140111550, 2 955 fichiers) contre
+  19,1 s sans restauration (job 122254109719, 2 967 fichiers), soit
+  ~7 s par analyse. La desactivation du trap-caching ne serait donc pas
+  justifiee par un gain nul -- la voie retenue est l'eviction, pas
+  `trap-caching: false`.
+- **55 des 75 entrees ecrites sous default setup ont ete relues** (de
+  10 s a 2 h apres creation, par les analyses de PR de l'epoque ou toute
+  PR etait analysee). Les 2 entrees ecrites sous advanced setup (#22553,
+  2026-10-27 13:25Z) ne l'ont pas encore ete : la fenetre ne portait
+  aucune PR touchant du JS/TS, ce qui n'est PAS une preuve d'inutilite
+  -- une PR JS/TS derive une analyse javascript (matrice de codeql.yml)
+  qui restaurerait l'entree la plus recente.
+- **Nettoyage interne absent** : `codeql.yml` declare `permissions:
+  contents: read` au workflow et `actions: read` au job analyze -- sans
+  le droit d'ecriture sur les caches, l'action ne peut pas retirer ses
+  anciens TRAP elle-meme.
+
 ## Format de cle CodeQL default setup (mesure 2026-09-14)
 
     codeql-overlay-base-database-1-<random8>-<lang>-2.27.0-<sha40>-<runid>-1
+
+**Non revalide depuis la bascule advanced setup (#22548, 2026-10-25)** : ce
+format est celui du default setup. Le premier dry-run qui suit la bascule est
+la mesure a faire ; un `-1-<random8>` qui disparait ferait tomber la famille
+entiere en REFUSE `not_codeql_overlay` — visible dans le rapport, jamais
+silencieux.
 
 - `<random8>` : 8 hex, probablement un identifiant de step run.
 - `<lang>` : `python`, `csharp`, `javascript` (les 3 langues activees
@@ -118,8 +201,11 @@ Criteres d'eviction (cf. issue #16088 acceptance) :
 - Issue #16088 (mesure du defaut, 12 entrees / 0.19 Go unitaire)
 - scripts/ci/prune_merged_worktrees.py -- meme esprit, worktrees au lieu
   de caches ; auteur + revue po-2023, septembre 2026.
-- .github/workflows/codeql.yml : **absente** du depot, le CodeQL est en
-  default setup gere par GitHub (cf. mesure 2026-09-14).
+- .github/workflows/codeql.yml : absente du depot jusqu'a #22548 (2026-10-25),
+  qui fait passer CodeQL en advanced setup. Le workflow existe desormais, donc
+  le declencheur `workflow_run: [CodeQL]` de evict-orphan-caches.yml resout un
+  workflow reel (question ouverte #18309). Le format de cle CodeQL, lui, reste
+  a revalider sur une analyse advanced : cf. section « Format de cle ».
 """
 from __future__ import annotations
 
@@ -151,6 +237,19 @@ CODEQL_OVERLAY_RE = re.compile(
     r"(?P<version>\d+)$"
 )
 
+# Pattern d'une cle TRAP CodeQL (mesure 2026-10-26/27, #22937). Une cle par
+# commit analyse : `codeql-trap-<cachever>-<toolchain>-<lang>-<sha40>`.
+# Adressage par restore-key uniquement (la plus recente de la famille) --
+# cf. la section « Format de cle TRAP CodeQL » du module pour les journaux
+# qui fondent ce lecteur unique et partiel.
+CODEQL_TRAP_RE = re.compile(
+    r"^codeql-trap-"
+    r"(?P<cachever>\d+)-"
+    r"(?P<toolchain>[\d.]+)-"
+    r"(?P<lang>\w+)-"
+    r"(?P<sha40>[0-9a-f]{40})$"
+)
+
 # Header documente par l'API GitHub Actions caches.
 GITHUB_API_VERSION = "2022-11-28"
 
@@ -175,6 +274,27 @@ DEDUPE_KEY_PREFIXES = ("setup-python-",)
 
 # `refs/pull/<n>/merge` et `refs/pull/<n>/head` : deux formes pour la meme PR.
 PR_REF_RE = re.compile(r"^refs/pull/(\d+)/(?:merge|head)$")
+
+# #19658 (decision A du coordinateur, 2026-10-26) : format de cle
+# `actions/setup-python`, mesure sur les logs de run (job « Golden-set
+# execution (H.7 P3) », run 40270198774, 2026-10-26T04:41Z) :
+#
+#   setup-python-Linux-x64-24.04-Ubuntu-python-3.12.14-pip-<fileHash 64 hex>
+#
+# - `<OS>-<arch>-<image>` : le triplet du runner (le prefixe `24.04-Ubuntu`
+#   est l'image du runner, pas une partie de la version python) ;
+# - `python-<version>` : la version **resolue** par le runner, pas la version
+#   demandee dans le YAML (`3.12` se resout en `3.12.14` sur l'image du pool) ;
+# - `<pm>` : le gestionnaire de paquets (`pip`) ;
+# - `<fileHash>` : le hash des fichiers de `cache-dependency-path`, **independant
+#   de la version** -- c'est pourquoi une meme empreinte apparait sous deux
+#   versions (3.12.14 et 3.12.15 pour le meme job).
+SETUP_PYTHON_RE = re.compile(
+    r"^setup-python-[^-]+-[^-]+-.+-python-"
+    r"(?P<version>\d+\.\d+\.\d+)-"
+    r"(?P<pm>[a-z]+)-"
+    r"(?P<filehash>[0-9a-f]{64})$"
+)
 
 
 def _parse_args() -> argparse.Namespace:
@@ -208,12 +328,37 @@ def _parse_args() -> argparse.Namespace:
         "is an ancestor of main, so the two other criteria never catch them.",
     )
     p.add_argument(
+        "--keep-latest-traps",
+        type=int,
+        default=1,
+        help="Per TRAP family (cache version + toolchain + language), keep "
+        "only the N most recent caches on the default branch and evict the "
+        "older ones (default: 1; 0 disables). #22937: PR analyses restore "
+        "TRAP caches by restore-key, which only ever serves the newest "
+        "entry of the family, so a single kept entry preserves every "
+        "possible restore.",
+    )
+    p.add_argument(
         "--no-dedupe",
         action="store_true",
         help="Disable the duplicate-key pass (#19658). By default, entries of a "
         "content-addressed key (%s) beyond the newest one are evicted, except "
         "the entry on --main-branch, which stays as every other branch's "
         "fallback." % ", ".join(DEDUPE_KEY_PREFIXES),
+    )
+    p.add_argument(
+        "--no-unrequested",
+        action="store_true",
+        help="Disable the unrequested-key pass (#19658, decision A). By default, a "
+        "setup-python cache key whose (package manager, python version) pair is "
+        "no longer declared by any workflow of main is evicted, even on an open "
+        "PR.",
+    )
+    p.add_argument(
+        "--workflows-dir",
+        default=str(REPO_ROOT / ".github" / "workflows"),
+        help="Directory holding the workflows the demand is derived from "
+        "(default: <repo>/.github/workflows).",
     )
     p.add_argument(
         "--repo",
@@ -405,6 +550,21 @@ def _classify_cache(
     }
     m = CODEQL_OVERLAY_RE.match(key)
     if not m:
+        # #22937 : cache TRAP CodeQL. Pas de test d'ancestry ni d'age ici :
+        # l'adressage d'un cache TRAP ne depend NI du SHA de sa cle (la cle
+        # exacte demandee par les analyses est `...-<lang>-unknown`), NI de
+        # sa date (la restore-key rend la plus recente de la famille). La
+        # seule question est "est-ce la plus recente de ma famille sur la
+        # branche par defaut", et c'est `_mark_superseded_traps` qui y
+        # repond -- le dry-run affiche donc un KEEP provisoire
+        # `trap_candidate`, tranche par la passe.
+        mt = CODEQL_TRAP_RE.match(key)
+        if mt:
+            rec.update({"verdict": "KEEP", "reason": "trap_candidate"})
+            rec["trap_family"] = (
+                f"{mt.group('cachever')}-{mt.group('toolchain')}-{mt.group('lang')}"
+            )
+            return rec
         # #19658 : une cle content-addressee (`setup-python-...-<hash>`) peut
         # exister en plusieurs exemplaires, un par scope de branche. GitHub
         # ne sert qu'UNE entree par cle : les copies sont de la redondance
@@ -471,6 +631,52 @@ def _mark_superseded(records: list[dict[str, Any]], keep_latest: int) -> None:
             r.update(
                 {"verdict": "EVICT", "reason": f"superseded_beyond_latest_{keep_latest}"}
             )
+
+
+def _mark_superseded_traps(
+    records: list[dict[str, Any]],
+    main_branch: str,
+    keep: int = 1,
+) -> None:
+    """#22937 : evincer les caches TRAP au-dela de la plus recente par famille.
+
+    Un cache TRAP `codeql-trap-<ver>-<toolchain>-<lang>-<sha>` n'a qu'un
+    lecteur possible et partiel (journaux du 2026-10-27, cf. la section
+    « Format de cle TRAP CodeQL » du module) :
+
+    * la branche par defaut ne restaure JAMAIS (« Analyzing default branch.
+      Skipping downloading of TRAP caches. », run 40512896186) -- `main`
+      ne fait qu'ecrire ;
+    * les analyses de PR demandent la cle exacte `...-<lang>-unknown` (job
+      122140111550) et restaurent par restore-key, qui rend la plus
+      RECENTE entree du prefixe. Aucune requete ne peut adresser une
+      entree autre que la plus recente de sa famille.
+
+    Garder `keep` entrees par famille preserve donc exactement 100 % des
+    restaurations possibles ; evincer le reste est sans perte. Mesure du
+    2026-10-27 : 77 entrees `codeql-trap-*` (2 222 Mo), toutes sur
+    `refs/heads/main`, dont 22 jamais lues -- chaque push sur `main` en
+    ecrit une neuve (~28,9 Mo) et rend la precedente inadressable.
+
+    Seules les entrees scellees sur la branche par defaut sont traitees :
+    une entree sur `refs/pull/<n>/merge` reste visible des runs de sa PR
+    (scope GitHub), on ne la touche pas -- elle est affichee
+    `not_default_branch` au dry-run, jamais silencieuse.
+    """
+    if keep <= 0:
+        return
+    default_ref = f"refs/heads/{main_branch}"
+    families: dict[str, list[dict[str, Any]]] = {}
+    for r in records:
+        if r.get("verdict") == "KEEP" and "trap_family" in r:
+            if str(r.get("ref", "")) != default_ref:
+                r["trap_kept"] = "not_default_branch"
+                continue
+            families.setdefault(r["trap_family"], []).append(r)
+    for members in families.values():
+        members.sort(key=lambda r: _parse_iso(r["created_at"]), reverse=True)
+        for r in members[keep:]:
+            r.update({"verdict": "EVICT", "reason": "trap_superseded_by_newer"})
 
 
 def _mark_duplicate_keys(
@@ -545,6 +751,205 @@ def _mark_duplicate_keys(
             r.update({"verdict": "EVICT", "reason": "duplicate_key_superseded"})
 
 
+def _strip_quotes(value: str) -> str:
+    v = (value or "").strip()
+    if len(v) >= 2 and v[0] == v[-1] and v[0] in ("'", '"'):
+        v = v[1:-1]
+    return v.strip()
+
+
+def _spec_covers(spec: str, version: str) -> bool:
+    """Une spec de version YAML couvre-t-elle une version resolue ?
+
+    `3.12` couvre `3.12.14` ; `3.x` couvre `3.12.14` ; `3.12.14` ne couvre
+    que lui-meme. Une spec **illisible** (vide, expression `${{ ... }}`) couvre
+    tout : une demande qu'on ne sait pas lire ne peut pas etre niee.
+    """
+    s = (spec or "").strip()
+    if not s or "${{" in s:
+        return True
+    if s == version:
+        return True
+    parts = s.split(".")
+    vparts = version.split(".")
+    if len(parts) > len(vparts):
+        return False
+    for a, b in zip(parts, vparts):
+        if a in ("x", "X", "*"):
+            return True
+        if a != b:
+            return False
+    return True
+
+
+def _parse_step(rest: str, block: list[str]) -> dict[str, str]:
+    """Extrait les cles d'un step (dont `uses` et le contenu de `with:`)."""
+    out: dict[str, str] = {}
+
+    def add(key: str, value: str) -> None:
+        out.setdefault(key, value)
+
+    m = re.match(r"^(?P<k>[\w.-]+)\s*:\s*(?P<v>.*)$", rest.strip())
+    if m:
+        add(m.group("k"), m.group("v"))
+
+    indents = [len(ln) - len(ln.lstrip()) for ln in block if ln.strip()]
+    if not indents:
+        return out
+    child_indent = min(indents)
+
+    with_indent: Optional[int] = None
+    with_entries: list[tuple[int, str]] = []
+    for ln in block:
+        if not ln.strip():
+            continue
+        ind = len(ln) - len(ln.lstrip())
+        s = ln.strip()
+        if with_indent is not None:
+            if ind <= with_indent:
+                with_indent = None
+            else:
+                with_entries.append((ind, s))
+                continue
+        if ind != child_indent:
+            continue
+        mm = re.match(r"^(?P<k>[\w.-]+)\s*:\s*(?P<v>.*)$", s)
+        if not mm:
+            continue
+        key, value = mm.group("k"), mm.group("v")
+        if key == "with" and not value.strip():
+            with_indent = ind
+            continue
+        add(key, value)
+
+    if with_entries:
+        entry_indent = min(i for i, _ in with_entries)
+        for ind, s in with_entries:
+            if ind != entry_indent:
+                continue
+            mm = re.match(r"^(?P<k>[\w.-]+)\s*:\s*(?P<v>.*)$", s)
+            if mm:
+                add(mm.group("k"), mm.group("v"))
+    return out
+
+
+def _demand_from_workflow_text(text: str) -> list[dict[str, str]]:
+    """Couples (package manager, version) demandes par les steps setup-python.
+
+    Seul un step `actions/setup-python` **avec** une entree `cache:` compte :
+    c'est lui qui écrit une cle de cache Actions. Le couple produit est
+    `(cache, python-version)`.
+    """
+    lines = text.splitlines()
+    out: list[dict[str, str]] = []
+    i = 0
+    while i < len(lines):
+        m = re.match(r"^(?P<indent>\s*)-\s+(?P<rest>.*)$", lines[i])
+        if not m:
+            i += 1
+            continue
+        step_indent = len(m.group("indent"))
+        j = i + 1
+        block: list[str] = []
+        while j < len(lines):
+            ln = lines[j]
+            if not ln.strip():
+                block.append(ln)
+                j += 1
+                continue
+            ind = len(ln) - len(ln.lstrip())
+            if ind <= step_indent:
+                break
+            block.append(ln)
+            j += 1
+        step = _parse_step(m.group("rest"), block)
+        if "actions/setup-python" in str(step.get("uses", "")):
+            cache = _strip_quotes(str(step.get("cache", "")))
+            if cache:
+                out.append(
+                    {
+                        "pm": cache,
+                        "version": _strip_quotes(str(step.get("python-version", ""))),
+                    }
+                )
+        i = j
+    return out
+
+
+def _declared_demand(workflows_dir: Path) -> Optional[list[dict[str, str]]]:
+    """Couples (cache, version) declares par les workflows de `main`, a la lecture.
+
+    Retourne `None` quand la lecture est impossible ( repertoire absent,
+    fichier illisible) : c'est le signal fail-CLOSED -- rien n'est evince.
+    La liste est **derivee des workflows**, jamais figee dans le script : le
+    critere suit les workflows au lieu de les deviner.
+    """
+    try:
+        files = sorted(
+            p for p in Path(workflows_dir).iterdir() if p.suffix in (".yml", ".yaml")
+        )
+    except OSError:
+        return None
+    if not files:
+        return None
+    demand: list[dict[str, str]] = []
+    for f in files:
+        try:
+            text = f.read_text(encoding="utf-8")
+        except OSError:
+            return None
+        demand.extend(_demand_from_workflow_text(text))
+    return demand
+
+
+def _mark_unrequested_keys(
+    records: list[dict[str, Any]], demand: Optional[list[dict[str, str]]]
+) -> None:
+    """Evince les cles `setup-python` que plus aucun workflow de `main` ne demande.
+
+    Decision A du coordinateur (2026-10-26, #19658) : une cle de cache
+    `setup-python-<...>-python-<version>-<pm>-<hash>` n'est relisible que par un
+    run dont le workflow **de `main`** pose le meme `cache:` ET resout la meme
+    version. Quand aucun workflow de `main` ne demande plus ce couple
+    `(cache, version)`, la cle est **prouvee orpheline** : elle ne peut plus
+    etre relue ni reecrite, et sa copie sur une PR ouverte n'a plus de valeur
+    (la regle fail-closed « copie de PR ouverte » ne protege que les cles
+    **encore demandees**).
+
+    La regle fail-closed « copie de PR ouverte » reste intacte pour toute cle
+    encore demandee : cette passe ne contourne le garde des PRs ouvertes que
+    pour une cle dont l'orphelinage est etabli.
+
+    `demand is None` (workflows illisibles) : rien n'est evince, chaque cle
+    `setup-python` est conservee avec la raison `unrequested_check_failed`.
+    """
+    for r in records:
+        if r.get("verdict") != "KEEP":
+            continue
+        m = SETUP_PYTHON_RE.match(str(r.get("key", "")))
+        if not m:
+            continue
+        pm = m.group("pm")
+        version = m.group("version")
+        r["setup_python_pm"] = pm
+        r["setup_python_version"] = version
+        r["setup_python_filehash"] = m.group("filehash")
+        if demand is None:
+            # Fail-CLOSED : la demande est inconnue, donc rien n'est affirme.
+            r["reason"] = "unrequested_check_failed"
+            continue
+        covering = [
+            d
+            for d in demand
+            if d.get("pm") == pm and _spec_covers(d.get("version", ""), version)
+        ]
+        if covering:
+            r["reason"] = "requested_by_main"
+            r["declared_by"] = covering[0].get("version", "")
+            continue
+        r.update({"verdict": "EVICT", "reason": "unrequested_by_main_workflows"})
+
+
 def _print_human(records: list[dict[str, Any]], applied: bool) -> None:
     for r in records:
         verdict = r["verdict"]
@@ -561,8 +966,11 @@ def _print_human(records: list[dict[str, Any]], applied: bool) -> None:
         # `dedupe_kept` porte la raison d'une copie CONSERVEE par la passe de
         # deduplication (`pr_open`, `open_prs_unknown`, `default_branch`) :
         # sans lui le dry-run afficherait « dedupe_candidate » et laisserait
-        # croire que rien n'a ete decide.
-        reason = r.get("dedupe_kept") or r.get("reason", "-")
+        # croire que rien n'a ete decide. `trap_kept` joue le meme role pour
+        # un cache TRAP hors branche par defaut (`not_default_branch`).
+        reason = (
+            r.get("dedupe_kept") or r.get("trap_kept") or r.get("reason", "-")
+        )
         print(
             f"{action:<10s}  {size_mb:6.1f} Mo  "
             f"sha={r.get('sha40', '-')[:10]}  {reason:<35s}  {key_trunc}"
@@ -606,6 +1014,7 @@ def main() -> int:
         for c in caches
     ]
     _mark_superseded(records, args.keep_latest)
+    _mark_superseded_traps(records, args.main_branch, args.keep_latest_traps)
     if not args.no_dedupe:
         # La liste des PRs ouvertes n'est lue que si la passe en a besoin :
         # un `--no-dedupe` ne doit pas dependre du reseau. Son absence rend
@@ -625,6 +1034,28 @@ def main() -> int:
                 file=sys.stderr,
             )
         _mark_duplicate_keys(records, args.main_branch, open_prs)
+
+    if not args.no_unrequested:
+        # La demande est derivee des workflows de `main` lus sur le checkout du
+        # sweep (sur le push vers `main`, ce checkout EST `main`). Une lecture
+        # impossible rend la demande INCONNUE : fail-CLOSED, aucune cle
+        # `setup-python` n'est evincee.
+        demand = _declared_demand(Path(args.workflows_dir))
+        if demand is None:
+            print(
+                "[WARN] Workflows de main illisibles : la demande est inconnue, "
+                "aucune cle setup-python n'est evincee (fail-CLOSED).",
+                file=sys.stderr,
+            )
+        else:
+            pairs = sorted({(d.get("pm", ""), d.get("version", "")) for d in demand})
+            print(
+                f"[INFO] Demande derivee de {args.workflows_dir} : "
+                f"{len(pairs)} couple(s) (cache, version) : "
+                + ", ".join(f"{pm}/{ver}" for pm, ver in pairs),
+                file=sys.stderr,
+            )
+        _mark_unrequested_keys(records, demand)
 
     applied = args.apply
     if applied:
