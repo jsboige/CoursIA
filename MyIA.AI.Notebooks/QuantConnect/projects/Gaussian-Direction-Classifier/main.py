@@ -188,11 +188,13 @@ class GaussianDirectionClassifier(QCAlgorithm):
         for ticker in self.tickers:
             symbol = self.symbols[ticker]
             lookback = max(self.feature_windows) + 5
-            hist = self.history(symbol, lookback, Resolution.DAILY)
+            # Demande le double de la fenetre visee : sur une demi-seance (cloture 13:00),
+            # history(N, DAILY) rend ~21 barres de moins (#20286).
+            hist = self.history(symbol, 2 * max(self.feature_windows) + 10, Resolution.DAILY)
             if hist.empty or len(hist) < max(self.feature_windows) + 1:
                 continue
 
-            closes = hist['close'].values
+            closes = hist['close'].values[-lookback:]
             features = self._compute_features(closes)
             prob_up = self._predict_proba_up(ticker, features)
             scores.append((ticker, prob_up))
