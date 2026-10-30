@@ -363,6 +363,21 @@
         "MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lean-toolchain",
         "MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lake-manifest.json"
       ]
+    },
+    {
+      "lake": "mimo",
+      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean",
+      "display-name": "mimo_lean",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "axiom-target-modules": "*",
+      "axiom-include-i18n-siblings": "true",
+      "paths": [
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/lean-toolchain",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/lake-manifest.json"
+      ]
     }
   ]
 }

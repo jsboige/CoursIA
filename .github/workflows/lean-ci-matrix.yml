@@ -165,6 +165,17 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lake-manifest.json'
+      # mimo_lean (herite du wrapper lean-mimo.yml supprime, #13751 :
+      # 0 sorry verifie (distinct_code_sorry = 0), axiom target-modules "*"
+      # + include-i18n-siblings true (le lake porte ses jumelles _en, comme
+      # le wrapper) -- parametres reportes au manifeste ; lakefile.toml etait
+      # un chemin mort du wrapper (le lake n'a que lakefile.lean) et
+      # lake-manifest.json n'etait declenche par rien : ajoute, comme
+      # planning, compression et riemann200)
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/lake-manifest.json'
       # Self-cover B.3 herite du wrapper lean-serre.yml supprime (#17336) :
       # le moteur d'axiomes change -> le gate axiom de serre100 rejoue.
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
@@ -314,6 +325,17 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lake-manifest.json'
+      # mimo_lean (herite du wrapper lean-mimo.yml supprime, #13751 :
+      # 0 sorry verifie (distinct_code_sorry = 0), axiom target-modules "*"
+      # + include-i18n-siblings true (le lake porte ses jumelles _en, comme
+      # le wrapper) -- parametres reportes au manifeste ; lakefile.toml etait
+      # un chemin mort du wrapper (le lake n'a que lakefile.lean) et
+      # lake-manifest.json n'etait declenche par rien : ajoute, comme
+      # planning, compression et riemann200)
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/lake-manifest.json'
       # Self-cover B.3 herite du wrapper lean-serre.yml supprime (#17336) :
       # le moteur d'axiomes change -> le gate axiom de serre100 rejoue.
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
