@@ -118,9 +118,9 @@ def test_juste_sous_la_limite_reste_une_mesure(monkeypatch):
 def test_apply_refuse_une_mesure_impossible(monkeypatch, capsys):
     """Le fail-closed est ce qui protege le grand apply : None -> aucun git mv."""
     monkeypatch.setattr(migration, "report_gating", lambda concerned: None)
-    monkeypatch.setattr(migration, "build_plan", lambda: ([], []))
-    monkeypatch.setattr(migration, "check_plan", lambda plan: [])
-    monkeypatch.setattr(migration, "build_replacements", lambda plan: [])
+    monkeypatch.setattr(migration, "build_plan", lambda only=None: ([], []))
+    monkeypatch.setattr(migration, "check_plan", lambda plan, only=None: [])
+    monkeypatch.setattr(migration, "build_replacements", lambda plan, only=None: [])
     monkeypatch.setattr(migration, "run_sweep", lambda reps: ({}, 0))
 
     assert migration.main(["--apply"]) == 1
@@ -205,3 +205,98 @@ def test_sous_le_plafond_graphql_aucun_appel_rest(monkeypatch):
 
     assert migration.report_gating(CONCERNED) == {"#502": [PLAN_A]}
     assert not any(argv[1] == "api" for argv in calls)
+
+
+# --- Mode `--only` : un deplacement par sous-repertoire ----------------------
+#
+# Arbitrage ai-01 du 2026-10-23 (#17417) : les deplacements se font par
+# sous-repertoire, une PR par tranche, d'abord ceux qu'aucune PR ouverte ne
+# tient. Le mode `--only` rend cette tranche POSSIBLE : il restreint le plan
+# ET les regles de reecriture au sous-repertoire vise.
+#
+# Le piege que le mode ferme : en mode hub-global, la regle
+# `DataScienceWithAgents/ -> ML.Python/` reecrit des referents vers un hub
+# qui n'existe pas encore (le hub est renomme en T5, le dernier). Une tranche
+# ne doit reecrire que ce qu'elle deplace.
+
+SUB_04B = "04b-Wavelet-Scattering"
+NB_04B = "04b-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch.ipynb"
+NB_VISION = "04-Vision/4.1-Conv-NumPy-Torch-Allclose.ipynb"
+
+
+def _fake_git(files_old=(), files_new=()):
+    """Remplace le helper ``git`` du module : seules les lectures ls-files comptent."""
+
+    def git(*args):
+        if args[0] == "ls-files" and len(args) > 1:
+            if args[1] == migration.HUB_NEW:
+                return "\n".join(files_new)
+            return "\n".join(files_old)
+        return ""
+
+    return git
+
+
+def test_only_restreint_le_plan_au_sous_repertoire(monkeypatch):
+    files = [f"{migration.HUB_OLD}/{NB_04B}", f"{migration.HUB_OLD}/{NB_VISION}"]
+    monkeypatch.setattr(migration, "git", _fake_git(files_old=files))
+
+    plan, errors = migration.build_plan(SUB_04B)
+
+    assert [old for old, _ in plan] == [f"{migration.HUB_OLD}/{NB_04B}"]
+    assert plan[0][1] == f"{migration.HUB_NEW}/05-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch-Python.ipynb"
+    assert errors == []
+
+
+def test_only_ne_reecrit_pas_le_hub_entier(monkeypatch):
+    """La regle globale du hub doit ABSENTER d'une tranche : elle viserait un hub inexistant."""
+    files = [f"{migration.HUB_OLD}/{NB_04B}"]
+    monkeypatch.setattr(migration, "git", _fake_git(files_old=files))
+    plan, _ = migration.build_plan(SUB_04B)
+
+    reps = migration.build_replacements(plan, SUB_04B)
+    rules = dict(reps)
+
+    # la regle du sous-repertoire vise EST presente
+    assert rules[f"DataScienceWithAgents/{SUB_04B}"] == "ML.Python/05-Wavelet-Scattering"
+    # ... et les regles globales sont ABSENTES
+    assert ("DataScienceWithAgents/", "ML.Python/") not in reps
+    assert (migration.HUB_OLD, migration.HUB_NEW) not in reps
+    # aucune regle d'un autre sous-repertoire
+    assert not any(a.startswith(f"DataScienceWithAgents/04-Vision") for a, _ in reps)
+
+
+def test_hub_global_garde_la_regle_du_hub(monkeypatch):
+    """Temoin negatif : sans --only, la regle globale doit toujours exister."""
+    files = [f"{migration.HUB_OLD}/{NB_04B}"]
+    monkeypatch.setattr(migration, "git", _fake_git(files_old=files))
+    plan, _ = migration.build_plan()
+
+    reps = migration.build_replacements(plan)
+
+    assert ("DataScienceWithAgents/", "ML.Python/") in reps
+    assert (migration.HUB_OLD, migration.HUB_NEW) in reps
+
+
+def test_only_inconnu_est_refuse():
+    """Un `--only` typo deployerait zero fichier : il doit etre refuse, pas silencieux."""
+    with pytest.raises(SystemExit):
+        migration.resolve_only("99-Sous-Repertoire-Inexistant")
+
+
+def test_only_accepte_le_nom_cible():
+    """Le nom cible designe la meme tranche que le nom courant."""
+    assert migration.resolve_only("05-Wavelet-Scattering") == SUB_04B
+    assert migration.resolve_only(SUB_04B) == SUB_04B
+
+
+def test_cle_deja_deplacee_nest_pas_morte(monkeypatch):
+    """Apres une tranche, les cles de table du sous-repertoire deplace sont inertes, pas mortes."""
+    keys_04b = [k for k in migration.NOTEBOOK_MAP if k.startswith(f"{SUB_04B}/")]
+    assert keys_04b, "la table doit contenir des cles 04b"
+    moved = [f"{migration.HUB_NEW}/{migration.NOTEBOOK_MAP[k]}" for k in keys_04b]
+    monkeypatch.setattr(migration, "git", _fake_git(files_old=(), files_new=moved))
+
+    assert migration.check_plan([], SUB_04B) == []
+    # hors tranche, ces memes cles SONT mortes : le controle global les voit
+    assert any("cle morte" in e for e in migration.check_plan([]))

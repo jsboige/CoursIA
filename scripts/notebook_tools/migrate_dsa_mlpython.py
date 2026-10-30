@@ -201,10 +201,39 @@ def read_kernelspec(repo_path: str) -> str | None:
     return ks.get("name")
 
 
-def build_plan() -> tuple[list[tuple[str, str]], list[str]]:
-    """Plan de deplacement : liste (ancien, nouveau) repo-relative + erreurs fail-closed."""
+def resolve_only(only: str) -> str:
+    """Sous-repertoire vise -> nom REEL du hub (cle de DIR_MAP).
+
+    Accepte le nom courant (cle de DIR_MAP) comme le nom cible (valeur) :
+    `04b-Wavelet-Scattering` et `05-Wavelet-Scattering` designent la meme
+    tranche. Un nom inconnu est refuse (fail-closed) : un `--only` typo
+    deployerait zero fichier et se lirait comme une tranche sans objet.
+    """
+    if only in DIR_MAP:
+        return only
+    inverse = {v: k for k, v in DIR_MAP.items()}
+    if only in inverse:
+        return inverse[only]
+    raise SystemExit(
+        f"--only : sous-repertoire inconnu : {only!r}. "
+        f"Choix possibles : {', '.join(sorted(DIR_MAP))} "
+        f"(ou leur nom cible : {', '.join(sorted(DIR_MAP.values()))})")
+
+
+def build_plan(only: str | None = None) -> tuple[list[tuple[str, str]], list[str]]:
+    """Plan de deplacement : liste (ancien, nouveau) repo-relative + erreurs fail-closed.
+
+    `only` restreint le plan a UN sous-repertoire du hub (arbitrage ai-01 du
+    2026-10-23 : les deplacements se font par sous-repertoire, une PR par
+    tranche). Sans `only`, le plan couvre tout le hub.
+    """
     errors: list[str] = []
     tracked = [l for l in git("ls-files", HUB_OLD).splitlines() if l.strip()]
+    if only is not None:
+        prefix = f"{HUB_OLD}/{only}/"
+        tracked = [l for l in tracked if l.startswith(prefix)]
+        if not tracked:
+            errors.append(f"aucun fichier suivi sous {prefix} -- tranche vide")
     plan: list[tuple[str, str]] = []
     for old in sorted(tracked):
         rel = old[len(HUB_OLD) + 1:]
@@ -229,7 +258,7 @@ def build_plan() -> tuple[list[tuple[str, str]], list[str]]:
     return plan, errors
 
 
-def check_plan(plan: list[tuple[str, str]]) -> list[str]:
+def check_plan(plan: list[tuple[str, str]], only: str | None = None) -> list[str]:
     errors: list[str] = []
     targets = [t for _, t in plan]
     dupes = {t for t in targets if targets.count(t) > 1}
@@ -244,10 +273,21 @@ def check_plan(plan: list[tuple[str, str]]) -> list[str]:
     # cle morte, donc une table qui derive reste verte. Mesure c.2294 : les sept
     # entrees 4.2c..4.2i ont survecu au renumerotage 4.2x -> 4.4/4.5/4.6 (PR #19468)
     # sans qu'aucune verification ne rougisse -- fail-closed ici.
+    # Tolérance de sequence : une cle dont le FICHIER a deja ete deplace par une
+    # tranche anterieure (cible presente sous HUB_NEW) n'est pas morte -- sans
+    # quoi la premiere tranche rendue ferait echouer toutes les suivantes.
+    # En mode `--only`, la verifie porte sur la tranche visee : une cle morte
+    # d'un AUTRE sous-repertoire ne doit pas bloquer un deplacement sans rapport.
     tracked = {l[len(HUB_OLD) + 1:] for l in git("ls-files", HUB_OLD).splitlines() if l.strip()}
+    tracked_new = set(git("ls-files", HUB_NEW).splitlines())
     for key in sorted(NOTEBOOK_MAP):
-        if key not in tracked:
-            errors.append(f"cle de table sans fichier dans le hub (cle morte): {key}")
+        if only is not None and not key.startswith(f"{only}/"):
+            continue
+        if key in tracked:
+            continue
+        if f"{HUB_NEW}/{NOTEBOOK_MAP[key]}" in tracked_new:
+            continue  # deja deplace par une tranche anterieure
+        errors.append(f"cle de table sans fichier dans le hub (cle morte): {key}")
     # Forme des VALEURS : le suffixe noyau ne se double pas. Le garde des cles
     # mortes ci-dessus controle les cles contre l'arbre, pas la forme des cibles --
     # il ne pouvait donc pas voir une source dont le titre porte deja le suffixe
@@ -279,8 +319,15 @@ def check_plan(plan: list[tuple[str, str]]) -> list[str]:
     return errors
 
 
-def build_replacements(plan: list[tuple[str, str]]) -> list[tuple[str, str]]:
-    """Regles de reecriture, de la plus longue a la plus courte (anti remplacement partiel)."""
+def build_replacements(plan: list[tuple[str, str]], only: str | None = None) -> list[tuple[str, str]]:
+    """Regles de reecriture, de la plus longue a la plus courte (anti remplacement partiel).
+
+    En mode `--only`, les regles sont RESTREINTES a la tranche visee : le hub
+    lui-meme et les AUTRES sous-repertoires ne sont pas (encore) deplaces, donc
+    une regle globale `DataScienceWithAgents/ -> ML.Python/` y reecrirait des
+    referents vers un hub qui n'existe pas encore. C'est la raison d'etre du
+    mode : une tranche ne reecrit que ce qu'elle deplace.
+    """
     reps: list[tuple[str, str]] = []
     for old, new in plan:
         rel_old, rel_new = old[len(HUB_OLD) + 1:], new[len(HUB_NEW) + 1:]
@@ -288,14 +335,19 @@ def build_replacements(plan: list[tuple[str, str]]) -> list[tuple[str, str]]:
         reps.append((f"DataScienceWithAgents/{rel_old}", f"ML.Python/{rel_new}"))  # forme serie-relative
     # formes hub-relatives pour les notebooks mappes T3 uniquement (navlinks internes)
     for rel_old, rel_new in NOTEBOOK_MAP.items():
+        if only is not None and not rel_old.startswith(f"{only}/"):
+            continue
         reps.append((rel_old, rel_new))
     # prefixes de repertoire (references a un dossier, pas a un fichier)
     for old_dir, new_dir in sorted(DIR_MAP.items(), key=lambda kv: -len(kv[0])):
+        if only is not None and old_dir != only:
+            continue
         reps.append((f"{HUB_OLD}/{old_dir}", f"{HUB_NEW}/{new_dir}"))
         reps.append((f"DataScienceWithAgents/{old_dir}", f"ML.Python/{new_dir}"))
-    # residu : le hub lui-meme
-    reps.append((HUB_OLD, HUB_NEW))
-    reps.append(("DataScienceWithAgents/", "ML.Python/"))
+    if only is None:
+        # residu : le hub lui-meme (deplace en T5, pas avant)
+        reps.append((HUB_OLD, HUB_NEW))
+        reps.append(("DataScienceWithAgents/", "ML.Python/"))
     # dedup + tri longueur decroissante
     seen, out = set(), []
     for a, b in reps:
@@ -318,14 +370,25 @@ def sweep_files() -> list[str]:
       - COURSE_CATALOG.generated.* : appartient a l'automation (catalog-pr-hygiene) ;
         il suivra le hub par REGENERATION a l'apply, pas par sweep manuel -- et sur
         une branche feature il reste byte-identique a main.
+      - le fichier de l'organe lui-meme : il porte les TABLES (DIR_MAP,
+        NOTEBOOK_MAP) qui decrivent le hub. Balayer ce fichier le reecrirait
+        pendant l'operation qui le consulte -- les cles de table deviendraient
+        leur propre cible, le plan de la tranche suivante neragedait plus sur
+        le bon repertoire. Une table se met a jour DELIBEREMENT, dans la PR de
+        la tranche, pas par un sweep automatique.
     """
     excluded_parts = {".lake", ".git", "_archives", "node_modules", ".venv", "venv", "__pycache__", "_peters"}
+    try:
+        self_rel = Path(__file__).resolve().relative_to(REPO_ROOT).as_posix()
+    except ValueError:
+        self_rel = ""
     out = []
     for line in git("ls-files").splitlines():
         p = Path(line)
         if p.suffix.lower() in TEXT_SUFFIXES and not (excluded_parts & set(p.parts)) \
                 and not line.startswith("scripts/results/") \
-                and not p.name.startswith("COURSE_CATALOG.generated."):
+                and not p.name.startswith("COURSE_CATALOG.generated.") \
+                and line != self_rel:
             out.append(line)
     return out
 
@@ -489,17 +552,24 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--apply", action="store_true", help="execute les git mv et reecritures, en sautant les fichiers tenus par des PRs ouvertes (defaut: dry-run, aucune ecriture)")
     ap.add_argument("--report-gating", action="store_true", help="liste, par PR ouverte, les fichiers du plan qu'elle retient (via gh)")
     ap.add_argument("--json", action="store_true", help="sortie machine")
+    ap.add_argument("--only", metavar="SOUS_REPERTOIRE", default=None,
+                    help="restreint le plan et le sweep a UN sous-repertoire du hub "
+                         "(arbitrage ai-01 2026-10-23 : un deplacement par sous-repertoire, "
+                         "une PR par tranche). Exemple : --only 04b-Wavelet-Scattering")
     args = ap.parse_args(argv)
 
-    plan, errors = build_plan()
-    errors += check_plan(plan)
-    reps = build_replacements(plan)
+    only = resolve_only(args.only) if args.only else None
+    plan, errors = build_plan(only)
+    errors += check_plan(plan, only)
+    reps = build_replacements(plan, only)
 
     measure = args.report_gating or args.apply
+    t3_renames = sum(1 for old, _ in plan if old[len(HUB_OLD) + 1:] in NOTEBOOK_MAP)
 
     if not args.json:
-        print(f"=== PLAN : {len(plan)} fichiers {HUB_OLD} -> {HUB_NEW} ===")
-        print(f"--- git mv ({len(plan)}) dont notebooks renommes T3 ({len(NOTEBOOK_MAP)}) ---")
+        portee = f"SOUS-REPERTOIRE {only}" if only else "HUB ENTIER"
+        print(f"=== PLAN : {len(plan)} fichiers {HUB_OLD} -> {HUB_NEW} ({portee}) ===")
+        print(f"--- git mv ({len(plan)}) dont notebooks renommes T3 ({t3_renames}) ---")
         for old, new in plan:
             marker = " [T3]" if old[len(HUB_OLD) + 1:] in NOTEBOOK_MAP else ""
             print(f"  {old} -> {new}{marker}")
@@ -537,7 +607,8 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.json:
         print(json.dumps({
-            "plan_size": len(plan), "t3_renames": len(NOTEBOOK_MAP),
+            "plan_size": len(plan), "t3_renames": t3_renames,
+            "only": only,
             "sweep_files": len(touched), "sweep_occurrences": total,
             "errors": errors, "gating_prs": gating,
         }, ensure_ascii=False, indent=1))
