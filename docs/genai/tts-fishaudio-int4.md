@@ -63,7 +63,7 @@ juste après le message `Using int4 quantization!`. Le quantificateur amont ne v
 
 **Correctif :** le wrapper [`serve_int4.py`](../../docker-configurations/services/tts-fishaudio/serve_int4.py) convertit `checkpoint_path` en `Path` avant l'appel, puis exécute `tools/api_server.py` avec les arguments reçus inchangés. Le compose le monte en lecture seule et ne l'utilise que sur la variable `FISHAUDIO_SERVE_SCRIPT` — le chemin fp16 par défaut ne passe pas par lui.
 
-### 2.4 Cohérence du padding (vérifiée, pas subie)
+### 2.5 Cohérence du padding (vérifiée, pas subie)
 
 Le quantificateur et le runtime partagent **le même** prédicat `_check_linear_int4_k(k, groupsize, inner_k_tiles)` :
 
@@ -105,7 +105,7 @@ LLAMA_CHECKPOINT_PATH=checkpoints/fs-1.2-int4-g128-20261030 \
   docker compose up -d tts-fishaudio
 ```
 
-- `FISHAUDIO_SERVE_SCRIPT` prend le correctif de chargement du §2.3 (relatif au répertoire de travail de l'image, `/app`) ;
+- `FISHAUDIO_SERVE_SCRIPT` prend le correctif de chargement du §2.4 (relatif au répertoire de travail de l'image, `/app`) ;
 - `FISHAUDIO_HALF_FLAG` **vide** retire `--half` : l'int4 exige ses `scales_and_zeros` en bfloat16, et `--half` les caste en fp16 (le noyau rend alors des valeurs aberrantes, mesuré). La forme `${VAR-default}` du compose ne se replie que si la variable est **indéfinie** — `${VAR:-default}` se replierait aussi sur une variable vide et collerait `--half` de force.
 
 ## 4. Les mesures
