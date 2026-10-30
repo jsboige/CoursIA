@@ -3559,6 +3559,65 @@ def test_orphan_report_neg2_marker_on_fleet_branch_stays(monkeypatch):
     assert [r["number"] for r in pig.unattributed_blocked_prs()] == [13]
 
 
+# --- #22362 : une PR de FORK n'est pas du travail de lane --------------------
+# Mesure fondatrice du 2026-10-26 : le tirage imprimait « Portee : 1 autre(s)
+# PR(s) bloquee(s) (#22362) n'ont pas de tag `Grain:` lisible ... Leur tag
+# manquant est lui-meme le defaut a corriger. » Or #22362 est une contribution
+# publique -- auteur `snakechoc`, tete `snakechoc/CoursIA` -> base
+# `jsboige/CoursIA`, body = gabarit vierge. Le gate `variation_tag_required.py`
+# exclut les forks par construction (regle 4 de sa docstring, « We never see a
+# fork body ») : l'absence de tag y est la forme NORMALE. Poser un `Grain:`
+# dessus inventerait une imputabilite.
+# Le predicat retenu est le champ GitHub `isCrossRepository`, pas une
+# heuristique locale (un fork ne se devine ni au nom d'auteur -- `jsboige` est
+# le login de poussee partage -- ni a la branche, qui est libre).
+
+
+def test_is_cross_repository_pr_reads_the_github_field():
+    """Predicat : le champ GitHub, et rien d'autre.
+
+    Champ absent (forme partielle, mock ancien) -> `False`. Le sens inverse
+    (traiter l'inconnu comme un fork) retirerait de la file de vraies PRs du
+    depot a reparer : c'est le sens dangereux, refuse ici explicitement.
+    """
+    assert pig.is_cross_repository_pr({"isCrossRepository": True}) is True
+    assert pig.is_cross_repository_pr({"isCrossRepository": False}) is False
+    assert pig.is_cross_repository_pr({}) is False
+    assert pig.is_cross_repository_pr(None) is False
+
+
+def test_fork_pr_excluded_from_orphans_report(monkeypatch):
+    """#22362, controle NEGATIF : une PR de fork bloquee sort de la file.
+
+    La population est celle du cas reel : une PR de fork, untagged, bloquee.
+    Sur le code d'avant, elle etait listee (mesure : `[20]`) -- ce test est
+    donc rouge avant le fix, et vert apres.
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [
+        _untagged_pr(20, author="snakechoc",
+                     branch="EX-0433-exercice-1",
+                     body="## Resume\n\nGabarit de TP non rempli\n"),
+    ], {20: dict(red, isCrossRepository=True)})
+    assert pig.unattributed_blocked_prs() == []
+
+
+def test_orphan_report_positive_control_same_repo_untagged_stays(monkeypatch):
+    """#22362, controle POSITIF : une untagged bloquee du depot reste listee.
+
+    Les DEUX PRs sont dans la meme population : la fork sort, celle du depot
+    reste. Un predicat qui viderait la file (always-True) passerait le controle
+    negatif ci-dessus mais rougirait ici -- c'est ce que ce test protege.
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [
+        _untagged_pr(20, author="snakechoc", branch="EX-0433-exercice-1"),
+        _untagged_pr(21, author="jsboige", branch="feature/x"),
+    ], {20: dict(red, isCrossRepository=True),
+        21: dict(red, isCrossRepository=False)})
+    assert [r["number"] for r in pig.unattributed_blocked_prs()] == [21]
+
+
 # --- #17474 : le plafond de `fetch_open_prs` amputait la traine -------------
 # `gh pr list` rend du plus RECENT au plus ancien (mesure firsthand du
 # 2026-09-23 sur ce depot : #17565 `2026-09-23T13:29:52Z` en tete, #15942
@@ -5049,8 +5108,8 @@ def test_draw_unclaimed_filtre_recent_false_enchaine_sur_sonde_pleine(monkeypatc
 
 # --- Geste 4 #19907 : 3e surface de livraison (PR MERGEE <90j citant #N) -----
 #
-# Cas fondateur (2026-10-08, cycles c.1450..c.1453, Tell c.1392 picker-delivered
-# gap confirme 9x) : 24-28 cycles successifs sans grain actionnable. Le label
+# Cas fondateur (2026-10-08, cycles c.1450..c.1453, gap picker-delivered
+# confirme 9x) : 24-28 cycles successifs sans grain actionnable. Le label
 # `candidate-delivered` est retracte par le sweep post-merge au-dela de
 # l'activite recente (#15744), et le marqueur `[INFO] candidate-delivered`
 # n'est poste que par les lanes qui refutent. Restait la PR MERGEE comme
@@ -5364,3 +5423,41 @@ def test_cover_probe_keeps_the_anchor_boundary(
     monkeypatch.setattr(pig, "_complete_open_prs", lambda: prs)
     monkeypatch.setattr(pig, "open_cover_signal", lambda n: None)
     assert pig.open_cover_signal_complete(4242) == ""
+
+
+def test_run_bounded_redirects_to_files_not_pipes(monkeypatch):
+    """Le correctif est le TRANSPORT : fichiers, jamais de pipe.
+
+    Sur Windows, un pipe fait joindre a `_communicate` des threads lecteurs
+    qu'un descendant garde ouverts : `timeout=` expire, et l'appel ne rend
+    jamais la main (mesure du 24/10 : `fetch_pr_states` bloque a t=140 s
+    pour un `timeout=90`). Avec des fichiers, il n'y a aucun thread.
+    """
+    seen: dict = {}
+
+    def fake_run(cmd, **kwargs):
+        seen.update(kwargs)
+        kwargs["stdout"].write("ok")
+        return _FakeCompleted(returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+    cp = pig._run_bounded(["gh", "api", "graphql"], timeout=30)
+    assert cp.returncode == 0
+    assert cp.stdout == "ok"
+    assert "capture_output" not in seen, "un pipe a ete reintroduit"
+    assert seen.get("stdout") is not None and seen.get("stderr") is not None
+    assert seen.get("timeout") == 30
+
+
+def test_run_bounded_propagates_the_timeout(monkeypatch):
+    """#21436 -- l'echeance est une BORNE, pas une esperance.
+
+    Le predicat : l'expiration remonte a l'appelant, elle n'est pas avalee.
+    """
+
+    def fake_run(cmd, **kwargs):
+        raise pig.subprocess.TimeoutExpired(cmd, kwargs.get("timeout") or 0)
+
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+    with pytest.raises(pig.subprocess.TimeoutExpired):
+        pig._run_bounded(["gh", "pr", "list"], timeout=2)

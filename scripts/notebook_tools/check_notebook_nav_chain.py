@@ -85,7 +85,8 @@ Ce que cet outil ne dit PAS
 Modes (convention check_notebook_navlinks.py / check_docs_links.py)
 ------------------------------------------------------------------
     python check_notebook_nav_chain.py                  # scan complet, exit 1 si findings
-    python check_notebook_nav_chain.py --baseline       # ecrit scripts/tests/baseline_nb_nav_chain.json
+    python check_notebook_nav_chain.py --baseline       # ecrit scripts/tests/baseline_nb_nav_chain.json (main propre requis)
+    python check_notebook_nav_chain.py --baseline --baseline-anyway  # ecrit hors main, provenance non_main
     python check_notebook_nav_chain.py --check          # check vs baseline (exit 1 si NEW)
     python check_notebook_nav_chain.py --check --diff-base origin/main  # NEW bloquent seulement s'ils sont imputables au diff
     python check_notebook_nav_chain.py --family Sharp   # limiter le RAPPORT a une famille
@@ -96,8 +97,10 @@ Modes (convention check_notebook_navlinks.py / check_docs_links.py)
 Exit codes
 ----------
     0 = aucun finding (ou mode --check : aucun NEW finding)
-    1 = findings presents (ou NEW findings vs baseline)
+    1 = findings presents (ou NEW findings vs baseline, ou baseline ecrit hors
+        de main propre -- verdict distinct d'un NEW, cf. #22121)
     2 = erreur d'execution (aucun notebook, argument introuvable)
+    3 = --baseline refuse : arbre != main propre (cf. --baseline-anyway)
 
 Voir aussi
 ----------
@@ -107,6 +110,7 @@ Voir aussi
 - #17093 (chaine QC-Py cassee), #17277 (l'instance corrigee)
 """
 import argparse
+import datetime
 import json
 import subprocess
 import sys
@@ -128,6 +132,11 @@ from check_notebook_navlinks import (  # noqa: E402
 )
 
 BASELINE_PATH = REPO_ROOT / "scripts" / "tests" / "baseline_nb_nav_chain.json"
+
+# Version de l'instrument, ecrite dans la provenance du baseline (#22121). A
+# incrementer quand la FORME des findings change : un baseline ecrit par une
+# version anterieure ne se compare pas a l'identique.
+INSTRUMENT_VERSION = "2026-10-23.1"
 
 # Vocabulaire de navigation. Base sur celui de check_notebook_navlinks.py (ou il
 # sert a CLASSER un lien casse), **complete par mesure** : il sert ici a decider
@@ -489,18 +498,140 @@ def _finding_keys(report):
     return keys
 
 
-def _write_baseline(report):
-    """Ecrit le baseline (snapshot des findings, supposes connus)."""
-    BASELINE_PATH.parent.mkdir(parents=True, exist_ok=True)
+def _git_output(*args):
+    """Sortie d'une commande git dans le depot, ou None si elle echoue."""
+    proc = subprocess.run(
+        ["git", *args], cwd=REPO_ROOT, capture_output=True, text=True,
+        encoding="utf-8", errors="replace",
+    )
+    if proc.returncode != 0:
+        return None
+    return proc.stdout.strip()
+
+
+def _git_provenance(baseline_path=None):
+    """Provenance de l'arbre qui ecrit le baseline (#22121).
+
+    Defaut mesure : `--baseline` n'ecrivait que deux cles, donc une reecriture
+    depuis une branche de sujet etait indiscernable d'une re-derivation sur
+    `main` -- un finding apparu entre-temps devenait « connu » comme effet de
+    bord d'une PR sans rapport (#21696, commit `f42c4e30d10`).
+
+    `dirty` ignore la modification du baseline lui-meme : ecrire ce fichier
+    salit l'arbre par construction, ce n'est pas un etat de travail.
+    """
+    head = _git_output("rev-parse", "HEAD") or ""
+    branch = _git_output("rev-parse", "--abbrev-ref", "HEAD") or ""
+    origin_main = _git_output("rev-parse", "origin/main") or ""
+
+    own = ""
+    if baseline_path is not None:
+        try:
+            own = Path(baseline_path).resolve().relative_to(REPO_ROOT).as_posix()
+        except ValueError:
+            own = ""
+
+    status = _git_output("status", "--porcelain") or ""
+    dirty = any(
+        line[3:].strip() and line[3:].strip() != own
+        for line in status.splitlines() if line.strip()
+    )
+
+    behind = None
+    if head and origin_main:
+        raw = _git_output("rev-list", "--count", f"{head}..{origin_main}")
+        behind = int(raw) if raw and raw.isdigit() else None
+
+    return {
+        "instrument": INSTRUMENT_VERSION,
+        "head": head,
+        "branch": branch,
+        "origin_main": origin_main,
+        "behind_origin_main": behind,
+        "dirty": dirty,
+        "written_at": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        # Drapeau qui porte le verdict de `--check` : vrai des que la source de
+        # l'ecriture n'est pas `main` a jour et propre.
+        "non_main": (branch != "main" or dirty
+                     or (bool(head) and bool(origin_main) and head != origin_main)),
+    }
+
+
+def _baseline_refusal(provenance, anyway):
+    """(code, message) : 0 = ecriture permise, 3 = refusee."""
+    if anyway or not provenance.get("non_main"):
+        return 0, ""
+    lines = [
+        "error: --baseline refuse : l'arbre n'est pas `main` propre.",
+        f"  HEAD        = {provenance.get('head') or '?'}",
+        f"  origin/main = {provenance.get('origin_main') or '?'}",
+        f"  branche     = {provenance.get('branch') or '?'}"
+        f"   dirty = {str(provenance.get('dirty')).lower()}",
+        "  Un baseline ecrit hors de `main` absorbe en silence les findings",
+        "  apparus entre-temps (#22121). Re-deriver sur main a jour, ou",
+        "  relancer avec --baseline-anyway : la provenance portera alors",
+        "  `non_main: true` et --check le dira.",
+    ]
+    return 3, "\n".join(lines)
+
+
+def _provenance_verdict(provenance):
+    """(code, message) du controle de provenance fait par --check (#22121).
+
+    Distinct d'un finding NEW : ce n'est pas le depot qui a change, c'est la
+    source du baseline qui n'est pas comparable. Un baseline sans provenance
+    (ecrit avant l'introduction du champ) n'est pas rougi mais signale : le
+    rendre rouge bloquerait tout le depot jusqu'a une re-derivation.
+    """
+    if not provenance:
+        return 0, ("WARN: baseline sans provenance (ecrit avant #22121) -- "
+                   "le re-deriver sur main propre active le controle.")
+    if provenance.get("non_main"):
+        return 1, (f"FAIL: baseline ecrit HORS de `main` propre "
+                   f"(branche={provenance.get('branch') or '?'}, "
+                   f"head={provenance.get('head') or '?'}, "
+                   f"origin/main={provenance.get('origin_main') or '?'}, "
+                   f"dirty={str(provenance.get('dirty')).lower()}, "
+                   f"written_at={provenance.get('written_at') or '?'}). "
+                   f"Re-deriver sur main : un baseline ecrit depuis une branche "
+                   f"absorbe les findings apparus entre-temps (#22121).")
+    return 0, ""
+
+
+def _write_baseline(report, path=None, provenance=None):
+    """Ecrit le baseline (snapshot des findings + provenance de la source)."""
+    target = Path(path) if path is not None else BASELINE_PATH
+    target.parent.mkdir(parents=True, exist_ok=True)
     snapshot = sorted(report["findings"], key=lambda f: (f["kind"], f["notebook"]))
     payload = {
+        "provenance": provenance if provenance is not None else _git_provenance(target),
         "findings": snapshot,
         "wrapped": sorted(report["wrapped"], key=lambda s: s["series"]),
     }
-    with open(BASELINE_PATH, "w", encoding="utf-8", newline="\n") as f:
+    with open(target, "w", encoding="utf-8", newline="\n") as f:
         json.dump(payload, f, ensure_ascii=False, indent=2)
         f.write("\n")
-    return BASELINE_PATH
+    return target
+
+
+def _load_baseline_document():
+    """Charge le document baseline entier, ou None si absent/illisible."""
+    if not BASELINE_PATH.is_file():
+        return None
+    try:
+        with open(BASELINE_PATH, encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
+def _baseline_provenance():
+    """Provenance du baseline commite, ou None (absent, ou ecrit avant #22121)."""
+    data = _load_baseline_document()
+    if not isinstance(data, dict):
+        return None
+    prov = data.get("provenance")
+    return prov if isinstance(prov, dict) else None
 
 
 def _load_baseline():
@@ -509,12 +640,8 @@ def _load_baseline():
     Format-compatible avec les baselines anciens : si un baseline n'a que
     (kind, notebook) on retombe sur cette cle (target vide).
     """
-    if not BASELINE_PATH.is_file():
-        return set()
-    try:
-        with open(BASELINE_PATH, encoding="utf-8") as f:
-            data = json.load(f)
-    except (OSError, json.JSONDecodeError):
+    data = _load_baseline_document()
+    if not isinstance(data, dict):
         return set()
     keys = set()
     for f in data.get("findings", []):
@@ -616,7 +743,15 @@ def main(argv=None):
                         help="Un notebook : limite le rapport a sa serie (defaut: tout)")
     parser.add_argument("--family", help="Limiter le RAPPORT a une famille (ex. Search, Sudoku)")
     parser.add_argument("--baseline", action="store_true",
-                        help="Ecrire le baseline (snapshot des findings actuels)")
+                        help="Ecrire le baseline (snapshot des findings actuels). "
+                             "Refuse (exit 3) si l'arbre n'est pas `main` propre : "
+                             "un baseline ecrit depuis une branche de sujet absorbe "
+                             "en silence les findings apparus entre-temps (#22121).")
+    parser.add_argument("--baseline-anyway", action="store_true", dest="baseline_anyway",
+                        help="Avec --baseline : ecrire meme hors de `main` propre. "
+                             "La provenance du payload porte alors `non_main: true`, "
+                             "et --check le signale comme un rouge distinct d'un "
+                             "finding NEW.")
     parser.add_argument("--check", action="store_true",
                         help="Comparer au baseline ; exit 1 si NEW finding (regression)")
     scope = parser.add_mutually_exclusive_group()
@@ -683,13 +818,28 @@ def main(argv=None):
     report["findings"].sort(key=lambda f: (f["kind"], f.get("notebook", "")))
 
     if args.baseline:
-        path = _write_baseline(report)
+        provenance = _git_provenance(BASELINE_PATH)
+        refusal_code, refusal_msg = _baseline_refusal(provenance, args.baseline_anyway)
+        if refusal_code:
+            print(refusal_msg, file=sys.stderr)
+            return refusal_code
+        path = _write_baseline(report, provenance=provenance)
         print(f"baseline ecrit: {path} ({len(report['findings'])} findings connus, "
               f"{len(report['not_judged'])} dossier(s) non juge(s), "
               f"{len(report['wrapped'])} serie(s) bouclee(s))")
+        print(f"  provenance: head={provenance['head'] or '?'} "
+              f"branche={provenance['branch'] or '?'} "
+              f"dirty={str(provenance['dirty']).lower()} "
+              f"non_main={str(provenance['non_main']).lower()}")
         return 0
 
     if args.check:
+        prov_code, prov_msg = _provenance_verdict(_baseline_provenance())
+        if prov_code:
+            print(prov_msg, file=sys.stderr)
+            return prov_code
+        if prov_msg and not args.quiet:
+            print(prov_msg)
         known = _load_baseline()
         current = _finding_keys(report)
         new = sorted(current - known)

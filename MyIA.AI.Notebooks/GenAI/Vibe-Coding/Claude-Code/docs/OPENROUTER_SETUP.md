@@ -6,24 +6,49 @@ Ce guide vous prend par la main pour configurer Claude Code avec OpenRouter comm
 
 > **Pourquoi OpenRouter ?** Au lieu d'utiliser l'API Anthropic (payante, compte obligatoire), OpenRouter vous donne accès a des modèles performants a moindre coût, avec une clé unique pour plusieurs modèles.
 >
-> **Compatibilité OpenRouter** : Les requêtes OpenRouter ne sont pas strictement compatibles avec le protocole Anthropic utilise par Claude Code (bug connu). L'installation du proxy [openrouter-proxy](https://github.com/ahaostudy/openrouter-proxy) résout le problème. La configuration ci-dessous inclut cette étape.
+> **Compatibilité OpenRouter** : OpenRouter expose son propre point d'entree compatible avec le protocole Anthropic (`https://openrouter.ai/api`), mesure le 2026-10-29 et re-mesure le 2026-10-30 — **aucun proxy n'est a installer**. Le guide demandait auparavant de faire tourner [openrouter-proxy](https://github.com/ahaostudy/openrouter-proxy) en local ; cette etape est obsolete, et l'Etape 0 explique la mesure qui l'a etabli.
 
 ---
 
-## Étape 0 : Installer le proxy OpenRouter (2 min)
+## Etape 0 : rien a installer — OpenRouter sert nativement l'API Anthropic
 
-Claude Code utilise le protocole Anthropic pour communiquer avec les modèles. OpenRouter ne respecte pas strictement ce protocole, ce qui provoque des erreurs (réponses mal formatées, échecs d'authentification intermittents). Le proxy [openrouter-proxy](https://github.com/ahaostudy/openrouter-proxy) traduit les requêtes correctement.
+**Il n'y a plus de proxy a lancer.** Le guide demandait jusqu'ici de cloner `openrouter-proxy` et de faire tourner `node proxy.js` sur le port 8899, au motif que « les requetes OpenRouter ne sont pas strictement compatibles avec le protocole Anthropic ». Ce n'est plus vrai.
+
+> **Mesures du 2026-10-29, re-mesurees le 2026-10-30.** OpenRouter expose desormais `POST https://openrouter.ai/api/v1/messages`, qui parle le protocole Anthropic et rend ses erreurs au **format Anthropic** :
+>
+> | Sonde | Resultat | Ce que ca prouve |
+> |---|---|---|
+> | `POST /api/v1/nonexistent-xyz-42` (temoin) | **404** | un chemin absent rend bien 404 |
+> | `POST /api/v1/messages` sans cle | **401**, corps `{"type":"error","error":{"type":"authentication_error",...}}` | la route **existe**, elle demande une authentification, et l'erreur est au format **Anthropic** (pas OpenAI) |
+> | `GET /api/v1/messages` | **404** | la route est **POST seule**, comme chez Anthropic |
+> | `claude -p --model anthropic/claude-haiku-5.5` avec `ANTHROPIC_BASE_URL=https://openrouter.ai/api` | **repond `OK`, code retour 0** | la chaine complete fonctionne **sans proxy** (mesure refaite le 2026-10-30 : meme resultat) |
+>
+> Le temoin 404 est la piece qui rend la mesure valide : sans lui, un 401 sur `/messages` ne distinguerait pas « route presente » de « tout rend 401 ».
+>
+> **Ce que la CLI permet, et pourquoi cela ne demande aucun traducteur.** Le schema de reglages de la CLI en service (`claude-code-settings.schema.json`) ne contient **aucune** occurrence de `openrouter` ni de fournisseur compatible OpenAI, alors qu'il porte Bedrock et Vertex en natif : la bascule vers un autre fournisseur passe donc par `ANTHROPIC_BASE_URL` + `ANTHROPIC_AUTH_TOKEN`. C'est exactement la voie mesuree ci-dessus — et elle aboutit a OpenRouter **directement**, sans passer par un proxy : `ANTHROPIC_BASE_URL=https://openrouter.ai/api` *est* le point d'entree Anthropic d'OpenRouter. L'absence de fournisseur OpenAI-compatible dans la CLI n'oblige donc pas a installer un traducteur ; elle oblige a passer par le protocole Anthropic — qu'OpenRouter parle nativement.
+>
+> *Portee du non-verifie : ces mesures sont faites sous Windows. Elles n'etablissent pas qu'un `claude -p` atteint OpenRouter dans un runtime Colab — c'est le test qui reste a faire la-bas (cf. l'Etape 5 bis).*
+
+**Le proxy reste utile dans un seul cas** : si vous devez parler a un fournisseur qui n'implemente que l'API OpenAI. Pour OpenRouter, ce n'est pas le cas — la marche a suivre est en annexe.
+
+### Si vous aviez deja installe le proxy
+
+Vous pouvez l'arreter et supprimer le clone. Le seul geste a faire est de changer la valeur de `ANTHROPIC_BASE_URL` (Etape 3) : `http://127.0.0.1:8899/api` devient `https://openrouter.ai/api`.
+
+### Annexe : le proxy `openrouter-proxy` (fournisseur compatible OpenAI uniquement)
+
+Les blocs ci-dessous ont ete ecrits pour l'etat anterieur du guide, ou le proxy passait pour obligatoire. Ils restent **valides pour un fournisseur qui n'implemente que l'API OpenAI** — ils ne s'appliquent pas a OpenRouter, dont le point d'entree Anthropic est natif (voir la mesure ci-dessus).
+
+> **Le paquet npm `openrouter-proxy` n'existe pas sur le registre** (`npm install -g openrouter-proxy` → 404, verifie le 2026-09-09, cf. #15419). L'installation reelle, conforme au depot upstream, est un clonage Git — zero dependance, seul Node.js (>= 16) est requis. Le depot upstream est vivant mais dormant (dernier commit 2026-07-30, documentation seule) : il fonctionne, il n'evolue plus.
 
 ### Installation
 
-> **Vérifié le 2026-09-09 (#15419)** : le paquet `openrouter-proxy` **n'existe pas sur le registre npm** (`npm install -g openrouter-proxy` → 404). L'installation réelle, conforme au dépôt upstream, est un clonage Git — zéro dépendance, seul Node.js (≥ 16) est requis.
-
 ```bash
-# Cloner le dépôt (emplacement au choix, il servira à chaque démarrage)
+# Cloner le depot (emplacement au choix, il servira a chaque demarrage)
 git clone https://github.com/ahaostudy/openrouter-proxy.git
 ```
 
-### Démarrage
+### Demarrage
 
 ```bash
 # Lance le proxy sur le port 8899 par defaut
@@ -31,11 +56,11 @@ cd openrouter-proxy
 node proxy.js
 ```
 
-Le proxy tourne en arrière-plan et traduit les requêtes Claude Code vers OpenRouter. Gardez-le actif tant que vous utilisez Claude Code.
+Le proxy tourne en arriere-plan et traduit les requetes Claude Code vers le fournisseur. Gardez-le actif tant que vous utilisez Claude Code.
 
 ### Lancement automatique (optionnel)
 
-Pour éviter de le lancer manuellement a chaque session :
+Pour eviter de le lancer manuellement a chaque session :
 
 **Windows** - Ajoutez a votre profil PowerShell (`notepad $PROFILE`), en adaptant le chemin du clone :
 
@@ -49,17 +74,15 @@ Start-Process -WindowStyle Hidden -FilePath "node" -ArgumentList "$HOME\openrout
 (node ~/openrouter-proxy/proxy.js &>/dev/null &)
 ```
 
-**Checkpoint :** Vérifiez que le proxy tourne :
+**Checkpoint :** Verifiez que le proxy tourne :
 
 ```bash
 curl http://127.0.0.1:8899/api/v1/models
 ```
 
-Si vous voyez une réponse JSON avec des modèles, le proxy fonctionne.
+Si vous voyez une reponse JSON avec des modeles, le proxy fonctionne.
 
-**Symptôme si le proxy ne tourne pas** : chaque appel modèle de Claude Code échoue avec une erreur de connexion (`fetch failed` / `connection refused`) vers `http://127.0.0.1:8899`. Si vous aviez activé le lancement automatique détaché, un redémarrage du poste l'a arrêté sans message visible : relancez simplement `node proxy.js` dans le dossier du proxy, puis re-testez le `curl` ci-dessus.
-
----
+**Symptome si le proxy ne tourne pas** : chaque appel modele de Claude Code echoue avec une erreur de connexion (`fetch failed` / `connection refused`) vers `http://127.0.0.1:8899`. Si vous aviez active le lancement automatique detache, un redemarrage du poste l'a arrete sans message visible : relancez simplement `node proxy.js` dans le dossier du proxy, puis re-testez le `curl` ci-dessus.
 
 ## Étape 1 : Installer Claude Code (3 min)
 
@@ -78,8 +101,10 @@ brew install --cask claude-code
 ### Linux / WSL
 
 ```bash
-curl -fsSL https://install.claude.com | sh
+curl -fsSL https://claude.ai/install.sh | bash
 ```
+
+> **Corrige le 2026-10-29 (issue #23276), precise le 2026-10-30.** La commande que ce guide portait jusqu'ici, `curl -fsSL https://install.claude.com | sh`, **ne fonctionne pas** : le domaine `install.claude.com` n'existe pas (`nslookup` → *Non-existent domain*, et `curl: (6) Could not resolve host` depuis un conteneur). Le point d'entree officiel est `https://claude.ai/install.sh`. **L'interpreteur est `bash`, pas `sh`** : le script utilise `[[ … ]]` et `=~` (ligne 9), des extensions bash que `/bin/sh` — `dash` sur Debian/Ubuntu — refuse ; `sh -n` rend `Syntax error: "(" unexpected (expecting "then")`, `bash -n` rend `rc=0` (mesure sur Debian ; le script affiche lui-meme `… | bash` dans son propre message d'erreur sudo). Mesure sur `debian:bookworm-slim` : l'installateur rend `rc=0` **via `bash`** et installe la version **2.1.312** dans `~/.local/bin` (le poste qui a mesure sert la 2.1.311 — l'objet installe et l'objet en service sont deux versions distinctes).
 
 ### Vérifier
 
@@ -87,7 +112,15 @@ curl -fsSL https://install.claude.com | sh
 claude --version
 ```
 
-**Checkpoint :** Vous devez voir un numero de version. Sinon, redémarrez votre terminal et réessayez.
+**Checkpoint :** Vous devez voir un numero de version.
+
+> **Sous Linux, `claude --version` peut repondre « command not found » alors que l'installation a reussi.** L'installateur place le binaire dans `~/.local/bin`, qui n'est **pas** dans le `PATH` par defaut. Le script d'installation ne porte pas cet avertissement lui-meme (0 occurrence dans `bootstrap.sh`, 9 704 octets) : c'est le **binaire installe**, qu'il lance en fin de script (`"$binary_path" install`), qui l'affiche — *« Native installation exists but ~/.local/bin is not in your PATH »*. Ajoutez-le une fois pour toutes :
+>
+> ```bash
+> echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc && source ~/.bashrc
+> ```
+>
+> Sans cette ligne, la CLI fonctionne depuis le shell ou l'installation a eu lieu mais disparait dans tout nouveau shell — c'est la cause la plus frequente du « je l'ai installe mais ca ne marche pas ». Sous Colab, la VM etant ephemere, cette ligne est a rejouer apres chaque redemarrage.
 
 ---
 
@@ -113,7 +146,7 @@ C'est l'étape la plus importante. Vous devez définir **3 variables obligatoire
 
 | Variable | Valeur | Role |
 |----------|--------|------|
-| `ANTHROPIC_BASE_URL` | `http://127.0.0.1:8899/api` | Passe par le proxy OpenRouter (Étape 0) au lieu d'Anthropic |
+| `ANTHROPIC_BASE_URL` | `https://openrouter.ai/api` | Va directement au point d'entree Anthropic d'OpenRouter (Etape 0), au lieu d'Anthropic |
 | `ANTHROPIC_AUTH_TOKEN` | `sk-or-v1-VOTRE_CLE` | Votre clé d'authentification OpenRouter |
 | `ANTHROPIC_API_KEY` | *(vide)* | Doit être vide pour ne pas conflit avec OpenRouter |
 | `ANTHROPIC_DEFAULT_OPUS_MODEL` | `qwen/qwen3.6-plus` | Modèle "opus" = Qwen 3.6 Plus (raisonnement complexe) |
@@ -122,9 +155,19 @@ C'est l'étape la plus importante. Vous devez définir **3 variables obligatoire
 
 ### Pourquoi le mapping des modèles ?
 
-Sans les variables `ANTHROPIC_DEFAULT_*_MODEL`, Claude Code essaie d'utiliser les modèles Claude natifs (`claude-sonnet-4-20250514`, etc.), qui **ne sont pas disponibles via OpenRouter**. Vous obtiendrez une erreur "Model not found".
+Sans les variables `ANTHROPIC_DEFAULT_*_MODEL`, Claude Code demande par defaut des **modeles Claude natifs** (`claude-sonnet-4-20250514`, etc.). Sur OpenRouter, ces noms-la **peuvent** ne pas exister pour la cle utilisee : le symptome attendu est alors une erreur "Model not found".
 
-Le mapping dit a Claude Code : "quand on te demande 'sonnet', utilise MiniMax M2.7 sur OpenRouter au lieu de chercher un modèle Anthropic".
+> **Ce que depend de la cle, pas d'OpenRouter.** La disponibilite d'un modele est une question de **droits de la cle**, pas de fournisseur : deux cles OpenRouter n'ont pas les memes modeles ouverts. Le message ci-dessus decrit le cas courant, il n'est pas une loi.
+>
+> **Ce que le catalogue mesure, et ce qu'il ne mesure pas.** `GET /v1/models` rend les **identifiants annonces** — ni la validite de la cle, ni l'autorisation d'appeler un modele : ce catalogue repond **200 meme sans droits d'appel**. Il sert donc a verifier *quels identifiants existent* (et lesquels sont retires), pas a conclure qu'un modele est accessible.
+>
+> ```bash
+> curl -s https://openrouter.ai/api/v1/models -H "Authorization: Bearer $OPENROUTER_API_KEY"
+> ```
+>
+> Pour la **capacite reelle**, la preuve est un **appel mesure et trace**, pas le catalogue. Mesures faites le 2026-10-29 avec la cle du module `GenAI` : `anthropic/claude-haiku-5.5` et `anthropic/claude-sonnet-5.5` repondent HTTP 200 **avec contenu** ; `qwen/qwen3.6-35b-a3b` et `minimax/minimax-m2.7` repondent HTTP 200 mais renvoient un **contenu vide** (a un budget de 16 tokens, un modele qui raisonne peut consommer son budget sans produire de texte : la mesure est un indice, pas un verdict d'indisponibilite). Conclusion retenue : **la table ci-dessous est un choix, pas une obligation** — alignez-la sur ce que votre cle rend reellement **en appel reel**, pas sur ce que le catalogue annonce.
+
+Le mapping dit a Claude Code : "quand on te demande 'sonnet', utilise MiniMax M2.7 sur OpenRouter au lieu de chercher un modele Anthropic". Si votre cle n'ouvre pas MiniMax M2.7, remplacez la valeur par un modele qu'elle a reellement rendu (mesures ci-dessus).
 
 ### Méthode recommandée : fichier settings.json
 
@@ -139,7 +182,7 @@ Contenu (remplacez `sk-or-v1-VOTRE_CLE` par votre vraie clé) :
 ```json
 {
   "env": {
-    "ANTHROPIC_BASE_URL": "http://127.0.0.1:8899/api",
+    "ANTHROPIC_BASE_URL": "https://openrouter.ai/api",
     "ANTHROPIC_AUTH_TOKEN": "sk-or-v1-VOTRE_CLE",
     "ANTHROPIC_API_KEY": "",
     "ANTHROPIC_DEFAULT_OPUS_MODEL": "qwen/qwen3.6-plus",
@@ -161,7 +204,7 @@ Ajoutez a la fin :
 
 ```powershell
 # Configuration OpenRouter pour Claude Code
-$env:ANTHROPIC_BASE_URL = "http://127.0.0.1:8899/api"
+$env:ANTHROPIC_BASE_URL = "https://openrouter.ai/api"
 $env:ANTHROPIC_AUTH_TOKEN = "sk-or-v1-VOTRE_CLE"
 $env:ANTHROPIC_API_KEY = ""
 $env:ANTHROPIC_DEFAULT_OPUS_MODEL = "qwen/qwen3.6-plus"
@@ -187,7 +230,7 @@ Ajoutez a la fin :
 
 ```bash
 # Configuration OpenRouter pour Claude Code
-export ANTHROPIC_BASE_URL="http://127.0.0.1:8899/api"
+export ANTHROPIC_BASE_URL="https://openrouter.ai/api"
 export ANTHROPIC_AUTH_TOKEN="sk-or-v1-VOTRE_CLE"
 export ANTHROPIC_API_KEY=""
 export ANTHROPIC_DEFAULT_OPUS_MODEL="qwen/qwen3.6-plus"
@@ -205,11 +248,11 @@ source ~/.zshrc
 
 ```bash
 # Windows
-echo $env:ANTHROPIC_BASE_URL       # doit afficher: http://127.0.0.1:8899/api
+echo $env:ANTHROPIC_BASE_URL       # doit afficher: https://openrouter.ai/api
 echo $env:ANTHROPIC_AUTH_TOKEN      # doit afficher: sk-or-v1-...
 
 # macOS/Linux
-echo $ANTHROPIC_BASE_URL            # doit afficher: http://127.0.0.1:8899/api
+echo $ANTHROPIC_BASE_URL            # doit afficher: https://openrouter.ai/api
 echo $ANTHROPIC_AUTH_TOKEN          # doit afficher: sk-or-v1-...
 ```
 
@@ -266,6 +309,152 @@ claude --model haiku -p "Reponds 'Haiku OK'"
 3. Vous devez voir une réponse du modèle
 
 **Checkpoint :** Les 3 modèles répondent en CLI et l'extension VS Code fonctionne.
+
+---
+
+## Étape 5 bis : Depuis Google Colab (le cas qui echouait en TP)
+
+Colab est une **machine Linux ephemere** avec un terminal et un acces Internet. Claude Code y fonctionne, a condition de ne pas suivre les etapes concues pour un poste de travail.
+
+### Ce qui ne marche pas dans Colab
+
+| Geste | Pourquoi il echoue |
+|---|---|
+| `claude auth login` | Ouvre un **navigateur** et attend un retour par callback. La VM Colab n'en a pas : la commande reste suspendue. |
+| Lancer `node proxy.js` | Le proxy ouvert dans une cellule meurt avec elle ; la cellule suivante ne le trouve plus. C'est une des causes plausibles de l'echec du TP, **non etablie** (cf. plus bas). Ce montage est de plus **obsolete pour OpenRouter** depuis l'Etape 0 : la recette ci-dessous ne lance aucun proxy. |
+| `brew`, installateur `.exe` | Ce sont des voies macOS / Windows. |
+| L'interface plein ecran de la CLI | Elle suppose un TTY : depuis un notebook, le mode utilisable est `claude -p` (non interactif). Un succes de `claude -p` ne dit rien de l'interface interactive. |
+
+### La recette
+
+Deux variantes selon le type de cellule. **Ne melangez pas les deux** : la fence doit contenir du `bash` quand elle contient des commandes shell, et du `python` quand elle contient du Python. Une fence `bash` qui contient `import os` n'est pas du bash — ni pour le lecteur, ni pour un executeur.
+
+**Variante A — cellule Python** (le defaut dans Colab) :
+
+```python
+# 1. Installer la CLI (Node est deja present dans Colab)
+!npm install -g @anthropic-ai/claude-code
+
+# 2. Verifier
+!claude --version
+
+# 3. Authentifier par JETON, jamais par navigateur
+import os
+os.environ["ANTHROPIC_BASE_URL"]    = "https://openrouter.ai/api"
+os.environ["ANTHROPIC_AUTH_TOKEN"]  = "sk-or-v1-VOTRE_CLE"   # jamais en clair dans un notebook committe
+os.environ["ANTHROPIC_MODEL"]       = "anthropic/claude-haiku-5.5"
+
+# 4. Tester — doit rendre un mot et un code retour 0
+!claude -p "Reponds uniquement: OK"
+```
+
+**Variante B — cellule `%%bash`** : les trois `export` **remplacent** le bloc `os.environ` de la variante A, ils ne s'y ajoutent pas :
+
+```bash
+# 1. Installer la CLI et verifier
+npm install -g @anthropic-ai/claude-code
+claude --version
+
+# 2. Authentifier par JETON (les trois export, dans CETTE cellule)
+export ANTHROPIC_BASE_URL="https://openrouter.ai/api"
+export ANTHROPIC_AUTH_TOKEN="sk-or-v1-VOTRE_CLE"   # jamais en clair dans un notebook committe
+export ANTHROPIC_MODEL="anthropic/claude-haiku-5.5"
+
+# 3. Tester, dans la MEME cellule
+claude -p "Reponds uniquement: OK"
+```
+
+En cellule `%%bash`, les trois `export` valent **seulement dans la cellule qui les porte**. Un `!export ...` lance dans une cellule Jupyter ouvre un **sous-shell** : la variable meurt avec lui et la cellule suivante ne la voit pas. C'est une source d'echec silencieuse classique en Colab, et elle ressemble au symptome de jeton absent decrit plus bas — d'ou la regle : pour une valeur qui doit survivre d'une cellule a l'autre, passez par `os.environ` (le runtime Python est partage entre cellules) et non par `!export`.
+
+> **Ne mettez pas la cle dans le notebook.** Lisez-la depuis les *Secrets* Colab (`google.colab.userdata`) ou une variable d'environnement de session. Un notebook committe avec une cle en clair est un incident de securite (regle `secrets-hygiene`) — le secret est rotation a faire, pas un `revert`.
+
+### Le cycle agentique : un fichier, une modification, des tests
+
+La recette ci-dessus verifie que la CLI **repond**. Ce qu'un TP veut montrer, c'est que la CLI **modifie un fichier** et que les tests **passent apres**. Voici le cycle complet, et sa trace mesuree.
+
+**Ce qui a ete reellement execute, et ou.** Aucun runtime Colab n'etait joignable depuis le poste qui a produit cette section : Colab Enterprise exige un projet GCP + une ADC + la CLI `google-colab`, et le Colab gratuit exige un compte Google — aucune des deux voies n'existe sur ce poste. La trace ci-dessous a donc ete produite dans un **conteneur Linux**, qui est **le meme systeme d'exploitation que Colab**, mais **n'est pas un runtime Colab** : aucune cellule Jupyter, aucun `%%bash`, aucun *Secret* Colab n'y est declenche. Ce qui est mesure, c'est le cycle CLI ; ce qui ne l'est pas, c'est le comportement propre a Colab (cellules, quotas, secrets). **Ne qualifiez pas cette trace de « recette Colab testee »** : elle est une recette *Linux* testee, dont Colab est un cas particulier.
+
+**Le cycle (a executer dans un shell, pas dans une cellule)**
+
+```bash
+# 1. Installer la CLI (URL canonique mesuree)
+curl -fsSL https://claude.ai/install.sh -o /tmp/install.sh && bash /tmp/install.sh
+export PATH="$HOME/.local/bin:$PATH"
+
+# 2. Un fichier volontairement buggue, et son test
+cat > calc.py <<'PY'
+def moyenne(xs):
+    return sum(xs) / len(xs)
+PY
+cat > test_calc.py <<'PY'
+from calc import moyenne
+
+
+def test_moyenne_normale():
+    assert moyenne([2, 4, 6]) == 4
+
+
+def test_moyenne_vide():
+    assert moyenne([]) == 0
+PY
+
+# 3. L'etat initial doit ECHOUER -- sinon le test ne prouve rien
+python -m pytest test_calc.py -q
+
+# 4. La CLI corrige le fichier
+claude -p "Corrige la fonction moyenne de calc.py : pour une liste vide, elle doit renvoyer 0 au lieu de lever une ZeroDivisionError. Modifie calc.py, ne modifie rien d'autre." \
+  --permission-mode acceptEdits --allowedTools "Read,Edit,Write"
+
+# 5. Le test doit PASSER apres
+python -m pytest test_calc.py -q
+```
+
+**La trace mesuree (2026-10-29, conteneur Linux, aucun secret dans la trace)**
+
+```
+claude --version -> 2.1.312 (Claude Code)
+pytest AVANT : FAILED test_calc.py::test_moyenne_vide - ZeroDivisionError: division by zero
+                1 failed, 1 passed                    (code de sortie 1)
+claude -p    : code de sortie 0, le fichier calc.py est modifie
+pytest APRES : 2 passed in 0.04s                     (code de sortie 0)
+controle secret : OK -- aucune occurrence du jeton dans les artefacts produits
+```
+
+Deux details de la trace qui meritent d'etre lus :
+
+- la CLI **n'a pas execute les tests** (elle a repondu que la commande Python lui etait refusee) : le fichier a ete modifie, **la validation reste outside de l'agent** — c'est le harnais qui lance `pytest`. Une trace ou l'agent se valide lui-meme n'est pas une preuve ;
+- stderr porte `[claude-code:unrecognized_model] {"model":"anthropic/claude-haiku-5.5"}` : la requete part quand meme et la reponse est correcte (voir plus bas).
+
+### Les deux modes d'echec, mesures
+
+Les deux produisent un **symptome muet**, et c'est ce qui rend le diagnostic difficile en TP :
+
+| Cause | Ce qu'on observe | Mesure |
+|---|---|---|
+| `ANTHROPIC_BASE_URL` pose **sans jeton** | La commande peut **ne pas rendre la main** et **n'afficher aucune erreur** | `claude -p` sans `ANTHROPIC_AUTH_TOKEN` : `rc=124` (arrete au bout de 60 s), stdout vide, une seule ligne sur stderr |
+| Ancien montage par proxy, proxy arrete | `fetch failed` / `connection refused` vers `127.0.0.1:8899` | erreur de connexion explicite, donc plus facile a diagnostiquer |
+
+Le premier cas est le piege : **une cellule qui tourne indefiniment n'est pas une cellule lente — c'est un symptome, pas un diagnostic.** L'absence de jeton est l'**hypothese la plus frequente** (elle est aussi la plus facile a verifier), mais un delai d'attente ne la **prouve** pas : un reseau lent, un `ANTHROPIC_MODEL` invalide, un endpoint injoignable ou un runtime Colab sature produisent le meme silence.
+
+> **Ce qu'un timeout permet de dire, et ce qu'il ne permet pas.** Il permet de dire : « l'appel n'a pas rendu dans le budget imparti ». Il ne permet **pas** de dire : « le jeton est absent ». La mesure qui separe les deux est l'**appel direct a l'API du fournisseur avec la meme cle** : il repond 401 si la cle est refusee (refus observe en environ une seconde lors de la mesure du 2026-10-29 -- un temoin de rejet immediat, pas une garantie de delai fournisseur). Le catalogue `/v1/models`, lui, **ne separe rien** — il repond 200 meme sans droits d'appel, et ne dit donc rien de la validite du jeton. Un `claude -p` qui expire ne fait **pas** cette separation.
+
+Si un `claude -p` ne rend rien au bout d'une minute dans Colab, verifiez `ANTHROPIC_AUTH_TOKEN` **en premier** — c'est l'hypothese la plus probable et la plus rapide a ecarter — mais ne concluez pas sur le timeout seul.
+
+**Ce que cette mesure n'etablit pas** : laquelle de ces causes a fait echouer le TP etudiant d'origine. Le ticket d'origine le dit explicitement (« cause exacte a reproduire, non etablie »), et je ne tranche pas a sa place — les deux modes sont reproductibles, aucun temoignage ne les departage.
+
+### Les lignes `unrecognized_model`
+
+Claude Code affiche sur sa sortie d'erreur des lignes de la forme :
+
+```
+[claude-code:unrecognized_model] {"model":"anthropic/claude-haiku-5.5","query_source":"sdk"}
+```
+
+Elles signalent que le nom du modele n'appartient pas au registre interne de Claude Code. **La requete part quand meme et la reponse est correcte** (`rc=0`) — c'est du bruit, pas une panne. Ne les confondez pas avec l'absence de jeton ci-dessus, qui elle ne produit aucune reponse.
+
+### Modeles disponibles
+
+Verifie le 2026-10-29 aupres de `https://openrouter.ai/api/v1/models` : les modeles Anthropic courants y sont, sous la forme `anthropic/claude-haiku-5.5`, `anthropic/claude-sonnet-5.5`, `anthropic/claude-opus-5.5` (contexte annonce 1 000 000). Les identifiants plus anciens sont retires : `anthropic/claude-sonnet-4` repond desormais « retired on June 15, 2026 ». Epinglez un identifiant, et re-verifiez-le si une session se met a echouer sans raison apparente.
 
 ---
 
