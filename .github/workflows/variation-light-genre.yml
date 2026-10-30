@@ -211,6 +211,8 @@ jobs:
           SIG_CAPEXC=$(python3 -c "import json; print(json.load(open('/tmp/signals.json')).get('signals',{}).get('CAP-EXCEEDED-BY-GENRE'))" 2>/dev/null || echo "False")
           SIG_MISMATCH=$(python3 -c "import json; print(json.load(open('/tmp/signals.json')).get('signals',{}).get('GENRE-MISMATCH'))" 2>/dev/null || echo "False")
           SIG_UNKNOWN=$(python3 -c "import json; print(json.load(open('/tmp/signals.json')).get('signals',{}).get('GENRE-UNKNOWN'))" 2>/dev/null || echo "False")
+          SIG_CHAIN=$(python3 -c "import json; print(json.load(open('/tmp/signals.json')).get('signals',{}).get('PREV-CHAIN-RUN'))" 2>/dev/null || echo "False")
+          CHAIN_DETAIL=$(python3 -c "import json;c=json.load(open('/tmp/signals.json')).get('prev_chain_runs') or [];print(('#%s, %d PRs : %s' % (c[0]['vein_key'], c[0]['count'], ', '.join('#%d' % n for n in c[0]['numbers']))) if c else '')" 2>/dev/null || echo "")
           UNKNOWN_WORD=$(python3 -c "import json; print(json.load(open('/tmp/signals.json')).get('candidate_genre_unknown_word') or '')" 2>/dev/null || echo "")
           TALLY=$(python3 -c "import json; t=json.load(open('/tmp/signals.json')).get('tally',{}); print(f\"declared={t.get('light_declared',0)} genre={t.get('light_genre',0)} cap={t.get('cap',1)}\")" 2>/dev/null || echo "inconnu")
           # #10341 -- the three aggregate signals (TIER-INFLATION, GENRE-RUN,
@@ -235,7 +237,8 @@ jobs:
             "variation-genre-run:FEF2C0:GENRE-RUN:>= 2 grains consecutifs du meme genre LIGHT pour la lane (#10020, advisory)" \
             "variation-genre-cap-exceeded:FBCA04:CAP-EXCEEDED-BY-GENRE:light_genre > cap partage G-VAR-2 (#10020, advisory)" \
             "variation-genre-mismatch:FEF2C0:GENRE-MISMATCH:declared genre != genre infere depuis les chemins du diff (#10020, advisory)" \
-            "variation-genre-unknown:FBCA04:GENRE-UNKNOWN:genre canonise hors enumeration close -- trou d'adjacence G-VAR-3, requalifier dans le body (#12158, advisory)"
+            "variation-genre-unknown:FBCA04:GENRE-UNKNOWN:genre canonise hors enumeration close -- trou d'adjacence G-VAR-3, requalifier dans le body (#12158, advisory)" \
+            "variation-prev-chain:FEF2C0:PREV-CHAIN-RUN:>= 3 grains consecutifs de la lane dans le meme EPIC via prev -- le grain suivant se tire au tapis (#21067, advisory)"
           do
             LABEL=$(echo "$LABEL_PAIR" | cut -d: -f1)
             COLOR=$(echo "$LABEL_PAIR" | cut -d: -f2)
@@ -254,6 +257,10 @@ jobs:
               CAP-EXCEEDED-BY-GENRE) SIGVAR="SIG_CAPEXC"; MAY_LABEL_INNOCENT="no" ;;
               GENRE-MISMATCH)        SIGVAR="SIG_MISMATCH"; MAY_LABEL_INNOCENT="yes" ;;
               GENRE-UNKNOWN)         SIGVAR="SIG_UNKNOWN"; MAY_LABEL_INNOCENT="yes" ;;
+              # #21067 correctif 2 -- le signal porte sur la PR courante par
+              # construction (c'est SON `prev:` qui prolonge la chaine) : il
+              # etiquette sans la garde #10341, comme GENRE-MISMATCH.
+              PREV-CHAIN-RUN)        SIGVAR="SIG_CHAIN"; MAY_LABEL_INNOCENT="yes" ;;
               *)
                 echo "Signal non reconnnu : ${SIGNAL} (PR ${PR_NUMBER})"
                 SIGVAR="__UNDEFINED__"
@@ -303,6 +310,8 @@ jobs:
           - **GENRE-MISMATCH** : declared genre != genre infere depuis les chemins du diff"
           [ "$SIG_UNKNOWN" = "True" ] && ACTIVE_LINES="${ACTIVE_LINES}
           - **GENRE-UNKNOWN** : le genre canonise \\\`${UNKNOWN_WORD:-?}\\\` est hors enumeration close -- trou d'adjacence G-VAR-3, requalifier le genre dans le body (#12158)"
+          [ "$SIG_CHAIN" = "True" ] && ACTIVE_LINES="${ACTIVE_LINES}
+          - **PREV-CHAIN-RUN** : la lane enchaine dans le meme EPIC sans repasser par le tapis (chaine ${CHAIN_DETAIL:-?}) -- le grain suivant se tire au tapis, cf #21067 correctif 2"
 
           # #10341 nuance : si la PR courante est CONTENU (non LIGHT-genre)
           # et qu'un signal agrege est actif, le dire explicitement -- le
@@ -321,7 +330,7 @@ jobs:
           **G-VAR-2/3 GENRE signals** (advisory, non bloquant, #10020).
           La lane \\\`${LANE}\\\` voit ces signaux actifs sur les mergees du jour (UTC ${TODAY}) :${ACTIVE_LINES}
 
-          G-VAR-2 plafonne a **max(1, grains_mergees_du_jour // 3) LIGHT par lane et par jour, toutes categories LIGHT confondues** -- un RATIO, pas un plafond plat ; le cap calcule du jour est dans le tally ci-dessus. G-VAR-3 interdit deux genres LIGHT consecutifs. Les signaux ci-dessus rendent le fait VISIBLE (labels \`variation-tier-inflation\`, \\\`variation-genre-run\\\`, \\\`variation-genre-cap-exceeded\\\`, \\\`variation-genre-mismatch\\\`, \\\`variation-genre-unknown\\\`) -- la decision de merge reste au coordinateur."
+          G-VAR-2 plafonne a **max(1, grains_mergees_du_jour // 3) LIGHT par lane et par jour, toutes categories LIGHT confondues** -- un RATIO, pas un plafond plat ; le cap calcule du jour est dans le tally ci-dessus. G-VAR-3 interdit deux genres LIGHT consecutifs. Les signaux ci-dessus rendent le fait VISIBLE (labels \`variation-tier-inflation\`, \\\`variation-genre-run\\\`, \\\`variation-genre-cap-exceeded\\\`, \\\`variation-genre-mismatch\\\`, \\\`variation-genre-unknown\\\`, \\\`variation-prev-chain\\\`) -- la decision de merge reste au coordinateur."
             # #17265 -- le rc de `gh` decide, jamais la vacuite de sa sortie :
             # sous panne de quota `gh` ecrit son document d'erreur sur STDOUT en
             # rc=1, et un repli DANS la substitution (`|| echo ""`) ne peut pas

@@ -3665,7 +3665,7 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
                 f"({exc}) : ce CLEAR ne dit rien des PRs OUVERTES touchant "
                 f"ces chemins. Verifier a la main avec "
                 f"`check_lane_claim.py --lane {my_lane} --paths ...` "
-                f"(sans numero d'issue) avant d'editer (#16570, #21742).",
+                f"(sans numero d'issue) avant d'editer (cf. #16570, #21742).",
                 file=sys.stderr,
             )
         except RuntimeError as exc:
@@ -3674,7 +3674,7 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
                 f"`--paths` ({exc}) : ce CLEAR ne dit rien des PRs OUVERTES "
                 f"touchant ces chemins. Verifier a la main avec "
                 f"`check_lane_claim.py --lane {my_lane} --paths ...` "
-                f"(sans numero d'issue) avant d'editer (#16570).",
+                f"(sans numero d'issue) avant d'editer (cf. #16570).",
                 file=sys.stderr,
             )
     # Dead-glob witness on the CALLER side (mirror of `empty_scope` on the
@@ -4514,8 +4514,18 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             )
         lines.append(
             "\nCoordinate with the owner(s), re-scope to paths no OPEN PR "
-            "touches, or pick another grain (#16570)."
+            "touches, or pick another grain from the GLOBAL POOL "
+            "(`python scripts/pick_idle_grain.py --belt --lane "
+            "<machine:workspace>`)."
         )
+        # Le renvoi porte sur le POOL, jamais sur un numero d'issue.
+        # Mesure du 2026-10-26 (lane myia-ai-01:CoursIA-2) : ce message
+        # pointait « (#16570) » -- l'issue qui a signale cette jambe-meme.
+        # #16570 est LIVREE (fix #16572 MERGED le 2026-09-18, label
+        # `candidate-delivered`) : un worker qui suit le repli atterrit sur
+        # un conteneur livre et peut y poser un claim. Le repli doit
+        # designer la SOURCE DU GRAIN (le pool global), pas un issue
+        # historiquement liee.
         print("\n".join(lines), file=sys.stderr)
         return 2
     # #14300 -- IMPLICIT: an OPEN PR of another lane references this issue
@@ -5282,7 +5292,9 @@ def _run_check_paths(
             )
         msg.append(
             "\nDo not start -- coordinate with the owner(s), or pick "
-            "another grain that does not intersect the open PR(s)."
+            "another grain from the GLOBAL POOL "
+            "(`python scripts/pick_idle_grain.py --belt --lane "
+            "<machine:workspace>`) that does not intersect the open PR(s)."
         )
         print("\n".join(msg), file=sys.stderr)
         return 2

@@ -143,7 +143,7 @@ Le picker (`scripts/pick_idle_grain.py`) croise l'urne `delivered` avec un signa
 5. **Observation `released`** (`verdict: RELEASED`) → le GPU est libre, le picker peut tirer.
 6. **Observation `stale`** (`verdict: STALE`) → cas d'erreur, la lane tenancière doit poster un `[OBS]` de réparation.
 
-Le script `scripts/coordination/debt_ledger.py check_pending --entity <m>#gpu<n>` rend le verdict (`OK_TO_RUN`, `NO_OBS`, `HOLD`, `RELEASED`, `STALE`, `UNPOSTED`) en ~50 ms (cache local). **Implémentation 4e livrable : [PR #19855](https://github.com/jsboige/CoursIA/pull/19855)**, merge de la sous-commande et de `evaluate_gpu_pending()` (113/113 tests passent).
+Le script `scripts/coordination/debt_ledger.py check_pending --entity <m>#gpu<n>` rend le verdict (`OK_TO_RUN`, `NO_OBS`, `HOLD`, `RELEASED`, `STALE`, `UNPOSTED`, `UNREADABLE_SPOOL`) en ~50 ms (cache local). **Implémentation 4e livrable : [PR #19855](https://github.com/jsboige/CoursIA/pull/19855)**, merge de la sous-commande et de `evaluate_gpu_pending()` (113/113 tests passent).
 
 ### Ce que le picker en fait (c.2431, #22747)
 
@@ -172,10 +172,13 @@ La section ci-dessus était une **promesse du protocole que le code ne tenait pa
 | `HOLD` | **1** | la gate refuse : tenu par une autre lane, ou par nous hors fenêtre |
 | `STALE` | **2** | `held` dépassé sans release — l'appelant décide (rafraîchir ou bloquer) |
 | `UNPOSTED` | **1** | le spool local porte des observations **jamais postées** : le ledger est illisible, pas libre — poster (`flush`) avant de conclure |
+| `UNREADABLE_SPOOL` | **1** | un fichier du spool local est **illisible** : il peut porter une réservation, donc le ledger est illisible, pas libre — le verdict nomme chaque fichier et son motif |
 
 Le code 2 est aussi rendu sur un usage invalide (`--entity` absent, ledger ≠ `gpu-reservation`) : là, il signale une **erreur d'appel**, pas un verdict.
 
 `UNPOSTED` prime sur les autres verdicts : il est rendu **avant** la lecture du snapshot, parce qu'un verdict réduit d'un snapshot ne voit pas ce qui n'a jamais voyagé (deux réservations `held` vivantes, quatre-vingt-quatre heures de spool, et un `RELEASED` rendu avec aplomb — #22456).
+
+`UNREADABLE_SPOOL` prime sur `UNPOSTED` : un fichier illisible peut porter un `held`, et un décompte d'enveloppes saines ne le dirait pas. Le fichier reste sur disque et le verdict en nomme le chemin et le motif — l'archivage des bonnes enveloppes reste possible, la conclusion « libre » ne l'est pas.
 
 **Le drainage du spool est en deux temps, et aucun n'est optionnel** : `debt_ledger.py flush` liste (ou `--emit` écrit) le lot à poster — le `content` de chaque appel est l'octet du fichier de spool, sans re-sérialisation — puis `flush --mark-posted <id>...` archive les observations effectivement postées. L'archivage est idempotent (l'`observation_id` est la clé) et tout-ou-rien : un id inconnu refuse le lot entier plutôt que d'archiver la moitié, parce qu'un spool à moitié drainé est précisément l'état qui fait mentir `check_pending`.
 

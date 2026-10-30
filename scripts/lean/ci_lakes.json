@@ -194,7 +194,7 @@
       "display-name": "game_theory_lean",
       "sorry-baseline": "1",
       "sorry-filter-mode": "real",
-      "axiom-target-modules": "SocialChoice.AMD,SocialChoice.Arrow,SocialChoice.Arrow_en,SocialChoice.Basic,SocialChoice.Basic_en,SocialChoice.Framework,SocialChoice.Framework_en,SocialChoice.MechanismDesign,SocialChoice.MechanismDesign_en,SocialChoice.Sen,SocialChoice.Sen_en,SocialChoice.SortedListCounting,SocialChoice.SortedListCounting_en,SocialChoice.Voting,SocialChoice.Voting_en,Abstraction,Abstraction.Basic,ProgramGames.Basic,ProgramGames.Basic_en,ProgramGames.Bounded,ProgramGames.Bounded_en",
+      "axiom-target-modules": "SocialChoice.AMD,SocialChoice.Arrow,SocialChoice.Arrow_en,SocialChoice.Basic,SocialChoice.Basic_en,SocialChoice.Framework,SocialChoice.Framework_en,SocialChoice.Groves,SocialChoice.Groves_en,SocialChoice.MechanismDesign,SocialChoice.MechanismDesign_en,SocialChoice.Sen,SocialChoice.Sen_en,SocialChoice.SortedListCounting,SocialChoice.SortedListCounting_en,SocialChoice.Voting,SocialChoice.Voting_en,Abstraction,Abstraction.Basic,ProgramGames.Basic,ProgramGames.Basic_en,ProgramGames.Bounded,ProgramGames.Bounded_en",
       "axiom-fail-on-sorry": "true",
       "certified-subdir": "SocialChoice",
       "paths": [
