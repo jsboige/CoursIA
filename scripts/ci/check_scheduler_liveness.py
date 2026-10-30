@@ -151,6 +151,12 @@ class Organ:
 # touches any of these `cron:` lines.
 REGISTRY: tuple[Organ, ...] = (
     Organ("pr-gate-stale-sweep.yml", 60.0, "cron '7 * * * *'"),
+    # #22946 (point 3 de la review ai-01 du 2026-10-27) : le controleur de
+    # debordement declarait '23,53', exactement le cron de
+    # linux-runner-version-pin-advisory.yml -- il prend desormais une minute
+    # libre, hors :00/:30, et entre dans ce registre pour que son extinction
+    # se mesure au lieu de se supposer.
+    Organ("ci-overflow-controller.yml", 60.0, "cron '31 * * * *'"),
     Organ("pr-gate-sweep-health-advisory.yml", 30.0, "cron '13,43 * * * *' -- cet observateur"),
     Organ("linux-runner-starvation-advisory.yml", 30.0, "cron '19,49 * * * *'"),
     Organ("coursia-waiter-starvation-advisory.yml", 30.0, "cron '11,41 * * * *'"),

@@ -20,6 +20,7 @@ couverts : une suite ou tout passe serait indiscernable d'un moteur debranche.
 
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -27,14 +28,17 @@ from pathlib import Path
 import pytest
 
 CI_DIR = Path(__file__).resolve().parents[1] / "ci"
+REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(CI_DIR))
 
 import fast_lane  # noqa: E402
 from fast_lane_registry import (  # noqa: E402
     FAST_LANE_NATIVE, PILOT, TRANCHE1, TRANCHE2, TRANCHE3, TRANCHE4,
-    TRANCHE5, TRANCHE8, TRANCHE12, TRANCHE13, TRANCHE14, TRANCHE22,
-    TRANCHE25, TRANCHE27, Guard,
+    TRANCHE5, TRANCHE8, TRANCHE12, TRANCHE13, TRANCHE14, TRANCHE20, TRANCHE22,
+    TRANCHE25, TRANCHE27, Guard, LIVE_READ_WILDCARD, live_read_guard_paths,
+    live_read_source_paths,
 )
+import fast_lane_registry  # noqa: E402
 
 # Lot PILOTE absorbe a l'etape 3 de #12856 (programme #12567) : comparaison
 # conclue pour ces neuf gardes -- job renomme byte-identique au `guard.name`
@@ -132,6 +136,110 @@ def test_notebook_guards_select_a_root_level_notebook():
             f"{expected} devrait couvrir un notebook a la racine "
             "(motif `**/*.ipynb`)"
         )
+
+
+# ---------------------------------------------------------------------------
+# 1 bis. Le garde Live-read doit se selectionner sur la SOURCE lue (#22001)
+# ---------------------------------------------------------------------------
+
+LIVE_READ_GUARD = TRANCHE20[0]
+LIVE_READ_REGISTRY = REPO_ROOT / "scripts" / "notebook_tools" / "live_read_registry.json"
+
+
+def _live_read_cells() -> list[dict]:
+    return json.loads(LIVE_READ_REGISTRY.read_text(encoding="utf-8"))["cells"]
+
+
+def test_le_garde_live_read_declenche_sur_la_seule_source_lue():
+    """Invariant : une revision qui ne touche que la SOURCE lue selectionne le garde.
+
+    Avant #22001, les `paths` du garde ne portaient que `**.ipynb` et ses
+    propres fichiers : la revision #21899, qui reecrivait `Pillars.lean`
+    sans toucher un carnet, ne declenchait rien.
+    """
+    sources = [cell["source"] for cell in _live_read_cells()]
+    assert sources, "registre live-read vide : l'invariant ne serait pas epingle"
+    for source in sources:
+        assert fast_lane.guard_applies(LIVE_READ_GUARD, [source]), source
+
+
+def test_controle_positif_le_controle_negatif_un_lean_voisin_non_declare():
+    """Controle positif : `Pillars.lean` seul. Negatif : un `.lean` voisin non declare.
+
+    Le voisin se choisit PARMI LES FICHIERS REELS du dossier, en excluant les
+    sources declarees : le test reste valide si le registre evolue.
+    """
+    declares = {cell["source"] for cell in _live_read_cells()}
+    dossier = REPO_ROOT / "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life"
+    voisins = sorted(
+        p.relative_to(REPO_ROOT).as_posix()
+        for p in dossier.glob("*.lean")
+        if p.relative_to(REPO_ROOT).as_posix() not in declares
+    )
+    assert voisins, "aucun .lean voisin non declare : le controle negatif serait vide"
+    assert fast_lane.guard_applies(LIVE_READ_GUARD, ["MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/Pillars.lean"])
+    assert not fast_lane.guard_applies(LIVE_READ_GUARD, [voisins[0]])
+
+
+def test_les_chemins_du_garde_sont_derives_du_registre(tmp_path):
+    """La derivation est prouvee : un registre temporaire suffit a elargir le declencheur."""
+    registre = tmp_path / "registre.json"
+    registre.write_text(json.dumps({"version": 1, "cells": [
+        {"notebook": "N.ipynb", "cell_id": "abc", "source": "chemin/lu/ici.lean"}]}),
+        encoding="utf-8")
+    assert live_read_source_paths(registre) == ["chemin/lu/ici.lean"]
+    assert set(live_read_source_paths()) <= set(LIVE_READ_GUARD.paths)
+
+
+def test_un_registre_illisible_echoue_ferme(tmp_path):
+    """Fail-closed : un registre illisible ne doit pas rendre le garde muet."""
+    with pytest.raises(RuntimeError):
+        live_read_source_paths(tmp_path / "absent.json")
+
+
+def test_un_registre_illisible_ne_rend_que_le_garde_live_read_bavard(tmp_path, monkeypatch, capsys):
+    """Reserve 1 de #22041 : la panne est LOCALISEE, pas silencieuse.
+
+    `TRANCHE20` porte ces chemins au chargement du module : laisser filer
+    l'exception rendait `fast_lane_registry` inimportable, donc les 30+ gardes
+    avec lui (mesure : registre absent -> `import fast_lane` meurt sur
+    RuntimeError, aucun check-run emis). Le repli elargit a tous les carnets --
+    un SUPERSET -- et le dit sur stderr ; le rouge vient ensuite du garde
+    lui-meme, qui ne peut pas lire le registre manquant.
+    """
+    monkeypatch.setattr(fast_lane_registry, "LIVE_READ_REGISTRY",
+                        tmp_path / "absent.json")
+    assert live_read_guard_paths() == [LIVE_READ_WILDCARD]
+    assert "registre live-read illisible" in capsys.readouterr().err
+    assert fast_lane.guard_applies(
+        LIVE_READ_GUARD, ["MyIA.AI.Notebooks/Serie/Carnet.ipynb"])
+
+
+def test_registre_absent_le_module_reste_importable(tmp_path):
+    """Preuve de bout en bout, sur un arbre copie : l'import ne meurt pas.
+
+    Le test ci-dessus mesure le repli ; celui-ci mesure ce qu'il achete -- un
+    registre absent ne rend plus TOUT le registre inimportable. Le module est
+    copie dans un arbre temporaire ou `scripts/notebook_tools/` existe mais ou
+    le registre est absent : c'est l'etat exact qui tuait `fast_lane.py`.
+    """
+    import shutil
+
+    ci = tmp_path / "scripts" / "ci"
+    ci.mkdir(parents=True)
+    (tmp_path / "scripts" / "notebook_tools").mkdir()
+    shutil.copyfile(CI_DIR / "fast_lane_registry.py", ci / "fast_lane_registry.py")
+    code = (
+        "import json, sys\n"
+        f"sys.path.insert(0, {str(ci)!r})\n"
+        "import fast_lane_registry as r\n"
+        "print(json.dumps(r.TRANCHE20[0].paths))\n"
+    )
+    proc = subprocess.run([sys.executable, "-c", code],
+                          capture_output=True, text=True, encoding="utf-8")
+    assert proc.returncode == 0, proc.stderr
+    assert LIVE_READ_WILDCARD in json.loads(proc.stdout)
+    assert "registre live-read illisible" in proc.stderr
 
 
 # ---------------------------------------------------------------------------
@@ -504,14 +612,21 @@ def test_check_navlinks_argv_carries_the_pr_diff_scope_issue_21016():
 def test_self_hosted_policy_guard_is_wired_fail_closed():
     guard = {item.name: item for item in PILOT}["self-hosted-runner-policy"]
     assert guard.source == "fast-lane-shadow.yml"
+    # #22954 : `--check-timeouts` ajoute le cliquet des bornes de job. Il est
+    # ici en egalite stricte pour qu'un retrait soit un rouge, pas une
+    # desactivation silencieuse du cliquet.
     assert guard.argv == [
         "python",
         "scripts/ci/check_self_hosted_runner_policy.py",
         "--check",
+        "--check-timeouts",
     ]
     assert ".github/workflows/*.yml" in guard.paths
     assert ".github/workflows/*.yaml" in guard.paths
     assert "scripts/ci/check_self_hosted_runner_policy.py" in guard.paths
+    assert "scripts/ci/self_hosted_timeout_baseline.txt" in guard.paths, (
+        "une PR qui reecrit la baseline doit relancer le cliquet (#22954)"
+    )
     assert "scripts/ci/fast_lane_registry.py" in guard.paths
 
 
