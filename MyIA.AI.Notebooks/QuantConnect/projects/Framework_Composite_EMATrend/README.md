@@ -12,7 +12,7 @@ hebdomadaire) via le QC Algorithm Framework. Allocation cible : EMA70/Trend30
 
 Chevauchement d'univers : les 5 actions Mag7 (AAPL, MSFT, GOOGL, AMZN, NVDA) sont
 présentes dans les deux stratégies. Le modèle de construction de portefeuille
-(`MultiStrategyPCM`) attribue une part du capital à chaque alpha, puis additionne les deux
+(`MultiStrategyPouchesPCM`) attribue une part du capital à chaque alpha, puis additionne les deux
 parts sur ces cinq titres. C'est le mode `intent`, par défaut depuis #19759.
 
 **Défaut corrigé par #19759.** Avant d'appeler `determine_target_percent`, le
@@ -139,6 +139,26 @@ source (+0,73 pt sur 7 ans) ne se retrouve pas : −0,045 pt sur 21 mois, dans l
 Pas de verdict de stratégie : correction d'un défaut d'exécution, mesurée sur la fenêtre
 source puis confirmée sans effet de performance hors échantillon ; les écarts 0.378 →
 0.383 (source) et 0.558 → 0.557 (OOS) ne sont pas des « BEATS ».
+
+## Non-régression du module partagé (#20188)
+
+Depuis #21134, `main.py` importe `MultiStrategyPouchesPCM` de `SharedPCM/pouches_pcm.py` au lieu de la copie locale `portfolio_construction.py`. Deux backtests QC Cloud du 2026-10-26, aux paramètres par défaut et sur la fenêtre 2018-01-01 → 2025-01-01, vérifient que ce changement ne modifie aucun ordre :
+
+- **A** : le code de `main` au commit `54f9b9eec1`, avec le module partagé ;
+- **B** : les mêmes `main.py` et `alpha_models.py`, avec l'ancienne copie `portfolio_construction.py` prise au commit qui précède la migration (`777f502a2a^`). L'ancienne copie accepte les mêmes arguments (`additive`, `algorithm`, `watch_source`, `watch_tickers`) : seul l'import change. Dans le mode par défaut `intent`, les deux variantes additionnent les deux tranches.
+
+A et B portent la même instrumentation, qui ne passe aucun ordre. Elle relève la valeur du portefeuille chaque jour à minuit, période de chauffe comprise (210 séances). En fin de backtest, elle calcule une empreinte SHA-256 par année des ordres (identifiant, date, titre, quantité, statut, prix) et des valeurs relevées.
+
+| | A (module partagé) | B (ancienne copie) |
+|---|---|---|
+| Ordres | 4 184 | 4 184 |
+| Valeurs relevées | 2 861 | 2 861 |
+| Dernière valeur relevée | 497 892,91 | 497 892,91 |
+| Sharpe (QC) | 0,832 | 0,832 |
+| CAGR | 25,576 % | 25,576 % |
+| Pire baisse | 36,3 % | 36,3 % |
+
+Les empreintes annuelles sont égales : 7 sur 7 pour les ordres, 8 sur 8 pour les valeurs. Les 27 statistiques de QC sont égales, rotation comprise. Les compteurs de diagnostic (`PCM calls`, `PCM calls with Trend on EMA tickers`) et l'exposition brute moyenne (0,918) sont égaux aussi. La migration ne change donc pas le comportement du projet. Traces hors dépôt : `QC-traces/20188-nr/`.
 
 ## Chiffres antérieurs à #19759
 
