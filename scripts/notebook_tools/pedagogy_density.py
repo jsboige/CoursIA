@@ -479,11 +479,12 @@ def _baseline_unkeyed_files(
 def _baseline_at(ref: str) -> dict | None:
     """Parse :data:`BASELINE_FILE` as it stood at ``ref``; ``None`` if unreadable.
 
-    LOST_KEY is defined against the change's BASE, so the organ must read the
-    key set the ratchet held before the change. ``None`` means "could not read"
-    (shallow clone, absent object) and is propagated as "not evaluated" -- never
-    silently treated as an empty baseline, which would report every key as
-    newly added and every rename as clean.
+    LOST_KEY is defined against the state the change FORKS FROM -- the
+    merge-base, not the tip of the base (residu de #10403, cf :func:`_merge_base`), so
+    the caller passes the merge-base commit. ``None`` means "could not read"
+    (shallow clone, absent object) and is propagated as "not evaluated" --
+    never silently treated as an empty baseline, which would report every key
+    as newly added and every rename as clean.
     """
     import subprocess
 
@@ -501,6 +502,34 @@ def _baseline_at(ref: str) -> dict | None:
         return None
 
 
+def _merge_base(ref: str) -> str | None:
+    """Point de fork entre ``ref`` et ``HEAD`` (``git merge-base ref HEAD``).
+
+    LOST_KEY et l'apport de la PR se definissent contre l'etat d'AVANT la PR,
+    c'est-a-dire au merge-base, pas a la pointe de la base (residu de #10403). Sur une
+    PR empilee dont la base a gagne des commits depuis le fork, la pointe de
+    la base porte deja des cles que `main` a ajoutees (une regeneration du
+    baseline en ajoute a chaque fois) : les lire attribue a la PR un
+    franchissement qu'elle n'a pas cause -- un carnet renomme par la PR, dont
+    la cle n'existait pas au fork, ressort en LOST_KEY.
+
+    ``None`` = merge-base indeterminable (clone superficiel, objet absent) :
+    l'appelant dit "non evalue", il ne retombe jamais sur la pointe de la
+    base.
+    """
+    import subprocess
+
+    repo_root = _TOOLS_DIR.parents[1]
+    proc = subprocess.run(
+        ["git", "-C", str(repo_root), "merge-base", ref, "HEAD"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    if proc.returncode != 0:
+        return None
+    merge_base = proc.stdout.strip()
+    return merge_base or None
+
+
 def _renamed_notebook_pairs(base_ref: str) -> list[tuple[str, str]] | None:
     """``(old, new)`` pairs git reports as renames between ``base_ref`` and HEAD.
 
@@ -508,6 +537,11 @@ def _renamed_notebook_pairs(base_ref: str) -> list[tuple[str, str]] | None:
     Returns ``None`` when the base ref cannot be resolved (shallow clone, absent
     object), so the caller can say "not evaluated" instead of claiming a
     conformity it never measured -- the #8819 lesson transposed.
+
+    La forme est en TROIS points (``base_ref...HEAD``), donc deja resolue au
+    merge-base : passer la pointe de la base ou le merge-base rend le meme
+    jeu de paires. L'appelant passe le merge-base pour n'avoir qu'une seule
+    resolution de reference dans tout ``_check_orphans`` (residu de #10403).
     """
     import subprocess
 
@@ -590,19 +624,32 @@ def _check_orphans(base_ref: str | None = None) -> int:
             "LOST_KEY non evalue (pas de --base : la perte se definit contre la base)"
         )
     else:
-        base_data = _baseline_at(base_ref)
-        renamed = _renamed_notebook_pairs(base_ref)
-        if base_data is None or renamed is None:
+        # La comparaison se fait au MERGE-BASE, pas a la pointe de `--base`
+        # (residu de #10403) : une base en retard a gagne des commits depuis le fork, et
+        # lire son etat attribue a la PR les cles que `main` a ajoutees.
+        merge_base = _merge_base(base_ref)
+        if merge_base is None:
             lost_note = (
-                f"LOST_KEY non evalue (base {base_ref} illisible dans ce clone) "
+                f"LOST_KEY non evalue (merge-base entre {base_ref} et HEAD "
+                f"indeterminable dans ce clone -- clone superficiel ?) "
                 f"-- conformite ni affirmee ni niee"
             )
         else:
-            lost = _keys_lost_by_rename(base_data.get("notebooks", {}), baseline, renamed)
-            lost_note = (
-                f"LOST_KEY evalue contre {base_ref} "
-                f"({len(renamed)} renommage(s) de notebook detecte(s))"
-            )
+            base_data = _baseline_at(merge_base)
+            renamed = _renamed_notebook_pairs(merge_base)
+            if base_data is None or renamed is None:
+                lost_note = (
+                    f"LOST_KEY non evalue (merge-base {merge_base} illisible dans "
+                    f"ce clone) -- conformite ni affirmee ni niee"
+                )
+            else:
+                lost = _keys_lost_by_rename(
+                    base_data.get("notebooks", {}), baseline, renamed)
+                lost_note = (
+                    f"LOST_KEY evalue contre {base_ref}, au merge-base "
+                    f"{merge_base} "
+                    f"({len(renamed)} renommage(s) de notebook detecte(s))"
+                )
 
     failed = False
     if orphans:

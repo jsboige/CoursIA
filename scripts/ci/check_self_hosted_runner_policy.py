@@ -768,6 +768,35 @@ SAFE_SELF_HOSTED_TRIGGERS = frozenset({
 })
 DEFAULT_WORKFLOWS_DIR = Path(__file__).resolve().parents[2] / ".github" / "workflows"
 
+# -- #22954: ratchet baseline for job-level timeout-minutes ------------------
+# A job that can reach a self-hosted runner without `timeout-minutes` can hold
+# its slot for six hours (the Actions default) if it freezes; that slot is then
+# missing from the PR gates. The rule is measured on `origin/main` 2f1291f01
+# (2026-10-29): **138 self-hosted jobs, 75 without a job-level bound** -- 12 in
+# the audited hybrid/overflow form (#22461) and **63 static**. The 12 are bound
+# by the PR that introduced this ratchet; the 63 static ones are the debt this
+# baseline names, so the guard can be green at merge while refusing to let the
+# set GROW. Retire a line as soon as its job is bound; `--update-baseline`
+# rewrites the file from what is measured.
+BASELINE_NAME = "self_hosted_timeout_baseline.txt"
+DEFAULT_BASELINE = Path(__file__).with_name(BASELINE_NAME)
+
+
+def load_baseline(path: Path) -> set[str]:
+    """Read the tolerated `workflow.yml:job` keys.
+
+    The key is `workflow:job`, never `workflow:line`: a line-anchored key
+    expires as soon as anything is inserted above it, and a guard that reddens
+    on an unchanged site is the fastest way to get itself disabled.
+    """
+    if not path.is_file():
+        return set()
+    return {
+        line.strip()
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if line.strip() and not line.startswith("#")
+    }
+
 
 @dataclass(frozen=True)
 class Violation:
@@ -784,6 +813,12 @@ class ScanResult:
     self_hosted_jobs: int
     violations: list[Violation]
     broken: list[str]
+    # -- #22954: job-level timeout-minutes ratchet ---------------------------
+    # Defaults keep every existing reader (and every synthetic-workflow test)
+    # working unchanged: the ratchet is only engaged by --check-timeouts.
+    timeouts_checked: bool = False
+    timeout_missing: int = 0
+    timeout_baselined: int = 0
 
 
 def _load_yaml():
@@ -1061,7 +1096,20 @@ def _guard_violation_message(condition: str) -> str:
     return "pull_request self-hosted job must lead with the same-repo job guard"
 
 
-def scan_workflows(workflows_dir: Path = DEFAULT_WORKFLOWS_DIR) -> ScanResult:
+def scan_workflows(
+    workflows_dir: Path = DEFAULT_WORKFLOWS_DIR,
+    *,
+    check_timeouts: bool = False,
+    baseline: set[str] | None = None,
+) -> ScanResult:
+    """Scan ``workflows_dir`` and return the isolation verdict.
+
+    ``check_timeouts`` engages the #22954 ratchet: every job that can reach a
+    self-hosted runner must carry a job-level ``timeout-minutes``. It is opt-in
+    so that the ~60 synthetic-workflow tests that build a job on the fly keep
+    testing one invariant at a time; the blocking fast-lane entry passes the
+    flag, so the rule is enforced where it matters.
+    """
     yaml = _load_yaml()
     if yaml is None:
         return ScanResult(0, 0, 0, [], ["PyYAML is unavailable"])
@@ -1069,6 +1117,11 @@ def scan_workflows(workflows_dir: Path = DEFAULT_WORKFLOWS_DIR) -> ScanResult:
     paths = sorted([*workflows_dir.glob("*.yml"), *workflows_dir.glob("*.yaml")])
     if not paths:
         return ScanResult(0, 0, 0, [], [f"no workflows in {workflows_dir}"])
+
+    if baseline is None:
+        baseline = load_baseline(DEFAULT_BASELINE) if check_timeouts else set()
+    timeout_missing = 0
+    timeout_baselined = 0
 
     violations: list[Violation] = []
     broken: list[str] = []
@@ -1164,6 +1217,29 @@ def scan_workflows(workflows_dir: Path = DEFAULT_WORKFLOWS_DIR) -> ScanResult:
                 if not is_self_hosted:
                     continue
             self_hosted_jobs += 1
+
+            if check_timeouts:
+                # #22954: GitHub's default job timeout is SIX HOURS. A frozen
+                # job then holds a slot the PR gates need -- measured on
+                # 2026-10-15, where frozen `Twin parity audit` runs (#22944)
+                # held 16 of 18 ephemeral slots overnight and 104 runs had to
+                # be cancelled by hand. The baseline names the debt that
+                # predates the rule; it must never grow.
+                if job.get("timeout-minutes") is None:
+                    timeout_missing += 1
+                    key = f"{path.name}:{job_name}"
+                    if key in baseline:
+                        timeout_baselined += 1
+                    else:
+                        violations.append(Violation(
+                            path.name,
+                            str(job_name),
+                            "MISSING_TIMEOUT",
+                            "a job that can reach a self-hosted runner must "
+                            "carry a job-level timeout-minutes: the Actions "
+                            "default is 6 hours, and a frozen job holds its "
+                            "slot that long (#22954)",
+                        ))
 
             if "pull_request_target" in triggers:
                 violations.append(Violation(
@@ -1266,7 +1342,16 @@ def scan_workflows(workflows_dir: Path = DEFAULT_WORKFLOWS_DIR) -> ScanResult:
                         _guard_violation_message(condition),
                     ))
 
-    return ScanResult(len(paths), jobs_scanned, self_hosted_jobs, violations, broken)
+    return ScanResult(
+        len(paths),
+        jobs_scanned,
+        self_hosted_jobs,
+        violations,
+        broken,
+        timeouts_checked=check_timeouts,
+        timeout_missing=timeout_missing,
+        timeout_baselined=timeout_baselined,
+    )
 
 
 def _payload(result: ScanResult) -> dict[str, Any]:
@@ -1277,6 +1362,9 @@ def _payload(result: ScanResult) -> dict[str, Any]:
         "self_hosted_jobs": result.self_hosted_jobs,
         "violations": [asdict(item) for item in result.violations],
         "broken": result.broken,
+        "timeouts_checked": result.timeouts_checked,
+        "timeout_missing": result.timeout_missing,
+        "timeout_baselined": result.timeout_baselined,
     }
 
 
@@ -1286,6 +1374,13 @@ def _print_text(result: ScanResult) -> None:
         f"workflows={result.workflows_scanned} jobs={result.jobs_scanned} "
         f"self_hosted={result.self_hosted_jobs}"
     )
+    if result.timeouts_checked:
+        print(
+            "[self-hosted-policy] timeouts: "
+            f"sans job-level timeout-minutes={result.timeout_missing} "
+            f"(dont {result.timeout_baselined} en baseline #22954, "
+            f"{result.timeout_missing - result.timeout_baselined} nouveaux)"
+        )
     for item in result.violations:
         print(
             f"  VIOLATION {item.code}: {item.workflow}:{item.job}: "
@@ -1310,9 +1405,51 @@ def main(argv: list[str] | None = None) -> int:
         default=DEFAULT_WORKFLOWS_DIR,
         help="workflow directory (used by tests and offline audits)",
     )
+    parser.add_argument(
+        "--check-timeouts",
+        action="store_true",
+        help="engage the #22954 ratchet: every job that can reach a "
+             "self-hosted runner must carry a job-level timeout-minutes",
+    )
+    parser.add_argument(
+        "--baseline",
+        type=Path,
+        default=DEFAULT_BASELINE,
+        help="known tolerated jobs for the timeout ratchet (workflow.yml:job)",
+    )
+    parser.add_argument(
+        "--update-baseline",
+        action="store_true",
+        help="rewrite the timeout baseline from what is measured",
+    )
     args = parser.parse_args(argv)
 
-    result = scan_workflows(args.workflows_dir)
+    if args.update_baseline:
+        measured = scan_workflows(
+            args.workflows_dir, check_timeouts=True, baseline=set()
+        )
+        keys = sorted({
+            f"{item.workflow}:{item.job}"
+            for item in measured.violations
+            if item.code == "MISSING_TIMEOUT"
+        })
+        header = (
+            "# Jobs auto-heberges sans `timeout-minutes` au niveau du job (#22954).\n"
+            "# Cle = `workflow.yml:job`, jamais `workflow:ligne` : une cle ancree\n"
+            "# sur une ligne perime des qu'on insere au-dessus, et un garde qui\n"
+            "# rougit sur un site inchange finit desactive.\n"
+            "# Dette mesuree le 2026-10-29 sur origin/main 2f1291f01 : 63 jobs\n"
+            "# STATIQUES. Les 12 jobs HYBRIDES (#22461), eux, sont bornes par la PR\n"
+            "# qui a introduit ce cliquet -- la forme hybride n'a AUCUNE tolerance.\n"
+            "# Retirer une ligne des que son job est borne.\n"
+        )
+        args.baseline.write_text(
+            header + "\n".join(keys) + "\n", encoding="utf-8", newline="\n"
+        )
+        print(f"baseline reecrite : {args.baseline} ({len(keys)} jobs)")
+        return EXIT_OK
+
+    result = scan_workflows(args.workflows_dir, check_timeouts=args.check_timeouts)
     if args.json:
         print(json.dumps(_payload(result), indent=2, ensure_ascii=False))
     else:
