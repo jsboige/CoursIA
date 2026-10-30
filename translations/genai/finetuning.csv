@@ -4878,83 +4878,114 @@ demo: **always demand the trivial baseline and out-of-sample evaluation** — he
 without it, the notebook displayed 92.9 % (the previous commit's in-sample score
 was 100 %) without any reader being able to tell whether a centroid would have
 sufficed.",,,,,,,425601cc5a39bfcb,c931c0892c2aeda0,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,bf51c29a,markdown,fr,56bce685daaf101a,"### Comparaison : Merging vs Routing
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,bf51c29a,markdown,fr,3173fda3dfbc2b26,"### Comparaison : Merging vs Routing
 
-Maintenant que nous avons implemente toutes les approches, comparons-les systematiquement.
+Les cinq approches des sections 3 à 6 sont implémentées ; comparons-les sur les
+critères qui décident en production — ce qu'elles coûtent, ce qu'elles préservent
+et ce qu'elles laissent faire évoluer.
 
-| Critere | LERP | SLERP | DARE | Routing (MoE) |
+| Critère | LERP | SLERP | DARE | Routing (MoE) |
 |---------|------|-------|------|---------------|
-| **Simplicite** | Très simple | Simple | Simple | Plus complexe |
-| **Qualite par domaine** | Degradee | Moins degradee | Variable | Optimale (expert dedie) |
-| **Cout d'inference** | 1 modèle | 1 modèle | 1 modèle | N modèles + routeur |
-| **VRAM** | 1x | 1x | 1x | Nx (ou offloading) |
-| **Flexibilite** | Fixe au merge | Fixe au merge | Fixe au merge | Dynamique (ajout d'experts) |
+| **Simplicité** | Très simple | Simple | Simple | Plus complexe |
+| **Qualité par domaine** | Dégradée (littérature) | Moins dégradée (littérature) | Variable (littérature) | Optimale si bien routé (littérature) |
+| **Coût d'inférence** | 1 modèle | 1 modèle | 1 modèle | N modèles + classifieur |
+| **VRAM** | × 1 | × 1 | × 1 | × N (ou offloading) |
+| **Latence** | 1 forward pass | 1 forward pass | 1 forward pass | 1 forward pass + classification |
+| **Entraînement additionnel** | 0 | 0 | 0 | Classifieur léger (~5 min) |
+| **Gestion des inputs hybrides** | Mauvaise (perte par moyennage) | Mauvaise (perte par moyennage) | Meilleure (dropout aléatoire) | Excellente (soft-routing) |
+| **Flexibilité** | Fixe au merge | Fixe au merge | Fixe au merge | Dynamique (ajout d'experts) |
 | **Outils** | Mergekit | Mergekit | Mergekit | Custom / vLLM |
 
-**Quand utiliser quoi ?**
-- **SLERP** : Meilleur compromis qualite/simplicite pour combiner 2-3 modèles
-- **DARE** : Quand on a beaucoup d'experts (>3) et des interferences entre tâches
-- **Routing** : Quand les domaines sont très différents et qu'on peut se permettre Nx VRAM
-### Comparaison : Merging vs Routing
+**Ce que ce carnet mesure, et ce qu'il ne mesure pas.** Une seule comparaison
+chiffrée sort des sections 3 à 6 : l'arbitrage du routeur contre la baseline
+triviale (section 6) — **13/14 hors échantillon (92,9 %) pour le classifieur
+appris contre 12/14 (85,7 %) pour un centroïde**, soit +7,1 points, avec la
+réserve qui l'accompagne : sur 14 points, l'écart tient à un pli. Le reste du
+tableau — qualité par domaine, perte par moyennage du LERP, avantage de SLERP,
+robustesse de DARE — est de la **littérature** : les sorties committées des
+sections 3 à 5 ne contiennent que des générations textuelles, aucune perplexité.
 
-Maintenant que nous avons démontré les deux paradigmes, voici leur
-**comparaison pragmatique** :
+**Règle de sélection — une seule, et le critère qui tranche est le chevauchement
+des domaines, pas le nombre d'experts :**
 
-| Aspect | Merging (LERP/SLERP/DARE) | Routing (MoE) |
-|---|---|---|
-| VRAM | × 1 adaptateur | × N experts chargés |
-| Latence | × 1 forward pass | × 1 forward pass + classification |
-| Qualité par domaine | 95-98 % du spécialiste (littérature, non mesuré) | 100 % du spécialiste (si bien routé) |
-| Entraînement additionnel | 0 | Classifieur léger (~5 min) |
-| Gestion des inputs hybrides | Mauvaise (perte par moyennage) | Excellente (soft-routing) |
+1. **Les domaines se chevauchent** dans l'espace d'embeddings (code, maths et
+   raisonnement mêlés dans les mêmes requêtes) → **routing / soft-MoE**. C'est le
+   seul choix qui sélectionne un expert par requête au lieu de moyenner les
+   poids, donc le seul dont la qualité ne dépend pas de l'absence
+   d'interférence. C'est aussi la seule mécanique que ce carnet évalue
+   réellement, et le gain du classifieur appris y reste modeste : **mesurez la
+   baseline triviale et hors échantillon** avant de conclure qu'un routeur appris
+   se justifie.
+2. **Les domaines sont mutuellement exclusifs** (tech vs cuisine) et vous avez
+   **plus de trois adaptateurs** → **merge statique DARE**, `drop_rate = 0.3`.
+   Zéro overhead d'inférence, et le dropout aléatoire atténue les interférences
+   entre tâches — propriété de littérature, non mesurée ici.
+3. **Deux ou trois adaptateurs, sans interférence à traiter** → **SLERP** : il
+   interpole sur l'arc de grand cercle et retombe automatiquement sur LERP quand
+   deux task vectors sont quasi colinéaires (fallback implémenté en section 4 ;
+   le log y rapporte `LERP fallback : 0 couches`, donc aucun n'a servi sur cet
+   exemple). Le LERP reste le choix par défaut quand on veut un seul paramètre
+   réglable (`α`) et un comportement trivialement prévisible.
+4. **Système multi-tâches généraliste** (un modèle qui doit tout faire) →
+   **merge DARE**, pour la simplicité d'exploitation ; le routing n'y ajoute son
+   coût de VRAM que s'il existe un signal de classification fiable.
 
-**Règle de sélection pragmatique** :
-- Si les **domaines sont mutuellement exclusifs** (Tech vs Cuisine)
-  → **DARE** est le défaut. Simple, efficace, zéro overhead.
-- Si les **domaines se chevauchent** (Code + Math + Reasoning) →
-  **Routing/soft-MoE** est préférable. Préserve la qualité par
-  token.
-- Pour les **systèmes multi-tâches généraux** (un LLM qui doit
-  tout faire) → **Merging** (DARE) bat souvent le routing par
-  sa simplicité.
+Rien dans ce carnet ne classe les trois merges entre eux : c'est un choix de
+littérature, à revalider sur un benchmark avec perplexité.
 ","### Comparison: Merging vs Routing
 
-Now that we have implemented all the approaches, let us compare them systematically.
+All five approaches of sections 3 to 6 are implemented; let us compare them on
+the criteria that decide in production — what they cost, what they preserve and
+what they let you change later.
 
 | Criterion | LERP | SLERP | DARE | Routing (MoE) |
 |-----------|------|-------|------|---------------|
 | **Simplicity** | Very simple | Simple | Simple | More complex |
-| **Per-domain quality** | Degraded | Less degraded | Variable | Optimal (dedicated expert) |
-| **Inference cost** | 1 model | 1 model | 1 model | N models + router |
-| **VRAM** | 1x | 1x | 1x | Nx (or offloading) |
+| **Per-domain quality** | Degraded (literature) | Less degraded (literature) | Variable (literature) | Optimal if well routed (literature) |
+| **Inference cost** | 1 model | 1 model | 1 model | N models + classifier |
+| **VRAM** | x 1 | x 1 | x 1 | x N (or offloading) |
+| **Latency** | 1 forward pass | 1 forward pass | 1 forward pass | 1 forward pass + classification |
+| **Additional training** | 0 | 0 | 0 | Lightweight classifier (~5 min) |
+| **Handling hybrid inputs** | Poor (loss through averaging) | Poor (loss through averaging) | Better (random dropout) | Excellent (soft-routing) |
 | **Flexibility** | Fixed at merge | Fixed at merge | Fixed at merge | Dynamic (adding experts) |
 | **Tools** | Mergekit | Mergekit | Mergekit | Custom / vLLM |
 
-**When to use what?**
-- **SLERP**: Best quality/simplicity compromise to combine 2-3 models
-- **DARE**: When you have many experts (>3) and interference between tasks
-- **Routing**: When the domains are very different and you can afford Nx VRAM
-### Comparison: Merging vs Routing
+**What this notebook measures, and what it does not.** Only one quantitative
+comparison comes out of sections 3 to 6: the router arbitrage against the
+trivial baseline (section 6) — **13/14 out of sample (92.9 %) for the learned
+classifier against 12/14 (85.7 %) for a centroid**, i.e. +7.1 points, with the
+reservation that accompanies it: on 14 points, the gap is one fold. The rest of
+the table — per-domain quality, LERP loss through averaging, the SLERP advantage,
+DARE robustness — is **literature**: the committed outputs of sections 3 to 5
+contain only text generations, no perplexity.
 
-Now that we have demonstrated both paradigms, here is their
-**pragmatic comparison**:
+**Selection rule — a single one, and the criterion that decides is the overlap of
+the domains, not the number of experts:**
 
-| Aspect | Merging (LERP/SLERP/DARE) | Routing (MoE) |
-|---|---|---|
-| VRAM | × 1 adapter | × N experts loaded |
-| Latency | × 1 forward pass | × 1 forward pass + classification |
-| Per-domain quality | 95-98 % of the specialist | 100 % of the specialist (if well routed) |
-| Additional training | 0 | Lightweight classifier (~5 min) |
-| Handling hybrid inputs | Poor (loss through averaging) | Excellent (soft-routing) |
+1. **The domains overlap** in embedding space (code, maths and reasoning mixed
+   within the same queries) -> **routing / soft-MoE**. It is the only choice that
+   selects an expert per query instead of averaging weights, hence the only one
+   whose quality does not depend on the absence of interference. It is also the
+   only mechanism this notebook actually evaluates, and the gain of the learned
+   classifier remains modest there: **measure the trivial baseline and an
+   out-of-sample split** before concluding that a learned router is justified.
+2. **The domains are mutually exclusive** (tech vs cooking) and you have **more
+   than three adapters** -> **static DARE merge**, `drop_rate = 0.3`. Zero
+   inference overhead, and random dropout attenuates inter-task interference —
+   a literature property, not measured here.
+3. **Two or three adapters, with no interference to handle** -> **SLERP**: it
+   interpolates on the great-circle arc and falls back to LERP automatically when
+   two task vectors are nearly collinear (fallback implemented in section 4; the
+   log there reports `LERP fallback : 0 couches`, so none was used on that
+   example). LERP remains the default when you want a single tunable parameter
+   (`alpha`) and trivially predictable behaviour.
+4. **General multi-task system** (one model that must do everything) -> **DARE
+   merge**, for operational simplicity; routing only adds its VRAM cost there if
+   a reliable classification signal exists.
 
-**Pragmatic selection rule**:
-- If the **domains are mutually exclusive** (Tech vs Cooking)
-  → **DARE** is the default. Simple, effective, zero overhead.
-- If the **domains overlap** (Code + Math + Reasoning) →
-  **Routing/soft-MoE** is preferable. Preserves per-token quality.
-- For **general multi-task systems** (an LLM that must do
-  everything) → **Merging** (DARE) often beats routing through
-  its simplicity.",,,,,,,56bce685daaf101a,e8381b82aa04178c,,,,,,,,,,,,,,
+Nothing in this notebook ranks the three merges against each other: that is a
+literature choice, to be revalidated on a benchmark with perplexity.
+",,,,,,,a2e720832e347355,a73bae4160c66d20,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,095833db,markdown,fr,671380ffe72bc3ea,"### Interpretation : Comparaison finale
 
 **Résultats attendus (hypothèses qualitatives — aucun classement mesuré, cf. Hypothèse à tester ci-dessous)** :
