@@ -329,3 +329,131 @@ def test_apply_cree_le_repertoire_cible_avant_le_mv(monkeypatch, tmp_path):
     assert migration.main(["--apply"]) == 0
     assert (tmp_path / "cible" / "dossier").is_dir()
     assert ("mv", "ancien/dossier/a.ipynb", "cible/dossier/a.ipynb") in calls
+
+
+# --- Fermeture atomique : un referent tenu suffit a refuser la tranche ------
+#
+# Un deplacement est atomique avec sa fermeture (fichiers deplaces + referents
+# reecrits). Sauter les fichiers tenus laisse des liens morts dans les DEUX
+# sens. Mesure du 2026-10-30 sur la tranche 04b : 5 des 11 referents sont tenus
+# par des PRs ouvertes, dont _quarto.yml (7 lignes de nav Quarto), la table de
+# traduction (145 lignes) et 2 baselines -- les sauter laissait le build docs
+# faux sans que rien ne le dise.
+
+
+def _apply_mocks(monkeypatch, gating, calls):
+    def fake_git(*args):
+        calls.append(args)
+        return ""
+
+    monkeypatch.setattr(migration, "git", fake_git)
+    monkeypatch.setattr(migration, "build_plan",
+                        lambda only=None: ([("ancien/dossier/a.ipynb", "cible/dossier/a.ipynb")], []))
+    monkeypatch.setattr(migration, "check_plan", lambda plan, only=None: [])
+    monkeypatch.setattr(migration, "build_replacements", lambda plan, only=None: [])
+    monkeypatch.setattr(migration, "run_sweep", lambda reps: ({}, 0))
+    monkeypatch.setattr(migration, "sweep_files", lambda: [])
+    monkeypatch.setattr(migration, "report_gating", lambda concerned: gating)
+
+
+def test_apply_refuse_une_fermeture_partiellement_tenue(monkeypatch, capsys):
+    """Un REFERENT tenu (pas un fichier du plan) suffit : rien n'est deplace."""
+    calls = []
+    _apply_mocks(monkeypatch, {"#22643": ["_quarto.yml"]}, calls)
+
+    assert migration.main(["--apply"]) == 1
+    out = capsys.readouterr().out
+    assert "REFUS" in out
+    assert "_quarto.yml" in out
+    assert "#22643" in out
+    assert not any(a[0] == "mv" for a in calls), "aucun git mv sur une fermeture tenue"
+
+
+def test_apply_refuse_aussi_si_le_fichier_du_plan_est_tenu(monkeypatch, capsys):
+    """Le cas d'origine de la porte : le fichier a deplacer lui-meme est tenu."""
+    calls = []
+    _apply_mocks(monkeypatch, {"#101": ["ancien/dossier/a.ipynb"]}, calls)
+
+    assert migration.main(["--apply"]) == 1
+    assert "1 du plan" in capsys.readouterr().out
+    assert not any(a[0] == "mv" for a in calls)
+
+
+def test_apply_procede_quand_la_fermeture_est_libre(monkeypatch, capsys):
+    """Temoin negatif : gating vide = feu vert, le mv a bien lieu."""
+    calls = []
+    _apply_mocks(monkeypatch, {}, calls)
+
+    assert migration.main(["--apply"]) == 0
+    assert "APPLIQUE" in capsys.readouterr().out
+    assert any(a[0] == "mv" for a in calls)
+
+
+# --- Formes NOM NU : liens frere-a-frere casses par le renommage T3 ---------
+
+
+def test_nom_nu_d_un_carnet_renomme_est_reecrit():
+    """`[WS-00a](WS-00a-...ipynb)` est relatif au dossier : le renommage le cassait."""
+    plan = [(f"{migration.HUB_OLD}/{NB_04B}",
+             f"{migration.HUB_NEW}/05-Wavelet-Scattering/"
+             "WS-00a-Ondelettes-1D-from-scratch-Python.ipynb")]
+
+    reps = migration.build_replacements(plan, SUB_04B)
+    rules = dict(reps)
+
+    assert rules["WS-00a-Ondelettes-1D-from-scratch.ipynb"] == \
+        "WS-00a-Ondelettes-1D-from-scratch-Python.ipynb"
+    # le chemin complet passe AVANT le nom nu (anti remplacement partiel)
+    cles = [a for a, _ in reps]
+    assert cles.index(f"{migration.HUB_OLD}/{NB_04B}") < \
+        cles.index("WS-00a-Ondelettes-1D-from-scratch.ipynb")
+
+
+def test_nom_nu_ambigu_n_est_pas_reecrit():
+    """Deux carnets de meme nom de base vers deux cibles : le nom nu ne dit pas lequel."""
+    plan = [
+        (f"{migration.HUB_OLD}/a/x.ipynb", f"{migration.HUB_NEW}/b/x-Python.ipynb"),
+        (f"{migration.HUB_OLD}/c/x.ipynb", f"{migration.HUB_NEW}/d/x-ML.ipynb"),
+    ]
+
+    assert "x.ipynb" not in dict(migration.build_replacements(plan))
+
+
+def test_nom_nu_absent_quand_le_fichier_garde_son_nom():
+    """Temoin negatif : un simple deplacement de dossier ne cree pas de regle de nom."""
+    plan = [(f"{migration.HUB_OLD}/04b/W.ipynb", f"{migration.HUB_NEW}/05/W.ipynb")]
+
+    assert "W.ipynb" not in dict(migration.build_replacements(plan))
+
+
+# --- `--survey` : quelle tranche est mergeable aujourd'hui -------------------
+
+
+def test_survey_refuse_si_la_mesure_des_prs_est_impossible(monkeypatch):
+    """Pas de releve des PRs = pas de verdict d'ordonnancement (fail-closed)."""
+    monkeypatch.setattr(migration, "fetch_open_pr_files", lambda: None)
+
+    assert migration.survey() == 1
+
+
+def test_survey_paie_le_releve_gh_une_seule_fois(monkeypatch, capsys):
+    """Dix tranches, UN appel gh : le releve se paie une fois, pas par tranche."""
+    appels = []
+
+    def fetch():
+        appels.append(1)
+        return {"#1": {"_quarto.yml"}}
+
+    monkeypatch.setattr(migration, "fetch_open_pr_files", fetch)
+    monkeypatch.setattr(migration, "DIR_MAP", {"A": "A2", "B": "B2"})
+    monkeypatch.setattr(migration, "build_plan",
+                        lambda only=None: ([("ancien/a/x.ipynb", "cible/a/x.ipynb")], []))
+    monkeypatch.setattr(migration, "build_replacements", lambda plan, only=None: [])
+    monkeypatch.setattr(migration, "run_sweep", lambda reps: ({"_quarto.yml": 1}, 1))
+
+    assert migration.survey() == 0
+    out = capsys.readouterr().out
+    assert len(appels) == 1
+    assert "0 tranche(s) libre(s)" in out
+    # le referent global bloque une tranche dont AUCUN fichier du plan n'est tenu
+    assert "TENUE" in out and "0 du plan" in out

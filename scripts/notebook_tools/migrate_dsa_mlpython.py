@@ -348,6 +348,24 @@ def build_replacements(plan: list[tuple[str, str]], only: str | None = None) -> 
         # residu : le hub lui-meme (deplace en T5, pas avant)
         reps.append((HUB_OLD, HUB_NEW))
         reps.append(("DataScienceWithAgents/", "ML.Python/"))
+    # formes NOM NU : lien frere-a-frere dans un notebook
+    # ("[WS-00a](WS-00a-Ondelettes-1D-from-scratch.ipynb)"), script de repro et
+    # prose qui nomment un carnet par son seul nom de fichier. Mesure du
+    # 2026-10-30 sur la seule tranche 04b : 34 occurrences dans les 11 fichiers
+    # touches, invisibles a toutes les regles ci-dessus -- celles-ci portent
+    # toutes un prefixe de dossier, et le renommage T3 les transformait en
+    # liens morts en silence.
+    # La regle n'est ajoutee que si le nom de base est NON AMBIGU dans le plan :
+    # deux carnets de meme nom de base vers deux cibles differentes rendraient
+    # le remplacement aveugle (le nom nu ne dit pas lequel des deux on designe).
+    cibles: dict[str, set[str]] = {}
+    for old, new in plan:
+        base_old, base_new = Path(old).name, Path(new).name
+        if base_old != base_new:
+            cibles.setdefault(base_old, set()).add(base_new)
+    for base_old, cibles_new in cibles.items():
+        if len(cibles_new) == 1:
+            reps.append((base_old, next(iter(cibles_new))))
     # dedup + tri longueur decroissante
     seen, out = set(), []
     for a, b in reps:
@@ -382,13 +400,18 @@ def sweep_files() -> list[str]:
         self_rel = Path(__file__).resolve().relative_to(REPO_ROOT).as_posix()
     except ValueError:
         self_rel = ""
+    # Le temoin de l'organe porte les ANCIENS noms verbatim : il asserte que la
+    # regle `ancien -> nouveau` existe, donc le balayer reecrirait ses fixtures
+    # et casserait ses assertions (mesure 2026-10-30 : la tranche 04b le
+    # comptait comme referent, et l'organe se bloquait lui-meme).
+    fixtures = {self_rel, "scripts/notebook_tools/tests/test_migrate_dsa_gating.py"}
     out = []
     for line in git("ls-files").splitlines():
         p = Path(line)
         if p.suffix.lower() in TEXT_SUFFIXES and not (excluded_parts & set(p.parts)) \
                 and not line.startswith("scripts/results/") \
                 and not p.name.startswith("COURSE_CATALOG.generated.") \
-                and line != self_rel:
+                and line not in fixtures:
             out.append(line)
     return out
 
@@ -496,7 +519,7 @@ def pr_files_via_rest(pr_number: int) -> list[str] | None:
     return paths
 
 
-def report_gating(concerned: set[str]) -> dict[str, list[str]] | None:
+def report_gating(concerned: set[str], pr_files: dict[str, set[str]] | None = None) -> dict[str, list[str]] | None:
     """Fichiers du plan retenus par des PRs ouvertes, PAR PR (best-effort via gh).
 
     Porte par fichier (decision ai-01 2026-10-23, #17417 T2-b) : une PR ouverte
@@ -514,6 +537,26 @@ def report_gating(concerned: set[str]) -> dict[str, list[str]] | None:
     PR hors fenetre est indiscernable d'une PR inexistante, donc un fichier
     qu'elle tient serait declare libre en silence. Une mesure partielle qui
     se tait est exactement la classe de defaut que ce mode corrige."""
+    prs = fetch_open_pr_files() if pr_files is None else pr_files
+    if prs is None:
+        return None
+    holding: dict[str, list[str]] = {}
+    for key, files in prs.items():
+        held = sorted(files & concerned)
+        if held:
+            holding[key] = held
+    return holding
+
+
+def fetch_open_pr_files() -> dict[str, set[str]] | None:
+    """`{"#N": {chemins}}` de TOUTES les PRs ouvertes, en UN appel gh.
+
+    Separe de `report_gating` pour que la mesure soit payee une seule fois :
+    `--survey` intersecte le meme releve avec la fermeture de chaque
+    sous-repertoire (une dizaine), sans refaire un appel gh par tranche.
+
+    None = mesure impossible (gh absent, gh en echec, liste des PRs tronquee,
+    ou liste de fichiers d'une PR au plafond GraphQL sans re-mesure REST)."""
     try:
         out = subprocess.run(
             ["gh", "pr", "list", "-R", "jsboige/CoursIA", "--state", "open",
@@ -530,33 +573,75 @@ def report_gating(concerned: set[str]) -> dict[str, list[str]] | None:
         print(f"[gating] TRONCATURE : {len(prs)} PRs lues (limite {GH_PR_LIST_LIMIT} atteinte) "
               "-- les PRs plus anciennes ne sont pas mesurees, mesure impossible")
         return None
-    holding: dict[str, list[str]] = {}
+    out_files: dict[str, set[str]] = {}
     for pr in prs:
-        files = [f["path"] for f in (pr.get("files") or [])
-                 if isinstance(f, dict) and f.get("path")]
+        files = {f["path"] for f in (pr.get("files") or [])
+                 if isinstance(f, dict) and f.get("path")}
         if len(files) >= GH_PR_FILES_GRAPHQL_CAP:
             rest = pr_files_via_rest(pr["number"])
             if rest is None:
                 print(f"[gating] PR #{pr['number']} : {GH_PR_FILES_GRAPHQL_CAP} fichiers ou plus, "
                       "mesure REST paginee impossible -- mesure incomplete")
                 return None
-            files = rest
-        held = sorted({p for p in files if p in concerned})
-        if held:
-            holding[f"#{pr['number']}"] = held
-    return holding
+            files = set(rest)
+        out_files[f"#{pr['number']}"] = files
+    return out_files
+
+
+def survey() -> int:
+    """Quelle tranche est mergeable AUJOURD'HUI ? Une ligne par sous-repertoire.
+
+    Un deplacement est atomique avec sa fermeture (fichiers deplaces + referents
+    reecrits) : la tranche n'est mergeable que si AUCUN fichier de cette
+    fermeture n'est tenu par une PR ouverte. La fermeture d'un sous-repertoire
+    n'est pas seulement ses carnets -- elle inclut les referents globaux que
+    sont `_quarto.yml`, les baselines et la table de traduction, des qu'ils
+    citent un de ses fichiers. D'ou cette mesure : elle dit a l'ordonnanceur
+    quelle tranche peut partir, au lieu de le supposer.
+    """
+    pr_files = fetch_open_pr_files()
+    if pr_files is None:
+        return 1
+    print(f"{'sous-repertoire':34s} {'mv':>3s} {'ref':>4s}  etat")
+    print("-" * 78)
+    libres = []
+    for only in sorted(DIR_MAP):
+        plan, _ = build_plan(only)
+        if not plan:
+            print(f"{only:34s} {0:3d} {0:4d}  tranche vide")
+            continue
+        touched, _n = run_sweep(build_replacements(plan, only))
+        concerned = {old for old, _ in plan} | set(touched)
+        gating = report_gating(concerned, pr_files)
+        if gating is None:
+            return 1
+        n_held = len({f for files in gating.values() for f in files})
+        if gating:
+            n_plan = sum(1 for old, _ in plan if any(old in v for v in gating.values()))
+            print(f"{only:34s} {len(plan):3d} {len(touched):4d}  "
+                  f"TENUE {len(gating):2d} PRs / {n_held:2d} fichiers ({n_plan} du plan)")
+        else:
+            libres.append(only)
+            print(f"{only:34s} {len(plan):3d} {len(touched):4d}  LIBRE -- mergeable aujourd'hui")
+    print("-" * 78)
+    print(f"{len(libres)} tranche(s) libre(s) : {', '.join(libres) if libres else 'aucune'}")
+    return 0
 
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="Migration DataScienceWithAgents -> ML/ML.Python (#17417, sequencement par fichier : un fichier tenu par une PR ouverte attend sa PR)")
-    ap.add_argument("--apply", action="store_true", help="execute les git mv et reecritures, en sautant les fichiers tenus par des PRs ouvertes (defaut: dry-run, aucune ecriture)")
+    ap.add_argument("--apply", action="store_true", help="execute les git mv et reecritures (defaut: dry-run, aucune ecriture) ; refuse si la fermeture du deplacement -- fichiers deplaces ET referents -- est tenue par une PR ouverte")
     ap.add_argument("--report-gating", action="store_true", help="liste, par PR ouverte, les fichiers du plan qu'elle retient (via gh)")
+    ap.add_argument("--survey", action="store_true", help="mesure, pour CHAQUE sous-repertoire, si sa fermeture est libre (tranche mergeable) -- un seul appel gh")
     ap.add_argument("--json", action="store_true", help="sortie machine")
     ap.add_argument("--only", metavar="SOUS_REPERTOIRE", default=None,
                     help="restreint le plan et le sweep a UN sous-repertoire du hub "
                          "(arbitrage ai-01 2026-10-23 : un deplacement par sous-repertoire, "
                          "une PR par tranche). Exemple : --only 04b-Wavelet-Scattering")
     args = ap.parse_args(argv)
+
+    if args.survey:
+        return survey()
 
     only = resolve_only(args.only) if args.only else None
     plan, errors = build_plan(only)
@@ -596,13 +681,13 @@ def main(argv: list[str] | None = None) -> int:
                 print("\n=== FICHIERS RETENUS : mesure impossible (fail-closed) ===")
             elif gating:
                 n_held = sum(len(v) for v in gating.values())
-                print(f"\n=== FICHIERS RETENUS par des PRs ouvertes ({len(gating)} PRs, {n_held} fichiers -- attendent leur PR) ===")
+                print(f"\n=== FERMETURE TENUE par des PRs ouvertes ({len(gating)} PRs, {n_held} fichiers) : tranche NON MERGEABLE ===")
                 for pr_id in sorted(gating, key=lambda k: int(k[1:])):
                     print(f"  {pr_id} retient {len(gating[pr_id])} fichier(s) :")
                     for f in gating[pr_id]:
                         print(f"    {f}")
             else:
-                print("\n=== FICHIERS RETENUS : aucun (aucune PR ouverte ne touche le plan) ===")
+                print("\n=== FERMETURE LIBRE : aucune PR ouverte ne touche le plan ni ses referents ===")
         print(f"\nmode {'APPLY' if args.apply else 'DRY-RUN (aucune ecriture)'}")
 
     if args.json:
@@ -619,13 +704,33 @@ def main(argv: list[str] | None = None) -> int:
         if gating is None:
             print("REFUS : mesure des PRs gelantes impossible (gate #5.4 fail-closed) -- aucun git mv execute.")
             return 1
-        held = {f for files in gating.values() for f in files}
-        plan_free = [(old, new) for old, new in plan if old not in held]
+        if gating:
+            # Un deplacement est ATOMIQUE avec sa fermeture : les fichiers deplaces
+            # ET les referents reecrits. Sauter les fichiers tenus laisse des liens
+            # morts dans les DEUX sens -- un referent libre reecrit vers un carnet
+            # reste a son ancien chemin, un referent tenu gardant l'ancien chemin
+            # vers un carnet deplace. La mesure du 2026-10-30 sur la tranche 04b
+            # montre le cout reel de l'ancien contrat « skip » : 5 des 11 referents
+            # sont tenus, dont _quarto.yml (7 lignes de nav), la table de traduction
+            # (145 lignes) et 2 baselines -- les sauter en silence rendait le build
+            # docs faux sans que rien ne le dise.
+            # La porte refuse donc la FERMETURE ENTIERE : une tranche tenue est une
+            # tranche NON MERGEABLE, jamais une tranche a moitie appliquee. La lane
+            # choisit alors un sous-repertoire dont la fermeture est libre.
+            held = {f for files in gating.values() for f in files}
+            in_plan = sum(1 for old, _ in plan if old in held)
+            print(f"REFUS : la fermeture du deplacement est tenue par des PRs ouvertes "
+                  f"({len(gating)} PRs, {len(held)} fichiers dont {in_plan} du plan, "
+                  f"{len(held) - in_plan} referents) -- aucun git mv execute.")
+            for pr_id in sorted(gating, key=lambda k: int(k[1:])):
+                print(f"  {pr_id} retient :")
+                for f in gating[pr_id]:
+                    print(f"    {f}")
+            return 1
         # Ordre : git mv d'abord, puis sweep -- apres le mv, `git ls-files` liste
         # le hub a ses NOUVEAUX chemins (navlinks internes relatifs reecrits la),
-        # les referents externes a leurs chemins inchanges. Les fichiers tenus ne
-        # sont ni mv ni sweep : leur PR ouverte les tient a leur chemin actuel.
-        for old, new in plan_free:
+        # les referents externes a leurs chemins inchanges.
+        for old, new in plan:
             # `git mv` refuse une destination dont le repertoire parent n'existe
             # pas ("fatal: destination directory does not exist") : le hub cible
             # n'existe pas encore au premier deplacement. On cree donc les
@@ -634,18 +739,9 @@ def main(argv: list[str] | None = None) -> int:
             (REPO_ROOT / Path(new).parent).mkdir(parents=True, exist_ok=True)
             git("mv", old, new)
         all_paths = sweep_files()
-        free_paths = [f for f in all_paths if f not in held]
-        n_out = apply_sweep(reps, [f for f in free_paths if not f.startswith(HUB_NEW)])
-        n_hub = apply_sweep(reps, [f for f in free_paths if f.startswith(HUB_NEW)])
-        if held:
-            print(f"ATTENDENT leur PR ({len(held)} fichiers, porte par fichier -- #17417 T2-b) :")
-            for pr_id in sorted(gating, key=lambda k: int(k[1:])):
-                for f in gating[pr_id]:
-                    print(f"  {pr_id}: {f}")
-        if not plan_free and n_out == 0 and n_hub == 0:
-            print("REFUS : tous les fichiers du plan sont retenus par des PRs ouvertes -- rien n'a ete applique.")
-            return 1
-        print(f"APPLIQUE : {len(plan_free)}/{len(plan)} git mv + sweep ({n_out} referents externes + {n_hub} fichiers du hub reecrits). Aucun commit -- la lane reviewe puis commit.")
+        n_out = apply_sweep(reps, [f for f in all_paths if not f.startswith(HUB_NEW)])
+        n_hub = apply_sweep(reps, [f for f in all_paths if f.startswith(HUB_NEW)])
+        print(f"APPLIQUE : {len(plan)}/{len(plan)} git mv + sweep ({n_out} referents externes + {n_hub} fichiers du hub reecrits). Aucun commit -- la lane reviewe puis commit.")
     return 0
 
 
