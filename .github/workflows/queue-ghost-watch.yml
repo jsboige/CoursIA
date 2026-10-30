@@ -132,7 +132,7 @@ jobs:
         run: |
           set +e
           python scripts/ci/gh_queue_health.py --watch --repo jsboige/CoursIA \
-            --output /tmp/queue-ghost-watch.json
+            --output /tmp/queue-ghost-watch.json 2> /tmp/queue-ghost-watch.stderr
           rc=$?
           echo "exit_code=${rc}"
           echo "exit_code=${rc}" >> "$GITHUB_OUTPUT"

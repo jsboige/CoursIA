@@ -98,9 +98,40 @@ variable {X : TopCat.{u}}
 -- `stalk_exact_godementStep` at `f = dⁿ`, both assembly patterns —
 -- `d^{n+1} = godementStep dⁿ` and `C^{n+2} = C⁰(coker dⁿ)` — being
 -- definitional (`rfl`): the recurrence promised by Part 93(a) is the lemma
--- itself, no induction over `n` is needed. Acyclicity `Hⁿ(C⁰) = 0` for
--- `n ≥ 1` — the homological reading, which the
--- `stalkFunctor_preservesHomology` instance already transports — is the
--- remaining named frontier of Part 93.
+-- itself, no induction over `n` is needed.
+--
+-- **Part 93(b), homological reading landed in the FR twin**:
+-- `Grothendieck.isZero_stalk_homology_godementCanonicalComplex` — the
+-- homology of the canonical complex is zero at every stalk, for every
+-- degree `n ≥ 1`, with **no sheaf hypothesis**. Three gestures: the stalk
+-- short complex centered at `n` is exact (the assembly theorem in `n - 1`);
+-- an exact short complex has zero homology; and the
+-- `stalkFunctor_preservesHomology` instance transports this `IsZero` along
+-- `ShortComplex.mapHomologyIso` — the homology of the stalk is the stalk
+-- of the homology. **Why stalks and not the presheaf**: a presheaf with
+-- all stalks zero need not be zero (non-separated) — stalkwise nullity is
+-- the unconditional form. The sheaf corollary (nullity of `Hⁿ` in the
+-- category of sheaves, [God58] II Th. 5.2.1) is the next frontier.
+--
+-- **Part 94, flabbiness of the canonical tower landed in the FR twin**:
+-- `Grothendieck.isFlasque_godementCanonicalComplex` — every stage of the
+-- canonical Godement complex is flasque, with **no hypothesis on `F`**
+-- (step 1 of the "flabby resolution" reading of [God58] II Th. 5.2.1).
+-- The three cases of the `godementCanonicalObj` recursion (degree 0,
+-- degree 1, degree n+2) each reduce definitionally to `godementPresheaf`
+-- of some presheaf, so the generic flabbiness `isFlasque_godementPresheaf`
+-- (zero-extension of germ families: a family of germs on `V` lifts to any
+-- open `U ⊇ V` by extending by zero outside `V`) covers the whole tower —
+-- a three-case `exact`, no recursion to write. Calibrating note
+-- (2026-10-18): Mathlib `TopCat.Presheaf.IsFlasque` does exist
+-- (Topology/Sheaves/Flasque.lean) — the #2159 addendum c.6242821964
+-- wrongly called it sheaf-only; the file carries both versions. The sheaf
+-- corollary of [God58] II Th. 5.2.1 remains behind abelian sheafification,
+-- absent from Mathlib at the pinned version (`sheafify`/`sheafifyStalkIso`
+-- Type-valued only; `HasSheafify`/`HasSheafCompose (forget A)` hypotheses
+-- with no instance for `(AddCommGrpCat, TopCat)`); the presheaf track —
+-- stalk acyclicity (Part 93(b)), flabby stages (this Part) — advances
+-- without it, and the flabby resolution (long exact sequence, Part 95+)
+-- will consume the brick landed here.
 
 end Grothendieck_en

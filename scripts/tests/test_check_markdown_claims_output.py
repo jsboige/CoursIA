@@ -53,6 +53,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 from check_markdown_claims_output import (  # noqa: E402
     _fuzzy_present,
+    _rounds_to_claim,
     _is_coordinate_tuple,
     _is_imperative_list_value,
     _is_input_specification,
@@ -297,11 +298,100 @@ class TestFuzzyPresent:
         assert _fuzzy_present("1.3", "1.3B")
 
     def test_prefix_then_digit_blocked(self):
-        """'1.3' must NOT match '1.32' (different magnitude)."""
-        assert not _fuzzy_present("1.3", "1.32 Go")
+        """Clause (a) alone: a prefix followed by a digit is not a magnitude
+        match. '1.39' does not round to '1.3' either (|1.39-1.3| = 0.09 >
+        the 0.05 half-ulp of a one-decimal claim), so nothing else matches.
+
+        The value this test used to carry, '1.32 Go', DOES round to '1.3'
+        and is now matched by clause (b) (see
+        `test_neighbour_but_rounding_claim_matched`); the magnitude reading
+        it asserted was the false positive measured on CoursIA #22769."""
+        assert not _fuzzy_present("1.3", "1.39 Go")
+
+    def test_rounding_anywhere_in_output(self):
+        """Clause (b) is position-independent: a value cited from a multi-row
+        results table matches on its rounding. Both pairs are verbatim from
+        `Search-11-Metaheuristics.ipynb` cell 32 vs its md[35] table (#22769)."""
+        assert _fuzzy_present("1.75", "SA | 1.7465 | 12.8907 | 17.2632")
+        assert _fuzzy_present("5.69", "RandomSearch | 51.3552 | 5.6888")
+
+    def test_rounding_at_output_start(self):
+        assert _fuzzy_present("1.75", "1.7465 other values")
+
+    def test_neighbour_but_rounding_claim_matched(self):
+        """'1.32' is a legitimate one-decimal rounding of the claim '1.3':
+        same magnitude, precision lost by the prose. Flagging it was a false
+        positive (regression guard for the #22769 class)."""
+        assert _fuzzy_present("1.3", "1.32 Go")
+
+    def test_no_rounding_no_match(self):
+        """A value that rounds elsewhere must not be masked by clause (b) --
+        '1.7565' rounds to 1.76, not to 1.75."""
+        assert not _rounds_to_claim("1.75", "value 1.7565 here")
 
     def test_short_norm_skipped(self):
         assert not _fuzzy_present("7", "0.2385")
+
+
+class TestRoundsToClaim:
+    """Bounds of the rounding predicate itself (clause b), both directions."""
+
+    def test_rounds_via_helper(self):
+        assert _rounds_to_claim("0.24", "0.2385")
+        assert _rounds_to_claim("1.75", "1.7465")
+
+    def test_neighbour_rounding_elsewhere(self):
+        assert not _rounds_to_claim("1.75", "1.7565")
+
+    def test_coarser_output_cannot_round_up(self):
+        """An output with fewer decimals than the claim cannot be its
+        rounding: '1.7' never satisfies '1.75'."""
+        assert not _rounds_to_claim("1.75", "1.7")
+
+    def test_integer_claim_is_not_a_rounding(self):
+        assert not _rounds_to_claim("175", "1.75")
+
+    def test_comma_decimal_output_matched(self):
+        """French outputs print the decimal comma: '1,7465' rounds to 1.75."""
+        assert _rounds_to_claim("1.75", "SA | 1,7465 | 12,8907")
+
+    def test_thousands_group_with_decimal_is_one_number(self):
+        """A three-digit comma group followed by a decimal point is a
+        thousands separator, not a decimal comma: '1,234.5678' is one number.
+
+        This is the rule the #22827 fix introduced; the test pins it so that a
+        later simplification cannot quietly read the group as the decimal 1.234
+        and start flagging prose that quotes the output verbatim."""
+        assert _rounds_to_claim("1234.5678", "params 1,234.5678 total")
+        assert not _rounds_to_claim("1.2345678", "params 1,234.5678 total")
+
+    def test_bare_comma_groups_stay_decimal(self):
+        """Without a decimal point to arbitrate, a three-digit comma group keeps
+        its French decimal reading even when several such groups appear side by
+        side. The rule is decidable on its own terms ('no point, no
+        arbitration'), so it is pinned rather than left to drift."""
+        assert _rounds_to_claim("1.798", "1,798 2,798 3,798")
+        assert not _rounds_to_claim("1798", "1,798 2,798 3,798")
+
+    def test_thousands_separator_is_not_a_decimal(self):
+        """A comma group followed by a decimal point is a thousands separator
+        (#22827): '19.80' must NOT be anchored on '19,798.0862', whose
+        two-decimal rounding is 19798.09."""
+        assert not _rounds_to_claim("19.80", "19,798.0862")
+        assert not _rounds_to_claim("19.79", "19,798.0862")
+        assert _rounds_to_claim("19798.09", "19,798.0862")
+
+    def test_three_digit_comma_group_stays_decimal(self):
+        """Counter-example: without a decimal point the group is genuinely
+        ambiguous and the francophone decimal reading wins -- '1,798' is
+        1.798, so it rounds to 1.80."""
+        assert _rounds_to_claim("1.80", "1,798")
+        assert not _rounds_to_claim("1798.00", "1,798")
+
+    def test_multi_group_thousands_with_decimals(self):
+        """Several thousands groups before the decimal point."""
+        assert not _rounds_to_claim("1.23", "1,234,567.89")
+        assert _rounds_to_claim("1234567.89", "1,234,567.89")
 
 
 class TestCanonicalClean:
@@ -541,16 +631,13 @@ class TestFounderPreserved:
         nb_path = tmp_path / "trunc.ipynb"
         nb_path.write_text(json.dumps(nb), encoding="utf-8")
         res = check_notebook(nb_path)
-        # The truncation fuzzy match (clause b in _fuzzy_present) catches
-        # this ONLY if the output STARTS with the truncated form. Output
-        # 'loss=2.4067' starts with 'l', not '2.40'. So technically NOT
-        # matched -- this test pins the actual behavior.
-        # The substantive '2.40' is a 4-char normalized number, but the
-        # output string 'loss=2.4067' contains '2.40' as substring --
-        # let me re-check.
+        # Clause (b) does NOT cover this pair: '2.4067' rounds to 2.41 at two
+        # decimals, not to 2.40 (|2.4067-2.40| = 0.0067 > the 0.005 half-ulp).
+        # What matches is clause (a), the substring test: the literal '2.40'
+        # sits inside 'loss=2.4067' followed by a digit, so the prefix loop
+        # only accepts it through a shorter cut. That is why this case lands
+        # CLEAN -- the prose number really is present verbatim in the output.
         norms = {f["normalized"] for f in res["findings"]}
-        # The substring '2.40' IS inside '2.4067' so the detector SHOULD
-        # match it as a prefix match via clause (a). Therefore CLEAN.
         if res["verdict"] == "CLEAN":
             return
         assert "2.40" in norms, res

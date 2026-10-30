@@ -358,6 +358,8 @@ def fanout_profile(
 def workspace_candidates(
     fanout: np.ndarray,
     top_fraction: float = 0.1,
+    gini_threshold: float = 0.2,
+    null_gini: float | None = None,
 ) -> Dict[str, object]:
     """Selectionne les **candidates workspace** (Gate 22, sous-ensemble a fan-out
     disproportionne).
@@ -365,9 +367,20 @@ def workspace_candidates(
     Analogue observationnel de la structure workspace d'Anthropic (un petit
     sous-ensemble, ~ <10 % du panel, a connectivite disproportionnee). Renvoie
     les indices tries par fan-out decroissant et un test honnete de
-    **concentration anormale** : le coefficient de Gini du vecteur ``fanout``
-    (un fan-out uniforme = Gini ~ 0 = pas de hub ; un fan-out concentre =
-    Gini eleve = structure workspace detectee).
+    **concentration anormale** : le coefficient de Gini du vecteur ``fanout``.
+
+    Recalibrage (mesure S4, #20324, 2026-10-21 -- reprise et re-verification
+    firsthand de la mesure c.435) : le Gini du fan-out couple **sparsite** et
+    **concentration**. Sur les traces S4 committes (nul time-shuffled n=50,
+    seed 20261012 : min 0.541, q50 0.638, q95 0.718), le bras entraine tombe a
+    0.485, SOUS tout le nul -- le signe est inverse de ce que le gate racontait,
+    et le seuil fixe historique 0.2 tire sur 100 % du nul (50/50 faux
+    positifs). Aucune valeur de seuil fixe ne separe les deux : le drapeau
+    calibre compare donc le Gini observe a une **reference de nul**
+    (``null_gini``, statistique centrale d'une batterie time-shuffled du meme
+    bras, typiquement la mediane) : structure = EXCES de concentration vs le
+    nul. Sur S4, ce drapeau ne tire pas sur le bras entraine -- c'est le
+    verdict honnete, et le contre-exemple reste affiche par le notebook.
 
     Parametres
     ----------
@@ -378,6 +391,14 @@ def workspace_candidates(
     top_fraction : float
         Fraction du panel retenue, dans ``]0, 1]``. ``0.1`` (defaut) reflete le
         <10 % d'activite d'Anthropic (garde-fou : mesure, ne l'assume pas).
+    gini_threshold : float
+        Seuil fixe du drapeau legacy, utilise SEULEMENT si ``null_gini`` est
+        None (aucune reference de nul fournie). 0.2 par defaut : taux de faux
+        positifs 100 % mesure sur S4 -- a ne pas lire comme un detecteur.
+    null_gini : float | None
+        Statistique centrale (mediane recommandee) de la batterie time-shuffled
+        du meme bras. Si fournie, le drapeau ``concentrated`` teste l'exces
+        ``gini > null_gini`` au lieu du seuil fixe.
 
     Retour
     ------
@@ -385,15 +406,19 @@ def workspace_candidates(
         ``indices`` : array int, indices des top features tries par fan-out
         decroissant (LONGUEUR = ``ceil(top_fraction * K)``). ``scores`` : array
         float, leurs fan-out. ``n_selected`` : int. ``gini`` : float dans
-        ``[0, 1]`` (concentration du fan-out). ``concentrated`` : bool,
-        True si ``gini`` franchit un seuil empirique (0.2 par defaut, faible --
-        a recalibrer sur les traces reelles ; c'est un drapeau, pas un verdict).
+        ``[0, 1]`` (concentration du fan-out). ``concentrated`` : bool -- si
+        ``null_gini`` est fournie : exces ``gini > null_gini`` (critere calibre,
+        ``criterion="excess-vs-null"``) ; sinon seuil fixe legacy
+        (``criterion="fixed-threshold"``, faux positifs 100 % sur S4 : sans
+        reference de nul, le drapeau ne dit rien). ``criterion`` : str, lequel
+        des deux criteres a produit le drapeau.
     """
     f = np.asarray(fanout, dtype=float).ravel()
     K = len(f)
     if K == 0:
         return {"indices": np.array([], dtype=int), "scores": np.array([]),
-                "n_selected": 0, "gini": 0.0, "concentrated": False}
+                "n_selected": 0, "gini": 0.0, "concentrated": False,
+                "criterion": "fixed-threshold"}
     if not 0.0 < top_fraction <= 1.0:
         raise ValueError(f"top_fraction dans ]0, 1] requis, got {top_fraction}")
     n_sel = max(1, int(np.ceil(top_fraction * K)))
@@ -414,14 +439,23 @@ def workspace_candidates(
         gini = float(np.clip(gini / gini_max if gini_max > 0 else 0.0, 0.0, 1.0))
     else:
         gini = 0.0
+    if null_gini is not None:
+        # Critere calibre (#20324) : structure = EXCES de concentration vs le nul
+        # time-shuffled du meme bras. Mesure S4 : le bras entraine (0.485) tombe
+        # sous tout le nul (min 0.541) -- ce drapeau n'y tire pas, honnetement.
+        concentrated = bool(gini > float(null_gini))
+        criterion = "excess-vs-null"
+    else:
+        # Legacy sans reference de nul : faux positifs 100 % sur S4 (50/50).
+        concentrated = bool(gini > gini_threshold)
+        criterion = "fixed-threshold"
     return {
         "indices": indices.astype(int),
         "scores": scores,
         "n_selected": int(n_sel),
         "gini": gini,
-        # seuil empirique faible : un fan-out uniforme donne Gini ~ 0 ;
-        # 0.2 signale une concentration visible. A recalibrer sur traces reelles.
-        "concentrated": bool(gini > 0.2),
+        "concentrated": concentrated,
+        "criterion": criterion,
     }
 
 
