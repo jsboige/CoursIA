@@ -1,6 +1,6 @@
 # SOTA — détail : mandat verbatim, incidents d'axes, mesures anti-fabrication
 
-Détail durable de [`.claude/rules/sota-not-workaround.md`](../../.claude/rules/sota-not-workaround.md) (harness-hygiene tier 2). La règle porte les tables opératoires (5 verdicts, checklist 6 axes, enforcement) ; ce fichier porte les verbatims, les incidents fondateurs et les mesures qui les justifient.
+Détail durable de [`.claude/rules/sota-not-workaround.md`](../../.claude/rules/sota-not-workaround.md) (harness-hygiene tier 2). La règle porte les tables opératoires (5 verdicts, interdit, enforcement) et l'exigence nominative des 6 axes ; ce fichier porte la **grille des 6 questions (§2)**, les verbatims, les incidents fondateurs et les mesures qui les justifient.
 
 Registre des audits par famille : [`docs/ledgers/3801-sota-axe2.md`](../ledgers/3801-sota-axe2.md).
 
@@ -14,7 +14,24 @@ Registre des audits par famille : [`docs/ledgers/3801-sota-axe2.md`](../ledgers/
 
 Les trois prongs de la règle en dérivent directement : msg1 → Prong A (5 verdicts), msg2 → registre #3801 + enforcement bots, msg3 → Prong B (problème non-trivial).
 
-## 2. Checklist 6 axes — origine de la 6ᵉ entrée (#10459)
+## 2. Checklist 6 axes — grille nominative et origine de la 6ᵉ entrée (#10459)
+
+**Grille de référence — la règle y renvoie par « [detail §2](../../docs/reference/sota-verdicts-detail.md) ».**
+
+**Condition d'entrée, avant la grille** : prouver que l'outil visé n'est pas disponible, par une recherche à la source (dépôt, registre de paquets, page du projet), URL et date dans le body. Une grille remplie « N/A » sur un outil qui existe est un faux `INTRINSIC` (#21121 : TorchLean, public depuis le 2026-05-11).
+
+Chaque verdict `INTRINSIC` doit répondre **nominativement** les 6 axes suivants, par « non applicable, parce que… » ou « oui, mais testé, résultat : ... » :
+
+| # | Axe | Question a repondre dans le body PR |
+|---|---|---|
+| 1 | **Binding .NET / NuGet** | Un package officiel existe-t-il pour la cible ? (ex : `OR-Tools`, `Accord.NET`) |
+| 2 | **`P/Invoke`** | Une API C stable est-elle exposee par la lib ? (cf `libtesseract`, `libsodium`) |
+| 3 | **CLI `Process.Start`** | Un binaire invocable existe-t-il ? (ex : `gambit`, `minizinc`, `clingo`) |
+| 4 | **`IKVM`** (pont Java) | La lib est-elle en Java ? Si oui, est-elle deja shadee ? ([`../ledgers/3801-sota-axe2.md`](../ledgers/3801-sota-axe2.md)) |
+| 5 | **`PythonNet`** (pont CPython) **(NEW c.8243)** | **La lib a-t-elle un binding Python ?** Si oui, le pont `.NET → CPython → pyspiel`-like est disponible via `pythonnet 3.0.5` + `Runtime.PythonDLL` — pas d'`INTRINSIC` sans l'avoir teste. |
+| 6 | **Lib differente a role equivalent** | Un autre moteur SOTA .NET tient-il le role ? (cf PyMC ↔ Infer.NET, OR-Tools ↔ choco, mealpy ↔ MetaGeneticSharp) |
+
+### Origine de la grille — la 6ᵉ entrée
 
 Trois verdicts `INTRINSIC` OpenSpiel **convergents** dans 3 PRs distinctes (#10390 / #10394 / #10454) — aucun n'avait examiné l'axe **PythonNet**. Aucun des trois auteurs n'a menti ni bâclé : l'axe était simplement absent de la taxonomie d'audit, donc sauté par tous.
 
