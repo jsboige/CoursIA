@@ -164,14 +164,16 @@ class BlackLittermanMomentum(QCAlgorithm):
             views: dict {symbol_id: (expected_return, confidence)}
         """
         views = {}
-        longest = max(self.MOM_WINDOWS) + 5
+        # Demande le double de la fenetre visee : sur une demi-seance (cloture 13:00),
+        # history(N, DAILY) rend ~21 barres de moins (#20286).
+        longest = 2 * max(self.MOM_WINDOWS) + 10
 
         for symbol in self.symbols:
             history = self.history(symbol, longest, Resolution.DAILY)
             if history.empty or len(history) < max(self.MOM_WINDOWS):
                 continue
 
-            prices = history["close"].values
+            prices = history["close"].values[-(max(self.MOM_WINDOWS) + 5):]
             mom_signals = []
 
             for window in self.MOM_WINDOWS:
