@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: GameTheory-SocialChoice
-pedagogical_count: 14
-breakdown: SocialChoice=14
-maturity: BETA=11, ALPHA=3
+pedagogical_count: 15
+breakdown: SocialChoice=15
+maturity: BETA=12, ALPHA=3
 -->
 
 La théorie du choix social étudie comment agréger des préférences individuelles en une décision collective. Ses résultats les plus célèbres sont des **théorèmes d'impossibilité** : le théorème d'Arrow (1951) montre qu'aucune règle de vote ne peut satisfaire simultanément des axiomes "raisonnables" (Pareto, IIA, non-dictature) dès que 3 alternatives ou plus sont en jeu ; le théorème de Sen (1970) démontre un conflit fondamental entre liberté individuelle et efficacité collective.
@@ -39,11 +39,12 @@ Cette sous-série du parcours [GameTheory](../README.md) explore ces résultats 
 | SC-06 | [06-Mobius-Aggregation-Pouvoir-Manipulation](06-Mobius-Aggregation-Pouvoir-Manipulation.ipynb) | Möbius sur le treillis des coalitions : dividendes de Harsanyi, poids contre pouvoir, manipulation pondérée (See #12204) | 40 min | COMPLET |
 | SC-07 | [07-Committees-Core](07-Committees-Core.ipynb) | Élections de comité par approbation : core, quotas Hare/Droop, certificats de paiement et règle de l'entropie harmonique (arXiv 2609.11912, See #16848) | 40 min | COMPLET |
 | SC-08 | [02-Stable-Marriage-Gale-Shapley](02-Stable-Marriage-Gale-Shapley.ipynb) | Mariage stable : algorithme de Gale-Shapley, jumeau Python du lake Lean `game_theory_lean/StableMarriage/` (aucun `sorry`) — couplage parfait, stabilité, man-optimalité vérifiée empiriquement par énumération exhaustive (See #19681) | 35 min | COMPLET |
+| SC-08 (C#) | [02-Stable-Marriage-Gale-Shapley-Csharp](02-Stable-Marriage-Gale-Shapley-Csharp.ipynb) | **Jumeau C#** — parité .NET du SC-08 (mariage stable / Gale-Shapley) implémenté from-scratch en C# (.NET Interactive) (See #19681) | 35 min | PARITÉ |
 | SC-10 | [10-Manipulation-Strategique-MultiWinner](10-Manipulation-Strategique-MultiWinner.ipynb) | Manipulation stratégique sous règles à comité : détecteur de déviation gagnante, branches du théorème de Gibbard-Satterthwaite (Handbook of Computational Social Choice ch. 6), fréquence mesurée par énumération exhaustive, encodage Z3 (See #21597) | 35 min | COMPLET |
 
 **Durée totale** : ~6h25
 
-> **Parité .NET** : les notebooks [01-Arrow-Impossibility-Theorem-Csharp.ipynb](01-Arrow-Impossibility-Theorem-Csharp.ipynb) (jumeau du SC-01), [03-Voting-Methods-Csharp.ipynb](03-Voting-Methods-Csharp.ipynb) (jumeau du SC-03) et [04-Computational-Aggregation-SAT-Z3-Csharp.ipynb](04-Computational-Aggregation-SAT-Z3-Csharp.ipynb) (jumeau du SC-04) sont les miroirs C# (.NET Interactive) des originaux Python — mêmes algorithmes implémentés from-scratch en C#. Marathon parité .NET ⇄ Python (#4956). Ces trois jumeaux C# sont comptés dans le `pedagogical_count` de la sous-série mais arborent le statut `PARITÉ` dans le tableau ci-dessus pour les distinguer des notebooks d'origine dont ils sont les retranscriptions .NET.
+> **Parité .NET** : les notebooks [01-Arrow-Impossibility-Theorem-Csharp.ipynb](01-Arrow-Impossibility-Theorem-Csharp.ipynb) (jumeau du SC-01), [03-Voting-Methods-Csharp.ipynb](03-Voting-Methods-Csharp.ipynb) (jumeau du SC-03), [04-Computational-Aggregation-SAT-Z3-Csharp.ipynb](04-Computational-Aggregation-SAT-Z3-Csharp.ipynb) (jumeau du SC-04) et [02-Stable-Marriage-Gale-Shapley-Csharp.ipynb](02-Stable-Marriage-Gale-Shapley-Csharp.ipynb) (jumeau du SC-08) sont les miroirs C# (.NET Interactive) des originaux Python — mêmes algorithmes implémentés from-scratch en C#. Marathon parité .NET ⇄ Python (#4956), étendu au mariage stable (See #19681). Ces quatre jumeaux C# sont comptés dans le `pedagogical_count` de la sous-série mais arborent le statut `PARITÉ` dans le tableau ci-dessus pour les distinguer des notebooks d'origine dont ils sont les retranscriptions .NET.
 
 ## Parcours d'apprentissage
 
