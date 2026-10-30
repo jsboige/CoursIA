@@ -14,7 +14,10 @@ mergees en 3 semaines au 2026-08-04, dont une (#9153) dont le titre avoue
 Le tri est celui de l'issue : **calcule = legitime, prose = interdit**.
 
   - Une cellule *code* qui compte et affiche est la bonne facon de porter un
-    chiffre : il se recalcule a chaque execution. On ne la regarde pas.
+    chiffre : il se recalcule a chaque execution. On ne la regarde pas --
+    ni ses sorties, ni son code source (docstrings et commentaires compris :
+    « forward 1 ligne » decrit un appel, « negligeables sur 1 ligne » une
+    empreinte memoire ; aucun des deux n'est une mesure figee, #22564 D3).
   - Une cellule *markdown* qui affirme « (140 lignes) » fige une mesure que
     rien ne remesure. Elle derive des qu'un tiers touche au fichier cite --
     y compris pour une raison sans rapport (sur game_theory_lean, 4 des 6
@@ -78,6 +81,17 @@ La classe par defaut reste ``artifact`` : le contrat CI
 exact. Les classes #9434 s'auditent en opt-in, pour poser le before/after d'un
 drainage par classe.
 
+Certaines occurrences sont des faux positifs de SENS, pas des mesures d'etat :
+« 36 cellules vivantes » d'un canon du Jeu de la Vie compte des cellules de
+l'automate, et « 248 818 lignes » d'un depot externe pine mesure un run, pas un
+compteur du depot. Les supprimer n'aurait pas de sens, et les laisser flaguer
+fait re-trancher le meme arbitrage a chaque tranche. Elles sont couvertes par
+une allowlist ``(fichier, motif)`` -- ``ARTIFACT_EXEMPTIONS`` -- ou chaque
+entree porte son motif ECRIT, et dont le motif ne couvre que son propre span
+sur la ligne. Une entree qui ne couvre plus rien est signalee
+``[ALLOWLIST-PERIMEE]`` en ``--all`` : une exemption se perime en silence si
+rien ne la relit (#23111).
+
 Usage
 -----
     # CI sur une PR : ne juge que les lignes AJOUTEES (classe artifact, defaut)
@@ -108,6 +122,7 @@ import re
 import subprocess
 import sys
 from pathlib import Path
+from typing import NamedTuple
 
 # ----------------------------------------------------------------------------
 # Classe « artifact » (#9377) -- compteurs d'artefacts du depot
@@ -127,6 +142,79 @@ ARTIFACT_NOUNS = r"(?:lignes?|lines?|cellules?|cells?|notebooks?|modules?|fichie
 COUNT_RE = re.compile(
     r"(?<![\w.#])~?\*{0,2}\d{1,6}\*{0,2}\s+" + ARTIFACT_NOUNS + r"(?![\w-])",
     re.IGNORECASE,
+)
+
+# ----------------------------------------------------------------------------
+# Allowlist MOTIVEE de la classe « artifact » (#23111)
+# ----------------------------------------------------------------------------
+# Un compte peut etre un faux positif de SENS et non une mesure d'etat : « 36
+# cellules vivantes » d'un canon du Jeu de la Vie compte les cellules de
+# l'automate, pas celles d'un carnet ; « 248 818 lignes » d'un depot externe
+# pine mesure un run, il ne derive pas avec CE depot. Supprimer le nombre
+# n'aurait alors aucun sens -- il faudrait reecrire le propos -- et le laisser
+# flaguer fait re-trancher le meme arbitrage a chaque tranche.
+#
+# Trois proprietes rendent l'exemption auditable plutot que commode :
+#
+# 1. Elle est un TRIO (chemin exact, motif de ligne, raison ECRITE). Pas de
+#    glob : une exemption large se perime en silence.
+# 2. Le motif ne couvre que les compteurs dont le span tombe DANS un de ses
+#    matches. Un « 87 cellules » sur la meme ligne reste flague, et un compte
+#    de cellules de carnet ajoute ailleurs dans le meme fichier aussi.
+# 3. Le motif est ETROIT : il nomme le contexte, pas seulement le nombre. S'il
+#    cesse de matcher apres une reecriture, l'occurrence est re-signalee et un
+#    humain re-tranche -- le sens contraire (motif large qui avale en silence
+#    un vrai compteur ajoute plus tard) est le seul vrai danger.
+#
+# L'allowlist est relue a chaque ``--all`` : ce qu'elle couvre est restitue,
+# et une entree qui ne couvre plus rien est nommee PERIMEE.
+
+
+class ArtifactExemption(NamedTuple):
+    """Une exemption motivee de la classe ``artifact``."""
+
+    path: str                  # chemin relatif POSIX exact, jamais un glob
+    motif: re.Pattern[str]     # motif de LIGNE ; couvre les compteurs dans son span
+    raison: str                # pourquoi ce nombre n'est pas un etat du depot
+
+
+ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/README.md",
+        motif=re.compile(r"Gosper Glider Gun \(36 cellules vivantes"),
+        raison=(
+            "« 36 cellules » = cellules VIVANTES du canon de Gosper dans le Jeu "
+            "de la Vie, pas des cellules de carnet. Le nombre est une propriete "
+            "du motif (il definit le canon), il ne derive pas avec le depot."
+        ),
+    ),
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/README.md",
+        motif=re.compile(r"Pulsar \(48 cellules\)"),
+        raison=(
+            "« 48 cellules » = periode-3 Pulsar du Jeu de la Vie, cite comme cas "
+            "a la limite de native_decide ; ce sont des cellules de l'automate."
+        ),
+    ),
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/README.en.md",
+        motif=re.compile(r"Pulsar \(48 cells\)"),
+        raison=(
+            "Sibling anglais du README precedent : meme Pulsar, memes cellules de "
+            "l'automate. Une paire FR/EN se traite ensemble, sinon le drainage "
+            "rouvre le meme arbitrage sur l'autre langue."
+        ),
+    ),
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/SymbolicAI/Lean/README.md",
+        motif=re.compile(r"248 818 lignes compil"),
+        raison=(
+            "Mesure d'un run de reproduction sur le depot externe pine "
+            "plby/HopfProblem : ce ne sont pas les lignes de CE depot, et le "
+            "nombre decrit le resultat du run (248 818 lignes compilees en "
+            "1154 s), pas un etat de CoursIA qui derive a chaque ajout."
+        ),
+    ),
 )
 
 # ----------------------------------------------------------------------------
@@ -358,7 +446,24 @@ def _notebook_is_seeded(nb_path: Path) -> bool:
     return False
 
 
-def _findings_in_text(text: str, location: str, classes: set[str]) -> list[tuple[str, str, str]]:
+def _exempt_spans(path: str, line: str) -> list[tuple[int, int]]:
+    """Spans de la ligne couverts par une exemption motivee propre a ce fichier.
+
+    Le span est ce qui rend l'exemption BORNEE : elle ne protege pas le
+    fichier, elle protege une portion de ligne. Un compteur voisin -- meme
+    ligne, meme nom d'artefact -- reste flague.
+    """
+    spans: list[tuple[int, int]] = []
+    for exemption in ARTIFACT_EXEMPTIONS:
+        if exemption.path != path:
+            continue
+        spans.extend(m.span() for m in exemption.motif.finditer(line))
+    return spans
+
+
+def _findings_in_text(
+    text: str, location: str, classes: set[str], path: str | None = None
+) -> list[tuple[str, str, str]]:
     """Rend [(location, classe, snippet)] pour les classes demandees.
 
     La ligne est l'unite de co-occurrence pour stochastic (mot-clef + nombre sur
@@ -366,7 +471,12 @@ def _findings_in_text(text: str, location: str, classes: set[str]) -> list[tuple
     La ligne est aussi l'unite d'exemption pacing (cf STUDENT_PACING_RE) : un
     « (Duree) (estimée) : X minutes » est TN pedagogique, jamais un compteur
     machine ; la ligne entiere est exoneree de la classe ``machine``.
+
+    ``path`` (defaut : la partie fichier de ``location``, qui porte un suffixe
+    `` MD[<i>]`` pour une cellule de carnet) selectionne les exemptions motivees
+    de la classe ``artifact`` (cf ARTIFACT_EXEMPTIONS).
     """
+    target = location.split(" MD[")[0] if path is None else path
     out: list[tuple[str, str, str]] = []
     for line in text.splitlines():
         if any(m in line for m in GENERATED_MARKERS):
@@ -377,7 +487,10 @@ def _findings_in_text(text: str, location: str, classes: set[str]) -> list[tuple
         # actives : un « ~50 minutes » colle a un artefact (lignes) reste flag.
         is_pacing = STUDENT_PACING_RE.search(line) is not None
         if "artifact" in classes:
+            exempt = _exempt_spans(target, line)
             for m in COUNT_RE.finditer(line):
+                if any(start <= m.start() and m.end() <= end for start, end in exempt):
+                    continue
                 out.append((location, "artifact", m.group(0).strip()))
         if "machine" in classes and not is_pacing:
             for m in MACHINE_RE.finditer(line):
@@ -439,20 +552,40 @@ def scan_all(root: Path, classes: set[str]) -> list[tuple[str, str, str]]:
 # propre ligne, l'ouvrir ferait avaler tout le reste du fichier.
 OUTPUTS_OPEN_RE = re.compile(r'^(\s*)"outputs"\s*:\s*\[\s*$')
 
+# Un bloc "source" ouvre sur sa propre ligne : `"source": [` (un tableau vide
+# ou mono-ligne ne colle pas au motif et n'ouvre rien, comme `"outputs": []`).
+SOURCE_OPEN_RE = re.compile(r'^(\s*)"source"\s*:\s*\[\s*$')
+
+# Type de la cellule courante : le "source" d'une cellule code est du code
+# (region non-prose), celui d'une cellule markdown est LA prose visee.
+CELL_TYPE_RE = re.compile(r'^\s*"cell_type"\s*:\s*"(\w+)"')
+
 # En-tete de hunk : `@@ -<a>[,<b>] +<c>[,<d>] @@`. Seul <c> (numero de depart dans
 # le fichier NOUVEAU) nous interesse -- c'est lui qui ancre la numerotation.
 HUNK_RE = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@")
 
 
-def _ipynb_output_lines(rel: str) -> set[int]:
-    """Lignes (1-based) situees dans un bloc `outputs` d'un notebook.
+def _ipynb_non_prose_lines(rel: str) -> set[int]:
+    """Lignes (1-based) situees dans une region NON-PROSE d'un notebook.
 
-    La prose d'une cellule et une charge utile de sortie se ressemblent ligne a
-    ligne : toutes deux sont des chaines nues (`    "print(...)\\n",` contre
-    `      "  Angel.lean   65 lignes\\n",`). Le champ `"source"` et le champ
-    `"outputs"` sont en revanche a la MEME profondeur, et le bloc se referme sur
-    une ligne dont l'indentation est celle de la cle. C'est cette carte qui les
-    separe -- le filtre ligne-a-ligne de `scan_diff` ne peut pas le faire seul.
+    Deux regions :
+
+    - le bloc ``outputs`` d'une cellule : la prose d'une cellule et une charge
+      utile de sortie se ressemblent ligne a ligne (toutes deux sont des
+      chaines nues, `    "print(...)\\n",` contre `      "  Angel.lean   65
+      lignes\\n",`), et seul le bloc les separe ;
+    - le bloc ``source`` d'une cellule **code** (#22564 D3) : docstrings et
+      commentaires compris. « Une cellule code qui compte et affiche ... On
+      ne la regarde pas » (en-tete) : un commentaire Python qui decrit un
+      appel (« forward 1 ligne ») ou une empreinte memoire (« negligeables
+      sur 1 ligne ») est de la prose technique legitime, pas une mesure
+      figee en markdown. Le ``source`` d'une cellule markdown reste LA prose
+      visee et n'entre pas dans la carte.
+
+    Les champs `"source"` et `"outputs"` sont a la MEME profondeur, et chaque
+    bloc se referme sur une ligne dont l'indentation est celle de la cle.
+    C'est cette carte qui separe les regions -- le filtre ligne-a-ligne de
+    `scan_diff` ne peut pas le faire seul (il ignore ``cell_type``).
     """
     try:
         text = Path(rel).read_text(encoding="utf-8", errors="replace")
@@ -460,12 +593,22 @@ def _ipynb_output_lines(rel: str) -> set[int]:
         return set()
     inside: set[int] = set()
     base: int | None = None
+    cell_type: str | None = None
     for num, raw in enumerate(text.splitlines(), start=1):
         indent = len(raw) - len(raw.lstrip(" "))
         if base is None:
-            match = OUTPUTS_OPEN_RE.match(raw)
+            match = CELL_TYPE_RE.match(raw)
             if match:
-                base = len(match.group(1))
+                cell_type = match.group(1)
+            outputs_match = OUTPUTS_OPEN_RE.match(raw)
+            if outputs_match:
+                base = len(outputs_match.group(1))
+                continue
+            if cell_type == "code":
+                source_match = SOURCE_OPEN_RE.match(raw)
+                if source_match:
+                    base = len(source_match.group(1))
+                    continue
             continue
         if indent == base and raw.strip().startswith("]"):
             base = None
@@ -504,7 +647,7 @@ def scan_diff(diff_range: str, classes: set[str]) -> list[tuple[str, str, str]]:
 
     findings: list[tuple[str, str, str]] = []
     generated_cache: dict[str, bool] = {}
-    output_lines_cache: dict[str, set[int]] = {}
+    non_prose_cache: dict[str, set[int]] = {}
 
     def _is_generated_file(rel: str) -> bool:
         if rel not in generated_cache:
@@ -515,10 +658,10 @@ def scan_diff(diff_range: str, classes: set[str]) -> list[tuple[str, str, str]]:
                 generated_cache[rel] = False
         return generated_cache[rel]
 
-    def _in_outputs(rel: str, ln: int) -> bool:
-        if rel not in output_lines_cache:
-            output_lines_cache[rel] = _ipynb_output_lines(rel)
-        return ln in output_lines_cache[rel]
+    def _is_non_prose(rel: str, ln: int) -> bool:
+        if rel not in non_prose_cache:
+            non_prose_cache[rel] = _ipynb_non_prose_lines(rel)
+        return ln in non_prose_cache[rel]
 
     # Pour le mode diff, la verification seed par carnet est couteuse et le
     # contrat CI ne demande que la classe artifact par defaut : on applique le
@@ -547,13 +690,15 @@ def scan_diff(diff_range: str, classes: set[str]) -> list[tuple[str, str, str]]:
             continue
         if current.endswith(".md") and _is_generated_file(current):
             continue
-        # La charge utile d'une SORTIE de cellule ressemble a s'y meprendre a de
-        # la prose (`"      \"  Angel.lean   65 lignes\\n\","`) : elle est
-        # pourtant le compte-rendu d'une cellule *code* qui compte et affiche,
-        # que la doctrine de l'en-tete declare legitime ("On ne la regarde
-        # pas."). Le filtre ligne-a-ligne ne peut pas l'attribuer a un type de
-        # cellule ; la carte par fichier, si.
-        if current.endswith(".ipynb") and _in_outputs(current, new_ln):
+        # La charge utile d'une SORTIE et le SOURCE d'une cellule CODE
+        # ressemblent a s'y meprendre a de la prose (`"      \"  Angel.lean
+        # 65 lignes\\n\","` comme `"""... forward 1 ligne."""`) : le premier
+        # est le compte-rendu d'une cellule *code* qui compte et affiche, le
+        # second est du code -- docstrings et commentaires compris --, et la
+        # doctrine de l'en-tete declare les deux legitimes ("On ne la regarde
+        # pas."). Le filtre ligne-a-ligne ne peut pas les attribuer a un type
+        # de cellule ; la carte par fichier, si.
+        if current.endswith(".ipynb") and _is_non_prose(current, new_ln):
             continue
         # Dans un .ipynb, seule une valeur de "source" est de la prose. Les
         # champs de metadonnees (`"notes": "... 14/14 cells executed."`, ecrit
@@ -645,6 +790,67 @@ def _emit_legacy(findings: list[tuple[str, str, str]], strict: bool) -> int:
     return 1 if strict else 0
 
 
+def _exemption_audit(root: Path) -> tuple[list[tuple[ArtifactExemption, int]], list[ArtifactExemption]]:
+    """Rend (exemptions vivantes avec le nombre de compteurs couverts, perimees).
+
+    « Vivante » veut dire : le motif matche encore ET il couvre au moins un
+    compteur que COUNT_RE aurait flague. Un motif qui matche sans couvrir de
+    compteur ne protege rien non plus : il est perime au meme titre.
+    """
+    live: list[tuple[ArtifactExemption, int]] = []
+    stale: list[ArtifactExemption] = []
+    for exemption in ARTIFACT_EXEMPTIONS:
+        try:
+            text = (root / exemption.path).read_text(encoding="utf-8")
+        except OSError:
+            stale.append(exemption)
+            continue
+        covered = 0
+        for line in text.splitlines():
+            spans = [m.span() for m in exemption.motif.finditer(line)]
+            if not spans:
+                continue
+            covered += sum(
+                1
+                for m in COUNT_RE.finditer(line)
+                if any(start <= m.start() and m.end() <= end for start, end in spans)
+            )
+        if covered:
+            live.append((exemption, covered))
+        else:
+            stale.append(exemption)
+    return live, stale
+
+
+def _report_exemptions(root: Path) -> None:
+    """Restitue l'allowlist en ``--all`` : ce qu'elle couvre, et ce qui est mort.
+
+    Jamais un echec : le stock ne fait rougir aucune PR (#17636). Ce qui est
+    rendu visible, c'est la DECISION -- et son eventuelle peremption, qui sans
+    cette ligne se lirait comme une exemption encore vivante.
+    """
+    if not ARTIFACT_EXEMPTIONS:
+        return
+    live, stale = _exemption_audit(root)
+    if live:
+        total = sum(n for _exemption, n in live)
+        print(
+            f"\n[ALLOWLIST] {len(live)} exemption(s) motivee(s) de la classe artifact, "
+            f"{total} compteur(s) couvert(s) :"
+        )
+        for exemption, covered in live:
+            print(f"  {exemption.path}  ({covered})  {exemption.motif.pattern}")
+            print(f"    pourquoi : {exemption.raison}")
+    if stale:
+        print(
+            f"\n[ALLOWLIST-PERIMEE] {len(stale)} entree(s) ne couvre(nt) plus aucun "
+            f"compteur -- retirer l'entree : une decision morte se lit comme une "
+            f"decision vivante."
+        )
+        for exemption in stale:
+            print(f"  {exemption.path}  {exemption.motif.pattern}")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     g = ap.add_mutually_exclusive_group(required=True)
@@ -679,8 +885,16 @@ def main() -> int:
 
     # Format legacy exact pour la classe artifact seule (contrat CI : --diff sans --class).
     if args.klass == "artifact":
-        return _emit_legacy(findings, args.strict)
-    return _emit_grouped(findings, args.strict, structural_only)
+        rc = _emit_legacy(findings, args.strict)
+    else:
+        rc = _emit_grouped(findings, args.strict, structural_only)
+
+    # L'allowlist ne se relit qu'en inventaire : en mode --diff, un fichier non
+    # touche par la PR n'est pas "perime", il est simplement hors champ.
+    if args.all and "artifact" in classes:
+        _report_exemptions(Path(args.root).resolve())
+
+    return rc
 
 
 if __name__ == "__main__":

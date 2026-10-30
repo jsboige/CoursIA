@@ -32,7 +32,14 @@ jobs:
     # 2026-09-02) : garde Python pur, sans secret. La garde same-repo ci-dessous
     # saute les PRs de fork (pr_gate.py compte `skipped` comme OK) : aucun code de
     # fork n'atteint le runner. Retour arriere = revert de la PR.
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # Offre GitHub d'abord (#17397, consigne user du 2026-10-25) : le CI local pallie ses limites. Retour = remettre le label.
+    # 2026-10-28 (#23053 b, lane myia-ai-01:CoursIA-2) : forme hybride de
+    # debordement (#22461 phase A) -- PR meme-depot ET vars.CI_OVERFLOW_LOCAL
+    # == 'true' -> jambe Linux locale ; sinon `ubuntu-latest` (etat du 27/10).
+    # Retour arriere = variable `false` ou supprimee, sans toucher ce fichier.
+    # Le job voisin `prover-tests` reste sur `ubuntu-latest` : il est desactive
+    # (`if: ... && false`) et n'a donc aucune duree mesurable a borner.
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     # Budget de 45 min, pas 30 (#16139, mesure 2026-09-14). Le 30 pose par
     # #15531 sur une extrapolation (~21 min) a ete ATTEINT quatre fois : la
@@ -103,7 +110,7 @@ jobs:
         # po-2024-docker (3,9-13,6 min) dont la tranche n'a pas de CPUQuota.
         # Sans quota lisible (`max` ou fichier absent), on laisse nproc.
         run: |
-          q=$(awk '$1 != "max" && $2 > 0 { n = int(($1 + $2 - 1) / $2); print (n < 1 ? 1 : n) }' /sys/fs/cgroup/cpu.max 2>/dev/null)
+          q=$(awk '$1 != "max" && $2 > 0 { n = int(($1 + $2 - 1) / $2); print (n < 1 ? 1 : n) }' /sys/fs/cgroup/cpu.max 2>/dev/null || true)
           [ -n "$q" ] || q=$(nproc)
           for v in OMP_NUM_THREADS MKL_NUM_THREADS OPENBLAS_NUM_THREADS NUMEXPR_NUM_THREADS; do
             echo "$v=$q" >> "$GITHUB_ENV"
@@ -124,7 +131,8 @@ jobs:
     # 2026-09-02) : garde Python pur, sans secret. La garde same-repo ci-dessous
     # saute les PRs de fork (pr_gate.py compte `skipped` comme OK) : aucun code de
     # fork n'atteint le runner. Retour arriere = revert de la PR.
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # Offre GitHub d'abord (#17397, consigne user du 2026-10-25) : le CI local pallie ses limites. Retour = remettre le label.
+    runs-on: ubuntu-latest
     if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && false  # Enable when tests/prover/ has tests
     steps:
       - run: echo "Prover tests not yet available"

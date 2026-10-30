@@ -2110,13 +2110,12 @@ MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,bcbf03dd,code,fr,8b6
 # print(f""Solution : {sol}"")
 print(""Exercice 3 SEND + MORE = MONEY a completer"")
 ",,,,,,,,8b60f271c8976d74,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,fr0whufdu8r,markdown,fr,273ad96f2117cf43,"### Exercice 4 : Sudoku 4x4 avec visualisation
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,fr0whufdu8r,markdown,fr,e5faa25e3b9144a9,"### Exercice 4 : Sudoku 4x4 « X » — ajouter les deux diagonales
 
-**Énoncé** : Un Sudoku 4x4 est une grille 4x4 où chaque ligne, colonne et bloc 2x2 doit contenir les chiffres 1-4 exactement une fois.
-
-Modélisez ce problème comme un CSP et utilisez le visualiseur de backtracking pour observer la résolution.
+**Énoncé** : on reprend la grille de l'exemple guidé, mais on ajoute la règle du **Sudoku X** : les deux diagonales principales doivent elles aussi contenir les chiffres 1 à 4 exactement une fois.
 
 **Grille initiale** (0 = case vide) :
+
 ```
 1 0 | 0 2
 0 0 | 0 0
@@ -2124,43 +2123,65 @@ Modélisez ce problème comme un CSP et utilisez le visualiseur de backtracking 
 0 0 | 0 0
 3 0 | 0 4
 ```
-",,,,,,,,273ad96f2117cf43,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,suhmqzd7qko,code,fr,7003f1b1844033d2,"# Exercice 4 : Sudoku 4x4 avec visualisation
+
+Écrivez `make_xsudoku_4x4_csp(initial_grid)`, qui construit ce CSP et le renvoie.
+
+**Ce qui change, ce qui ne change pas** : la contrainte reste « deux voisins diffèrent ». Ce sont les **voisins** qui changent — deux cases d'une même diagonale deviennent voisines. Les indices déjà posés sur une diagonale rétrécissent en plus le domaine des cases vides de cette diagonale, par le même calcul que dans l'exemple.
+
+**Livrable** : la première solution trouvée par `backtracking_with_viz` sur cette grille, et une phrase qui dit ce que l'ajout des diagonales a changé par rapport à l'exemple guidé.
+
+**Piège à connaître** : `is_solution` ne vérifie que les arêtes que vous avez déclarées — un modèle incomplet se valide donc lui-même. C'est pourquoi la cellule fournit `diagonales_ok`, un témoin qui ne lit que la grille finale, jamais le CSP : il reste juste même si le modèle est faux.",,,,,,,,e5faa25e3b9144a9,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,suhmqzd7qko,code,fr,23ce3eb47328b525,"# Exercice 4 : Sudoku 4x4 « X » -- ajouter les deux diagonales au modele
 
 # A COMPLETER
-# def make_sudoku_4x4_csp(initial_grid):
-#     """"""
-#     Cree un CSP pour un Sudoku 4x4.
-#     
-#     initial_grid : liste de 4 listes de 4 entiers (0 = vide)
-#     """"""
-#     csp = CSP()
-#     
-#     # Variables : (ligne, colonne)
-#     for i in range(4):
-#         for j in range(4):
-#             if initial_grid[i][j] == 0:
-#                 csp.add_variable(f""{i}{j}"", [1, 2, 3, 4])
-#     
-#     # Contraintes : lignes, colonnes, blocs 2x2
-#     # ...
-#     
-#     return csp
-#
-# initial = [
-#     [1, 0, 0, 2],
-#     [0, 0, 0, 0],
-#     [0, 0, 0, 0],
-#     [3, 0, 0, 4]
-# ]
-#
-# sudoku_csp = make_sudoku_4x4_csp(initial)
-# solution, viz = backtracking_with_viz(sudoku_csp)
-#
-# print(f""Solution : {solution}"")
-# viz.draw(max_depth=5, title=""Arbre de Backtracking - Sudoku 4x4"")
-print(""Exercice visualisation Sudoku - decommentez pour tester"")
-",,,,,,,,7003f1b1844033d2,,,,,,,,,,,,,,,
+# TODO etudiant : ecrire make_xsudoku_4x4_csp ci-dessous.
+# Indice : repartir de make_sudoku_4x4_csp (exemple guide) ; pour chaque case
+# situee sur une diagonale, ajouter les AUTRES cases de cette meme diagonale a
+# ses voisins (une case hors des deux diagonales ne gagne aucun voisin nouveau) ;
+# la contrainte x != y ne change pas d'un caractere.
+# Indice : les indices deja poses sur une diagonale doivent aussi etre retires
+# du domaine des cases vides de cette diagonale -- c'est le meme calcul de
+# domaines que dans l'exemple, applique a des voisins plus nombreux.
+
+def make_xsudoku_4x4_csp(initial_grid):
+    """"""CSP d'un Sudoku 4x4 ou les deux diagonales doivent aussi etre 1-4.""""""
+    # TODO etudiant : construire variables / domaines / voisins / contrainte
+    return None
+
+
+def diagonales_ok(grille):
+    """"""Temoin independant du modele : les deux diagonales sont-elles 1-4 ?""""""
+    principale = [grille[i][i] for i in range(4)]
+    secondaire = [grille[i][3 - i] for i in range(4)]
+    return sorted(principale) == [1, 2, 3, 4] and sorted(secondaire) == [1, 2, 3, 4]
+
+
+grille_x = [
+    [1, 0, 0, 2],
+    [0, 0, 0, 0],
+    [0, 0, 0, 0],
+    [3, 0, 0, 4]
+]
+
+csp_x = make_xsudoku_4x4_csp(grille_x)
+if csp_x is None:
+    print(""Exercice 4 a completer : modelisation X-Sudoku non fournie."")
+else:
+    sol_x, viz_x = backtracking_with_viz(csp_x)
+    if sol_x is None:
+        print(""Aucune solution -- verifier les aretes ajoutees aux diagonales."")
+    else:
+        grille_sol = [row[:] for row in grille_x]
+        for v, val in sol_x.items():
+            grille_sol[int(v[0])][int(v[1])] = val
+        print(f""Premiere solution : {sol_x}"")
+        print(f""Noeuds explores   : {len(viz_x.nodes)}"")
+        print(""Grille resolue :"")
+        for row in grille_sol:
+            print(row)
+        print(f""Diagonales valides (temoin independant) : {diagonales_ok(grille_sol)}"")
+        print(""Comparer avec l'exemple guide : meme grille, contraintes en plus."")
+",,,,,,,,23ce3eb47328b525,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,2595a953d10a,markdown,fr,5d4dc345703a8e37,"### Exercice 5 : Modélisation CSP pour un emploi du temps
 
 Modéliser un problème d'emploi du temps comme CSP : définir variables, domaines et contraintes.
@@ -2185,7 +2206,7 @@ MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,f2794796e864,code,fr
 result = None  # TODO etudiant : remplacer par votre implementation
 print(""Exercice a completer : Propagation de contraintes sur un CSP lineaire"")
 ",,,,,,,,2224f04783cbfe7a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,46d47e13,markdown,fr,43ad175983cc9127,"### Et ensuite ?
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,46d47e13,markdown,fr,193c67fa9e85fb80,"### Et ensuite ?
 
 Ce notebook a couvert les **fondamentaux** des CSP : formalisme, backtracking avec heuristiques, et utilisation de la bibliothèque `python-constraint`. Le notebook suivant, [CSP-2-Consistance](CSP-2-Consistency.ipynb), introduit les techniques de **propagation de contraintes** :
 
@@ -2199,7 +2220,8 @@ Ces techniques permettent de reduire encore davantage l'exploration en detectant
 
 - Russell, S. & Norvig, P. *Artificial Intelligence: A Modern Approach*, Chapitre 6
 - Dechter, R. *Constraint Processing*, Cambridge University Press, 2003
-- Voir aussi la série [Sudoku](../../Sudoku/README.md) pour une application complète des CSP",,,,,,,,43ad175983cc9127,,,,,,,,,,,,,,,
+- Voir aussi la série [Sudoku](../../Sudoku/README.md) pour une application complète des CSP
+- **Handbook of CP** (Rossi, van Beek, Walsh, 2006) : Ch. 1 *Introduction* (p. 3) -- le chapitre chapeau qui pose la problematique CP, le vocabulaire (X, D, C), la frontiere avec SAT/SMT/ILP, et la carte des 26 chapitres (2 parts : Foundations ch. 1-11, Extensions & Applications ch. 12-26). Le point d'entree canonique du Handbook, qui presente la serie Part2-CSP dans son cadre unificateur.",,,,,,,,193c67fa9e85fb80,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,conclusion-restored,markdown,fr,57838e8ba9dc2831,"***
 
 ## Conclusion
@@ -21501,3 +21523,107 @@ Console.WriteLine(""Etape 2 : poster MANDATORY (compatibilite, alimentation), re
 Console.WriteLine(""Etape 3 : objectif = M*strong + weak, M > |WEAK|, puis while (solverExo.solve())."");
 Console.WriteLine(""Verifier en fin : la solution respecte le budget de 1200 EUR."");
 ",,,,,,,,7f7cce92bb15a051,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,c7c9917a,markdown,fr,f06c9996a0608e96,"### Exemple guidé : Sudoku 4x4 — modélisation, résolution et arbre de recherche (crédité #22594)
+
+Un Sudoku 4x4 est une grille 4x4 où chaque ligne, chaque colonne et chacun des quatre blocs 2x2 contient les chiffres 1 à 4 exactement une fois. C'est un CSP binaire, et sa modélisation tient en quatre choix :
+
+| Élément | Choix | Conséquence mesurable |
+|---|---|---|
+| Variables | une variable `""ij""` par case **vide** | 12 variables et non 16 : un indice est une constante, pas une inconnue |
+| Domaines | {1, 2, 3, 4} privé des indices déjà posés dans la ligne, la colonne et le bloc | 2 ou 3 valeurs par case au lieu de 4 |
+| Voisins | même ligne, même colonne, même bloc 2x2 — cases vides seulement | une arête vers une case fixée ne servirait à rien : sa valeur est déjà retirée du domaine |
+| Contrainte | `x != y` entre deux voisins | le Sudoku n'a pas d'autre contrainte que « deux voisins diffèrent » |
+
+**Grille initiale** (0 = case vide) :
+
+```
+1 0 | 0 2
+0 0 | 0 0
+---------
+0 0 | 0 0
+3 0 | 0 4
+```
+
+**Attention à l'API** : la classe `CSP` de ce carnet n'a pas de méthode `add_variable`. Son constructeur prend les quatre éléments d'un coup — `CSP(variables, domains, neighbors, constraint_func)` — et c'est cette forme qu'utilise le code ci-dessous. Le modèle se lit alors d'un seul coup d'œil : les variables sont les cases vides, les domaines viennent des indices voisins, les voisins sont les cases vides de la ligne, de la colonne et du bloc, et la contrainte est la même pour toutes les arêtes.",,,,,,,,f06c9996a0608e96,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,03e42870,markdown,fr,498a7d46d713eda7,"### Lecture du résultat : 12 variables, 28 nœuds, 3 retours arrière
+
+L'arbre est plus large que celui de la carte d'Australie (11 nœuds) alors que le problème paraît plus petit : 12 cases vides contre 7 régions. Deux raisons se lisent dans la sortie. D'abord les domaines : les quatre indices fixés ne ramènent chaque case qu'à deux ou trois valeurs, mais le parcours suit l'ordre d'insertion des variables (`""01""`, `""02""`, `""10""`, …) et non MRV. Ensuite l'ordre des valeurs : rien ne suggère d'essayer d'abord la valeur la plus contraignante, donc des branches entières sont ouvertes avant d'être abandonnées.
+
+| Mesure | Valeur | Ce qu'elle signifie |
+|---|---|---|
+| Variables | 12 | cases vides de la grille de départ |
+| Nœuds explorés | 28 | tentatives d'assignation, retenues ou rejetées |
+| Rejets immédiats | 13 | conflits vus par `consistent()` avant toute récursion : branches coupées à la naissance |
+| Assignations retenues | 15 | `28 - 13` |
+| Retours arrière | 3 | `15 - 12` : assignations retenues qui ne sont pas dans le chemin final, donc défaites |
+
+Le dernier nombre se calcule sans instrument dédié : chaque assignation retenue allonge le chemin courant d'un nœud, chaque retour arrière le raccourcit d'un. À la fin le chemin mesure la taille de la solution (12), et l'écart avec les assignations retenues (15) compte exactement les retours arrière. C'est la même identité que sur la carte d'Australie, où les 11 nœuds se décomposaient en 7 assignations retenues et 4 rejets.
+
+Deux points à retenir pour la suite. Le premier est que **la solution trouvée n'est pas la solution** : cette grille de départ n'a que quatre indices, et plusieurs complétions la respectent. `backtracking_with_viz` s'arrête sur la première (le `return` dès que l'assignation est complète) ; compter toutes les solutions est un autre problème — l'énumération, pas la recherche. Le second est que **`is_solution` ne vaut que ce que le modèle déclare** : elle ne vérifie que les arêtes présentes dans `neighbors`, si bien qu'un modèle incomplet se valide lui-même. L'exercice 4 exploite précisément ce point.",,,,,,,,498a7d46d713eda7,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,7706ac14,code,fr,c43035591ac2b57a,"# Exemple guidé (crédité #22594) : Sudoku 4x4 avec visualisation
+
+def make_sudoku_4x4_csp(initial_grid):
+    """"""
+    Cree un CSP pour un Sudoku 4x4.
+
+    initial_grid : liste de 4 listes de 4 entiers (0 = vide)
+    """"""
+    cells = [(i, j) for i in range(4) for j in range(4)]
+
+    def peers(i, j):
+        """"""Cases de la meme ligne, colonne et bloc 2x2 que (i, j), sauf (i, j).""""""
+        p = set()
+        for k in range(4):
+            p.add((i, k))   # meme ligne
+            p.add((k, j))   # meme colonne
+        bi, bj = 2 * (i // 2), 2 * (j // 2)
+        for a in range(bi, bi + 2):
+            for b in range(bj, bj + 2):
+                p.add((a, b))   # meme bloc 2x2
+        p.discard((i, j))
+        return p
+
+    # Variables : (ligne, colonne) -> une variable ""ij"" par case vide
+    variables = [f""{i}{j}"" for (i, j) in cells if initial_grid[i][j] == 0]
+
+    domains, neighbors = {}, {}
+    for v in variables:
+        i, j = int(v[0]), int(v[1])
+        # Domaine : {1, 2, 3, 4} prive des indices deja presents chez les voisins
+        fixed = {initial_grid[a][b] for (a, b) in peers(i, j) if initial_grid[a][b] != 0}
+        domains[v] = [d for d in [1, 2, 3, 4] if d not in fixed]
+        # Contraintes : lignes, colonnes, blocs 2x2 (voisins encore vides)
+        neighbors[v] = [f""{a}{b}"" for (a, b) in sorted(peers(i, j))
+                        if initial_grid[a][b] == 0]
+
+    # Deux voisins doivent avoir des valeurs differentes
+    return CSP(variables, domains, neighbors, lambda v1, x, v2, y: x != y)
+
+
+initial = [
+    [1, 0, 0, 2],
+    [0, 0, 0, 0],
+    [0, 0, 0, 0],
+    [3, 0, 0, 4]
+]
+
+sudoku_csp = make_sudoku_4x4_csp(initial)
+solution, viz = backtracking_with_viz(sudoku_csp)
+
+n_fail = sum(1 for n in viz.nodes if n[3] == 'fail')
+n_ok = len(viz.nodes) - n_fail
+
+print(f""Variables : {len(sudoku_csp.variables)} cases vides"")
+print(f""Solution  : {solution}"")
+print(f""Valide    : {sudoku_csp.is_solution(solution)}"")
+print(f""Noeuds explores : {len(viz.nodes)}, dont {n_fail} rejets et {n_ok} assignations retenues"")
+print(f""Chemin final    : {len(viz.current_path)} noeuds -> {n_ok - len(viz.current_path)} retour(s) arriere"")
+
+grille = [row[:] for row in initial]
+for v, val in solution.items():
+    grille[int(v[0])][int(v[1])] = val
+print(""Grille resolue :"")
+for row in grille:
+    print(row)
+
+viz.draw(max_depth=5, title=""Arbre de Backtracking - Sudoku 4x4"")",,,,,,,,c43035591ac2b57a,,,,,,,,,,,,,,,

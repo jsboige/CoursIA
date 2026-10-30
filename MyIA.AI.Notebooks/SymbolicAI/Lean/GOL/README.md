@@ -24,6 +24,7 @@ prouvée en Lean — en gardant chaque barreau exécutable : un carnet, un moteu
 | GOL-06 | [GOL-06-Translateur-Life](GOL-06-Translateur-Life.ipynb) | Le translateur : de Life vers le calcul universel | `python3-lean` |
 | GOL-07 | [GOL-07-Hashlife-Correctness](GOL-07-Hashlife-Correctness.ipynb) | La correction de Hashlife comme théorème Lean | `lean4-wsl` |
 | GOL-08 | [GOL-08-Loi-II-Translateur-Life](GOL-08-Loi-II-Translateur-Life.ipynb) | La Loi II sur substrat Life : synthèse d'un translateur, certificat d'impossibilité scopé | `python3` |
+| GOL-08b | [GOL-08b-Certificat-Translateur-Lean](GOL-08b-Certificat-Translateur-Lean.ipynb) | Le variant `-b` annoncé par GOL-08 : témoin, impossibilité et frontière de famille en théorèmes du lake (`Conway.Life.Translateur`) | `lean4-wsl` |
 | GOL-09 | [GOL-09-Perplexite-Structurelle-Hashlife](GOL-09-Perplexite-Structurelle-Hashlife.ipynb) | Capstone perplexité T12 : la taille comprimée des trajectoires et le coût en temps (exposant α HashLife) comme mesures | `python3` |
 
 Les voisins hors sous-série : [Lean-16a](../Lean-16a-Conway-Man-and-Work.ipynb)
