@@ -1,0 +1,96 @@
+name: cycle-time-guard
+
+# #22736 -- les quadruplets d'heure de cycle (date, heure UTC, heure locale,
+# decalage) ecrits a la main dans les fichiers normatifs sont verifies sur
+# DEUX relations : coherence interne (l'heure locale annoncee est l'heure UTC
+# plus le decalage annonce) et coherence calendaire (le decalage annonce est
+# celui en vigueur dans le fuseau de reference a CETTE date -- heure d'ete
+# comprise, via `zoneinfo`).
+#
+# Instance fondatrice : le gabarit d'heure de cycle du skill `coordinate`
+# annoncait un decalage d'ete sur une date deja en heure standard. Son
+# arithmetique interne etait juste -- seule la relation calendaire voyait le
+# defaut. Aucun compte n'est fige : le garde verifie une RELATION, pas le
+# nombre d'exemples presents.
+#
+# PERIMETRE DU FILTRE : les `paths:` couvrent EXACTEMENT la surface que le
+# garde lit (`.claude/skills/**`, `.claude/rules/**`, `docs/**`) plus ses
+# propres sources -- un quadrupleLU hors de ce perimetre serait invisible, un
+# quadruple INTRODUIT hors de ce perimetre n'existe pas.
+#
+# Why un workflow dedie et non un etape de `always-on-guards.yml` : ce
+# fichier est touche par des PRs ouvertes d'autres lanes (#22216, #22244,
+# #22351) et `scripts/ci/fast_lane_registry.py` par sept (#20442, #22216,
+# #22041, #22177, #22193, #22210, #22244). Y ecrire un etape aurait
+# transforme une collision de chemins en conflit de merge sur un fichier
+# partage. L'ABSORPTION dans le job always-on (un seul slot) est un
+# suivi, pas une excuse : elle se fera quand ces PRs seront mergees.
+
+on:
+  pull_request:
+    paths:
+      - '.claude/skills/**'
+      - '.claude/rules/**'
+      - 'docs/**'
+      - 'scripts/ci/check_cycle_time_examples.py'
+      - 'scripts/coordination/cycle_time.py'
+      - '.github/workflows/cycle-time-guard.yml'
+  push:
+    branches: [main]
+    paths:
+      - '.claude/skills/**'
+      - '.claude/rules/**'
+      - 'docs/**'
+      - 'scripts/ci/check_cycle_time_examples.py'
+      - 'scripts/coordination/cycle_time.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  # #13372/#13488 -- le workflow a BOTH un declencheur `push: main` ET un
+  # groupe keyed sur `github.ref`. Sur main, `github.ref` vaut
+  # `refs/heads/main` pour TOUS les commits : le groupe est donc constant, et
+  # un `cancel-in-progress: true` litteral fait tuer le controle du commit
+  # precedent par le merge suivant. Le backstop cense attraper une mauvaise
+  # cascade etait tue par la cascade.
+  # Forme canonique du depot (`banner-guard.yml`, `bash-syntax-advisory.yml`) :
+  # sur PR, `github.ref` identifie la tete -- superseder est correct ; sur
+  # push, `github.sha` identifie le commit -- chaque commit de main est un
+  # sujet distinct qu'aucun autre ne peut remplacer, donc rien n'est annule.
+  group: cycle-time-guard-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  cycle_time:
+    # `ubuntu-latest` (runner heberge par GitHub, ephemere) et NON la jambe
+    # Linux auto-hebergee. Deux raisons, l'une de fond l'une de collision :
+    #   (a) FOND -- la politique d'isolation (`scripts/ci/
+    #       check_self_hosted_runner_policy.py`) n'a de sens que pour un
+    #       runner QUI POSSEDE LES CREDENTIELS DU CLUSTER ; un runner
+    #       GitHub ephemere n'en a pas, et le garde est un lecteur pur
+    #       (stdlib, aucun secret, aucune ecriture, 0,7 s de scan).
+    #   (b) COLLISION -- l'allowlist de cette politique est un fichier
+    #       revendique par des PRs ouvertes d'autres lanes (#22351,
+    #       #22244) : l'y inscrire aurait transforme une collision de
+    #       chemins en conflit de merge sur un fichier partage.
+    # Le rollback du depot (cf `always-on-guards.yml` l.126) est exactement
+    # ce couple : `runs-on: ubuntu-latest` + pas d'allowlist.
+    runs-on: ubuntu-latest
+    # Garde same-repo universelle (#13874) : sur `pull_request` elle laisse
+    # passer les PRs du depot et ecarte les PRs de fork (aucun code de fork
+    # n'atteint le runner) ; sur `push` / `workflow_dispatch`,
+    # `github.event.pull_request` est absent, donc la branche `== null` est
+    # vraie par construction.
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Quadruplets d'heure de cycle (date + decalage, heure d'ete comprise)
+        run: python scripts/ci/check_cycle_time_examples.py --root .

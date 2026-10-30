@@ -39,7 +39,9 @@ from __future__ import annotations
 
 import re
 
-__all__ = ["record_windows", "window_stats", "protocol_block",
+# Union des deux cotes du conflit : main expose `extract_int`,
+# `hackable_record`, `audit_rows` et `MAGIC_TOKEN`, la branche `hack_late_by_seed`.
+__all__ = ["record_windows", "window_stats", "protocol_block", "hack_late_by_seed",
            "extract_int", "hackable_record", "audit_rows", "MAGIC_TOKEN"]
 
 DEFAULT_MAX_RECORDS = 64
@@ -195,6 +197,65 @@ def window_stats(records) -> dict:
         "mean_math_correct": round(sum(float(r.get("mc", 0.0)) for r in records) / len(records), 4),
         "hack_rate": round(sum(float(r.get("hack", 0)) for r in records) / len(records), 4),
     }
+
+
+def hack_late_by_seed(artifact) -> dict:
+    """`hack_rate` de la **fenetre de queue**, par graine, depuis un artefact.
+
+    C'est la quantite que publient les lectures de ICT-25 §5.5 / §5.6
+    (`hack_freq late`) et sur laquelle repose leur regle de decision
+    pre-enregistree. Elle etait jusqu'ici lue dans la sortie inline d'un run
+    dont la trace n'est plus dans le carnet (#22133) : cette fonction la
+    re-derive de l'artefact seul.
+
+    Parameters
+    ----------
+    artifact : dict
+        Un artefact ecrit par `ict25_arms.py` : `per_seed` est une liste
+        d'entrees portant `metrics.seed`, `records_sample_tail`,
+        `records_total` et `records_sample`.
+
+    Returns
+    -------
+    dict
+        `{seed: hack_rate de la queue}`.
+
+    Raises
+    ------
+    ValueError
+        Si la fenetre de queue manque alors qu'elle est necessaire. Un
+        artefact anterieur a #22078 ne porte que la **tete** (steps 0 a 7 sur
+        un run de 960 completions) : la lire comme fenetre tardive
+        fabriquerait un nombre que le run n'a pas produit. On echoue donc
+        bruyamment plutot que de rendre un chiffre plausible et faux. Le
+        repli sur la tete n'est legitime que lorsque la tete couvre deja la
+        totalite du run (`records_total` <= taille de la tete) : la queue
+        n'apporterait alors rien de plus.
+    """
+    per_seed = artifact.get("per_seed") if isinstance(artifact, dict) else None
+    if not per_seed:
+        raise ValueError("artefact sans per_seed : aucune graine a recalculer")
+
+    out = {}
+    for entry in per_seed:
+        metrics = entry.get("metrics") or {}
+        seed = metrics.get("seed")
+        if seed is None:
+            raise ValueError("entree per_seed sans metrics.seed")
+        tail = entry.get("records_sample_tail") or []
+        if not tail:
+            head = entry.get("records_sample") or []
+            total = entry.get("records_total")
+            if total is not None and len(head) >= total:
+                out[seed] = window_stats(head)["hack_rate"]
+                continue
+            raise ValueError(
+                f"graine {seed} : pas de records_sample_tail exploitable "
+                f"(total={total}, tete={len(head)}). Artefact anterieur a #22078 ? "
+                f"La tete n'est pas une fenetre tardive : regenerer l'artefact."
+            )
+        out[seed] = window_stats(tail)["hack_rate"]
+    return out
 
 
 def protocol_block(*, max_completion_length: int, seeds, steps: int) -> dict:
