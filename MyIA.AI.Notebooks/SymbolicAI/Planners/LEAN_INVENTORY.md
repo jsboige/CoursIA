@@ -39,5 +39,5 @@ relaxé optimal `h⁺` n'excède jamais le coût du plan réel optimal `h*`
 | `Planning/Relaxation` (FR + `_en`) | 0 | exécution relaxée : `run`, `runR`, `reaches`, `reachesR`, `run_mono` |
 | `Planning/Admissibility` (FR + `_en`) | 0 | théorème-phare : `relaxed_plan_admissible`, `relaxed_plan_witness` |
 
-**Câblage CI** : caller workflow [`lean-planning.yml`](../../../.github/workflows/lean-planning.yml)
-(push `main`, paths `MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/**.lean` + `lakefile.*`), pipeline `real` (baseline `0`).
+**Câblage CI** : matrice [`lean-ci-matrix.yml`](../../../.github/workflows/lean-ci-matrix.yml)
+(clé `planning` dans `scripts/lean/ci_lakes.json` ; push `main`, paths `MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/**.lean` + `lakefile.lean` + `lean-toolchain` + `lake-manifest.json`), pipeline `real` (baseline `0`).

@@ -62,6 +62,10 @@ jobs:
     # heberge, sans toucher ce fichier. Limite : runs-on se resout a la
     # creation du job, les runs deja en file ne bougent pas.
     runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
+    # #22954 : borne explicite. Mesure du 2026-10-29 sur les 4 derniers
+    # runs verts de ce job : max 4.5 min. Marge large (le defaut
+    # d'Actions est 6 h, et un job fige tient son slot tout ce temps).
+    timeout-minutes: 15
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - name: Checkout
