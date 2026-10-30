@@ -2,7 +2,7 @@
 
 > **Statut** : première mesure rejouable de l'axe 1 (carnets), le carnet
 > `08-Aspire-AsyncFFI-Dotnet.ipynb`, sous deux runtimes isolés.
-> **Résultat** : compatibilité .NET 11 **établie** (9/9 cellules, 0 erreur) ;
+> **Résultat** : compatibilité .NET 11 **établie** (exécution complète, aucune erreur) ;
 > **aucun gain de temps d'exécution n'est établi** (écart médian −0,2 s,
 > dans l'étendue de dispersion).
 > **Lien** : `docs/dotnet/net11-runtime-deltas.md` (table « Volet carnets — axe 1 »)
@@ -74,8 +74,8 @@ L'artefact de la campagne est committé :
 
 Ce qui est établi, en revanche :
 
-- la **compatibilité .NET 11** du carnet : 9/9 cellules, 0 erreur, sur les deux
-  runtimes, sans adaptation ;
+- la **compatibilité .NET 11** du carnet : exécution complète, aucune erreur, sur les
+  deux runtimes, sans adaptation ;
 - le **coût de démarrage** du carnet sous .NET 11 est **équivalent** à celui
   sous .NET 10 (pas de régression de démarrage mesurable) ;
 - la mesure est **rejouable** : l'organe et les commandes sont dans le dépôt.
