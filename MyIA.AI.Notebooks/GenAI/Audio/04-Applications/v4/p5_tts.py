@@ -1347,6 +1347,16 @@ _CV3_RENDER_ATTEMPTS = 5
 # bit-identically and only a degenerate one is perturbed.
 _CV3_RETRY_SEED_STRIDE = 104_729  # prime, unrelated to seed + seg_index
 
+# Per-chunk attack guard (#19739, phase 2 of the #19692 narrator routing).
+# The duration floor above is a GROSS backstop and can never see an onset-drop:
+# a render that is a plausible length but simply started mid-text. Only the ASR
+# attack guard (v4.attack_guard — the per-chunk extension of p7's omission
+# organ) catches that class, so it is wired into the render loop as a second
+# acceptance gate: a chunk that clears the floor is re-rolled when its ASR
+# shows the attack missing. Off by default — it costs one Whisper call per
+# chunk and needs the ASR server, so it is opt-in via the env flag.
+_CV3_ATTACK_GUARD: bool = os.getenv("NARRATOR_CV3_ATTACK_GUARD", "0") == "1"
+
 # CosyVoice3 AutoModel: ~3.4 GB VRAM, tens of seconds to load — one instance
 # per process, not per segment.
 _CV3_MODEL_CACHE: dict[str, object] = {}
@@ -1566,6 +1576,44 @@ def _cv3_min_expected_s(text: str) -> float:
     return max(_CV3_MIN_ABS_S, len(text) / _CV3_MIN_CHARS_PER_SEC)
 
 
+def _cv3_chunk_asr(wav_path: str) -> str:
+    """Transcribe one rendered chunk via the p7 Whisper server.
+
+    Organ-first: this is `attack_guard.asr_http` (the same
+    `localhost:8190/v1/audio/transcriptions` path p7 uses), wrapped so the
+    render loop passes a bare path. It is injected into
+    `_cv3_chunk_attack_dropped` so hermetic tests substitute a stub and the
+    loop never reaches for the network.
+    """
+    from . import attack_guard
+
+    return attack_guard.asr_http({"audio": wav_path})
+
+
+def _cv3_chunk_attack_dropped(wav, sr: int, chunk_text: str, asr_fn) -> bool:
+    """Inline per-chunk attack guard (#19739).
+
+    Saves the candidate to a temp WAV, transcribes it with `asr_fn`, and
+    reports whether the attack is missing. The verdict is
+    `attack_guard.detect_missing_attack` — the positional head-loss detector
+    built on p7's `_missing_word_spans` — invoked organ-first, not
+    re-implemented here. `asr_fn` is injected so the loop stays testable
+    without a server or a GPU.
+    """
+    import tempfile
+    import torchaudio
+
+    from . import attack_guard
+
+    with tempfile.TemporaryDirectory(prefix="cv3_attack_") as tmp:
+        wav_path = str(Path(tmp) / "chunk.wav")
+        torchaudio.save(wav_path, wav, sr)
+        transcript = asr_fn(wav_path)
+    return bool(
+        attack_guard.detect_missing_attack(chunk_text, transcript)["attack_dropped"]
+    )
+
+
 def _synthesize_narrator_cosyvoice3(
     seg: AnnotatedSegment,
     fishaudio_text: str,
@@ -1620,6 +1668,7 @@ def _synthesize_narrator_cosyvoice3(
             # attempt 0 keeps the pre-guard seed, so a healthy chunk is
             # unchanged and only a degenerate one is perturbed.
             torch.manual_seed(seed + i + attempt * _CV3_RETRY_SEED_STRIDE)
+            attack_dropped = False
             try:
                 gen = model.inference_zero_shot(
                     chunk, prompt_text, str(asset_wav), stream=False
@@ -1634,16 +1683,35 @@ def _synthesize_narrator_cosyvoice3(
                 last_exc, last_dur = exc, 0.0
             else:
                 last_dur = candidate.shape[-1] / sr
-                if last_dur >= floor_s:
+                # A render that clears the duration floor is accepted only when
+                # the ASR attack guard also passes: the floor is a gross
+                # backstop that cannot see an onset-drop (a plausible-length
+                # render that started late), so the guard is the fidelity organ
+                # for that class (#19739). Off by default, so a plain run keeps
+                # the pre-guard behaviour and no Whisper dependency.
+                attack_dropped = (
+                    _CV3_ATTACK_GUARD
+                    and last_dur >= floor_s
+                    and _cv3_chunk_attack_dropped(candidate, sr, chunk, _cv3_chunk_asr)
+                )
+                if last_dur >= floor_s and not attack_dropped:
                     wav = candidate
                     break
-            logger.warning(
-                "[CV3] seg %s chunk %d/%d attempt %d/%d: degenerate render "
-                "(%.2fs for %d chars, floor %.2fs%s) - re-rolling seed",
-                seg.seg_index, i + 1, len(chunks), attempt + 1,
-                _CV3_RENDER_ATTEMPTS, last_dur, len(chunk), floor_s,
-                f", {type(last_exc).__name__}" if last_exc else "",
-            )
+            if attack_dropped:
+                logger.warning(
+                    "[CV3] seg %s chunk %d/%d attempt %d/%d: onset-drop "
+                    "(attack not spoken per ASR guard) - re-rolling seed",
+                    seg.seg_index, i + 1, len(chunks), attempt + 1,
+                    _CV3_RENDER_ATTEMPTS,
+                )
+            else:
+                logger.warning(
+                    "[CV3] seg %s chunk %d/%d attempt %d/%d: degenerate render "
+                    "(%.2fs for %d chars, floor %.2fs%s) - re-rolling seed",
+                    seg.seg_index, i + 1, len(chunks), attempt + 1,
+                    _CV3_RENDER_ATTEMPTS, last_dur, len(chunk), floor_s,
+                    f", {type(last_exc).__name__}" if last_exc else "",
+                )
         if wav is None:
             # Hard failure, never a silent short MP3: the run counts it in
             # Failed, which is honest, where a 0.10 s file is not.

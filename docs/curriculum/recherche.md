@@ -200,7 +200,7 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 16 | [ICT-12e — Valeur de l'information pour l'animat incarné…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12e-Value-of-Information-Animat-Python.ipynb) | BETA | Oui |
 | 17 | [ICT-13 — Morphodynamique stratégique : une stratégie…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb) | BETA | Oui |
 | 18 | [ICT-13b — Décroisement dynamique × observable : d'où…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb) | ALPHA | Oui |
-| 19 | [ICT-14 — Énergie libre et surprise du représentant…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14-FreeEnergySurprise-Python.ipynb) | BETA | Oui |
+| 19 | [ICT-14 — Énergie libre et surprise du représentant…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14-FreeEnergySurprise/ICT-14-FreeEnergySurprise-Python.ipynb) | BETA | Oui |
 | 20 | [ICT-15 — Integrated Complexity : convergence Φ / F / K…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15/ICT-15-IntegratedComplexity-Python.ipynb) | BETA | Oui |
 | 21 | [ICT-15c — Méta-proxy d'obstruction : structure des…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15/ICT-15c-MetaProxyObstruction-Python.ipynb) | BETA | Oui |
 | 22 | [ICT-15d — Cochaîne de Čech pondérée : obstruction…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15/ICT-15d-CechObstruction-Python.ipynb) | BETA | Oui |
