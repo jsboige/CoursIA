@@ -2912,3 +2912,109 @@ def test_main_runs_the_repair_phase_inside_its_own_deadline(monkeypatch):
         nits.NITS_PASS_BUDGET_S = previous_budget
         nits._NITS_PASS_DEADLINE = None
     _ = clock
+
+
+# ==================================================================
+# #23340 point 1 -- un test par sortie anticipee du run `--belt`.
+# Le principe : chaque sortie court-circuitee DESARME l'echeance du
+# run. Sans ces tests, supprimer les trois `_disarm_belt_run_clock()`
+# laissait la suite verte alors que c'est la propriete « aucune fuite
+# hors du run » que le docstring revendique. Chaque temoin releve
+# l'echeance AU MOMENT de la sortie (elle doit etre armee, sinon le
+# assert final ne prouverait rien) puis verifie `_BELT_DEADLINE[0] is
+# None` au retour de main.
+# ==================================================================
+
+
+def test_belt_disarms_on_the_board_consumer_exit(monkeypatch, tmp_path):
+    """Sortie « tableau consomme » (#20053) : picks retenus, return 0.
+
+    La sortie est AVANT l'ardoise de lane et le garde rouge -- c'est tout
+    l'objet du court-circuit. Si son `_disarm` disparaissait, l'echeance
+    armee par `--belt-time-budget` fuirait dans le process du test."""
+    _patch_belt_network(monkeypatch, prs=[], red_state=_state_red())
+    board_file = tmp_path / "board.json"
+    board_file.write_text("{}", encoding="utf-8")
+    seen = {}
+
+    monkeypatch.setattr(pig, "read_board_snapshot", lambda path: {"board": True})
+    monkeypatch.setattr(pig, "board_age_minutes", lambda snap, **kw: 0.0)
+
+    def fake_consume_board(snapshot, args, **kw):
+        seen["deadline"] = pig._BELT_DEADLINE[0]
+        return [{"number": 21125, "title": "temoin"}], {"reason": ""}
+
+    monkeypatch.setattr(pig, "consume_board", fake_consume_board)
+    monkeypatch.setattr(pig, "print_board_consumer", lambda *a, **kw: None)
+    pig._BELT_DEADLINE[0] = None
+    try:
+        rc = pig.main(["--lane", "myia-po-2025:CoursIA", "--belt",
+                       "--belt-time-budget", "60", "--json",
+                       "--board-export", str(board_file)])
+        assert rc == 0
+        assert seen["deadline"] is not None, (
+            "le temoin n'a pas vu d'echeance armee : le run n'est pas "
+            "passe par le chemin arme, l'assert final serait vide")
+        assert pig._BELT_DEADLINE[0] is None, (
+            "l'echeance fuit apres la sortie tableau consomme (#23340 point 1)")
+    finally:
+        pig._BELT_DEADLINE[0] = None
+
+
+def test_belt_disarms_on_the_pool_unmeasured_exit(monkeypatch):
+    """Sortie RC_POOL_UNMEASURED (#17038) : pool illisible, rc dedie.
+
+    « Je n'ai pas pu lire » n'est pas « aucun candidat » -- la sortie est
+    AVANT tout tirage, et son `_disarm` evite qu'une echeance armee pour
+    un run qui n'a rien servi borne les sondes d'un appel ulterieur du
+    meme process."""
+    _patch_belt_network(monkeypatch, prs=[], red_state=_state_red())
+    seen = {}
+
+    def unmeasured_pool(**kw):
+        seen["deadline"] = pig._BELT_DEADLINE[0]
+        return [], "gh: injoignable (temoin du test)"
+
+    monkeypatch.setattr(pig, "fetch_pool", unmeasured_pool)
+    pig._BELT_DEADLINE[0] = None
+    try:
+        rc = pig.main(["--lane", "myia-po-2025:CoursIA", "--belt",
+                       "--belt-time-budget", "60", "--json"])
+        assert rc == pig.RC_POOL_UNMEASURED
+        assert seen["deadline"] is not None, (
+            "le temoin n'a pas vu d'echeance armee : l'assert final "
+            "serait vide")
+        assert pig._BELT_DEADLINE[0] is None, (
+            "l'echeance fuit apres la sortie pool non mesure "
+            "(#23340 point 1)")
+    finally:
+        pig._BELT_DEADLINE[0] = None
+
+
+def test_belt_disarms_on_the_report_exit(monkeypatch):
+    """Sortie `--report` (#18832) : deux nombres, pas de tirage.
+
+    La sortie est APRES `fetch_pool` (elle mesure la passe complete) mais
+    AVANT la fenetre de claims et la boucle -- son `_disarm` est le seul
+    a rendre la main au caller sans mur pose."""
+    _patch_belt_network(monkeypatch, prs=[], red_state=_state_red())
+    seen = {}
+
+    def fake_metrics(pool, **kw):
+        seen["deadline"] = pig._BELT_DEADLINE[0]
+        return {"pool": 0, "max_gap_days": None}
+
+    monkeypatch.setattr(pig, "belt_report_metrics", fake_metrics)
+    monkeypatch.setattr(pig, "print_belt_report", lambda *a, **kw: None)
+    pig._BELT_DEADLINE[0] = None
+    try:
+        rc = pig.main(["--lane", "myia-po-2025:CoursIA", "--belt",
+                       "--belt-time-budget", "60", "--json", "--report"])
+        assert rc == 0
+        assert seen["deadline"] is not None, (
+            "le temoin n'a pas vu d'echeance armee : l'assert final "
+            "serait vide")
+        assert pig._BELT_DEADLINE[0] is None, (
+            "l'echeance fuit apres la sortie --report (#23340 point 1)")
+    finally:
+        pig._BELT_DEADLINE[0] = None

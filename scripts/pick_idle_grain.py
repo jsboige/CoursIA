@@ -1586,8 +1586,12 @@ _RECENT_DELIVERY_MARKER_RE = re.compile(
 # (`--belt-time-budget 90`, 78 s restants a l'entree de la boucle) : le run
 # rendait la main au-dela de 200 s, et quatre runs consecutifs ont expire en
 # 124 sans jamais servir de grain. L'echeance est publiee ici, et les deux
-# sondes lentes la lisent pour CLAMPER leur propre timeout : la boucle ne
-# peut plus depasser le mur de plus d'un timeout de sonde.
+# sondes lentes la lisent pour CLAMPER leur propre timeout : une sonde ne
+# peut plus depasser le mur de plus d'un timeout -- PAR APPEL, pas par phase.
+# Le plancher de 0,5 s de `_clamp_timeout` fait payer 0,5 s a chaque appel
+# emis APRES l'echeance (repli unitaire de `check_claims` hors fenetre,
+# boucle de selection), donc la borne par phase est « n_appels restants
+# x 0,5 s », pas « n_sondes x 0 » (#23340 point 3).
 _BELT_DEADLINE: list[float | None] = [None]
 
 
@@ -9112,286 +9116,291 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     _previous_belt_deadline = _BELT_DEADLINE[0]
     _BELT_DEADLINE[0] = deadline
 
-    def expired():
-        """Echeance atteinte ? Le drapeau se pose une fois, et il est lu par
-        TOUTES les surfaces couteuses de la boucle -- y compris celles qui ne
-        consomment pas `probe_budget`."""
-        if deadline is None:
-            return False
-        if time.monotonic() < deadline:
-            return False
-        state["time_budget_hit"] = True
-        return True
+    try:
+        def expired():
+            """Echeance atteinte ? Le drapeau se pose une fois, et il est lu par
+            TOUTES les surfaces couteuses de la boucle -- y compris celles qui ne
+            consomment pas `probe_budget`."""
+            if deadline is None:
+                return False
+            if time.monotonic() < deadline:
+                return False
+            state["time_budget_hit"] = True
+            return True
 
-    # Le budget enrobe TOUTE sonde, injectee ou reelle : un test qui fournit
-    # sa sonde doit voir le plafond s'appliquer aussi -- sinon la borne de
-    # cout ne serait testable qu'avec le reseau reel.
-    user_probe = delivered_probe or delivered_probe_inert
-    user_merged_pr_probe = merged_pr_probe or merged_pr_probe_inert
-    user_recent_marker_probe = (recent_marker_probe
-                                or recent_marker_probe_inert)
-    user_container_marker_probe = (container_marker_probe
-                                   or container_marker_probe_inert)
-    user_delivery_event_probe = (delivery_event_probe
-                                  or delivery_event_probe_inert)
+        # Le budget enrobe TOUTE sonde, injectee ou reelle : un test qui fournit
+        # sa sonde doit voir le plafond s'appliquer aussi -- sinon la borne de
+        # cout ne serait testable qu'avec le reseau reel.
+        user_probe = delivered_probe or delivered_probe_inert
+        user_merged_pr_probe = merged_pr_probe or merged_pr_probe_inert
+        user_recent_marker_probe = (recent_marker_probe
+                                    or recent_marker_probe_inert)
+        user_container_marker_probe = (container_marker_probe
+                                       or container_marker_probe_inert)
+        user_delivery_event_probe = (delivery_event_probe
+                                      or delivery_event_probe_inert)
 
-    def counted_probe(number, lane_name):
-        # L'echeance passe AVANT le plafond de sondes : les deux produisent le
-        # meme fail-OPEN, mais elles ne disent pas la meme chose a la lane
-        # (`time_budget_hit` = mur de temps, `budget_hit` = plafond de cout).
-        if expired() or budget[0] <= 0:
-            state["budget_hit"] = state["budget_hit"] or budget[0] <= 0
-            return DELIVERED_SIGNAL_UNPROBED
-        budget[0] -= 1
-        return user_probe(number, lane_name)
+        def counted_probe(number, lane_name):
+            # L'echeance passe AVANT le plafond de sondes : les deux produisent le
+            # meme fail-OPEN, mais elles ne disent pas la meme chose a la lane
+            # (`time_budget_hit` = mur de temps, `budget_hit` = plafond de cout).
+            if expired() or budget[0] <= 0:
+                state["budget_hit"] = state["budget_hit"] or budget[0] <= 0
+                return DELIVERED_SIGNAL_UNPROBED
+            budget[0] -= 1
+            return user_probe(number, lane_name)
 
-    def counted_merged_pr_probe(number, lane_name):
-        if expired() or budget[0] <= 0:
-            state["budget_hit"] = state["budget_hit"] or budget[0] <= 0
-            return DELIVERED_SIGNAL_UNPROBED
-        budget[0] -= 1
-        return user_merged_pr_probe(number, lane_name)
+        def counted_merged_pr_probe(number, lane_name):
+            if expired() or budget[0] <= 0:
+                state["budget_hit"] = state["budget_hit"] or budget[0] <= 0
+                return DELIVERED_SIGNAL_UNPROBED
+            budget[0] -= 1
+            return user_merged_pr_probe(number, lane_name)
 
-    if claims_probe is None:
-        def claims_probe(numbers):
-            return check_claims(numbers, args.lane)
+        if claims_probe is None:
+            def claims_probe(numbers):
+                return check_claims(numbers, args.lane)
 
-    belt_picks: list[dict] = []
-    belt_withheld: list[tuple[dict, str]] = []
-    # Garde-fou : on n'itère pas plus loin que la fenetre + un certain
-    # quota au cas ou le pool est entierement BLOQUE. Sans plafond, un
-    # tapis sans service appellerait `check_claims` indefiniment.
-    # max_iters = min(grains * 5 + 50, len(belt_pool)) borne l'explosion.
-    max_iters = min(args.grains * 5 + 50, len(belt_pool))
-    for i, it in enumerate(belt_pool):
-        if i >= max_iters:
-            break
-        if len(belt_picks) >= args.grains:
-            break
-        n = it["number"]
-        if n in belt_claims:
-            code, human = belt_claims[n]
-        elif expired():
-            # #21436 — echeance atteinte : la verification au fil de l'eau est
-            # precisement ce que le mur doit arreter, un `claim_claims` par
-            # candidat etant la surface que `probe_budget` ne compte pas. Le
-            # candidat part avec un claim INCONNU, que `claim_unread` rapporte
-            # deja (#20265) : c'est le meme fail-OPEN qu'une sonde ratee, dit
-            # a la lane au lieu d'etre silencieux.
-            code, human = CLAIM_CODE_UNCHECKED, "(budget de temps epuise)"
-            belt_claims[n] = (code, human)
-        else:
-            # Verification au fil de l'eau : on n'a pas regarde plus
-            # loin que `belt_check_window` initialement ; un item hors
-            # fenetre qui n'est pas dans `belt_claims` doit etre verifie
-            # ICI, sinon le tapis le sert sans l'avoir jamais teste -- le
-            # bug fondateur du 6e CHANGES_REQUESTED.
-            extra = claims_probe([n])
-            code, human = extra.get(n, (CLAIM_CODE_ERROR, "(no check)"))
-            belt_claims[n] = (code, human)
-        if code == CLAIM_CODE_BLOCKED:
-            belt_withheld.append((it, human))
-            continue
-        # #22500 -- plafond hebdomadaire d'un EPIC hors consolidation. Le
-        # tapis ne peut pas empecher une lane de CREER un sous-grain ; il
-        # peut refuser de lui reproposer le meme EPIC tant qu'un sous-grain
-        # y a ete cree ou claimé dans la semaine. Quand le pool porte deja
-        # des sous-grains ouverts de cet EPIC, ils sont nommes : « passe au
-        # candidat suivant » sans dire lequel revient a laisser la lane
-        # re-decouvrir ce que l'organe savait.
-        epic_cause = umbrella_visit_cause(it)
-        if epic_cause is not None:
-            siblings = [p for p in belt_pool
-                        if p is not it and it["number"] in parent_refs(p)][:2]
-            if siblings:
-                names = ", ".join(f"#{p.get('number')}" for p in siblings)
-                epic_cause += f" Sous-grains ouverts : {names}."
-            belt_withheld.append((it, epic_cause))
-            continue
-        # Sonde de livraison (#19390) : la voie ponderee ecartait et
-        # remplacait les candidats marques [INFO] candidate-delivered,
-        # le tapis les servait comme grains neufs -- chaque lane qui
-        # tirait une issue livree refaisait la verification puis
-        # reposait le marqueur (mesure 06/10 : #15974 et #16048, deux
-        # marqueurs chacune, servies a deux reprises). Portee : l'urne
-        # grain SEULE, comme la voie ponderee -- l'urne delivered sert
-        # precisement ces issues aux lanes habilitees (#15069). Pour
-        # l'urne umbrella, le LABEL `candidate-delivered` ne dit rien
-        # (il est pose mecaniquement par le workflow advisory des qu'une
-        # PR d'arc merge -- une umbrella ACCUMULE des PRs, ce marqueur
-        # n'y est donc pas un verdict de fermeture) ; en revanche le
-        # MARQUEUR DE CONTENEUR pose dans un commentaire, lui, l'est
-        # (cf. la branche umbrella ci-dessous).
-        if it.get("klass") == "grain" and not args.include_delivered:
-            # #19768 (perimetre restant, NOT-DELIVERED du 12/10) : filtre
-            # RECENT du tapis -- le meme que l'urne grain (draw_unclaimed),
-            # absent de cette boucle au merge de #19770. Mesure po-2023 du
-            # 10-09 : les 5 candidats servis non prenables du tapis
-            # portaient TOUS un marqueur identifiable ; le budget de sonde
-            # pleine eteint, chaque candidat au-dela etait servi SANS
-            # lecture (fail-OPEN). Le filtre recent coute 1 requete HORS
-            # budget et ecarte la cloture marquee AVANT la sonde pleine ;
-            # lecture en echec (None) = fail-OPEN, la sonde pleine suit.
-            #
-            # #22500 point 1 -- pour une CONSOLIDATION, ce filtre est remplace
-            # par la lecture qui rend l'HEURE du dernier evenement de
-            # cloture. Une consolidation est un chantier multi-tranches : une
-            # lane qui en livre UNE poste `[DELIVERED]` (continue.md P1,
-            # « rendre la main »), et le tapis lisait ce marqueur comme une
-            # livraison COMPLETE -- l'issue restait ouverte ET invisible.
-            # Mesure du 2026-10-26 sur les 48 issues ouvertes label
-            # `consolidation` : 10 consolidations bornees ecartees par un
-            # marqueur de plus de 48 h, dont #20381 (Dynamics, citee par le
-            # user depuis le 23/10).
-            #
-            # Meme grammaire, meme commentaire lu, une requete de moins : la
-            # lecture d'evenement remplace le filtre recent pour cette classe.
-            # Le marqueur n'ecarte plus au-dela de 48 h ; la surface
-            # « commentaire » de la sonde pleine est neutralisee elle aussi
-            # (`skip_marker`), le LABEL reste intact (il continue d'ecarter,
-            # quel que soit l'age), et la surface « PR MERGEE » est
-            # neutralisee seulement quand la derniere livraison par PR est
-            # deja connue et depasse 48 h (`skip_merged_pr`) : une
-            # consolidation accumule les PRs, et une tranche mergee depuis
-            # plus de 48 h ne dit plus « la consolidation est finie ».
-            marker_expired = False
-            merged_pr_expired = False
-            if is_consolidation(it):
-                # #22500 -- la surface « PR MERGEE » cesse elle aussi
-                # d'ecarter la consolidation au-dela de 48 h : le timestamp
-                # de la derniere livraison par PR est DEJA calcule en amont
-                # (`last_delivery_stamp`, corpus `fetch_merged` partage) --
-                # le reutiliser evite une requete `gh` supplementaire.
-                # Age inconnu (aucune livraison dans la fenetre, ou corpus
-                # indisponible) -> la sonde garde son comportement anterieur.
-                delivery_age_h = _visit_age_hours(
-                    it.get("last_delivery_stamp"), NOW)
-                merged_pr_expired = bool(
-                    delivery_age_h is not None
-                    and delivery_age_h >= CONSOLIDATION_LAG_H)
-                # Le mur de temps est atteint : la sonde n'est pas lue (elle
-                # coute) et rien n'est neutralise -- fail-OPEN explicite.
-                # Le TUPLE est forme ici : un `False` nu n'est pas
-                # decomposable en trois. Mesure du 26/10 : le tapis levait
-                # `TypeError: cannot unpack non-iterable bool object`
-                # des que le budget de temps etait epuise -- donc des que
-                # la boucle de service demarrait, et le tirage entier
-                # rendait zero grain (aucune consolidation servie).
-                verdict = ((False, False, None) if expired()
-                           else user_delivery_event_probe(n))
-                if verdict is None:
-                    # Lecture en echec : fail-OPEN, rien n'est neutralise --
-                    # mais l'echec est PUBLIE (mesure #17528, 2026-10-26 :
-                    # un `None` indistinguable d'un « pas de marqueur » est
-                    # ce qui a laisse le tapis resservir des conteneurs
-                    # livres).
-                    state.setdefault("marker_unread", []).append(n)
-                    verdict = (False, False, None)
-                recent_flag, delivered_flag, stamp = verdict
-                age_h = _visit_age_hours(stamp, NOW)
-                marker_expired = bool(
-                    delivered_flag
-                    and age_h is not None
-                    and age_h >= CONSOLIDATION_LAG_H)
+        belt_picks: list[dict] = []
+        belt_withheld: list[tuple[dict, str]] = []
+        # Garde-fou : on n'itère pas plus loin que la fenetre + un certain
+        # quota au cas ou le pool est entierement BLOQUE. Sans plafond, un
+        # tapis sans service appellerait `check_claims` indefiniment.
+        # max_iters = min(grains * 5 + 50, len(belt_pool)) borne l'explosion.
+        max_iters = min(args.grains * 5 + 50, len(belt_pool))
+        for i, it in enumerate(belt_pool):
+            if i >= max_iters:
+                break
+            if len(belt_picks) >= args.grains:
+                break
+            n = it["number"]
+            if n in belt_claims:
+                code, human = belt_claims[n]
+            elif expired():
+                # #21436 — echeance atteinte : la verification au fil de l'eau est
+                # precisement ce que le mur doit arreter, un `claim_claims` par
+                # candidat etant la surface que `probe_budget` ne compte pas. Le
+                # candidat part avec un claim INCONNU, que `claim_unread` rapporte
+                # deja (#20265) : c'est le meme fail-OPEN qu'une sonde ratee, dit
+                # a la lane au lieu d'etre silencieux.
+                code, human = CLAIM_CODE_UNCHECKED, "(budget de temps epuise)"
+                belt_claims[n] = (code, human)
             else:
-                recent_flag = (False if expired()
-                               else user_recent_marker_probe(n))
-                if recent_flag is None:
-                    # Meme traitement que ci-dessus : le fail-OPEN reste
-                    # assume, le SILENCE ne l'est pas. La sonde du marqueur
-                    # RECENT et celle du marqueur de CONTENEUR lisent le
-                    # meme fil : un echec de l'une predit l'echec de l'autre,
-                    # et les deux verdicts doivent etre distincts dans la
-                    # sortie (conteneur livre / non livre).
-                    state.setdefault("marker_unread", []).append(n)
-            if recent_flag is True and not marker_expired:
-                state["recent_filtered"] += 1
-                belt_withheld.append(
-                    (it,
-                     ("LIVRAISON (recent) : marqueur de cloture sur le "
-                      "dernier commentaire ([DELIVERED] / "
-                      "[FROZEN] / [INFO] candidate-delivered). "
-                      "Candidat remplace hors budget de sonde.")))
+                # Verification au fil de l'eau : on n'a pas regarde plus
+                # loin que `belt_check_window` initialement ; un item hors
+                # fenetre qui n'est pas dans `belt_claims` doit etre verifie
+                # ICI, sinon le tapis le sert sans l'avoir jamais teste -- le
+                # bug fondateur du 6e CHANGES_REQUESTED.
+                extra = claims_probe([n])
+                code, human = extra.get(n, (CLAIM_CODE_ERROR, "(no check)"))
+                belt_claims[n] = (code, human)
+            if code == CLAIM_CODE_BLOCKED:
+                belt_withheld.append((it, human))
                 continue
-            reason = delivered_signal_reason(
-                it, args.lane, counted_probe, state["failures"],
-                counted_merged_pr_probe, skip_marker=marker_expired,
-                skip_merged_pr=merged_pr_expired)
-            if reason is not None:
-                belt_withheld.append(
-                    (it, "LIVRAISON : " + reason
-                     + " Candidat remplace dans la meme urne."))
+            # #22500 -- plafond hebdomadaire d'un EPIC hors consolidation. Le
+            # tapis ne peut pas empecher une lane de CREER un sous-grain ; il
+            # peut refuser de lui reproposer le meme EPIC tant qu'un sous-grain
+            # y a ete cree ou claimé dans la semaine. Quand le pool porte deja
+            # des sous-grains ouverts de cet EPIC, ils sont nommes : « passe au
+            # candidat suivant » sans dire lequel revient a laisser la lane
+            # re-decouvrir ce que l'organe savait.
+            epic_cause = umbrella_visit_cause(it)
+            if epic_cause is not None:
+                siblings = [p for p in belt_pool
+                            if p is not it and it["number"] in parent_refs(p)][:2]
+                if siblings:
+                    names = ", ".join(f"#{p.get('number')}" for p in siblings)
+                    epic_cause += f" Sous-grains ouverts : {names}."
+                belt_withheld.append((it, epic_cause))
                 continue
-        elif it.get("klass") == "umbrella" and not args.include_delivered:
-            # Umbrella livree : le MARQUEUR DE CONTENEUR pose dans le dernier
-            # commentaire (`[INFO] candidate-delivered`) dit « plus rien a
-            # faire DEDANS ». C'est un MARQUEUR DE COMMENTAIRE, pose par une
-            # lane apres avoir mesure le conteneur -- et il se distingue du
-            # LABEL `candidate-delivered`, que le workflow advisory pose
-            # mecaniquement des qu'une PR d'arc merge : sur une umbrella qui
-            # accumule des PRs, ce label n'est PAS un verdict de fermeture et
-            # n'ecarte donc rien ici.
-            #
-            # Mesure du 2026-10-26 (#17528) : le meme EPIC a ete servi
-            # quatre fois en cinq jours (21/10, 22/10, 25/10 x2) et quatre
-            # lanes y ont repose le meme marqueur -- le tapis le resservait
-            # malgre le marqueur, parce que le filtre de livraison ne
-            # s'appliquait qu'a l'urne `grain`. La lecture est HORS budget de
-            # sonde (1 requete, comme le filtre recent) et reste fail-OPEN :
-            # une lecture en echec laisse l'umbrella servable.
-            recent = False if expired() else user_container_marker_probe(n)
-            if recent is None:
-                # La lecture a ECHOUE (reseau, 403, payload illisible) : l'etat
-                # de livraison du CONTENEUR est INCONNU, pas « libre ». Le
-                # fail-OPEN reste assume (le candidat est servi -- on ne refuse
-                # pas un grain faute d'avoir pu lire un commentaire), mais le
-                # SILENCE ne l'est pas : le numero est reporte, exactement
-                # comme `claim_unread` le fait pour le claim (#20265).
-                # Mesure #17528 (2026-10-26) : le conteneur portait un
-                # marqueur `[INFO] candidate-delivered` et la LECTURE a echoue
-                # -- le tapis a resservi un conteneur deja livre, et rien dans
-                # la sortie ne distinguait ce cas d'un conteneur libre.
-                state.setdefault("container_unread", []).append(n)
-            if recent is True:
-                state["recent_filtered"] += 1
-                belt_withheld.append(
-                    (it,
-                     ("LIVRAISON (conteneur) : le dernier commentaire "
-                      "porte le marqueur `[INFO] candidate-delivered` -- "
-                      "l'umbrella est livree, plus rien a faire dedans. "
-                      "Reservee au coordinateur/adjoint (urne `delivered`, "
-                      "#15069). Candidat remplace hors budget de sonde.")))
+            # Sonde de livraison (#19390) : la voie ponderee ecartait et
+            # remplacait les candidats marques [INFO] candidate-delivered,
+            # le tapis les servait comme grains neufs -- chaque lane qui
+            # tirait une issue livree refaisait la verification puis
+            # reposait le marqueur (mesure 06/10 : #15974 et #16048, deux
+            # marqueurs chacune, servies a deux reprises). Portee : l'urne
+            # grain SEULE, comme la voie ponderee -- l'urne delivered sert
+            # precisement ces issues aux lanes habilitees (#15069). Pour
+            # l'urne umbrella, le LABEL `candidate-delivered` ne dit rien
+            # (il est pose mecaniquement par le workflow advisory des qu'une
+            # PR d'arc merge -- une umbrella ACCUMULE des PRs, ce marqueur
+            # n'y est donc pas un verdict de fermeture) ; en revanche le
+            # MARQUEUR DE CONTENEUR pose dans un commentaire, lui, l'est
+            # (cf. la branche umbrella ci-dessous).
+            if it.get("klass") == "grain" and not args.include_delivered:
+                # #19768 (perimetre restant, NOT-DELIVERED du 12/10) : filtre
+                # RECENT du tapis -- le meme que l'urne grain (draw_unclaimed),
+                # absent de cette boucle au merge de #19770. Mesure po-2023 du
+                # 10-09 : les 5 candidats servis non prenables du tapis
+                # portaient TOUS un marqueur identifiable ; le budget de sonde
+                # pleine eteint, chaque candidat au-dela etait servi SANS
+                # lecture (fail-OPEN). Le filtre recent coute 1 requete HORS
+                # budget et ecarte la cloture marquee AVANT la sonde pleine ;
+                # lecture en echec (None) = fail-OPEN, la sonde pleine suit.
+                #
+                # #22500 point 1 -- pour une CONSOLIDATION, ce filtre est remplace
+                # par la lecture qui rend l'HEURE du dernier evenement de
+                # cloture. Une consolidation est un chantier multi-tranches : une
+                # lane qui en livre UNE poste `[DELIVERED]` (continue.md P1,
+                # « rendre la main »), et le tapis lisait ce marqueur comme une
+                # livraison COMPLETE -- l'issue restait ouverte ET invisible.
+                # Mesure du 2026-10-26 sur les 48 issues ouvertes label
+                # `consolidation` : 10 consolidations bornees ecartees par un
+                # marqueur de plus de 48 h, dont #20381 (Dynamics, citee par le
+                # user depuis le 23/10).
+                #
+                # Meme grammaire, meme commentaire lu, une requete de moins : la
+                # lecture d'evenement remplace le filtre recent pour cette classe.
+                # Le marqueur n'ecarte plus au-dela de 48 h ; la surface
+                # « commentaire » de la sonde pleine est neutralisee elle aussi
+                # (`skip_marker`), le LABEL reste intact (il continue d'ecarter,
+                # quel que soit l'age), et la surface « PR MERGEE » est
+                # neutralisee seulement quand la derniere livraison par PR est
+                # deja connue et depasse 48 h (`skip_merged_pr`) : une
+                # consolidation accumule les PRs, et une tranche mergee depuis
+                # plus de 48 h ne dit plus « la consolidation est finie ».
+                marker_expired = False
+                merged_pr_expired = False
+                if is_consolidation(it):
+                    # #22500 -- la surface « PR MERGEE » cesse elle aussi
+                    # d'ecarter la consolidation au-dela de 48 h : le timestamp
+                    # de la derniere livraison par PR est DEJA calcule en amont
+                    # (`last_delivery_stamp`, corpus `fetch_merged` partage) --
+                    # le reutiliser evite une requete `gh` supplementaire.
+                    # Age inconnu (aucune livraison dans la fenetre, ou corpus
+                    # indisponible) -> la sonde garde son comportement anterieur.
+                    delivery_age_h = _visit_age_hours(
+                        it.get("last_delivery_stamp"), NOW)
+                    merged_pr_expired = bool(
+                        delivery_age_h is not None
+                        and delivery_age_h >= CONSOLIDATION_LAG_H)
+                    # Le mur de temps est atteint : la sonde n'est pas lue (elle
+                    # coute) et rien n'est neutralise -- fail-OPEN explicite.
+                    # Le TUPLE est forme ici : un `False` nu n'est pas
+                    # decomposable en trois. Mesure du 26/10 : le tapis levait
+                    # `TypeError: cannot unpack non-iterable bool object`
+                    # des que le budget de temps etait epuise -- donc des que
+                    # la boucle de service demarrait, et le tirage entier
+                    # rendait zero grain (aucune consolidation servie).
+                    verdict = ((False, False, None) if expired()
+                               else user_delivery_event_probe(n))
+                    if verdict is None:
+                        # Lecture en echec : fail-OPEN, rien n'est neutralise --
+                        # mais l'echec est PUBLIE (mesure #17528, 2026-10-26 :
+                        # un `None` indistinguable d'un « pas de marqueur » est
+                        # ce qui a laisse le tapis resservir des conteneurs
+                        # livres).
+                        state.setdefault("marker_unread", []).append(n)
+                        verdict = (False, False, None)
+                    recent_flag, delivered_flag, stamp = verdict
+                    age_h = _visit_age_hours(stamp, NOW)
+                    marker_expired = bool(
+                        delivered_flag
+                        and age_h is not None
+                        and age_h >= CONSOLIDATION_LAG_H)
+                else:
+                    recent_flag = (False if expired()
+                                   else user_recent_marker_probe(n))
+                    if recent_flag is None:
+                        # Meme traitement que ci-dessus : le fail-OPEN reste
+                        # assume, le SILENCE ne l'est pas. La sonde du marqueur
+                        # RECENT et celle du marqueur de CONTENEUR lisent le
+                        # meme fil : un echec de l'une predit l'echec de l'autre,
+                        # et les deux verdicts doivent etre distincts dans la
+                        # sortie (conteneur livre / non livre).
+                        state.setdefault("marker_unread", []).append(n)
+                if recent_flag is True and not marker_expired:
+                    state["recent_filtered"] += 1
+                    belt_withheld.append(
+                        (it,
+                         ("LIVRAISON (recent) : marqueur de cloture sur le "
+                          "dernier commentaire ([DELIVERED] / "
+                          "[FROZEN] / [INFO] candidate-delivered). "
+                          "Candidat remplace hors budget de sonde.")))
+                    continue
+                reason = delivered_signal_reason(
+                    it, args.lane, counted_probe, state["failures"],
+                    counted_merged_pr_probe, skip_marker=marker_expired,
+                    skip_merged_pr=merged_pr_expired)
+                if reason is not None:
+                    belt_withheld.append(
+                        (it, "LIVRAISON : " + reason
+                         + " Candidat remplace dans la meme urne."))
+                    continue
+            elif it.get("klass") == "umbrella" and not args.include_delivered:
+                # Umbrella livree : le MARQUEUR DE CONTENEUR pose dans le dernier
+                # commentaire (`[INFO] candidate-delivered`) dit « plus rien a
+                # faire DEDANS ». C'est un MARQUEUR DE COMMENTAIRE, pose par une
+                # lane apres avoir mesure le conteneur -- et il se distingue du
+                # LABEL `candidate-delivered`, que le workflow advisory pose
+                # mecaniquement des qu'une PR d'arc merge : sur une umbrella qui
+                # accumule des PRs, ce label n'est PAS un verdict de fermeture et
+                # n'ecarte donc rien ici.
+                #
+                # Mesure du 2026-10-26 (#17528) : le meme EPIC a ete servi
+                # quatre fois en cinq jours (21/10, 22/10, 25/10 x2) et quatre
+                # lanes y ont repose le meme marqueur -- le tapis le resservait
+                # malgre le marqueur, parce que le filtre de livraison ne
+                # s'appliquait qu'a l'urne `grain`. La lecture est HORS budget de
+                # sonde (1 requete, comme le filtre recent) et reste fail-OPEN :
+                # une lecture en echec laisse l'umbrella servable.
+                recent = False if expired() else user_container_marker_probe(n)
+                if recent is None:
+                    # La lecture a ECHOUE (reseau, 403, payload illisible) : l'etat
+                    # de livraison du CONTENEUR est INCONNU, pas « libre ». Le
+                    # fail-OPEN reste assume (le candidat est servi -- on ne refuse
+                    # pas un grain faute d'avoir pu lire un commentaire), mais le
+                    # SILENCE ne l'est pas : le numero est reporte, exactement
+                    # comme `claim_unread` le fait pour le claim (#20265).
+                    # Mesure #17528 (2026-10-26) : le conteneur portait un
+                    # marqueur `[INFO] candidate-delivered` et la LECTURE a echoue
+                    # -- le tapis a resservi un conteneur deja livre, et rien dans
+                    # la sortie ne distinguait ce cas d'un conteneur libre.
+                    state.setdefault("container_unread", []).append(n)
+                if recent is True:
+                    state["recent_filtered"] += 1
+                    belt_withheld.append(
+                        (it,
+                         ("LIVRAISON (conteneur) : le dernier commentaire "
+                          "porte le marqueur `[INFO] candidate-delivered` -- "
+                          "l'umbrella est livree, plus rien a faire dedans. "
+                          "Reservee au coordinateur/adjoint (urne `delivered`, "
+                          "#15069). Candidat remplace hors budget de sonde.")))
+                    continue
+            # FREE, FREE_STALE, OWNED_BY_ME, ERROR -- servable.
+            # ERROR (check indisponible, parse rate...) est servable par
+            # defaut : on ne peut pas refuser un grain faute d'avoir pu
+            # verifier son claim, ce serait introduire un faux BLOQUE.
+            # Le fail-OPEN est assume, le SILENCE ne l'est pas (#20265) : un
+            # candidat servi sur une lecture en echec part avec un statut de
+            # claim INCONNU, et rien ne le distinguait d'un claim verifie libre.
+            # Le signal de livraison annoncait deja sa lecture ratee ; le claim
+            # le fait ici, au moment ou le candidat est retenu.
+            if args.lane and code in (CLAIM_CODE_ERROR, CLAIM_CODE_UNCHECKED):
+                state["claim_unread"].append(n)
+            # Gate GPU (#22747) : meme verdict, meme fail-CLOSED sur cible
+            # resolue, meme motif nomme que sur la voie ponderee -- le tapis est
+            # le chemin que le `/continue` emprunte (`--belt`), c'etait donc la
+            # ou le defaut aurait ete le plus visible. Sans cible declaree, le
+            # grain est servi et le fait est rapporte dans `etat` (revue #22939
+            # point 1 : ecarter tout le genre retirait 41 grains sans proteger
+            # un seul device).
+            gpu_cause = gpu_gate_reason(
+                it, args, gpu_probe,
+                state.setdefault("gpu_target_unresolved", []))
+            if gpu_cause is not None:
+                belt_withheld.append((it, "GPU : " + gpu_cause))
                 continue
-        # FREE, FREE_STALE, OWNED_BY_ME, ERROR -- servable.
-        # ERROR (check indisponible, parse rate...) est servable par
-        # defaut : on ne peut pas refuser un grain faute d'avoir pu
-        # verifier son claim, ce serait introduire un faux BLOQUE.
-        # Le fail-OPEN est assume, le SILENCE ne l'est pas (#20265) : un
-        # candidat servi sur une lecture en echec part avec un statut de
-        # claim INCONNU, et rien ne le distinguait d'un claim verifie libre.
-        # Le signal de livraison annoncait deja sa lecture ratee ; le claim
-        # le fait ici, au moment ou le candidat est retenu.
-        if args.lane and code in (CLAIM_CODE_ERROR, CLAIM_CODE_UNCHECKED):
-            state["claim_unread"].append(n)
-        # Gate GPU (#22747) : meme verdict, meme fail-CLOSED sur cible
-        # resolue, meme motif nomme que sur la voie ponderee -- le tapis est
-        # le chemin que le `/continue` emprunte (`--belt`), c'etait donc la
-        # ou le defaut aurait ete le plus visible. Sans cible declaree, le
-        # grain est servi et le fait est rapporte dans `etat` (revue #22939
-        # point 1 : ecarter tout le genre retirait 41 grains sans proteger
-        # un seul device).
-        gpu_cause = gpu_gate_reason(
-            it, args, gpu_probe,
-            state.setdefault("gpu_target_unresolved", []))
-        if gpu_cause is not None:
-            belt_withheld.append((it, "GPU : " + gpu_cause))
-            continue
-        belt_picks.append(it)
-    # #21436 -- l'echeance du tapis ne survit pas a la boucle : les appels
-    # directs a `check_claims` / `has_recent_delivery_marker` (tests, usages
-    # hors tapis) retrouvent leur timeout plein.
-    _BELT_DEADLINE[0] = _previous_belt_deadline
-    return belt_picks, belt_withheld, state
+            belt_picks.append(it)
+        return belt_picks, belt_withheld, state
+    finally:
+        # #21436 -- l'echeance du tapis ne survit pas a la boucle : les appels
+        # directs a `check_claims` / `has_recent_delivery_marker` (tests, usages
+        # hors tapis) retrouvent leur timeout plein. En finally, pas en fin de
+        # boucle : une exception levee entre l'armement et la sortie laisserait
+        # sinon le mur pose pour le reste du process -- et c'est precisement le
+        # cas in-process que les tests exercent (#23340 point 2).
+        _BELT_DEADLINE[0] = _previous_belt_deadline
 
 
 def creation_budget_gate(pool: list[dict]) -> dict[int, str]:
