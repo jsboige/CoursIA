@@ -35,10 +35,17 @@ archivage, la disposition équivalente vit ici : chaque bloc de contenu est reli
   au moment du déplacement ; le fichier n'a reçu ni en-tête, ni réécriture, ni réexécution.
 - **Successeur nommé et présent** — `../05b-Stockage-Vectoriel-Serveur.ipynb` existe sur la branche
   de la fusion, avec ses cellules de code **exécutées et leurs sorties réelles** (C.2).
-- **Références maintenues à la main, toutes purgées** — les quatre points qui pointaient vers
-  `05c` hors artefacts générés (le README de la série, la barre de navigation du carnet 06, la
-  navigation du carnet 03b et la clé de la base de densité pédagogique) ont été mis à jour dans
-  la même PR ; le carnet fusionné ne cite plus `05c` que pour nommer sa provenance.
+- **Références maintenues à la main** — quatre points pointaient vers `05c` hors artefacts
+  générés (le README de la série, la barre de navigation du carnet 06, la navigation du carnet 03b
+  et la clé de la base de densité pédagogique). Trois ont été purgés dans la même PR : le README
+  de la série, la navigation du carnet 03b et la clé de la base ; le carnet fusionné ne cite plus
+  `05c` que pour nommer sa provenance. **Le quatrième, la barre de navigation du carnet 06,
+  conserve volontairement une entrée `05c (archive)`** pointée sur
+  `_archive/05c-Moteurs-Vectoriels-Compares.ipynb` : retirer cette entrée ferait perdre au
+  lecteur le chemin vers la comparaison des moteurs (le lien « next » de la série), et le garde
+  « No markdown content loss in changed notebooks » la relèverait. Ce pointeur vise la copie
+  archivée, qui préserve le contenu byte-exact — ce n'est pas une référence résiduelle à un
+  carnet actif.
 - **Artefacts générés, laissés à l'automatisation** — `COURSE_CATALOG.generated.json`,
   `COURSE_CATALOG.generated.md`, `docs/curriculum/genai.md` et `_quarto.yml` mentionnent encore
   `05c` : ils restent **byte-identiques à `main`** sur la branche de la fusion (règle
