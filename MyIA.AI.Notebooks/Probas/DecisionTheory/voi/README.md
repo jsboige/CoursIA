@@ -17,7 +17,8 @@ constantes.
 | `InferNetVoi/` | Adaptateur C# : **Infer.NET réel** (`Microsoft.ML.Probabilistic`) infère les postérieurs de chaque signal et les marginales du signal |
 | `pymc_voi.py` | Adaptateur Python : **PyMC réel** échantillonne le même modèle génératif (prior predictive seedé, conditionnement empirique) |
 | `run_comparison.py` | Runner : exécute les deux moteurs, produit la table accord/désaccord + vérifie les contrôles sur les valeurs mesurées |
-| `tests/` | Tests pytest (contrat, comparateur, adaptateur PyMC) |
+| `lean_voi_adapter.py` | Adaptateur vers l'organe formel : convertit les mêmes contrats en une `NoisyProblem` du lake `lean_game_defs_ext` (fractions exactes, refus explicites), et émet la source Lean des instances |
+| `tests/` | Tests pytest (contrat, comparateur, adaptateur PyMC, adaptateur Lean) |
 | `comparison.json` | Sortie du dernier run de comparaison (artefact de preuve) |
 
 ## Le contrat JSON
@@ -60,6 +61,40 @@ Python `U[state, action]`) : l'ambiguïté d'axes ne peut pas surgir.
 ```bash
 python run_comparison.py                # exécute les deux moteurs + compare
 python -m pytest tests/ -q              # tests (contrat, comparateur, PyMC)
+```
+
+## Troisième comparaison : la valeur exacte en Lean
+
+Les deux moteurs infèrent ou échantillonnent ; aucun ne dit quelle est la bonne
+réponse. `lean_voi_adapter.py` transpose les **mêmes** fichiers
+`problems/*.json` dans l'organe formel
+(`MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext/Bayesian/VoiBench.lean`) et
+fait calculer la valeur exacte par le noyau Lean.
+
+- **Conversion documentée** : poids joints `prior × vraisemblance` mis à
+  l'échelle par `Lp`, utilités par `Lu`, coût par `Lp × Lu`. Aucun arrondi : le
+  JSON est lu en fractions exactes (`Fraction`), et les deux facteurs restent
+  distincts — mettre les utilités à l'échelle des probabilités multiplierait la
+  valeur par `Lp` au carré et rendrait le nombre Lean inutilisable comme
+  contrôle.
+- **Refus explicites plutôt que blanchiment** : poids négatif, prior ou
+  vraisemblance qui ne somme pas exactement à 1, clé manquante, coût négatif.
+  Un **signal impossible** (masse nulle) n'est pas un refus : sa contribution
+  vaut exactement zéro.
+- **Parité garantie** : un test compare le bloc d'instances du module Lean à la
+  sortie courante de l'adaptateur, et les nombres des théorèmes à l'évaluation
+  exacte. Éditer une instance Lean à la main fait rougir.
+
+Résultat sur le forage informatif : **253 000 EUR** d'EVSI brute. Infer.NET rend
+cette valeur exactement ; PyMC s'en écarte de 204 EUR. L'écart est mesurable
+comme bruit d'échantillonnage **parce que** la valeur exacte existe
+indépendamment des deux moteurs. Sur le contrôle négatif, la table est factorisée
+et le zéro est certifié par le théorème d'Evans, puis retrouvé par `decide` —
+deux instruments indépendants l'un de l'autre.
+
+```bash
+python lean_voi_adapter.py problems/*.json            # valeurs exactes, deux échelles
+python lean_voi_adapter.py problems/*.json --emit     # source Lean des instances
 ```
 
 ## Ce que ce répertoire n'est pas
