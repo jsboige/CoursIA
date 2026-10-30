@@ -16,7 +16,6 @@ import importlib.util
 import re
 import sys
 from pathlib import Path
-from types import SimpleNamespace
 from unittest.mock import patch
 
 import pytest
@@ -142,18 +141,20 @@ def _check_anchor(listed: str, emitted: str) -> dict:
         "'Conway.Life.p4_base_exhaustive' depends on axioms: "
         f"[{emitted}]"
     )
+    # Le seam de lancement de Lean est `_organ_run` : depuis la migration
+    # confinee (#15666), ce module ne spawn aucun processus lui-meme et
+    # n'importe plus `subprocess`. Patcher `_resolve_lake_command` /
+    # `subprocess.run` ne decouvre plus rien -- et leve une AttributeError
+    # plutot qu'un echec de test lisible.
+    assert hasattr(lean_server, "_organ_run"), (
+        "lean_server n'expose plus `_organ_run` : le seam de lancement de Lean "
+        "a change, ce test doit etre reecrit sur le nouveau seam."
+    )
     verifier = lean_server.LeanVerifier(str(REPO))
-    with (
-        patch.object(
-            lean_server,
-            "_resolve_lake_command",
-            return_value=(["lean"], {}),
-        ),
-        patch.object(
-            lean_server.subprocess,
-            "run",
-            return_value=SimpleNamespace(stdout=stdout, stderr="", returncode=0),
-        ),
+    with patch.object(
+        lean_server,
+        "_organ_run",
+        return_value=(0, stdout, ""),
     ):
         return verifier.check_axioms(
             "Conway.Life.p4_base_exhaustive",
