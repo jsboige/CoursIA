@@ -21,20 +21,112 @@ La phase A est **manuelle** (un operateur pose la variable). La phase B, decrite
 | etat mesure | decision |
 |---|---|
 | offre hebergee **saturee** (au moins `--saturation-jobs` jobs `ubuntu-latest` en file depuis plus de `--saturation-minutes`) **et** parc local libre (au moins `--min-free-slots` slots en ligne **et libres**) | variable a `true` |
-| file hebergee **videe** (au plus `--drain-jobs` job en file) | variable a `false` |
+| **charge rendue de la cohorte dans la marge hebergee** : l'offre hebergee n'attend pas, la marge (`--hosted-cap` moins les jobs heberges en file et en cours) est strictement positive, et la charge que la **cohorte** rend tient dans cette marge -- confirmee sur une **seconde** lecture | variable a `false` |
 | parc local **lui-meme affame** (des jobs `coursia-linux` attendent) | variable a `false` (on rend la main a l'heberge) |
-| sinon | **HOLD** (rien n'est ecrit) |
+| **cohorte non etablie** (liste derivee du depot vide ou illisible) | **UNREADABLE** (aucune ecriture) |
+| sinon (1 ou 2 jobs ages : bande morte) | **HOLD** (rien n'est ecrit) |
 
-Un **dwell** de `--dwell-minutes` (90 par defaut) interdit deux bascules rapprochees : une variable qui oscille est pire qu'une variable stable. Le dwell est **coherent avec la cadence** : il la depasse (90 > 60 min), sinon il ne peut jamais opposer quoi que ce soit -- deux passages consecutifs d'un cron horaire sont toujours a plus de 60 min, et un dwell de 30 min etait donc inerte (point Hermes du 2026-10-27, 12:53Z).
+### La liberation mesure la COHORTE dans la MARGE hebergee (#22937 vague 3)
 
-L'organe est **fail-CLOSED** : une mesure illisible (listing incomplet, inventaire des runners inaccessible) ne produit **aucune** ecriture.
+La liberation rend la **cohorte** a l'offre hebergee : les jobs dont le workflow lit
+`vars.CI_OVERFLOW_LOCAL`, et eux seuls. Deux grandeurs, une comparaison :
 
-Une lecture **tronquee** (budget de lecture atteint) n'est pas une mesure illisible : c'est une mesure **partielle**, dont les comptes sont des bornes **inferieures**. La regle appliquee est **directionnelle** -- une borne inferieure etablit une affirmation **positive** (« au moins N jobs ages ») mais **n'etablit aucune affirmation negative** (« aucun job en file », « le parc local n'est pas affame ») :
+1. **charge rendue** : les jobs **en file et en cours** sur le parc local dont le run
+   appartient a un workflow de la cohorte (le chemin du workflow est deja dans la
+   reponse des runs : le filtre ne coute aucun appel de plus) ;
+2. **marge hebergee** : le plafond de l'offre (`--hosted-cap`, 20 ; mesure : 19 jobs
+   heberges en concurrence au pic du 2026-10-16) moins les jobs heberges **en file et
+   en cours** ;
+3. **liberation** quand la charge rendue **confirmee** est **au plus egale** a la
+   marge -- c'est-a-dire quand les **deux** lectures de la charge rendue tiennent dans
+   la marge. C'est la lecture la plus haute qui decide, jamais la plus basse.
+
+Les jobs **statiques** du parc n'entrent dans **aucun** des deux cotes : ils portent le
+meme jeu de labels que la cohorte (`[self-hosted, coursia-ephemeral, coursia-linux]`)
+mais leur workflow ne lit pas la variable, et ils ne reviendront jamais sur l'offre
+hebergee. Les compter comme charge rendue etait le defaut de la vague 2 : des trois
+jobs statiques en cours -- le regime normal d'une journee de PRs -- la liberation
+n'avait plus jamais lieu, la variable restait a `true` et la cohorte tournait en local
+meme quand l'heberge etait vide. Le pendule de la version precedente etait devenu un
+**verrou** (review du coordinateur, 28/10 : les workflows qui lisent
+`CI_OVERFLOW_LOCAL` gardent un `runs-on` statique sur le pool local).
+
+#### D'ou vient la liste de la cohorte
+
+Elle est **derivee du depot a chaque passage** (`derive_cohort_workflows`) : un fichier
+de `.github/workflows/` est de la cohorte quand son contenu lit
+`vars.CI_OVERFLOW_LOCAL` -- la forme que
+`scripts/ci/check_self_hosted_runner_policy.py` enumere
+(`HYBRID_RUNS_ON_OVERFLOW_GUARD`). Rien n'est recopie : un workflow qui rejoint la
+forme hybride entre dans le calcul, un workflow qui la quitte en sort.
+
+Le marqueur porte le prefixe `vars.` a dessein : le simple nom de la variable apparait
+aussi dans la prose, et ranger son propre workflow dans la cohorte compterait un job
+**statique** du parc comme charge rendue. Les lignes entierement commentaires sont
+retirees avant la recherche, pour la meme raison : un en-tete qui cite la forme exacte
+(`vars.CI_OVERFLOW_LOCAL`) ne fait pas du workflow un membre de la cohorte. Le job de
+ce workflow, dont le `runs-on` est statique sur le pool local, n'est donc jamais dans
+la cohorte qu'il mesure -- verifie sur le depot : les workflows derives excluent le
+controleur lui-meme, qui cite la variable sans la lire.
+
+Une liste **vide** ou **illisible** (repertoire absent, fichier non lisible) n'est pas
+« une cohorte qui ne rend rien » : c'est une mesure **illisible**, et le verdict est
+`UNREADABLE`, jamais une liberation. Le `sparse-checkout` du workflow garde donc
+`.github/workflows` : sans ces fichiers, la liste serait vide a chaque passage.
+
+#### La confirmation
+
+Une seule lecture peut tomber sur un instant vide (le parc vient de finir un lot) : la
+charge rendue est relue **par la meme methode**, espacee de `--confirm-seconds` (30 s).
+Une confirmation absente, illisible ou tronquee bloque la liberation (fail-CLOSED).
+
+#### Pourquoi la seule lecture « l'offre hebergee n'attend pas » ne suffit pas
+
+Pendant que la cohorte tourne en local, l'offre hebergee ne porte **que** les jobs
+hors debordement (CodeQL en setup par defaut, Lean CI, les advisories de starvation).
+Elle parait donc **allegee**, meme quand la charge de la cohorte est enorme. Liberer
+sur cette seule lecture rend la cohorte entiere a une offre qui s'etouffe derriere,
+et le dwell de 90 min interdit ensuite de revenir a `true` : **on rejoue la nuit du
+27/10** (reserve du coordinateur, 28/10). La lecture de l'offre ne suffit donc pas :
+il faut celle de la charge rendue, qui est la seule a la borner.
+
+C'est aussi pour cela que la premiere version (file hebergee **videe**) etait
+inatteignable : le depot porte toujours des jobs heberges hors debordement, donc la
+variable ne pouvait plus jamais revenir a `false` une fois posee -- le controleur
+etait un **commutateur a sens unique**.
+
+#### Le dwell : oppose a la liberation, deroge pour la re-absorption
+
+Un **dwell** de `--dwell-minutes` (90 par defaut) interdit deux bascules rapprochees :
+une variable qui oscille est pire qu'une variable stable. Le dwell est **coherent
+avec la cadence** : il la depasse (90 > 60 min), sinon il ne peut jamais opposer quoi
+que ce soit -- deux passages consecutifs d'un cron horaire sont toujours a plus de
+60 min, et un dwell de 30 min etait donc inerte (point Hermes du 2026-10-27, 12:53Z).
+
+La **liberation** n'echappe jamais au dwell : c'est elle qui fait revenir la cohorte,
+donc c'est elle qui doit rester freinee.
+
+La **re-absorption** (offre hebergee -> parc local) y echappe quand le backlog
+heberge est **dur** : le plus ancien job attend depuis plus de `--panic-minutes`
+(30 min par defaut). La nuit du 27/10, la liberation a rendu la cohorte a une offre
+qui s'etouffee ensuite, et le dwell de 90 min a interdit de revenir a `true` : la
+file a starve pendant toute la fenetre. Attendre 90 min devant une starvation
+etablie prolonge la panne.
+
+Cet echappement ne peut pas creer d'oscillation : il exige un backlog **dur** (le
+plus ancien job attend), ce qui est **incompatible** avec la premise de liberation
+(« l'offre hebergee n'attend pas ») -- les deux ne peuvent pas etre vraies a la meme
+lecture.
+
+L'organe est **fail-CLOSED** : une mesure illisible (listing incomplet, inventaire des runners inaccessible, liste de la cohorte vide ou illisible) ne produit **aucune** ecriture.
+
+Une lecture **tronquee** (budget de lecture atteint) n'est pas une mesure illisible : c'est une mesure **partielle**, dont les comptes sont des bornes **inferieures**. La regle appliquee est **directionnelle** -- une borne inferieure etablit une affirmation **positive** (« au moins N jobs ages ») mais **n'etablit aucune affirmation negative** (« aucun job en file », « le parc local n'est pas affame », « la charge rendue tient dans la marge ») :
 
 | lecture tronquee | conclusion bloquee | conclusion conservee |
 |---|---|---|
-| offre hebergee | « la file hebergee est **videe** » -> pas de bascule vers `false` | « l'offre hebergee est **saturee** » -> la bascule vers `true` reste possible |
+| offre hebergee | « l'offre hebergee **n'attend pas** » -> pas de bascule vers `false` · une **marge** tiree d'un compte en cours borne -> pas de bascule vers `false` | « l'offre hebergee est **saturee** » -> la bascule vers `true` reste possible |
 | parc local | « le parc local **n'est pas affame** » -> pas de bascule vers `true` | « le parc local **est affame** » -> la bascule vers `false` reste possible |
+| charge rendue de la cohorte | « la charge rendue **tient dans la marge** » -> pas de bascule vers `false` | aucune : cette mesure ne sert qu'a liberer |
 
 Mesure du 2026-10-27 sur la file reelle, avant correction : lecture hebergee complete (`budget_unread = 0`) mais lecture **locale tronquee a 15 runs**, ages de 15 a 20 min -- donc **au-dessus** du seuil de 15 min, donc desertes par une lecture complete. Le compte `starved = 0` etait alors une **borne inferieure** : « le parc local n'est pas affame » n'etait pas etabli, et la garde de securite s'ouvrait en faux. Le budget local a ete aligne sur le budget hebergee (40 -> 120) pour que la lecture locale soit complete dans le regime nominal : a 40, le parc local (44 a 55 runs eligibles mesures) etait a la limite exacte du plafond, donc la troncature etait une loterie.
 
@@ -50,6 +142,14 @@ ACTIONS_VARIABLES_PAT=... python scripts/ci/ci_overflow_controller.py \
 ```
 
 Codes de retour : `0` nominal (HOLD ou bascule), `1` mesure illisible ou **etat de la variable illisible** (`UNREADABLE`), `2` refus (`REFUSED` : jeton de mesure absent, ou ecriture refusee par le depot).
+
+### Les seuils de la liberation
+
+| option | defaut | role |
+|---|---|---|
+| `--hosted-cap` | 20 | plafond de concurrence de l'offre hebergee (mesure : 19 jobs en concurrence au pic du 2026-10-16). La **marge** est ce plafond moins les jobs heberges en file et en cours ; la liberation exige que la charge rendue de la cohorte tienne dans cette marge |
+| `--confirm-seconds` | 30 | pause avant la **seconde** lecture de la charge rendue de la cohorte, qui la confirme |
+| `--panic-minutes` | 30 | age du plus ancien job heberge au-dela duquel le backlog est **dur** : la re-absorption n'est alors plus differee par le dwell |
 
 ## Jeton d'inventaire du parc (`RUNNERS_READ_PAT`)
 
@@ -118,9 +218,11 @@ Le job planifie rend son verdict dans le resume de chaque passage (horaire, minu
 }
 ```
 
+Cette mesure est anterieure aux deux corrections de la premise de liberation (« la charge rendue », puis « la charge rendue de la cohorte ») : elle a ete produite par la regle qui lisait la seule file hebergee. Le **verdict** reste identique sous la regle actuelle (la file etait saturee, donc la saturation prime et l'etat etait deja au bout) ; ce qui change est la **premise de liberation**.
+
 Lecture : au moment de la mesure, l'offre hebergee portait **136 jobs en file** (dont 134 de plus de 15 min, le plus ancien a 74 min) pendant que le parc local availait **26 slots libres sur 32 en ligne**. La variable etait deja a `true` : le controleur **n'ecrit rien** (etat deja au bout). C'est cette meme execution qui a servi a compter les 313 appels `gh` ci-dessous.
 
-Le rapport **porte desormais** les etats de troncature des deux lectures (`hosted.truncated`, `local.truncated`, `in_progress_unread`) et l'etat du canal d'ecriture (`write_token_env`, `write_token_present`, `write_blocked`, `state_known`, `state_reason`). Le resume du job (`--summary-out`) les restitue en clair, avec une ligne `DEGRADE:` par cause.
+Le rapport **porte desormais** les etats de troncature des deux lectures (`hosted.truncated`, `local.truncated`, `in_progress_unread`), la **charge rendue de la cohorte** sur ses deux lectures (`cohort`, `cohort_confirm`, avec le compte de workflows derives et le motif de derivation), la **marge hebergee** (`hosted_margin`, `hosted.in_progress`, `thresholds.hosted_cap`) et l'etat du canal d'ecriture (`write_token_env`, `write_token_present`, `write_blocked`, `state_known`, `state_reason`). Le resume du job (`--summary-out`) les restitue en clair, avec une ligne `DEGRADE:` par cause.
 
 ## Cout de l'organe (mesure, point 2 de la review ai-01 du 2026-10-27)
 
@@ -137,6 +239,8 @@ Le rapport **porte desormais** les etats de troncature des deux lectures (`hoste
 La reference anterieure (**313 appels**, mesure du 2026-10-27T13:31Z) correspondait au **budget local de 40** sur une file plus profonde (160 lectures de jobs). Le passage de 40 a 120 coute **+4 appels** et debloque la lecture locale (44 runs eligibles mesures contre un plafond de 40 : le parc local etait a la limite exacte du budget, donc la troncature y etait une loterie).
 
 Le terme dominant n'est pas le budget de jobs mais la **re-verification du residuel** : chaque entree vue au seul listing `queued` coute une requete `runs/{id}`, et une file hebergee profonde en produit une par job affame (143 pour 136 jobs en file au moment de la mesure de 13:31Z). Ce chiffre n'est pas un plafond theorique, c'est le cout observe d'un passage -- et il **varie avec la profondeur de la file**, pas avec le budget.
+
+**La charge rendue de la cohorte ajoute une troisieme lecture du label local** (vague 3). Elle n'est payee que lorsque la liberation est autrement candidate -- l'offre hebergee n'attend pas et le parc local n'est pas affame -- exactement comme la seconde lecture de confirmation qu'elle remplace ; hors de ce regime, le passage garde le cout ci-dessus. Son volume est borne par `--local-job-budget`, comme la lecture locale, mais le compteur du 27/10 n'a **pas** ete rejoue depuis cet ajout : le surcout n'est pas mesure a ce jour, et il est justifie par le gating, pas par une mesure.
 
 ## Cadence et tolerance
 
