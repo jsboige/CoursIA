@@ -37,11 +37,11 @@ Origine : EPIC [#16271](https://github.com/jsboige/CoursIA/issues/16271) — mig
 3. **La séquence et ses étiquettes** (03) : la structured prediction par CRF linéaire — du local au global par la log-partition.
 4. **La syntaxe et ses arbres** (04) : grammaires probabilistes et parsing CYK — l'ambiguïté quantifiée, la dérivation la plus probable.
 5. **La chaîne d'états cachés** (05) : le HMM génératif et le décodage de Viterbi — le contexte de séquence qui renverse la décision, pont historique du n-gramme (02) vers le CRF discriminatif (03).
-9. **Le mot et ses subwords** (09) : fastText — la représentation d'entrée passe du mot atomique à la somme des n-grammes de caractères, et la généralisation aux mots inconnus (OOV) devient mesurable.
+6. **Le mot et ses subwords** (09) : fastText — la représentation d'entrée passe du mot atomique à la somme des n-grammes de caractères, et la généralisation aux mots inconnus (OOV) devient mesurable.
 
 ## Prérequis
 
-- Python 3.10+ (les sept notebooks sont **CPU-only**)
+- Python 3.10+ (tous les notebooks de la série sont **CPU-only**)
 - `spaCy` + modèle `fr_core_news_sm` (notebook 01)
 - `sklearn-crfsuite` (témoin du notebook 03), `nltk` (témoin des notebooks 04 et 05), `hmmlearn` (témoin du notebook 05)
 - Aucune clé API requise
