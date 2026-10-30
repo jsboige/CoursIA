@@ -126,18 +126,21 @@ class TradeCostEstimationAlgorithm(QCAlgorithm):
         """Retrain DecisionTreeRegressor on accumulated cost data."""
         if self._factors.shape[0] < self._lookback_window:
             return
-        if self._model is None:
-            self._model = DecisionTreeRegressor(
-                max_depth=5, random_state=0
-            )
         # Align factors and costs on common indices
         common_idx = self._factors.index.intersection(self._costs.index)
         if len(common_idx) < 20:
             return
-        self._model.fit(
+        # Construire et fitter un modele local, publie dans self._model
+        # seulement apres un fit reussi : l'ancienne forme construisait
+        # self._model PUIS early-returnait sur common_idx < 20, laissant
+        # une instance construite mais non fittee que on_data testait par
+        # existence (is None) -> NotFittedError au premier predict (#22060).
+        model = DecisionTreeRegressor(max_depth=5, random_state=0)
+        model.fit(
             self._factors.loc[common_idx],
             self._costs.loc[common_idx]
         )
+        self._model = model
 
     def _trim_samples(self):
         """Keep only recent samples within lookback window."""

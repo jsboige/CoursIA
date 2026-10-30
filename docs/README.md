@@ -66,6 +66,7 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 | [reference/anti-regression-detail.md](reference/anti-regression-detail.md) | Patterns red-flag, protocole avant suppression |
 | [reference/notebook-renumbering-detail.md](reference/notebook-renumbering-detail.md) | Corpus des precedents `renum()`/`reclass()` (19 issues, 4 verdicts « aucune renum »), blast-radius mesure de la grappe Probas, etat de l'arbre. Detail de `.claude/rules/notebook-accretion-numbering.md` |
 | [reference/lean-axiom-coverage.md](reference/lean-axiom-coverage.md) | Couverture axiomes du gate proof-integrity par lake (22 lakes inventoriés, 2 câblés en CI : `lean-knot.yml` + `lean-conway.yml`) — classes dangereuses `native_decide.*`/`sorryAx`/`Classical.choice`. Détail de référence pour §B.3 de `.claude/rules/pr-review-discipline.md`. Établi cycle c.950 (worker po-2023, lane `myia-po-2023:CoursIA-2`), 167 lignes. See #8738 (step 3), #8752 (livraison) |
+| [reference/lean-material-map.md](reference/lean-material-map.md) | Carte du matériel Lean du dépôt, par lake — modules propres, miroirs `_en`, présence au CI, gate d'axiomes, date de naissance. Régénérée par `scripts/lean/lean_material_map.py`, `--check` rend 1 quand page et arbre divergent. See #23097 (T1, PR #23105) |
 | [reference/secrets-and-coord-detail.md](reference/secrets-and-coord-detail.md) | Secrets + coordination cross-machine |
 | [reference/student-pr-reviews-detail.md](reference/student-pr-reviews-detail.md) | Incident, format public, workflow |
 | [reference/user-blocker-signaling-detail.md](reference/user-blocker-signaling-detail.md) | Catégories + anti-patterns signaler |
@@ -348,6 +349,7 @@ Tables d'audit cumulatives par Epic (mandat user, format longue durée).
 | Fichier | Description |
 |---------|-------------|
 | [ledgers/3801-sota-axe2.md](ledgers/3801-sota-axe2.md) | Ledger axe-2 SOTA par famille, 5 verdicts (EPIC #3801) |
+| [ledgers/4362-mathlib-mutualization.md](ledgers/4362-mathlib-mutualization.md) | EPIC #4362 — états de couverture Mathlib par machine, chaque entrée citant la sortie du scan lu-seul (`setup_shared_mathlib.ps1 -Mode Scan`) ; po-2023 : 34 lakes, 3.06 Go d'économie potentielle, 13 junctions périmées |
 | [ledgers/10466-candidate-delivered-cleanup.md](ledgers/10466-candidate-delivered-cleanup.md) | EPIC #10466 — apurement du label `candidate-delivered`, cluster par cluster. Une table par cycle worker : ratio du cluster, issues traitées, leçons. Le compte d'issues ne baisse que si quelqu'un tient la trace de ce qui a été vérifié |
 | [transients/2026-08-13-10678-interp-positioning-audit.md](transients/2026-08-13-10678-interp-positioning-audit.md) | EPIC #10678 Phase 1 — audit des cellules d'interprétation mal positionnées. La table nomme chaque cas : c'est ce qui rend la règle [cell-interpretation-ordering](../.claude/rules/cell-interpretation-ordering.md) applicable au lieu d'être un principe |
 | [transients/2026-08-15-10678-orphan-interp-scan.md](transients/2026-08-15-10678-orphan-interp-scan.md) | EPIC #10678 Phase 1b — interprétations orphelines en fin de notebook. Prolonge le précédent : cellules `MISPLACED` relevées au scan c.237 |
@@ -440,6 +442,7 @@ Deltas runtime et digests de performance .NET, mesurés sur les bancs et les car
 | Fichier | Description |
 |---------|-------------|
 | [dotnet/net11-runtime-deltas.md](dotnet/net11-runtime-deltas.md) | .NET 9 → 10 → 11 — Deltas runtime mesurés sur les bancs et carnets types du dépôt |
+| [dotnet/net11-async-ffi-deltas.md](dotnet/net11-async-ffi-deltas.md) | .NET 10 → 11 — Delta runtime mesuré sur l'axe 1 (awaits profonds) du carnet Aspire AsyncFFI — compatibilité .NET 11 établie, verdict à n=25 |
 | [dotnet/net11-toub-digest.md](dotnet/net11-toub-digest.md) | .NET 11 — Digest de performance |
 
 
