@@ -81,6 +81,7 @@ namespace Conway_en
 open Conway
 namespace Life_en
 open Life
+open MacroCell
 
 /-! ## The fragment predicate `supportInMargin` -/
 
@@ -275,6 +276,54 @@ theorem jumpCapturedF_of_dilation (c : MacroCell) (a b : Int × Int)
     exact (Nat.cast_pow 2 c.level).symm
   omega
 
+/-! ### Slice 17 — the dilated corridor can only capture emptiness
+
+`jumpCapturedF_of_dilation` turns a geometric hypothesis (`h₀`: the padded
+support lives in a box `[a, b)`) into a capture, provided the box **contains
+the test corridor**: `hwin1`/`hwin3` require `2 · 2^lvl ≤ a₁` (resp. `a₂`),
+`hwin2`/`hwin4` require `b₁ ≤ 2^(lvl+1)` (resp. `b₂`). These four
+bounds are **jointly contradictory**: they force `2 · 2^lvl ≤ a₁ ≤ p₁ < b₁ ≤
+2 · 2^lvl` for every point `p` of the support. The geometric route therefore
+only applies to an **empty** padded grid — and on the empty grid the capture is
+trivial, so the theorem says nothing about the L3 class.
+
+This is an **impossibility** result, and it documents a dead end: every closed
+class of the fragment must go through **exact temporal invariance**
+(`hcap_of_period_mod`, slices 8b/15/16) or through the box argument, never
+through a geometric widening of the corridor. The slice does not advance L3;
+it keeps a future cycle from reopening that route. -/
+
+/-- **The dilated corridor only captures emptiness.** If the padded support
+    satisfies `h₀` and if the four corridor bounds of
+    `jumpCapturedF_of_dilation` hold, then the padded grid has **no** alive
+    point. The proof is the arithmetic of the corridor: `hwin1`/`hwin2` give
+    `b₁ ≤ 2^(lvl+1) = 2 · 2^lvl ≤ a₁`, whereas `h₀` would require
+    `a₁ ≤ p₁ < b₁`. -/
+theorem dilation_window_forces_empty (c : MacroCell) (a b : Int × Int)
+    (h₀ : ∀ p, isAlive ((padCenter2 c).toGrid (0, 0)) p = true →
+      a.1 ≤ p.1 ∧ p.1 < b.1 ∧ a.2 ≤ p.2 ∧ p.2 < b.2)
+    (hwin1 : ((2 ^ c.level : Nat) : Int) ≤ a.1 - ((2 ^ c.level : Nat) : Int))
+    (hwin2 : b.1 + ((2 ^ c.level : Nat) : Int) ≤
+      ((2 ^ c.level : Nat) : Int) + ((2 ^ (c.level + 1) : Nat) : Int))
+    (hwin3 : ((2 ^ c.level : Nat) : Int) ≤ a.2 - ((2 ^ c.level : Nat) : Int))
+    (hwin4 : b.2 + ((2 ^ c.level : Nat) : Int) ≤
+      ((2 ^ c.level : Nat) : Int) + ((2 ^ (c.level + 1) : Nat) : Int)) :
+    ∀ p, isAlive ((padCenter2 c).toGrid (0, 0)) p = false := by
+  intro p
+  cases h : isAlive ((padCenter2 c).toGrid (0, 0)) p with
+  | false => rfl
+  | true =>
+    exfalso
+    obtain ⟨h1, h2, _, _⟩ := h₀ p h
+    -- the corridor links `2^(lvl+1)` to `2 · 2^lvl`: the only non-linear
+    -- fact, supplied explicitly before letting `omega` conclude.
+    have h2L : ((2 ^ (c.level + 1) : Nat) : Int)
+        = ((2 ^ c.level : Nat) : Int) + ((2 ^ c.level : Nat) : Int) := by
+      rw [pow_succ]
+      push_cast
+      ring
+    omega
+
 /-- **A period repeats itself** (local byte-identical copy of
     `evolve_mul_of_period`, JumpCapture L518 — this module cannot import it,
     import cycle A↔B, cf docstring of `jumpCapturedF`): if `g` has period
@@ -411,6 +460,702 @@ theorem hashlife_correct_margin_of_hcap (c : MacroCell) (k : Nat)
       (gridToMacroCellWithOffset (evolve t (c.toGrid (0, 0)))).2 = true) :
     evolveHashlifeFast (2^k) (c.toGrid (0, 0)) = evolve (2^k) (c.toGrid (0, 0)) :=
   hashlife_correctN (2^k) (c.toGrid (0, 0)) hcap
+
+/-! ### Slice 18 — the `h_central` hypothesis is free (P4.4 inventory)
+
+`hashlifeResult_central_correct` (HashlifeCorrectness, **proved**: strong
+induction on `k`, base `hashlifeResult_central_correct_base` + inductive step
+`p4_succ_membership` fed by the two waves `p4_wave1_ih`/`p4_wave2_ih` and the
+bounded walls) states exactly the body of `centralCorrect`. Hence
+**`centralCorrect c k` holds for every well-formed cell of level `k + 2`**: at
+the natural indexing, the `h_central` hypothesis of the frame costs nothing —
+just like `h_margin` (L1, `supportInMargin` tautological). The effective
+content of `hashlife_correct_margin` therefore reduces **exactly to L3**:
+lifting `centralCorrect` to `hcap` (capture of the whole trajectory
+`∀ t ≤ 2^k`).
+
+The crossing brick already exists, proved: the walls
+`p4_{nw,ne,se,sw}_overlap_wall` (Walls/, private, sorry-free) give the
+**pointwise** agreement between the reference trajectory `evolve (2^(k-1))` of
+the parent grid and the second-wave reconstruction `node R1 R2 R4 R5`, on each
+sub-window `[2^k, 2^k + 2^((k-1)+1))²` and its Chebyshev box `2^(k-1)`, under
+`centralCorrect` of the four recombination nodes. The L3 residual is the
+iteration of this agreement along the dyadic decomposition of `t`. -/
+
+/-- **`centralCorrect` is a theorem at the natural indexing.** For every
+    well-formed cell of level `k + 2`, the `h_central` hypothesis of the
+    `hashlife_correct_margin` frame is obtained for free — the frame's content
+    shifts entirely onto L3 (`hcap`). -/
+theorem centralCorrect_free_of_wf (c : MacroCell) (k : Nat)
+    (hwf : c.wf = true) (hlvl : c.level = k + 2) :
+    centralCorrect c k :=
+  hashlifeResult_central_correct c k hwf hlvl
+
+/-! ### Slice 19 — the initial support already lies in the test window
+
+Any proof of `jumpCapturedF c = true` is a **constancy** statement: the
+support of `evolve (2^lvl) ((padCenter2 c).toGrid (0, 0))` must stay inside
+the window `[2^lvl, 2^lvl + 2^(lvl+1))²` of the predicate. The lemma below
+establishes the starting point: **at `t = 0` the support is already there** —
+the double padding centers the content of `c` inside `[3·2^(k-1), 5·2^(k-1))²`,
+itself contained in the window as soon as `1 ≤ k`. Capture is thus exactly
+"nothing leaves it during `2^lvl` steps": every closed class of this fragment
+(still lifes, periodic patterns, spaceships) shows that the trajectory brings
+the support back inside it; the P4 assembly (iterating the walls) will have to
+show that it **stays there** at every jump. The L3 residual is now a purely
+relative confinement statement about a window that initially contains the
+support. -/
+
+/-- **The padded support lives in the test window (the `t = 0` diagonal of
+    capture).** Composes the geometry of the central padding
+    (`padCenter2_toGrid_shift`: content translated by `3·2^(k-1)` on each
+    axis) with the support bound of a wf cell (`cellWfF_toGrid_bounds`:
+    support inside `[0, 2^k)²`): the support of `(padCenter2 c).toGrid (0, 0)`
+    lives in `[3·2^(k-1), 5·2^(k-1))²`, contained in the window
+    `[2^k, 2^k + 2^(k+1))²` of the `jumpCapturedF` predicate as soon as
+    `1 ≤ c.level`. Common geometric brick of the capture proofs — at the
+    initial instant the window contains the support; capturing the jump means
+    showing that it does not leave it by the horizon `2^lvl`. -/
+theorem padCenter2_support_in_window (c : MacroCell) (hc : cellWf c)
+    (hk : 1 ≤ c.level) {p : Int × Int}
+    (hp : p ∈ (padCenter2 c).toGrid (0, 0)) :
+    ((2 ^ c.level : Nat) : Int) ≤ p.1 ∧
+      p.1 < ((2 ^ c.level : Nat) : Int) + ((2 ^ (c.level + 1) : Nat) : Int) ∧
+      ((2 ^ c.level : Nat) : Int) ≤ p.2 ∧
+      p.2 < ((2 ^ c.level : Nat) : Int) + ((2 ^ (c.level + 1) : Nat) : Int) := by
+  rw [padCenter2_toGrid_shift c hk, mem_shift] at hp
+  obtain ⟨b1, b2, b3, b4⟩ := cellWfF_toGrid_bounds hc 0 0 hp
+  -- powers tied to a single atom `s = 2^(k-1)` for omega
+  have hkl : c.level - 1 + 1 = c.level := Nat.sub_add_cancel hk
+  have h2 : (2 ^ c.level : Int) = 2 * (2 ^ (c.level - 1) : Int) := by
+    conv_lhs => rw [← hkl]
+    rw [pow_succ]
+    ring
+  have hcast : ((2 ^ c.level : Nat) : Int) = (2 ^ c.level : Int) :=
+    (Nat.cast_pow 2 c.level).symm
+  have h4 : ((2 ^ (c.level + 1) : Nat) : Int) = 4 * (2 ^ (c.level - 1) : Int) := by
+    rw [Nat.cast_pow]
+    conv_lhs => rw [show c.level + 1 = c.level - 1 + 2 from by omega]
+    rw [pow_add, pow_two]
+    ring
+  dsimp only at b1 b2 b3 b4
+  omega
+
+/-! ### Slice 20 — public restitution of the NW wall (`wall_nw_agreement`)
+
+The P4.4 inventory (slice 18) named the four walls `p4_{nw,ne,se,sw}_overlap_wall`
+of `Walls/` as the crossing bricks of the L3 residual: the point-by-point
+agreement, on the central sub-window, between the reference trajectory and the
+second-wave reconstruction. These walls are **private** in their files — the P4
+assembly (dyadic iteration of the agreement along the decomposition of `t`)
+cannot invoke them from this fragment. This slice restitutes the NW wall under
+the fragment's own roof as a **public** statement `wall_nw_agreement`, built
+exclusively from the public bricks of `Foundation`: `p4_nw_parent_agree_n*`,
+`p4_nw_rside_char_*`, `evolve_box_agree_local`, `p4_isAlive_toGrid_shift`,
+`coord_bound_of_chebDist_le`. Statement and proof are the faithful copy of the
+original wall — no deprivatization in `Walls/`, no i18n impact.
+
+The 8 structural hypotheses `hn*_l`/`hn*_w` (level `k+1` and `wf` of the four
+recombination nodes) are **load-bearing**: the refutation block of
+`Walls/NW.lean` imposed them in two steps — the free pre-c.92 form refuted,
+then the bounded c.92 form without structural hypotheses refuted
+(`p4_nw_overlap_wall_c92_counterexample`, a counterexample found by the
+multi-agent prover, BG run DEMO 63). They are never weakened. The `hcc*`
+hypotheses (`centralCorrect n_i (k-1)`) are now **free** by slice 18
+(`centralCorrect_free_of_wf`) as soon as the nodes are wf of level `k+1`:
+at bottom, the wall only requires geometry. -/
+
+/-- **NW wall (public restitution of `p4_nw_overlap_wall`).** On the Chebyshev
+    box of radius `2^(k-1)` around a point `p` of the central window
+    `[2^k, 2^k + 2^((k-1)+1))²`, the reference trajectory of the 16-cell
+    supernode (one `2^(k-1)` generation) coincides with the second-wave
+    recombination `(node R1 R2 R4 R5).toGrid`, read translated by
+    `(-2^(k-1), -2^(k-1))`. Statement and proof faithfully copied from the
+    private wall `p4_nw_overlap_wall` (`Walls/NW.lean`), restituted publicly
+    under the fragment's roof for the P4 assembly: window → quadrant
+    (`p4_nw_parent_agree_n*`) → Chebyshev locality (`evolve_box_agree_local`)
+    on the quadrant's recombination node → `p4_nw_rside_char_*`
+    characterization of the result supernode. -/
+theorem wall_nw_agreement
+    (k : Nat) (hk1 : 1 ≤ k)
+    (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+     sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se : MacroCell)
+    (R1 R2 R4 R5 : MacroCell)
+    (hR1 : R1 = hashlifeResultAux (k + 1) (node nw_nw nw_ne nw_sw nw_se))
+    (hR2 : R2 = hashlifeResultAux (k + 1) (node nw_ne ne_nw nw_se ne_sw))
+    (hR4 : R4 = hashlifeResultAux (k + 1) (node nw_sw nw_se sw_nw sw_ne))
+    (hR5 : R5 = hashlifeResultAux (k + 1) (node nw_se ne_sw sw_ne se_nw))
+    (hn1_l : (node nw_nw nw_ne nw_sw nw_se).level = k + 1)
+    (hn2_l : (node nw_ne ne_nw nw_se ne_sw).level = k + 1)
+    (hn4_l : (node nw_sw nw_se sw_nw sw_ne).level = k + 1)
+    (hn5_l : (node nw_se ne_sw sw_ne se_nw).level = k + 1)
+    (hn1_w : (node nw_nw nw_ne nw_sw nw_se).wf = true)
+    (hn2_w : (node nw_ne ne_nw nw_se ne_sw).wf = true)
+    (hn4_w : (node nw_sw nw_se sw_nw sw_ne).wf = true)
+    (hn5_w : (node nw_se ne_sw sw_ne se_nw).wf = true)
+    (hR1_l : R1.level = k) (hR2_l : R2.level = k)
+    (hR4_l : R4.level = k) (hR5_l : R5.level = k)
+    (p : Int × Int)
+    (hp : (2^k : Int) ≤ p.1 ∧ p.1 < (2^k : Int) + 2^((k - 1) + 1) ∧
+          (2^k : Int) ≤ p.2 ∧ p.2 < (2^k : Int) + 2^((k - 1) + 1)) :
+    ∀ q, chebDist p q ≤ 2^(k - 1) →
+      isAlive (evolve (2^(k - 1))
+          ((node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
+                 (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se)).toGrid
+            (0, 0))) q
+        = isAlive ((node R1 R2 R4 R5).toGrid (0, 0))
+            (q.1 - (2^(k - 1) : Int), q.2 - (2^(k - 1) : Int)) := by
+  have hcc1 : centralCorrect (node nw_nw nw_ne nw_sw nw_se) (k - 1) :=
+    centralCorrect_free_of_wf _ (k - 1) hn1_w (by rw [hn1_l]; omega)
+  have hcc2 : centralCorrect (node nw_ne ne_nw nw_se ne_sw) (k - 1) :=
+    centralCorrect_free_of_wf _ (k - 1) hn2_w (by rw [hn2_l]; omega)
+  have hcc4 : centralCorrect (node nw_sw nw_se sw_nw sw_ne) (k - 1) :=
+    centralCorrect_free_of_wf _ (k - 1) hn4_w (by rw [hn4_l]; omega)
+  have hcc5 : centralCorrect (node nw_se ne_sw sw_ne se_nw) (k - 1) :=
+    centralCorrect_free_of_wf _ (k - 1) hn5_w (by rw [hn5_l]; omega)
+  -- Assembly (steps 3-5 of the c.94 plan): window → quadrant → Chebyshev
+  -- locality (`evolve_box_agree_local`) on the quadrant's recombination node
+  -- → `p4_nw_rside_char_*` characterization of the result supernode.
+  intro q hq
+  obtain ⟨hp1, hp2, hp3, hp4⟩ := hp
+  have hA : (2 ^ (k - 1 + 1) : Int) = (2 ^ k : Int) := by
+    have hk : k - 1 + 1 = k := by omega
+    rw [hk]
+  have hu2 : (2 ^ k : Int) = (2 ^ (k - 1) : Int) + (2 ^ (k - 1) : Int) := by
+    rw [← hA, pow_succ]; ring
+  have hcastu : ((2 ^ (k - 1) : Nat) : Int) = (2 ^ (k - 1) : Int) := by norm_cast
+  rw [hA] at hp2 hp4
+  obtain ⟨hq1, hq2⟩ := coord_bound_of_chebDist_le p q _ hq
+  by_cases hcx1 : q.1 - (2 ^ (k - 1) : Int) < (2 ^ k : Int) <;>
+    by_cases hcx2 : q.2 - (2 ^ (k - 1) : Int) < (2 ^ k : Int)
+  · -- NW quadrant: `n1`, untranslated.
+    have hbox : ∀ r, chebDist q r ≤ 2 ^ (k - 1) →
+        isAlive ((node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
+            (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se)).toGrid (0, 0)) r
+          = isAlive ((node nw_nw nw_ne nw_sw nw_se).toGrid (0, 0)) r := by
+      intro r hr
+      obtain ⟨hr1, hr2⟩ := coord_bound_of_chebDist_le q r _ hr
+      exact p4_nw_parent_agree_n1 k nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+        sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se hn1_l r
+        ⟨by omega, by omega, by omega, by omega⟩
+    have hL := evolve_box_agree_local (2 ^ (k - 1)) _ _ q hbox
+    rw [hL]
+    have hx' : 0 ≤ q.1 - (2 ^ (k - 1) : Int) ∧ q.1 - (2 ^ (k - 1) : Int) < (2 ^ k : Int) ∧
+        0 ≤ q.2 - (2 ^ (k - 1) : Int) ∧ q.2 - (2 ^ (k - 1) : Int) < (2 ^ k : Int) :=
+      ⟨by omega, by omega, by omega, by omega⟩
+    rw [p4_nw_rside_char_nw k hk1 _ _ _ _ R1 R2 R4 R5 hR1 hR2 hR4 hR5 hR1_l
+        hcc1 hcc2 hcc4 hcc5 (q.1 - (2 ^ (k - 1) : Int), q.2 - (2 ^ (k - 1) : Int)) hx']
+    congr 1
+    ext <;> (try dsimp only) <;> omega
+  · -- NE quadrant: `n2`, translated by `(0, 2^k)`.
+    have hbox : ∀ r, chebDist q r ≤ 2 ^ (k - 1) →
+        isAlive ((node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
+            (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se)).toGrid (0, 0)) r
+          = isAlive (shift ((0 : Int), (2 ^ k : Int))
+              ((node nw_ne ne_nw nw_se ne_sw).toGrid (0, 0))) r := by
+      intro r hr
+      obtain ⟨hr1, hr2⟩ := coord_bound_of_chebDist_le q r _ hr
+      rw [isAlive_shift, ← p4_isAlive_toGrid_shift]
+      exact p4_nw_parent_agree_n2 k nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+        sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se hn1_l hn1_w hn2_l hn2_w r
+        ⟨by omega, by omega, by omega, by omega⟩
+    have hL := evolve_box_agree_local (2 ^ (k - 1)) _ _ q hbox
+    rw [hL, ← evolve_shift, isAlive_shift]
+    have hx' : 0 ≤ q.1 - (2 ^ (k - 1) : Int) ∧ q.1 - (2 ^ (k - 1) : Int) < (2 ^ k : Int) ∧
+        (2 ^ k : Int) ≤ q.2 - (2 ^ (k - 1) : Int) ∧
+        q.2 - (2 ^ (k - 1) : Int) < (2 ^ k : Int) + (2 ^ k : Int) :=
+      ⟨by omega, by omega, by omega, by omega⟩
+    rw [p4_nw_rside_char_ne k hk1 _ _ _ _ R1 R2 R4 R5 hR1 hR2 hR4 hR5 hR1_l
+        hcc1 hcc2 hcc4 hcc5 (q.1 - (2 ^ (k - 1) : Int), q.2 - (2 ^ (k - 1) : Int)) hx']
+    congr 1
+    ext <;> (try dsimp only) <;> omega
+  · -- SW quadrant: `n4`, translated by `(2^k, 0)`.
+    have hbox : ∀ r, chebDist q r ≤ 2 ^ (k - 1) →
+        isAlive ((node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
+            (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se)).toGrid (0, 0)) r
+          = isAlive (shift ((2 ^ k : Int), (0 : Int))
+              ((node nw_sw nw_se sw_nw sw_ne).toGrid (0, 0))) r := by
+      intro r hr
+      obtain ⟨hr1, hr2⟩ := coord_bound_of_chebDist_le q r _ hr
+      rw [isAlive_shift, ← p4_isAlive_toGrid_shift]
+      exact p4_nw_parent_agree_n4 k nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+        sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se hn1_l hn1_w hn4_l hn4_w r
+        ⟨by omega, by omega, by omega, by omega⟩
+    have hL := evolve_box_agree_local (2 ^ (k - 1)) _ _ q hbox
+    rw [hL, ← evolve_shift, isAlive_shift]
+    have hx' : (2 ^ k : Int) ≤ q.1 - (2 ^ (k - 1) : Int) ∧
+        q.1 - (2 ^ (k - 1) : Int) < (2 ^ k : Int) + (2 ^ k : Int) ∧
+        0 ≤ q.2 - (2 ^ (k - 1) : Int) ∧ q.2 - (2 ^ (k - 1) : Int) < (2 ^ k : Int) :=
+      ⟨by omega, by omega, by omega, by omega⟩
+    rw [p4_nw_rside_char_sw k hk1 _ _ _ _ R1 R2 R4 R5 hR1 hR2 hR4 hR5 hR1_l
+        hcc1 hcc2 hcc4 hcc5 (q.1 - (2 ^ (k - 1) : Int), q.2 - (2 ^ (k - 1) : Int)) hx']
+    congr 1
+    ext <;> (try dsimp only) <;> omega
+  · -- SE quadrant: `n5`, translated by `(2^k, 2^k)`.
+    have hbox : ∀ r, chebDist q r ≤ 2 ^ (k - 1) →
+        isAlive ((node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
+            (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se)).toGrid (0, 0)) r
+          = isAlive (shift ((2 ^ k : Int), (2 ^ k : Int))
+              ((node nw_se ne_sw sw_ne se_nw).toGrid (0, 0))) r := by
+      intro r hr
+      obtain ⟨hr1, hr2⟩ := coord_bound_of_chebDist_le q r _ hr
+      rw [isAlive_shift, ← p4_isAlive_toGrid_shift]
+      exact p4_nw_parent_agree_n5 k nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+        sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se hn1_l hn1_w hn2_l hn2_w
+        hn4_l hn4_w hn5_l hn5_w r
+        ⟨by omega, by omega, by omega, by omega⟩
+    have hL := evolve_box_agree_local (2 ^ (k - 1)) _ _ q hbox
+    rw [hL, ← evolve_shift, isAlive_shift]
+    have hx' : (2 ^ k : Int) ≤ q.1 - (2 ^ (k - 1) : Int) ∧
+        q.1 - (2 ^ (k - 1) : Int) < (2 ^ k : Int) + (2 ^ k : Int) ∧
+        (2 ^ k : Int) ≤ q.2 - (2 ^ (k - 1) : Int) ∧
+        q.2 - (2 ^ (k - 1) : Int) < (2 ^ k : Int) + (2 ^ k : Int) :=
+      ⟨by omega, by omega, by omega, by omega⟩
+    rw [p4_nw_rside_char_se k hk1 _ _ _ _ R1 R2 R4 R5 hR1 hR2 hR4 hR5 hR1_l
+        hcc1 hcc2 hcc4 hcc5 (q.1 - (2 ^ (k - 1) : Int), q.2 - (2 ^ (k - 1) : Int)) hx']
+    congr 1
+    ext <;> (try dsimp only) <;> omega
+
+/-! ### Slice 21 — public restitution of the NE wall (`wall_ne_agreement`)
+
+Second wall restituted. The NE wall (`Walls/NE.lean:25`, the mirror of NW)
+covers the supercell `node R2 R3 R5 R6` anchored at
+`(2^(k-1), 2^k + 2^(k-1))` in the parent. Three departures from the NW wall,
+all carried by the statement:
+
+* the window is shifted on the **second** coordinate (`2^k + 2^k` instead of
+  `2^k`), and the conclusion is translated by
+  `(2^(k-1), 2^k + 2^(k-1))`;
+* the structural set widens to **`{n1..n7}`** (14 hypotheses instead of 8):
+  `n1`, `n4` and `n7` have no `hcc` — they are purely structural, required by
+  the bound exclusions of the parent-agreement lemmas;
+* the centre `n5` is **the same node as in the NW wall**:
+  `p4_nw_parent_agree_n5` is reused as is, and the four
+  `p4_nw_rside_char_*` characterisations stay parametric (applied to
+  `R2 R3 R5 R6`).
+
+Only `n3` (the parent's NE child) and `n6` are new on the agreement-brick
+side: `p4_ne_parent_agree_n3` (Foundation.lean:3453) and
+`p4_ne_parent_agree_n6` (:3491), both public. Statement and proof are a
+faithful copy of the original wall; no deprivatisation, no i18n impact. -/
+
+set_option maxHeartbeats 4000000 in
+/-- **NE wall (public restitution of `p4_ne_overlap_wall`).** On the Chebyshev
+    box of radius `2^(k-1)` around a point `p` of the shifted central window
+    `[2^k, 2^k + 2^((k-1)+1)) × [2·2^k, 2·2^k + 2^((k-1)+1))`, the reference
+    trajectory of the 16-cell supernode (one generation `2^(k-1)`) coincides
+    with the second-wave recombination `(node R2 R3 R5 R6).toGrid`, read
+    translated by `(-2^(k-1), -(2^k + 2^(k-1)))`. Faithful copy of the private
+    wall `p4_ne_overlap_wall` (`Walls/NE.lean`), made public under the
+    fragment's roof for the P4 assembly: window → quadrant (n2 reused from the
+    NW wall, n3 new, n5 shared centre, n6 new) → Chebyshev locality →
+    parametric `p4_nw_rside_char_*` characterisation of the resulting
+    supernode. -/
+theorem wall_ne_agreement
+    (k : Nat) (hk1 : 1 ≤ k)
+    (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+     sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se : MacroCell)
+    (R2 R3 R5 R6 : MacroCell)
+    (hR2 : R2 = hashlifeResultAux (k + 1) (node nw_ne ne_nw nw_se ne_sw))
+    (hR3 : R3 = hashlifeResultAux (k + 1) (node ne_nw ne_ne ne_sw ne_se))
+    (hR5 : R5 = hashlifeResultAux (k + 1) (node nw_se ne_sw sw_ne se_nw))
+    (hR6 : R6 = hashlifeResultAux (k + 1) (node ne_sw ne_se se_nw se_ne))
+    (hn1_l : (node nw_nw nw_ne nw_sw nw_se).level = k + 1)
+    (hn2_l : (node nw_ne ne_nw nw_se ne_sw).level = k + 1)
+    (hn3_l : (node ne_nw ne_ne ne_sw ne_se).level = k + 1)
+    (hn4_l : (node nw_sw nw_se sw_nw sw_ne).level = k + 1)
+    (hn5_l : (node nw_se ne_sw sw_ne se_nw).level = k + 1)
+    (hn6_l : (node ne_sw ne_se se_nw se_ne).level = k + 1)
+    (hn7_l : (node sw_nw sw_ne sw_sw sw_se).level = k + 1)
+    (hn1_w : (node nw_nw nw_ne nw_sw nw_se).wf = true)
+    (hn2_w : (node nw_ne ne_nw nw_se ne_sw).wf = true)
+    (hn3_w : (node ne_nw ne_ne ne_sw ne_se).wf = true)
+    (hn4_w : (node nw_sw nw_se sw_nw sw_ne).wf = true)
+    (hn5_w : (node nw_se ne_sw sw_ne se_nw).wf = true)
+    (hn6_w : (node ne_sw ne_se se_nw se_ne).wf = true)
+    (hn7_w : (node sw_nw sw_ne sw_sw sw_se).wf = true)
+    (hR2_l : R2.level = k) (hR3_l : R3.level = k)
+    (hR5_l : R5.level = k) (hR6_l : R6.level = k)
+    (p : Int × Int)
+    (hp : (2^k : Int) ≤ p.1 ∧ p.1 < (2^k : Int) + 2^((k - 1) + 1) ∧
+          ((2^k + (2^k : Int))) ≤ p.2 ∧
+          p.2 < ((2^k + (2^k : Int))) + 2^((k - 1) + 1)) :
+    ∀ q, chebDist p q ≤ 2^(k - 1) →
+      isAlive (evolve (2^(k - 1))
+          ((node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
+                 (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se)).toGrid
+            (0, 0))) q
+        = isAlive ((node R2 R3 R5 R6).toGrid (0, 0))
+            (q.1 - (2^(k - 1) : Int), q.2 - ((2^k : Int) + (2^(k - 1) : Int))) := by
+  have hcc2 : centralCorrect (node nw_ne ne_nw nw_se ne_sw) (k - 1) :=
+    centralCorrect_free_of_wf _ (k - 1) hn2_w (by rw [hn2_l]; omega)
+  have hcc3 : centralCorrect (node ne_nw ne_ne ne_sw ne_se) (k - 1) :=
+    centralCorrect_free_of_wf _ (k - 1) hn3_w (by rw [hn3_l]; omega)
+  have hcc5 : centralCorrect (node nw_se ne_sw sw_ne se_nw) (k - 1) :=
+    centralCorrect_free_of_wf _ (k - 1) hn5_w (by rw [hn5_l]; omega)
+  have hcc6 : centralCorrect (node ne_sw ne_se se_nw se_ne) (k - 1) :=
+    centralCorrect_free_of_wf _ (k - 1) hn6_w (by rw [hn6_l]; omega)
+  -- Mirror assembly of the NW wall: window → quadrant → Chebyshev locality
+  -- (`evolve_box_agree_local`) on the quadrant's recombination node →
+  -- (parametric) `p4_nw_rside_char_*` characterisation of the result supernode.
+  intro q hq
+  obtain ⟨hp1, hp2, hp3, hp4⟩ := hp
+  have hA : (2 ^ (k - 1 + 1) : Int) = (2 ^ k : Int) := by
+    have hk : k - 1 + 1 = k := by omega
+    rw [hk]
+  have hu2 : (2 ^ k : Int) = (2 ^ (k - 1) : Int) + (2 ^ (k - 1) : Int) := by
+    rw [← hA, pow_succ]; ring
+  have hcastu : ((2 ^ (k - 1) : Nat) : Int) = (2 ^ (k - 1) : Int) := by norm_cast
+  rw [hA] at hp2 hp4
+  obtain ⟨hq1, hq2⟩ := coord_bound_of_chebDist_le p q _ hq
+  by_cases hcx1 : q.1 - (2 ^ (k - 1) : Int) < (2 ^ k : Int) <;>
+    by_cases hcx2 : q.2 - ((2 ^ k : Int) + (2 ^ (k - 1) : Int)) < (2 ^ k : Int)
+  · -- NW quadrant of the supercell: `n2`, translated by `(0, 2^k)`.
+    have hbox : ∀ r, chebDist q r ≤ 2 ^ (k - 1) →
+        isAlive ((node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
+            (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se)).toGrid (0, 0)) r
+          = isAlive (shift ((0 : Int), (2 ^ k : Int))
+              ((node nw_ne ne_nw nw_se ne_sw).toGrid (0, 0))) r := by
+      intro r hr
+      obtain ⟨hr1, hr2⟩ := coord_bound_of_chebDist_le q r _ hr
+      rw [isAlive_shift, ← p4_isAlive_toGrid_shift]
+      exact p4_nw_parent_agree_n2 k nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+        sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se hn1_l hn1_w hn2_l hn2_w r
+        ⟨by omega, by omega, by omega, by omega⟩
+    have hL := evolve_box_agree_local (2 ^ (k - 1)) _ _ q hbox
+    rw [hL, ← evolve_shift, isAlive_shift]
+    have hx' : 0 ≤ q.1 - (2 ^ (k - 1) : Int) ∧ q.1 - (2 ^ (k - 1) : Int) < (2 ^ k : Int) ∧
+        0 ≤ q.2 - ((2 ^ k : Int) + (2 ^ (k - 1) : Int)) ∧
+        q.2 - ((2 ^ k : Int) + (2 ^ (k - 1) : Int)) < (2 ^ k : Int) :=
+      ⟨by omega, by omega, by omega, by omega⟩
+    rw [p4_nw_rside_char_nw k hk1 _ _ _ _ R2 R3 R5 R6 hR2 hR3 hR5 hR6 hR2_l
+        hcc2 hcc3 hcc5 hcc6
+        (q.1 - (2 ^ (k - 1) : Int), q.2 - ((2 ^ k : Int) + (2 ^ (k - 1) : Int))) hx']
+    congr 1
+    ext <;> (try dsimp only) <;> omega
+  · -- NE quadrant of the supercell: `n3` (the parent's NE child), translated by `(0, 2·2^k)`.
+    have hbox : ∀ r, chebDist q r ≤ 2 ^ (k - 1) →
+        isAlive ((node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
+            (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se)).toGrid (0, 0)) r
+          = isAlive (shift ((0 : Int), (2 ^ k : Int) + (2 ^ k : Int))
+              ((node ne_nw ne_ne ne_sw ne_se).toGrid (0, 0))) r := by
+      intro r hr
+      obtain ⟨hr1, hr2⟩ := coord_bound_of_chebDist_le q r _ hr
+      rw [isAlive_shift, ← p4_isAlive_toGrid_shift]
+      exact p4_ne_parent_agree_n3 k nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+        sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se hn1_l hn1_w r
+        ⟨by omega, by omega, by omega, by omega⟩
+    have hL := evolve_box_agree_local (2 ^ (k - 1)) _ _ q hbox
+    rw [hL, ← evolve_shift, isAlive_shift]
+    have hx' : 0 ≤ q.1 - (2 ^ (k - 1) : Int) ∧ q.1 - (2 ^ (k - 1) : Int) < (2 ^ k : Int) ∧
+        (2 ^ k : Int) ≤ q.2 - ((2 ^ k : Int) + (2 ^ (k - 1) : Int)) ∧
+        q.2 - ((2 ^ k : Int) + (2 ^ (k - 1) : Int)) < (2 ^ k : Int) + (2 ^ k : Int) :=
+      ⟨by omega, by omega, by omega, by omega⟩
+    rw [p4_nw_rside_char_ne k hk1 _ _ _ _ R2 R3 R5 R6 hR2 hR3 hR5 hR6 hR2_l
+        hcc2 hcc3 hcc5 hcc6
+        (q.1 - (2 ^ (k - 1) : Int), q.2 - ((2 ^ k : Int) + (2 ^ (k - 1) : Int))) hx']
+    congr 1
+    ext <;> (try dsimp only) <;> omega
+  · -- SW quadrant of the supercell: `n5` (centre node, SHARED with the NW wall),
+    -- translated by `(2^k, 2^k)`. Direct reuse of `p4_nw_parent_agree_n5`.
+    have hbox : ∀ r, chebDist q r ≤ 2 ^ (k - 1) →
+        isAlive ((node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
+            (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se)).toGrid (0, 0)) r
+          = isAlive (shift ((2 ^ k : Int), (2 ^ k : Int))
+              ((node nw_se ne_sw sw_ne se_nw).toGrid (0, 0))) r := by
+      intro r hr
+      obtain ⟨hr1, hr2⟩ := coord_bound_of_chebDist_le q r _ hr
+      rw [isAlive_shift, ← p4_isAlive_toGrid_shift]
+      exact p4_nw_parent_agree_n5 k nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+        sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se hn1_l hn1_w hn2_l hn2_w
+        hn4_l hn4_w hn5_l hn5_w r
+        ⟨by omega, by omega, by omega, by omega⟩
+    have hL := evolve_box_agree_local (2 ^ (k - 1)) _ _ q hbox
+    rw [hL, ← evolve_shift, isAlive_shift]
+    have hx' : (2 ^ k : Int) ≤ q.1 - (2 ^ (k - 1) : Int) ∧
+        q.1 - (2 ^ (k - 1) : Int) < (2 ^ k : Int) + (2 ^ k : Int) ∧
+        0 ≤ q.2 - ((2 ^ k : Int) + (2 ^ (k - 1) : Int)) ∧
+        q.2 - ((2 ^ k : Int) + (2 ^ (k - 1) : Int)) < (2 ^ k : Int) :=
+      ⟨by omega, by omega, by omega, by omega⟩
+    rw [p4_nw_rside_char_sw k hk1 _ _ _ _ R2 R3 R5 R6 hR2 hR3 hR5 hR6 hR2_l
+        hcc2 hcc3 hcc5 hcc6
+        (q.1 - (2 ^ (k - 1) : Int), q.2 - ((2 ^ k : Int) + (2 ^ (k - 1) : Int))) hx']
+    congr 1
+    ext <;> (try dsimp only) <;> omega
+  · -- SE quadrant of the supercell: `n6`, translated by `(2^k, 2·2^k)`.
+    have hbox : ∀ r, chebDist q r ≤ 2 ^ (k - 1) →
+        isAlive ((node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
+            (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se)).toGrid (0, 0)) r
+          = isAlive (shift ((2 ^ k : Int), (2 ^ k : Int) + (2 ^ k : Int))
+              ((node ne_sw ne_se se_nw se_ne).toGrid (0, 0))) r := by
+      intro r hr
+      obtain ⟨hr1, hr2⟩ := coord_bound_of_chebDist_le q r _ hr
+      rw [isAlive_shift, ← p4_isAlive_toGrid_shift]
+      exact p4_ne_parent_agree_n6 k nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+        sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se hn1_l hn1_w hn3_l hn3_w
+        hn6_l hn6_w hn7_l hn7_w r
+        ⟨by omega, by omega, by omega, by omega⟩
+    have hL := evolve_box_agree_local (2 ^ (k - 1)) _ _ q hbox
+    rw [hL, ← evolve_shift, isAlive_shift]
+    have hx' : (2 ^ k : Int) ≤ q.1 - (2 ^ (k - 1) : Int) ∧
+        q.1 - (2 ^ (k - 1) : Int) < (2 ^ k : Int) + (2 ^ k : Int) ∧
+        (2 ^ k : Int) ≤ q.2 - ((2 ^ k : Int) + (2 ^ (k - 1) : Int)) ∧
+        q.2 - ((2 ^ k : Int) + (2 ^ (k - 1) : Int)) < (2 ^ k : Int) + (2 ^ k : Int) :=
+      ⟨by omega, by omega, by omega, by omega⟩
+    rw [p4_nw_rside_char_se k hk1 _ _ _ _ R2 R3 R5 R6 hR2 hR3 hR5 hR6 hR2_l
+        hcc2 hcc3 hcc5 hcc6
+        (q.1 - (2 ^ (k - 1) : Int), q.2 - ((2 ^ k : Int) + (2 ^ (k - 1) : Int))) hx']
+    congr 1
+    ext <;> (try dsimp only) <;> omega
+
+/-! ### Slice 22 — public restitution of the SE wall (`wall_se_agreement`)
+
+Third wall restituted, the **diagonal** mirror of NW (indices `{5,6,8,9}`). The SE
+wall (`Walls/SE.lean:120`, NW reflected across the diagonal) covers the supercell
+`node R5 R6 R8 R9` anchored at `(2^k + 2^(k-1), 2^k + 2^(k-1))` in the parent:
+the window is shifted on **both** coordinates and the conclusion is translated
+accordingly.
+
+Two departures from the NW/NE walls:
+
+* the structural set holds **16 hypotheses `{n1..n8}`** — every quadrant of the
+  supercell is a distinct node of the ring, `n7` and `n8` being reached only by
+  the SW/SE quadrants;
+* three of the four quadrant bricks are **public** (`p4_nw_parent_agree_n5`,
+  `p4_ne_parent_agree_n6`, `p4_sw_parent_agree_n8`), but the fourth
+  (`p4_se_parent_agree_n9`) is **private in `Walls/SE.lean` and has no public
+  analogue** in the lake: the slice therefore restitutes it too, as
+  `se_parent_agree_n9`, before the wall — its four bricks (`p4_bool_eq_of_iff`,
+  `isAlive_true_iff_mem_local`, `mem_toGrid_node`, `p4_mem_toGrid_lt`) are public
+  in `Foundation`.
+
+Statements and proofs are faithful copies of the originals; no deprivatisation
+in `Walls/`, no i18n impact. -/
+
+/-- **Parent agreement / `n9` (public restitution of `p4_se_parent_agree_n9`).**
+    On the SE quadrant of the thrice-padded parent (`[2·2^k, 4·2^k)²`), the state
+    read in the parent's grid coincides with `n9` translated by
+    `(2·2^k, 2·2^k)`. `n9 = node se_nw se_ne se_sw se_se` is the parent's own SE
+    child: a single decomposition, the three other quadrants are excluded by
+    bounds. -/
+theorem se_parent_agree_n9 (k : Nat)
+    (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+      sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se : MacroCell)
+    (hn1_l : (node nw_nw nw_ne nw_sw nw_se).level = k + 1)
+    (hn1_w : (node nw_nw nw_ne nw_sw nw_se).wf = true)
+    (hn3_l : (node ne_nw ne_ne ne_sw ne_se).level = k + 1)
+    (hn3_w : (node ne_nw ne_ne ne_sw ne_se).wf = true)
+    (hn7_l : (node sw_nw sw_ne sw_sw sw_se).level = k + 1)
+    (hn7_w : (node sw_nw sw_ne sw_sw sw_se).wf = true)
+    (x : Int × Int)
+    (hx : (2 ^ k : Int) + (2 ^ k : Int) ≤ x.1 ∧
+          x.1 < (2 ^ k : Int) + (2 ^ k : Int) + (2 ^ k : Int) + (2 ^ k : Int) ∧
+          (2 ^ k : Int) + (2 ^ k : Int) ≤ x.2 ∧
+          x.2 < (2 ^ k : Int) + (2 ^ k : Int) + (2 ^ k : Int) + (2 ^ k : Int)) :
+    isAlive ((node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
+        (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se)).toGrid (0, 0)) x
+      = isAlive ((node se_nw se_ne se_sw se_se).toGrid
+          ((2 ^ k : Int) + (2 ^ k : Int), (2 ^ k : Int) + (2 ^ k : Int))) x := by
+  obtain ⟨hx1, hx2, hx3, hx4⟩ := hx
+  apply p4_bool_eq_of_iff
+  rw [isAlive_true_iff_mem_local, isAlive_true_iff_mem_local]
+  have hBB : (2 ^ (k + 1) : Int) = (2 ^ k : Int) + (2 ^ k : Int) := by
+    rw [pow_succ]; ring
+  rw [mem_toGrid_node (nw := node nw_nw nw_ne nw_sw nw_se), hn1_l, hBB]
+  simp only [Int.zero_add, Int.add_zero]
+  constructor
+  · rintro (h | h | h | h)
+    · obtain ⟨hr, -⟩ := p4_mem_toGrid_lt _ _ _ x hn1_w h
+      rw [hn1_l, hBB] at hr
+      exfalso; omega
+    · obtain ⟨hr, -⟩ := p4_mem_toGrid_lt _ _ _ x hn3_w h
+      rw [hn3_l, hBB] at hr
+      exfalso; omega
+    · obtain ⟨-, hc⟩ := p4_mem_toGrid_lt _ _ _ x hn7_w h
+      rw [hn7_l, hBB] at hc
+      exfalso; omega
+    · exact h
+  · intro h
+    exact Or.inr (Or.inr (Or.inr h))
+
+set_option maxHeartbeats 4000000 in
+/-- **SE wall (public restitution of `p4_se_overlap_wall`).** On the Chebyshev
+    box of radius `2^(k-1)` around a point `p` of the SE window
+    `[2·2^k, 2·2^k + 2^((k-1)+1))²`, the reference trajectory of the 16-cell
+    supernode (one generation `2^(k-1)`) coincides with the second-wave
+    recombination `(node R5 R6 R8 R9).toGrid`, read translated by
+    `(-(2^k + 2^(k-1)), -(2^k + 2^(k-1)))`. Faithful copy of the private wall
+    `p4_se_overlap_wall` (`Walls/SE.lean`), made public under the fragment's roof
+    for the P4 assembly: window → quadrant (n5 reused from the NW wall, n6 from
+    the NE wall, n8 from the SW wall, n9 restituted above) → Chebyshev locality →
+    parametric `p4_nw_rside_char_*` characterisation of the resulting
+    supernode. -/
+theorem wall_se_agreement
+    (k : Nat) (hk1 : 1 ≤ k)
+    (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+     sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se : MacroCell)
+    (R5 R6 R8 R9 : MacroCell)
+    (hR5 : R5 = hashlifeResultAux (k + 1) (node nw_se ne_sw sw_ne se_nw))
+    (hR6 : R6 = hashlifeResultAux (k + 1) (node ne_sw ne_se se_nw se_ne))
+    (hR8 : R8 = hashlifeResultAux (k + 1) (node sw_ne se_nw sw_se se_sw))
+    (hR9 : R9 = hashlifeResultAux (k + 1) (node se_nw se_ne se_sw se_se))
+    (hn1_l : (node nw_nw nw_ne nw_sw nw_se).level = k + 1)
+    (hn2_l : (node nw_ne ne_nw nw_se ne_sw).level = k + 1)
+    (hn3_l : (node ne_nw ne_ne ne_sw ne_se).level = k + 1)
+    (hn4_l : (node nw_sw nw_se sw_nw sw_ne).level = k + 1)
+    (hn5_l : (node nw_se ne_sw sw_ne se_nw).level = k + 1)
+    (hn6_l : (node ne_sw ne_se se_nw se_ne).level = k + 1)
+    (hn7_l : (node sw_nw sw_ne sw_sw sw_se).level = k + 1)
+    (hn8_l : (node sw_ne se_nw sw_se se_sw).level = k + 1)
+    (hn1_w : (node nw_nw nw_ne nw_sw nw_se).wf = true)
+    (hn2_w : (node nw_ne ne_nw nw_se ne_sw).wf = true)
+    (hn3_w : (node ne_nw ne_ne ne_sw ne_se).wf = true)
+    (hn4_w : (node nw_sw nw_se sw_nw sw_ne).wf = true)
+    (hn5_w : (node nw_se ne_sw sw_ne se_nw).wf = true)
+    (hn6_w : (node ne_sw ne_se se_nw se_ne).wf = true)
+    (hn7_w : (node sw_nw sw_ne sw_sw sw_se).wf = true)
+    (hn8_w : (node sw_ne se_nw sw_se se_sw).wf = true)
+    (hcc9 : centralCorrect (node se_nw se_ne se_sw se_se) (k - 1))
+    (hR5_l : R5.level = k) (hR6_l : R6.level = k)
+    (hR8_l : R8.level = k) (hR9_l : R9.level = k)
+    (p : Int × Int)
+    (hp : ((2^k + (2^k : Int))) ≤ p.1 ∧
+          p.1 < ((2^k + (2^k : Int))) + 2^((k - 1) + 1) ∧
+          ((2^k + (2^k : Int))) ≤ p.2 ∧
+          p.2 < ((2^k + (2^k : Int))) + 2^((k - 1) + 1)) :
+    ∀ q, chebDist p q ≤ 2^(k - 1) →
+      isAlive (evolve (2^(k - 1))
+          ((node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
+                 (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se)).toGrid
+            (0, 0))) q
+        = isAlive ((node R5 R6 R8 R9).toGrid (0, 0))
+            (q.1 - ((2^k : Int) + (2^(k - 1) : Int)),
+             q.2 - ((2^k : Int) + (2^(k - 1) : Int))) := by
+  have hcc5 : centralCorrect (node nw_se ne_sw sw_ne se_nw) (k - 1) :=
+    centralCorrect_free_of_wf _ (k - 1) hn5_w (by rw [hn5_l]; omega)
+  have hcc6 : centralCorrect (node ne_sw ne_se se_nw se_ne) (k - 1) :=
+    centralCorrect_free_of_wf _ (k - 1) hn6_w (by rw [hn6_l]; omega)
+  have hcc8 : centralCorrect (node sw_ne se_nw sw_se se_sw) (k - 1) :=
+    centralCorrect_free_of_wf _ (k - 1) hn8_w (by rw [hn8_l]; omega)
+  -- Same assembly as the NW/NE walls, with the diagonal shift of the window.
+  intro q hq
+  obtain ⟨hp1, hp2, hp3, hp4⟩ := hp
+  have hA : (2 ^ (k - 1 + 1) : Int) = (2 ^ k : Int) := by
+    have hk : k - 1 + 1 = k := by omega
+    rw [hk]
+  have hu2 : (2 ^ k : Int) = (2 ^ (k - 1) : Int) + (2 ^ (k - 1) : Int) := by
+    rw [← hA, pow_succ]; ring
+  have hcastu : ((2 ^ (k - 1) : Nat) : Int) = (2 ^ (k - 1) : Int) := by norm_cast
+  rw [hA] at hp2 hp4
+  obtain ⟨hq1, hq2⟩ := coord_bound_of_chebDist_le p q _ hq
+  by_cases hcx1 : q.1 - ((2 ^ k : Int) + (2 ^ (k - 1) : Int)) < (2 ^ k : Int) <;>
+    by_cases hcx2 : q.2 - ((2 ^ k : Int) + (2 ^ (k - 1) : Int)) < (2 ^ k : Int)
+  · -- NW quadrant of the supercell: `n5` (centre node, SHARED with the other
+    -- walls), translated by `(2^k, 2^k)`. Reuse of `p4_nw_parent_agree_n5`.
+    have hbox : ∀ r, chebDist q r ≤ 2 ^ (k - 1) →
+        isAlive ((node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
+            (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se)).toGrid (0, 0)) r
+          = isAlive (shift ((2 ^ k : Int), (2 ^ k : Int))
+              ((node nw_se ne_sw sw_ne se_nw).toGrid (0, 0))) r := by
+      intro r hr
+      obtain ⟨hr1, hr2⟩ := coord_bound_of_chebDist_le q r _ hr
+      rw [isAlive_shift, ← p4_isAlive_toGrid_shift]
+      exact p4_nw_parent_agree_n5 k nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+        sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se hn1_l hn1_w hn2_l hn2_w
+        hn4_l hn4_w hn5_l hn5_w r
+        ⟨by omega, by omega, by omega, by omega⟩
+    have hL := evolve_box_agree_local (2 ^ (k - 1)) _ _ q hbox
+    rw [hL, ← evolve_shift, isAlive_shift]
+    have hx' : 0 ≤ q.1 - ((2 ^ k : Int) + (2 ^ (k - 1) : Int)) ∧
+        q.1 - ((2 ^ k : Int) + (2 ^ (k - 1) : Int)) < (2 ^ k : Int) ∧
+        0 ≤ q.2 - ((2 ^ k : Int) + (2 ^ (k - 1) : Int)) ∧
+        q.2 - ((2 ^ k : Int) + (2 ^ (k - 1) : Int)) < (2 ^ k : Int) :=
+      ⟨by omega, by omega, by omega, by omega⟩
+    rw [p4_nw_rside_char_nw k hk1 _ _ _ _ R5 R6 R8 R9 hR5 hR6 hR8 hR9 hR5_l
+        hcc5 hcc6 hcc8 hcc9
+        (q.1 - ((2 ^ k : Int) + (2 ^ (k - 1) : Int)),
+         q.2 - ((2 ^ k : Int) + (2 ^ (k - 1) : Int))) hx']
+    congr 1
+    ext <;> (try dsimp only) <;> omega
+  · -- NE quadrant of the supercell: `n6`, translated by `(2^k, 2·2^k)`.
+    have hbox : ∀ r, chebDist q r ≤ 2 ^ (k - 1) →
+        isAlive ((node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
+            (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se)).toGrid (0, 0)) r
+          = isAlive (shift ((2 ^ k : Int), (2 ^ k : Int) + (2 ^ k : Int))
+              ((node ne_sw ne_se se_nw se_ne).toGrid (0, 0))) r := by
+      intro r hr
+      obtain ⟨hr1, hr2⟩ := coord_bound_of_chebDist_le q r _ hr
+      rw [isAlive_shift, ← p4_isAlive_toGrid_shift]
+      exact p4_ne_parent_agree_n6 k nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+        sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se hn1_l hn1_w hn3_l hn3_w
+        hn6_l hn6_w hn7_l hn7_w r
+        ⟨by omega, by omega, by omega, by omega⟩
+    have hL := evolve_box_agree_local (2 ^ (k - 1)) _ _ q hbox
+    rw [hL, ← evolve_shift, isAlive_shift]
+    have hx' : 0 ≤ q.1 - ((2 ^ k : Int) + (2 ^ (k - 1) : Int)) ∧
+        q.1 - ((2 ^ k : Int) + (2 ^ (k - 1) : Int)) < (2 ^ k : Int) ∧
+        (2 ^ k : Int) ≤ q.2 - ((2 ^ k : Int) + (2 ^ (k - 1) : Int)) ∧
+        q.2 - ((2 ^ k : Int) + (2 ^ (k - 1) : Int)) < (2 ^ k : Int) + (2 ^ k : Int) :=
+      ⟨by omega, by omega, by omega, by omega⟩
+    rw [p4_nw_rside_char_ne k hk1 _ _ _ _ R5 R6 R8 R9 hR5 hR6 hR8 hR9 hR5_l
+        hcc5 hcc6 hcc8 hcc9
+        (q.1 - ((2 ^ k : Int) + (2 ^ (k - 1) : Int)),
+         q.2 - ((2 ^ k : Int) + (2 ^ (k - 1) : Int))) hx']
+    congr 1
+    ext <;> (try dsimp only) <;> omega
+  · -- SW quadrant of the supercell: `n8`, translated by `(2·2^k, 2^k)`.
+    have hbox : ∀ r, chebDist q r ≤ 2 ^ (k - 1) →
+        isAlive ((node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
+            (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se)).toGrid (0, 0)) r
+          = isAlive (shift ((2 ^ k : Int) + (2 ^ k : Int), (2 ^ k : Int))
+              ((node sw_ne se_nw sw_se se_sw).toGrid (0, 0))) r := by
+      intro r hr
+      obtain ⟨hr1, hr2⟩ := coord_bound_of_chebDist_le q r _ hr
+      rw [isAlive_shift, ← p4_isAlive_toGrid_shift]
+      exact p4_sw_parent_agree_n8 k nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+        sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se hn1_l hn1_w hn3_l hn3_w
+        hn7_l hn7_w hn8_l hn8_w r
+        ⟨by omega, by omega, by omega, by omega⟩
+    have hL := evolve_box_agree_local (2 ^ (k - 1)) _ _ q hbox
+    rw [hL, ← evolve_shift, isAlive_shift]
+    have hx' : (2 ^ k : Int) ≤ q.1 - ((2 ^ k : Int) + (2 ^ (k - 1) : Int)) ∧
+        q.1 - ((2 ^ k : Int) + (2 ^ (k - 1) : Int)) < (2 ^ k : Int) + (2 ^ k : Int) ∧
+        0 ≤ q.2 - ((2 ^ k : Int) + (2 ^ (k - 1) : Int)) ∧
+        q.2 - ((2 ^ k : Int) + (2 ^ (k - 1) : Int)) < (2 ^ k : Int) :=
+      ⟨by omega, by omega, by omega, by omega⟩
+    rw [p4_nw_rside_char_sw k hk1 _ _ _ _ R5 R6 R8 R9 hR5 hR6 hR8 hR9 hR5_l
+        hcc5 hcc6 hcc8 hcc9
+        (q.1 - ((2 ^ k : Int) + (2 ^ (k - 1) : Int)),
+         q.2 - ((2 ^ k : Int) + (2 ^ (k - 1) : Int))) hx']
+    congr 1
+    ext <;> (try dsimp only) <;> omega
+  · -- SE quadrant of the supercell: `n9` (the parent's SE child), translated by
+    -- `(2·2^k, 2·2^k)`.
+    have hbox : ∀ r, chebDist q r ≤ 2 ^ (k - 1) →
+        isAlive ((node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
+            (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se)).toGrid (0, 0)) r
+          = isAlive (shift ((2 ^ k : Int) + (2 ^ k : Int), (2 ^ k : Int) + (2 ^ k : Int))
+              ((node se_nw se_ne se_sw se_se).toGrid (0, 0))) r := by
+      intro r hr
+      obtain ⟨hr1, hr2⟩ := coord_bound_of_chebDist_le q r _ hr
+      rw [isAlive_shift, ← p4_isAlive_toGrid_shift]
+      exact se_parent_agree_n9 k nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+        sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se hn1_l hn1_w hn3_l hn3_w
+        hn7_l hn7_w r
+        ⟨by omega, by omega, by omega, by omega⟩
+    have hL := evolve_box_agree_local (2 ^ (k - 1)) _ _ q hbox
+    rw [hL, ← evolve_shift, isAlive_shift]
+    have hx' : (2 ^ k : Int) ≤ q.1 - ((2 ^ k : Int) + (2 ^ (k - 1) : Int)) ∧
+        q.1 - ((2 ^ k : Int) + (2 ^ (k - 1) : Int)) < (2 ^ k : Int) + (2 ^ k : Int) ∧
+        (2 ^ k : Int) ≤ q.2 - ((2 ^ k : Int) + (2 ^ (k - 1) : Int)) ∧
+        q.2 - ((2 ^ k : Int) + (2 ^ (k - 1) : Int)) < (2 ^ k : Int) + (2 ^ k : Int) :=
+      ⟨by omega, by omega, by omega, by omega⟩
+    rw [p4_nw_rside_char_se k hk1 _ _ _ _ R5 R6 R8 R9 hR5 hR6 hR8 hR9 hR5_l
+        hcc5 hcc6 hcc8 hcc9
+        (q.1 - ((2 ^ k : Int) + (2 ^ (k - 1) : Int)),
+         q.2 - ((2 ^ k : Int) + (2 ^ (k - 1) : Int))) hx']
+    congr 1
+    ext <;> (try dsimp only) <;> omega
 
 /-! ## L3 class `T = 1` — hcap of still lifes (step 3, slice 4)
 
@@ -2964,6 +3709,594 @@ theorem hashlife_correct_margin_of_union_periodic_dyadic (c : MacroCell) (k : Na
   intro t _
   rw [hsplit]
   exact hcap_of_union_periodic_dyadic hTi g₁ g₂ hsep hfix₁ hfix₂ hcan hne₁ hne₂ t
+
+/-! ### Link 4 — the degenerate class: unions with an empty part
+
+Link 3 (`hcap_of_union_periodic_dyadic`) requires BOTH parts non-empty
+(`hne₁`, `hne₂`): its window `2 ^ i` is paid by the gap BETWEEN the two
+parts, a gap an empty part cannot witness. This link closes the excluded
+class: when one part is empty, the union IS the other part
+(`List.append_nil`), and the window is paid by the carrier part's OWN
+extent — two points of the same phase at distance `2 ^ i` force the
+reconstruction level (`gridToMacroCellWithOffset_level_ge_of_span`), the
+same lemma as link 3 but with the pair of points INSIDE the pattern instead
+of between two patterns. The separation `hsep` disappears from the
+interface: there is nothing left to separate. Combined with links 2
+(T ∈ {1, 2, 4}) and 3 (dyadic, separated on both sides), the P4.4
+decomposition of periodic unions is closed over its full extent. -/
+
+/-- **hcap of a periodic oscillator with an intra-part window.** A canonical
+    oscillator of period `T = 2 ^ i` whose every phase carries two points at
+    Chebyshev distance `≥ 2 ^ i` is captured at any instant: the trajectory
+    reduces to its `T` phases (`hcap_of_period`), and every phase spread over
+    `2 ^ i` is reconstructed at a level `≥ i`, hence `2 ^ i ∣ 2 ^ level`.
+    This is the single-grid mirror of link 3: the extent paying the window
+    lives inside the pattern instead of between two patterns. -/
+theorem hcap_of_period_span {T i : Nat} (hTi : T = 2 ^ i) (g : Grid)
+    (hg : Canonical g) (hper : evolve T g = g)
+    (hspan : ∀ s, ∃ p q, p ∈ evolve s g ∧ q ∈ evolve s g ∧ 2 ^ i ≤ chebDist p q) :
+    ∀ t, jumpCapturedF (gridToMacroCellWithOffset (evolve t g)).2 = true := by
+  have hT0 : 0 < T := by rw [hTi]; exact pow_pos (by norm_num) i
+  refine hcap_of_period g hg hT0 hper ?_
+  intro j _
+  obtain ⟨p, q, hp, hq, hcheb⟩ := hspan j
+  have hlvl : i ≤ (gridToMacroCellWithOffset (evolve j g)).2.level :=
+    gridToMacroCellWithOffset_level_ge_of_span _ i p q hp hq hcheb
+  obtain ⟨m, hm⟩ : ∃ m, (gridToMacroCellWithOffset (evolve j g)).2.level = i + m :=
+    ⟨(gridToMacroCellWithOffset (evolve j g)).2.level - i, by omega⟩
+  rw [hTi, hm, pow_add]
+  exact ⟨2 ^ m, by ring⟩
+
+/-- **hcap of degenerate periodic unions — link 4.** A union `g₁ ++ g₂`
+    whose second part is empty reduces to its carrier part
+    (`List.append_nil`): the capture is that of the single-grid lemma above,
+    the window paid by `g₁`'s own extent. No separation hypothesis (nothing
+    to separate), no fixpoint on the empty side (`evolve` of the empty grid
+    is the empty grid, the excluded part no longer enters the interface).
+    The left mirror (`g₁ = []`) follows by `List.nil_append`. -/
+theorem hcap_of_union_periodic_singleton {T i : Nat} (hTi : T = 2 ^ i)
+    (g₁ g₂ : Grid) (hfix₁ : evolve T g₁ = g₁)
+    (hcan : Canonical (g₁ ++ g₂)) (hg₂ : g₂ = [])
+    (hspan : ∀ s, ∃ p q, p ∈ evolve s g₁ ∧ q ∈ evolve s g₁ ∧ 2 ^ i ≤ chebDist p q)
+    (t : Nat) :
+    jumpCapturedF (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).2 = true := by
+  subst hg₂
+  rw [List.append_nil] at hcan ⊢
+  exact hcap_of_period_span hTi g₁ hcan hfix₁ hspan t
+
+/-- **L2 assembly for the degenerate class.** Mirror of the two assembly
+    corollaries above: a MacroCell whose grid rendered at the origin splits
+    into a `2 ^ i`-periodic carrier part with an intra-part window and an
+    empty part satisfies the Hashlife equality at any horizon `2 ^ k` under
+    `centralCorrect`. After low unions (`_of_union_periodic`, T ∈ {1, 2, 4})
+    and dyadic unions separated on both sides
+    (`_of_union_periodic_dyadic`), the degenerate class excluded by
+    `hne₁`/`hne₂` of link 3 is covered: it was nothing but a solitary
+    oscillator spread over its period. -/
+theorem hashlife_correct_margin_of_union_periodic_singleton (c : MacroCell) (k : Nat)
+    (h_central : centralCorrect c k) {T i : Nat} (hTi : T = 2 ^ i)
+    (g₁ g₂ : Grid) (hsplit : c.toGrid (0, 0) = g₁ ++ g₂)
+    (hfix₁ : evolve T g₁ = g₁)
+    (hcan : Canonical (g₁ ++ g₂)) (hg₂ : g₂ = [])
+    (hspan : ∀ s, ∃ p q, p ∈ evolve s g₁ ∧ q ∈ evolve s g₁ ∧ 2 ^ i ≤ chebDist p q) :
+    evolveHashlifeFast (2 ^ k) (c.toGrid (0, 0)) = evolve (2 ^ k) (c.toGrid (0, 0)) := by
+  refine hashlife_correct_margin_of_hcap c k h_central ?_
+  intro t _
+  rw [hsplit]
+  exact hcap_of_union_periodic_singleton hTi g₁ g₂ hfix₁ hcan hg₂ hspan t
+
+/-! ### Link 5 — ships in formation (union of two synchronous spaceships)
+
+Links 1 to 4 covered **periodic** unions (fixed points of `evolve T`). A
+spaceship is not a fixed point: `evolve p g = shift v g` moves it, and
+`hcap_of_union_periodic` does not apply. But two spaceships with the **same
+period** `p` and the **same displacement** `v` whose trajectories stay
+3-separated themselves form a spaceship: the union reappears after `p`
+steps, translated by `v`. Capture via the spaceship route
+(`hcap_of_spaceship`) then applies to the whole union — two synchronous
+gliders separated by three cells are covered by the same proof as each one
+in isolation. -/
+
+/-- **Derived periodicity of the union of two synchronous spaceships.** Two
+    spaceships with the same period `p > 0` and the same displacement `v`,
+    whose trajectories stay 3-separated, form a union which is itself a
+    spaceship of period `p` and displacement `v` — in the strong sense of
+    the list equality required by `hcap_of_spaceship`, and **with no
+    canonicity hypothesis** (unlike `evolve_period_union`: both sides of
+    the `Canonical.ext` bridge are unconditionally canonical —
+    `canonical_evolve_of_pos` on the left, `canonical_shift` on the
+    right). Membership by `mem_evolve_union_sep` then the two spaceship
+    legs, the translation absorbed by `mem_shift` on all three sides. -/
+theorem evolve_ship_union {p : Nat} (hp0 : 0 < p) (g₁ g₂ : Grid)
+    (hsep : ∀ s, ∀ q ∈ evolve s g₁, ∀ r ∈ evolve s g₂, 3 ≤ chebDist q r)
+    (v : Int × Int) (hship₁ : evolve p g₁ = shift v g₁)
+    (hship₂ : evolve p g₂ = shift v g₂) :
+    evolve p (g₁ ++ g₂) = shift v (g₁ ++ g₂) := by
+  apply Canonical.ext (canonical_evolve_of_pos hp0 _) (canonical_shift v _)
+  intro q
+  rw [mem_evolve_union_sep g₁ g₂ hsep p q, hship₁, hship₂,
+    mem_shift v g₁ q, mem_shift v g₂ q, mem_shift v (g₁ ++ g₂) q]
+  exact List.mem_append.symm
+
+/-- **hcap for spaceship formations — link 5.** For two synchronous
+    spaceships (same `p > 0`, same `v`), with 3-separated trajectories,
+    whose every phase of the union has a reconstruction level divisible by
+    `p` and whose velocity satisfies `2·|v.i| ≤ p`, every time `t` of the
+    union trajectory is captured: the union is a spaceship
+    (`evolve_ship_union`), and capture via the spaceship route
+    (`hcap_of_spaceship`) applies to it as is. -/
+theorem hcap_of_spaceship_formation {p : Nat} (hp0 : 0 < p) (g₁ g₂ : Grid)
+    (hsep : ∀ s, ∀ q ∈ evolve s g₁, ∀ r ∈ evolve s g₂, 3 ≤ chebDist q r)
+    (v : Int × Int) (hship₁ : evolve p g₁ = shift v g₁)
+    (hship₂ : evolve p g₂ = shift v g₂) (hcan : Canonical (g₁ ++ g₂))
+    (hdiv : ∀ i, i < p →
+      p ∣ 2 ^ (gridToMacroCellWithOffset (evolve i (g₁ ++ g₂))).2.level)
+    (hspd1 : -(p : Int) ≤ 2 * v.1 ∧ 2 * v.1 ≤ (p : Int))
+    (hspd2 : -(p : Int) ≤ 2 * v.2 ∧ 2 * v.2 ≤ (p : Int)) :
+    ∀ t, jumpCapturedF (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).2 = true :=
+  hcap_of_spaceship (g₁ ++ g₂) hcan hp0 v
+    (evolve_ship_union hp0 g₁ g₂ hsep v hship₁ hship₂) hdiv hspd1 hspd2
+
+/-- **L3 closed for synchronous spaceship formations.** Assembly
+    corollary mirroring `hashlife_correct_margin_of_union_periodic`: a
+    MacroCell whose grid rendered at the origin splits into two spaceships
+    with the same period `p > 0` and the same displacement `v`, with
+    3-separated trajectories, satisfies the Hashlife equality at any
+    horizon `2 ^ k` under `centralCorrect`. Second **composed** L3 case
+    after the periodic unions: two synchronous gliders separated by three
+    cells — each spaceship covered alone already was, their formation was
+    not. -/
+theorem hashlife_correct_margin_of_spaceship_formation (c : MacroCell) (k : Nat)
+    (h_central : centralCorrect c k) {p : Nat} (hp0 : 0 < p) (v : Int × Int)
+    (g₁ g₂ : Grid) (hsplit : c.toGrid (0, 0) = g₁ ++ g₂)
+    (hsep : ∀ s, ∀ q ∈ evolve s g₁, ∀ r ∈ evolve s g₂, 3 ≤ chebDist q r)
+    (hship₁ : evolve p g₁ = shift v g₁) (hship₂ : evolve p g₂ = shift v g₂)
+    (hcan : Canonical (g₁ ++ g₂))
+    (hdiv : ∀ i, i < p →
+      p ∣ 2 ^ (gridToMacroCellWithOffset (evolve i (c.toGrid (0, 0)))).2.level)
+    (hspd1 : -(p : Int) ≤ 2 * v.1 ∧ 2 * v.1 ≤ (p : Int))
+    (hspd2 : -(p : Int) ≤ 2 * v.2 ∧ 2 * v.2 ≤ (p : Int)) :
+    evolveHashlifeFast (2 ^ k) (c.toGrid (0, 0)) = evolve (2 ^ k) (c.toGrid (0, 0)) := by
+  refine hashlife_correct_margin_of_hcap c k h_central ?_
+  intro t _
+  rw [hsplit]
+  exact hcap_of_spaceship_formation hp0 g₁ g₂ hsep v hship₁ hship₂ hcan (hsplit ▸ hdiv) hspd1 hspd2 t
+
+/-! ### Slice 15 — mixed-period unions (mod route, containment)
+
+Links 2-4 of the union chain require both parts to share the **same** period `T`
+(`evolve_period_union`). This is a genuine restriction: the natural juxtaposition
+— a blinker (`T₁ = 2`) next to a pulsar (`T₂ = 3`) — does not satisfy it, and the
+union is neither an oscillator (period 6, non-dyadic) nor a spaceship: **none** of
+the single-pattern chains reaches it. This slice opens it through the mod route
+(`hcap_of_period_mod`, phase containment): as soon as `T` is a common multiple of
+both periods (`T₁ ∣ T`, `T₂ ∣ T` — the lcm without computing it), the union is
+`T`-periodic (`evolve_period_union_mul`), and capture follows under the
+containment hypothesis `hwin` on the union's phases — the same price the mod
+route has always charged (pulsar, slice 8b), here on the `T` phases of the union
+instead of the `T` phases of a single pattern.
+
+The geometric brick `frame_contains_support` — the reconstruction frame always
+contains the support of the reconstructed grid, up to margin and dyadic rounding
+— is the **`i = 0` diagonal** of any `hwin` hypothesis (the starting phase lives
+in its own frame): it comes for free for any witness, and it is the seed of
+future partial discharges (cross-phase containment via static boxes of the
+parts). -/
+
+/-- **The reconstruction frame contains the support.** Any live cell of `g` lives
+    in the square `[o, o + 2^level)²` where `(o, level)` is the frame of its
+    reconstruction `gridToMacroCellWithOffset g`. Proof by the MEMBERSHIP
+    round-trip (no canonicity hypothesis, `mem_toGrid_gridToMacroCellWithOffset`)
+    then the domain bounds of a well-formed cell (`cellWfF_toGrid_bounds`, wf by
+    `buildFromGrid_wf`). This is the `i = 0` diagonal of any `hwin` hypothesis of
+    the mod route: the starting phase always lives in its own frame. -/
+theorem frame_contains_support (g : Grid) (p : Int × Int) (hp : p ∈ g) :
+    (gridToMacroCellWithOffset g).1.1 ≤ p.1 ∧
+      p.1 < (gridToMacroCellWithOffset g).1.1
+        + (2 ^ (gridToMacroCellWithOffset g).2.level : Int) ∧
+      (gridToMacroCellWithOffset g).1.2 ≤ p.2 ∧
+        p.2 < (gridToMacroCellWithOffset g).1.2
+          + (2 ^ (gridToMacroCellWithOffset g).2.level : Int) := by
+  have hwf : ((gridToMacroCellWithOffset g).2).wf = true := by
+    unfold gridToMacroCellWithOffset
+    exact buildFromGrid_wf g _ _ _
+  exact cellWfF_toGrid_bounds (cellWf_of_wf _ hwf) _ _
+    ((mem_toGrid_gridToMacroCellWithOffset g p).mpr hp)
+
+/-- **Union periodicity at mixed periods.** If `T` is a common multiple of the
+    periods `T₁` (of `g₁`) and `T₂` (of `g₂`) and the trajectories stay
+    3-separated, the union is `T`-periodic. Each part regains its fixed point at
+    the multiple `mᵢ · Tᵢ = T` (`evolve_mulF_of_period`), and the split
+    `evolve_period_union` closes the union. Divisibility interface (`T₁ ∣ T`,
+    `T₂ ∣ T`): the reader picks the lcm or any multiple — the common period
+    required by links 2-4 is no longer a constraint. -/
+theorem evolve_period_union_mul {T T₁ T₂ : Nat} (hT : 0 < T)
+    (hdv₁ : T₁ ∣ T) (hdv₂ : T₂ ∣ T) (g₁ g₂ : Grid)
+    (hsep : ∀ s, ∀ p ∈ evolve s g₁, ∀ r ∈ evolve s g₂, 3 ≤ chebDist p r)
+    (hfix₁ : evolve T₁ g₁ = g₁) (hfix₂ : evolve T₂ g₂ = g₂)
+    (hcan : Canonical (g₁ ++ g₂)) :
+    evolve T (g₁ ++ g₂) = g₁ ++ g₂ := by
+  obtain ⟨m₁, hm₁⟩ := hdv₁
+  obtain ⟨m₂, hm₂⟩ := hdv₂
+  exact evolve_period_union hT g₁ g₂ hsep
+    (by rw [hm₁, Nat.mul_comm T₁ m₁]; exact evolve_mulF_of_period g₁ hfix₁ m₁)
+    (by rw [hm₂, Nat.mul_comm T₂ m₂]; exact evolve_mulF_of_period g₂ hfix₂ m₂) hcan
+
+/-- **hcap of mixed-period unions.** A union of two oscillators of periods
+    `T₁`, `T₂` **dividing a common period `T`** (it is `T` that is the common
+    multiple), with 3-separated
+    trajectories, is captured at every instant: the union is `T`-periodic
+    (`evolve_period_union_mul`) and the mod route applies — under the
+    containment `hwin` of the union's phases within the carrying phase's frame,
+    the constant price of this route since slice 8b. First **heterogeneous
+    composite** class: blinker + pulsar (2, 3) was reached by no existing
+    chain. -/
+theorem hcap_of_union_mixed {T T₁ T₂ : Nat} (hT : 0 < T)
+    (hdv₁ : T₁ ∣ T) (hdv₂ : T₂ ∣ T) (g₁ g₂ : Grid)
+    (hsep : ∀ s, ∀ p ∈ evolve s g₁, ∀ r ∈ evolve s g₂, 3 ≤ chebDist p r)
+    (hfix₁ : evolve T₁ g₁ = g₁) (hfix₂ : evolve T₂ g₂ = g₂)
+    (hcan : Canonical (g₁ ++ g₂))
+    (hwin : ∀ r, r < T → ∀ i, i < T → ∀ p ∈ evolve i (evolve r (g₁ ++ g₂)),
+      (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).1.1 ≤ p.1 ∧
+        p.1 < (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).1.1
+          + (2 ^ (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).2.level : Int) ∧
+      (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).1.2 ≤ p.2 ∧
+        p.2 < (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).1.2
+          + (2 ^ (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).2.level : Int)) :
+    ∀ t, jumpCapturedF (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).2 = true :=
+  hcap_of_period_mod (g₁ ++ g₂) hcan hT
+    (evolve_period_union_mul hT hdv₁ hdv₂ g₁ g₂ hsep hfix₁ hfix₂ hcan) hwin
+
+/-- **Assembled L2 for mixed-period unions.** Mirror of the three union assembly
+    corollaries (low, dyadic-high, degenerate): a MacroCell whose grid rendered
+    at the origin splits into two oscillators of periods `T₁`, `T₂` dividing a
+    common `T` (distinct in the use case), separated by three cells at every
+    phase and whose union phases
+    satisfy the containment `hwin`, satisfies the Hashlife equality at every
+    horizon `2^k` under `centralCorrect`. The blinker + pulsar class — two real
+    oscillators of the bestiary, periods 2 and 3 — is now in the fragment. -/
+theorem hashlife_correct_margin_of_union_mixed (c : MacroCell) (k : Nat)
+    (h_central : centralCorrect c k) {T T₁ T₂ : Nat} (hT : 0 < T)
+    (hdv₁ : T₁ ∣ T) (hdv₂ : T₂ ∣ T) (g₁ g₂ : Grid)
+    (hsplit : c.toGrid (0, 0) = g₁ ++ g₂)
+    (hsep : ∀ s, ∀ p ∈ evolve s g₁, ∀ r ∈ evolve s g₂, 3 ≤ chebDist p r)
+    (hfix₁ : evolve T₁ g₁ = g₁) (hfix₂ : evolve T₂ g₂ = g₂)
+    (hcan : Canonical (g₁ ++ g₂))
+    (hwin : ∀ r, r < T → ∀ i, i < T → ∀ p ∈ evolve i (evolve r (g₁ ++ g₂)),
+      (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).1.1 ≤ p.1 ∧
+        p.1 < (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).1.1
+          + (2 ^ (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).2.level : Int) ∧
+      (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).1.2 ≤ p.2 ∧
+        p.2 < (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).1.2
+          + (2 ^ (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).2.level : Int)) :
+    evolveHashlifeFast (2 ^ k) (c.toGrid (0, 0)) = evolve (2 ^ k) (c.toGrid (0, 0)) := by
+  refine hashlife_correct_margin_of_hcap c k h_central ?_
+  intro t _
+  rw [hsplit]
+  exact hcap_of_union_mixed hT hdv₁ hdv₂ g₁ g₂ hsep hfix₁ hfix₂ hcan hwin t
+
+/-! ### Slice 16 — discharging `hwin` by a static orbit box
+
+The containment `hwin` of the mod route (slices 8b, 15) is a `T × T`
+phase-pair statement: "every phase `r` has its reconstruction frame containing
+the support of every phase `r + i`". For a real pattern, checking this pair by
+pair is tedious; what is true — and sufficient — is simpler: **the whole orbit
+lives in a static box**, and **every phase's frame contains that box**. Two
+conditions independent of the pair `(r, i)`, each verified once. This slice
+performs the reduction: any witness of the (box, frames) pair fully discharges
+`hwin`.
+
+For a bounded oscillator (pulsar, blinker), the orbit is a finite set of
+phases with bounded support: the box always exists — the remaining concrete
+work is the box-in-frame inclusion (the frame is a dyadic rounding with margin
+of ITS OWN phase's support, so the inclusion asks for some slack, not an
+exact coincidence). The geometric brick `frame_contains_support` (slice 15) is
+the `i = 0` diagonal: frame of `r` contains the support of `r` — only the
+other `T - 1` phases remain to be covered by the box. -/
+
+/-- **`hwin` discharged by a static box.** If the support of each of the `T`
+    phases of a `T`-periodic pattern lives in a fixed box `[a₁, a₂) × [b₁, b₂)`,
+    and the reconstruction frame of each phase contains that box, then the
+    containment `hwin` (every phase in every other's frame) holds. Proof:
+    `evolve i (evolve r g)` folds onto `evolve ((i + r) % T) g`
+    (`evolve_add` + `evolve_mod_period`), whose support is in the box; the box
+    is in the frame of `r`; the bounds compose by `omega`. -/
+theorem hwin_of_orbit_box {T : Nat} (hT0 : 0 < T) (g : Grid)
+    (hper : evolve T g = g) (a₁ a₂ b₁ b₂ : Int)
+    (hbox : ∀ j, j < T → ∀ p ∈ evolve j g,
+      a₁ ≤ p.1 ∧ p.1 < a₂ ∧ b₁ ≤ p.2 ∧ p.2 < b₂)
+    (hframe : ∀ r, r < T →
+      (gridToMacroCellWithOffset (evolve r g)).1.1 ≤ a₁ ∧
+        a₂ ≤ (gridToMacroCellWithOffset (evolve r g)).1.1
+          + (2 ^ (gridToMacroCellWithOffset (evolve r g)).2.level : Int) ∧
+      (gridToMacroCellWithOffset (evolve r g)).1.2 ≤ b₁ ∧
+        b₂ ≤ (gridToMacroCellWithOffset (evolve r g)).1.2
+          + (2 ^ (gridToMacroCellWithOffset (evolve r g)).2.level : Int)) :
+    ∀ r, r < T → ∀ i, i < T → ∀ p ∈ evolve i (evolve r g),
+      (gridToMacroCellWithOffset (evolve r g)).1.1 ≤ p.1 ∧
+        p.1 < (gridToMacroCellWithOffset (evolve r g)).1.1
+          + (2 ^ (gridToMacroCellWithOffset (evolve r g)).2.level : Int) ∧
+      (gridToMacroCellWithOffset (evolve r g)).1.2 ≤ p.2 ∧
+        p.2 < (gridToMacroCellWithOffset (evolve r g)).1.2
+          + (2 ^ (gridToMacroCellWithOffset (evolve r g)).2.level : Int) := by
+  intro r hr i hi p hp
+  rw [← evolve_add, evolve_mod_period g hper (i + r)] at hp
+  obtain ⟨q1, q2, q3, q4⟩ := hbox ((i + r) % T) (Nat.mod_lt _ hT0) _ hp
+  obtain ⟨f1, f2, f3, f4⟩ := hframe r hr
+  exact ⟨by omega, by omega, by omega, by omega⟩
+
+/-- **hcap by static box, single pattern.** Direct application: the mod-route
+    capture of a `T`-periodic pattern follows from an orbit box and the
+    box-in-frame inclusion for each phase — without stating the containment
+    pair by pair. -/
+theorem hcap_of_period_mod_of_box (g : Grid) (hg : Canonical g) {T : Nat}
+    (hT0 : 0 < T) (hper : evolve T g = g) (a₁ a₂ b₁ b₂ : Int)
+    (hbox : ∀ j, j < T → ∀ p ∈ evolve j g,
+      a₁ ≤ p.1 ∧ p.1 < a₂ ∧ b₁ ≤ p.2 ∧ p.2 < b₂)
+    (hframe : ∀ r, r < T →
+      (gridToMacroCellWithOffset (evolve r g)).1.1 ≤ a₁ ∧
+        a₂ ≤ (gridToMacroCellWithOffset (evolve r g)).1.1
+          + (2 ^ (gridToMacroCellWithOffset (evolve r g)).2.level : Int) ∧
+      (gridToMacroCellWithOffset (evolve r g)).1.2 ≤ b₁ ∧
+        b₂ ≤ (gridToMacroCellWithOffset (evolve r g)).1.2
+          + (2 ^ (gridToMacroCellWithOffset (evolve r g)).2.level : Int)) :
+    ∀ t, jumpCapturedF (gridToMacroCellWithOffset (evolve t g)).2 = true :=
+  hcap_of_period_mod g hg hT0 hper
+    (hwin_of_orbit_box hT0 g hper a₁ a₂ b₁ b₂ hbox hframe)
+
+/-- **hcap of mixed unions by static box.** The same discharge for the
+    heterogeneous class of slice 15: a `T`-periodic union of two oscillators
+    of distinct periods is captured as soon as the union's orbit lives in a
+    box that every phase's frame contains. The concrete blinker + pulsar (2, 3)
+    witness now only has to exhibit the common box and the frame inclusions. -/
+theorem hcap_of_union_mixed_of_box {T T₁ T₂ : Nat} (hT : 0 < T)
+    (hdv₁ : T₁ ∣ T) (hdv₂ : T₂ ∣ T) (g₁ g₂ : Grid)
+    (hsep : ∀ s, ∀ p ∈ evolve s g₁, ∀ r ∈ evolve s g₂, 3 ≤ chebDist p r)
+    (hfix₁ : evolve T₁ g₁ = g₁) (hfix₂ : evolve T₂ g₂ = g₂)
+    (hcan : Canonical (g₁ ++ g₂)) (a₁ a₂ b₁ b₂ : Int)
+    (hbox : ∀ j, j < T → ∀ p ∈ evolve j (g₁ ++ g₂),
+      a₁ ≤ p.1 ∧ p.1 < a₂ ∧ b₁ ≤ p.2 ∧ p.2 < b₂)
+    (hframe : ∀ r, r < T →
+      (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).1.1 ≤ a₁ ∧
+        a₂ ≤ (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).1.1
+          + (2 ^ (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).2.level : Int) ∧
+      (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).1.2 ≤ b₁ ∧
+        b₂ ≤ (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).1.2
+          + (2 ^ (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).2.level : Int)) :
+    ∀ t, jumpCapturedF (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).2 = true := by
+  have hperU : evolve T (g₁ ++ g₂) = g₁ ++ g₂ :=
+    evolve_period_union_mul hT hdv₁ hdv₂ g₁ g₂ hsep hfix₁ hfix₂ hcan
+  exact hcap_of_union_mixed hT hdv₁ hdv₂ g₁ g₂ hsep hfix₁ hfix₂ hcan
+    (hwin_of_orbit_box hT (g₁ ++ g₂) hperU a₁ a₂ b₁ b₂ hbox hframe)
+
+/-! ### Slice 23 — public restitution of the SW wall (`wall_sw_agreement`)
+
+Last of the four walls restituted, as a mirror of the NE wall (coordinates
+permuted). The private SW wall (`p4_sw_overlap_wall`, Walls/SW.lean:106-254) covers
+the supercell `node R4 R5 R7 R8` ; this slice copies it as a public statement built
+only on the public bricks of `Foundation`, with no deprivatisation and no i18n
+impact.
+
+Its SW quadrant rests on `p4_sw_parent_agree_n7`, private and with **no public
+analogue** : the slice therefore restitutes `sw_parent_agree_n7` first (public copy,
+renamed, unchanged proof) — the fourth and last quadrant brick to come out of
+`Walls/`. The other three are public : `p4_nw_parent_agree_n4`
+(Foundation.lean:3317), the centre `p4_nw_parent_agree_n5` **shared** with the NW/NE
+walls, and `p4_sw_parent_agree_n8` (Foundation.lean:3567).
+
+Like the NW and NE walls (and the SE wall for its first three `hcc`), the statement
+is **strengthened** over the private wall : the four `hcc{4,5,7,8}` are not
+parameters but derivations at the head of the proof (`centralCorrect_free_of_wf`,
+slice 18) — the wall only requires geometry, from the statement itself.
+-/
+
+/-- **Parent / `n7` agreement, translated by `(2·2^K, 0)` on `[2·2^K, 4·2^K) x [0, 2·2^K)`**,
+    where `K` is the parent level (`2^K = 2^k` in the statement). Public restitution of
+    the private lemma `p4_sw_parent_agree_n7` (Walls/SW.lean:19-50) : statement and
+    proof unchanged, only the visibility changes. `n7` is the SW child of the parent
+    itself (as `n3` is its NE child) : a single decomposition suffices, the three other
+    quadrants of the parent are excluded by their bounds. -/
+theorem sw_parent_agree_n7 (k : Nat)
+    (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+      sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se : MacroCell)
+    (hn1_l : (node nw_nw nw_ne nw_sw nw_se).level = k + 1)
+    (hn1_w : (node nw_nw nw_ne nw_sw nw_se).wf = true)
+    (x : Int × Int)
+    (hx : (2 ^ k : Int) + (2 ^ k : Int) ≤ x.1 ∧
+          x.1 < (2 ^ k : Int) + (2 ^ k : Int) + (2 ^ k : Int) + (2 ^ k : Int) ∧
+          0 ≤ x.2 ∧ x.2 < (2 ^ k : Int) + (2 ^ k : Int)) :
+    isAlive ((node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
+        (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se)).toGrid (0, 0)) x
+      = isAlive ((node sw_nw sw_ne sw_sw sw_se).toGrid
+          ((2 ^ k : Int) + (2 ^ k : Int), 0)) x := by
+  obtain ⟨hx1, hx2, hx3, hx4⟩ := hx
+  apply p4_bool_eq_of_iff
+  rw [isAlive_true_iff_mem_local, isAlive_true_iff_mem_local]
+  have hBB : (2 ^ (k + 1) : Int) = (2 ^ k : Int) + (2 ^ k : Int) := by
+    rw [pow_succ]; ring
+  rw [mem_toGrid_node (nw := node nw_nw nw_ne nw_sw nw_se), hn1_l, hBB]
+  simp only [Int.zero_add, Int.add_zero]
+  constructor
+  · rintro (h | h | h | h)
+    · obtain ⟨hr, -⟩ := p4_mem_toGrid_lt _ _ _ x hn1_w h
+      rw [hn1_l, hBB] at hr
+      exfalso; omega
+    · obtain ⟨-, hc⟩ := p4_mem_toGrid_origin_le _ _ _ x h
+      exfalso; omega
+    · exact h
+    · obtain ⟨-, hc⟩ := p4_mem_toGrid_origin_le _ _ _ x h
+      exfalso; omega
+  · intro h
+    exact Or.inr (Or.inr (Or.inl h))
+
+
+set_option maxHeartbeats 4000000 in
+/-- **SW wall (public restitution of `p4_sw_overlap_wall`).** On the Chebyshev
+    box `2^(k-1)` around a point `p` of the SW window, the once half-stepped parent
+    grid coincides with the second-wave supercell `node R4 R5 R7 R8` read at the
+    local point `(q.1 - (2^k + 2^(k-1)), q.2 - 2^(k-1))`.
+
+    Fourth and last wall : same assembly as the NW/NE walls, coordinates permuted —
+    window -> quadrant (`by_cases` on the recentred point) -> Chebyshev locality
+    (`evolve_box_agree_local`) on the quadrant recombination node
+    (`p4_nw_parent_agree_n4/n5`, `sw_parent_agree_n7`, `p4_sw_parent_agree_n8`) ->
+    `p4_nw_rside_char_*` characterisation (parametric, reused as is on the quadruple
+    `(R4, R5, R7, R8)`). The 14 structural hypotheses `hn{1,2,3,4,5,7,8}_l/_w` are
+    kept intact (load-bearing, as in the private wall) ; the `hcc{4,5,7,8}` are free
+    by slice 18. -/
+theorem wall_sw_agreement
+    (k : Nat) (hk1 : 1 ≤ k)
+    (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+     sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se : MacroCell)
+    (R4 R5 R7 R8 : MacroCell)
+    (hR4 : R4 = hashlifeResultAux (k + 1) (node nw_sw nw_se sw_nw sw_ne))
+    (hR5 : R5 = hashlifeResultAux (k + 1) (node nw_se ne_sw sw_ne se_nw))
+    (hR7 : R7 = hashlifeResultAux (k + 1) (node sw_nw sw_ne sw_sw sw_se))
+    (hR8 : R8 = hashlifeResultAux (k + 1) (node sw_ne se_nw sw_se se_sw))
+    (hn1_l : (node nw_nw nw_ne nw_sw nw_se).level = k + 1)
+    (hn2_l : (node nw_ne ne_nw nw_se ne_sw).level = k + 1)
+    (hn3_l : (node ne_nw ne_ne ne_sw ne_se).level = k + 1)
+    (hn4_l : (node nw_sw nw_se sw_nw sw_ne).level = k + 1)
+    (hn5_l : (node nw_se ne_sw sw_ne se_nw).level = k + 1)
+    (hn7_l : (node sw_nw sw_ne sw_sw sw_se).level = k + 1)
+    (hn8_l : (node sw_ne se_nw sw_se se_sw).level = k + 1)
+    (hn1_w : (node nw_nw nw_ne nw_sw nw_se).wf = true)
+    (hn2_w : (node nw_ne ne_nw nw_se ne_sw).wf = true)
+    (hn3_w : (node ne_nw ne_ne ne_sw ne_se).wf = true)
+    (hn4_w : (node nw_sw nw_se sw_nw sw_ne).wf = true)
+    (hn5_w : (node nw_se ne_sw sw_ne se_nw).wf = true)
+    (hn7_w : (node sw_nw sw_ne sw_sw sw_se).wf = true)
+    (hn8_w : (node sw_ne se_nw sw_se se_sw).wf = true)
+    (hR4_l : R4.level = k) (hR5_l : R5.level = k)
+    (hR7_l : R7.level = k) (hR8_l : R8.level = k)
+    (p : Int × Int)
+    (hp : ((2^k + (2^k : Int))) ≤ p.1 ∧
+          p.1 < ((2^k + (2^k : Int))) + 2^((k - 1) + 1) ∧
+          (2^k : Int) ≤ p.2 ∧ p.2 < (2^k : Int) + 2^((k - 1) + 1)) :
+    ∀ q, chebDist p q ≤ 2^(k - 1) →
+      isAlive (evolve (2^(k - 1))
+          ((node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
+                 (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se)).toGrid
+            (0, 0))) q
+        = isAlive ((node R4 R5 R7 R8).toGrid (0, 0))
+            (q.1 - ((2^k : Int) + (2^(k - 1) : Int)), q.2 - (2^(k - 1) : Int)) := by
+  have hcc4 : centralCorrect (node nw_sw nw_se sw_nw sw_ne) (k - 1) :=
+    centralCorrect_free_of_wf _ (k - 1) hn4_w (by rw [hn4_l]; omega)
+  have hcc5 : centralCorrect (node nw_se ne_sw sw_ne se_nw) (k - 1) :=
+    centralCorrect_free_of_wf _ (k - 1) hn5_w (by rw [hn5_l]; omega)
+  have hcc7 : centralCorrect (node sw_nw sw_ne sw_sw sw_se) (k - 1) :=
+    centralCorrect_free_of_wf _ (k - 1) hn7_w (by rw [hn7_l]; omega)
+  have hcc8 : centralCorrect (node sw_ne se_nw sw_se se_sw) (k - 1) :=
+    centralCorrect_free_of_wf _ (k - 1) hn8_w (by rw [hn8_l]; omega)
+  intro q hq
+  obtain ⟨hp1, hp2, hp3, hp4⟩ := hp
+  have hA : (2 ^ (k - 1 + 1) : Int) = (2 ^ k : Int) := by
+    have hk : k - 1 + 1 = k := by omega
+    rw [hk]
+  have hu2 : (2 ^ k : Int) = (2 ^ (k - 1) : Int) + (2 ^ (k - 1) : Int) := by
+    rw [← hA, pow_succ]; ring
+  have hcastu : ((2 ^ (k - 1) : Nat) : Int) = (2 ^ (k - 1) : Int) := by norm_cast
+  rw [hA] at hp2 hp4
+  obtain ⟨hq1, hq2⟩ := coord_bound_of_chebDist_le p q _ hq
+  by_cases hcx1 : q.1 - ((2 ^ k : Int) + (2 ^ (k - 1) : Int)) < (2 ^ k : Int) <;>
+    by_cases hcx2 : q.2 - (2 ^ (k - 1) : Int) < (2 ^ k : Int)
+  · -- Quadrant NO du supercell : `n4`, translaté `(2^k, 0)`.
+    have hbox : ∀ r, chebDist q r ≤ 2 ^ (k - 1) →
+        isAlive ((node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
+            (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se)).toGrid (0, 0)) r
+          = isAlive (shift ((2 ^ k : Int), (0 : Int))
+              ((node nw_sw nw_se sw_nw sw_ne).toGrid (0, 0))) r := by
+      intro r hr
+      obtain ⟨hr1, hr2⟩ := coord_bound_of_chebDist_le q r _ hr
+      rw [isAlive_shift, ← p4_isAlive_toGrid_shift]
+      exact p4_nw_parent_agree_n4 k nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+        sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se hn1_l hn1_w hn4_l hn4_w r
+        ⟨by omega, by omega, by omega, by omega⟩
+    have hL := evolve_box_agree_local (2 ^ (k - 1)) _ _ q hbox
+    rw [hL, ← evolve_shift, isAlive_shift]
+    have hx' : 0 ≤ q.1 - ((2 ^ k : Int) + (2 ^ (k - 1) : Int)) ∧
+        q.1 - ((2 ^ k : Int) + (2 ^ (k - 1) : Int)) < (2 ^ k : Int) ∧
+        0 ≤ q.2 - (2 ^ (k - 1) : Int) ∧ q.2 - (2 ^ (k - 1) : Int) < (2 ^ k : Int) :=
+      ⟨by omega, by omega, by omega, by omega⟩
+    rw [p4_nw_rside_char_nw k hk1 _ _ _ _ R4 R5 R7 R8 hR4 hR5 hR7 hR8 hR4_l
+        hcc4 hcc5 hcc7 hcc8
+        (q.1 - ((2 ^ k : Int) + (2 ^ (k - 1) : Int)), q.2 - (2 ^ (k - 1) : Int)) hx']
+    congr 1
+    ext <;> (try dsimp only) <;> omega
+  · -- Quadrant NE du supercell : `n5` (nœud centre, PARTAGÉ avec les murs NW/NE),
+    -- translaté `(2^k, 2^k)`. Réutilisation directe de `p4_nw_parent_agree_n5`.
+    have hbox : ∀ r, chebDist q r ≤ 2 ^ (k - 1) →
+        isAlive ((node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
+            (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se)).toGrid (0, 0)) r
+          = isAlive (shift ((2 ^ k : Int), (2 ^ k : Int))
+              ((node nw_se ne_sw sw_ne se_nw).toGrid (0, 0))) r := by
+      intro r hr
+      obtain ⟨hr1, hr2⟩ := coord_bound_of_chebDist_le q r _ hr
+      rw [isAlive_shift, ← p4_isAlive_toGrid_shift]
+      exact p4_nw_parent_agree_n5 k nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+        sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se hn1_l hn1_w hn2_l hn2_w
+        hn4_l hn4_w hn5_l hn5_w r
+        ⟨by omega, by omega, by omega, by omega⟩
+    have hL := evolve_box_agree_local (2 ^ (k - 1)) _ _ q hbox
+    rw [hL, ← evolve_shift, isAlive_shift]
+    have hx' : 0 ≤ q.1 - ((2 ^ k : Int) + (2 ^ (k - 1) : Int)) ∧
+        q.1 - ((2 ^ k : Int) + (2 ^ (k - 1) : Int)) < (2 ^ k : Int) ∧
+        (2 ^ k : Int) ≤ q.2 - (2 ^ (k - 1) : Int) ∧
+        q.2 - (2 ^ (k - 1) : Int) < (2 ^ k : Int) + (2 ^ k : Int) :=
+      ⟨by omega, by omega, by omega, by omega⟩
+    rw [p4_nw_rside_char_ne k hk1 _ _ _ _ R4 R5 R7 R8 hR4 hR5 hR7 hR8 hR4_l
+        hcc4 hcc5 hcc7 hcc8
+        (q.1 - ((2 ^ k : Int) + (2 ^ (k - 1) : Int)), q.2 - (2 ^ (k - 1) : Int)) hx']
+    congr 1
+    ext <;> (try dsimp only) <;> omega
+  · -- Quadrant SO du supercell : `n7` (l'enfant SW du parent), translaté `(2·2^k, 0)`.
+    have hbox : ∀ r, chebDist q r ≤ 2 ^ (k - 1) →
+        isAlive ((node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
+            (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se)).toGrid (0, 0)) r
+          = isAlive (shift ((2 ^ k : Int) + (2 ^ k : Int), (0 : Int))
+              ((node sw_nw sw_ne sw_sw sw_se).toGrid (0, 0))) r := by
+      intro r hr
+      obtain ⟨hr1, hr2⟩ := coord_bound_of_chebDist_le q r _ hr
+      rw [isAlive_shift, ← p4_isAlive_toGrid_shift]
+      exact sw_parent_agree_n7 k nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+        sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se hn1_l hn1_w r
+        ⟨by omega, by omega, by omega, by omega⟩
+    have hL := evolve_box_agree_local (2 ^ (k - 1)) _ _ q hbox
+    rw [hL, ← evolve_shift, isAlive_shift]
+    have hx' : (2 ^ k : Int) ≤ q.1 - ((2 ^ k : Int) + (2 ^ (k - 1) : Int)) ∧
+        q.1 - ((2 ^ k : Int) + (2 ^ (k - 1) : Int)) < (2 ^ k : Int) + (2 ^ k : Int) ∧
+        0 ≤ q.2 - (2 ^ (k - 1) : Int) ∧ q.2 - (2 ^ (k - 1) : Int) < (2 ^ k : Int) :=
+      ⟨by omega, by omega, by omega, by omega⟩
+    rw [p4_nw_rside_char_sw k hk1 _ _ _ _ R4 R5 R7 R8 hR4 hR5 hR7 hR8 hR4_l
+        hcc4 hcc5 hcc7 hcc8
+        (q.1 - ((2 ^ k : Int) + (2 ^ (k - 1) : Int)), q.2 - (2 ^ (k - 1) : Int)) hx']
+    congr 1
+    ext <;> (try dsimp only) <;> omega
+  · -- Quadrant SE du supercell : `n8`, translaté `(2·2^k, 2^k)`.
+    have hbox : ∀ r, chebDist q r ≤ 2 ^ (k - 1) →
+        isAlive ((node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
+            (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se)).toGrid (0, 0)) r
+          = isAlive (shift ((2 ^ k : Int) + (2 ^ k : Int), (2 ^ k : Int))
+              ((node sw_ne se_nw sw_se se_sw).toGrid (0, 0))) r := by
+      intro r hr
+      obtain ⟨hr1, hr2⟩ := coord_bound_of_chebDist_le q r _ hr
+      rw [isAlive_shift, ← p4_isAlive_toGrid_shift]
+      exact p4_sw_parent_agree_n8 k nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+        sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se hn1_l hn1_w hn3_l hn3_w
+        hn7_l hn7_w hn8_l hn8_w r
+        ⟨by omega, by omega, by omega, by omega⟩
+    have hL := evolve_box_agree_local (2 ^ (k - 1)) _ _ q hbox
+    rw [hL, ← evolve_shift, isAlive_shift]
+    have hx' : (2 ^ k : Int) ≤ q.1 - ((2 ^ k : Int) + (2 ^ (k - 1) : Int)) ∧
+        q.1 - ((2 ^ k : Int) + (2 ^ (k - 1) : Int)) < (2 ^ k : Int) + (2 ^ k : Int) ∧
+        (2 ^ k : Int) ≤ q.2 - (2 ^ (k - 1) : Int) ∧
+        q.2 - (2 ^ (k - 1) : Int) < (2 ^ k : Int) + (2 ^ k : Int) :=
+      ⟨by omega, by omega, by omega, by omega⟩
+    rw [p4_nw_rside_char_se k hk1 _ _ _ _ R4 R5 R7 R8 hR4 hR5 hR7 hR8 hR4_l
+        hcc4 hcc5 hcc7 hcc8
+        (q.1 - ((2 ^ k : Int) + (2 ^ (k - 1) : Int)), q.2 - (2 ^ (k - 1) : Int)) hx']
+    congr 1
+    ext <;> (try dsimp only) <;> omega
 
 /-! ## Synthesis — the fragment is non-empty and the framework statement is honest
 

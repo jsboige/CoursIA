@@ -80,7 +80,7 @@ Quatre opérations, chacune avec son ancrage dans le dépôt, ses aboutissants o
 
 **Ancrage dépôt.**
 - [ICT-17b-Grokking-CompressionProgress-Python.ipynb](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb) — la compression progressive lue comme transition de phase, avec bosse Crutchfield-Feldman sur `model_bits + résiduel` (cf. [`dissolution-scalaires.md`](dissolution-scalaires.md) palier 5 : K bipolaire puis tri-polaire, la bosse force deux dimensions).
-- [ICT-15-IntegratedComplexity-Python.ipynb](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity-Python.ipynb) — la convergence Φ/F/K comme *signature* conjointe, dont le resserrement signale une compression effective.
+- [ICT-15/ICT-15-IntegratedComplexity-Python.ipynb](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15/ICT-15-IntegratedComplexity-Python.ipynb) — la convergence Φ/F/K comme *signature* conjointe, dont le resserrement signale une compression effective.
 
 **Aboutissants opérationnels dans la série ICT.**
 - La dissociation est *portée* par un proxy (ICT-17b cell [13] interprétation honnête : `K_compression_progress` positif sur grokking, `K_rang_effectif` négatif, `K_fisher_md` saute — *choisir K = déclarer un proxy*, cf. [`dissolution-scalaires.md`](dissolution-scalaires.md) palier 6).
@@ -270,7 +270,7 @@ Le terme « Conway » recouvre ici **deux** ponts distincts, de natures très di
 **Pourquoi c'est un pont.** Le zoo de proxys de la série ICT (cf. [`dissolution-scalaires.md`](dissolution-scalaires.md) spec-sheet — 13 proxys documentés pour Φ/F/K) est en situation *analogue* à un zoo d'observables : chaque proxy mesure « quelque chose », mais le **désaccord** entre proxys peut-il être *interprété* comme une obstruction de structure (testable en CSP : existe-t-il une assignation non-contextuelle ?) ou bien comme du *bruit* (variabilité stochastique irrelevante) ? Si le **pont** est valide, la contextualité Kochen-Specker devient un **outil de diagnostic** : un désaccord persistant entre proxys *après étalonnage* signale une obstruction de structure, pas un artefact.
 
 **Statut honnête.**
-- Les notebooks afférents existent déjà : [`Lean-13-Kochen-Specker.ipynb`](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13-Kochen-Specker.ipynb) et [`Lean-16f-Conway-Free-Will-Theorem.ipynb`](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16f-Conway-Free-Will-Theorem.ipynb).
+- Les notebooks afférents existent déjà : [`Lean-13-Kochen-Specker.ipynb`](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13-Kochen-Specker.ipynb) et [`Lean-16c-Conway-Free-Will-Theorem.ipynb`](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb).
 - Intégration ICT = **#7290** — **spéculatif**, **basse priorité**. Aucun des deux notebooks n'a, à ce jour, été formellement *raccordé* à la spec-sheet des 13 proxys ICT. Le pont reste **une direction de recherche**, pas un résultat acquis.
 - Le **risque de glissement** est ici important : la proximité lexicale (« Conway ») entre Hashlife (3.1) et Kochen-Specker (3.2) peut inciter à les fusionner — c'est **interdit**. Les deux ponts sont *orthogonaux* : (a) porte sur le **recollement**, (b) porte sur la **contextualité**. Une unification prématurée des deux effacerait la distinction qui les rend utiles.
 

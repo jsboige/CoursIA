@@ -1,10 +1,10 @@
 # `dotnet-build/` — Recette de build des runtimes Tweety C# / IKVM
 
-Ce dossier contient les **recettes de build** (POM shade + csproj) des runtimes .NET de Tweety
-recompilés via **IKVM 8.15.0** — la version déclarée par les 19 `*.csproj` de ce dossier depuis
-l'alignement #19673 (les 4 recettes « famille A » suivaient encore 8.14.0 alors que leurs DLL
-committées référencent `IKVM.Runtime 8.15.0` — les recettes ne reproduisaient pas les binaires
-livrés). La cible de recompilation post-C190 (`JvmDowngrader`, bytecode Java 15→8) est
+Ce dossier contient les **recettes de build** (POM shade + csproj) des runtimes .NET de Tweety.
+Depuis l'alignement #19673, les **5 recettes « famille A »** (`pl`, `aspic`, `beliefdynamics`,
+`dung`, `preferences`) déclarent **IKVM 8.15.0** — elles suivaient encore 8.14.0 alors que leurs
+DLL committées référencent `IKVM.Runtime 8.15.0` (les recettes ne reproduisaient pas les binaires
+livrés) ; les 14 autres recettes du dossier demeurent en 8.14.0. La cible de recompilation post-C190 (`JvmDowngrader`, bytecode Java 15→8) est
 inchangée : la contrainte bytecode Java 8 (section suivante) porte sur le contenu du fat-jar.
 La mesure runtime #19673 établit par ailleurs qu'une DLL bâtie sous 8.14.0 charge intégralement
 sous runtime 8.15.0 (types exposés et instanciables). Toutes les recettes ciblent
@@ -33,28 +33,50 @@ sous runtime 8.15.0 (types exposés et instanciables). Toutes les recettes cible
 
 IKVM 8.15 est un runtime **Java 8** : il **saute silencieusement** toute classe compilée en
 bytecode major > 52 (Java 9+), avec un warning `IKVM0101 class format error "55.0"`. Le pom parent
-de Tweety compile par défaut en `<release>11</release>` (major 55) → **les opérateurs de révision
-seraient absents de la DLL**. La recette rebuild patche le pom parent en `<release>8</release>`
-(+ `source`/`target` 8) avant `mvn install` du module `beliefdynamics`, garantissant du major-52
-IKVM-compilable. Vérification : `od -An -tu1 -j6 -N2 LeviMultipleBaseRevisionOperator.class` doit
+de Tweety v1.30 compile par défaut en `source`/`target` **15** (plugin 2.3.2, bytecode major 59) →
+**les opérateurs de révision seraient absents de la DLL**. La recette rebuild patche le pom parent
+(maven-compiler-plugin 2.3.2 → 3.13.0, `source`/`target` 15 → `<release>8</release>`) avant
+`mvn install` du module `beliefdynamics`, garantissant du major-52 IKVM-compilable. Vérification : `od -An -tu1 -j6 -N2 LeviMultipleBaseRevisionOperator.class` doit
 afficher `52`.
 
 ## Recette de rebuild (si la DLL doit être régénérée)
 
-Prérequis : JDK 17 (`JAVA_HOME`), Maven 3.9+, .NET SDK 8.0+, les 5 modules Tweety recompilés
-en Java 8 installés dans le `~/.m2` local (clone `TweetyProject` tag `v1.30`, patch parent-pom
-`maven-compiler-plugin` 2.3.2 → 3.13.0 + `<release>8</release>`, downgrade source Java 9-11 → 8,
-puis `mvn install -DskipTests -Dgpg.skip=true` sur commons/logics-commons/math/logics-fol/logics-pl).
+Prérequis : JDK 17 (`JAVA_HOME`), Maven 3.9+, .NET SDK 8.0+, git. Tout le reste est automatisé par
+[`rebuild-familyA-maven.sh`](rebuild-familyA-maven.sh), qui rejoue la chaîne complète mesurée sur #19673 :
+
+1. **Clone** `TweetyProjectTeam/TweetyProject` tag `v1.30` (repo renommé — l'ancien nom 404) sous `.familyA-clone/`.
+2. **Patchs idempotents Java 8** : parent pom (compiler 2.3.2 → 3.13.0, `<release>8</release>`) + les fichiers
+   sources touchés (`Files.readString`/`Path.of`/`isBlank`/`strip`, switch-fléchés → if-else, `var` → types explicites)
+   + suppressions ciblées (exemples `logics-pl`/`beliefdynamics`, `CmdLineSatSolver`, reasoners SAT/`SerialisedExtensionReasoner` — miroir de la stratégie `DUNG_130_EXCLUDE` de `rebuild-5shades.sh`).
+3. **`mvn install -DskipTests`** sur les modules tête (`logics-pl`, `arg-dung`, `arg-aspic`, `beliefdynamics`)
+   avec `-am` : **fermeture mesurée de la clôture transitive** (commons, math, logics-commons, plugin, logics-fol, agents,
+   logics-pl, graphs, arg-dung, arg-deductive, comparator, beliefdynamics, arg-aspic), tous vérifiés bytecode major 52.
+4. **Shade** des 4 poms (`mvn -f build-tweety-*-shade.pom.xml clean package`), copie immédiate du fat-jar —
+   les 4 poms partagent `target/`, chaque `clean` efface le précédent.
+5. **`dotnet build`** des 4 csproj (vider `$TMP/ikvm/cache/1/` avant — cache MSBuild keyé sur le hash du jar).
+6. **Audit bytecode** des fat-jars (major ≤ 52 exigé).
 
 ```bash
-# 1. Fat-jar Maven shade (déclare pl comme dep, tire transitivement fol/commons/math/...)
-mvn -f build-tweety-pl-shade.pom.xml clean package -Dgpg.skip=true
-cp target/tweety-pl-full-1.30.jar .
-
-# 2. DLL .NET via <IkvmReference> (TargetFramework = net8.0, PAS net10.0 — runtime kernel LTS)
-dotnet build build-TweetyShade.csproj -c Release
-cp bin/Release/net8.0/org.tweetyproject.tweety-pl.dll .
+bash rebuild-familyA-maven.sh
+# 4 DLLs dans bin/Release/net8.0/, à copier à côté des notebooks
 ```
+
+### Écarts mesurés DLL rebâties vs committées (sonde #19673)
+
+La chaîne Maven **ne reproduit pas byte-identique** les DLL committées (bâties par la chaîne javac
+manuelle `rebuild-5shades.sh`) ; les écarts de types publics `org.tweetyproject.*`, tous identifiés,
+vont dans les deux sens et **aucun type consommé par les carnets n'est touché** (les 40
+`Simple*Reasoner` de `arg.dung.reasoner` sont intacts des deux côtés) :
+
+| DLL | tweety types committée → rebâtie | Retirés (patch Java 8) | Ajoutés (fermeture Maven complète) |
+|-----|-----------------------------------|------------------------|------------------------------------|
+| pl | 437 → 415 | 21 exemples `logics.pl.examples` + `CmdLineSatSolver` | — |
+| aspic | 590 → 593 | idem + 4 reasoners SAT | 11 `dung.util`, 5 `dung.writer`, 4 `reasoner`, `graphs.util`, `dung.independence` |
+| beliefdynamics | 601 → 657 | idem + 2 `beliefdynamics.examples` | idem + 14 `agents`, 11 `dung.analysis`, 8 `deductive.attacks` |
+| dung | 563 → 570 | idem aspic | idem aspic |
+
+Les types retirés étaient du code mort Java 9+ que l'ancienne chaîne laissait fuir ; les types
+ajoutés sont des paquets que l'ancienne chaîne sous-compilait et que la fermeture Maven inclut.
 
 ## Pourquoi cette approche
 
@@ -67,7 +89,7 @@ cp bin/Release/net8.0/org.tweetyproject.tweety-pl.dll .
 
 Voir `Tweety-02-Basic-Logics-CSharp.ipynb` pour l'utilisation. Epic #4667.
 
-## Fichiers — IKVM shade 5 modules (notebooks Tweety-5/7a/7b)
+## Fichiers — IKVM shade (notebooks Tweety-5/7a/7b)
 
 Issue **#10411** : cinq shades `build-Tweety<Module>Shade.csproj` sur le modèle
 des onze existantes, chacune produisant `org.tweetyproject.tweety-<module>.dll`
@@ -101,7 +123,7 @@ bash dotnet-build/rebuild-5shades.sh
 # 5 jars dans libs/, prêts pour IKVM
 ```
 
-### Pipeline DLL — 5 modules
+### Pipeline DLL
 
 ```bash
 cd MyIA.AI.Notebooks/SymbolicAI/Tweety/dotnet-build

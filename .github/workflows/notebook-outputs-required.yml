@@ -6,7 +6,7 @@ name: Notebook outputs required (H.4 schema)
 #   'Invalid Notebook / outputs is a required property /
 #    Using nbformat v5.10.4 and nbconvert v7.17.1'
 #
-# Le notebook livre (GameTheory-06f-Bounded-Agents-Lean.ipynb) avait 9/9
+# Le notebook livre (Dynamics-05-Agents-Bornes-Lean.ipynb) avait 9/9
 # cellules code SANS la cle `outputs` (pas `outputs: []` vide -- la cle etait
 # absente du dict). Papermill a accepte (validator permissif), n'a rien
 # produit en sortie (kernel `lean4-wsl` hang faute de `.lake/`), et la cle
@@ -55,7 +55,7 @@ concurrency:
 jobs:
   detect-changes:
     name: Detect notebook changes (outputs-required)
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     # Garde anti-fork : un PR depuis un fork externe ne doit pas declencher
     # ce job. Pattern repris de `notebook-execution-required.yml` pour
     # coherence. Le job est GitHub-hosted (ubuntu-latest) -- le detecteur
@@ -103,7 +103,7 @@ jobs:
 
   validate:
     name: Validate 'outputs' key on every code cell
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     needs: detect-changes
     if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && needs.detect-changes.outputs.has_notebooks > 0
 
@@ -128,7 +128,7 @@ jobs:
         # le rc reel).
         run: |
           set +e
-          python scripts/notebook_tools/check_notebook_outputs_required.py \
+          python3 scripts/notebook_tools/check_notebook_outputs_required.py \
             --pr-diff origin/${{ github.base_ref }} HEAD \
             --json 2>&1 | tee /tmp/outputs_required.json
           VALIDATOR_EXIT=${PIPESTATUS[0]}
@@ -146,7 +146,7 @@ jobs:
             exit 1
           fi
 
-          OCCURRENCES=$(python -c "import json; print(json.load(open('/tmp/outputs_required.json'))['occurrences'])")
+          OCCURRENCES=$(python3 -c "import json; print(json.load(open('/tmp/outputs_required.json'))['occurrences'])")
           echo "All notebooks pass: $OCCURRENCES defective code-cell(s) found."
 
       - name: Post validation summary

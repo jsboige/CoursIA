@@ -20,10 +20,15 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 
-def _stub_llm_stack_if_absent() -> None:
+_STUB_KEYS = ("agent_framework", "agent_framework_openai")
+
+
+def _stub_llm_stack_if_absent() -> tuple:
     """Stub la stack LLM absente des runners CI nus (finding Hermes PR #18722).
 
     ``prover/__init__`` tire ``provers``/``workflow``/``config`` qui importent
@@ -33,10 +38,33 @@ def _stub_llm_stack_if_absent() -> None:
     LLM (constructeur mocke via mock.patch.object), des placeholders
     suffisent. Si la vraie stack est presente (machine de dev), elle est
     utilisee telle quelle -- le stub ne s'active que sur ImportError.
+
+    Retourne ``(saved, pre_existing)``. ``saved`` porte les entrees
+    ``sys.modules`` precedentes des deux paquets stubbe. ``pre_existing``
+    porte l'ensemble des modules ``prover*`` deja charges AVANT le stub, ou
+    ``None`` quand rien n'a ete stubbe -- et ce ``None`` n'est pas
+    cosmetique : avec ``set()`` la purge prendrait *tous* les ``prover.*``
+    de la session pour des modules neufs et les retirerait sur une machine
+    de dev ou la vraie stack est presente.
+
+    Les deux sont necessaires parce que deux fuites distinctes se
+    succedent (#21331, mesurees sur ``python:3.11-slim``) :
+
+    1. les placeholders eux-memes. Laisses en place, ils font echouer les
+       autres suites du dossier en ``RuntimeError`` la ou le conftest les
+       skipperait proprement ;
+    2. les sous-modules ``prover.*`` **importes pendant la fenetre de stub**.
+       Les retirer de ``sys.modules`` ne suffit pas : ``prover.provers``
+       reste en cache, et les classes qu'il porte ont ete *definies* sur les
+       bases ``_Placeholder`` (MRO mesure : ``[MultiAgentSorryProver,
+       object]``). La resolution paresseuse de ``prover.__getattr__`` rend
+       donc ensuite ces classes de stub, que l'appelant instancie en
+       ``RuntimeError``. Les purger rend l'import suivant honnete : sans la
+       stack, il leve ``ModuleNotFoundError`` et le conftest le skipper.
     """
     try:
         import agent_framework  # noqa: F401
-        return  # vraie stack disponible : rien a stubber
+        return {}, None  # vraie stack disponible : rien a stubber
     except ImportError:
         pass
 
@@ -69,19 +97,61 @@ def _stub_llm_stack_if_absent() -> None:
     ):
         setattr(af, name, _Placeholder)
     af.handler = _handler
-    sys.modules["agent_framework"] = af
     afo = types.ModuleType("agent_framework_openai")
     afo.OpenAIChatCompletionClient = _Placeholder
+    saved = {key: sys.modules.get(key) for key in _STUB_KEYS}
+    pre_existing = {name for name in sys.modules
+                    if name == "prover" or name.startswith("prover.")}
+    sys.modules["agent_framework"] = af
     sys.modules["agent_framework_openai"] = afo
+    return saved, pre_existing
 
 
-_stub_llm_stack_if_absent()
+def _restore_stack_modules(saved: dict, pre_existing: set) -> None:
+    """Retire les placeholders installes par ``_stub_llm_stack_if_absent``.
+
+    Purge aussi les sous-modules ``prover.*`` apparus depuis ``pre_existing``
+    : ce sont eux qui gardent les classes definies sur les bases de stub
+    (cf. point 2 de la docstring du helper).
+    """
+    for key, previous in saved.items():
+        if previous is None:
+            sys.modules.pop(key, None)
+        else:
+            sys.modules[key] = previous
+    if pre_existing is None:  # rien n'a ete stubbe : aucune purge a faire
+        return
+    for name in [n for n in sys.modules
+                 if (n == "prover" or n.startswith("prover."))
+                 and n not in pre_existing]:
+        del sys.modules[name]
+
+
+_SAVED_STACK, _PRE_EXISTING_PROVER = _stub_llm_stack_if_absent()
 
 from prover import run_prover_bg as inner  # noqa: E402
 from prover.provider_gate import (  # noqa: E402
     effective_agent_providers,
     validate_provider_credentials,
 )
+
+_restore_stack_modules(_SAVED_STACK, _PRE_EXISTING_PROVER)
+
+
+@pytest.fixture(autouse=True, scope="module")
+def _llm_stack_stub_scope():
+    """Stub pour les tests de CE module, puis retrait (#21331).
+
+    Les placeholders ne doivent exister que pendant la collecte de ce fichier
+    et pendant ses propres tests : laisses en place, ils font echouer les
+    autres suites du dossier (``test_prover_guards.py``) en ``RuntimeError``
+    la ou le conftest les skipperait proprement. Le retrait purge aussi les
+    ``prover.*`` charges pendant la fenetre, sinon les classes de stub y
+    restent en cache pour toute la suite de la session pytest.
+    """
+    saved, pre_existing = _stub_llm_stack_if_absent()
+    yield
+    _restore_stack_modules(saved, pre_existing)
 
 # Fixture providers : zai distant sans cle (le cas fondateur), local
 # keyless-by-design sur localhost, openrouter distant avec cle.

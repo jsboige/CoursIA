@@ -1124,9 +1124,9 @@ de résoudre de nouveaux problèmes, mais il faut le **prouver**, pas seulement 
 programmes. L'approfondissement 03b conserve le théorème de Hartmanis et Stearns (1965).
 
 **Suite** : [Complexity-03 — Plus de temps, plus de problèmes >>](Complexity-03-TimeHierarchy.ipynb)",,,,,,,,0bf93941cb956f66,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb,intro-hierarchy,markdown,fr,eac0279e9c048b04,"# Complexity-03 — Plus de temps, plus de problèmes
+MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb,intro-hierarchy,markdown,fr,bfd2d7bfa2d356cc,"# Complexity-03 — Plus de temps, plus de problèmes
 
-**Navigation** : [Index](README.md) | [02 — Vérifier ou trouver](Complexity-02-P-NP-Reduction.ipynb) | [03b — Hartmanis–Stearns](Complexity-03b-HartmanisStearns-TimeHierarchy.ipynb) | [03c — Zoo navigable](Complexity-03c-ComplexityZoo-Navigation-Python.ipynb)
+**Navigation** : [Index](README.md) | [02 — Vérifier ou trouver](Complexity-02-P-NP-Reduction.ipynb) | [03b — Hartmanis–Stearns](Complexity-03b-HartmanisStearns-TimeHierarchy.ipynb) | [03c — Zoo navigable](Complexity-03c-ComplexityZoo-Navigation-Python.ipynb) | [English →](Complexity-03-TimeHierarchy_en.ipynb)
 
 > **Public : Licence.** La démonstration historique et sa simulation multitête sont conservées dans l'approfondissement 03b.
 
@@ -1135,21 +1135,50 @@ MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb,intro-hierarchy,m
 - [01 — Compter des pas](Complexity-01-StepCounting.ipynb) : taille et budget de pas ;
 - [02 — Vérifier ou trouver](Complexity-02-P-NP-Reduction.ipynb) : problème de décision et algorithme.
 
-**Objectifs** : distinguer inclusion et séparation stricte de classes, comprendre une diagonale finie et expliquer pourquoi une table n'est pas une preuve de hiérarchie. **Durée estimée** : 35 minutes.",,,,,,,,eac0279e9c048b04,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb,budgets-intro,markdown,fr,f45d42651b9dbe73,"## 1. Des budgets imbriqués
+**Objectifs** : distinguer inclusion et séparation stricte de classes, comprendre une diagonale finie et expliquer pourquoi une table n'est pas une preuve de hiérarchie. **Durée estimée** : 35 minutes.
 
-Si un programme répond en n pas, il répond aussi dans un budget de n² pas. Cela montre une **inclusion** des budgets, pas une séparation des classes de problèmes : deux programmes différents sur un même problème ne prouvent pas qu'aucun programme rapide ne peut le résoudre. Comparons les budgets sur cinq tailles.",,,,,,,,f45d42651b9dbe73,,,,,,,,
+**Le théorème en une phrase.** Le théorème de hiérarchie temporelle (Hartmanis–Stearns, 1965) affirme que, pour des budgets raisonnables, disposer de strictement plus de temps permet de décider strictement plus de problèmes : certaines tâches exigent réellement plus de pas, et aucun algorithme rapide ne peut les simuler. Ce carnet illustre les **mécanismes** de cette preuve — budgets imbriqués, diagonalisation, simulation bornée — sur des tables finies ; il ne prétend pas la démontrer, ce que rappelle chaque lecture.","# Complexity-03 — More time, more problems
+
+**Navigation**: [Index](README.md) | [02 — Verify or find](Complexity-02-P-NP-Reduction.ipynb) | [03b — Hartmanis–Stearns](Complexity-03b-HartmanisStearns-TimeHierarchy.ipynb) | [03c — Navigable zoo](Complexity-03c-ComplexityZoo-Navigation-Python.ipynb) | [Français →](Complexity-03-TimeHierarchy.ipynb)
+
+> **Audience: Licence.** The historical demonstration and its multi-tape simulation are kept in the 03b deep dive.
+
+## What this notebook assumes
+
+- [01 — Counting steps](Complexity-01-StepCounting.ipynb): step size and budget;
+- [02 — Verify or find](Complexity-02-P-NP-Reduction.ipynb): decision problem and algorithm.
+
+**Objectives**: distinguish inclusion from strict separation of classes, understand a finite diagonal and explain why a table is not a proof of hierarchy. **Estimated duration**: 35 minutes.
+
+**The theorem in one sentence.** The time hierarchy theorem (Hartmanis–Stearns, 1965) states that, for reasonable budgets, having strictly more time allows one to decide strictly more problems: some tasks genuinely require more steps, and no fast algorithm can simulate them. This notebook illustrates the **mechanisms** of that proof — nested budgets, diagonalization, bounded simulation — on finite tables; it does not claim to prove it, as every reading reminds.",,,,,,,bfd2d7bfa2d356cc,3b2c4fdba7245b59,,,,,,,
+MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb,budgets-intro,markdown,fr,1fc2c979f10b72fe,"## 1. Des budgets imbriqués
+
+Si un programme répond en n pas, il répond aussi dans un budget de n² pas. Cela montre une **inclusion** des budgets, pas une séparation des classes de problèmes : deux programmes différents sur un même problème ne prouvent pas qu'aucun programme rapide ne peut le résoudre. Comparons les budgets sur cinq tailles.
+
+L'inclusion est triviale : un programme qui s'arrête en n pas s'arrête aussi avant n² pas. La difficulté est ailleurs — montrer qu'un problème exige *plus* que n² pas demande d'écarter **tous** les programmes rapides, pas seulement celui qu'on a sous la main. C'est ce fossé entre « j'ai un exemple » et « j'ai épuisé les possibilités » que ce carnet creuse.","## 1. Nested budgets
+
+If a program answers in n steps, it also answers within a budget of n² steps. This shows an **inclusion** of budgets, not a separation of problem classes: two different programs on the same problem do not prove that no fast program can solve it. Let us compare the budgets over five sizes.
+
+The inclusion is trivial: a program that halts within n steps also halts within n² steps. The difficulty lies elsewhere — showing that a problem requires *more* than n² steps means ruling out **all** fast programs, not just the one at hand. That gap between ""I have an example"" and ""I have exhausted the possibilities"" is precisely what this notebook digs into.",,,,,,,1fc2c979f10b72fe,8705b8e22560e6e8,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb,budgets-code,code,fr,527c8f18e333496a,"tailles = (2, 4, 8, 16, 32)
 print(f""{'n':>3} | {'n²':>5} | {'2ⁿ':>12}"")
 for n in tailles:
     print(f""{n:>3} | {n * n:>5} | {2 ** n:>12}"")
 assert all(n * n <= 2 ** n for n in tailles)
 ",,,,,,,,527c8f18e333496a,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb,budgets-reading,markdown,fr,9625cb3b5d27f820,"**Lecture du résultat.** Les coûts s'ordonnent pour les tailles affichées. Pour conclure qu'une classe possède un problème absent de l'autre, il faudrait écarter **tous** les algorithmes au petit budget. La table numérique ne le fait pas.
+MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb,budgets-reading,markdown,fr,a54ed3fb85809528,"**Lecture du résultat.** Les coûts s'ordonnent pour les tailles affichées : à n = 32, le budget n² vaut 1 024 pas contre 4 294 967 296 pour 2ⁿ — l'écart se creuse à chaque taille. Pour conclure qu'une classe possède un problème absent de l'autre, il faudrait écarter **tous** les algorithmes au petit budget. La table numérique ne le fait pas.
 
 ## 2. L'idée de diagonalisation
 
-Énumérons quelques machines candidates. À la ligne i, la construction D choisit l'opposé de la réponse de la machine numéro i sur l'entrée i. D diffère donc de chaque machine listée sur au moins une entrée. La liste ci-dessous n'est qu'une expérience **finie** : elle ne représente pas toutes les machines possibles.",,,,,,,,9625cb3b5d27f820,,,,,,,,
+Énumérons quelques machines candidates. À la ligne i, la construction D choisit l'opposé de la réponse de la machine numéro i sur l'entrée i. D diffère donc de chaque machine listée sur au moins une entrée. La liste ci-dessous n'est qu'une expérience **finie** : elle ne représente pas toutes les machines possibles.
+
+La diagonalisation inverse le sens de la question : au lieu de chercher un algorithme rapide, on construit un problème D qui contredit chaque machine candidate sur son propre terrain — l'entrée i. Contre une liste finie, cela marche ; contre l'infinité des machines, il faudrait une construction et une borne universelles, ce que la section 4 discute.","**Reading the result.** The costs are ordered for the sizes shown: at n = 32, the n² budget is worth 1,024 steps against 4,294,967,296 for 2ⁿ — the gap widens at every size. To conclude that one class has a problem absent from the other, one would have to rule out **all** algorithms within the smaller budget. The numerical table does not do that.
+
+## 2. The diagonalization idea
+
+Let us enumerate a few candidate machines. At row i, construction D chooses the opposite of machine number i's answer on input i. D therefore differs from every listed machine on at least one input. The list below is only a **finite** experiment: it does not represent all possible machines.
+
+Diagonalization reverses the direction of the question: instead of looking for a fast algorithm, one builds a problem D that contradicts each candidate machine on its own ground — input i. Against a finite list, this works; against the infinity of machines, one would need a universal construction and bound, which section 4 discusses.",,,,,,,a54ed3fb85809528,0eadf9a219a091ae,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb,diagonal-code,code,fr,0ce92530bf6bc66d,"machines = (
     lambda i: i % 2 == 0,
     lambda i: i < 2,
@@ -1162,11 +1191,19 @@ for i, machine in enumerate(machines):
     print(f""{i:>2} | {str(machine(i)):>6} | {str(diagonale[i]):>5} | {diagonale[i] != machine(i)}"")
 assert all(diagonale[i] != machine(i) for i, machine in enumerate(machines))
 ",,,,,,,,0ce92530bf6bc66d,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb,diagonal-reading,markdown,fr,8768b5cf623b9d7a,"**Lecture du résultat.** Chaque ligne porte une opposition vérifiée. Il reste une infinité de machines non listées ; ce tableau ne prouve donc aucune séparation de classes.
+MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb,diagonal-reading,markdown,fr,c66f72fe34fea1f8,"**Lecture du résultat.** Les quatre lignes affichent `True` dans la colonne « différents » : D(i) vaut l'opposé de M_i(i) sur chacune des entrées listées (0, 1, 2 et 3). Il reste une infinité de machines non listées ; ce tableau ne prouve donc aucune séparation de classes.
 
 ## 3. Le budget de simulation
 
-Une machine qui ne répond pas avant la limite ne peut pas bloquer indéfiniment le constructeur diagonal. Ici les coûts sont **déclarés** par un modèle fini : ce ne sont pas des pas mesurés par un simulateur universel. Une réponse non observée n'est pas un verdict faux.",,,,,,,,8768b5cf623b9d7a,,,,,,,,
+Une machine qui ne répond pas avant la limite ne peut pas bloquer indéfiniment le constructeur diagonal. Ici les coûts sont **déclarés** par un modèle fini : ce ne sont pas des pas mesurés par un simulateur universel. Une réponse non observée n'est pas un verdict faux.
+
+Dans la preuve réelle, cette limite est gérée par une **horloge universelle** : on simule chaque machine candidate pas à pas et on la stoppe au-delà du budget. Payer à la fois la machine et son simulateur est précisément le surcoût qui fait tenir la hiérarchie — et que le modèle fini ici ne rend pas.","**Reading the result.** The four rows display `True` in the ""different"" column: D(i) is the opposite of M_i(i) on each of the listed inputs (0, 1, 2 and 3). Infinitely many machines remain unlisted; this table therefore proves no separation of classes.
+
+## 3. The simulation budget
+
+A machine that does not answer before the limit cannot block the diagonal constructor indefinitely. Here the costs are **declared** by a finite model: they are not steps measured by a universal simulator. An unobserved answer is not a false verdict.
+
+In the real proof, this limit is handled by a **universal clock**: each candidate machine is simulated step by step and stopped beyond the budget. Paying for both the machine and its simulator is precisely the overhead that makes the hierarchy hold — and which the finite model here does not capture.",,,,,,,c66f72fe34fea1f8,10393236d21308a9,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb,bounded-code,code,fr,415999deaee15d43,"candidates = ((True, 1), (False, 3), (True, 12), (False, 40))
 def budget(i):
     return 2 * i + 4
@@ -1177,12 +1214,22 @@ for i, (verdict, pas) in enumerate(candidates):
     diagonal = not observe if observe is not None else True
     print(f""{i:>2} | {pas:>3} | {budget(i):>6} | {str(observe):>7} | {str(diagonal):>5}"")
 ",,,,,,,,415999deaee15d43,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb,bounded-reading,markdown,fr,9483330aca0a6dd2,"**Lecture du résultat.** `None` signifie « non observé dans le budget », jamais « faux ». Une machine dépassant ce budget sur une entrée ne satisfait pas la borne uniforme sur **toutes** les entrées, mais le tableau ne caractérise aucune classe entière.
+MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb,bounded-reading,markdown,fr,48761f8f9eb13f84,"**Lecture du résultat.** `None` signifie « non observé dans le budget », jamais « faux » : aux lignes 2 et 3, les coûts déclarés (12 et 40) dépassent le budget (8 et 10), la simulation s'interrompt et la réponse n'est pas observée. Une machine dépassant ce budget sur une entrée ne satisfait pas la borne uniforme sur **toutes** les entrées, mais le tableau ne caractérise aucune classe entière.
 
 ## 4. Le théorème, sans raccourci expérimental
 
-Le théorème de hiérarchie temporelle établit, sous des hypothèses techniques, qu'il existe des problèmes décidables avec un budget suffisamment plus grand mais impossibles avec le plus petit. Il faut énumérer toutes les machines admissibles, construire une horloge et payer le coût de simulation universelle. Les tables finies n'accomplissent aucune de ces preuves. [03b — Hartmanis–Stearns](Complexity-03b-HartmanisStearns-TimeHierarchy.ipynb) détaille le modèle historique. Ce résultat ne résout pas P contre NP.",,,,,,,,9483330aca0a6dd2,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb,exercise-one,markdown,fr,6c224d584a6a5329,"## Exercices
+Le théorème de hiérarchie temporelle établit, sous des hypothèses techniques, qu'il existe des problèmes décidables avec un budget suffisamment plus grand mais impossibles avec le plus petit. Il faut énumérer toutes les machines admissibles, construire une horloge et payer le coût de simulation universelle. Les tables finies n'accomplissent aucune de ces preuves. [03b — Hartmanis–Stearns](Complexity-03b-HartmanisStearns-TimeHierarchy.ipynb) détaille le modèle historique. Ce résultat ne résout pas P contre NP.
+
+Concrètement, la séparation s'obtient en construisant un problème D qui simule chaque machine candidate M_i sur son entrée i, répond l'opposé, et le fait dans un budget à peine supérieur à celui de M_i — d'où une classe strictement plus grande quand le budget croît. Le prix est connu : énumérer toutes les machines, les doter d'une horloge universelle, et simuler chacune en payant la machine et son simulateur.","**Reading the result.** `None` means ""not observed within the budget"", never ""false"": on rows 2 and 3, the declared costs (12 and 40) exceed the budget (8 and 10), the simulation stops and the answer is not observed. A machine exceeding this budget on one input does not satisfy the uniform bound on **all** inputs, but the table does not characterize any entire class.
+
+## 4. The theorem, without an experimental shortcut
+
+The time hierarchy theorem establishes, under technical assumptions, that there exist decidable problems solvable with a sufficiently larger budget but impossible with the smaller one. One must enumerate all admissible machines, build a clock and pay the cost of universal simulation. Finite tables accomplish none of these proofs. [03b — Hartmanis–Stearns](Complexity-03b-HartmanisStearns-TimeHierarchy.ipynb) details the historical model. This result does not settle P versus NP.
+
+Concretely, the separation is obtained by building a problem D that simulates each candidate machine M_i on its input i, answers the opposite, and does so within a budget only slightly larger than M_i's — hence a strictly larger class as the budget grows. The price is known: enumerate all machines, equip them with a universal clock, and simulate each one while paying for both the machine and its simulator.",,,,,,,48761f8f9eb13f84,4b41195934995020,,,,,,,
+MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb,exercise-one,markdown,fr,4b87cb2d8fd2251a,"## Exercices
+
+Les trois exercices prolongent les démonstrations sur les mêmes objets finis. Ils ne demandent pas de prouver la hiérarchie — hors de portée d'une table — mais de **sentir** ce que chaque table montre et ce qu'elle laisse ouvert, en manipulant budgets, diagonale et borne de simulation.
 
 ### Exercice 1 — Inclusion ou séparation ?
 
@@ -1190,7 +1237,17 @@ Comparez n² et n³ pour n = 2, 4, 8, 16. Expliquez pourquoi ces nombres ne prou
 
 - **Indice :** une table de nombres n'écarte aucun autre algorithme.
 - **Etape 1 :** produire les quatre couples.
-- **Etape 2 :** distinguer inclusion et séparation.",,,,,,,,6c224d584a6a5329,,,,,,,,
+- **Etape 2 :** distinguer inclusion et séparation.","## Exercises
+
+The three exercises extend the demonstrations on the same finite objects. They do not ask you to prove the hierarchy — beyond the reach of a table — but to **feel** what each table shows and what it leaves open, by manipulating budgets, the diagonal and the simulation bound.
+
+### Exercise 1 — Inclusion or separation?
+
+Compare n² and n³ for n = 2, 4, 8, 16. Explain why these numbers do not prove that a problem becomes solvable only with the second budget.
+
+- **Hint:** a table of numbers rules out no other algorithm.
+- **Step 1:** produce the four pairs.
+- **Step 2:** distinguish inclusion from separation.",,,,,,,4b87cb2d8fd2251a,460e5103bf097563,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb,exercise-one-code,code,fr,26f12f6120714580,"comparaison_budgets = None  # TODO etudiant : couples (n², n³)
 print('Exercice a completer : inclusion et separation')
 ",,,,,,,,26f12f6120714580,,,,,,,,
@@ -1200,7 +1257,13 @@ Ajoutez une cinquième fonction à `machines`, puis reconstruisez D et expliquez
 
 - **Indice :** évaluer la nouvelle fonction sur son propre indice.
 - **Etape 1 :** ajouter une machine.
-- **Etape 2 :** recalculer les cinq oppositions.",,,,,,,,27c1416e06194bac,,,,,,,,
+- **Etape 2 :** recalculer les cinq oppositions.","### Exercise 2 — Another diagonal
+
+Add a fifth function to `machines`, then rebuild D and explain why this finite table is still not a general proof.
+
+- **Hint:** evaluate the new function on its own index.
+- **Step 1:** add a machine.
+- **Step 2:** recompute the five oppositions.",,,,,,,27c1416e06194bac,78c6e253150c3340,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb,exercise-two-code,code,fr,3f4e4bd00d81af3d,"nouvelle_diagonale = None  # TODO etudiant : cinquieme machine et nouvelle diagonale
 print('Exercice a completer : nouvelle diagonale')
 ",,,,,,,,3f4e4bd00d81af3d,,,,,,,,
@@ -1210,7 +1273,13 @@ Repérez les lignes dont le coût déclaré dépasse `budget(i)`. Proposez un bu
 
 - **Indice :** comparer les deux colonnes numériques.
 - **Etape 1 :** produire un nouveau budget.
-- **Etape 2 :** énoncer la limite de ce modèle fini.",,,,,,,,23711b33a07b0521,,,,,,,,
+- **Etape 2 :** énoncer la limite de ce modèle fini.","### Exercise 3 — Overrunning the budget
+
+Find the rows whose declared cost exceeds `budget(i)`. Propose a budget that covers all four costs and explain why this does not build a bound for all machines.
+
+- **Hint:** compare the two numerical columns.
+- **Step 1:** produce a new budget.
+- **Step 2:** state the limit of this finite model.",,,,,,,23711b33a07b0521,7f7b53469a920431,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb,exercise-three-code,code,fr,fd91552f13ecaf89,"budget_etendu = None  # TODO etudiant : couvrir les quatre couts
 print('Exercice a completer : budget etendu')
 ",,,,,,,,fd91552f13ecaf89,,,,,,,,
@@ -1224,7 +1293,17 @@ MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb,conclusion,markdo
 
 Le théorème affirme l'existence de problèmes demandant réellement plus de temps, et non seulement de programmes lents. L'approfondissement [03b](Complexity-03b-HartmanisStearns-TimeHierarchy.ipynb) travaille le résultat historique.
 
-**Référence** : Hartmanis, J. et Stearns, R. E. (1965), *On the computational complexity of algorithms*, Transactions of the American Mathematical Society 117, 285–306.",,,,,,,,201caaa8dc42f33e,,,,,,,,
+**Référence** : Hartmanis, J. et Stearns, R. E. (1965), *On the computational complexity of algorithms*, Transactions of the American Mathematical Society 117, 285–306.","## Conclusion
+
+| Move | Verified here | Not demonstrated here |
+|---|---|---|
+| Budgets | Numerical inclusion | Strict separation of classes |
+| Diagonal | Four finite contradictions | All admissible machines |
+| Simulation | Halt on overrun | Bounded universal clock and cost |
+
+The theorem asserts the existence of problems genuinely requiring more time, not merely of slow programs. The deep dive [03b](Complexity-03b-HartmanisStearns-TimeHierarchy.ipynb) works through the historical result.
+
+**Reference**: Hartmanis, J. and Stearns, R. E. (1965), *On the computational complexity of algorithms*, Transactions of the American Mathematical Society 117, 285–306.",,,,,,,201caaa8dc42f33e,5dd8142b8f5174f8,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-TimeHierarchy.ipynb,c00,markdown,fr,b0866c3fe3da3966,"# Complexity-03b — Le théorème de hiérarchie temporelle de Hartmanis et Stearns (1965)
 
 **Approfondissement de [03 — Plus de temps, plus de problèmes](Complexity-03-TimeHierarchy.ipynb)** | [Index de la série](README.md)
@@ -4089,16 +4168,16 @@ Groups ». *Notices of the AMS* 54(5), 592–604.
 — Aaronson, S. (2013). « Why Philosophers Should Care About Computational Complexity ».
 Dans *Computability: Turing, Gödel, Church, and Beyond*, MIT Press (preprint 2011).
 ",,,,,,,,e49c904d183e594c,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-06-Aaronson-Dequantification-Stabilizer.ipynb,9cce5037,code,fr,d8cfd07b7b0f3965,"# Parameters
+MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb,9cce5037,code,fr,d8cfd07b7b0f3965,"# Parameters
 BATCH_MODE = ""true""
 ",,,,,,,,d8cfd07b7b0f3965,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-06-Aaronson-Dequantification-Stabilizer.ipynb,85910518,markdown,fr,82820ed0593f1b18,"# Complexity-06 — Déquantifier les suprématies
+MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb,85910518,markdown,fr,82820ed0593f1b18,"# Complexity-06 — Déquantifier les suprématies
 
 **Navigation** : [Index](README.md) | [05b — La permanente, frontière quantique](Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling.ipynb)
 
 Gottesman–Knill comme arbitre exécutable (Aaronson–Gottesman, 2004)
 ",,,,,,,,82820ed0593f1b18,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-06-Aaronson-Dequantification-Stabilizer.ipynb,feacb926,markdown,fr,f57e2770de96124e,"## 0. Pourquoi ce notebook
+MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb,feacb926,markdown,fr,f57e2770de96124e,"## 0. Pourquoi ce notebook
 
 Ce notebook est le sixième de la série
 ([01 — Compter des pas](Complexity-01-StepCounting.ipynb),
@@ -4135,7 +4214,7 @@ de suprématie (RCS, GBS) relèvent ici exactement de la **leçon de méthode** 
 réfute proprement, en exhibant le régime où la claim casse. Ce notebook ne prend parti
 pour aucun verdict : il mesure deux régimes sur des instances bornées, et chacun peut
 réexécuter le banc.",,,,,,,,f57e2770de96124e,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-06-Aaronson-Dequantification-Stabilizer.ipynb,6354b963,code,fr,579bedd291e35177,"import math
+MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb,6354b963,code,fr,579bedd291e35177,"import math
 import time
 
 import numpy as np
@@ -4146,7 +4225,7 @@ np.set_printoptions(precision=4, suppress=True)
 # Les chronometres sont des medianes sur 3 seeds (machine partagee, cf. §4).
 GLOBAL_SEEDS = (0, 1, 7)
 ",,,,,,,,579bedd291e35177,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-06-Aaronson-Dequantification-Stabilizer.ipynb,4de4a992,markdown,fr,8b477e619d4d4f28,"## 1. Le formalisme stabilisateur, définition exécutée
+MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb,4de4a992,markdown,fr,8b477e619d4d4f28,"## 1. Le formalisme stabilisateur, définition exécutée
 
 Un état stabilisateur est l'unique vecteur propre $+1$ commun de $n$ chaînes de Pauli
 indépendantes qui commutent — ses **stabilisateurs**. Aaronson–Gottesman stockent le
@@ -4158,7 +4237,7 @@ $Y = iXZ$ — plus un bit de signe $r$ par ligne et une ligne de travail.
 Tout ce qui suit manipule des **lignes de bits** : aucune amplitude, aucun nombre
 complexe hors les matrices $2\times2$ qui servent à *prouver* les tables. C'est la
 promesse polynomialiste de Gottesman–Knill, rendue littérale.",,,,,,,,8b477e619d4d4f28,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-06-Aaronson-Dequantification-Stabilizer.ipynb,ad6351f9,code,fr,d79d58221770ae61,"MATRICES = {
+MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb,ad6351f9,code,fr,d79d58221770ae61,"MATRICES = {
     ""I"": np.eye(2, dtype=complex),
     ""X"": np.array([[0, 1], [1, 0]], dtype=complex),
     ""Z"": np.array([[1, 0], [0, -1]], dtype=complex),
@@ -4217,12 +4296,12 @@ def _row_string(xs, zs, r):
         _pauli_letter(x, z) for x, z in zip(xs, zs)
     )
 ",,,,,,,,d79d58221770ae61,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-06-Aaronson-Dequantification-Stabilizer.ipynb,c9b991f5,markdown,fr,d3ea3dd1f42154ec,"**Lecture.** La table n'est pas symétrique : $X \cdot Y = iZ$ mais $Y \cdot X = -iZ$.
+MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb,c9b991f5,markdown,fr,d3ea3dd1f42154ec,"**Lecture.** La table n'est pas symétrique : $X \cdot Y = iZ$ mais $Y \cdot X = -iZ$.
 Suivre le cycle $X \to Y \to Z \to X$ coûte un facteur $i$ ($e = 1$) ; le remonter en
 rend un ($e = 3$). Cette asymétrie est tout ce que la mécanique quantique ajoute au
 calcul sur bits : le simulateur Clifford la trackera en **un seul bit par ligne**
 ($\sum_j e_j / 2 \bmod 2$), pas en amplitudes complexes.",,,,,,,,d3ea3dd1f42154ec,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-06-Aaronson-Dequantification-Stabilizer.ipynb,5fd5078f,markdown,fr,3f77c988f997c64b,"## 2. Les règles de conjugaison, dérivées elles aussi
+MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb,5fd5078f,markdown,fr,3f77c988f997c64b,"## 2. Les règles de conjugaison, dérivées elles aussi
 
 La second endroit où se tromper en silence : l'action des portes sur les lignes du
 tableau. $H$ conjugue $X \leftrightarrow Z$ (et change le signe d'un $Y$), $S$
@@ -4230,7 +4309,7 @@ conjugue $X \to Y$ (et change le signe d'un $Y$), et le $\mathsf{CNOT}$ suit deu
 xors — plus **un piège de phase** que l'on dérive au lieu de le croire : la table
 complète des 16 conjugués $\mathsf{CNOT}\,P\,\mathsf{CNOT}^\dagger$ sur la paire
 (contrôle, cible), calculée matriciellement.",,,,,,,,3f77c988f997c64b,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-06-Aaronson-Dequantification-Stabilizer.ipynb,a40c64b5,code,fr,73fbb03e50fbcc07,"CNOT_MAT = np.array(
+MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb,a40c64b5,code,fr,73fbb03e50fbcc07,"CNOT_MAT = np.array(
     [[1, 0, 0, 0],
      [0, 1, 0, 0],
      [0, 0, 0, 1],
@@ -4265,13 +4344,13 @@ for (p1, p2), (signe, q1, q2) in CNOT_RULES.items():
         negatifs.append((p1, p2))
 print(""Seuls cas a signe - :"", negatifs)
 ",,,,,,,,73fbb03e50fbcc07,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-06-Aaronson-Dequantification-Stabilizer.ipynb,aba11bc5,markdown,fr,5b189e67d4440f96,"**Lecture.** Les deux xors ($x_t \leftarrow x_t \oplus x_c$ puis
+MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb,aba11bc5,markdown,fr,5b189e67d4440f96,"**Lecture.** Les deux xors ($x_t \leftarrow x_t \oplus x_c$ puis
 $z_c \leftarrow z_c \oplus z_t$) reproduisent les **lettres** des 16 conjugués. Le
 signe $-$ n'apparaît que pour $X_c Z_t$ et $Y_c Y_t$ — soit, en bits, exactement
 $x_c = 1$, $z_t = 1$ et $z_c = x_t$ (les bits lus *avant* les xors). Tout le reste du
 notebook applique ces règles prouvées : la seule constante de phase du formalisme est
 dérivée, aucune n'est recopiée.",,,,,,,,5b189e67d4440f96,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-06-Aaronson-Dequantification-Stabilizer.ipynb,4b7957ff,markdown,fr,b6f10f31c800d18d,"## 3. L'organe : le simulateur CHP, complet
+MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb,4b7957ff,markdown,fr,b6f10f31c800d18d,"## 3. L'organe : le simulateur CHP, complet
 
 Trois pièces dans l'algorithme d'Aaronson–Gottesman :
 
@@ -4293,7 +4372,7 @@ Trois pièces dans l'algorithme d'Aaronson–Gottesman :
 Et en regard, la machine témoin : l'**état complet** $2^n$ — pas de classe de circuits,
 il paie l'exponentielle partout, mais il simule tout, $T$ comprise. Le croisement du §4
 dirige ces deux machines l'une contre l'autre.",,,,,,,,b6f10f31c800d18d,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-06-Aaronson-Dequantification-Stabilizer.ipynb,638a5fdc,code,fr,01ec031402af4240,"class CHPSimulator:
+MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb,638a5fdc,code,fr,01ec031402af4240,"class CHPSimulator:
     """"""Simulateur stabilisateur d'Aaronson-Gottesman 2004 (algorithme CHP).
 
     Tableau : lignes 0..n-1 destabilisateurs, n..2n-1 stabilisateurs, ligne 2n scratch.
@@ -4450,7 +4529,7 @@ MyIA.AI.Notebooks/Complexity/Complexity-06-Aaronson-Dequantification-Stabilizer.
         self.h(q)
         return m
 ",,,,,,,,01ec031402af4240,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-06-Aaronson-Dequantification-Stabilizer.ipynb,64829fca,code,fr,2c01f229e4d5d07e,"class StateVectorSim:
+MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb,64829fca,code,fr,2c01f229e4d5d07e,"class StateVectorSim:
     """"""Etat complet 2^n : la machine temoin, sans classe de circuits.
 
     Portes 1-qubit par tensordot sur le tenseur (2,)*n (qubit q = axe q, donc
@@ -4541,7 +4620,7 @@ def run_sv(n, gates, seed):
         sim.apply(*g)
     return sim
 ",,,,,,,,2c01f229e4d5d07e,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-06-Aaronson-Dequantification-Stabilizer.ipynb,d39e363e,code,fr,d1c952a278d4bc7c,"# --- demos : les etats que tout le monde connait, lus dans le tableau -----------
+MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb,d39e363e,code,fr,d1c952a278d4bc7c,"# --- demos : les etats que tout le monde connait, lus dans le tableau -----------
 bell = CHPSimulator(2, rng=np.random.default_rng(0))
 bell.h(0)
 bell.cnot(0, 1)
@@ -4571,13 +4650,13 @@ print(""GHZ-8 : stab[0] ="", ghz.stab_string(0), ""(attendu +XXXXXXXX)"")
 res = [ghz.measure_z(j) for j in range(8)]
 print(""GHZ-8 : les 8 mesures Z :"", res, ""-> toutes egales :"", len(set(res)) == 1)
 ",,,,,,,,d1c952a278d4bc7c,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-06-Aaronson-Dequantification-Stabilizer.ipynb,b4256fbc,markdown,fr,232c7c84cba9a0bb,"**Lecture.** Le tableau lit Bell exactement comme les cours le décrivent :
+MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb,b4256fbc,markdown,fr,232c7c84cba9a0bb,"**Lecture.** Le tableau lit Bell exactement comme les cours le décrivent :
 stabilisateurs $+XX$ et $+ZZ$ — et la corrélation de mesure n'est pas énoncée, elle
 **tombe** du formalisme : 50/50 tirs corrélés, aucune exception. GHZ tient dans les
 mêmes lignes de bits : l'état le plus « intriqué » du zoo quantique coûte à l'arbitre
 exactement ce que coûte $|0\rangle^{\otimes 8}$. C'est le premier résultat de la
 leçon : *l'intrication n'est pas le mur* — la classe de circuits l'est.",,,,,,,,232c7c84cba9a0bb,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-06-Aaronson-Dequantification-Stabilizer.ipynb,edc4ad13,markdown,fr,0154f246b2b60360,"## 4. La preuve croisée : l'arbitre ne ment pas
+MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb,edc4ad13,markdown,fr,0154f246b2b60360,"## 4. La preuve croisée : l'arbitre ne ment pas
 
 Un port écrit à la main doit prouver sa justesse, pas la réclamer. Le banc :
 
@@ -4593,7 +4672,7 @@ Un port écrit à la main doit prouver sa justesse, pas la réclamer. Le banc :
    $\sim\sqrt{K/\pi}/\sqrt{\mathrm{shots}}$ sur $K$ sorties possibles).
 3. **troisième juge** — si [stim](https://github.com/quantumlib/Stim) est installé,
    ses probabilités marginales de mesure donnent une seconde référence indépendante.",,,,,,,,0154f246b2b60360,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-06-Aaronson-Dequantification-Stabilizer.ipynb,383cdd31,code,fr,7a0ed96b7e80e393,"# --- croisement 1 : valeurs propres exactes (zéro bruit statistique) -----------
+MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb,383cdd31,code,fr,7a0ed96b7e80e393,"# --- croisement 1 : valeurs propres exactes (zéro bruit statistique) -----------
 total_checks = 0
 for n in (4, 6, 8, 10):
     for seed in GLOBAL_SEEDS:
@@ -4662,7 +4741,7 @@ if stim is not None:
                     ok_marg += 1
     print(f""stim confirme les {ok_marg} outcomes deterministes du CHP : OK"")
 ",,,,,,,,7a0ed96b7e80e393,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-06-Aaronson-Dequantification-Stabilizer.ipynb,f7f939d0,markdown,fr,6d9cdab77405d5ab,"**Lecture.** Chaque erreur possible du port a un détecteur dédié : une erreur de
+MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb,f7f939d0,markdown,fr,6d9cdab77405d5ab,"**Lecture.** Chaque erreur possible du port a un détecteur dédié : une erreur de
 phase dans `rowsum` ou la règle du $\mathsf{CNOT}$ inverse une valeur propre ; une
 erreur dans la mesure déplace la masse d'une distribution ; une erreur de convention
 d'axes mélange les qubits et fait échouer les deux bancs à la fois. Le port que vous
@@ -4671,13 +4750,13 @@ cacher un signe) et **sous le seuil statistique** sur les distributions — le m
 protocole qui, appliqué au brouillon de ce notebook, a intercepté une règle de phase
 du $\mathsf{CNOT}$ fausse (le piège $X_c Z_t$ / $Y_c Y_t$ du §2) : le banc n'est pas
 décoratif, il a déjà servi.",,,,,,,,6d9cdab77405d5ab,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-06-Aaronson-Dequantification-Stabilizer.ipynb,a136e80a,markdown,fr,185176f3f5e694f4,"## 5. La mesure discriminante : le régime, pas l'objet
+MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb,a136e80a,markdown,fr,185176f3f5e694f4,"## 5. La mesure discriminante : le régime, pas l'objet
 
 Protocole : les **mêmes circuits** (profondeur $3n$, portes Clifford uniformes, seeds
 $(0, 1, 7)$) sur les trois machines, temps **médian** par taille. Puis la même
 question côté suprématie : que se passe-t-il quand le circuit quitte la classe —
 une fraction $f$ des portes remplacée par des $T$ ?",,,,,,,,185176f3f5e694f4,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-06-Aaronson-Dequantification-Stabilizer.ipynb,c9a6f8fc,code,fr,edb98b9b97a557c8,"NS_CHP = [6, 8, 10, 12, 16, 20, 24, 32, 40, 48, 64]
+MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb,c9a6f8fc,code,fr,edb98b9b97a557c8,"NS_CHP = [6, 8, 10, 12, 16, 20, 24, 32, 40, 48, 64]
 NS_SV = [6, 8, 10, 11, 12, 13, 14, 15, 16, 18, 20, 22]
 NS_STIM = [6, 8, 12, 16, 20, 24, 32, 48, 64, 96, 128, 192, 256]
 
@@ -4734,7 +4813,7 @@ if stim_t_map:
           f""{chp_t[chp_ns.tolist().index(n_commun)] / stim_t_map[n_commun]:.0f}x ""
           ""(le port est fait pour etre lu, l'organe du metier pour la course)"")
 ",,,,,,,,edb98b9b97a557c8,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-06-Aaronson-Dequantification-Stabilizer.ipynb,e2410d1e,code,fr,19df523fe8e13ec9,"# --- regressions : ce que chaque machine paie par qubit -------------------------
+MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb,e2410d1e,code,fr,19df523fe8e13ec9,"# --- regressions : ce que chaque machine paie par qubit -------------------------
 # etat complet : t ~ a * 2^n  ->  log2(t) = log2(a) + n  (droite de pente ~1,
 # mais les echelons locaux sont plus raides : la memoire aussi a une loi)
 a_sv, b_sv = np.polyfit(sv_ns, np.log2(sv_t), 1)
@@ -4764,7 +4843,7 @@ for n_cible in (30, 40):
     print(f""EXTRAPOLATION du fit 2^n : n={n_cible} -> {val:.3g} {unite} par circuit""
           "" (non mesure)"")
 ",,,,,,,,19df523fe8e13ec9,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-06-Aaronson-Dequantification-Stabilizer.ipynb,505c4f40,code,fr,461631b50e253089,"# --- densite T : le regime ou l'arbitre rend son tablier ------------------------
+MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb,505c4f40,code,fr,461631b50e253089,"# --- densite T : le regime ou l'arbitre rend son tablier ------------------------
 def gen_circuit_T(n, depth, seed, fraction):
     """"""Circuit Clifford ou une fraction des portes est remplacee par T.""""""
     rng = np.random.default_rng(seed * 7919 + n * 31 + depth + int(fraction * 1000))
@@ -4819,7 +4898,7 @@ print()
 print(""Message du banc : la frontiere n'est pas 'quantique contre classique',"")
 print(""elle est 'Clifford contre le reste' -- et T est du reste."")
 ",,,,,,,,461631b50e253089,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-06-Aaronson-Dequantification-Stabilizer.ipynb,b4e8bb6e,markdown,fr,0cebdd6e234084b5,"**Lecture.** Trois constats, un seul message.
+MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb,b4e8bb6e,markdown,fr,0cebdd6e234084b5,"**Lecture.** Trois constats, un seul message.
 
 1. À circuits **Clifford purs**, la bascule est **mesurée**, pas extrapolée : dès la
    douzaine de qubits, l'état complet paie déjà plus que l'arbitre, et le ratio
@@ -4847,12 +4926,12 @@ conjointe sur **une classe de circuits et un régime de taille**. Réfuter propr
 c'est exhiber le régime où l'assertion casse — ici, tout circuit Clifford, quelle que
 soit la taille. Installer la claim, c'est montrer qu'on est sorti du régime — et $T$
 est le billet d'entrée le plus faible du hors-classe.",,,,,,,,0cebdd6e234084b5,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-06-Aaronson-Dequantification-Stabilizer.ipynb,14ff6ce6,markdown,fr,607ef97595658193,"## 6. Exercices
+MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb,14ff6ce6,markdown,fr,607ef97595658193,"## 6. Exercices
 
 Les stubs s'exécutent sans erreur (règle C.1 du dépôt) ; les indices et étapes guident
 sans écrire la solution. Les variables des bancs des sections précédentes restent en
 portée.",,,,,,,,607ef97595658193,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-06-Aaronson-Dequantification-Stabilizer.ipynb,6037f6fb,markdown,fr,a3a349bd4043b47c,"### Exercice 1 — La phase par commutation, sans matrices
+MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb,6037f6fb,markdown,fr,a3a349bd4043b47c,"### Exercice 1 — La phase par commutation, sans matrices
 
 Le §1 dérive la table de phase en multipliant les matrices. Une autre voie, purement
 algébrique, n'utilise que : (i) deux Pauli non triviales *distinctes* anti-commutent ;
@@ -4860,7 +4939,7 @@ algébrique, n'utilise que : (i) deux Pauli non triviales *distinctes* anti-comm
 ($P_1 P_2 = (P_2 P_1)^\dagger$ inverse l'exposant). Écrire
 `pauli_product_phase(p1, p2)` qui retourne $e$ tel que $P_1 P_2 = i^e P'$ **sans aucune
 matrice**, puis la comparer à `E_TABLE` case par case.",,,,,,,,a3a349bd4043b47c,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-06-Aaronson-Dequantification-Stabilizer.ipynb,4acfef80,code,fr,0e78333b7dc90a6e,"# Exercice 1 : a completer
+MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb,4acfef80,code,fr,0e78333b7dc90a6e,"# Exercice 1 : a completer
 def pauli_product_phase(p1, p2):
     """"""Exposeant e (0..3) tel que P1 @ P2 = (i**e) * P', sans matrices.
 
@@ -4888,7 +4967,7 @@ print(f""Comparaison case par case avec E_TABLE : {ok}/16 concordent"")
 for e in ecarts:
     print(""  ecart :"", e)
 ",,,,,,,,0e78333b7dc90a6e,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-06-Aaronson-Dequantification-Stabilizer.ipynb,0f340ff9,markdown,fr,5f9c0d5b6f045c70,"### Exercice 2 — L'arbitre de classe
+MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb,0f340ff9,markdown,fr,5f9c0d5b6f045c70,"### Exercice 2 — L'arbitre de classe
 
 Écrire `verdict_simulateur(n, portes)` : étant donné un circuit (liste de tuples comme
 celles des bancs du §5) et une taille, retourner `""CHP""` si le circuit est Clifford
@@ -4896,7 +4975,7 @@ celles des bancs du §5) et une taille, retourner `""CHP""` si le circuit est Cl
 dans les clous de l'état complet ($2^n \le 2^{22}$ amplitudes, la limite mémoire des
 bancs de ce notebook), `""aucun""` sinon. La fonction ne **simule** rien : elle lit la
 classe.",,,,,,,,5f9c0d5b6f045c70,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-06-Aaronson-Dequantification-Stabilizer.ipynb,992ecb41,code,fr,c8a4cb20fb4b8c44,"# Exercice 2 : a completer
+MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb,992ecb41,code,fr,c8a4cb20fb4b8c44,"# Exercice 2 : a completer
 def verdict_simulateur(n, portes):
     """"""'CHP' si Clifford, 'etat-complet' si 2**n <= 2**22, sinon 'aucun'.""""""
     verdict = None   # TODO etudiant
@@ -4920,7 +4999,7 @@ cas_tests = [
 for nom, n, portes in cas_tests:
     print(f""  {nom:>16} -> {verdict_simulateur(n, portes)}"")
 ",,,,,,,,c8a4cb20fb4b8c44,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-06-Aaronson-Dequantification-Stabilizer.ipynb,7657e296,markdown,fr,c1a58e1d8892a23e,"### Exercice 3 — Le mur, projeté par ses échelons
+MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb,7657e296,markdown,fr,c1a58e1d8892a23e,"### Exercice 3 — Le mur, projeté par ses échelons
 
 Le banc du §5 mesure les échelons locaux de l'état complet : le rapport
 $t(n{+}1)/t(n)$, qubit par qubit. Recalculer la projection **à partir de ces échelons
@@ -4928,7 +5007,7 @@ seuls** : estimer le facteur multiplicatif par qubit (les petites tailles sont
 dominées par les coûts fixes : ne garder que $n \ge 12$), vérifier qu'il est
 **au-dessus du plancher théorique** $2$, en déduire le temps projeté à $n = 30$, puis
 le plus petit $n$ où la projection dépasse **une heure** par circuit.",,,,,,,,c1a58e1d8892a23e,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-06-Aaronson-Dequantification-Stabilizer.ipynb,d7a0ca3c,code,fr,3f09286fe3fbc29f,"# Exercice 3 : a completer
+MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb,d7a0ca3c,code,fr,3f09286fe3fbc29f,"# Exercice 3 : a completer
 facteur_par_qubit = None   # TODO etudiant : facteur multiplicatif de sv_t par qubit
 t_projete_30 = None        # TODO etudiant : temps projete a n = 30 (secondes)
 n_une_heure = None         # TODO etudiant : plus petit n ou le temps projete > 3600 s
@@ -4946,7 +5025,7 @@ if facteur_par_qubit is not None:
     print(f""  temps projete a n=30 : {t_projete_30:.3g} s"")
     print(f""  projection > 1 heure des n = {n_une_heure}"")
 ",,,,,,,,3f09286fe3fbc29f,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-06-Aaronson-Dequantification-Stabilizer.ipynb,a88963a7,markdown,fr,94b5dd18dd8571c0,"## 7. Conclusion
+MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb,a88963a7,markdown,fr,94b5dd18dd8571c0,"## 7. Conclusion
 
 | Geste | Où | Ce qui a été mesuré |
 |---|---|---|

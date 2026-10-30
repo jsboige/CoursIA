@@ -26,27 +26,57 @@ name: Linux runner starvation advisory
 # #15332 : le scheduler GitHub a cesse de livrer l'evenement schedule le
 # 2026-09-09 (4 h sans AUCUN declenchement planifie, depot entier, 159
 # workflows) -- un organe porte par schedule seul meurt de la panne qu'il
-# observe. Le heartbeat workflow_run s'ancre sur DEUX workflows, par jambe :
-#   - "Secret Scan" : chaque push et pull_request, mais ses jobs tournent
-#     sur le parc self-hosted (coursia-ephemeral) -- jambe vivante quand le
-#     scheduler se tait et que le parc vit.
-#   - "Notebook outputs required (H.4 schema)" : push/PR touchant un
-#     notebook (le flux principal du depot) et jobs ubuntu-latest -- jambe
-#     GitHub-hosted de bout en bout : ce job aussi tourne sur ubuntu-latest,
-#     donc le heartbeat survit AUSSI au parc eteint tant que le flux
-#     notebook pousse (correction de la revue ai-01 du 2026-09-16 : Secret
-#     Scan seul reste en file indeterminee quand le parc est mort -- run
-#     jamais completed, workflow_run jamais emis ; un ancrage "heberge
-#     GitHub" doit l'etre de fait, pas de claim).
+# observe. Le heartbeat workflow_run s'ancre sur « Secret Scan », qui se
+# declenche sur CHAQUE push et CHAQUE pull_request du depot, par jambe :
+#   - jambe « pull_request » : elle se declenche sur l'activite PR, qui
+#     continue quand le scheduler se tait -- mesure de la panne du
+#     2026-09-09 : 47 fins push/main ET ~53 fins pull_request de l'ancre
+#     entre 00:00Z et 06:00Z, dont la fenetre de panne (01:13Z -> 05:22Z).
+#     C'est cette jambe qui compte le plus : un pool eteint bloque les jobs
+#     de PR, donc les merges s'arretent -- une jambe « push » seule ne
+#     declencherait plus rien, et l'observateur mourrait de la panne qu'il
+#     mesure ;
+#   - jambe « push » : sur un push vers main, les jobs de Secret Scan
+#     tournent sur ubuntu-latest (mesure : 20/20 jobs lus) -- elle survit
+#     donc a un parc self-hosted eteint.
+# L'ancre « Notebook outputs required (H.4 schema) » est RETIREE de la liste :
+# ses jobs sont sur le parc self-hosted depuis #21112 (« carrier routing »,
+# forme hybride Linux) -- mesure : 20/20 jobs de ses runs push/main sur
+# [self-hosted, coursia-ephemeral, coursia-linux]. La « jambe GitHub-hosted
+# de bout en bout » que ce header annoncait n'existe donc plus (le routage
+# l'a annulee sans que le header soit corrige) : le heartbeat ne survit
+# aujourd'hui a la panne du SCHEDULER, pas a celle du parc. Et l'ensemble
+# de declenchements de cette ancre est un SOUS-ENSEMBLE de celui de
+# « Secret Scan » -- elle ne se declenche que sur les evenements qui
+# touchent un *.ipynb, que Secret Scan voit aussi -- la garder ne doublait
+# que le volume.
 # La cadence SERVIE est mesuree par le script lui-meme (runs event=schedule
 # uniquement -- les runs workflow_run ne faussent pas la mesure).
+#
+# PORTE DE MESURE (#22937) : le heartbeat se declenche sur chaque fin
+# d'ancre -- mesure sur 24 h (fenetre `created=` cote serveur, paginee :
+# le listing tronque a 100 runs, et une fenetre non paginee donne un
+# FAUX 4,2/h la ou l'incident en montre 48/h) : 418 fins « Secret Scan »
+# (309 pull_request + 109 push), soit 17,4 runs/h par advisory, 35 pour la
+# paire. Chaque
+# passage complet paie ~9 appels API (compteur `gh_calls` du script ;
+# l'inventaire des runners en ajoute 1, volontairement non compte) sur le
+# jeton de depot (budget 1000 req/h) : la paire consommait ~480 appels/h,
+# et le 2026-10-28 22:04Z le jeton a ete sature (« API rate limit
+# exceeded for installation ») -> 18 rouges sur main en 10 min. La porte
+# (MEASURE_EVERY_N_RUNS) borne la MESURE : un passage complet sur 4, les
+# autres ne paient que la lecture de la cadence servie (1 appel). Le RUN
+# existe toujours et son rapport de cadence servie (#15332) est emis a
+# chaque passage -- c'est la SURVIVANCE de l'observateur qui est la
+# garantie, pas la frequence de la lecture complete. La jambe `schedule`
+# n'est jamais gatee : elle est la cadence de reference de l'advisory.
 
 on:
   schedule:
     - cron: '19,49 * * * *'
   workflow_dispatch:
   workflow_run:
-    workflows: ["Secret Scan", "Notebook outputs required (H.4 schema)"]
+    workflows: ["Secret Scan"]
     types: [completed]
 
 permissions:
@@ -121,4 +151,7 @@ jobs:
           SELF_WORKFLOW: linux-runner-starvation-advisory.yml
           DECLARED_CADENCE_MINUTES: "30"
           CADENCE_WARN_MINUTES: "360"
-        run: python scripts/ci/check_runner_starvation.py
+          # #22937 : borne la MESURE complete -- le run existe toujours et
+          # son rapport de cadence servie (#15332) est emis a chaque passage.
+          MEASURE_EVERY_N_RUNS: "4"
+        run: python3 scripts/ci/check_runner_starvation.py

@@ -33,12 +33,14 @@ jobs:
     # uniquement -- aucun code de fork ne peut l'atteindre. Routage #14283
     # inverse, retour sur ubuntu-latest et sortie de
     # SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit.
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - name: Checkout PR (full history for blob diff)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          filter: blob:none
 
       - name: Scan added blobs above threshold
         env:

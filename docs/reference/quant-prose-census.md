@@ -90,8 +90,8 @@ Recensement chiffré des valeurs quantitatives écrites en dur dans les cellules
 | `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-25-InoculationRL-Python.ipynb` | 37 |
 | `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-21-SAETrajectoires-Python.ipynb` | 13 |
 | `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb` | 10 |
-| `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-15e-Bridge2-RecoverabilityAgency-Python.ipynb` | 9 |
-| `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-15c-MetaProxyObstruction-Python.ipynb` | 8 |
+| `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-15/ICT-15e-Bridge2-RecoverabilityAgency-Python.ipynb` | 9 |
+| `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-15/ICT-15c-MetaProxyObstruction-Python.ipynb` | 8 |
 
 ### ML (drainable total = 433)
 
@@ -99,7 +99,7 @@ Recensement chiffré des valeurs quantitatives écrites en dur dans les cellules
 |---|---|
 | `MyIA.AI.Notebooks\ML\ML.Net\ML-6-ONNX-Python.ipynb` | 32 |
 | `MyIA.AI.Notebooks\ML\ML.Net\ML-6-ONNX.ipynb` | 24 |
-| `MyIA.AI.Notebooks\ML\DataScienceWithAgents\01-PythonForDataScience\notebooks\1.2-Manipulation_de_Donnees_avec_NumPy.ipynb` | 22 |
+| `MyIA.AI.Notebooks\ML\DataScienceWithAgents\01-Python-For-Data-Science\notebooks\1.2-Manipulation_de_Donnees_avec_NumPy.ipynb` | 22 |
 | `MyIA.AI.Notebooks\ML\DataScienceWithAgents\02-ML-Cours\2.5-Biais-Variance-CV-ROC.ipynb` | 22 |
 | `MyIA.AI.Notebooks\ML\ML.Net\ML-4-Evaluation-Python.ipynb` | 20 |
 
@@ -117,7 +117,7 @@ Recensement chiffré des valeurs quantitatives écrites en dur dans les cellules
 
 | Notebook | Drainable |
 |---|---|
-| `MyIA.AI.Notebooks\Probas\Infer\Infer-2-Gaussian-Mixtures.ipynb` | 38 |
+| `MyIA.AI.Notebooks\Probas\Infer\Infer-02-Gaussian-Mixtures.ipynb` | 38 |
 | `MyIA.AI.Notebooks\Probas\Infer\Infer-15-Recommenders.ipynb` | 27 |
 | `MyIA.AI.Notebooks\Probas\DecisionTheory\PyMC\DecPyMC-7-Sequential.ipynb` | 17 |
 | `MyIA.AI.Notebooks\Probas\DecisionTheory\DecInfer\DecInfer-03-Utility-Money.ipynb` | 16 |

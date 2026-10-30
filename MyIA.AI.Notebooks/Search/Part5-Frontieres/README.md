@@ -1,6 +1,6 @@
 # Search — Partie 5 : Frontières
 
-[<- Applications (cas pratiques)](../Applications/README.md) | [Partie 4 : Métaheuristiques](../Part4-Metaheuristics/README.md) | [Retour à la série Search](../README.md)
+[<- Partie 3 : Cas pratiques](../Part3-Cas-pratiques/README.md) | [Partie 4 : Métaheuristiques](../Part4-Metaheuristics/README.md) | [Retour à la série Search](../README.md)
 
 La frontière entre le cours et la recherche : des carnets qui ne traitent pas un problème classique pour l'apprendre — ils **auditent une garantie** (vérifier empiriquement ce qu'un solveur ou un théorème récent autorise réellement à affirmer) ou **distillent un preprint** (rendre opérable un résultat publié). Chaque carnet confronte une affirmation récente à un oracle indépendant, un certificat ou un témoin vérifiable à la main.
 
@@ -8,7 +8,7 @@ Sous-série d'audits et de distillations | Python 3.10+ (`ortools`, `pulp`, `sci
 
 ## Pourquoi cette partie
 
-Dix carnets qui ne traitent pas un problème classique pour l'apprendre — ils **auditent une garantie** (vérifier empiriquement ce qu'un solveur ou un théorème récent autorise réellement à affirmer) ou **distillent un preprint** (rendre opérable un résultat publié). Chaque carnet confronte une affirmation récente — théorème arXiv, preprint de conception de solveurs, garanties d'un mécanisme d'enchère — à un oracle indépendant, un certificat ou un témoin vérifiable à la main. La partie porte sa propre numérotation (`Frontieres-01..10`) ; les critères d'entrée et la délimitation galerie/frontières sont fixés par la carte du 2026-10-05 ([#19253](https://github.com/jsboige/CoursIA/issues/19253), arbitrée sur [#17802](https://github.com/jsboige/CoursIA/issues/17802)) : la clause « audite une garantie » porte sur ce que le carnet déclare vouloir établir ; l'hommage commémoratif et l'hommage à un travail étudiant restent en galerie.
+Des carnets qui ne traitent pas un problème classique pour l'apprendre — ils **auditent une garantie** (vérifier empiriquement ce qu'un solveur ou un théorème récent autorise réellement à affirmer) ou **distillent un preprint** (rendre opérable un résultat publié). Chaque carnet confronte une affirmation récente — théorème arXiv, preprint de conception de solveurs, garanties d'un mécanisme d'enchère — à un oracle indépendant, un certificat ou un témoin vérifiable à la main. La partie porte sa propre numérotation (`Frontieres-01..11`) ; les critères d'entrée et la délimitation galerie/frontières sont fixés par la carte du 2026-10-05 ([#19253](https://github.com/jsboige/CoursIA/issues/19253), arbitrée sur [#17802](https://github.com/jsboige/CoursIA/issues/17802)) : la clause « audite une garantie » porte sur ce que le carnet déclare vouloir établir ; l'hommage commémoratif et l'hommage à un travail étudiant restent en galerie.
 
 **Critère d'entrée** (carte [#19253](https://github.com/jsboige/CoursIA/issues/19253)) : le carnet vérifie empiriquement un résultat récent — théorème arXiv, preprint de conception de solveurs, garantie d'un mécanisme — avec les outils de la série, et confronte la claim à un oracle indépendant, un certificat ou un témoin vérifiable à la main. La date d'arrivée n'est pas un critère.
 
@@ -32,6 +32,7 @@ Dix carnets qui ne traitent pas un problème classique pour l'apprendre — ils 
 | 8 | [Frontieres-08-OrbitalAssembly-Certificate-Audit-Python](Frontieres-08-OrbitalAssembly-Certificate-Audit-Python.ipynb) | ~70 min | Assemblage orbital : physique de Hohmann dans le modèle, auditeur externe, preuve que la scalarisation est exactement lexicographique, comparaison à makespan égal, front d'échange ε-contrainte et sonde en taille **et** en densité — distillation PrCon C4 (Gurvan Estable, Joris Bely, Kévin Lubert) | Projet étudiant (PrCon PR #53) |
 | 9 | [Frontieres-09-RCPSP-Max-Feasibility-Bounds-Python](Frontieres-09-RCPSP-Max-Feasibility-Bounds-Python.ipynb) | ~65 min | RCPSP/max : le lag maximal comme arc inverse, faisabilité NP-difficile et son témoin de circuit positif, balayage des trois régimes temporel/ressource/réalisable, échelle de bornes certifiées et repli explicite quand la référence externe manque — distillation PrCon B4 (Arthur Gallier, Nicolas Naegelen) | Projet étudiant (PrCon PR #51) |
 | 10 | [Frontieres-10-NeuralDiving-Coloration-Python](Frontieres-10-NeuralDiving-Coloration-Python.ipynb) | ~60 min | Neural diving : un plongeur MLP prédit une affectation partielle, injectée comme hint réparable dans CP-SAT ; la médiane des branches recule (2829 → 2325, 25/25 instances améliorées) alors que ≈ 49 % des arêtes du hint violent l'adjacence — cohérence du hint avec les contraintes, pas précision par bit — hommage Nair et al. 2021 | Recherche (Nair et al. 2021) |
+| 11 | [Frontieres-11-Abstraction-Dette-ShortestPath-Python](Frontieres-11-Abstraction-Dette-ShortestPath-Python.ipynb) | ~55 min | Abstraction à dette bornée : partitionner la carte en provinces, agréger au minimum, resserrer la borne en payant l'interne minimal, puis relever dans le couloir désigné — l'agrégation moyenne sert de contre-témoin mesuré (elle viole l'admissibilité sur les requêtes courtes), et la dette de chaque échelle se chiffre au lieu de se prédire — hommage Culberson & Schaeffer 1998, Holte et al. 2005 | Recherche (Culberson & Schaeffer 1998 ; Holte et al. 2005) |
 
 ## Prérequis par notebook
 
@@ -47,6 +48,7 @@ Dix carnets qui ne traitent pas un problème classique pour l'apprendre — ils 
 | Frontieres-08 OrbitalAssembly Certificate Audit | CSP-3 (CP-SAT), CSP-4 (scheduling), CSP-5 (optimisation) | ortools, pandas, matplotlib |
 | Frontieres-09 RCPSP Max Feasibility Bounds | CSP-4 (scheduling), CSP-3 (CP-SAT), Planners-8 (temporel) | ortools, pandas, numpy, matplotlib |
 | Frontieres-10 NeuralDiving Coloration | Frontieres-06 (composante branchement), CSP-3 (CP-SAT), MGS-16 (sélection d'algorithmes) | ortools, scikit-learn, numpy, pandas |
+| Frontieres-11 Abstraction Dette ShortestPath | Search-3 (A*, heuristiques admissibles), Frontieres-03 (validateur indépendant) | matplotlib |
 
 ## Origine des projets
 
@@ -68,6 +70,8 @@ Le [Frontieres-09-RCPSP-Max-Feasibility-Bounds-Python](Frontieres-09-RCPSP-Max-F
 
 Le [Frontieres-10-NeuralDiving-Coloration-Python](Frontieres-10-NeuralDiving-Coloration-Python.ipynb) rend hommage au second geste de l'article de Nair et al. (2021), *« Solving Mixed Integer Programs Using Neural Networks »* (arXiv:2012.13349) : le **diving**, qui apprend une solution partielle pour guider un solveur MIP. Frontieres-06 a audité la composante *branching* (politique de branchement apprise) ; Frontieres-10 enchaîne sur l'autre composante : un plongeur MLP prédit une affectation des 60 sommets d'une coloration de graphe, injectée comme `hint` réparable dans OR-Tools CP-SAT, et l'on mesure l'effet sur les branches de preuve. La famille est calibrée pour qu'une fenêtre existe : les set-cover denses s'effondrent au presolve (`nodes = 0`) et les knapsack corrélés ne se prouvent pas en fenêtre notebook ; la coloration 60 sommets / 3 arêtes branche (médiane 2742, 2303-3799 sur les 60 instances d'entraînement) et se prouve (< 0,1 s). Verdict mesuré sur 25 instances de test, sur un run déterministe (`num_workers = 1`) : la médiane des branches recule (2829 → 2325, ≈ −18 %), les 25 instances s'améliorent (gain relatif médian ≈ 15 %, de 8 % à 28 %), et ≈ 49 % des arêtes du hint (44 sur ~90) sont en conflit avec l'adjacence — la cohérence, pas la précision par bit, détermine l'effet du hint. Le notebook ne copie aucun code, donnée, figure ou prose de l'article, archivé au gisement `G:\Mon Drive\MyIA\IA\Bibliographie IA\Search\`. Provenance : [`data/app33-neural-diving/SOURCE.md`](data/app33-neural-diving/SOURCE.md).
 
+Le [Frontieres-11-Abstraction-Dette-ShortestPath-Python](Frontieres-11-Abstraction-Dette-ShortestPath-Python.ipynb) rend hommage à la lignée des bases de motifs : Culberson et Schaeffer (1998), puis Holte, Grahn, Hansen et Zilberstein (2005). Sur une carte 24×24 aux terrains coûteux, le carnet exécute le geste complet — comprimer en provinces, résoudre l'esquisse, resserrer la borne en cessant de jeter les distances internes, relever un trajet dans le couloir désigné — et l'audit à chaque étape : la borne min est admissible sur toutes les requêtes mesurées, l'agrégation moyenne « plus juste » sert de contre-témoin (elle ment sur les requêtes courtes), et le bracket [borne, relevé] certifie l'optimum sans jamais consulter l'oracle. La dette — l'écart entre relevé et optimum — est chiffrée à chaque échelle de raffinement et se révèle non monotone : elle se mesure, elle ne se prédit pas. Ce carnet est la seconde attestation in-repo de l'opération « abstraire à dette bornée » du chantier [#12204](https://github.com/jsboige/CoursIA/issues/12204), sur un terrain indépendant de [GameTheory-19](../../GameTheory/GameTheory-19-Abstraction-a-Dette-Python.ipynb) (jeux à somme nulle).
+
 ## Ponts inter-séries
 
 | Série | Lien | Relation |
@@ -75,9 +79,9 @@ Le [Frontieres-10-NeuralDiving-Coloration-Python](Frontieres-10-NeuralDiving-Col
 | [Partie 1 : Search](../Part1-Foundations/README.md) | Fondamentaux | Heuristiques admissibles, A* (Frontieres-03) |
 | [Partie 2 : CSP](../Part2-CSP/README.md) | Programmation par contraintes | CP-SAT, scheduling, optimisation (toute la partie) |
 | [Partie 4 : Métaheuristiques](../Part4-Metaheuristics/README.md) | Sélection d'algorithmes | MGS-16 : Rice, No Free Lunch (Frontieres-06, Frontieres-10) |
-| [GameTheory](../../GameTheory/README.md) | GameTheory-16 (VCG) | Paiements VCG et garanties d'enchères (Frontieres-04) |
+| [GameTheory](../../GameTheory/README.md) | GameTheory-16 (VCG), GameTheory-19 (abstraction à dette) | Paiements VCG et garanties d'enchères (Frontieres-04) ; même loi d'abstraction attestée sur un terrain indépendant (Frontieres-11) |
 | [SymbolicAI — Planners](../../SymbolicAI/Planners/README.md) | Planners-8 (temporel) | Réseaux de contraintes temporelles (Frontieres-09) |
-| [Langlands](../../SymbolicAI/Lean/Langlands/) | Szpiro–Pasten 2026 | La distillation arithmétique (App-32) reliée à la sous-série Langlands (#18368) |
+| [Langlands](../../SymbolicAI/Lean/Langlands/) | Szpiro–Pasten 2026 | La distillation arithmétique `05-szpiro-pasten-2026.ipynb` vit désormais dans la sous-série Langlands (#18368, carte #19253) |
 
 ## Références
 
@@ -91,7 +95,8 @@ Le [Frontieres-10-NeuralDiving-Coloration-Python](Frontieres-10-NeuralDiving-Col
 | Frontieres-08 (OrbitalAssembly Certificate Audit) | Hohmann, W. (1925) — *Die Erreichbarkeit der Himmelskörper*, Oldenbourg ; Vallado, D. A. (2013) — *Fundamentals of Astrodynamics and Applications*, 4e éd., Microcosm Press ; Haimes, Y. Y., Lasdon, L. S., & Wismer, D. A. (1971) — « On a Bicriterion Formulation of the Problems of Integrated System Identification and System Optimization », *IEEE Transactions on Systems, Man, and Cybernetics* 1(3) (ε-contrainte) ; Wilcoxon, F. (1945) — « Individual Comparisons by Ranking Methods », *Biometrics Bulletin* 1(6). |
 | Frontieres-09 (RCPSP Max Feasibility Bounds) | Bartusch, M., Möhring, R. H., & Radermacher, F. J. (1988) — « Scheduling Project Networks with Resource Constraints and Time Windows », *Annals of Operations Research* 16(1) ; Kolisch, R., & Sprecher, A. (1997) — « PSPLIB — A Project Scheduling Problem Library », *European Journal of Operational Research* 96(1) ; Neumann, K., Schwindt, C., & Zimmermann, J. (2003) — *Project Scheduling with Time Windows and Scarce Resources*, Springer ; Bellman, R. (1958) — « On a Routing Problem », *Quarterly of Applied Mathematics* 16(1) (relaxation et détection de circuit). |
 | Frontieres-10 (Neural Diving Coloration) | Nair, V., Bartunov, S., Gimeno, F., et al. (2021) — « Solving Mixed Integer Programs Using Neural Networks », arXiv:2012.13349 (v3, juillet 2021) ; Bengio, Y., Lodi, A., & Prouvost, A. (2021) — « Machine Learning for Combinatorial Optimization: a Methodological Tour d'Horizon », *European Journal of Operational Research* 290(2). |
+| Frontieres-11 (Abstraction Dette ShortestPath) | Culberson, J. C., & Schaeffer, P. (1998) — « Pattern Databases », *Computational Intelligence* 14(3) ; Holte, R. C., Grahn, H., Hansen, J. V., & Zilberstein, S. (2005) — « Maximizing over Multiple Abstractions for Heuristic Search », *SARA 2005*, LNCS 3607. |
 
 ## Navigation
 
-[<- Applications (cas pratiques)](../Applications/README.md) | [Partie 4 : Métaheuristiques](../Part4-Metaheuristics/README.md) | [Retour à la série Search](../README.md)
+[<- Partie 3 : Cas pratiques](../Part3-Cas-pratiques/README.md) | [Partie 4 : Métaheuristiques](../Part4-Metaheuristics/README.md) | [Retour à la série Search](../README.md)

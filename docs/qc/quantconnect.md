@@ -218,7 +218,7 @@ QuantConnect expose 8 assistants intégrés (Conductor, Ideas, Research, Researc
 https://www.quantconnect.com/organization/<org_id>/assistants
 ```
 
-**Le Research Assistant résout le problème "Quantbook execution Windows local impossible"** : il execute les cells du notebook sur QC Cloud, itère automatiquement (edit, execute, fix, re-execute) jusqu'au succès, et les tokens consommes sont ceux de QC (pas Anthropic).
+**Le Research Assistant résout le problème "Quantbook execution Windows local impossible"** : il execute les cells du notebook sur QC Cloud, itère automatiquement (edit, execute, fix, re-execute) jusqu'au succès, et les tokens consommes sont ceux de QC (pas Anthropic). Il ne suffit pas seul à committer un carnet : le 2026-05-16, ses sorties n'ont pas été persistées dans le `.ipynb` (#1177). Routes d'exécution et rapatriement des sorties, assistant compris : [quantbook-execution-routes.md](quantbook-execution-routes.md).
 
 ### Workflow Research Assistant (via Playwright)
 
@@ -233,7 +233,7 @@ https://www.quantconnect.com/organization/<org_id>/assistants
 - **Validation cluster obligatoire post-deployment** : même si Research Assistant claim "Sharpe 3.50", refaire en local par walk-forward 5-fold + multi-seed >=4 + transaction costs avant tout claim BEATS. Cf [.claude/rules/pr-review-discipline.md](../../.claude/rules/pr-review-discipline.md) section C.
 - **Coût QC tokens** : ne pas lancer 50 deployments en parallèle sans vérifier le burn rate
 - **Éviter chevauchement agents** sur même deployment (tokens dupliqués) : coordination via dashboard avant lancement
-- **Notebook output download** : Playwright snapshot ou API download artifact (workflow exact a documenter par usage)
+- **Récupérer les sorties d'un carnet** : l'API de fichiers rend `outputs: []` (#1177). Routes mesurées (exécution directe dans l'IDE, exécuteur côté noyau, LEAN Research local) et outil de fusion `merge_executed_outputs.py` : [quantbook-execution-routes.md](quantbook-execution-routes.md)
 
 ### Cas d'usage privilégiés
 
@@ -241,20 +241,21 @@ https://www.quantconnect.com/organization/<org_id>/assistants
 - Validation algos QC Cloud avant import dans projects/
 - Debugging multi-aller-retour des strategies en iteration
 
-## Architecture composites (AlphaModel + MultiStrategyPCM)
+## Architecture composites (AlphaModel + MultiStrategyPouchesPCM)
 
 Pattern standardise pour combiner plusieurs strategies dans un même algo QC :
 
-### Structure de fichiers (3 fichiers obligatoires)
+### Structure de fichiers (par composite + module partage)
 
-- `main.py` : `QCAlgorithm` avec `set_alpha(CompositeAlphaModel(...))` + `set_portfolio_construction(MultiStrategyPCM(...))`
+- `main.py` : `QCAlgorithm` avec `set_alpha(CompositeAlphaModel(...))` + `set_portfolio_construction(MultiStrategyPouchesPCM(...))`
 - `alpha_models.py` : une classe par alpha, chaque avec `self.name` et `source_model=self.name`
-- `portfolio_construction.py` : `MultiStrategyPCM` avec `determine_target_percent` (PAS `create_targets`)
+- `SharedPCM/pouches_pcm.py` : `MultiStrategyPouchesPCM`, le PCM par poches canonique avec `determine_target_percent` (PAS `create_targets`) — une seule copie importee par tous les composites (extraction #19821 brique 1). Sur QC Cloud : attacher le projet `SharedPCM` en bibliotheque du consommateur (geste "Add Library"), puis `from SharedPCM.pouches_pcm import MultiStrategyPouchesPCM`
 
-### MultiStrategyPCM — design
+### MultiStrategyPouchesPCM — design
 
 - Groupe les insights par `source_model`
-- Alloue une slice de capital par stratégie via dict `alpha_allocations`
+- Alloue une poche de capital par strategie via dict `alpha_allocations`
+- Mode intent par defaut (`additive=True`, exige `algorithm=self`) : dernier insight actif par couple (symbole, source_model), somme des poches par symbole, sans levier (#19740, #19759)
 - Supporte branches weight-hint ET equal-weight
 - Utilise `set_rebalancing_func` pour le rebalance timing
 

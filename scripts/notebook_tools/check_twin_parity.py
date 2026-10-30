@@ -89,6 +89,8 @@ Usage
     python check_twin_parity.py --check
     # restreindre a une famille
     python check_twin_parity.py --family SMT/Z3-API
+    # une seule paire (ne parcourt que celle-ci ; nom inconnu = rc 2, #20197)
+    python check_twin_parity.py --check --pair "SW-9 JSON-LD"
     # rebaseline apres audit firsthand (ecrit les SHAs courants).
     # --pair + --by obligatoires en pratique : le selecteur evite de rebaseliner
     # les 116 paires, --by evite d'heriter de l'auteur de l'audit precedent.
@@ -111,8 +113,19 @@ Usage
     # Compare le registre+blobs au base-ref (avant la PR) vs au HEAD (apres la PR).
     # Le drift pre-existant (deja present au base-ref) n'est PAS comptabilise ici
     # -- il releve d'une PR de rebaseline dediee (cf #8264 batch precedent).
+    # Verdict STALE_BRANCH (#22920) : paire DEPLACEE sur la branche base apres le
+    # fork (registre de la tete declare encore l'ancien chemin). Le rebaseline
+    # --update y serait FAUX (il attesterait un chemin que main a abandonne) --
+    # le remede est `gh pr update-branch`. Compteur dedie `stale_branch`, jamais
+    # compte dans `drift_introduced`.
     python check_twin_parity.py --check --per-pair --base origin/main
     python check_twin_parity.py --check --per-pair --base HEAD~1
+    # en CI sur une PR, `auto` est la base juste : actions/checkout extrait le
+    # merge ref de GitHub, dont le premier parent est le main de l'evenement.
+    # Comparer a `origin/main` (refetch au demarrage du job) classe en
+    # DRIFT_INTRODUCED les paires rebaselinees sur main pendant l'attente en
+    # file (#22292).
+    python check_twin_parity.py --check --per-pair --base auto
     # mode CI cron (volet b #9399) : fleet-wide SANS base ref, breakdown 4 categories.
     # Distinct du check historique : rouge sur N'IMPORTE QUEL drift (legacy ou content),
     # pas seulement DRIFT_or_MISSING. Utilise par .github/workflows/twin-parity-cron.yml.
@@ -125,8 +138,14 @@ Exit codes
          OU zero drift toutes categories (mode --ci-strict --check)
     1 -- un ou plusieurs DRIFT / MISSING (mode --check fleet-wide)
          OU nouveau(s) DRIFT introduit(s) par la PR (mode --check --per-pair)
+         OU paire(s) STALE_BRANCH : deplacee(s) sur la branche base apres le
+         fork (#22920) -- le remede est `gh pr update-branch`, pas un rebaseline
          OU un ou plusieurs drift legacy/content/missing en --ci-strict --check
-    2 -- erreur (registre illisible, pas un depot git)
+    2 -- erreur (registre illisible, pas un depot git, paire ou famille inconnue
+         pour --check / --verify-recorded-sha)
+    3 -- mesure interrompue : un appel git a depasse sa borne (`_GIT_TIMEOUT_S`,
+         ou `_GIT_HISTORY_TIMEOUT_S` pour le parcours d'historique) (#20197).
+         Aucun verdict n'est rendu : ni vert, ni drift.
 
 Voir aussi
 ----------
@@ -173,19 +192,55 @@ def _is_fork_pressure(exc: OSError) -> bool:
     return exc.errno in (errno.EAGAIN, errno.EWOULDBLOCK)
 
 
-def _run_git(args: list[str], *, cwd=None, text: bool = True) -> subprocess.CompletedProcess:
+# --- borne de delai par appel git (#20197) -----------------------------------
+# Sans borne, un appel git bloque lit comme un gel de l'organe. Au-dela de la
+# borne, la mesure est interrompue et AUCUN verdict n'est rendu (ni vert, ni
+# drift) : un resultat vide se lirait « rien a signaler ».
+# Calibrage mesure : `ls-tree` / `show` durent de quelques ms a ~3 s (fetch
+# paresseux sur clone partiel, po-2024). `rev-list --objects HEAD`
+# (`_blob_ancestor_in`) parcourt tout l'historique et a depasse 60 s sous charge
+# (load ~7 sur 4 coeurs, clone de 722 packs) : une borne de 60 s la prenait pour
+# un blocage. 300 s laisse passer cet appel legitime et rend tout de meme un
+# blocage reel visible en rc 3 au lieu d'un silence.
+_GIT_TIMEOUT_S = 300
+# Le parcours d'historique (`rev-list --objects HEAD`) a sa propre borne : sur
+# le runner CI (clone `filter: blob:none`, fetch paresseux), ce seul appel a
+# depasse 300 s, alors que l'etape `--check --verify-recorded-sha` entiere dure
+# 3 min 54 a 6 min sur `main` sans borne (jobs 115585251354 et 115570972974).
+# 1800 s couvre ces mesures avec une marge d'un facteur 5 et reste tres en deca
+# du delai de job GitHub (6 h) : un vrai blocage sort toujours en rc 3.
+_GIT_HISTORY_TIMEOUT_S = 1800
+
+
+class GitTimeoutError(RuntimeError):
+    """Un appel git a depasse sa borne de delai : la mesure est interrompue."""
+
+
+def _run_git(args: list[str], *, cwd=None, text: bool = True,
+             timeout: float | None = None) -> subprocess.CompletedProcess:
     """`subprocess.run` de git, avec repli borne sur la pression de fork.
 
     Seul `EAGAIN` est retente ; toute autre `OSError` remonte inchangee, pour
     qu'une panne reelle reste visible au lieu d'etre diluee en trois essais.
+    Un appel qui depasse sa borne (`timeout`, `_GIT_TIMEOUT_S` par defaut) leve
+    `GitTimeoutError` (jamais avale, jamais retente : un remote lent ne se
+    repare pas en relancant).
     """
+    borne = _GIT_TIMEOUT_S if timeout is None else timeout
     last_exc = None
     for attempt in range(_EAGAIN_ATTEMPTS):
         if attempt:
             time.sleep(_EAGAIN_BACKOFF[attempt - 1])
         options = {"encoding": "utf-8", "errors": "replace"} if text else {}
         try:
-            return subprocess.run(args, cwd=cwd, capture_output=True, text=text, **options)
+            return subprocess.run(args, cwd=cwd, capture_output=True, text=text,
+                                  timeout=borne, **options)
+        except subprocess.TimeoutExpired as exc:
+            raise GitTimeoutError(
+                f"mesure interrompue : `{' '.join(args)}` n'a pas repondu en "
+                f"{borne:g} s (remote lent ou fetch paresseux bloque). "
+                f"Aucun verdict n'est rendu pour ce controle."
+            ) from exc
         except OSError as exc:
             if not _is_fork_pressure(exc):
                 raise
@@ -472,6 +527,9 @@ def _git_blob_sha(repo_root: Path, rel_path: str, git_ref: str = "HEAD") -> str 
     return None
 
 
+_REACHABLE_OBJECTS: dict[tuple[str, str], set[str]] = {}
+
+
 def _blob_ancestor_in(repo_root: Path, blob_sha: str, ref: str = "HEAD") -> bool:
     """Vrai si `blob_sha` est accessible depuis `ref` (= un commit ancetre le reference).
 
@@ -492,19 +550,35 @@ def _blob_ancestor_in(repo_root: Path, blob_sha: str, ref: str = "HEAD") -> bool
     figure, c'est un metadata-only drift (pas un orphelin). Sinon, c'est un
     orphelin par squash : le rebaseline doit le corriger.
 
-    Cout : `rev-list --objects HEAD` parcourt tout l'historique ; le defacto
-    full scan reste borne par la taille du depot (~5-10s sur CoursIA). Pour
-    un seul test is_noop par paire, c'est acceptable. Une optimisation
-    ulterieure (cache par ref+blob) n'est pas justifiee a c.409.
+    Cout : `rev-list --objects HEAD` parcourt tout l'historique (~4 s sur
+    CoursIA). Le parcours ne depend que du commit resolu, et la fonction est
+    appelee jusqu'a trois fois par paire : il est donc memorise par
+    (depot, commit).
+
+    Clone partiel : les workflows font leur checkout avec `filter: blob:none`.
+    Sans option, `rev-list --objects` y rapatrie un par un chaque blob absent
+    de l'historique (mesure du 2026-10-14 : 8 slots sur 10 bloques de 45 min a
+    4 h dans ce seul appel). `--missing=print` liste ces blobs sous la forme
+    `?<sha>` sans les telecharger ; l'appartenance se lit de la meme facon.
     """
     if not blob_sha or len(blob_sha) != 40:
         return False
-    r = _run_git(["git", "rev-list", "--objects", ref], cwd=str(repo_root))
-    if r.returncode != 0:
+    head = _run_git(["git", "rev-parse", "--verify", "--quiet", f"{ref}^{{commit}}"],
+                    cwd=str(repo_root))
+    if head.returncode != 0:
         return False
-    # Chaque ligne de `rev-list --objects` est soit "<commit_sha>" soit
-    # "<commit_sha> <blob_sha>". On grep simplement le blob SHA sur la sortie.
-    return blob_sha in r.stdout
+    key = (str(repo_root), head.stdout.strip())
+    reachable = _REACHABLE_OBJECTS.get(key)
+    if reachable is None:
+        r = _run_git(["git", "rev-list", "--objects", "--missing=print", key[1]],
+                     cwd=str(repo_root), timeout=_GIT_HISTORY_TIMEOUT_S)
+        if r.returncode != 0:
+            return False
+        # Chaque ligne est "<sha>", "<sha> <chemin>" ou, pour un objet absent
+        # du clone partiel, "?<sha>".
+        reachable = {line.lstrip("?").split(" ", 1)[0] for line in r.stdout.splitlines()}
+        _REACHABLE_OBJECTS[key] = reachable
+    return blob_sha in reachable
 
 
 def _content_sha(repo_root: Path, rel_path: str, git_ref: str = "HEAD") -> str | None:
@@ -546,7 +620,8 @@ def _git_show_file(repo_root: Path, git_ref: str, rel_path: str) -> str | None:
     return r.stdout.decode("utf-8", errors="replace")
 
 
-def _load_registry_at_ref(repo_root: Path, git_ref: str, reg_path: Path) -> list:
+def _load_registry_at_ref(repo_root: Path, git_ref: str, reg_path: Path,
+                          names: set[str] | None = None) -> list:
     """Charge le registre a un ref git arbitraire (HEAD, origin/main, <sha>...).
 
     Robuste a la frontiere de migration #8542 : le base-ref peut etre l'ANCIEN
@@ -556,6 +631,11 @@ def _load_registry_at_ref(repo_root: Path, git_ref: str, reg_path: Path) -> list
 
     Indispensable au mode `--per-pair --base origin/main` en CI : sur la PR de
     migration elle-meme, origin/main porte encore l'ancien format.
+
+    `names` (#21972) : quand un selecteur `--pair`/`--family` est pose, on ne
+    `git show` que les fichiers des paires visees (et leurs audits), pas les
+    2374 fichiers du registre. `names=None` (mode plein, sans selecteur) ne
+    filtre rien : le parcours integral reste strictement identique.
     """
     if yaml is None:
         raise SystemExit("PyYAML requis pour --per-pair.")
@@ -587,6 +667,13 @@ def _load_registry_at_ref(repo_root: Path, git_ref: str, reg_path: Path) -> list
                     pair_lines.append((fname[:-5], line))
             elif len(parts) == 2 and parts[1].endswith(".yaml"):
                 audit_lines.setdefault(parts[0], []).append(line)
+        # Filtre AVANT lecture (#21972) : avec un selecteur, ne `git show` que
+        # les fichiers de paire des noms demandes (+ leurs audits), pas les 2374
+        # fichiers du registre. Le slug d'un fichier de paire EST `_slug(name)`
+        # (un fichier = une paire, #8542), donc le filtre sur slug == sur name.
+        if names is not None:
+            wanted_slugs = {_slug(n) for n in names}
+            pair_lines = [(s, l) for (s, l) in pair_lines if s in wanted_slugs]
         for slug, line in sorted(pair_lines):
             txt = _git_show_file(repo_root, git_ref, line)
             if txt is None:
@@ -1625,7 +1712,302 @@ def _classify_per_pair(base_status: str, head_status: str) -> str:
     return "DRIFT_PRE_EXISTING"
 
 
+def _pair_paths_diverge(base_pp: dict, head_pp: dict) -> bool:
+    """True si la paire est declaree avec des chemins differents aux deux refs (#22920).
+
+    Test PUR (aucun appel git) : sert de garde de cout -- les sondes croisees et
+    le merge-base ne se paient que sur les paires qui divergent.
+    """
+    for side in ("python", "csharp"):
+        b = base_pp.get(side)
+        h = head_pp.get(side)
+        if isinstance(b, str) and isinstance(h, str) and b != h:
+            return True
+    return False
+
+
+def _merge_base_ref(repo_root: Path, base_ref: str) -> str | None:
+    """Point de fork (merge-base) entre HEAD et `base_ref` ; None si indeterminable.
+
+    Sert uniquement a ORIENTER le verdict STALE_BRANCH (#22920) : savoir de quel
+    cote (base ou tete) vient le deplacement d'une paire exige une ref
+    ANTERIEURE aux deux. Les arbres base/tete seuls ne le peuvent pas -- les
+    scenarios « paire deplacee par main, branche en retard » et « paire renommee
+    par la PR » y sont des images miroir exactes (meme jeu d'observations :
+    chemin du base present au base / absent de la tete, chemin de la tete
+    present a la tete / absent du base). Un echec (histoires disjointes, ref
+    inconnue) degrade vers le comportement existant : pas de verdict STALE_BRANCH.
+    """
+    r = _run_git(["git", "merge-base", "HEAD", base_ref], cwd=str(repo_root))
+    if r.returncode != 0 or not r.stdout.strip():
+        return None
+    return r.stdout.strip()
+
+
+def _stale_branch_probe(repo_root: Path, base_pp: dict, head_pp: dict,
+                        base_ref: str, merge_base: str | None) -> dict | None:
+    """Detecte une paire DEPLACEE par la branche base apres le fork (#22920).
+
+    Contexte : `main` deplace une paire (O -> N) APRES le fork de la branche de
+    PR. Le registre au base-ref declare N ; le registre de la tete declare
+    encore O. `_classify_per_pair` ne recoit que deux STATUTS : ce cas lui est
+    indiscernable d'une vraie derive, et le rebaseline `--update` prescrit sur
+    ce malentendu attesterait un chemin que main a deja abandonne -- une
+    attestation qui REGRESSE le registre au merge.
+
+    Conditions (toutes requises, par cote python/csharp divergent) :
+
+      1. chemins divergents (`_pair_paths_diverge`, deja garanti par l'appelant) ;
+      2. sonde croisee : le chemin declare au BASE est absent de l'arbre de la
+         TETE, OU le chemin declare par la TETE est absent du BASE (le
+         deplacement fait par main a supprime l'ancien chemin) ;
+      3. orientation (merge-base) : le chemin declare par la TETE existait au
+         point de fork ET le chemin declare au BASE n'y existait PAS -- le
+         deplacement est l'oeuvre de la branche base, pas de la PR.
+
+    La condition 3 est le discriminateur que les sondes croisees de la condition
+    2 ne peuvent pas fournir (cf `_merge_base_ref` : symetrie exacte des deux
+    scenarios). Sans elle, un rename LEGITIME introduit par la PR serait
+    qualifie STALE_BRANCH a tort. Un rename par la PR echoue la condition 3 :
+    son nouveau chemin n'existe pas au point de fork.
+
+    Retourne None si le cas n'est pas etabli (comportement per-pair existant) ;
+    sinon {"paths_base": {...}, "paths_head": {...}} pour le rapport JSON.
+    """
+    for side in ("python", "csharp"):
+        base_path = base_pp.get(side)
+        head_path = head_pp.get(side)
+        if not (isinstance(base_path, str) and isinstance(head_path, str)
+                and base_path != head_path):
+            continue
+        # Sondes croisees (existence seulement) : la tete est-elle en retard ?
+        base_path_in_head = _git_blob_sha(repo_root, base_path, "HEAD") is not None
+        head_path_in_base = _git_blob_sha(repo_root, head_path, base_ref) is not None
+        if base_path_in_head and head_path_in_base:
+            continue  # les deux chemins existent aux deux refs : pas un deplacement
+        # Orientation : le deplacement vient-il de la branche base ?
+        if merge_base is None:
+            continue  # point de fork inconnu -> verdict non etabli (degradation safe)
+        head_path_at_fork = _git_blob_sha(repo_root, head_path, merge_base) is not None
+        base_path_at_fork = _git_blob_sha(repo_root, base_path, merge_base) is not None
+        if head_path_at_fork and not base_path_at_fork:
+            return {
+                "paths_base": {"python": base_pp.get("python"),
+                               "csharp": base_pp.get("csharp")},
+                "paths_head": {"python": head_pp.get("python"),
+                               "csharp": head_pp.get("csharp")},
+            }
+    return None
+
+
+# Gabarit de la commande de rebaseline : --update atteste une empreinte de
+# contenu, il ne RESTAURE pas un fichier supprime (cf split_introduced_pairs).
+REBASELINE_TEMPLATE = (
+    'python scripts/notebook_tools/check_twin_parity.py --update --pair '
+    '"%s" --by "<machine:workspace>"'
+)
+
+
+def split_introduced_pairs(pairs: list) -> tuple[list, list]:
+    """Separe les paires DRIFT_INTRODUCED selon la remediation applicable.
+
+    Le verdict per-pair (`_classify_per_pair`) dit que la PR a casse la parite ;
+    il ne dit pas COMMENT la reparer -- et les deux remediations n'ont rien a
+    voir. Le discriminant est deja dans la donnee : `head_status`, le statut de
+    la paire au HEAD produit par `check_pair` (vocabulaire
+    `OK / DRIFT / NUMBERING-DRIFT / MISSING`).
+
+      - `head_status == "MISSING"` : un carnet de la paire est absent au HEAD.
+        Un rebaseline (`--update --pair`) atteste une empreinte de contenu ; il
+        ne restaure pas un fichier supprime -- la commande echoue ou fait un
+        no-op et envoie l'agent sur une piste morte. Le lot « missing » porte
+        donc le constat de suppression et les deux corrections possibles.
+      - tout le reste (`DRIFT`, `NUMBERING-DRIFT`) : derive de contenu, les deux
+        carnets existent et leur blob SHA a bouge -> rebaseline apres re-audit
+        firsthand (comportement historique, inchange).
+
+    Retourne `(drift, missing)` : deux listes des dicts de paire, dans l'ordre du
+    rapport. Seules les paires `verdict == "DRIFT_INTRODUCED"` sont considerees
+    -- c'est exactement ce que le gate rougit ; une paire pre-existante
+    (`DRIFT_PRE_EXISTING`, y compris un carnet deja absent au base-ref) n'entre
+    dans aucun des deux lots.
+    """
+    drift: list = []
+    missing: list = []
+    for p in pairs or []:
+        if p.get("verdict") != "DRIFT_INTRODUCED":
+            continue
+        if p.get("head_status") == "MISSING":
+            missing.append(p)
+        else:
+            drift.append(p)
+    return drift, missing
+
+
+def _missing_remediation_line(pair: dict) -> str:
+    """Ligne de remediation d'une paire dont un carnet est absent au HEAD."""
+    name = pair.get("name", "?")
+    if pair.get("base_status") == "MISSING":
+        fix = ("entree ajoutee par cette PR mais carnet absent au HEAD -- cree le "
+               "carnet, ou retire l'entree du registre "
+               "scripts/notebook_tools/twin_pairs.d/")
+    else:
+        fix = ("carnet absent au HEAD alors qu'il existait au base-ref -- SUPPRIME "
+               "par cette PR : restaure le carnet dans cette PR, ou retire l'entree "
+               "du registre scripts/notebook_tools/twin_pairs.d/ si la suppression "
+               "est voulue")
+    details = " ; ".join(pair.get("head_details") or [])
+    suffix = f" ({details})" if details else ""
+    return f'  [MISSING] "{name}" : {fix}.{suffix}'
+
+
+def split_stale_pairs(pairs: list) -> list:
+    """Paires STALE_BRANCH du rapport `--per-pair` (#22920), dans l'ordre du rapport.
+
+    Ces paires ne sont JAMAIS comptees dans `drift_introduced` (compteur dedie
+    `stale_branch`) : la derive n'est pas l'oeuvre de la PR, elle est le
+    deplacement d'une paire par la branche base APRES le fork. Fonction separee
+    de `split_introduced_pairs` (qui ne voit que les DRIFT_INTRODUCED) pour ne
+    pas en changer l'arite -- le contrat des tests du lot missing est preserved.
+    """
+    return [p for p in pairs or [] if p.get("verdict") == "STALE_BRANCH"]
+
+
+def _stale_remediation_line(pair: dict) -> str:
+    """Ligne de remediation d'une paire deplacee par la branche base (#22920).
+
+    Le remede est `gh pr update-branch` (reprendre le deplacement), JAMAIS un
+    rebaseline : la ligne ne doit contenir NI `--update` NI `--pair` -- un
+    rebaseline sur les anciens chemins ecraserait au merge la declaration a
+    jour du registre de main (regression du registre, cf #22920).
+    """
+    name = pair.get("name", "?")
+    pb = pair.get("paths_base") or {}
+    ph = pair.get("paths_head") or {}
+    return (
+        f'  [STALE-BRANCH] "{name}" : paire DEPLACEE sur la branche base apres '
+        f"le fork -- la tete declare python={ph.get('python', '?')} / "
+        f"csharp={ph.get('csharp', '?')}, le base declare "
+        f"python={pb.get('python', '?')} / csharp={pb.get('csharp', '?')}. "
+        f"Remede : gh pr update-branch, puis rejoue le travail et l attestation "
+        f"sur les NOUVEAUX chemins du base. Un rebaseline sur les anciens "
+        f"chemins regresserait le registre au merge (#22920)."
+    )
+
+
+def render_introduced_remediation(pairs: list) -> list:
+    """Lignes de remediation du gate, dans l'ordre des trois lots.
+
+    Consomme le rapport JSON `--per-pair` (`d["pairs"]`) et rend le texte que le
+    workflow imprime dans le log ET dans l'annotation ::error :
+
+      - derive de contenu -> la commande de rebaseline, inchangee ;
+      - carnet supprime  -> le constat de suppression et les deux corrections
+        possibles, SANS commande de rebaseline (elle ne restaure rien) ;
+      - branche perimee (#22920) -> `gh pr update-branch` + rejouer le travail
+        sur les nouveaux chemins, SANS rebaseline (il attesterait un chemin que
+        main a abandonne).
+
+    Aucun lot (rapport sans paire DRIFT_INTRODUCED ni STALE_BRANCH) -> la
+    commande generique historique, a nom exact a completer.
+    """
+    drift, missing = split_introduced_pairs(pairs)
+    stale = split_stale_pairs(pairs)
+    lines: list = []
+    if drift:
+        lines.append("Derive de contenu (rebaseline APRES re-audit firsthand) :")
+        for p in drift:
+            lines.append(REBASELINE_TEMPLATE % p.get("name", "?"))
+    if missing:
+        lines.append("Carnet SUPPRIME (aucun rebaseline ne restaure un fichier "
+                     "supprime) :")
+        for p in missing:
+            lines.append(_missing_remediation_line(p))
+    if stale:
+        lines.append("Branche PERIMEE (paire deplacee sur la branche base apres "
+                     "le fork -- le rebaseline y serait faux, #22920) :")
+        for p in stale:
+            lines.append(_stale_remediation_line(p))
+    if not drift and not missing and not stale:
+        lines.append(REBASELINE_TEMPLATE % "<nom exact de l entree>")
+    return lines
+
+
+def _paire_inconnue(nom: str, pairs: list) -> None:
+    """Message d'erreur pour un `--pair` qui ne nomme aucune paire (#20197)."""
+    names = sorted({pp.get("name", "?") for pp in pairs})
+    print(
+        f"Aucune paire nommee '{nom}'. "
+        f"Noms connus : {', '.join(names[:10])}{'...' if len(names) > 10 else ''}",
+        file=sys.stderr,
+    )
+
+
+# --- base de comparaison lue a l'execution (#22292) --------------------------
+# En CI, `actions/checkout` extrait `refs/pull/N/merge` : un commit de fusion
+# dont le PREMIER parent est le `main` tel qu'il etait a l'evenement, le second
+# etant la tete de la PR. `origin/main` est refetch au demarrage du job. Sous
+# famine de runners, `main` avance entre les deux lectures : toute paire
+# rebaselinee dans l'intervalle est DRIFT au merge ref et OK a `origin/main`,
+# donc classee DRIFT_INTRODUCED sur une PR qui ne la touche pas (instance
+# mesuree : #22218, 11 paires dont aucune n'etait touchee ; 22 des 256 PRs
+# ouvertes portaient ce rouge a leur tete).
+#
+# `--base auto` repond a la question que ce gate pose vraiment -- « qu'a
+# introduit CETTE PR ? » -- en comparant au main dont le merge ref est issu :
+# le choix ne depend plus du temps d'attente en file.
+_AUTO_BASE = "auto"
+# Sujet exact du commit de fusion fabrique par GitHub :
+#   Merge 1ad73da1e3 into e0964ecf4a
+# Le motif est un DISCRIMINANT, pas une dependance : s'il ne matche pas (sujet
+# reecrit, commit de fusion pousse par l'auteur sur sa branche), on retombe sur
+# `origin/main`, c'est-a-dire le comportement d'avant ce fix -- jamais une base
+# plus fausse que l'ancienne.
+_GITHUB_MERGE_SUBJECT = re.compile(r"^Merge [0-9a-f]{7,40} into [0-9a-f]{7,40}")
+
+
+def resolve_base_ref(repo_root: Path, base: str) -> str:
+    """Resout la sentinelle `auto` en une ref git reelle (#22292).
+
+    `HEAD^1` quand `HEAD` est un commit de fusion GitHub (`refs/pull/N/merge`),
+    `origin/main` sinon. Toute autre valeur est rendue inchangee : cette
+    fonction n'interprete que la sentinelle.
+
+    Un `HEAD` d'un seul parent (branche ordinaire), ou dont le sujet n'a pas la
+    forme `Merge <sha> into <sha>`, n'est pas un merge ref : la base reste
+    `origin/main`, soit exactement le comportement anterieur au fix.
+    """
+    if base != _AUTO_BASE:
+        return base
+    # `rev-list --parents -n 1 HEAD` : le commit puis ses parents. Deux parents
+    # ou plus -> commit de fusion. Aucune exception n'est avalee ici : une pause
+    # git (`GitTimeoutError`) doit interrompre la mesure en rc 3, pas se
+    # deguiser en base par defaut.
+    parents = _run_git(
+        ["git", "rev-list", "--parents", "-n", "1", "HEAD"], cwd=repo_root
+    ).stdout.split()
+    if len(parents) < 3:
+        return "origin/main"
+    subject = _run_git(
+        ["git", "log", "-1", "--format=%s", "HEAD"], cwd=repo_root
+    ).stdout.strip()
+    if _GITHUB_MERGE_SUBJECT.match(subject):
+        return "HEAD^1"
+    return "origin/main"
+
+
 def main(argv=None) -> int:
+    """Point d'entree CLI. Un appel git qui depasse sa borne de delai interrompt la
+    mesure : message explicite sur stderr et rc 3 (distinct de 1 = drift et de
+    2 = erreur de registre ou d'usage), jamais une trace brute ni un verdict vide."""
+    try:
+        return _main(argv)
+    except GitTimeoutError as exc:
+        print(f"ERREUR : {exc}", file=sys.stderr)
+        return 3
+
+
+def _main(argv=None) -> int:
     p = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     p.add_argument("--registry", default=str(DEFAULT_REGISTRY),
                    help=f"Chemin du registre YAML (defaut: {DEFAULT_REGISTRY.name})")
@@ -1664,7 +2046,9 @@ def main(argv=None) -> int:
                    help="Mode per-pair : compare HEAD vs --base <ref>. Ne FAIL que "
                         "le drift INTRODUIT par la PR, jamais le drift pre-existant.")
     p.add_argument("--base", default=None,
-                   help="Ref git de base pour le mode --per-pair (ex. origin/main, HEAD~1).")
+                   help="Ref git de base pour le mode --per-pair (ex. origin/main, "
+                        "HEAD~1, ou 'auto' : HEAD^1 quand HEAD est un merge ref "
+                        "GitHub, origin/main sinon -- cf #22292).")
     p.add_argument("--ci-strict", action="store_true",
                    help="Mode CI cron (#9399 volet b) : check fleet-wide SANS base ref, "
                         "avec breakdown 4 categories (ok_legacy / ok_content / drift_blob / "
@@ -1673,8 +2057,11 @@ def main(argv=None) -> int:
                         "QUEL drift (vs la semantique 'DRIFT_or_MISSING only' historique). "
                         "Distingue erreur d'outil vs constat de drift (cf L948/L949, c.1240).")
     p.add_argument("--pair", default=None,
-                   help="Restreindre --update a une paire nommee (ex. 'Search-9-LP'). "
-                        "Impossible a combiner avec --family.")
+                   help="Restreindre a une paire nommee (ex. 'Search-9-LP') : applique par "
+                        "--update, --migrate-audits, --check et --verify-recorded-sha "
+                        "(#20197), ainsi qu'en --per-pair --base <ref> (#21281) ; refuse par "
+                        "--coverage et --summary-by-verdict (modes de recensement integral). "
+                        "Nom inconnu = rc 2. Impossible a combiner avec --family.")
     p.add_argument("--yes-all-pairs", action="store_true",
                    help="Opt-in explicite pour rebaseline TOUTES les paires du registre "
                         "avec --update. Sans ce flag (ou --family/--pair), --update refuse.")
@@ -1741,7 +2128,21 @@ def main(argv=None) -> int:
         p.error("--migrate-audits est un mode exclusif : incompatible avec "
                 "--update / --per-pair / --base / --verify-recorded-sha / "
                 "--coverage / --summary-by-verdict / --ci-strict.")
-    # Garde anti-derive MERGE_HEAD / REBASE_HEAD (#11732) : pendant un merge non
+    # Selecteurs sans portee pour les modes de recensement seul (#21281,
+    # reliquat #20578) : un --pair/--family sur --coverage ou
+    # --summary-by-verdict etait silencieusement ignore -- un selecteur
+    # inconnu rendait rc 0 sur le recensement integral. On refuse a
+    # l'analyse (p.error) plutot que d'evaluer un selecteur qui n'a aucun
+    # sens pour ces deux modes.
+    if args.coverage and (args.pair or args.family):
+        p.error("--coverage est un mode de recensement integral : --pair/--family "
+                "n'y designent rien (recense justement les notebooks ABSENTS du "
+                "registre). Retirer le selecteur.")
+    if args.summary_by_verdict and (args.pair or args.family):
+        p.error("--summary-by-verdict est un mode de recensement integral : "
+                "--pair/--family n'y designent rien (compte les paires par "
+                "bridge_verdict). Retirer le selecteur.")
+    # Garde anti-derive merge/rebase en cours (#11732) : pendant un merge non
     # commite, `git ls-tree HEAD` lit l'ANCIENNE tete de branche (pas le resultat
     # du merge). --update atteste alors des blob SHAs qui ne refletent pas l'etat
     # final du notebook -- au commit du merge, les notebooks obtiennent de
@@ -1758,20 +2159,47 @@ def main(argv=None) -> int:
         except SystemExit:
             repo_root_for_state = None
         if repo_root_for_state is not None:
-            # git rev-parse -q --verify MERGE_HEAD/REBASE_HEAD : rc=0 si le
-            # depot est en cours de merge/rebase interactif. Le check precede
-            # `_repo_root()` final pour economiser un subprocess en cas d'erreur
-            # deja connue (mais apres args.repo_root parse, qui peut etre override
-            # dans les tests --repo-root sur tmp_path).
-            for state_file, label in (("MERGE_HEAD", "merge"), ("REBASE_HEAD", "rebase")):
+            # Le check precede `_repo_root()` final pour economiser un subprocess
+            # en cas d'erreur deja connue (mais apres args.repo_root parse, qui
+            # peut etre override dans les tests --repo-root sur tmp_path).
+            #
+            # Merge en cours : `git rev-parse -q --verify MERGE_HEAD` (rc=0 si
+            # et seulement si un merge est non commite) -- detection inchangee.
+            r = _run_git(
+                ["git", "rev-parse", "-q", "--verify", "MERGE_HEAD"],
+                cwd=str(repo_root_for_state),
+            )
+            if r.returncode == 0:
+                p.error("--update pendant un merge non committe : HEAD ne contient pas "
+                        "le resultat du merge. Commitez d'abord, puis re-attestez "
+                        "(cf #11732, variante operationnelle de #8957).")
+            # Rebase en cours : l'indicateur fiable est l'existence du repertoire
+            # `rebase-merge` (interactif/merge backend) ou `rebase-apply`
+            # (backend am), PAS le ref REBASE_HEAD. Git peut y laisser un
+            # REBASE_HEAD orphelin apres un rebase interrompu : un clone qui en
+            # porte un sans rebase en cours voyait alors --update refuse a tort
+            # (signale par le coordinateur 2026-10-27 : REBASE_HEAD du 20/09,
+            # ni rebase-merge ni rebase-apply, 3 tests update_guard rouges).
+            # `git rev-parse --git-path <name>` resout le chemin dans le git dir
+            # du depot (worktree compris) ; la sortie est relative au cwd dans
+            # le clone principal (`.git/rebase-merge`) et absolue dans un
+            # worktree -- d'ou la resolution explicite ci-dessous.
+            for state_dir in ("rebase-merge", "rebase-apply"):
                 r = _run_git(
-                    ["git", "rev-parse", "-q", "--verify", state_file],
+                    ["git", "rev-parse", "--git-path", state_dir],
                     cwd=str(repo_root_for_state),
                 )
-                if r.returncode == 0:
-                    p.error(f"--update pendant un {label} non committe : HEAD ne contient pas "
-                            f"le resultat du {label}. Commitez d'abord, puis re-attestez "
-                            f"(cf #11732, variante operationnelle de #8957).")
+                raw = r.stdout.strip() if r.returncode == 0 else ""
+                if not raw:
+                    continue
+                state_path = Path(raw)
+                if not state_path.is_absolute():
+                    state_path = repo_root_for_state / state_path
+                if state_path.exists():
+                    p.error("--update pendant un rebase non termine : HEAD ne contient pas "
+                            "le resultat du rebase. Terminez ou annulez le rebase "
+                            "(git rebase --continue / --abort), puis re-attestez "
+                            "(cf #11732, variante operationnelle de #8957).")
     if args.pair and args.family:
         p.error("--pair et --family sont mutuellement exclusifs avec --update.")
     if args.ci_strict and args.per_pair:
@@ -1792,6 +2220,16 @@ def main(argv=None) -> int:
 
     repo_root = Path(args.repo_root) if args.repo_root else _repo_root()
     reg_path = Path(args.registry)
+
+    # #22292 : la base du mode --per-pair se resout a l'execution. `--base` exige
+    # deja `--per-pair` (validation ci-dessus), donc la sentinelle ne peut pas
+    # s'inviter dans un mode qui n'en fait rien.
+    if args.base == _AUTO_BASE:
+        args.base = resolve_base_ref(repo_root, args.base)
+        origine = ("merge ref GitHub : comparaison au main dont il est issu"
+                   if args.base == "HEAD^1"
+                   else "HEAD n'est pas un merge ref GitHub")
+        print(f"--base auto -> '{args.base}' ({origine}, #22292)", file=sys.stderr)
 
     # --- Mode --summary-by-verdict (#10439) : denominateur actionnable sans
     # soustraction manuelle. Compte les paires par bridge_verdict ; les paires
@@ -1868,14 +2306,59 @@ def main(argv=None) -> int:
         # #8542) -> _load_registry_at_ref essaie le repertoire puis retombe sur
         # le fichier legacy.
         pairs_head = load_registry(reg_path)
-        pairs_base = _load_registry_at_ref(repo_root, args.base, reg_path)
+
+        # Application stricte des selecteurs (#21281, reliquat #20578) :
+        # un nom ou une famille inconnue -> rc 2 avec la liste des noms
+        # connus, comme --check --update le fait deja depuis #20578.
+        # On check AVANT le load du base-ref (qui fait un git ls-tree par
+        # paire et est dispendieux) : un selecteur inconnu ne doit jamais
+        # payer le cout d'un parcours integral.
+        if args.family:
+            known_families = sorted({pp.get("family", "?") for pp in pairs_head})
+            if args.family not in known_families:
+                print(
+                    f"--family {args.family!r} inconnue. Familles connues : "
+                    f"{known_families}",
+                    file=sys.stderr,
+                )
+                return 2
+            pairs_head = [pp for pp in pairs_head if pp.get("family") == args.family]
+        elif args.pair:
+            known_names = sorted({pp.get("name", "?") for pp in pairs_head})
+            if args.pair not in known_names:
+                print(
+                    f"--pair {args.pair!r} inconnue. Noms connus ({len(known_names)}) : "
+                    f"{known_names}",
+                    file=sys.stderr,
+                )
+                return 2
+            pairs_head = [pp for pp in pairs_head if pp.get("name") == args.pair]
+
+        # #21972 : ne charger au base-ref que les paires selectionnees. `pairs_head`
+        # est deja filtre par --pair/--family (juste dessus) ; sans selecteur il
+        # porte tout le registre -> `names` = tous les noms -> chargement integral,
+        # comportement strictement inchange.
+        pairs_base = _load_registry_at_ref(
+            repo_root, args.base, reg_path,
+            names={pp.get("name", "?") for pp in pairs_head},
+        )
         # Index par nom (au cas ou l'ordre ou les ajouts/suppressions different)
         base_by_name = {pp.get("name", "?"): pp for pp in pairs_base}
 
-        if args.family:
-            pairs_head = [pp for pp in pairs_head if pp.get("family") == args.family]
-            if not pairs_head:
-                print(f"Aucune paire pour la famille '{args.family}'.", file=sys.stderr)
+        # #22920 : verdict STALE_BRANCH, decide EN AMONT de _classify_per_pair
+        # (le cas est invisible dans ses entrees : deux statuts seulement). Le
+        # point de fork (merge-base) n'est resolu QUE si au moins une paire est
+        # declaree avec des chemins differents aux deux refs -- un test pur,
+        # sans appel git : un registre sans divergence ne paie rien.
+        merge_base = (
+            _merge_base_ref(repo_root, args.base)
+            if any(
+                (b := base_by_name.get(pp.get("name", "?"))) is not None
+                and _pair_paths_diverge(b, pp)
+                for pp in pairs_head
+            )
+            else None
+        )
 
         results = []
         for pp in pairs_head:
@@ -1892,11 +2375,24 @@ def main(argv=None) -> int:
                 base_details = base_check["details"]
 
             head_status = head_state["status"]
-            # Classification per-pair (cf _classify_per_pair -- le cas paire ajoutee
-            # est special : pas d'etat pre-existant, l'etat HEAD = ce que la PR introduit).
-            verdict = _classify_per_pair(base_status, head_status)
+            # #22920 : branche perimee ? Paire deplacee par la branche base apres
+            # le fork -- le registre de la tete declare encore l'ancien chemin.
+            # Sondes croisees + orientation, uniquement si les chemins divergent.
+            stale_paths = (
+                _stale_branch_probe(repo_root, base_pp, pp, args.base, merge_base)
+                if base_pp is not None and _pair_paths_diverge(base_pp, pp)
+                else None
+            )
+            if stale_paths is not None:
+                # Verdict dedie : PAS un DRIFT_INTRODUCED (compteur propre), et le
+                # remede est `gh pr update-branch`, jamais un rebaseline.
+                verdict = "STALE_BRANCH"
+            else:
+                # Classification per-pair (cf _classify_per_pair -- le cas paire ajoutee
+                # est special : pas d'etat pre-existant, l'etat HEAD = ce que la PR introduit).
+                verdict = _classify_per_pair(base_status, head_status)
 
-            results.append({
+            entry = {
                 "name": name,
                 "family": pp.get("family", "?"),
                 "parity_level": pp.get("parity_level", "?"),
@@ -1906,12 +2402,17 @@ def main(argv=None) -> int:
                 "verdict": verdict,
                 "base_details": base_details,
                 "head_details": head_state["details"],
-            })
+            }
+            if stale_paths is not None:
+                entry["paths_base"] = stale_paths["paths_base"]
+                entry["paths_head"] = stale_paths["paths_head"]
+            results.append(entry)
 
         n_ok = sum(1 for r in results if r["verdict"] == "OK")
         n_introduced = sum(1 for r in results if r["verdict"] == "DRIFT_INTRODUCED")
         n_resolved = sum(1 for r in results if r["verdict"] == "DRIFT_RESOLVED")
         n_pre_existing = sum(1 for r in results if r["verdict"] == "DRIFT_PRE_EXISTING")
+        n_stale = sum(1 for r in results if r["verdict"] == "STALE_BRANCH")
 
         if args.json:
             out = {
@@ -1923,6 +2424,7 @@ def main(argv=None) -> int:
                 "drift_introduced": n_introduced,
                 "drift_resolved": n_resolved,
                 "drift_pre_existing": n_pre_existing,
+                "stale_branch": n_stale,
                 "pairs": results,
             }
             print(json.dumps(out, ensure_ascii=False, indent=2))
@@ -1932,6 +2434,7 @@ def main(argv=None) -> int:
                 "DRIFT_INTRODUCED": "DRIFT-INTRO",
                 "DRIFT_RESOLVED": "DRIFT-FIXED",
                 "DRIFT_PRE_EXISTING": "DRIFT-PRE",
+                "STALE_BRANCH": "STALE-BRANCH",
             }
             for r in results:
                 tag = tag_map[r["verdict"]]
@@ -1941,9 +2444,15 @@ def main(argv=None) -> int:
                     for d in r["head_details"]:
                         print(f"       HEAD: {d}")
             print(f"\nTotal : {len(results)} paire(s) | "
-                  f"OK={n_ok} INTRO={n_introduced} FIXED={n_resolved} PRE={n_pre_existing}")
+                  f"OK={n_ok} INTRO={n_introduced} FIXED={n_resolved} "
+                  f"PRE={n_pre_existing} STALE={n_stale}")
 
-        if args.check and n_introduced > 0:
+        # Le gate rougit sur DRIFT_INTRODUCED **et** sur STALE_BRANCH : une paire
+        # perimee exige une action lane (`gh pr update-branch`) -- le bloc de
+        # remediation du workflow, ou vit la ligne update-branch, n'est rendu que
+        # sur exit 1. Les paires STALE ne comptent PAS dans drift_introduced
+        # (#22920) : le message de derive de contenu ne doit pas les viser.
+        if args.check and (n_introduced > 0 or n_stale > 0):
             if args.per_pair:
                 # Le DRIFT d'une normalisation outillee (strip_probe_banner.py --apply,
                 # strip_machine_paths.py, scrub_papermill_paths.py) deplace le blob SHA
@@ -1958,14 +2467,19 @@ def main(argv=None) -> int:
                 # JSON -> json.load levait "Extra data" et faisait tomber le gate en raw
                 # traceback (PRs #9097/#9098, exit 1 sur drift introduit). stderr reste visible
                 # dans les logs CI sans corrompre le rapport.
-                print(
-                    "\nRappel : si le DRIFT vient d'une normalisation outillee qui "
-                    "deplace le blob SHA (strip_probe_banner.py --apply, "
-                    "strip_machine_paths.py, scrub_papermill_paths.py), le rebaseline "
-                    "--update va EN DERNIER, apres ces strips -- attester PUIS "
-                    "stripper invalide l'attestation (#8957).",
-                    file=sys.stderr,
-                )
+                #
+                # Uniquement si un vrai DRIFT_INTRODUCED existe : sur une sortie
+                # rouge STALE_BRANCH seule, ce rappel (rebaseline apres strips)
+                # ne s'applique pas -- le remede est `gh pr update-branch`.
+                if n_introduced > 0:
+                    print(
+                        "\nRappel : si le DRIFT vient d'une normalisation outillee qui "
+                        "deplace le blob SHA (strip_probe_banner.py --apply, "
+                        "strip_machine_paths.py, scrub_papermill_paths.py), le rebaseline "
+                        "--update va EN DERNIER, apres ces strips -- attester PUIS "
+                        "stripper invalide l'attestation (#8957).",
+                        file=sys.stderr,
+                    )
             return 1
         return 0
 
@@ -2205,6 +2719,13 @@ def main(argv=None) -> int:
         # en CI on cible generalement tout le registre, mais un audit local peut
         # vouloir borner a une famille.
         target_pairs = pairs
+        if args.pair is not None:
+            # #20197 : --pair etait accepte puis ignore ici aussi. Nom inconnu = rc 2.
+            selection = [pp for pp in target_pairs if pp.get("name") == args.pair]
+            if not selection:
+                _paire_inconnue(args.pair, target_pairs)
+                return 2
+            target_pairs = selection
         if args.family:
             target_pairs = [pp for pp in target_pairs if pp.get("family") == args.family]
             if not target_pairs:
@@ -2265,6 +2786,20 @@ def main(argv=None) -> int:
             return 1
         return 0
 
+    # --pair (#20197) : restreint --check a la paire nommee. Avant ce correctif il
+    # etait accepte puis ignore : les 157 paires etaient parcourues (628 appels git
+    # pour le controle d'une seule). Un nom inconnu echoue en nommant les noms
+    # connus, jamais en retombant sur le registre entier.
+    if args.pair is not None:
+        selection = [pp for pp in pairs if pp.get("name") == args.pair]
+        if not selection:
+            _paire_inconnue(args.pair, pairs)
+            return 2
+        pairs = selection
+    # Selecteur sans paire (--family inconnue, deja signalee plus haut) : rien a
+    # mesurer. C'est une erreur d'usage, jamais un succes sur zero paire (#20197).
+    if not pairs and (args.pair is not None or args.family):
+        return 2
     results = [check_pair(repo_root, pp) for pp in pairs]
     n_ok = sum(1 for r in results if r["status"] == "OK")
     n_drift = sum(1 for r in results if r["status"] == "DRIFT")

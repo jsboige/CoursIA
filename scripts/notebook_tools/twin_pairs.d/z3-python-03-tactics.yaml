@@ -6,6 +6,7 @@
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Z3 EST le moteur SOTA, branche NATIVEMENT des deux cotes : Microsoft.Z3 (NuGet officiel) et pyz3 sont les deux bindings de la meme lib C++ Z3 sous-jacente (pas un pont intermediaire type IKVM/PythonNet). Parite firsthand sur Tactic('simplify') cellule 1 des deux notebooks : meme output SMT-LIB canonique — C# '(not (<= x 0))' == Python 'Not(x <= 0)' et C# '(= y (+ 5 x))' == Python 'y == 1 + x'. Aucune asymetrie de machinerie a corriger."
   known_differences:
+    - "Re-baseline 2026-10-14 (hors-flotte:claude-session-16638, #16638) : restauration des accents de la prose markdown (tranche z3-api #16638, outil canonique restore_accents_canonical.py, invariance strip_accents a 0 finding), cote Python seul ; cote C# byte-identique a main. Aucune cellule de code, sortie ni execution_count touchee. Parite inchangee : attestation (le blob SHA se deplace), pas reparation. --update en DERNIERE operation (cf #8957)."
     - "PR #17059 (redressement densite #17040) : cote Python seul edite, markdown seul -- retrait de la cellule de campagne `### Lecture chiffree : la paire XOR/AND rendue par le solveur`. Les 14 cellules de code et leurs sorties sont byte-identiques a la base ; le binding pyz3 est inchange."
     - "Python : pyz3 (Tactic('simplify'), Then(), With()). C# : Microsoft.Z3 .NET (Tactic(ctx, ...))."
     - "Concept demontre (simplify elimine une redondance, ctx-solver-simplify la garde) verifie firsthand cote Python (NB-03 CLEAN)."

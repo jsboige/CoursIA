@@ -32,6 +32,7 @@ import posixpath
 import re
 import subprocess
 import sys
+import urllib.parse
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -45,6 +46,7 @@ LANDING_PAGES = [
     "MyIA.AI.Notebooks/Sudoku/index.qmd",
     "MyIA.AI.Notebooks/GameTheory/index.qmd",
     "MyIA.AI.Notebooks/Probas/index.qmd",
+    "MyIA.AI.Notebooks/Physique/index.qmd",
     "docs/index.qmd",
     # COURSE_CATALOG.generated.md est lie depuis index.qmd (L64) mais servi en
     # texte brut sinon : on le REND en HTML (verifie firsthand #10925 Q2 —
@@ -94,6 +96,7 @@ NOTEBOOK_SUBTREES = (
     "MyIA.AI.Notebooks/GenAI/Image/",            # tranche 15 #10923 (20)
     "MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/",  # tranche 15 #10923 (23)
     "MyIA.AI.Notebooks/GenAI/PostTraining/",     # tranche 15 #10923 (14)
+    "MyIA.AI.Notebooks/GenAI/HumorDetection/",   # serie HumorDetection #20301 (1, introduction a la detection d'humour)
     "MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/",  # tranche 15 #10923 (1)
     "MyIA.AI.Notebooks/GenAI/Security/",         # tranche 19 #18423 (6, Control / Oversight / Tooling)
     "MyIA.AI.Notebooks/GenAI/SemanticKernel/",   # tranche 15 #10923 (20)
@@ -487,6 +490,25 @@ def duplicate_render_entries(
     return dupes
 
 
+def _emit_entry(lines: list[str], emitted: set[str], path: str) -> None:
+    """Ajoute ``- "path"`` sauf si le chemin est deja emis (#22274).
+
+    Le meme fichier peut apparaitre dans deux sections : un
+    ``docs/reference/*.README.md`` satisfait le motif ``*README.md`` **et** le
+    motif ``docs/*.md``. Quarto ne rend le document qu'une fois, mais la liste
+    generee portait les deux lignes, et le doublon faisait echouer toute
+    comparaison « nombre d'entrees == nombre d'entrees uniques ». La premiere
+    section gagne (ordre d'emission : landing, readmes, docs, notebooks) ; le
+    dedup ne s'applique qu'a l'**emission**, jamais a
+    ``duplicate_render_entries``, qui garde son role de signal d'index non
+    resolu *intra*-section (#20055).
+    """
+    if path in emitted:
+        return
+    emitted.add(path)
+    lines.append(f'    - "{path}"')
+
+
 def build_render_block(sections: dict[str, list[str]] | None = None) -> list[str]:
     """Build the YAML lines for the project.render list.
 
@@ -494,18 +516,24 @@ def build_render_block(sections: dict[str, list[str]] | None = None) -> list[str
     (cf. ``render_sections``) : la garde anti-doublon et l'emission portent
     alors sur la meme liste, au lieu de deux enumerations qui pourraient
     diverger entre deux appels a git.
+
+    Chaque chemin est emis **au plus une fois** (#22274) : un fichier present
+    dans deux sections n'est rendu qu'une fois par Quarto, et la liste generee
+    doit le refleter, sinon elle ne satisfait pas son propre critere de
+    fraicheur (« autant d'entrees que d'entrees uniques »).
     """
     if sections is None:
         sections = render_sections()
     readmes = sections["readmes"]
     docs_md = sections["docs"]
     notebooks = sections["notebooks"]
+    emitted: set[str] = set()
 
     lines = ["project:", "  type: site", "  output-dir: _site", "  render:"]
     # Landing pages (qmd) + catalogue genere (rendu HTML, cf. LANDING_PAGES)
     lines.append("    # Landing pages (.qmd) + COURSE_CATALOG.generated.md (rendu HTML).")
     for entry in sections["landing"]:
-        lines.append(f'    - "{entry}"')
+        _emit_entry(lines, emitted, entry)
     # READMEs (explicit list — globs do not expand in Quarto 1.7, see header)
     lines.append("    # README.md rendus en HTML (Axe C #4211). Liste explicite")
     lines.append("    # (regeneree par scripts/regen_quarto_render.py) car Quarto 1.7")
@@ -517,7 +545,7 @@ def build_render_block(sections: dict[str, list[str]] | None = None) -> list[str
     # #19901, cas mesure #19579). La liste triee qui suit fusionne sans conflit.
     lines.append("    # Archives et libs vendored EXCLUES (history interne, non pedagogique).")
     for p in readmes:
-        lines.append(f'    - "{p}"')
+        _emit_entry(lines, emitted, p)
     # docs/*.md (non-README) rendus en HTML (issue #18422, etend Axe C #4211).
     # Meme mecanisme que les READMEs : liste explicite par garde de Quarto 1.7
     # (cf. header). Les fichiers avec `---` hr sont exclus (garde #11451,
@@ -528,7 +556,7 @@ def build_render_block(sections: dict[str, list[str]] | None = None) -> list[str
         lines.append("    # que les READMEs : liste explicite (globs non etendus en Quarto 1.7).")
         lines.append("    # Garde `---` (#11451) appliquee auto-resorbante.")
         for p in docs_md:
-            lines.append(f'    - "{p}"')
+            _emit_entry(lines, emitted, p)
     # Notebooks rendered to HTML (EPIC #10921, pilote Search #10923). Explicit
     # list (globs do not expand in Quarto 1.7, see README comment above).
     if notebooks:
@@ -537,8 +565,47 @@ def build_render_block(sections: dict[str, list[str]] | None = None) -> list[str
         lines.append("    # Execution desactivee + echo: true au niveau racine (_quarto.yml).")
         lines.append("    # Sous-arbres rendus : " + ", ".join(sorted(NOTEBOOK_SUBTREES)) + ".")
         for p in notebooks:
-            lines.append(f'    - "{p}"')
+            _emit_entry(lines, emitted, p)
     return lines
+
+
+def _parse_block_entries(yml_text: str) -> set[str]:
+    """Return the set of render-list paths currently present in ``yml_text``.
+
+    The block is the ``project:`` top-level section; we scan for any line
+    of the form ``    - "path"`` (the comment lines are skipped by the regex
+    because they don't match the entry pattern). Used by ``--check`` to name
+    the missing/stale entries on rouge, not just say "stale" (#19895).
+    """
+    out: set[str] = set()
+    in_block = False
+    for line in yml_text.splitlines():
+        if line.startswith("project:"):
+            in_block = True
+            continue
+        if in_block:
+            if line and not line.startswith((" ", "\t", "#", "-")):
+                # A new top-level key ends the project block.
+                break
+            m = re.match(r'\s*-\s+"([^"]+)"\s*$', line)
+            if m:
+                out.add(m.group(1))
+    return out
+
+
+def _section_of(entry: str) -> str:
+    """Return the section a render-list entry belongs to.
+
+    Used by ``--check`` to label each named diff with its section, so the
+    reviewer doesn't have to re-derive it from NOTEBOOK_SUBTREES by hand.
+    """
+    if entry in LANDING_PAGES:
+        return "landing"
+    if entry.endswith("README.md") or entry == "README.md":
+        return "readmes"
+    if entry.startswith("docs/") and entry.endswith(".md"):
+        return "docs"
+    return "notebooks"
 
 
 def replace_render_block(yml_text: str, new_block_lines: list[str]) -> str:
@@ -584,13 +651,32 @@ def replace_render_block(yml_text: str, new_block_lines: list[str]) -> str:
 # rendu par la garde `---` #11451 ou hors sous-arbre rendu). Les READMEs hors
 # sous-arbres rendus (ex. QuantConnect/) forment la population « source
 # brute » documentee -- nonverifies par cette garde.
-_IPYNB_LINK_RE = re.compile(r"\]\(([^)#\s]+\.ipynb)\)")
-_HTML_LINK_RE = re.compile(r"\]\(([^)#\s]+\.html)\)")
+_IPYNB_LINK_RE = re.compile(r"\]\(([^)\s]+?\.ipynb(?:[?#][^)\s]*)?)\)")
+_HTML_LINK_RE = re.compile(r"\]\(([^)\s]+?\.html(?:[?#][^)\s]*)?)\)")
 
 
 def _normalise_readme_target(base: Path, href: str) -> str:
-    """Return a repository-relative POSIX path with ``..`` resolved."""
-    return posixpath.normpath((base / href).as_posix())
+    """Return a repository-relative POSIX path with ``..`` resolved.
+
+    Le href est decode de son percent-encoding avant resolution : sur
+    github.com le navigateur decode, donc ``Cr%C3%A9ateur%20de%20mail.ipynb``
+    vise reellement ``Créateur de mail.ipynb``. La comparaison litterale
+    produisait un faux positif BROKEN sur les README liençant des carnets
+    a accents/espaces (2 violations fantomes sur main, mesurees le 25/10).
+
+    La query et le fragment sont retires **avant** le decodage : un lien
+    ``carnet.ipynb#section`` ou ``carnet.ipynb?raw=1`` designe le fichier, pas
+    un nom qui contiendrait ``#`` ou ``?``. L'ordre est celui de
+    ``check_docs_index.py`` (split avant ``unquote``) ; le prendre a l'envers
+    laisserait un ``%23`` decode en ``#`` dans le chemin. Mesure du 25/10 sur
+    563 README : **0** lien relatif ``.ipynb``/``.html`` portant ``#`` ou ``?``
+    -- la classe est latente, pas active, mais elle produirait un BROKEN
+    fantome au premier lien ancre.
+    """
+    path_part = href.split("#", 1)[0].split("?", 1)[0]
+    return posixpath.normpath(
+        (base / urllib.parse.unquote(path_part)).as_posix()
+    )
 
 
 def readme_link_violations(
@@ -757,9 +843,41 @@ def main() -> int:
     proposed = replace_render_block(current, new_block)
 
     if args.check:
-        if proposed != current:
-            print("::error::_quarto.yml render list is stale. "
-                  "Run: python scripts/regen_quarto_render.py", file=sys.stderr)
+        new_entries = _parse_block_entries(proposed)
+        cur_entries = _parse_block_entries(current)
+        added = sorted(new_entries - cur_entries, key=str.lower)
+        removed = sorted(cur_entries - new_entries, key=str.lower)
+        if added or removed:
+            lines: list[str] = ["::error::_quarto.yml render list is stale (#19895):"]
+            if added:
+                lines.append(
+                    f"::error::  +{len(added)} added (in tree, missing from "
+                    f"_quarto.yml) :"
+                )
+                for p in added[:20]:
+                    lines.append(f"::error::    + [{_section_of(p)}] {p}")
+                if len(added) > 20:
+                    lines.append(
+                        f"::error::    ... and {len(added) - 20} more"
+                    )
+            if removed:
+                lines.append(
+                    f"::error::  -{len(removed)} removed (listed in _quarto.yml, "
+                    f"absent from tree) :"
+                )
+                for p in removed[:20]:
+                    lines.append(f"::error::    - [{_section_of(p)}] {p}")
+                if len(removed) > 20:
+                    lines.append(
+                        f"::error::    ... and {len(removed) - 20} more"
+                    )
+            lines.append(
+                "::error::Run: python scripts/regen_quarto_render.py "
+                "(regen re-ecrit le bloc). Sur conflit de merge, garder la "
+                "version de main et re-regen (la liste est un artefact genere, "
+                "cf. issue #19895)."
+            )
+            print("\n".join(lines), file=sys.stderr)
             return 1
         n = len(sections["readmes"])
         n_docs = len(sections["docs"])

@@ -41,9 +41,16 @@ from scripts.livecoding_video_pipeline import (
     STYLES,
     StrudelStyle,
     _load_env_files,
+    _build_arg_parser,
+    _click_play,
+    _resolve_capture_seconds,
+    _set_editor_code,
     build_repl_url,
+    capture_progressive_session,
     compose_narration,
+    compose_progressive_states,
     compose_strudel,
+    concat_wavs,
     cycles_for_duration,
     mix_final_ffmpeg,
     mux_ffmpeg,
@@ -211,6 +218,32 @@ class TestMuxFfmpeg:
         i_a = cmd.index("-c:a")
         assert cmd[i_a + 1] == "aac"
         assert cmd[-1].endswith("out.mp4")
+        # sans trim : ni -ss ni -t (chemin canvas historique)
+        assert "-ss" not in cmd and "-t" not in cmd
+
+    def test_trim_page_entiere_ss_avant_inputs_t_apres(self, tmp_path):
+        """Mode page : record_video filme tout le contexte (chargement,
+        play, warmup, export inclus) — la fenetre utile s'extrait par
+        -ss (fast seek, AVANT les inputs, piste video seule) + -t (duree
+        de sortie, les deux pistes)."""
+        cmd = mux_ffmpeg(
+            tmp_path / "v.webm", tmp_path / "a.wav", tmp_path / "out.mp4",
+            trim_start=12.3456, trim_duration=60.0,
+        )
+        i_ss, i_in = cmd.index("-ss"), cmd.index("-i")
+        assert i_ss < i_in
+        assert cmd[i_ss + 1] == "12.346"  # formate a 3 decimales
+        i_t = cmd.index("-t")
+        assert i_t > i_in and cmd[i_t + 1] == "60.000"
+        assert "-shortest" in cmd
+
+    def test_trim_seul_sans_duree(self, tmp_path):
+        """trim_start sans trim_duration reste legal (fenetre ouverte)."""
+        cmd = mux_ffmpeg(
+            tmp_path / "v.webm", tmp_path / "a.wav", tmp_path / "out.mp4",
+            trim_start=5.0,
+        )
+        assert "-ss" in cmd and "-t" not in cmd
 
 
 # --- Etape 2 : narration poetique timestampee (c.1215) ------------------------
@@ -769,6 +802,42 @@ class TestCLIInvocation:
         assert "OPENAI_API_KEY" in err
 
 
+class TestCaptureMode:
+    """Fix critere 5a #15604 : la capture par defaut filme la page
+    ENTIERE (editeur + canvas), le canvas seul reste disponible."""
+
+    def test_capture_mode_defaut_page(self, capsys):
+        """Sans drapeau : 'page' (le fix est le defaut — la demo neuve
+        montre le code sans option supplementaire)."""
+        rc = pipeline_main(
+            ["--style", "trance", "--duration", "120", "--output", "out/x.mp4"]
+        )
+        assert rc == 0
+        assert "'--capture-mode', 'page'" not in capsys.readouterr().out  # silencieux
+
+    def test_capture_mode_choix_refuse(self):
+        """Une valeur hors (page, canvas) est rejetee par argparse."""
+        with pytest.raises(SystemExit):
+            pipeline_main(
+                [
+                    "--style", "trance", "--duration", "120",
+                    "--output", "out/x.mp4",
+                    "--capture-mode", "webm-codec",
+                ]
+            )
+
+    def test_capture_repl_session_rejette_mode_inconnu(self, tmp_path):
+        """La garde en entree de capture_repl_session echoue AVANT
+        d'ouvrir un navigateur (echec explicite, pas de comportement
+        implicite par defaut)."""
+        from scripts.livecoding_video_pipeline import capture_repl_session
+
+        with pytest.raises(ValueError, match="capture_mode inconnu"):
+            capture_repl_session(
+                pattern="s('bd')", output_dir=tmp_path, capture_mode="autre"
+            )
+
+
 # --- Etapes 3 et 6 : TTS expressif + mixage final (#15604) -------------------
 
 
@@ -966,6 +1035,34 @@ class TestMixFinalFfmpeg:
         fc = cmd[cmd.index("-filter_complex") + 1]
         assert "st=0.000" in fc  # max(0, 2 - 3) borne a zero
 
+    def test_video_trim_start_ss_avant_input_video(self, monkeypatch):
+        # Mode page : la webm brute inclut le preambule (~5 s de
+        # chargement/play/warmup) ; -ss extrait la fenetre utile AVANT
+        # le premier -i (seek video seul, pas audio), et le fade se
+        # cale sur la duree de la FENETRE pas de la webm brute.
+        import scripts.livecoding_video_pipeline as pl
+        monkeypatch.setattr(pl, "probe_duration_ffprobe", lambda m: 185.2)
+        cmd = mix_final_ffmpeg(
+            Path("video.webm"), Path("browser.wav"), self.TRACKS,
+            Path("o.mp4"), duration_override=180.0, video_trim_start=5.2)
+        assert cmd[cmd.index("-ss") + 1] == "5.200"
+        assert cmd.index("-ss") < cmd.index("-i")
+        # -t = fenetre utile, pas la webm brute
+        assert cmd[cmd.index("-t") + 1] == "180.000"
+        fc = cmd[cmd.index("-filter_complex") + 1]
+        # fade en fin de fenetre utile : 180 - 3, pas 185.2 - 3
+        assert "st=177.000" in fc
+
+    def test_sans_video_trim_start_comportement_historique(self, monkeypatch):
+        # Mode canvas : aucun -ss, duree = probe webm (comportement
+        # historique inchange).
+        import scripts.livecoding_video_pipeline as pl
+        monkeypatch.setattr(pl, "probe_duration_ffprobe", lambda m: 60.0)
+        cmd = mix_final_ffmpeg(
+            Path("v.webm"), Path("b.wav"), self.TRACKS[:1], Path("o.mp4"))
+        assert "-ss" not in cmd
+        assert cmd[cmd.index("-t") + 1] == "60.000"
+
 
 class TestRunPipelineEtape3:
     """Cablage de l'etape 3 dans l'orchestrateur (synthese mockee :
@@ -1074,3 +1171,266 @@ class TestMixDurationOverride:
         fc = cmd[cmd.index("-filter_complex") + 1]
         assert "st=87.850" in fc  # 90.85 - 3.0
         assert cmd[cmd.index("-t") + 1] == "90.850"
+
+
+class TestResolveCaptureSeconds:
+    """Defaut coherent capture/duration (mesure c.1528 : demo 180 s
+    tronquee a 30,9 s, 4/11 segments mixes, sans drapeau explicite)."""
+
+    def test_none_suit_duration(self):
+        assert _resolve_capture_seconds(None, 180) == 180
+
+    def test_explicite_respecte(self):
+        """Une capture plus courte que la musique reste legale
+        (verification rapide, capture de test)."""
+        assert _resolve_capture_seconds(45, 180) == 45
+
+
+class TestCliCaptureSecondsDefault:
+    def test_parser_defaut_none(self):
+        """Le parser ne fixe plus 30 : None traverse jusqu'a la
+        resolution dans run_pipeline, la capture reste coherente avec
+        --duration (cycles, narration, mix)."""
+        args = _build_arg_parser().parse_args(["--duration", "90"])
+        assert args.capture_seconds is None
+        assert args.duration == 90
+
+    def test_run_pipeline_transmet_duration_a_la_capture(self, tmp_path, monkeypatch):
+        """Wiring : sans capture_seconds explicite, capture_repl_session
+        recoit duration_seconds."""
+        import scripts.livecoding_video_pipeline as pl
+
+        seen = {}
+
+        def _fake_capture(pattern, output_dir, capture_seconds, cycles, headless,
+                          capture_mode="page"):
+            seen["capture_seconds"] = capture_seconds
+            return {
+                "video_webm": str(tmp_path / "capture.webm"),
+                "audio_wav": str(tmp_path / "capture.wav"),
+                "final_mp4": str(tmp_path / "capture_final.mp4"),
+                "video_bytes": 1,
+                "wav_bytes": 1,
+                "mp4_bytes": 1,
+                "cycles": cycles,
+            }
+
+        monkeypatch.setattr(pl, "capture_repl_session", _fake_capture)
+        pl.run_pipeline(
+            style_name="trance",
+            duration_seconds=90,
+            output_path=str(tmp_path / "out.mp4"),
+            capture=True,
+            headless=True,
+        )
+        assert seen["capture_seconds"] == 90
+
+
+class _FakePlayPage:
+    """Page fake minimale pour l'orchestration _click_play : le clic
+    echoue les ``fail_first`` premiers essais puis reussit. Precedent
+    _FakeClient (LLM) : on valide la SEQUENCE retry, pas un verdict de
+    capture — la capture reelle reste provee par l'execution documentee
+    dans le body de la PR."""
+
+    def __init__(self, fail_first: int = 0):
+        self.clicks = 0
+        self.gotos = 0
+        self.waits = 0
+        self.last_url = None
+        self._fail_first = fail_first
+        outer = self
+
+        class _First:
+            @staticmethod
+            def click(timeout=None):
+                outer.clicks += 1
+                if outer.clicks <= outer._fail_first:
+                    raise RuntimeError(f"Locator.click: Timeout {timeout}ms")
+
+        self._first = _First()
+
+    def get_by_role(self, role, name=None):
+        return SimpleNamespace(first=self._first)
+
+    def goto(self, url):
+        self.gotos += 1
+        self.last_url = url
+
+    def wait_for_timeout(self, ms):
+        self.waits += 1
+
+
+class TestClickPlayRetry:
+    """Retry du clic play (timeout flaky 1 run sur 3, mesure c.1528) :
+    re-navigation de l'URL de partage entre tentatives, echec explicite
+    au dernier essai."""
+
+    def test_succes_immediat_sans_reload(self):
+        page = _FakePlayPage(fail_first=0)
+        _click_play(page, "https://strudel.cc/#HASH")
+        assert page.clicks == 1
+        assert page.gotos == 0
+
+    def test_timeout_puis_succes_apres_reload(self):
+        page = _FakePlayPage(fail_first=1)
+        _click_play(page, "https://strudel.cc/#HASH")
+        assert page.clicks == 2
+        assert page.gotos == 1
+        assert page.last_url == "https://strudel.cc/#HASH"
+        assert page.waits == 1  # attente post-navigation avant le 2e essai
+
+    def test_epuise_leve_la_derniere_erreur(self):
+        page = _FakePlayPage(fail_first=99)
+        with pytest.raises(RuntimeError, match="Timeout 10000ms"):
+            _click_play(page, "https://strudel.cc/#HASH", attempts=3)
+        assert page.clicks == 3
+        assert page.gotos == 2
+
+
+class TestSetEditorCode:
+    """La saisie ramene le curseur au debut apres chaque remplacement."""
+
+    def test_insertion_puis_retour_au_debut_du_document(self):
+        events = []
+
+        class _Keyboard:
+            def press(self, key):
+                events.append(("press", key))
+
+            def insert_text(self, code):
+                events.append(("insert_text", code))
+
+        class _Page:
+            keyboard = _Keyboard()
+
+            def click(self, selector):
+                events.append(("click", selector))
+
+        code = "setcps(0.5)\n$: s('bd')"
+        _set_editor_code(_Page(), code)
+        assert events == [
+            ("click", ".cm-content"),
+            ("press", "Control+a"),
+            ("insert_text", code),
+            ("press", "Control+Home"),
+        ]
+
+
+class TestEtatsProgressifs:
+    """Critere 5a de #15604 : le code Strudel doit montrer au moins TROIS
+    etats visibles distincts dans la video.
+
+    Les tests couvrent la logique PURE (composition des etats, gardes,
+    commande de concatenation). La capture reelle (navigateur, saisie,
+    rendu WAV, ffmpeg) est prouvee par l'execution documentee dans le body
+    de la PR — un test qui simulerait le navigateur ne prouverait rien.
+    """
+
+    def test_au_moins_trois_etats_distincts(self):
+        etats = compose_progressive_states("trance", 180, voices=4)
+        assert len(etats) >= 3
+        assert len(dict.fromkeys(etats)) == len(etats)
+
+    def test_trois_voix_suffisent(self):
+        assert len(compose_progressive_states("trance", 180, voices=3)) == 3
+
+    @pytest.mark.parametrize("style", sorted(STYLES))
+    @pytest.mark.parametrize("visuals", [False, True])
+    def test_dernier_etat_egale_compose_strudel(self, style, visuals):
+        """Garde anti-derive : la progression converge vers le script canonique."""
+        etats = compose_progressive_states(style, 180, voices=4, visuals=visuals)
+        attendu = compose_strudel(style, 180, voices=4, visuals=visuals)
+        assert etats[-1] == attendu
+
+    def test_etats_strictement_cumulatifs(self):
+        etats = compose_progressive_states("techno", 180, voices=4, visuals=True)
+        precedents = None
+        for k, etat in enumerate(etats, start=1):
+            lignes = etat.splitlines()
+            voix = [l for l in lignes if l.startswith("$: ")]
+            assert len(voix) == k, f"etat {k} porte {len(voix)} voix"
+            if precedents is not None:
+                # Chaque etat reprend les voix du precedent, dans l'ordre :
+                # une progression qui reecrirait une voix ne serait pas une
+                # progression mais un remplacement.
+                assert voix[: k - 1] == precedents
+            precedents = voix
+
+    def test_chaque_etat_est_executable(self):
+        """Un etat partiel doit rester du code VALIDE, pas un texte tronque."""
+        for etat in compose_progressive_states("ambient", 120, voices=3, visuals=True):
+            assert "setcps(" in etat
+            assert etat.count("(") == etat.count(")"), etat
+            assert "$: " in etat
+
+    def test_visuals_places_sur_les_bonnes_voix(self):
+        sans = compose_progressive_states("trance", 180, voices=4, visuals=False)
+        avec = compose_progressive_states("trance", 180, voices=4, visuals=True)
+        assert ".scope()" not in sans[0]
+        # La voix 1 (basse) recoit .scope(), la voix 2 (lead) .pianoroll() :
+        # l'etat 2 est donc le premier a porter un visual.
+        assert ".scope()" in avec[1]
+        assert ".pianoroll()" in avec[2]
+
+    def test_rejette_moins_de_trois_voix(self):
+        with pytest.raises(ValueError, match="trois etats"):
+            compose_progressive_states("trance", 180, voices=2)
+
+    def test_rejette_style_et_duree(self):
+        with pytest.raises(ValueError, match="inconnu"):
+            compose_progressive_states("dubstep", 180)
+        with pytest.raises(ValueError, match="duration_seconds"):
+            compose_progressive_states("trance", 30)
+
+    def test_session_refuse_sans_visuals_avant_le_navigateur(self):
+        """Echec explicite AVANT tout import playwright (contrat CI sans navigateur)."""
+        with pytest.raises(ValueError, match="visuals=True requis"):
+            capture_progressive_session("trance", 120, voices=4, visuals=False)
+
+    def test_session_refuse_moins_de_trois_voix_avant_le_navigateur(self):
+        with pytest.raises(ValueError, match="trois etats"):
+            capture_progressive_session("trance", 120, voices=2)
+
+
+class TestConcatWavs:
+    """Concatenation des pistes d'etats : l'audio doit evoluer comme le code."""
+
+    def test_commande_et_liste(self, tmp_path):
+        wavs = [tmp_path / f"state_{i:02d}.wav" for i in range(3)]
+        sortie = tmp_path / "progressive.wav"
+        cmd = concat_wavs(wavs, sortie)
+        assert cmd[:2] == ["ffmpeg", "-y"]
+        assert "-f" in cmd and cmd[cmd.index("-f") + 1] == "concat"
+        assert "-safe" in cmd and cmd[cmd.index("-safe") + 1] == "0"
+        assert cmd[-1] == str(sortie)
+        liste = sortie.with_suffix(".txt")
+        assert liste.is_file()
+        lignes = liste.read_text(encoding="utf-8").strip().splitlines()
+        assert len(lignes) == 3
+        # Le demuxer concat n'accepte que des chemins en avant-slash, meme
+        # sous Windows (un backslash y est un caractere d'echappement).
+        assert all("\\" not in l for l in lignes)
+
+    def test_rejette_une_seule_piste(self, tmp_path):
+        with pytest.raises(ValueError, match="au moins 2 pistes"):
+            concat_wavs([tmp_path / "a.wav"], tmp_path / "out.wav")
+
+
+class TestCliProgressive:
+    """Le mode progressif s'active explicitement et refuse la combinaison vide."""
+
+    def test_flag_parse(self):
+        args = _build_arg_parser().parse_args(["--capture", "--progressive"])
+        assert args.progressive is True
+        assert args.capture is True
+
+    def test_defaut_desactive(self):
+        assert _build_arg_parser().parse_args([]).progressive is False
+
+    def test_progressive_sans_capture_rend_2(self, capsys):
+        from scripts.livecoding_video_pipeline import main
+
+        assert main(["--progressive"]) == 2
+        assert "requiert --capture" in capsys.readouterr().err
+

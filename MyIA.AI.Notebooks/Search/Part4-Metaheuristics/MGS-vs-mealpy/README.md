@@ -11,7 +11,7 @@ Cette sous-série regroupe les **dix notebooks comparatifs** de l'Epic « MGS fa
 La réponse, étalée sur les neuf paires, distingue deux axes :
 
 - **Coût systématique** — mealpy est **plus cher par évaluation** sur 8/9 paires (médiane 2,38×, jusqu'à 7,86×), l'unique inversion P1 étant documentée comme un artefact d'instrumentation (écart runtime/noyau, pas algorithme). Le fork C# est systématiquement plus rapide par évaluation, mais cet écart est en partie **absorbé** par la mécanique du moteur (coût Python vs coût C#, fitness-isolée 5-7× plus rapide en C#).
-- **Qualité spécifique** — mealpy gagne **6/9 paires**, MGS **3/9**, médianes de −6,5 à +17 conflits. La **direction de l'écart de qualité dépend de la paire** : mealpy écrase en PSO (séparation totale) et EO (étendues disjointes, plus grand écart qualité de l'Epic) ; MGS gagne en SA (premier doublé de l'Epic : qualité et vitesse) et FBI (séparation totale, record de vitesse).
+- **Qualité spécifique** — mealpy gagne **6/9 paires**, MGS **3/9**, médianes de −6,5 à +15 conflits. La **direction de l'écart de qualité dépend de la paire** : mealpy écrase en PSO (séparation totale, plus grand écart qualité de l'Epic) et gagne en EO (étendues disjointes, ré-mesurée après correction : 35,0 vs 25,0, écart 10) ; MGS gagne en SA (premier doublé de l'Epic : qualité et vitesse) et FBI (séparation totale, record de vitesse).
 
 La question « quel moteur choisir ? » est ainsi **déplacée** : le coût d'évaluation est une donnée d'ingénierie (runtime, GPU, contraintes de latence), mais la qualité dépend du paysage de fitness et de la stratégie de recherche — pas du langage ni de l'écosystème.
 
@@ -38,7 +38,7 @@ Ce protocole est **ferme** : tout écart au protocole est déclaré explicitemen
 | 2 | [MGS-23](MGS-23-DifferentialEvolution-vs-Mealpy.ipynb) | DE MGS vs OriginalDE mealpy | mealpy devant mais resserré (21,5 vs 25,5, étendues chevauchées, MGS gagne la graine 0) | **MGS 3,45× moins cher** | 6,70× |
 | 3 | [MGS-24](MGS-24-SimulatedAnnealing-vs-Mealpy.ipynb) | SA MGS (population-based) vs OriginalSA mealpy (marcheur) | **MGS devant** (27,0 vs 31,0) — premier doublé qualité + vitesse | MGS 3,04× moins cher | 4,20× |
 | 4 | [MGS-25](MGS-25-WhaleOptimisation-vs-Mealpy.ipynb) | WOA MGS vs OriginalWOA mealpy + jumeau MGS-Naive | ex æquo MGS-MGS (49,5 = 49,5), mealpy derrière (51,0) | MGS 1,69× moins cher | 3,49× |
-| 5 | [MGS-26](MGS-26-EquilibriumOptimizer-vs-Mealpy.ipynb) | EO MGS vs OriginalEO mealpy | **mealpy écrase** (25,0 vs 42,0, étendues disjointes) — plus grand écart qualité de l'Epic | MGS 1,21× (plus faible de l'Epic) | 7,75× |
+| 5 | [MGS-26](MGS-26-EquilibriumOptimizer-vs-Mealpy.ipynb) | EO MGS vs OriginalEO mealpy | **mealpy devant** (25,0 vs 35,0, étendues disjointes) — ré-mesurée après correction du tirage du pool (écart 10) | MGS 1,21× (plus faible de l'Epic) | 7,75× |
 | 6 | [MGS-27](MGS-27-ForensicBasedInvestigation-vs-Mealpy.ipynb) | FBI MGS vs OriginalFBIO mealpy | **MGS devant** (séparation totale 37,0 vs 43,5) — deuxième doublé | **MGS 4,11× moins cher** (record de l'Epic) | 6,36× |
 | 7 | [MGS-28](MGS-28-BareBonesPSO-vs-Mealpy.ipynb) | BBPSO MGS vs jumeau mealpy construit (Kennedy 2003 strict) | mealpy devant à sémantique alignée (25,5 vs 30,5) | MGS 0,50× (2× moins cher) | 4,59× |
 | 8 | [MGS-29](MGS-29-GA-vs-Mealpy.ipynb) | Default GA MGS vs BaseGA mealpy | qualité comparable (12,5 vs 13,5, étendues chevauchées — l'écart PSO ne se reproduit pas) | MGS 6,12× moins cher (record) | n/a (sanity check coût IDENTIQUE post #13396) |
@@ -58,7 +58,7 @@ L'arc n'est **pas** un benchmark exploratoire : chaque notebook ferme un verdict
 
 4. **Paire canonique** — [MGS-25](MGS-25-WhaleOptimisation-vs-Mealpy.ipynb) (WOA). Trois colonnes, jumeau MGS-Naive comme ablation. Verdict : ex æquo MGS-MGS, mealpy derrière — l'opérateur spiral ne paie pas sur cette géométrie.
 
-5. **Paire symétrique** — [MGS-26](MGS-26-EquilibriumOptimizer-vs-Mealpy.ipynb) (EO). mealpy écrase avec étendues disjointes. Hypothèse ouverte : la sélection greedy par individu (mealpy) bat-elle la réinsertion de population (MGS) ?
+5. **Paire symétrique** — [MGS-26](MGS-26-EquilibriumOptimizer-vs-Mealpy.ipynb) (EO). mealpy devant, étendues disjointes (ré-mesurée après correction : 35,0 vs 25,0). Hypothèse ouverte : la sélection greedy par individu (mealpy) bat-elle la réinsertion de population (MGS) ?
 
 6. **Paire miroir** — [MGS-27](MGS-27-ForensicBasedInvestigation-vs-Mealpy.ipynb) (FBI, port MGS revendiqué depuis mealpy). Les équations ont dérivé (bruit A1 N(0,1) vs uniforme). MGS gagne les deux mains. Hypothèse ouverte : la dérive de bruit est-elle l'origine de l'écart ?
 
@@ -74,13 +74,13 @@ L'arc n'est **pas** un benchmark exploratoire : chaque notebook ferme un verdict
 
 Cette sous-série est **explicitement diagnostique**, pas prescriptive. Aucune des neuf paires ne conclut « il faut remplacer X par Y dans MGS » ; aucune n'ouvre une branche d'amélioration MGS. La boucle benchmark → diagnostic → correctif → re-benchmark est suivie **séparément** (cf. issue #13778 : « MGS vs mealpy : convertir les benchmarks en correctifs MGS puis re-mesurer »).
 
-Ce qui est livré ici, c'est la **photographie mesurée** d'un instant — fork C# à commit `501beeac7` × mealpy 3.0.2 — avec :
+Ce qui est livré ici, c'est la **photographie mesurée** d'un instant pour les huit paires non re-mesurées — fork C# à commit `501beeac7` × mealpy 3.0.2 — avec :
 
 - les écarts reproductibles (sanity check coût, déterminisme 8/8 ou 12/12) ;
 - les sources identifiées (sélection greedy vs réinsertion population, bruit N(0,1) vs uniforme, opérateurs de sélection/recuit) ;
 - les impasses déclarées (l'écart qualité PSO ne se reproduit pas GA — ce n'est pas un signal unidirectionnel).
 
-**Ce qui n'est PAS livré** : une prescription d'amélioration, un re-benchmark après correction, un classement final des deux bibliothèques. La campagne laisse les **questions ouvertes** documentées et reproductibles ; les réponses sont une autre campagne.
+**Ce qui n'est PAS livré** : une prescription d'amélioration, un classement final des deux bibliothèques. Le re-benchmark après correction est en revanche **livré pour la paire EO** (MGS-26, ré-mesurée après correction du tirage du pool, gitlink `3a7d91e57b`) ; les huit autres paires restent à la photographie de `501beeac7`. La campagne laisse les **questions ouvertes** documentées et reproductibles ; les réponses sont une autre campagne.
 
 ## Configuration requise
 
@@ -88,7 +88,7 @@ Identique à la série parente ([Partie 4 README §Configuration requise](../REA
 
 - Kernel `dotnet-interactive` 1.0.707101+ (hôte .NET moderne, charge net8.0/net9.0/net10).
 - Sous-module `MetaGeneticSharp/` buildé (DLLs `net9.0`).
-- Pont PythonNet pour les comparaisons mealpy (kernel `.NET` charge `mealpy` 3.0.2 via Python.NET).
+- Pont PythonNet pour les comparaisons mealpy (kernel `.NET` charge `mealpy` 3.0.2 via Python.NET) : un CPython qui importe `mealpy`, que trouve [`Config/PythonNetLoader.cs`](../../../Config/PythonNetLoader.cs) (installations standard de Windows, puis `python3` et `python` du `PATH`), ou que désigne `PYTHONNET_PYDLL`.
 - Reproductibilité seedée pour MGS-22 à MGS-31 (graines `{0, 1, 7, 42}` + `FastRandomRandomization.ResetSeed`).
 
 Règle C.2 : notebooks committés **avec leurs outputs** (exécution réelle, kernel .NET).
