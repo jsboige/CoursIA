@@ -19,17 +19,15 @@ SYMBOLIC_AI_DIR = ARGUMENT_ANALYSIS_DIR.parent
 def get_tweety_jar_dir() -> Optional[pathlib.Path]:
     """Find the directory containing Tweety JAR files.
 
-    Search order:
-    1. Argument_Analysis/libs/ (local)
-    2. Tweety/libs/ (sibling series)
+    Only the sibling series directory holds JARs. The former first candidate,
+    ``Argument_Analysis/libs/``, was removed with the #23109 arbitration: it
+    carried the duplicated native libraries and no JAR at all (measured at base
+    ``7e1b735ab``: six ``native/*`` entries, zero ``*.jar``), so its ``*.jar``
+    guard never matched -- a pointer that looked alive and resolved to nothing.
     """
-    candidates = [
-        ARGUMENT_ANALYSIS_DIR / "libs",
-        SYMBOLIC_AI_DIR / "Tweety" / "libs",
-    ]
-    for d in candidates:
-        if d.exists() and any(d.glob("*.jar")):
-            return d
+    d = SYMBOLIC_AI_DIR / "Tweety" / "libs"
+    if d.exists() and any(d.glob("*.jar")):
+        return d
     return None
 
 
@@ -44,7 +42,25 @@ def get_data_dir() -> pathlib.Path:
 
 
 def get_ext_tools_dir() -> pathlib.Path:
-    """Return the external tools directory path."""
+    """Return the external tools directory path.
+
+    Search order:
+    1. Argument_Analysis/ext_tools/ (local)
+    2. SymbolicAI/ext_tools/ (shared, sibling series)
+
+    The shared directory is canonical since the #23109 arbitration: the two
+    EProver trees were byte-identical, so the series-local copy is on its way
+    out and this fallback keeps the accessor working during the transition.
+    Returns the local path when neither exists, so callers keep a writable
+    target and the failure stays where it was.
+    """
+    candidates = [
+        ARGUMENT_ANALYSIS_DIR / "ext_tools",
+        SYMBOLIC_AI_DIR / "ext_tools",
+    ]
+    for d in candidates:
+        if d.exists():
+            return d
     return ARGUMENT_ANALYSIS_DIR / "ext_tools"
 
 

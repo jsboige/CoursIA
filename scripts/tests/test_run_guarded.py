@@ -186,10 +186,10 @@ def test_fichier_de_pid_ecrit(guarded, tmp_path):
 
 
 def test_defaut_de_production_48_go():
-    """Le lanceur de production porte 48 Go et 85 % (engagement Maintenance)."""
+    """Le lanceur de production porte 48 Go et 90 % (mandat user 2026-10-29)."""
     texte = LAUNCHER.read_text(encoding="utf-8")
     assert "[double]$MemoryCapGiB = 48" in texte, "defaut de memoire absent du lanceur"
-    assert "[int]$MaxCommitChargePct = 85" in texte, "defaut de charge de commit absent"
+    assert "[int]$MaxCommitChargePct = 90" in texte, "defaut de charge de commit absent"
     assert "--job-memory-limit-gib" in texte, "le lanceur ne pose pas de plafond de job"
     assert "--exclusive-lock" in texte, "le lanceur ne pose pas de verrou N=1"
     assert "--max-commit-charge-pct" in texte, "le lanceur ne pose pas de garde d'admission"
