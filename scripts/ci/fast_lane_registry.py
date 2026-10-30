@@ -1478,7 +1478,7 @@ TRANCHE9: list[Guard] = [
 #   'Invalid Notebook / outputs is a required property /
 #    Using nbformat v5.10.4 and nbconvert v7.17.0'
 #
-# Le c.1082 fabrication de GameTheory-06f-Bounded-Agents-Lean.ipynb a omis
+# Le c.1082 fabrication de Dynamics-05-Agents-Bornes-Lean.ipynb a omis
 # la cle `outputs` de 9/9 cellules code. Papermill (validator permissif) a
 # accepte, le kernel lean4-wsl n'a rien produit (hang faute de `.lake/`), la
 # cle n'a jamais ete injectee -- resultat : un notebook structurellement
@@ -1532,7 +1532,7 @@ TRANCHE10: list[Guard] = [
 # `notebook-source-collapse-ratchet.yml` a absorber.
 #
 # Le defaut fondeur est #15862 : la cellule `c989_independent_v2` de
-# GameTheory-06e-Open-Source-Game-Theory-Python.ipynb a perdu 3116 caracteres de
+# Dynamics-04-Open-Source-Game-Theory-Python.ipynb a perdu 3116 caracteres de
 # source (8425 -> 5309, -37.0 %) -- une table declarative et un `assert` ont
 # disparu -- et AUCUN des ~30 ratchets n'a bronche, parce que tous mesurent
 # des SORTIES, des sequences ou de la structure. Aucun ne mesurait la
@@ -2349,6 +2349,83 @@ TRANCHE25: list[Guard] = [
     ),
 ]
 
+# ---------------------------------------------------------------------------
+# TRANCHE 26 (#22009) -- le golden set de traduction ne derive plus en silence.
+#
+# `scripts/translation/build_golden_set.py --check` compare le JSON commite
+# (`translations/translation_golden_set.json`) a ce que l'arbre produit. Le
+# mode existait depuis l'origine et **aucun workflow ne l'appelait** : mesure
+# du 2026-10-22 sur un worktree detache de `origin/main`, `--check` rendait
+# deja rc=1 (57 paires du JSON absentes de l'arbre, 79 de l'arbre absentes du
+# JSON). Chaque merge qui ajoute ou retire une paire FR/EN laissait donc
+# deriver le fichier, et la derive ne se voyait qu'au moment ou une PR le
+# regenerait -- en l'absorbant dans un diff sans rapport (#22008, 22 paires).
+#
+# Garde NATIF : aucun workflow d'origine, c'est precisement le defaut.
+#
+# ARBITRAGE #22216, forme FINALE (review myia-ai-01 du 2026-10-26, demandes
+# 1 + 2) : la garde est ADVISORY pure, et la REGENERATION du JSON vit dans
+# le cron du catalogue (`catalog-cron.yml`, branche chore/catalog-refresh-
+# pending) -- meme modele que COURSE_CATALOG.generated.* et `_quarto.yml`
+# (#19901, regle catalog-pr-hygiene) : un fichier genere appartient au cron,
+# une branche de contenu ne le regenere pas. Le `--check` integral en
+# BLOQUANT rougissait toute PR qui edite l'un des ~966 fichiers apparies
+# sans regenerer le JSON -- chaque preuve Lean d'un lake bilingue et chaque
+# retouche de README pair aurait paye un rouge, une regeneration et un
+# re-push, sans aucun gain de traduction (la regeneration prend acte de
+# l'ecart, elle ne traduit pas), et des PRs paralleles regenerant le meme
+# fichier genere seraient entrees en conflit.
+#
+# Une forme intermediaire « structure-seule bloquante » (`--check-structure`,
+# deux jambes) a ete implantee sur cette branche (45d95416da0) puis RETIREE :
+# meme limitee aux paires (kind, fr, en), elle exigeait la regeneration SUR
+# BRANCHE du fichier genere a chaque paire ajoutee ou retiree -- exactement
+# le geste que catalog-pr-hygiene interdit pour le catalogue, et la source
+# des conflits entre PRs paralleles que la review ecarte. Aucun autre organe
+# ne couvre la fraicheur de cet INDEX (lean-i18n-drift.yml = parite de
+# CONTENU Lean au diff ; twin-parity-guard = parite de CONTENU des jumeaux
+# au diff ; translation-parity.yml = schedule seul) -- mais la derive de
+# structure reste SIGNALEE ici (advisory, `--check` integral) et RESORBEE
+# par le cron (< 24 h) : rien ne redevient silencieux.
+#
+# Codes de retour : 0 = a jour, 1 = derive (empreintes, orphelins et
+# structure compris).
+#
+# Cout mesure : **~1,0 s** sur l'arbre complet (483 paires, 3 familles), donc
+# la voie rapide -- qui paie deja son checkout -- le porte sans surcout
+# appreciable. C'est ce qui tranche la question laissee ouverte par l'issue
+# (« registre si le cout le permet, sinon job dedie »).
+#
+# `paths` : ce sont les fichiers dont la presence ou le contenu deplace une
+# paire ou derive une empreinte. Les trois extensions appariables sont la
+# (un `Foo.ipynb` ajoute a cote d'un `Foo_en.ipynb` existant CREE une paire),
+# plus le JSON lui-meme, le script et son registre.
+#
+# Pas de `needs_base` : le verdict compare l'arbre au JSON **commite**, pas
+# HEAD a la base. `diff_bounded` reste False -- une derive peut entrer par
+# n'importe quel merge et heriter d'un rouge, donc un rouge ne s'attribue
+# pas d'office a la PR qui le porte (c'est l'issue #22009 elle-meme : la
+# derive etait anterieure a la PR qui l'a constatee). Advisory + cron : le
+# rouge herite ne bloque personne, le cron le resorbe.
+# ---------------------------------------------------------------------------
+TRANCHE26: list[Guard] = [
+    Guard(
+        name="translation-golden-set-drift (advisory, non-blocking)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**/*.ipynb",
+            "**/*.lean",
+            "**/*.md",
+            "translations/translation_golden_set.json",
+            "scripts/translation/build_golden_set.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=["python", "scripts/translation/build_golden_set.py", "--check"],
+        blocking=False,
+        absorbed=True,
+    ),
+]
 
 # ---------------------------------------------------------------------------
 # TRANCHE 27 -- absorption des advisories label-posers de la tranche 1 #22209

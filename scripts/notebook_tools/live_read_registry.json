@@ -15,25 +15,25 @@
       "note": "§5-bis -- compte des lignes de Swaps/Basic.lean et numeros des declarations citees ; trouvee par l'invariant inverse de #22041"
     },
     {
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-06b-Lean-RepeatedGames-Lean-Python.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-02-Jeux-Repetes-Lean-Python.ipynb",
       "cell_id": "670b1be1",
       "source": "MyIA.AI.Notebooks/GameTheory/game_theory_lean/RepeatedGames/Stage.lean",
       "note": "Lecture directe du module Stage.lean (compte de lignes et declarations citees)"
     },
     {
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-06b-Lean-RepeatedGames-Lean-Python.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-02-Jeux-Repetes-Lean-Python.ipynb",
       "cell_id": "484c1177",
       "source": "MyIA.AI.Notebooks/GameTheory/game_theory_lean/CooperativeGames/ConeKernel.lean",
       "note": "Lecture directe du module ConeKernel.lean"
     },
     {
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-06b-Lean-RepeatedGames-Lean-Python.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-02-Jeux-Repetes-Lean-Python.ipynb",
       "cell_id": "3172db35",
       "source": "MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice/SortedListCounting.lean",
       "note": "Lecture directe du module SortedListCounting.lean"
     },
     {
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-06b-Lean-RepeatedGames-Lean-Python.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-02-Jeux-Repetes-Lean-Python.ipynb",
       "cell_id": "3172db35",
       "source": "MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice/_SmokeTest.lean",
       "note": "Lecture directe du module _SmokeTest.lean"
