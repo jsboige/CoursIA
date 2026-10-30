@@ -31,7 +31,7 @@ Sortie = JSON `{"csvs_checked": 1, "anomalies": [], "anomaly_count": 0}` (IN_SYN
 
 ## Acceptance #4957 Phase 2
 
-- [x] T1 extraction OK : 599 cellules / 19 notebooks .NET Interactive + Python jumeaux
+- [x] T1 extraction OK : tous les notebooks .NET Interactive et leurs jumeaux Python (compte tenu par le CI, cf. régénération du catalogue)
 - [x] T2 round-trip IN_SYNC : 0 anomaly
 - [x] Script T1+T2 inchangés (Phase 1 INFRA #5657 réutilisée telle quelle)
 - [x] Workflow CI `.github/workflows/translation-drift.yml` non touché
