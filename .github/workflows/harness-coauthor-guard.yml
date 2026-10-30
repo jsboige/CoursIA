@@ -57,6 +57,10 @@ jobs:
     # auto-hebergee. Le `if:` ci-dessous est la garde anti-fork exigee par
     # scripts/ci/check_self_hosted_runner_policy.py ; un `runs-on` STATIQUE la
     # rend auditable (une expression dynamique leve DYNAMIC_RUNS_ON).
+    # NOTE perimee depuis #22461 (mesure Hermes 28/10) : les deux lignes
+    # ci-dessus sont tombees -- le `runs-on` reel est l'expression hybride a
+    # fallback plus bas (bloc 2026-10-27 #22461), conservee byte-identique
+    # ici pour l'historique de la decision de routage.
     # Les PRs de fork sautent le job -- pr_gate.py compte `skipped` comme OK.
     # 2026-10-27 (mesure ai-01) : migration vers `ubuntu-latest` par Q35 etape 2
     # (#17397) -- `scripts/ci/audit_self_hosted_needs.py` certifie ce workflow
@@ -86,6 +90,33 @@ jobs:
       # ont ete annules a la limite de 5 min, pendant le fetch, avant tout scan.
       # Checkout clairseme sans blobs hors perimetre ; la base a son propre
       # checkout (etape BASE ci-dessous).
+      # Le work dir de ce runner n'est PAS froid dans sa voie hebergee : le pool
+      # `coursia-ephemeral` monte un volume nomme PERSISTANT par slot
+      # (`supervise.sh` : `-v "${vol_prefix}-${slot}":"$WORK_MOUNT"`, #14285) et
+      # seul le CONTENEUR est jetable -- c'est `actions/checkout` qui recoit le
+      # meme repertoire de travail au job suivant. L'exclusion de ce fichier du
+      # perimetre de #22931 reposait sur « deplace sur ubuntu-latest par
+      # #22821 » ; #22921 (forme hybride de `runs-on`) a rendu cette premisse
+      # fausse, en debordement le job tourne sur le meme pool chaud que les dix
+      # workflows deja traites. Mesure #23127, 2026-10-28.
+      # Sur `ubuntu-latest` la VM est neuve : le bloc est un no-op verifie par
+      # `[ -d .git ]`, il ne coute rien et ne masque rien.
+      - name: Restore the warm work tree before the sparse checkout
+        run: |
+          set -u
+          if [ -d "$GITHUB_WORKSPACE/.git" ]; then
+            if ! dirty=$(git -C "$GITHUB_WORKSPACE" -c safe.directory="$GITHUB_WORKSPACE" status --porcelain 2>/dev/null); then
+              echo "::warning::[heal-worktree] probe git status muet -- etat de l'arbre inconnu, reset applique quand meme (#22722)"
+              dirty=""
+            fi
+            untracked=$(printf '%s\n' "$dirty" | grep -c '^??' || true)
+            first_dirty=$(printf '%s\n' "$dirty" | head -n 1)
+            if ! git -C "$GITHUB_WORKSPACE" -c safe.directory="$GITHUB_WORKSPACE" reset --hard --quiet; then
+              echo "::warning::[heal-worktree] reset --hard a echoue -- le retrecissement sparse peut refuser (#22722)"
+            elif [ -n "$dirty" ]; then
+              echo "::notice::[heal-worktree] reset --hard effectue -- le job precedent avait laisse un etat sale (${first_dirty}) -- ${untracked} entree(s) non suivie(s) laissee(s) en place -- le retrecissement sparse passe (#22722)"
+            fi
+          fi
       - name: Checkout PR
         uses: actions/checkout@v4
         with:
