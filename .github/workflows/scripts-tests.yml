@@ -104,6 +104,16 @@ on:
       - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_narrator_routing.py'
       - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_customvoice_narrator.py'
       - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_qwen_tts_client.py'
+      # P2 segmentation (v4) : la deduplication des segments perdait le contenu
+      # des paragraphes multi-segments -- un paragraphe n'en conservait qu'un,
+      # et le controle de couverture ne signalait la perte que par un
+      # WARNING. Le test vit dans la suite v4 (v4/tests/) et son SUJET
+      # (v4/p2_segmentation.py) n'est pas sous scripts/** : sans ces entrees,
+      # une PR qui ne touche QUE p2_segmentation.py ne declenche aucun run CI
+      # et le test reste invisible jusqu'au prochain innocent qui touche
+      # scripts/** (#10416 pattern). Mirrored under pull_request: below.
+      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/p2_segmentation.py'
+      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p2_segment_dedup.py'
       # #11835 no-op guard: scripts/tests/test_pr_gate_rerun_noop_guard.py pins
       # the job-level if: of pr-gate-rerun.yml. Without this entry a PR touching
       # ONLY the workflow fires no scripts-tests run -- the guard is blind to
@@ -232,6 +242,9 @@ on:
       - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_narrator_routing.py'
       - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_customvoice_narrator.py'
       - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_qwen_tts_client.py'
+      # P2 segmentation (mirror of the push path above).
+      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/p2_segmentation.py'
+      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p2_segment_dedup.py'
       # #11835 no-op guard (mirror of the push path above).
       - '.github/workflows/pr-gate-rerun.yml'
       # Mirror the push path above so fork workflow-only PRs execute the policy.
@@ -617,6 +630,7 @@ jobs:
             MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_narrator_routing.py \
             MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_customvoice_narrator.py \
             MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_qwen_tts_client.py \
+            MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p2_segment_dedup.py \
             scripts/secrets/tests \
             scripts/quantconnect/tests \
             MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis \
