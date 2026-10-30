@@ -27,7 +27,8 @@ class FactorETFRotation(QCAlgorithm):
     Backtest results:
     v1.0: Sharpe 0.365, CAGR  8.7%, MaxDD 31.1% (composite, TLT+USMV)
     v2.0: Sharpe 0.471, CAGR 11.7%, MaxDD 33.7% (12m simple, USMV)
-    v3.0: Sharpe 0.540, CAGR 12.1%, MaxDD 24.2%, Net +109% (BEST)
+    v3.0: Sharpe 0.540, CAGR 12.1%, MaxDD 24.2% (run auteur, fenetre longue, table README) ;
+          Net +109% (BEST, fenetre alignee 2018-2025 du code)
 
     Factor ETFs: VLUE, MTUM, SIZE, QUAL, USMV
     Ref: Fama & French (2015), Asness et al. (2013),
