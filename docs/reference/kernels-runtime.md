@@ -127,7 +127,7 @@ Instance mesuree (#11104, ML-3 AutoML) :
 
 `0.22.3` prend `Microsoft.ML [4.0.3, )`, borne **ouverte** : le pin `Microsoft.ML, 5.0.0` du notebook reste valide. Mesure de bout en bout apres bascule : **10/10 cellules, 0 erreur, 86,1 s**.
 
-**Ce plafond est leve par le canon 1.0.712001 (02/10/2026, #18766)** : ce build embarque Roslyn 5.x (FileVersion `5.0.25.56712` mesure sur po-2024, hote `net10.0`) — les dependances `[4.13.0, )` (ex. AutoML 0.23.0) passent sous le nouveau canon. Le downgrade `0.23.0 -> 0.22.3` de ML-3 reste valide (bornes ouvertes, pas de raison de rebasculer). La section ci-dessus se lit desormais comme l'historique du canon 1.0.617701.
+**Ce plafond est leve par le canon 1.0.712001 (02/10/2026, #18766)** : ce build embarque Roslyn 5.x (FileVersion `5.0.25.56712` mesure sur po-2024, hote `net10.0`) — les dependances `[4.13.0, )` (ex. AutoML 0.23.0) passent sous le nouveau canon. Le downgrade `0.23.0 -> 0.22.3` de ML-3, qui n'avait ete fait que pour epargner ce plafond, est annule le 2026-10-28 : la convergence de version du carnet sur la version canonique du manifeste (`0.23.0`, #23073, PR #23088) le rebascule, et la dependance `[4.13.0, )` passe sous le canon 1.0.712001 (Roslyn 5.x). La section ci-dessus se lit desormais comme l'historique du canon 1.0.617701.
 
 Verifier la dependance d'un package avant d'incriminer le kernel :
 
