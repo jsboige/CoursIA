@@ -102,11 +102,12 @@ below the header.
 documented in this NOTICE before commit.** CoursIA-original code that extends
 or wraps the verbatim content lives in separate files (NOT prefixed with `_`).
 
-**Fins de ligne (seule divergence documentee).** L'amont livre `_fallacy_workflow_plugin.py`
-et `_taxonomy_navigator.py` en CRLF. Le depot impose `*.py text eol=lf` (`.gitattributes`) :
-ces deux fichiers sont stockes en LF. Un blob CRLF sous `eol=lf` fait apparaitre le fichier
-modifie apres chaque checkout et bloque tout organe qui exige un arbre propre. Le contenu reste
-identique a l'amont aux fins de ligne pres : `git diff --ignore-cr-at-eol` est vide.
+**Fins de ligne (seule divergence documentee).** L'amont livre `_fallacy_workflow_plugin.py`,
+`_taxonomy_navigator.py`, `_atms_core.py` et `_conflict_resolution.py` en CRLF. Le depot impose
+`*.py text eol=lf` (`.gitattributes`) : ces quatre fichiers sont stockes en LF. Un blob CRLF
+sous `eol=lf` fait apparaitre le fichier modifie apres chaque checkout et bloque tout organe
+qui exige un arbre propre. Le contenu reste identique a l'amont aux fins de ligne pres :
+`git diff --ignore-cr-at-eol` est vide.
 L'identite SHA256 octet a octet se verifie donc apres conversion CRLF -> LF du fichier amont.
 
 Partial copies (See #14026)
@@ -874,6 +875,26 @@ shortcut), on the synthetic text of `Argumentation-02`:
 These are single-run figures: the funnel calls a live LLM, so counts vary
 between runs while the structure of the evidence does not. Reproduce with
 `Argumentation-02-Fallacies-Detection-Python.ipynb` section 5.
+
+Moteurs de revision de croyance — ATMS et resolution de conflits (28/10/2026, issue #23163)
+-------------------------------------------------------------------------------------------
+
+Tranche de portage dans le cadre de l'issue #23163 (serie `Argument_Analysis` completee
+sur CoursIA ; le depot EPITA reste le cadre experimental, pas la destination). Deux
+moteurs du service `jtms` d'EPITA-IS, portes dans `argumentation_lib/` :
+
+| File in CoursIA `argumentation_lib/` | Upstream path in EPITA-IS | Upstream commit |
+|---------------------------------------|----------------------------|-----------------|
+| `_atms_core.py` (242 lines) | `argumentation_analysis/services/jtms/atms_core.py` | 713927e1 (2026-10-28) — VERBATIM, aucune modification |
+| `_conflict_resolution.py` (305 lines) | `argumentation_analysis/services/jtms/conflict_resolution.py` | 713927e1 (2026-10-28) — VERBATIM, aucune modification |
+
+Les deux fichiers amont n'importent que la bibliotheque standard : aucun prefixe
+`argumentation_analysis.*` n'a donc pas eu a etre reecrit, et le corps est
+**byte-for-byte** identique a l'amont (seule l'entete de provenance est ajoutee, qui
+cite le fichier amont, son SHA1 et la ligne concernee). Le carnet
+`Argumentation-06b-ATMS-Conflits-Python.ipynb` exerce les deux moteurs : etiquettes
+par environnements, invalidation, nogood non durable, cinq strategies de resolution
+de conflits, replis nommes et garde-fous bruyants.
 
 What this NOTICE does NOT cover
 -------------------------------
