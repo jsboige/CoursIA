@@ -336,3 +336,38 @@ def test_delivery_event_rend_none_quand_la_lecture_echoue(monkeypatch):
         raise RuntimeError("reseau")
     monkeypatch.setattr(pig.subprocess, "run", _boom)
     assert pig.delivery_event(5003) is None
+
+
+# --- le mur de temps ne doit pas faire tomber le tapis ----------------------
+
+def test_le_mur_de_temps_ne_tombe_pas_sur_une_consolidation():
+    """REGRESSION (26/10, tire reel) : le budget de temps de la boucle etait
+    epuise AVANT la boucle de service (`settle_belt_head` 341 s + claims 38 s
+    pour 240 s de budget). Le code de la consolidation formait alors le
+    verdict `False` -- un booleen nu -- et le decomposait en trois :
+    `TypeError: cannot unpack non-iterable bool object`.
+
+    Consequence mesuree : le tirage entier rendait ZERO grain, et la
+    classe `consolidation` (le mandat user du 25/10) n'etait jamais servie.
+
+    Le comportement attendu quand le temps est epuise : fail-OPEN -- aucune
+    sonde lue, AUCUN marqueur neutralise, le candidat reste servable."""
+    item = _consol(7001, visit_h=72)
+    picks, withheld, _state = _run(
+        [item], event_probe=lambda n: (True, True, _iso(72)),
+        time_budget_s=0)
+    assert [p["number"] for p in picks] == [7001], (
+        "mur de temps atteint : rien n'est neutralise, le candidat reste "
+        f"servable (withheld={[w[1] for w in withheld]})")
+
+
+def test_le_mur_de_temps_ne_tombe_pas_non_plus_sur_un_grain_ordinaire():
+    """Le meme mur, hors classe consolidation : le filtre recent ne doit pas
+    non plus lever une exception (il renvoie un booleen, il le decompose
+    normalement -- le test verrouille le voisinage)."""
+    item = _item(7002, visit_h=72)
+    picks, withheld, _state = _run(
+        [item], recent_marker_probe=lambda n: True, time_budget_s=0)
+    assert [p["number"] for p in picks] == [7002], (
+        f"mur de temps atteint sur un grain ordinaire (withheld="
+        f"{[w[1] for w in withheld]})")
