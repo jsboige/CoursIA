@@ -165,6 +165,20 @@
       ]
     },
     {
+      "lake": "asymmetricinformation",
+      "project-path": "MyIA.AI.Notebooks/GameTheory/asymmetric_information_lean",
+      "display-name": "asymmetric_information_lean",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "axiom-target-modules": "*",
+      "paths": [
+        "MyIA.AI.Notebooks/GameTheory/asymmetric_information_lean/**.lean",
+        "MyIA.AI.Notebooks/GameTheory/asymmetric_information_lean/lakefile.toml",
+        "MyIA.AI.Notebooks/GameTheory/asymmetric_information_lean/lean-toolchain",
+        "MyIA.AI.Notebooks/GameTheory/asymmetric_information_lean/lake-manifest.json"
+      ]
+    },
+    {
       "lake": "learningtheory",
       "project-path": "MyIA.AI.Notebooks/ML/learning_theory_lean",
       "display-name": "learning_theory_lean",
