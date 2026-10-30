@@ -1586,4 +1586,237 @@ private theorem rank_unique_label {seen : List (Nat × Nat)}
   · exact rank_covered hr hk hb
   · intro x y hx hy
     exact threadRank_inj hv hx hy (by simp [threadRank, hx, hy])
+
+/-! ## 14. The correspondence of rows (tranche 9)
+
+The equality `canon l = canon l'` concerns **rows**: to every crossing of `l`
+corresponds a crossing of `l'`, and the **four slots** correspond positionally.
+This is the property that makes the renaming composable: slot `j` of a
+crossing of `l` and slot `j` of the corresponding crossing of `l'` carry the
+**same rank** in their respective final threads.
+
+The ranks are taken in the final thread of the **current sublist**: the final
+thread of a list is the one of its last sublist, threaded from the state it
+receives — hence the parallel recursion on the two lists.
+
+- `RowsCorrespond`: the correspondence, stated as a parallel recursion;
+- `four_slots_eq`: two rows of four equal slots correspond positionally;
+- `rows_correspond`: two lists carrying the same canonical rows correspond
+  rank by rank, slot by slot.
+-/
+
+/-- Two lists of four slots that are equal correspond positionally: the slot of
+    rank `j` on one side is paired with the slot of rank `j` on the other. -/
+private theorem four_slots_eq {a b c d a' b' c' d' : Nat} {f g : Nat → Nat}
+    (h : [a, b, c, d].map f = [a', b', c', d'].map g) :
+    f a = g a' ∧ f b = g b' ∧ f c = g c' ∧ f d = g d' := by
+  simp only [List.map] at h
+  rcases List.cons.inj h with ⟨h1, h2⟩
+  rcases List.cons.inj h2 with ⟨h2', h3⟩
+  rcases List.cons.inj h3 with ⟨h3', h4⟩
+  rcases List.cons.inj h4 with ⟨h4', _⟩
+  exact ⟨h1, h2', h3', h4'⟩
+
+/-- Two lists of crossings correspond when, at every mutually paired crossing,
+    the four slots carry the same rank. The ranks are taken in the final
+    thread of the current sublist — the final thread of the whole list being
+    the one of its last sublist, threaded from the state it receives. -/
+private def RowsCorrespond (seen seen' : List (Nat × Nat)) (cs cs' : List PDCrossing) : Prop :=
+  match cs, cs' with
+  | [], [] => True
+  | c :: tl, c' :: tl' =>
+      (threadRank (canonThreaded (c :: tl) seen).2 c.e1 =
+          threadRank (canonThreaded (c' :: tl') seen').2 c'.e1) ∧
+      (threadRank (canonThreaded (c :: tl) seen).2 c.e2 =
+          threadRank (canonThreaded (c' :: tl') seen').2 c'.e2) ∧
+      (threadRank (canonThreaded (c :: tl) seen).2 c.e3 =
+          threadRank (canonThreaded (c' :: tl') seen').2 c'.e3) ∧
+      (threadRank (canonThreaded (c :: tl) seen).2 c.e4 =
+          threadRank (canonThreaded (c' :: tl') seen').2 c'.e4) ∧
+      RowsCorrespond (canonSlots seen [c.e1, c.e2, c.e3, c.e4]).2
+        (canonSlots seen' [c'.e1, c'.e2, c'.e3, c'.e4]).2 tl tl'
+  | _, _ => False
+
+/-- **Two lists carrying the same canonical rows correspond rank by rank, slot
+    by slot.** This is the lemma that links the two halves of the bridge: the
+    equality `canon l = canon l'` associates to every crossing of `l` a
+    crossing of `l'`, and to every slot a slot — by the equality of the ranks. -/
+private theorem rows_correspond :
+    ∀ (cs : List PDCrossing) (seen seen' : List (Nat × Nat)) (cs' : List PDCrossing),
+      (canonThreaded cs seen).1 = (canonThreaded cs' seen').1 →
+      RowsCorrespond seen seen' cs cs' := by
+  intro cs
+  induction cs with
+  | nil =>
+      intro seen seen' cs' h
+      cases cs' with
+      | nil => trivial
+      | cons c' tl' =>
+          have hne : (canonThreaded (c' :: tl') seen').1 ≠ [] := by
+            intro hh
+            have hct : (canonThreaded (c' :: tl') seen').1 =
+                (canonSlots seen' [c'.e1, c'.e2, c'.e3, c'.e4]).1 ::
+                  (canonThreaded tl' (canonSlots seen' [c'.e1, c'.e2, c'.e3, c'.e4]).2).1 := rfl
+            rw [hct] at hh
+            exact (List.cons_ne_nil _ _ hh).elim
+          exact absurd (h.symm.trans rfl) hne
+  | cons c tl ih =>
+      intro seen seen' cs' h
+      cases cs' with
+      | nil =>
+          have hne : (canonThreaded (c :: tl) seen).1 ≠ [] := by
+            intro hh
+            have hct : (canonThreaded (c :: tl) seen).1 =
+                (canonSlots seen [c.e1, c.e2, c.e3, c.e4]).1 ::
+                  (canonThreaded tl (canonSlots seen [c.e1, c.e2, c.e3, c.e4]).2).1 := rfl
+            rw [hct] at hh
+            exact (List.cons_ne_nil _ _ hh).elim
+          exact absurd h hne
+      | cons c' tl' =>
+          have hct1 : (canonThreaded (c :: tl) seen).1 =
+              (canonSlots seen [c.e1, c.e2, c.e3, c.e4]).1 ::
+                (canonThreaded tl (canonSlots seen [c.e1, c.e2, c.e3, c.e4]).2).1 := rfl
+          have hct2 : (canonThreaded (c' :: tl') seen').1 =
+              (canonSlots seen' [c'.e1, c'.e2, c'.e3, c'.e4]).1 ::
+                (canonThreaded tl' (canonSlots seen' [c'.e1, c'.e2, c'.e3, c'.e4]).2).1 := rfl
+          rw [hct1, hct2] at h
+          rcases List.cons.inj h with ⟨hhead, htail⟩
+          have hr1 := canonThreaded_row_ranks (c := c) (cs := tl) (seen := seen)
+          have hr2 := canonThreaded_row_ranks (c := c') (cs := tl') (seen := seen')
+          have hrow1 : ([c.e1, c.e2, c.e3, c.e4].map
+                  (fun x => threadRank (canonThreaded (c :: tl) seen).2 x) ::
+                (canonThreaded tl (canonSlots seen [c.e1, c.e2, c.e3, c.e4]).2).1) =
+              ((canonSlots seen [c.e1, c.e2, c.e3, c.e4]).1 ::
+                (canonThreaded tl (canonSlots seen [c.e1, c.e2, c.e3, c.e4]).2).1) :=
+            hr1.symm.trans hct1
+          rcases List.cons.inj hrow1 with ⟨hmap, _⟩
+          have hrow2 : ([c'.e1, c'.e2, c'.e3, c'.e4].map
+                  (fun x => threadRank (canonThreaded (c' :: tl') seen').2 x) ::
+                (canonThreaded tl' (canonSlots seen' [c'.e1, c'.e2, c'.e3, c'.e4]).2).1) =
+              ((canonSlots seen' [c'.e1, c'.e2, c'.e3, c'.e4]).1 ::
+                (canonThreaded tl' (canonSlots seen' [c'.e1, c'.e2, c'.e3, c'.e4]).2).1) :=
+            hr2.symm.trans hct2
+          rcases List.cons.inj hrow2 with ⟨hmap', _⟩
+          have hmap'' : ([c.e1, c.e2, c.e3, c.e4].map
+                (fun x => threadRank (canonThreaded (c :: tl) seen).2 x)) =
+              ([c'.e1, c'.e2, c'.e3, c'.e4].map
+                (fun x => threadRank (canonThreaded (c' :: tl') seen').2 x)) :=
+            hmap.trans (hhead.trans hmap'.symm)
+          rcases four_slots_eq hmap'' with ⟨h1, h2, h3, h4⟩
+          refine ⟨h1, h2, h3, h4, ?_⟩
+          exact ih (seen := (canonSlots seen [c.e1, c.e2, c.e3, c.e4]).2)
+              (seen' := (canonSlots seen' [c'.e1, c'.e2, c'.e3, c'.e4]).2)
+              (cs' := tl') htail
+
+/-! ## 15. The label of a rank (tranche 9)
+
+The previous tranches established that a rank carried by a thread is carried by
+**one** label (§13) and that a given rank corresponds to **exactly one** label
+(§13). What was missing was the **operator** that recovers the label of a given
+rank: without it, the renaming `π` cannot be written.
+
+- `pairOfRank`: the first entry of the thread that carries the requested rank;
+- `pairOfRank_mem` / `pairOfRank_none`: what it guarantees, and its contrary;
+- `labelOfRank`: the label that carries the rank;
+- `labelOfRank_spec`: the label returned is indeed the one `lookup` returns;
+- `labelOfRank_exists`: every carried rank is carried by the label returned;
+- `labelOfRank_inj`: two distinct ranks are never carried by the same label.
+-/
+
+/-- The first entry of the thread `t` that carries the rank `r`. -/
+private def pairOfRank : List (Nat × Nat) → Nat → Option (Nat × Nat)
+  | [], _ => none
+  | p :: t, r => if p.2 = r then some p else pairOfRank t r
+
+/-- The entry returned by `pairOfRank` is indeed in the thread, and carries the
+    requested rank. -/
+private theorem pairOfRank_mem {t : List (Nat × Nat)} {r : Nat} {p : Nat × Nat}
+    (h : pairOfRank t r = some p) : p ∈ t ∧ p.2 = r := by
+  induction t with
+  | nil => simp [pairOfRank] at h
+  | cons q t ih =>
+      by_cases hq : q.2 = r
+      · have hq' : pairOfRank (q :: t) r = some q := by simp [pairOfRank, hq]
+        rw [hq'] at h
+        have hpq : p = q := (Option.some.inj h).symm
+        subst hpq
+        exact ⟨List.mem_cons_self, hq⟩
+      · have hq' : pairOfRank (q :: t) r = pairOfRank t r := by simp [pairOfRank, hq]
+        rw [hq'] at h
+        obtain ⟨hm, hv⟩ := ih h
+        exact ⟨List.mem_cons_of_mem q hm, hv⟩
+
+/-- No entry of the thread carries the requested rank when `pairOfRank` returns
+    nothing. -/
+private theorem pairOfRank_none {t : List (Nat × Nat)} {r : Nat}
+    (h : pairOfRank t r = none) : ∀ p ∈ t, p.2 ≠ r := by
+  induction t with
+  | nil => intro p hp; simp at hp
+  | cons q t ih =>
+      intro p hp
+      by_cases hq : q.2 = r
+      · have hq' : pairOfRank (q :: t) r = some q := by simp [pairOfRank, hq]
+        rw [hq'] at h
+        simp at h
+      · have hq' : pairOfRank (q :: t) r = pairOfRank t r := by simp [pairOfRank, hq]
+        rw [hq'] at h
+        rcases List.mem_cons.mp hp with hpq | hpt
+        · rw [hpq]
+          exact hq
+        · exact ih h p hpt
+
+/-- The label that carries the rank `r` in the thread `t`. -/
+private def labelOfRank (t : List (Nat × Nat)) (r : Nat) : Option Nat :=
+  (pairOfRank t r).map Prod.fst
+
+/-- The label returned by `labelOfRank` is indeed the one `lookup` returns: with
+    distinct keys, it carries the requested rank. -/
+private theorem labelOfRank_spec {t : List (Nat × Nat)} (hk : SeenKeysNodup t)
+    {r y : Nat} (h : labelOfRank t r = some y) : t.lookup y = some r := by
+  unfold labelOfRank at h
+  cases hp : pairOfRank t r with
+  | none => simp [hp] at h
+  | some p =>
+      have hmem := pairOfRank_mem hp
+      have hlookup := lookup_eq_some_of_mem t hk p hmem.1
+      have hpy : p.1 = y := by
+        simp [hp] at h
+        exact h
+      calc t.lookup y = t.lookup p.1 := by rw [hpy]
+        _ = some p.2 := hlookup
+        _ = some r := by rw [hmem.2]
+
+/-- **Every** rank carried by the thread is carried by the label that
+    `labelOfRank` returns. Existence comes from the sequence of ranks (§13),
+    uniqueness from the injectivity of the values (§12). -/
+private theorem labelOfRank_exists {t : List (Nat × Nat)} (hv : SeenValsNodup t)
+    (hk : SeenKeysNodup t) (hr : ThreadRanks t) {r : Nat} (hb : 1 ≤ r ∧ r ≤ t.length) :
+    ∃ y, labelOfRank t r = some y ∧ t.lookup y = some r := by
+  obtain ⟨x, hx⟩ := rank_covered hr hk hb
+  have hmem := mem_of_lookup hx
+  have hnone : pairOfRank t r ≠ none := by
+    intro hn
+    exact absurd rfl (pairOfRank_none hn (x, r) hmem)
+  cases hp : pairOfRank t r with
+  | none => exact absurd hp hnone
+  | some p =>
+      have hpm := pairOfRank_mem hp
+      have hpm' : (p.1, r) ∈ t := by rw [← hpm.2]; exact hpm.1
+      have hpx : p.1 = x := pair_eq_of_mem_of_snd_eq hv hpm' hmem
+      refine ⟨p.1, ?_, ?_⟩
+      · simp [labelOfRank, hp]
+      · rw [hpx]
+        exact hx
+
+/-- Two distinct ranks are never carried by the same label. -/
+private theorem labelOfRank_inj {t : List (Nat × Nat)} (hk : SeenKeysNodup t)
+    {r s y z : Nat} (hr : labelOfRank t r = some y) (hs : labelOfRank t s = some z)
+    (hne : r ≠ s) : y ≠ z := by
+  intro h
+  subst h
+  have h1 := labelOfRank_spec hk hr
+  have h2 := labelOfRank_spec hk hs
+  rw [h1] at h2
+  exact hne (Option.some.inj h2)
+
 end Knots_en.AnyMoves
