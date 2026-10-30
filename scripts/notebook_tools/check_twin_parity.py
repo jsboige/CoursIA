@@ -120,6 +120,12 @@ Usage
     # compte dans `drift_introduced`.
     python check_twin_parity.py --check --per-pair --base origin/main
     python check_twin_parity.py --check --per-pair --base HEAD~1
+    # en CI sur une PR, `auto` est la base juste : actions/checkout extrait le
+    # merge ref de GitHub, dont le premier parent est le main de l'evenement.
+    # Comparer a `origin/main` (refetch au demarrage du job) classe en
+    # DRIFT_INTRODUCED les paires rebaselinees sur main pendant l'attente en
+    # file (#22292).
+    python check_twin_parity.py --check --per-pair --base auto
     # mode CI cron (volet b #9399) : fleet-wide SANS base ref, breakdown 4 categories.
     # Distinct du check historique : rouge sur N'IMPORTE QUEL drift (legacy ou content),
     # pas seulement DRIFT_or_MISSING. Utilise par .github/workflows/twin-parity-cron.yml.
@@ -1937,6 +1943,59 @@ def _paire_inconnue(nom: str, pairs: list) -> None:
     )
 
 
+# --- base de comparaison lue a l'execution (#22292) --------------------------
+# En CI, `actions/checkout` extrait `refs/pull/N/merge` : un commit de fusion
+# dont le PREMIER parent est le `main` tel qu'il etait a l'evenement, le second
+# etant la tete de la PR. `origin/main` est refetch au demarrage du job. Sous
+# famine de runners, `main` avance entre les deux lectures : toute paire
+# rebaselinee dans l'intervalle est DRIFT au merge ref et OK a `origin/main`,
+# donc classee DRIFT_INTRODUCED sur une PR qui ne la touche pas (instance
+# mesuree : #22218, 11 paires dont aucune n'etait touchee ; 22 des 256 PRs
+# ouvertes portaient ce rouge a leur tete).
+#
+# `--base auto` repond a la question que ce gate pose vraiment -- « qu'a
+# introduit CETTE PR ? » -- en comparant au main dont le merge ref est issu :
+# le choix ne depend plus du temps d'attente en file.
+_AUTO_BASE = "auto"
+# Sujet exact du commit de fusion fabrique par GitHub :
+#   Merge 1ad73da1e3 into e0964ecf4a
+# Le motif est un DISCRIMINANT, pas une dependance : s'il ne matche pas (sujet
+# reecrit, commit de fusion pousse par l'auteur sur sa branche), on retombe sur
+# `origin/main`, c'est-a-dire le comportement d'avant ce fix -- jamais une base
+# plus fausse que l'ancienne.
+_GITHUB_MERGE_SUBJECT = re.compile(r"^Merge [0-9a-f]{7,40} into [0-9a-f]{7,40}")
+
+
+def resolve_base_ref(repo_root: Path, base: str) -> str:
+    """Resout la sentinelle `auto` en une ref git reelle (#22292).
+
+    `HEAD^1` quand `HEAD` est un commit de fusion GitHub (`refs/pull/N/merge`),
+    `origin/main` sinon. Toute autre valeur est rendue inchangee : cette
+    fonction n'interprete que la sentinelle.
+
+    Un `HEAD` d'un seul parent (branche ordinaire), ou dont le sujet n'a pas la
+    forme `Merge <sha> into <sha>`, n'est pas un merge ref : la base reste
+    `origin/main`, soit exactement le comportement anterieur au fix.
+    """
+    if base != _AUTO_BASE:
+        return base
+    # `rev-list --parents -n 1 HEAD` : le commit puis ses parents. Deux parents
+    # ou plus -> commit de fusion. Aucune exception n'est avalee ici : une pause
+    # git (`GitTimeoutError`) doit interrompre la mesure en rc 3, pas se
+    # deguiser en base par defaut.
+    parents = _run_git(
+        ["git", "rev-list", "--parents", "-n", "1", "HEAD"], cwd=repo_root
+    ).stdout.split()
+    if len(parents) < 3:
+        return "origin/main"
+    subject = _run_git(
+        ["git", "log", "-1", "--format=%s", "HEAD"], cwd=repo_root
+    ).stdout.strip()
+    if _GITHUB_MERGE_SUBJECT.match(subject):
+        return "HEAD^1"
+    return "origin/main"
+
+
 def main(argv=None) -> int:
     """Point d'entree CLI. Un appel git qui depasse sa borne de delai interrompt la
     mesure : message explicite sur stderr et rc 3 (distinct de 1 = drift et de
@@ -1987,7 +2046,9 @@ def _main(argv=None) -> int:
                    help="Mode per-pair : compare HEAD vs --base <ref>. Ne FAIL que "
                         "le drift INTRODUIT par la PR, jamais le drift pre-existant.")
     p.add_argument("--base", default=None,
-                   help="Ref git de base pour le mode --per-pair (ex. origin/main, HEAD~1).")
+                   help="Ref git de base pour le mode --per-pair (ex. origin/main, "
+                        "HEAD~1, ou 'auto' : HEAD^1 quand HEAD est un merge ref "
+                        "GitHub, origin/main sinon -- cf #22292).")
     p.add_argument("--ci-strict", action="store_true",
                    help="Mode CI cron (#9399 volet b) : check fleet-wide SANS base ref, "
                         "avec breakdown 4 categories (ok_legacy / ok_content / drift_blob / "
@@ -2081,7 +2142,7 @@ def _main(argv=None) -> int:
         p.error("--summary-by-verdict est un mode de recensement integral : "
                 "--pair/--family n'y designent rien (compte les paires par "
                 "bridge_verdict). Retirer le selecteur.")
-    # Garde anti-derive MERGE_HEAD / REBASE_HEAD (#11732) : pendant un merge non
+    # Garde anti-derive merge/rebase en cours (#11732) : pendant un merge non
     # commite, `git ls-tree HEAD` lit l'ANCIENNE tete de branche (pas le resultat
     # du merge). --update atteste alors des blob SHAs qui ne refletent pas l'etat
     # final du notebook -- au commit du merge, les notebooks obtiennent de
@@ -2098,20 +2159,47 @@ def _main(argv=None) -> int:
         except SystemExit:
             repo_root_for_state = None
         if repo_root_for_state is not None:
-            # git rev-parse -q --verify MERGE_HEAD/REBASE_HEAD : rc=0 si le
-            # depot est en cours de merge/rebase interactif. Le check precede
-            # `_repo_root()` final pour economiser un subprocess en cas d'erreur
-            # deja connue (mais apres args.repo_root parse, qui peut etre override
-            # dans les tests --repo-root sur tmp_path).
-            for state_file, label in (("MERGE_HEAD", "merge"), ("REBASE_HEAD", "rebase")):
+            # Le check precede `_repo_root()` final pour economiser un subprocess
+            # en cas d'erreur deja connue (mais apres args.repo_root parse, qui
+            # peut etre override dans les tests --repo-root sur tmp_path).
+            #
+            # Merge en cours : `git rev-parse -q --verify MERGE_HEAD` (rc=0 si
+            # et seulement si un merge est non commite) -- detection inchangee.
+            r = _run_git(
+                ["git", "rev-parse", "-q", "--verify", "MERGE_HEAD"],
+                cwd=str(repo_root_for_state),
+            )
+            if r.returncode == 0:
+                p.error("--update pendant un merge non committe : HEAD ne contient pas "
+                        "le resultat du merge. Commitez d'abord, puis re-attestez "
+                        "(cf #11732, variante operationnelle de #8957).")
+            # Rebase en cours : l'indicateur fiable est l'existence du repertoire
+            # `rebase-merge` (interactif/merge backend) ou `rebase-apply`
+            # (backend am), PAS le ref REBASE_HEAD. Git peut y laisser un
+            # REBASE_HEAD orphelin apres un rebase interrompu : un clone qui en
+            # porte un sans rebase en cours voyait alors --update refuse a tort
+            # (signale par le coordinateur 2026-10-27 : REBASE_HEAD du 20/09,
+            # ni rebase-merge ni rebase-apply, 3 tests update_guard rouges).
+            # `git rev-parse --git-path <name>` resout le chemin dans le git dir
+            # du depot (worktree compris) ; la sortie est relative au cwd dans
+            # le clone principal (`.git/rebase-merge`) et absolue dans un
+            # worktree -- d'ou la resolution explicite ci-dessous.
+            for state_dir in ("rebase-merge", "rebase-apply"):
                 r = _run_git(
-                    ["git", "rev-parse", "-q", "--verify", state_file],
+                    ["git", "rev-parse", "--git-path", state_dir],
                     cwd=str(repo_root_for_state),
                 )
-                if r.returncode == 0:
-                    p.error(f"--update pendant un {label} non committe : HEAD ne contient pas "
-                            f"le resultat du {label}. Commitez d'abord, puis re-attestez "
-                            f"(cf #11732, variante operationnelle de #8957).")
+                raw = r.stdout.strip() if r.returncode == 0 else ""
+                if not raw:
+                    continue
+                state_path = Path(raw)
+                if not state_path.is_absolute():
+                    state_path = repo_root_for_state / state_path
+                if state_path.exists():
+                    p.error("--update pendant un rebase non termine : HEAD ne contient pas "
+                            "le resultat du rebase. Terminez ou annulez le rebase "
+                            "(git rebase --continue / --abort), puis re-attestez "
+                            "(cf #11732, variante operationnelle de #8957).")
     if args.pair and args.family:
         p.error("--pair et --family sont mutuellement exclusifs avec --update.")
     if args.ci_strict and args.per_pair:
@@ -2132,6 +2220,16 @@ def _main(argv=None) -> int:
 
     repo_root = Path(args.repo_root) if args.repo_root else _repo_root()
     reg_path = Path(args.registry)
+
+    # #22292 : la base du mode --per-pair se resout a l'execution. `--base` exige
+    # deja `--per-pair` (validation ci-dessus), donc la sentinelle ne peut pas
+    # s'inviter dans un mode qui n'en fait rien.
+    if args.base == _AUTO_BASE:
+        args.base = resolve_base_ref(repo_root, args.base)
+        origine = ("merge ref GitHub : comparaison au main dont il est issu"
+                   if args.base == "HEAD^1"
+                   else "HEAD n'est pas un merge ref GitHub")
+        print(f"--base auto -> '{args.base}' ({origine}, #22292)", file=sys.stderr)
 
     # --- Mode --summary-by-verdict (#10439) : denominateur actionnable sans
     # soustraction manuelle. Compte les paires par bridge_verdict ; les paires
