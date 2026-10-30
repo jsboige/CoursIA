@@ -49,7 +49,7 @@ Assistant de codage agentique développé par Anthropic. Interface CLI + Extensi
 # Installation CLI - chemin canonique : installation native (Node.js non requis)
 #   Windows : installateur depuis https://claude.com/code
 #   macOS   : brew install --cask claude-code
-#   Linux   : curl -fsSL https://claude.ai/install.sh | sh
+#   Linux   : curl -fsSL https://claude.ai/install.sh | bash
 claude --version
 ```
 
