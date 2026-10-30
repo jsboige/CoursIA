@@ -12,7 +12,7 @@
       "foreign_provisioning": [
         {
           "pattern": "tweetyproject\\.org/builds/",
-          "reason": "Source de provisionnement hors de l'organe de serie : le chemin tweetyproject.org/builds/<version>/ repond 404 depuis #12789 ; l'organe de serie telecharge depuis Maven Central (TWEETY_MAVEN_BASE). C'est le cas declencheur de #23047 (archive : TWEETY_VERSION redeclaree a 1.28 dans le carnet)."
+          "reason": "Source de provisionnement hors de l'organe de serie : le chemin tweetyproject.org/builds/<version>/ repond 404 depuis #12789 ; l'organe de serie telecharge depuis Maven Central (TWEETY_MAVEN_BASE). C'est le cas declencheur de #23047 (archive : TWEETY_VERSION redeclaree a 1.28 dans le carnet) -- cas CORPSUS repare depuis sur `main` par #23047 (commit d5e44a0919d6 : le carnet archive est desormais provisionne par l'organe de la serie). Le motif est conserve : il decrit la CLASSE de defaut que l'organe doit voir, pas un carnet particulier."
         }
       ]
     },
@@ -73,18 +73,7 @@
       "ecosystem": "nuget",
       "canonical": "3.4.1",
       "canonical_source": "manifest",
-      "divergences": [
-        {
-          "version": "3.2.1",
-          "decision": "to_converge",
-          "reason": "Ecart non justifie : aucune entree d'allowlist ni motif ecrit ne rattache l'epingle 3.2.1 a une contrainte de la serie."
-        },
-        {
-          "version": "3.4.0",
-          "decision": "to_converge",
-          "reason": "Ecart non justifie : meme constat que 3.2.1 -- aucun motif ecrit dans le depot ne rattache l'epingle 3.4.0 a une contrainte de la serie."
-        }
-      ]
+      "divergences": []
     },
     {
       "id": "Microsoft.ML",
@@ -117,13 +106,7 @@
       "ecosystem": "nuget",
       "canonical": "0.23.0",
       "canonical_source": "manifest",
-      "divergences": [
-        {
-          "version": "0.22.3",
-          "decision": "to_converge",
-          "reason": "Ecart non justifie : l'issue signale qu'un AutoML ancien peut etre requis par un ML.NET plus ancien -- mais aucun carnet du depot ne charge AutoML 0.22.3 avec un ML.NET ancien de maniere documentee, donc le motif n'est pas etabli et l'ecart reste a converger."
-        }
-      ]
+      "divergences": []
     },
     {
       "id": "CsvHelper",

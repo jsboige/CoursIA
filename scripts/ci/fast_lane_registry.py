@@ -20,11 +20,86 @@ de review B.0), seule l'infrastructure est mutualisee.
 
 Ce module ne contient QUE des donnees : la mecanique est dans `fast_lane.py`,
 ce qui rend le registre lisible et testable sans executer quoi que ce soit.
+
+Exception documentee (#22001) : les `paths` du garde Live-read (TRANCHE20)
+sont DERIVES du registre `live_read_registry.json` -- les sources lues par
+les cellules sont des DONNEES, pas des motifs recopies a la main. La
+derivation est une lecture de donnees, pas de la mecanique : elle reste ici
+parce que c'est le registre lui-meme qui porte les `paths`.
 """
 
 from __future__ import annotations
 
+import json
+import sys
 from dataclasses import dataclass, field
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+LIVE_READ_REGISTRY = REPO_ROOT / "scripts" / "notebook_tools" / "live_read_registry.json"
+# Repli du garde Live-read quand le registre est illisible : tous les carnets,
+# c'est-a-dire un SUPERSET de ce que le registre declarerait aujourd'hui.
+LIVE_READ_WILDCARD = "MyIA.AI.Notebooks/**/*.ipynb"
+
+
+def live_read_source_paths(registry_path: Path | None = None) -> list[str]:
+    """Chemins des fichiers LUS par les cellules live-read, d'apres le registre.
+
+    Une cellule live-read lit un fichier du depot et en committent la sortie
+    (compte de lignes, citations ``L<n>``). Si la source change, la sortie
+    committée devient un temoignage du passe -- et le garde qui le verifie
+    doit etre SELECTIONNE par la revision qui touche la source. Jusque-là
+    (avant #22001), les `paths` du garde ne portaient que ``**.ipynb`` et ses
+    propres fichiers : une PR qui ne touchait que la source ne declenchait
+    rien, et la revision #21899 (`Pillars.lean` 364 -> 414 lignes) a ete
+    mergee verte.
+
+    Les sources sont donc lues dans le registre, jamais recopiees : ajouter
+    une entree au registre suffit a elargir le declencheur.
+
+    Fail-closed : un registre illisible ou une entree sans `source` leve
+    plutot que de rendre un garde muet (un garde eteint en silence est le
+    defaut que ce correctif vient corriger). Les `paths` du garde passent par
+    `live_read_guard_paths()`, qui LOCALISE cette panne (cf sa docstring).
+    """
+    path = Path(registry_path) if registry_path is not None else LIVE_READ_REGISTRY
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise RuntimeError(f"registre live-read illisible : {path} ({exc})") from exc
+    sources: list[str] = []
+    for cell in data.get("cells", []):
+        source = cell.get("source")
+        if not source:
+            raise RuntimeError(
+                f"registre live-read : entree sans champ 'source' : {cell}")
+        sources.append(source)
+    return sources
+
+
+def live_read_guard_paths() -> list[str]:
+    """`paths` du garde Live-read, sans emporter le registre entier en cas de panne.
+
+    `TRANCHE20` porte ces chemins au CHARGEMENT du module : une exception
+    laissee filer rendrait `fast_lane_registry` inimportable, donc les 30+
+    gardes avec lui (mesure #22041 : registre absent -> `python scripts/ci/
+    fast_lane.py` meurt sur `RuntimeError` a l'import, aucun check-run n'est
+    emis). La panne est donc LOCALISEE au garde concerne : on retombe sur un
+    motif large -- tous les carnets -- qui reste un SUPERSET des sources
+    declarees. Le garde reste ainsi SELECTIONNE, et son propre argv
+    (`check_live_read_freshness.py`) rend le rouge en lisant le registre
+    manquant : bruyamment, jamais en silence.
+    """
+    try:
+        return live_read_source_paths()
+    except RuntimeError as exc:
+        print(
+            f"[fast-lane] registre live-read illisible : {exc} -- le garde "
+            f"Live-read reste selectionne sur {LIVE_READ_WILDCARD} au lieu de "
+            "rendre tout le registre inimportable (#22041).",
+            file=sys.stderr,
+        )
+        return [LIVE_READ_WILDCARD]
 
 
 @dataclass(frozen=True)
@@ -499,11 +574,16 @@ PILOT: list[Guard] = [
             ".github/workflows/*.yml",
             ".github/workflows/*.yaml",
             "scripts/ci/check_self_hosted_runner_policy.py",
+            "scripts/ci/self_hosted_timeout_baseline.txt",
             "scripts/tests/test_check_self_hosted_runner_policy.py",
             "scripts/ci/fast_lane_registry.py",
         ],
+        # #22954 : `--check-timeouts` ajoute le cliquet qui refuse un job
+        # auto-heberge sans `timeout-minutes` (defaut d'Actions : 6 h, et un job
+        # fige tient son slot tout ce temps). La dette existante est nommee dans
+        # `self_hosted_timeout_baseline.txt`, qui ne doit jamais grossir.
         argv=["python", "scripts/ci/check_self_hosted_runner_policy.py",
-              "--check"],
+              "--check", "--check-timeouts"],
         blocking=True,
         shadow_reason=PILOT_SHADOW_SANS_EMETTEUR,
     ),
@@ -1403,7 +1483,7 @@ TRANCHE9: list[Guard] = [
 #   'Invalid Notebook / outputs is a required property /
 #    Using nbformat v5.10.4 and nbconvert v7.17.0'
 #
-# Le c.1082 fabrication de GameTheory-06f-Bounded-Agents-Lean.ipynb a omis
+# Le c.1082 fabrication de Dynamics-05-Agents-Bornes-Lean.ipynb a omis
 # la cle `outputs` de 9/9 cellules code. Papermill (validator permissif) a
 # accepte, le kernel lean4-wsl n'a rien produit (hang faute de `.lake/`), la
 # cle n'a jamais ete injectee -- resultat : un notebook structurellement
@@ -1457,7 +1537,7 @@ TRANCHE10: list[Guard] = [
 # `notebook-source-collapse-ratchet.yml` a absorber.
 #
 # Le defaut fondeur est #15862 : la cellule `c989_independent_v2` de
-# GameTheory-06e-Open-Source-Game-Theory-Python.ipynb a perdu 3116 caracteres de
+# Dynamics-04-Open-Source-Game-Theory-Python.ipynb a perdu 3116 caracteres de
 # source (8425 -> 5309, -37.0 %) -- une table declarative et un `assert` ont
 # disparu -- et AUCUN des ~30 ratchets n'a bronche, parce que tous mesurent
 # des SORTIES, des sequences ou de la structure. Aucun ne mesurait la
@@ -2013,6 +2093,15 @@ TRANCHE20: list[Guard] = [
             "scripts/notebook_tools/tests/test_live_read_freshness.py",
             "scripts/ci/fast_lane.py",
             "scripts/ci/fast_lane_registry.py",
+            "scripts/tests/test_fast_lane.py",
+            # Les SOURCES lues par les cellules live-read : derivees du
+            # registre (#22001). Sans elles, le garde ne se selectionne que
+            # sur une revision qui touche le CARNET -- la revision qui
+            # reecrit la SOURCE passe sans controle, et la sortie committée
+            # de la cellule devient un temoignage du passe (#21899). La
+            # derivation est LOCALISEE : un registre illisible ne rend pas le
+            # module inimportable, il elargit ce seul garde (#22041).
+            *live_read_guard_paths(),
         ],
         pre_argv=[
             "python", "scripts/notebook_tools/check_live_read_freshness.py",
@@ -2499,8 +2588,13 @@ TRANCHE28: list[Guard] = [
 
 
 # ---------------------------------------------------------------------------
-# TRANCHE 29 (#23073) -- garde des versions de bibliotheques chargees par les
+# TRANCHE 30 (#23073) -- garde des versions de bibliotheques chargees par les
 # carnets.
+#
+# Renumerote TRANCHE29 -> TRANCHE30 au merge de `main` du 2026-10-30 :
+# `main` porte deja une TRANCHE29 (confrontation doc <-> quantification
+# reellement chargee, #23252). Deux blocs ne peuvent pas porter le meme
+# nom -- precedent : TRANCHE9 -> TRANCHE10.
 #
 # Mandat user du 2026-10-28, a propos de #23047 : « Ca meritera un organe
 # pour stabiliser les versions d'API et de libs, car ce genre de regressions
@@ -2542,7 +2636,7 @@ TRANCHE28: list[Guard] = [
 # range dans le seau advisory : un `failure` publie ne doit jamais tenir le
 # merge.
 # ---------------------------------------------------------------------------
-TRANCHE29: list[Guard] = [
+TRANCHE30: list[Guard] = [
     Guard(
         name="Library versions guard (advisory, #23073)",
         source=FAST_LANE_NATIVE,
@@ -2565,6 +2659,49 @@ TRANCHE29: list[Guard] = [
         # (forme hr-substitution-guard, #17941). Sans lui, une panne de l'org
         # se lirait comme un verdict.
         warn_rc=(2,),
+        absorbed=True,
+    ),
+]
+
+# TRANCHE 29 -- confrontation doc <-> quantification reellement chargee (#23252).
+#
+# Defaut ferme : la table « Quantization Settings per Service » de
+# ``docs/genai/genai-services.md`` annoncait ``tts-fishaudio`` en « BnB 4-bit
+# NF4 ~5 GB » alors que le service tourne en ``--half`` (fp16, 20,3 Go
+# mesures). Rien ne confrontait la table a ce que les services chargent : la
+# doc pouvait annoncer une quantification que personne n'applique, sans qu'un
+# seul garde ne rougisse -- et un lecteur y lit un budget VRAM qui n'existe pas.
+#
+# L'organe est ADVISORY d'abord (``blocking=False``) : il rend des verdicts
+# ``ORPHAN-SERVICE`` sur six services GPU absents de la table, et ces trous de
+# doc se corrigent service par service, pas en bloquant les PRs qui n'y
+# touchent pas. Le passage en bloquant se fera quand le stock de ``failing``
+# sera vide sur ``main`` -- c'est le critere de bascule, ecrit ici, pas un
+# « plus tard ».
+#
+# Forme : garde NON-delta. Il lit l'arbre entier (la table d'un cote, tous les
+# composes de l'autre) et son verdict est absolu, donc heritable de ``main`` :
+# ``diff_bounded`` reste faux, et un rouge corrobore sur ``main`` ne doit pas
+# etre impute a la PR. ``paths`` borne en revanche le DECLENCHEMENT -- la doc,
+# les composes et l'organe lui-meme, sinon le garde tournerait a vide sur
+# chaque PR de notebook.
+# ---------------------------------------------------------------------------
+TRANCHE29: list[Guard] = [
+    Guard(
+        name="quant-doc-divergence advisory (non-blocking)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "docs/genai/genai-services.md",
+            "docker-configurations/services/**/docker-compose*.yml",
+            "docker-configurations/services/**/docker-compose*.yaml",
+            "scripts/genai-stack/check_quant_doc_divergence.py",
+            "scripts/tests/test_check_quant_doc_divergence.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python", "scripts/genai-stack/check_quant_doc_divergence.py",
+        ],
+        blocking=False,
         absorbed=True,
     ),
 ]

@@ -166,20 +166,61 @@ def test_local_redeclaration_of_the_series_symbol_is_collected():
 # --------------------------------------------------------------------------
 # Controles positifs et negatifs (criteres d'acceptation de #23073)
 # --------------------------------------------------------------------------
-def test_positive_control_tweety_archive_is_red():
-    """Le carnet archive de #23047 porte 1.28 et un chemin de provisionnement mort."""
+def test_positive_control_tweety_stale_pin_and_dead_path_are_red():
+    """Le cas declencheur de #23047, rejoue sur une charge utile synthetique.
+
+    Le cas CORPUS (le carnet `SymbolicAI/_archive/Tweety.ipynb` qui
+    redeclarait `TWEETY_VERSION = "1.28"` et pointait sur
+    `tweetyproject.org/builds/1.28/`) a ete **repare sur `main`** par #23047
+    (commit `d5e44a0919d6`) : le carnet est desormais provisionne par
+    l'organe de la serie, et la mention de 1.28 ne subsiste que dans un
+    commentaire. Un controle positif pose sur ce carnet-la tomberait donc
+    au sol sans que l'organe ait change -- c'est le symptome d'un controle
+    depose sur un corpus convergent, pas d'une regression.
+
+    Le controle est donc **rejoue sur la classe de defaut** (un carnet qui
+    redeclare 1.28 ET provisionne depuis le chemin mort), ce qui garde la
+    capacite de detection verifiee quelle que soit l'etat du corpus.
+    """
     manifest = clv.load_manifest(MANIFEST_PATH)
     canonicals, errors = clv.resolve_canonicals(manifest, REPO_ROOT)
     assert not errors
-    notebook = REPO_ROOT / "MyIA.AI.Notebooks" / "SymbolicAI" / "_archive" / "Tweety.ipynb"
-    assert notebook.is_file(), "le carnet archive doit exister dans le depot"
-    pins = clv.pins_from_file(notebook, manifest)
-    findings = clv.state_findings(notebook.as_posix(), pins, manifest, canonicals)
+    payload = _notebook([
+        'TWEETY_VERSION = "1.28"',
+        'BASE_URL = "https://tweetyproject.org/builds/1.28/"',
+    ])
+    pins = clv.pins_from_payload(payload, manifest)
+    findings = clv.state_findings("synthetic-tweety.ipynb", pins, manifest, canonicals)
     kinds = {f["kind"] for f in findings}
     assert "foreign_provisioning" in kinds
     assert "downgrade" in kinds
     versions = {f["version"] for f in findings if f["kind"] == "downgrade"}
     assert "1.28" in versions
+
+
+def test_le_cas_corpus_de_l_archive_est_repare_sur_main():
+    """Le carnet archive de #23047 ne porte plus l'epinglage 1.28.
+
+    Ce test **constate** l'etat converge du corpus (le cas declencheur a ete
+    repare par #23047). Il ne fige pas une classe de defaut : si l'epinglage
+    1.28 revenait un jour dans un carnet, c'est l'organe -- advisory, sur
+    les carnets modifies -- qui le signalerait, et ce constat-ci devrait
+    alors etre reecrit avec la nouvelle reference.
+    """
+    notebook = REPO_ROOT / "MyIA.AI.Notebooks" / "SymbolicAI" / "_archive" / "Tweety.ipynb"
+    assert notebook.is_file(), "le carnet archive doit exister dans le depot"
+    payload = json.loads(notebook.read_text(encoding="utf-8"))
+    code = "\n".join(
+        "".join(cell.get("source", []))
+        for cell in payload.get("cells", [])
+        if cell.get("cell_type") == "code"
+    )
+    assert 'TWEETY_VERSION = "1.28"' not in code, (
+        "le carnet archive redeclare 1.28 : le cas declencheur de #23047 est "
+        "revenu, l'argument du manifeste et le controle positif doivent etre "
+        "reescrits"
+    )
+
 
 
 def test_positive_control_ikvm_814_is_red():
@@ -467,7 +508,7 @@ def _registry():
 def test_guard_is_registered_as_advisory():
     """Le garde est enregistre, en advisory, et son nom porte la mention."""
     registry = _registry()
-    guards = {g.name: g for g in registry.TRANCHE29}
+    guards = {g.name: g for g in registry.TRANCHE30}
     guard = guards["Library versions guard (advisory, #23073)"]
     assert guard.blocking is False
     assert guard.needs_base is True
@@ -478,7 +519,7 @@ def test_guard_is_registered_as_advisory():
 def test_guard_is_aggregated_by_the_fast_lane_engine():
     """Un groupe non cable n'est jamais execute : le geste doit etre dans l'engine."""
     engine = (REPO_ROOT / "scripts" / "ci" / "fast_lane.py").read_text(encoding="utf-8")
-    assert "TRANCHE29" in engine, "le groupe TRANCHE29 n'est pas cable dans fast_lane.py"
+    assert "TRANCHE30" in engine, "le groupe TRANCHE30 n'est pas cable dans fast_lane.py"
 
 
 # --------------------------------------------------------------------------

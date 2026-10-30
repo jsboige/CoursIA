@@ -10,8 +10,8 @@ organe pour stabiliser les versions d'API et de libs, car ce genre de
 regressions sont parmis les plus terribles et incidieuses. C'est toute une
 serie de notebook qui peut exploser. »
 
-Le cas declencheur tient en une cellule : `SymbolicAI/_archive/Tweety.ipynb`
-(celle 6) reecrit
+Le cas declencheur tenait en une cellule : `SymbolicAI/_archive/Tweety.ipynb`
+(celle 6) reecrivait
 
 ```python
 TWEETY_VERSION = "1.28"
@@ -23,6 +23,14 @@ l.54) fixe `TWEETY_VERSION = "1.30"` et telecharge depuis Maven Central
 (l.57). Le chemin `tweetyproject.org/builds/<version>/` repond **404** depuis
 #12789 — et le carnet archive s'est donc reexecute avec des JARs copies hors
 du depot, que personne ne peut rejouer.
+
+> **Le cas corpus a ete repare sur `main`** (#23047, commit `d5e44a0919d6`) :
+> le carnet archive est desormais provisionne par l'organe de la serie. L'organe
+> et son motif sont **conserves** — ils decrivent la *classe* de defaut
+> (reclaration locale d'une version que la serie fixe + provisionnement hors de
+> l'organe), pas un carnet particulier. Le controle positif du depot rejoue
+> desormais cette classe sur une charge utile synthetique : un controle pose
+> sur un corpus converge tomberait au sol sans que l'organe ait change.
 
 Un carnet isole est un incident. Pour une bibliotheque partagee par une
 serie, l'enjeu est autre : sans reference commune, chaque re-execution peut
@@ -121,9 +129,15 @@ pourquoi un ecart est justifie, pourquoi un autre doit converger. Un motif
 qui contient un decompil (« presente sur N carnets ») est un decompil
 copic qui perime au premier ajout de carnet ; il n'a pas sa place la.
 
-Les series concernees par les ecarts a converger sont la Tweety
-(IKVM / IKVM.Image), la SemanticWeb (dotNetRDF), le GameTheory et les
-Search (OrTools, pythonnet).
+Les ecarts **a converger** portent aujourd'hui sur OrTools (11 carnets),
+pythonnet (7), CsvHelper, Microsoft.ML et SkiaSharp (un chacun). Les ecarts
+**justifies** portent sur IKVM et IKVM.Image (8.14.0, six et cinq carnets :
+l'artefact ombre est compile dans cette version). Deux series ont **converge**
+et ne declarent plus aucun ecart : la SemanticWeb sur dotNetRDF 3.4.1
+(#23083) et AutoML sur 0.23.0 (#23088) — leurs entrees ont ete retirees du
+manifeste le jour ou la convergence a atterri, pas avant (une divergence
+declaree pour une version absente du corpus est un **fantome**, que
+l'organe signale).
 
 ## Taux de faux positifs — mesure
 

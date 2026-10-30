@@ -66,10 +66,20 @@ _STUDENT_HINTS = ("jsboigeEPF/", "jsboigeECE/", "jsboigeEpita/")
 # La baseline kernelspec est lue depuis la cellule 0 de chaque notebook.
 # Tout préfixe `dotnet-interactive`, `xcube`, `pwsh`, etc. est reconnu via
 # préfixe-match (voir `kernel_known()`).
+#
+# Kernels reels du depot, ajoutes apres mesure du 2026-10-29 (#23175) : la
+# liste ignorait `.net-csharp` (245 notebooks), `coursia-ml-training` (49) et
+# `pyphi` (10, serie IIT) — tous LU depuis les kernelspecs mais classes
+# « kernel inconnu » => ambigu. `naming_canon.py` documente deja les deux
+# premiers comme kernels mesures du depot (« 130 x -Csharp/-CSharp -> 130 x
+# `.net-csharp` », « 44 x -Python -> 41 x `python3`, 2 x
+# `coursia-ml-training` ») : la liste de cet inventaire etait en retard sur
+# la realite que le canon avait deja mesuree.
 _KNOWN_KERNEL_PREFIXES = (
     "python", "ir", "julia-", "java", "javascript", "typescript",
     "dotnet-interactive", "csharp", "fsharp", "pwsh", "lean", "sas",
     "sql", "soql", "xcube", "xeus", "conda",
+    ".net-csharp", "coursia-ml-training", "pyphi",
 )
 
 # Classification finale — chaque notebook est classifié dans exactement 1 case.
@@ -174,8 +184,15 @@ def _classify(path: str, stem: str, idx: str | None, kernel: str | None,
     if any(h in path for h in _EXTERNAL_HINTS):
         return _CLASSIF_EXCEPTION
     # Nom non parsé : ambigu (sauf base implicite avec kernel connu LU).
+    # Un suffixe de langue RECONNU n'exclut pas la conformité — la docstring
+    # du module dit « suffixe reconnu ou absent », et `_suffix()` ne retourne
+    # par construction qu'un suffixe reconnu ou "" : tout suffixe visible ici
+    # est reconnu. L'ancien garde `not suffix` (suffixe ABSENT seulement)
+    # classait 475 noms canoniques à préfixe de série en ambigu (mesure
+    # 2026-10-29, #23175 : `Complexity-02b-...-Python.ipynb`, kernel python3
+    # connu, suffixe `-python` reconnu — forme couverte par `naming_canon.py`).
     if idx is None:
-        if kernel is not None and _kernel_known(kernel) and not suffix:
+        if kernel is not None and _kernel_known(kernel):
             return _CLASSIF_CONFORME
         return _CLASSIF_AMBIGU
     # Suffixe de langue non reconnu ET kernel LU inconnu = ambigu (le
@@ -360,6 +377,19 @@ _CASES = [
     ("3.1-Retropropagation-Python.ipynb", _CLASSIF_CONFORME, "python3", "3.1"),
     # Sibling i18n _en : conforme (suffixe reconnu).
     ("07-Shapley_en.ipynb", _CLASSIF_CONFORME, "lean4", "7"),
+    # Quadrant non épingle avant #23175 : préfixe de série + suffixe de
+    # noyau RECONNU + kernel connu => conforme, pas ambigu. Mesure
+    # 2026-10-29 : 475 noms réels de ce gabarit (`Complexity-02b-...-Python`)
+    # étaient faux ambigu via l'ancien garde `not suffix`.
+    ("GameTheory-04c-NashExistence-CSharp.ipynb", _CLASSIF_CONFORME,
+     ".net-csharp", None),
+    ("Complexity-02b-SAT-PhaseTransition-Python.ipynb", _CLASSIF_CONFORME,
+     "python3", None),
+    # Contrôle négatif : kernel LU et hors liste connue reste ambigu,
+    # même avec un nom de forme canonique (exigence #15488 : le signal
+    # « kernel inconnu » doit pouvoir tirer sur des données réelles).
+    ("Search-08-JumpPointSearch-Python.ipynb", _CLASSIF_AMBIGU,
+     "kernel-inconnu-xyz", None),
     # Index à 1 chiffre sans zéro-pad = rename_proposed.
     ("1_OpenAI_Intro.ipynb", _CLASSIF_RENAME, "python3", "1"),
     ("9_Production_Patterns.ipynb", _CLASSIF_RENAME, "python3", "9"),
