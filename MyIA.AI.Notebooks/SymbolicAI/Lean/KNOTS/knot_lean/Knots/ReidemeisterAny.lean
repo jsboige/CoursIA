@@ -2534,4 +2534,134 @@ theorem verifyR1Fwd_positive_control :
       { crossings := [⟨1, 2, 3, 4⟩, ⟨5, 2, 3, 4⟩, ⟨1, 5, 6, 6⟩], numEdges := 6 }
     = true := by decide
 
+/-! ## 19. Renommer aussi le grand diagramme ne sauve pas le pont (tranche 13)
+
+La tranche 12 a borne le residu du grain #22359 a deux fermetures. La
+premiere -- « renommer **aussi** le grand diagramme » -- vient d'etre closee,
+par la **negatif** : cette section le demontre au noyau.
+
+Le montage est celui de la tranche 12, applique au couple **renomme** des
+deux cotes :
+
+- le temoin `kinkAnyWitness` et sa cible `kinkAnyTarget` (§18) ;
+- le renommage `π` applique aux **quatre slots** de chaque croisement
+  (`mapC`, §16), `numEdges` **inchange** (`renameDiagram` ci-dessous).
+
+Ce qui change, c'est la clause de *fraicheur* : le verificateur connecte
+exige `K.e2 = d.numEdges + 1`, et le kink renomme porte `K.e2 = π 1`. La
+cible renommee conserve ses deux aretes (`d.numEdges = 2`), donc la
+fraicheur impose `π 1 = 3`.
+
+Ce que la bonne formation impose, elle, c'est l'inverse : toute etiquette
+d'arete d'un diagramme bien forme est **au plus** `numEdges`
+(`wf_edge_le` ci-dessous), donc `π 1 ≤ 2`.
+
+Les deux sont incompatibles -- **pour tout `π`**, et sans meme supposer `π`
+injectif. Le pont « renommer aussi le grand diagramme » est donc
+**impossible**, et le residu du grain se reduit a **une seule** fermeture :
+doter la relation connectee d'un pas de reetiquetage -- un choix qui touche
+`ReidemeisterStep` et `Invariant.lean`, et qui releve donc de l'arbitrage
+coordinateur.
+
+Ce que cette section livre :
+
+1. `wf_edge_le` -- la piece arithmetique qui manquait au depot : toute
+   etiquette d'arete d'un diagramme bien forme est au plus `numEdges` ;
+2. `no_verifyR1Fwd_renamed_pair` -- **aucun** renommage ne rend le couple
+   temoin/cible acceptable au verificateur connecte ;
+3. `renamed_target_wf_identity` -- **controle de non-vacuite** : le renommage
+   n'est pas en cause (la cible renommee est bien formee pour `π = id`) ;
+   l'obstruction est la **fraicheur**, pas la bonne formation.
+-/
+
+/-- Renommage d'un diagramme : `π` applique aux quatre slots de chaque
+    croisement (`mapC`, §16). `numEdges` est **inchange** : le renommage
+    porte sur les *etiquettes*, pas sur la taille du diagramme. -/
+private def renameDiagram (π : Nat → Nat) (d : KnotDiagram) : KnotDiagram :=
+  ⟨mapC π d.crossings, d.numEdges⟩
+
+/-- La cible canonique du temoin (§18), renommee. -/
+private theorem renameDiagram_kinkAnyTarget (π : Nat → Nat) :
+    renameDiagram π kinkAnyTarget = ⟨[⟨π 1, π 2, π 1, π 2⟩], 2⟩ := by
+  simp [renameDiagram, kinkAnyTarget, mapC]
+
+/-- Le temoin (§18), renomme. -/
+private theorem renameDiagram_kinkAnyWitness (π : Nat → Nat) :
+    renameDiagram π kinkAnyWitness =
+      ⟨[⟨π 1, π 2, π 3, π 2⟩, ⟨π 3, π 1, π 4, π 4⟩], 4⟩ := by
+  simp [renameDiagram, kinkAnyWitness, mapC]
+
+/-- Le kink du temoin renomme est bien le dernier croisement : c'est lui qui
+    porte l'arc frais `e2 = π 1`. -/
+private theorem renamedWitness_kink (π : Nat → Nat) :
+    (renameDiagram π kinkAnyWitness).crossings.getLast? = some ⟨π 3, π 1, π 4, π 4⟩ := by
+  rw [renameDiagram_kinkAnyWitness π]
+  simp
+
+/-- **Toute etiquette d'arete d'un diagramme bien forme est au plus
+    `numEdges`.** C'est la moitie « borne » de la definition de `wf` : la
+    clause `d.edges.all (fun l => decide (1 ≤ l ∧ l ≤ d.numEdges))`.
+
+    Cette lemme manquait au depot -- les lemmes de `wf` qui existent sont
+    tous au niveau des diagrammes nommes (`unknot_wf`, `trefoil_wf`, ...),
+    sans caracterisation par les etiquettes. -/
+theorem wf_edge_le {d : KnotDiagram} (hwf : d.wf = true) {a : Nat} (ha : a ∈ d.edges) :
+    a ≤ d.numEdges := by
+  unfold KnotDiagram.wf at hwf
+  by_cases hc : d.crossings = []
+  · -- diagramme degenere : `edges` est vide, l'hypothese est absurde
+    simp [KnotDiagram.edges, hc] at ha
+  · simp only [hc, if_false] at hwf
+    have hall : ∀ x ∈ d.edges, decide (1 ≤ x ∧ x ≤ d.numEdges) = true := by
+      have h := (Bool.and_eq_true _ _).mp hwf |>.1
+      exact List.all_eq_true.mp h
+    have h1 := hall a ha
+    exact (of_decide_eq_true h1).2
+
+/-- **Renommer aussi le grand diagramme ne sauve pas le pont.**
+
+    Pour **tout** renommage `π` -- injectif ou non -- le couple
+    (cible renommee, temoin renomme) est refuse par le verificateur
+    connecte.
+
+    Les deux bornes sont incompatibles :
+
+    - la clause de fraicheur impose `K.e2 = d.numEdges + 1`, soit
+      `π 1 = 2 + 1 = 3` (le kink renomme porte `e2 = π 1`, et la cible
+      renommee conserve `numEdges = 2`) ;
+    - la bonne formation impose `π 1 ≤ 2` (`wf_edge_le` : toute etiquette
+      d'arete est au plus `numEdges`).
+
+    L'obstruction est donc **arithmetique**, comme celle de la tranche 12,
+    mais **cette fois elle survit au renommage** -- ce qui ferme la
+    premiere des deux fermetures possibles. -/
+theorem no_verifyR1Fwd_renamed_pair (π : Nat → Nat) :
+    verifyR1Fwd (renameDiagram π kinkAnyTarget) (renameDiagram π kinkAnyWitness) = false := by
+  by_cases hX : verifyR1Fwd (renameDiagram π kinkAnyTarget) (renameDiagram π kinkAnyWitness) = false
+  · exact hX
+  · have htrue : verifyR1Fwd (renameDiagram π kinkAnyTarget) (renameDiagram π kinkAnyWitness) = true :=
+      Bool.eq_true_of_not_eq_false hX
+    unfold verifyR1Fwd at htrue
+    rw [renamedWitness_kink π] at htrue
+    rw [renameDiagram_kinkAnyTarget π, renameDiagram_kinkAnyWitness π] at htrue
+    simp only [Bool.and_eq_true] at htrue
+    -- htrue : ((wf cible ∧ wf temoin) ∧ decide cardinal) ∧ (decide fraicheur ∧chirurgie)
+    have hA := htrue.1.1.1
+    -- fraicheur du kink renomme : `π 1 = d.numEdges + 1 = 2 + 1`
+    have hfresh : π 1 = 2 + 1 := (of_decide_eq_true htrue.2.1).1
+    -- bonne formation de la cible renommee : toute etiquette d'arete est
+    -- au plus `numEdges = 2`
+    have hmem : π 1 ∈ (⟨[⟨π 1, π 2, π 1, π 2⟩], 2⟩ : KnotDiagram).edges := by
+      simp [KnotDiagram.edges]
+    have hle : π 1 ≤ 2 := wf_edge_le hA hmem
+    omega
+
+/-- **Controle de non-vacuite** : le renommage n'est pas en cause. Pour
+    `π = id`, la cible renommee est **bien formee** (`wf = true`) et son
+    etiquette d'arete `1` est bien bornee par `numEdges = 2` -- c'est donc
+    la clause de fraicheur, et non la bonne formation, qui refuse la paire
+    renommee. -/
+theorem renamed_target_wf_identity : (renameDiagram id kinkAnyTarget).wf = true := by
+  decide
+
 end Knots.AnyMoves

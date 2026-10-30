@@ -2535,4 +2535,131 @@ theorem verifyR1Fwd_positive_control :
       { crossings := [⟨1, 2, 3, 4⟩, ⟨5, 2, 3, 4⟩, ⟨1, 5, 6, 6⟩], numEdges := 6 }
     = true := by decide
 
+/-! ## 19. Renaming the large diagram as well does not save the bridge (tranche 13)
+
+Tranche 12 bounded the residual of grain #22359 to two closures. The first
+-- "rename the **large** diagram as well" -- has just been closed, on the
+**negative**: this section proves it by the kernel.
+
+The setup is the one of tranche 12, applied to the **renamed** pair on both
+sides:
+
+- the witness `kinkAnyWitness` and its target `kinkAnyTarget` (section 18);
+- the renaming `pi` applied to the **four slots** of each crossing
+  (`mapC`, section 16), `numEdges` **unchanged** (`renameDiagram` below).
+
+What changes is the *freshness* clause: the connected verifier requires
+`K.e2 = d.numEdges + 1`, and the renamed kink carries `K.e2 = pi 1`. The
+renamed target keeps its two edges (`d.numEdges = 2`), so freshness
+requires `pi 1 = 3`.
+
+Well-formedness requires the opposite: every edge label of a well-formed
+diagram is **at most** `numEdges` (`wf_edge_le` below), hence `pi 1 <= 2`.
+
+The two are incompatible -- for **every** `pi`, and without even assuming
+`pi` injective. The bridge "rename the large diagram as well" is therefore
+**impossible**, and the residual of the grain is reduced to **one** closure:
+give the connected relation a relabelling step -- a choice that touches
+`ReidemeisterStep` and `Invariant.lean`, and which therefore falls under
+coordinator arbitration.
+
+What this section delivers:
+
+1. `wf_edge_le` -- the arithmetic piece the repository lacked: every edge
+   label of a well-formed diagram is at most `numEdges`;
+2. `no_verifyR1Fwd_renamed_pair` -- **no** renaming makes the
+   witness/target pair acceptable to the connected verifier;
+3. `renamed_target_wf_identity` -- **non-vacuity control**: the renaming is
+   not to blame (the renamed target is well formed for `pi = id`); the
+   obstruction is the **freshness**, not well-formedness.
+-/
+
+/-- Renaming of a diagram: `pi` applied to the four slots of each crossing
+    (`mapC`, section 16). `numEdges` is **unchanged**: the renaming bears on
+    the *labels*, not on the size of the diagram. -/
+private def renameDiagram (π : Nat → Nat) (d : KnotDiagram) : KnotDiagram :=
+  ⟨mapC π d.crossings, d.numEdges⟩
+
+/-- The canonical target of the witness (section 18), renamed. -/
+private theorem renameDiagram_kinkAnyTarget (π : Nat → Nat) :
+    renameDiagram π kinkAnyTarget = ⟨[⟨π 1, π 2, π 1, π 2⟩], 2⟩ := by
+  simp [renameDiagram, kinkAnyTarget, mapC]
+
+/-- The witness (section 18), renamed. -/
+private theorem renameDiagram_kinkAnyWitness (π : Nat → Nat) :
+    renameDiagram π kinkAnyWitness =
+      ⟨[⟨π 1, π 2, π 3, π 2⟩, ⟨π 3, π 1, π 4, π 4⟩], 4⟩ := by
+  simp [renameDiagram, kinkAnyWitness, mapC]
+
+/-- The kink of the renamed witness is indeed the last crossing: it is the
+    one carrying the fresh arc `e2 = pi 1`. -/
+private theorem renamedWitness_kink (π : Nat → Nat) :
+    (renameDiagram π kinkAnyWitness).crossings.getLast? = some ⟨π 3, π 1, π 4, π 4⟩ := by
+  rw [renameDiagram_kinkAnyWitness π]
+  simp
+
+/-- **Every edge label of a well-formed diagram is at most `numEdges`.** This
+    is the "bound" half of the definition of `wf`: the clause
+    `d.edges.all (fun l => decide (1 ≤ l ∧ l ≤ d.numEdges))`.
+
+    This lemma was missing from the repository -- the existing `wf` lemmas
+    are all at the level of named diagrams (`unknot_wf`, `trefoil_wf`, ...),
+    without any characterisation by labels. -/
+theorem wf_edge_le {d : KnotDiagram} (hwf : d.wf = true) {a : Nat} (ha : a ∈ d.edges) :
+    a ≤ d.numEdges := by
+  unfold KnotDiagram.wf at hwf
+  by_cases hc : d.crossings = []
+  · -- degenerate diagram: `edges` is empty, the hypothesis is absurd
+    simp [KnotDiagram.edges, hc] at ha
+  · simp only [hc, if_false] at hwf
+    have hall : ∀ x ∈ d.edges, decide (1 ≤ x ∧ x ≤ d.numEdges) = true := by
+      have h := (Bool.and_eq_true _ _).mp hwf |>.1
+      exact List.all_eq_true.mp h
+    have h1 := hall a ha
+    exact (of_decide_eq_true h1).2
+
+/-- **Renaming the large diagram as well does not save the bridge.**
+
+    For **every** renaming `pi` -- injective or not -- the pair (renamed
+    target, renamed witness) is refused by the connected verifier.
+
+    The two bounds are incompatible:
+
+    - the freshness clause requires `K.e2 = d.numEdges + 1`, that is
+      `pi 1 = 2 + 1 = 3` (the renamed kink carries `e2 = pi 1`, and the
+      renamed target keeps `numEdges = 2`);
+    - well-formedness requires `pi 1 <= 2` (`wf_edge_le`: every edge label
+      is at most `numEdges`).
+
+    The obstruction is therefore **arithmetic**, as in tranche 12, but
+    **this time it survives the renaming** -- which closes the first of the
+    two possible closures. -/
+theorem no_verifyR1Fwd_renamed_pair (π : Nat → Nat) :
+    verifyR1Fwd (renameDiagram π kinkAnyTarget) (renameDiagram π kinkAnyWitness) = false := by
+  by_cases hX : verifyR1Fwd (renameDiagram π kinkAnyTarget) (renameDiagram π kinkAnyWitness) = false
+  · exact hX
+  · have htrue : verifyR1Fwd (renameDiagram π kinkAnyTarget) (renameDiagram π kinkAnyWitness) = true :=
+      Bool.eq_true_of_not_eq_false hX
+    unfold verifyR1Fwd at htrue
+    rw [renamedWitness_kink π] at htrue
+    rw [renameDiagram_kinkAnyTarget π, renameDiagram_kinkAnyWitness π] at htrue
+    simp only [Bool.and_eq_true] at htrue
+    -- htrue : ((wf target ∧ wf witness) ∧ decide cardinality) ∧ (decide freshness ∧ surgery)
+    have hA := htrue.1.1.1
+    -- freshness of the renamed kink: `pi 1 = d.numEdges + 1 = 2 + 1`
+    have hfresh : π 1 = 2 + 1 := (of_decide_eq_true htrue.2.1).1
+    -- well-formedness of the renamed target: every edge label is at most
+    -- `numEdges = 2`
+    have hmem : π 1 ∈ (⟨[⟨π 1, π 2, π 1, π 2⟩], 2⟩ : KnotDiagram).edges := by
+      simp [KnotDiagram.edges]
+    have hle : π 1 ≤ 2 := wf_edge_le hA hmem
+    omega
+
+/-- **Non-vacuity control**: the renaming is not to blame. For `pi = id`, the
+    renamed target is **well formed** (`wf = true`) and its edge label `1`
+    is indeed bounded by `numEdges = 2` -- it is therefore the freshness
+    clause, and not well-formedness, that refuses the renamed pair. -/
+theorem renamed_target_wf_identity : (renameDiagram id kinkAnyTarget).wf = true := by
+  decide
+
 end Knots_en.AnyMoves
