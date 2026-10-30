@@ -4749,3 +4749,67 @@ def test_author_ref_returns_on_git_failure(monkeypatch):
     monkeypatch.setattr(mod, "_git", _synthetic_git())
     ref = "refs/pull/12345/head"
     assert mod._author_ref(ref) == ref
+
+
+# ---------------------------------------------------------------------------
+# #23089 -- la porte pile refuse de mesurer sur un clone tronque, et le dit
+# ---------------------------------------------------------------------------
+def _git(cwd, *args, check=True):
+    proc = subprocess.run(
+        ["git", *args], cwd=str(cwd), capture_output=True, text=True,
+        encoding="utf-8", errors="replace",
+    )
+    if check and proc.returncode != 0:
+        raise AssertionError(f"git {' '.join(args)} -> {proc.stderr.strip()}")
+    return proc
+
+
+def _disposable_clone(tmp_path, depth=None):
+    """Un origin bare local + un clone (complet par defaut)."""
+    origin = tmp_path / "origin.git"
+    work = tmp_path / "work"
+    _git(tmp_path, "init", "--bare", "-b", "main", str(origin))
+    work.mkdir()
+    _git(work, "init", "-b", "main")
+    _git(work, "config", "user.email", "t@t.invalid")
+    _git(work, "config", "user.name", "t")
+    (work / "a.txt").write_text("1\n", encoding="utf-8")
+    _git(work, "add", "a.txt")
+    _git(work, "commit", "-m", "c1")
+    _git(work, "remote", "add", "origin", str(origin))
+    _git(work, "push", "-q", "origin", "main")
+    clone = tmp_path / "clone"
+    args = ["clone", "-q", "--single-branch", "--branch", "main"]
+    if depth:
+        args.append(f"--depth={depth}")
+    _git(tmp_path, *args, origin.as_uri(), str(clone))
+    return clone
+
+
+def test_la_pile_refuse_un_clone_tronque_et_nomme_la_cause(tmp_path, monkeypatch):
+    """#23089 : sur un clone dont l'historique de `main` est reellement
+    tronque, la passe pile REFUSE de mesurer et rend une cause nommee --
+    jamais un faux « stack top » (mesure ai-01 du 2026-10-28 : #22244 et
+    #22252 rendues BLOCKED sur des squash deja merges)."""
+    if str(HERE.parent) not in sys.path:
+        sys.path.insert(0, str(HERE.parent))
+    clone = _disposable_clone(tmp_path, depth=1)
+    monkeypatch.chdir(clone)
+    index, incidents = mod.build_stack_index()
+    assert index is None
+    assert incidents == [mod.STACK_UNAVAILABLE_SHALLOW]
+    assert "shallow clone" in incidents[0]
+
+
+def test_la_pile_mesure_sur_un_clone_complet(tmp_path, monkeypatch):
+    """Controle positif : sur un clone complet, la passe mesure (aucune
+    cause de troncature). L'enumeration est neutralisee -- ce test porte sur
+    la garde, pas sur l'API."""
+    if str(HERE.parent) not in sys.path:
+        sys.path.insert(0, str(HERE.parent))
+    clone = _disposable_clone(tmp_path)
+    monkeypatch.chdir(clone)
+    monkeypatch.setattr(mod, "gh_lines", lambda args: [])
+    index, incidents = mod.build_stack_index()
+    assert incidents == []
+    assert index == {}
