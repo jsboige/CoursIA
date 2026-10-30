@@ -418,6 +418,36 @@ def test_canonical_transition_scoped_reverse_still_refused():
     assert ckd.accepted_canonical_transition(a, b, nb_path=path) is False
 
 
+def test_canonical_transition_scoped_ml06_312_to_313_accepted():
+    # #23426 : ML-06 est le seul carnet ML.Net sous kernel NOMME
+    # (hors census #23379, kernel python3) -- sa convergence vers le canon
+    # 3.13 exige une entree nominative, meme forme que 2.8c/2.9d.
+    a = {"language_version": "3.12.13", "kernelspec_name": "coursia-ml-training"}
+    b = {"language_version": "3.13.15", "kernelspec_name": "coursia-ml-training"}
+    path = "MyIA.AI.Notebooks/ML/ML.Net/ML-06-ONNX-Python.ipynb"
+    assert ckd.accepted_canonical_transition(a, b, nb_path=path) is True
+
+
+def test_canonical_transition_scoped_ml06_does_not_leak():
+    # La meme direction 3.12 -> 3.13 sous le meme kernelspec reste rouge
+    # ailleurs : ni un autre carnet ML.Net, ni 2.8c (scope 3.11 -> 3.13).
+    a = {"language_version": "3.12.13", "kernelspec_name": "coursia-ml-training"}
+    b = {"language_version": "3.13.15", "kernelspec_name": "coursia-ml-training"}
+    assert ckd.accepted_canonical_transition(a, b) is False
+    assert ckd.accepted_canonical_transition(
+        a, b,
+        nb_path=("MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/"
+                 "2.8c-Borne-Temoin-Concentration.ipynb")) is False
+
+
+def test_canonical_transition_scoped_ml06_reverse_still_refused():
+    # Direction inverse : rouge meme sur le chemin scope de ML-06.
+    a = {"language_version": "3.13.15", "kernelspec_name": "coursia-ml-training"}
+    b = {"language_version": "3.12.13", "kernelspec_name": "coursia-ml-training"}
+    path = "MyIA.AI.Notebooks/ML/ML.Net/ML-06-ONNX-Python.ipynb"
+    assert ckd.accepted_canonical_transition(a, b, nb_path=path) is False
+
+
 # --- #23292 : le carnet 02-ML-Cours reste a 3.10.19 et re-execute --------
 #
 # La direction 3.10 -> 3.13 n'existait dans aucune des deux tables pour le
