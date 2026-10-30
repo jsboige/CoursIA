@@ -412,6 +412,19 @@ FETCH_TOKEN_STATE_FILE="$STATE_DIR/.fetch_token_state"
 mkdir -p "$STATE_DIR"
 : > "$FETCH_TOKEN_STATE_FILE"
 
+# #21527 critere 5 (voie (a)) : le registration token vaut 1 h et ne se
+# consomme pas a l'usage -- chaque demarrage de conteneur re-fetchait le
+# sien (mesure ai-01 du 26/10 : 155 appels REST/h pour le pool ; c'est la
+# consommation qui a epuise le quota de la flotte le 2026-10-20). Le cache
+# ci-dessous, partage par tous les slots et waiters via STATE_DIR (persistant
+# sur l'hote), fait tomber la consommation a <= 1 fetch par fenetre de
+# validite. Meme motif que FETCH_TOKEN_STATE_FILE : fetch_token vit dans un
+# subshell $(...), seul le fichier traverse.
+REGISTRATION_TOKEN_CACHE="${REGISTRATION_TOKEN_CACHE:-$STATE_DIR/.registration_token_cache}"
+# Marge de securite sur les 3600 s publiees par GitHub : re-fetch a 55 min
+# pour ne jamais servir un jeton expire a un demarrage de conteneur.
+REGISTRATION_TOKEN_TTL_SEC=3300
+
 # Seuil de packs du cache _work persistant (#15105). Au-dela, l'entrypoint du
 # conteneur repack le clone (gc.auto=0 pose par actions/checkout : rien
 # d'autre ne consolide jamais -- slot 1 : 264 packs, compte croissant a
@@ -1666,16 +1679,46 @@ jobs en vol, puis relancer."
 }
 
 fetch_token() {
-  # Le registration token vaut 1 h et est jetable : un par demarrage de
-  # conteneur. C'est la raison pour laquelle la boucle vit sur l'HOTE et non
-  # dans l'image -- `gh` et ses credentials ne descendent jamais dans le
-  # conteneur.
+  # Le registration token vaut 1 h et ne se consomme pas a l'usage. Avant
+  # #21527 il etait re-demande a chaque demarrage de conteneur (155 appels
+  # REST/h sur le pool, mesure ai-01 du 26/10) : c'est la raison pour
+  # laquelle la boucle vit sur l'HOTE et non dans l'image -- `gh` et ses
+  # credentials ne descendent jamais dans le conteneur. Le jeton est desormais
+  # partage par le cache `$REGISTRATION_TOKEN_CACHE` (STATE_DIR) : un fetch
+  # par fenetre de validite, quel que soit le nombre de demarrages.
   #
   # #14259 epinglage : GH_TOKEN ambiant est honore tel quel par gh ;
   # COURSIA_RUNNER_GH_ACCOUNT (plus specifique) le surpasse en resolvant
   # le token du compte nomme. Sans epinglage, le fetch depend du compte
   # gh ACTIF -- un `gh auth switch` dans une autre session changeait
   # l'identite des registration tokens en silence (incident 2026-09-02).
+  #
+  # #21527 critere 5 (voie (a)) : consultation du cache AVANT tout -- servir
+  # un jeton encore valide ne coute AUCUN appel (pas meme `gh auth token`,
+  # qui lit le trousseau local). La cle (compte effectif + repo) fait qu'un
+  # changement d'epinglage ou de depot ne peut jamais servir le jeton d'une
+  # autre identite : la comparaison echoue et on retombe sur un fetch frais.
+  # Compte non epingle : la cle est le litteral "ambient" -- un `gh auth
+  # switch` en cours de fenetre ne change rien de fonctionnel (un
+  # registration token valide enregistre le runner quel que soit le compte
+  # admin qui l'a obtenu).
+  local cache_key="ambient"
+  [ -n "${COURSIA_RUNNER_GH_ACCOUNT:-}" ] && cache_key="$COURSIA_RUNNER_GH_ACCOUNT"
+  if [ -f "$REGISTRATION_TOKEN_CACHE" ]; then
+    local c_tok="" c_repo="" c_acct="" c_at=""
+    c_tok="$(awk -F= '$1=="TOKEN"{print $2; exit}' "$REGISTRATION_TOKEN_CACHE" 2>/dev/null)"
+    c_repo="$(awk -F= '$1=="REPO"{print $2; exit}' "$REGISTRATION_TOKEN_CACHE" 2>/dev/null)"
+    c_acct="$(awk -F= '$1=="ACCOUNT"{print $2; exit}' "$REGISTRATION_TOKEN_CACHE" 2>/dev/null)"
+    c_at="$(awk -F= '$1=="FETCHED_AT"{print $2; exit}' "$REGISTRATION_TOKEN_CACHE" 2>/dev/null)"
+    case "${c_at:-}" in ''|*[!0-9]*) c_at=0 ;; esac
+    if [ "$c_repo" = "$REPO" ] && [ "$c_acct" = "$cache_key" ] \
+       && printf '%s' "$c_tok" | grep -qxE '[A-Za-z0-9]{20,}' \
+       && [ $(( $(date +%s) - c_at )) -lt "$REGISTRATION_TOKEN_TTL_SEC" ]; then
+      printf 'HTTP=200\nERR=\nSOURCE=cache\n' > "$FETCH_TOKEN_STATE_FILE"
+      printf '%s\n' "$c_tok"
+      return 0
+    fi
+  fi
   if [ -n "${COURSIA_RUNNER_GH_ACCOUNT:-}" ]; then
     # #21527 : le compte epingle s'ecrit depuis la CONFIGURATION, jamais depuis
     # une reponse. Un environnement corrompu a deja fourni `{` (corps JSON
@@ -1730,6 +1773,20 @@ fetch_token() {
   # values ») : la forme se VALIDE ici, elle ne se suppose pas (#21527).
   if printf '%s' "$out" | grep -qxE '[A-Za-z0-9]{20,}'; then
     printf 'HTTP=200\nERR=\n' > "$FETCH_TOKEN_STATE_FILE"
+    # #21527 critere 5 : depot pour la fenetre de validite. Ecriture
+    # atomique (tmp + mv) : les slots fetchent en parallele, un lecteur ne
+    # doit jamais voir un fichier a demi ecrit ; le perdant d'une course
+    # ecrase simplement (deux jetons valides la meme seconde ne sont pas un
+    # defaut). Un echec d'ecriture du cache n'echoue JAMAIS le fetch -- le
+    # jeton obtenu reste bon. chmod 600 : le jeton ne depasse pas le
+    # perimetre deja prive de STATE_DIR.
+    if [ -n "$REGISTRATION_TOKEN_CACHE" ]; then
+      { printf 'ACCOUNT=%s\nREPO=%s\nTOKEN=%s\nFETCHED_AT=%s\n' \
+          "$cache_key" "${REPO:-}" "$out" "$(date +%s)" \
+          > "$REGISTRATION_TOKEN_CACHE.tmp.$$" \
+        && chmod 600 "$REGISTRATION_TOKEN_CACHE.tmp.$$" \
+        && mv -f "$REGISTRATION_TOKEN_CACHE.tmp.$$" "$REGISTRATION_TOKEN_CACHE"; } 2>/dev/null || true
+    fi
     printf '%s\n' "$out"
     return 0
   fi
@@ -1848,7 +1905,15 @@ if [ ! -d "$MIRROR/objects" ]; then
     fi
     git --git-dir="$MIRROR" remote add origin "$REMOTE" 2>/dev/null \
       || git --git-dir="$MIRROR" remote set-url origin "$REMOTE" 2>/dev/null
-    if git --git-dir="$MIRROR" fetch --prune "$REMOTE" '+refs/heads/*:refs/heads/*' '+refs/tags/*:refs/tags/*'; then
+    # gc.auto=0 (mission ai-01 26/10, #18225) : l'invariant documente plus haut
+    # (« un objet reste dans ses packs meme si la ref qui l'a fait entrer a
+    # disparu ») tient a l'ABSENCE de gc, pas a la prudence de l'appelant. Or un
+    # fetch declenche `gc --auto` par defaut -- un repack du miroir pendant qu'un
+    # slot emprunte ses objets est exactement ce que ce depot promet de ne jamais
+    # faire. Pose AVANT le premier fetch ; le refresh re-epingle la config pour
+    # les miroirs bootstrapes avant cette ligne.
+    git --git-dir="$MIRROR" config gc.auto 0
+    if git --git-dir="$MIRROR" -c gc.auto=0 fetch --prune "$REMOTE" '+refs/heads/*:refs/heads/*' '+refs/tags/*:refs/tags/*'; then
       git --git-dir="$MIRROR" symbolic-ref HEAD "$HEADREF" 2>/dev/null || true
       touch "$STAMP" 2>/dev/null || true
       echo "miroir: bootstrap OK en $(( $(date +%s) - t0 ))s"
@@ -1912,6 +1977,7 @@ if [ "$ACTION" = "status" ]; then
   echo "  bare: $(git --git-dir="$MIRROR" rev-parse --is-bare-repository 2>/dev/null)"
   echo "  refs: $(git --git-dir="$MIRROR" for-each-ref --format=x 2>/dev/null | wc -l | tr -d ' ')"
   echo "  taille: $(du -sh "$MIRROR" 2>/dev/null | awk '{print $1}')"
+  echo "  gc.auto: $(git --git-dir="$MIRROR" config gc.auto 2>/dev/null || echo 'non positionne (refresh le posera)')"
   echo "  dernier refresh: $([ -f "$STAMP" ] && date -Is -r "$STAMP" 2>/dev/null || echo jamais)"
   # PAS de compte d'emprunteurs ici : ce conteneur ne monte aucun volume _work,
   # donc il lirait zero et l'ecrirait comme un fait. Le compte se mesure depuis
@@ -1936,7 +2002,15 @@ fi
 # Horodatage AVANT le fetch : une panne reseau persistante ne doit pas se
 # transformer en marteau a chaque tick (meme choix que la recette source).
 touch "$STAMP" 2>/dev/null || true
-if git --git-dir="$MIRROR" fetch --prune "$REMOTE" '+refs/heads/*:refs/heads/*' '+refs/tags/*:refs/tags/*' 2>&1; then
+# gc.auto=0 en `-c` ET en config re-epinglee (mission ai-01 26/10, #18225) : le
+# `-c` couvre des le PREMIER refresh post-mise a jour les miroirs bootstrapes
+# avant la ligne du bootstrap (leur config n'a pas encore la cle) ; la config
+# re-epinglee rend l'invariant durable pour tout autre appelant git du volume.
+# Raison d'etre : le fetch declenche `gc --auto` par defaut, et un repack du
+# miroir pendant qu'un job emprunte ses objets est la promesse que ce depot
+# ne doit jamais casser.
+git --git-dir="$MIRROR" config gc.auto 0 2>/dev/null || true
+if git --git-dir="$MIRROR" -c gc.auto=0 fetch --prune "$REMOTE" '+refs/heads/*:refs/heads/*' '+refs/tags/*:refs/tags/*' 2>&1; then
   echo "miroir: rafraichi ($(date -Is))"
 else
   echo "miroir: refresh echoue -- le parc continue sur l'etat precedent"

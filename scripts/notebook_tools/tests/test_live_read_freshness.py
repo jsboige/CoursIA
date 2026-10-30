@@ -35,6 +35,8 @@ from check_live_read_freshness import (  # noqa: E402
     citations,
     count_claims,
     main,
+    UNDECLARED_BASELINE,
+    undeclared_live_read_cells,
 )
 
 
@@ -193,3 +195,102 @@ def test_registry_entries_resolve_to_real_artifacts():
 
 def test_self_test_passes():
     assert main(["--self-test"]) == 0
+
+
+# ---------------------------------------------------------------------------
+# Invariant INVERSE (#22041, reserve 2) : carnets -> registre
+# ---------------------------------------------------------------------------
+def _cell(cell_id: str, source: str, output: str) -> dict:
+    return {"cell_type": "code", "id": cell_id, "metadata": {},
+            "execution_count": 1, "source": source,
+            "outputs": [{"output_type": "stream", "name": "stdout",
+                         "text": output}]}
+
+
+def _tree(tmp_path: Path, cells: list[dict], declared: list[dict]) -> tuple[Path, Path]:
+    """Un arbre minimal : un carnet sous MyIA.AI.Notebooks, une source, un registre."""
+    root = tmp_path / "MyIA.AI.Notebooks"
+    (root / "Serie").mkdir(parents=True)
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src" / "Modele.lean").write_text("a\nb\nc\n", encoding="utf-8")
+    (tmp_path / "src" / "Autre.lean").write_text("x\ny\n", encoding="utf-8")
+    nb = {"cells": cells, "metadata": {}, "nbformat": 4, "nbformat_minor": 5}
+    (root / "Serie" / "Carnet.ipynb").write_text(
+        json.dumps(nb, ensure_ascii=False), encoding="utf-8")
+    reg = tmp_path / "registre.json"
+    reg.write_text(json.dumps({"version": 1, "cells": declared}), encoding="utf-8")
+    return root, reg
+
+
+LECTURE = "path = BASE / 'src' / 'Modele.lean'\nprint(path.read_text())\n"
+
+
+def test_invariant_inverse_detecte_une_cellule_non_declaree(tmp_path):
+    """Une cellule live-read absente du registre doit etre NOMMEE."""
+    root, reg = _tree(tmp_path, [_cell("abc", LECTURE, "Modele.lean : 3 lignes\n")], [])
+    found = undeclared_live_read_cells(notebook_root=root, registry_path=reg)
+    assert [(f["notebook"], f["cell_id"]) for f in found] == [
+        ("MyIA.AI.Notebooks/Serie/Carnet.ipynb", "abc")]
+
+
+def test_invariant_inverse_est_satisfait_quand_la_cellule_est_declaree(tmp_path):
+    """Controle negatif : la meme cellule declaree ne remonte plus."""
+    cells = [_cell("abc", LECTURE, "Modele.lean : 3 lignes\n")]
+    root, reg = _tree(tmp_path, cells, [{
+        "notebook": "MyIA.AI.Notebooks/Serie/Carnet.ipynb",
+        "cell_id": "abc", "source": "src/Modele.lean"}])
+    assert undeclared_live_read_cells(notebook_root=root, registry_path=reg) == []
+
+
+def test_invariant_inverse_ne_confond_pas_un_compte_non_rattache(tmp_path):
+    """Controle negatif mesure : « 12 lignes » d'un tableau n'est pas une lecture.
+
+    Cas reel qui a produit un faux positif (`m3_har_asymmetric_semivariance`) :
+    la cellule nomme un script puis affiche un compte de LIGNES DE TABLEAU. Le
+    compte doit nommer le fichier declare, comme le fait deja `count_claims`.
+    """
+    src = "s = Path('src/Autre.lean').read_text()\nprint('Resultats : 12 lignes')\n"
+    root, reg = _tree(tmp_path, [_cell("abc", src, "Resultats : 12 lignes, 3 actifs\n")], [])
+    assert undeclared_live_read_cells(notebook_root=root, registry_path=reg) == []
+
+
+def test_invariant_inverse_resout_un_chemin_construit_par_segments(tmp_path):
+    """La cellule declaree de GOL-01 n'a AUCUN chemin complet en litteral.
+
+    `WIN_LEAN_PROJECT / 'Conway' / 'Life' / 'Pillars.lean'` : un detecteur qui
+    n'accepterait que les chemins resolvables serait aveugle a la cellule qu'il
+    protege. Le dernier segment suffit.
+    """
+    src = ("p = BASE / 'src' / 'Modele.lean'\n"
+           "print(f'{p.name} -- declarations :')\n"
+           "for i, l in enumerate(p.read_text().splitlines(), 1):\n"
+           "    print(f'L{i}: {l}')\n")
+    root, reg = _tree(tmp_path, [_cell("seg", src,
+                                       "Modele.lean -- declarations :\nL1: a\n")], [])
+    assert [f["cell_id"] for f in
+            undeclared_live_read_cells(notebook_root=root, registry_path=reg)] == ["seg"]
+
+
+def test_registre_complet_sur_l_arbre_reel():
+    """Le ratchet qui retrecit : toute cellule live-read non declaree est vue.
+
+    Le registre et l'organe vont registre -> cellule ; sans cet invariant,
+    ajouter une cellule live-read ne rougit nulle part (#21899 par l'autre
+    bout). Le socle est celui de l'organe lui-meme : ce test mesure que la
+    realite n'a pas bouge sous lui, il ne redige pas une seconde liste.
+    """
+    found = {(f["notebook"], f["cell_id"]) for f in undeclared_live_read_cells()}
+    assert found == UNDECLARED_BASELINE, (
+        "cellules live-read non declarees inattendues : "
+        f"{sorted(found - UNDECLARED_BASELINE)} ; declarees depuis : "
+        f"{sorted(UNDECLARED_BASELINE - found)} (retrecir UNDECLARED_BASELINE)")
+
+
+def test_une_cellule_hors_socle_rougit_l_organe(monkeypatch):
+    """Le socle est un cliquet, pas un blanc-seing : une cellule nouvelle rougit."""
+    import check_live_read_freshness as organe
+
+    monkeypatch.setattr(organe, "undeclared_live_read_cells", lambda *a, **k: [
+        {"notebook": "MyIA.AI.Notebooks/Serie/Nouveau.ipynb",
+         "cell_id": "neuf", "literals": ["Modele.lean"]}])
+    assert organe.main(["--check-declarations"]) == 1

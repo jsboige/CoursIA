@@ -20,9 +20,9 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 309 |
+| Notebooks | 315 |
 | PRODUCTION | 0 |
-| BETA | 291 |
+| BETA | 297 |
 | ALPHA | 18 |
 
 ## ML/DataScienceWithAgents (110 notebooks)
@@ -73,30 +73,29 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 42 | [2.9f - Théorie effective du grokking en Lean :…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.9f-Grokking-Theorie-Effective-Lean.ipynb) | BETA | Oui |
 | 43 | [2.9g — La géométrie de la vérité : une direction dans…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.9g-Geometrie-de-la-Verite.ipynb) | BETA | Non |
 | 44 | [3.0 — Théorie de l'information : entropie, KL,…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.0-Theorie-Information.ipynb) | BETA | Oui |
-| 45 | [3.1 — La rétropropagation : la chaîne des gradients à…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.1-Retropropagation.ipynb) | BETA | Oui |
-| 46 | [3.10 — Le pendant SOTA : la bibliothèque diffusers…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.10-Modeles-Generatifs-Diffusion-SOTA.ipynb) | BETA | Non |
-| 47 | [3.11 — Le budget mémoire d'un entraînement : quatre…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.11-Budget-Memoire-Entrainement.ipynb) | BETA | Non |
-| 48 | [3.12 — Les collectives : l'anneau à la main contre…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.12-Les-Collectives.ipynb) | BETA | Non |
-| 49 | [3.14 - Debogage d un entrainement qui tourne mais n…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.14-Debug-Entrainement-N-Apprend-Pas-Python.ipynb) | BETA | Oui |
-| 50 | [3.2 — Les optimisateurs : de SGD à Adam, ce qui change…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.2-Optimisateurs.ipynb) | BETA | Oui |
-| 51 | [3.3 — Régularisation : dropout, weight decay, early…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.3-Regularisation.ipynb) | BETA | Oui |
-| 52 | [3.4 — Attention et Transformer from scratch : jusqu'au…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.4-Attention-Transformer-From-Scratch.ipynb) | BETA | Oui |
-| 53 | [3.4c — Mixture of Experts : router les jetons, croître…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.4c-MoE-from-scratch.ipynb) | BETA | Non |
-| 54 | [3.4d — Fourier features et biais spectral : quand le…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.4d-Fourier-Features-Biais-Spectral-Python.ipynb) | ALPHA | Oui |
-| 55 | [3.5 — Grokking et double descente : quand la…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.5-Phenomenes-de-Generalisation.ipynb) | BETA | Oui |
-| 56 | [3.6 — Modèles génératifs : trois objectifs, trois…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.6-Modeles-Generatifs.ipynb) | BETA | Oui |
-| 57 | [3.6b — Modèles génératifs en PyTorch : VAE, GAN et…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.6b-Modeles-Generatifs-PyTorch.ipynb) | BETA | Oui |
-| 58 | [3.6d — Modèles génératifs : Score-SDE *from scratch*](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.6d-Modeles-Generatifs-Score-SDE-from-scratch.ipynb) | BETA | Non |
-| 59 | [3.6e — Génération conditionnelle et *classifier-free…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.6e-Modeles-Generatifs-Conditionnels-from-scratch.ipynb) | BETA | Non |
-| 60 | [3.7 — Distillation maître-élève : quand le savoir se…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.7-Distillation-Maitre-Eleve.ipynb) | BETA | Oui |
-| 61 | [Représentations contrastives modernes — du skip-gram…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.8-Representations-Contrastives.ipynb) | BETA | Oui |
-| 62 | [3.9 — Quantization FP : FP32 vers FP16 et BF16 depuis…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9-Compression-Quantization-FP.ipynb) | BETA | Oui |
-| 63 | [3.9a — Compression par quantification INT8 : le réseau…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9a-Compression-Quantization-INT8.ipynb) | BETA | Non |
-| 64 | [3.9b — Compression par élagage : le réseau amputé qui…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9b-Compression-Pruning-from-scratch.ipynb) | BETA | Non |
-| 65 | [3.9c — Pruning from scratch sur CPU : le compagnon…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9c-Pruning-From-Scratch.ipynb) | BETA | Non |
-| 66 | [3.9d — Compression par distillation : transférer le…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9d-Compression-Distillation-from-scratch.ipynb) | BETA | Non |
-| 67 | [3.9e — Quantification SOTA : la même INT8, par…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-Quantization-SOTA.ipynb) | BETA | Non |
-| 68 | [3.9f — Élagage SOTA : les mêmes masques, par…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9f-Compression-Pruning-SOTA.ipynb) | BETA | Non |
+| 45 | [3.0b — Tenseurs : strides, vues et mémoire](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.0b-Tenseurs-Strides-Vues-Python.ipynb) | BETA | Oui |
+| 46 | [3.1 — La rétropropagation : la chaîne des gradients à…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.1-Retropropagation.ipynb) | BETA | Oui |
+| 47 | [3.10 — Le pendant SOTA : la bibliothèque diffusers…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.10-Modeles-Generatifs-Diffusion-SOTA.ipynb) | BETA | Non |
+| 48 | [3.11 — Le budget mémoire d'un entraînement : quatre…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.11-Budget-Memoire-Entrainement.ipynb) | BETA | Non |
+| 49 | [3.12 — Les collectives : l'anneau à la main contre…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.12-Les-Collectives.ipynb) | BETA | Non |
+| 50 | [3.14 - Debogage d un entrainement qui tourne mais n…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.14-Debug-Entrainement-N-Apprend-Pas-Python.ipynb) | BETA | Oui |
+| 51 | [3.2 — Les optimisateurs : de SGD à Adam, ce qui change…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.2-Optimisateurs.ipynb) | BETA | Oui |
+| 52 | [3.3 — Régularisation : dropout, weight decay, early…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.3-Regularisation.ipynb) | BETA | Oui |
+| 53 | [3.4 — Attention et Transformer from scratch : jusqu'au…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.4-Attention-Transformer-From-Scratch.ipynb) | BETA | Oui |
+| 54 | [3.4c — Mixture of Experts : router les jetons, croître…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.4c-MoE-from-scratch.ipynb) | BETA | Non |
+| 55 | [3.4d — Fourier features et biais spectral : quand le…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.4d-Fourier-Features-Biais-Spectral-Python.ipynb) | ALPHA | Oui |
+| 56 | [3.5 — Grokking et double descente : quand la…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.5-Phenomenes-de-Generalisation.ipynb) | BETA | Oui |
+| 57 | [3.6 — Modèles génératifs : trois objectifs, trois…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.6-Modeles-Generatifs.ipynb) | BETA | Oui |
+| 58 | [3.6b — Modèles génératifs en PyTorch : VAE, GAN et…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.6b-Modeles-Generatifs-PyTorch.ipynb) | BETA | Oui |
+| 59 | [3.6d — Modèles génératifs : Score-SDE *from scratch*](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.6d-Modeles-Generatifs-Score-SDE-from-scratch.ipynb) | BETA | Non |
+| 60 | [3.6e — Génération conditionnelle et *classifier-free…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.6e-Modeles-Generatifs-Conditionnels-from-scratch.ipynb) | BETA | Non |
+| 61 | [3.7 — Distillation maître-élève : transférer le savoir,…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.7-Distillation-Maitre-Eleve.ipynb) | BETA | Non |
+| 62 | [Représentations contrastives modernes — du skip-gram…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.8-Representations-Contrastives.ipynb) | BETA | Oui |
+| 63 | [3.9 — Quantization from scratch : du flottant réduit à…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9-Compression-Quantization-FP.ipynb) | BETA | Oui |
+| 65 | [3.9b — Compression par élagage : le réseau amputé qui…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9b-Compression-Pruning-from-scratch.ipynb) | BETA | Non |
+| 66 | [3.9c — Pruning from scratch sur CPU : le compagnon…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9c-Pruning-From-Scratch.ipynb) | BETA | Non |
+| 67 | [3.9e — Quantification SOTA : la même INT8, par…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb) | BETA | Non |
+| 68 | [3.9f — Élagage SOTA : les mêmes masques, par…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/_archive/3.9f-Compression-Pruning-SOTA.ipynb) | BETA | Non |
 | 69 | [3.9g — Comparatif compression : from scratch (Bloc A)…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9g-Compression-Comparatif-A-vs-B.ipynb) | BETA | Non |
 | 70 | [4.1 — Le neurone convolutif from scratch : kernel…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.1-Conv-NumPy-Torch-Allclose.ipynb) | BETA | Oui |
 | 71 | [4.2 — ConvNet profonde : pourquoi les résiduelles](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.2-ConvNet-Profonde-Residuelles.ipynb) | BETA | Non |
@@ -140,7 +139,7 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 109 | [Lab 16: Data Science Agent avec GCP BigQuery](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/Day7-Production/Lab16-Data-Science-Agent.ipynb) | ALPHA | Oui |
 | 110 | [Lab 17: Projet Final - Pipeline DS-STAR Complet](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/Day7-Production/Lab17-Final-Project.ipynb) | ALPHA | Oui |
 
-## ML/ML.Net (23 notebooks)
+## ML/ML.Net (24 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -160,36 +159,40 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 14 | [ML-06 : ONNX Model Integration avec ML.NET](../../MyIA.AI.Notebooks/ML/ML.Net/ML-06-ONNX.ipynb) | BETA | Oui |
 | 15 | [ML-07 (Python) : Systèmes de recommandation par…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-07-Recommendation-Python.ipynb) | BETA | Oui |
 | 16 | [ML-07 : Systèmes de Recommandation avec ML.NET](../../MyIA.AI.Notebooks/ML/ML.Net/ML-07-Recommendation.ipynb) | BETA | Oui |
-| 17 | [ML-08 (Python) : Clustering non-supervisé avec K-Means](../../MyIA.AI.Notebooks/ML/ML.Net/ML-08-Clustering-Python.ipynb) | BETA | Oui |
-| 18 | [ML-08 : Clustering non-supervise avec K-Means](../../MyIA.AI.Notebooks/ML/ML.Net/ML-08-Clustering.ipynb) | BETA | Oui |
-| 19 | [ML-09 (Python) : Détection d'anomalies par PCA (erreur…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-09-Anomaly-Detection-Python.ipynb) | BETA | Oui |
-| 20 | [ML-09 : Detection d'anomalies avec Randomized PCA](../../MyIA.AI.Notebooks/ML/ML.Net/ML-09-Anomaly-Detection.ipynb) | BETA | Oui |
-| 21 | [ML-09b (Python) : l'illusion de progression en…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-09b-TSAD-Benchmark-Flaws-Python.ipynb) | BETA | Oui |
-| 22 | [ML-09c : le Matrix Profile multidimensionnel, une…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-09c-MatrixProfile-Multidim-Python.ipynb) | BETA | Oui |
-| 23 | [TP : Prevision des ventes d'assurance](../../MyIA.AI.Notebooks/ML/ML.Net/TP-prevision-ventes.ipynb) | BETA | Oui |
+| 17 | [ML-07b — Identifiants sémantiques : recommander un item…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-07b-SemanticIDs-Recommandation-Python.ipynb) | ALPHA | Oui |
+| 18 | [ML-08 (Python) : Clustering non-supervisé avec K-Means](../../MyIA.AI.Notebooks/ML/ML.Net/ML-08-Clustering-Python.ipynb) | BETA | Oui |
+| 19 | [ML-08 : Clustering non-supervise avec K-Means](../../MyIA.AI.Notebooks/ML/ML.Net/ML-08-Clustering.ipynb) | BETA | Oui |
+| 20 | [ML-09 (Python) : Détection d'anomalies par PCA (erreur…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-09-Anomaly-Detection-Python.ipynb) | BETA | Oui |
+| 21 | [ML-09 : Detection d'anomalies avec Randomized PCA](../../MyIA.AI.Notebooks/ML/ML.Net/ML-09-Anomaly-Detection.ipynb) | BETA | Oui |
+| 22 | [ML-09b (Python) : l'illusion de progression en…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-09b-TSAD-Benchmark-Flaws-Python.ipynb) | BETA | Oui |
+| 23 | [ML-09c : le Matrix Profile multidimensionnel, une…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-09c-MatrixProfile-Multidim-Python.ipynb) | BETA | Oui |
+| 24 | [TP : Prevision des ventes d'assurance](../../MyIA.AI.Notebooks/ML/ML.Net/TP-prevision-ventes.ipynb) | BETA | Oui |
 
-## Probas (1 notebooks)
+## Probas (2 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | [Probas-KLS-Concentration : gap spectral, constante de…](../../MyIA.AI.Notebooks/Probas/Probas-KLS-Concentration.ipynb) | BETA | Oui |
+| 2 | [Le MCMC, mesuré — Metropolis–Hastings et Gibbs…](../../MyIA.AI.Notebooks/Probas/Probas-MCMC-Echantillonnage-Metropolis-Python.ipynb) | BETA | Oui |
 
-## Probas/Applications (10 notebooks)
+## Probas/Applications (12 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | [L'intégrale triangle scalaire à une boucle — trois…](../../MyIA.AI.Notebooks/Probas/Applications/Integrales/Integrales-01-Triangle-Scalaire-Python.ipynb) | BETA | Oui |
-| 2 | [Marches aléatoires : le retour — de Pólya (1921) au «…](../../MyIA.AI.Notebooks/Probas/Applications/Marches/Marches-01-Retour-Polya-Watson-Python.ipynb) | BETA | Oui |
-| 3 | [Percolation supercritique : le géant au-dessus du seuil](../../MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-01-Supercritique-Python.ipynb) | ALPHA | Oui |
-| 4 | [Percolation-02-Lean — le noyau fini de percolation,…](../../MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-02-Lean.ipynb) | BETA | Oui |
-| 5 | [Percolation au point critique : exposants finis et loi…](../../MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-03-Critique-Python.ipynb) | BETA | Oui |
-| 6 | [Percolation 03b — extensions L=128 et L=256](../../MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-03b-Critique-L128-L256.ipynb) | BETA | Oui |
-| 7 | [Percolation-04-Sharpness-Lean — la sharpness finie,…](../../MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-04-Sharpness-Lean.ipynb) | BETA | Oui |
-| 8 | [Percolation 04 — Sharpness](../../MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-04-Sharpness-Python.ipynb) | BETA | Oui |
-| 9 | [Le Framework Rational Speech Act (RSA)](../../MyIA.AI.Notebooks/Probas/Applications/Pyro_RSA_Hyperbole.ipynb) | BETA | Oui |
-| 10 | [Quotients, fibres et recollement : ce qui survit à la…](../../MyIA.AI.Notebooks/Probas/Applications/Quotients-Fibres-Recollement-Python.ipynb) | BETA | Oui |
+| 2 | [Le diagramme sunrise à masses égales : la sortie des…](../../MyIA.AI.Notebooks/Probas/Applications/Integrales/Integrales-02-Sunrise-Masses-Egales-Python.ipynb) | BETA | Oui |
+| 3 | [Marches aléatoires : le retour — de Pólya (1921) au «…](../../MyIA.AI.Notebooks/Probas/Applications/Marches/Marches-01-Retour-Polya-Watson-Python.ipynb) | BETA | Oui |
+| 4 | [Percolation supercritique : le géant au-dessus du seuil](../../MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-01-Supercritique-Python.ipynb) | ALPHA | Oui |
+| 5 | [Percolation-02-Lean — le noyau fini de percolation,…](../../MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-02-Lean.ipynb) | BETA | Oui |
+| 6 | [Percolation au point critique : exposants finis et loi…](../../MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-03-Critique-Python.ipynb) | BETA | Oui |
+| 7 | [Percolation 03b — extensions L=128 et L=256](../../MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-03b-Critique-L128-L256.ipynb) | BETA | Oui |
+| 8 | [Percolation 03c — extension à L = 512](../../MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-03c-Critique-L512.ipynb) | BETA | Oui |
+| 9 | [Percolation-04-Sharpness-Lean — la sharpness finie,…](../../MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-04-Sharpness-Lean.ipynb) | BETA | Oui |
+| 10 | [Percolation 04 — Sharpness](../../MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-04-Sharpness-Python.ipynb) | BETA | Oui |
+| 11 | [Le Framework Rational Speech Act (RSA)](../../MyIA.AI.Notebooks/Probas/Applications/Pyro_RSA_Hyperbole.ipynb) | BETA | Oui |
+| 12 | [Quotients, fibres et recollement : ce qui survit à la…](../../MyIA.AI.Notebooks/Probas/Applications/Quotients-Fibres-Recollement-Python.ipynb) | BETA | Oui |
 
-## Probas/DecisionTheory (36 notebooks)
+## Probas/DecisionTheory (37 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -229,6 +232,7 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 34 | [DecPyMC-5-Valeur de l'Information](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-5-Value-Information.ipynb) | ALPHA | Oui |
 | 35 | [DecPyMC-6-Systèmes Experts et Decisions Robustes](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-6-Expert-Systems.ipynb) | BETA | Oui |
 | 36 | [DecPyMC-7-MDPs, Bandits et POMDPs](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-7-Sequential.ipynb) | BETA | Oui |
+| 37 | [Règles de décision : EDT, CDT, CCDT et la lignée UDT](../../MyIA.AI.Notebooks/Probas/DecisionTheory/Regles-De-Decision/ReglesDeDecision-01-EDT-CDT-CCDT-UDT.ipynb) | BETA | Oui |
 
 ## Probas/Infer (21 notebooks)
 
@@ -286,7 +290,7 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 |---|----------|----------|------------|
 | 1 | [M16 — HAR asymétrique débiaisé : le signal survit-il…](../../MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/m3_har_asymmetric_semivariance.ipynb) | BETA | Non |
 
-## QuantConnect/Python (36 notebooks)
+## QuantConnect/Python (37 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -306,26 +310,27 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 14 | [QC-Py-32 - Reinforcement Learning DQN pour le Trading](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-32-RL-DQN-Trading.ipynb) | BETA | Non |
 | 15 | [QC-Py-33 - Reinforcement Learning PPO pour le Trading](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-33-RL-PPO-Trading.ipynb) | BETA | Non |
 | 16 | [QC-Py-34 - SAC et A2C : Comparaison d'Agents RL pour le…](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-34-RL-SAC-A2C-Trading.ipynb) | BETA | Non |
-| 17 | [QC-Py-35 - Reinforcement Learning pour la Construction…](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-35-RL-Portfolio-Construction.ipynb) | ALPHA | Non |
+| 17 | [QC-Py-35 - Reinforcement Learning pour la Construction…](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-35-RL-Portfolio-Construction.ipynb) | BETA | Non |
 | 18 | [QC-Py-40 : Paper Trading Binance - Mean Reversion…](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-40-PaperTrading-Binance.ipynb) | BETA | Non |
 | 19 | [QC-Py-41 : Paper Trading IBKR - SP500 Momentum](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-41-PaperTrading-IBKR.ipynb) | BETA | Non |
 | 20 | [QC-Py-43 — Données financières synthétiques par…](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-43-Diffusion-Series-Synthetiques.ipynb) | BETA | Non |
-| 21 | [QC-Py-Cloud-01 : Analyse de Sentiment FinBERT sur QC…](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-01-FinBERT-Sentiment.ipynb) | BETA | Non |
-| 22 | [QC-Py-Cloud-02 : Classification de Texte et Sentiment…](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-02-ML-Classification.ipynb) | BETA | Non |
-| 23 | [QC-Py-Cloud-03 : Parite de Risque (Risk Parity)](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-03-Risk-Parity.ipynb) | BETA | Non |
-| 24 | [QC-Py-Cloud-03b — Risk Parity Composite Multi-Asset](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-03b-RiskParity-Composite.ipynb) | BETA | Non |
-| 25 | [QC-Py-Cloud-04 — Mean Reversion on Sector ETFs](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-04-MeanReversion.ipynb) | BETA | Non |
-| 26 | [QC-Py-Cloud-05 : Prevision par Reseau de Neurones (MLP)](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-05-MLP-Forecasting.ipynb) | BETA | Non |
-| 27 | [QC-Py-Cloud-06 — PCA Statistical Arbitrage Mean…](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-06-PCA-StatArb.ipynb) | BETA | Non |
-| 28 | [QC-Py-Cloud-07 — Temporal CNN Direction Prediction](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-07-TemporalCNN.ipynb) | BETA | Non |
-| 29 | [Value Factor Z-Score — Sélection multi-facteurs…](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-08-ValueFactor-ZScore.ipynb) | BETA | Non |
-| 30 | [Option Wheel — Le paradoxe du win-rate eleve](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-09-OptionWheel.ipynb) | BETA | Non |
-| 31 | [QC-Py-Cloud-10 : Reinforcement Learning - DQN Trading](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-10-RL-DQN-Trading.ipynb) | BETA | Non |
-| 32 | [QC-Py-Cloud-11 — Regime Switching : Momentum in Bull,…](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-11-RegimeSwitching.ipynb) | BETA | Non |
-| 33 | [QC-Py-Cloud-12 — Sector Rotation & Multi-Asset Momentum](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-12-SectorRotation-Momentum.ipynb) | BETA | Non |
-| 34 | [QC-Py-Cloud-13 -- Volatility Targeting : Risk…](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-13-VolTargeting.ipynb) | BETA | Non |
-| 35 | [QC-Py-Cloud-14 — Dual Momentum : Asset Sélection…](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-14-DualMomentum.ipynb) | BETA | Non |
-| 36 | [Workflow : Téléchargement et gestion des datasets](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Dataset-Workflow.ipynb) | ALPHA | Non |
+| 21 | [QC-Py-44 — Agent de trading multi-LLM : analystes,…](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-44-Agent-Trading-Multi-LLM.ipynb) | BETA | Non |
+| 22 | [QC-Py-Cloud-01 : Analyse de Sentiment FinBERT sur QC…](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-01-FinBERT-Sentiment.ipynb) | BETA | Non |
+| 23 | [QC-Py-Cloud-02 : Classification de Texte et Sentiment…](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-02-ML-Classification.ipynb) | BETA | Non |
+| 24 | [QC-Py-Cloud-03 : Parite de Risque (Risk Parity)](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-03-Risk-Parity.ipynb) | BETA | Non |
+| 25 | [QC-Py-Cloud-03b — Risk Parity Composite Multi-Asset](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-03b-RiskParity-Composite.ipynb) | BETA | Non |
+| 26 | [QC-Py-Cloud-04 — Mean Reversion on Sector ETFs](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-04-MeanReversion.ipynb) | BETA | Non |
+| 27 | [QC-Py-Cloud-05 : Prevision par Reseau de Neurones (MLP)](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-05-MLP-Forecasting.ipynb) | BETA | Non |
+| 28 | [QC-Py-Cloud-06 — PCA Statistical Arbitrage Mean…](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-06-PCA-StatArb.ipynb) | BETA | Non |
+| 29 | [QC-Py-Cloud-07 — Temporal CNN Direction Prediction](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-07-TemporalCNN.ipynb) | BETA | Non |
+| 30 | [Value Factor Z-Score — Sélection multi-facteurs…](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-08-ValueFactor-ZScore.ipynb) | BETA | Non |
+| 31 | [Option Wheel — Le paradoxe du win-rate eleve](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-09-OptionWheel.ipynb) | BETA | Non |
+| 32 | [QC-Py-Cloud-10 : Reinforcement Learning - DQN Trading](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-10-RL-DQN-Trading.ipynb) | BETA | Non |
+| 33 | [QC-Py-Cloud-11 — Regime Switching : Momentum in Bull,…](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-11-RegimeSwitching.ipynb) | BETA | Non |
+| 34 | [QC-Py-Cloud-12 — Sector Rotation & Multi-Asset Momentum](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-12-SectorRotation-Momentum.ipynb) | BETA | Non |
+| 35 | [QC-Py-Cloud-13 -- Volatility Targeting : Risk…](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-13-VolTargeting.ipynb) | BETA | Non |
+| 36 | [QC-Py-Cloud-14 — Dual Momentum : Asset Sélection…](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-14-DualMomentum.ipynb) | BETA | Non |
+| 37 | [Workflow : Téléchargement et gestion des datasets](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Dataset-Workflow.ipynb) | ALPHA | Non |
 
 ## QuantConnect/kelly_lean (6 notebooks)
 
