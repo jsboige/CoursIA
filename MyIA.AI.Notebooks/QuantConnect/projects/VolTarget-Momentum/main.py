@@ -181,11 +181,21 @@ class VolTargetMomentum(QCAlgorithm):
             close = self.securities[sym].close
             if close <= ind.current.value:
                 continue
-            hist_12m = self.history(sym, self.lookback_12m + 5, Resolution.DAILY)
+            # Fenetre double (#20286) : sur une demi-seance, history() rend moins
+            # de barres que demandees et la garde ecarte le titre. On demande le
+            # double puis on re-slice sur la fenetre d'origine : la garde porte
+            # sur la fenetre reellement utilisee, son verdict ne change pas.
+            hist_12m = self.history(sym, 2 * (self.lookback_12m + 5), Resolution.DAILY)
+            hist_12m = hist_12m.iloc[-(self.lookback_12m + 5):]
             if len(hist_12m) < self.lookback_12m * 0.8:
                 continue
             ret_12m = hist_12m["close"].iloc[-1] / hist_12m["close"].iloc[-self.lookback_12m] - 1
-            hist_6m = self.history(sym, self.lookback_6m + 5, Resolution.DAILY)
+            # Fenetre double (#20286) : sur une demi-seance, history() rend moins
+            # de barres que demandees et la garde ecarte le titre. On demande le
+            # double puis on re-slice sur la fenetre d'origine : la garde porte
+            # sur la fenetre reellement utilisee, son verdict ne change pas.
+            hist_6m = self.history(sym, 2 * (self.lookback_6m + 5), Resolution.DAILY)
+            hist_6m = hist_6m.iloc[-(self.lookback_6m + 5):]
             if len(hist_6m) < self.lookback_6m * 0.8:
                 continue
             ret_6m = hist_6m["close"].iloc[-1] / hist_6m["close"].iloc[-self.lookback_6m] - 1
