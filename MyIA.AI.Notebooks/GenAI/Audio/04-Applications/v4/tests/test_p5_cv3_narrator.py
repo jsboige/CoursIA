@@ -267,9 +267,15 @@ class _FakeModel:
         yield {"tts_speech": _FakeTensor(int(dur * self.sample_rate))}
 
 
-def _install_fake_runtime(monkeypatch, model):
+def _install_fake_runtime(monkeypatch, model, guard_stub=True):
     """Wire the fake torch/torchaudio/pydub and the stub client, so the retry
-    loop is exercised hermetically -- no GPU, no CosyVoice install."""
+    loop is exercised hermetically -- no GPU, no CosyVoice install.
+
+    `guard_stub=True` (the default) stubs the attack verdict to a clean one,
+    so the tests that are NOT about the guard keep their focus. A test that
+    drives the guard passes `guard_stub=False` and lets the real verdict
+    path run against its own fake ASR.
+    """
     import sys
     import types
 
@@ -277,7 +283,9 @@ def _install_fake_runtime(monkeypatch, model):
     monkeypatch.setitem(sys.modules, "torch", fake_torch)
 
     torchaudio = types.ModuleType("torchaudio")
-    torchaudio.save = lambda buf, wav, sr, format=None: buf.write(b"WAV")
+    # No-op: the final MP3 build saves a buffer, the per-chunk attack guard
+    # (#19739) saves a temp path -- both hit this stub, so it ignores its args.
+    torchaudio.save = lambda *a, **k: None
     monkeypatch.setitem(sys.modules, "torchaudio", torchaudio)
 
     pydub = types.ModuleType("pydub")
@@ -305,12 +313,18 @@ def _install_fake_runtime(monkeypatch, model):
     # drive; its verdict organ has its own suites (test_attack_guard.py,
     # test_p5_cv3_attack_guard.py). Here a clean verdict is stubbed so the
     # re-roll loop stays the only thing under test -- no ASR, no organ.
-    monkeypatch.setattr(
-        "v4.p5_tts._cv3_attack_verdict",
-        lambda *a, **k: {
-            "attack_dropped": False, "reason": "none", "n_missing_leading": 0,
-        },
-    )
+    #
+    # The stub is a DEFAULT, not a wall: a test that drives the guard
+    # itself (the onset-drop re-roll) must be able to replace it, otherwise
+    # the stub would answer the very question the test asks. `guard_stub=False`
+    # is how such a test asks for the real verdict path.
+    if guard_stub:
+        monkeypatch.setattr(
+            "v4.p5_tts._cv3_attack_verdict",
+            lambda *a, **k: {
+                "attack_dropped": False, "reason": "none", "n_missing_leading": 0,
+            },
+        )
     return fake_torch
 
 
@@ -373,6 +387,103 @@ def test_cv3_fails_loudly_when_every_attempt_degenerates(tmp_path, monkeypatch):
         assert not mp3.exists(), "a failed render must not leave a partial MP3"
         return
     raise AssertionError("an all-degenerate chunk must raise, not return")
+
+
+def test_cv3_attack_guard_re_rolls_an_onset_drop(tmp_path, monkeypatch):
+    """With the guard on, a render that clears the duration floor but whose
+    ASR starts mid-text (attack dropped) is re-rolled; the clean re-roll is
+    accepted. Duration can never see this class -- only the ASR can (#19739)."""
+    from v4 import p5_tts
+    from v4.p5_tts import _synthesize_narrator_cosyvoice3
+
+    model = _FakeModel([2.0, 2.0])  # both clear the duration floor
+    # guard_stub=False: this test drives the guard itself, so the real
+    # verdict path must run (a stubbed verdict would answer the question).
+    fake_torch = _install_fake_runtime(monkeypatch, model, guard_stub=False)
+
+    # The ASR "hears" the attack dropped on the first render (its transcript
+    # is short on the 3 leading words), complete on the re-roll.
+    transcripts = [
+        "regardait la mer sans rien dire",
+        "Le vieux marin regardait la mer sans rien dire",
+    ]
+    asr_calls = []
+
+    def fake_asr(path):
+        asr_calls.append(path)
+        return transcripts[min(len(asr_calls) - 1, len(transcripts) - 1)]
+
+    monkeypatch.setattr(p5_tts, "_resolve_attack_asr", lambda: fake_asr)
+    monkeypatch.setenv("V4_ATTACK_GUARD", "on")
+
+    text = "Le vieux marin regardait la mer sans rien dire."
+    seg = _build_seg(speaker="narrateur", text=text)
+    out = _synthesize_narrator_cosyvoice3(
+        seg=seg, fishaudio_text=text,
+        mp3_path=tmp_path / "seg_0001_narrateur.mp3", seed=42, text_hash="h",
+    )
+    assert out.status == "generated"
+    assert out.attempts == 2, "the onset-drop must force exactly one re-roll"
+    assert len(model.calls) == 2
+    assert len(asr_calls) == 2, "the guard must consult the ASR per render"
+    assert fake_torch.seeds == [42, 42 + 104_729]
+
+
+def test_cv3_attack_guard_accepts_a_clean_render(tmp_path, monkeypatch):
+    """With the guard on, a render whose ASR keeps the attack is accepted on
+    its first pass -- the guard adds a gate, not a blanket re-roll."""
+    from v4 import p5_tts
+    from v4.p5_tts import _synthesize_narrator_cosyvoice3
+
+    model = _FakeModel([2.0])
+    _install_fake_runtime(monkeypatch, model, guard_stub=False)
+
+    def fake_asr(path):
+        return "Le vieux marin regardait la mer sans rien dire"  # complete
+
+    monkeypatch.setattr(p5_tts, "_resolve_attack_asr", lambda: fake_asr)
+    monkeypatch.setenv("V4_ATTACK_GUARD", "on")
+
+    text = "Le vieux marin regardait la mer sans rien dire."
+    seg = _build_seg(speaker="narrateur", text=text)
+    out = _synthesize_narrator_cosyvoice3(
+        seg=seg, fishaudio_text=text,
+        mp3_path=tmp_path / "seg_0001_narrateur.mp3", seed=42, text_hash="h",
+    )
+    assert out.status == "generated"
+    assert out.attempts == 1, "a clean render must not be re-rolled"
+    assert len(model.calls) == 1
+
+
+def test_cv3_attack_guard_off_never_calls_asr(tmp_path, monkeypatch):
+    """`V4_ATTACK_GUARD=off` is the A/B arm of the measured comparison: the
+    render loop must not touch the ASR at all, so a run can reproduce the
+    pre-guard acceptance without a Whisper server beside it.
+
+    The toggle is the one #23486 standardised for the Qwen narrator paths
+    (`ATTACK_GUARD_ENV = "V4_ATTACK_GUARD"`, default on): the CV3 path now
+    reads the same variable, so one switch governs the whole v4 pipeline.
+    """
+    from v4 import p5_tts
+    from v4.p5_tts import _synthesize_narrator_cosyvoice3
+
+    model = _FakeModel([2.0])
+    _install_fake_runtime(monkeypatch, model)
+
+    def boom(path):
+        raise AssertionError("the ASR must not be called when the guard is off")
+
+    monkeypatch.setattr(p5_tts, "_resolve_attack_asr", lambda: boom)
+    monkeypatch.setenv("V4_ATTACK_GUARD", "off")
+
+    text = "Le vieux marin regardait la mer sans rien dire."
+    seg = _build_seg(speaker="narrateur", text=text)
+    out = _synthesize_narrator_cosyvoice3(
+        seg=seg, fishaudio_text=text,
+        mp3_path=tmp_path / "seg_0001_narrateur.mp3", seed=42, text_hash="h",
+    )
+    assert out.status == "generated"
+    assert out.attempts == 1
 
 
 class _StubLLM:

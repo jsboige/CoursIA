@@ -17,13 +17,14 @@ inductive à deux ensembles `exists_colouring_aux` (fermeture `S` + support
 exact `E` — le prix `Finset` du support canonique du `Finsupp` de l'oracle)
 et l'énoncé public `exists_isColouring_mean_add_sum_mem_convexHull`.
 
-Réserve de portée (mesure k5.2, suivi #21417) : cet énoncé public n'est
-instanciable qu'à famille `v` identiquement nulle — les hypothèses de
-contention sur un `Finset` forcent `v i = 0` (`contention_stability_forces_zero`,
-plus bas dans ce fichier, avec l'argument mesuré). Le k2 est donc clos comme
-**preuve** ; il ne l'est pas comme énoncé instanciable, et la correction passe
-par la contention du côté de la distance de décalage fonctionnelle (voie k4.2c).
-Voir la ligne k5.2 de `FORMAL_STATUS.md`.
+Réserve de portée levée (mesure k5.2, chantier #21417 cran 2) : la forme
+livrée le 10-06 n'était instanciable qu'à famille `v` identiquement nulle — ses
+hypothèses de contention sur un `Finset` stable forçaient `v i = 0`
+(`contention_stability_forces_zero`, plus bas dans ce fichier, avec l'argument
+mesuré). L'énoncé public et la porte inductive portent désormais un jeu de
+clauses `B` (sommes signées bornées des générateurs, satisfaisable par une
+grande boîte, aucune stabilité requise) : le k2 est clos comme preuve **et**
+comme énoncé instanciable. Voir les lignes k2.6c et k5.2 de `FORMAL_STATUS.md`.
 -/
 
 import Discrepancy.Basic
@@ -187,19 +188,32 @@ moments, contenance) et `E` (support exact : enveloppe de la conclusion,
 `E ⊆ S`).
 
 Au niveau suivant, `S'` est l'image liftée du produit plein (la contenance
-y est transférée par `supportContained_pushUp_split`, k2.6b) et `E'` le
-support exact poussé (`SQ.map liftUpEmb`, `SQ` le filtre des scissions non
-nulles). Le pont entre les deux lectures est le carré
-`snocReal ∘ toRealProd = toReal ∘ liftUp` plus le transport d'enveloppe
-`mem_convexHull_map_snocReal` (ci-dessus). -/
+y est transférée par `supportContained_pushUp_split_enlarged`, l'organe de
+transmission du chantier #21417) et `E'` le support exact poussé (`SQ.map
+liftUpEmb`, `SQ` le filtre des scissions non nulles). Le pont entre les deux
+lectures est le carré `snocReal ∘ toRealProd = toReal ∘ liftUp` plus le
+transport d'enveloppe `mem_convexHull_map_snocReal` (ci-dessus).
+
+**Chantier #21417 (correction du défaut k5.2)** : la porte ne porte plus
+d'ensemble `A` stable par `± 3 • v i` — une classe d'orbite, insatisfaisable
+sur un `Finset` pour `v ≠ 0` (le témoin `contention_stability_forces_zero`
+ci-dessous démontre que ces hypothèses forcent `v = 0`). Elle porte un **jeu
+de clauses** : un `Finset B` contenant les sommes signées à coefficients
+bornés par 2 en les générateurs `3 • v i` (5ⁿ points, satisfaisable par une
+grande boîte — aucune stabilité n'est exigée de `B`), avec la contenance
+`SupportContained S P B`. L'équation de transmission se vérifie niveau par
+niveau : chaque clause du niveau `d + 1` (somme bornée des `n` premiers
+générateurs, snocquée à hauteur nulle) vit dans l'ombre
+`(B + w) ∩ (B − w)` car sa base `z` vérifie `z ± w ∈ B` — le coefficient du
+générateur dernier passe de `0` à `± 1`, borné par 2. -/
 theorem exists_colouring_aux (n : ℕ) :
     ∀ (d : ℕ) (S E : Finset (Fin d → ℤ)) (P : (Fin d → ℤ) → ℝ),
       (∀ x, 0 ≤ P x) → (∑ x ∈ S, P x = 1) →
       (∀ x, P x ≠ 0 → x ∈ E) → E ⊆ S →
-      ∀ A : Finset (Fin d → ℤ), 0 ∈ A → SupportContained S P A →
+      ∀ B : Finset (Fin d → ℤ),
       ∀ v : Fin n → (Fin d → ℤ),
-      (∀ i, v i ∈ A ∧ -v i ∈ A) →
-      (∀ a ∈ A, ∀ i, a + 3 • v i ∈ A ∧ a - 3 • v i ∈ A) →
+      (∀ f : Fin n → ℤ, (∀ i, |f i| ≤ 2) → ∑ i, f i • (3 • v i) ∈ B) →
+      SupportContained S P B →
       (∀ i, shiftDistance S P (6 • v i) ≤ 3⁻¹) →
       ∃ ε : Fin n → ℤ, (∀ i, ε i = 1 ∨ ε i = -1) ∧
         (fun j => coordMoment P S j + ∑ i, (ε i : ℝ) * (v i j : ℝ)) ∈
@@ -207,7 +221,7 @@ theorem exists_colouring_aux (n : ℕ) :
             ↑(E.map (⟨⇑toReal, toReal_injective⟩ : (Fin d → ℤ) ↪ (Fin d → ℝ))) := by
   induction n with
   | zero =>
-      intro d S E P hP0 hmass hE hES A hA0 hC v hAv hAstab hv
+      intro d S E P hP0 hmass hE hES B v hclauses hC hv
       have hzero : ∀ x ∈ S, x ∉ E → P x = 0 := by
         intro x _ hx
         by_contra hp
@@ -231,19 +245,52 @@ theorem exists_colouring_aux (n : ℕ) :
       rw [hfun]
       exact hmean
   | succ n ih =>
-      intro d S E P hP0 hmass hE hES A hA0 hC v hAv hAstab hv
+      intro d S E P hP0 hmass hE hES B v hclauses hC hv
       classical
       -- Le vecteur de scission
       set w : Fin d → ℤ := 3 • v (Fin.last n) with hw
-      -- Appartenances à A (chaînes de stabilité depuis 0)
-      have hm0 : (0 : Fin d → ℤ) ∈ A := hA0
-      have hmw : 3 • v (Fin.last n) ∈ A := by
-        simpa using (hAstab 0 hA0 (Fin.last n)).1
-      have hmnw : -(3 • v (Fin.last n)) ∈ A := by
-        simpa using (hAstab 0 hA0 (Fin.last n)).2
-      have hmn3 : ∀ i : Fin (n + 1), -(3 • v i) ∈ A := by
-        intro i
-        simpa using (hAstab 0 hA0 i).2
+      -- Évaluation des sommes signées de la famille de clauses
+      have hsum1 : ∀ (a : Fin (n + 1)) (x : ℤ),
+          ∑ i, (if i = a then x else 0) • (3 • v i) = x • (3 • v a) := by
+        intro a x
+        rw [Finset.sum_eq_single a]
+        · simp
+        · intro b _ hb; simp [hb]
+        · simp
+      have hsum2 : ∀ (a b : Fin (n + 1)) (hab : a ≠ b) (x y : ℤ),
+          ∑ i, (if i = a then x else if i = b then y else 0) • (3 • v i)
+            = x • (3 • v a) + y • (3 • v b) := by
+        intro a b hab x y
+        have hsplit : ∀ i ∈ (Finset.univ : Finset (Fin (n + 1))),
+            (if i = a then x else if i = b then y else 0) • (3 • v i)
+              = (if i = a then x • (3 • v i) else 0)
+                + (if i = b then y • (3 • v i) else 0) := by
+          intro i _
+          by_cases h1 : i = a
+          · subst h1
+            simp [hab]
+          · by_cases h2 : i = b
+            · subst h2
+              simp [h1]
+            · simp [h1, h2]
+        rw [Finset.sum_congr rfl hsplit, Finset.sum_add_distrib,
+          Finset.sum_ite_eq' Finset.univ a (fun i => x • (3 • v i)),
+          Finset.sum_ite_eq' Finset.univ b (fun i => y • (3 • v i))]
+        simp
+      -- Appartenances de base par la famille de clauses (aucune stabilité)
+      have hm0 : (0 : Fin d → ℤ) ∈ B := by
+        have h := hclauses (fun _ => 0) (by intro i; simp)
+        simpa using h
+      have hmw : w ∈ B := by
+        have h := hclauses (fun i => if i = Fin.last n then (1 : ℤ) else 0)
+          (by intro i; by_cases h : i = Fin.last n <;> simp [h])
+        rw [hsum1 (Fin.last n) 1] at h
+        simpa [hw] using h
+      have hmnw : -w ∈ B := by
+        have h := hclauses (fun i => if i = Fin.last n then (-1 : ℤ) else 0)
+          (by intro i; by_cases h : i = Fin.last n <;> simp [h, abs_neg])
+        rw [hsum1 (Fin.last n) (-1)] at h
+        simpa [hw] using h
       have mono3 : SupportContained S P ({0, w, -w} : Finset (Fin d → ℤ)) :=
         hC.mono (by
           intro t ht
@@ -259,36 +306,9 @@ theorem exists_colouring_aux (n : ℕ) :
       set S' : Finset (Fin (d + 1) → ℤ) :=
         (S ×ˢ (Finset.univ : Finset Bool)).map liftUpEmb with hS'
       set E' : Finset (Fin (d + 1) → ℤ) := SQ.map liftUpEmb with hE'
-      set A' : Finset (Fin (d + 1) → ℤ) :=
-        A.image (fun a => Fin.snoc a 0) with hA'
-      -- Petites équations de snoc
-      have hadd_snoc : ∀ x y : Fin d → ℤ,
-          (Fin.snoc x 0 : Fin (d + 1) → ℤ) + Fin.snoc y 0
-            = Fin.snoc (x + y) 0 := by
-        intro x y
-        funext j
-        induction j using Fin.lastCases with
-        | last => simp
-        | cast i => simp
-      have hsub_snoc : ∀ x y : Fin d → ℤ,
-          (Fin.snoc x 0 : Fin (d + 1) → ℤ) - Fin.snoc y 0
-            = Fin.snoc (x - y) 0 := by
-        intro x y
-        funext j
-        induction j using Fin.lastCases with
-        | last => simp
-        | cast i => simp
-      have hneg_snoc : ∀ x : Fin d → ℤ,
-          -(Fin.snoc x 0 : Fin (d + 1) → ℤ) = Fin.snoc (-x) 0 := by
-        intro x
-        funext j
-        induction j using Fin.lastCases with
-        | last => simp
-        | cast i => simp
-      -- Les vecteurs embarqués se lisent comme des snoc à hauteur nulle
-      have hv'snoc : ∀ i : Fin n,
-          (liftUp (v i.castSucc, false) : Fin (d + 1) → ℤ)
-            = Fin.snoc (v i.castSucc) 0 := fun _ => rfl
+      set B' : Finset (Fin (d + 1) → ℤ) :=
+        (B.image (fun b => b + w) ∩ B.image (fun b => b - w)).image
+          (fun a => Fin.snoc a 0) with hB'
       -- Les arguments du niveau suivant
       have hP0' : ∀ z, 0 ≤ pushUp (split w P) z :=
         fun z => pushUp_nonneg (split_nonneg hP0 w) z
@@ -334,41 +354,64 @@ theorem exists_colouring_aux (n : ℕ) :
         intro z hz
         obtain ⟨y, hy, rfl⟩ := Finset.mem_map.1 hz
         exact Finset.mem_map.2 ⟨y, Finset.filter_subset _ _ hy, rfl⟩
-      have hA0' : 0 ∈ A' := Finset.mem_image.2 ⟨0, hA0, by
-        funext j
-        induction j using Fin.lastCases with
-        | last => simp
-        | cast i => simp⟩
-      have hC' : SupportContained S' (pushUp (split w P)) A' :=
-        supportContained_pushUp_split w hC
-          (fun a ha => ⟨(hAstab a ha (Fin.last n)).1, (hAstab a ha (Fin.last n)).2⟩)
-      have hAv' : ∀ i : Fin n,
-          liftUp (v i.castSucc, false) ∈ A' ∧ -liftUp (v i.castSucc, false) ∈ A' := by
-        intro i
-        constructor
-        · refine Finset.mem_image.2 ⟨v i.castSucc, (hAv i.castSucc).1, ?_⟩
-          rw [hv'snoc i]
-        · refine Finset.mem_image.2 ⟨-v i.castSucc, (hAv i.castSucc).2, ?_⟩
-          rw [hv'snoc i, hneg_snoc]
-      have hAstab' : ∀ a ∈ A', ∀ i : Fin n,
-          a + 3 • liftUp (v i.castSucc, false) ∈ A'
-            ∧ a - 3 • liftUp (v i.castSucc, false) ∈ A' := by
-        intro a' ha' i
-        obtain ⟨a, ha, rfl⟩ := Finset.mem_image.1 ha'
-        rw [hA']
-        have h1 : 3 • liftUp (v i.castSucc, false)
-            = Fin.snoc (3 • v i.castSucc) 0 := by
+      -- La contenance du niveau suivant : l'organe de transmission (#21417)
+      have hC' : SupportContained S' (pushUp (split w P)) B' :=
+        supportContained_pushUp_split_enlarged w hC
+      -- Les clauses du niveau suivant : chaque somme bornée snocquée vit
+      -- dans l'ombre (B + w) ∩ (B − w), car sa base z vérifie z ± w ∈ B
+      have hclauses' : ∀ g : Fin n → ℤ, (∀ i, |g i| ≤ 2) →
+          ∑ i, g i • (3 • (liftUp (v i.castSucc, false) : Fin (d + 1) → ℤ)) ∈ B' := by
+        intro g hg
+        have hlift : ∀ i : Fin n,
+            3 • (liftUp (v i.castSucc, false) : Fin (d + 1) → ℤ)
+              = Fin.snoc (3 • v i.castSucc) 0 := by
+          intro i
           funext j
           induction j using Fin.lastCases with
           | last => simp [liftUp]
           | cast k => simp [liftUp, Pi.smul_apply]
-        constructor
-        · refine Finset.mem_image.2 ⟨a + 3 • v i.castSucc,
-            (hAstab a ha i.castSucc).1, ?_⟩
-          rw [h1, hadd_snoc]
-        · refine Finset.mem_image.2 ⟨a - 3 • v i.castSucc,
-            (hAstab a ha i.castSucc).2, ?_⟩
-          rw [h1, hsub_snoc]
+        set z : Fin d → ℤ := ∑ i, g i • (3 • v i.castSucc) with hzdef
+        have hsum' : ∑ i, g i • (3 • (liftUp (v i.castSucc, false) : Fin (d + 1) → ℤ))
+            = Fin.snoc z 0 := by
+          funext j
+          induction j using Fin.lastCases with
+          | last => simp
+          | cast k =>
+              rw [Finset.sum_apply]
+              simp only [hlift, Fin.snoc_castSucc, Pi.smul_apply, smul_eq_mul,
+                hzdef]
+              rw [Finset.sum_apply]
+              simp
+        have hzw : z - w ∈ B := by
+          have h := hclauses (Fin.snoc g (-1 : ℤ))
+            (by
+              intro i
+              induction i using Fin.lastCases with
+              | last => simp [abs_neg]
+              | cast k => simpa using hg k)
+          rw [Fin.sum_univ_castSucc] at h
+          simp only [Fin.snoc_castSucc, Fin.snoc_last, neg_one_smul] at h
+          rw [← hzdef] at h
+          rw [sub_eq_add_neg, hw]
+          exact h
+        have hzpw : z + w ∈ B := by
+          have h := hclauses (Fin.snoc g (1 : ℤ))
+            (by
+              intro i
+              induction i using Fin.lastCases with
+              | last => simp
+              | cast k => simpa using hg k)
+          rw [Fin.sum_univ_castSucc] at h
+          simp only [Fin.snoc_castSucc, Fin.snoc_last, one_smul] at h
+          rw [← hzdef] at h
+          rw [hw]
+          exact h
+        rw [hsum']
+        refine Finset.mem_image.mpr ⟨z, ?_, rfl⟩
+        simp only [Finset.mem_inter, Finset.mem_image]
+        refine ⟨⟨z - w, hzw, ?_⟩, z + w, hzpw, ?_⟩
+        · funext j; simp only [Pi.add_apply, Pi.sub_apply]; omega
+        · funext j; simp only [Pi.add_apply, Pi.sub_apply]; omega
       have hv' : ∀ i : Fin n,
           shiftDistance S' (pushUp (split w P)) (6 • liftUp (v i.castSucc, false))
             ≤ 3⁻¹ := by
@@ -379,28 +422,59 @@ theorem exists_colouring_aux (n : ℕ) :
           induction j using Fin.lastCases with
           | last => simp [liftUp]
           | cast k => simp [liftUp, Pi.smul_apply]
-        -- la contention à six décalages
-        have hmn6 : -(3 • v i.castSucc) - 3 • v i.castSucc ∈ A :=
-          (hAstab _ (hmn3 i.castSucc) i.castSucc).2
-        have hwu : 3 • v (Fin.last n) - 3 • v i.castSucc ∈ A :=
-          (hAstab _ hmw i.castSucc).2
-        have hnwu : -(3 • v (Fin.last n)) - 3 • v i.castSucc ∈ A :=
-          (hAstab _ hmnw i.castSucc).2
-        have hid1 : (-(3 • v i.castSucc) - 3 • v i.castSucc : Fin d → ℤ)
-            = -(6 • v i.castSucc) := by
-          funext j
-          simp only [Pi.sub_apply, Pi.smul_apply, Pi.neg_apply]
-          ring
-        have hid2 : 3 • v (Fin.last n) - 3 • v i.castSucc - 3 • v i.castSucc
-            = w - 6 • v i.castSucc := by
-          funext j
-          simp only [Pi.sub_apply, Pi.smul_apply, hw]
-          ring
-        have hid3 : -(3 • v (Fin.last n)) - 3 • v i.castSucc - 3 • v i.castSucc
-            = -w - 6 • v i.castSucc := by
-          funext j
-          simp only [Pi.sub_apply, Pi.smul_apply, Pi.neg_apply, hw]
-          ring
+        -- la contention à six décalages, par la famille de clauses
+        have hmn6 : -(6 • v i.castSucc) ∈ B := by
+          have h := hclauses (fun j => if j = i.castSucc then (-2 : ℤ) else 0)
+            (by intro j; by_cases h : j = i.castSucc <;> simp [h, abs_neg])
+          have hid : ((-2 : ℤ) • (3 • v i.castSucc) : Fin d → ℤ)
+              = -(6 • v i.castSucc) := by
+            funext j
+            simp only [Pi.smul_apply, Pi.neg_apply]
+            ring
+          rw [hsum1 i.castSucc (-2), hid] at h
+          exact h
+        have hwu : w - 6 • v i.castSucc ∈ B := by
+          have h := hclauses
+            (fun j => if j = Fin.last n then (1 : ℤ) else
+              if j = i.castSucc then (-2 : ℤ) else 0)
+            (by intro j
+                by_cases h1 : j = Fin.last n
+                · simp [h1]
+                · by_cases h2 : j = i.castSucc <;> simp [h1, h2, abs_neg])
+          have hid : (((1 : ℤ) • (3 • v (Fin.last n))
+              + (-2 : ℤ) • (3 • v i.castSucc) : Fin d → ℤ))
+              = w - 6 • v i.castSucc := by
+            funext j
+            simp only [Pi.add_apply, Pi.smul_apply, Pi.sub_apply, hw]
+            ring
+          rw [hsum2 (Fin.last n) i.castSucc
+            (by
+              intro h
+              have h2 := congrArg Fin.val h
+              simp only [Fin.val_last, Fin.val_castSucc] at h2
+              omega) 1 (-2), hid] at h
+          exact h
+        have hnwu : -w - 6 • v i.castSucc ∈ B := by
+          have h := hclauses
+            (fun j => if j = Fin.last n then (-1 : ℤ) else
+              if j = i.castSucc then (-2 : ℤ) else 0)
+            (by intro j
+                by_cases h1 : j = Fin.last n
+                · simp [h1, abs_neg]
+                · by_cases h2 : j = i.castSucc <;> simp [h1, h2, abs_neg])
+          have hid : (((-1 : ℤ) • (3 • v (Fin.last n))
+              + (-2 : ℤ) • (3 • v i.castSucc) : Fin d → ℤ))
+              = -w - 6 • v i.castSucc := by
+            funext j
+            simp only [Pi.add_apply, Pi.smul_apply, Pi.sub_apply, Pi.neg_apply, hw]
+            ring
+          rw [hsum2 (Fin.last n) i.castSucc
+            (by
+              intro h
+              have h2 := congrArg Fin.val h
+              simp only [Fin.val_last, Fin.val_castSucc] at h2
+              omega) (-1) (-2), hid] at h
+          exact h
         have h6set : SupportContained S P
             ({0, w, -w, -(6 • v i.castSucc), w - 6 • v i.castSucc,
               -w - 6 • v i.castSucc} : Finset (Fin d → ℤ)) :=
@@ -411,18 +485,15 @@ theorem exists_colouring_aux (n : ℕ) :
             · exact hm0
             · exact hmw
             · exact hmnw
-            · rw [← hid1]
-              exact hmn6
-            · rw [← hid2]
-              exact (hAstab _ hwu i.castSucc).2
-            · rw [← hid3]
-              exact (hAstab _ hnwu i.castSucc).2)
+            · exact hmn6
+            · exact hwu
+            · exact hnwu)
         rw [h6, hS', shiftDistance_pushUp]
         exact (shiftDistanceProd_split_le_of_support w (6 • v i.castSucc)
           hP0 hmass h6set).trans (hv i.castSucc)
       obtain ⟨ε', hε', hmem'⟩ := ih (d + 1) S' E' (pushUp (split w P))
-        hP0' hmass' hsupp' hES' A' hA0' hC'
-        (fun i => liftUp (v i.castSucc, false)) hAv' hAstab' hv'
+        hP0' hmass' hsupp' hES' B' (fun i => liftUp (v i.castSucc, false))
+        hclauses' hC' hv'
       -- Le point de niveau d + 1, lu coordonnée par coordonnée
       set z : Fin d → ℝ := fun k =>
         coordMoment P S k + ∑ i : Fin n, (ε' i : ℝ) * (v i.castSucc k : ℝ)
@@ -482,6 +553,15 @@ theorem exists_colouring_aux (n : ℕ) :
         funext j
         simp only [Pi.add_apply, Pi.neg_apply, Pi.sub_apply, hw]
         ring
+      have hmww : -w - w ∈ B := by
+        have h := hclauses (fun j => if j = Fin.last n then (-2 : ℤ) else 0)
+          (by intro j; by_cases h : j = Fin.last n <;> simp [h, abs_neg])
+        have hid : (-2 : ℤ) • (3 • v (Fin.last n)) = -w - w := by
+          funext j
+          simp only [Pi.smul_apply, Pi.sub_apply, Pi.neg_apply, smul_eq_mul, hw]
+          ring
+        rw [hsum1 (Fin.last n) (-2), hid] at h
+        exact h
       have hP5 : SupportContained S P
           ({0, w, -w, -w - w, -(w + w)} : Finset (Fin d → ℤ)) :=
         hC.mono (by
@@ -491,9 +571,9 @@ theorem exists_colouring_aux (n : ℕ) :
           · exact hm0
           · exact hmw
           · exact hmnw
-          · exact (hAstab _ hmnw (Fin.last n)).2
+          · exact hmww
           · rw [hidww]
-            exact (hAstab _ hmnw (Fin.last n)).2)
+            exact hmww)
       have hβ : 3⁻¹ ≤ β := by
         rw [hb, splitBit_eq_of_support w hP0 hmass hP5, hw2]
         linarith [hv (Fin.last n)]
@@ -530,11 +610,21 @@ theorem exists_colouring_aux (n : ℕ) :
         rw [hfe]
         exact hfin
 
-/-- **Lemme 1.4 (Karingula–Lovett) — énoncé public** : si chaque `v i`
-d'un ensemble `A` contenant `0` et stable par `± 3 • v j` a une distance de
-décalage `≤ 1/3` pour `6 • v i`, il existe une coloration `ε` telle que le
-barycentre de `P` augmenté des sommes signées appartienne à l'enveloppe
-convexe du support transporté de `P`.
+/-- **Lemme 1.4 (Karingula–Lovett) — énoncé public** : si `S` contient le
+support de `P` décalé par chaque somme signée à coefficients bornés par 2
+en les générateurs `3 • v i`, et si chaque `6 • v i` a une distance de
+décalage `≤ 1/3`, il existe une coloration `ε` telle que le barycentre de
+`P` augmenté des sommes signées appartienne à l'enveloppe convexe du
+support transporté de `P`.
+
+Le jeu de clauses `B` est fourni par l'appelant — typiquement l'image des
+coefficients bornés (5ⁿ points, une « grande boîte » satisfaisable,
+**aucune stabilité requise**) : c'est la correction du chantier #21417 du
+défaut k2.6c (l'ancienne forme portait un `A` stable par `± 3 • v i`, une
+classe d'orbite qui force `v = 0` — le témoin
+`contention_stability_forces_zero` ci-dessous). Exiger `B` explicite
+garde l'hypothèse vérifiable par l'appelant sans enfermer la porte
+inductive dans une instanciation figée.
 
 La forme porte (`exists_colouring_aux`) conclut sur le support exact `E` ;
 l'énoncé public le consomme avec `E := S.filter (P · ≠ 0)` et remonte à
@@ -542,11 +632,11 @@ l'enveloppe de `S` par monotonie — c'est la lecture lake de l'oracle
 `gdahia/Komlos` (`SignedSums.lean` l.32-36), où le `Finsupp` porte son
 support canonique. -/
 theorem exists_isColouring_mean_add_sum_mem_convexHull (n d : ℕ)
-    (S : Finset (Fin d → ℤ)) (P : (Fin d → ℤ) → ℝ) (hP0 : ∀ x, 0 ≤ P x)
+    (S B : Finset (Fin d → ℤ)) (P : (Fin d → ℤ) → ℝ) (hP0 : ∀ x, 0 ≤ P x)
     (hmass : ∑ x ∈ S, P x = 1) (hPsupp : ∀ x, P x ≠ 0 → x ∈ S)
-    (A : Finset (Fin d → ℤ)) (hA0 : 0 ∈ A) (hC : SupportContained S P A)
-    (v : Fin n → (Fin d → ℤ)) (hAv : ∀ i, v i ∈ A ∧ -v i ∈ A)
-    (hAstab : ∀ a ∈ A, ∀ i, a + 3 • v i ∈ A ∧ a - 3 • v i ∈ A)
+    (v : Fin n → (Fin d → ℤ))
+    (hclauses : ∀ f : Fin n → ℤ, (∀ i, |f i| ≤ 2) → ∑ i, f i • (3 • v i) ∈ B)
+    (hB : SupportContained S P B)
     (hv : ∀ i, shiftDistance S P (6 • v i) ≤ 3⁻¹) :
     ∃ ε : Fin n → ℤ, (∀ i, ε i = 1 ∨ ε i = -1) ∧
       (fun j => coordMoment P S j + ∑ i, (ε i : ℝ) * (v i j : ℝ)) ∈
@@ -554,7 +644,7 @@ theorem exists_isColouring_mean_add_sum_mem_convexHull (n d : ℕ)
           ↑(S.map (⟨⇑toReal, toReal_injective⟩ : (Fin d → ℤ) ↪ (Fin d → ℝ))) := by
   obtain ⟨ε, hε, hmem⟩ := exists_colouring_aux n d S (S.filter (fun x => P x ≠ 0)) P
     hP0 hmass (fun x hx => Finset.mem_filter.2 ⟨hPsupp x hx, hx⟩)
-    (Finset.filter_subset _ _) A hA0 hC v hAv hAstab hv
+    (Finset.filter_subset _ _) B v hclauses hB hv
   refine ⟨ε, hε, ?_⟩
   have hsub : (S.filter (fun x => P x ≠ 0)).map
       (⟨⇑toReal, toReal_injective⟩ : (Fin d → ℤ) ↪ (Fin d → ℝ))
@@ -577,10 +667,14 @@ n'est instanciable qu'à famille `v` identiquement nulle — le régime où
 `shiftDistance S P (6 • v i) ≤ 3⁻¹` est trivial et la conclusion ne porte
 aucune somme. C'est la même classe de défaut que celle mesurée en k1.7 sur
 l'invariance de `S` (hypothèse de stabilité par translation non nulle sur un
-ensemble fini), réintroduite au sommet k2.6 sur `A` : la correction requiert
-de réifier la contention du côté de la distance de décalage fonctionnelle
-(`shiftDistanceTV`, voie k4.2c) plutôt que d'un ensemble fini stable. L'issue
-de suivi nomme le chantier ; l'assemblage k5.2 (GridCase) en dépend. -/
+ensemble fini), réintroduite au sommet k2.6 sur `A`. **Correctif livré
+(chantier #21417)** : la porte inductive ne porte plus d'ensemble stable —
+la contention est réifiée sur un jeu de clauses `B` (sommes signées à
+coefficients bornés par 2 en les `3 • v i`, satisfaisable par grande boîte),
+transmise par `supportContained_pushUp_split_enlarged` (intersection des
+translatés) ; `shiftDistance` garde sa forme k1.1, la passerelle
+`shiftDistance_eq_shiftDistanceTV` (k4.2c) reste disponible comme lecture
+alternative. L'assemblage k5.2 (GridCase) en dépend. -/
 theorem contention_stability_forces_zero {d n : ℕ} (v : Fin n → (Fin d → ℤ))
     {A : Finset (Fin d → ℤ)} (hA0 : 0 ∈ A)
     (hAstab : ∀ a ∈ A, ∀ i, a + 3 • v i ∈ A ∧ a - 3 • v i ∈ A) :
