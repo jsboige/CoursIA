@@ -1,7 +1,0 @@
-date: '2026-10-22'
-by: myia-po-2024:CoursIA
-python_sha: 35ad4e28a64a3f84100853bafdd8703acdb7b730
-csharp_sha: e785d3fa4a951d31ed1676e08ca3547e3cb429cd
-content_python_sha: 07b77e12ef516267fbbdf433a6a48a5baf12e1ba55028eed3bcad617ec393680
-content_csharp_sha: b3c41891468a748c4689a88540460050966d52f7555f8cf40b199706c8a7adeb
-reason: "PR #21550 (lane myia-po-2024:CoursIA) -- cote Python seul. La cellule markdown de l'exemple dimension remplace une conclusion 'attendue' par une conclusion DERIVEE DE LA MESURE (exposant empirique par regression log-log sur les temps) ; deux cellules de code suppriment le bruit logging autour des exemples (logging.disable(WARNING) puis NOTSET). Re-execution complete : 52 -> 52 cellules, 0 cellule ajoutee ou retiree, sorties rafraichies. La contrepartie C# Search-11-Metaheuristics-CSharp.ipynb est INCHANGEE par la PR ; attestation parity-preserving."
