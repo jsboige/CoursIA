@@ -574,11 +574,16 @@ PILOT: list[Guard] = [
             ".github/workflows/*.yml",
             ".github/workflows/*.yaml",
             "scripts/ci/check_self_hosted_runner_policy.py",
+            "scripts/ci/self_hosted_timeout_baseline.txt",
             "scripts/tests/test_check_self_hosted_runner_policy.py",
             "scripts/ci/fast_lane_registry.py",
         ],
+        # #22954 : `--check-timeouts` ajoute le cliquet qui refuse un job
+        # auto-heberge sans `timeout-minutes` (defaut d'Actions : 6 h, et un job
+        # fige tient son slot tout ce temps). La dette existante est nommee dans
+        # `self_hosted_timeout_baseline.txt`, qui ne doit jamais grossir.
         argv=["python", "scripts/ci/check_self_hosted_runner_policy.py",
-              "--check"],
+              "--check", "--check-timeouts"],
         blocking=True,
         shadow_reason=PILOT_SHADOW_SANS_EMETTEUR,
     ),
