@@ -1186,4 +1186,176 @@ private theorem canonSlots_ranks (seen : List (Nat × Nat)) (xs : List Nat) :
         simp only [threadRank, hx]
       rw [hrank]
 
+
+/-! ## 11. Le fil final d'une liste de croisements (tranche 6)
+
+L'extraction a besoin de deux choses que les tranches précédentes ne donnent
+pas encore : le **fil final** d'une liste de croisements (le fil des vues tel
+qu'il est rendu après le dernier croisement), et le fait que la rangée
+canonique d'un croisement est exactement la liste des **rangs de ses
+étiquettes** dans ce fil final.
+
+- `canonThreaded` : les rangées canoniques *et* le fil final ;
+- `go_eq_rows` / `canon_eq_rows` : `canon` porte les mêmes rangées que
+  `canonThreaded` ;
+- `canonThreaded_faithful` : le fil final est fidèle si le fil de départ
+  l'était ;
+- `canonThreaded_ext` : le fil final **étend** le fil de départ ;
+- `canonSlots_lookup_some` : une étiquette filée est portée par le fil
+  rendu ;
+- `canonThreaded_row_ranks` : **la rangée d'un croisement est la liste des
+  rangs de ses quatre étiquettes dans le fil final**.
+
+C'est cette dernière propriété qui fait le lien entre les deux moitiés :
+l'égalité `canon l = canon l'` porte alors sur des *rangs*, et non plus sur
+des positions.
+-/
+
+/-- Deux listes se correspondent point à point. -/
+private theorem map_eq_of_pointwise {l : List Nat} {f g : Nat → Nat}
+    (h : ∀ x ∈ l, f x = g x) : l.map f = l.map g := by
+  induction l with
+  | nil => rfl
+  | cons x xs ih =>
+    simp only [List.map_cons]
+    have hx := h x (by simp)
+    have hxs : ∀ y ∈ xs, f y = g y := by
+      intro y hy
+      exact h y (by simp [hy])
+    rw [hx, ih hxs]
+
+/-- Les rangées canoniques d'une liste de croisements, et le fil des vues tel
+    qu'il est rendu après le dernier croisement. -/
+private def canonThreaded :
+    List PDCrossing → List (Nat × Nat) → List (List Nat) × List (Nat × Nat)
+  | [], seen => ([], seen)
+  | c :: cs, seen =>
+      let (ys, seen') := canonSlots seen [c.e1, c.e2, c.e3, c.e4]
+      let (rows, seen'') := canonThreaded cs seen'
+      (ys :: rows, seen'')
+
+/-- `canon.go` et `canonThreaded` portent les mêmes rangées. -/
+private theorem go_eq_rows (l : List PDCrossing) (seen : List (Nat × Nat)) :
+    canon.go l seen = (canonThreaded l seen).1 := by
+  induction l generalizing seen with
+  | nil => rfl
+  | cons c cs ih =>
+    have hgo : canon.go (c :: cs) seen =
+        (canonSlots seen [c.e1, c.e2, c.e3, c.e4]).1 ::
+          canon.go cs (canonSlots seen [c.e1, c.e2, c.e3, c.e4]).2 := rfl
+    have hct : (canonThreaded (c :: cs) seen).1 =
+        (canonSlots seen [c.e1, c.e2, c.e3, c.e4]).1 ::
+          (canonThreaded cs (canonSlots seen [c.e1, c.e2, c.e3, c.e4]).2).1 := rfl
+    rw [hgo, hct, ih]
+
+/-- `canon` et `canonThreaded` portent les mêmes rangées. -/
+private theorem canon_eq_rows (l : List PDCrossing) :
+    canon l = (canonThreaded l []).1 := by
+  exact go_eq_rows l []
+
+/-- Le fil final est fidèle si le fil de départ l'était. -/
+private theorem canonThreaded_faithful {l : List PDCrossing} {seen : List (Nat × Nat)}
+    (hk : SeenKeysNodup seen) (hv : SeenValsNodup seen) (hb : SeenValsBounded seen) :
+    SeenKeysNodup (canonThreaded l seen).2 ∧
+      SeenValsNodup (canonThreaded l seen).2 ∧
+      SeenValsBounded (canonThreaded l seen).2 := by
+  induction l generalizing seen with
+  | nil => exact ⟨hk, hv, hb⟩
+  | cons c cs ih =>
+    have hcs := canonSlots_faithful (seen := seen) (xs := [c.e1, c.e2, c.e3, c.e4]) hk hv hb
+    have hct : (canonThreaded (c :: cs) seen).2 =
+        (canonThreaded cs (canonSlots seen [c.e1, c.e2, c.e3, c.e4]).2).2 := rfl
+    rw [hct]
+    exact ih hcs.1 hcs.2.1 hcs.2.2
+
+/-- La compatibilité des fils est transitive. -/
+private theorem ThreadExt.trans {a b c : List (Nat × Nat)}
+    (hab : ThreadExt a b) (hbc : ThreadExt b c) : ThreadExt a c := by
+  intro x v h
+  exact hbc x v (hab x v h)
+
+/-- Le fil final **étend** le fil de départ : toute association portée par le
+    fil de départ l'est encore par le fil final, avec la même valeur. -/
+private theorem canonThreaded_ext :
+    ∀ (l : List PDCrossing) (seen : List (Nat × Nat)),
+      ∀ x v, seen.lookup x = some v → (canonThreaded l seen).2.lookup x = some v := by
+  intro l
+  induction l with
+  | nil =>
+    intro seen x v h
+    exact h
+  | cons c cs ih =>
+    intro seen x v h
+    have h1 := canonSlots_ext (seen := seen) (xs := [c.e1, c.e2, c.e3, c.e4]) x v h
+    have h2 := ih (canonSlots seen [c.e1, c.e2, c.e3, c.e4]).2 x v h1
+    have hct : (canonThreaded (c :: cs) seen).2 =
+        (canonThreaded cs (canonSlots seen [c.e1, c.e2, c.e3, c.e4]).2).2 := rfl
+    rw [hct]
+    exact h2
+
+/-- Une étiquette filée est portée par le fil rendu. -/
+private theorem canonSlots_lookup_some {seen : List (Nat × Nat)} {xs : List Nat} {x : Nat}
+    (hx : x ∈ xs) : ∃ v, (canonSlots seen xs).2.lookup x = some v := by
+  induction xs generalizing seen with
+  | nil => simp at hx
+  | cons y ys ih =>
+    cases hlk : seen.lookup y with
+    | some v =>
+      have hpair := congrArg Prod.snd
+        (canonSlots_cons_of_some (seen := seen) (x := y) (v := v) (xs := ys) hlk)
+      have hext := canonSlots_ext (seen := seen) (xs := ys)
+      rw [hpair]
+      simp only [List.mem_cons] at hx
+      rcases hx with hxy | hx
+      · exact ⟨v, hext x v (hxy ▸ hlk)⟩
+      · obtain ⟨w, hw⟩ := ih (seen := seen) hx
+        exact ⟨w, hw⟩
+    | none =>
+      have hpair := congrArg Prod.snd
+        (canonSlots_cons_of_none (seen := seen) (x := y) (xs := ys) hlk)
+      have hy : (seen ++ [(y, seen.length + 1)]).lookup y = some (seen.length + 1) :=
+        lookup_append_self hlk
+      have hext := canonSlots_ext (seen := seen ++ [(y, seen.length + 1)]) (xs := ys)
+      rw [hpair]
+      simp only [List.mem_cons] at hx
+      rcases hx with hxy | hx
+      · exact ⟨seen.length + 1, hxy ▸ hext y (seen.length + 1) hy⟩
+      · obtain ⟨w, hw⟩ := ih (seen := seen ++ [(y, seen.length + 1)]) hx
+        exact ⟨w, hw⟩
+
+/-- **La rangée d'un croisement est la liste des rangs de ses quatre
+    étiquettes dans le fil final.** C'est la propriété qui relie les deux
+    moitiés du pont : le nombre canonique d'un slot est le rang de son
+    étiquette dans le fil rendu, et non une position. -/
+private theorem canonThreaded_row_ranks {c : PDCrossing} {cs : List PDCrossing}
+    {seen : List (Nat × Nat)} :
+    (canonThreaded (c :: cs) seen).1 =
+      [c.e1, c.e2, c.e3, c.e4].map (fun x => threadRank (canonThreaded (c :: cs) seen).2 x) ::
+        (canonThreaded cs (canonSlots seen [c.e1, c.e2, c.e3, c.e4]).2).1 := by
+  have hranks := canonSlots_ranks (seen := seen) (xs := [c.e1, c.e2, c.e3, c.e4])
+  have hct : (canonThreaded (c :: cs) seen).1 =
+      (canonSlots seen [c.e1, c.e2, c.e3, c.e4]).1 ::
+        (canonThreaded cs (canonSlots seen [c.e1, c.e2, c.e3, c.e4]).2).1 := rfl
+  have hext : ∀ x v,
+      (canonSlots seen [c.e1, c.e2, c.e3, c.e4]).2.lookup x = some v →
+        (canonThreaded (c :: cs) seen).2.lookup x = some v := by
+    intro x v h
+    have hct2 : (canonThreaded (c :: cs) seen).2 =
+        (canonThreaded cs (canonSlots seen [c.e1, c.e2, c.e3, c.e4]).2).2 := rfl
+    rw [hct2]
+    exact canonThreaded_ext cs (canonSlots seen [c.e1, c.e2, c.e3, c.e4]).2 x v h
+  have hcarried : ∀ x ∈ [c.e1, c.e2, c.e3, c.e4],
+      ∃ v, (canonSlots seen [c.e1, c.e2, c.e3, c.e4]).2.lookup x = some v := by
+    intro x hx
+    exact canonSlots_lookup_some hx
+  have hrank : ∀ x ∈ [c.e1, c.e2, c.e3, c.e4],
+      threadRank (canonSlots seen [c.e1, c.e2, c.e3, c.e4]).2 x =
+        threadRank (canonThreaded (c :: cs) seen).2 x := by
+    intro x hx
+    obtain ⟨v, hv⟩ := hcarried x hx
+    have hT : (canonThreaded (c :: cs) seen).2.lookup x = some v := hext x v hv
+    simp only [threadRank, hv, hT]
+  rw [hct, hranks]
+  exact congrArg (fun l => l :: (canonThreaded cs (canonSlots seen [c.e1, c.e2, c.e3, c.e4]).2).1)
+    (map_eq_of_pointwise (l := [c.e1, c.e2, c.e3, c.e4]) hrank)
 end Knots.AnyMoves
