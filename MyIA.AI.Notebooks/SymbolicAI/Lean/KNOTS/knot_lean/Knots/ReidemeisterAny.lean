@@ -48,7 +48,14 @@ présents dans tout état atteint) mesurent exactement cette clôture.
 
 - **soundness `_any` → `ReidemeisterEquiv`** : un retrait `_any` est un R1/R2
   à renommage près ; le sceller exige « le renommage préserve le type du
-  nœud » (une `AnyEquiv` + lemme de pont) ;
+  nœud ». La tranche 12 livre la relation manquante (`AnyEquiv`, §18) et
+  **borne** le pont au lieu de le promettre : la route « choisir/renommer la
+  cible en gardant le grand diagramme » est **impossible**, prouvé au noyau
+  (§18, `no_verifyR1Fwd_from_witness`). Le pont restant exige soit de renommer
+  aussi le grand diagramme (chirurgie `dropLast` à établir), soit un **pas de
+  réétiquetage dans la relation connectée** — ce second choix touche
+  `ReidemeisterStep`, donc `Invariant.lean`, et relève d'un arbitrage
+  coordinateur ;
 - l'équivalence `canon l = canon l' ↔ ∃ renommage injectif` : **close**. La
   moitié **invariance** (`canon (mapC σ l) = canon l` pour `σ` injective) est
   prouvée en §7 (`canon_map_eq`) ; l'**extraction** du renommage depuis
@@ -2383,5 +2390,148 @@ theorem canon_rename_iff {l l' : List PDCrossing} :
     have hcanon : canon (mapC π l) = canon l := canon_map_eq hπ l
     rw [hmap] at hcanon
     exact hcanon.symm
+
+/-! ## 18. L'équivalence à renommage près, et la borne du pont annoncé (tranche 12)
+
+Le résidu déclaré en tête de module est la **sonorité `_any` →
+`ReidemeisterEquiv`**. La route enregistrée dans le plan du grain était :
+« sur formes canoniques, `canon` tue le renommage, et les labels mourants du
+kink y sont frais ». **Cette prémisse est fausse — et elle se réfute au
+noyau, pas par lecture.**
+
+Elle se mesure d'abord : une réplique Python fidèle de `canon`, de `wf` et des
+deux retraits `_any` (34 retraits sur diagrammes canoniques et bien formés) en
+trouve **14 non frais**. Le plus petit contre-exemple tient en deux
+croisements, et c'est celui que scelle cette section.
+
+Ce qui est livré ici, dans cet ordre :
+
+1. `AnyEquiv` — la **relation qui manquait** au langage (deux diagrammes
+   équivalents à renommage près), ses lois d'équivalence, et sa
+   caractérisation `∃ π injectif, mapC π l = l'` (conséquence directe de
+   `canon_rename_iff`, §17) ;
+2. `kinkAnyWitness` / `kinkAnyTarget` — un retrait `_any` **authentique** dont
+   le kink porte `e2 = 1`, c'est-à-dire un label **petit** : exactement ce que
+   la fraîcheur connectée interdit. Le retrait est certifié par le noyau
+   (`verifyKinkDownAny … = true`) ;
+3. `no_verifyR1Fwd_from_witness` — **aucune** cible ne satisfait
+   `verifyR1Fwd` sur ce témoin. La raison est arithmétique et **indépendante
+   du renommage** : la fraîcheur connectée exige `K.e2 = d.numEdges + 1`, soit
+   `d.numEdges = 0` ici ; la clause de cardinal exige
+   `D.numEdges = d.numEdges + 2`, donc `D.numEdges = 2` — or `D.numEdges = 4`.
+   Les deux clauses sont insatisfiables simultanément, quel que soit `d`.
+
+**Ce que cela change, et où cela se décide.** Le pont ne peut pas être
+« choisir ou renommer la cible en gardant le grand diagramme » : sur ce
+témoin, aucune cible n'existe. Deux fermetures restent possibles, et aucune
+n'est une édition de lane :
+
+- renommer **aussi** le grand diagramme, et établir alors la chirurgie
+  `dropLast` sous le renommage (formulation constructive, coût de preuve
+  élevé, aucun changement de la relation connectée) ;
+- doter la relation connectée d'un **pas de réétiquetage** — ce qui rend le
+  renommage lui-même un pas, et donc supprime le besoin d'un pont. Ce choix
+  modifie `ReidemeisterStep` et la surface d'`Invariant.lean` : il relève d'un
+  arbitrage coordinateur (issue #22359).
+
+Tant qu'un de ces deux choix n'est pas arbitré, le résidu reste **ouvert et
+désormais borné** — il n'est plus « probablement faisable par renommage ».
+-/
+
+/-- Deux diagrammes sont **équivalents à renommage près** lorsqu'ils ont la même
+    forme canonique. C'est le quotient que la langue connectée ne fournit pas :
+    ses vérificateurs comparent des diagrammes *littéralement*, alors qu'un
+    retrait `_any` ne conserve que la forme.
+
+    La relation ignore délibérément `numEdges` : sur un diagramme bien formé,
+    `numEdges` est déterminé par les étiquettes présentes (chacune de `1` à
+    `numEdges` apparaît exactement deux fois), donc deux diagrammes de même
+    forme canonique et tous deux bien formés ont même `numEdges`. La forme
+    canonique est donc le bon quotient, et elle est plus faible que l'égalité
+    littérale — c'est précisément l'écart que le pont doit franchir. -/
+def AnyEquiv (d d' : KnotDiagram) : Prop := canon d.crossings = canon d'.crossings
+
+theorem anyEquiv_refl (d : KnotDiagram) : AnyEquiv d d := rfl
+
+theorem anyEquiv_symm {d d' : KnotDiagram} (h : AnyEquiv d d') : AnyEquiv d' d := h.symm
+
+theorem anyEquiv_trans {d d' d'' : KnotDiagram} (h : AnyEquiv d d') (h' : AnyEquiv d' d'') :
+    AnyEquiv d d'' := h.trans h'
+
+/-- `AnyEquiv` est une relation d'équivalence : les trois lois sont celles de
+    l'égalité sur la forme canonique, transportées. -/
+theorem anyEquiv_equivalence : Equivalence AnyEquiv :=
+  ⟨anyEquiv_refl, anyEquiv_symm, anyEquiv_trans⟩
+
+/-- Caractérisation de `AnyEquiv` : deux diagrammes sont équivalents à
+    renommage près si et seulement si un renommage **injectif** envoie les
+    étiquettes de l'un sur celles de l'autre. C'est exactement
+    `canon_rename_iff` (§17), lu à travers `AnyEquiv`. -/
+theorem anyEquiv_iff_rename {d d' : KnotDiagram} :
+    AnyEquiv d d' ↔ ∃ π : Nat → Nat, Function.Injective π ∧ mapC π d.crossings = d'.crossings :=
+  canon_rename_iff
+
+/-- Témoin : deux croisements bien formés (chaque étiquette de `1` à `4`
+    apparaît exactement deux fois), dont le dernier est un kink `⟨3, 1, 4, 4⟩`.
+    Son arc `e2 = 1` est **petit** : le retrait `_any` tue les labels `{1, 3}`
+    en fusionnant `1 → 3`, alors que la fraîcheur connectée exigerait qu'ils
+    soient les deux plus grands. -/
+def kinkAnyWitness : KnotDiagram := ⟨[⟨1, 2, 3, 2⟩, ⟨3, 1, 4, 4⟩], 4⟩
+
+/-- Cible du retrait : la fusion `1 → 3` réécrit le slot `e1` du premier
+    croisement en `⟨3, 2, 3, 2⟩`, dont la forme canonique est `⟨1, 2, 1, 2⟩` —
+    d'où la compaction `numEdges = 2` (les labels mourants `{1, 3}` laissent
+    `{2, 4}`, renumérotés `{1, 2}`). -/
+def kinkAnyTarget : KnotDiagram := ⟨[⟨1, 2, 1, 2⟩], 2⟩
+
+/-- Le témoin est bien formé : parité vérifiée sur les quatre étiquettes. -/
+theorem kinkAnyWitness_wf : kinkAnyWitness.wf = true := by decide
+
+/-- Le croisement terminal du témoin est bien le kink `⟨3, 1, 4, 4⟩`. -/
+theorem kinkAnyWitness_kink : kinkAnyWitness.crossings.getLast? = some ⟨3, 1, 4, 4⟩ := by decide
+
+/-- Le retrait `_any` du témoin est **accepté** : c'est un mouvement R1
+    authentique à renommage près, et sa cible est bien formée. -/
+theorem verifyKinkDownAny_witness_kinkAny :
+    verifyKinkDownAny kinkAnyWitness kinkAnyTarget = true := by decide
+
+/-- **La borne du pont.** Sur le témoin, aucune cible ne satisfait le
+    vérificateur connecté : `verifyR1Fwd d kinkAnyWitness` est faux pour
+    **tout** `d`, et pas seulement pour la cible canonique.
+
+    La preuve ne touche aucune liste : elle est purement arithmétique. Le kink
+    porte `K.e2 = 1` ; la fraîcheur connectée impose `K.e2 = d.numEdges + 1`,
+    donc `d.numEdges = 0` ; la clause de cardinal impose alors
+    `kinkAnyWitness.numEdges = d.numEdges + 2 = 2`, alors qu'il vaut `4`. Les
+    deux cas sur `d.numEdges` ferment le but, et **aucun renommage de `d` ne
+    peut les éviter** — c'est pourquoi ce n'est pas un défaut de la cible
+    canonique, mais du pont lui-même. -/
+theorem no_verifyR1Fwd_from_witness (d : KnotDiagram) :
+    verifyR1Fwd d kinkAnyWitness = false := by
+  unfold verifyR1Fwd
+  rw [kinkAnyWitness_kink]
+  cases _h : d.numEdges with
+  | zero =>
+    -- d.numEdges = 0 : la clause de cardinal impose
+    -- kinkAnyWitness.numEdges = 0 + 2 = 2, or le témoin en porte 4.
+    simp [kinkAnyWitness]
+  | succ n =>
+    -- d.numEdges = n + 1 : la clause de fraîcheur impose
+    -- K.e2 = 1 = (n + 1) + 1, impossible.
+    simp [kinkAnyWitness]
+
+/-- **Contrôle positif de la borne** : le vérificateur connecté n'est pas
+    uniformément faux — il accepte la paire canonique du témoin
+    `reidemeister1Connected_satisfiable` (`ReidemeisterMoves` §7), dont le kink
+    `⟨1, 5, 6, 6⟩` porte bien `e2 = 5 = 4 + 1` (la fraîcheur, satisfaite).
+
+    La borne de `no_verifyR1Fwd_from_witness` porte donc sur le **témoin**
+    `kinkAnyWitness` — dont le kink porte `e2 = 1` — et non sur le
+    vérificateur. -/
+theorem verifyR1Fwd_positive_control :
+    verifyR1Fwd
+      { crossings := [⟨1, 2, 3, 4⟩, ⟨1, 2, 3, 4⟩], numEdges := 4 }
+      { crossings := [⟨1, 2, 3, 4⟩, ⟨5, 2, 3, 4⟩, ⟨1, 5, 6, 6⟩], numEdges := 6 }
+    = true := by decide
 
 end Knots.AnyMoves

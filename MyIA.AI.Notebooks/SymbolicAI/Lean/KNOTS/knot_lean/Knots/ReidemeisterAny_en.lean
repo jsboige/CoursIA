@@ -48,7 +48,14 @@ every reached state) measure exactly this closure.
 
 - **`_any` -> `ReidemeisterEquiv` soundness**: an `_any` withdrawal is an
   R1/R2 up to renaming; sealing it requires "renaming preserves the knot
-  type" (an `AnyEquiv` + a bridge lemma);
+  type". Tranche 12 delivers the missing relation (`AnyEquiv`, section 18) and
+  **bounds** the bridge instead of promising it: the route "choose or rename
+  the target while keeping the large diagram" is **impossible**, proved by the
+  kernel (section 18, `no_verifyR1Fwd_from_witness`). The remaining bridge
+  requires either renaming the large diagram as well (the `dropLast` surgery
+  then still to be established), or a **relabelling step inside the connected
+  relation** — the latter touches `ReidemeisterStep`, hence `Invariant.lean`,
+  and belongs to a coordinator arbitration, not to a lane edit;
 - the equivalence `canon l = canon l' <-> exists injective renaming`: **closed**.
   The **invariance** half (`canon (mapC σ l) = canon l` for injective `σ`) is
   proved in section 7 (`canon_map_eq`); the **extraction** of the renaming from
@@ -2385,5 +2392,147 @@ theorem canon_rename_iff {l l' : List PDCrossing} :
     have hcanon : canon (mapC π l) = canon l := canon_map_eq hπ l
     rw [hmap] at hcanon
     exact hcanon.symm
+
+/-! ## 18. Equivalence up to renaming, and the bound of the announced bridge (tranche 12)
+
+The residual declared at the head of the module is the **`_any` ->
+`ReidemeisterEquiv` soundness**. The route recorded in the grain plan was:
+"on canonical forms, `canon` kills the renaming, and the dying labels of the
+kink are fresh there". **That premise is false — and it is refuted by the
+kernel, not by reading.**
+
+It is measured first: a faithful Python replica of `canon`, of `wf` and of
+both `_any` withdrawals (34 withdrawals on canonical, well-formed diagrams)
+finds **14 non-fresh** ones. The smallest counter-example fits in two
+crossings, and it is the one sealed by this section.
+
+What is delivered here, in this order:
+
+1. `AnyEquiv` — the **missing relation** of the language (two diagrams
+   equivalent up to renaming), its equivalence laws, and its characterisation
+   `exists injective pi, mapC pi l = l'` (a direct consequence of
+   `canon_rename_iff`, section 17);
+2. `kinkAnyWitness` / `kinkAnyTarget` — an **authentic** `_any` withdrawal
+   whose kink carries `e2 = 1`, that is a **small** label: exactly what the
+   connected freshness forbids. The withdrawal is certified by the kernel
+   (`verifyKinkDownAny ... = true`);
+3. `no_verifyR1Fwd_from_witness` — **no** target satisfies `verifyR1Fwd` on
+   this witness. The reason is arithmetic and **independent of the renaming**:
+   the connected freshness requires `K.e2 = d.numEdges + 1`, hence
+   `d.numEdges = 0` here; the cardinality clause requires
+   `D.numEdges = d.numEdges + 2`, hence `D.numEdges = 2` — but it is `4`. The
+   two clauses cannot hold at once, whatever `d` is.
+
+**What this changes, and where it is decided.** The bridge cannot be "choose
+or rename the target while keeping the large diagram": on this witness, no
+target exists. Two closures remain possible, and neither is a lane edit:
+
+- rename the **large** diagram as well, and then establish the `dropLast`
+  surgery under the renaming (constructive formulation, high proof cost, no
+  change to the connected relation);
+- give the connected relation a **relabelling step** — which makes the
+  renaming itself a step, and removes the need for a bridge. That choice
+  modifies `ReidemeisterStep` and the surface of `Invariant.lean`: it belongs
+  to a coordinator arbitration (issue #22359).
+
+Until one of these two choices is arbitrated, the residual stays **open and
+now bounded** — it is no longer "probably doable by renaming".
+-/
+
+/-- Two diagrams are **equivalent up to renaming** when they have the same
+    canonical form. This is the quotient the connected language does not
+    provide: its verifiers compare diagrams *literally*, while an `_any`
+    withdrawal only preserves the shape.
+
+    The relation deliberately ignores `numEdges`: on a well-formed diagram,
+    `numEdges` is determined by the labels present (each of `1` to `numEdges`
+    appears exactly twice), so two diagrams with the same canonical form and
+    both well-formed have the same `numEdges`. The canonical form is therefore
+    the right quotient, and it is weaker than literal equality — that gap is
+    precisely what the bridge has to cross. -/
+def AnyEquiv (d d' : KnotDiagram) : Prop := canon d.crossings = canon d'.crossings
+
+theorem anyEquiv_refl (d : KnotDiagram) : AnyEquiv d d := rfl
+
+theorem anyEquiv_symm {d d' : KnotDiagram} (h : AnyEquiv d d') : AnyEquiv d' d := h.symm
+
+theorem anyEquiv_trans {d d' d'' : KnotDiagram} (h : AnyEquiv d d') (h' : AnyEquiv d' d'') :
+    AnyEquiv d d'' := h.trans h'
+
+/-- `AnyEquiv` is an equivalence relation: the three laws are those of
+    equality on the canonical form, transported. -/
+theorem anyEquiv_equivalence : Equivalence AnyEquiv :=
+  ⟨anyEquiv_refl, anyEquiv_symm, anyEquiv_trans⟩
+
+/-- Characterisation of `AnyEquiv`: two diagrams are equivalent up to renaming
+    if and only if an **injective** renaming sends the labels of one onto the
+    labels of the other. This is exactly `canon_rename_iff` (section 17), read
+    through `AnyEquiv`. -/
+theorem anyEquiv_iff_rename {d d' : KnotDiagram} :
+    AnyEquiv d d' ↔ ∃ π : Nat → Nat, Function.Injective π ∧ mapC π d.crossings = d'.crossings :=
+  canon_rename_iff
+
+/-- Witness: two well-formed crossings (each label from `1` to `4` appears
+    exactly twice), the last of them being a kink `⟨3, 1, 4, 4⟩`. Its arc
+    `e2 = 1` is **small**: the `_any` withdrawal kills the labels `{1, 3}` by
+    fusing `1 -> 3`, whereas the connected freshness would require them to be
+    the two largest. -/
+def kinkAnyWitness : KnotDiagram := ⟨[⟨1, 2, 3, 2⟩, ⟨3, 1, 4, 4⟩], 4⟩
+
+/-- Target of the withdrawal: the fusion `1 -> 3` rewrites the slot `e1` of
+    the first crossing into `⟨3, 2, 3, 2⟩`, whose canonical form is
+    `⟨1, 2, 1, 2⟩` — hence the compaction `numEdges = 2` (the dying labels
+    `{1, 3}` leave `{2, 4}`, renumbered `{1, 2}`). -/
+def kinkAnyTarget : KnotDiagram := ⟨[⟨1, 2, 1, 2⟩], 2⟩
+
+/-- The witness is well-formed: parity checked over the four labels. -/
+theorem kinkAnyWitness_wf : kinkAnyWitness.wf = true := by decide
+
+/-- The terminal crossing of the witness is indeed the kink `⟨3, 1, 4, 4⟩`. -/
+theorem kinkAnyWitness_kink : kinkAnyWitness.crossings.getLast? = some ⟨3, 1, 4, 4⟩ := by decide
+
+/-- The `_any` withdrawal of the witness is **accepted**: it is an authentic
+    R1 move up to renaming, and its target is well-formed. -/
+theorem verifyKinkDownAny_witness_kinkAny :
+    verifyKinkDownAny kinkAnyWitness kinkAnyTarget = true := by decide
+
+/-- **The bound of the bridge.** On the witness, no target satisfies the
+    connected verifier: `verifyR1Fwd d kinkAnyWitness` is false for **every**
+    `d`, and not only for the canonical target.
+
+    The proof touches no list: it is purely arithmetic. The kink carries
+    `K.e2 = 1`; the connected freshness imposes `K.e2 = d.numEdges + 1`,
+    hence `d.numEdges = 0`; the cardinality clause then imposes
+    `kinkAnyWitness.numEdges = d.numEdges + 2 = 2`, while it is `4`. The two
+    cases on `d.numEdges` close the goal, and **no renaming of `d` can avoid
+    them** — which is why this is not a defect of the canonical target, but of
+    the bridge itself. -/
+theorem no_verifyR1Fwd_from_witness (d : KnotDiagram) :
+    verifyR1Fwd d kinkAnyWitness = false := by
+  unfold verifyR1Fwd
+  rw [kinkAnyWitness_kink]
+  cases _h : d.numEdges with
+  | zero =>
+    -- d.numEdges = 0: the cardinality clause imposes
+    -- kinkAnyWitness.numEdges = 0 + 2 = 2, while the witness carries 4.
+    simp [kinkAnyWitness]
+  | succ n =>
+    -- d.numEdges = n + 1: the freshness clause imposes
+    -- K.e2 = 1 = (n + 1) + 1, impossible.
+    simp [kinkAnyWitness]
+
+/-- **Positive control of the bound**: the connected verifier is not uniformly
+    false — it accepts the canonical pair of the witness
+    `reidemeister1Connected_satisfiable` (`ReidemeisterMoves` section 7), whose
+    kink `⟨1, 5, 6, 6⟩` indeed carries `e2 = 5 = 4 + 1` (the freshness, met).
+
+    The bound of `no_verifyR1Fwd_from_witness` therefore bears on the
+    **witness** `kinkAnyWitness` — whose kink carries `e2 = 1` — and not on
+    the verifier. -/
+theorem verifyR1Fwd_positive_control :
+    verifyR1Fwd
+      { crossings := [⟨1, 2, 3, 4⟩, ⟨1, 2, 3, 4⟩], numEdges := 4 }
+      { crossings := [⟨1, 2, 3, 4⟩, ⟨5, 2, 3, 4⟩, ⟨1, 5, 6, 6⟩], numEdges := 6 }
+    = true := by decide
 
 end Knots_en.AnyMoves
