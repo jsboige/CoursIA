@@ -82,10 +82,10 @@ brew install --cask claude-code
 ### Linux / WSL
 
 ```bash
-curl -fsSL https://claude.ai/install.sh | sh
+curl -fsSL https://claude.ai/install.sh | bash
 ```
 
-> **Corrigé le 2026-10-29 (#23276).** La commande que ce guide portait jusque-là — `curl -fsSL https://install.claude.com | sh` — **ne fonctionne pas** : le domaine `install.claude.com` n'existe pas (`nslookup` → *Non-existent domain*, et `curl: (6) Could not resolve host` depuis un conteneur). Le point d'entrée officiel est `https://claude.ai/install.sh`. Mesuré sur `debian:bookworm-slim` : l'installateur rend `rc=0` et installe la version **2.1.312** dans `~/.local/bin`.
+> **Corrigé le 2026-10-29 (#23276), précisé le 2026-10-30.** La commande que ce guide portait jusque-là — `curl -fsSL https://install.claude.com | sh` — **ne fonctionne pas** : le domaine `install.claude.com` n'existe pas (`nslookup` → *Non-existent domain*, et `curl: (6) Could not resolve host` depuis un conteneur). Le point d'entrée officiel est `https://claude.ai/install.sh`. **L'interpréteur est `bash`, pas `sh`** : le script utilise `[[ … ]]` et `=~` (ligne 9), des extensions bash que `/bin/sh` — `dash` sur Debian/Ubuntu — refuse ; `sh -n` rend `Syntax error: "(" unexpected (expecting "then")`, `bash -n` rend `rc=0` (mesuré sur Debian ; le script affiche lui-même `… | bash` dans son propre message d'erreur sudo). Mesuré sur `debian:bookworm-slim` : l'installateur rend `rc=0` **via `bash`** et installe la version **2.1.312** dans `~/.local/bin` (le poste qui a mesuré sert la 2.1.311 — l'objet installé et l'objet en service sont deux versions distinctes).
 
 ### Vérifier
 
@@ -95,7 +95,7 @@ claude --version
 
 **Checkpoint :** Vous devez voir un numero de version.
 
-> **Sous Linux, `claude --version` peut répondre « command not found » alors que l'installation a réussi.** L'installateur place le binaire dans `~/.local/bin`, qui n'est **pas** dans le `PATH` par défaut — il le signale lui-même : *« Native installation exists but ~/.local/bin is not in your PATH »*. Ajoutez-le une fois pour toutes :
+> **Sous Linux, `claude --version` peut répondre « command not found » alors que l'installation a réussi.** L'installateur place le binaire dans `~/.local/bin`, qui n'est **pas** dans le `PATH` par défaut. Le script d'installation ne porte pas cet avertissement lui-même (0 occurrence dans `bootstrap.sh`, 9 704 octets) : c'est le **binaire installé**, qu'il lance en fin de script (`"$binary_path" install`), qui l'affiche — *« Native installation exists but ~/.local/bin is not in your PATH »*. Ajoutez-le une fois pour toutes :
 >
 > ```bash
 > echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc && source ~/.bashrc
@@ -370,7 +370,7 @@ runtime changent la donne — trois sont des faits du runtime, la quatrième res
 
 | Point | Ce qui est établi | Conséquence pour ce guide |
 |---|---|---|
-| Système | Colab est un **Linux**, pas un poste Windows | suivre l'installation Linux de l'Étape 1 (`curl -fsSL https://claude.ai/install.sh \| sh` — **pas** `install.claude.com`, domaine inexistant), puis ajouter `~/.local/bin` au `PATH` ; ne pas reprendre les commandes PowerShell |
+| Système | Colab est un **Linux**, pas un poste Windows | suivre l'installation Linux de l'Étape 1 (`curl -fsSL https://claude.ai/install.sh \| bash` — **pas** `install.claude.com`, domaine inexistant, et **pas** `sh` : le script exige les extensions bash que `dash` refuse), puis ajouter `~/.local/bin` au `PATH` ; ne pas reprendre les commandes PowerShell |
 | Durée de vie | la VM est **éphémère** : une déconnexion ou un redémarrage du runtime efface les installations | réinstaller la CLI **et** recloner le proxy après chaque redémarrage ; ce n'est pas une panne |
 | Secrets | `google.colab.userdata` n'existe **que** dans Colab ; un `!export ...` lancé dans une cellule **ne persiste pas**, chaque `!` ouvre un sous-shell | poser la clé dans `os.environ` depuis `userdata`, puis la passer explicitement au sous-processus. Ne jamais l'imprimer, ni la mettre dans `argv`, une cellule ou une sortie. Le helper partagé de la série (`GenAI/shared/helpers/genai_helpers.py`, livré par #23269) porte ce chargement |
 | Terminal interactif | `claude -p` (non interactif) est le mode utilisable par un notebook ; l'interface plein écran suppose un TTY | borner l'essai sur `claude -p`, et ne pas conclure de son succès qu'une interface interactive fonctionne |
