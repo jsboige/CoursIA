@@ -75,9 +75,9 @@
       "note": "Declarations reelles de FreeWillTheorem.lean (source de verite, pas une paraphrase)"
     },
     {
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-22-Galois-Probleme-Inverse-M23.ipynb",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb",
       "cell_id": "21fed7ef",
-      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/galois_lean/Galois/M23Lean4Web.lean",
+      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/galois_lean/Galois/M23Lean4Web.lean",
       "note": "Lecture directe du module M23Lean4Web.lean"
     },
     {
