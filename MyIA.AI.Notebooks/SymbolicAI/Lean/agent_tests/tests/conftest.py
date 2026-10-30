@@ -56,7 +56,15 @@ if not _STACK_PRESENT:
             and _is_stack_absence(call.excinfo.value)
         ):
             rep.outcome = "skipped"
+            # pytest attends un 3-tuple ``(fichier, ligne, raison)`` -- pas une
+            # chaine. Une chaine passe sur les rapporteurs compacts, mais en
+            # mode verbeux ``_get_raw_skip_reason`` fait ``assert
+            # isinstance(report.longrepr, tuple)`` et levee d'un
+            # ``INTERNALERROR`` fait echouer la jambe de tests ENTIERE, sans
+            # qu'aucun test ne soit en echec (#21331, mesure 2026-10-30).
             rep.longrepr = (
+                str(item.path),
+                item.location[1] or 0,
                 f"SKIPPED: {call.excinfo.value.name} absent — LLM-stack "
-                f"test skipped on bare runner (#21331)"
+                f"test skipped on bare runner (#21331)",
             )

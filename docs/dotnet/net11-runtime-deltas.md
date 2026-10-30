@@ -75,7 +75,21 @@
 | Timestamping DateTime.Now ×1000 | 296.8 | 217.8 | 128.5 | **−26.6 %** | **−56.7 %** | **−41.0 %** | 57.66 / 57.66 / 57.98 KB |
 
 Le 9→10 de Rule.LoadFromContent 50 (+25 %) est contre-intuitif et non confirmé par la variante
-500 règles (+3,7 %) : à re-mesurer fenêtre calme avant de le considérer comme une régression.
+500 règles (+3,7 %). **Contrôlé le 29/10** : le delta 9→10 de ce banc **n'est pas établi** — sous un
+ordre équilibré, net10 et net9 se chevauchent ; sous cet ordre, le biais de position **résiduel**
+tombe à **+11,2 %** (moyennes agrégées sur les 18 jambes : 213,6 → 237,5 → 236,1 µs), du même ordre
+que l'écart net9→net10 (+6,9 %) ; sur un runtime isolé et à n = 2 par position, l'étendue brute
+atteint 38,6 % (net10) — c'est ce que le carré latin neutralise. Ce banc reste interprétable
+**en 10→11**, pas en 9→10 — voir « Contrôle du banc 5 ».
+
+> **Banc 5 contrôlé le 29/10.** Les valeurs ci-dessus sont celles de la session du 02/10 (ordre
+> **fixe** : net9, net10, net11) et ne sont **pas réécrites**. Le contrôle du 29/10 (18 jambes,
+> ordre équilibré, lecture par séparabilité) établit : le **9→10 n'est pas établi** sur les trois
+> axes ; le **gain net11 sur le parsing ne se sépare pas** de la dispersion intra-runtime ; le
+> **gain net11 sur le timestamping est confirmé** (intervalle disjoint des deux autres). Les
+> valeurs absolues **ne sont pas comparables** à celles de la session du 02/10 (machine et
+> version RC différentes) : ce sont les **verdicts par axe** qui sont transposés ici, pas les
+> chiffres. Détail et limites : « Contrôle du banc 5 ».
 
 
 
@@ -185,8 +199,8 @@ python scripts/notebook_tools/notebook_tools.py execute MyIA.AI.Notebooks/GenAI/
 | Axe | Attendu (digest, baseline .NET 10) | Mesuré 10→11 | Mesuré 9→10 (rattrapage) | Verdict |
 |---|---|---|---|---|
 | JSON serialize/round-trip (semantic-fleet) | Writer escape-heavy 0,26 (×3,9) | **−14,6 % / −21,6 %** | −42,8 % / −38,8 % | **conforme en signe, inférieur en amplitude** — notre DTO n'est pas escape-heavy pur ; le gros morceau est le rattrapage 9→10 |
-| DateTime.Now + timestamps (Argumentum) | **0,45 (×2,2)** | **−41,0 %** | −26,6 % | **conforme en signe, amplitude relative −25 %** (×1,7 mesuré vs ×2,2 article, sous charge CI) — l'axe le mieux vérifié du digest sur nos charges |
-| Rule parsing multilingue (Argumentum) | (String.Split via agrégats, hors ratios article) | −13,2 % / −15,7 % | +3,7 % / +25 % (anomalie non confirmée, cf banc 5) | gain 11 réel sur le parsing de règles ; le 9→10 de la variante 50 règles à re-mesurer fenêtre calme |
+| DateTime.Now + timestamps (Argumentum) | **0,45 (×2,2)** | **−41,0 %** | −26,6 % — **non établi** (contrôle du 29/10) | **10→11 conforme en signe et confirmé séparable** (intervalle net11 disjoint des deux autres runtimes, contrôle du 29/10) ; amplitude relative −25 % (×1,7 mesuré vs ×2,2 article, sous charge CI) — l'axe le mieux vérifié du digest sur nos charges ; **le 9→10 n'est pas établi** : sous ordre équilibré, net10 et net9 se chevauchent |
+| Rule parsing multilingue (Argumentum) | (String.Split via agrégats, hors ratios article) | −13,2 % / −15,7 % — **non séparables** (contrôle du 29/10) | +3,7 % / +25 % — **non établis** (contrôle du 29/10) | **le gain 11 sur le parsing n'est pas établi** : aucune paire de runtimes ne se sépare sur les deux axes de parsing, l'amplitude intra-runtime (jusqu'à ×2,5 pour un même runtime) domine l'écart inter-runtime ; le 9→10 de la variante 50 règles a été **contrôlé** (29/10, sur une autre machine — voir « Contrôle du banc 5 ») et **n'est pas établi** |
 | Collections/LINQ (MGS) | FindAll 0,30 · SequenceEqual ×7,7 | ~0 à +17 % (GC-sensible) | −6 à −26 % | **non couvert** (nos bancs n'exercent pas ces API précises) ; côté 11 : nul/inconclusif |
 | Charge native-dominée (Z3.Linq) | (rien de spécifique promis) | −0,3 à −6,7 % | −5 à −10 % | **rattrapage 10 réel (marshaling), gain 11 nul** |
 | Allocation-heavy pipeline (Automata) | (Stores covariants 0,56 etc.) | +4,1 % / INCONCLUSIF EvilRegex — **signal +27,5 % non reproduit le 20/10** (re-mesure : +2,3 % 9→11, dispersion inter-passes 47–69 %) | −10,9 % | **rattrapage 10 réel ; 11 non prouvé sur cette charge** (allocs identiques au Ko près — cohérent : nos pipelines allouent par design, pas par défaut runtime) |
@@ -194,12 +208,14 @@ python scripts/notebook_tools/notebook_tools.py execute MyIA.AI.Notebooks/GenAI/
 
 ## Synthèse pour la décision P2 (LTS vs GA, escalade user)
 
-1. **Le vrai levier mesuré est le saut .NET 9 → 10** : −5 à −43 % selon la charge (JSON,
-   DateTime.Now et marshaling en tête). C'est aussi ce que le kernel canon impose déjà.
+1. **Le vrai levier mesuré est le saut .NET 9 → 10** : −5 à −43 % selon la charge (JSON et
+   marshaling sur nos bancs ; `DateTime.Now` **hors banc 5**, dont le 9→10 est non établi — voir
+   « Contrôle du banc 5 »). C'est aussi ce que le kernel canon impose déjà.
 2. **.NET 11 RC ajoute, sur nos charges réelles, deux gains mesurés** : JSON (−15 à −22 %
-   10→11) et DateTime.Now/timestamps (**−41 %** 10→11, l'axe le mieux vérifié du digest) ;
-   parsing de règles Argumentum −13/−16 % ; les autres axes sont plats, non couverts ou
-   inconvissables sous charge CI.
+   10→11) et DateTime.Now/timestamps (**−41 %** 10→11, l'axe le mieux vérifié du digest — gain
+   **confirmé séparable** par le contrôle du 29/10) ; le parsing de règles Argumentum (−13/−16 %)
+   **n'est plus compté comme gain établi** (29/10 : aucune paire de runtimes ne s'y sépare) ; les
+   autres axes sont plats, non couverts ou inconvissables sous charge CI.
 3. Les axes « vedettes » du digest (×3,9 escape, ×7,7 SequenceEqual, BigInteger ×2) ne sont
    pas exercés par nos charges : **si l'EPIC veut les départager, il faut des bancs ciblés
    API** (extension naturelle de #18770), pas nos charges représentatives.
@@ -275,6 +291,126 @@ calme ». Cette section est la réponse mesurée à ce drapeau.
 | `Pipeline_ConvertDeterminizeMinimize`, `Matching_DotNetDelegate` | **toujours non concluants** — dispersion inter-passes 47–69 % (écart max−min rapporté à la moyenne des deux bornes) |
 | Les 3 autres bancs encore marqués INCONCLUSIF (`RandomSearch_Sphere10D_50k` (MGS), `PromptSignature.Matches` et `PromptTransform.InterpolateKeys` (semantic-fleet)) | **non re-mesurés** dans ce cycle : même travail de préparation (clone depth-1 + build Release) sur des sous-modules dont les bancs amont relèvent de la coordination ai-01 |
 | Une fenêtre **calme** (runner CI de la machine au repos) avec n ≥ 5 passes | **non obtenue** sur cette machine ; c'est la condition qui reste pour serrer la dispersion inter-passes |
+
+## Contrôle du banc 5 — l'ordre fixe rend le delta 9→10 ininterprétable (myia-ai-01:CoursIA-2, 29/10)
+
+Objet : les **deux** drapeaux que ce document pose sur le banc 5 et laisse ouverts depuis le
+02/10 — « le 9→10 de Rule.LoadFromContent 50 (+25 %) est contre-intuitif et non confirmé par la
+variante 500 règles (+3,7 %) : à re-mesurer fenêtre calme » (prose du banc 5) et « le 9→10 de la
+variante 50 règles à re-mesurer fenêtre calme » (tableau « Verdicts par axe »). Cette section est
+la réponse mesurée à ces deux drapeaux.
+
+**Source de la mesure** : PR amont [ArgumentumGames/Argumentum#2056](https://github.com/ArgumentumGames/Argumentum/pull/2056) —
+**non mergée à ce jour** ; le fichier de mesures `benchmarks/MULTI-RUNTIME-net9-net10-net11-RECHECK.md`
+**n'existe que sur sa branche** (`feature/benchmarkdotnet-multiruntime-recheck`), pas sur
+`Argumentum/main`. Les valeurs citées ici sont donc susceptibles de changer si la PR amont évolue.
+
+**Ce que ce contrôle est, et ce qu'il n'est pas.** Ce n'est **pas** une ré-exécution de la
+session du 02/10 : il tourne sur une **autre machine**, avec une **autre version RC** et un
+protocole de harness légèrement différent (apphost lancé directement, pas le job BDN du 02/10).
+Les **valeurs absolues ne sont donc pas comparables** à celles du tableau du banc 5 — seule la
+session du 02/10 est comparable à elle-même. Ce que le contrôle apporte à ce document, ce sont
+les **verdicts de séparabilité par axe** et l'**amplitude de l'artefact d'ordre**, établis sur les
+**mêmes axes de benchmark** que le banc 5.
+
+### Protocole
+
+| Paramètre | Valeur |
+|---|---|
+| Objet | le **confound d'ordre** du banc 5 : dans un ordre fixe (net9, net10, net11), la position est parfaitement confondue avec le runtime |
+| Matrice | **18 jambes** = 6 répétitions × 3 runtimes, en **carré latin** (trois ordres cycliques `9,10,11` / `10,11,9` / `11,9,10`, répétés deux fois) : chaque runtime occupe **chaque position exactement deux fois** |
+| Espacement | 60 s entre deux jambes consécutives |
+| Warm-up | **écarté** — une jambe `net9` jouée puis jetée avant la première jambe mesurée |
+| Attestation | ligne `[Host]` du rapport BDN de chaque jambe lue et comparée au runtime attendu : **18 jambes, 0 écart** |
+| Lecture | par **séparabilité** — deux groupes ne sont distinguables que si `max(A) < min(B)` ; deux groupes qui se recouvrent ne sont **pas** séparés (absence de séparation, pas preuve d'égalité) |
+| Runtimes | .NET **9.0.22** · **10.0.14** · **11.0.0-rc.3** |
+| Machine | i9-14900KF (le document d'origine amont tourne sur i7-13650HX ; la session du 02/10 de ce document sur i7-12700H) — **valeurs absolues non comparables** |
+
+### Mesures — axe timestamping (`DateTime.Now` + `yyyyMMdd-HHmmss` ×1000, en µs)
+
+| Runtime | moyenne | médiane | min – max |
+|---|---:|---:|---:|
+| net9.0.22 | 273,5 | 272,8 | 171,8 – 384,4 |
+| net10.0.14 | 292,4 | 290,1 | 222,7 – 361,7 |
+| net11.0.0-rc.3 | **121,2** | 118,3 | 99,7 – 152,6 |
+
+**Séparabilité** :
+
+| Comparaison | Verdict |
+|---|---|
+| net11 vs net9 | **SÉPARÉS** (max net11 = 152,6 < min net9 = 171,8) |
+| net11 vs net10 | **SÉPARÉS** (max net11 = 152,6 < min net10 = 222,7) |
+| net10 vs net9 | **CHEVAUCHEMENT** (222,7 – 361,7 et 171,8 – 384,4) |
+
+**Axe parsing** (`Rule.LoadFromContent`, 50 et 500 règles) : **aucune paire de runtimes n'est
+séparable**, sur aucun des deux axes. L'amplitude **intra-runtime** atteint ×2,5 sur l'axe
+« 50 règles » (1 142 → 2 871 µs pour un **même** runtime).
+
+**Allocations** (50 / 500 / timestamps, en KB) : net9 `162,73 / 854,48 / 57,54` · net10
+`162,66 / 854,62 / 57,38` · net11 `162,54 / 854,82 / 57,76` — identiques à moins de 1 KB près,
+l'étendue intra-runtime étant elle-même de cet ordre.
+
+### Le confound, mesuré et non supposé
+
+Dans l'ordre fixe du banc 5, la position est confondue avec le runtime. **L'amplitude de cet
+artefact est mesurée sur ce banc** : sur un runtime isolé et à n = 2 par position, les moyennes
+par position de l'axe timestamping s'étalent de **238,3 µs** (1re position) à **330,2 µs**
+(3e position) pour **net10**, soit **+38,6 %** — une **étendue brute**, dans un seul sens
+(net10 : 238,3 < 330,2), pas une dispersion symétrique, et **non représentative** : sur net9
+l'étendue ne vaut que +3,4 %, sur net11 +27,9 %. C'est précisément ce que le **carré latin
+neutralise** : le protocole étant équilibré (chaque runtime occupe chaque position exactement
+deux fois), le biais **résiduel** sur les moyennes agrégées des 18 jambes tombe à **+11,2 %**
+(213,6 → 237,5 → 236,1 µs, puis plat de p2 à p3), soit **le même ordre que l'écart net9→net10
+(+6,9 %)**. Une réplication
+« 9,10,11 ×3 » peut donc lire un net10 plus lent que net9 alors que l'ordre équilibré montre
+qu'ils sont **indiscernables** : c'est l'artefact de l'ordre, pas un effet de runtime. La suite
+monotone du document amont (#2054 : 565 → 381 → 245 µs) **ne se reproduit pas** sous cet ordre
+équilibré.
+
+### Lecture (cinq points, sans arrondi favorable)
+
+1. **Le gain net11 sur le timestamping est réel et séparable** : 121,2 µs contre 273,5 (net9) et
+   292,4 (net10), intervalle net11 **disjoint** des deux autres — **−55,7 % vs net9**,
+   **−58,5 % vs net10**. C'est la seule affirmation de cet axe qui survit au protocole équilibré ;
+   elle ne dit rien sur la **taille exacte** du gain, l'intervalle net9 s'étalant sur un facteur
+   2,2. **Cette confirmation est indépendante** de la session du 02/10 (autre machine, autre
+   protocole) : elle porte sur le **signe et la séparabilité**, pas sur l'amplitude.
+2. **Le gain net10 sur net9 n'est pas établi** : les intervalles se recouvrent. Le verdict est
+   une **absence de séparation**, pas une preuve d'égalité — un gain net10 plus petit que la
+   dispersion du banc resterait indétectable ici. Aucune des trois lignes du banc 5 ne peut donc
+   porter un verdict de gain **ou** de régression sur son delta 9→10.
+3. **Le gain net11 sur le parsing n'est pas établi** : aucune paire de runtimes ne se sépare sur
+   les deux axes de parsing, et l'amplitude intra-runtime (jusqu'à ×2,5) domine l'écart
+   inter-runtime. Les **−15,7 % / −13,2 %** (10→11) de la session du 02/10 ne sont donc **pas**
+   confirmés — ils ne sont pas infirmés non plus : ils sont **indéterminés** à la précision de ce
+   banc.
+4. **Les allocations ne discriminent pas** : identiques à moins de 1 KB près sur les trois
+   runtimes, l'étendue intra-runtime étant du même ordre. Elles ne portent donc aucun argument
+   dans un sens ou dans l'autre.
+5. **La variabilité intra-runtime est le fait le plus important** de ce banc : toute affirmation
+   d'amplitude doit être exprimée en **séparabilité**, pas en pourcentage de moyenne.
+
+### Ce que ce contrôle règle, et ce qu'il ne règle pas
+
+| Point | État après le 29/10 |
+|---|---|
+| Banc 5 — le 9→10 est-il une régression de `Rule.LoadFromContent` 50 (+25 %) ? | **non établi** — sous ordre équilibré, net10 et net9 sont indiscernables, et l'écart de position mesuré (±38,6 %) est du même ordre que le +25 % lui-même |
+| Banc 5 — le 9→10 est-il un gain ? | **non établi** — même constat, dans l'autre sens : l'absence de séparation n'est pas une preuve d'égalité |
+| Banc 5 — le gain net11 sur le timestamping tient-il ? | **confirmé en signe et en séparabilité** par un protocole équilibré indépendant ; amplitude non comparable d'une session à l'autre |
+| Banc 5 — le gain net11 sur le parsing de règles (−15,7 % / −13,2 %) tient-il ? | **non établi** — aucune paire de runtimes ne se sépare sur les axes de parsing |
+| Les **valeurs absolues** du tableau du banc 5 (session du 02/10) | **inchangées** — elles restent la mesure de cette session, et ne sont pas comparables aux valeurs de ce contrôle |
+| Le 9→10 du banc 5 **sur la session du 02/10 elle-même** | **toujours non mesuré** — le contrôle tourne sur une autre machine ; seule une re-session du 02/10 sur cette machine trancherait la question *pour cette session* |
+| Une fenêtre **calme** sur la machine du 02/10, avec n ≥ 5 passes | **non obtenue** — c'est la condition qui reste pour trancher la question *dans les conditions d'origine* |
+
+### Origine et reproduction
+
+- **Contrôle amont** : [ArgumentumGames/Argumentum#2056](https://github.com/ArgumentumGames/Argumentum/pull/2056) — **PR ouverte, non mergée à ce jour** ; branche `feature/benchmarkdotnet-multiruntime-recheck`, fichier `benchmarks/MULTI-RUNTIME-net9-net10-net11-RECHECK.md` (présent sur cette branche seule, absent de `Argumentum/main`), scripts versionnés `benchmarks/recheck-multiruntime.ps1` (matrice équilibrée) et `benchmarks/recheck-multiruntime-aggregate.py` (agrégation + test de séparabilité) : la conclusion repose sur une **matrice rejouable**, pas sur une lecture de trois nombres.
+- **Nature de la relation avec ce document** : ce contrôle est **produit par la même lane** que la
+  présente correction ; il est le relais amont de l'EPIC .NET 11 côté CoursIA (#18770) et de
+  l'EPIC #18695. Le document amont d'origine (#2054) **n'est pas réécrit** : ses mesures restent
+  telles quelles, et le contrôle s'y **ajoute**.
+- **Reproduire** : voir le corps de la PR amont #2056 (build Release `AssetConverter.Benchmarks`,
+  `recheck-multiruntime.ps1` puis `recheck-multiruntime-aggregate.py`).
 
 ## Provenance des journaux
 
