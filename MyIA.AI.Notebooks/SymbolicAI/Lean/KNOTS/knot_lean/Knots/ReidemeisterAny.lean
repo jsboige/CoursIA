@@ -49,14 +49,19 @@ présents dans tout état atteint) mesurent exactement cette clôture.
 - **soundness `_any` → `ReidemeisterEquiv`** : un retrait `_any` est un R1/R2
   à renommage près ; le sceller exige « le renommage préserve le type du
   nœud » (une `AnyEquiv` + lemme de pont) ;
-- l'équivalence `canon l = canon l' ↔ ∃ bijection d'étiquettes` : la moitié
-  **invariance** (`canon (mapC σ l) = canon l` pour `σ` injective) est prouvée
-  en §7 (`canon_map_eq`) ; la réciproque (**extraction** du renommage depuis
-  l'égalité `canon`) reste résidu — elle exigera un invariant `SeenNodup` sur
-  le fil des vues. La tranche 3 corrige au passage la base de `canonSlots`
-  (l'état survivait à la liste vide) : sans lui, la renumérotation repartait à
-  zéro à chaque croisement et l'égalité `canon` acceptait des recâblages
-  inter-croisements — contre-exemple scellé en §7 ;
+- l'équivalence `canon l = canon l' ↔ ∃ renommage injectif` : **close**. La
+  moitié **invariance** (`canon (mapC σ l) = canon l` pour `σ` injective) est
+  prouvée en §7 (`canon_map_eq`) ; l'**extraction** du renommage depuis
+  l'égalité `canon` est prouvée en §16 (`canon_extraction` : un renommage
+  injectif sur les étiquettes de la source, qui envoie `l` sur `l'`) ; la
+  **complétude** est prouvée en §17 (`canon_rename_iff`) — l'extraction,
+  restreinte aux étiquettes de la source, est étendue hors de ce champ par une
+  translation au-dessus de toutes les étiquettes de la cible, ce qui fournit
+  l'injection **globale** qu'exige le sens « invariance ». La tranche 3 corrige
+  au passage la base de `canonSlots` (l'état survivait à la liste vide) : sans
+  lui, la renumérotation repartait à zéro à chaque croisement et l'égalité
+  `canon` acceptait des recâblages inter-croisements — contre-exemple scellé
+  en §7 ;
 - la complétude de l'énumération reste le résidu de #22240, inchangé.
 
 Convention i18n (EPIC #4980, décision user 2026-07-04) : ce fichier est le
@@ -2223,4 +2228,160 @@ private theorem canon_extraction {l l' : List PDCrossing} (h : canon l = canon l
     rcases List.mem_map.mp hy' with ⟨x, hx, hxy⟩
     exact ⟨x, hx, hxy⟩
   · exact hmap
+/-! ## 17. La forme canonique est complète pour le renommage (tranche 11)
+
+La tranche 16 a extrait le renommage depuis l'égalité `canon` : il y a une
+bijection de `labelsOf l` sur `labelsOf l'` qui envoie `l` sur `l'`. Cette
+tranche ferme la boucle en montrant que la forme canonique est un invariant
+**complet** de l'équivalence par renommage :
+
+`canon l = canon l' ↔ ∃ π : Nat → Nat, injective, mapC π l = l'`
+
+La difficulté est d'un côté : l'extraction (§16) donne une injection
+**restreinte** aux étiquettes de la source, alors que l'autre côté du pont
+(`canon_map_eq`, §7) demande une injection **globale** de `Nat` dans `Nat`.
+
+L'extension est explicite : le renommage extrait est conservé sur les
+étiquettes de la source, et étendu partout ailleurs par une **translation**
+au-dessus de toutes les étiquettes de la cible. Une translation ne peut alors
+rencontrer ni les images du renommage extrait (toutes strictement sous la
+borne) ni elle-même (elle est injective).
+
+- `natSumC` — la somme des étiquettes d'une liste de croisements, borne
+  supérieure de toutes les étiquettes qui y apparaissent ;
+- `slot_le_natSumC` — chaque étiquette d'un croisement est sous la borne ;
+- `mem_labelsOf_le_natSumC` — toute étiquette de `labelsOf l` est sous la
+  borne ;
+- `slot_mem_labelsOf` — une étiquette d'un croisement de `l` appartient à
+  `labelsOf l` (c'est le fait qui permet de transporter le renommage) ;
+- `mapC_congr` — deux renommages qui coïncident slot à slot ont le même
+  `mapC` ;
+- `extendRename` — l'extension du renommage hors du champ des étiquettes ;
+- `canon_rename_iff` — **le théorème de complétude**.
+-/
+
+/-- Somme des étiquettes d'une liste de croisements : une borne supérieure de
+    toutes les étiquettes qui y apparaissent. -/
+private def natSumC : List PDCrossing → Nat
+  | [] => 0
+  | c :: cs => c.e1 + c.e2 + c.e3 + c.e4 + natSumC cs
+
+/-- Chaque étiquette d'un croisement de `l` est bornée par `natSumC l`. -/
+private theorem slot_le_natSumC {l : List PDCrossing} {c : PDCrossing} (hc : c ∈ l) :
+    c.e1 ≤ natSumC l ∧ c.e2 ≤ natSumC l ∧ c.e3 ≤ natSumC l ∧ c.e4 ≤ natSumC l := by
+  induction l with
+  | nil => simp at hc
+  | cons d ds ih =>
+    rw [List.mem_cons] at hc
+    rcases hc with rfl | hc
+    · simp only [natSumC]
+      refine ⟨by omega, ?_⟩
+      refine ⟨by omega, ?_⟩
+      refine ⟨by omega, by omega⟩
+    · have h := ih hc
+      simp only [natSumC]
+      refine ⟨by omega, ?_⟩
+      refine ⟨by omega, ?_⟩
+      refine ⟨by omega, by omega⟩
+
+/-- Toute étiquette de `labelsOf l` est bornée par `natSumC l`. -/
+private theorem mem_labelsOf_le_natSumC {l : List PDCrossing} {y : Nat}
+    (hy : y ∈ labelsOf l) : y ≤ natSumC l := by
+  simp only [labelsOf, List.mem_flatMap] at hy
+  obtain ⟨c, hc, hmem⟩ := hy
+  have hmem' : y = c.e1 ∨ y = c.e2 ∨ y = c.e3 ∨ y = c.e4 := by simpa using hmem
+  rcases hmem' with rfl | rfl | rfl | rfl
+  · exact (slot_le_natSumC hc).1
+  · exact (slot_le_natSumC hc).2.1
+  · exact (slot_le_natSumC hc).2.2.1
+  · exact (slot_le_natSumC hc).2.2.2
+
+/-- Une étiquette qui apparaît dans un croisement de `l` appartient à
+    `labelsOf l` : c'est ce qui permet de transporter le renommage extrait
+    d'une liste à l'autre. -/
+private theorem slot_mem_labelsOf {l : List PDCrossing} {c : PDCrossing} (hc : c ∈ l) :
+    c.e1 ∈ labelsOf l ∧ c.e2 ∈ labelsOf l ∧ c.e3 ∈ labelsOf l ∧ c.e4 ∈ labelsOf l := by
+  simp only [labelsOf, List.mem_flatMap]
+  exact ⟨⟨c, hc, by simp⟩, ⟨c, hc, by simp⟩, ⟨c, hc, by simp⟩, ⟨c, hc, by simp⟩⟩
+
+/-- Deux renommages qui coïncident slot à slot produisent le même `mapC`. -/
+private theorem mapC_congr {π σ : Nat → Nat} {l : List PDCrossing}
+    (h : ∀ c ∈ l, π c.e1 = σ c.e1 ∧ π c.e2 = σ c.e2 ∧ π c.e3 = σ c.e3 ∧
+      π c.e4 = σ c.e4) : mapC π l = mapC σ l := by
+  unfold mapC
+  induction l with
+  | nil => rfl
+  | cons c cs ih =>
+    have h1 := h c (by simp)
+    obtain ⟨a1, a2, a3, a4⟩ := h1
+    have hcs := ih (fun d hd => h d (by simp [hd]))
+    simp only [List.map_cons]
+    rw [a1, a2, a3, a4, hcs]
+
+/-- **Extension d'un renommage hors du champ des étiquettes.** Sur les
+    étiquettes de `A`, le renommage est inchangé ; partout ailleurs, il
+    translate de `k`. Les images de la translation sont toutes `≥ k`, donc
+    disjointes des images du renommage initial dès que celles-ci sont `< k`. -/
+private def extendRename (π₀ : Nat → Nat) (A : List Nat) (k : Nat) : Nat → Nat :=
+  fun x => if x ∈ A then π₀ x else x + k
+
+/-- **Complétude du renommage.** La forme canonique est un invariant complet
+    de l'équivalence par renommage : deux listes de croisements ont la même
+    forme canonique si et seulement si l'une est le renommage de l'autre par
+    une injection de `Nat` dans `Nat`.
+
+    - sens « extraction » : §16 donne une bijection de `labelsOf l` sur
+      `labelsOf l'` ; on l'étend hors du champ des étiquettes de la source
+      par une translation au-dessus de toutes les étiquettes de la cible, ce
+      qui donne une injection **globale** ;
+    - sens « invariance » : `canon_map_eq` (§7) appliqué à cette injection.
+-/
+theorem canon_rename_iff {l l' : List PDCrossing} :
+    canon l = canon l' ↔ ∃ π : Nat → Nat, Function.Injective π ∧ mapC π l = l' := by
+  constructor
+  · intro h
+    obtain ⟨π₀, hmap₀, hinj₀, hsurj₀, hmapC⟩ := canon_extraction h
+    -- la borne : toute étiquette de la cible est strictement sous la borne
+    have hbound : ∀ y, y ∈ labelsOf l' → y < natSumC l' + 1 := by
+      intro y hy
+      have hle : y ≤ natSumC l' := mem_labelsOf_le_natSumC hy
+      omega
+    -- le renommage étendu : π₀ sur les étiquettes de la source, une
+    -- translation partout ailleurs
+    have hinj : Function.Injective (extendRename π₀ (labelsOf l) (natSumC l' + 1)) := by
+      intro x x' hxx'
+      by_cases hx : x ∈ labelsOf l
+      · by_cases hx' : x' ∈ labelsOf l
+        · simp only [extendRename, if_pos hx, if_pos hx'] at hxx'
+          exact hinj₀ x x' hx hx' hxx'
+        · simp only [extendRename, if_pos hx, if_neg hx'] at hxx'
+          have hy : π₀ x ∈ labelsOf l' := hmap₀ x hx
+          have hlt : π₀ x < natSumC l' + 1 := hbound _ hy
+          omega
+      · by_cases hx' : x' ∈ labelsOf l
+        · simp only [extendRename, if_neg hx, if_pos hx'] at hxx'
+          have hy : π₀ x' ∈ labelsOf l' := hmap₀ x' hx'
+          have hlt : π₀ x' < natSumC l' + 1 := hbound _ hy
+          omega
+        · simp only [extendRename, if_neg hx, if_neg hx'] at hxx'
+          omega
+    -- le renommage étendu coïncide avec le renommage extrait sur les slots
+    have hslots : ∀ c ∈ l,
+        (extendRename π₀ (labelsOf l) (natSumC l' + 1)) c.e1 = π₀ c.e1 ∧
+        (extendRename π₀ (labelsOf l) (natSumC l' + 1)) c.e2 = π₀ c.e2 ∧
+        (extendRename π₀ (labelsOf l) (natSumC l' + 1)) c.e3 = π₀ c.e3 ∧
+        (extendRename π₀ (labelsOf l) (natSumC l' + 1)) c.e4 = π₀ c.e4 := by
+      intro c hc
+      obtain ⟨h1, h2, h3, h4⟩ := slot_mem_labelsOf hc
+      simp only [extendRename]
+      rw [if_pos h1, if_pos h2, if_pos h3, if_pos h4]
+      exact ⟨rfl, rfl, rfl, rfl⟩
+    refine ⟨extendRename π₀ (labelsOf l) (natSumC l' + 1), hinj, ?_⟩
+    rw [mapC_congr hslots]
+    exact hmapC
+  · rintro ⟨π, hπ, hmap⟩
+    have hcanon : canon (mapC π l) = canon l := canon_map_eq hπ l
+    rw [hmap] at hcanon
+    exact hcanon.symm
+
 end Knots.AnyMoves
