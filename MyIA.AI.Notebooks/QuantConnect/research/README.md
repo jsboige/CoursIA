@@ -34,7 +34,7 @@ Recherche indépendante utilisant des données locales (yfinance, pandas, sklear
 | `research_tom_effect.ipynb` | Effet turn-of-the-month (fin de mois) | (c) Standalone | yfinance |
 | `research_vrp_putwrite.ipynb` | Stratégie VRP put-write | (c) Standalone | yfinance |
 
-Sur l'ensemble de la série, **16 sont de type (c) standalone research** (s'exécutent localement avec `pip install yfinance pandas matplotlib scikit-learn` ; la famille M12-HF utilise des données tick BTC Bitstamp possédées agrégées en minute localement) et **4 sont de type (b) research lié au quantbook QC Cloud** (`research_btc_ml`, `research_m11ef_ensemble`, `research_m12_har_rv_j` exécutés, et la variante `_minute` qui instancie `QuantBook` sans outputs committés — à exécuter sur QC Cloud).
+Sur l'ensemble de la série, la **majorité est de type (c) standalone research** (exécution locale avec `pip install yfinance pandas matplotlib scikit-learn` ; la famille M12-HF utilise des données tick BTC Bitstamp possédées agrégées en minute localement) ; le reste est de type (b), research lié au quantbook QC Cloud (`research_btc_ml`, `research_m11ef_ensemble`, `research_m12_har_rv_j` exécutés, et la variante `_minute` qui instancie `QuantBook` sans outputs committés — à exécuter sur QC Cloud). Le décompte par type se lit dans le tableau ci-dessus ; les totaux relèvent de la régénération du catalogue.
 
 ---
 
