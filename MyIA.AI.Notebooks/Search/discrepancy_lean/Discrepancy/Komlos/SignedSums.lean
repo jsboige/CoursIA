@@ -16,6 +16,14 @@ arbitrée en k2.6a), puis l'assemblage final lui-même (k2.6c) : le carré réel
 inductive à deux ensembles `exists_colouring_aux` (fermeture `S` + support
 exact `E` — le prix `Finset` du support canonique du `Finsupp` de l'oracle)
 et l'énoncé public `exists_isColouring_mean_add_sum_mem_convexHull`.
+
+Réserve de portée (mesure k5.2, suivi #21417) : cet énoncé public n'est
+instanciable qu'à famille `v` identiquement nulle — les hypothèses de
+contention sur un `Finset` forcent `v i = 0` (`contention_stability_forces_zero`,
+plus bas dans ce fichier, avec l'argument mesuré). Le k2 est donc clos comme
+**preuve** ; il ne l'est pas comme énoncé instanciable, et la correction passe
+par la contention du côté de la distance de décalage fonctionnelle (voie k4.2c).
+Voir la ligne k5.2 de `FORMAL_STATUS.md`.
 -/
 
 import Discrepancy.Basic
