@@ -179,3 +179,18 @@ def test_genuine_rewrite_with_ligature_is_still_flagged(tmp_path):
     ])
     categories = _categories(base, head)
     assert "MD_REWRITE" in categories
+
+
+def test_case_change_is_still_a_rewrite(tmp_path):
+    """CONTROLE NEGATIF : la casse reste significative.
+
+    Le squelette retire les diacritiques et les ligatures, jamais la casse :
+    une ligne revenue dans une autre casse n'a pas survecu, et une
+    reecriture de cette nature doit rester signalee. Ce controle vient de
+    la PR jumelle #23271, conservee ici pour que la propriete soit
+    pantee par la suite de tests de cette PR.
+    """
+    base = _write(tmp_path / "base.ipynb", BASE_LINES)
+    head = _write(tmp_path / "head.ipynb", [ln.upper() for ln in BASE_LINES])
+    categories = _categories(base, head)
+    assert "MD_REWRITE" in categories
