@@ -26,6 +26,10 @@ from pathlib import Path
 
 import pytest
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from check_target_coverage import _uses_lean_axiom  # noqa: E402
+
 # scripts/lean/tests/X.py -> parents[3] = repo root
 REPO = Path(__file__).resolve().parents[3]
 CONWAY_WF = REPO / ".github" / "workflows" / "lean-conway.yml"
@@ -72,13 +76,27 @@ def test_blocking_proof_integrity_targets_showcase_modules():
 
 def test_advisory_audit_job_wired():
     """Option (b): an ADVISORY proof-integrity-audit job exists, uses the
-    reusable lean-axiom workflow, and is non-blocking on sorry."""
+    reusable lean-axiom workflow, and is non-blocking on sorry.
+
+    **La forme de l'appel n'est pas figée, la cible l'est (#23247).** Ce pin
+    exigeait le littéral ``lean-axiom.yml@main``. Une PR qui ajoute un input au
+    workflow réutilisable ET le passe depuis cet appelant ne PEUT pas garder
+    ``@main`` : GitHub résout ``@main`` vers le fichier tel qu'il existe sur la
+    branche par défaut, qui ne déclare pas encore ``build-threads``, et rejette
+    l'appel avant tout job (``startup_failure``, 0 job — run 40854017279
+    mesuré). La règle vérifiée ici est inchangée — l'appelant doit résoudre vers
+    ``lean-axiom.yml`` — donc le pin applique la même normalisation que les deux
+    organes qui lisent ce même fait (``check_target_coverage._uses_lean_axiom``,
+    ``check_axiom_gate_coverage._GATE_CALL_RE``), lesquels acceptent déjà
+    ``jsboige/CoursIA/...@main`` comme ``./.github/workflows/...``.
+    """
     jobs = _load_jobs()
     assert "proof-integrity-audit" in jobs, (
         "#8782 (b): proof-integrity-audit job missing from lean-conway.yml")
     audit = jobs["proof-integrity-audit"]
-    assert "lean-axiom.yml@main" in audit.get("uses", ""), (
-        "audit must reuse the lean-axiom workflow")
+    uses = audit.get("uses", "")
+    assert _uses_lean_axiom(uses), (
+        f"audit must reuse the lean-axiom workflow, got uses={uses!r}")
     with_opts = audit.get("with", {})
     assert with_opts.get("fail-on-sorry") is False, (
         "the audit job must be advisory on sorry (fail-on-sorry: false)")
