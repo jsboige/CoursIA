@@ -25,9 +25,9 @@
 
 ## Compatibilité .NET 11 — établie
 
-Le carnet s'exécute **sans erreur** sous .NET 11 : les 9 cellules de code ont été passées sous
-`11.0.0-rc.3.26522.148` (exécution complète du carnet, 0 cellule en erreur, 0 cellule sans
-`execution_count`), et le runtime effectif est **prouvé dans la sortie** — par la cellule de
+Le carnet s'exécute **sans erreur** sous .NET 11 : l'intégralité des cellules de code a été passée
+sous `11.0.0-rc.3.26522.148` (exécution complète du carnet, aucune cellule en erreur, aucune cellule
+sans `execution_count`), et le runtime effectif est **prouvé dans la sortie** — par la cellule de
 provenance de l'organe, et par une cellule de provenance insérée en tête du carnet lors de cette
 exécution complète :
 
