@@ -117,7 +117,7 @@ Les archives RooSync sont des **markdown verbatim** sur GDrive (`$ROOSYNC_SHARED
 
 Avant `nvidia-smi` (ou tout autre lancement GPU) :
 
-1. **Charge hôte** : `uptime`, `free -g`, `nvidia-smi` — la charge hôte doit rester **< 85 %** sous l'expérience. Au-delà, reporter l'expérience et poster une observation `held` une fois la charge retombée (réservation à venir, pas de geste de lancement).
+1. **Charge hôte** : `uptime`, `free -g`, `nvidia-smi` — la charge hôte doit rester **< 90 %** sous l'expérience (seuil relevé de 85 à 90 % par mandat user du 2026-10-29 : 85 % est le régime nominal de la machine, pas son plafond). Au-delà, reporter l'expérience et poster une observation `held` une fois la charge retombée (réservation à venir, pas de geste de lancement). Ce seuil est **porté par le lanceur** (`launch_capped.ps1`) : appelé seul, `run_guarded.py` n'active pas la garde — son `--max-commit-charge-pct` vaut 0 par défaut.
 2. **CUDA devices** : `CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=<n>` sur la commande elle-même. Ne pas se fier au seul `CUDA_VISIBLE_DEVICES` (variable d'env du shell sans ordre PCI = risque d'allocation ambigu).
 3. **Ledger entry** : poster `[OBS]` (`state: held`) sur `CoursIA-gpu-reservation-ledger` **avant** le geste de lancement (pas après — sinon collision possible). Poster `[OBS]` (`state: released`) à la fin du run, avec `workload` court et `expected_end` réel. **Construire les deux avec `debt_ledger.py append`** : un envelope écrit à la main est rejeté au fold (les deux causes ci-dessus), et une libération rejetée laisse la ligne **`held` sur un device libre**.
 4. **GPU 0/1 réservé** : les GPU 0 et 1 de ai-01 portent le vLLM de la flotte et **ne se réservent pas**. Le GPU 2 est le seul slot GPU de cette machine pour les expériences.
@@ -143,7 +143,7 @@ Le picker (`scripts/pick_idle_grain.py`) croise l'urne `delivered` avec un signa
 5. **Observation `released`** (`verdict: RELEASED`) → le GPU est libre, le picker peut tirer.
 6. **Observation `stale`** (`verdict: STALE`) → cas d'erreur, la lane tenancière doit poster un `[OBS]` de réparation.
 
-Le script `scripts/coordination/debt_ledger.py check_pending --entity <m>#gpu<n>` rend le verdict (`OK_TO_RUN`, `NO_OBS`, `HOLD`, `RELEASED`, `STALE`, `UNPOSTED`) en ~50 ms (cache local). **Implémentation 4e livrable : [PR #19855](https://github.com/jsboige/CoursIA/pull/19855)**, merge de la sous-commande et de `evaluate_gpu_pending()` (113/113 tests passent).
+Le script `scripts/coordination/debt_ledger.py check_pending --entity <m>#gpu<n>` rend le verdict (`OK_TO_RUN`, `NO_OBS`, `HOLD`, `RELEASED`, `STALE`, `UNPOSTED`, `UNREADABLE_SPOOL`) en ~50 ms (cache local). **Implémentation 4e livrable : [PR #19855](https://github.com/jsboige/CoursIA/pull/19855)**, merge de la sous-commande et de `evaluate_gpu_pending()` (113/113 tests passent).
 
 ### Ce que le picker en fait (c.2431, #22747)
 
@@ -172,10 +172,13 @@ La section ci-dessus était une **promesse du protocole que le code ne tenait pa
 | `HOLD` | **1** | la gate refuse : tenu par une autre lane, ou par nous hors fenêtre |
 | `STALE` | **2** | `held` dépassé sans release — l'appelant décide (rafraîchir ou bloquer) |
 | `UNPOSTED` | **1** | le spool local porte des observations **jamais postées** : le ledger est illisible, pas libre — poster (`flush`) avant de conclure |
+| `UNREADABLE_SPOOL` | **1** | un fichier du spool local est **illisible** : il peut porter une réservation, donc le ledger est illisible, pas libre — le verdict nomme chaque fichier et son motif |
 
 Le code 2 est aussi rendu sur un usage invalide (`--entity` absent, ledger ≠ `gpu-reservation`) : là, il signale une **erreur d'appel**, pas un verdict.
 
 `UNPOSTED` prime sur les autres verdicts : il est rendu **avant** la lecture du snapshot, parce qu'un verdict réduit d'un snapshot ne voit pas ce qui n'a jamais voyagé (deux réservations `held` vivantes, quatre-vingt-quatre heures de spool, et un `RELEASED` rendu avec aplomb — #22456).
+
+`UNREADABLE_SPOOL` prime sur `UNPOSTED` : un fichier illisible peut porter un `held`, et un décompte d'enveloppes saines ne le dirait pas. Le fichier reste sur disque et le verdict en nomme le chemin et le motif — l'archivage des bonnes enveloppes reste possible, la conclusion « libre » ne l'est pas.
 
 **Le drainage du spool est en deux temps, et aucun n'est optionnel** : `debt_ledger.py flush` liste (ou `--emit` écrit) le lot à poster — le `content` de chaque appel est l'octet du fichier de spool, sans re-sérialisation — puis `flush --mark-posted <id>...` archive les observations effectivement postées. L'archivage est idempotent (l'`observation_id` est la clé) et tout-ou-rien : un id inconnu refuse le lot entier plutôt que d'archiver la moitié, parce qu'un spool à moitié drainé est précisément l'état qui fait mentir `check_pending`.
 
@@ -386,6 +389,7 @@ L'observation `[OBS]` d'un slot gpu0/gpu1 sur ai-01 est **interdite** : ces slot
 ## Historique des livrables (#16737)
 
 - **1er livrable (c.255)** : protocole initial — format `[OBS]`, garde 85 %, CUDA devices explicites, GPU 2 uniquement, fold hebdo, liaison picker / #1454.
+- **Garde relevée à 90 % (2026-10-29, mandat user direct)** : la garde d'admission n'est plus 85 % mais **90 %** — 85 % est le régime nominal de la machine, pas son plafond, et un garde posé là refuse des lancements sains. Appliqué dans la règle 1 ci-dessus et dans le défaut `-MaxCommitChargePct` de `launch_capped.ps1`. La mention « garde 85 % » du 1er livrable reste comme **état historique** de ce livrable.
 - **2e livrable (c.257)** : 1re observation `[OBS]` + corrections paths + section "Liaison picker ↔ file #1454" + heuristique pre-launch + sous-commande `check_pending --entity`.
 - **3e livrable (c.258)** : liaison cross-machine — topologie GPU (ai-01: gpu0/1=vLLM, gpu2=training ; po-* à confirmer), protocole de récupération cross-machine (DM nominatif + dashboard + cache 24h), garde vLLM, trigger de mise à jour.
 - **4e livrable (c.260, PR #19855)** : implémentation de la sous-commande `check_pending` + fonction pure `evaluate_gpu_pending()`. **Ce commit (4e livrable doc)** aligne le protocole sur le schéma réel de `debt_ledger.py` (state/holder/workload/started_at/expected_end/issue) et corrige les noms de verdicts (`RELEASED`/`STALE` au lieu de `EXPIRED`).
