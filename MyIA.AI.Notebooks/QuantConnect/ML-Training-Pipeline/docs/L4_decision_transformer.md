@@ -45,7 +45,7 @@ Un Decision Transformer (Chen et al. 2021) entraîné en **offline RL** apprend 
 | Symboles avec 4/4 graines positives | 1 / 25 | |
 | DT au-dessus de son teacher | 11 / 25 | aucun écart significatif |
 | Corrélation DT / teacher entre symboles | 0,877 (Sharpe), 0,936 (exposition) | le DT suit son teacher |
-| AUC médiane | **0,497** | hasard (L3 : 0,509) |
+| AUC médiane (25 symboles hors VIX) | **0,497** | hasard (L3 : 0,509) |
 
 **Symboles exclus des tests** (motif écrit dans le carnet) : VIX, dont le `Volume` vaut 0 sur
 toutes les lignes, si bien qu'aucune ligne de caractéristiques ne survit et qu'aucune graine
@@ -79,8 +79,7 @@ porte à 0,08 et au-delà.
 ## Données
 
 - 25 symboles du panier anti-biais (VIX exclu faute de volume), 7 classes d'actifs.
-- Plage : 2015-01-01 à 2026-05-22, empreinte
-  `ca31a7abfb2033eeffd25cac2361644bfb4724a9cb1b6db8533b5f3d2246dc1b`.
+- Plage : 2015-01-01 à 2026-05-22 (`data.first_day` et `data.last_day` du résultat ci-dessous).
 - Sortie du balayage causal **committée** dans `scripts/results/l4_decision_transformer/results.json`
   (`eval_protocol: causal-v1 (#21187)`, verdict agrégé, une cellule par symbole, détail par graine et par
   fold, tests de Ledoit-Wolf contre buy & hold et contre le teacher). 104 combinaisons, 2,7 h
