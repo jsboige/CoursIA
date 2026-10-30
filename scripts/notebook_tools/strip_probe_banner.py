@@ -670,6 +670,43 @@ def _strip_probe_banner_in_place(nb_path):
     return (len(hits), fixed)
 
 
+_DIV_TAG = re.compile(r"<(/?)div\b[^>]*>")
+
+
+def _is_single_div_block(html):
+    """True when ``html`` is ONE balanced ``<div>...</div>`` block, nothing else.
+
+    The discovery bootstrap occupies a whole output as a single
+    ``display:none`` placeholder div (measured: 98 list elements, opening on
+    ``<div>`` and closing on ``</div>``). A genuine result sharing that output
+    would sit OUTSIDE the root block -- so this guard, and not the mime-key
+    check (which only says *which keys* the output carries), is what stops the
+    whole-body delete on the list form from destroying real content.
+
+    False positives are the safe direction here: a refused output is reported
+    as ``SKIP`` and left byte-identical, while a destroyed one is
+    unrecoverable.
+    """
+    if isinstance(html, list):
+        text = "".join(part for part in html if isinstance(part, str))
+    elif isinstance(html, str):
+        text = html
+    else:
+        return False
+    s = text.strip()
+    if not s.startswith("<div"):
+        return False
+    depth = 0
+    for m in _DIV_TAG.finditer(s):
+        if m.group(1):
+            depth -= 1
+            if depth == 0:
+                return not s[m.end():].strip()
+        else:
+            depth += 1
+    return False
+
+
 def strip_discovery_variant_in_place(nb_path):
     """Remove the outputs carrying the "this cell" discovery bootstrap.
 
@@ -679,9 +716,18 @@ def strip_discovery_variant_in_place(nb_path):
     produces (#20190). Output-only: no source touched, ``execution_count``
     preserved, every other byte of the file left identical.
 
-    An output carrying the bootstrap AND other mime keys is REFUSED, not
-    stripped: blanking it would destroy a real result. The refusal is
-    visible in the caller's report (unit counted, none fixed).
+    An output is REFUSED -- counted, none fixed, notebook left byte-identical
+    -- unless it carries the bootstrap ALONE: its mime keys must be exactly
+    ``["text/html"]`` *and* its whole body must be one balanced ``<div>``
+    block (``_is_single_div_block``). Both halves matter: the key check alone
+    would destroy a ``["<div>bootstrap</div>", "<table>real result</table>"]``
+    output, and the block check alone would strip a ``text/html`` output that
+    also carries a PNG. A refusal is visible in the caller's report (unit
+    counted, none fixed).
+
+    Only a ``text/html`` value that decodes to the EXACT string of a target
+    output is rewritten, so a source cell quoting the bootstrap literal is
+    never touched.
 
     Returns ``(outputs_found, outputs_fixed)``.
     """
@@ -700,21 +746,23 @@ def strip_discovery_variant_in_place(nb_path):
             data = out.get("data")
             if not isinstance(data, dict):
                 continue
-            if not has_discovery_variant(data.get("text/html")):
+            html = data.get("text/html")
+            if not has_discovery_variant(html):
                 continue
             targets.append((ci, oi))
-            if list(data.keys()) == ["text/html"]:
+            if list(data.keys()) == ["text/html"] and _is_single_div_block(html):
                 strippable.append((ci, oi))
 
     if not targets:
         return (0, 0)
     if len(strippable) != len(targets):
-        # A MIXED output exists (bootstrap + other mime keys): refuse the
-        # whole notebook rather than destroy a real result. The raw-text
+        # Either a MIXED output exists (bootstrap + other mime keys), or an
+        # output carries content OUTSIDE the bootstrap's root <div> block --
+        # in both cases blanking would destroy a real result. The raw-text
         # pass cannot attribute a block to its output, so the refusal is
         # notebook-wide. Not reachable on the inherited corpus (measured:
-        # every one of the 177 outputs carries ``["text/html"]`` alone) --
-        # it is a guard, not a routine path.
+        # every one of the 177 outputs carries ``["text/html"]`` alone and is
+        # a single balanced <div> block) -- it is a guard, not a routine path.
         return (len(targets), 0)
 
     with open(nb_path, encoding="utf-8") as f:
@@ -723,6 +771,31 @@ def strip_discovery_variant_in_place(nb_path):
     new_text = text
     fixed = 0
     elem_pat = re.compile(r'"((?:[^"\\]|\\.)*)"')
+
+    # String form FIRST ("text/html" holding one JSON string): blank it.
+    # Two disciplines, both taken from the probe path:
+    #  - the match must decode to the EXACT string of a target output.
+    #    Matching on the bootstrap token alone would also hit a ``source``
+    #    cell quoting it, and the "output-only" promise would not be
+    #    structurally held;
+    #  - targets are consumed in REVERSE order and the search is re-run per
+    #    target (``break`` on the first hit), because every edit shrinks the
+    #    file: offsets captured before the first rewrite would splice the
+    #    JSON at the wrong place from the second output onward.
+    str_pat = re.compile(r'"text/html"\s*:\s*"((?:[^"\\]|\\.)*)"')
+    str_targets = [nb["cells"][ci]["outputs"][oi]["data"]["text/html"]
+                   for ci, oi in strippable
+                   if isinstance(nb["cells"][ci]["outputs"][oi]["data"]["text/html"], str)]
+    for banner_str in reversed(str_targets):
+        for m in str_pat.finditer(new_text):
+            try:
+                decoded = json.loads('"' + m.group(1) + '"')
+            except json.JSONDecodeError:
+                continue
+            if decoded == banner_str:
+                new_text = new_text[:m.start()] + '"text/html": ""' + new_text[m.end():]
+                fixed += 1
+                break
 
     # List form: blank the block body (the block becomes an empty list).
     # Blocks are walked in REVERSE file-offset order: each edit shrinks the
@@ -741,18 +814,6 @@ def strip_discovery_variant_in_place(nb_path):
         if not hit:
             continue
         new_text = new_text[:body_start] + new_text[body_end:]
-        fixed += 1
-
-    # String form: replace the whole "text/html": "<...>" with "".
-    str_pat = re.compile(r'"text/html"\s*:\s*"((?:[^"\\]|\\.)*)"')
-    for m in list(str_pat.finditer(new_text)):
-        try:
-            decoded = json.loads('"' + m.group(1) + '"')
-        except json.JSONDecodeError:
-            continue
-        if not has_discovery_variant(decoded):
-            continue
-        new_text = new_text[:m.start()] + '"text/html": ""' + new_text[m.end():]
         fixed += 1
 
     # The blanked outputs are empty ``display_data`` envelopes: drop them.

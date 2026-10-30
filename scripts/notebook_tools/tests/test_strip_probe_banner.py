@@ -733,3 +733,66 @@ class TestDiscoveryVariant:
         strip_banner_in_place(str(nb))
 
         assert nb.read_bytes() == before
+
+    # --- Gardes de forme (revue NanoClaw, 2026-10-30T14:34Z) --------------
+
+    def test_string_form_strips_two_outputs_without_offset_drift(self, tmp_path):
+        # The string form edits the raw text in place. Capturing every match
+        # offset once and then rewriting left-to-right splices the JSON at the
+        # wrong place from the SECOND output on, because each edit shrinks the
+        # file. Two string-form outputs is the smallest case that exposes it.
+        html = "".join(_discovery_output()["data"]["text/html"])
+        first = {"output_type": "display_data", "data": {"text/html": html},
+                 "metadata": {}}
+        second = {"output_type": "display_data", "data": {"text/html": html},
+                  "metadata": {}}
+        cells = [_code(["x = 1\r\n"], outputs=[first, second], execution_count=3)]
+        nb = _write_nb(tmp_path / "x.ipynb", cells)
+
+        found, fixed = strip_banner_in_place(str(nb), "discovery")
+
+        assert (found, fixed) == (2, 2)
+        new_nb = json.loads(nb.read_text(encoding="utf-8"))
+        assert count_discovery_outputs(str(nb)) == 0
+        # The JSON must still parse and the cell must keep its identity: a
+        # drifted splice truncates the document or the neighbouring keys.
+        assert new_nb["cells"][0]["execution_count"] == 3
+        assert new_nb["cells"][0]["source"] == ["x = 1\r\n"]
+
+    def test_output_with_sibling_real_content_is_refused(self, tmp_path):
+        # Mime keys are exactly ["text/html"], so the key check alone would
+        # call this strippable and delete the whole list body -- destroying
+        # the table. The structural guard (one balanced <div> block, nothing
+        # else) is what refuses it.
+        bootstrap = _discovery_output()["data"]["text/html"]
+        polluted = dict(_discovery_output())
+        polluted["data"] = {"text/html": list(bootstrap) + ["<table>result</table>"]}
+        cells = [_code(["x = 1\r\n"], outputs=[polluted])]
+        nb = _write_nb(tmp_path / "x.ipynb", cells)
+        before = nb.read_bytes()
+
+        found, fixed = strip_banner_in_place(str(nb), "discovery")
+
+        assert found == 1, "the unit is counted"
+        assert fixed == 0, "but refused: the table would be destroyed"
+        assert nb.read_bytes() == before
+
+    def test_source_quoting_the_wrapper_is_never_touched(self, tmp_path):
+        # The string-form pattern anchors on `"text/html": "<...>"`, which also
+        # appears inside a cell's `source` when that cell quotes the literal.
+        # Only a match decoding to the EXACT string of a target output is
+        # rewritten, so the docstring's "output-only" promise is structural.
+        html = "".join(_discovery_output()["data"]["text/html"])
+        quoted = '"text/html": ' + json.dumps(html) + "\r\n"
+        cells = [
+            _code([quoted], outputs=[]),
+            _code(["x = 1\r\n"], outputs=[_discovery_output()]),
+        ]
+        nb = _write_nb(tmp_path / "x.ipynb", cells)
+
+        found, fixed = strip_banner_in_place(str(nb), "discovery")
+
+        assert found == fixed == 1
+        new_nb = json.loads(nb.read_text(encoding="utf-8"))
+        assert new_nb["cells"][0]["source"] == [quoted], "source must be intact"
+        assert count_discovery_outputs(str(nb)) == 0
