@@ -135,6 +135,38 @@ _LESSON_TAG_RE = re.compile(r"\bL\d{3,4}(?:-L\d)?\b")
 # test_url_fragment_mask_is_context_free_by_design, pour qu'il ne se
 # decouvre pas par surprise si un carnet se met a ecrire des ancres en prose.
 _URL_FRAGMENT_RE = re.compile(r"#L\d{3,4}(?:-L\d{3,4})?")
+# Cible de lien vers un fichier du depot (``…-L128-L256.ipynb``, ``notes.md``) :
+# meme forme que le renvoi aux lecons, sens inverse. Un carnet qui documente
+# une serie parametree par la taille du systeme (L, N, k) herite d'un faux
+# positif STRUCTUREL des qu'il lie ses voisins : Percolation-05 (#23004,
+# PR #22153) liait ``Percolation-03b-Critique-L128-L256.ipynb`` (L128 + L256
+# = 4 points) et ``Percolation-03c-Critique-L512.ipynb`` (L512 = 2 points),
+# soit 6 points sur 665 caracteres -- densite 9/1000 au-dessus du seuil de 8,
+# pour une cellule « Pour aller plus loin » faite exclusivement de liens de
+# navigation. C'est exactement le geste que la navigation d'une serie
+# recommande. Voie 1 de #23004 : masquer la CIBLE du lien, sans toucher au
+# jeu de motifs des lecons (un resserrement du motif se valide par ses faux
+# negatifs, et un elargissement accidentel rendrait l'organe aveugle).
+#
+# Comme _URL_FRAGMENT_RE, le masque est sans contexte : il s'applique aussi a
+# un nom de fichier cite en prose hors lien. La forme NUE « L128 » hors de
+# tout nom de fichier reste comptee -- la voie 1 couvre les liens, pas la
+# prose ; l'ecart est assume et fige par test_file_target_mask_leaves_bare_tag.
+#
+# Borne du masque, mesuree (revue Hermes du 2026-10-28, point 1) : la
+# substitution est de MEME LONGUEUR et porte sur le seul span du nom de
+# fichier, donc un renvoi aux lecons ecrit A COTE du nom reste compte. Le cas
+# que la revue designait -- un renvoi cache DERRIERE le nom, c'est-a-dire un
+# « L<n> » qui serait a l'interieur du nom de fichier -- n'est pas instancie
+# sur le corpus : 35 411 unites markdown (34 390 cellules de carnet + les
+# fichiers .md) mesurees au 2026-10-28, dont UNE seule cite un nom de fichier
+# portant un « L<n> » (README de la serie Percolation), et AUCUNE n'associe ce
+# nom a un mot « lecon » ecrit hors de lui. L'ecart est donc assume sur
+# mesure, comme celui de _URL_FRAGMENT_RE, et fige pour la meme raison : que
+# le comportement soit lisible avant d'etre decouvert par surprise. Le
+# controle positif qui l'empeche de s'elargir en silence est
+# test_file_target_mask_is_span_local.
+_FILE_TARGET_RE = re.compile(r"[\w./-]+\.(?:ipynb|md)\b")
 _DM_RE = re.compile(r"\bDM\b")
 
 _LANE_RE = re.compile(r"\blanes?\b", re.IGNORECASE)
@@ -303,8 +335,11 @@ def markers_in_text(text: str) -> list[tuple[str, str, int]]:
         haystack = text
         if name == "lesson_tag":
             # Masque de meme longueur (les offsets ne servent pas ici) : une
-            # ancre de ligne de permalien n'est pas un renvoi aux lecons.
+            # ancre de ligne de permalien n'est pas un renvoi aux lecons, et
+            # la cible d'un lien vers un carnet voisin n'en est pas un non
+            # plus (#23004) -- ses L<d> sont des tailles de systeme.
             haystack = _URL_FRAGMENT_RE.sub(lambda m: " " * len(m.group(0)), text)
+            haystack = _FILE_TARGET_RE.sub(lambda m: " " * len(m.group(0)), haystack)
         for m in rx.finditer(haystack):
             if name == "dm" and _context_guarded(text, m.start(), m.end(), _DM_OK_CONTEXT):
                 continue
