@@ -98,6 +98,8 @@ lean backtest --project .
 
 QC Cloud backtest id c.799 : `9cc2bcb4809c514efb84e3cdaf89d610` (Completed 2026-07-22T22:42:00Z, ~25 min runtime).
 
+**Reproduction (#22788).** Un run du 2026-08-06 (`3649d90f`) redonne ce backtest ordre par ordre (1994 ordres, mêmes quantités, mêmes prix). Le contrôle du 2026-10-21, sur le même code et la même fenêtre, donne un Sharpe de 0,752, un CAGR de 18,70 %, un drawdown de 40,6 % et 2009 ordres : entre-temps, les prix ajustés de dix des quinze titres ont changé d'un facteur constant par titre, de 1,00064 (GOOGL) à 1,00499 (JPM). Détail dans la section « Écart avec la baseline ci-dessus » du README français.
+
 ## Files
 
 - `main.py` - Strategy (v2, GradientBoostingRegressor)

@@ -24,7 +24,17 @@ An exercise is defined here as a STUB (work for the student), per the
 exercise/example labeling convention:
   - markdown "Exercice" header whose following code cell is a stub, OR
   - a stub code cell whose own source comments contain "Exercice".
-A markdown "Exemple" header + working code is an EXAMPLE, not counted.
+
+The "Exemple" side of that convention is NOT re-guessed here (#23398). A code
+cell placed under a CREDITED example header (``### Exemple ... (credite #N)``)
+is EXAMPLE content, never an exercise: the digestion of the student work
+(#15042) keeps the student's code VERBATIM there -- original ``# Exercice N``
+header included -- so counting it as an exercise would invent a workload that
+does not exist. The ATTRIBUTION has ONE owner, ``check_credited_examples``
+(``is_credited_example_header``), which this counter CONSUMES. Without an
+attribution the example header says nothing about the role of the code: the
+CONTENT decides (a stub stays an exercise), exactly as for the reading organ
+(``check_split_reading_cells.is_exercise_cell``).
 
 Usage:
     python count_exercises.py                                  # all pedagogical notebooks
@@ -62,6 +72,12 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 NOTEBOOKS_DIR = REPO_ROOT / "MyIA.AI.Notebooks"
+
+# La convention d'attribution d'un exemple guide a UN proprietaire (#23398) :
+# ce module. On la CONSOMME au lieu de rededuire « un titre Exemple suivi de
+# code » -- deux deductions qui divergent (compteur vs organe de lecture).
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from check_credited_examples import is_credited_example_header  # noqa: E402
 
 #: Standard exercise budget for an ordinary course notebook (#2161).
 DEFAULT_THRESHOLD = 3
@@ -1415,6 +1431,57 @@ def _shallowest_atx_level(source: str) -> int | None:
     return min(levels) if levels else None
 
 
+def _governing_header(cells: list[dict], idx: int) -> dict | None:
+    """En-tete markdown qui commande la cellule `idx` (None s'il n'y en a pas).
+
+    Remontee en arriere : les cellules markdown SANS titre sont ignorees
+    (c'est de la prose, pas un en-tete) ; le premier TITRE markdown trouve
+    commande la cellule. Une cellule de CODE interrompt la remontee : le lien
+    de section est rompu, et l'on ne rattache pas la cellule a un titre qui
+    precede une autre section de code.
+
+    MEME REGLE que ``check_split_reading_cells._governing_header`` (organe de
+    lecture) -- la duplication est VOLONTAIRE : le compteur ne doit pas
+    dependre de l'organe de lecture (qui a ses propres dependances), mais la
+    CONVENTION d'attribution, elle, est consommee chez son proprietaire.
+    """
+    for j in range(idx - 1, -1, -1):
+        cell = cells[j]
+        if cell.get("cell_type") == "code":
+            return None
+        if cell.get("cell_type") != "markdown":
+            continue
+        src = "".join(cell.get("source", [])).strip()
+        if not src:
+            continue
+        if src.split("\n", 1)[0].lstrip().startswith("#"):
+            return cell
+    return None
+
+
+def _credited_example_code_indices(cells: list[dict]) -> set[int]:
+    """Indices des cellules de code qui sont du contenu d'EXEMPLE GUIDE CREDITE.
+
+    Une cellule de code placee sous un en-tete d'exemple GUIDE CREDITE n'est
+    pas un exercice : la digestion des travaux etudiants (#15042) y conserve
+    le code de l'etudiant VERBATIM, en-tete d'origine « # Exercice N » compris.
+    L'ATTRIBUTION est le discriminant, et elle a UN proprietaire :
+    ``check_credited_examples.is_credited_example_header`` (#23398).
+
+    Sans attribution, l'en-tete d'exemple ne dit rien du role du code : c'est
+    le CONTENU qui tranche (un stub reste un exercice), exactement comme pour
+    l'organe de lecture (``check_split_reading_cells.is_exercise_cell``).
+    """
+    out: set[int] = set()
+    for idx, cell in enumerate(cells):
+        if cell.get("cell_type") != "code":
+            continue
+        header = _governing_header(cells, idx)
+        if header is not None and is_credited_example_header(header):
+            out.add(idx)
+    return out
+
+
 def count_exercises_in_notebook(path: Path) -> NotebookCount:
     """Count exercises in one notebook, with per-cell evidence.
 
@@ -1436,6 +1503,11 @@ def count_exercises_in_notebook(path: Path) -> NotebookCount:
         return result
 
     cells = nb.get("cells", [])
+
+    # Cellules de code qui sont du contenu d'exemple guide CREDITE (#23398) :
+    # elles ne sont ni des exercices, ni des stubs d'exercice (la convention
+    # d'attribution est consommee chez son proprietaire, cf. le module).
+    example_code_indices = _credited_example_code_indices(cells)
 
     # First pass: enumerate markdown cells whose header lines name SINGULAR
     # exercise instances (`### Exercice 1`, `### Exercice 2`, ...). One header
@@ -1562,6 +1634,12 @@ def count_exercises_in_notebook(path: Path) -> NotebookCount:
             jcell = cells[j]
             if jcell.get("cell_type") != "code":
                 continue
+            if j in example_code_indices:
+                # Contenu d'exemple guide CREDITE : ce n'est pas une
+                # espace-reponse d'exercice (le code de l'etudiant y est
+                # verbatim), meme si ses marqueurs de stub y figurent. Ce code
+                # ne peut donc pas servir de stub a cet en-tete (#23398).
+                break
             j_source = "".join(jcell.get("source", []))
             if _is_stub_code(j_source):
                 j_num = _exercise_number(j_source)
@@ -1601,6 +1679,10 @@ def count_exercises_in_notebook(path: Path) -> NotebookCount:
                 if jcell.get("cell_type") != "code":
                     continue
                 forward_has_code_cell = True
+                if j in example_code_indices:
+                    # Contenu d'exemple guide CREDITE : pas une espace-reponse
+                    # d'exercice, donc pas un stub appariable (#23398).
+                    break
                 j_source = "".join(jcell.get("source", []))
                 if _is_stub_code(j_source):
                     if (
@@ -1819,6 +1901,8 @@ def count_exercises_in_notebook(path: Path) -> NotebookCount:
                 continue
             if jcell.get("cell_type") != "code" or j in paired_code_indices:
                 continue
+            if j in example_code_indices:
+                continue  # contenu d'exemple guide CREDITE (#23398)
             jsource = "".join(jcell.get("source", []))
             if not _is_stub_code(jsource):
                 continue
@@ -1848,6 +1932,11 @@ def count_exercises_in_notebook(path: Path) -> NotebookCount:
         if cell.get("cell_type") != "code":
             continue
         if i in paired_code_indices:
+            continue
+        if i in example_code_indices:
+            # Contenu d'exemple guide CREDITE : le code de l'etudiant est
+            # verbatim, en-tete « # Exercice N » compris, mais ce n'est pas une
+            # espace-reponse d'exercice (#23398).
             continue
         source = "".join(cell.get("source", []))
         mentions_exercise = (
