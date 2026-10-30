@@ -36,7 +36,10 @@ Usage::
     python scripts/lean/check_lean_inventory.py [--repo-root PATH]
         [--inventory REL_PATH] [--root REL_PATH] [--json]
 
-Exit code: 0 when the map covers every declared library, 1 otherwise.
+Exit code: 0 when the map covers every declared library, 1 on drift,
+2 when the gate could not measure -- inventory or root absent, or zero
+``lean_lib`` declared under the root (the parse-matched-nothing floor: a
+dialect regression or moved lakefiles must redden the gate, not pass it).
 """
 
 from __future__ import annotations
@@ -184,6 +187,18 @@ def check(repo_root: Path, inventory_rel: str = DEFAULT_INVENTORY,
             if not inventory_mentions(inventory_text, lib):
                 report["missing_from_inventory"].append({"lake": lake_rel, "lib": lib})
 
+    if report["declared_libs"] == 0:
+        # Plancher #23396 : zero lib declaree sous la racine, ce n'est pas une
+        # passe propre -- c'est un parse qui n'a rien matche (regression de
+        # dialecte, lakefiles deplaces). Le gate rougit au lieu de temoigner
+        # a vide.
+        report["verdict"] = "ERROR"
+        report["error"] = (
+            f"no lean_lib declared under {root_rel} -- a parse that matched "
+            "nothing is a broken gate, not a clean pass"
+        )
+        return report
+
     findings = len(report["missing_from_inventory"])
     report["findings"] = findings
     report["verdict"] = "OK" if findings == 0 else "DRIFT"
@@ -238,7 +253,9 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(report, indent=2, ensure_ascii=False))
     else:
         print(render_text(report))
-    return 1 if report["verdict"] == "DRIFT" else 0
+    # #23396 : ERROR ne sort plus en 0 -- un gate qui ne peut pas mesurer
+    # (carte/racine absente, zero lib declaree) doit rougir la CI.
+    return {"OK": 0, "DRIFT": 1}.get(report["verdict"], 2)
 
 
 if __name__ == "__main__":

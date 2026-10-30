@@ -21,7 +21,11 @@ What these tests hold:
    only is not a documented library;
 4. the gate can fail: a synthetic lake whose library the map does not name is
    reported as a drift (the control positive -- a detector that has never been
-   seen red is not a detector).
+   seen red is not a detector);
+5. the exit codes separate the three outcomes (#23396): drift exits 1, and
+   "cannot measure" -- absent map, or the ``declared_libs > 0`` floor tripped
+   by a parse that matched nothing -- exits 2, never 0. A gate that exits 0
+   while measuring nothing is a green witness.
 """
 
 from __future__ import annotations
@@ -161,6 +165,57 @@ def test_main_exit_code_follows_the_verdict(tmp_path, capsys):
     out = capsys.readouterr().out
     assert "MISSING_FROM_INVENTORY" in out
     assert "Abstraction" in out
+
+
+def test_main_exits_two_when_the_gate_cannot_measure(tmp_path, capsys):
+    """#23396 : un ERROR qui sort en 0 temoigne a vide -- la CI le lirait vert.
+
+    Carte absente : le gate ne peut pas mesurer, l'exit code doit le dire
+    (2), distinct du drift (1)."""
+    rc = cli.main(["--repo-root", str(tmp_path),
+                   "--inventory", "MyIA.AI.Notebooks/GameTheory/LEAN_INVENTORY.md",
+                   "--root", "MyIA.AI.Notebooks/GameTheory"])
+    assert rc == 2
+    out = capsys.readouterr().out
+    assert out.startswith("ERROR:")
+
+
+def test_check_flags_a_parse_that_matched_nothing(tmp_path):
+    """#23396, plancher declared_libs > 0 : zero lib declaree sous la racine,
+    ce n'est pas une passe propre.
+
+    Un lakefile dont plus aucune declaration ne matche les dialectes connus
+    (regression de syntaxe amont) doit rougir le gate -- sinon la derive
+    silencieuse du parseur se deguise en coherence."""
+    root = tmp_path / "MyIA.AI.Notebooks" / "GameTheory"
+    lake = root / "game_theory_lean"
+    lake.mkdir(parents=True, exist_ok=True)
+    (lake / "lakefile.lean").write_text(
+        "-- dialecte future que les regex ne connaissent pas encore\n"
+        "library_target Abstraction {}\n", encoding="utf-8")
+    inventory = root / "LEAN_INVENTORY.md"
+    inventory.write_text("# Carte\n\n| `Abstraction/` | 0 | ... |\n", encoding="utf-8")
+
+    report = cli.check(tmp_path, "MyIA.AI.Notebooks/GameTheory/LEAN_INVENTORY.md",
+                       "MyIA.AI.Notebooks/GameTheory")
+    assert report["verdict"] == "ERROR"
+    assert "no lean_lib declared" in report["error"]
+    assert report["declared_libs"] == 0
+
+
+def test_main_exits_two_on_the_zero_libs_floor(tmp_path, capsys):
+    """Le plancher passe par main : rc 2, pas 0 -- la jambe CI ne peut pas
+    lire vert un run qui n'a mesure aucune librairie."""
+    root = tmp_path / "MyIA.AI.Notebooks" / "GameTheory"
+    root.mkdir(parents=True, exist_ok=True)
+    (root / "LEAN_INVENTORY.md").write_text("# Carte vide de lakes\n",
+                                            encoding="utf-8")
+
+    rc = cli.main(["--repo-root", str(tmp_path),
+                   "--inventory", "MyIA.AI.Notebooks/GameTheory/LEAN_INVENTORY.md",
+                   "--root", "MyIA.AI.Notebooks/GameTheory"])
+    assert rc == 2
+    assert "no lean_lib declared" in capsys.readouterr().out
 
 
 if __name__ == "__main__":
