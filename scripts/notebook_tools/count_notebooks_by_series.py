@@ -40,7 +40,7 @@ EXCLUDE_PEDAGOGICAL = {"research", "archive", "_output", "partner-course", "exam
 
 SERIES_ORDER = [
     "GenAI", "Search", "ML", "SymbolicAI", "QuantConnect",
-    "GameTheory", "Sudoku", "Probas", "IIT", "RL", "EPF",
+    "GameTheory", "Sudoku", "Probas", "Physique", "IIT", "RL", "EPF",
 ]
 
 
