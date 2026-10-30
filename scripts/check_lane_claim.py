@@ -4578,8 +4578,8 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     return 0
 
 
-def _summarize_run_check_output(stdout_text: str, returncode: int) -> str:
-    """Court libelle machine-consommable issu du stdout d'un `_run_check`.
+def _summarize_run_check_output(verdict_text: str, returncode: int) -> str:
+    """Court libelle machine-consommable issu de la sortie d'un `_run_check`.
 
     Le code de retour de `_run_check`:
         0 -> CLEAR (libre)
@@ -4587,9 +4587,19 @@ def _summarize_run_check_output(stdout_text: str, returncode: int) -> str:
         2 -> NOT_SCOPED / path-collision / gh-error
         3 -> IMPLICIT (#14300, PR ouverte d'une autre lane)
 
-    Le stdout contient la phrase "CLEAR: no other lane claims #N" ou
+    Le texte porte la phrase "CLEAR: no other lane claims #N" ou
     "BLOCKED: another lane holds an active claim on #N" ou
     "IMPLICIT: lane X a une PR ouverte ..." ou un WARN NOT_SCOPED.
+
+    #22916 -- ce texte doit etre la CONCATENATION stdout + stderr, pas
+    le seul stdout : les deux verdicts `NOT_SCOPED` (call sans
+    `--paths`, et scope entierement mort #12345) partent sur **stderr**
+    juste avant `return 2`. Un resume nourri du seul stdout ne trouvait
+    donc jamais la phrase et classait tout scope mort en `ERROR`, alors
+    que le verdict est `BLOCKED` pour un appelant -- c'est la meme
+    famille d'echec que #22684 (le verdict existait, le resume ne le
+    voyait pas). Le stream qui porte la phrase est un detail d'emission :
+    un resume qui en depend n'est pas un resume, c'est un couplage.
 
     Pour le batch (#19643, c.1778) on s'en tient a 4 codes. Le picker
     (pick_idle_grain.check_claims) les remappe sur ses propres codes
@@ -4598,7 +4608,7 @@ def _summarize_run_check_output(stdout_text: str, returncode: int) -> str:
     (1 subprocess.run au lieu de N), pas une degradation de la
     discrimination. Source: PR #21373 review ai-01 5571014393.
     """
-    text = stdout_text or ""
+    text = verdict_text or ""
     if returncode == 0:
         return "FREE"
     if returncode == 3:
@@ -4614,6 +4624,32 @@ def _summarize_run_check_output(stdout_text: str, returncode: int) -> str:
             return "BLOCKED"
         return "ERROR"
     return f"EXIT_{returncode}"
+
+
+# Prefixes des lignes-verdict de `_run_check`. Extraits ici parce que
+# deux jambes les consultent (le resume machine et le champ `human`),
+# et que #22916 a montre qu'une jambe qui en oublie une source rend un
+# diagnostic faux sans jamais echouer.
+_VERDICT_LINE_PREFIXES = (
+    "CLEAR:", "BLOCKED:", "IMPLICIT:", "LOCKED",
+    "DEAD-SCOPE", "NOT_SCOPED", "DUMP",
+)
+
+
+def _find_verdict_line(text: str) -> str:
+    """Derniere ligne-verdict de `text`, ou chaine vide (#22916).
+
+    Parcourt de la fin vers le debut pour eviter le bruit du JSON de
+    synthese imprime avant le verdict. Ne regarde qu'un flux a la fois :
+    l'appelant passe stdout puis stderr, dans cet ordre.
+    """
+    for line in reversed((text or "").splitlines()):
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if stripped.startswith(_VERDICT_LINE_PREFIXES):
+            return stripped
+    return ""
 
 
 def check_issues_batch(
@@ -4703,27 +4739,28 @@ def check_issues_batch(
                 )
             result["exit"] = rc
             captured = buf_out.getvalue()
-            result["code"] = _summarize_run_check_output(captured, rc)
+            err_captured = buf_err.getvalue()
+            # #22916 -- le resume lit les DEUX flux : les verdicts
+            # `NOT_SCOPED` partent sur stderr (#12345, et le call sans
+            # `--paths`), le JSON de synthese et les verdicts BLOCKED /
+            # CLEAR sur stdout. Ne nourrir que stdout classait un scope
+            # mort en ERROR.
+            result["code"] = _summarize_run_check_output(
+                captured + err_captured, rc)
             # Human: on cherche la ligne-verdict parmi les dernieres non
-            # vides du stdout. Le stdout contient d'abord un JSON
-            # summary (`print(json.dumps(summary, ...))` ~L3209) puis
-            # la phrase verdict `CLEAR: ...` / `BLOCKED: ...` /
-            # `IMPLICIT: ...` / `LOCKED (v2): ...` / `DEAD-SCOPE LOCK
-            # ...` / `NOT_SCOPED: ...`. Le pattern prioritaire est
+            # vides. Le stdout contient d'abord un JSON summary
+            # (`print(json.dumps(summary, ...))` ~L3209) puis la phrase
+            # verdict `CLEAR: ...` / `BLOCKED: ...` / `IMPLICIT: ...` /
+            # `LOCKED (v2): ...` / `DEAD-SCOPE LOCK ...` ; stderr porte
+            # les `NOT_SCOPED: ...` (#22916). Le pattern prioritaire est
             # ^CLEAR: / ^BLOCKED: / ^IMPLICIT: / ^LOCKED / ^DEAD-SCOPE
             # / ^NOT_SCOPED : on parcourt les lignes de la fin vers le
-            # debut pour eviter le bruit du JSON.
-            verdict_line = ""
-            for line in reversed(captured.splitlines()):
-                stripped = line.strip()
-                if not stripped:
-                    continue
-                if any(stripped.startswith(prefix) for prefix in (
-                        "CLEAR:", "BLOCKED:", "IMPLICIT:", "LOCKED",
-                        "DEAD-SCOPE", "NOT_SCOPED", "DUMP",
-                )):
-                    verdict_line = stripped
-                    break
+            # debut pour eviter le bruit du JSON. stdout d'abord (verdict
+            # canonique), stderr en repli -- jamais un melange, pour
+            # qu'une erreur de diagnostic sur stderr ne puisse pas
+            # masquer le verdict rendu sur stdout.
+            verdict_line = (_find_verdict_line(captured)
+                            or _find_verdict_line(err_captured))
             if verdict_line:
                 result["human"] = verdict_line[:200]
             else:
