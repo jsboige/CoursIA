@@ -301,6 +301,16 @@ def _install_fake_runtime(monkeypatch, model):
     monkeypatch.setattr("v4.p5_tts._get_cv3_client", lambda: client)
     monkeypatch.setattr("v4.p5_tts._load_cv3_model", lambda: model)
     monkeypatch.setattr("v4.p5_tts.audio_duration_mp3", lambda b: 1.5)
+    # The attack guard (#19739) is ON by default in the loop these tests
+    # drive; its verdict organ has its own suites (test_attack_guard.py,
+    # test_p5_cv3_attack_guard.py). Here a clean verdict is stubbed so the
+    # re-roll loop stays the only thing under test -- no ASR, no organ.
+    monkeypatch.setattr(
+        "v4.p5_tts._cv3_attack_verdict",
+        lambda *a, **k: {
+            "attack_dropped": False, "reason": "none", "n_missing_leading": 0,
+        },
+    )
     return fake_torch
 
 
