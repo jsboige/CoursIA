@@ -26,6 +26,7 @@ from argumentation_lib._paths import (
     get_ontology_dir,
     get_data_dir,
     get_ext_tools_dir,
+    get_local_ext_tools_dir,
     ensure_output_dirs,
 )
 
@@ -522,7 +523,7 @@ __all__ = [
     # paths
     "LIB_DIR", "ARGUMENT_ANALYSIS_DIR", "SYMBOLIC_AI_DIR",
     "get_tweety_jar_dir", "get_ontology_dir", "get_data_dir",
-    "get_ext_tools_dir", "ensure_output_dirs",
+    "get_ext_tools_dir", "get_local_ext_tools_dir", "ensure_output_dirs",
     # jvm
     "initialize_jvm", "is_jvm_started", "shutdown_jvm",
     # state
