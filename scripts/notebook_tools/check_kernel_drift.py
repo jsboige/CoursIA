@@ -476,8 +476,10 @@ CANONICAL_LANGUAGE_TRANSITIONS_SCOPED = {
         "de QC-Py-16 (#19181, cas par cas)",
     # 2.8c est le premier carnet dont la re-execution sous 3.13 est la
     # convergence attendue vers le canon de SA serie. Le kernelspec
-    # ``coursia-ml-training`` est partage par une cinquantaine de carnets
-    # hors 02-ML-Cours qui ne declarent pas 3.13 : une entree globale
+    # ``coursia-ml-training`` est partage par 50 carnets hors 02-ML-Cours
+    # qui ne declarent pas 3.13 (54 au total ; mesure par lecture des
+    # metadonnees, commande et instantane consignes dans #23187) : une
+    # entree globale
     # les aurait tous rendus verts sur cette direction (reserve de revue sur
     # #22979). D'ou la portee par PREFIXE de repertoire ci-dessous, qui
     # couvre la serie entiere sans elargir au kernelspec (#23187).
@@ -499,11 +501,14 @@ CANONICAL_LANGUAGE_TRANSITIONS_SCOPED = {
     # 2026-10-29). Le prefixe -- un premier element termine par ``/`` --
     # limite la tolerance a ce repertoire : les carnets hors serie qui
     # partagent le kernelspec gardent la direction rouge, ce que la
-    # reserve #22979 exigeait (une cinquantaine de carnets hors
+    # reserve #22979 exigeait (50 carnets hors
     # 02-ML-Cours partagent ce kernelspec, contre 4 dans la serie --
-    # forme non exacte deliberee, comme a l'entree 2.8c ci-dessus, pour
-    # que la valeur ne pourrisse pas au rythme des ajouts de carnets ;
-    # la mesure exacte et sa commande sont consignees dans #23187).
+    # 54 au total ; mesure par lecture des METADONNEES de chaque carnet,
+    # commande et instantane consignes dans #23187). Un comptage par
+    # sous-chaine dans le fichier rend 67 : il additionne aussi les
+    # carnets dont le kernelspec est un autre mais dont une cellule cite
+    # le nom -- la population qui compte pour ce garde est celle des
+    # METADONNEES.
     ("MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/",
      "coursia-ml-training", "3.11", "3.13"):
         "Python 3.11 -> 3.13 sous `coursia-ml-training` pour tout carnet de "

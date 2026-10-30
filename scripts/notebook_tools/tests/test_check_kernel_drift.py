@@ -424,9 +424,19 @@ def test_canonical_transition_scoped_reverse_still_refused():
 # tournent sous ``coursia-ml-training`` (releves le 2026-10-29 sur main) :
 # 2.8c et 2.14b a 3.11.15, 2.9d et 2.9g a 3.10.19 -- deux directions, donc
 # deux entrees. La portee est un PREFIXE de repertoire, jamais le kernelspec
-# nu : 67 carnets hors serie partagent ce kernelspec sans declarer 3.13
-# (mesure du 2026-10-29 ; 71 au total, 4 dans la serie), et la reserve de
-# revue de #22979 a refuse l'entree globale precisement pour eux.
+# nu : 50 carnets hors serie partagent ce kernelspec sans declarer 3.13
+# (54 au total, 4 dans la serie). Le chiffre se relit par lecture des
+# METADONNEES de chaque carnet -- la commande et son instantane sont
+# consignes dans #23187 :
+#   python -c "import json, pathlib; print(sum(1 for p in
+#   pathlib.Path('MyIA.AI.Notebooks').rglob('*.ipynb') if
+#   (json.loads(p.read_text(encoding='utf-8')).get('metadata') or {})
+#   .get('kernelspec', {}).get('name') == 'coursia-ml-training'))"
+# (un comptage par sous-chaine dans le fichier rend 67 : il additionne les
+# carnets dont le kernelspec est un autre mais dont une cellule cite le
+# nom -- la population qui compte pour ce garde est celle des METADONNEES).
+# La reserve de revue de #22979 a refuse l'entree globale precisement
+# pour eux.
 
 
 def test_canonical_transition_scoped_series_02ml_accepted():
