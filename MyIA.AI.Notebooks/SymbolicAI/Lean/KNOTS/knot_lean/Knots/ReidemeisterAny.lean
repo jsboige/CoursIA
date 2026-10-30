@@ -1579,4 +1579,239 @@ private theorem rank_unique_label {seen : List (Nat × Nat)}
   · exact rank_covered hr hk hb
   · intro x y hx hy
     exact threadRank_inj hv hx hy (by simp [threadRank, hx, hy])
+/-! ## 14. La correspondance des rangées (tranche 9)
+
+L'égalité `canon l = canon l'` porte sur des **rangées** : à chaque croisement de
+`l` correspond un croisement de `l'`, et les **quatre slots** se correspondent
+positionnellement. C'est la propriété qui permet de composer le renommage : le
+slot `j` d'un croisement de `l` et le slot `j` du croisement correspondant de
+`l'` portent le **même rang** dans leurs fils finaux respectifs.
+
+Les rangs sont pris dans le fil final de la **sous-liste courante** : le fil
+final d'une liste est celui de sa dernière sous-liste, filée depuis l'état
+qu'elle reçoit — d'où la récursion parallèle sur les deux listes.
+
+- `RowsCorrespond` : la correspondance, énoncée comme une récursion parallèle ;
+- `four_slots_eq` : deux rangées de quatre slots égales se correspondent
+  positionnellement ;
+- `rows_correspond` : deux listes qui portent les mêmes rangées canoniques se
+  correspondent rang par rang, slot par slot.
+-/
+
+/-- Deux listes de quatre slots égales se correspondent positionnellement :
+    le slot de rang `j` d'un côté est apparié au slot de rang `j` de l'autre. -/
+private theorem four_slots_eq {a b c d a' b' c' d' : Nat} {f g : Nat → Nat}
+    (h : [a, b, c, d].map f = [a', b', c', d'].map g) :
+    f a = g a' ∧ f b = g b' ∧ f c = g c' ∧ f d = g d' := by
+  simp only [List.map] at h
+  rcases List.cons.inj h with ⟨h1, h2⟩
+  rcases List.cons.inj h2 with ⟨h2', h3⟩
+  rcases List.cons.inj h3 with ⟨h3', h4⟩
+  rcases List.cons.inj h4 with ⟨h4', _⟩
+  exact ⟨h1, h2', h3', h4'⟩
+
+/-- Deux listes de croisements se correspondent si, à chaque croisement
+    mutuellement apparié, les quatre slots portent le même rang. Les rangs sont
+    pris dans le fil final de la sous-liste courante — le fil final de la liste
+    entière étant celui de sa dernière sous-liste, filée depuis l'état qu'elle
+    reçoit. -/
+private def RowsCorrespond (seen seen' : List (Nat × Nat)) (cs cs' : List PDCrossing) : Prop :=
+  match cs, cs' with
+  | [], [] => True
+  | c :: tl, c' :: tl' =>
+      (threadRank (canonThreaded (c :: tl) seen).2 c.e1 =
+          threadRank (canonThreaded (c' :: tl') seen').2 c'.e1) ∧
+      (threadRank (canonThreaded (c :: tl) seen).2 c.e2 =
+          threadRank (canonThreaded (c' :: tl') seen').2 c'.e2) ∧
+      (threadRank (canonThreaded (c :: tl) seen).2 c.e3 =
+          threadRank (canonThreaded (c' :: tl') seen').2 c'.e3) ∧
+      (threadRank (canonThreaded (c :: tl) seen).2 c.e4 =
+          threadRank (canonThreaded (c' :: tl') seen').2 c'.e4) ∧
+      RowsCorrespond (canonSlots seen [c.e1, c.e2, c.e3, c.e4]).2
+        (canonSlots seen' [c'.e1, c'.e2, c'.e3, c'.e4]).2 tl tl'
+  | _, _ => False
+
+/-- **Deux listes qui portent les mêmes rangées canoniques se correspondent
+    rang par rang, slot par slot.** C'est le lemme qui relie les deux moitiés du
+    pont : l'égalité `canon l = canon l'` associe à chaque croisement de `l` un
+    croisement de `l'`, et à chaque slot un slot — par l'égalité des rangs. -/
+private theorem rows_correspond :
+    ∀ (cs : List PDCrossing) (seen seen' : List (Nat × Nat)) (cs' : List PDCrossing),
+      (canonThreaded cs seen).1 = (canonThreaded cs' seen').1 →
+      RowsCorrespond seen seen' cs cs' := by
+  intro cs
+  induction cs with
+  | nil =>
+      intro seen seen' cs' h
+      cases cs' with
+      | nil => trivial
+      | cons c' tl' =>
+          have hne : (canonThreaded (c' :: tl') seen').1 ≠ [] := by
+            intro hh
+            have hct : (canonThreaded (c' :: tl') seen').1 =
+                (canonSlots seen' [c'.e1, c'.e2, c'.e3, c'.e4]).1 ::
+                  (canonThreaded tl' (canonSlots seen' [c'.e1, c'.e2, c'.e3, c'.e4]).2).1 := rfl
+            rw [hct] at hh
+            exact (List.cons_ne_nil _ _ hh).elim
+          exact absurd (h.symm.trans rfl) hne
+  | cons c tl ih =>
+      intro seen seen' cs' h
+      cases cs' with
+      | nil =>
+          have hne : (canonThreaded (c :: tl) seen).1 ≠ [] := by
+            intro hh
+            have hct : (canonThreaded (c :: tl) seen).1 =
+                (canonSlots seen [c.e1, c.e2, c.e3, c.e4]).1 ::
+                  (canonThreaded tl (canonSlots seen [c.e1, c.e2, c.e3, c.e4]).2).1 := rfl
+            rw [hct] at hh
+            exact (List.cons_ne_nil _ _ hh).elim
+          exact absurd h hne
+      | cons c' tl' =>
+          have hct1 : (canonThreaded (c :: tl) seen).1 =
+              (canonSlots seen [c.e1, c.e2, c.e3, c.e4]).1 ::
+                (canonThreaded tl (canonSlots seen [c.e1, c.e2, c.e3, c.e4]).2).1 := rfl
+          have hct2 : (canonThreaded (c' :: tl') seen').1 =
+              (canonSlots seen' [c'.e1, c'.e2, c'.e3, c'.e4]).1 ::
+                (canonThreaded tl' (canonSlots seen' [c'.e1, c'.e2, c'.e3, c'.e4]).2).1 := rfl
+          rw [hct1, hct2] at h
+          rcases List.cons.inj h with ⟨hhead, htail⟩
+          have hr1 := canonThreaded_row_ranks (c := c) (cs := tl) (seen := seen)
+          have hr2 := canonThreaded_row_ranks (c := c') (cs := tl') (seen := seen')
+          have hrow1 : ([c.e1, c.e2, c.e3, c.e4].map
+                  (fun x => threadRank (canonThreaded (c :: tl) seen).2 x) ::
+                (canonThreaded tl (canonSlots seen [c.e1, c.e2, c.e3, c.e4]).2).1) =
+              ((canonSlots seen [c.e1, c.e2, c.e3, c.e4]).1 ::
+                (canonThreaded tl (canonSlots seen [c.e1, c.e2, c.e3, c.e4]).2).1) :=
+            hr1.symm.trans hct1
+          rcases List.cons.inj hrow1 with ⟨hmap, _⟩
+          have hrow2 : ([c'.e1, c'.e2, c'.e3, c'.e4].map
+                  (fun x => threadRank (canonThreaded (c' :: tl') seen').2 x) ::
+                (canonThreaded tl' (canonSlots seen' [c'.e1, c'.e2, c'.e3, c'.e4]).2).1) =
+              ((canonSlots seen' [c'.e1, c'.e2, c'.e3, c'.e4]).1 ::
+                (canonThreaded tl' (canonSlots seen' [c'.e1, c'.e2, c'.e3, c'.e4]).2).1) :=
+            hr2.symm.trans hct2
+          rcases List.cons.inj hrow2 with ⟨hmap', _⟩
+          have hmap'' : ([c.e1, c.e2, c.e3, c.e4].map
+                (fun x => threadRank (canonThreaded (c :: tl) seen).2 x)) =
+              ([c'.e1, c'.e2, c'.e3, c'.e4].map
+                (fun x => threadRank (canonThreaded (c' :: tl') seen').2 x)) :=
+            hmap.trans (hhead.trans hmap'.symm)
+          rcases four_slots_eq hmap'' with ⟨h1, h2, h3, h4⟩
+          refine ⟨h1, h2, h3, h4, ?_⟩
+          exact ih (seen := (canonSlots seen [c.e1, c.e2, c.e3, c.e4]).2)
+              (seen' := (canonSlots seen' [c'.e1, c'.e2, c'.e3, c'.e4]).2)
+              (cs' := tl') htail
+
+/-! ## 15. L'étiquette d'un rang (tranche 9)
+
+Les tranches précédentes ont établi qu'un rang porté par un fil est porté par
+**une** étiquette (§13) et qu'à un rang donné correspond **exactement une**
+étiquette (§13). Il manquait l'**opérateur** qui retrouve l'étiquette d'un rang
+donné : sans lui, le renommage `π` ne peut pas être écrit.
+
+- `pairOfRank` : la première association du fil qui porte le rang demandé ;
+- `pairOfRank_mem` / `pairOfRank_none` : ce qu'elle garantit, et son contraire ;
+- `labelOfRank` : l'étiquette qui porte le rang ;
+- `labelOfRank_spec` : l'étiquette rendue est bien celle que `lookup` rend ;
+- `labelOfRank_exists` : tout rang porté est porté par l'étiquette rendue ;
+- `labelOfRank_inj` : deux rangs distincts ne sont jamais portés par la même
+  étiquette.
+-/
+
+/-- La première association du fil `t` qui porte le rang `r`. -/
+private def pairOfRank : List (Nat × Nat) → Nat → Option (Nat × Nat)
+  | [], _ => none
+  | p :: t, r => if p.2 = r then some p else pairOfRank t r
+
+/-- L'association rendue par `pairOfRank` est bien dans le fil, et porte le
+    rang demandé. -/
+private theorem pairOfRank_mem {t : List (Nat × Nat)} {r : Nat} {p : Nat × Nat}
+    (h : pairOfRank t r = some p) : p ∈ t ∧ p.2 = r := by
+  induction t with
+  | nil => simp [pairOfRank] at h
+  | cons q t ih =>
+      by_cases hq : q.2 = r
+      · have hq' : pairOfRank (q :: t) r = some q := by simp [pairOfRank, hq]
+        rw [hq'] at h
+        have hpq : p = q := (Option.some.inj h).symm
+        subst hpq
+        exact ⟨List.mem_cons_self, hq⟩
+      · have hq' : pairOfRank (q :: t) r = pairOfRank t r := by simp [pairOfRank, hq]
+        rw [hq'] at h
+        obtain ⟨hm, hv⟩ := ih h
+        exact ⟨List.mem_cons_of_mem q hm, hv⟩
+
+/-- Aucune association du fil ne porte le rang demandé quand `pairOfRank` ne
+    rend rien. -/
+private theorem pairOfRank_none {t : List (Nat × Nat)} {r : Nat}
+    (h : pairOfRank t r = none) : ∀ p ∈ t, p.2 ≠ r := by
+  induction t with
+  | nil => intro p hp; simp at hp
+  | cons q t ih =>
+      intro p hp
+      by_cases hq : q.2 = r
+      · have hq' : pairOfRank (q :: t) r = some q := by simp [pairOfRank, hq]
+        rw [hq'] at h
+        simp at h
+      · have hq' : pairOfRank (q :: t) r = pairOfRank t r := by simp [pairOfRank, hq]
+        rw [hq'] at h
+        rcases List.mem_cons.mp hp with hpq | hpt
+        · rw [hpq]
+          exact hq
+        · exact ih h p hpt
+
+/-- L'étiquette qui porte le rang `r` dans le fil `t`. -/
+private def labelOfRank (t : List (Nat × Nat)) (r : Nat) : Option Nat :=
+  (pairOfRank t r).map Prod.fst
+
+/-- L'étiquette rendue par `labelOfRank` est bien celle que `lookup` rend : à
+    clés distinctes, elle porte bien le rang demandé. -/
+private theorem labelOfRank_spec {t : List (Nat × Nat)} (hk : SeenKeysNodup t)
+    {r y : Nat} (h : labelOfRank t r = some y) : t.lookup y = some r := by
+  unfold labelOfRank at h
+  cases hp : pairOfRank t r with
+  | none => simp [hp] at h
+  | some p =>
+      have hmem := pairOfRank_mem hp
+      have hlookup := lookup_eq_some_of_mem t hk p hmem.1
+      have hpy : p.1 = y := by
+        simp [hp] at h
+        exact h
+      calc t.lookup y = t.lookup p.1 := by rw [hpy]
+        _ = some p.2 := hlookup
+        _ = some r := by rw [hmem.2]
+
+/-- **Tout** rang porté par le fil est porté par l'étiquette que `labelOfRank`
+    rend. L'existence vient de la suite des rangs (§13), l'unicité de
+    l'injectivité des valeurs (§12). -/
+private theorem labelOfRank_exists {t : List (Nat × Nat)} (hv : SeenValsNodup t)
+    (hk : SeenKeysNodup t) (hr : ThreadRanks t) {r : Nat} (hb : 1 ≤ r ∧ r ≤ t.length) :
+    ∃ y, labelOfRank t r = some y ∧ t.lookup y = some r := by
+  obtain ⟨x, hx⟩ := rank_covered hr hk hb
+  have hmem := mem_of_lookup hx
+  have hnone : pairOfRank t r ≠ none := by
+    intro hn
+    exact absurd rfl (pairOfRank_none hn (x, r) hmem)
+  cases hp : pairOfRank t r with
+  | none => exact absurd hp hnone
+  | some p =>
+      have hpm := pairOfRank_mem hp
+      have hpm' : (p.1, r) ∈ t := by rw [← hpm.2]; exact hpm.1
+      have hpx : p.1 = x := pair_eq_of_mem_of_snd_eq hv hpm' hmem
+      refine ⟨p.1, ?_, ?_⟩
+      · simp [labelOfRank, hp]
+      · rw [hpx]
+        exact hx
+
+/-- Deux rangs distincts ne sont jamais portés par la même étiquette. -/
+private theorem labelOfRank_inj {t : List (Nat × Nat)} (hk : SeenKeysNodup t)
+    {r s y z : Nat} (hr : labelOfRank t r = some y) (hs : labelOfRank t s = some z)
+    (hne : r ≠ s) : y ≠ z := by
+  intro h
+  subst h
+  have h1 := labelOfRank_spec hk hr
+  have h2 := labelOfRank_spec hk hs
+  rw [h1] at h2
+  exact hne (Option.some.inj h2)
+
 end Knots.AnyMoves
