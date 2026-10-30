@@ -184,3 +184,63 @@ def test_positive_control_prefix_behaviour_is_refused():
     current_code = clc._summarize_run_check_output(
         stdout_only + "\n" + NOT_SCOPED_STDERR, 2)
     assert current_code == "BLOCKED"
+
+
+# --------------------------------------------------------------------------
+# 5. The two paths CONVERGE -- the mono path already did the right thing
+# --------------------------------------------------------------------------
+
+def test_the_mono_path_already_read_the_blocker():
+    """The single-issue path parses the stdout JSON -> it was already right.
+
+    This is the sharper form of the divergence the issue describes: the
+    picker had TWO reduction paths for the SAME verdict, and only the
+    batch one was wrong.
+    """
+    payload = _summary_json(blocking_lanes=["myia-po-2028:CoursIA"])
+    code, human = pig._summarize_claim(payload, 2)
+    assert code == pig.CLAIM_CODE_BLOCKED
+    assert "myia-po-2028:CoursIA" in human
+
+
+def test_the_two_paths_agree_after_the_fix():
+    """Mono and batch must return the same verdict for the same evidence.
+
+    Pre-fix: mono -> BLOCKED (it parses the JSON), batch -> ERROR (it
+    only looked at stdout). The picker serves a candidate on `ERROR`
+    (fail-open), so the batch path was the one that let occupied grains
+    through.
+    """
+    payload = _summary_json(blocking_lanes=["myia-po-2028:CoursIA"])
+    mono_code, _ = pig._summarize_claim(payload, 2)
+
+    batch_payload = _batch_result("ERROR", "(ERROR)", True)
+    batch_code, _ = pig._summarize_claim_from_batch(batch_payload, 19741)
+
+    assert mono_code == batch_code == pig.CLAIM_CODE_BLOCKED
+
+
+def test_a_silent_probe_agrees_on_both_paths():
+    """The fail-open must agree on both paths too -- not just on one.
+
+    Careful about the evidence class: the mono path is fed the probe's
+    **stdout**, so a readable JSON summary yields FREE/BLOCKED, while a
+    probe that produced *nothing* yields ERROR. The batch path receives
+    the already-reduced verdict. Convergence is only meaningful within
+    one evidence class -- so the silent case is compared against a silent
+    mono input.
+    """
+    mono_code, _ = pig._summarize_claim("", 2)  # nothing readable at all
+    batch_code, _ = pig._summarize_claim_from_batch(
+        _batch_result("ERROR", "(ERROR)", False), 19741)
+    assert mono_code == batch_code == pig.CLAIM_CODE_ERROR
+
+
+def test_a_readable_free_summary_is_free_on_the_mono_path():
+    """Control: a readable summary with no blocker is FREE (not ERROR).
+
+    This pins the evidence classes apart, so the convergence test above
+    cannot pass by accident.
+    """
+    code, _ = pig._summarize_claim(_summary_json(blocking_lanes=[]), 0)
+    assert code == pig.CLAIM_CODE_FREE
