@@ -30,6 +30,26 @@ This behaviour remains available under `mode` = `base` to reproduce the earlier 
 - `SharedPCM/pouches_pcm.py` (QC project library): `MultiStrategyPouchesPCM`, the canonical pouch PCM imported by `main.py` (extraction #19821 brick 1)
 - `quantbook.ipynb`: Research QuantBook for the Momentum + RegimeSwitching composite (native QC data, pre-backtest)
 
+## Shared module non-regression (#20188)
+
+Since #21134, `main.py` imports `MultiStrategyPouchesPCM` from `SharedPCM/pouches_pcm.py` instead of the local copy `portfolio_construction.py`. Two QC Cloud backtests run on 2026-10-26, with the default parameters and the window 2015-01-01 → 2025-12-31, check that this change alters no order:
+
+- **A**: the `main` code at commit `54f9b9eec1`, with the shared module;
+- **B**: the same `main.py` and `alpha_models.py`, with the old `portfolio_construction.py` copy taken at the commit before the migration (`777f502a2a^`). The argument the old copy does not know (`watch_source="SectorMomentum"`) is removed from the call, and two read-only properties expose its diagnostic counters under the names `main.py` reads.
+
+A and B carry the same instrumentation, which places no order. It records the portfolio value every day at midnight, warm-up included (252 sessions). At the end of the backtest it computes a SHA-256 fingerprint per year of the orders (id, date, security, quantity, status, price) and of the recorded values.
+
+| | A (shared module) | B (old copy) |
+|---|---|---|
+| Orders | 676 | 676 |
+| Recorded values | 4,382 | 4,382 |
+| Last recorded value | 238,628.49 | 238,628.49 |
+| Sharpe (QC) | 0.353 | 0.353 |
+| CAGR | 8.152% | 8.152% |
+| Max drawdown | 28.3% | 28.3% |
+
+The yearly fingerprints are equal: 12 of 12 for the orders, 12 of 12 for the values. The 27 QC statistics are equal, turnover included. The diagnostic counters of the portfolio construction model are equal as well. The migration therefore does not change the project's behaviour. Traces kept outside the repository: `QC-traces/20188-nr/`.
+
 ## Performance
 
 ### Re-measurement #21349 on the `main` code: `NO BEATS`

@@ -1202,6 +1202,32 @@ def _prune_stack_refs(keep: list[int]) -> None:
             _git(["update-ref", "-d", ref], check=False)
 
 
+#: Cause nommee rendue quand l'historique de la base est tronque dans le
+#: clone de l'appelant (#23089). Le texte est celui de l'issue : il nomme le
+#: symptome ET le geste qui le leve.
+STACK_UNAVAILABLE_SHALLOW = (
+    "stack check unavailable: shallow clone — git fetch --unshallow "
+    "(racines mortes : python scripts/ci/merge_dwell.py --prune-shallow)"
+)
+
+
+def _base_history_truncated() -> bool:
+    """L'historique de la base est-il tronque dans le clone de l'appelant ?
+
+    La question est posee a `merge_dwell` (c'est la qu'un `fetch --depth=1`
+    pouvait creer une borne) : meme predicat, meme source de verite. Lecture
+    indisponible -> `False` : on ne refuse pas la mesure sur un doute.
+    """
+    try:
+        from ci.merge_dwell import base_history_truncated
+    except Exception:  # noqa: BLE001 - lecteur optionnel, fail-open
+        return False
+    try:
+        return bool(base_history_truncated())
+    except Exception:  # noqa: BLE001 - idem
+        return False
+
+
 def build_stack_index() -> tuple[dict[int, StackEntry] | None, list[str]]:
     """Une passe : ce que chaque PR ouverte apporte par rapport a `main`.
 
@@ -1210,6 +1236,28 @@ def build_stack_index() -> tuple[dict[int, StackEntry] | None, list[str]]:
     porte (cf la porte B.0, dont l'echec de mesure est fail-closed a l'inverse,
     parce qu'elle infirme une affirmation -- ici on ne peut que constater).
     """
+    # #23089 : la porte pile compare `main..tete`. Sur un clone dont
+    # l'historique de `main` est REELLEMENT tronque, la comparaison est
+    # fausse : des commits deja merges apparaissent comme « propres », et la
+    # porte invente des piles (mesure ai-01 du 2026-10-28 : #22244 et #22252
+    # rendues BLOCKED sur des squash deja merges, `47b09bc383f` pour
+    # #22011). La passe refuse donc de mesurer et rend une cause NOMINEE --
+    # jamais un faux « stack top ».
+    #
+    # Le predicat est celui de `merge_dwell` (c'est la qu'un `fetch --depth=1`
+    # pouvait creer une borne) : meme question, meme source. Une lecture
+    # indisponible ne bloque pas la mesure -- elle la laisse au comportement
+    # d'avant (fail-open de la porte, jamais un refus fabrique).
+    #
+    # #23110 (reserve ai-01 du 2026-10-28) : la passe LIT, elle n'ECRIT pas.
+    # Elle appelait `merge_dwell.prune_dead_shallow_roots()` ici, donc une
+    # garde reecrivait `.git/shallow` du clone de l'appelant a chaque passe --
+    # un fichier que seul le transport (clone/fetch) a le droit d'ecrire. Le
+    # nettoyage des racines mortes est devenu la commande explicite
+    # `merge_dwell.py --prune-shallow` ; le message d'incident la nomme.
+    if _base_history_truncated():
+        return None, [STACK_UNAVAILABLE_SHALLOW]
+
     try:
         numbers = [
             int(line) for line in gh_lines([
