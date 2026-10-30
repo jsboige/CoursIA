@@ -1438,4 +1438,152 @@ private theorem threadRank_inj {seen : List (Nat × Nat)} (hv : SeenValsNodup se
   have h2 : vx = vy := by simpa only [threadRank, hx, hy] using h
   have hy' : seen.lookup y = some vx := by rw [h2]; exact hy
   exact pair_eq_of_mem_of_snd_eq hv (mem_of_lookup hx) (mem_of_lookup hy')
+
+/-! ## 13. The sequence of carried ranks (tranche 8)
+
+So far the thread was described by **bounds**: its ranks live between `1` and
+the size of the thread (§9). That is necessary, but insufficient for the
+extraction: to recover the label of a given rank, the sequence of carried
+ranks must be **exactly** `1, 2, …, n` — no gap, and in that order.
+
+This is what this section establishes:
+
+- `ThreadRanks`: the thread carries the sequence `1 … n`;
+- `canonLabel_threadRanks`, `canonSlots_threadRanks`, `canonThreaded_threadRanks`: threading
+  **preserves** that sequence (a new rank extends it by one);
+- `lookup_eq_some_of_mem`: an entry of the thread is indeed the one `lookup`
+  returns;
+- `rank_covered`: **every** rank of `1 … n` is carried by a label of the
+  thread;
+- `rank_unique_label`: **a given rank corresponds to exactly one label**
+  (existence by the sequence, uniqueness by the injectivity of the rank, §12).
+
+This is the second half of the right definition of `π`: `SeenKeysNodup` (§8)
+says a label has a single rank, `ThreadRanks` says a rank has a single label.
+-/
+
+/-- The sequence of ranks `1 … n`. -/
+private def rankSeq (n : Nat) : List Nat := (List.range n).map (fun k => k + 1)
+
+/-- The sequence `1 … n` extended by `n+1` is the sequence `1 … (n+1)`. -/
+private theorem rankSeq_succ (n : Nat) : rankSeq (n + 1) = rankSeq n ++ [n + 1] := by
+  unfold rankSeq
+  rw [List.range_succ, List.map_append, List.map_singleton]
+
+/-- The thread carries the ranks `1 … n`, in that order. -/
+private def ThreadRanks (seen : List (Nat × Nat)) : Prop :=
+  seen.map Prod.snd = rankSeq seen.length
+
+/-- The empty thread carries the empty sequence. -/
+private theorem threadRanks_nil : ThreadRanks [] := by
+  simp [ThreadRanks, rankSeq]
+
+/-- `canonLabel` preserves the sequence of ranks: an already carried rank does
+    not move, a new rank extends the sequence by one. -/
+private theorem canonLabel_threadRanks {seen : List (Nat × Nat)} {x : Nat}
+    (h : ThreadRanks seen) : ThreadRanks (canonLabel seen x).2 := by
+  unfold ThreadRanks
+  cases hlk : seen.lookup x with
+  | some v =>
+    have hsame : (canonLabel seen x).2 = seen := by
+      unfold canonLabel; rw [hlk]
+    rw [hsame]
+    exact h
+  | none =>
+    rw [show (canonLabel seen x).2 = seen ++ [(x, seen.length + 1)] by
+      unfold canonLabel; rw [hlk]]
+    simp only [List.map_append, List.map_singleton, List.length_append,
+      List.length_singleton]
+    rw [h, rankSeq_succ]
+
+/-- Threading a sequence of labels preserves the sequence of ranks (induction
+    on the sequence, arbitrary initial state). -/
+private theorem canonSlots_threadRanks {seen : List (Nat × Nat)} {xs : List Nat}
+    (h : ThreadRanks seen) : ThreadRanks (canonSlots seen xs).2 := by
+  induction xs generalizing seen with
+  | nil =>
+    simp only [canonSlots]
+    exact h
+  | cons y ys ih =>
+    cases hlk : seen.lookup y with
+    | some v =>
+      rw [canonSlots_cons_of_some hlk]
+      exact ih h
+    | none =>
+      have hlab : (canonLabel seen y).2 = seen ++ [(y, seen.length + 1)] := by
+        unfold canonLabel; rw [hlk]
+      have hk' := canonLabel_threadRanks (seen := seen) (x := y) h
+      rw [hlab] at hk'
+      rw [canonSlots_cons_of_none hlk]
+      exact ih hk'
+
+/-- The final thread of a list of crossings carries the sequence of ranks. -/
+private theorem canonThreaded_threadRanks {l : List PDCrossing} {seen : List (Nat × Nat)}
+    (h : ThreadRanks seen) : ThreadRanks (canonThreaded l seen).2 := by
+  induction l generalizing seen with
+  | nil =>
+    simp only [canonThreaded]
+    exact h
+  | cons c cs ih =>
+    have hcs := canonSlots_threadRanks (seen := seen)
+      (xs := [c.e1, c.e2, c.e3, c.e4]) h
+    have hct : (canonThreaded (c :: cs) seen).2 =
+        (canonThreaded cs (canonSlots seen [c.e1, c.e2, c.e3, c.e4]).2).2 := rfl
+    rw [hct]
+    exact ih hcs
+
+/-- An entry of the thread is indeed the one `lookup` returns: with distinct
+    keys, the query that targets an entry returns its value. -/
+private theorem lookup_eq_some_of_mem (l : List (Nat × Nat))
+    (hk : SeenKeysNodup l) (p : Nat × Nat) (hp : p ∈ l) :
+    l.lookup p.1 = some p.2 := by
+  induction l with
+  | nil => simp at hp
+  | cons q t ih =>
+    unfold SeenKeysNodup at hk
+    simp only [List.map_cons, List.nodup_cons] at hk
+    obtain ⟨hnotin, hnodup⟩ := hk
+    simp only [List.mem_cons] at hp
+    rcases hp with hpq | hpt
+    · subst hpq
+      simp only [List.lookup, beq_self_eq_true]
+    · have hne : (p.1 == q.1) = false := by
+        rw [beq_eq_false_iff_ne]
+        intro hqc
+        apply hnotin
+        rw [← hqc]
+        exact List.mem_map.mpr ⟨p, hpt, rfl⟩
+      simp only [List.lookup, hne]
+      exact ih hnodup hpt
+
+/-- **Every** rank of the thread is carried by a label of the thread: the
+    sequence `1 … n` is covered. -/
+private theorem rank_covered {seen : List (Nat × Nat)} (h : ThreadRanks seen)
+    (hk : SeenKeysNodup seen) {r : Nat} (hr : 1 ≤ r ∧ r ≤ seen.length) :
+    ∃ x, seen.lookup x = some r := by
+  have hr1 : r - 1 ∈ List.range seen.length := by
+    rw [List.mem_range]
+    omega
+  have hmem : r ∈ seen.map Prod.snd := by
+    rw [ThreadRanks] at h
+    unfold rankSeq at h
+    rw [h, List.mem_map]
+    exact ⟨r - 1, hr1, by omega⟩
+  obtain ⟨p, hp, hpv⟩ := List.mem_map.mp hmem
+  refine ⟨p.1, ?_⟩
+  rw [lookup_eq_some_of_mem seen hk p hp]
+  exact congrArg some hpv
+
+/-- **A given rank corresponds to exactly one label** of the thread:
+    existence comes from the sequence of ranks, uniqueness from the
+    injectivity of the rank (§12). -/
+private theorem rank_unique_label {seen : List (Nat × Nat)}
+    (hv : SeenValsNodup seen) (hk : SeenKeysNodup seen) (hr : ThreadRanks seen)
+    {r : Nat} (hb : 1 ≤ r ∧ r ≤ seen.length) :
+    (∃ x, seen.lookup x = some r) ∧
+      ∀ x y, seen.lookup x = some r → seen.lookup y = some r → x = y := by
+  constructor
+  · exact rank_covered hr hk hb
+  · intro x y hx hy
+    exact threadRank_inj hv hx hy (by simp [threadRank, hx, hy])
 end Knots_en.AnyMoves
