@@ -1819,4 +1819,413 @@ private theorem labelOfRank_inj {t : List (Nat × Nat)} (hk : SeenKeysNodup t)
   rw [h1] at h2
   exact hne (Option.some.inj h2)
 
+
+/-! ## 16. The extracted renaming (tranche 10)
+
+The previous tranches established that the equality `canon l = canon l'` pairs
+every crossing of `l` with a crossing of `l'`, and every slot with a slot, by
+equality of **ranks** (§14), and that a given rank is carried by **exactly one
+label** (§13, §15). What was missing was the **composition**: the operator `π`
+that renames the labels, and the proof that it is well defined, **injective**,
+and that it sends `l` onto `l'`.
+
+- `labelsOf`: the labels carried by a list of crossings;
+- `Tfinal`: the final thread of a list of crossings;
+- `labelsOf_carried`: a carried label is carried by the final thread;
+- `rank_transfer_acc`: the row correspondence **transports the ranks**;
+- `piOfT` / `piOf`: the renaming;
+- `pi_of_rank`: for a given rank, the renaming returns the label carrying it;
+- `pi_transfer`: the rank travels to the target, and the renaming follows;
+- `pi_inj`: the renaming is **injective** on the labels of the source;
+- `mapC_pi_acc`: the renaming **sends `l` onto `l'`**;
+- `canon_extraction`: the extraction, in the shape of the bridge.
+
+The shape of the renaming is the **rank**: the label of `l'` carrying the same
+rank as the label of `l`. The sequence of ranks `1 … n` (§13) guarantees that
+this label exists and is unique; the injectivity of the rank (§12) guarantees
+that the renaming never confuses two distinct labels.
+-/
+
+/-- The labels carried by a list of crossings: the four labels of each
+    crossing, in order. -/
+private def labelsOf (l : List PDCrossing) : List Nat :=
+  l.flatMap fun c => [c.e1, c.e2, c.e3, c.e4]
+
+/-- The final thread of a list of crossings: the thread rendered after the
+    last crossing, threaded from the empty thread. -/
+private def Tfinal (l : List PDCrossing) : List (Nat × Nat) :=
+  (canonThreaded l []).2
+
+/-- The renaming: the label of the target carrying the same rank as the label
+    of the source. Outside the range of the labels of the source, the renaming
+    returns the label itself. -/
+private def piOfT (T T' : List (Nat × Nat)) (x : Nat) : Nat :=
+  match labelOfRank T' (threadRank T x) with
+  | some y => y
+  | none => x
+
+/-- The renaming of the labels of `l` into labels of `l'`. -/
+private def piOf (l l' : List PDCrossing) (x : Nat) : Nat :=
+  piOfT (Tfinal l) (Tfinal l') x
+
+/-- The rank of a carried label is the value the thread carries for it. -/
+private theorem threadRank_of_lookup {t : List (Nat × Nat)} {x v : Nat}
+    (h : t.lookup x = some v) : threadRank t x = v := by
+  simp only [threadRank, h]
+
+/-- The labels of a crossing are those of the list carrying it. -/
+private theorem labelsOf_cons (c : PDCrossing) (cs : List PDCrossing) :
+    labelsOf (c :: cs) = [c.e1, c.e2, c.e3, c.e4] ++ labelsOf cs := rfl
+
+/-- A label of the current crossing is carried by the list. -/
+private theorem mem_labelsOf_head {c : PDCrossing} {cs : List PDCrossing} {x : Nat}
+    (hx : x ∈ [c.e1, c.e2, c.e3, c.e4]) : x ∈ labelsOf (c :: cs) := by
+  rw [labelsOf_cons]
+  exact List.mem_append.mpr (Or.inl hx)
+
+/-- A label carried by the tail is also carried by the whole list. -/
+private theorem mem_labelsOf_tail {c : PDCrossing} {cs : List PDCrossing} {x : Nat}
+    (hx : x ∈ labelsOf cs) : x ∈ labelsOf (c :: cs) := by
+  rw [labelsOf_cons]
+  exact List.mem_append.mpr (Or.inr hx)
+
+/-- A label of the list is either one of the current crossing or one of the
+    tail. -/
+private theorem labelsOf_cons_cases {c : PDCrossing} {cs : List PDCrossing} {x : Nat}
+    (hx : x ∈ labelsOf (c :: cs)) : x ∈ [c.e1, c.e2, c.e3, c.e4] ∨ x ∈ labelsOf cs := by
+  rw [labelsOf_cons] at hx
+  exact List.mem_append.mp hx
+
+/-- **A carried label is carried by the rendered thread**, with a value. -/
+private theorem labelsOf_carried :
+    ∀ (l : List PDCrossing) (seen : List (Nat × Nat)) (x : Nat),
+      x ∈ labelsOf l → ∃ v, (canonThreaded l seen).2.lookup x = some v := by
+  intro l
+  induction l with
+  | nil =>
+      intro seen x hx
+      have hnil : labelsOf ([] : List PDCrossing) = [] := rfl
+      rw [hnil] at hx
+      simp at hx
+  | cons c cs ih =>
+      intro seen x hx
+      have hct : (canonThreaded (c :: cs) seen).2 =
+          (canonThreaded cs (canonSlots seen [c.e1, c.e2, c.e3, c.e4]).2).2 := rfl
+      rcases labelsOf_cons_cases hx with hxs | hxs
+      · have hx' := canonSlots_lookup_some (seen := seen)
+          (xs := [c.e1, c.e2, c.e3, c.e4]) hxs
+        obtain ⟨v, hv⟩ := hx'
+        have h2 := canonThreaded_ext cs
+          (canonSlots seen [c.e1, c.e2, c.e3, c.e4]).2 x v hv
+        rw [hct]
+        exact ⟨v, h2⟩
+      · have hx' := ih (canonSlots seen [c.e1, c.e2, c.e3, c.e4]).2 x hxs
+        obtain ⟨v, hv⟩ := hx'
+        rw [hct]
+        exact ⟨v, hv⟩
+
+/-- **Two threads carrying the same rank carry the same value.** -/
+private theorem rank_pair {S S' : List (Nat × Nat)} {x y : Nat}
+    (hr : threadRank S x = threadRank S' y)
+    (hx : ∃ v, S.lookup x = some v) (hy : ∃ v, S'.lookup y = some v) :
+    ∃ v, S.lookup x = some v ∧ S'.lookup y = some v := by
+  obtain ⟨v, hv⟩ := hx
+  obtain ⟨v', hv'⟩ := hy
+  have h1 : threadRank S x = v := threadRank_of_lookup hv
+  have h2 : threadRank S' y = v' := threadRank_of_lookup hv'
+  rw [h1] at hr
+  rw [h2] at hr
+  have hvg : v' = v := hr.symm
+  refine ⟨v, hv, ?_⟩
+  rw [hvg] at hv'
+  exact hv'
+
+/-- The correspondence, decomposed at the "crossing / crossing" case. -/
+private theorem rowsCorrespond_cons {c c' : PDCrossing} {cs cs' : List PDCrossing}
+    {seen seen' : List (Nat × Nat)} (h : RowsCorrespond seen seen' (c :: cs) (c' :: cs')) :
+    (threadRank (canonThreaded (c :: cs) seen).2 c.e1 =
+        threadRank (canonThreaded (c' :: cs') seen').2 c'.e1) ∧
+    (threadRank (canonThreaded (c :: cs) seen).2 c.e2 =
+        threadRank (canonThreaded (c' :: cs') seen').2 c'.e2) ∧
+    (threadRank (canonThreaded (c :: cs) seen).2 c.e3 =
+        threadRank (canonThreaded (c' :: cs') seen').2 c'.e3) ∧
+    (threadRank (canonThreaded (c :: cs) seen).2 c.e4 =
+        threadRank (canonThreaded (c' :: cs') seen').2 c'.e4) ∧
+    RowsCorrespond (canonSlots seen [c.e1, c.e2, c.e3, c.e4]).2
+      (canonSlots seen' [c'.e1, c'.e2, c'.e3, c'.e4]).2 cs cs' :=
+  h
+
+/-- The correspondence, decomposed at the "empty list on the left" case. -/
+private theorem rowsCorrespond_nil_left {c' : PDCrossing} {cs' : List PDCrossing}
+    {seen seen' : List (Nat × Nat)} (h : RowsCorrespond seen seen' [] (c' :: cs')) : False :=
+  h
+
+/-- The correspondence, decomposed at the "empty list on the right" case. -/
+private theorem rowsCorrespond_nil_right {c : PDCrossing} {cs : List PDCrossing}
+    {seen seen' : List (Nat × Nat)} (h : RowsCorrespond seen seen' (c :: cs) []) : False :=
+  h
+
+/-- **The row correspondence transports the ranks.** Every label of `l` is
+    paired with a label of `l'` carrying the same rank in the respective
+    threads. -/
+private theorem rank_transfer_acc :
+    ∀ (l l' : List PDCrossing) (seen seen' : List (Nat × Nat)),
+      RowsCorrespond seen seen' l l' →
+      ∀ x, x ∈ labelsOf l → ∃ y, y ∈ labelsOf l' ∧
+        threadRank (canonThreaded l seen).2 x = threadRank (canonThreaded l' seen').2 y := by
+  intro l
+  induction l with
+  | nil =>
+      intro l' seen seen' hrc x hx
+      have hnil : labelsOf ([] : List PDCrossing) = [] := rfl
+      rw [hnil] at hx
+      simp at hx
+  | cons c cs ih =>
+      intro l' seen seen' hrc x hx
+      cases l' with
+      | nil =>
+          exact (rowsCorrespond_nil_right hrc).elim
+      | cons c' cs' =>
+          rcases rowsCorrespond_cons hrc with ⟨h1, h2, h3, h4, hrc'⟩
+          rcases labelsOf_cons_cases hx with hxs | hxs
+          · rcases List.mem_cons.mp hxs with h | h
+            · subst h
+              refine ⟨c'.e1, mem_labelsOf_head (c := c') (cs := cs') (by
+                simp), ?_⟩
+              exact h1
+            · rcases List.mem_cons.mp h with h | h
+              · subst h
+                refine ⟨c'.e2, mem_labelsOf_head (c := c') (cs := cs') (by
+                  simp), ?_⟩
+                exact h2
+              · rcases List.mem_cons.mp h with h | h
+                · subst h
+                  refine ⟨c'.e3, mem_labelsOf_head (c := c') (cs := cs') (by
+                    simp), ?_⟩
+                  exact h3
+                · rcases List.mem_cons.mp h with h | h
+                  · subst h
+                    refine ⟨c'.e4, mem_labelsOf_head (c := c') (cs := cs') (by
+                      simp), ?_⟩
+                    exact h4
+                  · simp at h
+          · obtain ⟨y, hy, hrank⟩ := ih cs'
+              (canonSlots seen [c.e1, c.e2, c.e3, c.e4]).2
+              (canonSlots seen' [c'.e1, c'.e2, c'.e3, c'.e4]).2 hrc' x hxs
+            refine ⟨y, mem_labelsOf_tail (c := c') (cs := cs') hy, ?_⟩
+            have hct : (canonThreaded (c :: cs) seen).2 =
+                (canonThreaded cs (canonSlots seen [c.e1, c.e2, c.e3, c.e4]).2).2 := rfl
+            have hct' : (canonThreaded (c' :: cs') seen').2 =
+                (canonThreaded cs' (canonSlots seen' [c'.e1, c'.e2, c'.e3, c'.e4]).2).2 := rfl
+            rw [hct, hct']
+            exact hrank
+
+/-- The final thread is faithful when the empty thread is. -/
+private theorem Tfinal_faithful (l : List PDCrossing) :
+    SeenKeysNodup (Tfinal l) ∧ SeenValsNodup (Tfinal l) ∧ SeenValsBounded (Tfinal l) := by
+  have h := canonThreaded_faithful (l := l) (seen := [])
+    (hk := by simp [SeenKeysNodup]) (hv := by simp [SeenValsNodup])
+    (hb := by simp [SeenValsBounded])
+  exact h
+
+/-- The final thread carries the sequence of ranks `1 … n`. -/
+private theorem Tfinal_ranks (l : List PDCrossing) : ThreadRanks (Tfinal l) := by
+  have h := canonThreaded_threadRanks (l := l) (seen := []) threadRanks_nil
+  exact h
+
+/-- **For a given rank, the renaming returns the label carrying it.** -/
+private theorem pi_of_rank {T T' : List (Nat × Nat)} (hv : SeenValsNodup T')
+    (hk : SeenKeysNodup T') (hr : ThreadRanks T') (hb : SeenValsBounded T')
+    {x y r : Nat} (hx : T.lookup x = some r) (hy : T'.lookup y = some r) :
+    piOfT T T' x = y := by
+  have hmem := mem_of_lookup hy
+  have hb' := hb (y, r) hmem
+  have hbound : 1 ≤ r ∧ r ≤ T'.length := by
+    constructor
+    · omega
+    · exact hb'.2
+  obtain ⟨z, hz, hzl⟩ := labelOfRank_exists hv hk hr hbound
+  have h1 : threadRank T' y = r := threadRank_of_lookup hy
+  have h2 : threadRank T' z = r := threadRank_of_lookup hzl
+  have hyz : y = z := threadRank_inj hv hy hzl (h1.trans h2.symm)
+  subst hyz
+  have htx : threadRank T x = r := threadRank_of_lookup hx
+  simp only [piOfT, htx, hz]
+
+/-- **The rank travels to the target, and the renaming follows.** -/
+private theorem pi_transfer {l l' : List PDCrossing} (hrc : RowsCorrespond [] [] l l') :
+    ∀ x, x ∈ labelsOf l →
+      ∃ y, y ∈ labelsOf l' ∧ piOf l l' x = y ∧
+        threadRank (Tfinal l') (piOf l l' x) = threadRank (Tfinal l) x := by
+  intro x hx
+  obtain ⟨y, hy, hrank⟩ := rank_transfer_acc (l := l) (l' := l') (seen := [])
+    (seen' := []) hrc x hx
+  have hxv : ∃ v, (Tfinal l).lookup x = some v := labelsOf_carried l [] x hx
+  have hxv' : ∃ v, (Tfinal l').lookup y = some v := labelsOf_carried l' [] y hy
+  obtain ⟨v, hv⟩ := hxv
+  obtain ⟨v', hv'⟩ := hxv'
+  have hvg : v' = v := by
+    have h1 : threadRank (Tfinal l') y = v' := threadRank_of_lookup hv'
+    have h2 : threadRank (Tfinal l') y = threadRank (Tfinal l) x := hrank.symm
+    have h3 : threadRank (Tfinal l) x = v := threadRank_of_lookup hv
+    rw [h1] at h2
+    rw [h3] at h2
+    exact h2
+  have hf := Tfinal_faithful l'
+  have hpi : piOf l l' x = y := pi_of_rank (T := Tfinal l) (T' := Tfinal l')
+    hf.2.1 hf.1 (Tfinal_ranks l') hf.2.2 hv (by
+      rw [hvg] at hv'
+      exact hv')
+  refine ⟨y, hy, hpi, ?_⟩
+  rw [hpi]
+  have h1 : threadRank (Tfinal l') y = v' := threadRank_of_lookup hv'
+  rw [h1]
+  have h2 : threadRank (Tfinal l) x = v := threadRank_of_lookup hv
+  rw [h2]
+  exact hvg
+
+/-- **The renaming is injective** on the labels of the source: two distinct
+    labels are never confused. -/
+private theorem pi_inj {l l' : List PDCrossing} (hrc : RowsCorrespond [] [] l l') :
+    ∀ x y, x ∈ labelsOf l → y ∈ labelsOf l → piOf l l' x = piOf l l' y → x = y := by
+  intro x y hx hy hxy
+  obtain ⟨z, hz, hpi, hrank⟩ := pi_transfer hrc x hx
+  obtain ⟨w, hw, hpi', hrank'⟩ := pi_transfer hrc y hy
+  have hA : threadRank (Tfinal l') (piOf l l' x) = threadRank (Tfinal l') (piOf l l' y) := by
+    rw [hxy]
+  have h1 : threadRank (Tfinal l) x = threadRank (Tfinal l) y :=
+    hrank.symm.trans (hA.trans hrank')
+  have hxv : ∃ v, (Tfinal l).lookup x = some v := labelsOf_carried l [] x hx
+  have hxv' : ∃ v, (Tfinal l).lookup y = some v := labelsOf_carried l [] y hy
+  obtain ⟨v, hv⟩ := hxv
+  obtain ⟨v', hv'⟩ := hxv'
+  exact threadRank_inj (Tfinal_faithful l).2.1 hv hv' h1
+
+/-- **A crossing and its image carry the same global rank.** -/
+private theorem head_pi {c c' : PDCrossing} {cs cs' : List PDCrossing}
+    {seen seen' : List (Nat × Nat)} {T T' : List (Nat × Nat)} {x y : Nat}
+    (he : ThreadExt (canonThreaded (c :: cs) seen).2 T)
+    (he' : ThreadExt (canonThreaded (c' :: cs') seen').2 T')
+    (hr : threadRank (canonThreaded (c :: cs) seen).2 x =
+      threadRank (canonThreaded (c' :: cs') seen').2 y)
+    (hx : x ∈ labelsOf (c :: cs)) (hy : y ∈ labelsOf (c' :: cs')) :
+    ∃ v, T.lookup x = some v ∧ T'.lookup y = some v := by
+  have hxv : ∃ v, (canonThreaded (c :: cs) seen).2.lookup x = some v :=
+    labelsOf_carried (c :: cs) seen x hx
+  have hxv' : ∃ v, (canonThreaded (c' :: cs') seen').2.lookup y = some v :=
+    labelsOf_carried (c' :: cs') seen' y hy
+  obtain ⟨v, hv, hv'⟩ := rank_pair hr hxv hxv'
+  exact ⟨v, he x v hv, he' y v hv'⟩
+
+/-- **The renaming sends the source list onto the target list.** -/
+private theorem mapC_pi_acc :
+    ∀ (l0 l'0 l l' : List PDCrossing) (seen seen' : List (Nat × Nat)),
+      ThreadExt (canonThreaded l seen).2 (Tfinal l0) →
+      ThreadExt (canonThreaded l' seen').2 (Tfinal l'0) →
+      RowsCorrespond seen seen' l l' →
+      mapC (piOfT (Tfinal l0) (Tfinal l'0)) l = l' := by
+  intro l0 l'0 l
+  induction l with
+  | nil =>
+      intro l' seen seen' he he' hrc
+      cases l' with
+      | nil => rfl
+      | cons c' cs' => exact (rowsCorrespond_nil_left hrc).elim
+  | cons c cs ih =>
+      intro l' seen seen' he he' hrc
+      cases l' with
+      | nil => exact (rowsCorrespond_nil_right hrc).elim
+      | cons c' cs' =>
+          rcases rowsCorrespond_cons hrc with ⟨h1, h2, h3, h4, hrc'⟩
+          have hf := Tfinal_faithful l'0
+          have hhead1 : piOfT (Tfinal l0) (Tfinal l'0) c.e1 = c'.e1 := by
+            obtain ⟨v, hvx, hvy⟩ := head_pi he he' h1
+              (mem_labelsOf_head (c := c) (cs := cs) (by simp))
+              (mem_labelsOf_head (c := c') (cs := cs') (by simp))
+            exact pi_of_rank (T := Tfinal l0) (T' := Tfinal l'0)
+              hf.2.1 hf.1 (Tfinal_ranks l'0) hf.2.2 hvx hvy
+          have hhead2 : piOfT (Tfinal l0) (Tfinal l'0) c.e2 = c'.e2 := by
+            obtain ⟨v, hvx, hvy⟩ := head_pi he he' h2
+              (mem_labelsOf_head (c := c) (cs := cs) (by simp))
+              (mem_labelsOf_head (c := c') (cs := cs') (by simp))
+            exact pi_of_rank (T := Tfinal l0) (T' := Tfinal l'0)
+              hf.2.1 hf.1 (Tfinal_ranks l'0) hf.2.2 hvx hvy
+          have hhead3 : piOfT (Tfinal l0) (Tfinal l'0) c.e3 = c'.e3 := by
+            obtain ⟨v, hvx, hvy⟩ := head_pi he he' h3
+              (mem_labelsOf_head (c := c) (cs := cs) (by simp))
+              (mem_labelsOf_head (c := c') (cs := cs') (by simp))
+            exact pi_of_rank (T := Tfinal l0) (T' := Tfinal l'0)
+              hf.2.1 hf.1 (Tfinal_ranks l'0) hf.2.2 hvx hvy
+          have hhead4 : piOfT (Tfinal l0) (Tfinal l'0) c.e4 = c'.e4 := by
+            obtain ⟨v, hvx, hvy⟩ := head_pi he he' h4
+              (mem_labelsOf_head (c := c) (cs := cs) (by simp))
+              (mem_labelsOf_head (c := c') (cs := cs') (by simp))
+            exact pi_of_rank (T := Tfinal l0) (T' := Tfinal l'0)
+              hf.2.1 hf.1 (Tfinal_ranks l'0) hf.2.2 hvx hvy
+          have htail : List.map (fun c => ⟨piOfT (Tfinal l0) (Tfinal l'0) c.e1,
+              piOfT (Tfinal l0) (Tfinal l'0) c.e2, piOfT (Tfinal l0) (Tfinal l'0) c.e3,
+              piOfT (Tfinal l0) (Tfinal l'0) c.e4⟩) cs = cs' := by
+            have hct : (canonThreaded (c :: cs) seen).2 =
+                (canonThreaded cs (canonSlots seen [c.e1, c.e2, c.e3, c.e4]).2).2 := rfl
+            have hct' : (canonThreaded (c' :: cs') seen').2 =
+                (canonThreaded cs' (canonSlots seen' [c'.e1, c'.e2, c'.e3, c'.e4]).2).2 := rfl
+            have he1 : ThreadExt (canonThreaded cs
+                (canonSlots seen [c.e1, c.e2, c.e3, c.e4]).2).2 (Tfinal l0) := by
+              rw [hct] at he
+              exact he
+            have he2 : ThreadExt (canonThreaded cs'
+                (canonSlots seen' [c'.e1, c'.e2, c'.e3, c'.e4]).2).2 (Tfinal l'0) := by
+              rw [hct'] at he'
+              exact he'
+            have hrec : mapC (piOfT (Tfinal l0) (Tfinal l'0)) cs = cs' := ih cs'
+              (canonSlots seen [c.e1, c.e2, c.e3, c.e4]).2
+              (canonSlots seen' [c'.e1, c'.e2, c'.e3, c'.e4]).2 he1 he2 hrc'
+            rwa [mapC] at hrec
+          simp only [mapC, List.map_cons]
+          rw [hhead1, hhead2, hhead3, hhead4, htail]
+
+/-- The renaming of the labels commutes with the labelling of a list. -/
+private theorem labelsOf_mapC (π : Nat → Nat) (l : List PDCrossing) :
+    labelsOf (mapC π l) = (labelsOf l).map π := by
+  induction l with
+  | nil => rfl
+  | cons c cs ih =>
+    have hmap : mapC π (c :: cs) =
+        ⟨π c.e1, π c.e2, π c.e3, π c.e4⟩ :: mapC π cs := rfl
+    have hflat : labelsOf (⟨π c.e1, π c.e2, π c.e3, π c.e4⟩ :: mapC π cs) =
+        [π c.e1, π c.e2, π c.e3, π c.e4] ++ labelsOf (mapC π cs) := rfl
+    have hsrc : labelsOf (c :: cs) = [c.e1, c.e2, c.e3, c.e4] ++ labelsOf cs := rfl
+    have hmapapp : ([c.e1, c.e2, c.e3, c.e4] ++ labelsOf cs).map π =
+        [π c.e1, π c.e2, π c.e3, π c.e4] ++ (labelsOf cs).map π := by
+      simp only [List.map_append, List.map_cons, List.map_nil]
+    rw [hmap, hflat, hsrc, ih, hmapapp]
+
+/-- **Extraction.** The equality `canon l = canon l'` produces a renaming `π` of
+    the labels which is a **bijection** from `labelsOf l` onto `labelsOf l'`,
+    and which sends `l` onto `l'`. This is the "extraction" half of the bridge
+    `canon l = canon l' <-> exists label bijection`. -/
+private theorem canon_extraction {l l' : List PDCrossing} (h : canon l = canon l') :
+    ∃ π : Nat → Nat,
+      (∀ x, x ∈ labelsOf l → π x ∈ labelsOf l') ∧
+      (∀ x y, x ∈ labelsOf l → y ∈ labelsOf l → π x = π y → x = y) ∧
+      (∀ y, y ∈ labelsOf l' → ∃ x, x ∈ labelsOf l ∧ π x = y) ∧
+      mapC π l = l' := by
+  have hrows : (canonThreaded l []).1 = (canonThreaded l' []).1 := by
+    rw [← canon_eq_rows l, ← canon_eq_rows l', h]
+  have hrc : RowsCorrespond [] [] l l' := rows_correspond l [] [] l' hrows
+  have hmap : mapC (piOf l l') l = l' :=
+    mapC_pi_acc l l' l l' [] [] (fun _ _ h => h) (fun _ _ h => h) hrc
+  refine ⟨piOf l l', ?_, ?_, ?_, ?_⟩
+  · intro x hx
+    obtain ⟨y, hy, hpi, _⟩ := pi_transfer hrc x hx
+    rw [hpi]
+    exact hy
+  · intro x y hx hy hxy
+    exact pi_inj hrc x y hx hy hxy
+  · intro y hy
+    have hy' : y ∈ labelsOf (mapC (piOf l l') l) := by rw [hmap]; exact hy
+    rw [labelsOf_mapC] at hy'
+    rcases List.mem_map.mp hy' with ⟨x, hx, hxy⟩
+    exact ⟨x, hx, hxy⟩
+  · exact hmap
 end Knots_en.AnyMoves
