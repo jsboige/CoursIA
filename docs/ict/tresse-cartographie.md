@@ -80,7 +80,7 @@ Quatre opérations, chacune avec son ancrage dans le dépôt, ses aboutissants o
 
 **Ancrage dépôt.**
 - [ICT-17b-Grokking-CompressionProgress-Python.ipynb](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb) — la compression progressive lue comme transition de phase, avec bosse Crutchfield-Feldman sur `model_bits + résiduel` (cf. [`dissolution-scalaires.md`](dissolution-scalaires.md) palier 5 : K bipolaire puis tri-polaire, la bosse force deux dimensions).
-- [ICT-15-IntegratedComplexity-Python.ipynb](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity-Python.ipynb) — la convergence Φ/F/K comme *signature* conjointe, dont le resserrement signale une compression effective.
+- [ICT-15/ICT-15-IntegratedComplexity-Python.ipynb](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15/ICT-15-IntegratedComplexity-Python.ipynb) — la convergence Φ/F/K comme *signature* conjointe, dont le resserrement signale une compression effective.
 
 **Aboutissants opérationnels dans la série ICT.**
 - La dissociation est *portée* par un proxy (ICT-17b cell [13] interprétation honnête : `K_compression_progress` positif sur grokking, `K_rang_effectif` négatif, `K_fisher_md` saute — *choisir K = déclarer un proxy*, cf. [`dissolution-scalaires.md`](dissolution-scalaires.md) palier 6).
@@ -112,8 +112,8 @@ Quatre opérations, chacune avec son ancrage dans le dépôt, ses aboutissants o
 **L'opération.** *Ce qui se met à jour* — la surprise d'une observation sous un modèle génératif, régularisée par la complexité KL entre prédiction et prior. L'énergie libre variationnelle est une borne supérieure stricte de la surprise ; sa décomposition *accuracy + complexity* la rend *opérationnellement mesurable* sur des bancs où le modèle génératif est gaussien ou en famille exponentielle connue.
 
 **Ancrage dépôt.**
-- [ICT-14-FreeEnergySurprise-Python.ipynb](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14-FreeEnergySurprise-Python.ipynb) — la jambe énergie-libre attachée au représentant interne `p̂` d'ICT-10. Thèse cell-anchored : « la jambe énergie-libre restait non attachée, alors que le banc expérimental la préparait sans le dire ». Trois *gates* falsifiables (précision fixe → MSE habillage ? précision adaptative → divergence du classement MSE ? bistable → marquage du franchissement du pli ?).
-- [ICT-14b-ActiveInferenceEFE-Python.ipynb](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14b-ActiveInferenceEFE-Python.ipynb) — livré par PR [#9545](https://github.com/jsboige/CoursIA/pull/9545) (MERGED, issue [#9532](https://github.com/jsboige/CoursIA/issues/9532) CLOSED) — banc d'inférence active : l'expected free energy pilote l'action.
+- [ICT-14-FreeEnergySurprise-Python.ipynb](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14-FreeEnergySurprise/ICT-14-FreeEnergySurprise-Python.ipynb) — la jambe énergie-libre attachée au représentant interne `p̂` d'ICT-10. Thèse cell-anchored : « la jambe énergie-libre restait non attachée, alors que le banc expérimental la préparait sans le dire ». Trois *gates* falsifiables (précision fixe → MSE habillage ? précision adaptative → divergence du classement MSE ? bistable → marquage du franchissement du pli ?).
+- [ICT-14b-ActiveInferenceEFE-Python.ipynb](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14-FreeEnergySurprise/ICT-14b-ActiveInferenceEFE-Python.ipynb) — livré par PR [#9545](https://github.com/jsboige/CoursIA/pull/9545) (MERGED, issue [#9532](https://github.com/jsboige/CoursIA/issues/9532) CLOSED) — banc d'inférence active : l'expected free energy pilote l'action.
 
 **Aboutissants opérationnels dans la série ICT.**
 - La **décomposition** *accuracy + complexity* est mesurée directement sur banc gaussien : c'est l'énergie libre variationnelle en famille fermée, sans approximation.
