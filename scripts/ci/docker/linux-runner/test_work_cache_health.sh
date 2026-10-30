@@ -734,6 +734,77 @@ echo "Test : repack -- un depot a alternates ne copie pas les objets empruntes (
 )
 echo ""
 
+# --- Retention des quarantaines `.stale-*` ---------------------------------
+# Le defaut mesure : le renommage de quarantaine etait reversible mais rien
+# ne le retirait, si bien que la retention etait infinie par construction.
+# Les trois controles NEGATIFS comptent autant que le positif : un clone
+# vivant, un suffixe non conforme et le plafond bas doivent tous survivre.
+(
+  echo "--- retention des quarantaines .stale-* ---"
+  P="$TEST_DIR/prune"
+  rm -rf "$P"
+  mkdir -p "$P/slug1"
+  for ts in 20260101T000000Z 20260102T000000Z 20260103T000000Z 20260104T000000Z; do
+    mkdir -p "$P/slug1/CoursIA.stale-$ts"
+    # contenu non vide : `du -sk` doit rendre un compte exploitable
+    head -c 4096 /dev/zero > "$P/slug1/CoursIA.stale-$ts/payload"
+  done
+  # Temoin 1 : le clone VIVANT, cote a cote des quarantaines.
+  mkdir -p "$P/slug1/CoursIA/.git"
+  # Temoin 2 : suffixe non conforme -- ecrit a la main, jamais emis par les
+  # deux sites. Il doit survivre, meme s'il est plus ancien que la borne.
+  mkdir -p "$P/slug1/notes.stale-manuel"
+
+  out="$(WCH_STALE_KEEP=2 wch_prune_quarantines "$P" 2>&1)"
+  echo "$out" >> "$LOG"
+
+  if [ -d "$P/slug1/CoursIA.stale-20260101T000000Z" ] || [ -d "$P/slug1/CoursIA.stale-20260102T000000Z" ]; then
+    ko "retention : les deux quarantaines les plus anciennes auraient du partir"
+  else
+    ok "retention : les deux plus anciennes sont retirees (plafond 2)"
+  fi
+  if [ -d "$P/slug1/CoursIA.stale-20260103T000000Z" ] && [ -d "$P/slug1/CoursIA.stale-20260104T000000Z" ]; then
+    ok "retention : les deux plus recentes sont conservees (l'arbre reste inspectable)"
+  else
+    ko "retention : les plus recentes ont ete retirees -- le geste perd sa preuve de preservation"
+  fi
+  if [ -d "$P/slug1/CoursIA/.git" ]; then
+    ok "temoin : le clone vivant n'est jamais touche"
+  else
+    ko "temoin : le clone VIVANT a ete retire -- le motif est trop large"
+  fi
+  if [ -d "$P/slug1/notes.stale-manuel" ]; then
+    ok "temoin : un suffixe .stale- non conforme a l'horodatage survit"
+  else
+    ko "temoin : le filtre par forme n'a pas joue (notes.stale-manuel retire)"
+  fi
+  if echo "$out" | grep -q "retention des quarantaines -- 2 retiree"; then
+    ok "retention : le journal nomme le compte retire"
+  else
+    ko "retention : le journal ne porte pas le compte retire ($out)"
+  fi
+
+  # Plafond bas : 0 retirerait TOUT, y compris la quarantaine du dernier
+  # incident. La borne doit se clamper a 1, pas obeir.
+  out="$(WCH_STALE_KEEP=0 wch_prune_quarantines "$P" 2>&1)"
+  echo "$out" >> "$LOG"
+  n_left="$(find "$P/slug1" -mindepth 1 -maxdepth 1 -type d -name 'CoursIA.stale-*' | wc -l)"
+  if [ "$n_left" = "1" ]; then
+    ok "plafond 0 : clampe a 1, la derniere quarantaine survit"
+  else
+    ko "plafond 0 : $n_left quarantaine(s) restante(s) -- le clamp n'a pas joue"
+  fi
+
+  # Passages repetes : le second ne doit plus rien retirer (idempotence).
+  out="$(WCH_STALE_KEEP=2 wch_prune_quarantines "$P" 2>&1)"
+  if [ -z "$out" ]; then
+    ok "idempotence : un passage sans rien a retirer n'ecrit rien"
+  else
+    ko "idempotence : un passage a vide a ecrit dans le journal ($out)"
+  fi
+)
+echo ""
+
 # --- Verdict agrege ---------------------------------------------------------
 n_pass="$(grep -c '^PASS ' "$RESULTS" 2>/dev/null)"; n_pass="${n_pass:-0}"
 n_fail="$(grep -c '^FAIL ' "$RESULTS" 2>/dev/null)"; n_fail="${n_fail:-0}"

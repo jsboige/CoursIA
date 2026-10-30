@@ -505,7 +505,7 @@ class TestBlockWiseDemotion:
 # ---------------------------------------------------------------------------
 
 # Verbatim instance from MyIA.AI.Notebooks/ML/DataScienceWithAgents/
-# 03-DeepLearning/3.9e-Compression-Quantization-SOTA.ipynb cell 22, as it
+# 03-Deep-Learning/3.9e-Compression-Quantization-SOTA.ipynb cell 22, as it
 # stood on origin/fix/16472-g2-residu-b2 (repaired by d9dee0ee28).
 BROKEN_CELL_22 = [
     "> **Indice : from torch.ao.quantization.quantize_fx import prepare_qat_fx "

@@ -46,11 +46,27 @@ env:
 jobs:
   dotnet-agentsafetyanalyzer-linux:
     name: AgentSafetyAnalyzer dotnet (ubuntu-latest, floor 26)
-    runs-on: ubuntu-latest
+    # 2026-10-28 (#23053 b, lane myia-ai-01:CoursIA-2) : forme hybride de
+    # debordement (#22461 phase A) -- PR meme-depot ET vars.CI_OVERFLOW_LOCAL
+    # == 'true' -> jambe Linux locale ; sinon `ubuntu-latest` (etat du 27/10).
+    # Retour arriere = variable `false` ou supprimee, sans toucher ce fichier.
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
     timeout-minutes: 15
 
     steps:
       - uses: actions/checkout@v4
+
+      # Le pool auto-heberge tourne en uid 1001, sans sudo ni dpkg :
+      # `setup-dotnet` y echoue sur son repertoire d'installation par
+      # defaut ("mkdir: cannot create directory '/usr/share/dotnet':
+      # Permission denied" -- job 122655198139, 2026-10-28). Meme cause,
+      # meme remede que le workflow Windows self-hosted deja en service
+      # (run 37396937471) : l'installation est dirigee vers le tool-cache
+      # du runner, inscriptible par le compte et persistant entre jobs.
+      # La branche hebergee reste intacte (elle ecrit dans /usr/share/dotnet).
+      - name: Route dotnet installs to the runner tool cache
+        if: github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true'
+        run: echo "DOTNET_INSTALL_DIR=$RUNNER_TOOL_CACHE/dotnet" >> "$GITHUB_ENV"
 
       - uses: actions/setup-dotnet@v4
         with:
