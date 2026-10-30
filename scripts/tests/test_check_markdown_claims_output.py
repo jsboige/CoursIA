@@ -355,6 +355,44 @@ class TestRoundsToClaim:
         """French outputs print the decimal comma: '1,7465' rounds to 1.75."""
         assert _rounds_to_claim("1.75", "SA | 1,7465 | 12,8907")
 
+    def test_thousands_group_with_decimal_is_one_number(self):
+        """A three-digit comma group followed by a decimal point is a
+        thousands separator, not a decimal comma: '1,234.5678' is one number.
+
+        This is the rule the #22827 fix introduced; the test pins it so that a
+        later simplification cannot quietly read the group as the decimal 1.234
+        and start flagging prose that quotes the output verbatim."""
+        assert _rounds_to_claim("1234.5678", "params 1,234.5678 total")
+        assert not _rounds_to_claim("1.2345678", "params 1,234.5678 total")
+
+    def test_bare_comma_groups_stay_decimal(self):
+        """Without a decimal point to arbitrate, a three-digit comma group keeps
+        its French decimal reading even when several such groups appear side by
+        side. The rule is decidable on its own terms ('no point, no
+        arbitration'), so it is pinned rather than left to drift."""
+        assert _rounds_to_claim("1.798", "1,798 2,798 3,798")
+        assert not _rounds_to_claim("1798", "1,798 2,798 3,798")
+
+    def test_thousands_separator_is_not_a_decimal(self):
+        """A comma group followed by a decimal point is a thousands separator
+        (#22827): '19.80' must NOT be anchored on '19,798.0862', whose
+        two-decimal rounding is 19798.09."""
+        assert not _rounds_to_claim("19.80", "19,798.0862")
+        assert not _rounds_to_claim("19.79", "19,798.0862")
+        assert _rounds_to_claim("19798.09", "19,798.0862")
+
+    def test_three_digit_comma_group_stays_decimal(self):
+        """Counter-example: without a decimal point the group is genuinely
+        ambiguous and the francophone decimal reading wins -- '1,798' is
+        1.798, so it rounds to 1.80."""
+        assert _rounds_to_claim("1.80", "1,798")
+        assert not _rounds_to_claim("1798.00", "1,798")
+
+    def test_multi_group_thousands_with_decimals(self):
+        """Several thousands groups before the decimal point."""
+        assert not _rounds_to_claim("1.23", "1,234,567.89")
+        assert _rounds_to_claim("1234567.89", "1,234,567.89")
+
 
 class TestCanonicalClean:
     """Markdown that quotes numbers from the previous code output is CLEAN."""
