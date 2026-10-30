@@ -300,3 +300,32 @@ def test_cle_deja_deplacee_nest_pas_morte(monkeypatch):
     assert migration.check_plan([], SUB_04B) == []
     # hors tranche, ces memes cles SONT mortes : le controle global les voit
     assert any("cle morte" in e for e in migration.check_plan([]))
+
+
+def test_apply_cree_le_repertoire_cible_avant_le_mv(monkeypatch, tmp_path):
+    """`git mv` refuse une destination dont le parent n'existe pas.
+
+    Premiere execution reelle de l'apply (2026-10-30) : l'organe plantait sur
+    son premier fichier, "fatal: destination directory does not exist" -- le
+    hub cible n'existe pas encore au premier deplacement. Le repertoire cible
+    doit donc etre cree AVANT le mv.
+    """
+    calls = []
+
+    def fake_git(*args):
+        calls.append(args)
+        return ""
+
+    monkeypatch.setattr(migration, "REPO_ROOT", tmp_path)
+    monkeypatch.setattr(migration, "git", fake_git)
+    monkeypatch.setattr(migration, "build_plan",
+                        lambda only=None: ([("ancien/dossier/a.ipynb", "cible/dossier/a.ipynb")], []))
+    monkeypatch.setattr(migration, "check_plan", lambda plan, only=None: [])
+    monkeypatch.setattr(migration, "build_replacements", lambda plan, only=None: [])
+    monkeypatch.setattr(migration, "run_sweep", lambda reps: ({}, 0))
+    monkeypatch.setattr(migration, "sweep_files", lambda: [])
+    monkeypatch.setattr(migration, "report_gating", lambda concerned: {})
+
+    assert migration.main(["--apply"]) == 0
+    assert (tmp_path / "cible" / "dossier").is_dir()
+    assert ("mv", "ancien/dossier/a.ipynb", "cible/dossier/a.ipynb") in calls

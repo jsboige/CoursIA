@@ -626,6 +626,12 @@ def main(argv: list[str] | None = None) -> int:
         # les referents externes a leurs chemins inchanges. Les fichiers tenus ne
         # sont ni mv ni sweep : leur PR ouverte les tient a leur chemin actuel.
         for old, new in plan_free:
+            # `git mv` refuse une destination dont le repertoire parent n'existe
+            # pas ("fatal: destination directory does not exist") : le hub cible
+            # n'existe pas encore au premier deplacement. On cree donc les
+            # repertoires cibles AVANT le mv -- sinon l'apply echoue sur son
+            # premier fichier (mesure 2026-10-30, premiere execution reelle).
+            (REPO_ROOT / Path(new).parent).mkdir(parents=True, exist_ok=True)
             git("mv", old, new)
         all_paths = sweep_files()
         free_paths = [f for f in all_paths if f not in held]
