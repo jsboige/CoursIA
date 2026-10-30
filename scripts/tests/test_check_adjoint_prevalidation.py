@@ -1048,6 +1048,58 @@ def test_any_other_author_still_expires_the_dossier():
         assert any("discussion changed after dossier" in e for e in errors), login
 
 
+# --- #17437 : la voix du coordinateur sous l'identite de son App de lane -----
+
+
+def test_coordinator_app_identity_does_not_expire_the_dossier():
+    """#17437: the coordinator's App identity is its own voice too.
+
+    The lane migration replaces the coordinator's PAT with an installation
+    token, so its post-dossier rows reach the API as
+    ``coursia-lane-ai-01[bot]``. Missing that spelling from the neutralised
+    set would make the coordinator's own lift (B.0 voie 1) expire its own
+    dossier -- #16840's defect, reproduced under the App identity.
+    """
+    base = _stamped_snapshot("")
+    base["comments"].pop()
+    snapshot = _stamped_snapshot(_dossier_for(base))
+    own = _comment("Lifting the stale PREFLIGHT_HOLD.", login=mod.COORDINATOR_APP_LOGIN)
+    own["createdAt"] = T1
+    snapshot["comments"].append(own)
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+
+
+def test_worker_lane_app_still_expires_the_dossier():
+    """#17437 negative control: widening stops at the coordinator.
+
+    Neutralising ``ACCEPTED_DOSSIER_AUTHORS`` wholesale would let any worker
+    lane's App write a blocking row after the dossier without expiring it --
+    that is the gate's entire control. Only the coordinator's own App is
+    neutralised, so these two must still refuse.
+    """
+    for login in ("coursia-lane-po-2024[bot]", "coursia-lane-po-2026[bot]"):
+        base = _stamped_snapshot("")
+        base["comments"].pop()
+        snapshot = _stamped_snapshot(_dossier_for(base))
+        foreign = _comment("a new concern", login=login)
+        foreign["createdAt"] = T1
+        snapshot["comments"].append(foreign)
+        errors = _errors(snapshot)
+        assert any("discussion changed after dossier" in e for e in errors), login
+
+
+def test_coordinator_app_login_is_an_accepted_dossier_author():
+    """#17437 consistency: one identity, two roles, kept in step.
+
+    ``COORDINATOR_APP_LOGIN`` is a literal so this module imports without
+    ``gh_identity``. If the App prefix or the lane list ever changes there,
+    this fails instead of silently neutralising a login the dossier gate
+    would reject as an author.
+    """
+    assert mod.COORDINATOR_APP_LOGIN in mod.gh_identity.ACCEPTED_DOSSIER_AUTHORS
+
+
 # --- #17818 : premiere pose d'un commentaire consultatif de bot marker-garde --
 
 
@@ -3234,6 +3286,34 @@ def test_queue_non_coordinator_approval_does_not_qualify():
     assert entry.review_qualifying is False
 
 
+def test_queue_coordinator_app_approval_qualifies_on_exact_head():
+    """#17437: the review door recognizes the coordinator's App as well."""
+    snapshot = _queue_snapshot([_review(login=mod.COORDINATOR_APP_LOGIN)])
+    entry = _classified(snapshot)
+    assert entry.verdict == mod.VERDICT_READY
+    assert entry.review_disposition == "approved-exact-head"
+    assert entry.review_qualifying is True
+
+
+def test_queue_coordinator_graphql_bot_approval_qualifies_on_exact_head():
+    """#21818: GraphQL supplies the App login without its REST suffix."""
+    review = _review(login="coursia-lane-ai-01")
+    review["author"]["type"] = "Bot"
+    entry = _classified(_queue_snapshot([review]))
+    assert entry.verdict == mod.VERDICT_READY
+    assert entry.review_disposition == "approved-exact-head"
+    assert entry.review_qualifying is True
+
+
+def test_queue_worker_app_approval_still_does_not_qualify():
+    """The review door stays closed to every worker-lane App."""
+    snapshot = _queue_snapshot([_review(login="coursia-lane-po-2024[bot]")])
+    entry = _classified(snapshot)
+    assert entry.verdict == mod.QUEUE_VERDICT_REVIEW_READY
+    assert entry.review_disposition == "approved-exact-head"
+    assert entry.review_qualifying is False
+
+
 def test_queue_recent_changes_requested_blocks_dispatch():
     """Divergence assumee du design #16483 : un CHANGES_REQUESTED recent n'est
     pas une review manquante, c'est une reserve a lever -- le piege « reserve
@@ -4749,3 +4829,67 @@ def test_author_ref_returns_on_git_failure(monkeypatch):
     monkeypatch.setattr(mod, "_git", _synthetic_git())
     ref = "refs/pull/12345/head"
     assert mod._author_ref(ref) == ref
+
+
+# ---------------------------------------------------------------------------
+# #23089 -- la porte pile refuse de mesurer sur un clone tronque, et le dit
+# ---------------------------------------------------------------------------
+def _git(cwd, *args, check=True):
+    proc = subprocess.run(
+        ["git", *args], cwd=str(cwd), capture_output=True, text=True,
+        encoding="utf-8", errors="replace",
+    )
+    if check and proc.returncode != 0:
+        raise AssertionError(f"git {' '.join(args)} -> {proc.stderr.strip()}")
+    return proc
+
+
+def _disposable_clone(tmp_path, depth=None):
+    """Un origin bare local + un clone (complet par defaut)."""
+    origin = tmp_path / "origin.git"
+    work = tmp_path / "work"
+    _git(tmp_path, "init", "--bare", "-b", "main", str(origin))
+    work.mkdir()
+    _git(work, "init", "-b", "main")
+    _git(work, "config", "user.email", "t@t.invalid")
+    _git(work, "config", "user.name", "t")
+    (work / "a.txt").write_text("1\n", encoding="utf-8")
+    _git(work, "add", "a.txt")
+    _git(work, "commit", "-m", "c1")
+    _git(work, "remote", "add", "origin", str(origin))
+    _git(work, "push", "-q", "origin", "main")
+    clone = tmp_path / "clone"
+    args = ["clone", "-q", "--single-branch", "--branch", "main"]
+    if depth:
+        args.append(f"--depth={depth}")
+    _git(tmp_path, *args, origin.as_uri(), str(clone))
+    return clone
+
+
+def test_la_pile_refuse_un_clone_tronque_et_nomme_la_cause(tmp_path, monkeypatch):
+    """#23089 : sur un clone dont l'historique de `main` est reellement
+    tronque, la passe pile REFUSE de mesurer et rend une cause nommee --
+    jamais un faux « stack top » (mesure ai-01 du 2026-10-28 : #22244 et
+    #22252 rendues BLOCKED sur des squash deja merges)."""
+    if str(HERE.parent) not in sys.path:
+        sys.path.insert(0, str(HERE.parent))
+    clone = _disposable_clone(tmp_path, depth=1)
+    monkeypatch.chdir(clone)
+    index, incidents = mod.build_stack_index()
+    assert index is None
+    assert incidents == [mod.STACK_UNAVAILABLE_SHALLOW]
+    assert "shallow clone" in incidents[0]
+
+
+def test_la_pile_mesure_sur_un_clone_complet(tmp_path, monkeypatch):
+    """Controle positif : sur un clone complet, la passe mesure (aucune
+    cause de troncature). L'enumeration est neutralisee -- ce test porte sur
+    la garde, pas sur l'API."""
+    if str(HERE.parent) not in sys.path:
+        sys.path.insert(0, str(HERE.parent))
+    clone = _disposable_clone(tmp_path)
+    monkeypatch.chdir(clone)
+    monkeypatch.setattr(mod, "gh_lines", lambda args: [])
+    index, incidents = mod.build_stack_index()
+    assert incidents == []
+    assert index == {}

@@ -44,6 +44,14 @@ jour le href en laissant le libelle derriere produit exactement le defaut
 #13645. Le predicat n'a pas eu besoin d'etre assoupli pour la forme « basename
 sans extension » : il compare un identifiant de famille extrait des DEUX cotes,
 donc l'extension et la glose hors crochets ne le concernent pas.
+
+Chemins illisibles
+------------------
+Un chemin que l'OS refuse de stat-er n'interrompt plus le balayage : il est
+consigne, affiche sur `stderr`, et rendu dans `unreadable` en `--json`. Il ne
+change pas le code de sortie -- ce n'est pas un desaccord, et `rc=1` appartient
+a `--fail` (cf. `iter_scan_files` pour la mesure fondatrice : WinError 1920 sur
+un paquet `.lake` sous Windows rendait l'organe muet, `rc=1` sans verdict).
 """
 
 from __future__ import annotations
@@ -119,6 +127,41 @@ def cell_sources(nb_path: Path):
             yield "".join(src) if isinstance(src, list) else src
 
 
+def iter_scan_files(root: Path, globs, unreadable: list):
+    """Rend les fichiers a scanner. Un chemin illisible est consigne, jamais fatal.
+
+    Pourquoi cette fonction existe (mesure du 2026-10-26, Windows). Le balayage
+    testait `p.is_file()` **avant** `EXCLUDE_PARTS` : un chemin que la portee
+    exclut -- `MyIA.AI.Notebooks/.../erc20_lean/.lake/packages/batteries/docs/
+    README.md` -- levait `OSError: [WinError 1920]` et tuait la boucle entiere.
+    L'organe rendait alors `rc=1` **sans aucun verdict** : indiscernable, pour
+    une lane qui le lance avant de committer, d'un desaccord trouve par `--fail`.
+    Un gate qui ne peut pas conclure n'est pas un gate.
+
+    Deux corrections, dans cet ordre : l'exclusion est evaluee d'abord (elle est
+    purement lexicale, donc gratuite, et elle evite de toucher un arbre qu'on
+    n'a pas a lire), puis `is_file()` est protege. Un chemin illisible est
+    **rendu a l'appelant** (`unreadable`), qui l'affiche : le silence sur une
+    portee non lue serait un faux vert de plus (#15867).
+    """
+    seen = set()
+    for glob in globs:
+        for p in root.glob(glob):
+            if p in seen or EXCLUDE_PARTS & set(p.parts):
+                continue
+            try:
+                if not p.is_file():
+                    continue
+            except OSError as exc:
+                unreadable.append({
+                    "path": p.relative_to(root).as_posix(),
+                    "error": str(exc),
+                })
+                continue
+            seen.add(p)
+            yield p
+
+
 SELF_TEST_CASES = [
     # (source, nb_findings_attendus, intitule)
     ("L'erreur du premier Cech affine ([ICT-15d](../../IIT/ICT-Series/ICT-15j-NerveDiscriminant-Python.ipynb)) "
@@ -154,23 +197,18 @@ def main() -> int:
     if args.self_test:
         return self_test()
 
-    findings, scanned = [], 0
-    seen = set()
-    for glob in SCAN_GLOBS + (DECK_GLOB,):
-        for p in REPO_ROOT.glob(glob):
-            if not p.is_file() or p in seen or EXCLUDE_PARTS & set(p.parts):
-                continue
-            seen.add(p)
-            scanned += 1
-            rel = p.relative_to(REPO_ROOT).as_posix()
-            if p.suffix == ".ipynb":
-                for src in cell_sources(p):
-                    findings += check_text(src, rel)
-            else:
-                try:
-                    findings += check_text(p.read_text(encoding="utf-8"), rel)
-                except Exception:
-                    pass
+    findings, scanned, unreadable = [], 0, []
+    for p in iter_scan_files(REPO_ROOT, SCAN_GLOBS + (DECK_GLOB,), unreadable):
+        scanned += 1
+        rel = p.relative_to(REPO_ROOT).as_posix()
+        if p.suffix == ".ipynb":
+            for src in cell_sources(p):
+                findings += check_text(src, rel)
+        else:
+            try:
+                findings += check_text(p.read_text(encoding="utf-8"), rel)
+            except Exception:
+                pass
 
     # Anti-silent-scan (#15867): `slides/` present but matching no deck would
     # render "0 desaccord" indistinguishable from a scope that scanned nothing.
@@ -182,10 +220,25 @@ def main() -> int:
               f"(#15867).", file=sys.stderr)
         return 2
 
+    # Un chemin illisible est signale, jamais tu : le scan a une portee non lue,
+    # et le taire rendrait le verdict plus propre qu'il ne l'est. Il ne rougit
+    # pas pour autant -- ce n'est pas un desaccord, et rc=1 y est deja pris par
+    # `--fail` (c'est precisement la collision qui rendait le crash illisible).
+    for u in unreadable[:20]:
+        print(f"AVERTISSEMENT : chemin illisible, ignore -- {u['path']} ({u['error']})",
+              file=sys.stderr)
+    if len(unreadable) > 20:
+        print(f"AVERTISSEMENT : {len(unreadable) - 20} autre(s) chemin(s) illisible(s) "
+              f"non detailles -- relancer avec --json pour la liste complete.",
+              file=sys.stderr)
+
     if args.json:
-        print(json.dumps({"scanned": scanned, "findings": findings}, indent=2, ensure_ascii=False))
+        print(json.dumps({"scanned": scanned, "unreadable": unreadable, "findings": findings},
+                         indent=2, ensure_ascii=False))
     else:
         print(f"Fichiers scannes : {scanned}")
+        if unreadable:
+            print(f"Chemins illisibles (ignores) : {len(unreadable)}")
         print(f"Desaccords libelle/cible : {len(findings)}\n")
         for f in findings:
             print(f"  {f['file']}")

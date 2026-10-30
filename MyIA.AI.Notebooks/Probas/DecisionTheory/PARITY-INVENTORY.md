@@ -103,6 +103,14 @@ tranche de mapping dédiée.
 
 ## 4. Extensions unilatérales (ni décalées, ni alignées — à documenter tel quel)
 
+> **État mesuré au 2026-10-26** (tranche P0bis, lane `myia-po-2023:CoursIA`) : la branche actuarielle
+> PyMC a été **consolidée** — le dépôt porte désormais un unique `DecPyMC-08-Actuariat-Capstone.ipynb`
+> qui remplace les carnets `DecPyMC-8`, `DecPyMC-9` et `DecPyMC-12` du tableau ci-dessous (les lignes
+> restent comme état historique du snapshot P0). Le capstone reste une **extension unilatérale** :
+> sans jumeau DecInfer, hors arc commun, non enregistrée au registre twin_pairs.d (les extensions
+> unilatérales ne s'y enregistrent pas — précédent ML-6 ONNX, famille ML). Par ailleurs les
+> compagnons Lean `DecInfer-02`/`02b`/`08b` demeurent hors arc commun (cause structurelle du décalage, §2).
+
 | Extension | Justification | Jumeau attendu ? |
 |---|---|---|
 | `DecInfer-10-Thompson-Sampling` | Extension dédiée bayésienne (regret vs ε-greedy/UCB1) — détails méthodologiques qui dépassent la couverture `DecPyMC-7` (qui inclut Thompson mais dilué dans MDP+bandits). | Non prévu. À vérifier si une future refonte `DecPyMC-10b` est légitime. |
@@ -114,7 +122,19 @@ tranche de mapping dédiée.
 pas de jumeau côté DecInfer et la convention autorise explicitement les extensions unilatérales
 (EPIC #12933 §Principe directeur).
 
-## 5. État du registre `twin_pairs.d/` (snapshot au HEAD)
+## 5. État du registre `twin_pairs.d/`
+
+> **État mesuré au 2026-10-26 — P0bis LIVRÉE** (tranche `#12933-P0bis-ajout-registre`, lane
+> `myia-po-2023:CoursIA`) : les **7 paires communes** sont enregistrées (`dt-1-utility-foundations.yaml`
+> à `dt-7-sequential.yaml`), chaque divergence de numéro portée par un `numbering_exception` documenté
+> (décalage de compteur des compagnons Lean + zero-pad asymétrique DecInfer `01..08` vs DecPyMC `1..7`).
+> Deux écarts avec la recommandation initiale ci-dessous, mesurés : (a) pas de fichiers `dt-ext-{8,9}`
+> — le registre n'enregistre pas les extensions unilatérales (aucun précédent, précédent inverse
+> ML-6 ONNX exclu) ; (b) la branche actuarielle s'est consolidée entre-temps en `DecPyMC-08-Capstone`
+> (§4). La garde `NUMBERING-DRIFT` couvre désormais la famille ; le **réalignement** des numéros reste
+> la tranche à venir, gatee sur l'arbitrage §3.
+
+### Historique — snapshot au HEAD `87dffc2bd9c` (conservé tel quel)
 
 ```
 $ ls scripts/notebook_tools/twin_pairs.d/ | grep -iE "(dt-?|dec(dt|infer|pymc))" | head
