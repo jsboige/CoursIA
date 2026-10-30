@@ -234,6 +234,15 @@ def _synthesize_narrator_customvoice(
     if base_url.endswith("/v1"):
         base_url = base_url[: -len("/v1")]
 
+    # Attack guard (#19739): the chunked render concatenates sentence chunks,
+    # and a chunk can start mid-text (onset-drop) without any duration check
+    # seeing it -- only the ASR can. Same organ and same hard-failure
+    # contract as the CV3 narrator path: a chunk whose attack could not be
+    # obtained is re-rendered, and the passage is refused if the attack is
+    # still missing. The lever here is the re-render (the gateway takes no
+    # seed and samples at temperature 0.9), not the CV3 seeded re-roll.
+    attack_report: dict = {}
+
     wav_bytes = qwen_tts_customvoice_chunked(
         plain_text,
         voice=_CUSTOMVOICE_NARRATOR_SPEAKER,
@@ -245,11 +254,16 @@ def _synthesize_narrator_customvoice(
         gap_ms=120,
         base_url=base_url,
         model=_CUSTOMVOICE_SERVED_MODEL,
+        attack_guard=True,
+        attack_report=attack_report,
     )
     if not wav_bytes:
         raise NarratorCustomVoiceUnavailable(
             f"seg {seg.seg_index}: CustomVoice gateway returned no audio "
-            f"(unreachable, 4xx/5xx, or a failed chunk) at {endpoint}"
+            f"(unreachable, 4xx/5xx, a failed chunk, or an attack the guard "
+            f"could not obtain after {attack_report.get('attempts', 0)} "
+            f"render(s) on chunk {attack_report.get('aborted_chunk')}) "
+            f"at {endpoint}"
         )
 
     try:
@@ -1194,6 +1208,12 @@ def _synthesize_narrator_qwen(
             f"seg {seg.seg_index}: empty text after stripping brackets"
         )
 
+    # Attack guard (#19739): same organ and same hard-failure contract as the
+    # CV3 narrator path -- a chunk that starts mid-text loses its attack and
+    # only the ASR sees it. The lever is the re-render (no seed on this
+    # transport), and the passage is refused if the attack is still missing.
+    attack_report: dict = {}
+
     wav_bytes = qwen_tts_voicedesign_chunked(
         plain_text,
         instructions=_QWEN_NARRATOR_INSTRUCTIONS,
@@ -1202,11 +1222,15 @@ def _synthesize_narrator_qwen(
         max_chars=_MAX_CHUNK_CHARS,
         per_chunk_timeout=290,
         gap_ms=120,
+        attack_guard=True,
+        attack_report=attack_report,
     )
     if not wav_bytes:
         raise NarratorQwenUnavailable(
-            f"seg {seg.seg_index}: Qwen returned None (gateway unreachable "
-            f"or render failed)"
+            f"seg {seg.seg_index}: Qwen returned None (gateway unreachable, "
+            f"render failed, or an attack the guard could not obtain after "
+            f"{attack_report.get('attempts', 0)} render(s) on chunk "
+            f"{attack_report.get('aborted_chunk')})"
         )
 
     # VoiceDesign returns WAV; downstream pipeline writes MP3 (same naming
