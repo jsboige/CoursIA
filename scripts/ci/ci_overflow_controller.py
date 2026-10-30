@@ -135,6 +135,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import check_runner_starvation as crs  # noqa: E402  (organe voisin, meme dossier)
+import check_self_hosted_runner_policy as csrp  # noqa: E402  (organe voisin)
 
 EXIT_OK = 0
 EXIT_UNREADABLE = 1
@@ -775,6 +776,8 @@ def collect_local(
     token: str | None,
     measure_starvation: bool = True,
     runners_token: str | None = None,
+    local_paths: set[str] | None = None,
+    local_paths_reason: str = "",
 ) -> LocalSample:
     """Mesure le parc local : slots libres, et affames si demande.
 
@@ -800,6 +803,23 @@ def collect_local(
                 f"jeton courant sans droit sur actions/runners -- {reason}"
             )
         return LocalSample(complete=False, reason=reason)
+    if local_paths_reason:
+        # La liste des workflows porteurs d'un job local n'est pas etablie :
+        # la lecture ciblee ne peut pas etre lancee, donc « le parc local
+        # n'est pas affame » ne peut etre affirme -> fail-CLOSED, jamais un
+        # enclenchement par defaut.
+        return LocalSample(
+            online=len(inv.online),
+            free=inv.free,
+            busy=len(inv.busy),
+            unknown=len(inv.unknown),
+            complete=False,
+            reason=(
+                "liste des workflows porteurs d'un job local non etablie "
+                f"({local_paths_reason}) -- « le parc local n'est pas affame » "
+                f"n'est PAS etablie"
+            ),
+        )
     starved = 0
     truncated = False
     in_progress_unread = 0
@@ -811,6 +831,7 @@ def collect_local(
             starve_minutes=saturation_minutes,
             now=now,
             job_read_budget=job_budget,
+            local_paths=local_paths,
         )
         if not starv.complete:
             return LocalSample(
@@ -829,6 +850,12 @@ def collect_local(
                 f"{len(starv.budget_unread)} run(s) local(aux) non lu(s) "
                 f"(budget de lecture {job_budget} atteint) -- « le parc local "
                 f"n'est pas affame » n'est PAS etablie"
+                + (
+                    f" ({starv.skipped_other_workflow} run(s) hors perimetre "
+                    f"ecarte(s) sans lecture)"
+                    if starv.skipped_other_workflow
+                    else ""
+                )
             )
     else:
         reason = "affamescence locale non mesuree (--no-local-starvation)"
@@ -909,6 +936,39 @@ def derive_cohort_workflows(repo_root: Path) -> tuple[set[str], str]:
             f"`{COHORT_MARKER}` -- la cohorte n'est pas etablie"
         )
     return paths, ""
+
+
+def derive_local_capable_workflows(repo_root: Path) -> tuple[set[str], str]:
+    """Derive du depot la liste des workflows QUI PEUVENT porter un job local.
+
+    Deux sources, lues dans le checkout a chaque passage, jamais recopiees :
+    les workflows STATIQUEMENT locaux (par l'organe de politique des runners,
+    qui possede la connaissance « quel runner porte quel workflow ») et la
+    cohorte hybride (par le marqueur `vars.CI_OVERFLOW_LOCAL`).
+
+    Rend `(chemins, motif)`, chemins sous la forme de `run.path`
+    (`.github/workflows/<fichier>`). Motif vide = derivation reussie.
+
+    Echec -- la liste locale est vide ou illisible -- : ensemble VIDE et
+    motif. La lecture ciblee ne peut alors pas etre lancee : « le parc local
+    n'est pas affame » ne peut pas etre affirme, donc le controleur ne peut
+    pas enclencher (fail-CLOSED, meme convention que la cohorte).
+    """
+    workflows_dir = Path(repo_root) / ".github" / "workflows"
+    local_paths, local_reason = csrp.local_capable_workflows(workflows_dir)
+    if local_reason:
+        return set(), local_reason
+    if not local_paths:
+        return set(), (
+            f"aucun workflow de {workflows_dir} ne peut porter un job "
+            f"`{LOCAL_LABEL}` -- la liste n'est pas etablie"
+        )
+    cohort_paths, _cohort_reason = derive_cohort_workflows(repo_root)
+    # Une cohorte VIDE n'est PAS « la cohorte ne rend rien » : son absence
+    # est signalee par le echantillon de charge (illisible), ailleurs. Elle
+    # ne doit donc pas casser la lecture ciblee, dont la liste statique
+    # suffit.
+    return local_paths | cohort_paths, ""
 
 
 def collect_cohort_charge(
@@ -1192,6 +1252,18 @@ def main(argv: list[str] | None = None) -> int:
             f"Le jeton a-t-il le droit `variables: read` ?"
         )
 
+    # Liste de la COHORTE : derivee du depot a chaque passage, jamais
+    # recopiee (un workflow qui rejoint la forme hybride entre dans le calcul
+    # sans qu'on touche a cet organe).
+    repo_root = Path(__file__).resolve().parents[2]
+    cohort_paths, cohort_reason = derive_cohort_workflows(repo_root)
+
+    # Liste des workflows QUI PEUVENT porter un job local : c'est elle qui
+    # cible la lecture locale. Sans elle, la lecture consomme son budget sur
+    # des runs qui n'ont aucun job local (mesure du coordinateur, 2026-10-28
+    # 16:55Z : 250 runs anciens en file, budget 120, lecture tronquee).
+    local_paths, local_paths_reason = derive_local_capable_workflows(repo_root)
+
     hosted = collect_hosted(
         args.repo, args.saturation_minutes, args.job_budget, now, token
     )
@@ -1204,13 +1276,9 @@ def main(argv: list[str] | None = None) -> int:
         token,
         measure_starvation=not args.no_local_starvation,
         runners_token=runners_token,
+        local_paths=None if local_paths_reason else local_paths,
+        local_paths_reason=local_paths_reason,
     )
-
-    # Liste de la COHORTE : derivee du depot a chaque passage, jamais
-    # recopiee (un workflow qui rejoint la forme hybride entre dans le calcul
-    # sans qu'on touche a cet organe).
-    repo_root = Path(__file__).resolve().parents[2]
-    cohort_paths, cohort_reason = derive_cohort_workflows(repo_root)
 
     # Charge rendue de la cohorte : elle n'est lue QUE si la liberation est
     # autrement candidate (l'offre hebergee n'attend pas et le parc local
@@ -1363,6 +1431,15 @@ def main(argv: list[str] | None = None) -> int:
                 cohort_confirm.in_progress_unread if cohort_confirm else 0
             ),
             "reason": cohort_confirm.reason if cohort_confirm else "",
+        },
+        # Les workflows porteurs d'un job LOCAL : c'est la liste qui cible la
+        # lecture locale (`derive_local_capable_workflows`), derivee du depot
+        # a chaque passage. Le compte la rend verifiable sans recopier les
+        # chemins ; la derivation vide signale que la lecture ciblee n'a pas
+        # pu etre lancee.
+        "local_capable": {
+            "workflows": len(local_paths),
+            "derivation": local_paths_reason,
         },
         "thresholds": {
             "saturation_jobs": args.saturation_jobs,
