@@ -20,11 +20,86 @@ de review B.0), seule l'infrastructure est mutualisee.
 
 Ce module ne contient QUE des donnees : la mecanique est dans `fast_lane.py`,
 ce qui rend le registre lisible et testable sans executer quoi que ce soit.
+
+Exception documentee (#22001) : les `paths` du garde Live-read (TRANCHE20)
+sont DERIVES du registre `live_read_registry.json` -- les sources lues par
+les cellules sont des DONNEES, pas des motifs recopies a la main. La
+derivation est une lecture de donnees, pas de la mecanique : elle reste ici
+parce que c'est le registre lui-meme qui porte les `paths`.
 """
 
 from __future__ import annotations
 
+import json
+import sys
 from dataclasses import dataclass, field
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+LIVE_READ_REGISTRY = REPO_ROOT / "scripts" / "notebook_tools" / "live_read_registry.json"
+# Repli du garde Live-read quand le registre est illisible : tous les carnets,
+# c'est-a-dire un SUPERSET de ce que le registre declarerait aujourd'hui.
+LIVE_READ_WILDCARD = "MyIA.AI.Notebooks/**/*.ipynb"
+
+
+def live_read_source_paths(registry_path: Path | None = None) -> list[str]:
+    """Chemins des fichiers LUS par les cellules live-read, d'apres le registre.
+
+    Une cellule live-read lit un fichier du depot et en committent la sortie
+    (compte de lignes, citations ``L<n>``). Si la source change, la sortie
+    committée devient un temoignage du passe -- et le garde qui le verifie
+    doit etre SELECTIONNE par la revision qui touche la source. Jusque-là
+    (avant #22001), les `paths` du garde ne portaient que ``**.ipynb`` et ses
+    propres fichiers : une PR qui ne touchait que la source ne declenchait
+    rien, et la revision #21899 (`Pillars.lean` 364 -> 414 lignes) a ete
+    mergee verte.
+
+    Les sources sont donc lues dans le registre, jamais recopiees : ajouter
+    une entree au registre suffit a elargir le declencheur.
+
+    Fail-closed : un registre illisible ou une entree sans `source` leve
+    plutot que de rendre un garde muet (un garde eteint en silence est le
+    defaut que ce correctif vient corriger). Les `paths` du garde passent par
+    `live_read_guard_paths()`, qui LOCALISE cette panne (cf sa docstring).
+    """
+    path = Path(registry_path) if registry_path is not None else LIVE_READ_REGISTRY
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise RuntimeError(f"registre live-read illisible : {path} ({exc})") from exc
+    sources: list[str] = []
+    for cell in data.get("cells", []):
+        source = cell.get("source")
+        if not source:
+            raise RuntimeError(
+                f"registre live-read : entree sans champ 'source' : {cell}")
+        sources.append(source)
+    return sources
+
+
+def live_read_guard_paths() -> list[str]:
+    """`paths` du garde Live-read, sans emporter le registre entier en cas de panne.
+
+    `TRANCHE20` porte ces chemins au CHARGEMENT du module : une exception
+    laissee filer rendrait `fast_lane_registry` inimportable, donc les 30+
+    gardes avec lui (mesure #22041 : registre absent -> `python scripts/ci/
+    fast_lane.py` meurt sur `RuntimeError` a l'import, aucun check-run n'est
+    emis). La panne est donc LOCALISEE au garde concerne : on retombe sur un
+    motif large -- tous les carnets -- qui reste un SUPERSET des sources
+    declarees. Le garde reste ainsi SELECTIONNE, et son propre argv
+    (`check_live_read_freshness.py`) rend le rouge en lisant le registre
+    manquant : bruyamment, jamais en silence.
+    """
+    try:
+        return live_read_source_paths()
+    except RuntimeError as exc:
+        print(
+            f"[fast-lane] registre live-read illisible : {exc} -- le garde "
+            f"Live-read reste selectionne sur {LIVE_READ_WILDCARD} au lieu de "
+            "rendre tout le registre inimportable (#22041).",
+            file=sys.stderr,
+        )
+        return [LIVE_READ_WILDCARD]
 
 
 @dataclass(frozen=True)
@@ -499,11 +574,16 @@ PILOT: list[Guard] = [
             ".github/workflows/*.yml",
             ".github/workflows/*.yaml",
             "scripts/ci/check_self_hosted_runner_policy.py",
+            "scripts/ci/self_hosted_timeout_baseline.txt",
             "scripts/tests/test_check_self_hosted_runner_policy.py",
             "scripts/ci/fast_lane_registry.py",
         ],
+        # #22954 : `--check-timeouts` ajoute le cliquet qui refuse un job
+        # auto-heberge sans `timeout-minutes` (defaut d'Actions : 6 h, et un job
+        # fige tient son slot tout ce temps). La dette existante est nommee dans
+        # `self_hosted_timeout_baseline.txt`, qui ne doit jamais grossir.
         argv=["python", "scripts/ci/check_self_hosted_runner_policy.py",
-              "--check"],
+              "--check", "--check-timeouts"],
         blocking=True,
         shadow_reason=PILOT_SHADOW_SANS_EMETTEUR,
     ),
@@ -1403,7 +1483,7 @@ TRANCHE9: list[Guard] = [
 #   'Invalid Notebook / outputs is a required property /
 #    Using nbformat v5.10.4 and nbconvert v7.17.0'
 #
-# Le c.1082 fabrication de GameTheory-06f-Bounded-Agents-Lean.ipynb a omis
+# Le c.1082 fabrication de Dynamics-05-Agents-Bornes-Lean.ipynb a omis
 # la cle `outputs` de 9/9 cellules code. Papermill (validator permissif) a
 # accepte, le kernel lean4-wsl n'a rien produit (hang faute de `.lake/`), la
 # cle n'a jamais ete injectee -- resultat : un notebook structurellement
@@ -1457,7 +1537,7 @@ TRANCHE10: list[Guard] = [
 # `notebook-source-collapse-ratchet.yml` a absorber.
 #
 # Le defaut fondeur est #15862 : la cellule `c989_independent_v2` de
-# GameTheory-06e-Open-Source-Game-Theory-Python.ipynb a perdu 3116 caracteres de
+# Dynamics-04-Open-Source-Game-Theory-Python.ipynb a perdu 3116 caracteres de
 # source (8425 -> 5309, -37.0 %) -- une table declarative et un `assert` ont
 # disparu -- et AUCUN des ~30 ratchets n'a bronche, parce que tous mesurent
 # des SORTIES, des sequences ou de la structure. Aucun ne mesurait la
@@ -2013,6 +2093,15 @@ TRANCHE20: list[Guard] = [
             "scripts/notebook_tools/tests/test_live_read_freshness.py",
             "scripts/ci/fast_lane.py",
             "scripts/ci/fast_lane_registry.py",
+            "scripts/tests/test_fast_lane.py",
+            # Les SOURCES lues par les cellules live-read : derivees du
+            # registre (#22001). Sans elles, le garde ne se selectionne que
+            # sur une revision qui touche le CARNET -- la revision qui
+            # reecrit la SOURCE passe sans controle, et la sortie committée
+            # de la cellule devient un temoignage du passe (#21899). La
+            # derivation est LOCALISEE : un registre illisible ne rend pas le
+            # module inimportable, il elargit ce seul garde (#22041).
+            *live_read_guard_paths(),
         ],
         pre_argv=[
             "python", "scripts/notebook_tools/check_live_read_freshness.py",
@@ -2265,6 +2354,83 @@ TRANCHE25: list[Guard] = [
     ),
 ]
 
+# ---------------------------------------------------------------------------
+# TRANCHE 26 (#22009) -- le golden set de traduction ne derive plus en silence.
+#
+# `scripts/translation/build_golden_set.py --check` compare le JSON commite
+# (`translations/translation_golden_set.json`) a ce que l'arbre produit. Le
+# mode existait depuis l'origine et **aucun workflow ne l'appelait** : mesure
+# du 2026-10-22 sur un worktree detache de `origin/main`, `--check` rendait
+# deja rc=1 (57 paires du JSON absentes de l'arbre, 79 de l'arbre absentes du
+# JSON). Chaque merge qui ajoute ou retire une paire FR/EN laissait donc
+# deriver le fichier, et la derive ne se voyait qu'au moment ou une PR le
+# regenerait -- en l'absorbant dans un diff sans rapport (#22008, 22 paires).
+#
+# Garde NATIF : aucun workflow d'origine, c'est precisement le defaut.
+#
+# ARBITRAGE #22216, forme FINALE (review myia-ai-01 du 2026-10-26, demandes
+# 1 + 2) : la garde est ADVISORY pure, et la REGENERATION du JSON vit dans
+# le cron du catalogue (`catalog-cron.yml`, branche chore/catalog-refresh-
+# pending) -- meme modele que COURSE_CATALOG.generated.* et `_quarto.yml`
+# (#19901, regle catalog-pr-hygiene) : un fichier genere appartient au cron,
+# une branche de contenu ne le regenere pas. Le `--check` integral en
+# BLOQUANT rougissait toute PR qui edite l'un des ~966 fichiers apparies
+# sans regenerer le JSON -- chaque preuve Lean d'un lake bilingue et chaque
+# retouche de README pair aurait paye un rouge, une regeneration et un
+# re-push, sans aucun gain de traduction (la regeneration prend acte de
+# l'ecart, elle ne traduit pas), et des PRs paralleles regenerant le meme
+# fichier genere seraient entrees en conflit.
+#
+# Une forme intermediaire « structure-seule bloquante » (`--check-structure`,
+# deux jambes) a ete implantee sur cette branche (45d95416da0) puis RETIREE :
+# meme limitee aux paires (kind, fr, en), elle exigeait la regeneration SUR
+# BRANCHE du fichier genere a chaque paire ajoutee ou retiree -- exactement
+# le geste que catalog-pr-hygiene interdit pour le catalogue, et la source
+# des conflits entre PRs paralleles que la review ecarte. Aucun autre organe
+# ne couvre la fraicheur de cet INDEX (lean-i18n-drift.yml = parite de
+# CONTENU Lean au diff ; twin-parity-guard = parite de CONTENU des jumeaux
+# au diff ; translation-parity.yml = schedule seul) -- mais la derive de
+# structure reste SIGNALEE ici (advisory, `--check` integral) et RESORBEE
+# par le cron (< 24 h) : rien ne redevient silencieux.
+#
+# Codes de retour : 0 = a jour, 1 = derive (empreintes, orphelins et
+# structure compris).
+#
+# Cout mesure : **~1,0 s** sur l'arbre complet (483 paires, 3 familles), donc
+# la voie rapide -- qui paie deja son checkout -- le porte sans surcout
+# appreciable. C'est ce qui tranche la question laissee ouverte par l'issue
+# (« registre si le cout le permet, sinon job dedie »).
+#
+# `paths` : ce sont les fichiers dont la presence ou le contenu deplace une
+# paire ou derive une empreinte. Les trois extensions appariables sont la
+# (un `Foo.ipynb` ajoute a cote d'un `Foo_en.ipynb` existant CREE une paire),
+# plus le JSON lui-meme, le script et son registre.
+#
+# Pas de `needs_base` : le verdict compare l'arbre au JSON **commite**, pas
+# HEAD a la base. `diff_bounded` reste False -- une derive peut entrer par
+# n'importe quel merge et heriter d'un rouge, donc un rouge ne s'attribue
+# pas d'office a la PR qui le porte (c'est l'issue #22009 elle-meme : la
+# derive etait anterieure a la PR qui l'a constatee). Advisory + cron : le
+# rouge herite ne bloque personne, le cron le resorbe.
+# ---------------------------------------------------------------------------
+TRANCHE26: list[Guard] = [
+    Guard(
+        name="translation-golden-set-drift (advisory, non-blocking)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**/*.ipynb",
+            "**/*.lean",
+            "**/*.md",
+            "translations/translation_golden_set.json",
+            "scripts/translation/build_golden_set.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=["python", "scripts/translation/build_golden_set.py", "--check"],
+        blocking=False,
+        absorbed=True,
+    ),
+]
 
 # ---------------------------------------------------------------------------
 # TRANCHE 27 -- absorption des advisories label-posers de la tranche 1 #22209
@@ -2416,6 +2582,51 @@ TRANCHE28: list[Guard] = [
             "scripts/tests/test_dwell_rule_matches_organ.py",
         ],
         blocking=True,
+        absorbed=True,
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 29 -- confrontation doc <-> quantification reellement chargee (#23252).
+#
+# Defaut ferme : la table « Quantization Settings per Service » de
+# ``docs/genai/genai-services.md`` annoncait ``tts-fishaudio`` en « BnB 4-bit
+# NF4 ~5 GB » alors que le service tourne en ``--half`` (fp16, 20,3 Go
+# mesures). Rien ne confrontait la table a ce que les services chargent : la
+# doc pouvait annoncer une quantification que personne n'applique, sans qu'un
+# seul garde ne rougisse -- et un lecteur y lit un budget VRAM qui n'existe pas.
+#
+# L'organe est ADVISORY d'abord (``blocking=False``) : il rend des verdicts
+# ``ORPHAN-SERVICE`` sur six services GPU absents de la table, et ces trous de
+# doc se corrigent service par service, pas en bloquant les PRs qui n'y
+# touchent pas. Le passage en bloquant se fera quand le stock de ``failing``
+# sera vide sur ``main`` -- c'est le critere de bascule, ecrit ici, pas un
+# « plus tard ».
+#
+# Forme : garde NON-delta. Il lit l'arbre entier (la table d'un cote, tous les
+# composes de l'autre) et son verdict est absolu, donc heritable de ``main`` :
+# ``diff_bounded`` reste faux, et un rouge corrobore sur ``main`` ne doit pas
+# etre impute a la PR. ``paths`` borne en revanche le DECLENCHEMENT -- la doc,
+# les composes et l'organe lui-meme, sinon le garde tournerait a vide sur
+# chaque PR de notebook.
+# ---------------------------------------------------------------------------
+TRANCHE29: list[Guard] = [
+    Guard(
+        name="quant-doc-divergence advisory (non-blocking)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "docs/genai/genai-services.md",
+            "docker-configurations/services/**/docker-compose*.yml",
+            "docker-configurations/services/**/docker-compose*.yaml",
+            "scripts/genai-stack/check_quant_doc_divergence.py",
+            "scripts/tests/test_check_quant_doc_divergence.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python", "scripts/genai-stack/check_quant_doc_divergence.py",
+        ],
+        blocking=False,
         absorbed=True,
     ),
 ]
