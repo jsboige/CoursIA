@@ -195,7 +195,15 @@ EXERCISE_TOKENS = ("TODO", "A completer", "à compléter", "Exercice")
 # entre les stubs (forme canonique, grandfathered) rougissait EXERCISE_READING
 # sur chaque enonce -- mesure sur 01-2-GPT-5-Image-Generation_en (cellules 31
 # et 33, miroir exact des cellules 31/33 du FR source sur main).
-EXERCISE_STATEMENT_TITLE_RE = re.compile(r"^#{1,6}\s*exerci[cs]e\b", re.IGNORECASE)
+# La forme GRAS (`**Exercice 1** -- ...`) est celle de 111 carnets du depot
+# (mesure au 30/10/2026) : sans elle, l'enonce echappait au carve-out
+# #17777 et passait pour « un paragraphe non titre » qui commente une sortie
+# -- donc pour une lecture. Mesure : PR #23439 (Z3-16c-Meal-Planner), ou
+# l'enonce en gras depose entre le code et son stub gonflait le compte de la
+# sortie precedente, et la PREMIERE lecture ajoutee sous ce code etait signalee
+# SECOND_READING a tort.
+EXERCISE_STATEMENT_TITLE_RE = re.compile(
+    r"^(?:#{1,6}\s*|\*+|_+)\s*exerci[cs]e\b", re.IGNORECASE)
 SECTION_TITLE_AFTER_EXERCISE_RE = re.compile(
     r"^(conclusion|ressources?|plan|references?|bibliographie|synthese|pour aller plus loin)\b",
     re.IGNORECASE,
@@ -650,6 +658,13 @@ def readings_by_output(nb: dict) -> Counter[str]:
     counts: Counter[str] = Counter()
     for i, c in enumerate(cells):
         if not is_reading_or_prose(c) or _is_pure_fence(c):
+            continue
+        # Meme carve-out que la boucle principale (ligne ~832) : un enonce
+        # d'exercice n'est PAS une lecture. Sans lui, un enonce place entre une
+        # sortie et son stub etait compte comme une lecture de cette sortie --
+        # et la premiere lecture ajoutee sous cette sortie etait signalee
+        # SECOND_READING (faux positif mesure sur #23439).
+        if is_exercise_statement(c, cells, i):
             continue
         key = _output_key_above(cells, i)
         if key is not None:

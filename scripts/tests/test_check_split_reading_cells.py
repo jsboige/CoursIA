@@ -754,6 +754,56 @@ def test_diff_lecture_sous_code_devant_code_sans_exces_non_flaggee():
     assert detect_added_readings(head, base) == []
 
 
+def test_diff_enonce_exercice_en_gras_ne_gonfle_pas_le_compte():
+    """Regression mesuree sur #23439 (Z3-16c-Meal-Planner) : l'enonce
+    d'exercice en GRAS (`**Exercice 1** -- ...`) n'est pas une lecture. Il ne
+    doit donc pas gonfler le compte par sortie de la sortie qu'il precede --
+    sinon la PREMIERE lecture ajoutee sous cette sortie est signalee
+    SECOND_READING a tort. La forme en gras est employee par 111 carnets du
+    depot (mesure au 30/10/2026) ; avant le correctif, elle echappait au
+    carve-out #17777 (qui exigeait un titre markdown `## Exercice N`).
+    """
+    base = nb(
+        code("print(1)"),
+        md("## 3. Exercices"),
+        md("**Exercice 1** -- forcer que le critere change."),
+        code("# Exercice 1 (stub) : TODO"),
+    )
+    head = nb(
+        code("print(1)"),
+        md("### Lecture du resultat\nLa reponse est stable."),
+        md("## 3. Exercices"),
+        md("**Exercice 1** -- forcer que le critere change."),
+        code("# Exercice 1 (stub) : TODO"),
+    )
+    assert detect_added_readings(head, base) == []
+
+
+def test_diff_vraie_seconde_lecture_reste_signalee_apres_un_enonce():
+    """Controle negatif du correctif : le carve-out ne doit pas blanchir une
+    VRAIE seconde lecture. Deux lectures sous le meme code, avec un enonce
+    d'exercice en gras entre les deux et son stub : la seconde reste signalee.
+    """
+    base = nb(
+        code("print(1)"),
+        md("### Lecture du resultat\nLa reponse est stable."),
+        md("## 3. Exercices"),
+        md("**Exercice 1** -- forcer que le critere change."),
+        code("# Exercice 1 (stub) : TODO"),
+    )
+    head = nb(
+        code("print(1)"),
+        md("### Lecture du resultat\nLa reponse est stable."),
+        md("### Lecture du resultat\nLa reponse est stable, relue en detail."),
+        md("## 3. Exercices"),
+        md("**Exercice 1** -- forcer que le critere change."),
+        code("# Exercice 1 (stub) : TODO"),
+    )
+    findings = detect_added_readings(head, base)
+    assert len(findings) == 1
+    assert findings[0]["type"] == "SECOND_READING"
+
+
 def test_diff_lecture_sous_code_avec_exces_rest_second_reading():
     """Meme topologie (prev = code execute, next = code), mais la sortie du
     dessus portait deja une lecture : l'ajout fait monter le compte ->
