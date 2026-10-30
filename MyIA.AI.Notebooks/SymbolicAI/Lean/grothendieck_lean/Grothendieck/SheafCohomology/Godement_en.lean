@@ -33,21 +33,41 @@ definition, prior to any Ext presentation).
 4. `godementSectionsComplex_X`: the definitional calibration of the stage —
    `(Γ(U, C^●F)).X n = godementCanonicalObj F n (op U)` by `rfl`, a bridge
    to the notations of Parts 89-92.
+5. `godementSectionsComplex_d_zero`: the calibration of the degree-0
+   differential — `(Γ(U, C^●F)).d 0 1 = d⁰(U)`, the component at `U` of the
+   canonical step.
+6. `exact_app_toGodement_godementCanonicalDZero`: **Part 91's step-B
+   exactness, evaluated at `U`** — the sequence of sections
+   `F(U) → C⁰F(U) → C¹F(U)` is exact. Evaluation at an open set is an exact
+   functor (limits and colimits of presheaves are pointwise:
+   `evaluationPreservesLimits`, `evaluation_preservesColimits`), so
+   exactness transports along `Functor.exact_tfae` — no recourse to stalks
+   or AB5.
+7. `godementZerothCohomologyIso`: **brick 2 — `H⁰_God(U, F) ≅ F(U)` for
+   `F` a sheaf** ([God58] II §5.1). Assembly without sheafification:
+   `H⁰ = ker d⁰` (nothing in degree −1), then `ker d⁰(U) ≅ F(U)` because
+   the kernel lift `F(U) ⟶ ker d⁰(U)` is epi (evaluated exactness,
+   `Exact.epi_kernelLift`) and mono (the Godement unit is mono, Part 90,
+   evaluated at `U`) — hence an iso (`isIso_iff_epi_and_mono`,
+   `AddCommGrpCat` is balanced).
 
 ## What this brick poses vs. what it leaves open
 
 **Posed**: the full definition `Hⁿ_God(U, F) = Hⁿ(Γ(U, C^●F))`, the stage
-calibrations, and the additive sections functor (a reusable brick — the
+and `d⁰` calibrations, the additive sections functor (a reusable brick — the
 "flabby ⇒ Γ-acyclic" capstone (Part 94, merged #21072) will connect to it
-after the stack is retargeted onto main).
+after the stack is retargeted onto main), and **brick 2**:
+`H⁰_God(U, F) ≅ F(U)` for `F` a sheaf — the sheafification wall identified
+in the P95 plan is not needed here: the monomorphism of the unit (Part 90)
+and step-B exactness (Part 91), both evaluated at `U`, suffice.
+Sheafification remains required by brick 3 alone.
 
 **Not posed** — named frontiers:
 - **functoriality in `F`**: it first requires functoriality of the
   *canonical complex* itself (`F ↦ C^●F` on morphisms), which Part 92 did
   not pose — a distinct grain `godementCanonicalComplex_map`;
-- `H⁰_God(U, F) ≅ F(U)` for `F` a sheaf (brick 2 of the P95 plan —
-  sheafification wall identified, to be instructed cold);
-- the long exact sequence (brick 3: cone or dimension-shift).
+- the long exact sequence (brick 3: cone or dimension-shift — it is the one
+  that will require abelian sheafification).
 
 ## References
 
@@ -84,7 +104,20 @@ open CategoryTheory CategoryTheory.Limits Opposite
 -- `godementCanonicalComplex_map`. The flabby-resolution route (Part 94,
 -- `isFlasque_godementCanonicalComplex`; capstone #21072 "flabby ⇒
 -- Γ-acyclic") will consume this definition: brick 2 `H⁰_God(U, F) ≅ Γ(U,F)`
--- for `F` a sheaf (sheafification wall to instruct cold), then brick 3 the
--- long exact sequence.
+-- for `F` a sheaf, then brick 3 the long exact sequence.
+--
+-- **Part 95, brick 2, landed in the FR twin (2026-10-19)**: the zeroth
+-- Godement cohomology is the group of sections —
+-- `godementZerothCohomologyIso : godementCohomologyObj U F 0 ≅ F.obj (op U)`
+-- for `F` a sheaf, proved WITHOUT sheafification: the P95-plan wall belongs
+-- to brick 3 only. The three moves, all named in the FR docstring:
+-- (1) `exact_app_toGodement_godementCanonicalDZero` — Part 91's step-B
+-- exactness evaluated at `U`, via `Functor.exact_tfae` and the pointwise
+-- evaluation functor (`evaluationPreservesLimits`,
+-- `evaluation_preservesColimits`) — no stalks, no AB5;
+-- (2) the evaluated unit is mono (Part 90, `mono_iff_mono_app`);
+-- (3) the kernel lift `F(U) ⟶ ker d⁰(U)` is epi (exactness) and mono
+-- (composition over the evaluated unit), hence an iso in balanced
+-- `AddCommGrpCat`.
 
 end Grothendieck.SheafCohomology_en
