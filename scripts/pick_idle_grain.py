@@ -2594,6 +2594,334 @@ def delivered_signal_reason(
     return None
 
 
+# --- Gate GPU : le picker consulte le ledger de reservation avant de tirer ----
+#
+# Le protocole (`docs/coordination/gpu-reservation.md`, section « Liaison
+# picker <-> file #1454 ») prescribe depuis c.257 un signal PRE-LAUNCH :
+# avant de tirer un grain `training`/`genai` marque GPU-bound, le picker
+# appelle `scripts/coordination/debt_ledger.py check_pending --entity
+# <m>#gpu<n>` et passe au suivant si le device est tenu. Le protocole
+# l'annoncait ; le CODE ne le faisait pas -- mesure 2026-10-27 (#22747) :
+# `git grep -n check_pending scripts/` ne renvoie que le ledger, ses tests
+# et la documentation ; zero appelant du cote du picker.
+#
+# DOCTRINE -- fail-CLOSED, a l'inverse du fail-OPEN des sondes de claim.
+# Une observation de device tenu est un fait de CONTENTION MATERIELLE : deux
+# lanes qui lancent sur le meme device se marchent dessus (#22456 : le
+# premier essai de po-2024 n'a pas ete vu par la regie). Un gate illisible
+# ne rend donc jamais « libre » : il rend « illisible », et le grain est
+# ecarte avec un motif NOMME -- jamais silencieusement absent.
+
+#: Genres declares GPU-bound. Le protocole laissait l'heuristique « a
+#: definir » ; elle est fixee ICI et reprise dans le document. Le genre
+#: retenu par `fetch_pool` est celui de l'auteur (tag `Grain:`) quand il
+#: existe, sinon l'inference titre+labels -- qui reste « une aide au tri,
+#: pas un verdict » (commentaire de `GENRE_RULES`). C'est pourquoi le
+#: motif d'un ecart est toujours nomme et toujours porte sur un verdict
+#: ECRIT : un grain ecarte n'est jamais un grain absent.
+GPU_BOUND_GENRES = frozenset({"training", "genai"})
+
+#: Forme d'entite du ledger : `<machine>#gpu<n>` (meme forme que
+#: `_parse_entity_string`, cote ledger).
+GPU_ENTITY_RE = re.compile(r"([A-Za-z0-9_.-]+)#gpu(\d+)")
+
+#: Ligne DEDIEE a la cible : `GPU: <machine>#gpu<n>` (debut de ligne,
+#: decoration markdown toleree). Le corps d'un grain cite frequemment une
+#: entite en CONTEXTE -- « po-2024 avait lance sur `myia-po-2024#gpu0` [...]
+#: ce grain tourne sur `myia-ai-01#gpu2` ». Prendre la PREMIERE occurrence du
+#: corps designe alors un device qui n'est pas la cible : s'il est libre, le
+#: grain passe alors que sa vraie cible est tenue, et le passage est muet
+#: (revue ai-01 du 2026-10-27, #22939 point 2). La ligne dediee est la seule
+#: forme qui distingue une DECLARATION d'une mention en prose.
+GPU_DECLARATION_RE = re.compile(
+    r"^[ \t]*[>*+#-]*[ \t]*\**GPU\**[ \t]*:[ \t]*(.+)$",
+    re.IGNORECASE | re.MULTILINE,
+)
+
+#: Verdicts du gate qui autorisent le tirage (table du document).
+GPU_SERVE_VERDICTS = frozenset({"OK_TO_RUN", "RELEASED"})
+
+#: Marqueur nomme par verdict non servable. Les deux premiers sont ceux
+#: ecrits par le document (l.140-141) ; les suivants sont nommes ici pour
+#: qu'aucun cas ne soit muet.
+GPU_VERDICT_MARKER = {
+    "NO_OBS": "[SKIP gpu-reservation missing]",
+    "HOLD": "[DEFER gpu-reservation hold]",
+    "STALE": "[DEFER gpu-reservation stale]",
+    "UNPOSTED": "[DEFER gpu-reservation unposted]",
+    "GATE_UNREAD": "[DEFER gpu-reservation gate-unreadable]",
+    # `UNREADABLE` est le verdict que le transport git rend ROUTINIER sur
+    # un siege sans remote `gpu-ledger` (#22755) : le gate refuse de repondre
+    # autour d'une source qu'il n'a pas pu lire. Sans marqueur nomme, ce
+    # verdict tombeait dans le repli `unknown-verdict` -- un motif qui
+    # pretend qu'on ne sait pas, alors que le ledger nomme tres bien son
+    # propre verdict et son remede.
+    "UNREADABLE": "[DEFER gpu-reservation unreadable]",
+    "TARGET_AMBIGUOUS": "[DEFER gpu-reservation target-ambiguous]",
+    # Defensif : la resolution rend `TARGET_UNRESOLVED` SANS appeler le gate
+    # (cf `gpu_gate_target`), ce marqueur ne sert donc qu'a une sonde qui
+    # l'aurait rendu de son propre chef.
+    "TARGET_UNRESOLVED": "[DEFER gpu-reservation target-unresolved]",
+}
+
+#: Marqueur du grain SERVI faute de cible declaree. Il ne doit pas se
+#: confondre avec le marqueur d'ecart ci-dessus : le premier dit « servi,
+#: sans reservation a verifier », le second « ecarte ». Un motif qui dit
+#: l'inverse de ce qui s'est passe est pire qu'aucun motif.
+#: Remede des lectures "gate illisible" (timeout, exception, sortie non-JSON).
+#: Il est ecrit pour rester vrai AVANT et APRES #22755 : le cache local est
+#: l'autorite tant que le transport git n'est pas en vigueur, et cesse de
+#: l'etre quand il l'est. Un remede qui n'affirmerait qu'un des deux etats
+#: serait faux dans l'autre -- et le cache n'est plus consultable sur un
+#: siege qui n'a pas de remote.
+GPU_GATE_READ_REMEDY = (
+    "Remede : verifier d'abord que le remote `gpu-ledger` est configure sur "
+    "ce siege (`git remote get-url gpu-ledger`) -- apres #22755 c'est la "
+    "source primaire et le cache local n'est plus une autorite ; avant, "
+    "rafraichir le cache local (debt_ledger.py reduce)."
+)
+
+#: Remede propre au verdict `UNREADABLE` : la source primaire n'a pas pu
+#: etre lue, et la seule action utile est le geste de siege.
+GPU_VERDICT_REMEDY = {
+    "UNREADABLE": (
+        "Remede : configurer le remote `gpu-ledger` du siege "
+        "(`git remote add gpu-ledger <url>`) puis rejouer le tirage -- le "
+        "cache local n'est pas une source de remplacement de la branche "
+        "`ops/gpu-ledger`."
+    ),
+}
+
+GPU_UNRESOLVED_NOTE = (
+    "[INFO gpu-reservation target-unresolved] aucune cible GPU declaree "
+    "pour ce grain : la porte n'a aucun device a proteger et le grain est "
+    "SERVI. Poser une ligne `GPU: <machine>#gpu<n>` dans le corps de "
+    "l'issue (ou tirer avec `--gpu-entity`) pour que la reservation soit "
+    "verifiee avant lancement."
+)
+
+#: Etats de resolution de la cible.
+GPU_TARGET_RESOLVED = "RESOLVED"
+GPU_TARGET_AMBIGUOUS = "AMBIGUOUS"
+GPU_TARGET_NONE = "NONE"
+
+
+def gpu_gate_probe_inert(item, args):
+    """Sonde INERTE : le gate n'est pas consulte.
+
+    Meme doctrine que `delivered_probe_inert` : un test unitaire ne doit
+    emettre aucune requete par candidat tire. Le retour `None` signifie
+    « aucune mesure » -- ce n'est PAS un verdict, et le grain reste
+    servable.
+
+    ATTENTION a la distinction que ces deux retours portent : `None` = la
+    SONDE n'a pas tourne (inert, test) ; `("GATE_UNREAD", ...)` = la SONDE a
+    tourne et n'a pas pu lire (reel, production). Le second ecarte le grain
+    (fail-CLOSED), le premier ne le fait pas.
+    """
+    return None
+
+
+def gpu_body_entities(body: str) -> list[str]:
+    """Entites `<machine>#gpu<n>` citees dans le corps, dans l'ordre, dedup.
+
+    C'est une lecture de PROSE : elle ne distingue pas une cible d'une
+    mention de contexte. La resolution (`gpu_gate_target`) s'en sert
+    seulement quand le corps n'a pas de ligne dediee, et refuse des qu'il y
+    en a plusieurs.
+    """
+    out: list[str] = []
+    for m in GPU_ENTITY_RE.finditer(body or ""):
+        entity = f"{m.group(1)}#gpu{m.group(2)}"
+        if entity not in out:
+            out.append(entity)
+    return out
+
+
+def gpu_declared_entities(body: str) -> list[str]:
+    """Entites declarees sur une ligne dediee `GPU: <machine>#gpu<n>`.
+
+    Une declaration est une INTENTION, pas une citation : c'est la seule
+    forme qui permette de trancher entre « la cible » et « le device dont on
+    parle ». Plusieurs lignes dediees nommant des entites distinctes ne
+    tranchent plus rien -- l'appelant doit alors refuser, pas choisir
+    (cf `gpu_gate_target`).
+    """
+    out: list[str] = []
+    for line in GPU_DECLARATION_RE.finditer(body or ""):
+        for m in GPU_ENTITY_RE.finditer(line.group(1)):
+            entity = f"{m.group(1)}#gpu{m.group(2)}"
+            if entity not in out:
+                out.append(entity)
+    return out
+
+
+def gpu_option_entities(args) -> list[str]:
+    """Entites offertes par `--gpu-entity` (option repetable), dedup."""
+    out: list[str] = []
+    for raw in (getattr(args, "gpu_entity", None) or []):
+        entity = str(raw).strip()
+        if entity and entity not in out:
+            out.append(entity)
+    return out
+
+
+def gpu_target_entities(item, args) -> list[str]:
+    """(compat) toutes les entites resolues, corps puis option.
+
+    Vue PLATE, sans verdict : elle ne dit rien de l'ambiguite. Le gate passe
+    par `gpu_gate_target`, qui la porte.
+    """
+    entities = gpu_body_entities((item or {}).get("body") or "")
+    for entity in gpu_option_entities(args):
+        if entity not in entities:
+            entities.append(entity)
+    return entities
+
+
+def gpu_gate_target(item, args):
+    """Rend `(kind, entity, candidates)` : la cible que le gate protege.
+
+    Ordre de resolution, du plus sur au plus faible :
+
+    1. la **ligne dediee** `GPU: <machine>#gpu<n>` du corps -- l'auteur a
+       declare sa cible ;
+    2. **une** entite citee dans le corps en prose -- non ambigue par le
+       nombre, donc utilisable ;
+    3. l'option `--gpu-entity` du tirage -- la cible que la lane offre ;
+    4. rien.
+
+    `AMBIGUOUS` des que 2 entites DISTINCTES apparaissent dans une meme
+    source (ligne dediee ou prose). Ce n'est pas une prudence gratuite :
+    choisir la premiere est exactement le passage muet que la revue a
+    releve, et un refus nomme est reversible la ou un passage ne l'est pas.
+
+    `NONE` n'est PAS un refus : absence de cible n'est pas un device tenu.
+    Le grain est servi, et le fait est NOMME (`GPU_UNRESOLVED_NOTE`).
+    """
+    body = (item or {}).get("body") or ""
+    declared = gpu_declared_entities(body)
+    if declared:
+        if len(declared) > 1:
+            return (GPU_TARGET_AMBIGUOUS, None, declared)
+        return (GPU_TARGET_RESOLVED, declared[0], declared)
+    prose = gpu_body_entities(body)
+    if prose:
+        if len(prose) > 1:
+            return (GPU_TARGET_AMBIGUOUS, None, prose)
+        return (GPU_TARGET_RESOLVED, prose[0], prose)
+    option = gpu_option_entities(args)
+    if option:
+        return (GPU_TARGET_RESOLVED, option[0], option)
+    return (GPU_TARGET_NONE, None, [])
+
+
+def gpu_gate_probe(item, args):
+    """Consulte le gate GPU et rend `(verdict, raison)`.
+
+    Jamais `None` : une lecture impossible rend `("GATE_UNREAD", motif)`, et
+    le grain est alors ecarte (fail-CLOSED) plutot que servi par defaut.
+
+    Le verdict est lu dans le JSON, JAMAIS dans le code de sortie : le code
+    est ambigu (`NO_OBS` sort 0 et doit pourtant ecarter ; `STALE` et une
+    erreur d'usage sortent tous deux 2). La source du verdict est le
+    ledger `gpu-reservation` (commande `check_pending`).
+    """
+    kind, entity, candidates = gpu_gate_target(item, args)
+    if kind == GPU_TARGET_AMBIGUOUS:
+        return ("TARGET_AMBIGUOUS",
+                "plusieurs cibles GPU distinctes et aucune ne fait foi : "
+                + ", ".join(candidates) + ". Ecrire une ligne dediee "
+                "`GPU: <machine>#gpu<n>` dans le corps pour designer la cible")
+    if kind == GPU_TARGET_NONE:
+        return ("TARGET_UNRESOLVED",
+                "aucune cible GPU resolue pour ce grain : ni ligne dediee "
+                "`GPU: <machine>#gpu<n>` ni entite unique dans le corps, ni "
+                "`--gpu-entity` au tirage")
+    ledger = pathlib.Path(__file__).resolve().parent / "coordination" / "debt_ledger.py"
+    cmd = [sys.executable, str(ledger), "check_pending",
+           "--ledger", "gpu-reservation", "--entity", entity, "--json"]
+    lane = getattr(args, "lane", None)
+    if lane:
+        cmd += ["--my-lane", str(lane)]
+    try:
+        proc = _run_bounded(cmd, timeout=_clamp_timeout(30),
+                             env=_utf8_child_env())
+    except subprocess.TimeoutExpired:
+        return ("GATE_UNREAD",
+                f"{entity} : le gate (check_pending) n'a pas repondu dans le "
+                "delai. " + GPU_GATE_READ_REMEDY)
+    except Exception as exc:  # noqa: BLE001 - diagnostic best-effort
+        return ("GATE_UNREAD",
+                f"{entity} : gate illisible ({type(exc).__name__}). Remede : "
+                "verifier que scripts/coordination/debt_ledger.py est "
+                "executable. " + GPU_GATE_READ_REMEDY)
+    try:
+        payload = json.loads(proc.stdout or "")
+    except Exception:  # noqa: BLE001 - sortie non-JSON = gate illisible
+        payload = None
+    if not isinstance(payload, dict) or not payload.get("verdict"):
+        return ("GATE_UNREAD",
+                f"{entity} : reponse illisible du gate (rc={proc.returncode}). "
+                + GPU_GATE_READ_REMEDY)
+    verdict = str(payload["verdict"])
+    reason = str(payload.get("reason") or "").strip()
+    return (verdict, f"{entity} : {verdict} -- {reason}".rstrip(" -"))
+
+
+def gpu_gate_reason(item, args, probe=None, notes=None) -> str | None:
+    """Rend la cause (texte) si le candidat ne doit PAS etre servi.
+
+    `None` = le grain est servable. Le texte porte le marqueur nomme du
+    verdict, l'entite, la source du verdict et la raison brute -- jamais de
+    silence : un grain ecarte est un grain DIT.
+
+    Deux cas sont decides SANS consulter le gate, parce que la question
+    qu'il pose n'a pas de sujet :
+
+    * cible **ambigue** (2 entites distinctes, ou plusieurs lignes dediees
+      qui se contredisent) -- refus NOMME, fail-CLOSED : on ne choisit pas
+      a la place de l'auteur ;
+    * cible **absente** -- le grain est SERVI, et le fait est depose dans
+      `notes` (marqueur `GPU_UNRESOLVED_NOTE`). L'absence de cible n'est pas
+      un device tenu : ecarter tout le genre `training`/`genai` faute d'une
+      entite nommee aurait retire 41 grains du tapis sans proteger un seul
+      device (mesure du 2026-10-27, revue #22939 point 1).
+    """
+    if (item or {}).get("genre") not in GPU_BOUND_GENRES:
+        return None
+    kind, _entity, candidates = gpu_gate_target(item, args)
+    if kind == GPU_TARGET_AMBIGUOUS:
+        return (f"{GPU_VERDICT_MARKER['TARGET_AMBIGUOUS']} plusieurs cibles "
+                f"GPU distinctes : {', '.join(candidates)} -- aucune ne fait "
+                "foi, et prendre la premiere ferait verifier un device qui "
+                "n'est pas celui du grain. Ecrire une ligne dediee "
+                "`GPU: <machine>#gpu<n>` dans le corps (ou n'en citer qu'une) "
+                "puis relancer le tirage. Candidat remplace dans la meme urne.")
+    if kind == GPU_TARGET_NONE:
+        if notes is not None:
+            notes.append({"number": (item or {}).get("number"),
+                          "cause": GPU_UNRESOLVED_NOTE})
+        return None
+    reader = probe if probe is not None else gpu_gate_probe_inert
+    measured = reader(item, args)
+    if measured is None:
+        # SONDE non injectee : aucune mesure, aucun verdict.
+        return None
+    verdict, reason = measured
+    if verdict in GPU_SERVE_VERDICTS:
+        return None
+    marker = GPU_VERDICT_MARKER.get(
+        verdict, "[DEFER gpu-reservation unknown-verdict]")
+    remedy = GPU_VERDICT_REMEDY.get(verdict, "")
+    tail = f" {remedy}" if remedy else ""
+    return (f"{marker} {reason}. Source du verdict : ledger "
+            "gpu-reservation (`check_pending`). Une experience GPU ne part "
+            "pas sur un device dont l'etat n'est pas etabli ("
+            "docs/coordination/gpu-reservation.md, « Liaison picker <-> file "
+            "#1454 »). Candidat remplace dans la meme urne." + tail)
+
+
 def open_cover_inert(issue_number: int) -> str:
     """Sonde inerte : aucune PR couvrante, aucun appel reseau.
 
@@ -2893,6 +3221,30 @@ def print_claim_unread_report(unread, lane: str | None = None) -> None:
     print("   pas libre : verifier avant d'editer")
     hint = ("--lane " + lane if lane else "--lane <machine:workspace>")
     print(f"   (`python scripts/check_lane_claim.py <N> {hint}`).")
+
+
+def print_gpu_target_unresolved(notes, indent: str = "") -> None:
+    """Rend compte des grains GPU-borneS SERVIS sans cible declaree.
+
+    Meme doctrine que `print_claim_unread_report` : ce qui a ete SERVI sans
+    mesure doit se lire comme tel, pas se fondre dans un tirage muet. Ici le
+    grain n'est PAS ecarte -- c'est voulu (aucun device n'est designe, donc
+    il n'y a rien a proteger) -- mais le silence ferait croire que la porte
+    a verifie une reservation, ce qui est faux.
+
+    A distinguer d'un ecart : ces numeros ne sont pas dans `withheld`.
+    """
+    entries = [e for e in (notes or []) if isinstance(e, dict)]
+    if not entries:
+        return
+    numbers = ", ".join(f"#{e.get('number')}" for e in entries[:5])
+    extra = "" if len(entries) <= 5 else f", ... (+{len(entries) - 5})"
+    print(f"{indent}Gate GPU : {len(entries)} grain(s) GPU-borne(s) "
+          f"SERVI(S) sans cible declaree ({numbers}{extra}).")
+    print(f"{indent}   Aucun device n'etait designe : il n'y avait rien a "
+          "proteger, et rien n'a ete verifie. Poser une ligne")
+    print(f"{indent}   `GPU: <machine>#gpu<n>` dans le corps du grain (ou "
+          "tirer avec `--gpu-entity`) pour que la reservation soit consultee.")
 
 
 def print_container_unread_report(unread, lane: str | None = None) -> None:
@@ -3499,6 +3851,15 @@ def _summarize_claim_from_batch(json_payload: dict, n: int) -> tuple[str, str]:
     if code == "IMPLICIT":
         return CLAIM_CODE_IMPLICIT, human
     if code == "ERROR":
+        # #23098 -- un `ERROR` qui **nomme** son bloquant n'est pas un
+        # verdict muet : l'organe a repondu, et sa reponse dit qu'une
+        # autre lane tient le grain. Le fail-open (servable par defaut)
+        # ne couvre que la classe reellement muette -- refuseroit un grain
+        # faute d'avoir pu le verifier. Ici il a ete verifie, et la
+        # reponse est negative : le grain est bloque.
+        if res.get("blocker_named"):
+            return (CLAIM_CODE_BLOCKED,
+                    "bloquant nomme par l'organe : " + human)
         return CLAIM_CODE_ERROR, human
     return CLAIM_CODE_ERROR, f"(batch: code {code} inconnu)"
 
@@ -3881,7 +4242,7 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
                    delivery=None, delivered_probe=None, delivered_state=None,
                    fallback_by_class=None, continuity_state=None,
                    cover_probe=None, long_visits=None,
-                   merged_pr_probe=None):
+                   merged_pr_probe=None, gpu_probe=None):
     """Tire, puis REMPLACE tout candidat qu une autre lane tient deja.
 
     Trois raisons de remplacer plutot que d annoter :
@@ -3972,6 +4333,23 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
             item for item in (fallback_by_class or {}).get(cls, [])
             if item["number"] not in primary_numbers
         ]
+        # `draw` RETIRE le corps du pick (payload JSON : un corps d'issue par
+        # candidat servi le ferait exploser). La porte GPU, elle, a besoin du
+        # corps pour resoudre la cible -- et le relire ici ne coute aucune
+        # requete. Sans cette table, la porte voyait un corps vide sur TOUTE
+        # la voie ponderee : elle repondait `TARGET_UNRESOLVED` pour chaque
+        # grain GPU-borne, ce qui ecartait le genre entier (defaut mesure par
+        # la revue #22939 point 1, et la raison pour laquelle l'ancien test
+        # « device tenu » passait sans jamais lire le corps).
+        body_by_number = {
+            it["number"]: (it.get("body") or "")
+            for it in list(primary) + list(reserve)
+        }
+
+        def _gate_view(cand_item, _bodies=body_by_number):
+            return {**cand_item,
+                    "body": _bodies.get(cand_item["number"], "")}
+
         got = []
         for pool_index, candidate_pool in enumerate((primary, reserve)):
             pool = list(candidate_pool)
@@ -4076,6 +4454,21 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
                             conflicts.append((c, "EN COURS : " + cover + (
                                 " Candidat remplace dans la meme urne.")))
                             continue
+                    # Gate GPU (#22747) : fail-CLOSED sur une cible RESOLUE,
+                    # et sur TOUTES les urnes -- une experience GPU ne part
+                    # pas sur un device tenu, quel que soit le tiroir qui la
+                    # propose. Le verdict est lu dans le JSON du gate et le
+                    # motif est NOMME : un grain ecarte est dit, pas absent.
+                    # Sans cible declaree, le grain est SERVI et le fait est
+                    # depose dans l'etat (`gpu_target_unresolved`) : la
+                    # porte protege un device, pas un genre (revue #22939).
+                    # `_gate_view` remet le corps que `draw` a retire du pick.
+                    gpu_cause = gpu_gate_reason(
+                        _gate_view(c), args, gpu_probe,
+                        state.setdefault("gpu_target_unresolved", []))
+                    if gpu_cause is not None:
+                        conflicts.append((c, "GPU : " + gpu_cause))
+                        continue
                     got.append(c)
                     if pool_index and continuity_state is not None:
                         continuity_state["used"] = True
@@ -4369,6 +4762,11 @@ _ORGAN_BANNER_RE = re.compile(r"Organes bloquants en echec\s*:\s*([a-z_ ]+?)\s*(
 _PR_STATE_FRAGMENT = """
   p%(n)d: pullRequest(number:%(n)d) {
     number mergeable
+    # #22362 : depot d'origine != depot de base (fork, PR etudiante). Lu ici
+    # parce que c'est le seul endroit ou les deux transports de
+    # `fetch_open_prs` convergent sur une forme commune, et parce que
+    # `blocking_causes` a deja paye cette requete quand on en a besoin.
+    isCrossRepository
     reviews(last:40) { nodes { state submittedAt author { login } body } }
     commits(last:1) { nodes { commit { statusCheckRollup {
       state   # #12830 : SUCCESS/FAILURE/PENDING/NEUTRAL au niveau rollup, pour le 3e etat file-saturation
@@ -5937,6 +6335,34 @@ def is_out_of_fleet_pr(pr: dict) -> bool:
     return head_ref.startswith("claude/") and "Hors flotte" in (pr.get("body") or "")
 
 
+# #22362 — PRs CROSS-REPOSITORY (fork) exclues de la file d'orphelines. Une
+# contribution publique — TP etudiant, ~95 forks, cf student-pr-reviews.md — a
+# pour forme NORMALE un body sans le moindre marqueur de lane : le gate de tag
+# le dit par construction (variation_tag_required.py, regle 4 de sa docstring :
+# « Forks are excluded ... the workflow does this before invoking us; we never
+# see a fork body »), et le workflow applique cette exemption en amont sur
+# `head.repo.fork` (variation-tag-guard.yml). L'absence de tag y est donc la
+# forme attendue, pas un defaut a reparer : la presenter comme telle, c'est
+# inventer une imputabilite et envoyer une lane sur une PR qui n'appartient a
+# aucune. Mesure fondatrice : #22362 (auteur `snakechoc`, tete
+# `snakechoc/CoursIA` -> base `jsboige/CoursIA`), seule PR listee sous ce
+# paragraphe le 2026-10-26.
+# Le predicat est le champ GitHub `isCrossRepository` — deja lu tel quel par
+# `scripts/ci/update_stale_pr_branches.py:608` et
+# `scripts/ci/sweep_stale_pr_branches.py:142` — et non un second critere
+# invente ici. Il se lit sur le noeud `pullRequest` (`_PR_STATE_FRAGMENT`),
+# deja paye par `unattributed_blocked_prs`.
+def is_cross_repository_pr(state: dict | None) -> bool:
+    """Vrai si la PR vient d'un depot d'origine different (fork, PR etudiante).
+
+    Champ absent (forme partielle, mock ancien) -> `False` : le garde garde sa
+    capacite sur une donnee manquante. L'inverse — traiter l'inconnu comme un
+    fork — retirerait de la file de vraies PRs du depot a reparer, c'est-a-dire
+    le sens dangereux.
+    """
+    return bool((state or {}).get("isCrossRepository"))
+
+
 def unattributed_blocked_prs(prs: list[dict] | None = None) -> list[dict]:
     """PRs ouvertes bloquees sans tag `Grain:` lisible, AVEC leur route.
 
@@ -5962,6 +6388,13 @@ def unattributed_blocked_prs(prs: list[dict] | None = None) -> list[dict]:
     depuis l'exterieur du cluster, et le gate `tag_required` les exempte deja
     (#17715) — router l'une d'elles rejouerait la contradiction que #17713
     ferme.
+
+    Les PRs CROSS-REPOSITORY (fork, contribution publique ou TP etudiant,
+    #22362) sont exclues pour la meme raison, portee par le MEME organe : le
+    gate `variation_tag_required.py` ne lit jamais un body de fork (regle 4 de
+    sa docstring), donc l'absence de tag y est la forme normale. Les lister
+    comme « tag manquant a reparer » inventerait une imputabilite ; ce constat
+    n'appartient a aucune lane.
     """
     if prs is None:
         prs = fetch_open_prs()
@@ -5975,6 +6408,8 @@ def unattributed_blocked_prs(prs: list[dict] | None = None) -> list[dict]:
     for pr in untagged:
         state = untagged_states.get(pr["number"])
         if state is None or not blocking_causes(state):
+            continue
+        if is_cross_repository_pr(state):
             continue
         out.append({"number": pr["number"], "title": pr["title"],
                     "author": ((pr.get("author") or {}).get("login")) or "inconnu",
@@ -8568,7 +9003,8 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                                 snapshot_prime=None,
                                 container_marker_probe=None,
                                 delivery_event_probe=None,
-                                time_budget_s=None):
+                                time_budget_s=None,
+                                gpu_probe=None):
     """La boucle de service du tapis : claims, livraison, remplacement.
 
     Extraite de ``main`` (#19390) pour etre testable sans harnais complet :
@@ -8844,7 +9280,15 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                 merged_pr_expired = bool(
                     delivery_age_h is not None
                     and delivery_age_h >= CONSOLIDATION_LAG_H)
-                verdict = (False if expired()
+                # Le mur de temps est atteint : la sonde n'est pas lue (elle
+                # coute) et rien n'est neutralise -- fail-OPEN explicite.
+                # Le TUPLE est forme ici : un `False` nu n'est pas
+                # decomposable en trois. Mesure du 26/10 : le tapis levait
+                # `TypeError: cannot unpack non-iterable bool object`
+                # des que le budget de temps etait epuise -- donc des que
+                # la boucle de service demarrait, et le tirage entier
+                # rendait zero grain (aucune consolidation servie).
+                verdict = ((False, False, None) if expired()
                            else user_delivery_event_probe(n))
                 if verdict is None:
                     # Lecture en echec : fail-OPEN, rien n'est neutralise --
@@ -8940,12 +9384,48 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
         # le fait ici, au moment ou le candidat est retenu.
         if args.lane and code in (CLAIM_CODE_ERROR, CLAIM_CODE_UNCHECKED):
             state["claim_unread"].append(n)
+        # Gate GPU (#22747) : meme verdict, meme fail-CLOSED sur cible
+        # resolue, meme motif nomme que sur la voie ponderee -- le tapis est
+        # le chemin que le `/continue` emprunte (`--belt`), c'etait donc la
+        # ou le defaut aurait ete le plus visible. Sans cible declaree, le
+        # grain est servi et le fait est rapporte dans `etat` (revue #22939
+        # point 1 : ecarter tout le genre retirait 41 grains sans proteger
+        # un seul device).
+        gpu_cause = gpu_gate_reason(
+            it, args, gpu_probe,
+            state.setdefault("gpu_target_unresolved", []))
+        if gpu_cause is not None:
+            belt_withheld.append((it, "GPU : " + gpu_cause))
+            continue
         belt_picks.append(it)
     # #21436 -- l'echeance du tapis ne survit pas a la boucle : les appels
     # directs a `check_claims` / `has_recent_delivery_marker` (tests, usages
     # hors tapis) retrouvent leur timeout plein.
     _BELT_DEADLINE[0] = _previous_belt_deadline
     return belt_picks, belt_withheld, state
+
+
+def creation_budget_gate(pool: list[dict]) -> dict[int, str]:
+    """#23174 -- les grains de creation a ecarter, avec la cause nommee.
+
+    Rend ``{numero: cause}``. Vide quand rien n'est ecarte.
+
+    Le contrat est **fail-OPEN a triple** : module absent, etat absent ou
+    illisible, catalogue du depot inconnu -> aucun grain n'est ecarte. Un
+    `git` muet ou un compteur qui n'a pas tourne ne doivent JAMAIS vider le
+    tapis : le regime ralentit la creation, il ne l'arrete pas.
+
+    La cause nommee est `BUDGET CRÉATION` (accent compris) : elle doit se
+    retrouver telle quelle dans le journal de tirage et dans la sortie JSON.
+    """
+    try:
+        import creation_budget as cb
+    except Exception:  # noqa: BLE001 - module absent = porte inactive
+        return {}
+    try:
+        return cb.creation_gate(pool)
+    except Exception:  # noqa: BLE001 - une porte qui leve n'ecarte personne
+        return {}
 
 
 def _log_tirage_safe(*, lane, candidates, retained, urn, mode):
@@ -9010,6 +9490,18 @@ def main(argv: list[str] | None = None) -> int:
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--lane", default=None,
                     help="machine:workspace, ex. myia-po-2026:CoursIA (requis hors --orphans-report)")
+    ap.add_argument("--gpu-entity", dest="gpu_entity", action="append",
+                    default=[], metavar="<machine>#gpu<n>",
+                    help="entite GPU device que ce tirage peut offrir ; "
+                         "option repetable. Elle sert quand le corps du "
+                         "candidat ne designe pas sa cible : la premiere "
+                         "valeur est consultee. Sans cible (ni ligne dediee "
+                         "`GPU: <machine>#gpu<n>`, ni entite unique dans le "
+                         "corps, ni cette option), le grain GPU-bound est "
+                         "SERVI et le fait est nomme "
+                         "(`[INFO gpu-reservation target-unresolved]`) ; "
+                         "plusieurs entites distinctes le font ECARTER "
+                         "(verdict TARGET_AMBIGUOUS)")
     ap.add_argument("--prev-genre", action="append", default=[],
                     metavar="GENRE[,GENRE...]",
                     help="genres deja consommes dans la session ; option repetable "
@@ -9131,6 +9623,12 @@ def main(argv: list[str] | None = None) -> int:
                          "selection (steer inclus).")
     ap.add_argument("--ignore-red", action="store_true",
                     help="passer outre le garde -- exige une justification ECRITE sur la PR concernee")
+    ap.add_argument("--ignore-creation-budget", action="store_true",
+                    help="#23174 : passer outre le BUDGET DE CREATION "
+                         "(la porte `BUDGET CRÉATION`). Exige une justification "
+                         "ECRITE : le regime ralentit la creation, il ne "
+                         "l'arrete pas -- on ne le contourne que par ecrit, "
+                         "jamais en silence.")
     ap.add_argument("--ignore-wip", action="store_true",
                     help="passer outre le plafond de WIP (Q41) -- exige "
                          "--wip-reason '<justification ECRITE>' : contrairement "
@@ -9648,15 +10146,50 @@ def main(argv: list[str] | None = None) -> int:
     # deja livree fait REFLUER le pool, c'est l'inverse de l'emballement.
     withheld: list[tuple[dict, str]] = []
     admitted = []
+    # #23174 -- budget de creation de carnets, a l'echelle de la flotte.
+    # La porte est lue AVANT l'admission : un grain de creation ecarte ne
+    # doit pas apparaitre dans le tirage. Elle est fail-OPEN a triple
+    # (module absent, etat absent, catalogue du depot inconnu) et elle ne
+    # s'active QUE sur un depassement de budget MESURE -- le regime ralentit
+    # la creation, il ne l'arrete pas.
+    budget_gate = ({} if args.ignore_creation_budget
+                   else creation_budget_gate(pool))
+    creation_withheld: list[tuple[dict, str]] = []
     for it in pool:
         if it["klass"] == "delivered":
             admitted.append(it)
+            continue
+        budget_cause = budget_gate.get(it["number"])
+        if budget_cause:
+            creation_withheld.append((it, budget_cause))
+            withheld.append((it, budget_cause))
             continue
         cause = admissibility(it, balance, issue_to_family, args.dwell_hours)
         if cause and not args.admit_reason:
             withheld.append((it, cause))
         else:
             admitted.append(it)
+    if creation_withheld:
+        print(f"   BUDGET CRÉATION : {len(creation_withheld)} grain(s) de "
+              f"creation écarté(s) du tirage — {creation_withheld[0][1]}")
+    filter_active = {
+        "exclude_issue": sorted(excluded_issues),
+        "require_label": sorted(required_labels, key=str.casefold),
+        "exclude_label": sorted(excluded_labels, key=str.casefold),
+        "min_age_days": args.min_age_days,
+        "max_age_days": args.max_age_days,
+        "min_idle_days": args.min_idle_days,
+        "max_idle_days": args.max_idle_days,
+        "urns": sorted(selected_urns),
+        # #23174 -- le garde de creation laisse une trace dans l'etat du
+        # tirage : sans lui, un tapis qui ecarte des grains de creation
+        # parait ne rien avoir refuse.
+        "creation_budget": {
+            "active": bool(budget_gate),
+            "ecartes": sorted(budget_gate),
+            "ignore": bool(args.ignore_creation_budget),
+        },
+    }
     filter_active = {
         "exclude_issue": sorted(excluded_issues),
         "require_label": sorted(required_labels, key=str.casefold),
@@ -9815,7 +10348,8 @@ def main(argv: list[str] | None = None) -> int:
                                         container_marker_probe=(
                                             has_recent_container_delivery_marker),
                                         delivery_event_probe=delivery_event,
-                                        time_budget_s=belt_time_remaining))
+                                        time_budget_s=belt_time_remaining,
+                                        gpu_probe=gpu_gate_probe))
         _belt_phase(f"pick_with_replacements fait: "
                     f"{len(belt_picks)} retenu(s), {len(belt_withheld)} witheld")
         belt_delivered_failures = belt_pick_state["failures"]
@@ -9888,6 +10422,10 @@ def main(argv: list[str] | None = None) -> int:
             if belt_withheld:
                 held = ", ".join(f"#{it['number']} ({c})" for it, c in belt_withheld[:5])
                 print(f"   BLOQUE par une autre lane (skip + replacement) : {held}")
+            # Volet GPU (#22747, revue #22939) : les grains SERVIS faute de
+            # cible declaree se lisent ici, pas dans les ecarts ci-dessus.
+            print_gpu_target_unresolved(
+                belt_pick_state.get("gpu_target_unresolved"), indent="   ")
             # Volet livraison (#19390) : ligne propre, distincte du BLOQUE --
             # le motif n'est pas une collision mais un travail deja rendu.
             # #19907 acceptance 2 : une ligne par candidat ecarte pour
@@ -10046,6 +10584,17 @@ def main(argv: list[str] | None = None) -> int:
                     "probes_attempted": bool(args.lane),
                     "unread": sorted(set(belt_pick_state.get("claim_unread")
                                          or [])),
+                },
+                # Volet GPU (#22747, revue #22939) : meme contrat que la
+                # volee ponderee -- `target_unresolved` liste les grains
+                # SERVIS sans cible declaree (aucun device protege, et le
+                # fait est nomme), `withheld` les grains ecartes par la
+                # porte.
+                "gpu_signal": {
+                    "target_unresolved": belt_pick_state.get(
+                        "gpu_target_unresolved") or [],
+                    "withheld": [it["number"] for it, c in belt_withheld
+                                 if c.startswith("GPU : ")],
                 },
                 # Volet marqueur de LIVRAISON (mesure #17528, 2026-10-26) :
                 # deux sondes de commentaire distinctes, deux verdicts
@@ -10259,7 +10808,8 @@ def main(argv: list[str] | None = None) -> int:
         cover_probe=cover_probe,
         fallback_by_class=fallback_by_class,
         continuity_state=continuity,
-        long_visits=long_visits)
+        long_visits=long_visits,
+        gpu_probe=gpu_gate_probe)
     withheld.extend(claim_conflicts)
     delivery = recent_delivery(picks)
     # Geste 5 #18203 : consigner la volee ponderee. L'urne journalisee est
@@ -10343,6 +10893,17 @@ def main(argv: list[str] | None = None) -> int:
                 "probes_attempted": bool(args.check_claims and args.lane),
                 "unread": sorted(set(delivered_state.get("claim_unread")
                                      or [])),
+            },
+            # Volet GPU (#22747, revue #22939) : `target_unresolved` est la
+            # liste des grains GPU-borneS **SERVIS** faute de cible
+            # declaree -- l'inverse d'un ecart, et c'est pourquoi il ne vit
+            # pas dans `withheld`. Sans cette cle, la porte se lirait
+            # « tout est protege » alors qu'elle n'a rien eu a proteger.
+            "gpu_signal": {
+                "target_unresolved": delivered_state.get(
+                    "gpu_target_unresolved") or [],
+                "withheld": [it["number"] for it, c in withheld
+                             if c.startswith("GPU : ")],
             },
             "red_backlog": backlog,
             "substance_drought": drought,
@@ -10468,6 +11029,11 @@ def main(argv: list[str] | None = None) -> int:
             print("   lane habilitee (#15069), ou par `--include-delivered`.")
         for it, cause in sorted(withheld, key=lambda kv: -kv[0]["number"])[:3]:
             print(f"   #{it['number']:<7} {cause.split(chr(58))[0]:<18} {it['title'][:46]}")
+    # Volet GPU (#22747, revue #22939) : hors du `elif withheld` -- ces
+    # grains-la sont SERVIS, pas ecartes, et les fondre dans le decompte
+    # des retenues dirait l'inverse de ce qui s'est passe.
+    print_gpu_target_unresolved(
+        delivered_state.get("gpu_target_unresolved"))
     if backlog.get("triggers"):
         numbers = ", ".join(f"#{r['number']}" for r in backlog["red"])
         print(f"!! --ignore-red : {len(backlog['red'])} PR(s) bloquee(s) de cette lane restent "

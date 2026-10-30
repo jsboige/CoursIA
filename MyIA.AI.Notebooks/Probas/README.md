@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: Probas
-pedagogical_count: 89
-breakdown: DecisionTheory=36, Infer=21, PyMC=20, Applications=11, root=1
-maturity: BETA=83, ALPHA=4, DRAFT=2
+pedagogical_count: 92
+breakdown: DecisionTheory=37, Infer=21, PyMC=20, Applications=12, root=2
+maturity: BETA=87, ALPHA=4, DRAFT=1
 -->
 
 > **À propos des décomptes** : le marqueur `CATALOG-STATUS` ci-dessus est la **source de vérité autoritative** pour les volumes (total de la famille, notebooks par sous-série, maturité). Il est régénéré chaque nuit par le workflow [`catalog-cron.yml`](../../.github/workflows/catalog-cron.yml) à 03:37 UTC sur `main` (commit par `github-actions[bot]`, livré par la PR permanente `chore/catalog-refresh-pending`). Pour la **répartition par kernel** (C#/.NET vs Python vs Lean 4) au sein d'une sous-série — la décomposition **technique** par interpréteur, que le marqueur n'agrège pas —, la source est la lecture directe des `metadata.kernelspec` des notebooks : ces volumes dérivent à chaque ajout et **aucun chiffre n'est maintenu ici en prose**. Si vous observez un décalage entre ce marqueur et une phrase en prose de ce README, **fiez-vous au marqueur** ; la prose sera ré-alignée lors du prochain passage.
@@ -227,6 +227,7 @@ Deux stacks, un même parcours de 20 modèles : **Infer.NET** (C#, message passi
 ```
 Probas/
 ├── Probas-KLS-Concentration.ipynb # Carnet transverse : Cheeger, hit-and-run, thin-shell (Python)
+├── Probas-CLT-Theoreme-Central-Limite.ipynb # Carnet transverse : TCL mesuré, variance finie porteuse (Python)
 ├── Probas-MCMC-Echantillonnage-Metropolis-Python.ipynb # Carnet transverse : Metropolis-Hastings + Gibbs from-scratch, diagnostics ESS/R-hat (Python)
 ├── Applications/                # Applications standalone
 │   ├── Quotients-Fibres-Recollement-Python.ipynb # Géométrie catégorique (kernel Python, ex-Infer-20)
@@ -462,6 +463,12 @@ Le carnet [`Probas-KLS-Concentration.ipynb`](Probas-KLS-Concentration.ipynb) (ke
 - **Marche hit-and-run** sur les trois corps : temps d'autocorrélation en dimension croissante, estimateur validé au préalable sur un contrôle AR(1) à trou spectral connu (avec son biais de troncature mesuré), et contrôle de domaine qui attrape l'erreur de bornes la plus fréquente de l'algorithme.
 - **Variance thin-shell** : les valeurs exactes sont retrouvées — `2n` pour la gaussienne, `4n/5` pour le cube, et une formule dérivée dans le carnet même pour le simplexe isotrope, vérifiée par assertion sur six dimensions ; les largeurs de couronne convergent vers 1/2, 1/5 et 1, **constantes en n**.
 - 3 exercices (directions de la sonde, AR(1) à deux modes, effet de l'isotropisation) ; sorties réelles committées, exécution `papermill --kernel python3`.
+
+Le carnet [`Probas-CLT-Theoreme-Central-Limite.ipynb`](Probas-CLT-Theoreme-Central-Limite.ipynb) (kernel `python3`, numpy) est un second contrepoint non-bayésien : il **mesure** le théorème central limite au lieu de l'énoncer. Deux résultats, tous deux mesurés :
+
+- **Le taux `1/√n` est une borne, sous hypothèse de troisième moment fini** : pour quatre lois de départ très différentes (uniforme, Bernoulli, exponentielle, log-normale), le produit `d_K(n)·√n` — où `d_K` est la distance de Kolmogorov à la gaussienne — varie peu quand `n` croît de 10 à 160. C'est une observation numérique cohérente avec la borne de Berry–Esseen `d_K(n) ≤ C·E|X−μ|³/(σ³√n)`, qui exige le **troisième moment absolu fini** — la variance finie du TCL ne suffit pas à donner ce taux — et n'impose aucune constante asymptotique non nulle : pour une loi normale, la distance de population est nulle à toute taille.
+- **L'hypothèse de variance finie est porteuse** : une loi à queue lourde à variance infinie (Lomax, `α = 1.5`) ne se normalise pas en gaussienne — l'échelle robuste des fluctuations de sa somme normalisée par `√n` **croît** avec `n` (en `n^{1/α − 1/2}`) au lieu de se stabiliser.
+- 3 exercices (distance de Kolmogorov, courbe de convergence, reproduction du contre-exemple à queue lourde) ; sorties réelles committées, exécution `papermill --kernel python3`.
 
 ### Probas-MCMC-Echantillonnage-Metropolis-Python.ipynb
 
