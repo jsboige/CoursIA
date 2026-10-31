@@ -405,6 +405,22 @@
         "MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lean-toolchain",
         "MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lake-manifest.json"
       ]
+    },
+    {
+      "lake": "grothendieck",
+      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean",
+      "display-name": "grothendieck_lean",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "axiom-target-modules": "*",
+      "paths": [
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/lean-toolchain",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/lake-manifest.json",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py"
+      ]
     }
   ]
 }
