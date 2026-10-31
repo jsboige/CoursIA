@@ -34,7 +34,11 @@ from prover.provider_gate import (
     effective_agent_providers,
     validate_provider_credentials,
 )
-from prover.lean_utils import count_real_sorries, stub_theorem_proof
+from prover.lean_utils import (
+    count_real_sorries,
+    stub_theorem_proof,
+    sweep_execution_leftovers,
+)
 from prover.tree_lock import (
     acquire_tree_lock,
     find_lean_project_root,
@@ -406,18 +410,28 @@ def _run_with_calibration_stub(demo, name, filepath, line, mode, iterations,
         )
 
     calibration = calibration_target is not None
+    run_result = None
     try:
-        return _run_prover_locked(
+        run_result = _run_prover_locked(
             demo, name, filepath, line, mode, iterations, provider,
             local_provider, director_provider, coordinator_provider,
             tactic_provider, search_provider, critic_provider,
             diagnosis_provider, use_diagnosis_agent, concurrent_search_count,
             calibration=calibration,
         )
+        return run_result
     finally:
         if calibration_target is not None:
             calibration_target[0].write_bytes(calibration_target[1])
             print("[CALIBRATION_RESTORE] approved proof restored")
+        # C4 (#1453 forensic, 2026-09-19): sweep the execution leftovers the
+        # run may leave next to its target (GoalExtract probe, sandboxes) on
+        # every exit path — under the tree lock, after the calibration
+        # restore. Sandboxes survive an errored run: crash evidence.
+        error_flag = sys.exc_info()[0] is not None or (
+            isinstance(run_result, dict) and bool(run_result.get("error"))
+        )
+        sweep_execution_leftovers(filepath, keep_sandboxes=error_flag)
 
 
 def _run_prover_locked(demo, name, filepath, line, mode, iterations, provider,

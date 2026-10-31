@@ -229,19 +229,19 @@ def desequilibre : WTree :=
   .node (.leaf 1) (.node (.leaf 1) (.node (.leaf 2) (.leaf 4)))
 
 /-- La maille de départ : 21 = 1·1 + 1·2 + 2·3 + 4·3. -/
-example : costW desequilibre = 21 := by native_decide
+example : costW desequilibre = 21 := by decide
 
 /-- Le poids 4 vit à la profondeur maximale 3. -/
-example : depthOf desequilibre 4 = 3 := by native_decide
+example : depthOf desequilibre 4 = 3 := by decide
 
 /-- Alléger le poids 4 en 1 à profondeur 3 rend la facture 12 : 21 −
 3 · (4 − 1) = 21 − 9 — l'écart de poids fois la profondeur de la cible. -/
-example : costW (swapW desequilibre 4 1) = 12 := by native_decide
+example : costW (swapW desequilibre 4 1) = 12 := by decide
 
 /-- Le théorème central sur la même maille : 12 + 4·3 = 21 + 1·3 = 24. -/
 example : costW (swapW desequilibre 4 1) + 4 * 3
     = costW desequilibre + 1 * 3 := by
-  have h4 : depthOf desequilibre 4 = 3 := by native_decide
-  rw [← h4, costW_swapW_eq desequilibre 4 1 (by native_decide)]
+  have h4 : depthOf desequilibre 4 = 3 := by decide
+  rw [← h4, costW_swapW_eq desequilibre 4 1 (by decide)]
 
 end CompressionLean

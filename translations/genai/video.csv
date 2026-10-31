@@ -20110,12 +20110,12 @@ MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb,
 **Navigation** : [<< 04-3 Sora API Cloud Video](04-3-Sora-API-Cloud-Video.ipynb) | [↑ Video Applications](README.md) | [↑ Video Series](../README.md)
 
 *MiniMax H3 (Hailuo) — Génération vidéo par le service cloud · Module 04-Applications · voie cloud OUVERTE en UE (ToS service), auto-hébergement INTRINSIC (Community License).*",,,,,,,,00d62989bea38684,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-6-MiniMax-video-01-v1-Cloud-Video.ipynb,18bb67e1,code,fr,2b69304f3d382e6c,"# Parameters
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb,18bb67e1,code,fr,2b69304f3d382e6c,"# Parameters
 MINIMAX_SPEND_QUOTA = 1
 notebook_mode = ""batch""
 skip_widgets = True
 ",,,,,,,,2b69304f3d382e6c,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-6-MiniMax-video-01-v1-Cloud-Video.ipynb,05aa98a2,markdown,fr,9ef06d4caa7f7d4f,"# MiniMax video-01 (v1) — Service cloud generation video via `/v1/video_generation`
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb,05aa98a2,markdown,fr,9ef06d4caa7f7d4f,"# MiniMax video-01 (v1) — Service cloud generation video via `/v1/video_generation`
 
 **Module :** 04-Applications
 **Niveau :** Applications
@@ -20134,7 +20134,7 @@ L'audit serie × endpoint (realise en cycle 196) a produit un **verdict couple**
 Ce notebook documente le **chemin cloud V1** : endpoint `/v1`, modele `video-01` (Hailuo line, video muet — pas d'audio natif contrairement a H3). Architecture pedagogique en 4 sections : verdict table, sonde HTTP non-brulante, interpretation structurelle, exercices.
 
 **Statut cle** : `MINIMAX_GENAI_API_KEY` non livree au worker au moment de la redaction (cf. `Minimax-H3 verdict requalification`, PR #10312). Notebook **execut-able SANS cle** : toutes les fonctions sont des stubs type-checkes qui rendent un verdict structurel sur les payloads/responses sans jamais POST reel. Generation reelle reservee a un futur cycle ou la cle sera delivree.",,,,,,,,9ef06d4caa7f7d4f,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-6-MiniMax-video-01-v1-Cloud-Video.ipynb,3356d140,code,fr,d448910f0d3d40c4,"# Parametres Papermill - JAMAIS modifier ce commentaire
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb,3356d140,code,fr,d448910f0d3d40c4,"# Parametres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration notebook
 notebook_mode = ""interactive""        # ""interactive"" ou ""batch""
@@ -20151,7 +20151,7 @@ if ""MINIMAX_SPEND_QUOTA"" not in globals():
 MINIMAX_VIDEO_ENDPOINT = ""https://api.minimax.io/v1/video_generation""
 MINIMAX_VIDEO_MODEL = ""video-01""
 ",,,,,,,,d448910f0d3d40c4,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-6-MiniMax-video-01-v1-Cloud-Video.ipynb,5b3f3c0b,code,fr,16a2bce80eb394df,"# Setup environnement et imports
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb,5b3f3c0b,code,fr,16a2bce80eb394df,"# Setup environnement et imports
 import os
 import json
 import time
@@ -20198,7 +20198,7 @@ print(f""OutDir: assets/video01-v1-cloud/  ({_OUT_DIR.exists()})"")
 print(f""UTC   : {datetime.now(timezone.utc).isoformat(timespec='seconds')}"")
 print(""="" * 70)
 ",,,,,,,,16a2bce80eb394df,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-6-MiniMax-video-01-v1-Cloud-Video.ipynb,530cdf98,markdown,fr,1fdfc0183f3a2251,"## Section 1 — Verdict table serie × endpoint (pivot G.9)
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb,530cdf98,markdown,fr,1fdfc0183f3a2251,"## Section 1 — Verdict table serie × endpoint (pivot G.9)
 
 Le reflexe a inculquer : **un refus scope a une serie ne se generalise PAS au service**. La sonde par-serie × par-endpoint tranche, pas un refus isole. Tableau ci-dessous recapitule les POST non-brulants envoyes en cycle 196 (plafond=1 genere reelement sur video-01/v1 ; tous les autres restaient a 0 debit) :
 
@@ -20216,7 +20216,7 @@ Le reflexe a inculquer : **un refus scope a une serie ne se generalise PAS au se
 **Lecon sur `/v1/models`** : cet endpoint enumere **uniquement les modeles texte** (chat-completions : `MiniMax-M3`, `M2.7`, `M2.5`, `M2.1`, `M2`). Surface **separée** pour les modeles video (`/v1/video_generation`, `/v2/video_generation`). Ne pas l'utiliser pour enumerer les candidats video.
 
 **Lecon sur les endpoints /v1 vs /v2** : `/v2/video_generation` est H3-only (la serie refusee) ; `/v1/video_generation` couvre `video-01`/`Hailuo` (la serie qui marche). Series differentes sur endpoints differents — POST `/v2` avec `video-01` renvoie « not supported by this endpoint », PAS un refus d'entitlement.",,,,,,,,1fdfc0183f3a2251,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-6-MiniMax-video-01-v1-Cloud-Video.ipynb,1e78d332,code,fr,cd3d77d7c29c84e3,"# Sonde POST non-brulante : definie pour reutilisation future (cle dispo + spend_quota=True)
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb,1e78d332,code,fr,cd3d77d7c29c84e3,"# Sonde POST non-brulante : definie pour reutilisation future (cle dispo + spend_quota=True)
 # IMPORTANT : par defaut NO_POST=True. La sonde ne brulera jamais de generation sans :
 #   (a) cle reellement disponible
 #   (b) MINIMAX_SPEND_QUOTA=1 (consentement explicite)
@@ -20294,7 +20294,7 @@ def probe_minimax_video(
             ""verdict"": f""EXC_{type(e).__name__}"",
         }
 ",,,,,,,,cd3d77d7c29c84e3,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-6-MiniMax-video-01-v1-Cloud-Video.ipynb,07a68054,markdown,fr,942915dbf02fdaa2,"## Section 2 — Methodologie de probe (le « comment »)
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb,07a68054,markdown,fr,942915dbf02fdaa2,"## Section 2 — Methodologie de probe (le « comment »)
 
 Cinq regles enseignees par ce notebook :
 
@@ -20303,7 +20303,7 @@ Cinq regles enseignees par ce notebook :
 3. **Secrets-hygiene regle 2/3** : `os.getenv(""MINIMAX_GENAI_API_KEY"")` **SANS** default literal. Si manquant : mode descriptif explicite (pas de « absent » maquille en cle partielle).
 4. **Plafond=1 generation par session de probe** — pas une regle provider, mais un garde-fou user (evite le burn de quota en cycle d'audit). Verdict YES/NO sur la premiere 200, pas apres.
 5. **Refus scope serie × endpoint ≠ refus du service** — extrapoler un seul 400 a l'ensemble du service est une **erreur G.9** classique. Sonder les autres series + endpoints AVANT de remonter un verdict d'entitlement.",,,,,,,,942915dbf02fdaa2,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-6-MiniMax-video-01-v1-Cloud-Video.ipynb,58232ace,code,fr,24fdfc933b555702,"# Validation : mode descriptif par defaut ; generation reelle si cle + MINIMAX_SPEND_QUOTA=1
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb,58232ace,code,fr,24fdfc933b555702,"# Validation : mode descriptif par defaut ; generation reelle si cle + MINIMAX_SPEND_QUOTA=1
 _spend_enabled = bool(MINIMAX_SPEND_QUOTA and _KEY_AVAILABLE)
 result = probe_minimax_video(
     payload={""prompt"": ""a cat walking in a garden"", ""duration"": 6, ""resolution"": ""720p""},
@@ -20321,7 +20321,7 @@ print(f""Endpoint : {result['endpoint']}"")
 print(f""Model    : {result['model']}"")
 print(""="" * 70)
 ",,,,,,,,24fdfc933b555702,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-6-MiniMax-video-01-v1-Cloud-Video.ipynb,4431ef15,markdown,fr,836c15eed45667cd,"### Interpretation — le verdict DESCRIPTIF_STUB est une feature, pas un echec
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb,4431ef15,markdown,fr,836c15eed45667cd,"### Interpretation — le verdict DESCRIPTIF_STUB est une feature, pas un echec
 
 Tant que `MINIMAX_GENAI_API_KEY` n'est pas livree, le notebook reste **execut-able SANS cle** et rend un verdict structurel (`DESCRIPTIF_STUB`) sur la forme des requetes/responses. C'est la **meme posture cle que 04-5** : key-gated skeleton.
 
@@ -20330,7 +20330,7 @@ Trois garanties portees par ce mode descriptif :
 - **0 generation reelle debit** — la sonde ne POST jamais sans `no_post=False` ET cle ET quota=1. Plafond=1 du cycle 196 preserve.
 - **Verdict structurel reproductible** — la sortie de la sonde est deterministe (meme payload, meme verdict). Permet de tester les exercices sans dependre d'un service externe.
 - **Migration vers mode generation triviale** : passer `MINIMAX_SPEND_QUOTA=1`, livrer `MINIMAX_GENAI_API_KEY`, appeler `probe_minimax_video(payload=..., no_post=False)`. La sonde bascule en mode reel sans autre changement de code.",,,,,,,,836c15eed45667cd,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-6-MiniMax-video-01-v1-Cloud-Video.ipynb,41e8ef86,markdown,fr,b794e04001fdca7c,"## Section 3 — Exercices
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb,41e8ef86,markdown,fr,b794e04001fdca7c,"## Section 3 — Exercices
 
 ### Exercice 1 — Predire le verdict d'une sonde sur une serie/endpoint inconnus
 
@@ -20344,7 +20344,7 @@ def predict_verdict(series: str, endpoint: str) -> str:
 ```
 
 **Hint** : utiliser un `dict` littera `{ (serie, endpoint): verdict }` ou un `set` de combinaisons valides.",,,,,,,,b794e04001fdca7c,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-6-MiniMax-video-01-v1-Cloud-Video.ipynb,5b4ada2b,code,fr,bb18a1a7eb5b8e8d,"def predict_verdict(series: str, endpoint: str) -> str:
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb,5b4ada2b,code,fr,bb18a1a7eb5b8e8d,"def predict_verdict(series: str, endpoint: str) -> str:
     """"""A partir de la table Section 1, renvoie le verdict d'une combinaison serie/endpoint.
 
     Cas a supporter :
@@ -20366,14 +20366,14 @@ MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-6-MiniMax-video-01-v1-Cloud-Vid
     # TODO etudiant : implementer la table de verdit et la logique de lookup.
     return None  # placeholder
 ",,,,,,,,bb18a1a7eb5b8e8d,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-6-MiniMax-video-01-v1-Cloud-Video.ipynb,5b79f8d7,markdown,fr,9f84bd107c134f94,"### Exercice 2 — Compteur de debit journalier (anti-burn-quota)
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb,5b79f8d7,markdown,fr,9f84bd107c134f94,"### Exercice 2 — Compteur de debit journalier (anti-burn-quota)
 
 **Objectif** : ecrire une fonction `daily_debit_count(log_path)` qui parse un fichier de log ligne-par-ligne (format `timestamp|status|model|task_id`) et renvoie le nombre de generations reussies (status=200) sur la journee courante (UTC).
 
 **Application** : c'est exactement le garde-fou qui empeche de bruler le quota 5/jour du provider en cycle d'audit — verifier AVANT chaque POST reel.
 
 **Hint** : utiliser `datetime.now(timezone.utc).date()` pour comparer au timestamp de chaque ligne.",,,,,,,,9f84bd107c134f94,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-6-MiniMax-video-01-v1-Cloud-Video.ipynb,c37f87eb,code,fr,0e39f1e6ec60de02,"def daily_debit_count(log_path: Path) -> int:
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb,c37f87eb,code,fr,0e39f1e6ec60de02,"def daily_debit_count(log_path: Path) -> int:
     """"""Compte les generations reussies (status=200) sur la journee courante (UTC).
 
     Format attendu par ligne : ""timestamp|status|model|task_id""
@@ -20389,12 +20389,12 @@ MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-6-MiniMax-video-01-v1-Cloud-Vid
     # ET meme journee UTC, compter.
     return None  # placeholder
 ",,,,,,,,0e39f1e6ec60de02,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-6-MiniMax-video-01-v1-Cloud-Video.ipynb,148b7944,markdown,fr,7146533b1118f7e4,"### Exercice 3 — Tableau comparatif video-01/v1 vs H3/v2 (verdict SOTA consolide)
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb,148b7944,markdown,fr,7146533b1118f7e4,"### Exercice 3 — Tableau comparatif video-01/v1 vs H3/v2 (verdict SOTA consolide)
 
 **Objectif** : construire un tableau comparatif synthetique des **deux** chemins cloud documentes dans le depot (ce notebook + 04-5) avec les colonnes : `(endpoint, modele, audio_natif, resolution_max, licence_ue, depense_par_5gen, verdict_entitlement)`. Renvoyer une `list[dict]`.
 
 **Application** : c'est le recapitulatif qu'attend un lecteur choisit sa voie : si l'audio natif est requis → H3/v2 avec licence UE bloquee dans certains territoires ; sinon → video-01/v1 plan-couvert, video muet suffit. Le choix depend du cas d'usage.",,,,,,,,7146533b1118f7e4,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-6-MiniMax-video-01-v1-Cloud-Video.ipynb,52cfe930,code,fr,2241abb3522d8dcd,"def build_cloud_video_comparison_table() -> list:
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb,52cfe930,code,fr,2241abb3522d8dcd,"def build_cloud_video_comparison_table() -> list:
     """"""Construit le tableau comparatif video-01/v1 vs H3/v2 (chemins cloud MiniMax documentes).
 
     Returns:
@@ -20405,7 +20405,7 @@ MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-6-MiniMax-video-01-v1-Cloud-Vid
     # connues de la probe cycle 196.
     return None  # placeholder
 ",,,,,,,,2241abb3522d8dcd,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-6-MiniMax-video-01-v1-Cloud-Video.ipynb,618f3667,markdown,fr,179b687ee701a8fc,"## Section 4 — Verdict SOTA consolide (cross-series)
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb,618f3667,markdown,fr,179b687ee701a8fc,"## Section 4 — Verdict SOTA consolide (cross-series)
 
 | Notebook | Endpoint | Modele | Verdict | Audio | UE-licence | Cout indicatif |
 |----------|----------|--------|---------|-------|-----------|----------------|

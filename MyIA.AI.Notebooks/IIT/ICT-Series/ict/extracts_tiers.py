@@ -53,9 +53,12 @@ par git ») : le constructeur de blob refuse de consommer une source en clair
 qui serait suivie par git (``assert_not_git_tracked``), pour que le texte
 historique ne puisse pas entrer accidentellement dans le depot en clair.
 
-La passphrase ne vit JAMAIS dans le depot : elle vient de l'argument direct
-ou de la variable d'environnement ``ICT_S6B_PASSPHRASE`` (sans valeur par
-defaut -- cf. regle secrets-hygiene, pattern ``os.getenv`` nu).
+La passphrase n'est JAMAIS codée en dur dans le code : elle vient de
+l'argument direct ou de la variable d'environnement ``ICT_S6B_PASSPHRASE``
+(sans valeur par défaut -- cf. regle secrets-hygiene, pattern ``os.getenv``
+nu). Sa valeur d'exemple est publiée dans le ``.env.example`` de la série,
+par décision user (#7742) : le chiffrement du corpus achète la
+**non-indexabilité**, pas la confidentialité -- cf. ``corpus/README.md``.
 """
 
 from __future__ import annotations

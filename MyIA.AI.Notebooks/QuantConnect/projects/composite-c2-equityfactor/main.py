@@ -36,22 +36,31 @@ class CompositeC2EquityFactor(QCAlgorithm):
             )
         )
 
-        # Alpha Models: 4-factor ensemble
-        self.set_alpha(CompositeAlphaModel(
-            ValueAlpha(),
-            QualityAlpha(),
-            LowVolAlpha(),
-            MomentumFactorAlpha()
-        ))
+        # Alpha Models: 4-factor ensemble. alphas=momentum keeps the momentum
+        # factor alone: the control of #21137.
+        if (self.get_parameter("alphas") or "all") == "momentum":
+            self.set_alpha(MomentumFactorAlpha())
+        else:
+            self.set_alpha(CompositeAlphaModel(
+                ValueAlpha(),
+                QualityAlpha(),
+                LowVolAlpha(),
+                MomentumFactorAlpha()
+            ))
 
         # PCM: Mean-Variance with sector cap
         sector_cap = float(self.get_parameter("sector_cap", 0.18))
         max_exposure = float(self.get_parameter("max_exposure", 0.65))
-        self.set_portfolio_construction(MeanVariancePCM(
+        # pcm_mode=symbol reproduces the PCM before #21137 (last insight per
+        # symbol: the momentum factor, emitted last, overwrites the others).
+        self.pcm = MeanVariancePCM(
             sector_cap=sector_cap,
             rebalance=timedelta(days=7),
-            max_exposure=max_exposure
-        ))
+            max_exposure=max_exposure,
+            by_sleeve=((self.get_parameter("pcm_mode") or "sleeve") == "sleeve"),
+            algorithm=self
+        )
+        self.set_portfolio_construction(self.pcm)
 
         # Risk: Portfolio drawdown cap + trailing stop
         trail = float(self.get_parameter("trail_stop", 0.04))
@@ -108,3 +117,9 @@ class CompositeC2EquityFactor(QCAlgorithm):
         final = self.portfolio.total_portfolio_value
         self.log(f"C4.2 EQUITY FACTOR COMPOSITE: Final=${final:,.2f}, "
                  f"Return={(final - 100000) / 100000:.2%}")
+        # Diagnostics for #21137: insights reaching the PCM, per alpha.
+        self.set_runtime_statistic("PCM calls", str(self.pcm.calls))
+        for source in sorted(set(self.pcm.reached) | set(self.pcm.reached_active)):
+            self.set_runtime_statistic(
+                f"PCM {source}",
+                f"{self.pcm.reached_active.get(source, 0)}/{self.pcm.reached.get(source, 0)}")

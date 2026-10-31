@@ -17,6 +17,13 @@
 #
 # Fenetre par defaut : 2018-01-01 -> 2024-12-31 = fenetre commune aux trois
 # allocations du depot (VT2 2018-2025, AW 2015-2024, TW 2015-2025).
+#
+# Rotation (#20388) : comme dans Paradox46VolScaledMomentum, set_holdings(cible,
+# 1.0) ne vendait pas la ligne precedente (jusqu'a trois lignes detenues a la
+# fois, 178 achats refuses et 36 ordres d'appel de marge sur 2018-2024) : la
+# jambe P46 dont on mesurait la correlation n'etait pas la strategie 46.
+# _rotate_to vend d'abord et vise 98 % ; statistiques d'execution "refused" et
+# "margin_calls".
 
 from AlgorithmImports import *
 
@@ -44,6 +51,11 @@ UNIVERSES = {
     "leveraged": ["UPRO", "TQQQ", "UDOW", "TECL", "SOXL", "USD"],
     "unlevered": ["SPY", "QQQ", "DIA", "XLK", "SMH", "XLF"],
 }
+
+# Part du portefeuille visee par une rotation, et seuil sous lequel une ligne
+# deja detenue est completee (#20388).
+TARGET_WEIGHT = 0.98
+TOP_UP_BELOW = 0.97
 
 
 class Paradox46Correlation(QCAlgorithm):
@@ -190,8 +202,38 @@ class Paradox46Correlation(QCAlgorithm):
             self._target = target
             if target is None:
                 self.liquidate()
-            else:
-                self.set_holdings(target, 1.0)
+        if target is not None:
+            self._rotate_to(target)
+
+    def _open_quantity(self, symbol):
+        return sum(t.quantity - t.quantity_filled
+                   for t in self.transactions.get_open_order_tickets(symbol))
+
+    def _rotate_to(self, target):
+        # Copie conforme de Paradox46VolScaledMomentum._rotate_to (#20388) :
+        # ordres MarketOnClose remplis dans l'ordre d'envoi, ventes d'abord,
+        # cible 98 %, complement sous 97 %, ordres ouverts deduits, achat
+        # plafonne a la marge libre a l'envoi, et reporte tant que la cible
+        # n'a pas de prix (premiere seance).
+        pending = {s: self._open_quantity(s) for s in self._symbols}
+        sells = {s: -self.portfolio[s].quantity - pending[s]
+                 for s in self._symbols if s != target}
+        sells = {s: q for s, q in sells.items() if q != 0}
+        if not sells and self.portfolio[target].quantity + pending[target] > 0:
+            held = (self.portfolio[target].holdings_value
+                    + pending[target] * self.securities[target].price)
+            if held >= TOP_UP_BELOW * self.portfolio.total_portfolio_value:
+                return
+        security = self.securities[target]
+        quantity = 0
+        if security.price > 0:
+            quantity = self.calculate_order_quantity(target, TARGET_WEIGHT) - pending[target]
+            room = 0.97 * self.portfolio.margin_remaining * security.leverage
+            quantity = min(quantity, int(room / security.price))
+        for symbol, q in sells.items():
+            self.market_order(symbol, q)
+        if quantity > 0:
+            self.market_order(target, quantity)
 
     # --- paniers ombre -------------------------------------------------------
 
@@ -267,6 +309,12 @@ class Paradox46Correlation(QCAlgorithm):
                 for name in self.baskets
             }
         self.log("CORRELATIONS " + json.dumps(out))
+        orders = list(self.transactions.get_orders())
+        refused = sum(1 for o in orders if o.status == OrderStatus.INVALID)
+        margin_calls = sum(1 for o in orders if "margin call" in (o.tag or "").lower())
+        self.set_runtime_statistic("refused", str(refused))
+        self.set_runtime_statistic("margin_calls", str(margin_calls))
+        self.log(f"refused={refused} margin_calls={margin_calls}")
         try:
             self.object_store.save_bytes(
                 "paradox46_correlations.json",

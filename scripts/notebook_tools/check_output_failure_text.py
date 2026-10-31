@@ -61,6 +61,12 @@ kept to MACHINE_PATH -- metadata never carries a tool-failure banner, and the
 convention permits normalizing a metadata key by hand (secrets-hygiene rule 6)
 only because the gate has to be able to SEE it first.
 
+Texte de programme affiche (#20120) : un chemin qui est l'argument littéral
+d'un appel ecrit sur la ligne affichee par la cellule (un source genere que
+le carnet imprime, par exemple) n'est pas emis par le runtime. Il sort de
+MACHINE_PATH et est compte a part dans la classe PROGRAM_LITERAL de --all,
+jamais silencieusement. Conditions et bornes : ``_is_program_literal``.
+
 The sweep also ventilates a third class, ``DEGRADED_HINT`` (#11692): the two
 soft "non disponible / not available" motifs, which on an absolute sweep are
 the large majority of hits and are mostly DELIBERATE fallback banners. They
@@ -157,7 +163,19 @@ TOOL_FAILURE_PATTERNS = (
     re.compile(r"no such file or directory", re.IGNORECASE),
     # inherited from check_render_volume_delta._UNAVAILABLE_PATTERNS
     *DEGRADED_HINT_PATTERNS,
-    re.compile(r"importerror", re.IGNORECASE),
+    # ImportError (#20701) : la FORME d'une exception levee (le nom, son
+    # deux-points et un message), et non le mot nu. Une reponse de LLM cite la
+    # classe dans sa prose (« `ImportError` si la CLI est lancee ... ») : une
+    # citation n'est pas un echec. La trace Jupyter colore le nom
+    # (ESC[0;31m ... ESC[0m) avant son deux-points, d'ou la reinitialisation
+    # facultative. La seconde alternative garde une derniere ligne de trace qui
+    # ne porte aucun message. Un gestionnaire qui imprime « Erreur: ImportError:
+    # <msg> » en milieu de ligne reste detecte. Le motif ne consomme qu'un jeton
+    # apres le deux-points : _is_degraded_hint lit ainsi l'extrait fidelement.
+    re.compile(r"(?<!`)ImportError(?:\x1b\[[0-9;]*m)*:[ \t]+\S+"
+               r"|^[ \t]*(?:\x1b\[[0-9;]*m)*ImportError(?:\x1b\[[0-9;]*m)*"
+               r"[ \t\r]*$",
+               re.IGNORECASE | re.MULTILINE),
 )
 
 # Witnesses: real strings observed in committed outputs. The self-test asserts
@@ -173,6 +191,7 @@ _PATTERN_WITNESSES = (
     "graphviz.backend.ExecutableNotFound",
     "bash: dot: command not found",
     "simanneal non disponible",
+    "ImportError: cannot import name 'X' from 'y'",
 )
 
 # --- benign banners: matched above, and NOT a tool failure -----------------
@@ -256,6 +275,35 @@ _PATH_WITNESSES = (
     "/home/agent/CoursIA/MyIA.AI.Notebooks",
     "/Users/jsboige/CoursIA/scripts",
 )
+
+# --- MACHINE_PATH : texte de programme affiche (#20120) ----------------------
+# Un chemin est une valeur EMISE PAR LE RUNTIME (il change avec la machine qui
+# a execute le carnet : le defaut) ou du TEXTE DE PROGRAMME que la cellule
+# affiche (un littéral stable, voulu : une cible de montage ecrite dans le
+# code montre). Le discriminant retenu -- decision du proprietaire de l'organe
+# (ai-01, c.6262311553) sur la mesure po-2024 (c.6086700118) -- est la forme
+# OPEN_LITERAL : le chemin ouvre un littéral de chaîne sur sa ligne de sortie,
+# c'est-a-dire que le caractere immediatement a sa gauche est un guillemet
+# (simple ou double). Sur le corpus de la mesure, la forme separe exactement
+# les 2 faux positifs Aspire des 5 occurrences Orleans, avec 0 occurrence
+# touchee sur les hote/env.
+#
+# Bornes assumees, epinglees par --self-test (le comportement EST la limite,
+# dite plutot que cachee) :
+#   - faux negatif : une ligne runtime qui CITE le chemin entre guillemets
+#     (`Serving from "/home/u/x"`, une trace `File "..."`, un repr Python)
+#     ouvre un littéral et est exemptee ;
+#   - faux positif : un chemin nu dans un commentaire de code affiche
+#     (`// /home/u/x`) n'ouvre rien et reste signale.
+# Les occurrences exemptees sont comptees dans la classe PROGRAM_LITERAL de
+# --all : jamais un silence.
+
+
+def _is_program_literal(probe, start, end):
+    """True si le chemin ``probe[start:end]`` ouvre un littéral de chaîne --
+    le caractere immediatement a sa gauche est un guillemet (forme OPEN_LITERAL
+    de la decision ai-01 c.6262311553)."""
+    return start > 0 and probe[start - 1] in ('"', "'")
 
 # --- class 3 (ADVISORY, never gates): capability downgrade -------------------
 # #14603. Each half of the couple alone is legitimate: a value can move on a
@@ -498,7 +546,8 @@ def scan(nb, base_nb=None):
     carry tool-failure banners, and the machine-path metadata class is what a
     re-execution leaks.
     """
-    found = {"TOOL_FAILURE": [], "MACHINE_PATH": [], "DECLARED_FALLBACK": []}
+    found = {"TOOL_FAILURE": [], "MACHINE_PATH": [], "DECLARED_FALLBACK": [],
+             "PROGRAM_LITERAL": []}
     if not nb:
         return found
     for idx, text in output_texts(nb):
@@ -532,7 +581,12 @@ def scan(nb, base_nb=None):
         path_probe = _path_probe(text)
         for pat in MACHINE_PATH_PATTERNS:
             for m in pat.finditer(path_probe):
-                found["MACHINE_PATH"].append((idx, m.group(0)[:120]))
+                # #20120: program text the cell prints is not a runtime path.
+                # Exempted hits stay visible in their own class (never silent).
+                if _is_program_literal(path_probe, m.start(), m.end()):
+                    found["PROGRAM_LITERAL"].append((idx, m.group(0)[:120]))
+                else:
+                    found["MACHINE_PATH"].append((idx, m.group(0)[:120]))
     # #14513: a machine path can also sit in document/cell metadata, invisible
     # to the output-only loop above -- the exact hole that let PT_11c's
     # metadata.path pass the gate green while the branch still carried the
@@ -827,7 +881,19 @@ def self_test(cwd=None):
                    # LLM-generated code sample: literal backslash-n ESCAPES in
                    # the response text are data, not drive paths -- the
                    # 2-char minimum segment quantifier keeps them out.
-                   r"pour 1..n:\n\ndef fizzbuzz(n):\n    result = []"):
+                   r"pour 1..n:\n\ndef fizzbuzz(n):\n    result = []",
+                   # Citation d'une classe d'exception par une reponse de LLM
+                   # (#20701) : le nom nu dans un tableau de risques, le
+                   # meme nom entre backticks avec un message, et en prose.
+                   # Une citation est une donnee, pas une levee.
+                   "| **Imports plats vs package** : le projet utilise "
+                   "`from utils import ...` (pas de package) | `ImportError` "
+                   "si la CLI est lancee depuis un autre dossier | Meme "
+                   "pattern que `tests/test_utils.py` : `sys.path` ou "
+                   "lancement depuis `sample_project/` ; ne pas introduire "
+                   "d'imports relatifs |",
+                   "Voir `ImportError: cannot import name 'X'` dans la doc.",
+                   "Le module peut lever ImportError pendant l'import."):
         hit = ([p.pattern for p in TOOL_FAILURE_PATTERNS if p.search(benign)]
                + [p.pattern for p in MACHINE_PATH_PATTERNS if p.search(benign)])
         if hit:
@@ -847,6 +913,56 @@ def self_test(cwd=None):
         if not any(p.search(_path_probe(leak)) for p in MACHINE_PATH_PATTERNS):
             failures.append("machine path hidden by the URL filter: "
                             + repr(leak))
+
+    # #20120: program text vs runtime path, on the real calibration lines.
+    # The Aspire line prints a literal of the program it shows: exempted, and
+    # counted as PROGRAM_LITERAL. The Orleans line is a runtime emission and
+    # keeps firing -- both directions are asserted, because an exemption that
+    # only proves it silences is indistinguishable from a hole. The two named
+    # bounds of the retained form (decision ai-01 c.6262311553) are pinned in
+    # their own direction: a runtime line QUOTING the path opens a literal and
+    # is exempted (known false negative), a bare path in a code comment opens
+    # nothing and stays flagged (known false positive). If one of these four
+    # verdicts moves, the self-test reddens.
+    def _pathonly(text):
+        return scan({"cells": [{"cell_type": "code", "outputs": [
+            {"output_type": "stream", "text": text}]}]})
+
+    _aspire_line = (
+        '.WithBindMount(Path.Combine(Environment.GetFolderPath('
+        'Environment.SpecialFolder.UserProfile), ".cache/huggingface"), '
+        '"/home/appuser/.cache/huggingface")')
+    _aspire = _pathonly(_aspire_line)
+    if _aspire["MACHINE_PATH"] or len(_aspire["PROGRAM_LITERAL"]) != 1:
+        failures.append("Aspire program-text literal not exempted: "
+                        + repr(_aspire))
+    _orleans = _pathonly("Content root path: /home/user/wt-aspire/"
+                         "MyIA.AI.Notebooks/GenAI/Integrations-DotNet/"
+                         "Orleans/OrleansAspireLab")
+    if len(_orleans["MACHINE_PATH"]) != 1 or _orleans["PROGRAM_LITERAL"]:
+        failures.append("Orleans runtime path lost its MACHINE_PATH "
+                        "(control): " + repr(_orleans))
+    _quoted = _pathonly('Serving from "/home/user/wt-aspire/x"')
+    if _quoted["MACHINE_PATH"] or len(_quoted["PROGRAM_LITERAL"]) != 1:
+        failures.append("quoted runtime line no longer exempted -- known "
+                        "false-negative bound moved: " + repr(_quoted))
+    _comment = _pathonly("// /home/user/wt-aspire/x")
+    if len(_comment["MACHINE_PATH"]) != 1 or _comment["PROGRAM_LITERAL"]:
+        failures.append("bare comment path no longer flagged -- known "
+                        "false-positive bound moved: " + repr(_comment))
+    # Cinquieme ligne : la borne materialisee sur l'historique. Le fondateur
+    # #11685 est fait de traces runtime qui CITENT le chemin (`working
+    # directory 'D:\...'`) -- des guillemets a gauche, donc exemptees sous la
+    # forme retenue. Le replay du fondateur (bas de ce self-test) les compte
+    # en PROGRAM_LITERAL ; ici le verdict unitaire est epingle pour que le
+    # jour ou l'on voudra les ramener dans la classe bloquante, ce soit le
+    # predicat qui change, jamais ce test qui se taise.
+    _founder = _pathonly(
+        "Exception message: an error occurred trying to start process 'dot' "
+        "with working directory 'D:" + BS + "dev" + BS + "CoursIA'")
+    if _founder["MACHINE_PATH"] or len(_founder["PROGRAM_LITERAL"]) != 1:
+        failures.append("quoted founding witness moved -- known "
+                        "false-negative bound moved: " + repr(_founder))
 
 
     # Benign banner: matched by "not available", neutralised by
@@ -878,6 +994,36 @@ def self_test(cwd=None):
     if not _one(_sandbox + "\nModuleNotFoundError: No module named 'simanneal'"):
         failures.append("sandbox banner masked a real failure in the same "
                         "stream")
+
+    # Forme ImportError (#20701). Chaque levee REELLE que le mot nu attrapait
+    # doit rester un TOOL_FAILURE : la derniere ligne d'une trace, sa variante
+    # coloree IPython, une derniere ligne sans message, et un gestionnaire qui
+    # imprime la classe en milieu de ligne avec son message. La citation de la
+    # ligne de tableau dans une reponse reste silencieuse, et ne doit pas
+    # masquer une levee partageant le meme flux.
+    for raised in ("Traceback (most recent call last):\n"
+                   "ImportError: cannot import name 'X' from 'y'",
+                   "\x1b[0;31mImportError\x1b[0m: cannot import name 'X'",
+                   "Traceback (most recent call last):\nImportError",
+                   "Erreur: ImportError: cannot import name 'X'"):
+        if len(_one(raised)) != 1:
+            failures.append("ImportError levee non classee TOOL_FAILURE : "
+                            + repr(raised))
+    _cite = ("| `ImportError` si la CLI est lancee depuis un autre dossier |")
+    if _one(_cite):
+        failures.append("citation ImportError d'un tableau de reponse "
+                        "declenchee (#20701)")
+    if len(_one(_cite + "\nImportError: cannot import name 'X'")) != 1:
+        failures.append("la citation ImportError masque une ImportError levee "
+                        "dans le meme flux (#20701)")
+    # Le balayage ventile un constat en DEGRADED_HINT sur son texte extrait.
+    # Une levee dont le message porte un motif mou doit garder son extrait hors
+    # de cette classe, sinon le balayage classerait une vraie ImportError en
+    # simple indice.
+    _soft = _one("ImportError: not available on this platform")
+    if not _soft or _is_degraded_hint(_soft[0][1]):
+        failures.append("ImportError levee a message en motif mou ventilee en "
+                        "DEGRADED_HINT (#20701) : " + repr(_soft))
 
     # Declared fallback (#18916): a demo-mode stub whose banner is printed BY
     # THE CELL'S OWN SOURCE is a DECLARED_FALLBACK, not a TOOL_FAILURE. Two
@@ -1048,6 +1194,15 @@ def self_test(cwd=None):
         failures.append("capability UPGRADE flagged (restoration must pass)")
 
     # Replay the founding commit against its parent.
+    # #20120: sous la forme OPEN_LITERAL, les 12 witnesses fondateurs tombent
+    # dans la borne faux-negatif materialisee -- ce sont des traces runtime
+    # qui CITENT le chemin (`working directory 'D:\...'`,
+    # `DOT file is saved to "D:\..."` : guillemet a gauche), donc exemptees
+    # de la classe bloquante et comptees en PROGRAM_LITERAL. Le plancher
+    # porte sur la CAPTURE (les deux classes ensemble) : les 12 restent
+    # vues, aucune ne disparait en silence. Le basculement lui-meme est
+    # epingle dans les lignes fixes ci-dessus ; s'il doit un jour etre
+    # annule, c'est le predicat qui change, jamais ce plancher.
     if git("cat-file", "-e", SELF_TEST_COMMIT, cwd=cwd) is None:
         print("SKIP replay: " + SELF_TEST_COMMIT[:12] + " not in this clone")
     else:
@@ -1056,15 +1211,22 @@ def self_test(cwd=None):
         rows = compare(parent, SELF_TEST_COMMIT, paths, cwd=cwd)
         tool = sum(r["classes"]["TOOL_FAILURE"]["delta"] for r in rows)
         n_path = sum(r["classes"]["MACHINE_PATH"]["delta"] for r in rows)
+        n_lit = 0
+        for p in paths:
+            head_nb = read_notebook_at(SELF_TEST_COMMIT, p, cwd=cwd)
+            base_nb = read_notebook_at(parent, p, cwd=cwd)
+            n_lit += (len(scan(head_nb)["PROGRAM_LITERAL"])
+                      - len(scan(base_nb)["PROGRAM_LITERAL"]))
         print("replay " + SELF_TEST_COMMIT[:12] + ": " + str(len(paths))
               + " notebooks, TOOL_FAILURE +" + str(tool)
-              + ", MACHINE_PATH +" + str(n_path))
+              + ", MACHINE_PATH +" + str(n_path)
+              + ", PROGRAM_LITERAL +" + str(n_lit))
         if tool < SELF_TEST_MIN_TOOL:
             failures.append("replay TOOL_FAILURE +" + str(tool) + " < "
                             + str(SELF_TEST_MIN_TOOL) + " expected")
-        if n_path < SELF_TEST_MIN_PATH:
-            failures.append("replay MACHINE_PATH +" + str(n_path) + " < "
-                            + str(SELF_TEST_MIN_PATH) + " expected")
+        if n_path + n_lit < SELF_TEST_MIN_PATH:
+            failures.append("replay path capture +" + str(n_path + n_lit)
+                            + " < " + str(SELF_TEST_MIN_PATH) + " expected")
 
     # #14513 replay: the metadata-only leak of #14272 / #13891, the defect
     # this extension exists to close. c4b99a3ec4 is the PT_11c head whose
@@ -1166,7 +1328,8 @@ def main(argv=None):
         for path in all_notebooks():
             found = scan(read_notebook_at(None, path))
             if (found["TOOL_FAILURE"] or found["MACHINE_PATH"]
-                    or found["DECLARED_FALLBACK"]):
+                    or found["DECLARED_FALLBACK"]
+                    or found["PROGRAM_LITERAL"]):
                 # Ventilation (#11692): soft-motif hits leave the
                 # TOOL_FAILURE count and are reported as DEGRADED_HINT --
                 # never summed back. #18916: the soft hits whose banner is
@@ -1185,12 +1348,15 @@ def main(argv=None):
                     "DECLARED_FALLBACK": [{"cell": c, "match": t}
                                           for c, t in
                                           found["DECLARED_FALLBACK"]],
+                    "PROGRAM_LITERAL": [{"cell": c, "match": t}
+                                        for c, t in found["PROGRAM_LITERAL"]],
                     "MACHINE_PATH": [{"cell": c, "match": t}
                                      for c, t in found["MACHINE_PATH"]]})
         total_tool = sum(len(r["TOOL_FAILURE"]) for r in rows)
         total_hint = sum(len(r["DEGRADED_HINT"]) for r in rows)
         total_declared = sum(len(r["DECLARED_FALLBACK"]) for r in rows)
         total_path = sum(len(r["MACHINE_PATH"]) for r in rows)
+        total_literal = sum(len(r["PROGRAM_LITERAL"]) for r in rows)
         if args.as_json:
             print(json.dumps({"mode": "sweep", "provenance": provenance,
                               "head": head, "behind_origin_main": behind,
@@ -1198,7 +1364,8 @@ def main(argv=None):
                               "hits": {"TOOL_FAILURE": total_tool,
                                        "DEGRADED_HINT": total_hint,
                                        "DECLARED_FALLBACK": total_declared,
-                                       "MACHINE_PATH": total_path},
+                                       "MACHINE_PATH": total_path,
+                                       "PROGRAM_LITERAL": total_literal},
                               "rows": rows}, indent=2, ensure_ascii=False))
         else:
             print("ADVISORY sweep [" + provenance + "]")
@@ -1209,17 +1376,21 @@ def main(argv=None):
             # banners) is reported for visibility and NEVER added to it.
             # #18916: DECLARED_FALLBACK is the subset whose banner the cell
             # source itself prints (demo stubs) -- documented, not owed.
+            # #20120: PROGRAM_LITERAL is the exempted subset of path shapes
+            # (program text the cell prints), named so it is never silent.
             print("TOOL_FAILURE " + str(total_tool)
                   + " | DEGRADED_HINT " + str(total_hint)
                   + " (reported, not summed) | DECLARED_FALLBACK "
                   + str(total_declared) + " | MACHINE_PATH "
-                  + str(total_path))
+                  + str(total_path) + " | PROGRAM_LITERAL "
+                  + str(total_literal) + " (exempted, not summed)")
             for r in rows:
                 print("  " + r["notebook"]
                       + "  tool=" + str(len(r["TOOL_FAILURE"]))
                       + " hint=" + str(len(r["DEGRADED_HINT"]))
                       + " declared=" + str(len(r["DECLARED_FALLBACK"]))
-                      + " path=" + str(len(r["MACHINE_PATH"])))
+                      + " path=" + str(len(r["MACHINE_PATH"]))
+                      + " literal=" + str(len(r["PROGRAM_LITERAL"])))
         return 0
 
     if not args.base:
