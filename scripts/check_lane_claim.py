@@ -172,6 +172,12 @@ _OPEN_PRS_TOTAL_TIMEOUT_S = int(
 # rend le fetch unique par processus ; le fichier-cache (v2) le rend unique
 # par session.
 _OPEN_PRS_MEMO: list[dict] | None = None
+# #22983 -- index des numeros d'issues cites par les bodies des PRs
+# ouvertes. Clé : `id()` de la liste servie (la liste elle-meme est
+# memoisee par `_OPEN_PRS_MEMO`, donc l'identite est stable pendant un
+# tirage). Sans cet index, la jambe IMPLICIT rescannait tous les bodies
+# pour chaque candidat (~0,6 s x 150 = ~105 s mesures).
+_OPEN_PRS_INDEX_MEMO: tuple[list[dict], dict[int, list[dict]]] | None = None
 
 # --- markers -----------------------------------------------------------------
 
@@ -2200,6 +2206,47 @@ def _pr_body_references_issue(body: str, issue_number: int) -> bool:
 # markers posted -- the organ said CLEAR and was "right": nobody had
 # claimed. The strongest signal of occupation -- an OPEN PR of another lane
 # already referencing the issue -- lived one `gh pr list` away.
+def _open_prs_by_referenced_issue(prs: list[dict]) -> dict[int, list[dict]]:
+    """Indexe, en UNE passe, les PRs ouvertes par numero d'issue cite.
+
+    #22983 -- la jambe IMPLICIT (#14300) demandait, pour CHAQUE candidat, un
+    balayage de TOUS les bodies de PRs ouvertes : mesure du 27/10, ~0,6 s par
+    candidat (366 PRs ouvertes x un corps de quelques kilo-octets), soit
+    ~105 s pour la fenetre de service de 150 numeros -- le cout dominant du
+    tapis. L'index remplace N balayages par UN : on extrait tous les numeros
+    cites une seule fois, puis on consulte un dict.
+
+    Le predicat reste le meme (`_PR_ISSUE_REF_RE`), donc la correspondance
+    des numeros est identique : c'est le meme regex, sur le meme corps, au
+    meme moment. Seule la repetitions change.
+    """
+    global _OPEN_PRS_INDEX_MEMO
+    index: dict[int, list[dict]] = {}
+    memo = _OPEN_PRS_INDEX_MEMO
+    # La memo porte la LISTE elle-meme (pas son `id()`) : la liste reste
+    # vivante, donc l'identite ne peut pas etre reattribuee par le
+    # collecteur a une autre liste.
+    if memo is not None and memo[0] is prs:
+        return memo[1]
+    for pr in prs:
+        # #19971 -- meme lecture defensive du transport qu'a l'entree des
+        # commentaires : un body de PR piege en payload JSON cache le `lane`
+        # et la reference `#N` exactement de la meme facon (instance fondatrice
+        # #17270, mesuree sur un body de PR).
+        body = _unwrap_trapped_body(pr.get("body") or "")
+        for m in _PR_ISSUE_REF_RE.finditer(body):
+            captured = m.group(1) or m.group(2)
+            if captured is None:
+                continue
+            try:
+                number = int(captured)
+            except ValueError:
+                continue
+            index.setdefault(number, []).append(pr)
+    _OPEN_PRS_INDEX_MEMO = (prs, index)
+    return index
+
+
 def _find_open_prs_referencing_issue(
     issue_number: int,
     my_lane: str,
@@ -2218,14 +2265,8 @@ def _find_open_prs_referencing_issue(
     if prs is None:
         prs = _gh_open_prs_with_files()
     out: list[dict] = []
-    for pr in prs:
-        # #19971 -- meme lecture defensive du transport qu'a l'entree des
-        # commentaires : un body de PR piege en payload JSON cache le `lane`
-        # et la reference `#N` exactement de la meme facon (instance fondatrice
-        # #17270, mesuree sur un body de PR).
+    for pr in _open_prs_by_referenced_issue(prs).get(issue_number, []):
         body = _unwrap_trapped_body(pr.get("body") or "")
-        if not _pr_body_references_issue(body, issue_number):
-            continue
         lane = extract_lane(body)
         if lane == my_lane:
             continue
@@ -3329,6 +3370,23 @@ def _claim_age_hours(created_at: str | None, now: datetime) -> float | None:
     return (now - parsed).total_seconds() / 3600.0
 
 
+#: #22983 -- un titre d'EPIC qui nomme un PARENT (`[EPIC #10355] Phase 3`,
+#: `[Epic Origami #19742 - Pli 3]`, `Epic #21424 T3 : ...`) designe une
+#: TRANCHE, pas un conteneur. Mesure du 27/10 (615 issues ouvertes) : 41
+#: issues portent un titre `EPIC...` sans le label `EPIC` ; 10 d'entre elles
+#: nomment un parent, et les 10 sont des tranches (`Phase 2/5`, `Pli 3`,
+#: `Tranche C etape 3`, `T3`, `T5`). Les 31 autres sont de vrais
+#: conteneurs (`[EPIC] Consolidation...`, `[Epic Origami] ...`).
+#:
+#: Pourquoi cela compte : sur une UMBRELLA, le filtre de livraison ne
+#: cherche que le MARQUEUR DE CONTENEUR (`[INFO] candidate-delivered`), pas
+#: le marqueur de grain (`[DELIVERED] lane ... -- motif`). Une tranche
+#: livree et classee umbrella reste donc servable -- mesure du 27/10 sur
+#: #21435 (`[DELIVERED] lane myia-po-2028:CoursIA` present, issue servie
+#: quand meme avec un `[CLAIMED]` fantome).
+EPIC_PARENT_TITLE_RE = re.compile(r"^\s*\[?EPIC\b[^\]]{0,40}#\d+", re.IGNORECASE)
+
+
 def _is_umbrella_issue(payload: dict) -> bool:
     """Return True if `payload` describes an umbrella / EPIC-style issue (#12156).
 
@@ -3339,6 +3397,11 @@ def _is_umbrella_issue(payload: dict) -> bool:
     `[EPIC` / `EPIC` after stripping the leading `[`. The label-route is the
     authoritative one; the title-route catches the historic pre-label inventory
     that the picker also accepts.
+
+    #22983 -- la route par TITRE exclut les TRANCHES : un titre qui nomme
+    un parent (`[EPIC #10355] Phase 3`) designe une tranche, pas un
+    conteneur. Le label reste autoritaire : une issue explicitement
+    labelisee `EPIC` reste une umbrella, quoi que son titre.
 
     Returns False on missing keys (defensive: the from-json path may carry a
     subset of fields). Never raises -- a malformed payload should degrade to
@@ -3351,6 +3414,9 @@ def _is_umbrella_issue(payload: dict) -> bool:
             if isinstance(name, str) and name == "EPIC":
                 return True
         title = payload.get("title") or ""
+        if EPIC_PARENT_TITLE_RE.match(title.lstrip("[")):
+            # Route par titre, mais le titre nomme un parent : TRANCHE.
+            return False
         upper = title.upper().lstrip("[")
         return upper.startswith("EPIC")
     except (AttributeError, TypeError):
@@ -4719,6 +4785,43 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     return 0
 
 
+def _blocking_lanes_from_summary(stdout_text: str) -> list[str]:
+    """Les lanes bloquantes portees par le resume JSON d'un `_run_check`.
+
+    #22983 -- le resume JSON (`print(json.dumps(summary, ...))`) porte
+    `blocking_lanes` ; le message `NOT_SCOPED:` va, lui, sur **stderr**
+    (`file=sys.stderr`, l.3881). Le reduiteur du picker historique lit le
+    JSON et rend BLOCKED des qu'`blocking_lanes` est non vide ; la voie
+    batch, elle, ne lisait que le **stdout** a la recherche du mot
+    `NOT_SCOPED` -- qui n'y est jamais. Mesure du 27/10 : 14 issues sur
+    150 rendaient le verdict `ERROR` alors que 4 lanes en tenaient le
+    grain.
+
+    Consequence : `ERROR` est **servable** par le tapis (fail-OPEN assume,
+    l.9438 du picker) quand `BLOCKED` est retenu. La voie batch servait
+    donc des grains tenus par d'autres lanes -- exactement la collision que
+    la jambe IMPLICIT (#14300) existe pour empecher.
+
+    Le predicat est celui du reduiteur historique : `blocking_lanes`
+    non vide -> BLOCKED. `raw_decode` (et non `loads`) parce que le stdout
+    porte une phrase humaine APRES l'objet.
+    """
+    text = stdout_text or ""
+    brace = text.find("{")
+    if brace == -1:
+        return []
+    try:
+        data, _ = json.JSONDecoder().raw_decode(text[brace:])
+    except json.JSONDecodeError:
+        return []
+    if not isinstance(data, dict):
+        return []
+    blocking = data.get("blocking_lanes") or []
+    if not isinstance(blocking, list):
+        return []
+    return [str(b) for b in blocking]
+
+
 def _summarize_run_check_output(stdout_text: str, returncode: int) -> str:
     """Court libelle machine-consommable issu du stdout d'un `_run_check`.
 
@@ -4884,15 +4987,24 @@ def check_issues_batch(
                     results[issue] = result
                     continue
             else:
-                try:
-                    payload = _gh_issue_comments(issue)
-                except (RuntimeError, ValueError) as exc:
-                    result["code"] = "ERROR"
-                    result["human"] = f"gh: {exc}"
-                    result["duration"] = round(
-                        _time.monotonic() - issue_t0, 4)
-                    results[issue] = result
-                    continue
+                # #22983 -- l'instantane sert le payload quand il le peut ;
+                # sinon on retombe sur la lecture reseau. Sans cette branche,
+                # la voie EN PROCESSUS (le tapis installe l'instantane puis
+                # appelle cette fonction) reposait sur `gh issue view` pour
+                # chaque issue : mesure du 27/10, 1,19 s par issue, soit
+                # 179 s pour les 150 numeros de la fenetre de service -- la
+                # totalite du cout de la boucle.
+                payload = _snapshot_issue_payload(issue)
+                if payload is None:
+                    try:
+                        payload = _gh_issue_comments(issue)
+                    except (RuntimeError, ValueError) as exc:
+                        result["code"] = "ERROR"
+                        result["human"] = f"gh: {exc}"
+                        result["duration"] = round(
+                            _time.monotonic() - issue_t0, 4)
+                        results[issue] = result
+                        continue
             _phase(f"#{issue} check running")
             with contextlib.redirect_stdout(buf_out), \
                     contextlib.redirect_stderr(buf_err):
@@ -4925,6 +5037,18 @@ def check_issues_batch(
             # `ERROR` qui nomme un bloquant ne l'est plus.
             result["blocker_named"] = _names_a_blocker(
                 evidence, stdout_json=captured)
+            # #22983 -- la voie batch doit rendre le MEME verdict que le
+            # reduiteur historique du picker : `exit 2` + un resume JSON qui
+            # nomme des lanes bloquantes = BLOCKED. Ce cas est distinct de
+            # `NOT_SCOPED` (#23098, qui lit la mention litterale sur stdout
+            # OU stderr) : ici, c'est le resume JSON sur stdout qui porte la
+            # liste. La clause ne peut qu'ABAISSER `ERROR` vers `BLOCKED`,
+            # jamais l'inverse.
+            bloquantes = []
+            if result["code"] == "ERROR" and rc == 2:
+                bloquantes = _blocking_lanes_from_summary(captured)
+                if bloquantes:
+                    result["code"] = "BLOCKED"
             # Human: on cherche la ligne-verdict parmi les dernieres non
             # vides des deux flux. Le stdout contient d'abord un JSON
             # summary (`print(json.dumps(summary, ...))` ~L3209) puis
@@ -4945,7 +5069,15 @@ def check_issues_batch(
                 )):
                     verdict_line = stripped
                     break
-            if verdict_line:
+            if bloquantes:
+                # #22983 -- meme libelle que le reduiteur historique du
+                # picker (« BLOQUE par <lanes> ») : la voie batch et la
+                # voie historique doivent se distinguer sur le VERDICT,
+                # pas sur la phrase. La phrase lue dans le stdout
+                # (« CLEAR: ... ») ne prime pas ici : le resume JSON
+                # fait foi.
+                result["human"] = "BLOQUE par " + ", ".join(bloquantes)
+            elif verdict_line:
                 result["human"] = verdict_line[:200]
             else:
                 # Pas de ligne-verdict : ERROR (exit 2) ou sortie

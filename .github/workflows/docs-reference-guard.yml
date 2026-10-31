@@ -40,19 +40,26 @@ concurrency:
 
 jobs:
   reference:
-    # GitHub-hosted : la politique d'isolation des runners
-    # (scripts/ci/check_self_hosted_runner_policy.py) n'admet un job
-    # self-hosted que si son workflow figure dans
-    # SELF_HOSTED_WORKFLOW_ALLOWLIST, chaque entree citant la lane
-    # proprietaire du deploiement. Ce workflow n'y figure pas, et l'y ajouter
-    # est une decision coordinateur -- pas un effet de bord d'une PR de garde.
-    # Defaut mesure : en [self-hosted, coursia-ephemeral, coursia-linux], ce
-    # job rougissait `Always-on guards` (VIOLATION WORKFLOW_NOT_ALLOWED) sur
-    # chaque PR touchant `docs/**/*.md`.
-    # La garde same-repo ci-dessous reste : elle preserve le contrat si le job
-    # est route un jour vers la jambe Linux (#13378), et ne coute rien ici.
-    runs-on: ubuntu-latest
+    # 2026-10-28 (#23053 vague 3, famille (a) gardes/advisories) : le workflow
+    # entre dans SELF_HOSTED_WORKFLOW_ALLOWLIST et adopte la forme hybride de
+    # debordement -- PR meme-depot ET vars.CI_OVERFLOW_LOCAL == 'true' ->
+    # jambe Linux locale ; tout le reste (variable absente ou fausse, forks,
+    # dispatch) retombe sur ubuntu-latest, donc l'etat du 28/10 est conserve.
+    # Bascule : `gh variable set CI_OVERFLOW_LOCAL --body true|false
+    # --repo jsboige/CoursIA`. Retour arriere = variable a `false` ou
+    # supprimee, sans toucher ce fichier.
+    # Avant cette PR le job etait fige sur `ubuntu-latest` et ne lisait jamais
+    # la variable : il rejoignait la file hebergee meme quand le parc local
+    # etait libre (mesure #23053 : 12 des 12 jobs en file demandaient
+    # `ubuntu-latest` pour 12 slots locaux libres).
+    # La garde anti-fork vit DANS l'expression `runs-on` ; la garde same-repo
+    # ci-dessous est conservee telle quelle (aucune ligne `if:` ajoutee ni
+    # retiree) -- elle reste la seconde barriere si le job evolue.
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    # Borne de duree (#23053) : 85 s mesures sur le dernier succes (run
+    # 40632471993, job `reference`), soit ~3x la duree observee avec la marge
+    # d'un clone froid.
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
