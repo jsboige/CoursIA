@@ -46,12 +46,15 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 | [reference/subagents-reference.md](reference/subagents-reference.md) | Roster 21 agents + 17 skills |
 | [reference/agents-roster-2026-10-08.md](reference/agents-roster-2026-10-08.md) | Roster daté des `machine:workspace` actifs, mesuré au 2026-10-08 (#14527, doc éphémère) |
 | [reference/catalog_markers.md](reference/catalog_markers.md) | Marqueurs CATALOG-STATUS des READMEs (expansion + vérification CI) |
+| [reference/lib-versions.md](reference/lib-versions.md) | Organe des versions de bibliothèques des carnets (#23073) : manifeste canonique, recensement `--census`, garde advisory sur les carnets modifiés |
 | [reference/audit-reassessment-findings.md → transients/2026-05-17-…](transients/2026-05-17-reference-audit-reassessment-findings.md) | Items d'audit automatisé déjà reclassés (protocole reassessment) — déplacé en lane transiente (tranche 3b #14623) |
 | [reference/student-pr-template.md](reference/student-pr-template.md) | Template PR étudiante |
 | [reference/readme-series-gabarit.md](reference/readme-series-gabarit.md) | Gabarit de référence des READMEs de séries (#2651) |
 | [reference/finition-de-serie.md](reference/finition-de-serie.md) | Critères de sortie du régime de finition de série (#19297) |
 | [reference/iit-ict-transition.md](reference/iit-ict-transition.md) | Transition IIT → ICT — état narratif et architectural de la série ICT-Series (#4588, plan de partition #5081), tenue à jour au fil des livraisons ; reclassée pérenne depuis `suivis/` (tranche 2 #19283) |
 | [reference/agentic-engines-deep-eval.md](reference/agentic-engines-deep-eval.md) | Évaluation en profondeur des moteurs agentiques (Semantic Kernel, Google ADK, Microsoft Agent Framework) sur la série DataScienceWithAgents — couverture réelle du corpus, pilotes reproductibles, faits d'API mesurés |
+| [reference/ws-probes-repro.md](reference/ws-probes-repro.md) | Reproduction hors carnet des sondes wavelet scattering (WS-00c, WS-03) — graine fixe, valeurs citées vs mesurées, écart 1 item (#21823) |
+| [reference/gorard-lanyonai-etape3.md](reference/gorard-lanyonai-etape3.md) | Dépôts lanyonai mesurés sur l'amont — licences, absence de `lean-toolchain`, ce que leurs preuves Lean établissent exactement (et ce qu'elles n'établissent pas) ; support de la décision de consommation par la série Gorard (#19741, étape 3) |
 
 ### Règles détaillées (docs/reference/)
 
@@ -65,6 +68,7 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 | [reference/anti-regression-detail.md](reference/anti-regression-detail.md) | Patterns red-flag, protocole avant suppression |
 | [reference/notebook-renumbering-detail.md](reference/notebook-renumbering-detail.md) | Corpus des precedents `renum()`/`reclass()` (19 issues, 4 verdicts « aucune renum »), blast-radius mesure de la grappe Probas, etat de l'arbre. Detail de `.claude/rules/notebook-accretion-numbering.md` |
 | [reference/lean-axiom-coverage.md](reference/lean-axiom-coverage.md) | Couverture axiomes du gate proof-integrity par lake (22 lakes inventoriés, 2 câblés en CI : `lean-knot.yml` + `lean-conway.yml`) — classes dangereuses `native_decide.*`/`sorryAx`/`Classical.choice`. Détail de référence pour §B.3 de `.claude/rules/pr-review-discipline.md`. Établi cycle c.950 (worker po-2023, lane `myia-po-2023:CoursIA-2`), 167 lignes. See #8738 (step 3), #8752 (livraison) |
+| [reference/lean-material-map.md](reference/lean-material-map.md) | Carte du matériel Lean du dépôt, par lake — modules propres, miroirs `_en`, présence au CI, gate d'axiomes, date de naissance. Régénérée par `scripts/lean/lean_material_map.py`, `--check` rend 1 quand page et arbre divergent. See #23097 (T1, PR #23105) |
 | [reference/secrets-and-coord-detail.md](reference/secrets-and-coord-detail.md) | Secrets + coordination cross-machine |
 | [reference/student-pr-reviews-detail.md](reference/student-pr-reviews-detail.md) | Incident, format public, workflow |
 | [reference/user-blocker-signaling-detail.md](reference/user-blocker-signaling-detail.md) | Catégories + anti-patterns signaler |
@@ -121,6 +125,7 @@ Documentation détaillée de l'infrastructure GenAI (ComfyUI, Docker, modèles l
 |---------|-------------|
 | [genai/3d-socle-reproductibilite.md](genai/3d-socle-reproductibilite.md) | Reproductibilité des socles 3D (NeRF, splats) — mesure sur deux postes : écart 0,07 dB et reproduction exacte |
 | [genai/genai-services.md](genai/genai-services.md) | Architectures Qwen/Lumina, mapping notebooks |
+| [genai/tts-fishaudio-int4.md](genai/tts-fishaudio-int4.md) | La route int4 réelle de tts-fishaudio — quantification amont weight-only, quatre correctifs, mesures VRAM/qualité (#23415) |
 | [genai/audio-embed-pattern.md](genai/audio-embed-pattern.md) | Pattern d'embed audio GenAI + leçons de réparation |
 | [genai/auth-flip-runbook.md](genai/auth-flip-runbook.md) | Runbook — flip d'authentification des services exposés (#16 P2) |
 | [genai/open-webui-orchestration.md](genai/open-webui-orchestration.md) | Orchestration et tâches planifiées avec Open WebUI v0.9.0 |
@@ -223,6 +228,8 @@ Suivi d'origine, par livrable : grille des trois régimes de lecture #7399 · ma
 | [ict/hoffman-interface-distillation-case13.md](ict/hoffman-interface-distillation-case13.md) | Case 13 — Hoffman interface theory : toy N=16 RÉFUTE la mise à l'échelle monotone de la dissociation FBT |
 | [ict/hoffman-interface-distillation-case14.md](ict/hoffman-interface-distillation-case14.md) | Case 14 — Hoffman interface theory : toy N=8, M=2, compression bit2 → NULL INSTRUMENTAL |
 | [ict/hoffman-interface-distillation.md](ict/hoffman-interface-distillation.md) | Case 11 — Hoffman interface theory : toy falsifiable en 2-bit |
+| [ict/ict12-valence-note-de-conception.md](ict/ict12-valence-note-de-conception.md) | Note de conception — tranche ICT-12 « Valence / Animats » : pourquoi le regroupement en `ICT-12/` suit l'escalier valence → animat, mouvement et validation |
+| [ict/ict14-freenergy-note-de-conception.md](ict/ict14-freenergy-note-de-conception.md) | Note de conception du palier 09 (ICT-14) — déplacement de la famille ICT-14 en sous-série `ICT-Series/ICT-14-FreeEnergySurprise/` (#20298) |
 
 ### Pré-enregistrements, distillations et prototypes (docs/ict/)
 
@@ -241,6 +248,7 @@ Grade distinct des synthèses ci-dessus : ces documents sont **grade T-pré-enre
 | [ict/butlin-indicators-pre-enregistrement.md](ict/butlin-indicators-pre-enregistrement.md) | Case 19 — le mot « using » de RPT-1 (Butlin et al. 2023) : protocole scellé avant écriture du banc, dissociation procédurale entre inspection structurelle et sonde causale |
 | [ict/assembly-theory-pre-enregistrement.md](ict/assembly-theory-pre-enregistrement.md) | Case 20 — l'assembly index mesuré (Sharma et al. 2023) contre la lecture « compression LZ » (Abrahão et al. 2024) : solveur exact à deux implémentations, échelle périodique certifiée `ai = log2 n`, règle de décision scellée par pentes |
 | [ict/stv-valence-symmetry-v2-pre-enregistrement.md](ict/stv-valence-symmetry-v2-pre-enregistrement.md) | Case 17bis — seconde opérationnalisation STV scellée avant le banc : observable d'entropie des classes de ratio du lock (correctif de l'aveuglement `CV` mesuré au case 17), drive découplé de la structure de verrouillage |
+| [ict/vervaeke-insight-pre-enregistrement.md](ict/vervaeke-insight-pre-enregistrement.md) | Réalisation de pertinence (Jaeger, Riedl, Djedovic, Vervaeke, Walsh 2024, *Front Psychol* 15:1362658) — protocole scellé avant codage du module : engagement adverse, heuristiques antagonistes, re-commitment ; opérationnalisation déclarée grade C, thèse de non-formalisabilité de l'article non testée |
 
 ## Curriculum (docs/curriculum/)
 
@@ -311,6 +319,7 @@ Documents de recherche durables fondant les EPICs de R&D (grade A-recherche). Di
 | [research/cartier-miller-p1-pilot.md](research/cartier-miller-p1-pilot.md) | Lecture ligne-par-ligne de pilot.py (P1 elliptic curve Cartier-Miller, EPIC #19452) — orchestration, hash, per-call math, validation cross-prime 7 premiers, garde flush-après-chaque-prime. Suite PRs #19487 / #19488. |
 | [research/cartier-miller-p1-point-count.md](research/cartier-miller-p1-point-count.md) | Lecture ligne-par-ligne de `point_count.py` (P1 Schoof + BSGS, EPIC #19452) — stdlib only, 0 import, 9 composants documentés. Suite des PRs #19487 (P0 cartography), #19488 (P1 elliptic_prefix), #19493 (P1 pilot). |
 | [research/cartier-miller-p1-integration.md](research/cartier-miller-p1-integration.md) | Cross-check 4 backends de la P1 Cartier-Miller (EPIC #19452) : elliptic_prefix + pilot + point_count + C++ pseudocode, confrontation littérale aux `output.json` du pin reproductible `37a9b72`. P1+ à venir (P2 Lean Mathlib, P3+ multi-cycle) |
+| [research/cartier-miller-p2-mathlib-survey.md](research/cartier-miller-p2-mathlib-survey.md) | Enquête d'organes Mathlib 4 et arbitrage des candidats de formalisation pour la P2 Cartier-Miller (EPIC #19452) — couverture des trois piliers du papier (courbes elliptiques, Frobenius, opérateur de Cartier) mesurée sur le **contenu commit** du Mathlib vendé (`git grep … HEAD -- Mathlib/`, citations `file:line`), les fichiers working-tree étant purgés pour cause de crise disque. Verdict d'arbitrage et garde de portée : le papier reste un draft non relu, la validation numérique est une corroboration et non une preuve |
 | [research/percolation-03-critique-scoping.md](research/percolation-03-critique-scoping.md) | Scoping du carnet `Percolation-03-Critique-Python.ipynb` (palier 3 *finite-size scaling*) — plan 4 phases ~70 min wall-clock, ~700 l. carnet + 250 l. rapport, 640 simulations `L × p × seeds`. Suite directe de #19494. c.1103 |
 | [research/slide-agents-marptoslidev-scoping.md](research/slide-agents-marptoslidev-scoping.md) | Scoping Marp→Slidev pour les agents de slides (c.1110, #19578) — inventaire firsthand (12 Marp coexistants avec 18 Slidev, configs et outils legacy), diagnostic des fronts communs (format Marp, PNG rendering mort-né, sk-agent vision périmé), 4 voies arbitrées (réécrire/fusionner/retirer/legacy), recommandation voie 1 (réécrire pour Slidev, 3 raisons mesurées). **Statut post-#21318 (2026-10-19) : voie 1 retenue et exécutée — 11 sources Marp retirées, 1 conservée en `_archive/`, config + outils Marp retirés.** |
 | [research/percolation-03-critique-results.md](research/percolation-03-critique-results.md) | Résultats d'exécution du palier 03 critique Percolation (#19494, c.1104) — mesure des exposants critiques (`β/ν`, `τ'`, `p_c(L) → 1/2`) par sweep `L × p × seeds` sur `networkx`. Verdict : tendances conformes mais convergence asymptotique non atteinte, corrections d'échelle finie dominantes. |
@@ -344,6 +353,7 @@ Tables d'audit cumulatives par Epic (mandat user, format longue durée).
 | Fichier | Description |
 |---------|-------------|
 | [ledgers/3801-sota-axe2.md](ledgers/3801-sota-axe2.md) | Ledger axe-2 SOTA par famille, 5 verdicts (EPIC #3801) |
+| [ledgers/4362-mathlib-mutualization.md](ledgers/4362-mathlib-mutualization.md) | EPIC #4362 — états de couverture Mathlib par machine, chaque entrée citant la sortie du scan lu-seul (`setup_shared_mathlib.ps1 -Mode Scan`) ; po-2023 : 34 lakes, 3.06 Go d'économie potentielle, 13 junctions périmées |
 | [ledgers/10466-candidate-delivered-cleanup.md](ledgers/10466-candidate-delivered-cleanup.md) | EPIC #10466 — apurement du label `candidate-delivered`, cluster par cluster. Une table par cycle worker : ratio du cluster, issues traitées, leçons. Le compte d'issues ne baisse que si quelqu'un tient la trace de ce qui a été vérifié |
 | [transients/2026-08-13-10678-interp-positioning-audit.md](transients/2026-08-13-10678-interp-positioning-audit.md) | EPIC #10678 Phase 1 — audit des cellules d'interprétation mal positionnées. La table nomme chaque cas : c'est ce qui rend la règle [cell-interpretation-ordering](../.claude/rules/cell-interpretation-ordering.md) applicable au lieu d'être un principe |
 | [transients/2026-08-15-10678-orphan-interp-scan.md](transients/2026-08-15-10678-orphan-interp-scan.md) | EPIC #10678 Phase 1b — interprétations orphelines en fin de notebook. Prolonge le précédent : cellules `MISPLACED` relevées au scan c.237 |
@@ -360,6 +370,7 @@ Tables d'audit cumulatives par Epic (mandat user, format longue durée).
 | [ledgers/13746-tests-eclates-dissipation.md](ledgers/13746-tests-eclates-dissipation.md) | EPIC #13746 — Ledger dissipation câblage tests éclatés |
 | [ledgers/14169-g1-recouvrement.md](ledgers/14169-g1-recouvrement.md) | Ledger G1 — Recouvrement 28 PRs amont endjin/Z3.Linq vs fork MyIntelligenceAgency/Z3.Linq |
 | [ledgers/14169-z3linq-upstream-overlap.md](ledgers/14169-z3linq-upstream-overlap.md) | Z3.Linq — recouvrement fork / amont |
+| [ledgers/14442-chronology-sweep-2026-10-26.md](ledgers/14442-chronology-sweep-2026-10-26.md) | Issue #14442 (défaut 3) — sweep de la chronologie de livraison Git dans les carnets GameTheory : mesure, classification contextuelle provenance / chronologie, cas analogues nommés |
 | [ledgers/14549-tensorsharp-multimodal.md](ledgers/14549-tensorsharp-multimodal.md) | Issue #14549 — TensorSharp multimodal axe Image/Vidéo — ledger unique c.257→c.259 |
 | [ledgers/14591-volet-bc-mesure.md](ledgers/14591-volet-bc-mesure.md) | 14591 Volets B + C — mesure chiffrée |
 | [ledgers/14598-ict-tests-timeout-dissipation.md](ledgers/14598-ict-tests-timeout-dissipation.md) | EPIC #14598 — Ledger dissipation timeout ICT tests/ |
@@ -383,7 +394,9 @@ Protocoles opérationnels de la coordination flotte (registres, tenanciers, liai
 | Fichier | Description |
 |---------|-------------|
 | [coordination/gpu-reservation.md](coordination/gpu-reservation.md) | Protocole de réservation GPU — schéma du ledger, garde 85 % charge hôte, CUDA devices explicites, GPU 2 dédié ai-01, fold hebdomadaire, liaison picker / file #1454. Chantier #16737. |
+| [coordination/gpu-ledger-transport.md](coordination/gpu-ledger-transport.md) | Transport git du ledger `gpu-reservation` — publication en ajout seul, remote paramétrable, garde de lancement et sources des verdicts, sans changement de l'autorité déclarée. |
 | [coordination/ci-overflow-controller.md](coordination/ci-overflow-controller.md) | Contrôleur automatique de la variable de dépôt `CI_OVERFLOW_LOCAL` (phase B du débordement CI) — file hébergeuse saturée → `true`, file drainée → `false`, mesure illisible → aucune écriture ; le job automatisé **écrit** la variable via le secret dédié `ACTIONS_VARIABLES_PAT` (canal séparé du jeton de mesure, aucun repli : secret absent → verdict rendu, rien d'écrit, cause nommée dans le résumé du job). Chantier #22937. |
+| [coordination/dns-rate-measurement.md](coordination/dns-rate-measurement.md) | Mesure du débit de requêtes UDP des runners éphémères (volet 5.1 de Maintenance#196) — compteur `Udp.OutDatagrams` lu dans chaque conteneur, distinction recyclage / remise à zéro, verdict `UNREADABLE` quand aucune mesure n'est exploitable. Chantier #22937. |
 
 ## Cadrage épistémique (docs/cadrage/)
 
@@ -435,6 +448,7 @@ Deltas runtime et digests de performance .NET, mesurés sur les bancs et les car
 | Fichier | Description |
 |---------|-------------|
 | [dotnet/net11-runtime-deltas.md](dotnet/net11-runtime-deltas.md) | .NET 9 → 10 → 11 — Deltas runtime mesurés sur les bancs et carnets types du dépôt |
+| [dotnet/net11-async-ffi-deltas.md](dotnet/net11-async-ffi-deltas.md) | .NET 10 → 11 — Delta runtime mesuré sur l'axe 1 (awaits profonds) du carnet Aspire AsyncFFI — compatibilité .NET 11 établie, verdict à n=25 |
 | [dotnet/net11-toub-digest.md](dotnet/net11-toub-digest.md) | .NET 11 — Digest de performance |
 
 

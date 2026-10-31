@@ -49,9 +49,14 @@ every reached state) measure exactly this closure.
 - **`_any` -> `ReidemeisterEquiv` soundness**: an `_any` withdrawal is an
   R1/R2 up to renaming; sealing it requires "renaming preserves the knot
   type" (an `AnyEquiv` + a bridge lemma);
-- the equivalence `canon l = canon l' <-> exists label bijection` is the
-  design justification, **not proved here** — the kernel only consumes
-  `canon` equality;
+- the equivalence `canon l = canon l' <-> exists label bijection`: the
+  **invariance** half (`canon (mapC σ l) = canon l` for injective `σ`) is
+  proved in section 7 (`canon_map_eq`); the converse (**extraction** of the
+  renaming from `canon` equality) remains a residual — it will require a
+  `SeenNodup` invariant on the seen-thread. Tranche 3 also fixes the
+  `canonSlots` base (the state now survives the empty list): without it, the
+  renumbering restarted at every crossing and `canon` equality accepted
+  inter-crossing rewires — counterexample sealed in section 7;
 - the completeness of the enumeration remains the residual of #22240,
   unchanged.
 
@@ -78,10 +83,11 @@ open Knots.Bounded
 /-! ## 1. The canonical form up to renaming
 
 The quotient of the representation by label renaming: each label receives a
-number by order of first appearance. Two crossing lists have the same `canon`
-exactly when they correspond through a label bijection — a design
-justification (not proved here, see the header); the kernel only consumes
-the equality.
+number by order of **first appearance, threaded from crossing to crossing**.
+Two crossing lists have the same `canon` exactly when they correspond through
+a label bijection — a design justification (invariance half proved in
+section 7, converse residual, see the header); the kernel only consumes the
+equality.
 -/
 
 /-- Label -> canonical number association: already-seen number, or
@@ -92,9 +98,13 @@ private def canonLabel (seen : List (Nat × Nat)) (x : Nat) :
   | some v => (v, seen)
   | none => (seen.length + 1, seen ++ [(x, seen.length + 1)])
 
-/-- Renumbers a label sequence, threading the seen-state. -/
+/-- Renumbers a label sequence, threading the seen-state. The `[]` base
+    **hands the thread back**: without it, every crossing restarted from an
+    empty state and the renumbering became per-crossing — `canon` equality
+    then accepted inter-crossing rewires (counterexample sealed in section 7).
+    -/
 private def canonSlots : List (Nat × Nat) → List Nat → List Nat × List (Nat × Nat)
-  | _, [] => ([], [])
+  | seen, [] => ([], seen)
   | seen, x :: xs =>
     let (v, seen') := canonLabel seen x
     let (ys, seen'') := canonSlots seen' xs
@@ -609,6 +619,198 @@ theorem demo_anyBoundedConnects_empty :
     anyBoundedConnects 1
       { crossings := [⟨1, 1, 2, 2⟩], numEdges := 2 }
       { crossings := [], numEdges := 0 } = true := by
+  decide
+
+/-! ## 7. The canon bridge — threading fix + invariance half (tranche 3)
+
+The seen-state threading was broken at the base: `canonSlots` returned
+`([], [])` on the empty list, discarding the accumulated state — the
+renumbering restarted at **every crossing**, and `canon` equality accepted
+targets that rewire inter-crossing connections (the counterexample below was
+accepted, and it corresponds to no renaming of the surgery result). The base
+now hands the thread back (`| seen, [] => ([], seen)`), the semantics
+documented since section 1 — a **global** first-appearance ranking.
+
+This tranche seals the fix and delivers the **invariance half** of the
+bridge:
+
+* `canon_map_eq` — renaming by an **injection** does not change the canonical
+  form: the first-appearance rank does not depend on the label's name, only on
+  the order of appearance. This is the direction soundness (`_any` ->
+  `ReidemeisterEquiv`) consumes: the certificate carried by the verifier is
+  stable under renaming.
+
+The converse (**extraction**: two lists with the same `canon` correspond
+through an injection) remains a residual — it will require a `SeenNodup`
+invariant on the seen-thread (the rank is injective only if the already-seen
+keys are distinct).
+-/
+
+/-- Renaming a list of crossings: `π` applied to the four slots of each
+    crossing. -/
+private def mapC (π : Nat → Nat) (l : List PDCrossing) : List PDCrossing :=
+  l.map fun c => ⟨π c.e1, π c.e2, π c.e3, π c.e4⟩
+
+/-- `lookup` commutes with key renaming: looking up `π x` in the image of a
+    list of pairs under `π` (on keys) is looking up `x` in the list — up to
+    injectivity of `π` on the keys. -/
+private theorem lookup_map_key {π : Nat → Nat} (hπ : Function.Injective π)
+    (l : List (Nat × Nat)) (x : Nat) (w : Nat) (h : l.lookup x = some w) :
+    (l.map fun p => (π p.1, p.2)).lookup (π x) = some w := by
+  induction l with
+  | nil => simp at h
+  | cons p t ih =>
+    -- `List.lookup` unfolds to a Bool `match` on `a == k`: reduce the
+    -- discriminator with the core lemmas `beq_self_eq_true` /
+    -- `beq_eq_false_iff_ne`, injectivity arbitrates the π case.
+    by_cases hpx : x = p.1
+    · subst hpx
+      simp only [List.lookup, beq_self_eq_true] at h
+      simp only [List.map_cons, List.lookup, beq_self_eq_true]
+      exact h
+    · have hb : (x == p.1) = false := by
+        rw [beq_eq_false_iff_ne]; exact hpx
+      simp only [List.lookup, hb] at h
+      have hne : (π x == π p.1) = false := by
+        rw [beq_eq_false_iff_ne]
+        exact fun hc => hpx (hπ hc)
+      simp only [List.map_cons, List.lookup, hne]
+      exact ih h
+
+/-- Mirror of the previous one for the absent case: if `x` is a key nowhere,
+    neither is `π x` in the image — up to injectivity of `π`. -/
+private theorem lookup_map_key_none {π : Nat → Nat} (hπ : Function.Injective π)
+    (l : List (Nat × Nat)) (x : Nat) (h : l.lookup x = none) :
+    (l.map fun p => (π p.1, p.2)).lookup (π x) = none := by
+  induction l with
+  | nil => rfl
+  | cons p t ih =>
+    by_cases hpx : x = p.1
+    · subst hpx
+      simp only [List.lookup, beq_self_eq_true] at h
+      simp at h
+    · have hb : (x == p.1) = false := by
+        rw [beq_eq_false_iff_ne]; exact hpx
+      simp only [List.lookup, hb] at h
+      have hne : (π x == π p.1) = false := by
+        rw [beq_eq_false_iff_ne]
+        exact fun hc => hpx (hπ hc)
+      simp only [List.map_cons, List.lookup, hne]
+      exact ih h
+
+/-- One step of `canonSlots`, "label already seen" case: the number is the
+    recorded value, the state is unchanged. `let`-free shape (both components
+    of the result are projections of a single evaluation). -/
+private theorem canonSlots_cons_of_some {seen : List (Nat × Nat)} {x v : Nat}
+    {xs : List Nat} (h : seen.lookup x = some v) :
+    canonSlots seen (x :: xs) =
+      (v :: (canonSlots seen xs).1, (canonSlots seen xs).2) := by
+  simp only [canonSlots, canonLabel, h]
+
+/-- One step of `canonSlots`, "first appearance" case: number `size + 1`, the
+    state gains the new association. -/
+private theorem canonSlots_cons_of_none {seen : List (Nat × Nat)} {x : Nat}
+    {xs : List Nat} (h : seen.lookup x = none) :
+    canonSlots seen (x :: xs) =
+      ((seen.length + 1) :: (canonSlots (seen ++ [(x, seen.length + 1)]) xs).1,
+        (canonSlots (seen ++ [(x, seen.length + 1)]) xs).2) := by
+  simp only [canonSlots, canonLabel, h]
+
+/-- The heart of the bridge: when the state threads are correlated by `π`
+    (keys renamed, canonical numbers unchanged), the numbers produced are
+    **equal** on both sides and the threads stay correlated. The
+    first-appearance rank does not depend on the label's name. -/
+private theorem canonSlots_congr {π : Nat → Nat} (hπ : Function.Injective π)
+    (xs : List Nat) :
+    ∀ seen seen' : List (Nat × Nat),
+      seen' = seen.map (fun p => (π p.1, p.2)) →
+      (canonSlots seen' (xs.map π)).1 = (canonSlots seen xs).1 ∧
+      (canonSlots seen' (xs.map π)).2 =
+        (canonSlots seen xs).2.map (fun p => (π p.1, p.2)) := by
+  induction xs with
+  | nil =>
+    intro seen seen' hcorr
+    simp only [List.map_nil]
+    exact ⟨rfl, hcorr⟩
+  | cons x xs ih =>
+    intro seen seen' hcorr
+    simp only [List.map_cons]
+    cases hlk : seen.lookup x with
+    | some v =>
+      have hlk' : seen'.lookup (π x) = some v := by
+        rw [hcorr, lookup_map_key hπ seen x v hlk]
+      rw [canonSlots_cons_of_some hlk, canonSlots_cons_of_some hlk']
+      -- states unchanged: the correlation hcorr itself feeds the IH
+      obtain ⟨ys, ys'⟩ := ih _ _ hcorr
+      exact ⟨congrArg (List.cons v) ys, ys'⟩
+    | none =>
+      have hlk' : seen'.lookup (π x) = none := by
+        rw [hcorr, lookup_map_key_none hπ seen x hlk]
+      have hlen : seen'.length = seen.length := by
+        rw [hcorr, List.length_map]
+      have hcorr2 : seen' ++ [(π x, seen'.length + 1)] =
+          (seen ++ [(x, seen.length + 1)]).map (fun p => (π p.1, p.2)) := by
+        rw [hcorr, List.map_append, List.map_singleton]
+        simp
+      rw [canonSlots_cons_of_none hlk, canonSlots_cons_of_none hlk']
+      obtain ⟨ys, ys'⟩ := ih _ _ hcorr2
+      rw [hlen] at ys ys' ⊢
+      exact ⟨congrArg (List.cons _) ys, ys'⟩
+
+/-- One step of `canon.go`, `let`-free: the canonical form of a list of
+    crossings is the quadruple of canonical numbers of the first crossing,
+    then the thread of the rest. (Zeta + projections: definitional.) -/
+private theorem canon_go_cons (c : PDCrossing) (cs : List PDCrossing)
+    (seen : List (Nat × Nat)) :
+    canon.go (c :: cs) seen =
+      (canonSlots seen [c.e1, c.e2, c.e3, c.e4]).1
+        :: canon.go cs (canonSlots seen [c.e1, c.e2, c.e3, c.e4]).2 := rfl
+
+/-- The heart of the bridge, crossing level: on correlated state threads, the
+    canonical form of a renamed list is that of the list. -/
+private theorem canon_go_congr {π : Nat → Nat} (hπ : Function.Injective π)
+    (l : List PDCrossing) :
+    ∀ seen seen' : List (Nat × Nat),
+      seen' = seen.map (fun p => (π p.1, p.2)) →
+      canon.go (mapC π l) seen' = canon.go l seen := by
+  induction l with
+  | nil => intro _ _ _; rfl
+  | cons c cs ih =>
+    intro seen seen' hcorr
+    have hmap : mapC π (c :: cs) =
+        ⟨π c.e1, π c.e2, π c.e3, π c.e4⟩ :: mapC π cs := by simp [mapC]
+    obtain ⟨hnums, hcorr2⟩ :=
+      canonSlots_congr hπ [c.e1, c.e2, c.e3, c.e4] seen seen' hcorr
+    rw [hmap, canon_go_cons, canon_go_cons,
+      show [π c.e1, π c.e2, π c.e3, π c.e4] = [c.e1, c.e2, c.e3, c.e4].map π from by
+        simp,
+      hnums, ih _ _ hcorr2]
+
+/-- **Invariance half of the bridge**: renaming a list of crossings by an
+    injection does not change its canonical form — the first-appearance rank
+    does not depend on the label's name, only on the order of appearance.
+    This is the direction soundness consumes: a verified step is verified for
+    the whole renaming class of its operands. -/
+theorem canon_map_eq {π : Nat → Nat} (hπ : Function.Injective π)
+    (l : List PDCrossing) : canon (mapC π l) = canon l :=
+  canon_go_congr hπ l [] [] rfl
+
+/-- **Counterexample sealing the threading fix**: the source is the large
+    side of the historical R1 pair (`verifyR1_witness_passes_any`); the
+    target `d` keeps the same silhouettes but rewires the inter-crossing
+    connections — the `e1` slot of the second crossing goes from `1` to `3`,
+    which is the work of **no** renaming of the surgery result
+    `[⟨1,2,3,4⟩, ⟨1,2,3,4⟩]` (a renaming would preserve the equality of the
+    `e1` slots of both crossings). Under global threading, `canon`
+    distinguishes the two and the verifier REFUSES. Before the fix, the
+    `_, [] => ([], [])` base reset the numbering at every crossing: both
+    canonical forms collapsed to `[[1,2,3,4], [1,2,3,4]]` and this step was
+    ACCEPTED — the defect, sealed here by the kernel. -/
+theorem verifyKinkDownAny_rejects_crossRewire :
+    verifyKinkDownAny
+      { crossings := [⟨1, 2, 3, 4⟩, ⟨5, 2, 3, 4⟩, ⟨1, 5, 6, 6⟩],
+        numEdges := 6 }
+      { crossings := [⟨1, 2, 3, 4⟩, ⟨3, 4, 1, 2⟩], numEdges := 4 } = false := by
   decide
 
 end Knots_en.AnyMoves

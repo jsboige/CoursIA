@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-10-25
+> REFERENCE — vivante — dernière révision 2026-10-30
 
 # Registre des revues scientifiques — `scientific_reviewed_by`
 
@@ -296,31 +296,31 @@ fera se périmer dès que le code de la série bougera.
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12-ValenceFieldsAndAnimats-Python.ipynb
   confidence: research
   reviewed_code_sha: 4bd52d81b4f2544a47c1a782de08927bb978f38ca85fa7873ddd4e978b9e8760
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-12b-LearnedValence-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12b-LearnedValence-Python.ipynb
   confidence: research
   reviewed_code_sha: fd2fcc293543c537a4e0c7477d0729eb7b8b321fa8eab194c1d8e3b424dcd926
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-12c-PregnanceAnimat-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12c-PregnanceAnimat-Python.ipynb
   confidence: research
   reviewed_code_sha: 60af22936f3a15fc94cbeed9e864952e0026d5af20e9c3c082ec918ec237b28c
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-12d-InhibitedActionAnimat-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12d-InhibitedActionAnimat-Python.ipynb
   confidence: research
   reviewed_code_sha: 44c3406ede520ac19295c8d46ac29324e1286d73141e4caf0b436360f8849a84
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-12e-Value-of-Information-Animat-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12e-Value-of-Information-Animat-Python.ipynb
   confidence: research
   reviewed_code_sha: 865df6eec48b8704606ededa7b24a92bdc98da851b3f05c274a7c70aa0e186ec
   review_date: "2026-09-21"
@@ -338,13 +338,13 @@ fera se périmer dès que le code de la série bougera.
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-14-FreeEnergySurprise-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-14-FreeEnergySurprise/ICT-14-FreeEnergySurprise-Python.ipynb
   confidence: research
   reviewed_code_sha: d2326c85498fac62beffe840f44f3f2c0778e969aa77e4ab819f88930adf9a3e
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-14b-ActiveInferenceEFE-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-14-FreeEnergySurprise/ICT-14b-ActiveInferenceEFE-Python.ipynb
   confidence: research
   reviewed_code_sha: 218e88ac3418e0b48f5a743d3e9fdaf94f4d5d735ae7ee2d817dbcb4a412b936
   review_date: "2026-09-21"
@@ -452,13 +452,13 @@ fera se périmer dès que le code de la série bougera.
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-19-EnjeuBattery-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-19-EnjeuBattery/ICT-19-EnjeuBattery-Python.ipynb
   confidence: research
   reviewed_code_sha: 66d81b8d05d75489fa4faf5f1ccb7f4a880d1efb290e4c6f5c652e2560242ebe
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-19b-EnjeuBattery-Raffinement-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-19-EnjeuBattery/ICT-19b-EnjeuBattery-Raffinement-Python.ipynb
   confidence: research
   reviewed_code_sha: 1e7b15fc0d10978baea4106bfcad65eecb46aae89c14b23998759c9b16da86c2
   review_date: "2026-09-21"

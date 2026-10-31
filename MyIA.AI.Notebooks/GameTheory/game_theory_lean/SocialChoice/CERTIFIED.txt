@@ -12,11 +12,12 @@
 # Instrument: count_code_sorry.scan_file (comment-stripped — a `sorry` inside
 # a docstring does not count; a real tactic `sorry` fails the gate).
 
-# FR modules (8)
+# FR modules (9)
 AMD.lean
 Arrow.lean
 Basic.lean
 Framework.lean
+Groves.lean
 MechanismDesign.lean
 Sen.lean
 SortedListCounting.lean
@@ -26,6 +27,7 @@ Voting.lean
 Arrow_en.lean
 Basic_en.lean
 Framework_en.lean
+Groves_en.lean
 MechanismDesign_en.lean
 Sen_en.lean
 SortedListCounting_en.lean
