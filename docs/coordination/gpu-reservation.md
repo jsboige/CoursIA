@@ -143,7 +143,7 @@ Le picker (`scripts/pick_idle_grain.py`) croise l'urne `delivered` avec un signa
 5. **Observation `released`** (`verdict: RELEASED`) → le GPU est libre, le picker peut tirer.
 6. **Observation `stale`** (`verdict: STALE`) → cas d'erreur, la lane tenancière doit poster un `[OBS]` de réparation.
 
-Le script `scripts/coordination/debt_ledger.py check_pending --entity <m>#gpu<n>` rend le verdict (`OK_TO_RUN`, `NO_OBS`, `HOLD`, `RELEASED`, `STALE`, `UNPOSTED`, `UNREADABLE_SPOOL`) en ~50 ms (cache local). **Implémentation 4e livrable : [PR #19855](https://github.com/jsboige/CoursIA/pull/19855)**, merge de la sous-commande et de `evaluate_gpu_pending()` (113/113 tests passent).
+Le script `scripts/coordination/debt_ledger.py check_pending --entity <m>#gpu<n>` rend le verdict (`OK_TO_RUN`, `NO_OBS`, `HOLD`, `RELEASED`, `STALE`, `UNPOSTED`, `UNREADABLE_SPOOL`, `UNREADABLE`) en ~50 ms (cache local). **Implémentation 4e livrable : [PR #19855](https://github.com/jsboige/CoursIA/pull/19855)**, merge de la sous-commande et de `evaluate_gpu_pending()` (113/113 tests passent).
 
 ### Ce que le picker en fait (c.2431, #22747)
 
@@ -173,12 +173,15 @@ La section ci-dessus était une **promesse du protocole que le code ne tenait pa
 | `STALE` | **2** | `held` dépassé sans release — l'appelant décide (rafraîchir ou bloquer) |
 | `UNPOSTED` | **1** | le spool local porte des observations **jamais postées** : le ledger est illisible, pas libre — poster (`flush`) avant de conclure |
 | `UNREADABLE_SPOOL` | **1** | un fichier du spool local est **illisible** : il peut porter une réservation, donc le ledger est illisible, pas libre — le verdict nomme chaque fichier et son motif |
+| `UNREADABLE` | **1** | la **source primaire git** est injoignable ou périmée (branche absente avec `--source git`, fetch en échec, remote injoignable en `auto`) : un ref de suivi local ne fait que du diagnostic, il n'autorise rien — fail-closed, le device n'est pas libre |
 
 Le code 2 est aussi rendu sur un usage invalide (`--entity` absent, ledger ≠ `gpu-reservation`) : là, il signale une **erreur d'appel**, pas un verdict.
 
 `UNPOSTED` prime sur les autres verdicts : il est rendu **avant** la lecture du snapshot, parce qu'un verdict réduit d'un snapshot ne voit pas ce qui n'a jamais voyagé (deux réservations `held` vivantes, quatre-vingt-quatre heures de spool, et un `RELEASED` rendu avec aplomb — #22456).
 
 `UNREADABLE_SPOOL` prime sur `UNPOSTED` : un fichier illisible peut porter un `held`, et un décompte d'enveloppes saines ne le dirait pas. Le fichier reste sur disque et le verdict en nomme le chemin et le motif — l'archivage des bonnes enveloppes reste possible, la conclusion « libre » ne l'est pas.
+
+`UNREADABLE` est le fail-closed du transport git : un **fetch en échec** ne laisse jamais le dernier ref de suivi local autoriser un lancement (le `held` d'une autre lane publié depuis y serait invisible) — ce ref est lu pour le diagnostic (`stale_ref` dans le JSON, avec le verdict qu'il aurait porté), jamais pour conclure. En `--source auto`, le repli sur le cache local n'a lieu que si la branche est **mesurée absente** sur le remote (`ls-remote` muet) : rien n'a jamais été publié, le cache ne peut manquer aucun hold.
 
 **Le drainage du spool est en deux temps, et aucun n'est optionnel** : `debt_ledger.py flush` liste (ou `--emit` écrit) le lot à poster — le `content` de chaque appel est l'octet du fichier de spool, sans re-sérialisation — puis `flush --mark-posted <id>...` archive les observations effectivement postées. L'archivage est idempotent (l'`observation_id` est la clé) et tout-ou-rien : un id inconnu refuse le lot entier plutôt que d'archiver la moitié, parce qu'un spool à moitié drainé est précisément l'état qui fait mentir `check_pending`.
 
