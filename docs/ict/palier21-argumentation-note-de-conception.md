@@ -82,10 +82,15 @@ déduit d'un répertoire). Les deux licences sont distinctes et le sous-module l
 un fichier hors de la liste du §1 de `LICENSE-CONTENT.md` **n'est pas** sous CC BY-SA.
 Le capstone cite cette distinction dans son propre en-tête, parce qu'il consomme les deux.
 
-**Le corpus réel, en volume mesuré** (sous-module à `d257443d`) : `Cards` porte 803 fichiers,
-dont 7 fichiers de texte sous CC BY-SA — 13 Mo au total. Le plus lourd est
-`Cards/Fallacies/Argumentum Fallacies - Taxonomy.csv` (1526 lignes, 4,18 Mo, 104 champs en
-ligne 1), suivi des deux ontologies (`docs/ontology/argumentum.owl`, 96 069 lignes, 6,0 Mo).
+**Le corpus réel, en volume mesuré** (sous-module à `9038690d`, le gitlink épinglé par `main`) :
+`Cards` porte 803 fichiers, dont 7 fichiers de texte sous CC BY-SA — 12 976 438 octets au total,
+soit 13,0 Mo en décimal. Le plus lourd est
+`Cards/Fallacies/Argumentum Fallacies - Taxonomy.csv` (1526 lignes, 4 178 565 octets, 104 champs en
+ligne 1), suivi des deux ontologies (`docs/ontology/argumentum.owl`, 96 069 lignes, 5 993 701 octets).
+Les sept fichiers du périmètre sont stables d'un pin à l'autre : sur l'intervalle qui sépare le
+commit les précédant (`d257443d`) du gitlink, une seule variation les touche — la taxonomie des
+vertus, de six octets — et les 53 fichiers que cet intervalle modifie par ailleurs sont des
+mindmaps (`Cards/Fallacies/Mindmaps/**`), hors du périmètre CC BY-SA.
 La provenance du corpus éditorial est nommée dans sa propre licence :
 `LICENSE-CONTENT.md:91`, « le corpus est l'œuvre de Jean-Sylvain Boige et des contributeurs
 du projet Argumentum ». Le capstone consomme donc un corpus dont le dépôt détient les droits,
