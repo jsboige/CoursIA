@@ -57,11 +57,13 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 WORKFLOWS = REPO_ROOT / ".github" / "workflows"
 CONTENT_WF = WORKFLOWS / "always-on-guards.yml"
 BODY_WF = WORKFLOWS / "always-on-guards-body.yml"
+COMMENTERS_WF = WORKFLOWS / "always-on-commenters.yml"
 ORGANS = REPO_ROOT / "scripts" / "ci" / "always_on_body_organs.sh"
 PR_GATE = REPO_ROOT / "scripts" / "pr_gate.py"
 
 CONTENT_JOB = "always-on-guards"
 BODY_JOB = "always-on-guards-body"
+COMMENTERS_JOB = "always-on-commenters"
 BODY_ORGANS = ["tag_required", "prev_guard", "close_keyword", "adjacency", "lane_claim"]
 
 
@@ -284,3 +286,124 @@ def test_pr_gate_fold_still_makes_a_skipped_run_shadow_a_red():
     """
     text = PR_GATE.read_text(encoding="utf-8")
     assert 'CONCLUSION_OK = frozenset({"success", "neutral", "skipped"})' in text
+
+
+# --------------------------- 6. la famille always-on : UN JOB PAR FICHIER
+# (correctif PR #22244, 2026-10-26) : le job `always-on-commenters` a d'abord
+# vecu en DEUXIEME job d'always-on-guards.yml. Deux defauts propres a cette
+# colocalisation, tous deux mesures :
+#
+# 1. GitHub rejette en ENTIER un workflow dont un `env:` de niveau JOB
+#    reference le contexte `runner` (il n'existe qu'au niveau step) : le
+#    fichier portait donc le umbrella des 16 organes ET l'emetteur de
+#    commentaires, et l'expression illegale a tue les DEUX -- 6 runs push a
+#    zero job, le check-run « Always-on guards -- 16 organes » n'a jamais
+#    existe sur la tete. Un fichier par responsabilite limite la panne au
+#    coupable ; l'invariant « un seul job par fichier » (test 2 ci-dessus,
+#    `list(content) == [CONTENT_JOB]`) etait deja l'epingle, la PR l'avait
+#    cassee en ajoutant le deuxieme job.
+# 2. Un groupe de concurrence partage entre les deux fichiers laisserait un
+#    run de l'un annuler un run de l'autre en pleine execution (les deux se
+#    declenchent sur le meme push, `cancel-in-progress: true`) : le fichier
+#    demenage porte son PROPRE groupe.
+
+
+def test_commenters_workflow_has_exactly_one_job():
+    """L'invariant « un job par fichier » vaut pour TOUTE la famille
+    always-on, pas seulement pour les deux premiers fichiers."""
+    assert list(_load(COMMENTERS_WF)["jobs"]) == [COMMENTERS_JOB]
+
+
+def test_content_workflow_is_back_to_a_single_job():
+    """Le demenagement doit etre un DEPLACEMENT : si ce test echoue, le job
+    commenters est revenu vivre (ou un troisieme job est ne) dans le fichier
+    du umbrella -- retour du rayon d'explosion mesure en #22244."""
+    assert list(_load(CONTENT_WF)["jobs"]) == [CONTENT_JOB]
+
+
+def test_commenters_job_name_is_distinct_from_the_family():
+    """Meme premisse que test_job_names_are_distinct : le fold du gate est
+    par NOM, trois verdicts exigent trois noms."""
+    names = {
+        _load(CONTENT_WF)["jobs"][CONTENT_JOB]["name"],
+        _load(BODY_WF)["jobs"][BODY_JOB]["name"],
+        _load(COMMENTERS_WF)["jobs"][COMMENTERS_JOB]["name"],
+    }
+    assert len(names) == 3, names
+
+
+def test_commenters_fires_on_pushes_not_on_edits():
+    """Meme declenchement que le job umbrella (`synchronize` : un verdict a
+    chaque tete), et PAS `edited` (#22331 : une edition de body ne doit pas
+    re-payer un run de file CI -- les stickies sont upsertes au push)."""
+    types = _trigger_types(_load(COMMENTERS_WF))
+    assert "opened" in types and "synchronize" in types
+    assert "edited" not in types
+
+
+def test_commenters_concurrency_group_is_isolated():
+    """Trois groupes distincts : un groupe partage + `cancel-in-progress`
+    laisserait le run d'un fichier annuler celui d'un autre fichier en
+    pleine execution, les deux etant declenches par le meme push."""
+    groups = {
+        _load(CONTENT_WF)["concurrency"]["group"],
+        _load(BODY_WF)["concurrency"]["group"],
+        _load(COMMENTERS_WF)["concurrency"]["group"],
+    }
+    assert len(groups) == 3, groups
+    assert any("always-on-commenters" in g for g in groups), groups
+
+
+def test_commenters_writes_live_at_job_level_only():
+    """Le contrat « l'ecriture est ICI et nulle part ailleurs » (moindre
+    privilege) : les droits d'ecriture sont portes par le JOB, pas elargis au
+    niveau workflow."""
+    doc = _load(COMMENTERS_WF)
+    assert doc.get("permissions") == {"contents": "read"}
+    job = doc["jobs"][COMMENTERS_JOB]
+    assert job["permissions"] == {
+        "contents": "read",
+        "pull-requests": "write",
+        "checks": "write",
+    }
+
+
+def test_no_job_level_env_uses_the_runner_context():
+    """LE defaut fondateur (PR #22244) : le contexte `runner` est illégal dans
+    un `env:` de niveau workflow comme de niveau job -- GitHub rejette alors
+    le fichier ENTIER (mesure : « Unrecognized named-value: 'runner' »,
+    6 runs push a zero job). Un `${{ runner.* }}` n'est legal qu'au niveau
+    step (env de step, with:, if:). Le scanner parse le YAML : un `runner.`
+    dans un COMMENTAIRE n'est pas vu, seul l'etait un vrai defaut."""
+    for wf in sorted(WORKFLOWS.glob("*.yml")):
+        doc = _load(wf)
+        scopes = {"workflow": doc.get("env") or {}}
+        for jk, job in (doc.get("jobs") or {}).items():
+            if isinstance(job, dict):
+                scopes[f"job {jk}"] = job.get("env") or {}
+        for scope, env in scopes.items():
+            assert isinstance(env, dict)
+            for key, val in env.items():
+                if isinstance(val, str):
+                    assert "runner." not in val, (
+                        "%s :: %s :: env %s utilise le contexte runner "
+                        "(illegal hors niveau step, fichier rejete en entier)"
+                        % (wf.name, scope, key)
+                    )
+
+
+def test_commenters_artifact_uploads_target_the_python_fallback_root():
+    """Coherence emetteur/lecteur d'artefacts SANS la variable d'env fautive :
+    `fast_lane.py::artifact_root()` retombe sur $RUNNER_TEMP/fast-lane-
+    artifacts quand FAST_LANE_ARTIFACT_DIR est absente ; les `path:` des
+    uploads doivent cibler la MEME racine (au niveau step, ou l'expression
+    `${{ runner.temp }}` est legale)."""
+    job = _load(COMMENTERS_WF)["jobs"][COMMENTERS_JOB]
+    uploads = [
+        s for s in job["steps"]
+        if str(s.get("uses", "")).startswith("actions/upload-artifact")
+    ]
+    assert len(uploads) == 3, "trois artefacts attendus (un par detecteur)"
+    for step in uploads:
+        path = step["with"]["path"]
+        assert path.startswith("${{ runner.temp }}/fast-lane-artifacts/"), path
