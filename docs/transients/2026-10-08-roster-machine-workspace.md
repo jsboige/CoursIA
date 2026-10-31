@@ -1,16 +1,8 @@
----
-name: agents-roster-2026-10-08
-description: Roster daté des machine:workspace actifs au 2026-10-08 (parent #14525, ferme #14527)
-metadata:
-  type: ephemeral
-  parent: 14527
-  parent-epic: 14525
-  measured: 2026-10-08
----
+> RAPPORT — 2026-10-08 — Roster daté des machine:workspace actifs au 2026-10-08, accompagnement de l'acceptance #14527 (EXISTS/RECENT/CONTRIBUTES/REACHABLE) — figé
 
 # Roster daté 2026-10-08 — machine:workspace CoursIA
 
-Ce roster accompagne l'issue **#14527** (« [Vibe-Coding] Établir le roster actif et préparer les redémarrages ou WAKE »). Il est **daté** et **éphémère** : il sera régénéré à chaque cycle où une décision de redémarrage ou de WAKE se pose. La référence **durable** sur la structure du cluster reste [cluster-agents.md](cluster-agents.md) — ce qui change peu.
+Ce roster accompagne l'issue **#14527** (« [Vibe-Coding] Établir le roster actif et préparer les redémarrages ou WAKE »). Il est **daté** et **éphémère** : il sera régénéré à chaque cycle où une décision de redémarrage ou de WAKE se pose. La référence **durable** sur la structure du cluster reste [cluster-agents.md](../reference/cluster-agents.md) — ce qui change peu.
 
 L'acceptance de #14527 demande quatre familles de preuves (EXISTS, RECENT, CONTRIBUTES, REACHABLE) et quatre groupes (actifs/joignables, dormants VS Code, joignables WAKE-CLAUDE/HERMES/NANOCLAW, optionnels/redondants). Le point de passage user est obligatoire : **aucun redémarrage ou WAKE n'est lancé avant le choix user** (cf. corps de #14527).
 
@@ -18,7 +10,7 @@ L'acceptance de #14527 demande quatre familles de preuves (EXISTS, RECENT, CONTR
 
 | Code | Sens |
 |---|---|
-| **EXISTS** | la machine et le workspace existent (cf. [cluster-agents.md](cluster-agents.md) + `roosync_inventory`) |
+| **EXISTS** | la machine et le workspace existent (cf. [cluster-agents.md](../reference/cluster-agents.md) + `roosync_inventory`) |
 | **RECENT** | activité documentée sur les 7 derniers jours (DM, dashboard, cron, commit) |
 | **CONTRIBUTES** | contribution mesurable : grain livré, dossier posé, PR mergée, ou service rendu |
 | **REACHABLE** | joignable par l'un des canaux du cluster (LAN, dashboard, DM, WAKE-CLAUDE/HERMES/NANOCLAW) |
@@ -84,7 +76,7 @@ Selon l'acceptance de #14527, **aucun redémarrage ou WAKE n'est lancé avant le
 
 ## Pointeurs
 
-- Référence durable sur la structure du cluster : [cluster-agents.md](cluster-agents.md)
+- Référence durable sur la structure du cluster : [cluster-agents.md](../reference/cluster-agents.md)
 - Issue parente : [#14527](https://github.com/jsboige/CoursIA/issues/14527)
 - EPIC parente : [#14525](https://github.com/jsboige/CoursIA/issues/14525)
 - Protocole de claim : [lane-claim-protocol.md](../../.claude/rules/lane-claim-protocol.md)
