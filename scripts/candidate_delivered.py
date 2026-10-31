@@ -155,9 +155,35 @@ def is_epic(title: str, labels: Iterable[str]) -> bool:
 # dispatch #N", or a `feature/N-...` branch name is context, not a claim.
 def _delivery_marker_re(number: int) -> "re.Pattern[str]":
     return re.compile(
-        r"\b(?:see|part\s+of|closes|fixes|refs|references?)\b\s*:?\s*#%d\b" % number,
+        r"\b(?:see|part\s+of|refs|references?"
+        r"|close[sd]?|fix(?:es|ed)?|resolve[sd]?)\b\s*:?\s*#%d\b" % number,
         re.IGNORECASE,
     )
+
+
+# #23762: the marker family splits in two, and only the CLOSING class
+# (`Closes`/`Fixes`/`Resolves`) is evidence of a complete delivery.
+# `See #N` / `Part of #N` are the repo's markers for a PARTIAL contribution
+# (git-workflow.md): a merged tranche followed by silence -- the lane moved on,
+# the rest waits its turn in the belt -- produces exactly the "merged + silent"
+# shape that used to earn the label. Measured by the secretariat (c228,
+# 2026-10-31): `Part of #22178` on #22202 is a reference to its umbrella, not a
+# delivery, and that marker is the mechanism behind the false positive.
+def _closing_marker_re(number: int) -> re.Pattern[str]:
+    return re.compile(
+        rf"\b(?:close[sd]?|fix(?:es|ed)?|resolve[sd]?)\b\s*:?\s*#{number}\b",
+        re.IGNORECASE,
+    )
+
+
+def closing_marker(body: str, number: int) -> bool:
+    """True iff ``body`` claims a COMPLETE delivery of issue ``number``.
+
+    Same adjacency rule as :func:`delivery_marker` (the marker directly before
+    the number), restricted to the closing keywords. A body that carries only
+    a partial marker is a delivered tranche, not a delivered issue.
+    """
+    return bool(_closing_marker_re(number).search(body or ""))
 
 
 def delivery_marker(body: str, number: int) -> bool:
@@ -299,6 +325,10 @@ def classify(
                               references it only contextually (no delivery
                               marker in its body, #15060)
         ``"in_flight"``    -- an OPEN PR references it: work in progress (#11100)
+        ``"partial"``      -- a merged PR declares a PARTIAL contribution
+                              (`See`/`Part of`/`Refs`) and none carries a
+                              closing keyword (`Closes`/`Fixes`/`Resolves`):
+                              a tranche is not a delivery (#23762)
         ``"active"``       -- a comment landed after the latest merge
         ``"candidate"``    -- delivered + silent: pose the label
     """
@@ -385,6 +415,17 @@ def classify(
         return ("no_delivery",
                 f"merged PR(s) {prs} mention the issue only contextually "
                 f"(no See/Part of/Closes/Fixes marker in their body) -- not a delivery")
+
+    # #23762: declared -- but only as TRANCHES. A partial marker is the repo's
+    # spelling for a contribution of one tranche, and silence after it is the
+    # belt's normal state (the next tranche waits its turn), not proof that the
+    # issue is done. Only a closing keyword claims the issue as a whole.
+    if not any(closing_marker(r.get("body") or "", target) for r in declared):
+        prs = ", ".join(f"#{r['pr_number']}" for r in declared)
+        return ("partial",
+                (f"merged PR(s) {prs} declare a PARTIAL contribution "
+                 f"(See/Part of/Refs, no Closes/Fixes/Resolves) -- "
+                 f"a tranche is not a delivery"))
 
     # ISO 8601 timestamps sort lexicographically; string max is correct.
     # #17759 mecanisme B: the comments the protocol PRESCRIBES to attest a
@@ -772,6 +813,15 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"  #{number:<6} in_flight  {why}  (label retracted)")
             else:
                 print(f"  #{number:<6} in_flight  {why}")
+        elif verdict == "partial":
+            # #23762: a tranche-only delivery no longer earns the label. A
+            # label posed under the old merged+silent predicate is retracted
+            # by the sweep itself -- hysteresis, not a verdict (#14307).
+            if labeled:
+                remove_label(repo, number, args.label, args.dry_run)
+                print(f"  #{number:<6} partial    {why}  (label retracted)")
+            else:
+                print(f"  #{number:<6} partial    {why}")
         elif verdict == "retracted":
             if labeled:  # re-posed over a human verdict -- restore the verdict
                 remove_label(repo, number, args.label, args.dry_run)
