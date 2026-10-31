@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-10-31
+
 # Mapping des modèles OpenAI — génération courante (tranche 1, #14755)
 
 > **Grain : DEEP/genai — lane `myia-po-2023:CoursIA-2` — tranche 1 de #14755.**
