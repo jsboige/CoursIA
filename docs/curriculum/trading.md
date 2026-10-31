@@ -111,12 +111,12 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 81 | [4.5c — Détection SOTA : YOLO sous ultralytics, scènes…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.6-Detection-Ultralytics-Difficult-Scenes.ipynb) | BETA | Non |
 | 82 | [4.6b — Détection SOTA : le renversement — le camouflage…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.6b-Detection-Adversarial-Camouflage.ipynb) | BETA | Non |
 | 83 | [4.6c — Du patch collé au vêtement porté : le dazzle…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.6c-Detection-Dazzle-Garment-StyleTransfer.ipynb) | BETA | Non |
-| 84 | [WS-00a — Ondelettes 1D *from scratch* : analyse…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/04b-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch.ipynb) | BETA | Oui |
-| 85 | [WS-00b — Ondelettes 2D *from scratch* : bandes…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/04b-Wavelet-Scattering/WS-00b-Ondelettes-2D-from-scratch.ipynb) | BETA | Oui |
-| 86 | [WS-00c — Scattering 2D *from scratch* : le module rend…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/04b-Wavelet-Scattering/WS-00c-Scattering-from-scratch.ipynb) | BETA | Oui |
-| 87 | [WS-01 — Débruitage d'images : du seuillage *from…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/04b-Wavelet-Scattering/WS-01-Denoising-SOTA.ipynb) | BETA | Oui |
-| 88 | [WS-02 — Scattering SOTA : kymatio contre le moteur…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/04b-Wavelet-Scattering/WS-02-Scattering-SOTA.ipynb) | BETA | Non |
-| 89 | [WS-03 — Synthèse : représentation construite vs…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/04b-Wavelet-Scattering/WS-03-Synthese-Scattering-vs-ResNet.ipynb) | BETA | Oui |
+| 84 | [WS-00a — Ondelettes 1D *from scratch* : analyse…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch.ipynb) | BETA | Oui |
+| 85 | [WS-00b — Ondelettes 2D *from scratch* : bandes…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-00b-Ondelettes-2D-from-scratch.ipynb) | BETA | Oui |
+| 86 | [WS-00c — Scattering 2D *from scratch* : le module rend…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-00c-Scattering-from-scratch.ipynb) | BETA | Oui |
+| 87 | [WS-01 — Débruitage d'images : du seuillage *from…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-01-Denoising-SOTA.ipynb) | BETA | Oui |
+| 88 | [WS-02 — Scattering SOTA : kymatio contre le moteur…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-02-Scattering-SOTA.ipynb) | BETA | Non |
+| 89 | [WS-03 — Synthèse : représentation construite vs…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-03-Synthese-Scattering-vs-ResNet.ipynb) | BETA | Oui |
 | 90 | [Lab 1 - Les Bases de la Data Science en Python](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb) | BETA | Oui |
 | 91 | [Lab 2 - Analyser un Appel d'Offre avec l'IA](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2-Document-Agents/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb) | BETA | Non |
 | 92 | [Lab 3 - Pré-qualifier des Candidats avec l'IA](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2-Document-Agents/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb) | BETA | Non |

@@ -1,0 +1,164 @@
+name: Twin index collision gate
+
+# Purpose
+# -------
+# BLOCKING gate: refuse une PR qui INTRODUIT une collision d'index d'attestation
+# dans le registre twin-pairs (`scripts/notebook_tools/twin_pairs.d/<paire>/`).
+#
+# Pourquoi une porte et pas une vigilance
+# ----------------------------------------
+# L'index `NNNN` du nom de fichier est la CLE DE TRI du journal d'une paire, et
+# il doit etre UNIQUE par paire. Mais le `by` de lane fait partie du NOM : deux
+# lanes qui attestent la meme paire le meme jour produisent deux NOMS
+# differents. Aucun conflit git, aucun nom identique, `MERGEABLE` et souvent
+# `CLEAN` -- et pourtant, une fois la premiere mergee, `main` passe au rouge sur
+# le garde `test_audit_index_unique_and_no_identical_duplicates_per_pair`.
+#
+# Mesure fondatrice (2026-10-29) : le merge de #20724 a casse `main` pour
+# TOUTE la flotte (`Scripts Tests (CPU)` rouge sur toute PR dont la base
+# includait ce commit) ; le meme jour, une seconde PR en collision a ete
+# detectee AVANT son merge grace a
+# `scripts/notebook_tools/check_twin_index_collisions.py`. L'organe existe, il
+# n'était simplement pas une porte : rien n'obligeait la lane a le consulter
+# avant de merger.
+#
+# Ce que la porte refuse
+# ----------------------
+#   * une collision INTER-revisions : la base porte le couple (paire, index)
+#     sous un nom, la tete sous un autre -> le merge cree deux fichiers au
+#     meme index ;
+#   * un doublon INTRA-revision que la base ne porte pas : la tete ajoute un
+#     second nom pour un index deja pris -> `main` rougira au merge.
+#
+# Ce que la porte NE refuse pas
+# -----------------------------
+# Un doublon HERITE de la base. Bloquer la pour ce motif condamnerait toute PR
+# touchant le registre tant que la base porte la dette -- et la PR qui la
+# REPAIRE (le renumerotage) ne pourrait plus passer. Le predicat porte donc sur
+# l'AGGRAVATION, pas sur l'etat absolu du registre.
+#
+# Le geste de correction est un `git mv` PUR : renumeroter le fichier de la
+# tete vers le premier index libre de la paire, sans toucher le contenu et
+# sans re-execution (la contiguite des index n'est pas testee).
+#
+# Paths watched
+# -------------
+#   - scripts/notebook_tools/twin_pairs.d/** (le registre lui-meme)
+#   - scripts/notebook_tools/check_twin_index_collisions.py (l'organe)
+#   - scripts/notebook_tools/check_twin_parity.py (la source de `audit_index`,
+#     que l'organe importe : une evolution de ce module change le verdict)
+#
+# Limite connue et assumee
+# -----------------------
+# 1. LE DECLENCHEUR. L'evenement `pull_request` execute le fichier de workflow
+#    **tire du commit de merge de la PR** (documentation GitHub, "Securely
+#    using pull_request_target" : "it runs the workflow file from the merge
+#    commit of the pull request") -- **fork compris**. La porte ajoutee par
+#    une PR s'applique donc a cette PR meme : c'est mesure ici, le check-run
+#    `Twin index collision gate (#23208)` est vert sur la PR same-repo qui
+#    introduit ce fichier. C'est `pull_request_target` qui lit la branche
+#    par defaut.
+#
+#    Les limites reelles d'une PR de **fork** sont ailleurs, et aucune
+#    n'atteint cette porte, qui ne fait que lire : l'evenement attend
+#    l'**approbation** d'un mainteneur quand l'auteur est un contributeur de
+#    premiere fois, et le `GITHUB_TOKEN` d'une PR de fork est en **lecture
+#    seule**.
+#
+# 2. LA BASE LUE. La porte compare `pull_request.base.sha`, c'est-a-dire
+#    `main` **au moment du push**. Une collision introduite sur `main`
+#    **entretemps** par une autre PR n'est pas vue ici : la porte referme la
+#    course au push suivant, pas au merge. Le garde de merge reste donc
+#    necessaire.
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/notebook_tools/twin_pairs.d/**'
+      - 'scripts/notebook_tools/check_twin_index_collisions.py'
+      - 'scripts/notebook_tools/check_twin_parity.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: twin-index-collision-gate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  index-collision:
+    name: "Twin index collision gate (#23208)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          filter: blob:none
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Gate the attestation index collisions
+        # `EVENT`/`PR_BASE`/`PR_HEAD` sont lus dans l'evenement, jamais deduits
+        # de la forme du checkout : le checkout d'un evenement `pull_request`
+        # materialise la REF DE MERGE, dont la forme ne dit rien de la tete de
+        # la PR. La comparaison porte sur (base, tete de la PR) -- c'est elle
+        # qui dit ce que la PR INTRODUIT.
+        env:
+          EVENT: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set +e
+          BASE=origin/main
+          HEAD_SHA="$(git rev-parse HEAD)"
+          if [ "$EVENT" = "pull_request" ]; then
+            BASE="$PR_BASE"
+            HEAD_SHA="$PR_HEAD"
+          fi
+          echo "Twin index collision : base=$BASE  head=$HEAD_SHA"
+          python scripts/notebook_tools/check_twin_index_collisions.py \
+              --base "$BASE" --head "$HEAD_SHA" --gate --json \
+              > twin_index_collision.json 2>twin_index_collision_stderr.log
+          EXIT=$?
+          set -e
+          if [ -s twin_index_collision_stderr.log ]; then
+            echo "Twin-index-collision tool diagnostics (stderr, non-fatal):"
+            cat twin_index_collision_stderr.log
+          fi
+          # Garde : un rapport illisible doit faire echouer la porte avec un
+          # motif CLAIR, pas avec une traceback qui masque le verdict.
+          if ! python3 -c "import json; json.load(open('twin_index_collision.json'))" 2>/dev/null; then
+            echo "::error title=Twin index collision report unparseable::The JSON report (twin_index_collision.json) could not be parsed. Tool exit was $EXIT. The report tail and stderr are shown below. This indicates the report stream was corrupted or the tool crashed before emitting JSON."
+            echo "--- report tail (last 400 chars) ---"
+            tail -c 400 twin_index_collision.json || true
+            echo "--- stderr ---"
+            cat twin_index_collision_stderr.log 2>/dev/null || true
+            exit 1
+          fi
+          python3 - <<'PY'
+          import json
+          import sys
+
+          data = json.load(open("twin_index_collision.json"))
+          reasons = data.get("gate_reasons") or []
+
+          if not data.get("gate_fail"):
+              print("::notice title=Twin index collision gate::Aucune collision d'index introduite par cette revision (base=%s, head=%s)."
+                    % (data.get("base_ref"), ", ".join(data.get("refs", []))))
+              sys.exit(0)
+
+          print("::error title=Twin index collision introduced::Cette PR INTRODUIT %d collision(s) d'index dans le registre twin-pairs : le merge la rendra visible sur `main`." % len(reasons))
+          for r in reasons:
+              print("- %s / index %s (%s)" % (r["pair"], r["index"], r["kind"]))
+              print("  noms en jeu : %s" % ", ".join(r.get("names", [])))
+              print("  geste : %s" % r.get("gist", ""))
+          print("Correctif : un `git mv` PUR suffit (aucun contenu a toucher, aucune re-execution) -- renumeroter le fichier de la tete vers le premier index libre de la paire.")
+          sys.exit(1)
+          PY

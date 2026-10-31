@@ -474,11 +474,15 @@ CANONICAL_LANGUAGE_TRANSITIONS_SCOPED = {
      "python3", "3.8", "3.13"):
         "Python 3.8 -> 3.13 : re-execution selective du sous-ensemble local "
         "de QC-Py-16 (#19181, cas par cas)",
-    # 2.8c est le seul carnet dont la re-execution sous 3.13 est la
+    # 2.8c est le premier carnet dont la re-execution sous 3.13 est la
     # convergence attendue vers le canon de SA serie. Le kernelspec
-    # ``coursia-ml-training`` est partage par une trentaine de carnets hors
-    # 02-ML-Cours qui ne declarent pas 3.13 : une entree globale les aurait
-    # tous rendus verts sur cette direction (reserve de revue sur #22979).
+    # ``coursia-ml-training`` est partage par 50 carnets hors 02-ML-Cours
+    # qui ne declarent pas 3.13 (54 au total ; mesure par lecture des
+    # metadonnees, commande et instantane consignes dans #23187) : une
+    # entree globale
+    # les aurait tous rendus verts sur cette direction (reserve de revue sur
+    # #22979). D'ou la portee par PREFIXE de repertoire ci-dessous, qui
+    # couvre la serie entiere sans elargir au kernelspec (#23187).
     ("MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/"
      "2.8c-Borne-Temoin-Concentration.ipynb",
      "coursia-ml-training", "3.11", "3.13"):
@@ -486,6 +490,36 @@ CANONICAL_LANGUAGE_TRANSITIONS_SCOPED = {
         "canon de la serie 02-ML-Cours, declare par son requirements.txt "
         "en-tete (CPython 3.13, #18331/#18247) ; cas fondateur #22889 "
         "(2.8c, base 3.11.15 -> tete 3.13.14, memes kernelspec base/tete)",
+    # Portee SERIE (#23187) : quatre carnets de 02-ML-Cours tournent sous ce
+    # kernelspec, releves le 2026-10-29 sur ``main`` -- 2.8c et 2.14b a
+    # ``language_info.version`` = 3.11.15, 2.9d et 2.9g a 3.10.19. Le canon
+    # de la serie est 3.13 pour les quatre (requirements.txt de la serie),
+    # d'ou DEUX directions : ``3.11 -> 3.13`` (2.14b, et 2.8c par son
+    # entree nominative) et ``3.10 -> 3.13`` (2.9d, 2.9g). Une seule
+    # direction aurait laisse la moitie de la serie rouge apres
+    # re-execution, en annoncant la couvrir (reserve de revue NanoClaw du
+    # 2026-10-29). Le prefixe -- un premier element termine par ``/`` --
+    # limite la tolerance a ce repertoire : les carnets hors serie qui
+    # partagent le kernelspec gardent la direction rouge, ce que la
+    # reserve #22979 exigeait (50 carnets hors
+    # 02-ML-Cours partagent ce kernelspec, contre 4 dans la serie --
+    # 54 au total ; mesure par lecture des METADONNEES de chaque carnet,
+    # commande et instantane consignes dans #23187). Un comptage par
+    # sous-chaine dans le fichier rend 67 : il additionne aussi les
+    # carnets dont le kernelspec est un autre mais dont une cellule cite
+    # le nom -- la population qui compte pour ce garde est celle des
+    # METADONNEES.
+    ("MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/",
+     "coursia-ml-training", "3.11", "3.13"):
+        "Python 3.11 -> 3.13 sous `coursia-ml-training` pour tout carnet de "
+        "la serie 02-ML-Cours : convergence vers le canon 3.13 declare par "
+        "le requirements.txt de la serie (#23187, suite de #22889)",
+    ("MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/",
+     "coursia-ml-training", "3.10", "3.13"):
+        "Python 3.10 -> 3.13 sous `coursia-ml-training` pour tout carnet de "
+        "la serie 02-ML-Cours : meme convergence vers le canon 3.13, pour "
+        "les carnets de la serie restes en 3.10 (2.9d et 2.9g mesures a "
+        "3.10.19 le 2026-10-29, #23187)",
     # ML-06 est le seul carnet Python de la serie ML.Net sous kernel NOMME :
     # hors du census #23379 (kernel python3 uniquement), sa convergence exige
     # sa propre entree scopee. Le kernelspec ``coursia-ml-training`` reste
@@ -509,16 +543,28 @@ def accepted_canonical_transition(base_info, head_info, nb_path=None):
     13.0`` est accepte, ``13.0 -> 12.0`` ne l'est pas.
 
     ``nb_path`` active en plus les transitions scopées (#19181) : une
-    entree nominative ne vaut que pour son chemin.
+    entree nominative ne vaut que pour son chemin. Deux portees coexistent,
+    distinguees par la forme du premier element de la cle : un chemin de
+    carnet (valeur exacte) et un **prefixe de repertoire** termine par ``/``
+    (toute la serie, #23187).
     """
     if base_info["kernelspec_name"] != head_info["kernelspec_name"]:
         return False
     key = (base_info["kernelspec_name"],
            _version_prefix(base_info["language_version"]),
            _version_prefix(head_info["language_version"]))
-    if nb_path is not None and (nb_path,) + key in (
-            CANONICAL_LANGUAGE_TRANSITIONS_SCOPED):
-        return True
+    if nb_path is not None:
+        # Les carnets sont adresses par git (slashes) : normaliser une
+        # eventuelle forme Windows pour que l'entree exacte et le prefixe
+        # comparent la meme chose.
+        norm = str(nb_path).replace("\\", "/")
+        if (norm,) + key in CANONICAL_LANGUAGE_TRANSITIONS_SCOPED:
+            return True
+        for entry in CANONICAL_LANGUAGE_TRANSITIONS_SCOPED:
+            scope = entry[0]
+            if (scope.endswith("/") and entry[1:] == key
+                    and norm.startswith(scope)):
+                return True
     return key in CANONICAL_LANGUAGE_TRANSITIONS
 
 

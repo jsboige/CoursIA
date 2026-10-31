@@ -3639,7 +3639,7 @@ class TestLockPolicy:
     # --- pid_is_alive : fail-safe ---
 
     def test_pid_is_alive_windows_found(self, monkeypatch):
-        monkeypatch.setattr(pmw.os, "name", "nt", raising=True)
+        monkeypatch.setattr(pmw, "_on_windows", lambda: True)
         monkeypatch.setattr(
             pmw.subprocess, "run",
             lambda *a, **k: _fake_proc(0, '"python.exe","31337"'),
@@ -3647,7 +3647,7 @@ class TestLockPolicy:
         assert pmw.pid_is_alive(31337) is True
 
     def test_pid_is_alive_windows_not_found(self, monkeypatch):
-        monkeypatch.setattr(pmw.os, "name", "nt", raising=True)
+        monkeypatch.setattr(pmw, "_on_windows", lambda: True)
         monkeypatch.setattr(
             pmw.subprocess, "run",
             lambda *a, **k: _fake_proc(0, "INFO: No tasks are running"),
@@ -3659,7 +3659,7 @@ class TestLockPolicy:
     ):
         # Le pid cherche n'apparait que dans une AUTRE colonne de la ligne
         # d'un autre processus : un test de sous-chaine le lirait vivant.
-        monkeypatch.setattr(pmw.os, "name", "nt", raising=True)
+        monkeypatch.setattr(pmw, "_on_windows", lambda: True)
         monkeypatch.setattr(
             pmw.subprocess, "run",
             lambda *a, **k: _fake_proc(0, '"python.exe","4242","Console","1","31337 K"'),
@@ -3669,7 +3669,7 @@ class TestLockPolicy:
     def test_pid_is_alive_windows_failure_is_alive(self, monkeypatch):
         # Fail-safe : tasklist injoignable = pid vivant -- on ne
         # deverrouille jamais sur une mesure impossible.
-        monkeypatch.setattr(pmw.os, "name", "nt", raising=True)
+        monkeypatch.setattr(pmw, "_on_windows", lambda: True)
 
         def _boom(*a, **k):
             raise OSError("tasklist absent")
@@ -3679,7 +3679,7 @@ class TestLockPolicy:
 
     @pytest.mark.parametrize("stdout", ["", "ERROR: The remote procedure call failed."])
     def test_pid_is_alive_windows_nonzero_exit_is_alive(self, monkeypatch, stdout):
-        monkeypatch.setattr(pmw.os, "name", "nt", raising=True)
+        monkeypatch.setattr(pmw, "_on_windows", lambda: True)
         monkeypatch.setattr(
             pmw.subprocess, "run",
             lambda *a, **k: _fake_proc(1, stdout),
@@ -3693,7 +3693,7 @@ class TestLockPolicy:
         assert status.dead_lock_unlocked is False
 
     def test_pid_is_alive_posix_lookup_error(self, monkeypatch):
-        monkeypatch.setattr(pmw.os, "name", "posix", raising=True)
+        monkeypatch.setattr(pmw, "_on_windows", lambda: False)
 
         def _lookup(pid, sig):
             raise ProcessLookupError()
@@ -3702,7 +3702,7 @@ class TestLockPolicy:
         assert pmw.pid_is_alive(31337) is False
 
     def test_pid_is_alive_posix_permission_is_alive(self, monkeypatch):
-        monkeypatch.setattr(pmw.os, "name", "posix", raising=True)
+        monkeypatch.setattr(pmw, "_on_windows", lambda: False)
 
         def _denied(pid, sig):
             raise PermissionError()
