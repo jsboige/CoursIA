@@ -48,15 +48,27 @@ présents dans tout état atteint) mesurent exactement cette clôture.
 
 - **soundness `_any` → `ReidemeisterEquiv`** : un retrait `_any` est un R1/R2
   à renommage près ; le sceller exige « le renommage préserve le type du
-  nœud » (une `AnyEquiv` + lemme de pont) ;
-- l'équivalence `canon l = canon l' ↔ ∃ bijection d'étiquettes` : la moitié
-  **invariance** (`canon (mapC σ l) = canon l` pour `σ` injective) est prouvée
-  en §7 (`canon_map_eq`) ; la réciproque (**extraction** du renommage depuis
-  l'égalité `canon`) reste résidu — elle exigera un invariant `SeenNodup` sur
-  le fil des vues. La tranche 3 corrige au passage la base de `canonSlots`
-  (l'état survivait à la liste vide) : sans lui, la renumérotation repartait à
-  zéro à chaque croisement et l'égalité `canon` acceptait des recâblages
-  inter-croisements — contre-exemple scellé en §7 ;
+  nœud ». La tranche 12 livre la relation manquante (`AnyEquiv`, §18) et
+  **borne** le pont au lieu de le promettre : la route « choisir/renommer la
+  cible en gardant le grand diagramme » est **impossible**, prouvé au noyau
+  (§18, `no_verifyR1Fwd_from_witness`). Le pont restant exige soit de renommer
+  aussi le grand diagramme (chirurgie `dropLast` à établir), soit un **pas de
+  réétiquetage dans la relation connectée** — ce second choix touche
+  `ReidemeisterStep`, donc `Invariant.lean`, et relève d'un arbitrage
+  coordinateur ;
+- l'équivalence `canon l = canon l' ↔ ∃ renommage injectif` : **close**. La
+  moitié **invariance** (`canon (mapC σ l) = canon l` pour `σ` injective) est
+  prouvée en §7 (`canon_map_eq`) ; l'**extraction** du renommage depuis
+  l'égalité `canon` est prouvée en §16 (`canon_extraction` : un renommage
+  injectif sur les étiquettes de la source, qui envoie `l` sur `l'`) ; la
+  **complétude** est prouvée en §17 (`canon_rename_iff`) — l'extraction,
+  restreinte aux étiquettes de la source, est étendue hors de ce champ par une
+  translation au-dessus de toutes les étiquettes de la cible, ce qui fournit
+  l'injection **globale** qu'exige le sens « invariance ». La tranche 3 corrige
+  au passage la base de `canonSlots` (l'état survivait à la liste vide) : sans
+  lui, la renumérotation repartait à zéro à chaque croisement et l'égalité
+  `canon` acceptait des recâblages inter-croisements — contre-exemple scellé
+  en §7 ;
 - la complétude de l'énumération reste le résidu de #22240, inchangé.
 
 Convention i18n (EPIC #4980, décision user 2026-07-04) : ce fichier est le
@@ -2223,4 +2235,433 @@ private theorem canon_extraction {l l' : List PDCrossing} (h : canon l = canon l
     rcases List.mem_map.mp hy' with ⟨x, hx, hxy⟩
     exact ⟨x, hx, hxy⟩
   · exact hmap
+/-! ## 17. La forme canonique est complète pour le renommage (tranche 11)
+
+La tranche 16 a extrait le renommage depuis l'égalité `canon` : il y a une
+bijection de `labelsOf l` sur `labelsOf l'` qui envoie `l` sur `l'`. Cette
+tranche ferme la boucle en montrant que la forme canonique est un invariant
+**complet** de l'équivalence par renommage :
+
+`canon l = canon l' ↔ ∃ π : Nat → Nat, injective, mapC π l = l'`
+
+La difficulté est d'un côté : l'extraction (§16) donne une injection
+**restreinte** aux étiquettes de la source, alors que l'autre côté du pont
+(`canon_map_eq`, §7) demande une injection **globale** de `Nat` dans `Nat`.
+
+L'extension est explicite : le renommage extrait est conservé sur les
+étiquettes de la source, et étendu partout ailleurs par une **translation**
+au-dessus de toutes les étiquettes de la cible. Une translation ne peut alors
+rencontrer ni les images du renommage extrait (toutes strictement sous la
+borne) ni elle-même (elle est injective).
+
+- `natSumC` — la somme des étiquettes d'une liste de croisements, borne
+  supérieure de toutes les étiquettes qui y apparaissent ;
+- `slot_le_natSumC` — chaque étiquette d'un croisement est sous la borne ;
+- `mem_labelsOf_le_natSumC` — toute étiquette de `labelsOf l` est sous la
+  borne ;
+- `slot_mem_labelsOf` — une étiquette d'un croisement de `l` appartient à
+  `labelsOf l` (c'est le fait qui permet de transporter le renommage) ;
+- `mapC_congr` — deux renommages qui coïncident slot à slot ont le même
+  `mapC` ;
+- `extendRename` — l'extension du renommage hors du champ des étiquettes ;
+- `canon_rename_iff` — **le théorème de complétude**.
+-/
+
+/-- Somme des étiquettes d'une liste de croisements : une borne supérieure de
+    toutes les étiquettes qui y apparaissent. -/
+private def natSumC : List PDCrossing → Nat
+  | [] => 0
+  | c :: cs => c.e1 + c.e2 + c.e3 + c.e4 + natSumC cs
+
+/-- Chaque étiquette d'un croisement de `l` est bornée par `natSumC l`. -/
+private theorem slot_le_natSumC {l : List PDCrossing} {c : PDCrossing} (hc : c ∈ l) :
+    c.e1 ≤ natSumC l ∧ c.e2 ≤ natSumC l ∧ c.e3 ≤ natSumC l ∧ c.e4 ≤ natSumC l := by
+  induction l with
+  | nil => simp at hc
+  | cons d ds ih =>
+    rw [List.mem_cons] at hc
+    rcases hc with rfl | hc
+    · simp only [natSumC]
+      refine ⟨by omega, ?_⟩
+      refine ⟨by omega, ?_⟩
+      refine ⟨by omega, by omega⟩
+    · have h := ih hc
+      simp only [natSumC]
+      refine ⟨by omega, ?_⟩
+      refine ⟨by omega, ?_⟩
+      refine ⟨by omega, by omega⟩
+
+/-- Toute étiquette de `labelsOf l` est bornée par `natSumC l`. -/
+private theorem mem_labelsOf_le_natSumC {l : List PDCrossing} {y : Nat}
+    (hy : y ∈ labelsOf l) : y ≤ natSumC l := by
+  simp only [labelsOf, List.mem_flatMap] at hy
+  obtain ⟨c, hc, hmem⟩ := hy
+  have hmem' : y = c.e1 ∨ y = c.e2 ∨ y = c.e3 ∨ y = c.e4 := by simpa using hmem
+  rcases hmem' with rfl | rfl | rfl | rfl
+  · exact (slot_le_natSumC hc).1
+  · exact (slot_le_natSumC hc).2.1
+  · exact (slot_le_natSumC hc).2.2.1
+  · exact (slot_le_natSumC hc).2.2.2
+
+/-- Une étiquette qui apparaît dans un croisement de `l` appartient à
+    `labelsOf l` : c'est ce qui permet de transporter le renommage extrait
+    d'une liste à l'autre. -/
+private theorem slot_mem_labelsOf {l : List PDCrossing} {c : PDCrossing} (hc : c ∈ l) :
+    c.e1 ∈ labelsOf l ∧ c.e2 ∈ labelsOf l ∧ c.e3 ∈ labelsOf l ∧ c.e4 ∈ labelsOf l := by
+  simp only [labelsOf, List.mem_flatMap]
+  exact ⟨⟨c, hc, by simp⟩, ⟨c, hc, by simp⟩, ⟨c, hc, by simp⟩, ⟨c, hc, by simp⟩⟩
+
+/-- Deux renommages qui coïncident slot à slot produisent le même `mapC`. -/
+private theorem mapC_congr {π σ : Nat → Nat} {l : List PDCrossing}
+    (h : ∀ c ∈ l, π c.e1 = σ c.e1 ∧ π c.e2 = σ c.e2 ∧ π c.e3 = σ c.e3 ∧
+      π c.e4 = σ c.e4) : mapC π l = mapC σ l := by
+  unfold mapC
+  induction l with
+  | nil => rfl
+  | cons c cs ih =>
+    have h1 := h c (by simp)
+    obtain ⟨a1, a2, a3, a4⟩ := h1
+    have hcs := ih (fun d hd => h d (by simp [hd]))
+    simp only [List.map_cons]
+    rw [a1, a2, a3, a4, hcs]
+
+/-- **Extension d'un renommage hors du champ des étiquettes.** Sur les
+    étiquettes de `A`, le renommage est inchangé ; partout ailleurs, il
+    translate de `k`. Les images de la translation sont toutes `≥ k`, donc
+    disjointes des images du renommage initial dès que celles-ci sont `< k`. -/
+private def extendRename (π₀ : Nat → Nat) (A : List Nat) (k : Nat) : Nat → Nat :=
+  fun x => if x ∈ A then π₀ x else x + k
+
+/-- **Complétude du renommage.** La forme canonique est un invariant complet
+    de l'équivalence par renommage : deux listes de croisements ont la même
+    forme canonique si et seulement si l'une est le renommage de l'autre par
+    une injection de `Nat` dans `Nat`.
+
+    - sens « extraction » : §16 donne une bijection de `labelsOf l` sur
+      `labelsOf l'` ; on l'étend hors du champ des étiquettes de la source
+      par une translation au-dessus de toutes les étiquettes de la cible, ce
+      qui donne une injection **globale** ;
+    - sens « invariance » : `canon_map_eq` (§7) appliqué à cette injection.
+-/
+theorem canon_rename_iff {l l' : List PDCrossing} :
+    canon l = canon l' ↔ ∃ π : Nat → Nat, Function.Injective π ∧ mapC π l = l' := by
+  constructor
+  · intro h
+    obtain ⟨π₀, hmap₀, hinj₀, hsurj₀, hmapC⟩ := canon_extraction h
+    -- la borne : toute étiquette de la cible est strictement sous la borne
+    have hbound : ∀ y, y ∈ labelsOf l' → y < natSumC l' + 1 := by
+      intro y hy
+      have hle : y ≤ natSumC l' := mem_labelsOf_le_natSumC hy
+      omega
+    -- le renommage étendu : π₀ sur les étiquettes de la source, une
+    -- translation partout ailleurs
+    have hinj : Function.Injective (extendRename π₀ (labelsOf l) (natSumC l' + 1)) := by
+      intro x x' hxx'
+      by_cases hx : x ∈ labelsOf l
+      · by_cases hx' : x' ∈ labelsOf l
+        · simp only [extendRename, if_pos hx, if_pos hx'] at hxx'
+          exact hinj₀ x x' hx hx' hxx'
+        · simp only [extendRename, if_pos hx, if_neg hx'] at hxx'
+          have hy : π₀ x ∈ labelsOf l' := hmap₀ x hx
+          have hlt : π₀ x < natSumC l' + 1 := hbound _ hy
+          omega
+      · by_cases hx' : x' ∈ labelsOf l
+        · simp only [extendRename, if_neg hx, if_pos hx'] at hxx'
+          have hy : π₀ x' ∈ labelsOf l' := hmap₀ x' hx'
+          have hlt : π₀ x' < natSumC l' + 1 := hbound _ hy
+          omega
+        · simp only [extendRename, if_neg hx, if_neg hx'] at hxx'
+          omega
+    -- le renommage étendu coïncide avec le renommage extrait sur les slots
+    have hslots : ∀ c ∈ l,
+        (extendRename π₀ (labelsOf l) (natSumC l' + 1)) c.e1 = π₀ c.e1 ∧
+        (extendRename π₀ (labelsOf l) (natSumC l' + 1)) c.e2 = π₀ c.e2 ∧
+        (extendRename π₀ (labelsOf l) (natSumC l' + 1)) c.e3 = π₀ c.e3 ∧
+        (extendRename π₀ (labelsOf l) (natSumC l' + 1)) c.e4 = π₀ c.e4 := by
+      intro c hc
+      obtain ⟨h1, h2, h3, h4⟩ := slot_mem_labelsOf hc
+      simp only [extendRename]
+      rw [if_pos h1, if_pos h2, if_pos h3, if_pos h4]
+      exact ⟨rfl, rfl, rfl, rfl⟩
+    refine ⟨extendRename π₀ (labelsOf l) (natSumC l' + 1), hinj, ?_⟩
+    rw [mapC_congr hslots]
+    exact hmapC
+  · rintro ⟨π, hπ, hmap⟩
+    have hcanon : canon (mapC π l) = canon l := canon_map_eq hπ l
+    rw [hmap] at hcanon
+    exact hcanon.symm
+
+/-! ## 18. L'équivalence à renommage près, et la borne du pont annoncé (tranche 12)
+
+Le résidu déclaré en tête de module est la **sonorité `_any` →
+`ReidemeisterEquiv`**. La route enregistrée dans le plan du grain était :
+« sur formes canoniques, `canon` tue le renommage, et les labels mourants du
+kink y sont frais ». **Cette prémisse est fausse — et elle se réfute au
+noyau, pas par lecture.**
+
+Elle se mesure d'abord : une réplique Python fidèle de `canon`, de `wf` et des
+deux retraits `_any` (34 retraits sur diagrammes canoniques et bien formés) en
+trouve **14 non frais**. Le plus petit contre-exemple tient en deux
+croisements, et c'est celui que scelle cette section.
+
+Ce qui est livré ici, dans cet ordre :
+
+1. `AnyEquiv` — la **relation qui manquait** au langage (deux diagrammes
+   équivalents à renommage près), ses lois d'équivalence, et sa
+   caractérisation `∃ π injectif, mapC π l = l'` (conséquence directe de
+   `canon_rename_iff`, §17) ;
+2. `kinkAnyWitness` / `kinkAnyTarget` — un retrait `_any` **authentique** dont
+   le kink porte `e2 = 1`, c'est-à-dire un label **petit** : exactement ce que
+   la fraîcheur connectée interdit. Le retrait est certifié par le noyau
+   (`verifyKinkDownAny … = true`) ;
+3. `no_verifyR1Fwd_from_witness` — **aucune** cible ne satisfait
+   `verifyR1Fwd` sur ce témoin. La raison est arithmétique et **indépendante
+   du renommage** : la fraîcheur connectée exige `K.e2 = d.numEdges + 1`, soit
+   `d.numEdges = 0` ici ; la clause de cardinal exige
+   `D.numEdges = d.numEdges + 2`, donc `D.numEdges = 2` — or `D.numEdges = 4`.
+   Les deux clauses sont insatisfiables simultanément, quel que soit `d`.
+
+**Ce que cela change, et où cela se décide.** Le pont ne peut pas être
+« choisir ou renommer la cible en gardant le grand diagramme » : sur ce
+témoin, aucune cible n'existe. Deux fermetures restent possibles, et aucune
+n'est une édition de lane :
+
+- renommer **aussi** le grand diagramme, et établir alors la chirurgie
+  `dropLast` sous le renommage (formulation constructive, coût de preuve
+  élevé, aucun changement de la relation connectée) ;
+- doter la relation connectée d'un **pas de réétiquetage** — ce qui rend le
+  renommage lui-même un pas, et donc supprime le besoin d'un pont. Ce choix
+  modifie `ReidemeisterStep` et la surface d'`Invariant.lean` : il relève d'un
+  arbitrage coordinateur (issue #22359).
+
+Tant qu'un de ces deux choix n'est pas arbitré, le résidu reste **ouvert et
+désormais borné** — il n'est plus « probablement faisable par renommage ».
+-/
+
+/-- Deux diagrammes sont **équivalents à renommage près** lorsqu'ils ont la même
+    forme canonique. C'est le quotient que la langue connectée ne fournit pas :
+    ses vérificateurs comparent des diagrammes *littéralement*, alors qu'un
+    retrait `_any` ne conserve que la forme.
+
+    La relation ignore délibérément `numEdges` : sur un diagramme bien formé,
+    `numEdges` est déterminé par les étiquettes présentes (chacune de `1` à
+    `numEdges` apparaît exactement deux fois), donc deux diagrammes de même
+    forme canonique et tous deux bien formés ont même `numEdges`. La forme
+    canonique est donc le bon quotient, et elle est plus faible que l'égalité
+    littérale — c'est précisément l'écart que le pont doit franchir. -/
+def AnyEquiv (d d' : KnotDiagram) : Prop := canon d.crossings = canon d'.crossings
+
+theorem anyEquiv_refl (d : KnotDiagram) : AnyEquiv d d := rfl
+
+theorem anyEquiv_symm {d d' : KnotDiagram} (h : AnyEquiv d d') : AnyEquiv d' d := h.symm
+
+theorem anyEquiv_trans {d d' d'' : KnotDiagram} (h : AnyEquiv d d') (h' : AnyEquiv d' d'') :
+    AnyEquiv d d'' := h.trans h'
+
+/-- `AnyEquiv` est une relation d'équivalence : les trois lois sont celles de
+    l'égalité sur la forme canonique, transportées. -/
+theorem anyEquiv_equivalence : Equivalence AnyEquiv :=
+  ⟨anyEquiv_refl, anyEquiv_symm, anyEquiv_trans⟩
+
+/-- Caractérisation de `AnyEquiv` : deux diagrammes sont équivalents à
+    renommage près si et seulement si un renommage **injectif** envoie les
+    étiquettes de l'un sur celles de l'autre. C'est exactement
+    `canon_rename_iff` (§17), lu à travers `AnyEquiv`. -/
+theorem anyEquiv_iff_rename {d d' : KnotDiagram} :
+    AnyEquiv d d' ↔ ∃ π : Nat → Nat, Function.Injective π ∧ mapC π d.crossings = d'.crossings :=
+  canon_rename_iff
+
+/-- Témoin : deux croisements bien formés (chaque étiquette de `1` à `4`
+    apparaît exactement deux fois), dont le dernier est un kink `⟨3, 1, 4, 4⟩`.
+    Son arc `e2 = 1` est **petit** : le retrait `_any` tue les labels `{1, 3}`
+    en fusionnant `1 → 3`, alors que la fraîcheur connectée exigerait qu'ils
+    soient les deux plus grands. -/
+def kinkAnyWitness : KnotDiagram := ⟨[⟨1, 2, 3, 2⟩, ⟨3, 1, 4, 4⟩], 4⟩
+
+/-- Cible du retrait : la fusion `1 → 3` réécrit le slot `e1` du premier
+    croisement en `⟨3, 2, 3, 2⟩`, dont la forme canonique est `⟨1, 2, 1, 2⟩` —
+    d'où la compaction `numEdges = 2` (les labels mourants `{1, 3}` laissent
+    `{2, 4}`, renumérotés `{1, 2}`). -/
+def kinkAnyTarget : KnotDiagram := ⟨[⟨1, 2, 1, 2⟩], 2⟩
+
+/-- Le témoin est bien formé : parité vérifiée sur les quatre étiquettes. -/
+theorem kinkAnyWitness_wf : kinkAnyWitness.wf = true := by decide
+
+/-- Le croisement terminal du témoin est bien le kink `⟨3, 1, 4, 4⟩`. -/
+theorem kinkAnyWitness_kink : kinkAnyWitness.crossings.getLast? = some ⟨3, 1, 4, 4⟩ := by decide
+
+/-- Le retrait `_any` du témoin est **accepté** : c'est un mouvement R1
+    authentique à renommage près, et sa cible est bien formée. -/
+theorem verifyKinkDownAny_witness_kinkAny :
+    verifyKinkDownAny kinkAnyWitness kinkAnyTarget = true := by decide
+
+/-- **La borne du pont.** Sur le témoin, aucune cible ne satisfait le
+    vérificateur connecté : `verifyR1Fwd d kinkAnyWitness` est faux pour
+    **tout** `d`, et pas seulement pour la cible canonique.
+
+    La preuve ne touche aucune liste : elle est purement arithmétique. Le kink
+    porte `K.e2 = 1` ; la fraîcheur connectée impose `K.e2 = d.numEdges + 1`,
+    donc `d.numEdges = 0` ; la clause de cardinal impose alors
+    `kinkAnyWitness.numEdges = d.numEdges + 2 = 2`, alors qu'il vaut `4`. Les
+    deux cas sur `d.numEdges` ferment le but, et **aucun renommage de `d` ne
+    peut les éviter** — c'est pourquoi ce n'est pas un défaut de la cible
+    canonique, mais du pont lui-même. -/
+theorem no_verifyR1Fwd_from_witness (d : KnotDiagram) :
+    verifyR1Fwd d kinkAnyWitness = false := by
+  unfold verifyR1Fwd
+  rw [kinkAnyWitness_kink]
+  cases _h : d.numEdges with
+  | zero =>
+    -- d.numEdges = 0 : la clause de cardinal impose
+    -- kinkAnyWitness.numEdges = 0 + 2 = 2, or le témoin en porte 4.
+    simp [kinkAnyWitness]
+  | succ n =>
+    -- d.numEdges = n + 1 : la clause de fraîcheur impose
+    -- K.e2 = 1 = (n + 1) + 1, impossible.
+    simp [kinkAnyWitness]
+
+/-- **Contrôle positif de la borne** : le vérificateur connecté n'est pas
+    uniformément faux — il accepte la paire canonique du témoin
+    `reidemeister1Connected_satisfiable` (`ReidemeisterMoves` §7), dont le kink
+    `⟨1, 5, 6, 6⟩` porte bien `e2 = 5 = 4 + 1` (la fraîcheur, satisfaite).
+
+    La borne de `no_verifyR1Fwd_from_witness` porte donc sur le **témoin**
+    `kinkAnyWitness` — dont le kink porte `e2 = 1` — et non sur le
+    vérificateur. -/
+theorem verifyR1Fwd_positive_control :
+    verifyR1Fwd
+      { crossings := [⟨1, 2, 3, 4⟩, ⟨1, 2, 3, 4⟩], numEdges := 4 }
+      { crossings := [⟨1, 2, 3, 4⟩, ⟨5, 2, 3, 4⟩, ⟨1, 5, 6, 6⟩], numEdges := 6 }
+    = true := by decide
+
+/-! ## 19. Renommer aussi le grand diagramme ne sauve pas le pont (tranche 13)
+
+La tranche 12 a borne le residu du grain #22359 a deux fermetures. La
+premiere -- « renommer **aussi** le grand diagramme » -- vient d'etre closee,
+par la **negatif** : cette section le demontre au noyau.
+
+Le montage est celui de la tranche 12, applique au couple **renomme** des
+deux cotes :
+
+- le temoin `kinkAnyWitness` et sa cible `kinkAnyTarget` (§18) ;
+- le renommage `π` applique aux **quatre slots** de chaque croisement
+  (`mapC`, §16), `numEdges` **inchange** (`renameDiagram` ci-dessous).
+
+Ce qui change, c'est la clause de *fraicheur* : le verificateur connecte
+exige `K.e2 = d.numEdges + 1`, et le kink renomme porte `K.e2 = π 1`. La
+cible renommee conserve ses deux aretes (`d.numEdges = 2`), donc la
+fraicheur impose `π 1 = 3`.
+
+Ce que la bonne formation impose, elle, c'est l'inverse : toute etiquette
+d'arete d'un diagramme bien forme est **au plus** `numEdges`
+(`wf_edge_le` ci-dessous), donc `π 1 ≤ 2`.
+
+Les deux sont incompatibles -- **pour tout `π`**, et sans meme supposer `π`
+injectif. Le pont « renommer aussi le grand diagramme » est donc
+**impossible**, et le residu du grain se reduit a **une seule** fermeture :
+doter la relation connectee d'un pas de reetiquetage -- un choix qui touche
+`ReidemeisterStep` et `Invariant.lean`, et qui releve donc de l'arbitrage
+coordinateur.
+
+Ce que cette section livre :
+
+1. `wf_edge_le` -- la piece arithmetique qui manquait au depot : toute
+   etiquette d'arete d'un diagramme bien forme est au plus `numEdges` ;
+2. `no_verifyR1Fwd_renamed_pair` -- **aucun** renommage ne rend le couple
+   temoin/cible acceptable au verificateur connecte ;
+3. `renamed_target_wf_identity` -- **controle de non-vacuite** : le renommage
+   n'est pas en cause (la cible renommee est bien formee pour `π = id`) ;
+   l'obstruction est la **fraicheur**, pas la bonne formation.
+-/
+
+/-- Renommage d'un diagramme : `π` applique aux quatre slots de chaque
+    croisement (`mapC`, §16). `numEdges` est **inchange** : le renommage
+    porte sur les *etiquettes*, pas sur la taille du diagramme. -/
+private def renameDiagram (π : Nat → Nat) (d : KnotDiagram) : KnotDiagram :=
+  ⟨mapC π d.crossings, d.numEdges⟩
+
+/-- La cible canonique du temoin (§18), renommee. -/
+private theorem renameDiagram_kinkAnyTarget (π : Nat → Nat) :
+    renameDiagram π kinkAnyTarget = ⟨[⟨π 1, π 2, π 1, π 2⟩], 2⟩ := by
+  simp [renameDiagram, kinkAnyTarget, mapC]
+
+/-- Le temoin (§18), renomme. -/
+private theorem renameDiagram_kinkAnyWitness (π : Nat → Nat) :
+    renameDiagram π kinkAnyWitness =
+      ⟨[⟨π 1, π 2, π 3, π 2⟩, ⟨π 3, π 1, π 4, π 4⟩], 4⟩ := by
+  simp [renameDiagram, kinkAnyWitness, mapC]
+
+/-- Le kink du temoin renomme est bien le dernier croisement : c'est lui qui
+    porte l'arc frais `e2 = π 1`. -/
+private theorem renamedWitness_kink (π : Nat → Nat) :
+    (renameDiagram π kinkAnyWitness).crossings.getLast? = some ⟨π 3, π 1, π 4, π 4⟩ := by
+  rw [renameDiagram_kinkAnyWitness π]
+  simp
+
+/-- **Toute etiquette d'arete d'un diagramme bien forme est au plus
+    `numEdges`.** C'est la moitie « borne » de la definition de `wf` : la
+    clause `d.edges.all (fun l => decide (1 ≤ l ∧ l ≤ d.numEdges))`.
+
+    Cette lemme manquait au depot -- les lemmes de `wf` qui existent sont
+    tous au niveau des diagrammes nommes (`unknot_wf`, `trefoil_wf`, ...),
+    sans caracterisation par les etiquettes. -/
+theorem wf_edge_le {d : KnotDiagram} (hwf : d.wf = true) {a : Nat} (ha : a ∈ d.edges) :
+    a ≤ d.numEdges := by
+  unfold KnotDiagram.wf at hwf
+  by_cases hc : d.crossings = []
+  · -- diagramme degenere : `edges` est vide, l'hypothese est absurde
+    simp [KnotDiagram.edges, hc] at ha
+  · simp only [hc, if_false] at hwf
+    have hall : ∀ x ∈ d.edges, decide (1 ≤ x ∧ x ≤ d.numEdges) = true := by
+      have h := (Bool.and_eq_true _ _).mp hwf |>.1
+      exact List.all_eq_true.mp h
+    have h1 := hall a ha
+    exact (of_decide_eq_true h1).2
+
+/-- **Renommer aussi le grand diagramme ne sauve pas le pont.**
+
+    Pour **tout** renommage `π` -- injectif ou non -- le couple
+    (cible renommee, temoin renomme) est refuse par le verificateur
+    connecte.
+
+    Les deux bornes sont incompatibles :
+
+    - la clause de fraicheur impose `K.e2 = d.numEdges + 1`, soit
+      `π 1 = 2 + 1 = 3` (le kink renomme porte `e2 = π 1`, et la cible
+      renommee conserve `numEdges = 2`) ;
+    - la bonne formation impose `π 1 ≤ 2` (`wf_edge_le` : toute etiquette
+      d'arete est au plus `numEdges`).
+
+    L'obstruction est donc **arithmetique**, comme celle de la tranche 12,
+    mais **cette fois elle survit au renommage** -- ce qui ferme la
+    premiere des deux fermetures possibles. -/
+theorem no_verifyR1Fwd_renamed_pair (π : Nat → Nat) :
+    verifyR1Fwd (renameDiagram π kinkAnyTarget) (renameDiagram π kinkAnyWitness) = false := by
+  by_cases hX : verifyR1Fwd (renameDiagram π kinkAnyTarget) (renameDiagram π kinkAnyWitness) = false
+  · exact hX
+  · have htrue : verifyR1Fwd (renameDiagram π kinkAnyTarget) (renameDiagram π kinkAnyWitness) = true :=
+      Bool.eq_true_of_not_eq_false hX
+    unfold verifyR1Fwd at htrue
+    rw [renamedWitness_kink π] at htrue
+    rw [renameDiagram_kinkAnyTarget π, renameDiagram_kinkAnyWitness π] at htrue
+    simp only [Bool.and_eq_true] at htrue
+    -- htrue : ((wf cible ∧ wf temoin) ∧ decide cardinal) ∧ (decide fraicheur ∧chirurgie)
+    have hA := htrue.1.1.1
+    -- fraicheur du kink renomme : `π 1 = d.numEdges + 1 = 2 + 1`
+    have hfresh : π 1 = 2 + 1 := (of_decide_eq_true htrue.2.1).1
+    -- bonne formation de la cible renommee : toute etiquette d'arete est
+    -- au plus `numEdges = 2`
+    have hmem : π 1 ∈ (⟨[⟨π 1, π 2, π 1, π 2⟩], 2⟩ : KnotDiagram).edges := by
+      simp [KnotDiagram.edges]
+    have hle : π 1 ≤ 2 := wf_edge_le hA hmem
+    omega
+
+/-- **Controle de non-vacuite** : le renommage n'est pas en cause. Pour
+    `π = id`, la cible renommee est **bien formee** (`wf = true`) et son
+    etiquette d'arete `1` est bien bornee par `numEdges = 2` -- c'est donc
+    la clause de fraicheur, et non la bonne formation, qui refuse la paire
+    renommee. -/
+theorem renamed_target_wf_identity : (renameDiagram id kinkAnyTarget).wf = true := by
+  decide
+
 end Knots.AnyMoves
