@@ -74,7 +74,51 @@ Les 5 théorèmes **sans aucun axiome** (tous dans `BlockBridge`) :
 - `DarkSnail.BlockBridge.causal_triangle_window_frac_monotonicity`
 - `DarkSnail.BlockBridge.causal_triangle_window_monotonicity`
 
-Les 62 autres dépendent exactement de `[propext, Classical.choice, Quot.sound]` — le trio standard que transitivement porte toute preuve Mathlib ; aucun n'ajoute `sorryAx` ni aucun axiome `native_decide.*`. C'est le profil axiomatique d'une preuve Mathlib ordinaire.
+Les 62 autres ne mobilisent que des axiomes du trio standard `[propext, Classical.choice, Quot.sound]` — la répartition exacte, recalculée sur le journal de la passe, est : 47 sur le trio complet, 13 sur `[propext, Quot.sound]`, 1 sur `[Quot.sound]`, 1 sur `[propext]`. Aucun axiome hors de ce trio, aucun `sorryAx`, aucun axiome `native_decide.*`. C'est le profil axiomatique d'une preuve Mathlib ordinaire.
+
+> **Rectificatif du 2026-10-31.** La version initiale de cette phrase affirmait que les 62 dépendaient *exactement* du trio complet : c'est faux, la mesure sur le journal montre quatre sous-ensembles (voir §1.4). La conclusion — « aucune preuve suspendue, aucun axiome piégé » — reste inchangée ; c'est la formulation qui était trop forte.
+
+### 1.4 Rejeu first-hand du 2026-10-31 — octets amont, journal livré
+
+La réserve du reviewer du 2026-10-31 ([Hermes], 07:36:24Z) portait sur un point
+précis : le build était **décrit**, mais aucun artefact committé n'en portait le
+résultat — ni sortie de `lake build`, ni requête d'axiomes, ni journal de
+`#print axioms`. Un tiers ne pouvait donc pas falsifier le verdict, seulement
+le croire.
+
+Le rejeu du 2026-10-31 comble l'écart, et il a au passage corrigé deux points de
+la mesure initiale :
+
+1. **Les octets compilés n'étaient pas ceux cités au §7.** Les copies locales
+   de l'enveloppe étaient en CRLF, les octets amont en LF : les identifiants de
+   blob des fichiers effectivement compilés différaient de ceux du dépôt amont
+   au commit mesuré. Le résultat de fond était identique (le CRLF est du
+   bruit pour l'analyseur Lean), mais un artefact de build qui ne correspond
+   pas aux octets cités n'est pas falsifiable. Le rejeu recopie les fichiers
+   depuis l'amont au commit épinglé : les empreintes et les identifiants de
+   blob concordent désormais avec le §7.
+2. **Un cache de build peut survivre à un changement d'octets.** Après la
+   recopie, `lake build` a réutilisé des `.olean` antérieurs : le journal
+   affichait un succès sans avoir recompilé les sources affichées. La passe
+   livrée supprime les artefacts de build des deux modules amont avant de
+   compiler — le journal porte alors explicitement la recompilation des deux.
+
+Le résultat de fond est identique, et il est désormais **porté par des
+artefacts** :
+
+| Mesure (rejeu du 2026-10-31, octets amont) | Résultat |
+|---|---|
+| `lake build Formalization.OcclusionTriad Formalization.BlockBridge` | **SUCCESS** — `Build completed successfully (3007 jobs).`, les deux modules amont recompilés dans la passe |
+| `lake env lean Axioms.query` | **rc=0** — 67 requêtes, 67 réponses, aucune erreur |
+| Répartition des axiomes | 47 sur le trio complet, 13 sur `[propext, Quot.sound]`, 1 sur `[Quot.sound]`, 1 sur `[propext]`, 5 sans aucun axiome |
+| `sorryAx` / `native_decide` | **0 / 0** |
+
+Les artefacts sont livrés dans `docs/lean/darksnail/build-evidence-2026-10-31/` :
+requête d'axiomes, journal de build, journal d'axiomes, empreintes des
+sources compilées, épinglage de l'environnement, et la recette de rejeu
+complète. Le générateur de la requête est dans le dépôt
+(`scripts/lean/dsnail_axioms_query.py`) : un tiers régénère la liste des
+requêtes depuis les sources amont, sans la dériver à la main.
 
 ## 2. Inventaire Python (le « gros du projet » nommé par le Concern)
 
@@ -98,7 +142,7 @@ S'y ajoutent : 5 fichiers de tests (`test_darksnail.py`, `test_darksnail_arc3.py
 1. Les deux fichiers compilent intégralement (élaboration complète, 0 erreur, 0 warning).
 2. Aucune preuve n'est suspendue (`0 sorry`, `0 sorryAx` transitif).
 3. Aucun axiome piégé (`0 native_decide`, `0 axiom` déclarée) ; seuls les trois axiomes standard de Mathlib.
-4. La claim badge « Lean 4 Zero Sorry Verified » devient **falsifiable et vérifiée** : c'est précisément ce qui manquait au verdict du 18/10.
+4. La claim badge « Lean 4 Zero Sorry Verified » devient **falsifiable et vérifiée** : c'est précisément ce qui manquait au verdict du 18/10. Depuis le rejeu du 2026-10-31, elle est falsifiable **par un tiers**, à partir des artefacts livrés (§1.4).
 
 **Non prouvé (et non prouvable par un build)** :
 1. **La fidélité des énoncés** à la physique et à l'architecture revendiquées (MHD/stellarator, MRxMHD/KAM, rotors SO(6) Kelvin-Mandel) : un build prouve que les preuves des énoncés *tels qu'écrits* sont complètes, pas que ces énoncés formalisent le système Python. C'est une revue de fond, humaine.
@@ -117,7 +161,7 @@ Ce que la mesure débloque, sans déplier quoi que ce soit (Pli 2 gelé par arbi
 
 - **Grain** : DEEP/lean — vérification first-hand, mesure datée, falsification d'une prémisse de verdict, livraison documentée.
 - **Livrable** : ce document + le commentaire de réponse au Concern sur #21310.
-- **Non livré** : l'enveloppe elle-même (convention de la page Pli 2 §1.3 : une copie de code amont n'a pas sa place dans ce dépôt public ; elle est remplacée par sa provenance citée).
+- **Non livré** : l'enveloppe elle-même (convention de la page Pli 2 §1.3 : une copie de code amont n'a pas sa place dans ce dépôt public ; elle est remplacée par sa provenance citée). Les **artefacts de la passe**, en revanche, sont livrés (§1.4) : ils ne contiennent aucun code amont, seulement la requête, les journaux, les empreintes et l'épinglage de l'environnement.
 
 ## 6. Suite recommandée
 
@@ -136,5 +180,6 @@ Ce que la mesure débloque, sans déplier quoi que ce soit (Pli 2 gelé par arbi
 | `formalization/BlockBridge.lean` | 289 lignes, blob `3353d3dc087c559ed3b1d76f672d2f9eedb95b4d`, namespace `DarkSnail.BlockBridge` |
 | Licence amont | CC0-1.0 |
 | Environnement de build | WSL Ubuntu, Lean `v4.33.0` (elan), Mathlib `v4.33.0` épinglée, cache Mathlib chaud |
+| Artefacts de la passe | `docs/lean/darksnail/build-evidence-2026-10-31/` — requête, journaux, empreintes, épinglage, recette de rejeu (§1.4) |
 
-Aucune copie du code amont n'est livrée dans ce dépôt : le document cite et laisse à sa source (convention établie par la page Pli 2).
+Aucune copie du code amont n'est livrée dans ce dépôt : le document cite et laisse à sa source (convention établie par la page Pli 2). Les artefacts livrés ne font pas exception à la règle : ils ne contiennent aucun code amont.
