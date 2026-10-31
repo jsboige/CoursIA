@@ -2943,4 +2943,94 @@ theorem verifyR3Fwd_last_not_kink (D d : KnotDiagram)
       simp
     exact h0 (hk'.symm ▸ h5)
 
+/-! ## 23. Préservation du motif terminal -- R3 ne fabrique pas de bigon
+
+Quatrième étape du certificat négatif (suite de la section 22) : le pas
+triangle préserve aussi l'absence de bigon terminal. La paire exigée par
+`verifyBigonDownAny` se lit `(dropLast.getLast?, getLast?)` ;
+`List.getLast?_dropLast` ramène sa première entrée à l'indice `length - 2`,
+et `List.getElem?_set` dit lequel des trois croisements réécrits occupe
+cette case. Trois fenêtres possibles : la paire tombe entièrement hors de la
+fenêtre (ses deux entrées sont celles de la source), sur sa seconde case
+(`i + 2 = n - 2` : la première entrée devient le croisement neuf `C`), ou sur
+sa première case (`i + 2 = n - 1` : `C` devient la seconde entrée). Dans les
+deux cas de chevauchement, `C` porte `e2 = e4(i)` et `e3 = e1(i)`, distincts
+par le `Nodup` des neuf labels du vérificateur : `C.e2 = C.e3` est
+impossible, donc la paire terminale ne peut pas se former. -/
+
+/-- Auxiliaire R3 : la paire terminale reste celle de la source quand la
+    fenêtre s'arrête deux crans avant la fin. -/
+theorem getLast?_dropLast_set3_of_lt {α : Type*} {l : List α} {i : Nat} {A B C : α}
+    (h : i + 2 + 2 < l.length) :
+    (((l.set i A).set (i+1) B).set (i+2) C).dropLast.getLast? = l.dropLast.getLast? := by
+  have hn : ¬ (l.length ≤ 1) := by omega
+  rw [List.getLast?_dropLast, List.getLast?_dropLast]
+  simp only [List.length_set]
+  rw [if_neg (by omega), if_neg hn]
+  rw [List.getElem?_set_ne (show i + 2 ≠ l.length - 2 by omega),
+      List.getElem?_set_ne (show i + 1 ≠ l.length - 2 by omega),
+      List.getElem?_set_ne (show i ≠ l.length - 2 by omega)]
+
+/-- Auxiliaire R3 : la première entrée de la paire devient le croisement neuf
+    `C` quand la fenêtre se pose sur l'avant-dernière case. -/
+theorem getLast?_dropLast_set3_second {α : Type*} {l : List α} {i : Nat} {A B C : α}
+    (h : i + 2 + 2 = l.length) :
+    (((l.set i A).set (i+1) B).set (i+2) C).dropLast.getLast? = some C := by
+  rw [List.getLast?_dropLast]
+  simp only [List.length_set]
+  rw [if_neg (by omega)]
+  rw [show l.length - 2 = i + 2 by omega]
+  rw [List.getElem?_set_self (by rw [List.length_set, List.length_set]; omega)]
+
+/-- Auxiliaire R3 : la première entrée de la paire est le deuxième croisement
+    écrit (`B`) quand la fenêtre se pose sur la dernière case. -/
+theorem getLast?_dropLast_set3_last {α : Type*} {l : List α} {i : Nat} {A B C : α}
+    (h : i + 2 + 1 = l.length) :
+    (((l.set i A).set (i+1) B).set (i+2) C).dropLast.getLast? = some B := by
+  rw [List.getLast?_dropLast]
+  simp only [List.length_set]
+  rw [if_neg (by omega)]
+  rw [show l.length - 2 = i + 1 by omega]
+  rw [List.getElem?_set_ne (show i + 2 ≠ i + 1 by omega)]
+  rw [List.getElem?_set_self (by rw [List.length_set]; omega)]
+
+/-- Le pas triangle ne fabrique pas de bigon terminal : si la source n'a
+    aucune paire terminale `e2 = e3` à arc commun, la cible non plus. -/
+theorem verifyR3Fwd_last_not_bigon (D d : KnotDiagram)
+    (h : verifyR3Fwd D d = true)
+    (hD : ¬ ∃ K₁ K₂, D.crossings.dropLast.getLast? = some K₁ ∧
+        D.crossings.getLast? = some K₂ ∧
+        K₂.e2 = K₂.e3 ∧ K₁.e2 = K₁.e3 ∧ K₁.e1 = K₂.e1) :
+    ¬ ∃ K₁ K₂, d.crossings.dropLast.getLast? = some K₁ ∧
+        d.crossings.getLast? = some K₂ ∧
+        K₂.e2 = K₂.e3 ∧ K₁.e2 = K₁.e3 ∧ K₁.e1 = K₂.e1 := by
+  simp only [verifyR3Fwd, Bool.and_eq_true] at h
+  obtain ⟨i, _, hi⟩ := List.any_eq_true.mp h.2
+  have hd := of_decide_eq_true hi
+  rw [hd.2.2.2.2.2]
+  rintro ⟨K₁, K₂, h1, h2, hK₂, hK₁, harc⟩
+  have hN := hd.2.2.2.2.1
+  obtain ⟨h0, _⟩ := List.nodup_cons.mp hN
+  have hmem : (crossingAt D.crossings i).e4 ∈
+      [(crossingAt D.crossings i).e2, (crossingAt D.crossings (i + 1)).e1,
+       (crossingAt D.crossings (i + 1)).e4, (crossingAt D.crossings (i + 2)).e3,
+       (crossingAt D.crossings (i + 2)).e4, (crossingAt D.crossings i).e3,
+       (crossingAt D.crossings i).e4, (crossingAt D.crossings (i + 1)).e3] := by
+    simp
+  rcases Nat.lt_trichotomy (i + 2 + 1) (D.crossings.length - 1) with hA | hA | hA
+  · rw [getLast?_dropLast_set3_of_lt (by omega)] at h1
+    rw [getLast?_set3_of_lt_last (by omega)] at h2
+    exact hD ⟨K₁, K₂, h1, h2, hK₂, hK₁, harc⟩
+  · rw [getLast?_dropLast_set3_second (by omega)] at h1
+    cases h1
+    have hkk : (crossingAt D.crossings i).e4 = (crossingAt D.crossings i).e1 := hK₁
+    exact h0 (hkk ▸ hmem)
+  · have hlast : i + 2 + 1 = D.crossings.length := by omega
+    rw [getLast?_dropLast_set3_last hlast] at h1
+    rw [getLast?_set3_last hlast] at h2
+    cases h1
+    cases h2
+    have hkk : (crossingAt D.crossings i).e4 = (crossingAt D.crossings i).e1 := hK₂
+    exact h0 (hkk ▸ hmem)
+
 end Knots.AnyMoves
