@@ -27,7 +27,7 @@
 | Organes argumentation | `ict/argumentation.py` : `DungAF`, `grounded_labeling`, `preferred_extensions`, `belief_trajectory`, `state_signature`, `belief_transition_matrix`, `discourse_irreversibility`, `RefusDeMesure` + quatre `REFUS_CODES`, `segmenter_enonces`, `est_codable`, `verdict_canaux`. |
 | Organes de mesure | `ict/time_arrow.py` (`entropy_production`, `trajectory_asymmetry`), `ict/mdl.py` (`two_part_code`, `tpm_description_length`), `ict/compression.py` (`compressed_length`), `ict/spectral.py`. |
 | Parité Tweety | 212 cas, par `labelling_from_extension` (#23665, MERGED) ; l'organe native exige JDK 17 + JAR et **n'est pas disponible sur cette machine** — le témoin de parité est donc à router, pas à rejouer localement. |
-| Recollement lectures réelles | `SymbolicAI/Argument_Analysis/Argumentation-Obs-04-Recollement-Strate6-Python.ipynb`, 54 cellules dont 21 de code, `execution_count` nul : 0. Livré par #13070 sous #13041 (issue close). |
+| Recollement lectures réelles | `SymbolicAI/Argument_Analysis/Argumentation-Obs-04-Recollement-Strate6-Python.ipynb`, exécuté, aucun `execution_count` nul. Livré par #13070 sous #13041 (issue close). |
 | Gating de la tranche 3 | **Levé.** Les trois issues que l'audit du 22/10 listait comme OPEN sont MERGED : #21636 (grounded contre Tweety), #21650 (codage AF des deux discours), #21663 (jonction Argumentum). |
 | Jambe C3 (#7742) | OPEN, corpus à quatre tiers défini, plan d'expérience à quatre items, trois prédictions falsifiables écrites. Bloquée non plus sur le branchement mais sur la passphrase du tier chiffré (question au registre). |
 
@@ -83,13 +83,13 @@ un fichier hors de la liste du §1 de `LICENSE-CONTENT.md` **n'est pas** sous CC
 Le capstone cite cette distinction dans son propre en-tête, parce qu'il consomme les deux.
 
 **Le corpus réel, en volume mesuré** (sous-module à `9038690d`, le gitlink épinglé par `main`) :
-`Cards` porte 803 fichiers, dont 7 fichiers de texte sous CC BY-SA — 12 976 438 octets au total,
+`Cards` porte des fichiers de texte sous CC BY-SA — 12 976 438 octets au total,
 soit 13,0 Mo en décimal. Le plus lourd est
-`Cards/Fallacies/Argumentum Fallacies - Taxonomy.csv` (1526 lignes, 4 178 565 octets, 104 champs en
-ligne 1), suivi des deux ontologies (`docs/ontology/argumentum.owl`, 96 069 lignes, 5 993 701 octets).
+`Cards/Fallacies/Argumentum Fallacies - Taxonomy.csv` (4 178 565 octets, 104 champs en
+ligne 1), suivi des deux ontologies (`docs/ontology/argumentum.owl`, 5 993 701 octets).
 Les sept fichiers du périmètre sont stables d'un pin à l'autre : sur l'intervalle qui sépare le
 commit les précédant (`d257443d`) du gitlink, une seule variation les touche — la taxonomie des
-vertus, de six octets — et les 53 fichiers que cet intervalle modifie par ailleurs sont des
+vertus, de six octets — et les fichiers que cet intervalle modifie par ailleurs sont des
 mindmaps (`Cards/Fallacies/Mindmaps/**`), hors du périmètre CC BY-SA.
 La provenance du corpus éditorial est nommée dans sa propre licence :
 `LICENSE-CONTENT.md:91`, « le corpus est l'œuvre de Jean-Sylvain Boige et des contributeurs
