@@ -17,7 +17,7 @@
 
 T0 (catalogue CSV) **LIVRÉ** : le CSV seed `rl.csv` capture la substance canonique de la série au commit `a93a08e21`. Chaque enregistrement = `notebook, cell_id, cell_type, src_lang, src_hash, text_fr, text_<7 langues>, hash_fr, hash_<7 hash>`. Les hashes `sha256-16` sur le texte normalisé (rstrip lines + strip newlines) détectent les dérives cellule-par-cellule.
 
-T1 (extraction) **LIVRÉ** : `python scripts/translation/extract_cells_to_csv.py MyIA.AI.Notebooks/RL/ -o translations/rl/rl.csv --src-lang fr --repo-root .`. Script déterministe byte-identique. Exclut `_output.ipynb` (Papermill) et `_agent.ipynb` (auto-générés). 486/511 cellules markdown/code extraites (25 sans id nbformat stable sautées).
+T1 (extraction) **LIVRÉ** : `python scripts/translation/extract_cells_to_csv.py MyIA.AI.Notebooks/RL/ -o translations/rl/rl.csv --src-lang fr --repo-root .`. Script déterministe byte-identique. Exclut `_output.ipynb` (Papermill) et `_agent.ipynb` (auto-générés). cellules markdown/code extraites, sauf celles sans id nbformat stable.
 
 T2 (drift detector) **LIVRÉ** : `python scripts/translation/check_translation_sync.py translations/rl/rl.csv` → `{"csvs_checked": 1, "anomalies": [], "anomaly_count": 0}` (IN_SYNC round-trip). Workflow CI `.github/workflows/translation-drift.yml` non-bloquant read-only.
 
