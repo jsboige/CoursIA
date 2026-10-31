@@ -1,8 +1,26 @@
 #region imports
 from AlgorithmImports import *
 
+from statistics import median
+
 from sklearn.linear_model import Ridge
 # endregion
+
+# Parameters (measurement #23630):
+#   fix=off  original sizing, orders unchanged: the weight is divided by the
+#            contract multiplier, then set_holdings sizes a futures position
+#            by initial margin. Passive counters added.
+#   fix=on   same signal and same share (1/vol) / sum(1/vol), sized by
+#            notional: each contract receives share x portfolio value, capped
+#            at max_position_pct; quantity = notional / (price x multiplier),
+#            rounded to whole contracts; fully collateralized (gross notional
+#            1.0); contracts outside the target are liquidated.
+#   ref=spy  reference arm: SPY held over the same window, no futures.
+#   start, end (YYYY-MM-DD): measurement window.
+# Counters published as runtime statistics: gross_median, gross_max (gross
+# notional / portfolio value at the daily check), held_median (contracts held
+# at the daily check), predicted_median (contracts with a positive prediction
+# at the rebalance), predicted_roots, rebalances, invalid_orders.
 
 
 class InverseVolatilityRankAlgorithm(QCAlgorithm):
@@ -34,16 +52,30 @@ class InverseVolatilityRankAlgorithm(QCAlgorithm):
     - std_months: Months for std indicator (default: 3)
     - atr_months: Months for ATR indicator (default: 3)
     - training_set_duration: Days of training data (default: 365)
-    - weight_multiplier: Portfolio leverage (default: 1.0, was 3.0)
-    - max_position_pct: Max weight per contract (default: 0.12 = 12%)
+    - weight_multiplier: Leverage of the original sizing, fix=off only
+      (default: 2.0)
+    - max_position_pct: Max weight per contract (default: 0.15 = 15%)
     - stop_loss_pct: Stop-loss per position (default: 0.08 = 8%)
+    - fix, ref, start, end: see the comment above the class
     """
 
     def initialize(self):
-        self.set_start_date(2015, 1, 1)
-        self.set_end_date(2024, 4, 1)
+        self._fix = self.get_parameter("fix", "on").strip().lower()
+        self._ref = self.get_parameter("ref", "none").strip().lower()
+        self.set_start_date(self._parse_date(self.get_parameter("start", "2015-01-01")))
+        self.set_end_date(self._parse_date(self.get_parameter("end", "2024-04-01")))
         self.set_cash(100_000_000)
         self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
+
+        self._gross = []
+        self._held = []
+        self._predicted = []
+        self._predicted_roots = {}
+        self._invalid_orders = 0
+
+        if self._ref == "spy":
+            self._spy = self.add_equity("SPY", Resolution.DAILY).symbol
+            return
 
         self._std_period = self.get_parameter('std_months', 3) * 26
         self._atr_period = self.get_parameter('atr_months', 3) * 26
@@ -99,6 +131,50 @@ class InverseVolatilityRankAlgorithm(QCAlgorithm):
             self.time_rules.after_market_open(schedule_symbol, 30),
             self._check_stop_loss
         )
+
+    @staticmethod
+    def _parse_date(text):
+        year, month, day = (int(part) for part in text.strip().split("-"))
+        return datetime(year, month, day)
+
+    def on_data(self, slice):
+        if self._ref == "spy" and not self.portfolio[self._spy].invested:
+            self.set_holdings(self._spy, 1.0)
+
+    def on_order_event(self, order_event):
+        if order_event.status == OrderStatus.INVALID:
+            self._invalid_orders += 1
+
+    def on_end_of_algorithm(self):
+        def med(values):
+            return f"{median(values):.3f}" if values else "n/a"
+        self.set_runtime_statistic("gross_median", med(self._gross))
+        self.set_runtime_statistic(
+            "gross_max", f"{max(self._gross):.3f}" if self._gross else "n/a"
+        )
+        self.set_runtime_statistic("held_median", med(self._held))
+        self.set_runtime_statistic("predicted_median", med(self._predicted))
+        self.set_runtime_statistic("rebalances", str(len(self._predicted)))
+        roots = ",".join(
+            f"{root}:{count}"
+            for root, count in sorted(self._predicted_roots.items())
+        )
+        self.set_runtime_statistic("predicted_roots", roots or "none")
+        self.set_runtime_statistic("invalid_orders", str(self._invalid_orders))
+
+    def _measure(self):
+        """Passive counter: gross notional / value and contracts held."""
+        value = self.portfolio.total_portfolio_value
+        if value <= 0:
+            return
+        held = [h for h in self.portfolio.values() if h.invested]
+        gross = 0.0
+        for holding in held:
+            security = self.securities[holding.symbol]
+            gross += (abs(holding.quantity) * security.price
+                      * security.symbol_properties.contract_multiplier)
+        self._gross.append(float(gross / value))
+        self._held.append(len(held))
 
     def _trade(self):
         """Predict volatility and rebalance with inverse-vol weights."""
@@ -158,12 +234,20 @@ class InverseVolatilityRankAlgorithm(QCAlgorithm):
                 prediction
             )
 
+        self._predicted.append(len(expected_volatility_by_security))
+        for security in expected_volatility_by_security:
+            root = security.symbol.id.symbol
+            self._predicted_roots[root] = self._predicted_roots.get(root, 0) + 1
+
         # Compute inverse-volatility portfolio weights
         portfolio_targets = []
         std_sum = sum(
             1 / vol
             for vol in expected_volatility_by_security.values()
         )
+        if self._fix == "on":
+            self._rebalance_notional(expected_volatility_by_security, std_sum)
+            return
 
         for security, expected_vol in (
             expected_volatility_by_security.items()
@@ -184,8 +268,33 @@ class InverseVolatilityRankAlgorithm(QCAlgorithm):
                 self._entry_prices[security.symbol] = security.price
         self.set_holdings(portfolio_targets, True)
 
+    def _rebalance_notional(self, expected_volatility_by_security, std_sum):
+        """fix=on: inverse-vol shares sized by notional, whole contracts."""
+        value = self.portfolio.total_portfolio_value
+        targets = {}
+        for security, expected_vol in (
+            expected_volatility_by_security.items()
+        ):
+            share = min(1 / expected_vol / std_sum, self._max_position_pct)
+            unit = (security.price
+                    * security.symbol_properties.contract_multiplier)
+            if unit <= 0:
+                continue
+            targets[security.symbol] = int(round(share * value / unit))
+            # Track entry price for stop-loss
+            if security.symbol not in self._entry_prices:
+                self._entry_prices[security.symbol] = security.price
+        for holding in self.portfolio.values():
+            if holding.invested and holding.symbol not in targets:
+                self.liquidate(holding.symbol)
+        for symbol, quantity in targets.items():
+            delta = quantity - self.portfolio[symbol].quantity
+            if delta != 0:
+                self.market_order(symbol, delta)
+
     def _check_stop_loss(self):
         """Liquidate positions that exceeded stop-loss threshold."""
+        self._measure()
         for security in list(self._contracts):
             symbol = security.symbol
             if symbol not in self._entry_prices:
@@ -210,6 +319,8 @@ class InverseVolatilityRankAlgorithm(QCAlgorithm):
 
     def on_securities_changed(self, changes):
         """Handle futures contract rollovers."""
+        if self._ref == "spy":
+            return
         for security in changes.added_securities:
             if security.symbol.is_canonical():
                 continue  # Skip continuous contracts
