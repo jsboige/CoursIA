@@ -9,10 +9,10 @@
       "note": "Annexe F -- compte des lignes de Pillars.lean et citations L<n> des declarations des temoins"
     },
     {
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-03b-Chemins-de-Swaps-Lean-Python.ipynb",
-      "cell_id": "6b4a335f",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-03b-Chambres-Murs-Chemins-Lean-Python.ipynb",
+      "cell_id": "61b519cc",
       "source": "MyIA.AI.Notebooks/GameTheory/game_theory_lean/Swaps/Basic.lean",
-      "note": "§5-bis -- compte des lignes de Swaps/Basic.lean et numeros des declarations citees ; trouvee par l'invariant inverse de #22041"
+      "note": "§10-bis -- compte des lignes de Swaps/Basic.lean et numeros des declarations citees ; trouvee par l'invariant inverse de #22041"
     },
     {
       "notebook": "MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-02-Jeux-Repetes-Lean-Python.ipynb",
