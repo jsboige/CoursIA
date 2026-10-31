@@ -497,15 +497,21 @@ def _shallow_path(run_git):
     return (out or "").strip() or None
 
 
-def _first_parent(sha, run_git):
-    """Le premier parent BRUT d'un commit, ou None (racine d'histoire ou illisible).
+def _raw_parents(sha, run_git):
+    """TOUS les parents BRUTS d'un commit, ou None si l'objet est illisible.
 
-    Le parent est lu dans l'objet commit lui-meme (`git cat-file commit`) et
-    non par `rev-list --parents` : sur une frontiere shallow, le graft
-    MASQUE le parent a la traversee (mesure : `rev-list --parents` rend le
-    seul sha, sans parent), alors que l'objet conserve la ligne `parent`.
-    C'est cette ligne qui dit si la frontiere tranche un historique reel ou
-    si elle ne masque rien du tout.
+    Les parents sont lus dans l'objet commit lui-meme (`git cat-file commit`)
+    et non par `rev-list --parents` : sur une frontiere shallow, le graft
+    MASQUE les parents a la traversee (mesure : `rev-list --parents` rend le
+    seul sha, sans parent), alors que l'objet conserve ses lignes `parent`.
+    Ce sont ces lignes qui disent si la frontiere tranche un historique reel
+    ou si elle ne masque rien du tout.
+
+    Tous les parents, et pas seulement le premier : le graft coupe la
+    traversee de TOUS les parents d'un commit de fusion, donc un second
+    parent absent est exactement aussi dangereux a exposer que le premier.
+    Une liste vide signifie « racine d'histoire » ; `None` signifie
+    « illisible », et les deux ne se confondent pas.
     """
     try:
         rc, out = run_git(["cat-file", "commit", sha])
@@ -513,10 +519,78 @@ def _first_parent(sha, run_git):
         return None
     if rc != 0:
         return None
-    for line in (out or "").splitlines():
-        if line.startswith("parent "):
-            return line.split(" ", 1)[1].strip() or None
-    return None
+    return [
+        line.split(" ", 1)[1].strip()
+        for line in (out or "").splitlines()
+        if line.startswith("parent ")
+    ]
+
+
+def _first_parent(sha, run_git):
+    """Le premier parent BRUT d'un commit, ou None (racine d'histoire ou illisible)."""
+    parents = _raw_parents(sha, run_git)
+    return parents[0] if parents else None
+
+
+#: Budget de `_ancestry_readable`, en greffes traversees. Un `.git/shallow`
+#: reel en porte quelques-unes (6 sur ai-01, 14 au pire mesure) : au-dela de
+#: ce budget on ne conclut pas, et l'appelant GARDE la frontiere (fail-safe).
+_ANCESTRY_GRAFT_HOPS_MAX = 64
+
+
+def _ancestry_readable(sha, run_git):
+    """L'ascendance COMPLETE de `sha` est-elle presente dans la base d'objets ?
+
+    C'est la condition qui rend sur a retirer une frontiere shallow dont le
+    parent est present (#23089, option (a) demandee par le coordinateur) :
+    tant que le parcours atteint une VRAIE racine d'histoire sans rencontrer
+    d'objet absent, le graft ne masque rien, et le retirer ne coupe aucun
+    `git log`.
+
+    La lecture procede par bonds : `rev-list --max-parents=0` rend les
+    racines atteignables, greffes COMPRISES (une frontiere declaree y
+    apparait comme une racine) ; pour chaque racine on relit ses parents
+    BRUTS dans l'objet, et on repart au-dessus de ceux qui en ont encore un.
+    Une racine dont les parents bruts sont absents de la liste est une vraie
+    racine. Le parcours s'arrete donc apres un bond par greffe rencontree.
+
+    Ce que la fonction mesure est le graphe de COMMITS, pas les arbres : un
+    blob absent ne fait pas echouer un `rev-list` de commits, et le graft
+    shallow ne coupe que les commits.
+
+    Lecture impossible, objet absent, budget epuise -> `False`. Le doute ne
+    retire jamais rien.
+    """
+    pending = [sha]
+    hops = 0
+    while pending:
+        if hops >= _ANCESTRY_GRAFT_HOPS_MAX:
+            return False
+        current = pending.pop()
+        hops += 1
+        try:
+            rc, out = run_git(["rev-list", "--max-parents=0", current])
+        except (OSError, subprocess.SubprocessError):
+            return False
+        if rc != 0:
+            return False  # objet absent ou lecture refusee
+        roots = (out or "").split()
+        if not roots:
+            return False
+        reached_true_root = False
+        for root in roots:
+            parents = _raw_parents(root, run_git)
+            if parents is None:
+                return False
+            if not parents:
+                # une vraie racine d'histoire a ete atteinte sans objet
+                # manquant : toute l'ascendance traverse est presente.
+                reached_true_root = True
+            else:
+                pending.extend(parents)
+        if reached_true_root:
+            return True
+    return False
 
 
 #: Borne de lecture des reflogs dans `_alive_tips`. Un reflog de depot actif
@@ -600,10 +674,21 @@ def prune_dead_shallow_roots(run_git=None):
     coordinateur, que `git fetch --unshallow` n'efface pas (il n'a rien a
     approfondir pour elles : leur parent n'existe pas dans ce depot).
 
+    **Second cas, mesure sur le meme clone le 2026-11-01 (option (a) du
+    coordinateur)** : les six racines ont en realite leur parent PRESENT, et
+    l'ancien critere les gardait toutes -- `--prune-shallow` rendait 0 et
+    `is-shallow-repository` restait `true` indefiniment. Une frontiere qu'on
+    peut PROUVER sans effet est morte aussi : si tous ses parents bruts sont
+    presents et que l'ascendance complete est lisible
+    (`_ancestry_readable`), le graft ne masque rien, et le retirer ne coupe
+    aucun parcours. Le retrait n'a lieu que sur cette preuve ; parent present
+    mais ascendance illisible = frontiere GARDEE.
+
     Le retrait n'enleve rien : une racine qu'aucune ref ne contient n'est
-    atteignable par aucun parcours de l'historique, et son parent etait deja
-    absent -- le parcours s'arretait la de toute facon. Seule la reponse
-    "shallow" du depot change.
+    atteignable par aucun parcours de l'historique, et soit son parent etait
+    deja absent -- le parcours s'arretait la de toute facon --, soit son
+    ascendance entiere est presente, donc rien n'est plus masque. Seule la
+    reponse "shallow" du depot change.
 
     **Commande EXPLICITE, jamais appelee par une garde (#23110).** La porte
     pile (`check_adjoint_prevalidation.build_stack_index`) appelait cette
@@ -637,15 +722,21 @@ def prune_dead_shallow_roots(run_git=None):
             continue  # une ref contient cette racine : elle vit
         if any(_reachable_from(sha, tip, run_git) for tip in tips):
             continue  # HEAD, HEAD de worktree ou reflog l'atteint : elle vit
-        parent = _first_parent(sha, run_git)
-        if parent is None:
-            continue  # racine d'histoire : rien a retirer
+        parents = _raw_parents(sha, run_git)
+        if not parents:
+            # racine d'histoire (ou objet illisible) : rien a retirer
+            continue
         try:
-            rc, _ = run_git(["cat-file", "-e", parent + "^{commit}"])
+            rc, _ = run_git(["cat-file", "-e", parents[0] + "^{commit}"])
         except (OSError, subprocess.SubprocessError):
             continue
-        if rc == 0:
-            continue  # le parent est present : la racine masque de l'historique
+        if rc == 0 and not _ancestry_readable(sha, run_git):
+            # Un parent est present, mais son ascendance ne l'est pas : la
+            # frontiere masque encore un historique tronque, on la GARDE.
+            # Mesure (ai-01, 2026-11-01) : les six frontieres du clone du
+            # coordinateur ont toutes leur parent present -- c'est ce cas-ci
+            # qui laissait `is-shallow-repository` a `true` pour toujours.
+            continue
         dead.append(sha)
     if not dead:
         return []

@@ -1872,3 +1872,100 @@ def test_une_borne_atteinte_par_le_head_d_un_worktree_lie_survit(
     ).stdout.strip() == ""
     assert _git(clone, "rev-parse", "HEAD").stdout.strip() != foreign
     assert merge_dwell.prune_dead_shallow_roots() == []
+
+
+def test_une_frontiere_dont_l_ascendance_est_presente_est_retiree(
+    tmp_path, monkeypatch
+):
+    """#23089, option (a) du coordinateur, mesuree sur ai-01 le 2026-11-01 :
+    une frontiere shallow dont le parent EST present et dont l'ascendance
+    complete est lisible ne masque rien -- son retrait ne coupe aucun
+    parcours.
+
+    C'est la forme que prend un depot apres un `git fetch --unshallow` qui
+    laisse en place des frontieres ETRANGERES : le `.git/shallow` du clone du
+    coordinateur portait six frontieres de cette sorte, **toutes** avec leur
+    parent present. L'ancien critere les gardait donc toutes, `--prune-shallow`
+    rendait 0 et `is-shallow-repository` restait `true` pour toujours.
+    """
+    origin, clone, _side = _disposable_repo(tmp_path)
+    work = tmp_path / "work"
+    _git_ok(_git(work, "checkout", "-q", "--orphan", "orpheline"), "orphan")
+    _git_ok(_git(work, "rm", "-rq", "--cached", "."), "rm cached")
+    (work / "o.txt").write_text("o\n", encoding="utf-8")
+    _git_ok(_git(work, "add", "o.txt"), "add o.txt")
+    _git_ok(_git(work, "commit", "-m", "racine orpheline"), "commit racine")
+    (work / "o2.txt").write_text("o2\n", encoding="utf-8")
+    _git_ok(_git(work, "add", "o2.txt"), "add o2.txt")
+    _git_ok(_git(work, "commit", "-m", "orpheline 2"), "commit orpheline 2")
+    _git_ok(_git(work, "push", "-q", "origin", "orpheline"), "push orpheline")
+    tip = _git(work, "rev-parse", "HEAD").stdout.strip()
+    monkeypatch.chdir(clone)
+    # fetch COMPLET (aucun `--depth`) : le parent et toute l'ascendance
+    # arrivent dans la base d'objets. Un fetch par nom de branche n'ecrit que
+    # `FETCH_HEAD` dans un clone `--single-branch` : aucune ref ne contient le
+    # sommet, et aucun reflog ne l'atteint.
+    _git_ok(_git(clone, "fetch", "-q", "origin", "orpheline"), "fetch complet")
+    assert _git(clone, "cat-file", "-e", tip + "^^{commit}").returncode == 0, (
+        "le parent doit etre present : c'est la forme mesuree sur ai-01"
+    )
+    (clone / ".git" / "shallow").write_text(tip + "\n", encoding="utf-8")
+    assert merge_dwell._default_run_git(
+        ["rev-parse", "--is-shallow-repository"]
+    )[1].strip() == "true"
+    assert merge_dwell._ancestry_readable(tip, merge_dwell._default_run_git) is True
+    assert merge_dwell.prune_dead_shallow_roots() == [tip]
+    assert merge_dwell._default_run_git(
+        ["rev-parse", "--is-shallow-repository"]
+    )[1].strip() == "false"
+
+
+def test_un_parent_present_mais_une_ascendance_illisible_garde_la_frontiere(
+    tmp_path, monkeypatch
+):
+    """#23089, controle NEGATIF de l'option (a) : le parent est present, mais
+    l'ascendance au-dela ne l'est pas. La frontiere masque encore une histoire
+    tronquee -- elle est GARDEE.
+
+    Sans ce controle, la fonction retirerait toute frontiere dont le seul
+    premier parent est present, et exposerait un `git log` a un objet absent.
+    """
+    origin, clone, _side = _disposable_repo(tmp_path)
+    work = tmp_path / "work"
+    _git_ok(_git(work, "checkout", "-q", "--orphan", "orpheline"), "orphan")
+    _git_ok(_git(work, "rm", "-rq", "--cached", "."), "rm cached")
+    (work / "o0.txt").write_text("o0\n", encoding="utf-8")
+    _git_ok(_git(work, "add", "o0.txt"), "add o0.txt")
+    _git_ok(_git(work, "commit", "-m", "racine orpheline"), "commit racine")
+    (work / "o1.txt").write_text("o1\n", encoding="utf-8")
+    _git_ok(_git(work, "add", "o1.txt"), "add o1.txt")
+    _git_ok(_git(work, "commit", "-m", "orpheline 1"), "commit orpheline 1")
+    middle = _git(work, "rev-parse", "HEAD").stdout.strip()
+    (work / "o2.txt").write_text("o2\n", encoding="utf-8")
+    _git_ok(_git(work, "add", "o2.txt"), "add o2.txt")
+    _git_ok(_git(work, "commit", "-m", "orpheline 2"), "commit orpheline 2")
+    tip = _git(work, "rev-parse", "HEAD").stdout.strip()
+    _git_ok(_git(work, "push", "-q", "origin", "orpheline"), "push orpheline")
+    monkeypatch.chdir(clone)
+    # Deux fetches bornes : le sommet ET son parent arrivent, la racine de la
+    # chaine reste absente du depot.
+    _git_ok(
+        _git(clone, "fetch", "--depth=1", "--quiet", "origin", tip),
+        "fetch sommet",
+    )
+    _git_ok(
+        _git(clone, "fetch", "--depth=1", "--quiet", "origin", middle),
+        "fetch parent",
+    )
+    # la frontiere declaree ne porte QUE le sommet : son parent est present,
+    # la frontiere parente (que le fetch aurait ecrite) n'y est plus.
+    (clone / ".git" / "shallow").write_text(tip + "\n", encoding="utf-8")
+    # `tip^^` ne traverse pas un graft : le parent se lit dans l'OBJET commit.
+    raw_parents = merge_dwell._raw_parents(tip, merge_dwell._default_run_git)
+    assert raw_parents == [middle]
+    assert _git(clone, "cat-file", "-e", middle + "^{commit}").returncode == 0
+    assert merge_dwell._ancestry_readable(tip, merge_dwell._default_run_git) is False
+    assert merge_dwell.prune_dead_shallow_roots() == []
+    assert merge_dwell._default_run_git(
+        ["rev-parse", "--is-shallow-repository"]
+    )[1].strip() == "true"
