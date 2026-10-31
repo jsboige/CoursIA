@@ -3077,4 +3077,82 @@ theorem verifyAnyMove_r3Any_length_ge_eleven {s t : KnotDiagram}
   have hl := verifyAnyMove_r3Any_length h
   omega
 
+/-! ## 25. Motif terminal du côté SOURCE de R3
+
+Sixième étape du certificat négatif (suite des sections 22-24). Les sections
+22 et 23 vont de la source vers la cible (`verifyR3Fwd D d` : absence de motif
+sur `D` implique absence sur `d`). L'invariant de l'ensemble atteignable a
+besoin de l'autre sens : `verifyR3 s t = verifyR3Fwd s t || verifyR3Fwd t s`,
+donc un pas triangle peut être vérifié dans l'orientation où `t` est la
+SOURCE de la chirurgie, et il faut alors montrer que le terminal écrit par
+`t` ne peut pas porter de motif.
+
+La garde du vérificateur contraint la source elle-même : le `Nodup` des neuf
+labels contient `e3(i+2)` et `e4(i+2)` (positions 4 et 5), donc le croisement
+source d'indice `i+2` n'est jamais un kink ; et il contient `e4(i)` (position
+7) alors que la garde impose `e2(i+2) = e4(i)` (troisième conjonction), donc
+la silhouette `e2 = e3` du terminal source est impossible. Quand la fenêtre
+atteint la fin de la liste, ces deux croisements sont exactement les
+croisements terminaux de la source. -/
+
+/-- Auxiliaire : le dernier croisement d'une liste est celui de l'indice
+    `length - 1`. -/
+theorem getLast?_eq_crossingAt {l : List PDCrossing} {i : Nat} (h : i + 1 = l.length) :
+    l.getLast? = some (crossingAt l i) := by
+  have hlt : i < l.length := by omega
+  have hs : l[i]? = some (l[i]'hlt) := List.getElem?_eq_some_iff.mpr ⟨hlt, rfl⟩
+  rw [List.getLast?_eq_getElem?, show l.length - 1 = i by omega, hs]
+  simp only [crossingAt, hs, Option.getD_some]
+
+/-- Auxiliaire : l'avant-dernier croisement d'une liste est celui de l'indice
+    `length - 2`. -/
+theorem dropLast_getLast?_eq_crossingAt {l : List PDCrossing} {i : Nat}
+    (h : i + 2 + 1 = l.length) :
+    l.dropLast.getLast? = some (crossingAt l (i + 1)) := by
+  have hlt : i + 1 < l.length := by omega
+  have hs : l[i + 1]? = some (l[i + 1]'hlt) := List.getElem?_eq_some_iff.mpr ⟨hlt, rfl⟩
+  rw [List.getLast?_dropLast, if_neg (by omega), show l.length - 2 = i + 1 by omega, hs]
+  simp only [crossingAt, hs, Option.getD_some]
+
+/-- Quand la fenêtre R3 atteint la fin de la source, le dernier croisement de
+    la source n'est pas un kink : `e3(i+2)` et `e4(i+2)` sont distincts par le
+    `Nodup` des neuf labels. -/
+theorem r3SrcEnd_not_kink (D : KnotDiagram) (i : Nat)
+    (hlen : i + 2 + 1 = D.crossings.length)
+    (hN : List.Nodup [(crossingAt D.crossings i).e1, (crossingAt D.crossings i).e2,
+      (crossingAt D.crossings (i + 1)).e1, (crossingAt D.crossings (i + 1)).e4,
+      (crossingAt D.crossings (i + 2)).e3, (crossingAt D.crossings (i + 2)).e4,
+      (crossingAt D.crossings i).e3, (crossingAt D.crossings i).e4,
+      (crossingAt D.crossings (i + 1)).e3]) :
+    ∀ K, D.crossings.getLast? = some K → K.e3 ≠ K.e4 := by
+  intro K hK
+  rw [getLast?_eq_crossingAt hlen] at hK
+  cases hK
+  intro hkk
+  rw [hkk] at hN
+  simp at hN
+
+/-- Quand la fenêtre R3 atteint la fin de la source, la paire terminale de la
+    source n'est pas un bigon : la garde impose `e2(i+2) = e4(i)`, et `e4(i)`
+    est distinct de `e3(i+2)` par le `Nodup` des neuf labels. -/
+theorem r3SrcEnd_not_bigon (D : KnotDiagram) (i : Nat)
+    (hlen : i + 2 + 1 = D.crossings.length)
+    (hguard : (crossingAt D.crossings (i + 2)).e2 = (crossingAt D.crossings i).e4)
+    (hN : List.Nodup [(crossingAt D.crossings i).e1, (crossingAt D.crossings i).e2,
+      (crossingAt D.crossings (i + 1)).e1, (crossingAt D.crossings (i + 1)).e4,
+      (crossingAt D.crossings (i + 2)).e3, (crossingAt D.crossings (i + 2)).e4,
+      (crossingAt D.crossings i).e3, (crossingAt D.crossings i).e4,
+      (crossingAt D.crossings (i + 1)).e3]) :
+    ¬ ∃ K₁ K₂, D.crossings.dropLast.getLast? = some K₁ ∧
+      D.crossings.getLast? = some K₂ ∧
+      K₂.e2 = K₂.e3 ∧ K₁.e2 = K₁.e3 ∧ K₁.e1 = K₂.e1 := by
+  rintro ⟨K₁, K₂, h1, h2, hK₂, _, _⟩
+  rw [getLast?_eq_crossingAt hlen] at h2
+  cases h2
+  have hdup : (crossingAt D.crossings i).e4 = (crossingAt D.crossings (i + 2)).e3 := by
+    rw [← hguard]
+    exact hK₂
+  rw [hdup] at hN
+  simp at hN
+
 end Knots.AnyMoves
