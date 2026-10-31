@@ -36,6 +36,23 @@ Usage:
     python strip_probe_banner.py --scan-all --check # exit 1 if defects found
     python strip_probe_banner.py --apply <path>     # fix in place
     python strip_probe_banner.py --apply-all        # fix repo-wide
+
+Variants (``--variant``):
+
+- ``probe`` (default) — the ``probeAddresses`` HTTP bootstrap above. This is
+  the detection set the repo-wide guard is calibrated on; the default path is
+  byte-identical to the historical behaviour.
+- ``discovery`` — the "this cell" discovery bootstrap
+  (``dotnet-interactive-this-cell``), a DIFFERENT banner emitted by the
+  kernel, which occupies a whole ``display_data`` output. The strip removes
+  the output, not lines inside it.
+- ``both`` — the two sets together.
+
+The sets are deliberately **disjoint**: the guard is calibrated against the
+committed corpus, so folding the discovery signature into
+``BANNER_SIGNATURES`` would report the inherited residue (177 notebooks
+measured on 2026-10-30) as new defects. The guard may only widen once the
+residue is swept (#23530).
 """
 
 import argparse
@@ -60,17 +77,60 @@ import sys
 BANNER_SIGNATURES = ("probeAddresses", "probingAddresses", "loadDotnetInteractiveApi")
 
 
-def has_banner(blob):
+# The .NET Interactive kernel emits TWO distinct bootstrap banners:
+#
+# 1. the ``probeAddresses`` HTTP bootstrap -- the three signatures above,
+#    whose script enumerates the worker's network interfaces;
+# 2. the "this cell" discovery bootstrap -- a
+#    ``<div id='dotnet-interactive-this-cell-$CACHE_BUSTER$'>`` plus a
+#    require.js bootstrap fetching ``${rootUrl}discovery``. It carries NONE
+#    of the three signatures above: it is a different banner, not a variant
+#    of the same text, hence its own detection set.
+#
+# Why the set stays DISJOINT from ``BANNER_SIGNATURES`` instead of simply
+# being appended to it: ``BANNER_SIGNATURES`` is the detection set of the
+# repo-wide banner guard (``scripts/ci/fast_lane_registry.py`` ->
+# ``--scan-all --check``). That guard is calibrated against the COMMITTED
+# corpus, so appending the discovery signature makes it report the
+# INHERITED residue as defects -- 177 grandfathered notebooks measured on
+# 2026-10-30 -- which is exactly the widening that was measured and
+# reverted on #22728. The guard may only widen AFTER the residue is swept.
+#
+# Measured shape of the discovery banner (origin/main, 2026-10-30): one
+# output per notebook, its ``data`` keys exactly ``["text/html"]``, and no
+# ``<pre>``/``<span>`` (the bootstrap is the whole output). The unit to
+# strip is therefore the OUTPUT, not a line inside it.
+DISCOVERY_VARIANT_SIGNATURES = ("dotnet-interactive-this-cell",)
+
+# Named detection sets, selected by ``--variant``. ``probe`` is the default
+# and keeps the behaviour of the repo-wide guard byte-identical.
+VARIANTS = {
+    "probe": BANNER_SIGNATURES,
+    "discovery": DISCOVERY_VARIANT_SIGNATURES,
+    "both": BANNER_SIGNATURES + DISCOVERY_VARIANT_SIGNATURES,
+}
+
+
+def has_banner(blob, signatures=BANNER_SIGNATURES):
     """Return True if any banner signature appears in the HTML blob.
 
     The on-disk format is a ``list[str]`` (one line per element) but a single
     string is also tolerated for robustness.
+
+    ``signatures`` defaults to the guard-facing ``BANNER_SIGNATURES``; the
+    discovery bootstrap is detected through its own set (see
+    ``has_discovery_variant``).
     """
     if isinstance(blob, list):
-        return any(any(sig in line for sig in BANNER_SIGNATURES) for line in blob)
+        return any(any(sig in line for sig in signatures) for line in blob)
     if isinstance(blob, str):
-        return any(sig in blob for sig in BANNER_SIGNATURES)
+        return any(sig in blob for sig in signatures)
     return False
+
+
+def has_discovery_variant(blob):
+    """True if the blob carries the "this cell" discovery bootstrap."""
+    return has_banner(blob, DISCOVERY_VARIANT_SIGNATURES)
 
 
 def count_banner_lines(nb_path):
@@ -116,6 +176,51 @@ def count_banner_lines(nb_path):
                 if any(sig in html for sig in BANNER_SIGNATURES):
                     n += 1
     return n
+
+
+def count_discovery_outputs(nb_path):
+    """Count the outputs carrying the "this cell" discovery bootstrap.
+
+    The unit is the OUTPUT (not a line inside it): the bootstrap occupies a
+    whole ``display_data`` output -- measured on the 177 inherited notebooks,
+    one output each, ``data`` keys exactly ``["text/html"]``.
+
+    An output carrying the bootstrap AND other mime keys is counted here
+    but REFUSED by the strip (blanking it would destroy a real result).
+    """
+    try:
+        with open(nb_path, encoding="utf-8") as f:
+            nb = json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return 0
+    n = 0
+    for cell in nb.get("cells", []):
+        if cell.get("cell_type") != "code":
+            continue
+        for out in cell.get("outputs", []) or []:
+            data = out.get("data")
+            if not isinstance(data, dict):
+                continue
+            if has_discovery_variant(data.get("text/html")):
+                n += 1
+    return n
+
+
+def count_banner_units(nb_path, variant="probe"):
+    """Count the strip units of the selected variant.
+
+    - ``probe``: banner-bearing list elements (the historical semantic);
+    - ``discovery``: outputs carrying the discovery bootstrap;
+    - ``both``: the sum of the two.
+
+    The count is what the strip is expected to remove, so the caller's
+    ``FIXED == pre`` invariant holds for every variant.
+    """
+    if variant == "discovery":
+        return count_discovery_outputs(nb_path)
+    if variant == "both":
+        return count_banner_lines(nb_path) + count_discovery_outputs(nb_path)
+    return count_banner_lines(nb_path)
 
 
 def is_empty_envelope(obj):
@@ -381,7 +486,7 @@ def _find_text_html_list_bounds(raw):
     return blocks
 
 
-def strip_banner_in_place(nb_path):
+def _strip_probe_banner_in_place(nb_path):
     """Remove banner ``text/html`` outputs by editing the data key on disk.
 
     Surgical text-level edit preserving every other byte (no JSON
@@ -571,6 +676,184 @@ def strip_banner_in_place(nb_path):
     return (len(hits), fixed)
 
 
+_DIV_TAG = re.compile(r"<(/?)div\b[^>]*>")
+
+
+def _is_single_div_block(html):
+    """True when ``html`` is ONE balanced ``<div>...</div>`` block, nothing else.
+
+    The discovery bootstrap occupies a whole output as a single
+    ``display:none`` placeholder div (measured: 98 list elements, opening on
+    ``<div>`` and closing on ``</div>``). A genuine result sharing that output
+    would sit OUTSIDE the root block -- so this guard, and not the mime-key
+    check (which only says *which keys* the output carries), is what stops the
+    whole-body delete on the list form from destroying real content.
+
+    False positives are the safe direction here: a refused output is reported
+    as ``SKIP`` and left byte-identical, while a destroyed one is
+    unrecoverable.
+    """
+    if isinstance(html, list):
+        text = "".join(part for part in html if isinstance(part, str))
+    elif isinstance(html, str):
+        text = html
+    else:
+        return False
+    s = text.strip()
+    if not s.startswith("<div"):
+        return False
+    depth = 0
+    for m in _DIV_TAG.finditer(s):
+        if m.group(1):
+            depth -= 1
+            if depth == 0:
+                return not s[m.end():].strip()
+        else:
+            depth += 1
+    return False
+
+
+def strip_discovery_variant_in_place(nb_path):
+    """Remove the outputs carrying the "this cell" discovery bootstrap.
+
+    The bootstrap occupies a WHOLE ``display_data`` output, so the strip
+    blanks that output's ``text/html`` and then drops the now-empty envelope
+    (``_drop_empty_envelopes``) -- the exact shape the probe strip already
+    produces (#20190). Output-only: no source touched, ``execution_count``
+    preserved, every other byte of the file left identical.
+
+    An output is REFUSED -- counted, none fixed, notebook left byte-identical
+    -- unless it carries the bootstrap ALONE: its mime keys must be exactly
+    ``["text/html"]`` *and* its whole body must be one balanced ``<div>``
+    block (``_is_single_div_block``). Both halves matter: the key check alone
+    would destroy a ``["<div>bootstrap</div>", "<table>real result</table>"]``
+    output, and the block check alone would strip a ``text/html`` output that
+    also carries a PNG. A refusal is visible in the caller's report (unit
+    counted, none fixed).
+
+    Only a ``text/html`` value that decodes to the EXACT string of a target
+    output is rewritten, so a source cell quoting the bootstrap literal is
+    never touched.
+
+    Returns ``(outputs_found, outputs_fixed)``.
+    """
+    try:
+        with open(nb_path, encoding="utf-8") as f:
+            nb = json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return (0, 0)
+
+    targets = []
+    strippable = []
+    for ci, cell in enumerate(nb.get("cells", [])):
+        if cell.get("cell_type") != "code":
+            continue
+        for oi, out in enumerate(cell.get("outputs", []) or []):
+            data = out.get("data")
+            if not isinstance(data, dict):
+                continue
+            html = data.get("text/html")
+            if not has_discovery_variant(html):
+                continue
+            targets.append((ci, oi))
+            if list(data.keys()) == ["text/html"] and _is_single_div_block(html):
+                strippable.append((ci, oi))
+
+    if not targets:
+        return (0, 0)
+    if len(strippable) != len(targets):
+        # Either a MIXED output exists (bootstrap + other mime keys), or an
+        # output carries content OUTSIDE the bootstrap's root <div> block --
+        # in both cases blanking would destroy a real result. The raw-text
+        # pass cannot attribute a block to its output, so the refusal is
+        # notebook-wide. Not reachable on the inherited corpus (measured:
+        # every one of the 177 outputs carries ``["text/html"]`` alone and is
+        # a single balanced <div> block) -- it is a guard, not a routine path.
+        return (len(targets), 0)
+
+    with open(nb_path, encoding="utf-8") as f:
+        text = f.read()
+
+    new_text = text
+    fixed = 0
+    elem_pat = re.compile(r'"((?:[^"\\]|\\.)*)"')
+
+    # String form FIRST ("text/html" holding one JSON string): blank it.
+    # Two disciplines, both taken from the probe path:
+    #  - the match must decode to the EXACT string of a target output.
+    #    Matching on the bootstrap token alone would also hit a ``source``
+    #    cell quoting it, and the "output-only" promise would not be
+    #    structurally held;
+    #  - targets are consumed in REVERSE order and the search is re-run per
+    #    target (``break`` on the first hit), because every edit shrinks the
+    #    file: offsets captured before the first rewrite would splice the
+    #    JSON at the wrong place from the second output onward.
+    str_pat = re.compile(r'"text/html"\s*:\s*"((?:[^"\\]|\\.)*)"')
+    str_targets = [nb["cells"][ci]["outputs"][oi]["data"]["text/html"]
+                   for ci, oi in strippable
+                   if isinstance(nb["cells"][ci]["outputs"][oi]["data"]["text/html"], str)]
+    for banner_str in reversed(str_targets):
+        for m in str_pat.finditer(new_text):
+            try:
+                decoded = json.loads('"' + m.group(1) + '"')
+            except json.JSONDecodeError:
+                continue
+            if decoded == banner_str:
+                new_text = new_text[:m.start()] + '"text/html": ""' + new_text[m.end():]
+                fixed += 1
+                break
+
+    # List form: blank the block body (the block becomes an empty list).
+    # Blocks are walked in REVERSE file-offset order: each edit shrinks the
+    # file, so earlier offsets stay valid.
+    for body_start, body_end in reversed(_find_text_html_list_bounds(new_text)):
+        body = new_text[body_start:body_end]
+        hit = False
+        for em in elem_pat.finditer(body):
+            try:
+                decoded = json.loads('"' + em.group(1) + '"')
+            except json.JSONDecodeError:
+                continue
+            if has_discovery_variant(decoded):
+                hit = True
+                break
+        if not hit:
+            continue
+        new_text = new_text[:body_start] + new_text[body_end:]
+        fixed += 1
+
+    # The blanked outputs are empty ``display_data`` envelopes: drop them.
+    new_text, _dropped = _drop_empty_envelopes(new_text)
+
+    if new_text != text:
+        with open(nb_path, "w", encoding="utf-8", newline="") as f:
+            f.write(new_text)
+
+    return (len(targets), fixed)
+
+
+def strip_banner_in_place(nb_path, variant="probe"):
+    """Strip the banner(s) of the selected variant, in place.
+
+    ``variant`` is one of ``VARIANTS``' keys:
+
+    - ``probe`` (default): the ``probeAddresses`` HTTP bootstrap -- the
+      historical behaviour, and the one the repo-wide guard relies on;
+    - ``discovery``: the "this cell" discovery bootstrap;
+    - ``both``: the two.
+
+    Returns ``(units_found, units_fixed)`` where a unit is a banner-bearing
+    list element (probe) or a banner-bearing output (discovery).
+    """
+    if variant == "discovery":
+        return strip_discovery_variant_in_place(nb_path)
+    if variant == "both":
+        found_p, fixed_p = _strip_probe_banner_in_place(nb_path)
+        found_d, fixed_d = strip_discovery_variant_in_place(nb_path)
+        return (found_p + found_d, fixed_p + fixed_d)
+    return _strip_probe_banner_in_place(nb_path)
+
+
 def iter_notebooks(nb_root):
     for path in glob.glob(os.path.join(nb_root, "**", "*.ipynb"), recursive=True):
         if "_output" in os.path.basename(path) or "_executed" in os.path.basename(path):
@@ -617,6 +900,15 @@ def main():
                        help="fix repo-wide in place")
     parser.add_argument("--check", action="store_true",
                         help="with --scan-all: exit 1 if any banner found")
+    parser.add_argument("--variant", choices=sorted(VARIANTS), default="probe",
+                        help="which bootstrap to work on: 'probe' (the "
+                             "probeAddresses HTTP bootstrap -- the default, and "
+                             "the detection set the repo-wide guard relies on), "
+                             "'discovery' (the 'this cell' discovery bootstrap, "
+                             "a WHOLE output), or 'both'. The sets are "
+                             "deliberately disjoint: the guard stays calibrated "
+                             "against the committed corpus while the inherited "
+                             "discovery residue is being swept (#23530).")
     parser.add_argument("--exclude-submodules", action="store_true",
                         help="skip notebooks inside git submodules (main-repo only; "
                              "used by the CI banner-guard so it stays green while a "
@@ -662,6 +954,9 @@ def main():
     total_envelopes_left = 0
     files_with_defect = 0
     skipped = []
+    unit_label = {"probe": "banner line(s)",
+                  "discovery": "output(s)",
+                  "both": "banner line(s)+output(s)"}[args.variant]
     for p in sorted(paths):
         # Count FIRST so the apply report shows the pre-strip counts (after
         # the strip they drop to 0; we'd otherwise miss the file in the
@@ -669,11 +964,11 @@ def main():
         # ``display_data`` envelope a previous strip left behind (#20190) —
         # the second one carries no banner, so a banner-only count skips the
         # notebook and the residue becomes permanent.
-        found = count_banner_lines(p)
+        found = count_banner_units(p, args.variant)
         envelopes = count_empty_envelopes(p)
         fixed = 0
         if do_apply and (found or envelopes):
-            fixed = strip_banner_in_place(p)[1]
+            fixed = strip_banner_in_place(p, args.variant)[1]
             envelopes_left = count_empty_envelopes(p)
         else:
             envelopes_left = envelopes
@@ -686,7 +981,8 @@ def main():
         total_envelopes_found += envelopes
         total_envelopes_left += envelopes_left
         rel = os.path.relpath(p, repo_root)
-        detail = "%d banner line(s)" % found
+        unit = unit_label
+        detail = "%d %s" % (found, unit)
         if envelopes:
             detail += ", %d empty envelope(s)" % envelopes
         if do_apply:
@@ -699,11 +995,15 @@ def main():
             print("[DEFECT] %s  (%s)" % (rel, detail))
 
     mode = "apply" if do_apply else "scan"
-    print("\n%s summary: %d notebook(s) carrying %d probeAddresses banner line(s) "
+    label = {"probe": "probeAddresses banner line(s)",
+             "discovery": "discovery bootstrap output(s)",
+             "both": "banner line(s) + discovery output(s)"}[args.variant]
+    print("\n%s summary [variant=%s]: %d notebook(s) carrying %d %s "
           "and %d empty display_data envelope(s)"
-          % (mode, files_with_defect, total_banners_found, total_envelopes_found))
+          % (mode, args.variant, files_with_defect, total_banners_found, label,
+             total_envelopes_found))
     if do_apply:
-        print("  banner lines fixed: %d   empty envelopes left: %d   skipped: %d file(s)"
+        print("  banner units fixed: %d   empty envelopes left: %d   skipped: %d file(s)"
               % (total_banners_fixed, total_envelopes_left, len(skipped)))
         for rel in skipped:
             print("    [unfixed] %s" % rel)

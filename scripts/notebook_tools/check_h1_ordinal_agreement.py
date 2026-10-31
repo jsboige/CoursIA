@@ -239,7 +239,7 @@ def self_test() -> int:
         return {"cells": [{"cell_type": "markdown", "source": [h1 + "\n", "suite"]}]}
 
     # positif : derive reelle, zero initial normalise
-    cases.append(("GameTheory-03c-Chambres-et-Murs-Python.ipynb", nb_with_h1("# GameTheory 3b : Chambres"), "drift"))
+    cases.append(("GameTheory-03b-Chambres-Murs-Chemins-Lean-Python.ipynb", nb_with_h1("# GameTheory 3c : Chambres"), "drift"))
     # positif : derive de serie (reclass)
     cases.append(("Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb", nb_with_h1("# GameTheory-6c : Jeux repetes"), "drift"))
     # negatif : zero initial et tiret/espace equivalents

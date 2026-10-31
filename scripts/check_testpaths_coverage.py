@@ -13,11 +13,31 @@ mise à jour du guard, dans les deux sens).
 Exclusions = marqueurs `# CI-EXCLUDED: <testpath> — <raison>` lus dans les
 fichiers workflows (co-localisés avec les runs qu'ils exemptent).
 
+Second sens (#22735) : le sens ci-dessus ne voit que les testpaths DÉCLARÉS.
+Une suite présente sur le disque sous `scripts/**/tests/` mais absente des
+DEUX listes (pytest.ini et couverture CI) lui était invisible — huit suites
+vertes en local, jouées par aucun workflow (#22735). Le garde confronte donc
+aussi l'ARBORESCENCE à la couverture : une suite sur disque que rien n'exécute
+est un rouge, et une suite déclarée câblée mais disparue de l'arbre aussi.
+
+Troisième sens (#22735) : l'INVARIANT de résolution des noms de modules pytest.
+pytest dérive le nom de module du paquet le plus proche portant `__init__.py` ;
+deux suites `tests/` sans paquet parent (`scripts/genai-stack/tests` et
+`agent_tests/tests`) se résolvent alors TOUTES DEUX en `tests.conftest`, et
+pluggy refuse d'enregistrer le même objet sous deux noms ("Plugin already
+registered under a different name"). L'option ini
+`consider_namespace_packages` (pytest >= 8.0) ferme la classe de défaut. Le
+garde vérifie qu'elle est déclarée ET qu'un workflow fige pytest >= 8 : sur
+une version antérieure, l'option serait ignorée SANS BRUIT (simple
+`PytestConfigWarning`) et le défaut reviendrait sans laisser de trace.
+
 Usage:
     python scripts/check_testpaths_coverage.py [--verbose] [--repo-root DIR]
 
 Exit 0 = aucune dérive. Exit 1 = au moins un testpath non couvert non exclu,
-ou une cible déclarée disparue de son workflow.
+une cible déclarée disparue de son workflow, une suite sur disque non
+exécutée par la CI, une suite déclarée disparue de l'arbre, ou l'invariant de
+résolution des noms de modules pytest violé.
 """
 
 from __future__ import annotations
@@ -51,6 +71,32 @@ WORKFLOW_COVERAGE: dict[str, list[str]] = {
         # scripts/fallacy_detection/tests : dir entier (#17580) — la garde
         # argumentum_snapshot (14 tests) devient un test de la collection.
         "scripts/fallacy_detection/tests",
+        # #22735 : huit suites de `scripts/**/tests/` etaient vertes en local
+        # et jouees par AUCUN workflow -- absentes aussi de pytest.ini, donc
+        # invisibles des DEUX sens de ce garde : datasets, genai-stack,
+        # hashlife, i18n, qc-mcp-lite, smartcontracts, sudoku, validation.
+        # Cables dans la jambe CPU de ce workflow le 2026-10-26 ; hermeticite
+        # mesuree firsthand (aucun Docker, aucun reseau ; `genai-stack` a
+        # exige `bcrypt`, deja dans le pip install du job), 666 tests cumules.
+        # EXCEPTION mesuree le 2026-10-27 : `qc-mcp-lite` ne se joue pas dans
+        # le run partage -- `server.py` l.31 importe `mcp.server.fastmcp` a la
+        # collection et le SDK MCP n'est pas dans le pip install de ce job
+        # (run #122006788867 : `ModuleNotFoundError: No module named 'mcp'`).
+        # Elle a son propre job dedie dans le MEME workflow (`qc-mcp-lite-
+        # tests`, SDK epingle 1.30.0) : la cible reste couverte par ce
+        # fichier, l'env reste isole.
+        "scripts/datasets/tests",
+        "scripts/genai-stack/tests",
+        "scripts/hashlife/tests",
+        "scripts/i18n/tests",
+        "scripts/qc-mcp-lite/tests",
+        "scripts/smartcontracts/tests",
+        "scripts/sudoku/tests",
+        "scripts/validation/tests",
+        # scripts/ci/tests : deja cable dans le run pytest (famille #22234)
+        # mais absent des testpaths de pytest.ini -- la convergence
+        # local <-> CI est un invariant de ce garde (#22735).
+        "scripts/ci/tests",
         "MyIA.AI.Notebooks/GameTheory/tests",
         "MyIA.AI.Notebooks/QuantConnect/scripts/tests",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_bg_tree_lock.py",
@@ -106,11 +152,24 @@ WORKFLOW_COVERAGE: dict[str, list[str]] = {
     ".github/workflows/sudoku-tests.yml": [
         "MyIA.AI.Notebooks/Sudoku/tests/test_dlx_certificates.py",
     ],
+    # geometry-tests.yml : dir entier (issue #23359) — 13 tests Z3/sympy du
+    # pont réel real_geometry_bridge.py (tests/test_real_geometry_bridge.py
+    # seul fichier), 1.7 s, deps sympy + z3-solver au pip install du job.
+    # Avant ce câblage, le dossier n'était ni dans pytest.ini ni collecté
+    # par aucune CI : le guard restait vert parce qu'il ne compare que les
+    # testpaths DÉCLARÉS (même angle mort que #17248 sur Argument_Analysis).
+    ".github/workflows/geometry-tests.yml": [
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/tests",
+    ],
 }
 
 # Marqueur d'exclusion : `# CI-EXCLUDED: <testpath> — <raison>` en commentaire
 # d'un workflow. L'em-dash "—" est le séparateur (format #10903).
 CI_EXCLUDED_MARKER = re.compile(r"^\s*#\s*CI-EXCLUDED:\s*(\S+?)\s*—\s*(.+)$")
+
+# Une suite de tests de la famille `scripts/**/tests/` : le repertoire doit
+# porter au moins un `test_*.py` pour compter comme suite (#22735).
+SUITE_DIR_RE = re.compile(r"^scripts/(?:[^/]+/)*tests$")
 
 
 def load_testpaths(pytest_ini: Path) -> list[str]:
@@ -310,6 +369,135 @@ def is_covered(testpath: str, covered_dirs: list[str]) -> bool:
     )
 
 
+# --- #22735 : second sens, l'arborescence confrontée à la couverture ---
+
+
+def discover_suites(repo_root: Path) -> list[str]:
+    """Suites de tests présentes sur le disque sous `scripts/**/tests/`.
+
+    Une suite est un répertoire dont le chemin relatif matches SUITE_DIR_RE
+    et qui contient au moins un `test_*.py`. La découverte est faite sur
+    l'ARBRE, jamais sur une liste déclarée : c'est tout l'objet du second
+    sens -- une suite absente des deux listes (pytest.ini et workflows) doit
+    quand même être vue.
+    """
+    scripts_dir = repo_root / "scripts"
+    if not scripts_dir.is_dir():
+        return []
+    suites: set[str] = set()
+    for test_file in scripts_dir.rglob("test_*.py"):
+        rel_dir = test_file.parent.relative_to(repo_root).as_posix()
+        if SUITE_DIR_RE.match(rel_dir):
+            suites.add(rel_dir)
+    return sorted(suites)
+
+
+def all_run_targets(repo_root: Path) -> set[str]:
+    """Cibles pytest réellement exécutées par l'ensemble des workflows."""
+    targets: set[str] = set()
+    for wf in sorted((repo_root / ".github/workflows").glob("*.yml")):
+        targets |= extract_run_targets(wf.read_text(encoding="utf-8"))
+    return targets
+
+
+def uncovered_suites(repo_root: Path) -> list[str]:
+    """Suites présentes sur le disque qu'aucun workflow n'exécute.
+
+    Le garde historique ne voit que les testpaths DÉCLARÉS : une suite
+    absente de pytest.ini ET de la couverture CI lui est invisible. Cette
+    fonction ferme ce trou (#22735 : huit suites vertes en local, jamais
+    rejouées automatiquement).
+    """
+    covered = sorted(all_run_targets(repo_root))
+    excluded = load_ci_excluded(repo_root)
+    return [
+        suite
+        for suite in discover_suites(repo_root)
+        if not is_covered(suite, covered) and suite not in excluded
+    ]
+
+
+def missing_declared_suites(
+    repo_root: Path,
+    coverage: dict[str, list[str]] | None = None,
+) -> list[str]:
+    """Suites déclarées câblées dans WORKFLOW_COVERAGE mais absentes de l'arbre.
+
+    Une cible déclarée qui a disparu du disque laisserait le garde croire
+    à une couverture qui n'existe plus -- le pendant exact de la dérive
+    « cible déclarée disparue du run réel », mais côté arbre.
+    """
+    coverage = WORKFLOW_COVERAGE if coverage is None else coverage
+    missing: list[str] = []
+    for targets in coverage.values():
+        for target in targets:
+            if target.endswith(".py") or not SUITE_DIR_RE.match(target):
+                continue
+            if not (repo_root / target).is_dir():
+                missing.append(target)
+    return sorted(set(missing))
+
+
+# --- #22735 : troisième sens, l'invariant de résolution des noms de modules ---
+
+# Nom de l'option ini qui étend la résolution de paquet aux paquets-espace de
+# noms (pytest >= 8.0). Sans elle, le nom de module d'un fichier est dérivé du
+# seul paquet le plus proche portant `__init__.py`.
+NAMESPACE_OPTION = "consider_namespace_packages"
+
+# Un workflow doit figer pytest >= 8 : avant 8.0, l'option ci-dessus n'existe
+# pas et pytest l'ignorerait sans bruit (un simple `PytestConfigWarning`).
+PYTEST_PIN_RE = re.compile(r"pytest\s*>=\s*8(?:\.\d+)*")
+
+
+def check_namespace_option(repo_root: Path) -> list[str]:
+    """Vérifie l'invariant de désambiguïsation des noms de modules pytest.
+
+    Deux conditions, toutes deux nécessaires :
+
+    1. `pytest.ini` déclare l'option — sans elle, deux suites `tests/` sans
+       paquet parent suffisent à faire tomber la collecte entière d'un job
+       ("Plugin already registered under a different name") ;
+    2. un workflow fige `pytest >= 8` — l'option n'existe pas avant 8.0 et
+       serait alors ignorée sans bruit, donc le défaut reviendrait sans
+       laisser de trace.
+
+    Le contrôle est exercé sur l'ARBRE (pytest.ini + workflows), jamais sur une
+    liste déclarée : c'est la suppression effective de l'option qu'il faut
+    voir, pas la mise à jour d'un manifeste.
+    """
+    problems: list[str] = []
+    ini_path = repo_root / "pytest.ini"
+    parser = configparser.ConfigParser()
+    try:
+        with ini_path.open(encoding="utf-8") as fh:
+            parser.read_file(fh)
+    except OSError:
+        return [f"pytest.ini illisible: {ini_path}"]
+    raw = (parser.get("pytest", NAMESPACE_OPTION, fallback="") or "").strip().lower()
+    if raw not in ("true", "1", "yes", "on"):
+        problems.append(
+            f"pytest.ini ne déclare pas `{NAMESPACE_OPTION} = true` — deux "
+            "suites `tests/` sans paquet parent résolvent alors le même nom de "
+            "module (`tests.conftest`) et la collecte tombe en "
+            "\"Plugin already registered under a different name\""
+        )
+    pinned = False
+    for wf in sorted((repo_root / ".github/workflows").glob("*.yml")):
+        for line in wf.read_text(encoding="utf-8").splitlines():
+            if "pip install" in line and PYTEST_PIN_RE.search(line):
+                pinned = True
+                break
+        if pinned:
+            break
+    if not pinned:
+        problems.append(
+            f"aucun workflow ne fige `pytest>=8` — l'option `{NAMESPACE_OPTION}` "
+            "n'existe pas avant pytest 8.0 et y serait ignorée sans bruit"
+        )
+    return problems
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--verbose", action="store_true")
@@ -360,7 +548,33 @@ def main() -> int:
         for p in problems:
             print(f"  FAIL {p}")
 
-    return 1 if (uncovered or problems) else 0
+    # Second sens (#22735) : l'arborescence confrontée à la couverture.
+    uncovered_disk = uncovered_suites(repo_root)
+    if uncovered_disk:
+        print("Suites de tests sur le disque, non exécutées par la CI "
+              "et non CI-EXCLUDED :")
+        for suite in uncovered_disk:
+            print(f"  FAIL {suite}")
+    elif args.verbose:
+        print(f"[ok] {len(discover_suites(repo_root))} suites sur le disque, "
+              "toutes exécutées par la CI")
+
+    missing = missing_declared_suites(repo_root)
+    if missing:
+        print("Suites déclarées câblées mais absentes de l'arbre :")
+        for suite in missing:
+            print(f"  FAIL {suite}")
+
+    # Troisième sens (#22735) : l'invariant de résolution des noms de modules.
+    namespace_problems = check_namespace_option(repo_root)
+    if namespace_problems:
+        print("Invariant de résolution des noms de modules pytest :")
+        for p in namespace_problems:
+            print(f"  FAIL {p}")
+
+    return 1 if (
+        uncovered or problems or uncovered_disk or missing or namespace_problems
+    ) else 0
 
 
 if __name__ == "__main__":
