@@ -541,6 +541,12 @@ _BOT_STICKY_ADVISORY_HEADERS: frozenset[str] = frozenset({
     "degraded-mode-advisory",
     "factual-mislabel-advisory",
     "markdown-claims-output-advisory",
+    # #22209 tranche 1b : `scan-md-hierarchy-drift.yml` postait un commentaire
+    # NEUF a chaque push (aucun marqueur). Absorbe dans la voie rapide, il
+    # pose desormais un sticky comme ses trois voisins -- sans cette entree,
+    # chaque mise a jour serait lue comme une surface de discussion modifiee
+    # par un tiers et perimerait le dossier de prevalidation.
+    "md-hierarchy-drift-advisory",
     "organ-duplication-advisory",
     "outputs-text-fragmentation-advisory",
     "render-volume-delta-advisory",
