@@ -46705,7 +46705,7 @@ réseau-modèle (DISCOVER, réinjection, chirurgie, contrôles) ;
 anglais (`TensorProductRepresentation_en.lean`, convention i18n #4980) — mêmes énoncés, preuves
 byte-identiques.
 ",,,,,,,,acde846d3a5c089e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13b-CHSH-Tsirelson-Native.ipynb,3666be08,markdown,fr,7c6776440266dade,"# Lean-13b : la borne de Tsirelson — digestion formelle de la frontière classique/quantique
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13b-CHSH-Tsirelson-Native.ipynb,3666be08,markdown,fr,c40f365d25d57224,"# Lean-13b : la borne de Tsirelson — digestion formelle de la frontière classique/quantique
 
 **Navigation** : [<< Lean-13 Kochen-Specker](Lean-13-Kochen-Specker.ipynb) · [Lean-13c CHSH-Landau >>](Lean-13c-CHSH-Landau-Saturation.ipynb) · [Lean-16c Free-Will](Lean-16c-Conway-Free-Will-Theorem.ipynb) · [Sommaire série](README.md)
 
@@ -46713,8 +46713,7 @@ Le **jeu de CHSH** (Clauser, Horne, Shimony, Holt 1969) fait s'affronter deux jo
 communiquent plus : Alice reçoit un bit $x$, Bob un bit $y$, chacun rend un bit ; ils gagnent
 selon la règle $a \oplus b = x \wedge y$. Le score le plus élevé qu'ils puissent atteindre en
 partageant seulement du hasard **classique** est $2$. En partageant un état **intrigué**, ils
-atteignent $2\sqrt{2}$ — c'est la **borne de Tsirelson** (1980), la première séparation
-quantique/classique prouvée de l'histoire de la physique.
+atteignent $2\sqrt{2}$ — c'est la **borne de Tsirelson** (1980).
 
 Ce notebook est le **compagnon natif** du module `conway_lean/Conway/CHSHQuantum.lean` : il
 n'expose pas la théorie « en prose », il **importe le module et exécute ses énoncés** dans un
@@ -46731,7 +46730,7 @@ Ce que la tranche sépare, et que ce notebook prend soin de ne pas confondre :
 Provenance : J. F. Clauser, M. A. Horne, A. Shimony, R. A. Holt, *Proposed experiment to test
 local hidden-variable theories*, Phys. Rev. Lett. **23** (1969) ; B. S. Tsirelson (Cirel'son),
 *Quantum generalizations of Bell's inequality*, Lett. Math. Phys. **4** (1980).
-",,,,,,,,7c6776440266dade,,,,,,,,,,,,,,,
+",,,,,,,,c40f365d25d57224,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13b-CHSH-Tsirelson-Native.ipynb,8b25373a,markdown,fr,2c8bff6f2529c889,"## 1. Vérification de l'environnement
 
 L'import ci-dessous charge les modules du lake `conway_lean` (compilés en `.olean`). Il est
@@ -46776,7 +46775,7 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13b-CHSH-Tsirelson-Native.ipynb,dc212dc0,
 (`leanprover/lean4:v4.33.0`, le pin de `conway_lean`), et la stdlib est résolue. Les imports
 de la cellule 1 peuvent maintenant être **tenus pour acquis** — ils ne l'étaient pas.
 ",,,,,,,,f77a2744abffb519,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13b-CHSH-Tsirelson-Native.ipynb,ae99c202,markdown,fr,a0939625e5224568,"## 3. Les trois bornes — tableau comparatif
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13b-CHSH-Tsirelson-Native.ipynb,ae99c202,markdown,fr,12fb991cc0af686b,"## 3. Les trois bornes — tableau comparatif
 
 | Régime | Objet mathématique | Borne | Déclaration Lean | Statut de la preuve |
 |---|---|---|---|---|
@@ -46785,13 +46784,13 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13b-CHSH-Tsirelson-Native.ipynb,ae99c202,
 | **quantique** | `CHSHQuantum.chshOperator A₀ A₁ B₀ B₁` | $\le (2\sqrt{2}) \cdot 1$ | `Conway.CHSHQuantum.tsirelson_bound` | **importé** de `Mathlib.Algebra.Star.CHSH.tsirelson_inequality` |
 | **séparation** | $2$ vs $2\sqrt{2}$ | $2 < 2\sqrt{2}$ | `Conway.CHSHQuantum.classical_quantum_gap` | prouvé dans ce lake |
 
-Deux lignes disent « prouvé dans ce lake », une dit « importé » : c'est la distinction que la
+Trois lignes disent « prouvé dans ce lake », une dit « importé » : c'est la distinction que la
 grille de #13106 demande de rendre visible. La borne quantique n'est **pas** redémontrée ici —
 la redériver artificiellement aurait été un exercice d'école, pas une digestion. Ce qui est
 local, c'est la **carte d'hypothèses** : le raccord entre le vocabulaire CoursIA et les
 hypothèses exactes de Mathlib, la réécriture de la forme brute $\sqrt{2}^{\,3} \cdot 1$ vers
 la forme usuelle $2\sqrt{2} \cdot 1$, et la preuve que l'écart est **strict**.
-",,,,,,,,a0939625e5224568,,,,,,,,,,,,,,,
+",,,,,,,,12fb991cc0af686b,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13b-CHSH-Tsirelson-Native.ipynb,74f81683,markdown,fr,195a4bb640a8c516,"## 4. Exemple guidé 1 — la signature exacte du théorème quantique
 
 Lire une signature, c'est lire la carte de ce qu'un théorème exige. Celle de `tsirelson_bound`
@@ -46905,12 +46904,12 @@ Trois exercices bornés pour manipuler les objets du lake. Chaque cellule **s'ex
 quelle** (corps trivial) : à vous de remplacer le corps par la bonne définition. Les `#eval`
 de contrôle affichent côte à côte votre valeur et celle du lake.
 ",,,,,,,,2cdb04858155475c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13b-CHSH-Tsirelson-Native.ipynb,72b4abe4,markdown,fr,950b1ff18463363d,"### Exercice 1 — le profile est-il maximal ?
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13b-CHSH-Tsirelson-Native.ipynb,72b4abe4,markdown,fr,7467592b9eca7492,"### Exercice 1 — le profil est-il maximal ?
 
 Définissez `estMaximal` renvoyant `true` si et seulement si le score du profil vaut exactement
 $2$ (le maximum classique). Le corps actuel renvoie `true` en toutes circonstances : sur les
 profils de score négatif, votre valeur et celle du lake divergeront — c'est le test.
-",,,,,,,,950b1ff18463363d,,,,,,,,,,,,,,,
+",,,,,,,,7467592b9eca7492,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13b-CHSH-Tsirelson-Native.ipynb,4bc6a064,code,fr,f1e7bda52eb691a9,"-- Exercice 1 : le profil atteint-il le maximum classique (score = 2) ?
 -- TODO etudiant : remplacer le corps ci-dessous
 def estMaximal (a₀ a₁ b₀ b₁ : Conway.CHSH.Outcome) : Bool :=

@@ -377,5 +377,57 @@ def test_render_text_announces_the_direction_in_both_senses():
         assert "enfant declare" not in text
 
 
+# --------------------------------------------------------------------------
+# lecture en echec (#23406) -- l'organe avertit, il ne meurt pas
+#
+# Les tests ci-dessus passent a `render_text` des dictionnaires construits a
+# la main, `title` et `reason` fournis. Aucun ne traversait la chaine REELLE
+# `assess()` en echec -> `main()` -> `render_text()`, qui est precisement le
+# chemin ou l'organe plantait (KeyError 'title', mesure du 2026-10-30).
+# --------------------------------------------------------------------------
+
+def test_render_text_survives_a_failed_read(monkeypatch, tmp_path):
+    monkeypatch.setattr(
+        "scripts.ci.check_umbrella_freshness._gh_json", lambda args: None)
+    result = assess(11900, tmp_path, "jsboige/CoursIA")
+    text = render_text(result)                       # ne doit pas lever
+    lowered = text.lower()
+    # Le texte NOMME l'echec de lecture : il ne se confond ni avec un
+    # conteneur sature mesure, ni avec un « aucun enfant cite » metier.
+    # Le mot SATURATED peut apparaitre dans la clause NEGATIVE (« ce n'est
+    # ni un SATURATED mesure... ») : ce qui compte est le VERDICT rendu.
+    assert "echoue" in lowered or "échec" in lowered
+    assert "inconnu" in lowered
+    assert "verdict: unknown" in lowered
+    assert "verdict: saturated" not in lowered
+    assert "aucun enfant" not in lowered
+
+
+def test_main_warns_instead_of_crashing_when_read_fails(monkeypatch, capsys):
+    monkeypatch.setattr(
+        "scripts.ci.check_umbrella_freshness._gh_json", lambda args: None)
+    rc = main(["11900", "--repo-root", "."])         # ne doit pas lever
+    captured = capsys.readouterr()
+    # Advisory : la lecture en echec ne rougit pas l'organe (#11900), et
+    # seul SATURATED sort en 1.
+    assert rc == 0
+    assert "::warning::#11900" in captured.err
+    assert "#11900" in captured.out
+
+
+def test_a_failed_read_is_not_a_business_unresolved(monkeypatch, tmp_path):
+    # Controle de distinction : deux etats differents ne doivent pas rendre
+    # le meme texte, sinon l'avertissement se perd dans le verdict metier.
+    monkeypatch.setattr(
+        "scripts.ci.check_umbrella_freshness._gh_json",
+        lambda args: {"number": 11900, "title": "t", "state": "OPEN",
+                      "body": "rien qui cite une enfant"})
+    unresolved = render_text(assess(11900, tmp_path, "jsboige/CoursIA"))
+    monkeypatch.setattr(
+        "scripts.ci.check_umbrella_freshness._gh_json", lambda args: None)
+    unreadable = render_text(assess(11900, tmp_path, "jsboige/CoursIA"))
+    assert unresolved != unreadable
+
+
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-v"]))
