@@ -17,6 +17,7 @@ Recherche indépendante utilisant des données locales (yfinance, pandas, sklear
 | `research_btc_ml.ipynb` | Caractéristiques de prédiction ML BTC | (b) QuantBook QC Cloud | QC Cloud crypto (BTCUSDT Binance) |
 | `research_composite_ff_aw.ipynb` | Composite FamaFrench + AllWeather | (c) Standalone | yfinance |
 | `research_composite_mom_regime.ipynb` | Composite Momentum + Régime | (c) Standalone | yfinance |
+| `research_day_of_week.ipynb` | Effet jour de la semaine (DOW, calendrier) — verdict NO BEATS net de coûts | (c) Standalone | yfinance (SPY/QQQ/EFA) |
 | `research_idio_vol_anomaly.ipynb` | Anomalie de volatilité idiosyncratique (IVOL) : backtest long-short, verdict INCONCLUSIVE | (c) Standalone | panier local CSV (SPY + 14 ETF) |
 | `research_iv_rank_strike_clusters.ipynb` | Facteurs IV-Rank et strike-availability (article QC #18766, verdicts NO-BEATS) | (c) Standalone | yfinance (VIX/SPY) + resultats QC Cloud mesures |
 | `research_m11ef_ensemble.ipynb` | Méthodes d'ensemble | (b) QuantBook QC Cloud | QC Cloud crypto (Bitstamp/Coinbase) |
