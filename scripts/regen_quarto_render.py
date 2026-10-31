@@ -84,6 +84,7 @@ NOTEBOOK_SUBTREES = (
     "MyIA.AI.Notebooks/CaseStudies/",            # tranche 15 #10923 (6)
     "MyIA.AI.Notebooks/Complexity/",             # tranche 19 #18423 (9 notebooks, complexite computationnelle)
     "MyIA.AI.Notebooks/NLP/",                    # tranche 19 #18423 (5, TAL/TALN)
+    "MyIA.AI.Notebooks/Physique/",                 # serie Physique numerique (EPIC #23161) -- Integrales deplaces de Probas/Applications/ (T1)
     "MyIA.AI.Notebooks/QuantConnect/",           # tranche 19 #18423 (203 rendus, 221 git-tracked - 18 sous /archive/ ; sous-familles : projects, Python, research, ML-Training-Pipeline, partner-course-quant-trading, kelly_lean)
     "MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/",  # tranche 19 #18423 (6)
     "MyIA.AI.Notebooks/GenAI/3D/",                # serie 3D Pli 2 #19949 (2, NeRF from scratch + critique des limitations)

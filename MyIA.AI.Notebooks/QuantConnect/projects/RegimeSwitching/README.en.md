@@ -56,11 +56,13 @@ The signal rules (regime, RSI, momentum), the stop, the 5-point threshold and th
 
 The `fix=on` residual, at most 1.6 % above 1, has not been attributed order by order. It involves no short position and no double order. It is consistent with the 5-point threshold, which can leave a line slightly above its target, and with orders sized earlier in the session filling at the close.
 
-**Innocuity check.** On its coded window, the `main` code from before this PR ran unmodified. The code of this PR ran with `fix=off` on the same window, the same day. The two order logs are identical: 263 orders out of 263 (date, symbol, quantity, status), and no QC statistic differs.
+**Innocuity check.** On its coded window, the `main` code from before PR #23224 ran unmodified. The code of PR #23224 ran with `fix=off` on the same window, the same day. The two order logs are identical: 263 orders out of 263 (date, symbol, quantity, status), and no QC statistic differs.
 
 ## Backtest Metrics
 
-QC Cloud backtests of 2026-10-29, starting capital 100,000, brokerage fees modelled by Lean. The retained strategy is the code of this PR with `fix=on` (`main.py` sha256 `dd78d4640e34`); the references are the same code in `mode` `spy`, `6040` and `ew4`. Results read after `completed: true`.
+QC Cloud backtests of 2026-10-29, starting capital 100,000, brokerage fees modelled by Lean. The retained strategy is the code of PR #23224 with `fix=on` (`main.py` sha256 `dd78d4640e34`); the references are the same code in `mode` `spy`, `6040` and `ew4`. Results read after `completed: true`.
+
+Depuis #23253, le titre de section de `main.py` ne cite plus de « Beta-annealing » : ce mécanisme n'a jamais été implémenté. Seul ce commentaire change, et l'empreinte du fichier passe de `dd78d4640e34` à `cb2ad1684e8a`. Toutes les lignes hors commentaires sont identiques : les ordres et les mesures ci-dessous restent ceux de l'empreinte `dd78d4640e34`.
 
 **w1: 2015-01-01 → 2024-12-31** (2516 tradable dates)
 
