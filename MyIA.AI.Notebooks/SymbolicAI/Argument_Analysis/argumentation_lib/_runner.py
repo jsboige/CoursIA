@@ -237,9 +237,13 @@ PHASE_TASK_DESCRIPTIONS = {
         "Encoder les arguments en logique propositionnelle et consigner les "
         "verdicts du solveur"
     ),
-    "conversation": (
-        "Analyser rhétoriquement le texte : arguments, sophismes, encodage "
-        "formel et conclusion"
+    "conversation_informal": (
+        "Analyser rhétoriquement le texte : arguments et sophismes "
+        "(partie conversationnelle, agent informel)"
+    ),
+    "conversation_logic": (
+        "Encoder formellement le texte et en tirer la conclusion "
+        "(partie conversationnelle, agent logique)"
     ),
 }
 
@@ -1031,18 +1035,30 @@ la phase 1, déjà passée.
         )
 
         _logger.info("Starting conversational orchestration...")
-        # #23726 : une tâche porte la conversation ; son identifiant exact
-        # est donné aux deux agents qui peuvent la clôturer.
-        conversation_task_id = self._open_phase_task("conversation")
+        # #23726 : UNE tâche par agent de la conversation, jamais un
+        # identifiant partagé. Un id donné aux deux agents serait une source
+        # d'écrasement : le second à appeler mark_task_as_answered écraserait
+        # l'entrée du premier dans state.answers (self.answers[task_id] = ...),
+        # et la réponse de l'agent le plus prompt ferait disparaître, sans
+        # trace, le travail de l'autre — exactement le mode de panne que
+        # #23726 documente. Deux tâches distinctes, chacune clôturée par SON
+        # agent, rendent la non-clôture de chacun détectable.
+        conversation_informal_task_id = self._open_phase_task(
+            "conversation_informal"
+        )
+        conversation_logic_task_id = self._open_phase_task("conversation_logic")
         pm = create_pm_agent(self.kernel, self.llm_service_id, self.state)
         informal = create_informal_agent(
             self.kernel,
             self.llm_service_id,
             self.state,
-            task_id=conversation_task_id,
+            task_id=conversation_informal_task_id,
         )
         logic = create_logic_agent(
-            self.kernel, self.llm_service_id, self.state, task_id=conversation_task_id
+            self.kernel,
+            self.llm_service_id,
+            self.state,
+            task_id=conversation_logic_task_id,
         )
         agents = [pm, informal, logic]
 
@@ -1095,10 +1111,22 @@ la phase 1, déjà passée.
             "journal": journal,
             "sequence": [entry["speaker"] for entry in journal],
             "selection_trace": strategy.selection_trace,
-            "task_id": conversation_task_id,
-            "task_closed": self._close_phase_task(
-                "conversation", conversation_task_id, "conversation"
-            ),
+            "task_id": {
+                "informal": conversation_informal_task_id,
+                "logic": conversation_logic_task_id,
+            },
+            "task_closed": {
+                "informal": self._close_phase_task(
+                    "conversation_informal",
+                    conversation_informal_task_id,
+                    "InformalAgent",
+                ),
+                "logic": self._close_phase_task(
+                    "conversation_logic",
+                    conversation_logic_task_id,
+                    "LogicAgent",
+                ),
+            },
             "state_snapshot": self.state.get_state_snapshot(summarize=True),
             "conclusion": self.state.final_conclusion,
         }

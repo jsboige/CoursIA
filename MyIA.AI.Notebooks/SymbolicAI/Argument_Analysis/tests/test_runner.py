@@ -132,10 +132,17 @@ def _install_sk_mock():
         # instances created since the last reset (order-preserving)
         instances = []
 
-        def __init__(self, agents=None, chat_history=None, termination_strategy=None):
+        def __init__(
+            self,
+            agents=None,
+            chat_history=None,
+            termination_strategy=None,
+            selection_strategy=None,
+        ):
             self.agents = agents or []
             self.chat_history = chat_history
             self.termination_strategy = termination_strategy
+            self.selection_strategy = selection_strategy
             AgentGroupChat.instances.append(self)
 
         async def invoke(self):
@@ -144,7 +151,8 @@ def _install_sk_mock():
             for name in AgentGroupChat.YIELD_NAMES:
                 if AgentGroupChat.ON_TURN is not None:
                     AgentGroupChat.ON_TURN(name, self)
-                yield SimpleNamespace(name=name)
+                # content : lu par run_conversational (journal), pas par run()
+                yield SimpleNamespace(name=name, content="")
 
     mod_gc.AgentGroupChat = AgentGroupChat
 
@@ -168,6 +176,23 @@ def _install_sk_mock():
     agents.strategies = strategies
     strategies.termination = term_parent
     term_parent.default_termination_strategy = mod_dts
+
+    # semantic_kernel.agents.strategies.selection.selection_strategy
+    # (#23726) : base de DelegatingSelectionStrategy, importée par
+    # run_conversational. Squelette minimal pour tester l'orchestration
+    # conversationnelle sans SK réel.
+    sel_parent = ModuleType("semantic_kernel.agents.strategies.selection")
+    mod_sel = ModuleType(
+        "semantic_kernel.agents.strategies.selection.selection_strategy"
+    )
+
+    class SelectionStrategy:
+        def __init__(self):
+            pass
+
+    mod_sel.SelectionStrategy = SelectionStrategy
+    strategies.selection = sel_parent
+    sel_parent.selection_strategy = mod_sel
 
     # contents
     contents = ModuleType("semantic_kernel.contents")
@@ -226,6 +251,8 @@ def _install_sk_mock():
         "semantic_kernel.agents.strategies": strategies,
         "semantic_kernel.agents.strategies.termination": term_parent,
         "semantic_kernel.agents.strategies.termination.default_termination_strategy": mod_dts,
+        "semantic_kernel.agents.strategies.selection": sel_parent,
+        "semantic_kernel.agents.strategies.selection.selection_strategy": mod_sel,
         "semantic_kernel.contents": contents,
         "semantic_kernel.contents.chat_message_content": mod_cmc,
         "semantic_kernel.contents.utils": utils,
@@ -1356,3 +1383,76 @@ def test_agents_built_without_task_id_keep_the_vendored_prompt():
     logic = create_logic_agent(k, "svc", s)
     assert informal.instructions is PROMPT_INFORMAL_ANALYSIS
     assert logic.instructions is PROMPT_LOGIC_ANALYSIS
+
+
+# ---------------------------------------------------------------------------
+# run_conversational — une tâche par agent (#23726, réserve Hermes v2)
+# ---------------------------------------------------------------------------
+# Défaut originel : run_conversational ouvrait UNE tâche et donnait son
+# identifiant AUX DEUX agents (informal + logic). Le second à appeler
+# mark_task_as_answered écrasait l'entrée du premier dans state.answers
+# (self.answers[task_id] = ...), et la réponse de l'agent le plus prompt
+# disparaissait SANS TRACE — le mode de panne que #23726 documente, reproduit
+# à l'intérieur du correctif. Correction : une tâche par agent. Ces deux tests
+# étaient absents de la suite (qui ne pilotait que run(), d'où le passage à
+# l'interstice) : ils verrouillent la conversational sur le même contrat.
+
+
+def _drive_conversational(runner, close=None):
+    """Piloter run_conversational (async) depuis un test sync, en jouant la
+    clôture des tâches comme le ferait un agent (via ON_TURN)."""
+    AGC = _agc()
+    if close is not None:
+        AGC.ON_TURN = close
+    return asyncio.run(runner.run_conversational(max_turns=2))
+
+
+def test_conversation_opens_one_task_per_agent_not_one_shared():
+    """run_conversational : chaque agent porte l'identifiant de SA tâche,
+    jamais un identifiant commun (réserve Hermes v2, head 375c09c13e)."""
+    AGC = _agc()
+    out = _drive_conversational(
+        AnalysisRunner(_kernel(), "svc", _state(), max_turns=2)
+    )
+
+    # deux tâches de conversation distinctes, pas une seule partagée
+    assert set(out["task_id"].keys()) == {"informal", "logic"}
+    informal_id, logic_id = out["task_id"]["informal"], out["task_id"]["logic"]
+    assert informal_id != logic_id
+
+    # chaque instructions d'agent nomme son propre id, PAS celui de l'autre
+    agents = {a.name: a for chat in AGC.instances for a in chat.agents}
+    assert informal_id in agents["InformalAgent"].instructions
+    assert logic_id in agents["LogicAgent"].instructions
+    assert logic_id not in agents["InformalAgent"].instructions
+    assert informal_id not in agents["LogicAgent"].instructions
+
+
+def test_conversational_answers_of_both_agents_are_both_retained():
+    """Anti-régression centrale : les réponses des DEUX agents sont conservées
+    — l'une n'écrase plus l'autre dans state.answers."""
+    AGC = _agc()
+    s = _state()
+
+    def close_both(name, chat):
+        # chaque agent clôture SA propre tâche (ids distincts) ; avant la
+        # correction les deux partageaient un id et le second écrasait le
+        # premier dans state.answers.
+        agent = next(a for a in chat.agents if a.name == name)
+        for tid in s.analysis_tasks:
+            if f"`{tid}`" in agent.instructions and tid not in s.answers:
+                s.mark_task_as_answered(tid, f"reponse de {name}", name)
+
+    AGC.YIELD_NAMES = ["InformalAgent", "LogicAgent"]
+    out = _drive_conversational(
+        AnalysisRunner(_kernel(), "svc", s, max_turns=2), close=close_both
+    )
+
+    informal_id, logic_id = out["task_id"]["informal"], out["task_id"]["logic"]
+    # les deux réponses survivent, chacune sous son propre id
+    assert set(s.answers.keys()) >= {informal_id, logic_id}
+    assert s.answers[informal_id]["author_agent"] == "InformalAgent"
+    assert s.answers[logic_id]["author_agent"] == "LogicAgent"
+    # et la clôture des deux tâches est rapportée, pas une seule
+    assert out["task_closed"]["informal"] is True
+    assert out["task_closed"]["logic"] is True
