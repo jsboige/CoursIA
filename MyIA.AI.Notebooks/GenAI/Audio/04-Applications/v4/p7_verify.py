@@ -213,6 +213,7 @@ def run(force: bool = False) -> Path:
 
             wers: list[float] = []
             omission_records: list[dict] = []
+            unverifiable: list[dict] = []
             for idx in sample_indices:
                 if idx >= len(segments):
                     continue
@@ -221,6 +222,21 @@ def run(force: bool = False) -> Path:
                 mp3_path = tts_result.get("mp3_path", "")
 
                 if not mp3_path or not Path(mp3_path).exists():
+                    # Un segment sans MP3 n'a jamais ete rendu (P5 en echec).
+                    # Le controle d'omission ne peut pas le lire -- le sauter
+                    # en silence laisserait un verdict vert « aucune omission »
+                    # au-dessus d'un corpus qui a des trous. Il est compte, et
+                    # nomme dans le rapport.
+                    unverifiable.append(
+                        {
+                            "seg_index": seg.seg_index,
+                            "speaker": seg.speaker,
+                            "status": tts_result.get("status", ""),
+                            "reason": (
+                                "no_mp3_path" if not mp3_path else "mp3_absent"
+                            ),
+                        }
+                    )
                     continue
 
                 try:
@@ -303,6 +319,11 @@ def run(force: bool = False) -> Path:
             wer_results["omission_words_3plus"] = float(
                 sum(r["n_words"] for r in omission_records)
             )
+            # Un echantillon qu'on n'a pas pu lire n'est pas un echantillon
+            # propre : le compte est publie a cote des compteurs d'omission,
+            # pour qu'un lecteur du rapport ne prenne pas un zero pour un
+            # « rien a signaler » (cf IncompleteAudiobookError en p6).
+            wer_results["unverifiable_segments"] = float(len(unverifiable))
             omission_path = BASE_DIR / "outputs" / "omission_report.json"
             omission_path.write_text(
                 json.dumps(
@@ -321,6 +342,8 @@ def run(force: bool = False) -> Path:
                         ),
                         "sampled_segments": len(sample_indices),
                         "segments_with_omissions": len(omission_records),
+                        "segments_unverifiable_missing": len(unverifiable),
+                        "unverifiable_missing": unverifiable,
                         "records": omission_records,
                     },
                     indent=2,
@@ -340,6 +363,14 @@ def run(force: bool = False) -> Path:
                         f"    seg {rec['seg_index']} ({rec['speaker']}): "
                         f"{rec['n_spans']} span(s), ex: {first[:70]}"
                     )
+            elif unverifiable:
+                print(
+                    f"  OMISSIONS: none >=3 mots sur les "
+                    f"{len(sample_indices) - len(unverifiable)} segment(s) "
+                    f"verifiable(s) -- MAIS {len(unverifiable)} segment(s) "
+                    f"NON VERIFIABLE(S), aucun MP3 : "
+                    + ", ".join(str(u["seg_index"]) for u in unverifiable)
+                )
             else:
                 print("  OMISSIONS: none >=3 mots")
 
@@ -379,7 +410,15 @@ def run(force: bool = False) -> Path:
     # Verdict
     detected = diarization_results.get("detected_speakers", 999)
     mean_wer = wer_results.get("mean", 1.0)
-    verdict = "PASS" if (detected <= 10 and mean_wer <= 0.15) else "NEEDS_REVIEW"
+    # Un echantillon non verifiable interdit le PASS : la moyenne WER porte
+    # sur les seuls segments lisibles, donc un corpus troue peut afficher une
+    # excellente moyenne. « propre sur ce qu'on a pu lire » n'est pas « propre ».
+    unverifiable_n = int(wer_results.get("unverifiable_segments", 0))
+    verdict = (
+        "PASS"
+        if (detected <= 10 and mean_wer <= 0.15 and unverifiable_n == 0)
+        else "NEEDS_REVIEW"
+    )
 
     report = QualityReport(
         wer=wer_results,
@@ -394,6 +433,11 @@ def run(force: bool = False) -> Path:
     print(f"[P7] Done: {output_path}")
     print(f"  Verdict: {verdict}")
     print(f"  Speakers: {detected}, WER: {mean_wer}")
+    if unverifiable_n:
+        print(
+            f"  [!] {unverifiable_n} segment(s) non verifiable(s) (aucun MP3) "
+            "-- le PASS est refuse tant qu'ils manquent"
+        )
 
     return output_path
 

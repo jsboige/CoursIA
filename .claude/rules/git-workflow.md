@@ -16,13 +16,20 @@ Examples: `Add: notebook sur les Transformers`, `Fix: correction d'erreurs dans 
 
 ### Safe reference syntax (prevent premature issue auto-close)
 
-GitHub auto-closes issues on `Refs #N`, `Fixes #N`, `Closes #N`. Use safe syntax:
+GitHub auto-closes an issue only when a closing keyword (`close`/`closes`/`closed`, `fix`/`fixes`/`fixed`, `resolve`/`resolves`/`resolved`) **immediately** precedes the reference. Anything between the two is text, and nothing closes. Use safe syntax:
 
 | Intent | Correct | Wrong |
 |--------|---------|-------|
 | Link without closing | `See #N` or `Part of #N` | ~~`Refs #N`~~ |
-| Close when ALL criteria met | `Closes #N` (verify acceptance first) | ~~`Fixes #N`~~ for partial |
+| Close when ALL criteria met | `Closes #N` on its own line (verify acceptance first) | ~~`Fixes #N`~~ for partial |
 | Partial delivery | `See #N` (partial: X/Y criteria) | ~~`Refs #N`~~ |
+
+**The scope swallows the keyword (#23348).** The mandated `type(scope): subject` form has an inviting place for the issue number — `type(scope,#N): subject` — and that form closes nothing: `(` and the scope sit between the keyword and the number. Measured on `origin/main` over 500 commits: 299 distinct issue numbers cited this way, **186 still open**; among the 162 cited by a correction verb, **95 still open** — issues whose fix is already on `main`, inflating the belt with work already done. Never rely on the subject alone to close. Two forms that work:
+
+- `Fix(ci,#22937): …` **and** a `Closes #22937` line in the commit body (for a squash merge, the PR body becomes that message);
+- `Fix(ci): …` and a `Closes #22937` line in the body.
+
+The lister `python scripts/ci/list_scope_swallowed_issues.py` (`--json`, `--all-forms`) names the pairs (open issue, correction commit) so the residual can be triaged. It closes nothing, comments nothing: triage and closure belong to the coordinator (G.9).
 
 **Incident**: 3 issues (#1943, #2048, #2158) auto-closed by GitHub on partial PRs using `Refs #N`. See #2211.
 

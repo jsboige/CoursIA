@@ -20,7 +20,9 @@ namespace MyIA.AI.Shared.Tests.Search;
 /// confond pas avec l'erreur cadree <c>?</c> ; un moteur muet est <b>nomme</b>
 /// apres le delai (un silence n'est pas une reponse vide — une reponse vide est
 /// un resultat GTP valide) ; et les coordonnees bouclent avec
-/// <see cref="GoPoint"/>, le I saute compris.
+/// <see cref="GoPoint"/>, le I saute compris. La tranche 10 y ajoute le
+/// <c>genmove</c> type : intersection, passe et abandon se lisent sans faire
+/// de « resign » une intersection.
 /// </summary>
 public sealed class GtpClientWitnessTests
 {
@@ -197,6 +199,88 @@ public sealed class GtpClientWitnessTests
         Assert.Throws<GtpException>(() => GtpCoordinate.Parse("C0", 5));   // rangee nulle
         Assert.Throws<GtpException>(() => GtpCoordinate.Parse("C6", 5));   // rangee hors plateau
         Assert.Throws<GtpException>(() => GtpCoordinate.Parse("resign", 9)); // abandon : pas une intersection
+    }
+
+    [Fact]
+    public void GenMove_RendUnSommetType()
+    {
+        using ScriptedEngine engine = new();
+        engine.Responses.Respond("= D4", "");
+        using GtpClient client = new(engine.Commands, engine.Responses);
+
+        GtpMove move = client.GenMove(GoColor.Black, 9);
+
+        Assert.False(move.IsResign);
+        Assert.False(move.IsPass);
+        Assert.Equal(new GoPoint(3, 3), move.Point);
+        Assert.Contains("genmove B", engine.Commands.ToString());
+    }
+
+    [Fact]
+    public void GenMove_RendLePasseType()
+    {
+        using ScriptedEngine engine = new();
+        engine.Responses.Respond("= pass", "");
+        using GtpClient client = new(engine.Commands, engine.Responses);
+
+        GtpMove move = client.GenMove(GoColor.White, 9);
+
+        Assert.True(move.IsPass);
+        Assert.False(move.IsResign);
+        Assert.Equal(GoPoint.Pass, move.Point);
+        Assert.Contains("genmove W", engine.Commands.ToString());
+    }
+
+    [Fact]
+    public void GenMove_RendLAbandonTypeSansSommet()
+    {
+        using ScriptedEngine engine = new();
+        engine.Responses.Respond("= resign", "");
+        using GtpClient client = new(engine.Commands, engine.Responses);
+
+        GtpMove move = client.GenMove(GoColor.Black, 9);
+
+        Assert.True(move.IsResign);
+        Assert.False(move.IsPass);
+        Assert.Null(move.Vertex);
+        Assert.Throws<InvalidOperationException>(() => move.Point);
+    }
+
+    [Fact]
+    public void GenMove_UneReponseDErreurEstNommeAvecLaCommande()
+    {
+        using ScriptedEngine engine = new();
+        engine.Responses.Respond("? engine panic", "");
+        using GtpClient client = new(engine.Commands, engine.Responses);
+
+        GtpException ex = Assert.Throws<GtpException>(
+            () => client.GenMove(GoColor.Black, 9));
+
+        Assert.Contains("genmove B", ex.Message);
+        Assert.Contains("engine panic", ex.Message);
+    }
+
+    [Fact]
+    public void GenMove_UnContenuQuiNestPasUnSeulMotEstRefuse()
+    {
+        using ScriptedEngine engine = new();
+        engine.Responses.Respond("= D4 E5", "");
+        using GtpClient client = new(engine.Commands, engine.Responses);
+
+        GtpException ex = Assert.Throws<GtpException>(
+            () => client.GenMove(GoColor.Black, 9));
+
+        Assert.Contains("genmove B", ex.Message);
+        Assert.Contains("D4 E5", ex.Message);
+    }
+
+    [Fact]
+    public void ParseGenMove_DistingueLesTroisIssuesSansToucherAuParseur()
+    {
+        Assert.Equal(new GoPoint(3, 3), GtpCoordinate.ParseGenMove("D4", 9).Point);
+        Assert.True(GtpCoordinate.ParseGenMove("pass", 9).IsPass);
+        Assert.True(GtpCoordinate.ParseGenMove("resign", 9).IsResign);
+        Assert.Throws<GtpException>(() => GtpCoordinate.Parse("resign", 9));
     }
 
     [Fact]
