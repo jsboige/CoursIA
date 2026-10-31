@@ -74,6 +74,37 @@ Une liste **vide** ou **illisible** (repertoire absent, fichier non lisible) n'e
 `UNREADABLE`, jamais une liberation. Le `sparse-checkout` du workflow garde donc
 `.github/workflows` : sans ces fichiers, la liste serait vide a chaque passage.
 
+#### La lecture locale est CIBLEE (vague 4)
+
+La question que pose la lecture locale est « le parc local est-il **affame** ? ». Elle ne
+peut repondre que sur les runs qui **peuvent** porter un job `coursia-linux`. La lire
+sans cibler la consomme sur des runs qui n'en portent pas : sous saturation de l'offre
+hebergee, les runs anciens de la file sont presque tous des runs qui attendent
+`ubuntu-latest`, et ils mangeaient seuls le budget de 120 lectures -- la lecture se
+tronquait avant d'etablir quoi que ce soit, et la soupape se fermait exactement dans le
+regime ou elle devait s'ouvrir (mesure du coordinateur, 2026-10-28 16:55Z, run
+40730110344 : `129 job(s) heberge(s) en file`, `16 slot(s) local(aux) libre(s)`, et
+lecture locale TRONQUEE).
+
+Le ciblage se fait par `run.path`, le chemin du workflow porte par la reponse des runs :
+un run dont le workflow ne peut pas porter un job local est **ecarte sans lecture**, et
+son exclusion ne retire rien a la mesure. La liste des workflows concernes est **derivee
+du depot a chaque passage** (`derive_local_capable_workflows`), jamais recopiee :
+
+- les workflows **statiquement locaux** -- un `runs-on` qui porte le label du parc local ;
+  c'est l'organe de politique des runners (`local_capable_workflows`) qui possede cette
+  connaissance, le controleur ne la reecrit pas ;
+- la **cohorte hybride**, deja derivee par le marqueur ;
+- les **appelants** de workflows reutilisables : le `run.path` d'un run designe le
+  workflow **appelant**, donc un appelant d'un workflow local est concerne lui aussi.
+
+Un `runs-on` dynamique **non audite** est traite comme **capable** : une expression qu'on
+ne sait pas lire peut atterrir n'importe ou, et l'ignorer cacherait une affamescence.
+Un run dont le `path` est **absent** est de meme lu, et compte a part. Seule la
+**lecture du fichier** peut faire echouer la derivation -- une liste **vide** ou
+**illisible** rend alors `UNREADABLE` : « le parc local n'est pas affame » ne peut pas
+etre affirme, donc le controleur ne peut pas enclencher.
+
 #### La confirmation
 
 Une seule lecture peut tomber sur un instant vide (le parc vient de finir un lot) : la
