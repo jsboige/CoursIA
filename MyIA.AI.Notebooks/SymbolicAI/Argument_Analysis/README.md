@@ -298,7 +298,7 @@ Argument_Analysis/
 ├── .env / .env.example        # Configuration
 ├── install_jdk_portable.py    # Installation JDK
 ├── data/                      # Données (taxonomie sophismes)
-├── ext_tools/                 # Outils externes
+├── ext_tools/                 # Outils externes locaux (SPASS) — EProver est partagé : ../ext_tools/
 ├── jdk-17-portable/           # JDK (ignoré git)
 ├── libs/                      # JARs Tweety
 ├── ontologies/                # Ontologies OWL
