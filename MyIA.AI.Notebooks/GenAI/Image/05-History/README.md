@@ -4,6 +4,8 @@
 
 Notebooks rétrospectifs : les outils d'avant Stable Diffusion (2021-2022) qui ont établi les paradigmes encore à l'œuvre aujourd'hui — CLIP comme fonction de perte sémantique, guidance par classifieur, diffusion guidée avant l'ère des modèles ouverts massifs.
 
+**Sources.** Chaque carnet cite l'identifiant durable de ses publications (auteurs, année, lien arXiv) et, quand la copie est archivée, le chemin du gisement partagé qui la rouvre sans la retélécharger. Ce chemin est un localisateur : la citation reste la référence si le gisement bouge. Convention complète : [docs/reference/bibliography-hygiene.md](../../../../docs/reference/bibliography-hygiene.md).
+
 ## Notebooks
 
 | # | Notebook | Contenu | Publication |
