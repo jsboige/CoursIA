@@ -238,8 +238,20 @@ jobs:
     # so it stays in the per-PR scope at full fidelity rather than being
     # pushed to a nocturnal window only.
     name: "Pedagogy density baseline orphan guard (#13815, #16122)"
-    runs-on: ubuntu-latest
+    # 2026-10-28 (#23053 vague 3, famille (a) gardes/advisories) : forme
+    # hybride de debordement -- PR meme-depot ET vars.CI_OVERFLOW_LOCAL ==
+    # 'true' -> jambe Linux locale ; tout le reste (variable absente ou fausse,
+    # forks, push) retombe sur ubuntu-latest. Bascule :
+    # `gh variable set CI_OVERFLOW_LOCAL --body true|false --repo jsboige/CoursIA`.
+    # Retour arriere = variable a `false` ou supprimee, sans toucher ce fichier.
+    # La garde anti-fork vit DANS l'expression `runs-on` ; le `if:` ci-dessous
+    # est conserve tel quel (aucune ligne ajoutee ni retiree).
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
     if: github.event_name == 'pull_request' || github.event_name == 'push'
+    # Borne de duree (#23053) : 59 s mesures sur le dernier succes (run
+    # 40635312980, job `baseline-orphans-guard`), soit ~3x la duree observee
+    # avec la marge d'un clone froid (le job fait `fetch-depth: 0`).
+    timeout-minutes: 10
     steps:
       - name: Checkout PR
         uses: actions/checkout@v4
