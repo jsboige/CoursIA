@@ -284,19 +284,33 @@ def matrix_lakes(ref: str) -> list[dict]:
 
 @functools.lru_cache(maxsize=None)
 def deleted_dispatchers(ref: str) -> list[dict]:
-    """Every deleted ``lean-*`` dispatcher, with its last existing content.
+    """Every ``lean-*`` dispatcher deleted from the history of ``ref``.
 
-    ``git rev-list -n 1 --all -- <path>`` returns the newest commit touching
-    the path across all refs; for a deleted file that is the deletion commit,
-    so its parent holds the last version that existed. We therefore report
-    ``had_gate`` on ``<sha>^:<path>``.
+    The scan is **restricted to commits reachable from ``ref``**. A deletion
+    that happened on some other ref never removed the dispatcher from the
+    audited history, and counting it reports a loss this ref never suffered:
+    a rename commit shows up as the newest commit touching the path, its
+    parent holds the pre-rename content, and the old project-path reads as
+    ungated while the dispatcher is alive and gating at its new path.
+
+    That is measured, not hypothetical (2026-10-31): ``lean-galois.yml`` was
+    never deleted on ``main`` -- ``git log --diff-filter=D origin/main`` over
+    it is empty -- yet ``--all`` found a deletion on a ref ``main`` does not
+    carry and ``rev-list -n 1 --all`` returned the rename commit ``88edc37b4``
+    instead, so the pre-rename path ``.../Lean/galois_lean`` was reported
+    lost while the live job gates ``.../Lean/GALOIS/galois_lean``.
+
+    For each deletion commit, ``<sha>^:<path>`` holds the last version that
+    existed on the ref's history, so ``had_gate`` and ``gated_paths`` are read
+    from there.
     """
-    listed = _git("log", "--all", "--diff-filter=D", "--name-only",
+    listed = _git("log", ref, "--diff-filter=D", "--name-only",
                   "--format=", "--", f"{WORKFLOWS_DIR}/lean-*.yml")
     paths = sorted({p for p in listed.split("\n") if p.startswith(f"{WORKFLOWS_DIR}/lean-")})
     out = []
     for path in paths:
-        sha = _git("rev-list", "-n", "1", "--all", "--", path).strip()
+        sha = _git("log", "-n", "1", "--diff-filter=D", "--format=%H",
+                   ref, "--", path).strip()
         if not sha:
             continue
         last = _git("show", f"{sha}^:{path}")
