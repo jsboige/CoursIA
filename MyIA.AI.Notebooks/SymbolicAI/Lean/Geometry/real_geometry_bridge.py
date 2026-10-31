@@ -26,14 +26,28 @@ l'organe Z3 (théorie des corps ordonnés réels, ``QF_NIA``). Deux faces :
   (existe-t-il un point réel non nul sur la conique ?). C'est la « subtilité
   réelle vs complexe » que le carnet nomme comme l'une de ses deux limites.
 
+* :func:`verify_witness` — le validateur **indépendant** : il rejoue le témoin
+  par substitution exacte dans les expressions du problème, sans solveur. Un
+  témoin n'est une preuve de réfutation que s'il satisfait les hypothèses,
+  viole la conclusion et respecte les non-dégénérescences ; un témoin altéré
+  est **rejeté**, et le refus dit lequel des trois contrôles est tombé.
+
+Une dégénérescence non écartée change le verdict : sans ``B != A``, deux
+perpendiculaires ne forcent plus l'alignement, et Z3 trouve le témoin dégénéré
+(les hypothèses deviennent vacues en ``B = A``) ; l'exclusion réelle explicite
+(``assumptions``) rend le théorème valide. Un ``unknown`` — y compris simulé à
+la frontière d'adaptation (:func:`decide_real`, ``solver_factory``) — n'est
+**jamais** reclassé en preuve.
+
 Le module est l'organe natif (Z3) du raisonnement réel ; il ne réimplémente
-pas le calcul algébrique — il le *décide* sur ``R`` et il *rend les témoins*.
+pas le calcul algébrique — il le *décide* sur ``R``, il *rend les témoins*, et
+il *valide* ceux qu'on lui présente.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from fractions import Fraction
-from typing import Dict, Iterable, List, Optional
+from typing import Any, Callable, Dict, Iterable, List, Optional
 
 import sympy as sp
 import z3 as _z3
@@ -60,7 +74,15 @@ def _poly_to_z3(expr, symbols: List, zvars: Dict) -> "_z3.ExprRef":
         if coef.is_Rational:
             fr = Fraction(int(coef.p), int(coef.q))
         else:
-            fr = Fraction(int(coef), 1)
+            # Un coefficient non rationnel (√2, π, …) ne se représente pas
+            # exactement en QF_NIA (coefficients rationnels). L'ancien
+            # `Fraction(int(coef), 1)` le TRONQUAIT (√2 → 1, π → 3) et
+            # produisait des verdicts faux, dont un faux VALID (review Hermes
+            # #23018). On refuse donc explicitement ; supporter √2 exactement
+            # (z3.RealVal / nombre algébrique) est un jalon à part.
+            raise ValueError(
+                f"coefficient non rationnel {coef!r} : Z3 ne le "
+                f"représenterait qu'après troncature entière")
         term: "_z3.ExprRef" = fr
         for sym, power in zip(symbols, monom):
             if power:
@@ -107,6 +129,20 @@ def _z3num_to_sympy(v: "_z3.ExprRef"):
     return sp.Rational(text)
 
 
+def _z3num_is_exact(v: "_z3.ExprRef") -> bool:
+    """
+    Le numéral du modèle est-il une valeur **exacte** (rationnel) ?
+
+    ``True`` pour un ``RatNumRef`` — le témoin est alors un nombre rationnel
+    exact, certifiable par substitution. ``False`` pour un
+    ``AlgebraicNumRef`` : la valeur rendue est un *encadrement* rationnel à
+    :data:`_ALGEBRAIC_DIGITS` chiffres (cf. :func:`_z3num_to_sympy`), pas la
+    valeur algébrique elle-même — une approximation ne certifie pas un témoin
+    algébrique (critère 3 de l'issue #22379).
+    """
+    return not str(v).endswith("?")
+
+
 def _make_solver(timeout_ms: Optional[int] = None) -> "_z3.Solver":
     """Un solveur ``QF_NIA`` ; le timeout n'est posé que si l'API le permet."""
     s = _z3.SolverFor("QF_NIA")
@@ -132,18 +168,23 @@ class RealVerdict:
 
     status: str                          # "valid" | "invalid" | "unknown"
     witness: Optional[Dict] = None      # {sp.Symbol: Rational} si "invalid"
+    exact: bool = True                  # témoin exact ? (False = encadrement)
 
     def __str__(self) -> str:
         if self.status == "valid":
             return "VALID — aucun contre-exemple reel"
         if self.status == "invalid":
-            return "INVALID — temoin reel fourni"
+            kind = "temoin reel exact" if self.exact else \
+                "temoin reel en encadrement (non certifiable par substitution)"
+            return f"INVALID — {kind}"
         return "UNKNOWN — le solveur ne conclut pas"
 
 
 def decide_real(hypotheses: Iterable, conclusion, symbols: List,
                 timeout_ms: Optional[int] = None,
-                assumptions: Optional[Iterable] = None) -> RealVerdict:
+                assumptions: Optional[Iterable] = None,
+                solver_factory: Optional[Callable[[Optional[int]], Any]] = None,
+                ) -> RealVerdict:
     """
     Décide, **sur les réels**, ``forall x. (∧ h = 0) -> g = 0``.
 
@@ -161,8 +202,14 @@ def decide_real(hypotheses: Iterable, conclusion, symbols: List,
     assumptions : itérable d'expressions sympy devant être **non nulles**
         (côtés de non-dégénérescence, ex. ``B != A``) — sans elles, Z3 tend à
         rendre un témoin *dégénéré* (points coïncidents, le plus « facile »).
+    solver_factory : fabrique de solveur (``f(timeout_ms) -> objet`` ayant
+        ``add`` et ``check``). Sert à **simuler** la frontière ``unknown`` de
+        façon déterministe, sans dépendre d'un timeout propre à une machine
+        (critère 6 de #22379) : un solveur qui rend ``unknown`` produit le
+        statut ``unknown``, jamais ``valid``.
     """
-    solver = _make_solver(timeout_ms)
+    make = solver_factory or _make_solver
+    solver = make(timeout_ms)
     zvars = _fresh_vars(symbols)
     for h in hypotheses:
         solver.add(_poly_to_z3(h, symbols, zvars) == 0)
@@ -179,15 +226,18 @@ def decide_real(hypotheses: Iterable, conclusion, symbols: List,
         # au lieu de faire lever `m.eval` (TypeError: invalid input) — un
         # symbole que les hypothèses ne contraignent pas est parfaitement
         # légitime dans un contre-exemple.
-        witness = {s: _z3num_to_sympy(m.eval(zvars[s], model_completion=True))
-                   for s in symbols}
-        return RealVerdict("invalid", witness)
+        vals = {s: m.eval(zvars[s], model_completion=True) for s in symbols}
+        witness = {s: _z3num_to_sympy(v) for s, v in vals.items()}
+        exact = all(_z3num_is_exact(v) for v in vals.values())
+        return RealVerdict("invalid", witness, exact=exact)
     return RealVerdict("unknown")
 
 
 def real_model(constraints: Iterable, symbols: List,
                timeout_ms: Optional[int] = None,
-               assumptions: Optional[Iterable] = None) -> Optional[Dict]:
+               assumptions: Optional[Iterable] = None,
+               solver_factory: Optional[Callable[[Optional[int]], Any]] = None,
+               ) -> Optional[Dict]:
     """
     Un point **réel** satisfaisant toutes les contraintes ``c = 0``, ou ``None``
     s'il n'en existe pas.
@@ -199,8 +249,12 @@ def real_model(constraints: Iterable, symbols: List,
 
     ``assumptions`` : expressions devant être **non nulles** (non-dégénérescence)
     — sans elles, le point renvoyé tend à être dégénéré (points coïncidents).
+
+    ``solver_factory`` : cf. :func:`decide_real` — un solveur qui ne conclut pas
+    (``unknown``) rend ``None``, il ne fabrique jamais un point.
     """
-    solver = _make_solver(timeout_ms)
+    make = solver_factory or _make_solver
+    solver = make(timeout_ms)
     zvars = _fresh_vars(symbols)
     for c in constraints:
         solver.add(_poly_to_z3(c, symbols, zvars) == 0)
@@ -211,6 +265,102 @@ def real_model(constraints: Iterable, symbols: List,
     m = solver.model()
     return {s: _z3num_to_sympy(m.eval(zvars[s], model_completion=True))
             for s in symbols}
+
+
+# ---------------------------------------------------------------------------
+# Validateur indépendant d'un témoin (aucun solveur dans la boucle)
+# ---------------------------------------------------------------------------
+
+def _residue_decisif(r) -> bool:
+    """
+    Un résidu de substitution est **concluant** seulement s'il est un nombre.
+
+    Un résidu qui garde un symbole libre (``z + 1``) n'est ni une annulation
+    confirmée ni une violation confirmée : c'est une *famille* d'affectations
+    dont rien n'a été évalué. Sans cette garde, ``!= 0`` le passait pour une
+    réfutation (fail-open) — review Hermes #23018.
+    """
+    return bool(r.is_number) and r.is_zero is not None
+
+
+@dataclass
+class WitnessCheck:
+    """
+    Verdict du validateur **indépendant** d'un témoin, par substitution exacte.
+
+    Les trois conditions d'un contre-exemple honnête :
+
+    * ``holds_hypotheses`` — chaque hypothèse s'annule au témoin ;
+    * ``violates_conclusion`` — la conclusion, elle, n'est **pas** nulle ;
+    * ``non_degenerate`` — chaque non-dégénérescence demandée est non nulle.
+
+    Les résidus sont conservés pour que le refus soit **lisible** : un témoin
+    rejeté dit *pourquoi* il l'est, il ne rend pas un simple ``False``.
+    """
+
+    residuals: List[sp.Expr] = field(default_factory=list)
+    conclusion_residual: Optional[sp.Expr] = None
+    assumption_residuals: List[sp.Expr] = field(default_factory=list)
+
+    @property
+    def holds_hypotheses(self) -> bool:
+        return all(_residue_decisif(r) and r == 0 for r in self.residuals)
+
+    @property
+    def violates_conclusion(self) -> bool:
+        r = self.conclusion_residual
+        return r is not None and _residue_decisif(r) and r != 0
+
+    @property
+    def non_degenerate(self) -> bool:
+        return all(_residue_decisif(r) and r != 0
+                   for r in self.assumption_residuals)
+
+    @property
+    def ok(self) -> bool:
+        return self.holds_hypotheses and self.violates_conclusion \
+            and self.non_degenerate
+
+    def __str__(self) -> str:
+        verdict = "TEMOIN VALIDE" if self.ok else "TEMOIN REJETE"
+        parts = [f"hypotheses={'ok' if self.holds_hypotheses else 'violees'}",
+                 f"conclusion={'violee' if self.violates_conclusion else 'tenue'}",
+                 f"non-degenerescence={'ok' if self.non_degenerate else 'degeneree'}"]
+        return f"{verdict} — {', '.join(parts)}"
+
+
+def verify_witness(hypotheses: Iterable, conclusion, symbols: List,
+                   witness: Dict, assumptions: Optional[Iterable] = None,
+                   ) -> WitnessCheck:
+    """
+    Valide un témoin **sans appeler le solveur** : substitution exacte.
+
+    C'est le contrôle indépendant exigé par le critère 6 de l'issue — un
+    témoin produit par Z3 n'est une preuve de réfutation que si sa
+    substitution dans les expressions mêmes du problème satisfait les
+    hypothèses et viole la conclusion. Un témoin **altéré** doit être
+    **rejeté** ; c'est exactement ce que ce validateur teste.
+
+    ``witness`` doit couvrir tous les ``symbols`` (``ValueError`` sinon) : un
+    témoin partiel ne se valide pas silencieusement.
+
+    Limite honnête : la substitution est **exacte** sur les rationnels. Un
+    témoin irrationnel est un encadrement à 30 chiffres — ses résidus ne
+    s'annulent pas exactement, et le validateur le **rejette** : une
+    approximation ne certifie pas un témoin algébrique (voir
+    ``RealVerdict.exact``, qui distingue les deux classes à la source).
+    """
+    missing = [s for s in symbols if s not in witness]
+    if missing:
+        raise ValueError(f"temoin incomplet, symboles absents : {missing}")
+    subs = {s: witness[s] for s in symbols}
+    check = WitnessCheck()
+    for h in hypotheses:
+        check.residuals.append(sp.simplify(sp.expand(h).subs(subs)))
+    check.conclusion_residual = sp.simplify(sp.expand(conclusion).subs(subs))
+    for a in (assumptions or []):
+        check.assumption_residuals.append(sp.simplify(sp.expand(a).subs(subs)))
+    return check
 
 
 # ---------------------------------------------------------------------------

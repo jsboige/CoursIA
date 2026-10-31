@@ -3,12 +3,16 @@
 # Deploiement po-2028 (2026-10-20, mandat user runners via ai-01:CoursIA) --
 # adapte de persist/coursia-runner-start.sh (po-2024, 2026-09-02). L'original
 # vit dans la distro Ubuntu sous /usr/local/bin/coursia-runner-start.sh ; ce
-# fichier est la copie de reference (C:\dev\CoursIA-runners-p0\).
+# fichier est la copie de reference (D:\dev\CoursIA-runners-p0\ -- la copie
+# C:\dev\CoursIA-runners-p0\ du 20/10 est un heritage de la pose initiale,
+# purgeable avec son disque ; cf delta 1).
 #
 # DELTAS po-2028 vs po-2024 (tous deux pesees du 2026-10-20) :
-#   1. REPO_DIR=/mnt/c/dev/CoursIA-2 -- le checkout de cette machine (po-2024 :
-#      /mnt/d/Dev/CoursIA). Suivra la migration C:\dev -> D:\dev quand le SSD
-#      2 To sera pose.
+#   1. REPO_DIR=/mnt/d/dev/CoursIA-2 -- le checkout de cette machine (po-2024 :
+#      /mnt/d/Dev/CoursIA). La bascule C:\dev -> D:\dev annoncee ici a eu lieu le
+#      2026-10-27 ; l'ancien chemin C: n'est plus qu'un clone residuel, que les
+#      mandats disque peuvent purger. Coder C: en dur faisait mourir le service
+#      au premier redemarrage apres purge, sans rien dire.
 #   2. TOKEN : pas de master.env sur cette machine. Le token admin GitHub est
 #      relu a CHAQUE invocation depuis gh.exe cote Windows via l'interop WSL
 #      (--with-token doctrine inchangee : jamais persistant dans la distro,
@@ -29,7 +33,10 @@
 #      porte l'agrege (200 Mo/s write / 400 Mo/s read sur /var/lib/docker).
 set -euo pipefail
 
-REPO_DIR="/mnt/c/dev/CoursIA-2"
+# Convention des quatre wrappers freres (po-2024/po-2025/po-2027/ai-01) :
+# le checkout est surchargeable par l'environnement, la constante n'est que
+# le defaut de cette machine.
+REPO_DIR="${COURSIA_REPO_DIR:-/mnt/d/dev/CoursIA-2}"
 
 # --- TOKEN (doctrine po-2024 : relu a chaque invocation, jamais persistant) ---
 GH_WIN="/mnt/c/Program Files/GitHub CLI/gh.exe"
@@ -77,6 +84,20 @@ if ! docker info >/dev/null 2>&1; then
 fi
 
 SUPERVISE="$REPO_DIR/scripts/ci/docker/linux-runner/supervise.sh"
+
+# Garde d'existence du checkout (complement du delta 1, revue #23227) : coder
+# D: en dur repare la cause (purge de C:), mais ne dit rien si D: lui-meme
+# manque (clone deplace, disque non monte). Le service doit mourir en le
+# DISANT, pas en silence -- meme forme que la garde daemon #15095.
+if [ ! -d "$REPO_DIR" ]; then
+    echo "FATAL: checkout introuvable (REPO_DIR=$REPO_DIR absent ou non monte) -- verifier le clone/disque avant de relancer le service." >&2
+    exit 1
+fi
+if [ ! -x "$SUPERVISE" ]; then
+    echo "FATAL: superviseur introuvable ($SUPERVISE absent ou non executable) -- le checkout est-il complet ?" >&2
+    exit 1
+fi
+
 mkdir -p "$COURSIA_RUNNER_STATE_DIR"
 
 # --- PURGE SENTINELLE PERIMEE (#15163) --------------------------------------
@@ -84,7 +105,27 @@ mkdir -p "$COURSIA_RUNNER_STATE_DIR"
 # reboot ; un ExecStart explicite sans superviseur vivant la purge, sinon on
 # sort en erreur sans interferer avec un arret en cours.
 if [ "${1:-start}" = "start" ] && [ -e "$COURSIA_RUNNER_STATE_DIR/stop" ]; then
-  if pgrep -f 'supervise\.sh start' >/dev/null 2>&1; then
+  # Predicat PER-CHECKOUT (#21527) : le superviseur d'un AUTRE checkout
+  # (orphelin de test d'un autre worktree) ne doit pas bloquer le purge
+  # de CETTE sentinelle -- il bloquait le service en failed, pool a zero.
+  #
+  # L'organe est lu par `bash`, pas execute : son bit executable est 100644
+  # dans l'index, donc le noyau ne le rend pas executable sur un checkout
+  # Linux natif ; un exec refuse rendrait le predicat FAUX -- il repondrait
+  # « aucun superviseur vivant » et purgerait a tort.
+  #
+  # Repli CONSERVATEUR : si l'organe n'est pas lisible (depot perime sur la
+  # machine, ou wrapper deploye avant la mise a jour du checkout), on
+  # retombe sur le predicat per-machine : le repli peut REFUSER un purge
+  # a tort, jamais PURGER a tort.
+  HELPER="$REPO_DIR/scripts/ci/docker/linux-runner/persist/supervisor_live_for.sh"
+  SUPERVISOR_ALIVE=0
+  if [ -r "$HELPER" ]; then
+    if bash "$HELPER" "$REPO_DIR" start >/dev/null 2>&1; then SUPERVISOR_ALIVE=1; fi
+  else
+    if pgrep -f 'supervise\.sh start' >/dev/null 2>&1; then SUPERVISOR_ALIVE=1; fi
+  fi
+  if [ "$SUPERVISOR_ALIVE" -eq 1 ]; then
     echo "sentinelle presente ET superviseur vivant -- arret en cours, on n'interfere pas" >&2
     exit 1
   fi
