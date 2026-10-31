@@ -284,26 +284,47 @@ def matrix_lakes(ref: str) -> list[dict]:
 
 @functools.lru_cache(maxsize=None)
 def deleted_dispatchers(ref: str) -> list[dict]:
-    """Every deleted ``lean-*`` dispatcher, with its last existing content.
+    """Every ``lean-*`` dispatcher deleted **and still absent** at ``ref``.
 
-    ``git rev-list -n 1 --all -- <path>`` returns the newest commit touching
-    the path across all refs; for a deleted file that is the deletion commit,
-    so its parent holds the last version that existed. We therefore report
-    ``had_gate`` on ``<sha>^:<path>``.
+    Two readings the naive form gets wrong, both measured on ``lean-galois.yml``
+    (#23741, 2026-10-31):
+
+    * **a path alive at ``ref`` is not a deletion.** Its live version is already
+      counted by ``covered_lakes(ref)``, so condemning it reports a coverage
+      loss that does not exist. Deleted once and re-added later is the ordinary
+      case: a lake moves into the matrix, then back out of it.
+    * **``git rev-list -n 1 --all -- <path>`` is not the deletion commit.** It
+      returns the newest commit touching the path across all refs, which after a
+      re-add is a *modification* -- ``<sha>^`` then held a version predating a
+      directory move, and its ``gated_paths`` named a path that no longer exists,
+      which can never be found in the live coverage. The deletion commit is the
+      one the ``--diff-filter=D`` listing names; it is read from there instead of
+      assumed.
+
+    ``had_gate`` is therefore evaluated on the parent of the real deletion
+    commit: the last version that existed before the file went away.
     """
     listed = _git("log", "--all", "--diff-filter=D", "--name-only",
-                  "--format=", "--", f"{WORKFLOWS_DIR}/lean-*.yml")
-    paths = sorted({p for p in listed.split("\n") if p.startswith(f"{WORKFLOWS_DIR}/lean-")})
+                  "--format=%H", "--", f"{WORKFLOWS_DIR}/lean-*.yml")
+    alive = {p for p in _git("ls-tree", "-r", "--name-only", ref,
+                             "--", WORKFLOWS_DIR).split("\n") if p}
+    newest: dict[str, str] = {}
+    sha = ""
+    for line in listed.split("\n"):
+        line = line.strip()
+        if len(line) == 40 and all(c in "0123456789abcdef" for c in line):
+            sha = line
+        elif line.startswith(f"{WORKFLOWS_DIR}/lean-") and sha:
+            newest.setdefault(line, sha)  # listing is newest-first
     out = []
-    for path in paths:
-        sha = _git("rev-list", "-n", "1", "--all", "--", path).strip()
-        if not sha:
-            continue
-        last = _git("show", f"{sha}^:{path}")
+    for path, deleted_by in sorted(newest.items()):
+        if path in alive:
+            continue  # re-added: its coverage is measured live, not here
+        last = _git("show", f"{deleted_by}^:{path}")
         if not last.strip():
             continue  # the parent did not have it (add/delete in one commit)
         out.append({"dispatcher": Path(path).name,
-                    "deleted_by": sha[:10],
+                    "deleted_by": deleted_by[:10],
                     "had_gate": calls_gate(last),
                     "gated_paths": gate_project_paths(last)})
     return out

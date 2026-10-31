@@ -325,6 +325,30 @@ class TestRealRefRegression:
             "gate or justify it in writing (#17097 criterion 3)."
         )
 
+    def test_a_dispatcher_alive_at_the_ref_is_not_reported_deleted(self):
+        """A path that exists at the measured ref is not a deletion (#23741).
+
+        The naive reading condemned ``lean-galois.yml`` -- deleted when its lake
+        moved into the matrix, then re-added under ``Lean/GALOIS/`` -- because
+        ``git rev-list -n 1 --all`` returned the *re-add's* parent, whose gated
+        path pointed at a directory that no longer exists and could therefore
+        never be matched against the live coverage. Coverage is a property of
+        the ref, so a live dispatcher must not be judged through its history.
+        """
+        from check_axiom_gate_coverage import _git
+
+        alive = {p for p in _git("ls-tree", "-r", "--name-only", _REF,
+                                 "--", ".github/workflows").split("\n") if p}
+        ghosts = sorted(
+            f".github/workflows/{d['dispatcher']}"
+            for d in deleted_dispatchers(_REF)
+            if f".github/workflows/{d['dispatcher']}" in alive
+        )
+        assert ghosts == [], (
+            f"reported deleted but present at {_REF}: {ghosts} -- a live "
+            "workflow's coverage is measured at the ref, not through its history"
+        )
+
     def test_missing_gate_on_matrix_lakes_is_reportable(self):
         """The pre-existing gap must stay MEASURABLE, whatever its size."""
         r = measure(_REF)
