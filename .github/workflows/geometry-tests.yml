@@ -1,0 +1,108 @@
+name: Geometry-Tests
+
+# Câblage #23359 (Part of #22379) — le dossier
+# MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/tests n'était exécuté
+# par AUCUN workflow : absent de pytest.ini testpaths, et aucun des 25
+# workflows invoquant pytest ne nommait ce dossier. Un test que rien
+# n'exécute n'est pas une preuve : il est vert par absence.
+#
+# Même classe de défaut et même traitement que GameTheory (#13746,
+# tranche 1 : gametheory-tests.yml) et SymbolicAI/Argument_Analysis
+# (#17248) : workflow dédié à paths: serrés, le testpath entre dans
+# pytest.ini, et la cible est déclarée dans WORKFLOW_COVERAGE de
+# scripts/check_testpaths_coverage.py (source de vérité du guard).
+#
+# Bornes mesurées firsthand (worktree 2f1291f01, 2026-10-29) :
+#   - `pytest MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/tests` =
+#     **13 tests, 13 passed en 1.70 s** (local Windows, python 3.11).
+#   - deps du test tests/test_real_geometry_bridge.py : pytest, sympy
+#     (1.14 local), et z3 via real_geometry_bridge.py (l.38-39 :
+#     `import sympy`, `import z3`) — le module vit à l'étage parent du
+#     dossier tests/ et s'importe par sys.path relatif au fichier de
+#     test, aucune installation de paquet requise.
+#
+# Acceptance #23359 :
+# 1. Workflow créé et exécuté sur push+PR ciblant
+#    MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/** (cf paths:).
+# 2. Plancher de collection 13 (floor mesuré avant PR).
+# 3. Suite verte au premier run OU échec documenté.
+#
+# Pièges évités (cf gametheory-tests.yml) :
+# - Pas de modification des paths: d'un autre workflow pour cette
+#   tranche (diff traçable, un sujet par PR).
+# - Pas de matrix multi-python tant que le run vert n'est pas
+#   confirmé sur 3.11.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/**'
+      - '.github/workflows/geometry-tests.yml'
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, edited, reopened]
+    paths:
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/**'
+      - '.github/workflows/geometry-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: geometry-tests-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  geometry-tests:
+    name: SymbolicAI Geometry pytest (13 collected)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      # Floor mesuré firsthand — origin/main worktree, baseline 2026-10-29.
+      # Quand des tests sont retirés INTENTIONNELLEMENT, ajuster cette valeur
+      # dans la même PR (le message d'erreur du guard la nomme).
+      GEOMETRY_TEST_FLOOR: 13
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      # Deps minimales : pytest + sympy (calcul algébrique) + z3-solver
+      # (décision réelle — real_geometry_bridge.py importe z3 en dur,
+      # les tests de contre-exemple échoueraient en COLLECT sans lui).
+      - name: Install minimal deps (pytest + sympy + z3-solver)
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest sympy z3-solver
+
+      - name: Run Geometry tests
+        # working-directory = racine du dépôt : pytest.ini y est, donc le
+        # testpath correspondant est reconnu par défaut sans préciser la
+        # cible (self-documente la dépendance à pytest.ini).
+        run: |
+          pytest MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/tests --tb=short -v
+
+      # Collection floor-guard (même sémantique que gametheory-tests.yml :
+      # éviter un pytest vert alors que des tests ont silencieusement
+      # disparu du chemin de collecte). Pas de `|| true` : exit 1 attendu
+      # si la collecte plante ou si le compte passe sous le plancher.
+      - name: Collection floor-guard (13)
+        if: always()
+        run: |
+          COLLECTED=$(pytest MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/tests --collect-only -q 2>&1 | grep -oE '[0-9]+ tests? collected' | grep -oE '[0-9]+' | head -1)
+          if [ -z "$COLLECTED" ]; then
+            echo "::error::Le collect-only n'a renvoyé aucune ligne 'N tests collected' -- la collecte a planté, c'est probablement une panne d'infra."
+            exit 1
+          fi
+          if [ "$COLLECTED" -lt "$GEOMETRY_TEST_FLOOR" ]; then
+            echo "::error::Régression de couverture : $COLLECTED tests collectés, plancher=$GEOMETRY_TEST_FLOOR."
+            echo "::error::Si la baisse est intentionnelle, ajuster GEOMETRY_TEST_FLOOR dans cette PR -- le message d'erreur nomme la valeur."
+            exit 1
+          fi
+          echo "OK : $COLLECTED tests collectés (plancher=$GEOMETRY_TEST_FLOOR)."
