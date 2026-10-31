@@ -7071,6 +7071,24 @@ def belt_visit_stamp(it: dict) -> str | None:
 CONSOLIDATION_TAG = "consolidation"
 CONSOLIDATION_LAG_H = 48
 UMBRELLA_VISIT_CAP_DAYS = 7
+# #21067 correctif 1 -- le plafond de VISITES (#22500, ci-dessus) regarde un
+# claim ou une sous-issue ; il ne voit pas les LIVRAISONS. Une lane qui
+# enchaine les sous-grains d'un meme EPIC sans repasser par le tapis ne pose
+# ni claim sur l'EPIC ni sous-issue : elle passe d'un carnet au suivant, et le
+# tapis la ressert. Mesure de l'issue (fenetre 2026-10-02 -> 2026-10-16) :
+# #16334 a recu 43 marqueurs en 14 j, dont 11 carnets issus d'un enchainement.
+# Le plafond K compte les PRs MERGEES de la lane qui citent l'EPIC ; K=2 est
+# le cap de veine que les lanes appliquent deja a la main (variation-protocol,
+# `vein_cap`). 0 desactive le garde (kill switch), et le tapis NOMME toujours
+# ce qu'il ecarte -- un plafond silencieux se lirait comme une famine.
+EPIC_LANE_DELIVERY_CAP_DEFAULT = 2
+# Les PRs de ce depot citent leur issue en trois familles (git-workflow.md :
+# `Closes #N` ferme, `See #N` / `Part of #N` lient sans fermer, `Refs` tolere
+# en heritage). La forme est celle des corps reels, pas une grammaire ideale :
+# un `#N` nu n'est PAS pris (il nommerait une PR ou un fil voisin, et
+# gonflerait le compte d'un EPIC que la lane n'a pas servi).
+_DELIVERY_CITED_RE = re.compile(
+    r"(?i)\b(?:part\s+of|closes?|fixed|fixes?|resolves?|see|refs?)\s*:?\s*#(\d+)")
 # Hermes 2026-10-25T13:55Z (#22504) : le motif d'origine `\bconsolidations?\b`
 # attrapait le MOT, pas le travail -- mesure sur le pool reel, 17 items
 # classes dont 4 ou « consolidation » nomme le SUJET d'un conteneur (#22500
@@ -7243,6 +7261,116 @@ def umbrella_visit_cause(it: dict, *, now=None) -> str | None:
             f"(< {UMBRELLA_VISIT_CAP_DAYS} j) -- un sous-grain par visite. "
             f"Servir un sous-grain ouvert existant, ou passer au candidat "
             f"suivant.")
+
+
+def epic_lane_delivery_counts(
+    prs: list[dict] | None,
+    lane: str,
+    *,
+    now: dt.datetime | None = None,
+    days: int | None = None,
+) -> dict[int, int]:
+    """``{numero d'issue: livraisons de `lane`}`` sur la fenetre de `days` jours.
+
+    Une livraison = une PR **mergee** dont le tag de lane (`parse_grain_tag`,
+    l'extracteur PARTAGE avec variation-tag-guard) nomme `lane`, qui cite
+    l'issue par `Closes` / `See` / `Part of` / `Refs`. L'attribution suit le
+    TAG, jamais `--author` : le compte GitHub est partage sur ce depot.
+
+    Fonction PURE (aucune requete) : elle lit le corpus que
+    `fetch_lane_record_prs` a deja paye pour l'ardoise de lane. Un corpus
+    absent rend un dict vide -- l'appelant doit alors laisser le garde
+    INACTIF (fail-OPEN) plutot que de lire « aucune livraison » la ou rien
+    n'a ete mesure.
+    """
+    moment = now or NOW
+    # `LANE_RECORD_WINDOW_DAYS` est declare plus bas dans le module (bloc de
+    # l'ardoise de lane) : la valeur se resout a l'APPEL, pas a l'import --
+    # un defaut d'argument la lirait avant sa definition.
+    window = LANE_RECORD_WINDOW_DAYS if days is None else days
+    cutoff = moment - dt.timedelta(days=window)
+    counts: dict[int, int] = {}
+    for pr in prs or []:
+        tag = parse_grain_tag(pr.get("body") or "")
+        if not tag or tag.get("lane") != lane:
+            continue
+        raw = pr.get("mergedAt") or ""
+        try:
+            merged = dt.datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        if merged < cutoff:
+            continue
+        # UNE livraison = UNE PR. Un corps qui cite l'EPIC deux fois
+        # ("Part of #16334" en tete, "Closes #16334" en pied) ne compte
+        # qu'UNE fois : compter par occurrence faisait/refuser la lane
+        # apres une seule livraison reelle des que K=2 (famine
+        # fabriquee -- le module de tests interdit precisement ce
+        # refus sur une mesure gonflee).
+        cited = {int(x) for x in _DELIVERY_CITED_RE.findall(pr.get("body") or "")}
+        for n in cited:
+            counts[n] = counts.get(n, 0) + 1
+    return counts
+
+
+def epic_lane_delivery_cause(
+    it: dict,
+    deliveries: dict[int, int] | None,
+    cap: int,
+    lane: str | None,
+) -> str | None:
+    """#21067 correctif 1 -- EPIC deja livre `cap` fois par CETTE lane.
+
+    Rend la cause de refus quand l'item est une umbrella (hors classe
+    `consolidation`, dont c'est le travail de revenir) et que la lane y a
+    livre au moins `cap` grains sur la fenetre. ``None`` sinon : `cap <= 0`
+    desactive le garde, `deliveries` absent ou `lane` absente le laisse
+    inactif (fail-OPEN -- jamais un refus sur une mesure qu'on n'a pas).
+
+    Le refus porte sur la LANE, pas sur l'EPIC : les autres lanes le voient
+    toujours. C'est la difference avec le plafond de visites (#22500), qui
+    est global pendant 7 jours.
+    """
+    if cap <= 0 or not lane or not deliveries:
+        return None
+    if it.get("klass") != "umbrella" or is_consolidation(it):
+        return None
+    count = int(deliveries.get(it["number"], 0))
+    if count < cap:
+        return None
+    return (f"PLAFOND LIVRAISONS EPIC (#21067) : {count} livraison(s) de "
+            f"{lane} sur {LANE_RECORD_WINDOW_DAYS} j (>= {cap}) -- le tapis "
+            f"rend la tete suivante a cette lane ; l'EPIC reste tirable par "
+            f"les autres.")
+
+
+def epic_delivery_cap_state(
+    lane_record: dict | None,
+    lane: str | None,
+) -> tuple[str, dict[int, int]]:
+    """#21067 correctif 2 -- l'etat du plafond, en TROIS cas et non deux.
+
+    ``epic_deliveries == {}`` veut dire deux choses opposees qu'un booleen
+    confondait :
+
+    - ``measured``   : la lecture de l'ardoise a abouti et la lane n'a livre
+      aucun EPIC sur la fenetre. Le garde EST evalue ; il n'ecarte rien.
+      Publier « non mesurees » ici etait faux, et ``active: false`` dans le
+      JSON faisait lire un garde inactif la ou il avait tourne.
+    - ``unmeasured`` : la lecture a echoue. Le garde doit rester inactif --
+      fail-OPEN, jamais un refus sur une absence de mesure.
+    - ``not-applicable`` : pas de lane. Le plafond est par lane ; sans lane
+      il n'a pas d'objet.
+
+    Le discriminant existe deja dans l'ardoise elle-meme
+    (``lane_record["measured"] = error is None``) : le plafond le lisait
+    simplement en moins.
+    """
+    if not lane or lane_record is None:
+        return "not-applicable", {}
+    if not lane_record.get("measured"):
+        return "unmeasured", {}
+    return "measured", dict(lane_record.get("epic_deliveries") or {})
 
 
 def apply_child_visits(pool: list[dict], targets: list[dict]) -> dict[int, str]:
@@ -7698,6 +7826,8 @@ def belt_filter(
     admitted: list[dict],
     args,
     urns: set[str] | None = None,
+    epic_deliveries: dict[int, int] | None = None,
+    drops: list[tuple[dict, str]] | None = None,
 ) -> list[dict]:
     """Filtre le pool admissible pour le mode --belt.
 
@@ -7740,6 +7870,18 @@ def belt_filter(
         urn = item.get("klass") or "grain"
         if urn not in selected_urns_set:
             return False
+        # #21067 correctif 1 : l'EPIC deja livre `cap` fois par cette lane
+        # sort du tirage POUR ELLE (les autres lanes le voient). Applique
+        # apres les autres filtres pour que le rapport nomme une cause qui
+        # aurait vraiment ete servie.
+        cause = epic_lane_delivery_cause(
+            item, epic_deliveries,
+            getattr(args, "epic_delivery_cap", 0) or 0,
+            getattr(args, "lane", None))
+        if cause:
+            if drops is not None:
+                drops.append((item, cause))
+            return False
         return True
 
     return [it for it in admitted if _keep(it)]
@@ -7748,6 +7890,9 @@ def belt_filter(
 def draw_belt(
     admitted: list[dict],
     args,
+    *,
+    epic_deliveries: dict[int, int] | None = None,
+    drops: list[tuple[dict, str]] | None = None,
 ) -> list[dict]:
     """Mode --belt : trie le pool admissible et tire `args.grains` candidats.
 
@@ -7760,6 +7905,7 @@ def draw_belt(
     2. labels requis / exclus
     3. bornes d'age / idle
     4. urnes (memes que la voie ponderee)
+    5. plafond de livraisons EPIC (#21067), quand la mesure est fournie
 
     Les claims tenes par une autre lane ne sont pas elimines ici -- c'est
     le caller (`main`) qui les passe par `check_claims` sur la fenetre et
@@ -7771,8 +7917,15 @@ def draw_belt(
     quand la voie ponderee rendrait vide ou biaise vers le recent. Un DWELL
     ou un avis de zone ne vide pas la sortie : il figure en rappel dans la
     banniere texte, pas dans le predicat de selection.
+
+    `epic_deliveries` / `drops` : transmis a `belt_filter` pour que ce point
+    d'entree ne puisse pas contourner le plafond #21067. Aucun appelant ne
+    l'utilise aujourd'hui (mesure du 2026-10-29 : `draw_belt` n'est appele
+    nulle part hors d'un docstring de test) ; les parametres existent pour
+    que le prochain le fasse sans rouvrir le trou.
     """
-    filtered = belt_filter(admitted, args)
+    filtered = belt_filter(admitted, args, epic_deliveries=epic_deliveries,
+                           drops=drops)
     filtered.sort(key=belt_sort_key)
     return filtered[:args.grains]
 
@@ -8158,6 +8311,7 @@ def consume_board(
     urns: set[str] | None = None,
     lane: str | None = None,
     live_check: bool = True,
+    epic_deliveries: dict[int, int] | None = None,
 ) -> tuple[list[dict], dict]:
     """Retient les candidats d'un instantane, avec UN controle vivant.
 
@@ -8170,11 +8324,20 @@ def consume_board(
     Un candidat retenu tenu par une autre lane rend ``picks == []`` : le caller
     bascule alors sur le calcul local, qui est le comportement d'aujourd'hui --
     jamais une regression.
+
+    `epic_deliveries` : livraisons par EPIC de CETTE lane, pour que le plafond
+    #21067 s'applique ICI aussi (il ne l'etait que sur le calcul local --
+    ce chemin pouvait servir a une lane un EPIC qu'elle avait deja livre).
+    ``None`` = mesure absente : le plafond reste inactif, jamais un refus sur
+    une absence de mesure.
     """
     items = [board_item_decode(c) for c in (snapshot.get("items") or [])]
     withheld = {w.get("n") for w in (snapshot.get("withheld") or [])
                 if isinstance(w, dict)}
-    eligible = belt_filter(items, args, urns=urns)
+    epic_drops: list[tuple[dict, str]] = []
+    eligible = belt_filter(items, args, urns=urns,
+                            epic_deliveries=epic_deliveries,
+                            drops=epic_drops)
     eligible = [it for it in eligible if it["number"] not in withheld]
     eligible.sort(key=belt_sort_key)
     meta = {
@@ -8183,6 +8346,22 @@ def consume_board(
         "withheld_skipped": len(withheld),
         "retained": eligible[0]["number"] if eligible else None,
         "live_check": None,
+        # #21067 correctif 1 : ce que le plafond de livraisons a ecarte SUR
+        # CE CHEMIN. Nomme, jamais silencieux -- un plafond muet se lit
+        # comme une famine du pool.
+        # Correctif 3 : `state` dit POURQUOI, pas seulement si. Le chemin
+        # consommateur ne peut pas mesurer les livraisons de la lane sans
+        # payer le corpus de PRs mergees (`fetch_lane_record_prs`, 7,5 s /
+        # 3,7 Mo mesures) que l'acceptance #20053 interdit ici -- un seul
+        # controle vivant, aucun fetch de pool. L'etat est donc `unmeasured`
+        # et la sortie le dit ; un appelant qui A la mesure la passe.
+        "epic_delivery_cap": {
+            "state": ("measured" if epic_deliveries is not None
+                      else "unmeasured"),
+            "applied": epic_deliveries is not None,
+            "dropped": [{"number": it["number"], "title": it["title"],
+                         "cause": cause} for it, cause in epic_drops],
+        },
         "reason": "ok",
     }
     if not eligible:
@@ -8239,6 +8418,13 @@ def print_board_consumer(snapshot: dict, picks: list[dict], meta: dict,
               f"-- {live['human']}")
     print("   garde rouge NON evalue sur ce chemin (--board-export) : "
           "un rouge propre reste a traiter avant ce grain.")
+    cap = meta.get("epic_delivery_cap") or {}
+    if cap.get("dropped"):
+        print("   plafond de livraisons EPIC ecarte sur ce chemin : "
+              + ", ".join(f"#{d['number']}" for d in cap["dropped"][:6]))
+    elif not cap.get("applied"):
+        print("   plafond de livraisons EPIC NON evalue sur ce chemin "
+              "(mesure absente) : le garde reste inactif, il ne refuse pas.")
     if meta.get("reason") != "ok":
         print(f"   repli : {meta['reason']}")
     print()
@@ -8793,6 +8979,12 @@ def lane_delivery_record(lane: str, prs: list[dict] | None, *,
         "truncated": bool(truncated),
         "windows": buckets,
         "undated": undated,
+        # #21067 correctif 1 : les livraisons par EPIC, lues sur le MEME
+        # corpus (aucune requete de plus). Vide quand la mesure a echoue --
+        # le garde du tapis reste alors inactif, il ne refuse jamais sur une
+        # absence de mesure.
+        "epic_deliveries": ({} if error is not None
+                            else epic_lane_delivery_counts(prs, lane, now=now)),
     }
 
 
@@ -8997,7 +9189,8 @@ def delivery_event_probe_inert(number):
 
 
 def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
-                                delivered_probe=None, claims_probe=None,
+                                delivered_probe=None, cover_probe=None,
+                                claims_probe=None,
                                 merged_pr_probe=None,
                                 recent_marker_probe=None,
                                 snapshot_prime=None,
@@ -9052,7 +9245,8 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     illisibles], "budget_hit": bool, "claim_unread": [numeros servis sur une
     lecture de claim en echec], "container_unread": [numeros servis sur une
     lecture du DERNIER COMMENTAIRE en echec], "marker_unread": [numeros servis
-    sur une lecture du marqueur RECENT en echec], "time_budget_hit": bool}``.
+    sur une lecture du marqueur RECENT en echec], "cover_failures": [numeros
+    dont la sonde de couverture a echoue], "time_budget_hit": bool}``.
     ``claim_unread``
     est le pendant du ``failures`` de livraison : deux lectures qui n'ont pas
     ABOUTI, servies quand meme (fail-OPEN) et rapportees a la lane (#20265).
@@ -9067,6 +9261,13 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     rapport (mesure #17528, 2026-10-26 : le picker a signale `403` sur deux
     candidats du meme run, et l'echec de la SONDE n'etait nomme nulle part).
 
+    ``prime_truncated`` (#21436, 2026-10-30) compte les issues de tete que le
+    mur de temps a fait **ecarter du priming** : l'instantane n'est pas un
+    gate, la boucle reprend avec le reste de son budget, mais la troncature
+    est rapportee au lieu d'etre tu (meme doctrine que ``claim_unread``). La
+    cle est absente quand le priming est alle au bout -- un ``0`` et une cle
+    manquante ne disent pas la meme chose.
+
     ``time_budget_s`` (#21436) est un mur de temps sur la BOUCLE : passe
     l'echeance, plus aucune sonde n'est emise (claims hors fenetre, filtre
     recent, sondes de livraison), les candidats restants sont servis en
@@ -9078,7 +9279,7 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     budget = [int(probe_budget)]
     state = {"failures": [], "budget_hit": False, "recent_filtered": 0,
              "claim_unread": [], "container_unread": [], "marker_unread": [],
-             "time_budget_hit": False}
+             "cover_failures": [], "time_budget_hit": False}
     # #22630 -- l'instantane local est rafraichi UNE FOIS pour les candidats
     # de la fenetre : toutes les sondes de commentaires (filtre recent et
     # sonde pleine de livraison) le lisent ensuite sans requete GitHub par
@@ -9092,14 +9293,6 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     # etait donc TOUJOURS fausse en production -- le cache n'etait jamais
     # amorce, alors que les sondes le consultaient. C'est l'injection du
     # prime, et elle seule, qui decide du reseau.
-    prime = (belt_snapshot_prime_inert if snapshot_prime is None
-             else snapshot_prime)
-    prime(REPO, [int(it.get("number", 0))
-                 for it in (belt_pool or [])[:70] if it.get("number")])
-    # Le pool et l'enumeration des PRs ouvertes ont ete lus AVANT cette
-    # fonction : on persiste ici, sinon leurs entrees de la passe
-    # disparaitraient au retour (le flush de `red_backlog` est deja passe).
-    _flush_repair_snapshot()
     # #21436 — `probe_budget` borne le NOMBRE de sondes de livraison. Il ne
     # borne ni leur DUREE, ni les deux surfaces que la boucle paie par
     # candidat hors fenetre : `claims_probe` (un `check_claims` unitaire) et
@@ -9114,6 +9307,42 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     deadline = None
     if time_budget_s is not None:
         deadline = time.monotonic() + max(0.0, float(time_budget_s))
+    prime = (belt_snapshot_prime_inert if snapshot_prime is None
+             else snapshot_prime)
+    prime_numbers = [int(it.get("number", 0))
+                     for it in (belt_pool or [])[:70] if it.get("number")]
+    # #21436 (2026-10-30) — le priming s'executait AVANT l'installation de
+    # `deadline`, donc sans jamais lire le mur, alors qu'il est la PREMIERE
+    # depense reseau de la boucle : un `gh api` par issue de tete, en serie
+    # (`_belt_snapshot_prime` -> `refresh` -> `ensure_issue_payloads`).
+    # Mesure sur ce siege, quatre executions consecutives : la phase
+    # `pick_with_replacements start` s'ouvre a t=35 s en annoncant « 205 s
+    # restants », puis plus aucune ligne, run tue a 240 s sans avoir servi un
+    # seul grain. Le budget etait calcule puis ignore.
+    #
+    # Deux bornes, et le comportement d'un appel SANS budget est inchange :
+    # (1) le priming ne consomme que la MOITIE du reste -- l'instantane est un
+    # confort dont la boucle doit pouvoir se passer (`_belt_snapshot_prime`
+    # le dit deja) ; un priming qui mange tout le mur reproduirait le defaut
+    # sous une autre forme, en rapportant l'echeance au lieu de servir ;
+    # (2) il avance par tranches et relit l'echeance entre deux, donc il
+    # s'arrete au mur et non au bout de 70 issues -- et le nombre d'issues
+    # laissees de cote est rapporte, jamais tu.
+    PRIME_SLICE = 8
+    if deadline is None:
+        prime(REPO, prime_numbers)
+    else:
+        prime_deadline = time.monotonic() + max(
+            0.0, (deadline - time.monotonic()) / 2.0)
+        for start in range(0, len(prime_numbers), PRIME_SLICE):
+            if time.monotonic() >= prime_deadline:
+                state["prime_truncated"] = len(prime_numbers) - start
+                break
+            prime(REPO, prime_numbers[start:start + PRIME_SLICE])
+    # Le pool et l'enumeration des PRs ouvertes ont ete lus AVANT cette
+    # fonction : on persiste ici, sinon leurs entrees de la passe
+    # disparaitraient au retour (le flush de `red_backlog` est deja passe).
+    _flush_repair_snapshot()
     # #21436 -- publie l'echeance pour les sondes LENTES (`check_claims`,
     # `has_recent_delivery_marker`) : elles lisent `_clamp_timeout` pour ne
     # jamais courir au-dela du mur. Restauree en sortie de boucle (try/finally
@@ -9138,6 +9367,7 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     # sa sonde doit voir le plafond s'appliquer aussi -- sinon la borne de
     # cout ne serait testable qu'avec le reseau reel.
     user_probe = delivered_probe or delivered_probe_inert
+    user_cover_probe = cover_probe or open_cover_inert
     user_merged_pr_probe = merged_pr_probe or merged_pr_probe_inert
     user_recent_marker_probe = (recent_marker_probe
                                 or recent_marker_probe_inert)
@@ -9162,6 +9392,21 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
             return DELIVERED_SIGNAL_UNPROBED
         budget[0] -= 1
         return user_merged_pr_probe(number, lane_name)
+
+    def counted_cover_probe(number):
+        # #16589 etait cable sur la seule voie PONDEREE : le tapis rendait
+        # donc des candidats dont une PR ouverte porte deja le travail, et
+        # la lane recevait un `ACTION REQUISE` sur une issue deja servie
+        # (mesure du 2026-10-27 : `open_cover_signal_complete(22374)` rend
+        # 'PR #22515' sur 389 PRs ouvertes enumerees, et le tapis a quand
+        # meme servi #22374). Meme doctrine que la voie ponderee : la sonde
+        # de couverture partage le MEME budget que la sonde de livraison,
+        # avec le meme fail-OPEN dit a la lane.
+        if expired() or budget[0] <= 0:
+            state["budget_hit"] = state["budget_hit"] or budget[0] <= 0
+            return DELIVERED_SIGNAL_UNPROBED
+        budget[0] -= 1
+        return user_cover_probe(number)
 
     if claims_probe is None:
         def claims_probe(numbers):
@@ -9331,6 +9576,19 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
             if reason is not None:
                 belt_withheld.append(
                     (it, "LIVRAISON : " + reason
+                     + " Candidat remplace dans la meme urne."))
+                continue
+            # #16589/#21757 : la sonde de PR couvrante vient APRES le filtre
+            # de livraison -- un travail deja livre prime sur un travail en
+            # cours -- et seulement sur les candidats SURVIVANTS. Sans cet
+            # appel, le tapis sert une issue dont une PR ouverte porte deja
+            # le travail : la voie ponderee l'ecartait, le tapis non.
+            cover = open_cover_reason(
+                it, counted_cover_probe,
+                state.setdefault("cover_failures", []))
+            if cover is not None:
+                belt_withheld.append(
+                    (it, "EN COURS : " + cover
                      + " Candidat remplace dans la meme urne."))
                 continue
         elif it.get("klass") == "umbrella" and not args.include_delivered:
@@ -9601,6 +9859,14 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--dwell-hours", type=float, default=DWELL_HOURS_DEFAULT,
                     help="delai avant qu'une issue neuve soit consommable "
                          f"(defaut {DWELL_HOURS_DEFAULT:.0f} h ; 0 desactive le garde)")
+    ap.add_argument("--epic-delivery-cap", type=int,
+                    default=EPIC_LANE_DELIVERY_CAP_DEFAULT, metavar="K",
+                    help="#21067 correctif 1 : une umbrella sur laquelle cette "
+                         "lane a livre K grains (PRs mergees citant l'EPIC) sur "
+                         f"{LANE_RECORD_WINDOW_DAYS} j sort du tirage POUR ELLE "
+                         f"(defaut {EPIC_LANE_DELIVERY_CAP_DEFAULT} ; 0 "
+                         "desactive le garde). Les autres lanes la voient "
+                         "toujours, et le tapis nomme ce qu'il ecarte.")
     ap.add_argument("--delivery-boost-max", type=float, default=0.0,
                     help="#15491 Phase 1 : plafond du facteur d'age de derniere "
                          "livraison des umbrellas (defaut 0 = inactif, kill "
@@ -10234,10 +10500,41 @@ def main(argv: list[str] | None = None) -> int:
             print(f"[t={_time_belt.monotonic() - _belt_t0:.2f}s] belt {name}",
                   file=sys.stderr, flush=True)
         _belt_phase(f"start: grains={args.grains} lane={args.lane}")
-        belt_pool = belt_filter(admitted, args, urns=selected_urns)
+        # #21067 correctif 1 : les livraisons par EPIC de CETTE lane, lues
+        # sur le corpus de l'ardoise deja paye. Sans ardoise (pas de lane,
+        # ou mesure en echec) le garde reste inactif et le dit -- jamais un
+        # refus sur une absence de mesure.
+        # Correctif 2 : `epic_delivery_cap_state` separe « mesure a ZERO »
+        # de « pas mesure ». Les deux rendent un dict vide, et les confondre
+        # publiait « non mesurees » sur une mesure qui avait abouti.
+        _epic_cap_state, _epic_deliveries = epic_delivery_cap_state(
+            lane_record, args.lane)
+        _epic_drops: list[tuple[dict, str]] = []
+        if _epic_cap_state == "unmeasured":
+            _belt_phase("plafond livraisons EPIC: INACTIF (mesure de la lane "
+                        "en echec -- aucun refus sur une absence de mesure)")
+        elif _epic_cap_state == "not-applicable":
+            _belt_phase("plafond livraisons EPIC: INACTIF (pas de lane -- le "
+                        "plafond est par lane)")
+        elif not _epic_deliveries:
+            _belt_phase("plafond livraisons EPIC: MESURE, aucune livraison de "
+                        "la lane sur la fenetre (rien a ecarter)")
+        else:
+            _belt_phase(f"plafond livraisons EPIC: MESURE, "
+                        f"{sum(_epic_deliveries.values())} livraison(s) sur "
+                        f"{len(_epic_deliveries)} EPIC(s)")
+        belt_pool = belt_filter(admitted, args, urns=selected_urns,
+                                epic_deliveries=_epic_deliveries,
+                                drops=_epic_drops)
         belt_pool.sort(key=belt_sort_key)
         _belt_phase(f"pool charge: {len(belt_pool)} candidates "
                     f"(apres belt_filter)")
+        if _epic_drops:
+            _belt_phase("plafond livraisons EPIC: "
+                        + ", ".join(f"#{it['number']} ({cause.split('(')[0].strip()})"
+                                    for it, cause in _epic_drops[:6])
+                        + (f" (+{len(_epic_drops) - 6})"
+                           if len(_epic_drops) > 6 else ""))
         # Verification des claims tenes par une autre lane : on regarde
         # plus large que `args.grains` pour tolerer un remplacement si
         # la tete de file est tenue. Cout borne : au plus `grains + 4`
@@ -10341,6 +10638,7 @@ def main(argv: list[str] | None = None) -> int:
             belt_pick_with_replacements(belt_pool, belt_claims, args,
                                         belt_probe_budget(belt_check_window),
                                         delivered_probe=has_delivered_signal,
+                                        cover_probe=cover_probe,
                                         merged_pr_probe=merged_pr_signal,
                                         recent_marker_probe=(
                                             has_recent_delivery_marker),
@@ -10461,6 +10759,15 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"!! signal de livraison NON LU sur {numbers} : le tirage")
                 print("   est MAINTENU et ces candidats CONSERVES -- une lecture")
                 print("   qui n'a pas ABOUTI n'est PAS une absence de signal.")
+            belt_cover_failures = belt_pick_state.get("cover_failures") or []
+            if belt_cover_failures:
+                numbers = ", ".join(f"#{n}"
+                                    for n in sorted(set(belt_cover_failures)))
+                print(f"!! sonde de couverture NON LUE sur {numbers} : la")
+                print("   recherche de PR couvrante n'a pas abouti (reseau, 403,")
+                print("   payload illisible). Le tirage est MAINTENU et ces")
+                print("   candidats CONSERVES -- une lecture qui n'a pas ABOUTI")
+                print("   n'est PAS une absence de PR couvrante.")
             # #20265 : meme doctrine pour le claim, juxtaposee a la ligne
             # ci-dessus -- les deux lectures ratees se lisent ensemble.
             print_claim_unread_report(belt_pick_state.get("claim_unread"),
@@ -10551,6 +10858,23 @@ def main(argv: list[str] | None = None) -> int:
                 } for it in belt_picks},
                 "withheld": [{"number": it["number"], "title": it["title"],
                               "cause": c} for it, c in belt_withheld],
+                # #21067 correctif 1 : ce que le plafond de livraisons a
+                # ecarte POUR CETTE LANE (les autres lanes le voient). Nomme,
+                # jamais silencieux -- un plafond muet se lit comme une
+                # famine du pool.
+                "epic_delivery_cap": {
+                    "cap": args.epic_delivery_cap,
+                    # Correctif 2 : `state` porte le troisieme cas que le
+                    # booleen `active` ecrasait. `active: false` sur une
+                    # mesure a zero faisait lire un garde inactif la ou il
+                    # avait tourne ; `active` reste pour les consommateurs
+                    # existants et vaut « le garde a pu s'appliquer ».
+                    "state": _epic_cap_state,
+                    "active": _epic_cap_state == "measured",
+                    "dropped": [{"number": it["number"],
+                                 "title": it["title"],
+                                 "cause": c} for it, c in _epic_drops],
+                },
                 # Volet livraison du tapis (#19390) : les trois etats ont
                 # trois messages distincts (ecarte / lecture en echec /
                 # non sonde), fail-OPEN sur les deux derniers -- meme
@@ -10568,6 +10892,8 @@ def main(argv: list[str] | None = None) -> int:
                     "recent_filtered": belt_pick_state.get(
                         "recent_filtered", 0),
                     "unread": sorted(set(belt_delivered_failures)),
+                    "cover_probes_failed": sorted(
+                        set(belt_pick_state.get("cover_failures") or [])),
                     "budget_hit": belt_probe_budget_hit[0],
                     # #21436 : le mur de temps est un plafond DISTINCT du
                     # plafond de sondes -- les confondre ferait lire « cout

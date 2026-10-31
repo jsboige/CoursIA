@@ -694,4 +694,253 @@ theorem contention_stability_forces_zero {d n : ℕ} (v : Fin n → (Fin d → �
   have hcoord : (3 • v i) j = 0 := congrFun h3 j
   simpa [Pi.smul_apply] using hcoord
 
+/-! ### Contrôle positif k5.2 (chantier #21417, cran P4)
+
+L'énoncé public corrigé n'est pas seulement non vide par construction : il
+s'instancie **explicitement** sur une famille `v` non nulle. Le témoin vit
+en dimension `d = 1` avec un seul générateur `v 0 = 1` : le support de `P`
+est la grille `{0, 6, 12, 18}` (quatre points de pas 6, masse `1/4`
+chacun), le jeu de clauses `B` est `{−6, −3, 0, 3, 6}` — exactement les
+cinq sommes signées à coefficients bornés par 2 en `3 • v 0` —, et le
+cadre `S` est le pas-3 de −6 à 24 : le support augmenté de chacun de ses
+translatés par `B`, ce qu'exige `SupportContained`. Sur cette instance,
+`shiftDistance S P (6 • v 0) = 1/4` (deux arêtes de bord sur onze points,
+les contributions intérieures s'annulant par translation du support),
+strictement sous le seuil `3⁻¹`.
+
+La paire de théorèmes qui suit est le contrôle positif complet : la forme
+corrigée s'applique (`exists_isColouring_grid_nonzero_v`, avec `gridV 0 ≠ 0`
+par `gridV_nonzero`), tandis que la forme **historique** — contention par
+ensemble `A` stable par `± 3 • v i` — est démontrée insatisfiable pour ce
+même `v` (`old_form_unsatisfiable_for_gridV`, par
+`contention_stability_forces_zero`). C'est la mesure k5.2 retournée : le
+défaut n'était pas dans la conclusion du Lemme 1.4 mais dans une hypothèse
+qu'aucune instance non triviale ne pouvait satisfaire. -/
+
+/-- Point de la droite `d = 1` vu dans `Fin 1 → ℤ` : la fonction constante. -/
+def gridPoint (t : ℤ) : Fin 1 → ℤ := fun _ => t
+
+/-- Support du témoin : la grille `{0, 6, 12, 18}` (pas 6, quatre points). -/
+noncomputable def gridSupport : Finset (Fin 1 → ℤ) :=
+  (Finset.Ico (0 : ℤ) 4).image (fun k => gridPoint (6 * k))
+
+/-- Jeu de clauses du témoin : les cinq sommes signées bornées par 2 en
+`3 • v 0`, soit `{−6, −3, 0, 3, 6}`. -/
+noncomputable def gridClauses : Finset (Fin 1 → ℤ) :=
+  (Finset.Ico (-2 : ℤ) 3).image (fun j => gridPoint (3 * j))
+
+/-- Cadre du témoin : le pas-3 de −6 à 24 — `gridSupport` augmenté de
+chacun de ses translatés par `gridClauses` (exigence `SupportContained`). -/
+noncomputable def gridBox : Finset (Fin 1 → ℤ) :=
+  (Finset.Ico (-2 : ℤ) 9).image (fun m => gridPoint (3 * m))
+
+/-- L'uniforme sur `gridSupport` : masse `1/4` par point du support. -/
+noncomputable def gridP (x : Fin 1 → ℤ) : ℝ := if x ∈ gridSupport then 1 / 4 else 0
+
+/-- La famille génératrice du témoin : `v 0 = 1`, **non nulle**. -/
+def gridV : Fin 1 → (Fin 1 → ℤ) := fun _ _ => 1
+
+theorem gridPoint_injective : Function.Injective gridPoint := fun _ _ h => congrFun h 0
+
+/-- Les abscisses du support : `6 · {0, 1, 2, 3}`. -/
+noncomputable def gridTs : Finset ℤ := (Finset.Ico (0 : ℤ) 4).image (fun k => 6 * k)
+
+theorem mem_gridSupport_iff {t : ℤ} :
+    gridPoint t ∈ gridSupport ↔ t ∈ gridTs := by
+  constructor
+  · intro h
+    obtain ⟨k, hk, heq⟩ := Finset.mem_image.mp h
+    exact Finset.mem_image.mpr ⟨k, hk, congrFun heq 0⟩
+  · intro h
+    obtain ⟨k, hk, heq⟩ := Finset.mem_image.mp h
+    exact Finset.mem_image.mpr ⟨k, hk, congrArg gridPoint heq⟩
+
+/-- La clause d'abscisse : `3 · m ∈ gridTs` exactement pour `m` pair dans
+`{0, 2, 4, 6}` — les quatre points du support. -/
+theorem mem_gridTs_iff {m : ℤ} :
+    3 * m ∈ gridTs ↔ m ∈ ({0, 2, 4, 6} : Finset ℤ) := by
+  simp only [gridTs, Finset.mem_image, Finset.mem_Ico,
+    Finset.mem_insert, Finset.mem_singleton]
+  constructor
+  · rintro ⟨k, ⟨hk0, hk4⟩, hkm⟩
+    omega
+  · rintro (rfl | rfl | rfl | rfl)
+    · exact ⟨0, by omega, by ring⟩
+    · exact ⟨1, by omega, by ring⟩
+    · exact ⟨2, by omega, by ring⟩
+    · exact ⟨3, by omega, by ring⟩
+
+theorem gridSupport_subset_gridBox : gridSupport ⊆ gridBox := by
+  intro x hx
+  obtain ⟨k, hk, rfl⟩ := Finset.mem_image.mp hx
+  obtain ⟨hk1, hk2⟩ := Finset.mem_Ico.mp hk
+  refine Finset.mem_image.mpr ⟨2 * k, ?_, ?_⟩
+  · simp only [Finset.mem_Ico]; omega
+  · exact congrArg gridPoint (by ring)
+
+theorem gridP_nonneg : ∀ x, 0 ≤ gridP x := by
+  intro x
+  unfold gridP
+  split <;> norm_num
+
+theorem gridP_mass : ∑ x ∈ gridBox, gridP x = 1 := by
+  have hzero : ∀ x ∈ gridBox, x ∉ gridSupport → gridP x = 0 := by
+    intro x _ hx
+    unfold gridP
+    rw [if_neg hx]
+  rw [← Finset.sum_subset gridSupport_subset_gridBox hzero]
+  have hpos : ∀ x ∈ gridSupport, gridP x = 1 / 4 := by
+    intro x hx
+    unfold gridP
+    rw [if_pos hx]
+  rw [Finset.sum_congr rfl hpos, Finset.sum_const]
+  have hcard : gridSupport.card = 4 := by
+    have hinj : Function.Injective (fun k : ℤ => gridPoint (6 * k)) := by
+      intro a b h
+      have h6 : (6 : ℤ) * a = 6 * b := gridPoint_injective h
+      omega
+    rw [gridSupport, Finset.card_image_of_injective _ hinj]
+    simp
+  rw [hcard]
+  norm_num
+
+theorem gridP_support : ∀ x, gridP x ≠ 0 → x ∈ gridBox := by
+  intro x hx
+  have hmem : x ∈ gridSupport := by
+    by_contra h
+    unfold gridP at hx
+    rw [if_neg h] at hx
+    norm_num at hx
+  exact gridSupport_subset_gridBox hmem
+
+theorem gridClauses_clauses :
+    ∀ f : Fin 1 → ℤ, (∀ i, |f i| ≤ 2) → ∑ i, f i • (3 • gridV i) ∈ gridClauses := by
+  intro f hf
+  obtain ⟨h1, h2⟩ := abs_le.mp (hf 0)
+  rw [Fin.sum_univ_one]
+  have hval : f 0 • (3 • gridV 0) = gridPoint (3 * f 0) := by
+    funext j
+    simp only [gridV, gridPoint, Pi.smul_apply]
+    ring
+  rw [hval]
+  refine Finset.mem_image.mpr ⟨f 0, ?_, congrArg gridPoint rfl⟩
+  simp only [Finset.mem_Ico]
+  omega
+
+theorem grid_contained : SupportContained gridBox gridP gridClauses := by
+  intro z hz w hw
+  have hz' : z ∈ gridSupport := by
+    by_contra h
+    unfold gridP at hz
+    rw [if_neg h] at hz
+    norm_num at hz
+  obtain ⟨k, hk, rfl⟩ := Finset.mem_image.mp hz'
+  obtain ⟨j, hj, rfl⟩ := Finset.mem_image.mp hw
+  obtain ⟨hk1, hk2⟩ := Finset.mem_Ico.mp hk
+  obtain ⟨hj1, hj2⟩ := Finset.mem_Ico.mp hj
+  refine Finset.mem_image.mpr ⟨2 * k + j, ?_, ?_⟩
+  · simp only [Finset.mem_Ico]; omega
+  · funext q
+    simp only [gridPoint, Pi.add_apply]
+    ring
+
+/-- La mesure clé du témoin : le décalage `6 • v 0` coupe le support en
+exactement deux arêtes de bord, d'où `Δ = 1/4` — strictement sous le
+seuil `3⁻¹` de l'hypothèse `hv` du Lemme 1.4. -/
+theorem grid_shiftDistance : shiftDistance gridBox gridP (6 • gridV 0) = 1 / 4 := by
+  unfold shiftDistance
+  have hshift : (6 • gridV 0 : Fin 1 → ℤ) = gridPoint 6 := by
+    funext j
+    simp only [gridV, gridPoint, Pi.smul_apply]
+    ring
+  have hreindex : ∑ x ∈ gridBox, |gridP (x + 6 • gridV 0) - gridP x|
+      = ∑ m ∈ Finset.Ico (-2 : ℤ) 9,
+          |gridP (gridPoint (3 * m) + gridPoint 6) - gridP (gridPoint (3 * m))| := by
+    rw [hshift]
+    simp only [gridBox]
+    exact Finset.sum_image (fun a _ b _ h => by
+      have h3 : (3 : ℤ) * a = 3 * b := gridPoint_injective h
+      omega)
+  rw [hreindex]
+  have hval : ∀ m ∈ Finset.Ico (-2 : ℤ) 9,
+      |gridP (gridPoint (3 * m) + gridPoint 6) - gridP (gridPoint (3 * m))|
+        = if m = -2 ∨ m = 6 then 1 / 4 else 0 := by
+    intro m hm
+    obtain ⟨hm1, hm2⟩ := Finset.mem_Ico.mp hm
+    have hshiftm : gridPoint (3 * m) + gridPoint 6 = gridPoint (3 * (m + 2)) := by
+      funext q
+      simp only [gridPoint, Pi.add_apply]
+      ring
+    have hgg : ∀ t : ℤ, gridP (gridPoint t) = if t ∈ gridTs then 1 / 4 else 0 := by
+      intro t
+      unfold gridP
+      simp only [mem_gridSupport_iff]
+    rw [hshiftm, hgg (3 * (m + 2)), hgg (3 * m)]
+    simp only [mem_gridTs_iff, Finset.mem_insert, Finset.mem_singleton]
+    interval_cases m <;> simp
+  rw [Finset.sum_congr rfl hval]
+  have hsum2 : ∑ m ∈ Finset.Ico (-2 : ℤ) 9,
+      (if m = -2 ∨ m = 6 then (1 / 4 : ℝ) else 0) = 1 / 2 := by
+    have hsub : ({-2, 6} : Finset ℤ) ⊆ Finset.Ico (-2 : ℤ) 9 := by
+      intro x hx
+      simp only [Finset.mem_insert, Finset.mem_singleton] at hx
+      simp only [Finset.mem_Ico]
+      omega
+    have hzero : ∀ m ∈ Finset.Ico (-2 : ℤ) 9,
+        m ∉ ({-2, 6} : Finset ℤ) →
+          (if m = -2 ∨ m = 6 then (1 / 4 : ℝ) else 0) = 0 := by
+      intro m _ hm'
+      simp only [Finset.mem_insert, Finset.mem_singleton] at hm'
+      rw [if_neg hm']
+    have hbig : ∑ m ∈ Finset.Ico (-2 : ℤ) 9,
+        (if m = -2 ∨ m = 6 then (1 / 4 : ℝ) else 0)
+        = ∑ m ∈ ({-2, 6} : Finset ℤ),
+            (if m = -2 ∨ m = 6 then (1 / 4 : ℝ) else 0) := by
+      first
+        | exact Finset.sum_subset hsub hzero
+        | exact (Finset.sum_subset hsub hzero).symm
+    rw [hbig]
+    simp
+    norm_num
+  rw [hsum2]
+  norm_num
+
+theorem grid_shiftDistance_le : shiftDistance gridBox gridP (6 • gridV 0) ≤ 3⁻¹ := by
+  rw [grid_shiftDistance]
+  norm_num
+
+theorem gridV_nonzero : gridV 0 ≠ 0 := by
+  intro h
+  have h0 : (gridV 0 : Fin 1 → ℤ) 0 = 1 := rfl
+  rw [h] at h0
+  simp at h0
+
+/-- **Le contrôle positif** : l'énoncé public corrigé du Lemme 1.4
+s'applique au témoin — une famille `v` **non nulle** (`gridV 0 = 1`) avec
+toutes ses hypothèses satisfaites (`hmass`, `hclauses`, `hB`, `hv` avec
+`Δ = 1/4 < 3⁻¹`). -/
+theorem exists_isColouring_grid_nonzero_v :
+    ∃ ε : Fin 1 → ℤ, (∀ i, ε i = 1 ∨ ε i = -1) ∧
+      (fun j => coordMoment gridP gridBox j + ∑ i, (ε i : ℝ) * (gridV i j : ℝ)) ∈
+        convexHull ℝ
+          ↑(gridBox.map (⟨⇑toReal, toReal_injective⟩ : (Fin 1 → ℤ) ↪ (Fin 1 → ℝ))) := by
+  refine exists_isColouring_mean_add_sum_mem_convexHull 1 1 gridBox gridClauses gridP
+    gridP_nonneg gridP_mass gridP_support gridV gridClauses_clauses grid_contained ?_
+  intro i
+  fin_cases i
+  exact grid_shiftDistance_le
+
+/-- **Le contraste** : pour ce même `gridV`, la forme historique de la
+contention (ensemble `A` fini contenant `0` et stable par `± 3 • v i`)
+est **insatisfiable** — conséquence immédiate du témoin
+`contention_stability_forces_zero`. C'est la preuve formelle que le
+correctif #21417 a bien débloqué une instance que l'ancien énoncé
+interdisait. -/
+theorem old_form_unsatisfiable_for_gridV :
+    ¬ ∃ A : Finset (Fin 1 → ℤ), (0 : Fin 1 → ℤ) ∈ A ∧
+      ∀ a ∈ A, a + 3 • gridV 0 ∈ A ∧ a - 3 • gridV 0 ∈ A := by
+  rintro ⟨A, hA0, hAstab⟩
+  exact gridV_nonzero
+    (contention_stability_forces_zero gridV hA0 (fun a ha _ => hAstab a ha) 0)
+
 end Discrepancy.Komlos
