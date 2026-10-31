@@ -30,7 +30,7 @@ from __future__ import annotations
 import os
 import random
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Tuple
+from typing import Dict, FrozenSet, Iterable, List, Optional, Tuple
 
 from .argumentation import DungAF, grounded_labeling
 
@@ -197,6 +197,28 @@ def instrument_grounded(af: DungAF) -> frozenset:
     return frozenset(arg for arg, value in label.items() if value == "in")
 
 
+def labelling_from_extension(af: DungAF, extension: FrozenSet[int]) -> Dict[int, str]:
+    """Labelling complet DERIVE d'une extension grounded, sans oracle.
+
+    ``in`` = membre de l'extension ; ``out`` = attaque par un membre ;
+    ``undec`` = le reste. C'est la forme sous laquelle les trajectoires de
+    croyance consomment le labelling (la separation ``out`` / ``undec`` est
+    ce que la parite sur les seuls ensembles IN ne voit pas -- proposition
+    consultant du 24/10, #7742 : un mutant qui etiquette ``undec`` en
+    ``out`` passe la parite IN 212/212).
+    """
+    return {
+        arg: (
+            "in"
+            if arg in extension
+            else "out"
+            if any(attacker in extension for attacker, attacked in af.attacks if attacked == arg)
+            else "undec"
+        )
+        for arg in af.arguments
+    }
+
+
 def af_from_native(theory) -> DungAF:
     """Lit un ``DungTheory`` construit par l'organe dans un :class:`DungAF`."""
     arguments = [int(str(node.getName())) for node in theory.getNodes()]
@@ -270,6 +292,17 @@ def random_cases(
 def parity(cases: Iterable[Tuple[str, DungAF]]) -> Dict[str, object]:
     """Confronte instrument et oracle sur ``cases`` ; rend lignes et comptes.
 
+    Deux confrontations distinctes (proposition consultant du 24/10, #7742) :
+
+    - **ensembles IN** (``accord`` / ``desaccord``) : la parite historique,
+      aveugle a la separation ``out`` / ``undec`` -- un mutant qui etiquette
+      tout non-IN en ``out`` la passe ;
+    - **labelling complet** (``label_accord`` / ``label_desaccord``) : le
+      labelling de l'instrument contre le labelling derive de l'extension
+      native (:func:`labelling_from_extension`). C'est la jambe qui voit la
+      separation ``out`` / ``undec``, celle que les trajectoires de C3
+      consomment.
+
     Un desaccord n'est jamais leve en exception : il est **compte** et porte
     ses deux ensembles, pour que le carnet puisse nommer les cas divergents au
     lieu d'un simple « echec ».
@@ -277,18 +310,35 @@ def parity(cases: Iterable[Tuple[str, DungAF]]) -> Dict[str, object]:
     rows: List[Dict[str, object]] = []
     agree = 0
     disagree = 0
+    label_agree = 0
+    label_disagree = 0
     for name, af in cases:
         instrument = instrument_grounded(af)
         native = native_grounded(af)
         same = instrument == native
+        instrument_label = grounded_labeling(af)
+        derived_label = labelling_from_extension(af, native)
+        label_same = instrument_label == derived_label
         agree += int(same)
         disagree += int(not same)
+        label_agree += int(label_same)
+        label_disagree += int(not label_same)
         rows.append(
             {
                 "name": name,
                 "instrument": sorted(instrument),
                 "natif": sorted(native),
                 "accord": same,
+                "label_accord": label_same,
+                "labels_divergents": (
+                    None
+                    if label_same
+                    else {
+                        str(arg): (instrument_label[arg], derived_label[arg])
+                        for arg in af.arguments
+                        if instrument_label[arg] != derived_label[arg]
+                    }
+                ),
             }
         )
     return {
@@ -296,4 +346,6 @@ def parity(cases: Iterable[Tuple[str, DungAF]]) -> Dict[str, object]:
         "n": len(rows),
         "accord": agree,
         "desaccord": disagree,
+        "label_accord": label_agree,
+        "label_desaccord": label_disagree,
     }
