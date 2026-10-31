@@ -2581,6 +2581,31 @@ def test_publish_git_emit_creates_branch_one_line_per_observation(tmp_path, caps
     assert capsys.readouterr().out.startswith("HOLD")
 
 
+def test_premiere_publication_ne_signale_pas_le_fetch_absent_comme_une_erreur(
+    tmp_path, capsys
+):
+    """Le point mineur de la review Hermes (2026-10-28) : a la premiere
+    publication d'une machine, la branche dediee n'existe pas ENCORE sur le
+    remote -- le fetch « echoue » sans que rien ne soit casse, et la ligne
+    `fetch: fatal: couldn't find remote ref ...` sur stderr est du bruit.
+
+    Le cas est distingue par `ls-remote` (remote joignable + liste VIDE),
+    jamais par le TEXTE du stderr -- ce texte est localise. Temoin : stderr ne
+    porte plus de ligne `fetch:`, et stdout nomme ce qui se passe.
+    """
+    remote, work = _git_sandbox(tmp_path)
+    state_dir = _gpu_state(tmp_path)
+    assert _append_hold(state_dir) == 0
+    capsys.readouterr()
+    rc = _publish(state_dir, work, "myia-ai-01", emit=True)
+    captured = capsys.readouterr()
+    assert rc == 0
+    assert "fetch:" not in captured.err
+    assert "branche absente sur le remote" in captured.out
+    # la publication, elle, a bien eu lieu
+    assert len(_bare_lines(remote, "myia-ai-01")) == 1
+
+
 def test_publish_git_emit_is_idempotent(tmp_path, capsys):
     """Republier ne duplique aucune ligne : l'id fait foi."""
     remote, work = _git_sandbox(tmp_path)

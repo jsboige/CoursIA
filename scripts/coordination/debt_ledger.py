@@ -2591,6 +2591,24 @@ def fetch_git_ledger_branch(
     return _git_reason(err) or f"git fetch {remote} {GIT_LEDGER_BRANCH} a echoue"
 
 
+def _branche_absente_du_remote(repo: Path, *, remote: str) -> bool:
+    """La branche dediee n'existe-t-elle pas ENCORE sur le remote ?
+
+    Distinguer par une interrogation du remote (``ls-remote``), **jamais par
+    le TEXTE de stderr** : ce texte est localise et sa formulation change
+    d'une version de git a l'autre. Un remote joignable dont la liste est
+    VIDE veut dire « la branche n'existe pas encore » -- cas normal de la
+    premiere publication d'une machine, et non une panne.
+
+    Un remote injoignable (rc != 0) ne prouve rien : la reponse est False,
+    et l'appelant garde le motif du fetch.
+    """
+    rc, out, _ = _git(
+        ["ls-remote", remote, f"refs/heads/{GIT_LEDGER_BRANCH}"], cwd=repo
+    )
+    return rc == 0 and not out.strip()
+
+
 def git_ledger_ref_available(
     repo: Path, *, remote: str = GIT_LEDGER_REMOTE_DEFAULT
 ) -> bool:
@@ -3037,6 +3055,12 @@ def publish_git_ledger(
     # une cible interdite sont refuses sans qu'une branche soit publiee.
     remote_url = ensure_git_ledger_remote(repo, remote)
     fetch_error = fetch_git_ledger_branch(repo, remote=remote)
+    # La branche peut ne pas encore exister sur le remote : le fetch echoue
+    # alors que TOUT va bien (premiere publication d'une machine). Le cas est
+    # distingue par `ls-remote`, jamais par le texte du stderr.
+    fetch_branche_absente = bool(fetch_error) and _branche_absente_du_remote(
+        repo, remote=remote
+    )
     # La tete est epinglee UNE fois apres le fetch : ce qui est deja publie,
     # l'arbre du commit et son parent viennent du meme sha (finding Hermes 2).
     base_sha = _pin_ledger_base(repo, remote=remote)
@@ -3054,6 +3078,7 @@ def publish_git_ledger(
         "to_publish": [str(obs["observation_id"]) for obs in to_publish],
         "already_on_branch": sorted(existing_ids & source_ids),
         "fetch_error": fetch_error,
+        "fetch_branche_absente": fetch_branche_absente,
         "published": False,
         "pushed_sha": None,
         "drained": [],
@@ -3982,10 +4007,21 @@ def _cli_publish(args: argparse.Namespace) -> int:
             )
             print("(dry-run -- rien ecrit, rien pousse ; pass --emit pour publier)")
         if summary["fetch_error"]:
-            print(
-                f"fetch: {summary['fetch_error']} (lecture du dernier ref local)",
-                file=sys.stderr,
-            )
+            if summary.get("fetch_branche_absente"):
+                # Cas NORMAL de la premiere publication : le remote est
+                # joignable et la branche n'existe pas encore. Le fetch
+                # « echoue » parce qu'il n'y a rien a fetcher -- l'afficher
+                # comme une erreur pollue le journal de chaque machine
+                # (point mineur de la review Hermes du 2026-10-28).
+                print(
+                    "branche absente sur le remote (premiere publication) : "
+                    "rien a fetcher"
+                )
+            else:
+                print(
+                    f"fetch: {summary['fetch_error']} (lecture du dernier ref local)",
+                    file=sys.stderr,
+                )
         if summary.get("snapshot"):
             print(f"snapshot (cache) refreshed: {summary['snapshot']}")
         if summary.get("drain_missing"):
