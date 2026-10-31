@@ -491,7 +491,15 @@ def serie_par_instrument(commande, sens: str,
             # DERNIERE de la serie, la reference en est la PREMIERE. Inverser
             # les deux inverserait la tendance — c'est ce qui faisait
             # rendre « AVANCE » a une serie qui recule.
-            tendance = verdict(lot[-1]["valeur"], lot[0]["valeur"], sens)
+            #
+            # La tendance se lit entre le PREMIER jour et le DERNIER jour :
+            # deux mesures du meme jour ne font pas une tendance (c'est un
+            # ecart de minutes, pas un ecart de jours).
+            jours = {p["date"][:10] for p in lot}
+            if len(jours) >= 2:
+                tendance = verdict(lot[-1]["valeur"], lot[0]["valeur"], sens)
+            else:
+                tendance = "SANS TENDANCE (mesures du meme jour)"
         else:
             tendance = "PREMIERE MESURE"
         sortie.append({"instrument": identite, "points": lot,

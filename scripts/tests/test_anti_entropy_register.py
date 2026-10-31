@@ -1125,6 +1125,17 @@ def test_la_serie_separe_les_instruments():
     assert groupes[1]["tendance"] == "PREMIERE MESURE"
 
 
+def test_deux_mesures_du_meme_jour_ne_font_pas_une_tendance():
+    """Une tendance se lit entre deux JOURS : deux publications du meme jour
+    (a l'ocasion d'un evenement) ne sont pas un ecart de sept jours."""
+    e = _entree_padding()
+    groupes = aer.serie_par_instrument(
+        e.commande, e.sens,
+        [("2026-10-28T22:32:02Z", 0.08, "publication 1", "instrument@x"),
+         ("2026-10-28T23:06:38Z", 0.1, "publication 2", "instrument@x")])
+    assert groupes[0]["tendance"] == "SANS TENDANCE (mesures du meme jour)"
+
+
 def test_un_point_sans_identite_est_laisse_de_cote(monkeypatch):
     """Un point dont l'identite ne peut pas etre etablie ne se compare a
     rien : il sort de la serie plutot que d'etre attribue au hasard."""
