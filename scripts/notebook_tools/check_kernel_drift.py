@@ -532,6 +532,28 @@ CANONICAL_LANGUAGE_TRANSITIONS_SCOPED = {
         "sont converges par #23379 (ML-04b #23382, ML-09 #23388, ML-07 "
         "#23389, ML-05 #23424) ; ML-06 est le dernier hors canon, tous "
         "kernels confondus (#23426)",
+    # 2.9d est le premier des deux derniers carnets de la serie restes a
+    # 3.10.19. Sa convergence est la voie 1 de #23292 (re-execution sous le
+    # venv canon `coursia-ml-training`, mesure a 3.13.15) : elle evite une
+    # seconde tolerance pour le repertoire, mais la direction `3.10 -> 3.13`
+    # n'existait dans AUCUNE des deux tables pour ce kernelspec -- mesure
+    # firsthand : `accepted_canonical_transition` rend False avec et sans
+    # chemin avant cette entree. Le scope reste nominatif (un carnet par
+    # entree) pour la meme raison que 2.8c : le kernelspec est partage par
+    # une trentaine de carnets hors serie (reserve de revue #22979).
+    #
+    # 2.9g ne figure PAS ici tant que ses sorties ne sont pas re-executees :
+    # une entree accorde la permission de bouger la version du carnet, et
+    # l'accorder avant la mesure laisserait passer un hand-edit sous couvert
+    # de convergence. Son venv exige un modele 7B quantifie sur une RTX 4060
+    # de 8 Go que la grille ICT-25 occupe jusqu'a la fin de la campagne ; la
+    # tranche est due et suivie sur #23292, pas abandonnee.
+    ("MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/"
+     "2.9d-Features-Circulaires-Helice-Nombres.ipynb",
+     "coursia-ml-training", "3.10", "3.13"):
+        "Python 3.10 -> 3.13 sous `coursia-ml-training` : convergence vers le "
+        "canon de la serie 02-ML-Cours par re-execution (#23292, voie 1) ; "
+        "venv du kernelspec mesure a 3.13.15, sorties re-executees",
 }
 
 

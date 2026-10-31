@@ -542,6 +542,63 @@ def test_canonical_transition_scoped_ml06_reverse_still_refused():
     assert ckd.accepted_canonical_transition(a, b, nb_path=path) is False
 
 
+# --- #23292 : le carnet 02-ML-Cours reste a 3.10.19 et re-execute --------
+#
+# La direction 3.10 -> 3.13 n'existait dans aucune des deux tables pour le
+# kernelspec `coursia-ml-training` : mesure avant l'entree, sur le module
+# d'avant-fix, `accepted_canonical_transition` rendait False avec ET sans
+# chemin. Les tests ci-dessous portent la positive (2.9d, dont les sorties
+# sont re-executees dans la meme PR) et les controles negatifs que
+# l'acceptance de #23292 exige nominativement : un carnet hors serie
+# partageant le kernelspec reste rouge, la direction inverse le reste aussi,
+# et 2.9g -- dont la re-execution est due mais pas encore faite -- reste
+# rouge tant que la mesure n'existe pas.
+
+_02ML = "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/"
+_29D = _02ML + "2.9d-Features-Circulaires-Helice-Nombres.ipynb"
+_29G = _02ML + "2.9g-Geometrie-de-la-Verite.ipynb"
+
+
+def test_canonical_transition_scoped_02ml_310_to_313_accepted():
+    # Voie 1 de #23292 : la re-execution sous le venv canon
+    # `coursia-ml-training` (mesure a 3.13.15) est la convergence attendue
+    # du carnet de la serie encore estampille 3.10.19.
+    a = {"language_version": "3.10.19", "kernelspec_name": "coursia-ml-training"}
+    b = {"language_version": "3.13.15", "kernelspec_name": "coursia-ml-training"}
+    assert ckd.accepted_canonical_transition(a, b, nb_path=_29D) is True
+
+
+def test_canonical_transition_scoped_29g_still_refused():
+    # 2.9g partage la serie et la direction, mais pas la mesure : ses sorties
+    # ne sont pas re-executees. Une entree accorde la permission de bouger la
+    # version d'un carnet ; l'accorder avant la mesure laisserait passer un
+    # hand-edit sous couvert de convergence. Le carnet reste donc rouge, et
+    # ce test tombe le jour ou sa tranche est livree.
+    a = {"language_version": "3.10.19", "kernelspec_name": "coursia-ml-training"}
+    b = {"language_version": "3.13.15", "kernelspec_name": "coursia-ml-training"}
+    assert ckd.accepted_canonical_transition(a, b, nb_path=_29G) is False
+
+
+def test_canonical_transition_scoped_02ml_does_not_leak_outside_series():
+    # Controle negatif de l'acceptance : un carnet HORS 02-ML-Cours qui
+    # partage le kernelspec garde sa direction rouge (#22979 : 67 carnets
+    # concernes), et la meme transition sans chemin reste rouge aussi.
+    a = {"language_version": "3.10.19", "kernelspec_name": "coursia-ml-training"}
+    b = {"language_version": "3.13.15", "kernelspec_name": "coursia-ml-training"}
+    assert ckd.accepted_canonical_transition(
+        a, b, nb_path="MyIA.AI.Notebooks/GenAI/Texte/01-Prompt-Eng.ipynb"
+    ) is False
+    assert ckd.accepted_canonical_transition(a, b) is False
+
+
+def test_canonical_transition_scoped_02ml_reverse_still_refused():
+    # Le cliquet ne descend pas : 3.13 -> 3.10 reste rouge meme sur le
+    # chemin scope.
+    a = {"language_version": "3.13.15", "kernelspec_name": "coursia-ml-training"}
+    b = {"language_version": "3.10.19", "kernelspec_name": "coursia-ml-training"}
+    assert ckd.accepted_canonical_transition(a, b, nb_path=_29D) is False
+
+
 def test_canonical_transition_python_313_to_311_refused():
     # Negatif 1 : la direction inverse est une regression du canon.
     a = {"language_version": "3.13.3", "kernelspec_name": "python3"}
