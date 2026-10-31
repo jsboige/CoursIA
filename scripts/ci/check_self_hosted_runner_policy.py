@@ -691,6 +691,20 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   s'execute. Rollback = variable a `false` ou supprimee, sans toucher les
     #   fichiers.
     "creation-provenance-advisory.yml",
+    # 2026-10-31 (c2740, lane myia-ai-01:CoursIA) : rouge de `main` apres le
+    #   squash-merge de #23063. Le cliquet a ete valide sur une base qui ne
+    #   contenait pas encore `sudoku-tests.yml` (82734d24b) ni
+    #   `twin-index-collision-gate.yml` (38141f743), arrives sur main entre
+    #   l'ecriture et le merge ; `scripts-tests.yml:qc-mcp-lite-tests` est
+    #   arrive apres. Les trois jobs etaient nus sur `ubuntu-latest`
+    #   (HOSTED_PR_JOB_UNEXCEPTED). Conversion en forme hybride, meme
+    #   expression que ci-dessus ; chaque job porte deja son `timeout-minutes`
+    #   (10, 15, 15). `scripts-tests.yml` figure deja plus haut dans
+    #   l'allowlist. La variable vaut `true` depuis le 2026-10-31T04:09Z : le
+    #   routage change reellement (jambe locale quand le controleur deborde).
+    #   Rollback = variable a `false`, sans toucher les fichiers.
+    "sudoku-tests.yml",
+    "twin-index-collision-gate.yml",
 
     # #23053 (meme PR, meme lane, 2026-10-31) : `cycle-time-guard.yml` est
     #   lui aussi un workflow NEUF pour le cliquet -- son job `cycle_time`
