@@ -70,8 +70,20 @@ from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
 logger = logging.getLogger(__name__)
 
+#: PySAT est-il importable ? C'est le drapeau que `_pl_handler._sat_available`
+#: lit pour decider si le chemin SAT peut etre pris. Sans lui,
+#: `sat_handler.PYSAT_AVAILABLE` levait `AttributeError`, avalie par le
+#: `except` du caller, et le chemin SAT restait du code mort (reserve #23449).
+try:
+    import pysat  # noqa: F401
+
+    PYSAT_AVAILABLE = True
+except Exception:  # pragma: no cover - dependance d'environnement
+    PYSAT_AVAILABLE = False
+
 __all__ = [
     "PLFormulaError",
+    "PYSAT_AVAILABLE",
     "SATHandler",
     "SATPLEngine",
     "entails",
@@ -407,7 +419,7 @@ class _Encoder:
 
         raise PLFormulaError(f"Noeud non encode : {node!r}")
 
-    # -- combinateurs CNF (une variable par connecteur, deux clauses) -------
+    # -- combinateurs CNF (une variable par connecteur, clauses de definition bilaterales) -------
 
     def negation(self, child: int) -> int:
         """Variable `v` telle que `v <-> !child`."""
@@ -436,7 +448,12 @@ class _Encoder:
         """Variable `v` telle que `v <-> (!left | right)`."""
         var = self.new_var()
         self.clauses.append([-var, -left, right])  # v -> (!left | right)
-        self.clauses.append([left, -right, var])  # (!left | right) -> v
+        # (!left | right) -> v  <=>  (left & !right) -> v : la distribution
+        # d'un `&` sous un `|` donne DEUX clauses, pas une (une seule clause
+        # `left | !right | v` serait strictement plus faible et briserait
+        # l'equivalence v <-> (!left | right)).
+        self.clauses.append([left, var])  # left & !right -> v  (1/2)
+        self.clauses.append([-right, var])  # left & !right -> v  (2/2)
         return var
 
 

@@ -299,6 +299,17 @@ def test_organ_sat_du_depot_present_et_utilise():
     assert "cadical195" in [name for name, _ in handler._organ.RECOMMENDED_SOLVERS]
 
 
+def test_module_expose_le_drapeau_pysat_available():
+    """Le module expose `PYSAT_AVAILABLE` en tant que bool : c'est le symbole
+    que `_pl_handler._sat_available` lit pour decider du chemin SAT. Sans lui,
+    `sat_handler.PYSAT_AVAILABLE` levait AttributeError, avalie par le `except`
+    du caller, et le chemin SAT restait du code mort (reserve #23449)."""
+    from argumentation_lib import sat_handler
+
+    assert "PYSAT_AVAILABLE" in sat_handler.__all__
+    assert isinstance(sat_handler.PYSAT_AVAILABLE, bool)
+
+
 # ---------------------------------------------------------------------------
 # Couture moteur : le contrat `entails(formules, query)` de #23040
 # ---------------------------------------------------------------------------
