@@ -474,6 +474,24 @@ CANONICAL_LANGUAGE_TRANSITIONS_SCOPED = {
      "python3", "3.8", "3.13"):
         "Python 3.8 -> 3.13 : re-execution selective du sous-ensemble local "
         "de QC-Py-16 (#19181, cas par cas)",
+    # SL-14 : son 3.9 etait un artefact de PACKAGING, pas une contrainte
+    # fonctionnelle. `pip install aifeynman` (sdist fige en 2021) est
+    # impossible sous 3.13 : son `setup.py` importe `numpy.distutils`,
+    # retire de NumPy 2, et NumPy 1.26 n'a pas de roue cp313 -- le carnet
+    # etait donc epingle au conteneur fondateur 3.9 par cette seule
+    # raison. La reconstruction des 7 extensions Fortran par le f2py de
+    # NumPy 2 (#23443) demontre que l'echantillon s'execute sous 3.13 :
+    # la contrainte tombe. L'entree reste NOMINATIVE (chemin exact) -- la
+    # direction 3.9 -> 3.13 demeure rouge partout ailleurs, ce que la
+    # reserve de revue sur la serie ICT (pyphi==1.2.0, requires-python
+    # >=3.9,<3.10) exige.
+    ("MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/"
+     "SL-14-AIFeynman-Discover-Equations.ipynb",
+     "python3", "3.9", "3.13"):
+        "Python 3.9 -> 3.13 : convergence vers le canon d'execution 3.13 ; "
+        "le 3.9 du carnet etait impose par le packaging de `aifeynman` "
+        "(numpy.distutils), leve par la reconstruction des extensions "
+        "Fortran sous 3.13 dans la meme PR (#23443)",
     # 2.8c est le premier carnet dont la re-execution sous 3.13 est la
     # convergence attendue vers le canon de SA serie. Le kernelspec
     # ``coursia-ml-training`` est partage par 50 carnets hors 02-ML-Cours
