@@ -60,7 +60,21 @@ permissions:
 jobs:
   assert:
     name: Composition vs RAM VM
-    runs-on: ubuntu-latest
+    # 2026-10-28 (#23053 vague 3, famille (a) gardes/advisories) : forme
+    # hybride de debordement -- PR meme-depot ET vars.CI_OVERFLOW_LOCAL ==
+    # 'true' -> jambe Linux locale ; tout le reste (variable absente ou fausse,
+    # forks, push/schedule/dispatch) retombe sur ubuntu-latest. Bascule :
+    # `gh variable set CI_OVERFLOW_LOCAL --body true|false --repo jsboige/CoursIA`.
+    # Retour arriere = variable a `false` ou supprimee : routage 100 % heberge,
+    # sans toucher ce fichier. Limite : runs-on se resout a la creation du job,
+    # les runs deja en file ne bougent pas.
+    # La garde anti-fork vit DANS l'expression : aucune ligne `if:` ajoutee ni
+    # retiree.
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
+    # Borne de duree (#23053) : 70 s mesures sur le dernier succes (run
+    # 40630215290, job `assert`), soit ~4x la duree observee avec la marge d'un
+    # clone froid. Sans borne, un job herite de 360 min et fige un slot
+    # ephemerel (16 slots sur 18 tenus le 15/10).
     timeout-minutes: 5
     steps:
       - name: Checkout
