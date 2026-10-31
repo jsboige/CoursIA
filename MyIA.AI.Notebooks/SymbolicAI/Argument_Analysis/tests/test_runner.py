@@ -229,6 +229,16 @@ def _state(text="Le chat est sur le paillasson. Donc le chat est a l'interieur."
     return RhetoricalAnalysisState(text)
 
 
+def _count_plugins(kernel, name):
+    """Nombre de plugins enregistres SOUS le nom donne.
+
+    Le kernel porte plusieurs plugins (StateManager, Reasoner depuis
+    #22981) : l'assertion d'idempotence porte sur le nom, pas sur le
+    nombre total de plugins.
+    """
+    return sum(1 for plugin_name in kernel.plugins if plugin_name == name)
+
+
 def _run(runner):
     """Drive the async runner from a sync test without requiring pytest-asyncio."""
     return asyncio.run(runner.run())
@@ -402,11 +412,22 @@ def test_agent_builders_are_idempotent_on_plugin_registration():
     """If StateManager is already on the kernel, builders must NOT re-add it."""
     k, s = _kernel(), _state()
     create_pm_agent(k, "svc", s)
-    assert len(k.plugins) == 1
+    assert _count_plugins(k, "StateManager") == 1
     create_informal_agent(k, "svc", s)
     create_logic_agent(k, "svc", s)
-    assert len(k.plugins) == 1  # still exactly one StateManager plugin
+    # still exactly one StateManager plugin (the kernel also carries the
+    # `Reasoner` plugin since #22981 : the solver is a separate plugin)
+    assert _count_plugins(k, "StateManager") == 1
     assert "StateManager" in k.plugins
+
+
+def test_logic_agent_registers_the_reasoner_plugin_once():
+    """Le solveur propositionnel est expose aux agents (#22981), sans doublon."""
+    k, s = _kernel(), _state()
+    create_logic_agent(k, "svc", s)
+    assert _count_plugins(k, "Reasoner") == 1
+    create_logic_agent(k, "svc", s)
+    assert _count_plugins(k, "Reasoner") == 1
 
 
 def test_informal_builder_registers_plugin_when_absent():
@@ -448,7 +469,7 @@ def test_runner_init_does_not_re_register_when_present():
     runner = AnalysisRunner(k, "svc", s)
     # plugin already there -> runner leaves it and holds no new smp
     assert runner._smp is None
-    assert len(k.plugins) == 1
+    assert _count_plugins(k, "StateManager") == 1
 
 
 # ---------------------------------------------------------------------------

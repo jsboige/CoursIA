@@ -227,6 +227,7 @@ MyIA.AI.Notebooks/SymbolicAI/SmartContracts/06-Real-World/SC-24-Testnet-Deploy.i
 MyIA.AI.Notebooks/SymbolicAI/SmartContracts/06-Real-World/SC-25-Mainnet-Deploy.ipynb	MyIA.AI.Notebooks/SymbolicAI/SmartContracts/06-Real-World/SC-25-Mainnet-Deploy-Python.ipynb	2026-09-25	myia-po-2025:CoursIA
 MyIA.AI.Notebooks/SymbolicAI/SmartContracts/06-Real-World/SC-26-Final-Project.ipynb	MyIA.AI.Notebooks/SymbolicAI/SmartContracts/06-Real-World/SC-26-Final-Project-Python.ipynb	2026-09-25	myia-po-2025:CoursIA
 MyIA.AI.Notebooks/SymbolicAI/SmartContracts/06-Real-World/SC-27-Dette-Irreversibilite.ipynb	MyIA.AI.Notebooks/SymbolicAI/SmartContracts/06-Real-World/SC-27-Dette-Irreversibilite-Python.ipynb	2026-09-25	myia-po-2025:CoursIA
+ancien	nouveau	date	lane
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-Crosscoder-Distillation-Python.ipynb	MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb	2026-10-03	myia-po-2027:CoursIA
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-45-InoculationBifurcation-9B-Python.ipynb	MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42b-InoculationBifurcation-9B-Python.ipynb	2026-10-04	myia-po-2023:CoursIA
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09d-Lean-Discrepancy-Komlos.ipynb	MyIA.AI.Notebooks/Search/Discrepancy/Discrepancy-02-Komlos-Lean.ipynb	2026-10-04	myia-po-2027:CoursIA
@@ -320,6 +321,7 @@ MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere.ipynb	MyIA.AI.Notebooks/II
 MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations.ipynb	MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations-Python.ipynb	2026-10-12	myia-ai-01:CoursIA-2
 MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb	MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb	2026-10-12	myia-ai-01:CoursIA-2
 MyIA.AI.Notebooks/GameTheory/GameTheory-23a-Biens-Publics-Plan-Deformation-Python.ipynb	MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-09-Biens-Publics-N-Personnes-Python.ipynb	2026-10-11	myia-po-2023:CoursIA-2
+
 MyIA.AI.Notebooks/ML/ML.Net/ML-1-Introduction-Python.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction-Python.ipynb	2026-10-10	myia-po-2023:CoursIA-2
 MyIA.AI.Notebooks/ML/ML.Net/ML-1-Introduction.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction.ipynb	2026-10-10	myia-po-2023:CoursIA-2
 MyIA.AI.Notebooks/ML/ML.Net/ML-2-Data&Features-Python.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-02-Data&Features-Python.ipynb	2026-10-10	myia-po-2023:CoursIA-2
@@ -362,6 +364,9 @@ MyIA.AI.Notebooks/Search/Applications/Adversarial/App-14b-ConnectFour.ipynb	MyIA
 MyIA.AI.Notebooks/Search/Applications/Adversarial/App-14c-ConnectFour-CSharp.ipynb	MyIA.AI.Notebooks/Search/Applications/Adversarial/App-12c-ConnectFour.ipynb	2026-10-23	myia-po-2023:CoursIA-2
 MyIA.AI.Notebooks/GameTheory/GameTheory-03f-Meta-Actions-Tarifees-Python.ipynb	MyIA.AI.Notebooks/GameTheory/GameTheory-03e-Meta-Actions-Tarifees-Python.ipynb	2026-10-18	myia-po-2023:CoursIA
 MyIA.AI.Notebooks/GameTheory/GameTheory-03g-Deux-Especes-de-Fleches-Python.ipynb	MyIA.AI.Notebooks/GameTheory/GameTheory-03f-Deux-Especes-de-Fleches-Python.ipynb	2026-10-18	myia-po-2023:CoursIA
+MyIA.AI.Notebooks/Search/Applications/Search/App-32-Szpiro-Pasten-2026.ipynb	MyIA.AI.Notebooks/Search/App-32-Szpiro-Pasten-2026.ipynb	2026-10-20	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/Search/Applications/Adversarial/App-14b-ConnectFour.ipynb	MyIA.AI.Notebooks/Search/Applications/Adversarial/App-12b-ConnectFour.ipynb	2026-10-23	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/Search/Applications/Adversarial/App-14c-ConnectFour-CSharp.ipynb	MyIA.AI.Notebooks/Search/Applications/Adversarial/App-12c-ConnectFour.ipynb	2026-10-23	myia-po-2023:CoursIA-2
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity-Python.ipynb	MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15/ICT-15-IntegratedComplexity-Python.ipynb	2026-10-24	myia-po-2027:CoursIA-2
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15b-SensitivityCanonicity-Python.ipynb	MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15/ICT-15b-SensitivityCanonicity-Python.ipynb	2026-10-24	myia-po-2027:CoursIA-2
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15c-MetaProxyObstruction-Python.ipynb	MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15/ICT-15c-MetaProxyObstruction-Python.ipynb	2026-10-24	myia-po-2027:CoursIA-2
@@ -388,6 +393,16 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14b-ActiveInferenceEFE-Python.ipynb	MyIA.AI
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14/ICT-14-FreeEnergySurprise-Python.ipynb	MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14-FreeEnergySurprise/ICT-14-FreeEnergySurprise-Python.ipynb	2026-10-28	myia-po-2027:CoursIA-2
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14/ICT-14b-ActiveInferenceEFE-Python.ipynb	MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14-FreeEnergySurprise/ICT-14b-ActiveInferenceEFE-Python.ipynb	2026-10-28	myia-po-2027:CoursIA-2
 MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb	MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-14-Euler-Navier-Stokes-Python.ipynb	2026-10-30	myia-po-2024:CoursIA
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats-Python.ipynb	MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12/ICT-12-ValenceFieldsAndAnimats-Python.ipynb	2026-10-27	myia-po-2027:CoursIA-2
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12b-LearnedValence-Python.ipynb	MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12/ICT-12b-LearnedValence-Python.ipynb	2026-10-27	myia-po-2027:CoursIA-2
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12c-PregnanceAnimat-Python.ipynb	MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12/ICT-12c-PregnanceAnimat-Python.ipynb	2026-10-27	myia-po-2027:CoursIA-2
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12d-InhibitedActionAnimat-Python.ipynb	MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12/ICT-12d-InhibitedActionAnimat-Python.ipynb	2026-10-27	myia-po-2027:CoursIA-2
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12e-Value-of-Information-Animat-Python.ipynb	MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12/ICT-12e-Value-of-Information-Animat-Python.ipynb	2026-10-27	myia-po-2027:CoursIA-2
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12/ICT-12-ValenceFieldsAndAnimats-Python.ipynb	MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12-ValenceFieldsAndAnimats-Python.ipynb	2026-10-28	myia-po-2027:CoursIA-2
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12/ICT-12b-LearnedValence-Python.ipynb	MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12b-LearnedValence-Python.ipynb	2026-10-28	myia-po-2027:CoursIA-2
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12/ICT-12c-PregnanceAnimat-Python.ipynb	MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12c-PregnanceAnimat-Python.ipynb	2026-10-28	myia-po-2027:CoursIA-2
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12/ICT-12d-InhibitedActionAnimat-Python.ipynb	MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12d-InhibitedActionAnimat-Python.ipynb	2026-10-28	myia-po-2027:CoursIA-2
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12/ICT-12e-Value-of-Information-Animat-Python.ipynb	MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12e-Value-of-Information-Animat-Python.ipynb	2026-10-28	myia-po-2027:CoursIA-2
 MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction-CSharp.ipynb	2026-10-27	myia-po-2023:CoursIA-2
 MyIA.AI.Notebooks/ML/ML.Net/ML-02-Data&Features.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-02-Data-Features-CSharp.ipynb	2026-10-27	myia-po-2023:CoursIA-2
 MyIA.AI.Notebooks/ML/ML.Net/ML-02-Data&Features-Python.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-02-Data-Features-Python.ipynb	2026-10-27	myia-po-2023:CoursIA-2
