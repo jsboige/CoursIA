@@ -47,26 +47,14 @@
       "ecosystem": "nuget",
       "canonical": "3.1.0",
       "canonical_source": "manifest",
-      "divergences": [
-        {
-          "version": "3.0.5",
-          "decision": "to_converge",
-          "reason": "Ecart non justifie : la serie IKVM 8.15.0 s'accompagne de pythonnet 3.1.0 ; l'epingle 3.0.5 n'a pas de motif ecrit dans le depot, donc il est classe « a converger » et non « justifie »."
-        }
-      ]
+      "divergences": []
     },
     {
       "id": "Google.OrTools",
       "ecosystem": "nuget",
       "canonical": "9.15.6755",
       "canonical_source": "manifest",
-      "divergences": [
-        {
-          "version": "9.11.4210",
-          "decision": "to_converge",
-          "reason": "Ecart non justifie : aucune entree d'allowlist ni motif ecrit dans le depot ne rattache l'epingle 9.11.4210 a une contrainte de la serie, donc l'ecart est classe « a converger ». Les decompils (nombre de carnets par version, epinglages flottants) ne sont PAS recopies ici : ils viennent du recensement, `python scripts/notebook_tools/check_lib_versions.py --census`, seul a jour sur le corpus."
-        }
-      ]
+      "divergences": []
     },
     {
       "id": "dotNetRDF",

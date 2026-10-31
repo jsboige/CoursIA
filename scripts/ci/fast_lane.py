@@ -45,7 +45,8 @@ from fast_lane_registry import (  # noqa: E402
     TRANCHE7, TRANCHE8, TRANCHE9, TRANCHE10, TRANCHE11, TRANCHE12, TRANCHE13,
     TRANCHE14, TRANCHE15, TRANCHE16, TRANCHE17, TRANCHE18, TRANCHE19,
     TRANCHE20, TRANCHE21, TRANCHE22, TRANCHE23, TRANCHE24, TRANCHE25, TRANCHE26,
-    TRANCHE27, TRANCHE28, TRANCHE29, TRANCHE30, TRANCHE31, Guard,
+    TRANCHE27, TRANCHE28, TRANCHE29, TRANCHE30, TRANCHE31, TRANCHE32,
+    TRANCHE33, Guard,
 )
 
 SHADOW_PREFIX = "fast-lane (ombre): "
@@ -339,6 +340,237 @@ def emit_check_run(repo: str, head_sha: str, name: str, conclusion: str,
         print(f"[fast-lane] check-run publie : {name} -> {conclusion}")
 
 
+# ---------------------------------------------------------------------------
+# Effets de bord PR : stickies et artefacts (#22209, tranche 1b)
+# ---------------------------------------------------------------------------
+#
+# Les gardes de cette tranche ne rendent pas leur verdict par un check-run
+# seul : ils ECRIVENT sur la PR (commentaire a marqueur) et, pour l'un d'eux,
+# deposent un artefact JSON. L'ecriture est isolee dans ce module et n'est
+# atteinte que par `--effects`, executee par le SEUL job qui porte
+# `pull-requests: write` (`Always-on commenters`). Le job principal
+# (`Always-on guards`) n'a pas ce drapeau : un defaut dans le code d'un garde
+# ne peut donc pas ecrire sur une PR.
+#
+# Le marqueur est celui de `marocchino/sticky-pull-request-comment@v2`,
+# byte-identique et en FIN de corps -- c'est la forme que reconnait le
+# parseur du dossier de prevalidation (`check_adjoint_prevalidation.py`).
+
+STICKY_MARKER = "<!-- Sticky Pull Request Comment{h} -->"
+
+
+def sticky_marker(header: str) -> str:
+    return STICKY_MARKER.format(h=header)
+
+
+def artifact_root() -> Path:
+    raw = os.environ.get("FAST_LANE_ARTIFACT_DIR") or ""
+    if raw:
+        return Path(raw)
+    tmp = Path(os.environ.get("RUNNER_TEMP") or (REPO_ROOT / ".fast-lane-tmp"))
+    return tmp / "fast-lane-artifacts"
+
+
+def write_artifact(name: str, filename: str, payload: str) -> str:
+    dest = artifact_root() / name / filename
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.write_text(payload, encoding="utf-8")
+    return str(dest)
+
+
+def _gh_api(paginate: bool, *args: str, stdin: str | None = None):
+    cmd = ["gh", "api"]
+    if paginate:
+        cmd += ["--paginate", "--slurp"]
+    cmd += list(args)
+    if stdin is not None:
+        cmd += ["--input", "-"]
+    return subprocess.run(cmd, cwd=REPO_ROOT, input=stdin, capture_output=True,
+                          text=True, encoding="utf-8", errors="replace")
+
+
+def _existing_sticky(repo: str, pr: str, marker: str) -> str:
+    """Id du commentaire dont le corps se termine par `marker`, sinon ""."""
+    proc = _gh_api(True, f"repos/{repo}/issues/{pr}/comments?per_page=100")
+    if proc.returncode != 0:
+        print(f"[fast-lane][effets] lecture des commentaires impossible : "
+              f"{proc.stderr.strip()}", file=sys.stderr)
+        return ""
+    try:
+        pages = json.loads(proc.stdout or "[]")
+    except ValueError:
+        print("[fast-lane][effets] reponse de commentaires illisible",
+              file=sys.stderr)
+        return ""
+    for page in pages if isinstance(pages, list) else []:
+        for comment in page or []:
+            body = (comment.get("body") or "").rstrip()
+            # Un sticky dont le pied a ete deplace par une edition manuelle
+            # n'est plus reconnu : il sera repose, pas duplique dans le corps
+            # du precedent. C'est le comportement de l'action source.
+            if body.endswith(marker) and comment.get("id") is not None:
+                return str(comment["id"])
+    return ""
+
+
+def upsert_sticky_comment(repo: str, pr: str, header: str, body: str,
+                          dry_run: bool) -> str:
+    """Pose ou met a jour le sticky `header`. Rend l'action effectuee.
+
+    Idempotence : le commentaire existant est retrouve par son marqueur puis
+    PATCHe. Sans cela, chaque push empilerait un commentaire de plus sur la
+    PR -- l'accident que la tranche absorbe justement.
+    """
+    if not pr:
+        print("[fast-lane][effets] pas de numero de PR : sticky non pose",
+              file=sys.stderr)
+        return "skipped"
+    marker = sticky_marker(header)
+    text = body.rstrip() + "\n\n" + marker
+    if dry_run:
+        print(f"[fast-lane][a-blanc] sticky {header!r} -> "
+              f"{len(text)} caracteres")
+        return "dry-run"
+    existing = _existing_sticky(repo, pr, marker)
+    payload = json.dumps({"body": text})
+    if existing:
+        proc = _gh_api(False, "-X", "PATCH",
+                       f"repos/{repo}/issues/comments/{existing}",
+                       stdin=payload)
+        action = "updated"
+    else:
+        proc = _gh_api(False, "-X", "POST",
+                       f"repos/{repo}/issues/{pr}/comments", stdin=payload)
+        action = "created"
+    if proc.returncode != 0:
+        # Jamais de repli en POST quand le PATCH echoue : ce serait creer le
+        # doublon que l'upsert existe pour eviter.
+        print(f"[fast-lane][effets] ECHEC du sticky {header!r} : "
+              f"{proc.stderr.strip()}", file=sys.stderr)
+        return "error"
+    print(f"[fast-lane][effets] sticky {header!r} : {action}")
+    return action
+
+
+def drop_empty_pairs(cmd: list[str]) -> list[str]:
+    """Retire un token devenu vide ET son drapeau `--xxx` immediatement avant.
+
+    Les placeholders d'un garde peuvent designer une valeur absente (pas de
+    `base_sha` sur un `workflow_dispatch`) : passer `--reference-base ""`
+    ferait echouer le detecteur sur une valeur vide. Les workflows d'origine
+    construisent leur ligne de commande en deux temps pour cette raison ; ici
+    la substitution est uniforme, donc la compaction l'est aussi.
+    """
+    out: list[str] = []
+    for token in cmd:
+        if token == "":
+            if out and out[-1].startswith("--"):
+                out.pop()
+            continue
+        out.append(token)
+    return out
+
+
+def commenter_paths(patterns: list[str], merge_base: str,
+                    limit: int) -> tuple[list[str], int]:
+    """Fichiers passes au detecteur, et nombre total avant la borne.
+
+    Reproduit la selection des workflows sources : `--diff-filter=MR -M50%`
+    (seuls les fichiers MODIFIES ou RENOMMES portent une prose a verifier ;
+    un carnet ajoute n'a pas d'output commite a confronter) et `head -50`
+    avec un compte de couverture honnete (#18503).
+    """
+    if not patterns or not merge_base:
+        return [], 0
+    proc = git("diff", "--name-only", "--diff-filter=MR", "-M50%",
+               merge_base, "HEAD", "--", *patterns)
+    if proc.returncode != 0:
+        print(f"[fast-lane][effets] diff illisible : {proc.stderr.strip()}",
+              file=sys.stderr)
+        return [], 0
+    total = [line.strip() for line in proc.stdout.splitlines() if line.strip()]
+    kept = [p for p in total if (REPO_ROOT / p).is_file()]
+    if limit:
+        kept = kept[:limit]
+    return kept, len(total)
+
+
+def trunc_note(total: int, kept: int) -> str:
+    if total <= kept:
+        return ""
+    return (f"Couverture partielle: {total} notebooks changed, only the "
+            f"first {kept} were scanned.")
+
+
+def run_effects(guard: Guard, ctx: dict[str, str],
+                dry_run: bool) -> tuple[int, str, list[str]]:
+    """Execute les `commenters` d'un garde. Rend (rc agrege, log, pannes).
+
+    `pannes` porte les rc declares `fatal_rc` : ce sont des detecteurs casses,
+    pas des constats, et le job doit rougir pour eux comme le faisait le
+    workflow d'origine. Un constat (rc=1 d'un detecteur de prose, rc=2 du
+    drift) ne rougit rien : il s'ecrit dans le commentaire.
+    """
+    rc_agg = 0
+    chunks: list[str] = []
+    failures: list[str] = []
+    for commenter in guard.commenters:
+        local = dict(ctx, trunc_note="")
+
+        def _post(commenter=commenter, text=""):
+            if text:
+                upsert_sticky_comment(ctx["repo"], ctx["pr_number"],
+                                      commenter.header, text, dry_run)
+
+        # Les abstentions passent AVANT la selection de chemins. Une base
+        # introuvable rend sinon « aucun fichier a scanner », donc un quitus
+        # vert -- exactement la confusion que les workflows sources
+        # interdisent (#11754 : « rien regarde » != « rien trouve »).
+        if commenter.paths and not local.get("merge_base"):
+            _post(text=commenter.body(1, "", dict(local, merge_base="")))
+            chunks.append(f"--- {commenter.header} ---\n"
+                          "(merge-base introuvable : abstention)")
+            continue
+        if commenter.needs_pr_body and not local.get("pr_body_file"):
+            # Pas de corps de PR : juger sur un corps vide inventerait un
+            # verdict. On s'abstient, et on le DIT.
+            _post(text=commenter.body(1, "ABSTAIN", dict(local, merge_base="")))
+            chunks.append(f"--- {commenter.header} ---\n"
+                          "(corps de PR absent : abstention)")
+            continue
+        merged = commenter.argv
+        if commenter.paths:
+            kept, total = commenter_paths(commenter.paths,
+                                          local["merge_base"],
+                                          commenter.max_paths)
+            local["trunc_note"] = trunc_note(total, len(kept))
+            merged = expand_paths_token(merged, kept)
+            if not kept:
+                # Rien a scanner : l'original ne lance pas le detecteur et
+                # rend un quitus explicite, pas un silence.
+                _post(text=commenter.body(0, "", local))
+                chunks.append(f"--- {commenter.header} ---\n"
+                              "(aucun fichier modifie a scanner)")
+                continue
+        rc, log = run_argv(merged, local)
+        payload = payload_of(log)
+        chunks.append(f"--- {commenter.header} ---\n{log}")
+        if commenter.artifact_name and commenter.artifact_file:
+            try:
+                path = write_artifact(commenter.artifact_name,
+                                      commenter.artifact_file, payload)
+                print(f"[fast-lane][effets] artefact {commenter.artifact_name}"
+                      f" -> {path}")
+            except OSError as exc:
+                print(f"[fast-lane][effets] artefact non ecrit : {exc}",
+                      file=sys.stderr)
+        if rc in commenter.fatal_rc:
+            failures.append(f"{commenter.header} (exit {rc})")
+            rc_agg = rc or 1
+        _post(text=commenter.body(rc, payload, local))
+    return rc_agg, "\n\n".join(chunks), failures
+
+
 def conclusion_for(guard: Guard, rc: int, shadow: bool = False) -> str:
     if rc in guard.warn_rc:
         rc = 0
@@ -381,6 +613,16 @@ def main(argv: list[str] | None = None) -> int:
                         help="ne rien publier ; afficher les verdicts")
     parser.add_argument("--only", default="",
                         help="ne lancer qu'un garde, par nom")
+    # Separation des privileges (#22209 tranche 1b) : par DEFAUT le moteur
+    # n'ecrit rien sur la PR -- il emet des check-runs, rien de plus. Les
+    # gardes a `commenters` sont donc EXCLUS sans ce drapeau, et n'ont qu'un
+    # seul emetteur : le job qui le passe.
+    parser.add_argument("--effects", dest="effects", action="store_true",
+                        help="ne lancer que les gardes a effets de bord PR "
+                             "(stickies + artefacts)")
+    parser.add_argument("--no-effects", dest="effects", action="store_false",
+                        help="exclure les gardes a effets de bord (defaut)")
+    parser.set_defaults(effects=False)
     args = parser.parse_args(argv)
 
     changed = changed_files(args.base_ref)
@@ -393,8 +635,18 @@ def main(argv: list[str] | None = None) -> int:
               + TRANCHE15 + TRANCHE16 + TRANCHE17 + TRANCHE18 + TRANCHE19
               + TRANCHE20 + TRANCHE21 + TRANCHE22 + TRANCHE23 + TRANCHE24 + TRANCHE25
               + TRANCHE26 + TRANCHE27 + TRANCHE28 + TRANCHE29 + TRANCHE30
-              + TRANCHE31
+              + TRANCHE31 + TRANCHE32 + TRANCHE33
               if not args.only or g.name == args.only]
+    if args.effects:
+        guards = [g for g in guards if g.commenters]
+        print(f"[fast-lane] job effets de bord : {len(guards)} garde(s) a "
+              "commentaires")
+    else:
+        excluded = [g for g in guards if g.commenters]
+        guards = [g for g in guards if not g.commenters]
+        for g in excluded:
+            print(f"[fast-lane] hors de ce job (effets de bord PR, "
+                  f"`--effects` seulement) : {g.name}")
     selected = [g for g in guards if guard_applies(g, changed)]
     for guard in guards:
         if guard not in selected:
@@ -405,8 +657,12 @@ def main(argv: list[str] | None = None) -> int:
         "base_sha": args.base_sha,
         "head_sha": args.head_sha,
         "pr_number": args.pr_number,
+        "repo": args.repo,
         "base_json": "",
         "head_json": "",
+        "merge_base": "",
+        "pr_body_file": "",
+        "name_status_file": "",
     }
     results: dict[str, tuple[int, str]] = {}
     head_json: dict[str, str] = {}
@@ -417,8 +673,41 @@ def main(argv: list[str] | None = None) -> int:
     tmp = Path(os.environ.get("RUNNER_TEMP") or (REPO_ROOT / ".tmp" / "fast-lane"))
     tmp.mkdir(parents=True, exist_ok=True)
 
+    effect_failures: list[str] = []
+    if args.effects:
+        # Contexte des detecteurs a effets de bord, construit UNE fois. La
+        # base est le merge-base (ce que les workflows sources utilisent),
+        # pas `base_sha` : une PR basee sur un main ancien doit etre jugee
+        # sur son apport, et `base_sha` sert de reference de re-scan.
+        merged = git("merge-base", args.base_ref, "HEAD")
+        ctx["merge_base"] = (merged.stdout.strip()
+                             if merged.returncode == 0 else "")
+        if not ctx["merge_base"]:
+            print("[fast-lane][effets] merge-base introuvable : les "
+                  "detecteurs s'abstiennent, aucun verdict n'est fabrique",
+                  file=sys.stderr)
+        body_raw = os.environ.get("FAST_LANE_PR_BODY") or ""
+        if body_raw:
+            body_path = tmp / "pr_body.txt"
+            body_path.write_text(body_raw, encoding="utf-8")
+            ctx["pr_body_file"] = str(body_path)
+        if args.base_sha:
+            ns = git("diff", "-M", "--name-status",
+                     f"{args.base_sha}...{args.head_sha or 'HEAD'}",
+                     "--", "MyIA.AI.Notebooks/")
+            ns_path = tmp / "name_status.txt"
+            ns_path.write_text(ns.stdout, encoding="utf-8")
+            ctx["name_status_file"] = str(ns_path)
+
     # -- phase 1 : HEAD, aucun garde ne mute l'arbre -------------------------
     for guard in selected:
+        if guard.commenters:
+            rc, log, failures = run_effects(guard, ctx, args.dry_run)
+            effect_failures.extend(f"{guard.name} / {f}" for f in failures)
+            results[guard.name] = (rc, log)
+            print(f"[fast-lane] effets {guard.name} : exit {rc}"
+                  f"{' (detecteur en panne)' if failures else ''}")
+            continue
         if guard.pre_argv:
             # Pre-controle (self-test du detecteur, #11685) : un rc non nul
             # EST le verdict du garde et le scan n'est pas execute -- un
@@ -582,6 +871,13 @@ def main(argv: list[str] | None = None) -> int:
     # (#12567), `blocking_failed` ne compte deja que les gardes reels
     # (absorbes, ou lane --no-shadow) : si l'un d'eux echoue, le job DOIT
     # rougir, meme si le reste de la lane observe.
+    if effect_failures:
+        # Une panne de detecteur a effets de bord rougit le job MEME en ombre :
+        # ce n'est pas un verdict sur la PR, c'est un organe casse, et les
+        # workflows d'origine rougissaient sur ces codes.
+        print("[fast-lane][effets] panne(s) de detecteur : "
+              + ", ".join(effect_failures), file=sys.stderr)
+        return 1
     if args.shadow and not blocking_failed:
         return 0
     return 1 if blocking_failed else 0

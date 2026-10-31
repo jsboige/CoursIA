@@ -21,7 +21,9 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from check_obsolete_chat_model import (OBSOLETE_CHAT_MODELS,
-                                       analyze_notebook, cell_kind,
+                                       analyze_notebook,
+                                       analyze_python_module, cell_kind,
+                                       collect_sources,
                                        is_obsolete_chat_model, main)
 
 
@@ -609,3 +611,106 @@ def test_corpus_scan_migration_compatible(path):
     for f in report["findings"]:
         assert f["model"] in OBSOLETE_CHAT_MODELS, f
     assert main([str(path)]) == (1 if report["findings"] else 0)
+
+
+# ---------------------------------------------------------------------------
+# Modules .py hors carnet
+#
+# Un appel chat ne vit pas seulement dans un carnet : des modules consommes
+# par les carnets portent des replis litteraux. Mesure firsthand (31/10) :
+# ``scripts/livecoding_video_pipeline.py`` repliait sur ``gpt-4o-mini`` via
+# ``os.environ.get("OPENAI_MODEL", ...)`` -- invisible d'un scan borne aux
+# carnets, et invisible aussi d'un scan .py avant le cas ``or`` ci-dessous.
+# ---------------------------------------------------------------------------
+
+MODULE_CHAT = (
+    "from openai import OpenAI\n"
+    "client = OpenAI()\n"
+    "\n"
+    "\n"
+    "def narrate(prompt):\n"
+    "    return client.chat.completions.create(\n"
+    "        model='gpt-4o-mini', messages=[{'role': 'user', 'content': prompt}])\n"
+)
+
+
+def test_python_module_accepte_par_la_cli(tmp_path):
+    """Un module .py est une unite scannable : le scan le voit et ROUGIT."""
+    p = tmp_path / "pipeline.py"
+    p.write_text(MODULE_CHAT, encoding="utf-8")
+    assert collect_sources([str(p)]) == [(p, "python")]
+    report = analyze_python_module(str(p))
+    assert report["kind"] == "python"
+    assert report["stats"]["python_modules"] == 1
+    assert [f["model"] for f in report["findings"]] == ["gpt-4o-mini"]
+    assert main([str(p)]) == 1
+
+
+def test_python_module_repli_or_resolu(tmp_path):
+    """``variable or os.environ.get("M", "<modele>")`` : le repli litteral est
+    la valeur statiquement visible, donc un FINDING -- c'est la forme qui
+    etait un FAUX NEGATIF (site dit ``unresolved``, litteral classe mention
+    doc)."""
+    p = tmp_path / "repli.py"
+    p.write_text(
+        "import os\n"
+        "from openai import OpenAI\n"
+        "client = OpenAI()\n"
+        "\n"
+        "\n"
+        "def narrate(prompt, llm_model=None):\n"
+        "    model = llm_model or os.environ.get('OPENAI_MODEL', 'gpt-4o-mini')\n"
+        "    return client.chat.completions.create(\n"
+        "        model=model, messages=[{'role': 'user', 'content': prompt}])\n",
+        encoding="utf-8")
+    report = analyze_python_module(str(p))
+    assert [f["model"] for f in report["findings"]] == ["gpt-4o-mini"], \
+        report
+    assert report["unresolved"] == []
+    assert "repli 'or'" in report["findings"][0]["via"]
+    assert main([str(p)]) == 1
+
+
+def test_python_module_repli_or_sans_litteral_reste_unresolved(tmp_path):
+    """Temoin negatif du cas ``or`` : sans litteral, rien n'est accuse."""
+    p = tmp_path / "sans_repli.py"
+    p.write_text(
+        "import os\n"
+        "from openai import OpenAI\n"
+        "client = OpenAI()\n"
+        "\n"
+        "\n"
+        "def narrate(prompt, llm_model=None):\n"
+        "    model = llm_model or os.environ.get('OPENAI_MODEL')\n"
+        "    return client.chat.completions.create(\n"
+        "        model=model, messages=[{'role': 'user', 'content': prompt}])\n",
+        encoding="utf-8")
+    report = analyze_python_module(str(p))
+    assert report["findings"] == []
+    assert len(report["unresolved"]) == 1
+    assert main([str(p)]) == 0
+
+
+def test_python_module_sain_reste_silencieux(tmp_path):
+    """Temoin negatif : un module sans appel chat ne produit rien, et une
+    mention en chaine non consommee reste advisory."""
+    p = tmp_path / "sain.py"
+    p.write_text(
+        "'Ancienne cible historique : gpt-4o-mini.'\n"
+        "# un commentaire citant gpt-4o-mini est ignore par l'AST\n"
+        "def f():\n"
+        "    return 1\n",
+        encoding="utf-8")
+    report = analyze_python_module(str(p))
+    assert report["findings"] == []
+    assert report["stats"]["python_modules"] == 1
+    assert main([str(p)]) == 0
+
+
+def test_suffixe_inconnu_refuse(tmp_path):
+    """La CLI refuse un fichier qui n'est ni carnet ni module, plutot que de
+    le sauter en silence."""
+    p = tmp_path / "notes.txt"
+    p.write_text("gpt-4o-mini", encoding="utf-8")
+    with pytest.raises(FileNotFoundError):
+        collect_sources([str(p)])
