@@ -6905,8 +6905,10 @@ result"" and ""this hyperparameter seems to change the result, within the seed n
 The cost of the protocol is assumed: each configuration reloads its own quantized base and
 frees the memory at the end. This is what makes it possible to replay the same code on
 different seeds, without the state of one training contaminating the next.",,,,,,,e4a1545a499c04fa,8245ee480b61fab9,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-00c-LoRA-SOTA-Comparison-Python.ipynb,cell-00,markdown,fr,a3b54306716731bb,"# FT-00c : LoRA SOTA — la même adaptation, cette fois avec `peft`
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-00c-LoRA-SOTA-Comparison-Python.ipynb,cell-00,markdown,fr,ceada9b42cebebd2,"# FT-00c : LoRA SOTA — la même adaptation, cette fois avec `peft`
 **Navigation** : [Index](README.md) | [00b — Hyperparams](FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb) | [00d — QLoRA SOTA](FT-00d-LoRA-QLoRA-SOTA-Comparison-Python.ipynb)
+
+**Version anglaise** : [FT-00c — LoRA SOTA (en)](FT-00c-LoRA-SOTA-Comparison-Python_en.ipynb)
 
 **Objectif** : refaire, avec `peft.LoraConfig` + `peft.get_peft_model`, **exactement** l'adaptation LoRA construite à la main dans [FT-00a](FT-00a-LoRA-from-scratch-Python.ipynb) — même tâche, même split, même graine, mêmes hyperparamètres — puis mesurer ce que l'écosystème apporte : paramètres entraînés, exactitude, lignes de code, temps de fine-tuning, sauvegarde/fusion de l'adaptateur.
 
@@ -6917,13 +6919,15 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-00c-LoRA-SOTA-Comparison-Python.ipynb,cell
 **Position dans la série** : FT-00a démonte le mécanisme ; ce notebook branche la même mini-tâche sur `peft`, l'implémentation SOTA maintenue par HuggingFace, et complète la couverture LLM de [21_LoRA_FineTuning](../Texte/21_LoRA_FineTuning.ipynb) par une comparaison mesurée from scratch vs lib sur tâche contrôlée. La suite reste [FT-02](FT-02-QLoRA-Quantization-Python.ipynb) (QLoRA 4-bit) et [FT-06](FT-06-Vision-Language-LoRA-Python.ipynb) (vision-langage).","# FT-00c: LoRA SOTA — the same adaptation, this time with `peft`
 **Navigation**: [Index](README.md) | [00b — Hyperparams](FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb) | [00d — QLoRA SOTA](FT-00d-LoRA-QLoRA-SOTA-Comparison-Python.ipynb)
 
-**Goal**: redo, with `peft.LoraConfig` + `peft.get_peft_model`, **exactly** the LoRA adaptation built by hand in [FT-00a](FT-00a-LoRA-from-scratch-Python.ipynb) — same task, same split, same seed, same hyperparameters — then measure what the ecosystem brings: trained parameters, accuracy, lines of code, fine-tuning time, adapter save/merge.
+**French version**: [FT-00c — LoRA SOTA](FT-00c-LoRA-SOTA-Comparison-Python.ipynb)
+
+**Objective**: redo, with `peft.LoraConfig` + `peft.get_peft_model`, **exactly** the LoRA adaptation built by hand in [FT-00a](FT-00a-LoRA-from-scratch-Python.ipynb) — same task, same split, same seed, same hyperparameters — then measure what the ecosystem brings: trained parameters, accuracy, lines of code, fine-tuning time, adapter save/merge.
 
 **Prerequisites**: [FT-00a](FT-00a-LoRA-from-scratch-Python.ipynb) (the `W' = W + (alpha/r) * B @ A` decomposition, the initialization invariants, the merge) — this notebook is its industrial counterpart.
 
 **Duration**: ~20 min · **Level**: intermediate · **Hardware**: CPU is enough.
 
-**Position in the series**: FT-00a dissects the mechanism; this notebook plugs the same mini-task into `peft`, the SOTA implementation maintained by HuggingFace, and completes the LLM coverage of [21_LoRA_FineTuning](../Texte/21_LoRA_FineTuning.ipynb) with a measured from-scratch vs library comparison on a controlled task. What follows remains [FT-02](FT-02-QLoRA-Quantization-Python.ipynb) (4-bit QLoRA) and [FT-06](FT-06-Vision-Language-LoRA-Python.ipynb) (vision-language).",,,,,,,a3b54306716731bb,f9523a0b732e7dcc,,,,,,,,,,,,,,
+**Position in the series**: FT-00a dissects the mechanism; this notebook plugs the same mini-task into `peft`, the SOTA implementation maintained by HuggingFace, and completes the LLM coverage of [21_LoRA_FineTuning](../Texte/21_LoRA_FineTuning.ipynb) with a measured from-scratch vs library comparison on a controlled task. What follows remains [FT-02](FT-02-QLoRA-Quantization-Python.ipynb) (4-bit QLoRA) and [FT-06](FT-06-Vision-Language-LoRA-Python.ipynb) (vision-language).",,,,,,,ceada9b42cebebd2,98fae9f5ad6e5312,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-00c-LoRA-SOTA-Comparison-Python.ipynb,cell-01,markdown,fr,7ff699d59506d606,"### Vérification de l'environnement
 
 Avant tout calcul, on vérifie le moteur effectif : version de PyTorch, de `peft`, device disponible. La mini-tâche (section 1) tient sur CPU en quelques dizaines de secondes par epoch — aucune ressource GPU n'est requise.","### Checking the environment
