@@ -120,8 +120,14 @@ def get_taxonomy_sophism_detector():
 
     Note: This module depends on `InformalAnalysisPlugin` from EPITA-IS upstream,
     which is NOT vendored in this tranche (Semantic-Kernel coupled, 891 lines).
-    Instantiation will fail at runtime until Volet B etape 4 ports the SK shim.
-    The class symbol itself is import-safe (analysis only).
+    Importing the module raises ModuleNotFoundError today, in two stacked
+    layers (measured 2026-10-31, issue #10355): the vendored detector keeps
+    its upstream relative import `from .informal_definitions import ...`
+    while the sibling on disk is `_informal_definitions.py`, and even with
+    that name fixed, `_informal_definitions.py` itself imports
+    `argumentation_analysis.*` (upstream package, absent from this tree).
+    Both files are verbatim copies by design; runtime usability awaits
+    Volet B etape 4 (SK shim), which will re-export the public symbols.
     """
     from argumentation_lib._taxonomy_sophism_detector import (
         TaxonomySophismDetector,
