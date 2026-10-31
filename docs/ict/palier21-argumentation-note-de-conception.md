@@ -82,6 +82,16 @@ déduit d'un répertoire). Les deux licences sont distinctes et le sous-module l
 un fichier hors de la liste du §1 de `LICENSE-CONTENT.md` **n'est pas** sous CC BY-SA.
 Le capstone cite cette distinction dans son propre en-tête, parce qu'il consomme les deux.
 
+**Le corpus réel, en volume mesuré** (sous-module à `d257443d`) : `Cards` porte 803 fichiers,
+dont 7 fichiers de texte sous CC BY-SA — 13 Mo au total. Le plus lourd est
+`Cards/Fallacies/Argumentum Fallacies - Taxonomy.csv` (1526 lignes, 4,18 Mo, 104 champs en
+ligne 1), suivi des deux ontologies (`docs/ontology/argumentum.owl`, 96 069 lignes, 6,0 Mo).
+La provenance du corpus éditorial est nommée dans sa propre licence :
+`LICENSE-CONTENT.md:91`, « le corpus est l'œuvre de Jean-Sylvain Boige et des contributeurs
+du projet Argumentum ». Le capstone consomme donc un corpus dont le dépôt détient les droits,
+et les deux fichiers explicitement exclus de CC BY-SA (`regles.md` / `rules.md`, et
+`Cards/Rules/Argumentum Rules - Cards.old.csv`) ne sont pas lus comme corpus.
+
 **Ce que le chiffrement achète, et qu'il ne faut pas sur-vendre** : de la
 **non-indexabilité**, pas de la confidentialité — la passphrase doit atteindre les étudiants,
 donc elle est de fait publique. Cette formulation figure telle quelle dans le README du
@@ -130,6 +140,14 @@ discriminantes et une en ré-établissement :
 | Irréversibilité (σ) | `ict.time_arrow.entropy_production`, `discourse_irreversibility` | **Non discriminante à la taille disponible** ; ré-essayée seulement là où un null avec dispersion existe, sinon rapportée comme non résolue. |
 | Compressibilité (K) | `ict.mdl.tpm_description_length`, `ict.compression.compressed_length` | Instrument disponible ; la discrimination reste à mesurer, elle est un des résultats attendus du capstone. |
 | Ordre causal | σ de l'ordre du récit contre contre-factuel permuté (#7742 tranche 1) ; longueur de description à ordre de Markov croissant (`fit_markov_order`) | Contrôle de sensibilité à l'ordre **retenu** ; à petite taille c'est l'ordre et la longueur de description qui séparent, pas σ. |
+
+Ce re-découpage n'est pas une invention de cette note : le carnet de graine l'écrit lui-même,
+en tête de son bandeau d'ouverture (cellule 1) — « la discrimination passe à **K (code MDL deux
+parties)** et à la **trajectoire à ordre fixe** ; l'issue de l'englobement est une
+**chronologie** (la clause de clôture arrivée en dernier décide), pas une topologie ». La
+cellule 27 nomme le même fait sur le spécimen : « dans les deux récits, la bascule terminale
+est opérée par l'énoncé arrivé en dernier ». Le capstone **prend acte** de ce déplacement
+d'instrument et le porte dans son gate au lieu de continuer à lire σ.
 
 **Aucune des trois n'est agrégée en un scalaire.** La leçon de `dissolution-scalaires.md`
 tient : quatre phénomènes de complexités distinctes ne se réduisent pas à un nombre unique ;
