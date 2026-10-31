@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-10-31
+
 # Orchestration et tâches planifiées avec Open WebUI v0.9.0
 
 > Référentiel fonctionnel pour la série **GenAI / Texte**. Compare les trois piliers
