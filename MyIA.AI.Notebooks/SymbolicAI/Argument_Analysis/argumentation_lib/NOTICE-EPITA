@@ -22,7 +22,7 @@ CoursIA copy
 | `_pl_handler.py` (689 lines)        | `argumentation_analysis/agents/core/logic/pl_handler.py` | a8025f60 (2026-07-02) |
 | `_fol_handler.py` (1163 lines)      | `argumentation_analysis/agents/core/logic/fol_handler.py` | a8025f60 (2026-07-02) |
 | `_modal_handler.py` (327 lines)    | `argumentation_analysis/agents/core/logic/modal_handler.py` | a8025f60 (2026-07-02) |
-| `_adf_handler.py` (161 lines)      | `argumentation_analysis/agents/core/logic/adf_handler.py` | a8025f60 (2026-07-02) |
+| `_adf_handler.py` (NOT-VERBATIM : adaptation locale du 2026-10-29, voir « Adaptations locales declarees » ci-dessous)      | `argumentation_analysis/agents/core/logic/adf_handler.py` | a8025f60 (2026-07-02) + adaptation CoursIA du 2026-10-29 |
 | `_af_handler.py` (234 lines)       | `argumentation_analysis/agents/core/logic/af_handler.py` | a8025f60 (2026-07-02) |
 | `_ranking_handler.py` (120 lines)  | `argumentation_analysis/agents/core/logic/ranking_handler.py` | a8025f60 (2026-07-02) |
 | `_belief_revision_handler.py` (158 lines) | `argumentation_analysis/agents/core/logic/belief_revision_handler.py` | a8025f60 (2026-07-02) |
@@ -59,6 +59,84 @@ autre ligne n'est modifiee. `_llm_transport.py` est une **adaptation declaree** 
 fournisseur LLM n'est cable dans CoursIA, donc la couche `LLMValidatorLayer` leve
 `LLMValidatorUnavailable` et la politique `fail_open` / `fail_closed` tranche — le carnet
 `Argumentation-09-Guardrails-AI-Shield-Python.ipynb` exerce ce chemin reel.
+
+Adaptations locales declarees
+-----------------------------
+
+Une copie **NOT-VERBATIM** est une copie dont le contenu a ete adapte en CoursIA pour
+etre **executable contre le runtime reellement vendu**, avec la raison ecrite dans
+l'en-tete du fichier. Deux copies sont dans ce cas ; la table « CoursIA copy » les
+signale par la mention NOT-VERBATIM.
+
+| Fichier | Nature de l'adaptation | Pourquoi |
+|---|---|---|
+| `_delegating_selection.py` | 1 jeton : `ProjectManager` -> `ProjectManagerAgent` | L'API amont a change de nom ; la correction est cosmetique sur la ligne concernee. |
+| `_adf_handler.py` | Adaptation d'API (4 derives mesurees) + vocabulaire de conditions etendu (`or:`, `and:`) + gate-out explicite sur `parse_adf_file` + **import optionnel de `jpype`** + **limite de composition a un seul niveau** | L'organe ADF n'etait exerce par **aucun** carnet de la serie (organe orphelin) et il etait **casse** contre le jar reellement vendu `MyIA.AI.Notebooks/SymbolicAI/Tweety/libs/adf-1.30.jar` : surcharge `builder.add(arg)` inexistante, conditions de base devenues des enumerations, liens du graphe exiges par le builder, reasoners ADF SAT-based sans solveur. Les quatre derives, leur symptome mesure et le correctif applique sont detailes dans l'en-tete du fichier. La lecture de fichier KPPADF n'est pas cablee contre ce jar : `parse_adf_file` leve une erreur explicite plutot que de laisser passer une derivation silencieuse. **Adaptation 5 (2026-10-29)** : `import jpype` est rendu optionnel — le module s'importe sans JPype, seule son *instanciation* (qui amorce la JVM) est refusee, avec un message qui nomme la dependance et la maniere de l'installer. Motif mesure : le job CI `Scripts Tests (CPU)` cible `Argument_Analysis` dans sa liste pytest mais ne declare pas `jpype` dans ses installations ; l'import au niveau module echouait donc a la **collecte** (`ModuleNotFoundError`) et faisait echouer le job entier (21 846 tests verts + 1 erreur de collecte, exit 1). Meme convention que le paquet lui-meme (`argumentation_lib/__init__.py`, dont `get_adf_handler_symbol` degrade deja gracieusement). **Limite de composition** : `or:` / `and:` acceptent exactement deux conditions **simples** — une condition composite ne peut pas en contenir une autre ; le message d'erreur nomme la limite et donne la forme acceptee. Le carnet `Argumentation-03d-ADF-Semantiques-Python.ipynb` exerce l'organe repare et rend ses sorties. |
+
+Tranche T3 -- privacy / export (`opaque_id`, `sanitize_state`, `pattern_mining`)
+------------------------------------------------------------------------------
+
+Porte dans le cadre de l'issue #23163 (serie `Argument_Analysis` completee sur
+CoursIA). Les quatre modules ci-dessous forment la **chaine d'export prive** :
+opacification des identifiants -> garde d'etat -> minage de motifs agreges.
+Le carnet `Argumentation-10-Privacy-Export-Python.ipynb` les exerce tous les
+quatre, sur un etat synthetique, et **falsifie ses resultats contre la fixture
+amont** `data/privacy_mining_examples.json` (meme valeurs, memes cles).
+
+| File in CoursIA `argumentation_lib/` | Upstream path in EPITA-IS | Upstream commit |
+|---------------------------------------|----------------------------|-----------------|
+| `_opaque_id.py` (65 lines) | `argumentation_analysis/evaluation/opaque_id.py` | 2e2a1c3c (2026-10-29) -- VERBATIM, aucune modification |
+| `_sanitize_state.py` (1131 lines) | `argumentation_analysis/evaluation/sanitize_state.py` | 2e2a1c3c (2026-10-29) -- prefixe d'import seul |
+| `_native_dung.py` (411 lines) | `argumentation_analysis/reporting/restitution/native_dung.py` | 2e2a1c3c (2026-10-29) -- VERBATIM, aucune modification |
+| `_pattern_mining.py` (512 lines) | `argumentation_analysis/evaluation/pattern_mining.py` | 2e2a1c3c (2026-10-29) -- prefixe d'import seul |
+
+**Integrite verbatim** (SHA1 du corps, apres conversion CRLF -> LF, entete de
+provenance exclue) :
+
+- `_opaque_id.py` body SHA1=`60933b0904a86a77eb9a5017069b43e4b6fac0bc` (65L)
+- `_sanitize_state.py` body SHA1 amont=`236f5290f869cc8f1e76f9b76a15e17cd2321fba`
+  -> apres reecriture du prefixe d'import
+  `c6ad422fa90013aad12d4d7316a55d7d608da103` (1131L)
+- `_native_dung.py` body SHA1=`c2976b6f200de307698a8bf3f9ed5e6527fade97` (411L)
+- `_pattern_mining.py` body SHA1 amont=`0176c88bfaf7c82184dd69e6fda85a0dae8c2e02`
+  -> apres reecriture du prefixe d'import
+  `2ce4e3033e924c021d890af0b328832db51ddb93` (512L)
+
+**Divergences declarees** (deux, et deux seulement) :
+
+1. `_sanitize_state.py` : l'unique import `argumentation_analysis.*` (l.61) est
+   reecrit en `from argumentation_lib._opaque_id import opaque_id` -- le module
+   jumeau verbatim porte ci-contre. Aucune autre ligne n'est modifiee.
+2. `_pattern_mining.py` : l'unique import `argumentation_analysis.*` (l.91, **LAZY**,
+   a l'interieur de `DungTopologyDetector.detect`) est reecrit en
+   `from argumentation_lib._native_dung import (KEYED_SEMANTICS, dung_reading)`.
+   Aucune autre ligne n'est modifiee.
+
+Sans la divergence 2, le detecteur de topologie Dung de `pattern_mining.py`
+retournait `{"error": 1.0}` (import non resolu) au lieu des mesures reelles --
+**verifie en execution** : la cellule 12 du carnet echouait sur l'assertion
+`det == stored_mining["formal_detectors"]["result"]` avant le portage de
+`_native_dung.py`, et passe a 15/15 cellules vertes apres. `_native_dung.py` est
+auto-porte (bibliotheque standard seule, aucun import `argumentation_analysis.*`),
+il n'a donc pas de dependance non vendoree.
+
+**Fixture associee** : `data/privacy_mining_examples.json` est la copie de
+`docs/coursia_contrib/privacy_mining_examples.json` amont. L'amont la livre en
+CRLF (10 483 octets) ; le depot n'impose aucune regle `eol` sur les `.json` de
+`data/`, la copie est donc stockee en LF (10 121 octets), SHA1
+`42f748471e4ab10f8008ed270f4292a278118a56`. Contenu identique aux fins de ligne
+pres.
+
+**Suite de test portee** : `tests/test_privacy_mining_roundtrip.py` est le
+round-trip test amont (`tests/unit/coursia/privacy_mining/test_privacy_mining_roundtrip.py`,
+470 lignes, corps SHA1 apres conversion CRLF -> LF
+`9752c075af56ec2de5be7c93b2a716ac1148cdcf`), repris tel quel avec quatre
+adaptations declarees dans son en-tete (prefixes d'import, chemins de la
+fixture et du carnet, comptage de lignes de l'inventaire compare au **corps**
+des copies portees, ajout de la racine de la serie au `sys.path`). Il rejoue
+les 21 cas de la fixture contre les modules reels -- c'est la preuve que le
+portage est fidele, pas une reecriture. Deux tests CoursIA y sont ajoutes
+(prefixe du port Dung ; cas `cooccurrence_doc_unit` mesure).
 
 Rationale for verbatim import
 -----------------------------

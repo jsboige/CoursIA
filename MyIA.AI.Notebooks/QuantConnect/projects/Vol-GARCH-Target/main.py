@@ -150,14 +150,23 @@ class GarchVolTargetAlgorithm(QCAlgorithm):
     def _daily_log_return(self, ticker, bar):
         """Rendement journalier dont la paire de clotures est verifiee (#21782).
 
-        `history(sym, 3, DAILY)` inclut ou non la seance courante selon l'heure de
+        `history(sym, N, DAILY)` inclut ou non la seance courante selon l'heure de
         l'appel. Prendre `iloc[-2]` sans le verifier peut former une paire a deux
         seances comptee comme un pas journalier, ou une paire desalignee avec
         `bar.close`. On aligne donc la paire sur `bar.end_time`, et on rejette un
         ecart calendaire qui trahit une suspension : mieux vaut aucun rendement
         qu'un faux pas de GARCH.
+
+        Fenetre large (#20286 / #21471). Sur une demi-seance, `self.history()`
+        rend moins de barres que demande : le raccourcissement mesure vaut 21
+        barres (105 servies pour 126 demandees, #20286). Ici le seuil n'est que
+        de 2 clotures, donc une fenetre double (4) laisserait une marge de 2
+        barres -- sous le raccourcissement observe. On demande 30 barres : la
+        marge (28) depasse le raccourcissement mesure, et la paire lue reste
+        celle des deux dernieres barres. Le calcul est inchange, c'est la marge
+        qui grandit. Cout : un `history` journalier de 30 barres, negligeable.
         """
-        hist = self.history(self.symbols[ticker], 3, Resolution.DAILY)
+        hist = self.history(self.symbols[ticker], 30, Resolution.DAILY)
         if hist is None or len(hist) < 2:
             return None
         closes = hist["close"]

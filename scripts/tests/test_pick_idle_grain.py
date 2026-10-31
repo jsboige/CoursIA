@@ -1777,6 +1777,40 @@ def test_aggregate_with_unreadable_organ_stays_with_lane(monkeypatch):
     assert {i["check"] for i in out["base_unresolved"]} == {AGG}
 
 
+def test_unreadable_organ_is_not_imputed_to_the_lane_for_foreign_prs(
+        monkeypatch, capsys):
+    """Revue `myia-po-2023` (30/10) : la sortie ne dit plus « le rouge RESTE
+    a la lane » pour des PRs qui sont d'autres lanes.
+
+    L'echantillon etranger entre dans le meme seau `base_unresolved` que les
+    PRs de la lane (le garde n'interroge les etats que de la lane ;
+    l'echantillon des 16 PRs etrangeres n'est paye qu'en complement).
+    L'affichage confondait les deux lots : la phrase « le rouge RESTE a la
+    lane » ne vaut que pour les PRs de la lane, et une lane qui lisait six
+    numeros etrangers est alle chercher un defaut d'attribution inexistant.
+    """
+    _patch_organs(monkeypatch, {})       # aucun organe lisible
+    _patch_backlog(monkeypatch, [
+        _pr(1, "myia-po-2025:CoursIA", 30),
+        _pr(2, "myia-po-2026:CoursIA", 30),
+    ], {1: _agg_red(111), 2: _agg_red(222)})
+    out = pig.red_backlog("myia-po-2025:CoursIA", 24, count_threshold=3)
+    entry = [i for i in out["base_unresolved"] if i["check"] == AGG][0]
+    assert entry["prs"] == [1, 2]
+    assert entry["prs_lane"] == [1]
+    assert entry["prs_foreign"] == [2]
+
+    pig.print_base_inherited(out)
+    printed = capsys.readouterr().out
+    lignes = [l for l in printed.splitlines() if l.strip().startswith("- ")]
+    assert len(lignes) == 2
+    assert "#1" in lignes[0] and "#2" in lignes[1]
+    # « RESTE a la lane » n'est prononce que pour la PR de la lane ;
+    # la PR etrangere est dite etrangere.
+    assert "RESTE a la lane" in printed.split("#2")[0]
+    assert "d'AUTRES lanes" in printed.split("#2")[1]
+
+
 def test_untagged_pr_never_corroborates(monkeypatch):
     """Fail-closed #14537 : sans tag de lane lisible, hors corroboration.
 
@@ -3557,6 +3591,65 @@ def test_orphan_report_neg2_marker_on_fleet_branch_stays(monkeypatch):
         _untagged_pr(13, branch="feature/x", body="Hors flotte\n"),
     ], {13: red})
     assert [r["number"] for r in pig.unattributed_blocked_prs()] == [13]
+
+
+# --- #22362 : une PR de FORK n'est pas du travail de lane --------------------
+# Mesure fondatrice du 2026-10-26 : le tirage imprimait « Portee : 1 autre(s)
+# PR(s) bloquee(s) (#22362) n'ont pas de tag `Grain:` lisible ... Leur tag
+# manquant est lui-meme le defaut a corriger. » Or #22362 est une contribution
+# publique -- auteur `snakechoc`, tete `snakechoc/CoursIA` -> base
+# `jsboige/CoursIA`, body = gabarit vierge. Le gate `variation_tag_required.py`
+# exclut les forks par construction (regle 4 de sa docstring, « We never see a
+# fork body ») : l'absence de tag y est la forme NORMALE. Poser un `Grain:`
+# dessus inventerait une imputabilite.
+# Le predicat retenu est le champ GitHub `isCrossRepository`, pas une
+# heuristique locale (un fork ne se devine ni au nom d'auteur -- `jsboige` est
+# le login de poussee partage -- ni a la branche, qui est libre).
+
+
+def test_is_cross_repository_pr_reads_the_github_field():
+    """Predicat : le champ GitHub, et rien d'autre.
+
+    Champ absent (forme partielle, mock ancien) -> `False`. Le sens inverse
+    (traiter l'inconnu comme un fork) retirerait de la file de vraies PRs du
+    depot a reparer : c'est le sens dangereux, refuse ici explicitement.
+    """
+    assert pig.is_cross_repository_pr({"isCrossRepository": True}) is True
+    assert pig.is_cross_repository_pr({"isCrossRepository": False}) is False
+    assert pig.is_cross_repository_pr({}) is False
+    assert pig.is_cross_repository_pr(None) is False
+
+
+def test_fork_pr_excluded_from_orphans_report(monkeypatch):
+    """#22362, controle NEGATIF : une PR de fork bloquee sort de la file.
+
+    La population est celle du cas reel : une PR de fork, untagged, bloquee.
+    Sur le code d'avant, elle etait listee (mesure : `[20]`) -- ce test est
+    donc rouge avant le fix, et vert apres.
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [
+        _untagged_pr(20, author="snakechoc",
+                     branch="EX-0433-exercice-1",
+                     body="## Resume\n\nGabarit de TP non rempli\n"),
+    ], {20: dict(red, isCrossRepository=True)})
+    assert pig.unattributed_blocked_prs() == []
+
+
+def test_orphan_report_positive_control_same_repo_untagged_stays(monkeypatch):
+    """#22362, controle POSITIF : une untagged bloquee du depot reste listee.
+
+    Les DEUX PRs sont dans la meme population : la fork sort, celle du depot
+    reste. Un predicat qui viderait la file (always-True) passerait le controle
+    negatif ci-dessus mais rougirait ici -- c'est ce que ce test protege.
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [
+        _untagged_pr(20, author="snakechoc", branch="EX-0433-exercice-1"),
+        _untagged_pr(21, author="jsboige", branch="feature/x"),
+    ], {20: dict(red, isCrossRepository=True),
+        21: dict(red, isCrossRepository=False)})
+    assert [r["number"] for r in pig.unattributed_blocked_prs()] == [21]
 
 
 # --- #17474 : le plafond de `fetch_open_prs` amputait la traine -------------

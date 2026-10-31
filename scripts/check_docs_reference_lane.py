@@ -72,9 +72,10 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 TRANSIENTS_REL = Path("docs") / "transients"
 ARCHIVE_REL = Path("docs") / "archive"
 
-# Default coverage floor = first wave (docs/notebook-metadata/, 9 documents).
+# Default coverage floor = wave 1 (docs/notebook-metadata/, 9 documents)
+# + wave 2 (docs/qc/, 8 documents, hors qc-strategies-status chaud par PRs).
 # Raise it as perenne waves land; it is a monotone floor, never a target.
-DEFAULT_BASELINE = 9
+DEFAULT_BASELINE = 17
 
 # "> REFERENCE -- 2026-10-25 -- vivante -- derniere revision <date>"
 # (marker + "vivante" + "derniere revision" + trailing date; dash and accent
