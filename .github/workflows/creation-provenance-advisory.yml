@@ -55,11 +55,21 @@ jobs:
     # d'aucun ressources local du parc (les jobs sans besoin local ont ete
     # migres vers ubuntu-latest par Q35 etape 2 -- voir le journal de
     # l'allowlist dans scripts/ci/check_self_hosted_runner_policy.py).
-    runs-on: ubuntu-latest
+    # 2026-10-29 (#23053, cliquet de politique) : forme hybride de debordement
+    # -- PR meme-depot ET vars.CI_OVERFLOW_LOCAL == 'true' -> jambe Linux
+    # locale ; tout le reste (variable absente ou fausse, forks, dispatch)
+    # retombe sur ubuntu-latest. **La variable vaut `false` au 29/10** : le
+    # routage est donc identique a celui d'aujourd'hui (100 % heberge), et la
+    # conversion retire la violation du cliquet sans changer ou le job
+    # s'execute. Bascule : `gh variable set CI_OVERFLOW_LOCAL --body
+    # true|false --repo jsboige/CoursIA`. Retour arriere = variable a
+    # `false` ou supprimee, sans toucher ce fichier.
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
     # Garde same-repo universelle : un fork n'atteint pas ce job.
     if: >-
       github.event.pull_request.head.repo.full_name == null
       || github.event.pull_request.head.repo.full_name == github.repository
+    timeout-minutes: 10
     steps:
       - name: Checkout (sparse, scripts only)
         uses: actions/checkout@v4

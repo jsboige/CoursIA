@@ -1,0 +1,180 @@
+# Derive des gitlinks de sous-modules (Regle 2 de submodule-maintenance.md).
+#
+# Pourquoi un garde ici, et pas seulement en phase de coordination
+# -----------------------------------------------------------------
+# Le proprietaire naturel de la derive de gitlink est Dependabot. Il peut se
+# taire : mesure du 2026-10-29, Dependabot n'a produit **aucune** PR (tous
+# ecosystemes) depuis le 2026-10-27, et le sous-module Argumentum derive de
+# 26 commits sans que personne ne le signale. Cause mesuree : le pin de `main`
+# a ete avance a la main de 84 commits (PR #22958, 20:57Z), soit 5 minutes
+# avant que Dependabot n'auto-cloture sa propre PR (#22823, 21:02Z,
+# « up-to-date now ») -- Dependabot n'avait alors plus de cible a proposer, et
+# sa resolution de branche s'est figee sur une ref du 23/10.
+#
+# L'organe qui mesure la Regle 2 (`scripts/coordination/submodule_watch.py`) ne
+# tournait qu'a la main, au rythme des cycles de coordination : une derive de
+# 26 commits a pu s'accumuler en trois semaines sans regard. Ce workflow
+# l'execute chaque jour, sans jeton et sans le binaire `gh` (mode
+# `--drift-only`, appel REST stdlib) : la derive redevient un fait du depot,
+# pas une observation opportune.
+#
+# Ce que le garde echoue (et ce qu'il n'echoue pas)
+# --------------------------------------------------
+# Il echoue sur un **bump en retard** : une derive mesuree de plus de
+# `MAX_AHEAD` commits (40). Il n'echoue pas sur une derive de quelques commits,
+# qui est le fonctionnement normal (le pin suit au rythme des bumps), ni sur une
+# mesure impossible (depot injoignable, API muet) : un incident de reseau ne
+# doit pas transformer une veille en garde permanent rouge.
+#
+# Pourquoi 40, et pas 10 : le seuil est une **duree deguisee**. Mesure du
+# 2026-10-30 sur Argumentum, la plus active des cinq : 100 commits sur 6 jours
+# actifs (24-29/10), mediane **16 commits par jour actif**. A 10, le garde
+# rougissait apres une seule journee d'activite amont -- tous les jours pour un
+# cron quotidien, donc un rouge qu'on apprend a ignorer. 40 ~ 2,5 jours actifs
+# medians : un jour de retard passe sans bruit, un bump oublie rougit en trois
+# jours au lieu de trois semaines.
+#
+# Bloquant sur `schedule` et `push`, advisory sur `pull_request`
+# -------------------------------------------------------------
+# Le trou du rouge quotidien est un probleme de **cron** ; la decision, elle,
+# porte sur les evenements qui font autorite sur `main`. Sur une PR qui touche
+# un sous-module, une derive anterieure au contenu de la PR n'est pas imputable
+# a son auteur : le step emet une **annotation** (`::warning::`) et ne fait pas
+# echouer le job. Sur `schedule` et `push`, c'est bien le depot qui est mesure :
+# `::error::` et `exit 1`.
+#
+# La decision se prend sur le **JSON**, jamais sur le code de sortie
+# ----------------------------------------------------------------
+# Python rend `1` aussi bien sur une derive mesuree que sur une exception non
+# rattrapee : brancher le verdict sur `rc` publiait « derive de gitlink au-dela
+# du seuil » sur un artefact vide (releve par la review Hermes du 2026-10-29 sur
+# la PR #23314). Le step de mesure n'expose donc plus `rc` ; le step de verdict
+# lit `drift.json`, et un artefact **absent ou illisible** est traite comme une
+# **panne de mesure** (annotation d'erreur distincte), pas comme une derive.
+#
+# Etat au merge : 26 commits de derive sur Argumentum, sous le seuil de 40. Le
+# bump de rattrapage est la PR #23375 (`d257443df0 -> a88947e5c2`), ouverte
+# independamment de ce garde -- le garde demarre donc au vert, et l'absence de
+# bump redevient un fait mesure, pas une observation opportune.
+name: Submodule drift (Regle 2)
+
+on:
+  schedule:
+    # Hors :00 pile : les crons de tete d'heure se superposent a la vague GH.
+    - cron: "17 4 * * *"
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".gitmodules"
+      - "MyIA.AI.Notebooks/Search/MetaGeneticSharp"
+      - "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3.Linq"
+      - "MyIA.AI.Notebooks/SymbolicAI/SMT/Automata"
+      - "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum"
+      - "MyIA.AI.Notebooks/GenAI/SemanticKernel/semantic-fleet"
+  pull_request:
+    paths:
+      - ".gitmodules"
+      - "MyIA.AI.Notebooks/Search/MetaGeneticSharp"
+      - "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3.Linq"
+      - "MyIA.AI.Notebooks/SymbolicAI/SMT/Automata"
+      - "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum"
+      - "MyIA.AI.Notebooks/GenAI/SemanticKernel/semantic-fleet"
+
+permissions:
+  contents: read
+
+jobs:
+  drift:
+    # Forme hybride de debordement (#22937/#22944/#23016) : meme-depot et
+    # `vars.CI_OVERFLOW_LOCAL == 'true'` -> pool Linux local ; sinon
+    # `ubuntu-latest`. La garde anti-fork vit DANS l'expression `runs-on` :
+    # une PR de fork n'atteint jamais le runner local, et son job reste
+    # heberge comme avant.
+    #
+    # Pourquoi ce workflow etait nu : il est arrive sur main par #23314
+    # (2026-10-31 09:33:12Z), soit 16 min APRES que le cliquet de politique
+    # (#23053) ait ete corrige par #23670 (08:17:40Z) -- il n'a donc pas pu
+    # connaitre la regle. Forme identique a celle des workflows convertis
+    # le meme jour (`cycle-time-guard.yml`, `creation-provenance-advisory.yml`).
+    # Rollback = variable a `false` ou supprimee, sans toucher ce fichier.
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
+    # Borne de temps : le job devient atteignable sur le parc local, et un
+    # job sans borne peut y retenir un slot six heures (defaut Actions).
+    timeout-minutes: 10
+    env:
+      # Seuil unique. La mesure ET le verdict le lisent ici : une valeur
+      # recopiee dans deux steps est une valeur qui finit par diverger.
+      MAX_AHEAD: "40"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Pas de sous-modules : l'organe lit les gitlinks dans l'arbre
+          # (`git ls-tree`) et interroge les depots distants (`git ls-remote`).
+          # Initialiser les sous-modules ici serait inutile et lourd.
+          submodules: false
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Mesure de la derive (Regle 2)
+        id: measure
+        # Un plantage du script ne doit pas interrompre la chaine : le verdict
+        # ci-dessous lit `drift.json` et distingue « pas de mesure » de
+        # « derive mesuree », ce que le code de sortie ne sait pas faire.
+        continue-on-error: true
+        run: |
+          set +e
+          python scripts/coordination/submodule_watch.py \
+            --drift-only --ref HEAD --max-ahead "$MAX_AHEAD" --json > drift.json
+          rc=$?
+          set -e
+          cat drift.json
+          echo "code de sortie local (indicatif, jamais la decision) : $rc"
+
+      - name: Artefact de mesure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: submodule-drift
+          path: drift.json
+          if-no-files-found: warn
+
+      - name: Verdict sur la mesure (jamais sur le code de sortie)
+        # Le JSON est la source de verite. Un artefact absent ou illisible est
+        # une PANNE DE MESURE : elle n'est jamais comptee comme une derive.
+        # Bloquant sur les evenements qui font autorite sur `main` ; advisory
+        # sur une PR, ou une derive anterieure n'est pas imputable a son auteur.
+        run: |
+          set -u
+          advisory=0
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then advisory=1; fi
+
+          if [ ! -s drift.json ] || ! jq -e . drift.json > /dev/null 2>&1; then
+            msg="mesure absente ou illisible : submodule_watch.py n'a pas produit un drift.json exploitable. Rien ne permet de conclure a une derive."
+            if [ "$advisory" = "1" ]; then
+              echo "::warning::$msg"
+              exit 0
+            fi
+            echo "::error::$msg"
+            exit 2
+          fi
+
+          late=$(jq -r --argjson max "$MAX_AHEAD" \
+            '[.repos[] | select(.drift.state == "DERIVE" and (.drift.ahead_by // 0) > $max)
+              | "\(.slug // .path) ahead_by=\(.drift.ahead_by)"] | join("; ")' drift.json) \
+            || { echo "::error::lecture de drift.json impossible"; exit 2; }
+
+          if [ -n "$late" ]; then
+            msg="derive de gitlink au-dela du seuil ($MAX_AHEAD commits) : bump de sous-module en retard -- $late. Mesure complete dans l'artefact submodule-drift."
+            if [ "$advisory" = "1" ]; then
+              echo "::warning::$msg"
+              exit 0
+            fi
+            echo "::error::$msg"
+            exit 1
+          fi
+
+          echo "aucune derive au-dela de $MAX_AHEAD commits (verdict lu dans drift.json)"

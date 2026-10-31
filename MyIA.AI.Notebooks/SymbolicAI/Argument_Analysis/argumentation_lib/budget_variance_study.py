@@ -40,7 +40,7 @@ import statistics
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional
 
 
 @functools.lru_cache(maxsize=1)
@@ -82,34 +82,51 @@ def _load_batch_text() -> str:
 
 
 # ---------------------------------------------------------------------------
-# Validation de contenu — port verbatim de la cellule 23 du carnet 08b
-# (issue #18395). Ne pas diverger : la demonstration et la mesure doivent
-# appliquer les memes seuils.
+# Validation de contenu — les seuils vivent dans _verdict.py (source unique,
+# #18776 tranche reprise ciblee) : la mesure, la porte de reprise du runner
+# et le carnet doivent appliquer les memes seuils. Re-exports pour les
+# consommateurs historiques (tests, carnets) qui importent depuis ici.
 # ---------------------------------------------------------------------------
 
-STATE_KEYS_BLACKLIST: Set[str] = {
-    "analysis_state", "arguments", "identified_arguments", "identified_fallacies",
-    "belief_sets", "query_log", "answers", "raw_text", "final_conclusion",
-    "shared_state", "task_context", "metadata", "state",
-}
-
-MIN_ARGUMENT_WORDS: int = 4
-MIN_ARGUMENT_TEXT_OVERLAP: int = 12
+from argumentation_lib._verdict import (  # noqa: F401
+    MIN_ARGUMENT_TEXT_OVERLAP,
+    MIN_ARGUMENT_WORDS,
+    STATE_KEYS_BLACKLIST,
+    argument_has_substance,
+    compute_verdict_metrics,
+    count_substantive_arguments,
+    count_substantive_fallacies,
+    fallacy_has_substance,
+)
 
 # Cibles = generation courante verifiee (docs/genai/model-mapping-openai.md) :
 # famille mini/nano -> gpt-5.6-luna, principal -> gpt-5.6-sol. Les cibles
 # d'origine (gpt-4o-mini, gpt-4o) sont elles-memes d'une generation
 # remplacee -- substituer l'une par l'autre deplacait l'echec (#20135).
+# Extension #22783 : la famille 4o entre dans la table (gpt-4o-mini ->
+# gpt-5.6-luna, gpt-4o -> gpt-5.6-sol, memes cibles que le mapping) -- sans
+# elle, un .env encore sur gpt-4o-mini passait le substitut a travers et la
+# serie executait un modele obsolete en le nommant dans sa provenance.
 # Port verbatim de la cellule de validation du carnet 08b : ne pas diverger.
 OBSOLETE_MODEL_SUBSTITUTIONS = {
     "gpt-5-mini": "gpt-5.6-luna",
     "gpt-5": "gpt-5.6-sol",
     "gpt-5-nano": "gpt-5.6-luna",
+    "gpt-4o-mini": "gpt-5.6-luna",
+    "gpt-4o": "gpt-5.6-sol",
 }
 
 
 def _resolve_chat_model_id() -> str:
     _load_env()
+    # Priorite a la cible REELLEMENT executee (#22783) : la cellule du kernel
+    # pose ACTIVE_CHAT_MODEL_ID apres avoir configure le service (vLLM local
+    # ou repli). Sans cette lecture, OPENAI_CHAT_MODEL_ID pourrait nommer un
+    # modele que le run n'a pas utilise -- exactement la divergence que le
+    # rapport de provenance existe pour empecher.
+    active = os.getenv("ACTIVE_CHAT_MODEL_ID")
+    if active:
+        return active
     configured = os.getenv("OPENAI_CHAT_MODEL_ID")
     if not configured:
         raise RuntimeError(
@@ -121,152 +138,23 @@ def _resolve_chat_model_id() -> str:
 
 
 def _text_overlap(text: str, candidate: str) -> int:
-    if not text or not candidate:
-        return 0
-    a = re.sub(r"\s+", " ", text.lower())
-    b = re.sub(r"\s+", " ", candidate.lower())
-    n = len(b)
-    upper = min(n, 80)
-    for size in range(upper, MIN_ARGUMENT_TEXT_OVERLAP - 1, -1):
-        for i in range(0, n - size + 1):
-            sub = b[i:i + size]
-            if sub in a:
-                return size
-    return 0
+    # Delegue a la source unique (_verdict) ; conserve pour les imports
+    # historiques de ce module.
+    from argumentation_lib._verdict import _text_overlap as _impl
+
+    return _impl(text, candidate)
 
 
 def _argument_has_substance(arg_desc: str, raw_text: str) -> bool:
-    desc = str(arg_desc).strip()
-    if not desc:
-        return False
-    if desc.lower() in STATE_KEYS_BLACKLIST:
-        return False
-    if len(desc.split()) < MIN_ARGUMENT_WORDS:
-        return False
-    if _text_overlap(raw_text or "", desc) < MIN_ARGUMENT_TEXT_OVERLAP:
-        return False
-    return True
+    from argumentation_lib._verdict import argument_has_substance as _impl
+
+    return _impl(arg_desc, raw_text)
 
 
 def _fallacy_has_substance(f_data: Dict[str, Any]) -> bool:
-    if not isinstance(f_data, dict):
-        return False
-    ftype = str(f_data.get("type", "")).strip()
-    if not ftype or ftype.lower() in ("unknown", "type inconnu", ""):
-        return False
-    justification = str(f_data.get("justification", "")).strip()
-    if not justification or justification.lower() == "justification manquante":
-        return False
-    if len(justification) < 10:
-        return False
-    target = f_data.get("target_argument_id")
-    if target is None or target == "":
-        return False
-    return True
+    from argumentation_lib._verdict import fallacy_has_substance as _impl
 
-
-def compute_verdict_metrics(state: Any) -> Dict[str, Any]:
-    """Mesure la forme du verdict d'un etat issu d'un run agentique.
-
-    Port de ``generate_validated_analysis_report`` (cellule 23 du carnet
-    08b) limite aux champs utiles a l'etude : comptes substantifs, statut
-    de validation, score, raison d'echec.
-    """
-    raw_text = getattr(state, "raw_text", None) or ""
-
-    substantive_args = 0
-    total_args = 0
-    if hasattr(state, "identified_arguments"):
-        for _arg_id, arg_desc in state.identified_arguments.items():
-            total_args += 1
-            if _argument_has_substance(arg_desc, raw_text):
-                substantive_args += 1
-
-    substantive_fallacies = 0
-    total_fallacies = 0
-    if hasattr(state, "identified_fallacies"):
-        for _f_id, f_data in state.identified_fallacies.items():
-            total_fallacies += 1
-            if _fallacy_has_substance(f_data):
-                substantive_fallacies += 1
-
-    belief_sets = len(getattr(state, "belief_sets", {}) or {})
-
-    meaningful_queries = 0
-    total_queries = 0
-    if hasattr(state, "query_log"):
-        for qlog in state.query_log:
-            total_queries += 1
-            raw_result = qlog.get("raw_result", "") if isinstance(qlog, dict) else ""
-            if "ACCEPTED" in str(raw_result) or "REJECTED" in str(raw_result):
-                meaningful_queries += 1
-
-    has_conclusion = bool(getattr(state, "final_conclusion", None))
-
-    checks: List[str] = []
-    failed_reasons: List[str] = []
-    if substantive_args:
-        checks.append("ARGUMENTS_IDENTIFIED")
-    elif total_args > 0:
-        failed_reasons.append("ARGUMENTS_FORM_ONLY")
-    else:
-        failed_reasons.append("ARGUMENTS_NONE")
-    if substantive_fallacies:
-        checks.append("FALLACIES_ANALYZED")
-    elif total_fallacies > 0:
-        failed_reasons.append("FALLACIES_FORM_ONLY")
-    elif hasattr(state, "answers") and any(
-        "sophisme" in str(v).lower() for v in state.answers.values()
-    ):
-        checks.append("FALLACY_ANALYSIS_ATTEMPTED")
-    else:
-        failed_reasons.append("FALLACIES_NONE")
-    if belief_sets > 0:
-        checks.append("BELIEF_SET_CREATED")
-    else:
-        failed_reasons.append("BELIEF_SET_NONE")
-    if total_queries > 0:
-        checks.append("QUERIES_SUBMITTED")
-    else:
-        failed_reasons.append("QUERIES_NONE")
-    if meaningful_queries > 0:
-        checks.append("QUERIES_MEANINGFUL")
-    else:
-        failed_reasons.append("QUERIES_NOT_MEANINGFUL")
-    if has_conclusion:
-        checks.append("CONCLUSION_GENERATED")
-    else:
-        failed_reasons.append("CONCLUSION_NONE")
-
-    max_checks = 7
-    confidence = round(len(checks) / max_checks, 2)
-
-    if any(
-        fr in ("ARGUMENTS_FORM_ONLY", "FALLACIES_FORM_ONLY") for fr in failed_reasons
-    ):
-        status = "INVALIDATED_FORM"
-    elif confidence >= 0.8:
-        status = "COMPLETE_VALIDATED"
-    elif confidence >= 0.5:
-        status = "PARTIAL_VALIDATED"
-    elif confidence >= 0.3:
-        status = "MINIMAL"
-    else:
-        status = "INCOMPLETE"
-
-    return {
-        "total_arguments": total_args,
-        "substantive_arguments": substantive_args,
-        "total_fallacies": total_fallacies,
-        "substantive_fallacies": substantive_fallacies,
-        "belief_sets": belief_sets,
-        "total_queries": total_queries,
-        "meaningful_queries": meaningful_queries,
-        "has_conclusion": has_conclusion,
-        "validation_status": status,
-        "confidence_score": confidence,
-        "failed_reason": failed_reasons[0] if failed_reasons else None,
-    }
+    return _impl(f_data)
 
 
 # ---------------------------------------------------------------------------
@@ -387,11 +275,27 @@ def summarize(runs: List[Dict[str, Any]]) -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 CONFIGS: Dict[str, Dict[str, Any]] = {
-    # Comportement herite : plafond partage max_turns // 2 (10/10 sur 20).
-    "baseline": {},
+    # Comportement herite (= main) : chaque phase plafonnee a 5 tours par
+    # DefaultTerminationStrategy (maximum_iterations=5, defaut SK). Jusqu'a
+    # la tranche reprise ciblee de #18776 ce plafond etait IMPLICITE — les
+    # budgets #18785 restaient inertes — et la baseline se declarait
+    # ``max_turns // 2`` (10/10) alors qu'elle s'arretait a 5. Reproduire
+    # main sur le runner a strategie explicite, c'est poser 5/5 : meme
+    # mecanique, meme total (5+5+3 = 13 tours, mesure campagne3_baseline).
+    "baseline": {"max_turns": 10, "max_informal_turns": 5, "max_formal_turns": 5},
     # Budget par phase (#18785) : phase informelle etendue a 15 tours,
-    # phase formelle maintenue a 10.
+    # phase formelle maintenue a 10. Depuis la tranche reprise ciblee,
+    # ces budgets MORDENT (strategie de terminaison explicite).
     "proposal": {"max_turns": 20, "max_informal_turns": 15, "max_formal_turns": 10},
+    # Reprise ciblee de la phase deficitaire (branche « ou » de l'issue) :
+    # budgets 10/10 qui mordent, puis reprise focused arguments/sophismes
+    # tant que l'un des deux livrables reste sous son seuil.
+    "resumption": {
+        "max_turns": 20,
+        "max_informal_turns": 10,
+        "max_formal_turns": 10,
+        "targeted_resumption": True,
+    },
 }
 
 
@@ -428,10 +332,19 @@ def main(argv: Optional[List[str]] = None) -> int:
     seeds = [int(s.strip()) for s in args.seeds.split(",") if s.strip()]
     out_path = Path(args.out)
 
+    def _sk_version() -> str:
+        try:
+            import semantic_kernel
+
+            return getattr(semantic_kernel, "__version__", "unknown")
+        except Exception:
+            return "absent"
+
     study: Dict[str, Any] = {
         "issue": 18776,
         "started_at": datetime.now().isoformat(),
         "model_id": _resolve_chat_model_id(),
+        "semantic_kernel_version": _sk_version(),
         "configs": {},
     }
 

@@ -118,6 +118,17 @@ preference. Le budget local a ete aligne sur le budget hebergee (40 -> 120)
 pour que la lecture locale soit **complete** dans le regime nominal : un
 budget trop bas produit une troncature systematique, donc une lecture
 locale toujours « non etablie », donc une bascule vers `true` impossible.
+
+Le plafond du jeton du depot (`github.token`) est de **1 000 appels/h pour
+le repo**, partage avec les autres jobs : c'est lui qui borne la cadence,
+et non une preference. Le cron horaire du depot consomme 313 appels/h ; la
+minuterie locale sur ai-01 en ajoute **un passage par heure** -- soit
+**~630 appels/h, 63 % du plafond**. Une cadence locale a 15 min aurait porte
+le seul declencheur local a ~1 250 appels/h : au-dessus du plafond, l'organe
+se serait affame lui-meme, et son etat rendu serait devenu illisible
+(UNREADABLE -- sur mais muet). Ce que la minuterie locale apporte n'est donc
+pas de la frequence mais de la fiabilite : la livraison des crons du depot
+est mesuree a 22 % des tics servis (mediane 289 min de retard).
 """
 
 from __future__ import annotations
@@ -143,6 +154,9 @@ EXIT_REFUSED = 2
 
 DEFAULT_REPO = "jsboige/CoursIA"
 DEFAULT_VARIABLE = "CI_OVERFLOW_LOCAL"
+# Fichier du workflow qui porte cet organe : le garde-fou de cadence lit
+# les runs de CE workflow pour mesurer l'ecart depuis le dernier passage.
+CONTROLLER_WORKFLOW_FILE = "ci-overflow-controller.yml"
 HOSTED_LABEL = "ubuntu-latest"
 LOCAL_LABEL = "coursia-linux"
 
@@ -660,6 +674,60 @@ def _gh_api(
     return proc.returncode, proc.stdout, proc.stderr
 
 
+def last_run_age_minutes(
+    repo: str,
+    workflow_file: str,
+    now: datetime,
+    token: str | None,
+    current_run_id: str | None = None,
+) -> tuple[float | None, str]:
+    """Age du dernier passage du controleur, en minutes.
+
+    L'ecart se lit dans l'API des runs du controleur LUI-MEME : etat sans
+    etat ajoute (ni variable, ni cache, ni fichier). Le run COURANT est
+    exclu -- il est deja dans la liste, et sans cette exclusion l'ecart
+    serait toujours nul et le declencheur ne declencherait jamais.
+
+    Rend `(age, motif)`. `age` a `None` quand l'ecart n'a pas pu etre
+    etabli (listing illisible, aucun passage anterieur) : le garde-fou ne
+    peut alors rien interdire, et l'absence d'interdiction est la direction
+    qui laisse la soupape fonctionner.
+    """
+    rc, out, err = _gh_api(
+        [f"repos/{repo}/actions/workflows/{workflow_file}/runs?per_page=10"],
+        token=token,
+    )
+    if rc != 0:
+        message = (err or out or "").strip().splitlines()
+        return None, (
+            "listing des runs du controleur illisible ("
+            + (message[-1] if message else "raison inconnue")
+            + ")"
+        )
+    try:
+        data = json.loads(out)
+    except json.JSONDecodeError:
+        return None, "reponse non-JSON"
+    runs = data.get("workflow_runs") if isinstance(data, dict) else None
+    if not isinstance(runs, list):
+        return None, "reponse inattendue"
+    for run in runs:
+        if not isinstance(run, dict):
+            continue
+        rid = run.get("id")
+        if current_run_id and str(rid) == str(current_run_id):
+            continue
+        created = run.get("created_at")
+        if not isinstance(created, str):
+            continue
+        try:
+            stamp = datetime.fromisoformat(created.replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        return (now - stamp).total_seconds() / 60.0, ""
+    return None, "aucun passage anterieur du controleur"
+
+
 def read_variable(
     repo: str, name: str, token: str
 ) -> tuple[str | None, datetime | None, str]:
@@ -1064,6 +1132,19 @@ def render_summary(report: dict, rc: int) -> str:
     emettre une annotation, un lecteur la voit dans le resume.
     """
     thresholds = report.get("thresholds", {})
+    if report.get("skipped"):
+        # Passage ecarte par la garde de cadence : aucune mesure n'a eu
+        # lieu, donc le resume ne parle QUE de l'ecart constate.
+        return "\n".join([
+            "### CI overflow controller (phase B) -- VERDICT",
+            "",
+            f"- code retour : {rc}",
+            f"- verdict : {report.get('verdict')}",
+            f"- raison : {report.get('reason')}",
+            f"- dernier passage : {report.get('last_run_age_min')} min "
+            f"(minimum {report.get('min_interval_min')} min)",
+            "",
+        ])
     hosted = report.get("hosted", {})
     local = report.get("local", {})
     cohort = report.get("cohort", {})
@@ -1074,6 +1155,12 @@ def render_summary(report: dict, rc: int) -> str:
         f"- code retour : {rc}",
         f"- verdict : {report.get('verdict')}",
         f"- raison : {report.get('reason')}",
+        f"- dernier passage : "
+        + (
+            f"{report.get('last_run_age_min')} min"
+            if report.get("last_run_age_min") is not None
+            else f"illisible ({report.get('last_run_age_reason')})"
+        ),
         f"- variable : {report.get('current')} -> {report.get('target')} "
         f"({'ECRIT' if report.get('written') else 'NON ECRIT'})",
         f"- hebergee : {hosted.get('queued')} job(s) en file, "
@@ -1195,6 +1282,18 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="ne mesure pas l'affamescence du parc local (garde secondaire)",
     )
+    parser.add_argument(
+        "--min-interval",
+        type=float,
+        default=0.0,
+        metavar="MINUTES",
+        help=(
+            "intervalle minimal entre deux passages, en minutes : si le "
+            "dernier passage du controleur est plus recent, ce passage rend "
+            "SKIPPED sans mesurer et sans ecrire (0 = pas de garde, le "
+            "comportement d'un declenchement manuel)"
+        ),
+    )
     parser.add_argument("--json", action="store_true")
     parser.add_argument(
         "--summary-out",
@@ -1237,6 +1336,67 @@ def main(argv: list[str] | None = None) -> int:
         if args.now
         else datetime.now(timezone.utc)
     )
+
+    # Garde-fou de cadence : le declencheur tire plus souvent que le cron
+    # horaire (cadence locale sur ai-01, ou fin de PR gate). L'ecart minimal
+    # entre deux passages borne ce que le declencheur consomme -- en occupation
+    # du parc local (le controleur tourne SUR ce parc) et en appels API. Le
+    # controle est fait AVANT toute mesure : un passage ecarte ne doit rien
+    # lire du tout.
+    # L'ecart au dernier passage est mesure AVANT la garde, et reporte dans
+    # TOUS les cas : c'est l'instrument qui rend visible la mort du
+    # declencheur local (un ecart qui grandit) au lieu de la laisser
+    # silencieuse. Il coute UN appel, dans un passage qui en compte 313.
+    age, age_reason = last_run_age_minutes(
+        args.repo,
+        CONTROLLER_WORKFLOW_FILE,
+        now,
+        token,
+        current_run_id=os.environ.get("GITHUB_RUN_ID"),
+    )
+    if args.min_interval > 0:
+        if age is not None and age < args.min_interval:
+            report = {
+                "verdict": "SKIPPED",
+                "reason": (
+                    f"intervalle minimal non ecoule : {age:.1f} min depuis le "
+                    f"dernier passage, minimum {args.min_interval:.0f} min -- "
+                    f"aucune mesure, aucune ecriture"
+                ),
+                "skipped": True,
+                "last_run_age_min": age,
+                "min_interval_min": args.min_interval,
+                "current": None,
+                "target": None,
+                "written": False,
+                "thresholds": {
+                    "saturation_jobs": args.saturation_jobs,
+                    "saturation_minutes": args.saturation_minutes,
+                    "min_free_slots": args.min_free_slots,
+                    "dwell_minutes": args.dwell_minutes,
+                    "hosted_cap": args.hosted_cap,
+                    "confirm_seconds": args.confirm_seconds,
+                },
+            }
+            rc = EXIT_OK
+            if args.json:
+                print(json.dumps(report, indent=2, ensure_ascii=False))
+            else:
+                print(f"[ci-overflow] SKIPPED -- {report['reason']}")
+            if args.summary_out:
+                Path(args.summary_out).write_text(
+                    render_summary(report, rc), encoding="utf-8"
+                )
+            return rc
+        if age is None:
+            # L'ecart n'a pas pu etre etabli : le garde-fou ne peut rien
+            # interdire. On continue (mesurer vaut mieux que ne rien
+            # faire), et le motif est dit dans le rapport.
+            print(
+                f"[ci-overflow] garde de cadence inoperante ({age_reason}) -- "
+                f"le passage continue",
+                file=sys.stderr,
+            )
 
     # Lecture de la variable : le jeton d'ecriture d'abord (il porte le droit
     # `Variables: read-write`), le jeton de mesure en repli LECTURE SEULE
@@ -1380,6 +1540,8 @@ def main(argv: list[str] | None = None) -> int:
         "write_token_env": args.write_token_env,
         "write_token_present": bool(write_token),
         "write_blocked": write_blocked,
+        "last_run_age_min": round(age, 1) if age is not None else None,
+        "last_run_age_reason": age_reason,
         "state_known": not state_unknown,
         "state_reason": state_reason,
         "hosted": {
