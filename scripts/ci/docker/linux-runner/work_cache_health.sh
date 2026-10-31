@@ -284,21 +284,64 @@ wch_quarantine_depth() {  # <basename> -> profondeur (0 si ce n'est pas une quar
   printf '%s\n' "$depth"
 }
 
+# Age d'une quarantaine, en heures, lu dans son NOM.
+#
+# PAS dans le mtime du repertoire : la mise en quarantaine est un `rename(2)`
+# (le renommage preserve le mtime du deplace), donc le mtime d'une quarantaine
+# est celui du clone abandonne -- pas celui de la mise en quarantaine. Pour une
+# chaine de renommages, c'est le DERNIER suffixe qui porte le dernier
+# renommage : c'est lui qui dit quand l'incident a eu lieu.
+#
+# Rend l'age en heures sur stdout ; rend 1 (et n'ecrit rien) si le nom ne porte
+# pas d'horodatage lisible. Un age illisible n'est PAS traite comme « ancien » :
+# l'echec de la mesure ne doit jamais autoriser une suppression.
+wch_quarantine_age_hours() {  # <basename>
+  local base="$1" stamp epoch now
+  stamp="${base##*.stale-}"
+  case "$stamp" in
+    [0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]T[0-9][0-9][0-9][0-9][0-9][0-9]Z) ;;
+    *) return 1 ;;
+  esac
+  epoch="$(date -u -d "${stamp:0:4}-${stamp:4:2}-${stamp:6:2} ${stamp:9:2}:${stamp:11:2}:${stamp:13:2}" +%s 2>/dev/null)" || return 1
+  [ -n "$epoch" ] || return 1
+  now="$(date -u +%s)"
+  printf '%s\n' "$(( (now - epoch) / 3600 ))"
+}
+
 # Les horodatages sont de largeur fixe et en UTC : sous LC_ALL=C le tri
 # lexicographique EST un tri chronologique. `head -n -<keep>` rend tout SAUF
 # les <keep> derniers, c'est-a-dire les plus anciens -- ceux qu'on retire.
+#
+# DEUX BORNES, et il faut les deux (mesure ai-01 du 2026-10-31).
+#
+# La borne de NOMBRE (`WCH_STALE_KEEP`, defaut 2) borne la RETENTION EN
+# NOMBRE : sans elle, chaque echec de repack ajoutait une quarantaine et la
+# retention etait infinie par construction (#23076).
+#
+# Elle ne borne pas la DUREE : un slot qui a produit deux quarantaines les
+# garde indefiniment. Mesure ai-01 du 2026-10-31 : **15 clones en
+# quarantaine, 25 675 836 Kio = 24 Gio** sur les 12 work-volumes, ages de
+# **59 a 114 h** -- tous hors de toute fenetre de diagnostic, tous retenus
+# par la seule borne de nombre. La borne d'AGE (`WCH_STALE_MAX_AGE_HOURS`,
+# defaut 48 h) ferme cette duree : une quarantaine dont le dernier
+# renommage est plus vieux que la fenetre part, meme si le compte ne
+# l'emporterait pas.
 wch_prune_quarantines() {  # <workdir>
   local workdir="$1" keep="${WCH_STALE_KEEP:-2}" slot path base sz parent prefix rest tail
+  local max_age="${WCH_STALE_MAX_AGE_HOURS:-48}" age
   local removed=0 reclaimed=0 idx
-  local -a list=()
+  local -a list=() aged=()
   case "$keep" in ''|*[!0-9]*) keep=2 ;; esac
+  # `max_age=0` DESACTIVE la borne d'age (echappatoire mesure : un parc qui
+  # voudrait la seule borne de nombre la pose explicitement).
+  case "$max_age" in ''|*[!0-9]*) max_age=48 ;; esac
   # `keep=0` retirerait TOUT, y compris la quarantaine du dernier incident :
   # la borne la plus basse qui preserve l'intention est 1.
   [ "$keep" -ge 1 ] || keep=1
   [ -d "$workdir" ] || return 0
   for slot in "$workdir"/*; do
     [ -d "$slot" ] || continue
-    list=()
+    list=(); aged=()
     # Le filtre de FORME passe AVANT le comptage. L'inverse a ete mesure : un
     # `notes.stale-manuel` present dans le slot decalait la borne et faisait
     # retirer une quarantaine de plus que le plafond demande (test dedie).
@@ -328,9 +371,35 @@ wch_prune_quarantines() {  # <workdir>
           break
         fi
       done
+      # L'AGE se lit dans le NOM (jamais dans le mtime : le renommage le
+      # preserve). Une quarantaine hors de la fenetre part meme si le compte
+      # ne l'emporterait pas -- c'est la borne qui rend la retention FINIE en
+      # duree, et non seulement en nombre.
+      if [ "$max_age" -gt 0 ]; then
+        age="$(wch_quarantine_age_hours "$base" 2>/dev/null || echo '')"
+        if [ -n "$age" ] && [ "$age" -gt "$max_age" ]; then
+          aged+=("$path")
+          continue
+        fi
+      fi
       list+=("$path")
     done < <(find "$slot" -mindepth 1 -maxdepth 1 -type d -name '*.stale-*' -print 2>/dev/null \
                | LC_ALL=C sort)
+    # 1. La borne d'AGE : hors fenetre d'inspection, la quarantaine part --
+    #    meme si le compte (borne 2) la garderait.
+    for path in ${aged[@]+"${aged[@]}"}; do
+      base="${path##*/}"
+      sz="$(du -sk -- "$path" 2>/dev/null | awk '{print $1}')"
+      case "$sz" in ''|*[!0-9]*) sz=0 ;; esac
+      if rm -rf -- "$path" 2>/dev/null; then
+        removed=$((removed + 1))
+        reclaimed=$((reclaimed + sz))
+        echo "work_cache: quarantaine $base retiree (${sz} Kio, hors fenetre d'age de ${max_age} h)"
+      else
+        echo "work_cache: quarantaine $base NON retirable -- conservee" >&2
+      fi
+    done
+    # 2. La borne de NOMBRE : les plus anciennes au-dela du plafond.
     [ "${#list[@]}" -gt "$keep" ] || continue
     for (( idx = 0; idx < ${#list[@]} - keep; idx++ )); do
       path="${list[idx]}"
