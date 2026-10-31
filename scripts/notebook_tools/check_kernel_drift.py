@@ -403,6 +403,17 @@ def diff_kernel(base_info, head_info):
 #     (3.8.10, 3.9.0, 3.10.0, 3.10.11, 3.10.19, 3.11.0, 3.11.9, 3.11.14,
 #     3.11.15, 3.13.3, 3.13.7, 3.13.12, 3.13.14) ; 60 carnets ``python3`` + 2
 #     ``conda-torch``.
+#   - Python ``coursia-ml-training`` (serie 02-ML-Cours) : canon de serie
+#     declare CPython 3.13 par le requirements.txt de la serie (en-tete,
+#     #18331), mais les carnets committes historiques portent encore
+#     ``language_info`` 3.11.x -- la re-execution canonique derive donc
+#     3.11 -> 3.13 sous ce kernelspec (cas #22889, mesure 2026-10-27).
+#     Ce kernelspec est partage par une trentaine de carnets hors
+#     02-ML-Cours, qui n'ont pas de requirements.txt declarant 3.13 (reserve
+#     de revue sur #22979, mesuree) : la transition n'est donc PAS globale.
+#     Elle est nominative, dans ``CANONICAL_LANGUAGE_TRANSITIONS_SCOPED``,
+#     et ne vaut que pour le carnet qui la motive. Sous ce kernelspec,
+#     ``3.11 -> 3.13`` reste rouge globalement, comme l'inverse.
 #   - Decision duale sur le canon (coord. 2026-10-05T03:43:46Z, DM
 #     msg-20261005T034346-qyldsl) : **deux canons**, pas un seul --
 #     (a) **canon des algorithmes deployes sur QC Cloud = Python 3.11**,
@@ -448,19 +459,128 @@ CANONICAL_LANGUAGE_TRANSITIONS = {
         "Python 3.12 -> 3.13 : convergence vers le canon d'execution 3.13 (#19181, anticipation -- pas de carnet `python3` a 3.12 mesure)",
 }
 
+# #19181 (cas par cas, decision coordinateur du 11/10) : les transitions
+# 3.8/3.9 -> 3.13 restent rouges GLOBALEMENT pour proteger la serie ICT
+# (epinglee <3.10 via pyphi). Seul le carnet nomme ci-dessous a un
+# traitement nominatif : sa re-execution selective sous 3.13 du
+# sous-ensemble local (les cellules REF QC Cloud ne sont pas executables
+# localement) est la convergence attendue, pas une derive. Une entree
+# scoped ne vaut QUE pour son chemin -- QC-Py-03, 100% cellules REF,
+# n'en porte pas : sa metadonnee fossile ne peut bouger que par
+# hand-edit, ce que personne ne doit faire.
+CANONICAL_LANGUAGE_TRANSITIONS_SCOPED = {
+    ("MyIA.AI.Notebooks/QuantConnect/Python/"
+     "QC-Py-16-Alternative-Data.ipynb",
+     "python3", "3.8", "3.13"):
+        "Python 3.8 -> 3.13 : re-execution selective du sous-ensemble local "
+        "de QC-Py-16 (#19181, cas par cas)",
+    # 2.8c est le premier carnet dont la re-execution sous 3.13 est la
+    # convergence attendue vers le canon de SA serie. Le kernelspec
+    # ``coursia-ml-training`` est partage par 50 carnets hors 02-ML-Cours
+    # qui ne declarent pas 3.13 (54 au total ; mesure par lecture des
+    # metadonnees, commande et instantane consignes dans #23187) : une
+    # entree globale
+    # les aurait tous rendus verts sur cette direction (reserve de revue sur
+    # #22979). D'ou la portee par PREFIXE de repertoire ci-dessous, qui
+    # couvre la serie entiere sans elargir au kernelspec (#23187).
+    ("MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/"
+     "2.8c-Borne-Temoin-Concentration.ipynb",
+     "coursia-ml-training", "3.11", "3.13"):
+        "Python 3.11 -> 3.13 sous `coursia-ml-training` : convergence vers le "
+        "canon de la serie 02-ML-Cours, declare par son requirements.txt "
+        "en-tete (CPython 3.13, #18331/#18247) ; cas fondateur #22889 "
+        "(2.8c, base 3.11.15 -> tete 3.13.14, memes kernelspec base/tete)",
+    # Portee SERIE (#23187) : quatre carnets de 02-ML-Cours tournent sous ce
+    # kernelspec, releves le 2026-10-29 sur ``main`` -- 2.8c et 2.14b a
+    # ``language_info.version`` = 3.11.15, 2.9d et 2.9g a 3.10.19. Le canon
+    # de la serie est 3.13 pour les quatre (requirements.txt de la serie),
+    # d'ou DEUX directions : ``3.11 -> 3.13`` (2.14b, et 2.8c par son
+    # entree nominative) et ``3.10 -> 3.13`` (2.9d, 2.9g). Une seule
+    # direction aurait laisse la moitie de la serie rouge apres
+    # re-execution, en annoncant la couvrir (reserve de revue NanoClaw du
+    # 2026-10-29). Le prefixe -- un premier element termine par ``/`` --
+    # limite la tolerance a ce repertoire : les carnets hors serie qui
+    # partagent le kernelspec gardent la direction rouge, ce que la
+    # reserve #22979 exigeait (50 carnets hors
+    # 02-ML-Cours partagent ce kernelspec, contre 4 dans la serie --
+    # 54 au total ; mesure par lecture des METADONNEES de chaque carnet,
+    # commande et instantane consignes dans #23187). Un comptage par
+    # sous-chaine dans le fichier rend 67 : il additionne aussi les
+    # carnets dont le kernelspec est un autre mais dont une cellule cite
+    # le nom -- la population qui compte pour ce garde est celle des
+    # METADONNEES.
+    ("MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/",
+     "coursia-ml-training", "3.11", "3.13"):
+        "Python 3.11 -> 3.13 sous `coursia-ml-training` pour tout carnet de "
+        "la serie 02-ML-Cours : convergence vers le canon 3.13 declare par "
+        "le requirements.txt de la serie (#23187, suite de #22889)",
+    # ML-06 est le seul carnet Python de la serie ML.Net sous kernel NOMME :
+    # hors du census #23379 (kernel python3 uniquement), sa convergence exige
+    # sa propre entree scopee. Le kernelspec ``coursia-ml-training`` reste
+    # partage par une trentaine de carnets hors serie qui ne declarent pas
+    # 3.13 : l'entree reste nominative (reserve de revue #22979).
+    ("MyIA.AI.Notebooks/ML/ML.Net/ML-06-ONNX-Python.ipynb",
+     "coursia-ml-training", "3.12", "3.13"):
+        "Python 3.12 -> 3.13 sous `coursia-ml-training` : convergence vers le "
+        "canon de la serie ML.Net, dont les quatre carnets kernel python3 "
+        "sont converges par #23379 (ML-04b #23382, ML-09 #23388, ML-07 "
+        "#23389, ML-05 #23424) ; ML-06 est le dernier hors canon, tous "
+        "kernels confondus (#23426)",
+    # 2.9d est le premier des deux derniers carnets de la serie restes a
+    # 3.10.19. Sa convergence est la voie 1 de #23292 (re-execution sous le
+    # venv canon `coursia-ml-training`, mesure a 3.13.15) : elle evite une
+    # seconde tolerance pour le repertoire, mais la direction `3.10 -> 3.13`
+    # n'existait dans AUCUNE des deux tables pour ce kernelspec -- mesure
+    # firsthand : `accepted_canonical_transition` rend False avec et sans
+    # chemin avant cette entree. Le scope reste nominatif (un carnet par
+    # entree) pour la meme raison que 2.8c : le kernelspec est partage par
+    # une trentaine de carnets hors serie (reserve de revue #22979).
+    #
+    # 2.9g ne figure PAS ici tant que ses sorties ne sont pas re-executees :
+    # une entree accorde la permission de bouger la version du carnet, et
+    # l'accorder avant la mesure laisserait passer un hand-edit sous couvert
+    # de convergence. Son venv exige un modele 7B quantifie sur une RTX 4060
+    # de 8 Go que la grille ICT-25 occupe jusqu'a la fin de la campagne ; la
+    # tranche est due et suivie sur #23292, pas abandonnee.
+    ("MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/"
+     "2.9d-Features-Circulaires-Helice-Nombres.ipynb",
+     "coursia-ml-training", "3.10", "3.13"):
+        "Python 3.10 -> 3.13 sous `coursia-ml-training` : convergence vers le "
+        "canon de la serie 02-ML-Cours par re-execution (#23292, voie 1) ; "
+        "venv du kernelspec mesure a 3.13.15, sorties re-executees",
+}
 
-def accepted_canonical_transition(base_info, head_info):
+
+def accepted_canonical_transition(base_info, head_info, nb_path=None):
     """Vrai quand la derive de version EST une transition canon (#17679).
 
     Exige le meme ``kernelspec.name`` (un changement de kernel reste rouge
     par construction) et la direction exacte de la table : ``12.0 ->
     13.0`` est accepte, ``13.0 -> 12.0`` ne l'est pas.
+
+    ``nb_path`` active en plus les transitions scopées (#19181) : une
+    entree nominative ne vaut que pour son chemin. Deux portees coexistent,
+    distinguees par la forme du premier element de la cle : un chemin de
+    carnet (valeur exacte) et un **prefixe de repertoire** termine par ``/``
+    (toute la serie, #23187).
     """
     if base_info["kernelspec_name"] != head_info["kernelspec_name"]:
         return False
     key = (base_info["kernelspec_name"],
            _version_prefix(base_info["language_version"]),
            _version_prefix(head_info["language_version"]))
+    if nb_path is not None:
+        # Les carnets sont adresses par git (slashes) : normaliser une
+        # eventuelle forme Windows pour que l'entree exacte et le prefixe
+        # comparent la meme chose.
+        norm = str(nb_path).replace("\\", "/")
+        if (norm,) + key in CANONICAL_LANGUAGE_TRANSITIONS_SCOPED:
+            return True
+        for entry in CANONICAL_LANGUAGE_TRANSITIONS_SCOPED:
+            scope = entry[0]
+            if (scope.endswith("/") and entry[1:] == key
+                    and norm.startswith(scope)):
+                return True
     return key in CANONICAL_LANGUAGE_TRANSITIONS
 
 
@@ -533,6 +653,28 @@ def _code_index_by_id(nb):
     return result
 
 
+def _code_source_by_id(nb):
+    """Map code-cell id -> its source text, whitespace-stripped.
+
+    The source is the stable identity of a cell across base and head: a
+    re-serialisation regenerates the nbformat ids and touches nothing else,
+    so an id-only comparison cannot tell "this cell was replaced" from
+    "this cell is new".
+    """
+    out = {}
+    for cell in nb.get("cells", []):
+        if cell.get("cell_type") != "code":
+            continue
+        cid = cell.get("id")
+        if not cid:
+            continue
+        src = cell.get("source", "")
+        if isinstance(src, list):
+            src = "".join(src)
+        out[cid] = src.strip()
+    return out
+
+
 def diff_signatures(base_sig, head_sig, base_nb=None, head_nb=None):
     """Return a list of cell identifiers whose float signature changed.
 
@@ -548,8 +690,11 @@ def diff_signatures(base_sig, head_sig, base_nb=None, head_nb=None):
     themselves nor shift code cells' indices.
 
     #17232: added code cells are no longer reported unconditionally --
-    only those carrying a non-empty float signature are (see the loop in
-    the id-aligned branch below).
+    only those carrying a non-empty float signature are.
+    #23364: and, among those, only when a base-only cell carries the same
+    source, i.e. when the cell was re-identified rather than added. A
+    genuinely added cell has no base signature to drift from (see the loop
+    in the id-aligned branch below).
     """
     # If we have notebooks with cell ids, align by id
     if base_nb is not None and head_nb is not None:
@@ -574,18 +719,39 @@ def diff_signatures(base_sig, head_sig, base_nb=None, head_nb=None):
             h = head_sig[h_idx] if h_idx < len(head_sig) else ()
             if b != h and not _signatures_equivalent(b, h):
                 diffs.append(cid)
-        # Added code cells (only in head), reported ONLY when they actually
-        # carry a float-array signature (#17232). An added cell with no
-        # signature cannot be a float-repr drift, and reporting it
-        # unconditionally made papermill's `injected-parameters` cell look
-        # like one: papermill replaces that cell on every re-execution and
-        # nbformat 4.5 hands the replacement a fresh cell id, so the
-        # (one id removed, one id added) pair is the normal fingerprint of a
-        # re-execution -- measured on PR #17145, where the added cell had 0
-        # outputs and every common cell had an identical signature.
+        # Added code cells: a cell present only in head. Two very different
+        # things hide here, and only one of them can drift.
+        #
+        #   * A cell RE-IDENTIFIED by a re-serialisation: nbformat hands it a
+        #     fresh id while its source is untouched (#17232 -- papermill's
+        #     `injected-parameters` cell is the measured case). Its source
+        #     still matches a base cell that disappeared, so a base signature
+        #     exists and the comparison is meaningful.
+        #   * A cell genuinely ADDED by the PR. It has no base counterpart and
+        #     therefore nothing to drift FROM. Reporting it unconditionally
+        #     reddened every PR whose new cell printed numbers shaped like a
+        #     float array -- Wilson intervals such as `[0.57,1.00]`, which
+        #     FLOAT_ARRAY_RE cannot tell from a 2-element ndarray (#23364,
+        #     measured on PR #23273: 8 -> 10 code cells, 0 id lost, the two
+        #     flagged cells had no base cell with the same source).
+        #
+        # So an added cell is reported ONLY when a base-only cell carries the
+        # same source; otherwise it is new content, not drift.
+        base_only = set(base_ids.keys()) - set(head_ids.keys())
+        base_src = _code_source_by_id(base_nb)
+        head_src = _code_source_by_id(head_nb)
         for cid in sorted(set(head_ids.keys()) - set(base_ids.keys())):
             h_idx = head_ids[cid]
-            if h_idx < len(head_sig) and head_sig[h_idx]:
+            if not (h_idx < len(head_sig) and head_sig[h_idx]):
+                continue
+            twin = next((b for b in sorted(base_only)
+                         if base_src.get(b) == head_src.get(cid)), None)
+            if twin is None:
+                continue
+            b_idx = base_ids[twin]
+            b = base_sig[b_idx] if b_idx < len(base_sig) else ()
+            if b != head_sig[h_idx] and not _signatures_equivalent(
+                    b, head_sig[h_idx]):
                 diffs.append(cid)
         return diffs
     return _diff_signatures_ordinal(base_sig, head_sig)
@@ -617,7 +783,116 @@ _REQUIRES_PYTHON_RE = re.compile(r"""requires-python\s*=\s*["']([^"']+)["']""")
 _NUMPY_PIN_RE = re.compile(r"numpy\s*([<>=!~][0-9A-Za-z.,<>=!~*]*)")
 
 
-def canonical_env_hint(nb_path, root="."):
+def _git_show_head(rel, root):
+    """Lit un fichier depuis l'object store git quand il n'est pas sur disque.
+
+    Issue #20868. Un arbre partiel (sparse-checkout, `git clone --filter=blob:none`)
+    peut materialiser le working tree sans le blob, ou detenir le blob sans le
+    materialiser. Le `read_text` du disque leve alors `OSError`, et l'ancienne
+    continuite silencieusement -- ce qui laisse le verdict de drift dire « la
+    serie n'epingle rien » alors que le fichier est bien dans le depot.
+
+    Retourne le contenu texte, ou None si :
+    - l'object n'est pas dans HEAD (`absent_from_repo`) ;
+    - git n'est pas dans le PATH ou `root` n'est pas un depot (`no_git`) ;
+    - la lecture via `git show` a echoue pour une autre raison (`unreadable`).
+
+    Le caller ne distingue pas ces trois cas : ils menent tous a `continue`
+    dans la recherche de l'artefact parent. La distinction appartient au log
+    si on en ajoute un, pas au contrat de cette fonction.
+    """
+    import subprocess
+    rel_posix = Path(rel).as_posix()
+    try:
+        exists = subprocess.run(
+            ["git", "cat-file", "-e", f"HEAD:{rel_posix}"],
+            cwd=root, capture_output=True, text=True,
+            encoding="utf-8", errors="replace", check=False)
+    except (FileNotFoundError, OSError):
+        return None
+    if exists.returncode != 0:
+        return None
+    try:
+        shown = subprocess.run(
+            ["git", "show", f"HEAD:{rel_posix}"],
+            cwd=root, capture_output=True, text=True,
+            encoding="utf-8", errors="replace", check=True)
+    except subprocess.CalledProcessError:
+        return None
+    return shown.stdout
+
+
+_VERSION_HEAD_RE = re.compile(r"^(\d+)(?:\.(\d+))?(?:\.(\d+))?")
+_CLAUSE_RE = re.compile(r"^(>=|<=|==|!=|>|<)\s*(.+)$")
+
+
+def _version_tuple(text):
+    """``"3.9.25"`` -> ``(3, 9, 25)`` ; ``"3.13"`` -> ``(3, 13)``.
+
+    Rend les composants REELLEMENT ecrits, sans remplissage : ``==3.9`` est une
+    correspondance de prefixe (PEP 440), pas l'egalite avec ``3.9.0``. Le
+    remplissage se fait au moment de la comparaison d'ordre, dans
+    ``_cmp_pad``. ``None`` quand le texte ne commence pas par un numero.
+    """
+    match = _VERSION_HEAD_RE.match(str(text or "").strip())
+    if not match:
+        return None
+    return tuple(int(part) for part in match.groups() if part is not None)
+
+
+def _cmp_pad(left, right):
+    """Deux tuples de version ramenes a la meme longueur, remplis de zeros."""
+    width = max(len(left), len(right))
+    return (left + (0,) * (width - len(left)),
+            right + (0,) * (width - len(right)))
+
+
+def _requires_python_allows(spec, version):
+    """Le ``requires-python`` epingle peut-il heberger ``version`` ?
+
+    Rend ``True``, ``False``, ou ``None`` quand la comparaison n'est pas
+    mesurable (spec absent, borne non numerique, operateur ``~=`` ou joker).
+    Le ``None`` est une absence de mesure : l'appelant ne doit pas le rendre
+    comme une autorisation -- il n'ajoute simplement aucun conflit.
+
+    #22297 : le garde nommait l'artefact epingle sans verifier que l'intervalle
+    qu'il porte peut heberger l'interpreteur de la BASE. Sur la serie ICT,
+    ``requires-python = ">=3.9,<3.10"`` est un conseil qu'on ne peut pas suivre
+    quand la base enregistre 3.13 : le rejeu sous 3.9 est une descente
+    major.minor, que ce meme garde refuse. L'indice produisait donc la panne
+    qu'il pretendait resoudre.
+    """
+    target = _version_tuple(version)
+    if target is None:
+        return None
+    clauses = [c.strip() for c in str(spec or "").split(",") if c.strip()]
+    if not clauses:
+        return None
+    for clause in clauses:
+        match = _CLAUSE_RE.match(clause)
+        if not match:
+            return None
+        op, raw = match.group(1), match.group(2).strip()
+        bound = _version_tuple(raw)
+        if bound is None:
+            return None
+        padded_target, padded_bound = _cmp_pad(target, bound)
+        if op == ">=" and not padded_target >= padded_bound:
+            return False
+        if op == ">" and not padded_target > padded_bound:
+            return False
+        if op == "<=" and not padded_target <= padded_bound:
+            return False
+        if op == "<" and not padded_target < padded_bound:
+            return False
+        if op == "==" and target[:len(bound)] != bound:
+            return False
+        if op == "!=" and target[:len(bound)] == bound:
+            return False
+    return True
+
+
+def canonical_env_hint(nb_path, root=".", base_language_version=None):
     """Nomme l'environnement epingle qui couvre ce notebook, s'il existe (#17185).
 
     Le garde nommait les CAUSES du drift (« un autre interpreteur, 3.11 ->
@@ -629,9 +904,13 @@ def canonical_env_hint(nb_path, root="."):
     documente (cf `IIT/ICT-Series/pyproject.toml`) ; ce qui manquait est le
     POINTEUR vers lui au moment ou la lane lit le verdict.
 
-    Rend un dict ``{artifact, requires_python?, numpy_pin?}``, ou None quand
-    aucun artefact n'est trouve : l'absence est une information, pas un silence
-    a combler par un chemin suppose.
+    Rend un dict ``{artifact, requires_python?, numpy_pin?, from_object_store?}``,
+    ou None quand aucun artefact n'est trouve : l'absence est une information,
+    pas un silence a combler par un chemin suppose.
+
+    `from_object_store=True` signale que le verdict vient de l'object store
+    (sparse-checkout, #20868), pour que le lecteur sache que le rendu depend
+    de la materialisation du fichier sur disque.
     """
     parents = [p for p in Path(nb_path).parents if p.as_posix() != "."]
     for parent in parents[:_ENV_WALK_LEVELS]:
@@ -640,12 +919,36 @@ def canonical_env_hint(nb_path, root="."):
             try:
                 text = (Path(root) / rel).read_text(encoding="utf-8",
                                                     errors="replace")
+                from_object_store = False
             except OSError:
-                continue
+                # #20868 : l'OSError ne dit pas si l'artefact est absent du
+                # disque ou du depot. Interroger l'object store avant de
+                # renoncer -- un sparse-checkout materialise partiellement
+                # l'arbre, et la serie peut tres bien epingler son env.
+                text = _git_show_head(rel, root)
+                if text is None:
+                    continue
+                from_object_store = True
             hint = {"artifact": rel.as_posix()}
+            if from_object_store:
+                hint["from_object_store"] = True
             requires_python = _REQUIRES_PYTHON_RE.search(text)
             if requires_python:
-                hint["requires_python"] = requires_python.group(1)
+                spec = requires_python.group(1)
+                hint["requires_python"] = spec
+                # #22297 : un pointeur vers un intervalle qui ne peut pas
+                # heberger l'interpreteur de la base n'est pas un remede, c'est
+                # la panne d'a cote. On le dit dans le hint plutot que de
+                # laisser la lane decouvrir la descente au prochain passage.
+                if base_language_version:
+                    allowed = _requires_python_allows(spec, base_language_version)
+                    if allowed is False:
+                        hint["version_conflict"] = (
+                            f"the pinned range {spec} cannot host the base "
+                            f"interpreter {base_language_version}: re-executing "
+                            f"there would be a major.minor DOWNGRADE, which "
+                            f"this gate refuses -- the pinned environment is "
+                            f"not a followable remedy for this notebook")
             numpy_pin = _NUMPY_PIN_RE.search(text)
             if numpy_pin:
                 hint["numpy_pin"] = f"numpy{numpy_pin.group(1)}"
@@ -704,8 +1007,8 @@ def _measure(base, args_obj):
         # #17679 : la transition canon C# 12.0 -> 13.0 est attendue (option
         # 1, decision coordinateur) -- seule, elle ne fait pas finding.
         canonical_transition = False
-        if kernel_diffs and accepted_canonical_transition(base_kernel,
-                                                          head_kernel):
+        if kernel_diffs and accepted_canonical_transition(
+                base_kernel, head_kernel, nb_path=nb_path):
             canonical_transition = True
             kernel_diffs = []
         # Defect 2: pass notebooks for id-based alignment
@@ -748,7 +1051,9 @@ def _measure(base, args_obj):
                 # serie qui epingle le sien obtient ici le pointeur vers son
                 # artefact, pour que « aligner l'env » ne se lise pas comme une
                 # introspection a faire soi-meme.
-                env_hint = canonical_env_hint(nb_path)
+                env_hint = canonical_env_hint(
+                    nb_path,
+                    base_language_version=base_kernel["language_version"])
                 if env_hint:
                     detail = [f"the series pins a canonical environment at "
                               f"`{env_hint['artifact']}`"]
@@ -757,12 +1062,20 @@ def _measure(base, args_obj):
                             f"requires-python {env_hint['requires_python']}")
                     if env_hint.get("numpy_pin"):
                         detail.append(env_hint["numpy_pin"])
-                    causes.append(
-                        " / ".join(detail)
-                        + "; re-executing under that environment keeps the "
-                          "committed repr stable, whereas a local interpreter "
-                          "reproduces this drift"
-                    )
+                    if env_hint.get("version_conflict"):
+                        causes.append(
+                            " / ".join(detail) + "; "
+                            + env_hint["version_conflict"]
+                            + " -- rebuild an interpreter of the base's "
+                              "major.minor that reproduces the pinned numpy, "
+                              "or document the drift (C.4)")
+                    else:
+                        causes.append(
+                            " / ".join(detail)
+                            + "; re-executing under that environment keeps the "
+                              "committed repr stable, whereas a local interpreter "
+                              "reproduces this drift"
+                        )
                 finding["probable_causes"] = causes
             findings.append(finding)
 

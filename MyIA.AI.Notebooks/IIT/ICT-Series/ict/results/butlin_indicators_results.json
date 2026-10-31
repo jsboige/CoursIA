@@ -214,5 +214,51 @@
       0.1,
       0.35
     ]
+  },
+  "calibration": {
+    "seeds": [
+      11,
+      22,
+      33
+    ],
+    "n_test": 500,
+    "by_seed": [
+      {
+        "seed": 11,
+        "acc_base_real": 1.0,
+        "acc_lesion_real": 0.228,
+        "delta_real": 0.772,
+        "acc_base_twin": 1.0,
+        "acc_lesion_twin": 0.228,
+        "delta_twin": 0.772,
+        "delta_sham": 0.0
+      },
+      {
+        "seed": 22,
+        "acc_base_real": 1.0,
+        "acc_lesion_real": 0.232,
+        "delta_real": 0.768,
+        "acc_base_twin": 1.0,
+        "acc_lesion_twin": 0.232,
+        "delta_twin": 0.768,
+        "delta_sham": 0.0
+      },
+      {
+        "seed": 33,
+        "acc_base_real": 1.0,
+        "acc_lesion_real": 0.248,
+        "delta_real": 0.752,
+        "acc_base_twin": 1.0,
+        "acc_lesion_twin": 0.248,
+        "delta_twin": 0.752,
+        "delta_sham": 0.0
+      }
+    ],
+    "acc_lesion_window": [
+      0.1,
+      0.35
+    ],
+    "acc_lesion_theoretical": 0.234375,
+    "bands_ok": true
   }
 }

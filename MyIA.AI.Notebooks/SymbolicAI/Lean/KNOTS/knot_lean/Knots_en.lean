@@ -11,11 +11,17 @@
     Lean 4 / Mathlib 4, bricks:
     - `Knots.Basic` — combinatorial foundations (crossings,
       diagrams, PD-codes, Gauss codes, Dowker-Thistlethwaite notation)
+    - `Knots.Tangle` — four-ended tangles (Conway convention:
+      zero/infinity/one tangles, rotation, vertical/horizontal
+      compositions, numerator/denominator closures)
     - `Knots.Reidemeister` — Reidemeister moves (RI, RII, RIII) and
       invariance of the polynomial / combinatorial invariants
     - `Knots.ReidemeisterMoves` — kernel-verifiable sequences of moves
       (organ #18611: data inductive + Bool verifiers + soundness into
       `ReidemeisterEquiv`)
+    - `Knots.ReidemeisterAny` — extended move language (organ #22359:
+      kink/bigon without freshness, canonical form `canon` up to renaming,
+      R1/R3 embedding of the connected language, bounded decision frame)
     - `Knots.Invariant` — polynomial invariants (Alexander, Jones),
       tricolourability, genus
     - `Knots.Conway` — Conway notations and conventions
@@ -23,6 +29,9 @@
       smooth/topological dichotomy (extracted from Conway, #18397)
     - `Knots.Jones` — Kauffman bracket on PD codes (state sum,
       trefoil / figure eight / unknot evaluations)
+    - `Knots.Khovanov` — Khovanov complex of the trefoil (smoothing
+      cube, m/Δ, d∘d = 0, graded table `q + q³ + q⁵t² + q⁹t³`,
+      χ|_{q=−1} = −2)
     - `Knots.FigureEight` — invariants of the figure-eight knot on its
       planar PD code (signed Alexander classical up to a unit, determinant
       5, non-tricolorability, 4 crossings — provisional definition)
@@ -40,15 +49,20 @@
 -/
 
 import Knots.Basic_en
+import Knots.Tangle_en
 import Knots.Reidemeister_en
 import Knots.Invariant_en
 import Knots.Mutation_en
 import Knots.ConwayPD_en
 import Knots.Conway_en
+import Knots.ConwayNotation_en
 import Knots.Slice_en
 import Knots.ReidemeisterInvariance_en
 import Knots.ReidemeisterMoves_en
+import Knots.ReidemeisterCombinatorial_en
+import Knots.ReidemeisterAny_en
 import Knots.Jones_en
+import Knots.Khovanov_en
 import Knots.FigureEight_en
 import Knots.Lidman_en
 import Knots.MathlibPrerequisites_en

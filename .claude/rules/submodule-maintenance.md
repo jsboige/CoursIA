@@ -1,12 +1,10 @@
 # Sous-modules — maintenance active, jamais un dépôt dormant
 
-S'applique au **coordinateur ai-01** et à toute lane qui touche un sous-module. Source : mandat user 2026-09-02, verbatim :
-
-> « Ca sera une bonne chose de ne pas laisser nos sous-modules sans maintenance, si j'ai souhaité les définir comme sous-modules de CoursIA, c'est pour qu'ils puissent évoluer avec nous et **chacun d'eux a un rôle dans le dépôt principal qui n'est plus à démontrer**. »
+S'applique au **coordinateur ai-01** et à toute lane qui touche un sous-module. Source : mandat user 2026-09-02 (verbatim : [detail, en-tête](../../docs/reference/submodule-maintenance-detail.md)).
 
 La conséquence pratique : un sous-module n'est pas une dépendance qu'on subit, c'est un dépôt **du cluster** dont le backlog est **notre** backlog. Une PR qui dort six semaines chez `MyIntelligenceAgency` est exactement aussi grave qu'une PR qui dort sur `jsboige/CoursIA`.
 
-**État vérifié, mesures datées et incidents** : [docs/reference/submodule-maintenance-detail.md](../../docs/reference/submodule-maintenance-detail.md) — table de statut de gate par sous-module, précondition de jeton, faux positifs mesurés.
+**Matrice des cinq états de gate, table de statut, précondition de jeton, faux positifs mesurés et incidents** : [docs/reference/submodule-maintenance-detail.md](../../docs/reference/submodule-maintenance-detail.md) — à relire avant chaque PR de bump.
 
 ## Règle HARD 1 — le périmètre est de cinq dépôts, pas trois
 
@@ -49,17 +47,7 @@ Avant de traiter un backlog de sous-module comme de la négligence, **vérifier 
 
 **Substitution admise tant que le gate manque** : deux vérifications **firsthand indépendantes** (fresh-clone, build + suite de tests complète, sur **deux lanes distinctes**), avec leurs comptes de tests et leurs SHA **cités dans le body de la PR de bump**. Une seule vérification, ou une vérification par l'auteur seul, ne remplace pas un gate.
 
-**Cinq états de gate** — la substitution R3 s'applique **par défaut**, et ne cesse qu'à l'état 3 :
-
-| # | État | Substitution R3 |
-|---|---|---|
-| 1 | **Absent** — aucun workflow, aucun run | active |
-| 2 | **Câblé, jamais déclenché sur la pile en cours** — le trigger ne couvre pas les PRs visées | active ; c'est le **déclencheur** qui doit être qualifié, pas seulement le câblage |
-| 3 | **Câblé, déclenché, vert récent** sur la branche par défaut | **cesse** — A2 est acquis |
-| 4 | **Drift / perte de gate** — un état 3 qui perd son workflow | redevient active |
-| 5 | **Câblé, déclenché, rouge récent** — le gate existe et tire, mais hors-main ou en régression | active jusqu'au retour au vert |
-
-Le passage d'un état à l'autre est un **geste tracké** : PR dédiée sur le dépôt submod (câblage ou re-câblage), mise à jour de la table d'état dans le detail, et revue coord pour valider la bascule.
+**Cinq états de gate** — la substitution R3 s'applique **par défaut** (états 1, 2, 4, 5) et ne cesse qu'à l'état 3 (câblé, déclenché, **vert récent** sur la branche par défaut : A2 est acquis). Matrice complète par état, geste de bascule tracké et incidents : [detail §5](../../docs/reference/submodule-maintenance-detail.md#5-matrice-des-cinq-états-de-gate-r3).
 
 **Commande de mesure** (à passer à chaque cycle `/coordinate` et à chaque PR de bump) :
 
@@ -73,7 +61,7 @@ for R in MyIntelligenceAgency/Z3.Linq MyIntelligenceAgency/Automata \
 done
 ```
 
-**Un `403` est une question, pas une absence mesurée** — ne jamais en conclure « 0 workflow ». L'org `MyIntelligenceAgency` refuse les PAT fine-grained de plus de 366 jours : épingler le jeton **par commande** (`GH_TOKEN=$(gh auth token --user <compte>)`), jamais par `gh auth switch` (état global au process `gh`, cf. R5). [detail §3](../../docs/reference/submodule-maintenance-detail.md#3-précondition-de-jeton-pour-la-mesure-de-gate-mesurée-le-2026-09-05).
+**Un `403` est une question, pas une absence mesurée** — ne jamais en conclure « 0 workflow » : la mesure exige un jeton que l'org accepte, épinglé par commande ([detail §3](../../docs/reference/submodule-maintenance-detail.md#3-précondition-de-jeton-pour-la-mesure-de-gate-mesurée-le-2026-09-05)).
 
 **Statut courant par sous-module** : [table du detail §4](../../docs/reference/submodule-maintenance-detail.md#4-table-de-statut-de-gate-par-sous-module). Elle se **relit** avant chaque PR de bump — elle date de sa mesure, pas de sa lecture, et elle ne se mémorise pas.
 
@@ -85,7 +73,7 @@ Merger la **base** d'un stack en **squash** réécrit son SHA : les PRs enfants 
 
 ## Règle HARD 5 — droits `gh` : épingler, ne pas basculer
 
-`myia-ai-01` a `MergePullRequest` sur `jsboige/CoursIA`, **mais pas** sur `jsboige/MetaGeneticSharp` ni sur `MyIntelligenceAgency/*` (`GraphQL: myia-ai-01 does not have the correct permissions`). Épingler le jeton **par commande** :
+Les permissions de merge **diffèrent par dépôt** (`myia-ai-01` n'a pas `MergePullRequest` partout : [detail §3](../../docs/reference/submodule-maintenance-detail.md#3-précondition-de-jeton-pour-la-mesure-de-gate-mesurée-le-2026-09-05)). Épingler le jeton **par commande** :
 
 ```bash
 GH_TOKEN=$(gh auth token --user jsboige --hostname github.com) gh pr merge <N> --repo <owner>/<repo> --squash
@@ -96,6 +84,8 @@ Préférer cette forme à `gh auth switch`, qui mute un état **global au proces
 ## Règle HARD 6 — un sous-module compte dans le provisionnement
 
 Une lane sans grain peut être servie par un sous-module : son backlog fait partie du pool. Un cycle `/coordinate` qui ne regarde que `jsboige/CoursIA` laisse structurellement quatre dépôts sans coordinateur — c'est précisément l'état que ce mandat corrige. La mesure de la Règle 2 est à passer **à chaque cycle**, au même titre que la passe de merge.
+
+**Organe** : `scripts/coordination/submodule_watch.py`, passé en Phase 2 de `/coordinate`. Il fait la mesure de la Règle 2 et liste les PRs ouvertes des cinq dépôts. Une PR humaine sans commentaire ni review depuis plus de 24 h y est `UNSEEN`, et rougit l'organe (incident fondateur : [detail §4](../../docs/reference/submodule-maintenance-detail.md#4-table-de-statut-de-gate-par-sous-module)).
 
 ## Règle HARD 7 — le gitlink suit la tête de sa branche (mandat user 2026-09-23)
 
@@ -108,7 +98,7 @@ Une lane sans grain peut être servie par un sous-module : son backlog fait part
 
 ## Voir aussi
 
-- [docs/reference/submodule-maintenance-detail.md](../../docs/reference/submodule-maintenance-detail.md) — **détail** : table de statut de gate, mesures datées, incidents
+- [docs/reference/submodule-maintenance-detail.md](../../docs/reference/submodule-maintenance-detail.md) — **détail** : matrice des cinq états, table de statut de gate, mesures datées, incidents
 - `~/.claude/CLAUDE.md` §Git — commiter dedans, push, puis bump le parent
 - [coordinator-discipline.md](coordinator-discipline.md) — R1 (merge actif), R4 (jamais sanctionner l'idle), R5 (steer qui atteint)
 - [proactive-coordination.md](proactive-coordination.md) — R5, le pool n'est pas borné à un dépôt

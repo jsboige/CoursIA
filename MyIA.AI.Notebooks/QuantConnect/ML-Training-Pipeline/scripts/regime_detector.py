@@ -36,6 +36,7 @@ def detect_regimes_price(
     volatility_percentile: float = 75,
     black_swan_drawdown: float = -0.20,
     black_swan_window: int = 30,
+    causal_threshold: bool = True,
 ) -> pd.Series:
     """Classify each date into a market regime using price statistics.
 
@@ -57,6 +58,36 @@ def detect_regimes_price(
         Drawdown threshold for black swan (e.g. -0.20 = -20%).
     black_swan_window : int
         Window for drawdown calculation.
+    causal_threshold : bool, default True
+        When True (default, fix #21054 v2), the volatility threshold at
+        index t is the *expanding* quantile of ``rolling_std``
+        computed from indices ``[0, t)`` only — i.e. the threshold at
+        t is the rolling_std-percentile over the **strict past**, with
+        a ``.shift(1)`` so that the value used to classify t does not
+        depend on rolling_std[t] itself. This is the strict
+        ``known at t-1`` contract required for live and walk-forward
+        use.
+
+        Warmup: ``returns = prices.pct_change()`` is NaN at index 0
+        (no previous price), so the ``rolling(L).std()`` of returns
+        needs ``L`` non-NaN return values, which means ``L + 1``
+        price observations. Its first non-NaN output is at index
+        ``L`` (e.g. ``L=30`` -> first valid at index 30, since
+        ``returns[1..30]`` are 30 non-NaN values and ``rolling(30)``
+        emits at the right edge). ``expanding(min_periods=L)`` then
+        needs ``L`` non-NaN ``rolling_std`` values, so the first
+        non-NaN output of the expanding quantile lands at index
+        ``2L - 1`` (e.g. ``L=30`` -> first valid at index 59). The
+        ``.shift(1)`` adds one more index of latency, so the first
+        usable threshold lands at index ``2L`` (e.g. ``L=30`` ->
+        first usable at index 60). Before that, the threshold is
+        NaN and the volatility regime is unreachable by
+        construction (NaN-comparison yields False).
+
+        When False, the threshold is the *global* non-causal
+        ``rolling_std.quantile(...)`` over the whole series; kept for
+        backtesting/reproducibility against the pre-fix behaviour
+        (#21054) but not for live or walk-forward use.
 
     Returns
     -------
@@ -67,7 +98,25 @@ def detect_regimes_price(
 
     rolling_return = prices.pct_change(lookback_days)
     rolling_std = returns.rolling(lookback_days).std() * np.sqrt(252)
-    vol_threshold = rolling_std.quantile(volatility_percentile / 100)
+    if causal_threshold:
+        # Causal (strict t-1): the threshold at t is the expanding
+        # quantile of rolling_std over [0, t), then .shift(1) so the
+        # value at index t is the quantile of [0, t-1] (true
+        # known-at-t-1 contract). Without the shift, the expanding
+        # quantile at t would include rolling_std[t] itself, which is
+        # a 1-step look-ahead flagged by the adjoint (#21111 v2).
+        # First usable threshold at index 2*lookback_days
+        # (rolling_std first valid at L, expanding needs L non-NaN
+        # so first output at 2L-1, shift pushes to 2L).
+        vol_threshold = (
+            rolling_std.expanding(min_periods=lookback_days)
+            .quantile(volatility_percentile / 100)
+            .shift(1)
+        )
+    else:
+        # Non-causal (legacy, pre-#21054): global quantile, includes
+        # future observations. Reproducibility / tests only.
+        vol_threshold = rolling_std.quantile(volatility_percentile / 100)
 
     rolling_max = prices.rolling(black_swan_window, min_periods=1).max()
     drawdown = (prices - rolling_max) / rolling_max
@@ -116,6 +165,7 @@ class HMMRegimeResult:
     log_likelihood: float       # Final log-likelihood
     n_states: int               # Number of HMM states
     transition_matrix: np.ndarray  # State transition probabilities
+    decode_mode: str = "viterbi"   # Decoding scheme used ("viterbi" or "filter")
 
 
 class GaussianHMM:
@@ -245,23 +295,45 @@ class GaussianHMM:
         self.log_likelihood_ = ll
         return self
 
-    def predict(self, X: np.ndarray) -> np.ndarray:
-        """Decode most likely state sequence via Viterbi.
+    def predict(self, X: np.ndarray, mode: str = "viterbi") -> np.ndarray:
+        """Decode most likely state sequence.
 
         Parameters
         ----------
         X : np.ndarray, shape (T, D)
             Observation matrix.
+        mode : {"viterbi", "filter"}, default "viterbi"
+            "viterbi": globally most likely path (Viterbi with backtracking
+            from the final observation). RETROSPECTIVE ONLY — the state
+            decoded at t depends on observations strictly after t, so a
+            Viterbi label is NOT known at t and leaks future information
+            into any walk-forward or live signal built on it (#21054).
+            Kept as the default for backward compatibility of historical
+            analyses; do not use for signal generation.
+            "filter": forward-only decoding — the state at t is the argmax
+            over states of the forward probability p(z_t | x_0..t), so it
+            is a function of observations up to t only. This is the causal
+            mode for signal use (Hamilton-style filtered probabilities,
+            argmax instead of sum-product smoothing).
 
         Returns
         -------
         np.ndarray of int, shape (T,)
             Most likely state sequence.
         """
+        if mode not in ("viterbi", "filter"):
+            raise ValueError(f"mode must be 'viterbi' or 'filter', got {mode!r}")
+        log_emit = self._log_emission(X)
+
+        if mode == "filter":
+            # Forward-only: alpha[t, k] = log p(z_t=k, x_0..t) up to a
+            # per-t constant, so argmax_k alpha[t] is the filtered state.
+            alpha = self._forward(log_emit)
+            return np.argmax(alpha, axis=1)
+
         T = len(X)
         K = self.n_states
         log_A = np.log(self.A + 1e-300)
-        log_emit = self._log_emission(X)
 
         viterbi = np.zeros((T, K))
         backptr = np.zeros((T, K), dtype=int)
@@ -285,6 +357,7 @@ def detect_regimes_hmm(
     n_states: int = 3,
     lookback: int = 400,
     min_samples: int = 80,
+    decode_mode: str = "viterbi",
 ) -> HMMRegimeResult:
     """Detect market regimes using Gaussian HMM on price features.
 
@@ -309,10 +382,18 @@ def detect_regimes_hmm(
         Maximum history to use for feature computation.
     min_samples : int
         Minimum samples required for fitting.
+    decode_mode : {"viterbi", "filter"}, default "viterbi"
+        Decoding scheme passed through to ``GaussianHMM.predict``.
+        CAUTION (#21054): ``"viterbi"`` (default, backward compatible) is
+        retrospective — the label at t depends on observations after t
+        via the end-backtracking, so it must not feed a walk-forward or
+        live signal. Use ``decode_mode="filter"`` when labels are
+        consumed as a known-at-t signal feature.
 
     Returns
     -------
-    HMMRegimeResult with labels, regime_names, and metadata.
+    HMMRegimeResult with labels, regime_names, and metadata
+    (``decode_mode`` echoes the scheme used).
     """
     original_prices = pd.Series(prices).reset_index(drop=True)
     original_len = len(original_prices)
@@ -331,6 +412,7 @@ def detect_regimes_hmm(
             log_likelihood=0.0,
             n_states=n_states,
             transition_matrix=np.eye(n_states),
+            decode_mode=decode_mode,
         )
 
     vol20 = np.array([ret[max(0, i - 19):i + 1].std() for i in range(n)])
@@ -349,7 +431,7 @@ def detect_regimes_hmm(
 
     hmm = GaussianHMM(n_states=n_states)
     hmm.fit(X_raw)
-    labels_raw = hmm.predict(X_raw)
+    labels_raw = hmm.predict(X_raw, mode=decode_mode)
 
     # Name states by mean return (column 0)
     state_means = []
@@ -381,6 +463,7 @@ def detect_regimes_hmm(
         log_likelihood=hmm.log_likelihood_,
         n_states=n_states,
         transition_matrix=hmm.A.copy(),
+        decode_mode=decode_mode,
     )
 
 

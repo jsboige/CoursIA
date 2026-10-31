@@ -1,6 +1,6 @@
 # Partie 2 : Programmation par Contraintes
 
-[← Partie 1 : Search](../Part1-Foundations/README.md) | [↑ Série Search](../README.md) | [Partie 4 : Métaheuristiques →](../Part4-Metaheuristics/README.md)
+[← Partie 1 : Search](../Part1-Foundations/README.md) | [↑ Série Search](../README.md) | [Partie 3 : Cas pratiques →](../Part3-Cas-pratiques/README.md)
 
 Au lieu de concevoir un algorithme d'exploration, que se passe-t-il si l'on déclare les contraintes du problème et que l'on laisse le solveur trouver les solutions ? La programmation par contraintes (CSP) représente ce changement de paradigme : on ne cherche plus, on contraint. Ce modèle déclaratif est au coeur des outils industriels (ordonnancement, logistique, vérification) et s'applique naturellement aux problèmes NP-difficiles.
 
@@ -8,31 +8,31 @@ Les deux premiers notebooks installent le socle. CSP-1 pose le modèle (X, D, C)
 
 Ces deux idées se voient sur le fil rouge de la partie, la coloration de l'Australie. CSP-1 en pose le **graphe de contraintes** : sept variables — les États — reliées par une contrainte de différence par frontière, chacune dotée d'un domaine de trois couleurs (la Tasmanie, sans voisin, flotte hors du graphe) :
 
-[![Graphe de contraintes de la coloration de l'Australie : 7 variables aux domaines de taille 3, la Tasmanie isolée](assets/readme/csp1-backtracking-tree.png)](CSP-1-Fundamentals.html)
+[![Graphe de contraintes de la coloration de l'Australie : 7 variables aux domaines de taille 3, la Tasmanie isolée](assets/readme/csp1-backtracking-tree.png)](CSP-1-Fundamentals.ipynb)
 
 CSP-2 montre ensuite la propagation à l'œuvre sur le même graphe : une fois WA fixée à Rouge, AC-3 réduit les domaines de SA et NT à {Vert, Bleu} avant tout essai de valeur — la déduction locale a resserré l'espace de recherche :
 
-[![Propagation AC-3 sur la coloration de l'Australie, avant/après : WA fixée à Rouge, domaines de SA et NT réduits à Vert-Bleu](assets/readme/csp2-ac3-propagation.png)](CSP-2-Consistency.html)
+[![Propagation AC-3 sur la coloration de l'Australie, avant/après : WA fixée à Rouge, domaines de SA et NT réduits à Vert-Bleu](assets/readme/csp2-ac3-propagation.png)](CSP-2-Consistency.ipynb)
 
 La montée en puissance occupe les quatre notebooks suivants. CSP-3 passe aux contraintes globales (AllDifferent, Cumulative, Circuit), ces contraintes de haut niveau pour lesquelles les solveurs embarquent des propagateurs spécialisés — c'est là que CP-SAT se met à résoudre en quelques millisecondes ce qu'un backtracking naïf mettrait des heures à parcourir. CSP-4 et CSP-5 appliquent l'arsenal aux deux grands classiques industriels : l'ordonnancement (Job-Shop, RCPSP, planification d'infirmiers) et l'optimisation combinatoire (Bin Packing, Knapsack, portefeuille). CSP-6, le notebook le plus avancé, ouvre le capot : la Lazy Clause Generation explique pourquoi CP-SAT s'appelle ainsi — un solveur CP qui apprend des clauses SAT en cours de route — et les hybridations CP+ML et LLM+CSP esquissent ce que devient la discipline à l'ère des grands modèles : le langage naturel comme interface de modélisation, le solveur comme garant.
 
 Trois de ces jalons s'illustrent directement. La contrainte globale `Cumulative` (CSP-3) ordonnance quatre tâches sous une capacité de deux machines — le Gantt optimal, et un profil de charge qui sature la capacité presque partout :
 
-[![Contrainte globale Cumulative : ordonnancement optimal de 4 tâches sur 2 machines, Gantt et profil de charge saturant la capacité 2](assets/readme/csp3-global-constraints.png)](CSP-3-Advanced.html)
+[![Contrainte globale Cumulative : ordonnancement optimal de 4 tâches sur 2 machines, Gantt et profil de charge saturant la capacité 2](assets/readme/csp3-global-constraints.png)](CSP-3-Advanced.ipynb)
 
 CSP-4 passe au Job-Shop : trois jobs s'entrelacent sur trois machines via `IntervalVar` et `NoOverlap`, pour un makespan optimal de 11 :
 
-[![Diagramme de Gantt d'un Job-Shop résolu par CP-SAT : 3 jobs entrelacés sur 3 machines, makespan 11](assets/readme/csp4-jobshop-gantt.png)](CSP-4-Scheduling.html)
+[![Diagramme de Gantt d'un Job-Shop résolu par CP-SAT : 3 jobs entrelacés sur 3 machines, makespan 11](assets/readme/csp4-jobshop-gantt.png)](CSP-4-Scheduling.ipynb)
 
 Le benchmark de parallélisation de CSP-6 rappelle enfin qu'aucun mécanisme n'est magique : sur un N-Queens 12 résolu en quelques millisecondes, passer de 1 à 4 workers n'apporte aucune accélération — le surcoût de coordination l'emporte et le speedup réel reste sous 1×, loin de l'idéal linéaire :
 
-[![Parallélisation CP-SAT sur N-Queens 12 : temps de résolution et speedup restant sous 1x avec 1, 2 puis 4 workers](assets/readme/csp6-lazy-clause-generation.png)](CSP-6-Hybridization.html)
+[![Parallélisation CP-SAT sur N-Queens 12 : temps de résolution et speedup restant sous 1x avec 1, 2 puis 4 workers](assets/readme/csp6-lazy-clause-generation.png)](CSP-6-Hybridization.ipynb)
 
 Les trois derniers notebooks desserrent chacun une hypothèse du cadre classique : et si toutes les contraintes n'avaient pas le même poids (CSP-7, contraintes souples) ? Et si les variables étaient des intervalles de temps (CSP-8, algèbre d'Allen) ? Et si personne ne détenait le problème en entier (CSP-9, résolution distribuée et préservation de la vie privée) ?
 
 L'algèbre d'Allen (CSP-8) donne le vocabulaire de ce temps qualitatif : treize relations de base entre deux intervalles. La figure extraite du notebook n'en rend toutefois **que cinq visibles** (before, meets, overlaps, during, equals) — le tracé des huit autres vignettes est défaillant dans la sortie actuelle du notebook ; limitation illustrative assumée, en attendant une correction du tracé et une ré-exécution :
 
-[![Relations d'Allen entre deux intervalles : rendu partiel, 5 des 13 vignettes tracées (before, meets, overlaps, during, equals)](assets/readme/csp8-allen-algebra.png)](CSP-8-Temporal.html)
+[![Relations d'Allen entre deux intervalles : rendu partiel, 5 des 13 vignettes tracées (before, meets, overlaps, during, equals)](assets/readme/csp8-allen-algebra.png)](CSP-8-Temporal.ipynb)
 
 *Figures : sorties d'exécution réelles extraites des notebooks (non régénérées, règle C.3), downscalées ≤1200 px / ≤200 ko (EPIC #5654) — provenance détaillée dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).*
 
@@ -54,31 +54,32 @@ Si la Partie 1 enseigne à chercher, celle-ci enseigne à modéliser — et c'es
 
 | # | Notebook | Kernel | Contenu | Durée |
 |---|----------|--------|---------|-------|
-| 1 | [CSP-1-Fundamentals](CSP-1-Fundamentals.html) | Python 3 | Modèle CSP (X, D, C), backtracking, heuristiques MRV et LCV | ~50 min |
-| 2 | [CSP-2-Consistency](CSP-2-Consistency.html) | Python 3 | AC-3, Forward Checking, MAC : propagation de contraintes | ~45 min |
-| 3 | [CSP-3-Advanced](CSP-3-Advanced.html) | Python 3 | Contraintes globales OR-Tools : AllDifferent, Cumulative, Circuit, LNS | ~50 min |
-| 4 | [CSP-4-Scheduling](CSP-4-Scheduling.html) | Python 3 | Job-Shop (JSSP), RCPSP, Nurse Scheduling, IntervalVar, NoOverlap | ~1h |
-| 5 | [CSP-5-Optimization](CSP-5-Optimization.html) | Python 3 | Bin Packing, Knapsack, Cutting Stock, Portfolio Optimization | ~1h |
-| 6 | [CSP-6-Hybridization](CSP-6-Hybridization.html) | Python 3 | Lazy Clause Generation (LCG), CP+SAT, CP+ML, LLM+CSP | ~1h30 |
-| 7 | [CSP-7-Soft](CSP-7-Soft.html) | Python 3 | Contraintes souples : Fuzzy CSP, Weighted CSP, Semiring-based CSP | ~1h |
-| 8 | [CSP-8-Temporal](CSP-8-Temporal.html) | Python 3 | Algèbre d'intervalles d'Allen, Simple Temporal Problems (STP), TCSP | ~1h |
-| 9 | [CSP-9-Distributed](CSP-9-Distributed.html) | Python 3 | Asynchronous Backtracking (ABT), AWC, Privacy-preserving CSP | ~1h30 |
+| 1 | [CSP-1-Fundamentals](CSP-1-Fundamentals.ipynb) | Python 3 | Modèle CSP (X, D, C), backtracking, heuristiques MRV et LCV | ~50 min |
+| 2 | [CSP-2-Consistency](CSP-2-Consistency.ipynb) | Python 3 | AC-3, Forward Checking, MAC : propagation de contraintes | ~45 min |
+| 3 | [CSP-3-Advanced](CSP-3-Advanced.ipynb) | Python 3 | Contraintes globales OR-Tools : AllDifferent, Cumulative, Circuit, LNS | ~50 min |
+| 4 | [CSP-4-Scheduling](CSP-4-Scheduling.ipynb) | Python 3 | Job-Shop (JSSP), RCPSP, Nurse Scheduling, IntervalVar, NoOverlap | ~1h |
+| 5 | [CSP-5-Optimization](CSP-5-Optimization.ipynb) | Python 3 | Bin Packing, Knapsack, Cutting Stock, Portfolio Optimization | ~1h |
+| 6 | [CSP-6-Hybridization](CSP-6-Hybridization.ipynb) | Python 3 | Lazy Clause Generation (LCG), CP+SAT, CP+ML, LLM+CSP | ~1h30 |
+| 7 | [CSP-7-Soft](CSP-7-Soft.ipynb) | Python 3 | Contraintes souples : Fuzzy CSP, Weighted CSP, Semiring-based CSP | ~1h |
+| 8 | [CSP-8-Temporal](CSP-8-Temporal.ipynb) | Python 3 | Algèbre d'intervalles d'Allen, Simple Temporal Problems (STP), TCSP | ~1h |
+| 9 | [CSP-9-Distributed](CSP-9-Distributed.ipynb) | Python 3 | Asynchronous Backtracking (ABT), AWC, Privacy-preserving CSP | ~1h30 |
+| 10 | [CSP-10-Optimisation-Z3](CSP-10-Optimisation-Z3.ipynb) | Python 3 | Couverture minimale (set cover) en SMT d'optimisation Z3 : preuve de minimalité, pont CP↔SMT | ~1h30 |
 
 ### Parité Python ⇄ .NET
 
-Les neuf notebooks de cette partie existent en **binôme bilingue** : une version Python (OR-Tools CP-SAT) et une version C# / .NET, dans l'esprit de l'Epic de parité #4956. Le port .NET invoque la **vraie lib** — jamais une réimplémentation jouet : Choco-solver bridgé via IKVM (jurisprudence #4667), OR-Tools natif, ou port from-scratch d'un algorithme sans solveur off-the-shelf selon le terrain.
+Les neuf notebooks de cette partie existent en **binôme bilingue** : une version Python (OR-Tools CP-SAT) et une version C# / .NET, dans l'esprit de l'Epic de parité #4956. CSP-10 (SMT Z3) est en **Python seul** — c'est le pont CP↔SMT de la partie, sans jumeau .NET. Le port .NET invoque la **vraie lib** — jamais une réimplémentation jouet : Choco-solver bridgé via IKVM (jurisprudence #4667), OR-Tools natif, ou port from-scratch d'un algorithme sans solveur off-the-shelf selon le terrain.
 
 | # | Python (OR-Tools CP-SAT) | .NET (C#) | Solveur .NET |
 |---|--------------------------|-----------|--------------|
-| 1 | [CSP-1-Fundamentals](CSP-1-Fundamentals.html) | [CSP-1-Fundamentals-CSharp](CSP-1-Fundamentals-CSharp.html) | Choco-solver via IKVM |
-| 2 | [CSP-2-Consistency](CSP-2-Consistency.html) | [CSP-2-Consistency-CSharp](CSP-2-Consistency-CSharp.html) | Choco-solver via IKVM (propagation native) |
-| 3 | [CSP-3-Advanced](CSP-3-Advanced.html) | [CSP-3-Advanced-CSharp](CSP-3-Advanced-CSharp.ipynb) | Choco-solver via IKVM |
-| 4 | [CSP-4-Scheduling](CSP-4-Scheduling.html) | [CSP-4-Scheduling-CSharp](CSP-4-Scheduling-CSharp.html) | OR-Tools CP-SAT natif (+ section Choco comparative) |
-| 5 | [CSP-5-Optimization](CSP-5-Optimization.html) | [CSP-5-Optimization-CSharp](CSP-5-Optimization-CSharp.html) | Choco-solver via IKVM (contrainte globale `binPacking`) |
-| 6 | [CSP-6-Hybridization](CSP-6-Hybridization.html) | [CSP-6-Hybridization-CSharp](CSP-6-Hybridization-CSharp.html) | OR-Tools CP-SAT natif (LCG, CP+SAT) |
-| 7 | [CSP-7-Soft](CSP-7-Soft.html) | [CSP-7-Soft-CSharp](CSP-7-Soft-CSharp.html) | Choco-solver via IKVM (réification `reifyWith` / `ifThen`) |
-| 8 | [CSP-8-Temporal](CSP-8-Temporal.html) | [CSP-8-Temporal-CSharp](CSP-8-Temporal-CSharp.html) | OR-Tools CP-SAT natif (IntervalVar temporels) |
-| 9 | [CSP-9-Distributed](CSP-9-Distributed.html) | [CSP-9-Distributed-CSharp](CSP-9-Distributed-CSharp.html) | ABT multi-agent (port from scratch, Yokoo 1992) |
+| 1 | [CSP-1-Fundamentals](CSP-1-Fundamentals.ipynb) | [CSP-1-Fundamentals-CSharp](CSP-1-Fundamentals-CSharp.ipynb) | Choco-solver via IKVM |
+| 2 | [CSP-2-Consistency](CSP-2-Consistency.ipynb) | [CSP-2-Consistency-CSharp](CSP-2-Consistency-CSharp.ipynb) | Choco-solver via IKVM (propagation native) |
+| 3 | [CSP-3-Advanced](CSP-3-Advanced.ipynb) | [CSP-3-Advanced-CSharp](CSP-3-Advanced-CSharp.ipynb) | Choco-solver via IKVM |
+| 4 | [CSP-4-Scheduling](CSP-4-Scheduling.ipynb) | [CSP-4-Scheduling-CSharp](CSP-4-Scheduling-CSharp.ipynb) | OR-Tools CP-SAT natif (+ section Choco comparative) |
+| 5 | [CSP-5-Optimization](CSP-5-Optimization.ipynb) | [CSP-5-Optimization-CSharp](CSP-5-Optimization-CSharp.ipynb) | Choco-solver via IKVM (contrainte globale `binPacking`) |
+| 6 | [CSP-6-Hybridization](CSP-6-Hybridization.ipynb) | [CSP-6-Hybridization-CSharp](CSP-6-Hybridization-CSharp.ipynb) | OR-Tools CP-SAT natif (LCG, CP+SAT) |
+| 7 | [CSP-7-Soft](CSP-7-Soft.ipynb) | [CSP-7-Soft-CSharp](CSP-7-Soft-CSharp.ipynb) | Choco-solver via IKVM (réification `reifyWith` / `ifThen`) |
+| 8 | [CSP-8-Temporal](CSP-8-Temporal.ipynb) | [CSP-8-Temporal-CSharp](CSP-8-Temporal-CSharp.ipynb) | OR-Tools CP-SAT natif (IntervalVar temporels) |
+| 9 | [CSP-9-Distributed](CSP-9-Distributed.ipynb) | [CSP-9-Distributed-CSharp](CSP-9-Distributed-CSharp.ipynb) | ABT multi-agent (port from scratch, Yokoo 1992) |
 
 > **Quel solveur .NET pour quel terrain ?** CSP-4 (ordonnancement `IntervalVar`, `NoOverlap`, `Cumulative`), CSP-6 (Lazy Clause Generation, CP+SAT) et CSP-8 (intervalles temporels) sont routés vers **OR-Tools CP-SAT natif** — le terrain où CP-SAT excelle, cf. *vrai outil SOTA pour le problème* (#3801). Les binômes 1, 2, 3, 5 et 7 illustrent **Choco via IKVM** comme levier de parité .NET pour une lib Java — y compris `binPacking`, contrainte globale dont la propagation surpasse la linéarisation BoolVar manuelle. CSP-9 (DisCSP) n'a pas de solveur off-the-shelf : l'algorithme ABT (Yokoo 1992) y est porté **from scratch** en C# multi-agent.
 
@@ -101,7 +102,7 @@ flowchart LR
     SOCLE --> IND
 ```
 
-Les notebooks CSP présupposent les bases de la Partie 1 : formalisation en espace d'états ([Search-1](../Part1-Foundations/Search-01-StateSpace.html)) et backtracking ([Search-2](../Part1-Foundations/Search-02-Uninformed.html)).
+Les notebooks CSP présupposent les bases de la Partie 1 : formalisation en espace d'états ([Search-1](../Part1-Foundations/Search-01-StateSpace.ipynb)) et backtracking ([Search-2](../Part1-Foundations/Search-02-Uninformed.ipynb)).
 
 ## Prérequis & environnement
 
@@ -120,13 +121,13 @@ Pour le setup complet, voir le [README de la série Search](../README.md).
 | Solveur CP-SAT trop lent sur les grandes instances | Préférer les contraintes globales (AllDifferent, Cumulative) aux contraintes binaires équivalentes ; utiliser LNS (CSP-3) |
 | Comment choisir entre CP-SAT et un solveur SAT ? | CP-SAT pour les contraintes globales et l'optimisation (objectif), SAT pour la décision pure ; CSP-6 détaille les compromis |
 | CSP-9 : les algorithmes distribués ne convergent pas | Vérifier que le réseau de contraintes est un arbre, ou utiliser AWC (Weak-Commitment) au lieu d'ABT |
-| Où sont les applications concrètes ? | Voir [Applications](../Applications/README.md) : 40 notebooks (N-Queens, Nurse Scheduling, VRP, TSP...) |
+| Où sont les applications concrètes ? | Voir [Applications](../Part3-Cas-pratiques/README.md) : notebooks d'application (N-Queens, Nurse Scheduling, VRP, TSP...) |
 
 ## Ponts vers SymbolicAI
 
 Les notebooks CSP nécessitent une compréhension préalable de :
-- **[Search-1 (StateSpace)](../Part1-Foundations/Search-01-StateSpace.html)** : formalisation des problèmes
-- **[Search-2 (Uninformed)](../Part1-Foundations/Search-02-Uninformed.html)** : backtracking = DFS avec retour arrière
+- **[Search-1 (StateSpace)](../Part1-Foundations/Search-01-StateSpace.ipynb)** : formalisation des problèmes
+- **[Search-2 (Uninformed)](../Part1-Foundations/Search-02-Uninformed.ipynb)** : backtracking = DFS avec retour arrière
 
 ## Progression recommandée
 
@@ -160,7 +161,7 @@ CSP-1 (Fundamentals) ──> CSP-2 (Consistency) ──> CSP-3 (Advanced)
 | Série | Lien | Relation |
 | ------- | ------ | ---------- |
 | [Partie 1 : Search](../Part1-Foundations/README.md) | Fondamentaux | Prérequis : backtracking, heuristiques |
-| [Applications](../Applications/README.md) | 40 notebooks d'application | Mise en pratique des CSP |
+| [Applications](../Part3-Cas-pratiques/README.md) | Notebooks d'application | Mise en pratique des CSP |
 | [Search (parent)](../README.md) | Vue d'ensemble | Contexte et parcours global |
 | [Sudoku](../../Sudoku/) | Résolution par contraintes | Application directe des CSP |
 | [SymbolicAI/SMT/Z3-Linq2Z3](../../SymbolicAI/SMT/Z3-Linq2Z3/README.md) | Solveur SMT | CSP-6 (LCG) et automates symboliques |
@@ -191,7 +192,12 @@ Couverture par notebook des sources fondatrices de la programmation par contrain
 | CSP-6 (Hybridization) | Ohrimenko, I., Stuckey, P. J., & Codish, M. (2009) — « Propagation via Lazy Clause Generation », *Constraints* 14(3). Origine de la Lazy Clause Generation. |
 | CSP-1, CSP-2, CSP-8 | Dechter, R. (2003) — *Constraint Processing*. Morgan Kaufmann. Socle de la propagation de contraintes et des niveaux de consistance, en amont de la série. |
 | CSP-3 à CSP-8 | Krupke, D. et al. (2023) — *The CP-SAT Primer: Using and Understanding Google OR-Tools' CP-SAT Solver* (CC-BY). Le manuel du solveur CP-SAT, aval de la série. |
-| CSP-3, CSP-5, CSP-7 | Rossi, F., van Beek, P. & Walsh, T. (dir., 2006) — *Handbook of Constraint Programming*. Elsevier. Ouvrage de référence organisé par thème (propagation, contraintes globales, contraintes souples, temporel) — le découpage que suit la série. |
+| CSP-3 (Advanced) | Rossi, F., van Beek, P. & Walsh, T. (dir., 2006) — *Handbook of Constraint Programming* (Elsevier), **Ch. 7 *Global Constraints*** (Willem-Jan van Hoeve, Irit Katriel, p. 205) — la presentation canonique d'AllDifferent/Cumulative/Circuit/Table reprise dans le carnet. |
+| CSP-3 (Advanced) | id. **Ch. 4 *Backtracking Search Algorithms*** (Peter van Beek, p. 83) — socle de recherche utilise dans la serie. |
+| CSP-5 (Optimization) | id. **Ch. 15 *Operations Research Methods in Constraint Programming*** (J.N. Hooker, p. 525) — couplage CP / RO. |
+| CSP-7 (Soft) | id. **Ch. 9 *Soft Constraints*** (Meseguer, Rossi, Schiex, p. 279) — semiring-based CSP, classic/fuzzy/weighted. |
+| CSP-8 (Temporal) | id. **Ch. 19 *Temporal CSPs*** (Manolis Koubarakis, p. 663) — formalisation des CSP temporels. |
+| Toute la série | id. **Ch. 1 *Introduction*** (Rossi, van Beek, Walsh, p. 3) — carte thematique de l'ouvrage alignee sur le decoupage de la serie. |
 | CSP-9 (Distributed) | **Distributed Constraint Processing** (support de cours, 2018) — `2018 - lecture-Distributed Constraint Processing.pdf`, rayon *Constraint Programming* du gisement documentaire (auteur non lisible : PDF non hydraté). Série homonyme en ligne : [G. Picard, Mines Saint-Étienne](https://www.gauthier-picard.info/files/lecture-DCSP-2025.pdf). Passage du CSP centralisé aux formulations distribuées (DisCSP, DCOP). |
 | Toute la série | Bardin, S., Bjørner, N. & Cadar, C. (2019) — *Bringing CP, SAT and SMT together: Next Challenges in Constraint Solving* (Dagstuhl Seminar 19062), Dagstuhl Reports 9(2):27. Le pont CP↔SAT↔SMT. |
 
@@ -215,10 +221,10 @@ Le véritable enseignement est une **sensibilité à la modélisation** : le mê
 
 ### Prochaines étapes
 
-- **Les applications** : les [40 notebooks d'application](../Applications/README.md) (N-Queens, Nurse Scheduling, VRP, TSP, Picross, Minesweeper CSP) mettent en pratique CP-SAT sur des problèmes concrets avec benchmark baseline-comparison.
+- **Les applications** : les [notebooks d'application](../Part3-Cas-pratiques/README.md) (N-Queens, Nurse Scheduling, VRP, TSP, Picross, Minesweeper CSP) mettent en pratique CP-SAT sur des problèmes concrets avec benchmark baseline-comparison.
 - **Vers le raisonnement symbolique** : la modélisation déclarative de cette partie est le premier contact avec un mode de raisonnement qu'approfondissent [Z3/SMT](../../SymbolicAI/SMT/Z3-Linq2Z3/README.md) (SMT solving), les [Planners](../../SymbolicAI/Planners/) (PDDL, HTN) et [Tweety](../../SymbolicAI/Tweety/) (logique formelle) côté SymbolicAI. CSP-6 (LCG) fait explicitement le pont vers SAT.
-- **Retour aux fondamentaux** : après avoir vu la puissance de la propagation, reprendre [Search-2 (backtracking)](../Part1-Foundations/Search-02-Uninformed.html) — le DFS y apparaît comme un cas particulier de CSP sans propagation, et l'on mesure le saut qu'apportent AC-3/MAC.
-- **La série dans son ensemble** : le [sommaire Search](../README.md) cartographie les quatre parties et les applications — celle-ci est le socle déclaratif qui prolonge la Partie 1 (recherche) et prépare la Partie 4 (métaheuristiques) et les Applications.
+- **Retour aux fondamentaux** : après avoir vu la puissance de la propagation, reprendre [Search-2 (backtracking)](../Part1-Foundations/Search-02-Uninformed.ipynb) — le DFS y apparaît comme un cas particulier de CSP sans propagation, et l'on mesure le saut qu'apportent AC-3/MAC.
+- **La série dans son ensemble** : le [sommaire Search](../README.md) cartographie les quatre parties et les applications — celle-ci est le socle déclaratif qui prolonge la Partie 1 (recherche) et prépare la Partie 4 (métaheuristiques) et la Partie 3 (cas pratiques).
 
 ### Le fil rouge
 
@@ -226,4 +232,4 @@ La programmation par contraintes propose un changement de regard sur la résolut
 
 ## Navigation
 
-[<- Partie 1 : Search Fondamental](../Part1-Foundations/README.md) | [Retour à la série Search](../README.md) | [Partie 4 : Métaheuristiques ->](../Part4-Metaheuristics/README.md)
+[<- Partie 1 : Search Fondamental](../Part1-Foundations/README.md) | [Retour à la série Search](../README.md) | [Partie 3 : Cas pratiques ->](../Part3-Cas-pratiques/README.md)

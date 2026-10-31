@@ -21,11 +21,13 @@ from scripts.ci.check_umbrella_freshness import (  # noqa: E402
     assess,
     classify,
     classify_ref,
+    declares_parent,
     extract_paths,
     extract_refs,
     main,
     missing_paths,
     render_text,
+    resolve_cited_path,
 )
 
 
@@ -164,6 +166,61 @@ def test_missing_paths_handles_directory_trailing_slash(tmp_path):
 
 
 # --------------------------------------------------------------------------
+# prefixe des series (#10643 : 6 faux positifs mesures sur 10 avertissements)
+# --------------------------------------------------------------------------
+
+def _series_file(root: Path, relative: str) -> Path:
+    target = root / "MyIA.AI.Notebooks" / relative
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text("x", encoding="utf-8")
+    return target
+
+
+def test_missing_paths_resolves_series_relative_citation(tmp_path):
+    # Le corps de #10643 cite `GameTheory/scripts/setup_lean4_kernel.ps1` ;
+    # le fichier vit sous la racine des series. Il ne doit pas etre dit absent.
+    _series_file(tmp_path, "GameTheory/scripts/setup_lean4_kernel.ps1")
+    assert missing_paths(["GameTheory/scripts/setup_lean4_kernel.ps1"], tmp_path) == []
+
+
+def test_extract_paths_drops_abbreviated_citation():
+    # `docs/archive/.../phase-12a/scripts/` est une citation tronquee : rien a
+    # confronter a l'arbre, donc rien a declarer absent.
+    body = "voir `docs/archive/.../phase-12a/scripts/` et `docs/real.md`"
+    assert extract_paths(body) == ["docs/real.md"]
+
+
+def test_resolve_cited_path_prefers_the_repository_root(tmp_path):
+    root_file = tmp_path / "RL" / "x.md"
+    root_file.parent.mkdir(parents=True)
+    root_file.write_text("x", encoding="utf-8")
+    _series_file(tmp_path, "RL/x.md")
+    assert resolve_cited_path("RL/x.md", tmp_path) == root_file
+
+
+def test_missing_paths_accepts_a_series_homonym_when_the_root_path_is_gone(tmp_path):
+    # Reserve 2 de la review NanoClaw du 2026-10-29 : l'arbitrage de
+    # precedence est fige ici plutot que laisse implicite. Une citation qui
+    # visait la RACINE, dont le fichier a ete supprime alors qu'un homonyme
+    # survit sous les series, est declaree PRESENTE. Cout accepte : une
+    # sous-declaration d'avertissement (missing_paths n'alimente que des
+    # warnings, jamais le code de sortie) -- preferee a un faux « path not
+    # found », la classe de faux positif qui a fait publier un constat errone
+    # sur #10643 (6 faux positifs sur 10 avertissements).
+    _series_file(tmp_path, "RL/x.md")
+    assert missing_paths(["RL/x.md"], tmp_path) == []
+
+
+def test_missing_paths_still_reports_a_genuinely_absent_series_path(tmp_path):
+    # Controle negatif : la resolution ne doit pas blanchir une vraie absence.
+    # `Lean-1-Setup.ipynb` a ete renumerote en `Lean-01-Setup-Lean-Python.ipynb`.
+    _series_file(tmp_path, "SymbolicAI/Lean/Lean-01-Setup-Lean-Python.ipynb")
+    assert missing_paths(["SymbolicAI/Lean/Lean-1-Setup.ipynb"], tmp_path) == [
+        "SymbolicAI/Lean/Lean-1-Setup.ipynb"
+    ]
+
+
+# --------------------------------------------------------------------------
 # rendering + exit codes
 # --------------------------------------------------------------------------
 
@@ -203,6 +260,173 @@ def test_assess_degrades_to_unknown_without_gh(monkeypatch, tmp_path):
         "scripts.ci.check_umbrella_freshness._gh_json", lambda args: None)
     result = assess(11900, tmp_path, "jsboige/CoursIA")
     assert result["verdict"] == "unknown"
+
+
+# --------------------------------------------------------------------------
+# parent relation (c.2266) -- l'ENFANT declare son parent
+# --------------------------------------------------------------------------
+
+def test_declares_parent_reads_the_child_side_declaration():
+    # La convention du depot : l'issue nomme son parent.
+    assert declares_parent("Part of #4362.\n\nScan + Apply.", 4362) is True
+    assert declares_parent("Enfant de #4362.", 4362) is True
+    assert declares_parent("Sous-issue de #4362", 4362) is True
+    assert declares_parent("parent : #4362", 4362) is True
+
+
+def test_declares_parent_ignores_a_bare_mention():
+    # Un lien transversal dans le corps de l'ENFANT n'est pas une declaration.
+    assert declares_parent("Voir aussi #4362 pour le contexte.", 4362) is False
+    assert declares_parent("Le lac est dans #4362.", 4362) is False
+    assert declares_parent("", 4362) is False
+
+
+def test_declares_parent_is_bounded_to_the_exact_number():
+    # #43620 ne fait pas de #4362 un parent.
+    assert declares_parent("Part of #43620.", 4362) is False
+    assert declares_parent("Part of #4362.", 4362) is True
+
+
+def test_cross_references_only_stay_advisory_not_saturated():
+    """Le cas mesure sur #4362 (c.2266) -- et son correctif.
+
+    Les 8 enfants Lean de l'umbrella sont CLOSES ; la seule reference ouverte
+    (#4208, un EPIC sans rapport cite dans le corps) ne declare PAS #4362
+    comme son parent. L'umbrella est PROBABLEMENT vide, mais ce n'est pas
+    decidable mecaniquement : le conteneur peut porter un travail vivant
+    qu'aucune issue ne declare (mesure : #19821 nomme son reste a faire par
+    des "briques", sans issue fille ni phrase de filiation).
+
+    Un rouge ici ferait sauter un conteneur plein -- donc le verdict rouge
+    reste reserve a la seule lecture non ambigue (toutes les references
+    fermees), et ce cas-ci est ADVISORY.
+    """
+    refs = [_issue(4363, "CLOSED"), _issue(2611, "CLOSED"), _issue(4208, "OPEN")]
+    result = classify(refs, [], {4208: False})
+    assert result["verdict"] == "UNRESOLVED"
+    assert result["child_open"] == 0
+    assert result["cross_references"] == [4208]
+    assert any("#4208" in w for w in result["warnings"])
+
+
+def test_all_issues_closed_is_still_saturated():
+    """Le rouge non ambigu survit : toutes les references fermees."""
+    refs = [_issue(4363, "CLOSED"), _issue(2611, "CLOSED")]
+    result = classify(refs, [], {})
+    assert result["verdict"] == "SATURATED"
+    assert result["child_open"] == 0
+
+
+def test_fresh_when_an_open_reference_declares_the_parent():
+    refs = [_issue(4363, "CLOSED"), _issue(4365, "OPEN")]
+    result = classify(refs, [], {4365: True})
+    assert result["verdict"] == "FRESH"
+    assert result["child_open"] == 1
+    assert result["children_open"] == [4365]
+
+
+def test_unreadable_parent_relation_stays_advisory():
+    """Fail-CLOSED : une relation qu'on n'a pas pu lire ne fabrique pas de rouge."""
+    refs = [_issue(4208, "OPEN")]
+    result = classify(refs, [], {4208: None})
+    assert result["verdict"] == "UNRESOLVED"
+    assert any("#4208" in w for w in result["warnings"])
+
+
+def test_unmeasured_relation_keeps_the_historical_reading():
+    """Sans mesure de la relation, le comportement historique est conserve."""
+    refs = [_issue(15037, "CLOSED"), _issue(15047, "OPEN")]
+    result = classify(refs, [])
+    assert result["verdict"] == "FRESH"
+    assert result["child_open"] == 1
+
+
+def test_render_text_names_the_parent_relation():
+    result = classify([_issue(4208, "OPEN")], [], {4208: False})
+    result.update({"number": 4362, "title": "t", "refs": [_issue(4208, "OPEN")],
+                   "child_flags": {4208: False}})
+    text = render_text(result)
+    assert "reference croisee" in text
+
+
+def test_the_reason_names_the_measured_direction():
+    """Le sens de la filiation est MESURE, pas suppose (revue Hermes #21792).
+
+    Le cas #20233 : c'est l'umbrella qui declare ses references comme ses
+    parents ("Fille de #17578"), l'inverse de ce que le libelle affirmait.
+    """
+    refs = [_issue(17578, "OPEN"), _issue(10355, "OPEN")]
+    result = classify(refs, [], {17578: True, 10355: True},
+                      {17578: "par cet umbrella", 10355: "par cet umbrella"})
+    assert result["verdict"] == "FRESH"
+    assert "par cet umbrella" in result["reason"]
+    assert "declare this umbrella as their parent" not in result["reason"]
+
+
+def test_render_text_announces_the_direction_in_both_senses():
+    for sense, label in (("par eux", "[filiation : par eux]"),
+                         ("par cet umbrella", "[filiation : par cet umbrella]")):
+        result = classify([_issue(4208, "OPEN")], [], {4208: True},
+                          {4208: sense})
+        result.update({"number": 20233, "title": "t",
+                       "refs": [_issue(4208, "OPEN")],
+                       "child_flags": {4208: True},
+                       "child_directions": {4208: sense}})
+        text = render_text(result)
+        assert label in text
+        assert "enfant declare" not in text
+
+
+# --------------------------------------------------------------------------
+# lecture en echec (#23406) -- l'organe avertit, il ne meurt pas
+#
+# Les tests ci-dessus passent a `render_text` des dictionnaires construits a
+# la main, `title` et `reason` fournis. Aucun ne traversait la chaine REELLE
+# `assess()` en echec -> `main()` -> `render_text()`, qui est precisement le
+# chemin ou l'organe plantait (KeyError 'title', mesure du 2026-10-30).
+# --------------------------------------------------------------------------
+
+def test_render_text_survives_a_failed_read(monkeypatch, tmp_path):
+    monkeypatch.setattr(
+        "scripts.ci.check_umbrella_freshness._gh_json", lambda args: None)
+    result = assess(11900, tmp_path, "jsboige/CoursIA")
+    text = render_text(result)                       # ne doit pas lever
+    lowered = text.lower()
+    # Le texte NOMME l'echec de lecture : il ne se confond ni avec un
+    # conteneur sature mesure, ni avec un « aucun enfant cite » metier.
+    # Le mot SATURATED peut apparaitre dans la clause NEGATIVE (« ce n'est
+    # ni un SATURATED mesure... ») : ce qui compte est le VERDICT rendu.
+    assert "echoue" in lowered or "échec" in lowered
+    assert "inconnu" in lowered
+    assert "verdict: unknown" in lowered
+    assert "verdict: saturated" not in lowered
+    assert "aucun enfant" not in lowered
+
+
+def test_main_warns_instead_of_crashing_when_read_fails(monkeypatch, capsys):
+    monkeypatch.setattr(
+        "scripts.ci.check_umbrella_freshness._gh_json", lambda args: None)
+    rc = main(["11900", "--repo-root", "."])         # ne doit pas lever
+    captured = capsys.readouterr()
+    # Advisory : la lecture en echec ne rougit pas l'organe (#11900), et
+    # seul SATURATED sort en 1.
+    assert rc == 0
+    assert "::warning::#11900" in captured.err
+    assert "#11900" in captured.out
+
+
+def test_a_failed_read_is_not_a_business_unresolved(monkeypatch, tmp_path):
+    # Controle de distinction : deux etats differents ne doivent pas rendre
+    # le meme texte, sinon l'avertissement se perd dans le verdict metier.
+    monkeypatch.setattr(
+        "scripts.ci.check_umbrella_freshness._gh_json",
+        lambda args: {"number": 11900, "title": "t", "state": "OPEN",
+                      "body": "rien qui cite une enfant"})
+    unresolved = render_text(assess(11900, tmp_path, "jsboige/CoursIA"))
+    monkeypatch.setattr(
+        "scripts.ci.check_umbrella_freshness._gh_json", lambda args: None)
+    unreadable = render_text(assess(11900, tmp_path, "jsboige/CoursIA"))
+    assert unresolved != unreadable
 
 
 if __name__ == "__main__":

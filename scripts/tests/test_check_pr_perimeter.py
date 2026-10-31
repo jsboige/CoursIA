@@ -875,6 +875,51 @@ def test_pull_request_review_trigger_includes_edited_type():
     )
 
 
+def test_perimeter_workflow_declares_pull_request_trigger_with_edited():
+    """#21922 : CE fichier doit redeclarer `pull_request` avec `edited`.
+
+    Le levier du garde est le NOM de check-run "perimeter review guard
+    (#11268)". Seul le run de ce fichier le publie -- une re-mesure faite
+    par always-on-guards porte le nom de l'umbrella et ne supersede pas le
+    rouge de la surface review (le repli de l'agregat du PR gate est
+    latest-wins PAR NOM).
+
+    Mesure fondatrice (#21922, PR #21893) : check-run rouge a 20:50:57Z,
+    body corrige a ~21:15Z (le remede canonique d'une assertion fausse),
+    et AUCUN run de ce fichier sur cette tete -- le rouge a disparu de la
+    tete par un mecanisme non etabli (pruning de suite), donc l'etat
+    bloquant se dissolvait de facon non deterministe.
+
+    Ce test rend l'invariant executable : un futur editeur qui retoucherait
+    le bloc `on:` et supprimerait le trigger reverait le defaut sans que
+    rien ne le dise.
+    """
+    here = pathlib.Path(__file__).resolve()
+    repo_root = here.parents[2]
+    wf = repo_root / ".github" / "workflows" / "perimeter-review-guard.yml"
+    text = wf.read_text(encoding="utf-8")
+    import re
+    block = re.search(r"^on:\s*\n(?P<body>(?:  [^\n]*\n)+)", text,
+                       re.MULTILINE)
+    assert block, "could not locate `on:` block in perimeter-review-guard.yml"
+    body = block.group("body")
+    pr_block = re.search(
+        r"^  pull_request:\s*\n((?:    [^\n]*\n)+)", body, re.MULTILINE
+    )
+    assert pr_block, (
+        "perimeter-review-guard.yml ne declare plus `pull_request:` -- une "
+        "correction de body ne re-mesure plus le nom de check-run que ce "
+        "fichier publie, et le rouge de la surface review survit jusqu'au "
+        "prochain evenement de review (#21922, mesure #21893)."
+    )
+    pr_body = pr_block.group(1)
+    assert "types:" in pr_body and "edited" in pr_body, (
+        "pull_request: doit lister explicitement `edited` -- sans lui, "
+        "GitHub l'exclut du defaut et une correction de body ne declenche "
+        "rien (cf. #11635)."
+    )
+
+
 # ---------------------------------------------------------------------------
 # Consequence model (#11648): supersession per author + blocking scope
 # ---------------------------------------------------------------------------
@@ -4235,6 +4280,27 @@ def test_issue_20125_perimeter_verbs_do_not_exempt():
     assert not _count_exempt("This PR covers 4 files.")
 
 
+def test_imperfect_count_verb_is_exempt():
+    """Founder #21154 (body avant reformulation) : un denombrement a
+    l'imparfait decrit un inventaire anterieur, pas le perimetre de la PR."""
+    assert _count_exempt(
+        "le bandeau du 02/09 comptait 11 fichiers `_REPORT/_STATUS/_AUDIT.md` "
+        "a trier"
+    )
+    assert _count_exempt("l'audit du 12/10 recensait 14 fichiers orphelins")
+    assert _count_exempt("l'ancien index listait 9 fichiers")
+
+
+def test_imperfect_count_verb_keeps_the_colon_guard():
+    """L'imparfait ne blanchit pas une declaration par deux-points."""
+    assert not _count_exempt("comptait 3 fichiers : a.py, b.py, c.py")
+
+
+def test_present_count_verb_still_fails():
+    """Le present « compte » reste une annonce de perimetre."""
+    assert not _count_exempt("Cette PR compte 3 fichiers.")
+
+
 def _body_candidates(body: str, n_files: int):
     items = [{"kind": "body", "author": "lane", "body": body, "source": "body", "ts": ""}]
     return select_candidates(items, n_files)[0]
@@ -4261,3 +4327,153 @@ def test_issue_20086_end_to_end_colon_declaration_still_blocks():
     body = "Perimetre : 4 fichiers : Life.lean, Life_en.lean, Hashlife.lean, Hashlife_en.lean\n"
     cands = _body_candidates(body, 7)
     assert any(c.blocking for c in cands), "la declaration canonique doit bloquer"
+
+
+# ---------------------------------------------------------------------------
+# #22341 : un diff porte par des sequences d'echappement terminal
+# ---------------------------------------------------------------------------
+
+_ESCAPE_REFUSAL = (
+    "gh error: the diff contains terminal escape sequences; "
+    "pass --allow-escape-sequences to output it anyway"
+)
+
+
+def test_escape_sequence_refusal_is_retried_over_a_renderer_free_transport(monkeypatch):
+    """`gh pr diff` refuse d'IMPRIMER un diff porte par des codes ANSI ; le
+    diff, lui, se lit. Le garde ne doit pas perdre sa mesure (#22341).
+
+    Le transport REST n'est PAS dispensé du drapeau : `gh api` refuse le
+    meme diff et honore le meme drapeau (mesure de la review Hermes). Le
+    mock reproduit ce comportement reel : sans le drapeau, l'API repond
+    rc=1 -- ce qui serait un chemin mort."""
+    perim = __import__("check_pr_perimeter")
+    calls = []
+
+    def fake_run_gh_rc(args):
+        calls.append(list(args))
+        if args[0] == "pr" and args[1] == "diff":
+            if "--allow-escape-sequences" in args:
+                return 1, "", "unknown flag: --allow-escape-sequences"
+            return 1, "", _ESCAPE_REFUSAL
+        if args[0] == "api":
+            if "--allow-escape-sequences" in args:
+                return 0, "diff --git a/x b/x\n+ok\n", ""
+            return 1, "", _ESCAPE_REFUSAL
+        return 1, "", "transport inattendu"
+
+    monkeypatch.setattr(perim, "_run_gh_rc", fake_run_gh_rc)
+    monkeypatch.setattr(
+        perim, "_run_gh", lambda args: '{"nameWithOwner": "jsboige/CoursIA"}'
+    )
+    diff = perim._pr_diff_text(22341)
+    assert diff == "diff --git a/x b/x\n+ok\n"
+    assert any(
+        c[:2] == ["pr", "diff"] and "--allow-escape-sequences" in c for c in calls
+    ), "le drapeau dedie doit etre tente"
+    api_calls = [c for c in calls if c[0] == "api"]
+    assert api_calls, "le diff REST sans rendu doit etre tente"
+    assert any(
+        "--allow-escape-sequences" in c for c in api_calls
+    ), "le transport REST doit porter le drapeau, sans lui il echoue aussi"
+
+
+def test_escape_sequence_refusal_survives_a_gh_without_the_flag(monkeypatch):
+    """Un `gh` qui ignore le drapeau bascule sur le diff REST : la mesure
+    reste COMPLETE (le contenu porte les mouvements de baseline)."""
+    perim = __import__("check_pr_perimeter")
+
+    def fake_run_gh_rc(args):
+        if args[0] == "pr" and args[1] == "diff":
+            if "--allow-escape-sequences" in args:
+                return 1, "", "unknown flag: --allow-escape-sequences"
+            return 1, "", _ESCAPE_REFUSAL
+        if args[0] == "api":
+            if "--allow-escape-sequences" in args:
+                return 0, "diff --git a/y b/y\n", ""
+            return 1, "", _ESCAPE_REFUSAL
+        return 1, "", "transport inattendu"
+
+    monkeypatch.setattr(perim, "_run_gh_rc", fake_run_gh_rc)
+    monkeypatch.setattr(
+        perim, "_run_gh", lambda args: '{"nameWithOwner": "jsboige/CoursIA"}'
+    )
+    assert perim._pr_diff_text(22341) == "diff --git a/y b/y\n"
+
+
+def test_the_rest_transport_falls_back_to_the_flagless_call_on_an_old_gh(monkeypatch):
+    """Un `gh` ancien ne connait pas le drapeau ("unknown flag") mais ne
+    refuse PAS l'API : l'appel sans drapeau est alors le transport qui
+    reussit (mesure : gh 2.83.2, rc=0, 69 672 octets, 11 ESC)."""
+    perim = __import__("check_pr_perimeter")
+    calls = []
+
+    def fake_run_gh_rc(args):
+        calls.append(list(args))
+        if args[0] == "pr" and args[1] == "diff":
+            if "--allow-escape-sequences" in args:
+                return 1, "", "unknown flag: --allow-escape-sequences"
+            return 1, "", _ESCAPE_REFUSAL
+        if args[0] == "api":
+            if "--allow-escape-sequences" in args:
+                return 1, "", "unknown flag: --allow-escape-sequences"
+            return 0, "diff --git a/z b/z\n", ""
+        return 1, "", "transport inattendu"
+
+    monkeypatch.setattr(perim, "_run_gh_rc", fake_run_gh_rc)
+    monkeypatch.setattr(
+        perim, "_run_gh", lambda args: '{"nameWithOwner": "jsboige/CoursIA"}'
+    )
+    assert perim._pr_diff_text(22341) == "diff --git a/z b/z\n"
+    api_calls = [c for c in calls if c[0] == "api"]
+    assert any("--allow-escape-sequences" in c for c in api_calls)
+    assert any("--allow-escape-sequences" not in c for c in api_calls)
+
+
+def test_the_rest_transport_without_the_flag_measures_nothing(monkeypatch):
+    """Controle NEGATIF du filet : si le transport REST perd le drapeau, il
+    echoue comme le refuse l'ecrit le reelle -- le garde ne doit alors
+    RIEN mesurer (fail-closed, rc=2), et non fabriquer une reponse
+    d'API que l'instrument reel ne rend pas (#22341, review Hermes)."""
+    perim = __import__("check_pr_perimeter")
+
+    def fake_run_gh_rc(args):
+        if args[0] == "pr" and args[1] == "diff":
+            return 1, "", _ESCAPE_REFUSAL
+        if args[0] == "api":
+            return 1, "", _ESCAPE_REFUSAL
+        return 1, "", "transport inattendu"
+
+    monkeypatch.setattr(perim, "_run_gh_rc", fake_run_gh_rc)
+    monkeypatch.setattr(
+        perim, "_run_gh", lambda args: '{"nameWithOwner": "jsboige/CoursIA"}'
+    )
+    with pytest.raises(SystemExit) as exc:
+        perim._pr_diff_text(22341)
+    assert exc.value.code == 2
+
+
+def test_an_unrelated_gh_failure_stays_fail_closed(monkeypatch):
+    """Le contrat fail-closed tient pour toute AUTRE echec : seule la
+    signature reconnue ouvre un transport de repli."""
+    perim = __import__("check_pr_perimeter")
+    monkeypatch.setattr(
+        perim, "_run_gh_rc", lambda args: (1, "", "gh error: HTTP 404: Not Found")
+    )
+    with pytest.raises(SystemExit) as exc:
+        perim._pr_diff_text(22341)
+    assert exc.value.code == 2
+
+
+def test_a_readable_diff_is_never_re_fetched(monkeypatch):
+    """Cas nominal : un `gh pr diff` qui reussit ne declenche aucun repli."""
+    perim = __import__("check_pr_perimeter")
+    calls = []
+
+    def fake_run_gh_rc(args):
+        calls.append(list(args))
+        return 0, "diff --git a/z b/z\n", ""
+
+    monkeypatch.setattr(perim, "_run_gh_rc", fake_run_gh_rc)
+    assert perim._pr_diff_text(22341) == "diff --git a/z b/z\n"
+    assert len(calls) == 1

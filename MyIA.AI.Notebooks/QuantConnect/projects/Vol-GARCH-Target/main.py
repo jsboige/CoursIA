@@ -17,11 +17,33 @@ class GarchVolTargetAlgorithm(QCAlgorithm):
     filter for direction (long only, no shorts).
 
     Assets: SPY, EFA, EEM, TLT, GLD, DBC (AQR-style multi-asset).
+    Backtest: 2018-01-01 -> 2025-01-01 par defaut (parametres start_date / end_date, %Y%m%d)
+
+    Parametre mode (#21778) :
+    - strategy (defaut) : la strategie ci-dessus ;
+    - spy : SPY detenu ;
+    - 6040 : SPY 60 %, BND 40 % ;
+    - rv21 : la strategie, avec pour seule difference la variance des 21 derniers
+      rendements journaliers a la place de la prevision GARCH.
+    Les references spy et 6040 se reequilibrent au debut de chaque mois, une minute apres
+    l'ouverture ; dans ces deux modes, rebalance() sort aussitot. Trace journaliere "shadow"
+    (e0..e4, #18923) : valeur du portefeuille a l'ouverture de chaque seance de SPY.
     """
 
     def initialize(self):
-        self.set_start_date(2018, 1, 1)
-        self.set_end_date(2025, 1, 1)
+        self._mode = self.get_parameter("mode", "strategy").lower()
+        if self._mode not in ("strategy", "spy", "6040", "rv21"):
+            raise ValueError(f"unknown mode parameter: {self._mode} (strategy | spy | 6040 | rv21)")
+        start_date_param = self._parse_date_param("start_date")
+        end_date_param = self._parse_date_param("end_date")
+        if start_date_param is not None:
+            self.set_start_date(start_date_param)
+        else:
+            self.set_start_date(2018, 1, 1)
+        if end_date_param is not None:
+            self.set_end_date(end_date_param)
+        else:
+            self.set_end_date(2025, 1, 1)
         self.set_cash(100000)
 
         self.set_brokerage_model(
@@ -56,6 +78,11 @@ class GarchVolTargetAlgorithm(QCAlgorithm):
         self.returns = {
             t: deque(maxlen=self.train_window + 50) for t in self.tickers
         }
+        # #21782 : nombre de rendements jamais recus, et nombre deja replies dans
+        # cond_var. Les deux compteurs sont absolus : la fenetre glissante du deque
+        # ne permet pas d'indexer un rendement de facon stable.
+        self.return_count = {t: 0 for t in self.tickers}
+        self.folded_count = {t: 0 for t in self.tickers}
 
         self.day_count = 0
 
@@ -68,6 +95,45 @@ class GarchVolTargetAlgorithm(QCAlgorithm):
 
         self.set_warm_up(250, Resolution.DAILY)
 
+        # Mesure #21778 : references detenues et trace journaliere, hors decision de la strategie
+        spy = self.symbols["SPY"]
+        self._bnd = (self.add_equity("BND", Resolution.DAILY).symbol
+                     if self._mode == "6040" else None)
+        if self._mode in ("spy", "6040"):
+            self.settings.seed_initial_prices = True
+            self.schedule.on(
+                self.date_rules.month_start(spy),
+                self.time_rules.after_market_open(spy, 1),
+                self._rebalance_reference,
+            )
+        self._closes = 0
+        self.schedule.on(
+            self.date_rules.every_day(spy),
+            self.time_rules.after_market_open(spy, 0),
+            self._trace,
+        )
+
+    def _parse_date_param(self, name):
+        raw = self.get_parameter(name)
+        if raw is None or str(raw).strip() == "":
+            return None
+        return datetime.strptime(str(raw).strip(), "%Y%m%d")
+
+    def _rebalance_reference(self):
+        if self.is_warming_up:
+            return
+        if self._mode == "spy":
+            self.set_holdings([PortfolioTarget(self.symbols["SPY"], 1.0)])
+        else:
+            self.set_holdings([PortfolioTarget(self.symbols["SPY"], 0.6),
+                               PortfolioTarget(self._bnd, 0.4)])
+
+    def _trace(self):
+        if self.is_warming_up:
+            return
+        self.plot("shadow", f"e{self._closes % 5}", self.portfolio.total_portfolio_value)
+        self._closes += 1
+
     def on_data(self, data: Slice):
         for ticker, sym in self.symbols.items():
             if not data.ContainsKey(sym):
@@ -75,16 +141,67 @@ class GarchVolTargetAlgorithm(QCAlgorithm):
             bar = data[sym]
             if bar is None:
                 continue
-            hist = self.history(sym, 2, Resolution.DAILY)
-            if hist is not None and len(hist) >= 2:
-                prev = float(hist["close"].iloc[-2])
-                curr = float(bar.close)
-                if prev > 0:
-                    self.returns[ticker].append(np.log(curr / prev))
+            log_return = self._daily_log_return(ticker, bar)
+            if log_return is not None:
+                self.returns[ticker].append(log_return)
+                self.return_count[ticker] += 1
         self.day_count += 1
 
+    def _daily_log_return(self, ticker, bar):
+        """Rendement journalier dont la paire de clotures est verifiee (#21782).
+
+        `history(sym, N, DAILY)` inclut ou non la seance courante selon l'heure de
+        l'appel. Prendre `iloc[-2]` sans le verifier peut former une paire a deux
+        seances comptee comme un pas journalier, ou une paire desalignee avec
+        `bar.close`. On aligne donc la paire sur `bar.end_time`, et on rejette un
+        ecart calendaire qui trahit une suspension : mieux vaut aucun rendement
+        qu'un faux pas de GARCH.
+
+        Fenetre large (#20286 / #21471). Sur une demi-seance, `self.history()`
+        rend moins de barres que demande : le raccourcissement mesure vaut 21
+        barres (105 servies pour 126 demandees, #20286). Ici le seuil n'est que
+        de 2 clotures, donc une fenetre double (4) laisserait une marge de 2
+        barres -- sous le raccourcissement observe. On demande 30 barres : la
+        marge (28) depasse le raccourcissement mesure, et la paire lue reste
+        celle des deux dernieres barres. Le calcul est inchange, c'est la marge
+        qui grandit. Cout : un `history` journalier de 30 barres, negligeable.
+        """
+        hist = self.history(self.symbols[ticker], 30, Resolution.DAILY)
+        if hist is None or len(hist) < 2:
+            return None
+        closes = hist["close"]
+        # Un historique LEAN porte parfois un MultiIndex (symbole, horodatage) :
+        # `list(hist.index)` rend alors des tuples, pas des dates. On prend le
+        # dernier niveau, qui est l'horodatage dans les deux formes.
+        idx = hist.index
+        levels = getattr(idx, "nlevels", 1)
+        times = list(idx.get_level_values(-1) if levels > 1 else idx)
+        if times[-1] >= bar.end_time:
+            curr_close, curr_time = float(closes.iloc[-1]), times[-1]
+            prev_close, prev_time = float(closes.iloc[-2]), times[-2]
+        else:
+            curr_close, curr_time = float(bar.close), bar.end_time
+            prev_close, prev_time = float(closes.iloc[-1]), times[-1]
+        # `nan <= 0` est faux : une cloture non finie traverserait le test de
+        # positivite ci-dessous et entrerait dans la fenetre glissante, d'ou elle
+        # ne ressortirait que 550 seances plus tard. Sur 2023-11 -> 2026-07 ce
+        # garde-fou n'a rien rejete (mesure : 0 rejet non fini et 0 rejet non
+        # positif sur 129 rebalances) ; il retient un cas que ces donnees ne
+        # presentent pas, et ne change donc pas le resultat mesure.
+        if not (np.isfinite(prev_close) and np.isfinite(curr_close)):
+            return None
+        if prev_close <= 0 or curr_close <= 0:
+            return None
+        gap = (curr_time - prev_time).days
+        if gap <= 0 or gap > 4:
+            return None
+        log_return = float(np.log(curr_close / prev_close))
+        if not np.isfinite(log_return):
+            return None
+        return log_return
+
     def rebalance(self):
-        if self.is_warming_up:
+        if self.is_warming_up or self._mode in ("spy", "6040"):
             return
 
         weights = {}
@@ -95,7 +212,10 @@ class GarchVolTargetAlgorithm(QCAlgorithm):
             if not self.sma_ind[ticker].IsReady:
                 continue
 
-            var_forecast = self._garch_forecast(ticker)
+            if self._mode == "rv21":
+                var_forecast = float(np.var(np.array(self.returns[ticker])[-21:]))
+            else:
+                var_forecast = self._garch_forecast(ticker)
             if var_forecast is None or var_forecast <= 0:
                 continue
 
@@ -133,6 +253,12 @@ class GarchVolTargetAlgorithm(QCAlgorithm):
 
         should_refit = (self.day_count - self.last_fit_day[ticker]) >= self.refit_freq
 
+        # Invariant de `cond_var` : c'est la prevision de variance du **prochain**
+        # rendement non observe (v_{T+1} apres avoir observe r_T). Une prevision
+        # s'applique donc une seule fois, et entre deux re-estimations la variance
+        # avance d'un pas par rendement recu -- c'est le defaut corrige en #21782 :
+        # l'ancien code repliait seulement le dernier rendement (deja compte dans la
+        # prevision precedente) et ignorait les quatre autres.
         if should_refit or self.cond_var[ticker] is None:
             params = self._fit_garch_vt(rets)
             if params is not None:
@@ -142,14 +268,26 @@ class GarchVolTargetAlgorithm(QCAlgorithm):
             var_series = self._cond_var_series(rets, omega, alpha, beta)
             if var_series is None:
                 return None
-            self.cond_var[ticker] = float(var_series[-1])
-        else:
-            omega, alpha, beta = self.garch_params[ticker]
-            last_r = float(rets[-1])
-            self.cond_var[ticker] = omega + alpha * last_r ** 2 + beta * self.cond_var[ticker]
+            # var_series[-1] = v_T (variance du dernier rendement, qui ne l'incorpore
+            # pas encore) : la prevision du lendemain est v_{T+1}.
+            self.cond_var[ticker] = (
+                omega + alpha * float(rets[-1]) ** 2 + beta * float(var_series[-1])
+            )
+            self.folded_count[ticker] = self.return_count[ticker]
+            return self.cond_var[ticker] if np.isfinite(self.cond_var[ticker]) else None
 
         omega, alpha, beta = self.garch_params[ticker]
-        return omega + alpha * float(rets[-1]) ** 2 + beta * self.cond_var[ticker]
+        pending = self.return_count[ticker] - self.folded_count[ticker]
+        if pending > 0:
+            new_returns = list(self.returns[ticker])[-pending:]
+            for r in new_returns:
+                self.cond_var[ticker] = (
+                    omega + alpha * float(r) ** 2 + beta * self.cond_var[ticker]
+                )
+            self.folded_count[ticker] = self.return_count[ticker]
+        if not np.isfinite(self.cond_var[ticker]):
+            return None
+        return self.cond_var[ticker]
 
     def _fit_garch_vt(self, rets):
         sigma2 = float(np.var(rets))

@@ -53,6 +53,7 @@ Les images pleine-largeur utilisent le layout **`image-overlay`** (fond d'image 
 | 06 | Apprentissage | `06-apprentissage/` | ~2394 | 140 | EPITA, ECE, EPF |
 | 07 | Elargissements | `07-elargissements/` | ~642 | 9 | EPITA, EPF |
 | 08 | IA Generative | `08-ia-generative/` | ~464 | 36 | EPITA, ECE, EPF |
+| 09 | Traitement automatique des langues | `09-traitement-automatique-langues/` | - | - | - |
 | S1 | Argumentation | `S1-argumentation/` | ~791 | 20 | Sessions avancees |
 | S2 | IA exploratoire/symbolique | `S2-ia-exploratoire-symbolique/` | ~1112 | 54 | Sessions avancees |
 | S3 | Acculturation IA | `S3-acculturation/` | ~2039 | 133 | Sessions avancees |
@@ -90,33 +91,35 @@ slides/
     layouts/                 # cover, section, questions, image-overlay, dense, two-cols
     styles/
     package.json
-  _tools/                    # Scripts conversion PPTX (historique)
-    pptx_to_marp.py          # Etape 1 : PPTX -> Markdown brut
-    marp_to_slidev.py        # Etape 2 : normalisation Slidev + layouts
-    slide_tools.py           # Extraction PPTX (texte, images, inventaire)
+  _tools/                    # Scripts utilitaires PPTX + Playwright (actifs)
+    slide_tools.py           # Extraction PPTX (texte, images, inventaire) -- sert `batch_extract_all`
     batch_extract_all.py     # Extraction batch des 12 decks
-    compare_marp_pptx.py     # Diff visuel PPTX <-> rendu Slidev
-  analysis/                  # Rapports audits visuels cross-deck
+    render_deck.py           # Capture Playwright slide-par-slide (1440x900, headless)
+    extract_animations.py    # Extracteur d'animations PPTX -> JSON (reconstruit v-click Slidev)
+    slide_inventory.py       # Inventaire batch de presentations etudiantes (.pptx/.pdf/.odp)
   XX-nom-du-deck/
     slides.md                # Source Slidev (livrable principal, commite)
     images/                  # Images referencees par slides.md (commite)
     pptx-reference/          # Renders PNG du PPTX d'origine pour audit visuel (commite)
-    analysis/                # Audits PPTX<->Slidev, mapping, vision compare
-      mapping-YYYYMMDD.md
-      visual-audit-deckNN.md
+    analysis/                # Sortie des audits (mapping, visual-audit) :
+                             # regeneree a la demande par slide-analyzer, non
+                             # commitee (vague 2026-04/05 retiree, #11508 L6)
     public/                  # Assets statiques Slidev (optionnel)
 ```
 
 ## Pipeline de conversion (historique)
 
-Les decks 01-08 et S1-S4 ont ete convertis depuis des PPTX originaux en deux temps :
+Les decks 01-08 et S1-S3 ont ete convertis depuis des PPTX originaux en plusieurs
+temps (post-#21318 : les scripts `pptx_to_marp.py`, `marp_to_slidev.py`,
+`compare_marp_pptx.py` et le config `.marprc.yml` ont ete retires -- Marp
+n'etait plus utilise pour editer, et le depot est Slidev-first) :
 
-1. **PPTX -> Marp** via `_tools/pptx_to_marp.py` (extraction texte + images + inventaire)
-2. **Marp -> Slidev** via `_tools/marp_to_slidev.py` (normalisation frontmatter, conversion layouts, migration theme `ia101.css` vers `theme-ia101/`)
+1. **PPTX -> Marp** (supprime) : `_tools/pptx_to_marp.py` (extraction texte + images + inventaire)
+2. **Marp -> Slidev** (supprime) : `_tools/marp_to_slidev.py` (normalisation frontmatter, conversion layouts, migration theme `ia101.css` vers `theme-ia101/`)
 3. **Relecture qualitative** : hierarchie des puces, eclatement des slides denses, cross-references notebooks, enrichissement textuel
 4. **Audits visuels PPTX <-> Slidev** : mapping manuel + verification sk-agent glm-4.6v + screenshots Playwright par slide
 
-Le format Marp n'est plus utilise pour editer les slides — les scripts de conversion restent disponibles pour d'eventuels nouveaux decks PPTX a importer.
+Le seul `slides.marp.md` residuel est `slides/S4-trading-algorithmique/_archive/slides.marp.md` (porte par le repertoire `_archive/`, header de disposition per la convention `_archive-convention.md` -- les 11 autres ont ete retires dans la mesure ou Slidev est canonique). Pour tout nouveau deck PPTX : `slide_tools.py extract` (PPTX -> assets) + `extract_animations.py` (animations JSON) puis ecriture directe en `slides.md` Slidev.
 
 ## Audits visuels
 
@@ -136,7 +139,7 @@ Regles de base pour les images et le layout :
 ## Decisions de conception
 
 - **Slidev** (Markdown + Vue) : hot-reload, layouts custom, composants Vue pour interactivite, export HTML/PDF
-- **Theme-ia101 partage** : coherence visuelle entre tous les decks (13 au total)
+- **Theme-ia101 partage** : coherence visuelle entre tous les decks
 - **Images en overlay** : layout `image-overlay` pour les slides image-dominantes, jamais en colonne droite (convention issue #221, confirmee 5+ fois)
 - **Slides "Questions?"** conservees comme pauses respiratoires entre sections
 - **PPTX-reference en `.gitignore` ou committe** selon le deck : les renders PNG servent a l'audit visuel
@@ -185,7 +188,7 @@ Images pleine-largeur : layout `image-overlay` avec texte par-dessus, **JAMAIS**
 
 **Cause amont**, ni Slidev ni le theme : depuis `magic-string` **1.4.3** (publiee le 2026-10-05), `@unocss/transformer-directives` reecrit en double, en fin de fichier, les declarations qu'il a inserees quand le fichier contient aussi une regle vide a nettoyer (unocss/unocss#5373, correctif propose #5375 ; cote Slidev slidevjs/slidev#2768).
 
-**Reparation** : l'override `"magic-string@^1": "1.4.2"` dans `slides/package.json`. Le contournement anterieur (`build.cssMinify: false` dans un `vite.config.ts` du theme, #19981) a ete retire avec le fichier : il desactivait la minification de tout le site construit pour masquer une dependance fautive. A retirer quand une version d'UnoCSS portant le correctif de #5375 sera publiee et tiree par Slidev (suivi dans #20051).
+**Reparation** : le correctif amont unocss/unocss#5375 (`overwrite()` au lieu de `update()`) est paru dans UnoCSS **66.11.0** (publiee le 2026-10-12), tiree par le lockfile depuis le retrait de l'override -- `magic-string` resout de nouveau en 1.4.3 sans casser le build. Historique des parades : `build.cssMinify: false` dans un `vite.config.ts` du theme (#19981, retire avec le fichier : il desactivait la minification de tout le site construit pour masquer une dependance fautive), puis l'override `"magic-string@^1": "1.4.2"` dans `slides/package.json` (#20060), retire quand le correctif est arrive (suivi dans #20051). Le defect revient si une version d'UnoCSS anterieure a 66.11.0 reentre dans l'arbre : symptome et tickets ci-dessus.
 
 **Ou vit un `vite.config.*`** : Slidev ne lit un `vite.config.*` que dans ses **racines** (le theme, les addons, la racine du deck) -- un `slides/vite.config.ts` serait **ignore**. Une configuration destinee aux 19 decks vit donc dans le theme (`theme-ia101/`), jamais a la racine de `slides/`.
 

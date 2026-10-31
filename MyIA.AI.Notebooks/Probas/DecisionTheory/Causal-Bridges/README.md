@@ -19,6 +19,9 @@
 | [CausalBridges-06 — L'instrument faible](CausalBridges-06-Dowhy-Instrument-Faible.ipynb) | ~45 min | Variable instrumentale via `dowhy.CausalModel` (pipeline `identify` + `estimate(iv.instrumental_variable)` + `refute`) ; F-stat Staiger-Stock, biais IV vs OLS, **verdict NON_IDENTIFIABLE** honnête sur exclusion violée ; complète le 2SLS from scratch de la cellule 40 de `CausalBridges-07-Quasi-Experimental.ipynb` |
 | [CausalBridges-07 — Quasi-Experimental](CausalBridges-07-Quasi-Experimental.ipynb) | ~50 min | Méthodes quasi-expérimentales (DiD, contrôle synthétique, RDD, variables instrumentales) sur données réalistes ; estimands et hypothèses d'identification explicités |
 | [CausalBridges-08 — Décomposer la discrimination](CausalBridges-08-Causal-Fairness.ipynb) | ~50 min | Critères structurels Str-DE/IE/SE, famille TV (TE, Exp-SE, NDE, NIE) — Lem 4.1 et Thm 4.2 **vérifiés à la précision machine** sur un SCM à bruits partagés, `dowhy` backdoor vs naïf (+69 % d'écart mesuré), règle des 80 % (EEOC) sur le crédit allemand, business necessity |
+| [CausalBridges-09 — Emuler un essai ciblé](CausalBridges-09-Hernan-TargetTrialEmulation-Python.ipynb) | ~60 min | *Target trial emulation* (Hernan/Robins ch. 21-22) : confounding **variant dans le temps** sur lombalgie récurrente à deux visites, $L_1$ à la fois confondeur et médiateur, protocole d'essai ciblé à 7 composantes ; g-formula (Robins 1986, simulation forward) et IPTW stabilisé (Robins 1999, poids de censuration) contre trois réflexes naïfs ; benchmark **200 répliques × 2 forces de confounding** (biais/RMSE/couverture IC 95 %) — les deux g-méthodes sans biais, l'IPTW paie en variance (ET ×3) ; `dowhy` ancré sur l'instantané $t_0$ (SOTA-OK) ; pli 2 de l'EPIC #19309 |
+| [CausalBridges-10 — Automated Social Science](CausalBridges-10-Automated-Social-Science.ipynb) | ~45 min | Manning/Zhu/Horton (2024) en version bornée locale : un **SCM générateur** à β vrai connu (vendeur logistique, offre = 0.8 × budget), sujets LLM mono-tour sur les endpoints vLLM self-hosted de la stack GenAI (Qwen2.5-0.5B **AWQ vs GPTQ** × 3 seeds, 450 runs), ajustement `dowhy` (`linear_regression`, l'estimateur LPM du papier), **écart de calibration mesuré** contre le monde générateur et bras **élicitation directe** (l'argument central du papier — l'élicitation ne remplace pas la simulation — rejoué sur modèles 0.5B) ; distinction simulation/humains explicite ; grain #21203 du réservoir #14468 |
+| [CausalBridges-10b — Effets individuels : TARNet et CFRNet](CausalBridges-10b-ML-CATE-CFRNet-TARNet-Python.ipynb) | ~60 min | Le CATE τ(x) comme fonction de l'individu, pas un nombre : sur **IHDP** (Hill 2011, 747 unités, 25 covariables, vérité terrain), cinq baselines classiques (OLS-X, T/S-Learner, IPTW, doubly-robust) plafonnent, **TARNet et CFRNet from scratch** (tronc partagé + 2 têtes, MMD IPM, PyTorch) ; leçon mesurée : sans `dropout 0.5 + ℓ2` le réseau fite l'outcome et rate l'effet (PEHE 1,6 → 0,28) ; tableau verdict **5 graines** (PEHE médiane + IQR, erreur ATE) — TARNet premier (0,281), CFRNet deuxième avec la meilleure erreur ATE (0,072) ; contre-épreuve **ACIC 2016** (3 simulations zymu_1/5/10, 4 802 unités, 58 covariables, licence CDLA-Sharing-1.0, sha256 affichés à l'exécution) : le classement s'inverse — Doubly-robust et T-Learner premiers sur les trois blocs (PEHE 0.96–1.48), TARNet et CFRNet ne conservent pas leur avantage IHDP (1.52–4.90) ; pli 3 de l'EPIC #19309 |
 
 **Prérequis** : probabilités conditionnelles, graphes orientés acycliques (DAG), notions d'inférence bayésienne. Une lecture préalable de l'un des cinq notebooks de la constellation (ci-dessous) rend le pont plus concret.
 
@@ -36,8 +39,8 @@ Les quatre séries **implantent le même formalisme** avec des outils différent
 
 | Direction | Notebook | Moteur | Ce qu'il apporte de plus |
 |-----------|----------|--------|--------------------------|
-| Logique + SCM + contrefactuels | [Tweety-11](../../../SymbolicAI/Tweety/Tweety-11-Causal-Python.html) | Tweety (.NET) | backend causal logique, opérateur `do` natif |
-| Message passing exact | [Infer-5](../../Infer/Infer-5-Causal-Inference.ipynb) | Infer.NET | backdoor, front-door, Simpson, médiation, capstone contrefactuel |
+| Logique + SCM + contrefactuels | [Tweety-11](../../../SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb) | Tweety (.NET) | backend causal logique, opérateur `do` natif |
+| Message passing exact | [Infer-5](../../Infer/Infer-05-Causal-Inference.ipynb) | Infer.NET | backdoor, front-door, Simpson, médiation, capstone contrefactuel |
 | MCMC bayésien | [PyMC-5](../../PyMC/PyMC-05-Causal-Inference.ipynb) | PyMC | incertitude postérieure sur l'effet, contrefactuel bayésien |
 | Émergence causale (Hoel) | [ICT-5](../../../IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb), [ICT-6](../../../IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb) | PyPhi (CE 2.0) | information effective, coarse-graining, multiscale |
 
@@ -82,3 +85,16 @@ Exercices de CausalBridges-08 (famille TV, Epic #16620) :
 2. **Str-DE-fair n'efface pas l'écart observé** — mettre le coefficient direct `A → Y` à zéro : NDE ≈ 0 mais la TV reste positive (canal indirect + spurieux) ; la règle des 80 % mesure l'écart, pas la discrimination directe.
 3. **La règle des 80 % sur d'autres attributs du crédit allemand** — `foreign_worker` (groupe de référence minuscule : quelle confiance au ratio ?) et l'âge binarisé à 25 ans.
 
+Exercices de CausalBridges-10 (Automated Social Science, #21203) :
+
+1. **Le parseur de secours** — le parseur strict compte `None` toute réponse non conforme ; écrire un parseur fallback (DECLINE/REFUSE/NO d'un côté, ACCEPT/YES/OK de l'autre, trancher seulement si un seul camp apparaît) et mesurer combien de runs il récupère, puis si les β estimés bougent.
+2. **Les coefficients standardisés** — calculer les β* (β × σ(cause) / σ(réponse)) des trois causes sur les sujets simulés : quelle cause domine la décision du vendeur ? (le papier : budget 0.51, prix minimum −0.49).
+3. **La sensibilité au libellé** — rejouer la cellule pilote avec une paraphrase du prompt (par ex. « Would you sell your mug at that price? », offre mécanique inchangée à 0.8 × budget, sinon le β vrai ne tient plus) et mesurer combien de réponses changent : c'est le bruit de mesure propre aux sujets simulés.
+
+Exercices de CausalBridges-10b (CATE, TARNet/CFRNet, pli 3 de #19309) :
+
+1. **Ablation de la pénalité MMD** — balayer α ∈ {0, 0.5, 1, 2} (3 graines) : sur cette réplique la PEHE croît avec α ; trouver un régime (petit α, noyau non linéaire) où CFRNet repasse devant TARNet.
+2. **Ablation du tronc partagé** — définir un T-Learner neuronal (deux réseaux indépendants, un par bras, sans représentation commune) et mesurer sa PEHE contre TARNet sur les 5 graines.
+3. **GANITE from scratch** (Bica et al. 2018) — générateur de contrefactuels + discriminateur ; comparer sa PEHE à TARNet sur 3 graines.
+4. **CEVAE simplifié** (Louizos et al. 2017) — VAE à facteur latent z portant confondeur et hétérogénéité ; ITE par différence de décodages à z échantillonné.
+5. **Dragonnet** (Shi et al. 2019) — tronc partagé + tête outcome + tête propension, régularisation ciblée ε ∈ {0, 0.1, 1} ; mesurer la PEHE par strate de propension.

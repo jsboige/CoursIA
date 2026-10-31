@@ -23,7 +23,7 @@ Ce module explore les modèles de génération vidéo de pointe : HunyuanVideo, 
 | 1 | [02-1-HunyuanVideo-Generation](02-1-HunyuanVideo-Generation.ipynb) | Génération Hunyuan | Local GPU | ~18GB |
 | 2 | [02-2-LTX-Video-Lightweight](02-2-LTX-Video-Lightweight.ipynb) | Génération légère LTX | Local GPU | ~8GB |
 | 3 | [02-3-Wan-Video-Generation](02-3-Wan-Video-Generation.ipynb) | Génération Wan | Local GPU | ~10GB |
-| 4 | [02-4-SVD-Image-to-Video](02-4-SVD-Image-to-Video.ipynb) | SVD (Image → Vidéo) | ComfyUI | ~10GB |
+| 4 | [02-4-SVD-Image-to-Video](02-4-SVD-Image-to-Video.ipynb) | SVD (Image → Vidéo) | Local GPU (diffusers) | ~10GB |
 | 5 | [02-5-LTX2-Audiovisual](02-5-LTX2-Audiovisual.ipynb) | LTX-2 audio+vidéo conjoint (22B) | Local GPU | ~14-24GB (fp8-cast natif, GGUF Q4 en prod) |
 | 6 | [02-6-MiniMax-H3-Architecture-Licensing](02-6-MiniMax-H3-Architecture-Licensing.ipynb) | Architecture et bifurcation juridique MiniMax H3 (licence poids ≠ ToS service) | Étude documentaire (CPU) | — |
 | 7 | [02-7-CogVideoX-Text-to-Video](02-7-CogVideoX-Text-to-Video.ipynb) | Génération texte → vidéo CogVideoX-2b (Apache-2.0, couple discriminant Prong B) | Local GPU | ~16-20GB |

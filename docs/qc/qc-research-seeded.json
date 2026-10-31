@@ -39,8 +39,8 @@
   "20886": {
    "url": "https://www.quantconnect.com/research/20886/the-max-effect-with-vix-based-leverage-scaling/",
    "lastmod": "2026-06-12T13:58:59+00:00",
-   "seeded_at": null,
-   "issue": null
+   "seeded_at": "2026-10-24",
+   "issue": 22290
   },
   "20371": {
    "url": "https://www.quantconnect.com/research/20371/volatility-targeted-qqq-tlt-rotation-with-a-multi-scale-cnn-lstm-forecast/",
@@ -875,6 +875,12 @@
    "lastmod": "2026-09-20T03:36:17+00:00",
    "seeded_at": null,
    "issue": 16940
+  },
+  "21469": {
+   "url": "https://www.quantconnect.com/research/21469/following-the-stock-purchases-of-senators/",
+   "lastmod": "2026-10-09T19:01:21+00:00",
+   "seeded_at": null,
+   "issue": 20465
   }
  }
 }

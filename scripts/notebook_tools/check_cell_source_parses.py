@@ -8,7 +8,7 @@ output it carries) crosses the 60+ checks without one red. Two instances:
   (a) PR #13287 cell -- `print(f"  donne un levier "prononce" (0.746)...")`
       -- double-quote OUTSIDE f-string substitution field: invalid in 3.11
       as in 3.14 (PEP 701 only covers the inside of `{}`).
-  (b) `main` GameTheory-03e-Plan-de-deformation-Python.ipynb cell[7] -- a markdown
+  (b) `main` Dynamics-09-Biens-Publics-N-Personnes-Python.ipynb cell[7] -- a markdown
       blob typed `code`, carrying an orphan output from another calculation.
 
 This script:
@@ -112,6 +112,19 @@ def _scan_line(line: str, depth: int, in_triple: Optional[str]) -> Tuple[int, Op
     return depth, in_triple
 
 
+def _is_line_continuation(line: str) -> bool:
+    """True when the physical line ends with an odd number of backslashes:
+    a single trailing backslash continues the logical line, an escaped
+    backslash (``\\\\``) does not."""
+    n = 0
+    for ch in reversed(line.rstrip()):
+        if ch == "\\":
+            n += 1
+        else:
+            break
+    return n % 2 == 1
+
+
 def _strip_ipython_magics(src: str) -> str:
     """Drop lines starting with `!` (shell) or `%` (magics incl. `%%`). The
     cell source may legitimately contain `!pip install` or `%%time` -- those
@@ -126,17 +139,43 @@ def _strip_ipython_magics(src: str) -> str:
     ``print("..."\\n      % (a, b))`` lost its argument line and the cell
     was flagged "'(' was never closed"). The stripper therefore tracks
     bracket depth and triple-quote state and only drops a magic line at
-    logical-line start."""
+    logical-line start.
+
+    A dropped magic line may chain physical continuations with trailing
+    backslashes (``%pip install a \\\\<newline>    b c``): those physical
+    lines belong to the magic's logical line, not to Python. Leaving them
+    behind used to compile to "unexpected indent" (TP #21036, install cell).
+    The stripper consumes the whole backslash run of a dropped magic.
+
+    A magic may also be INDENTED -- the body of an ``if``/``try`` block
+    (TP #21036: ``if run_inflect_nano:`` guarded install). Dropping it
+    entirely would leave the block header without a body and compile to
+    IndentationError; an indented magic is replaced by ``pass`` at the
+    same indentation. At depth 0 a statement can never start with ``%`` or
+    ``!`` in valid Python, so the replacement cannot shadow real code."""
     out_lines = []
     depth = 0
     in_triple: Optional[str] = None
+    in_continuation = False
+    pending_pass_indent: Optional[str] = None
     for line in src.splitlines():
+        if in_continuation:
+            in_continuation = _is_line_continuation(line)
+            continue
         if depth == 0 and in_triple is None:
             stripped = line.lstrip()
             if stripped.startswith("!") or stripped.startswith("%"):
+                in_continuation = _is_line_continuation(line)
+                if line[: len(line) - len(line.lstrip())]:
+                    pending_pass_indent = line[: len(line) - len(line.lstrip())]
                 continue
+        if pending_pass_indent is not None:
+            out_lines.append(pending_pass_indent + "pass")
+            pending_pass_indent = None
         depth, in_triple = _scan_line(line, depth, in_triple)
         out_lines.append(line)
+    if pending_pass_indent is not None:
+        out_lines.append(pending_pass_indent + "pass")
     return "\n".join(out_lines)
 
 
@@ -206,7 +245,7 @@ def _compile_cell(src: str, target_py: Tuple[int, int] = (3, 10)) -> Tuple[Optio
 
 
 def _cells_touched_by_pr(diff_range: Iterable[str]) -> List[Path]:
-    """Return the .ipynb paths modified between two refs (e.g. origin/main..HEAD)."""
+    """Return the .ipynb paths modified between two refs (merge-base..HEAD)."""
     out: List[Path] = []
     for line in diff_range:
         # `git diff --name-only` line shape: 'MyIA.AI.Notebooks/.../foo.ipynb'
@@ -217,10 +256,22 @@ def _cells_touched_by_pr(diff_range: Iterable[str]) -> List[Path]:
 
 
 def _diff_range(base: str, head: str) -> Iterable[str]:
-    """`git diff --name-only <base>..<head>`, or HEAD if no diff available."""
+    """`git diff --name-only <base>...<head>`, or [] if no diff available.
+
+    Trois points et non deux (residu de #10403) : `<base>..<head>` compare deux arbres,
+    donc sur une PR empilee dont la base a gagne des commits depuis le fork,
+    il liste aussi les notebooks que `main` a modifies -- la PR se voit
+    imputer des findings sur des fichiers qu'elle n'a pas touches. La forme en
+    trois points ne rend que l'apport de la PR (merge-base..head).
+
+    Un echec git (merge-base indeterminable dans un clone superficiel) n'est
+    pas rattrape par un repli en deux points : la fonction rend une liste
+    vide, et l'appelant doit lire ce vide comme "aucun diff disponible", pas
+    comme "aucun notebook touche".
+    """
     try:
         cp = subprocess.run(
-            ["git", "diff", "--name-only", f"{base}..{head}"],
+            ["git", "diff", "--name-only", f"{base}...{head}"],
             cwd=REPO_ROOT,
             capture_output=True,
             text=True,

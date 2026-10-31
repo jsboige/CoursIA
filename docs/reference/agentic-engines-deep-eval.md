@@ -14,9 +14,15 @@
 | T4 | pt 2 — SK, modes restants (séquentiel, concurrent, group chat, Magentic) exécutés (service LLM réel, temp 0) | livré |
 | T5 | pt 3 — MAF, graphe typé (`WorkflowBuilder`) exécuté (service LLM réel, temp 0), borne de boucle falsifiée | livré |
 | T6 | pt 4 — couverture C# mesurée par les assemblages (SK 1.81.0, MAF 1.24.0, ADK absent), contrôles positif et négatif | livré |
-| — | pt 2 — MS Agent Framework (agents, graphe) | à venir |
+| T7 | pt 2 — MAF, couche agents : `HandoffBuilder` exécuté (service LLM réel, temp 0), contrôle positif des cinq topologies Python | livré |
+| T8 | pt 2 — MAF, couche agents : `GroupChatBuilder` (selection function) + `MagenticBuilder` (manageur + ledger) exécutés (service LLM réel, temp 0) | livré |
+| P1 | pt 3 — pilote identique, réplique **SK** : charge de distillation figée + `GroupChatOrchestration` à manager custom, exécuté (service LLM réel, temp 0, 2 runs) | livré |
+| P2 | pt 3 — réplique **MAF** sur la même fixture, même politique de tour (`GroupChatBuilder` + selection function + termination condition) | livré |
+| P3 | pt 3 — réplique **ADK** sur la même fixture, même politique de tour (boucle Python de désignation explicite + `InMemorySessionService` partagée) | livré |
+| — | coût pour le dépôt (pt 5) | livré (§4) |
 | — | pt 1 état de l'art | livré hors repo : note datée du 2026-10-05 sur [#19380](https://github.com/jsboige/CoursIA/issues/19380) ; mémo inventaire local du 2026-10-07 (po-2024:CoursIA-2) sur [#14499](https://github.com/jsboige/CoursIA/issues/14499) |
-| — | pts 3-6 (déterminisme, couverture langages, coût, verdict) | à venir |
+| — | pts 3-5 (déterminisme, couverture langages, coût) | livrés (§2-§4) |
+| — | pt 6 verdict par critère | réservé à ai-01 + user |
 
 ## 2. Modes d'orchestration — exemples exécutés
 
@@ -280,12 +286,187 @@ VERDICT controles : negatif=OK positif=OK
 
 **Forme du livrable, et pourquoi.** La sonde est une **app mono-fichier** (.NET 10, directives `#:package`) : aucun `.csproj` n'est ajouté au dépôt, donc aucun impact sur `MyIA.CoursIA.sln`, `MyIA.AI.Shared.sln` ni sur les workflows .NET (tous filtrés par chemin) — un projet orphelin aurait été happé par l'un ou l'autre. La reproduction demande le réseau pour la restauration des paquets, comme les pilotes Python demandent une clé d'API.
 
-**Les traces d'exécution sont committées** ([`eval-pilots/traces/`](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/eval-pilots/traces/)) : les `stdout` des six pilotes, tels quels — pour qu'une affirmation `VÉRIFIÉ` de ce document soit une **propriété du dépôt** et non du poste de l'auteur. Le `stderr` n'est pas committé : les avertissements Python y impriment des chemins absolus, et un fichier committé n'en porte pas. La séparation est faite **à la capture**, jamais par retrait de lignes après coup. Une trace committée n'est pas un contrôle — le contrôle est le pilote, rejouable par la commande du README ; la trace est le témoin daté.
+**Les traces d'exécution sont committées** ([`eval-pilots/traces/`](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/eval-pilots/traces/)) : les `stdout` des pilotes, tels quels — pour qu'une affirmation `VÉRIFIÉ` de ce document soit une **propriété du dépôt** et non du poste de l'auteur. Le `stderr` n'est pas committé : les avertissements Python y impriment des chemins absolus, et un fichier committé n'en porte pas. La séparation est faite **à la capture**, jamais par retrait de lignes après coup. Une trace committée n'est pas un contrôle — le contrôle est le pilote, rejouable par la commande du README ; la trace est le témoin daté.
 
 **Le coût de ce choix est payé, et il est petit.** Un `.csproj` hors solution aurait aussi rendu T6 rejouable ; l'app mono-fichier ne le fait pas *par elle-même* — les versions de paquets doivent être lisibles quelque part en dehors des directives. C'est le rôle de [`eval-pilots/README.md`](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/eval-pilots/README.md) : il porte les trois versions épinglées, la commande de restauration, l'interpréteur des pilotes Python et le modèle épinglé. T6 est donc rejouable depuis le dépôt seul, sans `.csproj` ni impact sur les solutions.
 
 **Deux pièges de méthode, tous deux payés par une erreur réelle.** `Assembly.Load("<nom>")` ne suffit pas : rien ne référence ces assemblages, donc rien ne les charge, et la sonde rend « aucune assembly » sur un projet pourtant correctement restauré — il faut charger **par chemin** depuis le répertoire de sortie. Et un détecteur se valide par ses **faux négatifs**, pas par ses hits : d'où le contrôle négatif ci-dessus. Sans lui, « 0 hit » serait indiscernable de « sonde cassée » — le mode de défaut qui a fait passer pour un « résidu » un lake portant 80 % de la dette formelle du dépôt (règle anti-régression).
 
-### 2.8 À venir
+### 2.8 Pilote MAF — la couche agents (HandoffBuilder)
 
-Reste de #14499 : le pilote identique dans les trois moteurs sur une **vraie charge de distillation** (point 3), et le coût pour le dépôt (point 5). L'emplacement `eval-pilots/` accueille les pilotes Python et la sonde C# ; l'idiome de référence de MAF est l'organe du dépôt (`SymbolicAI/Lean/agent_tests/prover/workflow.py`).
+`VERIFIÉ` — pilote [`eval-pilots/maf_agents_handoff_pilot.py`](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/eval-pilots/maf_agents_handoff_pilot.py), exécuté sous le **venv projet** (Python 3.13) / `agent-framework-core` **1.21.0** + `agent-framework-orchestrations` **1.3.1** (lignes alignées pour la mesure — l'env portait core 1.15.0 avec orchestrations 1.1.1, incompatible sur le protocole request-info ; règle F), service **réel** `gpt-4o-mini`, température 0, `max_tokens` 200, budget **dur** de 40 appels comptés par un client instrumenté. Même scénario de triage que T2 (§2.3) et T3 (§2.4), même modèle épinglé en constante — les **trois** moteurs sont comparables par construction. Reproduction firsthand depuis l'emplacement livré : exit 0, **deux fois** (le second processus sert de mesure inter-processus du déterminisme).
+
+```text
+MAF versions: agent-framework-core 1.21.0, agent-framework-orchestrations 1.3.1
+sonde OK (1 appel(s))
+TOPOLOGIES PYTHON: Sequential, Concurrent, GroupChat, Magentic, Handoff
+[technique #1] agents=['triage', 'specialiste_technique'] decision: specialiste_technique
+[technique #2] agents=['triage', 'specialiste_technique'] decision: specialiste_technique
+[formation #1] agents=['triage', 'specialiste_formation'] decision: specialiste_formation
+[formation #2] agents=['triage', 'specialiste_formation'] decision: specialiste_formation
+ROUTING CORRECTNESS: OK
+ROUTING DETERMINISM: OK
+LLM CALLS: 9/40
+PILOT OK maf handoff model=gpt-4o-mini
+```
+
+**Déterminisme (pt 3, troisième moteur, troisième datapoint identique)** : à température 0, la décision de routage (quel spécialiste termine) est stable intra-processus et inter-processus ; la prose n'est pas assertée — même doctrine que T2/T3. Profil de coût identique à T2 : **exactement 2 appels LLM par run** (1 triage + 1 spécialiste), la sonde mise à part.
+
+**La couche agents de MAF existe, mais elle vit dans un paquet séparé.** T5 (§2.6) pouvait laisser croire que MAF Python se réduit au graphe typé : c'est un artefact de périmètre, pas de nature. Les cinq topologies mesurées en C# par T6 existent en Python dans `agent-framework-orchestrations` — contrôle positif par import, zéro appel LLM : `SequentialBuilder`, `ConcurrentBuilder`, `GroupChatBuilder`, `MagenticBuilder`, `HandoffBuilder`. La parité C#/Python est donc réelle sur la couche agents (là où SK est Python d'abord, §2.7), et les **deux natures de routage coexistent chez MAF** : graphe écrit dans le cœur (T5), topologies déléguées dans orchestrations (ce pilote) — la conclusion du §2.6 se précise sans être renversée.
+
+Faits d'API mesurés sur core 1.21.0 / orchestrations 1.3.1 :
+
+| Fait | Détail |
+| --- | --- |
+| Drapeau obligatoire | `HandoffBuilder.build()` jette `ValueError` si un participant n'a pas `require_per_service_call_history_persistence=True` (« local history stays consistent with the service across handoff tool-call short-circuits »). |
+| Agent de départ explicite | `with_start_agent(agent)` obligatoire — `build()` jette sinon (« Must call with_start_agent(...) before building the workflow »). |
+| Entrée et lancement | message explicite `Message(role="user", contents=[Content(type="text", …)])` + `workflow.run(msg)` direct. `WorkflowAgent(workflow).run(...)` bute sur le handshake request-info du handoff (`AgentInvalidResponseException: Unexpected content type while awaiting request info responses`) — mesuré sur deux lignes de versions alignées, ce n'est pas un artefact de dérive. |
+| Observable du locuteur | l'identité d'agent ne vit **ni** dans `AgentResponse` ni dans `Message` : c'est l'event qui la porte. Seuls les events `type='output'` (`executor_id` + réponse) marquent un tour de parole réel ; `executor_invoked`/`executor_completed` partent **aussi** pour les rounds du protocole interne (`should_respond=False`, sans appel LLM) — les compter fait lire un mesh bouclant là où la conversation réelle est `triage → spécialiste → fin`. |
+| Terminaison | le workflow est en **posture interactive** : après la réponse du spécialiste il émet une `request_info` (`HandoffAgentUserRequest`) et attend l'utilisateur. Réutiliser le même workflow pour une nouvelle entrée fait avancer l'état mais laisse la requête pendante (warning « fresh message while request_info events are still pending ») — même hygiène que T2 : **reconstruire le workflow par invocation** (agents réutilisables, eux). |
+| Spécialistes puits | un participant sans `add_handoff` déclenche un warning (« your workflow may get stuck ») mais est un **puits légitime** : le run termine sur sa réponse. Le warning se lit « ce agent ne peut pas re-transférer », pas « erreur ». |
+| Comptage de versions | `agent_framework.__version__` (metapaquet) et `agent-framework-core` divergent — leçon déjà inscrite en T5, toujours vraie en 1.21. |
+
+### 2.9 Pilote MAF couche agents — GroupChat (selection function) et Magentic (manageur + ledger)
+
+
+`VÉRIFIÉ` — pilote [`eval-pilots/maf_groupchat_magentic_pilot.py`](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/eval-pilots/maf_groupchat_magentic_pilot.py), exécuté sous `agent-framework-core` **1.21.0** / `agent-framework-orchestrations` **1.3.1** (env venv du dépôt — le cœur a avancé depuis T5/T7), service **réel** (`gpt-4o-mini`, température 0, `max_tokens` 200, budget **dur de 60 appels** compté par un client instrumenté qui jette au-delà). Même banc de triage que T2/T3/T7 : deux entrées non ambiguës × deux exécutions par topologie. Reproduction firsthand depuis l'emplacement livré : exit 0.
+
+Les deux topologies mesurées ici complètent la couche agents MAF entamée par T7 (handoff) — et elles portent **la question topologique décisive** pour l'évaluation comparative :
+
+- **GroupChat** — qui parle ensuite n'est **pas négocié par un protocole du moteur** : c'est une **selection function que nous écrivons**, appelée à chaque tour avec l'état de la conversation (`GroupChatState(current_round, participants, conversation)`). Le pilote mesure ce seam : le triage répond en nommant son spécialiste (`SPECIALISTE TECHNIQUE` / `SPECIALISTE FORMATION` en majuscules), la selection function lit la conversation et route ;
+- **Magentic** — le pattern orchestrateur : un agent **manageur** découpe la demande en une tâche confiée au spécialiste, le **ledger** (plan + avancement, en JSON) piste l'exécution, sous borne `max_round_count=1`.
+
+Trace d'exécution (les deux runs — même process et processus frais — sont byte-identiques) :
+
+```text
+MAF versions: agent-framework-core 1.21.0, agent-framework-orchestrations 1.3.1
+[GC technique #1/#2] agents=['triage', 'specialiste_technique'] decision: specialiste_technique
+[GC formation #1/#2] agents=['triage', 'specialiste_formation'] decision: specialiste_formation
+[MG technique #1/#2] participation: specialiste_technique
+[MG formation  #1/#2] participation: specialiste_formation
+GC ROUTING CORRECTNESS: OK / DETERMINISM: OK
+MG PARTICIPATION CORRECTNESS: OK / DETERMINISM: OK
+LLM CALLS: total 25/60 (groupchat 8, magentic 16)
+PILOT OK maf groupchat+magentic model=gpt-4o-mini
+```
+
+**Déterminisme (pt 3, datapoint MAF couche agents)** : même doctrine que T2/T3/T7 — à température 0 on asserte la **décision** (quel spécialiste a parlé / participé), jamais la prose. Mesuré stable en intra-processus (2 exécutions par entrée) **et** inter-processus (relance complète : traces byte-identiques, y compris la répartition des appels 8/16).
+
+Faits d'API mesurés sur orchestrations 1.3.1 :
+
+| Fait | Détail |
+| --- | --- |
+| L'observable T7 ne dit pas qui a parlé ici | les events `type='output'` d'un GroupChat/Magentic portent l'id de l'**orchestrateur** (`group_chat_orchestrator` / `magentic_orchestrator`), pas des participants. Le tour de parole réel vit dans les events `type='group_chat'` : leur `data` est soit un `GroupChatRequestSentEvent` (tâche envoyée — sans appel LLM) soit un `GroupChatResponseReceivedEvent` (vraie réponse, champ `participant_name`). Seul le second compte. |
+| **Le même extracteur sert les deux topologies** | Magentic **embarque un group chat interne** : ses tours de spécialistes passent aussi par des events `group_chat` → la fonction `auteurs()` du pilote (filtre `ResponseReceived` → `participant_name`) fonctionne à l'identique pour GroupChat et Magentic. Le plan du manageur, lui, vit dans les events `magentic_orchestrator` — hors tours de parole. |
+| `executor_invoked`/`completed` partent aussi pour les rounds de protocole | ils tirent pour des rounds `should_respond=False` **sans appel LLM** (mesuré sur le flux complet d'un run) — les compter comme des tours surévalue la participation. C'est le même piège que le T7, vu de la couche orchestration. |
+| Le manageur Magentic exige son **propre plafond de tokens** | ses prompts de ledger demandent du **JSON** (plan, avancement). À `max_tokens=200` le JSON est tronqué → `Progress ledger JSON parse failed (attempt 3/3): Unbalanced JSON braces` → l'orchestrateur RESET puis `Max round count reached` **sans que le plan n'ait jamais été consommé**. À 600 tokens pour le seul manageur (les spécialistes restent à 200), le ledger parse proprement et le routage s'exécute. Même famille que le fait SK §2.5 (manager Magentic = JSON structuré = budget dédié) — la contrainte est dans le **pattern Magentic**, pas dans le moteur. |
+| La selection function est le seam evaluable | `GroupChatState.participants` est un `OrderedDict` (identifiant → description) ; `current_round` part à 0 (premier appel = qui ouvre), et `conversation[-1]` est la réponse à router. `TerminationCondition` n'est **pas** importable du top-level `agent_framework` — la borne passe par `max_rounds` du builder. |
+| Coût par topologie | GroupChat : **2 appels/run** (triage + spécialiste, `max_rounds=2`) ; Magentic : **4 appels/run** (plan + ledger du manageur + réponse du spécialiste + ledger final) — le pattern orchestrateur coûte le double du routage par selection function sur ce banc. |
+
+**Ce que le relevé apprend pour l'évaluation comparative.** Le §2.6 concluait que MAF-graph donne un routage **écrit** là où SK-Magentic le délègue à un LLM. La couche agents MAF nuance la partition : `GroupChatBuilder` rend le routage **écrit sans écrire le graphe** — la selection function est notre code appelé par le moteur, exactement le compromis que le handoff T7 délègue au protocole et que le graphe T5 impose en arêtes. Les trois couches forment un spectre (délégué → callable nôtre → graphe nôtre), et GroupChat en est **le point médian** : déterminisme testable hors LLM (la fonction est pure Python sur l'état) sans le coût d'écriture du graphe. Magentic, lui, reste le pattern délégué — avec la même exigence de budget de tokens du manageur que SK, et un coût par run double sur ce banc.
+
+### 2.10 À venir
+
+Le suivi des tranches vit dans le tableau **État du document** en tête de ce document, pas ici : le seul point du protocole encore ouvert est le **verdict par critère** (point 6), que le protocole réserve à l'arbitrage ai-01 + user. L'emplacement `eval-pilots/` accueille les pilotes Python et la sonde C# ; l'idiome de référence du graphe MAF est l'organe du dépôt (`SymbolicAI/Lean/agent_tests/prover/workflow.py`).
+
+## 3. Pilote identique sur une vraie charge de distillation (point 3)
+
+### 3.1 La charge partagée — fixture figée
+
+`VERIFIÉ` (fixture [`distill_charge_fixture.md`](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/eval-pilots/distill_charge_fixture.md)) : la charge est la **section réelle** d'ouverture de [`01-SemanticKernel-Intro.ipynb`](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/01-SemanticKernel-Intro.ipynb) (cellules 0-8 : objectifs, prérequis, sommaire, première cellule de code), extraite puis **figée** à la tête `8e9eaaaa0`. Écart **déclaré** dans le header de la fixture : la cellule 8, l'unique cellule d'authentification de la section, est tronquée par le budget de fixture — la charge distillée ne couvre donc pas l'authentification, et c'est un choix de borne, pas une caractéristique du carnet. Les trois répliques (P1 SK, P2 MAF, P3 ADK) distillent **ce fichier**, pas le carnet vivant — la charge est byte-stable entre moteurs, entre exécutions et entre dates.
+
+### 3.2 P1 — Semantic Kernel : `GroupChatOrchestration` à manager custom
+
+`VERIFIÉ` (pilote [`sk_distillation_pilot.py`](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/eval-pilots/sk_distillation_pilot.py), LOC self-mesurées reportées dans la trace [`out-P1-sk-distillation.txt`](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/eval-pilots/traces/out-P1-sk-distillation.txt), sk 1.41.3, gpt-4o-mini temp 0, budget dur 16) :
+
+- **La politique de tour vit dans le moteur** : trois `ChatCompletionAgent` (producteur ≤ 120 mots, critique à verdict imposé `VERDICT: ACCEPTE|REVISION:`, arbitre à `DECISION:`) reliés par `GroupChatOrchestration`, dont le manager custom `DistillationGroupChatManager` encode producteur → critique → [révision → producteur → critique] → arbitre dans `select_next_agent`, et scelle dans `should_terminate`. C'est la pièce que P2/P3 ré-encoderont dans l'idiome de leur moteur (graphe typé / boucle) — **même politique, organe différent**.
+- **Mesures** (2 exécutions complètes) : 3 appels LLM/run, latences 1,82/0,69/0,83 s puis 1,83/0,72/0,77 s, mur 3,46/3,42 s, total 8/16 appels (sondes comprises). **Déterminisme OK** : (tours, décision, tour d'arbitrage) = (1, ACCEPTE, 1) identique sur les deux runs.
+- **Comportement en échec** : une sonde sur un modèle inexistant échoue fort (`ServiceResponseException`, type nommé, clé jamais affichée) — aucun repli, aucune tentative masquée.
+- **Deux constats de moteur, pas des trous du pilote** : (1) l'orchestration GroupChat appelle les agents **en streaming** — le compteur d'appels doit surcharger `get_streaming_chat_message_contents`, pas seulement la voie non-streaming (première version du pilote : 6 appels invisibles au compteur) ; (2) les chunks streaming n'exposent **pas** l'usage de jetons (l'API ne le rend que sur `stream_options.include_usage`, que SK ne positionne pas) — la mesure « tokens par appel » exige la voie non-streaming ; sur ce banc, la latence et le compte d'appels sont mesurés, les jetons sont `n/d` pour les tours d'agents. C'est une **différence d'observabilité par mode d'invocation**, audible pour le point 6.
+- **Réserve de couverture, levée par ré-exécution.** La mesure initiale (ci-dessus) datait d'**avant** la documentation de la troncature de la cellule 8 : le critique acceptait au tour 1, seule la voie ACCEPTE était exercée. Le pilote a été **ré-exécuté sur la fixture réparée** (4859 caractères, troncature déclarée) : le critique rejette alors au tour 1 (`VERDICT: REVISION:` — la distillation ne couvre pas l'authentification), le producteur révise, le critique rejette de nouveau, l'arbitre scelle en `DECISION: RESIDUEL tour 1`. Séquence : producteur → critique → producteur → critique → arbitre (2 tours), déterminisme structurel OK sur les deux runs, 12/16 appels. **La branche RÉVISION du manager SK est donc exercée**, et le résultat **converge avec P2 (MAF)** : même séquence d'auteurs, même type de décision, même tour d'arbitrage. La divergence de verdict P1(ACCEPTE)/P2(RESIDUEL) relevait bien de la **charge**, pas du moteur — désormais prouvé par ré-exécution à charge identique. C'est la comparaison strictement à charge identique que le point 3 appelait.
+
+### 3.3 P2 — Microsoft Agent Framework : `GroupChatBuilder` à selection function
+
+`VERIFIÉ` (pilote [`maf_distillation_pilot.py`](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/eval-pilots/maf_distillation_pilot.py), trace [`out-P2-maf-distillation.txt`](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/eval-pilots/traces/out-P2-maf-distillation.txt)) : la même politique de tour que P1, encodée cette fois dans une **selection function** appelée par le moteur à chaque tour avec `GroupChatState(current_round, participants, conversation)` — l'idiome MAF (`GroupChatBuilder`, orchestrations 1.3.1). Mêmes instructions mot pour mot, même fixture figée, même modèle épinglé `gpt-4o-mini` à température 0.
+
+Relevé (deux runs, même process) :
+
+```text
+MAF versions: agent-framework-core 1.21.0, agent-framework-orchestrations 1.3.1, agent-framework-openai 1.16.0
+sonde echec (modele inexistant): ChatClientException
+[run 1] sequence: producteur -> critique -> producteur -> critique -> arbitre   verdict_final=REVISION   wall=7.23s
+[run 2] sequence: producteur -> critique -> producteur -> critique -> arbitre   verdict_final=REVISION   wall=6.24s
+    decision: DECISION: RESIDUEL tour 1: la cellule d'authentification est tronquee...
+DETERMINISME (tours, decision, tour d'arbitrage): OK (2, 'RESIDUEL', '1') vs (2, 'RESIDUEL', '1')
+LLM CALLS: 12/16
+```
+
+Le pilote reporte aussi ses LOC self-mesurées dans la trace (ligne `LOC PILOT`).
+
+- **La branche RÉVISION est exercée ici, contrairement à P1.** En documentant la troncature de la cellule 8 dans la fixture (correctif de la review P1), la charge est devenue **non distillable complètement** : le critique rejette au tour 1 (`VERDICT: REVISION:` — la distillation ne couvre pas l'authentification), le producteur révise, le critique rejette de nouveau, l'arbitre scelle en `DECISION: RESIDUEL`. La politique conditionnelle complète (producteur → critique → révision → producteur → critique → arbitre) est donc mise à l'épreuve en P2, là où P1 n'exerçait que la voie ACCEPTE. C'est une couverture **gagnée par la réparation de la fixture**, pas par une charge écrite pour l'occasion.
+- **Déterminisme asserti sur la structure, jamais la prose** : le tuple comparé est (tours, type de décision, entier du tour d'arbitrage) = `(2, RESIDUEL, 1)`. La phrase motivant le RESIDUEL varie entre runs (le LLM la reformule) ; le déterminisme ne la lit pas — c'est la même discipline qu'en P1, resserrée par une expression régulière sur `tour\s+(\d+)` plutôt qu'un découpage de chaîne fragile.
+
+- **Écart d'environnement déclaré à l'installation** : `agent-framework-openai` n'existe **pas** en 1.21.0 sur PyPI (dernière disponible : 1.17.0, `pip index versions` le 29/10) — le connecteur est donc résolu par pip contre les pins `core 1.21.0` + `orchestrations 1.3.1` de T8 ; la ligne de versions effective est imprimée dans la trace (connecteur 1.16.0). Le constructeur prend `model=`, pas `model_id=`.
+- **Deux pièges d'extraction, mesurés et corrigés** : (1) `GroupChatResponseReceivedEvent` ne porte **pas** le texte — seulement `round_index` et `participant_name` ; le texte vit dans l'event `executor_invoked` dont `data` est un `AgentExecutorResponse` (`executor_id` = nom de l'agent, `agent_response.text`/`.messages`). La séquence d'auteurs se lit donc sur les events `group_chat`, les textes sur les `AgentExecutorResponse`. (2) La selection function n'a **pas d'état terminal** : sans `termination_condition`, elle ré-élit l'arbitre jusqu'à `max_rounds`. La boucle se scelle donc par une `termination_condition` (`_apres_arbitre` : stop dès que le dernier auteur est l'arbitre), posée sur le builder — c'est l'homologue du `should_terminate` du manager SK de P1.
+- **Comparabilité avec P1** : même fixture figée, même politique, même réglage, organe différent — exactement ce que vise le point 3. Chez SK la boucle vit dans un `GroupChatManager` custom (deux méthodes `select_next_agent`/`should_terminate`), chez MAF dans une selection function + une termination condition posées sur le builder. **Convergence prouvée à charge identique** : P1 a été ré-exécuté sur la fixture réparée (cf §3.2) et produit la **même** séquence (producteur → critique → producteur → critique → arbitre), le **même** type de décision (`RESIDUEL`), le **même** tour d'arbitrage (1) que P2. Les deux répliques ne divergent que sur l'idiome d'orchestration, pas sur le résultat — c'est la mesure centrale du point 3.
+
+### 3.4 P3 — Google ADK : boucle Python de désignation explicite sur session partagée
+
+`VERIFIÉ` (pilote [`adk_distillation_pilot.py`](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/eval-pilots/adk_distillation_pilot.py), trace [`out-P3-adk-distillation.txt`](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/eval-pilots/traces/out-P3-adk-distillation.txt)) : la même politique de tour que P1/P2, mais **sans manager de group-chat ni selection function** — ADK n'a pas cet idiome dans notre setup. La politique vit dans une **boucle Python de désignation explicite** (contrat C4 de l'organe `AdkOrchestrator` du Track2, réutilisé tel quel) : notre code décide qui parle ensuite, invoque l'agent désigné via un `Runner` ADK sur une `InMemorySessionService` **partagée**, lit sa réponse, re-désigne. C'est exactement la différence de nature que le point 3 veut mesurer : là où SK/MAF exposent un point d'extension *orchestrateur* (manager, selection function), ADK expose des primitives (`Runner`, `SessionService`) et laisse la politique à l'appelant.
+
+Relevé (deux runs, même process) :
+
+```text
+ADK version: google-adk 2.8.0
+sonde echec (modele inexistant): NotFoundError
+charge: distill_charge_fixture.md (4859 caracteres, fixture figee)
+[run 1] tours=1 verdict_critique=ACCEPTE wall=4.03s
+    sequence: producteur -> critique -> arbitre
+    decision: DECISION: RESIDUEL tour 1: La cellule d'authentification est tronquee...
+[run 2] tours=1 verdict_critique=ACCEPTE wall=4.56s
+    sequence: producteur -> critique -> arbitre
+    decision: DECISION: RESIDUEL tour 1: La cellule d'authentification est tronquee...
+DETERMINISME (tours, decision, tour d'arbitrage): OK (1, 'RESIDUEL', '1') vs (1, 'RESIDUEL', '1')
+LLM CALLS: 7/16
+```
+
+Le pilote reporte ses LOC self-mesurées dans la trace (ligne `LOC PILOT`).
+
+- **Désignation explicite obligatoire, mesurée.** Passer `prompt=None` après le premier rôle (c'est-à-dire laisser ADK router par handoff implicite) produit des warnings `Event from an unknown agent` et des séquences d'auteurs instables — le routeur implicite ne connaît pas nos trois rôles. Le pilote passe donc à chaque tour un **prompt de désignation explicite** (« À toi de jouer, critique : … ») : la session partagée porte l'historique complet, le prompt ne fait que désigner. C'est l'équivalent ADK du contrat C4 de l'organe Track2, et c'est la condition de reproductibilité de la séquence.
+- **Deux verdicts distincts, non contradictoires.** Le critique porte sur la **qualité de la distillation** (exactitude, non-invention, concision — il accepte), l'arbitre sur la **recevabilité au regard de la charge** (la cellule d'authentification est tronquée, il scelle en RESIDUEL). Le résumé du pilote affiche donc `verdict_critique` et `decision` séparément : un `ACCEPTE` du critique suivi d'un `RESIDUEL` de l'arbitre est un comportement correct, pas un bug d'extraction.
+- **Variabilité inter-processus observée, honnêtement reportée.** Sur une exécution antérieure du même pilote, les deux runs ont divergé (`(1, RESIDUEL, 1)` vs `(2, ACCEPTE, 1)`) — un outlier LLM : la première critique a parfois demandé une RÉVISION au lieu d'accepter, changeant la structure du tour. Température 0 ne garantit donc pas l'identité structurelle inter-processus chez ADK, contrairement à ce que P1/P2 ont montré sur leur setup. La trace committée est la mesure **reproductible sur deux runs consécutifs du même process** ; l'outlier est documenté ici plutôt que masqué par une relance sélective. C'est un constat de moteur utile pour le point 3 (et cohérent avec §3.1 : la prose des spécialistes n'est pas byte-identique entre processus).
+- **Comparabilité avec P1/P2** : même fixture figée (4859 caractères), même politique, même modèle épinglé à température 0, même budget dur de 16 appels. Les trois répliques convergent sur la décision arbitrale (`RESIDUEL` lié à la troncature de la cellule 8) quand elles la mesurent sur la fixture réparée ; elles diffèrent sur l'**idiome d'orchestration** — manager custom (SK), selection function + termination condition (MAF), boucle de désignation de l'appelant (ADK). C'est précisément la mesure du point 3 : la même charge, trois organes, trois natures de contrôle du tour.
+
+## 4. Coût pour le dépôt (point 5)
+
+Le point 5 demande trois choses : ce qui existe déjà, la dette de migration, et la valeur pédagogique. Mesures firsthand sur l'arbre à la tête de cette PR.
+
+### 4.1 Ce qui existe déjà (inventaire mesuré)
+
+| Moteur | Présence dans le dépôt | Mesure |
+|---|---|---|
+| **Semantic Kernel** | série pédagogique complète, **C# et Python** | `GenAI/SemanticKernel/` — la seule série véritablement bi-langage du chantier (kernels .NET Interactive et Python ; compte exact = catalogue, non recopié ici) |
+| **Google ADK** | série pédagogique dédiée + organe d'orchestration réutilisable | `ML/DataScienceWithAgents/Track2-GoogleADK/`, plus `utils/adk_runtime.py` (`build_agent`, `run_agent_turn`) et `utils/adk_orchestrator.py` (contrat C4) — réutilisés tels quels par le pilote P3 |
+| **Microsoft Agent Framework** | **aucune série pédagogique** — présent uniquement dans les pilotes d'évaluation de ce chantier | `grep` sur `agent-framework`/`Microsoft.Agents.AI` dans les `.ipynb` ne retourne que les pilotes ; MAF n'apparaît que dans `eval-pilots/` |
+| **semantic-fleet** | sous-module épinglé | `MyIntelligenceAgency/semantic-fleet`, branche `stable-from-v0343` (`.gitmodules`) — infrastructure de flotte SK, hors série pédagogique |
+| **pilotes d'évaluation** | pilotes autonomes + traces committées | `eval-pilots/` : SK (T1/T2/T4/P1), MAF (T5/T7/T8/P2), ADK (P3) — chacun exécutable firsthand, traces dans `traces/` |
+
+Le constat structurel : **le dépôt enseigne déjà deux des trois moteurs** (SK en C# et Python, ADK en Python via Track2), et le troisième (MAF) n'a **pas** de série — il n'existe chez nous que comme objet de mesure. C'est le déséquilibre que le point 5 doit nommer.
+
+### 4.2 Dette de migration
+
+`VERIFIÉ` contre l'inventaire : la dette n'est **pas** symétrique.
+
+- **Pas de migration à proprement parler** : SK et ADK ont chacun leur série et leurs idiomes, stables. Rien à porter d'un moteur à l'autre — les séries coexistent sans se concurrencer.
+- **La dette réelle est un manque, pas un portage** : MAF n'a pas de série pédagogique. Le combler signifierait **écrire** une série (au moins un carnet couche agents : `HandoffBuilder`, `GroupChatBuilder`, `MagenticBuilder` — les trois idiomes déjà exécutés en T7/T8), pas migrer du contenu existant. Le coût est donc celui d'une **création**, bornée par ce que T5/T7/T8/P2 ont déjà mesuré et documenté (les pièges d'extraction, la termination condition, la ligne de versions `core 1.21.0` + `orchestrations 1.3.1` + connecteur résolu).
+- **Dette d'environnement déclarée** : les trois moteurs exigent des venv **distincts** (SK 1.41.3 ; MAF core 1.21.0 + orchestrations 1.3.1 ; ADK 2.8.0 + litellm + pydantic-settings). Ce n'est pas une dette de code mais une dette de **reproductibilité** : un étudiant qui veut rejouer les trois pilotes doit monter trois environnements. Le README `eval-pilots/` documente chacun.
+
+### 4.3 Valeur pédagogique — enseigner les trois est la bonne réponse pour un cours
+
+Le point 3 a mesuré la chose décisive : **à charge identique, les trois moteurs produisent la même structure et le même verdict** (P1 ré-exécuté = P2 = P3, `RESIDUEL tour 1`). Ce qui diffère, c'est **l'idiome de contrôle du tour**, pas le résultat. C'est exactement ce qui fait la valeur d'un enseignement multi-moteurs :
+
+- **Le concept transférable est la politique d'orchestration** (producteur → critique → [révision] → arbitre), et elle se ré-encode dans trois idiomes : un manager à deux méthodes (SK), une selection function + une termination condition (MAF), une boucle de désignation de l'appelant (ADK). Un étudiant qui a vu les trois sait que l'orchestration est un **choix de conception**, pas une propriété du moteur.
+- **La différence de nature est elle-même le cours** : SK et MAF exposent un **point d'extension orchestrateur** (le moteur appelle votre code pour savoir qui parle ensuite), ADK expose des **primitives** (`Runner`, `SessionService`) et laisse la politique à l'appelant. C'est une distinction architecturale réelle, mesurée, qu'on ne peut pas enseigner avec un seul moteur.
+- **L'expertise multi-moteurs de la flotte est un atout, pas un coût** : les trois séries (et les pilotes) sont déjà écrites et exécutées. Le coût marginal d'enseigner les trois est faible une fois les organes en place ; la valeur — un étudiant capable de lire une orchestration quel que soit le moteur — est élevée.
+
+**Réserve d'honnêteté** : la couverture C# n'existe que pour SK (§2.7) — ADK est Python-only, MAF a une couche C# mesurée par les assemblages mais pas de série. Un cours bi-langage ne peut donc pas être symétrique sur les trois moteurs ; c'est une borne à déclarer, pas à masquer. Le verdict par critère (quel moteur pour quel usage) reste au point 6, réservé à ai-01 + user.

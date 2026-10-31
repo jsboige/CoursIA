@@ -12,17 +12,18 @@ Ce module présente des cas d'usage concrets et des workflows de production pour
 |-------------|--------|
 | Kernel | Python 3 |
 | Durée estimée | ~4-6h |
-| GPU requis | 0-14GB |
+| GPU requis | Selon le notebook (voir VRAM ci-dessous) |
 
 ## Notebooks
 
 | # | Notebook | Contenu | Service | VRAM |
 |---|----------|---------|---------|------ |
-| 1 | [04-1-Educational-Content-Generation](04-1-Educational-Content-Generation.ipynb) | Contenu éducatif | Mixed | ~10GB |
-| 2 | [04-2-Creative-Workflows](04-2-Creative-Workflows.ipynb) | Workflows créatifs | ComfyUI | Variable |
+| 1 | [04-1-Educational-Content-Generation](04-1-Educational-Content-Generation.ipynb) | Contenu éducatif | OpenAI API, OpenRouter | 0 |
+| 2 | [04-2-Creative-Workflows](04-2-Creative-Workflows.ipynb) | Workflows créatifs | OpenAI API, OpenRouter | 0 |
 | 3 | [04-3-Production-Integration](04-3-Production-Integration.ipynb) | Intégration production | Mixed | ~10GB |
-| 4 | [04-4-Cross-Stitch-Pattern-Maker-Legacy](04-4-Cross-Stitch-Pattern-Maker-Legacy.ipynb) | Point de croix (legacy) | Local | 0 |
+| 4 | [04-4-Cross-Stitch-Pattern-Maker-Legacy](04-4-Cross-Stitch-Pattern-Maker-Legacy.ipynb) | Point de croix (legacy) | Forge (SDXL, API REST) | Variable |
 | 5 | [04-5-MiniMax-Cloud-Image](04-5-MiniMax-Cloud-Image.ipynb) | Images par API cloud | MiniMax Hailuo | 0 |
+| 6 | [04-6-AesCode-Visual-Documents](04-6-AesCode-Visual-Documents.ipynb) | Documents visuels générés comme code | vLLM local (AesCode-8B) | ~6 Go (INT4) / ~17 Go (bf16) |
 
 ## Prérequis
 
@@ -47,22 +48,22 @@ pip install -r requirements-comfyui.txt
 
 ### 04-1 Génération de contenu pédagogique
 - **Objectif** : Automatiser la création de contenu pédagogique
-- **Technologies** : gpt-image-1 + GPT-4o + post-processing
+- **Technologies** : gpt-image-1 + GPT-5 (gpt-5-mini par défaut) via OpenAI ou OpenRouter + post-processing
 - **Applications** : Cours, supports de formation, illustrations
 
 ### 04-2 Creative Workflows
 - **Objectif** : Workflows créatifs automatisés
-- **Technologies** : ComfyUI + modèles avancés
+- **Technologies** : gpt-image-1 + GPT-5 via OpenAI ou OpenRouter, workflows multi-étapes
 - **Applications** : Design graphique, art numérique, prototypes
 
 ### 04-3 Intégration en production
 - **Objectif** : Intégration dans pipelines de production
-- **Technologies** : API + batch processing + monitoring
+- **Technologies** : API OpenAI/OpenRouter + ComfyUI (Qwen Image Edit) + batch processing + monitoring
 - **Applications** : E-commerce, média, contenu à grande échelle
 
 ### 04-4 Cross-Stitch Pattern Maker
 - **Objectif** : Conversion d'images en patrons de point de croix
-- **Technologies** : PIL + algorithmes de conversion
+- **Technologies** : SD Forge (SDXL, img2img via API REST) + PIL + algorithmes de conversion
 - **Applications** : Artisanat, loisirs, design textile
 
 ### 04-5 MiniMax Hailuo — images par le service cloud
@@ -70,16 +71,21 @@ pip install -r requirements-comfyui.txt
 - **Technologies** : API `image-01` via `urllib` + artefacts PNG et `metadata.json` commités
 - **Applications** : Illustration à la demande, transfert de style, comparaison des voies cloud et locale
 
+### 04-6 AesCode — documents visuels générés comme code
+- **Objectif** : Produire posters et dashboards en HTML/CSS éditable via un VLM local (base Qwen3-VL-8B), avec boucle de vérification mécanique du contenu
+- **Technologies** : vLLM local (conteneur `aescode_8b_server`, RTX 3090 ; checkpoint officiel bf16 sur carte dédiée, ou quantification AWQ INT4 sur carte partagée) + checklist de conformité parsant le HTML généré
+- **Applications** : Supports de cours éditables, infographies vérifiables, itération spec → génération → contrôle → correction
+
 ## Workflows
 
 ### Éducation
 ```
-Texte → GPT-4o (brief) → gpt-image-1 (images) → Post-processing → Support
+Texte → GPT-5 (brief) → gpt-image-1 (images) → Post-processing → Support
 ```
 
 ### Création
 ```
-Brief → ComfyUI (génération) → Édition → Validation → Livraison
+Brief → gpt-image-1 (génération) → Édition → Validation → Livraison
 ```
 
 ### Production

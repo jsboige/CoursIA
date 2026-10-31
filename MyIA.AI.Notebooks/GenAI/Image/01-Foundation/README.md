@@ -4,7 +4,7 @@
 
 Ce module couvre les fondamentaux de la génération d'images par IA : modèles cloud, ComfyUI, et opérations de base.
 
-**Dans le cadre du fil rouge contenu visuel éducatif** : avant de produire des visuels, il faut savoir générer une image à partir d'un texte. [01-1](01-1-OpenAI-DALL-E-3.ipynb) et [01-2](01-2-GPT-5-Image-Generation.ipynb) couvrent les API cloud (simples et immédiates). [01-4](01-4-Forge-SD-XL-Turbo.ipynb) et [01-5](01-5-Qwen-Image-Edit.ipynb) passent en local via ComfyUI pour le contrôle fin. [01-3](01-3-Basic-Image-Operations.ipynb) donne les bases de manipulation (PIL, OpenCV) utiles pour comprendre ce que font les modèles.
+**Dans le cadre du fil rouge contenu visuel éducatif** : avant de produire des visuels, il faut savoir générer une image à partir d'un texte. [01-1](01-1-OpenAI-DALL-E-3.ipynb) et [01-2](01-2-GPT-5-Image-Generation.ipynb) couvrent les API cloud (simples et immédiates). [01-4](01-4-Forge-SD-XL-Turbo.ipynb) passe en local via Forge (SD XL Turbo) et [01-5](01-5-Qwen-Image-Edit.ipynb) via ComfyUI, pour le contrôle fin. [01-3](01-3-Basic-Image-Operations.ipynb) donne les bases de manipulation (PIL, OpenCV) utiles pour comprendre ce que font les modèles.
 
 ## Vue d'overview
 
@@ -22,10 +22,10 @@ Ce module couvre les fondamentaux de la génération d'images par IA : modèles 
 | 1 | [01-1-OpenAI-DALL-E-3](01-1-OpenAI-DALL-E-3.ipynb) | Génération avec gpt-image-1 (DALL-E 3 retiré) | OpenAI API | 0 |
 | 2 | [01-2-GPT-5-Image-Generation](01-2-GPT-5-Image-Generation.ipynb) | Génération avec GPT-5 | OpenAI API | 0 |
 | 3 | [01-3-Basic-Image-Operations](01-3-Basic-Image-Operations.ipynb) | Opérations de base | PIL/OpenCV | 0 |
-| 4 | [01-4-Forge-SD-XL-Turbo](01-4-Forge-SD-XL-Turbo.ipynb) | Stable Diffusion XL Turbo | ComfyUI | Variable |
+| 4 | [01-4-Forge-SD-XL-Turbo](01-4-Forge-SD-XL-Turbo.ipynb) | Stable Diffusion XL Turbo | Forge (API REST) | Variable |
 | 5 | [01-5-Qwen-Image-Edit](01-5-Qwen-Image-Edit.ipynb) | Introduction Qwen | ComfyUI | ~29GB |
 | 5b | [01-5b-Qwen-Image-Edit-2509](01-5b-Qwen-Image-Edit-2509.ipynb) | Édition avancée Qwen Image Edit 2509 | ComfyUI | ~29GB |
-| 5c | [01-5c-Qwen-Image-21-Workflows](01-5c-Qwen-Image-21-Workflows.html) | Workflows de référence Qwen-Image 2.1 (nomadoor) sur instance hébergée | ComfyUI 0.37.2 (hébergée) | palier INT8 #17266 |
+| 5c | [01-5c-Qwen-Image-21-Workflows](01-5c-Qwen-Image-21-Workflows.ipynb) | Workflows de référence Qwen-Image 2.1 (nomadoor) sur instance hébergée | ComfyUI 0.37.2 (hébergée) | palier INT8 #17266 |
 
 **[01-1](01-1-OpenAI-DALL-E-3.ipynb) — API cloud.** Le point d'entrée le plus immédiat : un prompt, une clé, et gpt-image-1 renvoie un visuel en ~19 s :
 
@@ -63,6 +63,8 @@ Ce module couvre les fondamentaux de la génération d'images par IA : modèles 
 
 Voir [`scripts/secrets/render_envs.py`](../../../../scripts/secrets/render_envs.py) + [`.claude/rules/secrets-hygiene.md`](../../../../.claude/rules/secrets-hygiene.md). Les clés sont centralisées dans `.secrets/master.env` (gitignored) et propagées via `python scripts/secrets/render_envs.py` vers `GenAI/.env`. **Jamais de littéraux inline** (`sk-...`, `Bearer ...`) ni dans ce README, ni dans le code, ni dans les cellules notebooks (cf incident 2026-05-14).
 
+Les paramètres de rendu (`style`, `quality`, `size`, `response_format`) ne passent plus tous : `gpt-image-1` et `dall-e-3` les refusent au niveau de la forme de l'API (HTTP 400 `Unknown parameter`). La table mesurée [docs/genai/parametres-par-modele.md](../../../../docs/genai/parametres-par-modele.md) dit, par modèle d'image, ce que chaque paramètre devient (mesure datée, messages d'erreur cités).
+
 ### Docker Services (optionnel)
 ```bash
 cd docker-configurations/services/comfyui-qwen
@@ -75,7 +77,7 @@ Accès : http://localhost:8188
 1. **01-1-OpenAI-DALL-E-3** - Introduction rapide à la génération d'images
 2. **01-2-GPT-5-Image-Generation** - Génération multimodale avec texte
 3. **01-3-Basic-Image-Operations** - Manipulation d'images locale
-4. **01-4-Forge-SD-XL-Turbo** - Modèle open source via ComfyUI
+4. **01-4-Forge-SD-XL-Turbo** - Modèle open source via Forge (SD XL Turbo)
 5. **01-5-Qwen-Image-Edit** - Édition d'images avancée
 
 ## Points clés

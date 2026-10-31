@@ -14,11 +14,81 @@
 
 > **Note métriques** : la valeur historique « Sharpe 0.399 » rapportée par le README pré-c.454 et la table « Comparaison aux alternatives » provenait d'une mesure pré-revision ; le notebook de recherche `research.ipynb` cell[10]·out[0] documente le verdict effectif **Risk Parity Sharpe 0.544** (MaxDD -20.26 %), confirmé par audit G.1 firsthand lors de la PR c.454 (audit vision fondateur, `assets/readme/MANIFEST.md`).
 
+## Achat refusé et renvoi à la séance suivante
+
+Les chiffres de cette section sont ceux du backtest de `main.py` sur QC Cloud ; le tableau Performance ci-dessus vient du notebook de recherche, un calcul distinct.
+
+En résolution journalière, tous les ordres partent en `MarketOnClose` : soumis à 10:00 New York, remplis à la clôture. Lean contrôle le pouvoir d'achat d'un achat avant qu'aucune vente du même rééquilibrage ne soit remplie, et y impute la marge des achats déjà acceptés ce jour-là. Le 2015-02-02, le portefeuille sort de BND à 100 % : les achats de SPY et de GLD passent, celui de TLT est refusé (statut `Invalid`) à 110 dollars de marge près, et n'était jamais renvoyé. La ligne TLT restait vide jusqu'au rééquilibrage de mars.
+
+`main.py` renvoie désormais un achat refusé à la séance suivante : `on_order_event` note le refus, un événement quotidien renvoie `set_holdings` vers la cible du dernier rééquilibrage, et chaque renvoi écrit une ligne `RETRY` au journal. Mesure avant/après, selon un protocole posé avant les runs (#20523) :
+
+| Fenêtre | Achats refusés | Renvoyés et remplis | Sharpe | Rendement annuel composé | Pire baisse |
+|---|---|---|---|---|---|
+| 2015-01-01 -> 2024-12-31 (codée) | 1 avant, 1 après | 0 avant, 1 après (TLT, 2015-02-03) | 0,373 -> 0,360 | 7,45 % -> 7,29 % | 18,4 % -> 18,4 % |
+| 2025-01-01 -> 2026-07-10 (hors échantillon) | aucun | — | 0,643, identique | 15,08 %, identique | 10,9 %, identique |
+
+Hors échantillon, sans refus, le correctif ne change aucun ordre. Sur la fenêtre codée, l'écart vient du seul mois de février 2015 : il n'a pas de signe à retenir. Ce que le correctif apporte, c'est que le backtest mesure la stratégie décrite.
+
+## Paramètres
+
+| Paramètre | Valeurs | Défaut | Rôle |
+|---|---|---|---|
+| `mode` | `strategy`, `spy`, `6040` | `strategy` | `strategy` garde la décision du code ; `spy` détient SPY à 100 % ; `6040` détient SPY à 60 % et BND à 40 %, rééquilibrés au début de chaque mois, une minute après l'ouverture |
+| `start_date` | date `%Y%m%d` | 2015-01-01 | début de la fenêtre |
+| `end_date` | date `%Y%m%d` | 2024-12-31 | fin de la fenêtre |
+
+Les trois modes tracent chaque jour la valeur du portefeuille à l'ouverture de SPY (graphique `shadow`, séries `e0` à `e4`). En mode référence, le rééquilibrage de la stratégie et le renvoi des achats refusés ne font rien. Sans paramètre, la décision de la stratégie ne change pas : le contrôle ci-dessous le vérifie ordre par ordre.
+
+## Verdict contre références détenues (#21420)
+
+Le protocole a été écrit dans #21420 avant le premier backtest, sur le modèle de #21329. Pour une parité de risque, le 60/40 est la référence naturelle ; SPY détenu fixe le seuil du verdict `NO BEATS`. Les deux références tournent dans le même algorithme que la stratégie, sous le même modèle de courtage et avec le même préchauffage de 280 jours.
+
+Les séries comparées sont la valeur du portefeuille à chaque ouverture de SPY. Les tests passent par `Paradox46Benchmarks/significance.py`, avec un taux sans risque nul :
+
+- écart de Sharpe de Ledoit-Wolf ;
+- bootstrap stationnaire ;
+- écart de moyennes de Newey-West.
+
+Sur chaque fenêtre, la correction de Holm porte sur les six p-valeurs.
+
+Règle de verdict, écrite avant la mesure :
+
+- `BEATS` : écart de Sharpe positif et significatif (Holm < 0,05) contre les deux références ;
+- `NO BEATS` : Sharpe de la stratégie inférieur à celui de SPY détenu ;
+- `INCONCLUSIVE` : tous les autres cas.
+
+**Contrôle d'innocuité : tenu.** En mode `strategy`, sur la fenêtre codée, le code instrumenté (projet 38101154) reproduit le backtest du code d'origine (`6f35c6d89be8a9fd8525acacd14c4a6b`, projet 38101150) :
+
+- 438 ordres sur 438, sans écart de date, de symbole ni de quantité ;
+- 27 statistiques QC sur 27.
+
+Les ordres de la stratégie sont soumis à 10:00 New York et remplis à la clôture, sur les deux fenêtres ; aucun n'est passé à minuit.
+
+| Fenêtre | Séances | Sharpe stratégie (taux nul) | SPY détenu (taux nul) | 60/40 (taux nul) | p Holm (Ledoit-Wolf, SPY / 60/40) | Verdict |
+|---|---|---|---|---|---|---|
+| Codée, 2015-01-02 → 2024-12-31 | 2516 | 0,710 | 0,786 | 0,802 | 1,0 / 1,0 | **NO BEATS** |
+| Hors échantillon, 2025-01-02 → 2026-07-21 | 387 | 1,230 | 1,034 | 1,158 | 1,0 / 1,0 | **INCONCLUSIVE** |
+
+Statistiques QC (calculées par QC avec son propre taux sans risque). Leurs Sharpe ne se comparent pas à ceux de la table du dessus : QC retranche un taux sans risque non nul et part de ses propres séries quotidiennes, alors que le protocole prend un taux nul sur la valeur du portefeuille à l'ouverture. Le classement des portefeuilles peut donc changer d'une table à l'autre, et le verdict se lit sur la table du dessus.
+
+| Fenêtre | Mode | Sharpe QC (taux de QC, autre échelle) | CAGR | Pire baisse | Ordres | Backtest |
+|---|---|---|---|---|---|---|
+| Codée | stratégie | 0,360 | 7,29 % | 18,4 % | 438 | `5475762624cf4a91e21c1e6a6cf24f98` |
+| Codée | SPY détenu | 0,533 | 12,97 % | 33,7 % | 1 | `626f0da67dc03f843c7a48f1eba06a5e` |
+| Codée | 60/40 | 0,442 | 8,41 % | 21,7 % | 201 | `68a3e2b47da02e8dc69f2a6f053ca650` |
+| Hors échantillon | stratégie | 0,721 | 16,26 % | 10,9 % | 80 | `fdcf4ba6a6258b501ab14f079f267862` |
+| Hors échantillon | SPY détenu | 0,651 | 18,49 % | 18,7 % | 2 | `2497915228110d7587d702ca01caf3d7` |
+| Hors échantillon | 60/40 | 0,554 | 12,80 % | 11,2 % | 30 | `52ff8a147efaeb9be1dd305382824769` |
+
+Le backtest hors échantillon a été demandé jusqu'au 2026-10-19, mais il s'arrête le 2026-07-21 : les nœuds QC utilisés coupent les backtests environ 90 jours avant la date du jour. Aucun paramètre n'a été réglé sur cette période.
+
+**Lecture.** Sur la fenêtre codée, la stratégie est sous les deux références en Sharpe. Face au 60/40, à volatilité annuelle presque égale (8,9 % contre 9,0 %), elle rend moins par an pour une pire baisse un peu plus faible. Hors échantillon, son Sharpe est le plus haut des trois, sans écart significatif : sur 387 séances, l'intervalle bootstrap à 95 % de l'écart contre SPY détenu va de −1,27 à +1,57. Son rendement quotidien moyen y reste sous celui de SPY détenu ; c'est sa volatilité plus basse qui porte le Sharpe. Le code actuel ne bat donc aucune des deux références de façon mesurable, et passe sous SPY détenu sur sa propre fenêtre.
+
 ## Figures du notebook de recherche
 
-Le notebook [`research.ipynb`](research.html) documente l'analyse complète de la parité de risque : exploration des actifs, inverse-volatility weighting (H1), backtest (H2), impact de TLT en 2020-2023 (H3), sensibilité au lookback de volatilité (H4) et analyse par régime de marché. La stratégie atteint un plafond structurel (Sharpe 0.544) — contre-exemple pédagogique. Provenance détaillée : [`MANIFEST.md`](assets/readme/MANIFEST.md).
+Le notebook [`research.ipynb`](research.ipynb) documente l'analyse complète de la parité de risque : exploration des actifs, inverse-volatility weighting (H1), backtest (H2), impact de TLT en 2020-2023 (H3), sensibilité au lookback de volatilité (H4) et analyse par régime de marché. La stratégie atteint un plafond structurel (Sharpe 0.544) — contre-exemple pédagogique. Provenance détaillée : [`MANIFEST.md`](assets/readme/MANIFEST.md).
 
-Le QuantBook [`quantbook.ipynb`](quantbook.html) reproduit cette analyse exploratoire sur les données natives QuantConnect (pondération inverse-volatilité).
+Le QuantBook [`quantbook.ipynb`](quantbook.ipynb) reproduit cette analyse exploratoire sur les données natives QuantConnect (pondération inverse-volatilité).
 
 **Exploration — l'analyse des actifs (§2).** Le **dual-panel** juxtapose la courbe « Rendements cumulés 2015-2026 » sur 6 actifs (SPY/EFA/GLD/DBC/TLT) avec la heatmap de la matrice de corrélation. Les stats annualisées cell[4]·out[1] révèlent **GLD = meilleur Sharpe 0.81** (CAGR 12.02 %) avec **corrélation SPY 0.04** — diversifieur clé du portefeuille, tandis que **DBC sous-performe** (Sharpe 0.20, CAGR 3.45 %). La lecture visuelle confirme que GLD est l'actif qui contribue le plus à la diversification : l'inverse-vol weighting amplifie mécaniquement sa pondération face aux actifs les plus risqués.
 
@@ -41,10 +111,10 @@ Le QuantBook [`quantbook.ipynb`](quantbook.html) reproduit cette analyse explora
   <em>H2 — dual-panel equity + allocation ; RP Sharpe 0.544 < SPY 0.655 mais RP MaxDD -20.26 % vs SPY -33.72 % (cell[10]·out[0]).</em>
 </p>
 
-**H3 — impact TLT pendant la hausse des taux 2020-2023.** Le **quad-panel** cell[12]·out[0] analyse la « TLT Pain period (2020-2023) » sous 4 angles : (1) TLT vs SPY vs GLD base 100 — TLT perd ~40 %, SPY progresse ; (2) Volatilité roulante 60j annualisée — TLT explose en 2022 ; (3) Poids Risk Parity — TLT surpondéré mécaniquement par inverse-vol en période de stress ; (4) Performance relative. Métriques 2020-2023 cell[12]·out[1] : **RP +24.1 % ≈ 60/40 +24.5 % mais SPY +55.8 %** sur la fenêtre — RP perd ~32 pp face à SPY mais préserve l'isolation relative. Le diagnostic confirme le « problème TLT » : l'inverse-vol amplifie involontairement la baisse de l'obligation longue en période de hausse des taux.
+**H3 — impact TLT pendant la hausse des taux 2020-2023.** Le **quad-panel** cell[12]·out[0] analyse la « TLT Pain period (2020-2023) » sous 4 angles : (1) TLT vs SPY vs GLD base 100 — TLT perd ~40 %, SPY progresse ; (2) Volatilité roulante 60j annualisée — TLT explose en 2022 ; (3) Poids Risk Parity — TLT surpondéré mécaniquement par inverse-vol en période de stress ; (4) Performance relative. Métriques 2020-2023 (cell[12]·out[1]) : **RP +24.1 % ≈ 60/40 +24.5 % mais SPY +55.8 %** sur la fenêtre — RP perd ~32 pp face à SPY mais préserve l'isolation relative. Le diagnostic confirme le « problème TLT » : l'inverse-vol amplifie involontairement la baisse de l'obligation longue en période de hausse des taux.
 
 <p align="center">
-  <img src="assets/readme/rp-h3-tlt.png" alt="Quad-panel « Analyse de la periode TLT Pain (2020-2023) » : (haut-gauche) « TLT vs SPY vs GLD (2020-2023, base 100) » — SPY monte ~1.55 / TLT chute ~0.75 (perte ~25%) / GLD resilience ~1.30. (haut-droite) « Volatilite roulante 60j annualisee » (%) — spike COVID 2020 SPY 60% / TLT 35%, puis range 10-30%. (bas-gauche) « Poids Risk Parity » step chart 0.15-0.30 (5 lignes DBC/EFA/GLD/SPY/TLT entrelacees). (bas-droite) « Performance relative (2020-2023, base 100) » — SPY orange 1.55 / RP bleu 1.25 / 60/40 vert 1.25. RP perd ~32 pp vs SPY sur fenetre TLT pain, preserve isolation relative." width="840"/><br>
+  <img src="assets/readme/rp-h3-tlt.png" alt="Quad-panel « Analyse de la periode TLT Pain (2020-2023) » : (haut-gauche) « TLT vs SPY vs GLD (2020-2023, base 100) » — SPY monte ~1.55 / TLT chute ~0.75 (perte ~25%) / GLD resilience ~1.30. (haut-droite) « Volatilite roulante 60j annualisee » (%) — spike COVID 2020 SPY 60% / TLT 35%, puis range 10-30%. (bas-gauche) « Poids Risk Parity » step chart 0.15-0.30 (courbes DBC/EFA/GLD/SPY/TLT entrelacees). (bas-droite) « Performance relative (2020-2023, base 100) » — SPY orange 1.55 / RP bleu 1.25 / 60/40 vert 1.25. RP perd ~32 pp vs SPY sur fenetre TLT pain, preserve isolation relative." width="840"/><br>
   <em>H3 — quad-panel TLT Pain ; RP 24.1 % ≈ 60/40 24.5 % « SPY 55.8 % sur la fenêtre (cell[12]·out[1]).</em>
 </p>
 

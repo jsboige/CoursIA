@@ -35,23 +35,18 @@
   margin: 0.35em 0;
 }
 
-/* 4. Utilitaire densité maximale : <div class="dense-list">. */
-.slidev-layout .dense-list ul,
-.slidev-layout .dense-list ol {
-  font-size: 0.82em;
-  line-height: 1.22;
-}
-.slidev-layout .dense-list li {
-  margin: 0.02em 0;
-}
-.slidev-layout .dense-list h2 {
-  margin-top: 0.3em;
-}
-.slidev-layout .dense-list p {
-  margin: 0.2em 0;
-  font-size: 0.85em;
-  line-height: 1.2;
-}
+/* 4. Utilitaire densité maximale : <div class="dense-list">. Définition
+ *    portée par le thème (`theme-ia101/styles/index.css`, #22286) avec les
+ *    valeurs qui étaient rendues ici (0.82em / 1.22 / item 0.02em / H2
+ *    0.3em / p 0.85em).
+ *
+ *    S3 et S8 gardent leur PROPRE définition locale — S3
+ *    (`S3-acculturation/style.css` l.57) `.dense-list ul` 0.86em / 1.35,
+ *    S8 (`S8-semantic-web/style.css` l.54-87) `ul`/`ol` 0.82em / 1.22,
+ *    `li`, `h2` 0.15em, `p`, `pre`, `blockquote`, `table`. Le bloc du thème
+ *    n'est donc canonique que pour 02 et 06, les deux decks dédupliqués
+ *    ici ; il ne l'est pas pour eux (feuille de deck chargée après le
+ *    thème, à spécificité égale). */
 
 /* 5. Grilles d'images (pattern S3 §4) : compressibles. */
 .slidev-layout .img-grid {
@@ -69,12 +64,30 @@
   object-fit: contain;
 }
 
-/* 6. Variante ultra-dense pour la slide « Généralisation et
- *    surapprentissage » (longues lignes qui se replient deux fois). */
-.slidev-layout .dense-list.xl-dense ul {
-  font-size: 0.72em;
-  line-height: 1.12;
+/* 5b. Variante 3 colonnes pour les stacks nombreux (>= 5 images) :
+ *     2 colonnes feraient 4 rangees x 118 px, qui debordent sous un
+ *     titre + texte. Mesure : scan_slidev_overflow, lot L3 #11508. */
+.slidev-layout .img-grid.cols3 img {
+  width: 31%;
+  max-height: 96px;
 }
-.slidev-layout .dense-list.xl-dense li {
-  margin: 0;
+
+/* 5d. Variante rang unique : quand meme 2 rangees en cols3 debordent
+ *     sous le texte (slides ResNets 6 imgs / regret 4 imgs), on force
+ *     TOUTES les images sur une seule rangee, hauteur cappee a 90 px.
+ *     Mesure vision + scan_slidev_overflow, lot L3 #11508. */
+.slidev-layout .img-grid.onerow img {
+  flex: 1 1 0;
+  width: auto;
+  min-width: 0;
+  max-height: 90px;
 }
+
+/* 5c. Image isolée sous du texte (`.img-fit`) : budget de hauteur porté
+ *     par le thème (`theme-ia101/styles/index.css`, #22286), avec la
+ *     justification mesurée du plafond de 100 px (cf le commentaire du
+ *     thème). */
+
+/* 6. Variante ultra-dense (`.dense-list.xl-dense`) : définition portée par
+ *    le thème. Elle sert toujours la slide « Généralisation et
+ *    surapprentissage », dont les longues lignes se replient deux fois. */

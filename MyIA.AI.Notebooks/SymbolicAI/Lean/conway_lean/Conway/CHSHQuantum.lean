@@ -71,13 +71,12 @@ séparée du chemin de découverte, et les deux sont lisibles ici.
 - `Lean-13-Kochen-Specker.ipynb` : autre obstruction à l'accord classique, mais
   de nature combinatoire (colorabilité des vecteurs) et non analytique comme la
   borne de Tsirelson.
-- `Lean-16f-Conway-Free-Will-Theorem.ipynb` : le théorème du libre arbitre de
+- `Lean-16c-Conway-Free-Will-Theorem.ipynb` : le théorème du libre arbitre de
   Conway et Kochen, qui exploite la même frontière entre corrélations
   classiques et quantiques.
-- `Lean-13b-CHSH-Tsirelson-Native.ipynb` : le notebook natif **prévu** pour cette
-  tranche (Epic #13106), qui exécutera les énoncés de ce module sous le kernel
-  `lean4-wsl`. Il n'est pas encore livré : ce renvoi est prospectif, pas un
-  fichier existant.
+- `Lean-13b-CHSH-Tsirelson-Native.ipynb` : le notebook natif de cette tranche
+  (Epic #13106), qui exécute les énoncés de ce module sous le kernel
+  `lean4-wsl-conway`.
 -/
 
 import Conway.CHSH

@@ -32,7 +32,6 @@ name: Dry-run sizing control (ai-01 reference copies)
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-    branches: [main]
     paths:
       - 'scripts/ci/docker/linux-runner/persist/ai-01/**'
       # Self-cover (#8822) : un workflow filtre par chemins doit lister son
@@ -52,16 +51,31 @@ concurrency:
 jobs:
   dryrun-sizing-control:
     name: "Dry-run sizing control (ai-01 reference copies)"
-    # GitHub-hosted, et non auto-heberge : la suite est du bash pur, sans
-    # secret ni acces machine, et dure quelques minutes. Un `runs-on`
-    # auto-heberge exigerait une entree dans SELF_HOSTED_WORKFLOW_ALLOWLIST et
-    # une garde anti-fork pour un job qui n'en a pas besoin.
-    runs-on: ubuntu-latest
+    # 2026-10-28 (#23053 vague 3, famille (a) gardes/advisories) : forme
+    # hybride de debordement -- la suite reste du bash pur, sans secret ni
+    # acces machine, donc elle est routable sur la jambe Linux locale sans
+    # perdre la garde anti-fork (elle vit DANS l'expression `runs-on`).
+    # PR meme-depot ET vars.CI_OVERFLOW_LOCAL == 'true' -> local ; tout le
+    # reste (variable absente ou fausse, forks, dispatch) -> ubuntu-latest.
+    # Bascule : `gh variable set CI_OVERFLOW_LOCAL --body true|false
+    # --repo jsboige/CoursIA`. Retour arriere = variable a `false` ou
+    # supprimee, sans toucher ce fichier. Le workflow entre dans
+    # SELF_HOSTED_WORKFLOW_ALLOWLIST dans la meme PR.
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
+    # Borne de duree (#23053) : 9 s mesures sur le dernier succes (run
+    # 40635378933, job `dryrun-sizing-control`) ; la borne large de 20 min
+    # couvre la copie des references et un clone froid, sans laisser un slot
+    # se figer des heures.
     timeout-minutes: 20
     steps:
       - name: Checkout PR
         uses: actions/checkout@v4
         with:
+          # Cone-mode false (#23053) : le runner local `coursia-linux` embarque
+          # git 2.43.0, dont le mode par defaut (cone) refuse un chemin de
+          # fichier -- "is not a directory", rc=128. Mesure : WSL local,
+          # git 2.43.0 -- cone + fichier rc=128, --no-cone + fichier rc=0.
+          sparse-checkout-cone-mode: false
           sparse-checkout: |
             .github/workflows/dryrun-sizing-control.yml
             scripts/ci/docker/linux-runner/persist/ai-01/

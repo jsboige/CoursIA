@@ -106,6 +106,40 @@ class TestShouldSkip:
         assert _should_skip(p) is True
 
 
+class TestSiteArtifactSkip:
+    """`_site/` (Quarto build artifact) is not repository source.
+
+    `_site/` is gitignored and GENERATED from our own docs. A broken link
+    inside it is a re-render of a link the source already declares, so the
+    organ must not report it as a repository defect.
+
+    Before this entry, the organ's verdict depended on the machine: on a
+    workstation that had run a Quarto build it reported dead links for pages
+    that are not in the repository at all, while CI -- where the artifact is
+    gitignored and therefore never checked out -- stayed green. A verdict
+    that depends on the machine is not a verdict.
+    """
+
+    def test_site_root_skipped(self):
+        p = REPO_ROOT / "_site" / "index.html"
+        assert _should_skip(p) is True
+
+    def test_site_nested_skipped(self):
+        """A nested `_site/` is skipped too -- the skip is by directory NAME."""
+        p = REPO_ROOT / "docs" / "_site" / "reference" / "index.html"
+        assert _should_skip(p) is True
+
+    def test_site_is_gitignored(self):
+        """The skip list and `.gitignore` must agree on `_site/`.
+
+        Tying them by test rather than by comment: if `_site/` were ever
+        un-ignored, the skip would start masking real content, and this test
+        is what would notice.
+        """
+        gitignore = (REPO_ROOT / ".gitignore").read_text(encoding="utf-8")
+        assert "_site/" in gitignore
+
+
 class TestShouldSkipArchiveVariants:
     """Lock the archive-skip design decision (EPIC #9535 item 10, incident #9814).
 
@@ -361,6 +395,39 @@ class TestBaseline:
     def test_load_missing_baseline(self):
         loaded = load_baseline(Path("/nonexistent/baseline.json"))
         assert loaded is None
+
+
+class TestGeneratedSourceExcuse:
+    """#22651: a generated page cannot be repaired on a content branch."""
+
+    @staticmethod
+    def _result(source: str) -> ScanResult:
+        return ScanResult(broken=[LinkRef(
+            source=source,
+            target="../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/"
+                   "04-17-Basic-Pitch-Transcription.ipynb",
+            line=78, text="Transcription Note a Note : basic-pitch",
+        )])
+
+    def test_real_generated_curriculum_link_is_excused(self):
+        """Positive control: the #22556 rename on the real generated page."""
+        source = "docs/curriculum/genai.md"
+        assert check_docs_links._is_generated_source(REPO_ROOT / source)
+        assert check_regression(self._result(source), {}) == []
+        report = check_docs_links.format_generated_excuses(
+            self._result(source).broken)
+        assert "Excused: 1 generated source" in report
+        assert "04-17-Basic-Pitch-Transcription.ipynb" in report
+
+    def test_same_broken_link_in_manual_page_remains_regression(self, tmp_path, monkeypatch):
+        """Negative control: no header, no exemption."""
+        source = "docs/curriculum/manual.md"
+        page = tmp_path / source
+        page.parent.mkdir(parents=True)
+        page.write_text("# Parcours rédigé à la main\n", encoding="utf-8")
+        monkeypatch.setattr(check_docs_links, "REPO_ROOT", tmp_path)
+        assert check_docs_links._is_generated_source(page) is False
+        assert len(check_regression(self._result(source), {})) == 1
 
 
 class TestRegressionDetection:

@@ -24,28 +24,75 @@ Create a new project, upload all `.py` files, compile and run a backtest.
 |--------|-----------|----------------|
 | Alpha Framework (4 factors + MeanVar PCM) | Weekly | Top 25 by market cap, 65% max exposure, sector cap 18%, TWAP 6-slice |
 
-### Aligned baseline (2018-2025)
+### What the composite actually computed (#21137, October 2026)
 
-Standardized #1630 window (2018-01-01 to 2025-01-01, 1761 tradeable dates), backtested on QC Cloud with post-#2801 real fees.
+The four alphas score the same stocks at the same time, on the first pass of each month. Before calling `determine_target_percent`, the Lean base class (`PortfolioConstructionModel.GetTargetInsights`) keeps only the most recent active insight per symbol: on every stock, the alpha that emits last erases the others. This is the mechanism already measured by #19740 on the `Framework_Composite_*` projects.
+
+Three backtests on QC Cloud, same window (2018-01-01 to 2025-01-01, 1761 tradeable dates), same code, two project parameters:
+
+| Variant | `pcm_mode` | `alphas` | Sharpe | CAGR | Max drawdown | PSR | Orders |
+|---------|------------|----------|--------|------|--------------|-----|--------|
+| A. Code before #21137 | `symbol` | `all` | 0.584 | 13.183% | 20.500% | 7.631% | 7568 |
+| B. Control: momentum only | `symbol` | `momentum` | 0.585 | 13.194% | 20.500% | 7.650% | 7362 |
+| C. Per-sleeve fix (default) | `sleeve` | `all` | 0.441 | 9.126% | 17.600% | 3.284% | 9003 |
+
+Backtests `e8d5fd4f` (A), `122d1a54` (B), `67da341f` (C), project 37945484.
+
+**Reading.** A and B are almost identical: before #21137, the composite reduced to the momentum factor. The counters written at the end of the backtest (`PCM <alpha>` statistics, active insights / insights received by the PCM) confirm it: only `MomFactor` (5729 / 23837) and `LowVol` (76 / 328, on stocks momentum does not score) reach the PCM, `Value` and `Quality` never.
+
+The per-sleeve fix (C) keeps the latest insight per (symbol, alpha) pair, normalizes scores inside each sleeve, gives each active sleeve an equal share and sums per symbol. It does what the composite claims, and does **worse** than momentum alone over this window: Sharpe 0.441 versus 0.585, with lower volatility (9.1% versus 12.2%) and a smaller max drawdown. Verdict: **NO BEATS**. The fix corrects the accounting; it does not improve performance.
+
+Variant C in fact only blended LowVol and momentum: Value and Quality emitted nothing, for two reasons measured by #21141 (next section).
+
+### Value and Quality wired in (#21141, October 2026)
+
+Two defects kept `ValueAlpha` and `QualityAlpha` from emitting, and both passed without an error:
+
+1. **Field names.** Fine selection read `valuation_ratios.price_to_book`, `price_to_earnings`, `operation_ratios.return_on_equity` and `debt_to_equity` through `getattr(..., None)` inside a `try/except`. These names do not exist in Lean: the four fields were `None` on every read (0 out of 50350). The correct names are `pb_ratio`, `pe_ratio` (plain numbers), `roe` and `total_debt_equity_ratio` (multi-period fields, read through `.value`).
+2. **Invisible cache.** The two alphas read the fundamental cache through `getattr(algorithm, 'fundamental_cache', {})`. The object the framework hands them does not carry the Python attribute set by the selection: the `{}` default came back on each of the 84 monthly calls, and the alpha returned without a score. Both alphas now receive the Python algorithm at construction (`owner=self`).
+
+The two final backtests, same window and same project as the previous section:
+
+| Variant | `pcm_mode` | `alphas` | Sharpe | CAGR | Max drawdown | PSR | Orders |
+|---------|------------|----------|--------|------|--------------|-----|--------|
+| B''. Control: momentum only | `symbol` | `momentum` | 0.585 | 13.194% | 20.500% | 7.650% | 7362 |
+| F. Four factors per sleeve (default) | `sleeve` | `all` | 0.301 | 7.106% | 18.900% | 1.195% | 9685 |
+
+Backtests `f678eaad` (B'') and `4482adb4` (F), project 37945484. Statistics written at the end of the backtest: `Emitted Value` 504/2099 and `Emitted Quality` 496/2062 (UP insights / insights emitted), `Cache Value` and `Cache Quality` 84/84 (calls where the former cache read saw nothing / calls).
+
+**Reading.** B'' reproduces B exactly: the new reading code does not touch momentum alone. With its four factors actually wired in, the composite does worse than momentum alone (Sharpe 0.301 versus 0.585) and worse than the LowVol and momentum blend of variant C (0.441). Its volatility is the lowest of the three (8.7% versus 12.2% for momentum alone) and its max drawdown stays below the control's, but returns fall more than risk does. Verdict: **NO BEATS**, under a rule written before the backtests. A single window, already seen: the verdict bears on the composite's design, not on an out-of-sample validation.
+
+**Reproduction (#22788).** The "before" run of #21471, launched on 2026-10-25 with the same code (#21170), the same window and the default parameters, gives F a Sharpe of 0.290, a CAGR of 6.993%, a max drawdown of 19.400% and 9805 orders (backtest `ab849b70`). Comparing the filled orders of both runs, symbol by symbol, places the gap in the data: 42 of the 44 symbols are filled at exactly the same price, and the other two at a constant factor over the whole window (PG: 1.00662 over its 205 fills; ASML: 1.00134 over one fill). A constant factor per symbol is the trace of a rewrite of the adjusted history between the two dates, such as a dividend added to the series produces; the ex-dividend dates are not checked here. On 2018-01-03 the 21 orders of both runs are identical; on 2018-01-04 only PG differs (5 shares bought versus 6, the quantity depending on the price), and the portfolio then follows another path. The figures in the table are therefore those of 2026-10-17: a new run of the same code gives close figures, not identical ones. The drift measured on F (0.011 of Sharpe) is small next to the gap to the control (0.284) and the verdict does not change; control B'' was not rerun.
+
+The `PCM <alpha>` statistics count what the base class passes to the PCM after its per-symbol deduplication. The per-sleeve mode rebuilds its sleeves upstream, from all active insights: these counters therefore do not measure what it consumes.
+
+### Project parameters
+
+| Parameter | Values | Effect |
+|-----------|--------|--------|
+| `pcm_mode` | `sleeve` (default), `symbol` | `symbol` reproduces the PCM from before #21137 |
+| `alphas` | `all` (default), `momentum` | `momentum` wires `MomentumFactorAlpha` only (control) |
+
+### History: baseline published before #21137
+
+These figures were obtained with the PCM from before #21137, hence with momentum alone in practice. Replayed in October 2026, the same code gives row A above: QC data and engine have changed in between.
 
 | Metric | Catalog (2015-2025) | Aligned (2018-2025) |
 |--------|---------------------|---------------------|
-| Sharpe Ratio | 0.543 | **0.574** |
+| Sharpe Ratio | 0.543 | 0.574 |
 | CAGR | 10.010% | 11.942% |
 | Max Drawdown | 18.800% | 18.600% |
 | PSR | 16.822% | 25.765% |
 
-Backtest `8eecba32` (aligned) / `3173f8b39` (catalog `c2-equityfactor-post2801`), project 32981222.
-
-The strongest COMP (composite-framework) backbone baseline verified to date: Sharpe 0.574 is the highest among the Alpha Framework composites tested on the aligned window, and near Tier-1 territory (>0.5). It **holds and slightly improves** over the catalog window (0.543 to 0.574, PSR 16.8% to 25.8%) — genuinely robust, not period-overfit. This contrasts sharply with the sibling `composite-c1-multiasset` (Sharpe 0.258): both share the Alpha Framework scaffold, but factor investing on a fine-fundamental top-25 large-cap US stock universe (Value/Quality/LowVol/Momentum + MeanVariancePCM) dramatically outperforms static 5-ETF multi-asset rotation (3-alpha momentum ensemble + RiskParityPCM). The component alpha/PCM choice and stock-level fundamental universe matter far more than the framework wiring itself. Promoted Tier 4 (Untested) to Tier 2 (Historique). `totalOrders=0` in the MCP wrapper is an extraction artifact (CAGR 11.9% implies real trades).
+Backtest `8eecba32` (aligned) / `3173f8b39` (catalog `c2-equityfactor-post2801`), project 32981222. The interpretation that came with these figures (four-factor investing beating the multi-asset rotation of `composite-c1-multiasset`) no longer holds: the measured performance was momentum's alone.
 
 ## Files
 
 | File | Description |
 |------|-------------|
-| `main.py` | Composite equity factor algorithm orchestrating universe selection, alphas, PCM, risk, and execution |
-| `alpha_models.py` | Four factor models: Value, Quality, LowVolatility, and Momentum |
-| `portfolio_construction.py` | MeanVariancePCM with weekly rebalance, sector caps, and exposure limits |
+| `main.py` | Composite equity factor algorithm orchestrating universe selection, alphas, PCM, risk, and execution; fundamental cache and `Emitted`, `Field` and `Cache` counters (#21141) |
+| `alpha_models.py` | Four factor models: Value, Quality, LowVolatility, and Momentum; Value and Quality read the cache through the Python algorithm passed at construction (#21141) |
+| `portfolio_construction.py` | MeanVariancePCM with weekly rebalance, sector caps, and exposure limits; per-sleeve mode (`by_sleeve`) and per-alpha counters (#21137) |
 | `risk_management.py` | SectorCapRiskModel with max sector weight and beta constraints |
 | `execution.py` | TWAP execution model (6 slices, 10-minute window) |
 

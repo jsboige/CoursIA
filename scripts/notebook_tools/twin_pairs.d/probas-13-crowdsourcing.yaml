@@ -6,6 +6,7 @@
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Modele nominal lib-vs-lib cite par owner #10382 (\"PyMC vs Infer, 2 moteurs qui brillent\") : C# = Microsoft Infer.NET (Microsoft.ML.Probabilistic, NuGet officiel, native .NET, inférence variationnelle EP/VMP) et Python = PyMC (pip pymc, native Python, NUTS/HMC + ADVI). Chaque cote atteint le moteur SOTA de son ecosysteme probabiliste -- ni pont intermediaire ni reimplementation. Aucune asymetrie de machinerie a corriger. Verifie firsthand : C# Microsoft.ML.Probabilistic refs + execution_count, Python pymc imports."
   known_differences:
+  - "Re-baseline 2026-10-14 (hors-flotte:claude-session-16638, #16638) : restauration des accents de la prose markdown (tranche PyMC #16638, outil canonique restore_accents_canonical.py, invariance strip_accents a 0 finding), cote Python seul ; cote C# byte-identique a main. Aucune cellule de code, sortie ni execution_count touchee. Parite inchangee : attestation (le blob SHA se deplace), pas reparation. --update en DERNIERE operation (cf #8957)."
   - '2026-07-28 (myia-po-2023) #8711 / See #8081 : FERME l''asymetrie sources entre jumeaux -- Infer-13 portait une
     cellule "Sources canoniques" (table Raykar 2010, Karger 2011, Dawid-Skene 1979, Whitehill 2009, Kim-Ghahramani
     2012, MBML Ch.7) absente cote PyMC, alors que PyMC-13 citait massivement Dawid-Skene (53x) sans le rattachement
@@ -19,3 +20,25 @@
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
     Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
     (variationnel) sur backend PyTensor. Memes concepts, paradigmes d''inference differents.'
+  - '2026-10-23 (myia-po-2024) #14122 tranche famille A : REBASELINE cote C# -- purge CS1701. Fix causal
+    (cf #21727) : display(HTML(FactorGraphHelper.GetLatestFactorGraphHtml())) devient
+    FactorGraphHelper.GetLatestFactorGraphHtml().DisplayAs("text/html") sur 2 sites de code (cellules 16 et 23) --
+    meme HTML rendu sans lier IHtmlContent (Microsoft.AspNetCore.Html.Abstractions 2.2 vs hote 8.0). CS1701 en
+    sortie : 2 -> 0. Re-execution complete du carnet (15/15 cellules de code, 0 erreur, execution_count 1..15
+    sans trou, kernel .net-csharp, metadata.papermill 20,4 s) ; rendus HTML des graphes de facteurs conserves
+    (13317 et 7736 caracteres, identiques a la base) ; 9 bannieres probeAddresses retirees par l''outil canonique
+    post-re-exec. Churn de re-exec declare : les lignes de progression Infer.NET (Compiling model, Iterating) et
+    Installed Packages, vides dans la base, reviennent en stream (cells 2/11/14/29). Cote Python byte-identique
+    a main. Attestation 0010 = nouveau blob SHA + content_csharp_sha du cote C#.'
+  - '2026-10-23 (myia-po-2024) #14122 suite : le churn de re-exec declare ci-dessus butait sur le ratchet
+    Output-flood (CELL_CAP 50) -- cellules 25e1cfd8 (1 -> 64 objets) et e00aca9e (1 -> 114). DEUX correctifs de
+    SOURCE, aucun output edite a la main. (1) 25e1cfd8 : moteurHW.ShowProgress = false -- la barre de progression
+    Infer.NET ecrit un point par iteration et le kernel .net-csharp en fait un objet de sortie par point ; c''est le
+    cas fondateur documente dans l''en-tete du ratchet. Les lignes Compiling model / Iterating / dots de cette
+    cellule disparaissent donc, et la note ci-dessus ne vaut plus pour elle. (2) e00aca9e : tableau des
+    annotations, listes de predictions et matrices de confusion passes en StringBuilder ecrits en une fois ; texte
+    rendu IDENTIQUE a la base (991 caracteres, compare apres normalisation CRLF). Objets de sortie : 64 -> 10 et
+    114 -> 4, total du carnet 99 ; ratchets flood / failure-text / collapse tous a 0 regressed sur origin/main.
+    Re-execution complete (15/15 cellules, execution_count 1..15, 0 erreur, 19 s), strip probeAddresses puis
+    --update en DERNIERE operation. Attestation 0011.'
+  - "Audit de parite 2026-10-27 (myia-po-2028:CoursIA-2, #22267) : derive cote PYTHON SEUL, cote C# byte-identique a main (aucun commit sur Infer-13-Crowdsourcing depuis l'audit). Mesure contre le blob enregistre (python c75fd7b2 -> 034666ae) : 17 cellules de code des deux cotes, 0 source retiree, 0 source ajoutee, 0 difference de sortie ; 30 -> 32 cellules markdown cote Python (5 remplacees, 7 ajoutees). Causes uniques : #22033 (densite pedagogique PyMC-13, 2026-10-24) et #20830 (accents, 2026-10-17), markdown seul dans les deux cas. Parite de contenu inchangee : attestation (le blob SHA se deplace), pas reparation. Ecart connu et nomme : le jumeau Python est desormais plus dense en markdown que le jumeau C# (2 cellules '### Lecture' supplementaires) -- asymetrie de densite, sans ecart sur le contenu executable. --update en DERNIERE operation (cf #8957)."

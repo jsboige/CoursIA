@@ -117,3 +117,163 @@ def test_explain_branch_calls_the_env_hint():
         "le pointeur d'env doit etre produit DANS la branche --explain : "
         "c'est ce que le workflow consomme (--explain --json)"
     )
+
+
+# === #20868 : arbre partiel (sparse-checkout, blob:none) ===
+
+def test_sparse_checkout_falls_back_to_object_store(tmp_path):
+    """#20868 : un fichier absent du disque mais present dans HEAD doit etre
+    lu depuis l'object store, pas laisse pour None en silence.
+
+    Mesure du constat : sur le depot reel, ICT-Series/pyproject.toml est
+    materialise ; le test reproduit la situation d'un sparse-checkout qui
+    detient le blob dans HEAD sans l'avoir pose sur disque. Le verdict doit
+    alors nommer l'env, en le signalant par `from_object_store=True`.
+    """
+    import subprocess
+    # Depot git jetable pour eviter de polluer le working tree reel.
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    subprocess.run(["git", "-C", str(tmp_path), "config",
+                    "user.email", "test@example.com"], check=True)
+    subprocess.run(["git", "-C", str(tmp_path), "config",
+                    "user.name", "Test"], check=True)
+    serie = tmp_path / "SerieSparse"
+    serie.mkdir()
+    pyproject = serie / "pyproject.toml"
+    pyproject.write_text('[project]\nrequires-python = ">=3.11,<3.12"\n',
+                         encoding="utf-8")
+    nb = serie / "nb.ipynb"
+    nb.write_text("{}", encoding="utf-8")
+    subprocess.run(["git", "-C", str(tmp_path), "add", "."], check=True)
+    subprocess.run(["git", "-C", str(tmp_path), "commit", "-q",
+                    "-m", "sparse fixture"], check=True)
+    # Sparse-checkout simule : on garde le commit, on retire le fichier.
+    pyproject.unlink()
+    assert not pyproject.exists()
+
+    hint = ckd.canonical_env_hint("SerieSparse/nb.ipynb", root=str(tmp_path))
+
+    assert hint is not None, (
+        "l'env epingle existe dans HEAD (commit) : le garde doit le trouver "
+        "via l'object store, pas rendre None en silence sur OSError"
+    )
+    assert hint["artifact"] == "SerieSparse/pyproject.toml"
+    assert hint["requires_python"] == ">=3.11,<3.12"
+    assert hint.get("from_object_store") is True, (
+        "le hint doit signaler qu'il vient de l'object store, pour que le "
+        "lecteur sache que le verdict de drift est sensible a la materialisation"
+    )
+
+
+def test_sparse_checkout_no_artifact_in_head_returns_none(tmp_path):
+    """#20868 contre-test : si l'OSError est lie a un fichier vraiment absent
+    du depot (pas un sparse-checkout, juste pas la), le garde ne doit pas
+    inventer un pointeur. None reste la bonne reponse -- l'absence EST
+    l'information, cf docstring de `canonical_env_hint`.
+
+    Sur un `tmp_path` qui n'est pas un depot git, `_git_show_head` rend None
+    (pas de git, ou git sans objet) ; le `continue` ramene au comportement
+    anterieur a #20868, qui etait correct dans ce cas.
+    """
+    serie = tmp_path / "Serie"
+    serie.mkdir()
+    (serie / "nb.ipynb").write_text("{}", encoding="utf-8")
+    # Pas de pyproject, pas de requirements, pas de .git.
+    assert ckd.canonical_env_hint("Serie/nb.ipynb", root=str(tmp_path)) is None
+
+
+# === #22297 : un pointeur vers un intervalle qui ne peut pas heberger la base ===
+
+def test_requires_python_allows_truth_table():
+    """La comparaison d'intervalle, ses bornes, et ses refus de conclure."""
+    allows = ckd._requires_python_allows
+
+    # Heberge : la base est dans l'intervalle epingle.
+    assert allows(">=3.9,<3.10", "3.9.25") is True
+    assert allows(">=3.11,<3.14", "3.13.14") is True
+    assert allows("==3.9", "3.9.25") is True
+
+    # N'heberge pas : c'est le cas fondateur #22297 (base 3.13, pin 3.9).
+    assert allows(">=3.9,<3.10", "3.13.14") is False
+    assert allows(">=3.9,<3.10", "3.12.13") is False
+    assert allows(">=3.11,<3.14", "3.9.25") is False
+    assert allows("!=3.13", "3.13.14") is False
+
+    # Non mesurable : on ne rend PAS une autorisation, on rend None.
+    assert allows("~=3.9", "3.13.14") is None
+    assert allows("", "3.13.14") is None
+    assert allows("n importe quoi", "3.13.14") is None
+    assert allows(">=3.9,<3.10", "") is None
+
+
+def test_ict_pin_conflicts_with_a_313_base():
+    """Le cas mesure de #22297 : la serie epingle 3.9, la base enregistre 3.13.
+
+    Suivre l'indice ferait passer `language_info.version` de 3.13 a 3.9, une
+    descente major.minor que ce meme garde refuse. L'indice doit donc porter le
+    conflit plutot que laisser la lane le decouvrir a la prochaine execution.
+    """
+    nb = ("MyIA.AI.Notebooks/IIT/ICT-Series/"
+          "ICT-40a-TriangulationCausale-Python.ipynb")
+
+    conflit = ckd.canonical_env_hint(
+        nb, root=str(REPO_ROOT), base_language_version="3.13.14")
+    assert conflit is not None
+    assert conflit["requires_python"] == ">=3.9,<3.10"   # le pin reste nomme
+    assert "version_conflict" in conflit, (
+        "une base 3.13 avec un pin >=3.9,<3.10 doit etre signalee : "
+        "re-executer sous 3.9 est une descente refusee par le garde"
+    )
+    assert "3.13.14" in conflit["version_conflict"]
+    assert "DOWNGRADE" in conflit["version_conflict"]
+
+    # Controle positif du silence : les carnets ICT qui tournent REELLEMENT
+    # sur le 3.9 epingle ne doivent porter aucun conflit.
+    sain = ckd.canonical_env_hint(
+        nb, root=str(REPO_ROOT), base_language_version="3.9.25")
+    assert sain is not None
+    assert "version_conflict" not in sain, (
+        "une base 3.9 est hebergee par >=3.9,<3.10 : aucun conflit a declarer"
+    )
+
+
+def test_no_conflict_without_a_base_version():
+    """Sans version de base, le hint garde exactement sa forme d'avant."""
+    hint = ckd.canonical_env_hint(ICT_NOTEBOOK, root=str(REPO_ROOT))
+    assert "version_conflict" not in hint
+
+
+def test_a_compatible_pin_raises_no_conflict(tmp_path):
+    """Controle negatif : un pin qui heberge la base ne doit pas crier au loup."""
+    serie = tmp_path / "Serie"
+    _write(serie / "pyproject.toml",
+           '[project]\nrequires-python = ">=3.11,<3.14"\n'
+           'dependencies = ["numpy>=2.0"]\n')
+    (serie / "nb.ipynb").write_text("{}", encoding="utf-8")
+
+    hint = ckd.canonical_env_hint(
+        "Serie/nb.ipynb", root=str(tmp_path), base_language_version="3.13.14")
+    assert hint["requires_python"] == ">=3.11,<3.14"
+    assert "version_conflict" not in hint
+
+
+def test_explain_branch_reports_the_conflict_instead_of_the_remedy():
+    """Pin structurel : la branche --explain doit brancher sur le conflit.
+
+    Sans ce branchement, le verdict continuerait d'affirmer qu'un rejeu sous
+    l'env epingle « garde le repr commite stable » -- exactement le conseil qui
+    produit la descente refusee.
+    """
+    source = (Path(ckd.__file__)).read_text(encoding="utf-8")
+    start = source.index("if args_obj.explain:")
+    end = source.index('finding["probable_causes"] = causes')
+    explain_branch = source[start:end]
+
+    assert "base_language_version=" in explain_branch, (
+        "le hint doit recevoir la version de la base : sans elle, il ne peut "
+        "pas mesurer que l'intervalle epingle ne l'heberge pas"
+    )
+    assert 'env_hint.get("version_conflict")' in explain_branch, (
+        "le verdict doit distinguer un pointeur suivable d'un pointeur qui "
+        "nous ferait descendre de version"
+    )

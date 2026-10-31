@@ -1,5 +1,6 @@
 # region imports
 from AlgorithmImports import *
+from datetime import datetime
 # endregion
 
 
@@ -18,8 +19,22 @@ class VolTargetMomentum(QCAlgorithm):
     """
 
     def initialize(self):
-        self.set_start_date(2015, 1, 1)
-        self.set_end_date(2025, 1, 1)  # Fixed end date for reproducibility
+        # Mesure contre références détenues (#22923, protocole de #21594) :
+        # `strategy` (défaut) garde la décision du code ; `spy` (SPY détenu) et
+        # `6040` (SPY 60 %, BND 40 %) sont les deux références du verdict ;
+        # `ew7` (les 7 ETFs à poids égal) et `novt` (la même règle, multiplicateur
+        # de volatilité fixé à 1) sont deux diagnostics.
+        self._mode = self.get_parameter("mode", "strategy").lower()
+        if self._mode not in ("strategy", "spy", "6040", "ew7", "novt"):
+            raise ValueError(
+                f"unknown mode parameter: {self._mode} (strategy | spy | 6040 | ew7 | novt)"
+            )
+
+        # Dates paramétrables (backtests QC Cloud) ; les défauts sont les dates codées.
+        start = self.get_parameter("start_date", "2015-01-01")
+        end = self.get_parameter("end_date", "2025-01-01")
+        self.set_start_date(datetime.strptime(start, "%Y-%m-%d"))
+        self.set_end_date(datetime.strptime(end, "%Y-%m-%d"))  # Fixed end date for reproducibility
         self.set_cash(100_000)
         self.set_benchmark("SPY")
 
@@ -59,7 +74,65 @@ class VolTargetMomentum(QCAlgorithm):
             self.rebalance,
         )
 
+        # Daily data: every order fills at the close, so a buy is checked before
+        # the sells of the same rebalance free any margin. A refused buy is
+        # re-sent at the next session, once those sells have filled (#20523).
+        self._targets = {}
+        self._refused = {}
+        self.schedule.on(
+            self.date_rules.every_day("SPY"),
+            self.time_rules.after_market_open("SPY", 30),
+            self._resend_refused,
+        )
+
         self.set_warm_up(timedelta(days=280))
+
+        # Références : aucune décision de stratégie (`rebalance` sort aussitôt),
+        # rééquilibrage au début de chaque mois, une minute après l'ouverture.
+        # Un achat refusé est renvoyé à la séance suivante vers son poids de
+        # référence, par le même `_resend_refused` que la stratégie.
+        # Les 7 ETFs, BND compris, sont déjà abonnés : aucun mode n'en ajoute.
+        if self._mode in ("spy", "6040", "ew7"):
+            self.schedule.on(
+                self.date_rules.month_start("SPY"),
+                self.time_rules.after_market_open("SPY", 1),
+                self._rebalance_reference,
+            )
+
+        # Trace journalière `shadow` (contrat #18923) : valeur du portefeuille à
+        # l'ouverture de chaque séance de SPY, hors préchauffage, répartie sur
+        # e0..e4. Tous les modes la prennent au même instant.
+        self._closes = 0
+        self.schedule.on(
+            self.date_rules.every_day("SPY"),
+            self.time_rules.after_market_open("SPY", 0),
+            self._trace,
+        )
+
+    def _rebalance_reference(self):
+        if self.is_warming_up:
+            return
+        if self._mode == "spy":
+            targets = {"SPY": 1.0}
+        elif self._mode == "6040":
+            targets = {"SPY": 0.6, self.safe_ticker: 0.4}
+        else:
+            weight = 1.0 / len(self.all_tickers)
+            targets = {ticker: weight for ticker in self.all_tickers}
+        self._targets = targets
+        self._refused.clear()
+        for ticker in self.all_tickers:
+            sym = self.symbols[ticker]
+            if ticker in targets:
+                self.set_holdings(sym, targets[ticker])
+            elif self.portfolio[sym].invested:
+                self.liquidate(sym)
+
+    def _trace(self):
+        if self.is_warming_up:
+            return
+        self.plot("shadow", f"e{self._closes % 5}", self.portfolio.total_portfolio_value)
+        self._closes += 1
 
     def _get_portfolio_vol(self):
         """Estimate current portfolio volatility from holdings."""
@@ -74,7 +147,14 @@ class VolTargetMomentum(QCAlgorithm):
             if not holding.invested:
                 continue
             weight = holding.holdings_value / total_value
-            hist = self.history(sym, self.vol_lookback + 5, Resolution.DAILY)
+            # Fenetre double (#20286) : sur une demi-seance, history() rend moins
+            # de barres que demandees et le ticker est ecarte de la ponderation
+            # de volatilite. On demande le double puis on re-slice sur la fenetre
+            # d'origine : la vol annualisee est inchangee hors demi-seance. Comme
+            # dans rebalance(), la garde porte sur la fenetre reellement utilisee
+            # (#21471 : re-slice puis garde, l'ordre canonique des autres sites).
+            hist = self.history(sym, 2 * (self.vol_lookback + 5), Resolution.DAILY)
+            hist = hist.iloc[-(self.vol_lookback + 5):]
             if len(hist) < self.vol_lookback * 0.8:
                 continue
             returns = hist["close"].pct_change().dropna().tail(self.vol_lookback)
@@ -91,6 +171,8 @@ class VolTargetMomentum(QCAlgorithm):
     def rebalance(self):
         if self.is_warming_up:
             return
+        if self._mode not in ("strategy", "novt"):
+            return
 
         candidates = {}
         for ticker in self.risky_tickers:
@@ -101,11 +183,21 @@ class VolTargetMomentum(QCAlgorithm):
             close = self.securities[sym].close
             if close <= ind.current.value:
                 continue
-            hist_12m = self.history(sym, self.lookback_12m + 5, Resolution.DAILY)
+            # Fenetre double (#20286) : sur une demi-seance, history() rend moins
+            # de barres que demandees et la garde ecarte le titre. On demande le
+            # double puis on re-slice sur la fenetre d'origine : la garde porte
+            # sur la fenetre reellement utilisee, son verdict ne change pas.
+            hist_12m = self.history(sym, 2 * (self.lookback_12m + 5), Resolution.DAILY)
+            hist_12m = hist_12m.iloc[-(self.lookback_12m + 5):]
             if len(hist_12m) < self.lookback_12m * 0.8:
                 continue
             ret_12m = hist_12m["close"].iloc[-1] / hist_12m["close"].iloc[-self.lookback_12m] - 1
-            hist_6m = self.history(sym, self.lookback_6m + 5, Resolution.DAILY)
+            # Fenetre double (#20286) : sur une demi-seance, history() rend moins
+            # de barres que demandees et la garde ecarte le titre. On demande le
+            # double puis on re-slice sur la fenetre d'origine : la garde porte
+            # sur la fenetre reellement utilisee, son verdict ne change pas.
+            hist_6m = self.history(sym, 2 * (self.lookback_6m + 5), Resolution.DAILY)
+            hist_6m = hist_6m.iloc[-(self.lookback_6m + 5):]
             if len(hist_6m) < self.lookback_6m * 0.8:
                 continue
             ret_6m = hist_6m["close"].iloc[-1] / hist_6m["close"].iloc[-self.lookback_6m] - 1
@@ -137,7 +229,8 @@ class VolTargetMomentum(QCAlgorithm):
         has_risky = any(t in raw_targets for t in self.risky_tickers)
         vol_scalar = 1.0
         current_vol = self.vol_target
-        if has_risky:
+        # Le mode `novt` (diagnostic #22923) garde un multiplicateur de 1.
+        if has_risky and self._mode != "novt":
             current_vol = self._get_portfolio_vol()
             if current_vol > 0.01:
                 vol_scalar = self.vol_target / current_vol
@@ -159,12 +252,30 @@ class VolTargetMomentum(QCAlgorithm):
         tgt_str = ", ".join(f"{t}:{w:.1%}" for t, w in sorted(targets.items()))
         self.log(f"{regime} | vol={vol_pct} scalar={vol_scalar:.2f} | {tgt_str}")
 
+        self._targets = targets
+        self._refused.clear()
         for ticker in self.all_tickers:
             sym = self.symbols[ticker]
             if ticker in targets:
                 self.set_holdings(sym, targets[ticker])
             elif self.portfolio[sym].invested:
                 self.liquidate(sym)
+
+    def on_order_event(self, order_event: OrderEvent):
+        if order_event.status == OrderStatus.INVALID:
+            self._refused[order_event.symbol] = self.time.date()
+
+    def _resend_refused(self):
+        if self.is_warming_up or not self._refused:
+            return
+        today = self.time.date()
+        for sym, day in list(self._refused.items()):
+            if day >= today:
+                continue
+            del self._refused[sym]
+            weight = self._targets.get(sym.value, 0.0)
+            self.log(f"RETRY {sym.value} target={weight:.1%} refused={day}")
+            self.set_holdings(sym, weight)
 
     def on_data(self, data: Slice):
         pass

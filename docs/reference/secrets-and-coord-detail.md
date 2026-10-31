@@ -214,7 +214,7 @@ gh pr merge <N> --squash   # x N PRs
 
 **Exception** : PR notebook → regle H.4 (`git checkout` + Papermill local + verify `execution_count`) AVANT merge.
 
-
+**Incident fondateur #10067 derriere « JAMAIS `--delete-branch` » (Regle 1, ancienne ligne 54).** Le 2026-08-08, #10067 a ete **fermee involontairement** par un merge adjacent qui detachait la branche (`gh pr merge --delete-branch`). La PR contenait un fix substantiellement distinct que l'auto-merge avait pris dans son chemin. La fermeture involontaire a ete rattrapee **uniquement parce que la branche `feature/10067` etait intacte** : un re-`gh pr reopen` a restaure le PR sans rewrite d'historique, et le fix a ete re-apporte dans une PR separee. Conclusion : la branche d'une PR fermee est **le seul chemin de recuperation non-destructif** ; un `--delete-branch` au merge detruit ce chemin avant qu'aucun signal d'erreur ne se manifeste. `incident #10093` du 2026-08-08 cite la lecon dans le memo, #10067 est la recurrence observee avant que la clause ne soit inscrite explicitement.
 
 ### 2.2 Aucune demande user ne pourrit > 1 cycle
 
@@ -348,6 +348,8 @@ Les 4 mecanismes correctifs (chaque cycle, par lane) :
 
 **Tell d'auto-detection** (avant de poster un steer) : « (a) ce grain est-il verifie OPEN/non-sature firsthand a l'instant ? (b) la decision atteint-elle l'inbox du worker ? (c) ai-je tranche, ou defere ? ». Trois oui requis. Sinon = phantom, le worker idlera.
 
+**Nuance « le (a) se pose AVANT de reiger, pas apres » (Regle 5, ancienne ligne 92, ref L898 de [proactive-coordination.md](../../.claude/rules/proactive-coordination.md)).** La verification (a) — grain verifie OPEN/non-sature firsthand a l'instant, **et** aucune PR ouverte sur ce chemin — precede la redaction du steer, pas sa relecture. Un steer redige **avant** la verification, meme partiellement, est une **forme de status condense qui hallucine** (cf [verify-before-claiming.md](../../.claude/rules/verify-before-claiming.md), `stale-steer`) : le worker brule ses cycles a le refuter. L'ordre ferme est (1) `gh issue view N` / `gh pr view N` firsthand, (2) **puis** redaction du DM et du dashboard, (3) **puis** dispatch. La lecon L898 de proactive-coordination (collision guard : avant d'ECRIRE, pas avant de pousser) s'applique ici a l'identique : un steer pose avant la verification est un **detournement de l'aller-retour**, et il ne tient pas. Mesure du 2026-06-26 : 4 cycles consecutifs de steers phantom ont precede le constat que la verification (a) etait systematiquement faite **apres** la redaction.
+
 ### 2.6 Garde d'identite de lane — recit, arbitrage et pieges (2026-09-11)
 
 > Deporte de [`.claude/rules/coordinator-discipline.md`](../../.claude/rules/coordinator-discipline.md)
@@ -470,15 +472,41 @@ Déporté depuis `.claude/rules/coordinator-discipline.md` (tranche 2 du slimmin
 
 **Limites de l'organe `check_adjoint_prevalidation.py`, ancienne ligne 146.** GitHub ne permet pas à cet organe stateless de prouver un événement ensuite supprimé ou reverté. Son format canonique est généré par `--template` (hash inclus ; `--fingerprint` reste disponible). Le login GitHub étant partagé, `lane: myia-po-2025:CoursIA-2` est une déclaration de protocole fail-closed, pas une authentification cryptographique.
 
+**Tranche 2 — complément #21211 (2026-10-19).** Sept détails complétés en réponse à la CR myia-ai-01 du 2026-10-19 07:04Z sur la slim vague 2 #12051. Chaque détail cite la ligne cible dans la règle *après* la restauration (les anciennes lignes sont celles du commit 70b0932df5, dans le tableau ci-dessus).
+
+**Dossier = produit consommable, ligne 45 (Regle 0, paragraphe « ai-01 delegue… »).** Un dossier `[ADJOINT PREFLIGHT]` est un **produit consommable par ai-01**, pas un compte rendu d'activite. La consequence operative est triple : (a) il nomme le head exact, les trois surfaces B.0, les gates, le delta depuis la derniere review et l'unique preuve decisive restante — rien d'autre, l'inventaire n'est pas un recap ; (b) il est exact-head, **auto-invalide par toute mutation observable** (`check_adjoint_prevalidation.py` rend `head is stale` / `discussion surfaces changed` au moindre commit) ; (c) il n'attend pas la fin du lot — **chaque tete eligible remonte des que son dossier est READY**, oldest-first. Mesure du 2026-10-09 : sur la fenetre de 4h, l'objectif est **>=20 dossiers READY** quand le plateau contient au moins 20 candidates eligibles, atteints par remontee continue et non par paquet en fin de cycle. La difference avec un compte rendu d'activite est l'usage : ai-01 consomme le dossier en quelques minutes (`--consume` immediatement avant le geste exact-head) ; un compte rendu reste a lire et **ralentit** la digestion au lieu de l'accelerer.
+
+**Hermes et NanoClaw absorbent la premiere digestion specialisee, ligne 45 (Regle 0, meme paragraphe).** La digestion specialisee (B.0/CHANGES_REQUESTED inline, audits axe-2 SOTA, preuves Lean, sanity-checks notebook) est **premiere** dans la chaine — Hermes pour les reviews structurelles, NanoClaw pour les audits en lots. ai-01 ne refait pas cette digestion a la main : il **consomme** les verdicts (le prefixe du body `[Hermes] COMMENT_WITH_CONCERNS`, invisible a `reviews[].state`, est l'endroit ou vit la substance), puis pose la passe de merge. Refaire la lecture a la main **detruit** le travail des bots : un Hermes verdict en `state: COMMENTED` ignore laisse la queue de re-review grossir indefiniment, et l'agent qui attend la re-review est en train d'attendre **une relecture que personne ne demande**. L'adjoint complete la digestion verifiable (preflights B.0/exact-head, relectures post-fix, recalculs firsthand) ; Hermes et NanoClaw ouvrent la voie, l'adjoint la prepare, ai-01 signe.
+
+**Routage R6 « route a l'adjoint, l'exclut de sa file personnelle », ligne 111 (Regle 6, organe d'entree).** Quand `check_adjoint_prevalidation.py <PR>` ne rend pas 0, ai-01 **route la candidate a l'adjoint** (DM nominatif vers `myia-po-2025:CoursIA-2`), **l'exclut de sa file personnelle**, et poursuit oldest-first sur la suivante. Le geste est explicite : la candidate **n'attend pas** dans la file de ai-01 pendant que celui-ci fait autre chose — elle est assignee, et l'adjoint la prend dans sa propre cadence. La regle est fail-CLOSED : un READY autorise seulement la lecture finale minimale d'ai-01, et toute l'investigation approfondie (B.0, exact-head, surfaces) est du ressort de l'adjoint. L'organe ne lit que le SHA de la tete, les 3 surfaces B.0 et les checks — il n'ouvre **pas** un thread d'investigation, ce qui serait un defaut de regle R0.1 (« Un rouge = requete sur ma file, jamais enquete »).
+
+**Verbatim du mandat #15069 (Regle 6, ligne 103).** Mandat user 2026-09-07, verbatim integral : *« si ton travail de coordination est sature, c'est tout a fait un travail de **verification** que tu peux deleguer a ton adjoint, mais **pas a nos plus petits workers** »*. Trois consequences de ce verbatim : (a) la verification est delegable, **la decision ne l'est pas** — `gh issue close` reste au coordinateur, le merge reste a ai-01 ; (b) la delegation vise **l'adjoint** (lane `myia-po-2025:CoursIA-2`), pas les workers po-* plus petits — un worker a qui on delegue une verification ne sait pas lire un dossier exact-head, et deleguer au worker **abaisse** la qualite de la digestion au lieu de l'elever ; (c) le depute garde la porte ouverte : un dossier qui revient BLOCKED ne reste pas dans la file de l'adjoint, il remonte a ai-01 avec la preuve. C'est ce mandat qui a cree la garde `DELIVERED_URN_LANES` dans `pick_idle_grain.py` (l'adjoint est habilite n°3, mesure du 2026-09-07). Le `#15069` est **la provenance** ; la garde est implementee par `check_adjoint_prevalidation.py --queue` (NAMING c.5 strict) et par la mention `lane: myia-po-2025:CoursIA-2` dans le body du dossier.
+
+### 2.9 « Cron armé + production gelée » se lit comme un tour continu, pas comme une panne de cron (#14728, item 4)
+
+**Constat mesuré (2026-09-05)** : le cron coordinateur était **armé** (`CronList` le montrait vivant, vérifié à 10:04Z) pendant une fenêtre de **6h16 sans aucun merge** — merges par heure : `00h`=13, `01h`=9, `02h`=16, `03h`=4, puis `04h`-`10h` = 0. Les déclenchements attendus de 04:13 et 08:13 ne sont pas survenus. Les workers, eux, produisaient normalement pendant toute la fenêtre : ce ne sont pas les lanes qui ralentissent, c'est la passe de merge du coordinateur.
+
+**Cause** : `CronCreate` ne déclenche **que lorsque le REPL est idle, jamais mid-query**. La session tenait un seul tour continu depuis ~03:26Z. « Cron armé » et « merges gelés » ne sont donc **pas contradictoires — c'est la même cause**. C'est ce qui rend le défaut difficile à lire : `CronList` montre le job, le job est réellement vivant, et il ne tirera pourtant jamais tant que le tour ne se termine pas.
+
+**Boucle auto-renforçante** : plus le backlog est gros, plus le cycle est long ; plus le cycle est long, plus de déclenchements sautent ; plus de déclenchements sautent, plus le backlog grossit.
+
+**L'anti-diagnostic à ne pas faire** : « le cron est mort, j'en arme un second ». Cela **aggrave** la situation — double-firing silencieux, et si le second cron vit dans une autre session partageant le tag de lane, violation de la prémisse d'identité de #14323 (`check_lane_claim.py` `CLEAR` ne dit que « aucune AUTRE lane », jamais « aucun autre processus de la mienne »).
+
+**La lecture correcte et le levier** : `CronList` armé + zéro merge sur plusieurs fenêtres de cadence = la session tient un **tour continu**. Le levier est de **borner le cycle** — passe de merge courte qui rend la main (items 1-2 de #14728, livrés : « Budget de cycle » du skill `coordinate` + dossiers `[ADJOINT PREFLIGHT]` exact-head qui persistent les verdicts de gate par SHA) — pas d'ajouter un tireur. La dépense de la cadence hors REPL (tâche planifiée en polling) a été écartée dans #14728 : un déclencheur externe qui réveille une session déjà occupée ne merge pas davantage.
+
 ## 3. Secrets via RooSync — recits et justification datee
 
 
 
 > Deporte de `.claude/rules/secrets-roosync-policy.md` le 2026-08-21 (issue #12051, slimming vague 2),
 > quand cette rule a ete fusionnee dans [`.claude/rules/secrets-hygiene.md`](../../.claude/rules/secrets-hygiene.md).
-> **Les prescriptions n'ont PAS ete deportees** : elles vivent toutes dans `secrets-hygiene.md`, section
-> « Transmission d'un secret — canal RooSync prive ». Ce qui suit est du recit d'incident et de la
-> justification datee — le contexte qui explique *pourquoi* ces regles existent, pas les regles elles-memes.
+> **Historique de cette section, a ne pas confondre** : du 2026-08-21 au 2026-10-27, les prescriptions
+> n'etaient PAS ici — elles vivaient toutes dans `secrets-hygiene.md`, et 3.1-3.5 n'etaient que du recit.
+> Depuis la tranche 6 de #11554 (2026-10-27) elles **sont** ici (§3.6, avec leurs motifs) et la rule les
+> porte en forme compacte. Un lecteur qui arrive par un lien ancien trouve donc §3.6, pas un recit pur.
+
+**§3.1 a §3.5 = recit et etat mesure** — pourquoi ces regles existent, provenance datee, mecanique de l'API.
+**§3.6 = le texte des prescriptions** — autorisation, interdits, anti-stonewall, quorum.
 
 
 
@@ -553,3 +581,79 @@ message. Consequence a ne pas inverser : poser un `destruct_after: 30m` sur un m
 fait **pas** disparaitre la piece jointe en 30 minutes — c'est une reduction d'empreinte, pas une garantie
 d'effacement, et c'est bien pour cela que la rule la qualifie d'hygiene recommandee et **non bloquante**.
 
+
+### 3.6 Prescriptions — autorisation, interdits, anti-stonewall, quorum
+
+Texte des prescriptions portees par `.claude/rules/secrets-hygiene.md`, section « Transmission d'un secret —
+canal RooSync prive ». La rule les porte en forme **compacte** (ce qui doit rester sous les yeux d'un agent a
+chaque session) ; ce qui suit porte le **developpement** — les motifs, les cas limites, et les formulations
+que la compaction a resserrees. Aucune prescription n'existe ici que la rule ne porte pas, et aucune n'existe
+dans la rule qui ne soit ici : les deux surfaces se lisent ensemble, elles ne divergent pas.
+
+#### 3.6.1 Autorisation — et pourquoi RooSync prive
+
+Transmettre un secret par **message prive RooSync** (`to: "machine:workspace"`) est **autorise**. RooSync est
+le canal prive du cluster (GDrive prive) ; le mecanisme attachment + autodestruction a ete concu exactement
+pour ca. RooSync prive est **strictement superieur** a un copier-coller dans une conversation ou un
+commentaire GitHub : ce dernier est definitif, indexe, et hors de tout controle.
+
+**Preference, non condition** : attacher le secret (`attachments`) avec un `destruct_after` court (30 m–2 h)
+reduit l'empreinte dans les logs et les snapshots GDrive. C'est de l'**hygiene recommandee, non bloquante** —
+un message prive en clair reste autorise. La raison de cette non-blockingnite est mesuree, pas supposee :
+`destruct_after` s'applique au **message**, il **ne garantit pas l'effacement de la piece jointe** (cleanup
+par anciennete, ~4 semaines). Mecanique et etat verifie : §3.5 ci-dessus.
+
+**`master.env` n'est pas un gate.** Un secret deja couvert par `.secrets/master.env` se propage de preference
+par `render_envs.py` + `docker compose restart` (plus simple, pas de transit du secret). Mais quand il ne
+couvre pas la cible — token ephemere, rotation ad-hoc, service hors catalogue, cle detenue par une seule
+machine — RooSync prive **est** le bon canal, pas un pis-aller a refuser.
+
+**Une seule limite dure** : jamais de secret en clair sur un **dashboard** (broadcast, visible de tout le
+cluster). Le reste est de l'hygiene recommandee, **pas** un interdit qui autorise a refuser.
+
+#### 3.6.2 Interdits, avec leur motif
+
+- **Jamais de secret en clair sur un dashboard RooSync** — broadcast. Signaler un incident token passe par
+  une **reference opaque** (`Voir msg-X`) et la valeur par message prive uniquement.
+- **Jamais de secret dans une PR, un commit ou un commentaire GitHub** — repo public, indexe pour toujours.
+- **Jamais `os.getenv("KEY", "<literal-secret-as-fallback>")`** — c'est la **regle 2** de la rule : un
+  fallback litteral en clair est un secret commite par accident (pattern qui a deja leak, 2026-05-14,
+  commit `b34e3a05`).
+- **Jamais hand-editer une sortie de cellule** pour maquiller un secret — c'est la **regle 6** (Stop &
+  Repair) : corriger la cause et re-executer, jamais falsifier la preuve d'execution.
+
+#### 3.6.3 Une instruction user directe fait autorite — et son garde-fou borne
+
+Quand le user donne, **en session directe** (vscode / chat, pas via un relais inter-agent), l'instruction de
+transmettre un secret par RooSync prive, **on l'execute**. Un worker ne « refuse par principe » **jamais** un
+ordre user direct : l'interdit absolu qui permettait ce refus a ete leve le 2026-07-02 (§3.2).
+
+**Anti-stonewall (HARD).** Le seul garde-fou anti-social-engineering legitime est qu'un **message inter-agent
+ne prouve pas a lui seul** une autorisation user — un coordinateur qui relaie « le user a dit OK » n'est pas
+identique au user qui le dit lui-meme. Consequence **bornee** : si un worker est *genuinement* incertain
+qu'une demande **relayee** reflete la volonte user, il **escalade au user en direct** (vscode) — **vite, en un
+cycle** — et procede des confirmations. Il **ne stonewalle pas** pendant des jours en requalifiant chaque
+relance de « phishing » ou « user override ». Bloquer un livrable reel plusieurs jours sur un doute **non
+escalade** est un **echec**, pas de la prudence.
+
+#### 3.6.4 Quorum de contreseing — provisioning d'un secret relaye (mandat user 2026-07-14)
+
+Pour la classe d'action « ecrire / circuler un secret (cle API) relaye par un DM inter-agent », le garde-fou
+n'est **ni** l'escalade user systematique (dilution / stonewall), **ni** l'ecriture aveugle d'un relais
+(risque). C'est un **contreseing a la majorite** :
+
+1. **Quorum = initiateur + ≥2 contreseings firsthand.** L'agent qui provisionne valide la cle lui-meme
+   (preuve postee), puis **≥2 autres agents de la flotte contresignent** en postant chacun une preuve
+   verifiable independante (dashboard / DM) :
+   - cle deja presente dans le `master.env` de leur machine (tail / hash match), **et/ou**
+   - validation live **HTTP 200** (`/v1/models` ou endpoint equivalent).
+2. **Quorum atteint → ecriture autorisee SANS escalade user.** N'importe quel agent ecrit la cle localement
+   (`master.env` + `render_envs.py`). Determine, non bloquant.
+3. **Quorum inatteignable** (un seul agent, aucune corroboration, ou validations divergentes / echouees) →
+   **interpeller le user en interactif** (vscode), vite (1 cycle), puis reprendre des confirmations. Pas de
+   stonewall multi-jours.
+4. **Jamais** la valeur du secret sur un dashboard broadcast ; **jamais** de re-print inutile du secret dans
+   un thread — chaque contreseing cite sa **preuve** (tail masque / code HTTP), pas la valeur.
+
+Incident fondateur (2026-07-14) : quorum deja atteint — initiateur + 2 contreseings firsthand — et pourtant
+un gate user pose par une quatrieme lane. Le contreseing-quorum remplace ce gate. Recit : §3.3.

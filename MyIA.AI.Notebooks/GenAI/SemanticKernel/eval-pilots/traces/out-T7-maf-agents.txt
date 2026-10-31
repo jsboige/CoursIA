@@ -1,0 +1,11 @@
+MAF versions: agent-framework-core 1.21.0, agent-framework-orchestrations 1.3.1
+sonde OK (1 appel(s))
+TOPOLOGIES PYTHON: Sequential, Concurrent, GroupChat, Magentic, Handoff
+[technique #1] agents=['triage', 'specialiste_technique'] decision: specialiste_technique
+[technique #2] agents=['triage', 'specialiste_technique'] decision: specialiste_technique
+[formation #1] agents=['triage', 'specialiste_formation'] decision: specialiste_formation
+[formation #2] agents=['triage', 'specialiste_formation'] decision: specialiste_formation
+ROUTING CORRECTNESS: OK
+ROUTING DETERMINISM: OK
+LLM CALLS: 9/40
+PILOT OK maf handoff model=gpt-4o-mini

@@ -9,30 +9,48 @@ All notebooks in this directory are **(c) standalone research** — independent 
 | Notebook | Topic | Type |
 |----------|-------|------|
 | `ML-Research-Template.ipynb` | Template for ML research | (c) |
-| `m3_har_asymmetric_semivariance.ipynb` | HAR asymmetric semivariance | (c) |
+| `m3_har_asymmetric_semivariance.ipynb` | M16 — Asymmetric HAR, debiased: does the signal survive outside the bias? | (c) |
 | `research_what_dl_can_predict.ipynb` | What DL can predict in finance | (c) |
-| `research_l4_decision_transformer.ipynb` | Decision Transformer evaluation | (c) |
+| `research_l1_tsmom.ipynb` | L1 TSMOM — time-series momentum baseline (NO BEATS) | (c) |
+| `research_l2_dual_momentum.ipynb` | L2 Cross-sectional + dual momentum (NO BEATS) | (c) |
+| `research_l3_trend.ipynb` | L3 Trend long-horizon — directional LSTM (NO BEATS) | (c) |
+| `research_l4_decision_transformer.ipynb` | L4 Decision Transformer (NO BEATS under the causal protocol, #21187) | (c) |
+| `c1330_xrp_dt_foldwise_research.ipynb` | c.1330 — XRP Decision Transformer: fold-wise §C validation (per-bucket verdicts) | (c) |
+| `hmm_alpha_research.ipynb` | Gaussian HMM for alpha trading (Broad Ch6 Ex4) | (c) |
+| `c875_hmm_alpha_dm_research.ipynb` | C875 — HMM-alpha: strict Ledoit-Wolf DM validation (50 bps stress, INCONCLUSIVE) | (c) |
+| `m4_dlinear_vol_research.ipynb` | DLinear-vol: linear DL vs HAR (pure forecasts) | (c) |
+| `m5_hmm_regime_research.ipynb` | HMM regime-switching HAR: when structural sophistication hurts | (c) |
+| `m9_tft_vol_research.ipynb` | TFT (Temporal Fusion Transformer): the failure of over-parameterization | (c) |
+| `m11e_ensemble_research.ipynb` | HAR-Kelly ensemble: dilution confirmed (3rd failure axis) | (c) |
+| `m12_har_rv_j_research.ipynb` | HAR-RV-J: jump decomposition (Andersen-Bollerslev-Diebold 2007) | (c) |
+| `m15_lstm_rv_research.ipynb` | Log-LSTM RV: sequential memory for realized variance | (c) |
+| `m4_dlinear_vol_sc_validation.ipynb` | M4 — DLinear-vol: §C registry entry (multi-seed conjunction + DM `loss_fn="linear"`) | (c) |
+| `m15_lstm_rv_sc_validation.ipynb` | M15 — LSTM RV: §C registry entry (2nd §C entry, same protocol) | (c) |
 
 Full classification: [docs/qc/qc-strategies-status.md](../../../docs/qc/qc-strategies-status.md)
 
-## Curriculum V2 — Validated Keepers (2026-05-16, gate FERMEE)
+## Curriculum V2 — Keepers from the 2026-05-16 gate (all removed since)
 
-After 8 stages tested (S1–S8) on anti-FAANG/Mag7 universe (SPY, TLT, XLF, XLK, XLE, XLV, XLY, XLI, XLB, XLU, XLP), **4 KEEPERS** confirmed under strict OOS 2027 holdout, walk-forward 5-fold expanding, 4-seed block bootstrap (22-day blocks), tx costs 10bps rebalance + 50bps stress — **amendé le 2026-09-13** (M12 revalidé NO BEATS, note sous le tableau) :
+After 8 stages tested (S1–S8) on anti-FAANG/Mag7 universe (SPY, TLT, XLF, XLK, XLE, XLV, XLY, XLI, XLB, XLU, XLP), the 2026-05-16 gate retained **4 KEEPERS** under walk-forward 5-fold expanding, 4-seed block bootstrap (22-day blocks), tx costs 10bps rebalance + 50bps stress. The "strict OOS 2027 holdout" label matched no measurement: at that date the data stopped at 2026-05-01, the 2027 holdout was empty, and the results were in-sample walk-forwards (#21055). None of the four holds today: M15 was removed on 2026-08-17, M12 on 2026-09-13, S3 and S4 on 2026-10-20 (notes below the table):
 
 | Stage | Strategy | Δ-Sharpe | Stat. Significance | MaxDD | Script |
 |-------|----------|----------|--------------------|-------|--------|
 | S1 vol | **M12 HAR-RV-J** (jump-augmented HAR) — **retiré des keepers le 2026-09-13** | n/a | Cycle 31 : p=0.0015 (56/84 sign-test) — **non confirmé** (note ci-dessous) | n/a | `m12_har_rv_j.py` |
-| S1 vol | **M15 LSTM h=32** (log-RV LSTM) | n/a | p=0.0107 (53/84 sign-test) | n/a | `m15_lstm_rv.py` |
-| S3 regime | **HMM Regime** (2-state, daily) | **+0.669** | 4/4 seeds positive | -39.1% | `s3_hmm_regime.py` |
-| S4 v2 | **Inverse-vol Ridge + HMM** | **+0.325** | 4/4 seeds positive | -17.7% | `s4_inverse_vol_ridge_v2.py` |
+| S1 vol | **M15 LSTM h=32** (log-RV LSTM) — **removed from keepers 2026-08-17** | n/a | Gate: p=0.0107 (53/84 sign-test, no DM test) — §C re-run: **NO BEATS** (44/84, p=0.372) | n/a | `m15_lstm_rv.py` |
+| S3 regime | **HMM Regime** (2-state, daily) — **removed from keepers 2026-10-20** | n/a (in-sample +0.669, superseded) | **NO BEATS** causal: Δ-0.49 vs 50/50, Δ-0.65 vs SPY (Holm p=0.032) | -44.9% | `s3_hmm_regime.py` |
+| S4 v2 | **Inverse-vol Ridge + HMM** — **removed from keepers 2026-10-20** | n/a (in-sample +0.325, superseded) | **INCONCLUSIVE** causal: Δ+0.24, Holm p=0.38, CI95 covers 0 | -17.6% | `s4_inverse_vol_ridge_v2.py` |
+
+> **Amendement 2026-10-20 — S3/S4 re-measured causally, keepers removed** (#21633) : the figures above (+0.669 / +0.325) came from an HMM **fitted on the same block it labels**, read in smoothed probabilities (conditioned on the block's own future), named by the block mean, with no decision lag — a future read, not an OOS. Pre-registered re-measurement (causal fit on the strict past, 22-day refit, 1-day decision lag, Ledoit-Wolf HAC + Holm vs 50/50 SPY-TLT and SPY held, leak witness) : **S3 = NO BEATS** (causal Sharpe 0.37 vs B&H 0.72 ; the in-sample smoothed version carried +1.13 of it) and **S4 = INCONCLUSIVE** (Δ+0.24 not significant ; its witness is negative — the in-sample refit *hurt*). The S3+S4 portfolio recommendation below is **withdrawn**. Details : [`docs/Curriculum_V2_Meta_Analysis.md`](docs/Curriculum_V2_Meta_Analysis.md) and `scripts/results/s3_hmm_regime/verdict.md`.
 
 > **Amendement 2026-09-13 — M12 revalidé NO BEATS** (#16004, Epic #1454) : sous protocole cluster symétrique (sept actifs, calibration train-only des deux côtés, DM sur perte MSE, sign-test binomial exact au niveau actif), M12 obtient **0/7 BEATS, p = 1,0** — ADA NO BEATS (3/3 horizons), ETH NO BEATS (h=5/h=10), cinq actifs INCONCLUSIVE. Le BEATS Cycle 31 (p=7,9e-7) n'est pas confirmé : il comptait quatre labels de seed bit-identiques d'un OLS déterministe comme répétitions et calibrait la baseline seule. Non réfuté définitivement — protocoles et fenêtres diffèrent. Détail : [`REGISTRY.md`](REGISTRY.md) §M12 et [`docs/M12_HAR_RV_J.md`](docs/M12_HAR_RV_J.md).
 
-S1 long-horizon sweep also produced **8 BEATS multi-coin sur 16** (XRP h=66 13.5σ, ETH h=132 5.0σ, BTC h=22/66 BEATS). Reco portfolio : **S3 + S4 v2 monthly rebalance, Sharpe ~1.12**.
+> **Amendement 2026-08-17 — M15 h=32 retiré** (#11395, #11468) : le BEATS de la gate reposait sur un sign-test du Sharpe Kelly, sans test Diebold-Mariano. Le re-run §C (DM sur la perte MSE, seeds 0/1/7/42, 84 combinaisons) le dément : erreur MSE plus élevée que HAR à tous les horizons (-9.1 % / -9.0 % / -10.9 % d'edge), gain de Sharpe non significatif (44/84, p=0.372). La revalidation cluster du 2026-10-01 (sept actifs, appariement par date d'origine, configuration h=64) conclut aussi **NO BEATS**. Détail : [`docs/M15_LSTM_RV.md`](docs/M15_LSTM_RV.md) et [`REGISTRY.md`](REGISTRY.md) §M15.
 
-**Rejected stages** (NO BEATS) : S2 vol-ensembles (DM, MLP, GSP), S5 stop-loss overlays, S6 LO-only sectors, S7 composites, S8 long-horizon classifiers (dir_acc ≠ edge).
+S1 long-horizon sweep also produced **8 BEATS multi-coin sur 16** (XRP h=66 13.5σ, ETH h=132 5.0σ, BTC h=22/66 BEATS). ~~Reco portfolio : S3 + S4 v2 monthly rebalance, Sharpe ~1.12~~ — **withdrawn 2026-10-20** (S3/S4 not confirmed causally, amendment above).
 
-> Detail complet : [`docs/Curriculum_V2_Meta_Analysis.md`](docs/Curriculum_V2_Meta_Analysis.md) — méthodologie, ablations, leçons. Pivot V2 documenté dans [`CURRICULUM.md`](CURRICULUM.md). 3 projets QC Cloud déployés à partir de ces KEEPERS — cf [`../partner-course-quant-trading/README.md`](../partner-course-quant-trading/README.md).
+**Rejected stages** (NO BEATS) : S2 vol-ensembles (DM, MLP, GSP), S3 HMM Regime (removed 2026-10-20, causal re-measurement NO BEATS), S4 v2 Ridge+HMM (removed 2026-10-20, causal re-measurement INCONCLUSIVE), S5 stop-loss overlays, S6 LO-only sectors, S7 composites, S8 long-horizon classifiers (dir_acc ≠ edge).
+
+> Detail complet : [`docs/Curriculum_V2_Meta_Analysis.md`](docs/Curriculum_V2_Meta_Analysis.md) — méthodologie, ablations, leçons. Pivot V2 documenté dans [`CURRICULUM.md`](CURRICULUM.md). 3 projets QC Cloud ont été construits sur les modèles de volatilité de la gate (M12, M15, baseline GARCH) avant leur retrait — cf [`../partner-course-quant-trading/README.md`](../partner-course-quant-trading/README.md).
 
 ## Architecture
 
@@ -433,17 +451,17 @@ Systematic evaluation of trading signal generation approaches, 7 hard discipline
 | L1 | TSMOM | Time-series momentum | NO BEATS | net Sharpe -2.26 to -2.56 (costs kill the signal) | `docs/L1_tsmom.md` |
 | L2 | CS+DM | Carry + dual momentum | NO BEATS | best CS 252d delta -0.153 | `docs/L2_dual_momentum.md` |
 | L3 | Trend | Regime + trend long-horizon | NO BEATS | 0/75 signal, median AUC 0.509, 300 combos | `results/l3_trend_long_horizon/` |
-| **L4** | **Decision Transformer** | **Action-based (buy/hold/sell)** | **BEATS** (panel @10bps) | **24/26, median AUC 0.558** ; @50bps INCONCLUSIVE ; 06/08 temporal holdout not reproduced (-6.63σ internal) ; **04/09 real OOT NO-BEATS** (train frozen ≤ 2025-06-30, 0/5 seeds, −5.38σ) | `docs/L4_decision_transformer.md` |
+| L4 | Decision Transformer | Action-based (buy/hold/sell) | NO BEATS | 0/26 signal, median AUC 0.496, 104 combos, causal protocol (#21187, #21584); the former 24/26 (AUC 0.558) came from a test return-to-go drawn from realized future returns | `docs/L4_decision_transformer.md` |
 | L5 | Vol-targeted composite | Trend filter + 10% vol-targeting on S7 composite | NO BEATS | delta -0.236 vs S4 v2 (t=-2.49), DSR 0.074 | `docs/L5_vol_targeted_composite.md` |
 | (side) | PatchTST | Forecast-based (return prediction) — mislabeled "L5" before 2026-06-12 | NO BEATS | 0/26, median AUC 0.501 | `results/l5_patchtst/` |
 
 **Key findings**:
 
-1. **Action-based >> forecast-based**: DT (classifies buy/hold/sell) massively outperforms PatchTST (predicts return magnitude). The portfolio translation layer (forecast -> position) destroys forecast signal via transaction costs and discretization errors.
+1. **Neither action-based nor forecast-based**: the DT's lead (classifies buy/hold/sell) over PatchTST (predicts return magnitude) came from a test return-to-go drawn from realized future returns. Re-measured under a causal protocol, both are NO BEATS (#21187).
 2. **Trend overlays are systematically destructive** on this universe/period: L1, L2, L3 all NO BEATS, and the L5 ablation isolates the 12-1 TSMOM filter as the cause of its deficit (-0.260 alone vs -0.025 for vol-targeting alone).
-3. **Vol-targeting is a risk tool, not alpha**: L5's 10% vol-target hits its risk objective (realised vol 10.3% vs 16.6%, reduced MaxDD) at ~zero Sharpe cost. Keep it as a risk overlay on production candidates (S3 + S4 v2 KEEPERS), not as a signal.
+3. **Vol-targeting is a risk tool, not alpha**: L5's 10% vol-target hits its risk objective (realised vol 10.3% vs 16.6%, reduced MaxDD) at ~zero Sharpe cost. Keep it as a risk overlay on a candidate strategy, not as a signal (the S3 and S4 v2 candidates meant here were removed on 2026-10-20, #21633).
 
-Results: `scripts/results/{l1_tsmom,l2_dual_momentum,l3_trend_long_horizon,l4_decision_transformer,l5_vol_targeted,l5_patchtst}/results.json`. Next: L4 DT extended multi-seed (ai-01 BG run), then QC Cloud migration.
+Results: `scripts/results/{l1_tsmom,l2_dual_momentum,l3_trend_long_horizon,l4_decision_transformer,l5_vol_targeted,l5_patchtst}/results.json`. The extended DT multi-seed and its QC Cloud migration, planned after its BEATS, are moot since the causal re-measurement.
 
 ## Reproducibility
 
@@ -460,18 +478,18 @@ Results: `scripts/results/{l1_tsmom,l2_dual_momentum,l3_trend_long_horizon,l4_de
 
 Ce pipeline matérialise **l'empirisme honnête appliqué au ML financier** : plutôt que de revendiquer un edge sur un backtest unique, il teste systématiquement des familles de modèles (HAR-RV, LSTM, Transformer, DQN, Decision Transformer, GNN, HMM regime) sous une méthodologie stricte et publie les verdicts — y compris les échecs. L'arc pédagogique :
 
-- **La rigueur méthodologique d'abord** : walk-forward 5-fold expanding, 4-seed block bootstrap, OOS strict (2027 holdout jamais tuné), coûts de transaction réalistes (10bps rebalance + 50bps stress), univers anti-FAANG/Mag7 pour éviter le beta-loading déguisé. Ces choix sont **la condition de validité** de tout verdict — sans eux, un Sharpe spectaculaire n'est qu'un artefact.
-- **Les leçons transversales** : (1) **action-based >> forecast-based** — le Decision Transformer (classifie buy/hold/sell) surpasse massivement PatchTST (prédit la magnitude), car la couche de traduction forecast→position détruit le signal via coûts et discrétisation ; (2) **trend overlays systématiquement destructeurs** sur cet univers/période (L1/L2/L3 tous NO BEATS, le filtre TSMOM 12-1 isolé comme cause du déficit L5) ; (3) **vol-targeting = outil de risque, pas d'alpha** (atteint sa cible de vol 10.3% vs 16.6%, réduit le MaxDD, à coût Sharpe ~nul).
-- **Les KEEPERS validés** (Curriculum V2, gate 2026-05-16) : S3 HMM Regime (+0.669), S4 Inverse-vol Ridge+HMM (+0.325), M15 LSTM-RV. Reco portfolio S3+S4 monthly = Sharpe ~1.12. **Amendement 2026-09-13** : M12 HAR-RV-J, quatrième keeper historique, est **retiré** — revalidation cluster symétrique **NO BEATS** (0/7, p=1,0, #16004) ; son BEATS Cycle 31 (pseudo-réplication de seeds d'un OLS déterministe + calibration asymétrique de la baseline) n'est pas confirmé, sans réfutation définitive (protocoles et fenêtres diffèrent).
-- **La transparence sur les échecs** : le Ladder #1409 documente publiquement que 5/6 ladder levels sont NO BEATS. C'est aussi important pédagogiquement que les keepers — **la plupart des idées ML ne battent pas le buy-and-hold**, et le savoir vaut mieux que l'illusion.
+- **La rigueur méthodologique d'abord** : walk-forward 5-fold expanding, 4-seed block bootstrap, holdout 2027 réservé et jamais tuné (engagement prospectif : vide à la date de la gate du 2026-05-16, dont les résultats sont des walk-forward intra-échantillon, #21055), coûts de transaction réalistes (10bps rebalance + 50bps stress), univers anti-FAANG/Mag7 pour éviter le beta-loading déguisé. Ces choix sont **la condition de validité** de tout verdict — sans eux, un Sharpe spectaculaire n'est qu'un artefact.
+- **Les leçons transversales** : (1) **le paradigme ne crée pas le signal** — l'avance du Decision Transformer (classifie buy/hold/sell) sur PatchTST (prédit la magnitude) venait d'un return-to-go de test tiré des rendements futurs réalisés ; re-mesurés sous protocole causal, les deux sont NO BEATS (#21187) ; (2) **trend overlays systématiquement destructeurs** sur cet univers/période (L1/L2/L3 tous NO BEATS, le filtre TSMOM 12-1 isolé comme cause du déficit L5) ; (3) **vol-targeting = outil de risque, pas d'alpha** (atteint sa cible de vol 10.3% vs 16.6%, réduit le MaxDD, à coût Sharpe ~nul).
+- **Les keepers de la gate du 2026-05-16** (Curriculum V2) : ~~S3 HMM Regime (+0.669), S4 Inverse-vol Ridge+HMM (+0.325), M15 LSTM-RV~~ — aucun ne tient. **Amendement 2026-10-20** (#21633) : S3 et S4 sont **retirés** — re-mesure causale pré-enregistrée (fit sur le passé strict, décalage 1 jour, Ledoit-Wolf + Holm, témoin de fuite) : **S3 NO BEATS** (le +0.669 était porté par un HMM lissé conditionné au futur de son propre bloc : +1.13 de Sharpe in-sample), **S4 INCONCLUSIVE** (Δ+0.24, Holm p=0.38) ; la reco portfolio S3+S4 (Sharpe ~1.12) est retirée. **Amendement 2026-09-13** : M12 HAR-RV-J, quatrième keeper historique, est **retiré** — revalidation cluster symétrique **NO BEATS** (0/7, p=1,0, #16004) ; son BEATS Cycle 31 (pseudo-réplication de seeds d'un OLS déterministe + calibration asymétrique de la baseline) n'est pas confirmé, sans réfutation définitive (protocoles et fenêtres diffèrent). **Amendement 2026-08-17** (#11395) : M15 LSTM-RV h=32 est **retiré** — le re-run §C (DM sur la perte MSE) rend **NO BEATS** (44/84, p=0.372, erreur MSE plus élevée que HAR à tous les horizons), et la revalidation cluster du 2026-10-01 aussi.
+- **La transparence sur les échecs** : le Ladder #1409 documente publiquement que tous ses échelons sont NO BEATS, L4 compris depuis sa re-mesure causale (#21187). C'est aussi important pédagogiquement que les keepers — **la plupart des idées ML ne battent pas le buy-and-hold**, et le savoir vaut mieux que l'illusion.
 
 ### Prochaines étapes
 
-1. **Reproduire les KEEPERS** : cloner le repo, installer les dépendances (`Dependencies` ci-dessus), lancer `python scripts/dry_run_validation.py` pour valider le pipeline CPU, puis entraîner S3/S4 sur données réelles (`python scripts/s3_hmm_regime.py`).
-2. **L4 Decision Transformer verdict** : BEATS panel @10bps (24/26) — but the **real** out-of-sample temporal validation (04/09, train frozen ≤ 2025-06-30) is **NO-BEATS** (0/5 seeds, edge −5.38σ): the edge stays confined to the cross-section (details: `docs/L4_decision_transformer.md`, §Protocole OOT).
-3. **Migration QC Cloud** : les keepers sont des modèles research standalone (type (c), données yfinance) ; l'étape suivante est l'intégration dans des `QCAlgorithm` déployables (cf. `../projects/` et la série QC-Py).
+1. **Reproduire les verdicts** : cloner le repo, installer les dépendances (`Dependencies` ci-dessus), lancer `python scripts/dry_run_validation.py` pour valider le pipeline CPU, puis relancer M15 sur les données du pipeline (`python scripts/m15_lstm_rv.py`) et retrouver son NO BEATS §C. Les scripts S3/S4 restent disponibles (`python scripts/s3_hmm_regime.py`, `--witness` pour le témoin de fuite) comme études de cas de lecture du futur.
+2. **Bilan L4 Decision Transformer** : NO BEATS sous protocole causal (0/26 avec signal, AUC médian 0.496, #21187). Le BEATS panel @10bps (24/26) venait d'un return-to-go de test tiré des rendements futurs réalisés ; le carnet `research_l4_decision_transformer.ipynb` refait la mesure en fermant cette porte (#21584).
+3. **Migration QC Cloud** : les modèles du pipeline sont des modèles research standalone (type (c), données yfinance) ; aucun n'a aujourd'hui de BEATS confirmé. Un modèle qui en obtiendrait un passerait ensuite dans un `QCAlgorithm` (cf. `../projects/` et la série QC-Py).
 4. **Surveiller la thermal safety** : tout training GPU doit passer par `shared/gpu_training.py` (MAX_TEMP=80C, AMP) — le repo RTX 3090/4090 a déjà subi des throttling thermiques.
 5. **Consulter le REGISTRY** : [`REGISTRY.md`](REGISTRY.md) catalogue les 70+ checkpoints par stage (-1/0/1/2) avec verdict BEATS/FAIL/MIXED et l'audit Anti-Bias.
 6. **Lire la méta-analyse** : [`docs/Curriculum_V2_Meta_Analysis.md`](docs/Curriculum_V2_Meta_Analysis.md) pour la synthèse cross-iteration (parcimonie vs expressivité, vol vs direction).
 
-> **Rappel honnête** : ce pipeline est un **standalone research** (type (c), données yfinance locales). Les verdicts (KEEPERS, NO BEATS) sont valables sur l'univers et la période testés. Un edge en research standalone n'est pas un edge en production — la migration QC Cloud avec vraies données, frais réels et slippage est l'étape de validation obligatoire avant tout déploiement.
+> **Rappel honnête** : ce pipeline est un **standalone research** (type (c), données yfinance locales). Les verdicts (BEATS, NO BEATS) sont valables sur l'univers et la période testés. Un edge en research standalone n'est pas un edge en production — la migration QC Cloud avec les données du fournisseur, les frais effectifs et le slippage est l'étape de validation obligatoire avant tout déploiement.

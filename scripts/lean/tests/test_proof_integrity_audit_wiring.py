@@ -26,6 +26,10 @@ from pathlib import Path
 
 import pytest
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from check_target_coverage import _uses_lean_axiom  # noqa: E402
+
 # scripts/lean/tests/X.py -> parents[3] = repo root
 REPO = Path(__file__).resolve().parents[3]
 CONWAY_WF = REPO / ".github" / "workflows" / "lean-conway.yml"
@@ -57,13 +61,27 @@ def test_blocking_proof_integrity_targets_showcase_modules():
 
 def test_advisory_audit_job_wired():
     """Option (b): an ADVISORY proof-integrity-audit job exists, uses the
-    reusable lean-axiom workflow, and is non-blocking on sorry."""
+    reusable lean-axiom workflow, and is non-blocking on sorry.
+
+    **La forme de l'appel n'est pas figée, la cible l'est (#23247).** Ce pin
+    exigeait le littéral ``lean-axiom.yml@main``. Une PR qui ajoute un input au
+    workflow réutilisable ET le passe depuis cet appelant ne PEUT pas garder
+    ``@main`` : GitHub résout ``@main`` vers le fichier tel qu'il existe sur la
+    branche par défaut, qui ne déclare pas encore ``build-threads``, et rejette
+    l'appel avant tout job (``startup_failure``, 0 job — run 40854017279
+    mesuré). La règle vérifiée ici est inchangée — l'appelant doit résoudre vers
+    ``lean-axiom.yml`` — donc le pin applique la même normalisation que les deux
+    organes qui lisent ce même fait (``check_target_coverage._uses_lean_axiom``,
+    ``check_axiom_gate_coverage._GATE_CALL_RE``), lesquels acceptent déjà
+    ``jsboige/CoursIA/...@main`` comme ``./.github/workflows/...``.
+    """
     jobs = _load_jobs()
     assert "proof-integrity-audit" in jobs, (
         "#8782 (b): proof-integrity-audit job missing from lean-conway.yml")
     audit = jobs["proof-integrity-audit"]
-    assert "lean-axiom.yml@main" in audit.get("uses", ""), (
-        "audit must reuse the lean-axiom workflow")
+    uses = audit.get("uses", "")
+    assert _uses_lean_axiom(uses), (
+        f"audit must reuse the lean-axiom workflow, got uses={uses!r}")
     with_opts = audit.get("with", {})
     assert with_opts.get("fail-on-sorry") is False, (
         "the audit job must be advisory on sorry (fail-on-sorry: false)")
@@ -231,7 +249,19 @@ def test_audit_allowlists_native_decide_axioms():
     self-certify. Here the second reading is the coordinator's B.0 pass. Each
     of the 12 ratchet names is `._native.native_decide.ax_1_1` on a finite
     proposition, all are enumerated, and the no-wildcard property is
-    unchanged."""
+    unchanged.
+
+    **Narrowed to 77 by #21833**: the two `_initial_nonempty` twins per file
+    (`otca_initial_nonempty`, `unitcell_initial_nonempty` and their `_en`
+    counterparts -- 4 names) stopped being `native_decide`: their statements
+    are now DERIVED from the corresponding population theorems
+    (`otca_initial_population` / `unitcell_initial_population`) by
+    `List.length` + `omega`, with the statements unchanged. `#print axioms`
+    on the rebuilt lake measures 5 anchors per file (10 for the FR/_en pair)
+    instead of 7 per file (14 for the pair). The 4 names are removed from the
+    allow-list, which TIGHTENS the gate: a future `native_decide` reintroduced
+    on those declarations is now a new red, which is the property the
+    no-wildcard rule exists to preserve."""
     jobs = _load_jobs()
     audit = jobs["proof-integrity-audit"].get("with", {})
     allow = audit.get("allow-axioms", "")
@@ -241,14 +271,19 @@ def test_audit_allowlists_native_decide_axioms():
     # the blocking gate's 19) is caught -- and so any future widening has to
     # come with the module-attribution argument, as #9341's did.
     names = [a.strip() for a in allow.split(",") if a.strip()]
-    assert len(names) == 81, (
-        f"audit allow-list must carry the 81 native_decide axioms of the whole "
+    assert len(names) == 79, (
+        f"audit allow-list must carry the 79 native_decide axioms of the whole "
         f"lake under the #10889 '*' derivation (38 HashlifeCorrectness-era "
         f"footprint + 21 build-enumerated entries of the newly covered "
         f"modules + 2 P4-At standalone witnesses from grain 3a #11303 + 8 "
         f"class-witness entries from the #6724 criterion-3 characterization "
         f"[PR #11910] + 8 Pillars entries from #20004 [tranche 2 of #19989] "
-        f"+ 4 Pillars entries from the OTCA tranche 3 of #19989, "
+        f"+ 4 Pillars entries from the OTCA tranche 3 of #19989 "
+        f"- 4 Pillars `_initial_nonempty` entries derived (not native_decide) "
+        f"by #21833, "
+        f"+ 2 Turing-machine entries from #17465 (the FR + _en twins of "
+        f"turingmachine_facts, the single anchor of the Turing-machine "
+        f"witness), "
         f"each attributed in the workflow comment); got {len(names)}")
     # Sample members from each family revealed by the audit (P4 base cases,
     # box-assez-grand lemmas, hashlife_correct_implies bridges, plus one
@@ -261,6 +296,8 @@ def test_audit_allowlists_native_decide_axioms():
         "Conway.Life.jumpCaptured_block._native.native_decide.ax_1_1",
         "Conway.Life.jumpCaptured_beehive._native.native_decide.ax_1_1",
         "Conway_en.Life_en.RLE_en.glider_parse_ok._native.native_decide.ax_1_1",
+        "Conway.Life.Pillars.turingmachine_facts._native.native_decide.ax_1_1",
+        "Conway.Life.Pillars_en.turingmachine_facts._native.native_decide.ax_1_1",
     ]:
         assert sample in names, (
             f"audit allow-list missing revealed axiom {sample!r}")

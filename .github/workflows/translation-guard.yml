@@ -27,13 +27,15 @@ name: Translation Guard
 
 on:
   pull_request:
-    branches: [ main ]
     # #12773 tranche 1b + amend. #13196 Hermes : paths-filter pour limiter
     # les declenchements aux PR touchant la surface reelle du garde
     # (`translation_override_required.py` qui interroge l'API `gh pr`). La
     # cible du garde = fichiers de traduction derives : `translations/**`
     # (CSV de sync, derives par T1/T3) et les `*_<lang>.ipynb` rendus.
     # Hermetique : sans `translations/**` le garde est desarme sur sa cible
+    # principale. NB : le declencheur reste large, mais le filtre de fond
+    # (ALL_CHANGED, step guard) ne retient que `translations/**/*.csv` --
+    # les README/PERIMETER/golden_set manuscrits declenchent puis passent.
     # principale (86 fichiers mesures firsthand par Hermes sur `main`).
     paths:
       - '.github/workflows/translation-guard.yml'
@@ -53,6 +55,12 @@ on:
 
 permissions:
   contents: read
+  # `pull-requests: write` : l'etape `Fail if violated` poste le commentaire
+  # structure `<!-- translation-guard-violation -->` (gh pr comment). Sans ce
+  # droit ni GH_TOKEN, le POST echouait en silence (`|| true`) : le contributeur
+  # ne voyait jamais les trois sorties du garde (#20450). Garde same-repo au
+  # niveau job : une PR de fork ne recoit jamais ce jeton.
+  pull-requests: write
 
 concurrency:
   group: translation-guard-${{ github.ref }}
@@ -121,7 +129,13 @@ jobs:
           fi
 
           # 3-dot diff: translation-owned files changed on the PR branch.
-          # translations/** = sync CSVs (derived). *_<lang>.ipynb = rendered
+          # translations/**/*.csv = sync CSVs (derived by T1/T3). Les autres
+          # fichiers sous translations/ (README.md, PERIMETER.md,
+          # translation_golden_set.json) sont manuscrits -- mesuré firsthand
+          # 2026-10-30 : 36 CSV derives vs 28 fichiers manuscrits sur main,
+          # aucun generateur de README dans scripts/translation/. Les exclure
+          # evite le faux positif #23401 (PR prose-counts sur les README de
+          # couverture). *_<lang>.ipynb = rendered
           # translation notebooks (derived by render_notebook.py T4). Target
           # langs match check_perimeter.py TARGET_LANGS (en/es/ar/fa/zh/ru/pt),
           # the single source of truth (#10109).
@@ -135,7 +149,7 @@ jobs:
           # premier cas déclencheur : PR #10306 deep_research_optimization_en
           # jamais rendu auparavant).
           ALL_CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- \
-            'translations/**' \
+            'translations/**/*.csv' \
             'MyIA.AI.Notebooks/**/*_en.ipynb' \
             'MyIA.AI.Notebooks/**/*_ru.ipynb' \
             'MyIA.AI.Notebooks/**/*_pt.ipynb' \
@@ -174,9 +188,11 @@ jobs:
             echo "" >> "$GITHUB_STEP_SUMMARY"
             echo "### How to fix" >> "$GITHUB_STEP_SUMMARY"
             echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo "Translation CSVs (\`translations/**\`) and rendered notebooks (\`*_<lang>.ipynb\`) are **derived** from the source notebook + the T1/T3/T4 toolchain. The canonical exit is to edit the **source notebook** (FR); \`translation-sync.yml\` then re-extracts, re-translates (changed cells only), and re-renders." >> "$GITHUB_STEP_SUMMARY"
+            echo "Translation CSVs (\`translations/**/*.csv\`) and rendered notebooks (\`*_<lang>.ipynb\`) are **derived** from the source notebook + the T1/T3/T4 toolchain. The canonical exit is to edit the **source notebook** (FR); \`translation-sync.yml\` then re-extracts, re-translates (changed cells only), and re-renders." >> "$GITHUB_STEP_SUMMARY"
             echo "" >> "$GITHUB_STEP_SUMMARY"
             echo "**State of the engine (#15198, #10038):** \`translation-sync.yml\` is on a manual-maintainer hold since 2026-08-12 -- it no longer runs per-PR, so editing the FR source does **not** refresh the derived file until the hold is lifted. While the hold stands, the auditable exit for a legitimate derived-file change is the dual-key override (#10332), never a silent hand-edit." >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "**Counterpart organ (#20232):** the hot-subset ratchet (\`scripts/translation/tests/test_hot_subset_ratchet.py\`, #13551) requires a **per-cell CSV resync** after an FR edit -- exactly the derived files flagged here. The dual-key override above is the auditable path for that resync; the two organs name each other on purpose." >> "$GITHUB_STEP_SUMMARY"
             echo "" >> "$GITHUB_STEP_SUMMARY"
             echo '```bash' >> "$GITHUB_STEP_SUMMARY"
             echo "git checkout origin/main -- $CHANGED" >> "$GITHUB_STEP_SUMMARY"
@@ -192,6 +208,13 @@ jobs:
       # cliquet is not disarmed. The decision lives in
       # `scripts/ci/translation_override_required.py` (testable, injectable
       # fetchers -- unit tests never touch the network).
+      #
+      # Counterpart organ (#20232): the hot-subset ratchet
+      # (`scripts/translation/tests/test_hot_subset_ratchet.py`, #13551)
+      # requires a per-cell CSV resync after an FR edit -- i.e. the derived
+      # files this guard flags. The two organs name each other on purpose:
+      # the ratchet points here and to this dual-key; this guard points to
+      # the ratchet. Do not silence one by weakening the other.
       - name: Resolve translation-guard override (#10332)
         id: override
         if: steps.check.outputs.violated == 'true'
@@ -201,12 +224,24 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           set -uo pipefail
+          # Shell reel de l'etape : `bash -e {0}`. `set -uo pipefail` n'enleve
+          # pas -e : sans capture protegee, un exit 1 du helper (verdict BLOCK)
+          # tuait l'etape avant `RC=$?`, et le commentaire structure
+          # `<!-- translation-guard-violation -->` de l'etape Fail n'etait jamais
+          # poste (#20450). Capture via `&& RC=0 || RC=$?`, idiome des gardes
+          # freres (always-on-guards.yml). RC=1 est aussi le code d'une exception
+          # Python non rattrapee : le verdict fait foi par le JSON, pas par le
+          # seul code de retour.
           python3 scripts/ci/translation_override_required.py \
-            --pr-number "$PR_NUMBER" > /tmp/override.json
-          RC=$?
-          echo "--- override verdict ---"
+            --pr-number "$PR_NUMBER" > /tmp/override.json && RC=0 || RC=$?
+          echo "--- override verdict (rc=$RC) ---"
           cat /tmp/override.json
-          OVERRIDE_APPLIED=$(python3 -c "import json; print(json.load(open('/tmp/override.json')).get('override_applied', False))")
+          # Verdict illisible (crash, exit 2 argparse, JSON absent) = erreur
+          # d'execution : le job echoue ici, jamais comme "pas de violation".
+          if ! OVERRIDE_APPLIED=$(python3 -c "import json; print(json.load(open('/tmp/override.json')).get('override_applied', False))"); then
+            echo "::error title=Translation guard::verdict du helper illisible (rc=$RC) : erreur d'execution, pas une absence de violation."
+            exit 1
+          fi
           if [ "$OVERRIDE_APPLIED" = "True" ]; then
             MOTIF=$(python3 -c "import json; print(json.load(open('/tmp/override.json')).get('motif',''))")
             echo "override_applied=true" >> "$GITHUB_OUTPUT"
@@ -214,14 +249,16 @@ jobs:
           else
             echo "override_applied=false" >> "$GITHUB_OUTPUT"
           fi
-          # Exit code of the python script decides: 0 = pass, 1 = block.
-          # We always proceed to the next step so we can print a structured
-          # log either way; the `Fail if violated (or unsatisfied override)`
-          # step below reads `override_applied`.
+          # Le verdict (0 = pass, 1 = block) est journalise ci-dessus. Sur un
+          # verdict lisible, on sort 0 : l'etape `Fail if violated (or unsatisfied
+          # override)` lit `override_applied` et porte l'echec.
           exit 0
 
       - name: Fail if violated (or unsatisfied override)
         if: steps.check.outputs.violated == 'true' && steps.override.outputs.override_applied != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
         run: |
           REASON=$(python3 -c "import json; print(json.load(open('/tmp/override.json')).get('reason','unknown'))" 2>/dev/null || echo "unknown")
           echo "::error title=Translation guard FAILED::$REASON"
@@ -238,7 +275,7 @@ jobs:
 
           See #10332 for the override protocol.
           EOF
-          )" 2>/dev/null || true
+          )" || echo "::warning title=Translation guard::commentaire de violation non poste (gh pr comment en echec) ; le verdict ci-dessus reste la reference."
           exit 1
 
       - name: Journalise accepted override (#10332)

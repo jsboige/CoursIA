@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: Probas
-pedagogical_count: 83
-breakdown: DecisionTheory=33, Infer=21, PyMC=20, Applications=8, root=1
-maturity: BETA=76, DRAFT=4, ALPHA=3
+pedagogical_count: 92
+breakdown: DecisionTheory=37, Infer=21, PyMC=20, Applications=12, root=2
+maturity: BETA=87, ALPHA=4, DRAFT=1
 -->
 
 > **À propos des décomptes** : le marqueur `CATALOG-STATUS` ci-dessus est la **source de vérité autoritative** pour les volumes (total de la famille, notebooks par sous-série, maturité). Il est régénéré chaque nuit par le workflow [`catalog-cron.yml`](../../.github/workflows/catalog-cron.yml) à 03:37 UTC sur `main` (commit par `github-actions[bot]`, livré par la PR permanente `chore/catalog-refresh-pending`). Pour la **répartition par kernel** (C#/.NET vs Python vs Lean 4) au sein d'une sous-série — la décomposition **technique** par interpréteur, que le marqueur n'agrège pas —, la source est la lecture directe des `metadata.kernelspec` des notebooks : ces volumes dérivent à chaque ajout et **aucun chiffre n'est maintenu ici en prose**. Si vous observez un décalage entre ce marqueur et une phrase en prose de ce README, **fiez-vous au marqueur** ; la prose sera ré-alignée lors du prochain passage.
@@ -21,7 +21,7 @@ L'**arc décision** ([`DecisionTheory/DecInfer/`](DecisionTheory/DecInfer/README
 
 Le versant **PyMC** porte ces modèles en Python avec l'échantillonnage NUTS : le **corpus bayésien PyMC** ([`PyMC/`](PyMC/README.md), en miroir de l'arc Infer — paires numérotées, la paire de debugging étant `PyMC-02b` ↔ `Infer-2b` (toutes deux accrétions 2b, cf renommage #17808) ; fondations, modèles classiques, inférence causale, puis frontières : séquences, reco, processus gaussien épars, filtre de Kalman, change-point, survie) et les **miroirs de l'arc décision** ([`DecisionTheory/DecPyMC/`](DecisionTheory/DecPyMC/README.md), renumérotés, dont la **jambe actuarielle** 8-12).
 
-La **percolation** ([`Applications/Percolation/`](Applications/Percolation/README.md)) complète ce trio Lean avec [`Percolation-02-Lean`](Applications/Percolation/Percolation-02-Lean.html) (noyau fini prouvé sans `sorry`, compagnon du lake `percolation_lean`), jumeau de la simulation Python [`Percolation-01-Supercritique-Python`](Applications/Percolation/Percolation-01-Supercritique-Python.html) (trois régimes mesurés).
+La **percolation** ([`Applications/Percolation/`](Applications/Percolation/README.md)) complète ce trio Lean avec [`Percolation-02-Lean`](Applications/Percolation/Percolation-02-Lean.ipynb) (noyau fini prouvé sans `sorry`, compagnon du lake `percolation_lean`), jumeau de la simulation Python [`Percolation-01-Supercritique-Python`](Applications/Percolation/Percolation-01-Supercritique-Python.ipynb) (trois régimes mesurés).
 
 Enfin, un **pont causal** ([`DecisionTheory/Causal-Bridges/`](DecisionTheory/Causal-Bridges/README.md), kernels `python3` et `coursia-ml-training`) fédère les quatre traitements de la causalité disséminés dans le dépôt — Tweety (logique), Infer.NET, PyMC et l'émergence causale (PyPhi) — autour de l'échelle de Pearl et du do-calculus. Sur l'outil de référence [`dowhy`](https://www.pywhy.org/dowhy/), le pont identifie l'estimande (backdoor, front-door, variable instrumentale), l'estime puis le réfute ; il monte au troisième échelon de Pearl (contrefactuel individuel), couvre les méthodes quasi-expérimentales (DiD, contrôle synthétique, RDD), et pousse chaque hypothèse d'identification dans ses retranchements : découverte de structure quand le graphe manque (`causal-learn` : PC, GES, LiNGAM — CausalBridges-04, ex-DoWhy-3), sensibilité au confondeur caché (robustness value, E-value, Rosenbaum — CausalBridges-05, ex-DoWhy-4) et instrument faible (F-stat, biais IV vs OLS — CausalBridges-06, ex-DoWhy-5).
 
@@ -166,7 +166,7 @@ Pour les étudiants en recherche opérationnelle ou finance :
 
 #### Parcours rapide Python (standalone, ~2h)
 
-Si vous préférez Python au C#, commencez par **PyMC-01-Setup** (introduction standalone en Python, premier modèle Two Coins) puis Pyro_RSA_Hyperbole.ipynb (application à la linguistique pragmatique avec le framework RSA). En **C#/.NET**, l'introduction est `Infer-1b` (`Infer/Infer-1b-Premiers-Modeles.ipynb`), le premier modèle avec les fondations de [`Infer/`](Infer/README.md).
+Si vous préférez Python au C#, commencez par **PyMC-01-Setup** (introduction standalone en Python, premier modèle Two Coins) puis Pyro_RSA_Hyperbole.ipynb (application à la linguistique pragmatique avec le framework RSA). En **C#/.NET**, l'introduction est `Infer-1b` (`Infer/Infer-01b-Premiers-Modeles.ipynb`), le premier modèle avec les fondations de [`Infer/`](Infer/README.md).
 
 #### Parcours PyMC complet (~21h)
 
@@ -214,7 +214,7 @@ Deux stacks, un même parcours de 20 modèles : **Infer.NET** (C#, message passi
 
 | Critère | Recommandation |
 |---------|---------------|
-| Juste découvrir la programmation probabiliste | **Infer-1b** (`Infer/Infer-1b-Premiers-Modeles.ipynb`) |
+| Juste découvrir la programmation probabiliste | **Infer-1b** (`Infer/Infer-01b-Premiers-Modeles.ipynb`) |
 | Comprendre les graphes de facteurs | **Infer-3** (Monty Hall, Murder Mystery) |
 | Un premier modèle qui marche | **Infer-1b** ou **PyMC-01-Setup** |
 | Application concrète rapide | **Infer-8 TrueSkill** ou **Infer-11 LDA** |
@@ -227,6 +227,8 @@ Deux stacks, un même parcours de 20 modèles : **Infer.NET** (C#, message passi
 ```
 Probas/
 ├── Probas-KLS-Concentration.ipynb # Carnet transverse : Cheeger, hit-and-run, thin-shell (Python)
+├── Probas-CLT-Theoreme-Central-Limite.ipynb # Carnet transverse : TCL mesuré, variance finie porteuse (Python)
+├── Probas-MCMC-Echantillonnage-Metropolis-Python.ipynb # Carnet transverse : Metropolis-Hastings + Gibbs from-scratch, diagnostics ESS/R-hat (Python)
 ├── Applications/                # Applications standalone
 │   ├── Quotients-Fibres-Recollement-Python.ipynb # Géométrie catégorique (kernel Python, ex-Infer-20)
 │   ├── Percolation/             # Simulation supercritique (Python) + compagnon Lean 4 (lake percolation_lean)
@@ -235,8 +237,8 @@ Probas/
 │   ├── PyMC-01-Setup.ipynb ... PyMC-19-Survival-Analysis.ipynb
 │   └── README.md                # Documentation détaillée de la série PyMC
 ├── Infer/                       # Corpus bayésien : socle 1-19 sans le 6, accretions 1b/2b/8b
-│   ├── Infer-1-Setup.ipynb ... Infer-19-Survival-Analysis.ipynb
-│   ├── Infer-1b-Premiers-Modeles.ipynb  # Accretion du premier modèle (ex-Infer-101)
+│   ├── Infer-01-Setup.ipynb ... Infer-19-Survival-Analysis.ipynb
+│   ├── Infer-01b-Premiers-Modeles.ipynb  # Accretion du premier modèle (ex-Infer-101)
 │   ├── Infer-08b-TrueSkill-Formules-Fermees-CSharp.ipynb # Accretion TrueSkill : mise à jour closed-form O(1) (V(t)/W(t))
 │   ├── README.md                # Documentation détaillée de la série bayésienne
 │   ├── Infer-Glossary.md        # Glossaire des termes Infer.NET
@@ -400,12 +402,14 @@ La causalité est traitée à **quatre endroits** du dépôt, chacun avec son mo
 | [CausalBridges-05 — Le confondeur non observé](DecisionTheory/Causal-Bridges/CausalBridges-05-Dowhy-Sensibilite-Confounder.ipynb) | ~50 min | Sensibilité, pas certitude : robustness value de Cinelli-Hazlett (`linear-partial-R2`), **E-value natif** `dowhy`, bornes de Rosenbaum exactes (Γ*), courbe de bascule du confondeur simulé |
 | [CausalBridges-06 — L'instrument faible](DecisionTheory/Causal-Bridges/CausalBridges-06-Dowhy-Instrument-Faible.ipynb) | ~45 min | Variable instrumentale via `dowhy` (pipeline `identify` + `estimate(iv)` + `refute`) ; F-stat Staiger-Stock, biais IV vs OLS en Monte-Carlo, **verdict NON_IDENTIFIABLE** honnête sur exclusion violée |
 | [CausalBridges-07 — Quasi-Experimental](DecisionTheory/Causal-Bridges/CausalBridges-07-Quasi-Experimental.ipynb) | ~50 min | Méthodes quasi-expérimentales (DiD, contrôle synthétique, RDD, variables instrumentales) sur données réalistes ; estimands et hypothèses d'identification explicités |
-| [CausalBridges-08 — Décomposer la discrimination](DecisionTheory/Causal-Bridges/CausalBridges-08-Causal-Fairness.html) | ~50 min | Équité causale : critères structurels Str-DE/IE/SE, famille TV (TE, Exp-SE, NDE, NIE) — Lem 4.1 et Thm 4.2 vérifiés avec `dowhy` sur données de crédit |
+| [CausalBridges-08 — Décomposer la discrimination](DecisionTheory/Causal-Bridges/CausalBridges-08-Causal-Fairness.ipynb) | ~50 min | Équité causale : critères structurels Str-DE/IE/SE, famille TV (TE, Exp-SE, NDE, NIE) — Lem 4.1 et Thm 4.2 vérifiés avec `dowhy` sur données de crédit |
+| [CausalBridges-09 — Emuler un essai ciblé](DecisionTheory/Causal-Bridges/CausalBridges-09-Hernan-TargetTrialEmulation-Python.ipynb) | ~60 min | *Target trial emulation* (Hernan/Robins) : confounding variant dans le temps, g-formula et IPTW stabilisé contre trois réflexes naïfs, benchmark 200 répliques |
+| [CausalBridges-10 — Automated Social Science](DecisionTheory/Causal-Bridges/CausalBridges-10-Automated-Social-Science.ipynb) | ~45 min | Manning/Zhu/Horton (2024) en version bornée locale : SCM générateur à β vrai connu, sujets LLM mono-tour sur endpoints vLLM self-hosted (AWQ vs GPTQ × 3 seeds), ajustement `dowhy`, écart de calibration + bras élicitation directe |
 
 | Série | Moteur | Angle causal |
 |-------|--------|--------------|
-| [Tweety-11-Causal-Python](../SymbolicAI/Tweety/Tweety-11-Causal-Python.html) | Tweety (.NET, logique) | modèle causal structurel, opérateur `do`, contrefactuels |
-| [Infer-5-Causal-Inference](Infer/Infer-5-Causal-Inference.ipynb) | Infer.NET (message passing) | backdoor, front-door, paradoxe de Simpson, médiation |
+| [Tweety-11-Causal-Python](../SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb) | Tweety (.NET, logique) | modèle causal structurel, opérateur `do`, contrefactuels |
+| [Infer-05-Causal-Inference](Infer/Infer-05-Causal-Inference.ipynb) | Infer.NET (message passing) | backdoor, front-door, paradoxe de Simpson, médiation |
 | [PyMC-05-Causal-Inference](PyMC/PyMC-05-Causal-Inference.ipynb) | PyMC (MCMC) | backdoor, front-door, contrefactuel bayésien |
 | [ICT-5](../IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb) · [ICT-6](../IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb) | PyPhi (CE 2.0) | émergence causale, information effective de Hoel |
 
@@ -447,8 +451,8 @@ Protocole de **représentation** — et non d'inférence : deux observations d'u
 
 Duo simulation + formalisation autour de la percolation de liens sur tore fini
 (Diskin–Easo–Radhakrishnan–Sudakov–Tassion, arXiv:2603.03257) :
-[`Percolation-01-Supercritique-Python`](Applications/Percolation/Percolation-01-Supercritique-Python.html) (Python, trois régimes mesurés) et
-[`Percolation-02-Lean`](Applications/Percolation/Percolation-02-Lean.html) (Lean 4, compagnon exécutable du lake `percolation_lean`, noyau fini prouvé sans `sorry`) —
+[`Percolation-01-Supercritique-Python`](Applications/Percolation/Percolation-01-Supercritique-Python.ipynb) (Python, trois régimes mesurés) et
+[`Percolation-02-Lean`](Applications/Percolation/Percolation-02-Lean.ipynb) (Lean 4, compagnon exécutable du lake `percolation_lean`, noyau fini prouvé sans `sorry`) —
 voir [`Applications/Percolation/README.md`](Applications/Percolation/README.md) et #14871.
 
 ## Carnets transverses (racine de la série)
@@ -459,6 +463,25 @@ Le carnet [`Probas-KLS-Concentration.ipynb`](Probas-KLS-Concentration.ipynb) (ke
 - **Marche hit-and-run** sur les trois corps : temps d'autocorrélation en dimension croissante, estimateur validé au préalable sur un contrôle AR(1) à trou spectral connu (avec son biais de troncature mesuré), et contrôle de domaine qui attrape l'erreur de bornes la plus fréquente de l'algorithme.
 - **Variance thin-shell** : les valeurs exactes sont retrouvées — `2n` pour la gaussienne, `4n/5` pour le cube, et une formule dérivée dans le carnet même pour le simplexe isotrope, vérifiée par assertion sur six dimensions ; les largeurs de couronne convergent vers 1/2, 1/5 et 1, **constantes en n**.
 - 3 exercices (directions de la sonde, AR(1) à deux modes, effet de l'isotropisation) ; sorties réelles committées, exécution `papermill --kernel python3`.
+
+Le carnet [`Probas-CLT-Theoreme-Central-Limite.ipynb`](Probas-CLT-Theoreme-Central-Limite.ipynb) (kernel `python3`, numpy) est un second contrepoint non-bayésien : il **mesure** le théorème central limite au lieu de l'énoncer. Deux résultats, tous deux mesurés :
+
+- **Le taux `1/√n` est une borne, sous hypothèse de troisième moment fini** : pour quatre lois de départ très différentes (uniforme, Bernoulli, exponentielle, log-normale), le produit `d_K(n)·√n` — où `d_K` est la distance de Kolmogorov à la gaussienne — varie peu quand `n` croît de 10 à 160. C'est une observation numérique cohérente avec la borne de Berry–Esseen `d_K(n) ≤ C·E|X−μ|³/(σ³√n)`, qui exige le **troisième moment absolu fini** — la variance finie du TCL ne suffit pas à donner ce taux — et n'impose aucune constante asymptotique non nulle : pour une loi normale, la distance de population est nulle à toute taille.
+- **L'hypothèse de variance finie est porteuse** : une loi à queue lourde à variance infinie (Lomax, `α = 1.5`) ne se normalise pas en gaussienne — l'échelle robuste des fluctuations de sa somme normalisée par `√n` **croît** avec `n` (en `n^{1/α − 1/2}`) au lieu de se stabiliser.
+- 3 exercices (distance de Kolmogorov, courbe de convergence, reproduction du contre-exemple à queue lourde) ; sorties réelles committées, exécution `papermill --kernel python3`.
+
+### Probas-MCMC-Echantillonnage-Metropolis-Python.ipynb
+
+Descend **sous le capot** de l'échantillonneur que la série PyMC emploie en boîte noire (NUTS) : un **Metropolis–Hastings** à marche aléatoire et un **Gibbs** construits **from-scratch** (stdlib + numpy), puis **diagnostiqués** avec les instruments qu'on applique aux sorties PyMC — auto-corrélation intégrable → effectif de samples indépendants (`ESS = N/τ`), et `R-hat` de Gelman–Rubin sur quatre chaînes (graines `0, 1, 7, 42`). L'algorithme ne compare que des **ratios** de densités, donc la constante de normalisation `Z` s'annule : c'est précisément ce qui rend l'échantillonnage praticable là où l'intégrale n'a pas de forme fermée.
+
+Le carnet mesure là où l'approximation naïve — **factoriser** la posterior (mean-field) ou la **ramener à une gaussienne au mode** — **échoue**, sur deux cibles à vérité connue :
+
+| Cible | Grandeur | MCMC (from-scratch) | Approximation naïve | Vérité |
+|---|---|---|---|---|
+| T1 — gaussienne 2D corrélée (`ρ = 0.8`) | corrélation | **0,801** (MH) · 0,799 (Gibbs) | −0,014 (mean-field) | 0,800 |
+| T2 — mélange bimodal (`±2,5`, `σ = 0,5`) | variance | **6,359** | 0,249 (un seul mode) | 6,500 |
+
+Sur T1, les diagnostics confirment un sampleur sain (`ESS/ch ≈ 426`, `R-hat = 1,0000`) ; le mean-field rend des **marges correctes** mais **remet la corrélation à zéro par construction** — factoriser, c'est *supposer* l'indépendance. Sur T2, l'approximation à un mode ne se contente pas d'être imprécise : sa moyenne (`2,50`) tombe **dans la vallée** où la posterior n'a pas de masse, et l'écart mesuré `≈ 57/43` entre les deux modes illustre au passage la leçon d'initialisation (les quatre chaînes démarrent au même mode — sur une cible multimodale, on disperse les points de départ). 3 exercices (probabilité d'acceptation, `ESS` à partir de l'ACF, taux d'acceptation vs taille de pas) ; sorties réelles committées, exécution `papermill --kernel mcp-jupyter-py310`.
 
 ## Prerequisites
 
@@ -647,9 +670,9 @@ Cette série ancre mathématiquement ses résultats phares dans un assistant de 
 | ---                      | ---                              | ---                                                                               | ---                                                                  |
 | Probas (DecisionTheory)  | `decision_theory_lean`           | Axiomes de Von Neumann-Morgenstern ⇒ existence d'une utilité espérée (`0 sorry`)  | [`DecInfer-02-Lean-ExpectedUtility`](DecisionTheory/DecInfer/DecInfer-02-Lean-ExpectedUtility.ipynb)  |
 | Probas (DecisionTheory)  | `decision_theory_lean`           | Coherence utility ⟹ preferences (loterie de référence) (`0 sorry`)                | [`DecisionTheory/DecInfer/`](DecisionTheory/DecInfer/README.md) Coherence   |
-| ML ↔ Probas (PAC Learning) | [`learning_theory_lean`](../ML/learning_theory_lean/) | `pac_finite_class_bound` + `pac_agnostic_generalization` (`0 sorry bout-en-bout`) | [`2.8-Theorie-PAC`](../ML/DataScienceWithAgents/02-ML-Cours/2.8-Theorie-PAC.html) + [`2.8b-Theorie-PAC-Lean`](../ML/DataScienceWithAgents/02-ML-Cours/2.8b-Theorie-PAC-Lean.html) |
+| ML ↔ Probas (PAC Learning) | [`learning_theory_lean`](../ML/learning_theory_lean/) | `pac_finite_class_bound` + `pac_agnostic_generalization` (`0 sorry bout-en-bout`) | [`2.8-Theorie-PAC`](../ML/DataScienceWithAgents/02-ML-Cours/2.8-Theorie-PAC.ipynb) + [`2.8b-Theorie-PAC-Lean`](../ML/DataScienceWithAgents/02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb) |
 | Probas (DecisionTheory)  | `decision_theory_lean` Peters    | Indice de Gittins, identités d'escompte (`0 sorry`, ref `v4.27.0-rc1`)            | [`DecInfer-08b-Lean-Gittins`](DecisionTheory/DecInfer/DecInfer-08b-Lean-Gittins.ipynb)                                          |
-| QC ↔ Probas              | `kelly_lean`                     | Fraction risquée `f* = μ−σ²/2` sous log-bienveillance (`0 sorry`)                  | [`Kelly_companion-Python.ipynb`](../QuantConnect/kelly_lean/Kelly_companion-Python.html)                                           |
+| QC ↔ Probas              | `kelly_lean`                     | Fraction risquée `f* = μ−σ²/2` sous log-bienveillance (`0 sorry`)                  | [`Kelly_companion-Python.ipynb`](../QuantConnect/kelly_lean/Kelly_companion-Python.ipynb)                                           |
 | GameTheory ↔ Probas      | `game_theory_lean` (Arrow)       | Impossibilité d'Arrow (5 axiomes ⇒ dictature)                                     | [`01-Arrow-Impossibility-Theorem.ipynb`](../GameTheory/SocialChoice/01-Arrow-Impossibility-Theorem.ipynb)                                          |
 | Search ↔ Probas          | `search_lean`                    | Consistance heuristique `h ≤ h*` ⇒ optimalité `A*`                                 | hub Search (cf [`search_lean/`](../Search/search_lean/))                                     |
 | SymbolicAI ↔ Probas      | `argumentation_lean`             | Extension Dung (`grounded`/`preferred`/`stable`) par cadre formel                 | [`Argumentation-03-Dung-AF-Semantics-Python.ipynb`](../SymbolicAI/Argument_Analysis/Argumentation-03-Dung-AF-Semantics-Python.ipynb)                               |

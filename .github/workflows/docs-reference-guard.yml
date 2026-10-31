@@ -1,0 +1,96 @@
+name: docs-reference-guard
+
+# Lane perenne docs/ (sens reference vivante) + plancher de couverture (#14623,
+# sens perenne -- miroir de docs-transients-guard pour la direction perenne).
+#
+# Doctrine : un document de reference vivante porte l'en-tete
+# "> REFERENCE - vivante - derniere revision <date>", et cette date est lue
+# dans l'historique git (git log -1), jamais recopiee. L'organe
+# scripts/check_docs_reference_lane.py verifie deux sens : l'integrite (la date
+# de l'en-tete concorde avec la derniere revision du fichier) et un plancher de
+# couverture monotone (le nombre de docs balises ne descend pas sous la vague
+# initiale). Meme modele que docs-transients-guard et prose-counts-guard :
+# l'echec du check-run EST le signalement, visible sans ouvrir les logs.
+#
+# Ce guard s'execute en MODE PR (--base origin/<base_ref>) : les dates ne sont
+# comparees que pour les docs modifies par la PR, contre leur propre dernier
+# commit sur la branche -- le seul endroit ou git log -1 lit encore une date de
+# CONTENU. Sans --base (mode arbre) l'organe ne verifie que le marqueur et le
+# plancher : un squash-merge ecrit %cs = heure du merge (mesure sur #22216 :
+# dernier commit de branche 05:57Z, squash 10:32Z), donc une egalite de dates
+# sur tout l'arbre rougirait main a chaque merge franchissant un jour UTC.
+# D'ou la ref explicite ci-dessous : sur le merge ref, le dernier commit de
+# chaque doc touche EST le commit de merge, date a l'heure CI -- des dates
+# fabriquees.
+#
+# Convention complete : docs/transients/README.md (section "Sens perenne").
+
+on:
+  pull_request:
+    paths:
+      - 'docs/**/*.md'
+      - 'scripts/check_docs_reference_lane.py'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-reference-guard-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  reference:
+    # 2026-10-28 (#23053 vague 3, famille (a) gardes/advisories) : le workflow
+    # entre dans SELF_HOSTED_WORKFLOW_ALLOWLIST et adopte la forme hybride de
+    # debordement -- PR meme-depot ET vars.CI_OVERFLOW_LOCAL == 'true' ->
+    # jambe Linux locale ; tout le reste (variable absente ou fausse, forks,
+    # dispatch) retombe sur ubuntu-latest, donc l'etat du 28/10 est conserve.
+    # Bascule : `gh variable set CI_OVERFLOW_LOCAL --body true|false
+    # --repo jsboige/CoursIA`. Retour arriere = variable a `false` ou
+    # supprimee, sans toucher ce fichier.
+    # Avant cette PR le job etait fige sur `ubuntu-latest` et ne lisait jamais
+    # la variable : il rejoignait la file hebergee meme quand le parc local
+    # etait libre (mesure #23053 : 12 des 12 jobs en file demandaient
+    # `ubuntu-latest` pour 12 slots locaux libres).
+    # La garde anti-fork vit DANS l'expression `runs-on` ; la garde same-repo
+    # ci-dessous est conservee telle quelle (aucune ligne `if:` ajoutee ni
+    # retiree) -- elle reste la seconde barriere si le job evolue.
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    # Borne de duree (#23053) : 85 s mesures sur le dernier succes (run
+    # 40632471993, job `reference`), soit ~3x la duree observee avec la marge
+    # d'un clone froid.
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # ref: la TETE de la branche PR, jamais le merge ref. Sur le merge
+          # ref, le dernier commit de chaque doc touche est le commit de merge
+          # (date = heure CI) : la comparaison de dates se ferait contre des
+          # dates fabriquees, et chaque doc de la PR rougirait.
+          ref: ${{ github.event.pull_request.head.sha }}
+          # fetch-depth: 0 -- convention des gardes git-aware du depot
+          # (scripts-tests.yml : catalog-cron / catalog-drift / cell-order-gate /
+          # exercise-leak-ci). Un shallow (2) fait apparaitre le commit de
+          # boundary comme touchant TOUS les fichiers (diff contre le parent
+          # greffe) : `git log -1` rend alors une date fabriquee pour les docs
+          # que la PR ne touche pas, et la garde rougit x9 hors perimetre.
+          # Mesure et repro : review structurelle de #22527.
+          fetch-depth: 0
+          # filter: blob:none -- les deux lectures de l'organe
+          # (git log -1 --format=%cs, git diff --name-only) ne consomment que
+          # commits et arbres, jamais de blobs ; mesure au 2026-10-27 sur un
+          # clone blobless de ce depot : 9/9 dates identiques a un clone
+          # complet, diff --name-only byte-identique. La fraction de transfert
+          # economisee est citee par la review de #22527.
+          filter: blob:none
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Lane perenne et plancher de couverture (mode PR)
+        # Mode PR : dates comparees uniquement pour les docs modifies entre la
+        # base et la tete, contre leur propre dernier commit (survivable au
+        # squash, cf. en-tete de ce fichier).
+        run: python scripts/check_docs_reference_lane.py --base origin/${{ github.base_ref }}

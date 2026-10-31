@@ -4,9 +4,9 @@
 
 <!-- CATALOG-STATUS
 series: GenAI-PostTraining
-pedagogical_count: 21
-breakdown: PostTraining=21
-maturity: BETA=14, ALPHA=6, DRAFT=1
+pedagogical_count: 23
+breakdown: PostTraining=23
+maturity: BETA=16, ALPHA=6, DRAFT=1
 -->
 
 > **Place dans GenAI** : cette série est le pendant *théorique et SOTA 2024-2025* de la série [FineTuning](../FineTuning/README.md). FineTuning couvre la boîte à outils pratique (LoRA, QLoRA, SFT, DPO, model merging) ; PostTraining remonte la chaîne conceptuelle complète SFT → RLHF → DPO → GRPO → RLVR → **GAE** et reproduit les techniques récentes (Deepseek-R1) sur petits modèles, complétée par un notebook d'évaluation comparative, un détecteur de reward hacking, et un notebook d'implémentation from-scratch de la famille "no critic" (GRPO/RLOO/GAE) sur toy env CPU, par un **notebook multi-step à crédit différé causal** (PT-12 : les cinq estimateurs re-mesurés, GAE-λ devient discriminant, verdict BEATS 5/5 seeds — le "1-step collapse" était une propriété du banc), et de **trois notebooks appliqués Qwen + GRPO + reward vérifiable + rewardspy en ligne** (PT-11a Z3 CSP arithmétique sur Qwen3.5-0.8B + PT-11b SymPy arithmétique + Z3 N-queens, plus leur validation multi-seed, **plus PT-11c sur le cran au-dessus Qwen3-1.7B/2B** qui qualifie l'étage GPU moyen 16 Go et oppose 0.8B vs 1.7B/2B à budget steps égal) qui font sortir la série du toy env vers un vrai LLM, et **PT-13 sur les corrections 2025 de la loss GRPO** (`Dr. GRPO` : retrait de `÷|o_i|` et `÷std` ; `clip-higher` de `DAPO` : ε_high=0.28 > ε_low=0.2), dont le biais de longueur est mesuré au **niveau gradient**, et **PT-14 sur les lois thermodynamiques de l'entraînement** (R08 : T ∼ η, équipartition ℓf = C·η, schedule 1/t optimal avec discontinuité η/2, force entropique — la physique des learning-rate schedules utilisés en PT-11), et **PT-15 sur le contrôle par interprétabilité** (R14 §3.2 / R11 §1.1 : refusal direction d'Arditi — extraction diffmoy, ablation par projection toutes-couches, steering additif ; machine unlearning et son évaluation white-box ; finetuning shallow « ~10 exemples rouvrent un modèle aligné » de Gade/Lermen ; evaluation awareness Claude 4.6/Apollo, et **PT-16 sur le vericoding** (Bursuc et al. 2025 : la preuve formelle comme récompense — pipeline spec → LLM local 7B → `Dafny verify`/`lean` réels → boucle de réparation 5 tentatives, avec le cas d'école LC0033 « liste vide prouvée conforme à une spec incomplète »), et **PT-17 sur les règles de score propres comme récompense (laya, Nandakishor M., Apache-2.0)** — récompense qui note une probabilité plutôt qu'une réponse ; étude étagée d'un modèle de décision non autorégressif (encodeur bidirectionnel + tête transformer, primitives `choice`/`score`/`noul`). Étage 1 (CPU from-scratch) : la famille des récompenses (binaire, linéaire, log, Brier, sphérique) sur tâche jouet où p(y|x) est connue — les propres **calibrent 7,6× mieux** que les impropres (ECE 0,011 vs 0,088) à exactitude comparable. Estimateur perturbation (GRPO-like G=8) vs gradient direct (MLE) : direct gagne en calibration. Question tranchée : la sur-confiance vient de **toute récompense qui ne note que l'argmax**, pas de la cross-entropie. Étage 2 (GPU 24 Go, ≥ 4 graines, bras CE / RL / RL+CE) reporté en PR séparée. Les deux se complèment : commencer par FineTuning pour la pratique, PostTraining pour la profondeur méthodologique.
@@ -108,7 +108,7 @@ Le **3ᵉ pilier** du post-training moderne, et souvent le **seul utilisé en pr
                   ┌──────────▼───────────┐
                   │  SFT (PT-02)         │
                   │  trl.SFTTrainer      │
-                  │  → Qwen-0.5B-SFT     │
+                  │  → Qwen3.5-0.8B-SFT  │
                   └──────────┬───────────┘
                              │
               ┌──────────────┼──────────────┐
@@ -207,12 +207,12 @@ PT-06 documente le pipeline d'évaluation complet et produit un tableau comparat
 
 | Série | Connection | Details |
 |-------|------------|---------|
-| **[RL](../../RL/)** | RL classique fondamentaux + sous-série `rlpt_*` | Les notebooks RL ([RL-05 MDP/Q-Learning](../../RL/RL-05-MDP-Programmation-Dynamique-Q-Learning-Python.html) et [RL-06c PPO from scratch](../../RL/RL-06c-PPO-Depuis-Zero-Python.html)) établissent l'intuition policy/value que PPO/GRPO réutilisent. Recommandés comme prérequis pour PT-04. |
-| **[RL — RLPT-02 GRPO](../../RL/PostTraining/RLPT-02-GRPO-Minimal-Python.html)** | GRPO *naked* (sans `trl`) | La mécanique de GRPO (group rollouts, avantage intra-groupe, no critic) écrite à la main sur Qwen3.5-0.8B. Bon prérequis conceptuel pour PT-11a/PT-11b. |
-| **[RL — RLPT-03 reward hacking](../../RL/PostTraining/RLPT-03-Reward-Hacking-Python.html)** | Cas clinique d'inoculation | Mini-cas : 3 voies pour déclencher le hack sur récompense vérifiable, inoculation comme variable. PT-07 est l'outil (catalogue de détecteurs), RLPT-03 le cas d'usage. |
-| **[RL — RLPT-04 DPO vs PPO](../../RL/PostTraining/RLPT-04-DPO-Offline-contre-GRPO-Online-Python.html)** | Comparaison offline vs online | DPO/ORPO offline vs GRPO online à budget 40 steps — prérequis empirique pour PT-06 (évaluation comparative). |
-| **[RL — RL-09 offline](../../RL/RL-09-RL-Offline-Behavior-Cloning-Python.html)** | DPO = preference learning offline | Le Behavior Cloning y est l'analogue tabulaire du SFT, et la contrainte de support de BCQ celle de la pénalité KL de DPO (PT-03). Le meilleur prérequis conceptuel pour DPO. |
-| **[RL — RL-10 reward shaping](../../RL/RL-10-Reward-Shaping-Curriculum-Python.html)** | Reward model = shaping appris | Le reward shaping (Ng 1999) et son biais (shaping naïf → reward hacking) préfigurent le reward model appris et le Goodhart traité en [PT-07](PT_07_rewardspy_reward_hacking.html). |
+| **[RL](../../RL/)** | RL classique fondamentaux + sous-série `rlpt_*` | Les notebooks RL ([RL-05 MDP/Q-Learning](../../RL/RL-05-MDP-Programmation-Dynamique-Q-Learning-Python.ipynb) et [RL-06c PPO from scratch](../../RL/RL-06c-PPO-Depuis-Zero-Python.ipynb)) établissent l'intuition policy/value que PPO/GRPO réutilisent. Recommandés comme prérequis pour PT-04. |
+| **[RL — RLPT-02 GRPO](../../RL/PostTraining/RLPT-02-GRPO-Minimal-Python.ipynb)** | GRPO *naked* (sans `trl`) | La mécanique de GRPO (group rollouts, avantage intra-groupe, no critic) écrite à la main sur Qwen3.5-0.8B. Bon prérequis conceptuel pour PT-11a/PT-11b. |
+| **[RL — RLPT-03 reward hacking](../../RL/PostTraining/RLPT-03-Reward-Hacking-Python.ipynb)** | Cas clinique d'inoculation | Mini-cas : 3 voies pour déclencher le hack sur récompense vérifiable, inoculation comme variable. PT-07 est l'outil (catalogue de détecteurs), RLPT-03 le cas d'usage. |
+| **[RL — RLPT-04 DPO vs PPO](../../RL/PostTraining/RLPT-04-DPO-Offline-contre-GRPO-Online-Python.ipynb)** | Comparaison offline vs online | DPO/ORPO offline vs GRPO online à budget 40 steps — prérequis empirique pour PT-06 (évaluation comparative). |
+| **[RL — RL-09 offline](../../RL/RL-09-RL-Offline-Behavior-Cloning-Python.ipynb)** | DPO = preference learning offline | Le Behavior Cloning y est l'analogue tabulaire du SFT, et la contrainte de support de BCQ celle de la pénalité KL de DPO (PT-03). Le meilleur prérequis conceptuel pour DPO. |
+| **[RL — RL-10 reward shaping](../../RL/RL-10-Reward-Shaping-Curriculum-Python.ipynb)** | Reward model = shaping appris | Le reward shaping (Ng 1999) et son biais (shaping naïf → reward hacking) préfigurent le reward model appris et le Goodhart traité en [PT-07](PT_07_rewardspy_reward_hacking.ipynb). |
 | **[GenAI/FineTuning](../FineTuning/)** | Boîte à outils fine-tuning | Série sœur dans GenAI : LoRA/QLoRA/SFT/DPO en pratique. PostTraining = profondeur méthodologique (voir [`COURSE_CATALOG.generated.md`](../../../COURSE_CATALOG.generated.md) pour le décompte canonique), FineTuning = recettes exécutables. |
 
 ## Frontière avec RL/rlpt_* — où ouvre `PT_*`, où ouvre `rlpt_*`
@@ -223,11 +223,11 @@ Les sous-séries [RL/rlpt_*](../../RL/) et cette série PostTraining couvrent **
 
 | Question pédagogique | Ouvrir | Pourquoi |
 |---|---|---|
-| « Comment SFT/DPO/GRPO sont-ils *câblés* dans `trl` ? Comment lire une loss ? » | [PT-02](PT_02_sft_baseline.html), [PT-03](PT_03_dpo_direct_preference.html), [PT-04](PT_04_grpo_deepseek_r1.html) | `trl.SFTTrainer`/`DPOTrainer`/`GRPOTrainer` sur vrai LLM Qwen3.5-0.8B QLoRA, vraies losses, vrais gradients via la pile HuggingFace. |
-| « Comment GRPO *fonctionne* intérieurement — group rollouts, avantage intra-groupe, no critic ? » | [PT-08](PT_08_grpo_from_scratch_toy_env.html) (toy env) ou [RL/RLPT-02](../../RL/PostTraining/RLPT-02-GRPO-Minimal-Python.html) (vrai LM sans `trl`) | La mécanique écrite à la main — on voit chaque rollout, chaque reward, chaque log-prob ratio. |
-| « GRPO + RLVR sur vrai LLM, avec détecteur Goodhart en ligne, multi-seed ? » | [PT-11a](PT_11a_grpo_qwen35_rlvr.html), [PT-11b](PT_11b_grpo_qwen_rlvr_on_verifiers.html) | La pile SOTA 2025 : `trl.GRPOTrainer` + Z3/SymPy + `rewardspy.watch_trl` (Goodhart live), 4 seeds dans PT-11b-multi-seed. |
-| « Quels sont les détecteurs statistiques du reward hacking ? » | [PT-07](PT_07_rewardspy_reward_hacking.html) | Catalogue `rewardspy.detectors` (6 classes : Component Dominance, Length Drift, etc.) — l'**outil**. |
-| « Le reward hacking est-il un attracteur spontané sur petit modèle ? Cas clinique. » | [RL/RLPT-03](../../RL/PostTraining/RLPT-03-Reward-Hacking-Python.html) | Mini-cas : 3 voies pour déclencher le hack, inoculation comme variable — le **cas d'usage** de `rewardspy`. |
+| « Comment SFT/DPO/GRPO sont-ils *câblés* dans `trl` ? Comment lire une loss ? » | [PT-02](PT_02_sft_baseline.ipynb), [PT-03](PT_03_dpo_direct_preference.ipynb), [PT-04](PT_04_grpo_deepseek_r1.ipynb) | `trl.SFTTrainer`/`DPOTrainer`/`GRPOTrainer` sur vrai LLM Qwen3.5-0.8B QLoRA, vraies losses, vrais gradients via la pile HuggingFace. |
+| « Comment GRPO *fonctionne* intérieurement — group rollouts, avantage intra-groupe, no critic ? » | [PT-08](PT_08_grpo_from_scratch_toy_env.ipynb) (toy env) ou [RL/RLPT-02](../../RL/PostTraining/RLPT-02-GRPO-Minimal-Python.ipynb) (vrai LM sans `trl`) | La mécanique écrite à la main — on voit chaque rollout, chaque reward, chaque log-prob ratio. |
+| « GRPO + RLVR sur vrai LLM, avec détecteur Goodhart en ligne, multi-seed ? » | [PT-11a](PT_11a_grpo_qwen35_rlvr.ipynb), [PT-11b](PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb) | La pile SOTA 2025 : `trl.GRPOTrainer` + Z3/SymPy + `rewardspy.watch_trl` (Goodhart live), 4 seeds dans PT-11b-multi-seed. |
+| « Quels sont les détecteurs statistiques du reward hacking ? » | [PT-07](PT_07_rewardspy_reward_hacking.ipynb) | Catalogue `rewardspy.detectors` (6 classes : Component Dominance, Length Drift, etc.) — l'**outil**. |
+| « Le reward hacking est-il un attracteur spontané sur petit modèle ? Cas clinique. » | [RL/RLPT-03](../../RL/PostTraining/RLPT-03-Reward-Hacking-Python.ipynb) | Mini-cas : 3 voies pour déclencher le hack, inoculation comme variable — le **cas d'usage** de `rewardspy`. |
 | « InoculationRL complet, panel persona × reward hackable, capstone ? » | [#5105 ICT-25](https://github.com/jsboige/CoursIA/issues/5105) | Capstone final — **distinct** de `RLPT-03` (qui en est la version compacte). |
 
 Le constat d'éventuelle duplication `RLPT-02 ↔ PT-11a` et `RLPT-03 ↔ PT-07` est traité en [#11460](https://github.com/jsboige/CoursIA/issues/11460) : les deux séries *se complètent* par l'angle du regard (mécanique vs déploiement outillé), pas par duplication.
@@ -357,7 +357,7 @@ En pratique : DPO pour l'alignement conversationnel, GRPO+RLVR pour le raisonnem
 Si SFT, DPO ou GRPO ne produisent pas d'amélioration mesurable sur GSM8K ou MMLU :
 
 - Vérifier que le dataset d'évaluation est bien séparé du dataset d'entraînement (`seed=42` pour le split, pas de fuite).
-- S'assurer que le nombre de steps d'entraînement est suffisant (minimum 100 steps pour observer un signal sur 0.5B).
+- S'assurer que le nombre de steps d'entraînement est suffisant (minimum 100 steps pour observer un signal sur Qwen3.5-0.8B).
 - Un seul seed ne suffit pas : les résultats sont bruités. Utiliser au minimum 4 seeds (`{0, 1, 7, 42}`) et vérifier que l'écart est >= 2 sigma (cf règle multi-seed CoursIA).
 - Le notebook PT-06 (`PT_06_eval_comparative.ipynb`) automatise cette comparaison avec verdict BEATS/NO BEATS/INCONCLUSIVE.
 

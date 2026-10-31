@@ -38,14 +38,23 @@ require mathlib from git
 
 @[default_target]
 lean_lib «Perceptron» where
-  globs := #[.submodules `Perceptron, `Perceptron_en]
+  -- `.submodules `Perceptron` ne couvre que Perceptron.*, pas le module
+  -- racine `Perceptron.lean` : sans le glob nu, `lake build` ne produit jamais
+  -- Perceptron.olean. Le gate d'axiomes (#22519, `target-modules: "*"`)
+  -- enumere tout `*.lean` du projet et echoue faute d'olean a inspecter.
+  -- Meme lecon que `GradientFlow` plus bas, ou le glob nu est deja pose.
+  globs := #[.submodules `Perceptron, `Perceptron, `Perceptron_en]
 
 /-- Module `PacLearning` — théorie PAC (Valiant 1984), sample complexity classe finie.
 Frère de `Perceptron` dans le lake ML généraliste `learning_theory_lean` (cf
 `decision_theory_lean` qui mutualise Gittins + Utility + Coherence). Voir #4293. -/
 @[default_target]
 lean_lib «PacLearning» where
-  globs := #[.submodules `PacLearning, `PacLearning_en]
+  -- Meme lecon que `Perceptron` ci-dessus et `GradientFlow` plus bas :
+  -- `.submodules` ne couvre pas le module racine, donc sans le glob nu
+  -- PacLearning.olean n'existe pas et le gate d'axiomes (#22519) n'a rien
+  -- a inspecter pour ce module.
+  globs := #[.submodules `PacLearning, `PacLearning, `PacLearning_en]
 
 /-- Module `GradientFlow` — digestion #13106 (forme formalisation) :
 évanouissement du gradient `c ^ n` dans une pile plain vs survie `(1-c) ^ n`
@@ -99,6 +108,17 @@ lean_lib «Renaming» where
   /- Module plat, meme forme que MathUniverse : pas d'arborescence
   `Renaming/`. -/
   globs := #[`Renaming, `Renaming_en]
+/-- Module `Generators` — suite de #16753 : réifie le critère « générateurs
++ composition » que `MathUniverse` laissait en exhibition concrète — syntaxe
+de termes `Term ν` sur un générateur binaire, évaluation `Term.eval`,
+prédicat `Generates`, l'équation (A2) comme DONNÉE (les huit termes
+`termA2`), et le pont prouvé vers les tables de `bool8`/`nand8`
+(`relA1_iff_generated`, `relA2_iff_generated`, `relA1_iff_relA2`). Frère
+cadet de `MathUniverse` dans le lake ML généraliste. -/
+@[default_target]
+lean_lib «Generators» where
+  /- Module plat, même leçon que MathUniverse : pas de `.submodules`. -/
+  globs := #[`Generators, `Generators_en]
 
 /-- Module `MutualGen` — digestion #16741/arc B (issue #16753, tranche 4) :
 génération mutuelle générale de l'Annexe A de R16 — termes sur signature

@@ -17,6 +17,8 @@ import os
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import re
+import contextlib
+import tempfile
 
 logger = logging.getLogger(__name__)
 
@@ -45,15 +47,20 @@ _MAX_PREFIX_TAGS = 4  # Max prosody tags prepended before segment text.
 # F6 — Narrator routing to Qwen3-TTS VoiceDesign (Issue #15002, EPIC #1028)
 # ---------------------------------------------------------------------------
 # The FishAudio S2-Pro narrator clone (v4_narrator_male_neutral) renders as a
-# monotone bourdon ("DRONE" verdict) on Boule de Suif. A measured alternative
-# is the Qwen3-TTS VoiceDesign task on the self-hosted gateway :8196, which
-# delivers `EXPRESSIVE` prosody on the same passage (~110 Hz, expressive
-# intonation, motion >= 2.0 st/syll). The acceptance of #15002 is to ROUTE
-# narrator segments to Qwen while leaving every other speaker unchanged on
-# FishAudio clone.
+# monotone bourdon ("DRONE" verdict) on Boule de Suif, which motivated routing
+# narrator segments to the Qwen3-TTS VoiceDesign task on the self-hosted
+# gateway :8196 (issue #15002: EXPRESSIVE prosody, ~110 Hz, motion >= 2.0
+# st/syll). The full run however exposed the flip side, measured in #19454:
+# the Qwen narrator catastrophically degrades literary French (WER ~0.52,
+# "Quelksons avion de Gros, Intererts"), and no gateway voice fixes it
+# (kokoro 0.44-0.73 same distortions), while the FishAudio narrator clone
+# transcribes near-perfectly on the same witness segments (WER 0.000-0.067,
+# better than the 0.097 historical baseline). A monotone but intelligible
+# narrator dominates an expressive but unintelligible one.
 #
-# Activation: env flag NARRATOR_QWEN_ROUTING (default "1"). Set "0" to fall
-# back to the FishAudio narrator clone (legacy path).
+# Activation: env flag NARRATOR_QWEN_ROUTING (default "0" since #19454 =
+# FishAudio narrator clone). Set "1" to route narrator segments to Qwen
+# VoiceDesign (EXPRESSIVE prosody, degraded French WER).
 #
 # Failure contract: if the gateway is unreachable / 4xx, the narrator branch
 # raises NarratorQwenUnavailable, and `_synthesize_batch` re-raises it instead
@@ -62,16 +69,17 @@ _MAX_PREFIX_TAGS = 4  # Max prosody tags prepended before segment text.
 # NOT silently fall back to FishAudio (that would defeat the measurement in
 # #1028), and we do not emit an audiobook whose narrator segments are simply
 # missing. Acceptance #6 of #15002.
-_NARRATOR_QWEN_ROUTING: bool = os.getenv("NARRATOR_QWEN_ROUTING", "1") == "1"
+_NARRATOR_QWEN_ROUTING: bool = os.getenv("NARRATOR_QWEN_ROUTING", "0") == "1"
 _QWEN_NARRATOR_REFERENCE_ID: str = "qwen-voicedesign-narrator-fr-literary"
 
 # Phase 1 of the narrator pivot (#19692): a second candidate engine,
 # CosyVoice3 (Fun-CosyVoice3-0.5B-2512, Apache-2.0), synthesizes the narrator
-# chunked-by-sentence behind its own flag. The DEFAULT IS UNCHANGED — flag
-# "0": Qwen VoiceDesign stays the narrator engine until the association's
-# listening picks the final engine (#17586). Engines are exclusive: both
-# flags ON raises a configuration error, never a silent precedence (same
-# no-silent-swap contract as #15002 acceptance 6).
+# chunked-by-sentence behind its own flag. Flag "0": the narrator default is
+# the FishAudio clone since the #19454 WER measurement (Qwen VoiceDesign had
+# been the default engine of #15002); CosyVoice3 goes through the
+# association's listening to pick the final engine (#17586). Engines are
+# exclusive: both flags ON raises a configuration error, never a silent
+# precedence (same no-silent-swap contract as #15002 acceptance 6).
 _NARRATOR_COSYVOICE3_ROUTING: bool = os.getenv("NARRATOR_COSYVOICE3_ROUTING", "0") == "1"
 # The "-v2" suffix is not decoration: this sentinel is bumped whenever a
 # change can alter the AUDIO of an already-rendered segment, so the batch
@@ -85,8 +93,12 @@ _NARRATOR_COSYVOICE3_ROUTING: bool = os.getenv("NARRATOR_COSYVOICE3_ROUTING", "0
 # text (tags included) is unchanged, so its hash -- the other cache key --
 # cannot see the fix; only this sentinel re-renders the glued narrators
 # (measured: 16/20 sampled segments carried omissions traced to glue
-# points like "route,[short pause] quand" -> "route,quand").
-_CV3_NARRATOR_REFERENCE_ID: str = "cosyvoice3-zeroshot-narrator-fr-v3"
+# points like "route,[short pause] quand" -> "route,quand"). v4 = the
+# attack guard (#19739): a chunk that passes the duration floor can still
+# start mid-text (onset-drop), and the guard re-rolls it -- segments the
+# pre-guard run shipped with a dropped attack must not stay cached as
+# "generated".
+_CV3_NARRATOR_REFERENCE_ID: str = "cosyvoice3-zeroshot-narrator-fr-v4"
 
 # Engine -> reference_id sentinel. The narrator cache is keyed on it
 # (#19692): an MP3 rendered by one engine is never served for another.
@@ -94,6 +106,221 @@ _NARRATOR_ENGINE_REFERENCE_IDS: dict[str, str] = {
     "qwen_voicedesign": _QWEN_NARRATOR_REFERENCE_ID,
     "cosyvoice3": _CV3_NARRATOR_REFERENCE_ID,
 }
+
+# ---------------------------------------------------------------------------
+# Phase 2 (#17586 acceptance) — Narrator routing to Qwen3-TTS CustomVoice
+# ---------------------------------------------------------------------------
+# User confirmed voice B at 09:10Z on 15/10. The CustomVoice 1.7B checkpoint
+# is a 24 GB VRAM model (12 Hz codec), too large for the bakeoff_small lane
+# (8 GB card on po-2027). The render runs on the bakeoff_large side
+# (po-2023, RTX 3090 24 GB) and is exposed via the self-hosted TTS gateway.
+#
+# Status as of #21145 (2026-10-19): the public endpoint `tts-api.myia.io/v1`
+# is live and auth-gated (`/health` healthy, `/v1/*` 401 without bearer,
+# probed from po-2025). The CustomVoice HTTP call is IMPLEMENTED in
+# `_synthesize_narrator_customvoice`: chunked render via
+# `prosody_lab.qwen_tts_client.qwen_tts_customvoice_chunked` (sentence
+# chunks, silence gap, single WAV), WAV->MP3 at 192 kbps — the transport
+# parallel of the VoiceDesign narrator call on the same socket. Point
+# NARRATOR_CUSTOMVOICE_GATEWAY_URL at the published URL to activate the
+# call; TTS_GATEWAY_API_KEY carries the bearer (client env).
+#
+# This branch stays OFF by default (NARRATOR_CUSTOMVOICE_ROUTING=0) until
+# the user (or ai-01) validates a sample chapter end-to-end. The
+# no-silent-swap contract of #15002 acceptance 6 carries over: any HTTP
+# call that returns 4xx/5xx, short audio, or an undefined endpoint raises
+# NarratorCustomVoiceUnavailable, and _synthesize_batch re-raises instead
+# of absorbing it into a survivable status="failed" record.
+_NARRATOR_CUSTOMVOICE_ROUTING: bool = os.getenv("NARRATOR_CUSTOMVOICE_ROUTING", "0") == "1"
+_CUSTOMVOICE_NARRATOR_SPEAKER: str = os.getenv("NARRATOR_CUSTOMVOICE_SPEAKER", "serena")
+# Served model id on the published gateway (GET /v1/models with the bearer
+# returns exactly ["kokoro", "tada", "qwen3"], measured 19/10 #21145) — NOT
+# the VoiceDesign checkpoint name the client defaults to. Override via env
+# if ops renames the served id.
+_CUSTOMVOICE_SERVED_MODEL: str = os.getenv("NARRATOR_CUSTOMVOICE_MODEL", "qwen3")
+# Consigne de voix par defaut : AUCUNE. Le rendu valide par l'Association
+# Bibliotheques Sonores est CustomVoice NEUTRE (mesure dans
+# `A0C-qwen3tts-customvoice-neutral-metrics.json` sur GDrive) -- `speaker=serena`,
+# `language=French`, `instruct=None`. Pas de consigne 'voix posee, debit lent...'
+# transmise tant que personne ne l'a ecoutee sur ce moteur. Une surcharge
+# ulterieure reste possible via la variable d'environnement
+# NARRATOR_CUSTOMVOICE_INSTRUCTIONS (env var, pas constante en dur).
+# Voir la revue ai-01 sur la tete 2f42b21721 (c.2180, DM ai01-c2180-20925-reserve-20261016).
+_CUSTOMVOICE_NARRATOR_INSTRUCTIONS: str | None = (
+    os.getenv("NARRATOR_CUSTOMVOICE_INSTRUCTIONS") or None
+)
+
+
+def _customvoice_narrator_reference_id(speaker: str) -> str:
+    """Sentinelle de cache de la route CustomVoice : elle encode le speaker,
+    pour que re-pointer NARRATOR_CUSTOMVOICE_SPEAKER invalide le cache sans
+    bump manuel (un MP3 rendu par une autre voix ne doit jamais etre resservi).
+
+    La sentinelle statique d'origine ("qwen3tts-customvoice-narrator-fr-B-v1")
+    annonçait un locuteur "B" alors que le rendu par défaut est "serena" :
+    la cle de cache n'identifiait donc pas la voix rendue.
+    """
+    return f"qwen3tts-customvoice-{speaker}-narrateur-fr-v1"
+
+
+_CUSTOMVOICE_NARRATOR_REFERENCE_ID: str = _customvoice_narrator_reference_id(
+    _CUSTOMVOICE_NARRATOR_SPEAKER
+)
+
+_NARRATOR_ENGINE_REFERENCE_IDS["customvoice"] = _CUSTOMVOICE_NARRATOR_REFERENCE_ID
+
+
+class NarratorCustomVoiceUnavailable(RuntimeError):
+    """Raised when Qwen3-TTS CustomVoice cannot synthesize a narrator segment
+    (gateway endpoint undefined, unreachable, 4xx/5xx, or inference failure).
+    Same contract as NarratorQwenUnavailable and NarratorCosyVoice3Unavailable:
+    hard failure, never a silent fall back to FishAudio (#15002 acceptance 6).
+    """
+
+
+# Short-audio floor for CustomVoice (#21145): same gross-backstop reasoning
+# as the CV3 degenerate-render guard (#19692) — legitimate French speech tops
+# out well under 40 chars/s, so a whole-segment WAV under this floor is a
+# degenerate render, not fast speech.
+_CUSTOMVOICE_MIN_CHARS_PER_SEC = 40.0
+_CUSTOMVOICE_MIN_ABS_S = 0.20
+
+
+def _customvoice_min_expected_s(text: str) -> float:
+    """Shortest audio that could plausibly hold `text` (CustomVoice)."""
+    return max(
+        _CUSTOMVOICE_MIN_ABS_S, len(text) / _CUSTOMVOICE_MIN_CHARS_PER_SEC
+    )
+
+
+def _synthesize_narrator_customvoice(
+    seg: AnnotatedSegment,
+    fishaudio_text: str,
+    mp3_path: Path,
+    seed: int,
+    text_hash: str,
+) -> TTSResult:
+    """Synthesize a narrator segment via Qwen3-TTS CustomVoice 1.7B (voice B).
+
+    Live HTTP call against the published gateway route (#21145, successor
+    of the wiring skeleton #20925): chunked CustomVoice render via the
+    prosody_lab client (sentence chunks, silence gap, single WAV), then
+    WAV->MP3 at 192 kbps -- the exact transport parallel of the
+    VoiceDesign narrator path on the same socket. The no-silent-swap
+    contract of #15002 acceptance 6 carries over: an undefined endpoint,
+    a 4xx/5xx (the client returns None), a failed chunk, or a short-audio
+    render below the char-derived floor all surface as
+    NarratorCustomVoiceUnavailable here, and `_synthesize_batch`
+    re-raises instead of absorbing it into a survivable status="failed"
+    record.
+    """
+    endpoint = os.getenv("NARRATOR_CUSTOMVOICE_GATEWAY_URL", "")
+    if not endpoint:
+        raise NarratorCustomVoiceUnavailable(
+            f"seg {seg.seg_index}: NARRATOR_CUSTOMVOICE_GATEWAY_URL is not "
+            f"defined; the CustomVoice branch is wired but awaits ops to "
+            f"publish the custom-voice route on the self-hosted TTS "
+            f"gateway (tts-api.myia.io/v1, HTTP 200 on /v1/models as of "
+            f"c.1672 2026-10-15)."
+        )
+
+    plain_text = _strip_brackets_for_qwen(fishaudio_text)
+    if not plain_text:
+        raise NarratorCustomVoiceUnavailable(
+            f"seg {seg.seg_index}: empty text after stripping brackets"
+        )
+
+    # Imported here (not at module top) so hermetic tests need neither the
+    # gateway nor pydub — the guards above run network-free.
+    from .prosody_lab.qwen_tts_client import qwen_tts_customvoice_chunked
+
+    # The client appends "/v1/audio/speech" itself; accept the documented
+    # ".../v1" endpoint form too instead of producing a /v1/v1 URL.
+    base_url = endpoint.rstrip("/")
+    if base_url.endswith("/v1"):
+        base_url = base_url[: -len("/v1")]
+
+    # Attack guard (#19739): the chunked render concatenates sentence chunks,
+    # and a chunk can start mid-text (onset-drop) without any duration check
+    # seeing it -- only the ASR can. Same organ and same hard-failure
+    # contract as the CV3 narrator path: a chunk whose attack could not be
+    # obtained is re-rendered, and the passage is refused if the attack is
+    # still missing. The lever here is the re-render (the gateway takes no
+    # seed and samples at temperature 0.9), not the CV3 seeded re-roll.
+    attack_report: dict = {}
+
+    wav_bytes = qwen_tts_customvoice_chunked(
+        plain_text,
+        voice=_CUSTOMVOICE_NARRATOR_SPEAKER,
+        instructions=_CUSTOMVOICE_NARRATOR_INSTRUCTIONS or "",
+        language="French",
+        speed=1.0,
+        max_chars=_MAX_CHUNK_CHARS,
+        per_chunk_timeout=290,
+        gap_ms=120,
+        base_url=base_url,
+        model=_CUSTOMVOICE_SERVED_MODEL,
+        attack_guard=True,
+        attack_report=attack_report,
+    )
+    if not wav_bytes:
+        raise NarratorCustomVoiceUnavailable(
+            f"seg {seg.seg_index}: CustomVoice gateway returned no audio "
+            f"(unreachable, 4xx/5xx, a failed chunk, or an attack the guard "
+            f"could not obtain after {attack_report.get('attempts', 0)} "
+            f"render(s) on chunk {attack_report.get('aborted_chunk')}) "
+            f"at {endpoint}"
+        )
+
+    try:
+        from pydub import AudioSegment
+
+        audio = AudioSegment.from_file(io.BytesIO(wav_bytes), format="wav")
+    except Exception as exc:  # pragma: no cover — pydub/ffmpeg missing
+        raise NarratorCustomVoiceUnavailable(
+            f"seg {seg.seg_index}: CustomVoice WAV decode failed: {exc}"
+        ) from exc
+
+    # Short-audio guard (same gross-backstop logic as the CV3 degenerate
+    # render guard, #19692): a WAV under the char-derived floor is a
+    # degenerate render, not fast speech, and must not become a silent
+    # short MP3.
+    duration_s = len(audio) / 1000.0
+    floor_s = _customvoice_min_expected_s(plain_text)
+    if duration_s < floor_s:
+        raise NarratorCustomVoiceUnavailable(
+            f"seg {seg.seg_index}: CustomVoice short audio {duration_s:.2f}s "
+            f"< floor {floor_s:.2f}s for {len(plain_text)} chars"
+        )
+
+    try:
+        buf = io.BytesIO()
+        audio.export(buf, format="mp3", bitrate="192k")
+        mp3_bytes = buf.getvalue()
+    except Exception as exc:  # pragma: no cover — pydub/ffmpeg missing
+        raise NarratorCustomVoiceUnavailable(
+            f"seg {seg.seg_index}: WAV->MP3 conversion failed: {exc}"
+        ) from exc
+
+    mp3_path.write_bytes(mp3_bytes)
+    duration = audio_duration_mp3(mp3_bytes)
+
+    logger.info(
+        "[CustomVoice] seg %s: %d chars, %.1fs audio at %s",
+        seg.seg_index, len(plain_text), duration, endpoint,
+    )
+
+    return TTSResult(
+        seg_index=seg.seg_index,
+        speaker=seg.speaker,
+        reference_id=_CUSTOMVOICE_NARRATOR_REFERENCE_ID,
+        mp3_path=str(mp3_path),
+        duration_s=duration,
+        seed=seed,
+        status="generated",
+        attempts=1,
+        text_hash=text_hash,
+    )
 
 # VoiceDesign `instructions` prompt — describes the desired voice and delivery
 # for a 19th-century French audiobook narrator. Tuned from prosody_lab A/B
@@ -834,14 +1061,52 @@ def _synthesize_fishaudio_path(
         # Multi-chunk: synthesize SEQUENTIALLY (FishAudio is single-threaded)
         audio_results: list[bytes | None] = []
         attempts = 0
-        for req in tts_requests:
+        failed_chunks: list[int] = []
+        for i, req in enumerate(tts_requests, start=1):
             audio = fishaudio_tts(**req)
             attempts += 1
             if audio is None:
                 thermal_wait()
                 audio = fishaudio_tts(**req)
                 attempts += 1
+            if not audio:
+                # A falsy render is a failed render: the single-chunk branch
+                # below already treats an empty body as a failure ("[audio] if
+                # audio else []"), so b"" must not count as a delivered chunk.
+                failed_chunks.append(i)
             audio_results.append(audio)
+
+        if failed_chunks:
+            # A failed chunk used to be silently DROPPED: the remaining chunks
+            # were concatenated, the segment was written and reported
+            # "generated", and the audiobook simply lost up to ~220 characters
+            # of dialogue with nothing anywhere saying so. That is the exact
+            # opposite of the contract the other render paths hold -- the Qwen
+            # client returns None "so a partial passage is never silently
+            # measured", and the single-chunk branch here fails the segment.
+            # A missing segment is visible in the report; a hole is not, so
+            # the segment fails as a whole when any of its chunks failed.
+            logger.error(
+                "[P5] seg %s: %d chunk(s) failed (%s) - segment failed, "
+                "no partial passage is shipped",
+                seg.seg_index, len(failed_chunks), failed_chunks,
+            )
+            print(
+                f"  [P5] seg {seg.seg_index} FAILED: {len(failed_chunks)} "
+                f"chunk(s) failed {failed_chunks} of {len(tts_requests)} - "
+                f"no partial passage is shipped"
+            )
+            return TTSResult(
+                seg_index=seg.seg_index,
+                speaker=seg.speaker,
+                reference_id=reference_id,
+                mp3_path="",
+                duration_s=0.0,
+                seed=seed,
+                status="failed",
+                attempts=attempts,
+                text_hash=current_hash,
+            )
 
         audio_parts = [a for a in audio_results if a is not None]
 
@@ -879,10 +1144,12 @@ def _synthesize_segment(seg: AnnotatedSegment, fishaudio_text: str) -> TTSResult
     """Synthesize a single segment, dispatching narrateur -> Qwen VoiceDesign.
 
     F6 (Issue #15002): narrator segments are routed to Qwen3-TTS VoiceDesign
-    when NARRATOR_QWEN_ROUTING is ON (default). Every other speaker stays on
-    the legacy FishAudio S2-Pro path. On Qwen gateway failure the narrator
-    branch raises NarratorQwenUnavailable — there is no silent fallback to
-    FishAudio (acceptance #6 of #15002).
+    when NARRATOR_QWEN_ROUTING is ON (default "0" since the #19454 WER
+    measurement — the Qwen narrator degrades literary French to ~0.52 WER
+    while the FishAudio clone stays at 0.000-0.067). Every other speaker
+    stays on the legacy FishAudio S2-Pro path. On Qwen gateway failure the
+    narrator branch raises NarratorQwenUnavailable — there is no silent
+    fallback to FishAudio (acceptance #6 of #15002).
     """
     reference_id = _resolve_voice(seg)
     seed = 42 + seg.seg_index
@@ -903,6 +1170,14 @@ def _synthesize_segment(seg: AnnotatedSegment, fishaudio_text: str) -> TTSResult
         )
     if _should_route_narrator_to("cosyvoice3", seg):
         return _synthesize_narrator_cosyvoice3(
+            seg=seg,
+            fishaudio_text=fishaudio_text,
+            mp3_path=mp3_path,
+            seed=seed,
+            text_hash=current_hash,
+        )
+    if _should_route_narrator_to("customvoice", seg):
+        return _synthesize_narrator_customvoice(
             seg=seg,
             fishaudio_text=fishaudio_text,
             mp3_path=mp3_path,
@@ -977,6 +1252,12 @@ def _synthesize_narrator_qwen(
             f"seg {seg.seg_index}: empty text after stripping brackets"
         )
 
+    # Attack guard (#19739): same organ and same hard-failure contract as the
+    # CV3 narrator path -- a chunk that starts mid-text loses its attack and
+    # only the ASR sees it. The lever is the re-render (no seed on this
+    # transport), and the passage is refused if the attack is still missing.
+    attack_report: dict = {}
+
     wav_bytes = qwen_tts_voicedesign_chunked(
         plain_text,
         instructions=_QWEN_NARRATOR_INSTRUCTIONS,
@@ -985,11 +1266,15 @@ def _synthesize_narrator_qwen(
         max_chars=_MAX_CHUNK_CHARS,
         per_chunk_timeout=290,
         gap_ms=120,
+        attack_guard=True,
+        attack_report=attack_report,
     )
     if not wav_bytes:
         raise NarratorQwenUnavailable(
-            f"seg {seg.seg_index}: Qwen returned None (gateway unreachable "
-            f"or render failed)"
+            f"seg {seg.seg_index}: Qwen returned None (gateway unreachable, "
+            f"render failed, or an attack the guard could not obtain after "
+            f"{attack_report.get('attempts', 0)} render(s) on chunk "
+            f"{attack_report.get('aborted_chunk')})"
         )
 
     # VoiceDesign returns WAV; downstream pipeline writes MP3 (same naming
@@ -1026,6 +1311,7 @@ def _narrator_engine_flags() -> dict[str, bool]:
     return {
         "qwen_voicedesign": _NARRATOR_QWEN_ROUTING,
         "cosyvoice3": _NARRATOR_COSYVOICE3_ROUTING,
+        "customvoice": _NARRATOR_CUSTOMVOICE_ROUTING,
     }
 
 
@@ -1128,6 +1414,78 @@ _CV3_RENDER_ATTEMPTS = 5
 # attempt 0 reproduces the pre-guard seed exactly, so a healthy chunk renders
 # bit-identically and only a degenerate one is perturbed.
 _CV3_RETRY_SEED_STRIDE = 104_729  # prime, unrelated to seed + seg_index
+
+# Attack guard (#19739, phase 2): a chunk that passes the duration floor can
+# still start mid-text -- the onset-drop measured in phase 1 (PR #19699) is
+# seed-dependent and invisible to any duration check (the chars/s bands of
+# clean and omitting renders overlap fully), so only the ASR can see it. The
+# verdict organ is v4.attack_guard (delivered by #21459); this loop is where
+# it plugs in: a floor-passing render is accepted only if the ASR hears the
+# chunk's first words, otherwise the same spaced-seed re-roll that answers a
+# degenerate render answers the dropped attack. V4_ATTACK_GUARD=off restores
+# the pre-guard acceptance (one ASR call less) -- that is the A/B arm the
+# measured comparison needs, not a production mode: a run with the guard off
+# ships the onset-drop the issue exists to close.
+_ATTACK_GUARD_ENV = "V4_ATTACK_GUARD"
+_ATTACK_GUARD_ASR_BASE_URL_ENV = "V4_ASR_BASE_URL"
+# Same endpoint and model as the omission organ p7 (localhost:8190,
+# large-v3-turbo): the guard must measure exactly what p7 measures, so an
+# "attack dropped" verdict and a p7 omission span cannot diverge.
+_ATTACK_GUARD_ASR_BASE_URL = "http://localhost:8190"
+
+
+def _attack_guard_enabled() -> bool:
+    """V4_ATTACK_GUARD reads on, off, 0/1 -- default ON (the correction is the
+    phase-2 deliverable, not an opt-in)."""
+    return os.getenv(_ATTACK_GUARD_ENV, "on").strip().lower() not in {
+        "0", "off", "no", "false",
+    }
+
+
+def _resolve_attack_asr():
+    """wav path -> transcript, on the organ's http client (asr_http).
+
+    The callable is resolved per segment, not at import: tests inject their
+    own, and the run can point V4_ASR_BASE_URL at the Whisper server of the
+    machine that carries the services.
+    """
+    from .attack_guard import asr_http
+
+    base_url = os.getenv(
+        _ATTACK_GUARD_ASR_BASE_URL_ENV, _ATTACK_GUARD_ASR_BASE_URL
+    )
+
+    def _transcribe(wav_path) -> str:
+        return asr_http({"audio": str(wav_path)}, base_url=base_url)
+
+    return _transcribe
+
+
+def _cv3_attack_verdict(candidate, sr, chunk, chunk_index, chunk_seed, asr_fn, tmp_dir):
+    """Floor passed -- does the ASR hear the chunk's first words? (#19739)
+
+    Writes the candidate to a scratch wav (the organ's clients read a file),
+    transcribes it with the injected asr_fn and delegates the verdict to
+    attack_guard.evaluate_chunk. Returns the organ's verdict dict; the caller
+    decides what a dropped attack costs.
+    """
+    import torchaudio
+
+    from .attack_guard import evaluate_chunk
+
+    wav_path = Path(tmp_dir) / f"chunk_{chunk_index}_attack.wav"
+    torchaudio.save(str(wav_path), candidate, sr, format="wav")
+    transcript = asr_fn(wav_path)
+    return evaluate_chunk(
+        {
+            "chunk_index": chunk_index,
+            "text": chunk,
+            "seed": chunk_seed,
+            "engine": "cosyvoice3",
+            "audio": str(wav_path),
+        },
+        transcript,
+    )
 
 # CosyVoice3 AutoModel: ~3.4 GB VRAM, tens of seconds to load — one instance
 # per process, not per segment.
@@ -1389,54 +1747,106 @@ def _synthesize_narrator_cosyvoice3(
     prompt_text = cv3_client.PROMPT_TEXT_ZH + cv3_client.ENDOFPROMPT
     sr = int(model.sample_rate)
 
+    # Attack guard (#19739): on by default -- see _attack_guard_enabled. The
+    # ASR callable is resolved once per segment; the scratch dir holds the
+    # candidate wavs the organ's clients transcribe (system temp, never the
+    # repo, and it goes away with the segment).
+    attack_asr = _resolve_attack_asr() if _attack_guard_enabled() else None
+    tmp_ctx = (
+        tempfile.TemporaryDirectory(prefix="v4_attack_guard_")
+        if attack_asr is not None
+        else contextlib.nullcontext(None)
+    )
+
     t0 = time.time()
     wavs = []
     attempts = 0
-    for i, chunk in enumerate(chunks):
-        floor_s = _cv3_min_expected_s(chunk)
-        wav = None
-        last_dur = 0.0
-        last_exc: Exception | None = None
-        for attempt in range(_CV3_RENDER_ATTEMPTS):
-            attempts += 1
-            # attempt 0 keeps the pre-guard seed, so a healthy chunk is
-            # unchanged and only a degenerate one is perturbed.
-            torch.manual_seed(seed + i + attempt * _CV3_RETRY_SEED_STRIDE)
-            try:
-                gen = model.inference_zero_shot(
-                    chunk, prompt_text, str(asset_wav), stream=False
+    attack_checks = 0
+    attack_rerolls = 0
+    with tmp_ctx as attack_tmp:
+        for i, chunk in enumerate(chunks):
+            floor_s = _cv3_min_expected_s(chunk)
+            wav = None
+            last_dur = 0.0
+            last_exc: Exception | None = None
+            last_attack: dict | None = None
+            for attempt in range(_CV3_RENDER_ATTEMPTS):
+                attempts += 1
+                # attempt 0 keeps the pre-guard seed, so a healthy chunk is
+                # unchanged and only a degenerate one is perturbed. The same
+                # formula answers a dropped attack (attack_guard.spaced_seed).
+                chunk_seed = seed + i + attempt * _CV3_RETRY_SEED_STRIDE
+                torch.manual_seed(chunk_seed)
+                try:
+                    gen = model.inference_zero_shot(
+                        chunk, prompt_text, str(asset_wav), stream=False
+                    )
+                    parts = [j["tts_speech"] for j in gen]
+                    candidate = (
+                        torch.cat(parts, dim=-1) if len(parts) > 1 else parts[0]
+                    )
+                except Exception as exc:  # noqa: BLE001
+                    # The crash and the silent 0.04 s are the same event: too few
+                    # speech tokens. Here the mel was short enough to break the f0
+                    # predictor's conv1d before anything was yielded, so it is the
+                    # same re-roll that answers it.
+                    last_exc, last_dur = exc, 0.0
+                else:
+                    last_dur = candidate.shape[-1] / sr
+                    if last_dur >= floor_s:
+                        if attack_asr is None:
+                            wav = candidate
+                            break
+                        attack_checks += 1
+                        verdict = _cv3_attack_verdict(
+                            candidate, sr, chunk, i, chunk_seed,
+                            attack_asr, attack_tmp,
+                        )
+                        if verdict["attack_dropped"]:
+                            attack_rerolls += 1
+                            last_attack = verdict
+                            logger.warning(
+                                "[CV3] seg %s chunk %d/%d attempt %d/%d: attack "
+                                "dropped (%s, %d leading word(s) lost) - re-"
+                                "rolling seed (#19739)",
+                                seg.seg_index, i + 1, len(chunks), attempt + 1,
+                                _CV3_RENDER_ATTEMPTS, verdict["reason"],
+                                verdict["n_missing_leading"],
+                            )
+                            continue
+                        wav = candidate
+                        break
+                logger.warning(
+                    "[CV3] seg %s chunk %d/%d attempt %d/%d: degenerate render "
+                    "(%.2fs for %d chars, floor %.2fs%s) - re-rolling seed",
+                    seg.seg_index, i + 1, len(chunks), attempt + 1,
+                    _CV3_RENDER_ATTEMPTS, last_dur, len(chunk), floor_s,
+                    f", {type(last_exc).__name__}" if last_exc else "",
                 )
-                parts = [j["tts_speech"] for j in gen]
-                candidate = torch.cat(parts, dim=-1) if len(parts) > 1 else parts[0]
-            except Exception as exc:  # noqa: BLE001
-                # The crash and the silent 0.04 s are the same event: too few
-                # speech tokens. Here the mel was short enough to break the f0
-                # predictor's conv1d before anything was yielded, so it is the
-                # same re-roll that answers it.
-                last_exc, last_dur = exc, 0.0
-            else:
-                last_dur = candidate.shape[-1] / sr
-                if last_dur >= floor_s:
-                    wav = candidate
-                    break
-            logger.warning(
-                "[CV3] seg %s chunk %d/%d attempt %d/%d: degenerate render "
-                "(%.2fs for %d chars, floor %.2fs%s) - re-rolling seed",
-                seg.seg_index, i + 1, len(chunks), attempt + 1,
-                _CV3_RENDER_ATTEMPTS, last_dur, len(chunk), floor_s,
-                f", {type(last_exc).__name__}" if last_exc else "",
-            )
-        if wav is None:
-            # Hard failure, never a silent short MP3: the run counts it in
-            # Failed, which is honest, where a 0.10 s file is not.
-            raise NarratorCosyVoice3Unavailable(
-                f"seg {seg.seg_index}: chunk {i + 1}/{len(chunks)} still "
-                f"degenerate after {_CV3_RENDER_ATTEMPTS} attempts (last "
-                f"{last_dur:.2f}s for {len(chunk)} chars, floor "
-                f"{floor_s:.2f}s): {chunk[:60]!r}"
-            ) from last_exc
-        wavs.append(wav)
+            if wav is None:
+                # Hard failure, never a silent short MP3: the run counts it in
+                # Failed, which is honest, where a 0.10 s file is not.
+                if last_attack is not None and last_dur >= floor_s:
+                    raise NarratorCosyVoice3Unavailable(
+                        f"seg {seg.seg_index}: chunk {i + 1}/{len(chunks)} "
+                        f"attack still dropped after {_CV3_RENDER_ATTEMPTS} "
+                        f"attempts (last verdict: {last_attack['reason']}, "
+                        f"{last_attack['n_missing_leading']} leading word(s) "
+                        f"lost): {chunk[:60]!r} (#19739)"
+                    )
+                raise NarratorCosyVoice3Unavailable(
+                    f"seg {seg.seg_index}: chunk {i + 1}/{len(chunks)} still "
+                    f"degenerate after {_CV3_RENDER_ATTEMPTS} attempts (last "
+                    f"{last_dur:.2f}s for {len(chunk)} chars, floor "
+                    f"{floor_s:.2f}s): {chunk[:60]!r}"
+                ) from last_exc
+            wavs.append(wav)
     elapsed = time.time() - t0
+    if attack_asr is not None:
+        logger.info(
+            "[CV3] seg %s: attack guard checked %d render(s), re-rolled %d (#19739)",
+            seg.seg_index, attack_checks, attack_rerolls,
+        )
 
     pause = torch.zeros(1, int(_CV3_PAUSE_S * sr))
     parts_audio: list[torch.Tensor] = []
@@ -1591,7 +2001,7 @@ def _synthesize_batch(
             seg_idx = futures[future]
             try:
                 results[seg_idx] = future.result()
-            except NarratorQwenUnavailable:
+            except (NarratorQwenUnavailable, NarratorCustomVoiceUnavailable):
                 # Hard failure by contract (acceptance #6 of #15002, cf the
                 # class docstring): the narrator routing exists to SURFACE the
                 # Qwen regression #1028. Recording a missing narrator segment
@@ -1601,6 +2011,9 @@ def _synthesize_batch(
                 # that guard only fires when NOTHING at all was generated.
                 # Propagate: the pass aborts instead of shipping an audiobook
                 # with narrator segments missing.
+                # NarratorCustomVoiceUnavailable joins the list: the
+                # CustomVoice route raises its own typed error, and the
+                # generic handler below would otherwise absorb it.
                 raise
             except Exception as exc:
                 # Surface the cause FIRST: a failure record that itself

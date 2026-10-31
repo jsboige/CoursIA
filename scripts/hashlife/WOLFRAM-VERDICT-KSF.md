@@ -41,10 +41,12 @@ L'instrument declare donc desormais `WOLFRAM-SATURATED` sous `n_cells < 512` (co
 
 | Regle | Classe | KSF(W=1) | KSF(W=32) | Landmark | Verdict |
 |-------|--------|----------|-----------|----------|---------|
-| 0     | I      | 0.008    | 0.008     | 0.000    | CLASS-I-CONFIRMED (delta 0.008) |
+| 0     | I      | 0.000    | 0.008     | 0.000    | CLASS-I-CONFIRMED (delta 0.008) |
 | 4     | II     | 0.032    | 0.000     | 0.000    | CLASS-II-CONFIRMED (delta 0.000) |
 | 30    | III    | 1.000    | **1.000** | 0.850    | CLASS-III-CONFIRMED (delta 0.150) |
-| 110   | IV     | 0.751    | **0.376** | 0.200    | CLASS-IV-CONFIRMED (delta 0.176) |
+| 110   | IV     | 0.582    | **0.376** | 0.200    | CLASS-IV-CONFIRMED (delta 0.176) |
+
+**Correction du 2026-10-12** (#20177) : les deux cellules KSF(W=1) ne se recalculaient pas depuis `wolfram_ksf_results.json` commis. R0 W=1 portait 0.008 -- la valeur W=32 (0.0078) recopiee dans la mauvaise colonne. R110 W=1 portait 0.751, valeur orpheline : non derivable du JSON n=1024 (0.5818) ni d'un run n=512 reproductible (0.788, re-execution du 2026-10-12, seed 33). Les cellules sont alignees sur le JSON canonique ; les verdicts, compares a W=32, sont inchanges.
 
 **n_cells = 512, n_steps = 512, seed = 33** (plancher de la zone concluante) :
 
@@ -63,13 +65,21 @@ A W = 32 (contexte maximal), hors saturation : KSF(R30) = **1.000** bit/cellule,
 
 **Verdict final** : `WOLFRAM-KSF-DISCRIMINANT` — la Kolmogorov structure function **separe** le chaos de la structure Turing-complete des que la mesure sort de la zone saturee, contrairement a ce que concluait la mesure a n_cells = 64.
 
-### 2. Les landmarks theoriques sont confirmes empiriquement
+### 2. Ancres de classe et tolerance : definitions d'instrument, pas des mesures publiees
 
-Les quatre classes tombent dans la fenetre de tolerance (0.20 bit/cellule) de leur landmark a n = 1024 : R0 et R4 sur 0.000, R30 sur 0.850 (observe 1.000), R110 sur 0.200 (observe 0.376). La ligne « landmarks non valides, a recalibrer » de la version precedente est levee : l'ecart venait de l'unite, pas du landmark.
+Aucune reference ne chiffre la KSF de R30 ou R110 en bits/cellule -- Vereshchagin & Vitanyi (2004) definissent la fonction, pas sa valeur sur ces regles. Les quatres landmarks sont des **ancres operationnelles derivees de la classe** :
+
+- I/II : 0.000 (determinisme -- le contexte capture tout) ;
+- III : le plancher theorique est 1.0 bit/cellule (entropie maximale, cf. tableau de perimetre) ; l'ancre appliquee 0.850 est **conservative**, volontairement sous le plancher (marge 0.15) ;
+- IV : 0.200, ancre choisie pour l'hypothese « le contexte capture gliders et reactions » -- sans source numerique, assumee comme choix d'instrument.
+
+La **tolerance** (delta < 0.20 bit/cellule) est la fenetre operationnelle de l'instrument (bruit zlib ~3 % mesure entre postes, variation d'echelle), pas un resultat. Elle est numeriquement egale a l'ancre R110 : consequence assumee, le verdict de R110 y est sensible -- a n = 512, R110 (0.507) tombe en CLASS-IV-DEVIATION (table ci-dessus), et le rapprochement de l'ancre reste mesure sur deux echelles seulement (0.507 -> 0.376), pas etabli comme asymptote.
+
+Ce que la mesure a n = 1024 etablit : les quatre classes se rangent dans l'ordre prevu par leurs ancres (R0/R4 a 0.000, R30 au plancher 1.000, R110 intermediaire 0.376). La ligne « landmarks non valides, a recalibrer » de la version precedente restait erronee : l'ecart venait de l'unite. Elle n'etablit pas l'exactitude numerique des ancres elles-memes.
 
 ### 3. Convergence en n — un plancher, pas une asymptote
 
-R110 decroit vers son landmark avec la taille : 0.507 (n=512, deviation) puis 0.376 (n=1024, confirme). La convergence n'est pas encore asymptotique : la part de la structure de R110 que la fenetre W = 32 capture croit avec n. Rule 30 est insensible a n (1.000 a toutes les echelles mesurees : entropie maximale a chaque pas).
+R110 decroit vers son ancre avec la taille : 0.507 (n=512, deviation) puis 0.376 (n=1024, confirme). La meme decroissance se mesure a W = 1 : 0.788 (n=512) puis 0.582 (n=1024), re-execution du 2026-10-12, seed 33. La convergence n'est pas encore asymptotique : la part de la structure de R110 que la fenetre W = 32 capture croit avec n. Rule 30 est insensible a n (1.000 a toutes les echelles mesurees : entropie maximale a chaque pas).
 
 ### 4. Ce que la mesure dit et ne dit pas
 

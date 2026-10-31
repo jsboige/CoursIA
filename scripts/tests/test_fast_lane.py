@@ -20,6 +20,7 @@ couverts : une suite ou tout passe serait indiscernable d'un moteur debranche.
 
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -27,13 +28,17 @@ from pathlib import Path
 import pytest
 
 CI_DIR = Path(__file__).resolve().parents[1] / "ci"
+REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(CI_DIR))
 
 import fast_lane  # noqa: E402
 from fast_lane_registry import (  # noqa: E402
     FAST_LANE_NATIVE, PILOT, TRANCHE1, TRANCHE2, TRANCHE3, TRANCHE4,
-    TRANCHE5, TRANCHE8, TRANCHE12, TRANCHE13, TRANCHE14, Guard,
+    TRANCHE5, TRANCHE8, TRANCHE12, TRANCHE13, TRANCHE14, TRANCHE20, TRANCHE22,
+    TRANCHE25, TRANCHE27, Guard, LIVE_READ_WILDCARD, live_read_guard_paths,
+    live_read_source_paths,
 )
+import fast_lane_registry  # noqa: E402
 
 # Lot PILOTE absorbe a l'etape 3 de #12856 (programme #12567) : comparaison
 # conclue pour ces neuf gardes -- job renomme byte-identique au `guard.name`
@@ -131,6 +136,110 @@ def test_notebook_guards_select_a_root_level_notebook():
             f"{expected} devrait couvrir un notebook a la racine "
             "(motif `**/*.ipynb`)"
         )
+
+
+# ---------------------------------------------------------------------------
+# 1 bis. Le garde Live-read doit se selectionner sur la SOURCE lue (#22001)
+# ---------------------------------------------------------------------------
+
+LIVE_READ_GUARD = TRANCHE20[0]
+LIVE_READ_REGISTRY = REPO_ROOT / "scripts" / "notebook_tools" / "live_read_registry.json"
+
+
+def _live_read_cells() -> list[dict]:
+    return json.loads(LIVE_READ_REGISTRY.read_text(encoding="utf-8"))["cells"]
+
+
+def test_le_garde_live_read_declenche_sur_la_seule_source_lue():
+    """Invariant : une revision qui ne touche que la SOURCE lue selectionne le garde.
+
+    Avant #22001, les `paths` du garde ne portaient que `**.ipynb` et ses
+    propres fichiers : la revision #21899, qui reecrivait `Pillars.lean`
+    sans toucher un carnet, ne declenchait rien.
+    """
+    sources = [cell["source"] for cell in _live_read_cells()]
+    assert sources, "registre live-read vide : l'invariant ne serait pas epingle"
+    for source in sources:
+        assert fast_lane.guard_applies(LIVE_READ_GUARD, [source]), source
+
+
+def test_controle_positif_le_controle_negatif_un_lean_voisin_non_declare():
+    """Controle positif : `Pillars.lean` seul. Negatif : un `.lean` voisin non declare.
+
+    Le voisin se choisit PARMI LES FICHIERS REELS du dossier, en excluant les
+    sources declarees : le test reste valide si le registre evolue.
+    """
+    declares = {cell["source"] for cell in _live_read_cells()}
+    dossier = REPO_ROOT / "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life"
+    voisins = sorted(
+        p.relative_to(REPO_ROOT).as_posix()
+        for p in dossier.glob("*.lean")
+        if p.relative_to(REPO_ROOT).as_posix() not in declares
+    )
+    assert voisins, "aucun .lean voisin non declare : le controle negatif serait vide"
+    assert fast_lane.guard_applies(LIVE_READ_GUARD, ["MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/Pillars.lean"])
+    assert not fast_lane.guard_applies(LIVE_READ_GUARD, [voisins[0]])
+
+
+def test_les_chemins_du_garde_sont_derives_du_registre(tmp_path):
+    """La derivation est prouvee : un registre temporaire suffit a elargir le declencheur."""
+    registre = tmp_path / "registre.json"
+    registre.write_text(json.dumps({"version": 1, "cells": [
+        {"notebook": "N.ipynb", "cell_id": "abc", "source": "chemin/lu/ici.lean"}]}),
+        encoding="utf-8")
+    assert live_read_source_paths(registre) == ["chemin/lu/ici.lean"]
+    assert set(live_read_source_paths()) <= set(LIVE_READ_GUARD.paths)
+
+
+def test_un_registre_illisible_echoue_ferme(tmp_path):
+    """Fail-closed : un registre illisible ne doit pas rendre le garde muet."""
+    with pytest.raises(RuntimeError):
+        live_read_source_paths(tmp_path / "absent.json")
+
+
+def test_un_registre_illisible_ne_rend_que_le_garde_live_read_bavard(tmp_path, monkeypatch, capsys):
+    """Reserve 1 de #22041 : la panne est LOCALISEE, pas silencieuse.
+
+    `TRANCHE20` porte ces chemins au chargement du module : laisser filer
+    l'exception rendait `fast_lane_registry` inimportable, donc les 30+ gardes
+    avec lui (mesure : registre absent -> `import fast_lane` meurt sur
+    RuntimeError, aucun check-run emis). Le repli elargit a tous les carnets --
+    un SUPERSET -- et le dit sur stderr ; le rouge vient ensuite du garde
+    lui-meme, qui ne peut pas lire le registre manquant.
+    """
+    monkeypatch.setattr(fast_lane_registry, "LIVE_READ_REGISTRY",
+                        tmp_path / "absent.json")
+    assert live_read_guard_paths() == [LIVE_READ_WILDCARD]
+    assert "registre live-read illisible" in capsys.readouterr().err
+    assert fast_lane.guard_applies(
+        LIVE_READ_GUARD, ["MyIA.AI.Notebooks/Serie/Carnet.ipynb"])
+
+
+def test_registre_absent_le_module_reste_importable(tmp_path):
+    """Preuve de bout en bout, sur un arbre copie : l'import ne meurt pas.
+
+    Le test ci-dessus mesure le repli ; celui-ci mesure ce qu'il achete -- un
+    registre absent ne rend plus TOUT le registre inimportable. Le module est
+    copie dans un arbre temporaire ou `scripts/notebook_tools/` existe mais ou
+    le registre est absent : c'est l'etat exact qui tuait `fast_lane.py`.
+    """
+    import shutil
+
+    ci = tmp_path / "scripts" / "ci"
+    ci.mkdir(parents=True)
+    (tmp_path / "scripts" / "notebook_tools").mkdir()
+    shutil.copyfile(CI_DIR / "fast_lane_registry.py", ci / "fast_lane_registry.py")
+    code = (
+        "import json, sys\n"
+        f"sys.path.insert(0, {str(ci)!r})\n"
+        "import fast_lane_registry as r\n"
+        "print(json.dumps(r.TRANCHE20[0].paths))\n"
+    )
+    proc = subprocess.run([sys.executable, "-c", code],
+                          capture_output=True, text=True, encoding="utf-8")
+    assert proc.returncode == 0, proc.stderr
+    assert LIVE_READ_WILDCARD in json.loads(proc.stdout)
+    assert "registre live-read illisible" in proc.stderr
 
 
 # ---------------------------------------------------------------------------
@@ -457,17 +566,67 @@ def test_advisory_flags_match_the_source_workflows():
     assert by_name["self-hosted-runner-policy"].blocking is True
 
 
+def test_check_nav_chain_argv_carries_the_pr_diff_scope_issue_20303():
+    """#20303 : la garde absorbee doit garder la portee de son workflow d'origine.
+
+    Le workflow d'origine passait `--diff-files pr_files.txt` (diff base...HEAD).
+    L'argv absorbe n'avait que `--check` : tout NEW du graphe global, meme hors
+    de la PR, rougissait la PR. La portee passe par `{base_ref}` (comme
+    split-reading, prose-counts, md-content-loss) : le checker calcule le diff.
+    Un finding NEW hors diff ne bloque pas ; dans le diff, il bloque (controle
+    positif et negatif de bout en bout : test_check_notebook_nav_chain.py).
+    """
+    by_name = {g.name: g for g in PILOT}
+    guard = by_name["check-nav-chain"]
+    assert "--check" in guard.argv
+    assert "--diff-base" in guard.argv
+    i = guard.argv.index("--diff-base")
+    assert guard.argv[i + 1] == "{base_ref}", "la base vient de la lane, pas en dur"
+    resolved = fast_lane.substitute(guard.argv, {"base_ref": "origin/main"})
+    assert resolved[resolved.index("--diff-base") + 1] == "origin/main"
+    assert guard.needs_base and guard.diff_bounded
+
+
+def test_check_navlinks_argv_carries_the_pr_diff_scope_issue_21016():
+    """#21016 : la garde absorbee check-navlinks doit garder la portee de son
+    workflow d'origine (symetrique de check-nav-chain, #20303/#20582).
+
+    Le workflow d'origine passait `--diff-files pr_files.txt` (diff base...HEAD).
+    L'argv absorbe n'avait que `--check` : tout NEW du graphe global, meme hors
+    de la PR, rougissait la PR. La portee passe par `{base_ref}` (comme
+    split-reading, prose-counts, md-content-loss, nav-chain) : le checker
+    calcule le diff lui-meme. Un finding NEW hors diff ne bloque pas ; dans
+    le diff, il bloque (controle positif et negatif de bout en bout :
+    test_check_notebook_navlinks.py).
+    """
+    by_name = {g.name: g for g in PILOT}
+    guard = by_name["check-navlinks"]
+    assert "--check" in guard.argv
+    assert "--diff-base" in guard.argv
+    i = guard.argv.index("--diff-base")
+    assert guard.argv[i + 1] == "{base_ref}", "la base vient de la lane, pas en dur"
+    resolved = fast_lane.substitute(guard.argv, {"base_ref": "origin/main"})
+    assert resolved[resolved.index("--diff-base") + 1] == "origin/main"
+    assert guard.needs_base and guard.diff_bounded
+
 def test_self_hosted_policy_guard_is_wired_fail_closed():
     guard = {item.name: item for item in PILOT}["self-hosted-runner-policy"]
     assert guard.source == "fast-lane-shadow.yml"
+    # #22954 : `--check-timeouts` ajoute le cliquet des bornes de job. Il est
+    # ici en egalite stricte pour qu'un retrait soit un rouge, pas une
+    # desactivation silencieuse du cliquet.
     assert guard.argv == [
         "python",
         "scripts/ci/check_self_hosted_runner_policy.py",
         "--check",
+        "--check-timeouts",
     ]
     assert ".github/workflows/*.yml" in guard.paths
     assert ".github/workflows/*.yaml" in guard.paths
     assert "scripts/ci/check_self_hosted_runner_policy.py" in guard.paths
+    assert "scripts/ci/self_hosted_timeout_baseline.txt" in guard.paths, (
+        "une PR qui reecrit la baseline doit relancer le cliquet (#22954)"
+    )
     assert "scripts/ci/fast_lane_registry.py" in guard.paths
 
 
@@ -1671,4 +1830,325 @@ def test_check_hr_substitution_gh_failure_exits_two(monkeypatch):
         chs.get_pr_diff(12345)
     assert excinfo.value.code == 2, (
         "l'echec gh doit sortir rc=2 (incident), pas rc=1 (verdict)"
+    )
+
+
+def test_tranche22_markdown_schema_advisory_guard_is_wired():
+    """Tranche 22 = schema des cellules markdown (#20167), advisory. Contrat :
+    native, absorbe, non bloquant (calibration avant bascule), iteration par
+    carnet modifie. Le detecteur DOIT tirer sur un carnet fautif et rester
+    muet sur un carnet propre : un organe qui ne dit jamais rien est
+    indiscernable d'un organe debranche (lecon #11685).
+    """
+    import json
+    import tempfile
+
+    assert len(TRANCHE22) == 1, "la tranche 22 documente 1 seul garde (#20167)"
+    guard = TRANCHE22[0]
+    assert guard.source == FAST_LANE_NATIVE
+    assert guard.absorbed, f"{guard.name} doit porter absorbed=True"
+    assert not guard.blocking, (
+        f"{guard.name} est advisory : bascule en bloquant seulement quand main "
+        f"ne porte plus aucune cellule markdown fautive"
+    )
+    assert guard.iterates_paths and "{changed_paths}" in guard.argv
+    assert "--check" in guard.argv
+    assert "MyIA.AI.Notebooks/**/*.ipynb" in guard.iterate_paths
+    for needle in (
+        "scripts/notebook_tools/fix_markdown_cell_schema.py",
+        "scripts/notebook_tools/tests/test_fix_markdown_cell_schema.py",
+        "scripts/ci/fast_lane_registry.py",
+    ):
+        assert needle in guard.paths, f"{needle} doit figurer dans les paths"
+
+    # Controle positif et negatif du detecteur, sur de vrais fichiers.
+    root = Path(__file__).resolve().parents[2]
+    script = root / "scripts" / "notebook_tools" / "fix_markdown_cell_schema.py"
+    nb_defect = {
+        "cells": [{"cell_type": "markdown", "id": "a", "metadata": {},
+                   "source": ["x\n"], "outputs": []}],
+        "metadata": {}, "nbformat": 4, "nbformat_minor": 5,
+    }
+    nb_clean = {
+        "cells": [{"cell_type": "markdown", "id": "a", "metadata": {},
+                   "source": ["x\n"]}],
+        "metadata": {}, "nbformat": 4, "nbformat_minor": 5,
+    }
+    with tempfile.TemporaryDirectory() as tmp:
+        bad = Path(tmp) / "bad.ipynb"
+        good = Path(tmp) / "good.ipynb"
+        bad.write_text(json.dumps(nb_defect), encoding="utf-8")
+        good.write_text(json.dumps(nb_clean), encoding="utf-8")
+        rc_bad = subprocess.run(
+            ["python", str(script), "--check", str(bad)],
+            capture_output=True, text=True, encoding="utf-8",
+        ).returncode
+        rc_good = subprocess.run(
+            ["python", str(script), "--check", str(good)],
+            capture_output=True, text=True, encoding="utf-8",
+        ).returncode
+    assert rc_bad == 1, "le detecteur doit tirer (rc=1) sur un carnet fautif"
+    assert rc_good == 0, "le detecteur doit rester muet (rc=0) sur un carnet propre"
+
+
+def test_tranche25_added_axioms_cliquet_guard_is_wired():
+    """Tranche 25 (#21390) = cliquet `native_decide`/`sorry`/`admit` ajoute
+    dans un diff `*.lean`.
+
+    Contrat : garde NATIF (aucun workflow d'origine), BLOQUANT et ABSORBE
+    (sans `absorbed`, un `blocking=True` ne bloque rien -- incident #19168),
+    base resolue par `{base_ref}` (`origin/<base_ref>` dans le job
+    `Always-on guards`, qui fait `git fetch origin "<base_ref>"` avec un
+    checkout en `fetch-depth: 0`), et **rc=2 (incident d'entree) qui n'est
+    pas lu comme un vert** : `warn_rc` est vide, donc `conclusion_for` rend
+    `failure` et le garde arme `blocking_failed`.
+    """
+    assert len(TRANCHE25) == 1, "la tranche 25 porte 1 seul garde (#21390)"
+    guard = TRANCHE25[0]
+    assert guard.source == FAST_LANE_NATIVE
+    assert guard.blocking, (
+        f"{guard.name} doit bloquer : une ancre ajoutee dans une declaration "
+        "nommee est deja interdite par pr-review-discipline §B"
+    )
+    assert guard.absorbed, (
+        f"{guard.name} doit porter absorbed=True, sans quoi blocking=True ne "
+        "bloque rien (incident #19168)"
+    )
+    assert guard.needs_base, "le garde compare HEAD a la base"
+    assert guard.warn_rc == (), (
+        "warn_rc vide : un rc=2 (base/tete non resolue) doit rester un rouge, "
+        "pas etre lu comme un vert"
+    )
+    assert "**/*.lean" in guard.paths, "le cliquet doit porter sur les .lean modifies"
+    for needle in (
+        "scripts/lean/check_added_axioms_cliquet.py",
+        "scripts/lean/tests/test_check_added_axioms_cliquet.py",
+        "scripts/ci/fast_lane.py",
+        "scripts/ci/fast_lane_registry.py",
+    ):
+        assert needle in guard.paths, f"{needle} doit figurer dans les paths"
+    assert guard.argv[0] == "python"
+    assert "scripts/lean/check_added_axioms_cliquet.py" in guard.argv
+    assert "--base" in guard.argv and "{base_ref}" in guard.argv
+    assert "--head" in guard.argv and "HEAD" in guard.argv
+
+    # Le rc=2 ne doit pas produire un vert : conclusion reelle du moteur.
+    assert fast_lane.conclusion_for(guard, 2) == "failure"
+    assert fast_lane.conclusion_for(guard, 1) == "failure"
+    assert fast_lane.conclusion_for(guard, 0) == "success"
+
+    # La tranche doit etre branchee dans la liste executee par fast_lane.py.
+    root = Path(__file__).resolve().parents[2]
+    source = (root / "scripts" / "ci" / "fast_lane.py").read_text(encoding="utf-8")
+    assert "TRANCHE25" in source, (
+        "TRANCHE25 doit etre importee ET agregee par fast_lane.py"
+    )
+
+
+def test_tranche25_cliquet_detector_tire_sur_une_ancre_nommee_et_rie_tient_sur_un_example(tmp_path):
+    """Controle de bout en bout du detecteur **via sa CLI**, dans les deux
+    sens : une ancre `native_decide` ajoutee dans un `theorem` nomme doit
+    faire sortir rc=1 (rouge), une ancre dans un `example` rc=0 (vert --
+    la pile #18706 ne doit pas rougir), et une base qui ne resout pas rc=2
+    (incident d'entree, fail-closed)."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+
+    def _git(*args):
+        return subprocess.run(
+            ["git", *args], cwd=repo, capture_output=True, text=True,
+            encoding="utf-8", check=True,
+        )
+
+    _git("init", "-q", "-b", "main")
+    _git("config", "user.email", "test@test")
+    _git("config", "user.name", "test")
+    (repo / "Base.lean").write_text(
+        "theorem base_ok : True := by trivial" + chr(10), encoding="utf-8")
+    _git("add", "-A")
+    _git("commit", "-q", "-m", "base")
+
+    detector = (Path(__file__).resolve().parents[2] / "scripts" / "lean"
+                / "check_added_axioms_cliquet.py")
+
+    def _run(base):
+        return subprocess.run(
+            ["python", str(detector), "--base", base, "--head", "HEAD"],
+            cwd=repo, capture_output=True, text=True, encoding="utf-8",
+        ).returncode
+
+    # 1. ancre dans une declaration NOMMEE -> rc=1 (rouge)
+    (repo / "Base.lean").write_text(
+        "theorem base_ok : True := by trivial" + chr(10)
+        + "theoremAdded : True := by native_decide" + chr(10), encoding="utf-8")
+    _git("add", "-A")
+    _git("commit", "-q", "-m", "named anchor")
+    assert _run("HEAD~1") == 1, "une ancre dans un theorem nomme doit rougir"
+
+    # 2. ancre dans un `example` -> rc=0 (vert) : la pile #18706 ne rougit pas
+    (repo / "Base.lean").write_text(
+        "theorem base_ok : True := by trivial" + chr(10)
+        + "example : True := by native_decide" + chr(10), encoding="utf-8")
+    _git("add", "-A")
+    _git("commit", "-q", "-m", "example anchor")
+    assert _run("HEAD~1") == 0, "une ancre dans un example doit rester verte"
+
+    # 3. base qui ne resout pas -> rc=2 (fail-closed, jamais un vert)
+    assert _run("ref-qui-nexiste-pas") == 2, "une base non resolue doit sortir 2"
+
+
+def test_tranche27_absorbe_les_trois_label_posers_advisory():
+    """Tranche 27 (#22209 tranche 1, volet 1a) = les trois advisories dont
+    la payload PR-time est un LABEL, absorbes selon le precedent TRANCHE6
+    (deaccent) : advisory (jamais rouge), iter par fichier change,
+    absorbed=True (nom canonique + conclusion reelle), et le declencheur
+    `pull_request` retire du workflow source dans le meme commit.
+    """
+    assert len(TRANCHE27) == 3, "la tranche 27 porte les trois label-posers"
+    by_source = {g.source: g for g in TRANCHE27}
+    assert set(by_source) == {
+        "consecutive-code-cells-advisory.yml",
+        "mermaid-fill-color-advisory.yml",
+        "markdown-table-guard.yml",
+    }
+    for guard in TRANCHE27:
+        assert not guard.blocking, (
+            f"{guard.name} doit rester advisory : le workflow d'origine ne "
+            "rougissait JAMAIS la PR, l'absorption ne doit pas la durcir"
+        )
+        assert guard.absorbed, (
+            f"{guard.name} doit porter absorbed=True : sans lui, le job "
+            "always-on rendrait une conclusion neutre sous le prefixe d'ombre"
+        )
+        assert guard.iterates_paths, "forme per-PR : iter par fichier change"
+        assert guard.argv[0] == "python" and "--json" in guard.argv, (
+            "la payload absorbee est le JSON du detecteur, comme le workflow "
+            "d'origine qui lisait son verdict dans le JSON"
+        )
+        assert "--check" not in guard.argv and "--fail-on-findings" not in guard.argv, (
+            "pas de drapeau rouge : le workflow d'origine n'en portait pas "
+            "(toujours vert, label = payload)"
+        )
+        assert "{changed_paths}" in guard.argv
+
+    # Identite byte-a-byte : guard.name == ligne `name:` du job du workflow
+    # source (contrat check_absorbed_check_run_identity.py, #12175).
+    root = Path(__file__).resolve().parents[2]
+    for guard in TRANCHE27:
+        wf = (root / ".github" / "workflows" / guard.source).read_text(encoding="utf-8")
+        needle = f'name: "{guard.name}"'
+        assert needle in wf, (
+            f"{guard.source} doit porter byte-identique la ligne {needle!r} "
+            "(contrat d'identite des gardes absorbees)"
+        )
+        # Le trigger pull_request doit avoir ete retire du workflow source :
+        # sinon la PR payerait la mesure DEUX fois (workflow + fast lane).
+        on_block = wf.split("\non:\n", 1)[1].split("\n\npermissions:", 1)[0]
+        assert "pull_request:" not in on_block, (
+            f"{guard.source} : le declencheur pull_request doit etre retire "
+            "dans le meme commit que l'absorption (doublon de mesure sinon)"
+        )
+
+    # warn_rc : mermaid (rc=2 = cible introuvable) et table (rc=2 = rien a
+    # scanner) coercent ce rc en succes ; consecutive n'a pas de rc non nul.
+    assert by_source["mermaid-fill-color-advisory.yml"].warn_rc == (2,)
+    assert by_source["markdown-table-guard.yml"].warn_rc == (2,)
+    assert by_source["consecutive-code-cells-advisory.yml"].warn_rc == ()
+
+    # pre_argv : seul mermaid porte le self-test (le workflow d'origine en
+    # avait un step -- lecon #11685).
+    mermaid_pre = by_source["mermaid-fill-color-advisory.yml"].pre_argv
+    assert mermaid_pre and mermaid_pre[-1] == "--self-test", (
+        "pre_argv mermaid = self-test du detecteur"
+    )
+    for src in ("consecutive-code-cells-advisory.yml", "markdown-table-guard.yml"):
+        assert not by_source[src].pre_argv, f"{src} n'avait pas de self-test"
+
+    # Semantique advisory : rc=0 -> success ; un rc de panne (hors warn_rc)
+    # -> neutral, JAMAIS failure.
+    for guard in TRANCHE27:
+        assert fast_lane.conclusion_for(guard, 0) == "success"
+        assert fast_lane.conclusion_for(guard, 3) == "neutral", (
+            "un advisory ne rougit pas la PR, meme sur un rc de panne"
+        )
+
+    # La tranche doit etre branchee dans la liste executee par fast_lane.py.
+    source = (root / "scripts" / "ci" / "fast_lane.py").read_text(encoding="utf-8")
+    assert "TRANCHE27" in source, "TRANCHE27 doit etre importee ET agregee"
+
+    # La selection declenche sur les arbres d'origine, et le filtre
+    # d'iteration ne passe PAS les fichiers de cablage au detecteur
+    # (incident #13220).
+    ccc = by_source["consecutive-code-cells-advisory.yml"]
+    assert fast_lane.guard_applies(ccc, ["MyIA.AI.Notebooks/Search/a.ipynb"])
+    assert not any(
+        fast_lane.path_matches(
+            ".github/workflows/consecutive-code-cells-advisory.yml", p)
+        for p in ccc.iterate_paths
+    ), "le workflow lui-meme ne doit pas etre passe au detecteur"
+
+
+def test_tranche27_detecteurs_tirent_via_la_forme_argv_de_la_garde(tmp_path):
+    """Controle de bout en bout des TROIS detecteurs via la forme argv exacte
+    enregistree dans TRANCHE27 (controle positif : chaque detecteur doit
+    tirer sur un temoin fautif -- un detecteur qu'on ne peut pas montrer en
+    train de tirer est indiscernable d'un detecteur debranche, lecon #11685).
+    """
+    import json as _json
+    import subprocess as _sp
+
+    root = Path(__file__).resolve().parents[2]
+
+    def _det(script: str, *extra: str) -> _sp.CompletedProcess:
+        return _sp.run(
+            [sys.executable, f"scripts/notebook_tools/{script}", "--json", *extra],
+            cwd=root, capture_output=True, text=True, encoding="utf-8",
+        )
+
+    # 1. consecutive-code-cells : la forme argv s'execute, rend rc=0 et un
+    # JSON parseable avec summary (la detection elle-meme est couverte par
+    # les tests propres du detecteur, corpus-dependante).
+    nb = {
+        "cells": [
+            {"cell_type": "code", "source": "print(1)", "metadata": {},
+             "outputs": [], "execution_count": 1},
+            {"cell_type": "code", "source": "print(2)", "metadata": {},
+             "outputs": [], "execution_count": 2},
+        ],
+        "metadata": {}, "nbformat": 4, "nbformat_minor": 5,
+    }
+    f = tmp_path / "T_tranche27.ipynb"
+    f.write_text(_json.dumps(nb), encoding="utf-8")
+    proc = _det("detect_consecutive_code_cells.py", str(f))
+    assert proc.returncode == 0, proc.stderr
+    assert "summary" in _json.loads(proc.stdout)
+
+    # 2. mermaid : pre_argv --self-test d'abord, puis temoin fautif
+    # (fill: sans color:) -> total_hits >= 1 en restant rc=0.
+    proc = _sp.run(
+        [sys.executable,
+         "scripts/notebook_tools/detect_mermaid_fill_without_color.py",
+         "--self-test"],
+        cwd=root, capture_output=True, text=True, encoding="utf-8")
+    assert proc.returncode == 0, "self-test mermaid (pre_argv) doit passer"
+    bad = tmp_path / "bad_mermaid.md"
+    bad.write_text("```mermaid\nflowchart TD\n  A[Question] --> B{Oui}\n"
+                   "  style A fill:#f9f\n```\n", encoding="utf-8")
+    proc = _sp.run(
+        [sys.executable,
+         "scripts/notebook_tools/detect_mermaid_fill_without_color.py",
+         "--json", "--root", ".", str(bad)],
+        cwd=root, capture_output=True, text=True, encoding="utf-8")
+    assert proc.returncode == 0, "advisory : toujours vert (payload = JSON)"
+    payload = _json.loads(proc.stdout)
+    assert payload["total_hits"] >= 1, "le temoin fill:-sans-color: doit tirer"
+
+    # 3. table scan : temoin NO_SEP (lignes pipe sans separateur) ->
+    # total_findings >= 1, forme argv = --json <path>.
+    tbl = tmp_path / "table_controle.md"
+    tbl.write_text("| a | b |\n| c | d |\n| e | f |\n", encoding="utf-8")
+    proc = _det("scan_md_table_syntax.py", str(tbl))
+    assert proc.returncode == 0, proc.stderr
+    assert _json.loads(proc.stdout)["total_findings"] >= 1, (
+        "le temoin NO_SEP doit tirer"
     )

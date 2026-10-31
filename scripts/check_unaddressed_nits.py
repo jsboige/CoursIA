@@ -98,6 +98,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 import unicodedata
 from datetime import datetime, timezone
 
@@ -2985,9 +2986,18 @@ def _block_emitted(body: str) -> bool:
     m_tagged = HOLD_TAGGED_HEAD.match(head)
     if m_tagged and _hold_head_is_emission(head, m_tagged.end()):
         return True
+    # #22245 — la recherche porte sur la CASSE DE LA SOURCE, pas sur une
+    # version majusculee. `uhead = head.upper()` faisait matcher le mot
+    # ordinaire : « Cause du blocage identifiee — ... » (c.6365851694 sur
+    # #21252, un DIAGNOSTIC de la lane sur son propre rouge) etait classe
+    # BLOCK. La casse est deja le discriminant que ce module applique a HOLD
+    # (« CASSE : HOLD majuscule, la forme dans laquelle le protocole et les
+    # posts l'emettent », cf HOLD_HEAD) ; l'appliquer aussi a BLOCAGE retire
+    # la classe entiere, sans une garde de tournure de plus — la liste des
+    # tournures francaises n'est pas close (option 2 de l'issue, refusee).
     for marker in ("BLOCAGE", "BLOCK"):
         pos = 0
-        while (i := uhead.find(marker, pos)) != -1:
+        while (i := head.find(marker, pos)) != -1:
             before = head[i - 1] if i > 0 else ""
             after = head[i + len(marker)] if i + len(marker) < len(head) else ""
             if before.isalnum() or before == "_" or before == "[" or after.isalnum() or after == "_":
@@ -3352,9 +3362,65 @@ def ts(value: str | None) -> datetime | None:
     return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
 
+# #19643 (residu) -- borne PAR APPEL sur chaque `gh` de l'organe. Mesure de
+# l'issue (commentaire 2026-10-09T09:20:40Z) : 195 appels sans borne sur 200,
+# environ 0,75 s par appel. 90 s est un choix, pas la queue mesuree : large
+# pour un `gh api --paginate` sur une PR chargee, sous le timeout des tools
+# shell des agents (~115-120 s). Une expiration remonte (TimeoutExpired),
+# jamais avalee. La borne ne couvre pas le total de la chaine B.0.
+GH_CALL_TIMEOUT_S = 90
+
+
+# #21882 (Option C) -- budget CUMULATIF de la passe nits. `GH_CALL_TIMEOUT_S`
+# borne un APPEL ; le cout mesure (issue, 2026-10-21) est la SOMME : 284
+# processus `gh` = 211 s pour 41 PRs, 101 % en sous-processus. Une borne par
+# appel ne ramene pas la chaine sous le budget. Ce budget de passe, verifie
+# avant chaque `gh_json`, rend les PRs non evaluees ABSENTES (semantique
+# #18829 : "absente = non evaluee", pas "evaluee claire") au lieu de laisser
+# le picker faire deriver la flotte entiere. C'est le filet de securite de
+# l'issue : il BORNE le pire cas (nombre de PRs croissant, reseau lent) sans
+# pretendre rendre la passe rapide -- c'est le role de l'Option A (parallelisme)
+# / B (requete GraphQL unique), differes tant que `pick_idle_grain.py` est en
+# contention 4 PRs ouvertes. Configurable (env), defaut 300 s (seuil de
+# l'issue).
+NITS_PASS_BUDGET_S = float(os.environ.get("NITS_PASS_BUDGET_S", "300"))
+# Deadline absolue (monotone) de la passe ; None tant que le premier `gh_json`
+# de la passe ne l'a pas arme. L'armement est idempotent (jamais sur-ecrit).
+_NITS_PASS_DEADLINE: float | None = None
+
+
+class NitsBudgetExhausted(Exception):
+    """#21882 (Option C) : la passe nits a depasse son budget de temps.
+
+    Le picker rend les PRs restantes ABSENTES (non evaluees, #18829) ; le
+    gate / l'audit standalone fail-closed (rc=1). Aucun verdict "evaluee
+    claire" n'est jamais fabrique a partir d'un budget depasse.
+    """
+
+
+def _nits_budget_exhausted() -> bool:
+    """Arme le budget de passe au premier `gh_json`, verifie au suivant.
+
+    Monotone et idempotent a l'armement : la premiere appel fixe la deadline a
+    `now + NITS_PASS_BUDGET_S` ; tout appel suivant rend True une fois la
+    deadline franchie.
+    """
+    global _NITS_PASS_DEADLINE
+    now = time.monotonic()
+    if _NITS_PASS_DEADLINE is None:
+        _NITS_PASS_DEADLINE = now + NITS_PASS_BUDGET_S
+        return False
+    return now > _NITS_PASS_DEADLINE
+
+
 def gh_json(args: list[str]) -> object:
+    if _nits_budget_exhausted():
+        raise NitsBudgetExhausted(
+            f"budget de passe nits de {NITS_PASS_BUDGET_S:.0f} s depasse -- "
+            "PR rendue absente (non evaluee, #18829), #21882 Option C")
     out = subprocess.run(
-        ["gh", *args], capture_output=True, text=True, encoding="utf-8", check=True
+        ["gh", *args], capture_output=True, text=True, encoding="utf-8", check=True,
+        timeout=GH_CALL_TIMEOUT_S,
     ).stdout
     return json.loads(out)
 
@@ -3405,6 +3471,10 @@ def _gh_fetch_issue(n: int) -> dict | None:
     if n not in _ISSUE_INFO_CACHE:
         try:
             d = gh_json(["api", "repos/" + REPO + "/issues/" + str(n)])
+        except subprocess.TimeoutExpired:
+            # #19643 (residu) : une expiration n'est pas « numero qui n'est pas
+            # une issue » -- elle ne doit pas etre mise en cache comme None.
+            raise
         except Exception:
             _ISSUE_INFO_CACHE[n] = None
             return None
@@ -3844,40 +3914,63 @@ def _resolve_absent_sha_state(data: dict, cap: int = 5) -> dict[str, dict]:
 # carte vide, arbre tronque, statut non reconnu) y retombe.
 
 
-def _rebase_preserved_by_path(rewound_files, head_blobs) -> bool:
+# #20066 -- trois etats, pas deux. « blob different » et « aucun blob
+# comparable » appellent le MEME refus, mais pas la meme lecture : le premier
+# dit que le travail a bouge, le second dit seulement que l'organe n'a pas pu
+# regarder. Les confondre fait affirmer a l'organe une comparaison qu'il n'a
+# pas faite.
+_BLOB_PRESERVED = "preserved"
+_BLOB_DIFFERS = "differs"
+_BLOB_UNCOMPARABLE = "uncomparable"
+
+
+def _rebase_blob_state(rewound_files, head_blobs) -> str:
     """#15973 : chaque chemin touche par le commit rembobine doit se
     retrouver dans la tete, byte pour byte -- modification presente au meme
     blob, deletion toujours absente, rename installe au nouveau chemin et
-    parti de l'ancien. Fail-closed sur toute donnee manquante ou statut non
-    reconnu : un organe de merge-gate ne devient jamais permissif sur un
-    doute, c'est le refus #15556 qui reste la reponse par defaut.
+    parti de l'ancien.
+
+    Rend `_BLOB_PRESERVED` (identite prouvee), `_BLOB_DIFFERS` (au moins un
+    blob compare et different) ou `_BLOB_UNCOMPARABLE` (aucun blob compare :
+    donnee absente, carte vide, liste tronquee, statut inconnu). Fail-closed
+    dans les trois cas autres que `preserved` : un organe de merge-gate ne
+    devient jamais permissif sur un doute, c'est le refus #15556 qui reste la
+    reponse par defaut. #20066 : le troisieme etat existe pour que le LIBELLE
+    du refus n'annonce jamais une mesure qui n'a pas eu lieu.
     """
     if not rewound_files or not head_blobs:
-        return False
+        return _BLOB_UNCOMPARABLE
     # L'API commits plafonne `files` a 300 entrees sans drapeau de
     # troncature : au-dela, la verification ne porterait qu'un sous-ensemble
     # -- une identite demi-prouvee est un fail-open, pas une preuve.
     if len(rewound_files) >= 300:
-        return False
+        return _BLOB_UNCOMPARABLE
     for filename, blob, status, previous in rewound_files:
         if not filename or not blob:
-            return False
+            return _BLOB_UNCOMPARABLE
         if status == "removed":
             if filename in head_blobs:
-                return False
+                return _BLOB_DIFFERS
             continue
         if status == "renamed":
             if not previous or previous in head_blobs:
-                return False
+                return _BLOB_DIFFERS
             if head_blobs.get(filename) != blob:
-                return False
+                return _BLOB_DIFFERS
             continue
         if status in ("added", "modified", "changed", "copied"):
             if head_blobs.get(filename) != blob:
-                return False
+                return _BLOB_DIFFERS
             continue
-        return False  # statut inconnu : refus conservateur
-    return True
+        return _BLOB_UNCOMPARABLE  # statut inconnu : refus conservateur
+    return _BLOB_PRESERVED
+
+
+def _rebase_preserved_by_path(rewound_files, head_blobs) -> bool:
+    """Contrat booleen de #15973, conserve : `True` seulement si l'identite
+    par chemin est PROUVEE. Les deux etats non prouvables (`differs`,
+    `uncomparable`) rendent `False`, comme avant #20066."""
+    return _rebase_blob_state(rewound_files, head_blobs) == _BLOB_PRESERVED
 
 
 def _pr_head_oid(data: dict) -> str:
@@ -4369,6 +4462,10 @@ def improper_dismissals(pr: int) -> set[str]:
     try:
         reviews = gh_json(["api", f"repos/{REPO}/pulls/{pr}/reviews", "--paginate"])
         events = gh_json(["api", f"repos/{REPO}/issues/{pr}/timeline", "--paginate"])
+    except subprocess.TimeoutExpired:
+        # #19643 (residu) : un ensemble vide lirait la reserve d'un tiers comme
+        # levee. Une expiration remonte jusqu'au verdict non-CLEAN de main().
+        raise
     except Exception:
         return set()  # timeline illisible : on retombe sur l'ancien comportement
     if not isinstance(reviews, list) or not isinstance(events, list):
@@ -5012,6 +5109,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         for (t, lifter, lift_body) in explicit_lifts:
             refused = None
             refused_known_change = False
+            refused_blob_state = None
             warned = None
             artifact = None
             for sha in sorted(_cited_shas(lift_body)):
@@ -5044,11 +5142,13 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
                     # la tete). Fail-closed : sans donnees ou sans identite,
                     # le refus #15556 reste la reponse.
                     sha_files = rewound_files_map.get(sha) or []
-                    if _rebase_preserved_by_path(sha_files, head_blobs):
+                    blob_state = _rebase_blob_state(sha_files, head_blobs)
+                    if blob_state == _BLOB_PRESERVED:
                         if artifact is None:
                             artifact = (sha, "rebase_preserved")
                         continue
                     refused = sha
+                    refused_blob_state = blob_state
                     if tree and head_tree:
                         refused_known_change = True
                     break
@@ -5056,7 +5156,8 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
             if refused:
                 voided_lifts.append(
                     {"author": lifter, "at": t.isoformat(), "sha": refused,
-                     "tree_differs": refused_known_change})
+                     "tree_differs": refused_known_change,
+                     "blob_state": refused_blob_state})
             else:
                 kept_lifts.append((t, lifter, lift_body))
                 if artifact:
@@ -5518,9 +5619,18 @@ def _print_sha_notes(result: dict) -> None:
               f"rembobiné par un push muet ({why}) — preuve conservée, "
               f"non bloquant")
     for v in result.get("voided_lifts") or []:
-        detail = (" — l'arbre DIFFÈRE de la tête : vraie réserve à reposer"
-                  if v.get("tree_differs")
-                  else " — arbre non comparable, refus conservateur")
+        # #20066 -- `tree_differs` dit que les deux arbres sont connus et
+        # differents ; il ne dit pas qu'un BLOB a ete compare. Quand
+        # `sha_files` est vide (pas d'entree pour ce SHA), ou la carte de la
+        # tete vide, `_rebase_blob_state` rend `uncomparable` : le refus est
+        # le meme, le libelle doit dire qu'aucun blob n'a ete regarde.
+        if not v.get("tree_differs"):
+            detail = " — arbre non comparable, refus conservateur"
+        elif v.get("blob_state") == _BLOB_UNCOMPARABLE:
+            detail = (" — l'arbre DIFFÈRE de la tête : aucun blob comparable, "
+                      "refus conservateur")
+        else:
+            detail = (" — l'arbre DIFFÈRE de la tête : blob modifié depuis la levée, fond non vérifié")
         print(f"  [!] NON LEVE — levee de {v['author']} à {v['at']} : cite "
               f"{v['sha']}, absent des commits de la PR (résolu côté serveur, "
               f"mais rembobiné par un push ultérieur){detail}")
@@ -5543,13 +5653,22 @@ def analyse_pr(pr: int) -> dict:
     assemblage : ce qui diverge ici casse le merge-gate lui-meme et devient
     visible immediatement.
     """
-    data = gh_json(["pr", "view", str(pr), "--repo", REPO, "--json", FIELDS])
-    # #13639 + #15556 : resolution serveur du contexte SHA (messages,
-    # arbres rembobines, arbre de tete), AVANT analyse (qui reste pure).
-    _attach_absent_sha_context(data)
-    return analyse(data, review_threads(pr), datetime.now(timezone.utc),
-                   issue_info=gh_issue_info,
-                   dismissed_improperly=improper_dismissals(pr))
+    try:
+        data = gh_json(["pr", "view", str(pr), "--repo", REPO, "--json", FIELDS])
+        # #13639 + #15556 : resolution serveur du contexte SHA (messages,
+        # arbres rembobines, arbre de tete), AVANT analyse (qui reste pure).
+        _attach_absent_sha_context(data)
+        return analyse(data, review_threads(pr), datetime.now(timezone.utc),
+                       issue_info=gh_issue_info,
+                       dismissed_improperly=improper_dismissals(pr))
+    except NitsBudgetExhausted:
+        # #21882 (Option C) : budget de passe depasse. La PR est rendue ABSENTE
+        # (non evaluee, #18829) : `blocked` faux, aucun point. Le picker la lit
+        # comme absente (.get("blocking")/["blocked"] -> vide/faux) et ne la
+        # met pas dans la file de reparation. Jamais un verdict "claire".
+        return {"pr": pr, "blocked": False, "blocking": [],
+                "unevaluated": [], "unevaluated_total": 0,
+                "budget_exhausted": True}
 
 
 def _ensure_utf8_stdout() -> None:
@@ -5668,11 +5787,29 @@ def main() -> int:
     ap.add_argument("--search", help="filtre gh (ex: 'merged:2026-07-01..2026-07-15')")
     ap.add_argument("--json", action="store_true", help="sortie machine (mode gate)")
     args = ap.parse_args()
-    if args.audit:
-        return audit(args.limit, args.search)
-    if args.pr is None:
-        ap.error("fournir un numero de PR, ou --audit")
-    return gate(args.pr, args.json)
+    try:
+        if args.audit:
+            return audit(args.limit, args.search)
+        if args.pr is None:
+            ap.error("fournir un numero de PR, ou --audit")
+        return gate(args.pr, args.json)
+    except subprocess.TimeoutExpired as exc:
+        # #19643 (residu) : gh n'a pas repondu dans sa borne -- aucun verdict.
+        # Non-CLEAN (rc=1, fail-closed), jamais un rc=0 ni une trace nue.
+        # ASCII seul : stderr peut etre une console cp1252 (cf #16103).
+        print(f"NON MESURE : gh n'a pas repondu en {exc.timeout}s "
+              f"({' '.join(map(str, exc.cmd))[:120]}) -- aucun verdict, rc=1 (fail-closed)",
+              file=sys.stderr)
+        return 1
+    except NitsBudgetExhausted as exc:
+        # #21882 (Option C) : budget de passe nits depasse (gate/audit
+        # standalone). Fail-closed : rc=1, jamais un rc=0 "claire" fabrique.
+        # Borde aussi un `--audit` de grande taille (arret au budget au lieu
+        # de deriver pendant des dizaines de minutes).
+        print(f"NON MESURE : budget de passe nits de {NITS_PASS_BUDGET_S:.0f} s "
+              f"depasse ({exc}) -- aucun verdict, rc=1 (fail-closed)",
+              file=sys.stderr)
+        return 1
 
 
 if __name__ == "__main__":

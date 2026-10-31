@@ -65,7 +65,8 @@ Ce module couvre les fondamentaux du traitement audio par IA : reconnaissance vo
 ### API Keys
 ```bash
 # Dans GenAI/.env
-OPENAI_API_KEY=sk-...
+OPENAI_DIRECT_API_KEY=sk-...   # 01-1 (TTS) : clé OpenAI directe, l'API TTS ne passe pas par OpenRouter (à défaut, le carnet lit OPENAI_API_KEY)
+OPENAI_API_KEY=sk-...          # 01-2 (Whisper STT) ; 01-4 et 01-5 l'utilisent en option pour comparer avec l'API
 ```
 
 ### Dépendances

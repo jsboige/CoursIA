@@ -153,21 +153,66 @@ PR_BODY_OK = (
     "Grain: MED/docs -- lane myia-po-2026:CoursIA -- prev: MED/tooling #999\n"
 )
 
+# --- la jambe de body (#22748) ----------------------------------------------
+# Les organes de body ont leur propre workflow depuis #22331/#22333, et
+# l'organe d'adjacence y tourne aussi. Le sweep lisait les jambes resolues
+# dans `always-on-guards.yml` seulement : cette jambe-la n'y est pas declaree,
+# et un filtre l'y excluait en plus. Un verdict G-VAR-3 perime tombe sur elle
+# n'etait donc jamais rafraichi (#22748, ~12 h rouge).
+
+BODY_JOB_NAME = "Always-on guards -- body"
+BODY_JOB_URL = (
+    "https://github.com/jsboige/CoursIA/actions/runs/40366622667/job/122038953042")
+BODY_ANNOTATIONS_API = (
+    "api", "repos/jsboige/CoursIA/check-runs/122038953042/annotations")
+# Sentinelle : « on ne declare pas l'appel d'annotations » (l'organe ne doit
+# pas aller le chercher). `None` veut dire « l'appel echoue ».
+_UNSET = object()
+
+
+def _check_row(name: str, conclusion: str, url: str = "https://x") -> str:
+    return "\t".join([name, conclusion, "0s", url])
+
 
 def _setup_fake_for_pr(fake_run: FakeRun, pr: int, body: str,
-                        always_on_failing: bool) -> None:
-    """Configure FakeRun for one PR: body, checks, comments."""
+                        always_on_failing: bool,
+                        body_conclusion: str | None = None,
+                        bodys_annotations: list[str] | None | object = _UNSET):
+    """Configure FakeRun for one PR: body, checks, comments.
+
+    `body_conclusion` pose la jambe `Always-on guards -- body` a la
+    conclusion donnee (None = absente de la sortie `gh pr checks`) ;
+    `bodys_annotations` declare ce que rend l'API d'annotations de cette
+    jambe (`_UNSET` = on ne l'appelle pas, `None` = appel en echec).
+
+    `always_on_failing` ne pilote plus que la jambe de CONTENU : la jambe de
+    body est decidee par ses annotations (#22748).
+    """
     fake_run.specs[("pr", "view", str(pr), "--json", "body")] = (
         0, json.dumps({"body": body}), "")
     fake_run.specs[("pr", "view", str(pr), "--json", "comments",
                     "--jq")] = (
         0, "[]", "")
-    checks = [
-        ["Always-on guards -- 13 organes, 1 checkout",
-         "fail" if always_on_failing else "success", "0s", "https://x"],
+    rows = [
+        # Les noms sont ceux que l'organe RESOUT dans le workflow (#22403) :
+        # une fixture qui reecrirait le nom en dur reproduirait exactement le
+        # defaut corrige -- elle resterait verte sur un workflow renomme.
+        _check_row(name, "fail" if always_on_failing else "success")
+        for name in rsa.content_guard_job_names()
     ]
-    checks_text = "\n".join("\t".join(row) for row in checks) + "\n"
+    if body_conclusion is not None:
+        rows.append(_check_row(BODY_JOB_NAME, body_conclusion, BODY_JOB_URL))
+    checks_text = "\n".join(rows) + "\n"
     fake_run.specs[("pr", "checks", str(pr))] = (0, checks_text, "")
+    if bodys_annotations is not _UNSET:
+        if bodys_annotations is None:
+            # `gh api` en echec (404/quota) : l'attribution est alors
+            # impossible, et le contrat est de ne RIEN ecrire.
+            fake_run.specs[BODY_ANNOTATIONS_API] = (
+                1, "", "gh: Not Found (HTTP 404)")
+        else:
+            fake_run.specs[BODY_ANNOTATIONS_API] = (
+                0, json.dumps([{"message": m} for m in bodys_annotations]), "")
     # `gh pr edit ... --body-file -` (the edit call): accept any input.
     fake_run.specs[("pr", "edit", str(pr), "--body-file", "-")] = (
         0, "", "")
@@ -295,3 +340,385 @@ def test_main_exit_1_on_real_failing(fake_run, capsys, monkeypatch):
     monkeypatch.setattr(rsa, "fetch_merged_window", lambda days=21: [])
     rc = rsa.main(["--pr", "999", "--dry-run"])
     assert rc == 1
+
+
+# --- #22403 : le nom du job se lit dans le workflow, il ne se code pas ------
+
+
+def test_content_guard_job_names_are_read_from_the_workflow():
+    """Le nom resolu existe vraiment dans `always-on-guards.yml`.
+
+    Defaut fondateur (#22403) : l'organe cherchait `-- 13 organes` quand le
+    job s'appelait `-- 16 organes`. Le predicat « le job est ROUGE » ne
+    pouvait jamais etre vrai, l'organe se taisait, et le silence se lisait
+    comme « rien a rafraichir ». Ce test rougit au prochain renommage.
+    """
+    import yaml
+
+    names = rsa.content_guard_job_names()
+    assert names, "aucun job Always-on guards resolu -- l'organe serait muet"
+
+    workflow = Path(rsa.__file__).resolve().parents[2] / (
+        ".github/workflows/always-on-guards.yml")
+    data = yaml.safe_load(workflow.read_text(encoding="utf-8")) or {}
+    declared = {
+        (job or {}).get("name")
+        for job in (data.get("jobs") or {}).values()
+    }
+    for name in names:
+        assert name in declared, (
+            f"le nom resolu {name!r} n'est declare par aucun job de "
+            f"{workflow.name} -- l'organe mesure un check qui n'existe pas")
+
+
+def test_content_guard_job_names_follow_a_rename(tmp_path):
+    """Un workflow renomme est suivi : la resolution lit le fichier, pas une constante.
+
+    Le job de body partage le prefixe et doit rester EXCLU de la resolution.
+    """
+    wf = tmp_path / "always-on-guards.yml"
+    wf.write_text(
+        "jobs:\n"
+        "  guards:\n"
+        "    name: 'Always-on guards -- 21 organes, 1 checkout'\n"
+        "  body:\n"
+        "    name: 'Always-on guards -- body'\n",
+        encoding="utf-8")
+    assert rsa.content_guard_job_names(wf) == [
+        "Always-on guards -- 21 organes, 1 checkout",
+    ]
+
+
+def test_content_guard_job_names_refuses_an_empty_resolution(tmp_path):
+    """Aucun job correspondant -> RuntimeError, jamais un silence complaisant."""
+    wf = tmp_path / "always-on-guards.yml"
+    wf.write_text("jobs:\n  guards:\n    name: 'Other guard'\n",
+                  encoding="utf-8")
+    with pytest.raises(RuntimeError, match="refuse de mesurer"):
+        rsa.content_guard_job_names(wf)
+
+
+def test_is_failing_ignores_an_unattributed_body_job_red(fake_run):
+    """Une jambe de body rouge SANS attribution d'adjacence ne compte pas.
+
+    Les deux jobs partagent le prefixe `Always-on guards` : un match par
+    sous-chaine sur `gh pr checks` les fusionnerait, et l'organe toucherait
+    le body d'une PR pour un rouge qui ne concerne pas l'adjacence. Ici les
+    annotations sont illisibles (aucune spec) : le contrat est de ne pas
+    attribuer -- donc de ne pas ecrire.
+    """
+    _setup_fake_for_pr(fake_run, 4242, PR_BODY_OK, always_on_failing=False,
+                       body_conclusion="fail")
+    assert rsa.is_always_on_guards_failing(4242) is False
+
+
+# --- #22748 : la jambe de body porte l'organe d'adjacence -------------------
+
+
+def test_body_aggregate_really_runs_the_adjacency_organ():
+    """La premisse du correctif : l'adjacence tourne dans le job de body.
+
+    Si `scripts/ci/always_on_body_organs.sh` cessait d'appeler
+    `organ_adjacency`, ouvrir le rafraichissement a cette jambe n'aurait plus
+    d'objet -- et l'attribution par annotation deviendrait un faux signal.
+    Ce test rougit a la disparition de l'organe, pas a son renommage interne.
+    """
+    script = (Path(rsa.__file__).resolve().parents[2]
+              / "scripts" / "ci" / "always_on_body_organs.sh")
+    text = script.read_text(encoding="utf-8")
+    assert re.search(r"^\s*adjacency\)\s*organ_adjacency\s*;;", text, re.M), (
+        "l'organe d'adjacence n'est plus dispatché par le job de body : "
+        "l'attribution par annotation n'a plus de premisse")
+
+
+def test_body_job_names_are_read_from_its_own_workflow():
+    """La jambe de body se resout dans SON fichier, pas dans celui du contenu.
+
+    Defaut fondateur (#22748) : `content_guard_job_names()` ne lit que
+    `always-on-guards.yml`, qui ne declare pas ce job. La jambe etait donc
+    structurellement invisible -- et un filtre par marqueur `body` l'excluait
+    en plus si elle y avait ete.
+    """
+    import yaml
+
+    names = rsa.body_guard_job_names()
+    assert names, "aucun job de body resolu -- l'organe serait muet"
+
+    workflow = (Path(rsa.__file__).resolve().parents[2]
+                / ".github" / "workflows" / rsa.BODY_WORKFLOW_NAME)
+    data = yaml.safe_load(workflow.read_text(encoding="utf-8")) or {}
+    declared = {
+        (job or {}).get("name")
+        for job in (data.get("jobs") or {}).values()
+    }
+    for name in names:
+        assert name in declared, (
+            f"le nom resolu {name!r} n'est declare par aucun job de "
+            f"{workflow.name} -- l'organe mesure un check qui n'existe pas")
+    # Et il ne sort pas de la jambe de contenu : la distinction des deux
+    # jambes est portee par `adjacency_leg_state`, pas par un filtre unique.
+    assert not set(names) & set(rsa.content_guard_job_names())
+
+
+def test_body_job_names_follow_a_rename(tmp_path):
+    """La resolution lit le fichier, jamais une constante."""
+    wf = tmp_path / "always-on-guards-body.yml"
+    wf.write_text(
+        "jobs:\n"
+        "  body:\n"
+        "    name: 'Always-on guards -- body, 5 organes'\n"
+        "  other:\n"
+        "    name: 'Some other workflow'\n",
+        encoding="utf-8")
+    assert rsa.body_guard_job_names(wf) == [
+        "Always-on guards -- body, 5 organes",
+    ]
+
+
+def test_body_job_names_refuse_an_empty_resolution(tmp_path):
+    """Aucun job correspondant -> RuntimeError, jamais un silence complaisant."""
+    wf = tmp_path / "always-on-guards-body.yml"
+    wf.write_text("jobs:\n  other:\n    name: 'Not a guard'\n",
+                  encoding="utf-8")
+    with pytest.raises(RuntimeError, match="refuse de mesurer"):
+        rsa.body_guard_job_names(wf)
+
+
+def test_body_job_red_by_adjacency_is_refreshed(fake_run):
+    """Verdict G-VAR-3 perime sur la jambe BODY -> le sweep rafraichit (#22748).
+
+    Avant le correctif : `would_refresh: false` (la jambe n'etait meme pas
+    lue). Apres : la banniere d'agregat nomme `adjacency`, la simulation
+    passe contre la sequence courante, le marqueur est pose.
+    """
+    _setup_fake_for_pr(
+        fake_run, 22748, PR_BODY_OK, always_on_failing=False,
+        body_conclusion="fail",
+        bodys_annotations=[
+            "Organes de body bloquants en echec : adjacency",
+        ])
+    merged_window = [
+        {"number": 999,
+         "body": "Grain: MED/tooling -- lane myia-po-2026:CoursIA -- prev: MED/guard #998\n",
+         "mergedAt": "2026-09-01T07:00:00Z"},
+    ]
+    result = rsa.refresh_one(22748, dry_run=True, merged_window=merged_window)
+    assert result["guard_leg_cause"] == "body-adjacency"
+    assert result["always_on_failing"] is True
+    assert result["guard_pass"] is True
+    assert result["would_refresh"] is True
+    assert result["refreshed"] is True  # dry-run, virtuel
+
+
+def test_body_job_red_by_organ_marker_alone_is_refreshed(fake_run):
+    """Second temoin : `::error::G-VAR-3 ...`, emis par l'organe lui-meme.
+
+    Une jambe coupee apres l'organe mais avant l'agregat ne porte pas la
+    banniere ; l'annotation de l'organe suffit, et elle est tout aussi
+    specifique (`G-VAR-3` n'apparait dans aucun autre organe de body).
+    """
+    _setup_fake_for_pr(
+        fake_run, 22751, PR_BODY_OK, always_on_failing=False,
+        body_conclusion="fail",
+        bodys_annotations=[
+            "G-VAR-3 LIGHT-genre adjacency [prev: #999 tooling via "
+            "merged-sequence ; sequence de merges au 2026-09-01T07:00:00Z]: "
+            "LIGHT/genre repeats the predecessor's genre",
+        ])
+    merged_window = [
+        {"number": 999,
+         "body": "Grain: MED/tooling -- lane myia-po-2026:CoursIA -- prev: MED/guard #998\n",
+         "mergedAt": "2026-09-01T07:00:00Z"},
+    ]
+    result = rsa.refresh_one(22751, dry_run=True, merged_window=merged_window)
+    assert result["guard_leg_cause"] == "body-adjacency"
+    assert result["would_refresh"] is True
+
+
+def test_body_job_red_by_close_keyword_is_not_refreshed(fake_run):
+    """NON-REGRESSION : un rouge de body d'une AUTRE cause n'est pas rafraichi.
+
+    La jambe de body porte cinq organes. `close_keyword` rougit cette jambe
+    alors que l'adjacence, elle, passerait : editer le corps ne leverait rien,
+    remplirait la file `cancel-in-progress` (#22331) et le sweep rapporterait
+    un refresh imaginaire.
+    """
+    _setup_fake_for_pr(
+        fake_run, 22749, PR_BODY_OK, always_on_failing=False,
+        body_conclusion="fail",
+        bodys_annotations=[
+            "Organes de body bloquants en echec : close_keyword",
+            "closing-keyword + PR-number reference detected: Closes #1 is "
+            "followed by a bare #2",
+        ])
+    merged_window = [
+        {"number": 999,
+         "body": "Grain: MED/tooling -- lane myia-po-2026:CoursIA -- prev: MED/guard #998\n",
+         "mergedAt": "2026-09-01T07:00:00Z"},
+    ]
+    result = rsa.refresh_one(22749, dry_run=True, merged_window=merged_window)
+    assert result["guard_pass"] is True, (
+        "le scenario n'a de valeur que si l'adjacence, elle, passerait")
+    assert result["guard_leg_cause"] == "body-other-organ"
+    assert result["always_on_failing"] is False
+    assert result["would_refresh"] is False
+    assert result["refreshed"] is False
+
+
+def test_body_job_red_with_unreadable_annotations_fails_closed(fake_run):
+    """Annotations illisibles -> aucune attribution, donc aucune ecriture.
+
+    L'etat « je n'ai pas pu lire » ne doit pas se confondre avec « c'est
+    l'adjacence » : le sweep reste muet sur cette PR, ce qui est le pire
+    connu -- jamais une edition non gardee.
+    """
+    _setup_fake_for_pr(
+        fake_run, 22750, PR_BODY_OK, always_on_failing=False,
+        body_conclusion="fail", bodys_annotations=None)
+    merged_window = [
+        {"number": 999,
+         "body": "Grain: MED/tooling -- lane myia-po-2026:CoursIA -- prev: MED/guard #998\n",
+         "mergedAt": "2026-09-01T07:00:00Z"},
+    ]
+    result = rsa.refresh_one(22750, dry_run=True, merged_window=merged_window)
+    assert result["guard_leg_cause"] == "body-unreadable"
+    assert result["would_refresh"] is False
+
+
+def test_body_job_red_by_stale_adjacency_still_requires_a_passing_simulation(
+        fake_run):
+    """L'attribution ouvre la jambe, elle ne dispense PAS de la simulation.
+
+    Une vraie adjacence G-VAR-3 sur la jambe de body reste bloquante : le
+    sweep la nomme (exit 1) au lieu de la lever par une edition de corps.
+    """
+    body_lint = (
+        "## Quoi\n\nFixes.\n\n"
+        "Grain: LIGHT/guard -- lane myia-po-2026:CoursIA -- prev: LIGHT/guard #0\n"
+    )
+    _setup_fake_for_pr(
+        fake_run, 22752, body_lint, always_on_failing=False,
+        body_conclusion="fail",
+        bodys_annotations=[
+            "Organes de body bloquants en echec : adjacency",
+        ])
+    merged_window = [
+        {"number": 998,
+         "body": "Grain: LIGHT/guard -- lane myia-po-2026:CoursIA -- prev: LIGHT/tooling #997\n",
+         "mergedAt": "2026-09-01T05:00:00Z"},
+        {"number": 997,
+         "body": "Grain: LIGHT/tooling -- lane myia-po-2026:CoursIA -- prev: MED/guard #996\n",
+         "mergedAt": "2026-09-01T04:00:00Z"},
+    ]
+    result = rsa.refresh_one(22752, dry_run=True, merged_window=merged_window)
+    assert result["always_on_failing"] is True
+    assert result["guard_pass"] is False
+    assert result["would_refresh"] is False
+    assert result["refreshed"] is False
+
+
+# --- #22893 : le silence de la MESURE porte une cause -----------------------
+# `gh pr checks` n'ecrit rien sur stdout quand il n'a pas pu mesurer. Sans
+# une cause dediee, ce silence se lisait exactement comme « aucun rouge » :
+# une PR dont les checks sont illisibles etait donc rapportee « propre ».
+#
+# Les trois etats mesures (voir `get_pr_check_rows`) :
+#   rc!=0 + stdout vide   -> checks-unreadable  (la mesure n'a pas abouti)
+#   rc=0  + stdout vide   -> checks-empty       (mesure d'absence)
+#   rc!=0 + des lignes    -> LU                 (rc=8 = checks pending/failing)
+
+
+def test_get_pr_check_rows_distinguishes_silence_from_absence(fake_run):
+    """Le tri etat par etat de `get_pr_check_rows` (#22893).
+
+    Trois sorties possibles de `gh pr checks`, trois valeurs distinctes :
+    `None` (illisible), `[]` (mesure d'absence), les lignes (mesure).
+    """
+    # rc!=0 sans un octet sur stdout : `gh` n'a pas mesure (branche sans
+    # check : `no checks reported on the '<branch>' branch`).
+    fake_run.specs[("pr", "checks", "101")] = (1, "", "no checks reported")
+    assert rsa.get_pr_check_rows(101) is None
+    # rc=0 sans stdout : gh a conclu, il n'y avait rien a imprimer.
+    fake_run.specs[("pr", "checks", "102")] = (0, "", "")
+    assert rsa.get_pr_check_rows(102) == []
+    # rc=8 (*checks pending/failing*) AVEC des lignes : une mesure.
+    rows = [_check_row("Always-on guards -- 16 organes, 1 checkout", "fail")]
+    fake_run.specs[("pr", "checks", "103")] = (8, "\n".join(rows) + "\n", "")
+    assert rsa.get_pr_check_rows(103) == [{
+        "name": "Always-on guards -- 16 organes, 1 checkout",
+        "conclusion": "fail",
+        "url": "https://x",
+    }]
+    # stdout non vide mais aucune ligne exploitable : la forme a change, et
+    # un changement de forme n'est pas « aucun rouge ».
+    fake_run.specs[("pr", "checks", "104")] = (0, "unparseable\n", "")
+    assert rsa.get_pr_check_rows(104) is None
+
+
+def test_unreadable_checks_are_named_not_read_as_clean(fake_run):
+    """Un `gh pr checks` muet en echec -> `checks-unreadable`, jamais un silence.
+
+    Le predicat `failing` ne bouge pas (illisible n'est pas rouge), mais le
+    JSON du sweep NOMME l'etat : c'est ce que #11808 exige -- un filtre
+    deconnecte et un filtre vide ne doivent pas rendre la meme chose.
+    """
+    _setup_fake_for_pr(fake_run, 22800, PR_BODY_OK, always_on_failing=True)
+    fake_run.specs[("pr", "checks", "22800")] = (1, "", "gh: HTTP 502")
+    merged_window = [
+        {"number": 999,
+         "body": "Grain: MED/tooling -- lane myia-po-2026:CoursIA -- prev: MED/guard #998\n",
+         "mergedAt": "2026-09-01T07:00:00Z"},
+    ]
+    result = rsa.refresh_one(22800, dry_run=True, merged_window=merged_window)
+    assert result["guard_leg_cause"] == "checks-unreadable"
+    assert result["guard_leg"] is None
+    # Fail-CLOSED : on n'ecrit rien sur un corps quand on n'a pas pu mesurer.
+    assert result["always_on_failing"] is False
+    assert result["would_refresh"] is False
+    assert result["refreshed"] is False
+
+
+def test_rc8_with_rows_stays_readable_and_refreshes(fake_run):
+    """`rc=8` AVEC des lignes reste une mesure : le rafraichissement a lieu.
+
+    `gh pr checks` sort en 8 quand des checks sont en echec ou en attente.
+    Degrader ce cas en « illisible » ferait taire le sweep sur exactement
+    les PRs qu'il doit reparer -- c'est le cas nominal.
+    """
+    _setup_fake_for_pr(fake_run, 22801, PR_BODY_OK, always_on_failing=True)
+    rows = [
+        _check_row(name, "fail")
+        for name in rsa.content_guard_job_names()
+    ]
+    fake_run.specs[("pr", "checks", "22801")] = (
+        8, "\n".join(rows) + "\n", "")
+    merged_window = [
+        {"number": 999,
+         "body": "Grain: MED/tooling -- lane myia-po-2026:CoursIA -- prev: MED/guard #998\n",
+         "mergedAt": "2026-09-01T07:00:00Z"},
+    ]
+    result = rsa.refresh_one(22801, dry_run=True, merged_window=merged_window)
+    assert result["guard_leg_cause"] == "content-job"
+    assert result["always_on_failing"] is True
+    assert result["would_refresh"] is True
+    assert result["refreshed"] is True  # dry-run, virtuel
+
+
+def test_rc0_without_rows_is_a_measured_absence(fake_run):
+    """`rc=0` + stdout vide -> `checks-empty`, distinct d'`checks-unreadable`.
+
+    `gh` a conclu et n'avait rien a imprimer : c'est une mesure d'absence,
+    pas un echec de mesure. Les deux ne partagent donc pas la meme cause.
+    """
+    _setup_fake_for_pr(fake_run, 22802, PR_BODY_OK, always_on_failing=False)
+    fake_run.specs[("pr", "checks", "22802")] = (0, "", "")
+    merged_window = [
+        {"number": 999,
+         "body": "Grain: MED/tooling -- lane myia-po-2026:CoursIA -- prev: MED/guard #998\n",
+         "mergedAt": "2026-09-01T07:00:00Z"},
+    ]
+    result = rsa.refresh_one(22802, dry_run=True, merged_window=merged_window)
+    assert result["guard_leg_cause"] == "checks-empty"
+    assert result["guard_leg"] is None
+    assert result["would_refresh"] is False
+

@@ -1,6 +1,6 @@
 # Protocole de variation — anti-monoculture, tag déclaré + merge-gate coordinateur
 
-S'applique à **tous les workers** (`po-*`) **et au coordinateur `ai-01`**. Source : mandat user 2026-07-21. Les concepts (tiers DEEP/MED/LIGHT, rotation des genres, never-idle) vivent dans [proactive-coordination.md](proactive-coordination.md) R6/R7 — la monoculture a persisté parce qu'ils étaient auto-évalués et invisibles ; ce fichier ajoute la mécanique qui les fait mordre : **tag auditable**, **merge-gate**, **obligation de provisionnement**.
+S'applique à **tous les workers** (`po-*`) **et au coordinateur `ai-01`**. Source : mandat user 2026-07-21. Les concepts (tiers DEEP/MED/LIGHT, rotation des genres, never-idle) vivent dans [proactive-coordination.md](proactive-coordination.md) R6/R7 ; ce fichier ajoute la mécanique qui les fait mordre : **tag auditable**, **merge-gate**, **obligation de provisionnement** (pourquoi la prose seule n'a pas tenu : [détail §1](../../docs/reference/variation-protocol-detail.md)).
 
 **Détail (justifications mesurées, incidents fondateurs, verbatims)** : [docs/reference/variation-protocol-detail.md](../../docs/reference/variation-protocol-detail.md).
 
@@ -22,7 +22,7 @@ Le guard ([`variation-tag-guard.yml`](../../.github/workflows/variation-tag-guar
 
 | TIER | Litmus décisif | Exemples |
 |---|---|---|
-| **DEEP** | `main` contient-il désormais un **résultat/capacité qui n'existait pas**, dont la production a demandé du **raisonnement de domaine** ? | sorry Lean retiré + `lake build SUCCESS` · backtest/training avec verdict multi-seed · nouveau notebook exécuté (≥3 exos, outputs réels) · moteur SOTA branché (verdict SOTA-OK) · module de recherche à résultat falsifiable |
+| **DEEP** | `main` contient-il désormais un **résultat/capacité qui n'existait pas**, dont la production a demandé du **raisonnement de domaine** ? | sorry Lean retiré + `lake build SUCCESS` · backtest/training avec verdict multi-seed · nouveau notebook exécuté (≥3 exos, outputs réels) · consolidation de série (fusion, déplacement ou renumérotation de carnets : ré-exécution complète, aucune perte de contenu) · moteur SOTA branché (verdict SOTA-OK) · module de recherche à résultat falsifiable |
 | **MED** | Étend de la substance existante **avec ré-exécution/vérification**, et **change quelque chose** (pas « 0 trouvé ») | enrichissement + ré-exec · audit borné dont le finding **change une décision** · exercice ajouté + exécuté · refactor avec tests verts · audit README fichier-entier corrigeant un drift structurel |
 | **LIGHT** | **« Pourrais-je en générer une douzaine en scannant l'instance suivante ? »** → si oui : LIGHT, quel que soit le label | guard-tranche · path-fix · doc-resync · ledger append · accent/leak/FP · propagation de marqueur |
 
@@ -57,15 +57,17 @@ Un genre hors liste est un **alias** que le merge-gate normalise : pas une viola
 | `lean` (ex #12252) | `MED/notebook-lean` | **CONTENU** | grain de contenu **au-delà** du plancher |
 | `guard` (ex #11997) | `MED/guard` | **META** | ne tient **pas** le plancher, comme toute PR META |
 
-Le raisonnement : G-VAR-1 demande « qu'est-ce qui atteint `main` quand ce travail aboutit ? » — la réponse regarde ce qui **arrive sur `main`**, pas ce que le REPAIR a fait. **Cas négatif explicite** : un REPAIR d'une PR META reste META — une lane qui ne réparerait que ses PRs de tooling/docs ne tiendrait toujours pas G-VAR-1. **Forme** : le genre hérité est déclaré directement, sans annotation spéciale (le REPAIR se lit dans le titre `fix(` et le diff) ; une annotation ajoute du bruit sans information. **Tier** : litmus habituel — un REPAIR à ré-exécution complète + diagnostic de ratchet est `MED` ; un REPAIR d'une ligne de body reste `LIGHT` et consomme le budget G-VAR-2 (pas d'exception). Raisonnement complet et arbitrage #11815 : [détail §13](../../docs/reference/variation-protocol-detail.md).
+**Prescriptions** : le genre hérité est déclaré **directement**, sans annotation spéciale (le REPAIR se lit dans le titre `fix(` et le diff) ; une annotation ajoute du bruit sans information. **Tier** : litmus habituel — un REPAIR à ré-exécution complète + diagnostic de ratchet est `MED` ; un REPAIR d'une ligne de body reste `LIGHT` et consomme le budget G-VAR-2 (pas d'exception). Un REPAIR d'une PR **META** reste **META** : il ne tient jamais le plancher à lui seul. Raisonnement complet et arbitrage #11815 : [détail §13](../../docs/reference/variation-protocol-detail.md).
 
 ## 2. Les trois gates durs
 
 - **G-VAR-1 — Plat principal DEEP, dans un genre de CONTENU.** La PR-plancher du cycle (R1 de proactive-coordination) **DOIT** être DEEP **et** porter un genre de la classe CONTENU. **Une LIGHT ne satisfait JAMAIS le plancher ; un genre META non plus, quel que soit son tier ; un MED non plus.** Le MED et le META restent **bienvenus au-delà** du plancher (sous budget G-VAR-2 pour leurs composantes LIGHT) : ce qui est exigé, c'est qu'**au moins un** grain DEEP de contenu porte le cycle. Le pool global porte toujours du DEEP de contenu : la monoculture vient du choix du plus facile *disponible*, pas d'une absence de substance.
 
-  **Durcissement #15793 (2026-09-12)** : le plancher passe de « DEEP **ou MED** » à **DEEP** — mesure motrice (15 % de DEEP sur 7 j, META devant CONTENU sur 48 h) et contre-poids anti-inflation (`TIER-INFLATION` + re-qualification par le merge-gate, §3) : [détail §12](../../docs/reference/variation-protocol-detail.md). Le litmus DEEP reste objectif. Le durcissement se paie en **lecture de tags par ai-01**, jamais en confiance.
+  **Consolider est du DEEP, et la priorité se règle au tapis (mandat user 2026-10-25).** Une consolidation de série (ligne DEEP du tableau des tiers) déclare le genre des carnets qu'elle réorganise (`notebook-python`, `notebook-lean`...), comme un REPAIR hérite du genre de la PR réparée : ce qui arrive sur `main` est une série de carnets. Un nouveau carnet reste DEEP, mais son tier ne le rend pas prioritaire : les issues de consolidation reviennent en tête du tapis plusieurs fois par semaine, un EPIC qui étend une série au plus une fois ([proactive-coordination.md](proactive-coordination.md) règle 5, issue #22500, organe en PR #22504). Verbatim et mesure : [détail §14](../../docs/reference/variation-protocol-detail.md).
 
-  **La sécheresse se mesure — [`scripts/pick_idle_grain.py`](../../scripts/pick_idle_grain.py) — elle ne s'auto-évalue pas (#13086).** Le picker compte les **merges consécutifs sans genre CONTENU** de la lane et, au seuil (3 par défaut), **restreint le tirage aux genres CONTENU** : la lane reçoit un grain, et ce grain tient le plancher. L'échappatoire `--ignore-drought` (capability GPU-only/vision-only) **se justifie par écrit** ; une capability **se mesure sur les lanes sœurs du même modèle**, elle ne se déclare pas — tant qu'une lane sœur livre du contenu, « ma capability exclut le contenu » est réfuté.
+  **Durcissement #15793 (2026-09-12)** : le plancher passe de « DEEP **ou MED** » à **DEEP** — mesure motrice et contre-poids anti-inflation (`TIER-INFLATION` + re-qualification par le merge-gate, §3) : [détail §12](../../docs/reference/variation-protocol-detail.md). Le litmus DEEP reste objectif. Le durcissement se paie en **lecture de tags par ai-01**, jamais en confiance.
+
+  **La sécheresse se mesure — [`scripts/pick_idle_grain.py`](../../scripts/pick_idle_grain.py) — elle ne s'auto-évalue pas (#13086).** Le picker compte les **merges consécutifs sans genre CONTENU** de la lane et, au seuil (3 par défaut), **restreint le tirage aux genres CONTENU** : la lane reçoit un grain, et ce grain tient le plancher. L'échappatoire `--ignore-drought` (capability GPU-only/vision-only) **se justifie par écrit** ; une capability **se mesure sur les lanes sœurs du même modèle**, elle ne se déclare pas. Mécanisme et pourquoi : [détail §12.3](../../docs/reference/variation-protocol-detail.md).
 
 - **G-VAR-2 — Budget LIGHT proportionnel : `max(1, grains_mergés_du_jour // 3)`**, par lane et par jour, **toutes catégories LIGHT confondues**. Une lane à 1-5 grains garde le plafond d'une LIGHT ; à 6 elle en a deux, à 19 elle en a six. Au-delà : la LIGHT attend demain ou cède la place à du DEEP/MED. Le budget se **calcule** — [`scripts/variation_light_cap.py`](../../scripts/variation_light_cap.py) — il ne se déclare pas.
 
@@ -96,7 +98,7 @@ Le HOLD est **attaché à la candidate**, jamais à la cadence de sa lane. Il ne
 
 ## 4. Provisionnement d'exception — ce qui lie ai-01 (HARD)
 
-La cause racine est **autant** un défaut de provisionnement qu'un réflexe de facilité worker. Le provisionnement est une **exception nommée** : le coordinateur provisionne **quand il a une raison nommée** (sécheresse mesurée, dette de batch-close, veine à équilibrer), pas par quota de lane ni à chaque cycle — un quota par lane à tous les cycles rendrait le steering structurellement toujours premier sur le tirage, ce que la règle 5 de [proactive-coordination.md](proactive-coordination.md) interdit. Quand il provisionne, `ai-01` :
+Le provisionnement est une **exception nommée** : le coordinateur provisionne **quand il a une raison nommée** (sécheresse mesurée, dette de batch-close, veine à équilibrer), pas par quota de lane ni à chaque cycle — un quota par lane à tous les cycles rendrait le steering structurellement toujours premier sur le tirage, ce que la règle 5 de [proactive-coordination.md](proactive-coordination.md) interdit (cause racine et corollaires mesurés : [détail §9](../../docs/reference/variation-protocol-detail.md)). Quand il provisionne, `ai-01` :
 
 0. **Le tirage est la voie par défaut** : une lane sans steering **tire** et n'attend rien. Un steering nommé s'ajoute au tirage quand il est déjà là (mécanisme never-empty, règle 7) — et doit être le plus équilibré possible : un steering qui répète le genre du cycle précédent fait pire que le tirage.
 1. **Provisionne sur sa raison nommée**, **groundé firsthand** (`gh issue view`), varié en genre d'une lane à l'autre.
@@ -105,7 +107,7 @@ La cause racine est **autant** un défaut de provisionnement qu'un réflexe de f
 4. **Varie la loterie** — le coordinateur applique G-VAR-3 à son propre dispatch.
 5. **Dissocie admission et production** : les candidates en HOLD, `DWELL`, review ou attente de merge ne diminuent jamais le provisionnement dû. La queue d'admission se résorbe par une piste de digestion parallèle ; elle n'applique aucune backpressure globale aux producteurs.
 
-Sous-provisionner puis merger la monoculture qui en résulte est **le** manquement que ce protocole corrige. Ralentir la production pour accommoder la digestion en est un autre.
+Sous-provisionner puis merger la monoculture qui en résulte est **le** manquement que ce protocole corrige ; ralentir la production pour accommoder la digestion en est un autre (justification : [détail §9](../../docs/reference/variation-protocol-detail.md)).
 
 ## 5. Auto-détection
 

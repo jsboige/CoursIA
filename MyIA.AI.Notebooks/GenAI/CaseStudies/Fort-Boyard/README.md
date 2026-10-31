@@ -28,7 +28,7 @@ Simulation multi-agents Semantic Kernel du jeu télévisé Fort Boyard : le Pèr
 ## Prérequis
 
 ```bash
-pip install semantic-kernel openai jupyter
+pip install semantic-kernel python-dotenv jupyter
 ```
 
 ---

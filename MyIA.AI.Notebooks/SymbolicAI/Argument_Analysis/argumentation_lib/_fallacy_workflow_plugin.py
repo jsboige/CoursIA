@@ -62,6 +62,7 @@ from semantic_kernel.contents import (
     FunctionResultContent,
 )
 
+from ._llm_settings import apply_reasoning_none_for_function_tools
 from argumentation_analysis.agents.utils.taxonomy_navigator import TaxonomyNavigator
 from argumentation_analysis.core.plaintext_destination import (
     PlaintextDestinationError,
@@ -291,7 +292,16 @@ class FallacyWorkflowPlugin:
         load_error: Optional[str] = None
         if not data and taxonomy_file_path:
             try:
-                with open(taxonomy_file_path, mode="r", encoding="utf-8") as infile:
+                # utf-8-sig, jamais utf-8 : le CSV de taxonomie du depot commence
+                # par un BOM. Lu en utf-8, le BOM colle a la 1re en-tete (la
+                # colonne s'appelle "﻿PK"), `_build_deep_index` ne resout
+                # plus AUCUN noeud, et l'entonnoir bascule en silence sur
+                # `one_shot` au lieu de naviguer. Cette deviation a l'amont est
+                # DECLAREE et chiffree dans NOTICE-EPITA, « Deviations carried on
+                # top of the #19287 verbatim blob », point 2 (utf-8 -> 0 entree
+                # d'index ; utf-8-sig -> 1408 PK et 91 entrees). Le retour a
+                # `utf-8` de d8b82d2f1 (#19482) contredisait donc ce contrat.
+                with open(taxonomy_file_path, mode="r", encoding="utf-8-sig") as infile:
                     reader = csv.DictReader(infile)
                     data = purge_rows(list(reader))
             except FileNotFoundError:
@@ -348,6 +358,11 @@ class FallacyWorkflowPlugin:
 
         slave_settings = OpenAIPromptExecutionSettings(
             function_choice_behavior=FunctionChoiceBehavior.Auto(auto_invoke=False)
+        )
+        # #20135 : la famille 5.6 exige reasoning_effort explicite pour les
+        # outils de fonction sur /v1/chat/completions (400 sinon).
+        apply_reasoning_none_for_function_tools(
+            slave_settings, getattr(self.llm_service, "ai_model_id", None)
         )
         return slave_kernel, slave_settings
 

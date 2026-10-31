@@ -1,9 +1,19 @@
 {
+  "provenance": {
+    "instrument": "2026-10-23.1",
+    "head": "b51fd44d61c8e51e130f6d291eab7e291903a8c9",
+    "branch": "main",
+    "origin_main": "b51fd44d61c8e51e130f6d291eab7e291903a8c9",
+    "behind_origin_main": 0,
+    "dirty": false,
+    "written_at": "2026-10-30T19:00:59Z",
+    "non_main": false
+  },
   "findings": [
     {
       "kind": "independent_chain",
-      "notebook": "MyIA.AI.Notebooks/GenAI/Image/examples",
-      "series": "MyIA.AI.Notebooks/GenAI/Image/examples"
+      "notebook": "MyIA.AI.Notebooks/GameTheory",
+      "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
       "kind": "independent_chain",
@@ -17,18 +27,8 @@
     },
     {
       "kind": "independent_chain",
-      "notebook": "MyIA.AI.Notebooks/Probas/Infer",
-      "series": "MyIA.AI.Notebooks/Probas/Infer"
-    },
-    {
-      "kind": "independent_chain",
       "notebook": "MyIA.AI.Notebooks/RL",
       "series": "MyIA.AI.Notebooks/RL"
-    },
-    {
-      "kind": "independent_chain",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/CSP",
-      "series": "MyIA.AI.Notebooks/Search/Applications/CSP"
     },
     {
       "kind": "independent_chain",
@@ -37,18 +37,13 @@
     },
     {
       "kind": "independent_chain",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
+      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques",
+      "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
     },
     {
       "kind": "independent_chain",
       "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical",
       "series": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical"
-    },
-    {
-      "kind": "independent_chain",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API"
     },
     {
       "kind": "orphan_entry",
@@ -67,17 +62,12 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-03b-Chemins-de-Swaps-Lean-Python.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-03b-Chambres-Murs-Chemins-Lean-Python.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-03e-Plan-de-deformation-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/GameTheory"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-03f-Meta-Actions-Tarifees-Python.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-03e-Meta-Actions-Tarifees-Python.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
@@ -92,42 +82,12 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-05b-Lean-Minimax-Lean.ipynb",
-      "series": "MyIA.AI.Notebooks/GameTheory"
-    },
-    {
-      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-06-EvolutionTrust-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-06b-Lean-RepeatedGames-Lean-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/GameTheory"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-CSharp.ipynb",
-      "series": "MyIA.AI.Notebooks/GameTheory"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-06d-Sympathie-vs-Engagement-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/GameTheory"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-06f-Bounded-Agents-Lean.ipynb",
-      "series": "MyIA.AI.Notebooks/GameTheory"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-06f-Bounded-Agents-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/GameTheory"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-06h-Transparent-Institutions-Python.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-06i-Ensembles-Limites-Poincare-Bendixson-Python.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
@@ -143,11 +103,6 @@
     {
       "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-08c-CombinatorialGames-CSharp.ipynb",
-      "series": "MyIA.AI.Notebooks/GameTheory"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-09c-Stackelberg-SecurityGame-Python.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
@@ -187,37 +142,7 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-15g-AssistanceGames-2026-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/GameTheory"
-    },
-    {
-      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-16-MechanismDesign-CSharp.ipynb",
-      "series": "MyIA.AI.Notebooks/GameTheory"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-16b-Automated-Mechanism-Design-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/GameTheory"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-16c-Extraction-de-Revenu-DSIC-IR-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/GameTheory"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-16d-Echange-de-Reins-Lean-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/GameTheory"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-16e-LLM-Players-Othman-Sandholm-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/GameTheory"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-16f-Lean-Assignment-Lean.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
@@ -233,11 +158,6 @@
     {
       "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-17d-Lean-Screening-Signaling-Lean.ipynb",
-      "series": "MyIA.AI.Notebooks/GameTheory"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-17e-Bayesian-Persuasion-Python.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
@@ -282,22 +202,22 @@
     },
     {
       "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb",
+      "series": "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-9-AceStep-Music-Generation.ipynb",
+      "series": "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced"
+    },
+    {
+      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-13-Audiobook-FishAudio-S2Pro.ipynb",
       "series": "MyIA.AI.Notebooks/GenAI/Audio/04-Applications"
     },
     {
       "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-14-VoiceLeading-Rendu-GenAI.ipynb",
-      "series": "MyIA.AI.Notebooks/GenAI/Audio/04-Applications"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-15-MERT2-Music-Understanding.ipynb",
-      "series": "MyIA.AI.Notebooks/GenAI/Audio/04-Applications"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-16-SheetSage2-Audio-To-Score.ipynb",
       "series": "MyIA.AI.Notebooks/GenAI/Audio/04-Applications"
     },
     {
@@ -309,26 +229,6 @@
       "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-8-Lecture-Analytique.ipynb",
       "series": "MyIA.AI.Notebooks/GenAI/Audio/04-Applications"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python_en.ipynb",
-      "series": "MyIA.AI.Notebooks/GenAI/FineTuning"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python_en.ipynb",
-      "series": "MyIA.AI.Notebooks/GenAI/FineTuning"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python_en.ipynb",
-      "series": "MyIA.AI.Notebooks/GenAI/FineTuning"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python_en.ipynb",
-      "series": "MyIA.AI.Notebooks/GenAI/FineTuning"
     },
     {
       "kind": "orphan_entry",
@@ -362,12 +262,12 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/08-Aspire-AsyncFFI-Dotnet.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/07-Aspire-SemanticFleet-MultiConnector.ipynb",
       "series": "MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/09-Aspire-Harness-CopilotSdk.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/08-Aspire-AsyncFFI-Dotnet.ipynb",
       "series": "MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire"
     },
     {
@@ -382,27 +282,17 @@
     },
     {
       "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/GenAI/PostTraining/PT_03_dpo_direct_preference.ipynb",
+      "series": "MyIA.AI.Notebooks/GenAI/PostTraining"
+    },
+    {
+      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/GenAI/PostTraining/PT_07_rewardspy_reward_hacking.ipynb",
       "series": "MyIA.AI.Notebooks/GenAI/PostTraining"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GenAI/PostTraining/PT_08_grpo_from_scratch_toy_env.ipynb",
-      "series": "MyIA.AI.Notebooks/GenAI/PostTraining"
-    },
-    {
-      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/GenAI/PostTraining/PT_09_rloo_from_scratch_toy_env.ipynb",
-      "series": "MyIA.AI.Notebooks/GenAI/PostTraining"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GenAI/PostTraining/PT_10_gae_from_scratch_toy_env.ipynb",
-      "series": "MyIA.AI.Notebooks/GenAI/PostTraining"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GenAI/PostTraining/PT_11a_grpo_qwen35_rlvr.ipynb",
       "series": "MyIA.AI.Notebooks/GenAI/PostTraining"
     },
     {
@@ -449,16 +339,6 @@
       "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/GenAI/PostTraining/PT_17_laya_proper_rewards_toy.ipynb",
       "series": "MyIA.AI.Notebooks/GenAI/PostTraining"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/04-Tokenisation-From-Scratch.ipynb",
-      "series": "MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/09-KernelMemory-Multimodal.ipynb",
-      "series": "MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique"
     },
     {
       "kind": "orphan_entry",
@@ -512,67 +392,12 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12e-Value-of-Information-Animat-Python.ipynb",
+      "notebook": "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12e-Value-of-Information-Animat-Python.ipynb",
       "series": "MyIA.AI.Notebooks/IIT/ICT-Series"
     },
     {
       "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/IIT/ICT-Series"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14-FreeEnergySurprise-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/IIT/ICT-Series"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15b-SensitivityCanonicity-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/IIT/ICT-Series"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15c-MetaProxyObstruction-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/IIT/ICT-Series"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15e-Bridge2-RecoverabilityAgency-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/IIT/ICT-Series"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15f-Bridge1bis-DecoupledFamily-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/IIT/ICT-Series"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15g-EmpiricalHuangExploitation-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/IIT/ICT-Series"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15h-Bridge1bis-AsymmetricFamily-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/IIT/ICT-Series"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15i-Bridge1bis-2DLandscape-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/IIT/ICT-Series"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15j-NerveDiscriminant-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/IIT/ICT-Series"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15k-RecollementMacroCells-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/IIT/ICT-Series"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15l-IndependanceGenerateur-Python.ipynb",
       "series": "MyIA.AI.Notebooks/IIT/ICT-Series"
     },
     {
@@ -588,11 +413,6 @@
     {
       "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-22-LLMSubstrat-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/IIT/ICT-Series"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-23-PersonaCatastrophe-Python.ipynb",
       "series": "MyIA.AI.Notebooks/IIT/ICT-Series"
     },
     {
@@ -642,11 +462,6 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/IIT/ICT-Series"
-    },
-    {
-      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-38-SLens-SelfLocation-Python.ipynb",
       "series": "MyIA.AI.Notebooks/IIT/ICT-Series"
     },
@@ -663,16 +478,6 @@
     {
       "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-40b-AnalogCognitionWaves-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/IIT/ICT-Series"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41-SAE-GeometrieFeatures-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/IIT/ICT-Series"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb",
       "series": "MyIA.AI.Notebooks/IIT/ICT-Series"
     },
     {
@@ -702,11 +507,6 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-SaillancePregnance.ipynb",
-      "series": "MyIA.AI.Notebooks/IIT/ICT-Series"
-    },
-    {
-      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe4-VoteOnChain.ipynb",
       "series": "MyIA.AI.Notebooks/IIT/ICT-Series"
     },
@@ -732,48 +532,23 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/IIT"
+      "notebook": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch.ipynb",
+      "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.2d-Detection-AnchorFree-From-Scratch.ipynb",
-      "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision"
+      "notebook": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-00c-Scattering-from-scratch.ipynb",
+      "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.2e-Detection-FocalLoss-From-Scratch.ipynb",
-      "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision"
+      "notebook": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-01-Denoising-SOTA.ipynb",
+      "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.2h-YOLOv5-Bench-Ultralytics.ipynb",
-      "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.2i-Detection-Ultralytics-Difficult-Scenes.ipynb",
-      "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/04b-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch.ipynb",
-      "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/04b-Wavelet-Scattering"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/04b-Wavelet-Scattering/WS-01-Denoising-SOTA.ipynb",
-      "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/04b-Wavelet-Scattering"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/04b-Wavelet-Scattering/WS-02-Scattering-SOTA.ipynb",
-      "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/04b-Wavelet-Scattering"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/04b-Wavelet-Scattering/WS-03-Synthese-Scattering-vs-ResNet.ipynb",
-      "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/04b-Wavelet-Scattering"
+      "notebook": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-03-Synthese-Scattering-vs-ResNet.ipynb",
+      "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering"
     },
     {
       "kind": "orphan_entry",
@@ -827,6 +602,11 @@
     },
     {
       "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/Probas/DecisionTheory/Actuariat/Actuariat-05-Valeur-Info-Souscription.ipynb",
+      "series": "MyIA.AI.Notebooks/Probas/DecisionTheory/Actuariat"
+    },
+    {
+      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/CausalBridges-02-Dowhy-Estimand-Intervention.ipynb",
       "series": "MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges"
     },
@@ -857,11 +637,6 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/CausalBridges-08-Causal-Fairness.ipynb",
-      "series": "MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges"
-    },
-    {
-      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-02-Lean-ExpectedUtility.ipynb",
       "series": "MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer"
     },
@@ -869,21 +644,6 @@
       "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08b-Lean-Gittins.ipynb",
       "series": "MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Probas/Infer/Infer-18-Change-Point.ipynb",
-      "series": "MyIA.AI.Notebooks/Probas/Infer"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Probas/Infer/Infer-19-Survival-Analysis.ipynb",
-      "series": "MyIA.AI.Notebooks/Probas/Infer"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Probas/Infer/Infer-1b-Premiers-Modeles.ipynb",
-      "series": "MyIA.AI.Notebooks/Probas/Infer"
     },
     {
       "kind": "orphan_entry",
@@ -899,86 +659,6 @@
       "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/Probas/PyMC/PyMC-19-Survival-Analysis.ipynb",
       "series": "MyIA.AI.Notebooks/Probas/PyMC"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/ML-Research-Template.ipynb",
-      "series": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/c1330_xrp_dt_foldwise_research.ipynb",
-      "series": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/c875_hmm_alpha_dm_research.ipynb",
-      "series": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/hmm_alpha_research.ipynb",
-      "series": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/m11e_ensemble_research.ipynb",
-      "series": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/m12_har_rv_j_research.ipynb",
-      "series": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/m15_lstm_rv_research.ipynb",
-      "series": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/m15_lstm_rv_sc_validation.ipynb",
-      "series": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/m3_har_asymmetric_semivariance.ipynb",
-      "series": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/m4_dlinear_vol_sc_validation.ipynb",
-      "series": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/m5_hmm_regime_research.ipynb",
-      "series": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/research_l1_tsmom.ipynb",
-      "series": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/research_l2_dual_momentum.ipynb",
-      "series": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/research_l3_trend.ipynb",
-      "series": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/research_l4_decision_transformer.ipynb",
-      "series": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/research_what_dl_can_predict.ipynb",
-      "series": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline"
     },
     {
       "kind": "orphan_entry",
@@ -1047,92 +727,12 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/QuantConnect/research/intraday_volume_periodicity.ipynb",
+      "notebook": "MyIA.AI.Notebooks/QuantConnect/research/research_st_reversal.ipynb",
       "series": "MyIA.AI.Notebooks/QuantConnect/research"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/QuantConnect/research/research_btc_ml.ipynb",
-      "series": "MyIA.AI.Notebooks/QuantConnect/research"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/QuantConnect/research/research_composite_ff_aw.ipynb",
-      "series": "MyIA.AI.Notebooks/QuantConnect/research"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/QuantConnect/research/research_composite_mom_regime.ipynb",
-      "series": "MyIA.AI.Notebooks/QuantConnect/research"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/QuantConnect/research/research_iv_rank_strike_clusters.ipynb",
-      "series": "MyIA.AI.Notebooks/QuantConnect/research"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/QuantConnect/research/research_m11ef_ensemble.ipynb",
-      "series": "MyIA.AI.Notebooks/QuantConnect/research"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/QuantConnect/research/research_m12_har_rv_j.ipynb",
-      "series": "MyIA.AI.Notebooks/QuantConnect/research"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/QuantConnect/research/research_m12_har_rv_j_minute.ipynb",
-      "series": "MyIA.AI.Notebooks/QuantConnect/research"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/QuantConnect/research/research_m12_hf_btc_local.ipynb",
-      "series": "MyIA.AI.Notebooks/QuantConnect/research"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/QuantConnect/research/research_m12_hf_dm_test.ipynb",
-      "series": "MyIA.AI.Notebooks/QuantConnect/research"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/QuantConnect/research/research_quality_lowvol.ipynb",
-      "series": "MyIA.AI.Notebooks/QuantConnect/research"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/QuantConnect/research/research_risk_parity.ipynb",
-      "series": "MyIA.AI.Notebooks/QuantConnect/research"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/QuantConnect/research/research_rl_grpo.ipynb",
-      "series": "MyIA.AI.Notebooks/QuantConnect/research"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/QuantConnect/research/research_rl_intro.ipynb",
-      "series": "MyIA.AI.Notebooks/QuantConnect/research"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/QuantConnect/research/research_rl_multi_asset.ipynb",
-      "series": "MyIA.AI.Notebooks/QuantConnect/research"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/QuantConnect/research/research_rl_ppo.ipynb",
-      "series": "MyIA.AI.Notebooks/QuantConnect/research"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/QuantConnect/research/research_rl_reward_shaping.ipynb",
-      "series": "MyIA.AI.Notebooks/QuantConnect/research"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/QuantConnect/research/research_rl_tactical_overlay.ipynb",
+      "notebook": "MyIA.AI.Notebooks/QuantConnect/research/research_turn_of_month.ipynb",
       "series": "MyIA.AI.Notebooks/QuantConnect/research"
     },
     {
@@ -1192,102 +792,12 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/RL/RL-19-Reward-Tampering-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/RL"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/CSP/App-11b-Picross-CSharp.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/CSP"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/CSP/App-1b-NQueens-CSharp.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/CSP"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/CSP/App-2-GraphColoring-Statistical-Validity-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/CSP"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/CSP/App-20b-SudokuBenchmark-CSharp.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/CSP"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/CSP/App-5-Timetabling-CSharp.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/CSP"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-CSharp.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/CSP"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/CSP/App-7b-Wordle-CSharp.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/CSP"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-CSharp.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/CSP"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-13b-TSP-Metaheuristics-CSharp.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/Hybrid"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-18b-HyperparameterTuning-CSharp.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/Hybrid"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-18c-HyperparameterTuning-Rustuna-vs-Optuna.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/Hybrid"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-22-AlgorithmSelection-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/Hybrid"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-27-Sparse-Index-Tracking-Walk-Forward.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/Hybrid"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/Search/App-14-ConnectFour-CSharp.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/Search"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/Search/App-14c-ConnectFour-CSharp.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/Search"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/Search/App-32-Szpiro-Pasten-2026.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/Search"
-    },
-    {
-      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/Search/Part1-Foundations"
     },
     {
       "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX-CSharp.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Part1-Foundations"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03-Informed-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/Search/Part1-Foundations"
     },
     {
@@ -1342,6 +852,11 @@
     },
     {
       "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09e-Komlos-Lean.ipynb",
+      "series": "MyIA.AI.Notebooks/Search/Part1-Foundations"
+    },
+    {
+      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/Search/Part1-Foundations"
     },
@@ -1352,23 +867,68 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced-CSharp.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Part2-CSP"
+      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-11b-Picross-CSharp.ipynb",
+      "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization-CSharp.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Part2-CSP"
+      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-13b-TSP-Metaheuristics-CSharp.ipynb",
+      "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft-CSharp.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Part2-CSP"
+      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-18b-HyperparameterTuning-CSharp.ipynb",
+      "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-CSharp.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Part2-CSP"
+      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-18c-HyperparameterTuning-Rustuna-vs-Optuna.ipynb",
+      "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-1b-NQueens-CSharp.ipynb",
+      "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-2-GraphColoring-Statistical-Validity-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-20b-SudokuBenchmark-CSharp.ipynb",
+      "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-27-Sparse-Index-Tracking-Walk-Forward.ipynb",
+      "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-5-Timetabling-CSharp.ipynb",
+      "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-6-Minesweeper-CSharp.ipynb",
+      "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-7b-Wordle-CSharp.ipynb",
+      "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-8-MiniZinc-CSharp.ipynb",
+      "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
     },
     {
       "kind": "orphan_entry",
@@ -1387,6 +947,11 @@
     },
     {
       "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-16-AlgorithmSelection.ipynb",
+      "series": "MyIA.AI.Notebooks/Search/Part4-Metaheuristics"
+    },
+    {
+      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-17-ParameterControl.ipynb",
       "series": "MyIA.AI.Notebooks/Search/Part4-Metaheuristics"
     },
@@ -1398,6 +963,11 @@
     {
       "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-20-Langage-de-Composition.ipynb",
+      "series": "MyIA.AI.Notebooks/Search/Part4-Metaheuristics"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-21-Representation-vs-Algorithme.ipynb",
       "series": "MyIA.AI.Notebooks/Search/Part4-Metaheuristics"
     },
     {
@@ -1433,11 +1003,6 @@
     {
       "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-09-RCPSP-Max-Feasibility-Bounds-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Part5-Frontieres"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-10-NeuralDiving-Coloration-Python.ipynb",
       "series": "MyIA.AI.Notebooks/Search/Part5-Frontieres"
     },
     {
@@ -1517,11 +1082,6 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-07c-Orchestration-Modes-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis"
-    },
-    {
-      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08d-Restitution-3-Actes-Python.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis"
     },
@@ -1567,73 +1127,18 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-07b-Examples-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-5b-Lean-Relaxation.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-08b-Erdos-Formal-Conjectures-Lean.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-5c-Differentiel-Atteignabilite.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-14b-Finiteness-Lean-Companion.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16g-Conway-Canons.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16h-Conway-PatternTour-Native.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16j-Conway-Hashlife-Correctness-Native.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21c-Descente-Budget.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-23b-Lean-ERC20-Native-Companion.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-24-Calibration-Native-Companion.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-27-EdgeColoring-Tutte-Companion.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-29-Hecke-Operators-Native.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-36-Structures-Finies-MUH-Lean.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-38-Capstone-Geometry-Lean-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/03_Sudoku_Modes_Comparison.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3"
     },
     {
       "kind": "orphan_entry",
@@ -1658,11 +1163,6 @@
     {
       "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/16_RealArithmetic.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/18_Einsteins_Riddle.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3"
     },
     {
@@ -1799,151 +1299,24 @@
       "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-12-Grounded-Via-TweetyProject-Python.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/Tweety"
-    },
-    {
-      "kind": "unreachable",
-      "notebook": "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-5-Multi-Model-TTS-Gateway.ipynb",
-      "series": "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced"
-    },
-    {
-      "kind": "unreachable",
-      "notebook": "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb",
-      "series": "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced"
-    },
-    {
-      "kind": "unreachable",
-      "notebook": "MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/07-Aspire-SemanticFleet-MultiConnector.ipynb",
-      "series": "MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire"
-    },
-    {
-      "kind": "unreachable",
-      "notebook": "MyIA.AI.Notebooks/GenAI/PostTraining/PT_03_dpo_direct_preference.ipynb",
-      "series": "MyIA.AI.Notebooks/GenAI/PostTraining"
-    },
-    {
-      "kind": "unreachable",
-      "notebook": "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15d-CechObstruction-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/IIT/ICT-Series"
-    },
-    {
-      "kind": "unreachable",
-      "notebook": "MyIA.AI.Notebooks/Probas/DecisionTheory/Actuariat/Actuariat-05-Valeur-Info-Souscription.ipynb",
-      "series": "MyIA.AI.Notebooks/Probas/DecisionTheory/Actuariat"
-    },
-    {
-      "kind": "unreachable",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-CSharp.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/CSP"
-    },
-    {
-      "kind": "unreachable",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/CSP"
-    },
-    {
-      "kind": "unreachable",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-13-TSP-Metaheuristics.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/Hybrid"
-    },
-    {
-      "kind": "unreachable",
-      "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal-CSharp.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Part2-CSP"
-    },
-    {
-      "kind": "unreachable",
-      "notebook": "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-09-EverestRelief.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Part4-Metaheuristics"
-    },
-    {
-      "kind": "unreachable",
-      "notebook": "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-10-CenterBias.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Part4-Metaheuristics"
-    },
-    {
-      "kind": "unreachable",
-      "notebook": "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-14-IslandSynergyFound.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Part4-Metaheuristics"
-    },
-    {
-      "kind": "unreachable",
-      "notebook": "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-15-LandscapeAnalysis.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Part4-Metaheuristics"
-    },
-    {
-      "kind": "unreachable",
-      "notebook": "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-16-AlgorithmSelection.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Part4-Metaheuristics"
-    },
-    {
-      "kind": "unreachable",
-      "notebook": "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-18-CecBanc.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Part4-Metaheuristics"
-    },
-    {
-      "kind": "unreachable",
-      "notebook": "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-19-MetropolisReinsertion.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Part4-Metaheuristics"
-    },
-    {
-      "kind": "unreachable",
-      "notebook": "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-21-Representation-vs-Algorithme.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Part4-Metaheuristics"
-    },
-    {
-      "kind": "unreachable",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/Geometry-01-From-Figure-To-Equation.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry"
-    },
-    {
-      "kind": "unreachable",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/Geometry-03-Wu-Method-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry"
-    },
-    {
-      "kind": "unreachable",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/Geometry-03b-Ritt-Decomposition-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry"
-    },
-    {
-      "kind": "unreachable",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/Geometry-04-DD-AR-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry"
-    },
-    {
-      "kind": "unreachable",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-12b-Lean-Sensitivity-Theorem.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
-    },
-    {
-      "kind": "unreachable",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-12c-Tensor-Product-Representations-Lean.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
-    },
-    {
-      "kind": "unreachable",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-23-ERC20-Invariant-Companion.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
-    },
-    {
-      "kind": "unreachable",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-5c-Differentiel-Atteignabilite.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical"
-    },
-    {
-      "kind": "unreachable",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/03_Sudoku_Modes_Comparison.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3"
     }
   ],
   "wrapped": [
     {
       "series": "MyIA.AI.Notebooks/Complexity",
-      "notebooks": 13
+      "notebooks": 20
     },
     {
-      "series": "MyIA.AI.Notebooks/GenAI/00-GenAI-Environment",
-      "notebooks": 6
+      "series": "MyIA.AI.Notebooks/Compression",
+      "notebooks": 7
+    },
+    {
+      "series": "MyIA.AI.Notebooks/GameTheory/Coalitions",
+      "notebooks": 5
+    },
+    {
+      "series": "MyIA.AI.Notebooks/GameTheory/Dynamics",
+      "notebooks": 12
     },
     {
       "series": "MyIA.AI.Notebooks/GenAI/Audio/01-Foundation",
@@ -1954,20 +1327,16 @@
       "notebooks": 3
     },
     {
-      "series": "MyIA.AI.Notebooks/GenAI/Image/01-Foundation",
-      "notebooks": 6
-    },
-    {
       "series": "MyIA.AI.Notebooks/GenAI/Image/03-Orchestration",
       "notebooks": 4
     },
     {
-      "series": "MyIA.AI.Notebooks/GenAI/Image/05-History",
+      "series": "MyIA.AI.Notebooks/GenAI/Image/examples",
       "notebooks": 3
     },
     {
       "series": "MyIA.AI.Notebooks/GenAI/Texte",
-      "notebooks": 36
+      "notebooks": 40
     },
     {
       "series": "MyIA.AI.Notebooks/GenAI/Vibe-Coding/Claude-Code/notebooks",
@@ -1982,12 +1351,20 @@
       "notebooks": 6
     },
     {
-      "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks",
+      "series": "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14-FreeEnergySurprise",
       "notebooks": 2
     },
     {
+      "series": "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery",
+      "notebooks": 2
+    },
+    {
+      "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks",
+      "notebooks": 6
+    },
+    {
       "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours",
-      "notebooks": 37
+      "notebooks": 39
     },
     {
       "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/Day4-Foundations",
@@ -2003,7 +1380,35 @@
     },
     {
       "series": "MyIA.AI.Notebooks/NLP",
+      "notebooks": 8
+    },
+    {
+      "series": "MyIA.AI.Notebooks/Probas/Infer",
+      "notebooks": 21
+    },
+    {
+      "series": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline",
+      "notebooks": 18
+    },
+    {
+      "series": "MyIA.AI.Notebooks/Search/Part2-CSP",
+      "notebooks": 18
+    },
+    {
+      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean",
+      "notebooks": 59
+    },
+    {
+      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS",
+      "notebooks": 4
+    },
+    {
+      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands",
       "notebooks": 5
+    },
+    {
+      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO",
+      "notebooks": 4
     },
     {
       "series": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation",
@@ -2011,15 +1416,23 @@
     },
     {
       "series": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced",
-      "notebooks": 6
+      "notebooks": 7
     },
     {
       "series": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic",
       "notebooks": 4
     },
     {
+      "series": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API",
+      "notebooks": 31
+    },
+    {
       "series": "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/01-Solidity-Foundation",
       "notebooks": 4
+    },
+    {
+      "series": "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced",
+      "notebooks": 8
     },
     {
       "series": "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/03-Foundry-Testing",

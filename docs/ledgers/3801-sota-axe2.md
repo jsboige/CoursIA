@@ -542,7 +542,7 @@ Famille `MyIA.AI.Notebooks/Probas/Infer/` = 19 notebooks `Infer-{1..19}-*.ipynb`
 
 ### Disclosures honnêtes vérifiées
 
-- (a) `Infer-5-Causal-Inference.ipynb` cellules 0/13/36/37 (markdown) = commentaires pédagogiques "cross-check avec PyMC-4" pointant `../PyMC/PyMC-04-Bayesian-Networks.ipynb`. Cellule 14 (code) contient côte à côte une comparaison `pm.sample()` PyMC et `Variable<bool> cloudySpr = Variable.Bernoulli(0.5)` Infer.NET sur le même réseau bayésien `Cloudy → Sprinkler → WetGrass`. **Le moteur primaire reste Infer.NET** (9 appels `.Infer<>()` avec outputs réels dans ce notebook). Ce n'est **pas** un fallback, c'est une **validation croisée cross-family** — force pédagogique, à discloser honnêtement dans le ledger mais **SOTA-OK (Infer.NET autonome)**.
+- (a) `Infer-05-Causal-Inference.ipynb` cellules 0/13/36/37 (markdown) = commentaires pédagogiques "cross-check avec PyMC-4" pointant `../PyMC/PyMC-04-Bayesian-Networks.ipynb`. Cellule 14 (code) contient côte à côte une comparaison `pm.sample()` PyMC et `Variable<bool> cloudySpr = Variable.Bernoulli(0.5)` Infer.NET sur le même réseau bayésien `Cloudy → Sprinkler → WetGrass`. **Le moteur primaire reste Infer.NET** (9 appels `.Infer<>()` avec outputs réels dans ce notebook). Ce n'est **pas** un fallback, c'est une **validation croisée cross-family** — force pédagogique, à discloser honnêtement dans le ledger mais **SOTA-OK (Infer.NET autonome)**.
 
 **Cross-check double-vérifié** : (1) audit sub-agent a identifié la présence de `PyMC` dans 4 markdown cells + 1 code cell mixt ; (2) vérification firsthand worker via `python -c` confirme ces 5 cellules — claim confirmée.
 
@@ -552,15 +552,15 @@ Chaque notebook pose un problème de **probabilistic programming** avancé qui e
 
 | Notebook | Problème posé (cellule-clef) | Capacité Infer.NET distinctive |
 |----------|------------------------------|--------------------------------|
-| Infer-1-Setup | Installation + sanity-check import | Setup — exception légitime Prong B |
-| Infer-2-Gaussian-Mixtures | Mélange de Gaussiennes, inférence de composantes | EP sur modèle mixte + BIC |
-| Infer-3-Factor-Graphs | Affaire Auburn/Grey, `Variable.Bernoulli(0.7)` | Marginal inference sur factor graph explicite |
-| Infer-4-Bayesian-Networks | Explaining-away diagnostic médical | Réseau bayésien, inférence causale |
-| Infer-5-Causal-Inference | **do-calculus Pearl** : observationnel vs interventionnel | Observationnel vs interventionnel — discriminant net |
-| Infer-2b-Debugging-Bonnes-Pratiques | Pédagogie debug "Model has no support" | Debugging — exception légitime Prong B |
-| Infer-7-Skills-IRT | IRT 2-PL, capacité par étudiant | EP sur modèle de traits latents |
-| Infer-8-TrueSkill | TrueSkill (Xbox Live), inférence de skill | Application canonique Microsoft Infer.NET |
-| Infer-9-Classification | Régression logistique bayésienne + multi-features | Posterior sur poids avec incertitude |
+| Infer-01-Setup | Installation + sanity-check import | Setup — exception légitime Prong B |
+| Infer-02-Gaussian-Mixtures | Mélange de Gaussiennes, inférence de composantes | EP sur modèle mixte + BIC |
+| Infer-03-Factor-Graphs | Affaire Auburn/Grey, `Variable.Bernoulli(0.7)` | Marginal inference sur factor graph explicite |
+| Infer-04-Bayesian-Networks | Explaining-away diagnostic médical | Réseau bayésien, inférence causale |
+| Infer-05-Causal-Inference | **do-calculus Pearl** : observationnel vs interventionnel | Observationnel vs interventionnel — discriminant net |
+| Infer-02b-Debugging-Bonnes-Pratiques | Pédagogie debug "Model has no support" | Debugging — exception légitime Prong B |
+| Infer-07-Skills-IRT | IRT 2-PL, capacité par étudiant | EP sur modèle de traits latents |
+| Infer-08-TrueSkill | TrueSkill (Xbox Live), inférence de skill | Application canonique Microsoft Infer.NET |
+| Infer-09-Classification | Régression logistique bayésienne + multi-features | Posterior sur poids avec incertitude |
 | Infer-10-Model-Selection | **Model evidence** : log evidence comparé | Evidence de modèle — capacité signature Infer.NET |
 | Infer-11-Topic-Models | LDA asymétrique, theta par doc | VMP sur modèle à composantes |
 | Infer-12-Modeles-Hierarchiques | Pooling partiel `theta[c] ~ N(mu, tau)` | Shrinkage hiérarchique |
@@ -2722,7 +2722,7 @@ Part of #3801, #1385
 
 | Métrique | Valeur |
 |----------|--------|
-| Famille | `MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb` (1 .ipynb — causalité bayésienne + do-calculus, parité Infer-5-Causal-Inference entry #006) |
+| Famille | `MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb` (1 .ipynb — causalité bayésienne + do-calculus, parité Infer-05-Causal-Inference entry #006) |
 | Kernel | `python3` |
 | Owner-lane | **po-2025 strict** (lane Python bayésienne native ; entry #028 PyMC 1-15 c.411 + Infer-extension #018 PyMC-16..19) |
 | Date audit | 2026-07-16 (c.538) |
@@ -2789,6 +2789,140 @@ Le do-calculus **est la capacité distinctive** de la causalité — il n'existe
 - **Collision-avoidance** : `gh pr list --state all --search` = 0 PR PyMC-5 SOTA en vol ; entry #030 stacked à la suite de #029.
 - **Cumulatif** : entry #030 = **PyMC-5 standalone** (1 nb) → **famille Probas/PyMC COMPLÈTE 15/15** dans le registre (entry #028 14 + entry #018 PyMC-16..19 + entry #030 PyMC-5 = 19 notebooks PyMC couverts). PyMC/ArviZ déjà comptés ; cette entry clôture le gap PyMC-5.
 
+## Entry #031 — GameTheory/13f-Ataraxos-Patron-Python (owner po-2027, grain A #20408)
+
+| Métrique | Valeur |
+|----------|--------|
+| Famille | `MyIA.AI.Notebooks/GameTheory/GameTheory-13f-Ataraxos-Patron-Python.ipynb` (1 .ipynb — patron Ataraxos Sokota et al. 2025 sur Kuhn poker, satellite Recherche tier 13f, précédents 13d/13e) |
+| Kernel | `python3` |
+| Owner-lane | **po-2027** (`myia-po-2027:CoursIA` ; création du notebook, pas un audit de série existante) |
+| Date | 2026-10-12 |
+| PR | #20435 |
+| Verdict agrégé | **SOTA-OK (périmètre jouet déclaré)** — copie pédagogique déclarée, organe natif = grain B de #20408 |
+
+### Synthèse
+
+| Nb | Cells | Code | EXEC | Err | Stubs C.1 | Kernel | Outils SOTA | Verdict |
+|-----|-------|------|------|-----|-----------|--------|-------------|---------|
+| GameTheory-13f-Ataraxos-Patron-Python | 22 | 9 | 9/9 | 0 | 0 (3 ex.) | python3 | PyTorch (policy-value net + belief net entraînés réels) + évaluation exacte par énumération + pas miroir tabulaire avec projection KL | **SOTA-OK (déclaré)** |
+
+- **EXEC_PROVED** : 9/9 (100%) — `execution_count` 1–9 contigus, 0 erreur, 0 warning.
+- **Violations C.1** : 0 (regex = 0 hit ; 3 stubs `print("Exercice N a completer")` + `return None` conformes).
+
+### Vrais outils SOTA invoqués
+
+- **PyTorch** — réseau politique-valeur (7→64→64, 2 têtes) auto-entraîné (28 rounds × 256 parties, PG + reverse-KL vs table de collecte, amortissement dynamique lr/λ) ; réseau de croyances (7→32→3) supervisé sur 6000 parties d'auto-jeu. Entraînements réels, sorties committées.
+- **Évaluation exacte par énumération** — valeur par donnes × chemins terminaux, meilleure réponse card-aware par induction rétrograde sur les 12 infosets, **self-checks assertés à 1e-9** contre constantes dérivées à la main : valeur uniforme = +1/8, exploitabilité uniforme = 11/24 (les deux passent exactement).
+- **Pas miroir tabulaire** — descente miroir avec projection KL par bissection (budget δ = 0.25), témoin négatif argmax (recherche sans mise à jour).
+
+### Copie pédagogique déclarée (organ-first)
+
+Motif : montrer le patron 3 briques (policy-value self-play / croyances génératives / update equivalence au temps de test) en environ trois cents lignes lisibles sur le plus petit jeu d'information imparfaite non trivial. La sémantique n'existe dans aucune autre série (`git grep -iE "update.equiv|tts_policy|ataraxos" origin/main -- MyIA.AI.Notebooks/` = 0 hit). L'organe officiel du papier (`AtaraxosAI`, entraîné doudizhu à grande échelle) est le **grain B** de #20408, explicitement différé — déclaré dans le body de la PR.
+
+### Prong B — honnêteté mesurée
+
+La discrimination est attestée par le **témoin négatif interne** : exploitabilité base 0.3306 → TTS 0.2653 → témoin argmax 0.1667 — le pas miroir borné recouvre ≈ 40 % du chemin du témoin ; en face-à-face, la TTS en position J2 bat la base (+0.135) et le témoin (+0.131). Le carnet enseigne la lecture renversée (robustesse ≠ force, région de confiance = correction bornée) au lieu du récit attendu — jouet mono-seed assumé dans le texte.
+
+### Conformité aux règles
+
+| Règle | Statut | Preuve |
+|-------|--------|--------|
+| C.1 | **CONFORME** | 0 hit regex ; 3 stubs `print` + `return None` + `# TODO etudiant` |
+| C.2 | **CONFORME** | 9/9 exec_count réels, sorties mesurées committées (0.3306/0.2653/0.1667, CE 0.7042, KL 0.0008→0.0000) |
+| Stop & Repair | **CONFORME** | 0 hand-edit de sortie ; hooks pre-commit verts (papermill paths scrubbed) |
+| SOTA Prong A | **SOTA-OK (déclaré)** | PyTorch réel entraîné + énumération exacte ; organe natif différé au grain B (déclaré) |
+| SOTA Prong B | **CONFORME** | Témoin négatif mesuré, lecture honnête du renversement, mono-seed assumé |
+
+## Entry #032 — GameTheory/13g-Ataraxos-Organe-Natif (owner po-2027, grain B #20408)
+
+| Métrique | Valeur |
+|----------|--------|
+| Famille | `MyIA.AI.Notebooks/GameTheory/GameTheory-13g-Ataraxos-Organe-Natif.ipynb` (1 .ipynb — invocation de l'organe natif `AtaraxosAI/doudizhu` à budget réduit, satellite Recherche tier 13g, suite de 13f) |
+| Kernel | `python3` |
+| Owner-lane | **po-2027** (`myia-po-2027:CoursIA`) |
+| Date | 2026-10-12 (numérotation allouée à la livraison ; l'entrée #031 vit sur #20435, mergée) |
+| PR | #20446 |
+| Verdict agrégé | **SOTA-OK** — organe natif installé, validé par sa suite de tests, entraîné et invoqué à échelle réduite ; la limite PerfectDou de la brique evaluations est mesurée et documentée, pas contournée |
+
+### Synthèse
+
+| Nb | Cells | Code | EXEC | Err | Stubs C.1 | Kernel | Outils SOTA | Verdict |
+|-----|-------|------|------|-----|-----------|--------|-------------|---------|
+| GameTheory-13g-Ataraxos-Organe-Natif | 16 | 8 | 8/8 | 0 | 0 (3 ex.) | python3 | organe `AtaraxosAI/doudizhu` natif : nanopokerlib C++20 (build MinGW), MARVEL VRPO 2 iter, Yomi 2 iter, Kagami update-equiv B in {4,16,64} | **SOTA-OK** |
+
+- **EXEC_PROVED** : 8/8 (100%) — `execution_count` 1–8 contigus, 0 erreur. Cellules organ-presence exécutées RÉELLEMENT à la re-exécution (constantes C++ lues depuis le module compilé ; `96 passed, 5 deselected, rc=0` — suite de tests native de l'organe rejouée en sous-processus pendant l'exécution du carnet).
+
+### Vrais outils SOTA invoqués (les quatre briques, nativement)
+
+- **nanopokerlib (C++20/pybind11)** — build MinGW-w64 g++ 16.2, générateur Ninja (patch local du `setup.py` : `-A x64` restreint aux générateurs multi-config ; `libwinpthread-1.dll` copiée près du `.pyd` après `-static-libstdc++ -static-libgcc`). 96/96 tests natifs.
+- **MARVEL (VRPO)** — entraînements réels 2 itérations : `doudizhu` full 202,4 s/iter (OOM 32,5 Go à défauts intacts — tampon de rejeu), `doudizhu_tiny` 40,2 s/iter (5 cartes/main, variante native de l'organe, défaut du moteur Kagami).
+- **Yomi (croyances)** — entraînement réel 2 itérations sur checkpoint MARVEL gelé (OOM 2,7 Go à batch 128 → batch 8).
+- **Kagami update-equiv** — `DoudizhuInferenceEngine` + `bind_marvel_model`/`bind_yomi_model` sur checkpoints réels, donnes racines construites par la méthode canonique des tests de l'organe (graines 0–5), budgets {4, 16, 64} vs défaut 512.
+
+### Mesures (relevées 2026-10-12, organ Windows/mingw, torch 2.14.1+cpu)
+
+KL(direct ‖ recherchée) par budget, 6 donnes : B=4 → 1,22 nat moyen (renversements 50 %) ; B=16 → 1,51 nat (max 4,04, 83 %) ; B=64 → 0,44 nat (67 %) ; direct 8 ms/requête vs 0,36–1,34 s recherchée.
+
+### Témoin négatif (Prong B — honnêteté mesurée)
+
+La divergence n'est **pas monotone en budget** (pic à B=16, chute à B=64 ; une donne sur six anti-converge, la donne 2 : 1,348 → 1,502 nat de B=4 a B=64) : à croyance sous-entraînée (2 iter vs 40 000 papier), chaque rollout hérite du bruit d'amont — le budget de recherche ne compense pas l'entraînement manquant. Le carnet enseigne cette lecture au lieu du récit « plus de budget = mieux ».
+
+### Limite mesurée, non contournée
+
+La brique `evaluations` (matches complets) exige le bootstrap externe PerfectDou (`from perfectdou.env.game import GameEnv` + données générées par son script) — import-chain + `CalledProcessError` relevés dans le carnet. La mesure passe par le moteur d'inference Kagami un-pas, sans dépôt externe. RECOVERABLE-MACHINE documenté pour les matches complets, pas substitué.
+
+### Conformité aux règles
+
+| Règle | Statut | Preuve |
+|-------|--------|--------|
+| C.1 | **CONFORME** | 3 stubs `print` + `return None` + `# TODO etudiant` ; 0 erreur d'exécution |
+| C.2 | **CONFORME** | 8/8 exec_count réels, sorties mesurées committées (96 passed natif, tableaux KL, figure) |
+| Stop & Repair | **CONFORME** | 0 hand-edit de sortie ; dégradation organ-absent = branche de code, pas un maquillage |
+| SOTA Prong A | **SOTA-OK** | organ-first : la sémantique update-equiv du patron 13f est remplacée par l'organe officiel ici (questions 1-3 répondues par construction) |
+| SOTA Prong B | **CONFORME** | échelle de budgets + témoin négatif non-monotonie mesuré, hétérogénéité par donne affichée |
+
+## Entry #033 — GameTheory/13h-Ataraxos-DynamicDamping (owner po-2027, grain C #20408)
+
+| Métrique | Valeur |
+|----------|--------|
+| Famille | `MyIA.AI.Notebooks/GameTheory/GameTheory-13h-Ataraxos-DynamicDamping-Python.ipynb` (1 .ipynb — ablation de la coordination temporelle d'Ataraxos, mesurée sur Kuhn par exploitabilité exacte ; satellite Recherche tier 13h, précédents 13d/13f/13g) |
+| Kernel | `python3` |
+| Owner-lane | **po-2027** (`myia-po-2027:CoursIA` ; création du notebook) |
+| Date | 2026-10-21 |
+| PR | #21824 — branche `feature/20408-13h-dynamic-damping` (grain C de #20408) |
+| Verdict agrégé | **SOTA-OK (périmètre jouet déclaré)** — instrument exact, témoin négatif mesuré, résultat négatif documenté |
+
+### Synthèse
+
+| Nb | Cells | Code | EXEC | Err | Stubs C.1 | Kernel | Outils SOTA | Verdict |
+|-----|-------|------|------|-----|-----------|--------|-------------|---------|
+| GameTheory-13h-Ataraxos-DynamicDamping-Python | 20 | 9 | 9/9 | 0 | 0 (3 ex.) | python3 | CFR (regret matching, regrets contrefactuels) + exploitabilité exacte par énumération des 64 stratégies pures + témoin analytique `-1/18` | **SOTA-OK (déclaré)** |
+
+- **EXEC_PROVED** : 9/9 (100%) — `execution_count` 1–9 contigus, 0 erreur, papermill 41,85 s, `exception: None`.
+- **Violations C.1** : 0 (3 stubs `print("Exercice N a completer")` + `None  # TODO etudiant` conformes, le carnet s'exécute de bout en bout).
+
+### Ce que le carnet mesure
+
+Ablation à **budget égal** de quatre régimes de mise à jour (gap de Nash exact de la politique moyenne, six jalons) : `plain` (témoin négatif), `cfrplus`, `linavg`, `sched` (coordination planifiée des deux leviers). **Trois convergent** vers `-1/18` à `4e-4` près (`plain` et `linavg` à `6e-6`, `cfrplus` à `3,6e-4`) ; `sched` **n'y converge pas dans ce budget** — valeur finale `-0.05331`, écart `2,2e-3`, meilleur jalon à 400 : c'est une valeur de **budget fini**, pas un point fixe atteint. Mesures committées : à 200 itérations `linavg` 0,00900 contre `plain` 0,01225 (−26,5 %) ; à 2000 itérations `linavg` 0,00303 (−29,7 %), `sched` 0,03899 (+804 %). Reproductibilité : tous les chiffres se rejouent à l'identique, sauf le dernier jalon de `sched`, sensible aux ulp de plateforme au 4ᵉ décimale (0,03899 committé / 0,03895 en rejeu indépendant) — aucun verdict n'en dépend.
+
+### Témoin négatif (Prong B — honnêteté mesurée)
+
+Le régime « coordination planifiée » mène **très tôt** (25 itérations : 0,01755 contre 0,04494 pour `plain`), puis **perd** en fin de budget : son gap descend jusqu'à 0,00647 à 400 itérations, puis **remonte** à 0,03899 à 2000 — l'actualisation des regrets détruit l'accumulation qui fait converger le CFR. Le carnet enseigne ce résultat négatif au lieu du récit « coordination = mieux » ; `cfrplus` (agressivité constante) est le plus lent à 2000 itérations (+12,3 %).
+
+### Organe natif nommé (organ-first)
+
+Organe de référence pour Kuhn : `pyspiel` / OpenSpiel (CFR). Non invoqué ici : les quatre régimes mesurés sont des **variantes d'actualisation** que la librairie n'expose pas, et la validation de l'instrument passe par le **témoin analytique** `-1/18` (Kuhn 1950), indépendant de l'algorithme — plus fort qu'un second passage du même solveur. La sémantique Ataraxos elle-même reste portée par 13f (patron) et 13g (organe natif `AtaraxosAI/doudizhu`).
+
+### Conformité aux règles
+
+| Règle | Statut | Preuve |
+|-------|--------|--------|
+| C.1 | **CONFORME** | 3 stubs `print` + `None` + `# TODO etudiant` ; 0 erreur d'exécution |
+| C.2 | **CONFORME** | 9/9 exec_count réels, sorties mesurées committées |
+| Stop & Repair | **CONFORME** | 0 hand-edit de sortie ; l'arbre faux (`cbb`) a été corrigé à la source puis ré-exécuté |
+| SOTA Prong A | **SOTA-OK** | instrument exact, organe natif nommé, copie déclarée justifiée |
+| SOTA Prong B | **CONFORME** | problème non dégénéré (information imparfaite, 64 stratégies pures), témoin négatif et résultat négatif mesurés |
+
 ## Cumul entries (registre axe-2 SOTA)
 
 Tableau cumulatif unique du registre : une ligne par entry `## Entry #NNN`. Toute nouvelle entry doit etre ajoutee ici dans la meme PR (regle #14562).
@@ -2825,5 +2959,8 @@ Tableau cumulatif unique du registre : une ligne par entry `## Entry #NNN`. Tout
 | 028 | Probas/PyMC 1-15 (14 nb) | po-2025 strict | 2026-07-12 | SOTA-OK 14/14 | #6286 MERGED |
 | 029 | GenAI/SemanticKernel 01-10b (12 nb) | owner-floue po-2025 consultatif | 2026-07-12 | SOTA-OK 12/12 | #6286 MERGED |
 | 030 | Probas/PyMC-05-Causal-Inference (1 nb) | po-2025 strict | 2026-07-16 | SOTA-OK 1/1 | #6808 MERGED |
+| 031 | GameTheory/13f-Ataraxos-Patron-Python (1 nb) | po-2027 | 2026-10-12 | SOTA-OK 1/1 (copie pédagogique déclarée) | #20435 |
+| 032 | GameTheory/13g-Ataraxos-Organe-Natif (1 nb) | po-2027 | 2026-10-12 | SOTA-OK 1/1 (organe natif invoqué, limite PerfectDou documentée) | #20446 |
+| 033 | GameTheory/13h-Ataraxos-DynamicDamping (1 nb) | po-2027 | 2026-10-21 | SOTA-OK 1/1 (instrument exact, résultat négatif mesuré) | #21824 — branche `feature/20408-13h-dynamic-damping` |
 
-**Mesure** : `grep -c '^## Entry #' docs/ledgers/3801-sota-axe2.md` = **30** (verifie le 2026-09-04). Ce tableau unique remplace les deux tableaux dupliques (8 lignes, entry #005 ; 22 lignes, entry #008) supprimes par #14562.
+**Mesure** : `grep -c '^## Entry #' docs/ledgers/3801-sota-axe2.md` = **33** (vérifié le 2026-10-21 ; l'entrée #033 arrive avec le grain C de #20408 ; l'entrée #032 était arrivée avec #20446). Ce tableau unique remplace les deux tableaux dupliqués (huit lignes, entry #005 ; vingt-deux lignes, entry #008) supprimés par #14562.

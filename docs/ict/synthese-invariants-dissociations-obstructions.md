@@ -36,7 +36,7 @@ Une dissociation n'est pas un bruit de mesure : c'est le moment où deux proxys,
 
 - **ICT-synthèse cross-substrat** (strate 5, [ICT-Series](../../MyIA.AI.Notebooks/IIT/ICT-Series/README.md)) : trois proxys de l'intégration, deux se suivent, un diverge. La dissociation est le résultat, pas un échec.
 - [**ICT-18b-ReversibilityBudget-Python**](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18b-ReversibilityBudget-Python.ipynb) ([#7287](https://github.com/jsboige/CoursIA/issues/7287)) : la réversibilité y est dissociée en un **moyen** (production d'entropie $\sigma$ de Schnakenberg — *mesuré*) et une **fin** (compétence de régénération au sens de Levin — *nommée comme une autre grandeur, jamais mesurée*). Le verdict `P2 DISSOCIATION` capture exactement ce régime : on croyait mesurer « la » réversibilité, on mesurait son coût, pas sa finalité.
-- [**ICT-15b-SensitivityCanonicity-Python**](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15b-SensitivityCanonicity-Python.ipynb) ([#7288](https://github.com/jsboige/CoursIA/issues/7288)) : degré spectral et sensibilité de Huang, deux lectures d'une même dynamique, divergent sur la question « lequel est canonique ? ». La dissociation révèle que le choix du proxy *est* un choix de préfaisceau.
+- [**ICT-15b-SensitivityCanonicity-Python**](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15/ICT-15b-SensitivityCanonicity-Python.ipynb) ([#7288](https://github.com/jsboige/CoursIA/issues/7288)) : degré spectral et sensibilité de Huang, deux lectures d'une même dynamique, divergent sur la question « lequel est canonique ? ». La dissociation révèle que le choix du proxy *est* un choix de préfaisceau.
 
 **Piège évité.** Lire une dissociation comme un « bruit à corriger ». Réconcilier deux proxys divergents par moyenne les vide de leur information — c'est exactement l'unification prématurée que cette grille interdit.
 
@@ -51,7 +51,7 @@ L'obstruction n'est pas un échec de méthode : c'est une **structure**. Quand d
 - **Scalaire universel falsifié** (strate 5) : la non-existence d'une section globale recollant tous les proxys = un *candidat* de classe d'obstruction non nulle (la falsification est un fait ; sa lecture comme classe de cohomologie `H¹` est proposée, grade C). *C'est le résultat, pas un manque.*
 - [**social_choice_lean**](../../MyIA.AI.Notebooks/GameTheory/social_choice_lean/) : l'impossibilité d'Arrow, 0 `sorry` — le local (préférences individuelles) ne se globalise pas en une fonction de choix, et c'est un théorème.
 - [**#7290 Kochen-Specker**](https://github.com/jsboige/CoursIA/issues/7290) : aucune assignation globale non contextuelle n'existe — `H¹ ≠ 0` érigé en impossibilité (lecture cohomologique d'Abramsky-Brandenburger). Le dépôt le pose en problème de contraintes où la section se recolle (SAT) ou se refuse (UNSAT). **Instruit et mesuré** ([section dédiée](#kochen-specker-sur-le-zoo-de-proxys--lanalogie-et-où-elle-meurt)) : le transfert échoue un cran *avant* le SAT/UNSAT, faute de proxys non conjointement mesurables — le zoo n'est pas « non contextuel », la question n'y est pas encore posable.
-- **Jeu de la Vie** ([Lean-16b](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb) / [-16c](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Game-of-Life-Golly.ipynb) / [-16d](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16d-Conway-Game-of-Life-Lean-Native.ipynb)) : la règle locale `B3/S23` et la complétude de Turing ne se recollent pas « gratuitement » — l'écart est mesuré, et la preuve du bond HashLife (`hashlife_correct`) vit dans cet écart.
+- **Jeu de la Vie** ([GOL-01](../../MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-01-Regles-Vie-Lean.ipynb) / [-16c](../../MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-02-Golly.ipynb) / [-16d](../../MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-03-Vie-Native.ipynb)) : la règle locale `B3/S23` et la complétude de Turing ne se recollent pas « gratuitement » — l'écart est mesuré, et la preuve du bond HashLife (`hashlife_correct`) vit dans cet écart.
 
 **Piège évité.** Lire une obstruction comme un trou à combler. Combler l'obstruction (forcer un scalaire, moyenné les proxys) détruit l'information qu'elle porte — on revient au régime 2 en pire.
 
@@ -115,7 +115,7 @@ Le détecteur est validé sur des fixtures à insatisfiabilité **prouvée à la
 
 ### Le résultat mesuré : la question n'est pas posable
 
-Mesure sur S1 (tri auto-organisé), trois coarse-grainings `k ∈ {3, 4, 6}` × cinq graines `{0, 1, 7, 42, 99}`, proxys câblés comme dans [ICT-15c](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15c-MetaProxyObstruction-Python.ipynb) (`f(x) = x`, anti-saturation) :
+Mesure sur S1 (tri auto-organisé), trois coarse-grainings `k ∈ {3, 4, 6}` × cinq graines `{0, 1, 7, 42, 99}`, proxys câblés comme dans [ICT-15c](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15/ICT-15c-MetaProxyObstruction-Python.ipynb) (`f(x) = x`, anti-saturation) :
 
 ```
 recouvrements distincts  : 1
@@ -149,7 +149,7 @@ Cette synthèse ne lance aucun nouveau dispatch. Elle éclaire deux chantiers d�
 - Série ICT : [`MyIA.AI.Notebooks/IIT/ICT-Series/`](../../MyIA.AI.Notebooks/IIT/ICT-Series/) ([Epic #4588](https://github.com/jsboige/CoursIA/issues/4588)) — strate 5 « scalaire universel falsifié ».
 - Doc companion obstruction/recollement : [`docs/cadrage/grothendieckian-lens.md`](../cadrage/grothendieckian-lens.md) ([#7299](https://github.com/jsboige/CoursIA/issues/7299)).
 - Langage cohomologique formalisé : [`grothendieck_lean/Grothendieck/SheafCohomology/`](../../MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/SheafCohomology/Basic.lean) (0 `sorry` de production).
-- Dissociations instrumentées : [ICT-15b](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15b-SensitivityCanonicity-Python.ipynb) ([#7288](https://github.com/jsboige/CoursIA/issues/7288)), [ICT-18b](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18b-ReversibilityBudget-Python.ipynb) ([#7287](https://github.com/jsboige/CoursIA/issues/7287)).
+- Dissociations instrumentées : [ICT-15b](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15/ICT-15b-SensitivityCanonicity-Python.ipynb) ([#7288](https://github.com/jsboige/CoursIA/issues/7288)), [ICT-18b](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18b-ReversibilityBudget-Python.ipynb) ([#7287](https://github.com/jsboige/CoursIA/issues/7287)).
 - Obstructions érigées en impossibilité : [`social_choice_lean`](../../MyIA.AI.Notebooks/GameTheory/social_choice_lean/) (Arrow), [#7290](https://github.com/jsboige/CoursIA/issues/7290) (Kochen-Specker).
 - Test de contextualité (possibiliste, CSP) + garde anti-analogie-décorative : [`ict/proxy_contextuality.py`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ict/proxy_contextuality.py), 47 tests dont l'insatisfiabilité prouvée à la main de la boîte PR ([#7290](https://github.com/jsboige/CoursIA/issues/7290)).
 - Quatrième fil (diachronique) — généalogie de `p̂` : [`docs/ict/genealogy-representation-interne.md`](genealogy-representation-interne.md) ([#7735](https://github.com/jsboige/CoursIA/issues/7735)).

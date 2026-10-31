@@ -46,13 +46,25 @@ cd D:/dev/CoursIA-2
   --lang fr --device cuda
 
 # 3) Mesure 3 ASR (à lancer après CHAQUE rendu, met à jour metrics.json)
+#    Set ASR = tiny, large-v3, large-v3-turbo (defaut) ; --skip-prosody en debug.
 ./venv/Scripts/python.exe \
   MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/a0c_rerun/measure_3asr.py \
   --wav "G:/Mon Drive/MyIA/Projets/BibliothequesSonores/A0-review-20261007/A0C-qwen3tts-customvoice-neutral.wav" \
   --ref-text-file "G:/Mon Drive/MyIA/Projets/BibliothequesSonores/A0-review-20261007/extract_C_long_narration.txt" \
-  --metrics-json "G:/Mon Drive/MyIA/Projets/BibliothequesSonores/A0-review-20261007/A0C-qwen3tts-customvoice-neutral-metrics.json" \
-  --asr-models tiny small large-v3
+  --metrics-json "G:/Mon Drive/MyIA/Projets/BibliothequesSonores/A0-review-20261007/A0C-qwen3tts-customvoice-neutral-metrics.json"
 ```
+
+> **WER et omissions -- convention du banc** (c.6115711862, fix #19695) :
+> - WER par distance de Levenshtein sur la normalisation `_normalize_words`
+>   (NFC, lower, alnum->espace). Le seuil de 0,15 (c.6034723389) porte sur ce
+>   WER normalise, pas sur le `split()` brut.
+> - Omissions = runs de >= 3 mots de reference SUPPRIMES a l'alignement
+>   (`difflib.SequenceMatcher` opcodes `delete` + excedent `replace` >= 3),
+>   vote >= 2 ASR sur un recouvrement >= 3 mots. Un mot substitue ne casse
+>   pas une omission : le verdict tranche sur la disparition du passage.
+> - Jambe prosodie : `verify_prosody.py --single <wav>` -- stocke dans
+>   `metrics["prosody"]`. Le script se lance en sous-processus et parse la
+>   derniere ligne JSON de stdout.
 
 ## Sortie
 

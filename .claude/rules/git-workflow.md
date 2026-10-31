@@ -16,13 +16,20 @@ Examples: `Add: notebook sur les Transformers`, `Fix: correction d'erreurs dans 
 
 ### Safe reference syntax (prevent premature issue auto-close)
 
-GitHub auto-closes issues on `Refs #N`, `Fixes #N`, `Closes #N`. Use safe syntax:
+GitHub auto-closes an issue only when a closing keyword (`close`/`closes`/`closed`, `fix`/`fixes`/`fixed`, `resolve`/`resolves`/`resolved`) **immediately** precedes the reference. Anything between the two is text, and nothing closes. Use safe syntax:
 
 | Intent | Correct | Wrong |
 |--------|---------|-------|
 | Link without closing | `See #N` or `Part of #N` | ~~`Refs #N`~~ |
-| Close when ALL criteria met | `Closes #N` (verify acceptance first) | ~~`Fixes #N`~~ for partial |
+| Close when ALL criteria met | `Closes #N` on its own line (verify acceptance first) | ~~`Fixes #N`~~ for partial |
 | Partial delivery | `See #N` (partial: X/Y criteria) | ~~`Refs #N`~~ |
+
+**The scope swallows the keyword (#23348).** The mandated `type(scope): subject` form has an inviting place for the issue number — `type(scope,#N): subject` — and that form closes nothing: `(` and the scope sit between the keyword and the number. Measured on `origin/main` over 500 commits: 299 distinct issue numbers cited this way, **186 still open**; among the 162 cited by a correction verb, **95 still open** — issues whose fix is already on `main`, inflating the belt with work already done. Never rely on the subject alone to close. Two forms that work:
+
+- `Fix(ci,#22937): …` **and** a `Closes #22937` line in the commit body (for a squash merge, the PR body becomes that message);
+- `Fix(ci): …` and a `Closes #22937` line in the body.
+
+The lister `python scripts/ci/list_scope_swallowed_issues.py` (`--json`, `--all-forms`) names the pairs (open issue, correction commit) so the residual can be triaged. It closes nothing, comments nothing: triage and closure belong to the coordinator (G.9).
 
 **Incident**: 3 issues (#1943, #2048, #2158) auto-closed by GitHub on partial PRs using `Refs #N`. See #2211.
 
@@ -39,18 +46,18 @@ GitHub auto-closes issues on `Refs #N`, `Fixes #N`, `Closes #N`. Use safe syntax
 | **Branche manipulée par plusieurs agents de front** | **INTERDIT** | un `[CLAIMED]` d'une autre lane sur l'issue vaut « plusieurs agents » → [lane-claim-protocol.md](lane-claim-protocol.md) |
 
 - **L'alternative merge d'abord, quand elle existe** : `git merge origin/main`, `gh pr update-branch`, cherry-pick, revert, nouveaux commits. Le force-push est le dernier recours, jamais le réflexe de rebase par défaut.
-- **`gh pr update-branch` ne remet PAS le plancher DWELL à zéro quand la fusion est sans conflit** (#16149, durci par la CR du 2026-09-16 ; corrige ce que #15859 avait laissé croire) : le plancher de merge (120 min, `scripts/ci/merge_dwell.py`) se mesure par `last_authoritative_committed_at`, qui remonte la chaîne first-parent **au-delà** des fusions de rafraîchissement de base **prouvées content-free** — trois conditions conjointes : deux parents, le second **ancêtre de la base**, et l'arbre du merge **identique à l'auto-merge** des parents (`git merge-tree --write-tree`). C'est exactement la forme d'un `update-branch` sans conflit. **Rafraîchir une branche propre pour récupérer un fix de `main` est donc gratuit.** Fail-closed partout ailleurs : une résolution manuelle de conflit (arbre ≠ auto-merge), un rebase, ou une preuve d'équivalence indisponible **re-arment** le plancher — c'est du contenu d'auteur, et il se mesure. Un commit de code ordinaire le re-arme évidemment aussi. Ce rouge n'est **pas un défaut de la PR** : le gate le nomme `DWELL -- ... leve au premier balayage suivant <ts>` et le balayage (`pr-gate-stale-sweep.yml`) lève seul — **sa cadence réelle n'est pas horaire** malgré son cron `7 * * * *` : le workflow mesure lui-même **178-341 min** entre deux services (5 tirs en 24 h, #15197), donc l'échéance annoncée est une borne, pas une promesse. Sur une PR dont le **seul** rouge est `DWELL`, `update-branch` n'est pas nuisible, il est **inutile** (rafale CI pour rien sur un pool de runners partagé) ; le geste **gratuit** est de rejouer la jambe (`gh run rerun <run_id> --job <job_id>`) : aucun commit, donc aucun ré-armement.
+- **`gh pr update-branch` ne remet PAS le plancher DWELL à zéro quand la fusion est sans conflit** (#16149) : `last_authoritative_committed_at` saute les fusions de rafraîchissement **prouvées content-free**, et fail-close sur tout le reste (résolution manuelle de conflit, rebase, preuve indisponible = **ré-armé**). **Rafraîchir une branche propre pour récupérer un fix de `main` est donc gratuit.** Ce rouge n'est pas un défaut de la PR — le gate le nomme et le balayage le lève seul ; sur une PR dont le **seul** rouge est `DWELL`, le geste **gratuit** est de rejouer la jambe (`gh run rerun <run_id> --job <job_id>`) : aucun commit, donc aucun ré-armement. Prédicat conjonctif, cadence réelle du balayage (178-341 min, #15197) et récit de la correction (#16962) : [git-workflow-detail.md §4](../../docs/reference/git-workflow-detail.md#4-dwell--pourquoi-update-branch-ne-re-arme-plus-le-plancher-16962).
 - **Ce que chaque geste fait au plancher** :
   - `gh pr update-branch` **sans conflit** : **inchangé** — fusion content-free, sautée.
   - `gh pr update-branch` **avec résolution de conflit** : **ré-armé** — l'arbre diffère de l'auto-merge.
   - rebase : **ré-armé** — fail-closed.
   - commit de contenu ordinaire : **ré-armé** — la tête change de date.
-- **`update-branch` tue AUSSI le dossier de prévalidation, et c'est la moitié qu'on oublie** : il change la tête, donc le contrat exact-head (`[ADJOINT PREFLIGHT]`, `surfaces-sha256`, comptes `diff-files`/`additions`) est **périmé à la seconde**, et `check_adjoint_prevalidation.py` rend `head is stale` / `discussion surfaces changed`. La boucle se referme sur elle-même : `main` rouge → la lane doit `update-branch` (bon geste) → **le dossier périt** → l'adjoint ne peut plus attester `checks: latest-wins-green` sans mentir, donc il retient le dossier (à juste titre) → `exit 1` → pas de merge → la PR vieillit → il faut re-`update-branch`. **Correction du 2026-09-20 (#16962)** : cette boucle avait d'abord été décrite avec un second effet — « et le DWELL se ré-arme ». C'est **faux** pour un `update-branch` sans conflit (`last_authoritative_committed_at` saute les fusions prouvées content-free), et l'erreur rendait la boucle plus serrée qu'elle ne l'est. Le seul effet réel est la **péremption du dossier**, et il suffit à produire la boucle. Mesure du 2026-09-19 : **17 candidates sur 17** refusées par le gate pour ce seul motif, aucune pour un défaut de PR.
+- **`update-branch` tue AUSSI le dossier de prévalidation, et c'est la moitié qu'on oublie** : il change la tête, donc le contrat exact-head (`[ADJOINT PREFLIGHT]`, empreinte `surfaces-sha256`, comptes `diff-files`/`additions`) est **périmé à la seconde**, et `check_adjoint_prevalidation.py` rend `head is stale` / `discussion surfaces changed`. C'est cette péremption, et non le DWELL, qui referme la boucle — mesure et mécanisme vérifié à la source : [prevalidation-dossier-order-detail.md §1-§3](../../docs/reference/prevalidation-dossier-order-detail.md).
 
   **L'ordre qui sort de la boucle — le dossier vient APRÈS la stabilisation de la branche, jamais avant :**
 
   1. la lane `update-branch` si elle doit récupérer `main` ;
-  2. on laisse les checks se ré-agréger à la nouvelle tête, puis **on rejoue** le job si besoin — personne ne re-pousse. Le plancher DWELL, lui, n'a **pas** été ré-armé par un `update-branch` sans conflit : il continue de se mesurer depuis le dernier commit qui modifie le côté PR — la date de committer que remonte `last_authoritative_committed_at`, pas celle de la fusion de rafraîchissement. Il ne se ré-arme que si le rafraîchissement a exigé une **résolution manuelle de conflit** (arbre ≠ auto-merge des parents), cas où l'attente de 120 min redevient réelle ;
+  2. on laisse les checks se ré-agréger à la nouvelle tête, puis **on rejoue** le job si besoin — personne ne re-pousse. Le plancher DWELL n'a **pas** été ré-armé par un `update-branch` sans conflit ; il ne l'est que par une **résolution manuelle de conflit**, cas où l'attente de 120 min redevient réelle ;
   3. **alors** l'adjoint écrit le dossier, à la tête exacte ;
   4. le coordinateur merge **immédiatement**, et **la branche est gelée entre 3 et 4**.
 
@@ -79,9 +86,7 @@ GitHub auto-closes issues on `Refs #N`, `Fixes #N`, `Closes #N`. Use safe syntax
 
 ## Orphan-branch scan (L576 ★★)
 
-**S'applique quand** un worker voit une branche distante `jsboige/*` et **envisage de la self-pick**. Les ancres `pulls` **peuvent mentir** : REST `commits/<oid>/pulls` renvoie un faux négatif pour une branche pourtant attachée à une PR OPEN, et une branche squash-mergée n'est jamais ancêtre de `main`. Conclure « orpheline » sur une seule ancre = auto-pick d'un travail en cours, ou re-livraison d'un travail déjà sur `main`.
-
-**Quatre ancres, toutes à passer** — matrice de décision complète, faux positifs mesurés et incident fondateur (c.576, branches attachées à #7086-#7091) : [orphan-branch-scan-l576.md](../../docs/reference/orphan-branch-scan-l576.md).
+**S'applique quand** un worker voit une branche distante `jsboige/*` et **envisage de la self-pick**. Les ancres `pulls` **peuvent mentir** (faux négatif REST sur une branche pourtant attachée à une PR OPEN ; une branche squash-mergée n'est jamais ancêtre de `main`) — **quatre ancres, toutes à passer** : matrice de décision complète, faux positifs mesurés et incident fondateur (c.576, #7086-#7091) : [orphan-branch-scan-l576.md](../../docs/reference/orphan-branch-scan-l576.md).
 
 ```bash
 git merge-base --is-ancestor <sha> origin/main          # 1. intégrée upstream ? (muette si squash)
@@ -90,11 +95,11 @@ gh pr list --state all --search "head:<branch>"         # 3. autoritatif sur les
 git log origin/main --oneline --grep "<sujet>"          # 4. identité de CONTENU (squash → sujet préservé)
 ```
 
-**Anti-pattern** : ne JAMAIS conclure « orpheline » sur `git fetch` + REST seul. Coût de l'investigation : ~10 s. Coût de son omission : un cycle dupliqué, ou l'écrasement d'un travail en cours.
+**Anti-pattern** : ne JAMAIS conclure « orpheline » sur `git fetch` + REST seul (coût ~10 s ; omission = cycle dupliqué ou écrasement d'un travail en cours).
 
 ## Worktree cleanup en fin de cycle (#14195)
 
-**Problème** : chaque review de PR notebook / build Lean crée un worktree ; sans organe de retrait, ces worktrees s'accumulent (mesure 2026-09-02 : 265 sur po-2026 en 36 h, 103 sur ai-01 ; précédent #8924). Le mécanisme est nommé depuis le 2026-08-05 mais l'organe n'avait jamais été construit.
+**Problème** : chaque review de PR notebook / build Lean crée un worktree ; sans organe de retrait, ces worktrees s'accumulent (mesures datées : [détail §5](../../docs/reference/git-workflow-detail.md)).
 
 **Solution** : `scripts/ci/prune_merged_worktrees.py`, dry-run par défaut, `--apply` explicite. À exécuter en fin de cycle worker (ou via cron) :
 
@@ -120,17 +125,9 @@ python scripts/ci/install_prune_task.py --install --dry-run  # afficher argv sch
 
 **Ancre PR autoritative** : `gh pr list --state all --search "head:<branch>"` (pas `--is-ancestor` seul, ni `commits/<oid>/pulls` REST — cf §Orphan-branch scan ci-dessus pour les faux négatifs mesurés).
 
-**Refus ≠ échec + observabilité (roo-extensions #3895, 27/09)** : mesuré sur 3 machines, 86-100 % des worktrees vus sont REFUSE (worktrees de cycle nés HEAD-détachés ou sales par construction — po-2023 a saturé ses disques dessus). Un REFUS est une **décision** de l'organe : exit 0, le rapport porte le décompte par classe (`refusals:` en texte, `refusal_reasons` en JSON) ; rc≠0 = panne gh/git ou échec d'application, uniquement. La tâche planifiée relaie `--warn-threshold 20` : au-delà, une ligne `[WARN][prune-task]` vit dans le journal (`%LOCALAPPDATA%\CoursIA\prune_task\logs\`). Attribution lane : un spawn peut poser `.lane-owner` (une ligne : `machine:workspace`) à la racine du worktree — l'organe l'affiche (`lane=...`) et l'agrège (`lane_refusals`) ; le fichier est toléré au nettoyage et n'influence AUCUNE décision.
+**Refus ≠ échec + observabilité** : un REFUS est une **décision** de l'organe : exit 0, le rapport porte le décompte par classe (`refusals:` en texte, `refusal_reasons` en JSON) ; rc≠0 = panne gh/git ou échec d'application, uniquement. La tâche planifiée relaie `--warn-threshold 20` : au-delà, une ligne `[WARN][prune-task]` vit dans le journal (`%LOCALAPPDATA%\CoursIA\prune_task\logs\`). Attribution lane : un spawn peut poser `.lane-owner` (une ligne : `machine:workspace`) à la racine du worktree — l'organe l'affiche (`lane=...`) et l'agrège (`lane_refusals`) ; le fichier est toléré au nettoyage et n'influence AUCUNE décision (mesure : [détail §5](../../docs/reference/git-workflow-detail.md)).
 
-**Mesure 2026-09-03 (po-2027, cycle #14195)** :
-
-| | Avant | Après `--apply` |
-|---|---:|---:|
-| Worktrees enregistrés | 5 | 4 |
-| … REMOVE | 1 (test-prune-merged, PR #14403 MERGED) | — |
-| … REFUSE | 4 (main + 3 PR OPEN) | 4 |
-
-Le worktree de test créé sur `fix/14142-qc40-followup-state` (PR #14403 mergée par squash 2026-09-02) a été retiré — c'est le **contrôle positif** manquant à tout prédicat d'ascendance : un squash-merge efface l'ascendance, mais `gh pr list --state all --search` retrouve la PR par le nom de branche.
+**Mesure datée et contrôle positif** (po-2027, cycle #14195 ; tableau avant/après et contrôle positif du squash-merge) : [détail §5](../../docs/reference/git-workflow-detail.md).
 
 ## PR Body Generation
 

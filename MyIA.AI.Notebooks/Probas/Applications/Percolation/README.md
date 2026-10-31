@@ -11,20 +11,24 @@ critique** (p ≈ p_c). Simulation-first : on fait *voir* les trois régimes
 
 | Composant | Notebook | Stack | Ce qu'il apporte |
 |-----------|----------|-------|------------------|
-| [Percolation-01-Supercritique-Python](Percolation-01-Supercritique-Python.html) | 1 (Python) | Python 3 + `networkx` | Tore carré (degré 4, `p_c(bond, ℤ²) = 1/2`) et tore hexagonal (degré 3, `p_c ≈ 0.6527`) — trois régimes mesurés, géant du tore, vitesse de disparition `Φ(n) ~ √n` |
-| [Percolation-02-Lean](Percolation-02-Lean.html) | 2 (Lean 4) | Lean 4 + Mathlib (`percolation_lean`) | Compagnon exécutable du lake : configurations d'arêtes ouvertes, Harris–Kleitman fini, connexité croissante, composantes, frontière isopérimétrique avec profil calculé sur `C₃`/`C₄` |
+| [Percolation-01-Supercritique-Python](Percolation-01-Supercritique-Python.ipynb) | 1 (Python) | Python 3 + `networkx` | Tore carré (degré 4, `p_c(bond, ℤ²) = 1/2`) et tore hexagonal (degré 3, `p_c ≈ 0.6527`) — trois régimes mesurés, géant du tore, vitesse de disparition `Φ(n) ~ √n` |
+| [Percolation-02-Lean](Percolation-02-Lean.ipynb) | 2 (Lean 4) | Lean 4 + Mathlib (`percolation_lean`) | Compagnon exécutable du lake : configurations d'arêtes ouvertes, Harris–Kleitman fini, connexité croissante, composantes, frontière isopérimétrique avec profil calculé sur `C₃`/`C₄` |
 | [Percolation-03-Critique-Python](Percolation-03-Critique-Python.ipynb) | 3 (Python) | Python 3 + `networkx` | Physique du point critique : loi d'échelle finie `M(L, 1/2)/L² ~ L^{-β/ν}`, distribution de tailles `P(s) ~ s^{-τ'}`, convergence `p_c(L) → 1/2`. Sweep `L ∈ {8,16,32,64}` × `p ∈ {0.45,…,0.55}` × 32 seeds = 640 simulations `networkx.connected_components` canonique |
 | [Percolation-03b-Critique-L128-L256](Percolation-03b-Critique-L128-L256.ipynb) | 3b (Python) | Python 3 + `networkx` | Extension du carnet 03 aux tailles `L ∈ {128, 256}` pour la convergence asymptotique. Fit log-log sur 6 points (L = 8, 16, 32, 64, 128, 256) : β/ν = 0.1065, τ' = 2.188, p_c(L) → 1/2 monotone. Sweep `L ∈ {128, 256}` × `p ∈ {0.45,…,0.55}` × 32 seeds = 320 simulations ~48 s |
 | [Percolation-03c-Critique-L512](Percolation-03c-Critique-L512.ipynb) | 3c (Python) | Python 3 + `networkx` | Extension du carnet 03b à L = 512 pour la convergence asymptotique. Fit log-log sur 7 points (L = 8, 16, 32, 64, 128, 256, 512) : β/ν = 0.1062 (cible 0.1042, R²=0.977, std_err=0.007 — convergence asymptotique bloquée aux corrections d'échelle finie), p_c(L) → 1/2 monotone (écart 0.0013 à L=512). Sweep `L = 512` × `p ∈ {0.45,…,0.55}` × 32 seeds = 160 simulations ~186 s |
 | [Percolation-04-Sharpness-Python](Percolation-04-Sharpness-Python.ipynb) | 4 (Python) | Python 3 + `networkx` | Palier 4 du plan #19494 : mesure de la queue supérieure `Ψ(n) = P(\|C_o\| ≥ n)` sur grille `L ∈ {64, 128, 256, 512}` × `p ∈ {0.50, …, 0.70}` × 32 seeds = 1024 simulations ~170 s. Comparaison au théorème de *supercritical sharpness* (Diskin-Easo-Radhakrishnan-Sudakov-Tassion, arXiv:2603.03257 §3.0). **Verdict** : palier non mesurable aux seuils `n ∈ {1, 2, …, 128}` à L ≤ 512 — le fit log-y de `Ψ(n)` est dominé par la transition initiale (Psi(1)=1 → Psi(2)~0.7) et non par la décroissance exponentielle sharpness (qui exigerait `n ~ médiane du géant`). L'alpha mesuré **décroît** avec p, opposé à la cible `(p - 1/2)^{d-1} = p - 1/2` |
+| [Percolation-04-Sharpness-Lean](Percolation-04-Sharpness-Lean.ipynb) | 4 (Lean 4) | Lean 4 + Mathlib (`percolation_lean`) | Jumeau formel du palier 4 (#19494, item 3) : module `Sharpness` du lake — inégalité de sharpness finie `#(smallClusterEvent G v k) ≤ Σ_{A ∋ v, \|A\| ≤ k} 2^(N−\|δA\|)` par comptage de candidats confinés (frontière pleine ⇒ arêtes forcées fermées), forme **mixte** de Harris–Kleitman (anti-corrélation croissant × décroissant), témoins exacts calculés sur `C₃` (`2/8`) et `C₄` (`4/16`) |
+| [Percolation-05-Dimension-Fractale-Effondrement-Python](Percolation-05-Dimension-Fractale-Effondrement-Python.ipynb) | 5 (Python) | Python 3 + `numpy` (union-find maison, oracle `scipy`) | Palier 5 : la **géométrie** de l'amas critique, là où 03/03b/03c ne mesuraient que le rapport β/ν. Union-find de Hoshen–Kopelman écrit à la main, vérifié contre `scipy.sparse.csgraph` (0 désaccord sur 60 instances). `d_f` par deux routes — masse à `p_c` (1.8726 ± 0.0138) et comptage de boîtes (six estimations, moyenne 1.8659, soit 1.6 % sous 91/48) — puis ν par effondrement d'échelle (ν\* = 1.375, dispersion minimale 0.0287, contre 0.0945 à ν = 2 : contrôle négatif mesuré) et par la pente en `p_c` corrigée de `d_f` (ν = 1.32). Contrôle croisé `d_f = 2 − β/ν` contre le β/ν mesuré par 03c : écart 1.5 %. Sweep `L ∈ {32, 64, 128, 256}` × `p ∈ [0.44, 0.56]` × 32 seeds = 3200 instances, en une minute environ |
 
 ## Formalisation Lean (`percolation_lean/`)
 
 Le lake [`percolation_lean/`](percolation_lean/) porte la jambe formelle du
 duo : noyau fini de percolation **prouvé sans `sorry`** (configurations,
-composantes, connexité, frontière isopérimétrique finie — modules `Basic`,
-`Connectivity`, `Components`, `Boundary`, `Examples`, paires FR/EN selon la
-convention #4980), `proof-integrity` câblé en CI. Le théorème de l'article
+composantes, connexité, frontière isopérimétrique finie et inégalité de
+sharpness finie (`card_smallClusterEvent_le`, dont l'inégalité de l'article
+arXiv:2603.03257 §3.0 est la limite) — modules `Basic`,
+`Connectivity`, `Components`, `Boundary`, `Examples`, `Sharpness`, paires FR/EN
+selon la convention #4980), `proof-integrity` câblé en CI. Le théorème de l'article
 reste un **horizon de recherche** : le lake distingue ce qui est prouvé, ce qui
 vient de Mathlib et ce qui est hors portée (voir #14871).
 
@@ -44,6 +48,7 @@ appelle et son prérequis, vit dans l'issue de suivi **#19494** :
 | 03 | `Percolation-03-Critique-Python` | le régime critique comme limite finie : seuil dépendant de la taille, loi de puissance des composantes au point critique |
 | 04 | `Percolation-04-Sharpness-Python` | le théorème mesuré : la queue origine-fixe raidit quand `p ↓ p_c` (sharpness supercritique) |
 | 04 | `Percolation-04-Sharpness-Lean` (exploratoire) | jumeau formel du palier 4 : énoncé fini paramétrique au-dessus du socle prouvé du lake |
+| 05 | `Percolation-05-Dimension-Fractale-Effondrement-Python` | la géométrie de l'amas critique : dimension fractale par comptage de boîtes, longueur de corrélation ν par effondrement d'échelle — ce que le seul rapport β/ν des carnets 03 ne peut pas donner |
 
 ## Pont vers la série ICT
 

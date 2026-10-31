@@ -260,7 +260,7 @@ d'entrée de la baseline, c'est-à-dire l'un des deux bras de la comparaison. Le
 précédent inversé était faux avec la même force d'affirmation et sans source nommée ;
 cette correction cite les siennes.
 
-### Note Tell c.1069 strict — Carry désactivé sur cette implémentation (c.1107)
+### Note — Carry désactivé sur cette implémentation (c.1107)
 
 Le carry proxy front-only initialement livré (c.1106) réduisait à la pente
 `EWMA(8,32)` sur la même série de closes — formule bit-identique au signal
@@ -380,7 +380,7 @@ full), repoussée au suivi #17320. Les arbitrages reportés (scalaires sqrt vs
 Table 29, FDM-Table-52 vs breadth) restent ouverts et sont désormais
 motivés par ce finding.
 
-### Note Tell c.1069 strict — FDM requalifié en breadth multiplier (c.1109 REPAIR-3 + c.1111 REPAIR-5)
+### Note — FDM requalifié en breadth multiplier (c.1109 REPAIR-3 + c.1111 REPAIR-5)
 
 Le préflight adjoint po-2025 (`msg-20260911T043805-i7tl0g` pour c.1109,
 puis `msg-20260911T053342-rwwap4`) a détecté deux défauts sémantiques
@@ -408,7 +408,7 @@ des forecasts est préservé séparément, en aval, par le ratio
 
 **c.1113 REPAIR-7 — formule mesure une largeur effective, pas une
 concentration** (correction sémantique par adjoint po-2025 habilité
-n°3 Tell c.15069 strict). Le ratio `sum(|f|)/sqrt(sum(f^2))` range de
+n°3 (#15069)). Le ratio `sum(|f|)/sqrt(sum(f^2))` range de
 **1.0** (une magnitude domine, le reste à 0 — concentration MAXIMUM)
 à **sqrt(N)** (toutes les magnitudes égales — concentration ZÉRO) :
 c'est l'**inverse** d'une mesure de concentration. Appeler cela «
@@ -417,8 +417,8 @@ la sémantique. La formule mesure une **largeur effective des magnitudes
 absolues** (effective breadth of absolute magnitudes, INVERSE
 concentration).
 
-**REPAIR-5 c.1111** (Tell c.1069 strict honnêteté référentielle, par
-adjoint po-2025 habilité n°3 urne `delivered` Tell c.15069 strict) :
+**REPAIR-5 c.1111** (honnêteté référentielle, par
+adjoint po-2025 habilité n°3 urne `delivered` (#15069)) :
 - Docstring `_breadth_multiplier` reformulée « sign-invariant effective
   breadth of absolute magnitudes » ; retrait des claims « one-directional
   / aligned » et « magnitude concentration » ; précision que seul le
@@ -457,7 +457,7 @@ cette formule. Le Carver FDM au sens propre (estimateur
 signed-correlation rolling) reste une dette de fond (#15549 acceptance
 follow-up).
 
-### Note Tell c.1069 strict — Retarget delta direct, pas d'aller-retour fabriqué (c.1109 REPAIR-3)
+### Note — Retarget delta direct, pas d'aller-retour fabriqué (c.1109 REPAIR-3)
 
 Le préflight adjoint a aussi détecté que `_rebalance` liquidait toutes
 les positions investies avant `set_holdings`, ce qui **fabrique** un
@@ -508,35 +508,33 @@ quand la cible est proche de la position actuelle.
 - **c.1063 increment** : scalaire per-horizon `sqrt(slow/32)`, warmup 2x cohérent,
 
   history bulk 1 call. Détails dans le commit `e41a4eb8d632`.
-- **REPAIR-3 c.1109** : FDM requalifié en breadth multiplier (Tell c.1069 strict
-
-  honnêteté référentielle) + retarget delta direct (pas d'aller-retour fabriqué).
+- **REPAIR-3 c.1109** : FDM requalifié en breadth multiplier (honnêteté référentielle) + retarget delta direct (pas d'aller-retour fabriqué).
   Préflight adjoint po-2025 `msg-20260911T043805-i7tl0g` ; jambe QC po-2026
   suspendue jusqu'au nouveau head exact.
 - **REPAIR-5 c.1111** : docstring `_breadth_multiplier` sign-invariant magnitude
 
-  concentration (Tell c.1069 strict honnêteté référentielle — l'`abs()` efface les
+  concentration (honnêteté référentielle — l'`abs()` efface les
   signes, `[10,10] == [10,-10]`) + `config.json` Carver FDM stale → breadth
   multiplier sign-invariant. Préflight adjoint po-2025
   `msg-20260911T053342-rwwap4` ; adjoint habilité n°3 urne `delivered`
-  Tell c.15069 strict a pushé le commit `5c316080f10f`. QC demeurait suspendu
+  (#15069) a pushé le commit `5c316080f10f`. QC demeurait suspendu
   jusqu'à cette dissipation par le worker (REPAIR-6 c.1111 = cohérence prose
   README ↔ source).
 - **REPAIR-6 c.1111 (worker)** : cohérence README ↔ source REPAIR-5 — section
 
-  « Note Tell c.1069 strict — FDM requalifié » étendue avec le défaut sign-invariant
+  « Note — FDM requalifié » étendue avec le défaut sign-invariant
   (la prose c.1109 disait « bonus quand le book est unidirectionnel », faux) +
   statut courant étendu avec REPAIR-5. Amend borné scope unique
   `FuturesTrend/README.md`. Push `--force-with-lease=refs/heads/feature/15549-carver13-futures:5c316080f10ffcf0dd011a4da1a7ce77dad20277`.
 - **REPAIR-7 c.1113 (worker)** : correction sémantique « effective breadth /
 
-  inverse concentration » (Tell c.1069 strict honnêteté référentielle, par
-  préflight adjoint po-2025 habilité n°3 urne `delivered` Tell c.15069 strict,
+  inverse concentration » (honnêteté référentielle, par
+  préflight adjoint po-2025 habilité n°3 urne `delivered` (#15069),
   `msg-20260911T063424-qnc0q9`) — la formule `sum(|f|)/sqrt(sum(f^2))` mesure
   une largeur effective (1 = concentré, sqrt(N) = étalé), pas une concentration.
   Source `main_carver13.py` docstring `_breadth_multiplier` refondue + module
   docstring ligne 27-29 ; `config.json` libellé cohérent ; README.md sections
-  « Note Tell c.1069 strict » et « Statut courant » étendues. Ajout d'un test
+  « Note » et « Statut courant » étendues. Ajout d'un test
   CPU exécutable `tests/test_breadth_multiplier.py` (4 cas : sign-invariant,
   `[10,0]` clipé à 1, 4 magnitudes égales clipées à 2, exécution locale sans
   QC Cloud) — le caractère sign-invariant n'est plus seulement documenté, il est
@@ -583,7 +581,7 @@ a volontairement sondé le bras qui a couru.
   du piege day-advance (cf [[qc-backtest-dataset-day-advance-confound]]) ;
   le chemin sonde n'ecrit ni dans `_roll_cache` ni dans les orders.
 - **Decouverte instrumentale (run 1)** : le stockage logs QC (free tier)
-  plafonne a **100 kb/backtest**, consomme des le 2016-02-18 par ~550 lignes
+  plafonne a **100 kb/backtest**, consomme des le 2016-02-18 par un flot massif de lignes
   engine-level « Order Error : Insufficient buying power » (non
   supprimables depuis l'algo). Toutes les lignes `PROBE16652` (2016-2026)
   ont ete dropees serveur-side — l'onglet Logs du rapport ne retient que la

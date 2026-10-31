@@ -4,9 +4,9 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI-Planners
-pedagogical_count: 25
-breakdown: Planners=25
-maturity: BETA=25
+pedagogical_count: 26
+breakdown: Planners=26
+maturity: BETA=26
 -->
 
 Cette série de notebooks introduit la **Planification Automatique**, une branche fondamentale de l'IA qui génère des séquences d'actions pour atteindre des objectifs.
@@ -63,7 +63,7 @@ Les notebooks 4 à 6 constituent le cœur technique de la série. Le notebook 4 
 
 ### Phase 3 : Approches Avancées (Notebooks 7-9, ~3h)
 
-La planification classique épuise ses limites dès que les problèmes deviennent trop grands pour l'exploration d'états. Les notebooks 7 à 9 proposent des alternatives. Le notebook 7 (OR-Tools) introduit la programmation par contraintes avec CP-SAT de Google OR-Tools : modélisation de contraintes (all-different, cumulative, table), scheduling, et optimisation multi-objectif. Le notebook 8 (Temporal) étend au domaine temporel avec PDDL 2.1 : durées d'actions, parallélisme, contraintes temporelles simples et denses, ordonnancement de tâches. Le notebook 9 (HTN) présente la planification hiérarchique (Task Networks) : tâches primitives vs abstraites, méthodes de décomposition, langage HDDL, solveur inspiré de SHOP2, et comparaison avec STRIPS. À l'issue, vous disposez de trois paradigmes complémentaires pour les problèmes qui dépassent la planification classique.
+La planification classique épuise ses limites dès que les problèmes deviennent trop grands pour l'exploration d'états. Les notebooks 7 à 9 proposent des alternatives. Le notebook 7 (OR-Tools) introduit la programmation par contraintes avec CP-SAT de Google OR-Tools : modélisation de contraintes (all-different, cumulative, table), scheduling, et optimisation multi-objectif. Le notebook 8 (Temporal) étend au domaine temporel avec PDDL 2.1 : durées d'actions, parallélisme, contraintes temporelles simples et denses, ordonnancement de tâches. Le notebook 9 (HTN) présente la planification hiérarchique (Task Networks) : tâches primitives vs abstraites, méthodes de décomposition, langage HDDL, solveur inspiré de SHOP2, et comparaison avec STRIPS. À l'issue, vous disposez de trois paradigmes complémentaires pour les problèmes qui dépassent la planification classique. Le notebook 13 (Mesure-Qualite-Plans) **mesure la qualité des plans** : sur une tour de 4 blocs, cinq configurations de Fast Downward sont comparées à plan égal — les quatre recherches A* trouvent le plan optimal de 6 actions en évaluant de 22 à 121 états selon l'heuristique, la recherche greedy s'en écarte (10 actions) en n'évaluant que 20 états — et une recherche naïve (BFS) en Python explore 95 états pour ce même plan optimal : le contrepoint qui fait de l'heuristique un choix d'efficience.
 
 <p align="center"><a href="03-Advanced/Planners-7-OR-Tools.ipynb"><img src="assets/readme/planners7-ortools.png" width="540" alt="OR-Tools CP-SAT : diagramme de Gantt d'un ordonnancement job-shop (makespan minimisé) produit par le solveur."></a></p>
 
@@ -193,7 +193,8 @@ SymbolicAI/Planners/
 │   ├── Planners-8-Temporal.ipynb        # Planification temporelle
 │   ├── Planners-8-Temporal-Csharp.ipynb # Twin C# Allen + STN + RCPSP-lite from-scratch (See #4956)
 │   ├── Planners-9-HTN.ipynb             # Planification hiérarchique
-│   └── Planners-9-HTN-Csharp.ipynb      # Twin C# SHOP2 HTN solver from-scratch (See #4956)
+│   ├── Planners-9-HTN-Csharp.ipynb      # Twin C# SHOP2 HTN solver from-scratch (See #4956)
+│   └── Planners-13-Mesure-Qualite-Plans-Python.ipynb # Benchmark qualité des plans : 5 configs FD + BFS naïve (tour 4 blocs)
 ├── 04-NeuroSymbolic/
 │   ├── Planners-10-LLM-Planning.ipynb   # LLM + Planning
 │   ├── Planners-11-Unified-Planning.ipynb # Interface unifiée
@@ -212,7 +213,7 @@ SymbolicAI/Planners/
 │   └── lean-toolchain                     # Pinning toolchain Lean 4
 ├── requirements.txt                      # Dépendances Python (unified-planning, Fast Downward, etc.)
 └── archive/
-    └── Fast-Downward-Legacy.ipynb       # Version archivée (1 notebook hors compteur pédagogique)
+    └── Fast-Downward-Legacy.ipynb       # Version archivée (hors compteur pédagogique)
 ```
 
 ## Contenu détaillé des notebooks
@@ -235,6 +236,7 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 | 10 | LLM-Planning | Planification avec LLMs, prompting, plan repair, limites et avantages |
 | 11 | Unified-Planning | Interface multi-solveurs, comparaison croisée, portabilité du modèle — + optimisation `MinimizeActionCosts` (optimal bat satisficing de 7 unités) [#7592] |
 | 12 | LOOP | Learning to Plan : state encoder, policy network, value network, 85.8% IPC coverage |
+| 13 | Mesure-Qualite-Plans | **Mesurer la qualité des plans** : 5 configurations Fast Downward sur une tour de 4 blocs — A* avec heuristiques blind, hmax, lmcut et fast-forward (les quatre trouvent le plan optimal de 6 actions, en évaluant de 22 à 121 états selon l'heuristique), plus une recherche greedy qui s'en écarte (10 actions, 20 états) ; recherche naïve BFS en Python en contrepoint |
 | 14 | LLM-Space-Reducer | Le LLM comme réducteur d'espace de recherche (position aicpp) : mini-DSL ARC, trois bras mesurés (exhaustif borné, LLM-direct, LLM-réducteur) |
 
 ---
@@ -252,34 +254,36 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 | # | Notebook | Kernel | Contenu | Durée |
 |---|----------|--------|---------|-------|
 | 1 | [Planners-1-Introduction](01-Foundation/Planners-1-Introduction.ipynb) | Python | Concepts, modèle STRIPS, triptyque État-Action-But | 30 min |
+| 1 (C#) | [Planners-1-Introduction-Csharp](01-Foundation/Planners-1-Introduction-Csharp.ipynb) | .NET (C#) | Twin C# du 1 : tranche 1 from-scratch (triptyque État-Action-But, BFS), tranche 2 Fast Downward via l'API Docker (See #4956) | 30 min |
 | 2 | [Planners-2-PDDL-Basics](01-Foundation/Planners-2-PDDL-Basics.ipynb) | Python | Syntaxe PDDL, domaines, problèmes, prédicats, actions | 40 min |
-| 2 (C#) | [Planners-2-PDDL-Basics-Csharp](01-Foundation/Planners-2-PDDL-Basics-Csharp.ipynb) | .NET (C#) | Twin C# du 2 : planificateur STRIPS from-scratch (modèle typé, grounding, BFS forward), domaines Logistics + Gripper (See #4956) | 40 min |
+| 2 (C#) | [Planners-2-PDDL-Basics-Csharp](01-Foundation/Planners-2-PDDL-Basics-Csharp.ipynb) | .NET (C#) | Twin C# du 2 : tranche 1 from-scratch (STRIPS : modèle typé, grounding, BFS forward) sur Logistics + Gripper ; tranche 2 : Fast Downward 24.06.1 via l'API Docker, port 8200 (See #4956) | 40 min |
 | 3 | [Planners-3-State-Space](01-Foundation/Planners-3-State-Space.ipynb) | Python | Espaces d'états, graphes de recherche, explosion combinatoire | 35 min |
-| 3 | [Planners-3-State-Space-Csharp](01-Foundation/Planners-3-State-Space-Csharp.ipynb) | .NET (C#) | Twin C# du 3 : BFS/DFS/Greedy/A* from-scratch, terrain pondéré (See #4956) | 35 min |
+| 3 (C#) | [Planners-3-State-Space-Csharp](01-Foundation/Planners-3-State-Space-Csharp.ipynb) | .NET (C#) | Twin C# du 3 : tranche 1 from-scratch (BFS/DFS/Greedy/A*, terrain uniforme et pondéré) ; tranche 2 : QuikGraph (NuGet) sur la grille 11x11, puis Fast Downward en processus local via `up_fast_downward`, sans Docker (See #4956) | 35 min |
 
 ### Partie 2 : Planification Classique ([02-Classical/](02-Classical/README.md))
 
 | # | Notebook | Kernel | Contenu | Durée |
 |---|----------|--------|---------|-------|
 | 4 | [Planners-4-Fast-Downward](02-Classical/Planners-4-Fast-Downward.ipynb) | Python | Architecture FD, Docker, A*, GBFS, EHC, heuristiques | 45 min |
-| 4 (C#) | [Planners-4-Fast-Downward-Csharp](02-Classical/Planners-4-Fast-Downward-Csharp.ipynb) | .NET (C#) | Twin C# du 4 : planificateur SAS+ from-scratch (prevail/pre/eff), A\*/GBFS/EHC, h^max/h^FF par RPG, domaines Ferry + Logistics (See #4956) | 45 min |
+| 4 (C#) | [Planners-4-Fast-Downward-Csharp](02-Classical/Planners-4-Fast-Downward-Csharp.ipynb) | .NET (C#) | Twin C# du 4 : tranche 1 from-scratch, sans Docker (planificateur SAS+ prevail/pre/eff, A\*/GBFS/EHC, h^max/h^FF par RPG, domaines Ferry + Logistics) ; tranche 2 : Fast Downward via l'API Docker, port 8200 (See #4956) | 45 min |
 | 5 | [Planners-5-Heuristics](02-Classical/Planners-5-Heuristics.ipynb) | Python | h-add, h-max, h-FF, landmarks | 40 min |
-| 5 (C#) | [Planners-5-Heuristics-Csharp](02-Classical/Planners-5-Heuristics-Csharp.ipynb) | .NET (C#) | Twin C# du 5 : h-max/h-add/h-FF/landmarks from-scratch, démo non-admissibilité h^add (See #4956) | 40 min |
+| 5 (C#) | [Planners-5-Heuristics-Csharp](02-Classical/Planners-5-Heuristics-Csharp.ipynb) | .NET (C#) | Twin C# du 5 : tranche 1 from-scratch (h-max/h-add/h-FF/landmarks, démo non-admissibilité h^add) ; tranche 2 : h* = 4 validé sur Blocks World par Fast Downward via l'API Docker, port 8200, avec la comparaison LM-cut (See #4956) | 40 min |
 | 5b | [Planners-5b-Lean-Relaxation](02-Classical/Planners-5b-Lean-Relaxation.ipynb) | Lean 4 | Companion **natif** (kernel Lean) : preuve formelle 0-sorry de l'admissibilité de la relaxation (h⁺ ≤ h\*) dans le lake `planning_lean`, `#check` + `#print axioms` in-kernel, lemmes de monotonie `step_mono`/`run_mono` sur domaine jouet exécutable (cf [#4053](https://github.com/jsboige/CoursIA/issues/4053) création du lake / PR #4168, companion natif) | 45 min |
 | 5c | [Planners-5c-Differentiel-Atteignabilite](02-Classical/Planners-5c-Differentiel-Atteignabilite.ipynb) | Python | **Différentiel d'atteignabilité** (strate 7) : protocole en 4 pas — inatteignabilité **prouvée** par énumération exhaustive (36 états), contrôle d'effort (BFS/A\*+h_max/IDDFS échouent sur le même espace, budgets rapportés), primitive **nommée et payante** (`raft-across`, planchette consommée + détour), delta mesuré (Δ={g1,g2}, h\* 7 et 6, espace 36→60). Consomme les théorèmes du lake `planning_lean` (h_max ≤ h⁺ ≤ h\*, `Admissibility.lean:41`) — chaîne h_max(3) ≤ h\*(8) strict vérifiée, rive droite invisible même au monde relaxé. Stdlib pur, déterministe (See #12233) | 45 min |
 | 6 | [Planners-6-Domains](02-Classical/Planners-6-Domains.ipynb) | Python | Blocks World, Logistics, Gripper, Ferry, Hanoi | 50 min |
-| 6 (C#) | [Planners-6-Domains-Csharp](02-Classical/Planners-6-Domains-Csharp.ipynb) | .NET (C#) | Twin C# du 6 : planificateur STRIPS from-scratch (modèle Atom/Action/State, BFS forward + anti-cycle), domaines Block World + Hanoï + Gripper (See #4956) | 45 min |
+| 6 (C#) | [Planners-6-Domains-Csharp](02-Classical/Planners-6-Domains-Csharp.ipynb) | .NET (C#) | Twin C# du 6 : tranche 1 from-scratch (modèle Atom/Action/State, BFS forward + anti-cycle) sur Block World, Hanoï et Gripper ; tranche 2 : Fast Downward 24.06.1 via l'API Docker, port 8200, sur ces domaines (See #4956) | 45 min |
 
 ### Partie 3 : Approches Avancées ([03-Advanced/](03-Advanced/README.md))
 
 | # | Notebook | Kernel | Contenu | Durée |
 |---|----------|--------|---------|-------|
 | 7 | [Planners-7-OR-Tools](03-Advanced/Planners-7-OR-Tools.ipynb) | Python | CP-SAT, programmation par contraintes, scheduling | 45 min |
-| 7 (C#) | [Planners-7-OR-Tools-Csharp](03-Advanced/Planners-7-OR-Tools-Csharp.ipynb) | .NET (C#) | Twin C# du 7 : solveur CP Job-Shop from-scratch (propagation au plus tôt + backtracking disjonctif), instance ft3 (makespan optimal 11 = OR-Tools) + N-Reines, Gantt ASCII (See #4956) | 45 min |
+| 7 (C#) | [Planners-7-OR-Tools-Csharp](03-Advanced/Planners-7-OR-Tools-Csharp.ipynb) | .NET (C#) | Twin C# du 7 : tranche 1 solveur CP Job-Shop from-scratch, sans OR-Tools (propagation au plus tôt + backtracking disjonctif) sur un exemple 3x3 qui n'est pas l'instance ft3 de la littérature (makespan optimal 11, trouvé par OR-Tools) ; N-Reines et Gantt ASCII ; tranche 2 : même exemple via Google.OrTools CP-SAT (paquet NuGet `Google.OrTools`) (See #4956) | 45 min |
 | 8 | [Planners-8-Temporal](03-Advanced/Planners-8-Temporal.ipynb) | Python | PDDL 2.1, durées, parallélisme, ordonnancement | 40 min |
-| 8 (C#) | [Planners-8-Temporal-Csharp](03-Advanced/Planners-8-Temporal-Csharp.ipynb) | .NET (C#) | Twin C# du 8 : PDDL 2.1 actions duratives + algèbre d'Allen (13 relations) + STN Floyd-Warshall + RCPSP-lite glouton + Gantt ASCII from-scratch (See #4956) | 40 min |
+| 8 (C#) | [Planners-8-Temporal-Csharp](03-Advanced/Planners-8-Temporal-Csharp.ipynb) | .NET (C#) | Twin C# du 8 : tranche 1 from-scratch (PDDL 2.1 actions duratives, algèbre d'Allen à 13 relations, STN Floyd-Warshall, RCPSP-lite glouton, Gantt ASCII) ; tranche 2 : RCPSP résolu par Google.OrTools CP-SAT (paquet NuGet `Google.OrTools`) (See #4956) | 40 min |
 | 9 | [Planners-9-HTN](03-Advanced/Planners-9-HTN.ipynb) | Python | Hierarchical Task Networks, méthodes, décomposition | 45 min |
-| 9 (C#) | [Planners-9-HTN-Csharp](03-Advanced/Planners-9-HTN-Csharp.ipynb) | .NET (C#) | Twin C# du 9 : solveur HTN SHOP2 from-scratch (State/Pred, Methods, backtracking), domaines Logistics + Cafe (See #4956) | 40 min |
+| 9 (C#) | [Planners-9-HTN-Csharp](03-Advanced/Planners-9-HTN-Csharp.ipynb) | .NET (C#) | Twin C# du 9 : tranche 1 solveur HTN SHOP2 from-scratch (State/Pred, Methods, backtracking) sur Logistics + Cafe ; tranche 2 : le même problème via unified_planning + aries, par pont .NET vers CPython (paquet NuGet `pythonnet` 3.0.5, paquets Python `unified-planning` et `up-aries`) (See #4956) | 40 min |
+| 13 | [Planners-13-Mesure-Qualite-Plans](03-Advanced/Planners-13-Mesure-Qualite-Plans-Python.ipynb) | Python | **Mesurer la qualité des plans** : 5 configurations Fast Downward sur une tour de 4 blocs — A* avec heuristiques blind, hmax, lmcut et fast-forward (les quatre trouvent le plan optimal de 6 actions, en évaluant de 22 à 121 états selon l'heuristique), plus une recherche greedy qui s'en écarte (10 actions, 20 états) ; recherche naïve BFS en Python en contrepoint | 40 min |
 
 ### Partie 4 : Neuro-Symbolique ([04-NeuroSymbolic/](04-NeuroSymbolic/README.md))
 
@@ -793,7 +797,7 @@ L'infrastructure du dépôt fournit trois familles d'outils MCP qui soutiennent 
 | `Planners-11-Unified-Planning` | [Lean](../Lean/) + [SemanticWeb](../SemanticWeb/) (ontologies de domaine) | Modèle PDDL ↔ ontologie OWL/SHACL : un domaine PDDL peut être annoté sémantiquement |
 | `Planners-12-LOOP` | [Probas](../../Probas/) (PyMC, Infer.NET) + [ML](../../ML/) (parité Python/.NET #4956) | Apprentissage par renforcement / imitation sur politiques de planification |
 
-**Effet de composition — Planners = carrefour action/représentation.** Là où GameTheory est le carrefour **simulation/proof inter-séries** (Python ⇄ Lean 4 sur des théorèmes économiques), Planners est le carrefour **simulation/proof intra-série** : le notebook `5b-Lean-Relaxation` et son lake `planning_lean/` natif démontrent qu'une même propriété (ici l'admissibilité d'une heuristique) peut être **observée empiriquement** dans le kernel Python 3 (notebook `5-Heuristics.ipynb`) ET **prouvée formellement** dans le kernel Lean 4 (`Admissibility.lean`). C'est le pattern de dualité rendu **interne à la série**, là où GameTheory le déploie **entre séries distinctes**. La séquence pédagogique : STRIPS → PDDL → Fast Downward → heuristiques → **preuve de l'admissibilité de la relaxation** → CP-SAT → temporel → HTN → LLM-Planning → LOOP. Le pipeline 14 notebooks aligne l'évolution paradigmatique du domaine (1971 STRIPS → 2024 Learning to Plan) sur la **frontière de preuve** (informelle → formelle).
+**Effet de composition — Planners = carrefour action/représentation.** Là où GameTheory est le carrefour **simulation/proof inter-séries** (Python ⇄ Lean 4 sur des théorèmes économiques), Planners est le carrefour **simulation/proof intra-série** : le notebook `5b-Lean-Relaxation` et son lake `planning_lean/` natif démontrent qu'une même propriété (ici l'admissibilité d'une heuristique) peut être **observée empiriquement** dans le kernel Python 3 (notebook `5-Heuristics.ipynb`) ET **prouvée formellement** dans le kernel Lean 4 (`Admissibility.lean`). C'est le pattern de dualité rendu **interne à la série**, là où GameTheory le déploie **entre séries distinctes**. La séquence pédagogique : STRIPS → PDDL → Fast Downward → heuristiques → **preuve de l'admissibilité de la relaxation** → CP-SAT → temporel → HTN → LLM-Planning → LOOP. Le pipeline de la série aligne l'évolution paradigmatique du domaine (1971 STRIPS → 2024 Learning to Plan) sur la **frontière de preuve** (informelle → formelle).
 
 ---
 

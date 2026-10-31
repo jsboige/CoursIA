@@ -7,7 +7,8 @@
 > (FR canonique + miroirs `_en.lean` Pattern A [#4980](https://github.com/jsboige/CoursIA/issues/4980)),
 > qui est désormais le home canonique (`@[default_target] lean_lib SocialChoice` dans le lakefile de
 > `game_theory_lean`). La certification no-sorry et le build Lake y sont repris via
-> `.github/workflows/lean-social-choice.yml`.
+> `.github/workflows/lean-ci-matrix.yml` (le wrapper `lean-social-choice.yml` a été absorbé dans
+> la matrice par #17374).
 >
 > **Ce répertoire n'est plus un lake.** La coquille technique (`lakefile.lean`, `lean-toolchain`,
 > `lake-manifest.json`) a été retirée (follow-up #4365) : elle faisait passer le dossier pour un lake
@@ -24,7 +25,7 @@ Ce répertoire est l'**archive** des formalisations mathématiques de la théori
 
 | Statistique | Valeur |
 |-------------|--------|
-| Théorèmes/Lemmas | 76 (0 sorry, 7 modules) |
+| Théorèmes/Lemmas | voir catalogue (0 sorry, modules absorbés) |
 | sorry restants | 0 |
 | Toolchain | `leanprover/lean4:v4.31.0-rc1` |
 | Dépendances | Mathlib4, Lake |
@@ -35,7 +36,7 @@ le home canonique [`game_theory_lean/SocialChoice/`](../game_theory_lean/SocialC
 
 ## Théorèmes formalisés
 
-*Les quatre résultats fondateurs formalisés (0 sorry, 7 modules) — de l'impossibilité de
+*Les quatre résultats fondateurs formalisés (0 sorry, modules absorbés) — de l'impossibilité de
 Arrow et du paradoxe de Sen jusqu'au théorème de l'électeur médian et à la véridicité de
 l'enchère de Vickrey :*
 
@@ -121,7 +122,7 @@ flowchart TD
 
 ### 3. Théorie du vote (Voting.lean)
 
-**Dans `SocialChoice/Voting.lean`** (port de chasenorman/Formalized-Voting, 19 théorèmes,
+**Dans `SocialChoice/Voting.lean`** (port de chasenorman/Formalized-Voting, voir catalogue,
 0 sorry). Le module couvre bien au-delà du seul électeur médian :
 
 - **Marges** (`margin_pos`, `margin_antisymm`, `margin_pos_iff_neg_rev`) : la marge
@@ -141,7 +142,7 @@ flowchart TD
 
 ### 4. Théorie des mécanismes — Enchère de Vickrey (MechanismDesign.lean)
 
-**Dans `SocialChoice/MechanismDesign.lean`** (4 théorèmes, 0 sorry). Le projet s'étend
+**Dans `SocialChoice/MechanismDesign.lean`** (voir catalogue, 0 sorry). Le projet s'étend
 au-delà du choix social pur vers la **théorie des mécanismes** (incitations et véridicité) :
 
 - **Véridicité de Vickrey** (`vickrey_truthful_bidder0`, `vickrey_truthful_bidder1`,
@@ -166,14 +167,14 @@ au-delà du choix social pur vers la **théorie des mécanismes** (incitations e
 social_choice_lean/                     (tombstone documentaire — plus un lake)
 ├── README.md                          # Documentation historique (cette tombstone)
 ├── STATUS.md                          # Statut (historique, figé à l'absorption)
-├── NOTICE.md                          # Licence MIT (DominikPeters)
+├── NOTICE.md                          # Provenance et état de licence des sources amont
 ├── LEAN_PREREQUISITES.md              # Prérequis pédagogiques Lean 4 / Mathlib
 │
 │   ── retiré (follow-up #4365) : lakefile.lean, lean-toolchain, lake-manifest.json ──
 │   ── sources déplacées vers game_theory_lean/SocialChoice/ (PR #6058) ──
 │
 ├── SocialChoice.lean                  # [DÉPLACÉ] Fichier d'imports principaux
-└── SocialChoice/                      # [DÉPLACÉ] Module principal (7 fichiers, 0 sorry)
+└── SocialChoice/                      # [DÉPLACÉ] Module principal (fichiers absorbés, 0 sorry)
     ├── Basic.lean                    # Définitions de base (P, I, PrefOrder, QuasiOrder,
     │                                 # lemmes de transitivité, best/maximal elements)
     ├── Framework.lean                # Cadre SWF (Profile, SWF, weak_pareto, IIA,
@@ -213,9 +214,9 @@ Le paradoxe de Sen (`Sen.lean`) utilise `is_decisive_over` comme décisivité **
 | Median Voter | Black (1948), "On the Rationale of Group Decision-making" | Comptage majoritaire sur single-peaked |
 | Split Cycle | Holliday & Pacuit (2023) | Élimination des défaites dans les cycles |
 
-### Port depuis Lean 3
+### Reprise depuis Lean 3 — partielle et mesurée
 
-Ce projet est un port depuis [asouther4/lean-social-choice](https://github.com/asouther4/lean-social-choice) (Lean 3). Les adaptations principales :
+Ce répertoire n'est pas un portage intégral de [asouther4/lean-social-choice](https://github.com/asouther4/lean-social-choice) : seuls `Basic.lean` (25 noms de déclarations repris sur 29) et `Arrow.lean` (19 sur 29) sont des portages ; `Voting.lean` (4 sur 53) est une réécriture, et `Sen.lean` (0 sur 4 — le paradoxe libéral est absent de l'amont, qui porte le théorème de Sen sur la fonction de choix), `MechanismDesign.lean`, `AMD.lean` et `SortedListCounting.lean` (0 chacun) sont des ajouts CoursIA. Taux complets et règle de comptage : [NOTICE.md](NOTICE.md) (mesures du 2026-10-25). Sur la partie réellement portée, les adaptations principales :
 
 - Remplacement des `definition` Lean 3 par `def` Lean 4
 - Migration des tactiques Lean 3 vers Lean 4 (syntaxe `split_ifs`, `rcases`)
@@ -239,7 +240,7 @@ Ce projet est un port depuis [asouther4/lean-social-choice](https://github.com/a
 ```bash
 cd MyIA.AI.Notebooks/GameTheory/game_theory_lean
 lake exe cache get      # cache Mathlib (première fois)
-lake build SocialChoice # compile les 7 modules absorbés (0 sorry)
+lake build SocialChoice # compile les modules absorbés (0 sorry)
 ```
 
 ## Concepts clés formels
@@ -276,7 +277,7 @@ Voir la licence du repository principal.
 
 ## Conclusion
 
-Ce projet formalise en Lean 4 (**0 `sorry`**, 76 théorèmes/lemmas sur 7 modules) les
+Ce projet formalise en Lean 4 (**0 `sorry`**, voir catalogue en modules absorbés) les
 résultats fondateurs de la théorie du choix social : le **théorème d'impossibilité
 d'Arrow**, le **paradoxe libéral de Sen**, la **théorie du vote** (Condorcet, électeur
 médian, Split Cycle) et la **véridicité de l'enchère de Vickrey** (théorie des mécanismes).

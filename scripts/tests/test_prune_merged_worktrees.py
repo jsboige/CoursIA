@@ -16,9 +16,13 @@ Pinent le contrat de sûreté (issues #14195 + #14509 acceptance) :
 3. `parse_porcelain` separe untracked / gitignores non-cache / tracks
    modifies (`--ignored=matching`, jamais de `!!` compte comme source
    sale).
-4. `worktree_has_initialized_submodules` detecte les worktrees que git ne
-   retirera jamais ("working trees containing submodules cannot be moved
-   or removed") -> REFUSE contains_submodules.
+4. `worktree_blocks_removal_for_submodules` detecte les worktrees que git
+   ne retirera jamais ("working trees containing submodules cannot be
+   moved or removed") -> REFUSE contains_submodules. Union de deux etats
+   que git refuse : sous-module INITIALISE (`git submodule status` sans
+   prefixe '-') et sous-module ENREGISTRE mais deinitialise -- le gitdir
+   du sous-module persiste dans `<gitdir-du-worktree>/modules/` alors que
+   le status affiche pourtant '-' (#21710).
 5. `WorktreeStatus.decision` = `REMOVE` quand pr_state=MERGED ou CLOSED
    et pas d'unpushed, de submodule, ni de untracked bloquant (contrôle
    positif manquant aux prédicats d'ascendance, cf squashed-merge).
@@ -46,6 +50,7 @@ Run : python -m pytest scripts/tests/test_prune_merged_worktrees.py
 from __future__ import annotations
 
 import json
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -276,6 +281,149 @@ class TestSubmoduleDetection:
         # Pas de preuve de submodule initialise : ne REFUSE pas sur un
         # etat qu'on ne peut pas lire (pire cas = FAILED git, avant-fix).
         assert self._stub(monkeypatch, 128, "") is False
+
+
+class TestRegisteredSubmodules21710:
+    """#21710 : un sous-module ENREGISTRE mais deinitialise bloque git.
+
+    `git submodule status` montre alors une ligne prefixee '-' (« non
+    initialise »), mais le gitdir du sous-module persiste dans
+    `<gitdir-du-worktree>/modules/` et `git worktree remove` refuse
+    TOUJOURS. L'ancien predicat (status seul) annoncait REMOVE, l'apply
+    echouait -- 18 worktrees mesures chez le rapporteur de l'issue.
+
+    Constat mesure sur git 2.50.1 : apres `submodule update --init` puis
+    `submodule deinit --all -f` dans le worktree, le status rend
+    `-<sha> sub` et le retrait rend "fatal: working trees containing
+    submodules cannot be moved or removed". La classe E2E en fin de
+    fichier fige ce constat sur de vrais objets git ; ici on pinne les
+    predicats et leur cablage.
+    """
+
+    @staticmethod
+    def _git_dir(tmp_path, with_modules: bool) -> str:
+        """Gitdir de worktree factice, avec ou sans `modules/` (#21710)."""
+        git_dir = tmp_path / ("gd-modules" if with_modules else "gd-nu")
+        git_dir.mkdir(exist_ok=True)
+        if with_modules:
+            (git_dir / "modules" / "sub").mkdir(parents=True)
+        return str(git_dir)
+
+    @staticmethod
+    def _stub_git(monkeypatch, status_stdout: str, git_dir_stdout: str,
+                  revparse_rc: int = 0):
+        """Route run_git : `submodule status` et
+        `rev-parse --absolute-git-dir`. Toute autre commande rend rc=128
+        (etat illisible), jamais un feu vert."""
+        def fake_run_git(*args, **kwargs):
+            cmd = list(args)
+            if "submodule" in cmd:
+                return _fake_proc(0, status_stdout)
+            if "--absolute-git-dir" in cmd:
+                return _fake_proc(revparse_rc, git_dir_stdout)
+            return _fake_proc(128, "")
+        monkeypatch.setattr(pmw, "run_git", fake_run_git)
+
+    @staticmethod
+    def _router(git_dir: str, status_stdout: str = "-abc123 sub\n",
+                branch: str = "fix/X"):
+        """Router run_git complet pour `get_worktree_info` : worktree
+        propre sur une branche feature, au sous-module enregistre-seul."""
+        def fake_run_git(*args, **kwargs):
+            cmd = list(args)
+            if "submodule" in cmd:
+                return _fake_proc(0, status_stdout)
+            if "--absolute-git-dir" in cmd:
+                return _fake_proc(0, git_dir)
+            if "--abbrev-ref" in cmd and "HEAD" in cmd:
+                return _fake_proc(0, f"{branch}\n")
+            if "status" in cmd:
+                return _fake_proc(0, "")
+            return _fake_proc(128, "")
+        return fake_run_git
+
+    # -- worktree_has_registered_submodules ------------------------------
+
+    def test_modules_dir_present_is_true(self, tmp_path, monkeypatch):
+        git_dir = self._git_dir(tmp_path, with_modules=True)
+        self._stub_git(monkeypatch, "-abc123 sub\n", git_dir)
+        assert pmw.worktree_has_registered_submodules("C:/fake") is True
+
+    def test_modules_dir_absent_is_false(self, tmp_path, monkeypatch):
+        git_dir = self._git_dir(tmp_path, with_modules=False)
+        self._stub_git(monkeypatch, "-abc123 sub\n", git_dir)
+        assert pmw.worktree_has_registered_submodules("C:/fake") is False
+
+    def test_unreadable_revparse_is_false(self, tmp_path, monkeypatch):
+        # Gitdir avec modules/ sur disque, mais rev-parse echoue : pas de
+        # preuve lisible, on ne REFUSE pas sur un etat qu'on ne peut pas
+        # lire (pire cas = FAILED git, etat d'avant-fix non regresse).
+        git_dir = self._git_dir(tmp_path, with_modules=True)
+        self._stub_git(monkeypatch, "-abc123 sub\n", git_dir,
+                       revparse_rc=128)
+        assert pmw.worktree_has_registered_submodules("C:/fake") is False
+
+    def test_empty_revparse_stdout_is_false(self, tmp_path, monkeypatch):
+        self._stub_git(monkeypatch, "-abc123 sub\n", "")
+        assert pmw.worktree_has_registered_submodules("C:/fake") is False
+
+    # -- worktree_blocks_removal_for_submodules (l'union) ----------------
+
+    def test_blocks_removal_initialized_without_modules_dir(
+            self, tmp_path, monkeypatch):
+        # Cas #14509 : sous-module initialise (ligne sans '-') -> bloque
+        # MEME sans modules/ -- l'union ne doit pas perdre ce cas.
+        git_dir = self._git_dir(tmp_path, with_modules=False)
+        self._stub_git(monkeypatch, " abc123 sub\n", git_dir)
+        assert pmw.worktree_blocks_removal_for_submodules("C:/fake") is True
+
+    def test_blocks_removal_registered_only_is_the_21710_regression(
+            self, tmp_path, monkeypatch):
+        # LE cas de regression #21710 : le status affiche '-<sha> sub'
+        # (semble non initialise) MAIS modules/ est present -> git refuse.
+        # L'ancien predicat (status seul) rendait False ici : REMOVE
+        # annonce au dry-run, echec fatal a l'apply.
+        git_dir = self._git_dir(tmp_path, with_modules=True)
+        self._stub_git(monkeypatch, "-abc123 sub\n", git_dir)
+        assert pmw.worktree_blocks_removal_for_submodules("C:/fake") is True
+
+    def test_blocks_removal_never_initialized_is_false(
+            self, tmp_path, monkeypatch):
+        # Controle negatif (#14619) : sous-module CONFIGURE mais jamais
+        # materialise dans CE worktree (status '-', aucun modules/) ->
+        # git le retire sans protester, le predicat ne doit pas sur-refuser.
+        git_dir = self._git_dir(tmp_path, with_modules=False)
+        self._stub_git(monkeypatch, "-abc123 sub\n", git_dir)
+        assert pmw.worktree_blocks_removal_for_submodules("C:/fake") is False
+
+    # -- aval : get_worktree_info porte le drapeau, diagnose le verdict --
+
+    def test_get_worktree_info_reports_registered_only_state(
+            self, tmp_path, monkeypatch):
+        """Le statut '-' ressemble a « non initialise », pourtant git
+        refusera : get_worktree_info doit porter has_submodules=True."""
+        git_dir = self._git_dir(tmp_path, with_modules=True)
+        monkeypatch.setattr(pmw, "run_git", self._router(git_dir))
+        info = pmw.get_worktree_info("C:/fake", "C:/other")
+        assert info["has_submodules"] is True
+
+    def test_diagnose_refuses_registered_only_without_gh_call(
+            self, tmp_path, monkeypatch):
+        """Etat enregistre-seul -> REFUSE contains_submodules AVANT toute
+        resolution PR (le verdict est structurel, aucun appel gh)."""
+        git_dir = self._git_dir(tmp_path, with_modules=True)
+        monkeypatch.setattr(pmw, "run_git", self._router(git_dir))
+
+        def _no_gh(*a, **k):
+            raise AssertionError(
+                "lookup_pr_for_branch ne doit pas etre appele : le "
+                "verdict submodule est structurel et ne demande aucun gh"
+            )
+
+        monkeypatch.setattr(pmw, "lookup_pr_for_branch", _no_gh)
+        s = pmw.diagnose_worktree("C:/fake", "C:/other")
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "contains_submodules"
 
 
 # ---------------------------------------------------------------------------
@@ -623,6 +771,190 @@ class TestContentOnMainRemove:
         s = pmw.diagnose_worktree("C:/fake", "C:/other")
         assert s.decision == "REFUSE"
         assert s.refusal_reason == "detached_no_match"
+
+
+class TestGhDegradedMode:
+    """#21753 : gh indisponible (sonde identite rc!=0 / pas de jeton) n'est
+    pas « toutes les PRs ouvertes ». La passe reste audible : aucun appel gh
+    n'est tente, les predicats git-only (ascendance, patch-id) decident
+    seuls, le refus terminal se nomme no_gh_unverifiable, la sortie n'est
+    JAMAIS vide."""
+
+    _GH_DOWN = "gh auth token rc=1 (no oauth token)"
+
+    def _info(self, **over):
+        base = dict(
+            branch="fix/unverifiable", ahead_count=0, untracked=[],
+            blocking_untracked=[], ignored_extra=[], tracked_modified=[],
+            has_source_dirty=False, has_submodules=False, is_current=False,
+        )
+        base.update(over)
+        return base
+
+    def _no_gh(self, *a, **k):
+        raise AssertionError(
+            "mode degrade : aucun appel gh ne doit etre tente"
+        )
+
+    def test_degraded_refuses_unverifiable_branch(self, monkeypatch):
+        # Branche propre, ni PR connue (gh muet) ni ascendance : REFUSE
+        # nommee no_gh_unverifiable -- pas no_pr_match, qui lirait « pas de
+        # PR » la ou la verite est « non verifiable ».
+        info = self._info()
+        monkeypatch.setattr(pmw, "get_worktree_info", lambda *a: info)
+        monkeypatch.setattr(pmw, "lookup_pr_for_branch", self._no_gh)
+        monkeypatch.setattr(pmw, "remote_head_for_head", lambda *a, **k: None)
+        monkeypatch.setattr(pmw, "head_is_ancestor_of_main", lambda *a: False)
+        s = pmw.diagnose_worktree("C:/fake", "C:/other",
+                                  gh_unavailable_reason=self._GH_DOWN)
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "no_gh_unverifiable"
+
+    def test_degraded_ancestor_still_removes(self, monkeypatch):
+        # Point 2 de l'issue : la degradation ne desserre PAS le critere
+        # git-only d'ascendance -- un worktree dont la tete est ancetre de
+        # origin/main reste retirable sans aucun gh.
+        info = self._info()
+        monkeypatch.setattr(pmw, "get_worktree_info", lambda *a: info)
+        monkeypatch.setattr(pmw, "lookup_pr_for_branch", self._no_gh)
+        monkeypatch.setattr(pmw, "remote_head_for_head", lambda *a, **k: None)
+        monkeypatch.setattr(pmw, "head_is_ancestor_of_main", lambda *a: True)
+        monkeypatch.setattr(pmw, "recent_activity_age_hours",
+                            lambda *a, **k: 99.0)
+        s = pmw.diagnose_worktree("C:/fake", "C:/other",
+                                  gh_unavailable_reason=self._GH_DOWN)
+        assert s.decision == "REMOVE"
+        assert s.content_on_main is True
+        assert s.content_on_main_by == "ancestor"
+
+    def test_degraded_detached_skips_gh_and_refuses(self, monkeypatch):
+        # HEAD detache hors main : la resolution par sujet est gh par
+        # construction (pr view / pr list) -- jamais tentee en degrade.
+        info = self._info(branch=None)
+        monkeypatch.setattr(pmw, "get_worktree_info", lambda *a: info)
+        monkeypatch.setattr(pmw, "detached_head_is_on_main", lambda *a: False)
+        monkeypatch.setattr(pmw, "lookup_pr_for_detached_head", self._no_gh)
+        s = pmw.diagnose_worktree("C:/fake", "C:/other",
+                                  gh_unavailable_reason=self._GH_DOWN)
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "no_gh_unverifiable"
+
+    def test_no_reason_keeps_no_pr_match(self, monkeypatch):
+        # Controle de discrimination : sans raison de degradation, le refus
+        # conservateur garde son nom historique -- le nouveau nom ne doit
+        # pas fuir hors du mode degrade.
+        info = self._info()
+        monkeypatch.setattr(pmw, "get_worktree_info", lambda *a: info)
+        monkeypatch.setattr(pmw, "lookup_pr_for_branch",
+                            lambda *a, **k: None)
+        monkeypatch.setattr(pmw, "remote_head_for_head", lambda *a, **k: None)
+        monkeypatch.setattr(pmw, "head_is_ancestor_of_main", lambda *a: False)
+        s = pmw.diagnose_worktree("C:/fake", "C:/other")
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "no_pr_match"
+
+    def test_resolve_short_circuits_when_unavailable(self, tmp_path,
+                                                     monkeypatch):
+        # Aucun etage gh (lot, ancre) n'est tente en degrade.
+        res = pmw.PrResolution(cache_path=None)
+        res.unavailable_reason = self._GH_DOWN
+        monkeypatch.setattr(pmw, "run_gh", self._no_gh)
+        assert res.resolve("feature/anything") is None
+        assert res.stats["listing_calls"] == 0
+        assert res.stats["anchor_calls"] == 0
+
+    def test_resolve_cache_still_answers_when_unavailable(self, tmp_path,
+                                                          monkeypatch):
+        # Le cache disque ne depend pas de gh : un MERGED deja etabli (garde
+        # oid satisfaite) continue de retirer des worktrees sans jeton.
+        cache = tmp_path / "cache.json"
+        _seed_cache_file(cache, {
+            "feature/cached": {
+                "number": 42, "state": "MERGED",
+                "url": "https://example/pr/42",
+                "headRefOid": _PR_OID_A,
+            },
+        })
+        res = pmw.PrResolution(cache_path=cache)
+        res.unavailable_reason = self._GH_DOWN
+        monkeypatch.setattr(pmw, "run_gh", self._no_gh)
+        row = res.resolve("feature/cached", head_sha=_PR_OID_A)
+        assert row is not None and row["state"] == "MERGED"
+        assert res.stats["cache_hits"] == 1
+
+    def test_run_gh_timeout_returns_124(self, monkeypatch):
+        # Mesure fondatrice : un `--apply` pendu ~2 h, 0 octet de sortie.
+        # Un gh muet doit devenir un echec DETECTE (rc=124, stderr nomme),
+        # jamais une attente infinie.
+        import subprocess as _sp
+
+        def _hang(*a, **k):
+            raise _sp.TimeoutExpired(cmd=["gh"], timeout=30)
+
+        monkeypatch.setattr(pmw.subprocess, "run", _hang)
+        proc = pmw.run_gh("pr", "list", check=False)
+        assert proc.returncode == 124
+        assert "timeout" in proc.stderr
+
+    def test_probe_reports_reason_not_token(self, monkeypatch):
+        # La sonde rend une RAISON ; son stdout (un jeton) n'y figure
+        # jamais -- le detail vient du stderr seul.
+        import subprocess as _sp
+
+        def _rc1(*a, **k):
+            return _fake_proc(1, stderr="no oauth token found")
+
+        monkeypatch.setattr(pmw.subprocess, "run", _rc1)
+        reason = pmw.probe_gh_availability()
+        assert reason is not None
+        assert "rc=1" in reason
+        assert "no oauth token" in reason
+
+        def _ok(*a, **k):
+            # stdout = jeton bidon : ne doit JAMAIS se retrouver dans la
+            # sortie de la sonde (ici : la sonde rend None, silencieuse).
+            return _fake_proc(0, stdout="gho_not_a_real_token")
+
+        monkeypatch.setattr(pmw.subprocess, "run", _ok)
+        assert pmw.probe_gh_availability() is None
+
+    def test_probe_gh_missing(self, monkeypatch):
+        import subprocess as _sp
+
+        def _missing(*a, **k):
+            raise FileNotFoundError("gh")
+
+        monkeypatch.setattr(pmw.subprocess, "run", _missing)
+        reason = pmw.probe_gh_availability()
+        assert reason is not None
+        assert "introuvable" in reason
+
+    def test_render_text_banner_in_degraded_mode(self):
+        # La banniere est la PREMIERE ligne : une passe degradee ne doit
+        # jamais se lire comme un constat de PRs ouvertes.
+        statuses = [
+            _make_status(decision="REFUSE",
+                         refusal_reason="no_gh_unverifiable",
+                         pr_state=None, pr_number=None, pr_url=None),
+            _make_status(decision="REFUSE", refusal_reason="pr_open:#7",
+                         pr_state="OPEN", pr_number=7),
+        ]
+        text = pmw.render_text(statuses, dry_run=True,
+                               gh_unavailable_reason=self._GH_DOWN)
+        first = text.splitlines()[0]
+        assert "gh unavailable on this seat" in first
+        assert "1 worktrees in degraded mode" in first
+        assert self._GH_DOWN in first
+        # Les lignes de statut suivent, la sortie n'est jamais vide.
+        assert "no_gh_unverifiable" in text
+
+    def test_render_text_no_banner_when_gh_fine(self):
+        statuses = [
+            _make_status(decision="REFUSE", refusal_reason="pr_open:#7",
+                         pr_state="OPEN", pr_number=7),
+        ]
+        text = pmw.render_text(statuses, dry_run=True)
+        assert "gh unavailable" not in text
 
 
 class TestContentOnMainByPatchId:
@@ -1365,14 +1697,15 @@ class TestDetachedHeadOnMain17684:
         assert pmw.lookup_pr_for_detached_head("/tmp/fake") is None
 
 
-def _fake_proc(returncode: int = 0, stdout: str = "", json_payload=None):
+def _fake_proc(returncode: int = 0, stdout: str = "", json_payload=None,
+               stderr: str = ""):
     """Construit un subprocess.CompletedProcess minimal pour stubbing."""
     import subprocess
     out = stdout
     if json_payload is not None:
         out = json.dumps(json_payload)
     return subprocess.CompletedProcess(
-        args=[], returncode=returncode, stdout=out, stderr=""
+        args=[], returncode=returncode, stdout=out, stderr=stderr
     )
 
 
@@ -1399,13 +1732,327 @@ def _seed_cache_file(path, entries):
     }), encoding="utf-8")
 
 
-def _stub_gh_listing_then_anchor(monkeypatch, listing_payload, anchor_payload):
-    """Les deux commandes gh se distinguent par '--search' (ancre seule)."""
+def _stub_gh_listing_then_anchor(monkeypatch, listing_payload, anchor_payload,
+                                 rest_payload=None):
+    """Les trois commandes gh se distinguent (#23636).
+
+    - `api ... pulls?...head=` : l'ancre REST (voie 1, seau `core`) ;
+    - `pr list --search head:` : le repli GraphQL de l'ancre (voie 2) ;
+    - `pr list` sans `--search` : le lot de la passe.
+
+    `rest_payload` vaut None par defaut : la voie REST repond une liste
+    vide (route vivante, aucune correspondance) et l'ancre tranche par
+    son repli -- les tests historiques gardent ainsi leur sens.
+    """
     def fake_gh(*args, **kwargs):
+        if args and args[0] == "api":
+            if rest_payload is None:
+                return _fake_proc(json_payload=[])
+            return _fake_proc(json_payload=rest_payload)
         if "--search" in args:
             return _fake_proc(json_payload=anchor_payload)
         return _fake_proc(json_payload=listing_payload)
     monkeypatch.setattr(pmw, "run_gh", fake_gh)
+
+
+def _rest_row(number, state, ref, sha=_PR_OID_A, merged_at=None,
+              head_repo=None, base_repo=None):
+    """Entree REST `pulls` : la forme de l'API, pas la forme interne.
+
+    `head_repo` / `base_repo` sont optionnels : absents, la ligne ne porte
+    aucune info de depot (fork supprime) et l'ancre tranche sur le seul
+    critere de branche.
+    """
+    row = {
+        "number": number,
+        "state": state,
+        "merged_at": merged_at,
+        "html_url": f"https://example/pr/{number}",
+        "head": {"ref": ref, "sha": sha},
+    }
+    if head_repo is not None:
+        row["head"]["repo"] = {"full_name": head_repo}
+    if base_repo is not None:
+        row["base"] = {"repo": {"full_name": base_repo}}
+    return row
+
+
+class TestAnchorRestRoute:
+    """#23636 : l'ancre passe par le seau `core` (REST `pulls?head=`), qui
+    reste sain quand le seau `graphql` est epuise sous le compte partage.
+
+    L'ancre GraphQL reste le repli (branches de fork : leur head
+    appartient a un autre proprietaire, donc hors du filtre `head=`), mais
+    son echec ne doit plus LEVER : une levee avortait toute la passe.
+    """
+
+    def test_rest_route_resolves_before_graphql(self, monkeypatch):
+        calls = []
+
+        def fake_gh(*args, **kwargs):
+            calls.append(list(args))
+            if args and args[0] == "api":
+                return _fake_proc(json_payload=[
+                    _rest_row(321, "open", "feature/x", sha=_PR_OID_B),
+                ])
+            raise AssertionError(
+                "l'ancre REST tranche : le repli GraphQL ne doit pas etre "
+                "appele")
+
+        monkeypatch.setattr(pmw, "run_gh", fake_gh)
+        row = pmw.anchor_search_pr_for_branch("feature/x")
+        assert row["number"] == 321
+        assert row["state"] == "OPEN"
+        assert row["headRefName"] == "feature/x"
+        assert row["headRefOid"] == _PR_OID_B
+        assert row["url"] == "https://example/pr/321"
+        # L'endpoint est la liste par head -- jamais commits/<oid>/pulls
+        # (faux negatifs mesures, cf orphan-branch-scan).
+        endpoint = calls[0][1]
+        assert "pulls" in endpoint and "head=" in endpoint
+        assert "commits/" not in endpoint
+
+    def test_rest_maps_the_three_states(self, monkeypatch):
+        """`state` interne : OPEN / MERGED / CLOSED -- REST rend
+        open / closed + `merged_at` non nul pour une PR fusionnee."""
+        cases = [
+            (_rest_row(1, "open", "f/x"), "OPEN"),
+            (_rest_row(2, "closed", "f/x", merged_at="2026-10-31T01:00:00Z"),
+             "MERGED"),
+            (_rest_row(3, "closed", "f/x"), "CLOSED"),
+        ]
+        for payload, expected in cases:
+            monkeypatch.setattr(
+                pmw, "run_gh",
+                lambda *a, _p=payload, **k: _fake_proc(json_payload=[_p]),
+            )
+            row = pmw.anchor_search_pr_for_branch("f/x")
+            assert row["state"] == expected, payload
+
+    def test_rest_keeps_the_most_recent_number(self, monkeypatch):
+        """close+reopen / re-PR : deux PRs partagent le nom de branche ->
+        on garde le numero max, comme le lot et comme le rows[0] de
+        l'ancre GraphQL (date desc)."""
+        monkeypatch.setattr(
+            pmw, "run_gh",
+            lambda *a, **k: _fake_proc(json_payload=[
+                _rest_row(41, "closed", "f/x"),
+                _rest_row(57, "open", "f/x"),
+            ]),
+        )
+        row = pmw.anchor_search_pr_for_branch("f/x")
+        assert row["number"] == 57
+
+    def test_rest_row_of_another_branch_is_not_retained(self, monkeypatch):
+        """#23642 : une reponse REST NON FILTREE ne doit pas pouvoir
+        retenir la PR d'une AUTRE branche.
+
+        Le filtre `head=` de l'API n'est pas une barriere suffisante : une
+        requete dont le separateur `:` a ete consomme rend les 5 PRs les
+        plus recentes du depot, sans rapport avec la branche demandee. La
+        ligne retenue doit donc porter EXACTEMENT la branche demandee.
+        """
+        def fake_gh(*args, **kwargs):
+            if args and args[0] == "api":
+                return _fake_proc(json_payload=[
+                    _rest_row(999, "closed", "feature/autre-branche"),
+                    _rest_row(321, "open", "feature/x", sha=_PR_OID_B),
+                ])
+            # Le repli GraphQL est pollue de la meme facon : aucune des deux
+            # voies ne doit rendre la PR d'une autre branche.
+            return _fake_proc(json_payload=[
+                {"number": 999, "state": "MERGED",
+                 "url": "https://example/pr/999",
+                 "headRefName": "feature/autre-branche",
+                 "headRefOid": _PR_OID_A},
+            ])
+
+        monkeypatch.setattr(pmw, "run_gh", fake_gh)
+        row = pmw.anchor_search_pr_for_branch("feature/x")
+        assert row is not None
+        assert row["number"] == 321
+        assert row["headRefName"] == "feature/x"
+
+    def test_no_row_of_the_requested_branch_yields_none(self, monkeypatch):
+        """Le pendant du precedent : si AUCUNE ligne ne porte la branche
+        demandee, l'ancre rend l'inconcluant (None) -- jamais la PR d'une
+        autre branche. C'est ce qui empeche le script de retirer un
+        worktree actif en le croyant fusionne."""
+        def fake_gh(*args, **kwargs):
+            if args and args[0] == "api":
+                return _fake_proc(json_payload=[
+                    _rest_row(999, "closed", "feature/autre-branche"),
+                ])
+            return _fake_proc(json_payload=[
+                {"number": 999, "state": "MERGED",
+                 "url": "https://example/pr/999",
+                 "headRefName": "feature/autre-branche",
+                 "headRefOid": _PR_OID_A},
+            ])
+
+        monkeypatch.setattr(pmw, "run_gh", fake_gh)
+        assert pmw.anchor_search_pr_for_branch("feature/x") is None
+
+    def test_branch_name_starting_with_a_placeholder_token_survives(
+            self, monkeypatch):
+        """#23642 : `gh api` expanse `owner` / `repo` / `branch` quand ils
+        suivent un `:` litteral dans l'endpoint, et il CONSOMME le `:` au
+        passage. Un nom de branche `branch-x` voyait donc son nom remplace
+        par la branche locale, et le `:` disparaitre -- ce qui fait
+        IGNORER le filtre `head=` par l'API (mesure : 5 lignes rendues au
+        lieu de 0, sur la forme de production).
+
+        Le separateur est encode en `%3A` : plus aucun `:` litteral ne
+        suit le nom, le jeton survit intact.
+        """
+        calls = []
+
+        def fake_gh(*args, **kwargs):
+            calls.append(list(args))
+            return _fake_proc(json_payload=[])
+
+        monkeypatch.setattr(pmw, "run_gh", fake_gh)
+        pmw.anchor_search_pr_for_branch("branch-x")
+        endpoint = calls[0][1]
+        assert "%3Abranch-x" in endpoint
+        assert ":branch-x" not in endpoint
+
+    def test_empty_rest_payload_falls_back_to_graphql(self, monkeypatch):
+        """#23642 : une voie REST vide doit basculer sur le repli
+        GraphQL, qui rend alors la PR de la branche demandee."""
+        calls = []
+
+        def fake_gh(*args, **kwargs):
+            calls.append(list(args))
+            if args and args[0] == "api":
+                return _fake_proc(json_payload=[])
+            return _fake_proc(json_payload=[
+                {"number": 55, "state": "MERGED",
+                 "url": "https://example/pr/55",
+                 "headRefName": "f/x", "headRefOid": _PR_OID_A},
+            ])
+
+        monkeypatch.setattr(pmw, "run_gh", fake_gh)
+        row = pmw.anchor_search_pr_for_branch("f/x")
+        assert row is not None and row["number"] == 55
+        assert len(calls) == 2, (
+            "une voie REST vide doit declencher le repli GraphQL")
+
+    def test_graphql_prefix_match_is_rejected(self, monkeypatch):
+        """`gh pr list --search "head:f/x"` fait un matching PREFIXE :
+        `f/x-2` et `f/xy` sortent aussi. La ligne retenue doit porter
+        EXACTEMENT la branche demandee, sinon l'ancre rend la PR d'une
+        branche voisine."""
+        def fake_gh(*args, **kwargs):
+            if args and args[0] == "api":
+                return _fake_proc(json_payload=[])
+            return _fake_proc(json_payload=[
+                {"number": 77, "state": "MERGED",
+                 "url": "https://example/pr/77",
+                 "headRefName": "f/x-2", "headRefOid": _PR_OID_A},
+            ])
+
+        monkeypatch.setattr(pmw, "run_gh", fake_gh)
+        assert pmw.anchor_search_pr_for_branch("f/x") is None
+
+    def test_rest_row_from_another_repo_is_rejected(self, monkeypatch):
+        """La voie REST ne sert que les branches dont le head vit dans le
+        depot de la PR : une ligne dont `head.repo` != `base.repo` est
+        ecartee. Les branches de fork restent le ressort du repli
+        GraphQL."""
+        def fake_gh(*args, **kwargs):
+            if args and args[0] == "api":
+                return _fake_proc(json_payload=[
+                    _rest_row(12, "open", "f/x",
+                              head_repo="jsboige/AutreDepot",
+                              base_repo="jsboige/CoursIA"),
+                ])
+            return _fake_proc(json_payload=[])
+
+        monkeypatch.setattr(pmw, "run_gh", fake_gh)
+        assert pmw.anchor_search_pr_for_branch("f/x") is None
+
+    def test_rest_row_of_the_same_repo_is_kept(self, monkeypatch):
+        """Le cas nominal du filtre de depot : `head.repo` == `base.repo`
+        -> la ligne est acceptee."""
+        def fake_gh(*args, **kwargs):
+            if args and args[0] == "api":
+                return _fake_proc(json_payload=[
+                    _rest_row(12, "open", "f/x",
+                              head_repo="jsboige/CoursIA",
+                              base_repo="jsboige/CoursIA"),
+                ])
+            return _fake_proc(json_payload=[])
+
+        monkeypatch.setattr(pmw, "run_gh", fake_gh)
+        row = pmw.anchor_search_pr_for_branch("f/x")
+        assert row is not None and row["number"] == 12
+
+    def test_branch_name_is_url_encoded(self, monkeypatch):
+        """Un `head=` mal encode rend une liste VIDE : le faux negatif
+        serait silencieux. Le `/` du nom de branche doit etre encode."""
+        calls = []
+
+        def fake_gh(*args, **kwargs):
+            calls.append(list(args))
+            return _fake_proc(json_payload=[])
+
+        monkeypatch.setattr(pmw, "run_gh", fake_gh)
+        pmw.anchor_search_pr_for_branch("feature/deep/branch")
+        endpoint = calls[0][1]
+        assert "feature%2Fdeep%2Fbranch" in endpoint
+        # Le separateur `owner:branche` est encode lui aussi : un `:`
+        # litteral dans l'endpoint est consomme par `gh api` (qui expanse
+        # alors les jetons `owner`/`repo`/`branch`) et le filtre `head=`
+        # devient inoperant (#23642).
+        assert "%3Afeature%2Fdeep%2Fbranch" in endpoint
+        assert ":feature%2Fdeep%2Fbranch" not in endpoint
+
+    def test_graphql_fallback_still_serves_fork_branches(self, monkeypatch):
+        """Le repli GraphQL reste la voie des branches de fork : une
+        reponse GraphQL saine est donc acceptee quand la voie REST ne
+        trouve rien."""
+        def fake_gh(*args, **kwargs):
+            if args and args[0] == "api":
+                return _fake_proc(json_payload=[])
+            return _fake_proc(json_payload=[_row(88, "OPEN", "f/fork")])
+
+        monkeypatch.setattr(pmw, "run_gh", fake_gh)
+        row = pmw.anchor_search_pr_for_branch("f/fork")
+        assert row["number"] == 88 and row["state"] == "OPEN"
+
+    def test_graphql_failure_does_not_raise(self, monkeypatch):
+        """Le contrat de #23636 : les deux voies muettes rendent
+        l'inconcluant, elles ne LEVENT plus. Une levee avortait toute la
+        passe (rc=2, aucun rapport ecrit)."""
+        def fake_gh(*args, **kwargs):
+            if args and args[0] == "api":
+                return _fake_proc(returncode=1, stdout="",
+                                  stderr="404 Not Found")
+            return _fake_proc(
+                returncode=1, stdout="",
+                stderr="GraphQL: API rate limit already exceeded")
+
+        monkeypatch.setattr(pmw, "run_gh", fake_gh)
+        try:
+            row = pmw.anchor_search_pr_for_branch("f/x")
+        except Exception as exc:  # pragma: no cover - c'est l'echec vise
+            raise AssertionError(
+                "l'ancre ne doit plus lever : une levee avorte toute la "
+                f"passe (got {type(exc).__name__}: {exc})")
+        assert row is None
+
+    def test_rest_failure_falls_back_to_graphql(self, monkeypatch):
+        """La voie REST indisponible (gh muet, endpoint refuse) ne
+        condamne pas l'ancre : le repli GraphQL tranche encore."""
+        def fake_gh(*args, **kwargs):
+            if args and args[0] == "api":
+                return _fake_proc(returncode=1, stdout="", stderr="boom")
+            return _fake_proc(json_payload=[_row(99, "MERGED", "f/x")])
+
+        monkeypatch.setattr(pmw, "run_gh", fake_gh)
+        row = pmw.anchor_search_pr_for_branch("f/x")
+        assert row["number"] == 99 and row["state"] == "MERGED"
 
 
 class TestPrResolution:
@@ -2270,9 +2917,15 @@ class TestRefusalReport3895:
         PR detachee du disque (aucun appel gh possible dans ces tests)."""
         monkeypatch.setattr(pmw, "list_worktrees", lambda: [
             {"path": s.path, "branch": s.branch} for s in statuses])
+        # #21753 : la sonde d'identite est bouchonnee verte -- ces tests
+        # verifient le contrat de sortie du nominal, pas le mode degrade
+        # (couvert par TestGhDegradedMode). Sans ce stub, le verdict de la
+        # passe dependrait de la presence reelle de gh sur le siège.
+        monkeypatch.setattr(pmw, "probe_gh_availability", lambda: None)
         monkeypatch.setattr(
             pmw, "diagnose_worktree",
-            lambda path, cur, head_sha=None, activity_window_h=6.0:
+            lambda path, cur, head_sha=None, activity_window_h=6.0,
+                   gh_unavailable_reason=None, quarantine_submodules=False:
                 next(s for s in statuses if s.path == path),
         )
         monkeypatch.setattr(
@@ -2331,6 +2984,39 @@ class TestRefusalReport3895:
         owners = [s.get("lane_owner") for s in out["statuses"]]
         assert "myia-po-2026:CoursIA-2" in owners
         assert "[WARN][prune-task]" in captured.err
+
+    def test_mute_flag_distinguishes_silent_from_clean(
+            self, monkeypatch, capsys):
+        """#127 : un organe qui n'a diagnostique AUCUN worktree (scanned=0)
+        est MUET, pas propre. Le flag JSON `mute` et la ligne stderr rendent
+        un silence discriminable d'une passe propre -- avant, `scanned=0`,
+        stdout vide et rc=0 etaient indiscernables d'une ferme saine (classe
+        #86, 8 nuits sur ai-01)."""
+        # scanned=0 -> mute True, et l'avertissement part sur stderr
+        # (stdout reste du JSON pur pour json.loads).
+        assert self._run_main(monkeypatch, [], argv_extra=["--json"]) == 0
+        cap = capsys.readouterr()
+        out = json.loads(cap.out)
+        assert out["scanned"] == 0
+        assert out["mute"] is True
+        # reserve Hermes #22440 : le cas mute n'a rien sous la main -- refus
+        # et retraits restent a 0 (implicite jusqu'ici, desormais epingle).
+        assert out["refused"] == 0
+        assert out["removable"] == 0
+        assert "MUTE" in cap.err
+        # reserve Hermes #22440 (complement symetrique) : en mode TEXTE, un
+        # passage scanned=0 doit aussi laisser une ligne sur stdout -- sans
+        # elle, un appelant qui ne lit que stdout voit un silence blanc.
+        assert self._run_main(monkeypatch, []) == 0
+        cap_text = capsys.readouterr()
+        assert "scanned=0" in cap_text.out
+        assert "MUTE" in cap_text.err
+        # controle negatif : un scan non vide n'est JAMAIS mute.
+        assert self._run_main(
+            monkeypatch, [_make_status()], argv_extra=["--json"]) == 0
+        out2 = json.loads(capsys.readouterr().out)
+        assert out2["scanned"] == 1
+        assert out2["mute"] is False
 
     def test_apply_error_still_exits_two(self, monkeypatch):
         """Le rc=2 des echecs d'application survit au changement : un
@@ -2718,6 +3404,9 @@ class TestScanRootMultiFarms:
 
         monkeypatch.setattr(pmw, "_SCAN_ROOT_OVERRIDE", None)
         monkeypatch.setattr(pmw, "list_worktrees", spy)
+        # #21753 : sonde d'identite bouchonnee verte (hermeticite -- le
+        # nominal de ces tests ne depend pas de la presence de gh).
+        monkeypatch.setattr(pmw, "probe_gh_availability", lambda: None)
         monkeypatch.setattr(pmw, "diagnose_worktree", lambda *a, **k: None)
         monkeypatch.setattr(
             pmw, "get_pr_resolution",
@@ -2983,3 +3672,467 @@ class TestBranchPatchIdOnRealGit:
             "la jambe elargie doit concorder sur le cas mono-commit "
             f"(mesure : {branch})"
         )
+
+
+class TestRegisteredSubmoduleFatal21710E2E:
+    """Test pinne sur worktree MERGED a gitlinks : le fatal de #21710.
+
+    Aucun stub : un vrai depot, un vrai sous-module local, un vrai
+    `deinit --all -f`. Le constat mesure (git 2.50.1) que ce test fige :
+
+    - apres `submodule update --init` puis `deinit --all -f` dans le
+      worktree, `git submodule status` ne montre qu'une ligne
+      `-<sha> sub` (« non initialise ») ;
+    - le gitdir du worktree porte pourtant `modules/`, et
+      `git worktree remove` echoue structurellement sur
+      "working trees containing submodules cannot be moved or removed" ;
+    - `worktree_blocks_removal_for_submodules` predit ce refus, et ne
+      sur-refuse pas un worktree voisin qui n'a jamais materialise de
+      sous-module.
+
+    Skips nommes : git absent du PATH, ou `submodule add` local refuse
+    (git ancien sans `protocol.file.allow`) -- le test reste vert sur un
+    runner contraint sans redevenir muet sur le defaut.
+    """
+
+    @staticmethod
+    def _git(cwd, *args):
+        """git tolerant : les assertions de refus ont besoin du rc/stderr."""
+        return subprocess.run(
+            ["git", "-C", str(cwd), "-c", "user.email=e2e@test",
+             "-c", "user.name=e2e", "-c", "core.autocrlf=false",
+             "-c", "protocol.file.allow=always", *args],
+            capture_output=True, text=True, encoding="utf-8",
+            errors="replace",
+        )
+
+    @classmethod
+    def _ok(cls, proc, what: str):
+        assert proc.returncode == 0, (
+            f"git {what} a echoue: {proc.stderr.strip()}")
+
+    def test_deinitialized_submodule_still_blocks_git_removal(self, tmp_path):
+        if shutil.which("git") is None:
+            pytest.skip("git absent du PATH")
+
+        # Depots temoins : source (le futur sous-module) et hote.
+        src = tmp_path / "src"
+        src.mkdir()
+        self._ok(self._git(src, "init", "-b", "main"), "init src")
+        (src / "lib.txt").write_text("s\n", encoding="utf-8")
+        self._ok(self._git(src, "add", "lib.txt"), "add src")
+        self._ok(self._git(src, "commit", "-m", "src init"), "commit src")
+
+        main = tmp_path / "main"
+        main.mkdir()
+        self._ok(self._git(main, "init", "-b", "main"), "init main")
+        (main / "README.md").write_text("m\n", encoding="utf-8")
+        self._ok(self._git(main, "add", "README.md"), "add main")
+        self._ok(self._git(main, "commit", "-m", "main init"),
+                 "commit main")
+
+        # Sous-module LOCAL (URL = chemin) : un git recent exige
+        # protocol.file.allow=always ; un git qui refuse encore le skippe
+        # au lieu de rougir (le skip est nomme).
+        proc = self._git(main, "submodule", "add",
+                         str(src).replace("\\", "/"), "sub")
+        if proc.returncode != 0:
+            pytest.skip(
+                "submodule add local a echoue (git sans "
+                f"protocol.file.allow ?) : {proc.stderr.strip()[:300]}")
+        self._ok(self._git(main, "commit", "-m", "add submodule"),
+                 "commit submodule")
+
+        wt = tmp_path / "wt"
+        wt_clean = tmp_path / "wt-clean"
+        self._ok(self._git(main, "worktree", "add", str(wt), "HEAD"),
+                 "worktree add wt")
+        self._ok(self._git(main, "worktree", "add", str(wt_clean), "HEAD"),
+                 "worktree add wt-clean")
+
+        try:
+            # Materialise le sous-module DANS le worktree, puis deinit :
+            # le gitdir du sous-module persiste dans
+            # `<gitdir-du-worktree>/modules/` -- c'est LUI que git lit,
+            # ni l'index (git rm --cached ne leve pas le refus) ni le
+            # statut affiche.
+            self._ok(self._git(wt, "submodule", "update", "--init"),
+                     "submodule update --init")
+            self._ok(self._git(wt, "submodule", "deinit", "--all", "-f"),
+                     "submodule deinit")
+
+            # Le statut « ment » (ligne '-') : c'est le piege de #21710.
+            status = self._git(wt, "submodule", "status")
+            self._ok(status, "submodule status")
+            assert status.stdout.strip().startswith("-"), (
+                "le fixture doit produire l'etat enregistre-seul "
+                f"(status '-') : {status.stdout.strip()!r}")
+
+            # Reproduction du fatal : git refuse le retrait.
+            proc = self._git(main, "worktree", "remove", str(wt))
+            assert proc.returncode != 0, (
+                "git doit refuser le retrait d'un worktree dont le gitdir "
+                "porte modules/ (meme apres deinit)")
+            assert "working trees containing submodules" in proc.stderr, (
+                f"stderr inattendu: {proc.stderr.strip()}")
+
+            # Le predicat corrige predit le refus...
+            assert pmw.worktree_blocks_removal_for_submodules(str(wt)) is True
+            # ...et ne sur-refuse pas le voisin vierge (jamais de
+            # `submodule update --init` chez lui : pas de modules/).
+            assert pmw.worktree_blocks_removal_for_submodules(
+                str(wt_clean)) is False
+        finally:
+            # Nettoyage : `tmp_path` efface le disque mais PAS le registre
+            # du depot hote -- deux `worktree remove --force` (le --force
+            # passe la garde sous-module, mesure au-dessus) referment le
+            # registre proprement.
+            for path in (wt, wt_clean):
+                self._git(main, "worktree", "remove", "--force", str(path))
+class TestLockPolicy:
+    """Protocole v1.3 (Maintenance #113, dae338b) : verrous `git worktree lock`.
+
+    Deux classes discriminatees par la forme de la raison -- lock d'agent
+    (`claude agent agent-<hex> (pid N)`, deverrouillable si pid mort ET
+    REMOVE-ready) vs opt-out de lane (raison libre, honore indefiniment).
+    Fail-safe dans les deux sens : raison incomprise = opt-out, pid
+    indeterminable = vivant.
+    """
+
+    # --- classify_worktree_lock ---
+
+    def test_classify_agent_lock(self):
+        assert pmw.classify_worktree_lock(
+            "claude agent agent-1a2b3c (pid 4242)"
+        ) == ("agent", 4242)
+
+    def test_classify_optout_lock(self):
+        assert pmw.classify_worktree_lock(
+            "reserve pour la revue de semaine"
+        ) == ("optout", None)
+
+    def test_classify_unparsed_reason_is_optout(self):
+        # Fail-safe : une raison qu'on ne comprend pas n'est JAMAIS un
+        # lock d'agent -- on ne deverrouille pas ce qu'on n'a pas classe.
+        assert pmw.classify_worktree_lock("n'importe quoi (pid 1)") == ("optout", None)
+
+    def test_classify_agent_reason_with_human_suffix_is_optout(self):
+        # F1 (revue #21503) : `git worktree lock --reason` ECRASE la raison
+        # precedente, donc un humain qui garde la tracabilite du pid ecrit
+        # la forme agent SUIVIE d'une consigne. `search()` classait ce
+        # verrou `agent` et pouvait le deverrouiller -- une garde humaine
+        # honoree comme un cadavre. La forme doit etre PURE (fullmatch).
+        assert pmw.classify_worktree_lock(
+            "claude agent agent-7f3a11 (pid 999999) -- NE PAS TOUCHER, revue en cours"
+        ) == ("optout", None)
+
+    def test_classify_none_is_no_lock(self):
+        # None = aucune ligne "locked" dans le porcelain : pas de verrou.
+        assert pmw.classify_worktree_lock(None) == (None, None)
+
+    def test_classify_bare_lock_reason_is_unclassified(self):
+        # F2 (revue #21503) : `git worktree lock` SANS `--reason` est
+        # l'invocation par defaut ; le porcelain rend une ligne "locked"
+        # vide. Une raison vide est une raison qu'on ne comprend pas, PAS
+        # une absence de verrou : la rendre (None, None) faisait sortir la
+        # politique en REMOVE, puis le remove echouait sur un worktree
+        # verrouille -- la classe de mensonge corrigee en #14693.
+        assert pmw.classify_worktree_lock("") == ("unclassified", None)
+        assert pmw.classify_worktree_lock("   ") == ("unclassified", None)
+
+    # --- enforce_lock_policy : opt-out ---
+
+    def test_optout_refuses_remove(self):
+        s = pmw.enforce_lock_policy(_make_status(), "garde humaine")
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "lane_optout_lock"
+        assert s.lock_class == "optout"
+        assert s.lock_pid is None
+        assert s.dead_lock_unlocked is False
+
+    def test_bare_locked_refuses_remove(self):
+        # F2 (revue #21503) : un verrou nu REFUSE le retrait au lieu de le
+        # laisser partir en REMOVE pour echouer cote git a l'apply. Le
+        # garde-fou git reste la derniere ressource ; l'organe, lui, ne
+        # plus annoncer un REMOVE qui ne passera pas.
+        s = pmw.enforce_lock_policy(_make_status(), "")
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "unclassified_lock"
+        assert s.lock_class == "unclassified"
+        assert s.lock_pid is None
+        assert s.dead_lock_unlocked is False
+
+    # --- enforce_lock_policy : lock d'agent ---
+
+    def test_live_agent_lock_refuses(self, monkeypatch):
+        monkeypatch.setattr(pmw, "pid_is_alive", lambda pid: True)
+        s = pmw.enforce_lock_policy(
+            _make_status(), "claude agent agent-deadbeef (pid 777)"
+        )
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "live_agent_lock:777"
+        assert s.lock_class == "agent"
+        assert s.lock_pid == 777
+        assert s.dead_lock_unlocked is False
+
+    def test_dead_agent_lock_flags_remove(self, monkeypatch):
+        monkeypatch.setattr(pmw, "pid_is_alive", lambda pid: False)
+        s = pmw.enforce_lock_policy(
+            _make_status(), "claude agent agent-deadbeef (pid 777)"
+        )
+        # Le statut RESTE REMOVE : le retrait passera par l'unlock nomme
+        # (apply_removal), jamais par remove -f -f.
+        assert s.decision == "REMOVE"
+        assert s.dead_lock_unlocked is True
+        assert s.lock_pid == 777
+
+    # --- enforce_lock_policy : statuts non-retirables ---
+
+    def test_no_lock_leaves_status_intact(self):
+        s = _make_status()
+        out = pmw.enforce_lock_policy(s, None)
+        assert out.decision == "REMOVE"
+        assert out.locked_reason is None
+        assert out.lock_class is None
+        assert out.lock_pid is None
+        assert out.dead_lock_unlocked is False
+
+    def test_lock_never_overrides_existing_refuse(self, monkeypatch):
+        # Un worktree sale (REFUSE avant la politique) verrouille :
+        # la premiere cause reste LA cause citee, le lock n'ecrit pas
+        # la sienne par-dessus.
+        monkeypatch.setattr(pmw, "pid_is_alive", lambda pid: False)
+        s = _make_status(decision="REFUSE", refusal_reason="unpushed_commits")
+        out = pmw.enforce_lock_policy(s, "claude agent agent-aa (pid 9)")
+        assert out.decision == "REFUSE"
+        assert out.refusal_reason == "unpushed_commits"
+        # Visibilite quand meme : le rapport sait qu'un verrou existe.
+        assert out.lock_class == "agent"
+        assert out.dead_lock_unlocked is False
+
+    def test_lock_never_creates_remove(self):
+        # Meme un opt-out sur un SKIP_CURRENT reste SKIP_CURRENT : la
+        # politique ajoute des REFUSE, jamais des REMOVE.
+        s = _make_status(decision="SKIP_CURRENT", refusal_reason=None)
+        out = pmw.enforce_lock_policy(s, "garde")
+        assert out.decision == "SKIP_CURRENT"
+
+    # --- parse porcelain de la ligne locked ---
+
+    def test_list_worktrees_parses_locked_reason(self, monkeypatch):
+        porcelain = (
+            "worktree D:/farm/principal\n"
+            "HEAD abc123\n"
+            "branch refs/heads/main\n"
+            "\n"
+            "worktree D:/farm/agent-42\n"
+            "HEAD def456\n"
+            "branch refs/heads/fix/x\n"
+            "locked claude agent agent-42ab (pid 31337)\n"
+            "\n"
+            "worktree D:/farm/garde\n"
+            "HEAD 789aaa\n"
+            "branch refs/heads/fix/y\n"
+            "locked\n"
+        )
+        monkeypatch.setattr(
+            pmw, "run_git", lambda *a, **k: _fake_proc(0, porcelain)
+        )
+        monkeypatch.setattr(
+            pmw, "current_repo_root", lambda: "D:/farm/principal"
+        )
+        wts = pmw.list_worktrees()
+        by_path = {w["path"]: w for w in wts}
+        assert by_path["D:/farm/principal"].get("locked_reason") is None
+        assert by_path["D:/farm/agent-42"]["locked_reason"] == (
+            "claude agent agent-42ab (pid 31337)"
+        )
+        # Verrou nu : la ligne "locked" seule rend une raison vide.
+        assert by_path["D:/farm/garde"]["locked_reason"] == ""
+
+    # --- pid_is_alive : fail-safe ---
+
+    def test_pid_is_alive_windows_found(self, monkeypatch):
+        monkeypatch.setattr(pmw, "_on_windows", lambda: True)
+        monkeypatch.setattr(
+            pmw.subprocess, "run",
+            lambda *a, **k: _fake_proc(0, '"python.exe","31337"'),
+        )
+        assert pmw.pid_is_alive(31337) is True
+
+    def test_pid_is_alive_windows_not_found(self, monkeypatch):
+        monkeypatch.setattr(pmw, "_on_windows", lambda: True)
+        monkeypatch.setattr(
+            pmw.subprocess, "run",
+            lambda *a, **k: _fake_proc(0, "INFO: No tasks are running"),
+        )
+        assert pmw.pid_is_alive(31337) is False
+
+    def test_pid_is_alive_windows_pid_in_other_column_is_not_alive(
+        self, monkeypatch
+    ):
+        # Le pid cherche n'apparait que dans une AUTRE colonne de la ligne
+        # d'un autre processus : un test de sous-chaine le lirait vivant.
+        monkeypatch.setattr(pmw, "_on_windows", lambda: True)
+        monkeypatch.setattr(
+            pmw.subprocess, "run",
+            lambda *a, **k: _fake_proc(0, '"python.exe","4242","Console","1","31337 K"'),
+        )
+        assert pmw.pid_is_alive(31337) is False
+
+    def test_pid_is_alive_windows_failure_is_alive(self, monkeypatch):
+        # Fail-safe : tasklist injoignable = pid vivant -- on ne
+        # deverrouille jamais sur une mesure impossible.
+        monkeypatch.setattr(pmw, "_on_windows", lambda: True)
+
+        def _boom(*a, **k):
+            raise OSError("tasklist absent")
+
+        monkeypatch.setattr(pmw.subprocess, "run", _boom)
+        assert pmw.pid_is_alive(31337) is True
+
+    @pytest.mark.parametrize("stdout", ["", "ERROR: The remote procedure call failed."])
+    def test_pid_is_alive_windows_nonzero_exit_is_alive(self, monkeypatch, stdout):
+        monkeypatch.setattr(pmw, "_on_windows", lambda: True)
+        monkeypatch.setattr(
+            pmw.subprocess, "run",
+            lambda *a, **k: _fake_proc(1, stdout),
+        )
+        assert pmw.pid_is_alive(31337) is True
+        status = pmw.enforce_lock_policy(
+            _make_status(), "claude agent agent-deadbeef (pid 31337)"
+        )
+        assert status.decision == "REFUSE"
+        assert status.refusal_reason == "live_agent_lock:31337"
+        assert status.dead_lock_unlocked is False
+
+    def test_pid_is_alive_posix_lookup_error(self, monkeypatch):
+        monkeypatch.setattr(pmw, "_on_windows", lambda: False)
+
+        def _lookup(pid, sig):
+            raise ProcessLookupError()
+
+        monkeypatch.setattr(pmw.os, "kill", _lookup)
+        assert pmw.pid_is_alive(31337) is False
+
+    def test_pid_is_alive_posix_permission_is_alive(self, monkeypatch):
+        monkeypatch.setattr(pmw, "_on_windows", lambda: False)
+
+        def _denied(pid, sig):
+            raise PermissionError()
+
+        monkeypatch.setattr(pmw.os, "kill", _denied)
+        assert pmw.pid_is_alive(31337) is True
+
+
+class TestLockPolicyEndToEnd:
+    """v1.3 -- vrais verrous `git worktree lock` sur une vraie ferme.
+
+    Controle positif du protocole complet, dans l'esprit hermetique de
+    TestEndToEndHermetic14693 : seul l'ancre PR est stubbee (MERGED), et
+    la MORT du pid est stubbee dans le cas mort (determinisme CI -- un
+    vrai pid mort se recycle). Le cas vivant, lui, utilise le pid REEL
+    du process pytest : le vrai `tasklist` tranche. L'unlock + remove
+    sont de vrais appels git sur une vraie ferme.
+    """
+
+    MERGED_PR = {
+        "number": 424243,
+        "state": "MERGED",
+        "url": "https://example/pr/424243",
+        "headRefName": "feature/e2e",
+    }
+
+    def _anchor(self, monkeypatch):
+        monkeypatch.setattr(
+            pmw, "lookup_pr_for_branch",
+            lambda branch, head_sha=None: dict(
+                self.MERGED_PR, headRefName=branch),
+        )
+
+    def _lock(self, super, wt, reason):
+        _git_ok(str(super), "worktree", "lock", str(wt), "--reason", reason)
+
+    def test_dead_agent_lock_unlocked_and_removed(self, tmp_path, monkeypatch):
+        """Le chemin nominal v1.3 : REMOVE-ready + lock d'agent a pid mort
+        -> l'unlock NOMME passe, le remove suit, le disque est vide."""
+        super, wt = _make_repo_with_feature_worktree(tmp_path)
+        self._anchor(monkeypatch)
+        monkeypatch.chdir(super)
+        reason = "claude agent agent-testv13 (pid 31337)"
+        self._lock(super, wt, reason)
+        monkeypatch.setattr(pmw, "pid_is_alive", lambda pid: False)
+
+        s = pmw.enforce_lock_policy(
+            pmw.diagnose_worktree(str(wt), str(super)), reason)
+        assert s.decision == "REMOVE", s.refusal_reason
+        assert s.dead_lock_unlocked is True
+
+        # Sequence exacte du apply de main() : clean des toleres, puis
+        # unlock + remove sans force.
+        pmw.clean_tolerated_artifacts(s)
+        ok, stderr = pmw.apply_removal(s)
+        assert ok, f"REMOVE annonce mais unlock+remove echoue: {stderr}"
+        assert not wt.exists(), "le worktree doit avoir quitte le disque"
+        # Vrai retrait, pas juste deverrouillage : le porcelain ne liste
+        # plus le chemin (normalise en slash pour comparer a git).
+        listing = pmw.run_git(str(super), "worktree", "list", "--porcelain")
+        assert str(wt).replace("\\", "/") not in listing.stdout
+
+    def test_locked_remove_fails_without_unlock(self, tmp_path, monkeypatch):
+        """Preuve que le garde-fou est REEL : un remove direct (sans le
+        passage par l'unlock v1.3) echoue sur un worktree verrouille --
+        git tranche en dernier ressort, l'organe ne force jamais."""
+        super, wt = _make_repo_with_feature_worktree(tmp_path)
+        self._anchor(monkeypatch)
+        monkeypatch.chdir(super)
+        self._lock(super, wt, "claude agent agent-x (pid 31337)")
+
+        # Statut diagnostique SANS la politique : REMOVE, mais
+        # dead_lock_unlocked reste False -> apply_removal ne tente pas
+        # l'unlock et git refuse le remove verrouille.
+        s = pmw.diagnose_worktree(str(wt), str(super))
+        assert s.decision == "REMOVE"
+        assert s.dead_lock_unlocked is False
+        ok, stderr = pmw.apply_removal(s)
+        assert not ok, "git n'aurait pas du retirer un worktree verrouille"
+        assert "lock" in stderr.lower(), stderr
+        assert wt.exists(), "le worktree verrouille reste sur disque"
+
+    def test_live_agent_lock_refuses_real_pid(self, tmp_path, monkeypatch):
+        """Contre-test avec un pid REELLEMENT vivant (le process pytest) :
+        le vrai tasklist tranche, la politique refuse, rien ne bouge."""
+        super, wt = _make_repo_with_feature_worktree(tmp_path)
+        self._anchor(monkeypatch)
+        monkeypatch.chdir(super)
+        reason = f"claude agent agent-live (pid {os.getpid()})"
+        self._lock(super, wt, reason)
+
+        s = pmw.enforce_lock_policy(
+            pmw.diagnose_worktree(str(wt), str(super)), reason)
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == f"live_agent_lock:{os.getpid()}"
+        assert wt.exists(), "un lock vivant ne bouge pas d'un cheveu"
+
+    def test_optout_lock_refuses_and_survives(self, tmp_path, monkeypatch):
+        """Opt-out de lane : honore indefiniment, aucune mesure de pid
+        n'est meme tentee, le worktree reste."""
+        super, wt = _make_repo_with_feature_worktree(tmp_path)
+        self._anchor(monkeypatch)
+        monkeypatch.chdir(super)
+        reason = "reserve pour la revue de semaine"
+        self._lock(super, wt, reason)
+
+        called = []
+
+        def _spy(pid):
+            called.append(pid)
+            return False
+
+        monkeypatch.setattr(pmw, "pid_is_alive", _spy)
+        s = pmw.enforce_lock_policy(
+            pmw.diagnose_worktree(str(wt), str(super)), reason)
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "lane_optout_lock"
+        assert called == [], "un opt-out ne mesure jamais le pid"
+        assert wt.exists()

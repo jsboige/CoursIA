@@ -191,12 +191,15 @@ def test_lookup_slice_machine_override_wins_on_real_po2024():
     #19802. Le test precedent affirmait le repli sur la generique en se
     fondant sur l'absence de ce fichier : son postulat a disparu avec le
     deploiement, il n'etait donc plus un test de l'organe mais un test de
-    l'etat du depot.
+    l'etat du depot. La valeur attendue suit l'etat du depot : 16.0 pose
+    par #19802 (J+7, budget 15), 22.0 depuis l'arbitrage c2153 du
+    2026-10-12 (budget 21, mur 20G/22G -- le mur suit la composition,
+    #20174).
     """
     path = lookup_slice("po-2024")
     assert path == REPO_SLICE.parent / "po-2024" / "coursia-ci.slice"
     assert path.is_file()
-    assert parse_memory_max_gib(path) == 16.0
+    assert parse_memory_max_gib(path) == 22.0
 
 
 def test_lookup_slice_falls_back_to_generic_for_unknown_machine():

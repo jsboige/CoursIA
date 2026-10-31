@@ -1,8 +1,11 @@
+> REFERENCE — vivante — dernière révision 2026-10-30
+
 # QC Comparative Backtests — Strategy Catalog
 
 **Issue** : See #1630
 **Generated** : 2026-06-04 (automated catalog, pending live backtests)
 **Updated** : 2026-06-11 — +3 baselines (MeanReversion v5.2 IBKR, AdaptiveAssetAllocation, PairsTrading). MeanReversion promoted Tier 2 → Tier 1 (0.29 → 0.81). AAA promoted Tier 4 → Tier 1 (untested → 0.509).
+**Updated** : 2026-10-22 — rang 17 vérifié post-#2801 et dégradé historique (0.69 → 0.467, re-run natif MCP qc-mcp) ; rang 31b dédoublonné avec le rang 31 (re-exécution native : runtime error). See #21852.
 **Post-#2801 verification** : 2026-06-14 — campaign started. The remediation #2801 (brokerage
 model on 52 strategies via Lot 1 #2812, real fees via Lot 2 #2823/#2864, fixed end-dates via
 Lot 3 #2813, OOS splits via Lot 5 #2824) **invalidates pre-remediation Sharpes** when the
@@ -48,7 +51,7 @@ Strategies with solid risk-adjusted returns. These are the primary candidates fo
 | 14 | Gaussian-Direction-Classifier | ML | Equities | ~~0.76~~ → **0.76** ✓post-#2801 | 23.1 | 25.6 | 0.90 | robuste (confirmed 0%, daily schedule but low realized turnover on liquid mega-cap basket = near-immune, PSR 22.7%) |
 | 15 | ML-Temporal-CNN | DL | Equities (QQQ) | ~~0.73~~ → **0.46** ✓post-#2801 | 12.5 | 30.8 | 0.41 | **historique** (downgraded -37%, DL/CNN overfits real fees, PSR 5.2%) |
 | 16 | TrendStocksLite | IND | Equities | ~~0.72~~ → **0.71** ✓post-#2801 | 18.0 | 33.7 | 0.53 | robuste (confirmed -2%, weekly trend on 15 liquid large-caps = low realized turnover, near-immune, PSR 25.0%) |
-| 17 | ML-LLM-Summarization | ML/NLP | Equities | 0.69 | 15.5 | — | — | robuste |
+| 17 | ML-LLM-Summarization | ML/NLP | Equities | ~~0.69~~ → **0.467** ✓post-#2801 | 9.9 | 23.0 | 0.43 | **historique** (downgraded -32%, PSR 1.4% non significatif ; re-run natif 2015-2026 IBKR via MCP qc-mcp, backtest `1c5d6f25` projet 29936071 — chemin keyword-sentiment déterministe sans clé OpenAI, frais négligeables $312/$18.6M : l'écart est une re-mesure, pas une sensibilité aux frais) |
 | 18 | ML-RandomForest | ML | Equities | ~~0.68~~ → **0.70** ✓post-#2801 | 20.6 | 40.9 | 0.50 | robuste (confirmed +3%, bi-weekly RF on 10 mega-caps = moderate turnover near-immune on fee-homogeneous US equity basket, PSR 18.4%) |
 | 19 | AllWeather | RISK | Multi-asset | ~~0.67~~ → **0.47** ✓post-#2801 | 7.5 | 16.4 | 0.46 | **historique** (downgraded -30%, low-turnover multi-asset NOT near-immune, PSR 19.6%) |
 | 20 | ML-Trend-Scanning | ML | Multi-window | ~~0.66~~ → **0.33** ✓post-#2801 | 7.1 | 29.4 | 0.24 | **historique** (downgraded -50%, daily rebalance on SPY/TLT/GLD multi-asset = very high turnover crushed by real IBKR fees, PSR 7.8%) |
@@ -64,7 +67,7 @@ Strategies with solid risk-adjusted returns. These are the primary candidates fo
 | 29 | RegimeSwitching | ML | Multi-asset (SPY/QQQ/IEF/GLD) | ~~0.55~~ → **0.581** ✓post-#2801 | 12.3 | 33.0 | 0.37 | robuste (confirmed mild +6%, multi-asset HOLDS via explicit turnover suppression — regime-change trigger + anti-micro-rebalancing + beta-annealing; contrasts AllWeather -30% multi-sleeve; PSR 7.0% low not a true leader) |
 | 30 | Temporal-CNN-Prediction | DL | Equities (QQQ top-3) | ~~0.54~~ → **0.161** ✓post-#2801 | 4.8 | 31.7 | 0.15 | **historique** (downgraded -70%, DL/CNN weekly-retraining overfits real fees severely, PSR 3.2%; universe corrected Multi-asset→Equities) |
 | 31 | RL-DQN-Trading | RL | Portfolio | ~~0.53~~ → **0.58 (2020-21 only)** ✓post-#2801 | 18.2 | 33.2 | 0.55 | **non re-verifiable** (locked to ~1yr window, runtime error on extension, PSR 30.2%) |
-| 31b | RL-Portfolio-Q-Learning | RL | Equities | 0.58 | 18.2 | 33.2 | — | historique (2020-2021) |
+| 31b | RL-Portfolio-Q-Learning | RL | Equities | ~~0.58~~ → **0.076 (natif 2015-2024)** ✓post-#22022 | 18.2 | 33.2 | — | **doublon du rang 31** (valeurs identiques 0.58/18.2/33.2) ; historique 0.58 = fenêtre 2020-2021 dates hardcodées (#1630, backtest `fb1a6366`) ; re-exécution native 2015-2024 tentée 2026-10-22 : runtime error au 1er rebalance (`main.py:92` truth-value Series, 0 ordre, backtest `862af357`) ; **fix #22022** (l.92-93 → `.iloc[-1]`) puis **mesure native : Sharpe 0.076, CAGR 3.4 %, MaxDD 27.0 %, 416 ordres, PSR 0.02 % non significatif — NO BEATS** (backtest `9b836e97`, cloud 32057969) |
 | 32 | LSTM-Forecasting | DL | Multi-asset (SPY/QQQ/IWM/EFA/TLT/GLD/IEF) | ~~0.53~~ → **0.525** ✓post-#2801 | 11.3 | 32.5 | 0.35 | robuste (confirmed flat -1%, near-immune despite weekly rebalance — fee-homogeneous 7-US-ETF basket + concentrated 2-4 selection = low realized turnover; PSR 13.4% low not a true leader; sklearn MLPClassifier not real LSTM per docstring) |
 | 33 | TrendStocks-Alpha | IND | Equities | ~~0.52~~ → **0.51** ✓post-#2801 | 15.7 | 39.6 | 0.40 | robuste (confirmed -2%, high-turnover near-immune to fees, PSR 5.6%) |
 | 34 | Portfolio-IBKR-Coinbase-Hybrid | COMP | Multi-asset (5 IBKR equity sleeves + 3 Binance crypto sleeves) | 0.52 → **1.153** ✓post-#2801 | 38.9 | 38.8 | 1.00 | robuste (**TRUE LEADER PSR 61.95%** — heavy bull-market caveat; catalog 0.52 was a short 383-date baseline) |
@@ -344,7 +347,7 @@ Standardized backtest results from QC Cloud via MCP qc-mcp-lite. Period: 2018-01
 | EMA-Cross-Alpha | 28885488 | 2018-2025 | -0.010 | 2.8 | 14.0 | 0.5 | `633779d0` | Period overfitting |
 | MomentumRegime | 31243821 | 2018-2025 | 0.185 | 4.7 | 11.5 | 13.0 | `033834d8` | Double-defense |
 | ForexCarry | 28657908 | 2015-2025* | -1.108 | -0.5 | 19.2 | — | `c3afe374` | *Cannot restrict to 2018+ |
-| RL-Q-Learning | 32057969 | 2020-2021* | 0.584 | 18.2 | 33.2 | — | `fb1a6366` | *Hardcoded dates |
+| RL-Q-Learning | 32057969 | 2020-2021* | 0.584 | 18.2 | 33.2 | — | `fb1a6366` | *Hardcoded dates ; code actuel crash en fenêtre native (main.py:92, mesuré 2026-10-22) |
 | PuppiesOfTheDow-QC | 32732704 | 2018-2025 | 0.302 | 9.613 | 28.8 | 3.5 | `37266daa` | Collapse vs catalog 1.99 (period overfitting) |
 | LeveragedETFMomentum-QC | 32732756 | 2018-2025 | **1.779** | 126.388 | 53.3 | **79.8** | `2addf467` | Confirms catalog 1.80. Lev ETF: extreme CAGR, MaxDD 53% |
 | Framework_Composite_TrendWeather | 28825740 | 2018-2025 | 0.948 | 24.603 | 27.5 | 56.6 | `cd84c50b` | Close to catalog 1.16, best composite (revu par #19393 : liste de titres choisie en 2026, univers ex ante `NO BEATS`) |

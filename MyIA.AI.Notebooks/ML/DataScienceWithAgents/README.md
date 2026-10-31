@@ -74,7 +74,7 @@ Labs 1 + 6 + 8. Découvrir le pipeline data science, construire un premier agent
 
 ```
 DataScienceWithAgents/
-├── 01-PythonForDataScience/    # Fondations Python
+├── 01-Python-For-Data-Science/    # Fondations Python
 │   └── notebooks/
 │       ├── 1.1-Python_pour_la_Data_Science.ipynb
 │       ├── 1.2-Manipulation_de_Donnees_avec_NumPy.ipynb
@@ -108,8 +108,9 @@ DataScienceWithAgents/
 │   ├── 2.13-Analyse-Erreurs.ipynb
 │   └── 2.14-Explicabilite-SHAP-LIME-Contrefactuels.ipynb
 │
-├── 03-DeepLearning/            # Deep learning from scratch
+├── 03-Deep-Learning/            # Deep learning from scratch
 │   ├── 3.0-Theorie-Information.ipynb
+│   ├── 3.0b-Tenseurs-Strides-Vues-Python.ipynb
 │   ├── 3.1-Retropropagation.ipynb
 │   ├── 3.2-Optimisateurs.ipynb
 │   ├── 3.3-Regularisation.ipynb
@@ -127,7 +128,7 @@ DataScienceWithAgents/
 │   ├── 4.2b-Lean-GradientFlow-Vanishing.ipynb
 │   └── 4.3-TransferLearning-ResNet.ipynb
 │
-├── 04b-Wavelet-Scattering/   # Ondelettes et scattering : analyse multi-résolution
+├── 05-Wavelet-Scattering/   # Ondelettes et scattering : analyse multi-résolution
 │   ├── WS-00a-Ondelettes-1D-from-scratch.ipynb
 │   ├── WS-00b-Ondelettes-2D-from-scratch.ipynb
 │   └── WS-01-Denoising-SOTA.ipynb
@@ -144,22 +145,22 @@ DataScienceWithAgents/
     └── Day7-Production/        # Integration GCP
 ```
 
-## Fondations (01-PythonForDataScience)
+## Fondations (01-Python-For-Data-Science)
 
 La porte d'entrée de la série, en amont de NumPy et Pandas : le strict minimum de Python pour lire la suite, puis les gestes que la data science suppose acquis — visualiser une question, nettoyer un jeu sale, décrire une distribution.
 
 | Notebook | Contenu | Durée |
 |----------|---------|-------|
-| [1.1-Python](01-PythonForDataScience/notebooks/1.1-Python_pour_la_Data_Science.ipynb) | types et conversions (`float()` d'import), structures (`list`/`dict`/`tuple`/`set`), fonctions et docstring, compréhensions, fichiers en `with` + encodage explicite, traceback lu de bas en haut | 60-75 min |
-| [1.2-NumPy](01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb) | Arrays, opérations, vectorisation | 45 min |
-| [1.3-Pandas](01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb) | DataFrames, filtrage, groupby | 60 min |
-| [1.4-Visualisation](01-PythonForDataScience/notebooks/1.4-Visualisation_Matplotlib_Seaborn.ipynb) | matplotlib d'abord (figure/axes, une question → un graphique), erreurs classiques (axe tronqué, surcharge), puis seaborn (`hue`, `pairplot`, heatmap de corrélation) — manchots de Palmer | 60 min |
-| [1.5-Exploration](01-PythonForDataScience/notebooks/1.5-Exploration_Nettoyage_Donnees_Reelles.ipynb) | audit (dimensions/types/manquants/doublons), journal des décisions de nettoyage, quasi-doublon instruit, référence auteur reproduite à zéro divergence — sur `penguins_raw.csv` | 75 min |
-| [1.6-Statistiques](01-PythonForDataScience/notebooks/1.6-Statistiques_Descriptives.ipynb) | tendance centrale, dispersion et coefficient de variation, asymétrie par sous-groupe, corrélation de Pearson et paradoxe de Simpson mesuré — renvoi vers [`Probas/`](../../Probas/README.md) | 60 min |
+| [1.1-Python](01-Python-For-Data-Science/notebooks/1.1-Python_pour_la_Data_Science.ipynb) | types et conversions (`float()` d'import), structures (`list`/`dict`/`tuple`/`set`), fonctions et docstring, compréhensions, fichiers en `with` + encodage explicite, traceback lu de bas en haut | 60-75 min |
+| [1.2-NumPy](01-Python-For-Data-Science/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb) | Arrays, opérations, vectorisation | 45 min |
+| [1.3-Pandas](01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb) | DataFrames, filtrage, groupby | 60 min |
+| [1.4-Visualisation](01-Python-For-Data-Science/notebooks/1.4-Visualisation_Matplotlib_Seaborn.ipynb) | matplotlib d'abord (figure/axes, une question → un graphique), erreurs classiques (axe tronqué, surcharge), puis seaborn (`hue`, `pairplot`, heatmap de corrélation) — manchots de Palmer | 60 min |
+| [1.5-Exploration](01-Python-For-Data-Science/notebooks/1.5-Exploration_Nettoyage_Donnees_Reelles.ipynb) | audit (dimensions/types/manquants/doublons), journal des décisions de nettoyage, quasi-doublon instruit, référence auteur reproduite à zéro divergence — sur `penguins_raw.csv` | 75 min |
+| [1.6-Statistiques](01-Python-For-Data-Science/notebooks/1.6-Statistiques_Descriptives.ipynb) | tendance centrale, dispersion et coefficient de variation, asymétrie par sous-groupe, corrélation de Pearson et paradoxe de Simpson mesuré — renvoi vers [`Probas/`](../../Probas/README.md) | 60 min |
 
 > **Numérotation (règle d'accrétion).** La série commence à `1.1` — les notebooks `1.2` et `1.3` d'origine sont inchangés, et les prérequis s'insèrent autour d'eux. Continuité : `1.1` (Python) → `1.2` (NumPy) → `1.3` (Pandas) → `1.4` (Visualisation) → `1.5` (Exploration) → `1.6` (Statistiques) → [02-ML-Cours](02-ML-Cours/README.md).
 
-Documentation complète : [01-PythonForDataScience/README.md](01-PythonForDataScience/README.md)
+Documentation complète : [01-Python-For-Data-Science/README.md](01-Python-For-Data-Science/README.md)
 
 ## Fondations ML (02-ML-Cours)
 
@@ -167,74 +168,75 @@ Le socle machine learning canonique avec scikit-learn, posé à la main entre le
 
 | Notebook | Sujet | Concept-phare |
 |----------|-------|---------------|
-| [2.1-Workflow-ML](02-ML-Cours/2.1-Workflow-ML.html) | split → fit → predict → évaluer | surapprentissage rendu visible |
-| [2.2-Descente-de-gradient](02-ML-Cours/2.2-Descente-de-gradient.html) | ouvrir la boîte noire de `fit()` | 3 learning rates (lent / bon / divergeant) |
-| [2.3-Regression-lineaire-logistique](02-ML-Cours/2.3-Regression-lineaire-logistique.html) | OLS vs MLE | droite vs sigmoïde |
-| [2.3b-Naive-Bayes-Generatif](02-ML-Cours/2.3b-Naive-Bayes-Generatif.html) | *Pont génératif* — classifieur naïf de Bayes (Bernoulli, multinomial, Gaussien), hypothèse d'indépendance conditionnelle | **L'indépendance qui décide** : la frontière est inherited du modèle conjoint, pas apprise |
-| [2.3c-Regression-Grande-Dimension](02-ML-Cours/2.3c-Regression-Grande-Dimension.html) | p >> n : Ridge (L2), PCR (ACP) et PLS (supervisée) | **Var ≠ valeur prédictive** : la PLS trouve en 5 composantes ce que la PCR paie à 44 |
-| [2.3d-Modele-Gaussien-LDA-QDA](02-ML-Cours/2.3d-Modele-Gaussien-LDA-QDA.html) | Analyse discriminante linéaire vs quadratique | **L'hypothèse de covariance décide la frontière** : partagée → droite (LDA), propre → conique (QDA) |
-| [2.4-Arbres-Forets-Ensembles](02-ML-Cours/2.4-Arbres-Forets-Ensembles.html) | DecisionTree, RandomForest, GradientBoosting | réduction de variance |
-| [2.5-Biais-Variance-CV-ROC](02-ML-Cours/2.5-Biais-Variance-CV-ROC.html) | biais-variance, validation croisée, ROC/AUC | coût du seuil de décision |
-| [2.5b-Calibration-Probabilites](02-ML-Cours/2.5b-Calibration-Probabilites.html) | calibration des probabilités : reliability diagram, ECE | pourquoi 0.87 n'est pas 87 % de chances |
-| [2.5c-Equite-Sous-Groupes](02-ML-Cours/2.5c-Equite-Sous-Groupes.html) | équité par sous-groupe : parité démographique, equalized odds, post-traitement par seuils (Hardt) | **L'accuracy globale ne suffit pas** : 96,4 % global coexiste avec des écarts de groupe [0,92–1,00] |
-| [2.6-Clustering-KMeans-PCA](02-ML-Cours/2.6-Clustering-KMeans-PCA.html) | non supervisé : KMeans + ACP | structure retrouvée sans étiquettes |
-| [2.7-Modeles-Non-Parametriques](02-ML-Cours/2.7-Modeles-Non-Parametriques.html) | SVM à noyau et k plus proches voisins | kernel trick (linéaire vs RBF) |
-| [2.7b-SMO-From-Scratch](02-ML-Cours/2.7b-SMO-From-Scratch.html) | *Accrétion de 2.7* — SMO (Platt) écrit à la main : sous-problème 2D (dont la branche dégénérée `η ≤ 0`), cascade de working set, KKT et gap de dualité | **Le solveur écrit à la main retrouve sklearn** : même biais à 4·10⁻⁴ près, gap de dualité ≈ 3·10⁻³, pire violation KKT ponctuelle ≈ 10⁻³ |
-| [2.8-Theorie-PAC](02-ML-Cours/2.8-Theorie-PAC.html) | théorie PAC : sample complexity, dimension VC | la borne PAC prédit l'empirique |
-| [2.8b-Theorie-PAC-Lean](02-ML-Cours/2.8b-Theorie-PAC-Lean.html) | *Compagnon Lean* (kernel `lean4-wsl`) — la même borne PAC, démontrée | ce que 2.8 constate, le lake le prouve |
-| [2.8c-Borne-Temoin-Concentration](02-ML-Cours/2.8c-Borne-Temoin-Concentration.html) | *Carte transversale + illustrations Python* — Sections 1--3 (reconstruction de la borne, témoin extrémal, Hoeffding bilatérale) sous kernel `coursia-ml-training` | qui porte quoi, et la mesure numérique Python exécutée |
-| [2.8d-Lean-Novikoff-Convergence](02-ML-Cours/2.8d-Lean-Novikoff-Convergence.html) | *Compagnon Lean* (kernel `lean4-wsl`) — la moitié Perceptron du lake : Novikoff `n·γ² ≤ R²`, ses deux lemmes, son témoin de saturation | **Le théorème interrogé en direct** : `#check` + `#print axioms` depuis le lake, dynamique rejouée sur entiers |
-| [2.9-Grokking-Generalisation](02-ML-Cours/2.9-Grokking-Generalisation.html) | *Épilogue* — grokking : la généralisation qui arrive en retard (premier réseau de neurones) | **L'horloge cachée** : embeddings rangés en cercle après le grok (ACP + Fourier) |
-| [2.10-Optimisation-Hyperparametres](02-ML-Cours/2.10-Optimisation-Hyperparametres.html) | méthodologie du réglage : grille, hasard, bayésien (TPE) — et quand s'arrêter | le critère d'arrêt économise la moitié des essais |
-| [2.11-Regularisation-Sparse-LASSO](02-ML-Cours/2.11-Regularisation-Sparse-LASSO.html) | *Régularisation sparse* — LASSO (L1, polyèdre) vs Ridge (L2, boule), coord descent, sélection de λ, ElasticNet sur features corrélées | **la géométrie décide** : polyèdre L1 → sparsity, boule L2 → shrink ; sur ρ > 0.7, ElasticNet stabilise |
-| [2.12-Donnees-Desequilibrees](02-ML-Cours/2.12-Donnees-Desequilibrees.html) | *Classes déséquilibrées* — la métrique qui ment (accuracy vs PR), rééchantillonnage, seuillage par coût | **La courbe PR dit la vérité** : sur ~3 % de positifs, la ROC flatte — seule l'average precision rend l'arbitrage visible |
-| [2.13-Analyse-Erreurs](02-ML-Cours/2.13-Analyse-Erreurs.html) | le geste du praticien : diagnostiquer un modèle entraîné (tranches, worst-k) | la poche invisible : 67.6% d'erreur sous un score global correct |
-| [2.14-Explicabilite-SHAP-LIME-Contrefactuels](02-ML-Cours/2.14-Explicabilite-SHAP-LIME-Contrefactuels.html) | *Explicabilité XAI* — expliquer une décision individuelle : SHAP (arbre exact + kernel), LIME, contrefactuels DiCE, et leurs limites communes | **additivité exacte vs récits instables** : Tree SHAP vérifié à 1e-16, LIME instable de seed en seed |
+| [2.1-Workflow-ML](02-ML-Cours/2.1-Workflow-ML.ipynb) | split → fit → predict → évaluer | surapprentissage rendu visible |
+| [2.2-Descente-de-gradient](02-ML-Cours/2.2-Descente-de-gradient.ipynb) | ouvrir la boîte noire de `fit()` | 3 learning rates (lent / bon / divergeant) |
+| [2.3-Regression-lineaire-logistique](02-ML-Cours/2.3-Regression-lineaire-logistique.ipynb) | OLS vs MLE | droite vs sigmoïde |
+| [2.3b-Naive-Bayes-Generatif](02-ML-Cours/2.3b-Naive-Bayes-Generatif.ipynb) | *Pont génératif* — classifieur naïf de Bayes (Bernoulli, multinomial, Gaussien), hypothèse d'indépendance conditionnelle | **L'indépendance qui décide** : la frontière est inherited du modèle conjoint, pas apprise |
+| [2.3c-Regression-Grande-Dimension](02-ML-Cours/2.3c-Regression-Grande-Dimension.ipynb) | p >> n : Ridge (L2), PCR (ACP) et PLS (supervisée) | **Var ≠ valeur prédictive** : la PLS trouve en 5 composantes ce que la PCR paie à 44 |
+| [2.3d-Modele-Gaussien-LDA-QDA](02-ML-Cours/2.3d-Modele-Gaussien-LDA-QDA.ipynb) | Analyse discriminante linéaire vs quadratique | **L'hypothèse de covariance décide la frontière** : partagée → droite (LDA), propre → conique (QDA) |
+| [2.4-Arbres-Forets-Ensembles](02-ML-Cours/2.4-Arbres-Forets-Ensembles.ipynb) | DecisionTree, RandomForest, GradientBoosting | réduction de variance |
+| [2.5-Biais-Variance-CV-ROC](02-ML-Cours/2.5-Biais-Variance-CV-ROC.ipynb) | biais-variance, validation croisée, ROC/AUC | coût du seuil de décision |
+| [2.5b-Calibration-Probabilites](02-ML-Cours/2.5b-Calibration-Probabilites.ipynb) | calibration des probabilités : reliability diagram, ECE | pourquoi 0.87 n'est pas 87 % de chances |
+| [2.5c-Equite-Sous-Groupes](02-ML-Cours/2.5c-Equite-Sous-Groupes.ipynb) | équité par sous-groupe : parité démographique, equalized odds, post-traitement par seuils (Hardt) | **L'accuracy globale ne suffit pas** : 96,4 % global coexiste avec des écarts de groupe [0,92–1,00] |
+| [2.6-Clustering-KMeans-PCA](02-ML-Cours/2.6-Clustering-KMeans-PCA.ipynb) | non supervisé : KMeans + ACP | structure retrouvée sans étiquettes |
+| [2.7-Modeles-Non-Parametriques](02-ML-Cours/2.7-Modeles-Non-Parametriques.ipynb) | SVM à noyau et k plus proches voisins | kernel trick (linéaire vs RBF) |
+| [2.7b-SMO-From-Scratch](02-ML-Cours/2.7b-SMO-From-Scratch.ipynb) | *Accrétion de 2.7* — SMO (Platt) écrit à la main : sous-problème 2D (dont la branche dégénérée `η ≤ 0`), cascade de working set, KKT et gap de dualité | **Le solveur écrit à la main retrouve sklearn** : même biais à 4·10⁻⁴ près, gap de dualité ≈ 3·10⁻³, pire violation KKT ponctuelle ≈ 10⁻³ |
+| [2.8-Theorie-PAC](02-ML-Cours/2.8-Theorie-PAC.ipynb) | théorie PAC : sample complexity, dimension VC | la borne PAC prédit l'empirique |
+| [2.8b-Theorie-PAC-Lean](02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb) | *Compagnon Lean* (kernel `lean4-wsl`) — la même borne PAC, démontrée | ce que 2.8 constate, le lake le prouve |
+| [2.8c-Borne-Temoin-Concentration](02-ML-Cours/2.8c-Borne-Temoin-Concentration.ipynb) | *Carte transversale + illustrations Python* — Sections 1--3 (reconstruction de la borne, témoin extrémal, Hoeffding bilatérale) sous kernel `coursia-ml-training` | qui porte quoi, et la mesure numérique Python exécutée |
+| [2.8d-Lean-Novikoff-Convergence](02-ML-Cours/2.8d-Lean-Novikoff-Convergence.ipynb) | *Compagnon Lean* (kernel `lean4-wsl`) — la moitié Perceptron du lake : Novikoff `n·γ² ≤ R²`, ses deux lemmes, son témoin de saturation | **Le théorème interrogé en direct** : `#check` + `#print axioms` depuis le lake, dynamique rejouée sur entiers |
+| [2.9-Grokking-Generalisation](02-ML-Cours/2.9-Grokking-Generalisation.ipynb) | *Épilogue* — grokking : la généralisation qui arrive en retard (premier réseau de neurones) | **L'horloge cachée** : embeddings rangés en cercle après le grok (ACP + Fourier) |
+| [2.10-Optimisation-Hyperparametres](02-ML-Cours/2.10-Optimisation-Hyperparametres.ipynb) | méthodologie du réglage : grille, hasard, bayésien (TPE) — et quand s'arrêter | le critère d'arrêt économise la moitié des essais |
+| [2.11-Regularisation-Sparse-LASSO](02-ML-Cours/2.11-Regularisation-Sparse-LASSO.ipynb) | *Régularisation sparse* — LASSO (L1, polyèdre) vs Ridge (L2, boule), coord descent, sélection de λ, ElasticNet sur features corrélées | **la géométrie décide** : polyèdre L1 → sparsity, boule L2 → shrink ; sur ρ > 0.7, ElasticNet stabilise |
+| [2.12-Donnees-Desequilibrees](02-ML-Cours/2.12-Donnees-Desequilibrees.ipynb) | *Classes déséquilibrées* — la métrique qui ment (accuracy vs PR), rééchantillonnage, seuillage par coût | **La courbe PR dit la vérité** : sur ~3 % de positifs, la ROC flatte — seule l'average precision rend l'arbitrage visible |
+| [2.13-Analyse-Erreurs](02-ML-Cours/2.13-Analyse-Erreurs.ipynb) | le geste du praticien : diagnostiquer un modèle entraîné (tranches, worst-k) | la poche invisible : 67.6% d'erreur sous un score global correct |
+| [2.14-Explicabilite-SHAP-LIME-Contrefactuels](02-ML-Cours/2.14-Explicabilite-SHAP-LIME-Contrefactuels.ipynb) | *Explicabilité XAI* — expliquer une décision individuelle : SHAP (arbre exact + kernel), LIME, contrefactuels DiCE, et leurs limites communes | **additivité exacte vs récits instables** : Tree SHAP vérifié à 1e-16, LIME instable de seed en seed |
 
 Documentation complète : [02-ML-Cours/README.md](02-ML-Cours/README.md)
 
-## Deep Learning (03-DeepLearning)
+## Deep Learning (03-Deep-Learning)
 
-Le prolongement direct du socle : là où [2.2](02-ML-Cours/2.2-Descente-de-gradient.html) ouvre `fit()` sur une droite et [2.9](02-ML-Cours/2.9-Grokking-Generalisation.html) entraîne un réseau PyTorch en boîte noire, cette série écrit la mécanique intermédiaire **à la main** — chaque mécanisme implémenté en NumPy pur, vérifié (gradient numérique, parité pas-à-pas avec PyTorch), puis relié à l'API `torch` que consomment les séries RL/PostTraining.
+Le prolongement direct du socle : là où [2.2](02-ML-Cours/2.2-Descente-de-gradient.ipynb) ouvre `fit()` sur une droite et [2.9](02-ML-Cours/2.9-Grokking-Generalisation.ipynb) entraîne un réseau PyTorch en boîte noire, cette série écrit la mécanique intermédiaire **à la main** — chaque mécanisme implémenté en NumPy pur, vérifié (gradient numérique, parité pas-à-pas avec PyTorch), puis relié à l'API `torch` que consomment les séries RL/PostTraining.
 
 | Notebook | Sujet | Concept-phare |
 |----------|-------|---------------|
-| [3.0-Theorie-Information](03-DeepLearning/3.0-Theorie-Information.html) | Entropie, cross-entropy et KL from scratch sur texte français, MSE vs CE sur classifieur, température softmax, pont DPO/GRPO | **La loss qui fait apprendre** : pourquoi la CE et pas la MSE ; KL comme mesure de décalage entre distributions |
-| [3.1-Retropropagation](03-DeepLearning/3.1-Retropropagation.html) | Le MLP et la rétropropagation à la main (NumPy pur, sans autograd) | **Le gradient vérifié** (différence finie 1,3e-11 ; parité exacte avec PyTorch ; init nulle = gradient nul) |
-| [3.2-Optimisateurs](03-DeepLearning/3.2-Optimisateurs.html) | Momentum, Adagrad, RMSProp, Adam et schedules, écrits puis validés pas à pas contre `torch.optim` | **La parité exacte** (5 mises à jour identiques à ≤2,2e-16 ; Beale 5 trajectoires ; MLP 3 graines ; schedules : coût en déterministe, gain en bruité) |
-| [3.3-Regularisation](03-DeepLearning/3.3-Regularisation.html) | Dropout, weight decay et early stopping écrits à la main sur un MLP construit pour surapprendre (17 000 paramètres, 100 points, 12 étiquettes fausses) | **Corriger la variance sans changer le modèle** : trois remèdes appliqués au même surapprentissage fabriqué |
-| [3.4-Attention-Transformer-From-Scratch](03-DeepLearning/3.4-Attention-Transformer-From-Scratch.html) | De l'attention mono-tête lisible sur l'inversion de séquence au mini-GPT de 1,25 M entraîné dans le notebook | **L'attention jusqu'au bout, sur CPU** : attention + masque causal + multi-têtes + bloc pré-norme, mini-GPT char-level (117 s, *Le Horla*) |
-| [3.5-Phenomenes-de-Generalisation](03-DeepLearning/3.5-Phenomenes-de-Generalisation.html) | Grokking et double descente reproduits en NumPy pur (MLP à embeddings + Adam à la main), confrontés à la borne PAC du 2.8 | **Le phénomène sans la boîte noire** : mémorisation → transition abrupte, et le W de la double descente (pic au seuil M ≈ n, 20 graines) |
-| [3.6-Modeles-Generatifs](03-DeepLearning/3.6-Modeles-Generatifs.html) | VAE, GAN et diffusion (DDPM) écrits en NumPy pur, même cible (huit modes sur un cercle), même budget, face à une baseline GMM | **Trois objectifs, trois échecs** : VAE couvre mais moyenne, GAN s'effondre, diffusion raffine au prix de 100 passes |
-| [3.6b-Modeles-Generatifs-PyTorch](03-DeepLearning/3.6b-Modeles-Generatifs-PyTorch.html) | *Versant framework* du 3.6 : VAE, GAN et DDPM entraînés sur cible 2D à 4 modes (PyTorch CPU) | **Le compromis qualité/diversité** : 4 mécanismes sur mêmes métriques, verdict nuancé, pas de « gagnant » unique |
-| [3.7-Distillation-Maitre-Eleve](03-DeepLearning/3.7-Distillation-Maitre-Eleve.html) | Distillation teacher/student : maître entraîné distille son savoir vers un élève ~9× plus petit | **Le facteur T² vérifié** : la KL brute chute en ~1/T², la KL scalée reste constante ; verdict INCONCLUSIVE au seuil strict |
-| [3.8-Representations-Contrastives](03-DeepLearning/3.8-Representations-Contrastives.html) | Pré-entraînement contrastif moderne : vues continues, encodeur MLP et loss InfoNCE from scratch, pont vers skip-gram | **Apprendre des représentations sans étiquettes** : deux vues attirent leurs embeddings, les autres repoussent |
+| [3.0-Theorie-Information](03-Deep-Learning/3.0-Theorie-Information.ipynb) | Entropie, cross-entropy et KL from scratch sur texte français, MSE vs CE sur classifieur, température softmax, pont DPO/GRPO | **La loss qui fait apprendre** : pourquoi la CE et pas la MSE ; KL comme mesure de décalage entre distributions |
+| [3.0b-Tenseurs-Strides-Vues](03-Deep-Learning/3.0b-Tenseurs-Strides-Vues-Python.ipynb) | Le support mémoire du tenseur à la main : buffer, offset, forme et strides en NumPy pur, parité mesurée avec PyTorch (vues, `expand`, `view`, gradient), fenêtres glissantes et im2col | **L'adresse comme formule** : toute opération « sans copie » ne fait que réécrire les pas |
+| [3.1-Retropropagation](03-Deep-Learning/3.1-Retropropagation.ipynb) | Le MLP et la rétropropagation à la main (NumPy pur, sans autograd) | **Le gradient vérifié** (différence finie 1,3e-11 ; parité exacte avec PyTorch ; init nulle = gradient nul) |
+| [3.2-Optimisateurs](03-Deep-Learning/3.2-Optimisateurs.ipynb) | Momentum, Adagrad, RMSProp, Adam et schedules, écrits puis validés pas à pas contre `torch.optim` | **La parité exacte** (5 mises à jour identiques à ≤2,2e-16 ; Beale 5 trajectoires ; MLP 3 graines ; schedules : coût en déterministe, gain en bruité) |
+| [3.3-Regularisation](03-Deep-Learning/3.3-Regularisation.ipynb) | Dropout, weight decay et early stopping écrits à la main sur un MLP construit pour surapprendre (17 000 paramètres, 100 points, 12 étiquettes fausses) | **Corriger la variance sans changer le modèle** : trois remèdes appliqués au même surapprentissage fabriqué |
+| [3.4-Attention-Transformer-From-Scratch](03-Deep-Learning/3.4-Attention-Transformer-From-Scratch.ipynb) | De l'attention mono-tête lisible sur l'inversion de séquence au mini-GPT de 1,25 M entraîné dans le notebook | **L'attention jusqu'au bout, sur CPU** : attention + masque causal + multi-têtes + bloc pré-norme, mini-GPT char-level (117 s, *Le Horla*) |
+| [3.5-Phenomenes-de-Generalisation](03-Deep-Learning/3.5-Phenomenes-de-Generalisation.ipynb) | Grokking et double descente reproduits en NumPy pur (MLP à embeddings + Adam à la main), confrontés à la borne PAC du 2.8 | **Le phénomène sans la boîte noire** : mémorisation → transition abrupte, et le W de la double descente (pic au seuil M ≈ n, 20 graines) |
+| [3.6-Modeles-Generatifs](03-Deep-Learning/3.6-Modeles-Generatifs.ipynb) | VAE, GAN et diffusion (DDPM) écrits en NumPy pur, même cible (huit modes sur un cercle), même budget, face à une baseline GMM | **Trois objectifs, trois échecs** : VAE couvre mais moyenne, GAN s'effondre, diffusion raffine au prix de 100 passes |
+| [3.6b-Modeles-Generatifs-PyTorch](03-Deep-Learning/3.6b-Modeles-Generatifs-PyTorch.ipynb) | *Versant framework* du 3.6 : VAE, GAN et DDPM entraînés sur cible 2D à 4 modes (PyTorch CPU) | **Le compromis qualité/diversité** : 4 mécanismes sur mêmes métriques, verdict nuancé, pas de « gagnant » unique |
+| [3.7-Distillation-Maitre-Eleve](03-Deep-Learning/3.7-Distillation-Maitre-Eleve.ipynb) | Distillation teacher/student : maître entraîné distille son savoir vers un élève ~9× plus petit | **Le facteur T² vérifié** : la KL brute chute en ~1/T², la KL scalée reste constante ; verdict INCONCLUSIVE au seuil strict |
+| [3.8-Representations-Contrastives](03-Deep-Learning/3.8-Representations-Contrastives.ipynb) | Pré-entraînement contrastif moderne : vues continues, encodeur MLP et loss InfoNCE from scratch, pont vers skip-gram | **Apprendre des représentations sans étiquettes** : deux vues attirent leurs embeddings, les autres repoussent |
 
-Documentation complète : [03-DeepLearning/README.md](03-DeepLearning/README.md)
+Documentation complète : [03-Deep-Learning/README.md](03-Deep-Learning/README.md)
 
 ## Vision par ordinateur (04-Vision)
 
-[`03-DeepLearning`](#deep-learning-03-deeplearning) a ouvert la rétropropagation sur des **vecteurs** tabulaires (MLP, gradient vérifié, parité NumPy ↔ torch). Le passage à l'image demande une primitive nouvelle : le neurone **convolutif**, qui partage ses poids spatialement. Cette série reprend la **même discipline** (from scratch PUIS framework, parité epsilon machine) et l'applique à la convolution, l'empilement profond, et au skip-connection qui rend les réseaux entraînables.
+[`03-Deep-Learning`](#deep-learning-03-deeplearning) a ouvert la rétropropagation sur des **vecteurs** tabulaires (MLP, gradient vérifié, parité NumPy ↔ torch). Le passage à l'image demande une primitive nouvelle : le neurone **convolutif**, qui partage ses poids spatialement. Cette série reprend la **même discipline** (from scratch PUIS framework, parité epsilon machine) et l'applique à la convolution, l'empilement profond, et au skip-connection qui rend les réseaux entraînables.
 
 | Notebook | Sujet | Concept-phare |
 |----------|-------|---------------|
-| [4.1-Conv-NumPy-Torch-Allclose](04-Vision/4.1-Conv-NumPy-Torch-Allclose.html) | Conv2d NumPy pur (single + multi-canal), gradient vérifié par différence finie, parité epsilon machine avec `torch.nn.Conv2d`, pooling et invariance par translation | **La convolution n'est pas magique** : un produit scalaire local, partagé spatialement, parité NumPy/torch à epsilon machine |
-| [4.2-ConvNet-Profonde-Residuelles](04-Vision/4.2-ConvNet-Profonde-Residuelles.html) | 20 conv2d empilées nues (effondrement du gradient), skip naïf (gradient réparé mais passe avant qui dérive), bloc pré-norme (les deux réparés), même protocole transposé à 20 blocs d'attention, puis accuracy CIFAR-10 sur 3 graines | **Le skip-connection n'est pas un détail architectural** : c'est le mécanisme qui rend les réseaux profonds entraînables |
-| [4.3-TransferLearning-ResNet](04-Vision/4.3-TransferLearning-ResNet.html) | ResNet18 pré-entraîné ImageNet, tête greffée (5 130 params entraînables sur 11,18 M), gelé vs fine-tuné sur EuroSAT (Sentinel-2, 10 classes, 3 graines appariées + test de permutation des signes) | **Le feature extractor pré-entraîné est réutilisable — et le prix de ne pas l'adapter se mesure** : gelé ~89 % ; fine-tuné +6,2 pts appariés, mais seulement à taux différencié décroissant (à taux constants, l'optimiseur finit sous le gelé) |
+| [4.1-Conv-NumPy-Torch-Allclose](04-Vision/4.1-Conv-NumPy-Torch-Allclose.ipynb) | Conv2d NumPy pur (single + multi-canal), gradient vérifié par différence finie, parité epsilon machine avec `torch.nn.Conv2d`, pooling et invariance par translation | **La convolution n'est pas magique** : un produit scalaire local, partagé spatialement, parité NumPy/torch à epsilon machine |
+| [4.2-ConvNet-Profonde-Residuelles](04-Vision/4.2-ConvNet-Profonde-Residuelles.ipynb) | 20 conv2d empilées nues (effondrement du gradient), skip naïf (gradient réparé mais passe avant qui dérive), bloc pré-norme (les deux réparés), même protocole transposé à 20 blocs d'attention, puis accuracy CIFAR-10 sur 3 graines | **Le skip-connection n'est pas un détail architectural** : c'est le mécanisme qui rend les réseaux profonds entraînables |
+| [4.3-TransferLearning-ResNet](04-Vision/4.3-TransferLearning-ResNet.ipynb) | ResNet18 pré-entraîné ImageNet, tête greffée (5 130 params entraînables sur 11,18 M), gelé vs fine-tuné sur EuroSAT (Sentinel-2, 10 classes, 3 graines appariées + test de permutation des signes) | **Le feature extractor pré-entraîné est réutilisable — et le prix de ne pas l'adapter se mesure** : gelé ~89 % ; fine-tuné +6,2 pts appariés, mais seulement à taux différencié décroissant (à taux constants, l'optimiseur finit sous le gelé) |
 
 Documentation complète : [04-Vision/README.md](04-Vision/README.md)
 
-## Ondelettes et scattering (04b-Wavelet-Scattering)
+## Ondelettes et scattering (05-Wavelet-Scattering)
 
 Série d'analyse multi-résolution dans la même discipline from scratch : la transformée en ondelettes 1D écrite à la main (synthèse = adjoint exact de l'analyse), validée coefficient par coefficient contre PyWavelets, puis mise au travail sur le débruitage — seuillage sans oracle contre passe-bas Fourier avec oracle — avant son extension 2D séparable aux bandes orientées et à la compression d'image.
 
 | Notebook | Sujet | Concept-phare |
 |----------|-------|---------------|
-| [WS-00a-Ondelettes-1D-from-scratch](04b-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch.html) | DWT orthonormale à la main (Haar, D4, db4), profil d'énergie par échelle, débruitage par seuillage dur/doux (seuil universel, sans oracle) contre passe-bas Fourier (cutoffs garde-tout/étroit/libre, avec oracle), banc Donoho-Johnstone (Doppler, HeaviSine, Stationnaire+burst) | **Aucune base n'est universellement parcimonieuse** : ondelette +4,5 dB sur le chirp sans oracle, Fourier +4,8 dB sur le stationnaire avec oracle, mixte serré |
-| [WS-00b-Ondelettes-2D-from-scratch](04b-Wavelet-Scattering/WS-00b-Ondelettes-2D-from-scratch.html) | Transformée 2D séparable = produit tensoriel du moteur 1D de WS-00a, pyramide de Mallat, contrôle d'orientation sur motifs à orientation connue, reconstruction parfaite + `allclose` bande par bande contre PyWavelets, duel de compression à budget apparié contre une DCT 8×8 | **Le pouvoir de parcimonie est conditionnel au budget** : db4 écrase la DCT 8×8 de +16,4 dB à 0,2 % de coefficients retenus, mais l'écart tombe à ~0,2 dB dès 5 % |
-| [WS-01-Denoising-SOTA](04b-Wavelet-Scattering/WS-01-Denoising-SOTA.html) | Bloc B : duel débruitage d'images (4 images × 3 sigmas × 3 graines) entre la baseline from scratch (moteur WS-00b, seuil universel de WS-00a) et les estimateurs SOTA — VisuShrink/BayesShrink (`skimage`), SureShrink écrit à la main (SURE validé contre force brute) sur coefficients `pywt` | **À transformée identique, l'écart vient du seuil, pas du moteur** : BayesShrink adaptatif par sous-bande gagne +2,2 à +3,0 dB sur le seuil universel global à chaque régime de bruit |
+| [WS-00a-Ondelettes-1D-from-scratch](05-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch.ipynb) | DWT orthonormale à la main (Haar, D4, db4), profil d'énergie par échelle, débruitage par seuillage dur/doux (seuil universel, sans oracle) contre passe-bas Fourier (cutoffs garde-tout/étroit/libre, avec oracle), banc Donoho-Johnstone (Doppler, HeaviSine, Stationnaire+burst) | **Aucune base n'est universellement parcimonieuse** : ondelette +4,5 dB sur le chirp sans oracle, Fourier +4,8 dB sur le stationnaire avec oracle, mixte serré |
+| [WS-00b-Ondelettes-2D-from-scratch](05-Wavelet-Scattering/WS-00b-Ondelettes-2D-from-scratch.ipynb) | Transformée 2D séparable = produit tensoriel du moteur 1D de WS-00a, pyramide de Mallat, contrôle d'orientation sur motifs à orientation connue, reconstruction parfaite + `allclose` bande par bande contre PyWavelets, duel de compression à budget apparié contre une DCT 8×8 | **Le pouvoir de parcimonie est conditionnel au budget** : db4 écrase la DCT 8×8 de +16,4 dB à 0,2 % de coefficients retenus, mais l'écart tombe à ~0,2 dB dès 5 % |
+| [WS-01-Denoising-SOTA](05-Wavelet-Scattering/WS-01-Denoising-SOTA.ipynb) | Bloc B : duel débruitage d'images (4 images × 3 sigmas × 3 graines) entre la baseline from scratch (moteur WS-00b, seuil universel de WS-00a) et les estimateurs SOTA — VisuShrink/BayesShrink (`skimage`), SureShrink écrit à la main (SURE validé contre force brute) sur coefficients `pywt` | **À transformée identique, l'écart vient du seuil, pas du moteur** : BayesShrink adaptatif par sous-bande gagne +2,2 à +3,0 dB sur le seuil universel global à chaque régime de bruit |
 
-Documentation complète : [04b-Wavelet-Scattering/README.md](04b-Wavelet-Scattering/README.md)
+Documentation complète : [05-Wavelet-Scattering/README.md](05-Wavelet-Scattering/README.md)
 
 ## Workshop 3 Jours (Track1-LangChain)
 
@@ -242,23 +244,23 @@ Documentation complète : [04b-Wavelet-Scattering/README.md](04b-Wavelet-Scatter
 
 | Lab | Notebook | Contenu |
 |-----|----------|---------|
-| 1 | [Lab1-PythonForDataScience](Track1-LangChain/Day1-Foundations/Labs/Lab1-PythonForDataScience.html) | Pandas, Matplotlib, Scikit-Learn |
+| 1 | [Lab1-PythonForDataScience](Track1-LangChain/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb) | Pandas, Matplotlib, Scikit-Learn |
 
 ### Day 2 - Agents Documentaires
 
 | Lab | Notebook | Contenu |
 |-----|----------|---------|
-| 2 | [Lab2-RFP-Analysis](Track1-LangChain/Day2-Document-Agents/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.html) | Parser des appels d'offres avec LLM |
-| 3 | [Lab3-CV-Screening](Track1-LangChain/Day2-Document-Agents/Labs/Lab3-CV-Screening/Lab3-CV-Screening.html) | Scoring CV avec agents IA |
+| 2 | [Lab2-RFP-Analysis](Track1-LangChain/Day2-Document-Agents/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb) | Parser des appels d'offres avec LLM |
+| 3 | [Lab3-CV-Screening](Track1-LangChain/Day2-Document-Agents/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb) | Scoring CV avec agents IA |
 
 ### Day 3 - Data + Agents
 
 | Lab | Notebook | Contenu |
 |-----|----------|---------|
-| 4 | [Lab4-DataWrangling](Track1-LangChain/Day3-Data-Agents/Labs/Lab4-DataWrangling/Lab4-DataWrangling.html) | Nettoyage et transformation |
-| 5 | [Lab5-Viz-ML](Track1-LangChain/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.html) | Visualisation et intro ML |
-| 6 | [Lab6-First-Agent](Track1-LangChain/Day3-Data-Agents/Labs/Lab6-First-Agent/Lab6-First-Agent.html) | Construction d'un agent simple |
-| 7 | [Lab7-Data-Analysis-Agent](Track1-LangChain/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.html) | Agent pour DataFrames |
+| 4 | [Lab4-DataWrangling](Track1-LangChain/Day3-Data-Agents/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb) | Nettoyage et transformation |
+| 5 | [Lab5-Viz-ML](Track1-LangChain/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb) | Visualisation et intro ML |
+| 6 | [Lab6-First-Agent](Track1-LangChain/Day3-Data-Agents/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb) | Construction d'un agent simple |
+| 7 | [Lab7-Data-Analysis-Agent](Track1-LangChain/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb) | Agent pour DataFrames |
 
 ## Track Track2-GoogleADK (Days 4-7)
 
@@ -268,35 +270,35 @@ Track avancé intégrant les frameworks Google ADK (DS-STAR, MLE-STAR) avec supp
 
 | Lab | Notebook | Objectif |
 |-----|----------|----------|
-| 8 | [ADK-Introduction](Track2-GoogleADK/Day4-Foundations/Lab8-ADK-Introduction.html) | Architecture ADK, configuration providers |
-| 9 | [First-ADK-Agent](Track2-GoogleADK/Day4-Foundations/Lab9-First-ADK-Agent.html) | Premier agent pour Data Science |
+| 8 | [ADK-Introduction](Track2-GoogleADK/Day4-Foundations/Lab8-ADK-Introduction.ipynb) | Architecture ADK, configuration providers |
+| 9 | [First-ADK-Agent](Track2-GoogleADK/Day4-Foundations/Lab9-First-ADK-Agent.ipynb) | Premier agent pour Data Science |
 
 ### Day 5 - DS-STAR (Labs 10-12 + extensions 12b-12d, 18)
 
 | Lab | Notebook | Objectif |
 |-----|----------|----------|
-| 10 | [File-Analyzer](Track2-GoogleADK/Day5-DS-Star/Lab10-File-Analyzer.html) | Analyse de fichiers hétérogènes |
-| 11 | [Planner-Coder-Loop](Track2-GoogleADK/Day5-DS-Star/Lab11-Planner-Coder-Loop.html) | Boucle itérative multi-agents |
-| 12 | [DS-Star-Workshop](Track2-GoogleADK/Day5-DS-Star/Lab12-DS-Star-Workshop.html) | Application complète |
-| 12b | [Sequential-Orchestration](Track2-GoogleADK/Day5-DS-Star/Lab12b-Sequential-Orchestration.html) | Contrat C4 : désignation séquentielle, l'orchestrateur explicite au-dessus d'ADK |
-| 12c | [Agent-Handoff](Track2-GoogleADK/Day5-DS-Star/Lab12c-Agent-Handoff.html) | Contrat C5 : handoff inter-agents natif câblé et observable |
-| 12d | [Token-Usage](Track2-GoogleADK/Day5-DS-Star/Lab12d-Token-Usage.html) | Contrat C6 : traçabilité de la consommation LLM |
-| 12e | [Session-Persistence](Track2-GoogleADK/Day5-DS-Star/Lab12e-Session-Persistence.html) | Persistance d'état de session : une conversation qui se souvient |
+| 10 | [File-Analyzer](Track2-GoogleADK/Day5-DS-Star/Lab10-File-Analyzer.ipynb) | Analyse de fichiers hétérogènes |
+| 11 | [Planner-Coder-Loop](Track2-GoogleADK/Day5-DS-Star/Lab11-Planner-Coder-Loop.ipynb) | Boucle itérative multi-agents |
+| 12 | [DS-Star-Workshop](Track2-GoogleADK/Day5-DS-Star/Lab12-DS-Star-Workshop.ipynb) | Application complète |
+| 12b | [Sequential-Orchestration](Track2-GoogleADK/Day5-DS-Star/Lab12b-Sequential-Orchestration.ipynb) | Contrat C4 : désignation séquentielle, l'orchestrateur explicite au-dessus d'ADK |
+| 12c | [Agent-Handoff](Track2-GoogleADK/Day5-DS-Star/Lab12c-Agent-Handoff.ipynb) | Contrat C5 : handoff inter-agents natif câblé et observable |
+| 12d | [Token-Usage](Track2-GoogleADK/Day5-DS-Star/Lab12d-Token-Usage.ipynb) | Contrat C6 : traçabilité de la consommation LLM |
+| 12e | [Session-Persistence](Track2-GoogleADK/Day5-DS-Star/Lab12e-Session-Persistence.ipynb) | Persistance d'état de session : une conversation qui se souvient |
 
 ### Day 6 - MLE-STAR (Labs 13-15)
 
 | Lab | Notebook | Objectif |
 |-----|----------|----------|
-| 13 | [Web-Search-SOTA](Track2-GoogleADK/Day6-MLE-Star/Lab13-Web-Search-SOTA.html) | Recherche de modèles SOTA |
-| 14 | [Ablation-Refinement](Track2-GoogleADK/Day6-MLE-Star/Lab14-Ablation-Refinement.html) | Optimisation ciblée |
-| 15 | [Kaggle-Challenge](Track2-GoogleADK/Day6-MLE-Star/Lab15-Kaggle-Challenge.html) | Compétition Kaggle |
+| 13 | [Web-Search-SOTA](Track2-GoogleADK/Day6-MLE-Star/Lab13-Web-Search-SOTA.ipynb) | Recherche de modèles SOTA |
+| 14 | [Ablation-Refinement](Track2-GoogleADK/Day6-MLE-Star/Lab14-Ablation-Refinement.ipynb) | Optimisation ciblée |
+| 15 | [Kaggle-Challenge](Track2-GoogleADK/Day6-MLE-Star/Lab15-Kaggle-Challenge.ipynb) | Compétition Kaggle |
 
 ### Day 7 - Production (Labs 16-17)
 
 | Lab | Notebook | Objectif |
 |-----|----------|----------|
-| 16 | [Data-Science-Agent](Track2-GoogleADK/Day7-Production/Lab16-Data-Science-Agent.html) | Agent BigQuery/BQML |
-| 17 | [Final-Project](Track2-GoogleADK/Day7-Production/Lab17-Final-Project.html) | Projet intégré |
+| 16 | [Data-Science-Agent](Track2-GoogleADK/Day7-Production/Lab16-Data-Science-Agent.ipynb) | Agent BigQuery/BQML |
+| 17 | [Final-Project](Track2-GoogleADK/Day7-Production/Lab17-Final-Project.ipynb) | Projet intégré |
 
 ### Technologies Track2-GoogleADK
 
@@ -454,7 +456,7 @@ La thèse est honnête : les agents LLM ne remplacent pas le data scientist, ils
 ### Prochaines étapes
 
 - **Approfondir le ML sous-jacent** : la série [ML](../README.md) (et son pendant C# [ML.Net](../ML.Net/README.md)) reprend les algorithmes (LightGBM, SSA, évaluation PFI/ROC) sous l'angle de l'implémentation — utile pour comprendre ce que l'agent exécute quand il génère du code scikit-learn.
-- **Démarrer par les fondations visuelles** : la sous-série [`04-Vision`](04-Vision/README.md) prolonge [03-DeepLearning](03-DeepLearning/README.md) sur les images (Conv2d from scratch + ConvNet profonde + résiduelles, parité NumPy/torch à epsilon machine, puis transfer learning ResNet gelé vs fine-tuné). Prérequis utile avant d'orchestrer un agent sur des données image.
+- **Démarrer par les fondations visuelles** : la sous-série [`04-Vision`](04-Vision/README.md) prolonge [03-Deep-Learning](03-Deep-Learning/README.md) sur les images (Conv2d from scratch + ConvNet profonde + résiduelles, parité NumPy/torch à epsilon machine, puis transfer learning ResNet gelé vs fine-tuné). Prérequis utile avant d'orchestrer un agent sur des données image.
 - **Aller vers l'évaluation et la robustesse** : les Labs 13-15 (Web-Search-SOTA, Ablation-Refinement, Kaggle-Challenge) introduisent l'évaluation rigoureuse des agents ML (MLE-bench, métriques cross-compétition) ; le prolongement naturel est la **robustesse multi-seed** et la **walk-forward validation**, traitées dans le pipeline [QuantConnect](../../QuantConnect/README.md).
 - **Franchir le cap production** : le Day 7 (BigQuery, BQML, Vertex AI) ouvre sur le déploiement réel. Le pont vers [GenAI](../../GenAI/README.md) relie ces agents data aux pipelines de génération (image, audio, texte) et aux architectures Qwen/Lumina auto-hébergées.
 - Pour la pratique : reprenez le Lab 7 (agent DataFrame) et posez-lui une question qu'il *ne peut pas* répondre avec les seules colonnes présentes — comment réagit-il ? Confrontez cette limite au Lab 11 (boucle planner-coder) : qu'apporte vraiment le multi-agent ? C'est la tension vivante de la série : la puissance de l'agent *vs* la nécessité de l'encadrer.
