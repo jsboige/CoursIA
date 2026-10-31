@@ -23,7 +23,7 @@
    - `browser_navigate("http://localhost:3039/<N>?print")`  (N = numéro de slide)
    - `browser_take_screenshot(filename: "checkN.png")` → puis `Read` le PNG (analyse vision)
    - Fallback sans MCP : `./node_modules/.bin/slidev export 03-logique/slides.md --format png --output <dir>` (rend tout le deck en `<dir>/N.png`).
-3. **Comparer au PPTX original** : `slides/03-logique/pptx-reference/slide-NN.png` (le mapping Slidev↔PPTX est dans `slides/03-logique/analysis/mapping-*.md`). La numérotation PPTX ≠ Slidev → croiser par **titre/contenu**. Objectif : **ne rien perdre** au passage.
+3. **Comparer au PPTX original** : `slides/03-logique/pptx-reference/slide-NN.png` (les mappings Slidev↔PPTX committés en cours de chantier ont ete retires de l'arbre en 2026-10, chantier #11508 L6 — recuperables dans l'historique git ; un nouvel audit regenere son mapping a la demande via `slide-analyzer`). La numerotation PPTX ≠ Slidev → croiser par **titre/contenu**. Objectif : **ne rien perdre** au passage.
 4. **Au SPLIT d'une slide PPTX dense en plusieurs slides Slidev** : répartir les **images** vers la slide **pédagogiquement pertinente**, pas toutes sur la première.
    - Exemple validé : `img_033` (diagramme `Result(Result(S0,Forward),Turn(Right))`) déplacée de "Calcul situationnel" vers "Axiomes du calcul situationnel" (où le concept `Result(p,s)` est traité).
    - **Vérifier la/les slide(s) adjacente(s) AVANT de conclure à une perte de contenu** (le contenu manquant est souvent sur la slide suivante du split).
