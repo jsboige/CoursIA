@@ -50,7 +50,7 @@ concurrency:
 jobs:
   sudoku-dlx-tests:
     name: Sudoku DLX certificates pytest (17 collected)
-    runs-on: ubuntu-latest
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
     timeout-minutes: 10
     env:
       # Plancher mesure firsthand : `pytest ... --collect-only -q` = 17 tests
