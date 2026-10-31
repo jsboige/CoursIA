@@ -90,6 +90,13 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # `pipefail` + `exit 0` se contredisaient : sous `bash -e`, un
+          # non-zero de l'organe tuait l'etape AVANT le `exit 0`, et le job
+          # rendait un rouge la ou sa doctrine dit « le verdict n'est jamais
+          # porte par la conclusion du check ». Mesure du 2026-10-30 : quota
+          # d'installation GitHub epuise -> `gh` non-zero -> rouge forge sur
+          # #22977 et #22576. Le code de retour est desormais LU et annote,
+          # jamais laisse gouverner.
           set -o pipefail
           PR="${{ github.event.pull_request.number || inputs.pr }}"
           {
@@ -97,10 +104,11 @@ jobs:
             echo
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
-          # Le job sort TOUJOURS en 0 : le verdict est porte par les
-          # annotations `::warning::` et par le resume, jamais par la
-          # conclusion du check (doctrine des advisories du depot).
+          rc=0
           python scripts/ci/check_creation_provenance.py --pr "$PR" 2>&1 \
-            | tee -a "$GITHUB_STEP_SUMMARY"
+            | tee -a "$GITHUB_STEP_SUMMARY" || rc="${PIPESTATUS[0]}"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
+          if [ "$rc" -ne 0 ]; then
+            echo "::warning::creation-provenance: l'organe s'est interrompu avant de conclure (rc=$rc) -- mesure NON CONCLUANTE, jamais un constat sur la PR"
+          fi
           exit 0
