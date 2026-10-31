@@ -3152,4 +3152,111 @@ theorem r3SrcEnd_not_bigon (D : KnotDiagram) (i : Nat)
   rw [hdup] at hN
   simp at hN
 
+/-! ## 26. Assembly: a triangle step produces no terminal motif
+
+Seventh step of the negative certificate (continues sections 22-25). Sections
+22 and 23 prove the transmission of the invariant in the direction
+`verifyR3Fwd D d` (source to target); section 25 gives the two source-side
+lemmas for the case where the window reaches the end of the list. What was
+still missing is the assembly: `verifyR3 s t` is the **disjunction** of both
+orientations, so a verified triangle step may be read in the orientation where
+`t` is the source of the surgery. This section shows that each orientation
+yields both terminal invariants (no kink, no bigon), then joins them in the
+exact shape consumed by the induction on `verifyAnyMoves`. -/
+
+/-- Reverse direction of the triangle step for the terminal kink: if the
+    **target** `d` has no terminal kink, the **source** `D` has none either.
+    Outside the window the terminal is transmitted as is; when the window
+    reaches the end of the source, this is `r3SrcEnd_not_kink`. -/
+theorem verifyR3Fwd_src_not_kink (D d : KnotDiagram)
+    (h : verifyR3Fwd D d = true)
+    (hd : ∀ K, d.crossings.getLast? = some K → K.e3 ≠ K.e4) :
+    ∀ K, D.crossings.getLast? = some K → K.e3 ≠ K.e4 := by
+  simp only [verifyR3Fwd, Bool.and_eq_true] at h
+  obtain ⟨i, _, hi⟩ := List.any_eq_true.mp h.2
+  have hguard := of_decide_eq_true hi
+  rw [hguard.2.2.2.2.2] at hd
+  rcases Nat.lt_or_ge (i + 2 + 1) D.crossings.length with hlt | hge
+  · rw [getLast?_set3_of_lt_last hlt] at hd
+    exact hd
+  · exact r3SrcEnd_not_kink D i (by omega) hguard.2.2.2.2.1
+
+/-- Forward direction, in joint form: sections 22 and 23 together. -/
+theorem verifyR3Fwd_not_motif (D d : KnotDiagram)
+    (h : verifyR3Fwd D d = true)
+    (hk : ∀ K, D.crossings.getLast? = some K → K.e3 ≠ K.e4)
+    (hb : ¬ ∃ K₁ K₂, D.crossings.dropLast.getLast? = some K₁ ∧
+        D.crossings.getLast? = some K₂ ∧
+        K₂.e2 = K₂.e3 ∧ K₁.e2 = K₁.e3 ∧ K₁.e1 = K₂.e1) :
+    (∀ K, d.crossings.getLast? = some K → K.e3 ≠ K.e4) ∧
+    (¬ ∃ K₁ K₂, d.crossings.dropLast.getLast? = some K₁ ∧
+        d.crossings.getLast? = some K₂ ∧
+        K₂.e2 = K₂.e3 ∧ K₁.e2 = K₁.e3 ∧ K₁.e1 = K₂.e1) :=
+  ⟨verifyR3Fwd_last_not_kink D d h hk, verifyR3Fwd_last_not_bigon D d h hb⟩
+
+/-- Reverse direction of the triangle step for the terminal bigon. Three cases
+    on the position of the window: entirely before the terminal pair
+    (transmission), on the second-to-last slot (the rewritten crossing then
+    carries `e4(i)` in `e2` and `e1(i)` in `e3`, both in the `Nodup`), or on
+    the last slot (section 25). -/
+theorem verifyR3Fwd_src_not_bigon (D d : KnotDiagram)
+    (h : verifyR3Fwd D d = true)
+    (hd : ¬ ∃ K₁ K₂, d.crossings.dropLast.getLast? = some K₁ ∧
+        d.crossings.getLast? = some K₂ ∧
+        K₂.e2 = K₂.e3 ∧ K₁.e2 = K₁.e3 ∧ K₁.e1 = K₂.e1) :
+    ¬ ∃ K₁ K₂, D.crossings.dropLast.getLast? = some K₁ ∧
+        D.crossings.getLast? = some K₂ ∧
+        K₂.e2 = K₂.e3 ∧ K₁.e2 = K₁.e3 ∧ K₁.e1 = K₂.e1 := by
+  simp only [verifyR3Fwd, Bool.and_eq_true] at h
+  obtain ⟨i, _, hi⟩ := List.any_eq_true.mp h.2
+  have hguard := of_decide_eq_true hi
+  rw [hguard.2.2.2.2.2] at hd
+  rintro ⟨K₁, K₂, h1, h2, hK₂, hK₁, harc⟩
+  have hN := hguard.2.2.2.2.1
+  rcases Nat.lt_trichotomy (i + 2 + 2) D.crossings.length with hA | hA | hA
+  · rw [getLast?_dropLast_set3_of_lt hA] at hd
+    rw [getLast?_set3_of_lt_last (by omega)] at hd
+    exact hd ⟨K₁, K₂, h1, h2, hK₂, hK₁, harc⟩
+  · rw [dropLast_getLast?_eq_crossingAt (l := D.crossings) (i := i + 1) (by omega)] at h1
+    cases h1
+    have hdup : (crossingAt D.crossings i).e4 = (crossingAt D.crossings (i + 2)).e3 := by
+      rw [← hguard.2.2.2.1]
+      exact hK₁
+    rw [hdup] at hN
+    simp at hN
+  · exact (r3SrcEnd_not_bigon D i (by omega) hguard.2.2.2.1 hN)
+      ⟨K₁, K₂, h1, h2, hK₂, hK₁, harc⟩
+
+/-- Assembly: `verifyR3` is the disjunction of both orientations of
+    `verifyR3Fwd`, and each yields both terminal invariants. -/
+theorem verifyR3_not_motif (s t : KnotDiagram)
+    (h : verifyR3 s t = true)
+    (hk : ∀ K, s.crossings.getLast? = some K → K.e3 ≠ K.e4)
+    (hb : ¬ ∃ K₁ K₂, s.crossings.dropLast.getLast? = some K₁ ∧
+        s.crossings.getLast? = some K₂ ∧
+        K₂.e2 = K₂.e3 ∧ K₁.e2 = K₁.e3 ∧ K₁.e1 = K₂.e1) :
+    (∀ K, t.crossings.getLast? = some K → K.e3 ≠ K.e4) ∧
+    (¬ ∃ K₁ K₂, t.crossings.dropLast.getLast? = some K₁ ∧
+        t.crossings.getLast? = some K₂ ∧
+        K₂.e2 = K₂.e3 ∧ K₁.e2 = K₁.e3 ∧ K₁.e1 = K₂.e1) := by
+  simp only [verifyR3, Bool.or_eq_true] at h
+  rcases h with hf | hr
+  · exact verifyR3Fwd_not_motif s t hf hk hb
+  · exact ⟨verifyR3Fwd_src_not_kink t s hr hk, verifyR3Fwd_src_not_bigon t s hr hb⟩
+
+/-- The `r3Any` move preserves the absence of a terminal motif, in both
+    orientations that `verifyR3` accepts. This is the shape consumed by the
+    induction on `verifyAnyMoves`. -/
+theorem verifyAnyMove_r3Any_not_motif (s t : KnotDiagram)
+    (h : verifyAnyMove (.r3Any s t) = true)
+    (hk : ∀ K, s.crossings.getLast? = some K → K.e3 ≠ K.e4)
+    (hb : ¬ ∃ K₁ K₂, s.crossings.dropLast.getLast? = some K₁ ∧
+        s.crossings.getLast? = some K₂ ∧
+        K₂.e2 = K₂.e3 ∧ K₁.e2 = K₁.e3 ∧ K₁.e1 = K₂.e1) :
+    (∀ K, t.crossings.getLast? = some K → K.e3 ≠ K.e4) ∧
+    (¬ ∃ K₁ K₂, t.crossings.dropLast.getLast? = some K₁ ∧
+        t.crossings.getLast? = some K₂ ∧
+        K₂.e2 = K₂.e3 ∧ K₁.e2 = K₁.e3 ∧ K₁.e1 = K₂.e1) :=
+  verifyR3_not_motif s t (by simpa only [verifyAnyMove] using h) hk hb
+
 end Knots_en.AnyMoves
