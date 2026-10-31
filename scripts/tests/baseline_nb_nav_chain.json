@@ -1,13 +1,13 @@
 {
   "provenance": {
     "instrument": "2026-10-23.1",
-    "head": "98dd6fd7509c33c722ea6201f6bb4a106e0eb97c",
-    "branch": "feature/20381-dynamics-escalier-nav",
-    "origin_main": "33e68ce4527f55fa575c5bd8f7d78a7839f44350",
+    "head": "26f4063b776e82e0e6b7cdbdde12145a2d7ab24b",
+    "branch": "main",
+    "origin_main": "26f4063b776e82e0e6b7cdbdde12145a2d7ab24b",
     "behind_origin_main": 0,
-    "dirty": true,
-    "written_at": "2026-10-31T02:44:38Z",
-    "non_main": true
+    "dirty": false,
+    "written_at": "2026-10-31T06:55:45Z",
+    "non_main": false
   },
   "findings": [
     {
