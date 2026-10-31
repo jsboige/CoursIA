@@ -3033,4 +3033,48 @@ theorem verifyR3Fwd_last_not_bigon (D d : KnotDiagram)
     have hkk : (crossingAt D.crossings i).e4 = (crossingAt D.crossings i).e1 := hK₂
     exact h0 (hkk ▸ hmem)
 
+/-! ## 24. Plancher d'un pas -- de onze croisements on ne redescend pas
+
+Cinquième étape du certificat négatif (suite des sections 20-23). Le compte
+ne peut pas passer sous onze tant que l'état reste sans motif terminal : un
+retrait de kink (`r1Any`) ou de bigon (`r2Any`) qui amènerait dix croisements
+exigerait son motif sur le diagramme de DÉPART (section 21), que l'invariant
+interdit ; un pas triangle (`r3Any`) conserve le compte (section 20). C'est la
+moitié « compte » de l'étape de préservation d'un pas ; la moitié « motif »
+est portée par les sections 22 et 23 pour la direction `verifyR3Fwd` et reste
+à établir pour l'orientation inverse. -/
+
+/-- Un pas kink partant d'un diagramme à onze croisements sans kink terminal
+    ne redescend pas sous onze. -/
+theorem verifyAnyMove_r1Any_length_ge_eleven {s t : KnotDiagram}
+    (h : verifyAnyMove (AnyMove.r1Any s t) = true)
+    (hlen : s.crossings.length = 11)
+    (hnk : ∀ K, s.crossings.getLast? = some K → K.e3 ≠ K.e4) :
+    11 ≤ t.crossings.length := by
+  rcases verifyAnyMove_r1Any_kink_on_larger h with ⟨hl, K, hK, hkk⟩ | ⟨hl, K, hK, hkk⟩
+  · omega
+  · exact absurd hkk (hnk K hK)
+
+/-- Un pas bigon partant d'un diagramme à onze croisements sans paire
+    terminale ne redescend pas sous onze. -/
+theorem verifyAnyMove_r2Any_length_ge_eleven {s t : KnotDiagram}
+    (h : verifyAnyMove (AnyMove.r2Any s t) = true)
+    (hlen : s.crossings.length = 11)
+    (hnb : ¬ ∃ K₁ K₂, s.crossings.dropLast.getLast? = some K₁ ∧
+        s.crossings.getLast? = some K₂ ∧
+        K₂.e2 = K₂.e3 ∧ K₁.e2 = K₁.e3 ∧ K₁.e1 = K₂.e1) :
+    11 ≤ t.crossings.length := by
+  rcases verifyAnyMove_r2Any_bigon_on_larger h with ⟨hl, hb⟩ | ⟨hl, hb⟩
+  · omega
+  · exact absurd hb hnb
+
+/-- Un pas triangle partant d'un diagramme à onze croisements reste à onze
+    (le compte est conservé, sans hypothèse de motif). -/
+theorem verifyAnyMove_r3Any_length_ge_eleven {s t : KnotDiagram}
+    (h : verifyAnyMove (AnyMove.r3Any s t) = true)
+    (hlen : s.crossings.length = 11) :
+    11 ≤ t.crossings.length := by
+  have hl := verifyAnyMove_r3Any_length h
+  omega
+
 end Knots.AnyMoves
