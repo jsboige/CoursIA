@@ -360,6 +360,69 @@ def is_covered(testpath: str, covered_dirs: list[str]) -> bool:
     )
 
 
+# Racines balayées par l'inventaire. Le guard ci-dessus ne compare que les
+# testpaths DÉCLARÉS dans pytest.ini : un dossier de tests présent dans le
+# dépôt mais absent de pytest.ini lui est invisible, et il reste VERT dessus
+# (constat mesuré sur SymbolicAI/Argument_Analysis, 174 tests non collectés —
+# cf. le commentaire de WORKFLOW_COVERAGE). L'inventaire ferme ce côté-là :
+# il part du dépôt, pas de la déclaration.
+INVENTORY_ROOTS = ("MyIA.AI.Notebooks", "scripts", "GradeBookApp")
+
+
+TEST_DIR_NAMES = {"tests", "test"}
+SKIP_PARTS = {"__pycache__", ".ipynb_checkpoints", ".lake", "_archive"}
+
+
+def discover_test_dirs(repo_root: Path) -> list[str]:
+    """Dossiers-racines de tests du dépôt, hors caches et archives.
+
+    Critère : le dossier s'appelle `tests`/`test` ET porte au moins un
+    `test_*.py`. Volontairement borné à la convention de nommage : un module
+    `test_*.py` co-localisé avec du code (gateway, helpers, config) est un test
+    unitaire de voisinage, pas une suite — l'inventaire ne prétend pas le
+    juger, il ne nomme que les suites qu'aucune déclaration ne vise.
+    """
+    found: set[str] = set()
+    for root_rel in INVENTORY_ROOTS:
+        root = repo_root / root_rel
+        if not root.is_dir():
+            continue
+        for module in root.rglob("test_*.py"):
+            parts = module.parts
+            if any(p in SKIP_PARTS for p in parts):
+                continue
+            if module.parent.name not in TEST_DIR_NAMES:
+                continue
+            found.add(module.parent.relative_to(repo_root).as_posix())
+    return sorted(found)
+
+
+def run_inventory(
+    repo_root: Path, testpaths: list[str], excluded: dict[str, str], strict: bool
+) -> list[str]:
+    """Liste les dossiers de tests qu'aucune déclaration ne surveille.
+
+    Un dossier est surveillé s'il est lui-même un testpath déclaré, s'il est
+    contenu dans un testpath déclaré, ou s'il est CI-EXCLUDED. Le reste est le
+    trou d'inventaire : des tests qui existent et que rien ne nomme.
+    """
+    unwatched: list[str] = []
+    for d in discover_test_dirs(repo_root):
+        if any(d == tp or d.startswith(tp + "/") for tp in testpaths):
+            continue
+        if d in excluded:
+            continue
+        unwatched.append(d)
+
+    print(f"Inventaire des dossiers de tests : {len(unwatched)} non surveillé(s)")
+    for d in unwatched:
+        print(f"  {'FAIL' if strict else 'INFO'} {d}")
+    if unwatched and not strict:
+        print(
+            "  (advisory : exit 0. Les câbler dans pytest.ini ou les déclarer "
+            "`# CI-EXCLUDED: <dossier> — <raison>` ; `--strict` fait rougir.)"
+        )
+    return unwatched if strict else []
 # --- #22735 : second sens, l'arborescence confrontée à la couverture ---
 
 
@@ -493,6 +556,17 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--verbose", action="store_true")
     ap.add_argument("--repo-root", type=Path, default=REPO_ROOT)
+    ap.add_argument(
+        "--inventory",
+        action="store_true",
+        help="Inventorier les dossiers de tests du dépôt qu'aucune déclaration "
+        "pytest.ini ne surveille (advisory, exit 0 sauf --strict).",
+    )
+    ap.add_argument(
+        "--strict",
+        action="store_true",
+        help="Avec --inventory : faire rougir sur un dossier non surveillé.",
+    )
     args = ap.parse_args()
 
     repo_root = args.repo_root.resolve()
@@ -563,8 +637,22 @@ def main() -> int:
         for p in namespace_problems:
             print(f"  FAIL {p}")
 
+    # Inventaire (#23359) : les suites qu'aucune declaration pytest.ini ne vise.
+    # Sens distinct des deux precedents -- ceux-ci confrontent l'arbre aux
+    # workflows, celui-ci aux testpaths declares de pytest.ini.
+    inventory = (
+        run_inventory(repo_root, testpaths, excluded, args.strict)
+        if args.inventory
+        else []
+    )
+
     return 1 if (
-        uncovered or problems or uncovered_disk or missing or namespace_problems
+        uncovered
+        or problems
+        or uncovered_disk
+        or missing
+        or namespace_problems
+        or inventory
     ) else 0
 
 
