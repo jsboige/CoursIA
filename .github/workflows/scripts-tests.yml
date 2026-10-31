@@ -642,7 +642,6 @@ jobs:
             MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_customvoice_narrator.py \
             MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_qwen_tts_client.py \
             MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p2_segment_dedup.py \
-
             MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_narration.py \
             scripts/secrets/tests \
             scripts/quantconnect/tests \
