@@ -104,6 +104,17 @@ on:
       - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_narrator_routing.py'
       - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_customvoice_narrator.py'
       - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_qwen_tts_client.py'
+      # P2 segmentation (v4) : la deduplication des segments perdait le contenu
+      # des paragraphes multi-segments -- un paragraphe n'en conservait qu'un,
+      # et le controle de couverture ne signalait la perte que par un
+      # WARNING. Le test vit dans la suite v4 (v4/tests/) et son SUJET
+      # (v4/p2_segmentation.py) n'est pas sous scripts/** : sans ces entrees,
+      # une PR qui ne touche QUE p2_segmentation.py ne declenche aucun run CI
+      # et le test reste invisible jusqu'au prochain innocent qui touche
+      # scripts/** (#10416 pattern). Mirrored under pull_request: below.
+      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/p2_segmentation.py'
+      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p2_segment_dedup.py'
+
       # #22905 organe de narration partage : sans ces deux entrees, une PR qui ne
       # touche QUE v4/narration.py ne declenche aucun run (pattern #10416), et son
       # garde-fou n'etait collecte par aucune jambe. Mirrored under pull_request:
@@ -238,6 +249,10 @@ on:
       - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_narrator_routing.py'
       - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_customvoice_narrator.py'
       - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_qwen_tts_client.py'
+      # P2 segmentation (mirror of the push path above).
+      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/p2_segmentation.py'
+      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p2_segment_dedup.py'
+
       # #22905 organe de narration partage (mirror of the push path above).
       - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/narration.py'
       - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_narration.py'
@@ -668,6 +683,7 @@ jobs:
             MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_narrator_routing.py \
             MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_customvoice_narrator.py \
             MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_qwen_tts_client.py \
+            MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p2_segment_dedup.py \
             MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_narration.py \
             scripts/secrets/tests \
             scripts/quantconnect/tests \
