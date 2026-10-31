@@ -303,7 +303,8 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 > DL distinctes des tranches 2-9 — focus sur réseaux récurrents / convolutifs temporels).
 > Métriques pleine période in-sample (non walk-forward OOS). **0 edge statistiquement significative**
 > (PSR < 50 % partout — PSR max 28.70 % `Temporal-CNN-Prediction`). **1 BROKEN** :
-> `Crypto-LSTM-Prediction` Sharpe -0.021 (légèrement négatif, drawdown 27.4 %).
+> `Crypto-LSTM-Prediction` Sharpe -0.021 (légèrement négatif, drawdown 27.4 %) — chiffre d'un projet cloud au code
+> différent du dépôt ; mesure du code du dépôt dans #23563 (NO BEATS sur 2021-2026).
 > Walk-forward multi-seed OOS requis avant toute promotion production. Identité de profil
 > `DL-LSTM` ↔ `LSTM-Forecasting` (Sharpe 0.525 / MaxDD 32.5 % / PSR ~13.4 % quasi-identiques)
 > = cohérent ; mais **divergence** `ML-Temporal-CNN` (Sharpe 0.161) vs `Temporal-CNN-Prediction`
@@ -313,7 +314,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 |-----------|--------|------|--------|------------------------------------------------------------------------|
 | `DL-LSTM` | `projects/DL-LSTM/` | DL (LSTM PyTorch bi-dir 2×50) | **Needs-improvement** | 2766 j. ; Sharpe 0.525 ; CAGR 11.29 % ; MaxDD 32.5 % ; PSR 13.42 % ; NP 224.7 % ($227 577) — profil identique à `LSTM-Forecasting` ci-dessous |
 | `LSTM-Forecasting` | `projects/LSTM-Forecasting/` | DL (MLPClassifier sklearn) | **Needs-improvement** | 2766 j. ; Sharpe 0.525 ; CAGR 11.30 % ; MaxDD 32.5 % ; PSR 13.44 % ; NP 224.9 % ($227 712) — quasi-identique à `DL-LSTM` (hand-rolled vs sklearn convergent) |
-| `Crypto-LSTM-Prediction` | `projects/Crypto-LSTM-Prediction/` | DL (DLinear/LSTM crypto) | **BROKEN** | 2313 j. ; **Sharpe -0.021** ; CAGR 3.40 % ; MaxDD 27.4 % ; **PSR 1.21 %** ; NP 23.6 % ($25 198) — Sharpe négatif, PSR quasi-nul, edge absent |
+| `Crypto-LSTM-Prediction` | `projects/Crypto-LSTM-Prediction/` | DL (DLinear/LSTM crypto) | **BROKEN** | 2313 j. ; **Sharpe -0.021** ; CAGR 3.40 % ; MaxDD 27.4 % ; **PSR 1.21 %** ; NP 23.6 % ($25 198) — Sharpe négatif, PSR quasi-nul, edge absent. **Ce backtest vient du projet cloud 31855350, dont le code (`MLPClassifier` sklearn) n'est pas celui du dépôt** ; le `main.py` du dépôt ne passait aucun ordre (quatre verrous, #23563). Portage du classement BTC/ETH mesuré par #23563 : NO BEATS sur 2021-2026 (Sharpe QC 0,48 à 0,59, PSR 9 à 12 %, sous BTC détenu sur les 4 graines), INCONCLUSIVE sur 2026-03 à 2026-10 — détail dans le README du projet |
 | `ML-Temporal-CNN` | `projects/ML-Temporal-CNN/` | DL (Temporal CNN hand-rolled) | **Needs-improvement** | post-#2801 (tradeableDates=0) ; Sharpe 0.161 ; CAGR 4.81 % ; MaxDD 31.7 % ; PSR 2.68 % ; NP 26.5 % ($30 099) — Sharpe faible, edge absent |
 | `Temporal-CNN-Prediction` | `projects/Temporal-CNN-Prediction/` | DL (Temporal CNN) | **Needs-improvement (max cohorte)** | post-#2801 (tradeableDates=0) ; **Sharpe 0.734** ; **CAGR 20.51 %** ; **MaxDD 21.6 %** (min cohorte) ; **PSR 28.70 %** ; NP 154.1 % ($169 062) — meilleur Sharpe/CAGR/MaxDD cohorte mais PSR < 50 % |
 
