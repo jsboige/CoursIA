@@ -29,8 +29,16 @@ from semantic_kernel.contents.chat_history import ChatHistory
 from semantic_kernel.functions.kernel_arguments import KernelArguments
 
 from argumentation_lib._shared_state import RhetoricalAnalysisState
+from argumentation_lib._guarded_state import GuardedStateManagerPlugin
+from argumentation_lib._pl_reasoner import PLReasonerPlugin
 from argumentation_lib._state_manager_plugin import StateManagerPlugin
 from argumentation_lib._llm_settings import apply_reasoning_none_for_function_tools
+from argumentation_lib._verdict import (
+    count_substantive_arguments,
+    count_substantive_fallacies,
+    phantom_target_fallacy_ids,
+    state_key_argument_ids,
+)
 
 _logger = logging.getLogger("argumentation_lib.runner")
 
@@ -111,12 +119,25 @@ Répondez en utilisant les fonctions kernel disponibles pour:
 - Logger les résultats de requêtes
 - Marquer la tâche comme répondue
 
-Contrat d'appel OBLIGATOIRE : avant toute réponse en prose, appelez au moins
-une fois `StateManager-add_belief_set` (logic_type="propositional") pour
-encoder un argument du texte en formule, puis `StateManager-log_query_result`
-pour consigner un verdict de requête. Le texte source figure dans la
-conversation : encodez directement depuis lui, même si l'état ne recense pas
-encore d'arguments. Répondre en prose sans appel kernel = tâche non accomplie.
+Contrat d'appel OBLIGATOIRE (l'ordre compte) :
+1. `StateManager-add_belief_set` (logic_type="propositional") avec le contenu :
+   UNE formule propositionnelle par ligne, syntaxe `!` (non), `&&` (et),
+   `||` (ou), `=>` (implique), `<=>` (équivalent), parenthèses pour la
+   priorité ; les atomes sont des identifiants (lettres, chiffres, `_`).
+   Le parseur du solveur REFUSE `->` : écrivez `=>`.
+2. `Reasoner-pl_query` (belief_set_id = identifiant renvoyé par
+   add_belief_set, query = la formule à vérifier) : c'est le SEUL moyen
+   d'obtenir un verdict. Le solveur propositionnel répond
+   `ACCEPTED: ...` ou `REJECTED: ...`.
+3. `StateManager-log_query_result` (belief_set_id, query, raw_result) avec
+   raw_result = la sortie de `Reasoner-pl_query` COPIÉE TELLE QUELLE.
+   Tout autre contenu (une question en langage naturel, une reformulation)
+   est REFUSÉ par l'outil.
+
+Vous désignez ce qui mérite d'être vérifié ; le solveur décide. Ne jugez
+jamais vous-même une formule. Le texte source figure dans la conversation :
+encodez directement depuis lui, même si l'état ne recense pas encore
+d'arguments. Répondre en prose sans appel kernel = tâche non accomplie.
 """
 
 PROMPT_SYNTHESIS = """Vous êtes l'agent de synthèse.
@@ -132,10 +153,87 @@ Votre rôle:
 Rédigez une conclusion finale complète.
 """
 
+# Reprise ciblée de la phase déficitaire (#18776, branche « ou » de la
+# demande) : la phase informelle porte deux livrables (arguments, sophismes)
+# qui se disputent le même budget de tours. Ces prompts ne portent QU'UN
+# livrable chacun — c'est le mécanisme qui sépare le budget des deux phases
+# « arguments » et « sophismes » de l'issue.
+
+PROMPT_RESUMPTION_ARGUMENTS = """Vous êtes l'agent de reprise ciblée pour l'identification d'arguments.
+
+Contexte : la phase informelle principale a tourné, mais les arguments
+enregistrés dans l'état ne sont pas substantifs — ils ne reprennent pas les
+phrases du texte source (intitulés trop courts, clés d'état, ou reformulations
+sans recouvrement avec le texte).
+
+Votre unique tâche : identifier les arguments principaux du texte.
+N'identifiez PAS de sophismes ici — une autre reprise s'en charge.
+
+[État Actuel]
+{{$analysis_state}}
+
+Contrat d'appel OBLIGATOIRE : pour CHAQUE argument identifié, appelez
+`StateManager-add_identified_argument` avec comme description une phrase
+COMPLÈTE reprise MOT POUR MOT du texte source (jamais un résumé, jamais
+une clé d'état, jamais un intitulé court). Un argument valide est une
+phrase qui figure dans le texte. Répondre en prose sans appeler la
+fonction kernel = tâche non accomplie.
+"""
+
+PROMPT_RESUMPTION_FALLACIES = """Vous êtes l'agent de reprise ciblée pour la détection de sophismes.
+
+Contexte : la phase informelle principale a tourné, mais les sophismes
+enregistrés dans l'état ne sont pas substantifs — type manquant ou générique,
+justification vide, ou cible absente.
+
+Votre unique tâche : détecter les sophismes du texte.
+N'identifiez PAS de nouveaux arguments ici — ils sont déjà dans l'état.
+
+[État Actuel]
+{{$analysis_state}}
+
+Contrat d'appel OBLIGATOIRE : appelez `StateManager-add_identified_fallacies`
+avec une liste de dictionnaires, chacun portant les clés `type` (le nom du
+sophisme, ex. « Appel à l'autorité », « Faux dilemme »), `justification`
+(pourquoi ce passage précis est un sophisme, au moins une phrase complète)
+et `target` (l'identifiant de l'argument visé, ex. « arg_1 »). Répondre en
+prose sans appeler la fonction kernel = tâche non accomplie.
+"""
+
 
 # ---------------------------------------------------------------------------
 # Agent builders — direct instantiation, no factory needed
 # ---------------------------------------------------------------------------
+
+
+def _iteration_cap(max_iterations: int):
+    """Stratégie de terminaison explicite portant le budget d'une phase.
+
+    Sans elle, ``AgentGroupChat`` tourne sous ``DefaultTerminationStrategy``
+    dont ``maximum_iterations`` vaut **5** par défaut : chaque phase affichait
+    un plafond de 10-15 tours mais s'arrêtait systématiquement à 5 — les
+    budgets ``max_informal_turns`` / ``max_formal_turns`` (#18785) n'avaient
+    aucune prise mécanique (mesure #18776 : 20/20 runs réels arrêtés à
+    5 tours par phase sous des plafonds de 10 et 15). Passer la stratégie
+    explicite est ce qui rend ces budgets réels.
+
+    Le repli sans stratégie est réservé au stub de test déclaré
+    (``semantic_kernel._coursia_mock``, posé par ``tests/test_runner.py``),
+    même discipline que ``create_logic_agent`` : hors de ce cas,
+    l'``ImportError`` est propagée — une installation SK cassée ne doit pas
+    produire un run au plafond silencieusement écrasé.
+    """
+    try:
+        from semantic_kernel.agents.strategies.termination.default_termination_strategy import (
+            DefaultTerminationStrategy,
+        )
+
+        return DefaultTerminationStrategy(maximum_iterations=max_iterations)
+    except ImportError:
+        sk_module = sys.modules.get("semantic_kernel")
+        if not getattr(sk_module, "_coursia_mock", False):
+            raise
+        return None
 
 
 def _resolve_service(kernel: Kernel, llm_service_id: str):
@@ -195,13 +293,38 @@ def _execution_settings_for(kernel: Kernel, llm_service_id: str) -> Dict[str, An
     }
 
 
+def _state_manager_plugin(state: RhetoricalAnalysisState) -> StateManagerPlugin:
+    """Plugin d'état de l'analyse — version GARDEE (#22981).
+
+    `StateManagerPlugin` est une copie verbatim de l'amont EPITA : on
+    l'étend au lieu de la modifier. La sous-classe garde change une seule
+    chose : `log_query_result` n'accepte plus que les verdicts RÉELLEMENT
+    émis par le solveur (`PLReasonerPlugin`). Le registre des verdicts est
+    propre à l'état (`registry_for`), donc le plugin d'état et le solveur
+    partagent le même registre sans paramétrage supplémentaire.
+    """
+    return GuardedStateManagerPlugin(state)
+
+
+def _ensure_reasoner_plugin(kernel: Kernel, state: RhetoricalAnalysisState) -> None:
+    """Expose le solveur propositionnel aux agents (plugin `Reasoner`).
+
+    Sans ce plugin, aucun outil ne produit de verdict : l'agent ne pouvait
+    que consigner une question en langage naturel, que le carnet rejette
+    ensuite (`QUERIES_NOT_MEANINGFUL`, #22981).
+    """
+    if "Reasoner" in [p.name for p in kernel.plugins.values()]:
+        return
+    kernel.add_plugin(PLReasonerPlugin(state), plugin_name="Reasoner")
+
+
 def create_pm_agent(
     kernel: Kernel,
     llm_service_id: str,
     state: RhetoricalAnalysisState,
 ) -> ChatCompletionAgent:
     """Create the Project Manager agent."""
-    smp = StateManagerPlugin(state)
+    smp = _state_manager_plugin(state)
     kernel.add_plugin(smp, plugin_name="StateManager")
 
     agent = ChatCompletionAgent(
@@ -225,7 +348,7 @@ def create_informal_agent(
     """Create the Informal Analysis agent."""
     # StateManagerPlugin already added by PM — reuse it
     if "StateManager" not in [p.name for p in kernel.plugins.values()]:
-        smp = StateManagerPlugin(state)
+        smp = _state_manager_plugin(state)
         kernel.add_plugin(smp, plugin_name="StateManager")
 
     agent = ChatCompletionAgent(
@@ -278,8 +401,13 @@ def create_logic_agent(
         fcb = None
 
     if "StateManager" not in [p.name for p in kernel.plugins.values()]:
-        smp = StateManagerPlugin(state)
+        smp = _state_manager_plugin(state)
         kernel.add_plugin(smp, plugin_name="StateManager")
+
+    # Le solveur propositionnel doit etre exposed AVANT la creation de
+    # l'agent : l'agent doit pouvoir DECOUVRIR l'outil `Reasoner-pl_query`
+    # dans la liste de ses fonctions (#22981).
+    _ensure_reasoner_plugin(kernel, state)
 
     agent_kwargs = dict(
         kernel=kernel,
@@ -326,6 +454,12 @@ class AnalysisRunner:
         max_turns: int = 20,
         max_informal_turns: int | None = None,
         max_formal_turns: int | None = None,
+        targeted_resumption: bool = False,
+        max_resumption_argument_turns: int = 4,
+        max_resumption_fallacy_turns: int = 4,
+        resumption_max_rounds: int = 2,
+        min_substantive_arguments: int = 2,
+        min_substantive_fallacies: int = 2,
     ):
         self.kernel = kernel
         self.llm_service_id = llm_service_id
@@ -341,13 +475,30 @@ class AnalysisRunner:
             max_formal_turns if max_formal_turns is not None
             else max_turns // 2
         )
+        # Reprise ciblée de la phase déficitaire (#18776, branche « ou »).
+        # Désactivée par défaut : le comportement historique (3 phases,
+        # rien entre elles) reste celui des appelants qui n'optent pas.
+        # Les seuils de substance sont évalués par les prédicats de
+        # ``_verdict`` (source unique, mêmes seuils que le carnet et la
+        # mesure) — le runner ne redéfinit pas ce qu'est un argument
+        # substantif.
+        self.targeted_resumption = targeted_resumption
+        self.max_resumption_argument_turns = max_resumption_argument_turns
+        self.max_resumption_fallacy_turns = max_resumption_fallacy_turns
+        self.resumption_max_rounds = resumption_max_rounds
+        self.min_substantive_arguments = min_substantive_arguments
+        self.min_substantive_fallacies = min_substantive_fallacies
 
         # Register StateManagerPlugin on kernel
         if "StateManager" not in [p.name for p in kernel.plugins.values()]:
-            self._smp = StateManagerPlugin(state)
+            self._smp = _state_manager_plugin(state)
             kernel.add_plugin(self._smp, plugin_name="StateManager")
         else:
             self._smp = None
+
+        # Le solveur propositionnel est expose des la construction du runner :
+        # c'est le SEUL chemin d'obtention d'un verdict de moteur (#22981).
+        _ensure_reasoner_plugin(kernel, state)
 
     async def run(self) -> Dict[str, Any]:
         """Execute the full 3-phase analysis pipeline."""
@@ -379,9 +530,13 @@ class AnalysisRunner:
         # SK 1.44 : ChatHistoryChannel.invoke lit messages[-1] et lève
         # IndexError sur un canal vide — chaque phase doit amorcer une
         # history USER (le texte à analyser), sinon aucune n'a lieu.
+        # La stratégie de terminaison explicite porte le budget de la
+        # phase (#18776) : sans elle, le défaut SK (5 itérations) écrase
+        # silencieusement max_informal_turns.
         group_chat = AgentGroupChat(
             agents=[pm, informal],
             chat_history=phase1_history,
+            termination_strategy=_iteration_cap(self.max_informal_turns),
         )
 
         try:
@@ -404,6 +559,18 @@ class AnalysisRunner:
                 "error": str(e),
             })
 
+        # Reprise ciblée de la phase déficitaire (#18776, branche « ou » de
+        # la demande) : la phase informelle porte DEUX livrables (arguments,
+        # sophismes) qui se disputent le même budget de tours ; selon le run,
+        # l'un des deux sort vide ou purement formel, et c'est ce qui fait
+        # basculer la forme du verdict. La reprise évalue chaque livrable
+        # avec les seuils de substance du carnet (_verdict, source unique)
+        # et relance UNIQUEMENT le livrable déficitaire, avec son propre
+        # budget de tours — les budgets « arguments » et « sophismes » sont
+        # ainsi séparés, comme le demande l'issue.
+        if self.targeted_resumption:
+            await self._run_targeted_resumption(results)
+
         # Phase 2: Formal analysis (logic)
         _logger.info("=== Phase 2: Formal Analysis ===")
         logic = create_logic_agent(
@@ -423,8 +590,11 @@ class AnalysisRunner:
 [Phase courante : Analyse FORMELLE]
 Les agents disponibles sont UNIQUEMENT ProjectManagerAgent et LogicAgent :
 désignez toujours 'LogicAgent'. La tâche de cette phase : encoder les
-arguments en belief sets propositionnels (StateManager-add_belief_set) et
-consigner des verdicts de requêtes (StateManager-log_query_result).
+arguments en belief sets propositionnels (StateManager-add_belief_set),
+faire décider le solveur (Reasoner-pl_query) et consigner le verdict
+renvoyé par le solveur (StateManager-log_query_result, raw_result = sortie
+du solveur copiée telle quelle). Un verdict inventé par l'agent est refusé
+par l'outil.
 N'ajoutez PAS de tâche d'identification d'arguments : c'est le travail de
 la phase 1, déjà passée.
 """
@@ -444,6 +614,7 @@ la phase 1, déjà passée.
             group_chat2 = AgentGroupChat(
                 agents=[pm_formal, logic],
                 chat_history=phase2_history,
+                termination_strategy=_iteration_cap(self.max_formal_turns),
             )
             turn_count = 0
             async for response in group_chat2.invoke():
@@ -491,6 +662,7 @@ la phase 1, déjà passée.
             group_chat3 = AgentGroupChat(
                 agents=[pm, synthesis_agent],
                 chat_history=phase3_history,
+                termination_strategy=_iteration_cap(3),
             )
             turn_count = 0
             async for response in group_chat3.invoke():
@@ -518,6 +690,200 @@ la phase 1, déjà passée.
 
         _logger.info("Analysis complete.")
         return results
+
+    # ------------------------------------------------------------------
+    # Reprise ciblée de la phase déficitaire (#18776)
+    # ------------------------------------------------------------------
+
+    async def _run_targeted_resumption(self, results: Dict[str, Any]) -> None:
+        """Relance uniquement le livrable déficitaire de la phase informelle.
+
+        Un « livrable » est un des deux produits de la phase informelle :
+        les arguments substantifs et les sophismes substantifs (au sens des
+        prédicats de ``_verdict`` — mêmes seuils que le carnet 08b et que la
+        mesure ``budget_variance_study``). Jusqu'à ``resumption_max_rounds``
+        rounds : on nettoie les entrées empoisonnées, on évalue les deux
+        livrables, on relance chaque livrable sous son seuil, puis on
+        ré-évalue au round suivant. Sortie dès que les deux seuils sont
+        tenus — la reprise ne consomme rien sur un run qui n'en a pas
+        besoin.
+
+        Nettoyage (#18395, contrat du validateur du carnet) : une clé d'état
+        en guise d'argument (check 1b) ou un sophisme dont la cible n'existe
+        pas (check 2b) invalident la forme du verdict **quoi qu'on ajoute**
+        ensuite — aucun remplissage additif ne peut les éliminer. La reprise
+        les retire donc d'abord, de façon déterministe (aucun LLM), avant de
+        remplir : ajouter ne suffit pas, il faut aussi purger.
+        """
+        for round_idx in range(1, self.resumption_max_rounds + 1):
+            pruned = self._prune_poisoned_entries()
+            if pruned["state_key_arguments"] or pruned["phantom_target_fallacies"]:
+                results["phases"].append({
+                    "name": "resumption_hygiene",
+                    "round": round_idx,
+                    "status": "completed",
+                    **pruned,
+                })
+            n_args = count_substantive_arguments(self.state)
+            n_fallacies = count_substantive_fallacies(self.state)
+            deficits: List[tuple] = []
+            if n_args < self.min_substantive_arguments:
+                deficits.append(("arguments", n_args))
+            if n_fallacies < self.min_substantive_fallacies:
+                deficits.append(("fallacies", n_fallacies))
+            if not deficits:
+                _logger.info(
+                    f"Reprise ciblée round {round_idx}: aucun déficit "
+                    f"({n_args} args substantifs, {n_fallacies} sophismes substantifs)."
+                )
+                break
+            _logger.info(
+                f"=== Reprise ciblée round {round_idx}: déficits="
+                f"{[(d, n) for d, n in deficits]} ==="
+            )
+            for deficit, current_count in deficits:
+                entry = await self._run_resumption_chat(
+                    deficit, round_idx, current_count
+                )
+                # Le remplissage peut lui-même introduire des cibles
+                # fantômes : on purge à nouveau, et on le rapporte.
+                post_pruned = self._prune_poisoned_entries()
+                if post_pruned["state_key_arguments"] or post_pruned["phantom_target_fallacies"]:
+                    entry["pruned_after"] = post_pruned
+                results["phases"].append(entry)
+
+    def _prune_poisoned_entries(self) -> Dict[str, List[str]]:
+        """Retire les entrées que le validateur du carnet invalide à coup sûr.
+
+        Déterministe (aucun appel LLM) : clés d'état en guise d'arguments et
+        sophismes à cible inexistante. Retourne les identifiants retirés.
+        """
+        pruned_state_keys = state_key_argument_ids(self.state)
+        for arg_id in pruned_state_keys:
+            self.state.identified_arguments.pop(arg_id, None)
+        pruned_phantoms = phantom_target_fallacy_ids(self.state)
+        for f_id in pruned_phantoms:
+            self.state.identified_fallacies.pop(f_id, None)
+        if pruned_state_keys or pruned_phantoms:
+            _logger.info(
+                f"Reprise ciblée: nettoyage de {len(pruned_state_keys)} "
+                f"clé(s) d'état et {len(pruned_phantoms)} cible(s) fantôme(s)."
+            )
+        return {
+            "state_key_arguments": pruned_state_keys,
+            "phantom_target_fallacies": pruned_phantoms,
+        }
+
+    def _resumption_agent(self, deficit: str) -> ChatCompletionAgent:
+        """Agent focalisé portant le prompt de reprise d'UN livrable."""
+        instructions = (
+            PROMPT_RESUMPTION_ARGUMENTS
+            if deficit == "arguments"
+            else PROMPT_RESUMPTION_FALLACIES
+        )
+        return ChatCompletionAgent(
+            kernel=self.kernel,
+            name=f"Resumption{deficit.capitalize()}Agent",
+            instructions=instructions,
+            service=_resolve_service(self.kernel, self.llm_service_id),
+            arguments=_state_arguments(
+                self.state,
+                _execution_settings_for(self.kernel, self.llm_service_id),
+            ),
+        )
+
+    def _resumption_ask(
+        self, deficit: str, round_idx: int, current_count: int
+    ) -> str:
+        """Message USER du chat de reprise : le déficit mesuré + le texte."""
+        if deficit == "arguments":
+            current_listing = json.dumps(
+                dict(list(self.state.identified_arguments.items())[:8]),
+                ensure_ascii=False,
+            )
+            return (
+                f"Reprise ciblée (round {round_idx}) : l'état contient "
+                f"{len(self.state.identified_arguments)} arguments dont "
+                f"{current_count} substantifs "
+                f"(objectif : au moins {self.min_substantive_arguments}). "
+                f"Descriptions actuelles : {current_listing}\n\n"
+                "Ajoutez les arguments manquants du texte suivant, chaque "
+                "description reprenant une phrase COMPLÈTE du texte, mot "
+                f"pour mot :\n\n{self.state.raw_text}"
+            )
+        current_listing = json.dumps(
+            {
+                fid: {
+                    "type": fdata.get("type"),
+                    "target": fdata.get("target_argument_id"),
+                }
+                for fid, fdata in list(self.state.identified_fallacies.items())[:8]
+            },
+            ensure_ascii=False,
+        )
+        return (
+            f"Reprise ciblée (round {round_idx}) : l'état contient "
+            f"{len(self.state.identified_fallacies)} sophismes dont "
+            f"{current_count} substantifs "
+            f"(objectif : au moins {self.min_substantive_fallacies}). "
+            f"Entrées actuelles : {current_listing}\n"
+            f"Identifiants d'arguments ciblables : "
+            f"{list(self.state.identified_arguments.keys())}\n\n"
+            "Détectez les sophismes du texte suivant (type + justification "
+            f"+ cible) :\n\n{self.state.raw_text}"
+        )
+
+    async def _run_resumption_chat(
+        self, deficit: str, round_idx: int, current_count: int
+    ) -> Dict[str, Any]:
+        """Un chat de reprise focalisé, borné par son propre budget."""
+        cap = (
+            self.max_resumption_argument_turns
+            if deficit == "arguments"
+            else self.max_resumption_fallacy_turns
+        )
+        agent = self._resumption_agent(deficit)
+        ask = self._resumption_ask(deficit, round_idx, current_count)
+
+        history = ChatHistory()
+        history.add_message(
+            ChatMessageContent(role=AuthorRole.USER, content=ask)
+        )
+
+        entry: Dict[str, Any] = {
+            "name": f"resumption_{deficit}",
+            "round": round_idx,
+            "substantive_before": current_count,
+        }
+        try:
+            group_chat = AgentGroupChat(
+                agents=[agent],
+                chat_history=history,
+                termination_strategy=_iteration_cap(cap),
+            )
+            turn_count = 0
+            async for response in group_chat.invoke():
+                turn_count += 1
+                _logger.info(
+                    f"  Reprise {deficit} turn {turn_count}: {response.name} responded"
+                )
+                if turn_count >= cap:
+                    break
+            after = (
+                count_substantive_arguments(self.state)
+                if deficit == "arguments"
+                else count_substantive_fallacies(self.state)
+            )
+            entry.update({
+                "turns": turn_count,
+                "status": "completed",
+                "substantive_after": after,
+                "budget_turns": cap,
+            })
+        except Exception as e:
+            _logger.error(f"Reprise {deficit} error: {e}")
+            entry.update({"status": "error", "error": str(e)})
+        return entry
 
     async def run_conversational(self, max_turns: int = 6) -> Dict[str, Any]:
         """Orchestration conversationnelle réelle : UN seul AgentGroupChat
