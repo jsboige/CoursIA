@@ -211,7 +211,25 @@ class CarverThirteen(QCAlgorithm):
         end_y, end_m, end_d = _as_date(end_param, (2026, 12, 31))
         self.set_start_date(start_y, start_m, start_d)
         self.set_end_date(end_y, end_m, end_d)
-        self.set_cash(100000)
+        # #23824: `set_holdings` on a future is sized on INITIAL MARGIN, not
+        # on notional -- a weight of 0.05 buys contracts whose margin is 5 %
+        # of the portfolio, i.e. a notional 10-20x larger, so the breadth
+        # "soft cap on gross leverage" capped the sum of margins, not the
+        # exposure. `fix=on` (default) sizes in whole contracts on notional,
+        # `fix=off` replays the margin-sized path order for order. `cash`
+        # lets the same compile run at a capital where whole contracts can
+        # express the target weights.
+        self.fix = (self.get_parameter("fix") or "on") == "on"
+        cash_param = self.get_parameter("cash")
+        self._initial_cash = int(cash_param) if cash_param else 100000
+        self.set_cash(self._initial_cash)
+        # #23824 passive counters, reported by set_runtime_statistic (read
+        # back by read_backtest without the run log): gross / net notional
+        # exposure over portfolio value, sampled at each post-warmup
+        # rebalance, and non-zero targets rounded to 0 whole contracts.
+        self._gross = []
+        self._net = []
+        self._sizing = {"nonzero_targets": 0, "rounded_to_zero": 0}
         self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
 
         # 18 liquid continuous futures, diversified across asset classes.
@@ -662,6 +680,8 @@ class CarverThirteen(QCAlgorithm):
             self._wall_s += time.perf_counter() - t_wall_start
             return
 
+        self._sample_exposure()
+
         # 16076: serve the forecast loop from the rollover-aware sliding
         # windows when they are guaranteed identical to a fresh bulk
         # (mapping stable since the last fetch), and re-fetch only the
@@ -835,6 +855,28 @@ class CarverThirteen(QCAlgorithm):
             # the same entry and read nowhere.)
             holding = self.portfolio[order_sym]
             current_holding = holding.quantity
+            if self.fix:
+                # #23824: target in whole contracts on notional, then send
+                # the delta. A sign flip or a flat target is the same delta
+                # arithmetic, so no separate liquidate is needed.
+                security = self.securities[order_sym]
+                price = float(security.price)
+                multiplier = float(security.symbol_properties.contract_multiplier)
+                target_qty = 0
+                if target_weight != 0.0:
+                    self._sizing["nonzero_targets"] += 1
+                    if price > 0.0 and multiplier > 0.0:
+                        target_qty = int(round(
+                            target_weight * self.portfolio.total_portfolio_value
+                            / (price * multiplier)
+                        ))
+                    if target_qty == 0:
+                        self._sizing["rounded_to_zero"] += 1
+                delta = target_qty - int(current_holding)
+                if delta != 0:
+                    self.market_order(order_sym, delta)
+                    set_holdings_issued_this_call = True
+                continue
             sign_change = (current_holding > 0 and target_weight < 0) or (
                 current_holding < 0 and target_weight > 0
             )
@@ -861,8 +903,36 @@ class CarverThirteen(QCAlgorithm):
         self._fc_s += time.perf_counter() - t_fc
         self._wall_s += time.perf_counter() - t_wall_start
 
+    def _sample_exposure(self):
+        """#23824: gross and net notional exposure over portfolio value."""
+        tpv = float(self.portfolio.total_portfolio_value)
+        if tpv <= 0.0:
+            return
+        values = []
+        for symbol in list(self.portfolio.keys()):
+            holding = self.portfolio[symbol]
+            if holding.invested:
+                values.append(float(holding.holdings_value))
+        self._gross.append(sum(abs(v) for v in values) / tpv)
+        self._net.append(sum(values) / tpv)
+
     def on_end_of_algorithm(self):
         final = self.portfolio.total_portfolio_value
+        g = sorted(self._gross)
+        n = sorted(abs(x) for x in self._net)
+        self.set_runtime_statistic("fix", "on" if self.fix else "off")
+        self.set_runtime_statistic("cash", str(self._initial_cash))
+        if g:
+            self.set_runtime_statistic(
+                "gross", f"med={g[len(g) // 2]:.2f} p90={g[int(0.9 * (len(g) - 1))]:.2f} max={g[-1]:.2f} n={len(g)}"
+            )
+            self.set_runtime_statistic(
+                "net", f"med|.|={n[len(n) // 2]:.2f} max|.|={n[-1]:.2f}"
+            )
+        self.set_runtime_statistic(
+            "sizing",
+            f"zero={self._sizing['rounded_to_zero']}/{self._sizing['nonzero_targets']}",
+        )
         # REPAIR-9 c.1117: log the instrumentation tally so the QC backtest
         # output carries the diagnostic discriminators that allow the
         # adjoint to truncate H1 vs H2 without re-running the backtest.
@@ -880,7 +950,7 @@ class CarverThirteen(QCAlgorithm):
         completed = er["completed_with_orders"] + er["completed_no_order"]
         self.log(
             f"CARVER13: Final=${final:,.2f}, "
-            f"Return={(final - 100000) / 100000:.2%}, "
+            f"Return={(final - self._initial_cash) / self._initial_cash:.2%}, "
             f"Breadth-multiplied forecasts={len(self.forecasts)} "
             f"| REPAIR-9 INSTRUMENTATION: "
             f"rebalance_calls={n_inv}, "
