@@ -219,8 +219,12 @@ def test_sous_le_plafond_graphql_aucun_appel_rest(monkeypatch):
 # qui n'existe pas encore (le hub est renomme en T5, le dernier). Une tranche
 # ne doit reecrire que ce qu'elle deplace.
 
-SUB_04B = "04b-Wavelet-Scattering"
-NB_04B = "04b-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch.ipynb"
+# Tranche temoin. A l'ecriture (#23114) elle s'appelait « 04b-Wavelet-
+# Scattering » ; le renommage in-place 04b -> 05 (#23541, 2026-10-30) a fusionne
+# apres l'ecriture des temoins mais avant leur merge : la tranche suit le nom
+# REEL du hub (05), meme principe que la note T2-01 du DIR_MAP de l'organe.
+SUB_WS = "05-Wavelet-Scattering"
+NB_WS = "05-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch.ipynb"
 NB_VISION = "04-Vision/4.1-Conv-NumPy-Torch-Allclose.ipynb"
 
 
@@ -238,27 +242,27 @@ def _fake_git(files_old=(), files_new=()):
 
 
 def test_only_restreint_le_plan_au_sous_repertoire(monkeypatch):
-    files = [f"{migration.HUB_OLD}/{NB_04B}", f"{migration.HUB_OLD}/{NB_VISION}"]
+    files = [f"{migration.HUB_OLD}/{NB_WS}", f"{migration.HUB_OLD}/{NB_VISION}"]
     monkeypatch.setattr(migration, "git", _fake_git(files_old=files))
 
-    plan, errors = migration.build_plan(SUB_04B)
+    plan, errors = migration.build_plan(SUB_WS)
 
-    assert [old for old, _ in plan] == [f"{migration.HUB_OLD}/{NB_04B}"]
+    assert [old for old, _ in plan] == [f"{migration.HUB_OLD}/{NB_WS}"]
     assert plan[0][1] == f"{migration.HUB_NEW}/05-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch-Python.ipynb"
     assert errors == []
 
 
 def test_only_ne_reecrit_pas_le_hub_entier(monkeypatch):
     """La regle globale du hub doit ABSENTER d'une tranche : elle viserait un hub inexistant."""
-    files = [f"{migration.HUB_OLD}/{NB_04B}"]
+    files = [f"{migration.HUB_OLD}/{NB_WS}"]
     monkeypatch.setattr(migration, "git", _fake_git(files_old=files))
-    plan, _ = migration.build_plan(SUB_04B)
+    plan, _ = migration.build_plan(SUB_WS)
 
-    reps = migration.build_replacements(plan, SUB_04B)
+    reps = migration.build_replacements(plan, SUB_WS)
     rules = dict(reps)
 
     # la regle du sous-repertoire vise EST presente
-    assert rules[f"DataScienceWithAgents/{SUB_04B}"] == "ML.Python/05-Wavelet-Scattering"
+    assert rules[f"DataScienceWithAgents/{SUB_WS}"] == "ML.Python/05-Wavelet-Scattering"
     # ... et les regles globales sont ABSENTES
     assert ("DataScienceWithAgents/", "ML.Python/") not in reps
     assert (migration.HUB_OLD, migration.HUB_NEW) not in reps
@@ -268,7 +272,7 @@ def test_only_ne_reecrit_pas_le_hub_entier(monkeypatch):
 
 def test_hub_global_garde_la_regle_du_hub(monkeypatch):
     """Temoin negatif : sans --only, la regle globale doit toujours exister."""
-    files = [f"{migration.HUB_OLD}/{NB_04B}"]
+    files = [f"{migration.HUB_OLD}/{NB_WS}"]
     monkeypatch.setattr(migration, "git", _fake_git(files_old=files))
     plan, _ = migration.build_plan()
 
@@ -286,18 +290,24 @@ def test_only_inconnu_est_refuse():
 
 def test_only_accepte_le_nom_cible():
     """Le nom cible designe la meme tranche que le nom courant."""
-    assert migration.resolve_only("05-Wavelet-Scattering") == SUB_04B
-    assert migration.resolve_only(SUB_04B) == SUB_04B
+    # Le mecanisme d'alias (valeur -> cle) se temoigne sur une tranche ou
+    # courant et cible different encore : Track1-LangChain -> 06-Agents-LangChain.
+    assert migration.resolve_only("06-Agents-LangChain") == "Track1-LangChain"
+    assert migration.resolve_only("Track1-LangChain") == "Track1-LangChain"
+    # Depuis le renommage in-place (#23541), 05-Wavelet-Scattering est cle ET
+    # valeur : les deux faces designent la meme tranche.
+    assert migration.resolve_only("05-Wavelet-Scattering") == SUB_WS
+    assert migration.resolve_only(SUB_WS) == SUB_WS
 
 
 def test_cle_deja_deplacee_nest_pas_morte(monkeypatch):
     """Apres une tranche, les cles de table du sous-repertoire deplace sont inertes, pas mortes."""
-    keys_04b = [k for k in migration.NOTEBOOK_MAP if k.startswith(f"{SUB_04B}/")]
-    assert keys_04b, "la table doit contenir des cles 04b"
-    moved = [f"{migration.HUB_NEW}/{migration.NOTEBOOK_MAP[k]}" for k in keys_04b]
+    keys_ws = [k for k in migration.NOTEBOOK_MAP if k.startswith(f"{SUB_WS}/")]
+    assert keys_ws, "la table doit contenir des cles de la tranche 05-Wavelet-Scattering"
+    moved = [f"{migration.HUB_NEW}/{migration.NOTEBOOK_MAP[k]}" for k in keys_ws]
     monkeypatch.setattr(migration, "git", _fake_git(files_old=(), files_new=moved))
 
-    assert migration.check_plan([], SUB_04B) == []
+    assert migration.check_plan([], SUB_WS) == []
     # hors tranche, ces memes cles SONT mortes : le controle global les voit
     assert any("cle morte" in e for e in migration.check_plan([]))
 
@@ -394,18 +404,18 @@ def test_apply_procede_quand_la_fermeture_est_libre(monkeypatch, capsys):
 
 def test_nom_nu_d_un_carnet_renomme_est_reecrit():
     """`[WS-00a](WS-00a-...ipynb)` est relatif au dossier : le renommage le cassait."""
-    plan = [(f"{migration.HUB_OLD}/{NB_04B}",
+    plan = [(f"{migration.HUB_OLD}/{NB_WS}",
              f"{migration.HUB_NEW}/05-Wavelet-Scattering/"
              "WS-00a-Ondelettes-1D-from-scratch-Python.ipynb")]
 
-    reps = migration.build_replacements(plan, SUB_04B)
+    reps = migration.build_replacements(plan, SUB_WS)
     rules = dict(reps)
 
     assert rules["WS-00a-Ondelettes-1D-from-scratch.ipynb"] == \
         "WS-00a-Ondelettes-1D-from-scratch-Python.ipynb"
     # le chemin complet passe AVANT le nom nu (anti remplacement partiel)
     cles = [a for a, _ in reps]
-    assert cles.index(f"{migration.HUB_OLD}/{NB_04B}") < \
+    assert cles.index(f"{migration.HUB_OLD}/{NB_WS}") < \
         cles.index("WS-00a-Ondelettes-1D-from-scratch.ipynb")
 
 
