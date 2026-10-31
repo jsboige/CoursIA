@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: Sudoku
-pedagogical_count: 38
-breakdown: root=38
-maturity: BETA=38
+pedagogical_count: 39
+breakdown: root=39
+maturity: BETA=38, ALPHA=1
 -->
 
 > **Note éditoriale (counts)** : les comptes de notebooks (agrégé, par langage ou par kernel) ne sont pas tenus à la main dans ce README : ils dérivent et relèvent de la régénération du catalogue. Le marqueur `CATALOG-STATUS` ci-dessus et le catalogue généré (`COURSE_CATALOG.generated.md`) sont autoritatifs.
