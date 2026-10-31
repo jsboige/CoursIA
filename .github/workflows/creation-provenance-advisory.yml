@@ -55,11 +55,21 @@ jobs:
     # d'aucun ressources local du parc (les jobs sans besoin local ont ete
     # migres vers ubuntu-latest par Q35 etape 2 -- voir le journal de
     # l'allowlist dans scripts/ci/check_self_hosted_runner_policy.py).
-    runs-on: ubuntu-latest
+    # 2026-10-29 (#23053, cliquet de politique) : forme hybride de debordement
+    # -- PR meme-depot ET vars.CI_OVERFLOW_LOCAL == 'true' -> jambe Linux
+    # locale ; tout le reste (variable absente ou fausse, forks, dispatch)
+    # retombe sur ubuntu-latest. **La variable vaut `false` au 29/10** : le
+    # routage est donc identique a celui d'aujourd'hui (100 % heberge), et la
+    # conversion retire la violation du cliquet sans changer ou le job
+    # s'execute. Bascule : `gh variable set CI_OVERFLOW_LOCAL --body
+    # true|false --repo jsboige/CoursIA`. Retour arriere = variable a
+    # `false` ou supprimee, sans toucher ce fichier.
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
     # Garde same-repo universelle : un fork n'atteint pas ce job.
     if: >-
       github.event.pull_request.head.repo.full_name == null
       || github.event.pull_request.head.repo.full_name == github.repository
+    timeout-minutes: 10
     steps:
       - name: Checkout (sparse, scripts only)
         uses: actions/checkout@v4
@@ -80,6 +90,13 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # `pipefail` + `exit 0` se contredisaient : sous `bash -e`, un
+          # non-zero de l'organe tuait l'etape AVANT le `exit 0`, et le job
+          # rendait un rouge la ou sa doctrine dit « le verdict n'est jamais
+          # porte par la conclusion du check ». Mesure du 2026-10-30 : quota
+          # d'installation GitHub epuise -> `gh` non-zero -> rouge forge sur
+          # #22977 et #22576. Le code de retour est desormais LU et annote,
+          # jamais laisse gouverner.
           set -o pipefail
           PR="${{ github.event.pull_request.number || inputs.pr }}"
           {
@@ -87,10 +104,11 @@ jobs:
             echo
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
-          # Le job sort TOUJOURS en 0 : le verdict est porte par les
-          # annotations `::warning::` et par le resume, jamais par la
-          # conclusion du check (doctrine des advisories du depot).
+          rc=0
           python scripts/ci/check_creation_provenance.py --pr "$PR" 2>&1 \
-            | tee -a "$GITHUB_STEP_SUMMARY"
+            | tee -a "$GITHUB_STEP_SUMMARY" || rc="${PIPESTATUS[0]}"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
+          if [ "$rc" -ne 0 ]; then
+            echo "::warning::creation-provenance: l'organe s'est interrompu avant de conclure (rc=$rc) -- mesure NON CONCLUANTE, jamais un constat sur la PR"
+          fi
           exit 0
