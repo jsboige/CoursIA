@@ -22,7 +22,7 @@ CoursIA copy
 | `_pl_handler.py` (689 lines)        | `argumentation_analysis/agents/core/logic/pl_handler.py` | a8025f60 (2026-07-02) |
 | `_fol_handler.py` (1163 lines)      | `argumentation_analysis/agents/core/logic/fol_handler.py` | a8025f60 (2026-07-02) |
 | `_modal_handler.py` (327 lines)    | `argumentation_analysis/agents/core/logic/modal_handler.py` | a8025f60 (2026-07-02) |
-| `_adf_handler.py` (161 lines)      | `argumentation_analysis/agents/core/logic/adf_handler.py` | a8025f60 (2026-07-02) |
+| `_adf_handler.py` (NOT-VERBATIM : adaptation locale du 2026-10-29, voir « Adaptations locales declarees » ci-dessous)      | `argumentation_analysis/agents/core/logic/adf_handler.py` | a8025f60 (2026-07-02) + adaptation CoursIA du 2026-10-29 |
 | `_af_handler.py` (234 lines)       | `argumentation_analysis/agents/core/logic/af_handler.py` | a8025f60 (2026-07-02) |
 | `_ranking_handler.py` (120 lines)  | `argumentation_analysis/agents/core/logic/ranking_handler.py` | a8025f60 (2026-07-02) |
 | `_belief_revision_handler.py` (158 lines) | `argumentation_analysis/agents/core/logic/belief_revision_handler.py` | a8025f60 (2026-07-02) |
@@ -59,6 +59,19 @@ autre ligne n'est modifiee. `_llm_transport.py` est une **adaptation declaree** 
 fournisseur LLM n'est cable dans CoursIA, donc la couche `LLMValidatorLayer` leve
 `LLMValidatorUnavailable` et la politique `fail_open` / `fail_closed` tranche — le carnet
 `Argumentation-09-Guardrails-AI-Shield-Python.ipynb` exerce ce chemin reel.
+
+Adaptations locales declarees
+-----------------------------
+
+Une copie **NOT-VERBATIM** est une copie dont le contenu a ete adapte en CoursIA pour
+etre **executable contre le runtime reellement vendu**, avec la raison ecrite dans
+l'en-tete du fichier. Deux copies sont dans ce cas ; la table « CoursIA copy » les
+signale par la mention NOT-VERBATIM.
+
+| Fichier | Nature de l'adaptation | Pourquoi |
+|---|---|---|
+| `_delegating_selection.py` | 1 jeton : `ProjectManager` -> `ProjectManagerAgent` | L'API amont a change de nom ; la correction est cosmetique sur la ligne concernee. |
+| `_adf_handler.py` | Adaptation d'API (4 derives mesurees) + vocabulaire de conditions etendu (`or:`, `and:`) + gate-out explicite sur `parse_adf_file` + **import optionnel de `jpype`** + **limite de composition a un seul niveau** | L'organe ADF n'etait exerce par **aucun** carnet de la serie (organe orphelin) et il etait **casse** contre le jar reellement vendu `MyIA.AI.Notebooks/SymbolicAI/Tweety/libs/adf-1.30.jar` : surcharge `builder.add(arg)` inexistante, conditions de base devenues des enumerations, liens du graphe exiges par le builder, reasoners ADF SAT-based sans solveur. Les quatre derives, leur symptome mesure et le correctif applique sont detailes dans l'en-tete du fichier. La lecture de fichier KPPADF n'est pas cablee contre ce jar : `parse_adf_file` leve une erreur explicite plutot que de laisser passer une derivation silencieuse. **Adaptation 5 (2026-10-29)** : `import jpype` est rendu optionnel — le module s'importe sans JPype, seule son *instanciation* (qui amorce la JVM) est refusee, avec un message qui nomme la dependance et la maniere de l'installer. Motif mesure : le job CI `Scripts Tests (CPU)` cible `Argument_Analysis` dans sa liste pytest mais ne declare pas `jpype` dans ses installations ; l'import au niveau module echouait donc a la **collecte** (`ModuleNotFoundError`) et faisait echouer le job entier (21 846 tests verts + 1 erreur de collecte, exit 1). Meme convention que le paquet lui-meme (`argumentation_lib/__init__.py`, dont `get_adf_handler_symbol` degrade deja gracieusement). **Limite de composition** : `or:` / `and:` acceptent exactement deux conditions **simples** — une condition composite ne peut pas en contenir une autre ; le message d'erreur nomme la limite et donne la forme acceptee. Le carnet `Argumentation-03d-ADF-Semantiques-Python.ipynb` exerce l'organe repare et rend ses sorties. |
 
 Tranche T3 -- privacy / export (`opaque_id`, `sanitize_state`, `pattern_mining`)
 ------------------------------------------------------------------------------
