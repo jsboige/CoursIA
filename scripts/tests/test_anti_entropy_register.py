@@ -818,6 +818,7 @@ def test_une_reference_transverse_est_refusee(monkeypatch):
         lambda issue, cle, now=None: aer.Reference(776.0, "2026-10-21",
                                                     "commentaire publie",
                                                     instrument="scripts/notebook_tools/o.py@ancien"))
+    monkeypatch.setattr(aer, "points_publies", lambda *a, **k: [])
     out = aer.mesurer_tout(registre=(e,))[0]
     assert out["verdict"] == "INSTRUMENT ILLEGIBLE"
     assert "transverse" in out["non_comparable"]
@@ -837,6 +838,7 @@ def test_une_reference_du_meme_instrument_est_comparee(monkeypatch):
     monkeypatch.setattr(aer, "identite_instrument",
                         lambda commande: "scripts/notebook_tools/o.py@meme")
     monkeypatch.setattr(aer, "lire_reference", lambda issue, cle, now=None: None)
+    monkeypatch.setattr(aer, "points_publies", lambda *a, **k: [])
     out = aer.mesurer_tout(registre=(e,))[0]
     assert out["verdict"] == "STAGNE"
     assert out["non_comparable"] == ""
@@ -971,6 +973,7 @@ def test_la_mesure_est_refusee_quand_l_arbre_local_divergente(monkeypatch):
                         lambda issue, cle, now=None: None)
     monkeypatch.setattr(aer, "_run", _run_avec_divergence(
         ["MyIA.AI.Notebooks/ML/WS-00a-Ondelettes-1D-from-scratch.ipynb"]))
+    monkeypatch.setattr(aer, "points_publies", lambda *a, **k: [])
     out = aer.mesurer_tout(registre=(e,))[0]
     assert out["verdict"] == "INSTRUMENT ILLEGIBLE"
     assert "mesure refusee" in out["non_comparable"]
@@ -1030,6 +1033,7 @@ def test_la_fenetre_de_rebasage_est_suspendue(monkeypatch):
                         lambda commande: "scripts/notebook_tools/o.py@meme")
     monkeypatch.setattr(aer, "lire_reference",
                         lambda issue, cle, now=None: None)
+    monkeypatch.setattr(aer, "points_publies", lambda *a, **k: [])
     out = aer.mesurer_tout(registre=(e,))[0]
     assert out["comparaison_suspendue"] is True
     assert "SUSPENDUE" in out["fenetre"]
@@ -1050,6 +1054,7 @@ def test_une_publication_de_sept_jours_ouvre_la_fenetre(monkeypatch):
         lambda issue, cle, now=None: aer.Reference(
             38.0, "2026-10-24", "commentaire publie",
             instrument="scripts/notebook_tools/o.py@meme"))
+    monkeypatch.setattr(aer, "points_publies", lambda *a, **k: [])
     out = aer.mesurer_tout(registre=(e,))[0]
     assert out["comparaison_suspendue"] is False
     assert "active" in out["fenetre"]
@@ -1065,7 +1070,179 @@ def test_le_commentaire_porte_la_fenetre(monkeypatch):
                         lambda commande: "scripts/notebook_tools/o.py@meme")
     monkeypatch.setattr(aer, "lire_reference",
                         lambda issue, cle, now=None: None)
+    monkeypatch.setattr(aer, "points_publies", lambda *a, **k: [])
     out = aer.mesurer_tout(registre=(e,))[0]
     corps = aer.commentaire_du_jour([out], "2026-10-31T00:00:00Z")
     assert "SUSPENDUE" in corps
     assert "rebascage 2026-10-31" in corps
+
+
+# --- la serie a instrument constant (le controle positif, VIF) ---------------
+#
+# Le controle positif exige par l'issue etait devenu MUET : il affirmait un
+# `RECULE` ecrit en dur, sans jamais mesurer. Depuis le merge de #23193,
+# l'instrument a change : la valeur du jour et la reference ne sont plus
+# comparables, et le controle ne testait plus ce qu'il croyait tester.
+#
+# Ces tests exercent le controle sur la SERIE A INSTRUMENT CONSTANT : les
+# points reels de l'entree, groupes par l'instrument qui les a produits.
+
+
+def _entree_padding():
+    return next(e for e in aer.REGISTRE if e.cle == "padding-nommage")
+
+
+def test_le_controle_positif_rend_recule_sur_une_serie_reelle():
+    """776 -> 813 -> 840 a instrument constant : RECULE.
+
+    Ce sont les trois points REELS de l'entree (la reference inscrite dans
+    l'issue, la publication balisee du 28/10, la mesure du 30/10), avec
+    l'identite declaree de l'instrument qui les a produits. La tendance
+    d'un groupe est le verdict entre sa premiere et sa derniere valeur,
+    dans le sens de l'entree : le padding monte, donc il RECULE.
+    """
+    e = _entree_padding()
+    groupes = aer.serie_par_instrument(
+        e.commande, e.sens,
+        [("2026-10-21", 776.0, "issue #23175", "instrument@avant-23193"),
+         ("2026-10-28", 813.0, "publication du 28/10", "instrument@avant-23193"),
+         ("2026-10-30", 840.0, "mesure du 30/10", "instrument@avant-23193")])
+    assert len(groupes) == 1
+    assert groupes[0]["tendance"] == "RECULE"
+    assert [p["valeur"] for p in groupes[0]["points"]] == [776.0, 813.0, 840.0]
+
+
+def test_la_serie_separe_les_instruments():
+    """Deux instruments distincts donnent deux groupes : on ne les melange
+    jamais, c'est precisement le defaut de #23193."""
+    e = _entree_padding()
+    groupes = aer.serie_par_instrument(
+        e.commande, e.sens,
+        [("2026-10-28", 813.0, "publication", "instrument@avant-23193"),
+         ("2026-10-31", 38.0, "mesure du jour", "instrument@apres-23193")])
+    assert len(groupes) == 2
+    assert groupes[0]["tendance"] == "PREMIERE MESURE"
+    assert groupes[1]["tendance"] == "PREMIERE MESURE"
+
+
+def test_un_point_sans_identite_est_laisse_de_cote(monkeypatch):
+    """Un point dont l'identite ne peut pas etre etablie ne se compare a
+    rien : il sort de la serie plutot que d'etre attribue au hasard."""
+    monkeypatch.setattr(aer, "identite_instrument_a",
+                        lambda commande, au: "")
+    e = _entree_padding()
+    groupes = aer.serie_par_instrument(
+        e.commande, e.sens,
+        [("2026-10-28", 813.0, "publication", ""),
+         ("2026-10-31", 38.0, "mesure", "")])
+    assert groupes == []
+
+
+def test_les_points_historiques_declarent_leur_source():
+    """Un point historique sans source est une valeur inventee."""
+    e = _entree_padding()
+    assert len(e.historique) >= 2
+    for h in e.historique:
+        assert h.source
+        assert h.mesure_le
+
+
+def test_l_identite_derivee_a_la_date_est_celle_des_points_declares():
+    """L'identite declaree d'un point doit etre celle que l'organe derive
+    LUI-MEME a la date du point. Sans cela, le groupe de la serie serait
+    faux — et le controle positif porterait sur un mensonge.
+
+    Le test est ignore sur un clone superficiel : l'historique de
+    l'instrument n'y existe pas, et une identite non etablie ne prouve
+    rien (c'est le principe que l'organe applique partout ailleurs).
+    """
+    e = _entree_padding()
+    for h in e.historique:
+        derivee = aer.identite_instrument_a(e.commande, h.mesure_le)
+        if not derivee:
+            pytest.skip("historique de l'instrument indisponible "
+                        "(clone superficiel)")
+        assert derivee == h.instrument, (
+            f"l identite declaree ({h.instrument}) ne correspond pas a "
+            f"l identite derivee au {h.mesure_le} ({derivee})")
+
+
+def test_le_commentaire_publie_la_serie(monkeypatch):
+    """La serie est PUBLIEE : c'est elle qui rend le controle positif lisible
+    par un tiers, sans qu'il ait a rejouer la mesure."""
+    e = aer.Entree(
+        cle="x", issue=1, titre="t",
+        commande=("python", "scripts/notebook_tools/o.py"),
+        extraction=("lignes",), sens="descend", cible=0.0,
+        historique=(aer.Reference(776.0, "2026-10-21", "issue #1",
+                                  instrument="o.py@ancien"),))
+    monkeypatch.setattr(aer, "mesurer",
+                        lambda entree, maintenant=None: (840.0, "", ""))
+    monkeypatch.setattr(aer, "identite_instrument",
+                        lambda commande: "o.py@ancien")
+    monkeypatch.setattr(aer, "points_publies", lambda *a, **k: [])
+    monkeypatch.setattr(aer, "lire_reference",
+                        lambda issue, cle, now=None: None)
+    out = aer.mesurer_tout(registre=(e,))[0]
+    corps = aer.commentaire_du_jour([out], "2026-10-31T00:00:00Z")
+    assert "Serie a instrument constant" in corps
+    assert "776" in corps and "840" in corps
+    assert "**RECULE**" in corps
+
+
+def test_la_mesure_refusee_n_entre_pas_dans_la_serie(monkeypatch):
+    """Une mesure refusee (arbre divergent, instrument muet) ne decrit
+    rien : elle n'entre pas dans la serie."""
+    e = aer.Entree(
+        cle="x", issue=1, titre="t",
+        commande=("python", "scripts/notebook_tools/o.py"),
+        extraction=("lignes",), sens="descend", cible=0.0,
+        historique=(aer.Reference(776.0, "2026-10-21", "issue #1",
+                                  instrument="o.py@ancien"),))
+    monkeypatch.setattr(aer, "mesurer",
+                        lambda entree, maintenant=None: (840.0, "", ""))
+    monkeypatch.setattr(aer, "identite_instrument",
+                        lambda commande: "o.py@ancien")
+    monkeypatch.setattr(aer, "points_publies", lambda *a, **k: [])
+    monkeypatch.setattr(aer, "lire_reference",
+                        lambda issue, cle, now=None: None)
+    monkeypatch.setattr(aer, "arbre_aligne",
+                        lambda commande, rayon="": (False, "arbre divergent"))
+    out = aer.mesurer_tout(registre=(e,))[0]
+    for groupe in out["serie"]:
+        for p in groupe["points"]:
+            assert p["source"] != "mesure du jour"
+
+
+def test_la_valeur_publiee_est_lue_dans_la_colonne_valeur():
+    """La valeur d'une publication se lit dans la colonne `valeur` — pas
+    dans la reference, ni dans le verdict."""
+    corps = ("| `padding-nommage` | #5081 | 813 | 776 (2026-10-21) | "
+             "descend | **RECULE** | `o.py@x` |")
+    assert aer._valeur_publiee(corps, "padding-nommage") == 813.0
+    assert aer._valeur_publiee(corps, "autre") is None
+    assert aer._valeur_publiee("| `x` | #1 | — | — | descend | **STAGNE** |",
+                               "x") is None
+
+
+def test_l_instrument_reel_rend_encore_une_valeur():
+    """Le controle est VIF : il mesure le VRAI instrument du depot.
+
+    C'est le test qui aurait attrape un changement de la forme de la
+    sortie de l'instrument (une cle renommee, un JSON restructure) : le
+    couplage entre l'instrument et la specification d'extraction n'est
+    verifie par aucun autre test.
+    """
+    e = _entree_padding()
+    # `--base HEAD` plutot que `origin/main` : le test mesure l'ARBRE
+    # LOCAL, qui existe toujours, et ne depend pas d'une reference
+    # distante absente d'un clone CI.
+    source = e.commande
+    commande = tuple("HEAD" if i and source[i - 1] == "--base" else mot
+                     for i, mot in enumerate(source))
+    variante = aer.Entree(cle=e.cle, issue=e.issue, titre=e.titre,
+                          commande=commande, extraction=e.extraction,
+                          sens=e.sens, cible=e.cible, arbre=e.arbre)
+    valeur, erreur, _ = aer.mesurer(variante)
+    assert erreur == "", f"l instrument reel ne rend plus de valeur : {erreur}"
+    assert valeur is not None and valeur >= 0

@@ -128,6 +128,17 @@ class Entree:
     # git comme `git ls-tree`) : il n'y a alors rien a verifier. Voir
     # `arbre_aligne`.
     arbre: str = ""
+    # Les points HISTORIQUES de la serie, anterieurs a la reference courante.
+    #
+    # Ils ne portent PAS d'identite d'instrument : l'organe la derive
+    # lui-meme, a la DATE du point (`identite_instrument(..., au=...)`).
+    # C'est ce qui rend la serie cumulative sans la faire mentir : une
+    # valeur datee du 2026-10-21 est attribu a l'instrument qui etait
+    # alors dans l'arbre, pas a celui d'aujourd'hui.
+    #
+    # Chaque point porte sa SOURCE (le fil ou la publication qui l'a
+    # produit) : une valeur sans source est une valeur inventee.
+    historique: tuple[Reference, ...] = ()
 
 
 # Le registre, version 1 (les trois cas cites par l'issue).
@@ -188,6 +199,24 @@ REGISTRE: tuple[Entree, ...] = (
                             instrument=("scripts/notebook_tools/"
                                         "inventory_notebook_names.py"
                                         "@d818b008b5558d9a755c81d3d05e29ac23a9f823")),
+        # Les points anterieurs de la serie, avec leur SOURCE. L'identite
+        # de l'instrument n'est PAS declaree ici : l'organe la derive a
+        # la date du point. C'est ce qui permet de lire la serie de
+        # l'instrument d'avant #23193 — celle-la meme qui vaut
+        # « RECULE » (776 -> 813 -> 840).
+        historique=(
+            Reference(776.0, "2026-10-21",
+                      "issue #23175, reference inscrite dans le corps",
+                      instrument=("scripts/notebook_tools/"
+                                  "inventory_notebook_names.py"
+                                  "@4ee8a58dfee62fc7e8cc3bff3329c17493822c01")),
+            Reference(840.0, "2026-10-30",
+                      "issue #23175, commentaire de mesure du "
+                      "2026-10-30T23:46Z (lane myia-po-2028:CoursIA-2)",
+                      instrument=("scripts/notebook_tools/"
+                                  "inventory_notebook_names.py"
+                                  "@4ee8a58dfee62fc7e8cc3bff3329c17493822c01")),
+        ),
         note="`ambigu` = nom non parsé ou kernel non verifie.",
         # L'instrument prend sa LISTE de carnets dans `origin/main` et lit
         # le CONTENU de chaque carnet dans l'ARBRE LOCAL : le rayon a
@@ -301,11 +330,40 @@ def identite_instrument(commande) -> str:
     l'instrument change. Si le sha ne peut pas etre etabli, l'identite
     est inconnue (""), jamais « identique ».
     """
+    return _identite(commande, None)
+
+
+def identite_instrument_a(commande, au: str) -> str:
+    """L'identite de l'instrument **tel qu'il etait a la date** `au`.
+
+    C'est ce qui rend la serie lisible : une valeur mesuree le 2026-10-21
+    appartient a l'instrument de cette date-la, pas a celui d'aujourd'hui.
+    Sans elle, la serie historique disparaitrait — et avec elle, la seule
+    comparaison qui dise si le chantier recule.
+
+    La resolution est au JOUR : `--before=<date>` prend le dernier commit
+    anterieur a minuit. Une mesure faite en fin de journee apres un
+    commit de la journee est donc attribuee a l'instrument d'avant ce
+    commit — c'est le cas de la mesure du 2026-10-30T23:46Z, faite
+    volontairement avec l'instrument anterieur a #23193. Le point declare
+    porte alors son identite, et l'ecart entre les deux est visible.
+    """
+    return _identite(commande, au)
+
+
+def _identite(commande, au: str | None) -> str:
+    """Le coeur de l'identite : le sha du dernier commit qui a touche le
+    script de l'instrument, avant la date `au` si elle est donnee."""
     script = _script_de_la_commande(commande)
     if not script:
         return "git:" + " ".join(str(m) for m in commande)
     for ref in ("origin/main", "HEAD"):
-        code, out, _ = _run(("git", "log", "-1", "--format=%H", ref, "--", script))
+        if au:
+            cmd = ("git", "log", "-1", "--format=%H", f"--before={au}",
+                   ref, "--", script)
+        else:
+            cmd = ("git", "log", "-1", "--format=%H", ref, "--", script)
+        code, out, _ = _run(cmd)
         sha = out.strip()
         if code == 0 and sha:
             return f"{script}@{sha}"
@@ -320,6 +378,126 @@ def comparables(identite: str, identite_reference: str) -> bool:
     permet pas de comparer, donc elle ne vaut pas comparaison.
     """
     return bool(identite) and bool(identite_reference) and identite == identite_reference
+
+
+# ---------------------------------------------------------------------------
+# La serie a instrument constant
+# ---------------------------------------------------------------------------
+#
+# Le controle positif de l'issue exige que le padding rende « RECULE » a la
+# mesure. Depuis le merge de #23193 (l'instrument corrige), la valeur du jour
+# et la reference ne viennent plus du meme instrument : comparer les deux
+# fabriquerait un verdict, et le controle ne testerait plus ce qu'il croit
+# testerer.
+#
+# Refuser la comparaison transverse (fait par `comparables`) suffit a ne plus
+# mentir, mais cela laisse le lecteur sans la MESURE qui compte : le
+# chantier recule-t-il, lui ? Cette question a une reponse, et elle se lit
+# dans la serie **a instrument constant** : le groupe des valeurs produites
+# par un meme instrument, dans leur ordre chronologique.
+#
+# Pour l'entree « padding et nommage », ce groupe est celui de l'instrument
+# d'avant #23193 : 776 (2026-10-21) -> 813 (2026-10-28) -> 840 (2026-10-30).
+# Il rend RECULE (+64 en neuf jours) — le controle positif est donc
+# VIVANT : il s'exerce sur des mesures reelles, et non sur des constantes
+# ecrites en dur dans un test.
+#
+# L'identite d'un point est celle de l'instrument TEL QU'IL ETAIT a la date
+# du point (`identite_instrument(..., au=...)`) : sans cela, une valeur du
+# 2026-10-21 serait attribuee a l'instrument d'aujourd'hui, et la serie
+# historique disparaitrait.
+
+def _valeur_publiee(body: str, cle: str) -> float | None:
+    """La valeur du jour d'une publication balisee, pour l'entree `cle`.
+
+    La colonne `valeur` du tableau de la publication. Une cellule qui n'est
+    pas un nombre (un tiret, une mention) donne `None` : une absence de
+    valeur n'est pas une valeur.
+    """
+    for ligne in (body or "").splitlines():
+        m = _LIGNE_TABLE.match(ligne)
+        if not m or m.group("cle") != cle:
+            continue
+        cellules = [c.strip() for c in ligne.strip().strip("|").split("|")]
+        if len(cellules) < 3:
+            return None
+        brut = cellules[2].replace(",", ".").strip()
+        try:
+            return float(brut)
+        except ValueError:
+            return None
+    return None
+
+
+def points_publies(issue: int, cle: str) -> list[tuple[str, float, str, str]]:
+    """Les points `(date, valeur, source, instrument)` de chaque publication.
+
+    Les publications sont lues dans l'ordre chronologique. L'identite de
+    l'instrument est celle portee par le tableau de la publication depuis le
+    rebasage du 2026-10-30 ; avant elle, elle est vide et sera derivee a la
+    date de la publication (cf `serie_par_instrument`).
+    """
+    points: list[tuple[str, float, str, str]] = []
+    for commentaire in _commentaires_marques(issue):
+        corps = commentaire.get("body") or ""
+        valeur = _valeur_publiee(corps, cle)
+        if valeur is None:
+            continue
+        ident = identite_du_commentaire(corps, cle)
+        source = (f"publication balisee du {commentaire.get('created_at') or '?'}"
+                  + (f" (instrument `{ident}`)" if ident else ""))
+        points.append((commentaire.get("created_at") or "", valeur, source, ident))
+    return points
+
+
+def serie_par_instrument(commande, sens: str,
+                         points: list[tuple[str, float, str, str]]
+                         ) -> list[dict]:
+    """Regroupe les points par l'instrument qui les a produits.
+
+    Chaque point est un quadruplet `(date, valeur, source, instrument)`.
+    L'instrument **declare** est utilise quand il est connu (c'est la
+    version de l'instrument avec laquelle la valeur a ete MESUREE) ; sinon
+    l'identite est derivee a la date du point. Un point dont l'identite ne
+    peut pas etre etablie est **laisse de cote** (il ne se compare a rien).
+
+    Chaque groupe porte sa TENDANCE : le verdict entre sa premiere et sa
+    derniere valeur. Deux valeurs du meme groupe sont, par construction,
+    produites par le meme instrument — c'est la seule comparaison qui se
+    defend.
+    """
+    groupes: dict[str, list[dict]] = {}
+    for date, valeur, source, declaree in points:
+        identite = declaree or identite_instrument_a(commande, date)
+        if not identite:
+            continue
+        groupes.setdefault(identite, []).append(
+            {"date": date, "valeur": valeur, "source": source})
+    sortie: list[dict] = []
+    for identite, lot in groupes.items():
+        lot.sort(key=lambda p: (p["date"], p["valeur"]))
+        # Deux publications du meme jour et de meme valeur sont le MEME
+        # point : il en faut une seule, sinon la serie compte des
+        # repetitions comme des etapes.
+        dedupes: list[dict] = []
+        for p in lot:
+            if dedupes and dedupes[-1]["date"][:10] == p["date"][:10] \
+                    and dedupes[-1]["valeur"] == p["valeur"]:
+                continue
+            dedupes.append(p)
+        lot = dedupes
+        if len(lot) >= 2:
+            # `verdict(valeur, reference)` : la valeur du jour est la
+            # DERNIERE de la serie, la reference en est la PREMIERE. Inverser
+            # les deux inverserait la tendance — c'est ce qui faisait
+            # rendre « AVANCE » a une serie qui recule.
+            tendance = verdict(lot[-1]["valeur"], lot[0]["valeur"], sens)
+        else:
+            tendance = "PREMIERE MESURE"
+        sortie.append({"instrument": identite, "points": lot,
+                        "tendance": tendance})
+    sortie.sort(key=lambda g: g["points"][0]["date"])
+    return sortie
 
 
 def _ref_de_la_commande(commande) -> str:
@@ -760,6 +938,25 @@ def commentaire_du_jour(entrees: list[dict], mesure_le: str) -> str:
         elif e.get("note"):
             detail += f" — {e['note']}"
         lignes.append(detail)
+    # La SERIE a instrument constant : elle porte la reponse a la question
+    # que le verdict de sept jours ne peut plus poser — « le chantier
+    # recule-t-il ? ». Elle est ce qui rend le controle positif de l'issue
+    # VIF : il s'exerce sur des mesures reelles, groupees par l'instrument
+    # qui les a produites, et non sur des constantes ecrites en dur.
+    if any(e.get("serie") for e in entrees):
+        lignes += ["", "**Serie a instrument constant** — chaque groupe est "
+                  "l'ensemble des valeurs produites par le MEME instrument ; "
+                  "a instrument constant, la valeur se compare.", "",
+                  "| entree | instrument | points | tendance |",
+                  "|---|---|---|---|"]
+        for e in entrees:
+            for groupe in e.get("serie") or []:
+                points = " → ".join(
+                    f"{_fmt(p['valeur'])} ({p['date'][:10]})"
+                    for p in groupe["points"])
+                lignes.append(
+                    f"| `{e['cle']}` | `{groupe['instrument']}` | {points} "
+                    f"| **{groupe['tendance']}** |")
     lignes += [
         "",
         ("Le progres se lit a la **valeur** de l'instrument, jamais au nombre "
@@ -771,6 +968,12 @@ def commentaire_du_jour(entrees: list[dict], mesure_le: str) -> str:
         "refusee — le verdict affiche alors `INSTRUMENT ILLEGIBLE` plutot "
         "que de comparer des grandeurs qui ne se mesurent pas l'une comme "
         "l'autre."),
+        "",
+        ("La **serie a instrument constant** est publiee en regard : c'est la "
+         "seule comparaison qui se defend quand l'instrument a change. "
+         "Elle porte la tendance de chaque groupe — c'est la que se lit "
+         "le controle positif de l'issue (le padding rend `RECULE` a "
+         "instrument constant)."),
         "",
         ("L'**arbre mesure** est nomme avec la valeur : un instrument qui "
          "prend sa liste de fichiers dans une revision et lit leur contenu "
@@ -1156,6 +1359,29 @@ def mesurer_tout(registre: tuple[Entree, ...] = REGISTRE,
             else:
                 fenetre = (f"comparaison de 7 j active (reference publiee "
                            f"le {ref.mesure_le})")
+        # La SERIE a instrument constant : les points anterieurs declares
+        # (avec leur source), les publications, et la mesure du jour. Elle
+        # repond a la question que le verdict de sept jours ne peut plus
+        # poser — « le chantier recule-t-il ? » — et elle est ce qui rend
+        # le controle positif de l'issue VIF : il s'exerce sur des
+        # mesures reelles, groupees par l'instrument qui les a produites.
+        points_serie = [(h.mesure_le, h.valeur, h.source, h.instrument)
+                        for h in entree.historique]
+        if entree.reference is not None:
+            points_serie.append((entree.reference.mesure_le,
+                                 entree.reference.valeur,
+                                 f"reference portee par l'entree "
+                                 f"({entree.reference.source})",
+                                 entree.reference.instrument))
+        points_serie.extend(points_publies(entree.issue, entree.cle))
+        if valeur is not None and aligne and not erreur:
+            # Seule une mesure ACCEPTEE entre dans la serie : une mesure
+            # refusee (arbre divergent, instrument muet) ne decrit rien et
+            # ne se compare a rien.
+            points_serie.append((reference.date().isoformat(), valeur,
+                                 "mesure du jour", identite))
+        serie = serie_par_instrument(entree.commande, entree.sens,
+                                     points_serie)
         if valeur is None:
             verdict_final = "INSTRUMENT ILLEGIBLE"
         elif ref is None:
@@ -1183,6 +1409,7 @@ def mesurer_tout(registre: tuple[Entree, ...] = REGISTRE,
                            "source": ref.source,
                            "instrument": ref.instrument}
                           if ref else None),
+            "serie": serie,
             "verdict": verdict_final,
         })
     return out
