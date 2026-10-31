@@ -9261,6 +9261,13 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     rapport (mesure #17528, 2026-10-26 : le picker a signale `403` sur deux
     candidats du meme run, et l'echec de la SONDE n'etait nomme nulle part).
 
+    ``prime_truncated`` (#21436, 2026-10-30) compte les issues de tete que le
+    mur de temps a fait **ecarter du priming** : l'instantane n'est pas un
+    gate, la boucle reprend avec le reste de son budget, mais la troncature
+    est rapportee au lieu d'etre tu (meme doctrine que ``claim_unread``). La
+    cle est absente quand le priming est alle au bout -- un ``0`` et une cle
+    manquante ne disent pas la meme chose.
+
     ``time_budget_s`` (#21436) est un mur de temps sur la BOUCLE : passe
     l'echeance, plus aucune sonde n'est emise (claims hors fenetre, filtre
     recent, sondes de livraison), les candidats restants sont servis en
@@ -9286,14 +9293,6 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     # etait donc TOUJOURS fausse en production -- le cache n'etait jamais
     # amorce, alors que les sondes le consultaient. C'est l'injection du
     # prime, et elle seule, qui decide du reseau.
-    prime = (belt_snapshot_prime_inert if snapshot_prime is None
-             else snapshot_prime)
-    prime(REPO, [int(it.get("number", 0))
-                 for it in (belt_pool or [])[:70] if it.get("number")])
-    # Le pool et l'enumeration des PRs ouvertes ont ete lus AVANT cette
-    # fonction : on persiste ici, sinon leurs entrees de la passe
-    # disparaitraient au retour (le flush de `red_backlog` est deja passe).
-    _flush_repair_snapshot()
     # #21436 — `probe_budget` borne le NOMBRE de sondes de livraison. Il ne
     # borne ni leur DUREE, ni les deux surfaces que la boucle paie par
     # candidat hors fenetre : `claims_probe` (un `check_claims` unitaire) et
@@ -9308,6 +9307,42 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     deadline = None
     if time_budget_s is not None:
         deadline = time.monotonic() + max(0.0, float(time_budget_s))
+    prime = (belt_snapshot_prime_inert if snapshot_prime is None
+             else snapshot_prime)
+    prime_numbers = [int(it.get("number", 0))
+                     for it in (belt_pool or [])[:70] if it.get("number")]
+    # #21436 (2026-10-30) — le priming s'executait AVANT l'installation de
+    # `deadline`, donc sans jamais lire le mur, alors qu'il est la PREMIERE
+    # depense reseau de la boucle : un `gh api` par issue de tete, en serie
+    # (`_belt_snapshot_prime` -> `refresh` -> `ensure_issue_payloads`).
+    # Mesure sur ce siege, quatre executions consecutives : la phase
+    # `pick_with_replacements start` s'ouvre a t=35 s en annoncant « 205 s
+    # restants », puis plus aucune ligne, run tue a 240 s sans avoir servi un
+    # seul grain. Le budget etait calcule puis ignore.
+    #
+    # Deux bornes, et le comportement d'un appel SANS budget est inchange :
+    # (1) le priming ne consomme que la MOITIE du reste -- l'instantane est un
+    # confort dont la boucle doit pouvoir se passer (`_belt_snapshot_prime`
+    # le dit deja) ; un priming qui mange tout le mur reproduirait le defaut
+    # sous une autre forme, en rapportant l'echeance au lieu de servir ;
+    # (2) il avance par tranches et relit l'echeance entre deux, donc il
+    # s'arrete au mur et non au bout de 70 issues -- et le nombre d'issues
+    # laissees de cote est rapporte, jamais tu.
+    PRIME_SLICE = 8
+    if deadline is None:
+        prime(REPO, prime_numbers)
+    else:
+        prime_deadline = time.monotonic() + max(
+            0.0, (deadline - time.monotonic()) / 2.0)
+        for start in range(0, len(prime_numbers), PRIME_SLICE):
+            if time.monotonic() >= prime_deadline:
+                state["prime_truncated"] = len(prime_numbers) - start
+                break
+            prime(REPO, prime_numbers[start:start + PRIME_SLICE])
+    # Le pool et l'enumeration des PRs ouvertes ont ete lus AVANT cette
+    # fonction : on persiste ici, sinon leurs entrees de la passe
+    # disparaitraient au retour (le flush de `red_backlog` est deja passe).
+    _flush_repair_snapshot()
     # #21436 -- publie l'echeance pour les sondes LENTES (`check_claims`,
     # `has_recent_delivery_marker`) : elles lisent `_clamp_timeout` pour ne
     # jamais courir au-dela du mur. Restauree en sortie de boucle (try/finally
