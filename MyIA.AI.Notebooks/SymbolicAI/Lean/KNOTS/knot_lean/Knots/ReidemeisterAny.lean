@@ -2748,4 +2748,69 @@ theorem verifyAnyMove_r3Any_length {s t : KnotDiagram}
   simp only [verifyAnyMove] at h
   exact (verifyR3_length s t h).symm
 
+/-! ## 21. Motifs requis -- un retrait verifie exige son motif terminal
+
+Briques du certificat negatif (suite de la section 20) : la baisse de compte
+n'est jamais gratuite. Un retrait de kink verifie exige un kink TERMINAL sur
+le grand diagramme (`e3 = e4` sur le dernier croisement) ; un retrait de bigon
+verifie exige sa paire terminale (silhouettes `e2 = e3` sur les deux derniers,
+arc commun `e1` partage). Ce sont ces motifs que le potentiel du theoreme de
+plancher devra compter : chaque unité de baisse consomme un motif que seul un
+up-move (ou une fusion, cf section 19) peut avoir introduit. -/
+
+/-- Un retrait de kink verifie exige un kink terminal : le dernier croisement
+    du grand diagramme porte `e3 = e4`. -/
+theorem verifyKinkDownAny_last_kink (D d : KnotDiagram)
+    (h : verifyKinkDownAny D d = true) :
+    ∃ K, D.crossings.getLast? = some K ∧ K.e3 = K.e4 := by
+  cases hL : D.crossings.getLast? with
+  | none => simp [verifyKinkDownAny, hL] at h
+  | some K =>
+    simp only [verifyKinkDownAny, hL, Bool.and_eq_true] at h
+    exact ⟨K, rfl, (of_decide_eq_true h.2.1).1⟩
+
+/-- Un retrait de bigon verifie exige sa paire terminale : silhouettes
+    `e2 = e3` sur les deux derniers croisements, arc commun `e1` partage. -/
+theorem verifyBigonDownAny_last_bigon (D d : KnotDiagram)
+    (h : verifyBigonDownAny D d = true) :
+    ∃ K₁ K₂, D.crossings.dropLast.getLast? = some K₁ ∧ D.crossings.getLast? = some K₂ ∧
+      K₂.e2 = K₂.e3 ∧ K₁.e2 = K₁.e3 ∧ K₁.e1 = K₂.e1 := by
+  cases hL : D.crossings.getLast? with
+  | none => simp [verifyBigonDownAny, hL] at h
+  | some K₂ =>
+    cases hL2 : D.crossings.dropLast.getLast? with
+    | none => simp [verifyBigonDownAny, hL, hL2] at h
+    | some K₁ =>
+      simp only [verifyBigonDownAny, hL, hL2, Bool.and_eq_true] at h
+      have hd := of_decide_eq_true h.2.1
+      exact ⟨K₁, K₂, rfl, rfl, hd.1, hd.2.1, hd.2.2.1⟩
+
+/-- Version pas : un pas kink `_any` verifie porte son kink a la fin du GRAND
+    cote, avec le compte correspondant. -/
+theorem verifyAnyMove_r1Any_kink_on_larger {s t : KnotDiagram}
+    (h : verifyAnyMove (AnyMove.r1Any s t) = true) :
+    (t.crossings.length = s.crossings.length + 1 ∧
+      ∃ K, t.crossings.getLast? = some K ∧ K.e3 = K.e4) ∨
+    (s.crossings.length = t.crossings.length + 1 ∧
+      ∃ K, s.crossings.getLast? = some K ∧ K.e3 = K.e4) := by
+  simp only [verifyAnyMove, Bool.or_eq_true] at h
+  rcases h with h | h
+  · exact Or.inl ⟨(verifyKinkDownAny_length t s h).symm, verifyKinkDownAny_last_kink t s h⟩
+  · exact Or.inr ⟨(verifyKinkDownAny_length s t h).symm, verifyKinkDownAny_last_kink s t h⟩
+
+/-- Version pas : un pas bigon `_any` verifie porte sa paire terminale du
+    GRAND cote, avec le compte correspondant. -/
+theorem verifyAnyMove_r2Any_bigon_on_larger {s t : KnotDiagram}
+    (h : verifyAnyMove (AnyMove.r2Any s t) = true) :
+    (t.crossings.length = s.crossings.length + 2 ∧
+      ∃ K₁ K₂, t.crossings.dropLast.getLast? = some K₁ ∧ t.crossings.getLast? = some K₂ ∧
+        K₂.e2 = K₂.e3 ∧ K₁.e2 = K₁.e3 ∧ K₁.e1 = K₂.e1) ∨
+    (s.crossings.length = t.crossings.length + 2 ∧
+      ∃ K₁ K₂, s.crossings.dropLast.getLast? = some K₁ ∧ s.crossings.getLast? = some K₂ ∧
+        K₂.e2 = K₂.e3 ∧ K₁.e2 = K₁.e3 ∧ K₁.e1 = K₂.e1) := by
+  simp only [verifyAnyMove, Bool.or_eq_true] at h
+  rcases h with h | h
+  · exact Or.inl ⟨(verifyBigonDownAny_length t s h).symm, verifyBigonDownAny_last_bigon t s h⟩
+  · exact Or.inr ⟨(verifyBigonDownAny_length s t h).symm, verifyBigonDownAny_last_bigon s t h⟩
+
 end Knots.AnyMoves
