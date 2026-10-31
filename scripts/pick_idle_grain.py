@@ -9189,7 +9189,8 @@ def delivery_event_probe_inert(number):
 
 
 def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
-                                delivered_probe=None, claims_probe=None,
+                                delivered_probe=None, cover_probe=None,
+                                claims_probe=None,
                                 merged_pr_probe=None,
                                 recent_marker_probe=None,
                                 snapshot_prime=None,
@@ -9244,7 +9245,8 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     illisibles], "budget_hit": bool, "claim_unread": [numeros servis sur une
     lecture de claim en echec], "container_unread": [numeros servis sur une
     lecture du DERNIER COMMENTAIRE en echec], "marker_unread": [numeros servis
-    sur une lecture du marqueur RECENT en echec], "time_budget_hit": bool}``.
+    sur une lecture du marqueur RECENT en echec], "cover_failures": [numeros
+    dont la sonde de couverture a echoue], "time_budget_hit": bool}``.
     ``claim_unread``
     est le pendant du ``failures`` de livraison : deux lectures qui n'ont pas
     ABOUTI, servies quand meme (fail-OPEN) et rapportees a la lane (#20265).
@@ -9270,7 +9272,7 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     budget = [int(probe_budget)]
     state = {"failures": [], "budget_hit": False, "recent_filtered": 0,
              "claim_unread": [], "container_unread": [], "marker_unread": [],
-             "time_budget_hit": False}
+             "cover_failures": [], "time_budget_hit": False}
     # #22630 -- l'instantane local est rafraichi UNE FOIS pour les candidats
     # de la fenetre : toutes les sondes de commentaires (filtre recent et
     # sonde pleine de livraison) le lisent ensuite sans requete GitHub par
@@ -9330,6 +9332,7 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     # sa sonde doit voir le plafond s'appliquer aussi -- sinon la borne de
     # cout ne serait testable qu'avec le reseau reel.
     user_probe = delivered_probe or delivered_probe_inert
+    user_cover_probe = cover_probe or open_cover_inert
     user_merged_pr_probe = merged_pr_probe or merged_pr_probe_inert
     user_recent_marker_probe = (recent_marker_probe
                                 or recent_marker_probe_inert)
@@ -9354,6 +9357,21 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
             return DELIVERED_SIGNAL_UNPROBED
         budget[0] -= 1
         return user_merged_pr_probe(number, lane_name)
+
+    def counted_cover_probe(number):
+        # #16589 etait cable sur la seule voie PONDEREE : le tapis rendait
+        # donc des candidats dont une PR ouverte porte deja le travail, et
+        # la lane recevait un `ACTION REQUISE` sur une issue deja servie
+        # (mesure du 2026-10-27 : `open_cover_signal_complete(22374)` rend
+        # 'PR #22515' sur 389 PRs ouvertes enumerees, et le tapis a quand
+        # meme servi #22374). Meme doctrine que la voie ponderee : la sonde
+        # de couverture partage le MEME budget que la sonde de livraison,
+        # avec le meme fail-OPEN dit a la lane.
+        if expired() or budget[0] <= 0:
+            state["budget_hit"] = state["budget_hit"] or budget[0] <= 0
+            return DELIVERED_SIGNAL_UNPROBED
+        budget[0] -= 1
+        return user_cover_probe(number)
 
     if claims_probe is None:
         def claims_probe(numbers):
@@ -9523,6 +9541,19 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
             if reason is not None:
                 belt_withheld.append(
                     (it, "LIVRAISON : " + reason
+                     + " Candidat remplace dans la meme urne."))
+                continue
+            # #16589/#21757 : la sonde de PR couvrante vient APRES le filtre
+            # de livraison -- un travail deja livre prime sur un travail en
+            # cours -- et seulement sur les candidats SURVIVANTS. Sans cet
+            # appel, le tapis sert une issue dont une PR ouverte porte deja
+            # le travail : la voie ponderee l'ecartait, le tapis non.
+            cover = open_cover_reason(
+                it, counted_cover_probe,
+                state.setdefault("cover_failures", []))
+            if cover is not None:
+                belt_withheld.append(
+                    (it, "EN COURS : " + cover
                      + " Candidat remplace dans la meme urne."))
                 continue
         elif it.get("klass") == "umbrella" and not args.include_delivered:
@@ -10572,6 +10603,7 @@ def main(argv: list[str] | None = None) -> int:
             belt_pick_with_replacements(belt_pool, belt_claims, args,
                                         belt_probe_budget(belt_check_window),
                                         delivered_probe=has_delivered_signal,
+                                        cover_probe=cover_probe,
                                         merged_pr_probe=merged_pr_signal,
                                         recent_marker_probe=(
                                             has_recent_delivery_marker),
@@ -10692,6 +10724,15 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"!! signal de livraison NON LU sur {numbers} : le tirage")
                 print("   est MAINTENU et ces candidats CONSERVES -- une lecture")
                 print("   qui n'a pas ABOUTI n'est PAS une absence de signal.")
+            belt_cover_failures = belt_pick_state.get("cover_failures") or []
+            if belt_cover_failures:
+                numbers = ", ".join(f"#{n}"
+                                    for n in sorted(set(belt_cover_failures)))
+                print(f"!! sonde de couverture NON LUE sur {numbers} : la")
+                print("   recherche de PR couvrante n'a pas abouti (reseau, 403,")
+                print("   payload illisible). Le tirage est MAINTENU et ces")
+                print("   candidats CONSERVES -- une lecture qui n'a pas ABOUTI")
+                print("   n'est PAS une absence de PR couvrante.")
             # #20265 : meme doctrine pour le claim, juxtaposee a la ligne
             # ci-dessus -- les deux lectures ratees se lisent ensemble.
             print_claim_unread_report(belt_pick_state.get("claim_unread"),
@@ -10816,6 +10857,8 @@ def main(argv: list[str] | None = None) -> int:
                     "recent_filtered": belt_pick_state.get(
                         "recent_filtered", 0),
                     "unread": sorted(set(belt_delivered_failures)),
+                    "cover_probes_failed": sorted(
+                        set(belt_pick_state.get("cover_failures") or [])),
                     "budget_hit": belt_probe_budget_hit[0],
                     # #21436 : le mur de temps est un plafond DISTINCT du
                     # plafond de sondes -- les confondre ferait lire « cout
