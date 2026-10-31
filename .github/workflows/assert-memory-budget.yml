@@ -111,3 +111,13 @@ jobs:
           python -m pytest scripts/tests/test_assert_memory_budget.py -v
         env:
           PYTHONIOENCODING: utf-8
+
+      # Harnais de la purge de sentinelle (#15163, #21527). Il etait HORS CI :
+      # ses cas ne tournaient qu'a la main, donc la regression du predicat
+      # (per-machine au lieu de per-checkout) n'aurait rougi nulle part. Le
+      # harnais est purement bash, lit un /proc FAKE (aucun etat reel touche)
+      # et rend en quelques secondes.
+      - name: Sentinel purge harness (per-checkout predicate)
+        run: |
+          set -uo pipefail
+          bash scripts/ci/docker/linux-runner/persist/test_sentinel_purge.sh

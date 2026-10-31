@@ -219,12 +219,16 @@ def _nb_ids(cells):
             {
                 "cell_type": "code",
                 "id": cid,
+                "source": src,
                 "execution_count": 1,
                 "outputs": ([] if text is None else
                             [{"output_type": "stream", "name": "stdout",
                               "text": text}]),
             }
-            for cid, text in cells
+            # (cid, text) ou (cid, text, source) : la source est l'identite
+            # stable d'une cellule a travers une re-serialisation (#23364).
+            for cid, text, src in (c if len(c) == 3 else (c[0], c[1], "")
+                                   for c in cells)
         ],
         "metadata": {
             "kernelspec": {"name": "python3", "display_name": "Python 3"},
@@ -260,12 +264,19 @@ def test_diff_signatures_added_empty_cell_not_reported():
 def test_diff_signatures_added_cell_with_float_still_reported():
     """Positive control: the fix must not blind the gate.
 
-    An added cell that really produces a float array is still a drift.
+    A cell RE-IDENTIFIED by a re-serialisation (same source, fresh id) whose
+    float output really changed is still a drift: the base signature exists,
+    so the comparison is meaningful. What #23364 removes is the added cell
+    with NO base counterpart, not this one.
+
+    `c-keep` keeps the id-aligned branch reachable: with no common id at all
+    the organ falls back to ordinal alignment by design, which is a
+    different contract than the one under test here.
     """
     assert _id_aligned_diffs(
-        [("c1", "[1.0, 1.0]\n")],
-        [("c1", "[1.0, 1.0]\n"), ("c2", "[2.0, 2.0]\n")],
-    ) == ["c2"]
+        [("c-keep", "ok\n", "keep()"), ("c1", "[1.0, 1.0]\n", "df.head()")],
+        [("c-keep", "ok\n", "keep()"), ("c1-b", "[2.0, 2.0]\n", "df.head()")],
+    ) == ["c1-b"]
 
 
 def test_diff_signatures_added_empty_cell_does_not_mask_a_real_drift():
@@ -277,12 +288,38 @@ def test_diff_signatures_added_empty_cell_does_not_mask_a_real_drift():
     ) == ["c1"]
 
 
-def test_diff_signatures_added_mixed_only_float_ones_reported():
-    """Among several added cells, only those carrying a signature report."""
+def test_diff_signatures_added_mixed_only_reidentified_ones_reported():
+    """Among several added cells, only a re-identified one can drift.
+
+    `injected` carries no signature (papermill's parameters cell), `c3` is
+    genuinely new content, `old-new` is the base cell `old` under a fresh id:
+    only the last one has a base signature to differ from.
+    """
     assert _id_aligned_diffs(
-        [("c1", "ok\n")],
-        [("c1", "ok\n"), ("injected", None), ("c3", "[3.0, 3.0]\n")],
-    ) == ["c3"]
+        [("c1", "ok\n", "a"), ("old", "[9.0, 9.0]\n", "df.tail()")],
+        [("c1", "ok\n", "a"), ("injected", None, "# Parameters"),
+         ("c3", "[3.0, 3.0]\n", "new_analysis()"),
+         ("old-new", "[8.0, 8.0]\n", "df.tail()")],
+    ) == ["old-new"]
+
+
+def test_diff_signatures_added_cell_printing_intervals_not_reported():
+    """#23364 founding instance, measured on PR #23273.
+
+    The PR ADDED two cells that print Wilson confidence intervals. Their
+    output text `[0.57,1.00]` matches FLOAT_ARRAY_RE exactly as a 2-element
+    ndarray would, so the added-cell branch reported them as
+    `signature_drift_cells` -- while `origin/main` had no cell with the same
+    source, i.e. there was no base value to drift from.
+
+    The guard must stay silent here: 8 -> 10 code cells, 0 id lost, both
+    flagged cells genuine additions.
+    """
+    assert _id_aligned_diffs(
+        [("c1", "[0.10, 0.20]\n", "report()")],
+        [("c1", "[0.10, 0.20]\n", "report()"),
+         ("wilson", "[0.57,1.00]\n[0.00,0.20]\n", "wilson_ci(wins, n)")],
+    ) == []
 
 
 
@@ -540,6 +577,63 @@ def test_canonical_transition_scoped_ml06_reverse_still_refused():
     b = {"language_version": "3.12.13", "kernelspec_name": "coursia-ml-training"}
     path = "MyIA.AI.Notebooks/ML/ML.Net/ML-06-ONNX-Python.ipynb"
     assert ckd.accepted_canonical_transition(a, b, nb_path=path) is False
+
+
+# --- #23292 : le carnet 02-ML-Cours reste a 3.10.19 et re-execute --------
+#
+# La direction 3.10 -> 3.13 n'existait dans aucune des deux tables pour le
+# kernelspec `coursia-ml-training` : mesure avant l'entree, sur le module
+# d'avant-fix, `accepted_canonical_transition` rendait False avec ET sans
+# chemin. Les tests ci-dessous portent la positive (2.9d, dont les sorties
+# sont re-executees dans la meme PR) et les controles negatifs que
+# l'acceptance de #23292 exige nominativement : un carnet hors serie
+# partageant le kernelspec reste rouge, la direction inverse le reste aussi,
+# et 2.9g -- dont la re-execution est due mais pas encore faite -- reste
+# rouge tant que la mesure n'existe pas.
+
+_02ML = "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/"
+_29D = _02ML + "2.9d-Features-Circulaires-Helice-Nombres.ipynb"
+_29G = _02ML + "2.9g-Geometrie-de-la-Verite.ipynb"
+
+
+def test_canonical_transition_scoped_02ml_310_to_313_accepted():
+    # Voie 1 de #23292 : la re-execution sous le venv canon
+    # `coursia-ml-training` (mesure a 3.13.15) est la convergence attendue
+    # du carnet de la serie encore estampille 3.10.19.
+    a = {"language_version": "3.10.19", "kernelspec_name": "coursia-ml-training"}
+    b = {"language_version": "3.13.15", "kernelspec_name": "coursia-ml-training"}
+    assert ckd.accepted_canonical_transition(a, b, nb_path=_29D) is True
+
+
+def test_canonical_transition_scoped_29g_still_refused():
+    # 2.9g partage la serie et la direction, mais pas la mesure : ses sorties
+    # ne sont pas re-executees. Une entree accorde la permission de bouger la
+    # version d'un carnet ; l'accorder avant la mesure laisserait passer un
+    # hand-edit sous couvert de convergence. Le carnet reste donc rouge, et
+    # ce test tombe le jour ou sa tranche est livree.
+    a = {"language_version": "3.10.19", "kernelspec_name": "coursia-ml-training"}
+    b = {"language_version": "3.13.15", "kernelspec_name": "coursia-ml-training"}
+    assert ckd.accepted_canonical_transition(a, b, nb_path=_29G) is False
+
+
+def test_canonical_transition_scoped_02ml_does_not_leak_outside_series():
+    # Controle negatif de l'acceptance : un carnet HORS 02-ML-Cours qui
+    # partage le kernelspec garde sa direction rouge (#22979 : 67 carnets
+    # concernes), et la meme transition sans chemin reste rouge aussi.
+    a = {"language_version": "3.10.19", "kernelspec_name": "coursia-ml-training"}
+    b = {"language_version": "3.13.15", "kernelspec_name": "coursia-ml-training"}
+    assert ckd.accepted_canonical_transition(
+        a, b, nb_path="MyIA.AI.Notebooks/GenAI/Texte/01-Prompt-Eng.ipynb"
+    ) is False
+    assert ckd.accepted_canonical_transition(a, b) is False
+
+
+def test_canonical_transition_scoped_02ml_reverse_still_refused():
+    # Le cliquet ne descend pas : 3.13 -> 3.10 reste rouge meme sur le
+    # chemin scope.
+    a = {"language_version": "3.13.15", "kernelspec_name": "coursia-ml-training"}
+    b = {"language_version": "3.10.19", "kernelspec_name": "coursia-ml-training"}
+    assert ckd.accepted_canonical_transition(a, b, nb_path=_29D) is False
 
 
 def test_canonical_transition_python_313_to_311_refused():

@@ -10,7 +10,7 @@ etait calcule puis ignore.
 Ces tests verrouillent les trois comportements du correctif, sans reseau :
 
 1. **sans budget** (``time_budget_s=None``), le priming est inchange : un seul
-   appel, toutes les issues de tete, aucune troncature rapportee ;
+   appel, toute la fenetre de service, aucune troncature rapportee ;
 2. **mur deja tombe** (``time_budget_s=0``), le priming n'emet AUCUN appel et
    la troncature est **rapportee** (``prime_truncated``), pas tu ;
 3. **budget confortable**, le priming avance par tranches mais va au bout :
@@ -137,8 +137,13 @@ def test_le_priming_ne_consomme_pas_tout_le_budget(monkeypatch):
     # Budget de 100 s : moitie = 50 s, soit 5 tranches de 8 = 40 issues.
     _picks, _withheld, state = _run(pool, tick_prime, 100.0)
 
-    assert state["prime_truncated"] == 70 - len(tick_prime.flat)
-    assert state["prime_truncated"] > 0, "le priming doit s'arreter avant 70"
+    # #22983 -- la fenetre du priming n'est plus « les 70 positions de
+    # tete » en dur : c'est la fenetre que la boucle de service va
+    # parcourir (`belt_service_window`), donc la troncature se compte sur
+    # CETTE fenetre. Le mur, lui, reste borne a la moitie du reste.
+    window = pig.belt_service_window(_args(), len(pool))
+    assert state["prime_truncated"] == window - len(tick_prime.flat)
+    assert state["prime_truncated"] > 0, "le priming doit s'arreter avant la fenetre"
     assert clock["t"] < 1000.0 + 100.0, "le priming ne mange pas le mur"
 
 
