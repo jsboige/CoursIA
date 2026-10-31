@@ -1,0 +1,23 @@
+probe gpt-4o-mini: OK -> OK
+sonde echec (modele inexistant): ServiceResponseException
+charge: distill_charge_fixture.md (4859 caracteres, fixture figee)
+[run 1] tours=2 verdict_final=REVISION wall=7.75s appels=5
+    sequence: producteur -> critique -> producteur -> critique -> arbitre
+    decision: DECISION: RESIDUEL tour 1: La cellule d'authentification est tronquée, ce qui empêche une distillati
+    appel[stream]: latence=2.35s jetons=n/d
+    appel[stream]: latence=1.03s jetons=n/d
+    appel[stream]: latence=2.07s jetons=n/d
+    appel[stream]: latence=0.89s jetons=n/d
+    appel[stream]: latence=1.16s jetons=n/d
+[run 2] tours=2 verdict_final=REVISION wall=10.58s appels=5
+    sequence: producteur -> critique -> producteur -> critique -> arbitre
+    decision: DECISION: RESIDUEL tour 1: La cellule d'authentification est tronquée, ce qui empêche une distillati
+    appel[stream]: latence=1.79s jetons=n/d
+    appel[stream]: latence=1.2s jetons=n/d
+    appel[stream]: latence=1.72s jetons=n/d
+    appel[stream]: latence=0.88s jetons=n/d
+    appel[stream]: latence=4.81s jetons=n/d
+DETERMINISME (tours, decision, tour d'arbitrage): OK (2, 'DECISION', '1:') vs (2, 'DECISION', '1:')
+LLM CALLS: 12/16
+LOC PILOT: 364 lignes
+PILOT OK sk=1.41.3 orchestration=GroupChat(manager_custom) charge=distillation
