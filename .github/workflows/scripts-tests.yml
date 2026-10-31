@@ -104,6 +104,17 @@ on:
       - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_narrator_routing.py'
       - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_customvoice_narrator.py'
       - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_qwen_tts_client.py'
+      # P2 segmentation (v4) : la deduplication des segments perdait le contenu
+      # des paragraphes multi-segments -- un paragraphe n'en conservait qu'un,
+      # et le controle de couverture ne signalait la perte que par un
+      # WARNING. Le test vit dans la suite v4 (v4/tests/) et son SUJET
+      # (v4/p2_segmentation.py) n'est pas sous scripts/** : sans ces entrees,
+      # une PR qui ne touche QUE p2_segmentation.py ne declenche aucun run CI
+      # et le test reste invisible jusqu'au prochain innocent qui touche
+      # scripts/** (#10416 pattern). Mirrored under pull_request: below.
+      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/p2_segmentation.py'
+      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p2_segment_dedup.py'
+
       # #22905 organe de narration partage : sans ces deux entrees, une PR qui ne
       # touche QUE v4/narration.py ne declenche aucun run (pattern #10416), et son
       # garde-fou n'etait collecte par aucune jambe. Mirrored under pull_request:
@@ -238,6 +249,10 @@ on:
       - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_narrator_routing.py'
       - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_customvoice_narrator.py'
       - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_qwen_tts_client.py'
+      # P2 segmentation (mirror of the push path above).
+      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/p2_segmentation.py'
+      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p2_segment_dedup.py'
+
       # #22905 organe de narration partage (mirror of the push path above).
       - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/narration.py'
       - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_narration.py'
@@ -466,6 +481,26 @@ jobs:
           # Origami). Without it the suite fails on ModuleNotFoundError
           # instead of exercising the service core.
           pip install z3-solver
+          # python-sat (PySAT): Argument_Analysis/argumentation_lib/sat_handler.py
+          # branche l'entailement propositionnel sur l'organe du depot
+          # (SymbolicAI/ext_tools/sat_solver.py), qui importe `pysat` et pose
+          # PYSAT_AVAILABLE. Sans le paquet, l'organe retombe puis
+          # `_solve_with_pysat` leve ModuleNotFoundError : les 12 tests de
+          # tests/test_sat_handler.py echouent au lieu d'exercer le moteur
+          # (mesure du rouge : run 41002293693, job 123889255619, 2026-10-30).
+          # Regle F : on installe la dependance, on ne la saute pas -- un
+          # skipif aurait rendu la suite verte en n'executant rien.
+          # Plancher : `python-sat>=1.8.dev13`, la forme deja utilisee par
+          # Search/requirements.txt. TOUTES les publications PyPI de
+          # python-sat sont des pre-releases : un specifier qui nomme une
+          # pre-release (ici 1.8.dev13) est sans ambiguite pour pip, alors
+          # qu'une borne stable (>=0.1.8, forme de GameTheory/requirements.txt)
+          # n'en nomme aucune et reste ambigue. Le solveur
+          # 'cadical195' (defaut de sat_solver.solve_sat) est present dans
+          # les roues resolues, verifie sur 1.8.dev19 (cp311/manylinux) et
+          # 1.9.dev17.
+          pip install "python-sat>=1.8.dev13"
+          python -c "import pysat; from importlib.metadata import version; print('python-sat resolu:', version('python-sat'))"
           # jupyter_kernel_gateway: son module s'importe `kernel_gateway` et
           # `run_gateway.py` le sonde au preflight (#22439). Sans le paquet,
           # test_run_gateway.py signalerait une dependance manquante au lieu
@@ -668,6 +703,7 @@ jobs:
             MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_narrator_routing.py \
             MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_customvoice_narrator.py \
             MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_qwen_tts_client.py \
+            MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p2_segment_dedup.py \
             MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_narration.py \
             scripts/secrets/tests \
             scripts/quantconnect/tests \
@@ -819,8 +855,10 @@ jobs:
         # (148) et GradeBook (15) : une collection cassee (import manquant au
         # module level, crash de collection) rend 0 test collecte au lieu d'un
         # compte -- c'est un probleme d'installation, PAS une baisse de
-        # couverture. La suite est stdlib (effets de bord mockes), donc aucune
-        # dep a ajouter au pip install du job.
+        # couverture. La collecte de cette suite ne demande aucune dep (les
+        # imports lourds sont locaux aux fonctions) ; l'EXECUTION, elle, exige
+        # python-sat depuis #23449 (tests/test_sat_handler.py), installe plus
+        # haut dans ce job.
         if: always()
         env:
           ARGUMENT_ANALYSIS_TESTS_FLOOR: 174
