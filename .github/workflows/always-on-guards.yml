@@ -1360,3 +1360,12 @@ jobs:
               ;;
           esac
           echo "Tous les organes always-on sont verts (ou skips d'evenement)${HS_REGIME:+ ; hot-subset : ${HS_REGIME}}."
+  # EFFETS DE BORD PR (#22209, tranche 1b, voie A) : le job
+  # `always-on-commenters` vit dans SON PROPRE fichier
+  # (always-on-commenters.yml). Deux raisons mesurees : (1) un workflow
+  # YAML invalide est rejete EN ENTIER par GitHub, et colocaliser
+  # l'emetteur de commentaires avec le umbrella des 16 organes a tue le
+  # gate de contenu avec lui (PR #22244 : contexte runner dans un
+  # env: de niveau job, fichier rejete, 6 runs a zero jobs) ; (2) la
+  # famille always-on est un job par fichier
+  # (test_always_on_body_split.py::test_job_names_are_distinct).
