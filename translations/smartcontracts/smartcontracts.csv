@@ -22734,7 +22734,7 @@ MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-7b-ERC20-Lea
 - **Le lac `erc20_lean`** (`MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean/`) — la version Lean 4 + Mathlib, le « moteur formel » du présent notebook.
 - **Le notebook compagnon [`Lean-23`](../../Lean/Lean-23-ERC20-Invariant-Companion.ipynb)** — qui interroge directement le lac Lean pour ses `#check` réels.
 - **EPIC #4980** — convention i18n Lean (sibling pair FR/EN dans `ERC20.lean` / `ERC20_en.lean`).
-- Notebooks associés : `[SC-08-DeFi-Primitives-Python](./SC-08-DeFi-Primitives-Python.ipynb)`, `[SC-11 (LLM-Assisted)](./SC-11-LLM-Assisted-Python.ipynb)`, `[Lean-22 (Galois) >](../../Lean/Lean-22-Galois-Probleme-Inverse-M23.ipynb)`.",,,,,,,,be29bc2a1b5dfc30,,,,,,,,,,,,,,,
+- Notebooks associés : `[SC-08-DeFi-Primitives-Python](./SC-08-DeFi-Primitives-Python.ipynb)`, `[SC-11 (LLM-Assisted)](./SC-11-LLM-Assisted-Python.ipynb)`, `[Lean-22 (Galois) >](../../Lean/GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb)`.",,,,,,,,be29bc2a1b5dfc30,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SmartContracts/04-Privacy-Cryptography/SC-15-Zero-Knowledge-Proofs-Python.ipynb,f1a2b3c4,markdown,fr,6882a1e5a71039a2,"### Exercice : Implementer la transformation de Fiat-Shamir
 
 La classe `SchnorrZKP` ci-dessus implemente la transformation de Fiat-Shamir pour
