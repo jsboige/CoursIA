@@ -691,6 +691,20 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   s'execute. Rollback = variable a `false` ou supprimee, sans toucher les
     #   fichiers.
     "creation-provenance-advisory.yml",
+    # 2026-10-31 (c2740, lane myia-ai-01:CoursIA) : rouge de `main` apres le
+    #   squash-merge de #23063. Le cliquet a ete valide sur une base qui ne
+    #   contenait pas encore `sudoku-tests.yml` (82734d24b) ni
+    #   `twin-index-collision-gate.yml` (38141f743), arrives sur main entre
+    #   l'ecriture et le merge ; `scripts-tests.yml:qc-mcp-lite-tests` est
+    #   arrive apres. Les trois jobs etaient nus sur `ubuntu-latest`
+    #   (HOSTED_PR_JOB_UNEXCEPTED). Conversion en forme hybride, meme
+    #   expression que ci-dessus ; chaque job porte deja son `timeout-minutes`
+    #   (10, 15, 15). `scripts-tests.yml` figure deja plus haut dans
+    #   l'allowlist. La variable vaut `true` depuis le 2026-10-31T04:09Z : le
+    #   routage change reellement (jambe locale quand le controleur deborde).
+    #   Rollback = variable a `false`, sans toucher les fichiers.
+    "sudoku-tests.yml",
+    "twin-index-collision-gate.yml",
 
     # #23053 (meme PR, meme lane, 2026-10-31) : `cycle-time-guard.yml` est
     #   lui aussi un workflow NEUF pour le cliquet -- son job `cycle_time`
@@ -732,6 +746,23 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "dotnet-ArgumentAnalysis.yml",
     "dotnet-OrphanApps.yml",
     "dotnet-Shared.Tests.yml",
+    # 2026-10-31 (#23359, lane myia-po-2028:CoursIA-2) : meme famille que
+    #   `gametheory-tests.yml` ci-dessus -- une suite de tests dediee, cablee
+    #   par PR, qui n'avait aucune jambe self-hosted. Le workflow NEUF
+    #   `geometry-tests.yml` est arrive apres que le cliquet (#23053) a ete
+    #   ecrit : son job etait nu sur `ubuntu-latest` (violation
+    #   `HOSTED_PR_JOB_UNEXCEPTED`). Il est converti dans la meme PR en
+    #   forme hybride de debordement (meme expression que
+    #   `gametheory-tests.yml`, meme `if:` anti-fork conserve, meme
+    #   `timeout-minutes: 10`) et entre ici dans l'allowlist -- une forme
+    #   hybride dans un workflow NON allowliste est refusee par construction
+    #   (`WORKFLOW_NOT_ALLOWED`, cf. le test
+    #   `test_hybrid_runs_on_in_non_allowlisted_workflow_is_rejected`).
+    #   La variable vaut `false` au 2026-10-31 : le routage est donc INCHANGE
+    #   (100 % heberge) -- la conversion retire la violation sans changer ou
+    #   le job s'execute. Rollback = variable a `false` ou supprimee, sans
+    #   toucher les fichiers.
+    "geometry-tests.yml",
     "gametheory-tests.yml",
     "genai-helpers-tests.yml",
     # 2026-10-27 (#22937 vague 2, lane myia-ai-01:CoursIA-2) : meme forme
@@ -768,6 +799,23 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #     seul `validate-pr` est portable (Quarto par tarball curl).
     "quarto-render-list-freshness.yml",
     "enrich-quality-gate.yml",
+    # 2026-10-31 (#23666, lane myia-ai-01:CoursIA-2) : `submodule-drift.yml`
+    #   est un workflow NEUF pour le cliquet -- il est arrive sur main par
+    #   #23314 le 2026-10-31 a 09:33:12Z, soit 16 min APRES que #23670
+    #   (08:17:40Z)
+    #   ait corrige le cliquet : il n'a pas pu connaitre la regle. Son job
+    #   `drift` etait nu sur `ubuntu-latest` (violation
+    #   `HOSTED_PR_JOB_UNEXCEPTED`), avec un trigger `pull_request` (paths
+    #   filtre sur `.gitmodules` et les cinq sous-modules).
+    #   Conversion en forme hybride de debordement, meme expression que les
+    #   workflows convertis le meme jour (`cycle-time-guard.yml`,
+    #   `creation-provenance-advisory.yml`) : la garde anti-fork vit DANS
+    #   l'expression `runs-on`, donc une PR de fork reste hebergee et
+    #   n'atteint jamais le parc local. `timeout-minutes: 10` ajoute au job.
+    #   La variable vaut `true` depuis le 2026-10-31T04:09Z : le routage
+    #   change reellement quand la variable est activee.
+    #   Rollback = variable a `false`, sans toucher les fichiers.
+    "submodule-drift.yml",
 }
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",

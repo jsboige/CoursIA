@@ -31,7 +31,9 @@ lake build   # depuis ce dossier (lean-toolchain v4.33.0)
 
 ## CI
 
-Workflow `lean-formal-groups.yml` (dispatcher fin vers les workflows
-réutilisables, même forme que `hecke_lean`) : build (baseline `sorry = 0`,
-mode `real`) et gate `proof-integrity` (`fail-on-sorry: true`,
-`target-modules: "*"`, axiomes interdits `native_decide.*`/`sorryAx`).
+Ce lake est servi par la matrice `lean-ci-matrix.yml` (entrée
+`formal_groups` de `scripts/lean/ci_lakes.json`, #13751) : build (baseline
+`sorry = 0`, mode `real`) et gate `proof-integrity` (`fail-on-sorry: true`,
+`target-modules: "*"`, axiomes interdits `native_decide.*`/`sorryAx`). Le
+dispatcher dédié `lean-formal-groups.yml` a été retiré dans la même
+migration — deux déclencheurs simultanés produiraient un double build.
