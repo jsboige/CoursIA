@@ -11,6 +11,14 @@ openai>=1.0                   # OpenAI API client
 # Java bridge (for Tweety integration)
 jpype1>=1.4
 
+# SAT industriel (argumentation_lib/sat_handler.py -> SymbolicAI/ext_tools/
+# sat_solver.py). Sans PySAT, l'entailement propositionnel leve
+# ModuleNotFoundError au lieu de router vers l'organe du depot (#23449).
+# Plancher `>=1.8.dev13` et non `>=0.1.8` : toutes les publications PyPI de
+# python-sat sont des pre-releases, et pip refuse un specifier qui n'en nomme
+# aucune (mesure du 2026-10-30). Meme forme que Search/requirements.txt.
+python-sat>=1.8.dev13
+
 # Utilities
 python-dotenv>=1.0            # .env file loading
 nest-asyncio>=1.5             # Async in Jupyter
