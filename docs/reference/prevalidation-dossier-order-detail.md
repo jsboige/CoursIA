@@ -2,7 +2,7 @@
 
 Détail déporté de la puce « `update-branch` tue AUSSI le dossier de prévalidation » de [`git-workflow.md`](../../.claude/rules/git-workflow.md). Le sujet : **le dossier de prévalidation atteste une tête, pas une PR** — et l'ordre des gestes qui en découle.
 
-**La règle fait foi** pour l'ordre et le gel ; ce document ne les rejoue pas, il donne le **pourquoi** (le mécanisme vérifié à la source, la boucle réelle, et les deux prémisses de l'issue fondatrice qui étaient fausses).
+L'ordre en 4 temps et le gel vivent en **§5** (déplacés depuis la règle par la tranche l.8 de #11554, qui en garde l'essence en une ligne) ; ce document donne aussi le **pourquoi** (le mécanisme vérifié à la source, la boucle réelle, et les deux prémisses de l'issue fondatrice qui étaient fausses).
 
 ## 1. La mesure fondatrice — 17 candidates sur 17
 
@@ -83,7 +83,16 @@ Ce qui manquait n'est donc pas le **fait**, c'est **l'ordre** — et le fait qu'
 
 ## 5. Pourquoi cet ordre — et pas un autre
 
-L'ordre en 4 temps lui-même est porté par la règle (puce « `update-branch` tue AUSSI le dossier de prévalidation ») ; il n'est **pas** recopié ici, pour la raison du §4.
+L'ordre en 4 temps a été porté par la règle jusqu'à la tranche l.8 de #11554 ; il vit ici depuis, la règle en garde l'essence en une ligne (« le dossier vient APRÈS la stabilisation de la branche, jamais avant, et la branche est gelée entre dossier et merge »).
+
+**L'ordre qui sort de la boucle — le dossier vient APRÈS la stabilisation de la branche, jamais avant :**
+
+1. la lane `update-branch` si elle doit récupérer `main` ;
+2. on laisse les checks se ré-agréger à la nouvelle tête, puis **on rejoue** le job si besoin — personne ne re-pousse. Le plancher DWELL n'a **pas** été ré-armé par un `update-branch` sans conflit ; il ne l'est que par une **résolution manuelle de conflit**, cas où l'attente de 120 min redevient réelle ;
+3. **alors** l'adjoint écrit le dossier, à la tête exacte ;
+4. le coordinateur merge **immédiatement**, et **la branche est gelée entre 3 et 4**.
+
+Le gel est la pièce qui manquait : un dossier a besoin d'une **branche silencieuse**, sinon le travail de prévalidation est détruit par le travail de réparation, indéfiniment.
 
 Ce qui mérite d'être explicité, c'est **pourquoi le gel en est la pièce centrale** : c'est la seule qui ne se déduit pas du mécanisme. Un dossier a besoin d'une **branche silencieuse** — sans gel, le travail de prévalidation est détruit par le travail de réparation, et le gel ne peut pas se déduire de « le dossier atteste une tête », il faut le **décider**.
 
@@ -91,7 +100,7 @@ Le blocage est structurel : **chacun fait exactement ce que son rôle prescrit**
 
 ## Voir aussi
 
-- [`.claude/rules/git-workflow.md`](../../.claude/rules/git-workflow.md) — la règle : les deux moitiés du mécanisme `update-branch`, l'ordre, le gel
+- [`.claude/rules/git-workflow.md`](../../.claude/rules/git-workflow.md) — la règle : les deux moitiés du mécanisme `update-branch`, l'essence de l'ordre et du gel en une ligne
 - [`scripts/check_adjoint_prevalidation.py`](../../scripts/check_adjoint_prevalidation.py) — le gate, et ses trois codes de sortie
 - [`.claude/skills/coordinate/SKILL.md`](../../.claude/skills/coordinate/SKILL.md) — la passe de merge, la péremption par tête/surface
 - [#16962 / #17286](https://github.com/jsboige/CoursIA/issues/16962) — le prédicat DWELL réel, et pourquoi la règle l'avait périmé

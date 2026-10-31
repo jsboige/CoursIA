@@ -78,6 +78,14 @@ Une règle du harnais est **datée de sa rédaction, pas de sa lecture**. Quand 
 
 Le worktree de test créé sur `fix/14142-qc40-followup-state` (PR #14403 mergée par squash 2026-09-02) a été retiré — c'est le **contrôle positif** manquant à tout prédicat d'ascendance : un squash-merge efface l'ascendance, mais `gh pr list --state all --search` retrouve la PR par le nom de branche.
 
+## 6. Le scope avale le mot-clé — la mesure sur 500 commits (#23348)
+
+Détail déporté de la puce « Safe reference syntax » de la règle. Le mandat `type(scope): subject` a une place invite pour le numéro d'issue — `type(scope,#N): subject` — et cette forme ne ferme rien : `(` et le scope s'assoient entre le mot-clé de fermeture et le numéro.
+
+Mesuré sur `origin/main` sur 500 commits : **299 numéros d'issues distincts cités de cette façon, 186 encore ouverts** ; parmi les **162** cités par un verbe de correction, **95 encore ouverts** — des issues dont le fix est déjà sur `main`, qui gonflent le tapis de travail déjà fait. GitHub ne ferme que si le mot-clé **précède immédiatement** la référence ; tout ce qui s'intercale est du texte.
+
+L'organe de triage : `python scripts/ci/list_scope_swallowed_issues.py` (`--json`, `--all-forms`) nomme les paires (issue ouverte, commit de correction). Il ne ferme rien, ne commente rien : triage et fermeture reviennent au coordinateur (G.9).
+
 ## Voir aussi
 
 - [`.claude/rules/git-workflow.md`](../../.claude/rules/git-workflow.md) — la règle
