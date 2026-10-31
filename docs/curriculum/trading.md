@@ -20,12 +20,12 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 315 |
+| Notebooks | 313 |
 | PRODUCTION | 0 |
-| BETA | 297 |
-| ALPHA | 18 |
+| BETA | 294 |
+| ALPHA | 19 |
 
-## ML/DataScienceWithAgents (110 notebooks)
+## ML/DataScienceWithAgents (108 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -91,53 +91,52 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 60 | [3.6e — Génération conditionnelle et *classifier-free…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.6e-Modeles-Generatifs-Conditionnels-from-scratch.ipynb) | BETA | Non |
 | 61 | [3.7 — Distillation maître-élève : transférer le savoir,…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.7-Distillation-Maitre-Eleve.ipynb) | BETA | Non |
 | 62 | [Représentations contrastives modernes — du skip-gram…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.8-Representations-Contrastives.ipynb) | BETA | Oui |
-| 63 | [3.9 — Quantization from scratch : du flottant réduit à…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9-Compression-Quantization-FP.ipynb) | BETA | Oui |
-| 65 | [3.9b — Compression par élagage : le réseau amputé qui…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9b-Compression-Pruning-from-scratch.ipynb) | BETA | Non |
-| 66 | [3.9c — Pruning from scratch sur CPU : le compagnon…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9c-Pruning-From-Scratch.ipynb) | BETA | Non |
-| 67 | [3.9e — Quantification SOTA : la même INT8, par…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb) | BETA | Non |
-| 68 | [3.9f — Élagage SOTA : les mêmes masques, par…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/_archive/3.9f-Compression-Pruning-SOTA.ipynb) | BETA | Non |
-| 69 | [3.9g — Comparatif compression : from scratch (Bloc A)…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9g-Compression-Comparatif-A-vs-B.ipynb) | BETA | Non |
-| 70 | [4.1 — Le neurone convolutif from scratch : kernel…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.1-Conv-NumPy-Torch-Allclose.ipynb) | BETA | Oui |
-| 71 | [4.2 — ConvNet profonde : pourquoi les résiduelles](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.2-ConvNet-Profonde-Residuelles.ipynb) | BETA | Non |
-| 72 | [Le gradient qui s'évanouit, le gradient qui survit :…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.2b-Lean-GradientFlow-Vanishing.ipynb) | BETA | Oui |
-| 73 | [4.3 — Transfer learning : réutiliser un ResNet18…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.3-TransferLearning-ResNet.ipynb) | BETA | Non |
-| 74 | [4.4 — Détection d'objets from scratch : la grille…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.4-Detection-Anchor-From-Scratch.ipynb) | BETA | Non |
-| 75 | [4.4b — Détection d'objets anchor-free : le renversement…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.4b-Detection-AnchorFree-From-Scratch.ipynb) | BETA | Non |
-| 76 | [4.4c — Détection d'objets from scratch : la Focal Loss](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.4c-Detection-FocalLoss-From-Scratch.ipynb) | BETA | Non |
-| 77 | [4.5 — Détection SOTA : fine-tuner torchvision plutôt…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.5-Detection-SOTA-Torchvision.ipynb) | BETA | Non |
-| 78 | [4.5b — Détection SOTA : YOLO sous ultralytics, la…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.5b-Detection-SOTA-Ultralytics.ipynb) | BETA | Non |
-| 79 | [4.5c — Bench yolov5nu sur le terrain du 4.4 (chunk 2/3,…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.5c-YOLOv5-Bench-Ultralytics.ipynb) | BETA | Non |
-| 80 | [4.5d — Détection SOTA : un second wrapper, LibreYOLO,…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.5d-Detection-SOTA-LibreYOLO.ipynb) | BETA | Non |
-| 81 | [4.5c — Détection SOTA : YOLO sous ultralytics, scènes…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.6-Detection-Ultralytics-Difficult-Scenes.ipynb) | BETA | Non |
-| 82 | [4.6b — Détection SOTA : le renversement — le camouflage…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.6b-Detection-Adversarial-Camouflage.ipynb) | BETA | Non |
-| 83 | [4.6c — Du patch collé au vêtement porté : le dazzle…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.6c-Detection-Dazzle-Garment-StyleTransfer.ipynb) | BETA | Non |
-| 84 | [WS-00a — Ondelettes 1D *from scratch* : analyse…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch.ipynb) | BETA | Oui |
-| 85 | [WS-00b — Ondelettes 2D *from scratch* : bandes…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-00b-Ondelettes-2D-from-scratch.ipynb) | BETA | Oui |
-| 86 | [WS-00c — Scattering 2D *from scratch* : le module rend…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-00c-Scattering-from-scratch.ipynb) | BETA | Oui |
-| 87 | [WS-01 — Débruitage d'images : du seuillage *from…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-01-Denoising-SOTA.ipynb) | BETA | Oui |
-| 88 | [WS-02 — Scattering SOTA : kymatio contre le moteur…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-02-Scattering-SOTA.ipynb) | BETA | Non |
-| 89 | [WS-03 — Synthèse : représentation construite vs…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-03-Synthese-Scattering-vs-ResNet.ipynb) | BETA | Oui |
-| 90 | [Lab 1 - Les Bases de la Data Science en Python](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb) | BETA | Oui |
-| 91 | [Lab 2 - Analyser un Appel d'Offre avec l'IA](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2-Document-Agents/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb) | BETA | Non |
-| 92 | [Lab 3 - Pré-qualifier des Candidats avec l'IA](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2-Document-Agents/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb) | BETA | Non |
-| 93 | [Lab 4 - Le Nettoyage de Données avec Pandas](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb) | BETA | Oui |
-| 94 | [Lab 5 - De la Visualisation au Machine Learning](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb) | BETA | Oui |
-| 95 | [Lab 6 - Anatomie de votre premier Agent d'IA](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb) | BETA | Non |
-| 96 | [Lab 7 - Votre premier Agent Analyste de Données](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb) | BETA | Non |
-| 97 | [Lab 8: Introduction au Framework ADK et Multi-Provider](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/Day4-Foundations/Lab8-ADK-Introduction.ipynb) | BETA | Non |
-| 98 | [Lab 9: Premier Agent ADK pour Data Science](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/Day4-Foundations/Lab9-First-ADK-Agent.ipynb) | BETA | Oui |
-| 99 | [Lab 10: Data File Analyzer (DS-STAR Component)](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/Day5-DS-Star/Lab10-File-Analyzer.ipynb) | BETA | Oui |
-| 100 | [Lab 11: Planner-Coder-Verifier Loop (DS-STAR Core)](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/Day5-DS-Star/Lab11-Planner-Coder-Loop.ipynb) | ALPHA | Oui |
-| 101 | [Lab 12: DS-STAR Workshop - Analyse Multi-Fichiers](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/Day5-DS-Star/Lab12-DS-Star-Workshop.ipynb) | BETA | Oui |
-| 102 | [Lab 12b : Désignation séquentielle — le contrat C4,…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/Day5-DS-Star/Lab12b-Sequential-Orchestration.ipynb) | BETA | Non |
-| 103 | [Lab 12c : Handoff entre agents — le contrat C5, le…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/Day5-DS-Star/Lab12c-Agent-Handoff.ipynb) | BETA | Non |
-| 104 | [Lab 12d : Traçabilité de la consommation — le contrat…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/Day5-DS-Star/Lab12d-Token-Usage.ipynb) | BETA | Non |
-| 105 | [Lab 12e : Persistance d'état de session - une…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/Day5-DS-Star/Lab12e-Session-Persistence.ipynb) | BETA | Non |
-| 106 | [Lab 13: Web Search pour Modèles SOTA (MLE-STAR…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/Day6-MLE-Star/Lab13-Web-Search-SOTA.ipynb) | BETA | Oui |
-| 107 | [Lab 14: Ablation et Raffinement Ciblé (MLE-STAR…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/Day6-MLE-Star/Lab14-Ablation-Refinement.ipynb) | ALPHA | Oui |
-| 108 | [Lab 15: Kaggle Challenge avec MLE-STAR](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/Day6-MLE-Star/Lab15-Kaggle-Challenge.ipynb) | BETA | Oui |
-| 109 | [Lab 16: Data Science Agent avec GCP BigQuery](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/Day7-Production/Lab16-Data-Science-Agent.ipynb) | ALPHA | Oui |
-| 110 | [Lab 17: Projet Final - Pipeline DS-STAR Complet](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/Day7-Production/Lab17-Final-Project.ipynb) | ALPHA | Oui |
+| 63 | [3.9 — Quantization from scratch : du flottant réduit à…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9-Compression-Quantization-FP.ipynb) | BETA | Non |
+| 64 | [3.9b — Compression par élagage : le réseau amputé qui…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9b-Compression-Pruning-from-scratch.ipynb) | BETA | Non |
+| 65 | [3.9c — Pruning from scratch sur CPU : le compagnon…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9c-Pruning-From-Scratch.ipynb) | BETA | Non |
+| 66 | [3.9e — Compression SOTA : quantization et élagage par…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb) | BETA | Non |
+| 67 | [3.9g — Comparatif compression : from scratch (Bloc A)…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9g-Compression-Comparatif-A-vs-B.ipynb) | BETA | Non |
+| 68 | [4.1 — Le neurone convolutif from scratch : kernel…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.1-Conv-NumPy-Torch-Allclose.ipynb) | BETA | Oui |
+| 69 | [4.2 — ConvNet profonde : pourquoi les résiduelles](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.2-ConvNet-Profonde-Residuelles.ipynb) | BETA | Non |
+| 70 | [Le gradient qui s'évanouit, le gradient qui survit :…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.2b-Lean-GradientFlow-Vanishing.ipynb) | BETA | Oui |
+| 71 | [4.3 — Transfer learning : réutiliser un ResNet18…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.3-TransferLearning-ResNet.ipynb) | BETA | Non |
+| 72 | [4.4 — Détection d'objets from scratch : la grille…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.4-Detection-Anchor-From-Scratch.ipynb) | BETA | Non |
+| 73 | [4.4b — Détection d'objets anchor-free : le renversement…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.4b-Detection-AnchorFree-From-Scratch.ipynb) | BETA | Non |
+| 74 | [4.4c — Détection d'objets from scratch : la Focal Loss](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.4c-Detection-FocalLoss-From-Scratch.ipynb) | BETA | Non |
+| 75 | [4.5 — Détection SOTA : fine-tuner torchvision plutôt…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.5-Detection-SOTA-Torchvision.ipynb) | BETA | Non |
+| 76 | [4.5b — Détection SOTA : YOLO sous ultralytics, la…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.5b-Detection-SOTA-Ultralytics.ipynb) | BETA | Non |
+| 77 | [4.5c — Bench yolov5nu sur le terrain du 4.4 (chunk 2/3,…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.5c-YOLOv5-Bench-Ultralytics.ipynb) | BETA | Non |
+| 78 | [4.5d — Détection SOTA : un second wrapper, LibreYOLO,…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.5d-Detection-SOTA-LibreYOLO.ipynb) | BETA | Non |
+| 79 | [4.6 — Détection SOTA : YOLO sous ultralytics, scènes…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.6-Detection-Ultralytics-Difficult-Scenes.ipynb) | BETA | Non |
+| 80 | [4.6b — Détection SOTA : le renversement — le camouflage…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.6b-Detection-Adversarial-Camouflage.ipynb) | BETA | Non |
+| 81 | [4.6c — Du patch collé au vêtement porté : le dazzle…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.6c-Detection-Dazzle-Garment-StyleTransfer.ipynb) | BETA | Non |
+| 82 | [WS-00a — Ondelettes 1D *from scratch* : analyse…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch.ipynb) | BETA | Oui |
+| 83 | [WS-00b — Ondelettes 2D *from scratch* : bandes…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-00b-Ondelettes-2D-from-scratch.ipynb) | BETA | Oui |
+| 84 | [WS-00c — Scattering 2D *from scratch* : le module rend…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-00c-Scattering-from-scratch.ipynb) | BETA | Oui |
+| 85 | [WS-01 — Débruitage d'images : du seuillage *from…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-01-Denoising-SOTA.ipynb) | BETA | Oui |
+| 86 | [WS-02 — Scattering SOTA : kymatio contre le moteur…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-02-Scattering-SOTA.ipynb) | BETA | Non |
+| 87 | [WS-03 — Synthèse : représentation construite vs…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-03-Synthese-Scattering-vs-ResNet.ipynb) | BETA | Oui |
+| 88 | [Lab 1 - Les Bases de la Data Science en Python](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb) | BETA | Oui |
+| 89 | [Lab 2 - Analyser un Appel d'Offre avec l'IA](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2-Document-Agents/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb) | BETA | Non |
+| 90 | [Lab 3 - Pré-qualifier des Candidats avec l'IA](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2-Document-Agents/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb) | BETA | Non |
+| 91 | [Lab 4 - Le Nettoyage de Données avec Pandas](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb) | BETA | Oui |
+| 92 | [Lab 5 - De la Visualisation au Machine Learning](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb) | BETA | Oui |
+| 93 | [Lab 6 - Anatomie de votre premier Agent d'IA](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb) | BETA | Non |
+| 94 | [Lab 7 - Votre premier Agent Analyste de Données](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb) | BETA | Non |
+| 95 | [Lab 8: Introduction au Framework ADK et Multi-Provider](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/Day4-Foundations/Lab8-ADK-Introduction.ipynb) | BETA | Non |
+| 96 | [Lab 9: Premier Agent ADK pour Data Science](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/Day4-Foundations/Lab9-First-ADK-Agent.ipynb) | BETA | Oui |
+| 97 | [Lab 10: Data File Analyzer (DS-STAR Component)](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/Day5-DS-Star/Lab10-File-Analyzer.ipynb) | BETA | Oui |
+| 98 | [Lab 11: Planner-Coder-Verifier Loop (DS-STAR Core)](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/Day5-DS-Star/Lab11-Planner-Coder-Loop.ipynb) | ALPHA | Oui |
+| 99 | [Lab 12: DS-STAR Workshop - Analyse Multi-Fichiers](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/Day5-DS-Star/Lab12-DS-Star-Workshop.ipynb) | BETA | Oui |
+| 100 | [Lab 12b : Désignation séquentielle — le contrat C4,…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/Day5-DS-Star/Lab12b-Sequential-Orchestration.ipynb) | BETA | Non |
+| 101 | [Lab 12c : Handoff entre agents — le contrat C5, le…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/Day5-DS-Star/Lab12c-Agent-Handoff.ipynb) | BETA | Non |
+| 102 | [Lab 12d : Traçabilité de la consommation — le contrat…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/Day5-DS-Star/Lab12d-Token-Usage.ipynb) | BETA | Non |
+| 103 | [Lab 12e : Persistance d'état de session - une…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/Day5-DS-Star/Lab12e-Session-Persistence.ipynb) | BETA | Non |
+| 104 | [Lab 13: Web Search pour Modèles SOTA (MLE-STAR…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/Day6-MLE-Star/Lab13-Web-Search-SOTA.ipynb) | BETA | Oui |
+| 105 | [Lab 14: Ablation et Raffinement Ciblé (MLE-STAR…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/Day6-MLE-Star/Lab14-Ablation-Refinement.ipynb) | ALPHA | Oui |
+| 106 | [Lab 15: Kaggle Challenge avec MLE-STAR](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/Day6-MLE-Star/Lab15-Kaggle-Challenge.ipynb) | BETA | Oui |
+| 107 | [Lab 16: Data Science Agent avec GCP BigQuery](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/Day7-Production/Lab16-Data-Science-Agent.ipynb) | ALPHA | Oui |
+| 108 | [Lab 17: Projet Final - Pipeline DS-STAR Complet](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/Day7-Production/Lab17-Final-Project.ipynb) | ALPHA | Oui |
 
 ## ML/ML.Net (24 notebooks)
 
@@ -168,29 +167,29 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 23 | [ML-09c : le Matrix Profile multidimensionnel, une…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-09c-MatrixProfile-Multidim-Python.ipynb) | BETA | Oui |
 | 24 | [TP : Prevision des ventes d'assurance](../../MyIA.AI.Notebooks/ML/ML.Net/TP-prevision-ventes.ipynb) | BETA | Oui |
 
-## Probas (2 notebooks)
+## Probas (3 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
-| 1 | [Probas-KLS-Concentration : gap spectral, constante de…](../../MyIA.AI.Notebooks/Probas/Probas-KLS-Concentration.ipynb) | BETA | Oui |
-| 2 | [Le MCMC, mesuré — Metropolis–Hastings et Gibbs…](../../MyIA.AI.Notebooks/Probas/Probas-MCMC-Echantillonnage-Metropolis-Python.ipynb) | BETA | Oui |
+| 1 | [Le théorème central limite, mesuré](../../MyIA.AI.Notebooks/Probas/Probas-CLT-Theoreme-Central-Limite.ipynb) | BETA | Oui |
+| 2 | [Probas-KLS-Concentration : gap spectral, constante de…](../../MyIA.AI.Notebooks/Probas/Probas-KLS-Concentration.ipynb) | BETA | Oui |
+| 3 | [Le MCMC, mesuré — Metropolis–Hastings et Gibbs…](../../MyIA.AI.Notebooks/Probas/Probas-MCMC-Echantillonnage-Metropolis-Python.ipynb) | BETA | Oui |
 
-## Probas/Applications (12 notebooks)
+## Probas/Applications (11 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
-| 1 | [L'intégrale triangle scalaire à une boucle — trois…](../../MyIA.AI.Notebooks/Probas/Applications/Integrales/Integrales-01-Triangle-Scalaire-Python.ipynb) | BETA | Oui |
-| 2 | [Le diagramme sunrise à masses égales : la sortie des…](../../MyIA.AI.Notebooks/Probas/Applications/Integrales/Integrales-02-Sunrise-Masses-Egales-Python.ipynb) | BETA | Oui |
-| 3 | [Marches aléatoires : le retour — de Pólya (1921) au «…](../../MyIA.AI.Notebooks/Probas/Applications/Marches/Marches-01-Retour-Polya-Watson-Python.ipynb) | BETA | Oui |
-| 4 | [Percolation supercritique : le géant au-dessus du seuil](../../MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-01-Supercritique-Python.ipynb) | ALPHA | Oui |
-| 5 | [Percolation-02-Lean — le noyau fini de percolation,…](../../MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-02-Lean.ipynb) | BETA | Oui |
-| 6 | [Percolation au point critique : exposants finis et loi…](../../MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-03-Critique-Python.ipynb) | BETA | Oui |
-| 7 | [Percolation 03b — extensions L=128 et L=256](../../MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-03b-Critique-L128-L256.ipynb) | BETA | Oui |
-| 8 | [Percolation 03c — extension à L = 512](../../MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-03c-Critique-L512.ipynb) | BETA | Oui |
-| 9 | [Percolation-04-Sharpness-Lean — la sharpness finie,…](../../MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-04-Sharpness-Lean.ipynb) | BETA | Oui |
-| 10 | [Percolation 04 — Sharpness](../../MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-04-Sharpness-Python.ipynb) | BETA | Oui |
-| 11 | [Le Framework Rational Speech Act (RSA)](../../MyIA.AI.Notebooks/Probas/Applications/Pyro_RSA_Hyperbole.ipynb) | BETA | Oui |
-| 12 | [Quotients, fibres et recollement : ce qui survit à la…](../../MyIA.AI.Notebooks/Probas/Applications/Quotients-Fibres-Recollement-Python.ipynb) | BETA | Oui |
+| 1 | [Marches aléatoires : le retour — de Pólya (1921) au «…](../../MyIA.AI.Notebooks/Probas/Applications/Marches/Marches-01-Retour-Polya-Watson-Python.ipynb) | BETA | Oui |
+| 2 | [Percolation supercritique : le géant au-dessus du seuil](../../MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-01-Supercritique-Python.ipynb) | ALPHA | Oui |
+| 3 | [Percolation-02-Lean — le noyau fini de percolation,…](../../MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-02-Lean.ipynb) | BETA | Oui |
+| 4 | [Percolation au point critique : exposants finis et loi…](../../MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-03-Critique-Python.ipynb) | BETA | Oui |
+| 5 | [Percolation 03b — extensions L=128 et L=256](../../MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-03b-Critique-L128-L256.ipynb) | BETA | Oui |
+| 6 | [Percolation 03c — extension à L = 512](../../MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-03c-Critique-L512.ipynb) | BETA | Oui |
+| 7 | [Percolation-04-Sharpness-Lean — la sharpness finie,…](../../MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-04-Sharpness-Lean.ipynb) | BETA | Oui |
+| 8 | [Percolation 04 — Sharpness](../../MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-04-Sharpness-Python.ipynb) | BETA | Oui |
+| 9 | [Percolation 05 — La geometrie de l'amas critique :…](../../MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-05-Dimension-Fractale-Effondrement-Python.ipynb) | BETA | Oui |
+| 10 | [Le Framework Rational Speech Act (RSA)](../../MyIA.AI.Notebooks/Probas/Applications/Pyro_RSA_Hyperbole.ipynb) | BETA | Oui |
+| 11 | [Quotients, fibres et recollement : ce qui survit à la…](../../MyIA.AI.Notebooks/Probas/Applications/Quotients-Fibres-Recollement-Python.ipynb) | BETA | Oui |
 
 ## Probas/DecisionTheory (37 notebooks)
 
@@ -212,7 +211,7 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 14 | [Causal-Fairness — Décomposer la discrimination :…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/CausalBridges-08-Causal-Fairness.ipynb) | BETA | Oui |
 | 15 | [CausalBridges-09 — Emuler un essai ciblé : confounding…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/CausalBridges-09-Hernan-TargetTrialEmulation-Python.ipynb) | ALPHA | Oui |
 | 16 | [CausalBridges-10 — Automated Social Science : des…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/CausalBridges-10-Automated-Social-Science.ipynb) | BETA | Non |
-| 17 | [CausalBridges-10b — Effets de traitement individuels :…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/CausalBridges-10b-ML-CATE-CFRNet-TARNet-Python.ipynb) | BETA | Oui |
+| 17 | [CausalBridges-10b — Effets de traitement individuels :…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/CausalBridges-10b-ML-CATE-CFRNet-TARNet-Python.ipynb) | ALPHA | Oui |
 | 18 | [DecInfer-01-Utility-Foundations : Axiomes et Fondements](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-01-Utility-Foundations.ipynb) | BETA | Oui |
 | 19 | [DecInfer-02-Théorème de représentation de von…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-02-Lean-ExpectedUtility.ipynb) | BETA | Oui |
 | 20 | [DecInfer-02b-Lean-Coherence : Dutch Book et bornes de…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-02b-Lean-Coherence.ipynb) | BETA | Oui |
@@ -247,7 +246,7 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 7 | [Infer-05-Causal-Inference : Inférence Causale et…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-05-Causal-Inference.ipynb) | BETA | Oui |
 | 8 | [Infer-07-Skills-IRT : Evaluation de Competences et…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-07-Skills-IRT.ipynb) | BETA | Oui |
 | 9 | [Infer-08-TrueSkill : Système de Classement et…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-08-TrueSkill.ipynb) | BETA | Oui |
-| 10 | [Infer-8b-TrueSkill-Formules-Fermees : la mise a jour…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-08b-TrueSkill-Formules-Fermees-CSharp.ipynb) | BETA | Oui |
+| 10 | [Infer-08b-TrueSkill-Formules-Fermees : la mise a jour…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-08b-TrueSkill-Formules-Fermees-CSharp.ipynb) | BETA | Oui |
 | 11 | [Infer-09-Classification : Classification Bayesienne](../../MyIA.AI.Notebooks/Probas/Infer/Infer-09-Classification.ipynb) | BETA | Oui |
 | 12 | [Infer-10-Model-Sélection : Sélection et Comparaison de…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb) | BETA | Oui |
 | 13 | [Infer-11-Topic-Models : Latent Dirichlet Allocation…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-11-Topic-Models.ipynb) | BETA | Oui |
