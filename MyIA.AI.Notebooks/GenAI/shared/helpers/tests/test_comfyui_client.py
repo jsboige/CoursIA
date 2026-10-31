@@ -203,7 +203,7 @@ class TestMakeRequest:
         assert req.data is None
 
     def test_http_error_raises_exception_with_body(self):
-        """HTTPError leve une Exception avec code + body dans le message."""
+        """HTTPError leve une HTTPStatusError avec code + body dans le message."""
         # HTTPError en Python 3.13 a la signature (url, code, msg, hdrs, fp).
         from urllib.error import HTTPError
         fake_http_err = HTTPError(
@@ -216,8 +216,12 @@ class TestMakeRequest:
         with mock.patch.object(comfyui_client.request, "urlopen") as mock_urlopen:
             mock_urlopen.side_effect = fake_http_err
             client = comfyui_client.ComfyUIClient("http://x")
-            with pytest.raises(Exception, match="HTTP 500"):
+            with pytest.raises(
+                comfyui_client.HTTPStatusError, match="HTTP 500"
+            ) as exc_info:
                 client._make_request("/foo")
+        assert exc_info.value.code == 500
+        assert exc_info.value.body == "comfyui crashed"
 
     def test_url_error_raises_exception(self):
         """URLError leve une Exception avec reason dans le message."""

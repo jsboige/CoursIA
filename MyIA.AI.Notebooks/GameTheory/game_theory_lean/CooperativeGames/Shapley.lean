@@ -13,7 +13,7 @@
   caractérisation axiomatique et l'unicité ; **ancrages à confirmer** sur
   l'ouvrage, le PDF n'étant pas acquis sur cette machine).
 
-  Convention i18n (cycle 39 ratifiée, voir `docs/lean/i18n-inventory-cycle-38.md`) :
+  Convention i18n (cycle 39 ratifiée, voir `../../../../docs/transients/2026-07-04-lean-i18n-inventory-cycle-38.md`) :
   en-têtes, sections, docstrings et commentaires intra-preuve en français ;
   le code Lean tactique (noms de symboles, références Mathlib, énoncés de lemmes,
   preuves) reste en anglais pour préserver la compatibilité Mathlib.

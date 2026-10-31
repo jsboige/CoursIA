@@ -556,6 +556,16 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   organ-duplication-advisory.yml et docs-transients-guard.yml.
     #   Rollback = revert de la PR (l'entree disparait de l'allowlist).
     "live-read-freshness.yml",
+    "pr-gate-rerun.yml",
+    "pr-gate-sweep-health-advisory.yml",
+    "stale-guard-red-sweep.yml",
+    "adjacency-stale-sweep.yml",
+    "concurrency-conj-guard.yml",
+    "pr-path-collision-advisory.yml",
+    "repeated-prose-advisory.yml",
+    "repo-size-advisory.yml",
+    "testpaths-coverage-guard.yml",
+    "notebook-outputs-required.yml",
 }
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",

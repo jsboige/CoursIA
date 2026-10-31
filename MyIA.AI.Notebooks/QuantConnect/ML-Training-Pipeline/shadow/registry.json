@@ -87,6 +87,16 @@
       "params": {},
       "fee_model": "modèle de frais par défaut de Lean pour ce courtier",
       "fingerprint": "29901378fae71c8c"
+    },
+    {
+      "id": "btc-voltarget-base",
+      "kind": "qc",
+      "sha": "4d26b3a6129b1245095e45c1f448a59c34a51b36",
+      "frozen_on": "2026-10-17",
+      "entrypoint": "MyIA.AI.Notebooks/QuantConnect/projects/BTC-VolTarget-QC:37950433",
+      "params": {},
+      "fee_model": "modèle de frais par défaut de Lean pour ce courtier (Bitfinex crypto, IBKR equity)",
+      "fingerprint": "653384a26fcaf8d3"
     }
   ]
 }
