@@ -82,7 +82,7 @@ Agents are auto-discovered by Claude Code. Each has YAML frontmatter with model,
 | `organ-first-implementation` | nommer l'organe natif d'une autre série avant de réimplémenter (5 questions dans le body) |
 | `submodule-maintenance` | les cinq sous-modules : mesure de dérive du gitlink, états de gate, droits `gh`, ordre du bump |
 
-**Deux classes, et la distinction change ce qu'un agent a en contexte.** Les règles **path-gated** ne se chargent que si la session touche les fichiers visés : `audit-cross-source-distillation`, `catalog-pr-hygiene`, `cell-interpretation-ordering`, `codeql-suppressions-inertes`, `consecutive-code-cells`, `exercise-example-labeling`, `genai-config`, `lean-merge-discipline`, `notebook-accretion-numbering`, `notebook-conventions`, `readme-french-first`, `results-artifact-policy`, `three-exercises-per-notebook`, `wsl-kernels`. Toutes les autres sont auto-chargées à chaque session ; la liste de cette phrase se recalcule (`grep -l '^paths:' .claude/rules/*.md`), elle ne se recopie pas d'une session à l'autre.
+**Deux classes, et la distinction change ce qu'un agent a en contexte.** Les règles **path-gated** (celles qui portent un frontmatter `paths:`) ne se chargent que si la session touche les fichiers visés ; toutes les autres sont **auto-chargées** à chaque session. **La liste des path-gated ne se recopie pas ici** : elle se recalcule, et une copie en dur diverge au premier ajout/rétraction d'un frontmatter — `grep -l '^paths:' .claude/rules/*.md` (mesurée **14** au 2026-10-29) est la source, pas cette phrase.
 
 ## Model Selection Strategy
 

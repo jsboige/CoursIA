@@ -19,17 +19,15 @@ SYMBOLIC_AI_DIR = ARGUMENT_ANALYSIS_DIR.parent
 def get_tweety_jar_dir() -> Optional[pathlib.Path]:
     """Find the directory containing Tweety JAR files.
 
-    Search order:
-    1. Argument_Analysis/libs/ (local)
-    2. Tweety/libs/ (sibling series)
+    Only the sibling series directory holds JARs. The former first candidate,
+    ``Argument_Analysis/libs/``, was removed with the #23109 arbitration: it
+    carried the duplicated native libraries and no JAR at all (measured at base
+    ``7e1b735ab``: six ``native/*`` entries, zero ``*.jar``), so its ``*.jar``
+    guard never matched -- a pointer that looked alive and resolved to nothing.
     """
-    candidates = [
-        ARGUMENT_ANALYSIS_DIR / "libs",
-        SYMBOLIC_AI_DIR / "Tweety" / "libs",
-    ]
-    for d in candidates:
-        if d.exists() and any(d.glob("*.jar")):
-            return d
+    d = SYMBOLIC_AI_DIR / "Tweety" / "libs"
+    if d.exists() and any(d.glob("*.jar")):
+        return d
     return None
 
 
@@ -44,7 +42,41 @@ def get_data_dir() -> pathlib.Path:
 
 
 def get_ext_tools_dir() -> pathlib.Path:
-    """Return the external tools directory path."""
+    """Return the shared external tools directory path (canonical).
+
+    The shared sibling-series directory ``SymbolicAI/ext_tools/`` is the
+    canonical location since the #23109 arbitration: the EProver tree that
+    the series-local copy held was byte-identical to the shared one and has
+    been removed from the tree, so the local directory now only carries the
+    tools that are NOT shared (the SPASS binary, absent from the shared
+    directory).
+
+    Resolution order:
+    1. SymbolicAI/ext_tools/ (shared, canonical)
+    2. Argument_Analysis/ext_tools/ (local, fallback for a checkout that
+       does not carry the shared directory)
+
+    Returns the local path when neither exists, so callers keep a writable
+    target and the failure stays where it was.
+    """
+    candidates = [
+        SYMBOLIC_AI_DIR / "ext_tools",
+        ARGUMENT_ANALYSIS_DIR / "ext_tools",
+    ]
+    for d in candidates:
+        if d.exists():
+            return d
+    return ARGUMENT_ANALYSIS_DIR / "ext_tools"
+
+
+def get_local_ext_tools_dir() -> pathlib.Path:
+    """Return the series-local external tools directory path.
+
+    Distinct from :func:`get_ext_tools_dir`, which now points at the shared
+    directory. The local directory keeps the tools that are not shared with
+    the other SymbolicAI series (the SPASS binary is not present in
+    ``SymbolicAI/ext_tools/``).
+    """
     return ARGUMENT_ANALYSIS_DIR / "ext_tools"
 
 
