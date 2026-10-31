@@ -115,6 +115,14 @@ Convention locale : suffixe kernel en **position médiane** (`SW-N-CSharp-X` / `
 
 Hors périmètre nominal, même constat : `Probas/Applications/Percolation/Percolation-04-Sharpness-Python.ipynb` + `Percolation-04-Sharpness-Lean.ipynb` — paire même-numéro-même-titre sans entrée (grep NONE).
 
+> **État mesuré au 2026-10-31** (myia-po-2028:CoursIA, #12933 tranche P2ter ; la liste ci-dessus est conservée telle que mesurée par P2 au 2026-10-28) :
+>
+> - **Trou 1 (GT-06f) — consommé par la consolidation #20316** : `GameTheory-06f-Bounded-Agents-{Python,Lean}.ipynb` ont été déplacés par #22177 (T3'a, descente du tier 06 dans `Dynamics/`) ; plus aucun fichier à ce chemin à `main` (`git log --diff-filter=D` mesuré). La paire relocalisée est Python ↔ Lean, hors schéma `python:`/`csharp:` du registre.
+> - **Trou 3 (GT-16f) — consommé par la consolidation #20316** : les deux carnets `GameTheory-16f-*.ipynb` ont été supprimés par #22742 (T5a, sous-série Coalitions) ; le contenu Munkres vit désormais dans `Coalitions/Coalitions-04-Munkres-Affectation-Python.ipynb` + le lake `assignment_lean/Assignment/KuhnMunkres.lean`.
+> - **Trou 2 (GT-13b↔13c) — enregistré à cette date** : entrée `twin_pairs.d/gametheory-13b-safe-subgame-solving.yaml` (+ audit file-per-audit), `parity_level: semantic`, divergence d'accrétion b/c portée par `numbering_exception` documentée — l'alignement des lettres reste une décision de mapping (§6).
+> - **Trou 4 (App-17b/18b-Python) — vivant**, tranche suivante sous claim po-2028.
+> - **Percolation-04 — hors schéma du registre** (paire Python ↔ Lean), le constat P2 demeure.
+
 ## 4. Extensions unilatérales (célibataires) — grep registre NONE sauf mention
 
 - **Search/Part1** : `Search-02c-QuikGraph`, `03e-AStar-Optimality`, `03f-Reparer-Localement-Sous-Garantie-Python`, `05b-NaturalEvolutionStrategies`, `09b-SpuriousMinima`, `09c-CombinatorialDiscrepancy`, `09d-BeckFiala-Lean-Python`, `09e-Komlos-Lean`, `09f-ConvexOptimisation-Python`, `11b-Metaheuristiques-Deep` (+Part2/3/4), `11c`, `11d`, `12a-Composer-Regards`, `13a-Traverser-Murs-Certifies`.
