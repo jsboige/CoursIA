@@ -1,0 +1,9 @@
+- name: "App-17b VRP Logistics"
+  family: Search/Part3-Cas-pratiques
+  python: MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-17b-VRP-Logistics-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-17b-VRP-Logistics-CSharp.ipynb
+  parity_level: semantic
+  known_differences:
+    - "[2026-10-31 myia-po-2028:CoursIA #12933 tranche P2ter] Enregistrement initial (membre Python du trio Part3 nomme par l'inventaire P2 #23119 section 3 ; l'entree app-17-vrp-logistics n'enregistrait que la paire base OR-Tools, gap reconnu en prose dans son known_differences). Audit structurel firsthand au main 2026-10-31 : 24 md / 14 code (Python) vs 22 md / 14 code (CSharp), plans miroir (## 1 Modelisation -- VRPInstance, instance canonique declaree identique au jumeau Python cote CSharp). Titres explicites des deux cotes : metaheuristiques from-scratch."
+    - "Mesure des imports (2026-10-31) : les deux cotes importent AUSSI le moteur OR-Tools (Python `ortools.constraint_solver`, CSharp `Google.OrTools.ConstraintSolver`) a cote des tranches from-scratch -- symetrie de machinerie constatee, pont non re-audite ici (le detail des resultats OR-Tools de cette paire releve de l'entree app-17-vrp-logistics)."
+    - "Socle pedagogique commun : VRP capacite -- metaheuristiques from-scratch (Nearest-Neighbor, Cheapest-Insertion, 2-opt, recuit simule) sur l'instance canonique (15 clients, capacite 60), borne ceil(demande/capacite), comparaison des qualites de solutions."
