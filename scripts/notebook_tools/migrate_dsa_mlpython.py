@@ -44,7 +44,7 @@ DIR_MAP = {
     "02-ML-Cours": "02-ML-Cours",
     "03-Deep-Learning": "03-Deep-Learning",
     "04-Vision": "04-Vision",
-    "04b-Wavelet-Scattering": "05-Wavelet-Scattering",
+    "05-Wavelet-Scattering": "05-Wavelet-Scattering",
     "Track1-LangChain": "06-Agents-LangChain",
     "Track2-GoogleADK": "07-Agents-GoogleADK",
 }
@@ -155,12 +155,12 @@ NOTEBOOK_MAP: dict[str, str] = {
     "04-Vision/4.6-Detection-Ultralytics-Difficult-Scenes.ipynb": "04-Vision/Vision-06-Detection-Ultralytics-Difficult-Scenes-Python.ipynb",
     "04-Vision/4.6b-Detection-Adversarial-Camouflage.ipynb": "04-Vision/Vision-06b-Detection-Adversarial-Camouflage-Python.ipynb",
     "04-Vision/4.6c-Detection-Dazzle-Garment-StyleTransfer.ipynb": "04-Vision/Vision-06c-Detection-Dazzle-Garment-StyleTransfer-Python.ipynb",
-    "04b-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch.ipynb": "05-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch-Python.ipynb",
-    "04b-Wavelet-Scattering/WS-00b-Ondelettes-2D-from-scratch.ipynb": "05-Wavelet-Scattering/WS-00b-Ondelettes-2D-from-scratch-Python.ipynb",
-    "04b-Wavelet-Scattering/WS-00c-Scattering-from-scratch.ipynb": "05-Wavelet-Scattering/WS-00c-Scattering-from-scratch-Python.ipynb",
-    "04b-Wavelet-Scattering/WS-01-Denoising-SOTA.ipynb": "05-Wavelet-Scattering/WS-01-Denoising-SOTA-Python.ipynb",
-    "04b-Wavelet-Scattering/WS-02-Scattering-SOTA.ipynb": "05-Wavelet-Scattering/WS-02-Scattering-SOTA-Python.ipynb",
-    "04b-Wavelet-Scattering/WS-03-Synthese-Scattering-vs-ResNet.ipynb": "05-Wavelet-Scattering/WS-03-Synthese-Scattering-vs-ResNet-Python.ipynb",
+    "05-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch.ipynb": "05-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch-Python.ipynb",
+    "05-Wavelet-Scattering/WS-00b-Ondelettes-2D-from-scratch.ipynb": "05-Wavelet-Scattering/WS-00b-Ondelettes-2D-from-scratch-Python.ipynb",
+    "05-Wavelet-Scattering/WS-00c-Scattering-from-scratch.ipynb": "05-Wavelet-Scattering/WS-00c-Scattering-from-scratch-Python.ipynb",
+    "05-Wavelet-Scattering/WS-01-Denoising-SOTA.ipynb": "05-Wavelet-Scattering/WS-01-Denoising-SOTA-Python.ipynb",
+    "05-Wavelet-Scattering/WS-02-Scattering-SOTA.ipynb": "05-Wavelet-Scattering/WS-02-Scattering-SOTA-Python.ipynb",
+    "05-Wavelet-Scattering/WS-03-Synthese-Scattering-vs-ResNet.ipynb": "05-Wavelet-Scattering/WS-03-Synthese-Scattering-vs-ResNet-Python.ipynb",
 }
 
 # Histogramme des noyaux du hub, etendu par T2-a a deux noyaux mesures sur main

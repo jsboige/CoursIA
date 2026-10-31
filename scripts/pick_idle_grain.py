@@ -9342,7 +9342,8 @@ def belt_service_window(args, pool_size: int) -> int:
 
 
 def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
-                                delivered_probe=None, claims_probe=None,
+                                delivered_probe=None, cover_probe=None,
+                                claims_probe=None,
                                 merged_pr_probe=None,
                                 recent_marker_probe=None,
                                 snapshot_prime=None,
@@ -9397,7 +9398,8 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     illisibles], "budget_hit": bool, "claim_unread": [numeros servis sur une
     lecture de claim en echec], "container_unread": [numeros servis sur une
     lecture du DERNIER COMMENTAIRE en echec], "marker_unread": [numeros servis
-    sur une lecture du marqueur RECENT en echec], "time_budget_hit": bool}``.
+    sur une lecture du marqueur RECENT en echec], "cover_failures": [numeros
+    dont la sonde de couverture a echoue], "time_budget_hit": bool}``.
     ``claim_unread``
     est le pendant du ``failures`` de livraison : deux lectures qui n'ont pas
     ABOUTI, servies quand meme (fail-OPEN) et rapportees a la lane (#20265).
@@ -9412,6 +9414,13 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     rapport (mesure #17528, 2026-10-26 : le picker a signale `403` sur deux
     candidats du meme run, et l'echec de la SONDE n'etait nomme nulle part).
 
+    ``prime_truncated`` (#21436, 2026-10-30) compte les issues de tete que le
+    mur de temps a fait **ecarter du priming** : l'instantane n'est pas un
+    gate, la boucle reprend avec le reste de son budget, mais la troncature
+    est rapportee au lieu d'etre tu (meme doctrine que ``claim_unread``). La
+    cle est absente quand le priming est alle au bout -- un ``0`` et une cle
+    manquante ne disent pas la meme chose.
+
     ``time_budget_s`` (#21436) est un mur de temps sur la BOUCLE : passe
     l'echeance, plus aucune sonde n'est emise (claims hors fenetre, filtre
     recent, sondes de livraison), les candidats restants sont servis en
@@ -9423,7 +9432,7 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     budget = [int(probe_budget)]
     state = {"failures": [], "budget_hit": False, "recent_filtered": 0,
              "claim_unread": [], "container_unread": [], "marker_unread": [],
-             "time_budget_hit": False}
+             "cover_failures": [], "time_budget_hit": False}
     # #22630 -- l'instantane local est rafraichi UNE FOIS pour les candidats
     # de la fenetre : toutes les sondes de commentaires (filtre recent et
     # sonde pleine de livraison) le lisent ensuite sans requete GitHub par
@@ -9437,6 +9446,29 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     # etait donc TOUJOURS fausse en production -- le cache n'etait jamais
     # amorce, alors que les sondes le consultaient. C'est l'injection du
     # prime, et elle seule, qui decide du reseau.
+    # #21436 — `probe_budget` borne le NOMBRE de sondes de livraison. Il ne
+    # borne ni leur DUREE, ni les deux surfaces que la boucle paie par
+    # candidat hors fenetre : `claims_probe` (un `check_claims` unitaire) et
+    # `recent_marker_probe` (un commentaire). Mesure du 22/10 sur ce siege :
+    # 8 verdicts de claim coutent 47 s a froid, donc `max_iters` = 70 laisse
+    # ~410 s de travail avant la premiere sonde de livraison -- c'est le
+    # `pick_with_replacements start` ou les taps de po-2023, po-2025 et de
+    # cette lane se sont tous arretes (#21436, cinq mesures independantes).
+    # Mur de temps pose ICI, sur la boucle entiere : l'echeance est absolue
+    # (`monotonic`), donc le caller peut lui passer le RESTE d'un budget de
+    # run, pas une duree par appel.
+    #
+    # #21436 (2026-10-30) — le priming s'executait AVANT l'installation de
+    # `deadline`, donc sans jamais lire le mur, alors qu'il est la PREMIERE
+    # depense reseau de la boucle : un `gh api` par issue de tete, en serie
+    # (`_belt_snapshot_prime` -> `refresh` -> `ensure_issue_payloads`).
+    # Mesure sur ce siege, quatre executions consecutives : la phase
+    # `pick_with_replacements start` s'ouvre a t=35 s en annonçant « 205 s
+    # restants », puis plus aucune ligne, run tue a 240 s sans avoir servi un
+    # seul grain. Le budget etait calcule puis ignore.
+    deadline = None
+    if time_budget_s is not None:
+        deadline = time.monotonic() + max(0.0, float(time_budget_s))
     prime = (belt_snapshot_prime_inert if snapshot_prime is None
              else snapshot_prime)
     # #22983 -- la fenetre de priming est la fenetre que la boucle va
@@ -9452,26 +9484,37 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     # `main`, n'a pas de phase reseau : elle fait la sienne).
     wanted = [int(it.get("number", 0))
               for it in (belt_pool or [])[:max_iters] if it.get("number")]
-    if not set(wanted).issubset(globals().get("_BELT_PRIMED_WINDOW") or set()):
+    # #21436 (2026-10-30) — Deux bornes, et le comportement d'un appel SANS
+    # budget est inchange : (1) le priming ne consomme que la MOITIE du
+    # reste -- l'instantane est un confort dont la boucle doit pouvoir se
+    # passer (`_belt_snapshot_prime` le dit deja) ; un priming qui mange tout
+    # le mur reproduirait le defaut sous une autre forme, en rapportant
+    # l'echeance au lieu de servir ; (2) il avance par tranches et relit
+    # l'echeance entre deux, donc il s'arrete au mur et non au bout de la
+    # fenetre -- et le nombre d'issues laissees de cote est rapporte, jamais
+    # tu.
+    PRIME_SLICE = 8
+    already_primed = set(wanted).issubset(
+        globals().get("_BELT_PRIMED_WINDOW") or set())
+    if already_primed:
+        # #22983 -- `main` a deja fait la phase reseau pour cette fenetre
+        # (une seule passe, pas deux) : la boucle n'en refait pas une.
+        pass
+    elif deadline is None:
         prime(REPO, wanted)
+    else:
+        prime_deadline = time.monotonic() + max(
+            0.0, (deadline - time.monotonic()) / 2.0)
+        for start in range(0, len(wanted), PRIME_SLICE):
+            if time.monotonic() >= prime_deadline:
+                state["prime_truncated"] = len(wanted) - start
+                break
+            prime(REPO, wanted[start:start + PRIME_SLICE])
     # Le pool et l'enumeration des PRs ouvertes ont ete lus AVANT cette
     # fonction : on persiste ici, sinon leurs entrees de la passe
     # disparaitraient au retour (le flush de `red_backlog` est deja passe).
     _flush_repair_snapshot()
-    # #21436 — `probe_budget` borne le NOMBRE de sondes de livraison. Il ne
-    # borne ni leur DUREE, ni les deux surfaces que la boucle paie par
-    # candidat hors fenetre : `claims_probe` (un `check_claims` unitaire) et
-    # `recent_marker_probe` (un commentaire). Mesure du 22/10 sur ce siege :
-    # 8 verdicts de claim coutent 47 s a froid, donc `max_iters` = 70 laisse
-    # ~410 s de travail avant la premiere sonde de livraison -- c'est le
-    # `pick_with_replacements start` ou les taps de po-2023, po-2025 et de
-    # cette lane se sont tous arretes (#21436, cinq mesures independantes).
-    # Mur de temps pose ICI, sur la boucle entiere : l'echeance est absolue
-    # (`monotonic`), donc le caller peut lui passer le RESTE d'un budget de
-    # run, pas une duree par appel.
-    deadline = None
-    if time_budget_s is not None:
-        deadline = time.monotonic() + max(0.0, float(time_budget_s))
+
     # #21436 -- publie l'echeance pour les sondes LENTES (`check_claims`,
     # `has_recent_delivery_marker`) : elles lisent `_clamp_timeout` pour ne
     # jamais courir au-dela du mur. Restauree en sortie de boucle (try/finally
@@ -9496,6 +9539,7 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     # sa sonde doit voir le plafond s'appliquer aussi -- sinon la borne de
     # cout ne serait testable qu'avec le reseau reel.
     user_probe = delivered_probe or delivered_probe_inert
+    user_cover_probe = cover_probe or open_cover_inert
     user_merged_pr_probe = merged_pr_probe or merged_pr_probe_inert
     user_recent_marker_probe = (recent_marker_probe
                                 or recent_marker_probe_inert)
@@ -9520,6 +9564,21 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
             return DELIVERED_SIGNAL_UNPROBED
         budget[0] -= 1
         return user_merged_pr_probe(number, lane_name)
+
+    def counted_cover_probe(number):
+        # #16589 etait cable sur la seule voie PONDEREE : le tapis rendait
+        # donc des candidats dont une PR ouverte porte deja le travail, et
+        # la lane recevait un `ACTION REQUISE` sur une issue deja servie
+        # (mesure du 2026-10-27 : `open_cover_signal_complete(22374)` rend
+        # 'PR #22515' sur 389 PRs ouvertes enumerees, et le tapis a quand
+        # meme servi #22374). Meme doctrine que la voie ponderee : la sonde
+        # de couverture partage le MEME budget que la sonde de livraison,
+        # avec le meme fail-OPEN dit a la lane.
+        if expired() or budget[0] <= 0:
+            state["budget_hit"] = state["budget_hit"] or budget[0] <= 0
+            return DELIVERED_SIGNAL_UNPROBED
+        budget[0] -= 1
+        return user_cover_probe(number)
 
     if claims_probe is None:
         def claims_probe(numbers):
@@ -9696,6 +9755,19 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
             if reason is not None:
                 belt_withheld.append(
                     (it, "LIVRAISON : " + reason
+                     + " Candidat remplace dans la meme urne."))
+                continue
+            # #16589/#21757 : la sonde de PR couvrante vient APRES le filtre
+            # de livraison -- un travail deja livre prime sur un travail en
+            # cours -- et seulement sur les candidats SURVIVANTS. Sans cet
+            # appel, le tapis sert une issue dont une PR ouverte porte deja
+            # le travail : la voie ponderee l'ecartait, le tapis non.
+            cover = open_cover_reason(
+                it, counted_cover_probe,
+                state.setdefault("cover_failures", []))
+            if cover is not None:
+                belt_withheld.append(
+                    (it, "EN COURS : " + cover
                      + " Candidat remplace dans la meme urne."))
                 continue
         elif it.get("klass") == "umbrella" and not args.include_delivered:
@@ -10672,13 +10744,17 @@ def main(argv: list[str] | None = None) -> int:
             # n'emet plus aucun appel GitHub. La boucle refait l'appel par
             # elle-meme (`prime`), mais il ne coute alors qu'un balayage : le
             # second passage trouve les entrees fraiches.
-            _belt_snapshot_prime(REPO, [
+            primed_window = [
                 int(it.get("number", 0)) for it in belt_pool
-                if it.get("number")][:belt_service_window(args, len(belt_pool))])
+                if it.get("number")][:belt_service_window(
+                    args, len(belt_pool))]
+            _belt_snapshot_prime(REPO, primed_window)
             global _BELT_PRIMED_WINDOW
-            _BELT_PRIMED_WINDOW = {
-                int(it.get("number", 0)) for it in belt_pool
-                if it.get("number")}
+            # #22983 -- la fenetre PRIMEE, et rien de plus : un numero hors
+            # fenetre n'a pas ete lu, il ne doit pas se dire servi. La garde
+            # de la boucle (`wanted` ⊆ `_BELT_PRIMED_WINDOW`) repose sur la
+            # fenetre de service, donc la declaration doit etre exacte.
+            _BELT_PRIMED_WINDOW = set(primed_window)
             # #22983 -- les stamps viennent de l'instantane quand il sert
             # la cible : c'est la meme reduction que la voie reseau
             # (`_claim_stamp_from_comments`), sans appel GitHub. Seuls les
@@ -10779,6 +10855,7 @@ def main(argv: list[str] | None = None) -> int:
             belt_pick_with_replacements(belt_pool, belt_claims, args,
                                         belt_probe_budget(belt_check_window),
                                         delivered_probe=has_delivered_signal,
+                                        cover_probe=cover_probe,
                                         merged_pr_probe=merged_pr_signal,
                                         recent_marker_probe=(
                                             has_recent_delivery_marker),
@@ -10899,6 +10976,15 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"!! signal de livraison NON LU sur {numbers} : le tirage")
                 print("   est MAINTENU et ces candidats CONSERVES -- une lecture")
                 print("   qui n'a pas ABOUTI n'est PAS une absence de signal.")
+            belt_cover_failures = belt_pick_state.get("cover_failures") or []
+            if belt_cover_failures:
+                numbers = ", ".join(f"#{n}"
+                                    for n in sorted(set(belt_cover_failures)))
+                print(f"!! sonde de couverture NON LUE sur {numbers} : la")
+                print("   recherche de PR couvrante n'a pas abouti (reseau, 403,")
+                print("   payload illisible). Le tirage est MAINTENU et ces")
+                print("   candidats CONSERVES -- une lecture qui n'a pas ABOUTI")
+                print("   n'est PAS une absence de PR couvrante.")
             # #20265 : meme doctrine pour le claim, juxtaposee a la ligne
             # ci-dessus -- les deux lectures ratees se lisent ensemble.
             print_claim_unread_report(belt_pick_state.get("claim_unread"),
@@ -11023,6 +11109,8 @@ def main(argv: list[str] | None = None) -> int:
                     "recent_filtered": belt_pick_state.get(
                         "recent_filtered", 0),
                     "unread": sorted(set(belt_delivered_failures)),
+                    "cover_probes_failed": sorted(
+                        set(belt_pick_state.get("cover_failures") or [])),
                     "budget_hit": belt_probe_budget_hit[0],
                     # #21436 : le mur de temps est un plafond DISTINCT du
                     # plafond de sondes -- les confondre ferait lire « cout

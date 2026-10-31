@@ -1635,13 +1635,124 @@ def _resolve_delivered_v2(
     return "close"
 
 
-def _post_comment(issue: str, body: str) -> None:
-    """Post an issue comment via `gh issue comment --body-file`.
+def _issue_comment_count(issue: str, repo: str | None = None) -> int:
+    """Nombre de commentaires de l'issue, mesure NEUVE (#22758).
 
-    A body file (not --body) avoids shell-escaping the marker / em-dash / quotes
-    and keeps the posted text byte-exact. Written under the OS temp dir, not the
-    worktree, so it never leaks into a commit (cf L677-L4 body-file discipline).
+    L'instantane (#22630) sert la LECTURE d'un verdict de claim. Une
+    verification d'ecriture qui le consulterait comparerait l'etat d'avant a
+    lui-meme et validerait une ecriture qui n'a pas eu lieu : d'ou une mesure
+    hors cache, REST d'abord (quota distinct du GraphQL qui porte l'ecriture),
+    GraphQL non cache ensuite.
+
+    Les deux transports morts -> `RuntimeError`, jamais un compte invente :
+    un appelant qui ne peut pas compter ne peut pas constater un succes.
     """
+    slug = repo or _repo_slug()
+    proc = subprocess.run(
+        ["gh", "api", f"repos/{slug}/issues/{issue}", "--jq", ".comments"],
+        capture_output=True, text=True, shell=False,
+        encoding="utf-8", errors="replace",
+    )
+    if proc.returncode == 0:
+        try:
+            return int((proc.stdout or "").strip())
+        except ValueError:
+            rest_err = f"valeur illisible {proc.stdout.strip()[:40]!r}"
+    else:
+        rest_err = (
+            (proc.stderr.strip().splitlines() or [f"exit {proc.returncode}"])[0][:120]
+        )
+        print(
+            f"[TRANSPORT] comptage REST indisponible ({rest_err})"
+            f" -- bascule GraphQL non cache.",
+            file=sys.stderr,
+        )
+    cmd = ["gh", "issue", "view", str(issue), "--json", "comments"]
+    if repo:
+        # Meme depot sur les deux transports (reserve #20248) : sans ce
+        # `--repo`, la voie GraphQL infererait le slug du cwd et pourrait
+        # compter les commentaires d'un autre depot.
+        cmd[3:3] = ["--repo", repo]
+    proc = subprocess.run(
+        cmd,
+        capture_output=True, text=True, shell=False,
+        encoding="utf-8", errors="replace",
+    )
+    if proc.returncode == 0:
+        try:
+            payload = json.loads(proc.stdout)
+        except json.JSONDecodeError as exc:
+            raise RuntimeError(
+                f"comptage des commentaires de #{issue} : GraphQL rendu "
+                f"illisible ({exc})"
+            ) from exc
+        return len(payload.get("comments") or [])
+    gql_err = (proc.stderr.strip().splitlines() or [f"exit {proc.returncode}"])[0][:120]
+    raise RuntimeError(
+        f"comptage des commentaires de #{issue} : REST puis GraphQL tous deux "
+        f"tombes (REST: {rest_err} ; GraphQL: {gql_err}) -- ecriture NON "
+        f"VERIFIABLE, ce n'est pas un succes"
+    )
+
+
+def _post_comment_rest(issue: str, body: str, repo: str | None = None) -> None:
+    """Ecriture de repli par REST (`gh api ... --input`), quota distinct (#22758).
+
+    La LECTURE basculait deja en REST sous panne GraphQL (#17038) ; l'ECRITURE
+    ne le faisait pas, donc un quota GraphQL epuise rendait toute claim
+    impossible. `--input` porte le JSON complet (`{"body": ...}`) : c'est la
+    forme sure de gh-posting-hygiene, jamais `-f body=@fichier` qui publie le
+    chemin au lieu du corps.
+    """
+    slug = repo or _repo_slug()
+    with tempfile.NamedTemporaryFile(
+        "w", suffix=".json", delete=False, encoding="utf-8"
+    ) as fh:
+        json.dump({"body": body}, fh)
+        payload_path = fh.name
+    try:
+        proc = subprocess.run(
+            [
+                "gh", "api", f"repos/{slug}/issues/{issue}/comments",
+                "--method", "POST", "--input", payload_path,
+            ],
+            capture_output=True, text=True, shell=False,
+            encoding="utf-8", errors="replace",
+        )
+    finally:
+        Path(payload_path).unlink(missing_ok=True)
+    if proc.returncode != 0:
+        raise RuntimeError(
+            f"gh api issues/{issue}/comments (REST) failed "
+            f"(exit {proc.returncode}): {proc.stderr.strip()[:200]}"
+        )
+
+
+def _post_comment(issue: str, body: str, repo: str | None = None) -> None:
+    """Poste un commentaire et CONSTATE qu'il existe (#22758).
+
+    Trois garanties, dans cet ordre :
+
+    1. **comptage AVANT** par une mesure neuve (jamais l'instantane) -- sans
+       etat de reference, un compte d'apres ne prouve rien ;
+    2. **GraphQL d'abord, puis bascule REST de l'ECRITURE** en nommant le
+       transport, comme la lecture le fait depuis #17038 ;
+    3. **comptage APRES** : le nombre doit avoir augmente d'exactement un.
+       Sinon `RuntimeError` -- un organe ne rend jamais un succes qu'il n'a
+       pas constate (#22758 : une claim « posee » alors que 0 commentaire
+       existait).
+
+    Le corps passe par un fichier (jamais `--body`) : le marqueur, le tiret
+    cadratin et les guillemets restent byte-exacts, et rien ne fuit dans un
+    commit (cf L677-L4 body-file discipline).
+    """
+    try:
+        before = _issue_comment_count(issue, repo)
+    except RuntimeError as exc:
+        raise RuntimeError(
+            f"{exc} -- refus d'ecrire sans pouvoir verifier l'ecriture "
+            f"(un succes non constatable n'est pas un succes)"
+        ) from exc
     with tempfile.NamedTemporaryFile(
         "w", suffix=".md", delete=False, encoding="utf-8"
     ) as fh:
@@ -1654,9 +1765,29 @@ def _post_comment(issue: str, body: str) -> None:
     )
     Path(path).unlink(missing_ok=True)
     if proc.returncode != 0:
+        graphql_err = (
+            (proc.stderr.strip().splitlines() or [f"exit {proc.returncode}"])[0][:120]
+            if proc.stderr.strip() else f"exit {proc.returncode}"
+        )
+        print(
+            f"[TRANSPORT] gh issue comment (GraphQL) indisponible ({graphql_err})"
+            f" -- bascule REST de l'ECRITURE, quota distinct.",
+            file=sys.stderr,
+        )
+        try:
+            _post_comment_rest(issue, body, repo)
+        except RuntimeError as rest_exc:
+            raise RuntimeError(
+                f"gh issue comment {issue} : GraphQL puis REST tous deux "
+                f"tombes (GraphQL: {graphql_err} ; REST: {rest_exc}) -- "
+                f"ecriture NON POSEE"
+            ) from rest_exc
+    after = _issue_comment_count(issue, repo)
+    if after != before + 1:
         raise RuntimeError(
-            f"gh issue comment {issue} failed (exit {proc.returncode}): "
-            f"{proc.stderr.strip()}"
+            f"gh issue comment {issue} : le transport a rendu succes mais le "
+            f"compte de commentaires n'a pas augmente ({before} -> {after}) -- "
+            f"ecriture NON CONSTATEE, la claim n'est pas posee"
         )
 
 
