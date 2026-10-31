@@ -3698,8 +3698,12 @@ def test_is_student_tp_pr_couvre_les_marqueurs_de_liste():
     est donc mesuree ici, jeton par jeton, y compris composes (`1. [ ]`).
     """
     for prefix in ("- ", "* ", "+ ", "1. ", "2) ", "(3) ", "- [ ] ", "- [x] ",
-                   "> - ", "1. [ ] ", "   >  -  "):
+                   "> - ", "1. [ ] ", "   >  -  ", "`", "``", "- `"):
         assert pig.is_student_tp_pr({"body": prefix + REAL_TP_HEAD}) is True, prefix
+    # Code span : la revue nommait la forme `` `PR de TP` etudiante `` ; le
+    # backtick de tete est un jeton de bruit comme les autres.
+    assert pig.is_student_tp_pr({"body": "`PR de TP` etudiante relayee\n"}) is True
+    assert pig.is_student_tp_pr({"body": "- [x] `PR de TP` etudiante\n"}) is True
     # Le sens dangereux reste ferme : une PR de lane qui met un TP en liste
     # plus bas dans son corps n'est pas un rendu etudiant.
     assert pig.is_student_tp_pr({

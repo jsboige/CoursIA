@@ -6470,8 +6470,9 @@ STUDENT_TP_DECLARATION_RE = re.compile(r"^PR\s+de\s+TP\b", re.IGNORECASE)
 # couverture des marqueurs de liste dans le bruit de tete -- une classe de faux
 # negatifs latente ». Le strip est donc une BOUCLE de jetons, pas un `lstrip`
 # de caracteres : `lstrip` ne sait pas enjamber `1.` ni `[ ]`, et rendait la
-# declaration invisible des qu'elle etait mise en liste.
-STUDENT_TP_LEAD_TOKEN_RE = re.compile(r"^(?:>+|[-*+_]|\(?\d+[.)]|\[[ xX]\])\s*")
+# declaration invisible des qu'elle etait mise en liste. Le `backtick` ferme la
+# derniere forme nommee par la revue (code span : `` `PR de TP` etudiante ``).
+STUDENT_TP_LEAD_TOKEN_RE = re.compile(r"^(?:>+|[-*+_]|\(?\d+[.)]|\[[ xX]\]|`+)\s*")
 
 
 def _strip_lead_decoration(line: str) -> str:
