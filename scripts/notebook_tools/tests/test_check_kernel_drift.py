@@ -499,13 +499,14 @@ def test_canonical_transition_scoped_series_02ml_accepted():
 
 def test_canonical_transition_scoped_series_02ml_310_accepted():
     # Positif, deuxieme direction (#23187) : 2.9d et 2.9g sont a 3.10.19, et
-    # le canon de leur serie est 3.13. Sans cette entree, la PR annoncait
+    # le canon de leur serie est 3.13. Sans ces entrees, la PR annoncait
     # couvrir la serie en laissant la moitie de ses carnets rouge.
     a = {"language_version": "3.10.19",
          "kernelspec_name": "coursia-ml-training"}
     b = {"language_version": "3.13.14",
          "kernelspec_name": "coursia-ml-training"}
-    for name in ("2.9d-Features-Circulaires-Helice-Nombres.ipynb",):
+    for name in ("2.9d-Features-Circulaires-Helice-Nombres.ipynb",
+                 "2.9g-Geometrie-de-la-Verite.ipynb"):
         path = ("MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/"
                 + name)
         assert ckd.accepted_canonical_transition(a, b, nb_path=path) is True
@@ -586,9 +587,10 @@ def test_canonical_transition_scoped_ml06_reverse_still_refused():
 # chemin. Les tests ci-dessous portent la positive (2.9d, dont les sorties
 # sont re-executees dans la meme PR) et les controles negatifs que
 # l'acceptance de #23292 exige nominativement : un carnet hors serie
-# partageant le kernelspec reste rouge, la direction inverse le reste aussi,
-# et 2.9g -- dont la re-execution est due mais pas encore faite -- reste
-# rouge tant que la mesure n'existe pas.
+# partageant le kernelspec reste rouge, la direction inverse le reste aussi.
+# 2.9g etait la porte fermee -- refusee tant que sa mesure n'existait pas ;
+# sa tranche est livree ici, l'entree et le carnet re-execute dans le meme
+# diff, et le test passe du refus a l'acceptation dans ce meme geste.
 
 _02ML = "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/"
 _29D = _02ML + "2.9d-Features-Circulaires-Helice-Nombres.ipynb"
@@ -604,15 +606,22 @@ def test_canonical_transition_scoped_02ml_310_to_313_accepted():
     assert ckd.accepted_canonical_transition(a, b, nb_path=_29D) is True
 
 
-def test_canonical_transition_scoped_29g_still_refused():
-    # 2.9g partage la serie et la direction, mais pas la mesure : ses sorties
-    # ne sont pas re-executees. Une entree accorde la permission de bouger la
-    # version d'un carnet ; l'accorder avant la mesure laisserait passer un
-    # hand-edit sous couvert de convergence. Le carnet reste donc rouge, et
-    # ce test tombe le jour ou sa tranche est livree.
+def test_canonical_transition_scoped_29g_accepted():
+    # Dernier carnet de la serie reste a 3.10.19, et la porte qui gardait son
+    # entree : une entree accorde la permission de bouger la version d'un
+    # carnet, donc elle s'ajoute AVEC la mesure, jamais avant. Les sorties de
+    # 2.9g sont re-executees dans le diff qui porte cette entree (#23292,
+    # voie 1), ce qui est exactement la condition que ce test exigeait.
     a = {"language_version": "3.10.19", "kernelspec_name": "coursia-ml-training"}
     b = {"language_version": "3.13.15", "kernelspec_name": "coursia-ml-training"}
-    assert ckd.accepted_canonical_transition(a, b, nb_path=_29G) is False
+    assert ckd.accepted_canonical_transition(a, b, nb_path=_29G) is True
+    # La portee reste nominative : le meme couple SANS chemin reste rouge.
+    assert ckd.accepted_canonical_transition(a, b) is False
+    # Et l'entree ne dispense ni de la direction exacte ni de l'egalite de
+    # kernelspec -- les deux refus survivent a l'acceptation.
+    assert ckd.accepted_canonical_transition(b, a, nb_path=_29G) is False
+    c = {"language_version": "3.13.15", "kernelspec_name": "python3"}
+    assert ckd.accepted_canonical_transition(a, c, nb_path=_29G) is False
 
 
 def test_canonical_transition_scoped_02ml_does_not_leak_outside_series():
