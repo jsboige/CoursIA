@@ -96,7 +96,10 @@ def _gh(args: list[str], timeout: int = 120) -> str:
     out = subprocess.run(["gh", *args], capture_output=True, text=True,
                          encoding="utf-8", timeout=timeout, check=False)
     if out.returncode != 0:
-        err = (out.stderr or "").strip()
+        # Le message de `gh` est multi-lignes (le conseil `gh auth login`
+        # suit l'erreur) : il est aplati, sinon il coupe la ligne de verdict
+        # dans le resume de l'etape (apport de main, reprise ici).
+        err = " ".join((out.stderr or "").split())
         message = f"gh {' '.join(args[:3])} a echoue : {err[:300]}"
         classe = InstrumentError if _TRANSPORT_RE.search(err) else GhError
         raise classe(message)
@@ -239,7 +242,8 @@ def main(argv: list[str] | None = None) -> int:
                          "$TIRAGE_JOURNAL_PATH, sinon le chemin local)")
     ap.add_argument("--strict", action="store_true",
                     help="sortir 1 sur un constat (usage local ; le job CI "
-                         "sort toujours 0)")
+                         "sort toujours 0). Une mesure INDISPONIBLE n'est "
+                         "pas un constat : elle sort 0 meme en --strict.")
     ap.add_argument("--json", default=None)
     args = ap.parse_args(argv)
 
@@ -258,6 +262,7 @@ def main(argv: list[str] | None = None) -> int:
         """
         rapport["statut"] = "UNKNOWN"
         rapport["instrument"] = detail
+        rapport["mesure_indisponible"] = detail
         motif = f"{genre} : provenance NON EVALUEE -- {detail}"
         rapport["exemptions"].append(motif)
         note(motif)
@@ -437,6 +442,8 @@ def _emit(rapport: dict, args) -> None:
               "provenance n'a pas ete mesuree)")
     if rapport.get("verdict"):
         print(f"- **verdict : {rapport['verdict']}**")
+    if rapport.get("mesure_indisponible"):
+        print(f"- mesure indisponible : {rapport['mesure_indisponible']}")
     for e in rapport.get("exemptions", []):
         print(f"- exemption : {e}")
     for c in rapport.get("constats", []):

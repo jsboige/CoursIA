@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-10-30
+
 # QC Strategy Improver — Agent Memory (relocalisé)
 
 > **Origine** : fichier `.claude/agent-memory/qc-strategy-improver/MEMORY.md` (relocalisé en c.1301+211 dans le cadre de l'EPIC #9535, item 7 PR-C narrow). Le contenu est conservé tel quel (anti-régression : cf triage jsboigeEpita, durable vs scratch) ; seul un sommaire FR est ajouté.

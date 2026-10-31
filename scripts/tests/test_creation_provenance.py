@@ -338,3 +338,29 @@ def test_le_statut_est_pose_en_marche_normale(monkeypatch, tmp_path):
     sortie = tmp_path / "rapport.json"
     assert cp.main(["--pr", "1", "--json", str(sortie)]) == 0
     assert '"statut": "CONFORME"' in sortie.read_text(encoding="utf-8")
+def test_gh_classe_la_panne_de_transport_et_le_verdict_d_entree(monkeypatch):
+    """Le discriminant est le stderr de `gh`, pas le code de sortie : les deux
+    rendent non-zero. Un quota epuise ou un DNS muet est une panne de
+    TRANSPORT (UNKNOWN) ; un `Could not resolve to a PullRequest` est un
+    verdict sur l'ENTREE, et le motif ne doit pas annoncer un instrument
+    injoignable (test repris de main, PR #23283)."""
+    class Faux:
+        returncode = 1
+
+        def __init__(self, err):
+            self.stderr = err
+            self.stdout = ""
+
+    monkeypatch.setattr(
+        cp.subprocess, "run",
+        lambda *a, **k: Faux("API rate limit exceeded for installation."))
+    with pytest.raises(cp.InstrumentError):
+        cp.pr_files(22977)
+
+    monkeypatch.setattr(
+        cp.subprocess, "run",
+        lambda *a, **k: Faux("GraphQL: Could not resolve to a PullRequest "
+                             "with the number of 99999."))
+    with pytest.raises(cp.GhError):
+        cp.pr_files(99999)
+

@@ -1629,13 +1629,124 @@ def _resolve_delivered_v2(
     return "close"
 
 
-def _post_comment(issue: str, body: str) -> None:
-    """Post an issue comment via `gh issue comment --body-file`.
+def _issue_comment_count(issue: str, repo: str | None = None) -> int:
+    """Nombre de commentaires de l'issue, mesure NEUVE (#22758).
 
-    A body file (not --body) avoids shell-escaping the marker / em-dash / quotes
-    and keeps the posted text byte-exact. Written under the OS temp dir, not the
-    worktree, so it never leaks into a commit (cf L677-L4 body-file discipline).
+    L'instantane (#22630) sert la LECTURE d'un verdict de claim. Une
+    verification d'ecriture qui le consulterait comparerait l'etat d'avant a
+    lui-meme et validerait une ecriture qui n'a pas eu lieu : d'ou une mesure
+    hors cache, REST d'abord (quota distinct du GraphQL qui porte l'ecriture),
+    GraphQL non cache ensuite.
+
+    Les deux transports morts -> `RuntimeError`, jamais un compte invente :
+    un appelant qui ne peut pas compter ne peut pas constater un succes.
     """
+    slug = repo or _repo_slug()
+    proc = subprocess.run(
+        ["gh", "api", f"repos/{slug}/issues/{issue}", "--jq", ".comments"],
+        capture_output=True, text=True, shell=False,
+        encoding="utf-8", errors="replace",
+    )
+    if proc.returncode == 0:
+        try:
+            return int((proc.stdout or "").strip())
+        except ValueError:
+            rest_err = f"valeur illisible {proc.stdout.strip()[:40]!r}"
+    else:
+        rest_err = (
+            (proc.stderr.strip().splitlines() or [f"exit {proc.returncode}"])[0][:120]
+        )
+        print(
+            f"[TRANSPORT] comptage REST indisponible ({rest_err})"
+            f" -- bascule GraphQL non cache.",
+            file=sys.stderr,
+        )
+    cmd = ["gh", "issue", "view", str(issue), "--json", "comments"]
+    if repo:
+        # Meme depot sur les deux transports (reserve #20248) : sans ce
+        # `--repo`, la voie GraphQL infererait le slug du cwd et pourrait
+        # compter les commentaires d'un autre depot.
+        cmd[3:3] = ["--repo", repo]
+    proc = subprocess.run(
+        cmd,
+        capture_output=True, text=True, shell=False,
+        encoding="utf-8", errors="replace",
+    )
+    if proc.returncode == 0:
+        try:
+            payload = json.loads(proc.stdout)
+        except json.JSONDecodeError as exc:
+            raise RuntimeError(
+                f"comptage des commentaires de #{issue} : GraphQL rendu "
+                f"illisible ({exc})"
+            ) from exc
+        return len(payload.get("comments") or [])
+    gql_err = (proc.stderr.strip().splitlines() or [f"exit {proc.returncode}"])[0][:120]
+    raise RuntimeError(
+        f"comptage des commentaires de #{issue} : REST puis GraphQL tous deux "
+        f"tombes (REST: {rest_err} ; GraphQL: {gql_err}) -- ecriture NON "
+        f"VERIFIABLE, ce n'est pas un succes"
+    )
+
+
+def _post_comment_rest(issue: str, body: str, repo: str | None = None) -> None:
+    """Ecriture de repli par REST (`gh api ... --input`), quota distinct (#22758).
+
+    La LECTURE basculait deja en REST sous panne GraphQL (#17038) ; l'ECRITURE
+    ne le faisait pas, donc un quota GraphQL epuise rendait toute claim
+    impossible. `--input` porte le JSON complet (`{"body": ...}`) : c'est la
+    forme sure de gh-posting-hygiene, jamais `-f body=@fichier` qui publie le
+    chemin au lieu du corps.
+    """
+    slug = repo or _repo_slug()
+    with tempfile.NamedTemporaryFile(
+        "w", suffix=".json", delete=False, encoding="utf-8"
+    ) as fh:
+        json.dump({"body": body}, fh)
+        payload_path = fh.name
+    try:
+        proc = subprocess.run(
+            [
+                "gh", "api", f"repos/{slug}/issues/{issue}/comments",
+                "--method", "POST", "--input", payload_path,
+            ],
+            capture_output=True, text=True, shell=False,
+            encoding="utf-8", errors="replace",
+        )
+    finally:
+        Path(payload_path).unlink(missing_ok=True)
+    if proc.returncode != 0:
+        raise RuntimeError(
+            f"gh api issues/{issue}/comments (REST) failed "
+            f"(exit {proc.returncode}): {proc.stderr.strip()[:200]}"
+        )
+
+
+def _post_comment(issue: str, body: str, repo: str | None = None) -> None:
+    """Poste un commentaire et CONSTATE qu'il existe (#22758).
+
+    Trois garanties, dans cet ordre :
+
+    1. **comptage AVANT** par une mesure neuve (jamais l'instantane) -- sans
+       etat de reference, un compte d'apres ne prouve rien ;
+    2. **GraphQL d'abord, puis bascule REST de l'ECRITURE** en nommant le
+       transport, comme la lecture le fait depuis #17038 ;
+    3. **comptage APRES** : le nombre doit avoir augmente d'exactement un.
+       Sinon `RuntimeError` -- un organe ne rend jamais un succes qu'il n'a
+       pas constate (#22758 : une claim « posee » alors que 0 commentaire
+       existait).
+
+    Le corps passe par un fichier (jamais `--body`) : le marqueur, le tiret
+    cadratin et les guillemets restent byte-exacts, et rien ne fuit dans un
+    commit (cf L677-L4 body-file discipline).
+    """
+    try:
+        before = _issue_comment_count(issue, repo)
+    except RuntimeError as exc:
+        raise RuntimeError(
+            f"{exc} -- refus d'ecrire sans pouvoir verifier l'ecriture "
+            f"(un succes non constatable n'est pas un succes)"
+        ) from exc
     with tempfile.NamedTemporaryFile(
         "w", suffix=".md", delete=False, encoding="utf-8"
     ) as fh:
@@ -1648,9 +1759,29 @@ def _post_comment(issue: str, body: str) -> None:
     )
     Path(path).unlink(missing_ok=True)
     if proc.returncode != 0:
+        graphql_err = (
+            (proc.stderr.strip().splitlines() or [f"exit {proc.returncode}"])[0][:120]
+            if proc.stderr.strip() else f"exit {proc.returncode}"
+        )
+        print(
+            f"[TRANSPORT] gh issue comment (GraphQL) indisponible ({graphql_err})"
+            f" -- bascule REST de l'ECRITURE, quota distinct.",
+            file=sys.stderr,
+        )
+        try:
+            _post_comment_rest(issue, body, repo)
+        except RuntimeError as rest_exc:
+            raise RuntimeError(
+                f"gh issue comment {issue} : GraphQL puis REST tous deux "
+                f"tombes (GraphQL: {graphql_err} ; REST: {rest_exc}) -- "
+                f"ecriture NON POSEE"
+            ) from rest_exc
+    after = _issue_comment_count(issue, repo)
+    if after != before + 1:
         raise RuntimeError(
-            f"gh issue comment {issue} failed (exit {proc.returncode}): "
-            f"{proc.stderr.strip()}"
+            f"gh issue comment {issue} : le transport a rendu succes mais le "
+            f"compte de commentaires n'a pas augmente ({before} -> {after}) -- "
+            f"ecriture NON CONSTATEE, la claim n'est pas posee"
         )
 
 
@@ -3665,7 +3796,7 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
                 f"({exc}) : ce CLEAR ne dit rien des PRs OUVERTES touchant "
                 f"ces chemins. Verifier a la main avec "
                 f"`check_lane_claim.py --lane {my_lane} --paths ...` "
-                f"(sans numero d'issue) avant d'editer (#16570, #21742).",
+                f"(sans numero d'issue) avant d'editer (cf. #16570, #21742).",
                 file=sys.stderr,
             )
         except RuntimeError as exc:
@@ -3674,7 +3805,7 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
                 f"`--paths` ({exc}) : ce CLEAR ne dit rien des PRs OUVERTES "
                 f"touchant ces chemins. Verifier a la main avec "
                 f"`check_lane_claim.py --lane {my_lane} --paths ...` "
-                f"(sans numero d'issue) avant d'editer (#16570).",
+                f"(sans numero d'issue) avant d'editer (cf. #16570).",
                 file=sys.stderr,
             )
     # Dead-glob witness on the CALLER side (mirror of `empty_scope` on the
@@ -4514,8 +4645,18 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             )
         lines.append(
             "\nCoordinate with the owner(s), re-scope to paths no OPEN PR "
-            "touches, or pick another grain (#16570)."
+            "touches, or pick another grain from the GLOBAL POOL "
+            "(`python scripts/pick_idle_grain.py --belt --lane "
+            "<machine:workspace>`)."
         )
+        # Le renvoi porte sur le POOL, jamais sur un numero d'issue.
+        # Mesure du 2026-10-26 (lane myia-ai-01:CoursIA-2) : ce message
+        # pointait « (#16570) » -- l'issue qui a signale cette jambe-meme.
+        # #16570 est LIVREE (fix #16572 MERGED le 2026-09-18, label
+        # `candidate-delivered`) : un worker qui suit le repli atterrit sur
+        # un conteneur livre et peut y poser un claim. Le repli doit
+        # designer la SOURCE DU GRAIN (le pool global), pas un issue
+        # historiquement liee.
         print("\n".join(lines), file=sys.stderr)
         return 2
     # #14300 -- IMPLICIT: an OPEN PR of another lane references this issue
@@ -4610,10 +4751,72 @@ def _summarize_run_check_output(stdout_text: str, returncode: int) -> str:
         # n'agit pas sur un verdict 2 (sortie du chemin "free" du
         # picker), donc on le note sans le confondre avec un BLOCKED
         # d'une autre lane.
+        #
+        # #23098 : la classe `NOT_SCOPED` **nomme** son bloquant (le
+        # champ `Blocked-by (legacy blocking_lanes field...)` et la
+        # liste des scopes revendiques). Ce n'est donc pas un verdict
+        # muet : le reducer doit le lire comme un blocage, sinon un
+        # grain occupe reste servable (`ERROR` est servable par
+        # defaut, cf pick_idle_grain.py). Le texte peut arriver sur
+        # stdout OU stderr selon la branche -- les deux flux sont
+        # concatenees par l'appelant.
         if "NOT_SCOPED" in text or "OPEN PR(s) of other lanes touch" in text:
             return "BLOCKED"
         return "ERROR"
     return f"EXIT_{returncode}"
+
+
+def _names_a_blocker(evidence: str, stdout_json: str = "") -> bool:
+    """Le verdict nomme-t-il un bloquant ? (predicat #23098)
+
+    `ERROR` est **servable par defaut** cote tapis : on ne refuse pas un
+    grain faute d'avoir pu verifier son claim. Ce fail-open est assume et
+    doit rester entier la ou l'organe est reellement muet.
+
+    Mais un verdict qui **nomme** son bloquant n'est pas muet : `NOT_SCOPED`
+    porte le champ `Blocked-by (legacy blocking_lanes field, taken at face
+    value)` et les scopes revendiques ; `BLOCKED` porte la phrase
+    `BLOCKED: another lane holds an active claim`. Traiter ces deux classes
+    comme `ERROR` laissait un grain **occupe** au fond de l'urne -- mesure
+    du 2026-10-30 (c.746) : #20035, #19741 et #14318 sortaient tous
+    `code=ERROR, human=(ERROR)` du batch alors que le meme appel unitaire
+    rendait `NOT_SCOPED` + `Blocked-by ...` (voir le test du depot
+    `assert "NOT_SCOPED" in captured.err`).
+
+    Ce predicat separe les deux classes : il ne dit PAS que le grain est
+    libre, il dit que l'organe **a repondu** -- donc qu'il n'a pas le droit
+    de le servir en fail-open.
+
+    Sources de preuve :
+    - le JSON de synthese porte `blocking_lanes` (liste non vide = bloquant
+      nomme) ;
+    - le texte porte `Blocked-by (legacy `blocking_lanes` field` ou la
+      phrase `BLOCKED: another lane holds an active claim`.
+    """
+    text = evidence or ""
+    if stdout_json:
+        brace = stdout_json.find("{")
+        if brace != -1:
+            try:
+                data, _ = json.JSONDecoder().raw_decode(stdout_json[brace:])
+            except json.JSONDecodeError:
+                data = None
+            if isinstance(data, dict):
+                if data.get("blocking_lanes"):
+                    return True
+                # Un claim actif d'une autre lane, meme sans
+                # `blocking_lanes` (le champ legacy est parfois vide
+                # alors que `active_claims` est peuple) : le verdict
+                # `BLOCKED:` le dit aussi sur la sortie humaine.
+                if data.get("blocked") is True and data.get("active_claims"):
+                    return True
+    if "Blocked-by (legacy `blocking_lanes` field" in text:
+        return True
+    if "BLOCKED: another lane holds an active claim" in text:
+        return True
+    if "OPEN PR(s) of other lanes touch" in text:
+        return True
+    return False
 
 
 def check_issues_batch(
@@ -4703,18 +4906,36 @@ def check_issues_batch(
                 )
             result["exit"] = rc
             captured = buf_out.getvalue()
-            result["code"] = _summarize_run_check_output(captured, rc)
+            # #23098 -- le verdict n'est PAS toujours sur stdout : la
+            # classe `NOT_SCOPED` (exit 2) est ecrite sur **stderr** par
+            # `_run_check`, et le test du depot l'y lit
+            # (`assert "NOT_SCOPED" in captured.err`). Ne reduire que
+            # stdout faisait donc classer `ERROR` un verdict qui NOMAIT
+            # son bloquant -- et `ERROR` est servable par defaut cote
+            # tapis : un grain occupe etait retenu. Mesure du 2026-10-30
+            # (c.746) : #20035, #19741, #14318 -> `code=ERROR`,
+            # `human=(ERROR)`, alors que le meme appel unitaire rend
+            # `NOT_SCOPED` + `Blocked-by` sur stderr.
+            captured_err = buf_err.getvalue()
+            evidence = captured + "\n" + captured_err
+            result["code"] = _summarize_run_check_output(evidence, rc)
+            # Le bloquant est-il NOMME, quel que soit le code de sortie ?
+            # C'est le predicat que le tapis consomme (#23098, acceptance
+            # 2) : un `ERROR` muet reste servable (fail-open assume), un
+            # `ERROR` qui nomme un bloquant ne l'est plus.
+            result["blocker_named"] = _names_a_blocker(
+                evidence, stdout_json=captured)
             # Human: on cherche la ligne-verdict parmi les dernieres non
-            # vides du stdout. Le stdout contient d'abord un JSON
+            # vides des deux flux. Le stdout contient d'abord un JSON
             # summary (`print(json.dumps(summary, ...))` ~L3209) puis
             # la phrase verdict `CLEAR: ...` / `BLOCKED: ...` /
             # `IMPLICIT: ...` / `LOCKED (v2): ...` / `DEAD-SCOPE LOCK
-            # ...` / `NOT_SCOPED: ...`. Le pattern prioritaire est
-            # ^CLEAR: / ^BLOCKED: / ^IMPLICIT: / ^LOCKED / ^DEAD-SCOPE
-            # / ^NOT_SCOPED : on parcourt les lignes de la fin vers le
-            # debut pour eviter le bruit du JSON.
+            # ...` ; `NOT_SCOPED: ...` sort sur **stderr**. Le pattern
+            # prioritaire est ^CLEAR: / ^BLOCKED: / ^IMPLICIT: / ^LOCKED
+            # / ^DEAD-SCOPE / ^NOT_SCOPED : on parcourt les lignes de la
+            # fin vers le debut pour eviter le bruit du JSON.
             verdict_line = ""
-            for line in reversed(captured.splitlines()):
+            for line in reversed(evidence.splitlines()):
                 stripped = line.strip()
                 if not stripped:
                     continue
@@ -5282,7 +5503,9 @@ def _run_check_paths(
             )
         msg.append(
             "\nDo not start -- coordinate with the owner(s), or pick "
-            "another grain that does not intersect the open PR(s)."
+            "another grain from the GLOBAL POOL "
+            "(`python scripts/pick_idle_grain.py --belt --lane "
+            "<machine:workspace>`) that does not intersect the open PR(s)."
         )
         print("\n".join(msg), file=sys.stderr)
         return 2
