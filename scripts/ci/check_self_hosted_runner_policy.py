@@ -782,6 +782,23 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #     seul `validate-pr` est portable (Quarto par tarball curl).
     "quarto-render-list-freshness.yml",
     "enrich-quality-gate.yml",
+    # 2026-10-31 (#23666, lane myia-ai-01:CoursIA-2) : `submodule-drift.yml`
+    #   est un workflow NEUF pour le cliquet -- il est arrive sur main par
+    #   #23314 le 2026-10-31 a 09:33:12Z, soit 16 min APRES que #23670
+    #   (08:17:40Z)
+    #   ait corrige le cliquet : il n'a pas pu connaitre la regle. Son job
+    #   `drift` etait nu sur `ubuntu-latest` (violation
+    #   `HOSTED_PR_JOB_UNEXCEPTED`), avec un trigger `pull_request` (paths
+    #   filtre sur `.gitmodules` et les cinq sous-modules).
+    #   Conversion en forme hybride de debordement, meme expression que les
+    #   workflows convertis le meme jour (`cycle-time-guard.yml`,
+    #   `creation-provenance-advisory.yml`) : la garde anti-fork vit DANS
+    #   l'expression `runs-on`, donc une PR de fork reste hebergee et
+    #   n'atteint jamais le parc local. `timeout-minutes: 10` ajoute au job.
+    #   La variable vaut `true` depuis le 2026-10-31T04:09Z : le routage
+    #   change reellement quand la variable est activee.
+    #   Rollback = variable a `false`, sans toucher les fichiers.
+    "submodule-drift.yml",
 }
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",

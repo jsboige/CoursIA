@@ -331,7 +331,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 
 | Stratégie | Projet QC | Backtest ID | Nom backtest | Date | Sharpe | CAGR | MaxDD | PSR | Verdict |
 |-----------|-----------|-------------|-------------|------|-------:|-----:|------:|----:|---------|
-| `BTC-ML` | 29318876 | `df8e873a6b819d5aa082ff150ee8f595` | "po2026-verify-btc-ml-oos-2021-2026" | 2026-07-15 | **0.057** | 3.69 % | 15.4 % | 1.52 % | **Needs-improvement** (Sharpe near-zero, PSR ~1.5 %, profil quasi-passif) |
+| `BTC-ML` | 29318876 | `df8e873a6b819d5aa082ff150ee8f595` | "po2026-verify-btc-ml-oos-2021-2026" | 2026-07-15 | **0.057** | 3.69 % | 15.4 % | 1.52 % | **Needs-improvement** (Sharpe near-zero, PSR ~1.5 %, profil quasi-passif ; #23504 : filtre qui suspendait les sorties et features d'inférence différentes de l'entraînement, corrigés ; NO BEATS sur 2026-03 → 2026-10) |
 | `Crypto-MultiCanal` | 30750734 | `82fae2cde69e476ec3671b6603a300ac` | "1630-baseline-CryptoMultiCanal-post2801" | 2026-06-14 | **0.333** | 4.59 % | **14.1 %** | 12.95 % | **Needs-improvement** (Sharpe correct mais CAGR modeste, MaxDD min cohorte) |
 | `CSharp-BTC-MACD-ADX` | 30751067 | `ff36dde9650487744ab72d9c119039fa` | "BTC-MACD-ADX Baseline" | 2026-04-27 | 0.225 | 3.63 % | **72.7 %** | 2.88 % | **Needs-improvement** (MaxDD catastrophique — MACD/ADX sur BTC = whipsaw en bear market) |
 | `Portfolio-IBKR-Binance-Hybrid` | 31717642 | `173434a130bee666b26b33b6463bc694` | "Phase3-WF-2022-2024-5050" | 2026-07-16 | 0.391 | 14.11 % | 35.3 % | 9.05 % | **Needs-improvement** (WF walk-forward 50/50 multi-actifs, PSR < 50 %) |
@@ -340,7 +340,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 
 ### Observations pédagogiques
 
-- **`BTC-ML`** : Sharpe 0.057 ≈ 0 sur 1886 jours OOS 2021-2026 (BTC post-halving cycles), profil quasi-passif. Confirme que la stratégie ML Crypto s'effondre en régime post-halving (probablement surapprentissage sur le bull run 2020-2021).
+- **`BTC-ML`** : Sharpe 0.057 ≈ 0 sur 1886 jours OOS 2021-2026 (BTC post-halving cycles), profil quasi-passif. Confirme que la stratégie ML Crypto s'effondre en régime post-halving (probablement surapprentissage sur le bull run 2020-2021). #23504 a corrigé deux défauts : le filtre de volatilité suspendait les sorties, et le modèle était interrogé avec d'autres features que celles de son entraînement. Le code corrigé ne bat pas BTC détenu, ni sur la fenêtre publiée ni sur 2026-03 → 2026-10 (détail dans le README du projet).
 - **`CSharp-BTC-MACD-ADX`** MaxDD 72.7 % : MACD/ADX sur BTC = oscillateurs inadaptés à la volatilité crypto. Whipsaw violent en bear market 2018+2022. Drawdown > 70 % = inacceptable, peu importe le Sharpe positif résiduel.
 - **`Portfolio-IBKR-Binance-Hybrid`** : seul backtest walk-forward WF 2022-2024 50/50 de la cohorte (= méthodologie OOS distincte du training), Sharpe 0.391 / CAGR 14.11 % décent mais PSR < 50 %. Distribution stable multi-actifs (IBKR equity + Binance crypto) vs concentration BTC mono-actif.
 - **Note méthodologique** : `Crypto-LSTM-Prediction` (BTC LSTM/DLinear, projet 31855350) **est éligible à la cohorte BTC/Crypto** mais déjà promu en tranche 10 (#7249 OPEN, cohorte DL/LSTM/Temporal-CNN) — promotion redondante évitée pour préserver l'atomicité inter-tranches.
