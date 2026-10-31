@@ -1624,6 +1624,24 @@ def _rest_pr_rows_for_branch(branch: str) -> Optional[list]:
     `%2F`) : un `head=` mal encode rend un resultat VIDE, c'est-a-dire un
     faux negatif silencieux.
 
+    Le DEUXIEME separateur est encode aussi (`:` -> `%3A`), et c'est
+    mesure, pas precaution (#23642, revue Hermes) : `gh api` expanse les
+    jetons `owner`, `repo` et `branch` quand ils suivent un `:` litteral
+    dans l'endpoint, et il CONSOMME le `:` au passage. Un nom de branche
+    qui commence par `owner`, `repo` ou `branch` (cas `branch-x`) voyait
+    donc son nom remplace par la branche locale -- et le `:` de
+    `head=<owner>:<branche>` disparaitre, ce qui fait IGNORER le filtre
+    `head=` par l'API : la reponse devenait alors les 5 PRs les plus
+    recentes du depot, sans rapport avec la branche demandee. Encode en
+    `%3A`, plus aucun `:` litteral ne suit le nom : le jeton survit et
+    le filtre `head=` est respecte (mesure : 0 ligne pour une branche
+    inexistante, 1 ligne pour la branche reelle).
+
+    La selection par branche est refaite COTE CODE apres le fetch
+    (`_rest_row_to_pr_row`) : le filtre de l'API ne doit pas etre la
+    SEULE barriere, un `head=` mal transmis doit rendre un resultat
+    VIDE, jamais la PR d'une autre branche.
+
     `commits/<oid>/pulls` reste interdit (faux negatifs mesures, cf
     orphan-branch-scan dans .claude/rules/git-workflow.md).
     """
@@ -1631,7 +1649,7 @@ def _rest_pr_rows_for_branch(branch: str) -> Optional[list]:
 
     endpoint = (
         "repos/{owner}/{repo}/pulls"
-        f"?state=all&head={{owner}}:{quote(branch, safe='')}&per_page=5"
+        f"?state=all&head={{owner}}%3A{quote(branch, safe='')}&per_page=5"
     )
     proc = run_gh("api", endpoint, check=False)
     if proc.returncode != 0:
@@ -1645,17 +1663,39 @@ def _rest_pr_rows_for_branch(branch: str) -> Optional[list]:
     return payload
 
 
-def _rest_row_to_pr_row(row: dict) -> Optional[dict]:
+def _rest_row_to_pr_row(row: dict, branch: str) -> Optional[dict]:
     """Mappe une entree REST `pulls` vers la forme interne des lignes.
 
     L'organe consomme `state` en "OPEN" / "MERGED" / "CLOSED" ; REST rend
     "open" / "closed", et ne distingue une PR fusionnee que par
     `merged_at` non nul.
+
+    Deux barrieres COTE CODE, mesurees (#23642) :
+
+    1. `head.ref` doit EQUALER la branche demandee. Le filtre `head=` de
+       l'API n'est pas une barriere suffisante : une requete dont le
+       separateur `:` a ete consomme rend les 5 PRs les plus recentes du
+       depot, et l'ancre pouvait alors retenir la PR d'une AUTRE
+       branche. Une ligne qui ne porte pas la branche demandee est
+       ecartee -- une reponse non filtrée doit rendre un resultat VIDE,
+       jamais un verdict faux.
+    2. le `head.repo` doit etre le depot de la PR (`base.repo`). La voie
+       REST ne sert que les branches dont le head vit dans le depot
+       courant ; une branche de fork est le ressort du repli GraphQL
+       plus bas. Un `head.repo` absent (fork supprime) ne permet pas de
+       conclure : la ligne est alors acceptee sur le seul critere de la
+       branche.
     """
     head = row.get("head") or {}
     ref = head.get("ref")
     number = row.get("number")
     if not ref or number is None:
+        return None
+    if ref != branch:
+        return None
+    head_repo = ((head.get("repo") or {}).get("full_name"))
+    base_repo = (((row.get("base") or {}).get("repo") or {}).get("full_name"))
+    if head_repo and base_repo and head_repo != base_repo:
         return None
     state = row.get("state")
     if state == "open":
@@ -1699,7 +1739,7 @@ def anchor_search_pr_for_branch(branch: str) -> Optional[dict]:
     """
     payload = _rest_pr_rows_for_branch(branch)
     if payload:
-        rows = [r for r in (_rest_row_to_pr_row(x) for x in payload) if r]
+        rows = [r for r in (_rest_row_to_pr_row(x, branch) for x in payload) if r]
         if rows:
             # Plusieurs PRs ont partage le meme nom de branche (close +
             # reopen) : on garde la plus recente (numero max), meme choix
@@ -1728,6 +1768,15 @@ def anchor_search_pr_for_branch(branch: str) -> Optional[dict]:
         rows = json.loads(proc.stdout)
     except json.JSONDecodeError:
         return None
+    if not rows:
+        return None
+    # Meme barriere que la voie REST : la ligne retenue doit porter la
+    # branche demandee. `gh pr list --search "head:<branche>"` fait un
+    # matching PREFIXE sur le nom de branche : `head:feature/x` rend aussi
+    # `feature/x-2` et `feature/xy`. Sans cette confrontation, l'ancre
+    # pouvait rendre la PR d'une branche voisine -- et le script retirait
+    # alors un worktree actif en le croyant fusionne (#23642).
+    rows = [r for r in rows if r.get("headRefName") == branch]
     if not rows:
         return None
     # Si plusieurs PRs ont partage le meme nom de branche (improbable mais

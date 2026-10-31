@@ -1755,15 +1755,26 @@ def _stub_gh_listing_then_anchor(monkeypatch, listing_payload, anchor_payload,
     monkeypatch.setattr(pmw, "run_gh", fake_gh)
 
 
-def _rest_row(number, state, ref, sha=_PR_OID_A, merged_at=None):
-    """Entree REST `pulls` : la forme de l'API, pas la forme interne."""
-    return {
+def _rest_row(number, state, ref, sha=_PR_OID_A, merged_at=None,
+              head_repo=None, base_repo=None):
+    """Entree REST `pulls` : la forme de l'API, pas la forme interne.
+
+    `head_repo` / `base_repo` sont optionnels : absents, la ligne ne porte
+    aucune info de depot (fork supprime) et l'ancre tranche sur le seul
+    critere de branche.
+    """
+    row = {
         "number": number,
         "state": state,
         "merged_at": merged_at,
         "html_url": f"https://example/pr/{number}",
         "head": {"ref": ref, "sha": sha},
     }
+    if head_repo is not None:
+        row["head"]["repo"] = {"full_name": head_repo}
+    if base_repo is not None:
+        row["base"] = {"repo": {"full_name": base_repo}}
+    return row
 
 
 class TestAnchorRestRoute:
@@ -1832,6 +1843,151 @@ class TestAnchorRestRoute:
         row = pmw.anchor_search_pr_for_branch("f/x")
         assert row["number"] == 57
 
+    def test_rest_row_of_another_branch_is_not_retained(self, monkeypatch):
+        """#23642 : une reponse REST NON FILTREE ne doit pas pouvoir
+        retenir la PR d'une AUTRE branche.
+
+        Le filtre `head=` de l'API n'est pas une barriere suffisante : une
+        requete dont le separateur `:` a ete consomme rend les 5 PRs les
+        plus recentes du depot, sans rapport avec la branche demandee. La
+        ligne retenue doit donc porter EXACTEMENT la branche demandee.
+        """
+        def fake_gh(*args, **kwargs):
+            if args and args[0] == "api":
+                return _fake_proc(json_payload=[
+                    _rest_row(999, "closed", "feature/autre-branche"),
+                    _rest_row(321, "open", "feature/x", sha=_PR_OID_B),
+                ])
+            # Le repli GraphQL est pollue de la meme facon : aucune des deux
+            # voies ne doit rendre la PR d'une autre branche.
+            return _fake_proc(json_payload=[
+                {"number": 999, "state": "MERGED",
+                 "url": "https://example/pr/999",
+                 "headRefName": "feature/autre-branche",
+                 "headRefOid": _PR_OID_A},
+            ])
+
+        monkeypatch.setattr(pmw, "run_gh", fake_gh)
+        row = pmw.anchor_search_pr_for_branch("feature/x")
+        assert row is not None
+        assert row["number"] == 321
+        assert row["headRefName"] == "feature/x"
+
+    def test_no_row_of_the_requested_branch_yields_none(self, monkeypatch):
+        """Le pendant du precedent : si AUCUNE ligne ne porte la branche
+        demandee, l'ancre rend l'inconcluant (None) -- jamais la PR d'une
+        autre branche. C'est ce qui empeche le script de retirer un
+        worktree actif en le croyant fusionne."""
+        def fake_gh(*args, **kwargs):
+            if args and args[0] == "api":
+                return _fake_proc(json_payload=[
+                    _rest_row(999, "closed", "feature/autre-branche"),
+                ])
+            return _fake_proc(json_payload=[
+                {"number": 999, "state": "MERGED",
+                 "url": "https://example/pr/999",
+                 "headRefName": "feature/autre-branche",
+                 "headRefOid": _PR_OID_A},
+            ])
+
+        monkeypatch.setattr(pmw, "run_gh", fake_gh)
+        assert pmw.anchor_search_pr_for_branch("feature/x") is None
+
+    def test_branch_name_starting_with_a_placeholder_token_survives(
+            self, monkeypatch):
+        """#23642 : `gh api` expanse `owner` / `repo` / `branch` quand ils
+        suivent un `:` litteral dans l'endpoint, et il CONSOMME le `:` au
+        passage. Un nom de branche `branch-x` voyait donc son nom remplace
+        par la branche locale, et le `:` disparaitre -- ce qui fait
+        IGNORER le filtre `head=` par l'API (mesure : 5 lignes rendues au
+        lieu de 0, sur la forme de production).
+
+        Le separateur est encode en `%3A` : plus aucun `:` litteral ne
+        suit le nom, le jeton survit intact.
+        """
+        calls = []
+
+        def fake_gh(*args, **kwargs):
+            calls.append(list(args))
+            return _fake_proc(json_payload=[])
+
+        monkeypatch.setattr(pmw, "run_gh", fake_gh)
+        pmw.anchor_search_pr_for_branch("branch-x")
+        endpoint = calls[0][1]
+        assert "%3Abranch-x" in endpoint
+        assert ":branch-x" not in endpoint
+
+    def test_empty_rest_payload_falls_back_to_graphql(self, monkeypatch):
+        """#23642 : une voie REST vide doit basculer sur le repli
+        GraphQL, qui rend alors la PR de la branche demandee."""
+        calls = []
+
+        def fake_gh(*args, **kwargs):
+            calls.append(list(args))
+            if args and args[0] == "api":
+                return _fake_proc(json_payload=[])
+            return _fake_proc(json_payload=[
+                {"number": 55, "state": "MERGED",
+                 "url": "https://example/pr/55",
+                 "headRefName": "f/x", "headRefOid": _PR_OID_A},
+            ])
+
+        monkeypatch.setattr(pmw, "run_gh", fake_gh)
+        row = pmw.anchor_search_pr_for_branch("f/x")
+        assert row is not None and row["number"] == 55
+        assert len(calls) == 2, (
+            "une voie REST vide doit declencher le repli GraphQL")
+
+    def test_graphql_prefix_match_is_rejected(self, monkeypatch):
+        """`gh pr list --search "head:f/x"` fait un matching PREFIXE :
+        `f/x-2` et `f/xy` sortent aussi. La ligne retenue doit porter
+        EXACTEMENT la branche demandee, sinon l'ancre rend la PR d'une
+        branche voisine."""
+        def fake_gh(*args, **kwargs):
+            if args and args[0] == "api":
+                return _fake_proc(json_payload=[])
+            return _fake_proc(json_payload=[
+                {"number": 77, "state": "MERGED",
+                 "url": "https://example/pr/77",
+                 "headRefName": "f/x-2", "headRefOid": _PR_OID_A},
+            ])
+
+        monkeypatch.setattr(pmw, "run_gh", fake_gh)
+        assert pmw.anchor_search_pr_for_branch("f/x") is None
+
+    def test_rest_row_from_another_repo_is_rejected(self, monkeypatch):
+        """La voie REST ne sert que les branches dont le head vit dans le
+        depot de la PR : une ligne dont `head.repo` != `base.repo` est
+        ecartee. Les branches de fork restent le ressort du repli
+        GraphQL."""
+        def fake_gh(*args, **kwargs):
+            if args and args[0] == "api":
+                return _fake_proc(json_payload=[
+                    _rest_row(12, "open", "f/x",
+                              head_repo="jsboige/AutreDepot",
+                              base_repo="jsboige/CoursIA"),
+                ])
+            return _fake_proc(json_payload=[])
+
+        monkeypatch.setattr(pmw, "run_gh", fake_gh)
+        assert pmw.anchor_search_pr_for_branch("f/x") is None
+
+    def test_rest_row_of_the_same_repo_is_kept(self, monkeypatch):
+        """Le cas nominal du filtre de depot : `head.repo` == `base.repo`
+        -> la ligne est acceptee."""
+        def fake_gh(*args, **kwargs):
+            if args and args[0] == "api":
+                return _fake_proc(json_payload=[
+                    _rest_row(12, "open", "f/x",
+                              head_repo="jsboige/CoursIA",
+                              base_repo="jsboige/CoursIA"),
+                ])
+            return _fake_proc(json_payload=[])
+
+        monkeypatch.setattr(pmw, "run_gh", fake_gh)
+        row = pmw.anchor_search_pr_for_branch("f/x")
+        assert row is not None and row["number"] == 12
+
     def test_branch_name_is_url_encoded(self, monkeypatch):
         """Un `head=` mal encode rend une liste VIDE : le faux negatif
         serait silencieux. Le `/` du nom de branche doit etre encode."""
@@ -1845,6 +2001,12 @@ class TestAnchorRestRoute:
         pmw.anchor_search_pr_for_branch("feature/deep/branch")
         endpoint = calls[0][1]
         assert "feature%2Fdeep%2Fbranch" in endpoint
+        # Le separateur `owner:branche` est encode lui aussi : un `:`
+        # litteral dans l'endpoint est consomme par `gh api` (qui expanse
+        # alors les jetons `owner`/`repo`/`branch`) et le filtre `head=`
+        # devient inoperant (#23642).
+        assert "%3Afeature%2Fdeep%2Fbranch" in endpoint
+        assert ":feature%2Fdeep%2Fbranch" not in endpoint
 
     def test_graphql_fallback_still_serves_fork_branches(self, monkeypatch):
         """Le repli GraphQL reste la voie des branches de fork : une
