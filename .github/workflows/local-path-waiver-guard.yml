@@ -62,26 +62,36 @@ concurrency:
 jobs:
   guard:
     name: No local-path waiver bodies
-    # #22937 (volet (d), 2026-10-28) : la garde REJOINT LA COHORTE -- forme
-    # hybride auditee de `check_self_hosted_runner_policy.py` (#22461) :
-    # PR meme-depot ET `vars.CI_OVERFLOW_LOCAL == 'true'` -> jambe Linux
-    # locale ; tout le reste (fork, variable absente ou fausse,
-    # `workflow_dispatch`) retombe sur `ubuntu-latest`.
-    # La garde same-repo est DANS l'expression : un job de forme hybride ne
-    # porte pas de `if:` de garde (la forme est statiquement auditable).
-    # Retour arriere = remettre `runs-on: ubuntu-latest` + retirer l'entry
-    # de SELF_HOSTED_WORKFLOW_ALLOWLIST.
+    # 2026-10-28 (#23053 vague 3, famille (a) gardes/advisories) : forme
+    # hybride de debordement -- la suite est du bash pur, sans secret ni
+    # acces machine, donc elle est routable sur la jambe Linux locale.
+    # La jambe `issue_comment` a ete RETIREE sur main (#22937 vague 2) :
+    # les declencheurs restants (`pull_request`, `workflow_dispatch`) sont
+    # tous deux dans SAFE_SELF_HOSTED_TRIGGERS, donc la garde anti-fork
+    # vit DANS l'expression `runs-on` et rien n'est perdu. Cette entree
+    # remplace l'exception nommee que la branche posait ici : la premise
+    # FORK_REACHABLE (`issue_comment`) n'existe plus sur main.
+    # PR meme-depot ET vars.CI_OVERFLOW_LOCAL == 'true' -> local ; tout le
+    # reste (variable absente ou fausse, forks, dispatch) -> ubuntu-latest.
+    # Bascule : `gh variable set CI_OVERFLOW_LOCAL --body true|false
+    # --repo jsboige/CoursIA`. Retour arriere = variable a `false` ou
+    # supprimee, sans toucher ce fichier. Le workflow entre dans
+    # SELF_HOSTED_WORKFLOW_ALLOWLIST dans la meme PR.
     runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
+    # Borne de duree (#23053) : 14 s mesures sur le dernier succes
+    # (run 48472, job `guard`) ; 5 min couvrent le sparse-checkout et un
+    # clone froid, sans laisser un slot se figer des heures.
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
         with:
-          # Cone mode (le defaut) n'accepte que des REPERTOIRES : une entree
-          # de fichier fait echouer le checkout (`fatal: ... is not a
-          # directory`). Mesure : le runner local `myia-po-2027-linux-docker-1`
-          # (git 2.43.0) echoue la, alors que le runner heberge (git plus
-          # recent) passe -- la legende locale a fait apparaitre un defaut
-          # latent, pas un defaut de mon forme `runs-on`. Forme canonique du
-          # depot (17 workflows, ex. `concurrency-conj-guard.yml`).
+          # Cone-mode false (#23053) : le runner local `coursia-linux` embarque
+          # git 2.43.0, dont le mode par defaut (cone) REFUSE un chemin de
+          # fichier -- "is not a directory", rc=128 -- alors que git >= 2.44
+          # l'accepte. Mesure : WSL local, git 2.43.0 -- cone + fichier
+          # rc=128, --no-cone + fichier rc=0 (les deux fichiers materialises).
+          # Meme forme que `adjacency-stale-sweep.yml` et
+          # `candidate-delivered-advisory.yml`.
           sparse-checkout-cone-mode: false
           sparse-checkout: |
             .github/workflows/local-path-waiver-guard.yml

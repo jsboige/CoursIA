@@ -9,8 +9,10 @@ Plus : tests de cohérence de dénombrement et de partage de grammaire.
 """
 import json
 import os
+import shutil
 import subprocess
 import sys
+import tempfile
 
 REPO_ROOT = subprocess.check_output(
     ["git", "rev-parse", "--show-toplevel"],
@@ -177,6 +179,108 @@ def test_kernelspec_distinct_from_lang_suffix():
     # Le self-test doit explicitement montrer ce cas.
     assert "MGS-26-Equilibrium" in r.stdout, \
         "self-test missing MGS-26-Equilibrium case"
+
+
+def _git(repo, *args):
+    """git dans un depot temporaire (cwd=repo)."""
+    return subprocess.run(["git"] + list(args), cwd=repo, capture_output=True,
+                          text=True, encoding="utf-8", errors="replace")
+
+
+def _notebook_json(kernelspec="python3"):
+    """Carnet minimal : le kernelspec est ce que l'inventaire mesure."""
+    return json.dumps({
+        "cells": [],
+        "metadata": {"kernelspec": {"name": kernelspec,
+                                    "display_name": "Python 3",
+                                    "language": "python"}},
+        "nbformat": 4,
+        "nbformat_minor": 5,
+    }, ensure_ascii=False, indent=1)
+
+
+def _inventory_at(repo, ref):
+    """Lance l'instrument sur `ref`, dans le depot `repo` (cwd=repo)."""
+    r = subprocess.run(
+        [sys.executable,
+         os.path.join(REPO_ROOT, "scripts/notebook_tools/inventory_notebook_names.py"),
+         "--base", ref, "--json"],
+        cwd=repo, capture_output=True, text=True,
+        encoding="utf-8", errors="replace")
+    assert r.returncode == 0, "inventory failed on %s: %s%s" % (ref, r.stdout, r.stderr)
+    return json.loads(r.stdout)
+
+
+def _repo_two_revisions_with_a_renamed_notebook():
+    """Depot jetable : rev1 = carnet `MGS-26-Equilibrium`, rev2 = renomme.
+
+    Le nom est choisi sans index parsable (`MGS-26-...` -> idx=None, cf la
+    nomenclature du depot) : c'est le cas ou un kernelspec NON LU fait basculer
+    l'entree de `conforme` a `ambigu` (naming : base implicite non verifie).
+    """
+    repo = tempfile.mkdtemp(prefix="inv-revision-")
+    _git(repo, "init", "-q")
+    _git(repo, "config", "user.email", "test@example.invalid")
+    _git(repo, "config", "user.name", "test")
+    d = os.path.join(repo, "MyIA.AI.Notebooks", "GenAI", "Texte")
+    os.makedirs(d)
+    p1 = os.path.join(d, "MGS-26-Equilibrium.ipynb")
+    with open(p1, "w", encoding="utf-8") as f:
+        f.write(_notebook_json())
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-qm", "rev1")
+    rev1 = _git(repo, "rev-parse", "HEAD").stdout.strip()
+    # rev2 : le carnet est renome -> son chemin disparait de l'ARBRE LOCAL.
+    os.replace(p1, os.path.join(d, "MGS-27-Equilibrium.ipynb"))
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-qm", "rev2")
+    rev2 = _git(repo, "rev-parse", "HEAD").stdout.strip()
+    return repo, rev1, rev2
+
+
+def test_inventory_reads_content_in_the_named_revision():
+    """#23623 — la mesure est une fonction de la revision seule.
+
+    Un carnet renomme entre deux revisions : l'inventaire de rev1 doit lire
+    le kernelspec DANS rev1. Avant le correctif, le contenu etait lu dans
+    l'arbre local -> le chemin de rev1 est absent du checkout -> kernel non
+    lu -> l'entree tombait en `ambigu` au lieu de `conforme`.
+    """
+    repo, rev1, _rev2 = _repo_two_revisions_with_a_renamed_notebook()
+    try:
+        inv = _inventory_at(repo, rev1)
+        rel = "MyIA.AI.Notebooks/GenAI/Texte/MGS-26-Equilibrium.ipynb"
+        entries = {e["path"]: e for e in inv["entries"]}
+        assert rel in entries, \
+            "le carnet de rev1 doit figurer dans l'inventaire de rev1 : %s" % sorted(entries)
+        e = entries[rel]
+        assert e["kernelspec"] == "python3", \
+            "kernelspec non lu dans la revision mesuree (lu : %r) — " \
+            "le contenu est lu dans l'arbre local, pas dans la revision" % (e["kernelspec"],)
+        assert e["classification"] == "conforme", \
+            "classement attendu 'conforme', obtenu '%s' (kernel : %r)" \
+            % (e["classification"], e["kernelspec"])
+    finally:
+        shutil.rmtree(repo, ignore_errors=True)
+
+
+def test_inventory_is_identical_across_revisions_of_the_same_notebook():
+    """#23623 — renomme entre deux revisions : les deux revisions se classent
+    de facon identique (le contenu de CHAQUE revision est lu dans SA revision)."""
+    repo, rev1, rev2 = _repo_two_revisions_with_a_renamed_notebook()
+    try:
+        i1 = _inventory_at(repo, rev1)
+        i2 = _inventory_at(repo, rev2)
+        e1 = {e["path"]: e for e in i1["entries"]}
+        e2 = {e["path"]: e for e in i2["entries"]}
+        a = e1["MyIA.AI.Notebooks/GenAI/Texte/MGS-26-Equilibrium.ipynb"]
+        b = e2["MyIA.AI.Notebooks/GenAI/Texte/MGS-27-Equilibrium.ipynb"]
+        assert (a["kernelspec"], a["classification"]) == \
+               (b["kernelspec"], b["classification"]) == ("python3", "conforme"), \
+            "les deux revisions doivent classer le carnet identiquement : %r vs %r" \
+            % (a, b)
+    finally:
+        shutil.rmtree(repo, ignore_errors=True)
 
 
 if __name__ == "__main__":
