@@ -1107,6 +1107,21 @@ def classify_worktree_lock(reason: Optional[str]) -> tuple[Optional[str], Option
     return ("optout", None)
 
 
+def _on_windows() -> bool:
+    """True sous Windows.
+
+    Une indirection de module plutot qu'un test `os.name` ecrit au point
+    d'appel : patcher `os.name` est une mutation *globale au process*. Tant
+    qu'elle est active sur un hote POSIX, tout `Path(...)` leve
+    `NotImplementedError: cannot instantiate 'WindowsPath'` -- y compris celui
+    que pytest appelle pour formater le rapport d'un test en echec. Le worker
+    xdist meurt alors sur un rapport qu'il ne sait pas ecrire, et l'echec reel
+    n'est jamais montre (#23353, ou ce patch a coute le diagnostic entier).
+    Les tests patchent cette fonction, pas la plateforme.
+    """
+    return os.name == "nt"
+
+
 def pid_is_alive(pid: int) -> bool:
     """Le pid est-il vivant ? Fail-safe : indeterminable = vivant.
 
@@ -1122,7 +1137,7 @@ def pid_is_alive(pid: int) -> bool:
     verrouille un cycle de trop qu'un deverrouillage sur une mesure
     impossible.
     """
-    if os.name == "nt":
+    if _on_windows():
         try:
             out = subprocess.run(
                 ["tasklist", "/FI", f"PID eq {pid}", "/FO", "CSV", "/NH"],
@@ -2954,6 +2969,13 @@ def main() -> int:
     if args.json:
         out = {
             "scanned": len(statuses),
+            # #127 : un organe qui n'a diagnostique AUCUN worktree (scanned=0)
+            # n'atteste PAS une ferme propre -- il est MUET. Le flag rend un
+            # silence (`scanned=0`, stdout vide, rc=0) discriminable d'une passe
+            # propre ; avant, les deux signatures etaient identiques (classe
+            # #86, 8 nuits sur ai-01). Pure observabilite : aucune decision de
+            # retrait n'est modifiee, l'ancre `--search head:<b>` est intacte.
+            "mute": len(statuses) == 0,
             "removable": sum(1 for s in statuses if s.decision == "REMOVE"),
             "refused": refused_count,
             "refusal_reasons": refusal_reason_breakdown(statuses),
@@ -2992,6 +3014,16 @@ def main() -> int:
         else:
             print(render_text(statuses, dry_run=True,
                               gh_unavailable_reason=gh_unavailable_reason))
+        # #127 : symetrie du signal MUTE en mode texte. Un appelant qui ne lit
+        # que stdout doit voir la meme information que le champ JSON `mute` et
+        # que la ligne `MUTE:` sur stderr ; sans cette ligne, un passage
+        # `scanned=0` rend un stdout blanc, indiscernable d'une passe propre
+        # (reserve Hermes sur #22440, complement symetrique du flag JSON).
+        if len(statuses) == 0:
+            print(
+                "scanned=0  (aucun worktree diagnostique -- passage muet, "
+                "pas propre ; voir aussi MUTE sur stderr, #127)"
+            )
         # Budget API de la passe (#15369) : la mesure est un livrable, pas
         # un side-effect silencieux.
         st = get_pr_resolution().stats
@@ -2999,6 +3031,19 @@ def main() -> int:
             f"api: cache={st['cache_hits']} lot={st['listing_calls']}"
             f" hits_lot={st['listing_hits']} ancre={st['anchor_calls']}"
             f" degrade={st['listing_degraded']}"
+        )
+
+    # #127 : un organe muet (scanned=0) n'est PAS une attestation de ferme
+    # propre. Averti sur stderr -- le journal de la tache planifiee fusionne
+    # les deux flux, et en --json le stdout doit rester pur pour json.loads.
+    # Le champ JSON `mute` (ci-dessus) porte la meme information aux lecteurs
+    # structurels ; aucun des deux ne modifie une decision de retrait.
+    if len(statuses) == 0:
+        print(
+            "MUTE: aucun worktree diagnostique (scanned=0) -- ce rapport "
+            "n'atteste pas une ferme propre ; le passage est silencieux, "
+            "pas propre (#127).",
+            file=sys.stderr,
         )
 
     # Seuil d'alerte (#3895) : stderr, jamais stdout -- en --json le stdout

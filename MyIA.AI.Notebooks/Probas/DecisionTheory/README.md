@@ -1,6 +1,6 @@
 # Théorie de la Décision — arc bayésien, formel et causal
 
-[← Série Probas](../README.md) · [Corpus bayésien Infer.NET](../Infer/README.md) · [Corpus bayésien PyMC](../PyMC/README.md) · [Lake Lean `decision_theory_lean`](decision_theory_lean/)
+[← Série Probas](../README.md) · [Corpus bayésien Infer.NET](../Infer/README.md) · [Corpus bayésien PyMC](../PyMC/README.md) · [Règles de décision EDT/CDT/CCDT/UDT](Regles-De-Decision/README.md) · [Lake Lean `decision_theory_lean`](decision_theory_lean/)
 
 Un posterior n'est pas une fin en soi : c'est l'**entrée** d'une décision. Savoir que la tumeur est maligne avec 70 % de probabilité ne dit pas s'il faut opérer ; connaître la distribution de rendement d'un actif ne dit pas combien y investir. Cet arc prolonge la modélisation probabiliste de la série [Probas](../README.md) jusqu'au **choix d'action sous incertitude** : comment transformer une croyance quantifiée en la meilleure décision possible, et comment **prouver** que cette décision est optimale.
 
@@ -12,6 +12,7 @@ L'arc rassemble des notebooks répartis en trois traitements complémentaires du
 | [`DecPyMC/`](DecPyMC/README.md) | 8 = socle 1-7 + capstone 08 (Python) | PyMC (NUTS/MCMC) | Le miroir Python : mêmes concepts, échantillonnage stochastique, diagnostics ArviZ ; le capstone (08) ouvre la sous-série Actuariat |
 | [`Actuariat/`](Actuariat/README.md) | 5 (Python) | PyMC (NUTS/MCMC) | La **sous-série actuarielle** T1-T5 : prime pure, fréquence × sévérité, crédibilité, ruine, valeur de l'information en souscription |
 | [`Causal-Bridges/`](Causal-Bridges/README.md) | 4 (Python) | `dowhy` (PyWhy) | Le **capstone causal** : l'échelle de Pearl et le do-calculus, plus les méthodes quasi-expérimentales (DiD, RDD, contrôle synthétique) |
+| [`Regles-De-Decision/`](Regles-De-Decision/README.md) | Sous-série Python | SCM finis + `dowhy` | Le **choix de la règle de décision** : conditionnement EDT, intervention CDT, conséquences causales CCDT et procédure UDT comparés sur les mêmes modèles |
 | [`decision_theory_lean`](decision_theory_lean/) | *(lake, hors compte)* | Lean 4 + Mathlib | La **couche de certification** : utilité espérée vNM, cohérence de de Finetti, escompte de Gittins, démontrés `0 sorry` |
 
 ## Pourquoi cet arc — la double question de la rationalité
@@ -61,6 +62,7 @@ Le parcours suit une progression unique, portée en parallèle par les deux mote
 3. **Robustesse & séquentiel** — Décision sous incertitude sévère (Minimax, regret) puis passage au temps : processus de décision markoviens (MDP), équation de Bellman, itération valeur/politique.
 4. **Bandits** — L'arbitrage exploration/exploitation : Thompson Sampling (posterior Beta-Bernoulli calculé par le moteur), comparé à ε-greedy et UCB1. C'est ici qu'intervient le **second notebook Lean** ([DecInfer-08b](DecInfer/DecInfer-08b-Lean-Gittins.ipynb)) : l'indice de Gittins et les identités d'escompte géométrique.
 5. **Pont causal (capstone)** — [CausalBridges-01 — Do-Calculus](Causal-Bridges/CausalBridges-01-Do-Calculus.ipynb) fédère les quatre traitements de la causalité disséminés dans le dépôt (Tweety logique, Infer.NET, PyMC, émergence causale PyPhi) autour de l'**échelle de Pearl** (association → intervention → contrefactuel) et du **do-calculus**, exécutés sur l'outil de référence [`dowhy`](https://www.pywhy.org/dowhy/). Une décision optimale suppose de savoir ce que l'on *cause*, pas seulement ce que l'on *observe*.
+6. **Règles de décision sous corrélation** — [ReglesDeDecision-01](Regles-De-Decision/ReglesDeDecision-01-EDT-CDT-CCDT-UDT.ipynb) reprend la distinction observation/intervention au moment où elle change la **valeur d'un acte**. Sur des modèles causaux finis énumérés exactement, le carnet compare EDT, CDT, CCDT et l'intervention sur une procédure, de Fisher et Newcomb au cas d'Egan et au dilemme du prisonnier. Il mesure aussi la condition de reconnaissance sous laquelle l'avantage reproductif des agents CDT du problème de Dai s'inverse.
 
 ## Structure et contenu
 
@@ -75,6 +77,10 @@ L'extension actuarielle — le passage de la décision bayésienne au métier de
 ### `Causal-Bridges/` — le capstone causal (dowhy)
 
 Quatre notebooks-ponts, dont [CausalBridges-01 — Do-Calculus](Causal-Bridges/CausalBridges-01-Do-Calculus.ipynb) en tête, qui relient l'arc décision au reste du dépôt par la question causale : le do-calculus (CausalBridges-01), l'identification nommée d'estimands (CausalBridges-02), le contrefactuel individuel (CausalBridges-03) et les méthodes quasi-expérimentales (CausalBridges-07). Exécutés sur `dowhy` (kernel `coursia-ml-training`). **Détail** : [`Causal-Bridges/README.md`](Causal-Bridges/README.md).
+
+### `Regles-De-Decision/` — la règle qui évalue l'acte
+
+[ReglesDeDecision-01](Regles-De-Decision/ReglesDeDecision-01-EDT-CDT-CCDT-UDT.ipynb) distingue trois calculs sur un même modèle causal : conditionner sur l'acte (EDT), intervenir sur l'acte (CDT) et intervenir sur la procédure qui produit les actes (UDT). L'opérationnalisation de la CCDT d'Edgington reproduit les valeurs publiées par Mohajeri, puis est confrontée à des mondes adéquats et à un témoin négatif Newcomb. Le cas d'Egan et une simulation de population inspirent les limites : une coïncidence mesurée sur une famille de modèles n'est pas une preuve universelle, et un gain reproductif n'est pas un verdict normatif. **Détail** : [`Regles-De-Decision/README.md`](Regles-De-Decision/README.md).
 
 ### `decision_theory_lean` — la couche de certification (hors compte notebooks)
 
@@ -93,7 +99,7 @@ Le lake suit la convention i18n FR/EN de la série (fichiers `*_en.lean` miroirs
 **Environnements** :
 
 - **Piste Infer.NET (`DecInfer/`)** : .NET 9.0 + `dotnet-interactive`. Voir [`../README.md`](../README.md#installation) pour l'installation du kernel.
-- **Piste PyMC (`DecPyMC/`) et pont causal (`Causal-Bridges/`)** : Python 3.12+ (PyMC 6 et ArviZ 1.x ne s'installent pas sur une version antérieure), dépendances `pymc`, `arviz`, `dowhy` dans [`../requirements.txt`](../requirements.txt). Les notebooks `DecPyMC` déclarent le kernel `python3` ; la plupart des `Causal-Bridges` déclarent encore `coursia-ml-training`, un kernel propre aux machines de la flotte ([#17654](https://github.com/jsboige/CoursIA/issues/17654)).
+- **Piste PyMC (`DecPyMC/`), pont causal (`Causal-Bridges/`) et règles de décision (`Regles-De-Decision/`)** : Python 3.12+ (PyMC 6 et ArviZ 1.x ne s'installent pas sur une version antérieure), dépendances `pymc`, `arviz`, `dowhy` dans [`../requirements.txt`](../requirements.txt). Les notebooks `DecPyMC` et `ReglesDeDecision` déclarent le kernel `python3` ; la plupart des `Causal-Bridges` déclarent encore `coursia-ml-training`, un kernel propre aux machines de la flotte ([#17654](https://github.com/jsboige/CoursIA/issues/17654)).
 - **Companions Lean (`DecInfer-02`, `DecInfer-02b`, `DecInfer-08b`)** : kernel Lean 4 (WSL) + lake [`decision_theory_lean`](decision_theory_lean/). Compilation : `lake -R build` dans le dossier du lake.
 
 Chaque sous-série démarre par ses fondations (`DecInfer-01` / `DecPyMC-1`) et se lit dans l'ordre numérique — la progression est cumulative.

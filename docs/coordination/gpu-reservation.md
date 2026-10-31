@@ -2,7 +2,8 @@
 
 > **Tenancier** : `myia-ai-01:CoursIA-2` (mandat user 2026-09-18, mandat régisseur GPU 2026-10-05).
 > **Code source** : `scripts/coordination/debt_ledger.py` (kind `gpu-reservation`, fonction `_summarize_gpu_reservation`).
-> **Dashboard dédié** : `CoursIA-gpu-reservation-ledger` (un par kind, jamais partagé).
+> **Référence (autorité)** : le dépôt git **privé** `jsboige/coursia-gpu-ledger`, branche `ops/gpu-ledger` — décision du mainteneur du 2026-10-27 (arbitrage rendu sur [#22456](https://github.com/jsboige/CoursIA/issues/22456)) : l'état vivant des réservations GPU de la flotte y est versionné, et le dashboard n'en est plus qu'une copie.
+> **Dashboard dédié** : `CoursIA-gpu-reservation-ledger` (un par kind, jamais partagé) — **copie** de la référence.
 > **Issue de référence** : [#16737](https://github.com/jsboige/CoursIA/issues/16737).
 
 ## Vue d'ensemble
@@ -22,11 +23,13 @@ Le ledger `gpu-reservation` catalogue **une entrée par réservation GPU**, clé
 
 Le **README documente l'intention**, le **ledger documente l'usage réel**. Une réservation GPU consomme une fenêtre de temps qu'aucune autre lane ne doit chevaucher. Sans ledger, deux lanes peuvent exécuter en parallèle sur la même machine et se neutraliser (saturation mémoire, swap, etc.).
 
-Le dashboard `CoursIA-gpu-reservation-ledger` est la **seule source de vérité** de l'usage GPU réel de la flotte. Les fichiers `*.ledger.json` dans `scripts/coordination/_local/` sont des artefacts locaux (init/spool/reduce) qui n'ont aucune valeur cross-machine.
+Le dépôt privé `jsboige/coursia-gpu-ledger` (branche `ops/gpu-ledger`) est la **seule source de vérité** de l'usage GPU réel de la flotte : chaque machine y publie ses observations et y relit l'état des autres. Le dashboard `CoursIA-gpu-reservation-ledger` n'en est plus qu'une **copie** lisible, et les fichiers `*.ledger.json` dans `scripts/coordination/_local/` un **cache** local — jamais une autorité cross-machine.
+
+Cette référence a été **arbitrée**, pas déduite : le mainteneur a retenu l'option (a) — un dépôt git privé et dédié — le 2026-10-27 (arbitrage consigné sur [#22456](https://github.com/jsboige/CoursIA/issues/22456)). Le dépôt de travail, public, ne peut pas porter cet état ; l'organe le refuse par construction. Le **moyen** (commandes de publication et de lecture) est livré par #22755.
 
 ## Quand poster une observation
 
-**Toute lane** qui lance une expérience GPU poste une observation sur le dashboard dédié avant `nvidia-smi` (ou équivalent). Le geste est **rapide** (1 message), **atomique** (1 observation = 1 fenêtre), et **idempotent** (un re-post remplace l'observation précédente pour la même entité, fenêtre mise à jour).
+**Toute lane** qui lance une expérience GPU publie une observation dans la **référence** (dépôt privé `jsboige/coursia-gpu-ledger`, branche `ops/gpu-ledger`) avant `nvidia-smi` (ou équivalent) ; le dashboard dédié en reçoit la copie. Le geste est **rapide**, **atomique** (1 observation = 1 fenêtre), et **idempotent** (une republication remplace l'observation précédente pour la même entité, fenêtre mise à jour).
 
 **Proposition mesurée par `myia-po-2023` le 2026-10-25 — en attente d'arbitrage du coordinateur sur [#16737](https://github.com/jsboige/CoursIA/issues/16737), donc NON en vigueur : le seuil n'est pas la durée, c'est l'annonce.** Un run dont la durée est **annoncée à l'avance** poste un `held` avant son premier appel CUDA et un `released` à la fin, **quelle que soit sa longueur**. Un seuil de 15 min laissait invisibles les runs courts **répétés**, qui occupent le device autant qu'un long — et « machine silencieuse » y devient indiscernable de « machine active » (mesure `myia-po-2023`, 2026-10-25). La règle par l'annonce ne demande aucun jugement sur la durée, ce qui la rend opposable. **Tant que l'arbitrage n'est pas rendu, le seuil des 15 min demeure la règle du protocole.** Restent hors champ les appels d'inférence ponctuels non annoncés, qui ne constituent pas une fenêtre.
 
@@ -117,9 +120,9 @@ Les archives RooSync sont des **markdown verbatim** sur GDrive (`$ROOSYNC_SHARED
 
 Avant `nvidia-smi` (ou tout autre lancement GPU) :
 
-1. **Charge hôte** : `uptime`, `free -g`, `nvidia-smi` — la charge hôte doit rester **< 85 %** sous l'expérience. Au-delà, reporter l'expérience et poster une observation `held` une fois la charge retombée (réservation à venir, pas de geste de lancement).
+1. **Charge hôte** : `uptime`, `free -g`, `nvidia-smi` — la charge hôte doit rester **< 90 %** sous l'expérience (seuil relevé de 85 à 90 % par mandat user du 2026-10-29 : 85 % est le régime nominal de la machine, pas son plafond). Au-delà, reporter l'expérience et poster une observation `held` une fois la charge retombée (réservation à venir, pas de geste de lancement). Ce seuil est **porté par le lanceur** (`launch_capped.ps1`) : appelé seul, `run_guarded.py` n'active pas la garde — son `--max-commit-charge-pct` vaut 0 par défaut.
 2. **CUDA devices** : `CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=<n>` sur la commande elle-même. Ne pas se fier au seul `CUDA_VISIBLE_DEVICES` (variable d'env du shell sans ordre PCI = risque d'allocation ambigu).
-3. **Ledger entry** : poster `[OBS]` (`state: held`) sur `CoursIA-gpu-reservation-ledger` **avant** le geste de lancement (pas après — sinon collision possible). Poster `[OBS]` (`state: released`) à la fin du run, avec `workload` court et `expected_end` réel. **Construire les deux avec `debt_ledger.py append`** : un envelope écrit à la main est rejeté au fold (les deux causes ci-dessus), et une libération rejetée laisse la ligne **`held` sur un device libre**.
+3. **Ledger entry** : publier `[OBS]` (`state: held`) dans la **référence** (dépôt privé `jsboige/coursia-gpu-ledger`, branche `ops/gpu-ledger` ; le dashboard dédié en reçoit la copie) **avant** le geste de lancement (pas après — sinon collision possible). Publier `[OBS]` (`state: released`) à la fin du run, avec `workload` court et `expected_end` réel. **Construire les deux avec `debt_ledger.py append`**, puis publier par `debt_ledger.py publish --git` (moyen livré par #22755) : un envelope écrit à la main est rejeté au fold (les deux causes ci-dessus), et une libération rejetée laisse la ligne **`held` sur un device libre**.
 4. **GPU 0/1 réservé** : les GPU 0 et 1 de ai-01 portent le vLLM de la flotte et **ne se réservent pas**. Le GPU 2 est le seul slot GPU de cette machine pour les expériences.
 
 ## Périmètre du tenancier
@@ -136,16 +139,33 @@ Le tenancier (`myia-ai-01:CoursIA-2`) :
 
 Le picker (`scripts/pick_idle_grain.py`) croise l'urne `delivered` avec un signal **pre-launch** :
 
-1. Avant de tirer un grain `training` ou `genai` marqué **GPU-bound** (heuristique : à définir), le picker vérifie qu'une observation `[OBS]` existe dans le ledger pour l'entité ciblée via la sous-commande `check_pending --entity <m>#gpu<n>`.
+1. Avant de tirer un grain `training` ou `genai` marqué **GPU-bound**, le picker vérifie qu'une observation `[OBS]` existe dans le ledger pour l'entité ciblée via la sous-commande `check_pending --entity <m>#gpu<n>`. **L'heuristique « GPU-bound » est fixée** : un candidat est GPU-borne si son genre est `training` ou `genai` — le genre retenu par le picker est celui que l'auteur a déclaré (tag `Grain:`) quand il existe, sinon celui inféré du titre et des labels (`GENRE_RULES`, qui reste « une aide au tri, pas un verdict »). **L'entité ciblée se résout** dans cet ordre : (1) la **ligne dédiée** `GPU: <machine>#gpu<n>` du **corps** du candidat — la seule forme qui distingue une *déclaration* d'une mention en prose ; (2) **une seule** entité `<machine>#gpu<n>` citée en prose dans le corps ; (3) l'option `--gpu-entity` du tirage (répétable) — la cible que la lane qui tire peut offrir. **Deux entités distinctes** dans la même source rendent la cible **ambiguë** : le grain est alors écarté avec le motif `[DEFER gpu-reservation target-ambiguous]` — le picker ne choisit pas à la place de l'auteur. **Aucune cible** n'est pas un device tenu : le grain est alors **servi**, et le fait est nommé dans la sortie du tirage (`[INFO gpu-reservation target-unresolved]`) — la porte n'avait aucun device à protéger, et rien n'a été vérifié.
 2. **Pas d'observation `[OBS]`** (`verdict: NO_OBS`) → le picker saute le grain et log `[SKIP gpu-reservation missing]`. La lane worker qui rencontre ce skip doit poster l'observation OU prendre un grain non-GPU.
 3. **Observation `held` par une autre lane** (`verdict: HOLD`) → le picker signale `[DEFER gpu-reservation hold]` et passe au suivant.
 4. **Observation `held` par ma lane, dans la fenêtre** (`verdict: OK_TO_RUN`) → le picker tire normalement.
 5. **Observation `released`** (`verdict: RELEASED`) → le GPU est libre, le picker peut tirer.
 6. **Observation `stale`** (`verdict: STALE`) → cas d'erreur, la lane tenancière doit poster un `[OBS]` de réparation.
 
-Le script `scripts/coordination/debt_ledger.py check_pending --entity <m>#gpu<n>` rend le verdict (`OK_TO_RUN`, `NO_OBS`, `HOLD`, `RELEASED`, `STALE`, `UNPOSTED`) en ~50 ms (cache local). **Implémentation 4e livrable : [PR #19855](https://github.com/jsboige/CoursIA/pull/19855)**, merge de la sous-commande et de `evaluate_gpu_pending()` (113/113 tests passent).
+Le script `scripts/coordination/debt_ledger.py check_pending --entity <m>#gpu<n>` rend le verdict (`OK_TO_RUN`, `NO_OBS`, `HOLD`, `RELEASED`, `STALE`, `UNPOSTED`, `UNREADABLE_SPOOL`, `UNREADABLE`) en ~50 ms (cache local). **Implémentation 4e livrable : [PR #19855](https://github.com/jsboige/CoursIA/pull/19855)**, merge de la sous-commande et de `evaluate_gpu_pending()` (113/113 tests passent).
 
-**Codes de sortie** (promis par la docstring de la sous-commande, `debt_ledger.py:2419`) :
+### Ce que le picker en fait (c.2431, #22747)
+
+La section ci-dessus était une **promesse du protocole que le code ne tenait pas** : mesuré le 2026-10-27, `git grep -n check_pending scripts/` ne renvoyait que le ledger, ses tests et cette page — **zéro appelant** du côté du picker. Le gate est maintenant câblé :
+
+- **Où** : au moment de **servir** un candidat, sur les deux chemins de tirage — la voie pondérée (`draw_unclaimed`) et le tapis (`belt_pick_with_replacements`, celui que le cycle `/continue` emprunte). Le gate n'est donc consulté que pour une poignée de candidats, jamais pour tout le pool.
+- **Doctrine : fail-CLOSED.** Une observation de device tenu est un fait de **contention matérielle** — deux lanes qui lancent sur le même device se marchent dessus (#22456 : le premier essai de `po-2024` n'a pas été vu par la régie). Un gate **illisible** ne rend donc jamais « libre » : il rend `GATE_UNREAD`, et le grain est écarté avec un motif nommé. C'est l'inverse du fail-OPEN des sondes de claim (là, une lecture ratée ne doit pas inventer un blocage).
+- **Le verdict est lu dans le JSON, jamais dans le code de sortie** : `NO_OBS` sort 0 et doit pourtant écarter, `STALE` et une erreur d'usage sortent tous deux 2 — le code de sortie ne décide de rien.
+- **Le motif est nommé** : un grain écarté est un grain **dit**, pas un grain absent. Marqueurs : `[SKIP gpu-reservation missing]` (aucune observation), `[DEFER gpu-reservation hold]` (device tenu), `[DEFER gpu-reservation stale]`, `[DEFER gpu-reservation unposted]` (spool non drainé), `[DEFER gpu-reservation gate-unreadable]` (gate illisible), `[DEFER gpu-reservation unreadable]` (le transport git n'a pas pu lire le ledger — siège sans remote `gpu-ledger`), `[DEFER gpu-reservation target-ambiguous]` (plusieurs cibles GPU distinctes, aucune ne fait foi). Un grain **servi sans cible déclarée** laisse une trace d'un autre genre : `[INFO gpu-reservation target-unresolved]` — ce n'est pas un écart, c'est l'absence de device à protéger.
+- **Déclarer sa cible** : la forme canonique est une **ligne dédiée** dans le **corps de l'issue** :
+
+  ```text
+  GPU: myia-ai-01#gpu2
+  ```
+
+  Cette ligne **prime** sur toute mention en prose — une mention en prose est un **contexte**, pas une **déclaration** (« po-2024 avait lancé sur `myia-po-2024#gpu0` […] ce grain tourne sur `myia-ai-01#gpu2` »). Si le corps porte **deux** entités distinctes en prose et **aucune** ligne dédiée, la cible est **ambiguë** : le grain est écarté (`[DEFER gpu-reservation target-ambiguous]`). Lever l'ambiguïté n'est pas choisir à la place de l'auteur : c'est écrire la ligne dédiée.
+- **Tests** : `scripts/tests/test_pick_idle_grain_gpu_gate.py` couvre les trois cas d'acceptation de #22747 (device libre → proposé, device tenu → écarté avec motif, gate indisponible → écarté avec motif), les deux non-régressions (verdict lu dans le JSON ; un grain non GPU-borne ne consulte jamais le gate) et les deux chemins de tirage.
+
+**Codes de sortie** (promis par la docstring de la sous-commande, `debt_ledger.py:2663`) :
 
 | Verdict | Code | Lecture |
 |---|---|---|
@@ -155,10 +175,16 @@ Le script `scripts/coordination/debt_ledger.py check_pending --entity <m>#gpu<n>
 | `HOLD` | **1** | la gate refuse : tenu par une autre lane, ou par nous hors fenêtre |
 | `STALE` | **2** | `held` dépassé sans release — l'appelant décide (rafraîchir ou bloquer) |
 | `UNPOSTED` | **1** | le spool local porte des observations **jamais postées** : le ledger est illisible, pas libre — poster (`flush`) avant de conclure |
+| `UNREADABLE_SPOOL` | **1** | un fichier du spool local est **illisible** : il peut porter une réservation, donc le ledger est illisible, pas libre — le verdict nomme chaque fichier et son motif |
+| `UNREADABLE` | **1** | la **source primaire git** est injoignable ou périmée (branche absente avec `--source git`, fetch en échec, remote injoignable en `auto`) : un ref de suivi local ne fait que du diagnostic, il n'autorise rien — fail-closed, le device n'est pas libre |
 
 Le code 2 est aussi rendu sur un usage invalide (`--entity` absent, ledger ≠ `gpu-reservation`) : là, il signale une **erreur d'appel**, pas un verdict.
 
 `UNPOSTED` prime sur les autres verdicts : il est rendu **avant** la lecture du snapshot, parce qu'un verdict réduit d'un snapshot ne voit pas ce qui n'a jamais voyagé (deux réservations `held` vivantes, quatre-vingt-quatre heures de spool, et un `RELEASED` rendu avec aplomb — #22456).
+
+`UNREADABLE_SPOOL` prime sur `UNPOSTED` : un fichier illisible peut porter un `held`, et un décompte d'enveloppes saines ne le dirait pas. Le fichier reste sur disque et le verdict en nomme le chemin et le motif — l'archivage des bonnes enveloppes reste possible, la conclusion « libre » ne l'est pas.
+
+`UNREADABLE` est le fail-closed du transport git : un **fetch en échec** ne laisse jamais le dernier ref de suivi local autoriser un lancement (le `held` d'une autre lane publié depuis y serait invisible) — ce ref est lu pour le diagnostic (`stale_ref` dans le JSON, avec le verdict qu'il aurait porté), jamais pour conclure. En `--source auto`, le repli sur le cache local n'a lieu que si la branche est **mesurée absente** sur le remote (`ls-remote` muet) : rien n'a jamais été publié, le cache ne peut manquer aucun hold.
 
 **Le drainage du spool est en deux temps, et aucun n'est optionnel** : `debt_ledger.py flush` liste (ou `--emit` écrit) le lot à poster — le `content` de chaque appel est l'octet du fichier de spool, sans re-sérialisation — puis `flush --mark-posted <id>...` archive les observations effectivement postées. L'archivage est idempotent (l'`observation_id` est la clé) et tout-ou-rien : un id inconnu refuse le lot entier plutôt que d'archiver la moitié, parce qu'un spool à moitié drainé est précisément l'état qui fait mentir `check_pending`.
 
@@ -335,10 +361,10 @@ qui ne réserve pas — et la seule parade est que le siège déclare, ce que ce
 
 ### Protocole de récupération cross-machine (c.258)
 
-Le tenancier publie sa propre observation `[OBS]` sur le dashboard `CoursIA-gpu-reservation-ledger`. Pour récupérer l'observation d'une autre machine :
+Le tenancier publie sa propre observation `[OBS]` dans la **référence** (dépôt privé `jsboige/coursia-gpu-ledger`, branche `ops/gpu-ledger`) ; le dashboard `CoursIA-gpu-reservation-ledger` en reçoit la **copie** lisible. Pour récupérer l'observation d'une autre machine :
 
-1. **DM nominatif** (canal principal) : `roosync_messages send --to myia-po-2023:CoursIA-3 --subject "[gpu-status probe] 2026-10-08T03:55Z" --body "Peux-tu poster un [OBS] rafraîchi pour myia-po-2023#gpu0 et #gpu1 sur le dashboard CoursIA-gpu-reservation-ledger ? Format JSON-LINE sur une ligne. Merci."` — réponse attendue < 5 min en session worker active, < 1 h en cron.
-2. **Fallback lecture dashboard** : `roosync_dashboard read --type workspace --section all` puis grep `[OBS]` filtré par entité. Les observations sont tagguées par `entity: "myia-po-2023#gpu0"` dans le JSON, donc matchable.
+1. **DM nominatif** (canal principal) : `roosync_messages send --to myia-po-2023:CoursIA-3 --subject "[gpu-status probe] 2026-10-08T03:55Z" --body "Peux-tu publier un [OBS] rafraîchi pour myia-po-2023#gpu0 et #gpu1 dans la référence (dépôt privé jsboige/coursia-gpu-ledger, branche ops/gpu-ledger) ? Format JSON-LINE sur une ligne. Le dashboard en recevra la copie. Merci."` — réponse attendue < 5 min en session worker active, < 1 h en cron.
+2. **Lecture de la référence, puis de sa copie** : la **référence** est lue en premier (c'est l'autorité) ; le dashboard n'en est plus qu'une copie de repli, à lire quand la référence est inaccessible (réseau coupé, secret absent, machine hors ligne) : `roosync_dashboard read --type workspace --section all` puis grep `[OBS]` filtré par entité. Les observations sont tagguées par `entity: "myia-po-2023#gpu0"` dans le JSON, donc matchable.
 3. **Cache local** : les observations récentes (< 24 h) sont cachées dans `scripts/coordination/_local/gpu_status_cache.json` pour éviter le ping à chaque décision de routage. Le cache est rafraîchi au prochain DM probe ou à l'expiration du TTL.
 
 ### Garde — ne PAS interférer avec le vLLM (c.258)
@@ -369,6 +395,7 @@ L'observation `[OBS]` d'un slot gpu0/gpu1 sur ai-01 est **interdite** : ces slot
 ## Historique des livrables (#16737)
 
 - **1er livrable (c.255)** : protocole initial — format `[OBS]`, garde 85 %, CUDA devices explicites, GPU 2 uniquement, fold hebdo, liaison picker / #1454.
+- **Garde relevée à 90 % (2026-10-29, mandat user direct)** : la garde d'admission n'est plus 85 % mais **90 %** — 85 % est le régime nominal de la machine, pas son plafond, et un garde posé là refuse des lancements sains. Appliqué dans la règle 1 ci-dessus et dans le défaut `-MaxCommitChargePct` de `launch_capped.ps1`. La mention « garde 85 % » du 1er livrable reste comme **état historique** de ce livrable.
 - **2e livrable (c.257)** : 1re observation `[OBS]` + corrections paths + section "Liaison picker ↔ file #1454" + heuristique pre-launch + sous-commande `check_pending --entity`.
 - **3e livrable (c.258)** : liaison cross-machine — topologie GPU (ai-01: gpu0/1=vLLM, gpu2=training ; po-* à confirmer), protocole de récupération cross-machine (DM nominatif + dashboard + cache 24h), garde vLLM, trigger de mise à jour.
 - **4e livrable (c.260, PR #19855)** : implémentation de la sous-commande `check_pending` + fonction pure `evaluate_gpu_pending()`. **Ce commit (4e livrable doc)** aligne le protocole sur le schéma réel de `debt_ledger.py` (state/holder/workload/started_at/expected_end/issue) et corrige les noms de verdicts (`RELEASED`/`STALE` au lieu de `EXPIRED`).

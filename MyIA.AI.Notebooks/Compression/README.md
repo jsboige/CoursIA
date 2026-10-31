@@ -34,6 +34,7 @@ Lean des définitions est prévu par les plis suivants.
 | [Compression-02 — Huffman canonique : des longueurs aux tables de décodage](Compression-02-HuffmanCanonique-Python.ipynb) | Découverte | forme canonique de Schwartz-Kallick (l'en-tête réduit aux longueurs), table de décodage $2^L$ et son coût mémoire, aller-retour octet-exact sur un extrait réel, débits mesurés contre chiffres cités |
 | [Compression-03 — LZ77 : compresser par références dans une fenêtre glissante](Compression-03-LZ77-Python.ipynb) | Licence | parse LZ77 en littéraux et couples (décalage, longueur), copie chevauchante, structure `LZData` à trois flux sur le modèle zstd, coût d'un triplet et double couche LZ + entropie, débit de la recherche naïve contre un tableau de suffixes |
 | [Compression-04 — ANS : coder des bits fractionnaires par l'état (rANS, tANS)](Compression-04-ANS-Python.ipynb) | Licence | plafond Huffman sur source déséquilibrée, pas rANS et état porteur d'entropie, streaming par blocs avec retour prouvé à M, tables tANS par pavage dyadique et appariement tourné, validation exhaustive des transitions, banc de taux et débits contre Huffman et zlib |
+| [Compression-04b — Codecs SOTA : le front de Pareto vitesse × taux](Compression-04b-CodecsSOTA-Pareto-Python.ipynb) | Recherche | sondage honnête des codecs réellement présents (`zlib`, `bz2`, `lzma`, `zstd`, `brotli`, `lz4`) et des absents (`openzl`, codecs de la distribution 7-Zip), banc à deux axes sur trois corpus avec aller-retour octet-exact par empreinte, front de Pareto **calculé** et lu séparément sur la vitesse d'encodage et de décodage, quatre régimes croisant taux et vitesse, balayage des niveaux zstd montrant qu'un même codec traverse plusieurs régimes, témoin négatif sur l'incompressible |
 | [Compression-05 — Compression des modèles : quantifier, élaguer, distiller](Compression-05-MLCompression-Python.ipynb) | Licence | vue d'ensemble des trois familles appliquées à un réseau entraîné — quantification FP16/INT8, élagage par magnitude, distillation maître-élève — sur un terrain synthétique CPU ; cellules adaptées des `3.9-*` de la série ML, mesures avant/après sur une même référence et pont vers le compression-progress (ICT-17b) |
 | [Compression-06 — MDL : décrire le modèle autant que les données](Compression-06-MDL-Kolmogorov-Python.ipynb) | Licence | principe MDL en deux parties, précision optimale `b*` d'un modèle quantifié sur 16 Kio du *Horla*, coût du modèle amorti par `n` mesuré contre la loi en `0,5 log2(n)`, complexité de Kolmogorov non calculable et trois bornes supérieures mesurées |
 
@@ -62,6 +63,19 @@ dyadique. Le carnet valide chaque codeur par round-trips aléatoires et une
 tous les codeurs entropiques collent à l'entropie (écart de 2 à 5 centièmes),
 mais sur une source à 99 %/1 % tANS rend 0,09 bit/symbole là où Huffman rend
 1,0000.
+
+Compression-04b en une phrase : un codec n'est pas un score, c'est un point
+dans le plan taux × vitesse, et le vainqueur change selon l'axe de vitesse
+qu'on regarde. Le carnet sonde les codecs réellement installés, mesure neuf
+d'entre eux sur trois corpus avec un aller-retour octet-exact vérifié par
+empreinte, puis **calcule** le front de Pareto : sur 128 Kio du *Horla*, `bz2
+-9` reste le meilleur taux (2,5970 bits/octet, 2,02 bits sous l'entropie
+d'ordre 0) et bat sur ce corpus `brotli -11`, `lzma -6` et `zstd -19` en taux
+comme en vitesse d'encodage ; le front de décodage, lui, change de membres.
+Il établit aussi ce que le carnet 04 ne pouvait pas refermer : les codecs de
+production descendent **sous** l'entropie des octets parce qu'ils ne
+transmettent pas ces octets — et il montre qu'une grille de régimes se décide
+par son seuil, raison pour laquelle le front est calculé et non désigné.
 
 Compression-05 en une phrase : un réseau entraîné est un fichier de poids à
 4 octets qui se comprime de trois façons complémentaires — **quantifier**

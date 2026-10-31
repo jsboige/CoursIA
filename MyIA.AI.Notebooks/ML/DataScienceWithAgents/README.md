@@ -110,6 +110,7 @@ DataScienceWithAgents/
 │
 ├── 03-Deep-Learning/            # Deep learning from scratch
 │   ├── 3.0-Theorie-Information.ipynb
+│   ├── 3.0b-Tenseurs-Strides-Vues-Python.ipynb
 │   ├── 3.1-Retropropagation.ipynb
 │   ├── 3.2-Optimisateurs.ipynb
 │   ├── 3.3-Regularisation.ipynb
@@ -127,7 +128,7 @@ DataScienceWithAgents/
 │   ├── 4.2b-Lean-GradientFlow-Vanishing.ipynb
 │   └── 4.3-TransferLearning-ResNet.ipynb
 │
-├── 04b-Wavelet-Scattering/   # Ondelettes et scattering : analyse multi-résolution
+├── 05-Wavelet-Scattering/   # Ondelettes et scattering : analyse multi-résolution
 │   ├── WS-00a-Ondelettes-1D-from-scratch.ipynb
 │   ├── WS-00b-Ondelettes-2D-from-scratch.ipynb
 │   └── WS-01-Denoising-SOTA.ipynb
@@ -200,6 +201,7 @@ Le prolongement direct du socle : là où [2.2](02-ML-Cours/2.2-Descente-de-grad
 | Notebook | Sujet | Concept-phare |
 |----------|-------|---------------|
 | [3.0-Theorie-Information](03-Deep-Learning/3.0-Theorie-Information.ipynb) | Entropie, cross-entropy et KL from scratch sur texte français, MSE vs CE sur classifieur, température softmax, pont DPO/GRPO | **La loss qui fait apprendre** : pourquoi la CE et pas la MSE ; KL comme mesure de décalage entre distributions |
+| [3.0b-Tenseurs-Strides-Vues](03-Deep-Learning/3.0b-Tenseurs-Strides-Vues-Python.ipynb) | Le support mémoire du tenseur à la main : buffer, offset, forme et strides en NumPy pur, parité mesurée avec PyTorch (vues, `expand`, `view`, gradient), fenêtres glissantes et im2col | **L'adresse comme formule** : toute opération « sans copie » ne fait que réécrire les pas |
 | [3.1-Retropropagation](03-Deep-Learning/3.1-Retropropagation.ipynb) | Le MLP et la rétropropagation à la main (NumPy pur, sans autograd) | **Le gradient vérifié** (différence finie 1,3e-11 ; parité exacte avec PyTorch ; init nulle = gradient nul) |
 | [3.2-Optimisateurs](03-Deep-Learning/3.2-Optimisateurs.ipynb) | Momentum, Adagrad, RMSProp, Adam et schedules, écrits puis validés pas à pas contre `torch.optim` | **La parité exacte** (5 mises à jour identiques à ≤2,2e-16 ; Beale 5 trajectoires ; MLP 3 graines ; schedules : coût en déterministe, gain en bruité) |
 | [3.3-Regularisation](03-Deep-Learning/3.3-Regularisation.ipynb) | Dropout, weight decay et early stopping écrits à la main sur un MLP construit pour surapprendre (17 000 paramètres, 100 points, 12 étiquettes fausses) | **Corriger la variance sans changer le modèle** : trois remèdes appliqués au même surapprentissage fabriqué |
@@ -224,17 +226,17 @@ Documentation complète : [03-Deep-Learning/README.md](03-Deep-Learning/README.m
 
 Documentation complète : [04-Vision/README.md](04-Vision/README.md)
 
-## Ondelettes et scattering (04b-Wavelet-Scattering)
+## Ondelettes et scattering (05-Wavelet-Scattering)
 
 Série d'analyse multi-résolution dans la même discipline from scratch : la transformée en ondelettes 1D écrite à la main (synthèse = adjoint exact de l'analyse), validée coefficient par coefficient contre PyWavelets, puis mise au travail sur le débruitage — seuillage sans oracle contre passe-bas Fourier avec oracle — avant son extension 2D séparable aux bandes orientées et à la compression d'image.
 
 | Notebook | Sujet | Concept-phare |
 |----------|-------|---------------|
-| [WS-00a-Ondelettes-1D-from-scratch](04b-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch.ipynb) | DWT orthonormale à la main (Haar, D4, db4), profil d'énergie par échelle, débruitage par seuillage dur/doux (seuil universel, sans oracle) contre passe-bas Fourier (cutoffs garde-tout/étroit/libre, avec oracle), banc Donoho-Johnstone (Doppler, HeaviSine, Stationnaire+burst) | **Aucune base n'est universellement parcimonieuse** : ondelette +4,5 dB sur le chirp sans oracle, Fourier +4,8 dB sur le stationnaire avec oracle, mixte serré |
-| [WS-00b-Ondelettes-2D-from-scratch](04b-Wavelet-Scattering/WS-00b-Ondelettes-2D-from-scratch.ipynb) | Transformée 2D séparable = produit tensoriel du moteur 1D de WS-00a, pyramide de Mallat, contrôle d'orientation sur motifs à orientation connue, reconstruction parfaite + `allclose` bande par bande contre PyWavelets, duel de compression à budget apparié contre une DCT 8×8 | **Le pouvoir de parcimonie est conditionnel au budget** : db4 écrase la DCT 8×8 de +16,4 dB à 0,2 % de coefficients retenus, mais l'écart tombe à ~0,2 dB dès 5 % |
-| [WS-01-Denoising-SOTA](04b-Wavelet-Scattering/WS-01-Denoising-SOTA.ipynb) | Bloc B : duel débruitage d'images (4 images × 3 sigmas × 3 graines) entre la baseline from scratch (moteur WS-00b, seuil universel de WS-00a) et les estimateurs SOTA — VisuShrink/BayesShrink (`skimage`), SureShrink écrit à la main (SURE validé contre force brute) sur coefficients `pywt` | **À transformée identique, l'écart vient du seuil, pas du moteur** : BayesShrink adaptatif par sous-bande gagne +2,2 à +3,0 dB sur le seuil universel global à chaque régime de bruit |
+| [WS-00a-Ondelettes-1D-from-scratch](05-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch.ipynb) | DWT orthonormale à la main (Haar, D4, db4), profil d'énergie par échelle, débruitage par seuillage dur/doux (seuil universel, sans oracle) contre passe-bas Fourier (cutoffs garde-tout/étroit/libre, avec oracle), banc Donoho-Johnstone (Doppler, HeaviSine, Stationnaire+burst) | **Aucune base n'est universellement parcimonieuse** : ondelette +4,5 dB sur le chirp sans oracle, Fourier +4,8 dB sur le stationnaire avec oracle, mixte serré |
+| [WS-00b-Ondelettes-2D-from-scratch](05-Wavelet-Scattering/WS-00b-Ondelettes-2D-from-scratch.ipynb) | Transformée 2D séparable = produit tensoriel du moteur 1D de WS-00a, pyramide de Mallat, contrôle d'orientation sur motifs à orientation connue, reconstruction parfaite + `allclose` bande par bande contre PyWavelets, duel de compression à budget apparié contre une DCT 8×8 | **Le pouvoir de parcimonie est conditionnel au budget** : db4 écrase la DCT 8×8 de +16,4 dB à 0,2 % de coefficients retenus, mais l'écart tombe à ~0,2 dB dès 5 % |
+| [WS-01-Denoising-SOTA](05-Wavelet-Scattering/WS-01-Denoising-SOTA.ipynb) | Bloc B : duel débruitage d'images (4 images × 3 sigmas × 3 graines) entre la baseline from scratch (moteur WS-00b, seuil universel de WS-00a) et les estimateurs SOTA — VisuShrink/BayesShrink (`skimage`), SureShrink écrit à la main (SURE validé contre force brute) sur coefficients `pywt` | **À transformée identique, l'écart vient du seuil, pas du moteur** : BayesShrink adaptatif par sous-bande gagne +2,2 à +3,0 dB sur le seuil universel global à chaque régime de bruit |
 
-Documentation complète : [04b-Wavelet-Scattering/README.md](04b-Wavelet-Scattering/README.md)
+Documentation complète : [05-Wavelet-Scattering/README.md](05-Wavelet-Scattering/README.md)
 
 ## Workshop 3 Jours (Track1-LangChain)
 
