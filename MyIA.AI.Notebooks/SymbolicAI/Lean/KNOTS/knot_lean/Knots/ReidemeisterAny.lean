@@ -2664,4 +2664,88 @@ theorem no_verifyR1Fwd_renamed_pair (π : Nat → Nat) :
 theorem renamed_target_wf_identity : (renameDiagram id kinkAnyTarget).wf = true := by
   decide
 
+/-! ## 20. Arithmetique des comptes -- briques du certificat negatif borne
+
+Le plancher de comptage (t11 : aucune chaine `_any` bornee ne relie un pli
+de `11n102` au diagramme nœud) se prouve sans enumeration : chaque
+verificateur fixe l'ecart des longueurs **par construction** (`+1` kink,
+`+2` bigon, `0` triangle), et la chaine propage cette comptabilite par
+induction. Les extractions ci-dessous lisent ces conjoncts directement --
+aucun raisonnement sur la chirurgie n'est requis a ce niveau. La partie
+difficile du certificat (les motifs amovibles ne peuvent exceder le surplus
+cree par les pas montants) vient ensuite ; ces briques en sont le socle.
+-/
+
+/-- Le retrait `_any` d'un kink raccourcit exactement d'un croisement :
+    le conjonct de longueur du verificateur, extrait tel quel. -/
+theorem verifyKinkDownAny_length (D d : KnotDiagram)
+    (h : verifyKinkDownAny D d = true) :
+    d.crossings.length + 1 = D.crossings.length := by
+  cases hL : D.crossings.getLast? with
+  | none => simp [verifyKinkDownAny, hL] at h
+  | some K =>
+    simp only [verifyKinkDownAny, hL, Bool.and_eq_true] at h
+    exact (of_decide_eq_true h.2.1).2
+
+/-- Le retrait `_any` d'une paire de bigons raccourcit exactement de deux
+    croisements : conjonct de longueur, extrait tel quel. -/
+theorem verifyBigonDownAny_length (D d : KnotDiagram)
+    (h : verifyBigonDownAny D d = true) :
+    d.crossings.length + 2 = D.crossings.length := by
+  cases hL : D.crossings.getLast? with
+  | none => simp [verifyBigonDownAny, hL] at h
+  | some K₂ =>
+    cases hL2 : D.crossings.dropLast.getLast? with
+    | none => simp [verifyBigonDownAny, hL, hL2] at h
+    | some K₁ =>
+      simp only [verifyBigonDownAny, hL, hL2, Bool.and_eq_true] at h
+      exact (of_decide_eq_true h.2.1).2.2.2
+
+/-- Le glissement triangulaire preserve exactement le compte : conjonct
+    de longueur de `verifyR3Fwd`, extrait tel quel. -/
+theorem verifyR3Fwd_length (d d' : KnotDiagram)
+    (h : verifyR3Fwd d d' = true) :
+    d.crossings.length = d'.crossings.length := by
+  simp only [verifyR3Fwd, Bool.and_eq_true] at h
+  exact of_decide_eq_true h.1.1.2
+
+/-- La forme direction-neutre du triangle preserve le compte (les deux
+    orientations portent la meme egalite). -/
+theorem verifyR3_length (d d' : KnotDiagram)
+    (h : verifyR3 d d' = true) :
+    d.crossings.length = d'.crossings.length := by
+  unfold verifyR3 at h
+  rcases Bool.or_eq_true_iff.mp h with h | h
+  · exact verifyR3Fwd_length d d' h
+  · exact (verifyR3Fwd_length d' d h).symm
+
+/-- Un pas kink `_any` verifie change le compte d'exactement un, dans un
+    sens ou l'autre (le verificateur est direction-neutre). -/
+theorem verifyAnyMove_r1Any_length {s t : KnotDiagram}
+    (h : verifyAnyMove (AnyMove.r1Any s t) = true) :
+    t.crossings.length = s.crossings.length + 1 ∨
+    s.crossings.length = t.crossings.length + 1 := by
+  simp only [verifyAnyMove, Bool.or_eq_true] at h
+  rcases h with h | h
+  · exact Or.inl (verifyKinkDownAny_length t s h).symm
+  · exact Or.inr (verifyKinkDownAny_length s t h).symm
+
+/-- Un pas bigon `_any` verifie change le compte d'exactement deux, dans
+    un sens ou l'autre. -/
+theorem verifyAnyMove_r2Any_length {s t : KnotDiagram}
+    (h : verifyAnyMove (AnyMove.r2Any s t) = true) :
+    t.crossings.length = s.crossings.length + 2 ∨
+    s.crossings.length = t.crossings.length + 2 := by
+  simp only [verifyAnyMove, Bool.or_eq_true] at h
+  rcases h with h | h
+  · exact Or.inl (verifyBigonDownAny_length t s h).symm
+  · exact Or.inr (verifyBigonDownAny_length s t h).symm
+
+/-- Un pas triangle `_any` verifie preserve exactement le compte. -/
+theorem verifyAnyMove_r3Any_length {s t : KnotDiagram}
+    (h : verifyAnyMove (AnyMove.r3Any s t) = true) :
+    t.crossings.length = s.crossings.length := by
+  simp only [verifyAnyMove] at h
+  exact (verifyR3_length s t h).symm
+
 end Knots.AnyMoves

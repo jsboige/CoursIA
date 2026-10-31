@@ -2662,4 +2662,88 @@ theorem no_verifyR1Fwd_renamed_pair (π : Nat → Nat) :
 theorem renamed_target_wf_identity : (renameDiagram id kinkAnyTarget).wf = true := by
   decide
 
+/-! ## 20. Count arithmetic -- building blocks of the bounded negative certificate
+
+The counting floor (t11: no bounded `_any` chain connects a fold of
+`11n102` to the unknot diagram) is proved without enumeration: each
+verifier fixes the length gap **by construction** (`+1` kink, `+2` bigon,
+`0` triangle), and the chain propagates that bookkeeping by induction.
+The extractions below read those conjuncts directly -- no reasoning about
+the surgery is needed at this level. The hard part of the certificate
+(removable patterns cannot exceed the surplus created by upward steps)
+comes next; these blocks are its foundation.
+-/
+
+/-- The `_any` kink removal shortens the diagram by exactly one crossing:
+    the length conjunct of the verifier, extracted as is. -/
+theorem verifyKinkDownAny_length (D d : KnotDiagram)
+    (h : verifyKinkDownAny D d = true) :
+    d.crossings.length + 1 = D.crossings.length := by
+  cases hL : D.crossings.getLast? with
+  | none => simp [verifyKinkDownAny, hL] at h
+  | some K =>
+    simp only [verifyKinkDownAny, hL, Bool.and_eq_true] at h
+    exact (of_decide_eq_true h.2.1).2
+
+/-- The `_any` bigon-pair removal shortens the diagram by exactly two
+    crossings: the length conjunct, extracted as is. -/
+theorem verifyBigonDownAny_length (D d : KnotDiagram)
+    (h : verifyBigonDownAny D d = true) :
+    d.crossings.length + 2 = D.crossings.length := by
+  cases hL : D.crossings.getLast? with
+  | none => simp [verifyBigonDownAny, hL] at h
+  | some K₂ =>
+    cases hL2 : D.crossings.dropLast.getLast? with
+    | none => simp [verifyBigonDownAny, hL, hL2] at h
+    | some K₁ =>
+      simp only [verifyBigonDownAny, hL, hL2, Bool.and_eq_true] at h
+      exact (of_decide_eq_true h.2.1).2.2.2
+
+/-- The triangle slide preserves the count exactly: the length conjunct
+    of `verifyR3Fwd`, extracted as is. -/
+theorem verifyR3Fwd_length (d d' : KnotDiagram)
+    (h : verifyR3Fwd d d' = true) :
+    d.crossings.length = d'.crossings.length := by
+  simp only [verifyR3Fwd, Bool.and_eq_true] at h
+  exact of_decide_eq_true h.1.1.2
+
+/-- The direction-neutral form of the triangle preserves the count (both
+    orientations carry the same equality). -/
+theorem verifyR3_length (d d' : KnotDiagram)
+    (h : verifyR3 d d' = true) :
+    d.crossings.length = d'.crossings.length := by
+  unfold verifyR3 at h
+  rcases Bool.or_eq_true_iff.mp h with h | h
+  · exact verifyR3Fwd_length d d' h
+  · exact (verifyR3Fwd_length d' d h).symm
+
+/-- A verified `_any` kink step changes the count by exactly one, in
+    either direction (the verifier is direction-neutral). -/
+theorem verifyAnyMove_r1Any_length {s t : KnotDiagram}
+    (h : verifyAnyMove (AnyMove.r1Any s t) = true) :
+    t.crossings.length = s.crossings.length + 1 ∨
+    s.crossings.length = t.crossings.length + 1 := by
+  simp only [verifyAnyMove, Bool.or_eq_true] at h
+  rcases h with h | h
+  · exact Or.inl (verifyKinkDownAny_length t s h).symm
+  · exact Or.inr (verifyKinkDownAny_length s t h).symm
+
+/-- A verified `_any` bigon step changes the count by exactly two, in
+    either direction. -/
+theorem verifyAnyMove_r2Any_length {s t : KnotDiagram}
+    (h : verifyAnyMove (AnyMove.r2Any s t) = true) :
+    t.crossings.length = s.crossings.length + 2 ∨
+    s.crossings.length = t.crossings.length + 2 := by
+  simp only [verifyAnyMove, Bool.or_eq_true] at h
+  rcases h with h | h
+  · exact Or.inl (verifyBigonDownAny_length t s h).symm
+  · exact Or.inr (verifyBigonDownAny_length s t h).symm
+
+/-- A verified `_any` triangle step preserves the count exactly. -/
+theorem verifyAnyMove_r3Any_length {s t : KnotDiagram}
+    (h : verifyAnyMove (AnyMove.r3Any s t) = true) :
+    t.crossings.length = s.crossings.length := by
+  simp only [verifyAnyMove] at h
+  exact (verifyR3_length s t h).symm
+
 end Knots_en.AnyMoves
