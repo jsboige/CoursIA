@@ -273,6 +273,11 @@ def test_verdict_conforme_a_la_table_de_verite_exhaustive():
         (["a ^ b", "a"], "!b", True),
         (["(a | b) -> c", "a"], "c", True),
         (["(a | b) -> c", "a"], "!c", False),
+        # implication niee dans la requete (polarite du defaut encodeur #1) :
+        ([], "a -> a", True),
+        (["!a"], "a -> b", True),
+        (["a"], "a <-> a", True),
+        (["!(a -> b)"], "!b", True),
     ]
 
     handler = SATHandler()
