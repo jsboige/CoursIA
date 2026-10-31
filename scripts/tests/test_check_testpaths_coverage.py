@@ -41,6 +41,7 @@ from check_testpaths_coverage import (  # noqa: E402
     load_testpaths,
     missing_declared_suites,
     uncovered_suites,
+    verify_declared_test_cwd,
 )
 
 
@@ -355,6 +356,125 @@ def test_run_inventory_est_advisory_par_defaut(tmp_path: Path) -> None:
 
     assert run_inventory(tmp_path, [], {}, strict=False) == []
     assert run_inventory(tmp_path, [], {}, strict=True) == ["scripts/beta/tests"]
+
+
+def test_run_inventory_une_cible_dossier_de_workflow_couvre(tmp_path: Path) -> None:
+    """Controle positif : un dossier joue par un workflow dedie ne sort pas.
+
+    C'est le defaut fondateur de #23648 : l'inventaire ne lisait que
+    `pytest.ini` et annoncait comme non surveillees des suites qu'un workflow
+    joue, dont `Geometry/tests` qui figure pourtant dans WORKFLOW_COVERAGE.
+    """
+    from check_testpaths_coverage import run_inventory
+
+    _make_suite(tmp_path, "MyIA.AI.Notebooks/Geometry/tests")
+    _make_suite(tmp_path, "scripts/beta/tests")
+
+    unwatched = run_inventory(
+        tmp_path,
+        [],
+        {},
+        strict=True,
+        workflow_coverage={"w.yml": ["MyIA.AI.Notebooks/Geometry/tests"]},
+        workflow_test_cwd={},
+    )
+
+    assert unwatched == ["scripts/beta/tests"]
+
+
+def test_run_inventory_un_perimetre_test_cwd_couvre(tmp_path: Path) -> None:
+    """Un perimetre `test-cwd` declare couvre le dossier qu'il designe."""
+    from check_testpaths_coverage import run_inventory
+
+    _make_suite(tmp_path, "MyIA.AI.Notebooks/IIT/ICT-Series/tests")
+    _make_suite(tmp_path, "MyIA.AI.Notebooks/IIT/ICT-Series/scripts/tests")
+
+    unwatched = run_inventory(
+        tmp_path,
+        [],
+        {},
+        strict=True,
+        workflow_coverage={},
+        workflow_test_cwd={"ict-tests.yml": ["MyIA.AI.Notebooks/IIT/ICT-Series/tests"]},
+    )
+
+    assert unwatched == ["MyIA.AI.Notebooks/IIT/ICT-Series/scripts/tests"]
+
+
+def test_run_inventory_une_cible_fichier_rend_partiellement_surveille(
+    tmp_path: Path,
+) -> None:
+    """Une cible-fichier dedans ne couvre pas le dossier, mais l'en retire pas.
+
+    Le dossier n'est pas declare couvert (les autres tests du dossier ne
+    tournent pas), il n'est pas declare trou non plus (un test tourne) : le
+    sortir comme l'un ou l'autre affirmerait plus que la mesure.
+    """
+    from check_testpaths_coverage import run_inventory
+
+    _make_suite(tmp_path, "MyIA.AI.Notebooks/Sudoku/tests")
+
+    unwatched = run_inventory(
+        tmp_path,
+        [],
+        {},
+        strict=True,
+        workflow_coverage={"w.yml": ["MyIA.AI.Notebooks/Sudoku/tests/test_dlx.py"]},
+        workflow_test_cwd={},
+    )
+
+    assert unwatched == []
+
+
+def _make_matrix_workflow(root: Path, cwd: str, args: str) -> None:
+    """Pose un workflow a matrice portant un couple test-cwd / test-args."""
+    wf_dir = root / ".github" / "workflows"
+    wf_dir.mkdir(parents=True, exist_ok=True)
+    (wf_dir / "w.yml").write_text(
+        "name: t\non: [push]\njobs:\n  t:\n    strategy:\n      matrix:\n"
+        "        include:\n"
+        f"          - test-cwd: {cwd}\n"
+        f'            test-args: "{args}"\n',
+        encoding="utf-8",
+    )
+
+
+def test_verify_declared_test_cwd_accepte_la_jointure(tmp_path: Path) -> None:
+    """Le perimetre se valide par le `test-cwd` ou par la jointure cwd/args."""
+    from check_testpaths_coverage import verify_declared_test_cwd
+
+    _make_matrix_workflow(tmp_path, "S/tests", ".")
+    assert (
+        verify_declared_test_cwd(
+            tmp_path, False, test_cwd={".github/workflows/w.yml": ["S/tests"]}
+        )
+        == []
+    )
+
+    (tmp_path / ".github" / "workflows" / "w.yml").unlink()
+    _make_matrix_workflow(tmp_path, "S", "tests")
+    assert (
+        verify_declared_test_cwd(
+            tmp_path, False, test_cwd={".github/workflows/w.yml": ["S/tests"]}
+        )
+        == []
+    )
+
+
+def test_verify_declared_test_cwd_rougit_sur_un_perimetre_absent(
+    tmp_path: Path,
+) -> None:
+    """Un perimetre declare que le workflow ne joue plus est une derive."""
+    from check_testpaths_coverage import verify_declared_test_cwd
+
+    _make_matrix_workflow(tmp_path, "S/tests", ".")
+
+    problems = verify_declared_test_cwd(
+        tmp_path, False, test_cwd={".github/workflows/w.yml": ["S/other/tests"]}
+    )
+
+    assert len(problems) == 1
+    assert "S/other/tests" in problems[0]
 # --- #22735 : troisième sens, l'invariant de résolution des noms de modules ---
 
 
