@@ -16,7 +16,7 @@ Deux réserves ouvertes, l'une par la page sœur, l'autre par la page de relevé
 | Réserve | Où | État après cette page |
 |---|---|---|
 | « Les modèles `4b` : **non mesurés** … L'affirmation "24 Go" reste donc **non réfutée pour `4b`** » | [decision-models-local-verification.md](decision-models-local-verification.md) §5 | **close** — les deux checkpoints sont mesurés, sur GPU, avec leur pic VRAM |
-| « Le besoin 24 Go **reste non réfuté pour `4b`** (non mesuré) » | [decision-models.md](decision-models.md), ligne de statut | **close sur le fond** ; la **correction de la ligne** est due à une PR de suivi (voir §7) |
+| « Le besoin 24 Go **reste non réfuté pour `4b`** (non mesuré) » | [decision-models.md](decision-models.md), ligne de statut | **close sur le fond** ; la **correction de la ligne** de statut reste due — cette page ne modifie pas [decision-models.md](decision-models.md) |
 
 La réserve « le score de l'index n'est pas reproductible » **reste ouverte** : c'est un échec de données, pas de mesure (les charges utiles de `multimodalart/decision-index-suite-0.3` répondent **401**).
 
@@ -95,7 +95,7 @@ Ce que la comparaison **ne dit pas** : les **temps** ne sont pas comparables ent
 
 Le pic est mesuré par `torch.cuda.max_memory_allocated()` (mémoire **allouée**, pas réservée), après `reset_peak_memory_stats()` : **8,02 Gio** pour les deux checkpoints.
 
-- Un modèle de **4 Md de paramètres en bfloat16** représente **7,45 Gio** de poids seuls ; le solde (**~0,57 Gio**) couvre les activations de la passe et la tête de lecture.
+- Les **poids** occupent **7,83 Gio** : le dépôt `eljiwo/jiwo-4b` déclare `safetensors` = **4 205 751 296** paramètres en **BF16**, et ses deux fragments pèsent 8 411 549 328 octets ; la tête de lecture `readout.safetensors` ajoute 1,3 Mo (~0,001 Gio). Le solde (**~0,19 Gio**) couvre les **activations** de la passe.
 - **8,02 Gio < 23,99 Gio** : le seuil « 24 Go » est **réfuté** pour ce palier. Le service tient sur une carte de **16 Go** sans tension.
 - **8,02 Gio > 8,00 Gio** : il ne tient **pas** sur la carte 8 Gio qui sert de référence au palier `0.8b` (RTX 3070 Ti Laptop, 8,0 Gio). Sur cette carte, l'organe basculerait le modèle en **CPU float32** — repli documenté de l'organe, **ici non mesuré** : c'est une inférence d'encombrement, pas une observation.
 
