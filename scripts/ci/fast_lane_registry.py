@@ -2588,7 +2588,7 @@ TRANCHE28: list[Guard] = [
 
 
 # ---------------------------------------------------------------------------
-# TRANCHE 30 (#23073) -- garde des versions de bibliotheques chargees par les
+# TRANCHE 31 (#23073) -- garde des versions de bibliotheques chargees par les
 # carnets.
 #
 # Renumerote TRANCHE29 -> TRANCHE30 au merge de `main` du 2026-10-30 :
@@ -2636,7 +2636,7 @@ TRANCHE28: list[Guard] = [
 # range dans le seau advisory : un `failure` publie ne doit jamais tenir le
 # merge.
 # ---------------------------------------------------------------------------
-TRANCHE30: list[Guard] = [
+TRANCHE31: list[Guard] = [
     Guard(
         name="Library versions guard (advisory, #23073)",
         source=FAST_LANE_NATIVE,

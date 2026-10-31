@@ -508,7 +508,7 @@ def _registry():
 def test_guard_is_registered_as_advisory():
     """Le garde est enregistre, en advisory, et son nom porte la mention."""
     registry = _registry()
-    guards = {g.name: g for g in registry.TRANCHE30}
+    guards = {g.name: g for g in registry.TRANCHE31}
     guard = guards["Library versions guard (advisory, #23073)"]
     assert guard.blocking is False
     assert guard.needs_base is True
@@ -519,7 +519,7 @@ def test_guard_is_registered_as_advisory():
 def test_guard_is_aggregated_by_the_fast_lane_engine():
     """Un groupe non cable n'est jamais execute : le geste doit etre dans l'engine."""
     engine = (REPO_ROOT / "scripts" / "ci" / "fast_lane.py").read_text(encoding="utf-8")
-    assert "TRANCHE30" in engine, "le groupe TRANCHE30 n'est pas cable dans fast_lane.py"
+    assert "TRANCHE31" in engine, "le groupe TRANCHE31 n'est pas cable dans fast_lane.py"
 
 
 # --------------------------------------------------------------------------
