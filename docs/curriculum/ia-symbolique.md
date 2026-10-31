@@ -81,8 +81,8 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 7 | [ANALYSE-05b - Le KLS constant est-il O(1) ? Le passage…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-05b-KLS-Song-Zhang-O1.ipynb) | BETA | Non |
 | 8 | [ANALYSE-06 : Sensibilité 2026 — Huang, le décideur qui…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean-Python.ipynb) | BETA | Non |
 | 9 | [ANALYSE-06: Sensitivity 2026 — Huang, the refuting…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean-Python_en.ipynb) | BETA | Non |
-| 10 | [ANALYSE-06 — Sensibilité 2026 : notre lac face aux…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean.ipynb) | BETA | Non |
-| 11 | [ANALYSE-06 — Sensitivity 2026: our lake facing the…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean_en.ipynb) | BETA | Non |
+| 10 | [ANALYSE-06b — Sensibilité 2026 : notre lac face aux…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06b-Sensibilite-2026-Lean.ipynb) | BETA | Non |
+| 11 | [ANALYSE-06b — Sensitivity 2026: our lake facing the…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06b-Sensibilite-2026-Lean_en.ipynb) | BETA | Non |
 | 12 | [ANALYSE-07 — Percolation critique et Ising sur l'arbre…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-07-Percolation-Critique.ipynb) | BETA | Non |
 | 13 | [ANALYSE-07 — Critical percolation and Ising on the tree…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-07-Percolation-Critique_en.ipynb) | BETA | Non |
 | 14 | [ANALYSE-08 : Ramsey et van der Waerden — l'énumération…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-08-Ramsey-VdW.ipynb) | BETA | Non |

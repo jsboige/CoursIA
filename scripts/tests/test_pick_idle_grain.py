@@ -1777,6 +1777,40 @@ def test_aggregate_with_unreadable_organ_stays_with_lane(monkeypatch):
     assert {i["check"] for i in out["base_unresolved"]} == {AGG}
 
 
+def test_unreadable_organ_is_not_imputed_to_the_lane_for_foreign_prs(
+        monkeypatch, capsys):
+    """Revue `myia-po-2023` (30/10) : la sortie ne dit plus « le rouge RESTE
+    a la lane » pour des PRs qui sont d'autres lanes.
+
+    L'echantillon etranger entre dans le meme seau `base_unresolved` que les
+    PRs de la lane (le garde n'interroge les etats que de la lane ;
+    l'echantillon des 16 PRs etrangeres n'est paye qu'en complement).
+    L'affichage confondait les deux lots : la phrase « le rouge RESTE a la
+    lane » ne vaut que pour les PRs de la lane, et une lane qui lisait six
+    numeros etrangers est alle chercher un defaut d'attribution inexistant.
+    """
+    _patch_organs(monkeypatch, {})       # aucun organe lisible
+    _patch_backlog(monkeypatch, [
+        _pr(1, "myia-po-2025:CoursIA", 30),
+        _pr(2, "myia-po-2026:CoursIA", 30),
+    ], {1: _agg_red(111), 2: _agg_red(222)})
+    out = pig.red_backlog("myia-po-2025:CoursIA", 24, count_threshold=3)
+    entry = [i for i in out["base_unresolved"] if i["check"] == AGG][0]
+    assert entry["prs"] == [1, 2]
+    assert entry["prs_lane"] == [1]
+    assert entry["prs_foreign"] == [2]
+
+    pig.print_base_inherited(out)
+    printed = capsys.readouterr().out
+    lignes = [l for l in printed.splitlines() if l.strip().startswith("- ")]
+    assert len(lignes) == 2
+    assert "#1" in lignes[0] and "#2" in lignes[1]
+    # « RESTE a la lane » n'est prononce que pour la PR de la lane ;
+    # la PR etrangere est dite etrangere.
+    assert "RESTE a la lane" in printed.split("#2")[0]
+    assert "d'AUTRES lanes" in printed.split("#2")[1]
+
+
 def test_untagged_pr_never_corroborates(monkeypatch):
     """Fail-closed #14537 : sans tag de lane lisible, hors corroboration.
 
