@@ -15,6 +15,19 @@
 #     linear layers, no separate scales) that upstream images cannot load.
 #     The official fp16 snapshot is the supported path (measured 2026-10-06:
 #     warm-up 20.33GB VRAM, 3.7 tok/s generation on a RTX 3090).
+#   - A 4-bit path that DOES work on the official image is the upstream int4
+#     weight-only route (tools/llama/quantize.py) -- see quantize_int4.py and
+#     docs/genai/tts-fishaudio-int4.md for the measured recipe. It requires:
+#       * LLAMA_CHECKPOINT_PATH=checkpoints/fs-1.2-int4-g128-<timestamp>
+#       * FISHAUDIO_SERVE_SCRIPT=serve_int4.py -- the image's int4 loader
+#         branch reads `path.name` but the API server passes the checkpoint
+#         path as a str (AttributeError); the wrapper converts it to a Path.
+#         (Relative to the image workdir /app, where the compose mounts it.)
+#       * FISHAUDIO_HALF_FLAG=  (empty) -- the int4 kernel needs the
+#         `scales_and_zeros` buffers to stay bfloat16, and `--half` casts every
+#         float buffer to float16 (measured: the kernel then returns garbage).
+#         The image's own default (no --half) is bfloat16, which is also the
+#         precision the upstream quantizer uses.
 #   - The upstream image entrypoint (run_webui.py) intercepts CLI args: the
 #     compose file pins the api_server entrypoint explicitly.
 #   - Reference voices stored in ./references/ (sample.wav + sample.lab)
@@ -27,17 +40,19 @@ services:
     container_name: tts-fishaudio
     hostname: tts-fishaudio
     entrypoint: ["/app/.venv/bin/python"]
-    command:
-      - tools/api_server.py
-      - --llama-checkpoint-path
-      - ${LLAMA_CHECKPOINT_PATH:-checkpoints/s2-pro}
-      - --decoder-checkpoint-path
-      - ${DECODER_CHECKPOINT_PATH:-checkpoints/s2-pro/codec.pth}
-      - --decoder-config-name
-      - ${DECODER_CONFIG_NAME:-modded_dac_vq}
-      - --listen
-      - 0.0.0.0:8080
-      - --half
+    # Commande en forme chaine (et non liste) : le drapeau de precision doit
+    # pouvoir disparaitre sans laisser un argument vide -- argparse rejecte un
+    # argument vide, et l'image n'expose pas de `--no-half` (son `--half` est
+    # un `store_true`, dont le defaut est deja bfloat16). Meme raison pour le
+    # script de lancement : par defaut celui de l'image, le wrapper int4 pour
+    # la route quantifiee (FISHAUDIO_SERVE_SCRIPT, monte en lecture seule).
+    command: >
+      ${FISHAUDIO_SERVE_SCRIPT:-tools/api_server.py}
+      --llama-checkpoint-path ${LLAMA_CHECKPOINT_PATH:-checkpoints/s2-pro}
+      --decoder-checkpoint-path ${DECODER_CHECKPOINT_PATH:-checkpoints/s2-pro/codec.pth}
+      --decoder-config-name ${DECODER_CONFIG_NAME:-modded_dac_vq}
+      --listen 0.0.0.0:8080
+      ${FISHAUDIO_HALF_FLAG---half}
 
     ports:
       - "127.0.0.1:${FISHAUDIO_PORT:-8197}:8080"
@@ -57,6 +72,10 @@ services:
       - type: bind
         source: ${REFERENCES_PATH:-./references}
         target: /app/references
+      - type: bind
+        source: ${SERVE_SCRIPT_PATH:-./serve_int4.py}
+        target: /app/serve_int4.py
+        read_only: true
       - type: volume
         source: fishaudio-cache
         target: /root/.cache

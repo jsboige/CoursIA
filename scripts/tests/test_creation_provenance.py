@@ -164,3 +164,47 @@ def test_la_frontiere_du_seuil_est_exacte(age, attendu):
     verdict, _ = cp.decide(1, age, {"disponible": True, "vues": 0,
                                     "retenue": None})
     assert verdict == attendu
+
+
+# --- la mesure indisponible n'est pas un constat -----------------------------
+
+def test_un_gh_en_echec_leve_une_mesure_indisponible(monkeypatch):
+    """Mesure du 2026-10-30 : le quota d'installation GitHub etait epuise
+    dans le job, `gh api` est sorti non-zero, et l'organe a rendu un rouge
+    sur #22977 et #22576 -- deux PRs sans rapport avec la panne."""
+    class Faux:
+        returncode = 1
+        stderr = ("API rate limit exceeded for installation.")
+        stdout = ""
+
+    monkeypatch.setattr(cp.subprocess, "run", lambda *a, **k: Faux())
+    with pytest.raises(cp.MesureIndisponible):
+        cp.pr_files(22977)
+
+
+def test_une_mesure_indisponible_sort_0_et_ne_produit_aucun_constat(
+        monkeypatch, capsys):
+    def panne(_pr):
+        raise cp.MesureIndisponible("gh api a echoue : quota epuise")
+
+    monkeypatch.setattr(cp, "pr_meta", panne)
+    monkeypatch.setattr(cp, "pr_files", panne)
+    rc = cp.main(["--pr", "22977"])
+    sortie = capsys.readouterr().out
+    assert rc == 0
+    assert "NON MESURE (UNKNOWN)" in sortie
+    assert "constat" not in sortie
+
+
+def test_une_mesure_indisponible_nest_pas_un_constat_meme_en_strict(
+        monkeypatch, capsys):
+    """--strict rougit sur un CONSTAT. Une panne de mesure n'en est pas un :
+    la faire rougir ferait d'un incident d'infrastructure un defaut de PR."""
+    monkeypatch.setattr(cp, "pr_meta",
+                        lambda _pr: (_ for _ in ()).throw(
+                            cp.MesureIndisponible("reseau absent")))
+    monkeypatch.setattr(cp, "pr_files",
+                        lambda _pr: (_ for _ in ()).throw(
+                            cp.MesureIndisponible("reseau absent")))
+    assert cp.main(["--pr", "22977", "--strict"]) == 0
+    assert "NON MESURE (UNKNOWN)" in capsys.readouterr().out
