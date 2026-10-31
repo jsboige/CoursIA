@@ -1,6 +1,6 @@
 name: Lean Galois CI
 
-# CI for galois_lean (SymbolicAI/Lean/galois_lean).
+# CI for galois_lean (SymbolicAI/Lean/GALOIS/galois_lean).
 # Inverse Galois problem / M23 — proof layer for the Lean-19 notebook.
 # Rule lean-merge-discipline: lake build SUCCESS local OBLIGATOIRE avant merge.
 #
@@ -19,10 +19,10 @@ on:
   push:
     branches: [main]
     paths:
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/galois_lean/**.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/galois_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/galois_lean/lakefile.toml'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/galois_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/galois_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/galois_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/galois_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/galois_lean/lean-toolchain'
       - '.github/workflows/lean-galois.yml'
       - '.github/workflows/lean-axiom.yml'
       - '.github/workflows/lean-build.yml'
@@ -33,10 +33,10 @@ on:
   pull_request:
     types: [opened, synchronize, edited, reopened]
     paths:
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/galois_lean/**.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/galois_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/galois_lean/lakefile.toml'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/galois_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/galois_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/galois_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/galois_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/galois_lean/lean-toolchain'
       # The gate must run on the PR that introduces or changes it (cf #8712).
       - '.github/workflows/lean-galois.yml'
       - '.github/workflows/lean-axiom.yml'
@@ -56,7 +56,7 @@ jobs:
   ci:
     uses: jsboige/CoursIA/.github/workflows/lean-build.yml@main
     with:
-      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/galois_lean
+      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/galois_lean
       display-name: galois_lean
       sorry-baseline: "0"
       sorry-filter-mode: real
@@ -87,7 +87,7 @@ jobs:
     needs: ci  # c.306 parity with knot_lean (#14922) -- serialize the two compiles; ordering edge only, no measured clone-halving (c.329, ai-01 re-review #15150)
     uses: ./.github/workflows/lean-axiom.yml
     with:
-      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/galois_lean
+      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/galois_lean
       display-name: galois_lean
       target-modules: "*"
       allow-axioms: ""

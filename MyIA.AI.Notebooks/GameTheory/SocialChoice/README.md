@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: GameTheory-SocialChoice
-pedagogical_count: 14
-breakdown: SocialChoice=14
-maturity: BETA=11, ALPHA=3
+pedagogical_count: 15
+breakdown: SocialChoice=15
+maturity: BETA=12, ALPHA=3
 -->
 
 La théorie du choix social étudie comment agréger des préférences individuelles en une décision collective. Ses résultats les plus célèbres sont des **théorèmes d'impossibilité** : le théorème d'Arrow (1951) montre qu'aucune règle de vote ne peut satisfaire simultanément des axiomes "raisonnables" (Pareto, IIA, non-dictature) dès que 3 alternatives ou plus sont en jeu ; le théorème de Sen (1970) démontre un conflit fondamental entre liberté individuelle et efficacité collective.
@@ -242,6 +242,10 @@ La thèse est puissante et honnêtement présentée : il n'existe pas de règle 
 ### Le fil rouge
 
 Le choix social propose un changement de regard sur la décision collective : ne plus demander « quelle est la meilleure règle de vote ? » mais **« quels axiomes suis-je prêt à sacrifier, et lesquels sont mutuellement incompatibles ? »**. Cette sous-série vous a donné les résultats d'impossibilité (Arrow, Sen, Gibbard-Satterthwaite), les méthodes pour les établir (simulation, preuve Lean 4, vérification SAT/Z3), et l'intuition des relaxations (électeur médian, Split Cycle) pour transformer un constat d'impossibilité apparemment stérile en une compréhension fine de l'espace des règles possibles — en gardant à l'esprit qu'aucune règle ne domine partout, et que c'est précisément cette absence de « bonne » réponse universelle qui fait du choix social un domaine vivant.
+
+### Tombstones de provenance assumées
+
+La purge chronologique C5 ([#23256](https://github.com/jsboige/CoursIA/pull/23256)) a retiré des carnets de la famille GameTheory les renvois de *chronologie de livraison*. Deux numéros y survivent délibérément, parce qu'ils sont de la **provenance durable** et non de la chronologie : [#15949](https://github.com/jsboige/CoursIA/issues/15949) — l'hommage à Richard E. Stearns (1936-2026), co-fondateur de la théorie de la complexité, cité par [SC-01](01-Arrow-Impossibility-Theorem.ipynb) dans ses deux jumeaux FR/C# — et [#6146](https://github.com/jsboige/CoursIA/pull/6146) — l'absorption des jeux répétés dans [`game_theory_lean/`](../game_theory_lean/README.md), citée par le carnet `Dynamics-01` et par [`LEAN_INVENTORY.md`](../LEAN_INVENTORY.md). Ces renvois sont assumés comme tombstones (tranché dans [#23637](https://github.com/jsboige/CoursIA/issues/23637)) : ils ne relèvent d'aucune purge à venir de la classe C5.
 
 ---
 

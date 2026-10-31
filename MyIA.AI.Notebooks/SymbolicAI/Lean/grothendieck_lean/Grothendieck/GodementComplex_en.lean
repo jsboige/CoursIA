@@ -38,6 +38,18 @@ module iterates the step **at all degrees** and assembles the result as a
 5. `toGodement_comp_godementCanonicalD`: the start of the augmented complex —
    `μ ≫ d⁰ = 0`, restating Part 89 in the iterated notations.
 
+## Functoriality in `F` (Part 96)
+
+`godementCanonicalComplexMap`: for a morphism of presheaves `η : F ⟶ G`, the
+morphism of canonical complexes — the frontier named by Part 95 (Part 92 had
+posed the object, not the action on morphisms). The recursion carries the
+whole square state (an `Arrow`-morphism: the two verticals and their
+commutation), because `cokernel.map` takes the right vertical **as data** —
+the naive recursion is circular. Identity is respected
+(`godementCanonicalComplexMap_id`). **Not posed**: composition (named
+frontier, together with the long exact sequence, for the functoriality of
+Godement cohomology).
+
 ## What this Part poses vs. what it leaves open
 
 **Posed**: the recursion `d^{n+1} = godementStep dⁿ` at all degrees, the
@@ -112,5 +124,47 @@ variable {X : TopCat.{u}}
 -- all stalks zero need not be zero (non-separated) — stalkwise nullity is
 -- the unconditional form. The sheaf corollary (nullity of `Hⁿ` in the
 -- category of sheaves, [God58] II Th. 5.2.1) is the next frontier.
+--
+-- **Part 94, flabbiness of the canonical tower landed in the FR twin**:
+-- `Grothendieck.isFlasque_godementCanonicalComplex` — every stage of the
+-- canonical Godement complex is flasque, with **no hypothesis on `F`**
+-- (step 1 of the "flabby resolution" reading of [God58] II Th. 5.2.1).
+-- The three cases of the `godementCanonicalObj` recursion (degree 0,
+-- degree 1, degree n+2) each reduce definitionally to `godementPresheaf`
+-- of some presheaf, so the generic flabbiness `isFlasque_godementPresheaf`
+-- (zero-extension of germ families: a family of germs on `V` lifts to any
+-- open `U ⊇ V` by extending by zero outside `V`) covers the whole tower —
+-- a three-case `exact`, no recursion to write. Calibrating note
+-- (2026-10-18): Mathlib `TopCat.Presheaf.IsFlasque` does exist
+-- (Topology/Sheaves/Flasque.lean) — the #2159 addendum c.6242821964
+-- wrongly called it sheaf-only; the file carries both versions. The sheaf
+-- corollary of [God58] II Th. 5.2.1 remains behind abelian sheafification,
+-- absent from Mathlib at the pinned version (`sheafify`/`sheafifyStalkIso`
+-- Type-valued only; `HasSheafify`/`HasSheafCompose (forget A)` hypotheses
+-- with no instance for `(AddCommGrpCat, TopCat)`); the presheaf track —
+-- stalk acyclicity (Part 93(b)), flabby stages (this Part) — advances
+-- without it, and the flabby resolution (long exact sequence, Part 95+)
+-- will consume the brick landed here.
+--
+-- **Part 96, functoriality in F landed in the FR twin**:
+-- `Grothendieck.godementCanonicalComplexMap` — for every morphism of
+-- presheaves `η : F ⟶ G`, a morphism of cochain complexes
+-- `godementCanonicalComplex F ⟶ godementCanonicalComplex G` (the frontier
+-- named by Part 95: Part 92 had posed the object, not the action on
+-- morphisms). The difficulty is the **definition**, not the commutation:
+-- the degree-`n + 2` arrow is `C⁰` of a cokernel arrow built by
+-- `cokernel.map`, which takes the right vertical arrow **as data** — i.e.
+-- the degree-`n + 1` arrow one is still defining. The naive recursion is
+-- circular; it is broken by carrying the **whole square** as an
+-- `Arrow`-morphism `godementDChain F n ⟶ godementDChain G n` (the pair of
+-- the two verticals `f n`, `f (n + 1)` **and** the commutation of the
+-- degree-`n` square) — the degree-`n + 1` square follows without any
+-- self-reference, the right vertical becoming the left vertical of the
+-- next one. The generic lemma `godementStep_map` factors the same
+-- computation for the base square (the unit, via `toGodement_naturality`)
+-- and for each iterated square. Identity is respected
+-- (`godementCanonicalComplexMap_id`); composition is **not posed** — the
+-- named frontier is now the pair (composition, long exact sequence) of
+-- Part 95.
 
 end Grothendieck_en
