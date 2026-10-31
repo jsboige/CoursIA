@@ -12,6 +12,11 @@ Le parseur partage sa grammaire avec `naming_canon.py` (centralisé par #15503
 depuis `check_duplicate_notebook_index`) : `INDEX_RE`, `LANG_SUFFIXES`,
 `index_key`, `strip_lang` y sont définis. Aucune duplication de regex.
 
+La mesure est une fonction de la **seule révision mesurée** : la liste des
+carnets ET leur contenu sont lus dans `<base>` (via `git ls-tree` et
+`git cat-file --batch`), jamais dans l'arbre local. Un checkout en retard ne
+peut donc pas changer le résultat (#23623).
+
 Usage:
     python scripts/notebook_tools/inventory_notebook_names.py --base origin/main
     python scripts/notebook_tools/inventory_notebook_names.py --base origin/main --json
@@ -27,6 +32,7 @@ import os
 import re
 import subprocess
 import sys
+import threading
 from pathlib import PurePosixPath
 
 # Ajoute le root du dépôt au sys.path pour permettre l'absolu
@@ -100,21 +106,104 @@ def _git(args):
     return r.stdout
 
 
-def _kernelspec(path: str) -> str | None:
-    """Lit `metadata.kernelspec.name` depuis la cellule 0 d'un notebook.
+def _kernelspec_bytes(data: bytes | None) -> str | None:
+    """Kernelspec lu dans les OCTETS d'un carnet — aucun accès disque.
 
-    Évite `import nbformat` (lourd) — `json.loads(open().read())` suffit pour
-    la cellule 0 qui porte la metadata globale. Retourne None si le notebook
-    n'a pas de kernelspec (rare mais vu sur archives).
+    Le contenu vient de l'objet git de la révision mesurée (cf
+    `_kernelspecs_at`) : la mesure ne dépend donc pas du checkout local
+    (#23623). Retourne None si le carnet n'a pas de kernelspec (rare mais vu
+    sur archives) ou si le contenu n'est pas du JSON lisible.
     """
-    try:
-        with open(path, "rb") as f:
-            data = json.loads(f.read().decode("utf-8", errors="replace"))
-        spec = data.get("metadata", {}).get("kernelspec", {})
-        name = spec.get("name") or spec.get("display_name")
-        return name if isinstance(name, str) and name.strip() else None
-    except (OSError, ValueError):
+    if not data:
         return None
+    try:
+        nb = json.loads(data.decode("utf-8", errors="replace"))
+    except ValueError:
+        return None
+    if not isinstance(nb, dict):
+        return None
+    spec = nb.get("metadata", {})
+    if not isinstance(spec, dict):
+        return None
+    spec = spec.get("kernelspec", {})
+    if not isinstance(spec, dict):
+        return None
+    name = spec.get("name") or spec.get("display_name")
+    return name if isinstance(name, str) and name.strip() else None
+
+
+def _kernelspecs_at(ref: str, paths: list[str]) -> dict[str, str | None]:
+    """Kernelspec de chaque carnet, lus DANS la révision `ref`.
+
+    Un seul processus `git cat-file --batch` : la liste des carnets et leur
+    contenu viennent alors de la même révision, et la mesure ne dépend plus
+    de l'état du checkout (cf #23623 — la liste venait de la révision mais le
+    contenu de l'arbre local).
+
+    Protocole : on écrit `<ref>:<chemin>` sur stdin ; git répond par une
+    ligne d'en-tête `<sha> <type> <size>` suivie du blob puis d'un
+    séparateur. Un chemin absent de la révision répond `<object> missing`.
+    L'écriture est faite par un thread dédié : sans lui, un gros lot de
+    requêtes remplirait le tampon stdin pendant que git remplit stdout —
+    interblocage.
+
+    Zéro blob lu pour une liste non vide = protocole rompu : on lève au lieu
+    d'écrire un inventaire vide (un résultat sans mesure n'est pas un
+    résultat).
+    """
+    if not paths:
+        return {}
+    env = dict(os.environ, MSYS_NO_PATHCONV="1")
+    proc = subprocess.Popen(
+        ["git", "cat-file", "--batch"],
+        stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL, env=env,
+    )
+    payload = "".join("%s:%s\n" % (ref, p) for p in paths).encode("utf-8")
+
+    def _feed():
+        try:
+            proc.stdin.write(payload)
+            proc.stdin.flush()
+        except (BrokenPipeError, ValueError, OSError):
+            pass
+        finally:
+            try:
+                proc.stdin.close()
+            except (BrokenPipeError, OSError, ValueError):
+                pass
+
+    writer = threading.Thread(target=_feed, daemon=True)
+    writer.start()
+    specs: dict[str, str | None] = {}
+    try:
+        for p in paths:
+            header = proc.stdout.readline()
+            if not header:
+                raise RuntimeError(
+                    "git cat-file --batch : sortie prematuree sur %s" % p)
+            parts = header.split()
+            # En-tete valide : `<sha> <type> <size>`. Sinon git a repondu
+            # `<object> missing|ambiguous|dangling` : le chemin n'est pas dans
+            # la revision — kernel non lu (et kernel `None` = non lu).
+            if len(parts) < 3 or parts[1] not in (b"blob", b"tree", b"commit", b"tag"):
+                specs[p] = None
+                continue
+            size = int(parts[2])
+            data = proc.stdout.read(size)
+            proc.stdout.read(1)  # séparateur
+            specs[p] = _kernelspec_bytes(data)
+    finally:
+        try:
+            proc.stdout.close()
+        finally:
+            proc.wait()
+    lus = sum(1 for v in specs.values() if v is not None)
+    if paths and not lus:
+        raise RuntimeError(
+            "git cat-file --batch : aucun blob lu pour %d chemin(s) dans %s "
+            "-- protocole rompu, aucun inventaire produit" % (len(paths), ref))
+    return specs
 
 
 def _family(path: str) -> str:
@@ -250,13 +339,23 @@ def _index_zero_padded(stem: str) -> bool | None:
 
 
 def notebooks_at(ref: str) -> list[str]:
-    """Liste les chemins .ipynb d'une révision git (relatifs au root)."""
-    out = _git(["ls-tree", "-r", "--name-only", ref])
-    return [l.strip() for l in out.splitlines() if l.strip().lower().endswith(".ipynb")]
+    """Liste les chemins .ipynb d'une révision git (relatifs au root).
+
+    `-z` : la sortie est séparée par NUL et n'est PAS échappée par git —
+    un chemin contenant un espace ou un caractère non-ASCII survit intact,
+    et le protocole `git cat-file --batch` (un chemin par ligne) reste
+    synchrone avec la liste.
+    """
+    out = _git(["ls-tree", "-r", "-z", "--name-only", ref])
+    return [p for p in out.split("\0") if p.strip().lower().endswith(".ipynb")]
 
 
 def build_inventory(ref: str, baseline: int | None = None) -> dict:
     """Construit l'inventaire canonique pour `ref`.
+
+    La mesure est une fonction de `ref` **seul** : la liste des carnets et
+    leur contenu sont lus dans la révision (cf #23623), jamais dans l'arbre
+    local. Deux checkouts différents, même révision, même résultat.
 
     Retourne un dict avec :
       `ref` : révision examinée.
@@ -280,6 +379,16 @@ def build_inventory(ref: str, baseline: int | None = None) -> dict:
     de scope).
     """
     paths = notebooks_at(ref)
+    # Filtre les _output (artefacts d'exécution, pas source canonique) AVANT
+    # la lecture des blobs : ils constitueraient l'essentiel du volume lu
+    # pour un résultat nul.
+    paths = [p for p in paths
+             if "/_output/" not in p and not p.startswith("_output/")]
+    # Les kernelspec sont lus DANS la révision mesurée, pas dans l'arbre
+    # local : sans cela, un checkout en retard (carnet renommé, ajouté ou
+    # retiré depuis) fait basculer des centaines de carnets de classe sans
+    # que le dépôt ait bougé (#23623).
+    specs = _kernelspecs_at(ref, paths)
     # baseline auto = entries (classification --base).
     # choisissait HEAD : c'est vrai sur main (où la
     # PR n'a pas encore bougé) mais faux sur la branche PR qui ajoute un
@@ -296,13 +405,10 @@ def build_inventory(ref: str, baseline: int | None = None) -> dict:
     }
     entries = []
     for p in paths:
-        # Filtre les _output (artefacts d'exécution, pas source canonique).
-        if "/_output/" in p or p.startswith("_output/"):
-            continue
         stem = re.sub(r"\.ipynb$", "", p, flags=re.I)
         basename = os.path.basename(p)
         idx = index_key(basename)
-        kernel = _kernelspec(p) if os.path.isfile(p) else None
+        kernel = specs.get(p)
         suf = _suffix(stem)
         # zero-pad lu sur le stem (préfixe `0N_` vs `N_`),
         # pas sur l'idx (qui perd l'info).
