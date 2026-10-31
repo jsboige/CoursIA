@@ -179,6 +179,30 @@ class TestUpsertComment:
         result = gcu.upsert_comment(45, MARKER, "y", "o/r", runner=gh)
         assert result["comment_id"] == 801
 
+    def test_create_without_a_comment_id_refuses_the_verdict(self):
+        """#22758 point 4 : un POST dont la reponse ne porte pas d'id ne rend
+        pas « created ». Sans identifiant, le commentaire n'est ni adressable
+        ni verifiable, et le passage suivant ne peut pas distinguer « cree »
+        de « rien ecrit »."""
+        import json
+
+        class _NoId(RecordingGh):
+            def __call__(self, cmd, **kwargs):
+                self.calls.append(list(cmd))
+                if "--paginate" in cmd:
+                    return FakeProc(stdout=json.dumps(self.pages))
+                return FakeProc(stdout='{"message": "Not Found"}')
+
+        gh = _NoId([[]])
+        try:
+            gcu.upsert_comment(46, MARKER, "x", "o/r", runner=gh)
+        except RuntimeError as exc:
+            assert "identifiant" in str(exc), exc
+        else:
+            raise AssertionError(
+                "un POST sans id de commentaire doit refuser le verdict de succes")
+        assert gh.find("POST") is not None, "le POST doit avoir ete tente"
+
 
 # ---------------------------------------------------------------------------
 # lift -- un mur qui ne se ferme jamais n'est pas un signal
