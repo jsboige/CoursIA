@@ -29,8 +29,9 @@ Fonctions exposees
 - ``generer_donnees_iv(n, force, effet_direct_z, seed)`` -- monde
   DGP-connu : X = force * Z + 0.8 U + N(0, 0.5) ;
   Y = 2 X + 1 U + (effet_direct_z * Z) + N(0, 0.7).
-  ``force=1.0`` -> instrument FORT (F ~ 800) ; ``force=0.05`` ->
-  instrument FAIBLE (F ~ 2-3) ; ``effet_direct_z=0.0`` -> exclusion
+  ``force=1.0`` -> instrument FORT (F ~ 2300 a n=2000) ; ``force=0.05``
+  -> instrument FAIBLE (F ~ 6-7, sous le seuil Staiger-Stock de 10) ;
+  ``effet_direct_z=0.0`` -> exclusion
   respectee ; ``effet_direct_z != 0`` -> exclusion violee.
 - ``f_statistic(donnees, x, z)`` -- F-stat du premier etage, regression
   X ~ Z + intercept. Renvoie (F, p_value, r2).
@@ -109,8 +110,8 @@ def generer_donnees_iv(
         Taille de l'echantillon. Assez grand pour que la F-stat ait
         un pouvoir discriminant.
     force : float, default 1.0
-        Coeff premier etage sur Z. ``1.0`` = FORT (F ~ 800) ;
-        ``0.05`` = FAIBLE (F ~ 2-3).
+        Coeff premier etage sur Z. ``1.0`` = FORT (F ~ 2300 a n=2000) ;
+        ``0.05`` = FAIBLE (F ~ 6-7, sous le seuil de 10).
     effet_direct_z : float, default 0.0
         Effet direct Z -> Y (exclusion). ``0.0`` = exclusion
         respectee ; ``0.5`` = exclusion VIOLEE -> verdict
