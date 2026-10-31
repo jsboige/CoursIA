@@ -418,6 +418,130 @@ def test_canonical_transition_scoped_reverse_still_refused():
     assert ckd.accepted_canonical_transition(a, b, nb_path=path) is False
 
 
+# --- #23187 : portee SERIE (prefixe de repertoire) --------------------------
+# Le canon 3.13 est celui de la serie 02-ML-Cours entiere, declare par son
+# requirements.txt -- pas celui du seul 2.8c. Quatre carnets de la serie
+# tournent sous ``coursia-ml-training`` (releves le 2026-10-29 sur main) :
+# 2.8c et 2.14b a 3.11.15, 2.9d et 2.9g a 3.10.19 -- deux directions, donc
+# deux entrees. La portee est un PREFIXE de repertoire, jamais le kernelspec
+# nu : 50 carnets hors serie partagent ce kernelspec sans declarer 3.13
+# (54 au total, 4 dans la serie). Le chiffre se relit par lecture des
+# METADONNEES de chaque carnet -- la commande et son instantane sont
+# consignes dans #23187 :
+#   python -c "import json, pathlib; print(sum(1 for p in
+#   pathlib.Path('MyIA.AI.Notebooks').rglob('*.ipynb') if
+#   (json.loads(p.read_text(encoding='utf-8')).get('metadata') or {})
+#   .get('kernelspec', {}).get('name') == 'coursia-ml-training'))"
+# (un comptage par sous-chaine dans le fichier rend 67 : il additionne les
+# carnets dont le kernelspec est un autre mais dont une cellule cite le
+# nom -- la population qui compte pour ce garde est celle des METADONNEES).
+# La reserve de revue de #22979 a refuse l'entree globale precisement
+# pour eux.
+
+
+def test_canonical_transition_scoped_series_02ml_accepted():
+    # Positif : un autre carnet de la serie converge vers le canon 3.13.
+    # Le representant est 2.14b, dont la version mesuree est bien 3.11.15 --
+    # nommer ici un carnet a 3.10.19 aurait fait passer le test sur une base
+    # que ce carnet n'a jamais portee (reserve NanoClaw du 2026-10-29).
+    a = {"language_version": "3.11.15",
+         "kernelspec_name": "coursia-ml-training"}
+    b = {"language_version": "3.13.14",
+         "kernelspec_name": "coursia-ml-training"}
+    path = ("MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/"
+            "2.14b-XAI-Shap-Attribution-Causal-Bridge.ipynb")
+    assert ckd.accepted_canonical_transition(a, b, nb_path=path) is True
+    # Sans chemin, la meme derive reste rouge : aucune entree GLOBALE n'a
+    # ete ajoutee pour ce kernelspec.
+    assert ckd.accepted_canonical_transition(a, b) is False
+    # Et un changement de kernelspec reste rouge meme sous la portee serie
+    # (le prefixe ne dispense pas de l'egalite de kernelspec).
+    c = {"language_version": "3.13.14", "kernelspec_name": "python3"}
+    assert ckd.accepted_canonical_transition(a, c, nb_path=path) is False
+
+
+def test_canonical_transition_scoped_series_02ml_310_accepted():
+    # Positif, deuxieme direction (#23187) : 2.9d et 2.9g sont a 3.10.19, et
+    # le canon de leur serie est 3.13. Sans cette entree, la PR annoncait
+    # couvrir la serie en laissant la moitie de ses carnets rouge.
+    a = {"language_version": "3.10.19",
+         "kernelspec_name": "coursia-ml-training"}
+    b = {"language_version": "3.13.14",
+         "kernelspec_name": "coursia-ml-training"}
+    for name in ("2.9d-Features-Circulaires-Helice-Nombres.ipynb",
+                 "2.9g-Geometrie-de-la-Verite.ipynb"):
+        path = ("MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/"
+                + name)
+        assert ckd.accepted_canonical_transition(a, b, nb_path=path) is True
+    # Sans chemin, la direction reste rouge (pas d'entree globale).
+    assert ckd.accepted_canonical_transition(a, b) is False
+    # Hors de la serie, 3.10 -> 3.13 reste rouge : le prefixe est le seul
+    # elargissement, il ne fuit pas.
+    assert ckd.accepted_canonical_transition(
+        a, b,
+        nb_path=("MyIA.AI.Notebooks/Complexity/"
+                 "Complexity-07-KolmogorovBornee-Sequences-Python.ipynb"),
+    ) is False
+
+
+def test_canonical_transition_scoped_series_does_not_leak_outside():
+    # Controle negatif de la portee serie (reserve #22979) : les carnets qui
+    # partagent le kernelspec hors 02-ML-Cours gardent la direction rouge,
+    # sinon l'entree globale refusee en revue rentrerait par la porte de
+    # derriere. Le troisieme chemin verifie la frontiere du prefixe
+    # (``02-ML-Cours-autre/`` n'est pas ``02-ML-Cours/``).
+    a = {"language_version": "3.11.15",
+         "kernelspec_name": "coursia-ml-training"}
+    b = {"language_version": "3.13.14",
+         "kernelspec_name": "coursia-ml-training"}
+    for path in (
+        "MyIA.AI.Notebooks/Complexity/"
+        "Complexity-07-KolmogorovBornee-Sequences-Python.ipynb",
+        "MyIA.AI.Notebooks/GameTheory/"
+        "GameTheory-19b-Bilevel-PPO-Python.ipynb",
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours-autre/x.ipynb",
+    ):
+        assert ckd.accepted_canonical_transition(a, b, nb_path=path) is False
+
+
+def test_canonical_transition_scoped_series_reverse_still_refused():
+    # Le cliquet ne descend pas, meme sous la portee serie.
+    a = {"language_version": "3.13.14",
+         "kernelspec_name": "coursia-ml-training"}
+    b = {"language_version": "3.11.15",
+         "kernelspec_name": "coursia-ml-training"}
+    path = ("MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/"
+            "2.14b-XAI-Shap-Attribution-Causal-Bridge.ipynb")
+def test_canonical_transition_scoped_ml06_312_to_313_accepted():
+    # #23426 : ML-06 est le seul carnet ML.Net sous kernel NOMME
+    # (hors census #23379, kernel python3) -- sa convergence vers le canon
+    # 3.13 exige une entree nominative, meme forme que 2.8c/2.9d.
+    a = {"language_version": "3.12.13", "kernelspec_name": "coursia-ml-training"}
+    b = {"language_version": "3.13.15", "kernelspec_name": "coursia-ml-training"}
+    path = "MyIA.AI.Notebooks/ML/ML.Net/ML-06-ONNX-Python.ipynb"
+    assert ckd.accepted_canonical_transition(a, b, nb_path=path) is True
+
+
+def test_canonical_transition_scoped_ml06_does_not_leak():
+    # La meme direction 3.12 -> 3.13 sous le meme kernelspec reste rouge
+    # ailleurs : ni un autre carnet ML.Net, ni 2.8c (scope 3.11 -> 3.13).
+    a = {"language_version": "3.12.13", "kernelspec_name": "coursia-ml-training"}
+    b = {"language_version": "3.13.15", "kernelspec_name": "coursia-ml-training"}
+    assert ckd.accepted_canonical_transition(a, b) is False
+    assert ckd.accepted_canonical_transition(
+        a, b,
+        nb_path=("MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/"
+                 "2.8c-Borne-Temoin-Concentration.ipynb")) is False
+
+
+def test_canonical_transition_scoped_ml06_reverse_still_refused():
+    # Direction inverse : rouge meme sur le chemin scope de ML-06.
+    a = {"language_version": "3.13.15", "kernelspec_name": "coursia-ml-training"}
+    b = {"language_version": "3.12.13", "kernelspec_name": "coursia-ml-training"}
+    path = "MyIA.AI.Notebooks/ML/ML.Net/ML-06-ONNX-Python.ipynb"
+    assert ckd.accepted_canonical_transition(a, b, nb_path=path) is False
+
+
 def test_canonical_transition_python_313_to_311_refused():
     # Negatif 1 : la direction inverse est une regression du canon.
     a = {"language_version": "3.13.3", "kernelspec_name": "python3"}
