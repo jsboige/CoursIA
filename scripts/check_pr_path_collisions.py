@@ -49,8 +49,14 @@ noise that gets ignored:
 - **Stacked PRs** -- the base of one is the head of the other: the overlap is
   the stack itself, never a conflict.
 - **Generated artifacts** -- ``COURSE_CATALOG.generated.*`` and the twin
-  registry ``scripts/notebook_tools/twin_pairs.d/``: permanent structural
-  overlap with zero signal.
+  registry's **pair-level files** (``twin_pairs.d/<pair>.yaml``, touched by
+  every ``--update`` attestation of the pair): permanent structural overlap
+  with zero signal. The registry's **per-entry journal files**
+  (``twin_pairs.d/<pair>/NNNN-*.yaml``) are NOT excluded: two PRs sharing
+  one is the duplicate-remediation collision measured on #23515/#23520
+  (three lanes shipped the same renumbering the same morning), and the
+  journal index is the sort key that breaks ``main`` when duplicated
+  (#14911/#15345).
 
 Strong pairs are additionally labelled ``pr-overlap`` (label on both sides),
 giving the coordinator a filterable queue. Weak pairs get the comment only.
@@ -264,13 +270,19 @@ FOUNDING_OVERCLAIM_PAIR: tuple[int, int, str, int, int] = (
 )
 
 # Generated artifacts with permanent structural overlap and zero signal
-# (#13615: a guard that reports everything reports nothing).
+# (#13615: a guard that reports everything reports nothing). The twin
+# registry's PAIR-level yaml (one path segment under twin_pairs.d/) is such
+# an artifact: every --update attestation of a pair touches it. The per-entry
+# journal files one level deeper are signal, not noise -- two open PRs
+# sharing a single NNNN-<lane>.yaml is exactly the duplicate remediation
+# this organ exists to flag (measured: #23515/#23520, 2026-10-30, blind
+# spot of the previous blanket exclusion).
 EXCLUDED_EXACT_PATHS = frozenset({
     "COURSE_CATALOG.generated.json",
     "COURSE_CATALOG.generated.md",
 })
 EXCLUDED_PATH_RES = (
-    re.compile(r"^scripts/notebook_tools/twin_pairs\.d/"),
+    re.compile(r"^scripts/notebook_tools/twin_pairs\.d/[^/]+\.yaml$"),
 )
 
 # Body keywords that cite an issue (title already carries bare ``#N`` by
@@ -1211,6 +1223,37 @@ def _self_test() -> int:
     ])
     check("artifact-only overlap produces no collision",
           artifacts.n_collisions == 0)
+
+    # Negative: two PRs sharing only a PAIR-level twin file -> still nothing
+    # (every --update attestation of a pair touches it: structural overlap).
+    pair_level_only = detect_path_collisions([
+        PrRow(number=900022, title="a", paths=(
+            "scripts/notebook_tools/twin_pairs.d/gametheory-11-bayesiangames.yaml",)),
+        PrRow(number=900023, title="b", paths=(
+            "scripts/notebook_tools/twin_pairs.d/gametheory-11-bayesiangames.yaml",)),
+    ])
+    check("twin pair-level file overlap produces no collision",
+          pair_level_only.n_collisions == 0)
+
+    # Positive control (measured 2026-10-30, #23515/#23520): two PRs sharing
+    # the SAME per-entry journal file IS the duplicate-remediation collision.
+    # The previous blanket exclusion of twin_pairs.d/ made the organ blind to
+    # it -- three lanes shipped the same renumbering the same morning. This
+    # is the LANE-side pre-detection; merge_ready.py's twin_collision_reason
+    # (5bis) remains the merge-time index-collision guard -- complementary
+    # layers, different surfaces.
+    entry_shared = detect_path_collisions([
+        PrRow(number=900024, title="fix(twin,#8057): renumeroter 0018", paths=(
+            "scripts/notebook_tools/twin_pairs.d/gametheory-11-bayesiangames/"
+            "0020-2026-10-29-myia-po-2023-CoursIA-2.yaml",)),
+        PrRow(number=900025, title="fix(twin,#8057): renumeroter 0018 bis", paths=(
+            "scripts/notebook_tools/twin_pairs.d/gametheory-11-bayesiangames/"
+            "0020-2026-10-29-myia-po-2023-CoursIA-2.yaml",)),
+    ])
+    check("twin per-entry journal file overlap produces a collision",
+          entry_shared.n_collisions == 1
+          and entry_shared.collisions[0].a_number in (900024, 900025)
+          and entry_shared.collisions[0].b_number in (900024, 900025))
 
     # Tier discrimination: shared path, disjoint issues -> weak, not strong.
     weak = detect_path_collisions([

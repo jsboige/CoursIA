@@ -1147,3 +1147,8 @@ out/
 
 # Fichiers systeme macOS
 .DS_Store
+
+# Traces brutes des mesures d'enveloppe VRAM (#22110) : les journaux de run sont
+# committes comme preuve de re-derivation, malgre la regle `*.log` du gabarit
+# Visual Studio plus haut. Exception limitee a ce dossier de resultats.
+!scripts/results/3d_enveloppe_8go/traces/*.log
