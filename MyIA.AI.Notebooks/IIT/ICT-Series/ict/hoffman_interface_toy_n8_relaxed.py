@@ -7,8 +7,9 @@ Case 14 teste hypothese 2 du verdict case 13 : le relachement
 de la compression canonique (bit2 au lieu de bit0) restaure-t-il la dissociation
 FBT a N=8 ?
 
-Setup : Prakash, Stephens, Hoffman, Singh & Fields (2017) "Fitness Beats Truth in the
-Evolution of Perception", arXiv:1505.04322, section 4 (toy formel).
+Setup : Prakash, Stephens, Hoffman, Singh & Fields (2021) "Fitness Beats Truth in the
+Evolution of Perception", Acta Biotheoretica 69(3):319-341,
+doi:10.1007/s10441-020-09400-0, section 4 (toy formel) du préprint du 30 juillet 2017.
 
 8 paysages (4 symetriques herites case 11 + 4 nouveaux bit2-aligned family).
 """

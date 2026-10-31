@@ -164,3 +164,203 @@ def test_la_frontiere_du_seuil_est_exacte(age, attendu):
     verdict, _ = cp.decide(1, age, {"disponible": True, "vues": 0,
                                     "retenue": None})
     assert verdict == attendu
+
+
+# --- la panne d'instrument n'est pas un rouge --------------------------------
+
+def _gh_rate_limited(args, timeout=120):
+    raise RuntimeError(
+        "gh api repos/jsboige/CoursIA/pulls/1/files a echoue : gh: API rate "
+        "limit exceeded for installation.")
+
+
+def test_un_instrument_injoignable_rend_unknown_et_sort_0(monkeypatch, capsys):
+    """Mesure du 2026-10-29 (PR #23282, run 40868243719).
+
+    `gh api .../files` a rendu `API rate limit exceeded for installation` :
+    le script levait une RuntimeError, le step sortait 1, et la PR portait
+    un rouge de TRANSPORT alors que son contenu etait conforme (verdict
+    local : « aucun carnet neuf dans la PR »). Un organe injoignable rend
+    UNKNOWN, jamais un rouge (#14849).
+    """
+    monkeypatch.setattr(cp, "_gh", _gh_rate_limited)
+
+    rc = cp.main(["--pr", "1"])
+
+    assert rc == 0, "une panne d'instrument ne doit jamais faire rougir le job"
+    sortie = capsys.readouterr().out
+    assert "UNKNOWN" in sortie
+    assert "NON EVALUEE" in sortie
+
+
+def test_strict_ne_convertit_pas_une_panne_d_instrument_en_constat(
+        monkeypatch, capsys):
+    """`--strict` sanctionne un VERDICT. Une panne n'en produit aucun : elle
+    ne doit pas devenir un constat sous le seul effet du drapeau."""
+    monkeypatch.setattr(cp, "_gh", _gh_rate_limited)
+
+    assert cp.main(["--pr", "1", "--strict"]) == 0
+    assert "UNKNOWN" in capsys.readouterr().out
+
+
+def test_un_bug_de_code_n_est_pas_avale_par_la_garde(monkeypatch):
+    """Le try n'attrape que la panne d'instrument : un defaut de code doit
+    remonter, sinon la garde masquerait ses propres regressions."""
+    def gh_buggue(args, timeout=120):
+        raise ValueError("defaut de code, pas une panne de transport")
+
+    monkeypatch.setattr(cp, "_gh", gh_buggue)
+
+    with pytest.raises(ValueError):
+        cp.main(["--pr", "1"])
+
+
+# --- la panne d'instrument ne doit pas devenir un constat (revue 2026-10-29) --
+
+def test_issue_created_remonte_une_panne_d_instrument(monkeypatch):
+    """Le correctif precedent s'arretait a l'entree.
+
+    `issue_created` ecrasait TOUTE exception en `None` : pendant la famine
+    d'API decrite dans le corps, une PR parfaitement conforme recevait
+    « issue #N d'age non mesure » puis un `::warning::`. Le grief que cette
+    garde existe pour supprimer etait toujours produit, une requete plus
+    loin. Un `None` n'a pas deux significations selon la fonction qui le
+    rend.
+    """
+    def gh_famine(args, timeout=120):
+        raise cp.InstrumentError(
+            "gh issue view a echoue : gh: API rate limit exceeded")
+
+    monkeypatch.setattr(cp, "_gh", gh_famine)
+
+    with pytest.raises(cp.InstrumentError):
+        cp.issue_created(4242)
+
+
+def test_issue_created_rend_none_quand_gh_rend_un_verdict(monkeypatch):
+    """Un 404 EST un constat sur l'entree : l'issue n'existe pas, donc
+    « age non mesure » est vrai. Seule la panne de transport remonte."""
+    def gh_introuvable(args, timeout=120):
+        raise cp.GhError(
+            "gh issue view a echoue : GraphQL: Could not resolve to an Issue")
+
+    monkeypatch.setattr(cp, "_gh", gh_introuvable)
+
+    assert cp.issue_created(4242) is None
+
+
+def test_gh_discrimine_le_transport_du_verdict_d_entree(monkeypatch):
+    """Tout `returncode != 0` devenait « instrument injoignable ».
+
+    Un 404, un argument refuse, un depot non autorise sont des VERDICTS sur
+    l'entree, pas des pannes de transport : les confondre rend l'organe
+    aveugle a ses propres erreurs d'invocation.
+    """
+    class _Fini:
+        def __init__(self, err):
+            self.returncode, self.stderr, self.stdout = 1, err, ""
+
+    monkeypatch.setattr(
+        cp.subprocess, "run",
+        lambda *a, **k: _Fini("gh: API rate limit exceeded for installation."))
+    with pytest.raises(cp.InstrumentError):
+        cp._gh(["api", "x"])
+
+    monkeypatch.setattr(
+        cp.subprocess, "run",
+        lambda *a, **k: _Fini("GraphQL: Could not resolve to a PullRequest"))
+    with pytest.raises(cp.GhError):
+        cp._gh(["pr", "view", "999999999"])
+
+
+def test_un_json_illisible_est_une_panne_d_instrument(monkeypatch):
+    """Un stdout tronque pendant une famine vient de `gh`, pas du code.
+
+    `JSONDecodeError` est une `ValueError` : il echappait donc au `try` de
+    `main()` et produisait le rouge de transport que ce correctif supprime.
+    Le discriminant n'est pas la classe d'exception, c'est la provenance.
+    """
+    monkeypatch.setattr(cp, "_gh", lambda args, timeout=120: '{"truncated": ')
+
+    with pytest.raises(cp.InstrumentError):
+        cp._gh_json(["api", "x"])
+
+
+def test_un_age_non_mesure_avec_tirage_nomme_est_conforme():
+    """Le cas `(None, tirage disponible)` n'etait couvert par aucun test.
+
+    Une issue dont l'age est illisible mais qui a ete servie par un tirage
+    nomme EST conforme : le tirage vaut attente.
+    """
+    verdict, _ = cp.decide(1234, None, {
+        "disponible": True, "vues": 1,
+        "retenue": {"draw_id": "d-1", "lane": "l", "ts": "t"}})
+
+    assert verdict == "CONFORME (tirage)"
+
+
+def _pr_conforme(monkeypatch):
+    monkeypatch.setattr(cp, "pr_meta", lambda pr: {
+        "title": "t", "author": {"login": "jsboige"},
+        "createdAt": "2026-10-29T10:00:00Z", "body": "Closes #4242"})
+    monkeypatch.setattr(cp, "pr_files", lambda pr: [
+        {"filename": "a/b/carnet.ipynb", "status": "added"}])
+
+
+def test_une_panne_sur_issue_created_rend_unknown_et_sort_0(
+        monkeypatch, capsys):
+    """La famine epargne `pr_files` et frappe la requete suivante : le job
+    doit rendre UNKNOWN, pas accuser la PR."""
+    _pr_conforme(monkeypatch)
+
+    def gh_famine(args, timeout=120):
+        raise cp.InstrumentError(
+            "gh issue view a echoue : gh: API rate limit exceeded")
+
+    monkeypatch.setattr(cp, "_gh", gh_famine)
+
+    assert cp.main(["--pr", "1"]) == 0
+    sortie = capsys.readouterr().out
+    assert "UNKNOWN" in sortie
+    assert "NON EVALUEE" in sortie
+
+
+def test_le_statut_est_pose_en_marche_normale(monkeypatch, tmp_path):
+    """`statut` n'existait que dans la branche de panne : un consommateur de
+    `--json` ne pouvait pas distinguer CONFORME de « pas de statut »."""
+    _pr_conforme(monkeypatch)
+    monkeypatch.setattr(cp, "issue_created",
+                        lambda n: "2026-10-01T00:00:00Z")
+    monkeypatch.setattr(cp, "draws_for",
+                        lambda i, j: {"disponible": True, "vues": 0,
+                                      "retenue": None})
+
+    sortie = tmp_path / "rapport.json"
+    assert cp.main(["--pr", "1", "--json", str(sortie)]) == 0
+    assert '"statut": "CONFORME"' in sortie.read_text(encoding="utf-8")
+def test_gh_classe_la_panne_de_transport_et_le_verdict_d_entree(monkeypatch):
+    """Le discriminant est le stderr de `gh`, pas le code de sortie : les deux
+    rendent non-zero. Un quota epuise ou un DNS muet est une panne de
+    TRANSPORT (UNKNOWN) ; un `Could not resolve to a PullRequest` est un
+    verdict sur l'ENTREE, et le motif ne doit pas annoncer un instrument
+    injoignable (test repris de main, PR #23283)."""
+    class Faux:
+        returncode = 1
+
+        def __init__(self, err):
+            self.stderr = err
+            self.stdout = ""
+
+    monkeypatch.setattr(
+        cp.subprocess, "run",
+        lambda *a, **k: Faux("API rate limit exceeded for installation."))
+    with pytest.raises(cp.InstrumentError):
+        cp.pr_files(22977)
+
+    monkeypatch.setattr(
+        cp.subprocess, "run",
+        lambda *a, **k: Faux("GraphQL: Could not resolve to a PullRequest "
+                             "with the number of 99999."))
+    with pytest.raises(cp.GhError):
+        cp.pr_files(99999)
+

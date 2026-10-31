@@ -49,9 +49,14 @@ présents dans tout état atteint) mesurent exactement cette clôture.
 - **soundness `_any` → `ReidemeisterEquiv`** : un retrait `_any` est un R1/R2
   à renommage près ; le sceller exige « le renommage préserve le type du
   nœud » (une `AnyEquiv` + lemme de pont) ;
-- l'équivalence `canon l = canon l' ↔ ∃ bijection d'étiquettes` est la
-  justification de conception, **non prouvée ici** — le noyau ne consomme que
-  l'égalité `canon` ;
+- l'équivalence `canon l = canon l' ↔ ∃ bijection d'étiquettes` : la moitié
+  **invariance** (`canon (mapC σ l) = canon l` pour `σ` injective) est prouvée
+  en §7 (`canon_map_eq`) ; la réciproque (**extraction** du renommage depuis
+  l'égalité `canon`) reste résidu — elle exigera un invariant `SeenNodup` sur
+  le fil des vues. La tranche 3 corrige au passage la base de `canonSlots`
+  (l'état survivait à la liste vide) : sans lui, la renumérotation repartait à
+  zéro à chaque croisement et l'égalité `canon` acceptait des recâblages
+  inter-croisements — contre-exemple scellé en §7 ;
 - la complétude de l'énumération reste le résidu de #22240, inchangé.
 
 Convention i18n (EPIC #4980, décision user 2026-07-04) : ce fichier est le
@@ -72,10 +77,11 @@ open Knots.Bounded
 /-! ## 1. La forme canonique à renommage près
 
 Le quotient de la représentation par renommage d'étiquettes : chaque étiquette
-reçoit un numéro par ordre de première apparition. Deux listes de croisements
-ont même `canon` exactement quand elles se correspondent par une bijection
-d'étiquettes — justification de conception (non prouvée ici, voir l'en-tête) ;
-le noyau ne consomme que l'égalité.
+reçoit un numéro par ordre de **première apparition, filé d'un croisement à
+l'autre**. Deux listes de croisements ont même `canon` exactement quand elles
+se correspondent par une bijection d'étiquettes — justification de conception
+(moitié invariance prouvée en §7, réciproque résidu, voir l'en-tête) ; le
+noyau ne consomme que l'égalité.
 -/
 
 /-- Association étiquette → numéro canonique : numéro déjà vu, ou
@@ -86,9 +92,13 @@ private def canonLabel (seen : List (Nat × Nat)) (x : Nat) :
   | some v => (v, seen)
   | none => (seen.length + 1, seen ++ [(x, seen.length + 1)])
 
-/-- Renumérote une suite d'étiquettes en filant l'état des vues. -/
+/-- Renumérote une suite d'étiquettes en filant l'état des vues. La base
+    `[]` **restitue le fil** : sans cela, chaque croisement repartait d'un
+    état vide et la renumérotation devenait par-croisement — l'égalité
+    `canon` acceptait alors des recâblages inter-croisements (contre-exemple
+    scellé en §7). -/
 private def canonSlots : List (Nat × Nat) → List Nat → List Nat × List (Nat × Nat)
-  | _, [] => ([], [])
+  | seen, [] => ([], seen)
   | seen, x :: xs =>
     let (v, seen') := canonLabel seen x
     let (ys, seen'') := canonSlots seen' xs
@@ -603,6 +613,197 @@ theorem demo_anyBoundedConnects_empty :
     anyBoundedConnects 1
       { crossings := [⟨1, 1, 2, 2⟩], numEdges := 2 }
       { crossings := [], numEdges := 0 } = true := by
+  decide
+
+/-! ## 7. Le pont canon — correctif du filage + moitié invariance (tranche 3)
+
+Le filage de l'état des vues était cassé à la base : `canonSlots` rendait
+`([], [])` sur la liste vide, jetant l'état accumulé — la renumérotation
+repartait à zéro à **chaque croisement**, et l'égalité `canon` acceptait des
+cibles qui recâblent les connexions inter-croisements (le contre-exemple
+ci-dessous l'acceptait, et il ne correspond à aucun renommage du résultat de
+chirurgie). La base rend désormais le fil (`| seen, [] => ([], seen)`), la
+sémantique documentée depuis la section 1 — premier rang de première
+apparition **global**.
+
+Cette tranche scelle le correctif et livre la **moitié invariance** du pont :
+
+* `canon_map_eq` — renommer par une **injection** ne change pas la forme
+  canonique : le rang de première apparition ne dépend pas du nom de
+  l'étiquette, seulement de l'ordre d'apparition. C'est la direction que
+  consomme la soundness (`_any` → `ReidemeisterEquiv`) : le certificat porté
+  par le vérificateur est stable par renommage.
+
+La réciproque (**extraction** : deux listes de même `canon` se correspondent
+par une injection) reste résidu — elle exigera un invariant `SeenNodup` sur le
+fil des vues (le rang n'est injectif que si les clés déjà vues sont distinctes).
+-/
+
+/-- Renommage d'une liste de croisements : `π` appliquée aux quatre slots de
+    chaque croisement. -/
+private def mapC (π : Nat → Nat) (l : List PDCrossing) : List PDCrossing :=
+  l.map fun c => ⟨π c.e1, π c.e2, π c.e3, π c.e4⟩
+
+/-- `lookup` commute au renommage des clés : chercher `π x` dans l'image d'une
+    liste de paires par `π` (sur les clés), c'est chercher `x` dans la liste —
+    à injectivité de `π` près sur les clés. -/
+private theorem lookup_map_key {π : Nat → Nat} (hπ : Function.Injective π)
+    (l : List (Nat × Nat)) (x : Nat) (w : Nat) (h : l.lookup x = some w) :
+    (l.map fun p => (π p.1, p.2)).lookup (π x) = some w := by
+  induction l with
+  | nil => simp at h
+  | cons p t ih =>
+    -- `List.lookup` déplie en `match` Bool sur `a == k` : on réduit le
+    -- discriminateur par les lemmes core `beq_self_eq_true` /
+    -- `beq_eq_false_iff_ne`, l'injectivité arbitre le cas π.
+    by_cases hpx : x = p.1
+    · subst hpx
+      simp only [List.lookup, beq_self_eq_true] at h
+      simp only [List.map_cons, List.lookup, beq_self_eq_true]
+      exact h
+    · have hb : (x == p.1) = false := by
+        rw [beq_eq_false_iff_ne]; exact hpx
+      simp only [List.lookup, hb] at h
+      have hne : (π x == π p.1) = false := by
+        rw [beq_eq_false_iff_ne]
+        exact fun hc => hpx (hπ hc)
+      simp only [List.map_cons, List.lookup, hne]
+      exact ih h
+
+/-- Miroir du précédent pour le cas absent : si `x` n'est clé nulle part,
+    `π x` non plus dans l'image — à injectivité de `π` près. -/
+private theorem lookup_map_key_none {π : Nat → Nat} (hπ : Function.Injective π)
+    (l : List (Nat × Nat)) (x : Nat) (h : l.lookup x = none) :
+    (l.map fun p => (π p.1, p.2)).lookup (π x) = none := by
+  induction l with
+  | nil => rfl
+  | cons p t ih =>
+    by_cases hpx : x = p.1
+    · subst hpx
+      simp only [List.lookup, beq_self_eq_true] at h
+      simp at h
+    · have hb : (x == p.1) = false := by
+        rw [beq_eq_false_iff_ne]; exact hpx
+      simp only [List.lookup, hb] at h
+      have hne : (π x == π p.1) = false := by
+        rw [beq_eq_false_iff_ne]
+        exact fun hc => hpx (hπ hc)
+      simp only [List.map_cons, List.lookup, hne]
+      exact ih h
+
+/-- Une étape de `canonSlots`, cas « étiquette déjà vue » : le numéro est la
+    valeur déjà enregistrée, l'état ne bouge pas. Forme sans `let` (les deux
+    composantes du résultat sont les projections d'une seule évaluation). -/
+private theorem canonSlots_cons_of_some {seen : List (Nat × Nat)} {x v : Nat}
+    {xs : List Nat} (h : seen.lookup x = some v) :
+    canonSlots seen (x :: xs) =
+      (v :: (canonSlots seen xs).1, (canonSlots seen xs).2) := by
+  simp only [canonSlots, canonLabel, h]
+
+/-- Une étape de `canonSlots`, cas « première apparition » : numéro
+    `taille + 1`, l'état s'enrichit de la nouvelle association. -/
+private theorem canonSlots_cons_of_none {seen : List (Nat × Nat)} {x : Nat}
+    {xs : List Nat} (h : seen.lookup x = none) :
+    canonSlots seen (x :: xs) =
+      ((seen.length + 1) :: (canonSlots (seen ++ [(x, seen.length + 1)]) xs).1,
+        (canonSlots (seen ++ [(x, seen.length + 1)]) xs).2) := by
+  simp only [canonSlots, canonLabel, h]
+
+/-- Le cœur du pont : quand les fils d'état sont corrélés par `π` (les clés
+    renommées, les numéros canoniques inchangés), les numéros produits sont
+    **égaux** des deux côtés et les fils restent corrélés. Le rang de première
+    apparition ne dépend pas du nom de l'étiquette. -/
+private theorem canonSlots_congr {π : Nat → Nat} (hπ : Function.Injective π)
+    (xs : List Nat) :
+    ∀ seen seen' : List (Nat × Nat),
+      seen' = seen.map (fun p => (π p.1, p.2)) →
+      (canonSlots seen' (xs.map π)).1 = (canonSlots seen xs).1 ∧
+      (canonSlots seen' (xs.map π)).2 =
+        (canonSlots seen xs).2.map (fun p => (π p.1, p.2)) := by
+  induction xs with
+  | nil =>
+    intro seen seen' hcorr
+    simp only [List.map_nil]
+    exact ⟨rfl, hcorr⟩
+  | cons x xs ih =>
+    intro seen seen' hcorr
+    simp only [List.map_cons]
+    cases hlk : seen.lookup x with
+    | some v =>
+      have hlk' : seen'.lookup (π x) = some v := by
+        rw [hcorr, lookup_map_key hπ seen x v hlk]
+      rw [canonSlots_cons_of_some hlk, canonSlots_cons_of_some hlk']
+      -- états inchangés : la corrélation hcorr elle-même nourrit l'IH
+      obtain ⟨ys, ys'⟩ := ih _ _ hcorr
+      exact ⟨congrArg (List.cons v) ys, ys'⟩
+    | none =>
+      have hlk' : seen'.lookup (π x) = none := by
+        rw [hcorr, lookup_map_key_none hπ seen x hlk]
+      have hlen : seen'.length = seen.length := by
+        rw [hcorr, List.length_map]
+      have hcorr2 : seen' ++ [(π x, seen'.length + 1)] =
+          (seen ++ [(x, seen.length + 1)]).map (fun p => (π p.1, p.2)) := by
+        rw [hcorr, List.map_append, List.map_singleton]
+        simp
+      rw [canonSlots_cons_of_none hlk, canonSlots_cons_of_none hlk']
+      obtain ⟨ys, ys'⟩ := ih _ _ hcorr2
+      rw [hlen] at ys ys' ⊢
+      exact ⟨congrArg (List.cons _) ys, ys'⟩
+
+/-- Une étape de `canon.go`, sans `let` : la forme canonique d'une liste de
+    croisements est le quadruplet des numéros canoniques du premier croisement,
+    puis le fil des suivants. (Zéta + projections : définitionnel.) -/
+private theorem canon_go_cons (c : PDCrossing) (cs : List PDCrossing)
+    (seen : List (Nat × Nat)) :
+    canon.go (c :: cs) seen =
+      (canonSlots seen [c.e1, c.e2, c.e3, c.e4]).1
+        :: canon.go cs (canonSlots seen [c.e1, c.e2, c.e3, c.e4]).2 := rfl
+
+/-- Le cœur du pont, niveau croisements : sur des fils d'état corrélés, la
+    forme canonique d'une liste renommée est celle de la liste. -/
+private theorem canon_go_congr {π : Nat → Nat} (hπ : Function.Injective π)
+    (l : List PDCrossing) :
+    ∀ seen seen' : List (Nat × Nat),
+      seen' = seen.map (fun p => (π p.1, p.2)) →
+      canon.go (mapC π l) seen' = canon.go l seen := by
+  induction l with
+  | nil => intro _ _ _; rfl
+  | cons c cs ih =>
+    intro seen seen' hcorr
+    have hmap : mapC π (c :: cs) =
+        ⟨π c.e1, π c.e2, π c.e3, π c.e4⟩ :: mapC π cs := by simp [mapC]
+    obtain ⟨hnums, hcorr2⟩ :=
+      canonSlots_congr hπ [c.e1, c.e2, c.e3, c.e4] seen seen' hcorr
+    rw [hmap, canon_go_cons, canon_go_cons,
+      show [π c.e1, π c.e2, π c.e3, π c.e4] = [c.e1, c.e2, c.e3, c.e4].map π from by
+        simp,
+      hnums, ih _ _ hcorr2]
+
+/-- **Moitié invariance du pont** : renommer une liste de croisements par une
+    injection ne change pas sa forme canonique — le rang de première
+    apparition ne dépend pas du nom de l'étiquette, seulement de l'ordre
+    d'apparition. C'est la direction que consomme la soundness : un pas
+    vérifié l'est pour toute la classe de renommage de ses opérandes. -/
+theorem canon_map_eq {π : Nat → Nat} (hπ : Function.Injective π)
+    (l : List PDCrossing) : canon (mapC π l) = canon l :=
+  canon_go_congr hπ l [] [] rfl
+
+/-- **Contre-exemple scellant le correctif du filage** : la source est le grand
+    côté de la paire R1 historique (`verifyR1_witness_passes_any`) ; la cible
+    `d` garde les mêmes silhouettes mais recâble les connexions
+    inter-croisements — le slot `e1` du second croisement passe de `1` à `3`,
+    ce qui n'est le fait d'**aucun** renommage du résultat de chirurgie
+    `[⟨1,2,3,4⟩, ⟨1,2,3,4⟩]` (un renommage préserverait l'égalité des slots
+    `e1` des deux croisements). Sous le filage global, `canon` distingue les
+    deux et le vérificateur REFUSE. Avant le correctif, la base
+    `_, [] => ([], [])` remettait la numérotation à zéro à chaque croisement :
+    les deux formes canoniales tombaient sur `[[1,2,3,4], [1,2,3,4]]` et ce
+    pas était ACCEPTÉ — le défaut, scellé ici par le noyau. -/
+theorem verifyKinkDownAny_rejects_crossRewire :
+    verifyKinkDownAny
+      { crossings := [⟨1, 2, 3, 4⟩, ⟨5, 2, 3, 4⟩, ⟨1, 5, 6, 6⟩],
+        numEdges := 6 }
+      { crossings := [⟨1, 2, 3, 4⟩, ⟨3, 4, 1, 2⟩], numEdges := 4 } = false := by
   decide
 
 end Knots.AnyMoves
