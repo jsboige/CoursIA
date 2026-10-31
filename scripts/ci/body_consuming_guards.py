@@ -412,6 +412,13 @@ REFERENCE: dict[str, dict[str, dict]] = {
             },
         },
     },
+    "scripts/ci/fast_lane.py": {
+        "channels": {
+            "env:FAST_LANE_PR_BODY": {
+                "cabled_in": ["always-on-commenters.yml"],
+            },
+        },
+    },
     "scripts/lean/check_added_axioms_cliquet.py": {
         "channels": {
             "env:LEAN_CLIQUET_PR_BODY": {
