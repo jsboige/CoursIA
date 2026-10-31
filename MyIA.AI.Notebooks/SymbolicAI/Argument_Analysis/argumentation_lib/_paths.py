@@ -42,25 +42,41 @@ def get_data_dir() -> pathlib.Path:
 
 
 def get_ext_tools_dir() -> pathlib.Path:
-    """Return the external tools directory path.
+    """Return the shared external tools directory path (canonical).
 
-    Search order:
-    1. Argument_Analysis/ext_tools/ (local)
-    2. SymbolicAI/ext_tools/ (shared, sibling series)
+    The shared sibling-series directory ``SymbolicAI/ext_tools/`` is the
+    canonical location since the #23109 arbitration: the EProver tree that
+    the series-local copy held was byte-identical to the shared one and has
+    been removed from the tree, so the local directory now only carries the
+    tools that are NOT shared (the SPASS binary, absent from the shared
+    directory).
 
-    The shared directory is canonical since the #23109 arbitration: the two
-    EProver trees were byte-identical, so the series-local copy is on its way
-    out and this fallback keeps the accessor working during the transition.
+    Resolution order:
+    1. SymbolicAI/ext_tools/ (shared, canonical)
+    2. Argument_Analysis/ext_tools/ (local, fallback for a checkout that
+       does not carry the shared directory)
+
     Returns the local path when neither exists, so callers keep a writable
     target and the failure stays where it was.
     """
     candidates = [
-        ARGUMENT_ANALYSIS_DIR / "ext_tools",
         SYMBOLIC_AI_DIR / "ext_tools",
+        ARGUMENT_ANALYSIS_DIR / "ext_tools",
     ]
     for d in candidates:
         if d.exists():
             return d
+    return ARGUMENT_ANALYSIS_DIR / "ext_tools"
+
+
+def get_local_ext_tools_dir() -> pathlib.Path:
+    """Return the series-local external tools directory path.
+
+    Distinct from :func:`get_ext_tools_dir`, which now points at the shared
+    directory. The local directory keeps the tools that are not shared with
+    the other SymbolicAI series (the SPASS binary is not present in
+    ``SymbolicAI/ext_tools/``).
+    """
     return ARGUMENT_ANALYSIS_DIR / "ext_tools"
 
 

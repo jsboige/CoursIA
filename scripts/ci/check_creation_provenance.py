@@ -64,12 +64,26 @@ AGE_MIN_H = 48.0
 FLEET_PREFIXES = ("jsboige", "myia-")
 
 
+class MesureIndisponible(RuntimeError):
+    """L'organe n'a pas pu MESURER — ce n'est pas un constat sur la PR.
+
+    Deux causes mesurees le 2026-10-30 : `gh` rend un non-zero quand le
+    quota d'installation GitHub est epuise (`API rate limit exceeded for
+    installation`), et il le rend aussi sur une panne reseau ou un
+    `GH_TOKEN` absent. Dans les trois cas, l'organe ne sait RIEN de la PR :
+    il doit le dire et s'arreter, jamais fabriquer un rouge.
+    """
+
+
 def _gh(args: list[str], timeout: int = 120) -> str:
     out = subprocess.run(["gh", *args], capture_output=True, text=True,
                          encoding="utf-8", timeout=timeout, check=False)
     if out.returncode != 0:
-        raise RuntimeError(f"gh {' '.join(args[:3])} a echoue : "
-                           f"{(out.stderr or '').strip()[:300]}")
+        # Le message de `gh` est multi-lignes (le conseil `gh auth login`
+        # suit l'erreur) : il est aplati, sinon il coupe la ligne de verdict
+        # dans le resume de l'etape.
+        detail = " ".join((out.stderr or "").split())[:300]
+        raise MesureIndisponible(f"gh {' '.join(args[:3])} a echoue : {detail}")
     return out.stdout
 
 
@@ -181,7 +195,8 @@ def main(argv: list[str] | None = None) -> int:
                          "$TIRAGE_JOURNAL_PATH, sinon le chemin local)")
     ap.add_argument("--strict", action="store_true",
                     help="sortir 1 sur un constat (usage local ; le job CI "
-                         "sort toujours 0)")
+                         "sort toujours 0). Une mesure INDISPONIBLE n'est "
+                         "pas un constat : elle sort 0 meme en --strict.")
     ap.add_argument("--json", default=None)
     args = ap.parse_args(argv)
 
@@ -190,8 +205,21 @@ def main(argv: list[str] | None = None) -> int:
     def note(texte: str) -> None:
         print(f"::warning::creation-provenance: {texte}")
 
-    meta = pr_meta(args.pr)
-    files = pr_files(args.pr)
+    # La mesure elle-meme. Un `gh` muet (quota d'installation epuise, reseau,
+    # jeton absent) ne dit RIEN de la PR : la garde le declare non mesuree et
+    # s'arrete. Rendre un constat faute d'avoir pu lire serait un faux rouge
+    # -- la doctrine des advisories du depot (#14849 : UNKNOWN, jamais forge).
+    try:
+        meta = pr_meta(args.pr)
+        files = pr_files(args.pr)
+    except MesureIndisponible as exc:
+        motif = (f"mesure impossible : {exc} -- la garde ne conclut pas sur "
+                 "cette PR")
+        rapport["verdict"] = "NON MESURE (UNKNOWN)"
+        rapport["mesure_indisponible"] = str(exc)
+        note(motif)
+        _emit(rapport, args)
+        return 0
     rapport["pr_meta"] = {"titre": meta.get("title"),
                           "auteur": (meta.get("author") or {}).get("login"),
                           "creee": meta.get("createdAt")}
@@ -318,6 +346,8 @@ def _emit(rapport: dict, args) -> None:
         print(f"- age de l'issue : {rapport['age_heures']:.1f} h")
     if rapport.get("verdict"):
         print(f"- **verdict : {rapport['verdict']}**")
+    if rapport.get("mesure_indisponible"):
+        print(f"- mesure indisponible : {rapport['mesure_indisponible']}")
     for e in rapport.get("exemptions", []):
         print(f"- exemption : {e}")
     for c in rapport.get("constats", []):

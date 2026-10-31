@@ -56,11 +56,13 @@ Les règles de signal (régime, RSI, momentum), le stop, le seuil de 5 points et
 
 Le résidu de `fix=on`, au plus 1,6 % au-dessus de 1, n'a pas été attribué ordre par ordre. Il n'implique ni position courte ni double ordre. Il est compatible avec le seuil de 5 points, qui peut laisser une ligne un peu au-dessus de sa cible, et avec le remplissage à la clôture d'ordres dimensionnés plus tôt dans la séance.
 
-**Contrôle d'innocuité.** Sur sa fenêtre codée, le code de `main` d'avant cette PR a tourné sans modification. Le code de cette PR a tourné en `fix=off` sur la même fenêtre, le même jour. Les deux journaux sont identiques : 263 ordres sur 263 (date, symbole, quantité, statut), et aucune statistique QC ne diffère.
+**Contrôle d'innocuité.** Sur sa fenêtre codée, le code de `main` d'avant la PR #23224 a tourné sans modification. Le code de la PR #23224 a tourné en `fix=off` sur la même fenêtre, le même jour. Les deux journaux sont identiques : 263 ordres sur 263 (date, symbole, quantité, statut), et aucune statistique QC ne diffère.
 
 ## Métriques du backtest
 
-Backtests QC Cloud du 2026-10-29, capital de départ 100 000, frais de courtage modélisés par Lean. La stratégie retenue est le code de cette PR en `fix=on` (`main.py` sha256 `dd78d4640e34`) ; les références sont le même code en `mode` `spy`, `6040` et `ew4`. Résultats lus après `completed: true`.
+Backtests QC Cloud du 2026-10-29, capital de départ 100 000, frais de courtage modélisés par Lean. La stratégie retenue est le code de la PR #23224 en `fix=on` (`main.py` sha256 `dd78d4640e34`) ; les références sont le même code en `mode` `spy`, `6040` et `ew4`. Résultats lus après `completed: true`.
+
+Depuis #23253, le titre de section de `main.py` ne cite plus de « Beta-annealing » : ce mécanisme n'a jamais été implémenté. Seul ce commentaire change, et l'empreinte du fichier passe de `dd78d4640e34` à `cb2ad1684e8a`. Toutes les lignes hors commentaires sont identiques : les ordres et les mesures ci-dessous restent ceux de l'empreinte `dd78d4640e34`.
 
 **w1 : 2015-01-01 → 2024-12-31** (2516 dates négociables)
 

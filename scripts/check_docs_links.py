@@ -97,11 +97,22 @@ DECK_FILENAME = "slides.md"
 #
 # `archive/` (docs historical archives, ~319 files) stays skipped: those are
 # frozen historical reports out of scope for link validation.
+#
+# `_site/` is the Quarto BUILD ARTIFACT (generated from our own sources, and
+# gitignored). It is skipped for the same reason `node_modules` is: it is not
+# source, so a broken link inside it is not a defect of the repository -- it is
+# a re-render of a link that the SOURCE already declares. Without this entry,
+# the organ's result depends on whether the machine happens to have run a
+# Quarto build: on a developer machine that has, it reports "dead links" for
+# pages that are not in the repository at all. In CI the situation does not
+# arise (the artifact is gitignored, hence never checked out), which is exactly
+# why the divergence went unnoticed: the organ's verdict was machine-dependent.
 SKIP_DIRS = {
     ".lake", "node_modules", ".git", "venv", "__pycache__",
     "archive", "_output", ".ipynb_checkpoints", "worktrees",
     ".mypy_cache", ".pytest_cache", ".ruff_cache",
     "custom_nodes",  # Third-party ComfyUI plugins, not ours to fix
+    "_site",  # Quarto build artifact -- gitignored, not source
 }
 
 # Baseline file location
