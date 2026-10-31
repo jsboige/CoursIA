@@ -363,7 +363,7 @@ def _text_hash(text: str) -> str:
 # Global cache: seg_index → English instruction string
 _dramatic_translations: dict[int, str] = {}
 
-# LLM batch size for translation (gpt-4o-mini, cheap)
+# LLM batch size for translation (chat mini du mapping, #14755)
 _TRANSLATION_BATCH_SIZE = 40
 
 _DRAMATIC_KEYWORD_MAP: list[tuple[list[str], str]] = [
@@ -479,7 +479,7 @@ def _get_vocal_reinforcement(instruction: str) -> str | None:
 def _translate_prompts_batch(
     segments: list[AnnotatedSegment],
 ) -> dict[int, str]:
-    """Translate all dramatic prompts via LLM (gpt-4o-mini) in batches.
+    """Translate all dramatic prompts via LLM (chat mini du mapping, #14755) in batches.
 
     Returns {seg_index: english_instruction} mapping.  Results are cached
     to ``outputs/dramatic_translations.json`` — subsequent runs skip the LLM.
@@ -506,8 +506,9 @@ def _translate_prompts_batch(
         from openai import OpenAI
         import os
 
-        client = OpenAI()  # Uses OPENAI_API_KEY from env
-        model = os.getenv("TRANSLATION_MODEL", "gpt-4o-mini")
+        client = OpenAI()  # OPENAI_API_KEY / OPENAI_BASE_URL depuis l'environnement
+        # #14755 : gpt-4o-mini (OBS 2024) -> gpt-5.6-luna (mini du mapping)
+        model = os.getenv("TRANSLATION_MODEL", "gpt-5.6-luna")
 
         system_msg = (
             "You are a voice direction translator. Convert French dramatic "

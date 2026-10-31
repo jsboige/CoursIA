@@ -548,9 +548,47 @@ def _markdown(source: str) -> dict:
     return {"cell_type": "markdown", "source": [source], "metadata": {}}
 
 
-def test_une_mention_de_version_perimee_dans_la_prose_est_relevee():
+# --------------------------------------------------------------------------
+# Fixture explicite pour les tests de MENTIONS
+#
+# Un test de mention ne doit pas dependre de l'etat courant du manifeste
+# LIVRE. Le manifeste livre declare les ecarts REELS du corpus : la
+# convergence de `pythonnet` (#23073) a retire 3.0.5 de ses divergences --
+# ce carnet ne l'epingle plus -- donc un test adosse au manifeste livre ne
+# mordrait plus : il passerait sans jamais signaler de mention, et
+# l'echec qu'il doit.watch serait invisible.
+#
+# Le fixture declare donc explicitement l'ecart surveille. Meme convention
+# que `_LIB_IKVM` plus bas, et meme raison qu'il y donne : « un test qui
+# passe sans declencher son constat ne prouve rien ».
+# --------------------------------------------------------------------------
+_LIB_PYTHONNET_AVEC_ECART = [
+    {
+        "id": "pythonnet",
+        "ecosystem": "nuget",
+        "canonical": "3.1.0",
+        "canonical_source": "manifest",
+        "divergences": [
+            {
+                "version": "3.0.5",
+                "decision": "to_converge",
+                "reason": "ecart surveille par le fixture",
+            },
+        ],
+    },
+    {
+        "id": "dotNetRDF",
+        "ecosystem": "nuget",
+        "canonical": "3.4.1",
+        "canonical_source": "manifest",
+        "divergences": [],
+    },
+]
+
+
+def test_une_mention_de_version_perimee_dans_la_prose_est_relevee(tmp_path):
     """La prose qui annonce l'ancienne version est un constat, meme si l'epinglage est a jour."""
-    manifest = clv.load_manifest(MANIFEST_PATH)
+    manifest = _manifest_with(tmp_path, _LIB_PYTHONNET_AVEC_ECART)
     canonicals, _errors = clv.resolve_canonicals(manifest, REPO_ROOT)
     payload = _notebook_with([
         _code('#r "nuget: pythonnet, 3.1.0"'),
@@ -563,9 +601,9 @@ def test_une_mention_de_version_perimee_dans_la_prose_est_relevee():
     )
 
 
-def test_la_ligne_depinglage_n_est_pas_une_mention():
+def test_la_ligne_depinglage_n_est_pas_une_mention(tmp_path):
     """La ligne qui porte l'epinglage n'est pas une mention : elle est l'epinglage."""
-    manifest = clv.load_manifest(MANIFEST_PATH)
+    manifest = _manifest_with(tmp_path, _LIB_PYTHONNET_AVEC_ECART)
     canonicals, _errors = clv.resolve_canonicals(manifest, REPO_ROOT)
     payload = _notebook_with([_code('#r "nuget: pythonnet, 3.0.5"')])
     assert clv.mention_findings("x.ipynb", payload, manifest, canonicals) == []
@@ -605,9 +643,9 @@ def test_une_mention_en_prose_reste_relevee_apres_le_correction_des_lignes_depin
     assert any(f["kind"] == "mention_residuelle" for f in findings), findings
 
 
-def test_une_sortie_affichant_une_version_perimee_est_relevee():
+def test_une_sortie_affichant_une_version_perimee_est_relevee(tmp_path):
     """Le bandeau « Installed Packages » affiche la version reellement chargee."""
-    manifest = clv.load_manifest(MANIFEST_PATH)
+    manifest = _manifest_with(tmp_path, _LIB_PYTHONNET_AVEC_ECART)
     canonicals, _errors = clv.resolve_canonicals(manifest, REPO_ROOT)
     payload = _notebook_with([
         _code(
@@ -619,9 +657,11 @@ def test_une_sortie_affichant_une_version_perimee_est_relevee():
     assert any(f["kind"] == "mention_residuelle" for f in findings)
 
 
-def test_une_mention_d_un_carnet_sans_epinglage_de_cette_bibliotheque_est_ignoree():
+def test_une_mention_d_un_carnet_sans_epinglage_de_cette_bibliotheque_est_ignoree(
+    tmp_path,
+):
     """Le perimetre est borne : on ne parle que des bibliotheques que le carnet epingle."""
-    manifest = clv.load_manifest(MANIFEST_PATH)
+    manifest = _manifest_with(tmp_path, _LIB_PYTHONNET_AVEC_ECART)
     canonicals, _errors = clv.resolve_canonicals(manifest, REPO_ROOT)
     payload = _notebook_with([
         _code('#r "nuget: pythonnet, 3.1.0"'),
@@ -631,9 +671,9 @@ def test_une_mention_d_un_carnet_sans_epinglage_de_cette_bibliotheque_est_ignore
     assert all(f["library"] == "pythonnet" for f in findings)
 
 
-def test_le_delta_ignore_une_mention_deja_presente():
+def test_le_delta_ignore_une_mention_deja_presente(tmp_path):
     """Une mention deja presente et non touchee par la PR est une derive historique."""
-    manifest = clv.load_manifest(MANIFEST_PATH)
+    manifest = _manifest_with(tmp_path, _LIB_PYTHONNET_AVEC_ECART)
     canonicals, _errors = clv.resolve_canonicals(manifest, REPO_ROOT)
     base = _notebook_with([
         _code('#r "nuget: pythonnet, 3.1.0"'),
@@ -649,8 +689,8 @@ def test_le_delta_ignore_une_mention_deja_presente():
     ) == []
 
 
-def test_le_delta_releve_une_mention_introduite_par_la_pr():
-    manifest = clv.load_manifest(MANIFEST_PATH)
+def test_le_delta_releve_une_mention_introduite_par_la_pr(tmp_path):
+    manifest = _manifest_with(tmp_path, _LIB_PYTHONNET_AVEC_ECART)
     canonicals, _errors = clv.resolve_canonicals(manifest, REPO_ROOT)
     base = _notebook_with([_code('#r "nuget: pythonnet, 3.1.0"')])
     head = _notebook_with([
