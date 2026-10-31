@@ -1,0 +1,291 @@
+{
+ "package": "setreplace",
+ "version": "0.2.0",
+ "origin": "PyPI, reimplementation tierce (github.com/kovasb/setreplace-py)",
+ "reference": "maxitg/SetReplace (Wolfram Research, MIT)",
+ "passed": 19,
+ "total": 19,
+ "cases": [
+  {
+   "case": "C1a 1 evenement reecrit UNE arete",
+   "ok": true,
+   "expected": "2 aretes dont 1 inversee",
+   "obtained": [
+    [
+     2,
+     1
+    ],
+    [
+     3,
+     4
+    ]
+   ],
+   "why": "events = substitutions"
+  },
+  {
+   "case": "C1b 2 evenements reecrivent les DEUX aretes",
+   "ok": true,
+   "expected": [
+    [
+     2,
+     1
+    ],
+    [
+     4,
+     3
+    ]
+   ],
+   "obtained": [
+    [
+     2,
+     1
+    ],
+    [
+     4,
+     3
+    ]
+   ],
+   "why": "deux substitutions disjointes"
+  },
+  {
+   "case": "C1c SetReplaceAll = toutes les correspondances d'une generation",
+   "ok": true,
+   "expected": [
+    [
+     2,
+     1
+    ],
+    [
+     4,
+     3
+    ]
+   ],
+   "obtained": [
+    [
+     2,
+     1
+    ],
+    [
+     4,
+     3
+    ]
+   ],
+   "why": "confirme que l'ecart avec C1a est bien generations vs evenements"
+  },
+  {
+   "case": "C2 chaine, appariement force",
+   "ok": true,
+   "expected": [
+    [
+     1,
+     3
+    ],
+    [
+     3,
+     4
+    ]
+   ],
+   "obtained": [
+    [
+     1,
+     3
+    ],
+    [
+     3,
+     4
+    ]
+   ],
+   "why": "appariement unique, donc attendu unique"
+  },
+  {
+   "case": "C3 ligne n=0",
+   "ok": true,
+   "expected": "1 aretes / 1 atomes",
+   "obtained": "1 aretes / 1 atomes",
+   "why": "un evenement ajoute une arete et un atome"
+  },
+  {
+   "case": "C3 ligne n=1",
+   "ok": true,
+   "expected": "2 aretes / 2 atomes",
+   "obtained": "2 aretes / 2 atomes",
+   "why": "un evenement ajoute une arete et un atome"
+  },
+  {
+   "case": "C3 ligne n=2",
+   "ok": true,
+   "expected": "3 aretes / 3 atomes",
+   "obtained": "3 aretes / 3 atomes",
+   "why": "un evenement ajoute une arete et un atome"
+  },
+  {
+   "case": "C3 ligne n=3",
+   "ok": true,
+   "expected": "4 aretes / 4 atomes",
+   "obtained": "4 aretes / 4 atomes",
+   "why": "un evenement ajoute une arete et un atome"
+  },
+  {
+   "case": "C3 ligne n=4",
+   "ok": true,
+   "expected": "5 aretes / 5 atomes",
+   "obtained": "5 aretes / 5 atomes",
+   "why": "un evenement ajoute une arete et un atome"
+  },
+  {
+   "case": "C3 ligne n=5",
+   "ok": true,
+   "expected": "6 aretes / 6 atomes",
+   "obtained": "6 aretes / 6 atomes",
+   "why": "un evenement ajoute une arete et un atome"
+  },
+  {
+   "case": "C3 ligne n=6",
+   "ok": true,
+   "expected": "7 aretes / 7 atomes",
+   "obtained": "7 aretes / 7 atomes",
+   "why": "un evenement ajoute une arete et un atome"
+  },
+  {
+   "case": "C4 fraicheur : 2 atomes neufs distincts",
+   "ok": true,
+   "expected": 2,
+   "obtained": [
+    5,
+    6
+   ],
+   "why": "deux evenements donnent deux atomes neufs, non confondus"
+  },
+  {
+   "case": "C5 set_replace_list rend n+1 etats",
+   "ok": true,
+   "expected": 5,
+   "obtained": 5,
+   "why": "l'etat initial compte, donc 0..n"
+  },
+  {
+   "case": "C6 point fixe converge vers l'arete unique",
+   "ok": true,
+   "expected": [
+    [
+     1,
+     4
+    ]
+   ],
+   "obtained": [
+    [
+     1,
+     4
+    ]
+   ],
+   "why": "la chaine se contracte jusqu'a (1,4)"
+  },
+  {
+   "case": "C7 determinisme sur deux executions",
+   "ok": true,
+   "expected": "etats identiques",
+   "obtained": "identiques",
+   "why": "pas d'aleatoire dans le choix"
+  },
+  {
+   "case": "C8a sortie ajoutee en fin de liste",
+   "ok": true,
+   "expected": [
+    [
+     3,
+     4
+    ],
+    [
+     2,
+     1
+    ]
+   ],
+   "obtained": [
+    [
+     3,
+     4
+    ],
+    [
+     2,
+     1
+    ]
+   ],
+   "why": "l'arete la plus proche du debut part, sa sortie va a la fin"
+  },
+  {
+   "case": "C8b doublons non fondus : ce n'est pas un ensemble",
+   "ok": true,
+   "expected": [
+    [
+     2,
+     1
+    ],
+    [
+     2,
+     1
+    ]
+   ],
+   "obtained": [
+    [
+     2,
+     1
+    ],
+    [
+     2,
+     1
+    ]
+   ],
+   "why": "coherent avec un decalage de liste, pas avec une fusion d'ensemble"
+  },
+  {
+   "case": "C8c appariement depuis le debut",
+   "ok": true,
+   "expected": [
+    [
+     3,
+     4
+    ],
+    [
+     1,
+     3
+    ]
+   ],
+   "obtained": [
+    [
+     3,
+     4
+    ],
+    [
+     1,
+     3
+    ]
+   ],
+   "why": "(1,2)+(2,3) consommees, (1,3) ajoutee en fin"
+  },
+  {
+   "case": "C8d deux evenements sur une liste reordonnee",
+   "ok": true,
+   "expected": [
+    [
+     2,
+     1
+    ],
+    [
+     4,
+     3
+    ]
+   ],
+   "obtained": [
+    [
+     2,
+     1
+    ],
+    [
+     4,
+     3
+    ]
+   ],
+   "why": "apres 1 evenement la liste est [(3,4),(2,1)]"
+  }
+ ]
+}

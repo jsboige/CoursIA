@@ -508,7 +508,6 @@ def check_environment(tweety_dir: Path) -> EnvironmentCheck:
     else:
         local_eprover_paths = [
             tweety_dir.parent / "ext_tools" / "EProver" / "eprover.exe",
-            tweety_dir.parent / "Argument_Analysis" / "ext_tools" / "EProver" / "eprover.exe",
         ]
         for ep_path in local_eprover_paths:
             if ep_path.exists():
