@@ -1,5 +1,7 @@
 # Pli 2.0 — Lake d'enveloppe OcclusionTriad : verdict `INSUFFICISANT_BLOQUANT`
 
+> **Etat mesure au 2026-10-29** : la **prémisse de ce verdict est falsifiée par la dérive amont** — les deux imports fantômes (`TriadConservation`, `RoPECoherence`) ont disparu du fichier amont, qui compile intégralement (build SUCCESS, 0 sorry, 0 `sorryAx`, 0 `native_decide`, 67 théorèmes sur le profil axiomatique Mathlib standard) dans une enveloppe minimale. C'est le cas de figure que l'option (d) ci-dessous prévoyait (« Si upstream répond, Pli 2 peut être ré-ouvert »). Le verdict ci-dessous reste celui de sa date (2026-10-22) sur la tête qu'il a mesurée ; la décision de rouvrir Pli 2 appartient au coordinateur. Mesure complète : [`concern-2026-10-29-build-verification.md`](concern-2026-10-29-build-verification.md).
+
 > **Statut** : investigation first-hand c.487, Pli 2.0 CLOSE.
 > **Date** : 2026-10-18 (verdict révisé le 2026-10-22).
 > **Lane** : myia-po-2024:CoursIA-2 (Lean toolchain disponible, Lean 4.35.0, Lake 5.0.0).
