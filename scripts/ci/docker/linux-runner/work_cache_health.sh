@@ -265,11 +265,30 @@ wch_is_quarantine_name() {  # <basename>
   esac
 }
 
+# Profondeur d'empilement d'une quarantaine : `X.stale-A.stale-B` vaut 2.
+#
+# La borne ci-dessous comptait des NOMS, donc une chaine de dix generations
+# valait UNE entree et survivait a `keep=2`. Mesure po-2023 du 2026-10-30 :
+# `CoursIA.stale-…stale-…` (10 generations, du 27/10) = **4,8 Gio** a cote
+# d'un clone vivant de 2,4 Gio dans le meme volume -- soit un tiers du volume
+# pour un historique que l'intention « inspectable » ne vise pas.
+wch_quarantine_depth() {  # <basename> -> profondeur (0 si ce n'est pas une quarantaine)
+  local n="$1" depth=0
+  while case "$n" in
+          *.stale-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]T[0-9][0-9][0-9][0-9][0-9][0-9]Z) true ;;
+          *) false ;;
+        esac; do
+    n="${n%.stale-*}"
+    depth=$((depth + 1))
+  done
+  printf '%s\n' "$depth"
+}
+
 # Les horodatages sont de largeur fixe et en UTC : sous LC_ALL=C le tri
 # lexicographique EST un tri chronologique. `head -n -<keep>` rend tout SAUF
 # les <keep> derniers, c'est-a-dire les plus anciens -- ceux qu'on retire.
 wch_prune_quarantines() {  # <workdir>
-  local workdir="$1" keep="${WCH_STALE_KEEP:-2}" slot path base sz
+  local workdir="$1" keep="${WCH_STALE_KEEP:-2}" slot path base sz parent prefix rest tail
   local removed=0 reclaimed=0 idx
   local -a list=()
   case "$keep" in ''|*[!0-9]*) keep=2 ;; esac
@@ -287,6 +306,28 @@ wch_prune_quarantines() {  # <workdir>
       [ -n "$path" ] || continue
       base="${path##*/}"
       wch_is_quarantine_name "$base" || continue
+      # Une chaine empilee vaut `depth` generations, pas une : la ramener a
+      # `keep` est un RENOMMAGE (on retire les suffixes les plus ANCIENS, aucune
+      # donnee n'est supprimee) -- c'est ce qui rend la borne effective sur un
+      # empilement deja present sur disque, sans attendre qu'il se resorbe.
+      while [ "$(wch_quarantine_depth "$base")" -gt "$keep" ]; do
+        parent="${path%/*}"
+        prefix="${base%%.stale-*}"
+        rest="${base#*.stale-}"
+        tail="${rest#*.stale-}"
+        # Pas de seconde generation a retirer, ou le nom cible existe deja :
+        # on laisse la chaine telle quelle plutot que de la fusionner.
+        [ "$tail" != "$rest" ] || break
+        newname="$prefix.stale-$tail"
+        [ -e "$parent/$newname" ] && break
+        if mv -- "$path" "$parent/$newname" 2>/dev/null; then
+          echo "work_cache: quarantaine $base ramenee a $newname (generations les plus anciennes ecartees, contenu intact)"
+          path="$parent/$newname"
+          base="$newname"
+        else
+          break
+        fi
+      done
       list+=("$path")
     done < <(find "$slot" -mindepth 1 -maxdepth 1 -type d -name '*.stale-*' -print 2>/dev/null \
                | LC_ALL=C sort)
@@ -422,12 +463,20 @@ wch_check_workdir() {
   for gitdir in "$workdir"/*/*/.git; do
     [ -e "$gitdir" ] || continue
     repo="${gitdir%/.git}"
+    # Une quarantaine EST un clone complet : elle porte donc un `.git`, et
+    # cette boucle la reprenait comme un depot vivant. Consequences mesurees
+    # sur po-2023 le 2026-10-30 : la maintenance la repackait (le repack
+    # echoue et AJOUTE des packs -- 2,4 -> 4,8 Gio), puis l'echec la
+    # re-quarantinait SOUS ELLE-MEME, d'ou `X.stale-A.stale-B…stale-J` : une
+    # generation par demarrage, dix au total. L'intention « inspectable » ne
+    # demande aucune maintenance : on passe, et l'empilement cesse a la source.
+    wch_is_quarantine_name "${repo##*/}" && continue
     wch_integrity_pass "$repo"
     wch_maintenance_pass "$repo" "$threshold"
   done
   # Les quarantaines vivent a COTE des clones (`<workdir>/<slug>/<base>.stale-<ts>`),
-  # pas sous un `.git` : la boucle ci-dessus ne les voit donc jamais, et c'est
-  # precisement pourquoi elles s'accumulaient sans borne.
+  # sous un nom qui porte un `.git` -- la boucle ci-dessus les exclut
+  # desormais explicitement, et c'est la retention ci-dessous qui les borne.
   wch_prune_quarantines "$workdir"
   return 0
 }
