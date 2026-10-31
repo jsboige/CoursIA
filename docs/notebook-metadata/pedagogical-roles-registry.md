@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-10-30
+
 # Registre des rôles pédagogiques — `pedagogical_role`
 
 **Issue parente** : [#15080](https://github.com/jsboige/CoursIA/issues/15080) — critère 4 (le compteur d'exercices s'inverse)
@@ -46,8 +48,8 @@ Une valeur hors vocabulaire est écartée avec avertissement à la génération 
   justification: "3 sujets réellement ouverts, aucune cellule où écrire — le défaut est l'absence de support, pas l'absence de sujet (mesuré #15080 §1)"
 
 - notebook_path: GenAI/RAG-et-Memoire-Semantique/05b-Stockage-Vectoriel-Serveur.ipynb
-  role: method_demo
-  justification: "0 occurrence exercice/exercise/TODO/challenge/a vous sur 23 cellules ; se déclare « Grain #13021 » avec critères d'acceptation — son 0 est légitime (mesuré #15080 §5)"
+  role: open_subject
+  justification: "6 exercices énoncés et stubbés (cellules 18, 20, 26, 48, 50, 52 — marqueurs « TODO etudiant », corps exécutable) après la fusion #23588 qui a joint l'ancien 05c ; le corps du carnet porte la mesure complète (sections 2 à 7) mais l'étudiant a un travail à produire — le 0 du compteur d'exercices mesuré en #15080 §5 ne vaut plus (relu firsthand 2026-10-30)"
 
 - notebook_path: GenAI/Video/01-Foundation/01-1b-Video-Slideshow-Bonus.ipynb
   role: open_subject

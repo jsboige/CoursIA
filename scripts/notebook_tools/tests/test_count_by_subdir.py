@@ -279,5 +279,17 @@ class TestDelegationContract:
         import inspect
         src = inspect.getsource(fn)
         assert "SERIES_ORDER" in src
-        # SERIES_ORDER in count_notebooks_by_series: 11 entries (incl. EPF)
-        assert len(SERIES_ORDER) == 11
+        # The list is duplicated across three sibling modules (count / coverage /
+        # catalog). The invariant worth guarding is that the copies never
+        # diverge -- not a fixed length: hard-coding the count made every series
+        # addition (e.g. Physique, EPIC #23161) a red test for no reason.
+        assert SERIES_ORDER, "SERIES_ORDER must not be empty"
+        assert len(SERIES_ORDER) == len(set(SERIES_ORDER)), "no duplicate serie"
+        import catalog_coverage
+        import generate_catalog
+        assert catalog_coverage.SERIES_ORDER == SERIES_ORDER, (
+            "catalog_coverage.SERIES_ORDER drifted from count_notebooks_by_series"
+        )
+        assert generate_catalog.SERIES_ORDER == SERIES_ORDER, (
+            "generate_catalog.SERIES_ORDER drifted from count_notebooks_by_series"
+        )

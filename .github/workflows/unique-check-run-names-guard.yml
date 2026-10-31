@@ -59,10 +59,48 @@ jobs:
     # local etait sature PAR SES CHECKOUTS (mesure 00:45Z : 11 des 12 slots
     # occupes dans `actions/checkout`, 614 runs en file). La garde anti-fork
     # ci-dessous est CONSERVEE : aucun code de fork ne change de surface.
-    # Retour arriere = revert du commit (et remise de l'entree d'allowlist).
-    runs-on: ubuntu-latest
+    # 2026-10-27 (#22461, phase A) : forme hybride de debordement -- PR
+    # meme-depot ET vars.CI_OVERFLOW_LOCAL == 'true' -> jambe Linux locale ;
+    # tout le reste (variable absente ou fausse, forks, push/schedule/
+    # dispatch) retombe sur ubuntu-latest (l'etat du 27/10). Bascule :
+    # `gh variable set CI_OVERFLOW_LOCAL --body true|false --repo jsboige/CoursIA`.
+    # Retour arriere = variable a `false` ou supprimee : routage 100 %
+    # heberge, sans toucher ce fichier. Limite : runs-on se resout a la
+    # creation du job, les runs deja en file ne bougent pas.
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
+    # #22954 : borne explicite. Mesure du 2026-10-29 sur les 4 derniers
+    # runs verts de ce job : max 0.2 min. Marge large (le defaut
+    # d'Actions est 6 h, et un job fige tient son slot tout ce temps).
+    timeout-minutes: 10
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     steps:
+      # Le work dir de ce runner n'est PAS froid dans sa voie hebergee : le pool
+      # `coursia-ephemeral` monte un volume nomme PERSISTANT par slot
+      # (`supervise.sh` : `-v "${vol_prefix}-${slot}":"$WORK_MOUNT"`, #14285) et
+      # seul le CONTENEUR est jetable -- c'est `actions/checkout` qui recoit le
+      # meme repertoire de travail au job suivant. L'exclusion de ce fichier du
+      # perimetre de #22931 reposait sur « deplace sur ubuntu-latest par
+      # #22821 » ; #22921 (forme hybride de `runs-on`) a rendu cette premisse
+      # fausse, en debordement le job tourne sur le meme pool chaud que les dix
+      # workflows deja traites. Mesure #23127, 2026-10-28.
+      # Sur `ubuntu-latest` la VM est neuve : le bloc est un no-op verifie par
+      # `[ -d .git ]`, il ne coute rien et ne masque rien.
+      - name: Restore the warm work tree before the sparse checkout
+        run: |
+          set -u
+          if [ -d "$GITHUB_WORKSPACE/.git" ]; then
+            if ! dirty=$(git -C "$GITHUB_WORKSPACE" -c safe.directory="$GITHUB_WORKSPACE" status --porcelain 2>/dev/null); then
+              echo "::warning::[heal-worktree] probe git status muet -- etat de l'arbre inconnu, reset applique quand meme (#22722)"
+              dirty=""
+            fi
+            untracked=$(printf '%s\n' "$dirty" | grep -c '^??' || true)
+            first_dirty=$(printf '%s\n' "$dirty" | head -n 1)
+            if ! git -C "$GITHUB_WORKSPACE" -c safe.directory="$GITHUB_WORKSPACE" reset --hard --quiet; then
+              echo "::warning::[heal-worktree] reset --hard a echoue -- le retrecissement sparse peut refuser (#22722)"
+            elif [ -n "$dirty" ]; then
+              echo "::notice::[heal-worktree] reset --hard effectue -- le job precedent avait laisse un etat sale (${first_dirty}) -- ${untracked} entree(s) non suivie(s) laissee(s) en place -- le retrecissement sparse passe (#22722)"
+            fi
+          fi
       - name: Checkout workflows + script
         uses: actions/checkout@v4
         with:

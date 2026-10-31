@@ -213,11 +213,15 @@ class SectorMLClassificationAlgorithm(QCAlgorithm):
 
         delta = data.diff()
         gain = delta.clip(lower=0)
-        loss = -delta.clip(lower=0)
+        loss = -delta.clip(upper=0)
         avg_gain = gain.rolling(14).mean().iloc[-1]
         avg_loss = loss.rolling(14).mean().iloc[-1]
-        rs = avg_gain / avg_loss if avg_loss > 0 else 0.0
-        rsi = 100 - (100 / (1 + rs))
+        if avg_loss > 0:
+            rs = avg_gain / avg_loss
+            rsi = 100 - (100 / (1 + rs))
+        else:
+            # Sans variation : convention neutre ; hausse sans perte : RSI 100.
+            rsi = 100.0 if avg_gain > 0 else 50.0
         rsi_normalized = (rsi - 50) / 50
 
         sma_short = data.rolling(self.SMA_SHORT).mean().iloc[-1]
