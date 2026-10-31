@@ -1634,6 +1634,80 @@ def test_13960_no_duplicate_test_function_definitions() -> None:
     )
 
 
+# ---------------------------------------------------------------------------
+# #22244 (revue du coordinateur, 2026-10-28) : une jambe de DEBORDEMENT
+# (meme-depot && vars.CI_OVERFLOW_LOCAL == 'true') n'exige pas d'entree
+# d'allowlist -- son acces au pool local depend d'un basculement d'operateur
+# sur la variable de depot, geste explicite et reversible. Porteur reel :
+# always-on-commenters.yml, sorti de SELF_HOSTED_WORKFLOW_ALLOWLIST.
+# ---------------------------------------------------------------------------
+def test_legne_de_debordement_n_exige_pas_d_entree_d_allowlist(tmp_path):
+    """Controle positif : un workflow non allowliste dont le SEUL job est une
+    jambe de debordement est accepte -- l'etat par defaut le laisse heberge."""
+    write_workflow(tmp_path, "always-on-commenters", """
+        name: always-on-commenters
+        on:
+          pull_request:
+            branches: [main]
+          workflow_dispatch:
+        jobs:
+          always-on-commenters:
+            runs-on: RUNSON
+            steps:
+              - run: echo overflow
+        """)
+    (tmp_path / "always-on-commenters.yml").write_text(
+        (tmp_path / "always-on-commenters.yml").read_text(encoding="utf-8").replace(
+            "RUNSON", HYBRID_RUNS_ON_OVERFLOW
+        ),
+        encoding="utf-8",
+    )
+    result = policy.scan_workflows(tmp_path)
+    assert result.broken == []
+    assert result.violations == []
+    assert result.self_hosted_jobs == 1
+
+
+def test_legne_de_debordement_n_excuse_pas_un_job_self_hosted_statique(tmp_path):
+    """Controle negatif : l'exemption porte sur la JAMBE, pas sur le
+    workflow. Un job self-hosted statique dans le meme fichier reste refuse
+    (fail-closed) -- l'allowlist reste requise pour lui."""
+    write_workflow(tmp_path, "mixed-issuer", """
+        name: mixed
+        on: workflow_dispatch
+        jobs:
+          overflow:
+            runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
+            steps:
+              - run: echo overflow
+          statique:
+            runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+            steps:
+              - run: echo statique
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert result.broken == []
+    assert "WORKFLOW_NOT_ALLOWED" in codes(result)
+
+
+def test_legne_hybride_meme_depot_non_allowlistee_reste_refusee(tmp_path):
+    """Controle negatif : la forme hybride SANS la garde de debordement (la
+    jambe locale est atteignable par le seul push d'un meme depot) exige
+    toujours une entree d'allowlist -- l'exemption est etroite, pas
+    generale."""
+    write_workflow(tmp_path, "same-repo-hybrid", """
+        name: same-repo-hybrid
+        on: workflow_dispatch
+        jobs:
+          guard:
+            runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
+            steps:
+              - run: echo same-repo
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert result.broken == []
+    assert "WORKFLOW_NOT_ALLOWED" in codes(result)
+
 # --- LISTE DES WORKFLOWS PORTEURS D'UN JOB LOCAL (#22937 phase A) ----------
 #
 # La lecture locale du controleur de debordement ne doit viser que les runs
