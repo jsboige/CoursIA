@@ -1732,13 +1732,165 @@ def _seed_cache_file(path, entries):
     }), encoding="utf-8")
 
 
-def _stub_gh_listing_then_anchor(monkeypatch, listing_payload, anchor_payload):
-    """Les deux commandes gh se distinguent par '--search' (ancre seule)."""
+def _stub_gh_listing_then_anchor(monkeypatch, listing_payload, anchor_payload,
+                                 rest_payload=None):
+    """Les trois commandes gh se distinguent (#23636).
+
+    - `api ... pulls?...head=` : l'ancre REST (voie 1, seau `core`) ;
+    - `pr list --search head:` : le repli GraphQL de l'ancre (voie 2) ;
+    - `pr list` sans `--search` : le lot de la passe.
+
+    `rest_payload` vaut None par defaut : la voie REST repond une liste
+    vide (route vivante, aucune correspondance) et l'ancre tranche par
+    son repli -- les tests historiques gardent ainsi leur sens.
+    """
     def fake_gh(*args, **kwargs):
+        if args and args[0] == "api":
+            if rest_payload is None:
+                return _fake_proc(json_payload=[])
+            return _fake_proc(json_payload=rest_payload)
         if "--search" in args:
             return _fake_proc(json_payload=anchor_payload)
         return _fake_proc(json_payload=listing_payload)
     monkeypatch.setattr(pmw, "run_gh", fake_gh)
+
+
+def _rest_row(number, state, ref, sha=_PR_OID_A, merged_at=None):
+    """Entree REST `pulls` : la forme de l'API, pas la forme interne."""
+    return {
+        "number": number,
+        "state": state,
+        "merged_at": merged_at,
+        "html_url": f"https://example/pr/{number}",
+        "head": {"ref": ref, "sha": sha},
+    }
+
+
+class TestAnchorRestRoute:
+    """#23636 : l'ancre passe par le seau `core` (REST `pulls?head=`), qui
+    reste sain quand le seau `graphql` est epuise sous le compte partage.
+
+    L'ancre GraphQL reste le repli (branches de fork : leur head
+    appartient a un autre proprietaire, donc hors du filtre `head=`), mais
+    son echec ne doit plus LEVER : une levee avortait toute la passe.
+    """
+
+    def test_rest_route_resolves_before_graphql(self, monkeypatch):
+        calls = []
+
+        def fake_gh(*args, **kwargs):
+            calls.append(list(args))
+            if args and args[0] == "api":
+                return _fake_proc(json_payload=[
+                    _rest_row(321, "open", "feature/x", sha=_PR_OID_B),
+                ])
+            raise AssertionError(
+                "l'ancre REST tranche : le repli GraphQL ne doit pas etre "
+                "appele")
+
+        monkeypatch.setattr(pmw, "run_gh", fake_gh)
+        row = pmw.anchor_search_pr_for_branch("feature/x")
+        assert row["number"] == 321
+        assert row["state"] == "OPEN"
+        assert row["headRefName"] == "feature/x"
+        assert row["headRefOid"] == _PR_OID_B
+        assert row["url"] == "https://example/pr/321"
+        # L'endpoint est la liste par head -- jamais commits/<oid>/pulls
+        # (faux negatifs mesures, cf orphan-branch-scan).
+        endpoint = calls[0][1]
+        assert "pulls" in endpoint and "head=" in endpoint
+        assert "commits/" not in endpoint
+
+    def test_rest_maps_the_three_states(self, monkeypatch):
+        """`state` interne : OPEN / MERGED / CLOSED -- REST rend
+        open / closed + `merged_at` non nul pour une PR fusionnee."""
+        cases = [
+            (_rest_row(1, "open", "f/x"), "OPEN"),
+            (_rest_row(2, "closed", "f/x", merged_at="2026-10-31T01:00:00Z"),
+             "MERGED"),
+            (_rest_row(3, "closed", "f/x"), "CLOSED"),
+        ]
+        for payload, expected in cases:
+            monkeypatch.setattr(
+                pmw, "run_gh",
+                lambda *a, _p=payload, **k: _fake_proc(json_payload=[_p]),
+            )
+            row = pmw.anchor_search_pr_for_branch("f/x")
+            assert row["state"] == expected, payload
+
+    def test_rest_keeps_the_most_recent_number(self, monkeypatch):
+        """close+reopen / re-PR : deux PRs partagent le nom de branche ->
+        on garde le numero max, comme le lot et comme le rows[0] de
+        l'ancre GraphQL (date desc)."""
+        monkeypatch.setattr(
+            pmw, "run_gh",
+            lambda *a, **k: _fake_proc(json_payload=[
+                _rest_row(41, "closed", "f/x"),
+                _rest_row(57, "open", "f/x"),
+            ]),
+        )
+        row = pmw.anchor_search_pr_for_branch("f/x")
+        assert row["number"] == 57
+
+    def test_branch_name_is_url_encoded(self, monkeypatch):
+        """Un `head=` mal encode rend une liste VIDE : le faux negatif
+        serait silencieux. Le `/` du nom de branche doit etre encode."""
+        calls = []
+
+        def fake_gh(*args, **kwargs):
+            calls.append(list(args))
+            return _fake_proc(json_payload=[])
+
+        monkeypatch.setattr(pmw, "run_gh", fake_gh)
+        pmw.anchor_search_pr_for_branch("feature/deep/branch")
+        endpoint = calls[0][1]
+        assert "feature%2Fdeep%2Fbranch" in endpoint
+
+    def test_graphql_fallback_still_serves_fork_branches(self, monkeypatch):
+        """Le repli GraphQL reste la voie des branches de fork : une
+        reponse GraphQL saine est donc acceptee quand la voie REST ne
+        trouve rien."""
+        def fake_gh(*args, **kwargs):
+            if args and args[0] == "api":
+                return _fake_proc(json_payload=[])
+            return _fake_proc(json_payload=[_row(88, "OPEN", "f/fork")])
+
+        monkeypatch.setattr(pmw, "run_gh", fake_gh)
+        row = pmw.anchor_search_pr_for_branch("f/fork")
+        assert row["number"] == 88 and row["state"] == "OPEN"
+
+    def test_graphql_failure_does_not_raise(self, monkeypatch):
+        """Le contrat de #23636 : les deux voies muettes rendent
+        l'inconcluant, elles ne LEVENT plus. Une levee avortait toute la
+        passe (rc=2, aucun rapport ecrit)."""
+        def fake_gh(*args, **kwargs):
+            if args and args[0] == "api":
+                return _fake_proc(returncode=1, stdout="",
+                                  stderr="404 Not Found")
+            return _fake_proc(
+                returncode=1, stdout="",
+                stderr="GraphQL: API rate limit already exceeded")
+
+        monkeypatch.setattr(pmw, "run_gh", fake_gh)
+        try:
+            row = pmw.anchor_search_pr_for_branch("f/x")
+        except Exception as exc:  # pragma: no cover - c'est l'echec vise
+            raise AssertionError(
+                "l'ancre ne doit plus lever : une levee avorte toute la "
+                f"passe (got {type(exc).__name__}: {exc})")
+        assert row is None
+
+    def test_rest_failure_falls_back_to_graphql(self, monkeypatch):
+        """La voie REST indisponible (gh muet, endpoint refuse) ne
+        condamne pas l'ancre : le repli GraphQL tranche encore."""
+        def fake_gh(*args, **kwargs):
+            if args and args[0] == "api":
+                return _fake_proc(returncode=1, stdout="", stderr="boom")
+            return _fake_proc(json_payload=[_row(99, "MERGED", "f/x")])
+
+        monkeypatch.setattr(pmw, "run_gh", fake_gh)
+        row = pmw.anchor_search_pr_for_branch("f/x")
+        assert row["number"] == 99 and row["state"] == "MERGED"
 
 
 class TestPrResolution:
