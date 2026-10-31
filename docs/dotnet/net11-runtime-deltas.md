@@ -297,8 +297,91 @@ calme ». Cette section est la réponse mesurée à ce drapeau.
 | `Pipeline_EvilRegex` : le runtime .NET 11 est-il plus lent que .NET 9 ? | **non mesuré** — +2,3 % 9→11, −1,7 % 10→11 : aucun écart distinguable du bruit |
 | `Pipeline_EvilRegex` : le drapeau INCONCLUSIF du 02/10 | **non reproduit** — le signal +27,5 % et le rapport StdDev élevé du 02/10 n'apparaissent pas dans la fenêtre du 20/10 ; une non-reproduction affaiblit le drapeau, sans le trancher |
 | `Pipeline_ConvertDeterminizeMinimize`, `Matching_DotNetDelegate` | **toujours non concluants** — dispersion inter-passes 47–69 % (écart max−min rapporté à la moyenne des deux bornes) |
-| Les 3 autres bancs encore marqués INCONCLUSIF (`RandomSearch_Sphere10D_50k` (MGS), `PromptSignature.Matches` et `PromptTransform.InterpolateKeys` (semantic-fleet)) | **non re-mesurés** dans ce cycle : même travail de préparation (clone depth-1 + build Release) sur des sous-modules dont les bancs amont relèvent de la coordination ai-01 |
-| Une fenêtre **calme** (runner CI de la machine au repos) avec n ≥ 5 passes | **non obtenue** sur cette machine ; c'est la condition qui reste pour serrer la dispersion inter-passes |
+| Les 3 autres bancs encore marqués INCONCLUSIF (`RandomSearch_Sphere10D_50k` (MGS), `PromptSignature.Matches` et `PromptTransform.InterpolateKeys` (semantic-fleet)) | **non re-mesurés** dans ce cycle : même travail de préparation (clone depth-1 + build Release) sur des sous-modules dont les bancs amont relèvent de la coordination ai-01 — **tentative du 29/10 sur `myia-ai-01` : non concluante (fenêtre chargée), cf. « Tentative du 2026-10-29 sur myia-ai-01 »** |
+| Une fenêtre **calme** (runner CI de la machine au repos) avec n ≥ 5 passes | **non obtenue** sur cette machine — **non obtenue non plus sur `myia-ai-01` le 29/10 (charge d'hôte mesurée à 62-91 %), cf. la même section**. Elle n'est pas pour autant la condition **suffisante** : le protocole des bancs est une seconde cause, plus fondamentale, cf. « Le protocole du banc, seconde cause » |
+
+### Tentative du 2026-10-29 sur `myia-ai-01` — les 3 bancs restants, et la charge de l'hôte
+
+Les trois bancs encore marqués INCONCLUSIF ont été re-mesurés le **2026-10-29, ~18:05-18:07Z**, sur le poste `myia-ai-01`
+(`myia-ai-01:CoursIA-2`). Objet double : tenter de lever le drapeau, et **mesurer si ce siège peut servir de fenêtre calme**.
+
+**Protocole exécuté** (même règle de lecture que ci-dessus : on compare une session à elle-même).
+
+| Paramètre | Valeur |
+|---|---|
+| Bancs | `RandomSearch_Sphere10D_50k` (MetaGeneticSharp) · `PromptSignature.Matches` et `PromptTransform.InterpolateKeys` (semantic-fleet) |
+| Build | Release `net9.0` **unique** par banc (SDK 10.0.114 machine), jamais reconstruit entre les runtimes |
+| Exécution | `dotnet exec --fx-version <version exacte>` : 9.0.22 et 10.0.14 (racine machine), 11.0.0-rc.3.26522.148 (racine isolée `~/.dotnet11`, `dotnet-install` user-level, sans UAC) |
+| Config BDN | 0.15.8, `InProcessEmitToolchain`, ShortRun 5 warmup / 15 itérations / 1 invocation / unroll 1 (protocole de référence, mode InProcess) |
+| Passes | **5** par (banc × runtime), ordre **interleave** (net9 → net10 → net11 dans chaque passe), **médiane des 5 moyennes** par cellule |
+| Attestation | chaque journal porte son header `// Runtime=.NET X.Y.Z` — 9.0.22 / 10.0.14 / 11.0.0 relevés sur les 45 journaux (3 bancs × 3 runtimes × 5 passes) |
+
+**Mesures** (médiane des 5 moyennes, en µs ; dispersion = écart max−min rapporté à la moyenne des bornes, par runtime)
+
+| Benchmark | net9 | net10 | net11 (rc.3) | 9→10 | 9→11 | dispersion max |
+|---|---:|---:|---:|---:|---:|---:|
+| `RandomSearch_Sphere10D_50k` | 13 169 | 14 450 | 13 108 | +9,7 % | −0,5 % | 38 % |
+| `PromptSignature.Matches` | 4,77 | 5,83 | 4,85 | +22,2 % | +1,7 % | 102 % |
+| `PromptTransform.InterpolateKeys` | 20,92 | 25,23 | 16,36 | +20,6 % | −21,8 % | 123 % |
+
+**Charge de l'hôte pendant la fenêtre** : `myia-ai-01` héberge en permanence le vLLM de la flotte et les runners
+CI auto-hébergés — **charge processeur 91 % à 18:05Z, 62 % à 18:15Z, 76 % à 18:16Z**, avec **149 à 150 processus**
+`dotnet`/`node`/`Runner` relevés sur les mêmes échantillons.
+
+### Ce que la tentative règle, et ce qu'elle ne règle pas
+
+| Point | État après le 29/10 |
+|---|---|
+| `RandomSearch_Sphere10D_50k` (MGS) | **toujours non concluant** — 9→11 à −0,5 %, pour une dispersion de 28 à 38 % ; le delta est dans le bruit |
+| `PromptSignature.Matches` (semantic-fleet) | **toujours non concluant** — 9→11 à +1,7 %, dispersion 42 à 102 % (le 9→10 apparent de +22 % est un artefact de bruit) |
+| `PromptTransform.InterpolateKeys` (semantic-fleet) | **toujours non concluant** — le −21,8 % apparent est **incohérent avec la dispersion de 123 %** sur net9 : la session ne permet pas de le retenir |
+| La fenêtre **calme** | **non obtenable sur ce siège** — fait mesuré, pas une hypothèse : la charge de l'hôte (62-91 %) et les 149-150 processus-resident ne laissent pas de fenêtre de mesure propre. La re-mesure qui doit lever ces trois drapeaux doit se faire sur un **siège sans runners CI** (po-2023 ou po-2026), pas être rejouée ici |
+| Comparabilité avec les sessions du 02/10 et du 20/10 | **aucune** — machine différente, versions patch des runtimes différentes, .NET 11 en rc.3 (contre rc.1 puis rc.2). Ces chiffres sont une **troisième session**, pas une prolongation des précédentes ; ils se lisent session par session, comme les deux autres |
+
+Les trois drapeaux INCONCLUSIF **restent donc posés** : cette tentative n'apporte pas de verdict, elle apporte la
+preuve que la condition manquante (une fenêtre calme) n'est pas accessible depuis ce poste.
+
+### Le protocole du banc, seconde cause — et elle est plus fondamentale que la fenêtre
+
+Cette section corrige une lecture trop courte de ce document. Jusqu'ici, la dispersion résiduelle
+était attribuée à l'hôte : charge CI, fenêtre non calme, dispersion inter-séances. Une mesure
+indépendante de la lane `myia-po-2023:CoursIA-2` (dashboard #18695, commentaire `c.6505273899`)
+établit qu'une seconde cause, **inscrite dans la configuration des bancs**, suffit à elle seule à
+empêcher la conclusion — et qu'un hôte au repos ne la lèverait pas.
+
+`InProcessShortConfig` épingle `.WithInvocationCount(1).WithUnrollFactor(1)`
+(`semantic-fleet/benchmarks/SemanticFleet.Benchmarks/PromptSettingsBenchmarks.cs:33-34` ; même
+choix dans `MetaGeneticSharp.Benchmarks/OptimizerBenchmarks.cs`, justifié au fichier par un
+contournement antivirus). Conséquence : **une itération vaut exactement une invocation**, soit
+3,7 à 90 µs selon la cellule — deux à quatre ordres de grandeur sous les ~100 ms que BDN
+recommande, et qu'il réclame lui-même dans les journaux. À cette granularité, le bruit n'est pas
+réduit par une machine calme : il est structurel.
+
+Ce que cette correction ne dit pas — et **deux mécanismes déjà publiés puis réfutés par la mesure**.
+La même lane a d'abord avancé deux explications de l'écart entre régimes, puis les a testées et
+écartées elle-même (`c.6506079066` sur #18695, après `c.6505273899`) : ni le `UnrollFactor` par
+défaut, ni une fusion d'appels purs par le JIT n'en rendent compte. Même job long avec
+`.WithUnrollFactor(1)` (6 runs) : `Serialize` 3,6-4,4 µs contre 4,29 avec le défaut 16, `Matches`
+13-18 ns contre 14 — le facteur de déroulage ne change rien. Et un benchmark à argument **variable**
+sur 8 jobs de contenu distinct, où le hissage est impossible par construction, ne ralentit rien :
+rapport variable/constant de 0,9× sur les trois runtimes. Ce qui subsiste est un **fait**, pas une
+explication — deux régimes de mesure du même appel diffèrent d'un facteur 13× à près de 300×, et le
+mécanisme en est **ouvert**. Le test qui départagerait « coût fixe par itération » de « coût réel »
+— `OperationsPerInvoke` fixe et croissant sur le même appel (N = 1, 100, 10 000) — n'est pas fait ;
+ce document ne cite donc aucun mécanisme.
+
+**Ce que cela change pour les chiffres de ce document.** Ni la direction ni les valeurs ne sont
+renversées ; c'est leur **solidité** qui n'est pas celle qui était écrite. Les deux régimes
+disponibles se contredisent en signe sur `Serialize` 9→10 (ShortRun apparié −27,4 %, job long
++17,0 % puis +19,8 %) et sur `RoundTrip`. Aucun des quatre écarts inter-versions de cette série
+n'est donc **établi** : le drapeau INCONCLUSIF est confirmé, mais pour une raison de plus, et la
+re-mesure à programmer ne se réduit pas à « trouver une machine calme ».
+
+Le correctif porte sur la source des bancs, `semantic-fleet` et `MetaGeneticSharp` — donc des
+sous-modules : il relève de la coordination `ai-01` et n'est pas ouvert par cette PR. Sa forme
+précise dépend du régime à N croissant, non encore mesuré. `UnrollFactor(1)` étant **déjà** la
+valeur du dépôt côté `ShortRun`, le changer n'est pas le correctif ; l'argument variable non plus,
+la mesure ci-dessus le montre inopérant.
 
 ## Re-mesure du banc 4 (semantic-fleet) — fenêtre du 30/10 (myia-po-2024)
 
