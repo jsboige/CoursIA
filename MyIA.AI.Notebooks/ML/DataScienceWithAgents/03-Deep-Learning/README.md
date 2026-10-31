@@ -73,10 +73,10 @@ appliquée — entropie, KL, cross-entropy (#12420, livrée par #12640 → noteb
 pas changé et vaut pour la suite : chaque mécanisme écrit à la main, vérifié contre torch,
 puis consommé via l'API officielle.
 
-**Bloc A — Compression de modèles from scratch** (EPIC #16060, sous-notebooks par technique) :
-- Bloc A.1 — Quantification FP32→FP16 [3.9] (#16127, OPEN po-2026)
+**Bloc A — Compression de modèles from scratch** (EPIC #16060, clos — sous-notebooks par technique, tous livrés) :
+- Bloc A.1 — Quantification FP32→FP16 [3.9] (#16127, MERGED 2026-09-15)
 - Bloc A.2 — Quantification INT8 [3.9a] (#16094, MERGED po-2023 — absorbé dans la partie II de [3.9](3.9-Compression-Quantization-FP.ipynb))
-- Bloc A.3 — Pruning from scratch [3.9c] (#16060, PR en cours po-2024 — unstructured magnitude, structured filter pruning, Lottery Ticket Hypothesis)
+- Bloc A.3 — Pruning from scratch [3.9c] (MERGED po-2025 le 2026-10-21 par #21649 — unstructured magnitude, structured filter pruning, Lottery Ticket Hypothesis ; consolidation 3.9b/3.9c suivie en #21648)
 - Bloc A.4 — Distillation teacher/student [3.7] (#12675, MERGED — teacher/student sur MLP)
 
 **Bloc B — Confrontation au SOTA** (mêmes techniques, via les libs standard) :

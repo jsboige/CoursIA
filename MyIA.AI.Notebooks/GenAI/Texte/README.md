@@ -181,31 +181,23 @@ dépôt.
 
 ## Parcours suggéré
 
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│                                                                 │
-│  1_OpenAI_Intro ─────► 2_PromptEngineering                     │
-│        │                      │                                 │
-│        │                      └──────► 8_Reasoning_Models       │
-│        │                                                        │
-│        └──────► 3_Structured_Outputs                           │
-│                       │                                         │
-│                       └──────► 4_Function_Calling              │
-│                                      │                          │
-│                    ┌─────────────────┼─────────────────┐       │
-│                    │                 │                 │       │
-│                    ▼                 ▼                 ▼       │
-│           5_RAG_Modern      7_Code_Interpreter  9_Production   │
-│                 │                                    │          │
-│                 └──────► 6_PDF_Web_Search     9b_RedTeam       │
-│                                                       │         │
-│                                                       └─attack/defend stack self-hosted
-│                                                                 │
-│  10_LocalLlama (indépendant, prérequis: 1)                     │
-│        └──────► 10b_Inference_Mechanics                        │
-│                         └──────► 11_Quantization               │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart LR
+    N1["1_OpenAI_Intro"] --> N2["2_PromptEngineering"]
+    N1 --> N3["3_Structured_Outputs"]
+    N2 --> N8["8_Reasoning_Models"]
+    N3 --> N4["4_Function_Calling"]
+    N4 --> N5["5_RAG_Modern"]
+    N4 --> N7["7_Code_Interpreter"]
+    N4 --> N9["9_Production"]
+    N5 --> N6["6_PDF_Web_Search"]
+    N9 --> N9b["9b_RedTeam<br/>(attack/defend stack self-hosted)"]
+    N9 --> N9c["09c_Routage_Repli"]
+    N9c --> N9d["09d_Caches"]
+    N9d --> N9e["09e_Exploitation"]
+    N10["10_LocalLlama<br/>(indépendant, prérequis: 1)"] --> N10b["10b_Inference_Mechanics"]
+    N10b --> N10c["10c_Long_Context_Strategies"]
+    N10b --> N11["11_Quantization"]
 ```
 
 ## APIs couvertes

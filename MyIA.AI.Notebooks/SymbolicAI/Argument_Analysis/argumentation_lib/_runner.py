@@ -29,6 +29,8 @@ from semantic_kernel.contents.chat_history import ChatHistory
 from semantic_kernel.functions.kernel_arguments import KernelArguments
 
 from argumentation_lib._shared_state import RhetoricalAnalysisState
+from argumentation_lib._guarded_state import GuardedStateManagerPlugin
+from argumentation_lib._pl_reasoner import PLReasonerPlugin
 from argumentation_lib._state_manager_plugin import StateManagerPlugin
 from argumentation_lib._llm_settings import apply_reasoning_none_for_function_tools
 
@@ -111,12 +113,25 @@ Répondez en utilisant les fonctions kernel disponibles pour:
 - Logger les résultats de requêtes
 - Marquer la tâche comme répondue
 
-Contrat d'appel OBLIGATOIRE : avant toute réponse en prose, appelez au moins
-une fois `StateManager-add_belief_set` (logic_type="propositional") pour
-encoder un argument du texte en formule, puis `StateManager-log_query_result`
-pour consigner un verdict de requête. Le texte source figure dans la
-conversation : encodez directement depuis lui, même si l'état ne recense pas
-encore d'arguments. Répondre en prose sans appel kernel = tâche non accomplie.
+Contrat d'appel OBLIGATOIRE (l'ordre compte) :
+1. `StateManager-add_belief_set` (logic_type="propositional") avec le contenu :
+   UNE formule propositionnelle par ligne, syntaxe `!` (non), `&&` (et),
+   `||` (ou), `=>` (implique), `<=>` (équivalent), parenthèses pour la
+   priorité ; les atomes sont des identifiants (lettres, chiffres, `_`).
+   Le parseur du solveur REFUSE `->` : écrivez `=>`.
+2. `Reasoner-pl_query` (belief_set_id = identifiant renvoyé par
+   add_belief_set, query = la formule à vérifier) : c'est le SEUL moyen
+   d'obtenir un verdict. Le solveur propositionnel répond
+   `ACCEPTED: ...` ou `REJECTED: ...`.
+3. `StateManager-log_query_result` (belief_set_id, query, raw_result) avec
+   raw_result = la sortie de `Reasoner-pl_query` COPIÉE TELLE QUELLE.
+   Tout autre contenu (une question en langage naturel, une reformulation)
+   est REFUSÉ par l'outil.
+
+Vous désignez ce qui mérite d'être vérifié ; le solveur décide. Ne jugez
+jamais vous-même une formule. Le texte source figure dans la conversation :
+encodez directement depuis lui, même si l'état ne recense pas encore
+d'arguments. Répondre en prose sans appel kernel = tâche non accomplie.
 """
 
 PROMPT_SYNTHESIS = """Vous êtes l'agent de synthèse.
@@ -195,13 +210,38 @@ def _execution_settings_for(kernel: Kernel, llm_service_id: str) -> Dict[str, An
     }
 
 
+def _state_manager_plugin(state: RhetoricalAnalysisState) -> StateManagerPlugin:
+    """Plugin d'état de l'analyse — version GARDEE (#22981).
+
+    `StateManagerPlugin` est une copie verbatim de l'amont EPITA : on
+    l'étend au lieu de la modifier. La sous-classe garde change une seule
+    chose : `log_query_result` n'accepte plus que les verdicts RÉELLEMENT
+    émis par le solveur (`PLReasonerPlugin`). Le registre des verdicts est
+    propre à l'état (`registry_for`), donc le plugin d'état et le solveur
+    partagent le même registre sans paramétrage supplémentaire.
+    """
+    return GuardedStateManagerPlugin(state)
+
+
+def _ensure_reasoner_plugin(kernel: Kernel, state: RhetoricalAnalysisState) -> None:
+    """Expose le solveur propositionnel aux agents (plugin `Reasoner`).
+
+    Sans ce plugin, aucun outil ne produit de verdict : l'agent ne pouvait
+    que consigner une question en langage naturel, que le carnet rejette
+    ensuite (`QUERIES_NOT_MEANINGFUL`, #22981).
+    """
+    if "Reasoner" in [p.name for p in kernel.plugins.values()]:
+        return
+    kernel.add_plugin(PLReasonerPlugin(state), plugin_name="Reasoner")
+
+
 def create_pm_agent(
     kernel: Kernel,
     llm_service_id: str,
     state: RhetoricalAnalysisState,
 ) -> ChatCompletionAgent:
     """Create the Project Manager agent."""
-    smp = StateManagerPlugin(state)
+    smp = _state_manager_plugin(state)
     kernel.add_plugin(smp, plugin_name="StateManager")
 
     agent = ChatCompletionAgent(
@@ -225,7 +265,7 @@ def create_informal_agent(
     """Create the Informal Analysis agent."""
     # StateManagerPlugin already added by PM — reuse it
     if "StateManager" not in [p.name for p in kernel.plugins.values()]:
-        smp = StateManagerPlugin(state)
+        smp = _state_manager_plugin(state)
         kernel.add_plugin(smp, plugin_name="StateManager")
 
     agent = ChatCompletionAgent(
@@ -278,8 +318,13 @@ def create_logic_agent(
         fcb = None
 
     if "StateManager" not in [p.name for p in kernel.plugins.values()]:
-        smp = StateManagerPlugin(state)
+        smp = _state_manager_plugin(state)
         kernel.add_plugin(smp, plugin_name="StateManager")
+
+    # Le solveur propositionnel doit etre exposed AVANT la creation de
+    # l'agent : l'agent doit pouvoir DECOUVRIR l'outil `Reasoner-pl_query`
+    # dans la liste de ses fonctions (#22981).
+    _ensure_reasoner_plugin(kernel, state)
 
     agent_kwargs = dict(
         kernel=kernel,
@@ -344,10 +389,14 @@ class AnalysisRunner:
 
         # Register StateManagerPlugin on kernel
         if "StateManager" not in [p.name for p in kernel.plugins.values()]:
-            self._smp = StateManagerPlugin(state)
+            self._smp = _state_manager_plugin(state)
             kernel.add_plugin(self._smp, plugin_name="StateManager")
         else:
             self._smp = None
+
+        # Le solveur propositionnel est expose des la construction du runner :
+        # c'est le SEUL chemin d'obtention d'un verdict de moteur (#22981).
+        _ensure_reasoner_plugin(kernel, state)
 
     async def run(self) -> Dict[str, Any]:
         """Execute the full 3-phase analysis pipeline."""
@@ -423,8 +472,11 @@ class AnalysisRunner:
 [Phase courante : Analyse FORMELLE]
 Les agents disponibles sont UNIQUEMENT ProjectManagerAgent et LogicAgent :
 désignez toujours 'LogicAgent'. La tâche de cette phase : encoder les
-arguments en belief sets propositionnels (StateManager-add_belief_set) et
-consigner des verdicts de requêtes (StateManager-log_query_result).
+arguments en belief sets propositionnels (StateManager-add_belief_set),
+faire décider le solveur (Reasoner-pl_query) et consigner le verdict
+renvoyé par le solveur (StateManager-log_query_result, raw_result = sortie
+du solveur copiée telle quelle). Un verdict inventé par l'agent est refusé
+par l'outil.
 N'ajoutez PAS de tâche d'identification d'arguments : c'est le travail de
 la phase 1, déjà passée.
 """
