@@ -1,0 +1,363 @@
+{
+  "asset": "privacy_mining",
+  "issue": 1961,
+  "phase": 6,
+  "inventory": {
+    "argumentation_analysis/evaluation/opaque_id.py": 65,
+    "argumentation_analysis/evaluation/sanitize_state.py": 1131,
+    "argumentation_analysis/evaluation/pattern_mining.py": 512
+  },
+  "opaque_cases": [
+    {
+      "name": "deterministic_and_distinct",
+      "id_a_1": "a295797e",
+      "id_a_2": "a295797e",
+      "id_b_same_salt": "5f602022",
+      "id_a_other_salt": "193c2319",
+      "note": "same (name, salt) -> same 8-hex; distinct names under one salt -> distinct; salt change -> totally different"
+    },
+    {
+      "name": "no_salt_raises",
+      "result": "RuntimeError: OPAQUE_ID_SALT is required: no salt argument was passed and the OPAQUE_ID_SALT environment variable is uns…",
+      "raises": "RuntimeError (#1973: no public fallback)"
+    },
+    {
+      "name": "public_salt_is_a_confirmation_oracle",
+      "guess_check": true,
+      "note": "with a public salt, anyone who guesses a candidate name recomputes its ID in O(1) and confirms a match — the ID is not reversible, but it IS verifiable; secrecy lives in the salt only"
+    }
+  ],
+  "sanitize_cases": [
+    {
+      "name": "top_level_stripped_and_source_opacified",
+      "source_name_present": false,
+      "author_present": false,
+      "raw_text_present": false,
+      "source_id_after": "3599baaa",
+      "source_id_is_hex": true,
+      "metadata_keys_after": [
+        "genre",
+        "title",
+        "channel"
+      ],
+      "metadata_values_after": [
+        "5b656822",
+        "8a9e44dd",
+        "6fc47b79"
+      ],
+      "note": "source_metadata keeps WHICH metadata was present (keys) but every value becomes an opaque ID"
+    },
+    {
+      "name": "arguments_and_justifications",
+      "string_argument_becomes": {
+        "text_stripped": true
+      },
+      "structured_argument_survives": {
+        "score": 3
+      },
+      "fallacy_after": {
+        "type": "ad_hominem",
+        "severity": 2
+      },
+      "note": "identified_fallacies keeps type+severity (closed vocab / numeric) and drops justification; llm_assessment (0 quantitative value) is dropped the same way"
+    },
+    {
+      "name": "topology_survives_opacification",
+      "attacks_arity": 2,
+      "attacks_shape": [
+        [
+          "8hex",
+          "8hex"
+        ]
+      ],
+      "extensions_count_kept": 1,
+      "extensions_sizes_kept": [
+        1
+      ],
+      "extensions_members_opaque": true,
+      "name_kept": "dung_grounded",
+      "criterion_kept": "generalized_specificity",
+      "weight_kept": 0.7,
+      "contraries_keys_opaque": [
+        "f72b5fab"
+      ]
+    },
+    {
+      "name": "list_containers",
+      "counter_arguments_after": {
+        "strategy": "reductio",
+        "score": 0.5
+      },
+      "extracts_after": {
+        "claim_id": "c1"
+      },
+      "prob_method_kept": "ml",
+      "prob_arguments_opaque": [
+        "fb22732b"
+      ],
+      "prob_mapping_keys_opaque": [
+        "fb22732b"
+      ],
+      "prob_values_kept": [
+        0.42
+      ],
+      "dialogue_speaker_kept": "S1",
+      "debate_scheme_kept": "expert_opinion",
+      "br_cardinality_kept": 1
+    },
+    {
+      "name": "narrative_and_struct_reductions",
+      "narrative_after": {
+        "length": 32,
+        "stripped": true
+      },
+      "narrative_length": 32,
+      "stakes_after": {
+        "stripped": true,
+        "stakes_count": 1,
+        "stakeholders_count": 1,
+        "has_rhetorical_register": true,
+        "has_discursive_arena": false
+      },
+      "note": "narrative fields become {length, stripped}; stakes struct becomes counts + presence flags (has_rhetorical_register)"
+    },
+    {
+      "name": "unknown_container_traverses_intact",
+      "unknown_container_after": [
+        {
+          "free": "texte d'un conteneur non classé"
+        }
+      ],
+      "metrics_untouched": {
+        "n_args": 2,
+        "score": 0.9
+      },
+      "note": "ALLOWLIST design: a container absent from every table passes through INTACT — adding a state container is not neutral, it must be classified here (#1664)"
+    },
+    {
+      "name": "input_not_mutated",
+      "original_intact": true,
+      "note": "sanitize_state deep-copies dict input; the caller's state is untouched"
+    },
+    {
+      "name": "salt_requirement_is_conditional",
+      "state_without_opacifiable_fields": {
+        "identified_metrics": {
+          "n": 1
+        }
+      },
+      "state_with_source_id": "RuntimeError",
+      "note": "opaque_id raises only when a pass actually needs it: a state with no opacifiable field sanitizes fine without OPAQUE_ID_SALT"
+    }
+  ],
+  "mining_cases": [
+    {
+      "name": "spectrum",
+      "result": {
+        "corpus_A": {
+          "ad_hominem": 0.3333,
+          "straw_man": 0.3333,
+          "cherry_picking": 0.3333
+        },
+        "corpus_B": {
+          "appeal_to_authority": 0.5,
+          "false_cause": 0.5
+        }
+      }
+    },
+    {
+      "name": "trick_vs_influence",
+      "result": {
+        "corpus_A": {
+          "tricherie_share": 0.3333,
+          "influence_share": 0.6667,
+          "ratio": 2.0,
+          "asymmetry": 0.3333
+        },
+        "corpus_B": {
+          "tricherie_share": 0.5,
+          "influence_share": 0.5,
+          "ratio": 1.0,
+          "asymmetry": 0.0
+        }
+      }
+    },
+    {
+      "name": "trick_vs_influence_edges",
+      "only_influence": {
+        "only_influence": {
+          "tricherie_share": 0.0,
+          "influence_share": 1.0,
+          "ratio": 1000000000.0,
+          "asymmetry": 1.0
+        }
+      },
+      "note": "t=0,i>0 -> ratio capped at 1e9; both 0 -> 0.0 (no division error)"
+    },
+    {
+      "name": "cooccurrence_argument_unit",
+      "result": {
+        "pairs": [
+          {
+            "a": "ad_hominem",
+            "b": "straw_man",
+            "support": 1,
+            "confidence": 1.0,
+            "lift": 4.0,
+            "jaccard": 1.0
+          }
+        ],
+        "unit_count": 4
+      }
+    },
+    {
+      "name": "cooccurrence_doc_unit",
+      "result": {
+        "pairs": [
+          {
+            "a": "ad_hominem",
+            "b": "cherry_picking",
+            "support": 1,
+            "confidence": 1.0,
+            "lift": 2.0,
+            "jaccard": 1.0
+          },
+          {
+            "a": "ad_hominem",
+            "b": "straw_man",
+            "support": 1,
+            "confidence": 1.0,
+            "lift": 2.0,
+            "jaccard": 1.0
+          },
+          {
+            "a": "cherry_picking",
+            "b": "straw_man",
+            "support": 1,
+            "confidence": 1.0,
+            "lift": 2.0,
+            "jaccard": 1.0
+          }
+        ],
+        "unit_count": 2
+      }
+    },
+    {
+      "name": "cross_coverage",
+      "result": {
+        "ad_hominem": {
+          "per_signature_rate": {
+            "fol_invalid": 1.0,
+            "dung_unsupported": 1.0,
+            "jtms_retraction": 1.0
+          },
+          "per_occurrence_rate": {
+            "fol_invalid": 1.0,
+            "dung_unsupported": 1.0,
+            "jtms_retraction": 1.0
+          }
+        },
+        "straw_man": {
+          "per_signature_rate": {
+            "fol_invalid": 1.0,
+            "dung_unsupported": 1.0,
+            "jtms_retraction": 1.0
+          },
+          "per_occurrence_rate": {
+            "fol_invalid": 1.0,
+            "dung_unsupported": 1.0,
+            "jtms_retraction": 1.0
+          }
+        },
+        "cherry_picking": {
+          "per_signature_rate": {
+            "fol_invalid": 1.0,
+            "dung_unsupported": 1.0,
+            "jtms_retraction": 1.0
+          },
+          "per_occurrence_rate": {
+            "fol_invalid": 1.0,
+            "dung_unsupported": 1.0,
+            "jtms_retraction": 1.0
+          }
+        },
+        "appeal_to_authority": {
+          "per_signature_rate": {
+            "fol_invalid": 0.0,
+            "dung_unsupported": 1.0,
+            "jtms_retraction": 0.0
+          },
+          "per_occurrence_rate": {
+            "fol_invalid": 0.0,
+            "dung_unsupported": 1.0,
+            "jtms_retraction": 0.0
+          }
+        },
+        "false_cause": {
+          "per_signature_rate": {
+            "fol_invalid": 0.0,
+            "dung_unsupported": 1.0,
+            "jtms_retraction": 0.0
+          },
+          "per_occurrence_rate": {
+            "fol_invalid": 0.0,
+            "dung_unsupported": 1.0,
+            "jtms_retraction": 0.0
+          }
+        }
+      },
+      "note": "per_signature counts each signature once; per_occurrence counts every occurrence — they differ when a fallacy type repeats within a signature"
+    },
+    {
+      "name": "formal_detectors",
+      "result": {
+        "dung_topology": {
+          "n_args": 0.0,
+          "n_attacks": 1.0,
+          "density": 1.0,
+          "n_extensions": 0.0,
+          "max_extension_size": 0.0
+        },
+        "atms_branching": {
+          "max_assumption_count": 0.0,
+          "avg_assumptions": 0.0,
+          "contradiction_rate": 0.0
+        },
+        "jtms_retraction_rate": {
+          "n_beliefs": 0.0,
+          "n_justifications": 0.0,
+          "retraction_rate": 0.0
+        }
+      }
+    },
+    {
+      "name": "dung_topology_directed_density",
+      "result": {
+        "n_args": 3.0,
+        "n_attacks": 2.0,
+        "density": 0.3333,
+        "n_extensions": 2.0,
+        "max_extension_size": 2.0
+      },
+      "density_value": 0.3333,
+      "note": "density = attacks / (n*(n-1)) — DIRECTED denominator; 2/(3*2)=0.3333 here; extensions from both shapes are flattened into one count"
+    },
+    {
+      "name": "atms_coherent_three_state_1650",
+      "result": {
+        "max_assumption_count": 2.0,
+        "avg_assumptions": 1.0,
+        "contradiction_rate": 0.3333
+      },
+      "note": "#1650: coherent=False -> contradiction; coherent absent -> unclassified (excluded, warned, never fabricated by 'not coherent'); rate is a lower bound"
+    },
+    {
+      "name": "detector_exception_is_error_flag",
+      "result": {
+        "boom": {
+          "error": 1.0
+        }
+      }
+    }
+  ]
+}
