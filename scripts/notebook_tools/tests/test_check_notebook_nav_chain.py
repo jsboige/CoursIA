@@ -23,6 +23,11 @@ Sept clusters :
   6. TestMainModes — exit codes, --check NEW, --baseline.
   7. TestSeriesFilterRegression — l'epingle du bug « Path compare a une chaine »,
      qui rendait `--family` **silencieusement vide** (0 serie jugee, rc=0).
+  8. TestSeriesChain — le mode « chaine d'une serie » : la DIRECTION du
+     parcours (item 5 de #20381). Controle positif (chaine conforme = silence),
+     marche sans barre, « precedent » qui saute une marche, « suivant » qui
+     vise ailleurs, jumeau qui n'est pas une marche, mention de prose qui
+     n'est pas une arete, tableau ambigu, codes de sortie.
 """
 import json
 import sys
@@ -62,6 +67,24 @@ def _isolate_baseline(tmp_path, monkeypatch):
     # rederiger aussi, sinon ValueError au lieu d'un test.
     monkeypatch.setattr(cnc, "NOTEBOOKS_ROOT", tmp_path / "MyIA.AI.Notebooks")
     monkeypatch.setattr(cnc, "BASELINE_PATH", tmp_path / "baseline.json")
+    # La provenance (#22121) interroge git depuis REPO_ROOT : le faux depot de
+    # tmp_path n'en est pas un, donc toute commande echoue et `--baseline`
+    # refuserait d'ecrire (rc=3). Ce fichier suppose un depot en regle ; les cas
+    # de refus sont couverts par scripts/tests/test_check_notebook_nav_chain.py.
+    sha = "0" * 40
+
+    def _fake_git_output(*args):
+        if args in (("rev-parse", "HEAD"), ("rev-parse", "origin/main")):
+            return sha
+        if args == ("rev-parse", "--abbrev-ref", "HEAD"):
+            return "main"
+        if args == ("status", "--porcelain"):
+            return ""
+        if args and args[0] == "rev-list":
+            return "0"
+        return None
+
+    monkeypatch.setattr(cnc, "_git_output", _fake_git_output)
     return tmp_path
 
 
@@ -416,9 +439,15 @@ class TestBaselineIO:
         inbound, outbound, series = cnc.build_graph(list(p.values()))
         r = cnc.analyse(inbound, outbound, series)
         cnc._write_baseline(r)
-        first = cnc.BASELINE_PATH.read_bytes()
+        first = json.loads(cnc.BASELINE_PATH.read_text(encoding="utf-8"))
         cnc._write_baseline(r)
-        assert cnc.BASELINE_PATH.read_bytes() == first
+        second = json.loads(cnc.BASELINE_PATH.read_text(encoding="utf-8"))
+        # La provenance (#22121) porte `written_at`, seule valeur qui ne peut pas
+        # etre reproduite : deux ecritures separees par une seconde different par
+        # ce champ et par lui seul. Le reste est byte-identique.
+        assert isinstance(first["provenance"].pop("written_at"), str)
+        assert isinstance(second["provenance"].pop("written_at"), str)
+        assert first == second
 
     def test_missing_baseline_is_empty(self):
         assert cnc._load_baseline() == set()
@@ -503,3 +532,177 @@ def _capture(fn, argv):
     with redirect_stdout(buf):
         fn(argv)
     return buf.getvalue()
+
+
+# ------------------------------------------------------- 8. chaine de serie
+
+def _barre(prev=None, nxt=None, index=True):
+    """Barre de navigation canonique : `<< A | Index | B >>`."""
+    parts = []
+    if prev:
+        parts.append(f"[<< {prev}]({prev}.ipynb)")
+    if index:
+        parts.append("[Index](README.md)")
+    if nxt:
+        parts.append(f"[{nxt} >>]({nxt}.ipynb)")
+    return "**Navigation** : " + " | ".join(parts)
+
+
+def _serie_chaine(tmp_path, noms, barres=None, tables=None, cellules=None):
+    """Serie synthetique + son README (qui declare l'ordre de lecture).
+
+    `noms`   : noms des marches, dans l'ordre de lecture.
+    `barres` : {nom: texte de la cellule} ; defaut = barre canonique.
+    `tables` : [(caption, [lignes de tableau])] ; defaut = une table « Parcours ».
+    `cellules`: {nom: [cellules]} qui REMPLACENT la cellule de nav (defaut 1).
+    """
+    d = tmp_path / "MyIA.AI.Notebooks" / "Serie"
+    d.mkdir(parents=True, exist_ok=True)
+    for i, nom in enumerate(noms):
+        prev = noms[i - 1] if i > 0 else None
+        nxt = noms[i + 1] if i + 1 < len(noms) else None
+        if nom in (barres or {}):
+            cells = [("markdown", barres[nom])]
+        elif nom in (cellules or {}):
+            cells = cellules[nom]
+        else:
+            cells = [("markdown", f"# {nom}\n\n{_barre(prev, nxt)}\n")]
+        _write(d / f"{nom}.ipynb", cells)
+    if tables is None:
+        tables = [("Parcours",
+                   [f"| {i + 1:02d} | [{n}]({n}.ipynb) | contenu |" for i, n in enumerate(noms)])]
+    body = ["# Serie", ""]
+    for caption, lines in tables:
+        body += [f"## {caption}", "", "| # | Carnet | Contenu |", "|---|---|---|"]
+        body += lines
+        body.append("")
+    readme = d / "README.md"
+    readme.write_text("\n".join(body), encoding="utf-8")
+    return d, readme
+
+
+class TestSeriesChain:
+    """Mode « chaine d'une serie » : la DIRECTION du parcours (item 5 de #20381).
+
+    Le garde 404 et le graphe d'atteignable ne disent pas si une barre pointe
+    vers l'avant ou vers l'arriere de l'escalier : c'est la classe de la
+    reserve NanoClaw sur #20374 (six carnets de l'escalier Dynamics sans
+    barre, un carnet dont le « precedent » sautait une marche). Chaque cas
+    porte la classe qu'il ferme.
+    """
+
+    def test_chaine_conforme_aucun_finding(self, tmp_path):
+        """Controle positif : une barre canonique sur chaque marche = silence."""
+        _, readme = _serie_chaine(tmp_path, ["S-01", "S-02", "S-03"])
+        report, rc, errors = cnc.run_series_chain([str(readme)])
+        assert errors == []
+        assert rc == 0
+        assert report["findings"] == []
+        assert len(report["chains"][0]["steps"]) == 3
+
+    def test_marche_sans_barre(self, tmp_path):
+        """La classe fondatrice : une marche sans aucune barre."""
+        _, readme = _serie_chaine(tmp_path, ["S-01", "S-02", "S-03"],
+                           barres={"S-02": "Aucun lien de navigation ici."})
+        report, rc, _ = cnc.run_series_chain([str(readme)])
+        assert rc == 1
+        kinds = sorted(f["kind"] for f in report["findings"])
+        assert kinds == ["chain_no_next", "chain_no_prev"]
+        # le finding nomme la marche ET la direction attendue
+        no_prev = next(f for f in report["findings"] if f["kind"] == "chain_no_prev")
+        assert no_prev["notebook"].endswith("S-02.ipynb")
+        assert no_prev["expected"].endswith("S-01.ipynb")
+
+    def test_precedent_qui_saute_une_marche(self, tmp_path):
+        """Le « precedent » de S-03 vise S-01 : la marche S-02 est sautee."""
+        _, readme = _serie_chaine(tmp_path, ["S-01", "S-02", "S-03"],
+                           barres={"S-03": _barre(prev="S-01")})
+        report, rc, _ = cnc.run_series_chain([str(readme)])
+        assert rc == 1
+        assert [f["kind"] for f in report["findings"]] == ["chain_prev_wrong"]
+        assert report["findings"][0]["found"] == [
+            "MyIA.AI.Notebooks/Serie/S-01.ipynb"]
+
+    def test_suivant_qui_pointe_ailleurs(self, tmp_path):
+        """Le « suivant » de S-02 vise une marche qui n'est pas la suivante."""
+        d, readme = _serie_chaine(tmp_path, ["S-01", "S-02", "S-03"])
+        _write(d / "S-04.ipynb", [("markdown", "# S-04\n\nhors chaine\n")])
+        _write(d / "S-02.ipynb", [("markdown", f"# S-02\n\n{_barre('S-01', 'S-04')}\n")])
+        report, rc, _ = cnc.run_series_chain([str(readme)])
+        assert rc == 1
+        assert [f["kind"] for f in report["findings"]] == ["chain_next_wrong"]
+
+    def test_le_jumeau_n_est_pas_une_marche(self, tmp_path):
+        """Le C# d'une marche Python n'est pas une marche (convention README)."""
+        tables = [("Parcours", [
+            "| 01 | [S-01](S-01.ipynb) · [jumeau C#](S-01-CSharp.ipynb) | contenu |",
+            "| 02 | [S-02](S-02.ipynb) | contenu |",
+        ])]
+        _, readme = _serie_chaine(tmp_path, ["S-01", "S-02"], tables=tables)
+        report, rc, _ = cnc.run_series_chain([str(readme)])
+        assert rc == 0, report["findings"]
+        assert len(report["chains"][0]["steps"]) == 2
+
+    def test_une_mention_en_prose_n_est_pas_une_arete(self, tmp_path):
+        """Un lien de prose ne sauve pas un « precedent » manquant."""
+        cellules = {"S-02": [
+            ("markdown", "# S-02\n\nVoir [S-01](S-01.ipynb) pour le point de depart.\n")]}
+        _, readme = _serie_chaine(tmp_path, ["S-01", "S-02", "S-03"], cellules=cellules)
+        report, rc, _ = cnc.run_series_chain([str(readme)])
+        assert rc == 1
+        assert "chain_no_prev" in [f["kind"] for f in report["findings"]]
+
+    def test_mot_de_direction_porte_par_la_ligne(self, tmp_path):
+        """`Precedent : [X](...)` : le mot est sur la ligne, hors du lien."""
+        cellules = {"S-02": [
+            ("markdown", "# S-02\n\n**Navigation**\n\nPrecedent : [S-01](S-01.ipynb)\n")]}
+        _, readme = _serie_chaine(tmp_path, ["S-01", "S-02", "S-03"], cellules=cellules)
+        report, _, _ = cnc.run_series_chain([str(readme)])
+        # le « precedent » est reconnu, le « suivant » manque : un seul finding
+        assert [f["kind"] for f in report["findings"]] == ["chain_no_next"]
+
+    def test_tableau_ambigu_refuse_sans_selecteur(self, tmp_path):
+        """Deux tableaux de carnets : le selecteur est obligatoire, on ne devine pas."""
+        tables = [("Catalogue", ["| 01 | [S-01](S-01.ipynb) | x |",
+                                  "| 02 | [S-02](S-02.ipynb) | x |"]),
+                  ("Parcours", ["| 01 | [S-01](S-01.ipynb) | x |",
+                                "| 02 | [S-02](S-02.ipynb) | x |"])]
+        _, readme = _serie_chaine(tmp_path, ["S-01", "S-02"], tables=tables)
+        _, rc, errors = cnc.run_series_chain([str(readme)])
+        assert rc == 2
+        assert errors and "--chain-table" in errors[0]
+
+    def test_selecteur_de_tableau(self, tmp_path):
+        """`--chain-table` designe le tableau qui declare l'ordre."""
+        tables = [("Catalogue", ["| 01 | [S-01](S-01.ipynb) | x |",
+                                  "| 02 | [S-02](S-02.ipynb) | x |",
+                                  "| 03 | [S-03](S-03.ipynb) | x |"]),
+                  ("Parcours", ["| 01 | [S-01](S-01.ipynb) | x |",
+                                "| 02 | [S-02](S-02.ipynb) | x |"])]
+        _, readme = _serie_chaine(tmp_path, ["S-01", "S-02", "S-03"], tables=tables)
+        report, rc, errors = cnc.run_series_chain([str(readme)], "Parcours")
+        assert errors == []
+        assert rc == 0, report["findings"]
+        assert len(report["chains"][0]["steps"]) == 2
+
+    def test_readme_introuvable_est_une_erreur(self, tmp_path):
+        _, rc, errors = cnc.run_series_chain([str(tmp_path / "absent.md")])
+        assert rc == 2
+        assert "introuvable" in errors[0]
+
+    def test_cli_codes_de_sortie(self, tmp_path):
+        """rc=0 conforme, rc=1 findings, rc=2 usage invalide."""
+        _, readme = _serie_chaine(tmp_path, ["S-01", "S-02"])
+        assert cnc.main(["--series-chain", str(readme), "--quiet"]) == 0
+        _write(tmp_path / "MyIA.AI.Notebooks" / "Serie" / "S-02.ipynb",
+               [("markdown", "# S-02\n\naucune barre\n")])
+        assert cnc.main(["--series-chain", str(readme), "--quiet"]) == 1
+        assert cnc.main(["--series-chain", str(tmp_path / "absent.md"), "--quiet"]) == 2
+
+    def test_sortie_json_expose_la_chaine_lue(self, tmp_path):
+        """Le JSON publie l'ordre lu : un resultat doit etre auditable."""
+        _, readme = _serie_chaine(tmp_path, ["S-01", "S-02"])
+        out = json.loads(_capture(cnc.main, ["--series-chain", str(readme), "--json"]))
+        assert out["chains"][0]["readme"].endswith("README.md")
+        assert len(out["chains"][0]["steps"]) == 2
+        assert out["findings"] == []

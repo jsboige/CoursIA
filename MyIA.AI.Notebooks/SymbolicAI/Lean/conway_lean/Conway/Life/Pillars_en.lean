@@ -62,8 +62,10 @@ the published Gemini self-replication completes in 33 699 586).
   **500 × 500 torus** (first repetition gen 11324 == gen 5564), which
   validates both the source filename and the "5 760" row of
   `patterns/README.md`.
-  Formalizing it needs a **toroidal** engine, absent from the lake: that is
-  the natural continuation of this tranche.
+  Formalizing it needs a **toroidal** engine: one exists as of this tranche
+  (`Conway.Life.Torus`), but the 5 760 period stays a **measured** result
+  rather than a theorem (5 760 generations over 250 000 cells, out of reach of
+  `decide`).
 - **The OTCA: confinement observed over the measured window — measured
   2026-10-09 (#19989, tranche 3), refuting nothing**: over 1 800
   generations the extent stays **strictly** 2058 × 2058 (no cell outside
@@ -142,7 +144,7 @@ when needed.
 ### Why scaffold the witnesses now ?
 
 User mandate 2026-06-01 : prepare a complete-presentation scaffold so
-that the §11 roadmap of `Lean-16b-Conway-Game-of-Life-Lean.ipynb` is concrete and
+that the Annex F roadmap of `GOL/GOL-01-Regles-Vie-Lean.ipynb` is concrete and
 visible. Memoization was validated at the start of Phase 3 ; the
 witnesses are the natural endpoint.
 -/
@@ -169,7 +171,7 @@ LifeWiki community archive:
 |---------------------|-------------|-----------|---------------------------|
 | `otcametapixel.rle` | 2058 × 2058 | 165       | `otca_initial_population` |
 | `p5760unitlifecell.rle` | 499 × 499 | 15     | `unitcell_initial_population` |
-| `turingmachine.rle` | variable    | 104       | (narrative: Act II)       |
+| `turingmachine.rle` | 1714 × 1647 | 104       | `turingmachine_initial_population` |
 | `gemini.rle`        | huge        | 5 300     | `gemini_witness`          |
 
 `gemini.rle` (5.3 MB) is gitignored due to size; the notebook's
@@ -347,8 +349,13 @@ theorem otca_initial_nonempty : otcaInitial ≠ ([] : Grid) := by
 
     The period is real, but belongs to the **tiled** reading: measured
     *borderlessly* on a 500 × 500 torus (first repetition gen 11324 ==
-    gen 5564, i.e. 5 760). Formalizing it needs a toroidal engine, which does
-    not exist in the lake — that is the continuation of this tranche.
+    gen 5564, i.e. 5 760). The toroidal engine that formalization required now
+    exists: `Conway.Life.Torus`. It carries its own witnesses, including
+    `Torus.blinker_torus3_dies` — the blinker that oscillates forever on the
+    plane dies within two generations on a 3 × 3 torus: it is the boundary
+    model, not the pattern, that decides the fate. The 5 760 period itself
+    remains out of reach of a `decide` proof (5 760 generations over 250 000
+    cells): a **measured** result, not a theorem.
 
     What IS provable here, and **non-vacuous**, is that the loaded grid is
     real: exactly what the `evolveHashlifeFastMemo_empty` route used by the
@@ -374,6 +381,104 @@ theorem unitcell_initial_nonempty : unitcellInitial ≠ ([] : Grid) := by
   have hl := congrArg List.length h
   simp only [List.length_nil] at hl
   omega
+
+/-! ## Turing machine witness
+
+Paul Rendell's Turing machine (April 2000) is the most famous pattern
+of the community after the four pillars: a Turing machine whose program
+is written into a Conway grid. The file `turingmachine.rle` (104 KB,
+1714 × 1647 box) is **already in the tree**; until now it was only a
+story in the pattern archive table.
+
+What was missing: a **proven** witness. The pattern is genuinely loaded
+(`include_str` + `RLE.parseRLE!`, like the OTCA and the UnitCell), and
+it gets the pair of loading witnesses (population, non-vacuity) **plus**
+a **dynamism** witness: the machine is not inert.
+
+The dynamism witness cannot be a period witness: a period would require
+running the full evolution of the pattern, and the reference engine
+`Conway.Life.evolve` is **quadratic** — the membership test
+`isAlive g p = g.elem p` is a linear search in the sorted list, repeated
+for every candidate cell, i.e. about `9 × 36 549` candidate cells at
+`O(n)` each. We therefore use `Conway.Life.birthSiteNotFixed`: a
+**birth site** — a dead cell with exactly three live Moore neighbors —
+is enough to prove that the grid is not a fixed point, and that proof is
+**local**. -/
+
+/-- RLE source of Paul Rendell's Turing machine, embedded at compile time
+    by `include_str` (104 KB, 1714 × 1647 box). The path is relative to
+    THIS file (`Conway/Life/`). -/
+def turingmachineRLE : String := include_str "../../patterns/turingmachine.rle"
+
+/-- Initial state of the Turing machine, decoded from the RLE by the
+    repository's **proven** parser (`Conway.Life.RLE.parseRLE`). Measured
+    population: 36 549 live cells. -/
+def turingmachineInitial : Grid := RLE.parseRLE! turingmachineRLE
+
+/-- **Measured facts** on the loaded Turing grid, established by **a single**
+    `native_decide` evaluation.
+
+    The grouping is not cosmetic: every `native_decide` site re-evaluates
+    `RLE.parseRLE!`, hence re-parses the RLE source and re-sorts the
+    36 549 cells of the grid. A single pass suffices to establish the
+    four facts; the theorems below are mere projections of it, free at
+    kernel level. -/
+theorem turingmachine_facts :
+    turingmachineInitial.length = 36549 ∧
+    (9, 256) ∉ turingmachineInitial ∧
+    (9, 256) ∈ turingmachineInitial.flatMap mooreNeighbors ∧
+    liveNeighborCount turingmachineInitial (9, 256) = 3 := by
+  native_decide
+
+/-- The loaded Turing grid has exactly **36 549 live cells**.
+    Independent cross-check: the lake's measurement table
+    (`scripts/README.md`) carries the same value for this pattern. -/
+theorem turingmachine_initial_population : turingmachineInitial.length = 36549 :=
+  turingmachine_facts.1
+
+/-- The loaded Turing grid is non-empty: the placeholder route
+    `([] : Grid)` is **closed** for this pattern. -/
+theorem turingmachine_initial_nonempty : turingmachineInitial ≠ ([] : Grid) := by
+  intro h
+  have hlen : turingmachineInitial.length = 0 := by rw [h, List.length_nil]
+  have hpop : turingmachineInitial.length = 36549 := turingmachine_facts.1
+  rw [hlen] at hpop
+  exact absurd hpop (by decide)
+
+/-- Cell `(9, 256)` is **dead** in the loaded Turing grid. -/
+theorem turingmachine_birth_site_absent : (9, 256) ∉ turingmachineInitial :=
+  turingmachine_facts.2.1
+
+/-- Cell `(9, 256)` is a Moore neighbor of at least one live cell of the
+    Turing grid: it is therefore a **candidate** for the next step. Its
+    three live neighbors are `(9, 257)`, `(10, 256)` and `(10, 257)`. -/
+theorem turingmachine_birth_site_adjacent :
+    (9, 256) ∈ turingmachineInitial.flatMap mooreNeighbors :=
+  turingmachine_facts.2.2.1
+
+/-- Cell `(9, 256)` has **exactly three** live Moore neighbors in the
+    Turing grid: it is a **birth site** (rule B3). -/
+theorem turingmachine_birth_site_count :
+    liveNeighborCount turingmachineInitial (9, 256) = 3 :=
+  turingmachine_facts.2.2.2
+
+/-- **Dynamism witness for the Turing machine**: the loaded grid is not a
+    fixed point of the evolution — the machine **executes** at least one
+    B3/S23 transition (a cell is born at `(9, 256)`).
+
+    The proof is local (a birth site), hence applicable to a pattern of
+    36 549 cells whose full evolution is not computable by the reference
+    engine.
+
+    **Paired negative witness**: `Conway.Life.emptyGridIsStillLife` shows
+    that the empty grid — the placeholder that would replace the unloaded
+    pattern — is itself a fixed point. Without this control, the witness
+    above would not distinguish the loaded pattern from an empty grid
+    swapped in. -/
+theorem turingmachine_not_stilllife :
+    step turingmachineInitial ≠ turingmachineInitial :=
+  birthSiteNotFixed turingmachine_birth_site_absent
+    turingmachine_birth_site_adjacent turingmachine_birth_site_count
 
 /-- **Gemini witness** — Andrew Wade 2010.
 

@@ -9,14 +9,16 @@ amendement WS retenu par ai-01, DM ai01-dispatch-17417-table-20260923) :
       aplanissement de 01-Python-For-Data-Science/notebooks/)
   T3  notebooks N.M<acc>-Titre -> <Prefixe>-<NN><acc>-<Titre>-<Noyau> (94 mappages ci-dessous)
 
-L'EXECUTION REELLE (git mv + reecritures) EST GEELEE tant que les PRs ouvertes
-tenant des lignes du hub ne sont pas tombees (gate de sequenceement #5.4 de
-l'EPIC). Ce script se livre donc en mode dry-run par defaut : il construit le
-plan complet, execute toutes les verifications fail-closed, et n'ecrit rien.
+SEQUENCEMENT PAR FICHIER (decision ai-01 2026-10-23 sur #17417, T2-b) : une PR
+ouverte ne retient que les fichiers du plan qu'elle touche (git mv et sweep
+confondus) -- un fichier tenu attend sa PR, les autres partent. Le gel sur le
+hub entier a ete retire : il ne se levait jamais, la flotte n'etant pas freinee.
+Ce script se livre en mode dry-run par defaut : il construit le plan complet,
+execute toutes les verifications fail-closed, et n'ecrit rien.
 
     python scripts/notebook_tools/migrate_dsa_mlpython.py                # dry-run complet
-    python scripts/notebook_tools/migrate_dsa_mlpython.py --report-gating  # + PRs gelantes (gh)
-    python scripts/notebook_tools/migrate_dsa_mlpython.py --apply        # execute (a ne lancer qu'hors gel)
+    python scripts/notebook_tools/migrate_dsa_mlpython.py --report-gating  # + fichiers retenus, par PR (gh)
+    python scripts/notebook_tools/migrate_dsa_mlpython.py --apply        # execute (saute les fichiers tenus)
 
 Modes inspires de la convention check_* du depot : sortie lisible par defaut,
 --json pour la machine. Le dry-run sort 0 si toutes les verifications passent,
@@ -42,9 +44,9 @@ HUB_NEW = "MyIA.AI.Notebooks/ML/ML.Python"
 DIR_MAP = {
     "01-Python-For-Data-Science": "01-Python-For-Data-Science",
     "02-ML-Cours": "02-ML-Cours",
-    "03-DeepLearning": "03-DeepLearning",
+    "03-Deep-Learning": "03-Deep-Learning",
     "04-Vision": "04-Vision",
-    "04b-Wavelet-Scattering": "05-Wavelet-Scattering",
+    "05-Wavelet-Scattering": "05-Wavelet-Scattering",
     "Track1-LangChain": "06-Agents-LangChain",
     "Track2-GoogleADK": "07-Agents-GoogleADK",
 }
@@ -107,36 +109,36 @@ NOTEBOOK_MAP: dict[str, str] = {
     "02-ML-Cours/2.11e-CVXPY-Optimisation.ipynb": "02-ML-Cours/MLPy-11e-CVXPY-Optimisation-Python.ipynb",
     "02-ML-Cours/2.11f-Comparaison-Optimisation-Convexe.ipynb": "02-ML-Cours/MLPy-11f-Comparaison-Optimisation-Convexe-Python.ipynb",
     "02-ML-Cours/2.15-Donnee-Comme-Responsabilite-Python.ipynb": "02-ML-Cours/MLPy-15-Donnee-Comme-Responsabilite-Python.ipynb",
-    "03-DeepLearning/3.0-Theorie-Information.ipynb": "03-DeepLearning/DL-00-Theorie-Information-Python.ipynb",
-    "03-DeepLearning/3.1-Retropropagation.ipynb": "03-DeepLearning/DL-01-Retropropagation-Python.ipynb",
-    "03-DeepLearning/3.10-Modeles-Generatifs-Diffusion-SOTA.ipynb": "03-DeepLearning/DL-10-Modeles-Generatifs-Diffusion-SOTA-Python.ipynb",
-    "03-DeepLearning/3.2-Optimisateurs.ipynb": "03-DeepLearning/DL-02-Optimisateurs-Python.ipynb",
-    "03-DeepLearning/3.3-Regularisation.ipynb": "03-DeepLearning/DL-03-Regularisation-Python.ipynb",
-    "03-DeepLearning/3.4-Attention-Transformer-From-Scratch.ipynb": "03-DeepLearning/DL-04-Attention-Transformer-From-Scratch-Python.ipynb",
-    "03-DeepLearning/3.4c-MoE-from-scratch.ipynb": "03-DeepLearning/DL-04c-MoE-from-scratch-Python.ipynb",
-    "03-DeepLearning/3.5-Phenomenes-de-Generalisation.ipynb": "03-DeepLearning/DL-05-Phenomenes-de-Generalisation-Python.ipynb",
-    "03-DeepLearning/3.6-Modeles-Generatifs.ipynb": "03-DeepLearning/DL-06-Modeles-Generatifs-Python.ipynb",
-    "03-DeepLearning/3.6b-Modeles-Generatifs-PyTorch.ipynb": "03-DeepLearning/DL-06b-Modeles-Generatifs-PyTorch-Python.ipynb",
-    "03-DeepLearning/3.6c-Modeles-Generatifs-Diffusion-from-scratch.ipynb": "03-DeepLearning/DL-06c-Modeles-Generatifs-Diffusion-from-scratch-Python.ipynb",
-    "03-DeepLearning/3.6d-Modeles-Generatifs-Score-SDE-from-scratch.ipynb": "03-DeepLearning/DL-06d-Modeles-Generatifs-Score-SDE-from-scratch-Python.ipynb",
-    "03-DeepLearning/3.6e-Modeles-Generatifs-Conditionnels-from-scratch.ipynb": "03-DeepLearning/DL-06e-Modeles-Generatifs-Conditionnels-from-scratch-Python.ipynb",
-    "03-DeepLearning/3.7-Distillation-Maitre-Eleve.ipynb": "03-DeepLearning/DL-07-Distillation-Maitre-Eleve-Python.ipynb",
-    "03-DeepLearning/3.8-Representations-Contrastives.ipynb": "03-DeepLearning/DL-08-Representations-Contrastives-Python.ipynb",
-    "03-DeepLearning/3.9-Compression-Quantization-FP.ipynb": "03-DeepLearning/DL-09-Compression-Quantization-FP-Python.ipynb",
-    "03-DeepLearning/3.9a-Compression-Quantization-INT8.ipynb": "03-DeepLearning/DL-09a-Compression-Quantization-INT8-Python.ipynb",
-    "03-DeepLearning/3.9b-Compression-Pruning-from-scratch.ipynb": "03-DeepLearning/DL-09b-Compression-Pruning-from-scratch-Python.ipynb",
-    "03-DeepLearning/3.9c-Pruning-From-Scratch.ipynb": "03-DeepLearning/DL-09c-Pruning-From-Scratch-Python.ipynb",
-    "03-DeepLearning/3.9e-Compression-Quantization-SOTA.ipynb": "03-DeepLearning/DL-09e-Compression-Quantization-SOTA-Python.ipynb",
-    "03-DeepLearning/3.9f-Compression-Pruning-SOTA.ipynb": "03-DeepLearning/DL-09f-Compression-Pruning-SOTA-Python.ipynb",
-    # T2-a -- les 8 carnets de 03-DeepLearning que le dry-run refusait (fail-closed mesure c.2294).
-    "03-DeepLearning/3.4d-Fourier-Features-Biais-Spectral-Python.ipynb": "03-DeepLearning/DL-04d-Fourier-Features-Biais-Spectral-Python.ipynb",
-    "03-DeepLearning/3.9d-Compression-Distillation-from-scratch.ipynb": "03-DeepLearning/DL-09d-Compression-Distillation-from-scratch-Python.ipynb",
-    "03-DeepLearning/3.9g-Compression-Comparatif-A-vs-B.ipynb": "03-DeepLearning/DL-09g-Compression-Comparatif-A-vs-B-Python.ipynb",
-    "03-DeepLearning/3.11-Budget-Memoire-Entrainement.ipynb": "03-DeepLearning/DL-11-Budget-Memoire-Entrainement-Python.ipynb",
-    "03-DeepLearning/3.12-Les-Collectives.ipynb": "03-DeepLearning/DL-12-Les-Collectives-Python.ipynb",
-    "03-DeepLearning/3.13-Decouper-le-Modele-DDP-ZeRO-FSDP.ipynb": "03-DeepLearning/DL-13-Decouper-le-Modele-DDP-ZeRO-FSDP-Python.ipynb",
-    "03-DeepLearning/3.13b-Deux-Cartes-Reelles-DDP-FSDP-nccl.ipynb": "03-DeepLearning/DL-13b-Deux-Cartes-Reelles-DDP-FSDP-nccl-Python.ipynb",
-    "03-DeepLearning/3.14-Debug-Entrainement-N-Apprend-Pas-Python.ipynb": "03-DeepLearning/DL-14-Debug-Entrainement-N-Apprend-Pas-Python.ipynb",
+    "03-Deep-Learning/3.0-Theorie-Information.ipynb": "03-Deep-Learning/DL-00-Theorie-Information-Python.ipynb",
+    "03-Deep-Learning/3.1-Retropropagation.ipynb": "03-Deep-Learning/DL-01-Retropropagation-Python.ipynb",
+    "03-Deep-Learning/3.10-Modeles-Generatifs-Diffusion-SOTA.ipynb": "03-Deep-Learning/DL-10-Modeles-Generatifs-Diffusion-SOTA-Python.ipynb",
+    "03-Deep-Learning/3.2-Optimisateurs.ipynb": "03-Deep-Learning/DL-02-Optimisateurs-Python.ipynb",
+    "03-Deep-Learning/3.3-Regularisation.ipynb": "03-Deep-Learning/DL-03-Regularisation-Python.ipynb",
+    "03-Deep-Learning/3.4-Attention-Transformer-From-Scratch.ipynb": "03-Deep-Learning/DL-04-Attention-Transformer-From-Scratch-Python.ipynb",
+    "03-Deep-Learning/3.4c-MoE-from-scratch.ipynb": "03-Deep-Learning/DL-04c-MoE-from-scratch-Python.ipynb",
+    "03-Deep-Learning/3.5-Phenomenes-de-Generalisation.ipynb": "03-Deep-Learning/DL-05-Phenomenes-de-Generalisation-Python.ipynb",
+    "03-Deep-Learning/3.6-Modeles-Generatifs.ipynb": "03-Deep-Learning/DL-06-Modeles-Generatifs-Python.ipynb",
+    "03-Deep-Learning/3.6b-Modeles-Generatifs-PyTorch.ipynb": "03-Deep-Learning/DL-06b-Modeles-Generatifs-PyTorch-Python.ipynb",
+    "03-Deep-Learning/3.6c-Modeles-Generatifs-Diffusion-from-scratch.ipynb": "03-Deep-Learning/DL-06c-Modeles-Generatifs-Diffusion-from-scratch-Python.ipynb",
+    "03-Deep-Learning/3.6d-Modeles-Generatifs-Score-SDE-from-scratch.ipynb": "03-Deep-Learning/DL-06d-Modeles-Generatifs-Score-SDE-from-scratch-Python.ipynb",
+    "03-Deep-Learning/3.6e-Modeles-Generatifs-Conditionnels-from-scratch.ipynb": "03-Deep-Learning/DL-06e-Modeles-Generatifs-Conditionnels-from-scratch-Python.ipynb",
+    "03-Deep-Learning/3.7-Distillation-Maitre-Eleve.ipynb": "03-Deep-Learning/DL-07-Distillation-Maitre-Eleve-Python.ipynb",
+    "03-Deep-Learning/3.8-Representations-Contrastives.ipynb": "03-Deep-Learning/DL-08-Representations-Contrastives-Python.ipynb",
+    "03-Deep-Learning/3.9-Compression-Quantization-FP.ipynb": "03-Deep-Learning/DL-09-Compression-Quantization-FP-Python.ipynb",
+    "03-Deep-Learning/3.9a-Compression-Quantization-INT8.ipynb": "03-Deep-Learning/DL-09a-Compression-Quantization-INT8-Python.ipynb",
+    "03-Deep-Learning/3.9b-Compression-Pruning-from-scratch.ipynb": "03-Deep-Learning/DL-09b-Compression-Pruning-from-scratch-Python.ipynb",
+    "03-Deep-Learning/3.9c-Pruning-From-Scratch.ipynb": "03-Deep-Learning/DL-09c-Pruning-From-Scratch-Python.ipynb",
+    "03-Deep-Learning/3.9e-Compression-Quantization-SOTA.ipynb": "03-Deep-Learning/DL-09e-Compression-Quantization-SOTA-Python.ipynb",
+    "03-Deep-Learning/3.9f-Compression-Pruning-SOTA.ipynb": "03-Deep-Learning/DL-09f-Compression-Pruning-SOTA-Python.ipynb",
+    # T2-a -- les 8 carnets de 03-Deep-Learning que le dry-run refusait (fail-closed mesure c.2294).
+    "03-Deep-Learning/3.4d-Fourier-Features-Biais-Spectral-Python.ipynb": "03-Deep-Learning/DL-04d-Fourier-Features-Biais-Spectral-Python.ipynb",
+    "03-Deep-Learning/3.9d-Compression-Distillation-from-scratch.ipynb": "03-Deep-Learning/DL-09d-Compression-Distillation-from-scratch-Python.ipynb",
+    "03-Deep-Learning/3.9g-Compression-Comparatif-A-vs-B.ipynb": "03-Deep-Learning/DL-09g-Compression-Comparatif-A-vs-B-Python.ipynb",
+    "03-Deep-Learning/3.11-Budget-Memoire-Entrainement.ipynb": "03-Deep-Learning/DL-11-Budget-Memoire-Entrainement-Python.ipynb",
+    "03-Deep-Learning/3.12-Les-Collectives.ipynb": "03-Deep-Learning/DL-12-Les-Collectives-Python.ipynb",
+    "03-Deep-Learning/3.13-Decouper-le-Modele-DDP-ZeRO-FSDP.ipynb": "03-Deep-Learning/DL-13-Decouper-le-Modele-DDP-ZeRO-FSDP-Python.ipynb",
+    "03-Deep-Learning/3.13b-Deux-Cartes-Reelles-DDP-FSDP-nccl.ipynb": "03-Deep-Learning/DL-13b-Deux-Cartes-Reelles-DDP-FSDP-nccl-Python.ipynb",
+    "03-Deep-Learning/3.14-Debug-Entrainement-N-Apprend-Pas-Python.ipynb": "03-Deep-Learning/DL-14-Debug-Entrainement-N-Apprend-Pas-Python.ipynb",
     "04-Vision/4.1-Conv-NumPy-Torch-Allclose.ipynb": "04-Vision/Vision-01-Conv-NumPy-Torch-Allclose-Python.ipynb",
     "04-Vision/4.2-ConvNet-Profonde-Residuelles.ipynb": "04-Vision/Vision-02-ConvNet-Profonde-Residuelles-Python.ipynb",
     "04-Vision/4.2b-Lean-GradientFlow-Vanishing.ipynb": "04-Vision/Vision-02b-Lean-GradientFlow-Vanishing-Lean.ipynb",
@@ -155,12 +157,12 @@ NOTEBOOK_MAP: dict[str, str] = {
     "04-Vision/4.6-Detection-Ultralytics-Difficult-Scenes.ipynb": "04-Vision/Vision-06-Detection-Ultralytics-Difficult-Scenes-Python.ipynb",
     "04-Vision/4.6b-Detection-Adversarial-Camouflage.ipynb": "04-Vision/Vision-06b-Detection-Adversarial-Camouflage-Python.ipynb",
     "04-Vision/4.6c-Detection-Dazzle-Garment-StyleTransfer.ipynb": "04-Vision/Vision-06c-Detection-Dazzle-Garment-StyleTransfer-Python.ipynb",
-    "04b-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch.ipynb": "05-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch-Python.ipynb",
-    "04b-Wavelet-Scattering/WS-00b-Ondelettes-2D-from-scratch.ipynb": "05-Wavelet-Scattering/WS-00b-Ondelettes-2D-from-scratch-Python.ipynb",
-    "04b-Wavelet-Scattering/WS-00c-Scattering-from-scratch.ipynb": "05-Wavelet-Scattering/WS-00c-Scattering-from-scratch-Python.ipynb",
-    "04b-Wavelet-Scattering/WS-01-Denoising-SOTA.ipynb": "05-Wavelet-Scattering/WS-01-Denoising-SOTA-Python.ipynb",
-    "04b-Wavelet-Scattering/WS-02-Scattering-SOTA.ipynb": "05-Wavelet-Scattering/WS-02-Scattering-SOTA-Python.ipynb",
-    "04b-Wavelet-Scattering/WS-03-Synthese-Scattering-vs-ResNet.ipynb": "05-Wavelet-Scattering/WS-03-Synthese-Scattering-vs-ResNet-Python.ipynb",
+    "05-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch.ipynb": "05-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch-Python.ipynb",
+    "05-Wavelet-Scattering/WS-00b-Ondelettes-2D-from-scratch.ipynb": "05-Wavelet-Scattering/WS-00b-Ondelettes-2D-from-scratch-Python.ipynb",
+    "05-Wavelet-Scattering/WS-00c-Scattering-from-scratch.ipynb": "05-Wavelet-Scattering/WS-00c-Scattering-from-scratch-Python.ipynb",
+    "05-Wavelet-Scattering/WS-01-Denoising-SOTA.ipynb": "05-Wavelet-Scattering/WS-01-Denoising-SOTA-Python.ipynb",
+    "05-Wavelet-Scattering/WS-02-Scattering-SOTA.ipynb": "05-Wavelet-Scattering/WS-02-Scattering-SOTA-Python.ipynb",
+    "05-Wavelet-Scattering/WS-03-Synthese-Scattering-vs-ResNet.ipynb": "05-Wavelet-Scattering/WS-03-Synthese-Scattering-vs-ResNet-Python.ipynb",
 }
 
 # Histogramme des noyaux du hub, etendu par T2-a a deux noyaux mesures sur main
@@ -199,10 +201,39 @@ def read_kernelspec(repo_path: str) -> str | None:
     return ks.get("name")
 
 
-def build_plan() -> tuple[list[tuple[str, str]], list[str]]:
-    """Plan de deplacement : liste (ancien, nouveau) repo-relative + erreurs fail-closed."""
+def resolve_only(only: str) -> str:
+    """Sous-repertoire vise -> nom REEL du hub (cle de DIR_MAP).
+
+    Accepte le nom courant (cle de DIR_MAP) comme le nom cible (valeur) :
+    `04b-Wavelet-Scattering` et `05-Wavelet-Scattering` designent la meme
+    tranche. Un nom inconnu est refuse (fail-closed) : un `--only` typo
+    deployerait zero fichier et se lirait comme une tranche sans objet.
+    """
+    if only in DIR_MAP:
+        return only
+    inverse = {v: k for k, v in DIR_MAP.items()}
+    if only in inverse:
+        return inverse[only]
+    raise SystemExit(
+        f"--only : sous-repertoire inconnu : {only!r}. "
+        f"Choix possibles : {', '.join(sorted(DIR_MAP))} "
+        f"(ou leur nom cible : {', '.join(sorted(DIR_MAP.values()))})")
+
+
+def build_plan(only: str | None = None) -> tuple[list[tuple[str, str]], list[str]]:
+    """Plan de deplacement : liste (ancien, nouveau) repo-relative + erreurs fail-closed.
+
+    `only` restreint le plan a UN sous-repertoire du hub (arbitrage ai-01 du
+    2026-10-23 : les deplacements se font par sous-repertoire, une PR par
+    tranche). Sans `only`, le plan couvre tout le hub.
+    """
     errors: list[str] = []
     tracked = [l for l in git("ls-files", HUB_OLD).splitlines() if l.strip()]
+    if only is not None:
+        prefix = f"{HUB_OLD}/{only}/"
+        tracked = [l for l in tracked if l.startswith(prefix)]
+        if not tracked:
+            errors.append(f"aucun fichier suivi sous {prefix} -- tranche vide")
     plan: list[tuple[str, str]] = []
     for old in sorted(tracked):
         rel = old[len(HUB_OLD) + 1:]
@@ -227,7 +258,7 @@ def build_plan() -> tuple[list[tuple[str, str]], list[str]]:
     return plan, errors
 
 
-def check_plan(plan: list[tuple[str, str]]) -> list[str]:
+def check_plan(plan: list[tuple[str, str]], only: str | None = None) -> list[str]:
     errors: list[str] = []
     targets = [t for _, t in plan]
     dupes = {t for t in targets if targets.count(t) > 1}
@@ -242,10 +273,21 @@ def check_plan(plan: list[tuple[str, str]]) -> list[str]:
     # cle morte, donc une table qui derive reste verte. Mesure c.2294 : les sept
     # entrees 4.2c..4.2i ont survecu au renumerotage 4.2x -> 4.4/4.5/4.6 (PR #19468)
     # sans qu'aucune verification ne rougisse -- fail-closed ici.
+    # Tolérance de sequence : une cle dont le FICHIER a deja ete deplace par une
+    # tranche anterieure (cible presente sous HUB_NEW) n'est pas morte -- sans
+    # quoi la premiere tranche rendue ferait echouer toutes les suivantes.
+    # En mode `--only`, la verifie porte sur la tranche visee : une cle morte
+    # d'un AUTRE sous-repertoire ne doit pas bloquer un deplacement sans rapport.
     tracked = {l[len(HUB_OLD) + 1:] for l in git("ls-files", HUB_OLD).splitlines() if l.strip()}
+    tracked_new = set(git("ls-files", HUB_NEW).splitlines())
     for key in sorted(NOTEBOOK_MAP):
-        if key not in tracked:
-            errors.append(f"cle de table sans fichier dans le hub (cle morte): {key}")
+        if only is not None and not key.startswith(f"{only}/"):
+            continue
+        if key in tracked:
+            continue
+        if f"{HUB_NEW}/{NOTEBOOK_MAP[key]}" in tracked_new:
+            continue  # deja deplace par une tranche anterieure
+        errors.append(f"cle de table sans fichier dans le hub (cle morte): {key}")
     # Forme des VALEURS : le suffixe noyau ne se double pas. Le garde des cles
     # mortes ci-dessus controle les cles contre l'arbre, pas la forme des cibles --
     # il ne pouvait donc pas voir une source dont le titre porte deja le suffixe
@@ -277,8 +319,15 @@ def check_plan(plan: list[tuple[str, str]]) -> list[str]:
     return errors
 
 
-def build_replacements(plan: list[tuple[str, str]]) -> list[tuple[str, str]]:
-    """Regles de reecriture, de la plus longue a la plus courte (anti remplacement partiel)."""
+def build_replacements(plan: list[tuple[str, str]], only: str | None = None) -> list[tuple[str, str]]:
+    """Regles de reecriture, de la plus longue a la plus courte (anti remplacement partiel).
+
+    En mode `--only`, les regles sont RESTREINTES a la tranche visee : le hub
+    lui-meme et les AUTRES sous-repertoires ne sont pas (encore) deplaces, donc
+    une regle globale `DataScienceWithAgents/ -> ML.Python/` y reecrirait des
+    referents vers un hub qui n'existe pas encore. C'est la raison d'etre du
+    mode : une tranche ne reecrit que ce qu'elle deplace.
+    """
     reps: list[tuple[str, str]] = []
     for old, new in plan:
         rel_old, rel_new = old[len(HUB_OLD) + 1:], new[len(HUB_NEW) + 1:]
@@ -286,14 +335,37 @@ def build_replacements(plan: list[tuple[str, str]]) -> list[tuple[str, str]]:
         reps.append((f"DataScienceWithAgents/{rel_old}", f"ML.Python/{rel_new}"))  # forme serie-relative
     # formes hub-relatives pour les notebooks mappes T3 uniquement (navlinks internes)
     for rel_old, rel_new in NOTEBOOK_MAP.items():
+        if only is not None and not rel_old.startswith(f"{only}/"):
+            continue
         reps.append((rel_old, rel_new))
     # prefixes de repertoire (references a un dossier, pas a un fichier)
     for old_dir, new_dir in sorted(DIR_MAP.items(), key=lambda kv: -len(kv[0])):
+        if only is not None and old_dir != only:
+            continue
         reps.append((f"{HUB_OLD}/{old_dir}", f"{HUB_NEW}/{new_dir}"))
         reps.append((f"DataScienceWithAgents/{old_dir}", f"ML.Python/{new_dir}"))
-    # residu : le hub lui-meme
-    reps.append((HUB_OLD, HUB_NEW))
-    reps.append(("DataScienceWithAgents/", "ML.Python/"))
+    if only is None:
+        # residu : le hub lui-meme (deplace en T5, pas avant)
+        reps.append((HUB_OLD, HUB_NEW))
+        reps.append(("DataScienceWithAgents/", "ML.Python/"))
+    # formes NOM NU : lien frere-a-frere dans un notebook
+    # ("[WS-00a](WS-00a-Ondelettes-1D-from-scratch.ipynb)"), script de repro et
+    # prose qui nomment un carnet par son seul nom de fichier. Mesure du
+    # 2026-10-30 sur la seule tranche 04b : 34 occurrences dans les 11 fichiers
+    # touches, invisibles a toutes les regles ci-dessus -- celles-ci portent
+    # toutes un prefixe de dossier, et le renommage T3 les transformait en
+    # liens morts en silence.
+    # La regle n'est ajoutee que si le nom de base est NON AMBIGU dans le plan :
+    # deux carnets de meme nom de base vers deux cibles differentes rendraient
+    # le remplacement aveugle (le nom nu ne dit pas lequel des deux on designe).
+    cibles: dict[str, set[str]] = {}
+    for old, new in plan:
+        base_old, base_new = Path(old).name, Path(new).name
+        if base_old != base_new:
+            cibles.setdefault(base_old, set()).add(base_new)
+    for base_old, cibles_new in cibles.items():
+        if len(cibles_new) == 1:
+            reps.append((base_old, next(iter(cibles_new))))
     # dedup + tri longueur decroissante
     seen, out = set(), []
     for a, b in reps:
@@ -316,14 +388,30 @@ def sweep_files() -> list[str]:
       - COURSE_CATALOG.generated.* : appartient a l'automation (catalog-pr-hygiene) ;
         il suivra le hub par REGENERATION a l'apply, pas par sweep manuel -- et sur
         une branche feature il reste byte-identique a main.
+      - le fichier de l'organe lui-meme : il porte les TABLES (DIR_MAP,
+        NOTEBOOK_MAP) qui decrivent le hub. Balayer ce fichier le reecrirait
+        pendant l'operation qui le consulte -- les cles de table deviendraient
+        leur propre cible, le plan de la tranche suivante neragedait plus sur
+        le bon repertoire. Une table se met a jour DELIBEREMENT, dans la PR de
+        la tranche, pas par un sweep automatique.
     """
     excluded_parts = {".lake", ".git", "_archives", "node_modules", ".venv", "venv", "__pycache__", "_peters"}
+    try:
+        self_rel = Path(__file__).resolve().relative_to(REPO_ROOT).as_posix()
+    except ValueError:
+        self_rel = ""
+    # Le temoin de l'organe porte les ANCIENS noms verbatim : il asserte que la
+    # regle `ancien -> nouveau` existe, donc le balayer reecrirait ses fixtures
+    # et casserait ses assertions (mesure 2026-10-30 : la tranche 04b le
+    # comptait comme referent, et l'organe se bloquait lui-meme).
+    fixtures = {self_rel, "scripts/notebook_tools/tests/test_migrate_dsa_gating.py"}
     out = []
     for line in git("ls-files").splitlines():
         p = Path(line)
         if p.suffix.lower() in TEXT_SUFFIXES and not (excluded_parts & set(p.parts)) \
                 and not line.startswith("scripts/results/") \
-                and not p.name.startswith("COURSE_CATALOG.generated."):
+                and not p.name.startswith("COURSE_CATALOG.generated.") \
+                and line not in fixtures:
             out.append(line)
     return out
 
@@ -382,15 +470,97 @@ def apply_sweep(reps: list[tuple[str, str]], paths: list[str]) -> int:
     return total
 
 
-def report_gating() -> list[str] | None:
-    """PRs ouvertes tenant des lignes du hub (best-effort via gh).
+# Nombre de PRs ouvertes lues en une passe. `gh pr list` ne pagine pas
+# au-dela de cette borne : atteindre la limite est une MESURE PARTIELLE, pas
+# une mesure complete (reserve Hermes sur #23114). La valeur est haute (le
+# pool tourne autour de 330 PRs ouvertes) mais elle reste une borne, donc
+# son atteinte se detecte et se refuse -- cf. report_gating.
+GH_PR_LIST_LIMIT = 1000
 
-    None = mesure impossible (gh absent ou en echec) : distinct de [] (mesure
-    faite, hub libre) -- l'appelant refuse --apply sur None (fail-closed)."""
+# Plafond de la liste `files` de `gh pr list --json files` : GraphQL ramene
+# 100 entrees par PR. Une PR qui en tient plus perd la fin de sa liste, et un
+# fichier du plan qu'elle detient serait alors declare LIBRE sans que rien ne
+# le dise -- la classe de defaut que ce mode corrige. On repasse donc par
+# l'API REST paginee des que la liste GraphQL atteint ce plafond ; si cette
+# mesure echoue, la porte refuse (None), comme pour tout echec de mesure.
+GH_PR_FILES_GRAPHQL_CAP = 100
+
+
+def pr_files_via_rest(pr_number: int) -> list[str] | None:
+    """Chemins des fichiers d'une PR via l'API REST paginee.
+
+    None = mesure impossible (gh absent, gh en echec, reponse illisible,
+    pagination sans fin). Une liste tronquee serait pire qu'un echec : elle
+    ferait passer un fichier tenu pour un fichier libre.
+    """
+    paths: list[str] = []
+    for page in range(1, 31):
+        try:
+            r = subprocess.run(
+                ["gh", "api",
+                 f"repos/jsboige/CoursIA/pulls/{pr_number}/files?per_page=100&page={page}"],
+                capture_output=True, text=True, encoding="utf-8", errors="replace",
+                cwd=str(REPO_ROOT))
+        except FileNotFoundError:
+            return None
+        if r.returncode != 0:
+            return None
+        try:
+            batch = json.loads(r.stdout or "[]")
+        except json.JSONDecodeError:
+            return None
+        if not isinstance(batch, list):
+            return None
+        if not batch:
+            break
+        paths.extend(f["path"] for f in batch if isinstance(f, dict) and f.get("path"))
+        if len(batch) < 100:
+            break
+    return paths
+
+
+def report_gating(concerned: set[str], pr_files: dict[str, set[str]] | None = None) -> dict[str, list[str]] | None:
+    """Fichiers du plan retenus par des PRs ouvertes, PAR PR (best-effort via gh).
+
+    Porte par fichier (decision ai-01 2026-10-23, #17417 T2-b) : une PR ouverte
+    ne retient que l'INTERSECTION entre ses fichiers et les fichiers concernes
+    par la migration (git mv du plan + sweep des referents) -- plus la seule
+    presence d'un fichier dans le hub, qui ne se levait jamais.
+
+    Rend {"#N": [chemins retenus tries]} ; {} = mesure faite, aucun fichier
+    tenu. None = mesure impossible : gh absent, gh en echec, **liste
+    tronquee** (GH_PR_LIST_LIMIT atteinte), ou PR dont la liste de fichiers
+    atteint le plafond GraphQL et dont la re-mesure REST echoue. L'appelant
+    refuse --apply sur None (fail-closed).
+
+    La troncature est fail-closed pour la meme raison que l'echec gh : une
+    PR hors fenetre est indiscernable d'une PR inexistante, donc un fichier
+    qu'elle tient serait declare libre en silence. Une mesure partielle qui
+    se tait est exactement la classe de defaut que ce mode corrige."""
+    prs = fetch_open_pr_files() if pr_files is None else pr_files
+    if prs is None:
+        return None
+    holding: dict[str, list[str]] = {}
+    for key, files in prs.items():
+        held = sorted(files & concerned)
+        if held:
+            holding[key] = held
+    return holding
+
+
+def fetch_open_pr_files() -> dict[str, set[str]] | None:
+    """`{"#N": {chemins}}` de TOUTES les PRs ouvertes, en UN appel gh.
+
+    Separe de `report_gating` pour que la mesure soit payee une seule fois :
+    `--survey` intersecte le meme releve avec la fermeture de chaque
+    sous-repertoire (une dizaine), sans refaire un appel gh par tranche.
+
+    None = mesure impossible (gh absent, gh en echec, liste des PRs tronquee,
+    ou liste de fichiers d'une PR au plafond GraphQL sans re-mesure REST)."""
     try:
         out = subprocess.run(
             ["gh", "pr", "list", "-R", "jsboige/CoursIA", "--state", "open",
-             "--json", "number,files", "--limit", "300"],
+             "--json", "number,files", "--limit", str(GH_PR_LIST_LIMIT)],
             capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=str(REPO_ROOT))
         if out.returncode != 0:
             print(f"[gating] gh a echoue ({out.stderr.strip()[:80]}) -- mesure impossible")
@@ -399,35 +569,103 @@ def report_gating() -> list[str] | None:
         print("[gating] gh absent -- mesure impossible")
         return None
     prs = json.loads(out.stdout or "[]")
-    holding = []
+    if len(prs) >= GH_PR_LIST_LIMIT:
+        print(f"[gating] TRONCATURE : {len(prs)} PRs lues (limite {GH_PR_LIST_LIMIT} atteinte) "
+              "-- les PRs plus anciennes ne sont pas mesurees, mesure impossible")
+        return None
+    out_files: dict[str, set[str]] = {}
     for pr in prs:
-        if any(f["path"].startswith(HUB_OLD) for f in pr.get("files", [])):
-            holding.append(f"#{pr['number']}")
-    return holding
+        files = {f["path"] for f in (pr.get("files") or [])
+                 if isinstance(f, dict) and f.get("path")}
+        if len(files) >= GH_PR_FILES_GRAPHQL_CAP:
+            rest = pr_files_via_rest(pr["number"])
+            if rest is None:
+                print(f"[gating] PR #{pr['number']} : {GH_PR_FILES_GRAPHQL_CAP} fichiers ou plus, "
+                      "mesure REST paginee impossible -- mesure incomplete")
+                return None
+            files = set(rest)
+        out_files[f"#{pr['number']}"] = files
+    return out_files
+
+
+def survey() -> int:
+    """Quelle tranche est mergeable AUJOURD'HUI ? Une ligne par sous-repertoire.
+
+    Un deplacement est atomique avec sa fermeture (fichiers deplaces + referents
+    reecrits) : la tranche n'est mergeable que si AUCUN fichier de cette
+    fermeture n'est tenu par une PR ouverte. La fermeture d'un sous-repertoire
+    n'est pas seulement ses carnets -- elle inclut les referents globaux que
+    sont `_quarto.yml`, les baselines et la table de traduction, des qu'ils
+    citent un de ses fichiers. D'ou cette mesure : elle dit a l'ordonnanceur
+    quelle tranche peut partir, au lieu de le supposer.
+    """
+    pr_files = fetch_open_pr_files()
+    if pr_files is None:
+        return 1
+    print(f"{'sous-repertoire':34s} {'mv':>3s} {'ref':>4s}  etat")
+    print("-" * 78)
+    libres = []
+    for only in sorted(DIR_MAP):
+        plan, _ = build_plan(only)
+        if not plan:
+            print(f"{only:34s} {0:3d} {0:4d}  tranche vide")
+            continue
+        touched, _n = run_sweep(build_replacements(plan, only))
+        concerned = {old for old, _ in plan} | set(touched)
+        gating = report_gating(concerned, pr_files)
+        if gating is None:
+            return 1
+        n_held = len({f for files in gating.values() for f in files})
+        if gating:
+            n_plan = sum(1 for old, _ in plan if any(old in v for v in gating.values()))
+            print(f"{only:34s} {len(plan):3d} {len(touched):4d}  "
+                  f"TENUE {len(gating):2d} PRs / {n_held:2d} fichiers ({n_plan} du plan)")
+        else:
+            libres.append(only)
+            print(f"{only:34s} {len(plan):3d} {len(touched):4d}  LIBRE -- mergeable aujourd'hui")
+    print("-" * 78)
+    print(f"{len(libres)} tranche(s) libre(s) : {', '.join(libres) if libres else 'aucune'}")
+    return 0
 
 
 def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(description="Migration DataScienceWithAgents -> ML/ML.Python (#17417, gele tant que les PRs gelantes tiennent le hub)")
-    ap.add_argument("--apply", action="store_true", help="execute les git mv et reecritures (defaut: dry-run, aucune ecriture)")
-    ap.add_argument("--report-gating", action="store_true", help="liste les PRs ouvertes tenant le hub (via gh)")
+    ap = argparse.ArgumentParser(description="Migration DataScienceWithAgents -> ML/ML.Python (#17417, sequencement par fichier : un fichier tenu par une PR ouverte attend sa PR)")
+    ap.add_argument("--apply", action="store_true", help="execute les git mv et reecritures (defaut: dry-run, aucune ecriture) ; refuse si la fermeture du deplacement -- fichiers deplaces ET referents -- est tenue par une PR ouverte")
+    ap.add_argument("--report-gating", action="store_true", help="liste, par PR ouverte, les fichiers du plan qu'elle retient (via gh)")
+    ap.add_argument("--survey", action="store_true", help="mesure, pour CHAQUE sous-repertoire, si sa fermeture est libre (tranche mergeable) -- un seul appel gh")
     ap.add_argument("--json", action="store_true", help="sortie machine")
+    ap.add_argument("--only", metavar="SOUS_REPERTOIRE", default=None,
+                    help="restreint le plan et le sweep a UN sous-repertoire du hub "
+                         "(arbitrage ai-01 2026-10-23 : un deplacement par sous-repertoire, "
+                         "une PR par tranche). Exemple : --only 04b-Wavelet-Scattering")
     args = ap.parse_args(argv)
 
-    plan, errors = build_plan()
-    errors += check_plan(plan)
-    reps = build_replacements(plan)
+    if args.survey:
+        return survey()
+
+    only = resolve_only(args.only) if args.only else None
+    plan, errors = build_plan(only)
+    errors += check_plan(plan, only)
+    reps = build_replacements(plan, only)
 
     measure = args.report_gating or args.apply
-    gating = report_gating() if measure else None
+    t3_renames = sum(1 for old, _ in plan if old[len(HUB_OLD) + 1:] in NOTEBOOK_MAP)
 
     if not args.json:
-        print(f"=== PLAN : {len(plan)} fichiers {HUB_OLD} -> {HUB_NEW} ===")
-        print(f"--- git mv ({len(plan)}) dont notebooks renommes T3 ({len(NOTEBOOK_MAP)}) ---")
+        portee = f"SOUS-REPERTOIRE {only}" if only else "HUB ENTIER"
+        print(f"=== PLAN : {len(plan)} fichiers {HUB_OLD} -> {HUB_NEW} ({portee}) ===")
+        print(f"--- git mv ({len(plan)}) dont notebooks renommes T3 ({t3_renames}) ---")
         for old, new in plan:
             marker = " [T3]" if old[len(HUB_OLD) + 1:] in NOTEBOOK_MAP else ""
             print(f"  {old} -> {new}{marker}")
         print(f"\n=== SWEEP referents ({len(reps)} regles de remplacement, ordre longueur decroissante) ===")
     touched, total = run_sweep(reps)
+    gating = None
+    if measure:
+        # Fichiers que la migration toucherait : git mv du plan + referents sweep.
+        # Une PR ouverte ne retient que cette intersection (porte par fichier).
+        concerned = {old for old, _ in plan} | set(touched)
+        gating = report_gating(concerned)
     if not args.json:
         print(f"--- {len(touched)} fichiers referents touches, {total} occurrences a reecrire ---")
         for path, n in sorted(touched.items(), key=lambda kv: -kv[1]):
@@ -440,17 +678,22 @@ def main(argv: list[str] | None = None) -> int:
             print("  toutes les verifications passent (collisions, cibles, kernelspecs, couverture notebooks)")
         if measure:
             if gating is None:
-                print("\n=== PRs GELANTES : mesure impossible (fail-closed) ===")
+                print("\n=== FICHIERS RETENUS : mesure impossible (fail-closed) ===")
             elif gating:
-                print(f"\n=== PRs GELANTES tenant le hub ({len(gating)}) ===")
-                print("  " + ", ".join(gating))
+                n_held = sum(len(v) for v in gating.values())
+                print(f"\n=== FERMETURE TENUE par des PRs ouvertes ({len(gating)} PRs, {n_held} fichiers) : tranche NON MERGEABLE ===")
+                for pr_id in sorted(gating, key=lambda k: int(k[1:])):
+                    print(f"  {pr_id} retient {len(gating[pr_id])} fichier(s) :")
+                    for f in gating[pr_id]:
+                        print(f"    {f}")
             else:
-                print("\n=== PRs GELANTES : aucune (le hub est libre) ===")
+                print("\n=== FERMETURE LIBRE : aucune PR ouverte ne touche le plan ni ses referents ===")
         print(f"\nmode {'APPLY' if args.apply else 'DRY-RUN (aucune ecriture)'}")
 
     if args.json:
         print(json.dumps({
-            "plan_size": len(plan), "t3_renames": len(NOTEBOOK_MAP),
+            "plan_size": len(plan), "t3_renames": t3_renames,
+            "only": only,
             "sweep_files": len(touched), "sweep_occurrences": total,
             "errors": errors, "gating_prs": gating,
         }, ensure_ascii=False, indent=1))
@@ -462,17 +705,43 @@ def main(argv: list[str] | None = None) -> int:
             print("REFUS : mesure des PRs gelantes impossible (gate #5.4 fail-closed) -- aucun git mv execute.")
             return 1
         if gating:
-            print("REFUS : des PRs ouvertes tiennent le hub (gate #5.4) -- aucun git mv execute.")
+            # Un deplacement est ATOMIQUE avec sa fermeture : les fichiers deplaces
+            # ET les referents reecrits. Sauter les fichiers tenus laisse des liens
+            # morts dans les DEUX sens -- un referent libre reecrit vers un carnet
+            # reste a son ancien chemin, un referent tenu gardant l'ancien chemin
+            # vers un carnet deplace. La mesure du 2026-10-30 sur la tranche 04b
+            # montre le cout reel de l'ancien contrat « skip » : 5 des 11 referents
+            # sont tenus, dont _quarto.yml (7 lignes de nav), la table de traduction
+            # (145 lignes) et 2 baselines -- les sauter en silence rendait le build
+            # docs faux sans que rien ne le dise.
+            # La porte refuse donc la FERMETURE ENTIERE : une tranche tenue est une
+            # tranche NON MERGEABLE, jamais une tranche a moitie appliquee. La lane
+            # choisit alors un sous-repertoire dont la fermeture est libre.
+            held = {f for files in gating.values() for f in files}
+            in_plan = sum(1 for old, _ in plan if old in held)
+            print(f"REFUS : la fermeture du deplacement est tenue par des PRs ouvertes "
+                  f"({len(gating)} PRs, {len(held)} fichiers dont {in_plan} du plan, "
+                  f"{len(held) - in_plan} referents) -- aucun git mv execute.")
+            for pr_id in sorted(gating, key=lambda k: int(k[1:])):
+                print(f"  {pr_id} retient :")
+                for f in gating[pr_id]:
+                    print(f"    {f}")
             return 1
         # Ordre : git mv d'abord, puis sweep -- apres le mv, `git ls-files` liste
         # le hub a ses NOUVEAUX chemins (navlinks internes relatifs reecrits la),
         # les referents externes a leurs chemins inchanges.
         for old, new in plan:
+            # `git mv` refuse une destination dont le repertoire parent n'existe
+            # pas ("fatal: destination directory does not exist") : le hub cible
+            # n'existe pas encore au premier deplacement. On cree donc les
+            # repertoires cibles AVANT le mv -- sinon l'apply echoue sur son
+            # premier fichier (mesure 2026-10-30, premiere execution reelle).
+            (REPO_ROOT / Path(new).parent).mkdir(parents=True, exist_ok=True)
             git("mv", old, new)
         all_paths = sweep_files()
         n_out = apply_sweep(reps, [f for f in all_paths if not f.startswith(HUB_NEW)])
         n_hub = apply_sweep(reps, [f for f in all_paths if f.startswith(HUB_NEW)])
-        print(f"APPLIQUE : {len(plan)} git mv + sweep ({n_out} referents externes + {n_hub} fichiers du hub reecrits). Aucun commit -- la lane reviewe puis commit.")
+        print(f"APPLIQUE : {len(plan)}/{len(plan)} git mv + sweep ({n_out} referents externes + {n_hub} fichiers du hub reecrits). Aucun commit -- la lane reviewe puis commit.")
     return 0
 
 

@@ -82,22 +82,54 @@ Ce que cet outil ne dit PAS
   notebooks dans un ordre pedagogicalement absurde est « atteignable ».
 - Il ne remplace pas le garde 404 : les deux sont necessaires ensemble.
 
+Le mode « chaine d'une serie » (direction)
+------------------------------------------
+Le scan ci-dessus repond a « ce carnet est-il **atteignable** ? ». Il ne
+repond pas a « la barre de navigation pointe-t-elle vers la **bonne** marche
+? » : un carnet peut etre parfaitement atteignable et pointer malgre tout
+dans la mauvaise direction. C'est la classe de la reserve NanoClaw sur
+#20374 (« le checker nav-links valide les cibles, pas la direction du
+parcours »), qui a laisse passer six carnets de l'escalier Dynamics sans
+barre, et un carnet dont le « precedent » sautait une marche.
+
+Le mode `--series-chain` lit l'ordre declare par le README d'une serie et
+verifie, pour chaque paire de marches consecutives, que la premiere porte un
+lien « suivant » vers la seconde et la seconde un lien « precedent » vers la
+premiere. Il est **opt-in par serie** : l'ordre pedagogique n'est pas une
+propriete universelle — une marche d'approfondissement n'est pas un
+« suivant » — et un garde global rougeirait sur des series legitimement non
+lineaires. L'ordre est lu dans un TABLEAU du README ; quand le README expose
+plusieurs tableaux de carnets (catalogue, parcours, approfondissements),
+`--chain-table` designe celui qui declare la lecture : on ne devine pas.
+
 Modes (convention check_notebook_navlinks.py / check_docs_links.py)
 ------------------------------------------------------------------
     python check_notebook_nav_chain.py                  # scan complet, exit 1 si findings
-    python check_notebook_nav_chain.py --baseline       # ecrit scripts/tests/baseline_nb_nav_chain.json
+    python check_notebook_nav_chain.py --baseline       # ecrit scripts/tests/baseline_nb_nav_chain.json (main propre requis)
+    python check_notebook_nav_chain.py --baseline --baseline-anyway  # ecrit hors main, provenance non_main
     python check_notebook_nav_chain.py --check          # check vs baseline (exit 1 si NEW)
     python check_notebook_nav_chain.py --check --diff-base origin/main  # NEW bloquent seulement s'ils sont imputables au diff
     python check_notebook_nav_chain.py --family Sharp   # limiter le RAPPORT a une famille
     python check_notebook_nav_chain.py NB.ipynb         # limiter le rapport a la serie de ce notebook
+    python check_notebook_nav_chain.py --series-chain MyIA.AI.Notebooks/<Serie>/README.md
+                                                      # mode « chaine d'une serie » : la
+                                                      # DIRECTION du parcours (prev/next)
+                                                      # est-elle celle que le README
+                                                      # declare ? (opt-in par serie)
+    python check_notebook_nav_chain.py --series-chain <README> --chain-table "Phase 1"
+                                                      # selectionne le tableau qui declare
+                                                      # l'ordre (obligatoire si le README
+                                                      # expose plusieurs tableaux)
     python check_notebook_nav_chain.py --json           # sortie machine
     python check_notebook_nav_chain.py --quiet          # sortie minimale (CI)
 
 Exit codes
 ----------
     0 = aucun finding (ou mode --check : aucun NEW finding)
-    1 = findings presents (ou NEW findings vs baseline)
+    1 = findings presents (ou NEW findings vs baseline, ou baseline ecrit hors
+        de main propre -- verdict distinct d'un NEW, cf. #22121)
     2 = erreur d'execution (aucun notebook, argument introuvable)
+    3 = --baseline refuse : arbre != main propre (cf. --baseline-anyway)
 
 Voir aussi
 ----------
@@ -107,6 +139,7 @@ Voir aussi
 - #17093 (chaine QC-Py cassee), #17277 (l'instance corrigee)
 """
 import argparse
+import datetime
 import json
 import subprocess
 import sys
@@ -128,6 +161,11 @@ from check_notebook_navlinks import (  # noqa: E402
 )
 
 BASELINE_PATH = REPO_ROOT / "scripts" / "tests" / "baseline_nb_nav_chain.json"
+
+# Version de l'instrument, ecrite dans la provenance du baseline (#22121). A
+# incrementer quand la FORME des findings change : un baseline ecrit par une
+# version anterieure ne se compare pas a l'identique.
+INSTRUMENT_VERSION = "2026-10-23.1"
 
 # Vocabulaire de navigation. Base sur celui de check_notebook_navlinks.py (ou il
 # sert a CLASSER un lien casse), **complete par mesure** : il sert ici a decider
@@ -297,6 +335,296 @@ def scan_broken_nav(notebooks) -> list:
                 "text": bl["text"],
             })
     return findings
+
+
+# --------------------------------------------------------------------------
+# Mode « chaine d'une serie » (item 5 de #20381)
+# --------------------------------------------------------------------------
+# Le garde 404 verifie que la CIBLE existe ; le graphe d'atteignable verifie
+# qu'un lecteur PARVIENT au carnet. Aucun des deux ne dit si la barre de
+# navigation pointe vers l'ARRIERE ou vers l'AVANT de l'escalier : c'est
+# exactement la reserve de NanoClaw sur #20374 (« le checker nav-links valide
+# les cibles, pas la direction du parcours »), et c'est la classe que ce mode
+# rend detectable.
+#
+# Ce mode est **opt-in par serie** : l'ordre pedagogique n'est pas une
+# propriete universelle (une serie peut etre lineaire, une autre avoir des
+# approfondissements, une autre un capstone), et un garde global would
+# rougeir sur des series legitinement non lineaires. L'ordre declare est lu
+# dans le README de la serie — c'est la que la serie l'ecrit.
+
+# Marqueurs de direction portes par le TEXTE d'un lien. Les chevrons sont la
+# convention de la serie GameTheory (`<< X | Index | Y >>`), les fleches celle
+# de MetaGeneticSharp (`[← MGS-7b ...](...)`).
+CHAIN_PREV_MARKS = ("<<", "←", "‹")
+CHAIN_NEXT_MARKS = (">>", "→", "›")
+# Mots de direction. `prec`/`préc` sont ecrits avec leur separateur (`préc `,
+# `prec.`) : sans lui, « precisement » serait lu comme un « precedent ».
+CHAIN_PREV_WORDS = ("précédent", "precedent", "préc.", "préc ", "prec.", "prec ", "prev")
+CHAIN_NEXT_WORDS = ("suivant", "suivante", "next")
+# Marqueurs de navigation au niveau de la CELLULE : une cellule qui porte l'un
+# d'eux est une cellule de navigation, et c'est dans ces cellules que le
+# repli positionnel (le mot de direction est sur la ligne, hors du lien) a le
+# droit de s'appliquer.
+CHAIN_CELL_MARKERS = ("navigation", "nav ", "précédent", "precedent",
+                       "suivant", "suivante", "prev", "next")
+
+
+def _explicit_direction(text: str):
+    """Direction portee par le texte d'un lien : 'prev', 'next' ou None.
+
+    Un lien sans marqueur de direction n'est PAS une arete de parcours : c'est
+    une reference (index, jumeau C#/Python, « voir aussi »). C'est ce qui
+    permet de lire un carnet reel sans transformer chaque mention en prose en
+    arete.
+    """
+    low = text.lower()
+    for mark in CHAIN_PREV_MARKS:
+        if mark in low:
+            return "prev"
+    for mark in CHAIN_NEXT_MARKS:
+        if mark in low:
+            return "next"
+    for word in CHAIN_PREV_WORDS:
+        if word in low:
+            return "prev"
+    for word in CHAIN_NEXT_WORDS:
+        if word in low:
+            return "next"
+    return None
+
+
+def _line_direction(line: str, pos: int):
+    """Direction portee par la LIGNE, quand elle ne porte qu'un seul lien.
+
+    Repli positionnel : le mot de direction est avant le lien (« Precedent :
+    [X](...) ») ou apres (« [X](...) — Suivant »). Volontairement limite au
+    cas a un seul lien : une barre multi-liens (`<< A | Index | B >>`) porte
+    ses directions DANS les liens, et un repli positionnel y attribuerait une
+    direction arbitraire aux liens sans marqueur (l'index deviendrait un
+    « precedent »).
+    """
+    before, after = line[:pos].lower(), line[pos:].lower()
+    if any(w in before for w in CHAIN_PREV_WORDS) or any(m in before for m in CHAIN_PREV_MARKS):
+        return "prev"
+    if any(w in after for w in CHAIN_NEXT_WORDS) or any(m in after for m in CHAIN_NEXT_MARKS):
+        return "next"
+    return None
+
+
+def chain_links(nb_path: Path):
+    """Liens de navigation **directionnels** d'un carnet.
+
+    Portee volontairement plus stricte que `nav_edges` : un lien n'entre dans
+    le mode chaine que s'il porte une direction explicite dans son texte
+    (`<<`, `>>`, `←`, `→`, « precedent », « suivant »), ou qu'il est pose dans
+    une cellule de navigation dont la ligne ne porte qu'un seul lien (repli
+    positionnel). Une mention en prose — un lien dont le texte ne porte pas
+    de direction — n'est donc jamais lue comme une arete de parcours.
+
+    Retourne une liste de dicts {direction, target, text} ; `target` est le
+    chemin resolu (absolu).
+    """
+    try:
+        with open(nb_path, encoding="utf-8") as f:
+            nb = json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return []
+    out = []
+    for cell in nb.get("cells", []):
+        if cell.get("cell_type") != "markdown":
+            continue
+        src = cell.get("source", [])
+        text_lines = src if isinstance(src, str) else "".join(src)
+        low = text_lines.lower()
+        cell_is_nav = any(m in low for m in CHAIN_CELL_MARKERS)
+        for line in text_lines.splitlines():
+            matches = list(LINK_PATTERN.finditer(line))
+            for m in matches:
+                text, target = m.group(1), m.group(2)
+                direction = _explicit_direction(text)
+                if direction is None and cell_is_nav and len(matches) == 1:
+                    direction = _line_direction(line, m.start())
+                if direction is None:
+                    continue
+                resolved = _resolve_target(nb_path, target)
+                if resolved.suffix.lower() != ".ipynb":
+                    continue
+                out.append({"direction": direction, "target": resolved, "text": text})
+    return out
+
+
+def readme_tables(readme_path: Path):
+    """Tables markdown d'un README : [{caption, header, rows}].
+
+    `caption` = le dernier titre de niveau precede la table (le titre de la
+    section qui la porte) ; `header` = sa ligne d'en-tete ; `rows` = ses
+    lignes de donnees (la ligne de separation `|---|` est sautee).
+    """
+    try:
+        text = readme_path.read_text(encoding="utf-8")
+    except OSError:
+        return []
+    tables, cur, caption = [], None, ""
+    for raw in text.splitlines():
+        line = raw.strip()
+        if line.startswith("|"):
+            if cur is None:
+                cur = {"caption": caption, "header": line, "rows": []}
+                continue
+            if set(line.replace("|", "").replace(" ", "")) <= set("-:"):
+                continue
+            cur["rows"].append(line)
+            continue
+        if cur is not None:
+            tables.append(cur)
+            cur = None
+        if line.startswith("#"):
+            caption = line.lstrip("#").strip()
+    if cur is not None:
+        tables.append(cur)
+    return tables
+
+
+def readme_steps(readme_path: Path, table: dict):
+    """Marches declarees par une table de README, dans l'ordre du document.
+
+    Regle : la PREMIERE cible `.ipynb` de la ligne est la marche ; les
+    suivantes sont des **jumeaux** (le C# d'une marche Python, la version Lean
+    d'une marche Python) et ne comptent pas comme marches — convention ecrite
+    dans les README de serie (« Les jumeaux ne comptent pas comme marches »).
+    Une marche dont le carnet n'existe pas est quand meme listee : l'absence
+    est un finding, pas une raison de reordonner la chaine.
+    """
+    steps = []
+    for row in table["rows"]:
+        targets = [m.group(2) for m in LINK_PATTERN.finditer(row)
+                   if m.group(2).lower().endswith(".ipynb")]
+        if not targets:
+            continue
+        steps.append({
+            "notebook": (readme_path.parent / targets[0].lstrip("./")).resolve(),
+            "twins": [(readme_path.parent / t.lstrip("./")).resolve() for t in targets[1:]],
+        })
+    return steps
+
+
+def _rel_safe(path: Path) -> str:
+    """Chemin repo-relatif quand c'est possible, sinon le chemin absolu."""
+    try:
+        return path.relative_to(REPO_ROOT).as_posix()
+    except ValueError:
+        return path.as_posix()
+
+
+def check_series_chain(readme_path: Path, table: dict):
+    """Verifie la DIRECTION de la chaine declaree par une table de README.
+
+    Pour chaque paire de marches consecutives (A, B) de l'ordre declare :
+      - A doit porter un lien de direction `next` vers B ;
+      - B doit porter un lien de direction `prev` vers A.
+
+    Les liens vers l'exterieur de la serie (porte d'entree, capstone, index,
+    jumeaux) sont hors perimetre : seule l'adjacence **declaree** est jugee.
+
+    Retourne une liste de findings {kind, notebook, series, expected, found}.
+    """
+    steps = readme_steps(readme_path, table)
+    series = _rel_safe(readme_path.parent)
+    findings = []
+
+    def add(kind, nb, expected, found):
+        findings.append({
+            "kind": kind,
+            "notebook": _rel_safe(nb),
+            "series": series,
+            "expected": _rel_safe(expected) if expected else "",
+            "found": [_rel_safe(f) for f in found],
+        })
+
+    for i, step in enumerate(steps):
+        nb = step["notebook"]
+        if not nb.is_file():
+            add("chain_step_missing", nb, nb, [])
+            continue
+        links = chain_links(nb)
+        prevs = [l["target"] for l in links if l["direction"] == "prev"]
+        nexts = [l["target"] for l in links if l["direction"] == "next"]
+        if i > 0:
+            expected = steps[i - 1]["notebook"]
+            if not prevs:
+                add("chain_no_prev", nb, expected, [])
+            elif expected not in prevs:
+                add("chain_prev_wrong", nb, expected, prevs)
+        if i < len(steps) - 1:
+            expected = steps[i + 1]["notebook"]
+            if not nexts:
+                add("chain_no_next", nb, expected, [])
+            elif expected not in nexts:
+                add("chain_next_wrong", nb, expected, nexts)
+    return findings
+
+
+def run_series_chain(readme_args, table_selector=None):
+    """Mode chaine : verifie une ou plusieurs chaines declarees.
+
+    Retourne (report, rc, errors) :
+      - rc=0 : toutes les chaines lues sont conformes ;
+      - rc=1 : au moins un finding ;
+      - rc=2 : erreur d'usage (README introuvable, aucun tableau de carnets,
+        tableau absent ou ambigu). Le tableau est **ambigu** quand le README
+        expose plusieurs tableaux de carnets et qu'aucun selecteur n'est
+        donne : on ne devine pas la table qui declare l'ordre — la table
+        « Catalogue » d'un README n'est pas l'ordre de lecture.
+    """
+    chains, findings, errors = [], [], []
+    for raw in readme_args:
+        readme = Path(raw)
+        if not readme.is_absolute():
+            readme = REPO_ROOT / raw
+        if not readme.is_file():
+            errors.append(f"README introuvable: {raw}")
+            continue
+        candidates = []
+        for tb in readme_tables(readme):
+            steps = readme_steps(readme, tb)
+            if len(steps) >= 2:
+                candidates.append((tb, steps))
+        if not candidates:
+            errors.append(f"{_rel_safe(readme)} : aucun tableau de carnets (>= 2 marches)")
+            continue
+        if table_selector:
+            sel = table_selector.lower()
+            matches = [(tb, st) for tb, st in candidates
+                       if sel in tb["caption"].lower() or sel in tb["header"].lower()]
+            if not matches:
+                listed = ", ".join(f"{tb['caption'][:40]!r} ({len(st)} marches)"
+                                   for tb, st in candidates)
+                errors.append(f"{_rel_safe(readme)} : aucun tableau ne correspond a "
+                              f"{table_selector!r} ; candidats : {listed}")
+                continue
+            if len(matches) > 1:
+                errors.append(f"{_rel_safe(readme)} : {table_selector!r} selectionne "
+                              f"{len(matches)} tableaux ; le selecteur doit etre plus precis")
+                continue
+            chosen = matches[0]
+        elif len(candidates) == 1:
+            chosen = candidates[0]
+        else:
+            listed = ", ".join(f"{tb['caption'][:40]!r} ({len(st)} marches)"
+                               for tb, st in candidates)
+            errors.append(f"{_rel_safe(readme)} : {len(candidates)} tableaux de carnets ; "
+                          f"--chain-table est obligatoire (candidats : {listed})")
+            continue
+        tb, steps = chosen
+        found = check_series_chain(readme, tb)
+        chains.append({"readme": _rel_safe(readme), "table": tb["caption"],
+                       "header": tb["header"],
+                       "steps": [_rel_safe(s["notebook"]) for s in steps],
+                       "findings": found})
+        findings.extend(found)
+    rc = 2 if errors else (1 if findings else 0)
+    return {"chains": chains, "findings": findings}, rc, errors
 
 
 def build_graph(notebooks):
@@ -489,18 +817,140 @@ def _finding_keys(report):
     return keys
 
 
-def _write_baseline(report):
-    """Ecrit le baseline (snapshot des findings, supposes connus)."""
-    BASELINE_PATH.parent.mkdir(parents=True, exist_ok=True)
+def _git_output(*args):
+    """Sortie d'une commande git dans le depot, ou None si elle echoue."""
+    proc = subprocess.run(
+        ["git", *args], cwd=REPO_ROOT, capture_output=True, text=True,
+        encoding="utf-8", errors="replace",
+    )
+    if proc.returncode != 0:
+        return None
+    return proc.stdout.strip()
+
+
+def _git_provenance(baseline_path=None):
+    """Provenance de l'arbre qui ecrit le baseline (#22121).
+
+    Defaut mesure : `--baseline` n'ecrivait que deux cles, donc une reecriture
+    depuis une branche de sujet etait indiscernable d'une re-derivation sur
+    `main` -- un finding apparu entre-temps devenait « connu » comme effet de
+    bord d'une PR sans rapport (#21696, commit `f42c4e30d10`).
+
+    `dirty` ignore la modification du baseline lui-meme : ecrire ce fichier
+    salit l'arbre par construction, ce n'est pas un etat de travail.
+    """
+    head = _git_output("rev-parse", "HEAD") or ""
+    branch = _git_output("rev-parse", "--abbrev-ref", "HEAD") or ""
+    origin_main = _git_output("rev-parse", "origin/main") or ""
+
+    own = ""
+    if baseline_path is not None:
+        try:
+            own = Path(baseline_path).resolve().relative_to(REPO_ROOT).as_posix()
+        except ValueError:
+            own = ""
+
+    status = _git_output("status", "--porcelain") or ""
+    dirty = any(
+        line[3:].strip() and line[3:].strip() != own
+        for line in status.splitlines() if line.strip()
+    )
+
+    behind = None
+    if head and origin_main:
+        raw = _git_output("rev-list", "--count", f"{head}..{origin_main}")
+        behind = int(raw) if raw and raw.isdigit() else None
+
+    return {
+        "instrument": INSTRUMENT_VERSION,
+        "head": head,
+        "branch": branch,
+        "origin_main": origin_main,
+        "behind_origin_main": behind,
+        "dirty": dirty,
+        "written_at": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        # Drapeau qui porte le verdict de `--check` : vrai des que la source de
+        # l'ecriture n'est pas `main` a jour et propre.
+        "non_main": (branch != "main" or dirty
+                     or (bool(head) and bool(origin_main) and head != origin_main)),
+    }
+
+
+def _baseline_refusal(provenance, anyway):
+    """(code, message) : 0 = ecriture permise, 3 = refusee."""
+    if anyway or not provenance.get("non_main"):
+        return 0, ""
+    lines = [
+        "error: --baseline refuse : l'arbre n'est pas `main` propre.",
+        f"  HEAD        = {provenance.get('head') or '?'}",
+        f"  origin/main = {provenance.get('origin_main') or '?'}",
+        f"  branche     = {provenance.get('branch') or '?'}"
+        f"   dirty = {str(provenance.get('dirty')).lower()}",
+        "  Un baseline ecrit hors de `main` absorbe en silence les findings",
+        "  apparus entre-temps (#22121). Re-deriver sur main a jour, ou",
+        "  relancer avec --baseline-anyway : la provenance portera alors",
+        "  `non_main: true` et --check le dira.",
+    ]
+    return 3, "\n".join(lines)
+
+
+def _provenance_verdict(provenance):
+    """(code, message) du controle de provenance fait par --check (#22121).
+
+    Distinct d'un finding NEW : ce n'est pas le depot qui a change, c'est la
+    source du baseline qui n'est pas comparable. Un baseline sans provenance
+    (ecrit avant l'introduction du champ) n'est pas rougi mais signale : le
+    rendre rouge bloquerait tout le depot jusqu'a une re-derivation.
+    """
+    if not provenance:
+        return 0, ("WARN: baseline sans provenance (ecrit avant #22121) -- "
+                   "le re-deriver sur main propre active le controle.")
+    if provenance.get("non_main"):
+        return 1, (f"FAIL: baseline ecrit HORS de `main` propre "
+                   f"(branche={provenance.get('branch') or '?'}, "
+                   f"head={provenance.get('head') or '?'}, "
+                   f"origin/main={provenance.get('origin_main') or '?'}, "
+                   f"dirty={str(provenance.get('dirty')).lower()}, "
+                   f"written_at={provenance.get('written_at') or '?'}). "
+                   f"Re-deriver sur main : un baseline ecrit depuis une branche "
+                   f"absorbe les findings apparus entre-temps (#22121).")
+    return 0, ""
+
+
+def _write_baseline(report, path=None, provenance=None):
+    """Ecrit le baseline (snapshot des findings + provenance de la source)."""
+    target = Path(path) if path is not None else BASELINE_PATH
+    target.parent.mkdir(parents=True, exist_ok=True)
     snapshot = sorted(report["findings"], key=lambda f: (f["kind"], f["notebook"]))
     payload = {
+        "provenance": provenance if provenance is not None else _git_provenance(target),
         "findings": snapshot,
         "wrapped": sorted(report["wrapped"], key=lambda s: s["series"]),
     }
-    with open(BASELINE_PATH, "w", encoding="utf-8", newline="\n") as f:
+    with open(target, "w", encoding="utf-8", newline="\n") as f:
         json.dump(payload, f, ensure_ascii=False, indent=2)
         f.write("\n")
-    return BASELINE_PATH
+    return target
+
+
+def _load_baseline_document():
+    """Charge le document baseline entier, ou None si absent/illisible."""
+    if not BASELINE_PATH.is_file():
+        return None
+    try:
+        with open(BASELINE_PATH, encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
+def _baseline_provenance():
+    """Provenance du baseline commite, ou None (absent, ou ecrit avant #22121)."""
+    data = _load_baseline_document()
+    if not isinstance(data, dict):
+        return None
+    prov = data.get("provenance")
+    return prov if isinstance(prov, dict) else None
 
 
 def _load_baseline():
@@ -509,12 +959,8 @@ def _load_baseline():
     Format-compatible avec les baselines anciens : si un baseline n'a que
     (kind, notebook) on retombe sur cette cle (target vide).
     """
-    if not BASELINE_PATH.is_file():
-        return set()
-    try:
-        with open(BASELINE_PATH, encoding="utf-8") as f:
-            data = json.load(f)
-    except (OSError, json.JSONDecodeError):
+    data = _load_baseline_document()
+    if not isinstance(data, dict):
         return set()
     keys = set()
     for f in data.get("findings", []):
@@ -616,7 +1062,15 @@ def main(argv=None):
                         help="Un notebook : limite le rapport a sa serie (defaut: tout)")
     parser.add_argument("--family", help="Limiter le RAPPORT a une famille (ex. Search, Sudoku)")
     parser.add_argument("--baseline", action="store_true",
-                        help="Ecrire le baseline (snapshot des findings actuels)")
+                        help="Ecrire le baseline (snapshot des findings actuels). "
+                             "Refuse (exit 3) si l'arbre n'est pas `main` propre : "
+                             "un baseline ecrit depuis une branche de sujet absorbe "
+                             "en silence les findings apparus entre-temps (#22121).")
+    parser.add_argument("--baseline-anyway", action="store_true", dest="baseline_anyway",
+                        help="Avec --baseline : ecrire meme hors de `main` propre. "
+                             "La provenance du payload porte alors `non_main: true`, "
+                             "et --check le signale comme un rouge distinct d'un "
+                             "finding NEW.")
     parser.add_argument("--check", action="store_true",
                         help="Comparer au baseline ; exit 1 si NEW finding (regression)")
     scope = parser.add_mutually_exclusive_group()
@@ -632,11 +1086,47 @@ def main(argv=None):
                             "diff est calcule ici (`git diff --name-only REF...HEAD`). "
                             "C'est la forme de la voie rapide, qui fournit la base "
                             "via {base_ref}.")
+    parser.add_argument("--series-chain", action="append", default=[], metavar="README",
+                        help="Mode « chaine d'une serie » : verifie la DIRECTION de "
+                             "la chaine declaree par le README de la serie (item 5 "
+                             "de #20381). Opt-in : une serie par invocation, "
+                             "l'ordre pedagogique n'etant pas universel.")
+    parser.add_argument("--chain-table", metavar="SUBSTR",
+                        help="Avec --series-chain : selecteur du tableau qui declare "
+                             "la chaine (sous-chaine de son titre ou de sa ligne "
+                             "d'en-tete). Obligatoire si le README expose plusieurs "
+                             "tableaux de carnets : on ne devine pas la table.")
     parser.add_argument("--json", action="store_true", help="Sortie JSON machine-readable")
     parser.add_argument("--quiet", action="store_true", help="Sortie minimale (CI)")
     parser.add_argument("--include-untracked", action="store_true", default=False,
                         help="Inclut les .ipynb sur disque non-tracked par git (legacy)")
     args = parser.parse_args(argv)
+
+    # Mode « chaine d'une serie » : EXCLUSIF. Il repond a une autre question
+    # (« la direction du parcours est-elle celle declaree ? ») et son resultat
+    # ne doit pas se melanger aux findings d'atteignable d'une serie sans
+    # rapport. On sort donc avant le scan global du graphe.
+    if args.series_chain:
+        report, rc, errors = run_series_chain(args.series_chain, args.chain_table)
+        for err in errors:
+            print(f"error: {err}", file=sys.stderr)
+        if args.json:
+            json.dump({"chains": report["chains"], "findings": report["findings"],
+                       "errors": errors}, sys.stdout, ensure_ascii=False, indent=2)
+            sys.stdout.write("\n")
+        elif not args.quiet:
+            for ch in report["chains"]:
+                print(f"Chaine declaree : {ch['readme']} "
+                      f"(table « {ch['table']} », {len(ch['steps'])} marche(s))")
+            if report["findings"]:
+                print(f"FOUND {len(report['findings'])} finding(s) :")
+                for f in report["findings"]:
+                    extra = f" -> {f['expected']}" if f["expected"] else ""
+                    print(f"  [{f['kind']}] {f['notebook']}{extra}")
+            else:
+                print("OK : chaque marche declaree porte un lien 'suivant' vers la "
+                      "marche suivante, et la suivante un lien 'precedent' vers elle.")
+        return rc
 
     tracked_only = not args.include_untracked
 
@@ -683,13 +1173,28 @@ def main(argv=None):
     report["findings"].sort(key=lambda f: (f["kind"], f.get("notebook", "")))
 
     if args.baseline:
-        path = _write_baseline(report)
+        provenance = _git_provenance(BASELINE_PATH)
+        refusal_code, refusal_msg = _baseline_refusal(provenance, args.baseline_anyway)
+        if refusal_code:
+            print(refusal_msg, file=sys.stderr)
+            return refusal_code
+        path = _write_baseline(report, provenance=provenance)
         print(f"baseline ecrit: {path} ({len(report['findings'])} findings connus, "
               f"{len(report['not_judged'])} dossier(s) non juge(s), "
               f"{len(report['wrapped'])} serie(s) bouclee(s))")
+        print(f"  provenance: head={provenance['head'] or '?'} "
+              f"branche={provenance['branch'] or '?'} "
+              f"dirty={str(provenance['dirty']).lower()} "
+              f"non_main={str(provenance['non_main']).lower()}")
         return 0
 
     if args.check:
+        prov_code, prov_msg = _provenance_verdict(_baseline_provenance())
+        if prov_code:
+            print(prov_msg, file=sys.stderr)
+            return prov_code
+        if prov_msg and not args.quiet:
+            print(prov_msg)
         known = _load_baseline()
         current = _finding_keys(report)
         new = sorted(current - known)

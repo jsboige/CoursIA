@@ -7,6 +7,108 @@
       "cell_id": "50dcfe8c",
       "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/Pillars.lean",
       "note": "Annexe F -- compte des lignes de Pillars.lean et citations L<n> des declarations des temoins"
+    },
+    {
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-03b-Chambres-Murs-Chemins-Lean-Python.ipynb",
+      "cell_id": "61b519cc",
+      "source": "MyIA.AI.Notebooks/GameTheory/game_theory_lean/Swaps/Basic.lean",
+      "note": "§10-bis -- compte des lignes de Swaps/Basic.lean et numeros des declarations citees ; trouvee par l'invariant inverse de #22041"
+    },
+    {
+      "notebook": "MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-02-Jeux-Repetes-Lean-Python.ipynb",
+      "cell_id": "670b1be1",
+      "source": "MyIA.AI.Notebooks/GameTheory/game_theory_lean/RepeatedGames/Stage.lean",
+      "note": "Lecture directe du module Stage.lean (compte de lignes et declarations citees)"
+    },
+    {
+      "notebook": "MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-02-Jeux-Repetes-Lean-Python.ipynb",
+      "cell_id": "484c1177",
+      "source": "MyIA.AI.Notebooks/GameTheory/game_theory_lean/CooperativeGames/ConeKernel.lean",
+      "note": "Lecture directe du module ConeKernel.lean"
+    },
+    {
+      "notebook": "MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-02-Jeux-Repetes-Lean-Python.ipynb",
+      "cell_id": "3172db35",
+      "source": "MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice/SortedListCounting.lean",
+      "note": "Lecture directe du module SortedListCounting.lean"
+    },
+    {
+      "notebook": "MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-02-Jeux-Repetes-Lean-Python.ipynb",
+      "cell_id": "3172db35",
+      "source": "MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice/_SmokeTest.lean",
+      "note": "Lecture directe du module _SmokeTest.lean"
+    },
+    {
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-15d-Mobius-Coalitions-Lean-Python.ipynb",
+      "cell_id": "ea6530ce",
+      "source": "MyIA.AI.Notebooks/GameTheory/game_theory_lean/CooperativeGames/Shapley.lean",
+      "note": "Lecture directe du namespace Mobius dans Shapley.lean"
+    },
+    {
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-01-Regles-Vie-Lean.ipynb",
+      "cell_id": "life-lean-stats",
+      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life.lean",
+      "note": "Statistiques des modules Life -- Life.lean"
+    },
+    {
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-01-Regles-Vie-Lean.ipynb",
+      "cell_id": "life-lean-stats",
+      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/Spaceships.lean",
+      "note": "Statistiques des modules Life -- Spaceships.lean"
+    },
+    {
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-01-Regles-Vie-Lean.ipynb",
+      "cell_id": "life-lean-stats",
+      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/Oscillators.lean",
+      "note": "Statistiques des modules Life -- Oscillators.lean"
+    },
+    {
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16a-Conway-Man-and-Work.ipynb",
+      "cell_id": "9de9dd11",
+      "source": "MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/CGTTour.lean",
+      "note": "Lecture directe de CGTTour.lean (lakefile.lean du meme lac est ambigu par basename)"
+    },
+    {
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb",
+      "cell_id": "d194d5fe",
+      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/FreeWillTheorem.lean",
+      "note": "Declarations reelles de FreeWillTheorem.lean (source de verite, pas une paraphrase)"
+    },
+    {
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb",
+      "cell_id": "21fed7ef",
+      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/galois_lean/Galois/M23Lean4Web.lean",
+      "note": "Lecture directe du module M23Lean4Web.lean"
+    },
+    {
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-03e-Meta-Actions-Tarifees-Python.ipynb",
+      "cell_id": "c65",
+      "source": "MyIA.AI.Notebooks/GameTheory/game_theory_lean/Abstraction/Basic.lean",
+      "note": "Preuve formelle -- compte de lignes d'Abstraction/Basic.lean et declarations portees par le sujet du carnet ; trouvee par l'invariant inverse apres fusion de main ; chemin 03e depuis le re-lettrage f->e (#21252)"
+    },
+    {
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-12-Comptage-Matching-Lean-Python.ipynb",
+      "cell_id": "c7f8529e",
+      "source": "MyIA.AI.Notebooks/GameTheory/assignment_lean/Assignment/Counting.lean",
+      "note": "Tranche A -- extraits numerotes (lignes 23-32, 50-57, 74-80) du socle Counting.lean ; trouvee par l'invariant inverse apres fusion de main"
+    },
+    {
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-12-Comptage-Matching-Lean-Python_en.ipynb",
+      "cell_id": "c7f8529e",
+      "source": "MyIA.AI.Notebooks/GameTheory/assignment_lean/Assignment/Counting.lean",
+      "note": "Tranche A -- sibling EN du carnet ANALYSE-12, extraits numerotes du socle Counting.lean ; trouvee par l'invariant inverse apres fusion de main"
+    },
+    {
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/03-chaine-de-modularite-vers-fermat.ipynb",
+      "cell_id": "cell-17",
+      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/Hecke/FltRoute.lean",
+      "note": "Compte de lignes et table des declarations de FltRoute.lean ; trouvee par l'invariant inverse apres fusion de main"
+    },
+    {
+      "notebook": "MyIA.AI.Notebooks/Compression/Compression-04-ANS-Python.ipynb",
+      "cell_id": "0147a26c",
+      "source": "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/datasets/le_horla_1887.txt",
+      "note": "Section 1 -- taille et nombre de lignes du corpus, empreinte SHA-256 des 128 premiers Kio et entropie de la tranche de 16 Kio"
     }
   ]
 }

@@ -88,6 +88,7 @@ La capacité de voir une image appartient au **modèle**, pas à la machine ni �
 - **GPU 2** : le régisseur (`myia-ai-01:CoursIA-2`) tient la file des expériences (rendez-vous [#1454](https://github.com/jsboige/CoursIA/issues/1454)). Un GPU 2 vide sans raison écrite est une dette du cycle.
 - **Désignation du device.** Les variables vont sur la commande elle-même, pas sur une chaîne de commandes qui les perdrait : `CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=2 <commande>`. Ensuite, vérifier le placement réel avec `nvidia-smi --query-compute-apps`.
 - **Mémoire de la machine.** ai-01 sert la flotte : avant un run lourd, lire le taux d'engagement mémoire juste avant le lancement, pas une valeur lue plus tôt dans le cycle.
+- **Enveloppe VRAM mesurée par palier de modèle.** Le palier `4b` du Decision Index (`eljiwo/jiwo-4b`, révisions `v1` et `v2`) est servi **sur GPU** avec un pic de **8,02 Gio** alloués (bfloat16, contexte 8192), mesuré sur 900 items d'une tranche reconstruite : le seuil « 24 Go » est **réfuté pour ce palier**. Ce pic dépasse en revanche les 8,00 Gio d'une carte 8 Go — il faut une carte 16 Go. Mesure, limites et commande : [decision-models-4b-local-verification.md](../genai/decision-models-4b-local-verification.md).
 
 ## po-2025 — garde thermique
 
@@ -130,7 +131,7 @@ curl.exe -s -o NUL -w "%{http_code}`n" --max-time 6 http://<adresse>:<port>/v1/m
 
 - **QuantConnect MCP** (`quantconnect/mcp-server`, jetons sur `po-2024` et `po-2026`) : au plus 10 appels par minute pour **toute** la flotte ; annoncer un backtest sur le dashboard avant de le lancer. Détail : [quantconnect.md](../qc/quantconnect.md).
 - **GenAI image, audio, vidéo** (`po-2023`) : registre des services, ports et sous-domaines dans [genai-services.md](../genai/genai-services.md). Un notebook qui appelle ces services se valide contre eux, pas contre une sortie de substitution.
-- **Embedding** (`po-2026`, Qwen3-Embedding-4B AWQ, port `8004`) : consommable depuis le LAN d'ai-01. Son rapatriement aux côtés du vLLM est à l'étude.
+- **Embedding** (`po-2023`, conteneur `qwen3_4b_awq_embedding_server`, Qwen3-Embedding-4B AWQ, port hôte `8005` -> conteneur `8000`, vecteurs 2560 d) : consommable depuis le LAN d'ai-01 ; `/health` répond sans clé (mesuré le 2026-10-26). Le service vivait sur `po-2026` (port `8004`) avant sa panne du 2026-10-09 ; un `embedding-proxy-logger` occupe toujours le port 8004 sur `po-2023`.
 - **Lean et Mathlib** : installables sur toutes les machines (CLAUDE.md §F). Sur ai-01, un `lake build` vise une cible, jamais le lake entier.
 
 ## Pointeurs

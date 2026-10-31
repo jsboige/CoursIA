@@ -868,6 +868,191 @@ def test_hybrid_runs_on_linux_wrong_fallback_is_rejected(tmp_path):
     assert codes(result) == {"DYNAMIC_RUNS_ON"}
 
 
+# #22461 (dispatch ai-01 2026-10-27) : seconde garde enumeree de la forme
+# hybride -- la garde meme-depot conjoine a la variable de debordement
+# vars.CI_OVERFLOW_LOCAL == 'true'. Le nom de la variable et sa valeur sont
+# ENUMERES : le pool local ne recoit le job que si un operateur a bascule
+# la variable de depot (phase A) ; hors bascule (variable absente, fausse,
+# renommee, ou `||` de contournement) la forme n'est pas auditee.
+HYBRID_RUNS_ON_OVERFLOW = (
+    "${{ (github.event.pull_request.head.repo.full_name == github.repository"
+    " && vars.CI_OVERFLOW_LOCAL == 'true')"
+    " && fromJSON('[\"self-hosted\",\"coursia-ephemeral\",\"coursia-linux\"]') "
+    "|| 'ubuntu-latest' }}"
+)
+
+
+def test_hybrid_runs_on_overflow_form_is_accepted(tmp_path):
+    """#22461 : la garde overflow (meme-depot && vars.CI_OVERFLOW_LOCAL ==
+    'true') est la seconde forme hybride auditee -- labels LINUX uniquement,
+    repli ubuntu-latest. Porteur reel : les jobs deports par #22820/#22821/
+    #22822 (ici always-on-guards.yml, allowliste)."""
+    write_workflow(tmp_path, "always-on-guards", """
+        name: always-on-guards
+        on:
+          pull_request:
+            branches: [main]
+          workflow_dispatch:
+        jobs:
+          always-on-guards:
+            name: "Always-on guards"
+            runs-on: RUNSON
+            steps:
+              - run: echo overflow
+        """)
+    (tmp_path / "always-on-guards.yml").write_text(
+        (tmp_path / "always-on-guards.yml").read_text(encoding="utf-8").replace(
+            "RUNSON", HYBRID_RUNS_ON_OVERFLOW
+        ),
+        encoding="utf-8",
+    )
+    result = policy.scan_workflows(tmp_path)
+    assert result.broken == []
+    assert result.violations == []
+    assert result.self_hosted_jobs == 1
+
+
+def test_hybrid_runs_on_overflow_renamed_variable_is_rejected(tmp_path):
+    """#22461 : le NOM de la variable est enumere. CI_OVERFLOW_LOCAL_2 ou
+    CI_OVERFLOW seul -> la garde n'est pas celle auditee, DYNAMIC_RUNS_ON
+    (fail-closed : une variable renommee serait une bascule invisible pour
+    l'audit)."""
+    for name, variable in (
+        ("renamed-suffix", "CI_OVERFLOW_LOCAL_2"),
+        ("renamed-prefix", "CI_OVERFLOW"),
+    ):
+        write_workflow(tmp_path, name, f"""
+            name: {name}
+            on:
+              pull_request:
+                branches: [main]
+              workflow_dispatch:
+            jobs:
+              guard:
+                runs-on: ${{{{ (github.event.pull_request.head.repo.full_name == github.repository && vars.{variable} == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}}}
+                steps:
+                  - run: echo renamed
+            """)
+    result = policy.scan_workflows(tmp_path)
+    assert result.broken == []
+    assert codes(result) == {"DYNAMIC_RUNS_ON"}
+    assert len(result.violations) == 2
+
+
+def test_hybrid_runs_on_overflow_without_same_repo_guard_is_rejected(tmp_path):
+    """#22461 : la clause meme-depot est INTEGREE a la garde enumeree. La
+    variable seule (vars.CI_OVERFLOW_LOCAL == 'true') sans le test du repo
+    source -> refusee : un fork avec la variable basculee atteindrait le
+    pool local sans garde anti-fork."""
+    write_workflow(tmp_path, "var-only", """
+        name: var-only
+        on:
+          pull_request:
+            branches: [main]
+          workflow_dispatch:
+        jobs:
+          guard:
+            runs-on: ${{ (vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
+            steps:
+              - run: echo unguarded
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert result.broken == []
+    assert codes(result) == {"DYNAMIC_RUNS_ON"}
+    assert result.self_hosted_jobs == 0
+
+
+def test_hybrid_runs_on_overflow_bypassed_by_or_is_rejected(tmp_path):
+    """#22461 : aucun `||` ne peut court-circuiter la garde. Deux variantes
+    refusees : (a) `|| true` en fin de garde -- toujours vrai, la garde
+    meme-depot ne filtre plus rien ; (b) `||` deplace -- la disjunction
+    meme-depot || variable rend la variable suffisante SANS le test du repo
+    source. Les deux restent DYNAMIC_RUNS_ON."""
+    write_workflow(tmp_path, "or-true", """
+        name: or-true
+        on:
+          pull_request:
+            branches: [main]
+          workflow_dispatch:
+        jobs:
+          guard:
+            runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true' || true) && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
+            steps:
+              - run: echo bypass
+        """)
+    write_workflow(tmp_path, "or-displaced", """
+        name: or-displaced
+        on:
+          pull_request:
+            branches: [main]
+          workflow_dispatch:
+        jobs:
+          guard:
+            runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository || vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
+            steps:
+              - run: echo displaced
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert result.broken == []
+    assert codes(result) == {"DYNAMIC_RUNS_ON"}
+    assert len(result.violations) == 2
+
+
+def test_hybrid_runs_on_overflow_admits_only_linux_labels(tmp_path):
+    """#22461 : la garde overflow n'admet QUE LINUX_RUNNER_LABELS -- le trio
+    waiter sous cette garde est refuse (le debordement vise le pool Linux
+    containerise, pas les 16 slots d'attente du PR gate)."""
+    write_workflow(tmp_path, "overflow-waiter", """
+        name: overflow-waiter
+        on:
+          pull_request:
+            branches: [main]
+          workflow_dispatch:
+        jobs:
+          guard:
+            runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-waiter"]') || 'ubuntu-latest' }}
+            steps:
+              - run: echo wrong-pool
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert result.broken == []
+    assert codes(result) == {"DYNAMIC_RUNS_ON"}
+    assert result.self_hosted_jobs == 0
+
+
+def test_overflow_guard_does_not_narrow_existing_hybrid_forms(tmp_path):
+    """#22461 non-regression : la garde d'origine (#13363) garde SES deux
+    pools -- la forme waiter (pr-gate.yml) et la forme linux sous garde
+    simple restent acceptees a l'identique. Ajouter la garde overflow ne
+    retrecit rien de ce qui etait admis avant."""
+    for carrier, runs_on in (
+        ("pr-gate", HYBRID_RUNS_ON),
+        ("always-on-metadata-guards", HYBRID_RUNS_ON_LINUX),
+    ):
+        write_workflow(tmp_path, carrier, f"""
+            name: {carrier}
+            on:
+              pull_request:
+                branches: [main]
+              workflow_dispatch:
+            jobs:
+              guard:
+                runs-on: RUNSON
+                steps:
+                  - run: echo legacy
+            """)
+        (tmp_path / f"{carrier}.yml").write_text(
+            (tmp_path / f"{carrier}.yml").read_text(encoding="utf-8").replace(
+                "RUNSON", runs_on
+            ),
+            encoding="utf-8",
+        )
+    result = policy.scan_workflows(tmp_path)
+    assert result.broken == []
+    assert result.violations == []
+    assert result.self_hosted_jobs == 2
+
+
 def test_pull_request_job_without_guard_is_rejected(tmp_path):
     write_workflow(tmp_path, "unguarded", """
         name: unguarded
@@ -1114,6 +1299,314 @@ def test_missing_runs_on_breaks_instrument_instead_of_silent_skip(tmp_path):
     assert result.broken == ["broken-job.yml:test: missing runs-on"]
 
 
+# ---------------------------------------------------------------------------
+# Cliquet des jobs heberges sur pull_request (#23053)
+# ---------------------------------------------------------------------------
+# Les tests injectent leurs propres listes (exceptions courante + baseline) :
+# ils ne dependent ni du contenu reel du depot ni de l'ordre de conversion des
+# familles de #23053.
+def test_hosted_pr_job_without_named_exception_is_a_violation(tmp_path):
+    """Un job `ubuntu-latest` nu dans un workflow pull_request, absent de la
+    liste d'exceptions nommees, fait rougir le garde (#23053)."""
+    write_workflow(tmp_path, "pr-guard", """
+        name: pr-guard
+        on: [pull_request]
+        jobs:
+          check:
+            runs-on: ubuntu-latest
+            steps:
+              - run: echo unexcepted
+        """)
+    result = policy.scan_workflows(
+        tmp_path,
+        hosted_pr_exceptions={},
+        hosted_pr_exceptions_baseline=frozenset(),
+    )
+    assert result.broken == []
+    assert codes(result) == {"HOSTED_PR_JOB_UNEXCEPTED"}
+    unexcepted = [
+        item for item in result.violations
+        if item.code == "HOSTED_PR_JOB_UNEXCEPTED"
+    ]
+    assert [(item.workflow, item.job) for item in unexcepted] == [
+        ("pr-guard.yml", "check")
+    ]
+
+
+def test_hosted_pr_job_with_named_exception_is_accepted(tmp_path):
+    """Le meme job couvert par une exception nommee ne produit aucune
+    violation : la porte de sortie explicite de la regle 3 de #23053."""
+    write_workflow(tmp_path, "pr-guard", """
+        name: pr-guard
+        on: [pull_request]
+        jobs:
+          check:
+            runs-on: ubuntu-latest
+            steps:
+              - run: echo excepted
+        """)
+    exceptions = {"pr-guard.yml": "declencheur fork-reachable : heberge obligatoire"}
+    result = policy.scan_workflows(
+        tmp_path,
+        hosted_pr_exceptions=exceptions,
+        hosted_pr_exceptions_baseline=frozenset(exceptions),
+    )
+    assert result.broken == []
+    assert result.violations == []
+
+
+def test_hosted_pr_job_in_list_form_is_detected_as_naked(tmp_path):
+    """`runs-on: [ubuntu-latest]` est la meme forme nue que le scalaire : les
+    deux doivent etre vues (#23053)."""
+    write_workflow(tmp_path, "pr-guard", """
+        name: pr-guard
+        on: [pull_request]
+        jobs:
+          check:
+            runs-on: [ubuntu-latest]
+            steps:
+              - run: echo unexcepted
+        """)
+    result = policy.scan_workflows(
+        tmp_path,
+        hosted_pr_exceptions={},
+        hosted_pr_exceptions_baseline=frozenset(),
+    )
+    assert "HOSTED_PR_JOB_UNEXCEPTED" in codes(result)
+
+
+def test_hosted_pr_job_exception_outside_baseline_is_a_violation(tmp_path):
+    """La liste ne fait que retrecir : une exception absente de la baseline est
+    elle-meme une violation (#23053, invariant 2)."""
+    write_workflow(tmp_path, "pr-guard", """
+        name: pr-guard
+        on: [pull_request]
+        jobs:
+          check:
+            runs-on: ubuntu-latest
+            steps:
+              - run: echo excepted
+        """)
+    result = policy.scan_workflows(
+        tmp_path,
+        hosted_pr_exceptions={"pr-guard.yml": "motif quelconque"},
+        hosted_pr_exceptions_baseline=frozenset(),
+    )
+    assert codes(result) == {"HOSTED_PR_JOB_EXCEPTION_ADDED"}
+    assert result.violations[0].workflow == "pr-guard.yml"
+
+
+def test_hosted_pr_job_exception_without_motive_is_a_violation(tmp_path):
+    """Une exception nommee sans motif ne nomme rien : elle rougit (#23053)."""
+    write_workflow(tmp_path, "pr-guard", """
+        name: pr-guard
+        on: [pull_request]
+        jobs:
+          check:
+            runs-on: ubuntu-latest
+            steps:
+              - run: echo excepted
+        """)
+    result = policy.scan_workflows(
+        tmp_path,
+        hosted_pr_exceptions={"pr-guard.yml": "   "},
+        hosted_pr_exceptions_baseline=frozenset({"pr-guard.yml"}),
+    )
+    assert "HOSTED_PR_JOB_EXCEPTION_NO_MOTIVE" in codes(result)
+
+
+def test_non_pull_request_workflow_on_naked_hosted_runner_is_ignored(tmp_path):
+    """Le cliquet ne vise que les workflows declenches par `pull_request` : un
+    balayage cron heberge n'a aucune raison de deborder sur le parc local."""
+    write_workflow(tmp_path, "cron-guard", """
+        name: cron-guard
+        on:
+          push:
+          schedule:
+            - cron: "17 4 * * *"
+          workflow_dispatch:
+        jobs:
+          check:
+            runs-on: ubuntu-latest
+            steps:
+              - run: echo scheduled-only
+        """)
+    result = policy.scan_workflows(
+        tmp_path,
+        hosted_pr_exceptions={},
+        hosted_pr_exceptions_baseline=frozenset(),
+    )
+    assert result.broken == []
+    assert result.violations == []
+
+
+def test_hybrid_overflow_job_is_not_a_naked_hosted_runner(tmp_path):
+    """La forme hybride n'est pas un `ubuntu-latest` nu : le cliquet ne doit pas
+    la confondre avec le defaut qu'il traque."""
+    write_workflow(tmp_path, "pr-guard", """
+        name: pr-guard
+        on: [pull_request]
+        jobs:
+          check:
+            runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
+            steps:
+              - run: echo hybrid
+        """)
+    result = policy.scan_workflows(
+        tmp_path,
+        hosted_pr_exceptions={},
+        hosted_pr_exceptions_baseline=frozenset(),
+    )
+    assert "HOSTED_PR_JOB_UNEXCEPTED" not in codes(result)
+
+
+def test_real_repository_hosted_pr_jobs_are_all_excepted():
+    """Controle positif : sur l'arbre courant, aucun job `ubuntu-latest` nu de
+    workflow pull_request n'echappe a la liste d'exceptions, et cette liste
+    reste un sous-ensemble de la baseline figee (#23053)."""
+    result = policy.scan_workflows()
+    ratchet_codes = {code for code in codes(result) if code.startswith("HOSTED_PR_JOB_")}
+    assert ratchet_codes == set(), ratchet_codes
+    exceptions = policy.HOSTED_PR_JOB_EXCEPTIONS
+    baseline = policy.HOSTED_PR_JOB_EXCEPTIONS_BASELINE
+    assert set(exceptions) <= baseline, sorted(set(exceptions) - baseline)
+    assert all(str(motif).strip() for motif in exceptions.values())
+    assert result.hosted_pr_exceptions == sorted(exceptions)
+    assert result.hosted_pr_exceptions_baseline == sorted(baseline)
+
+
+# -- #22954 : cliquet `timeout-minutes` sur les jobs auto-heberges -----------
+# Un job qui peut atteindre un runner auto-heberge sans borne au niveau du job
+# peut tenir son slot six heures (defaut d'Actions) s'il fige ; le slot manque
+# alors aux PR gates. Mesure du 2026-10-29 sur `origin/main` 2f1291f01 : 138
+# jobs auto-heberges, 75 sans borne -- 12 hybrides et 63 statiques. La PR qui a
+# introduit le cliquet borne les 12 ; les 63 restants vivent dans la baseline
+# `scripts/ci/self_hosted_timeout_baseline.txt`, qui ne doit JAMAIS grossir.
+
+
+def _hybrid_workflow(tmp_path: Path, timeout_minutes: int | None = None) -> Path:
+    """Un workflow synthetique a un job hybride, avec ou sans borne #22954."""
+    bound = "" if timeout_minutes is None else f"\n            timeout-minutes: {timeout_minutes}"
+    body = f"""
+        name: always-on-guards
+        on:
+          pull_request:
+            branches: [main]
+          workflow_dispatch:
+        jobs:
+          overflow:
+            name: "Overflow"{bound}
+            runs-on: {HYBRID_RUNS_ON_OVERFLOW}
+            steps:
+              - run: echo overflow
+        """
+    return write_workflow(tmp_path, "always-on-guards", body)
+
+
+def test_22954_hybrid_job_without_timeout_is_reported(tmp_path):
+    """#22954 : la forme hybride sans borne est refusee, sans aucune tolerance.
+
+    Controle POSITIF du cliquet : la meme forme que
+    `test_hybrid_runs_on_overflow_form_is_accepted`, a qui l'on retire la seule
+    borne `timeout-minutes`.
+    """
+    _hybrid_workflow(tmp_path)
+    result = policy.scan_workflows(tmp_path, check_timeouts=True, baseline=set())
+    assert result.broken == []
+    assert codes(result) == {"MISSING_TIMEOUT"}
+    assert result.self_hosted_jobs == 1
+    assert result.timeout_missing == 1
+    assert result.timeout_baselined == 0
+    assert policy.main(["--check", "--check-timeouts",
+                        "--workflows-dir", str(tmp_path),
+                        "--baseline", str(tmp_path / "absent.txt")]) == policy.EXIT_VIOLATION
+
+
+def test_22954_hybrid_job_with_timeout_is_accepted(tmp_path):
+    """#22954 : controle NEGATIF -- la borne au niveau du job suffit."""
+    _hybrid_workflow(tmp_path, timeout_minutes=10)
+    result = policy.scan_workflows(tmp_path, check_timeouts=True, baseline=set())
+    assert result.broken == []
+    assert result.violations == []
+    assert result.timeouts_checked is True
+    assert result.timeout_missing == 0
+
+
+def test_22954_baselined_job_is_tolerated_but_named_in_the_report(tmp_path):
+    """#22954 : la dette nommee passe, et le rapport dit combien elle pese.
+
+    Une ligne de baseline est une date, pas un blanc-seing : le compte
+    `timeout_baselined` doit rester visible pour que la dette ne disparaisse
+    pas du rapport.
+    """
+    _hybrid_workflow(tmp_path)
+    baseline = {"always-on-guards.yml:overflow"}
+    result = policy.scan_workflows(tmp_path, check_timeouts=True, baseline=baseline)
+    assert result.violations == []
+    assert result.timeout_missing == 1
+    assert result.timeout_baselined == 1
+
+
+def test_22954_ratchet_is_opt_in_so_synthetic_workflows_stay_single_purpose(tmp_path):
+    """#22954 : sans le drapeau, le cliquet ne parle pas.
+
+    Les tests de ce fichier construisent des workflows synthetiques pour
+    eprouver UN invariant a la fois (garde meme-depot, jeu de labels, ...). Le
+    cliquet est donc opt-in cote API, et engage cote garde bloquant : c'est
+    `scripts/ci/fast_lane_registry.py` qui passe le drapeau, et le test suivant
+    l'y verifie.
+    """
+    _hybrid_workflow(tmp_path)
+    result = policy.scan_workflows(tmp_path)
+    assert result.violations == []
+    assert result.timeouts_checked is False
+
+
+def test_22954_repository_passes_the_ratchet_with_zero_new_jobs():
+    """#22954 : `main` passe le cliquet -- 0 nouveau, la dette en baseline."""
+    result = policy.scan_workflows(check_timeouts=True)
+    assert result.broken == []
+    assert [v for v in result.violations if v.code == "MISSING_TIMEOUT"] == []
+    assert result.timeouts_checked is True
+    assert policy.main(["--check", "--check-timeouts"]) == policy.EXIT_OK
+
+
+def test_22954_fast_lane_entry_actually_enforces_the_ratchet():
+    """#22954 : le garde BLOQUANT passe le drapeau, et surveille sa baseline.
+
+    Un cliquet opt-in ne vaut que si l'appel bloquant passe le drapeau. Ce test
+    est le garde du garde : retirer `--check-timeouts` de l'entree fast-lane, ou
+    oublier la baseline dans ses `paths`, rougit ici au lieu de desactiver le
+    cliquet en silence.
+    """
+    import fast_lane_registry as registry
+
+    # Le lot d'accueil d'un garde peut changer au fil des tranches : on cherche
+    # dans TOUTE liste de `Guard` du module, pas dans un lot nomme.
+    entries = [
+        guard
+        for value in vars(registry).values()
+        if isinstance(value, list)
+        for guard in value
+        if isinstance(guard, registry.Guard)
+        and guard.name == "self-hosted-runner-policy"
+    ]
+    assert len(entries) == 1, (
+        f"attendu exactement une entree fast-lane 'self-hosted-runner-policy', "
+        f"trouve {len(entries)}"
+    )
+    entry = entries[0]
+    assert "--check-timeouts" in entry.argv, (
+        "l'entree fast-lane doit passer --check-timeouts : sans le drapeau, "
+        "MISSING_TIMEOUT n'est jamais evalue (#22954)"
+    )
+    assert entry.blocking is True
+    assert "scripts/ci/self_hosted_timeout_baseline.txt" in entry.paths, (
+        "la baseline doit etre dans les paths du garde : sinon une PR qui la "
+        "reecrit ne relance pas le cliquet (#22954)"
+    )
+
+
 # #13960 : garde anti-regression sur les doublons de def dans ce fichier.
 # Le defaut fondateur (mesure 2026-09-01) : 4 paires byte-identiques
 # (`test_missing_trigger_breaks_instrument`, `test_empty_runs_on_list_breaks_instrument`,
@@ -1139,3 +1632,58 @@ def test_13960_no_duplicate_test_function_definitions() -> None:
         f"doublons de def au top-level : {duplicates} "
         f"(cf #13960 fondateur : la 2e def eclipse la 1re silencieusement)"
     )
+
+
+# --- LISTE DES WORKFLOWS PORTEURS D'UN JOB LOCAL (#22937 phase A) ----------
+#
+# La lecture locale du controleur de debordement ne doit viser que les runs
+# qui PEUVENT porter un job du parc local. C'est cet organe qui possede la
+# connaissance « quel workflow atterrit sur quel runner » : la liste est
+# derivee ici, jamais recopiee dans le controleur.
+
+def _wf(tmp_path: Path, name: str, runs_on: str) -> None:
+    write_workflow(tmp_path, name, f"""
+on: push
+jobs:
+  job:
+    runs-on: {runs_on}
+""")
+
+
+def test_le_parc_local_statique_est_dans_la_liste(tmp_path):
+    _wf(tmp_path, "local", "[self-hosted, coursia-ephemeral, coursia-linux]")
+    paths, reason = policy.local_capable_workflows(tmp_path)
+    assert reason == ""
+    assert paths == {".github/workflows/local.yml"}
+
+
+def test_un_workflow_heberge_est_hors_de_la_liste(tmp_path):
+    _wf(tmp_path, "heberge", "ubuntu-latest")
+    paths, reason = policy.local_capable_workflows(tmp_path)
+    assert reason == ""
+    assert paths == set()
+
+
+def test_une_expression_non_auditee_est_traitee_comme_capable(tmp_path):
+    """Fail-safe : une expression qu'on ne sait pas lire peut atterrir
+    n'importe ou. L'ignorer cacherait une affamescence locale."""
+    _wf(tmp_path, "dynamique", "${{ matrix.os }}")
+    paths, reason = policy.local_capable_workflows(tmp_path)
+    assert reason == ""
+    assert paths == {".github/workflows/dynamique.yml"}
+
+
+def test_un_yaml_invalide_fait_echouer_la_derivation(tmp_path):
+    """Fail-CLOSED : la liste n'est pas etablie -> l'ensemble est VIDE et un
+    motif est rendu. Un ensemble vide ne se lit jamais « aucun workflow
+    local »."""
+    write_workflow(tmp_path, "casse", "on: push\njobs:\n  job:\n   runs-on: [\n")
+    paths, reason = policy.local_capable_workflows(tmp_path)
+    assert paths == set()
+    assert reason != ""
+
+
+def test_un_repertoire_absent_fait_echouer_la_derivation(tmp_path):
+    paths, reason = policy.local_capable_workflows(tmp_path / "absent")
+    assert paths == set()
+    assert "absent" in reason

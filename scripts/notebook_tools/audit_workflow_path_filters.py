@@ -45,6 +45,13 @@ REQUIRED_UNFILTERED_WORKFLOWS: set[str] = {
     # lane-claim-guard -- tous dormant) en un seul workflow non filtre qui
     # porte leurs organes metadata + le moteur fast-lane.
     "always-on-guards.yml",
+    # #22331 : le jumeau de body du split precedent. Meme contrat, meme
+    # raison de ne PAS porter de `paths:` -- `derive_always_on_jobs` derive
+    # la liste canari des workflows `pull_request` SANS filtre, et un filtre
+    # retirerait ce job du canari (une PR qui n'edite que son corps ne
+    # declencherait plus le workflow qui juge le corps). Le job est exige par
+    # le gate sous son propre nom, comme celui du contenu.
+    "always-on-guards-body.yml",
     # #21922 : le garde perimeter a retrouve son declencheur `pull_request`
     # (restaure dans perimeter-review-guard.yml -- le levier du garde est le
     # nom de check-run que CE fichier publie, cf. son en-tete).
@@ -82,11 +89,13 @@ EXEMPT_DOCUMENTED: dict[str, str] = {
     # discipline d'auto-couverture paths, ecrite dans le workflow : un seul
     # evenement manquant = la garde ne protege rien.
     "notebook-plan-loss-gate.yml": "#14391/#14429",
-    # garde de surface de commentaires (#16780) : le declencheur principal
-    # est issue_comment, qui n'a PAS de semantique de paths -- un commentaire
-    # peut deposer un chemin local sur une PR qui ne touche aucun fichier
-    # particulier. Un filtre paths rendrait la garde aveugle sur exactement
-    # les PRs ou le defect arrive ; l'exemption est la decision ecrite.
+    # garde de surface de commentaires (#16780) : la garde porte sur la SURFACE
+    # DES COMMENTAIRES, pas sur le diff -- un commentaire peut deposer un chemin
+    # local sur une PR qui ne touche aucun fichier particulier. Un filtre paths
+    # rendrait la garde aveugle sur exactement les PRs ou le defect arrive ;
+    # l'exemption est la decision ecrite. (Le declencheur `issue_comment` de ce
+    # workflow a ete retire en #22937 vague 2 -- son verdict s'attachait a
+    # `main` ; le declencheur `pull_request` couvre la meme surface.)
     "local-path-waiver-guard.yml": "#16780",
 }
 
@@ -97,12 +106,12 @@ EXEMPT_DOCUMENTED: dict[str, str] = {
 # donc besoin du clone complet par construction, et n'est pas une regression.
 # Liste OPT-IN : ajouter un nom ici uniquement apres justification ecrite
 # (cf. issue #12385, hygiène de checkout de la série clone partiel #11843).
-CHECKOUT_HYGIENE_FULL_HISTORY_WORKFLOWS: set[str] = {
-    # gitleaks scanne les BLOBS de l'historique git complet. `filter: blob:none`
-    # (clone partiel) ne checkout pas les blobs, donc gitleaks ne verrait rien.
-    # Un clone complet est requis par construction.
-    "secret-scan.yml",
-}
+# Retrait de `secret-scan.yml` (2026-10-26) : sa justification (« gitleaks
+# scanne les BLOBS de l'historique ») date de l'ere gitleaks-action ; les deux
+# jambes invoquent desormais `detect --no-git` (arbre de travail seul, mesure
+# au source) et son checkout est passe a `fetch-depth: 1` -- le workflow n'a
+# plus besoin du clone complet, l'exclusion ne protegeait plus rien.
+CHECKOUT_HYGIENE_FULL_HISTORY_WORKFLOWS: set[str] = set()
 
 
 def _parse_on_key(data: dict[str, Any]) -> dict[str, Any] | None:
@@ -523,9 +532,15 @@ def _synthetic_checkout_workflows_dir(tmp: Path) -> Path:
     Cinq cas couvrent les criteres cumulatifs :
       1. bad-clone.yml    : pull_request + fetch-depth:0 sans blob:none -> NON CONFORME
       2. good-clone.yml   : pull_request + fetch-depth:0 + blob:none      -> conforme
-      3. secret-scan.yml  : pull_request + fetch-depth:0, dans l'exclusion -> exclu
+      3. depth-1.yml      : pull_request + fetch-depth:1 -> hors scope (pas de depth 0 ;
+                           le motif reel de secret-scan.yml depuis qu'il scanne en --no-git)
       4. push-only.yml    : push + fetch-depth:0, pas de trigger PR        -> hors scope
       5. bad-target.yml   : pull_request_target + fetch-depth:0 sans blob:none -> NON CONFORME
+
+    L'exclusion (liste OPT-IN, vide depuis le retrait de secret-scan.yml le
+    2026-10-26) n'a plus de cas ici : son mecanisme reste couvert par
+    test_checkout_hygiene_excluded (monkeypatch), qui n'herisse pas de la
+    liste reelle.
     """
     wf = tmp / "workflows"
     wf.mkdir(parents=True, exist_ok=True)
@@ -561,8 +576,8 @@ jobs:
 """,
         encoding="utf-8",
     )
-    (wf / "secret-scan.yml").write_text(
-        """name: Secret Scan
+    (wf / "depth-1.yml").write_text(
+        """name: Depth One
 on:
   pull_request:
     branches: [main]
@@ -572,7 +587,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 1
 """,
         encoding="utf-8",
     )

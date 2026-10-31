@@ -97,11 +97,22 @@ DECK_FILENAME = "slides.md"
 #
 # `archive/` (docs historical archives, ~319 files) stays skipped: those are
 # frozen historical reports out of scope for link validation.
+#
+# `_site/` is the Quarto BUILD ARTIFACT (generated from our own sources, and
+# gitignored). It is skipped for the same reason `node_modules` is: it is not
+# source, so a broken link inside it is not a defect of the repository -- it is
+# a re-render of a link that the SOURCE already declares. Without this entry,
+# the organ's result depends on whether the machine happens to have run a
+# Quarto build: on a developer machine that has, it reports "dead links" for
+# pages that are not in the repository at all. In CI the situation does not
+# arise (the artifact is gitignored, hence never checked out), which is exactly
+# why the divergence went unnoticed: the organ's verdict was machine-dependent.
 SKIP_DIRS = {
     ".lake", "node_modules", ".git", "venv", "__pycache__",
     "archive", "_output", ".ipynb_checkpoints", "worktrees",
     ".mypy_cache", ".pytest_cache", ".ruff_cache",
     "custom_nodes",  # Third-party ComfyUI plugins, not ours to fix
+    "_site",  # Quarto build artifact -- gitignored, not source
 }
 
 # Baseline file location
@@ -534,22 +545,57 @@ def load_baseline(path: Path = BASELINE_PATH) -> dict | None:
         return None
 
 
+def _is_generated_source(source: Path) -> bool:
+    """Detect a generated page by its header, not by a hardcoded path.
+
+    A content branch must leave generated artifacts unchanged: the catalogue
+    cron repairs their links after the merge (#22651). Only the explicit
+    production header grants this excuse; prose mentioning generation later in
+    a hand-written page does not.
+    """
+    try:
+        with source.open(encoding="utf-8") as handle:
+            prefix = handle.read(4096)
+    except (OSError, UnicodeDecodeError):
+        return False
+    header = re.match(r"\s*<!--(.*?)-->", prefix, re.DOTALL)
+    if header is None:
+        return False
+    return re.search(r"\bFICHIER GENERE\b", header.group(1), re.IGNORECASE) is not None
+
+
+def generated_source_excuses(result: ScanResult) -> list[LinkRef]:
+    """Broken links carried by explicitly generated source pages."""
+    return [
+        ref for ref in result.broken
+        if _is_generated_source(REPO_ROOT / ref.source)
+    ]
+
+
 def check_regression(result: ScanResult, baseline: dict,
                      preexisting: set[tuple[str, str]] | None = None) -> list[LinkRef]:
     """Find broken links that are NOT already excused (new regressions).
 
-    Two independent excuses apply. The frozen ``baseline`` covers the
-    non-PR paths (dispatch, plain full scan) where no comparison revision is
-    available. ``preexisting`` — computed against the branch's base revision —
-    covers the PR path: a link already broken before the branch is not this
-    branch's regression, and would otherwise redden every open PR at once
-    (#15766).
+    The frozen baseline and comparison revision excuse pre-existing defects.
+    A generated source carries a third, visible excuse: repairing it on the
+    branch is forbidden by catalogue hygiene, and its cron regenerates it after
+    the merge (#22651).
     """
     baseline_targets = {
         (b["source"], b["target"]) for b in baseline.get("broken_links", [])
     }
     excused = baseline_targets | (preexisting or set())
+    excused.update((ref.source, ref.target)
+                   for ref in generated_source_excuses(result))
     return [ref for ref in result.broken if (ref.source, ref.target) not in excused]
+
+
+def format_generated_excuses(refs: list[LinkRef]) -> str:
+    """Report generated-source excuses separately, never silently."""
+    lines = [f"Excused: {len(refs)} generated source"]
+    lines.extend(f"  {ref.source}:{ref.line} -> {ref.target}"
+                 for ref in sorted(refs, key=lambda r: (r.source, r.line)))
+    return "\n".join(lines)
 
 
 def format_report(result: ScanResult, show_orphans: bool = False) -> str:
@@ -643,6 +689,9 @@ def main():
                 sys.exit(0)
 
             new_broken = check_regression(result, baseline or {}, preexisting)
+            generated = generated_source_excuses(result)
+            if generated:
+                print(format_generated_excuses(generated))
             if new_broken:
                 if not args.quiet:
                     print(f"REGRESSION: {len(new_broken)} new broken link(s):")

@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-10-30
+
 # QuantConnect (QC) - Configuration et règles
 
 Document de reference pour la coordination QC (MCP, orgs, patterns, anti-patterns). Pour les details pédagogiques et le mapping livre Jared, voir la **navigation des docs QC** ci-dessous.
@@ -218,7 +220,7 @@ QuantConnect expose 8 assistants intégrés (Conductor, Ideas, Research, Researc
 https://www.quantconnect.com/organization/<org_id>/assistants
 ```
 
-**Le Research Assistant résout le problème "Quantbook execution Windows local impossible"** : il execute les cells du notebook sur QC Cloud, itère automatiquement (edit, execute, fix, re-execute) jusqu'au succès, et les tokens consommes sont ceux de QC (pas Anthropic).
+**Le Research Assistant résout le problème "Quantbook execution Windows local impossible"** : il execute les cells du notebook sur QC Cloud, itère automatiquement (edit, execute, fix, re-execute) jusqu'au succès, et les tokens consommes sont ceux de QC (pas Anthropic). Il ne suffit pas seul à committer un carnet : le 2026-05-16, ses sorties n'ont pas été persistées dans le `.ipynb` (#1177). Routes d'exécution et rapatriement des sorties, assistant compris : [quantbook-execution-routes.md](quantbook-execution-routes.md).
 
 ### Workflow Research Assistant (via Playwright)
 
@@ -233,7 +235,7 @@ https://www.quantconnect.com/organization/<org_id>/assistants
 - **Validation cluster obligatoire post-deployment** : même si Research Assistant claim "Sharpe 3.50", refaire en local par walk-forward 5-fold + multi-seed >=4 + transaction costs avant tout claim BEATS. Cf [.claude/rules/pr-review-discipline.md](../../.claude/rules/pr-review-discipline.md) section C.
 - **Coût QC tokens** : ne pas lancer 50 deployments en parallèle sans vérifier le burn rate
 - **Éviter chevauchement agents** sur même deployment (tokens dupliqués) : coordination via dashboard avant lancement
-- **Notebook output download** : Playwright snapshot ou API download artifact (workflow exact a documenter par usage)
+- **Récupérer les sorties d'un carnet** : l'API de fichiers rend `outputs: []` (#1177). Routes mesurées (exécution directe dans l'IDE, exécuteur côté noyau, LEAN Research local) et outil de fusion `merge_executed_outputs.py` : [quantbook-execution-routes.md](quantbook-execution-routes.md)
 
 ### Cas d'usage privilégiés
 
