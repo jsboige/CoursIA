@@ -3262,4 +3262,95 @@ theorem verifyAnyMove_r3Any_not_motif (s t : KnotDiagram)
         K₂.e2 = K₂.e3 ∧ K₁.e2 = K₁.e3 ∧ K₁.e1 = K₂.e1) :=
   verifyR3_not_motif s t (by simpa only [verifyAnyMove] using h) hk hb
 
+/-! ## 27. Chaine conditionnee -- la route sans motif terminal est fermee
+
+Huitieme etape du certificat negatif (suite des sections 21-26). Les sections
+21 a 26 transportent l'absence de motif terminal pas a pas ; le plancher
+conditionne assemble ces briques en theoreme de chaine, miroir exact du
+plancher four-distinct `movesConnects_length_le_of_allFourDistinct`
+(`ReidemeisterMoves.lean`, #20017) : si chaque maillon d'un certificat
+`movesConnectsAny` a une source sans motif terminal, la longueur de depart
+minore celle d'arrivee.
+
+**Portee exacte, sans surestimation.** L'hypothese par maillon interdit de
+fait tout pas R1/R2 dans la chaine couverte : un pas montant cree son motif
+sur la cible (section 21), qui devient la source du maillon suivant, et un pas
+descendant exige son motif sur sa source (section 21 encore). Le theoreme est
+donc la version `_any` du plancher conditionne de #20017 : la route qui
+**maintient** l'hypothese pas a pas est fermee, pas l'existence d'un temoin.
+La version inconditionnee (potentiel : les motifs crees par les up-moves,
+kinks de fusion de la section 19 compris) reste un residu designe. -/
+
+/-- Un diagramme ne porte ni kink terminal (`e3 = e4` sur le dernier
+    croisement) ni paire de bigon terminale (silhouettes `e2 = e3` sur les
+    deux derniers, arc commun partage). C'est l'invariant des sections 22-26,
+    package pour la chaine. -/
+def noTerminalMotif (d : KnotDiagram) : Prop :=
+  (∀ K, d.crossings.getLast? = some K → K.e3 ≠ K.e4) ∧
+  (¬ ∃ K₁ K₂, d.crossings.dropLast.getLast? = some K₁ ∧
+      d.crossings.getLast? = some K₂ ∧
+      K₂.e2 = K₂.e3 ∧ K₁.e2 = K₁.e3 ∧ K₁.e1 = K₂.e1)
+
+/-- Pas elementaire du plancher conditionne : un pas `_any` verifie dont la
+    source est sans motif terminal ne descend jamais. Un retrait de kink ou de
+    bigon exige son motif sur le GRAND cote (section 21) : si le grand cote
+    est la source, l'hypothese est violee ; sinon le pas est montant et le
+    compte monte. Le pas R3 conserve le compte. -/
+theorem verifyAnyMove_length_le_of_noTerminalMotif (m : AnyMove)
+    (h : verifyAnyMove m = true) (hnm : noTerminalMotif m.source) :
+    m.source.crossings.length ≤ m.target.crossings.length := by
+  rcases m with ⟨s, t⟩ | ⟨s, t⟩ | ⟨s, t⟩
+  · simp only [noTerminalMotif, AnyMove.source, AnyMove.target] at hnm ⊢
+    rcases verifyAnyMove_r1Any_kink_on_larger h with ⟨hl, K, hK, hkk⟩ | ⟨hl, K, hK, hkk⟩
+    · omega
+    · exact absurd hkk (hnm.1 K hK)
+  · simp only [noTerminalMotif, AnyMove.source, AnyMove.target] at hnm ⊢
+    rcases verifyAnyMove_r2Any_bigon_on_larger h with
+      ⟨hl, K₁, K₂, h1, h2, hK₂, hK₁, harc⟩ | ⟨hl, K₁, K₂, h1, h2, hK₂, hK₁, harc⟩
+    · omega
+    · exact (hnm.2 ⟨K₁, K₂, h1, h2, hK₂, hK₁, harc⟩).elim
+  · simp only [AnyMove.source, AnyMove.target]
+    have h3 := verifyAnyMove_r3Any_length h
+    omega
+
+/-- Version chaine du plancher conditionne : si chaque maillon d'un certificat
+    `movesConnectsAny` a une source sans motif terminal, la longueur de depart
+    minore celle d'arrivee. Miroir `_any` de
+    `movesConnects_length_le_of_allFourDistinct`. -/
+theorem movesConnectsAny_length_le_of_noTerminalMotif {ms : List AnyMove}
+    {d₂ : KnotDiagram} :
+    ∀ (d₁ : KnotDiagram), movesConnectsAny ms d₁ d₂ →
+      (∀ m ∈ ms, noTerminalMotif m.source) →
+      d₁.crossings.length ≤ d₂.crossings.length := by
+  induction ms with
+  | nil =>
+    intro d₁ h _
+    simp only [movesConnectsAny, verifyAnyMoves] at h
+    rw [of_decide_eq_true h]
+  | cons m ms ih =>
+    intro d₁ h hall
+    simp only [movesConnectsAny, verifyAnyMoves, Bool.and_eq_true] at h
+    obtain ⟨⟨hsrc, hmove⟩, hrest⟩ := h
+    have hsrc' : m.source = d₁ := of_decide_eq_true hsrc
+    have h₁ : d₁.crossings.length ≤ m.target.crossings.length := by
+      rw [← hsrc']
+      exact verifyAnyMove_length_le_of_noTerminalMotif m hmove (hall m (by simp))
+    have h₂ : m.target.crossings.length ≤ d₂.crossings.length :=
+      ih m.target hrest (fun m' hm' => hall m' (by simp [hm']))
+    omega
+
+/-- Corollaire : aucun certificat `movesConnectsAny` dont les sources sont
+    sans motif terminal ne relie un diagramme a croisements non nuls a un
+    diagramme a zero croisements. Forme « route fermee » du plancher
+    conditionne, parametree par la cible : l'application au noeud trivial et
+    au temoin 11n102 vit avec le temoin (`Lidman.lean`). -/
+theorem movesConnectsAny_not_zero_of_noTerminalMotif {ms : List AnyMove}
+    {d₁ d₂ : KnotDiagram} (hn : 0 < d₁.crossings.length)
+    (hz : d₂.crossings.length = 0)
+    (h : movesConnectsAny ms d₁ d₂)
+    (hall : ∀ m ∈ ms, noTerminalMotif m.source) :
+    False := by
+  have hl := movesConnectsAny_length_le_of_noTerminalMotif (d₂ := d₂) d₁ h hall
+  omega
+
 end Knots.AnyMoves

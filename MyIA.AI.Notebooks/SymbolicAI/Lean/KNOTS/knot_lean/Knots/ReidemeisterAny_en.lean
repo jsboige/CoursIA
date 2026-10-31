@@ -3259,4 +3259,95 @@ theorem verifyAnyMove_r3Any_not_motif (s t : KnotDiagram)
         K₂.e2 = K₂.e3 ∧ K₁.e2 = K₁.e3 ∧ K₁.e1 = K₂.e1) :=
   verifyR3_not_motif s t (by simpa only [verifyAnyMove] using h) hk hb
 
+/-! ## 27. Conditional chain — the motif-free route is closed
+
+Eighth step of the negative certificate (continues sections 21-26). Sections
+21 to 26 transmit the absence of a terminal motif step by step; the
+conditional floor assembles these bricks into a chain theorem, the exact
+mirror of the four-distinct floor
+`movesConnects_length_le_of_allFourDistinct` (`ReidemeisterMoves.lean`,
+#20017): if every link of a `movesConnectsAny` certificate has a source free
+of terminal motifs, the departure length bounds the arrival length.
+
+**Exact scope, no overstatement.** The per-link hypothesis in fact forbids
+every R1/R2 step in the covered chain: an up step creates its motif on the
+target (section 21), which becomes the source of the next link, and a down
+step requires its motif on its own source (section 21 again). The theorem is
+therefore the `_any` version of the #20017 conditional floor: the route that
+**maintains** the hypothesis step by step is closed, not the existence of a
+witness. The unconditional version (potential: motifs created by up-moves,
+fusion kinks of section 19 included) remains a designated residual. -/
+
+/-- A diagram carries neither a terminal kink (`e3 = e4` on the last
+    crossing) nor a terminal bigon pair (`e2 = e3` silhouettes on the last
+    two, shared common arc). This is the invariant of sections 22-26,
+    packaged for the chain. -/
+def noTerminalMotif (d : KnotDiagram) : Prop :=
+  (∀ K, d.crossings.getLast? = some K → K.e3 ≠ K.e4) ∧
+  (¬ ∃ K₁ K₂, d.crossings.dropLast.getLast? = some K₁ ∧
+      d.crossings.getLast? = some K₂ ∧
+      K₂.e2 = K₂.e3 ∧ K₁.e2 = K₁.e3 ∧ K₁.e1 = K₂.e1)
+
+/-- Elementary step of the conditional floor: a verified `_any` step whose
+    source is free of terminal motifs never goes down. A kink or bigon
+    removal requires its motif on the LARGER side (section 21): if the
+    larger side is the source, the hypothesis is violated; otherwise the
+    step goes up and the count rises. The R3 step preserves the count. -/
+theorem verifyAnyMove_length_le_of_noTerminalMotif (m : AnyMove)
+    (h : verifyAnyMove m = true) (hnm : noTerminalMotif m.source) :
+    m.source.crossings.length ≤ m.target.crossings.length := by
+  rcases m with ⟨s, t⟩ | ⟨s, t⟩ | ⟨s, t⟩
+  · simp only [noTerminalMotif, AnyMove.source, AnyMove.target] at hnm ⊢
+    rcases verifyAnyMove_r1Any_kink_on_larger h with ⟨hl, K, hK, hkk⟩ | ⟨hl, K, hK, hkk⟩
+    · omega
+    · exact absurd hkk (hnm.1 K hK)
+  · simp only [noTerminalMotif, AnyMove.source, AnyMove.target] at hnm ⊢
+    rcases verifyAnyMove_r2Any_bigon_on_larger h with
+      ⟨hl, K₁, K₂, h1, h2, hK₂, hK₁, harc⟩ | ⟨hl, K₁, K₂, h1, h2, hK₂, hK₁, harc⟩
+    · omega
+    · exact (hnm.2 ⟨K₁, K₂, h1, h2, hK₂, hK₁, harc⟩).elim
+  · simp only [AnyMove.source, AnyMove.target]
+    have h3 := verifyAnyMove_r3Any_length h
+    omega
+
+/-- Chain version of the conditional floor: if every link of a
+    `movesConnectsAny` certificate has a source free of terminal motifs, the
+    departure length bounds the arrival length. `_any` mirror of
+    `movesConnects_length_le_of_allFourDistinct`. -/
+theorem movesConnectsAny_length_le_of_noTerminalMotif {ms : List AnyMove}
+    {d₂ : KnotDiagram} :
+    ∀ (d₁ : KnotDiagram), movesConnectsAny ms d₁ d₂ →
+      (∀ m ∈ ms, noTerminalMotif m.source) →
+      d₁.crossings.length ≤ d₂.crossings.length := by
+  induction ms with
+  | nil =>
+    intro d₁ h _
+    simp only [movesConnectsAny, verifyAnyMoves] at h
+    rw [of_decide_eq_true h]
+  | cons m ms ih =>
+    intro d₁ h hall
+    simp only [movesConnectsAny, verifyAnyMoves, Bool.and_eq_true] at h
+    obtain ⟨⟨hsrc, hmove⟩, hrest⟩ := h
+    have hsrc' : m.source = d₁ := of_decide_eq_true hsrc
+    have h₁ : d₁.crossings.length ≤ m.target.crossings.length := by
+      rw [← hsrc']
+      exact verifyAnyMove_length_le_of_noTerminalMotif m hmove (hall m (by simp))
+    have h₂ : m.target.crossings.length ≤ d₂.crossings.length :=
+      ih m.target hrest (fun m' hm' => hall m' (by simp [hm']))
+    omega
+
+/-- Corollary: no `movesConnectsAny` certificate whose sources are free of
+    terminal motifs connects a diagram with nonzero crossings to a diagram
+    with zero crossings. "Closed route" form of the conditional floor,
+    parametrized by the target: the application to the trivial knot and the
+    11n102 witness lives with the witness (`Lidman.lean`). -/
+theorem movesConnectsAny_not_zero_of_noTerminalMotif {ms : List AnyMove}
+    {d₁ d₂ : KnotDiagram} (hn : 0 < d₁.crossings.length)
+    (hz : d₂.crossings.length = 0)
+    (h : movesConnectsAny ms d₁ d₂)
+    (hall : ∀ m ∈ ms, noTerminalMotif m.source) :
+    False := by
+  have hl := movesConnectsAny_length_le_of_noTerminalMotif (d₂ := d₂) d₁ h hall
+  omega
+
 end Knots_en.AnyMoves
