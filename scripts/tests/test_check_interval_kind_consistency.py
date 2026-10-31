@@ -103,6 +103,27 @@ def test_accord_explicite_passe(tmp_path: Path):
                                 "ambiguous": 0})
 
 
+def test_accord_explicite_format_percent_arviz_023_passe(tmp_path: Path):
+    """arviz >= 0.23 n'imprime plus `hdi94_lb` mais `hdi_3%`/`hdi_97%`
+    (#23666) : la cellule baseline Actuariat-03 re-executee sous canon 3.13
+    doit rester comptee comme HDI explicite."""
+    nb = _nb(tmp_path, [
+        _code('az.summary(t, hdi_prob=0.94)', "hdi_3%", "hdi_97%")])
+    assert examine(nb) == ([], {"cells": 1, "explicit": 1, "default": 0,
+                                "ambiguous": 0})
+
+
+def test_defaut_avec_sortie_percent_hdi_reste_attendu_eti(tmp_path: Path):
+    """Sans declaration, la famille attendue reste le defaut encode (`eti`)
+    meme au format percent -- comportement documente, verrouille ici pour
+    que l'extension de format ne change pas les verdicts existants."""
+    nb = _nb(tmp_path, [_code("az.summary(t)", "hdi_3%", "hdi_97%")])
+    issues, counts = examine(nb)
+    assert len(issues) == 1 and issues[0]["expected"] == "eti"
+    assert counts == {"cells": 1, "explicit": 0, "default": 1, "ambiguous": 0}
+
+
+
 def test_accord_par_defaut_passe(tmp_path: Path):
     """Le cas le plus frequent du depot (16 des 18 cellules) : aucun argument
     d'intervalle, sortie `eti` -- le defaut de la bibliotheque, coherent."""

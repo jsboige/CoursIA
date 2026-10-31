@@ -80,6 +80,10 @@ NOTEBOOKS = REPO_ROOT / "MyIA.AI.Notebooks"
 #: Famille d'intervalle portee par une colonne de sortie, p.ex. `hdi89_lb`.
 COLUMN = re.compile(r"\b(hdi|eti)(\d+)_(lb|ub)\b", re.I)
 
+#: Meme famille au rendu percent d'arviz >= 0.23, p.ex. `hdi_3%`/`hdi_97%`
+#: (#23666) : `az.summary` n'imprime plus de bornes `_lb`/`_ub` suffixees.
+COLUMN_PCT = re.compile(r"\b(hdi|eti)_(\d+(?:\.\d+)?)%", re.I)
+
 #: Appels arviz qui acceptent le choix du type d'intervalle. Restreindre a ces
 #: appelants evite de lire un `ci_kind=` qui appartiendrait a autre chose.
 CALLERS = re.compile(r"\baz\.(summary|plot_dist|plot_posterior|plot_forest"
@@ -114,7 +118,10 @@ def output_kinds(cell: dict) -> set[str]:
     """Familles d'intervalle presentes dans les SORTIES commitees de la cellule."""
     kinds: set[str] = set()
     for out in cell.get("outputs", []) or []:
-        for m in COLUMN.finditer(json.dumps(out)):
+        blob = json.dumps(out)
+        for m in COLUMN.finditer(blob):
+            kinds.add(m.group(1).lower())
+        for m in COLUMN_PCT.finditer(blob):
             kinds.add(m.group(1).lower())
     return kinds
 
