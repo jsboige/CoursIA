@@ -43,7 +43,7 @@ Guide comparatif détaillé pour comprendre les différences entre Claude Code e
 
 ### Configuration des modèles
 
-**Claude Code avec OpenRouter :** la configuration est **directe**, sans rien installer. OpenRouter expose son propre point d'entrée compatible avec le protocole Anthropic (`https://openrouter.ai/api`) : la bascule se fait par ces deux variables, sans proxy traducteur (mesure et tableau des sondes : [Quickstart OpenRouter](../Claude-Code/docs/OPENROUTER_SETUP.md), étape 0) :
+**Claude Code avec OpenRouter :** la configuration est **directe**, sans rien installer. OpenRouter expose son propre point d'entrée compatible avec le protocole Anthropic (`https://openrouter.ai/api`) : la bascule se fait par ces variables, sans proxy traducteur (mesure et tableau des sondes : [Quickstart OpenRouter](../Claude-Code/docs/OPENROUTER_SETUP.md), étape 0) :
 
 ```bash
 # Via variables d'environnement
