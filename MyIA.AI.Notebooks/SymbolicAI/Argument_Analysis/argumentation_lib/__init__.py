@@ -60,9 +60,17 @@ from argumentation_lib._shared_state import (
 # -- State Manager Plugin (Semantic Kernel @kernel_function wrapper) --
 # Heavy import — requires semantic_kernel.  Use lazy pattern.
 def get_state_manager_plugin():
-    """Lazy import to avoid requiring semantic_kernel at package import."""
-    from argumentation_lib._state_manager_plugin import StateManagerPlugin
-    return StateManagerPlugin
+    """Lazy import to avoid requiring semantic_kernel at package import.
+
+    Retourne la version GARDEE du plugin (`GuardedStateManagerPlugin`,
+    #22981) : `log_query_result` n'accepte que les verdicts reellement emis
+    par le solveur propositionnel. La classe verbatim
+    `StateManagerPlugin` reste accessible pour qui veut le comportement
+    non garde (aucun usage dans le depot hors tests).
+    """
+    from argumentation_lib._guarded_state import GuardedStateManagerPlugin
+
+    return GuardedStateManagerPlugin
 
 # -- Reporting (no-op shims) --
 from argumentation_lib._reporting_noop import (
@@ -199,6 +207,35 @@ def get_pl_handler_symbol():
     """
     from argumentation_lib._pl_handler import PLHandler
     return PLHandler
+
+
+# -- Solveur propositionnel expose aux agents (#22981) --
+def get_pl_reasoner_symbol():
+    """Lazy import du plugin de solveur propositionnel (Tweety, via JPype).
+
+    Différence avec `get_pl_handler_symbol` : cet accessor est
+    OPERATIONNEL. `PLHandler` vient de l'amont et n'est pas importable dans
+    ce checkout ; `_pl_reasoner.PLReasonerPlugin` expose en revanche le VRAI
+    solveur (`SimplePlReasoner`, déjà utilisé par
+    `Argumentation-05-Formal-Verification-Python.ipynb`) sous forme de plugin
+    Semantic Kernel — c'est le seul chemin d'obtention d'un verdict de
+    moteur dans la phase formelle (#22981).
+    """
+    from argumentation_lib._pl_reasoner import PLReasonerPlugin
+
+    return PLReasonerPlugin
+
+
+def get_verdict_registry_symbol():
+    """Lazy import du registre des verdicts moteur (#22981).
+
+    Le registre est ce qui distingue un verdict REELLEMENT emis par le
+    solveur d'une phrase libre : la garde de `log_query_result` n'accepte
+    que les verdicts qu'il contient.
+    """
+    from argumentation_lib._pl_verdict import VerdictRegistry, registry_for
+
+    return VerdictRegistry, registry_for
 
 
 # -- FOL Handler (JPype singleton, SK-coupled upstream, prover9_runner dep) --
@@ -540,6 +577,8 @@ __all__ = [
     "get_taxonomy_sophism_detector",
     "get_informal_definitions_symbols",
     "get_pl_handler_symbol",
+    "get_pl_reasoner_symbol",
+    "get_verdict_registry_symbol",
     "get_fol_handler_symbol",
     "get_modal_handler_symbol",
     "get_adf_handler_symbol",
