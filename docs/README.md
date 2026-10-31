@@ -449,6 +449,7 @@ Deltas runtime et digests de performance .NET, mesurés sur les bancs et les car
 | [dotnet/net11-runtime-deltas.md](dotnet/net11-runtime-deltas.md) | .NET 9 → 10 → 11 — Deltas runtime mesurés sur les bancs et carnets types du dépôt |
 | [dotnet/net11-async-ffi-deltas.md](dotnet/net11-async-ffi-deltas.md) | .NET 10 → 11 — Delta runtime mesuré sur l'axe 1 (awaits profonds) du carnet Aspire AsyncFFI — compatibilité .NET 11 établie, verdict à n=25 |
 | [dotnet/net11-toub-digest.md](dotnet/net11-toub-digest.md) | .NET 11 — Digest de performance |
+| [dotnet/net11-axis1-async.md](dotnet/net11-axis1-async.md) | .NET 10 vs 11 — axe 1 (awaits profonds / Runtime Async) : mesure rejouable sur un carnet, runtime prouvé par sonde et non déduit du nom de variante |
 
 
 ## Rapports transients (docs/transients/)
