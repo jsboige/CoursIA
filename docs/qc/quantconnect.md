@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-10-30
+
 # QuantConnect (QC) - Configuration et règles
 
 Document de reference pour la coordination QC (MCP, orgs, patterns, anti-patterns). Pour les details pédagogiques et le mapping livre Jared, voir la **navigation des docs QC** ci-dessous.

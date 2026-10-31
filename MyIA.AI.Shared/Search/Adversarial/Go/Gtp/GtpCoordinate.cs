@@ -1,10 +1,10 @@
 namespace MyIA.AI.Shared.Search.Adversarial.Go.Gtp;
 
 /// <summary>
-/// Decodage des coordonnees GTP (« C3 », « pass ») vers <see cref="GoPoint"/>.
-/// Le sens inverse existe deja : <see cref="GoPoint"/>.ToString() emet le format
-/// GTP (lettres sans le I, rangees 1-base). Ce parseur boucle la boucle pour
-/// lire les reponses de <c>genmove</c>.
+/// Decodage des coordonnees GTP (« C3 », « pass ») vers <see cref="GoPoint"/>,
+/// et des reponses <c>genmove</c> vers <see cref="GtpMove"/>. Le sens inverse
+/// existe deja : <see cref="GoPoint"/>.ToString() emet le format GTP (lettres
+/// sans le I, rangees 1-base).
 /// </summary>
 public static class GtpCoordinate
 {
@@ -52,5 +52,25 @@ public static class GtpCoordinate
         }
 
         return new GoPoint(column, row - 1);
+    }
+
+    /// <summary>
+    /// Decode une reponse <c>genmove</c> complete : intersection, passe ou
+    /// abandon. C'est la seule entree qui accepte « resign » — et elle ne le
+    /// transforme pas en point : elle le rend comme <see cref="GtpMove.Resign"/>.
+    /// </summary>
+    /// <param name="token">Contenu de la reponse, sans son cadre <c>=</c>.</param>
+    /// <param name="size">Taille du plateau, pour valider l'intersection.</param>
+    public static GtpMove ParseGenMove(string token, int size)
+    {
+        ArgumentNullException.ThrowIfNull(token);
+
+        string trimmed = token.Trim();
+        return trimmed switch
+        {
+            "pass" => GtpMove.Pass,
+            "resign" => GtpMove.Resign,
+            _ => GtpMove.FromVertex(Parse(trimmed, size)),
+        };
     }
 }
