@@ -179,9 +179,10 @@ Cabello, il n'existe aucune coloration {0,1} satisfaisant « exactement un 1
 par contexte ».
 
 L'orthogonalité de chaque contexte est implicite dans l'encodage par indices :
-`contextMembers` reflète la table de Cabello ; vérifier que les produits
-scalaires s'annulent est un lemme séparé (calculatoire) laissé à la
-formalisation géométrique (Pilier 2).
+`contextMembers` reflète la table de Cabello. Vérifier que les produits
+scalaires s'annulent n'est formalisé nulle part dans ce lake : c'est la
+prémisse physique que le Pilier 2 prend en hypothèse (l'axiome SPIN de
+`FreeWillTheorem.lean` la suppose, il ne la démontre pas).
 -/
 
 /-- Un index abstrait pour les 18 vecteurs distincts. -/
@@ -350,8 +351,9 @@ Si la réponse était une fonction déterministe de variables cachées,
 elle définirait une {0,1}-coloration valide — contredisant KS.
 La réponse de la particule ne peut donc pas être une fonction du seul passé.
 
-Ce lien sera formalisé au Pilier 2 (FreeWillTheorem.lean),
-avec les axiomes TWIN et MIN.
+Ce lien est formalisé au Pilier 2 : `FreeWillTheorem.fwt_single_particle`
+déduit `¬ SatisfiesSPIN` de `kochen_specker`, et `free_will_theorem` y ajoute
+les axiomes TWIN et MIN.
 -/
 
 end Conway

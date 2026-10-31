@@ -245,7 +245,7 @@ def _compile_cell(src: str, target_py: Tuple[int, int] = (3, 10)) -> Tuple[Optio
 
 
 def _cells_touched_by_pr(diff_range: Iterable[str]) -> List[Path]:
-    """Return the .ipynb paths modified between two refs (e.g. origin/main..HEAD)."""
+    """Return the .ipynb paths modified between two refs (merge-base..HEAD)."""
     out: List[Path] = []
     for line in diff_range:
         # `git diff --name-only` line shape: 'MyIA.AI.Notebooks/.../foo.ipynb'
@@ -256,10 +256,22 @@ def _cells_touched_by_pr(diff_range: Iterable[str]) -> List[Path]:
 
 
 def _diff_range(base: str, head: str) -> Iterable[str]:
-    """`git diff --name-only <base>..<head>`, or HEAD if no diff available."""
+    """`git diff --name-only <base>...<head>`, or [] if no diff available.
+
+    Trois points et non deux (residu de #10403) : `<base>..<head>` compare deux arbres,
+    donc sur une PR empilee dont la base a gagne des commits depuis le fork,
+    il liste aussi les notebooks que `main` a modifies -- la PR se voit
+    imputer des findings sur des fichiers qu'elle n'a pas touches. La forme en
+    trois points ne rend que l'apport de la PR (merge-base..head).
+
+    Un echec git (merge-base indeterminable dans un clone superficiel) n'est
+    pas rattrape par un repli en deux points : la fonction rend une liste
+    vide, et l'appelant doit lire ce vide comme "aucun diff disponible", pas
+    comme "aucun notebook touche".
+    """
     try:
         cp = subprocess.run(
-            ["git", "diff", "--name-only", f"{base}..{head}"],
+            ["git", "diff", "--name-only", f"{base}...{head}"],
             cwd=REPO_ROOT,
             capture_output=True,
             text=True,
