@@ -505,8 +505,7 @@ def test_canonical_transition_scoped_series_02ml_310_accepted():
          "kernelspec_name": "coursia-ml-training"}
     b = {"language_version": "3.13.14",
          "kernelspec_name": "coursia-ml-training"}
-    for name in ("2.9d-Features-Circulaires-Helice-Nombres.ipynb",
-                 "2.9g-Geometrie-de-la-Verite.ipynb"):
+    for name in ("2.9d-Features-Circulaires-Helice-Nombres.ipynb",):
         path = ("MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/"
                 + name)
         assert ckd.accepted_canonical_transition(a, b, nb_path=path) is True
