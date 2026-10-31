@@ -147,6 +147,15 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/**.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/lean-toolchain'
+      # formal_groups_lean (herite du wrapper lean-formal-groups.yml supprime,
+      # #13751 : 0 sorry par construction, axiom target-modules "*" +
+      # allow-axioms vide, fail-on-sorry true -- parametres reportes au
+      # manifeste. Le wrapper declarait aussi lakefile.toml : le lake n'en a
+      # pas (mesure au repertoire), le pattern mort n'est pas reporte.
+      # lean_server.py / lean_utils.py sont self-cover globaux ci-dessous.)
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_groups_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_groups_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_groups_lean/lean-toolchain'
       # sensitivity_lean (herite du wrapper lean-sensitivity.yml supprime, #13751 :
       # 0 sorry verifie, axiom target-modules "*" + allow-axioms vide,
       # fail-on-sorry true par defaut -- parametres reportes au manifeste)
@@ -307,6 +316,15 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/**.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/lean-toolchain'
+      # formal_groups_lean (herite du wrapper lean-formal-groups.yml supprime,
+      # #13751 : 0 sorry par construction, axiom target-modules "*" +
+      # allow-axioms vide, fail-on-sorry true -- parametres reportes au
+      # manifeste. Le wrapper declarait aussi lakefile.toml : le lake n'en a
+      # pas (mesure au repertoire), le pattern mort n'est pas reporte.
+      # lean_server.py / lean_utils.py sont self-cover globaux ci-dessous.)
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_groups_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_groups_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_groups_lean/lean-toolchain'
       # sensitivity_lean (herite du wrapper lean-sensitivity.yml supprime, #13751 :
       # 0 sorry verifie, axiom target-modules "*" + allow-axioms vide,
       # fail-on-sorry true par defaut -- parametres reportes au manifeste)
