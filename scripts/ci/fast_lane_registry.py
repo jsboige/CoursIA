@@ -2697,3 +2697,53 @@ TRANCHE30: list[Guard] = [
         absorbed=True,
     ),
 ]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 31 (#5081, critere 5) -- garde de collision d'index twin-pairs
+# entre revisions. Organe livre par #20620 (mesure c.76 du 2026-09-25,
+# adjoint myia-po-2025:CoursIA-2) mais JAMAIS cable : 0 workflow, 0 entree
+# de registre, 0 pre-commit (mesure du 2026-10-31, grep des trois surfaces
+# sur main @ 8ff1fb8e5). Le critere 5 du plan #5081 exige des gardes qui
+# EMPECHENT la collision -- l'organe existait, la prevention non.
+#
+# Ce que le confront ferme : deux lanes qui prennent le meme index NNNN
+# d'audit produisent deux NOMS de fichiers distincts (le `by` de lane fait
+# partie du nom), donc aucun conflit git, MERGEABLE voire CLEAN des deux
+# cotes -- et main rougit apres la premiere mergee. Cas mesure #17795 :
+# collision contre main seul, PR BLOCKED, donc invisible aux balayages qui
+# n'enumere que les candidates CLEAN.
+#
+# `--in-tree` ajoute le doublon INTRA-revision au verdict bloquant : aucun
+# test pytest ne porte ce predicat (le nom cite par la docstring de l'organe
+# n'existe pas ; scripts/notebook_tools/tests/ couvre l'allocation du
+# prochain index, pas l'unicite de l'arbre).
+#
+# Portee : l'organe ne lit QUE scripts/notebook_tools/twin_pairs.d (ls-tree
+# de ce chemin, glob *.yaml par paire) -- pas de NOTEBOOK_GLOBS : renommer
+# un notebook ne change aucun index d'audit, ajouter un record d'audit si.
+# rc=2 = incident d'entree (git/parse), neutre au check-run (forme
+# TRANCHE17). Verifie vert sur main @ 8ff1fb8e5 : 168 paires, 5118
+# fichiers, aucun doublon ; controle positif rejoue en developpement
+# (record syncretique meme paire meme index, lane differente -> exit 1).
+# ---------------------------------------------------------------------------
+TRANCHE31: list[Guard] = [
+    Guard(
+        name="twin-index-collision-guard",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "scripts/notebook_tools/twin_pairs.d/**",
+            "scripts/notebook_tools/check_twin_index_collisions.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_twin_index_collisions.py",
+            "--base", "{base_ref}", "--head", "HEAD", "--in-tree",
+        ],
+        blocking=True,
+        absorbed=True,
+        needs_base=True,
+        warn_rc=(2,),
+    ),
+]
