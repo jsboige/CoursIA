@@ -96,9 +96,11 @@ class TestCmdCountBySubdir:
         assert rc == 0
         out = buf.getvalue()
         assert "Search" in out
-        # Search hub has 4 documented sub-folders per audit c.1331+6.
-        assert "Applications" in out
+        # Search hub sub-folders after the App-32 → Langlands migration (#19253).
+        # The human-readable line lists the three largest sub-folders only.
         assert "Part1-Foundations" in out
+        assert "Part3-Cas-pratiques" in out
+        assert "Applications" not in out
 
     def test_real_repo_check_readme_search_ok(self):
         """Search hub check-readme: wrapper status is logically consistent with
@@ -151,8 +153,14 @@ class TestCmdCountBySubdir:
         assert "Search" in payload
         assert payload["Search"]["total"] >= 100  # Search = 115 currently
         assert "by_subfolder" in payload["Search"]
-        # Subfolder keys are documented folder names.
-        for sub in ["Applications", "Part1-Foundations", "Part4-Metaheuristics"]:
+        # Subfolder keys are documented folder names (#19253 layout).
+        for sub in [
+            "Part1-Foundations",
+            "Part2-CSP",
+            "Part3-Cas-pratiques",
+            "Part4-Metaheuristics",
+            "Part5-Frontieres",
+        ]:
             assert sub in payload["Search"]["by_subfolder"]
 
     def test_real_repo_json_check_readme_enriched(self):
@@ -271,5 +279,17 @@ class TestDelegationContract:
         import inspect
         src = inspect.getsource(fn)
         assert "SERIES_ORDER" in src
-        # SERIES_ORDER in count_notebooks_by_series: 11 entries (incl. EPF)
-        assert len(SERIES_ORDER) == 11
+        # The list is duplicated across three sibling modules (count / coverage /
+        # catalog). The invariant worth guarding is that the copies never
+        # diverge -- not a fixed length: hard-coding the count made every series
+        # addition (e.g. Physique, EPIC #23161) a red test for no reason.
+        assert SERIES_ORDER, "SERIES_ORDER must not be empty"
+        assert len(SERIES_ORDER) == len(set(SERIES_ORDER)), "no duplicate serie"
+        import catalog_coverage
+        import generate_catalog
+        assert catalog_coverage.SERIES_ORDER == SERIES_ORDER, (
+            "catalog_coverage.SERIES_ORDER drifted from count_notebooks_by_series"
+        )
+        assert generate_catalog.SERIES_ORDER == SERIES_ORDER, (
+            "generate_catalog.SERIES_ORDER drifted from count_notebooks_by_series"
+        )

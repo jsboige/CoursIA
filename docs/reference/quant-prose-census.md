@@ -90,8 +90,8 @@ Recensement chiffré des valeurs quantitatives écrites en dur dans les cellules
 | `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-25-InoculationRL-Python.ipynb` | 37 |
 | `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-21-SAETrajectoires-Python.ipynb` | 13 |
 | `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb` | 10 |
-| `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-15e-Bridge2-RecoverabilityAgency-Python.ipynb` | 9 |
-| `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-15c-MetaProxyObstruction-Python.ipynb` | 8 |
+| `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-15/ICT-15e-Bridge2-RecoverabilityAgency-Python.ipynb` | 9 |
+| `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-15/ICT-15c-MetaProxyObstruction-Python.ipynb` | 8 |
 
 ### ML (drainable total = 433)
 
@@ -117,7 +117,7 @@ Recensement chiffré des valeurs quantitatives écrites en dur dans les cellules
 
 | Notebook | Drainable |
 |---|---|
-| `MyIA.AI.Notebooks\Probas\Infer\Infer-2-Gaussian-Mixtures.ipynb` | 38 |
+| `MyIA.AI.Notebooks\Probas\Infer\Infer-02-Gaussian-Mixtures.ipynb` | 38 |
 | `MyIA.AI.Notebooks\Probas\Infer\Infer-15-Recommenders.ipynb` | 27 |
 | `MyIA.AI.Notebooks\Probas\DecisionTheory\PyMC\DecPyMC-7-Sequential.ipynb` | 17 |
 | `MyIA.AI.Notebooks\Probas\DecisionTheory\DecInfer\DecInfer-03-Utility-Money.ipynb` | 16 |

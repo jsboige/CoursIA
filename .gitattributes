@@ -51,6 +51,20 @@ MyIA.AI.Notebooks/**/*.md text eol=lf
 # geste d'installation, et une regle qui couvre l'un sans l'autre invite a
 # croire que le repertoire entier est normalise.
 scripts/ci/docker/linux-runner/persist/**/*.json text eol=lf
+# Meme consommateur encore : les drop-ins *.conf vivent dans
+# /etc/systemd/system/<unite>.service.d/ et sont lus par le meme analyseur que
+# les .service et .slice ci-dessus. Les blobs sont deja en LF (`i/lf` sur les
+# 11), donc l'ecart ne vient PAS de git : il vient du working tree, qu'un
+# ecrivain Windows peut basculer en CRLF sans que `git status` le signale.
+# Mesure du 2026-10-29 sur le checkout principal de po-2028 : 7 des 11 *.conf
+# portent des CR (ai-01, po-2024 x5, po-2028), et `git status --porcelain` les
+# rend PROPRES -- l'entree d'index porte une taille statique heritee d'un
+# checkout en core.autocrlf=true, si bien que git saute la comparaison de
+# contenu. L'installeur, lui, compare par sha256 la source (working tree) a la
+# cible Linux : le DIFF est permanent et aucune correction du fichier commite
+# ne le fait taire. `text eol=lf` fait du working tree un invariant, ce que
+# `git status` seul ne garantit pas.
+*.conf text eol=lf
 .env text eol=lf
 .env.example text eol=lf
 *.en.md text eol=lf
@@ -147,3 +161,43 @@ MyIA.AI.Notebooks/GenAI/FallacyDetection/data/academic/MAFALDA/*.jsonl -text
 # les 41 LF nus. La preuve de verbatim est l'EGALITE DES SHA DE BLOB (consignee
 # dans argumentum_snapshot.json), et elle n'est atteignable qu'avec `-text`.
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/ontologies/argumentum_*.owl -text
+
+# Banc Phase 2 de FallacyDetection : les deux CSV sont le PRODUIT du constructeur
+# (cartesian_dataset_builder), pas une recopie d'amont ; leur forme canonique est
+# le LF pur (les trois blobs du dossier mesures a 0 octet CR). Le manifeste
+# `phase2/manifest.json` epingle leur SHA256 et
+# `test_real_build_matches_committed_manifest` compare les OCTETS de la copie de
+# travail a la reconstruction : la copie de travail DOIT donc etre en LF, comme
+# le blob. Ce n'est donc pas un `-text` de verbatim, mais un `text eol=lf`.
+#
+# Mesure 2026-10-21 (#21862) : sur un poste dont le `core.autocrlf` GLOBAL vaut
+# `true` (et le local `false`), la premiere copie de travail etait en CRLF
+# (1630 CR sur val.csv, 3259 sur test.csv) alors que les blobs sont en LF -- et
+# l'index conservait une entree de STAT perime (taille 91958, mtime du 30/09),
+# si bien que `git status` comme `git checkout` ne voyaient RIEN : le fichier
+# etait modifie sur le disque sans que git ne le signale, et le test echouait
+# sur l'octet 65. `text eol=lf` ferme la classe : le checkout restitue le LF quel
+# que soit l'autocrlf local, et le filtre "clean" renormalise en LF une edition
+# CRLF -- le blob stocke ne peut plus diverger de la forme canonique.
+MyIA.AI.Notebooks/GenAI/FallacyDetection/data/phase2/*.csv text eol=lf
+MyIA.AI.Notebooks/GenAI/FallacyDetection/data/phase2/manifest.json text eol=lf
+# Banc ACIC 2016 de CausalBridges-10b (#21680) : les CSV sont recopies tels quels
+# du bundle causallib (LF pur) et le carnet AFFICHE leur sha256 a l'execution --
+# un checkout CRLF sous `core.autocrlf=true` changerait les octets, donc les
+# empreintes affichees, et la sortie commise deviendrait fausse au premier clone
+# Windows. Meme motif que phase2 ci-dessus : le sha256 exige la forme canonique,
+# donc `text eol=lf` (le LICENSE du bundle suit la meme regle).
+MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/data/acic2016/*.csv text eol=lf
+MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/data/acic2016/LICENSE text eol=lf
+
+# Corpus lu en direct par les carnets : `le_horla_1887.txt` est stocke LF
+# (blob 251 105 o) mais un checkout Windows `core.autocrlf=true` le rend CRLF
+# (256 791 o). Un carnet qui affiche sa taille, son empreinte SHA-256 et son
+# entropie mesure alors un fichier qui n'existe pas dans le depot : sur #21803,
+# cinq valeurs commitees (H, Huffman, rANS, tANS, zlib) etaient celles du
+# checkout CRLF et aucune n'etait reproductible au head. `text eol=lf` force le
+# working tree a LF, donc les octets lus sont ceux du blob.
+# Portee volontairement limitee aux `datasets/` : les 6 `.txt` de l'arbre qui
+# portent des CR (traces SemanticKernel, 97 octets au total) ne sont pas
+# concernes, donc cette regle ne les renormalise pas au passage.
+MyIA.AI.Notebooks/**/datasets/*.txt text eol=lf

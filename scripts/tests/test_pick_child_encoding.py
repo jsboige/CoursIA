@@ -69,27 +69,116 @@ def test_call_site_passes_the_utf8_env():
 
     On lit l'AST plutot que le texte : un ``grep`` sur "env=" passerait au
     vert sur une occurrence en commentaire ou dans une autre fonction.
+
+    v4 (PR #21373 review Hermes 5571014393) -- l'invariant originel
+    "exactement 1 subprocess.run" ne tient plus depuis la v3 : la piste
+    2 (mode batch) introduit un fallback legacy en sous-process par
+    issue, donc la fonction en compte 2, et le test crie a tort sur du
+    code sain (les 2 runs portent l'env UTF-8 partage). On rebascule
+    l'invariant sur ce qu'on GARDAIT vraiment -- l'UTF-8 du sous-process
+    -- et il devient plus fort : chaque appel, pas le premier.
+
+    v5 (PR #22389, mur de temps #21436) -- check_claims ne lance plus
+    ``subprocess.run`` directement : tout passe par ``_run_bounded``
+    (transport par fichiers, sinon ``run`` joint des threads lecteurs
+    qui ne rendent jamais la main sous Windows). L'invariant ne change
+    pas -- l'UTF-8 du sous-process -- mais il se prouve en deux sauts :
+    chaque ``_run_bounded`` de check_claims porte l'env (memes formes
+    acceptees qu'en v4), ET ``_run_bounded`` transmet son parametre
+    ``env`` a son propre ``subprocess.run``. Retirer l'un des deux
+    sauts rougit : le gate suit la chaine complete, pas le nom de la
+    fonction d'appel.
+
+    Forme acceptée pour ``env=`` :
+      - appel direct ``env=_utf8_child_env()`` (cas 1)
+      - alias local ``env=env`` ou ``env=child_env`` quand la variable
+        locale a ete assignee a ``_utf8_child_env()`` dans la meme
+        fonction (cas 2, le pattern partage utilise par la v3 pour
+        factoriser le dict).
     """
     tree = ast.parse((REPO / "scripts" / "pick_idle_grain.py").read_text(encoding="utf-8"))
 
     fn = next(n for n in tree.body
               if isinstance(n, ast.FunctionDef) and n.name == "check_claims")
 
-    runs = [n for n in ast.walk(fn)
-            if isinstance(n, ast.Call)
-            and isinstance(n.func, ast.Attribute)
-            and n.func.attr == "run"]
-    assert len(runs) == 1, f"attendu 1 subprocess.run dans check_claims, vu {len(runs)}"
+    def calls_named(fndef, attr):
+        return [n for n in ast.walk(fndef)
+                if isinstance(n, ast.Call)
+                and isinstance(n.func, ast.Attribute)
+                and n.func.attr == attr]
 
-    kwargs = {kw.arg for kw in runs[0].keywords}
-    assert "env" in kwargs, (
-        "check_claims lance un enfant Python sans env= : son stdout sera encode "
-        "en cp1252 sous Windows FR et le decodage UTF-8 du parent plantera"
+    # v5 : les lancements d'enfants sont soit des subprocess.run directs
+    # (chemin legacy), soit des _run_bounded (transport borne, #21436).
+    bounded = [n for n in ast.walk(fn)
+               if isinstance(n, ast.Call)
+               and isinstance(n.func, ast.Name)
+               and n.func.id == "_run_bounded"]
+    runs = calls_named(fn, "run")
+    assert runs or bounded, (
+        f"attendu au moins 1 subprocess.run ou _run_bounded dans "
+        f"check_claims (v5), vu {len(runs)} run(s) et {len(bounded)} "
+        f"_run_bounded(s)"
     )
 
-    env_kw = next(kw for kw in runs[0].keywords if kw.arg == "env")
-    assert isinstance(env_kw.value, ast.Call), "env= doit appeler _utf8_child_env()"
-    assert env_kw.value.func.id == "_utf8_child_env"
+    # Noms locaux (Name) assignes a _utf8_child_env() dans la meme fonction
+    # -- la v3 factorise via ``env = _utf8_child_env()`` puis ``env=env``.
+    local_env_aliases = {
+        tgt.id
+        for n in ast.walk(fn)
+        if isinstance(n, ast.Assign)
+        for tgt in n.targets
+        if isinstance(tgt, ast.Name)
+        and isinstance(n.value, ast.Call)
+        and isinstance(n.value.func, ast.Name)
+        and n.value.func.id == "_utf8_child_env"
+    }
+
+    def env_kw_ok(call):
+        kwargs = {kw.arg for kw in call.keywords}
+        if "env" not in kwargs:
+            return False, None
+        env_kw = next(kw for kw in call.keywords if kw.arg == "env")
+        # Cas 1 : appel direct env=_utf8_child_env()
+        if (isinstance(env_kw.value, ast.Call)
+                and isinstance(env_kw.value.func, ast.Name)
+                and env_kw.value.func.id == "_utf8_child_env"):
+            return True, env_kw
+        # Cas 2 : alias local assigne a _utf8_child_env() dans la fonction
+        if isinstance(env_kw.value, ast.Name) and env_kw.value.id in local_env_aliases:
+            return True, env_kw
+        return False, env_kw
+
+    for i, call in enumerate(runs + bounded):
+        ok, env_kw = env_kw_ok(call)
+        kind = "subprocess.run" if call in runs else "_run_bounded"
+        assert ok, (
+            f"{kind} #{i} dans check_claims lance un enfant Python sans "
+            f"env= (ou env= n'est ni _utf8_child_env() ni un alias local) : "
+            f"son stdout sera encode en cp1252 sous Windows FR et le "
+            f"decodage UTF-8 du parent plantera. Trouve : "
+            f"{ast.dump(env_kw.value)[:80] if env_kw is not None else 'aucun env='}"
+        )
+
+    # v5, second saut : _run_bounded doit transmettre son env au vrai
+    # subprocess.run -- sinon l'env pose en amont meurt au bord du seam.
+    if bounded:
+        helper = next(n for n in tree.body
+                      if isinstance(n, ast.FunctionDef)
+                      and n.name == "_run_bounded")
+        helper_runs = calls_named(helper, "run")
+        assert helper_runs, (
+            "_run_bounded ne lance aucun subprocess.run : le seam ne "
+            "demarre plus d'enfant, la chaine d'env est cassee par "
+            "construction"
+        )
+        forwarded = [kw for run in helper_runs for kw in run.keywords
+                     if kw.arg == "env" and isinstance(kw.value, ast.Name)
+                     and kw.value.id == "env"]
+        assert len(forwarded) == len(helper_runs), (
+            f"_run_bounded ne transmet pas env= a chacun de ses "
+            f"{len(helper_runs)} subprocess.run : l'UTF-8 pose par "
+            f"check_claims n'atteint jamais l'enfant"
+        )
 
 
 def test_helper_is_defined_at_module_scope():

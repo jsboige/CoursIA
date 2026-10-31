@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI-Argument_Analysis
-pedagogical_count: 32
-breakdown: Argument_Analysis=32
-maturity: BETA=30, ALPHA=1, DRAFT=1
+pedagogical_count: 33
+breakdown: Argument_Analysis=33
+maturity: BETA=31, ALPHA=1, DRAFT=1
 -->
 
 [← SmartContracts](../SmartContracts/README.md) | [↑ SymbolicAI](../README.md) | [SymbolicLearning →](../SymbolicLearning/README.md)
@@ -78,6 +78,8 @@ L'analyse argumentative outillée s'inscrit dans plusieurs cas concrets où la d
 | 05b | [Argumentation-05b-Multi-Backend-Routing-Python](Argumentation-05b-Multi-Backend-Routing-Python.ipynb) | Routage multi-backend « décider ou échouer bruyamment » : PL/Modal/Dung/FOL décidés par Tweety embarqué + sentinelle de contrat de livraison gardant les prouveurs externes (EProver/Mace4) — doctrine anti-théâtre / fail-loud | Raisonnement robuste |
 | 05c | [Argumentation-05c-Formal-Richness-Matrix-Python](Argumentation-05c-Formal-Richness-Matrix-Python.ipynb) | Matrice de richesse formelle (FP-5) : classifier ce qu'un solveur *décide réellement* (principe *wiring* ≠ *output*), 4 classes de verdict (substantive / honest-absent / unavailable / théâtre), sentinelle anti-théâtre `fabricated_true` + diagnostic laggards — pur stdlib | Évaluation honnête / anti-théâtre |
 | 06 | [Argumentation-06-JTMS-Python](Argumentation-06-JTMS-Python.ipynb) | Truth Maintenance System déterministe (Doyle 1979) : étiquetage IN/OUT, cascade de rétractation, détection d'odd loops — pur stdlib Python | Raisonnement non-monotone |
+| 06b | [Argumentation-06b-ATMS-Conflits-Python](Argumentation-06b-ATMS-Conflits-Python.ipynb) | ATMS (portage verbatim EPITA `713927e1`, #23163) : l'étiquette d'un nœud est l'ensemble des **environnements minimaux** d'hypothèses qui le dérivent (produit cartésien des étiquettes des prémisses, filtrage par les nœuds `out`), l'invalidation **retranche sans re-dériver** et le nogood n'est pas mémorisé ; puis le résolveur de conflits entre agents et ses **cinq stratégies** (`confidence_based`, `evidence_based`, `consensus`, `agent_expertise`, `temporal`), leurs replis nommés (`fallback_from`) et leurs garde-fous (`ValueError`, `missing_confidence`) — pur stdlib Python | Raisonnement non-monotone / conflits |
+| 06c | [Argumentation-06c-Revision-Croyances-Python](Argumentation-06c-Revision-Croyances-Python.ipynb) | Révision de croyances AGM sur l'organe `argumentation_lib._belief_revision_handler` (copie verbatim EPITA) : **contraction de noyau minimal** (une formule qui entail l'atome part entière, une formule qui ne l'entail pas reste), **révision de Levi** (contraction de `!f` puis expansion de `f`, avec substitution effective de `p` par `!p`), et les **deux défaillances de surface mesurées** : `dalal` et `levi` convergent (Tweety 1.28 n'expose pas de classe de Dalal), une méthode inconnue n'est pas refusée, et les connectifs `&&`/`||` lèvent une `TypeError` de dispatch JPype que le port ne traduit pas en `RuntimeError` | Raisonnement non-monotone / AGM |
 | 07 | [Argumentation-07-Orchestration-Python](Argumentation-07-Orchestration-Python.ipynb) | Orchestration : mini-DAG déterministe vs conversationnel (state-driven) | Coordination |
 | 07b | [Argumentation-07b-Communication-Channels-Python](Argumentation-07b-Communication-Channels-Python.ipynb) | Bus de communication multi-agents (distillation Triple Distillation du tronc EPITA) : format message à priorité inversée, contrat de canal fail-loud (#2161), routage sans routes mortes (#1571), corrélation requête-réponse — pur stdlib Python, déterministe | Communication multi-agents |
 | 07c | [Argumentation-07c-Orchestration-Modes-Python](Argumentation-07c-Orchestration-Modes-Python.ipynb) | Comparer 7 modes d'orchestration par le budget (distillation Triple Distillation de l'instrument EPITA #1735) : 3 registres d'arrêt (filet du harnais / déclaration du mode / réalité des phases), asymétrie d'axes largeur-délégation-dialogue, budget calibré dérivé de la mesure — mesures committées, pur stdlib | Arbitrage d'architectures multi-agents |
@@ -87,6 +89,8 @@ L'analyse argumentative outillée s'inscrit dans plusieurs cas concrets où la d
 | 08d | [Argumentation-08d-Restitution-3-Actes-Python](Argumentation-08d-Restitution-3-Actes-Python.ipynb) | Restitution honnête en 3 actes : scaffold déterministe pur stdlib (evidence réel-en-état, bande de verdict *gated*, gate de lisibilité §4, renderer *fail-loud*) + narration LLM **réelle** (SDK OpenAI, clé via `GenAI/.env`) *gated* — prompts conduits, callable injectable, fail-loud sans clé | Restitution / honnêteté |
 | 08e | [Argumentation-08e-Argument-Profile-Python](Argumentation-08e-Argument-Profile-Python.ipynb) | Vue agrégée par argument (`ArgumentProfile`) : réunit les 5 dimensions (sophismes, qualité, contre-arguments, JTMS, formel) en une fiche exploitable, et trie un débat par force (arguments faibles / fallacieux). Démontre l'**indépendance des dimensions** (valide formellement ≠ non fallacieux). Auto-contenu, déterministe, sans LLM | Vue agrégée / multidimensionnelle |
 | 08f | [Argumentation-08f-Synthese-Multidimensionnelle-Python](Argumentation-08f-Synthese-Multidimensionnelle-Python.ipynb) | Synthèse par niveaux via le catalogue light/standard/full (organe `workflow_levels`, étape 5 volet B #4960) : 9 dimensions dont 7 exécutées réellement (PL `SimplePlReasoner`, sophismes `fallacy_rules` #17348, Dung `Simple*Reasoner`, décision dérivée, synthèse 3 actes) et 2 **déclarées indisponibles avec preuve** (FOL/modale : inventaire du jar 7a, dépendances non vendues) ; gradation fill 0,71/0,86/1,00 croisée avec les fill LLM du sas (`07c`) sans prétendre à une parité d'échelle | Synthèse / catalogue de niveaux |
+| 09 | [Argumentation-09-Guardrails-AI-Shield-Python](Argumentation-09-Guardrails-AI-Shield-Python.ipynb) | Garde-fous de pipeline LLM (organe `argumentation_lib.ai_shield`, portage verbatim EPITA `713927e1`, #23163) : contrat des 3 couches (`heuristic` / `output_filter` / `llm_validator`), seuil **strict** (`passed = score < seuil`), masquage des identifiants, et surtout le **chemin d'échec** — fail-open (le texte passe, `error_type` nomme la panne) vs fail-closed (blocage) ; aucun appel réseau, aucune clé | Garde-fous / honnêteté de l'échec |
+| 10 | [Argumentation-10-Privacy-Export-Python](Argumentation-10-Privacy-Export-Python.ipynb) | Chaîne d'export privé : identifiants opaques (`sha256(sel+nom)` sur 8 hex, **sel secret obligatoire** — un sel public devient une oracle de confirmation), garde d'état en 9 passes (allowlist : la structure et les agrégats survivent, le texte part ; un conteneur inconnu traverse intact) et minage de motifs **agrégés** (spectre de sophismes, asymétrie tricherie/influence plafonnée, co-occurrences support/confiance/lift/Jaccard, couverture croisée) plus les 3 détecteurs formels (Dung / ATMS / JTMS) — portage verbatim EPITA `2e2a1c3c` (#23163), chaque résultat falsifié contre la fixture amont | Vie privée / export contrôlé |
 | 0* | [Agentic-0-init_agent](_archive/Argument_Analysis_Agentic-0-init_agent.ipynb) | *(legacy, archivé)* Configuration LLM/OpenAI (semantic_kernel) | Setup |
 | 1* | [Agentic-1-informal_agent](_archive/Argument_Analysis_Agentic-1-informal_agent.ipynb) | *(legacy, archivé)* Agent analyse informelle | Détection d'arguments |
 | 2* | [Agentic-2-pl_agent](_archive/Argument_Analysis_Agentic-2-pl_agent.ipynb) | *(legacy, archivé)* Agent logique propositionnelle | Formalisation |
@@ -113,6 +117,8 @@ L'analyse argumentative outillée s'inscrit dans plusieurs cas concrets où la d
 | **2-pl_agent** *(legacy)* | Convertir les arguments informels en formules propositionnelles et les vérifier via SAT | 60 min |
 | **07** | Composer les agents précédents en pipeline coordonné avec rapport de sortie structuré | 50 min |
 | **06** | Construire un moteur de croyances non-monotones (étiquetage IN/OUT, cascade de rétractation, détection d'odd loops) en pur stdlib Python, sans LLM ni solveur externe | 40 min |
+| **06b** | Passer de l'étiquetage booléen d'une croyance à son étiquetage **par environnements** : calculer le produit cartésien des étiquettes, lire le filtrage par nœud `out`, vérifier qu'une invalidation retranche sans re-dériver et qu'un nogood n'est pas mémorisé ; puis trancher un conflit entre agents par les cinq stratégies, en repérant laquelle s'applique, laquelle replie (`fallback_from`) et pourquoi une confiance absente n'est pas un zéro — pur stdlib Python | 40 min |
+| **06c** | Passer de l'étiquette booléenne d'une croyance à l'**ensemble révisable** : contracter un atome et voir si le noyau emporte la formule qui le soutient, décomposer une révision de Levi en contraction puis expansion, vérifier qu'une révision remplace vraiment une croyance par sa négation — et lire la frontière syntaxique réelle du parseur propositionnel (les connectifs `&&`/`||` passent, `&`/`|` sont refusés, `p AND q` devient l'atome `pANDq`) — JVM Tweety | 40 min |
 | **03** | Reconstruire les sémantiques grounded, preferred et stable de l'argumentation abstraite de Dung de zéro en pur Python (sans JVM) sur un cas où les trois divergent | 35 min |
 | **03b** | Étendre Dung par des valeurs et une audience (Bench-Capon 2003) : une attaque ne réussit que si la valeur de l'attaquant est préférée ; montrer qu'un même graphe en cycle produit trois conclusions distinctes selon l'audience — pur stdlib Python | 35 min |
 | **01** | Déployer un argument en ses 6 composants Toulmin (claim/data/warrant/backing/qualifier/rebuttal), auditer sa complétude, et traduire un débat en cadre de Dung (rebuttals → attaques) pour voir quel claim survit — pur stdlib Python | 30 min |
@@ -452,20 +458,19 @@ Le présent ordre est dérivé **lecture après lecture** des sections
 `**Navigation : [<< N >>]` ; il est public et auditable, pas une convention de
 nommage.
 
-**Mesure du 2026-09-09 sur `main`** : **28 notebooks** `.ipynb` dans le
-répertoire (27 à la racine, 1 sous `groupe-I2-contre-arguments-aspic/`). Depuis
-cette mesure, **cinq arrivées** portent le répertoire à **33** (32 racine + 1
-sous `groupe-I2-contre-arguments-aspic/`) : `Obs-02-Initiation`
-(#16431), puis les quatre distillats Triple Distillation livrés le
-2026-09-22/23 — `Dialogues_Protocolises`, `01b`, `Knowledge_Base`,
-`Communication_Channels` — mesure re-vérifiée au 2026-09-23 (`git ls-tree` :
-27 → 32 à la racine, aucune disparition). Chaque
+**Mesure du 2026-09-09 sur `main`** : les notebooks `.ipynb` du répertoire
+(racine et sous `groupe-I2-contre-arguments-aspic/`). Depuis cette mesure, des
+arrivées ont enrichi la série : `Obs-02-Initiation` (#16431), puis les
+distillats Triple Distillation livrés le 2026-09-22/23 —
+`Dialogues_Protocolises`, `01b`, `Knowledge_Base`, `Communication_Channels` —
+mesure re-vérifiée au 2026-09-23 (`git ls-tree` : croissance à la racine,
+aucune disparition). Chaque
 notebook est balisé dans un des trois arcs ou déclaré hors-arc avec sa raison.
 Puis `Argumentation-08f-Synthese-Multidimensionnelle` (étape 5 volet B #4960,
 organe `workflow_levels`) rejoint la série comme transverse de synthèse — le
 compte à jour du répertoire vit dans le catalogue régénéré.
 La présente section consolide la version c.1030 (livrée par session antérieure)
-et le mapping exhaustif 28/28 (PR #15371) — les deux contributions sont
+et le mapping exhaustif (PR #15371) — les deux contributions sont
 fusionnées sans doublon, le verdict renum (#15283) reste préservé ci-dessous.
 
 ### Arc 1 — Agentic (ligne principale, six rungs dans l'arc 00-08) — ordre strict
@@ -555,6 +560,7 @@ Toulmin_Model  (indépendant, racine propre)
 | `Argumentation-08e-Argument-Profile-Python.ipynb` | **Transverse (vue agrégée)** : fiche réunissant les 5 dimensions (sophismes, qualité, contre-arguments, JTMS, formel) — consomme les arcs 1, 2 et 3 |
 | `Argumentation-08f-Synthese-Multidimensionnelle-Python.ipynb` | **Transverse (synthèse)** : catalogue de niveaux light/standard/full (organe `workflow_levels`, #4960 étape 5) — exécute 7 dimensions réelles (PL, sophismes `fallacy_rules`, Dung, décision) et prouve les 2 indisponibles (FOL/modale) ; après `07c` et `08e` |
 | `Argumentation-08c-UI-Configuration-Python.ipynb` | **Transverse (interaction)** : interface utilisateur widgets, parcours alternatif « 0 → 1 → UI_configuration » |
+| `Argumentation-10-Privacy-Export-Python.ipynb` | **Transverse (vie privée)** : chaîne d'export d'un état d'analyse — `opaque_id` (opacification) → `sanitize_state` (garde d'export) → `pattern_mining` (minage agrégé) ; portage verbatim EPITA `2e2a1c3c` (#23163) — à lire avant toute publication d'un état de la série |
 | `Argumentation-02b-Argumentum-Cards-Python.ipynb` | **Hors-arc (production)** : deck imprimable du jeu Argumentum (176 cartes depuis la taxonomie) — consomme le socle ontologique, n'est pas un jalon de progression |
 | `Argumentation-Onto-01-AIF-OWL2-Python.ipynb` | **Fondation (socle ontologique)** : lecture de l'OWL upstream (`owl:Class` par sophisme, nœuds AIF) — outillage, pas un jalon d'apprentissage |
 | `Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb` | **Fondation (socle ontologique)** : CSV canonique complémentaire |
@@ -580,16 +586,15 @@ sont des **ordres partiels** :
    `Synthese_Multidimensionnelle`) se croisent avec les arcs sans chaîne
    de prérequis stricte — voir « Limites » ci-dessous.
 
-### Arithmétique (résolution du désaccord 14 vs 15 de #15283)
+### Arithmétique (résolution du désaccord de comptage de #15283)
 
-La discussion c.1030 opposait « 14 notebooks annoncés » (adjoint) à « 15
-balisés » (auteur de la PR). La mesure de référence est le répertoire :
-celle de cette branche au 2026-09-25 — les 33 de `main` (mesure
-du 2026-09-23, cinq arrivées depuis le 2026-09-09 ayant porté l'arc 3 de 5
-à 9) plus `Gouvernance_Multi_Agents` apportée par la présente PR — dont
-**20 balisés** par les arcs (6 + 4 + 10, l'arc 3 accueillant la gouvernance
-comme théorie parallèle) et **14 hors-arc** documentés ci-dessus — la somme
-fait 34, sans trou ni double. Les transverses que la c.1030 déclarait hors-ordre
+La discussion c.1030 opposait le compte de notebooks annoncé (adjoint) au
+compte balisé (auteur de la PR). La mesure de référence est le répertoire :
+celle de cette branche au 2026-09-25 — l'état de `main` (mesure du 2026-09-23,
+les arrivées depuis le 2026-09-09 ayant élargi l'arc 3) plus
+`Gouvernance_Multi_Agents` apportée par la présente PR — chaque notebook
+**balisé** par un arc (l'arc 3 accueillant la gouvernance comme théorie
+parallèle) ou **hors-arc** documenté ci-dessus, sans trou ni double. Les transverses que la c.1030 déclarait hors-ordre
 (`Formal_Richness_Matrix`, `Recollement_*`, …) sont ici nommés un à un avec
 leur raison.
 
@@ -641,7 +646,7 @@ Cette section consigne la proposition d'analyse reçue du workspace partenaire `
 | ------- | --------------- | ------------- |
 | `Argument_Analysis_Agentic-<N>` (numéros nus 0 à 5) | **aucune renumérotation** — c'est un arc | — |
 | 4 compagnons `*_agent` (`-0-init_agent`, `-1-informal_agent`, `-2-pl_agent`, `-3-orchestration_agent`) | **normalisation `*` → `b`** (convention §2 : base = `a`, première accrétion = `b`) | traduction d'une intention auteur déjà notée `*(legacy)*` dans la table curée |
-| 14 notebooks à mnémonique (théorie / formalismes) | **aucune renum, question de partition** — orthogonaux à l'arc Agentic | aucun tell ne se lit ; le mécanisme des lettres ne s'applique pas |
+| Notebooks à mnémonique (théorie / formalismes) | **aucune renum, question de partition** — orthogonaux à l'arc Agentic | aucun tell ne se lit ; le mécanisme des lettres ne s'applique pas |
 
 ### Collision slot 2 — décision owner requise
 
@@ -671,23 +676,20 @@ Ce lot est **distinct** de la renumérotation et peut partir seul, sans attendre
 
 ### Mesure repo-wide (hors Argument_Analysis)
 
-Le garde de collision du merge-gate (`check_duplicate_notebook_index.py:_INDEX_RE`) exclut la convention dominante du cours (`ID_IN_NAME_RE` accepte `<Préfixe>-<num><lettre?>-`, `_INDEX_RE` exige l'index en tête). Mesure au 2026-09-06 sur 1240 notebooks (hors `_archive`/checkpoints/`.lake`) :
+Le garde de collision du merge-gate (`check_duplicate_notebook_index.py:_INDEX_RE`) exclut la convention dominante du cours (`ID_IN_NAME_RE` accepte `<Préfixe>-<num><lettre?>-`, `_INDEX_RE` exige l'index en tête). Mesure au 2026-09-06 sur l'ensemble des notebooks du dépôt (hors `_archive`/checkpoints/`.lake`) :
 
 - identifiés par la règle §1 : 822
 - vus par `_INDEX_RE` : 224
-- écart : **746 notebooks identifiés que le garde de collision ne peut pas voir**
+- écart : des notebooks entiers identifiés comme invisibles pour le garde de collision (l'écart mesuré ci-dessus)
 
 L'écart n'est pas propre à Argument_Analysis — contrôle positif sur les voisines : `Sudoku` 0/37, `Tweety` 0/34, `GameTheory` 8/94. Ce périmètre mériterait sa propre issue, mais elle appartient à l'owner de l'organe. **Elle n'est pas déposée depuis cette section** — la présente consignation se limite à la série Argument_Analysis.
 
+## Provenance
 
----
+Les versions successives de ce README (1.2.1 → 1.2.5, 2026-09-09 → 2026-09-25) sont conservées dans l'historique Git :
 
-**Version 1.2.5** — 2026-09-25 — intégration `Gouvernance_Multi_Agents` (PR #17353, sous-grain 2 #4960) : ligne dans les tables « Notebooks » et « Ce que chaque notebook apporte », entrée arc 3 (indépendante, prérequis aucun, voisine d'`Agentic-3-orchestration` par la question — décider à plusieurs vs orchestrer le travail) ; mapping re-mesuré **34/34**, arithmétique **20 balisés (6+4+10) + 14 hors-arc** ; reprise des lignes renommées `Argumentation-NN` du merge `main` (#17718). Marqueur `CATALOG-STATUS` byte-identique, aucune régénération sur la branche. Tell readme-french-first R1 respecté (prose nouvelle en français).
+```
+git log --oneline MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/README.md
+```
 
-**Version 1.2.4** — 2026-09-23 — audit fichier ENTIER §E (issue #17453) : ajout d'`Observatoire-1-Initiation` (livré #16431, epic #16410) dans les tables « Notebooks » et « Ce que chaque notebook apporte » + arc 3 (prérequis `Dated_Graphs`, diagramme mis à jour) ; ajout des 4 notebooks manquants à la table « Notebooks » (`Recollement_Lectures`, `Recollement_Strate6`, `Argumentum_Cards`, `I2_Contre_arguments_ASPIC` — chemin sous-dossier corrigé) ; mapping exhaustif re-mesuré **33/33** (32 racine + 1 sous groupe-I2 — cinq arrivées depuis la mesure du 2026-09-09, re-vérifiées au `git ls-tree`), arithmétique **19 balisés (6+4+9) + 14 hors-arc**, `Communication_Channels` classé hors-arc (transverse infra) ; table « Statistiques catalogue à jour » ré-alignée sur le marqueur canonique `pedagogical_count: 28`, `maturity: BETA=26, ALPHA=1, DRAFT=1` (l'ancienne table sommait à 18 sur un vocabulaire PRODUCTION périmé), écart disque↔catalogue signalé (**5** notebooks non catalogués, nommés, rattrapage par le cron). Marqueur `CATALOG-STATUS` byte-identique, aucune régénération sur la branche. Tell readme-french-first R1 respecté (prose nouvelle en français).
-
-**Version 1.2.3** — 2026-09-10 — consolidation sans doublon de la section « Ordre partiel et prérequis » (PR #15371, suite au DM `msg-20260910T134004-9nsqfl` ai-01) : fusion de la livraison c.1030 (kernel/notebook prérequis détaillés, 15/28) avec le mapping exhaustif 28/28, en une seule section augmentée préservant le verdict renum (EPIC #5081, issue #14950) inchangé. Aucun notebook modifié, aucune décision de renum, marqueur `CATALOG-STATUS` byte-identique à `pedagogical_count: 18`. Tell readme-french-first R1 respectée (section rédigée en français). Tell catalog-pr-hygiene R1 respectée (catalogue inchangé).
-
-**Version 1.2.2** — 2026-09-09 — section *Ordre partiel et prérequis* ajoutée suite au nit user 5594317963. Aucun fichier notebook modifié, aucune décision de renum (EPIC #5081 reste owner-decision). Tell readme-french-first R1 respecté (section rédigée en français). Tell catalog-pr-hygiene R1 respecté (CATALOG-STATUS inchangé).
-
-**Version 1.2.1** — 2026-09-09 — section Renumérotation — verdict (EPIC #5081, issue #14950) consignant la proposition owner-decision sans modifier de fichier. Tell catalog-pr-hygiene R1 respecté (marqueur CATALOG-STATUS inchangé). Tell readme-french-first R1 respecté (section ajoutée en français).
+Chaque PR listée par `git log` (intégrations `Gouvernance_Multi_Agents`, audits fichier-entier, décisions owner `EPIC #5081`) reste traçable et auditable par le diff, sans raconter la livraison dans le README courant.

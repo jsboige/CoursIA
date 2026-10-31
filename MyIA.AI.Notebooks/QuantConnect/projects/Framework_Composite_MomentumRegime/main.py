@@ -99,6 +99,7 @@ class FrameworkCompositeMomentumRegime(QCAlgorithm):
             self.symbols[ticker] = self.add_equity(ticker, Resolution.DAILY).symbol
 
         self.pcm = None
+        self.rs_alpha = None
         if self.mode in FRAMEWORK_MODES:
             sector_mom_tickers = ["SPY", "IEF", "GLD"]  # IEF instead of TLT
             regime_switch_tickers = ["SPY", "QQQ", "IEF", "GLD"]
@@ -110,6 +111,7 @@ class FrameworkCompositeMomentumRegime(QCAlgorithm):
 
             sector_momentum = SectorMomentumAlpha(sector_mom_tickers, lookback_weights=sm_weights)
             regime_switching = RegimeSwitchingAlpha(regime_switch_tickers, momentum_lookback=rs_lookback)
+            self.rs_alpha = regime_switching
             if self.mode == "sm":
                 self.set_alpha(CompositeAlphaModel(sector_momentum))
                 allocations = {"SectorMomentum": 1.0}
@@ -139,6 +141,11 @@ class FrameworkCompositeMomentumRegime(QCAlgorithm):
         self.traded = 0.0
         self.order_counts = {}
         self.gross_sum = 0.0
+        # Leverage check (#21349): the sleeves add up to at most 1, so a daily gross
+        # exposure above 1.005 means a sleeve went over its slice (fees stay below).
+        self.gross_max = 0.0
+        self.gross_over_days = 0
+        self.gross_over_months = set()
         self._ref_month = -1
 
     def on_data(self, data):
@@ -159,7 +166,12 @@ class FrameworkCompositeMomentumRegime(QCAlgorithm):
             self.plot("shadow", "fees", self.portfolio.total_fees / self.start_value)
             self.plot("shadow", "turnover", self.traded)
             gross = sum(abs(holding.holdings_value) for holding in self.portfolio.values())
-            self.gross_sum += gross / value if value > 0 else 0.0
+            ratio = gross / value if value > 0 else 0.0
+            self.gross_sum += ratio
+            self.gross_max = max(self.gross_max, ratio)
+            if ratio > 1.005:
+                self.gross_over_days += 1
+                self.gross_over_months.add(self.time.strftime("%Y-%m"))
             self.closes += 1
 
     def on_order_event(self, order_event):
@@ -175,6 +187,13 @@ class FrameworkCompositeMomentumRegime(QCAlgorithm):
             self.set_runtime_statistic(f"Orders {ticker}", str(self.order_counts.get(ticker, 0)))
         gross = self.gross_sum / self.closes if self.closes else 0.0
         self.set_runtime_statistic("Gross exposure", f"{gross:.3f}")
+        self.set_runtime_statistic("Max gross exposure", f"{self.gross_max:.3f}")
+        self.set_runtime_statistic("Days gross > 1.005", str(self.gross_over_days))
+        self.set_runtime_statistic("Months gross > 1.005",
+                                   ",".join(sorted(self.gross_over_months)) or "none")
+        if self.rs_alpha is not None:
+            self.set_runtime_statistic("RS partial oversold",
+                                       ",".join(self.rs_alpha.partial_oversold) or "none")
         if self.pcm is not None:
             self.set_runtime_statistic("PCM calls", str(self.pcm.calls))
             self.set_runtime_statistic("PCM calls with SM", str(self.pcm.calls_with_watch))

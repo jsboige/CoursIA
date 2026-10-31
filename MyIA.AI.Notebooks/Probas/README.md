@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: Probas
-pedagogical_count: 83
-breakdown: DecisionTheory=33, Infer=21, PyMC=20, Applications=8, root=1
-maturity: BETA=76, DRAFT=4, ALPHA=3
+pedagogical_count: 92
+breakdown: DecisionTheory=37, Infer=21, PyMC=20, Applications=12, root=2
+maturity: BETA=87, ALPHA=4, DRAFT=1
 -->
 
 > **À propos des décomptes** : le marqueur `CATALOG-STATUS` ci-dessus est la **source de vérité autoritative** pour les volumes (total de la famille, notebooks par sous-série, maturité). Il est régénéré chaque nuit par le workflow [`catalog-cron.yml`](../../.github/workflows/catalog-cron.yml) à 03:37 UTC sur `main` (commit par `github-actions[bot]`, livré par la PR permanente `chore/catalog-refresh-pending`). Pour la **répartition par kernel** (C#/.NET vs Python vs Lean 4) au sein d'une sous-série — la décomposition **technique** par interpréteur, que le marqueur n'agrège pas —, la source est la lecture directe des `metadata.kernelspec` des notebooks : ces volumes dérivent à chaque ajout et **aucun chiffre n'est maintenu ici en prose**. Si vous observez un décalage entre ce marqueur et une phrase en prose de ce README, **fiez-vous au marqueur** ; la prose sera ré-alignée lors du prochain passage.
@@ -166,7 +166,7 @@ Pour les étudiants en recherche opérationnelle ou finance :
 
 #### Parcours rapide Python (standalone, ~2h)
 
-Si vous préférez Python au C#, commencez par **PyMC-01-Setup** (introduction standalone en Python, premier modèle Two Coins) puis Pyro_RSA_Hyperbole.ipynb (application à la linguistique pragmatique avec le framework RSA). En **C#/.NET**, l'introduction est `Infer-1b` (`Infer/Infer-1b-Premiers-Modeles.ipynb`), le premier modèle avec les fondations de [`Infer/`](Infer/README.md).
+Si vous préférez Python au C#, commencez par **PyMC-01-Setup** (introduction standalone en Python, premier modèle Two Coins) puis Pyro_RSA_Hyperbole.ipynb (application à la linguistique pragmatique avec le framework RSA). En **C#/.NET**, l'introduction est `Infer-1b` (`Infer/Infer-01b-Premiers-Modeles.ipynb`), le premier modèle avec les fondations de [`Infer/`](Infer/README.md).
 
 #### Parcours PyMC complet (~21h)
 
@@ -214,7 +214,7 @@ Deux stacks, un même parcours de 20 modèles : **Infer.NET** (C#, message passi
 
 | Critère | Recommandation |
 |---------|---------------|
-| Juste découvrir la programmation probabiliste | **Infer-1b** (`Infer/Infer-1b-Premiers-Modeles.ipynb`) |
+| Juste découvrir la programmation probabiliste | **Infer-1b** (`Infer/Infer-01b-Premiers-Modeles.ipynb`) |
 | Comprendre les graphes de facteurs | **Infer-3** (Monty Hall, Murder Mystery) |
 | Un premier modèle qui marche | **Infer-1b** ou **PyMC-01-Setup** |
 | Application concrète rapide | **Infer-8 TrueSkill** ou **Infer-11 LDA** |
@@ -227,6 +227,8 @@ Deux stacks, un même parcours de 20 modèles : **Infer.NET** (C#, message passi
 ```
 Probas/
 ├── Probas-KLS-Concentration.ipynb # Carnet transverse : Cheeger, hit-and-run, thin-shell (Python)
+├── Probas-CLT-Theoreme-Central-Limite.ipynb # Carnet transverse : TCL mesuré, variance finie porteuse (Python)
+├── Probas-MCMC-Echantillonnage-Metropolis-Python.ipynb # Carnet transverse : Metropolis-Hastings + Gibbs from-scratch, diagnostics ESS/R-hat (Python)
 ├── Applications/                # Applications standalone
 │   ├── Quotients-Fibres-Recollement-Python.ipynb # Géométrie catégorique (kernel Python, ex-Infer-20)
 │   ├── Percolation/             # Simulation supercritique (Python) + compagnon Lean 4 (lake percolation_lean)
@@ -235,8 +237,8 @@ Probas/
 │   ├── PyMC-01-Setup.ipynb ... PyMC-19-Survival-Analysis.ipynb
 │   └── README.md                # Documentation détaillée de la série PyMC
 ├── Infer/                       # Corpus bayésien : socle 1-19 sans le 6, accretions 1b/2b/8b
-│   ├── Infer-1-Setup.ipynb ... Infer-19-Survival-Analysis.ipynb
-│   ├── Infer-1b-Premiers-Modeles.ipynb  # Accretion du premier modèle (ex-Infer-101)
+│   ├── Infer-01-Setup.ipynb ... Infer-19-Survival-Analysis.ipynb
+│   ├── Infer-01b-Premiers-Modeles.ipynb  # Accretion du premier modèle (ex-Infer-101)
 │   ├── Infer-08b-TrueSkill-Formules-Fermees-CSharp.ipynb # Accretion TrueSkill : mise à jour closed-form O(1) (V(t)/W(t))
 │   ├── README.md                # Documentation détaillée de la série bayésienne
 │   ├── Infer-Glossary.md        # Glossaire des termes Infer.NET
@@ -407,7 +409,7 @@ La causalité est traitée à **quatre endroits** du dépôt, chacun avec son mo
 | Série | Moteur | Angle causal |
 |-------|--------|--------------|
 | [Tweety-11-Causal-Python](../SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb) | Tweety (.NET, logique) | modèle causal structurel, opérateur `do`, contrefactuels |
-| [Infer-5-Causal-Inference](Infer/Infer-5-Causal-Inference.ipynb) | Infer.NET (message passing) | backdoor, front-door, paradoxe de Simpson, médiation |
+| [Infer-05-Causal-Inference](Infer/Infer-05-Causal-Inference.ipynb) | Infer.NET (message passing) | backdoor, front-door, paradoxe de Simpson, médiation |
 | [PyMC-05-Causal-Inference](PyMC/PyMC-05-Causal-Inference.ipynb) | PyMC (MCMC) | backdoor, front-door, contrefactuel bayésien |
 | [ICT-5](../IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb) · [ICT-6](../IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb) | PyPhi (CE 2.0) | émergence causale, information effective de Hoel |
 
@@ -461,6 +463,25 @@ Le carnet [`Probas-KLS-Concentration.ipynb`](Probas-KLS-Concentration.ipynb) (ke
 - **Marche hit-and-run** sur les trois corps : temps d'autocorrélation en dimension croissante, estimateur validé au préalable sur un contrôle AR(1) à trou spectral connu (avec son biais de troncature mesuré), et contrôle de domaine qui attrape l'erreur de bornes la plus fréquente de l'algorithme.
 - **Variance thin-shell** : les valeurs exactes sont retrouvées — `2n` pour la gaussienne, `4n/5` pour le cube, et une formule dérivée dans le carnet même pour le simplexe isotrope, vérifiée par assertion sur six dimensions ; les largeurs de couronne convergent vers 1/2, 1/5 et 1, **constantes en n**.
 - 3 exercices (directions de la sonde, AR(1) à deux modes, effet de l'isotropisation) ; sorties réelles committées, exécution `papermill --kernel python3`.
+
+Le carnet [`Probas-CLT-Theoreme-Central-Limite.ipynb`](Probas-CLT-Theoreme-Central-Limite.ipynb) (kernel `python3`, numpy) est un second contrepoint non-bayésien : il **mesure** le théorème central limite au lieu de l'énoncer. Deux résultats, tous deux mesurés :
+
+- **Le taux `1/√n` est une borne, sous hypothèse de troisième moment fini** : pour quatre lois de départ très différentes (uniforme, Bernoulli, exponentielle, log-normale), le produit `d_K(n)·√n` — où `d_K` est la distance de Kolmogorov à la gaussienne — varie peu quand `n` croît de 10 à 160. C'est une observation numérique cohérente avec la borne de Berry–Esseen `d_K(n) ≤ C·E|X−μ|³/(σ³√n)`, qui exige le **troisième moment absolu fini** — la variance finie du TCL ne suffit pas à donner ce taux — et n'impose aucune constante asymptotique non nulle : pour une loi normale, la distance de population est nulle à toute taille.
+- **L'hypothèse de variance finie est porteuse** : une loi à queue lourde à variance infinie (Lomax, `α = 1.5`) ne se normalise pas en gaussienne — l'échelle robuste des fluctuations de sa somme normalisée par `√n` **croît** avec `n` (en `n^{1/α − 1/2}`) au lieu de se stabiliser.
+- 3 exercices (distance de Kolmogorov, courbe de convergence, reproduction du contre-exemple à queue lourde) ; sorties réelles committées, exécution `papermill --kernel python3`.
+
+### Probas-MCMC-Echantillonnage-Metropolis-Python.ipynb
+
+Descend **sous le capot** de l'échantillonneur que la série PyMC emploie en boîte noire (NUTS) : un **Metropolis–Hastings** à marche aléatoire et un **Gibbs** construits **from-scratch** (stdlib + numpy), puis **diagnostiqués** avec les instruments qu'on applique aux sorties PyMC — auto-corrélation intégrable → effectif de samples indépendants (`ESS = N/τ`), et `R-hat` de Gelman–Rubin sur quatre chaînes (graines `0, 1, 7, 42`). L'algorithme ne compare que des **ratios** de densités, donc la constante de normalisation `Z` s'annule : c'est précisément ce qui rend l'échantillonnage praticable là où l'intégrale n'a pas de forme fermée.
+
+Le carnet mesure là où l'approximation naïve — **factoriser** la posterior (mean-field) ou la **ramener à une gaussienne au mode** — **échoue**, sur deux cibles à vérité connue :
+
+| Cible | Grandeur | MCMC (from-scratch) | Approximation naïve | Vérité |
+|---|---|---|---|---|
+| T1 — gaussienne 2D corrélée (`ρ = 0.8`) | corrélation | **0,801** (MH) · 0,799 (Gibbs) | −0,014 (mean-field) | 0,800 |
+| T2 — mélange bimodal (`±2,5`, `σ = 0,5`) | variance | **6,359** | 0,249 (un seul mode) | 6,500 |
+
+Sur T1, les diagnostics confirment un sampleur sain (`ESS/ch ≈ 426`, `R-hat = 1,0000`) ; le mean-field rend des **marges correctes** mais **remet la corrélation à zéro par construction** — factoriser, c'est *supposer* l'indépendance. Sur T2, l'approximation à un mode ne se contente pas d'être imprécise : sa moyenne (`2,50`) tombe **dans la vallée** où la posterior n'a pas de masse, et l'écart mesuré `≈ 57/43` entre les deux modes illustre au passage la leçon d'initialisation (les quatre chaînes démarrent au même mode — sur une cible multimodale, on disperse les points de départ). 3 exercices (probabilité d'acceptation, `ESS` à partir de l'ACF, taux d'acceptation vs taille de pas) ; sorties réelles committées, exécution `papermill --kernel mcp-jupyter-py310`.
 
 ## Prerequisites
 

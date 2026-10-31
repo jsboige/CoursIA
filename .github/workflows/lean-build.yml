@@ -67,6 +67,11 @@ on:
         type: string
         required: false
         default: 'none'
+      build-threads:
+        description: "Borne de parallelisme d'elaboration, posee en variable d'environnement `LEAN_NUM_THREADS` (See #23247). Vide = comportement historique inchange pour tous les callers qui ne la posent pas. Poser '1' sur un lake dont la SOMME des elaborations paralleles depasse le plafond RAM du runner -- ubuntu-latest = 16 Go pour 4 vCPU. Le `lake` de ce toolchain N'EXPOSE PAS de drapeau -j/--jobs : mesure, « unknown short option '-j' » au run CI 40857014456 et « unknown long option '--jobs' » en local. Le levier disponible est donc la variable, dont la serialisation des elaborations est mesuree en depot (#14821, run 35175031202, lean-knot.yml:148). Distinct du cas #9840 (un SEUL module > plafond, se corrige en decoupant le module) : ici chaque module tient seul, c'est la co-elaboration qui tue."
+        type: string
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -290,7 +295,12 @@ jobs:
           # the error lines can be surfaced in a ::group:: on failure. `if cmd;` exempts
           # the pipeline from errexit, but pipefail still feeds `$?` here — this is what
           # preserves the 2026-06-14 invariant (FAILED build still exits != 0).
-          if lake -R build 2>&1 | tee "$RUNNER_TEMP/lake.log" | tail -20; then
+          # #23247 : borne de parallelisme optionnelle, posee en LEAN_NUM_THREADS.
+          # Sans l'input, THREADS_ENV est vide et la commande est byte-identique a
+          # l'historique -- aucun effet sur les dispatchers qui ne posent pas build-threads.
+          THREADS_ENV=""
+          if [ -n "${{ inputs.build-threads }}" ]; then THREADS_ENV="LEAN_NUM_THREADS=${{ inputs.build-threads }}"; fi
+          if env $THREADS_ENV lake -R build 2>&1 | tee "$RUNNER_TEMP/lake.log" | tail -20; then
             :
           else
             rc=$?
@@ -403,20 +413,20 @@ jobs:
     - name: Certified modules contract (${{ matrix.display-name }})
       if: matrix.certified-subdir != ''
       run: |
-        python -m pip install --quiet pytest
+        python3 -m pip install --quiet pytest
         # Rapport honnete lake-wide (advisory) : le lecteur du log voit le
         # total REEL du lake (dont le stretch sorry de RepeatedGames/Folk.lean,
         # hors du sous-dossier certifie), pas seulement le zero certifie.
-        python "scripts/lean/count_code_sorry.py" \
+        python3 "scripts/lean/count_code_sorry.py" \
           --lake "${{ matrix.project-path }}" --no-vacuous || true
-        python "scripts/lean/check_certified_sorry.py" \
+        python3 "scripts/lean/check_certified_sorry.py" \
           --repo "$GITHUB_WORKSPACE" \
           --lake "${{ matrix.project-path }}" \
           --subdir "${{ matrix.certified-subdir }}"
         # Controles positifs du gate lui-meme : un lot entier qui passe est
         # aussi ce que produit un gate de-branche -- la difference se fait sur
         # les controles positifs, pas sur le vert.
-        python -m pytest "scripts/tests/test_check_certified_sorry.py" -q
+        python3 -m pytest "scripts/tests/test_check_certified_sorry.py" -q
     - name: Drop Mathlib oleans before the cache save
       # actions/cache saves `.lake` in its post step, at the end of this job
       # (success only). Mathlib's own oleans make up most of that archive:

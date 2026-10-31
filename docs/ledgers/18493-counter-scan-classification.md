@@ -126,7 +126,7 @@ rougirait sur des equivalences correctes partout dans le depot.
 | `02-5-LTX2-Audiovisual.ipynb` | c13 | 6 | `tilde_count` | **KEEP** | mesure d'horloge datee (materiel precis) -- releve, pas un compteur d'artefact ; appartient a la classe perf-prose #8052 |
 | `02-7-CogVideoX-Text-to-Video.ipynb` | c1 | 15 | `tilde_count` | **KEEP** | equivalence unitaire definitionnelle : conversion exacte d'une constante du code (252 jours ouvres/an, 4,184 kJ/kcal, 10 min/bloc) -- ne derive pas |
 | `04-5-MiniMax-H3-Cloud-Video.ipynb` | c4 | 181 | `tilde_count` | **KEEP** | equivalence unitaire definitionnelle : conversion exacte d'une constante du code (252 jours ouvres/an, 4,184 kJ/kcal, 10 min/bloc) -- ne derive pas |
-| `ICT-15g-EmpiricalHuangExploitation-Python.ipynb` | c20 | 27 | `tilde_count` | **KEEP** | auto-documente : le chiffre du commentaire est celui de la ligne de code, ou une taille de telechargement stable |
+| `ICT-15/ICT-15g-EmpiricalHuangExploitation-Python.ipynb` | c20 | 27 | `tilde_count` | **KEEP** | auto-documente : le chiffre du commentaire est celui de la ligne de code, ou une taille de telechargement stable |
 | `4.3-TransferLearning-ResNet.ipynb` | c11 | 1 | `tilde_count` | **KEEP** | auto-documente : le chiffre du commentaire est celui de la ligne de code, ou une taille de telechargement stable |
 | `QC-Py-12-Backtesting-Analysis.ipynb` | c9 | 3 | `tilde_count` | **KEEP** | equivalence unitaire definitionnelle : conversion exacte d'une constante du code (252 jours ouvres/an, 4,184 kJ/kcal, 10 min/bloc) -- ne derive pas |
 | `QC-Py-15-Parameter-Optimization.ipynb` | c46 | 3 | `tilde_count` | **KEEP** | equivalence unitaire definitionnelle : conversion exacte d'une constante du code (252 jours ouvres/an, 4,184 kJ/kcal, 10 min/bloc) -- ne derive pas |
@@ -138,7 +138,7 @@ rougirait sur des equivalences correctes partout dans le depot.
 | `research_vrp_putwrite.ipynb` | c7 | 21 | `tilde_count` | **KEEP** | equivalence unitaire definitionnelle : conversion exacte d'une constante du code (252 jours ouvres/an, 4,184 kJ/kcal, 10 min/bloc) -- ne derive pas |
 | `Lean-10-LeanDojo.ipynb` | c2 | 22 | `config_dict_doc` | **KEEP** | borne unilaterale (`>100k`) sur une quantite qui ne decroit pas -- ne peut pas deriver faux ; doc de chois de preset |
 | `Lean-10-LeanDojo.ipynb` | c6 | 6 | `NOTE_runtime` | **EDIT** | litteral non derivable d'une mesure du carnet -- retire, mecanisme conserve |
-| `Lean-21-MIMO-Detection-Flips.ipynb` | c3 | 27 | `gt_runtime_threshold` | **KEEP** | logique operationnelle (`> 0 si ...`), pas un compteur -- faux positif de l'organe |
+| `MIMO/MIMO-02-Detection-Flips-Lean-Python.ipynb` | c3 | 27 | `gt_runtime_threshold` | **KEEP** | logique operationnelle (`> 0 si ...`), pas un compteur -- faux positif de l'organe |
 | `Z3-16c-Meal-Planner-Patient-Capstone-Python.ipynb` | c14 | 2 | `tilde_count` | **KEEP** | equivalence unitaire definitionnelle : conversion exacte d'une constante du code (252 jours ouvres/an, 4,184 kJ/kcal, 10 min/bloc) -- ne derive pas |
 | `Z3-16c-Meal-Planner-Patient-Capstone-Python.ipynb` | c14 | 3 | `tilde_count` | **KEEP** | equivalence unitaire definitionnelle : conversion exacte d'une constante du code (252 jours ouvres/an, 4,184 kJ/kcal, 10 min/bloc) -- ne derive pas |
 | `SC-20-Bitcoin-Scripting-Python.ipynb` | c27 | 24 | `tilde_count` | **KEEP** | equivalence unitaire definitionnelle : conversion exacte d'une constante du code (252 jours ouvres/an, 4,184 kJ/kcal, 10 min/bloc) -- ne derive pas |

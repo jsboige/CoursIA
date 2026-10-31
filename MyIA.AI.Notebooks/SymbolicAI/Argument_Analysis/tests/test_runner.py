@@ -366,6 +366,38 @@ def test_create_logic_agent_name_and_instructions():
     assert agent.instructions is PROMPT_LOGIC_ANALYSIS
 
 
+def test_logic_agent_fallback_taken_only_for_declared_test_stub():
+    """Stub declare (`_coursia_mock`) : agent construit sans settings, pas d'erreur.
+
+    C'est la branche legitime du repli : le stub plat de ce fichier n'expose
+    pas `semantic_kernel.connectors` (revue ai-01 du 21/10, #18395).
+    """
+    sk = sys.modules["semantic_kernel"]
+    assert getattr(sk, "_coursia_mock", False) is True, "precondition du stub"
+    k, s = _kernel(), _state()
+    agent = create_logic_agent(k, "svc", s)
+    assert agent.name == "LogicAgent"
+
+
+def test_logic_agent_propagates_import_error_outside_declared_stub():
+    """Hors stub declare, une installation SK cassee LEVE au lieu de degrader en silence.
+
+    Sans cette borne, `except ImportError: fcb = None` avalait toute
+    installation cassée ou incompatible et le carnet produisait un run
+    degrade d'apparence normale (#18395).
+    """
+    sk = sys.modules["semantic_kernel"]
+    had_flag = getattr(sk, "_coursia_mock", False)
+    k, s = _kernel(), _state()
+    sk._coursia_mock = False
+    try:
+        with pytest.raises(ImportError):
+            create_logic_agent(k, "svc", s)
+    finally:
+        sk._coursia_mock = had_flag
+    assert getattr(sk, "_coursia_mock", False) is had_flag, "drapeau restaure"
+
+
 def test_agent_builders_are_idempotent_on_plugin_registration():
     """If StateManager is already on the kernel, builders must NOT re-add it."""
     k, s = _kernel(), _state()

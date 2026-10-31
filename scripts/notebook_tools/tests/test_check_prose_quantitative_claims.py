@@ -68,6 +68,129 @@ def test_count_re_requires_number_before_noun():
 
 
 # --------------------------------------------------------------------------- #
+#  Allowlist motivee de la classe artifact (#23111)
+# --------------------------------------------------------------------------- #
+
+
+def test_artifact_exemptions_are_motivated_and_point_at_real_files():
+    """Chaque entree porte un chemin QUI EXISTE, un motif, et une raison ECRITE.
+
+    Une exemption morte ressemble exactement a une exemption vivante : meme
+    trio, meme silence. Le chemin est donc verifie contre l'arbre (une faute de
+    frappe dans un chemin ne protegerait rien et ne se verrait pas), et la
+    raison doit etre une phrase, pas un mot -- c'est elle qui rend l'arbitrage
+    relisible sans reconstituer le fil de la PR."""
+    repo_root = Path(__file__).resolve().parents[3]
+    assert cqc.ARTIFACT_EXEMPTIONS, "allowlist vide : #23111 attend les 4 occurrences Lean"
+    for exemption in cqc.ARTIFACT_EXEMPTIONS:
+        assert (repo_root / exemption.path).is_file(), (
+            f"chemin d'exemption introuvable : {exemption.path!r}"
+        )
+        assert not any(ch in exemption.path for ch in "*?["), (
+            f"un glob n'est pas un chemin : {exemption.path!r} (une exemption "
+            f"large se perime en silence)"
+        )
+        assert exemption.motif.pattern.strip(), "motif vide"
+        assert len(exemption.raison.split()) >= 8, (
+            f"raison trop courte pour etre relue : {exemption.raison!r}"
+        )
+
+
+@pytest.mark.parametrize(
+    "path, line",
+    [
+        (
+            "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/README.md",
+            "  - Gosper Glider Gun (36 cellules vivantes, période 30) parsé et vérifié",
+        ),
+        (
+            "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/README.md",
+            "- Pulsar (48 cellules) et pentadecathlon (p15) sont à la limite",
+        ),
+        (
+            "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/README.en.md",
+            "- Pulsar (48 cells) and pentadecathlon (p15) are borderline but pass `native_decide`",
+        ),
+        (
+            "MyIA.AI.Notebooks/SymbolicAI/Lean/README.md",
+            "reproduction réelle du dépôt piné `plby/HopfProblem` (248 818 lignes "
+            "compilées en 1154 s, 0 sorry/0 axiom)",
+        ),
+    ],
+)
+def test_artifact_exemptions_cover_the_four_lean_occurrences(path, line):
+    """Les quatre faux positifs de SENS nommes par #23111 ne sont plus signales.
+
+    « cellules vivantes » / « cellules » d'un canon du Jeu de la Vie comptent
+    des cellules de l'automate ; « 248 818 lignes » mesure un run sur un depot
+    externe pine. Supprimer le nombre reecrirait le propos."""
+    assert cqc._findings_in_text(line, path, {"artifact"}) == []
+
+
+def test_artifact_exemption_is_a_span_not_a_file_blanket():
+    """L'exemption couvre le compteur sous son motif, PAS la ligne ou le fichier.
+
+    Un vrai compteur de carnet sur la MEME ligne reste flague : c'est ce qui
+    distingue une exemption motivee d'un couperet par fichier, qui avalerait en
+    silence un compte ajoute plus tard."""
+    path = "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/README.md"
+    out = cqc._findings_in_text(
+        "- Pulsar (48 cellules) et le carnet fait 87 cellules de code", path, {"artifact"}
+    )
+    assert [snippet for _loc, _klass, snippet in out] == ["87 cellules"]
+    # …et un compte de cellules ordinaire ailleurs dans le MEME fichier aussi.
+    out = cqc._findings_in_text("Le README annonce 36 cellules de code.", path, {"artifact"})
+    assert [snippet for _loc, _klass, snippet in out] == ["36 cellules"]
+
+
+def test_artifact_exemption_does_not_leak_across_files():
+    """Le meme texte dans un AUTRE fichier n'est pas exempte : l'exemption est
+    (fichier, motif), jamais un motif global qui suivrait le phrase dans le
+    depot."""
+    line = "- Pulsar (48 cellules) et pentadecathlon (p15)"
+    out = cqc._findings_in_text(line, "autre/serie/README.md", {"artifact"})
+    assert out == [("autre/serie/README.md", "artifact", "48 cellules")]
+
+
+def test_artifact_exemption_uses_the_file_part_of_a_notebook_location():
+    """Une cellule de carnet porte une location « <fichier> MD[<i>] » : la
+    partie fichier suffit a apparier l'exemption, et le finding restitution
+    garde la location complete."""
+    path = "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/README.md"
+    out = cqc._findings_in_text("Pulsar (48 cellules)", f"{path} MD[3]", {"artifact"})
+    assert out == []
+    out = cqc._findings_in_text("Le carnet fait 87 cellules", f"{path} MD[3]", {"artifact"})
+    assert out == [(f"{path} MD[3]", "artifact", "87 cellules")]
+
+
+def test_exemption_audit_separates_live_from_stale(tmp_path):
+    """Une entree qui ne couvre plus rien est PERIMEE, pas silencieuse : elle ne
+    protege aucun compteur et se lit pourtant comme une decision vivante."""
+    first = cqc.ARTIFACT_EXEMPTIONS[0]
+    target = tmp_path / first.path
+    target.parent.mkdir(parents=True)
+    target.write_text(
+        "  - Gosper Glider Gun (36 cellules vivantes, période 30) parsé\n",
+        encoding="utf-8",
+    )
+    live, stale = cqc._exemption_audit(tmp_path)
+    assert [(e.path, n) for e, n in live] == [(first.path, 1)]
+    # Les autres fichiers de l'allowlist n'existent pas sous tmp_path.
+    assert len(stale) == len(cqc.ARTIFACT_EXEMPTIONS) - 1
+
+    # Le propos est reecrit : le motif ne matche plus, l'entree est perimee
+    # -- et l'occurrence redevient signalable, ce qui rend l'arbitrage a un
+    # humain plutot que de le laisser mourir en silence.
+    target.write_text("  - Gosper Glider Gun (36 cellules de carnet)\n", encoding="utf-8")
+    live, stale = cqc._exemption_audit(tmp_path)
+    assert live == []
+    assert len(stale) == len(cqc.ARTIFACT_EXEMPTIONS)
+    assert cqc._findings_in_text(
+        "  - Gosper Glider Gun (36 cellules de carnet)", first.path, {"artifact"}
+    ) == [(first.path, "artifact", "36 cellules")]
+
+
+# --------------------------------------------------------------------------- #
 #  Classe machine (MACHINE_RE) : duree absolue machine-dependante
 # --------------------------------------------------------------------------- #
 
@@ -471,9 +594,10 @@ def _dump_nb(path: Path, nb: dict) -> Path:
     return path
 
 
-def test_ipynb_output_lines_maps_payloads_not_sources(tmp_path):
-    """Une charge utile de sortie et une valeur de source sont, ligne a ligne, la
-    meme chose (une chaine nue). Seul le bloc ``outputs`` les separe."""
+def test_ipynb_non_prose_lines_maps_payloads_and_code_sources(tmp_path):
+    """Une charge utile de sortie, une valeur de source code et une valeur de
+    source markdown sont, ligne a ligne, la meme chose (une chaine nue). Le
+    bloc ``outputs`` et le ``cell_type`` les separent (#22564 D3)."""
     nb = {
         "cells": [
             {"cell_type": "markdown", "source": ["On a 140 lignes.\n"]},
@@ -488,19 +612,19 @@ def test_ipynb_output_lines_maps_payloads_not_sources(tmp_path):
     }
     path = _dump_nb(tmp_path / "mapped.ipynb", nb)
     lines = path.read_text(encoding="utf-8").splitlines()
-    inside = cqc._ipynb_output_lines(str(path))
+    inside = cqc._ipynb_non_prose_lines(str(path))
 
     def _ln(needle: str) -> int:
         hits = [n for n, raw in enumerate(lines, 1) if needle in raw]
         assert len(hits) == 1, f"{needle!r} apparait {len(hits)} fois"
         return hits[0]
 
-    assert _ln("On a 140 lignes") not in inside        # source markdown
-    assert _ln("print('x')") not in inside             # source code
+    assert _ln("On a 140 lignes") not in inside        # source markdown : LA prose visee
+    assert _ln("print('x')") in inside                 # source code : non-prose (D3)
     assert _ln("Angel.lean") in inside                 # charge utile de sortie
     # `"outputs": []` se referme sur sa propre ligne : l'ouvrir avalerait la
     # cellule suivante, et avec elle toutes les sources du reste du fichier.
-    assert _ln("z = 2") not in inside
+    assert _ln("z = 2") in inside                      # source code d'une cellule sans outputs
     assert _ln('"outputs": []') not in inside
 
 
@@ -555,6 +679,44 @@ def test_scan_diff_skips_output_payloads_but_flags_source_prose(tmp_path, monkey
         output_cell], "metadata": {}, "nbformat": 4, "nbformat_minor": 5})
     found = cqc.scan_diff("HEAD", {"artifact"})
     assert [snippet for _loc, _klass, snippet in found] == ["65 lignes"]
+
+
+def test_scan_diff_skips_code_cell_comments_but_flags_markdown_counts(tmp_path, monkeypatch):
+    """#22564 D3 : les deux temoins mesures sur 11b_Materiel_Debit_Cout -- une
+    docstring et un commentaire de ligne, chacun portant « 1 ligne ». En
+    cellule *code* ce n'est pas de la prose ; le MEME compteur en markdown
+    reste la prose que l'organe refuse. Sans le second volet, on ne saurait
+    pas distinguer « corrige » de « devenu aveugle »."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _git(repo, "init")
+    _git(repo, "config", "core.autocrlf", "false")
+
+    nb_path = repo / "carnet.ipynb"
+    _dump_nb(nb_path, {"cells": [{"cell_type": "code", "source": ["pass\n"],
+                                  "outputs": [], "execution_count": None}],
+                       "metadata": {}, "nbformat": 4, "nbformat_minor": 5})
+    _commit_all(repo, "base")
+    monkeypatch.chdir(repo)
+
+    # 1) Controle positif : les deux temoins de D3, en cellule CODE -> vert.
+    code_cell = {"cell_type": "code", "execution_count": 1, "outputs": [],
+                 "source": [('"""Octets VRAM par parametre : quantifie au .cuda() '
+                             + '(bitsandbytes), forward 1 ligne."""\n'),
+                            ("couche(x1)  # alloue les éventuels buffers de travail "
+                             + "(négligeables sur 1 ligne)\n")]}
+    _dump_nb(nb_path, {"cells": [code_cell],
+                       "metadata": {}, "nbformat": 4, "nbformat_minor": 5})
+    assert cqc.scan_diff("HEAD", {"artifact"}) == []
+
+    # 2) Controle negatif : le MEME compteur, cette fois en cellule MARKDOWN.
+    _dump_nb(nb_path, {"cells": [
+        {"cell_type": "markdown",
+         "source": ["Le cout marginal est negligeable sur 1 ligne.\n"]},
+        code_cell],
+        "metadata": {}, "nbformat": 4, "nbformat_minor": 5})
+    found = cqc.scan_diff("HEAD", {"artifact"})
+    assert [snippet for _loc, _klass, snippet in found] == ["1 ligne"]
 
 
 # --------------------------------------------------------------------------- #

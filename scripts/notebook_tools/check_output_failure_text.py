@@ -163,6 +163,15 @@ TOOL_FAILURE_PATTERNS = (
     re.compile(r"no such file or directory", re.IGNORECASE),
     # inherited from check_render_volume_delta._UNAVAILABLE_PATTERNS
     *DEGRADED_HINT_PATTERNS,
+    # Interpreteur Lean (#21578) : un `@[extern]` de la Storage TorchLean n'est
+    # resolu que par le binaire lie ; dans l'interpreteur, l'evaluation meurt sur
+    # ce message, qui atterrit tel quel dans les outputs committes du carnet. La
+    # classe est OUTIL (le runtime ne fournit pas la primitive), pas MACHINE : le
+    # message ne nomme ni OS, ni repertoire, ni binaire externe. Meme regime que
+    # le motif ImportError ci-dessous — la FORME de l'erreur, pas le symbole
+    # TorchLean particulier : tout paquet a `@[extern]` produit la meme classe.
+    re.compile(r"could not find native implementation of external declaration",
+               re.IGNORECASE),
     # ImportError (#20701) : la FORME d'une exception levee (le nom, son
     # deux-points et un message), et non le mot nu. Une reponse de LLM cite la
     # classe dans sa prose (« `ImportError` si la CLI est lancee ... ») : une
@@ -176,6 +185,35 @@ TOOL_FAILURE_PATTERNS = (
                r"|^[ \t]*(?:\x1b\[[0-9;]*m)*ImportError(?:\x1b\[[0-9;]*m)*"
                r"[ \t\r]*$",
                re.IGNORECASE | re.MULTILINE),
+    # Echec de workflow ComfyUI (#21816). Le service de generation repond une
+    # erreur et le carnet commite son repli a la place de l'illustration :
+    # exactement le degat C.2 que ce ratchet existe pour voir (#3473 /
+    # #11685). Les trois formes sont mesurees sur le blob d'avant #21815 de
+    # Barbie-Schreck (commit 0dbdd963ec) : la premiere est la levee du client
+    # partage (comfyui_client.py:233), les deux autres sont les lignes que la
+    # cellule journalise en repli, une par tour de generation.
+    #
+    # Ils sont DURS, pas doux : une banniere qui a remplace un rendu n'est pas
+    # un mode demo declare, et l'exemption de #18916/#19697 ne doit pas
+    # l'absoudre (mesure du 2026-10-24 : sur le blob degrade les trois rendent
+    # 4 hits en dur, sur le blob restaure 0). La classe est OUTIL -- un
+    # service externe a echoue -- jamais MACHINE : aucun des trois ne nomme un
+    # chemin, un OS ou un repertoire.
+    #
+    # `erreur generation image` est redondant avec `workflow execution failed`
+    # SUR CETTE INSTANCE (les deux rendent les memes 2 flux) ; il est garde
+    # parce que la cellule journalise ce prefixe quelle que soit l'exception :
+    # un delai d'attente produit le meme message sans la levee du client.
+    # Ce troisieme motif est EPINGLE A L'INSTANCE : il porte l'orthographe de
+    # cette cellule, sans accents. La forme PORTEUSE est la premiere
+    # (`workflow execution failed`), independante de l'orthographe -- c'est elle
+    # qui couvre tout autre carnet. Un carnet ecrivant « Erreur generation
+    # image » avec ses accents demanderait son propre motif mesure : aucune
+    # occurrence accentuee n'existe dans les sorties commitees (recherche du
+    # 2026-10-24), donc rien n'est devine ici.
+    re.compile(r"workflow execution failed", re.IGNORECASE),
+    re.compile(r"erreur generation image", re.IGNORECASE),
+    re.compile(r"illustration indisponible", re.IGNORECASE),
 )
 
 # Witnesses: real strings observed in committed outputs. The self-test asserts
@@ -192,6 +230,14 @@ _PATTERN_WITNESSES = (
     "bash: dot: command not found",
     "simanneal non disponible",
     "ImportError: cannot import name 'X' from 'y'",
+    "Could not find native implementation of external declaration "
+    "'TorchLean.Storage.Internal.floatBufferAppendSliceNative'",
+    # #21816 : les deux lignes committeees par le blob degrade de
+    # Barbie-Schreck (avant #21815), telles quelles -- la premiere porte deux
+    # des trois motifs, la seconde le troisieme.
+    "ERROR:BarbieVsAne:Erreur generation image: Workflow execution failed "
+    "(server reported error)",
+    "WARNING:BarbieVsAne:Illustration indisponible pour cette replique",
 )
 
 # --- benign banners: matched above, and NOT a tool failure -----------------
@@ -280,43 +326,69 @@ _PATH_WITNESSES = (
 # Un chemin est une valeur EMISE PAR LE RUNTIME (il change avec la machine qui
 # a execute le carnet : le defaut) ou du TEXTE DE PROGRAMME que la cellule
 # affiche (un littéral stable, voulu : une cible de montage ecrite dans le
-# code montre). Deux carnets Aspire affichent le source AppHost.cs qu'ils
-# viennent de generer : `"/home/appuser/.cache/huggingface"` y est un argument
-# d'appel. Le discriminant porte sur la FORME de l'argument, sur une seule
-# ligne, et exige les trois conditions :
-#   1. le chemin ouvre un littéral entre guillemets doubles, apres `(` ou `,`
-#      (position d'argument : `cle="..."` et le JSON `"cle": "..."` n'en
-#      sont pas) ;
-#   2. le littéral se ferme sur la meme ligne, suivi de `)`, `,` ou `;` ;
-#   3. un appel `Nom(` s'ouvre plus tot sur cette ligne.
-# Bornes, dites plutot que cachees : un echo runtime de la meme forme
-# (`Config("/home/u/x")`, appel positionnel rejoue) est exempte ; une banniere
-# qui cite le chemin en prose (`Serving from "/home/u/x"`), un repr Python
-# (`'/home/u/x'`), une trace d'erreur ou une valeur JSON ne le sont PAS.
-# Un commentaire de code qui porte un chemin reste signale (faux positif
-# conserve, par prudence). Les occurrences exemptees sont comptees dans la
-# classe PROGRAM_LITERAL de --all : jamais un silence.
-_PROGRAM_LITERAL_OPEN = re.compile(r'(?:\(|,\s*)"$')
-_PROGRAM_LITERAL_CLOSE = re.compile(r'\s*[),;]')
-_CALL_OPEN = re.compile(r'\w\(')
+# code montre). Le discriminant retenu -- decision du proprietaire de l'organe
+# (ai-01, c.6262311553) sur la mesure po-2024 (c.6086700118) -- est la forme
+# OPEN_LITERAL : le chemin ouvre un littéral de chaîne sur sa ligne de sortie,
+# c'est-a-dire que le caractere immediatement a sa gauche est un guillemet
+# (simple ou double). Sur le corpus de la mesure, la forme separe exactement
+# les 2 faux positifs Aspire des 5 occurrences Orleans, avec 0 occurrence
+# touchee sur les hote/env.
+#
+# Bornes assumees, epinglees par --self-test (le comportement EST la limite,
+# dite plutot que cachee) :
+#   - faux negatif : une ligne runtime qui CITE le chemin entre guillemets
+#     (`Serving from "/home/u/x"`, un repr Python) ouvre un littéral et est
+#     exemptee ;
+#   - faux positif : un chemin nu dans un commentaire de code affiche
+#     (`// /home/u/x`) n'ouvre rien et reste signale.
+# Les occurrences exemptees sont comptees dans la classe PROGRAM_LITERAL de
+# --all : jamais un silence.
+#
+# #21444 resserre la borne faux negatif sur les lignes de TRACE ou
+# D'EXCEPTION : la forme la plus frequente de la fuite de chemin machine
+# (secrets-hygiene regle 6, classe B -- le chemin dans une exception, le
+# mecanisme meme de l'Epic #21424) est un runtime qui cite son chemin entre
+# guillemets dans une traceback. Sur une telle ligne, OPEN_LITERAL n'exempte
+# plus : le chemin reste MACHINE_PATH. La limite conservee : une ligne runtime
+# citante HORS trace (`Serving from "/home/u/x"`, `Exception message: ...
+# 'D:\...'` au style .NET) reste exempte -- epinglee par --self-test.
 
 
 def _is_program_literal(probe, start, end):
-    """True si le chemin ``probe[start:end]`` est un argument littéral d'un
-    appel affiché sur sa propre ligne (cf. bloc ci-dessus)."""
+    """True si le chemin ``probe[start:end]`` ouvre un littéral de chaîne --
+    le caractere immediatement a sa gauche est un guillemet (forme OPEN_LITERAL
+    de la decision ai-01 c.6262311553)."""
+    return start > 0 and probe[start - 1] in ('"', "'")
+
+
+# --- #21444 : lignes de trace/exception, non-exemptibles ---------------------
+# Une traceback Python cite ses chemins entre guillemets (`File "/home/u/x"`,
+# `FileNotFoundError: [Errno 2] No such file or directory: '/home/u/x'`) : la
+# forme OPEN_LITERAL les exempterait, aveuglant le ratchet sur la classe de
+# fuite la plus frequente. Sur ces lignes le chemin reste MACHINE_PATH :
+#   - ligne de frame de traceback : commence par `File "` (indentation toleree) ;
+#   - message errno du runtime : porte `[Errno ` ;
+#   - en-tete d'exception : `<Nom>Error: ` / `<Nom>Exception: ` (nom CamelCase
+#     colle au deux-points -- `Exception message:` au style .NET ne matche pas,
+#     epingle comme borne conservée) ;
+#   - en-tete d'avertissement : contient `Warning: `.
+_TRACE_LINE_MARKERS = (
+    re.compile(r'^\s*File\s+"'),
+    re.compile(r'\[Errno '),
+    re.compile(r'\b[A-Za-z_][A-Za-z0-9_]*(?:Error|Exception)\s*:'),
+    re.compile(r'Warning\s*:'),
+)
+
+
+def _is_trace_line(probe, start):
+    """True si la ligne de ``probe`` contenant la position ``start`` est une
+    ligne de trace ou d'exception (#21444) -- non exemptible OPEN_LITERAL."""
     line_start = probe.rfind("\n", 0, start) + 1
-    line_end = probe.find("\n", end)
+    line_end = probe.find("\n", start)
     if line_end == -1:
         line_end = len(probe)
-    before = probe[line_start:start]
-    if not _PROGRAM_LITERAL_OPEN.search(before):
-        return False
-    if not _CALL_OPEN.search(before):
-        return False
-    close = probe.find('"', end, line_end)
-    if close == -1:
-        return False
-    return _PROGRAM_LITERAL_CLOSE.match(probe, close + 1, line_end) is not None
+    line = probe[line_start:line_end]
+    return any(marker.search(line) for marker in _TRACE_LINE_MARKERS)
 
 # --- class 3 (ADVISORY, never gates): capability downgrade -------------------
 # #14603. Each half of the couple alone is legitimate: a value can move on a
@@ -354,6 +426,14 @@ CAPABILITY_WITNESS_PATTERNS = (
 # cells verbatim, never read from git objects that may not be there.
 DOWNGRADE_REPLAY_FIXTURE = "demucs_downgrade_pair_14603.json"
 SELF_TEST_MIN_DOWNGRADE = 2
+
+# #21816 : la mesure du blob degrade de Barbie-Schreck (0dbdd963ec) est 4 hits
+# en dur, stable et reproduite hors du harnais (cellule 24, flux 17/20/36/39).
+# Le plancher du controle positif epingle cette mesure : un `>= 2` laissait
+# passer une regression qui perdrait deux des quatre motifs et resterait verte,
+# alors que la valeur attendue est connue. `--self-test` imprime la mesure, donc
+# une re-serialisation du carnet qui la deplacerait se lit dans la sortie.
+SELF_TEST_MIN_COMFY_HITS = 4
 
 
 def _cell_output_text(cell):
@@ -596,7 +676,11 @@ def scan(nb, base_nb=None):
             for m in pat.finditer(path_probe):
                 # #20120: program text the cell prints is not a runtime path.
                 # Exempted hits stay visible in their own class (never silent).
-                if _is_program_literal(path_probe, m.start(), m.end()):
+                # #21444: a trace/exception line never qualifies -- the
+                # runtime citing its own path between quotes is the leak,
+                # not program text.
+                if (_is_program_literal(path_probe, m.start(), m.end())
+                        and not _is_trace_line(path_probe, m.start())):
                     found["PROGRAM_LITERAL"].append((idx, m.group(0)[:120]))
                 else:
                     found["MACHINE_PATH"].append((idx, m.group(0)[:120]))
@@ -930,9 +1014,13 @@ def self_test(cwd=None):
     # #20120: program text vs runtime path, on the real calibration lines.
     # The Aspire line prints a literal of the program it shows: exempted, and
     # counted as PROGRAM_LITERAL. The Orleans line is a runtime emission and
-    # the quoted or repr forms are runtime too: all three must keep firing.
-    # An exemption that only proves it silences is indistinguishable from a
-    # hole -- both directions are asserted.
+    # keeps firing -- both directions are asserted, because an exemption that
+    # only proves it silences is indistinguishable from a hole. The two named
+    # bounds of the retained form (decision ai-01 c.6262311553) are pinned in
+    # their own direction: a runtime line QUOTING the path opens a literal and
+    # is exempted (known false negative), a bare path in a code comment opens
+    # nothing and stays flagged (known false positive). If one of these four
+    # verdicts moves, the self-test reddens.
     def _pathonly(text):
         return scan({"cells": [{"cell_type": "code", "outputs": [
             {"output_type": "stream", "text": text}]}]})
@@ -951,12 +1039,41 @@ def self_test(cwd=None):
     if len(_orleans["MACHINE_PATH"]) != 1 or _orleans["PROGRAM_LITERAL"]:
         failures.append("Orleans runtime path lost its MACHINE_PATH "
                         "(control): " + repr(_orleans))
-    for _runtime in ('Serving from "/home/user/wt-aspire/x"',
-                     "No such file or directory: '/home/user/x.csv'"):
-        _rt = _pathonly(_runtime)
-        if len(_rt["MACHINE_PATH"]) != 1 or _rt["PROGRAM_LITERAL"]:
-            failures.append("runtime shape exempted (hole): "
-                            + repr(_runtime))
+    _quoted = _pathonly('Serving from "/home/user/wt-aspire/x"')
+    if _quoted["MACHINE_PATH"] or len(_quoted["PROGRAM_LITERAL"]) != 1:
+        failures.append("quoted runtime line no longer exempted -- known "
+                        "false-negative bound moved: " + repr(_quoted))
+    _comment = _pathonly("// /home/user/wt-aspire/x")
+    if len(_comment["MACHINE_PATH"]) != 1 or _comment["PROGRAM_LITERAL"]:
+        failures.append("bare comment path no longer flagged -- known "
+                        "false-positive bound moved: " + repr(_comment))
+    # Cinquieme ligne : la borne materialisee sur l'historique. Le fondateur
+    # #11685 est fait de traces runtime qui CITENT le chemin (`working
+    # directory 'D:\...'`) -- des guillemets a gauche, donc exemptees sous la
+    # forme retenue. Le replay du fondateur (bas de ce self-test) les compte
+    # en PROGRAM_LITERAL ; ici le verdict unitaire est epingle pour que le
+    # jour ou l'on voudra les ramener dans la classe bloquante, ce soit le
+    # predicat qui change, jamais ce test qui se taise.
+    _founder = _pathonly(
+        "Exception message: an error occurred trying to start process 'dot' "
+        "with working directory 'D:" + BS + "dev" + BS + "CoursIA'")
+    if _founder["MACHINE_PATH"] or len(_founder["PROGRAM_LITERAL"]) != 1:
+        failures.append("quoted founding witness moved -- known "
+                        "false-negative bound moved: " + repr(_founder))
+
+    # #21444 : sur une ligne de trace ou d'exception, OPEN_LITERAL n'exempte
+    # plus -- chacune des quatre formes epinglees dans le sens bloquant, la
+    # borne .NET conservée reste exempte (pinned ci-dessus).
+    for _trace_line in (
+            '  File "/home/user/wt-aspire/run.py", line 3, in <module>',
+            "FileNotFoundError: [Errno 2] No such file or directory: "
+            "'/home/user/wt-aspire/data.csv'",
+            "RuntimeError: cannot read '/home/user/wt-aspire/x'",
+            "UserWarning: config not found at '/home/user/wt-aspire/x'"):
+        _t = _pathonly(_trace_line)
+        if len(_t["MACHINE_PATH"]) != 1 or _t["PROGRAM_LITERAL"]:
+            failures.append("trace/exception line exempted (#21444): "
+                            + repr(_trace_line))
 
 
     # Benign banner: matched by "not available", neutralised by
@@ -1188,6 +1305,15 @@ def self_test(cwd=None):
         failures.append("capability UPGRADE flagged (restoration must pass)")
 
     # Replay the founding commit against its parent.
+    # #20120: sous la forme OPEN_LITERAL, les 12 witnesses fondateurs tombent
+    # dans la borne faux-negatif materialisee -- ce sont des traces runtime
+    # qui CITENT le chemin (`working directory 'D:\...'`,
+    # `DOT file is saved to "D:\..."` : guillemet a gauche), donc exemptees
+    # de la classe bloquante et comptees en PROGRAM_LITERAL. Le plancher
+    # porte sur la CAPTURE (les deux classes ensemble) : les 12 restent
+    # vues, aucune ne disparait en silence. Le basculement lui-meme est
+    # epingle dans les lignes fixes ci-dessus ; s'il doit un jour etre
+    # annule, c'est le predicat qui change, jamais ce plancher.
     if git("cat-file", "-e", SELF_TEST_COMMIT, cwd=cwd) is None:
         print("SKIP replay: " + SELF_TEST_COMMIT[:12] + " not in this clone")
     else:
@@ -1196,15 +1322,22 @@ def self_test(cwd=None):
         rows = compare(parent, SELF_TEST_COMMIT, paths, cwd=cwd)
         tool = sum(r["classes"]["TOOL_FAILURE"]["delta"] for r in rows)
         n_path = sum(r["classes"]["MACHINE_PATH"]["delta"] for r in rows)
+        n_lit = 0
+        for p in paths:
+            head_nb = read_notebook_at(SELF_TEST_COMMIT, p, cwd=cwd)
+            base_nb = read_notebook_at(parent, p, cwd=cwd)
+            n_lit += (len(scan(head_nb)["PROGRAM_LITERAL"])
+                      - len(scan(base_nb)["PROGRAM_LITERAL"]))
         print("replay " + SELF_TEST_COMMIT[:12] + ": " + str(len(paths))
               + " notebooks, TOOL_FAILURE +" + str(tool)
-              + ", MACHINE_PATH +" + str(n_path))
+              + ", MACHINE_PATH +" + str(n_path)
+              + ", PROGRAM_LITERAL +" + str(n_lit))
         if tool < SELF_TEST_MIN_TOOL:
             failures.append("replay TOOL_FAILURE +" + str(tool) + " < "
                             + str(SELF_TEST_MIN_TOOL) + " expected")
-        if n_path < SELF_TEST_MIN_PATH:
-            failures.append("replay MACHINE_PATH +" + str(n_path) + " < "
-                            + str(SELF_TEST_MIN_PATH) + " expected")
+        if n_path + n_lit < SELF_TEST_MIN_PATH:
+            failures.append("replay path capture +" + str(n_path + n_lit)
+                            + " < " + str(SELF_TEST_MIN_PATH) + " expected")
 
     # #14513 replay: the metadata-only leak of #14272 / #13891, the defect
     # this extension exists to close. c4b99a3ec4 is the PT_11c head whose
@@ -1263,6 +1396,71 @@ def self_test(cwd=None):
             failures.append("downgrade replay CAPABILITY_DOWNGRADE "
                             + str(n_down) + " < "
                             + str(SELF_TEST_MIN_DOWNGRADE) + " expected")
+
+    # Replay #21816 : l'echec de workflow ComfyUI. Le blob d'avant #21815
+    # (0dbdd963ec, parent du merge de restauration) portait deux tours de
+    # repli sur stderr et AUCUNE illustration ; 1179cadc63 restaure les deux
+    # images et ses sorties ne portent plus un seul des trois motifs. Le
+    # controle est bidirectionnel et sur les vrais blobs -- un motif qui
+    # n'attrape pas le cas fondateur n'est pas livre, et un motif qui
+    # continue de le voir apres restauration serait un faux positif. Les deux
+    # commits sont sur main : le replay ne s'auto-saute que sur un clone
+    # partiel, et le dit comme les autres.
+    c_21816_deg = "0dbdd963ecbe9194832456abaf3fa54faa57ab21"
+    c_21816_fix = "1179cadc6354804e4ae1d3eca73c1947c7c6c84e"
+    nb_21816 = ("MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/"
+                "barbie-schreck.ipynb")
+    if (git("cat-file", "-e", c_21816_deg, cwd=cwd) is None
+            or git("cat-file", "-e", c_21816_fix, cwd=cwd) is None):
+        print("SKIP #21816 replay: 0dbdd963ec/1179cadc63 not in this clone")
+    else:
+        deg = scan(read_notebook_at(c_21816_deg, nb_21816, cwd=cwd))
+        fix = scan(read_notebook_at(c_21816_fix, nb_21816, cwd=cwd))
+        n_deg = len(deg["TOOL_FAILURE"])
+        n_fix = len(fix["TOOL_FAILURE"])
+        print("replay #21816: ComfyUI TOOL_FAILURE " + str(n_deg) + " -> "
+              + str(n_fix))
+        if n_deg < SELF_TEST_MIN_COMFY_HITS:
+            failures.append("#21816 replay: ComfyUI fallback not seen in the "
+                            "degraded blob (" + str(n_deg) + " < "
+                            + str(SELF_TEST_MIN_COMFY_HITS) + " measured; "
+                            + repr(deg["TOOL_FAILURE"]) + ")")
+        if n_fix:
+            failures.append("#21816 replay: ComfyUI failure still reported "
+                            "after the restoration (" + repr(fix["TOOL_FAILURE"])
+                            + ")")
+        # La direction qui compte vraiment : le PR qui a FAIT ENTRER le repli
+        # (133ffac507) a ete merge vert. Rejoue avec les motifs d'aujourd'hui,
+        # son delta doit etre positif -- c'est le trou que #21816 ferme, et
+        # un replay qui ne vaudrait que pour la restauration ne prouverait
+        # rien de ce trou.
+        #
+        # Le PARENT est garde comme les deux blobs, et la ligne `added` est
+        # refusee. Sans ces deux bornes l'assertion est satisfiable a vide :
+        # `compare()` ne rend pas d'erreur quand la base est illisible, il lit
+        # base_nb = None, marque la ligne `added`, scanne une base VIDE et
+        # calcule delta = 4 -- vert exactement comme sur un clone complet. Un
+        # clone superficiel dont la frontiere tombe sur ce commit produirait
+        # donc le vert que ce controle existe pour empecher (meme famille que
+        # #22277, « chercher OMIT_SHA partout est satisfiable a vide »).
+        c_21816_intro = "133ffac5071e255c7d594e601ba6b71a54104c3f"
+        if (git("cat-file", "-e", c_21816_intro, cwd=cwd) is None
+                or git("cat-file", "-e", c_21816_intro + "^", cwd=cwd) is None):
+            print("SKIP #21816 intro replay: 133ffac507 (or its parent) not "
+                  "in this clone")
+        else:
+            rows = compare(c_21816_intro + "^", c_21816_intro, [nb_21816],
+                           cwd=cwd)
+            delta = rows[0]["classes"]["TOOL_FAILURE"]["delta"]
+            print("replay #21816 intro: delta TOOL_FAILURE " + str(delta)
+                  + " (attendu > 0)")
+            if rows[0].get("added"):
+                failures.append("#21816 intro replay: the base carnet is "
+                                "unreadable (row marked added) -- delta "
+                                + str(delta) + " compares an empty base")
+            elif delta <= 0:
+                failures.append("#21816 intro replay: the entering commit is "
+                                "still green (delta " + str(delta) + ")")
 
     for f in failures:
         print("SELF-TEST FAIL: " + f)

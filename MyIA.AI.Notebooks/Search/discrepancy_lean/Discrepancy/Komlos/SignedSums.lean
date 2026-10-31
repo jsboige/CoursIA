@@ -16,11 +16,15 @@ arbitrée en k2.6a), puis l'assemblage final lui-même (k2.6c) : le carré réel
 inductive à deux ensembles `exists_colouring_aux` (fermeture `S` + support
 exact `E` — le prix `Finset` du support canonique du `Finsupp` de l'oracle)
 et l'énoncé public `exists_isColouring_mean_add_sum_mem_convexHull`.
-Réserve k5.2 (défaut mesuré, chantier #21417) : l'énoncé public tel que livré
-le 10-06 était **vacuose** hors famille nulle — le témoin
-`contention_stability_forces_zero` le démontre, et le jeu de clauses
-`clauseSet` (crans P3/P4) le corrige ; ce renvoi partira avec la dernière
-trace de l'ancien énoncé.
+
+Réserve de portée levée (mesure k5.2, chantier #21417 cran 2) : la forme
+livrée le 10-06 n'était instanciable qu'à famille `v` identiquement nulle — ses
+hypothèses de contention sur un `Finset` stable forçaient `v i = 0`
+(`contention_stability_forces_zero`, plus bas dans ce fichier, avec l'argument
+mesuré). L'énoncé public et la porte inductive portent désormais un jeu de
+clauses `B` (sommes signées bornées des générateurs, satisfaisable par une
+grande boîte, aucune stabilité requise) : le k2 est clos comme preuve **et**
+comme énoncé instanciable. Voir les lignes k2.6c et k5.2 de `FORMAL_STATUS.md`.
 -/
 
 import Discrepancy.Basic

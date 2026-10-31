@@ -1,0 +1,39 @@
+{
+  "schema": "harvey-sources-pin/v1",
+  "upstream_repo": "https://github.com/bbrhuft/Cartier-Miller-evaluation-of-genus-one-coefficient-sums",
+  "commit": "37a9b727dfd5034af0b8aa8185246d58008b9e5c",
+  "commit_short": "37a9b72",
+  "commit_date": "2026-10-05T20:59:52Z",
+  "measured_at": "2026-10-26T14:05:00Z",
+  "source_root_layout": "<clone>/Cartier_Miller_Benchmark/ (les chemins ci-dessous y sont relatifs)",
+  "corroboration": {
+    "upstream_files": [
+      "Cartier_Miller_Benchmark/SHA256SUMS.txt",
+      "Cartier_Miller_Benchmark/upstream/SOURCE_PROVENANCE.json"
+    ],
+    "note": "Le depot amont publie lui-meme les empreintes de ces fichiers au meme pin : les valeurs 'sha256' ci-dessous y sont identiques (recoupement par un tiers, l'auteur). SOURCE_PROVENANCE.json couvre recurrences_ntl.cpp et hypellfrob.cpp (vendorises depuis Sage) ; SHA256SUMS.txt couvre les trois.",
+    "checked_at": "2026-10-26T14:05:00Z"
+  },
+  "hash_convention": {
+    "sha256": "empreinte du contenu CANONIQUE : octets du blob Git, fins de ligne normalisees en LF (CRLF -> LF avant hachage). C'est la valeur que la garde verifie.",
+    "sha256_crlf": "empreinte du fichier de travail tel quel sur un clone Windows (core.autocrlf=true, donc CRLF). Recoupement : `sha256sum <fichier>` dans un clone Windows rend cette valeur, dans un clone Linux la valeur `sha256`.",
+    "reverification": "git clone <upstream_repo> && git checkout 37a9b727dfd5034af0b8aa8185246d58008b9e5c && git cat-file blob 37a9b727dfd5034af0b8aa8185246d58008b9e5c:Cartier_Miller_Benchmark/<fichier> | sha256sum  (ou : sha256sum -c Cartier_Miller_Benchmark/SHA256SUMS.txt dans le clone)"
+  },
+  "files": [
+    {
+      "path": "harvey_adapter.cpp",
+      "sha256": "5cf8114f6711373febff12df8a67ee996c131bc1cbecd6b701e37d305d4dd31b",
+      "sha256_crlf": "30445dc2882f5af2e0ab7f33c59d10ef2d2d1d6c1761ad5b10a380cf7560a039"
+    },
+    {
+      "path": "upstream/recurrences_ntl.cpp",
+      "sha256": "da1bbb94c6bc6b22b292f18634f25ed00083d4c395e1f682eb32e924fcda8353",
+      "sha256_crlf": "d3f9f9ad201982d24d2336a34ccd27d48b19d1e9dee37dd4b1a49919e238d863"
+    },
+    {
+      "path": "upstream/hypellfrob.cpp",
+      "sha256": "bf6b22d74e5b80ee9f7886a429c154dd7adcfd3c3be51118adcbfb42f9b6062c",
+      "sha256_crlf": "5d85028d48681c1d6349af84a1546787bc32d8ea11c6f87a764e9e1fe033c404"
+    }
+  ]
+}

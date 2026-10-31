@@ -1,8 +1,7 @@
 - name: Probas-4 Bayesian-Networks
   family: Probas/Infer.NET-PyMC
   python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-04-Bayesian-Networks.ipynb
-  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-4-Bayesian-Networks.ipynb
-  numbering_exception: 'Zero-padding cote Python uniquement PyMC-1..9 -> PyMC-01..09 (renommage #13760) ; jumeau C# Infer-1..9 non concerne, contenu pedagogique inchange.'
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-04-Bayesian-Networks.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Modele nominal lib-vs-lib cite par owner #10382 (\"PyMC vs Infer, 2 moteurs qui brillent\") : C# = Microsoft Infer.NET (Microsoft.ML.Probabilistic, NuGet officiel, native .NET, inférence variationnelle EP/VMP) et Python = PyMC (pip pymc, native Python, NUTS/HMC + ADVI). Chaque cote atteint le moteur SOTA de son ecosysteme probabiliste -- ni pont intermediaire ni reimplementation. Aucune asymetrie de machinerie a corriger. Verifie firsthand : C# Microsoft.ML.Probabilistic refs + execution_count, Python pymc imports."
@@ -20,3 +19,4 @@
     (variationnel) sur backend PyTensor. Memes concepts, paradigmes d''inference differents.'
   - 'Diagnostic EP non conjugue (section 4.bis, regression logistique bayesienne) : cote C# uniquement. L''analogue PyMC
     serait l''echec de convergence ADVI (ou la sensibilite au point de depart de NUTS) sur un prior vague, non traite ici.'
+  - '2026-10-24 (#17040 tranche Probas, lane myia-po-2025:CoursIA, PR #22194) : REBASELINE post-consolidation de densite. Audit de la paire avant attestation, mesure sur les blobs de tete : cote C# (Infer-04-Bayesian-Networks) 74 cellules -> 74, permutation de 4 cellules seulement -- la lecture "### Analyse des probabilites marginales" (gablmpih1m) remonte de l''index 16 a 13, juste apres la cellule code d''inference dont la sortie porte P(Cloudy) = 0,500 / P(Sprinkler) = 0,300 / P(Rain) = 0,500 / P(WetGrass) = 0,598 (sur main un bloc de visualisation de graphe de facteurs la separait de son code, regle cell-interpretation-ordering). Les 22 cellules code sont byte-identiques (source, sorties, execution_count). Cote Python (PyMC-04-Bayesian-Networks) byte-identique a main, ordre compris. Parite semantique inchangee : 0 source, 0 sortie, 0 execution_count touches.'

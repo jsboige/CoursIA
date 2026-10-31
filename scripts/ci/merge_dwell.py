@@ -160,6 +160,7 @@ l'organe vient de subir. Arbitrage documente dans la PR.
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 from datetime import datetime, timedelta, timezone
@@ -394,17 +395,316 @@ def _default_run_git(args):
     return completed.returncode, completed.stdout
 
 
+#: Refs candidates pour la base canonique, du plus canonique au plus large.
+#: La porte de pile (cf. `check_adjoint_prevalidation.py`) mesure
+#: ``main..tete`` ; le gate exige `baseRefName == main`, donc la base est
+#: toujours `main`.
+_BASE_REF_CANDIDATES = (
+    "refs/remotes/origin/main",
+    "origin/main",
+    "main",
+)
+
+
+def _resolve_base_ref(run_git):
+    """La ref de la base resolue localement, ou None.
+
+    Aucun candidat resolu = base inconnue (checkout minimal) : les appelants
+    traitent alors le depot comme potentiellement tronque, comme avant le
+    correctif #23089.
+    """
+    for ref in _BASE_REF_CANDIDATES:
+        try:
+            rc, _ = run_git(["rev-parse", "--verify", "--quiet", ref + "^{commit}"])
+        except (OSError, subprocess.SubprocessError):
+            return None
+        if rc == 0:
+            return ref
+    return None
+
+
+def shallow_boundary_shas(run_git):
+    """Les SHA declares comme racines shallow par le depot (`.git/shallow`).
+
+    Chaque ligne est un commit dont l'ascendance est coupee. Le fichier peut
+    etre absent (depot complet) : la liste est alors vide.
+    """
+    try:
+        rc, out = run_git(["rev-parse", "--git-path", "shallow"])
+    except (OSError, subprocess.SubprocessError):
+        return []
+    if rc != 0:
+        return []
+    path = (out or "").strip()
+    if not path:
+        return []
+    try:
+        with open(path, encoding="utf-8") as handle:
+            return [line.strip() for line in handle if line.strip()]
+    except OSError:
+        return []
+
+
+def base_history_truncated(run_git=None, base_ref=None):
+    """L'historique de la base est-il REELLEMENT tronque ?
+
+    `git rev-parse --is-shallow-repository` rend `true` des que `.git/shallow`
+    porte UNE ligne -- y compris des racines mortes, sans rapport avec la base.
+    Mesure (ai-01, 2026-10-28) : six bornes etrangeres a l'historique de
+    `main`, booleen `true` en permanence, alors que `main` etait complet
+    (18 788 commits visibles, le compte de l'API). Un predicat base sur ce
+    booleen seul ne protege donc rien : la jambe locale resterait
+    atteignable, et le clone complet serait rendu superficiel par le fetch.
+
+    Seule une borne qui est un ANCETRE de la base tronque l'historique de la
+    base -- c'est la seule question que pose un calcul `main..tete`. Base
+    inconnue (aucun candidat resolu) : on repond conservativement `True`, le
+    depot est traite comme tronque (comportement d'avant le correctif).
+    """
+    if run_git is None:
+        run_git = _default_run_git
+    try:
+        rc, out = run_git(["rev-parse", "--is-shallow-repository"])
+    except (OSError, subprocess.SubprocessError):
+        return False
+    if rc != 0 or (out or "").strip() != "true":
+        return False
+    boundaries = shallow_boundary_shas(run_git)
+    if not boundaries:
+        return False
+    if base_ref is None:
+        base_ref = _resolve_base_ref(run_git)
+    if base_ref is None:
+        return True
+    for sha in boundaries:
+        try:
+            rc, _ = run_git(["merge-base", "--is-ancestor", sha, base_ref])
+        except (OSError, subprocess.SubprocessError):
+            return True
+        if rc == 0:
+            return True
+    return False
+
+
+def _shallow_path(run_git):
+    """Le chemin du fichier `.git/shallow` du depot courant, ou None."""
+    try:
+        rc, out = run_git(["rev-parse", "--git-path", "shallow"])
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if rc != 0:
+        return None
+    return (out or "").strip() or None
+
+
+def _first_parent(sha, run_git):
+    """Le premier parent BRUT d'un commit, ou None (racine d'histoire ou illisible).
+
+    Le parent est lu dans l'objet commit lui-meme (`git cat-file commit`) et
+    non par `rev-list --parents` : sur une frontiere shallow, le graft
+    MASQUE le parent a la traversee (mesure : `rev-list --parents` rend le
+    seul sha, sans parent), alors que l'objet conserve la ligne `parent`.
+    C'est cette ligne qui dit si la frontiere tranche un historique reel ou
+    si elle ne masque rien du tout.
+    """
+    try:
+        rc, out = run_git(["cat-file", "commit", sha])
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if rc != 0:
+        return None
+    for line in (out or "").splitlines():
+        if line.startswith("parent "):
+            return line.split(" ", 1)[1].strip() or None
+    return None
+
+
+#: Borne de lecture des reflogs dans `_alive_tips`. Un reflog de depot actif
+#: peut porter des dizaines de milliers d'entrees ; au-dela de cette borne on
+#: garde les plus recentes (l'ordre de `git reflog` est du plus recent au plus
+#: ancien), et `_reachable_from` reste fail-safe sur ce qui n'a pas ete lu.
+_ALIVE_TIPS_RELOG_MAX = 500
+
+
+def _alive_tips(run_git):
+    """Les tetes depuis lesquelles une racine shallow peut etre ATTEINTE.
+
+    `for-each-ref` ne voit que les refs. Trois temoins d'historique vive lui
+    echappent : un `HEAD` detache, le `HEAD` de chaque worktree lie, et les
+    entrees de reflog. Une racine atteinte depuis l'un d'eux n'est PAS morte :
+    la retirer couperait un `git log` reel (#23110, reserve ai-01 du
+    2026-10-28).
+
+    Lecture impossible -> liste vide, et c'est `_reachable_from` qui protege :
+    un doute ne retire jamais rien.
+    """
+    tips: list[str] = []
+    seen: set[str] = set()
+
+    def add(raw):
+        sha = (raw or "").strip()
+        if sha and sha not in seen:
+            seen.add(sha)
+            tips.append(sha)
+
+    def read(argv):
+        try:
+            rc, out = run_git(argv)
+        except (OSError, subprocess.SubprocessError):
+            return ""
+        return out or "" if rc == 0 else ""
+
+    add(read(["rev-parse", "HEAD"]))
+    # Worktrees lies : un worktree en HEAD detache n'apparait dans aucune ref,
+    # et son HEAD est distinct de celui du depot courant. On demande son HEAD
+    # par chemin (`-C <path>`) plutot que de lire la ligne `HEAD <sha>` du
+    # porcelain (git >= 2.36 seulement) : la meme reponse sur toute version.
+    for line in read(["worktree", "list", "--porcelain"]).splitlines():
+        if line.startswith("worktree "):
+            path = line.split(" ", 1)[1].strip()
+            if path:
+                add(read(["-C", path, "rev-parse", "HEAD"]))
+        elif line.startswith("HEAD "):
+            add(line.split(" ", 1)[1])
+    # Les reflogs retiennent des tetes qu'aucune ref ne porte plus.
+    for line in read(["reflog", "--format=%H", "--all"]).splitlines()[:_ALIVE_TIPS_RELOG_MAX]:
+        add(line)
+    return tips
+
+
+def _reachable_from(sha, tip, run_git):
+    """`sha` est-il un ancetre de `tip` (lui-meme inclus) ?
+
+    Lecture impossible -> `True` : on ne retire pas une racine sur un doute.
+    Retirer une racine VIVANTE casse le parcours qui la traversait, alors que
+    laisser une racine morte ne coute qu'un booleen `is-shallow-repository`.
+    """
+    try:
+        rc, _ = run_git(["merge-base", "--is-ancestor", sha, tip])
+    except (OSError, subprocess.SubprocessError):
+        return True
+    return rc == 0
+
+
+def prune_dead_shallow_roots(run_git=None):
+    """Retire les racines shallow MORTES du depot courant.
+
+    Une racine shallow declaree dans `.git/shallow` que plus aucune ref ne
+    contient, et dont le parent est absent du depot, ne sert a rien : elle
+    ne masque aucun historique (il n'existe pas ici) et elle rend le depot
+    "shallow" en permanence -- `git rev-parse --is-shallow-repository` rend
+    alors `true` pour toujours, et toute garde fondee sur ce booleen croit
+    le depot tronque alors que son historique est complet.
+
+    Mesure (ai-01, 2026-10-28) : six racines de cette sorte dans le clone du
+    coordinateur, que `git fetch --unshallow` n'efface pas (il n'a rien a
+    approfondir pour elles : leur parent n'existe pas dans ce depot).
+
+    Le retrait n'enleve rien : une racine qu'aucune ref ne contient n'est
+    atteignable par aucun parcours de l'historique, et son parent etait deja
+    absent -- le parcours s'arretait la de toute facon. Seule la reponse
+    "shallow" du depot change.
+
+    **Commande EXPLICITE, jamais appelee par une garde (#23110).** La porte
+    pile (`check_adjoint_prevalidation.build_stack_index`) appelait cette
+    fonction a chaque passe : une lecture y ecrivait dans `.git/shallow` du
+    clone de l'appelant, alors que la liste des racines shallow appartient au
+    transport (`.git/shallow` est ce que `fetch` et `clone` ecrivent). Le
+    geste se fait donc a la main, par `merge_dwell.py --prune-shallow`, quand
+    l'operateur constate qu'un depot complet se declare shallow.
+
+    Le critere d'une racine VIVANTE ne se limite pas aux refs : `HEAD`, le
+    `HEAD` de chaque worktree lie et les reflogs comptent aussi, par
+    atteignabilite (`merge-base --is-ancestor`) et non par identite.
+
+    Renvoie les SHA retires (liste vide si rien a faire).
+    """
+    if run_git is None:
+        run_git = _default_run_git
+    boundaries = shallow_boundary_shas(run_git)
+    if not boundaries:
+        return []
+    tips = _alive_tips(run_git)
+    dead: list[str] = []
+    for sha in boundaries:
+        try:
+            rc, out = run_git(
+                ["for-each-ref", "--contains", sha, "--format=%(refname)"]
+            )
+        except (OSError, subprocess.SubprocessError):
+            continue
+        if rc == 0 and (out or "").strip():
+            continue  # une ref contient cette racine : elle vit
+        if any(_reachable_from(sha, tip, run_git) for tip in tips):
+            continue  # HEAD, HEAD de worktree ou reflog l'atteint : elle vit
+        parent = _first_parent(sha, run_git)
+        if parent is None:
+            continue  # racine d'histoire : rien a retirer
+        try:
+            rc, _ = run_git(["cat-file", "-e", parent + "^{commit}"])
+        except (OSError, subprocess.SubprocessError):
+            continue
+        if rc == 0:
+            continue  # le parent est present : la racine masque de l'historique
+        dead.append(sha)
+    if not dead:
+        return []
+    path = _shallow_path(run_git)
+    if not path:
+        return []
+    keep = [sha for sha in boundaries if sha not in dead]
+    if not keep:
+        # Plus aucune frontiere : le FICHIER lui-meme doit disparaitre.
+        # Mesure (2026-10-28) : `git rev-parse --is-shallow-repository`
+        # reste `true` tant que `.git/shallow` EXISTE, meme vide -- le
+        # booleen teste la presence du fichier, pas son contenu. Un fichier
+        # laisse en place maintiendrait donc le depot "shallow" en
+        # permanence, exactement comme les racines mortes qu'on vient de
+        # retirer.
+        try:
+            os.unlink(path)
+        except OSError:
+            return []
+        return dead
+    temporary = path + ".prune-tmp"
+    try:
+        with open(temporary, "w", encoding="utf-8", newline="\n") as handle:
+            for sha in keep:
+                handle.write(sha + "\n")
+        os.replace(temporary, path)
+    except OSError:
+        try:
+            os.unlink(temporary)
+        except OSError:
+            pass
+        return []
+    return dead
+
+
 def _ensure_commit_present(sha, run_git):
     """Best effort : ramener localement un parent absent avant merge-tree.
     Le checkout du gate porte le cote PR ; la base, elle, peut manquer. Un
     echec ici n'est PAS fatal : merge-tree echouera ensuite et la fusion se
     mesurera elle-meme (fail-closed, cf. CR 2026-09-16). L'approfondissement
-    qui rendra le merge-base calculable est gere par `_deepen_until_merge_base`."""
+    qui rendra le merge-base calculable est gere par `_deepen_until_merge_base`.
+
+    #23089 : `--depth=1` sur un depot COMPLET y cree une borne superficielle
+    -- le depot passe shallow alors que son historique etait complet, et les
+    calculs `main..tete` se mettent a voir des commits deja merges comme
+    « propres » (faux « stack top », #22244 et #22252 rendues BLOCKED sur des
+    squash deja merges le 2026-10-28). La borne n'a de sens que dans un
+    depot dont l'historique de la base est DEJA tronque : le checkout du gate,
+    qui est shallow par construction. Ailleurs, le fetch se fait sans
+    `--depth` et ne rend jamais le depot superficiel.
+    """
     try:
         rc, _ = run_git(["cat-file", "-e", sha + "^{commit}"])
         if rc == 0:
             return
-        run_git(["fetch", "--depth=1", "--quiet", "origin", sha])
+        if base_history_truncated(run_git):
+            run_git(["fetch", "--depth=1", "--quiet", "origin", sha])
+        else:
+            run_git(["fetch", "--quiet", "origin", sha])
     except (OSError, subprocess.SubprocessError):
         pass  # best effort : merge-tree echouera, la fusion se mesurera
 
@@ -766,6 +1066,174 @@ def _main_red_motif(repo: str, fetch=_gh_json) -> "str | None":
     )
 
 
+def _latest_check_runs(repo: str, ref: str, fetch=_gh_json, max_pages: int = 5):
+    """Dernier check-run par NOM sur `ref`, ou None si la couleur est illisible.
+
+    Pli latest-wins par `started_at` : la liste rendue par l'API contient
+    aussi les tentatives supersedees. Lire la premiere entree est le defaut
+    que #16765 a mesure (six rouges tous supersedes sur un meme head) : un
+    rouge perime rouvrirait la derogation sur un organe deja vert, et un
+    vert perime l'ouvrirait sur un organe encore rouge.
+
+    Pagination : une tete de PR de carnets porte 129 check-runs mesures
+    (review 5622234166) -- au-dela de `per_page=100`, le nom-preuve peut
+    vivre en page 2 et la voie se fermer a tort, precisement sur la
+    population visee. On suit les pages tant qu'une page est pleine,
+    bornees a `max_pages` (500 check-runs).
+
+    Fail-closed : payload illisible -> None, jamais un dictionnaire vide qui
+    se lirait « aucun organe rouge » (une couleur illisible ne vaut pas vert,
+    cf #18686).
+    """
+    all_runs: "list[dict]" = []
+    page = 1
+    while page <= max_pages:
+        url = "repos/{}/commits/{}/check-runs?per_page=100".format(repo, ref)
+        if page > 1:
+            url += "&page={}".format(page)
+        try:
+            payload = fetch(url)
+        except DwellError:
+            return None
+        if not isinstance(payload, dict):
+            return None
+        runs = payload.get("check_runs")
+        if not isinstance(runs, list):
+            return None
+        all_runs.extend(run for run in runs if isinstance(run, dict))
+        if len(runs) < 100:
+            break
+        page += 1
+    latest: "dict[str, dict]" = {}
+    for run in all_runs:
+        name = run.get("name")
+        if not name:
+            continue
+        previous = latest.get(name)
+        if previous is None or (
+            (run.get("started_at") or "") >= (previous.get("started_at") or "")
+        ):
+            latest[name] = run
+    return latest
+
+
+def _pr_earlier_red_organs(repo: str, pr_number: int, head_sha: str,
+                           fetch=_gh_json, max_commits: int = 10):
+    """Organes rouges a des commits ANTERIEURS de la PR (#22085, review).
+
+    Un organe qui ne tourne que sur `pull_request` n'a AUCUN check-run a la
+    tete de la branche par defaut : sa couleur « de main » n'existe pas la
+    ou une lecture des check-runs de main la cherchait (mesure review
+    5622234166 : 12 check-runs push sur la tete de main -- Pages, Quarto,
+    CodeQL -- aucun `Live-read freshness`). Le rouge se voit sur les PRs ;
+    la mesure reelle de ce que CETTE PR a repare est donc son propre
+    passe : chaque push re-poste les check-runs sur la nouvelle tete, les
+    commits anterieurs gardent les leurs.
+
+    Retourne {nom: check-run rouge} (premier rouge rencontre par commit,
+    base -> tete). Une lecture impossible rend un dict vide : ce segment
+    ne prouve rien, il ne deroge pas -- fail-closed.
+    """
+    try:
+        payload = fetch("repos/{}/pulls/{}/commits?per_page={}".format(
+            repo, pr_number, max_commits))
+    except DwellError:
+        return {}
+    if not isinstance(payload, list):
+        return {}
+    shas: "list[str]" = []
+    for entry in payload:
+        if isinstance(entry, dict) and entry.get("sha"):
+            shas.append(entry["sha"])
+    red: "dict[str, dict]" = {}
+    for sha in shas:
+        if sha == head_sha:
+            continue
+        runs = _latest_check_runs(repo, sha, fetch)
+        if not runs:
+            continue
+        for name, run in runs.items():
+            if (run.get("conclusion") in MAIN_RED_CONCLUSIONS
+                    and name not in red):
+                red[name] = run
+    return red
+
+
+def _repair_motif(repo: str, head_sha: "str | None", pr_number: "int | None",
+                  fetch=_gh_json):
+    """#22085 : motif de derogation quand la PR REPARE un rouge.
+
+    Le rouge de #22018 (`Live-read freshness`) n'est pas visible « depuis la
+    PR » au sens de #18686 : l'organe tourne aussi sur `pull_request`, donc
+    toutes les PRs le voient -- mais la PR qui le repare devait attendre son
+    plancher de 120 min comme les autres, et `MAIN_RED_WORKFLOWS` ne le
+    couvrait pas.
+
+    Deux sources de rouge, toutes deux reelles et fail-closed :
+
+    1. les organes ROUGES a la tete de la branche par defaut, pli
+       latest-wins -- mesure reelle pour les organes `push` (Pages, Quarto,
+       CodeQL...) ;
+    2. les organes rouges a des commits ANTERIEURS de cette PR
+       (`_pr_earlier_red_organs`) -- mesure reelle pour les organes qui ne
+       tournent que sur `pull_request` : jamais presents sur main, leur
+       rouge ne se lit que sur les PRs.
+
+    La derogation s'ouvre sur le premier organe que la PR rend `success` a
+    sa tete, A CONDITION que ce vert soit POSTERIEUR au rouge (review,
+    point 2 : un vert anterieur au rouge ne prouve aucune reparation --
+    une PR sans rapport garde son plancher). Le label seul ne suffit donc
+    jamais, et la preuve porte sur l'organe precis -- pas sur une couleur
+    globale.
+
+    Limite assumee : l'API ne dit pas quels organes sont BLOQUANTS. Un
+    organe advisory rouge peut donc ouvrir la voie -- mais seulement pour
+    une PR qui le fait passer au vert, ce qui reste une reparation reelle.
+    """
+    if not head_sha or pr_number is None:
+        return None
+    try:
+        branch = _default_branch(repo, fetch)
+    except DwellError:
+        return None
+    main_latest = _latest_check_runs(repo, branch, fetch)
+    if main_latest is None:
+        return None
+    reds: "dict[str, tuple[dict, str]]" = {}
+    for name, run in main_latest.items():
+        if run.get("conclusion") in MAIN_RED_CONCLUSIONS:
+            reds[name] = (run, "tete de {}".format(branch))
+    for name, run in _pr_earlier_red_organs(
+            repo, pr_number, head_sha, fetch).items():
+        if name not in reds:
+            reds[name] = (run, "commit anterieur de la PR")
+    if not reds:
+        return None
+    head_latest = _latest_check_runs(repo, head_sha, fetch)
+    if not head_latest:
+        return None
+    for name in sorted(reds):
+        head_run = head_latest.get(name)
+        if not (isinstance(head_run, dict)
+                and head_run.get("conclusion") == "success"):
+            continue
+        red_run, where = reds[name]
+        if (head_run.get("started_at") or "") <= (red_run.get("started_at") or ""):
+            # Vert ANTÉRIEUR au rouge : la PR a verdi avant que le rouge
+            # n'arrive -- ce n'est pas elle qui l'a repare.
+            continue
+        return (
+            "organe `{}` en echec ({}, check-run {}) -- repare a la tete "
+            "de la PR (check-run {} poste apres le rouge)".format(
+                name,
+                where,
+                red_run.get("id") or "?",
+                head_run.get("id") or "?",
+            )
+        )
+    return None
+
+
 def check(
     repo: str,
     sha: str,
@@ -796,12 +1264,16 @@ def check(
     if waived:
         motif = _main_red_motif(repo, fetch)
         if motif is None:
+            # #22085 : seconde voie. Le rouge que toutes les PRs voient (un
+            # organe qui tourne aussi sur `pull_request`) n'ouvre la
+            # derogation que si CETTE PR prouve qu'elle le repare a sa tete.
+            motif = _repair_motif(repo, sha, pr_number, fetch)
+        if motif is None:
             waived = False
             unmet_note = (
                 " -- label `{}` present mais condition non remplie "
-                "(main vert ou couleur illisible) : plancher applique".format(
-                    WAIVER_LABEL
-                )
+                "(main vert, rouge non repare par cette PR, ou couleur "
+                "illisible) : plancher applique".format(WAIVER_LABEL)
             )
         else:
             waiver_motif = motif
@@ -816,3 +1288,31 @@ def check(
         waiver_motif=waiver_motif,
     )
     return ok, message + unmet_note
+
+
+if __name__ == "__main__":  # pragma: no cover - commande manuelle
+    import argparse
+    import sys
+
+    parser = argparse.ArgumentParser(
+        description=__doc__.splitlines()[0] if __doc__ else "merge_dwell"
+    )
+    parser.add_argument(
+        "--prune-shallow",
+        action="store_true",
+        help="#23110 : retirer les racines shallow MORTES du depot courant "
+        "(commande EXPLICITE, a lancer a la main -- aucune garde ne "
+        "l'appelle, `git fetch --unshallow` ne les efface pas). Les SHA "
+        "retires sortent sur stdout, un par ligne.",
+    )
+    args = parser.parse_args()
+    if not args.prune_shallow:
+        parser.error("exactly one of --prune-shallow is required")
+    removed = prune_dead_shallow_roots()
+    for sha in removed:
+        print(sha)
+    print(
+        "racines shallow mortes retirees : {}".format(len(removed)),
+        file=sys.stderr,
+    )
+    raise SystemExit(0)

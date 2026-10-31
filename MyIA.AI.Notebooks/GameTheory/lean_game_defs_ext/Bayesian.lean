@@ -24,6 +24,16 @@
   - `Bayesian.Information` — valeur de l'information pour un décideur
                           unique : signaux comme partitions, monotonie de
                           Blackwell, pas-d'info ≤ signal ≤ parfait (phase 4)
+  - `Bayesian.InformationNoisy` — signaux bruites : table jointe finie
+                          état × réalisation, pas-d'info ≤ signal ≤
+                          parfait, valeurs non négatives sous paiements
+                          non négatifs, exemple à gain strict
+                          (phase 4, #22374)
+  - `Bayesian.VoiBench` — banc `voi` : les deux instances JSON du banc
+                          cross-engine (Infer.NET x PyMC) transcrites
+                          exactement par l'adaptateur, EVSI brute de
+                          253 000 EUR certifiée et contrôle négatif
+                          factorisé à zéro exact (#22374)
   - `Bayesian.InfoGames` — contre-exemple : dans un *jeu*, plus
                           d'information peut nuire strictement au joueur
                           informé (paiements de BNE unique 3 < 5,
@@ -61,6 +71,8 @@ import Bayesian.Auction
 import Bayesian.Vickrey
 import Bayesian.Max
 import Bayesian.Information
+import Bayesian.InformationNoisy
+import Bayesian.VoiBench
 import Bayesian.InfoGames
 import Bayesian.Reputation
 import Bayesian.Regret

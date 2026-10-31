@@ -28,8 +28,8 @@ attributions:
   # ===== Passe 1 — QC (PR #12832) =====
   - arxiv_id: "2411.17900"
     notebook: "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/research_l4_decision_transformer.ipynb"
-    cell_index: 12
-    expected_citation: "Yun, S. (2024), \"Pretrained LLM Adapted with LoRA as a Decision Transformer for Offline RL in Quantitative Trading\", arXiv:2411.17900"
+    cell_index: 22
+    expected_citation: "Yun, S. (2024), « Pretrained LLM Adapted with LoRA as a Decision Transformer for Offline RL in Quantitative Trading », arXiv:2411.17900"
     source_pr: "#12832"
     correction: "Decision Transformer citation: Chen 2021 / arXiv:2411.17900 (titre tronqué) -> Yun 2024 / arXiv:2411.17900 (auteur réel + titre complet)"
     date: "2026-08-23"
@@ -52,7 +52,7 @@ attributions:
     date: "2026-08-23"
 
   - arxiv_id: "1710.03667"
-    notebook: "MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.5-Phenomenes-de-Generalisation.ipynb"
+    notebook: "MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.5-Phenomenes-de-Generalisation.ipynb"
     cell_index: 18
     expected_citation: "5. Advani, M. & Saxe, A. (2017). *High-dimensional dynamics of generalization error in neural networks*. NeurIPS 2017. [arXiv:1710.03667](https://arxiv.org/abs/1710.03667)"
     source_pr: "#12824"

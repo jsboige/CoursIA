@@ -17,6 +17,8 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import check_lane_claim as clc  # noqa: E402
@@ -1132,6 +1134,238 @@ def test_stale_threshold_unblocks_old_claim(capsys):
     assert '"blocked": false' in captured.out
 
 
+# --- #22408 : l'age ne suffit pas, la lane peut livrer ------------------------
+# Instance fondatrice #21881 : claim po-2023 du 2026-10-21T18:39Z, PR #21884
+# ouverte a 18:59Z, dernier commit le 2026-10-23T06:29Z. A 73,8 h l'organe a
+# rendu STALE et po-2024 a repris le grain (#22251) : deux carnets DEEP pour un
+# seul grain. Le claim n'est perime que si la lane ne donne plus signe de vie.
+
+CSP10_PATH = "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-*.ipynb"
+
+
+class _ActivityProc:
+    def __init__(self, stdout: str, returncode: int = 0):
+        self.stdout = stdout
+        self.returncode = returncode
+        self.stderr = ""
+
+
+def _lane_pr(number: int, lane: str, issue: int) -> dict:
+    return {
+        "number": number,
+        "title": "CSP-10",
+        "headRefName": "feature/csp10",
+        "body": (f"Grain: DEEP/notebook-python -- lane {lane} "
+                 f"-- prev: DEEP/docs #1\n\nCloses #{issue}\n"),
+        "files": [{"path": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation.ipynb"}],
+    }
+
+
+def _fake_gh_pr_view(payload_json: str, returncode: int = 0):
+    """`subprocess.run` stub for the ONE call `_pr_last_lane_activity` makes.
+
+    Scoped to that helper by construction: every wiring test below patches
+    `_pr_last_lane_activity` itself instead, so a stub never has to share the
+    process with `git ls-files` or any other caller.
+    """
+    def fake_run(argv, *args, **kwargs):
+        assert list(argv[:3]) == ["gh", "pr", "view"], argv
+        return _ActivityProc(payload_json, returncode)
+    return fake_run
+
+
+def _patch_last_activity(monkeypatch, value):
+    """Inject the measured activity instant (None = NOT MEASURED)."""
+    monkeypatch.setattr(clc, "_pr_last_lane_activity",
+                        lambda pr_number, lane: value)
+
+
+def test_pr_last_lane_activity_takes_the_latest_lane_signal(monkeypatch):
+    """Parsing : le commit le plus recent OU un commentaire porte par la lane."""
+    fixture = json.dumps({
+        "commits": [{"committedDate": "2026-08-01T00:00:00Z"},
+                    {"committedDate": "2026-08-06T23:00:00Z"}],
+        "comments": [
+            # une AUTRE lane commente : ne compte pas (login partage partout)
+            {"body": "[INFO] lane myia-po-2024:CoursIA-2 -- relecture",
+             "createdAt": "2026-08-07T11:00:00Z"},
+        ],
+    })
+    monkeypatch.setattr(clc.subprocess, "run", _fake_gh_pr_view(fixture))
+    assert clc._pr_last_lane_activity(
+        21884, "myia-po-2023:CoursIA-2") == datetime(
+            2026, 8, 6, 23, 0, tzinfo=timezone.utc)
+
+
+def test_pr_last_lane_activity_counts_a_lane_tagged_comment(monkeypatch):
+    """Un commentaire de la lane titulaire compte comme une activite."""
+    fixture = json.dumps({
+        "commits": [{"committedDate": "2026-08-01T00:00:00Z"}],
+        "comments": [
+            {"body": "[INFO] lane myia-po-2023:CoursIA-2 -- 12/18 cellules",
+             "createdAt": "2026-08-07T09:00:00Z"},
+        ],
+    })
+    monkeypatch.setattr(clc.subprocess, "run", _fake_gh_pr_view(fixture))
+    assert clc._pr_last_lane_activity(
+        21884, "myia-po-2023:CoursIA-2") == datetime(
+            2026, 8, 7, 9, 0, tzinfo=timezone.utc)
+
+
+def test_pr_last_lane_activity_none_on_gh_failure(monkeypatch):
+    """Une lecture morte n'est pas une mesure d'inactivite."""
+    monkeypatch.setattr(clc.subprocess, "run",
+                        _fake_gh_pr_view("", returncode=1))
+    assert clc._pr_last_lane_activity(21884, "myia-po-2023:CoursIA-2") is None
+
+
+def test_aged_claim_with_live_lane_pr_blocks(monkeypatch, capsys):
+    """73 h de claim + PR ouverte de la meme lane + commit de 13 h => BLOCKED.
+
+    C'est le test cible de #22408 : sans lui, l'organe autorisait une reprise
+    sur un grain en cours de livraison.
+    """
+    p = payload(comment("[CLAIMED] lane myia-po-2023:CoursIA-2 -- CSP-10",
+                        "2026-08-04T11:00:00Z"), number=21881)
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files",
+                        lambda: [_lane_pr(21884, "myia-po-2023:CoursIA-2", 21881)])
+    _patch_last_activity(monkeypatch,
+                         datetime(2026, 8, 6, 23, 0, tzinfo=timezone.utc))
+
+    rc = clc._run_check(p, "myia-po-2024:CoursIA-2", stale_threshold=48.0,
+                        now=NOW, my_paths=[CSP10_PATH])
+    captured = capsys.readouterr()
+    assert rc == 1, captured.out + captured.err
+    assert '"myia-po-2023:CoursIA-2"' in captured.out
+    assert '"stale_claims": []' in captured.out
+    assert '"pr": 21884' in captured.out
+    assert "N'EST PAS perime (#22408)" in captured.err
+
+
+def test_aged_claim_without_open_pr_stays_stale(monkeypatch, capsys):
+    """Controle negatif : le meme claim, sans PR ouverte, reste STALE."""
+    p = payload(comment("[CLAIMED] lane myia-po-2023:CoursIA-2 -- CSP-10",
+                        "2026-08-04T11:00:00Z"), number=21881)
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files", lambda: [])
+
+    rc = clc._run_check(p, "myia-po-2024:CoursIA-2", stale_threshold=48.0,
+                        now=NOW, my_paths=[CSP10_PATH])
+    captured = capsys.readouterr()
+    assert rc == 0, captured.out + captured.err
+    assert '"stale_claims": [\n    "myia-po-2023:CoursIA-2"\n  ]' in captured.out
+    assert '"revived_claims": []' in captured.out
+    assert "STALE_CLAIM myia-po-2023:CoursIA-2" in captured.err
+
+
+def test_aged_claim_with_silent_pr_is_still_stale(monkeypatch, capsys):
+    """PR ouverte mais derniere touche a 61 h (> seuil 48 h) : STALE."""
+    p = payload(comment("[CLAIMED] lane myia-po-2023:CoursIA-2 -- CSP-10",
+                        "2026-08-04T11:00:00Z"), number=21881)
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files",
+                        lambda: [_lane_pr(21884, "myia-po-2023:CoursIA-2", 21881)])
+    _patch_last_activity(monkeypatch,
+                         datetime(2026, 8, 4, 23, 0, tzinfo=timezone.utc))
+
+    rc = clc._run_check(p, "myia-po-2024:CoursIA-2", stale_threshold=48.0,
+                        now=NOW, my_paths=[CSP10_PATH])
+    captured = capsys.readouterr()
+    assert rc == 0, captured.out + captured.err
+    assert '"stale_claims": [\n    "myia-po-2023:CoursIA-2"\n  ]' in captured.out
+
+
+def test_unreadable_activity_keeps_the_old_verdict(monkeypatch, capsys):
+    """gh indisponible : on garde STALE (une lecture morte n'est pas une preuve)."""
+    p = payload(comment("[CLAIMED] lane myia-po-2023:CoursIA-2 -- CSP-10",
+                        "2026-08-04T11:00:00Z"), number=21881)
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files",
+                        lambda: [_lane_pr(21884, "myia-po-2023:CoursIA-2", 21881)])
+    _patch_last_activity(monkeypatch, None)
+
+    rc = clc._run_check(p, "myia-po-2024:CoursIA-2", stale_threshold=48.0,
+                        now=NOW, my_paths=[CSP10_PATH])
+    captured = capsys.readouterr()
+    assert rc == 0, captured.out + captured.err
+    assert '"stale_claims": [\n    "myia-po-2023:CoursIA-2"\n  ]' in captured.out
+
+
+def test_open_pr_enumeration_failure_keeps_the_old_verdict(monkeypatch, capsys):
+    """#22408 / review Hermes 5641325382 -- une enumeration qui LEVE ne sort pas.
+
+    `_gh_open_prs_with_files()` leve `RuntimeError` sur un `gh` en echec et
+    `OpenPrsIncompleteError` (sa sous-classe) sur une enumeration partielle.
+    Ce mode n'etait couvert par aucun test : l'exception traversait
+    `_run_check` jusqu'a la CLI, qui sortait en traceback sans verdict -- et
+    quatre tests verts sur `main` (pas de `gh` dans l'environnement)
+    rougissaient au head. Une lecture impossible ne ranime pas un claim : il
+    garde son verdict d'avant, et l'organe le dit sur stderr.
+    """
+    p = payload(comment("[CLAIMED] lane myia-po-2023:CoursIA-2 -- CSP-10",
+                        "2026-08-04T11:00:00Z"), number=21881)
+
+    def boom():
+        raise clc.OpenPrsIncompleteError("enumeration incomplete: REST timeout")
+
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files", boom)
+
+    rc = clc._run_check(p, "myia-po-2024:CoursIA-2", stale_threshold=48.0,
+                        now=NOW, my_paths=[CSP10_PATH])
+    captured = capsys.readouterr()
+    assert rc == 0, captured.out + captured.err
+    assert '"stale_claims": [\n    "myia-po-2023:CoursIA-2"\n  ]' in captured.out
+    assert '"revived_claims": []' in captured.out
+    assert "activite de myia-po-2023:CoursIA-2 illisible" in captured.err
+
+
+def test_open_pr_enumeration_runtime_error_keeps_the_old_verdict(
+        monkeypatch, capsys):
+    """Meme filet pour un `gh` simplement en echec (RuntimeError nu).
+
+    C'est la forme exacte du log CI du job `Scripts Tests (CPU)` :
+    `RuntimeError: gh repo view failed (exit 4)`.
+    """
+    p = payload(comment("[CLAIMED] lane myia-po-2023:CoursIA-2 -- CSP-10",
+                        "2026-08-04T11:00:00Z"), number=21881)
+
+    def boom():
+        raise RuntimeError("gh repo view failed (exit 4)")
+
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files", boom)
+
+    rc = clc._run_check(p, "myia-po-2024:CoursIA-2", stale_threshold=48.0,
+                        now=NOW, my_paths=[CSP10_PATH])
+    captured = capsys.readouterr()
+    assert rc == 0, captured.out + captured.err
+    assert '"stale_claims": [\n    "myia-po-2023:CoursIA-2"\n  ]' in captured.out
+    assert "illisible" in captured.err
+
+
+def test_implicit_occupation_is_not_measured_when_a_claim_blocks(capsys):
+    """#22408 item 3 : `[]` ne doit plus se lire « mesure, personne ».
+
+    A l'instant du rapport #21881, le registre portait un claim actif : la
+    jambe IMPLICIT est lazy by outcome, elle n'a pas tourne, et `[]` se
+    lisait comme un resultat. Le booleen porte la difference.
+    """
+    p = payload(comment("[CLAIMED] lane myia-po-2025:CoursIA -- working here",
+                        "2026-08-07T10:00:00Z"), number=21881)
+    rc = clc._run_check(p, "myia-po-2024:CoursIA",
+                        stale_threshold=48.0, now=NOW, check_open_pr_paths=True)
+    captured = capsys.readouterr()
+    assert rc in (1, 2), captured.out
+    assert '"implicit_occupation": []' in captured.out
+    assert '"implicit_occupation_measured": false' in captured.out
+
+
+def test_implicit_occupation_is_measured_on_a_free_grain(monkeypatch, capsys):
+    p = payload(comment("rien", "2026-08-07T10:00:00Z"), number=21881)
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files", lambda: [])
+    rc = clc._run_check(p, "myia-po-2024:CoursIA",
+                        stale_threshold=48.0, now=NOW, check_open_pr_paths=True)
+    captured = capsys.readouterr()
+    assert rc == 0, captured.out
+    assert '"implicit_occupation_measured": true' in captured.out
+
+
 def test_stale_threshold_fresh_claim_returns_exit_2_not_scoped(capsys):
     # Other lane claimed 2h ago; threshold 24h -> NOT_SCOPED at exit 2 (#12322).
     # Pre-#12322 this returned `exit 1` + `BLOCKED`, conflating a non-scoped
@@ -1522,6 +1756,100 @@ def test_paths_multiple_prs_mixed(capsys):
     # But the JSON summary names it.
     assert "#9010" in captured.out
     assert "BLOCKED" in captured.err
+
+
+# --- Le repli pointe sur le POOL, pas sur une issue (#16570 livree) --------
+#
+# Mesure du 2026-10-26 (lane myia-ai-01:CoursIA-2, signalee par la session
+# jumelle `coursia-2-25`) : le message de blocage de la jambe PR-ouverte se
+# terminait par « or pick another grain (#16570) ». #16570 est l'ISSUE qui a
+# signale cette jambe-meme ; elle est LIVREE (fix #16572 MERGED le
+# 2026-09-18, label `candidate-delivered`). Un worker qui suit le repli
+# atterrit donc sur un conteneur livre et peut y poser un claim.
+#
+# Le repli doit designer la SOURCE DU GRAIN -- le pool global -- pas un
+# issue historiquement liee.
+
+
+def _open_pr_other_lane(number=9012, path="scripts/check_lane_claim.py"):
+    """PR ouverte d'une AUTRE lane, touchant `path`."""
+    return {
+        "number": number,
+        "title": f"feat(pr-{number})",
+        "headRefName": f"feat/pr-{number}",
+        "body": ("Grain: MED/lean -- lane myia-po-2026:CoursIA-2 -- prev: ...\n"
+                 "See #16570"),
+        "files": [{"path": path}],
+        "additions": 3,
+        "deletions": 1,
+    }
+
+
+def test_le_repli_de_la_collision_pointe_sur_le_pool(monkeypatch, capsys):
+    """Le message nomme le pool global, et pas un numero d'issue.
+
+    Chemin ISSUE (`_run_check` avec `--paths` + la jambe PR-ouverte) : c'est
+    celui que la session jumelle a mesure sur #21100 -- `BLOCKED: OPEN PR(s)
+    of other lanes touch this call's --paths`.
+    """
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files",
+                        lambda: [_open_pr_other_lane()])
+    p = payload(number=21100)
+    rc = clc._run_check(p, "myia-po-2024:CoursIA-2",
+                        my_paths=["scripts/check_lane_claim.py"],
+                        check_open_pr_paths=True)
+    assert rc == 2
+    err = capsys.readouterr().err
+    assert "BLOCKED: OPEN PR(s) of other lanes touch" in err
+    assert "pick another grain from the GLOBAL POOL" in err
+    assert "pick_idle_grain.py --belt" in err
+    # Le repli ne nomme PLUS l'issue livree comme destination.
+    assert "pick another grain (#16570)" not in err
+
+
+def test_le_repli_ne_designe_aucune_issue_comme_destination(monkeypatch, capsys):
+    """Controle generique : aucune forme « pick another grain (#N) » ne doit
+    survivre dans la sortie de la garde.
+
+    Un numero d'issue dans un renvoi de routage est un piege de lecture :
+    le worker qui le suit part sur l'issue, pas sur le pool. La forme
+    testee ici est la seule qui exprimait cette destination ; le test la
+    verrouille contre une regression sur N'importe quel numero.
+
+    Il couvre les DEUX chemins qui rendent un message de collision : le
+    chemin ISSUE (`_run_check`) et le chemin `--paths` seul
+    (`_run_check_paths`).
+    """
+    import re as _re
+
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files",
+                        lambda: [_open_pr_other_lane()])
+    p = payload(number=21100)
+    rc = clc._run_check(p, "myia-po-2024:CoursIA-2",
+                        my_paths=["scripts/check_lane_claim.py"],
+                        check_open_pr_paths=True)
+    assert rc == 2
+    err = capsys.readouterr().err
+    routing = [m for m in _re.finditer(r"pick another grain[^\n]*", err)
+               if _re.search(r"#\d+", m.group(0))]
+    assert not routing, (
+        "un renvoi de routage ne doit pas designer un issue : "
+        + "; ".join(m.group(0) for m in routing))
+
+    # Le chemin `--paths` seul rend le meme genre de repli : il doit
+    # designer le pool, lui aussi.
+    rc = clc._run_check_paths(
+        paths=["scripts/check_lane_claim.py"],
+        my_lane="myia-po-2024:CoursIA-2",
+        prs=[_open_pr_other_lane(number=9013)],
+    )
+    assert rc == 2
+    err = capsys.readouterr().err
+    routing = [m for m in _re.finditer(r"pick another grain[^\n]*", err)
+               if _re.search(r"#\d+", m.group(0))]
+    assert not routing, (
+        "un renvoi de routage ne doit pas designer un issue : "
+        + "; ".join(m.group(0) for m in routing))
 
 
 # --- --open-prs-on mode (#13595) --------------------------------------------
@@ -5227,6 +5555,120 @@ def test_delivered_replay_locks_again_after_open_then_merged(capsys):
     assert "LOCKED (v2)" in captured.err
 
 
+# --- #22445 -- the `paths:` clause on a [DELIVERED] is honoured --------------
+#
+# Measured defect (myia-po-2023:CoursIA, c.2360, issue #16334): the v2
+# conditional reducer re-marks a [DELIVERED] as an ACTIVE claim while its PR is
+# OPEN/MERGED, but `_PATHS_CLAUSE_RE` did not list DELIVERED -- so the marker's
+# `paths:` clause parsed to `None` and the re-marked claim came back EPIC-WIDE.
+# The very gesture meant to narrow the lock (`[DELIVERED] ... -- paths: ...`,
+# the form lane-claim-protocol.md prescribes) re-locked the whole umbrella.
+# The four tests below pin the fix and, just as importantly, its boundaries.
+
+def test_delivered_scope_clause_bounds_the_relock_on_open_pr(capsys):
+    """#22445 core: a scoped [DELIVERED] stays scoped while its PR is OPEN.
+
+    Pre-fix `active_claims[lane]["paths"]` was `null` and the disjoint caller
+    was BLOCKED (epic-wide relock). Post-fix the re-marked claim carries the
+    declared scope, and a caller whose scope is disjoint is CLEAR.
+    """
+    p = payload(
+        comment("[CLAIMED] lane myia-po-2026:CoursIA -- paths: "
+                "scripts/check_lane_claim.py",
+                "2026-10-25T03:39:12Z"),
+        comment("[DELIVERED] lane myia-po-2026:CoursIA -- PR #22400 -- paths: "
+                "scripts/check_lane_claim.py",
+                "2026-10-25T03:39:56Z"),
+        number=16334,
+        labels=[{"name": "EPIC"}],
+    )
+    rc = clc._run_check(p, "myia-po-2027:CoursIA-2",
+                       pr_states=_pr_states(22400, "OPEN"),
+                       my_paths=["MyIA.AI.Notebooks/IIT/ICT-Series/ICT-0-Framing.md"])
+    assert rc == 0
+    out = _json_out(capsys.readouterr())
+    assert out["blocking_lanes"] == []
+    assert out["active_claims"]["myia-po-2026:CoursIA"]["paths"] == [
+        "scripts/check_lane_claim.py"
+    ]
+    assert out["is_umbrella"] is True
+    assert out["epic_wide_on_umbrella"] is False
+
+
+def test_delivered_scope_clause_still_blocks_an_intersecting_caller(capsys):
+    """#22445 boundary: the clause bounds the lock, it does not remove it.
+
+    A scope that intersects the delivered slice keeps blocking -- the fix must
+    not turn [DELIVERED] into a free pass for siblings working the same files
+    (that would be the rejected option 2, which contradicts the v2 semantics).
+    """
+    p = payload(
+        comment("[DELIVERED] lane myia-po-2026:CoursIA -- PR #22400 -- paths: "
+                "scripts/check_lane_claim.py",
+                "2026-10-25T03:39:56Z"),
+        number=16334,
+        labels=[{"name": "EPIC"}],
+    )
+    rc = clc._run_check(p, "myia-po-2027:CoursIA-2",
+                       pr_states=_pr_states(22400, "OPEN"),
+                       my_paths=["scripts/check_lane_claim.py"])
+    assert rc == 1
+    out = _json_out(capsys.readouterr())
+    assert out["blocking_lanes"] == ["myia-po-2026:CoursIA"]
+    assert out["epic_wide_on_umbrella"] is False
+
+
+def test_delivered_scope_clause_with_dead_glob_lifts_to_epic_wide(capsys):
+    """#22445 fail-CLOSED: a scoped [DELIVERED] whose glob is dead relocks.
+
+    The #10958 hardener must keep working through the widened parser: a claim
+    whose entire scope matches no tracked file is a BROKEN claim, not a
+    permissive one, and is lifted back to epic-wide. Without this, honouring
+    the clause would open a fail-OPEN hole (a typo would free the umbrella).
+    """
+    p = payload(
+        comment("[DELIVERED] lane myia-po-2026:CoursIA -- PR #22400 -- paths: "
+                "scripts/no_such_directory/**",
+                "2026-10-25T03:39:56Z"),
+        number=16334,
+        labels=[{"name": "EPIC"}],
+    )
+    rc = clc._run_check(p, "myia-po-2027:CoursIA-2",
+                       pr_states=_pr_states(22400, "OPEN"),
+                       my_paths=["MyIA.AI.Notebooks/IIT/ICT-Series/ICT-0-Framing.md"])
+    assert rc == 1
+    out = _json_out(capsys.readouterr())
+    assert out["blocking_lanes"] == ["myia-po-2026:CoursIA"]
+    assert out["epic_wide_on_umbrella"] is True
+    # The dead glob is surfaced in the JSON (not only on stderr, #12740).
+    assert "scripts/no_such_directory/**" in out["dead_scope_globs"]["myia-po-2026:CoursIA"]
+
+
+def test_delivered_scope_clause_on_closed_pr_is_informational(capsys):
+    """#22445 no-regression: on the CLOSED branch the scope stays cosmetic.
+
+    A [DELIVERED] whose PR was closed without merge pops the lane, exactly as
+    [RELEASED] does. Honouring the clause must not resurrect a closed claim in
+    a bounded form -- there is nothing left to hold.
+    """
+    p = payload(
+        comment("[DELIVERED] lane myia-po-2026:CoursIA -- PR #22400 -- paths: "
+                "scripts/check_lane_claim.py",
+                "2026-10-25T03:39:56Z"),
+        number=16334,
+        labels=[{"name": "EPIC"}],
+    )
+    rc = clc._run_check(p, "myia-po-2027:CoursIA-2",
+                       pr_states=_pr_states(22400, "CLOSED"),
+                       my_paths=["scripts/check_lane_claim.py"])
+    assert rc == 0
+    out = _json_out(capsys.readouterr())
+    assert out["blocking_lanes"] == []
+    assert out["active_claims"] == {}
+    assert out["delivered_claims"] == [22400]
+    assert out["delivered_claims_pr_states"] == {"22400": "CLOSED"}
+
+
 def test_pr_states_signature_is_optional_no_behavioural_change(capsys):
     """v2: callers that don't pass `pr_states` keep the v1 surface.
 
@@ -6300,20 +6742,41 @@ def test_gh_calls_pin_utf8_regression_12811(monkeypatch):
         "labels": [],
         "comments": [],
     }, ensure_ascii=False).encode("utf-8")
-    prlist_raw = json.dumps([
-        {"number": 1, "title": "x " + bad_char, "headRefName": "b",
-         "body": "", "files": []},
-    ], ensure_ascii=False).encode("utf-8")
+    # #21742 -- l'enumeration des PRs ouvertes n'est plus un `gh pr list`
+    # unique : deux transports, `gh repo view` (resolution du depot, ASCII)
+    # puis `gh api graphql` (les pages, qui portent le TITRE des PRs). Le
+    # byte non-cp1252 se place donc dans le payload GraphQL -- c'est lui que
+    # `_gh_open_prs_with_files` decode desormais. L'intention du test est
+    # inchangee : le byte qui tue cp1252 ne doit pas tuer le mode.
+    repo_raw = b"jsboige/CoursIA"
+    prlist_raw = json.dumps({
+        "data": {"repository": {"pullRequests": {
+            "pageInfo": {"hasNextPage": False, "endCursor": None},
+            "nodes": [{"number": 1, "title": "x " + bad_char,
+                       "headRefName": "b", "body": "",
+                       "additions": 0, "deletions": 0,
+                       "files": {"totalCount": 0, "nodes": []}}],
+        }}},
+    }, ensure_ascii=False).encode("utf-8")
     # garde-fou du fixture : le byte qui tue cp1252 est bien dans les payloads
     assert b"\x8f" in issue_raw and b"\x8f" in prlist_raw
 
     def fake_run(cmd, **kwargs):
-        raw = prlist_raw if "list" in cmd else issue_raw
+        if cmd[1:3] == ["repo", "view"]:
+            raw = repo_raw
+        elif "graphql" in cmd:
+            raw = prlist_raw
+        else:
+            raw = issue_raw
         enc = kwargs.get("encoding") or "cp1252"  # défaut Windows, simulé
         decoded = raw.decode(enc, kwargs.get("errors") or "strict")
         return subprocess.CompletedProcess(cmd, 0, stdout=decoded, stderr="")
 
     monkeypatch.setattr(clc.subprocess, "run", fake_run)
+    # Le memo de processus (#21742) ferait court-circuiter le faux ci-dessus
+    # si un test precedent l'avait rempli.
+    monkeypatch.setattr(clc, "_OPEN_PRS_MEMO", None)
+    monkeypatch.setattr(clc, "_OPEN_PRS_CACHE_PATH", None)
     issue_payload = clc._gh_issue_comments("5635")
     assert issue_payload["title"].endswith(bad_char)
     prs = clc._gh_open_prs_with_files()
@@ -7028,3 +7491,846 @@ def test_unwrap_reuses_the_traps_organ_predicate():
     from check_gh_comment_traps import classify_payload_body  # noqa: PLC0415
     assert classify_payload_body(_PAYLOAD_19727) is not None
     assert clc._unwrap_trapped_body(_PAYLOAD_19727) == classify_payload_body(_PAYLOAD_19727)
+
+
+# --- #19643 / c.1753 -- timeout= sur _gh_open_prs_with_files ----------------
+
+
+@pytest.fixture
+def _isolated_open_prs(monkeypatch):
+    """Isole l'enumeration des PRs ouvertes pour un test (#21742).
+
+    Demande EXPLICITEMENT par les tests qui appellent le transport
+    (`_gh_open_prs_with_files` / `_gh_open_prs_complete` / `_run_check_paths`
+    sans `prs=`). Pas d'`autouse` : le fichier compte 7300+ tests et une
+    fixture globale reinitialiserait un etat que d'autres tests posent
+    deliberement.
+
+    Deux etats module sont remis a zero :
+
+      - `_OPEN_PRS_MEMO` -- le memo de processus. Sans ca, un test anterieur
+        qui a rempli la liste fait court-circuiter le faux `subprocess.run`
+        du test courant (le transport ne serait jamais appele, et l'assertion
+        porterait sur la liste du voisin) ;
+      - `_OPEN_PRS_CACHE_PATH` -- le cache de session, lu depuis l'env a
+        l'import. Un fichier herite de l'environnement du runner rendrait le
+        test dependant de la machine ; les tests qui VEULENT un cache le
+        reposent eux-memes.
+    """
+    monkeypatch.setattr(clc, "_OPEN_PRS_MEMO", None)
+    monkeypatch.setattr(clc, "_OPEN_PRS_CACHE_PATH", None)
+    return clc
+
+
+def test_gh_open_prs_default_timeout_is_60s():
+    """La constante module _GH_OPEN_PRS_TIMEOUT_S defaut 60s, surchargeable
+    par env CHECK_LANE_CLAIM_GH_TIMEOUT. C'est la borne qui protege le tapis
+    du picker (pick_idle_grain.py:2355) contre un appel `gh` lent (rate
+    limit secondaire, backoff silencieux)."""
+    # Defaut observe = 60s (constante module, surcharge env).
+    assert clc._GH_OPEN_PRS_TIMEOUT_S == 60
+
+
+def test_gh_open_prs_timeout_raises_runtime_error(monkeypatch,
+                                                  _isolated_open_prs):
+    """Si subprocess.run leve TimeoutExpired, _gh_open_prs_with_files() doit
+    lever un RuntimeError descriptif (pas un TimeoutExpired nu) -- l'appelant
+    picker traduit ca en CLAIM_CODE_ERROR (verdict 'verification
+    indisponible'), jamais un silence.
+
+    #21742 -- le premier appel `gh` est desormais `gh repo view` (resolution
+    du depot avant la requete GraphQL) ; c'est lui qui leve ici. Le message
+    nomme le meme contrat : timeout, duree, variable d'env de surcharge.
+    """
+    def fake_run(*args, **kwargs):
+        # Simule un `gh` qui dort au-dela du timeout : leve TimeoutExpired
+        # comme le vrai subprocess.run quand timeout= est depasse.
+        raise subprocess.TimeoutExpired(cmd=kwargs.get("args", ["gh"]), timeout=60)
+
+    monkeypatch.setattr(clc.subprocess, "run", fake_run)
+    with pytest.raises(RuntimeError) as excinfo:
+        clc._gh_open_prs_with_files()
+    msg = str(excinfo.value)
+    # Le message doit nommer le timeout, le temps, et la variable d'env
+    # pour qu'un operateur en deballage sache quoi faire.
+    assert "timed out" in msg.lower()
+    assert "60s" in msg
+    assert "CHECK_LANE_CLAIM_GH_TIMEOUT" in msg
+
+
+def test_gh_open_prs_timeout_override_via_env(monkeypatch):
+    """La constante _GH_OPEN_PRS_TIMEOUT_S respecte l'env
+    CHECK_LANE_CLAIM_GH_TIMEOUT (utile pour tests + debug operateur)."""
+    monkeypatch.setenv("CHECK_LANE_CLAIM_GH_TIMEOUT", "5")
+    # Recharger le module n'est pas possible ici, mais on verifie que
+    # l'overrride est implemente dans le code source directement.
+    import importlib
+    importlib.reload(clc)
+    try:
+        assert clc._GH_OPEN_PRS_TIMEOUT_S == 5
+    finally:
+        # Recharger sans l'env pour les tests suivants.
+        monkeypatch.delenv("CHECK_LANE_CLAIM_GH_TIMEOUT", raising=False)
+        importlib.reload(clc)
+
+
+def test_gh_open_prs_no_keyword_timeout_does_not_apply(monkeypatch,
+                                                       _isolated_open_prs):
+    """Si subprocess.run est appele SANS timeout= (defaut), on ne leve PAS
+    TimeoutExpired artificiellement -- on verifie juste que le timeout=
+    est passe par _gh_open_prs_with_files() au subprocess.run().
+
+    #21742 -- le transport enchainne DEUX sites d'appel (`gh repo view` puis
+    `gh api graphql`, une fois par page). L'intention d'origine -- CHAQUE
+    appel `gh` porte la borne, pas seulement le dernier -- se verifie donc
+    sur la LISTE des appels. Un transport qui oublierait `timeout=` sur un
+    seul des deux sites rendrait le tapis du picker bloquant.
+    """
+    seen_timeouts = []
+
+    def fake_run(cmd, **kwargs):
+        seen_timeouts.append(kwargs.get("timeout"))
+        if cmd[1:3] == ["repo", "view"]:
+            stdout = "jsboige/CoursIA"
+        elif "graphql" in cmd:
+            stdout = json.dumps({"data": {"repository": {"pullRequests": {
+                "pageInfo": {"hasNextPage": False, "endCursor": None},
+                "nodes": [],
+            }}}})
+        else:  # aucun autre appel attendu : le test echoue bruyamment
+            raise AssertionError(f"unexpected gh call: {cmd!r}")
+        return subprocess.CompletedProcess(
+            cmd, returncode=0, stdout=stdout, stderr="",
+        )
+
+    monkeypatch.setattr(clc.subprocess, "run", fake_run)
+    assert clc._gh_open_prs_with_files() == []
+    assert len(seen_timeouts) == 2, (
+        "les DEUX transports (repo view + graphql) doivent avoir ete appeles"
+    )
+    # La borne doit etre passee a CHAQUE subprocess.run, surchargeable par env.
+    assert seen_timeouts == [clc._GH_OPEN_PRS_TIMEOUT_S] * len(seen_timeouts)
+
+
+def test_gh_open_prs_cache_path_via_env(monkeypatch, tmp_path):
+    """#19643 -- si env CHECK_LANE_CLAIM_OPEN_PRS_JSON pointe sur un JSON
+    valide, _gh_open_prs_with_files() lit le cache et n'appelle PAS
+    subprocess.run. Test : on pose un fichier JSON, on verifie que la
+    fonction retourne le contenu du fichier sans appel `gh` (subprocess.run
+    n'est pas appele).
+
+    #21742 -- le cache porte desormais la COMPLETUDE : seul le format v2
+    (`{"format": "open-prs-v2", "complete": true, ...}`) est une preuve.
+    Un cache v2 complet est toujours lu sans `gh` ; c'est le point que ce
+    test pin (l'heritage en liste nue, lui, est ignore -- cf.
+    `test_open_prs_legacy_bare_list_cache_is_not_trusted`).
+    """
+    cached_prs = [{"number": 1, "title": "cached", "body": "",
+                   "headRefName": "x", "files": []}]
+    cache = tmp_path / "open_prs.json"
+    cache.write_text(json.dumps({
+        "format": "open-prs-v2",
+        "complete": True,
+        "count": len(cached_prs),
+        "prs": cached_prs,
+    }), encoding="utf-8")
+    monkeypatch.setenv("CHECK_LANE_CLAIM_OPEN_PRS_JSON", str(cache))
+
+    def fail_run(*args, **kwargs):
+        raise AssertionError("subprocess.run was called; cache should win")
+
+    monkeypatch.setattr(clc.subprocess, "run", fail_run)
+    # Recharger le module pour que l'env soit lue.
+    import importlib
+    importlib.reload(clc)
+    try:
+        out = clc._gh_open_prs_with_files()
+        assert out == cached_prs
+    finally:
+        monkeypatch.delenv("CHECK_LANE_CLAIM_OPEN_PRS_JSON", raising=False)
+        importlib.reload(clc)
+
+
+def test_gh_open_prs_cache_missing_falls_back_to_gh(monkeypatch, tmp_path):
+    """#19643 -- si l'env pointe sur un fichier absent, on retombe sur le
+    subprocess `gh` (avec timeout). Pas de corruption silencieuse.
+
+    #21742 -- le fallback passe par les deux transports de l'enumeration
+    complete (`gh repo view` + `gh api graphql`) ; le faux les sert tous les
+    deux et le verdict rendu est la liste vide de la connexion GraphQL.
+    """
+    missing = tmp_path / "absent.json"
+    monkeypatch.setenv("CHECK_LANE_CLAIM_OPEN_PRS_JSON", str(missing))
+
+    calls = []
+
+    def fake_run(cmd, **kwargs):
+        calls.append(kwargs.get("timeout"))
+        if cmd[1:3] == ["repo", "view"]:
+            stdout = "jsboige/CoursIA"
+        elif "graphql" in cmd:
+            stdout = json.dumps({"data": {"repository": {"pullRequests": {
+                "pageInfo": {"hasNextPage": False, "endCursor": None},
+                "nodes": [],
+            }}}})
+        else:
+            raise AssertionError(f"unexpected gh call: {cmd!r}")
+        return subprocess.CompletedProcess(
+            cmd, returncode=0, stdout=stdout, stderr="",
+        )
+
+    monkeypatch.setattr(clc.subprocess, "run", fake_run)
+    import importlib
+    importlib.reload(clc)
+    try:
+        out = clc._gh_open_prs_with_files()
+        assert out == []
+        # Le timeout=_GH_OPEN_PRS_TIMEOUT_S doit avoir ete passe a CHAQUE appel.
+        assert calls, "le fallback doit avoir appele gh"
+        assert set(calls) == {clc._GH_OPEN_PRS_TIMEOUT_S}
+    finally:
+        monkeypatch.delenv("CHECK_LANE_CLAIM_OPEN_PRS_JSON", raising=False)
+        importlib.reload(clc)
+
+
+def test_gh_open_prs_cache_corrupt_falls_back_to_gh(monkeypatch, tmp_path):
+    """#19643 -- si l'env pointe sur un JSON corrompu, on retombe sur le
+    subprocess `gh` (avec timeout). Pas de crash silencieux.
+
+    #21742 -- meme adaptation qu'au test « cache absent » : les deux
+    transports de l'enumeration complete sont servis par le faux.
+    """
+    cache = tmp_path / "corrupt.json"
+    cache.write_text("{not valid json", encoding="utf-8")
+    monkeypatch.setenv("CHECK_LANE_CLAIM_OPEN_PRS_JSON", str(cache))
+
+    calls = []
+
+    def fake_run(cmd, **kwargs):
+        calls.append("called")
+        if cmd[1:3] == ["repo", "view"]:
+            stdout = "jsboige/CoursIA"
+        elif "graphql" in cmd:
+            stdout = json.dumps({"data": {"repository": {"pullRequests": {
+                "pageInfo": {"hasNextPage": False, "endCursor": None},
+                "nodes": [],
+            }}}})
+        else:
+            raise AssertionError(f"unexpected gh call: {cmd!r}")
+        return subprocess.CompletedProcess(
+            cmd, returncode=0, stdout=stdout, stderr="",
+        )
+
+    monkeypatch.setattr(clc.subprocess, "run", fake_run)
+    import importlib
+    importlib.reload(clc)
+    try:
+        out = clc._gh_open_prs_with_files()
+        assert out == []
+        # Le fallback a bien eu lieu (un cache corrompu n'a pas de reponse).
+        assert calls, "le fallback doit avoir appele gh"
+    finally:
+        monkeypatch.delenv("CHECK_LANE_CLAIM_OPEN_PRS_JSON", raising=False)
+        importlib.reload(clc)
+
+
+def test_gh_open_prs_cache_wrong_type_falls_back_to_gh(monkeypatch, tmp_path):
+    """#19643 -- si l'env pointe sur un JSON valide mais pas une liste
+    (ex: dict), on retombe sur le subprocess `gh`. Pas de corruption.
+
+    #21742 -- la regle est desormais plus stricte et ce test la pin : un
+    dict qui n'est pas un cache v2 (`format: "open-prs-v2"`) n'est PAS une
+    preuve de completude, donc il est traite comme absent et le fetch
+    complet reecrit le fichier.
+    """
+    cache = tmp_path / "wrong_type.json"
+    cache.write_text(json.dumps({"not": "a list"}), encoding="utf-8")
+    monkeypatch.setenv("CHECK_LANE_CLAIM_OPEN_PRS_JSON", str(cache))
+
+    def fake_run(cmd, **kwargs):
+        if cmd[1:3] == ["repo", "view"]:
+            stdout = "jsboige/CoursIA"
+        elif "graphql" in cmd:
+            stdout = json.dumps({"data": {"repository": {"pullRequests": {
+                "pageInfo": {"hasNextPage": False, "endCursor": None},
+                "nodes": [],
+            }}}})
+        else:
+            raise AssertionError(f"unexpected gh call: {cmd!r}")
+        return subprocess.CompletedProcess(
+            cmd, returncode=0, stdout=stdout, stderr="",
+        )
+
+    monkeypatch.setattr(clc.subprocess, "run", fake_run)
+    import importlib
+    importlib.reload(clc)
+    try:
+        out = clc._gh_open_prs_with_files()
+        assert out == []
+        # Et le fetch complet a reecrit le fichier au format v2.
+        rewritten = json.loads(cache.read_text(encoding="utf-8"))
+        assert rewritten["format"] == "open-prs-v2"
+        assert rewritten["complete"] is True
+    finally:
+        monkeypatch.delenv("CHECK_LANE_CLAIM_OPEN_PRS_JSON", raising=False)
+        importlib.reload(clc)
+
+
+# --- #21742 -- enumeration COMPLETE des PRs ouvertes (fail-closed) ----------
+#
+# Mesure du 2026-10-21 sur jsboige/CoursIA (362 PRs ouvertes) : deux
+# truncations silencieuses, deux faux "CLEAR" --
+#
+#   1. la LISTE : `gh pr list --limit 200` rendait 200 PRs, 162 invisibles ;
+#   2. les FICHIERS : `--json files` plafonne a 100 chemins par PR (3 PRs
+#      ouvertes au-dela, jusqu'a 1070).
+#
+# Les tests ci-dessous pinnent la nouvelle voie : pagination GraphQL jusqu'a
+# `hasNextPage == false`, refetch REST des PRs plafonnees, et -- quand la
+# completude ne peut PAS etre etablie -- un verdict `UNKNOWN` (exit 1),
+# jamais un "CLEAR" qui ne prouve rien. Aucun test ne touche le reseau :
+# `_gh_repo_name_with_owner` / `_gh_graphql` / `_gh_pr_files_rest` /
+# `subprocess.run` sont monkeypatches a chaque fois.
+
+
+def _graphql_page(nodes, has_next=False, cursor=None):
+    """Une page de la connexion GraphQL `pullRequests` (#21742)."""
+    return {"data": {"repository": {"pullRequests": {
+        "pageInfo": {"hasNextPage": has_next, "endCursor": cursor},
+        "nodes": nodes,
+    }}}}
+
+
+def _graphql_node(number, files=(), total=None, title=None):
+    """Un noeud PR de la page GraphQL ; `total` simule le plafond a 100."""
+    paths = [{"path": p} for p in files]
+    return {
+        "number": number,
+        "title": title or f"PR {number}",
+        "headRefName": f"b{number}",
+        "body": "",
+        "additions": 0,
+        "deletions": 0,
+        "files": {
+            "totalCount": len(paths) if total is None else total,
+            "nodes": paths,
+        },
+    }
+
+
+def test_open_prs_complete_paginates_every_page(monkeypatch,
+                                                _isolated_open_prs):
+    """#21742 -- la LISTE des PRs est paginee jusqu'a `hasNextPage == false`.
+
+    Regression fondatrice : `gh pr list --limit 200` rendait les 200 PRs les
+    plus recentes d'un depot qui en compte 362. Une enumeration qui s'arrete
+    a la premiere page reproduit exactement ce faux "CLEAR" : les PRs de la
+    page suivante -- les plus anciennes, donc celles que la fenetre
+    tronquante perdait -- disparaissent du verdict.
+    """
+    monkeypatch.setattr(clc, "_gh_repo_name_with_owner",
+                        lambda: "jsboige/CoursIA")
+    pages = [
+        _graphql_page([_graphql_node(1)], has_next=True, cursor="c1"),
+        _graphql_page([_graphql_node(2)], has_next=False),
+    ]
+    seen_variables = []
+
+    def fake_graphql(query, variables=None):
+        seen_variables.append(variables)
+        return pages[len(seen_variables) - 1]
+
+    monkeypatch.setattr(clc, "_gh_graphql", fake_graphql)
+    prs = clc._gh_open_prs_complete()
+    # Les PRs des DEUX pages sont dans le resultat.
+    assert [p["number"] for p in prs] == [1, 2]
+    # La page 2 est demandee AVEC le curseur rendu par la page 1.
+    assert seen_variables == [None, {"cursor": "c1"}]
+
+
+def test_open_prs_complete_refetches_overflowing_files(monkeypatch,
+                                                       _isolated_open_prs):
+    """#21742 -- une PR dont `files.totalCount` depasse le plafond GraphQL de
+    100 est refetchee en REST, et porte TOUS ses chemins.
+
+    Mesure : 3 PRs ouvertes au-dela du plafond (#20687 1070 fichiers,
+    #21555 597, #21413 323). Un chemin porte par la queue invisible d'une de
+    ces PRs disparaissait du verdict `--paths`.
+    """
+    monkeypatch.setattr(clc, "_gh_repo_name_with_owner",
+                        lambda: "jsboige/CoursIA")
+    first_hundred = [f"f/{i}.py" for i in range(100)]
+    monkeypatch.setattr(clc, "_gh_graphql", lambda q, v=None: _graphql_page(
+        [_graphql_node(7, files=first_hundred, total=150)]))
+
+    seen = []
+
+    def fake_rest(owner, name, number, expected):
+        seen.append((owner, name, number, expected))
+        return first_hundred + [f"f/{i}.py" for i in range(100, 150)]
+
+    monkeypatch.setattr(clc, "_gh_pr_files_rest", fake_rest)
+    prs = clc._gh_open_prs_complete()
+    # Le refetch est demande pour la SEULE PR plafonnee, avec son total.
+    assert seen == [("jsboige", "CoursIA", 7, 150)]
+    paths = [f["path"] for f in prs[0]["files"]]
+    assert len(paths) == 150
+    # La queue au-dela des 100 premiers chemins est bien presente.
+    assert paths[-1] == "f/149.py"
+
+
+def test_open_prs_complete_raises_on_refetch_count_mismatch(monkeypatch,
+                                                            _isolated_open_prs):
+    """#21742 -- si le refetch REST rend MOINS de chemins que le `totalCount`
+    annonce, la completude n'est pas etablie -> `OpenPrsIncompleteError`.
+
+    C'est le garde de `_gh_pr_files_rest` lui-meme qui est exerce ici (pas
+    un faux) : un refetch tronque doit faire echouer l'enumeration, pas
+    rendre silencieusement une liste partielle.
+    """
+    first_hundred = [f"f/{i}.py" for i in range(100)]
+    rest_payload = json.dumps(
+        [{"filename": p} for p in first_hundred[:99]])
+
+    def fake_run(cmd, **kwargs):
+        if cmd[1:3] == ["repo", "view"]:
+            stdout = "jsboige/CoursIA"
+        elif "graphql" in cmd:
+            stdout = json.dumps(_graphql_page(
+                [_graphql_node(7, files=first_hundred, total=150)]))
+        elif "pulls" in " ".join(cmd):
+            stdout = rest_payload
+        else:
+            raise AssertionError(f"unexpected gh call: {cmd!r}")
+        return subprocess.CompletedProcess(
+            cmd, returncode=0, stdout=stdout, stderr="",
+        )
+
+    monkeypatch.setattr(clc.subprocess, "run", fake_run)
+    with pytest.raises(clc.OpenPrsIncompleteError) as excinfo:
+        clc._gh_open_prs_complete()
+    msg = str(excinfo.value)
+    assert "incomplete" in msg.lower()
+    assert "99" in msg and "150" in msg
+
+
+def test_open_prs_refetch_timeout_is_incomplete_not_traceback(
+        monkeypatch, _isolated_open_prs):
+    """#21742 -- un DELAI sur le refetch REST des fichiers est une
+    INCOMPLETUDE, pas une erreur de plomberie.
+
+    Mesure (2026-10-21, revue du correctif) : `_gh_pr_files_rest` laissait
+    `subprocess.TimeoutExpired` s'echapper tel quel. L'exception n'etait
+    attrapee ni par `except RuntimeError` ni par `except
+    OpenPrsIncompleteError` dans `--paths` et `--open-prs-on` -> le mode
+    `--paths` mourait sur une **traceback** au lieu de rendre le verdict
+    `UNKNOWN`. Le code de sortie restait non nul (fail-closed preserve), mais
+    le contrat de verdict ne l'etait pas.
+    """
+    first_hundred = [f"f/{i}.py" for i in range(100)]
+
+    def fake_run(cmd, **kwargs):
+        if cmd[1:3] == ["repo", "view"]:
+            stdout = "jsboige/CoursIA"
+        elif "graphql" in cmd:
+            stdout = json.dumps(_graphql_page(
+                [_graphql_node(7, files=first_hundred, total=150)]))
+        elif "pulls" in " ".join(cmd):
+            raise subprocess.TimeoutExpired(cmd=cmd, timeout=60)
+        else:
+            raise AssertionError(f"unexpected gh call: {cmd!r}")
+        return subprocess.CompletedProcess(
+            cmd, returncode=0, stdout=stdout, stderr="",
+        )
+
+    monkeypatch.setattr(clc.subprocess, "run", fake_run)
+    # L'exception doit etre une INCOMPLETUDE : c'est elle que les
+    # appelants traduisent en verdict `UNKNOWN`.
+    with pytest.raises(clc.OpenPrsIncompleteError) as excinfo:
+        clc._gh_open_prs_complete()
+    assert "delai" in excinfo.value.reason.lower()
+
+
+def test_open_prs_complete_raises_past_hard_cap(monkeypatch,
+                                                _isolated_open_prs):
+    """#21742 -- au-dela du plafond de securite, l'enumeration est declaree
+    INCOMPLETE (fail-closed) plutot que de rendre une liste partielle."""
+    monkeypatch.setattr(clc, "_gh_repo_name_with_owner",
+                        lambda: "jsboige/CoursIA")
+    monkeypatch.setattr(clc, "_OPEN_PRS_HARD_CAP", 1)
+    monkeypatch.setattr(clc, "_gh_graphql", lambda q, v=None: _graphql_page(
+        [_graphql_node(1), _graphql_node(2)]))
+    with pytest.raises(clc.OpenPrsIncompleteError) as excinfo:
+        clc._gh_open_prs_complete()
+    assert "plafond" in excinfo.value.reason.lower()
+
+
+def test_open_prs_legacy_bare_list_cache_is_not_trusted(monkeypatch, tmp_path,
+                                                        _isolated_open_prs):
+    """#21742 -- une liste NUE dans le cache n'est PAS une preuve.
+
+    Le producteur (picker belt) y ecrivait la sortie de `gh pr list --limit
+    200`, donc une liste tronquee des que le depot depasse 200 PRs ouvertes.
+    L'heritage vaut absence de cache : le fetch complet tourne, et il
+    REECRIT le fichier au format v2 (completude explicite) pour que la
+    session suivante herite d'une preuve, pas d'une troncature.
+    """
+    cache = tmp_path / "open_prs.json"
+    cache.write_text(json.dumps([{"number": 1, "title": "OLD-truncated"}]),
+                     encoding="utf-8")
+    monkeypatch.setattr(clc, "_OPEN_PRS_CACHE_PATH", str(cache))
+    complete = [{"number": 2, "title": "from-complete-fetch",
+                 "headRefName": "b", "body": "", "files": []}]
+    monkeypatch.setattr(clc, "_gh_open_prs_complete", lambda: list(complete))
+
+    prs = clc._gh_open_prs_with_files()
+    # La liste heritage est IGNOREE : c'est le fetch complet qui repond.
+    assert prs == complete
+    written = json.loads(cache.read_text(encoding="utf-8"))
+    assert written["format"] == "open-prs-v2"
+    assert written["complete"] is True
+    assert written["count"] == len(complete)
+    assert written["prs"] == complete
+
+
+def test_open_prs_v2_complete_cache_is_trusted(monkeypatch, tmp_path,
+                                               _isolated_open_prs):
+    """#21742 -- un cache v2 marque `complete: true` EST une preuve : il est
+    servi sans aucun appel `gh` (c'est l'economie de session de #19643,
+    conservee)."""
+    cached = [{"number": 5, "title": "cached-v2", "headRefName": "b",
+               "body": "", "files": []}]
+    cache = tmp_path / "open_prs.json"
+    cache.write_text(json.dumps({
+        "format": "open-prs-v2", "complete": True,
+        "count": len(cached), "prs": cached,
+    }), encoding="utf-8")
+    monkeypatch.setattr(clc, "_OPEN_PRS_CACHE_PATH", str(cache))
+
+    def boom():
+        raise AssertionError(
+            "un cache v2 complet ne doit PAS recharger la liste")
+
+    monkeypatch.setattr(clc, "_gh_open_prs_complete", boom)
+    assert clc._gh_open_prs_with_files() == cached
+
+
+def test_open_prs_v2_incomplete_cache_raises(monkeypatch, tmp_path,
+                                             _isolated_open_prs):
+    """#21742 -- un cache v2 marque `complete: false` ne pretend pas etre la
+    liste : il leve `OpenPrsIncompleteError`, qui remonte jusqu'au verdict
+    `UNKNOWN`. Rendre la liste partielle qu'il contient serait le faux
+    "CLEAR" que l'issue corrige."""
+    cache = tmp_path / "open_prs.json"
+    cache.write_text(json.dumps({
+        "format": "open-prs-v2", "complete": False,
+        "reason": "gh pr list --limit 200 tronque",
+    }), encoding="utf-8")
+    monkeypatch.setattr(clc, "_OPEN_PRS_CACHE_PATH", str(cache))
+
+    with pytest.raises(clc.OpenPrsIncompleteError) as excinfo:
+        clc._gh_open_prs_with_files()
+    assert "incomplet" in excinfo.value.reason.lower()
+    # Fail-closed : rien n'est memoise, une lecture ulterieure re-essaiera.
+    assert clc._OPEN_PRS_MEMO is None
+
+
+def test_check_paths_incomplete_enumeration_is_unknown_not_clear(
+        monkeypatch, capsys, _isolated_open_prs):
+    """#21742 -- `--paths` sur une enumeration INCOMPLETE rend `UNKNOWN`
+    (exit 1), jamais "CLEAR".
+
+    Le faux "CLEAR" est le degat meme de l'issue : un chemin detenu par la
+    PR ouverte #20802 repondait "aucune PR d'une autre lane ne touche [...]"
+    parce que cette PR tombait hors de la fenetre de 200. Une enumeration
+    incomplete ne prouve NI liberte NI occupation.
+    """
+    def boom():
+        raise clc.OpenPrsIncompleteError(
+            "enumeration tronquee (test)", "2 PRs sur 362")
+
+    monkeypatch.setattr(clc, "_gh_open_prs_complete", boom)
+    rc = clc._run_check_paths(
+        ["scripts/check_lane_claim.py"], "myia-po-2024:CoursIA-2")
+    assert rc == 1
+    out, err = capsys.readouterr()
+    summary = json.loads(out)
+    assert summary["verdict"] == "UNKNOWN"
+    assert summary["complete"] is False
+    assert "tronquee" in summary["reason"]
+    assert summary["other_lane_collisions"] == []
+    assert "UNKNOWN" in err
+    # Le mot "CLEAR" ne doit apparaitre NULLE PART dans la sortie.
+    assert "CLEAR" not in out
+    assert "CLEAR" not in err
+
+
+def test_open_prs_on_incomplete_enumeration_is_unknown_not_free(
+        monkeypatch, capsys, _isolated_open_prs):
+    """#21742 -- le mode liste (`--open-prs-on`) rend `UNKNOWN` et sort en 1
+    sur une enumeration incomplete, au lieu du "Path is free." qui affirme
+    une liberte qu'il n'a pas prouvee."""
+    def boom():
+        raise clc.OpenPrsIncompleteError(
+            "enumeration tronquee (test)", "2 PRs sur 362")
+
+    monkeypatch.setattr(clc, "_gh_open_prs_complete", boom)
+    rc = clc._run_open_prs_on(["scripts/check_lane_claim.py"])
+    assert rc == 1
+    out, err = capsys.readouterr()
+    combined = out + err
+    assert "UNKNOWN" in combined
+    assert "Path is free" not in combined
+
+
+def test_open_prs_with_files_fetches_once_per_process(monkeypatch,
+                                                      _isolated_open_prs):
+    """#21742 -- le memo de processus rend le fetch COMPLET unique.
+
+    Le mode batch (#19643) boucle sur N issues et chaque issue redemande la
+    liste ; sans memo, N enumerations completes (4 pages GraphQL + refetch
+    REST a chaque tour). L'economie ne doit pas se payer d'un fetch
+    incomplet : c'est bien `_gh_open_prs_complete` qui est compte.
+    """
+    calls = []
+
+    def fake_complete():
+        calls.append(1)
+        return [{"number": 1, "title": "memo", "headRefName": "b",
+                 "body": "", "files": []}]
+
+    monkeypatch.setattr(clc, "_gh_open_prs_complete", fake_complete)
+    first = clc._gh_open_prs_with_files()
+    second = clc._gh_open_prs_with_files()
+    assert len(calls) == 1
+    assert first is second
+
+
+def test_check_paths_detects_oldest_pr_on_second_page(monkeypatch, capsys,
+                                                      _isolated_open_prs):
+    """#21742 -- scenario FONDATEUR, bout en bout.
+
+    L'enumeration est ordonnee `UPDATED_AT ASC` : les PRs les plus anciennes
+    sont en fin de liste, exactement celles que la fenetre `--limit 200`
+    perdait. Ici la PR qui detient `scripts/check_lane_claim.py` est seule
+    sur la page 2 ; la page 1 ne porte que des PRs recentes sans rapport.
+
+    Un test qui se contenterait de verifier « la PR est dans la liste »
+    laisserait passer une regression du CHEMIN DE VERDICT -- c'est pourquoi
+    celui-ci appelle `_run_check_paths` sans `prs=` et exige exit 2.
+
+    La PR porte un tag `Grain: ... lane ...` lisible et DIFFERENT de ma lane :
+    l'auteur est `jsboige` sur toutes les PRs du depot, le tag est donc le
+    seul signal d'attribution (sans lui le verdict serait `UNREADABLE`, pas
+    le cas nominal mesure ici).
+    """
+    monkeypatch.setattr(clc, "_gh_repo_name_with_owner",
+                        lambda: "jsboige/CoursIA")
+    my_lane = "myia-po-2024:CoursIA-2"
+    other_lane = "myia-po-2027:CoursIA"
+    recent = [
+        _graphql_node(n, files=[f"docs/recent-{n}.md"])
+        for n in range(2000, 2010)
+    ]
+    oldest = _graphql_node(
+        1811, files=["scripts/check_lane_claim.py"],
+        title="Fix(check): oldest open PR on the same path")
+    oldest["body"] = (
+        f"Grain: MED/guard -- lane {other_lane} -- prev: LIGHT/docs #1234\n\n"
+        "Touche le garde de claim."
+    )
+    pages = [
+        _graphql_page(recent, has_next=True, cursor="c1"),
+        _graphql_page([oldest], has_next=False),
+    ]
+    seen_variables = []
+
+    def fake_graphql(query, variables=None):
+        seen_variables.append(variables)
+        return pages[len(seen_variables) - 1]
+
+    monkeypatch.setattr(clc, "_gh_graphql", fake_graphql)
+
+    rc = clc._run_check_paths(["scripts/check_lane_claim.py"], my_lane)
+    # COLLISION (2), ni "libre" (0) ni "enumeration indisponible" (1).
+    assert rc == 2
+    out, err = capsys.readouterr()
+    summary = json.loads(out)
+    collisions = summary["other_lane_collisions"]
+    assert [c["number"] for c in collisions] == [1811]
+    assert collisions[0]["lane"] == other_lane
+    assert collisions[0]["files_intersecting"] == ["scripts/check_lane_claim.py"]
+    assert summary["self_overlap"] == []
+    combined = out + err
+    assert "Path is free" not in combined
+    assert "CLEAR" not in combined
+    # Deux pages ont bien ete lues : la PR n'a pas ete trouvee par hasard.
+    assert len(seen_variables) == 2
+
+
+# --- #21431 -- creation scope vs neighbouring claim: compare BY PATTERN -----
+#
+# The measured defect: a lane whose scope is entirely in CREATION (the files
+# do not exist yet) was rendered BLOCKED by a neighbouring claim at disjoint
+# paths, with "Do not start". The tracked tree cannot resolve a scope that
+# does not exist -- it matches zero tracked files, the #10958 fail-safe
+# lifted it to epic-wide, and every lane blocked. The issue's own words: an
+# empty intersection between a creation glob and a tracked scope proves no
+# less than an empty intersection between two tracked scopes.
+#
+# The fix: a CREATION scope is compared BY PATTERN (fnmatch in both
+# directions) with the other lane's scope. A scope whose DIRECTORY does not
+# exist is a typo, not a creation, and keeps the #10958 fail-CLOSED -- that
+# discriminator is what leaves every existing fail-safe test green.
+
+_CLAIM_COLLAPSE = (
+    "[CLAIMED] lane myia-ai-01:CoursIA-2 -- paths: "
+    "scripts/notebook_tools/check_output_collapse*.py"
+)
+
+
+def test_run_check_creation_scope_disjoint_claim_is_clear(capsys):
+    """#21431 acceptance 1: the disjoint pair of the issue renders CLEAR.
+
+    Reproduction from the issue body: the caller declares a scope ENTIRELY in
+    creation (`scripts/notebook_tools/check_concession_prose.py`, an organ to
+    be written) while another lane holds a LIVE claim on a different organ
+    (`scripts/notebook_tools/check_output_collapse*`). No pattern overlaps ->
+    CLEAR.
+    """
+    p = payload(comment(_CLAIM_COLLAPSE, "2026-10-19T15:00:00Z"),
+                number=21424, title="t")
+    rc = clc._run_check(
+        p, "myia-po-2023:CoursIA-2",
+        my_paths=["scripts/notebook_tools/check_concession_prose.py"],
+    )
+    captured = capsys.readouterr()
+    assert rc == 0, (
+        f"Expected CLEAR (disjoint creation scope) but got rc={rc}. "
+        f"stderr:\n{captured.err}\naudit:\n{captured.out}"
+    )
+    assert "BLOCKED" not in captured.err
+    assert '"blocking_lanes": []' in captured.out
+
+
+def test_run_check_creation_scope_under_claim_glob_stays_blocked(capsys):
+    """#21431 acceptance 2: a creation UNDER a glob held by the other lane
+    stays BLOCKED.
+
+    `scripts/notebook_tools/check_output_collapse_v2.py` is a file to be
+    created, and it falls under the other lane's glob
+    `scripts/notebook_tools/check_output_collapse*.py` -- the pattern-wise
+    comparison finds the overlap, so the relaxation never opens a disputed
+    scope.
+    """
+    p = payload(comment(_CLAIM_COLLAPSE, "2026-10-19T15:00:00Z"),
+                number=21424, title="t")
+    rc = clc._run_check(
+        p, "myia-po-2023:CoursIA-2",
+        my_paths=["scripts/notebook_tools/check_output_collapse_v2.py"],
+    )
+    captured = capsys.readouterr()
+    assert rc == 1, (
+        f"Expected BLOCKED (creation under the other lane's glob) but got "
+        f"rc={rc}. stderr:\n{captured.err}\naudit:\n{captured.out}"
+    )
+    assert "BLOCKED" in captured.err
+    assert "myia-ai-01:CoursIA-2" in captured.out
+
+
+def test_run_check_creation_scope_clears_a_creation_claim(capsys):
+    """#21431, the symmetric case: the OTHER lane's claim is itself a
+    creation scope.
+
+    A claim whose files do not exist yet is not a broken claim -- it is a
+    tranche in progress -- so it is compared BY PATTERN with the caller's
+    scope instead of being lifted to epic-wide (#10958). Two lanes creating
+    two different organs in the same directory no longer block each other.
+    """
+    p = payload(
+        comment("[CLAIMED] lane myia-po-2023:CoursIA-2 -- paths: "
+                "scripts/notebook_tools/check_concession_prose.py",
+                "2026-10-19T15:00:00Z"),
+        number=21424, title="t",
+    )
+    rc = clc._run_check(
+        p, "myia-po-2024:CoursIA-2",
+        my_paths=["scripts/notebook_tools/check_output_flood.py"],
+    )
+    captured = capsys.readouterr()
+    assert rc == 0, (
+        f"Expected CLEAR (disjoint creation claim) but got rc={rc}. "
+        f"stderr:\n{captured.err}\naudit:\n{captured.out}"
+    )
+    assert '"blocking_lanes": []' in captured.out
+
+
+def test_run_check_typo_scope_keeps_blockers(capsys):
+    """#21431 non-regression: a scope whose DIRECTORY does not exist is a
+    typo, not a creation -- the #10958 fail-CLOSED stays.
+
+    `scripts/nowhere/typo.py` names a directory that is not in the repo: the
+    lane that wrote it meant something else, so the safe hypothesis is that
+    its claim is broader than it reads. Every other lane is kept and the
+    verdict stays BLOCKED -- the relaxation of #21431 does not open that.
+    """
+    p = payload(
+        comment("[CLAIMED] lane B:CoursIA-2 -- paths: scripts/grain_tag.py",
+                "2026-08-11T04:05:00Z"),
+        number=21424, title="t",
+    )
+    rc = clc._run_check(
+        p, "A:CoursIA",
+        my_paths=["scripts/nowhere/typo.py"],
+    )
+    captured = capsys.readouterr()
+    assert rc == 1, (
+        f"Expected BLOCKED (typo scope keeps the fail-CLOSED) but got "
+        f"rc={rc}. stderr:\n{captured.err}\naudit:\n{captured.out}"
+    )
+    assert "B:CoursIA-2" in captured.out
+
+
+def test_scope_is_creation_criterion():
+    """#21431 -- the discriminator, unit level: a file to be created in an
+    EXISTING directory is a creation scope; the same file in a directory
+    that does not exist is a typo; a live file is neither."""
+    tracked = ["scripts/check_lane_claim.py",
+               "scripts/notebook_tools/check_output_collapse.py"]
+    # Creation: the directory exists, the file does not.
+    assert clc._scope_is_creation(
+        ["scripts/notebook_tools/check_concession_prose.py"], tracked) is True
+    # A glob over a live directory, matching nothing yet -> also a creation.
+    assert clc._scope_is_creation(
+        ["scripts/notebook_tools/check_concession_*.py"], tracked) is True
+    # Typo: the directory does not exist.
+    assert clc._scope_is_creation(["scripts/nowhere/typo.py"], tracked) is False
+    # Live file: not a creation (its scope is already locked by the tree).
+    assert clc._scope_is_creation(["scripts/check_lane_claim.py"], tracked) is False
+    # Prose residue: a typo, never a creation.
+    assert clc._scope_is_creation(["prose sans separateur"], tracked) is False
+    # No walk -> no proof -> False (fail-CLOSED, mirrors `_empty_scope_in`).
+    assert clc._scope_is_creation(
+        ["scripts/notebook_tools/x.py"], None) is False
+    # Empty scope -> False.
+    assert clc._scope_is_creation([], tracked) is False
+    assert clc._scope_is_creation(None, tracked) is False
+
+
+def test_scopes_may_overlap_by_pattern():
+    """#21431 -- the pattern-wise comparison, unit level: a creation under a
+    glob overlaps it, a creation beside it does not."""
+    creation = ["scripts/notebook_tools/check_output_collapse_v2.py"]
+    glob = ["scripts/notebook_tools/check_output_collapse*.py"]
+    other = ["scripts/notebook_tools/check_concession_prose.py"]
+    # The creation falls under the glob -> overlap.
+    assert clc._scopes_may_overlap_by_pattern(creation, glob) is True
+    # ... and the other way round (both directions are tested).
+    assert clc._scopes_may_overlap_by_pattern(glob, creation) is True
+    # Two creations side by side -> disjoint.
+    assert clc._scopes_may_overlap_by_pattern(creation, other) is False
+    assert clc._scopes_may_overlap_by_pattern(other, creation) is False
+    # Two creations with the SAME name -> overlap.
+    assert clc._scopes_may_overlap_by_pattern(creation, creation) is True
+    # An empty side -> no overlap.
+    assert clc._scopes_may_overlap_by_pattern(creation, []) is False

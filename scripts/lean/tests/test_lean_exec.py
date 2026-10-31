@@ -988,93 +988,175 @@ def _wait_for(condition, timeout_s: float = 30.0, what: str = "condition"):
     assert condition(), f"{what} non atteinte sous {timeout_s} s"
 
 
+def _spawn_lease_holder(state: Path, cwd: Path, release: Path, **cap):
+    """Lance un run qui TENIENT la place (lease) jusqu'a un signal EXPLICITE.
+
+    #19382 : un test de file ne doit dependre d'aucune DUREE. Un holder
+    court (`sleep 3`, `--timeout 12`) peut expirer AVANT que le demandeur
+    suivant ne tente sa place : le cap se libere, le demandeur est ADMIS, et
+    le test qui attend un REFUS echoue -- faux rouge sur runner charge, sur
+    une PR qui ne touche aucun fichier Lean (instance du 25/10, job
+    121179706186, runner `myia-po-2023-linux-docker-1` : `AssertionError: 0`,
+    attendu 125).
+
+    Le holder attend un fichier `release` : la liberation devient un GESTE du
+    test, pas une horloge. `--timeout 180` n'est qu'un filet de securite --
+    le holder sort de toute facon quand le test ecrit `release`.
+    """
+    hold = cwd / "hold.py"
+    hold.write_text(
+        "import os, sys, time\n"
+        "deadline = time.monotonic() + 180\n"
+        "while not os.path.exists(sys.argv[1]) and time.monotonic() < deadline:\n"
+        "    time.sleep(0.05)\n",
+        encoding="utf-8",
+    )
+    return subprocess.Popen(
+        [PY, LEAN_EXEC, "run", "--json", "--timeout", "180", "--",
+         PY, str(hold), str(release)],
+        env=_env(state, **cap), cwd=str(cwd),
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+    )
+
+
+def _release_holder(holder, release: Path, timeout_s: int = 60):
+    """Libere le holder : le cap redevient disponible. Rend son code de
+    sortie, ou None s'il n'a pas fini dans le delai (un appel dans un
+    `finally` ne doit pas masquer l'echec du test)."""
+    release.write_text("", encoding="utf-8")
+    try:
+        return holder.wait(timeout=timeout_s)
+    except subprocess.TimeoutExpired:
+        return None
+
+
 def test_queue_wait_admits_after_release(
         neutralized_native_pop, native_pop_count):
     """--wait : le demandeur attend en file, est admis quand le cap se
-    libere, et publie son temps d'attente."""
+    libere, et publie son temps d'attente.
+
+    #19382 : la liberation est un GESTE (un fichier `release`), pas une
+    duree. Le demandeur part en parallele du holder, on mesure un temps
+    d'attente REEL (> 0,5 s) avant de liberer la place.
+    """
     _skip_if_native_pop_nonempty(native_pop_count)
     with tempfile.TemporaryDirectory() as td:
         state = Path(td) / "state"
         cap = dict(LEAN_EXEC_CAP=1, LEAN_EXEC_BUDGET=1)
-        first = subprocess.Popen(
-            [PY, LEAN_EXEC, "run", "--json", "--timeout", "12", "--",
-             PY, "-c", "import time; time.sleep(3)"],
-            env=_env(state, **cap), cwd=str(td),
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-        )
-        runs = state / "runs"
-        _wait_for(lambda: len(list(runs.glob("*.json"))) >= 1, what="1er run enregistre")
-
-        second = _run(state, ["run", "--json", "--wait", "25", "--",
-                              PY, "-c", "print('ok')"], timeout=120, **cap)
-        assert first.wait(timeout=60) == 0
-        assert second.returncode == le.EXIT_OK, second.stdout + second.stderr
-        res = _last(state)
-        assert res["status"] == "ok", res
-        assert res.get("queue_wait_s", 0.0) >= 0.5, res
+        release = Path(td) / "release"
+        holder = _spawn_lease_holder(state, Path(td), release, **cap)
+        try:
+            runs = state / "runs"
+            _wait_for(lambda: len(list(runs.glob("*.json"))) >= 1,
+                      what="1er run enregistre")
+            second = subprocess.Popen(
+                [PY, LEAN_EXEC, "run", "--json", "--wait", "25", "--",
+                 PY, "-c", "print('ok')"],
+                env=_env(state, **cap), cwd=str(td),
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+                encoding="utf-8", errors="replace",
+            )
+            # Le demandeur doit etre EN FILE : c'est l'etat observable qui
+            # prouve que le holder tient la place. Liberer avant que le
+            # demandeur soit arrived a sa decision d'admission le laisserait
+            # passer sans attendre (mesure : l'admission Windows elle-meme
+            # coute ~5 s, `tasklist` seul ~3,6 s -- le demandeur n'a pas
+            # encore tranche quand la place se libere).
+            queue = state / "queue"
+            _wait_for(lambda: len(list(queue.glob("*.json"))) >= 1,
+                      what="demandeur en file")
+            # Attente REELLE (> 0,5 s) avant de liberer la place.
+            time.sleep(1.0)
+            assert _release_holder(holder, release) == 0
+            out, err = second.communicate(timeout=120)
+            assert second.returncode == le.EXIT_OK, out + err
+            # Le resultat est lu sur la SORTIE du demandeur : `last_run.json`
+            # est partage par le state dir, et le holder y ecrit aussi.
+            res = json.loads(out[out.index("{"):])
+            assert res["status"] == "ok", res
+            assert res.get("queue_wait_s", 0.0) >= 0.5, res
+        finally:
+            _release_holder(holder, release, timeout_s=30)
 
 
 def test_queue_timeout_refuses(
         neutralized_native_pop, native_pop_count):
     """Delai de file depasse = refus explicite 'wait timeout' (jamais
-    d'attente infinie)."""
+    d'attente infinie).
+
+    #19382 (2e instance, 25/10) : ce test etait une COURSE. Le premier run
+    portait `--timeout 10`, et le second ne tentait sa place qu'APRES que le
+    premier soit enregistre. Sur un runner charge, l'ecart entre
+    l'enregistrement et la tentative du second a depasse 10 s : le premier
+    avait expire, le cap etait libre, et le second a ete ADMIS (0) la ou le
+    test attend un REFUS (125) -- `AssertionError: 0`, sur une PR qui ne
+    touchait aucun fichier Lean.
+
+    Le holder tient la place jusqu'a un signal EXPLICITE : plus aucune duree
+    fixe ne peut expirer entre l'enregistrement et la demande. Le timeout
+    d'un run reste couvert par `test_timeout_kills_whole_tree`.
+    """
     _skip_if_native_pop_nonempty(native_pop_count)
     with tempfile.TemporaryDirectory() as td:
         state = Path(td) / "state"
         cap = dict(LEAN_EXEC_CAP=1, LEAN_EXEC_BUDGET=1)
-        first = subprocess.Popen(
-            [PY, LEAN_EXEC, "run", "--json", "--timeout", "10", "--",
-             PY, "-c", "import time; time.sleep(30)"],
-            env=_env(state, **cap), cwd=str(td),
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-        )
-        runs = state / "runs"
-        _wait_for(lambda: len(list(runs.glob("*.json"))) >= 1, what="1er run enregistre")
-
-        second = _run(state, ["run", "--json", "--wait", "2", "--",
-                              PY, "-c", "print('ok')"], timeout=60, **cap)
-        assert second.returncode == le.EXIT_REFUSED, second.returncode
-        refused = json.loads(second.stdout[second.stdout.index("{"):])
-        assert "wait timeout" in (refused.get("reason") or ""), \
-            refused.get("reason")
-        assert first.wait(timeout=60) == le.EXIT_TIMEOUT
+        release = Path(td) / "release"
+        holder = _spawn_lease_holder(state, Path(td), release, **cap)
+        try:
+            runs = state / "runs"
+            _wait_for(lambda: len(list(runs.glob("*.json"))) >= 1,
+                      what="1er run enregistre")
+            second = _run(state, ["run", "--json", "--wait", "2", "--",
+                                  PY, "-c", "print('ok')"], timeout=60, **cap)
+            assert second.returncode == le.EXIT_REFUSED, second.returncode
+            refused = json.loads(second.stdout[second.stdout.index("{"):])
+            assert "wait timeout" in (refused.get("reason") or ""), \
+                refused.get("reason")
+        finally:
+            _release_holder(holder, release, timeout_s=30)
 
 
 def test_queue_full_refuses(
         neutralized_native_pop, native_pop_count):
     """File bornee : queue_max atteint = refus explicite du 3e demandeur,
-    jamais de croissance silencieuse de la file."""
+    jamais de croissance silencieuse de la file.
+
+    #19382 : le holder tient la place jusqu'a un signal EXPLICITE, donc le
+    3e demandeur trouve TOUJOURS la file pleine (le 2e est en file, le
+    holder occupe le cap) -- plus de course avec l'expiration du 1er run.
+    """
     _skip_if_native_pop_nonempty(native_pop_count)
     with tempfile.TemporaryDirectory() as td:
         state = Path(td) / "state"
         cap = dict(LEAN_EXEC_CAP=1, LEAN_EXEC_BUDGET=1,
                    LEAN_EXEC_QUEUE_MAX=1)
-        first = subprocess.Popen(
-            [PY, LEAN_EXEC, "run", "--json", "--timeout", "20", "--",
-             PY, "-c", "import time; time.sleep(8)"],
-            env=_env(state, **cap), cwd=str(td),
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-        )
-        runs = state / "runs"
-        _wait_for(lambda: len(list(runs.glob("*.json"))) >= 1, what="1er run enregistre")
-        second = subprocess.Popen(
-            [PY, LEAN_EXEC, "run", "--json", "--wait", "25", "--",
-             PY, "-c", "print('ok')"],
-            env=_env(state, **cap), cwd=str(td),
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-        )
-        queue = state / "queue"
-        _wait_for(lambda: len(list(queue.glob("*.json"))) >= 1,
-                  what="2e demandeur en file")
+        release = Path(td) / "release"
+        holder = _spawn_lease_holder(state, Path(td), release, **cap)
+        try:
+            runs = state / "runs"
+            _wait_for(lambda: len(list(runs.glob("*.json"))) >= 1,
+                      what="1er run enregistre")
+            second = subprocess.Popen(
+                [PY, LEAN_EXEC, "run", "--json", "--wait", "25", "--",
+                 PY, "-c", "print('ok')"],
+                env=_env(state, **cap), cwd=str(td),
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            )
+            queue = state / "queue"
+            _wait_for(lambda: len(list(queue.glob("*.json"))) >= 1,
+                      what="2e demandeur en file")
 
-        third = _run(state, ["run", "--json", "--wait", "1", "--",
-                             PY, "-c", "print('ok')"], timeout=60, **cap)
-        assert third.returncode == le.EXIT_REFUSED, third.returncode
-        refused = json.loads(third.stdout[third.stdout.index("{"):])
-        assert "queue full" in (refused.get("reason") or ""), \
-            refused.get("reason")
-        assert first.wait(timeout=60) == 0
-        assert second.wait(timeout=60) == 0
+            third = _run(state, ["run", "--json", "--wait", "1", "--",
+                                 PY, "-c", "print('ok')"], timeout=60, **cap)
+            assert third.returncode == le.EXIT_REFUSED, third.returncode
+            refused = json.loads(third.stdout[third.stdout.index("{"):])
+            assert "queue full" in (refused.get("reason") or ""), \
+                refused.get("reason")
+            # Liberation : le 2e demandeur est alors admis.
+            assert _release_holder(holder, release) == 0
+            assert second.wait(timeout=60) == 0
+        finally:
+            _release_holder(holder, release, timeout_s=30)
 
 
 def test_status_shows_queue_and_tree_leases():
@@ -1369,7 +1451,7 @@ def test_tree_lease_released_when_backend_translation_fails():
                 lambda root, cmd, caller, budget: (sentinel, None))
             le.release_tree_lease = (
                 lambda p: released.append(p))
-            def _boom(cmd, backend, env):
+            def _boom(cmd, backend, env, cwd=None):
                 raise OSError("wslpath a echoue (simulation)")
             le.backend_command = _boom
             os.chdir(proj)
@@ -1419,16 +1501,21 @@ def test_kill_switch_wsl_off_refuses_pinned_wsl():
 def test_auto_pin_refused_with_orphan_cache():
     """Defaut 3 : premier epinglage auto sur un lake dont .lake/build
     existe SANS epingle connue = refus actionnable (origine du cache
-    inconnue, l'organe ne tranche pas ni ne purge). Apres purge, la
-    politique par defaut s'applique normalement."""
+    inconnue, l'organe ne tranche pas ni ne purge). Le refus exige une
+    ambiguite REELLE (deux backends declarables) : a backend unique,
+    l'auto-epinglage pose l'unique choix (runner CI posix, couvert par
+    test_unknown_cache_sole_backend_auto_pins dans le fichier stdin).
+    Apres purge, la politique par defaut s'applique normalement."""
     with tempfile.TemporaryDirectory() as td:
         state = Path(td) / "state"
         proj = _lake_fixture(Path(td), "t3lake")
         (proj / ".lake" / "build").mkdir(parents=True)
-        cap = dict(LEAN_EXEC_CAP=8, LEAN_EXEC_BUDGET=1,
-                   LEAN_EXEC_FORCE_BACKENDS="native")
+        cap_ambigu = dict(LEAN_EXEC_CAP=8, LEAN_EXEC_BUDGET=1,
+                          LEAN_EXEC_FORCE_BACKENDS="wsl,native")
+        cap_native = dict(LEAN_EXEC_CAP=8, LEAN_EXEC_BUDGET=1,
+                          LEAN_EXEC_FORCE_BACKENDS="native")
         rc = _run(state, ["run", "--json", "--", PY, "-c", "print('ok')"],
-                  cwd=proj, timeout=90, **cap)
+                  cwd=proj, timeout=90, **cap_ambigu)
         assert rc.returncode == le.EXIT_REFUSED, (
             rc.returncode, rc.stdout, rc.stderr)
         out = json.loads(rc.stdout[rc.stdout.index("{"):])
@@ -1437,10 +1524,11 @@ def test_auto_pin_refused_with_orphan_cache():
         assert "--backend" in reason, reason
         # Fail-closed : aucune epingle posee par-dessus le cache orphelin.
         assert _registry(state) == {}
-        # Purge = la porte : l'auto-epinglage redevient legal.
+        # Purge = la porte : l'auto-epinglage redevient legal (l'enfant
+        # PY Windows exige le backend natif ici).
         shutil.rmtree(proj / ".lake")
         rc2 = _run(state, ["run", "--json", "--", PY, "-c", "print('ok')"],
-                   cwd=proj, timeout=90, **cap)
+                   cwd=proj, timeout=90, **cap_native)
         assert rc2.returncode == 0, rc2.stderr
         out2 = json.loads(rc2.stdout[rc2.stdout.index("{"):])
         assert out2["lean_backend"] == "native", out2
@@ -1587,15 +1675,17 @@ def test_dry_run_cli_reports_and_leaves_no_trace():
 
 def test_dry_run_cli_refuses_orphan_cache_without_pinning():
     """Cache `.lake/build` present sans epingle connue : la politique
-    premier-ecrivain ne tranche PAS (bascule = 1-2 h de Mathlib). `dry-run`
-    doit le DIRE — verdict REFUS — et surtout ne pas epingler pour
-    « debloquer » : ce serait prendre la decision qu'il previsualise."""
+    premier-ecrivain ne tranche PAS (bascule = 1-2 h de Mathlib) — sous
+    ambiguite REELLE (deux backends declarables ; a backend unique le
+    verdict auto-epingle, cf test_lean_exec_stdin.py). `dry-run` doit
+    DIRE le refus — et surtout ne pas epingler pour « debloquer » :
+    ce serait prendre la decision qu'il previsualise."""
     with tempfile.TemporaryDirectory() as td:
         state = Path(td) / "state"
         proj = _lake_fixture(Path(td), "drylake")
         (proj / ".lake" / "build").mkdir(parents=True, exist_ok=True)
         rc = _run(state, ["dry-run", "--json", "--cwd", str(proj)],
-                  timeout=90, LEAN_EXEC_FORCE_BACKENDS="native")
+                  timeout=90, LEAN_EXEC_FORCE_BACKENDS="wsl,native")
         assert rc.returncode == 0, (rc.returncode, rc.stdout, rc.stderr)
         payload = json.loads(rc.stdout[rc.stdout.index("{"):])
         assert payload["backend"]["chosen"] is None, payload["backend"]

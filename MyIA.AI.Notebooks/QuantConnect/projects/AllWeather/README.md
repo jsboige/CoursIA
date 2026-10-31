@@ -45,15 +45,29 @@ ses poids et aucune différence n'est significative. L'écart v5.0 − v1.0 (+0,
 dit ce que l'itération sur la fenêtre a ajouté, à titre descriptif. Détail du protocole et
 des chiffres : issue #21114.
 
-## Backtest Results (2015-2023)
+## Backtest Results — fenêtre codée (2015-01-01 → 2024-12-31)
 
-| Métrique | Valeur |
-|----------|--------|
-| Total Return | ~80-100% |
-| CAGR | ~8-10% |
-| Sharpe Ratio | ~0.7-1.0 |
-| Max Drawdown | ~-15% à -20% |
-| Volatilité | ~8-10% |
+Mesure du backtest QC Cloud de [`main.py`](main.py) sur sa fenêtre codée : 2516 séances
+négociables, 130 ordres.
+
+| Métrique | Valeur mesurée |
+|----------|----------------|
+| Total Return | +107,2 % |
+| CAGR | 7,551 % |
+| Sharpe Ratio | 0,474 |
+| Max Drawdown | −16,400 % |
+| Frais | 131,56 $ |
+
+Le modèle de portefeuille du carnet [`quantbook.ipynb`](quantbook.ipynb)
+(`portfolio_backtest`, prix QC natifs, taux sans risque 3 %, sans coûts de transaction)
+donne pour la même allocation Sharpe 0,603 / CAGR 8,0 % / MaxDD −17,2 % : modèle et
+fenêtre différents du backtest d'exécution, les deux jeux de chiffres ne se comparent
+pas directement.
+
+Les chiffres de la campagne de recherche « iter5 » cités dans la docstring de `main.py`
+(Sharpe yfinance 1,101 → 1,149, beta 0,328 → 0,337, alpha 0,033 → 0,043) ne figurent pas
+dans le carnet [`research.ipynb`](research.ipynb) du dépôt, qui ne mesure que
+l'exploration H1-H4.
 
 ## Figures du notebook de recherche
 
@@ -97,7 +111,7 @@ Le notebook [`research.ipynb`](research.ipynb) déroule l'analyse complète : ex
 **Grille de paramètres.** Enfin, l'exploration de la grille des paramètres identifie la zone optimale :
 
 <p align="center">
-  <img src="assets/readme/aw-grid-optimal.png" alt="Rolling 1-Year Sharpe Ratio 2016-2026 — 3 stratégies (Original Static Dalio trimestriel bleu ; Optimized Static+Tactical orange ; RP+Tactical Combo vert) : 3 lignes fortement corrélées sur toute la période, pic commun ~3,5 en 2020, dip commun ~-2 en 2022-2023, recovery ~2,5 en 2025-2026, ligne pointillée horizontale Sharpe=0. Les 3 stratégies partagent les mêmes cycles macro (post-COVID recovery 2020, bear market 2022-2023) mais l'Optimized devance Original en fin de période post-2023." width="420"/><br>
+  <img src="assets/readme/aw-grid-optimal.png" alt="Rolling 1-Year Sharpe Ratio 2016-2026 — 3 stratégies (Original Static Dalio trimestriel bleu ; Optimized Static+Tactical orange ; RP+Tactical Combo vert) : courbes fortement corrélées sur toute la période, pic commun ~3,5 en 2020, dip commun ~-2 en 2022-2023, recovery ~2,5 en 2025-2026, ligne pointillée horizontale Sharpe=0. Les 3 stratégies partagent les mêmes cycles macro (post-COVID recovery 2020, bear market 2022-2023) mais l'Optimized devance Original en fin de période post-2023." width="420"/><br>
   <em>Grille optimale — exploration des paramètres.</em>
 </p>
 

@@ -17,11 +17,15 @@ assembly itself (k2.6c): the real square `snocReal`, the hull transport
 `exists_colouring_aux` (closure `S` + exact support `E` — the `Finset`
 price of the oracle's canonical `Finsupp` support) and the public statement
 `exists_isColouring_mean_add_sum_mem_convexHull`.
-k5.2 caveat (measured defect, workstream #21417): the public statement as
-shipped on 10-06 was **vacuous** outside the zero family — the witness
-`contention_stability_forces_zero` proves it, and the `clauseSet` clause
-set (steps P3/P4) fixes it; this pointer goes away with the last trace of
-the old statement.
+
+Scope caveat lifted (measurement k5.2, #21417 step 2): the form delivered on
+10-06 was only instantiable for an identically zero family `v` — its
+contention hypotheses on a stable `Finset` forced `v i = 0`
+(`contention_stability_forces_zero`, further down in this file, with the
+measured argument). The public statement and the inductive gate now carry a
+clause set `B` (bounded signed sums of the generators, satisfiable by a large
+box, no stability required): k2 is closed as a proof **and** as an
+instantiable statement. See the k2.6c and k5.2 rows of `FORMAL_STATUS.md`.
 -/
 
 import Discrepancy.Basic_en

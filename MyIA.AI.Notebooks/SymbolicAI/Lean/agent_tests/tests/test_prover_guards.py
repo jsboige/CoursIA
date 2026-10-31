@@ -3242,11 +3242,24 @@ def test_workspace_root_walks_to_myia_ai_notebooks():
 
 
 def test_workspace_relative_joins_to_workspace_root():
-    """Forward-slash relative strings resolve under the workspace root."""
+    """Forward-slash relative strings resolve under the workspace root.
+
+    The JOIN contract (workspace-root anchoring, no drive letter) holds on
+    every checkout and is always asserted. The EXISTENCE pin requires a
+    complete checkout (submodules initialized): a bare CI clone has no
+    ``game_theory_lean`` gitlink materialized, so existence is skipped
+    with a written motif there (#21331) instead of failing the suite.
+    """
     from prover.config import _workspace_relative, _WORKSPACE_ROOT
 
     p = _workspace_relative("GameTheory/game_theory_lean")
     assert p == _WORKSPACE_ROOT / "GameTheory" / "game_theory_lean"
+    if not p.exists():
+        pytest.skip(
+            "game_theory_lean absent from this checkout (bare CI clone "
+            "without submodules) — join contract asserted above, existence "
+            "pinned on complete checkouts (#21331)"
+        )
     assert p.exists(), (
         "the workspace-relative entry for game_theory_lean must "
         "resolve to a real directory on a normal CoursIA-2 layout"
@@ -3261,6 +3274,27 @@ def test_workspace_relative_returns_none_when_no_root(monkeypatch):
     assert cfg._workspace_relative("GameTheory/cooperative_games_lean") is None
 
 
+def _game_theory_lean_present() -> bool:
+    """Complete-checkout probe: is the game_theory_lean gitlink materialized?
+
+    Bare CI clones (actions/checkout without submodules) leave the gitlink
+    unmaterialized, so the path constants resolve to ``None`` and the
+    existence pins below cannot hold. Stdlib-only walk mirroring
+    ``config._workspace_root()`` — importing ``prover.config`` here would
+    re-drag the LLM stack at module import (#21331).
+    """
+    for ancestor in Path(__file__).resolve().parents:
+        if ancestor.name == "MyIA.AI.Notebooks":
+            return (ancestor / "GameTheory" / "game_theory_lean").exists()
+    return False
+
+
+@pytest.mark.skipif(
+    not _game_theory_lean_present(),
+    reason="game_theory_lean gitlink not materialized (bare CI clone without "
+           "submodules) — the workspace-anchoring contract needs a complete "
+           "checkout; pinned on every full checkout (#21331)",
+)
 def test_path_constants_resolve_to_active_workspace():
     """Every FILE/DIR constant resolves into the active workspace, not a sibling.
 
@@ -4123,8 +4157,9 @@ def test_lean_server_timeout_returns_structured_marker(tmp_path, monkeypatch):
     """#18432 server side: a wall-clock exhaustion must return the STRUCTURED
     marker (wall_clock_timeout=True + timeout_s) — the legacy synthetic string
     said '(300s)' while the actual budget was 600s, and its empty raw_output
-    was indistinguishable from a zero-error outcome at every consumer."""
-    import subprocess as _sp
+    was indistinguishable from a zero-error outcome at every consumer.
+    Migration #15666: the build runs through the confined organ — a timeout is
+    the organ contract's rc == -1 with an empty partial capture."""
     import lean_server
     from lean_server import LeanVerifier
 
@@ -4132,10 +4167,12 @@ def test_lean_server_timeout_returns_structured_marker(tmp_path, monkeypatch):
     lake_root.mkdir()
     (lake_root / "lakefile.toml").write_text("", encoding="utf-8")
 
-    def _raise_timeout(*a, **k):
-        raise _sp.TimeoutExpired(cmd=["lake"], timeout=600)
+    def _organ_timeout(*a, **k):
+        # Organ contract: (-1, out, err) = wall-clock exhaustion, the
+        # pre-kill partial capture in out/err — empty here (no diagnostic).
+        return (-1, "", "")
 
-    monkeypatch.setattr(lean_server.subprocess, "run", _raise_timeout)
+    monkeypatch.setattr(lean_server, "_organ_run", _organ_timeout)
 
     v = LeanVerifier(project_dir=str(lake_root))
     result = v._run_lake_build(lake_root, "Foo/Bar.lean")
@@ -4153,9 +4190,8 @@ def test_lean_server_timeout_budget_env_knob(tmp_path, monkeypatch):
     """#18432: the wall-clock budget is parameterizable per lake / per run via
     $LEAN_LAKE_BUILD_TIMEOUT_S (same env-knob idiom as LEAN_LAKE_BIN); an
     unparsable value fails closed to the 600s default. The knob must drive
-    the ACTUAL subprocess timeout (the real final compile), not merely be
-    echoed in the timeout message."""
-    import subprocess as _sp
+    the ACTUAL compile timeout (the organ contract's budget argument, the
+    real final compile), not merely be echoed in the timeout message."""
     import lean_server
     from lean_server import LeanVerifier, _lake_build_timeout_s
 
@@ -4169,16 +4205,18 @@ def test_lean_server_timeout_budget_env_knob(tmp_path, monkeypatch):
 
     seen_kwargs = {}
 
-    def _raise_timeout(*a, **k):
-        seen_kwargs.update(k)
-        raise _sp.TimeoutExpired(cmd=["lake"], timeout=k.get("timeout"))
+    def _organ_timeout(*a, **k):
+        # Organ contract: (project, cmd_args, timeout) — the budget is the
+        # third positional argument.
+        seen_kwargs["timeout"] = a[2]
+        return (-1, "", "")
 
-    monkeypatch.setattr(lean_server.subprocess, "run", _raise_timeout)
+    monkeypatch.setattr(lean_server, "_organ_run", _organ_timeout)
     v = LeanVerifier(project_dir=str(lake_root))
     result = v._run_lake_build(lake_root, "Foo/Bar.lean")
-    # The knob reached the REAL subprocess timeout argument.
+    # The knob reached the ACTUAL compile timeout argument.
     assert seen_kwargs.get("timeout") == 123.0, (
-        "LEAN_LAKE_BUILD_TIMEOUT_S must drive the actual subprocess timeout"
+        "LEAN_LAKE_BUILD_TIMEOUT_S must drive the actual compile timeout"
     )
     assert result["timeout_s"] == 123
     assert "123" in result["errors"]
@@ -4199,12 +4237,11 @@ def test_lean_server_timeout_budget_env_knob(tmp_path, monkeypatch):
 
 
 def test_lean_server_timeout_with_real_error_is_confirmed_failure(tmp_path, monkeypatch):
-    """#18432 priority contract: TimeoutExpired carries the PARTIAL output
-    captured before the kill — if a real Lean diagnostic is already in
+    """#18432 priority contract: a wall-clock exhaustion carries the PARTIAL
+    output captured before the kill — if a real Lean diagnostic is already in
     there, the failure is CONFIRMED (errors outrank UNKNOWN): no
     wall_clock_timeout marker, the error is surfaced, and only the forensic
     wall_clock_exhausted flag records the cut."""
-    import subprocess as _sp
     import lean_server
     from lean_server import LeanVerifier
 
@@ -4214,13 +4251,12 @@ def test_lean_server_timeout_with_real_error_is_confirmed_failure(tmp_path, monk
 
     real_error = "Foo.lean:12:3: error: type mismatch\n"
 
-    def _raise_timeout(*a, **k):
-        # str payload (text-mode subprocess) carrying a REAL diagnostic.
-        # NB: TimeoutExpired's signature is (cmd, timeout, output, stderr) —
-        # the pre-kill stdout lands in `output`, there is no `stdout` kwarg.
-        raise _sp.TimeoutExpired(cmd=["lake"], timeout=600, output=real_error)
+    def _organ_timeout(*a, **k):
+        # Organ contract: rc == -1 with the pre-kill partial capture in out,
+        # here already carrying a REAL diagnostic.
+        return (-1, real_error, "")
 
-    monkeypatch.setattr(lean_server.subprocess, "run", _raise_timeout)
+    monkeypatch.setattr(lean_server, "_organ_run", _organ_timeout)
     v = LeanVerifier(project_dir=str(lake_root))
     result = v._run_lake_build(lake_root, "Foo/Bar.lean")
 
@@ -4232,15 +4268,10 @@ def test_lean_server_timeout_with_real_error_is_confirmed_failure(tmp_path, monk
     assert "type mismatch" in result["errors"]
     assert "type mismatch" in result["raw_output"], "partial output preserved"
 
-    # bytes payload (subprocess may hand back undecoded bytes) — same verdict.
-    def _raise_timeout_bytes(*a, **k):
-        raise _sp.TimeoutExpired(cmd=["lake"], timeout=600,
-                                 output=real_error.encode("utf-8"))
-
-    monkeypatch.setattr(lean_server.subprocess, "run", _raise_timeout_bytes)
-    result_b = v._run_lake_build(lake_root, "Foo/Bar.lean")
-    assert result_b.get("wall_clock_timeout") is not True
-    assert "type mismatch" in result_b["errors"]
+    # The undecoded-bytes leg no longer lives at this seam: the organ
+    # contract is (rc, out: str, err: str) — decoding (errors='replace')
+    # happens inside lean_notebook_utils._organ_run, covered by
+    # test_lean_exec_stdin.py.
 
 
 def test_compile_confirmed_errors_beat_timeout_unknown(tmp_path, monkeypatch):
@@ -5715,18 +5746,13 @@ class TestCheckAxiomsPinnedDeclarations:
             lean_server, "_enumerate_module_declarations",
             lambda project, module: called.append(module) or ["t"],
         )
+        # Migration #15666: the `lake env lean --stdin` snippet runs through
+        # the confined organ — patch its (rc, out, err) contract directly
+        # (the old _resolve_lake_command + subprocess.run seam is gone).
         monkeypatch.setattr(
-            lean_server, "_resolve_lake_command",
-            lambda cmd, cwd=None: (["true"], None),
+            lean_server, "_organ_run",
+            lambda *a, **k: (0, "'t' does not depend on any axioms", ""),
         )
-
-        class _Proc:
-            returncode = 0
-            stdout = "'t' does not depend on any axioms"
-            stderr = ""
-
-        import subprocess as _sp
-        monkeypatch.setattr(_sp, "run", lambda *a, **k: _Proc())
         res = ver.check_axioms("Whatever.Mod")
         assert called == ["Whatever.Mod"], (
             "declarations=None must keep the historical enumerate-everything "
