@@ -230,7 +230,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 
 | Stratégie | Chemin | Type | Statut | Métriques backtest (période ; Sharpe ; CAGR ; MaxDD ; PSR ; Net Profit) |
 |-----------|--------|------|--------|------------------------------------------------------------------------|
-| `HMM-KMeans-Voting` | `projects/HMM-KMeans-Voting/` | Régime (HMM) | **Needs-improvement** | 3522 j. ; Sharpe 0.488 ; CAGR 6.99 % ; MaxDD 23.8 % ; PSR 6.9 % ; NP 157.5 % ($144 661) — edge non significative |
+| `HMM-KMeans-Voting` | `projects/HMM-KMeans-Voting/` | Régime (HMM) | **NO BEATS** (2015-2024) / **NO BEATS** (2025-2026) | Mesure #23012 contre SPY détenu et 60/40, Sharpe à taux nul : −0,536 contre 0,786 / 0,802 sur 2015-2024 (`NO BEATS`, Holm 0,0027) ; 0,530 contre 1,080 / 1,224 sur 2025-2026 (`NO BEATS`, Holm 1,0). Fenêtre codée, code de `main` relancé le 2026-10-27 : Sharpe QC −0,567 ; CAGR −6,84 % ; MaxDD 63,2 % ; PSR 0 % ; 1685 ordres (l'ancienne mesure, Sharpe 0,488 et PSR 6,9 %, ne se reproduit pas). Le rééquilibrage (`liquidate()` puis `set_holdings`, remplis ensemble à la clôture) laisse des positions courtes : correctif et re-mesure en #23014. Sur 2015-2024, la stratégie fait significativement moins bien que l'allocation `neutral` détenue et que sa propre règle sans disjoncteur. Détail : README, section « Verdict contre références détenues (#23012) » |
 | `Markov-Regime-Detection` | `projects/Markov-Regime-Detection/` | Régime (Markov) | **Needs-improvement** | 2766 j. ; Sharpe 0.375 ; CAGR 8.44 % ; MaxDD 24.4 % ; PSR 5.8 % ; NP 144.0 % ($98 214) — edge non significative |
 | `HighBookToMarketFScore-QC` | `projects/HighBookToMarketFScore-QC/` | Factor (Piotroski) | **Needs-improvement** | période post-#2801 (tradeableDates=0, anomalie champ MCP ; ~2018–2025 aligned) ; Sharpe 0.411 ; CAGR 14.51 % ; **MaxDD 60.4 %** ; PSR 4.5 % ; NP 195.9 % ($17 992 007) — CAGR décent mais drawdown catastrophique |
 | `Cloud-VolTargeting` | `projects/Cloud-VolTargeting/` | Vol targeting | **Needs-improvement** (NO-BEATS confirmé) | 1761 j. (2018–2025, baseline #1630, v1, **84** ordres, backtest `21585-v1-warmup-2018-2025` du 2026-10-20, correctifs #18941 + #21585) ; Sharpe 0.438 ; CAGR 10.85 % ; MaxDD 21.0 % ; PSR 3.263 % ; NP 105.7 % ($77 750) — sous SPY mesuré sur la même fenêtre (CAGR 13.73 %, MaxDD 33.72 %), différence de Sharpe non significative (p unilatérale 0.556 sur 1756 séances). Remplace la mesure 2026-08-14 (Sharpe 0.207, 54 ordres, « quasi-cash »), prise avant les deux correctifs |
@@ -560,7 +560,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 > signal confirme un pattern récurrent : les stratégies **régime-switching seules** (sans blending
 > composite multi-factors type Framework_Composite) ne franchissent pas le seuil PSR 50 % en
 > in-sample pleine période. Leçon convergente avec tr.8 (RegimeSwitching PSR 4.80 % Needs-improvement),
-> tr.7 (HMM-KMeans-Voting PSR 6.9 %), et tr.6 (Markov-Regime-Detection PSR 5.8 %) : la **détection
+> tr.7 (HMM-KMeans-Voting PSR 6.9 %, non reproduit sur le code de `main` : voir #23012), et tr.6 (Markov-Regime-Detection PSR 5.8 %) : la **détection
 > de régime seule**, sans lissage ou composite weighting, **ne suffit pas à produire un edge
 > statistiquement significative** sur le référentiel pleine période in-sample.
 
