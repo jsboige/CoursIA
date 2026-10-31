@@ -498,9 +498,14 @@ def test_canonical_transition_scoped_series_02ml_accepted():
 
 
 def test_canonical_transition_scoped_series_02ml_310_accepted():
-    # Positif, deuxieme direction (#23187) : 2.9d et 2.9g sont a 3.10.19, et
-    # le canon de leur serie est 3.13. Sans ces entrees, la PR annoncait
-    # couvrir la serie en laissant la moitie de ses carnets rouge.
+    # Positif, deuxieme direction (#23187). A l'epoque de l'entree de serie,
+    # 2.9d et 2.9g etaient tous deux a 3.10.19. La direction est devenue
+    # NOMINATIVE (#23667) : chaque carnet porte sa propre entree. 2.9d est
+    # admis depuis sa re-execution ; 2.9g l'est par cette tranche (#23292),
+    # qui livre ses sorties re-executees dans le meme diff -- une entree
+    # n'est jamais accordee avant la mesure, c'est ce que gardait le test
+    # ``test_canonical_transition_scoped_29g_still_refused``, retire ici avec
+    # la tranche qu'il protegeait.
     a = {"language_version": "3.10.19",
          "kernelspec_name": "coursia-ml-training"}
     b = {"language_version": "3.13.14",
@@ -549,6 +554,29 @@ def test_canonical_transition_scoped_series_reverse_still_refused():
          "kernelspec_name": "coursia-ml-training"}
     path = ("MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/"
             "2.14b-XAI-Shap-Attribution-Causal-Bridge.ipynb")
+    # L'assertion manquait depuis #23187 : la fonction calculait `path` et
+    # ne controlait rien, donc ce controle negatif passait sans controler.
+    assert ckd.accepted_canonical_transition(a, b, nb_path=path) is False
+
+
+def test_canonical_transition_scoped_series_310_is_nominative():
+    # #23667 : la direction 3.10 -> 3.13 n'est plus une PORTEE de serie,
+    # elle est nominative. Un carnet de la serie qui n'a pas sa propre
+    # entree, et dont les sorties n'ont pas ete re-executees, reste donc
+    # rouge -- quelle que soit sa place dans le repertoire.
+    # 2.9g figurait ici jusqu'a #23292, dont la tranche livre ses sorties
+    # re-executees et l'entree nominative qui va avec. Le chemin conserve
+    # est donc un carnet FICTIF de la serie : il controle que la PORTE est
+    # restee fermee, et pas seulement que le cas nomme 2.9g s'est ouvert.
+    a = {"language_version": "3.10.19",
+         "kernelspec_name": "coursia-ml-training"}
+    b = {"language_version": "3.13.14",
+         "kernelspec_name": "coursia-ml-training"}
+    path = ("MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/"
+            "2.9h-Carnet-Inexistant-Sur-La-Serie.ipynb")
+    assert ckd.accepted_canonical_transition(a, b, nb_path=path) is False
+
+
 def test_canonical_transition_scoped_ml06_312_to_313_accepted():
     # #23426 : ML-06 est le seul carnet ML.Net sous kernel NOMME
     # (hors census #23379, kernel python3) -- sa convergence vers le canon
