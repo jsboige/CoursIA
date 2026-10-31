@@ -31237,11 +31237,11 @@ L'Epic Terry Tao 2026 est complète au sens de notre serie : on a digeste les **
 - PR #10761 (Phase 1 Sendov corps, MERGEABLE).
 - PR courant (Phase 2 Analysis, Lean-19).
 - Lean-12 Sensitivity (Huang), Lean-13 Kochen-Specker, Lean-15b Grothendieck, Lean-17 Knots, A* Optimalite (Search-03e), Lean-18 Sendov.",,,,,,,,568027948d36ada1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-22-Galois-Probleme-Inverse-M23.ipynb,cbd23bde,markdown,fr,82adbd91889f3533,"# Lean-22 : Le problème inverse de Galois — M₂₃ refermé le 9 août 2026
+MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb,cbd23bde,markdown,fr,82adbd91889f3533,"# GALOIS-01 : Le problème inverse de Galois — M₂₃ refermé le 9 août 2026
 
 **Série** : SymbolicAI / Lean — Théorie des groupes sporadiques et problème inverse de Galois
 
-**Navigation** : [<< MIMO-04 Capstone](MIMO/MIMO-04-Capstone-Digestion-Python.ipynb) | [Index](README.md)
+**Navigation** : [<< MIMO-04 Capstone](../MIMO/MIMO-04-Capstone-Digestion-Python.ipynb) | [Index](README.md) | [Lean-23 (ERC-20) >>](../Lean-23-ERC20-Invariant-Companion.ipynb)
 
 **Kernel** : Python 3 (vérifications exécutables sympy + extraction Steiner) + Lean 4 via WSL
 (`galois_lean`, source de vérité formelle — sections 3 et 4)
@@ -31261,7 +31261,7 @@ La confusion entre ces deux énoncés serait la même que celle entre « ce grou
 et « ce groupe apparaît comme groupe de symétries d'une équation polynomiale à coefficients rationnels ».
 Le premier est un fait de théorie des groupes finis ; le second est un fait de théorie des nombres
 algébriques — et il a résisté quarante ans de plus.",,,,,,,,82adbd91889f3533,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-22-Galois-Probleme-Inverse-M23.ipynb,b2927c0b,markdown,fr,20d8590e2dc77b9c,"## 1. L'histoire : de Hilbert au 9 août 2026
+MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb,b2927c0b,markdown,fr,20d8590e2dc77b9c,"## 1. L'histoire : de Hilbert au 9 août 2026
 
 Le **problème inverse de Galois**, posé dans l'ère Hilbert (1890s), demande : *tout groupe fini
 est-il le groupe de Galois d'une extension de ℚ ?* Hilbert lui-même contribue l'irréductibilité
@@ -31285,7 +31285,7 @@ sporadiques est complet.
 M₂₃ lui-même naît plus tôt : c'est le **groupe d'automorphismes du système de Steiner
 S(4,7,23)** — le **design de Witt** — découvert par Ernst Witt (1938) via la construction
 de Leech. C'est par ce système combinatoire que la preuve Lean ci-dessous l'attrape.",,,,,,,,20d8590e2dc77b9c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-22-Galois-Probleme-Inverse-M23.ipynb,5ac94148,markdown,fr,7e22a74e2dfa0a21,"## 2. Attributions — qui a prouvé quoi, et sous quelle licence
+MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb,5ac94148,markdown,fr,7e22a74e2dfa0a21,"## 2. Attributions — qui a prouvé quoi, et sous quelle licence
 
 Ce notebook assemble trois couches de travail, chacune crédité à sa source :
 
@@ -31299,7 +31299,7 @@ Ce notebook assemble trois couches de travail, chacune crédité à sa source :
 aucun `axiom` déclaré — la preuve repose uniquement sur les axiomes standard de Mathlib
 (`propext`, `Classical.choice`, `Quot.sound`). L'en-tête amont mentionne une assistance
 « Claude Code (Fable 5, 1M context) » dans le développement — conservée telle quelle.",,,,,,,,7e22a74e2dfa0a21,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-22-Galois-Probleme-Inverse-M23.ipynb,21fed7ef,code,fr,d27f545f0af4e509,"import sys, re, time
+MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb,21fed7ef,code,fr,d27f545f0af4e509,"import sys, re, time
 from pathlib import Path
 
 # Pattern de la serie : utilitaires Lean cross-plateforme (Epic #2314)
@@ -31329,14 +31329,14 @@ print('  sorry en position de preuve :', n_sorry_term,
 print('  native_decide :', len(re.findall('native_decide', code_only)), '; axiom declares :', len(re.findall('^axiom [A-Za-z]', code_only, re.M)))
 print(""En-tete licence  :"", src.splitlines()[1][:75])
 ",,,,,,,,d27f545f0af4e509,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-22-Galois-Probleme-Inverse-M23.ipynb,6f81858e,markdown,fr,b40fe600819f677d,"### Interprétation
+MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb,6f81858e,markdown,fr,b40fe600819f677d,"### Interprétation
 
 Le lake `galois_lean` (toolchain v4.33.0, Mathlib épinglé) porte la preuve amont **vendored** :
 le fichier `M23Lean4Web.lean` contient toute la couche M₂₂ dont dépend M₂₃,
 la construction de M₂₃ comme sous-groupe de Perm(23), sa cardinalité et sa simplicité.
 Le compteur d'import confirme la politique d'axiomes annoncée : aucune
 preuve trouée, aucune décision déléguée au noyau natif sans preuve.",,,,,,,,b40fe600819f677d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-22-Galois-Probleme-Inverse-M23.ipynb,62d7b786,markdown,fr,302e12cf8506ef3c,"## 3. M₂₃ exécuté — le groupe prouvé à l'écran
+MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb,62d7b786,markdown,fr,302e12cf8506ef3c,"## 3. M₂₃ exécuté — le groupe prouvé à l'écran
 
 L'énoncé 1 n'est pas raconté : il est **exécuté**. La cellule suivante fait trois choses :
 
@@ -31345,7 +31345,7 @@ L'énoncé 1 n'est pas raconté : il est **exécuté**. La cellule suivante fait
 3. `#print axioms` — la liste exhaustive des axiomes sur lesquels repose la preuve.
    C'est l'audit d'intégrité : **tout ce qui n'est pas dans la liste blanche standard
    (`propext`, `Classical.choice`, `Quot.sound`) viderait le théorème** (règle §B du dépôt).",,,,,,,,302e12cf8506ef3c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-22-Galois-Probleme-Inverse-M23.ipynb,a7ca4c6a,code,fr,b803b16e82cf3250,"import time
+MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb,a7ca4c6a,code,fr,b803b16e82cf3250,"import time
 t0 = time.time()
 rc_build, out_build, err_build = run_lake(GALOIS_WSL, 'build', timeout=1200)
 combined = (out_build or '') + (err_build or '')
@@ -31353,7 +31353,7 @@ tail = combined.strip().splitlines()[-4:] if combined.strip() else ['(aucune sor
 print(f""lake build rc={rc_build}"")
 print('\n'.join(tail))
 print(f""[lake build en {time.time()-t0:.1f}s]"")",,,,,,,,b803b16e82cf3250,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-22-Galois-Probleme-Inverse-M23.ipynb,e08f55f6,code,fr,6254fb48d57f8e92,"snippet = """"""
+MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb,e08f55f6,code,fr,6254fb48d57f8e92,"snippet = """"""
 import Galois.M23Lean4Web
 
 -- Les deux theoremes, enonces par Lean lui-meme
@@ -31375,7 +31375,7 @@ t0 = time.time()
 out = run_lean_snippet(GALOIS_WSL, snippet, timeout=900, snippet_id='m23_thms')
 print(out)
 print(f""[lean: {time.time()-t0:.1f}s]"")",,,,,,,,6254fb48d57f8e92,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-22-Galois-Probleme-Inverse-M23.ipynb,1374a2ba,markdown,fr,7a1dc4f1be105895,"### Interprétation
+MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb,1374a2ba,markdown,fr,7a1dc4f1be105895,"### Interprétation
 
 - **`Sporadic.card_M23 : Nat.card M23 = 10200960`** — l'ordre du groupe, calculé par une
   **chaîne de stabilisateurs Schreier–Sims matérialisée** dans la preuve : c'est du comptage
@@ -31390,7 +31390,7 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-22-Galois-Probleme-Inverse-M23.ipynb,1374
   du design de Witt S(4,7,23), et le fait que la liste en contient exactement 253.
   `PreservesHeptads` définit le sous-groupe de Perm(23) qui préserve le système — c'est la
   **définition combinatoire de M₂₃** — avec sa structure de groupe (`one`, `mul`).",,,,,,,,7a1dc4f1be105895,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-22-Galois-Probleme-Inverse-M23.ipynb,6bdfa409,markdown,fr,2a7386c7e472017e,"## 4. Le design de Witt S(4,7,23) — l'objet combinatoire
+MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb,6bdfa409,markdown,fr,2a7386c7e472017e,"## 4. Le design de Witt S(4,7,23) — l'objet combinatoire
 
 M₂₃ se définit comme groupe d'automorphismes du **système de Steiner S(4,7,23)** : 23 points,
 des blocs de 7 points (les **heptades**), tels que **tout sous-ensemble de 4 points est contenu
@@ -31399,7 +31399,7 @@ C(23,4)/C(7,4) = 8855/35 = **253** — exactement ce que `heptadList_length` én
 
 Extrayons les 253 heptades du fichier Lean et vérifions la propriété définaire **indépendamment**
 (en Python, sans Lean) — deux sources de vérité qui se recoupent.",,,,,,,,2a7386c7e472017e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-22-Galois-Probleme-Inverse-M23.ipynb,2e4ecf38,code,fr,24b14acc7157c726,"import itertools
+MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb,2e4ecf38,code,fr,24b14acc7157c726,"import itertools
 
 # Extraction des heptades depuis la source Lean (notation zero-based {a, b, ..., f, g})
 blocks_src = re.findall(r'\{(\d+(?:,\s*\d+){6})\}', src)
@@ -31421,7 +31421,7 @@ print(f""\n253 attendu (heptadList_length) <-> {n_heptads} extraits : ""
 print(f""Arithmetique du design : C(23,4)/C(7,4) = {len(list(itertools.combinations(range(23),4)))}""
       f""//{len(list(itertools.combinations(range(7),4)))} = ""
       f""{len(list(itertools.combinations(range(23),4)))//len(list(itertools.combinations(range(7),4)))}"")",,,,,,,,24b14acc7157c726,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-22-Galois-Probleme-Inverse-M23.ipynb,e51728d5,code,fr,0cd2877c076745ff,"# Propriete definatoire (verification partielle, sous-ensemble des 4-subsets)
+MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb,e51728d5,code,fr,0cd2877c076745ff,"# Propriete definatoire (verification partielle, sous-ensemble des 4-subsets)
 # La verification COMPLETE (8855 quadruplets) est l'Exercice 2.
 heptad_sets = [frozenset(h) for h in heptads_uniq]
 quads = list(itertools.combinations(range(23), 4))
@@ -31437,7 +31437,7 @@ for q in sample_quads:
         print(f""  ANOMALIE : {q} contenu dans {containing} heptades"")
 print(f""Echantillon de 200 quadruplets : {200 - bad}/200 dans exactement 1 heptade""
       + ("" -- PROPRIETE S(4,7,23) VERIFIEE SUR L'ECHANTILLON"" if bad == 0 else "" -- DEFAUT""))",,,,,,,,0cd2877c076745ff,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-22-Galois-Probleme-Inverse-M23.ipynb,dd8f4507,markdown,fr,35383936afa54507,"### Interprétation
+MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb,dd8f4507,markdown,fr,35383936afa54507,"### Interprétation
 
 - L'extraction rend **253 heptades distinctes**, chacune de taille 7 sur les points {0..22} —
   concordant avec `heptadList_length` prouvé en Lean.
@@ -31449,7 +31449,7 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-22-Galois-Probleme-Inverse-M23.ipynb,dd8f
   `blockMap` en est l'action sur les blocs. La théorie des groupes finis rencontre la
   combinatoire des designs : c'est par ce chemin que Witt a construit M₂₃ en 1938, bien avant
   l'ordinateur.",,,,,,,,35383936afa54507,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-22-Galois-Probleme-Inverse-M23.ipynb,0971b5e7,markdown,fr,ed7b79b2756b600f,"## 5. La réalisation galoisienne — citée, pas formalisée
+MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb,0971b5e7,markdown,fr,ed7b79b2756b600f,"## 5. La réalisation galoisienne — citée, pas formalisée
 
 L'énoncé 2 (M₂₃ groupe de Galois sur ℚ) repose sur une chaîne théorique que ce dépôt **ne
 formalise pas**. Elle est citée ici pour être honnête sur la frontière entre prouvé et rapporté :
@@ -31470,7 +31470,7 @@ cohomologie — mais **pas** le π₁ étale ni l'existence de Riemann. La phras
 noir sur blanc : **« M₂₃ est un groupe de Galois sur ℚ » n'est PAS formalisé dans ce dépôt** —
 il est prouvé dans le préprint, et vérifié computationnellement ci-dessous au niveau du
 polynôme, pas au niveau du groupe de Galois.",,,,,,,,ed7b79b2756b600f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-22-Galois-Probleme-Inverse-M23.ipynb,57ef6cf8,code,fr,8ab48d9bf179842f,"# Le socle grothendieckien du depot : ce qui existe deja cote formel
+MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb,57ef6cf8,code,fr,8ab48d9bf179842f,"# Le socle grothendieckien du depot : ce qui existe deja cote formel
 # (modules reels : la convention i18n #4980 adjoint un sibling _en a chaque
 #  module - exclu du denombrement pour que le compte reste celui des modules)
 gro = find_lean_project('grothendieck_lean')
@@ -31481,7 +31481,7 @@ for m in gro_modules[:14]:
 print(""  ..."" if len(gro_modules) > 14 else """")
 print(""\nChainon MANQUANT pour l'enonce 2 : pi1 etale / existence de Riemann -> non formalise"")
 ",,,,,,,,8ab48d9bf179842f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-22-Galois-Probleme-Inverse-M23.ipynb,e1cbf1d6,markdown,fr,4fb737190eeeceed,"## 6. Le polynôme f₁ — manipulé pour de vrai
+MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb,e1cbf1d6,markdown,fr,4fb737190eeeceed,"## 6. Le polynôme f₁ — manipulé pour de vrai
 
 Le préprint produit un polynôme **explicite** de degré 23 à coefficients entiers dont le corps
 de décomposition sur ℚ a pour groupe de Galois M₂₃. Le dépôt compagnon
@@ -31493,7 +31493,7 @@ au total, 14 chiffres pour le plus grand, contenu 1, et `f1(3) mod (2^61−1) = 
 **Nous chargeons les coefficients ci-dessous et recalculons l'empreinte de toutes pièces.**
 C'est la vérification d'intégrité de la transcription : une seule erreur de chiffre casse
 l'empreinte.",,,,,,,,4fb737190eeeceed,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-22-Galois-Probleme-Inverse-M23.ipynb,0d5598ec,code,fr,3b23c70058840807,"# Coefficients de f1, transcrits de polynomial_f1.gp (shaowuz/m23isgalois)
+MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb,0d5598ec,code,fr,3b23c70058840807,"# Coefficients de f1, transcrits de polynomial_f1.gp (shaowuz/m23isgalois)
 # coeff_f1[i] = coefficient de x^i ; l'entree x^22 est absente du fichier (coefficient 0)
 coeff_f1 = [
     -3150159884154, 19169943578802, -46185312415788, 53599151839311,
@@ -31518,7 +31518,7 @@ expected    = [23, 23, 219, 14, 1, 92254275456192]  # f1_expect de polynomial_f1
 print(""empreinte calculee :"", fingerprint)
 print(""empreinte attendue :"", expected)
 print(""TRANSCRIPTION INTEGRE"" if fingerprint == expected else ""ECART -- retranscrire !"")",,,,,,,,3b23c70058840807,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-22-Galois-Probleme-Inverse-M23.ipynb,63f67d15,code,fr,38bd8219045e21c7,"from sympy import Poly, symbols, factor_list, discriminant, GF
+MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb,63f67d15,code,fr,38bd8219045e21c7,"from sympy import Poly, symbols, factor_list, discriminant, GF
 x = symbols('x')
 f1 = sum(c * x**i for i, c in enumerate(coeff_f1))
 poly = Poly(f1, x)
@@ -31534,7 +31534,7 @@ print(f""factorisation sur Q    : {n_factors} facteur(s) -> ""
 disc = discriminant(f1, x)
 print(f""discriminant           : {len(str(abs(disc)))} chiffres, signe {'+' if disc > 0 else '-'}"")
 print(f""  (non nul -> f1 separable : 23 racines complexes distinctes)"")",,,,,,,,38bd8219045e21c7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-22-Galois-Probleme-Inverse-M23.ipynb,cad28d50,code,fr,21830481ab13921b,"# 4. Factorisations modulo quelques premiers -- les cycles de Frobenius
+MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb,cad28d50,code,fr,21830481ab13921b,"# 4. Factorisations modulo quelques premiers -- les cycles de Frobenius
 # factor_list(modulus=...) declenche en interne (sympy >= 1.13) une comparaison
 # d'entiers modulaires depreciee ; le warning associe imprime le chemin
 # site-packages de la machine d'execution. On le filtre : la comparaison vit
@@ -31548,7 +31548,7 @@ for p in (2, 3, 5, 7, 11):
     flp = factor_list(f1, modulus=p)
     degs = sorted(int(Poly(g, x, domain=GF(p)).degree()) * int(m) for g, m in flp[1])
     print(f""{p:>4} | {str(degs):<28} | {sum(degs)}"")",,,,,,,,21830481ab13921b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-22-Galois-Probleme-Inverse-M23.ipynb,4c33fd85,markdown,fr,5c9b423a56c42c0c,"### Interprétation
+MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb,4c33fd85,markdown,fr,5c9b423a56c42c0c,"### Interprétation
 
 - **Irréductible sur ℚ** : f₁ n'a aucun facteur rationnel — le corps ℚ(α) engendré par une
   racine est de degré 23, et le groupe de Galois (du corps de décomposition) agit
@@ -31565,8 +31565,8 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-22-Galois-Probleme-Inverse-M23.ipynb,4c33
   `GaloisGroup` + `GaloisProof` certifiant) et n'est **pas reproduite ici**. Notre chaîne
   sympy établit : degré 23 ✓, irréductible ✓, séparable ✓, Frobenius pairs ✓ — le socle
   computationnel, pas le théorème.",,,,,,,,5c9b423a56c42c0c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-22-Galois-Probleme-Inverse-M23.ipynb,f6e7da43,markdown,fr,2edb7813f4129e60,## 7. Exercices,,,,,,,,2edb7813f4129e60,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-22-Galois-Probleme-Inverse-M23.ipynb,5abcf042,code,fr,0cf28ef1a3befec7,"# EXERCICE 1 : l'arithmetique de l'ordre de M23.
+MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb,f6e7da43,markdown,fr,2edb7813f4129e60,## 7. Exercices,,,,,,,,2edb7813f4129e60,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb,5abcf042,code,fr,0cf28ef1a3befec7,"# EXERCICE 1 : l'arithmetique de l'ordre de M23.
 # Objectif : verifier la decomposition multiplicative 10200960 = 253 * 40320
 # et la factorisation premiere |M23| = 2^7 * 3^2 * 5 * 7 * 11 * 23, puis expliquer
 # pourquoi 253 et 40320 apparaissent chacun naturellement dans le design de Witt.
@@ -31578,7 +31578,7 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-22-Galois-Probleme-Inverse-M23.ipynb,5abc
 # Etape 3 : verifier |M23| / 23 == 443520 et chercher a quoi correspond ce nombre pour M22
 result = None  # TODO etudiant
 print(""Exercice 1 a completer : arithmetique de |M23|"")",,,,,,,,0cf28ef1a3befec7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-22-Galois-Probleme-Inverse-M23.ipynb,b3127f64,code,fr,6156b39a2a928488,"# EXERCICE 2 : la propriete definatoire S(4,7,23) -- verification EXHAUSTIVE.
+MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb,b3127f64,code,fr,6156b39a2a928488,"# EXERCICE 2 : la propriete definatoire S(4,7,23) -- verification EXHAUSTIVE.
 # Objectif : verifier que CHACUN des C(23,4) = 8855 quadruplets de points est contenu
 # dans exactement une heptade (la section 4 ne l'a fait que sur un echantillon de 200).
 # Indice : construire un index heptade -> frozenset, puis pour chaque quadruplet
@@ -31588,7 +31588,7 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-22-Galois-Probleme-Inverse-M23.ipynb,b312
 # Etape 3 : assert sur la totalite, et afficher le compte de quadruplets verifies
 result = None  # TODO etudiant
 print(""Exercice 2 a completer : verification exhaustive S(4,7,23)"")",,,,,,,,6156b39a2a928488,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-22-Galois-Probleme-Inverse-M23.ipynb,c414bd6e,code,fr,26c72377e4600c02,"# EXERCICE 3 : le second polynome f2 du depot compagnon.
+MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb,c414bd6e,code,fr,26c72377e4600c02,"# EXERCICE 3 : le second polynome f2 du depot compagnon.
 # Objectif : recuperer polynomial_f2.gp depuis https://github.com/shaowuz/m23isgalois,
 # transcrire les coefficients de f2, puis reproduire sur f2 les memes verifications
 # que la section 6 (empreinte, degre, irreductibilite sur Q, discriminant, factorisation
@@ -31601,7 +31601,7 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-22-Galois-Probleme-Inverse-M23.ipynb,c414
 # Etape 3 : degre / irreductibilite / discriminant / factorisation mod p, meme format
 result = None  # TODO etudiant
 print(""Exercice 3 a completer : empreinte et verifications de f2"")",,,,,,,,26c72377e4600c02,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-22-Galois-Probleme-Inverse-M23.ipynb,23a28e3b,markdown,fr,b299a0b24b412c2e,"## Conclusion
+MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb,23a28e3b,markdown,fr,b299a0b24b412c2e,"## Conclusion
 
 | | Ce notebook a établi | Méthode | Statut |
 |---|---|---|---|
@@ -31619,7 +31619,7 @@ d'arrivée naturel. Une noix de plus à grignoter.
 via cache), Python 3 avec `sympy`. Durée d'exécution : ~2 min une fois le lake construit.",,,,,,,,b299a0b24b412c2e,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-23-ERC20-Invariant-Companion.ipynb,85857942,markdown,fr,1891ed9734f58522,"# Lean-23 : ERC-20 sous Lean 4 — l'invariant de conservation prouvé
 
-**Navigation** : [Index](README.md) | [Lean-22 (Galois) <<](Lean-22-Galois-Probleme-Inverse-M23.ipynb) | [SC-7 SmartContract (Solidity ERC-20) >>](../SmartContracts/02-Solidity-Advanced/SC-07-Token-Standards-Python.ipynb)
+**Navigation** : [Index](README.md) | [Lean-22 (Galois) <<](GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb) | [SC-7 SmartContract (Solidity ERC-20) >>](../SmartContracts/02-Solidity-Advanced/SC-07-Token-Standards-Python.ipynb)
 
 Ce notebook presente le lake **`erc20_lean`** de ce dépot (issue #4047, livrable phase 1) : le port formel de l'**invariant de conservation d'un jeton ERC-20** en Lean 4 avec Mathlib. La propriété foncière d'un jeton fongible — aucun token ne peut être créé ou détruit par un `transfer` (seuls `mint`/`burn` le font, symétriquement sur l'offre) — est ici prouvée **mécaniquement** sur une machine à états finie de **trois transitions gardées**.
 
@@ -32080,7 +32080,7 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-23-ERC20-Invariant-Companion.ipynb,5e1ba4
 - **Lake `erc20_lean`** (`MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean/`) — la version Lean 4 + Mathlib : `ERC20/State.lean` (modèle), `ERC20/Ops.lean` (transitions), `ERC20/Invariant.lean` (préservation).
 - **EPIC #4980** — convention i18n Lean (aggrégateur bilingue inline FR-EN dans `ERC20.lean`, sibling pair dans `ERC20_en.lean`).
 - **Rule C.6** (mandat user 2026-08-19) — préférence pour un compagnon kernel `lean4-wsl` à côté du notebook Python ; le pattern actuel (subprocess `lake env lean`) reste mergeable, le kernel Lean natif est une suite à explorer.
-- Notebooks associés : `[Lean-22 (Galois)](Lean-22-Galois-Probleme-Inverse-M23.ipynb)`, `[Lean-21 (MIMO)](MIMO/MIMO-02-Detection-Flips-Lean-Python.ipynb)`, `[Lean-20 (PFR)](ANALYSE/ANALYSE-03-PFR-Lean.ipynb)`, `[Lean-13 (Kochen-Specker)](Lean-13-Kochen-Specker.ipynb)`, `[A* Optimalite (Search-03e)](../../Search/Part1-Foundations/Search-03e-AStar-Optimality.ipynb)`.",,,,,,,,8c4a10cd11f9e5a9,,,,,,,,,,,,,,,
+- Notebooks associés : `[Lean-22 (Galois)](GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb)`, `[Lean-21 (MIMO)](MIMO/MIMO-02-Detection-Flips-Lean-Python.ipynb)`, `[Lean-20 (PFR)](ANALYSE/ANALYSE-03-PFR-Lean.ipynb)`, `[Lean-13 (Kochen-Specker)](Lean-13-Kochen-Specker.ipynb)`, `[A* Optimalite (Search-03e)](../../Search/Part1-Foundations/Search-03e-AStar-Optimality.ipynb)`.",,,,,,,,8c4a10cd11f9e5a9,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-06-Mathlib-Essentials-Lean.ipynb,enr6_01,markdown,fr,1aeee3c42aa30e4f,"### Pourquoi ces imports ouvrent toute la bibliothèque
 
 Le bloc de gauche **documente** les espaces de noms qu'un projet Mathlib importerait : `Mathlib.Tactic` (les tactiques `ring`, `linarith`, `field_simp`...), `Mathlib.Data.Nat.Basic` (lemmes sur `Nat`), `Mathlib.Algebra` (structures algébriques). **Ce notebook-ci ne les importe pas** : il tourne sous `lean4_jupyter` sans Mathlib, et les exemples Mathlib n'y sont que documentés. En Lean 4, **un import n'est pas un `#include` C** : c'est la déclaration qu'on veut accéder à un module compilé. Dans un projet Lake équipé, `ring` n'existe pas sans `Mathlib.Tactic`, et des lemmes comme `Nat.add_comm` doivent être prouvés à la main sans `Mathlib.Data.Nat`.
@@ -34248,7 +34248,7 @@ Le tableau ci-dessus range la géométrie anabelienne au rayon des absents — e
 
 Le théorème structurel est de Grothendieck (SGA 7) : la monodromie d'une famille lisse au-dessus d'un disque épointé est **quasi-unipotente** — un certain pouvoir de la transformation est unipotent, autrement dit toutes ses valeurs propres sont des racines de l'unité. C'est un résultat de finitude remarquable : quelle que soit la famille, la boucle ne peut engendrer qu'une torsion d'ordre fini ou quasi fini. Deligne en a fait l'arme centrale de *Weil II* (1980) : c'est en contrôlant la monodromie ℓ-adique qu'il porte l'analogie de Riemann sur les corps finis. Le polynôme d'Alexander du trèfle est précisément le polynôme caractéristique de cette action.
 
-**État mesuré (18/10/2026)** : la série Lean manipule la monodromie sans jamais l'introduire — 4 occurrences d'usage ([Lean-22](Lean-22-Galois-Probleme-Inverse-M23.ipynb) ×1, [Lean-28](Lean-28-Complex-Structure-S6.ipynb) ×2 — le triangle (3,4,∞) « fournit les monodromies » qui donnent la présentation de π₁ — et [Riemann200/README](Riemann200/README.md) ×1), zéro définition. Mathlib 4 ne formalise pas davantage la quasi-unipotence : du hors-scope cohérent avec la table ci-dessus. La première marche — groupe fondamental d'un cercle épointé, action de monodromie d'un exemple explicite, quasi-unipotence calculée — est ouverte en grain dédié : [#21308](https://github.com/jsboige/CoursIA/issues/21308).
+**État mesuré (18/10/2026)** : la série Lean manipule la monodromie sans jamais l'introduire — 4 occurrences d'usage ([Lean-22](GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb) ×1, [Lean-28](Lean-28-Complex-Structure-S6.ipynb) ×2 — le triangle (3,4,∞) « fournit les monodromies » qui donnent la présentation de π₁ — et [Riemann200/README](Riemann200/README.md) ×1), zéro définition. Mathlib 4 ne formalise pas davantage la quasi-unipotence : du hors-scope cohérent avec la table ci-dessus. La première marche — groupe fondamental d'un cercle épointé, action de monodromie d'un exemple explicite, quasi-unipotence calculée — est ouverte en grain dédié : [#21308](https://github.com/jsboige/CoursIA/issues/21308).
 ",,,,,,,,61f6ecfa7bbca5c6,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15b-Lean-Grothendieck.ipynb,c34d70af,markdown,fr,d3d23df8ec30fff5,"### Lecture des 18 vérifications : l'index est vivant, pas déclaré
 
@@ -34955,14 +34955,14 @@ score espere atteint la frontiere |E[score]| = 2, puis verifiez sur quelques exe
 deux profils de scores opposes rapproche E[score] de 0. Indice : tout profil deterministe convient
 pour la frontiere -- la subtilite est le miroir exact d'`expectedScore`.",,,,,,,,ab662a328edeca86,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,chsh-code-stub,code,fr,9fb1e9bc5de41fcb,"print(""Exercice a completer"")",,,,,,,,9fb1e9bc5de41fcb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-22-Galois-Probleme-Inverse-M23.ipynb,07bf3a5c,markdown,fr,55506b61bd2c0e85,"## Annexe A — La complétion adique : approcher un anneau local par ses troncatures
+MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb,07bf3a5c,markdown,fr,55506b61bd2c0e85,"## Annexe A — La complétion adique : approcher un anneau local par ses troncatures
 
 Le problème inverse de Galois vit dans les **extensions locales** : pour comprendre un groupe de Galois global, on le regarde une prime à la fois, dans la complétion. Le module `Galois.AdicCompletionLocalRing` (portage pédagogique du dépôt `anthropics/fermats-last-theorem`, commit `aa2d8b34`, Apache-2.0) pose la première couche de cette arithmétique locale : **la complétion adique d'un anneau local `A` par son idéal maximal**.
 
 L'idée tient en une image. Un anneau local `A` d'idéal `I` est un monde qu'on ne voit jamais en entier — on n'en observe que des **troncatures** : le quotient `A ⧸ I^n`, « `A` vu modulo la puissance n-ième de l'idéal ». La complétion adique `AdicCompletion I A` est l'objet qui est **compatible avec toutes les troncatures à la fois** : un élément de la complétion, c'est une famille cohérente de classes modulo `I^n` pour chaque `n`. L'évaluation `evalₐ I n` projette la complétion sur sa troncature de degré `n`.
 
 Le module établit quatre briques : **Kernel** (le noyau de `evalₐ I n` est exactement l'image de `I^n` — la caractérisation « noyau d'évaluation = puissance de l'idéal »), **Exemple** (la troncature 2-adique de `ℤ`), **Local** (pour `A` local noethérien, l'idéal maximal de la complétion est le noyau de l'évaluation en degré 1, et les quotients par ses puissances s'identifient à ceux de `A`), **Transport** (ces identités survivent aux isomorphismes de complétions).",,,,,,,,55506b61bd2c0e85,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-22-Galois-Probleme-Inverse-M23.ipynb,2ac6c7f6,code,fr,f05e5daa91282735,"snippet_adic = """"""
+MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb,2ac6c7f6,code,fr,f05e5daa91282735,"snippet_adic = """"""
 import Galois.AdicCompletionLocalRing
 
 -- Kernel : troncature, noyau, unites (6 declarations)
@@ -35009,7 +35009,7 @@ t0 = time.time()
 out = run_lean_snippet(GALOIS_WSL, snippet_adic, timeout=900, snippet_id='adic_thms')
 print(out)
 print(f""[lean: {time.time()-t0:.1f}s]"")",,,,,,,,f05e5daa91282735,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-22-Galois-Probleme-Inverse-M23.ipynb,33c56f41,code,fr,1f83f42317d4a916,"# La troncature 2-adique de Z, jouee en Python : eval_3(20) = classe de 4 dans Z/8
+MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb,33c56f41,code,fr,1f83f42317d4a916,"# La troncature 2-adique de Z, jouee en Python : eval_3(20) = classe de 4 dans Z/8
 # (l'example de la section Exemple du module, rejouee hors Lean)
 print(""eval_3(20) ="", 20 % 8, ""  (classe de 4 dans Z/2^3 = Z/8, comme dans le module)"")
 print(""eval_3(8)  ="", 8 % 8, ""   (8 est multiple de 2^3 : image de I^3, dans le noyau)"")
@@ -35028,12 +35028,12 @@ for n in [3, 5, 8, 12]:
 print(""\nChaque troncature ETEND la precedente en poids faibles : la suite est"")
 print(""coherente pour le systeme projectif Z/2^n -> Z/2^{n-1}. La complétion Z_2"")
 print(""est exactement la limite de ce systeme -- c'est elle que le module formalise."")",,,,,,,,1f83f42317d4a916,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-22-Galois-Probleme-Inverse-M23.ipynb,58a7db93,markdown,fr,604c82b149d36876,"### Interprétation
+MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb,58a7db93,markdown,fr,604c82b149d36876,"### Interprétation
 
 Les `#check` rendent les **signatures vivantes** : `ker_evalₐ_eq_map_pow` dit que le noyau de la troncature de degré `n` est l'image de `I^n` — la phrase « noyau d'évaluation = puissance de l'idéal » devient un énoncé Lean imprimé par Lean. Les trois `#print axioms` ne listent que `propext`, `Classical.choice`, `Quot.sound` : **aucun `sorry`**, aucune tricherie — la couche est close.
 
 La démo Python porte le même contenu dans ℤ : `evalₐ (2) 3` envoie 20 sur sa classe mod 8, l'inverse de 3 se stabilise chiffre après chiffre. C'est le pont entre le formalisme (une limite de systèmes projectifs) et le geste de tous les jours en calcul modulaire. Et `isUnit_one_add_of_mem_map_maximalIdeal` est le **germe de Hensel** : dans un anneau local, tout `1 + x` avec `x` dans l'idéal maximal de la complétion est inversible — la lemme qui fait converger Newton p-adiquement, et qui rend possible la suite de la théorie locale.",,,,,,,,604c82b149d36876,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-22-Galois-Probleme-Inverse-M23.ipynb,df47cf61,markdown,fr,681fdb935b70724b,"## Annexe B — Groupes de ramification inférieure : la tour qui mesure l'inertie
+MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb,df47cf61,markdown,fr,681fdb935b70724b,"## Annexe B — Groupes de ramification inférieure : la tour qui mesure l'inertie
 
 Quand un groupe `G` agit sur un anneau local `R`, tout ne se passe pas « près du point » au même degré. Le module `Galois.LowerRamificationGroup` (même provenance : portage `anthropics/fermats-last-theorem`, Apache-2.0) construit l'objet qui **gradue** cette action : les groupes de ramification inférieure de Serre (*Local Fields*, ch. IV).
 
@@ -35044,7 +35044,7 @@ Trois étages s'emboîtent :
 3. **Ramification inférieure** — la tour `lowerRamificationGroup R G i` : les `σ ∈ G` qui fixent `R` **modulo `𝔪^(i+1)`**. On obtient `G ⊇ LRG(0) ⊇ LRG(1) ⊇ ⋯`, **antitone** (`lowerRamificationGroup_antitone`), dont le niveau 0 est exactement l'inertie (`lowerRamificationGroup_zero_eq_inertia`) et dont l'intersection est triviale (`iInf_lowerRamificationGroup_eq_bot`).
 
 Le lien avec l'annexe A est structurel : **la tour `LRG(i)` est définie par l'action sur les niveaux de la tour de troncatures que la complétion adique construit**. `LRG(i)` = les automorphismes invisibles au degré `i` de résolution.",,,,,,,,681fdb935b70724b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-22-Galois-Probleme-Inverse-M23.ipynb,72ce43e0,code,fr,8c5fc06feded48ca,"snippet_ram = """"""
+MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb,72ce43e0,code,fr,8c5fc06feded48ca,"snippet_ram = """"""
 import Galois.LowerRamificationGroup
 
 -- Inertie : monotonie, cas trivial, normalite (6 declarations)
@@ -35083,7 +35083,7 @@ t0 = time.time()
 out = run_lean_snippet(GALOIS_WSL, snippet_ram, timeout=900, snippet_id='ramif_thms')
 print(out)
 print(f""[lean: {time.time()-t0:.1f}s]"")",,,,,,,,8c5fc06feded48ca,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-22-Galois-Probleme-Inverse-M23.ipynb,75ae5a04,code,fr,c20eb585fa365394,"# Les niveaux que fixe la tour : dans Z, l'ideal maximal (2) et ses puissances.
+MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb,75ae5a04,code,fr,c20eb585fa365394,"# Les niveaux que fixe la tour : dans Z, l'ideal maximal (2) et ses puissances.
 # LRG(i) agit trivialement sur Z/2^{i+1} -- chaque groupe de la tour est ""invisible""
 # a un etage de la tour de troncatures de l'annexe A.
 print(""Etage | quotient | ce que LRG(i) respecte"")
@@ -35100,7 +35100,7 @@ print(f""  niveau  5 : {x % 2**5}"")
 print(""Projeter d'un etage au suivant = oublier les chiffres 2-adiques de poids fort :"")
 print(""c'est le systeme projectif dont la completion est la limite, et la tour LRG(i)"")
 print(""gradue les automorphismes selon le niveau ou ils cessent d'etre visibles."")",,,,,,,,c20eb585fa365394,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-22-Galois-Probleme-Inverse-M23.ipynb,d834025a,markdown,fr,fe5b6921f7122c57,"### Interprétation
+MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb,d834025a,markdown,fr,fe5b6921f7122c57,"### Interprétation
 
 La signature de `lowerRamificationGroup_antitone` imprimée par Lean dit l'essentiel : `Antitone (lowerRamificationGroup R G)` — **plus on monte dans la tour, plus le groupe rétrécit**. Et `lowerRamificationGroup_zero_eq_inertia` ancre le pied de la tour : le niveau 0 EST l'inertie, la ramification inférieure est son raffinement quantitatif. Enfin `iInf_lowerRamificationGroup_eq_bot` ferme la tour : un automorphisme invisible à **tous** les niveaux est l'identité — la filtration sépare les points de `G`.
 
@@ -46705,7 +46705,7 @@ réseau-modèle (DISCOVER, réinjection, chirurgie, contrôles) ;
 anglais (`TensorProductRepresentation_en.lean`, convention i18n #4980) — mêmes énoncés, preuves
 byte-identiques.
 ",,,,,,,,acde846d3a5c089e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13b-CHSH-Tsirelson-Native.ipynb,3666be08,markdown,fr,7c6776440266dade,"# Lean-13b : la borne de Tsirelson — digestion formelle de la frontière classique/quantique
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13b-CHSH-Tsirelson-Native.ipynb,3666be08,markdown,fr,c40f365d25d57224,"# Lean-13b : la borne de Tsirelson — digestion formelle de la frontière classique/quantique
 
 **Navigation** : [<< Lean-13 Kochen-Specker](Lean-13-Kochen-Specker.ipynb) · [Lean-13c CHSH-Landau >>](Lean-13c-CHSH-Landau-Saturation.ipynb) · [Lean-16c Free-Will](Lean-16c-Conway-Free-Will-Theorem.ipynb) · [Sommaire série](README.md)
 
@@ -46713,8 +46713,7 @@ Le **jeu de CHSH** (Clauser, Horne, Shimony, Holt 1969) fait s'affronter deux jo
 communiquent plus : Alice reçoit un bit $x$, Bob un bit $y$, chacun rend un bit ; ils gagnent
 selon la règle $a \oplus b = x \wedge y$. Le score le plus élevé qu'ils puissent atteindre en
 partageant seulement du hasard **classique** est $2$. En partageant un état **intrigué**, ils
-atteignent $2\sqrt{2}$ — c'est la **borne de Tsirelson** (1980), la première séparation
-quantique/classique prouvée de l'histoire de la physique.
+atteignent $2\sqrt{2}$ — c'est la **borne de Tsirelson** (1980).
 
 Ce notebook est le **compagnon natif** du module `conway_lean/Conway/CHSHQuantum.lean` : il
 n'expose pas la théorie « en prose », il **importe le module et exécute ses énoncés** dans un
@@ -46731,7 +46730,7 @@ Ce que la tranche sépare, et que ce notebook prend soin de ne pas confondre :
 Provenance : J. F. Clauser, M. A. Horne, A. Shimony, R. A. Holt, *Proposed experiment to test
 local hidden-variable theories*, Phys. Rev. Lett. **23** (1969) ; B. S. Tsirelson (Cirel'son),
 *Quantum generalizations of Bell's inequality*, Lett. Math. Phys. **4** (1980).
-",,,,,,,,7c6776440266dade,,,,,,,,,,,,,,,
+",,,,,,,,c40f365d25d57224,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13b-CHSH-Tsirelson-Native.ipynb,8b25373a,markdown,fr,2c8bff6f2529c889,"## 1. Vérification de l'environnement
 
 L'import ci-dessous charge les modules du lake `conway_lean` (compilés en `.olean`). Il est
@@ -46776,7 +46775,7 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13b-CHSH-Tsirelson-Native.ipynb,dc212dc0,
 (`leanprover/lean4:v4.33.0`, le pin de `conway_lean`), et la stdlib est résolue. Les imports
 de la cellule 1 peuvent maintenant être **tenus pour acquis** — ils ne l'étaient pas.
 ",,,,,,,,f77a2744abffb519,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13b-CHSH-Tsirelson-Native.ipynb,ae99c202,markdown,fr,a0939625e5224568,"## 3. Les trois bornes — tableau comparatif
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13b-CHSH-Tsirelson-Native.ipynb,ae99c202,markdown,fr,12fb991cc0af686b,"## 3. Les trois bornes — tableau comparatif
 
 | Régime | Objet mathématique | Borne | Déclaration Lean | Statut de la preuve |
 |---|---|---|---|---|
@@ -46785,13 +46784,13 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13b-CHSH-Tsirelson-Native.ipynb,ae99c202,
 | **quantique** | `CHSHQuantum.chshOperator A₀ A₁ B₀ B₁` | $\le (2\sqrt{2}) \cdot 1$ | `Conway.CHSHQuantum.tsirelson_bound` | **importé** de `Mathlib.Algebra.Star.CHSH.tsirelson_inequality` |
 | **séparation** | $2$ vs $2\sqrt{2}$ | $2 < 2\sqrt{2}$ | `Conway.CHSHQuantum.classical_quantum_gap` | prouvé dans ce lake |
 
-Deux lignes disent « prouvé dans ce lake », une dit « importé » : c'est la distinction que la
+Trois lignes disent « prouvé dans ce lake », une dit « importé » : c'est la distinction que la
 grille de #13106 demande de rendre visible. La borne quantique n'est **pas** redémontrée ici —
 la redériver artificiellement aurait été un exercice d'école, pas une digestion. Ce qui est
 local, c'est la **carte d'hypothèses** : le raccord entre le vocabulaire CoursIA et les
 hypothèses exactes de Mathlib, la réécriture de la forme brute $\sqrt{2}^{\,3} \cdot 1$ vers
 la forme usuelle $2\sqrt{2} \cdot 1$, et la preuve que l'écart est **strict**.
-",,,,,,,,a0939625e5224568,,,,,,,,,,,,,,,
+",,,,,,,,12fb991cc0af686b,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13b-CHSH-Tsirelson-Native.ipynb,74f81683,markdown,fr,195a4bb640a8c516,"## 4. Exemple guidé 1 — la signature exacte du théorème quantique
 
 Lire une signature, c'est lire la carte de ce qu'un théorème exige. Celle de `tsirelson_bound`
@@ -46905,12 +46904,12 @@ Trois exercices bornés pour manipuler les objets du lake. Chaque cellule **s'ex
 quelle** (corps trivial) : à vous de remplacer le corps par la bonne définition. Les `#eval`
 de contrôle affichent côte à côte votre valeur et celle du lake.
 ",,,,,,,,2cdb04858155475c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13b-CHSH-Tsirelson-Native.ipynb,72b4abe4,markdown,fr,950b1ff18463363d,"### Exercice 1 — le profile est-il maximal ?
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13b-CHSH-Tsirelson-Native.ipynb,72b4abe4,markdown,fr,7467592b9eca7492,"### Exercice 1 — le profil est-il maximal ?
 
 Définissez `estMaximal` renvoyant `true` si et seulement si le score du profil vaut exactement
 $2$ (le maximum classique). Le corps actuel renvoie `true` en toutes circonstances : sur les
 profils de score négatif, votre valeur et celle du lake divergeront — c'est le test.
-",,,,,,,,950b1ff18463363d,,,,,,,,,,,,,,,
+",,,,,,,,7467592b9eca7492,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13b-CHSH-Tsirelson-Native.ipynb,4bc6a064,code,fr,f1e7bda52eb691a9,"-- Exercice 1 : le profil atteint-il le maximum classique (score = 2) ?
 -- TODO etudiant : remplacer le corps ci-dessous
 def estMaximal (a₀ a₁ b₀ b₁ : Conway.CHSH.Outcome) : Bool :=
@@ -58316,7 +58315,7 @@ Trois parcours sont possibles, selon le temps et la curiosité :
 2. **Curieux (2h30)** : `MIMO-01` → `MIMO-02` (le seuil et la simulation). On quitte en ayant vu le seuil `2·log N` confrontée au Monte-Carlo.
 3. **Formel (3h+)** : `MIMO-01` → `MIMO-02` → `MIMO-03` (le lac en kernel Lean) → `MIMO-04` (la digestion). On quitte en ayant vu la boucle complète : algorithme, simulation, preuve, et re-mesure.
 
-Le parcours principal reprend ensuite à [Lean-22 — Galois](Lean-22-Galois-Probleme-Inverse-M23.ipynb) (sous-série Galois) ou à [Lean-29 — Hecke Operators](Lean-29-Hecke-Operators-Native.ipynb) (sous-série Hecke).
+Le parcours principal reprend ensuite à [Lean-22 — Galois](GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb) (sous-série Galois) ou à [Lean-29 — Hecke Operators](Lean-29-Hecke-Operators-Native.ipynb) (sous-série Hecke).
 ",,,,,,,,97f2c0314a267dfe,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-41-Capstone-MIMO-Python.ipynb,64eca5b6,markdown,fr,8349dda7175a8f6c,"## 7. Trois exercices
 
@@ -59000,7 +58999,7 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-01-Descente-Budget-Lean-Python.ipynb
 - **D. Papailiopoulos** (2026) - *Detection MIMO by coordinate flips : Proposition 9.1* (papier source des theoremes `Descent.lean`).
 - **`Descent.lean`** (`MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/`) - la formalisation : `Run` (inductif sur List sigma), `lastState`, lemmes 1-3 (`run_tail_cost_lt`, `run_nodup`, `run_length_le_cost`), `descent_flips_le_barrier`, `descent_target_before_ceiling`. Aucun `sorry`, aucun `axiom NAME := ...` global, aucun `native_decide`.
 - **`lean4-wsl` kernel** - Repare c.380, valide c.426, reutilise pour ce notebook (le pattern << lecture directe des sources >> permet l'execution Python portable sans `lake env lean`).
-- **Notebooks Lean associes** : `[Lean-24 (Calibration)](../Lean-24-Calibration-Native-Companion.ipynb)`, `[Lean-23 (ERC-20)](../Lean-23-ERC20-Invariant-Companion.ipynb)`, `[Lean-22 (Galois)](../Lean-22-Galois-Probleme-Inverse-M23.ipynb)`, `[MIMO-02 (Detection Flips)](MIMO-02-Detection-Flips-Lean-Python.ipynb)`, `[Lean-20 (PFR)](../ANALYSE/ANALYSE-03-PFR-Lean.ipynb)`.
+- **Notebooks Lean associes** : `[Lean-24 (Calibration)](../Lean-24-Calibration-Native-Companion.ipynb)`, `[Lean-23 (ERC-20)](../Lean-23-ERC20-Invariant-Companion.ipynb)`, `[Lean-22 (Galois)](../GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb)`, `[MIMO-02 (Detection Flips)](MIMO-02-Detection-Flips-Lean-Python.ipynb)`, `[Lean-20 (PFR)](../ANALYSE/ANALYSE-03-PFR-Lean.ipynb)`.
 - **EPIC #4980** - convention i18n Lean (lac `mimo_lean` est FR-only ; un sibling pair `_en.lean` est une suite a explorer mais hors scope de ce notebook).
 - **Regle C.1** - pas d'erreur volontaire dans les cellules d'exercice (stub `pass` ou `print(""Exercice a completer"")`).
 - **Regle C.7 (count_code_sorry)** - l'instrument canonique `scripts/lean/count_code_sorry.py --json` (champ `distinct_code_sorry`), jamais `grep -c sorry`. Cf [anti-regression.md](../../../../.claude/rules/anti-regression.md).",,,,,,,,94ddbd11eb556c94,,,,,,,,,,,,,,,
@@ -60794,7 +60793,7 @@ calculées.
 `#check` + `#print axioms` + `#eval Float`).",,,,,,,,62702152b9d9ebb6,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-04-Capstone-Digestion-Python.ipynb,1b83a2b6,markdown,fr,c2a38e64d04a364a,"# MIMO-04 : Capstone — digérer la détection MIMO par flips
 
-**Navigation** : [Index](README.md) | [<< MIMO-03 (Converse-Native)](MIMO-03-Converse-Native-Lean.ipynb) | [Lean-22 (Galois) >>](../Lean-22-Galois-Probleme-Inverse-M23.ipynb)
+**Navigation** : [Index](README.md) | [<< MIMO-03 (Converse-Native)](MIMO-03-Converse-Native-Lean.ipynb) | [Lean-22 (Galois) >>](../GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb)
 
 Ce carnet **digère** la sous-série MIMO plutôt que d'en ajouter une marche : il
 reprend le théorème de tête, la borne de queue de norme et le seuil `2·log N`

@@ -142,11 +142,30 @@ class TestPaths:
         for getter, name in [
             (P.get_ontology_dir, "ontologies"),
             (P.get_data_dir, "data"),
-            (P.get_ext_tools_dir, "ext_tools"),
         ]:
             d = getter()
             assert d.parent == P.ARGUMENT_ANALYSIS_DIR
             assert d.name == name
+
+    def test_ext_tools_dir_is_the_shared_tree(self):
+        """Depuis l'arbitrage #23109, l'outillage partage fait foi.
+
+        L'exemplaire local de l'outillage EProver (byte-identique au
+        partage) a quitte l'arbre : l'acceseur doit donc designer le
+        repertoire partage, et le local reste accessible par son propre
+        accesseur (il porte SPASS, absent du repertoire partage).
+        """
+        from argumentation_lib import _paths as P
+        shared = P.SYMBOLIC_AI_DIR / "ext_tools"
+        assert P.get_ext_tools_dir() == shared
+        assert P.get_local_ext_tools_dir() == P.ARGUMENT_ANALYSIS_DIR / "ext_tools"
+
+    def test_local_ext_tools_keeps_the_nonshared_tools(self):
+        """Le repertoire local garde SPASS, qui n'existe pas au partage."""
+        from argumentation_lib import _paths as P
+        local = P.get_local_ext_tools_dir()
+        assert (local / "spass" / "SPASS.exe").exists()
+        assert not (local / "EProver").exists()
 
     def test_get_tweety_jar_dir_returns_path_or_none(self):
         """Renvoie un Path (si JARs presents) ou None — pas d'exception."""
@@ -531,3 +550,66 @@ class TestEnrichmentSummary:
         summary = u.get_enrichment_summary()
         assert summary["total_arguments"] == 0
         assert summary["gaps"] == []
+
+
+# ============================================================================
+# Garde d'ecriture des arguments (#18395) : une cle d'etat n'est jamais un
+# argument, et un objet envoye par l'agent est lu par ses VALEURS.
+#
+# Le defaut mesure : l'agent appelle parfois le tool bulk avec un objet
+# (``{"analysis_state": ..., "arguments": ...}``). L'iteration sur la valeur
+# parcourt alors ses CLES, et les cles de l'etat etaient enregistrees comme
+# descriptions d'arguments -- d'ou ``arg_1 = "analysis_state"`` et
+# ``arg_2 = "arguments"``, que le validateur refuse ensuite
+# (``ARGUMENTS_STATE_KEY``). La reprise ciblee de `main` retire ces entrees
+# APRES coup ; elle ne corrige pas l'ecriture.
+# ============================================================================
+
+
+class TestArgumentWriteGuard:
+    def test_state_key_is_refused_at_write(self):
+        u = RhetoricalAnalysisState("texte")
+        u.add_identified_arguments(["analysis_state", "arguments"])
+        assert u.identified_arguments == {}, (
+            "une cle d'etat interne ne doit jamais etre enregistree "
+            "comme description d'un argument"
+        )
+
+    def test_dict_payload_is_read_by_its_values(self):
+        u = RhetoricalAnalysisState("texte")
+        u.add_identified_arguments({
+            "analysis_state": "analysis_state",
+            "arguments": "arguments",
+        })
+        assert u.identified_arguments == {}, (
+            "un objet envoye par l'agent ne doit pas produire ses cles "
+            "comme arguments"
+        )
+
+    def test_dict_payload_keeps_the_real_formulations(self):
+        u = RhetoricalAnalysisState("texte")
+        u.add_identified_arguments({
+            "texte": "Les energies renouvelables sont essentielles pour "
+                     "lutter contre le changement climatique.",
+        })
+        assert list(u.identified_arguments.values()) == [
+            "Les energies renouvelables sont essentielles pour "
+            "lutter contre le changement climatique."
+        ]
+
+    def test_nominal_list_is_unchanged(self):
+        u = RhetoricalAnalysisState("texte")
+        u.add_identified_arguments(["un argument repris du texte source"])
+        assert list(u.identified_arguments.values()) == [
+            "un argument repris du texte source"
+        ]
+
+    def test_state_key_among_valid_ones_does_not_block_the_others(self):
+        u = RhetoricalAnalysisState("texte")
+        u.add_identified_arguments([
+            "analysis_state",
+            "un argument repris du texte source",
+        ])
+        assert list(u.identified_arguments.values()) == [
+            "un argument repris du texte source"
+        ]
