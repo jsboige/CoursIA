@@ -107,7 +107,7 @@ def test_fichier_cite_absent_sans_intention_de_creation_nest_pas_saute(catalog):
     n'est pas une creation, et l'issue ne doit pas disparaitre du tapis."""
     verdict, _ = cb.classify_delivery(
         issue(title="claudish: la cle cliente du proxy n'a aucun organe de propagation",
-              body="Voir `MyIA.AI.Notebooks/GameTheory/GameTheory-03c-Le-Joueur-LLM.ipynb`"),
+              body="Voir `MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-10-Joueur-LLM.ipynb`"),
         catalog)
     assert verdict != cb.DELIVERY_NEW
 
