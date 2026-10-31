@@ -508,7 +508,14 @@ jobs:
           # 24 of 25 (9.9 min average). A slower runner class against a
           # sequential suite sitting near the cap is a scheduling lottery, not
           # a timeout that wants raising. See #14598 / #15574.
-          pip install pytest-xdist
+          # pytest >= 8 : l'option ini `consider_namespace_packages`, qui
+          # desambiguise les noms de modules pytest, n'existe pas avant 8.0.
+          # Sur un pytest plus ancien elle serait ignoree SANS BRUIT (simple
+          # `PytestConfigWarning`) et la collision `tests.conftest`
+          # reviendrait. Le runner porte 9.1.1 (mesure sur le log du run
+          # 40409945388) : ce pin est une garantie de non-regression, pas un
+          # upgrade.
+          pip install "pytest>=8" pytest-xdist
 
       - name: GameTheory-06 bout-en-bout sur l'image CI (#21764)
         # Le carnet GameTheory-06 importe `axelrod` ; sous pyarrow < 26 le
@@ -589,6 +596,41 @@ jobs:
         # 2026-10-20 04:44Z et 05:00Z, 4 jobs sur 4 en echec) : ils ont ete
         # retires de `coursia-linux`, et sept slots sont restes inactifs devant
         # une file de 800 runs. Borner `-n` leur rend les jobs.
+        #
+        # #22735 -- huit suites de `scripts/**/tests/` etaient vertes en local et
+        # jouees par AUCUN workflow : datasets, genai-stack, hashlife, i18n,
+        # qc-mcp-lite, smartcontracts, sudoku, validation (666 tests mesures sur
+        # `main` au 2026-10-26). La suite `scripts/sudoku/tests` certifie
+        # l'invariant de hierarchie de difficulte du corpus -- sans cablage, le
+        # defaut qu'elle refute redevient invisible. Hermeticite mesuree
+        # firsthand sur ce poste (2026-10-26, Python 3.13) : 77 / 199+1 skip /
+        # 164 / 50 / 58 / 26 / 60 / 31 tests verts, 58 s cumules, aucune
+        # dependance hors du pip install de ce job pour SEPT des huit suites
+        # (bcrypt compris, deja installe ici).
+        #
+        # La huitieme, `qc-mcp-lite`, fait exception : `server.py` l.31 importe
+        # `mcp.server.fastmcp` a la COLLECTION, et le SDK MCP n'est pas dans le
+        # pip install de ce job. Premier run (#122006788867, 2026-10-27) : le
+        # job s'est arrete sur `ModuleNotFoundError: No module named 'mcp'`,
+        # avec 21590 tests verts par ailleurs. La suite sort donc de ce run
+        # et prend son propre job (`qc-mcp-lite-tests`), ou le SDK est
+        # installe et epingle -- env isole, rayon d'action nul sur les 16000+
+        # tests du job partage ( meme motif que `adk-contracts` plus bas).
+        # L'inventaire des suites -- disque contre CI -- est
+        # desormais un organe (`scripts/check_testpaths_coverage.py`, garde
+        # `.github/workflows/testpaths-coverage-guard.yml`) et non une relecture
+        # de workflow.
+        #
+        # Une meme invocation pytest ne peut pas porter deux suites `tests/`
+        # sans paquet parent : pytest derive le nom de module du paquet le plus
+        # proche portant `__init__.py`, et `scripts/genai-stack/tests/` comme
+        # `agent_tests/tests/` se resolvent alors tous deux en `tests.conftest`
+        # -- pluggy refuse d'enregistrer le meme objet sous deux noms ("Plugin
+        # already registered under a different name"). Mesure : 1 collision sur
+        # 694 modules distincts, la seule etant `tests.conftest`. Le correctif
+        # est l'option ini `consider_namespace_packages` (pytest >= 8.0), qui
+        # etend la resolution aux paquets-espace de noms et rend les noms de
+        # modules uniques par chemin.
         run: |
           mem_max=$(cat /sys/fs/cgroup/memory.max 2>/dev/null \
             || cat /sys/fs/cgroup/memory/memory.limit_in_bytes 2>/dev/null \
@@ -631,6 +673,13 @@ jobs:
             scripts/quantconnect/tests \
             MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis \
             GradeBookApp \
+            scripts/datasets/tests \
+            scripts/genai-stack/tests \
+            scripts/hashlife/tests \
+            scripts/i18n/tests \
+            scripts/smartcontracts/tests \
+            scripts/sudoku/tests \
+            scripts/validation/tests \
             -n "$xdist_n" --dist loadscope --tb=short -q
         # Chien de garde xdist (#16288) : quand un worker meurt (`[gwN] node
         # down`), le master attend des workers morts SANS qu'aucun test soit en
@@ -810,6 +859,58 @@ jobs:
         if: always()
         run: |
           python scripts/ci/check_absorbed_path_parity.py --base origin/main
+
+  qc-mcp-lite-tests:
+    name: qc-mcp-lite suite (58)
+    # #22735 : `scripts/qc-mcp-lite/tests` (58 tests, verts en local) etait
+    # verte mais jouee par AUCUN workflow -- le defaut qu'elle refute
+    # (rate limiting, extraction de stats, auth) redev Invisible. Premier
+    # cablage : ajout au run pytest partage du job CPU, qui a casse la
+    # COLLECTE du job -- `scripts/qc-mcp-lite/server.py` l.31 importe
+    # `mcp.server.fastmcp`, et le SDK MCP n'est pas dans le pip install de ce
+    # job (run #122006788867, 2026-10-27 :
+    # `ModuleNotFoundError: No module named 'mcp'`, 21590 tests verts par
+    # ailleurs).
+    #
+    # Job dedie, PAS une entree du run pytest partage : meme motif que
+    # `adk-contracts` -- installer une chaine de dependances dans l'env
+    # partage du job CPU risquerait des conflits de pin avec les 16000+ tests
+    # qui y tournent. Env isole = rayon d'action nul.
+    #
+    # Le SDK est epingle sur la version mesuree (1.30.0 -- 58 tests verts en
+    # 3,8 s sur ce poste le 2026-10-27) : le pin est une garantie de
+    # non-regression, pas un upgrade. pytest est epingle `>=8` pour
+    # l'option ini `consider_namespace_packages` (cf. le run CPU plus haut).
+    #
+    # `requests` est une dependance de PREMIER rang du module, pas du test :
+    # `scripts/qc-mcp-lite/server.py` l.30 fait `import requests`, et
+    # `tests/test_server.py` l.357 patche `requests.post`. Premier run de ce
+    # job (run #40467079713, job #122066616935, 2026-10-27 08:52Z) : la
+    # COLLECTION echoue sur `ModuleNotFoundError: No module named 'requests'`
+    # -- le SDK MCP ne l'embarque pas. Dependance absente du
+    # `pip install`, ajoutee ici ; version epinglee `>=2.31` (convention du
+    # depot : `MyIA.AI.Notebooks/GenAI/requirements.txt` l.5).
+    #
+    # Mesure d'hermetisme (2026-10-27, venv Python 3.11 vide) : avec
+    # `mcp==1.30.0` + `pytest>=8` + `requests>=2.31`, la suite passe --
+    # c'est le triplet exact du `pip install` ci-dessous.
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install "mcp==1.30.0" "pytest>=8" "requests>=2.31"
+
+      - name: Run qc-mcp-lite suite
+        run: |
+          python -m pytest scripts/qc-mcp-lite/tests -q --tb=short
 
   adk-contracts:
     name: ADK runtime contracts (18)

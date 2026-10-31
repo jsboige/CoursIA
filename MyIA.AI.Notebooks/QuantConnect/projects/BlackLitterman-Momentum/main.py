@@ -52,8 +52,19 @@ class BlackLittermanMomentum(QCAlgorithm):
     COV_LOOKBACK = 60  # Days for covariance estimation
 
     def initialize(self):
-        self.set_start_date(2015, 1, 1)
-        self.set_end_date(2026, 1, 1)
+        # Protocole #23186 : `mode` choisit la strategie (defaut, decision
+        # inchangee), une reference detenue (spy : SPY 100 % ; 6040 : SPY 60 %
+        # / BND 40 %) ou le diagnostic ew15 (les quinze titres a poids egal).
+        self._mode = self.get_parameter("mode", "strategy").lower()
+        if self._mode not in ("strategy", "spy", "6040", "ew15"):
+            raise ValueError(
+                f"unknown mode parameter: {self._mode} "
+                "(strategy | spy | 6040 | ew15)"
+            )
+        start = self.get_parameter("start_date", "2015-01-01")
+        end = self.get_parameter("end_date", "2026-01-01")
+        self.set_start_date(datetime.strptime(start, "%Y-%m-%d"))
+        self.set_end_date(datetime.strptime(end, "%Y-%m-%d"))
         self.set_cash(100_000)
         self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
 
@@ -69,16 +80,65 @@ class BlackLittermanMomentum(QCAlgorithm):
 
         # Benchmark
         spy = self.add_equity("SPY", Resolution.DAILY)
+        self.spy = spy.symbol
         self.set_benchmark(spy.symbol)
+        # BND n'est pas dans l'univers de la strategie : seul le mode 6040 l'abonne.
+        self.bnd = (self.add_equity("BND", Resolution.DAILY).symbol
+                    if self._mode == "6040" else None)
 
-        # Monthly rebalance
+        # Monthly rebalance (meme calendrier pour la strategie et les references)
         self.schedule.on(
             self.date_rules.month_start("SPY", 1),
             self.time_rules.after_market_open("SPY", 30),
-            self.rebalance
+            self.rebalance if self._mode == "strategy" else self._rebalance_reference
         )
 
+        # Trace `shadow` (#18923) : valeur du portefeuille a l'ouverture de
+        # chaque seance de SPY, hors prechauffage, dans e0..e4.
+        self._closes = 0
+        self.schedule.on(
+            self.date_rules.every_day("SPY"),
+            self.time_rules.after_market_open("SPY", 0),
+            self._trace
+        )
+        self._rebalances = 0
+
         self.set_warmup(260, Resolution.DAILY)
+
+    def _trace(self):
+        if self.is_warming_up:
+            return
+        self.plot("shadow", f"e{self._closes % 5}",
+                  self.portfolio.total_portfolio_value)
+        self._closes += 1
+
+    def _execute(self, weights):
+        """Passe les cibles finales en un seul appel.
+
+        En resolution journaliere, un ordre passe en seance se remplit a la
+        cloture : un `liquidate()` suivi de `set_holdings` par titre calcule
+        les quantites contre des positions pas encore vendues et ne laisse que
+        les ecarts, positions courtes comprises (#23186). Un seul
+        `set_holdings` multi-cibles calcule sur la position finale ;
+        `cancel_open_orders` retire d'abord tout ordre encore en attente.
+        """
+        self.transactions.cancel_open_orders()
+        self.set_holdings(
+            [PortfolioTarget(s, float(w)) for s, w in weights.items()],
+            liquidate_existing_holdings=True,
+        )
+        self._rebalances += 1
+
+    def _rebalance_reference(self):
+        if self.is_warming_up:
+            return
+        if self._mode == "spy":
+            targets = {self.spy: 1.0}
+        elif self._mode == "6040":
+            targets = {self.spy: 0.6, self.bnd: 0.4}
+        else:
+            targets = {s: 1.0 / len(self.symbols) for s in self.symbols}
+        self._execute(targets)
 
     def _get_market_cap_weights(self):
         """
@@ -402,18 +462,15 @@ class BlackLittermanMomentum(QCAlgorithm):
         # 7. Vol targeting
         scaled = self._apply_vol_targeting(optimal, cov)
 
-        # 8. Execute
-        self.liquidate()
-
-        # scaled.index contains Symbol objects (from cov matrix columns)
-        for symbol, weight in scaled.items():
-            if weight > self.MIN_WEIGHT:
-                self.set_holdings(symbol, float(weight))
+        # 8. Execute (scaled.index contains Symbol objects, from cov matrix columns)
+        self._execute({symbol: weight for symbol, weight in scaled.items()
+                       if weight > self.MIN_WEIGHT})
 
         n_pos = sum(1 for w in scaled.values if w > self.MIN_WEIGHT)
         self.debug(f"BL rebalance: {n_pos} positions, {len(views)} momentum views")
 
     def on_end_of_algorithm(self):
+        self.set_runtime_statistic("rebalances", str(self._rebalances))
         final = self.portfolio.total_portfolio_value
         ret = (final - 100_000) / 100_000
         self.log(f"BlackLitterman-Momentum: Final=${final:,.0f}, Return={ret:.2%}")
