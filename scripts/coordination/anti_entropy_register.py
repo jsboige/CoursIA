@@ -88,11 +88,18 @@ def chemin_etat_defaut() -> pathlib.Path:
 
 @dataclasses.dataclass(frozen=True)
 class Reference:
-    """La valeur de reference : celle d'il y a sept jours."""
+    """La valeur de reference : celle d'il y a sept jours.
+
+    `instrument` est l'IDENTITE de l'instrument qui a produit la valeur.
+    Sans elle, une reference n'est pas comparable a la valeur du jour : deux
+    instruments qui ne sont pas le meme ne produisent pas la meme grandeur
+    (cf `comparables` et `identite_instrument`).
+    """
 
     valeur: float
     mesure_le: str
     source: str = ""
+    instrument: str = ""
 
 
 @dataclasses.dataclass(frozen=True)
@@ -116,6 +123,11 @@ class Entree:
     cible: float = 0.0
     reference: Reference | None = None
     note: str = ""
+    # Le sous-arbre dont le contenu l'instrument LIT dans l'arbre local.
+    # Vide = l'instrument ne lit que la revision qu'il nomme (un builtin
+    # git comme `git ls-tree`) : il n'y a alors rien a verifier. Voir
+    # `arbre_aligne`.
+    arbre: str = ""
 
 
 # Le registre, version 1 (les trois cas cites par l'issue).
@@ -132,11 +144,55 @@ REGISTRE: tuple[Entree, ...] = (
         extraction=("chemin", "by_classification.ambigu"),
         sens="descend",
         cible=0.0,
-        # La mesure du 2026-10-28T20:45Z, publiee dans l'issue #23175.
-        # C'est elle qui rend le PREMIER passage RECULE : c'est le controle
-        # positif exige par l'issue.
-        reference=Reference(776.0, "2026-10-21", "issue #23175"),
+        # La reference REBASEE sur l'instrument courant, mesuree sur un
+        # checkout ALIGNE sur la revision nommee.
+        #
+        # Pourquoi ce rebasage : la reference d'origine (776, mesuree le
+        # 2026-10-21) a ete produite par l'AVANT dernier instrument. Le
+        # correctif #23193 (d818b008b) a change ce que l'instrument compte
+        # : sur le meme arbre, l'ancien instrument rend 776 et le nouveau
+        # 44. Comparer 44 a 776, c'est fabriquer un AVANCE (ou un RECULE)
+        # qui ne dit rien du depot -- c'est ce qui produisait le verdict
+        # « AVANCE » affiche sur l'entree « padding et nommage » au lieu
+        # du RECULE attendu, et le cliquet du budget de creation
+        # (#23174) s'ouvrait a contresens sur cette base.
+        #
+        # Pourquoi 38 et non 44 (mesure du 2026-10-31, meme `origin/main`
+        # = 6135a06, deux checkouts, instrument d818b008b) : l'instrument
+        # prend sa LISTE de carnets dans la revision nommee (`git ls-tree`)
+        # mais lit le CONTENU de chaque carnet dans l'ARBRE LOCAL
+        # (`open(path)`). Les deux ne concordent que si le checkout EST
+        # sur la revision nommee. Sur un checkout aligne (worktree sur
+        # 6135a06) l'instrument rend **38** ; sur un checkout en retard
+        # (clone principal a d9aee247) il rend **44** : l'ecart est
+        # exactement la serie Wavelet renommee par 6135a06 -- son nom
+        # nouveau est dans la liste (prise sur la revision), son contenu
+        # est absent du checkout (nom ancien), donc le kernel n'est pas lu
+        # et le carnet compte `ambigu`. La valeur mesuree dependait donc
+        # du CHECKOUT, sans que rien ne le dise.
+        #
+        # La reference retenue est donc 38 : c'est la valeur de l'arbre
+        # que l'instrument nomme (`origin/main` a 6135a06), mesuree dans
+        # les conditions ou l'instrument mesure ce qu'il dit mesurer. Le
+        # garde `arbre_aligne` refuse desormais la mesure quand le
+        # checkout n'est pas sur la revision nommee -- sinon on publierait
+        # un melange de deux arbres sous un verdict unique.
+        #
+        # Apres ce rebasage, la comparaison est « valeur du jour » contre
+        # « valeur du jour du rebasage » : elle est STAGNE, ce qui est
+        # exact. Elle redeviendra une comparaison de sept jours le
+        # 2026-11-06, quand une publication portant l'identite de
+        # l'instrument aura sept jours : la reference sera alors relue
+        # dans le commentaire publie, avec l'identite a cote de la valeur.
+        reference=Reference(38.0, "2026-10-31", "issue #23175",
+                            instrument=("scripts/notebook_tools/"
+                                        "inventory_notebook_names.py"
+                                        "@d818b008b5558d9a755c81d3d05e29ac23a9f823")),
         note="`ambigu` = nom non parsé ou kernel non verifie.",
+        # L'instrument prend sa LISTE de carnets dans `origin/main` et lit
+        # le CONTENU de chaque carnet dans l'ARBRE LOCAL : le rayon a
+        # verifier est donc celui des carnets.
+        arbre="MyIA.AI.Notebooks",
     ),
     Entree(
         cle="catalogue-fraicheur",
@@ -199,6 +255,162 @@ def _chemin(obj, chemin: str):
     for part in chemin.split("."):
         cur = cur[part]
     return cur
+
+
+# ---------------------------------------------------------------------------
+# L'identite de l'instrument
+# ---------------------------------------------------------------------------
+#
+# Deux valeurs ne sont comparables que si le MEME instrument les a
+# produites. Or un instrument change : #23193 (d818b008b) a corrige
+# `inventory_notebook_names.py`, et sur le meme arbre l'ancien instrument
+# rend 776 la ou le nouveau rend 44. Comparer les deux, c'est fabriquer un
+# verdict qui ne dit rien du depot -- et un verdict fabrique est pire
+# qu'une absence de verdict, parce qu'il est lu comme une mesure.
+#
+# L'identite d'un instrument est donc la grandeur qui change quand
+# l'instrument change :
+#
+#   * un instrument qui est un SCRIPT du depot : `<chemin>@<sha du dernier
+#     commit qui a touche ce script>` -- le sha est precisement la
+#     grandeur qui bouge a chaque correction de l'instrument ;
+#   * un instrument qui est une COMMANDE git (`git log`, `git ls-tree`) :
+#     la commande elle-meme. Elle n'a pas de version, elle est stable par
+#     construction, et c'est ce qui la rend comparable d'une publication a
+#     l'autre.
+#
+# Une identite qu'on ne sait pas etablir vaut "" : elle ne veut pas dire
+# « identique », elle veut dire « inconnue » -- et une reference d'identite
+# inconnue n'est PAS comparable (cf `comparables`).
+
+def _script_de_la_commande(commande) -> str:
+    """Le script du depot que la commande appelle, ou "" si elle n'en appelle pas."""
+    for mot in commande:
+        mot = str(mot)
+        if mot.endswith((".py", ".sh")) and "/" in mot:
+            return mot
+    return ""
+
+
+def identite_instrument(commande) -> str:
+    """L'identite de l'instrument que la commande constitue.
+
+    Une commande git a une identite stable (la commande). Une commande
+    qui appelle un script du depot a pour identite le script et le sha du
+    dernier commit qui l'a touche -- c'est la grandeur qui change quand
+    l'instrument change. Si le sha ne peut pas etre etabli, l'identite
+    est inconnue (""), jamais « identique ».
+    """
+    script = _script_de_la_commande(commande)
+    if not script:
+        return "git:" + " ".join(str(m) for m in commande)
+    for ref in ("origin/main", "HEAD"):
+        code, out, _ = _run(("git", "log", "-1", "--format=%H", ref, "--", script))
+        sha = out.strip()
+        if code == 0 and sha:
+            return f"{script}@{sha}"
+    return ""
+
+
+def comparables(identite: str, identite_reference: str) -> bool:
+    """Deux valeurs sont-elles produites par le meme instrument ?
+
+    Le principe : on ne presume **jamais** la comparabilite. Une identite
+    inconnue (l'un des deux cotes vide) n'est pas une identite : elle ne
+    permet pas de comparer, donc elle ne vaut pas comparaison.
+    """
+    return bool(identite) and bool(identite_reference) and identite == identite_reference
+
+
+def _ref_de_la_commande(commande) -> str:
+    """La revision que la commande nomme (l'argument apres `--base`)."""
+    args = [str(m) for m in commande]
+    for i, mot in enumerate(args):
+        if mot == "--base" and i + 1 < len(args):
+            return args[i + 1]
+    return ""
+
+
+def arbre_aligne(commande, rayon: str = "") -> tuple[bool, str]:
+    """L'arbre mesure est-il celui que l'instrument nomme ?
+
+    Un instrument qui appelle un SCRIPT du depot peut lire le CONTENU de
+    ses fichiers dans l'ARBRE LOCAL, alors que sa LISTE de fichiers vient
+    de la revision nommee. Les deux ne concordent que si l'arbre local
+    porte le MEME contenu que la revision, dans le rayon que l'instrument
+    lit.
+
+    Le rayon est declare par l'entree (`Entree.arbre`) : c'est le
+    sous-arbre dont le contenu l'instrument lit. Un instrument qui ne lit
+    que la revision qu'il nomme (un builtin git comme `git ls-tree`)
+    declare un rayon vide : il n'y a alors rien a verifier.
+
+    La verification compare la revision nommee a l'ARBRE LOCAL
+    (`git diff <ref> -- <rayon>` compare une revision a l'arbre de
+    travail, commits non compris) : c'est exactement ce que l'instrument
+    lit. Comparer les SHA de HEAD et de la revision serait trop grossier
+    — une branche de travail qui ne touche que des scripts diverge
+    aussi, alors que les carnets qu'elle mesure sont identiques.
+
+    Mesure (2026-10-31, meme `origin/main` = 6135a06, deux checkouts) :
+    un checkout aligne rend **38** carnets `ambigu`, un checkout en retard
+    (main a d9aee247) en rend **44** : l'ecart est exactement la serie
+    Wavelet renommee par 6135a06 — son nom nouveau est dans la liste
+    (prise sur la revision), son contenu absent du checkout (nom ancien),
+    donc le kernel n'est pas lu et le carnet compte `ambigu`. La valeur
+    de l'instrument dependait donc du checkout, sans que rien ne le
+    dise.
+    """
+    ref = _ref_de_la_commande(commande)
+    if not ref or not rayon:
+        return True, ""
+    code, out, _ = _run(("git", "diff", "--name-only", ref, "--", rayon))
+    if code != 0:
+        return False, f"la revision nommee `{ref}` n'est pas lisible"
+    divergents = [l.strip() for l in out.splitlines() if l.strip()]
+    if not divergents:
+        return True, (f"l arbre local porte le meme contenu que `{ref}` "
+                      f"sur `{rayon}`")
+    return False, (
+        f"l arbre local ne porte pas le contenu de `{ref}` sur `{rayon}` "
+        f"({len(divergents)} fichier(s) divergent, dont "
+        f"`{divergents[0]}`) : l'instrument prend sa liste dans `{ref}` et "
+        f"lit son contenu dans l'arbre local — les deux ne concordent "
+        f"pas, et la valeur mesuree n'est pas celle de l'arbre nomme")
+
+
+def identite_du_commentaire(body: str, cle: str) -> str:
+    """L'identite de l'instrument, d'apres un commentaire publie.
+
+    Deux sources, dans cet ordre :
+
+      * la colonne `instrument` du tableau — elle est portee par les
+        publications qui suivent le rebasage du 2026-10-30 ;
+      * a defaut, la ligne de detail, qui porte la commande : pour une
+        commande git elle suffit (l'identite EST la commande) ; pour un
+        script elle ne suffit PAS (le sha du script n'y est pas), et
+        l'identite reste inconnue — donc non comparable.
+    """
+    for ligne in (body or "").splitlines():
+        m = _LIGNE_TABLE.match(ligne)
+        if not m or m.group("cle") != cle:
+            continue
+        cellules = [c.strip() for c in ligne.strip().strip("|").split("|")]
+        if len(cellules) >= 7 and cellules[6] and cellules[6] != "—":
+            return cellules[6]
+        break
+    for ligne in (body or "").splitlines():
+        if not ligne.startswith(f"- `{cle}`"):
+            continue
+        for bout in re.findall(r"`([^`]+)`", ligne):
+            if bout == cle:
+                continue
+            if bout.startswith("git "):
+                return "git:" + bout
+            if _script_de_la_commande(bout.split()):
+                return ""
+        return ""
+    return ""
 
 
 def extraire(sortie: str, spec: tuple, maintenant: dt.datetime | None = None):
@@ -463,7 +675,8 @@ def lire_reference(issue: int, cle: str,
         except Exception:  # noqa: BLE001 - valeur illisible
             continue
         date = (choisi.get("created_at") or "")[:10]
-        return Reference(valeur, date, "commentaire publie")
+        return Reference(valeur, date, "commentaire publie",
+                         instrument=identite_du_commentaire(body, cle))
     return None
 
 
@@ -512,26 +725,38 @@ def commentaire_du_jour(entrees: list[dict], mesure_le: str) -> str:
         "",
         "**Registre anti-entropie — mesure du " + mesure_le + "**",
         "",
-        "| entree | issue | valeur | reference (7 j) | sens | verdict |",
-        "|---|---|---:|---:|---|---|",
+        "| entree | issue | valeur | reference (7 j) | sens | verdict | instrument |",
+        "|---|---|---:|---:|---|---|---|",
     ]
     for e in entrees:
         if e.get("erreur"):
             ref = "—"
         elif e.get("reference") is None:
             ref = "— (pas de reference)"
+        elif e.get("comparaison_suspendue"):
+            ref = (f"{_fmt(e['reference']['valeur'])} "
+                   f"(rebascage {e['reference']['mesure_le']})")
         else:
             ref = f"{_fmt(e['reference']['valeur'])} ({e['reference']['mesure_le']})"
         lignes.append(
             f"| `{e['cle']}` | #{e['issue']} | {_fmt(e.get('valeur'))} | {ref} "
-            f"| {e.get('sens')} | **{e.get('verdict')}** |")
+            f"| {e.get('sens')} | **{e.get('verdict')}** | "
+            f"{e.get('instrument') or '—'} |")
     lignes += ["", "Instrument, sens et cible de chaque entree :", ""]
     for e in entrees:
         detail = (f"- `{e['cle']}` (#{e['issue']}) — {e['titre']} : "
                   f"`{_commande_affichee(e['commande'])}`")
         detail += f" — sens {e.get('sens')}, cible {_fmt(e.get('cible'))}"
+        if e.get("instrument"):
+            detail += f" — instrument `{e['instrument']}`"
+        if e.get("alignement"):
+            detail += f" — arbre : {e['alignement']}"
+        if e.get("fenetre"):
+            detail += f" — **{e['fenetre']}**"
         if e.get("erreur"):
             detail += f" — **INSTRUMENT ILLEGIBLE** : {e['erreur']}"
+        elif e.get("non_comparable"):
+            detail += f" — **comparaison refusee** : {e['non_comparable']}"
         elif e.get("note"):
             detail += f" — {e['note']}"
         lignes.append(detail)
@@ -539,6 +764,19 @@ def commentaire_du_jour(entrees: list[dict], mesure_le: str) -> str:
         "",
         ("Le progres se lit a la **valeur** de l'instrument, jamais au nombre "
         "de PRs qui citent l'issue."),
+        "",
+        ("L'**identite de l'instrument** est portee avec la valeur : deux "
+        "valeurs ne sont comparables que si le meme instrument les a "
+        "produites. Une reference produite par un autre instrument est "
+        "refusee — le verdict affiche alors `INSTRUMENT ILLEGIBLE` plutot "
+        "que de comparer des grandeurs qui ne se mesurent pas l'une comme "
+        "l'autre."),
+        "",
+        ("L'**arbre mesure** est nomme avec la valeur : un instrument qui "
+         "prend sa liste de fichiers dans une revision et lit leur contenu "
+         "dans l'arbre local ne mesure l'arbre nomme que si le checkout EST "
+         "sur cette revision. Sinon la mesure est refusee (`INSTRUMENT "
+         "ILLEGIBLE`) — un melange de deux arbres ne porte pas de verdict."),
     ]
     return "\n".join(lignes) + "\n"
 
@@ -864,9 +1102,67 @@ def mesurer_tout(registre: tuple[Entree, ...] = REGISTRE,
         if issue_filtre and entree.issue != issue_filtre:
             continue
         valeur, erreur, note = mesurer(entree, maintenant=reference)
+        identite = identite_instrument(entree.commande)
+        aligne, motif_alignement = arbre_aligne(entree.commande, entree.arbre)
         ref = lire_reference(entree.issue, entree.cle, now=reference)
-        if ref is None and entree.reference is not None:
-            ref = entree.reference
+        origine_reference = "publication" if ref is not None else ""
+        non_comparable = ""
+        if not aligne:
+            # La mesure ne mesure pas l'arbre qu'elle nomme : elle est
+            # refusee, reference comprise. Une valeur publiee dans ces
+            # conditions decrirait un melange de deux arbres.
+            non_comparable = f"mesure refusee : {motif_alignement}"
+            ref = None
+        elif ref is not None and not comparables(identite, ref.instrument):
+            # La reference vient d'une publication qui n'a pas ete mesuree
+            # par l'instrument courant : la comparer fabriquerait un verdict
+            # qui ne dit rien du depot. Elle est refusee, et le motif est
+            # nomme -- un refus sans motif se lit comme une panne.
+            non_comparable = (
+                f"reference transverse refusee : la reference "
+                f"{ref.valeur:g} (mesuree le {ref.mesure_le}) a ete "
+                f"produite par `{ref.instrument or 'instrument d identite inconnue'}`, "
+                f"l instrument courant est `{identite or 'instrument d identite inconnue'}`")
+            ref = None
+        if ref is None and aligne and entree.reference is not None:
+            if comparables(identite, entree.reference.instrument):
+                ref = entree.reference
+                origine_reference = "rebase"
+            elif not non_comparable:
+                non_comparable = (
+                    f"reference de repli incompatible : la reference "
+                    f"{entree.reference.valeur:g} (mesuree le "
+                    f"{entree.reference.mesure_le}) a ete produite par "
+                    f"`{entree.reference.instrument or 'instrument d identite inconnue'}`, "
+                    f"l instrument courant est `{identite or 'instrument d identite inconnue'}`")
+        # La FENETRE de comparaison est un element de la mesure : pendant
+        # la fenetre de rebasage, la reference n'est pas une publication de
+        # sept jours, et le verdict porte sur un intervalle plus court. Un
+        # lecteur qui ne le voit pas lit « STAGNE » comme « le chantier
+        # n'a pas bouge depuis sept jours » -- c'est exactement le faux
+        # « AVANCE » qu'on a corrige. Le marqueur est donc porte par la
+        # mesure, la publication et l'etat ecrit.
+        fenetre = ""
+        comparaison_suspendue = False
+        if ref is not None:
+            if origine_reference == "rebase":
+                ouverture = (dt.date.fromisoformat(ref.mesure_le)
+                             + dt.timedelta(days=7)).isoformat()
+                comparaison_suspendue = True
+                fenetre = (f"comparaison de 7 j SUSPENDUE : reference de "
+                           f"rebasage ({ref.mesure_le}, meme instrument, "
+                           f"mesuree le jour du rebasage) ; elle s'ouvre le "
+                           f"{ouverture}")
+            else:
+                fenetre = (f"comparaison de 7 j active (reference publiee "
+                           f"le {ref.mesure_le})")
+        if valeur is None:
+            verdict_final = "INSTRUMENT ILLEGIBLE"
+        elif ref is None:
+            verdict_final = ("INSTRUMENT ILLEGIBLE" if non_comparable
+                             else "PREMIERE MESURE")
+        else:
+            verdict_final = verdict(valeur, ref.valeur, entree.sens)
         out.append({
             "cle": entree.cle,
             "issue": entree.issue,
@@ -877,12 +1173,17 @@ def mesurer_tout(registre: tuple[Entree, ...] = REGISTRE,
             "valeur": valeur,
             "erreur": erreur,
             "note_mesure": note,
+            "instrument": identite,
+            "alignement": motif_alignement,
+            "non_comparable": non_comparable,
+            "fenetre": fenetre,
+            "comparaison_suspendue": comparaison_suspendue,
             "reference": ({"valeur": ref.valeur,
                            "mesure_le": ref.mesure_le,
-                           "source": ref.source}
+                           "source": ref.source,
+                           "instrument": ref.instrument}
                           if ref else None),
-            "verdict": verdict(valeur, ref.valeur if ref else None,
-                               entree.sens),
+            "verdict": verdict_final,
         })
     return out
 
@@ -929,7 +1230,18 @@ def main(argv: list[str] | None = None) -> int:
         "mesure_le": mesure_le,
         "entrees": {e["cle"]: {"issue": e["issue"], "valeur": e["valeur"],
                                "verdict": e["verdict"],
-                               "erreur": e["erreur"]}
+                               "instrument": e.get("instrument"),
+                               "erreur": e["erreur"],
+                               # La fenetre de comparaison, avec son motif :
+                               # un lecteur de l'etat doit voir si la
+                               # comparaison de sept jours est ACTIVE ou
+                               # SUSPENDUE (fenetre de rebasage). Sans ce
+                               # marqueur, « aucune retention » se lit
+                               # comme « le chantier s'est ameneliore ».
+                               "fenetre": e.get("fenetre"),
+                               "comparaison_suspendue": e.get(
+                                   "comparaison_suspendue", False),
+                               "reference": e.get("reference")}
                     for e in entrees},
     }
     chemin = ecrire_etat(etat, args.etat) if not args.dry_run else _chemin_etat(args.etat)
