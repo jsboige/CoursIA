@@ -186,3 +186,62 @@ def test_partition_neutralite_lignes_non_pytest() -> None:
     covered, floors = _partition_run_blocks(text)
     assert "scripts/audit/tests" in floors
     assert "scripts/audit/tests" not in covered
+
+
+# --- Inventaire des suites non declarees (#23359, perimetre restant) ---------
+#
+# Le guard ne compare que les testpaths DECLARES : un dossier de tests present
+# dans le depot mais absent de pytest.ini lui est invisible, et il reste vert
+# dessus (cas mesure : SymbolicAI/Argument_Analysis, 174 tests non collectes).
+# `--inventory` part du depot au lieu de la declaration.
+
+
+def test_discover_test_dirs_borne_la_convention(tmp_path: Path) -> None:
+    """Seuls les dossiers nommes `tests`/`test` portant un `test_*.py` sortent.
+
+    Un module `test_*.py` co-localise avec du code (gateway, helpers) est un
+    test de voisinage, pas une suite : l'inventaire ne le nomme pas.
+    """
+    from check_testpaths_coverage import discover_test_dirs
+
+    (tmp_path / "scripts" / "alpha" / "tests").mkdir(parents=True)
+    (tmp_path / "scripts" / "alpha" / "tests" / "test_a.py").write_text("", encoding="utf-8")
+    (tmp_path / "scripts" / "beta" / "gateway").mkdir(parents=True)
+    (tmp_path / "scripts" / "beta" / "gateway" / "test_g.py").write_text("", encoding="utf-8")
+    (tmp_path / "scripts" / "gamma" / "tests" / "_archive").mkdir(parents=True)
+    (tmp_path / "scripts" / "gamma" / "tests" / "_archive" / "test_z.py").write_text("", encoding="utf-8")
+
+    found = discover_test_dirs(tmp_path)
+
+    assert found == ["scripts/alpha/tests"]
+
+
+def test_run_inventory_un_testpath_declare_couvre_ses_sous_dossiers(
+    tmp_path: Path,
+) -> None:
+    """Un dossier inclus dans un testpath declare n'est pas un trou."""
+    from check_testpaths_coverage import run_inventory
+
+    (tmp_path / "scripts" / "alpha" / "tests" / "unit").mkdir(parents=True)
+    (tmp_path / "scripts" / "alpha" / "tests" / "unit" / "test_u.py").write_text(
+        "", encoding="utf-8"
+    )
+    (tmp_path / "scripts" / "beta" / "tests").mkdir(parents=True)
+    (tmp_path / "scripts" / "beta" / "tests" / "test_b.py").write_text("", encoding="utf-8")
+
+    unwatched = run_inventory(
+        tmp_path, ["scripts/alpha/tests"], {}, strict=True
+    )
+
+    assert unwatched == ["scripts/beta/tests"]
+
+
+def test_run_inventory_est_advisory_par_defaut(tmp_path: Path) -> None:
+    """Sans `--strict`, un trou d'inventaire n'est pas un echec : il est liste."""
+    from check_testpaths_coverage import run_inventory
+
+    (tmp_path / "scripts" / "beta" / "tests").mkdir(parents=True)
+    (tmp_path / "scripts" / "beta" / "tests" / "test_b.py").write_text("", encoding="utf-8")
+
+    assert run_inventory(tmp_path, [], {}, strict=False) == []
+    assert run_inventory(tmp_path, [], {}, strict=True) == ["scripts/beta/tests"]
