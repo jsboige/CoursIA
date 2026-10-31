@@ -67,6 +67,7 @@ liens de navigation rétablis après la descente d'un niveau.
 | Document | Rôle |
 |----------|------|
 | [`palier14-ict19-note-de-conception.md`](palier14-ict19-note-de-conception.md) | Palier 14 « Enjeu » : déplacement de `ICT-19` et `ICT-19b` vers la sous-série `ICT-19/`, périmètre choisi contre les paliers 11-13, et réparation des liens entrants comme sortants. |
+| [`queue-hors-strates-note-de-conception.md`](queue-hors-strates-note-de-conception.md) | Note de conception de la **queue « hors strates »** de la série ICT : destination de chacun des 8 carnets hors strates (40a/40b/47/47b/48-Onset/48-Wolfram/49/50) et clôture des trois options ouvertes (47b, 40b, 48-Onset). Note seule, mouvement différé. Issue [#20298](https://github.com/jsboige/CoursIA/issues/20298). |
 
 ## Parcours suggéré
 
