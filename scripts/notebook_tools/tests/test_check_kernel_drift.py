@@ -435,6 +435,45 @@ def test_canonical_transition_scoped_qcpy16_38_to_313_accepted():
     assert ckd.accepted_canonical_transition(a, b, nb_path=path) is True
 
 
+def test_canonical_transition_scoped_sl14_39_to_313_accepted():
+    # #23443 : le 3.9 de SL-14 etait un artefact de PACKAGING
+    # (`numpy.distutils` retire de NumPy 2 rend `pip install aifeynman`
+    # impossible sous 3.13, et NumPy 1.26 n'a pas de roue cp313). La
+    # reconstruction des sept extensions Fortran par le f2py de NumPy 2
+    # leve la contrainte : l'entree est nominative, comme 2.8c et ML-06.
+    a = {"language_version": "3.9.25", "kernelspec_name": "python3"}
+    b = {"language_version": "3.13.18", "kernelspec_name": "python3"}
+    path = ("MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/"
+            "SL-14-AIFeynman-Discover-Equations.ipynb")
+    assert ckd.accepted_canonical_transition(a, b, nb_path=path) is True
+
+
+def test_canonical_transition_scoped_sl14_does_not_leak_to_ict():
+    # Controle NEGATIF : la direction 3.9 -> 3.13 reste rouge partout
+    # ailleurs -- c'est la raison d'etre de la table scoped (la serie ICT
+    # est epinglee par `requires-python >=3.9,<3.10`, pyphi==1.2.0).
+    a = {"language_version": "3.9.25", "kernelspec_name": "python3"}
+    b = {"language_version": "3.13.18", "kernelspec_name": "python3"}
+    assert ckd.accepted_canonical_transition(a, b) is False
+    assert ckd.accepted_canonical_transition(
+        a, b,
+        nb_path=("MyIA.AI.Notebooks/ICT/"
+                 "ICT-24-PyPhi-Application.ipynb")) is False
+    assert ckd.accepted_canonical_transition(
+        a, b,
+        nb_path=("MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/"
+                 "SL-2-KnowledgeBasedLearning.ipynb")) is False
+
+
+def test_canonical_transition_scoped_sl14_reverse_still_refused():
+    # Direction inverse : rouge meme sur le chemin scope de SL-14.
+    a = {"language_version": "3.13.18", "kernelspec_name": "python3"}
+    b = {"language_version": "3.9.25", "kernelspec_name": "python3"}
+    path = ("MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/"
+            "SL-14-AIFeynman-Discover-Equations.ipynb")
+    assert ckd.accepted_canonical_transition(a, b, nb_path=path) is False
+
+
 def test_canonical_transition_scoped_does_not_leak_to_other_paths():
     # La meme transition 3.8 -> 3.13 reste rouge ailleurs : le scope protege
     # la serie ICT (<3.10) -- c'est la raison d'etre de la table scoped.
