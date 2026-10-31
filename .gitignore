@@ -1168,3 +1168,11 @@ out/
 # committes comme preuve de re-derivation, malgre la regle `*.log` du gabarit
 # Visual Studio plus haut. Exception limitee a ce dossier de resultats.
 !scripts/results/3d_enveloppe_8go/traces/*.log
+
+# Dataset GOT (Game of Thrones) du carnet 2.9g-Geometrie-de-la-Verite (#23723) :
+# ~2,5 Mo telecharges au runtime par la cellule d'import de la serie ML-Cours.
+# Artefact de telechargement, jamais un livrable -- la re-execution 2.9g (#23292,
+# PR #23691) l'a fait surgir en untracked dans l'atelier d'execution. Le body
+# initial de la PR affirmait a tort une entree preexistante (reserve Hermes
+# fondee, c.6542745309) : cette entree est la dette correspondante.
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/got_data/
