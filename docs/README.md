@@ -46,6 +46,7 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 | [reference/subagents-reference.md](reference/subagents-reference.md) | Roster 21 agents + 17 skills |
 | [reference/agents-roster-2026-10-08.md](reference/agents-roster-2026-10-08.md) | Roster daté des `machine:workspace` actifs, mesuré au 2026-10-08 (#14527, doc éphémère) |
 | [reference/catalog_markers.md](reference/catalog_markers.md) | Marqueurs CATALOG-STATUS des READMEs (expansion + vérification CI) |
+| [reference/lib-versions.md](reference/lib-versions.md) | Organe des versions de bibliothèques des carnets (#23073) : manifeste canonique, recensement `--census`, garde advisory sur les carnets modifiés |
 | [reference/audit-reassessment-findings.md → transients/2026-05-17-…](transients/2026-05-17-reference-audit-reassessment-findings.md) | Items d'audit automatisé déjà reclassés (protocole reassessment) — déplacé en lane transiente (tranche 3b #14623) |
 | [reference/student-pr-template.md](reference/student-pr-template.md) | Template PR étudiante |
 | [reference/readme-series-gabarit.md](reference/readme-series-gabarit.md) | Gabarit de référence des READMEs de séries (#2651) |
@@ -53,6 +54,7 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 | [reference/iit-ict-transition.md](reference/iit-ict-transition.md) | Transition IIT → ICT — état narratif et architectural de la série ICT-Series (#4588, plan de partition #5081), tenue à jour au fil des livraisons ; reclassée pérenne depuis `suivis/` (tranche 2 #19283) |
 | [reference/agentic-engines-deep-eval.md](reference/agentic-engines-deep-eval.md) | Évaluation en profondeur des moteurs agentiques (Semantic Kernel, Google ADK, Microsoft Agent Framework) sur la série DataScienceWithAgents — couverture réelle du corpus, pilotes reproductibles, faits d'API mesurés |
 | [reference/ws-probes-repro.md](reference/ws-probes-repro.md) | Reproduction hors carnet des sondes wavelet scattering (WS-00c, WS-03) — graine fixe, valeurs citées vs mesurées, écart 1 item (#21823) |
+| [reference/gorard-lanyonai-etape3.md](reference/gorard-lanyonai-etape3.md) | Dépôts lanyonai mesurés sur l'amont — licences, absence de `lean-toolchain`, ce que leurs preuves Lean établissent exactement (et ce qu'elles n'établissent pas) ; support de la décision de consommation par la série Gorard (#19741, étape 3) |
 
 ### Règles détaillées (docs/reference/)
 
@@ -66,6 +68,7 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 | [reference/anti-regression-detail.md](reference/anti-regression-detail.md) | Patterns red-flag, protocole avant suppression |
 | [reference/notebook-renumbering-detail.md](reference/notebook-renumbering-detail.md) | Corpus des precedents `renum()`/`reclass()` (19 issues, 4 verdicts « aucune renum »), blast-radius mesure de la grappe Probas, etat de l'arbre. Detail de `.claude/rules/notebook-accretion-numbering.md` |
 | [reference/lean-axiom-coverage.md](reference/lean-axiom-coverage.md) | Couverture axiomes du gate proof-integrity par lake (22 lakes inventoriés, 2 câblés en CI : `lean-knot.yml` + `lean-conway.yml`) — classes dangereuses `native_decide.*`/`sorryAx`/`Classical.choice`. Détail de référence pour §B.3 de `.claude/rules/pr-review-discipline.md`. Établi cycle c.950 (worker po-2023, lane `myia-po-2023:CoursIA-2`), 167 lignes. See #8738 (step 3), #8752 (livraison) |
+| [reference/lean-material-map.md](reference/lean-material-map.md) | Carte du matériel Lean du dépôt, par lake — modules propres, miroirs `_en`, présence au CI, gate d'axiomes, date de naissance. Régénérée par `scripts/lean/lean_material_map.py`, `--check` rend 1 quand page et arbre divergent. See #23097 (T1, PR #23105) |
 | [reference/secrets-and-coord-detail.md](reference/secrets-and-coord-detail.md) | Secrets + coordination cross-machine |
 | [reference/student-pr-reviews-detail.md](reference/student-pr-reviews-detail.md) | Incident, format public, workflow |
 | [reference/user-blocker-signaling-detail.md](reference/user-blocker-signaling-detail.md) | Catégories + anti-patterns signaler |
@@ -122,6 +125,7 @@ Documentation détaillée de l'infrastructure GenAI (ComfyUI, Docker, modèles l
 |---------|-------------|
 | [genai/3d-socle-reproductibilite.md](genai/3d-socle-reproductibilite.md) | Reproductibilité des socles 3D (NeRF, splats) — mesure sur deux postes : écart 0,07 dB et reproduction exacte |
 | [genai/genai-services.md](genai/genai-services.md) | Architectures Qwen/Lumina, mapping notebooks |
+| [genai/tts-fishaudio-int4.md](genai/tts-fishaudio-int4.md) | La route int4 réelle de tts-fishaudio — quantification amont weight-only, quatre correctifs, mesures VRAM/qualité (#23415) |
 | [genai/audio-embed-pattern.md](genai/audio-embed-pattern.md) | Pattern d'embed audio GenAI + leçons de réparation |
 | [genai/auth-flip-runbook.md](genai/auth-flip-runbook.md) | Runbook — flip d'authentification des services exposés (#16 P2) |
 | [genai/open-webui-orchestration.md](genai/open-webui-orchestration.md) | Orchestration et tâches planifiées avec Open WebUI v0.9.0 |
@@ -224,6 +228,7 @@ Suivi d'origine, par livrable : grille des trois régimes de lecture #7399 · ma
 | [ict/hoffman-interface-distillation-case13.md](ict/hoffman-interface-distillation-case13.md) | Case 13 — Hoffman interface theory : toy N=16 RÉFUTE la mise à l'échelle monotone de la dissociation FBT |
 | [ict/hoffman-interface-distillation-case14.md](ict/hoffman-interface-distillation-case14.md) | Case 14 — Hoffman interface theory : toy N=8, M=2, compression bit2 → NULL INSTRUMENTAL |
 | [ict/hoffman-interface-distillation.md](ict/hoffman-interface-distillation.md) | Case 11 — Hoffman interface theory : toy falsifiable en 2-bit |
+| [ict/ict12-valence-note-de-conception.md](ict/ict12-valence-note-de-conception.md) | Note de conception — tranche ICT-12 « Valence / Animats » : pourquoi le regroupement en `ICT-12/` suit l'escalier valence → animat, mouvement et validation |
 | [ict/ict14-freenergy-note-de-conception.md](ict/ict14-freenergy-note-de-conception.md) | Note de conception du palier 09 (ICT-14) — déplacement de la famille ICT-14 en sous-série `ICT-Series/ICT-14-FreeEnergySurprise/` (#20298) |
 
 ### Pré-enregistrements, distillations et prototypes (docs/ict/)
@@ -348,6 +353,7 @@ Tables d'audit cumulatives par Epic (mandat user, format longue durée).
 | Fichier | Description |
 |---------|-------------|
 | [ledgers/3801-sota-axe2.md](ledgers/3801-sota-axe2.md) | Ledger axe-2 SOTA par famille, 5 verdicts (EPIC #3801) |
+| [ledgers/4362-mathlib-mutualization.md](ledgers/4362-mathlib-mutualization.md) | EPIC #4362 — états de couverture Mathlib par machine, chaque entrée citant la sortie du scan lu-seul (`setup_shared_mathlib.ps1 -Mode Scan`) ; po-2023 : 34 lakes, 3.06 Go d'économie potentielle, 13 junctions périmées |
 | [ledgers/10466-candidate-delivered-cleanup.md](ledgers/10466-candidate-delivered-cleanup.md) | EPIC #10466 — apurement du label `candidate-delivered`, cluster par cluster. Une table par cycle worker : ratio du cluster, issues traitées, leçons. Le compte d'issues ne baisse que si quelqu'un tient la trace de ce qui a été vérifié |
 | [transients/2026-08-13-10678-interp-positioning-audit.md](transients/2026-08-13-10678-interp-positioning-audit.md) | EPIC #10678 Phase 1 — audit des cellules d'interprétation mal positionnées. La table nomme chaque cas : c'est ce qui rend la règle [cell-interpretation-ordering](../.claude/rules/cell-interpretation-ordering.md) applicable au lieu d'être un principe |
 | [transients/2026-08-15-10678-orphan-interp-scan.md](transients/2026-08-15-10678-orphan-interp-scan.md) | EPIC #10678 Phase 1b — interprétations orphelines en fin de notebook. Prolonge le précédent : cellules `MISPLACED` relevées au scan c.237 |
@@ -388,7 +394,9 @@ Protocoles opérationnels de la coordination flotte (registres, tenanciers, liai
 | Fichier | Description |
 |---------|-------------|
 | [coordination/gpu-reservation.md](coordination/gpu-reservation.md) | Protocole de réservation GPU — schéma du ledger, garde 85 % charge hôte, CUDA devices explicites, GPU 2 dédié ai-01, fold hebdomadaire, liaison picker / file #1454. Chantier #16737. |
+| [coordination/gpu-ledger-transport.md](coordination/gpu-ledger-transport.md) | Transport git du ledger `gpu-reservation` — publication en ajout seul, remote paramétrable, garde de lancement et sources des verdicts, sans changement de l'autorité déclarée. |
 | [coordination/ci-overflow-controller.md](coordination/ci-overflow-controller.md) | Contrôleur automatique de la variable de dépôt `CI_OVERFLOW_LOCAL` (phase B du débordement CI) — file hébergeuse saturée → `true`, file drainée → `false`, mesure illisible → aucune écriture ; le job automatisé **écrit** la variable via le secret dédié `ACTIONS_VARIABLES_PAT` (canal séparé du jeton de mesure, aucun repli : secret absent → verdict rendu, rien d'écrit, cause nommée dans le résumé du job). Chantier #22937. |
+| [coordination/dns-rate-measurement.md](coordination/dns-rate-measurement.md) | Mesure du débit de requêtes UDP des runners éphémères (volet 5.1 de Maintenance#196) — compteur `Udp.OutDatagrams` lu dans chaque conteneur, distinction recyclage / remise à zéro, verdict `UNREADABLE` quand aucune mesure n'est exploitable. Chantier #22937. |
 
 ## Cadrage épistémique (docs/cadrage/)
 
@@ -440,6 +448,7 @@ Deltas runtime et digests de performance .NET, mesurés sur les bancs et les car
 | Fichier | Description |
 |---------|-------------|
 | [dotnet/net11-runtime-deltas.md](dotnet/net11-runtime-deltas.md) | .NET 9 → 10 → 11 — Deltas runtime mesurés sur les bancs et carnets types du dépôt |
+| [dotnet/net11-async-ffi-deltas.md](dotnet/net11-async-ffi-deltas.md) | .NET 10 → 11 — Delta runtime mesuré sur l'axe 1 (awaits profonds) du carnet Aspire AsyncFFI — compatibilité .NET 11 établie, verdict à n=25 |
 | [dotnet/net11-toub-digest.md](dotnet/net11-toub-digest.md) | .NET 11 — Digest de performance |
 
 
