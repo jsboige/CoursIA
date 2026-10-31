@@ -3748,7 +3748,10 @@ def test_the_oldest_blocked_orphan_survives_the_cap(monkeypatch):
 
 def test_unaddressed_review_points_delegue_a_analyse_pr(monkeypatch):
     """La delegation passe par le point d'entree `analyse_pr` de l'organe --
-    un seul assemblage des kwargs, celui du merge-gate."""
+    un seul assemblage des kwargs, celui du merge-gate. Depuis #21882, la
+    passe est parallelisee (pool borne NITS_PASS_WORKERS) : l'ordre d'APPEL
+    de analyse_pr n'est plus garanti (ordonnancement preemptif des threads) --
+    le contrat ici est la delegation et le resultat agrege, pas l'ordre."""
     import check_unaddressed_nits as nits
     calls = []
 
@@ -3758,7 +3761,9 @@ def test_unaddressed_review_points_delegue_a_analyse_pr(monkeypatch):
 
     monkeypatch.setattr(nits, "analyse_pr", fake_analyse_pr)
     assert pig.unaddressed_review_points([15049, 15081]) == {15049: 2, 15081: 2}
-    assert calls == [15049, 15081]
+    # #21882 : sous pool, l'ordre d'appel n'est pas garanti (le dict agrege,
+    # lui, est deterministe) -- on pinnne l'ensemble des appels, pas l'ordre.
+    assert sorted(calls) == [15049, 15081]
 
 
 def test_unaddressed_review_points_derive_de_contrat_visible(monkeypatch):
