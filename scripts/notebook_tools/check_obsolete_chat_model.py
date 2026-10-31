@@ -68,6 +68,12 @@ LIMITES DECLAREES (pas de pretention d'analyse dynamique exhaustive) :
     Le cas Semantic-fleet (wrapper .NET du sous-module) se resout par
     lecture de l'organe source (``Program.cs`` au gitlink), pas par ce
     garde.
+  * Modules ``.py`` du depot : scannables (une unite par module, sans
+    report inter-cellules) quand la ligne de commande les nomme ou les
+    atteint par un dossier. Le garde CI, lui, reste borne aux carnets
+    (``iterate_paths=["**.ipynb"]`` dans le registre fast-lane, incident
+    #13220) : l'extension de perimetre du garde est une decision separee,
+    pas un effet de bord de cette option.
   * Les appels situes dans un corps de fonction sont resolus a l'etat du
     carnet au point de DEFINITION, avec reprise sur l'etat final si le nom
     n'etait pas encore lie -- pas a chaque appel runtime.
@@ -356,6 +362,30 @@ class NotebookScanner:
                 self.stats["non_python_cells"] += 1
             else:
                 self.stats["unparsed_cells"] += 1
+        self._finalize()
+
+    def scan_python_source(self, source: str) -> None:
+        """Scanne un module ``.py`` : une seule unite, pas d'inter-cellules.
+
+        Le module est traite comme une cellule unique (index 0) : la meme
+        marche bornee s'applique (liaison au niveau module, defauts de
+        parametres, attributs d'instance via ``__init__``), sans le report
+        inter-cellules qui n'a pas de sens hors carnet. Les commentaires
+        restent ignores par l'AST ; un module non parsable est compte
+        ``unparsed_cells`` et jamais accuse.
+        """
+        self.stats["code_cells"] += 1
+        self._cell_sources[0] = source
+        kind, tree = cell_kind(source)
+        if kind == "python":
+            self.stats["python_cells"] += 1
+            if re.search(r"^\s*(import\s+dspy|from\s+dspy\b)", source, re.M):
+                self.dspy_imported = True
+            self.visit_block(tree.body, Ctx(cell_index=0))
+        elif kind.startswith("non_python"):
+            self.stats["non_python_cells"] += 1
+        else:
+            self.stats["unparsed_cells"] += 1
         self._finalize()
 
     # -- marche des instructions -------------------------------------------
@@ -675,6 +705,23 @@ class NotebookScanner:
         if isinstance(node, ast.Constant) and isinstance(node.value, str):
             return Binding(node.value, "literal",
                            f"litteral (cell {ctx.cell_index})", id(node))
+        if isinstance(node, ast.BoolOp) and isinstance(node.op, ast.Or):
+            # ``variable or os.environ.get("M", "<modele>")`` : les operandes
+            # s'evaluent de gauche a droite et le premier litteral VRAI
+            # court-circuite, donc le premier litteral declare est la valeur
+            # statiquement visible -- et c'est le repli par defaut de la
+            # chaine. Sans ce cas, la chaine n'etait ni findee ni meme
+            # ``unresolved`` proprement : le litteral restait une mention doc
+            # et le site chat tombait en ``unresolved`` (faux negatif mesure
+            # sur ``scripts/livecoding_video_pipeline.py``, repli
+            # ``gpt-4o-mini``).
+            for operand in node.values:
+                candidate = self.bind_value(operand, ctx)
+                if candidate.value is not None:
+                    return Binding(candidate.value, candidate.kind,
+                                   f"repli 'or' -> {candidate.origin}",
+                                   candidate.node_id)
+            return Binding(None, "unresolved", "chaine 'or' sans litteral")
         if isinstance(node, ast.Call):
             parts = attr_chain(node.func)
             if parts and (tuple(parts[-1:]) == ("getenv",)
@@ -816,6 +863,20 @@ class NotebookScanner:
 # Analyse d'un carnet
 # ---------------------------------------------------------------------------
 
+def _report(path: str, kind: str, scanner: NotebookScanner) -> dict:
+    if kind == "python":
+        scanner.stats["python_modules"] = 1
+    return {
+        "kind": kind,
+        "notebook": path,
+        "findings": scanner.findings,
+        "doc_mentions": scanner.doc_mentions,
+        "doc_marked_cells": scanner.doc_marked_cells,
+        "unresolved": scanner.unresolved,
+        "stats": scanner.stats,
+    }
+
+
 def analyze_notebook(path: str) -> dict:
     p = Path(path)
     if not p.exists():
@@ -826,30 +887,60 @@ def analyze_notebook(path: str) -> dict:
         raise ValueError(f"JSON invalide: {path}: {exc}") from exc
     scanner = NotebookScanner(path)
     scanner.scan(notebook.get("cells", []))
-    return {
-        "notebook": path,
-        "findings": scanner.findings,
-        "doc_mentions": scanner.doc_mentions,
-        "doc_marked_cells": scanner.doc_marked_cells,
-        "unresolved": scanner.unresolved,
-        "stats": scanner.stats,
-    }
+    return _report(path, "notebook", scanner)
+
+
+def analyze_python_module(path: str) -> dict:
+    """Scanne un module ``.py`` du depot (hors carnet).
+
+    Les carnets ne sont pas le seul lieu d'un appel chat : des modules
+    consommes par les carnets portent des replis litteraux (mesure
+    firsthand : ``scripts/livecoding_video_pipeline.py`` repliait sur un
+    ``os.environ.get("OPENAI_MODEL", "<modele obsolete>")``). La detection
+    y est identique, la forme du rapport aussi, seule l'unite change.
+    """
+    p = Path(path)
+    if not p.exists():
+        raise FileNotFoundError(path)
+    try:
+        source = p.read_text(encoding="utf-8")
+    except UnicodeDecodeError as exc:
+        raise ValueError(f"encodage invalide: {path}: {exc}") from exc
+    scanner = NotebookScanner(path)
+    scanner.scan_python_source(source)
+    return _report(path, "python", scanner)
 
 
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 
-def collect_notebooks(paths: list[str]) -> list[Path]:
-    out: list[Path] = []
+SOURCE_SUFFIXES = (".ipynb", ".py")
+
+
+def source_kind(p: Path) -> str:
+    return "notebook" if p.suffix == ".ipynb" else "python"
+
+
+def collect_sources(paths: list[str]) -> list[tuple[Path, str]]:
+    """Rend les unites a scanner : ``(chemin, "notebook"|"python")``.
+
+    Un dossier descend sur les deux suffixes ; un fichier est accepte s'il
+    porte l'un des deux. Ce que la ligne de commande accepte ne dit PAS ce que
+    le garde CI itere : le cablage fast-lane reste volontairement borne aux
+    carnets (``iterate_paths=["**.ipynb"]``, incident #13220), le module
+    n'etant atteignable que par un appel explicite.
+    """
+    out: list[tuple[Path, str]] = []
     for raw in paths:
         p = Path(raw)
         if p.is_dir():
-            out.extend(sorted(p.rglob("*.ipynb")))
-        elif p.suffix == ".ipynb":
-            out.append(p)
+            for pattern in ("*.ipynb", "*.py"):
+                out.extend((q, source_kind(q)) for q in sorted(p.rglob(pattern)))
+        elif p.suffix in SOURCE_SUFFIXES:
+            out.append((p, source_kind(p)))
         else:
-            raise FileNotFoundError(f"ni carnet ni dossier: {raw}")
+            raise FileNotFoundError(f"ni carnet, ni module .py, ni dossier: {raw}")
     return out
 
 
@@ -861,32 +952,34 @@ def git_output(args: list[str], cwd: str) -> str:
     return proc.stdout
 
 
-def filter_base(notebooks: list[Path], base: str) -> tuple[list[Path], str]:
-    """Restreint aux carnets modifies depuis merge-base(base, HEAD)."""
+def filter_base(sources: list[tuple[Path, str]], base: str
+                ) -> tuple[list[tuple[Path, str]], str]:
+    """Restreint aux unites modifiees depuis merge-base(base, HEAD)."""
     top = git_output(["rev-parse", "--show-toplevel"], ".").strip()
     merge_base = git_output(["merge-base", base, "HEAD"], top).strip()
-    rel_notebooks = []
-    for p in notebooks:
+    rel_sources = []
+    for p, kind in sources:
         abs_p = p.resolve()
         try:
             rel = abs_p.relative_to(top).as_posix()
         except ValueError:
             rel = abs_p.as_posix()
-        rel_notebooks.append((p, rel))
+        rel_sources.append((p, kind, rel))
     changed = git_output(
         ["diff", "--name-only", merge_base, "--",
-         *[rel for _, rel in rel_notebooks]], top).split()
+         *[rel for _, _, rel in rel_sources]], top).split()
     changed_set = set(changed)
-    return [p for p, rel in rel_notebooks if rel in changed_set], merge_base
+    return [(p, kind) for p, kind, rel in rel_sources if rel in changed_set], \
+        merge_base
 
 
 def print_text(reports: list[dict], merge_base: str | None) -> None:
     findings = [f for r in reports for f in r["findings"]]
     mentions = [m for r in reports for m in r["doc_mentions"]]
     unresolved = [u for r in reports for u in r["unresolved"]]
-    stats = {k: sum(r["stats"][k] for r in reports) for k in
+    stats = {k: sum(r["stats"].get(k, 0) for r in reports) for k in
              ("code_cells", "python_cells", "non_python_cells",
-              "unparsed_cells", "chat_sites")}
+              "unparsed_cells", "chat_sites", "python_modules")}
     print("== check_obsolete_chat_model (#22783) ==")
     if merge_base:
         print(f"perimetre : carnets modifies depuis merge-base {merge_base}")
@@ -904,11 +997,14 @@ def print_text(reports: list[dict], merge_base: str | None) -> None:
           f"resolus statiquement (rapportes, jamais accuses) ; "
           f"{len(mentions)} mention(s) doc sans marqueur, {marked} cellule(s) "
           f"marquee(s).")
+    print(f"-- unites : {sum(1 for r in reports if r.get('kind') != 'python')} "
+          f"carnet(s), {stats['python_modules']} module(s) .py.")
     print(f"-- cellules : {stats['python_cells']} python, "
           f"{stats['non_python_cells']} non-python, {stats['unparsed_cells']} "
           f"non-parsables, {stats['chat_sites']} site(s) chat vus.")
     print("-- limites : AST Python seul (markdown/raw/.NET non scannes) ; "
-          "resolution bornee (voir en-tete du script).")
+          "resolution bornee (voir en-tete du script) ; un module .py est une "
+          "unite, sans report inter-cellules.")
 
 
 def main(argv=None) -> int:
@@ -916,7 +1012,7 @@ def main(argv=None) -> int:
         description="Detecte les appels chat ciblant un modele obsolete "
                     "(regle #22783).")
     parser.add_argument("paths", nargs="+",
-                        help="carnets .ipynb ou dossiers a scanner")
+                        help="carnets .ipynb, modules .py ou dossiers a scanner")
     parser.add_argument("--json", action="store_true", dest="as_json",
                         help="sortie JSON structuree")
     parser.add_argument("--obsolete", action="append", default=[],
@@ -933,11 +1029,13 @@ def main(argv=None) -> int:
             set(OBSOLETE_CHAT_MODELS) | set(args.obsolete))
 
     try:
-        notebooks = collect_notebooks(args.paths)
+        sources = collect_sources(args.paths)
         merge_base = None
         if args.base:
-            notebooks, merge_base = filter_base(notebooks, args.base)
-        reports = [analyze_notebook(str(p)) for p in notebooks]
+            sources, merge_base = filter_base(sources, args.base)
+        reports = [analyze_notebook(str(p)) if kind == "notebook"
+                   else analyze_python_module(str(p))
+                   for p, kind in sources]
     except (FileNotFoundError, ValueError, RuntimeError) as exc:
         print(f"ERREUR: {exc}", file=sys.stderr)
         return 2
@@ -953,8 +1051,11 @@ def main(argv=None) -> int:
             "doc_mentions": [m for r in reports for m in r["doc_mentions"]],
             "unresolved": [u for r in reports for u in r["unresolved"]],
             "stats": {
-                "notebooks": len(notebooks),
-                **{k: sum(r["stats"][k] for r in reports) for k in
+                "notebooks": sum(1 for r in reports
+                                 if r.get("kind") != "python"),
+                "python_modules": sum(1 for r in reports
+                                      if r.get("kind") == "python"),
+                **{k: sum(r["stats"].get(k, 0) for r in reports) for k in
                    ("code_cells", "python_cells", "non_python_cells",
                     "unparsed_cells", "chat_sites")},
                 "doc_marked_cells": sum(r["doc_marked_cells"]
