@@ -2776,3 +2776,60 @@ TRANCHE30: list[Guard] = [
         absorbed=True,
     ),
 ]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 31 (#5081, critere 5) -- garde de collision d'index twin-pairs
+# entre revisions. Organe livre par #20620 (mesure c.76 du 2026-09-25,
+# adjoint myia-po-2025:CoursIA-2) mais JAMAIS cable : 0 workflow, 0 entree
+# de registre, 0 pre-commit (mesure du 2026-10-31, grep des trois surfaces
+# sur main @ 8ff1fb8e5). Le critere 5 du plan #5081 exige des gardes qui
+# EMPECHENT la collision -- l'organe existait, la prevention non.
+#
+# Ce que le confront ferme : deux lanes qui prennent le meme index NNNN
+# d'audit produisent deux NOMS de fichiers distincts (le `by` de lane fait
+# partie du nom), donc aucun conflit git, MERGEABLE voire CLEAN des deux
+# cotes -- et main rougit apres la premiere mergee. Cas mesure #17795 :
+# collision contre main seul, PR BLOCKED, donc invisible aux balayages qui
+# n'enumere que les candidates CLEAN.
+#
+# `--gate` (#23208) est le mode PORTE de l'organe : bloque une collision
+# inter-revisions et un doublon intra-revision que la base ne porte PAS.
+# `--in-tree` (affectation initiale #23627) bloquait aussi les doublons
+# herites de la base, donc la PR qui les repare ne pouvait jamais passer
+# (mesure c2740 : 4 doublons deja sur main, rouge sur la PR d'union qui les
+# renumerote). L'unicite de l'arbre reste portee par le controle positif
+# `test_le_registre_de_la_revision_testee_ne_porte_aucun_doublon_intra_revision`.
+#
+# Portee : l'organe ne lit QUE scripts/notebook_tools/twin_pairs.d (ls-tree
+# de ce chemin, glob *.yaml par paire) -- pas de NOTEBOOK_GLOBS : renommer
+# un notebook ne change aucun index d'audit, ajouter un record d'audit si.
+# rc=2 = incident d'entree (git/parse), neutre au check-run (forme
+# TRANCHE17). Verifie vert sur main @ 8ff1fb8e5 : 168 paires, 5118
+# fichiers, aucun doublon ; controle positif rejoue en developpement
+# (record syncretique meme paire meme index, lane differente -> exit 1).
+# ---------------------------------------------------------------------------
+# Renumerote TRANCHE31 -> TRANCHE32 le 2026-10-31 (c2740) : `main` affectait
+# TRANCHE31 deux fois (versions de bibliotheques #23079, puis ce bloc #23627) ;
+# la seconde affectation ecrasait la premiere et le garde des versions ne
+# s'executait plus (incident #19374, meme classe).
+TRANCHE32: list[Guard] = [
+    Guard(
+        name="twin-index-collision-guard",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "scripts/notebook_tools/twin_pairs.d/**",
+            "scripts/notebook_tools/check_twin_index_collisions.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_twin_index_collisions.py",
+            "--base", "{base_ref}", "--head", "HEAD", "--gate",
+        ],
+        blocking=True,
+        absorbed=True,
+        needs_base=True,
+        warn_rc=(2,),
+    ),
+]

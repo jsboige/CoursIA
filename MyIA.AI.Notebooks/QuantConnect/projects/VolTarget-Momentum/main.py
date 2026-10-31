@@ -150,11 +150,13 @@ class VolTargetMomentum(QCAlgorithm):
             # Fenetre double (#20286) : sur une demi-seance, history() rend moins
             # de barres que demandees et le ticker est ecarte de la ponderation
             # de volatilite. On demande le double puis on re-slice sur la fenetre
-            # d'origine : la vol annualisee est inchangee hors demi-seance.
+            # d'origine : la vol annualisee est inchangee hors demi-seance. Comme
+            # dans rebalance(), la garde porte sur la fenetre reellement utilisee
+            # (#21471 : re-slice puis garde, l'ordre canonique des autres sites).
             hist = self.history(sym, 2 * (self.vol_lookback + 5), Resolution.DAILY)
+            hist = hist.iloc[-(self.vol_lookback + 5):]
             if len(hist) < self.vol_lookback * 0.8:
                 continue
-            hist = hist.iloc[-(self.vol_lookback + 5):]
             returns = hist["close"].pct_change().dropna().tail(self.vol_lookback)
             if len(returns) < 10:
                 continue

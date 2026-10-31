@@ -28,7 +28,8 @@ public static class GoColorExtensions
 }
 
 /// <summary>
-/// Une intersection du goban, ou le coup de passe (<see cref="Pass"/>).
+/// Une intersection du goban, le coup de passe (<see cref="Pass"/>) ou l'abandon
+/// (<see cref="Resign"/>).
 /// </summary>
 /// <param name="X">Colonne, 0 inclusif, croissant vers la droite.</param>
 /// <param name="Y">Ligne, 0 inclusif, croissant vers le bas.</param>
@@ -37,8 +38,14 @@ public readonly record struct GoPoint(int X, int Y)
     /// <summary>Le coup de passe — jouer nulle part.</summary>
     public static GoPoint Pass => new(-1, -1);
 
+    /// <summary>Le coup d'abandon — rendre la partie sans jouer.</summary>
+    public static GoPoint Resign => new(-2, -2);
+
     /// <summary>Ce point est-il le coup de passe ?</summary>
-    public bool IsPass => X < 0;
+    public bool IsPass => X == -1 && Y == -1;
+
+    /// <summary>Ce point est-il le coup d'abandon ?</summary>
+    public bool IsResign => X == -2 && Y == -2;
 
     /// <summary>
     /// Nom de coordonnee a la GTP : colonnes lettrees en sautant I
@@ -54,6 +61,11 @@ public readonly record struct GoPoint(int X, int Y)
             return "pass";
         }
 
+        if (IsResign)
+        {
+            return "resign";
+        }
+
         const string letters = "ABCDEFGHJKLMNOPQRSTUVWXYZ";
         return $"{letters[X]}{Y + 1}";
     }
@@ -61,9 +73,9 @@ public readonly record struct GoPoint(int X, int Y)
 
 /// <summary>
 /// Moteur de regles du jeu de Go : placement, captures, suicide, ko simple,
-/// passes et score de territoire. Port des semantiques du <c>GoBoard</c> de
-/// GoTraxx (patrimoine Aricie, <c>Libraries/AI/external/GoTraxx/</c>), EPIC
-/// #7265 pepite B3, tranche 2.
+/// passes, abandon et score de territoire. Port des semantiques du
+/// <c>GoBoard</c> de GoTraxx (patrimoine Aricie,
+/// <c>Libraries/AI/external/GoTraxx/</c>), EPIC #7265 pepite B3, tranche 2.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -92,8 +104,8 @@ public readonly record struct GoPoint(int X, int Y)
 /// <b>est porte</b> (tranche 4) : positionnel, par empreinte Zobrist 64 bits
 /// deterministe, l'historique des positions survivant au clonage — sans lui,
 /// l'arbre de recherche de la tranche 3 pourrait boucler sur un cycle que la
-/// racine interdit. Le resign, le chargement SGF et l'evaluation CNTK ne sont
-/// pas portes. Deux ecritures propres au patrimoine ne sont pas conservees : il
+/// racine interdit. Le resign est porte (tranche 10) ; le chargement SGF et
+/// l'evaluation CNTK ne sont pas portes. Deux ecritures propres au patrimoine ne sont pas conservees : il
 /// envisageait de jouer hors tour (<c>IsSimpleKoViolation</c> testait
 /// <c>Turn != player</c>) — ici l'alternance est stricte ; le score vivait
 /// chez un gnugo externe — ici c'est un score de territoire (pieres + vides
@@ -109,6 +121,7 @@ public sealed class GoGame
     private int _consecutivePasses;
     private ulong _positionHash;                // XOR Zobrist des pierres posees
     private HashSet<ulong> _positionHistory;    // chaque position vue depuis l'ouverture (superko)
+    private GoColor? _resigned;                 // couleur qui a abandonne, null si la partie vit encore
 
     /// <summary>
     /// Tables Zobrist par taille de plateau, deux entrees par intersection (noir,
@@ -127,8 +140,24 @@ public sealed class GoGame
     /// <summary>Couleur au trait — noir en ouverture.</summary>
     public GoColor ToPlay { get; private set; } = GoColor.Black;
 
-    /// <summary>La partie est-elle terminee (deux passes consecutifs) ?</summary>
+    /// <summary>La partie est-elle terminee (deux passes consecutifs, ou abandon) ?</summary>
     public bool IsOver { get; private set; }
+
+    /// <summary>
+    /// Couleur qui a abandonne, ou <see langword="null"/> si la partie s'est
+    /// terminee par passes ou est encore en cours. L'abandon est un fait de
+    /// partie, pas une intersection : il survit au clonage et determine le
+    /// vainqueur sans lire le score.
+    /// </summary>
+    public GoColor? ResignedBy => _resigned;
+
+    /// <summary>
+    /// Vainqueur par abandon, ou <see langword="null"/> si la partie n'est pas
+    /// finie ou s'est terminee par passes. Le vainqueur d'un abandon est
+    /// l'adversaire de la couleur qui abandonne — le score du plateau devient
+    /// illisible comme critere de victoire.
+    /// </summary>
+    public GoColor? Winner => _resigned?.Opposite();
 
     /// <summary>
     /// Le point de ko simple courant, s'il existe — la position de la pierre
@@ -179,6 +208,7 @@ public sealed class GoGame
         copy._consecutivePasses = _consecutivePasses;
         copy.ToPlay = ToPlay;
         copy.IsOver = IsOver;
+        copy._resigned = _resigned;
         copy._positionHash = _positionHash;
         copy._positionHistory = new HashSet<ulong>(_positionHistory);
         return copy;
@@ -198,12 +228,14 @@ public sealed class GoGame
     public bool IsLegal(GoPoint p) => IsLegal(p, ToPlay);
 
     /// <summary>
-    /// Legalite dans l'ordre du patrimoine : sur-plateau, intersection vide,
-    /// pas de violation du ko simple, pas de suicide, puis pas de repetition
-    /// de position (superko positionnel). L'alternance est stricte : seul le
-    /// trait courant obtient vrai. Le passe est toujours legal — c'est la
-    /// soupape d'arbitrage qui termine les parties sans coup, et la repetition
-    /// qu'il produit est deja l'etat courant, pas une recreation.
+    /// Legalite dans l'ordre du patrimoine : abandon ou passe toujours legaux,
+    /// puis sur-plateau, intersection vide, pas de violation du ko simple, pas
+    /// de suicide, puis pas de repetition de position (superko positionnel).
+    /// L'alternance est stricte : seul le trait courant obtient vrai. Le passe
+    /// est toujours legal — c'est la soupape d'arbitrage qui termine les
+    /// parties sans coup, et la repetition qu'il produit est deja l'etat
+    /// courant, pas une recreation. L'abandon est legal tant que la partie
+    /// vit : c'est une concession, pas un coup de plateau.
     /// </summary>
     public bool IsLegal(GoPoint p, GoColor color)
     {
@@ -212,7 +244,7 @@ public sealed class GoGame
             return false;
         }
 
-        if (p.IsPass)
+        if (p.IsResign || p.IsPass)
         {
             return true;
         }
@@ -259,14 +291,26 @@ public sealed class GoGame
     public bool Play(GoPoint p) => Play(p, ToPlay);
 
     /// <summary>
-    /// Jouer une pierre (ou passer, <see cref="GoPoint.Pass"/>). Faux — et le
-    /// plateau reste intact — si le coup est illegal.
+    /// Jouer une pierre, passer (<see cref="GoPoint.Pass"/>) ou abandonner
+    /// (<see cref="GoPoint.Resign"/>). Faux — et le plateau reste intact — si
+    /// le coup est illegal.
     /// </summary>
     public bool Play(GoPoint p, GoColor color)
     {
         if (!IsLegal(p, color))
         {
             return false;
+        }
+
+        // L'abandon ne touche ni le plateau ni le point de ko : il fige la
+        // position au moment de la concession et designe le vainqueur par
+        // renonciation, pas par score.
+        if (p.IsResign)
+        {
+            _resigned = color;
+            IsOver = true;
+            ToPlay = color.Opposite();
+            return true;
         }
 
         // Toute pierre jouee, passe comprise, efface le point de ko — le ko
@@ -319,6 +363,9 @@ public sealed class GoGame
 
     /// <summary>Passer son tour pour la couleur au trait.</summary>
     public bool Pass() => Play(GoPoint.Pass);
+
+    /// <summary>Abandonner pour la couleur au trait : la partie s'arrete, l'adversaire gagne.</summary>
+    public bool Resign() => Play(GoPoint.Resign);
 
     /// <summary>
     /// Score de territoire (a la chinoise) : pour chaque couleur, pierres
