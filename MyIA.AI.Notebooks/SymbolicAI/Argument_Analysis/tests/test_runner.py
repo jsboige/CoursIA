@@ -1263,3 +1263,96 @@ def test_resumption_hygiene_prunes_poisoned_entries():
     # après purge les seuils 1/1 sont tenus : aucune phase de reprise
     names = [p["name"] for p in out["phases"]]
     assert names == ["informal", "resumption_hygiene", "formal", "synthesis"]
+
+
+# ---------------------------------------------------------------------------
+# Contrat tâche / réponse (#23726)
+# ---------------------------------------------------------------------------
+# Sans tâche ouverte, `analysis_tasks` reste VIDE : l'agent n'a aucun
+# identifiant à fournir et n'invent qu'un nom de rôle ; or
+# `mark_task_as_answered` refuse un identifiant inconnu en SILENCE
+# (_shared_state.py : garde `task_id not in self.analysis_tasks` → warning +
+# return). La réponse de l'agent était donc perdue, sans trace.
+def test_phase_task_is_opened_and_named_in_the_worker_instructions():
+    """Une tâche par phase, et son identifiant EXACT dans les instructions."""
+    AGC = _agc()
+    s = _state()
+    out = _run(AnalysisRunner(_kernel(), "svc", s))
+
+    assert list(s.analysis_tasks) == ["task_1", "task_2"]
+
+    informal = [p for p in out["phases"] if p["name"] == "informal"][0]
+    formal = [p for p in out["phases"] if p["name"] == "formal"][0]
+    assert informal["task_id"] == "task_1"
+    assert formal["task_id"] == "task_2"
+
+    agents = [a for chat in AGC.instances for a in chat.agents]
+    informal_agent = [a for a in agents if a.name == "InformalAgent"][0]
+    logic_agent = [a for a in agents if a.name == "LogicAgent"][0]
+    assert "task_1" in informal_agent.instructions
+    assert "task_2" in logic_agent.instructions
+    assert "mark_task_as_answered" in informal_agent.instructions
+    assert "mark_task_as_answered" in logic_agent.instructions
+
+
+def test_worker_answer_is_recorded_instead_of_being_dropped():
+    """La réponse de l'agent EST conservée quand il clôture sa tâche."""
+    AGC = _agc()
+    AGC.YIELD_NAMES = ["ProjectManagerAgent", "InformalAgent"]
+    s = _state()
+
+    def close_task(name, chat):
+        # l'agent worker clôture la tâche ouverte par le runner
+        if name == "InformalAgent" and "task_1" not in s.answers:
+            s.mark_task_as_answered(
+                "task_1", "arguments et sophismes identifies", "InformalAgent"
+            )
+
+    AGC.ON_TURN = close_task
+    out = _run(AnalysisRunner(_kernel(), "svc", s))
+
+    informal = [p for p in out["phases"] if p["name"] == "informal"][0]
+    assert informal["task_closed"] is True
+    assert "task_1" in s.answers
+    assert s.answers["task_1"]["answer_text"] == "arguments et sophismes identifies"
+
+
+def test_unclosed_task_is_reported_not_silently_absorbed():
+    """Une tâche non close est TRACÉE dans l'état, pas absorbée en silence."""
+    s = _state()
+    out = _run(AnalysisRunner(_kernel(), "svc", s))
+
+    informal = [p for p in out["phases"] if p["name"] == "informal"][0]
+    formal = [p for p in out["phases"] if p["name"] == "formal"][0]
+    assert informal["task_closed"] is False
+    assert formal["task_closed"] is False
+    assert s.errors, "la non-clôture doit etre tracee dans l'etat"
+    assert any("task_1" in str(e["message"]) for e in s.errors)
+    assert any("task_2" in str(e["message"]) for e in s.errors)
+
+
+def test_prompt_contract_names_the_exact_task_id():
+    """Les prompts de travail nomment le mécanisme de clôture et l'interdit
+    d'identifiant inventé (le prompt vendangé ne donnait aucun id)."""
+    from argumentation_lib._runner import _task_instructions
+
+    block = _task_instructions("task_7", "analyse informelle")
+    assert "task_7" in block
+    assert "mark_task_as_answered" in block
+    # le PM prompt n'ouvre plus de tache concurrente et interdit l'identifiant invente
+    assert "ne créez PAS de tâche" in PROMPT_DEFINE_TASKS
+    assert "n'inventEZ JAMAIS" in PROMPT_DEFINE_TASKS
+    # les prompts de travail pointent la fonction kernel de clôture
+    assert "mark_task_as_answered" in PROMPT_INFORMAL_ANALYSIS
+    assert "mark_task_as_answered" in PROMPT_LOGIC_ANALYSIS
+
+
+def test_agents_built_without_task_id_keep_the_vendored_prompt():
+    """Hors runner (appel direct), les instructions restent celles du prompt
+    vendangé : le contrat historique n'est pas cassé par le #23726."""
+    k, s = _kernel(), _state()
+    create_pm_agent(k, "svc", s)
+    informal = create_informal_agent(k, "svc", s)
+    logic = create_logic_agent(k, "svc", s)
+    assert informal.instructions is PROMPT_INFORMAL_ANALYSIS
+    assert logic.instructions is PROMPT_LOGIC_ANALYSIS

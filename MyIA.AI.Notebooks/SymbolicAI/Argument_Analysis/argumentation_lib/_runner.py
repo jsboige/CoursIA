@@ -71,6 +71,10 @@ décision de routage : elle dépend du contenu, pas d'une séquence figée.
 
 [Instructions]
 Trouvez la première étape non complétée.
+Les tâches d'analyse sont OUVERTES par le runner (champ `tasks_defined`
+de l'état) : ne créez PAS de tâche concurrente et n'inventEZ JAMAIS
+d'identifiant de tâche — un identifiant inexistant fait PERDRE la réponse
+de l'agent (#23726). Votre rôle est le ROUTAGE.
 Répondez AU FORMAT JSON:
 {
   "task_description": "Description de la tâche",
@@ -96,7 +100,11 @@ Votre rôle:
 Répondez en utilisant les fonctions kernel disponibles pour:
 - Ajouter les arguments identifiés
 - Ajouter les sophismes détectés
-- Marquer la tâche comme répondue
+- Marquer la tâche comme répondue : appelez
+  `StateManager-mark_task_as_answered` avec l'identifiant EXACT de la
+  tâche en cours (écrit dans le bloc « Tâche en cours » de vos
+  instructions) et un résumé de votre travail. Un identifiant inventé
+  est REJETÉ SANS EFFET : votre travail serait alors perdu (#23726).
 
 Contrat d'appel OBLIGATOIRE : pour CHAQUE argument identifié, appelez
 `StateManager-add_identified_argument` avec la phrase complète de l'argument
@@ -117,7 +125,11 @@ Votre rôle:
 Répondez en utilisant les fonctions kernel disponibles pour:
 - Ajouter des belief sets
 - Logger les résultats de requêtes
-- Marquer la tâche comme répondue
+- Marquer la tâche comme répondue : appelez
+  `StateManager-mark_task_as_answered` avec l'identifiant EXACT de la
+  tâche en cours (écrit dans le bloc « Tâche en cours » de vos
+  instructions) et un résumé de votre travail. Un identifiant inventé
+  est REJETÉ SANS EFFET : votre travail serait alors perdu (#23726).
 
 Contrat d'appel OBLIGATOIRE (l'ordre compte) :
 1. `StateManager-add_belief_set` (logic_type="propositional") avec le contenu :
@@ -198,6 +210,57 @@ sophisme, ex. « Appel à l'autorité », « Faux dilemme »), `justification`
 (pourquoi ce passage précis est un sophisme, au moins une phrase complète)
 et `target` (l'identifiant de l'argument visé, ex. « arg_1 »). Répondre en
 prose sans appeler la fonction kernel = tâche non accomplie.
+"""
+
+
+# ---------------------------------------------------------------------------
+# Contrat tâche / réponse (#23726)
+# ---------------------------------------------------------------------------
+#
+# L'amont EPITA fait créer les tâches par le PM (`add_analysis_task`) et
+# clôt par l'agent qui a fait le travail, avec l'identifiant EXACT de la
+# tâche. Notre port a une structure de phases DÉTERMINISTE (informel →
+# formel → synthèse) : c'est donc le runner qui ouvre la tâche de phase et
+# qui en donne l'identifiant exact à l'agent qui la travaille.
+#
+# Pourquoi c'était un défaut mesuré, pas une préférence de style : sans
+# tâche ouverte, `analysis_tasks` restait VIDE, l'agent n'avait aucun
+# identifiant à fournir et n'inventait qu'un nom de rôle ; or
+# `mark_task_as_answered` REFUSE un identifiant inconnu en silence
+# (_shared_state.py : garde `task_id not in self.analysis_tasks` → warning
+# + `return`) — la réponse de l'agent était donc PERDUE, sans trace et sans
+# erreur rapportée (#23726).
+
+PHASE_TASK_DESCRIPTIONS = {
+    "informal": "Identifier les arguments principaux et les sophismes du texte",
+    "formal": (
+        "Encoder les arguments en logique propositionnelle et consigner les "
+        "verdicts du solveur"
+    ),
+    "conversation": (
+        "Analyser rhétoriquement le texte : arguments, sophismes, encodage "
+        "formel et conclusion"
+    ),
+}
+
+
+def _task_instructions(task_id: str, role: str) -> str:
+    """Bloc d'instructions nommant l'identifiant EXACT de la tâche en cours.
+
+    L'identifiant est écrit LITTÉRALEMENT dans les instructions de l'agent :
+    la snapshot d'état portée par `{{$analysis_state}}` est figée à la
+    construction de l'agent (cf `_state_arguments`), l'agent ne peut donc
+    pas y lire une tâche créée pendant la phase.
+    """
+    return f"""
+
+[Tâche en cours — identifiant exact : {task_id}]
+Vous TRAVAILLEZ sur la tâche `{task_id}` ({role}).
+À la fin de votre travail, appelez la fonction kernel
+`StateManager-mark_task_as_answered` avec cet identifiant EXACT
+(`task_id="{task_id}"`) et un résumé de votre travail.
+Tout autre identifiant (nom de rôle, « task », identifiant inventé) est
+REJETÉ SANS EFFET : votre travail serait alors perdu (#23726).
 """
 
 
@@ -344,17 +407,27 @@ def create_informal_agent(
     kernel: Kernel,
     llm_service_id: str,
     state: RhetoricalAnalysisState,
+    task_id: Optional[str] = None,
 ) -> ChatCompletionAgent:
-    """Create the Informal Analysis agent."""
+    """Create the Informal Analysis agent.
+
+    ``task_id`` (#23726) : identifiant EXACT de la tâche de phase que l'agent
+    doit clôturer. Absent (appel hors runner), les instructions restent celles
+    du prompt vendangé — le contrat historique est préservé.
+    """
     # StateManagerPlugin already added by PM — reuse it
     if "StateManager" not in [p.name for p in kernel.plugins.values()]:
         smp = _state_manager_plugin(state)
         kernel.add_plugin(smp, plugin_name="StateManager")
 
+    instructions = PROMPT_INFORMAL_ANALYSIS
+    if task_id:
+        instructions += _task_instructions(task_id, "analyse informelle")
+
     agent = ChatCompletionAgent(
         kernel=kernel,
         name="InformalAgent",
-        instructions=PROMPT_INFORMAL_ANALYSIS,
+        instructions=instructions,
         service=_resolve_service(kernel, llm_service_id),
         arguments=_state_arguments(
             state, _execution_settings_for(kernel, llm_service_id)
@@ -368,6 +441,7 @@ def create_logic_agent(
     kernel: Kernel,
     llm_service_id: str,
     state: RhetoricalAnalysisState,
+    task_id: Optional[str] = None,
 ) -> ChatCompletionAgent:
     """Create the Logic Analysis agent.
 
@@ -409,10 +483,14 @@ def create_logic_agent(
     # dans la liste de ses fonctions (#22981).
     _ensure_reasoner_plugin(kernel, state)
 
+    logic_instructions = PROMPT_LOGIC_ANALYSIS
+    if task_id:
+        logic_instructions += _task_instructions(task_id, "analyse formelle")
+
     agent_kwargs = dict(
         kernel=kernel,
         name="LogicAgent",
-        instructions=PROMPT_LOGIC_ANALYSIS,
+        instructions=logic_instructions,
         service=_resolve_service(kernel, llm_service_id),
         arguments=_state_arguments(
             state, _execution_settings_for(kernel, llm_service_id)
@@ -500,6 +578,43 @@ class AnalysisRunner:
         # c'est le SEUL chemin d'obtention d'un verdict de moteur (#22981).
         _ensure_reasoner_plugin(kernel, state)
 
+    # ------------------------------------------------------------------
+    # Contrat tâche / réponse (#23726)
+    # ------------------------------------------------------------------
+    def _open_phase_task(self, phase: str) -> str:
+        """Ouvre la tâche de la phase et retourne son identifiant (#23726).
+
+        La tâche est créée par le runner, pas par le PM : la structure de
+        phases de ce port est déterministe, et une tâche créée par le LLM
+        n'offre aucune garantie d'identifiant exploitable par l'agent qui
+        doit la clôturer.
+        """
+        description = PHASE_TASK_DESCRIPTIONS[phase]
+        task_id = self.state.add_task(description)
+        _logger.info(f"Tâche de phase ouverte ({phase}) : {task_id}")
+        return task_id
+
+    def _close_phase_task(self, phase: str, task_id: str, agent_name: str) -> bool:
+        """Vérifie la clôture de la tâche ; une non-clôture est ENREGISTRÉE.
+
+        Le contrat veut qu'une réponse d'agent soit attachée à une tâche.
+        Sans vérification, une non-clôture est INDÉTECTABLE : le travail de
+        la phase disparaît sans trace — c'est exactement le mode de panne
+        que #23726 documente. La non-clôture est donc consignée dans
+        `state.errors` (visible dans l'état, donc dans le rapport), jamais
+        absorbée en silence.
+        """
+        if task_id in self.state.answers:
+            return True
+        message = (
+            f"Tâche {task_id} ({phase}) non close : l'agent n'a pas appelé "
+            "mark_task_as_answered avec cet identifiant, son travail n'est "
+            "rattaché à aucune réponse."
+        )
+        _logger.warning(message)
+        self.state.log_error(agent_name, message)
+        return False
+
     async def run(self) -> Dict[str, Any]:
         """Execute the full 3-phase analysis pipeline."""
         _logger.info("Starting 3-phase argumentation analysis...")
@@ -514,8 +629,9 @@ class AnalysisRunner:
 
         # Phase 1: Informal analysis
         _logger.info("=== Phase 1: Informal Analysis ===")
+        informal_task_id = self._open_phase_task("informal")
         informal = create_informal_agent(
-            self.kernel, self.llm_service_id, self.state
+            self.kernel, self.llm_service_id, self.state, task_id=informal_task_id
         )
         pm = create_pm_agent(self.kernel, self.llm_service_id, self.state)
 
@@ -550,6 +666,10 @@ class AnalysisRunner:
                 "name": "informal",
                 "turns": turn_count,
                 "status": "completed",
+                "task_id": informal_task_id,
+                "task_closed": self._close_phase_task(
+                    "informal", informal_task_id, "InformalAgent"
+                ),
             })
         except Exception as e:
             _logger.error(f"Phase 1 error: {e}")
@@ -557,6 +677,8 @@ class AnalysisRunner:
                 "name": "informal",
                 "status": "error",
                 "error": str(e),
+                "task_id": informal_task_id,
+                "task_closed": False,
             })
 
         # Reprise ciblée de la phase déficitaire (#18776, branche « ou » de
@@ -573,8 +695,9 @@ class AnalysisRunner:
 
         # Phase 2: Formal analysis (logic)
         _logger.info("=== Phase 2: Formal Analysis ===")
+        formal_task_id = self._open_phase_task("formal")
         logic = create_logic_agent(
-            self.kernel, self.llm_service_id, self.state
+            self.kernel, self.llm_service_id, self.state, task_id=formal_task_id
         )
 
         # Le PM réutilisé tel quel entre phases garde ses instructions
@@ -626,6 +749,10 @@ la phase 1, déjà passée.
                 "name": "formal",
                 "turns": turn_count,
                 "status": "completed",
+                "task_id": formal_task_id,
+                "task_closed": self._close_phase_task(
+                    "formal", formal_task_id, "LogicAgent"
+                ),
             })
         except Exception as e:
             _logger.error(f"Phase 2 error: {e}")
@@ -633,6 +760,8 @@ la phase 1, déjà passée.
                 "name": "formal",
                 "status": "error",
                 "error": str(e),
+                "task_id": formal_task_id,
+                "task_closed": False,
             })
 
         # Phase 3: Synthesis
@@ -902,11 +1031,19 @@ la phase 1, déjà passée.
         )
 
         _logger.info("Starting conversational orchestration...")
+        # #23726 : une tâche porte la conversation ; son identifiant exact
+        # est donné aux deux agents qui peuvent la clôturer.
+        conversation_task_id = self._open_phase_task("conversation")
         pm = create_pm_agent(self.kernel, self.llm_service_id, self.state)
         informal = create_informal_agent(
-            self.kernel, self.llm_service_id, self.state
+            self.kernel,
+            self.llm_service_id,
+            self.state,
+            task_id=conversation_task_id,
         )
-        logic = create_logic_agent(self.kernel, self.llm_service_id, self.state)
+        logic = create_logic_agent(
+            self.kernel, self.llm_service_id, self.state, task_id=conversation_task_id
+        )
         agents = [pm, informal, logic]
 
         strategy = DelegatingSelectionStrategy(
@@ -958,6 +1095,10 @@ la phase 1, déjà passée.
             "journal": journal,
             "sequence": [entry["speaker"] for entry in journal],
             "selection_trace": strategy.selection_trace,
+            "task_id": conversation_task_id,
+            "task_closed": self._close_phase_task(
+                "conversation", conversation_task_id, "conversation"
+            ),
             "state_snapshot": self.state.get_state_snapshot(summarize=True),
             "conclusion": self.state.final_conclusion,
         }
