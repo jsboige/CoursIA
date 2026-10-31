@@ -46,53 +46,42 @@ on:
       # sudoku_lean
       - 'MyIA.AI.Notebooks/Sudoku/sudoku_lean/**.lean'
       - 'MyIA.AI.Notebooks/Sudoku/sudoku_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/Sudoku/sudoku_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/Sudoku/sudoku_lean/lean-toolchain'
       # kelly_lean
       - 'MyIA.AI.Notebooks/QuantConnect/kelly_lean/**.lean'
       - 'MyIA.AI.Notebooks/QuantConnect/kelly_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/QuantConnect/kelly_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/QuantConnect/kelly_lean/lean-toolchain'
       # minimax_lean
       - 'MyIA.AI.Notebooks/GameTheory/minimax_lean/**.lean'
       - 'MyIA.AI.Notebooks/GameTheory/minimax_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/GameTheory/minimax_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/GameTheory/minimax_lean/lean-toolchain'
       # search_lean
       - 'MyIA.AI.Notebooks/Search/search_lean/**.lean'
       - 'MyIA.AI.Notebooks/Search/search_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/Search/search_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/Search/search_lean/lean-toolchain'
       # assignment_lean
       - 'MyIA.AI.Notebooks/GameTheory/assignment_lean/**.lean'
       - 'MyIA.AI.Notebooks/GameTheory/assignment_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/GameTheory/assignment_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/GameTheory/assignment_lean/lean-toolchain'
       # discrepancy_lean
       - 'MyIA.AI.Notebooks/Search/discrepancy_lean/**.lean'
       - 'MyIA.AI.Notebooks/Search/discrepancy_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/Search/discrepancy_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/Search/discrepancy_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/SymbolicAI/Tweety/argumentation_lean/**.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Tweety/argumentation_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Tweety/argumentation_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Tweety/argumentation_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean/**.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/**.lean'
       - 'MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/lake-manifest.json'
       - 'MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean/**.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/finiteness_lean/**.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/finiteness_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/finiteness_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/finiteness_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/GameTheory/lean_game_defs/**.lean'
       - 'MyIA.AI.Notebooks/GameTheory/lean_game_defs/lakefile.toml'
@@ -102,36 +91,29 @@ on:
       - 'MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext/lean-toolchain'
       - 'MyIA.AI.Notebooks/ML/learning_theory_lean/**.lean'
       - 'MyIA.AI.Notebooks/ML/learning_theory_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/ML/learning_theory_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/ML/learning_theory_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/Probas/DecisionTheory/decision_theory_lean/**.lean'
       - 'MyIA.AI.Notebooks/Probas/DecisionTheory/decision_theory_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/Probas/DecisionTheory/decision_theory_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/Probas/DecisionTheory/decision_theory_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/**.lean'
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lean-toolchain'
       # Contrat certifie SocialChoice (herite du wrapper lean-social-choice.yml
       # supprime, #17374) : le manifeste certifie est un declencheur du lake.
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice/CERTIFIED.txt'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/**.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/lakefile.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/lean-toolchain'
       - 'MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters/**.lean'
       - 'MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters/lakefile.lean'
-      - 'MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters/lakefile.toml'
       - 'MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters/lean-toolchain'
       # tegmark_muh_lean (#16753)
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/**.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/lean-toolchain'
       # iit_lean (#18599, sans Mathlib — proxy relationnel IIT)
       - 'MyIA.AI.Notebooks/IIT/iit_lean/**.lean'
       - 'MyIA.AI.Notebooks/IIT/iit_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/IIT/iit_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/IIT/iit_lean/lean-toolchain'
       # serre100_lean (#17336)
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean/**.lean'
@@ -153,21 +135,18 @@ on:
       # fail-on-sorry true par defaut -- parametres reportes au manifeste)
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/**.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/lean-toolchain'
       # sensitivity_lean (herite du wrapper lean-sensitivity.yml supprime, #13751 :
       # 0 sorry verifie, axiom target-modules "*" + allow-axioms vide,
       # fail-on-sorry true par defaut -- parametres reportes au manifeste)
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean/**.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean/lean-toolchain'
       # compression_lean (lake dedie de l'EPIC #18706, decision D4 -- jumeau
       # formel de la serie Compression : 0 sorry de naissance, axiom
       # target-modules "*" -- parametres au manifeste)
       - 'MyIA.AI.Notebooks/Compression/Compression_lean/**.lean'
       - 'MyIA.AI.Notebooks/Compression/Compression_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/Compression/Compression_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/Compression/Compression_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/Compression/Compression_lean/lake-manifest.json'
       # riemann200_lean (lake dedie de la serie Riemann200, EPIC #20403
@@ -177,6 +156,15 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200/riemann200_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200/riemann200_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200/riemann200_lean/lake-manifest.json'
+      # planning_lean (herite du wrapper lean-planning.yml supprime, #13751 :
+      # 0 sorry verifie de naissance, axiom target-modules "*" -- parametres
+      # reportes au manifeste ; lake-manifest.json ajoute au declenchement,
+      # comme compression et riemann200 : un depin de Mathlib doit rejouer
+      # le lake)
+      - 'MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lake-manifest.json'
       # Self-cover B.3 herite du wrapper lean-serre.yml supprime (#17336) :
       # le moteur d'axiomes change -> le gate axiom de serre100 rejoue.
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
@@ -212,48 +200,37 @@ on:
       # verifie les DEUX blocs contre le manifeste.
       - 'MyIA.AI.Notebooks/Sudoku/sudoku_lean/**.lean'
       - 'MyIA.AI.Notebooks/Sudoku/sudoku_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/Sudoku/sudoku_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/Sudoku/sudoku_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/QuantConnect/kelly_lean/**.lean'
       - 'MyIA.AI.Notebooks/QuantConnect/kelly_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/QuantConnect/kelly_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/QuantConnect/kelly_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/GameTheory/minimax_lean/**.lean'
       - 'MyIA.AI.Notebooks/GameTheory/minimax_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/GameTheory/minimax_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/GameTheory/minimax_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/Search/search_lean/**.lean'
       - 'MyIA.AI.Notebooks/Search/search_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/Search/search_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/Search/search_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/GameTheory/assignment_lean/**.lean'
       - 'MyIA.AI.Notebooks/GameTheory/assignment_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/GameTheory/assignment_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/GameTheory/assignment_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/Search/discrepancy_lean/**.lean'
       - 'MyIA.AI.Notebooks/Search/discrepancy_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/Search/discrepancy_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/Search/discrepancy_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/SymbolicAI/Tweety/argumentation_lean/**.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Tweety/argumentation_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Tweety/argumentation_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Tweety/argumentation_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean/**.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/**.lean'
       - 'MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/lake-manifest.json'
       - 'MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean/**.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/finiteness_lean/**.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/finiteness_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/finiteness_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/finiteness_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/GameTheory/lean_game_defs/**.lean'
       - 'MyIA.AI.Notebooks/GameTheory/lean_game_defs/lakefile.toml'
@@ -263,36 +240,29 @@ on:
       - 'MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext/lean-toolchain'
       - 'MyIA.AI.Notebooks/ML/learning_theory_lean/**.lean'
       - 'MyIA.AI.Notebooks/ML/learning_theory_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/ML/learning_theory_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/ML/learning_theory_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/Probas/DecisionTheory/decision_theory_lean/**.lean'
       - 'MyIA.AI.Notebooks/Probas/DecisionTheory/decision_theory_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/Probas/DecisionTheory/decision_theory_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/Probas/DecisionTheory/decision_theory_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/**.lean'
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lean-toolchain'
       # Contrat certifie SocialChoice (herite du wrapper lean-social-choice.yml
       # supprime, #17374) : le manifeste certifie est un declencheur du lake.
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice/CERTIFIED.txt'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/**.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/lakefile.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/lean-toolchain'
       - 'MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters/**.lean'
       - 'MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters/lakefile.lean'
-      - 'MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters/lakefile.toml'
       - 'MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters/lean-toolchain'
       # tegmark_muh_lean (#16753)
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/**.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/lean-toolchain'
       # iit_lean (#18599, sans Mathlib — proxy relationnel IIT)
       - 'MyIA.AI.Notebooks/IIT/iit_lean/**.lean'
       - 'MyIA.AI.Notebooks/IIT/iit_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/IIT/iit_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/IIT/iit_lean/lean-toolchain'
       # serre100_lean (#17336)
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean/**.lean'
@@ -314,21 +284,18 @@ on:
       # fail-on-sorry true par defaut -- parametres reportes au manifeste)
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/**.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/lean-toolchain'
       # sensitivity_lean (herite du wrapper lean-sensitivity.yml supprime, #13751 :
       # 0 sorry verifie, axiom target-modules "*" + allow-axioms vide,
       # fail-on-sorry true par defaut -- parametres reportes au manifeste)
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean/**.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean/lean-toolchain'
       # compression_lean (lake dedie de l'EPIC #18706, decision D4 -- jumeau
       # formel de la serie Compression : 0 sorry de naissance, axiom
       # target-modules "*" -- parametres au manifeste)
       - 'MyIA.AI.Notebooks/Compression/Compression_lean/**.lean'
       - 'MyIA.AI.Notebooks/Compression/Compression_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/Compression/Compression_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/Compression/Compression_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/Compression/Compression_lean/lake-manifest.json'
       # riemann200_lean (lake dedie de la serie Riemann200, EPIC #20403
@@ -338,6 +305,15 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200/riemann200_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200/riemann200_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200/riemann200_lean/lake-manifest.json'
+      # planning_lean (herite du wrapper lean-planning.yml supprime, #13751 :
+      # 0 sorry verifie de naissance, axiom target-modules "*" -- parametres
+      # reportes au manifeste ; lake-manifest.json ajoute au declenchement,
+      # comme compression et riemann200 : un depin de Mathlib doit rejouer
+      # le lake)
+      - 'MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lake-manifest.json'
       # Self-cover B.3 herite du wrapper lean-serre.yml supprime (#17336) :
       # le moteur d'axiomes change -> le gate axiom de serre100 rejoue.
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'

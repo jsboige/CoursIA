@@ -104,6 +104,12 @@ on:
       - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_narrator_routing.py'
       - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_customvoice_narrator.py'
       - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_qwen_tts_client.py'
+      # #22905 organe de narration partage : sans ces deux entrees, une PR qui ne
+      # touche QUE v4/narration.py ne declenche aucun run (pattern #10416), et son
+      # garde-fou n'etait collecte par aucune jambe. Mirrored under pull_request:
+      # below.
+      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/narration.py'
+      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_narration.py'
       # #11835 no-op guard: scripts/tests/test_pr_gate_rerun_noop_guard.py pins
       # the job-level if: of pr-gate-rerun.yml. Without this entry a PR touching
       # ONLY the workflow fires no scripts-tests run -- the guard is blind to
@@ -232,6 +238,9 @@ on:
       - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_narrator_routing.py'
       - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_customvoice_narrator.py'
       - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_qwen_tts_client.py'
+      # #22905 organe de narration partage (mirror of the push path above).
+      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/narration.py'
+      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_narration.py'
       # #11835 no-op guard (mirror of the push path above).
       - '.github/workflows/pr-gate-rerun.yml'
       # Mirror the push path above so fork workflow-only PRs execute the policy.
@@ -448,6 +457,10 @@ jobs:
           # cible pytest ci-dessous est une erreur de collecte au lieu
           # d'exercer le service pour de vrai.
           pip install open_spiel
+          # ortools: GameTheory/tests collecte aussi amd_synthesis.py (#22381),
+          # qui importe CP-SAT au niveau module. Reprendre le plancher declare
+          # dans GameTheory/requirements.txt pour eviter une erreur de collecte.
+          pip install "ortools>=9.11"
           # z3-solver: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/
           # test_z3_sudoku_core.py imports z3 at module level (#21100, pli 0
           # Origami). Without it the suite fails on ModuleNotFoundError
@@ -480,6 +493,13 @@ jobs:
           # opentelemetry ; avec, 36 passed + 1 skipped (le skip = coordinator
           # reclasifie, comportement #21331).
           pip install "opentelemetry-sdk>=1.20.0" "pydantic==2.12.5" "openai==2.24.0"
+          # nashpy: MyIA.AI.Notebooks/GameTheory/tests/test_bayesian_equilibria.py
+          # (#22382) imports it at module level. `gametheory-tests.yml` l'installe,
+          # mais CE job collecte aussi MyIA.AI.Notebooks/GameTheory/tests : sans
+          # le paquet, une seule erreur de collecte fait echouer les 21098 tests
+          # verts du run (mesure du 2026-10-27, run 40489527870 :
+          # "1 error in 750.75s" -> Scripts Tests rouge -> PR gate rouge).
+          pip install nashpy
           # pytest-xdist: this job's 13 suites run in parallel (-n 4) below.
           # Not a speed nicety -- the sequential run is what makes this job
           # unschedulable on half the pool. Over 68 `Scripts Tests (CPU)` jobs,
@@ -606,6 +626,7 @@ jobs:
             MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_narrator_routing.py \
             MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_customvoice_narrator.py \
             MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_qwen_tts_client.py \
+            MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_narration.py \
             scripts/secrets/tests \
             scripts/quantconnect/tests \
             MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis \
@@ -803,7 +824,13 @@ jobs:
     # installing that chain into the shared env would risk pin conflicts with
     # the 1600+ existing tests. Isolated env = zero blast radius.
     # Offre GitHub d'abord (#17397, consigne user du 2026-10-25) : le CI local pallie ses limites. Retour = remettre le label.
-    runs-on: ubuntu-latest
+    # 2026-10-28 (#23053 b, lane myia-ai-01:CoursIA-2) : forme hybride de
+    # debordement (#22461 phase A) -- PR meme-depot ET vars.CI_OVERFLOW_LOCAL
+    # == 'true' -> jambe Linux locale ; sinon `ubuntu-latest` (etat du 27/10).
+    # Retour arriere = variable `false` ou supprimee, sans toucher ce fichier.
+    # Seul ce job est concerne : `scripts-tests` reste sur la jambe locale
+    # STATIQUE (sa suite est couplee a la forme du runner, #22820).
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     timeout-minutes: 15
 
