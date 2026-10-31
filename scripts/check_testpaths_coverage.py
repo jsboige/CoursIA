@@ -97,6 +97,15 @@ WORKFLOW_COVERAGE: dict[str, list[str]] = {
     # local, test-args relatifs) — ne couvre aucun testpath de la racine.
     # Présent dans le dict avec liste vide = inspecté et tranché volontaire.
     ".github/workflows/ict-tests.yml": [],
+    # sudoku-tests.yml : cible-FICHIER (câblage de #22375 tranche 1a, PR
+    # empilée sur #22474). Cible fichier = vérification verbatim seulement,
+    # aucune couverture de testpath : le dossier `Sudoku/tests/` contient
+    # aussi `test_thermal_safe_train.py` (entraînement torch, ~35 s de
+    # collecte seule) qu'un garde léger ne doit PAS collecter — d'où pas
+    # d'entrée `pytest.ini` testpaths et pas de cible-dossier ici.
+    ".github/workflows/sudoku-tests.yml": [
+        "MyIA.AI.Notebooks/Sudoku/tests/test_dlx_certificates.py",
+    ],
 }
 
 # Marqueur d'exclusion : `# CI-EXCLUDED: <testpath> — <raison>` en commentaire
