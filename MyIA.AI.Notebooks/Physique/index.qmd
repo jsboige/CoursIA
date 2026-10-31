@@ -1,0 +1,101 @@
+---
+title: "Physique — Physique numérique et théorie des champs"
+subtitle: "Série pédagogique — vérifier un calcul contre une vérité exacte : théorème de Noether, invariance de jauge, Yang-Mills sur réseau, volumes finis"
+description: "Série Physique du dépôt CoursIA — théorème de Noether dérivé symboliquement, invariance de jauge U(1) et SU(2), Yang-Mills bidimensionnel sur réseau comparé à sa solution exacte, équation de Burgers par volumes finis avec solveur de Riemann, intégrales vérifiées."
+listing:
+  - id: jauge
+    contents: "Jauge/*.ipynb"
+    type: grid
+    sort: "filename"
+    page-size: 24
+  - id: numerique
+    contents: "Numerique/*.ipynb"
+    type: grid
+    sort: "filename"
+    page-size: 24
+  - id: integrales
+    contents: "Integrales/*.ipynb"
+    type: grid
+    sort: "filename"
+    page-size: 24
+---
+
+::: {.series-banner}
+# Physique — physique numérique et théorie des champs
+
+**En physique, un calcul numérique a une réponse.** Les équations y possèdent des
+solutions exactes, des identités de symétrie, des limites analytiques : autant de
+vérités établies hors du code, contre lesquelles un solveur se juge sans complaisance.
+Cette série en fait la méthode — chaque carnet pose un problème dont la solution est
+connue indépendamment, calcule, puis compare.
+:::
+
+## Vue d'ensemble
+
+Trois sous-séries, un même principe de vérification.
+
+| Sous-série | Objet | Ce qui sert de vérité |
+|------------|-------|-----------------------|
+| **Jauge** | Symétries continues et théories de jauge : Noether, U(1) → SU(2), Yang-Mills sur réseau | La quantité conservée prédite par la symétrie ; la covariance du tenseur de champ ; la solution exacte du modèle bidimensionnel |
+| **Numerique** | Équations aux dérivées partielles par volumes finis, solveur de Riemann | La vitesse de propagation du choc de Burgers, connue analytiquement |
+| **Integrales** | Intégrales définies et impropres, calcul exact | La valeur close obtenue symboliquement, recroisée numériquement |
+
+**Kernels** : `python3` · **GPU** : non requis · **Prérequis** : analyse (dérivées
+partielles, intégrales multiples), algèbre linéaire, Python scientifique. La théorie des
+groupes nécessaire à la sous-série Jauge est introduite sur place.
+
+## Théories de jauge
+
+Le parcours part du théorème de Noether — à toute symétrie continue correspond une
+quantité conservée — puis rend la symétrie **locale** : la transformation dépend du
+point, la dérivée ordinaire cesse d'être covariante, et le champ de jauge est précisément
+ce qu'il faut introduire pour la rétablir. Le tenseur de champ apparaît alors comme
+l'objet qui se transforme sans le champ. La sous-série se termine sur la version non
+abélienne discrétisée, dans le cas bidimensionnel où le modèle est résoluble exactement :
+l'estimation numérique est confrontée à cette solution.
+
+::: {#jauge}
+:::
+
+## Analyse numérique vérifiée
+
+Volumes finis et solveur de Riemann sur l'équation de Burgers. Ce cas est choisi parce
+qu'il forme un choc dont la position et la vitesse de propagation se calculent à la
+main : un schéma qui étale le choc, ou le déplace, est reconnu faute sans discussion.
+L'enjeu pédagogique est la **discrétisation** — comment une équation continue devient un
+système fini, et ce que la conservation y devient.
+
+::: {#numerique}
+:::
+
+## Intégrales et calcul exact
+
+Le versant calculatoire de la série : méthodes analytiques, vérification numérique
+croisée, et le passage de l'un à l'autre comme contrôle mutuel.
+
+::: {#integrales}
+:::
+
+## Démarrage rapide
+
+```bash
+python -m venv .venv
+source .venv/bin/activate     # ou .venv\Scripts\activate sous Windows
+pip install numpy scipy sympy matplotlib
+jupyter notebook MyIA.AI.Notebooks/Physique/
+```
+
+## Ressources complémentaires
+
+- **README de série** : [Physique/README.md](README.md) — présentation des carnets, prérequis, ramifications.
+- **Catalogue** : `COURSE_CATALOG.generated.md` — inventaire exhaustif de la série avec noyaux, besoins matériels et statuts.
+- **Séries connexes** :
+  - [Probas](../Probas/index.qmd) — inférence et théorie de la décision, où les mêmes outils d'intégration servent à marginaliser plutôt qu'à mesurer.
+  - [SymbolicAI](../SymbolicAI/README.md) — la branche Lean 4 du dépôt, pour les identités qui se démontrent au lieu de se vérifier numériquement.
+  - [Search](../Search/index.qmd) — solveurs et heuristiques de recherche, en amont de tout calcul scientifique outillé.
+
+## Note sur le rendu Quarto
+
+Les carnets de la série sont en Python natif et sont rendus à partir de leurs sorties
+committées (règle C.2), sans ré-exécution par Quarto. Pour exécuter localement :
+kernel `python3` et les bibliothèques ci-dessus.

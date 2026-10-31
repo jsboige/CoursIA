@@ -150,24 +150,28 @@ class GarchVolTargetAlgorithm(QCAlgorithm):
     def _daily_log_return(self, ticker, bar):
         """Rendement journalier dont la paire de clotures est verifiee (#21782).
 
-        `history(sym, N, DAILY)` inclut ou non la seance courante selon l'heure
-        de l'appel, et rend moins de barres que demandees sur une demi-seance
-        (#21471 : 16,7 % de raccourcissement mesure en amont, 105 barres pour 126
-        demandees). A N = 3 il reste donc ~2 barres : la paire reste formable,
-        mais la marge tombe a une barre. Ce correctif **elargit la marge** ; il
-        ne repare pas un echec observe sur ce projet : demander `2 * 3` puis
-        garder les 3 dernieres barres porte la marge de 1 a 4 barres (motif
-        #20286, meme couple que la reference Cloud-SectorRotation-Momentum).
-        Le re-slice ne cree aucun invariant : **2 barres suffisent a la paire**,
-        c'est le nombre demande qui porte le correctif, pas le slice.
+        `history(sym, N, DAILY)` inclut ou non la seance courante selon l'heure de
+        l'appel. Prendre `iloc[-2]` sans le verifier peut former une paire a deux
+        seances comptee comme un pas journalier, ou une paire desalignee avec
+        `bar.close`. On aligne donc la paire sur `bar.end_time`, et on rejette un
+        ecart calendaire qui trahit une suspension : mieux vaut aucun rendement
+        qu'un faux pas de GARCH.
 
-        Prendre `iloc[-2]` sans verifier peut former une paire a deux seances
-        comptee comme un pas journalier, ou une paire desalignee avec
-        `bar.close`. On aligne donc la paire sur `bar.end_time`, et on rejette
-        un ecart calendaire qui trahit une suspension : mieux vaut aucun
-        rendement qu'un faux pas de GARCH.
+        Fenetre large (#20286 / #21471). Sur une demi-seance, `self.history()`
+        rend moins de barres que demande : le raccourcissement mesure vaut 21
+        barres (105 servies pour 126 demandees, soit 16,7 %, #20286 / #21471).
+        Ici le seuil n'est que de 2 clotures, donc une fenetre double (4)
+        laisserait une marge de 2 barres -- sous le raccourcissement observe. On
+        demande 30 barres : la marge (28) depasse le raccourcissement mesure, et
+        la paire lue reste celle des deux dernieres barres. Le calcul est
+        inchange, c'est la marge qui grandit. Cout : un `history` journalier de
+        30 barres, negligeable.
+
+        Ce correctif **elargit la marge** ; il ne repare pas un echec observe sur
+        ce projet. Le re-slice ne cree aucun invariant : **2 barres suffisent a la
+        paire**, c'est le nombre demande qui porte le correctif, pas le slice.
         """
-        hist = self.history(self.symbols[ticker], 2 * 3, Resolution.DAILY)
+        hist = self.history(self.symbols[ticker], 30, Resolution.DAILY)
         if hist is None or len(hist) < 2:
             return None
         hist = hist.iloc[-3:]
