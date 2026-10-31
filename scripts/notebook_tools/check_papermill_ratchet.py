@@ -191,15 +191,31 @@ def cell_papermill_blocks(nb):
 # tools, and the result must equal the head evidence BYTE FOR BYTE. A
 # hand-edited output does not survive it, because no strip tool produces a
 # hand-edit.
+#
+# The replay uses strip_probe_banner's "both" variant set, not its "probe"
+# default: the hook may run a dedicated variant (discovery, #23530), and a
+# strip the hook sanctions must be a strip this gate recognises.
 STRIP_TOOLS = ("strip_machine_paths", "strip_probe_banner")
 
 
-def stripped_evidence(content):
+def stripped_evidence(content, variant="both"):
     """exec_evidence of `content` after the output-touching strip hooks.
 
     Returns None when the tools cannot run, so a failure here can only leave
     the caller on its previous (stricter) verdict - never turn a FAIL into a
     PASS by accident.
+
+    ``variant`` is forwarded to ``strip_probe_banner.strip_banner_in_place``
+    and defaults to ``"both"``, NOT to that function's own ``"probe"``
+    default. The banner hook runs the variant the commit chose for the file
+    (``strip-probeaddresses-banner --variant discovery`` on the Sudoku sweep,
+    #23530), so replaying the base through the ``probe`` set alone left a
+    discovery strip unrecognised and turned a sanctioned normalization into
+    six ``STALE_BLOCK`` regressions plus one ``BLOCK_REMOVED`` (#23677,
+    measured by the review of 2026-10-31T08:14Z). ``"both"`` replays every
+    sanctioned variant, which is the hook's own surface: a strip the hook can
+    apply is a strip this gate must recognise. A hand-edited output still does
+    not survive the equality test, since no strip tool produces one.
     """
     handle, tmp = tempfile.mkstemp(suffix=".ipynb")
     os.close(handle)
@@ -208,7 +224,7 @@ def stripped_evidence(content):
         import strip_machine_paths
         import strip_probe_banner
         strip_machine_paths.strip_in_place(tmp)
-        strip_probe_banner.strip_banner_in_place(tmp)
+        strip_probe_banner.strip_banner_in_place(tmp, variant)
         return exec_evidence(json.loads(Path(tmp).read_text(encoding="utf-8")))
     except Exception:
         return None
