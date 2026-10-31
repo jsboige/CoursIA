@@ -3,8 +3,12 @@
 
 #10466 diagnosed why the pool ``gh issue list --state open`` is saturated with
 work that is already delivered but not closed: delivery PRs write ``See #N``
-(semantics "partial contribution") even when they fully resolve the issue, so
-GitHub does not close it. The issue stays in the pool, the next worker reads it
+-- the marker of a PARTIAL tranche per git-workflow.md -- even when the tranche
+in fact fully resolves the issue, so GitHub does not close it. Since #23762 the
+marker family is split (see ``_closing_marker_re``): only the CLOSING forms
+(``Closes``/``Fixes``/``Resolves``) are evidence of a complete delivery; the
+partial forms (``See``, ``Part of``, ``Refs``) classify as ``partial`` and never
+earn the label -- a tranche is not a delivery. The issue stays in the pool, the next worker reads it
 as available, and re-picks it in duplicate. The cost is paid -- measured
 firsthand on #9568 (delivered 2026-08-06 by #9589, then TWO post-delivery
 ``[CLAIMED]`` landed on it, one +4 days after the merge, dispatching a sister
