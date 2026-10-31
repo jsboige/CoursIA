@@ -435,12 +435,19 @@ class HMMKMeansVoting(QCAlgorithm):
             self.debug(
                 f"{self.time.date()} | CRISIS vol5={vol5:.1%} -> bear forced"
             )
-            self.liquidate()
-            self.set_holdings(self.spy, spy_w)
-            self.set_holdings(self.tlt, tlt_w)
-            self.set_holdings(self.ief, ief_w)
-            self.set_holdings(self.gld, gld_w)
-            self.set_holdings(self.djp, djp_w)
+            # Un seul appel a cibles multiples (#23014) : en donnees
+            # journalieres, liquidate() puis set_holdings partent ensemble a
+            # la cloture, et set_holdings ignorait la vente en attente.
+            # set_holdings ignore aussi les ordres d'un reequilibrage mensuel
+            # passe le meme jour, encore en attente : on les annule d'abord.
+            self.transactions.cancel_open_orders()
+            self.set_holdings([
+                PortfolioTarget(self.spy, spy_w),
+                PortfolioTarget(self.tlt, tlt_w),
+                PortfolioTarget(self.ief, ief_w),
+                PortfolioTarget(self.gld, gld_w),
+                PortfolioTarget(self.djp, djp_w),
+            ], liquidate_existing_holdings=True)
 
         elif vol5 <= CRISIS_VOL_THRESHOLD and self._crisis_active:
             self._crisis_active = False
@@ -475,12 +482,17 @@ class HMMKMeansVoting(QCAlgorithm):
             f"GLD={gld_w:.0%} DJP={djp_w:.0%}"
         )
 
-        self.liquidate()
-        self.set_holdings(self.spy, spy_w)
-        self.set_holdings(self.tlt, tlt_w)
-        self.set_holdings(self.ief, ief_w)
-        self.set_holdings(self.gld, gld_w)
-        self.set_holdings(self.djp, djp_w)
+        # Meme correctif (#23014) : les ordres se calculent sur la position
+        # finale, et non sur la position encore detenue ; les ordres encore
+        # en attente sont annules avant.
+        self.transactions.cancel_open_orders()
+        self.set_holdings([
+            PortfolioTarget(self.spy, spy_w),
+            PortfolioTarget(self.tlt, tlt_w),
+            PortfolioTarget(self.ief, ief_w),
+            PortfolioTarget(self.gld, gld_w),
+            PortfolioTarget(self.djp, djp_w),
+        ], liquidate_existing_holdings=True)
 
     def on_data(self, data: Slice):
         if self.is_warming_up:
