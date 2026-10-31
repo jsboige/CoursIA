@@ -2863,7 +2863,18 @@ def _body_md_hierarchy(rc: int, payload: str, ctx: dict) -> str:
 
 _COMMENTS_OUT_GLOB = "**/*.ipynb"
 
-TRANCHE30: list[Guard] = [
+# ---------------------------------------------------------------------------
+# TRANCHE 33 (#22209, tranche 1b) -- emetteur d'effets de bord de la voie
+# rapide (trois stickies + trois artefacts).
+#
+# Renumerote TRANCHE30 -> TRANCHE33 au merge de `main` du 2026-10-31 : `main`
+# porte deja une TRANCHE30 (modele de chat obsolete, #22783) et une TRANCHE32
+# (collision d'index jumeau, #23627). Deux blocs ne peuvent pas porter le meme
+# nom -- precedent : TRANCHE9 -> TRANCHE10, TRANCHE29 -> TRANCHE30. Sans
+# renumerotation, Python ecrase la premiere affectation par la seconde : les
+# trois gardes de cette tranche ne s'executent plus, silencieusement
+# (incident #19374 ; garde `test_no_module_level_name_is_assigned_twice_in_the_registry`).
+TRANCHE33: list[Guard] = [
     # Un seul job dans le workflow source -> un seul nom de check-run, trois
     # stickies et trois artefacts a l'interieur. Les trois detecteurs
     # partagent le meme trigger et le meme join markdown/output (#18354) :
@@ -3037,10 +3048,19 @@ TRANCHE28: list[Guard] = [
 # TRANCHE 31 (#23073) -- garde des versions de bibliotheques chargees par les
 # carnets.
 #
-# Renumerote TRANCHE29 -> TRANCHE30 au merge de `main` du 2026-10-30 :
-# `main` porte deja une TRANCHE29 (confrontation doc <-> quantification
-# reellement chargee, #23252). Deux blocs ne peuvent pas porter le meme
-# nom -- precedent : TRANCHE9 -> TRANCHE10.
+# Renumerote TRANCHE29 -> TRANCHE30 au merge de `main` du 2026-10-30. Le nom
+# TRANCHE31 est celui que ce bloc porte depuis son introduction (#23079) : il
+# reste le sien, et le conflit de nom est traite chez le bloc qui l avait pris
+# (collision d'index jumeau, #23627, renumerote TRANCHE31 -> TRANCHE32).
+#
+# Historique du conflit : le 2026-10-31, `main` affectait TRANCHE31 deux fois
+# (le present bloc, puis celui de #23627). Python ecrase la premiere
+# affectation par la seconde -- le present bloc (garde des versions de
+# bibliotheques) n'etait donc plus execute, et silencieusement : le garde
+# existe, il ne tourne pas (incident #19374). C'est exactement ce que mesure
+# la garde `test_no_module_level_name_is_assigned_twice_in_the_registry`, et
+# c'est ce que verifiait `test_check_lib_versions.py`, rouge sur `main` avec
+# un `KeyError: 'Library versions guard (advisory, #23073)'`.
 #
 # Mandat user du 2026-10-28, a propos de #23047 : « Ca meritera un organe
 # pour stabiliser les versions d'API et de libs, car ce genre de regressions
@@ -3248,7 +3268,11 @@ TRANCHE30: list[Guard] = [
 # fichiers, aucun doublon ; controle positif rejoue en developpement
 # (record syncretique meme paire meme index, lane differente -> exit 1).
 # ---------------------------------------------------------------------------
-TRANCHE31: list[Guard] = [
+# Renumerote TRANCHE31 -> TRANCHE32 au merge de `main` du 2026-10-31 : le nom
+# TRANCHE31 appartient au bloc des versions de bibliotheques (#23073), qui
+# n'etait plus execute du tout (cf. le bloc precedent). Deux blocs ne peuvent
+# pas porter le meme nom (incident #19374).
+TRANCHE32: list[Guard] = [
     Guard(
         name="twin-index-collision-guard",
         source=FAST_LANE_NATIVE,

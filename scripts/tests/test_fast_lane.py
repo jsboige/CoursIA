@@ -2162,7 +2162,7 @@ def test_tranche27_detecteurs_tirent_via_la_forme_argv_de_la_garde(tmp_path):
 # EPINGLES ici parce que la source ne les porte plus (son declencheur
 # `pull_request` est retire) : sans cette epingle, un elargissement silencieux
 # du perimetre du garde ne serait plus confronte a rien.
-_TRANCHE30_PATHS = {
+_TRANCHE33_PATHS = {
     "Markdown claims anchored to previous output (#11435 advisory)": [
         "MyIA.AI.Notebooks/**/*.ipynb",
         "scripts/check_markdown_claims_output.py",
@@ -2190,10 +2190,10 @@ _TRANCHE30_PATHS = {
 
 
 def test_tranche28_paths_are_reproduced_and_absorbed():
-    from fast_lane_registry import TRANCHE30
+    from fast_lane_registry import TRANCHE33
 
-    assert len(TRANCHE30) == 3, "la tranche 1b porte trois advisories"
-    for guard in TRANCHE30:
+    assert len(TRANCHE33) == 3, "la tranche 1b porte trois advisories"
+    for guard in TRANCHE33:
         assert guard.absorbed, f"{guard.name} doit porter absorbed=True"
         assert guard.blocking is False, (
             f"{guard.name} est advisory a la source : le bloquer changerait "
@@ -2201,7 +2201,7 @@ def test_tranche28_paths_are_reproduced_and_absorbed():
         assert guard.commenters, (
             f"{guard.name} sans `commenters` serait un garde muet : son "
             "verdict EST son commentaire")
-        assert guard.paths == _TRANCHE30_PATHS[guard.name], (
+        assert guard.paths == _TRANCHE33_PATHS[guard.name], (
             f"{guard.name} : perimetre derive du declencheur source")
         assert guard.argv == [], (
             f"{guard.name} : le verdict est rendu par `commenters` ; un argv "
@@ -2218,9 +2218,9 @@ def test_every_commenter_header_is_a_known_bot_sticky():
     import re as _re
     sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
     import check_adjoint_prevalidation as cap
-    from fast_lane_registry import TRANCHE30
+    from fast_lane_registry import TRANCHE33
 
-    headers = [c.header for g in TRANCHE30 for c in g.commenters]
+    headers = [c.header for g in TRANCHE33 for c in g.commenters]
     assert len(headers) == len(set(headers)), (
         f"en-tetes dupliques = upsert croise entre deux gardes : {headers}")
     for header in headers:
@@ -2303,10 +2303,10 @@ def test_upsert_never_falls_back_to_post_when_patch_fails(monkeypatch):
 
 def test_effect_guards_run_only_in_the_effects_job(monkeypatch):
     """Un seul emetteur par garde : `--effects` OU le job principal, jamais les deux."""
-    from fast_lane_registry import TRANCHE30
+    from fast_lane_registry import TRANCHE33
 
-    names = {g.name for g in TRANCHE30}
-    _blank_other_tranches(monkeypatch, keep={"TRANCHE30"})
+    names = {g.name for g in TRANCHE33}
+    _blank_other_tranches(monkeypatch, keep={"TRANCHE33"})
     seen_effects, emitted = [], []
     monkeypatch.setattr(fast_lane, "changed_files",
                         lambda _ref: ["MyIA.AI.Notebooks/GameTheory/x.ipynb"])
@@ -2346,9 +2346,9 @@ def test_effect_guards_run_only_in_the_effects_job(monkeypatch):
 
 def test_fatal_rc_rougit_le_job_meme_en_mode_ombre(monkeypatch):
     """Une panne de detecteur n'est pas un verdict : elle doit etre visible."""
-    from fast_lane_registry import TRANCHE30
+    from fast_lane_registry import TRANCHE33
 
-    c = TRANCHE30[2].commenters[0]
+    c = TRANCHE33[2].commenters[0]
     ctx = {"repo": "o/r", "pr_number": "7", "merge_base": "abc",
            "pr_body_file": "", "name_status_file": "", "base_sha": "abc",
            "head_sha": "def", "base_ref": "origin/main"}
@@ -2366,9 +2366,9 @@ def test_fatal_rc_rougit_le_job_meme_en_mode_ombre(monkeypatch):
 
 def test_abstention_sans_merge_base_ne_lance_pas_le_detecteur(monkeypatch):
     """« rien regarde » et « rien trouve » restent distinguables (#11754)."""
-    from fast_lane_registry import TRANCHE30
+    from fast_lane_registry import TRANCHE33
 
-    guard = TRANCHE30[0]
+    guard = TRANCHE33[0]
     ctx = {"repo": "o/r", "pr_number": "7", "merge_base": "",
            "pr_body_file": "", "name_status_file": "", "base_sha": "abc",
            "head_sha": "def", "base_ref": "origin/main"}
