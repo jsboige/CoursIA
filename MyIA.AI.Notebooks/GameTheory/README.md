@@ -192,7 +192,6 @@ Ces lettres prolongent la table périodique du 03 en une géométrie de l'espace
 | Lettre | Notebook | Ce qu'il ajoute | Noyau | Public |
 |--------|----------|-----------------|-------|--------|
 | 03b | [Chambres, murs et chemins](GameTheory-03b-Chambres-Murs-Chemins-Lean-Python.ipynb) | Les jeux stricts comme chambres d'un arrangement, les égalités comme murs, et la distance de swap qui sépare deux chambres : incidence mur/chambre, graphe des chambres, longueurs de Coxeter, puis parcours en largeur, théorème de décomposition et certificat Lean indépendant du plus court chemin | Python | Recherche |
-
 | 03d | [Deux espèces de flèches](GameTheory-03d-Deux-Especes-de-Fleches-Python.ipynb) | Le théorème fini du chemin minimal : quand un swap traverse un mur ; la conjecture naïve réfutée, la condition exacte vérifiée | Python | Recherche |
 | 03e | [Méta-actions tarifées](GameTheory-03e-Meta-Actions-Tarifees-Python.ipynb) | Changer les règles comme action payante : coût en échelons de rang, seuil de migration, méta-jeu ; puis le parcours complet, du jeu nommé au coût de la méta-action | Python | Recherche |
 
