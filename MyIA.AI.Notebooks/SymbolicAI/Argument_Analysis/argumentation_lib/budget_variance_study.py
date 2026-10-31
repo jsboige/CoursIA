@@ -103,16 +103,30 @@ from argumentation_lib._verdict import (  # noqa: F401
 # famille mini/nano -> gpt-5.6-luna, principal -> gpt-5.6-sol. Les cibles
 # d'origine (gpt-4o-mini, gpt-4o) sont elles-memes d'une generation
 # remplacee -- substituer l'une par l'autre deplacait l'echec (#20135).
+# Extension #22783 : la famille 4o entre dans la table (gpt-4o-mini ->
+# gpt-5.6-luna, gpt-4o -> gpt-5.6-sol, memes cibles que le mapping) -- sans
+# elle, un .env encore sur gpt-4o-mini passait le substitut a travers et la
+# serie executait un modele obsolete en le nommant dans sa provenance.
 # Port verbatim de la cellule de validation du carnet 08b : ne pas diverger.
 OBSOLETE_MODEL_SUBSTITUTIONS = {
     "gpt-5-mini": "gpt-5.6-luna",
     "gpt-5": "gpt-5.6-sol",
     "gpt-5-nano": "gpt-5.6-luna",
+    "gpt-4o-mini": "gpt-5.6-luna",
+    "gpt-4o": "gpt-5.6-sol",
 }
 
 
 def _resolve_chat_model_id() -> str:
     _load_env()
+    # Priorite a la cible REELLEMENT executee (#22783) : la cellule du kernel
+    # pose ACTIVE_CHAT_MODEL_ID apres avoir configure le service (vLLM local
+    # ou repli). Sans cette lecture, OPENAI_CHAT_MODEL_ID pourrait nommer un
+    # modele que le run n'a pas utilise -- exactement la divergence que le
+    # rapport de provenance existe pour empecher.
+    active = os.getenv("ACTIVE_CHAT_MODEL_ID")
+    if active:
+        return active
     configured = os.getenv("OPENAI_CHAT_MODEL_ID")
     if not configured:
         raise RuntimeError(
