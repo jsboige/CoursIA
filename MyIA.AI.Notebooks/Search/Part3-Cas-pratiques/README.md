@@ -120,7 +120,7 @@ La génération procédurale de niveaux (App-19) encode le Wave Function Collaps
 | 7b | [App-7b-Wordle-CSharp](App-7b-Wordle-CSharp.ipynb) | ~35 min | **Jumeau C#** — filtrage simple, CSP par propagation de domaines, solveur par entropie de Shannon from-scratch, parité #4956 | Jumeau .NET |
 | 8 | [App-8-MiniZinc](App-8-MiniZinc.ipynb) | ~50 min | Syntaxe MiniZinc, contraintes globales | Nouveau |
 | 8 | [App-8-MiniZinc-CSharp](App-8-MiniZinc-CSharp.ipynb) | ~50 min | **Jumeau C#** — Google.OrTools CP-SAT (Prong A #3801), modèles déclaratifs équivalents MiniZinc (MiniZinc n'a pas de binding .NET), parité #4956 | Jumeau .NET |
-| 9 | [App-11-Picross](App-11-Picross.ipynb) | ~40 min | Nonogrammes : 27Mx speedup CP-SAT | Projet étudiant |
+| 9 | [App-11-Picross](App-11-Picross.ipynb) | ~40 min | Nonogrammes : speedup mesuré 17.4x (10x10) à 4.64e+24x (15x15, extrapolé) | Projet étudiant |
 | 9b | [App-11b-Picross-CSharp](App-11b-Picross-CSharp.ipynb) | ~40 min | Twin C# : énumération de motifs, propagation par intersection (point fixe), naïf vs propagation | Classique |
 | 10 | [App-15-SportsScheduling](App-15-SportsScheduling.ipynb) | ~55 min | Calendrier sportif : contraintes TV, équité, déplacements | Projet étudiant |
 | 10b | [App-15b-SportsScheduling-CSharp](App-15b-SportsScheduling-CSharp.ipynb) | ~55 min | **Jumeau C#** — Google.OrTools CP-SAT natif .NET, round-robin + équilibre D/E + déplacements, parité #4956 | Jumeau .NET |
