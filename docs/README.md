@@ -44,8 +44,9 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 | [reference/teaching-context.md](reference/teaching-context.md) | Calendrier, scope EPITA-IS, agents par école |
 | [reference/scripts-reference.md](reference/scripts-reference.md) | Catalogue scripts dépôt |
 | [reference/subagents-reference.md](reference/subagents-reference.md) | Roster 21 agents + 17 skills |
-| [reference/agents-roster-2026-10-08.md](reference/agents-roster-2026-10-08.md) | Roster daté des `machine:workspace` actifs, mesuré au 2026-10-08 (#14527, doc éphémère) |
+| [`2026-10-08-roster-machine-workspace.md`](transients/2026-10-08-roster-machine-workspace.md) | Roster daté des `machine:workspace` actifs, mesuré au 2026-10-08 (#14527, doc éphémère, figé dans la lane transiente) |
 | [reference/catalog_markers.md](reference/catalog_markers.md) | Marqueurs CATALOG-STATUS des READMEs (expansion + vérification CI) |
+| [reference/lib-versions.md](reference/lib-versions.md) | Organe des versions de bibliothèques des carnets (#23073) : manifeste canonique, recensement `--census`, garde advisory sur les carnets modifiés |
 | [reference/audit-reassessment-findings.md → transients/2026-05-17-…](transients/2026-05-17-reference-audit-reassessment-findings.md) | Items d'audit automatisé déjà reclassés (protocole reassessment) — déplacé en lane transiente (tranche 3b #14623) |
 | [reference/student-pr-template.md](reference/student-pr-template.md) | Template PR étudiante |
 | [reference/readme-series-gabarit.md](reference/readme-series-gabarit.md) | Gabarit de référence des READMEs de séries (#2651) |
@@ -53,6 +54,7 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 | [reference/iit-ict-transition.md](reference/iit-ict-transition.md) | Transition IIT → ICT — état narratif et architectural de la série ICT-Series (#4588, plan de partition #5081), tenue à jour au fil des livraisons ; reclassée pérenne depuis `suivis/` (tranche 2 #19283) |
 | [reference/agentic-engines-deep-eval.md](reference/agentic-engines-deep-eval.md) | Évaluation en profondeur des moteurs agentiques (Semantic Kernel, Google ADK, Microsoft Agent Framework) sur la série DataScienceWithAgents — couverture réelle du corpus, pilotes reproductibles, faits d'API mesurés |
 | [reference/ws-probes-repro.md](reference/ws-probes-repro.md) | Reproduction hors carnet des sondes wavelet scattering (WS-00c, WS-03) — graine fixe, valeurs citées vs mesurées, écart 1 item (#21823) |
+| [reference/gorard-lanyonai-etape3.md](reference/gorard-lanyonai-etape3.md) | Dépôts lanyonai mesurés sur l'amont — licences, absence de `lean-toolchain`, ce que leurs preuves Lean établissent exactement (et ce qu'elles n'établissent pas) ; support de la décision de consommation par la série Gorard (#19741, étape 3) |
 
 ### Règles détaillées (docs/reference/)
 
@@ -123,6 +125,7 @@ Documentation détaillée de l'infrastructure GenAI (ComfyUI, Docker, modèles l
 |---------|-------------|
 | [genai/3d-socle-reproductibilite.md](genai/3d-socle-reproductibilite.md) | Reproductibilité des socles 3D (NeRF, splats) — mesure sur deux postes : écart 0,07 dB et reproduction exacte |
 | [genai/genai-services.md](genai/genai-services.md) | Architectures Qwen/Lumina, mapping notebooks |
+| [genai/tts-fishaudio-int4.md](genai/tts-fishaudio-int4.md) | La route int4 réelle de tts-fishaudio — quantification amont weight-only, quatre correctifs, mesures VRAM/qualité (#23415) |
 | [genai/audio-embed-pattern.md](genai/audio-embed-pattern.md) | Pattern d'embed audio GenAI + leçons de réparation |
 | [genai/auth-flip-runbook.md](genai/auth-flip-runbook.md) | Runbook — flip d'authentification des services exposés (#16 P2) |
 | [genai/open-webui-orchestration.md](genai/open-webui-orchestration.md) | Orchestration et tâches planifiées avec Open WebUI v0.9.0 |
@@ -391,7 +394,9 @@ Protocoles opérationnels de la coordination flotte (registres, tenanciers, liai
 | Fichier | Description |
 |---------|-------------|
 | [coordination/gpu-reservation.md](coordination/gpu-reservation.md) | Protocole de réservation GPU — schéma du ledger, garde 85 % charge hôte, CUDA devices explicites, GPU 2 dédié ai-01, fold hebdomadaire, liaison picker / file #1454. Chantier #16737. |
+| [coordination/gpu-ledger-transport.md](coordination/gpu-ledger-transport.md) | Transport git du ledger `gpu-reservation` — publication en ajout seul, remote paramétrable, garde de lancement et sources des verdicts, sans changement de l'autorité déclarée. |
 | [coordination/ci-overflow-controller.md](coordination/ci-overflow-controller.md) | Contrôleur automatique de la variable de dépôt `CI_OVERFLOW_LOCAL` (phase B du débordement CI) — file hébergeuse saturée → `true`, file drainée → `false`, mesure illisible → aucune écriture ; le job automatisé **écrit** la variable via le secret dédié `ACTIONS_VARIABLES_PAT` (canal séparé du jeton de mesure, aucun repli : secret absent → verdict rendu, rien d'écrit, cause nommée dans le résumé du job). Chantier #22937. |
+| [coordination/dns-rate-measurement.md](coordination/dns-rate-measurement.md) | Mesure du débit de requêtes UDP des runners éphémères (volet 5.1 de Maintenance#196) — compteur `Udp.OutDatagrams` lu dans chaque conteneur, distinction recyclage / remise à zéro, verdict `UNREADABLE` quand aucune mesure n'est exploitable. Chantier #22937. |
 
 ## Cadrage épistémique (docs/cadrage/)
 

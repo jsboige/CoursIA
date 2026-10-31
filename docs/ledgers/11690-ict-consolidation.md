@@ -28,6 +28,48 @@ Une ligne par notebook, cinq colonnes : **Intention** (ce que le cadrage `ICT-0-
 
 Les accrétions `-b/-c/-d` se tranchent dans le strand où elles tombent.
 
+## Recompte de couverture — mesure du 2026-10-30 (case 1 de l'acceptance)
+
+Mesure de la couverture du ledger contre les carnets réellement présents sur `main` à la tête `2095de3791`. C'est le « recompte exact de la couverture du ledger » qu'annonçait l'état du 2026-10-25, et il était resté ouvert.
+
+**Résultat : 62 carnets couverts sur 99 objets pédagogiques (63 %), 37 non couverts.**
+
+### Méthode, et les deux pièges qu'elle a dû désamorcer
+
+Le dénombrement se fait en deux temps : les carnets sur `main` (`git ls-tree -r --name-only origin/main -- MyIA.AI.Notebooks/IIT`, filtré sur `ICT`, hors `_output`), et les sections de carnet du ledger.
+
+1. **Le suffixe `-Python` est une convention de nommage, pas un second carnet.** Beaucoup d'entrées du ledger portent le nom d'avant renommage (`ICT-05-CausalEmergence.ipynb`) alors que `main` porte `ICT-05-CausalEmergence-Python.ipynb`. Comparer des noms bruts rend **23 faux manquants** et fait chuter la couverture mesurée à 48/99. Après normalisation, **aucun** nom du ledger n'est absent de `main` : les deux ensembles se réconcilient entièrement.
+2. **L'extracteur doit accepter les en-têtes sans `.ipynb`.** Les tranches A et B écrivent `` ### `ICT-15-IntegratedComplexity` `` là où les strands 1-5 écrivent `` ### `ICT-15d-CechObstruction.ipynb` ``. Un motif ancré sur `.ipynb` **sous-compte 13 carnets** et rendrait 49/99. Le motif retenu est `` ^### `ICT…` ``, extension optionnelle.
+
+Le chiffre de 62 est **corroboré indépendamment** par la correction de compte de la séance du 2026-10-11 (« le dossier de séance couvrait 62 carnets — 37 sur `main` (strands 1 à 6) plus les 25 de la tranche B »), établie par une autre lane sur un autre chemin : deux instruments indépendants qui tombent sur 62.
+
+### Le dénominateur bouge, et c'est lui qui rend les anciens ratios faux
+
+| Date | Dénominateur cité | Source |
+|---|---|---|
+| 2026-08-18 | 53 | corps de l'EPIC |
+| 2026-10-05 | 88 | état mesuré de l'EPIC |
+| **2026-10-30** | **99** | cette mesure |
+
+La série a crû de 11 carnets en 25 jours (familles ICT-42, ICT-35, ICT-36, ICT-48→50, accrétions `-b/-c/-d`). Les ratios figés (« 29/88 », « 53/53 ») mesurent une série qui n'existe plus : ils se **recalculent**, ils ne se citent pas (cf. [pr-review-discipline.md](../../.claude/rules/pr-review-discipline.md) §E, totaux de README non tenus à la main).
+
+### Les 37 carnets non couverts, groupés
+
+- **ICT-20-FeatureCatastrophes**, **ICT-25b-StratificationInterTailles**
+- **ICT-32** StratificationCausaleLife, **ICT-33** SoupCollisions, **ICT-34** BancRecollementLectures
+- **Famille ICT-35 (humour, 4)** : 35, 35b, 35c, 35d
+- **Famille ICT-36 (FLens, 4)** : 36, 36b, 36c, 36d — puis **ICT-37** FLens-BeliefState, **ICT-38** SLens-SelfLocation
+- **ICT-39** CompositionRegards, **ICT-40a** TriangulationCausale, **ICT-40b** AnalogCognitionWaves
+- **Famille ICT-42 (inoculation, 6)** : 42, 42b, 42c, 42d, 42e, 42f — puis **ICT-43** Calibration-MultiEchelle
+- **ICT-46** Strate7-FreeCoordinates, **ICT-47** et **ICT-47b** (axe douleur), **ICT-48** ×2 (Onset9B-Aggregate, WolframClasses), **ICT-49** MachinesDeGoedel, **ICT-50** WolframRule30/Rule110
+- **Non numérotés (5)** : `ICT-Argumentation-QBFAcceptance`, `ICT-Argumentation-TruthMaintenance`, `ICT-Dissociation-DehaeneF2-SelfReport`, `ICT-Greffe5-AttributionCausale`, `ICT-MUH-FibreTegmark`
+
+Les deux plus gros blocs sont **la famille ICT-42 (6)** et **les deux familles FLens ICT-36/37 (5)** — les mêmes que la décision 5 de la séance du 2026-10-11 range sous la sous-série « escalier » de #20298. Les lire avant #20298 évite d'arbitrer sur un inventaire troué.
+
+### Portée du non-vérifié
+
+La mesure porte sur la **présence d'une section** par carnet, pas sur sa qualité ni sur sa fraîcheur : un carnet couvert dont la correction a été livrée depuis est périmé en vertu de la réserve 2, et cette mesure ne le détecte pas. Le compteur d'objets est un comptage de fichiers : un carnet renommé sans mise à jour du ledger resterait couvert par la normalisation `-Python`, un carnet scindé ou fusionné compterait pour un. Aucun notebook n'a été ouvert ni modifié pour cette passe ; l'arbitrage du 2026-08-21 borne toujours le travail à la lecture.
+
 ## Passe d'arbitrage du mainteneur — séance du 2026-10-11 (case 3 de l'acceptance)
 
 Séance de relecture tenue avec le mainteneur le 2026-10-11 ; décisions consignées par la lane `myia-ai-01:CoursIA` ([#11690 c.6103450933](https://github.com/jsboige/CoursIA/issues/11690#issuecomment-6103450933)). Le mainteneur a accepté les recommandations du dossier de séance et posé un cadre élargi pour la suite (#20298–#20301, #17545, #5081). Conformément à la réserve 2 (péremption), chaque correction décidée invalide la ligne correspondante au moment de son exécution.
