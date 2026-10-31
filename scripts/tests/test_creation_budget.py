@@ -484,3 +484,89 @@ def test_le_cliquet_agit_meme_sans_depassement_de_budget(monkeypatch, catalog,
                                        "ML-7-Recommendation.ipynb")]
     gate = cb.creation_gate(pool, catalog=catalog, state=sous_budget)
     assert 1 in gate
+
+
+# --- le cliquet face a une mesure NON COMPARABLE -----------------------------
+
+def test_le_cliquet_suit_le_verdict_de_comparabilite(tmp_path):
+    """Le cliquet retient tant qu'on ne peut pas PROUVER que le chantier
+    progresse : `RECULE` retient, `STAGNE` retient aussi (rien n'a bouge,
+    donc rien n'est prouve), `INSTRUMENT ILLEGIBLE` (mesure non comparable)
+    retient, et seul `AVANCE` libere."""
+    attendu = {
+        "RECULE": True,
+        "STAGNE": True,
+        "INSTRUMENT ILLEGIBLE": True,
+        "PREMIERE MESURE": True,
+        "AVANCE": False,
+    }
+    for verdict, doit_retenir in attendu.items():
+        etat = _ecrire_etat_anti_entropie(tmp_path, verdict)
+        assert cb.cliquet_actif(str(etat)) is doit_retenir, verdict
+
+
+def test_une_mesure_non_comparable_retient_un_carnet_au_nom_non_conforme(
+        monkeypatch, catalog, tmp_path):
+    """Une mesure non comparable retient le carnet neuf non conforme : le
+    garde est fail-CLOSED sur la comparabilite, parce que son but est de
+    retenir un carnet qui aggrave le chantier."""
+    etat = _ecrire_etat_anti_entropie(tmp_path, "INSTRUMENT ILLEGIBLE")
+    monkeypatch.setenv(cb.ENV_ANTI_ENTROPY, str(etat))
+    pool = [_grain_qui_cree(fichier="MyIA.AI.Notebooks/ML/ML.Net/"
+                                       "ML-7-Recommendation.ipynb")]
+    out = cb.creation_gate(pool, catalog=catalog, state=None)
+    assert out, "une mesure non comparable doit retenir le carnet"
+
+
+def test_un_etat_absent_ne_retient_toujours_rien(catalog):
+    """L'absence d'etat reste fail-OPEN : le registre n'a rien publie, donc
+    il n'a rien a dire sur le chantier."""
+    assert cb.cliquet_actif("C:/nonexistent/anti_entropy.json") is False
+
+
+def test_un_chantier_stagne_retient_un_carnet_au_nom_non_conforme(
+        monkeypatch, catalog, tmp_path):
+    """`STAGNE` retient aussi : un chantier qui n'a pas bouge n'est pas un
+    chantier qui progresse. Un carnet neuf au nom non conforme aggraverait
+    une file qui ne recule pas -- c'est exactement ce que le cliquet doit
+    retenir."""
+    etat = _ecrire_etat_anti_entropie(tmp_path, "STAGNE")
+    monkeypatch.setenv(cb.ENV_ANTI_ENTROPY, str(etat))
+    pool = [_grain_qui_cree(fichier="MyIA.AI.Notebooks/ML/ML.Net/"
+                                       "ML-7-Recommendation.ipynb")]
+    out = cb.creation_gate(pool, catalog=catalog, state=None)
+    assert out, "un chantier stagne doit retenir le carnet non conforme"
+    assert cb.CAUSE_NOM in out[1]
+
+
+def test_un_chantier_qui_avance_libere_le_carnet(
+        monkeypatch, catalog, tmp_path):
+    """Le cliquet ne s'ouvre que sur une preuve : `AVANCE` libere."""
+    etat = _ecrire_etat_anti_entropie(tmp_path, "AVANCE")
+    monkeypatch.setenv(cb.ENV_ANTI_ENTROPY, str(etat))
+    pool = [_grain_qui_cree(fichier="MyIA.AI.Notebooks/ML/ML.Net/"
+                                       "ML-7-Recommendation.ipynb")]
+    out = cb.creation_gate(pool, catalog=catalog, state=None)
+    assert not out, "un chantier qui avance ne retient plus personne"
+
+
+def test_une_comparaison_suspendue_retient_meme_sur_un_verdict_avance(
+        monkeypatch, catalog, tmp_path):
+    """Le fail-CLOSED doit etre VISIBLE : une comparaison suspendue
+    (fenetre de rebasage) ne prouve aucun progres, meme quand le verdict
+    affiche dit `AVANCE`. Un lecteur qui ne voit que le verdict doit
+    pouvoir constater que rien n'est libere."""
+    etat = tmp_path / "anti_entropy.json"
+    etat.write_text(
+        json.dumps({"entrees": {"padding-nommage": {
+            "issue": 5081, "valeur": 38, "verdict": "AVANCE",
+            "comparaison_suspendue": True,
+            "fenetre": "comparaison de 7 j SUSPENDUE : reference de "
+                       "rebasage (2026-10-31) ; elle s'ouvre le 2026-11-07"}}}),
+        encoding="utf-8")
+    monkeypatch.setenv(cb.ENV_ANTI_ENTROPY, str(etat))
+    assert cb.cliquet_actif(str(etat)) is True
+    pool = [_grain_qui_cree(fichier="MyIA.AI.Notebooks/ML/ML.Net/"
+                                       "ML-7-Recommendation.ipynb")]
+    out = cb.creation_gate(pool, catalog=catalog, state=None)
+    assert out, "une comparaison suspendue doit retenir le carnet"

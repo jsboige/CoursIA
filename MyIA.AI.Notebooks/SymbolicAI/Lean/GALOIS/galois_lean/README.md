@@ -1,6 +1,6 @@
 # Problème inverse de Galois — M₂₃ groupe de Galois sur ℚ
 
-Lake `galois_lean` : couche de preuve pour le notebook **[Lean-22](../Lean-22-Galois-Probleme-Inverse-M23.ipynb)** (problème inverse de Galois), autour du groupe sporadique de Mathieu M₂₃.
+Lake `galois_lean` : couche de preuve pour le notebook **[Lean-22](../GALOIS-01-Probleme-Inverse-M23-Python.ipynb)** (problème inverse de Galois), autour du groupe sporadique de Mathieu M₂₃.
 
 ## Contexte
 
@@ -38,6 +38,6 @@ Per `sota-not-workaround` : refaire une échelle de petits groupes à côté d'u
 
 ## Voir aussi
 
-- [Lean-15-Grothendieck-Tribute](../Lean-15-Grothendieck-Tribute.ipynb) — hommage comparable (prouve ce qu'il annonce)
+- [Lean-15-Grothendieck-Tribute](../../Lean-15-Grothendieck-Tribute.ipynb) — hommage comparable (prouve ce qu'il annonce)
 - `grothendieck_lean` — angle SGA1 (π₁ étale, existence de Riemann) pour le chaînon-pont vers la réalisation galoisienne
 - EPIC i18n #4980 : siblings `_en` à venir
