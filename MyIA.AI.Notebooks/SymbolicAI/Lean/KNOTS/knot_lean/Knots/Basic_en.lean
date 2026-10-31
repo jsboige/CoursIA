@@ -141,6 +141,22 @@ def unknot : Knot where
 
 Crossing number 3, three positive crossings (right-hand trefoil).
 PD-code from KnotInfo: [[1,4,2,5],[3,6,4,1],[5,2,6,3]]
+
+Catastrophe bridge (item G.α.2 of plan #19333): the cuspidal cubic
+`y² = x³` — bifurcation curve `4a³ + 27b² = 0` of Thom's cusp — carries
+the same signature 3 (three crossings, three lobes of the torus trefoil
+`2φ = 3θ`). The verified form of the bridge lives in `AlexanderTrivial`:
+`alexander_trefoil_roots_primitive_sixth` establishes that the roots of
+the Alexander polynomial `t² − t + 1` are exactly the primitive sixth
+roots of unity; the Python replay lives in `IIT/ICT-Series/ICT-23`
+(`ict/catastrophe.py`).
+
+Group structure first (item E.1): the trefoil is the (2, 3) torus knot —
+the closure of the two-strand braid `σ₁³`. A group structure (the braid
+group) before being a knot object: the classification of finite groups
+(finite abelian = product of cyclics; cf. *Classifying Groups*,
+Sheydvasser, 2026-08-05) recalls the framework of which the braid group
+is a non-abelian instance.
 -/
 def trefoilDiagram : KnotDiagram where
   crossings := [

@@ -154,6 +154,15 @@ def _patch_common_network(monkeypatch):
     monkeypatch.setattr(pig, "has_delivered_signal",
                         pig.delivered_probe_inert)
     monkeypatch.setattr(pig, "merged_pr_signal", pig.merged_pr_probe_inert)
+    monkeypatch.setattr(pig, "has_recent_delivery_marker",
+                        pig.recent_marker_probe_inert)
+    # #22630 : main() injecte aussi le rafraichissement de l'instantane
+    # partage du tapis, qui emet un `gh api` par issue candidate. En test il
+    # est remplace par son homologue inerte -- la surface est enumeree ICI,
+    # comme les sondes de livraison, pas laissee au hasard de l'ordre des
+    # fichiers.
+    monkeypatch.setattr(pig, "_belt_snapshot_prime",
+                        pig.belt_snapshot_prime_inert)
 
 
 # ==================================================================

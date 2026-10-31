@@ -624,6 +624,14 @@ def _patch_belt_network(monkeypatch, prs, red_state):
     # un aller-retour d'auth lent. C'est de l'installation d'environnement,
     # pas le comportement sous test : on le neutralise.
     monkeypatch.setattr(pig.gh_identity, "pin_gh_token", lambda *a, **k: None)
+    # `snapshot_prime` (#22630) : le tapis rafraichit son instantane partage
+    # UNE FOIS par passe, ce qui emet un `gh api` par issue candidate. Le
+    # defaut de la boucle est INERTE (`belt_snapshot_prime_inert`) ; `main`
+    # injecte le vrai rafraichisseur. On enumere ici la surface, comme les
+    # autres : les tests qui gardent un pool vide n'ont aucun candidat a
+    # rafraichir, et l'ecriture du cache reste desactivee sous pytest
+    # (`_PASS_SNAPSHOT`).
+    monkeypatch.setattr(pig, "_belt_snapshot_prime", lambda repo, numbers: None)
 
 
 def test_belt_json_emits_single_document_when_red_present(monkeypatch, capsys):
@@ -699,6 +707,11 @@ def test_belt_loop_default_probes_are_inert(monkeypatch):
     et pendait (mesure 2026-10-09 : 99 s pour un seul test). Ce garde
     casse au premier retour d'un defaut reseau : les vraies sondes sont
     remplacees par des leveuses d'exception, la boucle doit completer.
+
+    Le rafraichissement d'instantane (#22630) est couvert de la meme facon :
+    le vrai ``_belt_snapshot_prime`` est une leveuse -- si la boucle
+    redevenait reseau par defaut, ce test echoue au lieu de pendre. Le
+    garde `_no_real_gh` attrape au passage tout `gh` residuel.
     """
     def raise_delivered(n, lane=None):
         raise _RealProbeReached(f"has_delivered_signal atteinte pour #{n}")
@@ -713,6 +726,10 @@ def test_belt_loop_default_probes_are_inert(monkeypatch):
     monkeypatch.setattr(pig, "has_delivered_signal", raise_delivered)
     monkeypatch.setattr(pig, "merged_pr_signal", raise_merged)
     monkeypatch.setattr(pig, "has_recent_delivery_marker", raise_recent)
+    monkeypatch.setattr(
+        pig, "_belt_snapshot_prime",
+        lambda repo, numbers: (_ for _ in ()).throw(
+            _RealProbeReached("_belt_snapshot_prime atteint hors injection")))
 
     pool = [_make_item(19001, age_days=50, idle=5, last=None),
             _make_item(19002, age_days=49, idle=5, last=None)]
@@ -755,9 +772,10 @@ def test_belt_main_json_path_never_reaches_real_probes(monkeypatch, capsys):
             "isDraft": False}]
     _patch_belt_network(monkeypatch, prs, red)
     # La fixture couvre fetch_visits (main l'appelle legitiment, sans
-    # reseau en test). Les sondes de livraison, elles, ne DOIVENT etre
-    # atteintes nulle part sur ce chemin -- defauts inertes de la boucle :
-    # si un defaut reseau revient, la leveuse fait echouer le test.
+    # reseau en test) ET le rafraichisseur d'instantane. Les sondes de
+    # livraison, elles, ne DOIVENT etre atteintes nulle part sur ce chemin
+    # -- defauts inertes de la boucle : si un defaut reseau revient, la
+    # leveuse fait echouer le test.
     monkeypatch.setattr(pig, "has_delivered_signal",
                         raise_real("has_delivered_signal"))
     monkeypatch.setattr(pig, "merged_pr_signal",
@@ -769,6 +787,43 @@ def test_belt_main_json_path_never_reaches_real_probes(monkeypatch, capsys):
     payload = json.loads(capsys.readouterr().out)
     assert payload["mode"] == "belt"
     assert payload["repair"]["grain"]["number"] == 18844
+
+
+def test_belt_main_injects_the_real_snapshot_prime(monkeypatch, capsys):
+    """Le cache reste utilise en production : `main` injecte le vrai prime.
+
+    Controle positif du defaut inerte : la boucle seule n'emet aucune
+    requete, mais le run complet rafraichit bien l'instantane partage UNE
+    FOIS pour les candidats de la fenetre. Le rafraichisseur est espionne
+    (aucune requete reelle), les candidats restent vides de claims pour
+    garder le run en memoire.
+    """
+    _patch_belt_network(monkeypatch, prs=[], red_state=_state_red())
+    pool = [_make_item(19101, age_days=50, idle=5, last=None)]
+    monkeypatch.setattr(pig, "fetch_pool", lambda **k: (list(pool), None))
+    # La mesure des dernieres visites (`latest_claim_stamp` / bulk GraphQL)
+    # n'est pas la surface sous test : elle est neutralisee comme dans les
+    # autres tests de la boucle, pour garder le run entierement en memoire.
+    monkeypatch.setattr(pig, "fetch_latest_claim_stamps_bulk",
+                        lambda *a, **k: ({}, None))
+    # Sondes de livraison : verdicts injectes, comme partout dans ce fichier
+    # -- seul le BRANCHEMENT du rafraichisseur est mesure ici.
+    monkeypatch.setattr(pig, "has_delivered_signal", lambda n, lane=None: False)
+    monkeypatch.setattr(pig, "merged_pr_signal", lambda n, lane=None: False)
+    monkeypatch.setattr(pig, "has_recent_delivery_marker", lambda n: False)
+    primed: list[list[int]] = []
+
+    def spy_prime(repo, numbers):
+        primed.append(list(numbers))
+
+    monkeypatch.setattr(pig, "_belt_snapshot_prime", spy_prime)
+    rc = pig.main(["--lane", "myia-po-2024:CoursIA-2", "--belt", "--json"])
+
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["mode"] == "belt"
+    assert primed, "main n'a pas branche le rafraichissement d'instantane"
+    assert primed == [[19101]], "une seule passe, sur les candidats tires"
 
 
 def test_non_belt_json_red_still_emits_standalone_repair(monkeypatch, capsys):
@@ -2255,6 +2310,14 @@ def test_check_claims_single_number_reads_mono_issue_output(monkeypatch):
     que leur claim soit lu.
     """
     monkeypatch.setattr(pig, "_build_open_prs_cache_for_belt", lambda lane: None)
+    # #22630 : la voie en processus (instantane local) est PRIORITAIRE dans
+    # `check_claims` -- sans ce shunt, elle consomme deux subprocess (`gh api`
+    # du rafraichissement, `gh issue view` du lecteur) avant la voie
+    # historique instrumentee ici, et le compte d'appels n'a plus de sens.
+    # La voie en processus a ses propres tests (test_gh_snapshot_22630.py) ;
+    # ces trois tests verifient le contrat de la voie subprocess.
+    monkeypatch.setattr(pig, "_claims_in_process",
+                        lambda numbers, lane, cache=None: None)
     calls, fake_run = _fake_run_recorder(lambda cmd: _SINGLE_ISSUE_STDOUT)
     monkeypatch.setattr(pig.subprocess, "run", fake_run)
 
@@ -2270,6 +2333,10 @@ def test_check_claims_unreadable_batch_falls_back_per_issue(monkeypatch):
     """Une sortie batch illisible ne rend plus ERROR : chaque issue est
     relue seule, comme le commentaire du code l'annoncait deja."""
     monkeypatch.setattr(pig, "_build_open_prs_cache_for_belt", lambda lane: None)
+    # #22630 : voie en processus ecartee -- ce test instrumente la voie
+    # subprocess historique (cf. test_check_claims_single_number_...).
+    monkeypatch.setattr(pig, "_claims_in_process",
+                        lambda numbers, lane, cache=None: None)
 
     def stdout_for(cmd):
         if cmd.count("--lane") and len(cmd) > 5:  # batch : 2 numeros ou plus
@@ -2557,6 +2624,11 @@ def test_check_claims_reads_the_belt_deadline(monkeypatch):
         return _Done()
 
     monkeypatch.setattr(pig.subprocess, "run", fake_run)
+    # #22630 : voie en processus ecartee -- le mur de temps se mesure sur le
+    # subprocess `check_lane_claim.py` de la voie historique, pas sur la voie
+    # en processus (qui n'ouvre aucun subprocess de ce nom).
+    monkeypatch.setattr(pig, "_claims_in_process",
+                        lambda numbers, lane, cache=None: None)
     pig._BELT_DEADLINE[0] = clock[0] + 2.0
     try:
         pig.check_claims([30031], "myia-po-2024:CoursIA")
@@ -2713,3 +2785,117 @@ def test_main_runs_the_repair_phase_inside_its_own_deadline(monkeypatch):
         nits.NITS_PASS_BUDGET_S = previous_budget
         nits._NITS_PASS_DEADLINE = None
     _ = clock
+
+
+def test_belt_withdraws_candidate_covered_by_open_pr():
+    """#16589 sur le TAPIS : une PR ouverte qui porte deja l'issue ecarte
+    le candidat, et le suivant le remplace.
+
+    Controle positif du defaut mesure le 2026-10-27 : la sonde de
+    couverture n'etait cablee que sur la voie PONDEREE
+    (``draw_unclaimed``). Le tapis, lui, rendait ``ACTION REQUISE : poser
+    [CLAIMED] ... sur #22374`` alors que ``#22515`` est OUVERTE et porte
+    l'issue dans son titre et son body -- un claim qui aurait ete VOID a
+    la seconde ou il etait pose.
+    """
+    covered = _make_item(22374, age_days=3, idle=1, last=None)
+    clean = _make_item(19002, age_days=49, idle=5, last=None)
+    pool = [covered, clean]
+
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        pool, _free_claims(pool), _belt_args(), probe_budget=8,
+        cover_probe=lambda n: "PR #22515" if n == 22374 else "")
+
+    assert [p["number"] for p in picks] == [19002]
+    assert len(withheld) == 1
+    number, cause = withheld[0]
+    assert number["number"] == 22374
+    assert cause.startswith("EN COURS : ")
+    assert "PR #22515" in cause
+    # Aucun echec de sonde : la sonde a repondu.
+    assert state.get("cover_failures", []) == []
+
+
+def test_belt_cover_probe_failure_is_fail_open_and_reported():
+    """Sonde de couverture ratee : le candidat est CONSERVE et le fait est
+    RAPPORTE -- meme tri-etat que la sonde de livraison.
+
+    Une lecture qui n'a pas ABOUTI n'est pas une absence de PR couvrante :
+    ecarter ici couterait a la lane un grain disponible a chaque 403.
+    """
+    pool = [_make_item(19001, age_days=50, idle=5, last=None)]
+
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        pool, _free_claims(pool), _belt_args(), probe_budget=8,
+        cover_probe=lambda n: None)
+
+    assert [p["number"] for p in picks] == [19001]
+    assert withheld == []
+    assert state["cover_failures"] == [19001]
+
+
+def test_belt_cover_probe_shares_the_delivery_budget():
+    """Sonde de couverture et sonde de livraison parent le MEME plafond.
+
+    Un plafond double laisserait le tapis depenser deux fois le cout
+    annonce par ``probe_budget`` -- la doctrine de la voie ponderee
+    (#16589) est « au meme rang, donc au meme cout borne ».
+    """
+    pool = [_make_item(19001 + i, age_days=50 - i, idle=5, last=None)
+            for i in range(4)]
+    seen = []
+
+    def cover(n):
+        seen.append(n)
+        return ""
+
+    # probe_budget=1 : la premiere sonde de livraison (inerte) consomme
+    # l'unite, la couverture n'a plus de budget et rend UNPROBED sans
+    # appeler la sonde injectee.
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        pool, _free_claims(pool), _belt_args(grains=4), probe_budget=1,
+        cover_probe=cover)
+
+    assert seen == []
+    assert state["budget_hit"] is True
+    # Fail-OPEN : les candidats restent servis.
+    assert [p["number"] for p in picks] == [19001, 19002, 19003, 19004]
+
+
+def test_belt_cover_probe_budget_exhausts_mid_hand():
+    """Le plafond partage s'epuise AU MILIEU d'une poignee, pas a sa frontiere.
+
+    Le test precedent prouve le partage a ``probe_budget=1`` : l'unite est
+    consommee par la sonde de livraison, la couverture rend ``UNPROBED`` sans
+    etre appelee. C'est une frontiere. Ici le plafond couvre plusieurs
+    candidats et le cout se cumule : chaque candidat paie sa sonde de
+    livraison PUIS sa sonde de couverture, et la couverture cesse d'etre
+    sonder alors que des candidats restent servables -- l'endroit ou le
+    double cout de ``counted_cover_probe`` devient reel (reserve Hermes,
+    #22986).
+
+    Cout mesure sur cette poignee de 4, plafond -> nombre de sondes de
+    couverture effectivement emises : 2 -> 0, 3 a 5 -> 1, 6 et plus -> 2.
+    Un candidat entierement servi coute donc 3 unites, et c'est ce chiffre
+    qui dit ou le plafond mord.
+    """
+    pool = [_make_item(19011 + i, age_days=50 - i, idle=5, last=None)
+            for i in range(4)]
+    seen = []
+
+    def cover(n):
+        seen.append(n)
+        return ""
+
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        pool, _free_claims(pool), _belt_args(grains=4), probe_budget=3,
+        cover_probe=cover)
+
+    # Plafond 3 pour une poignee de 4 : la couverture s'arrete apres le
+    # PREMIER candidat, alors que trois restent servables.
+    assert seen == [19011]
+    assert state["budget_hit"] is True
+    # Fail-OPEN : les 4 candidats restent servis malgre le plafond atteint.
+    assert [p["number"] for p in picks] == [19011, 19012, 19013, 19014]
+    # Le contrat d'etat porte la cle de couverture des le depart (#22986).
+    assert state["cover_failures"] == []

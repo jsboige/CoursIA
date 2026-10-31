@@ -16,6 +16,13 @@ unlisted (e.g. check_run / check_suite, whose payload can name a fork pull
 request) is refused by default. Dynamic ``runs-on`` expressions are rejected
 because their target cannot be proved statically.
 
+A ratchet (#23053) additionally refuses any job of a ``pull_request`` workflow
+left on a naked ``ubuntu-latest`` -- it never reads the overflow variable, so
+it queues on the hosted pool while local slots sit idle -- unless its workflow
+is named in ``HOSTED_PR_JOB_EXCEPTIONS`` with a motive. That list is a subset
+of a frozen baseline and only shrinks: naming a new exception is itself a
+violation.
+
 Exit codes:
   0  policy satisfied (including the explicit baseline of zero self-hosted jobs)
   1  policy violation
@@ -27,7 +34,7 @@ import argparse
 import json
 import re
 import sys
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -86,38 +93,40 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     # tranche 3d (#14283) : premier consommateur GitHub-hosted du depot une
     # fois secret-scan bascule -- 2650 runs same-repo du 2026-08-28 au
     # 2026-09-02, timeout 25 min, aucun filtre `paths:`.
-    "always-on-guards.yml",
-    # #22331 : le job de body est la moitie extraite de always-on-guards.yml
-    # (memes organes, meme pool, meme garde anti-fork, meme routage). Le laisser
-    # sur GitHub-hosted rendrait la famine de file pire qu'avant, puisque son
-    # declencheur `edited` est justement celui qui produit les re-declenchements.
-    "always-on-guards-body.yml",
+    #
+    # 2026-10-27 (PR #22820, lane myia-ai-01:CoursIA) : always-on-guards.yml et
+    # always-on-guards-body.yml MIGRENT vers ubuntu-latest par Q35 etape 2
+    # (#17397) -- l'organe `scripts/ci/audit_self_hosted_needs.py` les certifie
+    # sans aucun besoin local, et le parc local etait sature PAR SES CHECKOUTS
+    # (mesure 00:45Z : 11 des 12 slots occupes dans `actions/checkout`). Sortis
+    # de SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit. Precedent :
+    # repeated-prose-advisory.yml (#17443).
     "pr-gate-stale-sweep.yml",
     "windows-self-hosted-tests.yml",
     "linux-self-hosted-tests.yml",
     "banner-guard.yml",
-    "solution-leak-guard.yml",
     "prose-counts-guard.yml",
     "notebook-interp-positioning.yml",
-    "notebook-cell-source-parses.yml",
     "cell-order-gate.yml",
     "pip-leak-guard.yml",
     "hooks-parity.yml",
-    "notebook-exec-sequence-ratchet.yml",
+    # 2026-10-27 (lane myia-ai-01:CoursIA, lot 2 de l'extension Q35 etape 2) :
+    #   ces 11 workflows MIGRENT vers ubuntu-latest -- l'organe
+    #   `scripts/ci/audit_self_hosted_needs.py` les certifie sans aucun besoin
+    #   local, et le parc local etait sature PAR SES CHECKOUTS (mesure 00:45Z :
+    #   11 des 12 slots occupes dans `actions/checkout`, 614 runs en file). La
+    #   garde anti-fork est conservee dans chaque fichier. Sortis de
+    #   SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit. Precedent :
+    #   repeated-prose-advisory.yml (#17443).
     "notebook-navlink-check.yml",
     "notebook-nav-chain-guard.yml",
-    "notebook-papermill-ratchet.yml",
     # tranche 3b (#14283, meme decision, meme owner) : suite des gardes PR
     #   pure-Python. Fondue dans la meme PR que 3a -- les scinder aurait produit
     #   un conflit sur cette meme ancre pour zero benefice de relecture.
     "markdown-claims-output-advisory.yml",
-    "orphaned-delivery-scan.yml",
-    "quantconnect-notebook-freshness.yml",
-    "scan-md-hierarchy-drift.yml",
     "slides-composition-pr-relay.yml",
     "source-output-ratchet.yml",
     "translation-guard.yml",
-    "unique-check-run-names-guard.yml",
     "validation-matrix.yml",
     # tranche 3a (#14283, decision ai-01 2026-09-02, owner myia-ai-01:CoursIA) :
     #   gardes PR pure-Python, garde same-repo au niveau job, runs-on STATIQUE.
@@ -125,16 +134,19 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   slot quil attend), owui-playwright-check.yml (navigateurs hors image),
     #   always-on-guards.yml (trigger pull_request_review = FORK_REACHABLE).
     #   Rollback = revert de la PR de routage.
-    "arxiv-attributions-guard.yml",
-    "catalog-drift.yml",
+    # 2026-10-27 (lane myia-ai-01:CoursIA, lot 1 de l'extension Q35 etape 2) :
+    #   ces 13 workflows MIGRENT vers ubuntu-latest -- l'organe
+    #   `scripts/ci/audit_self_hosted_needs.py` les certifie sans aucun besoin
+    #   local, et le parc local etait sature PAR SES CHECKOUTS (mesure 00:45Z :
+    #   11 des 12 slots occupes dans `actions/checkout`, 614 runs en file). La
+    #   garde anti-fork est conservee dans chaque fichier. Sortis de
+    #   SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit. Precedent :
+    #   repeated-prose-advisory.yml (#17443).
     "consecutive-code-cells-advisory.yml",
-    "harness-coauthor-guard.yml",
     "ict-tests.yml",
-    "label-paths-guard.yml",
     "lean-conway.yml",
     "lean-i18n-drift.yml",
     "lean-knot.yml",
-    "manifest-description-visuelle-gate.yml",
     # tranche 3c (#14283, meme decision, meme owner) : jobs individuels d'un
     #   workflow dont les autres jobs restent sur ubuntu-latest.
     #   Exclus deliberement : ml-tests (torch retelecharge a chaque run, pas de
@@ -147,7 +159,6 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   croise, carnets Setup). Trigger pull_request paths + garde same-repo
     #   au niveau job + runs-on STATIQUE -- meme profil que ses voisins 3c.
     #   Rollback = revert de la PR (l'entree disparait de l'allowlist).
-    "bios-companion-coverage.yml",
     "lean-social-choice.yml",
     "notebook-execution-required.yml",
     "secret-scan.yml",
@@ -160,7 +171,17 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   workflow_dispatch seulement). Son jumeau always-on-guards.yml ne l'est
     #   PAS -- il porte pull_request_review, classe FORK_REACHABLE (#14294).
     "always-on-metadata-guards.yml",
-    "twin-parity.yml",
+    # #22937 (volet (d), 2026-10-28, lane myia-ai-01:CoursIA-2) : la garde
+    #   des waivers de chemins locaux REJOINT LA COHORTE (forme hybride
+    #   auditee #22461). Declencheurs `pull_request` (opened/synchronize/
+    #   reopened) + `workflow_dispatch` -- les DEUX sont dans
+    #   SAFE_SELF_HOSTED_TRIGGERS ; la jambe `issue_comment` avait ete
+    #   RETIREE (#23044, et son trigger est FORK_REACHABLE). Le job est
+    #   pure-Python, sparse-checkout de 2 fichiers, lecture seule des
+    #   commentaires de PR (`permissions: issues: read`,
+    #   `pull-requests: read`) : aucun besoin heberge specifique.
+    #   Rollback = remettre `runs-on: ubuntu-latest` + retirer l'entry.
+    "local-path-waiver-guard.yml",
     # tranche 4 (#14283, meme decision, meme owner) : balayages cron pur-Python.
     #   Declencheur `schedule` seul -- pas de contexte pull_request, donc aucune
     #   garde same-repo requise. 33 creneaux distincts, au plus 2 simultanes
@@ -280,6 +301,23 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   Rollback = revert de la PR (l'entree disparait de l'allowlist).
     "linux-runner-version-pin-advisory.yml",
     "linux-runner-starvation-advisory.yml",
+    # #22946 (owner myia-ai-01:CoursIA-2, review ai-01 du 2026-10-27) :
+    #   controleur du debordement CI_OVERFLOW_LOCAL (phase B de #22937). Meme
+    #   profil que les deux advisories ci-dessus : `schedule` +
+    #   `workflow_dispatch` UNIQUEMENT (advisory par construction, doctrine
+    #   #12817), runs-on STATIQUE [self-hosted, coursia-ephemeral,
+    #   coursia-linux], garde same-repo au niveau job malgre l'absence de
+    #   trigger `pull_request`. Pur-Python stdlib + `gh` binaire de l'image ;
+    #   le job est en LECTURE SEULE (aucun secret, aucune ecriture de
+    #   variable -- l'ecriture reste un geste d'operateur ai-01 en local,
+    #   arbitrage (b) du 2026-10-27), `permissions: actions: read` +
+    #   `contents: read` -- `variables` n'est PAS une portee admise sous
+    #   `permissions:` (une cle hors liste invalide le fichier entier).
+    #   La bascule vers le pool est le POINT 1 de la review : le job mesurait
+    #   la file hebergee en y faisant la queue (17 des 23 jobs en cours
+    #   etaient heberges). Rollback = revert de la PR (l'entree disparait de
+    #   l'allowlist, et le garde fail-closed refuse alors le runs-on).
+    "ci-overflow-controller.yml",
     # runner-starvation-advisory.yml (#14846, owner myia-po-2027:CoursIA-2) :
     #   jumeau de linux-runner-starvation-advisory.yml (#13378) etendu aux
     #   2 labels waiter + lean (matrice GitHub Actions, 2 entrees include).
@@ -322,7 +360,6 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   Rollback = revert de la PR (l'entree disparait de l'allowlist).
     "notebook-output-collapse-ratchet.yml",
     "notebook-validation.yml",
-    "owui-playwright-check.yml",
     "perimeter-review-guard.yml",
     "regression-guard.yml",
     "render-volume-delta-advisory.yml",
@@ -337,6 +374,22 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     # (#17397, PR dediee myia-ai-01:CoursIA-2 c.206, 5 workflows
     # agregateurs, 2026-10-06). Sorti de SELF_HOSTED_WORKFLOW_ALLOWLIST
     # dans le meme commit. Precedent : #17443 (po-2023, 4 agregateurs).
+    # scripts-tests.yml : RESTE sur le parc local (PR #22820, lane
+    # myia-ai-01:CoursIA, 2026-10-27). La migration vers ubuntu-latest a ete
+    # tentee puis ANNULEE sur une MESURE, pas sur une preference :
+    # `Scripts Tests (CPU)` y echoue (run 40427418743 -- 4 echecs sur 20950
+    # tests). Les deux causes sont couplees a la FORME du runner :
+    #   (a) `scripts/lean/tests/test_lean_exec.py` -- `compute_granted` derive
+    #       `jobs_cpu` de `os.cpu_count()` (2 sur ubuntu-latest, >= 4 sur le
+    #       parc local) ; le test exige `granted == 4` ;
+    #   (b) `scripts/tests/test_setup_shared_mathlib_scan.py` -- le script
+    #       `scripts/lean/setup_shared_mathlib.ps1` convertit la racine du
+    #       depot en chemins Windows (`$RepoRoot -replace '/', '\'`), ce qui
+    #       invalide `Test-Path` sur un runner POSIX -> « Aucun projet Lake
+    #       avec mathlib trouve. ».
+    # Un job dont la suite de tests est couplee a la forme de l'hote a un
+    # besoin local REEL : l'organe `audit_self_hosted_needs.py` ne le voit pas
+    # (il classifie le workflow, pas la suite qu'il execute).
     "scripts-tests.yml",
     "series-naming-gate.yml",
     # registre TRANCHE14 (issue #16762, owner myia-po-2023:CoursIA) : meme
@@ -367,7 +420,6 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     # (#17397, PR dediee myia-ai-01:CoursIA-2 c.206, 5 workflows
     # agregateurs, 2026-10-06). Sorti de SELF_HOSTED_WORKFLOW_ALLOWLIST
     # dans le meme commit. Precedent : #17443 (po-2023, 4 agregateurs).
-    "translation-drift.yml",
     "translation-sync.yml",
     "variation-light-genre.yml",
     # tranche 6 (c.903, owner myia-po-2026:CoursIA-2) : garde advisory pur-Python
@@ -379,7 +431,6 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   seee (cf. test_universal_guard_with_combined_target_is_accepted, #13874)
     #   pour les forks PRs qui se font skipper proprement par pr_gate.
     #   Rollback = revert de cette PR (l'entree disparait de l'allowlist).
-    "notebook-link-render-check.yml",
     # tranche 7 (acceptance 3 #11703, owner myia-po-2027:CoursIA) : garde
     #   advisory pur-Python declenchee sur pull_request filtrant les
     #   `**/*_lean/**/*.lean`, mode --pr-base de l'organe canonique
@@ -419,7 +470,6 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   (LINUX_RUNNER_LABELS, meme profil que notebook-cell-source-parses.yml
     #   tranche 1 #13378). Rollback = revert de la PR (l'entree disparait de
     #   l'allowlist).
-    "notebook-latex-control-chars.yml",
     # #17380 (owner myia-po-2023:CoursIA) : garde advisory sur la syntaxe
     #   math non rendable des cellules markdown -- 4 classes (delimiteurs
     #   LaTeX purs \(..\)/\[..\], dollars impairs par paragraphe, commandes
@@ -436,7 +486,6 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   Runner = jambe Linux containerisee (LINUX_RUNNER_LABELS, meme
     #   profil que notebook-latex-control-chars). Rollback = revert de la
     #   PR (l'entree disparait de l'allowlist).
-    "notebook-math-render.yml",
     # #14532 item 1 (owner myia-po-2026:CoursIA-2) : garde PR pure-Python sur
     #   les disparitions de section au plan des notebooks pedagogiques.
     #   workflow_dispatch-only ce cycle (anti-panic-deploiement, idem
@@ -475,7 +524,6 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   de fork se font skipper proprement par pr_gate. Runner = jambe Linux
     #   containerisee (LINUX_RUNNER_LABELS). Rollback = revert de la PR
     #   (l'entree disparait de l'allowlist).
-    "paragraph-length-advisory.yml",
     # #14598 sous-grain (owner myia-po-2025:CoursIA, claim c. issue) : sonde
     #   TEMPORAIRE de mesure non censuree de tests/ (55) -- le plafond
     #   production 30 min d'ict-tests.yml censure a droite les runs coupes
@@ -503,7 +551,6 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   Concurrency cancel-in-progress (le balayage de kernel sur N notebooks
     #   peut etre rejoue sans frais). Pas de label pose. Rollback = revert
     #   de la PR (l'entree disparait de l'allowlist).
-    "notebook-kernel-drift-guard.yml",
     # #16776 (owner myia-po-2023:CoursIA, PR #16801) : organ-duplication
     #   advisory -- signale les symboles ajoutes qui collident avec l'organ
     #   API d'une autre serie (scripts/audit/organ_api_index.yaml, regle
@@ -515,7 +562,6 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   Entree ajoutee par le repair du rouge WORKFLOW_NOT_ALLOWED signale
     #   par Hermes (CONCERNS 19/09) : la PR routait le job self-hosted sans
     #   toucher cette allowlist fail-closed. Rollback = revert de la PR.
-    "organ-duplication-advisory.yml",
     # #14623 (owner myia-po-2024:CoursIA, PR #18595) : docs-transients
     #   guard -- detecteur de fichiers transients (rapports/coordination)
     #   qui doivent vivre sur le dashboard, pas dans le repo (regle
@@ -527,7 +573,6 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   Entree ajoutee au repair du rouge WORKFLOW_NOT_ALLOWED (relecture
     #   ai-01 c.5917276825) : la PR routait le job self-hosted sans
     #   toucher cette allowlist fail-closed. Rollback = revert de la PR.
-    "docs-transients-guard.yml",
     # #19290 (owner myia-po-2026:CoursIA-2, PR #19296) : lean-formal-logic
     #   proof-integrity workflow pour le lake consumer FFL
     #   formal_logic_lean (Tweety <-> Lean, EPIC #15066). Le job
@@ -571,6 +616,189 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "repo-size-advisory.yml",
     "testpaths-coverage-guard.yml",
     "notebook-outputs-required.yml",
+    # 2026-10-27 (#22461, lane myia-ai-01:CoursIA-2) : les 26 workflows
+    #   deports vers ubuntu-latest par #22820/#22821/#22822 REDEVIENNENT
+    #   porteurs d'une jambe self-hosted CONDITIONNELLE : la forme hybride
+    #   de debordement (garde meme-depot && vars.CI_OVERFLOW_LOCAL ==
+    #   'true' -> LINUX_RUNNER_LABELS, sinon ubuntu-latest). Par defaut
+    #   (variable absente ou != 'true'), chaque job resout sur ubuntu-latest
+    #   -- l'etat du 27/10 est conserve ; l'entree d'allowlist ne rend le
+    #   pool local atteignable QUE si la variable est basculee par un
+    #   operateur (phase A : gh variable set CI_OVERFLOW_LOCAL --body
+    #   true|false --repo jsboige/CoursIA, jeton jsboige). Rollback =
+    #   variable a false ou supprimee, sans toucher les fichiers.
+    #   scripts-tests.yml N'EST PAS reconcerne : sa migration avait ete
+    #   ANNULEE sur mesure (#22820 -- suite couplee a la forme du runner).
+    "always-on-guards.yml",
+    "always-on-guards-body.yml",
+    "arxiv-attributions-guard.yml",
+    "bios-companion-coverage.yml",
+    "catalog-drift.yml",
+    "docs-transients-guard.yml",
+    "harness-coauthor-guard.yml",
+    "label-paths-guard.yml",
+    "manifest-description-visuelle-gate.yml",
+    "notebook-cell-source-parses.yml",
+    "notebook-exec-sequence-ratchet.yml",
+    "notebook-kernel-drift-guard.yml",
+    "notebook-latex-control-chars.yml",
+    "notebook-link-render-check.yml",
+    "notebook-math-render.yml",
+    "notebook-papermill-ratchet.yml",
+    "organ-duplication-advisory.yml",
+    "orphaned-delivery-scan.yml",
+    "owui-playwright-check.yml",
+    "paragraph-length-advisory.yml",
+    "quantconnect-notebook-freshness.yml",
+    "scan-md-hierarchy-drift.yml",
+    "solution-leak-guard.yml",
+    "translation-drift.yml",
+    "twin-parity.yml",
+    "unique-check-run-names-guard.yml",
+
+    # #23053 (vague 3, ordre de passage du coordinateur du 2026-10-28, lane
+    #   myia-ai-01:CoursIA-2) : la famille « gardes et advisories » adopte la
+    #   forme hybride de debordement (#22944/#23016). Ces quatre workflows
+    #   n'avaient AUCUNE entree : leur job etait heberge et ne lisait jamais
+    #   `CI_OVERFLOW_LOCAL` (mesure #23053 : 12 des 12 jobs en file
+    #   demandaient `ubuntu-latest` alors que 12 slots locaux etaient libres).
+    #   L'entree ne rend la jambe locale ATTEIGNABLE que si un operateur
+    #   bascule la variable : par defaut (absente ou != 'true') le job resout
+    #   sur ubuntu-latest, l'etat du 28/10 est conserve. La garde anti-fork vit
+    #   DANS l'expression `runs-on` -- aucune ligne `if:` n'est ajoutee ni
+    #   retiree. Chaque job porte un `timeout-minutes` ancre sur une duree
+    #   mesuree (un job sans borne a tenu 16 slots ephemeres sur 18 le 15/10).
+    #   Rollback = variable a `false` ou supprimee, sans toucher les fichiers.
+    #   pedagogy-density-advisory.yml figure deja ci-dessus (tranche 4 #14283) :
+    #   seule sa seconde jambe (`baseline-orphans-guard`) est convertie ici.
+    "assert-memory-budget.yml",
+    "docs-reference-guard.yml",
+    "dryrun-sizing-control.yml",
+    "twin-attestation-name-guard.yml",
+    # local-path-waiver-guard.yml n'est PAS ajoute ici : il figure deja plus
+    # haut dans l'allowlist. La branche #23053 l'y avait remis en doublon ; la
+    # fusion de main l'a revele, l'entree en double est retiree et seule la
+    # conversion du workflow (forme hybride, garde anti-fork dans `runs-on`)
+    # reste portee par cette PR.
+    # #23053 (meme vague, meme lane, 2026-10-29) : `creation-provenance-advisory.yml`
+    #   est un workflow NEUF -- il est arrive sur main par #23185 ("Feat(budget,
+    #   #23174)", meme lane), donc APRES que le cliquet soit ecrit, et son job
+    #   etait nu sur `ubuntu-latest` (violation `HOSTED_PR_JOB_UNEXCEPTED`).
+    #   Conversion en forme hybride dans la meme PR : meme expression que les
+    #   workflows ci-dessus, meme `if:` anti-fork conserve, `timeout-minutes: 10`.
+    #   La variable vaut `false` au 29/10 : le routage est donc INCHANGE (100 %
+    #   heberge) -- la conversion retire la violation sans changer ou le job
+    #   s'execute. Rollback = variable a `false` ou supprimee, sans toucher les
+    #   fichiers.
+    "creation-provenance-advisory.yml",
+    # 2026-10-31 (c2740, lane myia-ai-01:CoursIA) : rouge de `main` apres le
+    #   squash-merge de #23063. Le cliquet a ete valide sur une base qui ne
+    #   contenait pas encore `sudoku-tests.yml` (82734d24b) ni
+    #   `twin-index-collision-gate.yml` (38141f743), arrives sur main entre
+    #   l'ecriture et le merge ; `scripts-tests.yml:qc-mcp-lite-tests` est
+    #   arrive apres. Les trois jobs etaient nus sur `ubuntu-latest`
+    #   (HOSTED_PR_JOB_UNEXCEPTED). Conversion en forme hybride, meme
+    #   expression que ci-dessus ; chaque job porte deja son `timeout-minutes`
+    #   (10, 15, 15). `scripts-tests.yml` figure deja plus haut dans
+    #   l'allowlist. La variable vaut `true` depuis le 2026-10-31T04:09Z : le
+    #   routage change reellement (jambe locale quand le controleur deborde).
+    #   Rollback = variable a `false`, sans toucher les fichiers.
+    "sudoku-tests.yml",
+    "twin-index-collision-gate.yml",
+
+    # #23053 (meme PR, meme lane, 2026-10-31) : `cycle-time-guard.yml` est
+    #   lui aussi un workflow NEUF pour le cliquet -- son job `cycle_time`
+    #   etait nu sur `ubuntu-latest` (violation `HOSTED_PR_JOB_UNEXCEPTED`),
+    #   alors meme qu'il porte `timeout-minutes: 10` et une garde anti-fork.
+    #   Conversion en forme hybride dans la meme PR : meme expression que les
+    #   workflows ci-dessus, meme `if:` anti-fork conserve, borne de temps
+    #   conservee.
+    #   La variable vaut `false` au 2026-10-31 : le routage est donc INCHANGE
+    #   (100 % heberge) -- la conversion retire la violation sans changer ou
+    #   le job s'execute. Rollback = variable a `false` ou supprimee, sans
+    #   toucher les fichiers.
+    #   L'argument d'origine du workflow (le garder heberge : lecteur pur,
+    #   0,7 s, aucun besoin local) reste vrai -- il porte desormais sur la
+    #   jambe locale elue par l'operateur, pas sur la forme du `runs-on`.
+    "cycle-time-guard.yml",
+
+    # ------------------------------------------------------------------
+    # 2026-10-28 (#23053 famille b -- « les tests », lane
+    #   myia-ai-01:CoursIA-2) : ces 6 suites de tests n'avaient AUCUNE jambe
+    #   self-hosted sur main ; elles recoivent une jambe CONDITIONNELLE, la
+    #   forme hybride de debordement deja auditee (#22461 phase A : garde
+    #   meme-depot && vars.CI_OVERFLOW_LOCAL == 'true' -> LINUX_RUNNER_LABELS,
+    #   sinon ubuntu-latest). Par defaut (variable absente ou != 'true'),
+    #   chaque job resout sur ubuntu-latest : l'etat du 27/10 est conserve, et
+    #   cette entree ne rend le pool local atteignable QUE si un operateur
+    #   bascule la variable (gh variable set CI_OVERFLOW_LOCAL --body
+    #   true|false --repo jsboige/CoursIA, jeton jsboige). Rollback = variable
+    #   a false ou supprimee, sans toucher les fichiers.
+    #   Deja presents dans l'ensemble ci-dessus, donc NON reajoutes :
+    #   ict-tests.yml, ml-tests.yml, scripts-tests.yml, validation-matrix.yml.
+    #   Sur scripts-tests.yml, seul le job `adk-contracts` est reconcerne -- le
+    #   job `scripts-tests` reste sur la jambe locale STATIQUE (suite couplee a
+    #   la forme du runner, #22820). Sur validation-matrix.yml, le job
+    #   `validate` reste STATIQUE local : le basculer sur ubuntu-latest par
+    #   defaut serait un recul, il ne recoit donc pas la forme hybride.
+    # ------------------------------------------------------------------
+    "dotnet-AgentSafetyAnalyzer.yml",
+    "dotnet-ArgumentAnalysis.yml",
+    "dotnet-OrphanApps.yml",
+    "dotnet-Shared.Tests.yml",
+    "gametheory-tests.yml",
+    "genai-helpers-tests.yml",
+    # 2026-10-27 (#22937 vague 2, lane myia-ai-01:CoursIA-2) : meme forme
+    #   hybride de debordement que la phase A (#22461), appliquee aux
+    #   workflows a fort volume qui n'etaient PAS dans la phase A.
+    #   Les trois autres fichiers de la vague 2
+    #   (notebook-execution-required.yml, always-on-metadata-guards.yml,
+    #   notebook-validation.yml) sont deja dans l'allowlist -- ils y etaient
+    #   depuis la tranche 3c (#14283), avant leur deport Q35 du 27/10.
+    #   `twin-parity.yml` y est aussi, mais il est porte par une PR
+    #   dediee (#22944) : les deux PRs ne peuvent pas toucher le meme
+    #   workflow, et le perimetre accorde est « 5 workflows par volume
+    #   decroissant ».
+    #   Perimetre : 5 workflows, 6 jobs. Exclus, avec leur motif :
+    #   - codeql.yml : le setup par defaut de GitHub-heberge le job, la
+    #     ligne `runs-on` du fichier n'est pas honoree ;
+    #   - lean-ci-matrix.yml : la toolchain Lean vit dans une image distincte
+    #     (label `coursia-lean`), pas dans le pool `coursia-linux` ;
+    #   - local-path-waiver-guard.yml et perimeter-review-guard.yml :
+    #     declencheurs `issue_comment` et `pull_request_review`, classes
+    #     FORK_REACHABLE par l'instrument (default-deny) ;
+    #     [2026-10-29, fusion de main dans #23053 : la premisse ne vaut plus
+    #     pour local-path-waiver-guard.yml -- son `on:` ne porte desormais que
+    #     `pull_request` (opened/synchronize/reopened) et `workflow_dispatch`,
+    #     aucun declencheur atteignable par un fork. Il entre donc dans
+    #     l'allowlist ci-dessous et passe en forme hybride, garde anti-fork
+    #     dans l'expression `runs-on`. perimeter-review-guard.yml reste exclu.]
+    #   - les deux starvation-advisory : un chien de garde de la file ne
+    #     doit pas occuper la file qu'il observe ;
+    #   - ict-tests.yml : venv + pyphi/numpy/scipy, 8,1 min medianes -- le
+    #     debordement absorbe d'abord les jobs courts ;
+    #   - quarto-pages-deploy.yml : `build` et `deploy` dependent du
+    #     service GitHub Pages (upload-pages-artifact, deploy-pages + OIDC) ;
+    #     seul `validate-pr` est portable (Quarto par tarball curl).
+    "quarto-render-list-freshness.yml",
+    "enrich-quality-gate.yml",
+    # 2026-10-31 (#23666, lane myia-ai-01:CoursIA-2) : `submodule-drift.yml`
+    #   est un workflow NEUF pour le cliquet -- il est arrive sur main par
+    #   #23314 le 2026-10-31 a 09:33:12Z, soit 16 min APRES que #23670
+    #   (08:17:40Z)
+    #   ait corrige le cliquet : il n'a pas pu connaitre la regle. Son job
+    #   `drift` etait nu sur `ubuntu-latest` (violation
+    #   `HOSTED_PR_JOB_UNEXCEPTED`), avec un trigger `pull_request` (paths
+    #   filtre sur `.gitmodules` et les cinq sous-modules).
+    #   Conversion en forme hybride de debordement, meme expression que les
+    #   workflows convertis le meme jour (`cycle-time-guard.yml`,
+    #   `creation-provenance-advisory.yml`) : la garde anti-fork vit DANS
+    #   l'expression `runs-on`, donc une PR de fork reste hebergee et
+    #   n'atteint jamais le parc local. `timeout-minutes: 10` ajoute au job.
+    #   La variable vaut `true` depuis le 2026-10-31T04:09Z : le routage
+    #   change reellement quand la variable est activee.
+    #   Rollback = variable a `false`, sans toucher les fichiers.
+    "submodule-drift.yml",
 }
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",
@@ -636,6 +864,132 @@ SAFE_SELF_HOSTED_TRIGGERS = frozenset({
 })
 DEFAULT_WORKFLOWS_DIR = Path(__file__).resolve().parents[2] / ".github" / "workflows"
 
+# ---------------------------------------------------------------------------
+# Cliquet des jobs heberges sur pull_request (#23053)
+# ---------------------------------------------------------------------------
+# La forme hybride de debordement (#22944, #23016) ne sert a rien si un job
+# reste fige sur `ubuntu-latest` nu : il ne lit jamais `CI_OVERFLOW_LOCAL` et
+# rejoint la file hebergee meme quand le parc local est libre. Mesure
+# fondatrice (#23053, 2026-10-28 04:45Z) : 56 runs en file, 12 slots locaux
+# libres, et les 12 jobs echantillonnes demandaient TOUS `ubuntu-latest`. C'est
+# un defaut de routage, pas de capacite -- et sans cliquet, le prochain
+# workflow ajoute recree la file.
+#
+# Ce cliquet S'AJOUTE aux verifications existantes, il n'en remplace aucune :
+# il a ses propres codes, sa propre passe, et ne touche ni l'allowlist, ni la
+# forme hybride, ni les gardes de declencheur.
+#
+# Deux invariants :
+#   1. tout job d'un workflow declenche par `pull_request` dont le `runs-on`
+#      est `ubuntu-latest` NU (chaine seule, ou liste `[ubuntu-latest]`) doit
+#      appartenir a un workflow declare dans HOSTED_PR_JOB_EXCEPTIONS ;
+#   2. la liste courante ne fait que RETRECIR : ses cles doivent etre un
+#      sous-ensemble de HOSTED_PR_JOB_EXCEPTIONS_BASELINE. Une exception
+#      absente de la baseline est elle-meme une violation.
+#
+# Faire evoluer la liste : une PR de famille convertit des workflows et retire
+# leurs entrees de HOSTED_PR_JOB_EXCEPTIONS ET de
+# HOSTED_PR_JOB_EXCEPTIONS_BASELINE dans le meme commit. Ajouter une entree
+# reste possible mais exige d'etendre la baseline : c'est un geste delibere,
+# visible en diff et en review. Le garde ne lit pas les intentions ; il rend
+# l'ecart bloquant plutot que silencieux.
+#
+# Limite assumee : l'exception porte sur le WORKFLOW. Un job nu ajoute dans un
+# workflow deja excepte echappe au cliquet jusqu'a la conversion de ce
+# workflow. Le cliquet empeche la creation de nouvelles files ; il ne dispense
+# pas de lire le diff. La granularite par job rendrait la liste instable (les
+# jobs changent de nom plus souvent que les workflows) sans fermer cette
+# limite sur le fond.
+HOSTED_PR_JOB_EXCEPTIONS: dict[str, str] = {
+    # --- famille (c) : conversion en vol dans la PR #23059 (ouverte) --------
+    "lean-ci-matrix.yml": (
+        "famille (c) : le dispatcher `changes` reste nu, sa conversion est "
+        "portee par la PR #23059 (ouverte au 2026-10-30)"
+    ),
+    # --- jobs heberges pour une raison propre, mesuree dans le fichier -----
+    "codeql.yml": (
+        "CodeQL en advanced setup (#22548) : `analyze` telecharge le bundle "
+        "CodeQL, lance l'analyse et televerse du SARIF (`security-events: "
+        "write`), ~14 min/run heberge ; son routage sur le conteneur ephemere "
+        "n'est pas verifie -- #23053 laisse la question ouverte"
+    ),
+    "ml-tests.yml": (
+        "job `prover-tests` heberge : offre GitHub d'abord (consigne user "
+        "#17397 du 2026-10-25, note portee par le fichier)"
+    ),
+    "notebook-execution-required.yml": (
+        "job `golden-set-execute` heberge : offre GitHub d'abord (consigne "
+        "user #17397 du 2026-10-25, note portee par le fichier)"
+    ),
+    "perimeter-review-guard.yml": (
+        "declencheur `pull_request_review` classe FORK_REACHABLE (#14201) : le "
+        "runner local est interdit, le garde refuse la jambe self-hosted"
+    ),
+    "quarto-pages-deploy.yml": (
+        "`build` : OOM du rendu complet mesuree sur le pool (1145/1276 "
+        "notebooks, run 34217750689, #15202) ; `deploy` : push-only, "
+        "OIDC/PAGES ; `validate-pr` : offre GitHub d'abord (#17397)"
+    ),
+    "secret-scan.yml": (
+        "jambe `gitleaks-fork` : elle n'existe QUE pour les PRs de fork (son "
+        "`if:` exclut le depot lui-meme) et appelle `docker run`, dont le "
+        "socket manque au pool conteneur (uid 1001, no-new-privileges) ; la "
+        "jambe self-hosted voisine couvre les runs du depot"
+    ),
+    "slides-build-advisory.yml": (
+        "job `slides-build-advisory` heberge : offre GitHub d'abord (consigne "
+        "user #17397 du 2026-10-25) ; le fichier documente le nocturne "
+        "(#12817) et son runs-on statique"
+    ),
+}
+
+# Figee a la creation du cliquet (#23053, 2026-10-28) a 21 entrees, puis
+# reduite le 2026-10-30 aux 8 exceptions vivantes : les conversions #23016
+# (merge 2026-10-29) et #23058 famille (b) (merge 2026-10-30) sont arrivees
+# sur main et leurs entrees sont retirees avec elle, ainsi que celle de
+# lean-planning.yml, supprime par #23467. Elle NE S'ELARGIT PAS --
+# seule une decision de review peut le faire, et la PR qui nomme une nouvelle
+# exception retire au moins autant d'entrees dans le meme commit.
+HOSTED_PR_JOB_EXCEPTIONS_BASELINE: frozenset[str] = frozenset({
+    "codeql.yml",
+    "lean-ci-matrix.yml",
+    "ml-tests.yml",
+    "notebook-execution-required.yml",
+    "perimeter-review-guard.yml",
+    "quarto-pages-deploy.yml",
+    "secret-scan.yml",
+    "slides-build-advisory.yml",
+})
+
+# -- #22954: ratchet baseline for job-level timeout-minutes ------------------
+# A job that can reach a self-hosted runner without `timeout-minutes` can hold
+# its slot for six hours (the Actions default) if it freezes; that slot is then
+# missing from the PR gates. The rule is measured on `origin/main` 2f1291f01
+# (2026-10-29): **138 self-hosted jobs, 75 without a job-level bound** -- 12 in
+# the audited hybrid/overflow form (#22461) and **63 static**. The 12 are bound
+# by the PR that introduced this ratchet; the 63 static ones are the debt this
+# baseline names, so the guard can be green at merge while refusing to let the
+# set GROW. Retire a line as soon as its job is bound; `--update-baseline`
+# rewrites the file from what is measured.
+BASELINE_NAME = "self_hosted_timeout_baseline.txt"
+DEFAULT_BASELINE = Path(__file__).with_name(BASELINE_NAME)
+
+
+def load_baseline(path: Path) -> set[str]:
+    """Read the tolerated `workflow.yml:job` keys.
+
+    The key is `workflow:job`, never `workflow:line`: a line-anchored key
+    expires as soon as anything is inserted above it, and a guard that reddens
+    on an unchanged site is the fastest way to get itself disabled.
+    """
+    if not path.is_file():
+        return set()
+    return {
+        line.strip()
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if line.strip() and not line.startswith("#")
+    }
+
 
 @dataclass(frozen=True)
 class Violation:
@@ -652,6 +1006,22 @@ class ScanResult:
     self_hosted_jobs: int
     violations: list[Violation]
     broken: list[str]
+    # Workflows encore exceptes du cliquet #23053 (nom, trie). Expose pour que
+    # le verdict -- texte et JSON -- nomme la liste au lieu de la laisser
+    # implicite : une liste d'exceptions invisible est une liste qui ne
+    # retrecit pas.
+    hosted_pr_exceptions: list[str] = field(default_factory=list)
+    # Baseline effectivement utilisee pour le scan (toujours un sur-ensemble de
+    # ``hosted_pr_exceptions`` quand l'invariant tient). Portee par le resultat
+    # pour que le verdict -- texte et JSON -- ne mente pas quand un test
+    # injecte ses propres listes.
+    hosted_pr_exceptions_baseline: list[str] = field(default_factory=list)
+    # -- #22954: job-level timeout-minutes ratchet ---------------------------
+    # Defaults keep every existing reader (and every synthetic-workflow test)
+    # working unchanged: the ratchet is only engaged by --check-timeouts.
+    timeouts_checked: bool = False
+    timeout_missing: int = 0
+    timeout_baselined: int = 0
 
 
 def _load_yaml():
@@ -750,11 +1120,12 @@ def _runner_selection(
     return False, None, set(), "runs-on has an unsupported type"
 
 
-# Audited hybrid runs-on (#13363 jambe B). Exactly ONE dynamic form is
-# statically provable: the self-hosted leg is reached ONLY when the exact
-# same-repo guard is true; everything else falls back to a GitHub-hosted
-# label. Guard, label set and fallback are enumerated -- any variation
-# (different guard, different labels, different fallback) stays an
+# Audited hybrid runs-on (#13363 jambe B). Exactly ONE shape is statically
+# provable, under TWO enumerated guards: the self-hosted leg is reached ONLY
+# when the exact same-repo guard is true -- the #22461 guard additionally
+# requires vars.CI_OVERFLOW_LOCAL == 'true'; everything else falls back to a
+# GitHub-hosted label. Guard, label set and fallback are enumerated -- any
+# variation (different guard, different labels, different fallback) stays an
 # unauditable expression and keeps the DYNAMIC_RUNS_ON rejection.
 #
 # c.509 (dispatch c.2180, owner myia-ai-01:CoursIA-2) : the audited label
@@ -769,10 +1140,33 @@ def _runner_selection(
 # ratchet, outputs-required) routed to the containerized Linux leg
 # without forfeiting the same-repo guard or the github-hosted fallback.
 # Every other expression stays an unauditable DYNAMIC_RUNS_ON.
+#
+# #22461 (dispatch ai-01 2026-10-27) : SECONDE garde enumeree. La garde
+# meme-depot conjoine a la variable de debordement vars.CI_OVERFLOW_LOCAL
+# == 'true' -- le parc local ne recoit le job que si un operateur a bascule
+# la variable de depot (phase A du debordement : l'offre hebergee saturee
+# portait 28 des 29 jobs en file de l'echantillon, mesure #22461). Le nom
+# de la variable et sa valeur sont ENUMERES : toute autre variable, toute
+# autre valeur, toute autre expression reste hors audit (DYNAMIC_RUNS_ON,
+# refus inchange). Cette garde n'admet QUE le pool Linux ; la garde
+# d'origine conserve ses deux pools -- rien n'est retreci.
 HYBRID_RUNS_ON_GUARD = SAME_REPO_GUARD
 HYBRID_RUNS_ON_LABELS = WAITER_LABELS  # kept for backward compat (single set)
 HYBRID_RUNS_ON_LABEL_SETS = (WAITER_LABELS, LINUX_RUNNER_LABELS)
 HYBRID_RUNS_ON_FALLBACK = "ubuntu-latest"
+# Variable de depot de la seconde garde (phase A du debordement, #22461) :
+# nom et valeur ENUMERES -- cf. bloc de commentaire ci-dessus.
+CI_OVERFLOW_LOCAL_VAR = "CI_OVERFLOW_LOCAL"
+HYBRID_RUNS_ON_OVERFLOW_GUARD = (
+    f"{SAME_REPO_GUARD} && vars.{CI_OVERFLOW_LOCAL_VAR} == 'true'"
+)
+# Garde enumeree -> ensembles de labels admis pour la forme hybride. La
+# garde d'origine (#13363/c.509) garde exactement ses deux pools ; la garde
+# overflow (#22461) n'admet que LINUX_RUNNER_LABELS.
+HYBRID_RUNS_ON_GUARD_LABEL_SETS: dict[str, tuple[set[str], ...]] = {
+    HYBRID_RUNS_ON_GUARD: HYBRID_RUNS_ON_LABEL_SETS,
+    HYBRID_RUNS_ON_OVERFLOW_GUARD: (LINUX_RUNNER_LABELS,),
+}
 _HYBRID_PATTERN = re.compile(
     r"^\s*\("
     r"(?P<guard>[^()]+)"
@@ -783,8 +1177,9 @@ _HYBRID_PATTERN = re.compile(
 
 def _hybrid_runs_on(runs_on: Any) -> dict[str, set[str]] | None:
     """Return the audited hybrid legs for ``runs_on``, or None if it is not
-    the exact #13363 form. The caller keeps the DYNAMIC_RUNS_ON rejection
-    for every other expression."""
+    one of the enumerated forms (#13363, then the #22461 overflow guard).
+    The caller keeps the DYNAMIC_RUNS_ON rejection for every other
+    expression."""
     if not isinstance(runs_on, str):
         return None
     text = runs_on.strip()
@@ -793,7 +1188,9 @@ def _hybrid_runs_on(runs_on: Any) -> dict[str, set[str]] | None:
     match = _HYBRID_PATTERN.match(text[3:-2].strip())
     if match is None:
         return None
-    if " ".join(match.group("guard").split()) != HYBRID_RUNS_ON_GUARD:
+    guard = " ".join(match.group("guard").split())
+    allowed_label_sets = HYBRID_RUNS_ON_GUARD_LABEL_SETS.get(guard)
+    if allowed_label_sets is None:
         return None
     if match.group("fallback") != HYBRID_RUNS_ON_FALLBACK:
         return None
@@ -801,9 +1198,144 @@ def _hybrid_runs_on(runs_on: Any) -> dict[str, set[str]] | None:
         labels = {str(item) for item in json.loads(match.group("labels"))}
     except json.JSONDecodeError:
         return None
-    if labels not in HYBRID_RUNS_ON_LABEL_SETS:
+    if labels not in allowed_label_sets:
         return None
     return {"labels": labels}
+
+
+# --- Parc local mesure par le controleur de debordement (#22937 phase A) ----
+#
+# Le controleur mesure l'occupation du parc LOCAL (label `coursia-linux`) et
+# celle de l'offre HEBERGEE (label `ubuntu-latest`). Sa lecture locale doit
+# viser les runs qui PEUVENT porter un job local : sinon elle consomme son
+# budget de lectures sur des runs qui n'en portent pas (mesure du
+# coordinateur, 2026-10-28 16:55Z : 250 runs anciens en file, presque tous en
+# attente d'`ubuntu-latest`, budget 120 lectures -> la lecture locale se
+# tronque avant d'etablir quoi que ce soit, et la soupape se ferme exactement
+# dans le regime ou elle doit s'ouvrir).
+#
+# Ce module possede la connaissance « quel workflow peut atterrir sur quel
+# runner » : la liste est donc derivee ICI, pas reecrite dans le controleur.
+LOCAL_PARK_LABEL = "coursia-linux"
+
+
+def _job_can_reach_local_park(runs_on: Any) -> bool:
+    """True si un job portant ce `runs-on` peut atterrir sur le parc local.
+
+    - selection STATIQUE (scalaire, liste ou mapping) : il suffit qu'un de
+      ses labels soit celui du parc local ;
+    - forme hybride auditee : la jambe locale y est atteinte quand la garde
+      est vraie -> capable ;
+    - expression dynamique NON auditee : traitee comme CAPABLE. Une
+      expression non auditee peut atterrir n'importe ou ; l'ignorer
+      cacherait une affamescence locale -- c'est le piege que cet organe
+      combat partout ailleurs.
+    """
+    hybrid = _hybrid_runs_on(runs_on)
+    if hybrid is not None:
+        return LOCAL_PARK_LABEL in hybrid["labels"]
+    if _contains_expression(runs_on):
+        return True
+    _is_self_hosted, _group, labels, _error = _runner_selection(runs_on)
+    return LOCAL_PARK_LABEL in labels
+
+
+def local_capable_workflows(
+    workflows_dir: Path = DEFAULT_WORKFLOWS_DIR,
+) -> tuple[set[str], str]:
+    """Derive les workflows capables de porter un job sur le parc local.
+
+    Rend `(chemins, motif)`. Les chemins portent la forme de `run.path` dans
+    l'API des runs (`.github/workflows/<fichier>`). Le motif est VIDE quand la
+    derivation a reussi, et NON VIDE sinon.
+
+    Echec -- repertoire absent, PyYAML absent, fichier illisible, YAML
+    invalide, aucun workflow -- : ensemble VIDE et motif. Un ensemble vide ne
+    se lit JAMAIS « aucun workflow local » (ce serait une affirmation de
+    NON-affamescence locale) : il se lit « la liste n'est pas etablie »
+    (fail-CLOSED, meme convention que `derive_cohort_workflows`).
+
+    Un job dont le `runs-on` n'est pas analysable n'est jamais traite comme
+    absent : il est traite comme CAPABLE. Seule la LECTURE du fichier peut
+    faire echouer la derivation.
+
+    Les APPELS de workflow reutilisable sont propages : le `run.path` d'un run
+    est le workflow APPELANT, pas le workflow appele. Un appelant qui
+    appelle un workflow local est donc capable lui aussi (sinon ses jobs
+    locaux seraient invisibles) ; un appelant d'un workflow reutilisable
+    MEME-REPO est traite comme capable (le contenu distant n'est pas
+    analysable ici, et l'ignorer cacherait une affamescence).
+    """
+    yaml = _load_yaml()
+    if yaml is None:
+        return set(), "PyYAML est indisponible"
+
+    workflows_dir = Path(workflows_dir)
+    if not workflows_dir.is_dir():
+        return set(), f"repertoire des workflows absent ({workflows_dir})"
+    try:
+        files = sorted(
+            list(workflows_dir.glob("*.yml")) + list(workflows_dir.glob("*.yaml"))
+        )
+    except OSError as exc:
+        return set(), f"enumeration des workflows impossible ({exc})"
+    if not files:
+        return set(), f"aucun workflow dans {workflows_dir}"
+
+    parsed: dict[str, dict[str, Any]] = {}
+    for path in files:
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError as exc:
+            return set(), f"lecture de {path.name} impossible ({exc})"
+        data = _parse_workflow(text, yaml)
+        if data is None:
+            return set(), f"YAML de {path.name} invalide"
+        parsed[path.name] = data
+
+    capable: set[str] = set()
+    calls: dict[str, set[str]] = {}
+    for name, data in parsed.items():
+        jobs = data.get("jobs")
+        if not isinstance(jobs, dict):
+            continue
+        for job in jobs.values():
+            if not isinstance(job, dict):
+                continue
+            if "uses" in job:
+                reusable = str(job["uses"])
+                if reusable.startswith(LOCAL_REUSABLE_PREFIX):
+                    calls.setdefault(name, set()).add(
+                        reusable[len(LOCAL_REUSABLE_PREFIX):].split("@", 1)[0]
+                    )
+                elif SAME_REPO_REUSABLE_PATTERN.fullmatch(reusable):
+                    # Contenu distant non analysable ici : l'appelant est
+                    # traite comme capable (fail-safe).
+                    capable.add(name)
+                continue
+            runs_on = job.get("runs-on")
+            if runs_on is None:
+                continue
+            if _job_can_reach_local_park(runs_on):
+                capable.add(name)
+                break
+
+    # Propagation : un appelant d'un workflow capable l'est aussi. Le
+    # `run.path` designe l'APPELANT -- sans cette propagation, les jobs d'un
+    # workflow reutilisable local seraient invisibles pour la mesure locale.
+    changed = True
+    while changed:
+        changed = False
+        for caller, callees in calls.items():
+            if caller in capable:
+                continue
+            for callee in callees:
+                if callee in capable:
+                    capable.add(caller)
+                    changed = True
+                    break
+
+    return {f".github/workflows/{name}" for name in capable}, ""
 
 
 def _normalise_condition(value: Any) -> str:
@@ -902,14 +1434,136 @@ def _guard_violation_message(condition: str) -> str:
     return "pull_request self-hosted job must lead with the same-repo job guard"
 
 
-def scan_workflows(workflows_dir: Path = DEFAULT_WORKFLOWS_DIR) -> ScanResult:
+def _is_naked_hosted_runner(runs_on: Any) -> bool:
+    """Vrai si ``runs-on`` ne nomme QUE le label heberge par defaut.
+
+    ``ubuntu-latest`` seul (scalaire) ou une liste a un seul element
+    ``[ubuntu-latest]``. Une expression (forme hybride), un label self-hosted
+    ou une liste multi-labels ne sont PAS « nus » : ils sont deja routes, ou
+    le sont par construction.
+    """
+    if isinstance(runs_on, str):
+        return runs_on.strip().lower() == HYBRID_RUNS_ON_FALLBACK
+    if isinstance(runs_on, list):
+        return (
+            len(runs_on) == 1
+            and isinstance(runs_on[0], str)
+            and runs_on[0].strip().lower() == HYBRID_RUNS_ON_FALLBACK
+        )
+    return False
+
+
+def _hosted_pr_job_violations(
+    workflow: str,
+    triggers: set[str],
+    jobs: dict[str, Any],
+    exceptions: dict[str, str],
+) -> list[Violation]:
+    """Cliquet #23053, invariant 1 : un job nu sur un workflow PR doit etre
+    couvert par une exception nommee. La granularite est le workflow (cf. le
+    bloc de commentaire de ``HOSTED_PR_JOB_EXCEPTIONS``)."""
+    if "pull_request" not in triggers:
+        return []
+    violations: list[Violation] = []
+    for job_name, job in jobs.items():
+        if not isinstance(job, dict) or "uses" in job:
+            continue
+        if not _is_naked_hosted_runner(job.get("runs-on")):
+            continue
+        if workflow in exceptions:
+            continue
+        violations.append(Violation(
+            workflow,
+            str(job_name),
+            "HOSTED_PR_JOB_UNEXCEPTED",
+            "job fige sur `ubuntu-latest` dans un workflow declenche par "
+            "pull_request : adopter la forme hybride de debordement "
+            "(#22944/#23016) avec un `timeout-minutes`, ou declarer une "
+            "exception nommee dans HOSTED_PR_JOB_EXCEPTIONS avec son motif "
+            "(#23053)",
+        ))
+    return violations
+
+
+def _exception_list_violations(
+    exceptions: dict[str, str],
+    baseline: frozenset[str],
+) -> list[Violation]:
+    """Cliquet #23053, invariant 2 : la liste d'exceptions ne fait que
+    retrecir, et chaque entree porte un motif."""
+    violations: list[Violation] = []
+    for workflow in sorted(exceptions):
+        if workflow not in baseline:
+            violations.append(Violation(
+                workflow,
+                "*",
+                "HOSTED_PR_JOB_EXCEPTION_ADDED",
+                "exception absente de HOSTED_PR_JOB_EXCEPTIONS_BASELINE : la "
+                "liste ne fait que retrecir -- une exception ajoutee doit etre "
+                "compensee par au moins autant d'entrees retirees dans le meme "
+                "commit (#23053)",
+            ))
+        if not str(exceptions[workflow]).strip():
+            violations.append(Violation(
+                workflow,
+                "*",
+                "HOSTED_PR_JOB_EXCEPTION_NO_MOTIVE",
+                "une exception nommee porte un motif qui explique POURQUOI le "
+                "job reste heberge (#23053)",
+            ))
+    return violations
+
+
+def scan_workflows(
+    workflows_dir: Path = DEFAULT_WORKFLOWS_DIR,
+    *,
+    hosted_pr_exceptions: dict[str, str] | None = None,
+    hosted_pr_exceptions_baseline: frozenset[str] | None = None,
+    check_timeouts: bool = False,
+    baseline: set[str] | None = None,
+) -> ScanResult:
+    """Scan ``workflows_dir`` and return the isolation verdict.
+
+    ``check_timeouts`` engages the #22954 ratchet: every job that can reach a
+    self-hosted runner must carry a job-level ``timeout-minutes``. It is opt-in
+    so that the ~60 synthetic-workflow tests that build a job on the fly keep
+    testing one invariant at a time; the blocking fast-lane entry passes the
+    flag, so the rule is enforced where it matters.
+
+    ``hosted_pr_exceptions`` / ``hosted_pr_exceptions_baseline`` carry the
+    #23053 ratchet: a workflow whose ``pull_request`` job is left naked on
+    ``ubuntu-latest`` must be named in the exception list, and that list may
+    only shrink.
+
+    The two ``baseline`` notions are distinct and never share a name: the
+    #23053 one is a set of *workflow names*, the #22954 one a set of
+    ``workflow.yml:job`` keys. Merging the two features without renaming
+    would compare the exception list against job keys -- a mismatch that
+    silently empties the ratchet.
+    """
     yaml = _load_yaml()
     if yaml is None:
         return ScanResult(0, 0, 0, [], ["PyYAML is unavailable"])
 
+    exceptions = (
+        HOSTED_PR_JOB_EXCEPTIONS
+        if hosted_pr_exceptions is None
+        else hosted_pr_exceptions
+    )
+    exceptions_baseline = (
+        HOSTED_PR_JOB_EXCEPTIONS_BASELINE
+        if hosted_pr_exceptions_baseline is None
+        else hosted_pr_exceptions_baseline
+    )
+
     paths = sorted([*workflows_dir.glob("*.yml"), *workflows_dir.glob("*.yaml")])
     if not paths:
         return ScanResult(0, 0, 0, [], [f"no workflows in {workflows_dir}"])
+
+    if baseline is None:
+        baseline = load_baseline(DEFAULT_BASELINE) if check_timeouts else set()
+    timeout_missing = 0
+    timeout_baselined = 0
 
     violations: list[Violation] = []
     broken: list[str] = []
@@ -976,10 +1630,11 @@ def scan_workflows(workflows_dir: Path = DEFAULT_WORKFLOWS_DIR) -> ScanResult:
                     path.name,
                     str(job_name),
                     "DYNAMIC_RUNS_ON",
-                    "runs-on contains an expression other than the single audited "
-                    "hybrid form (same-repo guard -> self-hosted coursia-waiter, "
-                    "else ubuntu-latest; see #13363) and cannot be audited "
-                    "statically",
+                    "runs-on contains an expression other than the audited "
+                    "hybrid forms (same-repo guard, optionally && "
+                    "vars.CI_OVERFLOW_LOCAL == 'true', -> self-hosted pool, "
+                    "else ubuntu-latest; see #13363, #22461) and cannot be "
+                    "audited statically",
                 ))
                 continue
 
@@ -1004,6 +1659,29 @@ def scan_workflows(workflows_dir: Path = DEFAULT_WORKFLOWS_DIR) -> ScanResult:
                 if not is_self_hosted:
                     continue
             self_hosted_jobs += 1
+
+            if check_timeouts:
+                # #22954: GitHub's default job timeout is SIX HOURS. A frozen
+                # job then holds a slot the PR gates need -- measured on
+                # 2026-10-15, where frozen `Twin parity audit` runs (#22944)
+                # held 16 of 18 ephemeral slots overnight and 104 runs had to
+                # be cancelled by hand. The baseline names the debt that
+                # predates the rule; it must never grow.
+                if job.get("timeout-minutes") is None:
+                    timeout_missing += 1
+                    key = f"{path.name}:{job_name}"
+                    if key in baseline:
+                        timeout_baselined += 1
+                    else:
+                        violations.append(Violation(
+                            path.name,
+                            str(job_name),
+                            "MISSING_TIMEOUT",
+                            "a job that can reach a self-hosted runner must "
+                            "carry a job-level timeout-minutes: the Actions "
+                            "default is 6 hours, and a frozen job holds its "
+                            "slot that long (#22954)",
+                        ))
 
             if "pull_request_target" in triggers:
                 violations.append(Violation(
@@ -1106,7 +1784,28 @@ def scan_workflows(workflows_dir: Path = DEFAULT_WORKFLOWS_DIR) -> ScanResult:
                         _guard_violation_message(condition),
                     ))
 
-    return ScanResult(len(paths), jobs_scanned, self_hosted_jobs, violations, broken)
+        # Cliquet #23053 (passe independante, apres l'isolation : elle ne lit
+        # ni l'allowlist ni la forme hybride, seulement le `runs-on` nu).
+        violations.extend(
+            _hosted_pr_job_violations(path.name, triggers, jobs, exceptions)
+        )
+
+    # Invariant « la liste ne fait que retrecir » : une passe globale, elle ne
+    # depend d'aucun workflow du dossier scanne.
+    violations.extend(_exception_list_violations(exceptions, exceptions_baseline))
+
+    return ScanResult(
+        len(paths),
+        jobs_scanned,
+        self_hosted_jobs,
+        violations,
+        broken,
+        sorted(exceptions),
+        sorted(exceptions_baseline),
+        timeouts_checked=check_timeouts,
+        timeout_missing=timeout_missing,
+        timeout_baselined=timeout_baselined,
+    )
 
 
 def _payload(result: ScanResult) -> dict[str, Any]:
@@ -1117,6 +1816,11 @@ def _payload(result: ScanResult) -> dict[str, Any]:
         "self_hosted_jobs": result.self_hosted_jobs,
         "violations": [asdict(item) for item in result.violations],
         "broken": result.broken,
+        "hosted_pr_job_exceptions": result.hosted_pr_exceptions,
+        "hosted_pr_job_exceptions_baseline": result.hosted_pr_exceptions_baseline,
+        "timeouts_checked": result.timeouts_checked,
+        "timeout_missing": result.timeout_missing,
+        "timeout_baselined": result.timeout_baselined,
     }
 
 
@@ -1126,6 +1830,13 @@ def _print_text(result: ScanResult) -> None:
         f"workflows={result.workflows_scanned} jobs={result.jobs_scanned} "
         f"self_hosted={result.self_hosted_jobs}"
     )
+    if result.timeouts_checked:
+        print(
+            "[self-hosted-policy] timeouts: "
+            f"sans job-level timeout-minutes={result.timeout_missing} "
+            f"(dont {result.timeout_baselined} en baseline #22954, "
+            f"{result.timeout_missing - result.timeout_baselined} nouveaux)"
+        )
     for item in result.violations:
         print(
             f"  VIOLATION {item.code}: {item.workflow}:{item.job}: "
@@ -1133,6 +1844,16 @@ def _print_text(result: ScanResult) -> None:
         )
     for item in result.broken:
         print(f"  BROKEN: {item}")
+    print(
+        "[self-hosted-policy] hosted-pr-ratchet (#23053): "
+        f"{len(result.hosted_pr_exceptions)} workflow(s) encore excepte(s) "
+        f"sur {len(result.hosted_pr_exceptions_baseline)} dans la baseline"
+    )
+    # La liste n'est detaillee que lorsqu'elle est en cause : sur un run vert,
+    # une ligne de synthese suffit et n'inonde pas le journal du garde.
+    if any(item.code.startswith("HOSTED_PR_JOB_") for item in result.violations):
+        for name in result.hosted_pr_exceptions:
+            print(f"  EXCEPTION {name}")
     if not result.violations and not result.broken:
         if result.self_hosted_jobs == 0:
             print("[self-hosted-policy] OK -- explicit baseline: 0 self-hosted jobs.")
@@ -1150,9 +1871,51 @@ def main(argv: list[str] | None = None) -> int:
         default=DEFAULT_WORKFLOWS_DIR,
         help="workflow directory (used by tests and offline audits)",
     )
+    parser.add_argument(
+        "--check-timeouts",
+        action="store_true",
+        help="engage the #22954 ratchet: every job that can reach a "
+             "self-hosted runner must carry a job-level timeout-minutes",
+    )
+    parser.add_argument(
+        "--baseline",
+        type=Path,
+        default=DEFAULT_BASELINE,
+        help="known tolerated jobs for the timeout ratchet (workflow.yml:job)",
+    )
+    parser.add_argument(
+        "--update-baseline",
+        action="store_true",
+        help="rewrite the timeout baseline from what is measured",
+    )
     args = parser.parse_args(argv)
 
-    result = scan_workflows(args.workflows_dir)
+    if args.update_baseline:
+        measured = scan_workflows(
+            args.workflows_dir, check_timeouts=True, baseline=set()
+        )
+        keys = sorted({
+            f"{item.workflow}:{item.job}"
+            for item in measured.violations
+            if item.code == "MISSING_TIMEOUT"
+        })
+        header = (
+            "# Jobs auto-heberges sans `timeout-minutes` au niveau du job (#22954).\n"
+            "# Cle = `workflow.yml:job`, jamais `workflow:ligne` : une cle ancree\n"
+            "# sur une ligne perime des qu'on insere au-dessus, et un garde qui\n"
+            "# rougit sur un site inchange finit desactive.\n"
+            "# Dette mesuree le 2026-10-29 sur origin/main 2f1291f01 : 63 jobs\n"
+            "# STATIQUES. Les 12 jobs HYBRIDES (#22461), eux, sont bornes par la PR\n"
+            "# qui a introduit ce cliquet -- la forme hybride n'a AUCUNE tolerance.\n"
+            "# Retirer une ligne des que son job est borne.\n"
+        )
+        args.baseline.write_text(
+            header + "\n".join(keys) + "\n", encoding="utf-8", newline="\n"
+        )
+        print(f"baseline reecrite : {args.baseline} ({len(keys)} jobs)")
+        return EXIT_OK
+
+    result = scan_workflows(args.workflows_dir, check_timeouts=args.check_timeouts)
     if args.json:
         print(json.dumps(_payload(result), indent=2, ensure_ascii=False))
     else:

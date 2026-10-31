@@ -659,7 +659,19 @@ def render_text(reports: list[IssueReport], since: str, state: str, scanned: int
     return "\n".join(lines)
 
 
+def _ensure_utf8_output(stream) -> None:
+    # Windows : un flux redirige utilise la page de codes ANSI (cp1252) et un
+    # extrait d'emoji y crashe le print (UnicodeEncodeError, mesure 2026-10-30
+    # apres lecture de 686 issues). La restitution du coordinateur (#20183)
+    # passe par ce rendu a chaque cycle : la ligne [CONCERNS] ne doit pas
+    # dependre de la page de codes de la machine qui la produit.
+    if hasattr(stream, "reconfigure"):
+        stream.reconfigure(encoding="utf-8", errors="replace")
+
+
 def main(argv: list[str] | None = None) -> int:
+    for stream in (sys.stdout, sys.stderr):
+        _ensure_utf8_output(stream)
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--since", default="2026-09-25", help="issues mises a jour depuis (AAAA-MM-JJ)")
     parser.add_argument("--state", choices=["open", "closed", "all"], default="open")

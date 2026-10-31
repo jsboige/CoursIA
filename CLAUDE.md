@@ -245,7 +245,7 @@ docs/                       # Documentation déportée de ce fichier
 
 **Collision** : sous-agents read-only en parallèle OK ; sous-agents **éditeurs = un seul à la fois par notebook/série**.
 
-**Modèle explicite obligatoire** : tout `Agent()` DOIT spécifier `model: "sonnet"` ou `"haiku"`. `"opus"` **jamais sur les postes po-\***, sauf lane autorisée nommément (cf point 3, `myia-po-2024:CoursIA-3`) (mandat user 2026-10-10) — la tâche qui le justifierait remonte à ai-01 ; sur ai-01, justification écrite dans le prompt. Sous-agent sans `model` explicite = hérite d'opus = violation. Cf [model-delegation.md](.claude/rules/model-delegation.md).
+**Modèle explicite obligatoire** : tout `Agent()` DOIT porter un modèle explicite. Pour la lecture en volume, c'est `subagent_type: "swift-reader"`, sans argument `model` : le fichier d'agent fixe Swift, le vLLM local, qui est gratuit (mandat user 2026-10-27). Sinon, `model: "sonnet"` ou `"haiku"`. `"opus"` **jamais sur les postes po-\***, sauf lane autorisée nommément (cf point 3, `myia-po-2024:CoursIA-3`) (mandat user 2026-10-10) — la tâche qui le justifierait remonte à ai-01 ; sur ai-01, justification écrite dans le prompt. Sous-agent sans `model` explicite = hérite d'opus = violation. Cf [model-delegation.md](.claude/rules/model-delegation.md).
 
 ---
 
@@ -284,4 +284,4 @@ Structure complète : [quantconnect.md](docs/qc/quantconnect.md).
 
 CoursIA = plateforme éducative AI : Jupyter notebooks (C# .NET Interactive + Python), infrastructure Docker GenAI (ComfyUI + Qwen), GradeBookApp évaluation étudiants. Repository : https://github.com/jsboige/CoursIA. Documentation primaire en français ; commentaires code en français ou anglais.
 
-Stack : OpenAI/Anthropic APIs, Qwen 2.5-VL, Semantic Kernel, Python 3.10+ + .NET 9.0 Interactive, Papermill + MCP Jupyter, ComfyUI GPU (RTX 3090).
+Stack : OpenAI/Anthropic APIs, Qwen Image Edit 2509 (encodeur Qwen 2.5-VL 7B) et Qwen3-VL 4B, Semantic Kernel, Python 3.10+ + .NET 9.0 Interactive, Papermill + MCP Jupyter, ComfyUI GPU (RTX 3080 Ti 16 Go, po-2023).
