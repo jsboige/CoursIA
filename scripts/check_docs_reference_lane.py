@@ -78,9 +78,10 @@ ARCHIVE_REL = Path("docs") / "archive"
 # it is a monotone floor, never a target.
 DEFAULT_BASELINE = 33
 
-# "> REFERENCE -- 2026-10-25 -- vivante -- derniere revision <date>"
-# (marker + "vivante" + "derniere revision" + trailing date; dash and accent
-# variants tolerated)
+# "> REFERENCE — vivante — dernière révision 2026-10-31"
+# (marker, then "vivante", then "derniere revision" with its trailing date --
+# the fields are separated by dashes; em dash, en dash, hyphen and accent
+# variants all tolerated)
 REF_HEADER_RE = re.compile(
     r"^>\s*REFERENCE\s*[—–-]\s*vivante\s*[—–-]\s*"
     r"derni[èe]re\s+r[eé]vision\s+(?P<date>\d{4}-\d{2}-\d{2})\s*$",
