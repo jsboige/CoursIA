@@ -2813,4 +2813,134 @@ theorem verifyAnyMove_r2Any_bigon_on_larger {s t : KnotDiagram}
   · exact Or.inl ⟨(verifyBigonDownAny_length t s h).symm, verifyBigonDownAny_last_bigon t s h⟩
   · exact Or.inr ⟨(verifyBigonDownAny_length s t h).symm, verifyBigonDownAny_last_bigon s t h⟩
 
+
+/-! ## 22. Préservation du motif terminal -- R3 ne fabrique pas de kink
+
+Troisième étape du certificat négatif (suite des sections 20-21) : le pas
+triangle préserve l'absence de kink terminal. Le nouveau croisement écrit
+par R3 en position `i + 2` (quand la fenêtre touche la fin) est
+`⟨e3(i), e4(i), e1(i), e4(i+2)⟩` ; ses champs `e3 = e1(i)` et `e4 = e4(i+2)`
+sont distincts PAR CONSTRUCTION -- le `Nodup` des neuf labels du
+vérificateur les contient tous les deux. Un terminal hors de la fenêtre R3
+est intact : `List.set` ne réécrit que son indice. C'est la brique qui
+fermera l'inductivité du potentiel sur les pas R3 à compte constant. -/
+
+/-- Auxiliaire : le dernier élément d'un `cons` à queue non vide se lit
+    dans la queue (les deux équations du `match` de `getLast?`). -/
+theorem getLast?_cons_of_ne_nil {α : Type*} (a : α) {l : List α}
+    (h : l ≠ []) : (a :: l).getLast? = l.getLast? := by
+  cases l with
+  | nil => exact absurd rfl h
+  | cons b bs => rfl
+
+/-- Auxiliaire : réécrire un indice strictement avant le dernier ne touche
+    pas le dernier élément. -/
+theorem getLast?_set_of_lt_last {α : Type*} : ∀ (l : List α) (i : Nat) (x : α),
+    i + 1 < l.length → (l.set i x).getLast? = l.getLast? := by
+  intro l
+  induction l with
+  | nil => intro i x h; simp only [List.length_nil] at h; omega
+  | cons a as ih =>
+    intro i x h
+    cases i with
+    | zero =>
+      cases as with
+      | nil => simp only [List.length_cons, List.length_nil] at h; omega
+      | cons b bs => rfl
+    | succ k =>
+      cases as with
+      | nil => simp only [List.length_cons, List.length_nil] at h; omega
+      | cons b bs =>
+        simp only [List.set_cons_succ, List.length_cons] at h ⊢
+        have hm : ((b :: bs).set k x) ≠ [] := by
+          cases k with
+          | zero => simp
+          | succ k' => simp only [List.set_cons_succ]; simp
+        rw [getLast?_cons_of_ne_nil a hm, getLast?_cons_of_ne_nil a (by simp)]
+        exact ih k x (by simp only [List.length_cons]; omega)
+
+/-- Auxiliaire : réécrire le dernier indice remplace le dernier élément. -/
+theorem getLast?_set_last_aux {α : Type*} : ∀ (l : List α) (i : Nat) (x : α),
+    i + 1 = l.length → (l.set i x).getLast? = some x := by
+  intro l
+  induction l with
+  | nil => intro i x h; simp only [List.length_nil] at h; omega
+  | cons a as ih =>
+    intro i x h
+    cases i with
+    | zero =>
+      cases as with
+      | nil => rfl
+      | cons b bs => simp only [List.length_cons] at h; omega
+    | succ k =>
+      cases as with
+      | nil => simp only [List.length_cons, List.length_nil] at h; omega
+      | cons b bs =>
+        simp only [List.set_cons_succ, List.length_cons] at h ⊢
+        have hm : ((b :: bs).set k x) ≠ [] := by
+          cases k with
+          | zero => simp
+          | succ k' => simp only [List.set_cons_succ]; simp
+        rw [getLast?_cons_of_ne_nil a hm]
+        exact ih k x (by simp only [List.length_cons]; omega)
+
+/-- Version à arguments implicites, pour la réécriture. -/
+theorem getLast?_set_last {α : Type*} {l : List α} {i : Nat} {x : α}
+    (h : i + 1 = l.length) : (l.set i x).getLast? = some x :=
+  getLast?_set_last_aux l i x h
+
+/-- Auxiliaire R3 : triple réécriture `i, i+1, i+2` dont la fenêtre ne
+    touche pas la fin -- le terminal est celui de la liste source. -/
+theorem getLast?_set3_of_lt_last {α : Type*} {l : List α} {i : Nat} {A B C : α}
+    (h : i + 2 + 1 < l.length) :
+    (((l.set i A).set (i+1) B).set (i+2) C).getLast? = l.getLast? := by
+  have e1 : ((l.set i A).set (i+1) B).length = l.length := by
+    simp only [List.length_set]
+  have e2 : (l.set i A).length = l.length := by
+    simp only [List.length_set]
+  rw [getLast?_set_of_lt_last _ (i + 2) C (by rw [e1]; omega),
+      getLast?_set_of_lt_last _ (i + 1) B (by rw [e2]; omega),
+      getLast?_set_of_lt_last _ i A (by omega)]
+
+/-- Auxiliaire R3 : triple réécriture posée sur la fin -- le nouveau
+    terminal est le troisième croisement écrit. -/
+theorem getLast?_set3_last {α : Type*} {l : List α} {i : Nat} {A B C : α}
+    (h : i + 2 + 1 = l.length) :
+    (((l.set i A).set (i+1) B).set (i+2) C).getLast? = some C := by
+  have e1 : ((l.set i A).set (i+1) B).length = l.length := by
+    simp only [List.length_set]
+  rw [getLast?_set_last (by rw [e1]; omega)]
+
+/-- Le pas triangle ne fabrique pas de kink terminal : si la source est
+    sans kink terminal, la cible l'est aussi. Le `Nodup` des neuf labels
+    suffit -- le nouveau terminal porte `e3 = e1(i)` ≠ `e4 = e4(i+2)`, tous
+    deux dans la liste sans doublon ; un terminal hors fenêtre est intact. -/
+theorem verifyR3Fwd_last_not_kink (D d : KnotDiagram)
+    (h : verifyR3Fwd D d = true)
+    (hD : ∀ K, D.crossings.getLast? = some K → K.e3 ≠ K.e4) :
+    ∀ K, d.crossings.getLast? = some K → K.e3 ≠ K.e4 := by
+  simp only [verifyR3Fwd, Bool.and_eq_true] at h
+  obtain ⟨i, _, hi⟩ := List.any_eq_true.mp h.2
+  have hd := of_decide_eq_true hi
+  rw [hd.2.2.2.2.2]
+  intro K hK
+  rcases Nat.lt_or_ge (i + 2 + 1) D.crossings.length with hlt | hge
+  · rw [getLast?_set3_of_lt_last hlt] at hK
+    exact hD K hK
+  · have hlast : i + 2 + 1 = D.crossings.length := by omega
+    rw [getLast?_set3_last hlast] at hK
+    cases hK
+    intro hkink
+    have hk' : (crossingAt D.crossings i).e1 =
+        (crossingAt D.crossings (i + 2)).e4 := hkink
+    have hN := hd.2.2.2.2.1
+    obtain ⟨h0, _⟩ := List.nodup_cons.mp hN
+    have h5 : (crossingAt D.crossings (i + 2)).e4 ∈
+        [(crossingAt D.crossings i).e2, (crossingAt D.crossings (i + 1)).e1,
+         (crossingAt D.crossings (i + 1)).e4, (crossingAt D.crossings (i + 2)).e3,
+         (crossingAt D.crossings (i + 2)).e4, (crossingAt D.crossings i).e3,
+         (crossingAt D.crossings i).e4, (crossingAt D.crossings (i + 1)).e3] := by
+      simp
+    exact h0 (hk'.symm ▸ h5)
+
 end Knots.AnyMoves
