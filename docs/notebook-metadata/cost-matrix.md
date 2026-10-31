@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-10-25
+
 # Matrice coût/ressource par notebook
 
 > **Statut.** Document de cadrage, grade **B-méthodologique** (schéma applicable, pas une suggestion). V0 = pilote cycle c.794 (issue #8056, P1).
@@ -21,8 +23,8 @@ exposer sa matrice de coût dans **`nb.metadata['cost']`** (objet JSON, invisibl
 au rendu markdown). C'est la seule forme propre : une cellule markdown portant un
 bloc `---\n...\n---` est promue par markdown-it en **setext-H2 supersize**
 (défaut de rendu que le guard `#8352` bloque en ERROR). L'exemplar de référence =
-[`Infer-3-Factor-Graphs`](../../MyIA.AI.Notebooks/Probas/Infer/Infer-3-Factor-Graphs.ipynb)
-+ `Infer-4-Bayesian-Networks` (PR #8323).
+[`Infer-03-Factor-Graphs`](../../MyIA.AI.Notebooks/Probas/Infer/Infer-03-Factor-Graphs.ipynb)
++ `Infer-04-Bayesian-Networks` (PR #8323).
 
 ```json
 // nb.metadata["cost"] — l'objet JSON sérialisé par le notebook (.ipynb = JSON).

@@ -70,6 +70,8 @@ Les cellules doivent suivre un **ordre canonique** sans glissement ni oubli. Fri
 
 Preserver TOUS les commentaires `# TODO`, `# Indice`, `# Etape N`. Remplacer `raise NotImplementedError` legacy par ce pattern = **conforme**, anti-regression ne s'applique pas.
 
+Le stub `pass` est propre a Python ; un carnet qui heberge un autre langage (Solidity, Lean, C#, Prolog) emploie un stub valide dans ce langage — le squelette remis a l'etudiant doit compiler (#22840 : `pass;` dans des contrats Solidity SC-05/06/10/12).
+
 Un stub ne rend **jamais** une verite en dur (`return True`, `{"ok": True}`) : sa valeur de retour doit etre **indiscernable de « pas fait »** (`None`/`False`/`[]`/`0`), sinon la sortie committee affirme un resultat jamais verifie — detecteur : `scripts/notebook_tools/detect_stub_truth_returns.py` (#14817).
 
 ## Commit avec outputs (rule C.2)
@@ -85,7 +87,7 @@ Commit UNIQUEMENT les notebooks dont la source a change (`git diff <nb> | grep -
 **Convention issue #8364 (EPIC #8052).** Une cellule markdown d'interprétation ne cite **que** des valeurs présentes dans les outputs observés des cellules de code adjacentes (ou explicitement référencées). Complète le positionnement canonique « Interpretation APRES le code » (section *Enchainement* ci-dessus) en gouvernant le **contenu** cité, non plus seulement l'ordre.
 
 - Une valeur citée absente de l'output → **re-executer pour la mesurer** (règle F HARD : install/invoke/re-plug le vrai outil, cf [sota-not-workaround.md](sota-not-workaround.md) Stop & Repair), ou **reformuler sans la citer**. Jamais de prose écrite d'abord puis « validée » contre l'output après.
-- **Pour une PR « alignement doc-honesty »** : ne JAMAIS ré-aligner la prose sur un output qui la contredit sans **diagnostiquer la cause de la dérive**, et écrire dans le body l'un des trois verdicts `CAUSE_FIXED` / `CAUSE_DOCUMENTED_ONLY` / `CAUSE_INTRINSIC` (critères et actions : [docs/reference/notebook-quantitative-prose.md](../../docs/reference/notebook-quantitative-prose.md)). Ré-aligner sans diagnostic = consacrer la dégénérescence. Voir aussi [secrets-hygiene.md](secrets-hygiene.md) règle 6 (jamais hand-editer un output — corriger la cause + re-executer).
+- **Pour une PR « alignement doc-honesty »** : ne JAMAIS ré-aligner la prose sur un output qui la contredit sans **diagnostiquer la cause de la dérive**, et écrire dans le body l'un des trois verdicts `CAUSE_FIXED` / `CAUSE_DOCUMENTED_ONLY` / `CAUSE_INTRINSIC` (critères et actions : [docs/reference/notebook-quantitative-prose.md](../../docs/reference/notebook-quantitative-prose.md)). Ré-aligner sans diagnostic = consacrer la dégénérescence ; ré-aligner sur une sortie dégénérée (repli, clé absente, outil manquant) rend la prose vraie sans réparer le carnet, ce n'est **pas** une correction : on répare la cause, la prose suit. Voir aussi [secrets-hygiene.md](secrets-hygiene.md) règle 6 (jamais hand-editer un output — corriger la cause + re-executer).
 
 ## Valeurs quantitatives en prose : retirer plutôt que ré-épingler (rule C.5)
 

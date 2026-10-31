@@ -15,13 +15,19 @@
   "seed": 0
  },
  "sources": {
-  "fallacies_blob_sha1": "a761735375883b3ce19876cc0c781dc722ed8815",
-  "virtues_blob_sha1": "0cce826f64f677b9a777c6a4253745e007689c39",
+  "fallacies_blob_sha1": "f519331c5aa1c7021b7a8f728743bff9ed413ab7",
+  "virtues_blob_sha1": "74c0bcc12e7c53ef58cb76f5c2b01f497eb27caf",
   "scenarii_blob_sha1": "9f20eb808a1d22c9c1a5dd1b96460b0d6a23db60",
   "scenarii_upstream_commit": "0ab05d66576a1007c3952a67e2dd1eaf8f9b502c",
   "scenarii_copy_repo_path": "MyIA.AI.Notebooks/GenAI/FallacyDetection/data/argumentum_scenarii_cards.csv",
   "build_repo_commit": "4e0f5a103f404dba5ed27d3e9a1cd0b982de7cfe",
   "build_gitlink_commit": "0ab05d66576a1007c3952a67e2dd1eaf8f9b502c"
+ },
+ "licence": {
+  "dataset": "CC-BY-SA-4.0",
+  "attribution": "Argumentum",
+  "base": "texte editorial Argumentum (LICENSE-CONTENT.md, commit amont 956384ac, decision owner 2026-09-21)",
+  "note": "BY-SA 4.0 section 3(b) : un jeu derive ne peut pas ajouter de restriction (NC) au-dela de la licence amont"
  },
  "files": {
   "train.csv": {

@@ -22,6 +22,7 @@ tqdm>=4.65.0
 
 # Data handling
 pandas>=2.0.0
+pyarrow>=26.0.0               # kernel ipykernel SIGSEGV sous 26 (#21764) — plancher de la famille GameTheory (pyarrow>=26 exige Python>=3.11)
 
 # Causal inference (GameTheory-04f, lésion de Fisher par modèle causal graphique)
 dowhy>=0.12
@@ -39,6 +40,7 @@ sympy>=1.12
 # SAT/SMT Solvers (SocialChoice/04, GameTheory-1 setup check)
 python-sat>=0.1.8             # PySAT — SAT solving (Glucose3, Minisat22, Cadical103)
 z3-solver>=4.13               # Microsoft Z3 SMT solver
+ortools>=9.11                 # OR-Tools CP-SAT — synthese globale DSIC-IR (amd_synthesis.py, #22381)
 
 # Utilities
 python-dotenv>=1.0.0

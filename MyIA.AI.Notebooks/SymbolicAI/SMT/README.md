@@ -1,8 +1,8 @@
 <!-- CATALOG-STATUS
 series: SymbolicAI-SMT
-pedagogical_count: 47
-breakdown: SMT=47
-maturity: BETA=46, DRAFT=1
+pedagogical_count: 50
+breakdown: SMT=50
+maturity: BETA=48, DRAFT=2
 -->
 
 # SMT - Satisfiability Modulo Theories
@@ -126,8 +126,8 @@ La thèse est puissante et honnêtement présentée : il n'existe pas de « bon 
 
 ### Prochaines étapes
 
-- **Z3 en C# déclaratif (Z3.Linq)** : la série [Z3-Linq2Z3/](Z3-Linq2Z3/README.md) (18 notebooks, .NET 9) est la porte d'entrée idéale si vous venez de l'écosystème .NET — patron `Theorem<T>`, théorie des tableaux, planificateur de repas à l'échelle réelle (bloc 06→09 sur corpus RecipeML × Ciqual), ordonnancement, coloration, cryptarithmes, MaxSAT, puis bit-vectors, réels exacts et UNSAT cores via l'API brute.
-- **Z3 en Python (z3-py)** : la série [Z3-API/](Z3-API/README.md) (28 notebooks : 18 Python + 4 compagnons Meal-Planner + 6 twins C# parité `Microsoft.Z3`) ouvre l'API complète — tactiques, `BitVec`/`Array`/`String`, quantificateurs, preuve par réfutation, optimisation Pareto/MaxSAT.
+- **Z3 en C# déclaratif (Z3.Linq)** : la série [Z3-Linq2Z3/](Z3-Linq2Z3/README.md) (.NET 9) est la porte d'entrée idéale si vous venez de l'écosystème .NET — patron `Theorem<T>`, théorie des tableaux, planificateur de repas à l'échelle réelle (bloc 06→09 sur corpus RecipeML × Ciqual), ordonnancement, coloration, cryptarithmes, MaxSAT, puis bit-vectors, réels exacts et UNSAT cores via l'API brute.
+- **Z3 en Python (z3-py)** : la série [Z3-API/](Z3-API/README.md) (notebooks Python, compagnons Meal-Planner et twins C# en parité `Microsoft.Z3`) ouvre l'API complète — tactiques, `BitVec`/`Array`/`String`, quantificateurs, preuve par réfutation, optimisation Pareto/MaxSAT.
 - **Z3 parmi d'autres paradigmes** : la [série Sudoku](../../Sudoku/README.md) compare Z3 à une dizaine d'autres approches algorithmiques (backtracking, DLX, métaheuristiques, inférence probabiliste, réseaux de neurones) sur un même problème NP-complet — le terrain idéal pour situer la résolution SMT dans le spectre des solveurs.
 - **Programmation par contraintes industrielle** : la série [Search / CSP](../../Search/README.md) généralise la modélisation par contraintes (OR-Tools CP-SAT) à une famille plus large de problèmes d'optimisation et d'ordonnancement, avec un solveur complémentaire de Z3.
 

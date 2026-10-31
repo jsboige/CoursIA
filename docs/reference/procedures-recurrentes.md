@@ -100,7 +100,7 @@ Une PR « doc-honesty » / « alignement output » / « reconcile stale » (titr
 - **Citer `#8364` en label sans `## Diagnostic dérive`** dans le body = violation §D.5, reviewer DOIT poster `CHANGES_REQUESTED` (incident fondateur #8479, MusicGen 02-3 RTF `0.5-2x`→`0.21-0.24x` aligné sur run non-optimisé alors qu'une re-exec Stop-&-Repair était déjà due — verdict COSMETIC + CHANGES_REQUESTED obligatoire).
 - **Aligner un nombre de perf/timing/accuracy/coût sans re-exec** alors que le notebook est re-exécutable localement (kernel Python/.NET dispo, règle F) = enshrine une valeur qui changera au prochain passage kernel. C'est la dérive même que C.4 interdit.
 - **Fold l'alignement dans une PR markdown séparée** alors qu'une re-exec Stop-&-Repair est **déjà due** sur ce notebook (leak cellule cassée, cause classifiée **(a)** env) = malhonnête. Fold dans la re-exec, **pas** de PR markdown isolée.
-- **`CAUSE_DOCUMENTED_ONLY` sans issue fille** = COSMETIC caché, CHANGES_REQUESTED (cf §D.5).
+- **`CAUSE_DOCUMENTED_ONLY` sur une cause réparable par la flotte** (environnement, dépendance, clé, machine), même avec issue fille = COSMETIC caché, CHANGES_REQUESTED (cf §D.5).
 - **Hand-editer la sortie de cellule** au lieu de re-exécuter (Stop & Repair, L948 ★★, règle secrets-hygiene #6) = **BANNISSEMENT** (`CHANGES_REQUESTED` §D + §H sota-not-workaround). Seules exceptions tolérées : quantbooks QC (non-exécutables via MCP) + `metadata.papermill.input/output_path` au `basename` + `probeAddresses` banner strip post-re-exec .NET.
 
 ### Vérification post-fix (avant `[DONE]`)
@@ -133,6 +133,8 @@ Pour un notebook research utilisant `QuantBook()` (kernel QC Cloud uniquement) :
 1. **MCP qc-mcp d'abord** : vérifier si un outil exécute le research notebook
 2. **Fallback Playwright** : automatiser la session QC Cloud Web (login, navigation projet, Run All, téléchargement notebook exécuté)
 3. **Pas de fallback markdown explicatif** : un Quantbook commit doit avoir des outputs réels QC Cloud
+
+Routes mesurées (LEAN Research local, exécution directe dans l'IDE QC Cloud, exécuteur côté noyau, Research Assistant), récupération du fichier exécuté et fusion de ses sorties dans la branche : [docs/qc/quantbook-execution-routes.md](../qc/quantbook-execution-routes.md).
 
 ## Productivité pendant les opérations longues (règle HARD 2026-05-11)
 

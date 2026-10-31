@@ -63,8 +63,10 @@ la Gemini publie une auto-réplication complète en 33 699 586).
   un **tore 500 × 500** (première répétition gen 11324 == gen 5564), ce qui
   valide à la fois le nom du fichier source et la ligne « 5 760 » de
   `patterns/README.md`.
-  La formaliser demande un moteur **torique**, absent du lac : c'est la suite
-  naturelle de cette tranche.
+  La formaliser demande un moteur **torique** : il existe depuis cette tranche
+  (`Conway.Life.Torus`), mais la période 5 760 reste un résultat **mesuré** et
+  non un théorème (5 760 générations sur 250 000 cellules, hors de portée de
+  `decide`).
 - **L'OTCA : confinement observé sur la fenêtre mesurée — mesure du
   2026-10-09 (#19989, tranche 3), qui ne réfute rien** : sur 1 800
   générations, l'étendue reste **strictement** 2058 × 2058 (aucune
@@ -101,6 +103,34 @@ la Gemini publie une auto-réplication complète en 33 699 586).
   sont encore vides, où un négatif ne mesurerait rien de réel.
 - **Futur** : le CPU (une fois son RLE chargé par le même mécanisme) — sa
   question du bord reste à trancher par la même méthode de mesure.
+
+### Politique d'ancrage `native_decide` (#21833)
+
+Chaque déclaration `native_decide` crée un axiome **nommé**
+(`<thm>._native.native_decide.ax_1_1`) : le gate `proof-integrity-audit`
+les liste **par nom**, jamais par un joker.
+
+| Fichier | Ancres avant #21833 | Ancres après | Déclarations redevenues dérivées |
+|---|---|---|---|
+| `Conway.Life.Pillars` | 7 | 5 | `otca_initial_nonempty`, `unitcell_initial_nonempty` |
+| `Conway.Life.Pillars_en` | 7 | 5 | les deux siblings `_en` |
+
+Les 5 ancres **retenues** par fichier sont les certifications **indépendantes**
+du noyau : `pulsar_period3` (positif — période 3), `pulsar_period1_negative`
+et `pulsar_period2_negative` (négatifs appariés), `otca_initial_population`
+(64 691 cellules) et `unitcell_initial_population` (4 761 cellules) — chacune
+porte une affirmation que rien d'autre ne porte.
+
+Les 2 déclarations retirées ne perdent rien : `otca_initial_nonempty` et
+`unitcell_initial_nonempty` se **déduisent** de la population mesurée
+(`omega` sur la longueur). Un théorème qui dépend d'un autre ancrage n'en
+crée pas de nouveau — c'est `#print axioms` qui fait foi, pas la présence
+d'un `native_decide` dans le texte.
+
+Mesure : 7 déclarations par fichier avant, **5 ancres mesurées par
+`#print axioms`** après (14 → 10 pour la paire FR/`_en`), build
+`Build completed successfully (3014 jobs)` (`Conway.Life.Pillars` : 804 s,
+`Conway.Life.Pillars_en` : 803 s), toolchain épinglé `v4.33.0`.
 
 ### Pourquoi un fichier séparé ?
 
@@ -142,7 +172,7 @@ de l'archive communautaire LifeWiki :
 |------------------------|---------------|-------------|------------------------|
 | `otcametapixel.rle`    | 2058 × 2058  | 165         | `otca_initial_population` |
 | `p5760unitlifecell.rle`| 499 × 499    | 15          | `unitcell_initial_population` |
-| `turingmachine.rle`    | variable     | 104         | (récit : Acte II)      |
+| `turingmachine.rle`    | 1714 × 1647  | 104         | `turingmachine_initial_population` |
 | `gemini.rle`           | énorme       | 5 300       | `gemini_witness`       |
 
 `gemini.rle` (5,3 Mo) est gitignoré pour cause de taille ; la
@@ -287,9 +317,20 @@ theorem otca_initial_population : otcaInitial.length = 64691 := by
 
 /-- La grille OTCA chargée n'est pas vide. Contrôle croisé indépendant :
     la même population (64 691) est mesurée par comptage Python direct des
-    runs `o` du RLE source. -/
+    runs `o` du RLE source.
+
+    **La preuve est dérivée, pas réévaluée** : la non-vacuité découle de la
+    population mesurée par `otca_initial_population` — une population non
+    nulle exclut la liste vide. Ce théorème ne porte donc plus d'ancrage
+    `native_decide` propre : il hérite de celui de la population, et le
+    module perd une certification native indépendante au profit d'une
+    déduction arithmétique sur le noyau. -/
 theorem otca_initial_nonempty : otcaInitial ≠ ([] : Grid) := by
-  native_decide
+  intro h
+  have hpop := otca_initial_population
+  have hl := congrArg List.length h
+  simp only [List.length_nil] at hl
+  omega
 
 /-- **UnitCell** — Nicolay Beluchenko 2011.
 
@@ -309,8 +350,14 @@ theorem otca_initial_nonempty : otcaInitial ≠ ([] : Grid) := by
 
     La période est réelle, mais elle appartient à la lecture **pavée** :
     mesurée *sans bord* sur un tore 500 × 500 (première répétition
-    gen 11324 == gen 5564, soit 5 760). La formaliser demande un moteur
-    torique, qui n'existe pas dans le lac — c'est la suite de cette tranche.
+    gen 11324 == gen 5564, soit 5 760). Le moteur torique que cette
+    formalisation demandait existe désormais : `Conway.Life.Torus`. Il porte
+    ses propres témoins, dont `Torus.blinker_torus3_dies` — le blinker qui
+    oscille éternellement sur le plan s'éteint en deux générations sur un tore
+    3 × 3 : c'est le modèle de bord, et non le motif, qui décide du destin.
+    La période 5 760 elle-même reste hors de portée d'une preuve par `decide`
+    (5 760 générations sur 250 000 cellules) : c'est un résultat **mesuré**,
+    pas un théorème.
 
     Ce qui est prouvable ici, et **non vacuous**, c'est que la grille chargée
     est réelle : c'est exactement ce que fermait la route
@@ -322,9 +369,121 @@ theorem unitcell_initial_population : unitcellInitial.length = 4761 := by
     `evolveHashlifeFastMemo_empty` est donc **fermée** pour ce motif, ce qui
     rend le témoin de période impossible *a fortiori*. Contrôle croisé
     indépendant : la même population (4 761) est mesurée par
-    `scripts/lean/rle_to_lean_grid.py`. -/
+    `scripts/lean/rle_to_lean_grid.py`.
+
+    **La preuve est dérivée, pas réévaluée** : la non-vacuité découle de la
+    population mesurée par `unitcell_initial_population` — une population non
+    nulle exclut la liste vide. Ce théorème ne porte donc plus d'ancrage
+    `native_decide` propre : il hérite de celui de la population, et le
+    module perd une certification native indépendante au profit d'une
+    déduction arithmétique sur le noyau. -/
 theorem unitcell_initial_nonempty : unitcellInitial ≠ ([] : Grid) := by
+  intro h
+  have hpop := unitcell_initial_population
+  have hl := congrArg List.length h
+  simp only [List.length_nil] at hl
+  omega
+
+/-! ## Témoin de la machine de Turing
+
+La machine de Turing de Paul Rendell (avril 2000) est le motif le plus
+célèbre de la communauté après les quatre piliers : une machine de
+Turing dont le programme est écrit dans une grille de Conway. Le
+fichier `turingmachine.rle` (104 Ko, boîte 1714 × 1647) est **déjà dans
+l'arbre** ; jusqu'ici il n'était qu'un récit dans le tableau de
+l'archive de motifs.
+
+Ce qui manquait : un témoin **prouvé**. Le motif est chargé pour de
+vrai (`include_str` + `RLE.parseRLE!`, comme l'OTCA et l'UnitCell), et
+il reçoit la paire de témoins de chargement (population, non-vacuité)
+**plus** un témoin de **dynamisme** : la machine n'est pas inerte.
+
+Le témoin de dynamisme ne peut pas être un témoin de période : une
+période exigerait de faire tourner l'évolution complète du motif, et le
+moteur de référence `Conway.Life.evolve` est **quadratique** — le test
+d'appartenance `isAlive g p = g.elem p` est une recherche linéaire dans
+la liste triée, répétée pour chaque cellule candidate, soit environ
+`9 × 36 549` cellules candidates à coût `O(n)` chacune. On utilise donc
+`Conway.Life.birthSiteNotFixed` : un **site de naissance** — une cellule
+morte avec exactement trois voisins de Moore vivants — suffit à prouver
+que la grille n'est pas un point fixe, et cette preuve est **locale**. -/
+
+/-- Source RLE de la machine de Turing de Paul Rendell, embarquée à la
+    compilation par `include_str` (104 Ko, boîte 1714 × 1647). Le chemin
+    est relatif à CE fichier (`Conway/Life/`). -/
+def turingmachineRLE : String := include_str "../../patterns/turingmachine.rle"
+
+/-- État initial de la machine de Turing, décodé du RLE par l'analyseur
+    **prouvé** du dépôt (`Conway.Life.RLE.parseRLE`). Population mesurée :
+    36 549 cellules vivantes. -/
+def turingmachineInitial : Grid := RLE.parseRLE! turingmachineRLE
+
+/-- **Faits mesurés** sur la grille Turing chargée, établis par **une seule**
+    évaluation `native_decide`.
+
+    Le regroupement n'est pas cosmétique : chaque site `native_decide`
+    réévalue `RLE.parseRLE!`, donc reparse la source RLE et retrie les
+    36 549 cellules de la grille. Un seul passage suffit à établir les
+    quatre faits ; les théorèmes ci-dessous n'en sont que des projections,
+    gratuites au niveau du noyau. -/
+theorem turingmachine_facts :
+    turingmachineInitial.length = 36549 ∧
+    (9, 256) ∉ turingmachineInitial ∧
+    (9, 256) ∈ turingmachineInitial.flatMap mooreNeighbors ∧
+    liveNeighborCount turingmachineInitial (9, 256) = 3 := by
   native_decide
+
+/-- La grille Turing chargée a bien **36 549 cellules vivantes**.
+    Contrôle croisé indépendant : la table de mesures du lac
+    (`scripts/README.md`) porte la même valeur pour ce motif. -/
+theorem turingmachine_initial_population : turingmachineInitial.length = 36549 :=
+  turingmachine_facts.1
+
+/-- La grille Turing chargée n'est pas vide : la route du placeholder
+    `([] : Grid)` est **fermée** pour ce motif. -/
+theorem turingmachine_initial_nonempty : turingmachineInitial ≠ ([] : Grid) := by
+  intro h
+  have hlen : turingmachineInitial.length = 0 := by rw [h, List.length_nil]
+  have hpop : turingmachineInitial.length = 36549 := turingmachine_facts.1
+  rw [hlen] at hpop
+  exact absurd hpop (by decide)
+
+/-- La cellule `(9, 256)` est **morte** dans la grille Turing chargée. -/
+theorem turingmachine_birth_site_absent : (9, 256) ∉ turingmachineInitial :=
+  turingmachine_facts.2.1
+
+/-- La cellule `(9, 256)` est voisine de Moore d'au moins une cellule
+    vivante de la grille Turing : elle est donc **candidate** pour
+    l'étape suivante. Ses trois voisins vivants sont `(9, 257)`,
+    `(10, 256)` et `(10, 257)`. -/
+theorem turingmachine_birth_site_adjacent :
+    (9, 256) ∈ turingmachineInitial.flatMap mooreNeighbors :=
+  turingmachine_facts.2.2.1
+
+/-- La cellule `(9, 256)` a **exactement trois** voisins de Moore vivants
+    dans la grille Turing : c'est un **site de naissance** (règle B3). -/
+theorem turingmachine_birth_site_count :
+    liveNeighborCount turingmachineInitial (9, 256) = 3 :=
+  turingmachine_facts.2.2.2
+
+/-- **Témoin de dynamisme de la machine de Turing** : la grille chargée
+    n'est pas un point fixe de l'évolution — la machine **exécute** au
+    moins une transition de la règle B3/S23 (une cellule naît en
+    `(9, 256)`).
+
+    La preuve est locale (un site de naissance), donc applicable à un
+    motif de 36 549 cellules dont l'évolution complète n'est pas
+    calculable par le moteur de référence.
+
+    **Témoin négatif apparié** : `Conway.Life.emptyGridIsStillLife`
+    montre que la grille vide — le placeholder qui remplacerait le motif
+    non chargé — est, elle, un point fixe. Sans ce contrôle, le témoin
+    ci-dessus ne distinguerait pas le motif chargé d'une grille vide
+    remplacée. -/
+theorem turingmachine_not_stilllife :
+    step turingmachineInitial ≠ turingmachineInitial :=
+  birthSiteNotFixed turingmachine_birth_site_absent
+    turingmachine_birth_site_adjacent turingmachine_birth_site_count
 
 /-- **Témoin Gemini** — Andrew Wade 2010.
 

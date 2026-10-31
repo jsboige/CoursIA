@@ -94,17 +94,24 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0   # git merge-base --is-ancestor a besoin du graphe
+          filter: blob:none
           sparse-checkout: |
-            .github/workflows/evict-orphan-caches.yml
+            .github/workflows
             scripts/ci/evict_orphan_caches.py
             tests/test_evict_orphan_caches.py
+      # #19658 (decision A, 2026-10-26) : le critere « cle que plus aucun
+      # workflow de main ne demande » derive la demande des workflows de
+      # `main` -- ils doivent donc etre presents dans le checkout. Sans eux,
+      # la demande est INCONNUE et la passe n'evince rien (fail-CLOSED) : le
+      # checkout ci-dessus les inclut, et le sweep tourne sur le push vers
+      # `main`, donc ce checkout EST `main`.
 
       - name: Dry-run first (log to Actions UI, no delete)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
-          python scripts/ci/evict_orphan_caches.py \
+          python3 scripts/ci/evict_orphan_caches.py \
             --max-age-hours "${{ inputs.max_age_hours || '168' }}" \
             --json > /tmp/evict_dry.json
           echo "DRY-RUN SUMMARY:"
@@ -115,11 +122,11 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
-          python scripts/ci/evict_orphan_caches.py \
+          python3 scripts/ci/evict_orphan_caches.py \
             --max-age-hours "${{ inputs.max_age_hours || '168' }}" \
             --apply \
             --json | tee /tmp/evict_apply.json
-          EVICTABLE=$(python -c "import json,sys; d=json.load(open('/tmp/evict_apply.json')); print(d['evictable'])")
+          EVICTABLE=$(python3 -c "import json,sys; d=json.load(open('/tmp/evict_apply.json')); print(d['evictable'])")
           if [ "$EVICTABLE" = "0" ]; then
             echo "Aucun cache evictable : sweep termine sans DELETE."
             exit 0
@@ -128,4 +135,4 @@ jobs:
 
       - name: Tests invariants (regex + classification)
         run: |
-          python -m unittest tests.test_evict_orphan_caches -v
+          python3 -m unittest tests.test_evict_orphan_caches -v
