@@ -479,15 +479,29 @@ def test_voie_en_processus_rend_les_memes_codes_que_la_voie_cli(monkeypatch):
     solo = pig._claims_in_process([202], "myia-ai-01:CoursIA-2")
     assert solo is not None
     assert solo[202][0] == pig.CLAIM_CODE_BLOCKED
-    # La voie CLI BATCH (>= 2 issues) mappe la meme situation sur NOT_SCOPED
-    # (exit 2) -> BLOCKED depuis #22916. Le contrat #22630 avait gele le
-    # comportement HISTORIQUE du mode batch (`-> ERROR`) pour que la
-    # refonte « voie en processus » ne corrige rien au passage ; #22916
-    # leve explicitement ce gel : le resume ne lisait que stdout alors que
-    # `NOT_SCOPED` part sur stderr. La correction fait converger batch et
-    # solo, qui divergeaient sur la MEME situation -- c'est la ligne 481
-    # ci-dessus (solo -> BLOCKED) qui rend la divergence visible.
+    # La voie CLI BATCH (>= 2 issues) rend la MEME chose : la sonde y ecrit
+    # son verdict `NOT_SCOPED` sur **stderr** (le test du depot l'y lit :
+    # `assert "NOT_SCOPED" in captured.err`), et le reducer la reduisait
+    # **stdout seul** -> `ERROR`, servable par defaut -> le tapis retenait un
+    # grain **occupe**. C'etait exactement la divergence reprodutee par
+    # #23098, et son acceptance dit : « le tirage ne retient plus un grain
+    # dont la sonde a NOMME un bloquant, quel que soit le code de sortie ».
+    #
+    # #22983 -- CONTRAT CHANGE ICI, et non contourne (revue Hermes,
+    # point 5a) : le mode batch mappe desormais `exit 2` + un resume JSON
+    # qui nomme des lanes bloquantes sur BLOCKED, le verdict de la voie
+    # historique du picker. La version precedente de cette assertion
+    # affirmait ERROR -- le comportement HISTORIQUE du mode batch, qui
+    # rendait un grain tenu par une autre lane *servable* par le tapis
+    # (fail-open) : exactement la collision que la jambe IMPLICIT (#14300)
+    # existe pour empecher.
+    #
+    # L'assertion d'ici verifie donc la **convergence** des deux voies --
+    # ce que le nom du test annonce depuis le debut (« rend les MEMES codes
+    # que la voie CLI »). Elle ne fige plus la divergence : ce que ce test
+    # appelait « comportement HISTORIQUE » etait le defaut.
     assert verdicts[202][0] == pig.CLAIM_CODE_BLOCKED
+    assert verdicts[202][0] == solo[202][0]
 
 
 def test_voie_en_processus_rend_none_si_le_lecteur_manque(monkeypatch):

@@ -78,28 +78,31 @@ jobs:
   always-on-metadata-guards:
     name: "Always-on metadata guards -- 3 organes, 1 checkout"
     # Routage #14283 tranche 3c (ai-01 2026-09-02) : jambe Linux auto-hebergee.
-    # Garde anti-fork au niveau job + runs-on STATIQUE (une expression leverait
-    # DYNAMIC_RUNS_ON dans check_self_hosted_runner_policy.py).
-    # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
+    # Garde anti-fork au niveau job + runs-on sous la FORME HYBRIDE AUDITEE
+    # (une expression non auditee leverait DYNAMIC_RUNS_ON dans
+    # check_self_hosted_runner_policy.py).
     # Rapatrie sur l'offre GitHub le 2026-10-25 (#17397, consigne user : le CI local pallie
     # les limites de l'offre hebergee, il ne la remplace pas). Mesure : 3 jobs heberges en
     # cours pour un plafond d'environ 20, 42 jobs sur 42 en file sur coursia-linux.
     # L'entree reste dans SELF_HOSTED_WORKFLOW_ALLOWLIST : retour = remettre le label.
-    #
-    # #22937 (volet (d), 2026-10-28) : la garde REJOINT LA COHORTE -- forme
-    # hybride auditee de `check_self_hosted_runner_policy.py` (#22461) :
-    # PR meme-depot ET `vars.CI_OVERFLOW_LOCAL == 'true'` -> jambe Linux
-    # locale ; tout le reste (fork, variable absente ou fausse,
-    # `workflow_dispatch`) retombe sur `ubuntu-latest`. La garde same-repo
-    # reste en place au niveau job (elle ne gene pas la forme hybride :
-    # l'organe ne l'exige plus pour une jambe hybride, il ne l'interdit pas).
+    # #22937 (forme hybride, phase A puis vague 2 ; 2026-10-27 puis
+    # 2026-10-28) : PR meme-depot ET `vars.CI_OVERFLOW_LOCAL == 'true'` ->
+    # jambe Linux locale ; tout le reste (variable absente ou fausse,
+    # forks, push/schedule/dispatch) retombe sur `ubuntu-latest`. La garde
+    # same-repo reste en place au niveau job (elle ne gene pas la forme
+    # hybride : l'organe ne l'exige plus pour une jambe hybride, il ne
+    # l'interdit pas).
     # Ce qui a change depuis le retour arriere du 25/10 (#17397) : le
     # checkout sur le parc local ne coute plus 80-148 s mais **3,9 s**
     # (volume `_work` persistant par slot, #14285, remesure du 18/10 : le
     # checkout local est plus rapide que l'heberge a 40-51 s). La saturation
     # du parc local par les checkouts, qui motivait le retour arriere, a
     # donc disparu.
-    # Retour arriere = remettre `runs-on: ubuntu-latest`.
+    # Bascule : `gh variable set CI_OVERFLOW_LOCAL --body true|false --repo
+    # jsboige/CoursIA`. Retour arriere = variable a `false` ou supprimee :
+    # routage 100 % heberge, sans toucher ce fichier.
+    # Limite : runs-on se resout a la creation du job, les runs deja en
+    # file ne bougent pas.
     runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     timeout-minutes: 10

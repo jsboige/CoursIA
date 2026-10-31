@@ -67,7 +67,13 @@ jobs:
             PR_NUMBER=""
             echo "Nocturne window: $(git rev-parse --short "$BASE_SHA")..HEAD (24 h of main)"
           fi
-          ADDED=$(git diff --name-only --diff-filter=A "$BASE_SHA"..HEAD -- '*.ipynb' || true)
+          # Trois points et non deux (residu de #10403) : `"$BASE_SHA"..HEAD` compare
+          # deux arbres, donc sur une PR empilee dont la base a gagne des
+          # commits depuis le fork il attribue a la PR ce que `main` a gagne.
+          # `"$BASE_SHA"...HEAD` ne retient que l'apport de la PR. En fenetre
+          # nocturne BASE_SHA est un ancetre de HEAD, les deux formes y sont
+          # identiques -- la troisieme forme est donc gratuite dans ce cas.
+          ADDED=$(git diff --name-only --diff-filter=A "$BASE_SHA"...HEAD -- '*.ipynb' || true)
           if [ -z "$ADDED" ]; then
             if [ "$NOCTURNE" -eq 1 ]; then
               echo "No notebooks added in the last-24h window — advisory skips."
