@@ -3689,6 +3689,24 @@ def test_is_student_tp_pr_reads_the_declaration_line():
         "body": "Grain: MED/guard -- lane myia-po-2028:CoursIA-2\n"}) is False
 
 
+def test_is_student_tp_pr_couvre_les_marqueurs_de_liste():
+    """Revue Hermes du 2026-10-31 (#23733) : « la couverture des marqueurs de
+    liste dans le bruit de tete -- une classe de faux negatifs latente ».
+
+    Un `lstrip` de caracteres ne sait pas enjamber `1.` ni `[ ]` : la
+    declaration etait invisible des qu'elle etait mise en liste. La couverture
+    est donc mesuree ici, jeton par jeton, y compris composes (`1. [ ]`).
+    """
+    for prefix in ("- ", "* ", "+ ", "1. ", "2) ", "(3) ", "- [ ] ", "- [x] ",
+                   "> - ", "1. [ ] ", "   >  -  "):
+        assert pig.is_student_tp_pr({"body": prefix + REAL_TP_HEAD}) is True, prefix
+    # Le sens dangereux reste ferme : une PR de lane qui met un TP en liste
+    # plus bas dans son corps n'est pas un rendu etudiant.
+    assert pig.is_student_tp_pr({
+        "body": "Grain: MED/guard -- lane myia-po-2028:CoursIA-2\n\n"
+                "- PR de TP etudiante relayee\n"}) is False
+
+
 def test_student_tp_pr_excluded_from_orphans_report(monkeypatch):
     """#23732, controle NEGATIF : un rendu de TP relaye bloquee sort de la file.
 

@@ -6463,14 +6463,32 @@ def is_cross_repository_pr(state: dict | None) -> bool:
 # un rendu) reste dans la file. Un refus de matcher coute une PR mal routee ;
 # un faux positif retirerait une vraie PR de flotte de la file de reparation.
 STUDENT_TP_DECLARATION_RE = re.compile(r"^PR\s+de\s+TP\b", re.IGNORECASE)
-STUDENT_TP_LEAD_NOISE = "#>*-_ \t"
+# Bruit de tete : decoration markdown AVANT la declaration. Un seul caractere
+# ne suffit pas -- une liste ordonnee (`1.`), une case a cocher (`- [ ]`) et un
+# `+` de puce sont trois jetons distincts qui se composent (`1. [ ] PR de TP`).
+# La revue Hermes du 2026-10-31 nommait exactement cette classe : « la
+# couverture des marqueurs de liste dans le bruit de tete -- une classe de faux
+# negatifs latente ». Le strip est donc une BOUCLE de jetons, pas un `lstrip`
+# de caracteres : `lstrip` ne sait pas enjamber `1.` ni `[ ]`, et rendait la
+# declaration invisible des qu'elle etait mise en liste.
+STUDENT_TP_LEAD_TOKEN_RE = re.compile(r"^(?:>+|[-*+_]|\(?\d+[.)]|\[[ xX]\])\s*")
+
+
+def _strip_lead_decoration(line: str) -> str:
+    """Retire les jetons de tete markdown, repetes (`> - [ ] PR de TP`)."""
+    for _ in range(16):  # borne : une ligne de bruit n'est pas une boucle
+        stripped = STUDENT_TP_LEAD_TOKEN_RE.sub("", line, count=1)
+        if stripped == line:
+            break
+        line = stripped.lstrip()
+    return line
 
 
 def is_student_tp_pr(pr: dict) -> bool:
     """Vrai si la PR se declare en tete de corps comme un rendu de TP etudiant."""
     body = pr.get("body") or ""
     for raw in body.splitlines():
-        line = raw.strip().lstrip(STUDENT_TP_LEAD_NOISE).strip()
+        line = _strip_lead_decoration(raw.strip())
         if not line:
             continue
         return bool(STUDENT_TP_DECLARATION_RE.match(line))
