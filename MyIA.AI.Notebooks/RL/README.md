@@ -51,7 +51,7 @@ Les kernels sont relevés dans les carnets eux-mêmes (`metadata.kernelspec.name
 | 06c | [RL-06c-PPO-Depuis-Zero-Python](RL-06c-PPO-Depuis-Zero-Python.ipynb) | python3 | PPO depuis zéro : ratios d'échantillonnage d'importance, surrogate clippé, GAE, comparaison A2C contre PPO, et pont vers le RLHF | 45-50 min |
 | 06d | [RL-06d-SAC-Depuis-Zero-Python](RL-06d-SAC-Depuis-Zero-Python.ipynb) | python3 | SAC depuis zéro : maximum entropy, twin Q-networks, auto-température, politique gaussienne pour les actions continues | 45-50 min |
 | 06e | [RL-06e-GRPO-Depuis-Zero-Python](RL-06e-GRPO-Depuis-Zero-Python.ipynb) | python3 | GRPO depuis zéro : avantage relatif intra-groupe sans critic, clip PPO et pénalité KL contre la référence, portefeuille synthétique multi-graines | 45-50 min |
-| 06f | [RL-06f-SAC-Reel-Comparaison-Python](RL-06f-SAC-Reel-Comparaison-Python.ipynb) | python3 | SAC réel avec Stable-Baselines3 : même environnement Pendulum-v1 que le jouet RL-06d, trois graines, évaluation déterministe, et comparaison chiffrée des deux étages (paramètres appris, coût d'atteinte d'un niveau, performance) | 30-35 min |
+| 06f | [RL-06f-SAC-Reel-Comparaison-Python](RL-06f-SAC-Reel-Comparaison-Python.ipynb) | python3 | SAC réel avec Stable-Baselines3 : même environnement Pendulum-v1 que le jouet RL-06d, trois graines, évaluation déterministe, et comparaison chiffrée des deux étages (paramètres appris, budget de pas, temps mural, reward final) | 30-35 min |
 | 07 | [RL-07-Apprentissage-Multi-Agent-Python](RL-07-Apprentissage-Multi-Agent-Python.ipynb) | python3 | Apprentissage multi-agent avec PettingZoo : API AEC, apprentissage indépendant (IQL) sur des jeux coopératifs, auto-jeu sur TicTacToe | 45-50 min |
 | 07b | [RL-07b-Sur-Generalisation-Climbing-Game-Python](RL-07b-Sur-Generalisation-Climbing-Game-Python.ipynb) | python3 | Sur-généralisation relative dans le Climbing Game : même agent tabulaire, IQL contre Hysteretic Q-learning, protocole multi-graines, IQM et intervalle bootstrap, ablation du pessimisme | 40-45 min |
 | 08 | [RL-08-Dyna-Q-Planification-Python](RL-08-Dyna-Q-Planification-Python.ipynb) | python3 | Model-based : apprendre un modèle du monde et planifier dessus (Dyna-Q, Dyna-Q+, rollouts), Blocking Maze, et porte ouverte vers MCTS puis AlphaZero | 45-50 min |
@@ -189,6 +189,17 @@ Les carnets du socle (01 à 13) sont détaillés ci-dessous, section par section
 | Boucle multi-seed | Entraînement multi-seed, verdict de stabilité |
 | GRPO vs PPO/SAC | Ce que change le paradigme sans critic |
 
+### Notebook 6f - SAC réel (Stable-Baselines3)
+
+| Section | Contenu |
+|---------|---------|
+| L'étage réel | SAC de Stable-Baselines3 sur `Pendulum-v1`, le même environnement que le jouet `RL-06d`, trois graines |
+| Protocole déclaré | 12 000 pas d'environnement, évaluation tous les 4 000 pas, politique déterministe sur 10 épisodes — l'évaluation n'est pas celle du jouet, qui lit la moyenne des derniers épisodes d'entraînement en politique stochastique |
+| Ce que la comparaison établit | 336 646 paramètres appris contre 13 636 pour le jouet, 230.1 s de temps mural au maximum par graine, 18.39 s / 1000 pas |
+| Ce qu'elle n'établit pas | Le coût pour atteindre un niveau : les seuils sont franchis dès le premier point d'évaluation, la mesure est impossible et le carnet le dit. Le reward final ne sépare pas les deux étages |
+| Exercices | Température fixe contre température apprise, environnements vectorisés, récompense parcimonieuse avec `HerReplayBuffer` |
+| Ponts | `RL-02` (wrappers, callbacks), `RL-03` (HER), `RL-01` (premiers pas SB3), `RLPT-02`, `RL-15` |
+
 ### Notebook 7 - Apprentissage Multi-Agent
 
 | Section | Contenu |
@@ -292,7 +303,7 @@ Les carnets à numéro nu forment le socle ; les lettres (`01b`, `06c`, `07b`…
 | 1. Un framework d'abord | 01, 02 | Entraîner, évaluer, sauvegarder un agent sans écrire d'algorithme : la boucle d'interaction et l'outillage de production |
 | 2. Une tâche à objectif | 03 | Ré-étiqueter les échecs en succès (HER) et découvrir qu'un moteur off-policy est nécessaire pour cela |
 | 3. Le socle tabulaire | 04, 05 | Le compromis exploration/exploitation, puis le formalisme MDP et les algorithmes exacts avant l'approximation |
-| 4. Le deep, depuis zéro | 06, 06b, 06c, 06d, 06e | La lignée continue : DQN et REINFORCE, A2C, PPO, SAC, GRPO — chaque marche répare une limite nommée de la précédente |
+| 4. Le deep, depuis zéro | 06, 06b, 06c, 06d, 06e, 06f | La lignée continue : DQN et REINFORCE, A2C, PPO, SAC, GRPO, puis l'étage réel en bibliothèque (SB3) — chaque marche répare une limite nommée de la précédente |
 | 5. Familles et hypothèses | 07, 07b, 08, 09, 10, 11, 12, 13, 14 | Autant de façons de relâcher une hypothèse du socle : plusieurs agents, un modèle du monde, un jeu de données figé, un signal rare, une observation partielle, une distribution de retour, une récompense intrinsèque, un horizon long |
 | 6. Frontières et recherche | 15, 16, 19, 20, 21 | Comparer rigoureusement deux algorithmes, sortir du cadre MDP standard, et mesurer ce que valent les garanties théoriques |
 | Sous-série PostTraining | RLPT-00 → 04 | Transposer le RL à l'alignement des modèles de langue : reward model, PPO-RLHF, GRPO, DPO, reward hacking |
@@ -323,7 +334,7 @@ Les accrétions de l'entrée (`01b` synthèse logique bitwise, `01c` distillatio
 | `python3` | Tous les autres | Python 3.11 à 3.13 selon le carnet (relevé dans les `language_info`), CPU suffisant | `stable-baselines3[extra]`, `gymnasium`, `torch`, `highway-env`, `pettingzoo[classic]`, `trl`, `transformers`, `datasets` | Aucune : tout s'exécute en local |
 | `coursia-ml-training` | RLPT-00c, RLPT-02, RLPT-03, RLPT-04 | Kernel d'entraînement du dépôt, modèle de langue local | Les mêmes, plus la pile d'entraînement du kernel | Aucune |
 
-Connaissances attendues : Python intermédiaire (classes, NumPy) ; notions de tenseurs et d'autograd pour les carnets `06` à `06e` et la sous-série ; probabilités élémentaires pour `04` et `11`.
+Connaissances attendues : Python intermédiaire (classes, NumPy) ; notions de tenseurs et d'autograd pour les carnets `06` à `06f` et la sous-série ; probabilités élémentaires pour `04` et `11`.
 
 Trois carnets ont une exigence propre, écrite dans leur en-tête : `RL-01c` demande **Docker** (le programme Prolog est exécuté par le vrai moteur SWI-Prolog, et la version du moteur est journalisée dans la sortie) ; `RL-15` demande un **GPU CUDA** ; `RLPT-02` et `RLPT-04` chargent un petit modèle de langue et demandent de la mémoire plutôt que du calcul.
 
@@ -393,6 +404,7 @@ L'activité [Processus de décision de Markov de l'aspirateur autonome](../GenAI
 |---|---|
 | `RL-06c` | Schulman et al., PPO (2017) |
 | `RL-06d` | Haarnoja et al., SAC (2018) |
+| `RL-06f` | Haarnoja et al., SAC (2018) — l'algorithme underlies, dans son implémentation Stable-Baselines3 |
 | `RL-06e`, `RLPT-02` | GRPO, famille DeepSeekMath / DeepSeek-R1 |
 | `RL-10` | Ng, Harada & Russell, potential-based reward shaping (1999) |
 | `RL-11` | Cassandra, Littman & Kaelbling, Tiger Problem (1994) |
@@ -441,7 +453,7 @@ Par l'espace d'actions et la contrainte d'échantillonnage. Espace discret et pe
 | **PPO** | On-policy | 1, 2, 6c | Contrôle général, robuste |
 | **A2C** | On-policy | 2, 6b | Actor-Critic depuis zéro et via SB3 |
 | **GAE** | Advantage | 6c | Generalized Advantage Estimation |
-| **SAC** | Off-policy | 3, 6d | Actions continues, maximum entropy |
+| **SAC** | Off-policy | 3, 6d, 6f | Actions continues, maximum entropy |
 | **GRPO** | On-policy (critic-free) | 6e | Avantage relatif au groupe — l'algorithme RL de DeepSeek-R1, pont vers le RLHF |
 | **DDPG** | Off-policy | 3 | Actions continues |
 | **HER** | Replay strategy | 3 | Goal-conditioned tasks |
@@ -470,7 +482,7 @@ Par l'espace d'actions et la contrainte d'échantillonnage. Espace discret et pe
 | Environnement | Type | Notebook |
 |---------------|------|----------|
 | CartPole-v1 | Contrôle classique, discret | 1, 6, 6b, 6c |
-| Pendulum-v1 | Contrôle continu | 2, 6d |
+| Pendulum-v1 | Contrôle continu | 2, 6d, 6f |
 | Parking-v0 | Goal-conditioned, continu | 3 |
 | GaussianBandit | Bandit stochastique | 4 |
 | FrozenLake-v1 | Grille discrète, stochastique | 5 |
@@ -501,7 +513,7 @@ Par l'espace d'actions et la contrainte d'échantillonnage. Espace discret et pe
 | **Actor-Critic** | Combinaison politique + valeur | 6b |
 | **Advantage** | Réduction de variance A_t = R_t - V(s) | 6b |
 | **Maximum entropy RL** | Maximisation récompense + entropie | 6d |
-| **SAC** | Soft Actor-Critic, off-policy continu | 6d |
+| **SAC** | Soft Actor-Critic, off-policy continu | 6d, 6f |
 | **Twin Q-networks** | Double critique anti-surestimation | 6d |
 | **GRPO** | Avantage relatif au groupe, sans critique — l'algorithme RLHF de DeepSeek-R1 | 6e |
 | **Policy gradient** | Optimisation directe de la politique | 6 |
