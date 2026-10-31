@@ -1,3 +1,5 @@
+> RAPPORT — 2026-07-23 — ICT : quatre fronts ouverts par le cadrage 2026-07 (réversibilisation, canonicité, secret/identité, discours) + décision de numérotation par suffixe b (#7260) — figé
+
 # Extensions 2026-07 — la fin, la canonicité, l'identité et le discours
 
 > **Provenance.** Détail déporté du cadrage [ICT-0-Framing.md](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-0-Framing.md) (§ *Extensions 2026-07*), à

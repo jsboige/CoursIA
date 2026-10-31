@@ -894,7 +894,7 @@ jobs:
     # Mesure d'hermetisme (2026-10-27, venv Python 3.11 vide) : avec
     # `mcp==1.30.0` + `pytest>=8` + `requests>=2.31`, la suite passe --
     # c'est le triplet exact du `pip install` ci-dessous.
-    runs-on: ubuntu-latest
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     timeout-minutes: 15
 

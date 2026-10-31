@@ -514,12 +514,6 @@ CANONICAL_LANGUAGE_TRANSITIONS_SCOPED = {
         "Python 3.11 -> 3.13 sous `coursia-ml-training` pour tout carnet de "
         "la serie 02-ML-Cours : convergence vers le canon 3.13 declare par "
         "le requirements.txt de la serie (#23187, suite de #22889)",
-    ("MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/",
-     "coursia-ml-training", "3.10", "3.13"):
-        "Python 3.10 -> 3.13 sous `coursia-ml-training` pour tout carnet de "
-        "la serie 02-ML-Cours : meme convergence vers le canon 3.13, pour "
-        "les carnets de la serie restes en 3.10 (2.9d et 2.9g mesures a "
-        "3.10.19 le 2026-10-29, #23187)",
     # ML-06 est le seul carnet Python de la serie ML.Net sous kernel NOMME :
     # hors du census #23379 (kernel python3 uniquement), sa convergence exige
     # sa propre entree scopee. Le kernelspec ``coursia-ml-training`` reste
