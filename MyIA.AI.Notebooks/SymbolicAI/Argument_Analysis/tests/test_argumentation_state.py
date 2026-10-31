@@ -142,11 +142,30 @@ class TestPaths:
         for getter, name in [
             (P.get_ontology_dir, "ontologies"),
             (P.get_data_dir, "data"),
-            (P.get_ext_tools_dir, "ext_tools"),
         ]:
             d = getter()
             assert d.parent == P.ARGUMENT_ANALYSIS_DIR
             assert d.name == name
+
+    def test_ext_tools_dir_is_the_shared_tree(self):
+        """Depuis l'arbitrage #23109, l'outillage partage fait foi.
+
+        L'exemplaire local de l'outillage EProver (byte-identique au
+        partage) a quitte l'arbre : l'acceseur doit donc designer le
+        repertoire partage, et le local reste accessible par son propre
+        accesseur (il porte SPASS, absent du repertoire partage).
+        """
+        from argumentation_lib import _paths as P
+        shared = P.SYMBOLIC_AI_DIR / "ext_tools"
+        assert P.get_ext_tools_dir() == shared
+        assert P.get_local_ext_tools_dir() == P.ARGUMENT_ANALYSIS_DIR / "ext_tools"
+
+    def test_local_ext_tools_keeps_the_nonshared_tools(self):
+        """Le repertoire local garde SPASS, qui n'existe pas au partage."""
+        from argumentation_lib import _paths as P
+        local = P.get_local_ext_tools_dir()
+        assert (local / "spass" / "SPASS.exe").exists()
+        assert not (local / "EProver").exists()
 
     def test_get_tweety_jar_dir_returns_path_or_none(self):
         """Renvoie un Path (si JARs presents) ou None — pas d'exception."""

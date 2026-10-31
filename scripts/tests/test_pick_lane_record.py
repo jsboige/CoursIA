@@ -260,8 +260,12 @@ def test_record_is_informational_pure_and_ungated(capsys):
     snapshot = [dict(p) for p in prs]
     rec = pig.lane_delivery_record(LANE, prs, now=NOW_FIXED)
     assert prs == snapshot
+    # `epic_deliveries` (#21067 correctif 1) est une MESURE de plus, pas un
+    # gate : le plafond qu'elle alimente vit dans `belt_filter`, et son
+    # activation reste explicite (`--epic-delivery-cap`, 0 = inactif). Le
+    # contrat de cette ardoise -- purete, aucun verdict bloquant -- tient.
     assert set(rec) == {"lane", "measured", "error", "truncated",
-                        "windows", "undated"}
+                        "windows", "undated", "epic_deliveries"}
     pig.print_lane_record(rec)
     out = capsys.readouterr().out
     assert "REFUS" not in out.upper()
