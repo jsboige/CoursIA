@@ -692,6 +692,22 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   fichiers.
     "creation-provenance-advisory.yml",
 
+    # #23053 (meme PR, meme lane, 2026-10-31) : `cycle-time-guard.yml` est
+    #   lui aussi un workflow NEUF pour le cliquet -- son job `cycle_time`
+    #   etait nu sur `ubuntu-latest` (violation `HOSTED_PR_JOB_UNEXCEPTED`),
+    #   alors meme qu'il porte `timeout-minutes: 10` et une garde anti-fork.
+    #   Conversion en forme hybride dans la meme PR : meme expression que les
+    #   workflows ci-dessus, meme `if:` anti-fork conserve, borne de temps
+    #   conservee.
+    #   La variable vaut `false` au 2026-10-31 : le routage est donc INCHANGE
+    #   (100 % heberge) -- la conversion retire la violation sans changer ou
+    #   le job s'execute. Rollback = variable a `false` ou supprimee, sans
+    #   toucher les fichiers.
+    #   L'argument d'origine du workflow (le garder heberge : lecteur pur,
+    #   0,7 s, aucun besoin local) reste vrai -- il porte desormais sur la
+    #   jambe locale elue par l'operateur, pas sur la forme du `runs-on`.
+    "cycle-time-guard.yml",
+
     # ------------------------------------------------------------------
     # 2026-10-28 (#23053 famille b -- « les tests », lane
     #   myia-ai-01:CoursIA-2) : ces 6 suites de tests n'avaient AUCUNE jambe
