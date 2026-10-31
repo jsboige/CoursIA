@@ -67,9 +67,26 @@ d'une paire de feuilles sœurs exactement à la profondeur maximale
 (`sisterPath_spec`), et l'échange de deux poids en un parcours
 (`exchangeW`, facture `costW_exchangeW_eq`, corollaire strict
 `costW_exchangeW_lt` — le réarrangement du pli 5c lu sur l'arbre), ancres
-de la descente 21 -> 15 -> 14 du carnet 02. -/
+de la descente 21 -> 15 -> 14 du carnet 02 ; `Descente` — amener un minimum
+dans la paire profonde (pli 5g de #18706) : l'échange positionnel de deux
+feuilles (`exchPos`, deux `replaceAt` aux chemins exacts, jamais par poids)
+et sa facture (`costW_exchPos_eq` — chaque position paie l'écart à SA
+profondeur, corollaire monotone `costW_exchPos_le` — produit des écarts),
+l'infrastructure positionnelle (prolongement des chemins `subtreeAt_congr`,
+remplacement qui ne touche aucune position divergente, multi-ensemble des
+feuilles conservé, tout chemin plafonné par la hauteur), et le théorème
+`min_to_bottom` : tout poids minimal peut être amené dans la paire de sœurs
+à la profondeur maximale sans augmenter le coût — la première moitié du lemme
+des sœurs du théorème d'optimalité, ancre 21 -> 19 du carnet 02 ; `DeuxMinima`
+— les deux minima dans la paire profonde (pli 5h de #18706) : le comptage
+positionnel (`count_two_positions` — deux positions distinctes d'un même
+poids forcent sa multiplicité, et réciproquement `exists_leafPos_ne` désigne
+une seconde occurrence divergente), et le théorème `both_mins_to_bottom` :
+les DEUX plus petits poids vivent ensemble dans la paire de sœurs à la
+profondeur maximale, sans augmenter le coût — la seconde moitié du lemme des
+sœurs, ancre 21 -> 19 -> 16 du carnet 02 (le trie compte deux 1). -/
 @[default_target]
 lean_lib «PrefixCodes» where
   -- Module plat (fichiers racine, aucune arborescence `PrefixCodes/`) :
   -- pas de `.submodules`, cf la note `MathUniverse` de `learning_theory_lean`.
-  globs := #[`PrefixCodes, `PrefixCodes_en, `Decode, `McMillan, `Huffman, `Optimalite, `Echange, `Appariement, `Expansion, `Feuilles, `Soeurs]
+  globs := #[`PrefixCodes, `PrefixCodes_en, `Decode, `McMillan, `Huffman, `Optimalite, `Echange, `Appariement, `Expansion, `Feuilles, `Soeurs, `Descente, `DeuxMinima]
