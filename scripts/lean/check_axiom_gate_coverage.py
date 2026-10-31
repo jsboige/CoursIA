@@ -70,6 +70,29 @@ from pathlib import Path
 WORKFLOWS_DIR = ".github/workflows"
 GATE_FILENAME = "lean-axiom.yml"
 MANIFEST = "scripts/lean/ci_lakes.json"
+COVERAGE_DOC = "docs/reference/lean-axiom-coverage.md"
+
+# Un lake laisse SANS gate doit porter sa decision ecrite (critere 3 de #17097,
+# tranche #22519) : la ligne de doc nomme le ``project-path`` et dit « sans
+# gate ». Le critere reste textuel et volontairement pauvre -- il doit rester
+# lisible par un humain dans le document qui l'explique.
+_GATE_ABSENT_RE = re.compile(r"sans\s+gate", re.I)
+
+# Reserve Hermes 🟠1 (review #23019) : une mention « sans gate » precedee, dans
+# la meme cellule, d'une negation (« n'est plus sans gate », « n'a plus sans
+# gate », « plus sans gate ») dit que le lake N'EST PLUS sans gate -- elle ne
+# justifie rien. La fenetre de 20 caracteres borne la negation a la cellule qui
+# porte la mention, pas a la ligne entiere.
+_NEGATION_RE = re.compile(r"\b(n'est|n'a)\s+plus\b|\bplus\b", re.I)
+_NEGATION_WINDOW = 20
+
+
+def _bounded_path_re(path: str) -> re.Pattern:
+    """Le ``project-path`` en position delimitee (backticks, cellule de table,
+    espace) : une occurrence qui est le PREFIXE d'un chemin plus long sur la
+    ligne (``lean_game_defs`` dans ``lean_game_defs_ext``) ne matche pas.
+    Reserve Hermes 🟠1 (review #23019)."""
+    return re.compile(r"(?<![\w./-])" + re.escape(path) + r"(?![\w.-])")
 
 # Un APPEL du gate : un job dont le `uses:` resout vers lean-axiom.yml.
 # Ancre en debut de ligne (indentation admise) et non `re.search` libre : un
@@ -306,6 +329,46 @@ def classify_deleted(deleted: list[dict], gated_now: set[str]) -> dict:
     return {"lost": lost, "relocated": relocated, "never": never}
 
 
+@functools.lru_cache(maxsize=None)
+def coverage_doc(ref: str) -> str:
+    """Texte de la doc de reference lue a ``ref`` (worktree en repli)."""
+    text = _git("show", f"{ref}:{COVERAGE_DOC}")
+    if text:
+        return text
+    local = Path(__file__).resolve().parents[2] / COVERAGE_DOC
+    return local.read_text(encoding="utf-8") if local.is_file() else ""
+
+
+def justified_ungated(ref: str, ungated: list[str]) -> set[str]:
+    """Lakes sans gate qui portent neanmoins leur decision ecrite.
+
+    Un lake sans gate d'axiomes n'est pas illicite, il doit seulement etre CONNU
+    comme tel (#17097 critere 3, tranche #22519). « Connu » se lit dans la doc de
+    reference : la ligne porte le ``project-path`` **et** la mention « sans
+    gate ». Deux portes sont closes (reserve Hermes 🟠1, review #23019) : le
+    chemin doit etre en position delimitee -- une occurrence prefixe d'un chemin
+    plus long ne compte pas -- et la mention negative (« n'est plus sans gate »)
+    ne justifie rien. Ce qui n'est pas justifie n'est pas un silence tolerable :
+    c'est un lake dont personne n'a tranche, et c'est ce que
+    ``--check --strict`` refuse.
+    """
+    text = coverage_doc(ref)
+    justified = set()
+    for p in ungated:
+        path_re = _bounded_path_re(p)
+        for line in text.splitlines():
+            m = _GATE_ABSENT_RE.search(line)
+            if not m:
+                continue
+            before = line[max(0, m.start() - _NEGATION_WINDOW):m.start()]
+            if _NEGATION_RE.search(before):
+                continue
+            if path_re.search(line):
+                justified.add(p)
+                break
+    return justified
+
+
 def measure(ref: str) -> dict:
     """Full coverage report at ``ref``."""
     covered = covered_lakes(ref)
@@ -328,6 +391,8 @@ def measure(ref: str) -> dict:
     parts = classify_deleted(deleted, set(gated_paths))
     lost, relocated = parts["lost"], parts["relocated"]
     never = parts["never"]
+    justified = justified_ungated(ref, ungated)
+    unjustified = sorted(set(ungated) - justified)
 
     # What the file-wide scan would have credited *beyond* the job-scoped one:
     # the measure of the defect the scoping closes. Empty is the good news, not
@@ -347,6 +412,8 @@ def measure(ref: str) -> dict:
         "gated_lakes": gated_paths,
         "matrix_lakes": sorted(p for p in manifest_paths if p),
         "matrix_lakes_without_gate": ungated,
+        "matrix_lakes_without_gate_justified": sorted(justified),
+        "ungated_without_justification": unjustified,
         "deleted_dispatchers": len(deleted),
         "lost_gate": sorted(lost, key=lambda d: d["dispatcher"]),
         "gate_relocated": sorted(relocated, key=lambda d: d["dispatcher"]),
@@ -377,6 +444,12 @@ def _print_human(r: dict) -> None:
     print(f"   dont SANS gate d'axiomes : {len(sans)}")
     for p in sans:
         print(f"   sans gate  {p}")
+    unjustified = r["ungated_without_justification"]
+    print(f"   dont sans justification ecrite : {len(unjustified)}"
+          + ("  (decision ecrite dans la doc de reference)"
+             if r["matrix_lakes_without_gate_justified"] else ""))
+    for p in unjustified:
+        print(f"      SANS DECISION  {p}")
 
     print(f"\n3. Dispatchers lean-* supprimes : {r['deleted_dispatchers']}")
     print(f"   AVAIENT le gate -> PERDU : {len(r['lost_gate'])}")
@@ -391,6 +464,7 @@ def _print_human(r: dict) -> None:
 
     print(f"\nSYNTHESE : {len(r['gated_lakes'])} lakes couverts | "
           f"{len(r['matrix_lakes_without_gate'])} sans gate (jamais eu) | "
+          f"{len(r['ungated_without_justification'])} sans decision ecrite | "
           f"{len(r['lost_gate'])} PERDUS")
     print(f"\nRAPPEL : {r['not_an_acceptance_criterion']}")
 
@@ -405,6 +479,12 @@ def main() -> int:
                     help="Exit 1 si un lake a PERDU le gate (regression). "
                          "Un lake qui ne l'a jamais eu ne fait pas echouer : "
                          "c'est une decision de politique, pas une regression.")
+    ap.add_argument("--strict", action="store_true",
+                    help="Avec --check : exit 1 aussi quand un lake du manifeste "
+                         "n'a pas le gate ET ne porte aucune decision ecrite dans "
+                         f"{COVERAGE_DOC}. C'est le cliquet de la tranche #22519 : "
+                         "un lake ajoute demain a la matrice doit etre cable ou "
+                         "justifie, jamais laisse en silence.")
     args = ap.parse_args()
 
     r = measure(args.ref)
@@ -413,6 +493,8 @@ def main() -> int:
     else:
         _print_human(r)
     if args.check and r["lost_gate"]:
+        return 1
+    if args.check and args.strict and r["ungated_without_justification"]:
         return 1
     return 0
 
