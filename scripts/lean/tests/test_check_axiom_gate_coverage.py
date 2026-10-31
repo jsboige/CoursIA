@@ -497,6 +497,67 @@ class TestCompositeAxiomCoverage:
         assert [e["dispatcher"] for e in r["relocated"]] == ["lean-serre.yml"]
 
 
+class TestDeletedDispatchersReadTheTreeItMeasures:
+    """#23790 -- deux pieges de lecture, mesures par les deux cotes.
+
+    Le journal ``--diff-filter=D`` couvre **toutes** les refs : il liste un
+    chemin supprime ailleurs, vivant ici. Et pour un chemin vraiment disparu,
+    le commit de suppression se lit dans ce meme journal, pas par
+    ``rev-list -n 1 --all`` qui rend le dernier commit touchant le chemin sur
+    n'importe quelle ref (une re-creation, un renommage) -- ``<sha>^`` nomme
+    alors l'ancien ``project-path`` et fabrique une perte qui n'a pas eu lieu.
+
+    Instance fondatrice : ``lean-galois.yml`` supprime sur une branche le
+    2026-10-27, re-cable sur ``main`` le 2026-10-31 (``88edc37b4d``) ; le
+    ``rev-list`` rendait ce re-cablage, et ``<sha>^`` -- la revision d'avant le
+    renommage -- designait ``Lean/galois_lean``, devenue non couverte. Un
+    dispatcher **vivant** y etait lu comme perdu.
+    """
+
+    PATH = ".github/workflows/lean-galois.yml"
+    LIVE = (
+        "jobs:\n"
+        "  proof-integrity:\n"
+        "    uses: ./.github/workflows/lean-axiom.yml@main\n"
+        "    with:\n"
+        "      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/galois_lean\n"
+    )
+
+    def _measure(self, monkeypatch, present_at_ref: bool):
+        import check_axiom_gate_coverage as mod
+
+        def fake_git(*args):
+            if args[0] == "log" and "--diff-filter=D" in args and "--name-only" in args:
+                return f"{self.PATH}\n"
+            if args[0] == "ls-tree":
+                return f"{self.PATH}\n" if present_at_ref else ""
+            if args[0] == "log" and "--diff-filter=D" in args:
+                return "88edc37b4df5e8f689b3fed84862d2107982f6dd\n"
+            if args[0] == "show":
+                return self.LIVE
+            # ``rev-list -n 1 --all`` est precisement la lecture remplacee : la
+            # voir reapparaitre doit rougir, pas passer inapercue.
+            raise AssertionError(f"appel git inattendu: {args}")
+
+        monkeypatch.setattr(mod, "_git", fake_git)
+        mod.deleted_dispatchers.cache_clear()
+        try:
+            return mod.deleted_dispatchers("origin/main")
+        finally:
+            mod.deleted_dispatchers.cache_clear()
+
+    def test_a_dispatcher_still_in_the_tree_drops_no_coverage(self, monkeypatch):
+        assert self._measure(monkeypatch, present_at_ref=True) == []
+
+    def test_a_dispatcher_really_gone_keeps_its_gate_reading(self, monkeypatch):
+        rows = self._measure(monkeypatch, present_at_ref=False)
+        assert [r["dispatcher"] for r in rows] == ["lean-galois.yml"]
+        assert rows[0]["deleted_by"] == "88edc37b4d"
+        assert rows[0]["had_gate"] is True
+        assert rows[0]["gated_paths"] == [
+            "MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/galois_lean"]
+
+
 class TestJustifiedUngated:
     """Cliquet #22519 : un lake sans gate doit porter sa decision ECRITE.
 

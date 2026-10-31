@@ -284,19 +284,31 @@ def matrix_lakes(ref: str) -> list[dict]:
 
 @functools.lru_cache(maxsize=None)
 def deleted_dispatchers(ref: str) -> list[dict]:
-    """Every deleted ``lean-*`` dispatcher, with its last existing content.
+    """Every dispatcher deleted from the tree AT ``ref``, with its last content.
 
-    ``git rev-list -n 1 --all -- <path>`` returns the newest commit touching
-    the path across all refs; for a deleted file that is the deletion commit,
-    so its parent holds the last version that existed. We therefore report
-    ``had_gate`` on ``<sha>^:<path>``.
+    Two traps, both measured (#23790) :
+
+    - ``git log --all --diff-filter=D`` liste les chemins qu'**un** commit a
+      supprimes, mais ce commit peut vivre sur une branche pendant que le
+      chemin est **vivant** a ``ref`` -- et meme re-cree ensuite. La couverture
+      est une propriete de ``ref`` : un dispatcher present dans cet arbre ne
+      perd rien, il est donc ecarte.
+    - pour un chemin vraiment disparu, ``git rev-list -n 1 --all -- <path>``
+      rend le commit le plus recent touchant le chemin sur **n'importe quelle**
+      ref, c'est-a-dire une re-creation ou un renommage, pas la suppression :
+      ``<sha>^`` serait alors la revision d'**avant** le renommage, qui nomme
+      l'ancien ``project-path`` et se lit comme une perte qui n'a jamais eu
+      lieu. La suppression se lit donc dans le meme journal ``--diff-filter=D``.
     """
     listed = _git("log", "--all", "--diff-filter=D", "--name-only",
                   "--format=", "--", f"{WORKFLOWS_DIR}/lean-*.yml")
     paths = sorted({p for p in listed.split("\n") if p.startswith(f"{WORKFLOWS_DIR}/lean-")})
     out = []
     for path in paths:
-        sha = _git("rev-list", "-n", "1", "--all", "--", path).strip()
+        if _git("ls-tree", "--name-only", ref, "--", path).strip():
+            continue  # toujours dans l'arbre mesure : ce n'est pas une suppression
+        sha = _git("log", "--all", "-1", "--diff-filter=D", "--format=%H",
+                   "--", path).strip()
         if not sha:
             continue
         last = _git("show", f"{sha}^:{path}")
