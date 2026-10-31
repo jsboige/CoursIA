@@ -57,7 +57,17 @@ concurrency:
 jobs:
   geometry-tests:
     name: SymbolicAI Geometry pytest (13 collected)
-    runs-on: ubuntu-latest
+    # Forme hybride de débordement (#22944/#23016) — identique à celle du
+    # workflow frère `gametheory-tests.yml` (même classe de défaut, même
+    # conversion) : PR même-depot ET `vars.CI_OVERFLOW_LOCAL == 'true'` ->
+    # jambe Linux locale ; tout le reste (variable absente ou fausse, forks,
+    # push/dispatch) retombe sur `ubuntu-latest`. Le routage par défaut est
+    # donc INCHANGÉ (100 % hébergé) : la conversion retire la violation
+    # `HOSTED_PR_JOB_UNEXCEPTED` du cliquet (#23053) sans changer où le job
+    # s'exécute. Rollback = variable à `false` ou supprimée, sans toucher ce
+    # fichier. La garde anti-fork vit DANS l'expression `runs-on` — aucune
+    # ligne `if:` n'est ajoutée ni retirée.
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
     timeout-minutes: 10
     env:
       # Floor mesuré firsthand — origin/main worktree, baseline 2026-10-29.
