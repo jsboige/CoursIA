@@ -128,6 +128,8 @@ import hashlib
 import json
 import os
 import re
+import shutil
+import subprocess
 import sys
 import tempfile
 import time
@@ -168,6 +170,29 @@ ENVELOPE_PREFIX = "[OBS]"
 #: enforced by the reducer (``UNSUPPORTED_EXPORT_FORMAT``) so a future encoding
 #: cannot be silently misread as this one.
 ENVELOPE_FORMAT = "json"
+
+#: Branche dediee du transport git du ledger (#22456) : un fichier par machine
+#: ``gpu-reservation/<machine>.jsonl``, une ligne par observation (format
+#: ``envelope_line``), en ajout seul. La branche est la source PRIMAIRE de
+#: l'etat de reservation ; le dashboard RooSync en est un MIROIR, et le
+#: snapshot local n'est qu'un CACHE, jamais une autorite.
+GIT_LEDGER_BRANCH = "ops/gpu-ledger"
+
+#: La REFERENCE du registre des reservations GPU est un depot git PRIVE et
+#: dedie : `jsboige/coursia-gpu-ledger` (decision du mainteneur du 2026-10-27,
+#: arbitrage rendu sur #22456). Le remote du depot de travail (`origin` =
+#: `jsboige/CoursIA`, PUBLIC) ne peut donc plus designer la cible : y publier
+#: l'etat GPU de la flotte exposerait des reservations de la flotte dans un
+#: depot public. La cible est un PARAMETRE (`--remote`), seul son DEFAUT
+#: change -- et le defaut est refuse par une garde si on le redesigne.
+GIT_LEDGER_REMOTE_DEFAULT = "gpu-ledger"
+#: URL du depot de reference. Elle n'est JAMAIS utilisee automatiquement :
+#: chaque siege configure son remote (`git remote add gpu-ledger <url>`),
+#: l'authentification passant par le helper `gh` -- jamais par un jeton dans
+#: une URL git.
+GIT_LEDGER_REPO_URL = "https://github.com/jsboige/coursia-gpu-ledger.git"
+#: Cibles explicitement refusees (fail-CLOSED) : le depot de travail, public.
+GIT_LEDGER_FORBIDDEN_TARGETS: tuple[str, ...] = ("jsboige/coursia",)
 
 CONFIDENCE_LEVELS: tuple[str, ...] = ("low", "medium", "high")
 
@@ -1001,7 +1026,12 @@ GPU_PENDING_VERDICTS: tuple[str, ...] = ("OK_TO_RUN", "NO_OBS", "HOLD", "RELEASE
 #: dashboard ; un verdict reduit d'un snapshot ne voit pas ce qui n'a pas voyag.
 VERDICT_UNREADABLE_SPOOL = "UNREADABLE_SPOOL"
 VERDICT_UNPOSTED = "UNPOSTED"
-GPU_GATE_VERDICTS: tuple[str, ...] = (VERDICT_UNREADABLE_SPOOL, VERDICT_UNPOSTED)
+VERDICT_UNREADABLE = "UNREADABLE"
+GPU_GATE_VERDICTS: tuple[str, ...] = (
+    VERDICT_UNREADABLE_SPOOL,
+    VERDICT_UNPOSTED,
+    VERDICT_UNREADABLE,
+)
 
 #: Code de sortie par verdict -- source unique, reprise telle quelle par le
 #: tableau de ``docs/coordination/gpu-reservation.md``. Un verdict qui refuse
@@ -1013,6 +1043,7 @@ GPU_VERDICT_EXIT_CODES: dict[str, int] = {
     "HOLD": 1,
     VERDICT_UNREADABLE_SPOOL: 1,
     VERDICT_UNPOSTED: 1,
+    VERDICT_UNREADABLE: 1,
     "STALE": 2,
 }
 
@@ -1034,10 +1065,11 @@ def evaluate_gpu_pending(
     records read from the snapshot. Callers that want to walk the
     fold-from-snapshot first use ``records_from_snapshot``.
 
-    `my_lane` may be None: in that case, a `held` record with a holder is
-    always reported as HOLD (no ownership check), and OK_TO_RUN is never
-    returned. This is the safe default for a caller that is not yet sure
-    it owns the device.
+    `my_lane` may be None: in that case, a `held` record is always reported
+    as HOLD (no ownership can be proven), and OK_TO_RUN is never returned.
+    This is the safe default for a caller that is not yet sure it owns the
+    device. Likewise, a `held` record WITHOUT a holder is HOLD for every
+    caller: nobody can prove it owns that window.
     """
     # Filter records to this entity, newest observed_at first.
     matching = []
@@ -1069,8 +1101,21 @@ def evaluate_gpu_pending(
     if state != "held":
         return ("HOLD", f"unknown state={state!r} at {latest.observed_at.isoformat()}")
 
-    # state == "held" -- check the window and the holder.
-    if my_lane is not None and holder is not None and holder != my_lane:
+    # state == "held" -- ownership FIRST, then the window.
+    #
+    # OK_TO_RUN is reserved to the holder: it needs a NAMED caller and a
+    # named holder equal to it. The former predicate (`my_lane is not None
+    # and holder is not None and holder != my_lane`) let both unnamed cases
+    # fall through to the window checks and end in OK_TO_RUN -- a caller
+    # that did not say who it was was admitted onto a device held by another
+    # lane, against the contract stated above (PR #22755, Hermes finding 1).
+    if my_lane is None:
+        return (
+            "HOLD",
+            f"held by {holder} at {latest.observed_at.isoformat()} -- no calling "
+            "lane given (--my-lane): ownership cannot be proven, never OK_TO_RUN",
+        )
+    if holder != my_lane:
         return ("HOLD", f"held by {holder} (not {my_lane}) at {latest.observed_at.isoformat()}")
 
     if started_at_raw is not None:
@@ -1089,7 +1134,7 @@ def evaluate_gpu_pending(
         if now > expected_end:
             return ("STALE", f"held by {holder}, expected_end {expected_end.isoformat()} passed")
 
-    return ("OK_TO_RUN", f"held by {holder} (or matching), now={now.isoformat()}")
+    return ("OK_TO_RUN", f"held by {holder} (= calling lane), now={now.isoformat()}")
 
 
 def record_from_observation(observation: dict[str, Any], source: str) -> Record:
@@ -2399,6 +2444,828 @@ def resolve_now_sentinels(fields: dict[str, Any], *, moment: datetime) -> dict[s
 
 
 # ---------------------------------------------------------------------------
+# 10bis. GIT TRANSPORT -- la branche dediee ops/gpu-ledger (#22456)
+# ---------------------------------------------------------------------------
+#
+# Le dashboard RooSync suppose le MCP roo-state-manager disponible : sans lui,
+# personne ne peut lire l'etat de reservation, et le gate d'admission GPU
+# devient aveugle. La branche dediee est le transport SANS DEPENDANCE : chaque
+# machine publie ses enveloppes (un fichier ``gpu-reservation/<machine>.jsonl``,
+# une ligne par observation, ajout seul), tout le monde lit par ``git show``.
+# La branche est la source PRIMAIRE ; le dashboard reste un MIROIR de la
+# publication ; le snapshot local reste un CACHE, jamais une autorite.
+# Aucun jeton dans une URL git : l'identite est celle, ambiante, de la machine
+# (la config git du depot).
+
+
+def _git(args: Sequence[str], *, cwd: Path) -> tuple[int, str, str]:
+    """Run git in ``cwd``; ``(returncode, stdout, stderr)``, never raises."""
+    try:
+        proc = subprocess.run(
+            ["git", *args],
+            cwd=str(cwd),
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+        )
+    except OSError as exc:  # git absent du PATH : echec explicite, pas de crash
+        return 127, "", str(exc)
+    return proc.returncode, proc.stdout or "", proc.stderr or ""
+
+
+def default_repo_root() -> Path | None:
+    """Le depot git qui porte ce script (jamais un chemin en dur)."""
+    rc, out, _ = _git(
+        ["rev-parse", "--show-toplevel"], cwd=Path(__file__).resolve().parent
+    )
+    if rc != 0 or not out.strip():
+        return None
+    return Path(out.strip())
+
+
+def _tracking_ref(remote: str) -> str:
+    return f"refs/remotes/{remote}/{GIT_LEDGER_BRANCH}"
+
+
+def _normalise_repo_slug(url: str) -> str:
+    """Slug ``owner/repo`` d'une URL git, pour comparer deux cibles.
+
+    Accepte les formes https, ssh (``git@github.com:owner/repo.git``) et
+    ``ssh://`` ; le resultat est compare en minuscules.
+    """
+    text = url.strip().rstrip("/")
+    if text.endswith(".git"):
+        text = text[: -len(".git")]
+    if text.startswith("git@"):
+        text = text[len("git@") :]
+        text = text.replace(":", "/", 1)
+    else:
+        for prefix in ("https://", "http://", "ssh://", "git://"):
+            if text.startswith(prefix):
+                text = text[len(prefix) :]
+                break
+    parts = [part for part in text.split("/") if part]
+    if len(parts) >= 2:
+        return "/".join(parts[-2:]).lower()
+    return text.lower()
+
+
+def _git_remote_urls(repo: Path, remote: str) -> tuple[str, str]:
+    """Les DEUX URL d'un remote : celle de fetch et celle de push.
+
+    ``git remote get-url`` rend l'URL de **fetch** ; ``git push`` utilise la
+    ``pushurl`` quand elle est definie. Une garde qui ne regarde que la
+    premiere ne voit donc jamais la cible reelle d'ecriture -- et le refus
+    qu'elle prononce porte sur un depot qui n'est pas celui qui recevra la
+    poussee. Les deux sont donc resolues ici.
+
+    Renvoie ``("", "")`` si le remote n'est pas configure.
+    """
+    rc, fetch_url, _ = _git(["remote", "get-url", remote], cwd=repo)
+    if rc != 0 or not fetch_url.strip():
+        return "", ""
+    push_url = fetch_url.strip()
+    rc_push, pushed, _ = _git(["remote", "get-url", "--push", remote], cwd=repo)
+    if rc_push == 0 and pushed.strip():
+        push_url = pushed.strip()
+    return fetch_url.strip(), push_url
+
+
+def ensure_git_ledger_remote(repo: Path, remote: str) -> str:
+    """Resout la cible de publication ; refuse la cible interdite.
+
+    Le remote doit etre **configure sur le siege** : l'organe ne le cree
+    pas tout seul, parce qu'ecrire dans un depot partage ne doit pas
+    dependre d'un effet de bord d'une commande de lecture ou de test. Un
+    remote absent est donc un refus nomme, porteur du geste exact.
+
+    Une cible qui designerait le depot de travail **public** est refusee
+    (fail-CLOSED) : le registre des reservations GPU ne sort pas d'un depot
+    public, quel que soit le `--remote` passe. Les **deux** URL du remote
+    sont verifiees (fetch et push) : c'est la ``pushurl`` qui porte la
+    cible reelle d'ecriture, une URL de fetch privee ne dit rien d'elle.
+    """
+    fetch_url, push_url = _git_remote_urls(repo, remote)
+    if not fetch_url:
+        raise LedgerError(
+            "GIT_LEDGER_REMOTE_UNKNOWN",
+            f"remote git {remote!r} non configure dans {repo} ; la reference du "
+            f"registre GPU est le depot PRIVE "
+            f"git remote add {remote} {GIT_LEDGER_REPO_URL}",
+        )
+    for label, url in (("fetch", fetch_url), ("push", push_url)):
+        slug = _normalise_repo_slug(url)
+        if slug in GIT_LEDGER_FORBIDDEN_TARGETS:
+            raise LedgerError(
+                "GIT_LEDGER_FORBIDDEN_TARGET",
+                f"la cible de publication {slug!r} (URL de {label}) est "
+                "interdite : le registre des reservations GPU ne se publie pas "
+                "dans le depot de travail (public) ; reference attendue : "
+                f"{GIT_LEDGER_REMOTE_DEFAULT} -> {GIT_LEDGER_REPO_URL}",
+            )
+    return fetch_url
+
+
+def _git_reason(stderr: str) -> str:
+    """La premiere ligne utile d'un stderr git, bornée (jamais un dump)."""
+    return " ".join(stderr.split())[:200]
+
+
+def fetch_git_ledger_branch(
+    repo: Path, *, remote: str = GIT_LEDGER_REMOTE_DEFAULT
+) -> str | None:
+    """Fetch de la branche dediee ; ``None`` si reussi, sinon la raison.
+
+    Ce que vaut un echec depend de l'appelant. La publication peut continuer :
+    un ref de suivi perime y produit au pire une poussee refusee (non
+    fast-forward), jamais une perte. Le gate ``check_pending``, lui, refuse
+    (UNREADABLE) : un ref perime ne peut pas autoriser un lancement.
+    """
+    rc, _, err = _git(
+        ["fetch", "--quiet", remote, f"+refs/heads/{GIT_LEDGER_BRANCH}:{_tracking_ref(remote)}"],
+        cwd=repo,
+    )
+    if rc == 0:
+        return None
+    return _git_reason(err) or f"git fetch {remote} {GIT_LEDGER_BRANCH} a echoue"
+
+
+def _branche_absente_du_remote(repo: Path, *, remote: str) -> bool:
+    """La branche dediee n'existe-t-elle pas ENCORE sur le remote ?
+
+    Distinguer par une interrogation du remote (``ls-remote``), **jamais par
+    le TEXTE de stderr** : ce texte est localise et sa formulation change
+    d'une version de git a l'autre. Un remote joignable dont la liste est
+    VIDE veut dire « la branche n'existe pas encore » -- cas normal de la
+    premiere publication d'une machine, et non une panne.
+
+    Un remote injoignable (rc != 0) ne prouve rien : la reponse est False,
+    et l'appelant garde le motif du fetch.
+    """
+    rc, out, _ = _git(
+        ["ls-remote", remote, f"refs/heads/{GIT_LEDGER_BRANCH}"], cwd=repo
+    )
+    return rc == 0 and not out.strip()
+
+
+def git_ledger_ref_available(
+    repo: Path, *, remote: str = GIT_LEDGER_REMOTE_DEFAULT
+) -> bool:
+    """La branche dediee est-elle lisible localement (ref de suivi present) ?"""
+    rc, _, _ = _git(
+        ["rev-parse", "--verify", "--quiet", _tracking_ref(remote)], cwd=repo
+    )
+    return rc == 0
+
+
+def read_git_ledger_files(
+    repo: Path, *, remote: str = GIT_LEDGER_REMOTE_DEFAULT
+) -> dict[str, str]:
+    """Contenu brut ``{machine: texte}`` des fichiers gpu-reservation de la branche."""
+    ref = _tracking_ref(remote)
+    if not git_ledger_ref_available(repo, remote=remote):
+        raise LedgerError(
+            "GIT_LEDGER_UNAVAILABLE",
+            f"{ref} absent (branche jamais publiee, ou remote injoignable)",
+        )
+    rc, out, err = _git(["ls-tree", "-r", "--name-only", ref], cwd=repo)
+    if rc != 0:
+        raise LedgerError("GIT_LEDGER_UNAVAILABLE", f"ls-tree {ref} : {_git_reason(err)}")
+    prefix = f"{GPU_RESERVATION}/"
+    files: dict[str, str] = {}
+    for rel in out.splitlines():
+        rel = rel.strip()
+        if not rel.startswith(prefix) or not rel.endswith(".jsonl"):
+            continue
+        machine = rel[len(prefix) : -len(".jsonl")]
+        if not machine:
+            continue
+        rc_show, content, err_show = _git(["show", f"{ref}:{rel}"], cwd=repo)
+        if rc_show != 0:
+            raise LedgerError(
+                "GIT_LEDGER_UNAVAILABLE",
+                f"git show {ref}:{rel} : {_git_reason(err_show)}",
+            )
+        files[machine] = content
+    return files
+
+
+def observations_from_git_ledger(
+    repo: Path, *, remote: str = GIT_LEDGER_REMOTE_DEFAULT
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """``(observations, rejets)`` lus de la branche ; une ligne invalide est un
+    rejet nomme, jamais un crash du lecteur (meme discipline que le journal)."""
+    observations: list[dict[str, Any]] = []
+    rejections: list[dict[str, Any]] = []
+    for machine, content in sorted(read_git_ledger_files(repo, remote=remote).items()):
+        for index, line in enumerate(content.splitlines()):
+            line = line.strip()
+            if not line:
+                continue
+            label = f"{GIT_LEDGER_BRANCH}:{GPU_RESERVATION}/{machine}.jsonl[{index}]"
+            try:
+                observation = parse_observation(parse_envelope(line), GPU_RESERVATION)
+            except ObservationError as exc:
+                rejections.append(
+                    {"source": label, "reason": exc.reason, "detail": exc.detail}
+                )
+                continue
+            observations.append(observation)
+    return observations, rejections
+
+
+def _publishable_observations(spool_dir: Path, *, ledger: str) -> list[dict[str, Any]]:
+    """Source de publication : spool PENDING + archives ``posted``, dedupliquees
+    par ``observation_id`` et triees par horodatage.
+
+    Les archives repostent ce que le depot distant pourrait avoir purge ; la
+    deduplication par id fait qu'une republication n'ajoute jamais de ligne.
+    """
+    merged: dict[str, dict[str, Any]] = {}
+    for item in spool_pending(spool_dir, ledger=ledger):
+        merged[str(item["observation"]["observation_id"])] = item["observation"]
+    posted_dir = spool_dir / "posted"
+    if posted_dir.exists():
+        for path in sorted(posted_dir.glob("*.json")):
+            if path.name.startswith(".superseded-"):
+                continue
+            try:
+                archived = parse_envelope(path.read_text(encoding="utf-8"))
+            except (OSError, UnicodeError, ObservationError):
+                continue  # une archive endommagee ne doit pas bloquer le transport
+            if (
+                isinstance(archived, dict)
+                and archived.get("ledger") == ledger
+                and archived.get("observation_id")
+            ):
+                merged.setdefault(str(archived["observation_id"]), archived)
+    return sorted(
+        merged.values(),
+        key=lambda obs: (str(obs.get("observed_at", "")), str(obs.get("observation_id", ""))),
+    )
+
+
+def _pin_ledger_base(repo: Path, *, remote: str) -> str | None:
+    """Le sha du ref de suivi, resolu UNE SEULE fois ; ``None`` s'il est absent.
+
+    Une tentative de publication lit tout depuis CE sha -- le texte du
+    fichier, l'index, et le parent du commit. Resoudre le ref a plusieurs
+    moments laissait un autre publieur du meme depot le deplacer entre deux
+    lectures (finding Hermes 2 de la PR #22755) : le commit recevait pour
+    parent la nouvelle tete mais l'ancien fichier, la poussee etait un
+    fast-forward, et la ligne de l'autre publieur disparaissait en silence.
+    """
+    rc, out, _ = _git(
+        ["rev-parse", "--verify", "--quiet", f"{_tracking_ref(remote)}^{{commit}}"],
+        cwd=repo,
+    )
+    sha = out.strip()
+    if rc != 0 or not sha:
+        return None
+    return sha
+
+
+def _branch_file_text(
+    repo: Path, rel: str, *, remote: str, rev: str | None = None
+) -> str:
+    """Contenu d'un fichier de la branche ; ``''`` s'il n'existe pas.
+
+    ``rev`` : le commit a lire (un sha epingle par `_pin_ledger_base`) ; a
+    defaut, le ref de suivi tel qu'il est a l'instant de la lecture.
+    """
+    ref = rev if rev is not None else _tracking_ref(remote)
+    # L'absence du fichier est detectee par le CODE DE SORTIE de `cat-file -e`,
+    # jamais par le TEXTE de stderr : ce texte est LOCALISE (gettext), et une
+    # sous-chaine "does not exist" echouerait sur un siege francais -- la
+    # premiere publication d'une machine y echouerait systematiquement.
+    rc, _, err = _git(["cat-file", "-e", f"{ref}:{rel}"], cwd=repo)
+    if rc != 0:
+        # rc != 0 : le fichier est absent OU le ref est illisible. On
+        # distingue les deux -- un ref illisible est une panne, pas une absence.
+        rc_ref, _, _ = _git(["rev-parse", "--verify", "--quiet", ref], cwd=repo)
+        if rc_ref != 0:
+            raise LedgerError(
+                "GIT_LEDGER_UNAVAILABLE",
+                f"ref {ref} illisible : {_git_reason(err)}",
+            )
+        return ""
+    rc, out, err = _git(["show", f"{ref}:{rel}"], cwd=repo)
+    if rc == 0:
+        return out
+    raise LedgerError(
+        "GIT_LEDGER_UNAVAILABLE", f"git show {ref}:{rel} : {_git_reason(err)}"
+    )
+
+
+def _published_ids(text: str) -> set[str]:
+    """Les ``observation_id`` d'un fichier de branche (lignes invalides ignorees)."""
+    ids: set[str] = set()
+    for line in text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            parsed = parse_envelope(line)
+        except ObservationError:
+            continue
+        if isinstance(parsed, dict) and parsed.get("observation_id"):
+            ids.add(str(parsed["observation_id"]))
+    return ids
+
+
+def _ids_at(repo: Path, rev: str, rel: str, *, remote: str) -> set[str]:
+    """Les ``observation_id`` du fichier ``rel`` tel que le porte ``rev``."""
+    return _published_ids(_branch_file_text(repo, rel, remote=remote, rev=rev))
+
+
+def _publish_attempt(
+    *,
+    repo: Path,
+    rel: str,
+    canonical: str,
+    ledger: str,
+    remote: str,
+    to_publish: list[dict[str, Any]],
+    base_sha: str | None,
+) -> str | None:
+    """Un cycle worktree -> commit -> push ; retourne le sha pousse, ``None`` si
+    le push est rejete (l'appelant a droit a UN retry).
+
+    ``base_sha`` est la tete EPINGLEE par l'appelant apres son fetch (``None``
+    a la creation de la branche) : l'arbre, le texte du fichier et le parent
+    du commit en viennent tous. Si le distant a avance depuis, la poussee
+    n'est pas un fast-forward : elle est rejetee et l'appelant repart d'un
+    arbre relu, au lieu de publier un fichier qui a perdu des lignes.
+    """
+    # Worktree temporaire, meme volume que les worktrees de la machine (D:\...)
+    # quand le parent du depot est inscriptible ; sinon le tmp par defaut.
+    try:
+        repo.parent.mkdir(parents=True, exist_ok=True)
+        tmp_root = Path(tempfile.mkdtemp(prefix="git-ledger-", dir=repo.parent))
+    except OSError:
+        tmp_root = Path(tempfile.mkdtemp(prefix="git-ledger-"))
+    worktree = tmp_root / "wt"
+    try:
+        base = base_sha if base_sha is not None else "HEAD"
+        rc, _, err = _git(
+            ["worktree", "add", "--detach", "--no-checkout", str(worktree), base],
+            cwd=repo,
+        )
+        if rc != 0:
+            raise LedgerError("GIT_WORKTREE_FAILED", f"git worktree add : {_git_reason(err)}")
+        # Index = arbre de la branche (ou vide a la creation de la branche), SANS
+        # extraction : le commit ne peut ni perdre les fichiers des autres
+        # machines, ni embarquer le contenu du depot principal.
+        if base_sha is not None:
+            rc, _, err = _git(["read-tree", base_sha], cwd=worktree)
+        else:
+            rc, _, err = _git(["read-tree", "--empty"], cwd=worktree)
+        if rc != 0:
+            raise LedgerError("GIT_WORKTREE_FAILED", f"git read-tree : {_git_reason(err)}")
+        target = worktree / ledger / f"{canonical}.jsonl"
+        # Garde levee EXPLICITEMENT et uniquement pour ce chemin : c'est le
+        # worktree TEMPORAIRE de la branche dediee, pas l'arbre de travail du
+        # depot principal (assert_local_output continue de refuser toute autre
+        # ecriture dans un arbre git) ; l'etat publie vit sur la branche, jamais
+        # dans le depot principal.
+        target.parent.mkdir(parents=True, exist_ok=True)
+        text = (
+            _branch_file_text(repo, rel, remote=remote, rev=base_sha)
+            if base_sha is not None
+            else ""
+        )
+        if text and not text.endswith("\n"):
+            text += "\n"
+        # Ajout seul : les lignes distantes existantes sont recopiees telles
+        # quelles, les nouvelles sont appendues dans l'ordre du spool.
+        text += "".join(envelope_line(obs) + "\n" for obs in to_publish)
+        with open(target, "w", encoding="utf-8", newline="\n") as stream:
+            stream.write(text)
+        rc, _, err = _git(["add", "--", rel], cwd=worktree)
+        if rc != 0:
+            raise LedgerError("GIT_COMMIT_FAILED", f"git add : {_git_reason(err)}")
+        # Le commit est fabrique en PLOMBING (write-tree + commit-tree) et non
+        # par `git commit` : le parent est choisi explicitement.
+        #
+        # Pourquoi : `git commit` dans un worktree detache aurait pour parent
+        # la tete du worktree -- le HEAD du depot principal a la CREATION de la
+        # branche. L'arbre de la branche (vide, hors notre fichier) serait
+        # alors un commit qui SUPPRIME tout le contenu du depot (README.md
+        # compris). C'est ce que la garde `GIT_PUBLISH_SCOPE` a attrape.
+        # Ici, le parent est la tete EPINGLEE de la branche quand elle existe
+        # (le sha dont viennent l'arbre et le texte, jamais le ref relu a cet
+        # instant), et AUCUN parent quand la branche est creee (racine sans
+        # parent) : la branche porte alors exactement les fichiers du ledger.
+        rc, out, err = _git(["write-tree"], cwd=worktree)
+        if rc != 0:
+            raise LedgerError("GIT_COMMIT_FAILED", f"git write-tree : {_git_reason(err)}")
+        tree = out.strip()
+        commit_args = [
+            "commit-tree", tree,
+            "-m", f"{ledger}: publish {len(to_publish)} observation(s) from {canonical}",
+        ]
+        if base_sha is not None:
+            commit_args += ["-p", base_sha]
+        rc, out, err = _git(commit_args, cwd=worktree)
+        if rc != 0:
+            raise LedgerError(
+                "GIT_COMMIT_FAILED",
+                f"git commit-tree : {_git_reason(err)} (identite git ambiante requise)",
+            )
+        sha = out.strip()
+        # INVARIANT, CODE et non observation : le commit publie ne touche que
+        # le fichier de la machine. Les fichiers des autres machines sont lus
+        # depuis la branche et recopies tels quels ; si le commit en modifie un,
+        # la publication est refusee plutot que poussee. `--root` traite le cas
+        # de la branche nee (commit sans parent) : la liste porte alors tout
+        # l'arbre, qui doit se resumer au fichier de la machine.
+        rc, out, err = _git(
+            ["diff-tree", "--no-commit-id", "--name-only", "-r", "--root", sha],
+            cwd=worktree,
+        )
+        if rc != 0:
+            raise LedgerError(
+                "GIT_COMMIT_FAILED", f"git diff-tree {sha} : {_git_reason(err)}"
+            )
+        touched = [line.strip() for line in out.splitlines() if line.strip()]
+        if touched != [rel]:
+            # Le sha est nomme : l'operateur voit OUV est le commit (il peut
+            # l'inspecter) au lieu d'apprendre qu'une entree a disparu. Rien
+            # n'a ete pousse -- le worktree temporaire est supprime au finally.
+            raise LedgerError(
+                "GIT_PUBLISH_SCOPE",
+                f"commit {sha} publie sur {touched} au lieu de {rel} seule ; "
+                "rien n'a ete pousse, le worktree temporaire a ete supprime",
+            )
+        # INVARIANT d'ajout seul, mesure sur le commit FABRIQUE et non sur ce
+        # qu'on croit avoir lu : aucun identifiant porte par le fichier du
+        # PARENT reel (`<sha>^`) ne disparait, et chaque observation a
+        # publier figure dans le nouveau fichier. `GIT_PUBLISH_SCOPE` ne voit
+        # que les chemins ; il laissait passer un commit qui reecrivait le bon
+        # fichier en y perdant la ligne d'un autre publieur (finding Hermes 2
+        # de la PR #22755).
+        parent_ids = (
+            _ids_at(repo, f"{sha}^", rel, remote=remote) if base_sha is not None else set()
+        )
+        new_ids = _ids_at(repo, sha, rel, remote=remote)
+        wanted_ids = {str(obs["observation_id"]) for obs in to_publish}
+        lost = sorted(parent_ids - new_ids)
+        absent = sorted(wanted_ids - new_ids)
+        if lost or absent:
+            raise LedgerError(
+                "GIT_PUBLISH_LOSS",
+                f"commit {sha} sur {rel} : identifiants du parent perdus "
+                f"{lost or '(aucun)'}, observations a publier absentes "
+                f"{absent or '(aucune)'} ; rien n'a ete pousse, le spool est intact",
+            )
+        # La verification d'invariant precede le push : rien n'est publie si
+        # elle echoue. Le commit fabrique en plumbing ne deplace PAS la HEAD
+        # du worktree : la poussee vise donc le SHA explicite, jamais `HEAD`
+        # (qui designait encore la tete du depot principal -- la poussee
+        # aurait publie autre chose que ce que l'on vient de fabriquer).
+        push_ref = f"{sha}:refs/heads/{GIT_LEDGER_BRANCH}"
+        rc, _, err = _git(["push", remote, push_ref], cwd=worktree)
+        if rc != 0:
+            return None  # rejet (probablement non-fast-forward) : UN retry au-dessus
+        # Belt : le ref distant doit porter NOTRE sha. Un push « reussi » qui
+        # publierait autre chose est un echec silencieux du point de vue de
+        # l'etat de la flotte -- il est donc refuse ici, explicitement.
+        rc, out, err = _git(
+            ["ls-remote", remote, f"refs/heads/{GIT_LEDGER_BRANCH}"], cwd=worktree
+        )
+        if rc != 0:
+            raise LedgerError(
+                "GIT_PUBLISH_UNVERIFIED",
+                f"ls-remote {remote} : {_git_reason(err)} (poussee vers {sha}) ; "
+                "la poussee a pu ATTERRIR : relancer publish --git --emit "
+                "-- si l'observation est deja sur la branche, ce second essai "
+                "la DRAINE (published=false n'est pas une perte)",
+            )
+        remote_sha = out.split()[0].strip() if out.split() else ""
+        if remote_sha != sha:
+            raise LedgerError(
+                "GIT_PUBLISH_UNVERIFIED",
+                f"le ref distant porte {remote_sha!r} et non {sha!r} "
+                "(la poussee a publie autre chose que l'observation) ; "
+                "relancer publish --git --emit",
+            )
+        return sha
+    finally:
+        rc_rm, _, err_rm = _git(
+            ["worktree", "remove", "--force", str(worktree)], cwd=repo
+        )
+        if rc_rm != 0:
+            # Le retrait peut echouer (verrou fichier Windows, antivirus) :
+            # le worktree fantome et son enregistrement `.git/worktrees/<id>`
+            # subsisteraient, et le dossier temporaire est cree sous
+            # `repo.parent` -- a la racine du drive en production. `prune`
+            # retire l'enregistrement, et l'echec est JOURNALISE : un residu
+            # silencieux s'accumulerait a chaque tentative.
+            _git(["worktree", "prune"], cwd=repo)
+            shutil.rmtree(worktree, ignore_errors=True)
+            print(
+                f"WARNING worktree remove rc={rc_rm} : {_git_reason(err_rm)} "
+                "(prune tente ; un residu peut subsister)",
+                file=sys.stderr,
+            )
+        shutil.rmtree(tmp_root, ignore_errors=True)
+
+
+def _drain_published(
+    spool_dir: Path,
+    source: list[dict[str, Any]],
+    existing_ids: set[str],
+) -> list[str]:
+    """Draine du spool les observations DEJA portees par la branche.
+
+    Le drain est la moitie oubliee de la publication : une observation dont
+    l'``observation_id`` figure sur la branche est PUBLIEE, qu'elle y soit
+    arrivee par ce push-la ou par un push anterieur dont la verification a
+    echoue. La laisser dans le spool fait repondre ``UNPOSTED`` au gate pour
+    toujours -- et le remede documente (relancer la publication) boucle sur
+    un "deja a jour" qui ne draine rien.
+
+    Renvoie les identifiants draines (vide si rien a drainer). Ne leve pas :
+    un drain impossible ne doit pas faire perdre le resultat de la
+    publication, deja constate.
+    """
+    drainable = sorted(
+        str(obs["observation_id"]) for obs in source
+        if str(obs.get("observation_id")) in existing_ids
+    )
+    if not drainable:
+        return []
+    try:
+        archive_posted(spool_dir, drainable)
+    except LedgerError as exc:
+        # Un drain impossible ne doit pas faire perdre la publication -- mais
+        # il ne doit pas etre SILENT : la distinction "rien a drainer" et
+        # "drain impossible" se lit ici, sinon le gate repond UNPOSTED
+        # indefiniment sans que rien ne dise pourquoi.
+        print(
+            f"[debt-ledger] drain impossible ({exc.reason}) : les observations "
+            "publiees restent dans le spool ; le gate peut repondre UNPOSTED "
+            "autant de fois que le spool n'est pas vide",
+            file=sys.stderr,
+        )
+        return []
+    return drainable
+
+
+def publish_git_ledger(
+    *,
+    spool_dir: Path,
+    repo: Path,
+    machine: str,
+    remote: str = GIT_LEDGER_REMOTE_DEFAULT,
+    emit: bool = False,
+    ledger: str = GPU_RESERVATION,
+) -> dict[str, Any]:
+    """Publie les enveloppes locales sur la branche dediee ; resume du geste.
+
+    Dry-run par defaut (``emit=False``) : rien n'est ecrit, rien n'est pousse.
+    Idempotent : toute observation dont l'``observation_id`` figure deja sur la
+    branche n'est pas reecrite. La poussee vise ``<remote>:refs/heads/<branch>``,
+    jamais ``main`` ; en cas de rejet (deux machines publient en meme temps),
+    UN seul retry : re-fetch, reapplication du fichier sur la nouvelle tete
+    distante, nouveau commit, nouvelle poussee. Un echec final lève
+    ``GIT_PUSH_REJECTED`` -- jamais un succes silencieux.
+    """
+    canonical = canonical_machine(machine)
+    rel = f"{ledger}/{canonical}.jsonl"
+    source = [
+        parse_observation(obs, ledger)
+        for obs in _publishable_observations(spool_dir, ledger=ledger)
+    ]
+    source_ids = {str(obs["observation_id"]) for obs in source}
+    # INVARIANT, CODE et non observation : une machine n'ecrit que dans SON
+    # fichier. Une observation dont l'entite porte une autre machine est
+    # refusee ici, avant tout commit -- un ecrasement d'autrui ne doit pas
+    # pouvoir se produire par une simple ligne de spool.
+    for obs in source:
+        obs_machine = str((obs.get("entity") or {}).get("machine", ""))
+        if obs_machine and obs_machine != canonical:
+            raise LedgerError(
+                "GIT_PUBLISH_FOREIGN_MACHINE",
+                f"observation {obs.get('observation_id')!r} porte la machine "
+                f"{obs_machine!r} et serait ecrite dans le fichier de {canonical!r}",
+            )
+    # La cible est resolue AVANT tout contact reseau : un remote absent ou
+    # une cible interdite sont refuses sans qu'une branche soit publiee.
+    remote_url = ensure_git_ledger_remote(repo, remote)
+    fetch_error = fetch_git_ledger_branch(repo, remote=remote)
+    # La branche peut ne pas encore exister sur le remote : le fetch echoue
+    # alors que TOUT va bien (premiere publication d'une machine). Le cas est
+    # distingue par `ls-remote`, jamais par le texte du stderr.
+    fetch_branche_absente = bool(fetch_error) and _branche_absente_du_remote(
+        repo, remote=remote
+    )
+    # La tete est epinglee UNE fois apres le fetch : ce qui est deja publie,
+    # l'arbre du commit et son parent viennent du meme sha (finding Hermes 2).
+    base_sha = _pin_ledger_base(repo, remote=remote)
+    existing_text = (
+        _branch_file_text(repo, rel, remote=remote, rev=base_sha) if base_sha else ""
+    )
+    existing_ids = _published_ids(existing_text)
+    to_publish = [obs for obs in source if str(obs["observation_id"]) not in existing_ids]
+    summary: dict[str, Any] = {
+        "branch": GIT_LEDGER_BRANCH,
+        "remote": remote,
+        "remote_url": remote_url,
+        "target": rel,
+        "machine": canonical,
+        "to_publish": [str(obs["observation_id"]) for obs in to_publish],
+        "already_on_branch": sorted(existing_ids & source_ids),
+        "fetch_error": fetch_error,
+        "fetch_branche_absente": fetch_branche_absente,
+        "published": False,
+        "pushed_sha": None,
+        "drained": [],
+    }
+    if not emit:
+        return summary
+    if not to_publish:
+        # Les observations du spool sont DEJA sur la branche : publication
+        # rejouee apres un push ATTERRI dont la verification (ls-remote) a
+        # echoue, ou course gagnee par un push concurrent portant le meme
+        # contenu. Le spool doit alors etre DRAINE -- sinon `check_pending`
+        # rend UNPOSTED indefiniment et le remede documente ("relancer
+        # publish --git --emit") boucle sur un "deja a jour" qui ne draine
+        # rien : le device devient impossible a liberer.
+        drained = _drain_published(spool_dir, source, existing_ids)
+        if drained:
+            summary["drained"] = drained
+        return summary
+    pushed_sha = _publish_attempt(
+        repo=repo, rel=rel, canonical=canonical, ledger=ledger,
+        remote=remote, to_publish=to_publish, base_sha=base_sha,
+    )
+    if pushed_sha is None:
+        # Un seul retry : la tete distante a bouge sous nous. On repart de
+        # l'arbre RELU apres ce fetch-ci, epingle a nouveau.
+        fetch_git_ledger_branch(repo, remote=remote)
+        base_sha = _pin_ledger_base(repo, remote=remote)
+        existing_text = (
+            _branch_file_text(repo, rel, remote=remote, rev=base_sha) if base_sha else ""
+        )
+        existing_ids = _published_ids(existing_text)
+        to_publish = [
+            obs for obs in source if str(obs["observation_id"]) not in existing_ids
+        ]
+        summary["to_publish"] = [str(obs["observation_id"]) for obs in to_publish]
+        summary["already_on_branch"] = sorted(existing_ids & source_ids)
+        if not to_publish:
+            # La course a ete gagnee par un push portant le meme contenu.
+            summary["published"] = True
+            drained = _drain_published(spool_dir, source, existing_ids)
+            if drained:
+                summary["drained"] = drained
+            return summary
+        pushed_sha = _publish_attempt(
+            repo=repo, rel=rel, canonical=canonical, ledger=ledger,
+            remote=remote, to_publish=to_publish, base_sha=base_sha,
+        )
+    if pushed_sha is None:
+        # Le refus NE perd rien : les observations restent dans le spool local
+        # (elles ne sont archivees qu'apres un push reussi). Pour que l'etat de
+        # la flotte ne perde pas une observation, le fantome doit etre
+        # DETECTABLE : le refus nomme les identifiants retenus, et ils restent
+        # lisibles par `spool`.
+        retained = [str(obs["observation_id"]) for obs in to_publish]
+        raise LedgerError(
+            "GIT_PUSH_REJECTED",
+            f"push {remote}/{GIT_LEDGER_BRANCH} rejete deux fois (concurrence) ; "
+            f"{len(retained)} observation(s) RETENUES dans le spool local "
+            f"(published=false) : {', '.join(retained) or '(aucune)'} ; "
+            "relancer publish --git --emit",
+        )
+    published_now = [str(obs["observation_id"]) for obs in to_publish]
+    # Aucun spool n'est vide sur la foi d'un code de retour : chaque
+    # identifiant draine doit se RETROUVER dans le fichier du commit pousse
+    # (celui que ls-remote vient de confirmer comme tete distante). Une
+    # observation absente reste dans le spool -- elle sera republiee -- et
+    # l'echec est nomme (finding Hermes 2 de la PR #22755).
+    on_pushed = _ids_at(repo, pushed_sha, rel, remote=remote)
+    missing = sorted(set(published_now) - on_pushed)
+    if missing:
+        raise LedgerError(
+            "GIT_PUBLISH_LOSS",
+            f"le commit pousse {pushed_sha} ne porte pas {', '.join(missing)} "
+            f"dans {rel} ; spool NON draine (published=false pour ces "
+            "observations) ; relancer publish --git --emit",
+        )
+    summary["published"] = True
+    summary["pushed_sha"] = pushed_sha
+    # Le ref de suivi local voit immediatement ce qui vient d'etre publie.
+    # Compare-and-swap sur la base epinglee : si un autre publieur (ou un
+    # fetch) a deja avance le ref, on ne le ramene jamais en arriere.
+    expected_old = base_sha if base_sha is not None else "0" * len(pushed_sha)
+    _git(["update-ref", _tracking_ref(remote), pushed_sha, expected_old], cwd=repo)
+    # Drain du spool local : les ids publies ne doivent plus faire repondre
+    # UNPOSTED au gate local (la source de publication inclut les archives).
+    #
+    # La poussee a ATTERRI et le commit verifie porte TOUTES les observations
+    # publiees : l'etat de la flotte EST sur la branche. Un drain qui
+    # n'aboutit pas -- une enveloppe a pu disparaitre du spool entre la
+    # lecture de la source et l'archivage -- ne doit donc pas faire dire
+    # "echec" a une publication reussie : le RESIDUE est nomme, et la
+    # verification du commit reste le fait qui fait foi.
+    drain = _archive_published_best_effort(spool_dir, published_now)
+    summary["drained"] = list(drain.get("moved") or [])
+    if drain.get("missing"):
+        summary["drain_missing"] = list(drain["missing"])
+    return summary
+
+
+def _archive_published_best_effort(
+    spool_dir: Path, observation_ids: Sequence[str]
+) -> dict[str, list[str]]:
+    """Archive ce qui se resout, nomme ce qui ne se resout pas.
+
+    ``archive_posted`` reste **tout ou rien** -- c'est son contrat, et le
+    demi-drain qu'il refuse est justement l'etat qui fait mentir
+    ``check_pending``. Mais l'appelant de la publication, lui, a deja
+    verifie que la poussee a ATTERRI : un identifiant devenu introuvable
+    dans le spool (une enveloppe retiree entre la lecture de la source et
+    l'archivage) ne peut plus rien perdre -- l'observation est sur la
+    branche. Refuser l'appel entier ferait dire "echec" a une publication
+    reussie, et surtout laisserait croire que rien n'a ete publie.
+
+    Renvoie ``{"moved": [...], "already": [...], "missing": [...]}``.
+    """
+    pending_index = _index_spool(spool_dir, strict=True)
+    posted_index = _index_spool(spool_dir / "posted", strict=False)
+    resolvable = [
+        observation_id
+        for observation_id in observation_ids
+        if observation_id in pending_index or observation_id in posted_index
+    ]
+    missing = sorted(set(observation_ids) - set(resolvable))
+    outcome: dict[str, list[str]] = {"moved": [], "already": [], "missing": missing}
+    if resolvable:
+        archived = archive_posted(spool_dir, resolvable)
+        outcome["moved"] = list(archived.get("moved") or [])
+        outcome["already"] = list(archived.get("already") or [])
+    return outcome
+
+
+def refresh_snapshot_from_branch(
+    *,
+    ledger: str,
+    repo: Path,
+    remote: str = GIT_LEDGER_REMOTE_DEFAULT,
+    state_dir: Path,
+    now: datetime | None = None,
+) -> Path:
+    """Recalcule le snapshot local (CACHE) depuis la branche dediee, par le meme
+    code de fold que ``reduce`` ; retourne le chemin du snapshot ecrit.
+
+    Le snapshot n'est jamais une autorite : la branche est la source primaire,
+    ce cache n'existe que pour que ``check_pending --source local`` (et le
+    repli ``auto``) trouvent un etat replie sans re-lire git.
+    """
+    fetch_git_ledger_branch(repo, remote=remote)
+    observations, _rejections = observations_from_git_ledger(repo, remote=remote)
+    messages = [
+        {
+            "messageId": str(obs["observation_id"]),
+            "author": obs["actor"],
+            "createdAt": obs["observed_at"],
+            "content": envelope_line(obs),
+        }
+        for obs in observations
+    ]
+    export = {
+        "schema": EXPORT_SCHEMA,
+        "ledger": ledger,
+        "window": {"kind": "full", "archives": []},
+        "messages": messages,
+    }
+    baseline_path = state_dir / ledger / "baseline.json"
+    baseline = _read_json(baseline_path) if baseline_path.exists() else None
+    config = None
+    config_path = state_dir / "config.json"
+    if config_path.exists():
+        config = _read_json(config_path)
+    result = reduce_ledger(
+        ledger=ledger,
+        export=export,
+        prior_snapshot=None,
+        baseline=baseline,
+        now=now,
+        config=config,
+    )
+    base = state_dir / ledger
+    with LedgerLock(base / ".reduce.lock"):
+        snapshot_path = base / "snapshots" / "snapshot.json"
+        write_json_atomic(snapshot_path, result.snapshot)
+        write_json_atomic(base / "snapshots" / "summary.json", result.summary)
+        _write_text_atomic(base / "snapshots" / "status.md", result.status_text)
+    return snapshot_path
+
+
+# ---------------------------------------------------------------------------
 # 11. INIT -- schema doc, config, baseline, dashboard bootstrap
 # ---------------------------------------------------------------------------
 
@@ -2744,26 +3611,117 @@ def _parse_entity_string(raw: str, ledger: str) -> dict:
     raise ValueError(f"unknown ledger {ledger!r}")
 
 
+def _print_pending_verdict(
+    args: argparse.Namespace,
+    verdict: str,
+    reason: str,
+    now: datetime,
+    source: str,
+    extra: dict[str, Any] | None = None,
+) -> None:
+    """Une seule forme de sortie par verdict, quelle que soit la source lue.
+
+    ``extra`` ajoute des champs de DIAGNOSTIC a la sortie JSON (jamais un
+    second verdict : le champ ``verdict`` reste le seul que l'appelant lit).
+    """
+    if args.json_output:
+        payload = {
+            "verdict": verdict,
+            "reason": reason,
+            "entity": args.entity,
+            "now": format_utc(now),
+            "source": source,
+        }
+        if extra:
+            payload.update(extra)
+        print(json.dumps(payload))
+    else:
+        print(f"{verdict}  {args.entity}  {reason}")
+        print(f"source={source}")
+
+
+def _check_pending_snapshot(
+    args: argparse.Namespace,
+    entity: dict[str, Any],
+    now: datetime,
+    snapshot_path: Path,
+    *,
+    source: str,
+    fail_closed: bool,
+) -> int:
+    """Le chemin LOCAL historique : verdict replie depuis le snapshot (un CACHE).
+
+    ``fail_closed`` ne vaut True que pour le repli de ``--source auto`` : sans
+    snapshot, AUCUNE source n'est lisible et le verdict nomme l'indisponibilite
+    (``UNREADABLE``) au lieu de rendre l'entite libre. Avec ``--source local``
+    explicite, le comportement historique est preserve (``NO_OBS``).
+    """
+    if not snapshot_path.exists():
+        verdict, reason = (
+            ("UNREADABLE", f"no snapshot at {snapshot_path}")
+            if fail_closed
+            else ("NO_OBS", f"no snapshot at {snapshot_path}")
+        )
+        _print_pending_verdict(args, verdict, reason, now, source=source)
+        return 1 if fail_closed else 0
+    snapshot = json.loads(snapshot_path.read_text(encoding="utf-8"))
+    # A verdict needs the CURRENT state of the entity, and reads several fields
+    # off one record -- so it must be fed the merged row, not the per-field
+    # checkpoint records (#20077).
+    records = record_views_from_snapshot(snapshot, args.ledger)
+    verdict, reason = evaluate_gpu_pending(records, entity, now, args.my_lane)
+    _print_pending_verdict(args, verdict, reason, now, source=source)
+    return GPU_VERDICT_EXIT_CODES.get(verdict, 0)
+
+
 def _cli_check_pending(args: argparse.Namespace) -> int:
     """Pre-launch gate for a GPU workload.
 
-    Reads the latest snapshot, finds the latest observation for the entity,
-    and returns the verdict the picker needs:
+    Reads the latest state of the entity and returns the verdict the picker
+    needs. ``--source`` decides where the state is read from:
 
-      * UNREADABLE_SPOOL -- un fichier de l'outbox ne peut pas être lu ; la
-                            gate refuse car il pourrait porter un `held`.
-      * UNPOSTED  -- the local outbox still holds observations that never
-                     reached the dashboard; the reduced snapshot cannot be
-                     trusted until they are posted (#22456).
-      * NO_OBS    -- no record; the picker skips the GPU-bound grain.
-      * HOLD      -- held by another lane, or by us but outside the window.
-      * OK_TO_RUN -- held by us (or matching) and now is in the run window.
-      * STALE     -- held past expected_end with no release; needs follow-up.
-      * RELEASED  -- terminal; the GPU is free to take.
+      * ``git``   -- the dedicated branch ``ops/gpu-ledger`` (the PRIMARY
+                     source): fetch REQUIRED, read by ``git show``, fold,
+                     same verdict vocabulary as the local path. A failed
+                     fetch is ``UNREADABLE`` even when an older tracking ref
+                     is still readable: that ref is reported for diagnosis
+                     only (``stale_ref`` in the JSON), it never authorises;
+      * ``local`` -- the local snapshot, a CACHE never an authority; this is
+                     the historical behaviour, unchanged;
+      * ``auto``  -- try ``git``; on an unreachable branch, fall back to the
+                     local cache ONLY IF the branch does not exist on the
+                     remote (measured by ``ls-remote`` : nothing was ever
+                     published, so the cache cannot miss a hold) AND SAY SO
+                     in the output (``source=local (branche <remote>/<branch>
+                     absente)``). If the branch EXISTS, or the remote is
+                     unreachable, the verdict is ``UNREADABLE`` (fail-CLOSED) :
+                     a stale cache must not render a device free.
 
-    Exit code is 0 for OK_TO_RUN, 0 for NO_OBS (we surface a clear verdict
-    and let the caller branch), 0 for RELEASED, 1 for HOLD, UNPOSTED ou
-    UNREADABLE_SPOOL (un état illisible n'est jamais un périphérique libre),
+      * UNREADABLE_SPOOL -- un fichier de l'outbox ne peut pas etre lu ; la
+                            gate refuse car il pourrait porter un ``held``.
+    Verdicts:
+
+      * UNPOSTED   -- the local outbox still holds observations that never
+                      reached the ledger; no verdict is trusted until they
+                      are posted/published (#22456). This guard fires FIRST,
+                      whatever the source.
+      * NO_OBS     -- no record; the picker skips the GPU-bound grain.
+      * HOLD       -- held by another lane, or by us but outside the window.
+      * OK_TO_RUN  -- held by us (holder == --my-lane) and now is in the run
+                      window. Without --my-lane, a held device is HOLD.
+      * STALE      -- held past expected_end with no release; needs follow-up.
+      * RELEASED   -- terminal; the GPU is free to take.
+      * UNREADABLE -- NO source was readable (branch unreachable with
+                      ``--source git``, or git unreachable AND no local
+                      snapshot with ``--source auto``), or the fetch failed
+                      and only a possibly stale tracking ref remains.
+                      Fail-closed: an unreadable ledger is never a free device.
+
+    Exit codes come from ``GPU_VERDICT_EXIT_CODES`` (single source, mirrored
+    by the table of ``docs/coordination/gpu-reservation.md``): 0 for
+    OK_TO_RUN, NO_OBS and RELEASED, 1 for HOLD, UNPOSTED, UNREADABLE and
+    UNREADABLE_SPOOL (the gate refuses -- an unread ledger is not a free
+    device), 2 for STALE (the caller decides).
     2 for STALE (the caller decides whether to refresh or to hold). All exit
     codes are documented in gpu-reservation.md -- a wrapper that maps them
     to skip/hold/escalate lives one layer up.
@@ -2816,16 +3774,17 @@ def _cli_check_pending(args: argparse.Namespace) -> int:
         return GPU_VERDICT_EXIT_CODES[VERDICT_UNREADABLE_SPOOL]
 
     # An observation still sitting in the local outbox never reached the
-    # ledger, so a verdict reduced from the snapshot is blind to it: the gate
+    # ledger, so a verdict reduced from any source is blind to it: the gate
     # answers "RELEASED" with the aplomb of a measurement while a live hold
     # waits in the spool, and two lanes launch on the same device (#22456).
-    # Name the unread state instead of answering around it.
+    # Name the unread state instead of answering around it -- FIRST, whatever
+    # the source: an unread outbox invalidates the verdict before git is read.
     spooled = spool_status(base / "spool")[args.ledger]
     if spooled["pending"]:
         reason = (
             f"{spooled['pending']} observation(s) still pending in {base / 'spool'} "
             f"(oldest {spooled['oldest_observed_at'] or 'unknown'}) -- post them "
-            "(debt_ledger.py flush) before trusting any verdict"
+            "(debt_ledger.py flush, or publish --git --emit) before trusting any verdict"
         )
         if args.json_output:
             print(json.dumps({
@@ -2834,45 +3793,247 @@ def _cli_check_pending(args: argparse.Namespace) -> int:
                 "entity": args.entity,
                 "pending": spooled["pending"],
                 "now": format_utc(now),
+                "source": "local (outbox non vide)",
             }))
         else:
             print(f"{VERDICT_UNPOSTED}  {args.entity}  {reason}")
+            print("source=local (outbox non vide)")
         return GPU_VERDICT_EXIT_CODES[VERDICT_UNPOSTED]
 
-    if not snapshot_path.exists():
-        if args.json_output:
-            print(json.dumps({
-                "verdict": "NO_OBS",
-                "reason": f"no snapshot at {snapshot_path}",
-                "entity": args.entity,
-            }))
-        else:
-            print(f"NO_OBS  {args.entity}  (no snapshot at {snapshot_path})")
-        return 0
+    source = getattr(args, "source", "auto") or "auto"
+    if source == "local":
+        return _check_pending_snapshot(
+            args, entity, now, snapshot_path, source="local", fail_closed=False
+        )
 
-    snapshot = json.loads(snapshot_path.read_text(encoding="utf-8"))
-    # A verdict needs the CURRENT state of the entity, and reads several fields
-    # off one record -- so it must be fed the merged row, not the per-field
-    # checkpoint records (#20077).
-    records = record_views_from_snapshot(snapshot, args.ledger)
-
-    verdict, reason = evaluate_gpu_pending(records, entity, now, args.my_lane)
-
-    if args.json_output:
-        print(json.dumps({
-            "verdict": verdict,
-            "reason": reason,
-            "entity": args.entity,
-            "now": format_utc(now),
-        }))
+    # --source git, ou auto qui tente git d'abord.
+    repo = Path(args.repo) if args.repo else default_repo_root()
+    unavailable: str | None = None
+    fetch_error: str | None = None
+    # Etat de la branche DISTANTE : "absent" (elle n'existe pas : rien n'a
+    # jamais ete publie), "exists" (elle existe : elle peut porter le hold
+    # d'une autre machine), "unknown" (le remote est injoignable : on ne peut
+    # rien affirmer). Mesure par le CODE DE SORTIE de `ls-remote` -- jamais
+    # par le texte de stderr, qui est localise et dont le message distingue
+    # "ref absent" de "reseau coupe" par une phrase, pas par un code.
+    remote_state = "unknown"
+    if repo is None or not repo.exists():
+        unavailable = "aucun depot git lisible (git rev-parse --show-toplevel a echoue)"
     else:
-        print(f"{verdict}  {args.entity}  {reason}")
+        try:
+            ensure_git_ledger_remote(repo, args.remote)
+        except LedgerError as exc:
+            # Cible non configuree, ou cible interdite : la source PRIMAIRE est
+            # illisible. Le repli "auto" sur le cache local exige de pouvoir
+            # affirmer que la branche n'a JAMAIS ete publiee -- ce qu'on ne
+            # peut pas ici -> UNREADABLE, fail-CLOSED (un device ne se libere
+            # pas parce que la cible de reference est mal configuree).
+            unavailable = f"{exc.reason}: {exc.detail}"
+            remote_state = "unknown"
+            _print_pending_verdict(
+                args,
+                "UNREADABLE",
+                f"cible de publication inutilisable : {unavailable}",
+                now,
+                source=f"git (cible inutilisable : {unavailable})",
+            )
+            return GPU_VERDICT_EXIT_CODES[VERDICT_UNREADABLE]
+        fetch_error = fetch_git_ledger_branch(repo, remote=args.remote)
+        if not git_ledger_ref_available(repo, remote=args.remote):
+            unavailable = (
+                fetch_error
+                or f"branche {args.remote}/{GIT_LEDGER_BRANCH} absente"
+            )
+            rc_ls, out_ls, err_ls = _git(
+                ["ls-remote", args.remote, f"refs/heads/{GIT_LEDGER_BRANCH}"],
+                cwd=repo,
+            )
+            if rc_ls == 0:
+                remote_state = "exists" if out_ls.strip() else "absent"
+            else:
+                remote_state = "unknown"
+        else:
+            observations, _rejections = observations_from_git_ledger(
+                repo, remote=args.remote
+            )
+            records = [
+                record_from_observation(obs, f"git:{GIT_LEDGER_BRANCH}")
+                for obs in observations
+            ]
+            verdict, reason = evaluate_gpu_pending(records, entity, now, args.my_lane)
+            if fetch_error:
+                # Le fetch a echoue : le ref de suivi local n'est que le DERNIER
+                # ETAT CONNU de la branche, pas son etat present. Un hold publie
+                # depuis par une autre lane y est invisible, et ce ref rendrait
+                # RELEASED (ou OK_TO_RUN) sur un device deja repris -- le double
+                # lancement exact que ce gate existe pour empecher (PR #22755,
+                # finding Hermes 3). Le ref est donc lu pour le DIAGNOSTIC (le
+                # verdict qu'il porterait est nomme) mais il n'autorise rien :
+                # UNREADABLE, fail-CLOSED, comme une branche illisible.
+                rc_sha, out_sha, _ = _git(
+                    ["rev-parse", "--short", _tracking_ref(args.remote)], cwd=repo
+                )
+                stale_sha = out_sha.strip() if rc_sha == 0 else "?"
+                _print_pending_verdict(
+                    args,
+                    "UNREADABLE",
+                    f"fetch impossible : {fetch_error} ; le dernier ref local "
+                    f"({stale_sha}) dirait {verdict} ({reason}) -- lecture "
+                    "PERIMEE, diagnostic seulement : elle n'autorise aucun "
+                    "lancement (fail-CLOSED)",
+                    now,
+                    source=(
+                        f"git (fetch impossible : {fetch_error} ; dernier ref "
+                        "local lu pour diagnostic seulement)"
+                    ),
+                    extra={
+                        "stale_ref": {
+                            "sha": stale_sha,
+                            "verdict": verdict,
+                            "reason": reason,
+                        }
+                    },
+                )
+                return GPU_VERDICT_EXIT_CODES[VERDICT_UNREADABLE]
+            _print_pending_verdict(args, verdict, reason, now, source="git")
+            return GPU_VERDICT_EXIT_CODES.get(verdict, 0)
 
-    if verdict == "HOLD":
-        return GPU_VERDICT_EXIT_CODES["HOLD"]
-    if verdict == "STALE":
-        return GPU_VERDICT_EXIT_CODES["STALE"]
-    return GPU_VERDICT_EXIT_CODES.get(verdict, 0)
+    # Branche git injoignable.
+    if source == "git":
+        _print_pending_verdict(
+            args,
+            "UNREADABLE",
+            f"source git indisponible : {unavailable}",
+            now,
+            source=f"git (indisponible : {unavailable})",
+        )
+        return GPU_VERDICT_EXIT_CODES[VERDICT_UNREADABLE]
+    # auto : repli sur le cache local -- mais SEULEMENT quand la branche
+    # n'existe PAS (mesure par `ls-remote`). Un cache perime n'a pas le
+    # droit d'autoriser un lancement : si la branche existe (elle porte
+    # peut-etre le hold d'une autre machine) ou si le remote est injoignable
+    # (on ne peut rien affirmer), le cache -- anterieur -- ne repond pas a la
+    # place de la source primaire. C'est le double-reservation exact que ce
+    # transport doit empecher.
+    if remote_state != "absent":
+        _print_pending_verdict(
+            args,
+            "UNREADABLE",
+            f"git indisponible : {unavailable} ; la branche "
+            f"{args.remote}/{GIT_LEDGER_BRANCH} "
+            + ("EXISTE" if remote_state == "exists" else "est INCONNUE")
+            + " : elle peut porter le hold d'une autre machine, que le cache "
+            "local (anterieur) ne montre pas. Fail-CLOSED.",
+            now,
+            source=f"git (indisponible : {unavailable})",
+        )
+        return GPU_VERDICT_EXIT_CODES[VERDICT_UNREADABLE]
+    # La branche n'existe pas : rien n'a jamais ete publie, aucun hold
+    # n'existe nulle part : le cache local peut repondre.
+    return _check_pending_snapshot(
+        args,
+        entity,
+        now,
+        snapshot_path,
+        source=f"local (branche {args.remote}/{GIT_LEDGER_BRANCH} absente)",
+        fail_closed=True,
+    )
+
+
+def _cli_publish(args: argparse.Namespace) -> int:
+    """Publie le spool local vers la branche dediee (dry-run par defaut).
+
+    Conforme a la discipline de ``flush`` : sans ``--emit``, rien n'est ecrit
+    et rien n'est pousse ; la sortie montre ce qui serait publie, vers quoi,
+    et ce qui est deja sur la branche. Apres une publication reussie, le
+    snapshot local (un CACHE) est recalcule depuis la branche.
+    """
+    if not args.git:
+        print(
+            "ERROR: publish requires --git (seul transport : la branche dediee)",
+            file=sys.stderr,
+        )
+        return 2
+    if args.ledger != GPU_RESERVATION:
+        print(
+            f"ERROR: publish --git ne supporte que ledger={GPU_RESERVATION!r}",
+            file=sys.stderr,
+        )
+        return 2
+    state_dir = Path(args.state_dir) if args.state_dir else default_state_dir()
+    assert_local_output(state_dir, what="state directory")
+    spool_dir = Path(args.out_dir) if args.out_dir else state_dir / args.ledger / "spool"
+    repo = Path(args.repo) if args.repo else default_repo_root()
+    if repo is None or not repo.exists():
+        raise LedgerError(
+            "NO_GIT_REPO", "aucun depot git trouve pour publier (passez --repo <chemin>)"
+        )
+    machine = args.machine or (os.environ.get("COMPUTERNAME") or os.environ.get("HOSTNAME") or "")
+    moment = parse_utc_timestamp(args.now, where="--now") if args.now else None
+    summary = publish_git_ledger(
+        spool_dir=spool_dir,
+        repo=repo,
+        machine=machine,
+        remote=args.remote,
+        emit=args.emit,
+        ledger=args.ledger,
+    )
+    if args.emit and summary["published"]:
+        summary["snapshot"] = str(
+            refresh_snapshot_from_branch(
+                ledger=args.ledger,
+                repo=repo,
+                remote=args.remote,
+                state_dir=state_dir,
+                now=moment,
+            )
+        )
+    if args.json:
+        print(json.dumps(summary, ensure_ascii=False, indent=2))
+    else:
+        branch_target = f"{summary['remote']}/{summary['branch']} : {summary['target']}"
+        if args.emit:
+            if summary["published"]:
+                print(f"PUBLISHED {len(summary['to_publish'])} observation(s) -> {branch_target}")
+            else:
+                print(f"NOTHING TO PUBLISH -> {branch_target} (deja a jour)")
+        else:
+            print(f"DRY-RUN publish {args.ledger} -> {branch_target}")
+            for observation_id in summary["to_publish"]:
+                print(f"  {observation_id}")
+            print(
+                f"to publish: {len(summary['to_publish'])} ; "
+                f"already on branch: {len(summary['already_on_branch'])}"
+            )
+            print("(dry-run -- rien ecrit, rien pousse ; pass --emit pour publier)")
+        if summary["fetch_error"]:
+            if summary.get("fetch_branche_absente"):
+                # Cas NORMAL de la premiere publication : le remote est
+                # joignable et la branche n'existe pas encore. Le fetch
+                # « echoue » parce qu'il n'y a rien a fetcher -- l'afficher
+                # comme une erreur pollue le journal de chaque machine
+                # (point mineur de la review Hermes du 2026-10-28).
+                print(
+                    "branche absente sur le remote (premiere publication) : "
+                    "rien a fetcher"
+                )
+            else:
+                print(
+                    f"fetch: {summary['fetch_error']} (lecture du dernier ref local)",
+                    file=sys.stderr,
+                )
+        if summary.get("snapshot"):
+            print(f"snapshot (cache) refreshed: {summary['snapshot']}")
+        if summary.get("drain_missing"):
+            missing = summary["drain_missing"]
+            print(
+                f"drain incomplet : {len(missing)} observation(s) sont sur la "
+                "branche mais ne se resolvent plus dans le spool local : "
+                + ", ".join(missing[:10])
+                + ("..." if len(missing) > 10 else ""),
+                file=sys.stderr,
+            )
+    return 0
 
 
 def _cli_spool_status(args: argparse.Namespace) -> int:
@@ -3128,6 +4289,45 @@ def build_parser() -> argparse.ArgumentParser:
     flush.add_argument("--json", action="store_true", help="emit the manifest as JSON")
     flush.set_defaults(func=_cli_flush)
 
+    publish = sub.add_parser(
+        "publish",
+        parents=[common],
+        help=(
+            "publish the local envelopes to the git ledger branch "
+            f"{GIT_LEDGER_BRANCH} (dry-run; --emit publishes)"
+        ),
+    )
+    publish.add_argument("--ledger", choices=list(LEDGERS), default=GPU_RESERVATION)
+    publish.add_argument(
+        "--git",
+        action="store_true",
+        help="git transport on the dedicated branch (required; the only transport)",
+    )
+    publish.add_argument("--emit", action="store_true", help="publish for real (default is dry-run)")
+    publish.add_argument(
+        "--out-dir", help="publish from this spool dir instead of the state-dir one"
+    )
+    publish.add_argument(
+        "--repo",
+        help="git repository to publish from (default: the repository of this script)",
+    )
+    publish.add_argument(
+        "--remote",
+        default=GIT_LEDGER_REMOTE_DEFAULT,
+        help=(
+            "remote git qui porte la reference du registre GPU "
+            f"(defaut : {GIT_LEDGER_REMOTE_DEFAULT} -> {GIT_LEDGER_REPO_URL}, "
+            "depot PRIVE et dedie) ; la cible reste un parametre, mais le "
+            "depot de travail public est refuse"
+        ),
+    )
+    publish.add_argument(
+        "--machine",
+        help="target machine file (default: canonical name of this host)",
+    )
+    publish.add_argument("--json", action="store_true", help="emit the summary as JSON")
+    publish.set_defaults(func=_cli_publish)
+
     reduce_ = sub.add_parser("reduce", parents=[common], help="fold journal + checkpoint")
     reduce_.add_argument("--ledger", choices=list(LEDGERS), required=True)
     reduce_.add_argument("--events", help="journal export JSON (roosync_dashboard read)")
@@ -3160,7 +4360,34 @@ def build_parser() -> argparse.ArgumentParser:
         help="'<machine>#gpu<n>' for gpu-reservation (e.g. 'myia-ai-01#gpu2')",
     )
     check_pending.add_argument(
-        "--my-lane", help="the calling lane ('machine:workspace'); defaults to no ownership check",
+        "--my-lane",
+        help="the calling lane ('machine:workspace'); without it no ownership "
+        "can be proven and a held device is always HOLD (never OK_TO_RUN)",
+    )
+    check_pending.add_argument(
+        "--source",
+        choices=["auto", "git", "local"],
+        default="auto",
+        help=(
+            "where the verdict reads from: 'git' = branche dediee "
+            f"{GIT_LEDGER_BRANCH} (source PRIMAIRE) ; 'local' = snapshot local "
+            "(un CACHE, jamais une autorite, comportement historique) ; "
+            "'auto' (defaut) = git ; repli sur le cache local UNIQUEMENT si "
+            "le fetch a reussi et que la branche n'existe pas (rien n'a donc "
+            "jamais ete publie) ; fetch en echec = UNREADABLE (fail-CLOSED)"
+        ),
+    )
+    check_pending.add_argument(
+        "--repo",
+        help="git repository to read the ledger branch from (default: this script's repository)",
+    )
+    check_pending.add_argument(
+        "--remote",
+        default=GIT_LEDGER_REMOTE_DEFAULT,
+        help=(
+            "remote git qui porte la reference du registre GPU "
+            f"(defaut : {GIT_LEDGER_REMOTE_DEFAULT} -> {GIT_LEDGER_REPO_URL})"
+        ),
     )
     check_pending.add_argument(
         "--snapshot", help="path to a prior snapshot JSON; defaults to the local state dir",

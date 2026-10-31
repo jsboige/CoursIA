@@ -394,8 +394,30 @@ def missing_paths(cited: list[str], repo_root: Path) -> list[str]:
 def assess(number: int, repo_root: Path, repo: str) -> dict:
     payload = _gh_json(["api", f"repos/{repo}/issues/{number}"])
     if payload is None:
-        return {"number": number, "verdict": "unknown", "warning":
-                "gh unavailable or request failed", "refs": [], "warnings": []}
+        # Meme FORME que la sortie nominale : un consommateur ne doit pas
+        # avoir a connaitre deux contrats. Mesure #23406 (2026-10-30) :
+        # cette branche rendait cinq cles la ou `render_text` en lisait deux
+        # de plus (`title`, `reason`) -- l'organe mourait sur un KeyError au
+        # moment precis ou son verdict advisory manquait le plus (quota REST
+        # partage epuise, lecture en echec).
+        return {
+            "number": number,
+            "title": "",
+            "verdict": "unknown",
+            "reason": (
+                "la lecture GitHub a echoue (reseau, 403, payload illisible) "
+                "-- etat de l'umbrella INCONNU, ni « libre » : ce n'est ni un "
+                "SATURATED mesure ni un UNRESOLVED metier"
+            ),
+            "warning": "gh unavailable or request failed",
+            "refs": [],
+            "warnings": [],
+            "child_issues": 0,
+            "child_open": 0,
+            "child_flags": {},
+            "child_directions": {},
+            "cited_paths": [],
+        }
 
     body = payload.get("body") or ""
     numbers = extract_refs(body, number)
@@ -445,8 +467,15 @@ def assess(number: int, repo_root: Path, repo: str) -> dict:
 
 
 def render_text(result: dict) -> str:
-    lines = [f"#{result['number']}  {result['title']}"]
-    lines.append(f"  verdict: {result['verdict']} -- {result['reason']}")
+    # Lecture DEFENSIVE : un chemin de retour qui oublie une cle ne doit pas
+    # tuer le rendu. Mesure #23406 (2026-10-30) : la branche « lecture en
+    # echec » omettait `title` et `reason`, et `main()` imprimait le rendu
+    # AVANT d'emettre l'avertissement qu'il portait -- l'organe se taisait
+    # exactement quand il devait parler.
+    lines = [f"#{result.get('number', '?')}  {result.get('title') or ''}".rstrip()]
+    lines.append(
+        f"  verdict: {result.get('verdict', '?')} -- "
+        f"{result.get('reason') or ''}".rstrip())
     flags = result.get("child_flags") or {}
     directions = result.get("child_directions") or {}
     for ref in result.get("refs", []):
