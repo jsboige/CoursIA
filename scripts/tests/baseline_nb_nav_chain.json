@@ -1,13 +1,13 @@
 {
   "provenance": {
     "instrument": "2026-10-23.1",
-    "head": "b51fd44d61c8e51e130f6d291eab7e291903a8c9",
-    "branch": "main",
-    "origin_main": "b51fd44d61c8e51e130f6d291eab7e291903a8c9",
+    "head": "98dd6fd7509c33c722ea6201f6bb4a106e0eb97c",
+    "branch": "feature/20381-dynamics-escalier-nav",
+    "origin_main": "33e68ce4527f55fa575c5bd8f7d78a7839f44350",
     "behind_origin_main": 0,
-    "dirty": false,
-    "written_at": "2026-10-30T19:00:59Z",
-    "non_main": false
+    "dirty": true,
+    "written_at": "2026-10-31T02:44:38Z",
+    "non_main": true
   },
   "findings": [
     {
@@ -392,11 +392,6 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12e-Value-of-Information-Animat-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/IIT/ICT-Series"
-    },
-    {
-      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb",
       "series": "MyIA.AI.Notebooks/IIT/ICT-Series"
     },
@@ -724,16 +719,6 @@
       "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/QuantConnect/projects/Research-Executor/research_volatility_regime_ml.ipynb",
       "series": "MyIA.AI.Notebooks/QuantConnect/projects/Research-Executor"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/QuantConnect/research/research_st_reversal.ipynb",
-      "series": "MyIA.AI.Notebooks/QuantConnect/research"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/QuantConnect/research/research_turn_of_month.ipynb",
-      "series": "MyIA.AI.Notebooks/QuantConnect/research"
     },
     {
       "kind": "orphan_entry",
@@ -1304,7 +1289,7 @@
   "wrapped": [
     {
       "series": "MyIA.AI.Notebooks/Complexity",
-      "notebooks": 20
+      "notebooks": 21
     },
     {
       "series": "MyIA.AI.Notebooks/Compression",
@@ -1389,6 +1374,10 @@
     {
       "series": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline",
       "notebooks": 18
+    },
+    {
+      "series": "MyIA.AI.Notebooks/QuantConnect/research",
+      "notebooks": 22
     },
     {
       "series": "MyIA.AI.Notebooks/Search/Part2-CSP",
