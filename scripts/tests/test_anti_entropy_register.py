@@ -48,19 +48,24 @@ PADDING_SOIR = 813.0
 # 38 (instrument courant) a 776 (ancien instrument) fabricait un verdict.
 PADDING_REFERENCE = 776.0
 # La reference REBASEE : meme arbre, mesure par l'instrument courant
-# (`inventory_notebook_names.py` a d818b008b), sur un checkout ALIGNE sur
-# la revision nommee (`origin/main` a 6135a06), mesuree le 2026-10-31.
+# (`inventory_notebook_names.py` a 6144b71eb), sur un checkout ALIGNE sur
+# la revision nommee (`origin/main` a f798021d4), mesuree le 2026-10-31.
 #
-# 38 et non 44 : l'instrument prend sa LISTE de carnets dans la revision
+# 39 et non 44 : l'instrument prend sa LISTE de carnets dans la revision
 # nommee mais lit leur CONTENU dans l'arbre local. Sur un checkout aligne
-# il rend 38 ; sur un checkout en retard (clone principal a d9aee247) il
+# il rend 39 ; sur un checkout en retard (clone principal a d9aee247) il
 # rend 44 -- l'ecart est exactement la serie Wavelet renommee par
 # 6135a06. La reference est donc celle de l'ARBRE NOMME, mesuree dans
 # les conditions ou l'instrument mesure ce qu'il dit mesurer.
-PADDING_REFERENCE_REBASE = 38.0
+#
+# 39 et non 38 (le rebasage precedent) : #23625 a touche l'instrument
+# lui-meme, et l'ecart 38 -> 39 vient de l'ARBRE, pas de l'instrument --
+# mesure sur le meme arbre, l'ancien instrument (d818b008b) rend 39 lui
+# aussi.
+PADDING_REFERENCE_REBASE = 39.0
 # L'identite de l'instrument au moment du rebasage.
 INSTRUMENT_PADDING = ("scripts/notebook_tools/inventory_notebook_names.py"
-                       "@d818b008b5558d9a755c81d3d05e29ac23a9f823")
+                       "@6144b71ebfcd588d5347e16e7d2ba984dd6af2e5")
 
 
 def entree(cle="padding-nommage", sens="descend", cible=0.0):
@@ -766,7 +771,7 @@ def test_l_identite_de_l_instrument_suit_le_sha_du_script(monkeypatch):
     quand l'instrument change."""
     def faux_run(cmd, timeout=600):
         if "log" in cmd and "inventory_notebook_names.py" in " ".join(cmd):
-            return 0, "d818b008b5558d9a755c81d3d05e29ac23a9f823\n", ""
+            return 0, "6144b71ebfcd588d5347e16e7d2ba984dd6af2e5\n", ""
         return 1, "", ""
     monkeypatch.setattr(aer, "_run", faux_run)
     identite = aer.identite_instrument(
@@ -1158,10 +1163,26 @@ def test_les_points_historiques_declarent_leur_source():
         assert h.mesure_le
 
 
+def _ancetre_de(sha_a: str, sha_b: str) -> bool:
+    """`sha_a` est-il un ancetre de `sha_b` ? (`git merge-base`)"""
+    rc, _, _ = aer._run(["git", "-C", str(aer.RACINE),
+                          "merge-base", "--is-ancestor", sha_a, sha_b])
+    return rc == 0
+
+
 def test_l_identite_derivee_a_la_date_est_celle_des_points_declares():
-    """L'identite declaree d'un point doit etre celle que l'organe derive
-    LUI-MEME a la date du point. Sans cela, le groupe de la serie serait
-    faux — et le controle positif porterait sur un mensonge.
+    """L'identite declaree d'un point doit designer une version REELLE de
+    l'instrument : celle qui l'a produit, ou l'une de ses ancetres.
+
+    L'EGALITE stricte avec l'identite derivee a la date du point ne peut
+    pas etre exigee : git resout une date sans heure avec l'heure
+    COURANTE de l'horloge (cf le docstring de `identite_instrument_a`),
+    donc l'identite derivee d'un jour passe avance au fil des heures,
+    alors que l'identite declaree designe le PRODUISANT. Ce qui doit
+    etre vrai, c'est que l'identite declaree est un ancetre de l'identite
+    derivee — ou l'identite derivee elle-meme. Une identite declaree qui
+    n'est pas un ancetre, ou qui porte un autre script, est un mensonge :
+    c'est ce que le controle refuse.
 
     Le test est ignore sur un clone superficiel : l'historique de
     l'instrument n'y existe pas, et une identite non etablie ne prouve
@@ -1173,9 +1194,14 @@ def test_l_identite_derivee_a_la_date_est_celle_des_points_declares():
         if not derivee:
             pytest.skip("historique de l'instrument indisponible "
                         "(clone superficiel)")
-        assert derivee == h.instrument, (
-            f"l identite declaree ({h.instrument}) ne correspond pas a "
-            f"l identite derivee au {h.mesure_le} ({derivee})")
+        script_declare, _, sha_declare = h.instrument.rpartition("@")
+        script_derive, _, sha_derive = derivee.rpartition("@")
+        assert script_declare == script_derive, (
+            f"l identite declaree ({h.instrument}) ne porte pas le meme "
+            f"instrument que l identite derivee au {h.mesure_le} ({derivee})")
+        assert sha_declare == sha_derive or _ancetre_de(sha_declare, sha_derive), (
+            f"l identite declaree ({h.instrument}) n'est ni l'identite "
+            f"derivee au {h.mesure_le} ({derivee}) ni un ancetre de celle-ci")
 
 
 def test_le_commentaire_publie_la_serie(monkeypatch):

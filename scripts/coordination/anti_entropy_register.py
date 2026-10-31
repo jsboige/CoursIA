@@ -189,21 +189,37 @@ REGISTRE: tuple[Entree, ...] = (
         # checkout n'est pas sur la revision nommee -- sinon on publierait
         # un melange de deux arbres sous un verdict unique.
         #
+        # SECOND rebasage (2026-10-31, apres le merge de #23625) :
+        # #23625 a touche l'instrument LUI-MEME (6144b71eb), donc
+        # l'identite portee par la reference (d818b008b) n'etait plus celle
+        # de l'instrument courant. La comparaison tombait alors sur
+        # « reference transverse refusee » et le verdict DISPARAISSAIT.
+        # La reference est rebasee sur le nouvel instrument : 39, mesuree
+        # sur l'arbre aligne (`origin/main` a f798021d4).
+        #
+        # Pourquoi 39 et non 38 : l'ecart vient de l'ARBRE, pas de
+        # l'instrument. Mesure sur le meme arbre aligne, l'ANCIEN
+        # instrument (d818b008b) rend LUI AUSSI 39 : les deux instruments
+        # concordent, donc le delta 38 -> 39 dit qu'un carnet au nom
+        # ambigu de plus est apparu dans l'arbre nomme -- et non que
+        # l'instrument compte autrement.
+        #
         # Apres ce rebasage, la comparaison est « valeur du jour » contre
         # « valeur du jour du rebasage » : elle est STAGNE, ce qui est
         # exact. Elle redeviendra une comparaison de sept jours le
-        # 2026-11-06, quand une publication portant l'identite de
+        # 2026-11-07, quand une publication portant l'identite de
         # l'instrument aura sept jours : la reference sera alors relue
         # dans le commentaire publie, avec l'identite a cote de la valeur.
-        reference=Reference(38.0, "2026-10-31", "issue #23175",
+        reference=Reference(39.0, "2026-10-31", "issue #23175",
                             instrument=("scripts/notebook_tools/"
                                         "inventory_notebook_names.py"
-                                        "@d818b008b5558d9a755c81d3d05e29ac23a9f823")),
-        # Les points anterieurs de la serie, avec leur SOURCE. L'identite
-        # de l'instrument n'est PAS declaree ici : l'organe la derive a
-        # la date du point. C'est ce qui permet de lire la serie de
-        # l'instrument d'avant #23193 — celle-la meme qui vaut
-        # « RECULE » (776 -> 813 -> 840).
+                                        "@6144b71ebfcd588d5347e16e7d2ba984dd6af2e5")),
+        # Les points anterieurs de la serie, avec leur SOURCE et
+        # l'IDENTITE de l'instrument qui les a produits. L'identite
+        # declaree est celle du PRODUISANT : c'est elle qui fait le
+        # groupe de la serie (cf `serie_par_instrument`), et c'est elle
+        # qui permet de lire la serie de l'instrument d'avant #23193 —
+        # celle-la meme qui vaut « RECULE » (776 -> 813 -> 840).
         historique=(
             Reference(776.0, "2026-10-21",
                       "issue #23175, reference inscrite dans le corps",
@@ -216,6 +232,17 @@ REGISTRE: tuple[Entree, ...] = (
                       instrument=("scripts/notebook_tools/"
                                   "inventory_notebook_names.py"
                                   "@4ee8a58dfee62fc7e8cc3bff3329c17493822c01")),
+            # La reference precedente (38), mesuree le meme jour sur
+            # l'arbre aligne a 6135a06 avec l'instrument d818b008b. Elle
+            # reste dans la serie avec l'identite de son instrument : elle
+            # est un point de mesure reel, pas une valeur recopiee.
+            Reference(38.0, "2026-10-31",
+                      "issue #23175, reference rebasee precedente (arbre "
+                      "aligne a 6135a06, instrument d818b008b ; lane "
+                      "myia-po-2028:CoursIA-2)",
+                      instrument=("scripts/notebook_tools/"
+                                  "inventory_notebook_names.py"
+                                  "@d818b008b5558d9a755c81d3d05e29ac23a9f823")),
         ),
         note="`ambigu` = nom non parsé ou kernel non verifie.",
         # L'instrument prend sa LISTE de carnets dans `origin/main` et lit
@@ -341,12 +368,19 @@ def identite_instrument_a(commande, au: str) -> str:
     Sans elle, la serie historique disparaitrait — et avec elle, la seule
     comparaison qui dise si le chantier recule.
 
-    La resolution est au JOUR : `--before=<date>` prend le dernier commit
-    anterieur a minuit. Une mesure faite en fin de journee apres un
-    commit de la journee est donc attribuee a l'instrument d'avant ce
-    commit — c'est le cas de la mesure du 2026-10-30T23:46Z, faite
-    volontairement avec l'instrument anterieur a #23193. Le point declare
-    porte alors son identite, et l'ecart entre les deux est visible.
+    La resolution est au JOUR, par `git log --before=<date>`. Attention :
+    git interprete une date SANS heure avec l'HEURE COURANTE du moment
+    ou la commande est lancee (son `approxidate` remplit les champs
+    d'heure manquants par l'heure de l'horloge). L'identite derivee d'un
+    jour passe depend donc de l'heure a laquelle on interroge le depot :
+    le meme jour rend une identite differente apres le passage d'un
+    commit de ce jour-la. C'est pourquoi l'identite DECLAREE d'un point
+    — celle de l'instrument qui l'a produit — est verifiee contre
+    l'identite derivee par un rapport d'ANCETRE et non d'egalite :
+    l'instrument peut avoir evolue depuis la mesure, et c'est alors
+    l'ecart qui doit rester visible. Une identite declaree qui n'est
+    ni l'identite derivee ni un de ses ancetres — ou qui porte un
+    autre script — est un mensonge, et c'est ce que le controle refuse.
     """
     return _identite(commande, au)
 
