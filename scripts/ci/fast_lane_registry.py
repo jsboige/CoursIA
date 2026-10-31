@@ -2806,7 +2806,11 @@ TRANCHE30: list[Guard] = [
 # fichiers, aucun doublon ; controle positif rejoue en developpement
 # (record syncretique meme paire meme index, lane differente -> exit 1).
 # ---------------------------------------------------------------------------
-TRANCHE31: list[Guard] = [
+# Renumerote TRANCHE31 -> TRANCHE32 le 2026-10-31 (c2740) : `main` affectait
+# TRANCHE31 deux fois (versions de bibliotheques #23079, puis ce bloc #23627) ;
+# la seconde affectation ecrasait la premiere et le garde des versions ne
+# s'executait plus (incident #19374, meme classe).
+TRANCHE32: list[Guard] = [
     Guard(
         name="twin-index-collision-guard",
         source=FAST_LANE_NATIVE,
