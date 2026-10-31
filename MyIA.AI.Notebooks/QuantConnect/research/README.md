@@ -17,6 +17,8 @@ Recherche indépendante utilisant des données locales (yfinance, pandas, sklear
 | `research_btc_ml.ipynb` | Caractéristiques de prédiction ML BTC | (b) QuantBook QC Cloud | QC Cloud crypto (BTCUSDT Binance) |
 | `research_composite_ff_aw.ipynb` | Composite FamaFrench + AllWeather | (c) Standalone | yfinance |
 | `research_composite_mom_regime.ipynb` | Composite Momentum + Régime | (c) Standalone | yfinance |
+| `research_day_of_week.ipynb` | Effet jour de la semaine (DOW, calendrier) — verdict NO BEATS net de coûts | (c) Standalone | yfinance (SPY/QQQ/EFA) |
+| `research_fifty_two_week_high.ipynb` | Effet plus-haut 52 sem (George–Hwang 2004) : cross-section 20 grandes caps, verdict NO BEATS net de coûts | (c) Standalone | yfinance |
 | `research_iv_rank_strike_clusters.ipynb` | Facteurs IV-Rank et strike-availability (article QC #18766, verdicts NO-BEATS) | (c) Standalone | yfinance (VIX/SPY) + resultats QC Cloud mesures |
 | `research_m11ef_ensemble.ipynb` | Méthodes d'ensemble | (b) QuantBook QC Cloud | QC Cloud crypto (Bitstamp/Coinbase) |
 | `research_m12_har_rv_j.ipynb` | Modèle de volatilité HAR-RV-J (horaire) | (b) QuantBook QC Cloud | QC Cloud crypto (Hour) |
