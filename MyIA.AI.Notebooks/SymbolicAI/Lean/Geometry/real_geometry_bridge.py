@@ -7,7 +7,7 @@ des nombres **complexes**. La question qu'elle répond est « le théorème
 ``H ⟹ g`` tient-il ? », mais *sur les complexes*.
 
 Ce module apporte la même question **sur les réels**, résolue nativement par
-l'organe Z3 (théorie des corps ordonnés réels, ``QF_NIA``). Deux faces :
+l'organe Z3 (théorie des corps ordonnés réels, ``QF_NRA``). Deux faces :
 
 * :func:`decide_real` — valide-t-il sur ``R`` ? Trois verdicts :
   * ``valid``   — aucun contre-exemple réel (la réfutation est insatisfiable) ;
@@ -144,8 +144,13 @@ def _z3num_is_exact(v: "_z3.ExprRef") -> bool:
 
 
 def _make_solver(timeout_ms: Optional[int] = None) -> "_z3.Solver":
-    """Un solveur ``QF_NIA`` ; le timeout n'est posé que si l'API le permet."""
-    s = _z3.SolverFor("QF_NIA")
+    """Un solveur ``QF_NRA`` ; le timeout n'est posé que si l'API le permet.
+
+    Les variables du module sont des ``_z3.Real`` : la logique demandée est
+    l'arithmétique non linéaire **sur les réels**, pas ``QF_NIA`` (la même
+    théorie sur les entiers), qui nommerait un domaine étranger à celui décidé.
+    """
+    s = _z3.SolverFor("QF_NRA")
     if timeout_ms is not None:
         try:
             s.set_option("timeout", int(timeout_ms))
