@@ -2793,10 +2793,13 @@ TRANCHE30: list[Guard] = [
 # collision contre main seul, PR BLOCKED, donc invisible aux balayages qui
 # n'enumere que les candidates CLEAN.
 #
-# `--in-tree` ajoute le doublon INTRA-revision au verdict bloquant : aucun
-# test pytest ne porte ce predicat (le nom cite par la docstring de l'organe
-# n'existe pas ; scripts/notebook_tools/tests/ couvre l'allocation du
-# prochain index, pas l'unicite de l'arbre).
+# `--gate` (#23208) est le mode PORTE de l'organe : bloque une collision
+# inter-revisions et un doublon intra-revision que la base ne porte PAS.
+# `--in-tree` (affectation initiale #23627) bloquait aussi les doublons
+# herites de la base, donc la PR qui les repare ne pouvait jamais passer
+# (mesure c2740 : 4 doublons deja sur main, rouge sur la PR d'union qui les
+# renumerote). L'unicite de l'arbre reste portee par le controle positif
+# `test_le_registre_de_la_revision_testee_ne_porte_aucun_doublon_intra_revision`.
 #
 # Portee : l'organe ne lit QUE scripts/notebook_tools/twin_pairs.d (ls-tree
 # de ce chemin, glob *.yaml par paire) -- pas de NOTEBOOK_GLOBS : renommer
@@ -2806,7 +2809,11 @@ TRANCHE30: list[Guard] = [
 # fichiers, aucun doublon ; controle positif rejoue en developpement
 # (record syncretique meme paire meme index, lane differente -> exit 1).
 # ---------------------------------------------------------------------------
-TRANCHE31: list[Guard] = [
+# Renumerote TRANCHE31 -> TRANCHE32 le 2026-10-31 (c2740) : `main` affectait
+# TRANCHE31 deux fois (versions de bibliotheques #23079, puis ce bloc #23627) ;
+# la seconde affectation ecrasait la premiere et le garde des versions ne
+# s'executait plus (incident #19374, meme classe).
+TRANCHE32: list[Guard] = [
     Guard(
         name="twin-index-collision-guard",
         source=FAST_LANE_NATIVE,
@@ -2818,7 +2825,7 @@ TRANCHE31: list[Guard] = [
         ],
         argv=[
             "python", "scripts/notebook_tools/check_twin_index_collisions.py",
-            "--base", "{base_ref}", "--head", "HEAD", "--in-tree",
+            "--base", "{base_ref}", "--head", "HEAD", "--gate",
         ],
         blocking=True,
         absorbed=True,
