@@ -3652,6 +3652,81 @@ def test_orphan_report_positive_control_same_repo_untagged_stays(monkeypatch):
     assert [r["number"] for r in pig.unattributed_blocked_prs()] == [21]
 
 
+# --- #23732 : une PR de TP STUDIANTE relayee n'est pas du travail de lane ----
+# Meme classe que #22362 ci-dessus, prise par l'autre bout : le groupe n'a pas
+# pu ouvrir de PR depuis son fork, l'enseignant a pousse le carnet LUI-MEME
+# dans `jsboige/CoursIA`. `isCrossRepository` vaut alors `False`, donc
+# l'exemption fork ne les attrape pas -- mesure du 2026-10-31 : le tirage
+# imprimait « Portee : 2 autre(s) PR(s) bloquee(s) (#22969, #22991) ... Leur
+# tag manquant est lui-meme le defaut a corriger » sur deux rendus dont le
+# corps dit « Comme pour toute PR de TP, le tag Grain et les checklists
+# internes ne s'appliquent pas » (student-pr-reviews.md).
+# Le predicat est la DECLARATION en PREMIERE LIGNE du corps, et rien d'autre :
+# une PR de lane qui mentionne un TP plus bas doit rester dans la file
+# (controle negatif ci-dessous). Le sens dangereux -- retirer de la file une
+# vraie PR de flotte a reparer -- est donc ferme par construction.
+
+# Premiere ligne reelle des deux corps mesures (verbatim, tronquee au premier
+# point pour ne pas figer une phrase qui n'a pas de role dans le predicat).
+REAL_TP_HEAD = ("PR de TP étudiante **relayée par l'enseignant**. Le groupe "
+                "n'a pas réussi à ouvrir la PR depuis son fork.")
+
+
+def test_is_student_tp_pr_reads_the_declaration_line():
+    """Predicat : la premiere ligne non vide, et rien d'autre."""
+    assert pig.is_student_tp_pr({"body": REAL_TP_HEAD + "\n\n## Summary\n"}) is True
+    # Decorations markdown usuelles devant la declaration : toujours en tete.
+    assert pig.is_student_tp_pr({"body": "> " + REAL_TP_HEAD}) is True
+    assert pig.is_student_tp_pr({"body": "\n\n  " + REAL_TP_HEAD}) is True
+    assert pig.is_student_tp_pr({"body": "PR de TP\n"}) is True
+    # Corps vide, absent, ou sans declaration : pas un rendu de TP.
+    assert pig.is_student_tp_pr({"body": ""}) is False
+    assert pig.is_student_tp_pr({"body": None}) is False
+    assert pig.is_student_tp_pr({}) is False
+    assert pig.is_student_tp_pr({"body": "## Summary\n\nPR de TP etudiante\n"}) is False
+    # Une PR de lane ordinaire ne matche jamais.
+    assert pig.is_student_tp_pr({
+        "body": "Grain: MED/guard -- lane myia-po-2028:CoursIA-2\n"}) is False
+
+
+def test_student_tp_pr_excluded_from_orphans_report(monkeypatch):
+    """#23732, controle NEGATIF : un rendu de TP relaye bloquee sort de la file.
+
+    Population du cas reel : untagged, non-draft, `PR gate` rouge,
+    `isCrossRepository: False` (poussee dans le depot). Sur le code d'avant,
+    elle etait listee -- ce test est donc rouge avant le fix, et vert apres.
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [
+        _untagged_pr(22969, branch="tp1-mis-g01-search02b-networkx",
+                     body=REAL_TP_HEAD + "\n\n## Summary\n\n- Cours : EPF\n"),
+        _untagged_pr(22991, branch="tp1-mis-g03-search01-exercice2",
+                     body=REAL_TP_HEAD + "\n\n## Summary\n\n- Cours : EPF\n"),
+    ], {22969: dict(red, isCrossRepository=False),
+        22991: dict(red, isCrossRepository=False)})
+    assert pig.unattributed_blocked_prs() == []
+
+
+def test_orphan_report_positive_control_tp_mention_below_first_line_stays(
+        monkeypatch):
+    """#23732, controle POSITIF : une PR de lane qui PARLE d'un TP reste listee.
+
+    Les DEUX PRs sont dans la meme population et bloquent pour la meme cause ;
+    seule la premiere ligne differe. Un predicat qui chercherait `PR de TP`
+    n'importe ou dans le corps -- ou qui viderait la file (always-True) --
+    passerait le controle negatif ci-dessus mais rougirait ici.
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [
+        _untagged_pr(30, branch="feature/revue-tp",
+                     body="## Summary\n\nRevue d'une PR de TP etudiante.\n"),
+        _untagged_pr(31, branch="feature/autre",
+                     body="Note sur le rendu. Une PR de TP a ete relayee.\n"),
+    ], {30: dict(red, isCrossRepository=False),
+        31: dict(red, isCrossRepository=False)})
+    assert [r["number"] for r in pig.unattributed_blocked_prs()] == [30, 31]
+
+
 # --- #17474 : le plafond de `fetch_open_prs` amputait la traine -------------
 # `gh pr list` rend du plus RECENT au plus ancien (mesure firsthand du
 # 2026-09-23 sur ce depot : #17565 `2026-09-23T13:29:52Z` en tete, #15942
