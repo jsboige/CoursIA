@@ -98,6 +98,13 @@ WORKFLOW_COVERAGE: dict[str, list[str]] = {
         # local <-> CI est un invariant de ce garde (#22735).
         "scripts/ci/tests",
         "MyIA.AI.Notebooks/GameTheory/tests",
+        # ICT-Series scripts/tests : dir entier (#23730, classe #22735) —
+        # 45 tests sur 3 fichiers (protocol, records, reward_dynamics),
+        # hermétiques (stdlib, 0,2 s mesuré). La suite était collectée par
+        # ict-tests.yml en cwd local mais absente des testpaths de la racine
+        # ET de la jambe CPU : câblée des trois côtés dans la même PR
+        # (pytest.ini testpaths, liste pytest de ce workflow, ce dict).
+        "MyIA.AI.Notebooks/IIT/ICT-Series/scripts/tests",
         "MyIA.AI.Notebooks/QuantConnect/scripts/tests",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_bg_tree_lock.py",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_forensic_guards.py",
