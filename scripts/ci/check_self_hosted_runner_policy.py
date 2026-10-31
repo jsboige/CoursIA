@@ -746,6 +746,23 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "dotnet-ArgumentAnalysis.yml",
     "dotnet-OrphanApps.yml",
     "dotnet-Shared.Tests.yml",
+    # 2026-10-31 (#23359, lane myia-po-2028:CoursIA-2) : meme famille que
+    #   `gametheory-tests.yml` ci-dessus -- une suite de tests dediee, cablee
+    #   par PR, qui n'avait aucune jambe self-hosted. Le workflow NEUF
+    #   `geometry-tests.yml` est arrive apres que le cliquet (#23053) a ete
+    #   ecrit : son job etait nu sur `ubuntu-latest` (violation
+    #   `HOSTED_PR_JOB_UNEXCEPTED`). Il est converti dans la meme PR en
+    #   forme hybride de debordement (meme expression que
+    #   `gametheory-tests.yml`, meme `if:` anti-fork conserve, meme
+    #   `timeout-minutes: 10`) et entre ici dans l'allowlist -- une forme
+    #   hybride dans un workflow NON allowliste est refusee par construction
+    #   (`WORKFLOW_NOT_ALLOWED`, cf. le test
+    #   `test_hybrid_runs_on_in_non_allowlisted_workflow_is_rejected`).
+    #   La variable vaut `false` au 2026-10-31 : le routage est donc INCHANGE
+    #   (100 % heberge) -- la conversion retire la violation sans changer ou
+    #   le job s'execute. Rollback = variable a `false` ou supprimee, sans
+    #   toucher les fichiers.
+    "geometry-tests.yml",
     "gametheory-tests.yml",
     "genai-helpers-tests.yml",
     # 2026-10-27 (#22937 vague 2, lane myia-ai-01:CoursIA-2) : meme forme
