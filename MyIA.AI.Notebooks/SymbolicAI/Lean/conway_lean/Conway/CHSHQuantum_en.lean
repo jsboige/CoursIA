@@ -71,13 +71,12 @@ separate from the discovery path, and both are readable here.
 - `Lean-13-Kochen-Specker.ipynb`: another obstruction to classical agreement,
   but combinatorial in nature (vector colorability) rather than analytic like
   Tsirelson's bound.
-- `Lean-16f-Conway-Free-Will-Theorem.ipynb`: the Conway-Kochen free will
+- `Lean-16c-Conway-Free-Will-Theorem.ipynb`: the Conway-Kochen free will
   theorem, which exploits the same frontier between classical and quantum
   correlations.
-- `Lean-13b-CHSH-Tsirelson-Native.ipynb`: the native notebook **planned** for this
-  slice (Epic #13106), which will execute the statements of this module under the
-  `lean4-wsl` kernel. It is not delivered yet: this reference is prospective, not
-  an existing file.
+- `Lean-13b-CHSH-Tsirelson-Native.ipynb`: the native notebook for this slice
+  (Epic #13106), which executes the statements of this module under the
+  `lean4-wsl-conway` kernel.
 -/
 
 import Conway.CHSH_en

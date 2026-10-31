@@ -92,9 +92,10 @@ contexts of size 4 with the Cabello overlap, no {0,1}-coloring
 satisfying "exactly one 1 per context" exists.
 
 The orthogonality of each context is implicit in the index encoding:
-`contextMembers` reflects the Cabello table; verifying the inner
-products vanish is a separate (computational) lemma left for the
-geometric formalization (Pilier 2).
+`contextMembers` reflects the Cabello table. Verifying that the inner
+products vanish is formalized nowhere in this lake: it is the physical
+premise that Pilier 2 takes as a hypothesis (the SPIN axiom of
+`FreeWillTheorem.lean` assumes it, it does not prove it).
 -/
 
 /-- An abstract index for the 18 distinct vectors. -/
@@ -263,8 +264,9 @@ If the response were a deterministic function of hidden variables,
 it would define a valid {0,1}-coloring — contradicting KS.
 Hence the particle's response cannot be a function of the past alone.
 
-This connection will be formalized in Pilier 2 (FreeWillTheorem.lean),
-together with the TWIN and MIN axioms.
+This connection is formalized in Pilier 2: `FreeWillTheorem_en.fwt_single_particle`
+derives `¬ SatisfiesSPIN` from `kochen_specker`, and `free_will_theorem` adds
+the TWIN and MIN axioms on top.
 -/
 
 end Conway_en

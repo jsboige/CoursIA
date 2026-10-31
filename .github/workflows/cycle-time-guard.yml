@@ -64,20 +64,34 @@ concurrency:
 
 jobs:
   cycle_time:
-    # `ubuntu-latest` (runner heberge par GitHub, ephemere) et NON la jambe
-    # Linux auto-hebergee. Deux raisons, l'une de fond l'une de collision :
-    #   (a) FOND -- la politique d'isolation (`scripts/ci/
-    #       check_self_hosted_runner_policy.py`) n'a de sens que pour un
-    #       runner QUI POSSEDE LES CREDENTIELS DU CLUSTER ; un runner
-    #       GitHub ephemere n'en a pas, et le garde est un lecteur pur
-    #       (stdlib, aucun secret, aucune ecriture, 0,7 s de scan).
-    #   (b) COLLISION -- l'allowlist de cette politique est un fichier
-    #       revendique par des PRs ouvertes d'autres lanes (#22351,
-    #       #22244) : l'y inscrire aurait transforme une collision de
-    #       chemins en conflit de merge sur un fichier partage.
-    # Le rollback du depot (cf `always-on-guards.yml` l.126) est exactement
-    # ce couple : `runs-on: ubuntu-latest` + pas d'allowlist.
-    runs-on: ubuntu-latest
+    # 2026-10-31 (#23053, cliquet de politique) : FORME HYBRIDE DE
+    # DEBORDEMENT -- PR meme-depot ET vars.CI_OVERFLOW_LOCAL == 'true' ->
+    # jambe Linux locale ; tout le reste (variable absente ou fausse, forks,
+    # push, dispatch) retombe sur `ubuntu-latest`.
+    #
+    # **La variable vaut `false` au 2026-10-31** : le routage est donc
+    # IDENTIQUE a celui d'avant cette conversion (100 % heberge, lecture pure
+    # en 0,7 s) -- la conversion retire la violation `HOSTED_PR_JOB_UNEXCEPTED`
+    # SANS changer ou le job s'execute. Bascule : `gh variable set
+    # CI_OVERFLOW_LOCAL --body true|false --repo jsboige/CoursIA`. Retour
+    # arriere = variable a `false` ou supprimee, sans toucher ce fichier.
+    #
+    # Ce qui change par rapport au choix d'origine (et comment il tient) :
+    #   (a) FOND -- l'argument tient toujours : la jambe locale est le
+    #       conteneur ephemere SANS credentials du cluster, et le garde est
+    #       un lecteur pur (stdlib, aucun secret, aucune ecriture, 0,7 s de
+    #       scan) ; la garde anti-fork vit DANS l'expression `runs-on`, donc
+    #       un code de fork n'atteint jamais la jambe locale.
+    #   (b) COLLISION -- perime : l'allowlist de la politique est
+    #       `scripts/ci/check_self_hosted_runner_policy.py`, fichier que la PR
+    #       #23063 modifie DEJA (elle porte le cliquet) ; l'y inscrire
+    #       n'ajoute donc aucune collision de chemins nouvelle. #22244 touche
+    #       le meme fichier : c'est une ligne, le conflit se resout par
+    #       rebase.
+    # L'ABSORPTION dans le job always-on (un seul slot) reste un suivi, pas
+    # une excuse (cf `always-on-guards.yml` l.126) : elle se fera quand les
+    # PRs qui revendiquent le fichier seront mergees.
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
     # Garde same-repo universelle (#13874) : sur `pull_request` elle laisse
     # passer les PRs du depot et ecarte les PRs de fork (aucun code de fork
     # n'atteint le runner) ; sur `push` / `workflow_dispatch`,
