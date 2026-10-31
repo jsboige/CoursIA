@@ -39,7 +39,7 @@ CoursIA copy
 | `_delegating_selection.py` (204 lines) | `argumentation_analysis/core/strategies.py` (L134-L246, classe `DelegatingSelectionStrategy`) | ecfd9b9c (2026-09-29, ref pinned par issue #18393, NOT-VERBATIM : 1 token `ProjectManager` -> `ProjectManagerAgent` documente en en-tete du fichier, portee 3 PR #20338 review) |
 | `_file_loaders.py` (213 lines) | `argumentation_analysis/core/utils/file_loaders.py` | a8025f60 (2026-07-02, #23633 Volet B etape 4 -- helper amont de `_informal_definitions.py`, section dediee ci-dessous) |
 | `_taxonomy_loader.py` (360 lines) | `argumentation_analysis/utils/taxonomy_loader.py` | a8025f60 (2026-07-02, #23633 Volet B etape 4 -- helper amont de `_informal_definitions.py`, section dediee ci-dessous) |
-| `_epita_paths.py` (NOT-VERBATIM : appel module-level desactive, voir « Adaptations locales declarees ») | `argumentation_analysis/paths.py` | a8025f60 (2026-07-02, #23633 Volet B etape 4 -- helper amont de `_informal_definitions.py` ; nom `_epita_paths` : collision avec le `_paths.py` natif CoursIA) |
+| `_epita_paths.py` (NOT-VERBATIM : appel module-level desactive + `DATA_DIR` sur la racine APPLICATION, voir « Adaptations locales declarees ») | `argumentation_analysis/paths.py` | a8025f60 (2026-07-02, #23633 Volet B etape 4 -- helper amont de `_informal_definitions.py` ; nom `_epita_paths` : collision avec le `_paths.py` natif CoursIA) |
 | `_prompts.py` (163 lines) | `argumentation_analysis/agents/core/informal/prompts.py` | a8025f60 (2026-07-02, #23633 Volet B etape 4 -- import relatif litteral `from .prompts import ...` de `_informal_definitions.py`, mesure au scoping : aucun sibling n'existait) |
 
 Package `ai_shield/` (garde-fous de pipeline LLM) — porte dans le cadre de l'issue #23163
@@ -75,7 +75,7 @@ signale par la mention NOT-VERBATIM.
 | Fichier | Nature de l'adaptation | Pourquoi |
 |---|---|---|
 | `_delegating_selection.py` | 1 jeton : `ProjectManager` -> `ProjectManagerAgent` | L'API amont a change de nom ; la correction est cosmetique sur la ligne concernee. |
-| `_epita_paths.py` (#23633) | 1 appel module-level commente (`ensure_directories_exist()`, derniere ligne amont) + 3 lignes de commentaire ; la fonction reste byte-identique et invoquable | L'appel amont cree 8 repertoires vides a CHAQUE import, dont `Argument_Analysis/libs/tweety` retire par l'arbitrage #23109 (duplication des libs natives). Sans la deviation, `import argumentation_lib` aurait un effet de bord d'ecriture sur l'arbre a chaque processus. |
+| `_epita_paths.py` (#23633) | **Deux** deviations declarees : (1) 1 appel module-level commente (`ensure_directories_exist()`, derniere ligne amont) + 3 lignes de commentaire ; (2) `DATA_DIR = PROJECT_ROOT_DIR / DATA_DIR_NAME` au lieu de `ROOT_DIR / DATA_DIR_NAME`. La fonction `ensure_directories_exist()` et les autres constantes restent byte-identiques. | (1) L'appel amont cree 8 repertoires vides a CHAQUE import, dont `Argument_Analysis/libs/tweety` retire par l'arbitrage #23109 (duplication des libs natives). Sans la deviation, `import argumentation_lib` aurait un effet de bord d'ecriture sur l'arbre a chaque processus. (2) La taxonomie **suivie** de CoursIA est `Argument_Analysis/data/argumentum_fallacies_taxonomy.csv` ; avec la valeur amont, `_taxonomy_loader.TAXONOMY_FILE` et `_informal_definitions.DEFAULT_TAXONOMY_PATH` visent `argumentation_lib/data/` (absent du disque), et `get_taxonomy_path()` y cree le dossier puis **telecharge** la taxonomie depuis la branche `master` d'Argumentum -- non epinglee, `requests.get(...)` **sans `timeout`** : l'ensemble d'etiquettes de l'EPIC #10355 pouvait donc changer en amont sans aucun signal. Une seule constante couvre les deux consommateurs vivants (`_taxonomy_loader.py:53`, `_informal_definitions.py:126`) ; `EXTRACT_SOURCES_FILE`, le troisieme usage de `DATA_DIR`, n'a **aucun** appelant (recherche de code : 0). |
 | `_adf_handler.py` | Adaptation d'API (4 derives mesurees) + vocabulaire de conditions etendu (`or:`, `and:`) + gate-out explicite sur `parse_adf_file` + **import optionnel de `jpype`** + **limite de composition a un seul niveau** | L'organe ADF n'etait exerce par **aucun** carnet de la serie (organe orphelin) et il etait **casse** contre le jar reellement vendu `MyIA.AI.Notebooks/SymbolicAI/Tweety/libs/adf-1.30.jar` : surcharge `builder.add(arg)` inexistante, conditions de base devenues des enumerations, liens du graphe exiges par le builder, reasoners ADF SAT-based sans solveur. Les quatre derives, leur symptome mesure et le correctif applique sont detailes dans l'en-tete du fichier. La lecture de fichier KPPADF n'est pas cablee contre ce jar : `parse_adf_file` leve une erreur explicite plutot que de laisser passer une derivation silencieuse. **Adaptation 5 (2026-10-29)** : `import jpype` est rendu optionnel — le module s'importe sans JPype, seule son *instanciation* (qui amorce la JVM) est refusee, avec un message qui nomme la dependance et la maniere de l'installer. Motif mesure : le job CI `Scripts Tests (CPU)` cible `Argument_Analysis` dans sa liste pytest mais ne declare pas `jpype` dans ses installations ; l'import au niveau module echouait donc a la **collecte** (`ModuleNotFoundError`) et faisait echouer le job entier (21 846 tests verts + 1 erreur de collecte, exit 1). Meme convention que le paquet lui-meme (`argumentation_lib/__init__.py`, dont `get_adf_handler_symbol` degrade deja gracieusement). **Limite de composition** : `or:` / `and:` acceptent exactement deux conditions **simples** — une condition composite ne peut pas en contenir une autre ; le message d'erreur nomme la limite et donne la forme acceptee. Le carnet `Argumentation-03d-ADF-Semantiques-Python.ipynb` exerce l'organe repare et rend ses sorties. |
 
 Tranche T3 -- privacy / export (`opaque_id`, `sanitize_state`, `pattern_mining`)
@@ -1005,7 +1005,7 @@ couches 1 bis et 2) :
 |---|---|---|
 | `_file_loaders.py` | `argumentation_analysis/core/utils/file_loaders.py` | body SHA1=`a07a5e1b03bae17c33572d387890812173370ce5` (213L, LF, VERBATIM integrale) |
 | `_taxonomy_loader.py` | `argumentation_analysis/utils/taxonomy_loader.py` | body SHA1=`378d9632aa388905ecbe406c65a4062b58006e33` (360L, LF, VERBATIM integrale ; importe `argumentation_analysis.paths` -- resolu par la map) |
-| `_epita_paths.py` | `argumentation_analysis/paths.py` | body SHA1 apres deviation declaree=`6149f243ed3494c8872d5bd0154920257193d29b` (102L vs 100L amont ; amont sha1=`becf6a571906aa6a25b4475a3e32b49c04a2fd7e`, LF) ; deviation = appel module-level `ensure_directories_exist()` desactive (table « Adaptations locales declarees ») ; nom `_epita_paths` et non `_paths` : collision avec le module natif CoursIA `_paths.py` |
+| `_epita_paths.py` | `argumentation_analysis/paths.py` | body SHA1 apres deviations declarees=`69bd69df748b0b52f054a6f880dc0b5797b89b8e` (103L vs 100L amont ; amont sha1=`becf6a571906aa6a25b4475a3e32b49c04a2fd7e`, LF) ; decoupe du « body » = contenu apres le bloc de commentaires de tete (convention verifiee contre `_taxonomy_loader.py` et `_prompts.py`, et contre la valeur `6149f243...` du fichier a HEAD avant #23669) ; deviations = appel module-level `ensure_directories_exist()` desactive **et** `DATA_DIR` sur la racine application (table « Adaptations locales declarees ») ; nom `_epita_paths` et non `_paths` : collision avec le module natif CoursIA `_paths.py` |
 | `_prompts.py` | `argumentation_analysis/agents/core/informal/prompts.py` | body SHA1=`b1791616e9ba2095a1e791d40a19307f0f5ef562` (163L, LF, VERBATIM integrale) |
 
 **Le shim** : extension de `_epita_vendor_shim.py` (pattern #18391, meme mecanisme
@@ -1038,6 +1038,20 @@ Temoin negatif : sans le shim, l'import direct du detecteur leve toujours
 `ModuleNotFoundError: No module named 'argumentation_lib.informal_definitions'`
 (le shim porte bien la charge). Portee = l'IMPORT (precedent #18391 : l'execution
 LLM-backed de `setup_informal_kernel` exige un endpoint, hors grain).
+
+**Deviation (2) de `_epita_paths` -- temoin ne rouge (#23669)** : defaut mesure par
+`myia-ai-01` sur la PR #23669 elle-meme. Avec la valeur amont de `DATA_DIR`, la
+chaine `InformalAnalysisPlugin(kernel)` -> `get_taxonomy_path()` ne trouvait pas la
+taxonomie suivie et partait en telechargement de la branche `master` d'Argumentum,
+sans epinglage ni `timeout`. Preuve du temoin, mesuree le 2026-10-31 sur po-2028 :
+`tests/test_informal_runtime_shim.py` porte deux cas qui **rougissent** sous la
+valeur amont et **passent** sous la valeur vendue -- `DATA_DIR` remis a
+`ROOT_DIR / DATA_DIR_NAME` dans une copie de travail restauree ensuite par
+empreinte SHA256, `pytest` rend `2 failed` avec, dans la trace,
+`get_taxonomy_path() ... requests.get(TAXONOMY_URL)` intercepte par le `monkeypatch`
+du test ; sous la valeur vendue, `418 passed, 10 skipped, 0 failed` sur la suite
+`Argument_Analysis/tests` entiere. Aucun dossier `argumentation_lib/data/` cree
+dans les deux cas de la version vendue.
 
 What this NOTICE does NOT cover
 -------------------------------

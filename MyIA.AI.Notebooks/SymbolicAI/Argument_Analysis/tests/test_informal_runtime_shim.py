@@ -25,6 +25,12 @@ Les criteres d'acceptance de l'issue, un test par case :
    mesuree bout-en-bout : voir NOTICE-EPITA section #23633.
 6. La deviation declaree de `_epita_paths.py` fait son office : l'import ne
    recree PAS `Argument_Analysis/libs/` (retire par l'arbitrage #23109).
+7. La **seconde** deviation declaree (2) de `_epita_paths.py` fait son office :
+   `DATA_DIR` vise `Argument_Analysis/data` (la taxonomie suivie), donc
+   `get_taxonomy_path()` rend le CSV du depot **sans appel reseau** et sans creer
+   `argumentation_lib/data/`. Defaut mesure sur la PR #23669 par `myia-ai-01` :
+   avec la valeur amont, ce chemin telecharge la taxonomie depuis la branche
+   `master` d'Argumentum (non epinglee, `requests.get(...)` sans `timeout`).
 """
 from __future__ import annotations
 
@@ -338,13 +344,73 @@ def test_import_epita_paths_ne_recree_pas_libs():
 
 
 # ---------------------------------------------------------------------------
-# Bonus contrat : DATA_DIR vendo reste dans le perimetre du paquet
+# Acceptance 7 : la deviation declaree (2) de _epita_paths -- DATA_DIR
 # ---------------------------------------------------------------------------
-def test_data_dir_amont_dans_le_perimetre_du_paquet(informal_shim_env):
+def test_data_dir_pointe_la_racine_application(informal_shim_env):
     informal_shim_env.get_informal_definitions_symbols()
     from argumentation_analysis.paths import DATA_DIR
 
-    # Semantique amont vendoee : DATA_DIR = ROOT_DIR/"data" ou ROOT_DIR est le
-    # repertoire du module paths -> argumentation_lib/data (pas d'ecriture hors
-    # perimetre du paquet au seul niveau de la constante).
-    assert str(DATA_DIR).replace("\\", "/").endswith("argumentation_lib/data")
+    # Deviation #23633 (2) : DATA_DIR = PROJECT_ROOT_DIR/"data" =
+    # Argument_Analysis/data, la ou CoursIA SUIT sa taxonomie. La valeur amont
+    # (argumentation_lib/data) fait tomber les deux consommateurs du chargeur sur
+    # un repertoire absent, et get_taxonomy_path() part alors en telechargement
+    # non epingle (voir test_get_taxonomy_path_ne_telecharge_pas).
+    assert str(DATA_DIR).replace("\\", "/").endswith("Argument_Analysis/data"), (
+        f"DATA_DIR = {DATA_DIR} : la deviation declaree (2) de _epita_paths.py "
+        "n'est pas appliquee"
+    )
+
+    import argumentation_analysis.utils.taxonomy_loader as loader
+
+    tracked = os.path.join(
+        _ARG_ANALYSIS_DIR, "data", "argumentum_fallacies_taxonomy.csv"
+    )
+    assert os.path.isfile(tracked), f"la taxonomie suivie de CoursIA manque : {tracked}"
+    assert os.path.samefile(str(loader.TAXONOMY_FILE), tracked), (
+        f"TAXONOMY_FILE = {loader.TAXONOMY_FILE} ne vise pas la taxonomie suivie "
+        f"({tracked}) : le chargeur cherchera au mauvais endroit"
+    )
+
+
+def test_get_taxonomy_path_ne_telecharge_pas(informal_shim_env, monkeypatch):
+    """Temoin ne rouge : reseau intercepte, aucun appel, aucun dossier cree.
+
+    Avant la deviation (2), ce test echoue : TAXONOMY_FILE tombe dans
+    argumentation_lib/data/ (absent), get_taxonomy_path() y cree le dossier puis
+    telecharge la taxonomie depuis la branche `master` d'Argumentum -- non
+    epinglee, et `requests.get(...)` SANS `timeout`. L'ensemble d'etiquettes de
+    l'EPIC #10355 pouvait donc changer en amont sans aucun signal.
+    """
+    informal_shim_env.get_informal_definitions_symbols()
+    from argumentation_analysis.utils.taxonomy_loader import get_taxonomy_path
+
+    calls = []
+    requests_mod = sys.modules.get("requests")
+    if requests_mod is None:
+        try:
+            import requests as requests_mod  # noqa: F401
+        except ImportError:  # pragma: no cover - env sans requests
+            requests_mod = None
+    if requests_mod is not None:
+
+        def _forbid(*args, **kwargs):
+            calls.append((args, kwargs))
+            raise AssertionError(
+                "get_taxonomy_path() a tente un appel reseau : la taxonomie "
+                "suivie n'a pas ete trouvee a l'emplacement attendu"
+            )
+
+        monkeypatch.setattr(requests_mod, "get", _forbid)
+
+    package_data_dir = os.path.join(_ARG_ANALYSIS_DIR, "argumentation_lib", "data")
+    existed_before = os.path.isdir(package_data_dir)
+
+    path = get_taxonomy_path()
+
+    assert calls == [], f"appels reseau interdits par le contrat : {calls}"
+    assert os.path.isfile(path), f"get_taxonomy_path() rend un chemin absent : {path}"
+    assert os.path.basename(str(path)) == "argumentum_fallacies_taxonomy.csv"
+    assert os.path.isdir(package_data_dir) == existed_before, (
+        "get_taxonomy_path() a cree argumentation_lib/data/ : il cherche au "
+        "mauvais endroit (deviation (2) cassee)"
+    )

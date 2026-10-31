@@ -11,19 +11,36 @@
 # Verbatim import rationale: see NOTICE-EPITA at the root of this directory.
 #
 # Verbatim integrity: file content below this header is byte-for-byte identical
-# to the upstream source at the cited commit. No CoursIA modification.
+# to the upstream source at the cited commit, EXCEPT the deviations declared in
+# the NOT-VERBATIM block below (two of them).
 #
 # RUNTIME WIRING (#23633, Volet B etape 4) : ce module est enregistre sous son
 # nom amont par `_epita_vendor_shim.install_informal_runtime_shim()` pour que
 # les imports litteraux de `_informal_definitions.py` (verbatim, non modifiable)
 # resolvent au runtime.
 #
-# NOT-VERBATIM (deviation declaree, #23633 -- precedent _delegating_selection.py) :
-# l'appel module-level amont `ensure_directories_exist()` (derniere ligne du fichier
-# upstream) est DESACTIVE dans cette copie : il recreerait `Argument_Analysis/libs/tweety`
-# (repertoire retire par l'arbitrage #23109) et six autres repertoires vides a CHAQUE
-# import de argumentation_lib via le shim. La FONCTION reste byte-identique et
-# invoquable ; seul l'appel automatique a l'import est coupte. Voir NOTICE-EPITA.
+# NOT-VERBATIM -- DEUX deviations declarees (#23633, precedent _delegating_selection.py) :
+#
+# (1) L'appel module-level amont `ensure_directories_exist()` (derniere ligne du
+#     fichier upstream) est DESACTIVE dans cette copie : il recreerait
+#     `Argument_Analysis/libs/tweety` (repertoire retire par l'arbitrage #23109) et six
+#     autres repertoires vides a CHAQUE import de argumentation_lib via le shim. La
+#     FONCTION reste byte-identique et invoquable ; seul l'appel automatique a l'import
+#     est coupe.
+#
+# (2) `DATA_DIR` pointe la racine APPLICATION (`Argument_Analysis/data`) et non le
+#     paquet (`argumentation_lib/data`). Motif mesure : la taxonomie suivie de CoursIA
+#     est `Argument_Analysis/data/argumentum_fallacies_taxonomy.csv`. Avec la valeur
+#     amont, `_taxonomy_loader.TAXONOMY_FILE` (= `Argument_Analysis/` / DATA_DIR, ou
+#     l'operande absolu l'emporte) et `_informal_definitions.DEFAULT_TAXONOMY_PATH`
+#     tombent dans `argumentation_lib/data/`, absent du disque : `get_taxonomy_path()`
+#     cree ce dossier et telecharge la taxonomie depuis la branche `master`
+#     d'Argumentum -- non epinglee, `requests.get(...)` sans `timeout` -- donc
+#     l'ensemble d'etiquettes de l'EPIC #10355 pouvait changer en amont sans signal.
+#     Seul consommateur interne de `DATA_DIR` : les deux sites ci-dessus (aucun appelant
+#     de `EXTRACT_SOURCES_FILE`, recherche de code : 0).
+#
+# Voir NOTICE-EPITA.
 
 """
 Module de gestion centralisée des chemins du projet.
@@ -64,7 +81,8 @@ ROOT_DIR = (
 # Pour la configuration interne au package, ROOT_DIR est souvent utilisé.
 # Pour les éléments à la racine du projet (comme _temp, portable_jdk), PROJECT_ROOT_DIR est nécessaire.
 CONFIG_DIR = ROOT_DIR / CONFIG_DIR_NAME
-DATA_DIR = ROOT_DIR / DATA_DIR_NAME  # Données spécifiques au module
+# [NOT-VERBATIM #23633, deviation (2)] amont : DATA_DIR = ROOT_DIR / DATA_DIR_NAME
+DATA_DIR = PROJECT_ROOT_DIR / DATA_DIR_NAME  # Donnees de l'application
 LIBS_DIR = (
     PROJECT_ROOT_DIR / LIBS_DIR_NAME / "tweety"
 )  # Les libs Tweety sont dans libs/tweety/
