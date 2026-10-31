@@ -16,11 +16,24 @@ from sklearn.linear_model import Ridge
 #            rounded to whole contracts; fully collateralized (gross notional
 #            1.0); contracts outside the target are liquidated.
 #   ref=spy  reference arm: SPY held over the same window, no futures.
+#   universe=fixed (default, #23638)  the two roots that never got a
+#            prediction are repaired: Brent is subscribed as BZ (NYMEX Brent
+#            Last Day Financial; B is ICE Brent, which receives no contract on
+#            QC), and a contract without any open-interest row (the VIX
+#            futures on QC) is fitted on the two price factors only.
+#   universe=book  original universe: B, and a contract without open
+#            interest gets no prediction (ten roots out of twelve).
 #   start, end (YYYY-MM-DD): measurement window.
 # Counters published as runtime statistics: gross_median, gross_max (gross
 # notional / portfolio value at the daily check), held_median (contracts held
 # at the daily check), predicted_median (contracts with a positive prediction
 # at the rebalance), predicted_roots, rebalances, invalid_orders.
+# Diagnostic #23638, also passive: exit_reasons counts, per root and per
+# rebalance, why the root got a prediction or not (no_contract,
+# no_open_interest, no_indicators, factors_empty, few_dates, nonpositive,
+# predicted); added_roots counts the contracts added per root and the range of
+# warm-up daily bars they received; price_only_roots counts, per root, the
+# rebalances fitted without open interest (universe=fixed).
 
 
 class InverseVolatilityRankAlgorithm(QCAlgorithm):
@@ -56,12 +69,13 @@ class InverseVolatilityRankAlgorithm(QCAlgorithm):
       (default: 2.0)
     - max_position_pct: Max weight per contract (default: 0.15 = 15%)
     - stop_loss_pct: Stop-loss per position (default: 0.08 = 8%)
-    - fix, ref, start, end: see the comment above the class
+    - fix, ref, universe, start, end: see the comment above the class
     """
 
     def initialize(self):
         self._fix = self.get_parameter("fix", "on").strip().lower()
         self._ref = self.get_parameter("ref", "none").strip().lower()
+        self._universe = self.get_parameter("universe", "fixed").strip().lower()
         self.set_start_date(self._parse_date(self.get_parameter("start", "2015-01-01")))
         self.set_end_date(self._parse_date(self.get_parameter("end", "2024-04-01")))
         self.set_cash(100_000_000)
@@ -72,6 +86,12 @@ class InverseVolatilityRankAlgorithm(QCAlgorithm):
         self._predicted = []
         self._predicted_roots = {}
         self._invalid_orders = 0
+        # Diagnostic #23638 (passive): why a root gets no prediction.
+        self._roots = []
+        self._exit_reasons = {}
+        self._added_roots = {}
+        self._warmup_bars = {}
+        self._price_only = {}
 
         if self._ref == "spy":
             self._spy = self.add_equity("SPY", Resolution.DAILY).symbol
@@ -97,12 +117,14 @@ class InverseVolatilityRankAlgorithm(QCAlgorithm):
         self._contracts = []
 
         # Subscribe to 12 futures contracts across asset classes
+        brent = (Futures.Energy.BRENT_CRUDE if self._universe == "book"
+                 else Futures.Energy.BRENT_LAST_DAY_FINANCIAL)
         tickers = [
             Futures.Indices.VIX,
             Futures.Indices.SP_500_E_MINI,
             Futures.Indices.NASDAQ_100_E_MINI,
             Futures.Indices.DOW_30_E_MINI,
-            Futures.Energy.BRENT_CRUDE,
+            brent,
             Futures.Energy.GASOLINE,
             Futures.Energy.HEATING_OIL,
             Futures.Energy.NATURAL_GAS,
@@ -114,6 +136,7 @@ class InverseVolatilityRankAlgorithm(QCAlgorithm):
         for ticker in tickers:
             future = self.add_future(ticker, extended_market_hours=True)
             future.set_filter(lambda universe: universe.front_month())
+            self._roots.append(future.symbol.id.symbol)
 
         # Weekly rebalancing schedule
         schedule_symbol = Symbol.create(
@@ -161,6 +184,33 @@ class InverseVolatilityRankAlgorithm(QCAlgorithm):
         )
         self.set_runtime_statistic("predicted_roots", roots or "none")
         self.set_runtime_statistic("invalid_orders", str(self._invalid_orders))
+        if not self._roots:
+            return
+        reasons = ";".join(
+            f"{root}:" + ",".join(
+                f"{reason}={count}"
+                for reason, count in sorted(self._exit_reasons.get(root, {}).items())
+            )
+            for root in sorted(self._roots)
+        )
+        self.set_runtime_statistic("exit_reasons", reasons)
+        added = ";".join(
+            f"{root}:{self._added_roots.get(root, 0)}"
+            + (f"/bars{min(self._warmup_bars[root])}-{max(self._warmup_bars[root])}"
+               if self._warmup_bars.get(root) else "")
+            for root in sorted(self._roots)
+        )
+        self.set_runtime_statistic("added_roots", added)
+        price_only = ",".join(
+            f"{root}:{count}"
+            for root, count in sorted(self._price_only.items())
+        )
+        self.set_runtime_statistic("price_only_roots", price_only or "none")
+
+    def _count_exit(self, root, reason):
+        """Passive counter #23638: exit reason of a root at a rebalance."""
+        by_reason = self._exit_reasons.setdefault(root, {})
+        by_reason[reason] = by_reason.get(reason, 0) + 1
 
     def _measure(self):
         """Passive counter: gross notional / value and contracts held."""
@@ -187,22 +237,39 @@ class InverseVolatilityRankAlgorithm(QCAlgorithm):
         )
         open_interest.index = open_interest.index.droplevel(0)
 
+        present = {c.symbol.id.symbol for c in self._contracts}
+        for root in self._roots:
+            if root not in present:
+                self._count_exit(root, "no_contract")
+
         # Predict next-week volatility for each contract
         expected_volatility_by_security = {}
         for security in self._contracts:
             symbol = security.symbol
-            if symbol not in open_interest.index:
+            root = symbol.id.symbol
+            if symbol in open_interest.index:
+                # Combine indicator history with open interest
+                factors = pd.concat(
+                    [
+                        security.indicator_history,
+                        open_interest.loc[symbol]
+                    ],
+                    axis=1
+                ).ffill().loc[security.indicator_history.index].dropna()
+            elif self._universe == "book":
+                self._count_exit(root, "no_open_interest")
                 continue
-
-            # Combine indicator history with open interest
-            factors = pd.concat(
-                [
-                    security.indicator_history,
-                    open_interest.loc[symbol]
-                ],
-                axis=1
-            ).ffill().loc[security.indicator_history.index].dropna()
+            else:
+                # No open-interest row on QC for this contract (the VIX
+                # futures, #23638): fit on the two price factors only.
+                factors = security.indicator_history.dropna()
+                self._price_only[root] = self._price_only.get(root, 0) + 1
             if factors.empty:
+                self._count_exit(
+                    root,
+                    "no_indicators" if security.indicator_history.empty
+                    else "factors_empty"
+                )
                 continue
 
             label = security.label_history
@@ -214,6 +281,7 @@ class InverseVolatilityRankAlgorithm(QCAlgorithm):
                 )
             )
             if len(idx) < 20:
+                self._count_exit(root, "few_dates")
                 continue
 
             # Train Ridge regression
@@ -228,6 +296,9 @@ class InverseVolatilityRankAlgorithm(QCAlgorithm):
             )[0]
             if prediction > 0:
                 expected_volatility_by_security[security] = prediction
+                self._count_exit(root, "predicted")
+            else:
+                self._count_exit(root, "nonpositive")
             self.plot(
                 "Predictions",
                 security.symbol.canonical.value,
@@ -353,13 +424,16 @@ class InverseVolatilityRankAlgorithm(QCAlgorithm):
                 max(self._std_period + 1, self._atr_period)
                 + self._training_set_duration.days
             )
-            bars = self.history[TradeBar](
+            bars = list(self.history[TradeBar](
                 security.symbol, warm_up_length, Resolution.DAILY
-            )
+            ))
             for bar in bars:
                 security.consolidator.update(bar)
 
             self._contracts.append(security)
+            root = security.symbol.id.symbol
+            self._added_roots[root] = self._added_roots.get(root, 0) + 1
+            self._warmup_bars.setdefault(root, []).append(len(bars))
 
         for security in changes.removed_securities:
             self.subscription_manager.remove_consolidator(
