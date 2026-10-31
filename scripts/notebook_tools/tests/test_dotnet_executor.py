@@ -626,10 +626,86 @@ def test_has_sdk_requires_a_versioned_directory(tmp_path):
     assert _dotnet_env.has_sdk(tmp_path / "absent") is False
 
 
-def test_no_repair_when_dotnet_root_unset(monkeypatch):
-    """Without DOTNET_ROOT the host resolves itself; nothing to repair."""
+def test_repair_when_dotnet_root_unset_and_the_resolved_root_has_no_sdk(
+        monkeypatch, tmp_path):
+    """An unset DOTNET_ROOT is NOT "nothing to repair" (#17361).
+
+    The host then resolves *itself* from the ``dotnet`` on PATH, and that
+    resolution is exactly what this module exists to catch. Measured
+    2026-10-29 on myia-po-2028: with DOTNET_ROOT unset, ``shutil.which
+    ("dotnet")`` resolves ``C:\\Program Files\\dotnet\\dotnet.exe``, whose
+    install ships runtimes and no ``sdk/`` at all (``dotnet --info`` prints
+    "No SDKs were found"), while the SDK-bearing root sits elsewhere
+    (``%LOCALAPPDATA%\\Microsoft\\dotnet``, SDKs 8.0.426/9.0.319/10.0.402).
+    Returning None there left the kernel on a root that cannot restore.
+    """
+    runtime_only = _make_root(tmp_path, "runtime-only", False)
+    good = _make_root(tmp_path, "good", True)
     monkeypatch.delenv("DOTNET_ROOT", raising=False)
+    monkeypatch.setattr(_dotnet_env.shutil, "which",
+                        lambda name: str(runtime_only / "dotnet"))
+    monkeypatch.setattr(_dotnet_env, "sdk_root_candidates", lambda: [str(good)])
+    assert _dotnet_env.sdk_bearing_dotnet_root() == str(good)
+
+
+def test_repair_when_dotnet_root_is_empty(monkeypatch, tmp_path):
+    """An empty DOTNET_ROOT is the unset case, not a healthy one: the host
+    falls back to its own location, so it must be probed like any other root."""
+    runtime_only = _make_root(tmp_path, "runtime-only", False)
+    good = _make_root(tmp_path, "good", True)
+    monkeypatch.setenv("DOTNET_ROOT", "")
+    monkeypatch.setattr(_dotnet_env.shutil, "which",
+                        lambda name: str(runtime_only / "dotnet"))
+    monkeypatch.setattr(_dotnet_env, "sdk_root_candidates", lambda: [str(good)])
+    assert _dotnet_env.sdk_bearing_dotnet_root() == str(good)
+
+
+def test_no_repair_when_unset_and_the_resolved_root_has_sdk(monkeypatch, tmp_path):
+    """The control case: unset DOTNET_ROOT over a healthy resolved root stays
+    untouched -- the repair never fires on a root that can already restore."""
+    good = _make_root(tmp_path, "good", True)
+    monkeypatch.delenv("DOTNET_ROOT", raising=False)
+    monkeypatch.setattr(_dotnet_env.shutil, "which",
+                        lambda name: str(good / "dotnet"))
     assert _dotnet_env.sdk_bearing_dotnet_root() is None
+
+
+def test_no_repair_when_dotnet_is_not_on_path_and_the_variable_is_unset(
+        monkeypatch):
+    """Nothing resolved, nothing configured: no effective root to judge, so no
+    repair. The repair never invents a root."""
+    monkeypatch.delenv("DOTNET_ROOT", raising=False)
+    monkeypatch.setattr(_dotnet_env.shutil, "which", lambda name: None)
+    assert _dotnet_env.sdk_bearing_dotnet_root() is None
+
+
+def test_candidates_include_the_per_user_install_root_on_windows(
+        monkeypatch, tmp_path):
+    """``dotnet-install.ps1 -InstallDir`` defaults to
+    ``%LOCALAPPDATA%\\Microsoft\\dotnet``: that root is neither the ``dotnet``
+    on PATH nor ``%ProgramFiles%\\dotnet``, so a candidate list built from
+    those two alone can never repair a per-user install (measured 2026-10-29
+    on myia-po-2028, where it is the *only* root carrying an SDK)."""
+    local = tmp_path / "localappdata"
+    monkeypatch.setenv("LOCALAPPDATA", str(local))
+    monkeypatch.setenv("ProgramFiles", str(tmp_path / "pf"))
+    monkeypatch.setattr(_dotnet_env, "_on_windows", lambda: True)
+    monkeypatch.setattr(_dotnet_env.shutil, "which", lambda name: None)
+    assert str(local / "Microsoft" / "dotnet") in _dotnet_env.sdk_root_candidates()
+
+
+def test_candidates_do_not_repeat_a_root(monkeypatch, tmp_path):
+    """The ``dotnet`` on PATH is routinely the ProgramFiles root itself, and a
+    duplicated candidate costs a second probe for nothing (measured: the list
+    read ``['C:\\\\Program Files\\\\dotnet', 'C:\\\\Program Files\\\\dotnet']``)."""
+    root = _make_root(tmp_path, "dotnet", False)   # == ProgramFiles/dotnet
+    monkeypatch.setenv("ProgramFiles", str(tmp_path))
+    monkeypatch.setattr(_dotnet_env, "_on_windows", lambda: True)
+    monkeypatch.setattr(_dotnet_env.shutil, "which",
+                        lambda name: str(root / "dotnet"))
+    candidates = _dotnet_env.sdk_root_candidates()
+    assert candidates.count(str(root.resolve())) == 1
+    assert len(candidates) == len(set(candidates))
 
 
 def test_no_repair_when_configured_root_has_sdk(monkeypatch, tmp_path):
@@ -674,9 +750,68 @@ def test_kernel_gets_the_repaired_root_and_says_so(
 
     env = km.start_kernel.call_args.kwargs["env"]
     assert env["DOTNET_ROOT"] == str(good)
-    # The whole environment is forwarded, not just the repaired variable.
-    assert env["PATH"] == os.environ["PATH"]
+    # The whole environment is forwarded, not just the repaired variable, and
+    # the repaired root goes *first* on PATH: the muxer finds its SDKs next to
+    # itself, so PATH is the lever that actually moves the resolution.
+    assert env["PATH"] == str(good) + os.pathsep + os.environ["PATH"]
     assert str(runtime_only) in capsys.readouterr().out
+
+
+def test_kernel_launch_announces_the_repair_without_dotnet_root_set(
+        tmp_path, monkeypatch, _patch_kernelmanager, capsys):
+    """The repaired case that used to be unreachable: DOTNET_ROOT unset, the
+    resolved root has no SDK, a valid root is found. The announcement must name
+    the root it replaces -- reading ``os.environ['DOTNET_ROOT']`` for that
+    raised ``KeyError`` precisely in this case, turning a repair into a crash
+    of the kernel launch."""
+    runtime_only = _make_root(tmp_path, "runtime-only", False)
+    good = _make_root(tmp_path, "good", True)
+    monkeypatch.delenv("DOTNET_ROOT", raising=False)
+    monkeypatch.setattr(_dotnet_env.shutil, "which",
+                        lambda name: str(runtime_only / "dotnet"))
+    monkeypatch.setattr(_dotnet_env, "sdk_root_candidates", lambda: [str(good)])
+
+    nb = _write_nb(tmp_path / "n.ipynb", [_code_cell("1+1")])
+    km, _ = _patch_kernelmanager([[_msg("status", execution_state="idle")]])
+    dotnet_executor.execute_notebook(nb, cell_timeout=1)
+
+    env = km.start_kernel.call_args.kwargs["env"]
+    assert env["DOTNET_ROOT"] == str(good)
+    assert env["PATH"].startswith(str(good) + os.pathsep)
+    out = capsys.readouterr().out
+    assert str(runtime_only) in out and str(good) in out
+
+
+def test_repair_launch_env_moves_the_resolution_with_path_not_the_variable(
+        tmp_path, monkeypatch):
+    """``DOTNET_ROOT`` alone does not move the SDK resolution (#23352).
+
+    Measured 2026-10-29 on myia-po-2028 (.NET 10.0.402): the ProgramFiles
+    muxer answered ``aka.ms/dotnet/sdk-not-found`` to ``new`` and ``add
+    package`` with ``DOTNET_ROOT`` pointing at the SDK-bearing root, and
+    restored normally once that root came first on ``PATH``. A repair that
+    set only the variable would announce a fixed root while the subprocess
+    kept failing -- the announcement would read as proof.
+    """
+    good = _make_root(tmp_path, "good", True)
+    monkeypatch.setenv("PATH", os.pathsep.join(["/usr/bin", "/bin"]))
+    monkeypatch.delenv("DOTNET_ROOT", raising=False)
+
+    env = _dotnet_env.repair_launch_env(str(good))
+
+    assert env["PATH"] == os.pathsep.join([str(good), "/usr/bin", "/bin"])
+    assert env["DOTNET_ROOT"] == str(good)
+    # The caller's env is not mutated: the repair is scoped to the subprocess.
+    assert os.environ["PATH"] == os.pathsep.join(["/usr/bin", "/bin"])
+    assert "DOTNET_ROOT" not in os.environ
+
+
+def test_repair_launch_env_tolerates_an_empty_path(tmp_path):
+    """No inherited PATH must not produce a trailing separator, which some
+    loaders read as "current directory first"."""
+    good = _make_root(tmp_path, "good", True)
+    env = _dotnet_env.repair_launch_env(str(good), base_env={"PATH": ""})
+    assert env["PATH"] == str(good)
 
 
 def test_kernel_launch_unchanged_when_root_is_healthy(

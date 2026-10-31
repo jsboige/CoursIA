@@ -487,6 +487,15 @@ def test_voie_en_processus_rend_les_memes_codes_que_la_voie_cli(monkeypatch):
     # #23098, et son acceptance dit : « le tirage ne retient plus un grain
     # dont la sonde a NOMME un bloquant, quel que soit le code de sortie ».
     #
+    # #22983 -- CONTRAT CHANGE ICI, et non contourne (revue Hermes,
+    # point 5a) : le mode batch mappe desormais `exit 2` + un resume JSON
+    # qui nomme des lanes bloquantes sur BLOCKED, le verdict de la voie
+    # historique du picker. La version precedente de cette assertion
+    # affirmait ERROR -- le comportement HISTORIQUE du mode batch, qui
+    # rendait un grain tenu par une autre lane *servable* par le tapis
+    # (fail-open) : exactement la collision que la jambe IMPLICIT (#14300)
+    # existe pour empecher.
+    #
     # L'assertion d'ici verifie donc la **convergence** des deux voies --
     # ce que le nom du test annonce depuis le debut (« rend les MEMES codes
     # que la voie CLI »). Elle ne fige plus la divergence : ce que ce test
