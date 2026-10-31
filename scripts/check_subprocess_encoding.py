@@ -68,7 +68,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 # Vendored / external subtrees: outside the audit of production code
-# (same perimeter as code-style.md and the #13140 sweep).
+# (same perimeter as lean-i18n.md and the #13140 sweep).
 EXCLUDE_MARKERS = (
     "/.lake/", "/_peters/", "/reference_docs/", "/foundry-lib/lib/",
     "/.venv/", "/site-packages/", "/node_modules/",

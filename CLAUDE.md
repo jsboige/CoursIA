@@ -178,7 +178,7 @@ Protocole avant suppression (4 étapes : erreur exacte / 3 tactiques / PR `debt`
 | Notebooks | Documentation primaire en français, code en français ou anglais |
 | Naming | Pas de préfixes « Pure »/« Enhanced »/« Advanced »/« Ultimate » |
 
-Détail (+ convention i18n Lean FR/EN siblings) : [code-style.md](.claude/rules/code-style.md).
+Détail : [code-style.md](.claude/rules/code-style.md) · convention i18n Lean FR/EN siblings : [lean-i18n.md](.claude/rules/lean-i18n.md) (rule path-gatée `**/*.lean`).
 
 ### F. Environnement — RÉPARER, ne JAMAIS contourner (HARD)
 
