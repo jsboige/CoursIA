@@ -1,4 +1,4 @@
-# 04b - Wavelet Scattering : ondelettes et scattering
+# 05 - Wavelet Scattering : ondelettes et scattering
 
 [← DataScienceWithAgents (série parente)](../README.md)
 
