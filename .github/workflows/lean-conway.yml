@@ -356,13 +356,24 @@ jobs:
   target-coverage:
     name: conway target-coverage
     # Routage #14283 tranche 3 (decision ai-01 2026-09-02) : jambe Linux
-    # auto-hebergee. Le `if:` ci-dessous est la garde anti-fork exigee par
-    # scripts/ci/check_self_hosted_runner_policy.py ; un `runs-on` STATIQUE la
-    # rend auditable (une expression dynamique leve DYNAMIC_RUNS_ON).
-    # Les PRs de fork sautent le job -- pr_gate.py compte `skipped` comme OK.
-    # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # auto-hebergee.
+    # 2026-10-28 (#23053 famille (c), lane myia-ai-01:CoursIA-2) : forme hybride
+    # de debordement CI (#22937/#22944/#23016). PR meme-depot ET
+    # vars.CI_OVERFLOW_LOCAL == 'true' -> jambe Linux locale ; tout le reste
+    # (variable absente ou fausse, forks, push/dispatch) retombe sur
+    # ubuntu-latest. La garde same-repo vit dans l'expression elle-meme : le
+    # `if:` ci-dessous reste inchange. Bascule : `gh variable set
+    # CI_OVERFLOW_LOCAL --body true|false --repo jsboige/CoursIA`. Retour
+    # arriere = variable a `false` ou supprimee, sans toucher ce fichier.
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
     if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && always()
+    # Borne de duree (#23053) : 360 min, qui EST le plafond GitHub. La mesure des
+    # 8 derniers runs reussis du workflow donne 832 min au maximum, portees par
+    # les jobs Lean reutilisables : 3 x ce maximum depasse le plafond, donc la
+    # borne posee est le plafond lui-meme, et c'est assume explicitement ici.
+    # Sans borne ecrite, un job qui pend garde le meme defaut sans que personne
+    # ne l'ait choisi ; au-dela de 360 min c'est un echec, pas une attente.
+    timeout-minutes: 360
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
