@@ -89,7 +89,7 @@ concurrency:
 jobs:
   index-collision:
     name: "Twin index collision gate (#23208)"
-    runs-on: ubuntu-latest
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
     timeout-minutes: 15
 
     steps:
