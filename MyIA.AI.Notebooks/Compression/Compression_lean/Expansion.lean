@@ -159,7 +159,8 @@ profondeurs `[2, 2, 1]`, coût 12. -/
 -- [2, 2, 1]
 
 /-- Le coût du problème réduit : 12 = 2·2 + 2·2 + 4·1. -/
-example : costW (huffman [2, 2, 4]) = 12 := by native_decide
+example : costW (huffman [2, 2, 4]) = 12 := by
+  simp [huffman, build, insertT, weight, costW]
 
 /-- L'expansion en `(1, 1)` rend le coût du problème complet : 12 + (1 + 1)
 = 14, le coût du trie de Huffman de `[1, 1, 2, 4]` (ancre 14 du pli 5) —
@@ -167,8 +168,10 @@ les profondeurs passent de `[2, 2, 1]` à `[3, 3, 2, 1]` (ancre du pli 4),
 les deux constituants descendent d'un niveau, les autres feuilles ne
 bougent pas. -/
 example : costW (subst (huffman [2, 2, 4]) 1 1) = 14 := by
-  rw [costW_subst (huffman [2, 2, 4]) 1 1 (by native_decide)]
-  native_decide
+  have h : (1 + 1) ∈ leafWeights (huffman [2, 2, 4]) := by
+    simp [huffman, build, insertT, weight, leafWeights]
+  rw [costW_subst (huffman [2, 2, 4]) 1 1 h]
+  simp [huffman, build, insertT, weight, costW]
 
 /- Les feuilles de l'expansion : la masse `2` réouverte en `1` et `1`. -/
 #eval leafWeights (subst (huffman [2, 2, 4]) 1 1)
@@ -176,6 +179,7 @@ example : costW (subst (huffman [2, 2, 4]) 1 1) = 14 := by
 
 /-- Le poids ne bouge pas : la masse totale reste celle des fréquences
 d'entrée. -/
-example : weight (subst (huffman [2, 2, 4]) 1 1) = 8 := by native_decide
+example : weight (subst (huffman [2, 2, 4]) 1 1) = 8 := by
+  simp [huffman, build, insertT, weight, subst, leafWeights]
 
 end CompressionLean

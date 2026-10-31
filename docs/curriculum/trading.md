@@ -29,12 +29,12 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
-| 1 | [1.1 - Python pour la Data Science](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.1-Python_pour_la_Data_Science.ipynb) | BETA | Oui |
-| 2 | [1.2 - Manipulation de Données avec NumPy](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb) | BETA | Oui |
-| 3 | [1.3 - Analyse de Données avec Pandas](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb) | BETA | Oui |
-| 4 | [1.4 - Visualisation : Matplotlib puis Seaborn](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.4-Visualisation_Matplotlib_Seaborn.ipynb) | BETA | Oui |
-| 5 | [1.5 - Exploration et nettoyage de données réelles](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.5-Exploration_Nettoyage_Donnees_Reelles.ipynb) | BETA | Oui |
-| 6 | [1.6 - Statistiques descriptives](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.6-Statistiques_Descriptives.ipynb) | BETA | Oui |
+| 1 | [1.1 - Python pour la Data Science](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.1-Python_pour_la_Data_Science.ipynb) | BETA | Oui |
+| 2 | [1.2 - Manipulation de Données avec NumPy](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb) | BETA | Oui |
+| 3 | [1.3 - Analyse de Données avec Pandas](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb) | BETA | Oui |
+| 4 | [1.4 - Visualisation : Matplotlib puis Seaborn](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.4-Visualisation_Matplotlib_Seaborn.ipynb) | BETA | Oui |
+| 5 | [1.5 - Exploration et nettoyage de données réelles](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.5-Exploration_Nettoyage_Donnees_Reelles.ipynb) | BETA | Oui |
+| 6 | [1.6 - Statistiques descriptives](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.6-Statistiques_Descriptives.ipynb) | BETA | Oui |
 | 7 | [2.1 — Le workflow d'apprentissage automatique](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.1-Workflow-ML.ipynb) | BETA | Oui |
 | 8 | [2.10 — Optimisation d'hyperparamètres : grille, hasard,…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.10-Optimisation-Hyperparametres.ipynb) | BETA | Non |
 | 9 | [2.11 — Régularisation sparse : LASSO (L1) vs Ridge…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.11-Regularisation-Sparse-LASSO.ipynb) | BETA | Oui |

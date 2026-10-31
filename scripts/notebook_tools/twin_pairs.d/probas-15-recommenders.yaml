@@ -6,6 +6,7 @@
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Modele nominal lib-vs-lib cite par owner #10382 (\"PyMC vs Infer, 2 moteurs qui brillent\") : C# = Microsoft Infer.NET (Microsoft.ML.Probabilistic, NuGet officiel, native .NET, inférence variationnelle EP/VMP) et Python = PyMC (pip pymc, native Python, NUTS/HMC + ADVI). Chaque cote atteint le moteur SOTA de son ecosysteme probabiliste -- ni pont intermediaire ni reimplementation. Aucune asymetrie de machinerie a corriger. Verifie firsthand : C# Microsoft.ML.Probabilistic refs + execution_count, Python pymc imports."
   known_differences:
+  - 'Re-baseline 2026-10-14 (hors-flotte:claude-session-20167, PR #20593, #20167) : edition unilaterale cote Python seul, SCHEMA nbformat uniquement -- retrait des champs `execution_count`/`outputs` portes a tort par 2 cellules markdown (cles reservees aux cellules code en nbformat 4), par `fix_markdown_cell_schema.py`. Aucune source ni sortie de cellule code touchee : le carnet de base, une fois ces champs retires, est identique au carnet de tete (comparaison JSON complete). Cote C# byte-identique a main. Parite semantique inchangee : attestation (le blob SHA se deplace), pas reparation.'
   - '2026-10-07 (myia-po-2027:CoursIA) #tranche-15/16/17 : csharp_sha rebaseline -- 2 liens
     "Theme connexe" de la cellule 91 normalises ../Infer/Infer-{11,13}... en chemins directs
     (artefact copy-paste du jumeau PyMC, ou le prefixe ../Infer/ est correct ; depuis le dossier

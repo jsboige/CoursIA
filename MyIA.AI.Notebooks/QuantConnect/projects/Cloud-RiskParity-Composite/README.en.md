@@ -37,6 +37,30 @@ Fresh backtest via QC Cloud MCP, 2026-08-14 (`RiskParity-Composite-2018-2025-ali
 |--------|-----------|----------------|
 | Dual-filter Risk Parity | 30 days | SMA200 + 6-month momentum, equal weight among passing assets |
 
+## Midnight slice (#20264)
+
+In daily resolution, Lean delivers dividend notices in a slice dated midnight that carries no bar, and TLT pays a dividend every month. Before the fix, when the 30-day deadline was already due at midnight, that slice triggered the rebalance. Selection and quantities were then computed on the previous day's closes, and the orders filled one session earlier. On other months, the decision was taken at 4:00 pm on the day's close. The guard at the top of `on_data` ignores any slice without a bar: every rebalance now leaves at 4:00 pm. The rebalancing days do not change, only the instant of the decision does.
+
+Measurement before (`main` at `064dc1c732`) and after, on four pre-registered QC backtests ([protocol](https://github.com/jsboige/CoursIA/issues/20264#issuecomment-6149675428)):
+
+| Indicator | Coded, before | Coded, after | Out of sample, before | Out of sample, after |
+|---|---|---|---|---|
+| Window | 2018-01-01 → 2025-01-01 | same | 2025-01-02 → 2026-07-10 | same |
+| Rebalances leaving at midnight | 9 out of 80 | 0 out of 80 | 1 out of 18 | 0 out of 18 |
+| Rebalances with a different selection | | 1 out of 80 | | 1 out of 18 |
+| Sharpe ratio | 0.029 | 0.035 | 1.014 | 0.963 |
+| CAGR | 3.49% | 3.58% | 23.01% | 22.05% |
+| Max drawdown | 24.5% | 24.4% | 11.9% | 12.1% |
+| Net profit | 27.14% | 27.90% | 36.98% | 35.37% |
+| PSR | 0.096% | 0.102% | 45.07% | 42.56% |
+| Orders | 298 | 296 | 77 | 76 |
+| Backtest | `3a4eae48` | `1b75d5ce` | `d0b4101a` | `42018e5d` |
+
+- **Coded window.** The Sharpe gap (+0.006) stays below the 0.05 threshold set by the protocol: the metrics of the previous section remain the README's, and the NO-BEATS verdict is unchanged. The before variant reproduces 298 orders and a Sharpe of 0.029, against 297 and 0.027 announced on 2026-08-14. A single selection differs: on 2018-08-01, DBC and SPY before, SPY alone after.
+- **Out of sample.** The protocol rule classifies the result as a **degradation**: CAGR loses 0.95 point, beyond the 0.5-point threshold, and Sharpe loses 0.051, short of the 0.10 threshold. The gap comes down to a single decision. On 2025-02-03, the before variant decides at midnight on the Friday January 31 close and keeps EEM; the after variant decides at 4:00 pm on the Monday close and drops it, then takes it back at the next rebalance (2025-03-05).
+
+The fix does not aim at performance: it makes every decision leave at the same time, on the close of the rebalancing day.
+
 ## Files
 
 | File | Description |
