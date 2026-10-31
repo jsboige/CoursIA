@@ -2592,6 +2592,81 @@ TRANCHE28: list[Guard] = [
 
 
 # ---------------------------------------------------------------------------
+# TRANCHE 31 (#23073) -- garde des versions de bibliotheques chargees par les
+# carnets.
+#
+# Renumerote TRANCHE29 -> TRANCHE30 au merge de `main` du 2026-10-30 :
+# `main` porte deja une TRANCHE29 (confrontation doc <-> quantification
+# reellement chargee, #23252). Deux blocs ne peuvent pas porter le meme
+# nom -- precedent : TRANCHE9 -> TRANCHE10.
+#
+# Mandat user du 2026-10-28, a propos de #23047 : « Ca meritera un organe
+# pour stabiliser les versions d'API et de libs, car ce genre de regressions
+# sont parmis les plus terribles et incidieuses. C'est toute une serie de
+# notebook qui peut exploser ».
+#
+# Le cas declencheur : l'archive `SymbolicAI/_archive/Tweety.ipynb` reecrit
+# `TWEETY_VERSION = "1.28"` dans une cellule et part sur
+# `tweetyproject.org/builds/1.28/` -- chemin mort depuis #12789 (404), et
+# version en desaccord avec l'organe de serie (`TWEETY_VERSION = "1.30"`).
+# Deux des series du depot sont exposees : la Tweety (IKVM 8.14.0 sur six
+# carnets apres #19673) et la SemanticWeb (dotNetRDF en 3.2.1 et 3.4.x).
+#
+# L'organe compare l'epinglage porte par les cellules code des carnets
+# modifies a la version canonique du manifeste
+# (`scripts/notebook_tools/lib_versions_manifest.json`). Quand un organe de
+# serie fixe deja la version, le manifeste POINTE vers lui et ne recopie pas
+# la valeur : deux surfaces qui recopient la meme valeur finissent par
+# diverger -- c'est la regression que l'organe doit empecher.
+#
+# Semantique : DELTA base -> tete sur les epinglages (un epinglage deja
+# present et non touche par la PR ne rougit pas -- c'est une derive
+# historique, que le recensement (`--census`, rc 0) rapporte et que la
+# convergence traite), et ETAT pour le provisionnement etranger (son dommage
+# se produit a l'execution, pas a l'edition).
+#
+# Pourquoi ADVISORY : le stock porte des derives connues (dotNetRDF 3.2.1 sur
+# sept carnets de la serie SemanticWeb, OrTools 9.11.4210 sur onze carnets).
+# L'ecart IKVM 8.14.0 des six carnets Tweety n'en est pas une : leur artefact
+# ombre est compile en 8.14.0, l'ecart est justifie et porte au manifeste
+# (allowlist + motif). Un garde bloquant rougirait des PR qui ne font que
+# retoucher un de ces carnets -- un taux de faux positifs qui nuirait a la
+# lecture du rollup. Le taux est mesure sur les dernieres PRs de carnets et
+# publie ; la promotion en bloquant est une tranche distincte, apres
+# convergence.
+#
+# `absorbed=True` : garde natif (aucun workflow d'origine), convention des
+# tranches depuis TRANCHE8. Le nom porte `advisory` pour que `pr_gate` le
+# range dans le seau advisory : un `failure` publie ne doit jamais tenir le
+# merge.
+# ---------------------------------------------------------------------------
+TRANCHE31: list[Guard] = [
+    Guard(
+        name="Library versions guard (advisory, #23073)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**/*.ipynb",
+            "scripts/notebook_tools/check_lib_versions.py",
+            "scripts/notebook_tools/lib_versions_manifest.json",
+            "scripts/notebook_tools/tests/test_check_lib_versions.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_lib_versions.py",
+            "--changed", "{base_ref}...HEAD",
+        ],
+        blocking=False,   # advisory : publie le constat, ne tient jamais le merge
+        needs_base=True,  # delta base -> tete sur les epinglages
+        # rc=2 = incident d'entree (manifeste illisible, git en echec), pas une
+        # faute de la PR : il rend le check-run neutre, avec un titre distinct
+        # (forme hr-substitution-guard, #17941). Sans lui, une panne de l'org
+        # se lirait comme un verdict.
+        warn_rc=(2,),
+        absorbed=True,
+    ),
+]
+
 # TRANCHE 29 -- confrontation doc <-> quantification reellement chargee (#23252).
 #
 # Defaut ferme : la table « Quantization Settings per Service » de
