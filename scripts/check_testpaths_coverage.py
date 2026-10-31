@@ -152,6 +152,15 @@ WORKFLOW_COVERAGE: dict[str, list[str]] = {
     ".github/workflows/sudoku-tests.yml": [
         "MyIA.AI.Notebooks/Sudoku/tests/test_dlx_certificates.py",
     ],
+    # geometry-tests.yml : dir entier (issue #23359) — 13 tests Z3/sympy du
+    # pont réel real_geometry_bridge.py (tests/test_real_geometry_bridge.py
+    # seul fichier), 1.7 s, deps sympy + z3-solver au pip install du job.
+    # Avant ce câblage, le dossier n'était ni dans pytest.ini ni collecté
+    # par aucune CI : le guard restait vert parce qu'il ne compare que les
+    # testpaths DÉCLARÉS (même angle mort que #17248 sur Argument_Analysis).
+    ".github/workflows/geometry-tests.yml": [
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/tests",
+    ],
 }
 
 # Marqueur d'exclusion : `# CI-EXCLUDED: <testpath> — <raison>` en commentaire
