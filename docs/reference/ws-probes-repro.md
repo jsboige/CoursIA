@@ -61,7 +61,7 @@ reproduit le classifieur linéaire sur pixels bruts, donc cette ligne-là.
 établie.** Deux mesures indépendantes l'écartent de WS-00c :
 
 - il n'apparaît dans **aucun fichier** de la série (`git grep` sur les fichiers de
-  `04b-Wavelet-Scattering` à `origin/main` : 0 occurrence des deux valeurs) — alors que
+  `05-Wavelet-Scattering` à `origin/main` : 0 occurrence des deux valeurs) — alors que
   `0.790 / 0.425` y est bien présent, sur la ligne citée ci-dessus ;
 - il est **arithmétiquement impossible** sur le corpus de WS-00c : la cellule 20 imprime
   `corpus : 600 train / 200 test`, et aucune accuracy sur 200 items ne peut s'écrire `0.773`

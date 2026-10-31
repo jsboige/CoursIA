@@ -26,6 +26,7 @@
 | 02 | **02c** — Seuil sans mur, systèmes GF(2) | Mezard, Zecchina & Weisz (seuil des systèmes d'équations aléatoires sur GF(2)) | Transition de satisfaisabilité à $m/n = 1$ **sans** décollage de coût (Gauss $O(n^3)$ lisse), contrôle face au 3-SAT (coût DPLL qui décolle) |
 | 03 | **03b** — Hartmanis–Stearns 1965 | Juris Hartmanis & Richard Stearns (prix Turing 1993) | Théorème de hiérarchie en temps $\mathrm{TIME}(f) \subsetneq \mathrm{TIME}(f \log f)$, diagonalisation |
 | 03 | **03c** — Zoo et oracles | Scott Aaronson (fondateur Complexity Zoo 2004), Baker–Gill–Solovay 1975 | Navigation dans le Zoo, barrière de relativisation |
+| 03 | **03d** — La réfutation annoncée de l'ETH | Russell Impagliazzo & Ramamohan Paturi (ETH, 2001) ; les deux annonces d'octobre 2026 (OpenAI 25/10, Anthropic 26/10) | Trois surfaces Lean lues à la source, cinq limites citées, mur d'énumération et budget mesurés à $C = 1$ |
 | 04 | **04b** — Conjectures online 2026 | Sahil Singla, Christian Coester, Elias Koutsoupias, Marek Zbysiński | Secrétaire matroïdal, conjecture k-server |
 | 04 | **04c** — k-server, work function | Manasse, McGeoch & Sleator ; Coester, Koutsoupias, Zbysiński | Work Function Algorithm (DP exact), duel WFA vs LRU/FIFO |
 | 04 | **04d** — Secrétaire matroïdal | Sahil Singla (conjecture 2007) | Banc P[accept \| e ∈ OPT], garantie 1/4 |
