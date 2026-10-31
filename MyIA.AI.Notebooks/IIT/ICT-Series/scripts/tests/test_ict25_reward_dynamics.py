@@ -78,6 +78,25 @@ def test_reward_en_baisse_n_est_pas_une_exploitation():
     assert "baisse" in d["interpretation"]
 
 
+def test_reward_qui_baisse_pendant_que_math_monte_ne_dit_pas_hausse():
+    """La branche « LEGITIME » exige la hausse effective de la reward.
+
+    Cas releve par la review Hermes (#5105, point 3) : la branche ne testait
+    que `m_delta > epsilon`, donc une reward qui s'effondre (-0.9) pendant que
+    math_correct monte (+0.9) etait annoncee « reward en hausse » -- le libelle
+    contredisait le chiffre qu'il accompagne. Le verdict combine etait juste,
+    seule `interpretation` mentait.
+    """
+    d = reward_dynamics(_rows([1.0] * 4 + [0.1] * 4, [0.0] * 4 + [0.9] * 4))
+    assert d["reward_delta_early_to_late"] == -0.9
+    assert d["math_delta_early_to_late"] == 0.9
+    assert d["dynamics_present"] is True
+    assert d["exploitation"] is False  # m_delta > seuil : pas une exploitation
+    assert "baisse" in d["interpretation"]
+    assert "hausse" not in d["interpretation"]
+    assert "LEGITIME" not in d["interpretation"].upper()
+
+
 def test_le_seuil_est_celui_du_fallback_du_carnet():
     """0.05, exactement : c'est la valeur du detecteur 4 de la cellule 12
     (PR2.6). Les deux implementations doivent dire la meme chose."""

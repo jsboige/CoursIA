@@ -205,7 +205,10 @@ def reward_dynamics(rows, *, epsilon: float = REWARD_DYNAMICS_EPSILON) -> dict:
     r_delta = fmean(rewards[half:]) - fmean(rewards[:half])
     m_delta = fmean(maths[half:]) - fmean(maths[:half])
     dynamics = abs(r_delta) > epsilon
-    if dynamics and m_delta > epsilon:
+    # #5105 (review Hermes, point 3) : la branche « LEGITIME » doit exiger la
+    # hausse effective de la reward -- sans le signe de r_delta, une reward qui
+    # s'effondre pendant que math_correct monte etait annoncee « en hausse ».
+    if dynamics and r_delta > epsilon and m_delta > epsilon:
         interpretation = ("reward en hausse LEGITIME (math_correct monte) "
                           "-- apprentissage reel")
     elif dynamics and r_delta > epsilon:
