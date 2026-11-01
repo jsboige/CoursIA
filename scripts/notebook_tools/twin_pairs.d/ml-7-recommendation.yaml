@@ -1,7 +1,7 @@
 - name: "ML-7 Recommendation"
   family: ML.NET/Python
   python: MyIA.AI.Notebooks/ML/ML.Net/ML-07-Recommendation-Python.ipynb
-  csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-07-Recommendation.ipynb
+  csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-07-Recommendation-CSharp.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Modele nominal lib-vs-lib #10382 (moteurs distincts, chacun prod) : C# = Microsoft.ML (NuGet officiel Microsoft.ML, native .NET : Microsoft.ML.Transforms/Regression/Clustering/TimeSeries) et Python = scikit-learn (pip sklearn, native Python) -- chaque cote atteint le moteur SOTA ML de son ecosysteme, ni pont intermediaire ni reimplementation. Aucune asymetrie de machinerie a corriger. Verifie firsthand : C# Microsoft.ML refs + execution_count, Python sklearn imports."

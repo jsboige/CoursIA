@@ -21,13 +21,13 @@
 import Mathlib.Data.Fintype.Basic
 import Mathlib.Data.Fintype.Card
 import Mathlib.Order.Preorder.Finite
-import StableMarriage.Definitions
+import StableMarriage.Definitions_en
 
 namespace StableMarriage_en
 
 
 open Function Finset Classical
-open StableMarriage
+open StableMarriage_en
 
 variable {n : Nat} [NeZero n]
 
