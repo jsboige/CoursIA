@@ -24,6 +24,28 @@
   font-size: 1.25rem;
 }
 
+/* Le thème Quarto applique une couleur de lien sombre aux boutons du bandeau. */
+.quarto-title-banner a.btn,
+.quarto-title-banner a.btn:hover,
+.quarto-title-banner a.btn:focus-visible,
+.quarto-title-banner a.btn:active {
+  color: #ffffff;
+}
+
+.quarto-title-banner .btn-primary {
+  --bs-btn-bg: #185abc;
+  --bs-btn-border-color: #185abc;
+  --bs-btn-hover-bg: #12468f;
+  --bs-btn-hover-border-color: #12468f;
+  --bs-btn-active-bg: #12468f;
+  --bs-btn-active-border-color: #12468f;
+}
+
+.quarto-title-banner a.btn:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 3px;
+}
+
 /* Legacy .series-card retained for compatibility with other pages */
 .series-card {
   border-left: 4px solid #3b82f6;

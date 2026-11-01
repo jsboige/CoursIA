@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -16,6 +17,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from check_axiom_gate_coverage import (  # noqa: E402
+    WORKFLOWS_DIR,
     composite_axiom_coverage,
     calls_gate,
     classify_deleted,
@@ -23,6 +25,7 @@ from check_axiom_gate_coverage import (  # noqa: E402
     filewide_project_paths,
     gate_project_paths,
     iter_jobs,
+    justified_ungated,
     main,
     matrix_lakes,
     measure,
@@ -30,6 +33,16 @@ from check_axiom_gate_coverage import (  # noqa: E402
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 _REF = os.environ.get("AXIOM_GATE_COVERAGE_REF", "origin/main")
+
+
+def _run_git(*args):
+    """Run git, keeping the exit code (``cat-file -e`` answers by code, not output)."""
+    env = {**os.environ, "MSYS_NO_PATHCONV": "1"}
+    return subprocess.run(["git", *args], capture_output=True, env=env)
+
+
+def _path_exists_at_ref(path, ref):
+    return _run_git("cat-file", "-e", f"{ref}:{path}").returncode == 0
 
 
 class TestCallsGate:
@@ -241,6 +254,45 @@ class TestDeletedDispatchers:
             assert e["deleted_by"], "a deletion must carry the commit that made it"
             assert isinstance(e["gated_paths"], list)
 
+    def test_a_live_dispatcher_is_never_reported_deleted(self):
+        """A file alive at the measured ref cannot have been deleted there.
+
+        Measuring deletions across ALL refs fabricates some: ``--all`` sees a
+        deletion made on a branch the ref never carried, then ``rev-list -n 1
+        --all`` attributes it to the newest commit merely TOUCHING the path --
+        a rename -- and the pre-rename project-path reads as ungated while the
+        live job gates it under its new name. Measured 2026-10-31: four live
+        callers (formal-logic, galois, grothendieck, mimo) were reported
+        deleted, one of them as LOST coverage on a green main.
+        """
+        entries = deleted_dispatchers(_REF)
+        if not entries:
+            pytest.skip(f"no deleted dispatchers visible at {_REF}")
+        alive = [e["dispatcher"] for e in entries
+                 if _path_exists_at_ref(f"{WORKFLOWS_DIR}/{e['dispatcher']}", _REF)]
+        assert alive == [], (
+            f"{alive} are deleted at some ref but ALIVE at {_REF}: reporting them "
+            "as deletions measures history the audited ref never had. Restrict the "
+            "deletion scan to commits reachable from the ref."
+        )
+
+    def test_deleted_by_really_deletes_the_file(self):
+        """``deleted_by`` must be a commit that removes the path, not one that moves it."""
+        entries = deleted_dispatchers(_REF)
+        if not entries:
+            pytest.skip(f"no deleted dispatchers visible at {_REF}")
+        for e in entries:
+            path = f"{WORKFLOWS_DIR}/{e['dispatcher']}"
+            sha = _run_git("rev-parse", e["deleted_by"]).stdout.decode().strip()
+            assert _path_exists_at_ref(path, f"{sha}^"), (
+                f"{e['dispatcher']}: the parent of {e['deleted_by']} did not carry it"
+            )
+            assert not _path_exists_at_ref(path, sha), (
+                f"{e['dispatcher']}: {e['deleted_by']} still carries {path} — that "
+                "commit MODIFIED it (a rename), so the recorded content is not the "
+                "last version before a deletion."
+            )
+
 
 class TestClassifyDeleted:
     """Deplacer le gate n'est pas le perdre — et l'illisible reste PERDU."""
@@ -274,6 +326,52 @@ class TestClassifyDeleted:
         r = classify_deleted([d], set())
         assert r["lost"] == [] and r["relocated"] == []
         assert [e["dispatcher"] for e in r["never"]] == ["lean-y.yml"]
+
+    # -- le lake qui se deplace (#23871) --------------------------------
+    # Un rename T2 supprime le dispatcher et le recree sous un autre dossier :
+    # le project-path change, la couverture suit. La reconnaitre exige la
+    # PREUVE d'absence de l'ancien chemin -- sans elle, on blanchirait une
+    # vraie perte.
+
+    def test_a_moved_lake_is_relocation_not_loss(self):
+        """Old path gone from the tree + same-basename successor gated today."""
+        d = self._d(["A/Lean/galois_lean"])
+        gated = {"A/Lean/GALOIS/galois_lean"}
+        r = classify_deleted([d], gated, exists_at=lambda p: p in gated)
+        assert r["lost"] == []
+        [entry] = r["relocated"]
+        assert entry["moved_to"] == "A/Lean/GALOIS/galois_lean"
+
+    def test_a_surviving_old_path_keeps_it_lost(self):
+        """Negative control: both paths exist -> the old lake lives there, ungated."""
+        d = self._d(["A/Lean/galois_lean"])
+        present = {"A/Lean/galois_lean", "A/Lean/GALOIS/galois_lean"}
+        gated = {"A/Lean/GALOIS/galois_lean"}
+        r = classify_deleted([d], gated, exists_at=lambda p: p in present)
+        assert r["relocated"] == []
+        assert [e["dispatcher"] for e in r["lost"]] == ["lean-x.yml"]
+
+    def test_no_gated_successor_keeps_it_lost(self):
+        """Negative control: the lake vanished and nothing gated took its place."""
+        d = self._d(["A/Lean/galois_lean"])
+        r = classify_deleted([d], {"C/c_lean"}, exists_at=lambda p: False)
+        assert r["relocated"] == []
+        assert [e["dispatcher"] for e in r["lost"]] == ["lean-x.yml"]
+
+    def test_a_move_without_absence_probe_stays_lost(self):
+        """No probe is no evidence: the second shape stays fail-closed."""
+        d = self._d(["A/Lean/galois_lean"])
+        r = classify_deleted([d], {"A/Lean/GALOIS/galois_lean"})
+        assert r["relocated"] == []
+        assert [e["dispatcher"] for e in r["lost"]] == ["lean-x.yml"]
+
+    def test_an_ambiguous_successor_stays_lost(self):
+        """Two same-basename successors make the move unprovable: no credit."""
+        d = self._d(["A/Lean/galois_lean"])
+        gated = {"B/Lean/galois_lean", "C/Lean/galois_lean"}
+        r = classify_deleted([d], gated, exists_at=lambda p: p in gated)
+        assert r["relocated"] == []
+        assert [e["dispatcher"] for e in r["lost"]] == ["lean-x.yml"]
 
 
 class TestMeasurePartition:
@@ -494,3 +592,120 @@ class TestCompositeAxiomCoverage:
         r = classify_deleted([d], gated)
         assert r["lost"] == []
         assert [e["dispatcher"] for e in r["relocated"]] == ["lean-serre.yml"]
+
+
+class TestJustifiedUngated:
+    """Cliquet #22519 : un lake sans gate doit porter sa decision ECRITE.
+
+    Le silence n'est pas un etat representable. Un lake du manifeste que ni le
+    cablage ni une ligne de decision ne nomme est un lake dont personne n'a
+    tranche -- et c'est cela, et rien d'autre, que ``--check --strict`` refuse.
+    """
+
+    DOC = (
+        "| **Lacs non cables** | doc | OUI |"
+        " `MyIA.AI.Notebooks/A/a_lean` reste sans gate, motif mesure |\n"
+        "| **Autre** | doc | OUI |"
+        " `MyIA.AI.Notebooks/B/b_lean` est cable depuis #22519 |\n"
+    )
+
+    @pytest.fixture(autouse=True)
+    def _doc(self, monkeypatch):
+        import check_axiom_gate_coverage as mod
+        monkeypatch.setattr(mod, "coverage_doc", lambda ref: self.DOC)
+
+    def test_sans_gate_line_with_the_path_justifies_it(self):
+        assert justified_ungated("HEAD", ["MyIA.AI.Notebooks/A/a_lean"]) == {
+            "MyIA.AI.Notebooks/A/a_lean"}
+
+    def test_a_mention_without_sans_gate_does_not_justify(self):
+        """Le lake est cite dans la doc -- mais comme CABLE. Pas une decision."""
+        assert justified_ungated("HEAD", ["MyIA.AI.Notebooks/B/b_lean"]) == set()
+
+    def test_justification_does_not_leak_to_another_lake(self):
+        """Une ligne « sans gate » pour A ne blanchit pas B du meme document."""
+        assert justified_ungated(
+            "HEAD", ["MyIA.AI.Notebooks/A/a_lean", "MyIA.AI.Notebooks/B/b_lean"]
+        ) == {"MyIA.AI.Notebooks/A/a_lean"}
+
+    def test_a_bare_family_name_is_not_a_match(self):
+        """Le critere est le project-path, pas un mot du document."""
+        assert justified_ungated("HEAD", ["MyIA.AI.Notebooks/C/c_lean"]) == set()
+
+    def test_prefix_path_does_not_leak_to_longer_sibling(self, monkeypatch):
+        """🟠1 (review #23019) : une ligne ne nommant que `lean_game_defs_ext`
+        ne justifie pas son prefixe `lean_game_defs`. L'ancien test ne voyait
+        pas la fuite : il comparait `A/a_lean` et `B/b_lean`, chemins non
+        prefixes ; le manifeste reel porte le couple prefixe/sibling."""
+        import check_axiom_gate_coverage as mod
+        doc = ("| `MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext` "
+               "reste sans gate, motif mesure |\n")
+        monkeypatch.setattr(mod, "coverage_doc", lambda ref: doc)
+        assert justified_ungated(
+            "HEAD", ["MyIA.AI.Notebooks/GameTheory/lean_game_defs"]
+        ) == set()
+
+    def test_negated_mention_does_not_justify(self, monkeypatch):
+        """🟠1 (review #23019) : « n'est plus sans gate » dit l'inverse de la
+        decision -- elle ne doit pas blanchir le lake."""
+        import check_axiom_gate_coverage as mod
+        doc = ("| `MyIA.AI.Notebooks/A/a_lean` n'est plus sans gate : "
+               "cable depuis #22519 |\n")
+        monkeypatch.setattr(mod, "coverage_doc", lambda ref: doc)
+        assert justified_ungated("HEAD", ["MyIA.AI.Notebooks/A/a_lean"]) == set()
+
+    def test_empty_doc_justifies_nothing(self, monkeypatch):
+        import check_axiom_gate_coverage as mod
+        monkeypatch.setattr(mod, "coverage_doc", lambda ref: "")
+        assert justified_ungated("HEAD", ["MyIA.AI.Notebooks/A/a_lean"]) == set()
+
+
+class TestShippedManifestTranche:
+    """🟠2 (review #23019) : la suite doit confronter le garde au manifeste
+    LIVRE, pas a `origin/main` (l'etat d'avant la PR). `AXIOM_GATE_COVERAGE_REF`
+    n'est defini par aucun workflow du depot : le checkout courant (HEAD) est la
+    seule ref qui mesure ce que la PR livre. Un lake ajoute au manifeste sans
+    decision ecrite rougit ici, comme il rougirait au CLI."""
+
+    def test_le_manifeste_livre_est_integralement_tranche(self):
+        r = measure("HEAD")
+        if not r["matrix_lakes"]:
+            pytest.skip("no manifest at HEAD")
+        assert r["ungated_without_justification"] == []
+
+
+class TestStrictExitCode:
+    """`--strict` doit ROUGIR, pas seulement exister : sinon il est decoratif."""
+
+    def _run(self, argv):
+        saved = sys.argv
+        try:
+            sys.argv = ["check_axiom_gate_coverage.py", *argv]
+            return main()
+        finally:
+            sys.argv = saved
+
+    def _fake(self, monkeypatch, ungated):
+        import check_axiom_gate_coverage as mod
+        monkeypatch.setattr(mod, "measure", lambda ref: {
+            "ref": ref, "gated_lakes": [], "matrix_lakes": list(ungated),
+            "matrix_lakes_without_gate": list(ungated),
+            "matrix_lakes_without_gate_justified": [],
+            "ungated_without_justification": list(ungated),
+            "deleted_dispatchers": 0, "lost_gate": [], "gate_relocated": [],
+            "never_had_gate": [], "not_an_acceptance_criterion": "n/a",
+            "gate_callers": {"w.yml": ["A/a_lean"]},
+        })
+
+    def test_strict_fails_on_an_unjustified_lake(self, monkeypatch, capsys):
+        self._fake(monkeypatch, ["MyIA.AI.Notebooks/A/a_lean"])
+        assert self._run(["--check", "--strict", "--json", "--ref", "HEAD"]) == 1
+
+    def test_non_strict_stays_green_on_the_same_report(self, monkeypatch, capsys):
+        """Retro-compatibilite : le contrat d'avant #22519 ne bouge pas."""
+        self._fake(monkeypatch, ["MyIA.AI.Notebooks/A/a_lean"])
+        assert self._run(["--check", "--json", "--ref", "HEAD"]) == 0
+
+    def test_strict_is_green_when_nothing_is_ungated(self, monkeypatch, capsys):
+        self._fake(monkeypatch, [])
+        assert self._run(["--check", "--strict", "--json", "--ref", "HEAD"]) == 0

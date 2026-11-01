@@ -1,0 +1,148 @@
+{
+  "schema_version": 1,
+  "description": "Versions canoniques des bibliotheques chargees par les cellules des carnets (organe #23073). Quand un organe de serie fixe deja la version, le manifeste POINTE vers lui (canonical_source=organ) et ne recopie pas la valeur : deux surfaces qui recopient la meme valeur finissent par diverger. AUCUN DECOMPIL N'EST RECOPIE DANS CE FICHIER : le nombre de carnets par version vient du recensement (`python scripts/notebook_tools/check_lib_versions.py --census`), seul a jour sur le corpus. Les motifs ecrivent POURQUOI un ecart est justifie ou a converger, pas combien de carnets le portent.",
+  "libraries": [
+    {
+      "id": "Tweety",
+      "ecosystem": "tweety",
+      "canonical_source": "organ",
+      "organ_path": "MyIA.AI.Notebooks/SymbolicAI/Tweety/scripts/download_tweety_tools.py",
+      "organ_symbol": "TWEETY_VERSION",
+      "local_symbol": "TWEETY_VERSION",
+      "foreign_provisioning": [
+        {
+          "pattern": "tweetyproject\\.org/builds/",
+          "reason": "Source de provisionnement hors de l'organe de serie : le chemin tweetyproject.org/builds/<version>/ repond 404 depuis #12789 ; l'organe de serie telecharge depuis Maven Central (TWEETY_MAVEN_BASE). C'est le cas declencheur de #23047 (archive : TWEETY_VERSION redeclaree a 1.28 dans le carnet) -- cas CORPSUS repare depuis sur `main` par #23047 (commit d5e44a0919d6 : le carnet archive est desormais provisionne par l'organe de la serie). Le motif est conserve : il decrit la CLASSE de defaut que l'organe doit voir, pas un carnet particulier."
+        }
+      ]
+    },
+    {
+      "id": "IKVM",
+      "ecosystem": "nuget",
+      "canonical": "8.15.0",
+      "canonical_source": "manifest",
+      "divergences": [
+        {
+          "version": "8.14.0",
+          "decision": "justified",
+          "reason": "Ecart justifie, NON convergent : les carnets concernes chargent une DLL Tweety ombree precompilee contre IKVM 8.14.0 (recette de shade : dotnet-build/build-TweetyMlnShade.csproj pour Tweety-10) et figent ikvmVer = \"8.14.0\" dans leur cellule de setup. Monter la ligne d'epinglage a 8.15.0 sans recompiler l'artefact ombre charge une DLL compilee en 8.14.0 dans un runtime 8.15.0 : la convergence serait une regression fonctionnelle, pas un alignement. Les carnets concernes sont nommes dans les entrees d'allowlist."
+        }
+      ]
+    },
+    {
+      "id": "IKVM.Image",
+      "ecosystem": "nuget",
+      "canonical": "8.15.0",
+      "canonical_source": "manifest",
+      "divergences": [
+        {
+          "version": "8.14.0",
+          "decision": "justified",
+          "reason": "Ecart justifie, NON convergent : meme motif que IKVM 8.14.0 -- l'artefact ombre (DLL + runtime IKVM) est compile et prepare en 8.14.0 ; IKVM.Image suit la meme version que IKVM dans la recette de build."
+        }
+      ]
+    },
+    {
+      "id": "pythonnet",
+      "ecosystem": "nuget",
+      "canonical": "3.1.0",
+      "canonical_source": "manifest",
+      "divergences": []
+    },
+    {
+      "id": "Google.OrTools",
+      "ecosystem": "nuget",
+      "canonical": "9.15.6755",
+      "canonical_source": "manifest",
+      "divergences": []
+    },
+    {
+      "id": "dotNetRDF",
+      "ecosystem": "nuget",
+      "canonical": "3.4.1",
+      "canonical_source": "manifest",
+      "divergences": []
+    },
+    {
+      "id": "Microsoft.ML",
+      "ecosystem": "nuget",
+      "canonical": "5.0.0",
+      "canonical_source": "manifest",
+      "divergences": [
+        {
+          "version": "3.0.0",
+          "decision": "to_converge",
+          "reason": "Ecart non justifie : aucun motif ecrit dans le depot ne rattache l'epingle 3.0.0 a une contrainte de la serie, donc l'ecart est classe « a converger »."
+        }
+      ]
+    },
+    {
+      "id": "SkiaSharp",
+      "ecosystem": "nuget",
+      "canonical": "3.119.4",
+      "canonical_source": "manifest",
+      "divergences": [
+        {
+          "version": "2.88.3",
+          "decision": "to_converge",
+          "reason": "Ecart non justifie : aucun motif ecrit dans le depot ne rattache l'epingle 2.88.3 a une contrainte de la serie, donc l'ecart est classe « a converger »."
+        }
+      ]
+    },
+    {
+      "id": "Microsoft.ML.AutoML",
+      "ecosystem": "nuget",
+      "canonical": "0.23.0",
+      "canonical_source": "manifest",
+      "divergences": []
+    },
+    {
+      "id": "CsvHelper",
+      "ecosystem": "nuget",
+      "canonical": "33.0.1",
+      "canonical_source": "manifest",
+      "divergences": [
+        {
+          "version": "27.1.1",
+          "decision": "to_converge",
+          "reason": "Ecart non justifie : aucune dependance documentee a CsvHelper 27.x dans le depot, donc l'ecart est classe « a converger »."
+        }
+      ]
+    },
+    {
+      "id": "mealpy",
+      "ecosystem": "pip",
+      "canonical": "3.0.2",
+      "canonical_source": "manifest",
+      "note": "Version du paquet Python mealpy, celle que doit exposer l'environnement charge par `Config/PythonNetLoader.cs` pour les carnets qui l'importent. Le corpus ne l'epingle pas de facon executable : sa seule commande d'installation (`pip install mealpy numpy matplotlib`) est ecrite dans une cellule MARKDOWN (documentation, hors perimetre de l'organe), et les deux occurrences de 3.0.2 dans les cellules code sont de la prose (un `print` et un commentaire C#). L'entree de manifeste ne pretend donc pas que le corpus declare cette version ; c'est un contrat d'environnement, et le suivi de l'installation est dans #23104."
+    }
+  ],
+  "allowlist": [
+    {
+      "library": "IKVM",
+      "version": "8.14.0",
+      "notebooks": [
+        "Tweety-03-Advanced-Logics-CSharp.ipynb",
+        "Tweety-03-Conditional-Logics-CSharp.ipynb",
+        "Tweety-03-ModalLogic-CSharp.ipynb",
+        "Tweety-03-QBF-CSharp.ipynb",
+        "Tweety-07b-Ranking-Probabilistic-CSharp.ipynb",
+        "Tweety-10-MLN-CSharp.ipynb"
+      ],
+      "reason": "Carnet Tweety chargeant une DLL ombree precompilee contre IKVM 8.14.0 et figeant ikvmVer = \"8.14.0\" : l'epinglage ne peut pas bouger sans recompiler l'artefact ombre. Converger a 8.15.0 serait une regression fonctionnelle, pas un alignement."
+    },
+    {
+      "library": "IKVM.Image",
+      "version": "8.14.0",
+      "notebooks": [
+        "Tweety-03-Advanced-Logics-CSharp.ipynb",
+        "Tweety-03-Conditional-Logics-CSharp.ipynb",
+        "Tweety-03-ModalLogic-CSharp.ipynb",
+        "Tweety-03-QBF-CSharp.ipynb",
+        "Tweety-07b-Ranking-Probabilistic-CSharp.ipynb",
+        "Tweety-10-MLN-CSharp.ipynb"
+      ],
+      "reason": "Carnet Tweety chargeant une DLL ombree precompilee contre IKVM 8.14.0 et figeant ikvmVer = \"8.14.0\" : l'epinglage ne peut pas bouger sans recompiler l'artefact ombre. Converger a 8.15.0 serait une regression fonctionnelle, pas un alignement."
+    }
+  ]
+}

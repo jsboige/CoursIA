@@ -474,7 +474,8 @@ naturelle, l'hypothèse `h_central` du cadre ne coûte rien — au même titre q
 `centralCorrect` en `hcap` (capture de la trajectoire entière `∀ t ≤ 2^k`).
 
 La brique de traversée existe déjà, prouvée : les murs
-`p4_{nw,ne,se,sw}_overlap_wall` (Walls/, privés, sorry-free) donnent l'accord
+`p4_{nw,ne,se,sw}_overlap_wall` (Walls/, sorry-free -- NW, NE et SW privés, SE
+public depuis le découpage #23234) donnent l'accord
 **pointwise** entre la trajectoire de référence `evolve (2^(k-1))` de la grille
 parent et la reconstruction `node R1 R2 R4 R5` du second flot, sur chaque
 sous-fenêtre `[2^k, 2^k + 2^((k-1)+1))²` et sa boîte Chebyshev `2^(k-1)`, sous
@@ -544,14 +545,16 @@ theorem padCenter2_support_in_window (c : MacroCell) (hc : cellWf c)
 L'inventaire P4.4 (tranche 18) a nommé les quatre murs `p4_{nw,ne,se,sw}_overlap_wall`
 de `Walls/` comme briques de croisement du résidu L3 : l'accord point par point, sur
 la sous-fenêtre centrale, entre la trajectoire de référence et la reconstruction
-seconde vague. Ces murs sont **privés** dans leurs fichiers — l'assemblage P4
-(itération dyadique de l'accord le long de la décomposition de `t`) ne peut pas les
-invoquer depuis ce fragment. La tranche restitue le mur NW sous le toit du fragment
+seconde vague. Trois de ces murs (NW, NE, SW) restent **privés** dans leurs fichiers —
+l'assemblage P4 (itération dyadique de l'accord le long de la décomposition de `t`) ne
+peut pas les invoquer depuis ce fragment ; le quatrième, SE, est devenu public avec le
+découpage #23234 (`Walls/SE/Overlap.lean`). La tranche restitue le mur NW sous le toit
+du fragment
 en énoncé **public** `wall_nw_agreement`, exclusivement à partir des briques
 publiques de `Foundation` : `p4_nw_parent_agree_n*`, `p4_nw_rside_char_*`,
 `evolve_box_agree_local`, `p4_isAlive_toGrid_shift`, `coord_bound_of_chebDist_le`.
-Énoncé et preuve sont la copie fidèle du mur original — aucune déprivatisation dans
-`Walls/`, aucun impact i18n.
+Énoncé et preuve sont la copie fidèle du mur original — cette tranche ne déprivatise
+aucun mur de `Walls/` (le mur NW reste privé dans `Walls/NW.lean`), aucun impact i18n.
 
 Les 8 hypothèses structurelles `hn*_l`/`hn*_w` (niveau `k+1` et `wf` des quatre
 nœuds de recombinaison) sont **porteuses** : le bloc de réfutation de
@@ -731,7 +734,8 @@ Trois écarts avec le mur NW, tous portés par l'énoncé :
 Seuls `n3` (enfant NE du parent) et `n6` sont neufs côté briques d'accord :
 `p4_ne_parent_agree_n3` (Foundation.lean:3453) et `p4_ne_parent_agree_n6`
 (:3491), toutes deux publiques. Énoncé et preuve sont la copie fidèle du mur
-original ; aucune déprivatisation, aucun impact i18n. -/
+original ; aucune déprivatisation par cette tranche (le mur NE reste privé dans
+`Walls/NE.lean`), aucun impact i18n. -/
 
 set_option maxHeartbeats 4000000 in
 /-- **Mur NE (restitution publique de `p4_ne_overlap_wall`).** Sur la boîte
@@ -906,7 +910,7 @@ theorem wall_ne_agreement
 /-! ### Tranche 22 — restitution publique du mur SE (`wall_se_agreement`)
 
 Troisième mur restitué, en miroir **diagonal** de NW (indices `{5,6,8,9}`). Le mur SE
-(`Walls/SE.lean:120`, miroir de NW par réflexion diagonale) couvre le supercell
+(`Walls/SE/Overlap.lean`, miroir de NW par réflexion diagonale) couvre le supercell
 `node R5 R6 R8 R9` ancré à `(2^k + 2^(k-1), 2^k + 2^(k-1))` dans le parent :
 la fenêtre est décalée sur les **deux** coordonnées et la conclusion translatée
 d'autant.
@@ -917,15 +921,17 @@ Deux écarts avec les murs NW/NE :
   supercell est un nœud distinct de la couronne, `n7` et `n8` n'étant atteints que
   par les quadrants SO/SE ;
 * trois des quatre briques de quadrant sont **publiques** (`p4_nw_parent_agree_n5`,
-  `p4_ne_parent_agree_n6`, `p4_sw_parent_agree_n8`), mais la quatrième
-  (`p4_se_parent_agree_n9`) est **privée dans `Walls/SE.lean` et n'a aucun
-  analogue public** dans le lake : la tranche la restitue donc aussi, sous le nom
-  `se_parent_agree_n9`, avant le mur — ses quatre briques (`p4_bool_eq_of_iff`,
-  `isAlive_true_iff_mem_local`, `mem_toGrid_node`, `p4_mem_toGrid_lt`) sont
-  publiques dans `Foundation`.
+  `p4_ne_parent_agree_n6`, `p4_sw_parent_agree_n8`), et la quatrième
+  (`p4_se_parent_agree_n9`) l'est devenue : restée privée dans l'agrégat d'origine
+  jusqu'au découpage #23234, qui la rend publique dans `Walls/SE/Basic.lean`. La
+  tranche la restitue néanmoins, sous le nom `se_parent_agree_n9`, avant le mur —
+  écrit à l'époque où elle était privée et conservé depuis — ses quatre briques
+  (`p4_bool_eq_of_iff`, `isAlive_true_iff_mem_local`, `mem_toGrid_node`,
+  `p4_mem_toGrid_lt`) sont publiques dans `Foundation`.
 
-Énoncés et preuves sont les copies fidèles des originaux ; aucune
-déprivatisation dans `Walls/`, aucun impact i18n. -/
+Énoncés et preuves sont les copies fidèles des originaux ; cette tranche ne
+déprivatise aucun mur de `Walls/` (la déprivatisation des cinq théorèmes SE est le
+fait du découpage #23234, dans `Walls/SE/`), aucun impact i18n. -/
 
 /-- **Accord parent / `n9` (restitution publique de `p4_se_parent_agree_n9`).**
     Sur le quadrant SE du parent trois-fois-paddé (`[2·2^k, 4·2^k)²`), l'état
@@ -978,8 +984,9 @@ set_option maxHeartbeats 4000000 in
     `[2·2^k, 2·2^k + 2^((k-1)+1))²`, la trajectoire de référence du supernœud
     16-cellules (une génération `2^(k-1)`) coïncide avec la recombinaison
     seconde vague `(node R5 R6 R8 R9).toGrid`, lue translatée de
-    `(-(2^k + 2^(k-1)), -(2^k + 2^(k-1)))`. Copie fidèle du mur privé
-    `p4_se_overlap_wall` (`Walls/SE.lean`), en public sous le toit du fragment
+    `(-(2^k + 2^(k-1)), -(2^k + 2^(k-1)))`. Copie fidèle du mur
+    `p4_se_overlap_wall` (public depuis le découpage #23234, dans
+    `Walls/SE/Overlap.lean`), restituée en public sous le toit du fragment
     pour l'assemblage P4 : fenêtre → quadrant (n5 réutilisé du mur NW, n6 du mur
     NE, n8 du mur SW, n9 restitué ci-dessus) → localité Chebyshev →
     caractérisation `p4_nw_rside_char_*` paramétrique du supernœud résultat. -/
@@ -4068,6 +4075,148 @@ theorem hcap_of_union_mixed_of_box {T T₁ T₂ : Nat} (hT : 0 < T)
     evolve_period_union_mul hT hdv₁ hdv₂ g₁ g₂ hsep hfix₁ hfix₂ hcan
   exact hcap_of_union_mixed hT hdv₁ hdv₂ g₁ g₂ hsep hfix₁ hfix₂ hcan
     (hwin_of_orbit_box hT (g₁ ++ g₂) hperU a₁ a₂ b₁ b₂ hbox hframe)
+
+/-! ### Tranche 24 — capture par boîte statique du demi-cadre médian (apériodique)
+
+La scoping tranche 3 (c.5551593604) avait identifié les classes hcap-atteignables
+comme périodiques (`T ∣ 2^k`), puis 8a/8b les avait relâchées par containment des
+phases ; la tranche 17 a fermé la route du corridor dilaté (il ne capture que du
+vide). Cette tranche ouvre la classe **apériodique confinée** : aucune hypothèse
+de périodicité ni de divisibilité — seule une **boîte statique** que la
+trajectoire entière ne quitte jamais, placée dans le demi-cadre médian
+`[2^(lvl-1), 3·2^(lvl-1))²` du cadrage origine. L'arithmétique y est exactement
+celle du test `jumpCapturedF` (lecture shiftée de `3·2^(lvl-1)`, cf
+`padCenter2_toGrid_shift`) : la boîte `[u, 3u)²` avec `u = 2^(lvl-1)` remonte
+après shift dans `[4u, 6u)² = [2^lvl, 3·2^lvl)²` — la fenêtre exacte du
+prédicat, sans sur-approximation de dérive. C'est la contrepartie « position
+exacte » du corridor : là où la tranche 17 bornait la dérive par ±2^lvl (ce qui
+forçait une boîte de largeur nulle), ici la boîte constate les positions réelles
+de la trajectoire. La classe couvre sans les supposer les classes existantes
+(natures mortes, oscillateurs, unions) et les trajectoires confinées sans point
+fixe ni période — transitoires finis, motifs qui se stabilisent tard.
+
+Chaîne miroir de 8a/8b : cellule → reconstruction → hcap → énoncé-cadre. -/
+
+/-- **Tranche 24, maillon 1 — la boîte statique du demi-cadre médian capture le
+    saut.** Si la trajectoire de la grille d'origine de `c` vit entière dans la
+    boîte `[2^(lvl-1), 3·2^(lvl-1))²` (coordonnées du cadrage `(0, 0)`), le saut
+    est capturé — sans hypothèse de périodicité. Le transport padded → origine
+    (`padCenter2_toGrid_shift` + `evolve_shift`) ramène le test de fenêtre à une
+    inclusion linéaire : la boîte lue à travers le shift `3·2^(lvl-1)` atterrit
+    dans `[2^lvl, 3·2^lvl)²`, la fenêtre exacte de `jumpCapturedF`. Aucune
+    hypothèse de wf : la boîte remplace la borne de contenu du cadre. -/
+theorem jumpCapturedF_of_static_frame (c : MacroCell)
+    (hlvl : 1 ≤ c.level)
+    (hbox : ∀ s : Nat, ∀ p ∈ evolve s (c.toGrid (0, 0)),
+      (2 ^ (c.level - 1) : Int) ≤ p.1 ∧ p.1 < 3 * (2 ^ (c.level - 1) : Int) ∧
+      (2 ^ (c.level - 1) : Int) ≤ p.2 ∧ p.2 < 3 * (2 ^ (c.level - 1) : Int)) :
+    jumpCapturedF c = true := by
+  rw [jumpCapturedF_iff]
+  intro p hp
+  rw [padCenter2_toGrid_shift c hlvl, ← evolve_shift, mem_shift] at hp
+  obtain ⟨b1, b2, b3, b4⟩ := hbox (2 ^ c.level) _ hp
+  dsimp only at b1 b2 b3 b4
+  -- Bornes du test : `2^lvl ≤ p.i < 2^lvl + 2^(lvl+1)` ; contenu shifté par
+  -- `3·2^(lvl-1)` dans `[2^(lvl-1), 3·2^(lvl-1))` — linéaire en l'atome.
+  have hpow : (2 ^ c.level : Int) = 2 * (2 ^ (c.level - 1) : Int) := by
+    have hsplit : c.level = (c.level - 1) + 1 := by omega
+    conv_lhs => rw [hsplit]
+    rw [pow_succ]
+    ring
+  have hnext : ((2 ^ (c.level + 1) : Nat) : Int)
+      = (2 ^ c.level : Int) + (2 ^ c.level : Int) := by
+    rw [Nat.cast_pow, pow_succ]
+    ring
+  omega
+
+/-- **Tranche 24, maillon 2 — capture de la reconstruction par boîte statique.**
+    Variante grille du maillon 1 : la boîte est énoncée en coordonnées absolues,
+    relativement au cadre de reconstruction de `g` (offset + demi-cadre médian).
+    Le transport au cadrage origine (`toGrid_shift_grid` +
+    `toGrid_gridToMacroCellWithOffset_eq`) calque la chaîne 8b. -/
+theorem jumpCapturedF_reconstruction_of_static_frame (g : Grid) (hg : Canonical g)
+    (hbox : ∀ i : Nat, ∀ p ∈ evolve i g,
+      (gridToMacroCellWithOffset g).1.1
+          + (2 ^ ((gridToMacroCellWithOffset g).2.level - 1) : Int) ≤ p.1 ∧
+        p.1 < (gridToMacroCellWithOffset g).1.1
+          + 3 * (2 ^ ((gridToMacroCellWithOffset g).2.level - 1) : Int) ∧
+      (gridToMacroCellWithOffset g).1.2
+          + (2 ^ ((gridToMacroCellWithOffset g).2.level - 1) : Int) ≤ p.2 ∧
+        p.2 < (gridToMacroCellWithOffset g).1.2
+          + 3 * (2 ^ ((gridToMacroCellWithOffset g).2.level - 1) : Int)) :
+    jumpCapturedF (gridToMacroCellWithOffset g).2 = true := by
+  by_cases hne : g = []
+  · subst hne
+    decide
+  · have hlvl : 1 ≤ (gridToMacroCellWithOffset g).2.level := by
+      have hN := gridToMacroCellWithOffsetN_level_gt_n 2 g hne
+      rw [gridToMacroCellWithOffsetN_le_two_eq 2 g (by omega)] at hN
+      cases hL : (gridToMacroCellWithOffset g).2.level with
+      | zero => rw [hL] at hN; exact absurd hN (by decide)
+      | succ m => omega
+    have hshift : (gridToMacroCellWithOffset g).2.toGrid (0, 0)
+        = shift (0 - (gridToMacroCellWithOffset g).1.1,
+            0 - (gridToMacroCellWithOffset g).1.2)
+            ((gridToMacroCellWithOffset g).2.toGrid (gridToMacroCellWithOffset g).1) :=
+      toGrid_shift_grid _ 0 0 _ _
+    have hrt : (gridToMacroCellWithOffset g).2.toGrid (gridToMacroCellWithOffset g).1
+        = g := toGrid_gridToMacroCellWithOffset_eq g hg
+    have hwin' : ∀ i : Nat, ∀ p ∈
+        evolve i ((gridToMacroCellWithOffset g).2.toGrid (0, 0)),
+      (2 ^ ((gridToMacroCellWithOffset g).2.level - 1) : Int) ≤ p.1 ∧
+        p.1 < 3 * (2 ^ ((gridToMacroCellWithOffset g).2.level - 1) : Int) ∧
+      (2 ^ ((gridToMacroCellWithOffset g).2.level - 1) : Int) ≤ p.2 ∧
+        p.2 < 3 * (2 ^ ((gridToMacroCellWithOffset g).2.level - 1) : Int) := by
+      intro i p hp
+      rw [hshift, ← evolve_shift, mem_shift, hrt] at hp
+      obtain ⟨hb1, hb2, hb3, hb4⟩ := hbox i _ hp
+      dsimp only at hb1 hb2 hb3 hb4
+      omega
+    exact jumpCapturedF_of_static_frame _ hlvl hwin'
+
+/-- **Tranche 24, maillon 3 — hcap de la classe apériodique confinée.** Chaque
+    état `g_t` de la trajectoire porte sa boîte propre (le demi-cadre médian de
+    SA reconstruction) : la prémisse `hwin` indexe par l'état de départ `r` et le
+    temps écoulé `i`, sans borne temporelle — il n'y a plus de phase à réduire,
+    la boîte se vérifie état par état. -/
+theorem hcap_of_static_frame (g : Grid) (hg : Canonical g)
+    (hwin : ∀ r i : Nat, ∀ p ∈ evolve i (evolve r g),
+      (gridToMacroCellWithOffset (evolve r g)).1.1
+          + (2 ^ ((gridToMacroCellWithOffset (evolve r g)).2.level - 1) : Int) ≤ p.1 ∧
+        p.1 < (gridToMacroCellWithOffset (evolve r g)).1.1
+          + 3 * (2 ^ ((gridToMacroCellWithOffset (evolve r g)).2.level - 1) : Int) ∧
+      (gridToMacroCellWithOffset (evolve r g)).1.2
+          + (2 ^ ((gridToMacroCellWithOffset (evolve r g)).2.level - 1) : Int) ≤ p.2 ∧
+        p.2 < (gridToMacroCellWithOffset (evolve r g)).1.2
+          + 3 * (2 ^ ((gridToMacroCellWithOffset (evolve r g)).2.level - 1) : Int)) :
+    ∀ t, jumpCapturedF (gridToMacroCellWithOffset (evolve t g)).2 = true := by
+  intro t
+  have hcan : Canonical (evolve t g) := by
+    rcases Nat.eq_zero_or_pos t with h0 | hpos
+    · rw [h0]
+      simpa using hg
+    · exact canonical_evolve_of_pos hpos _
+  exact jumpCapturedF_reconstruction_of_static_frame _ hcan (hwin t)
+
+/-- **Tranche 24 — L3 clos pour la classe apériodique confinée : correction
+    Hashlife des trajectoires à boîte statique.** Sous containment médian des
+    états (aucune périodicité, aucune divisibilité), l'égalité globale s'applique
+    à tout horizon `2^k` sous `centralCorrect` — miroir de
+    `hashlife_correct_margin_of_period_mod` sans son hypothèse de période. -/
+theorem hashlife_correct_margin_of_static_frame (c : MacroCell) (k : Nat)
+    (h_central : centralCorrect c k)
+    (hwin : ∀ r i : Nat, ∀ p ∈ evolve i (evolve r (c.toGrid (0, 0))),
+      (gridToMacroCellWithOffset (evolve r (c.toGrid (0, 0)))).1.1
+          + (2 ^ ((gridToMacroCellWithOffset (evolve r (c.toGrid (0, 0)))).2.level - 1) : Int) ≤ p.1 ∧
+        p.1 < (gridToMacroCellWithOffset (evolve r (c.toGrid (0, 0)))).1.1
+          + 3 * (2 ^ ((gridToMacroCellWithOffset (evolve r (c.toGrid (0, 0)))).2.level - 1) : Int) ∧
+      (gridToMacroCellWithOffset (evolve r (c.toGrid (0, 0)))).1.2
+          + (2 ^ ((gridToMacroCellWithOffset (evolve r (c.toGrid (0, 0)))).2.level - 1) : Int) ≤ p.2 ∧
+        p.2 < (gridToMacroCellWithOffset (evolve r (c.toGrid (0, 0)))).1.2
+          + 3 * (2 ^ ((gridToMacroCellWithOffset (evolve r (c.toGrid (0, 0)))).2.level - 1) : Int)) :
+    evolveHashlifeFast (2^k) (c.toGrid (0, 0)) = evolve (2^k) (c.toGrid (0, 0)) :=
+  hashlife_correct_margin_of_hcap c k h_central
+    (fun t _ => hcap_of_static_frame _ (canonical_sortDedup _) hwin t)
 
 /-! ### Tranche 23 — restitution publique du mur SW (`wall_sw_agreement`)
 
