@@ -56,6 +56,10 @@ __all__ = [
     "institutionalization",
     "irreversibility_debt",
     "FixedSpacePredictor",
+    "BenchVerdict",
+    "classer_proxys",
+    "temoin_decoratif",
+    "bancher_mecanisme",
 ]
 
 
@@ -450,3 +454,148 @@ class FixedSpacePredictor:
     def surprise_structurelle(self) -> float:
         """Perte d'un point hors support, en bits : ``log2(|A| + 1)``."""
         return float(np.log2(len(self.actions) + 1))
+
+
+# ---------------------------------------------------------------------------
+# Banc unique (tete de la strate 7) — unification transversale du depot
+# ---------------------------------------------------------------------------
+#
+# ICT-46 (premier barreau) tourne les six proxys sur ses propres mecanismes
+# jouets. Le banc unique (tete du palier, #23778) emploie les MEMES six proxys
+# comme lentille sur des mecanismes qui changent l'espace des actions PARTOUT
+# dans le depot, chacun transcrit depuis son organe natif de serie (volet A) ou
+# sa copie pedagogique declaree (volet B). Le banc ne reimplimente rien : il
+# mesure les proxys sur la transcription et CLASSE le coup (latent / nouveau /
+# decoratif). Les trois controles et le temoin negatif vivent ici, dans l'organe.
+
+@dataclass(frozen=True)
+class BenchVerdict:
+    """Resultat du banc unique pour un mecanisme : les six proxys + la classe.
+
+    ``P_R`` est la lecture BRUTE de ``performative_power`` ; ``P_R_marg`` la
+    lecture MARGINALISEE (copie -> original, via ``equivalence``). ``temoin``
+    liste les violations du temoin negatif du 'decoratif' : vide = le verdict
+    'decoratif' est tenu, non vide = le temoin a ROUGI (ce n'est pas decoratif).
+    """
+
+    mecanisme: str
+    O_t: int
+    dA_t: int
+    C_t: int
+    P_R: float
+    P_R_marg: float
+    institutionnalisation: float
+    I_R: float
+    classe: str
+    temoin: tuple[str, ...] = ()
+
+
+def classer_proxys(
+    o_t: int,
+    d_a_t: int,
+    c_t: int,
+    p_r_marg: float,
+    institutionalisation: float,
+    eps: float = 1e-2,
+) -> str:
+    """Les trois controles du banc, decides par les proxys MESURES.
+
+    - ``nouveau``   : l'espace change reellement (``O_t > 0`` et ``dA_t > 0``)
+      ET le coup survit au retrait de son instigateur (``institutionnalisation > 0``) ;
+    - ``latent``    : l'espace ne change pas (``O_t = 0`` et ``dA_t = 0``) mais la
+      coordonnee preexistante est activee (``P(R) marginalisee > eps``) ;
+    - ``decoratif`` : l'espace ne change pas ET, sous marginalisation par
+      equivalence, ``P(R) -> 0`` (<= ``eps``) et la famille d'extensions est
+      canonique (``C_t = 1`` — il n'y a rien a choisir).
+    """
+    if o_t > 0 and d_a_t > 0:
+        return "nouveau" if institutionalisation > 0 else "nouveau (non institutionnalise)"
+    if o_t == 0 and d_a_t == 0:
+        if p_r_marg > eps:
+            return "latent"
+        if c_t == 1:
+            return "decoratif"
+        return "decoratif? (C_t > 1)"
+    return "?"
+
+
+def temoin_decoratif(
+    o_t: int,
+    d_a_t: int,
+    c_t: int,
+    p_r_marg: float,
+    eps: float = 1e-2,
+) -> tuple[str, ...]:
+    """Le temoin negatif du 'decoratif' — une assertion **falsifiable**.
+
+    Le verdict 'decoratif' tient si et seulement si les QUATRE conjoncts sont
+    vrais : ``P(R) marginalisee < eps``, ``C_t == 1``, ``O_t == 0``,
+    ``dA_t == 0``. Chaque violation est nommee, et c'est elle qui fait
+    ROUGIR le temoin (le coup n'est pas decoratif) :
+
+    - ``P(R)`` ne tombe pas a 0 sous l'equivalence -> l'habillage change en
+      realite la trajectoire (un coup qui agit, pas du vernis) ;
+    - ``C_t > 1`` -> le 'renommage' n'est pas un vrai renommage (les
+      extensions ne sont pas equivalentes) ;
+    - ``O_t > 0`` ou ``dA_t > 0`` -> il y a un ajout reel (pas un habillage).
+
+    Retourne le n-uplet des violations (vide = le 'decoratif' est tenu).
+    """
+    violations: list[str] = []
+    if p_r_marg > eps:
+        violations.append("P(R) marginalisee > eps : l'habillage change la trajectoire")
+    if c_t != 1:
+        violations.append(f"C_t = {c_t} != 1 : les extensions ne sont pas equivalentes")
+    if o_t > 0:
+        violations.append(f"O_t = {o_t} > 0 : ajout reel de concepts")
+    if d_a_t > 0:
+        violations.append(f"Delta A_t = {d_a_t} > 0 : ajout reel d'actions")
+    return tuple(violations)
+
+
+def bancher_mecanisme(
+    mecanisme: str,
+    g0: EvolutiveGame,
+    g1: EvolutiveGame,
+    eta: OntologicalMove,
+    candidate_extensions: tuple[OntologicalMove, ...],
+    equivalence: dict[str, str] | None = None,
+    horizon: int = 40,
+    n_sim: int = 60,
+    rng: np.random.Generator | None = None,
+    eps: float = 1e-2,
+) -> BenchVerdict:
+    """Point d'entree du banc unique : passe un mecanisme a la grille d'ICT-46.
+
+    L'appelant transcrit l'effet du mecanisme — mesure par son **organe natif**
+    de serie (volet A) ou par sa **copie pedagogique declaree** (volet B) — en
+    une paire de jeux ``g0`` (avant) / ``g1`` (apres) + le coup ``eta`` qui le
+    capture. Le banc mesure alors les six proxys sur cette transcription et
+    **classe** le coup (``classer_proxys``), en exposant le temoin negatif
+    (``temoin``). Il ne reimplimente aucun mecanisme d'une autre serie.
+
+    ``candidate_extensions`` alimente ``C_t`` (``non_canonicity``) ;
+    ``equivalence`` alimente la lecture marginalisee de ``P(R)`` (copie ->
+    original). ``g1`` joue le bras ``do(R)`` et ``g0`` le bras ``do(-R)``.
+    """
+    if rng is None:
+        rng = np.random.default_rng(0)
+    o_t = expansion_ontology(g0, g1)
+    d_a_t = political_opening(g0, g1)
+    c_t = non_canonicity(g0, candidate_extensions)
+    p_r = performative_power(g1, g0, horizon, n_sim, rng)
+    p_r_marg = performative_power(g1, g0, horizon, n_sim, rng, equivalence)
+    inst = institutionalization(g1, eta, horizon, rng)
+    i_r = irreversibility_debt(eta)
+    return BenchVerdict(
+        mecanisme=mecanisme,
+        O_t=o_t,
+        dA_t=d_a_t,
+        C_t=c_t,
+        P_R=p_r,
+        P_R_marg=p_r_marg,
+        institutionnalisation=inst,
+        I_R=i_r,
+        classe=classer_proxys(o_t, d_a_t, c_t, p_r_marg, inst, eps),
+        temoin=temoin_decoratif(o_t, d_a_t, c_t, p_r_marg, eps),
+    )
