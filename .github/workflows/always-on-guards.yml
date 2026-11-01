@@ -95,7 +95,7 @@ concurrency:
 
 jobs:
   always-on-guards:
-    name: "Always-on guards -- 17 organes, 1 checkout"
+    name: "Always-on guards -- 18 organes, 1 checkout"
     # Routage #14283 : premier consommateur GitHub-hosted du depot une fois
     # secret-scan bascule -- 2650 runs same-repo en 5 jours (2026-08-28 ->
     # 2026-09-02), timeout 25 min, aucun filtre `paths:`. Le pool Linux
@@ -1343,6 +1343,39 @@ jobs:
             --changed-from "origin/${{ github.base_ref }}"
 
       # -----------------------------------------------------------------
+      # #23046 (tranche #22519) -- cliquet de couverture du gate d'axiomes.
+      #
+      # L'organe scripts/lean/check_axiom_gate_coverage.py (livre par #23019)
+      # mesurait la couverture du gate lean-axiom.yml par lake, mais AUCUN
+      # workflow ne l'appelait -- un organ sans appelant ne protege rien
+      # (precedent #18835, CR myia-ai-01 : "Organe non arme. Aucun workflow
+      # ne l'appelle : en l'etat, il ne protege rien"). Ce step l'arme en
+      # cliquet :
+      #   --check  : exit 1 si un lake a PERDU le gate (regression -- un
+      #              dispatcher supprime qui emportait ses project-paths) ;
+      #   --strict : exit 1 aussi si un lake du manifeste ci_lakes.json
+      #              n'a NI gate NI decision ecrite dans la doc de reference
+      #              -- un lake ajoute a la matrice doit etre cable ou
+      #              justifie, jamais laisse en silence.
+      # Ref HEAD = l'arbre de la PR (merge ref au checkout) : la PR qui
+      # ajoute un lake au manifeste ou retire un appelant du gate est
+      # mesuree sur SON arbre, pas sur main.
+      # Pourquoi ici plutot que dans lean-ci-matrix.yml (l'autre home nomme
+      # par l'issue) : le matrix ne se declenche que sur les chemins lakes +
+      # self-cover, or un appelant du gate peut etre retire de N'IMPORTE
+      # quel workflow -- la surface du cliquet est toute PR, et ce job n'a
+      # pas de filtre paths par conception (canary pr_gate). Il paie deja le
+      # checkout fetch-depth: 0 + blob:none que l'organe exige : git log
+      # --diff-filter=D pour les dispatchers supprimes, git show ref:path
+      # pour les ~40 workflows de .github/workflows/.
+      # -----------------------------------------------------------------
+      - name: "Cliquet de couverture du gate d'axiomes (#23046)"
+        id: axiom_gate_coverage
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        run: python3 scripts/lean/check_axiom_gate_coverage.py --ref HEAD --check --strict
+
+      # -----------------------------------------------------------------
       # AGREGAT : la couleur du job. Un organe bloquant echoue -> rouge.
       # Les organes advisory ne figurent pas ici (ils sortent toujours 0 ;
       # si l'un crashe, le step lui-meme rougit le job -- meme posture que
@@ -1372,6 +1405,7 @@ jobs:
           check env_example_secrets "${{ steps.env_example_secrets.outcome }}"
           check oss_signature "${{ steps.oss_signature.outcome }}"
           check execution_signature "${{ steps.execution_signature.outcome }}"
+          check axiom_gate_coverage "${{ steps.axiom_gate_coverage.outcome }}"
           if [ -n "$FAILED" ]; then
             echo "::error::Organes bloquants en echec :$FAILED (le detail est dans les steps correspondants ci-dessus)."
             exit 1
