@@ -215,6 +215,13 @@ class Guard:
     # le shell n'est pas resolu pareil selon l'hote (127 mesuré en local
     # Windows) et le registre interdit la seconde couche de quoting.
     pre_argv: list[str] = field(default_factory=list)
+    # Effets de bord PR du garde (#22209 tranche 1b). Vide = le garde n'ecrit
+    # que son check-run, comme les tranches precedentes. Non vide = le job
+    # `Always-on commenters` execute le garde et pose ses commentaires
+    # stickies + ses artefacts ; le job `Always-on guards` l'EXCLUT
+    # (`--no-effects`), sinon les deux emettraient le meme verdict ET le meme
+    # commentaire. Le type `Commenter` est declare apres cette dataclass.
+    commenters: tuple = ()
 
 
 # Valeur de `source` pour un garde NE dedoublant aucun workflow unitaire : il
@@ -303,6 +310,9 @@ PILOT_SHADOW_NATIF = (
 #   - bare-cross-dir-load-gate : bloquant, EXECUTION PAR FICHIER (Pattern 1)
 #   - notebook-navlink-check   : bloquant, scan global
 #   - notebook-interp-positioning-guard : bloquant, scan global baselined
+#   - readme-notebook-coverage : bloquant, delta base-vs-head sur les carnets
+#                           AJOUTES (critere 3 de #13504 ; le stock mesure ne
+#                           rougit personne)
 #   - markdown-rendering-guard : bloquant, scan global baselined
 #   - self-hosted-runner-policy : bloquant, scan statique des workflows
 #   - duplicate-notebook-index-guard : bloquant, delta base-vs-head sur
@@ -2545,6 +2555,452 @@ TRANCHE27: list[Guard] = [
 
 
 # ---------------------------------------------------------------------------
+# TRANCHE 29 -- absorption des advisories a payload COMMENTAIRE (#22209 tranche
+# 1b, voie A arbitree par ai-01 le 2026-10-23, c.6372829627).
+#
+# Les trois workflows de la tranche 1 qui n'ecrivent pas un LABEL mais un
+# COMMENTAIRE (et, pour l'un d'eux, trois artefacts) :
+#
+#   markdown-claims-output-advisory.yml  -> 3 stickies + 3 artefacts
+#   organ-duplication-advisory.yml       -> 1 sticky
+#   scan-md-hierarchy-drift.yml          -> 1 commentaire
+#
+# La voie rapide n'emettait que des check-runs ; ces trois-la exigent en plus
+# d'ecrire sur la PR. D'ou l'emetteur d'effets de bord de `fast_lane.py`
+# (`upsert_sticky_comment`, `write_artifact`) et un job DISTINCT
+# `Always-on commenters` dans `always-on-guards.yml`, qui porte seul le droit
+# d'ecriture pour ces gardes -- un defaut dans l'un des organes du job
+# principal ne peut pas ecrire sur une PR.
+#
+# Contrats (identiques au volet 1a) :
+#   - `name` byte-identique au `job.name` du workflow source, verifie par
+#     `check_absorbed_check_run_identity.py` ;
+#   - blocs `paths:` du workflow source reproduits dans `Guard.paths`, avec un
+#     test qui les compare au YAML ;
+#   - workflow source reduit a `workflow_dispatch`, fichier conserve (sa
+#     re-mesure manuelle et la source du nom canonique).
+#
+# Les marqueurs stickies sont reproduits BYTE-IDENTIQUES a ce que pose
+# `marocchino/sticky-pull-request-comment@v2` : `<!-- Sticky Pull Request
+# Comment<header> -->`, en FIN de corps (cf le parseur de
+# `check_adjoint_prevalidation.py`, qui reconnait cette forme la). Un sticky
+# deja pose est MIS A JOUR, jamais double : c'est tout l'objet de l'upsert, et
+# le test le verifie sur un corps qui porte deja le marqueur.
+#
+# `scan-md-hierarchy-drift.yml` postait un commentaire NEUF a chaque push sans
+# marqueur. Reproduire cet accident (une PR de carnet recevait un commentaire
+# par push) n'apporterait rien : le garde pose desormais un sticky
+# `md-hierarchy-drift-advisory`, ce qui applique la meme regle « mis a jour,
+# pas double » aux quatre surfaces. L'en-tete est declare dans
+# `_BOT_STICKY_ADVISORY_HEADERS` (`check_adjoint_prevalidation.py`) pour que le
+# dossier de prevalidation continue de lire ces reecritures comme des
+# commentaires de bot consultatifs.
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class Commenter:
+    """Un effet de bord PR d'un garde absorbe.
+
+    header      En-tete du sticky. Le marqueur pose est
+                `<!-- Sticky Pull Request Comment<header> -->`, byte-identique
+                a celui de `marocchino/sticky-pull-request-comment@v2` ; il
+                sert AUSSI de cle d'upsert (le commentaire existant est
+                retrouve par ce marqueur puis PATCHe).
+    argv        Detecteur. Sa sortie standard est le rapport : elle part dans
+                l'artefact quand `artifact_name` est renseigne, et dans le
+                corps du commentaire quand `body` la consomme.
+    body        (rc, payload, ctx) -> corps du commentaire. Rend une chaine
+                vide pour ne rien poser (cas du drift markdown sans derive).
+    artifact_name / artifact_file
+                Nom d'artefact et nom de fichier, copies tels quels du
+                workflow source (`actions/upload-artifact` garde son nom
+                public). Vide = pas d'artefact.
+    paths       Globs des fichiers passes au detecteur via `{changed_paths}`,
+                en UNE invocation (les trois detecteurs de prose rendent un
+                document JSON unique pour N carnets ; un appel par fichier
+                casserait le JSON). Vide = le detecteur ne recoit aucun
+                chemin (`{changed_paths}` n'est pas substitue).
+    max_paths   Borne du nombre de chemins passes (0 = pas de borne). Les
+                detecteurs de prose bornent a 50 dans leur workflow d'origine
+                et DISENT la couverture partielle -- on reproduit les deux.
+    needs_pr_body
+                Le detecteur lit le corps de la PR (`--body-file`) : la valeur
+                vient de `FAST_LANE_PR_BODY` et est ecrite dans un temporaire.
+                Un corps absent fait ABSTENIR le commentaire plutot que de
+                juger sur un corps vide.
+    fatal_rc    rc qui sont une PANNE du detecteur et non un constat. Le
+                workflow d'origine rougit sur ces codes (scan_md_hierarchy :
+                rc=1 = baseline illisible ou scan vide) ; l'emetteur les
+                propage au job, sans quoi un detecteur casse rendrait un
+                commentaire vert. Les rc de constat (rc=1 des detecteurs de
+                prose, rc=2 du drift) ne sont PAS fatals.
+    """
+
+    header: str
+    argv: list[str]
+    body: "Callable[[int, str, dict], str]"
+    artifact_name: str = ""
+    artifact_file: str = ""
+    paths: list[str] = field(default_factory=list)
+    max_paths: int = 0
+    needs_pr_body: bool = False
+    fatal_rc: tuple[int, ...] = ()
+
+
+# --- Corps des commentaires -------------------------------------------------
+#
+# Les phrases sont copiees MOT POUR MOT des workflows sources : ce sont les
+# textes que des reviewers et des bots lisent depuis des mois, et une
+# reformulation silencieuse changerait le signal d'une PR a l'autre pour la
+# meme mesure. Seul l'emballage change (le heredoc shell disparait).
+
+_CLAIMS_OK = (
+    "✅ No prose/output mismatch detected in the notebooks this PR changed."
+)
+_CLAIMS_ABSTAIN = (
+    "⚠️ Detector abstained (merge-base introuvable, shallow fetch or "
+    "unanchored branch)."
+)
+_CLAIMS_WARN = (
+    "⚠️ Prose/output review needed in the notebooks this PR changed: a "
+    "numeric value is not anchored, an explicit relation is contradicted, "
+    "or its evidence is missing. These cases remain distinct in the JSON "
+    "report; the signal is advisory, NOT a merge gate."
+)
+_CLAIMS_TRAILER = (
+    "Scope = notebooks CHANGED in this PR, not the whole corpus. Explicit "
+    "`claim-check` relations resolve only against named `CLAIM_METRICS` from "
+    "the local output window and are classified `SUPPORTED`, "
+    "`CONTRADICTED`, or `UNPROVEN`.\n"
+    "The `markdown-claims-output-report` run artifact contains the "
+    "structured JSON report. See `python "
+    "scripts/check_markdown_claims_output.py --help` for re-running "
+    "locally.\n"
+    "Detector rationale: c.290 / c.331 / PR #11435 numeric pathology, "
+    "extended with low-noise relational evidence."
+)
+
+_STALE_OK = (
+    "✅ No unanchored measurement claim detected in the notebooks this PR "
+    "changed."
+)
+_STALE_ABSTAIN = (
+    "⚠️ Stale-claim detector abstained (merge-base introuvable, shallow "
+    "fetch or unanchored branch)."
+)
+_STALE_WARN = (
+    "⚠️ Stale-claim review needed: a markdown cell claims a measurement "
+    "value that appears in NO committed output of the notebook. Advisory, "
+    "NOT a merge gate — triage against the JSON artifact."
+)
+_STALE_TRAILER = (
+    "Scope = notebooks CHANGED in this PR, not the whole corpus. The "
+    "`stale-claim-report` run artifact holds the structured JSON.\n"
+    "Rationale: the sibling detector above only compares a claim to the "
+    "outputs of the cells that PRECEDE it; a claim written in a cell that "
+    "precedes its code (App-5-Timetabling c.2/c.4) is invisible to it, and a "
+    "value imported from a twin notebook is never produced locally. See "
+    "`python scripts/check_stale_claims.py --help`."
+)
+
+_MISLABEL_OK = (
+    "✅ No factual mislabel detected in the notebooks this PR changed "
+    "(entity counts and tuple formulas checked against nearby committed "
+    "streams)."
+)
+_MISLABEL_ABSTAIN = (
+    "⚠️ Factual-mislabel detector abstained (merge-base introuvable, "
+    "shallow fetch or unanchored branch)."
+)
+_MISLABEL_WARN = (
+    "⚠️ Factual-mislabel review needed: a markdown cell states an entity "
+    "count or tuple formula that CONTRADICTS the committed stream of the "
+    "code cell it describes (typically copied from a twin notebook with "
+    "different data). Advisory, NOT a merge gate — triage against the JSON "
+    "artifact."
+)
+_MISLABEL_TRAILER = (
+    "Scope = notebooks CHANGED in this PR, not the whole corpus. The "
+    "`factual-mislabel-report` run artifact holds the structured JSON.\n"
+    "Rationale: pure ABSENCE of a claimed value is the sibling stale-claim "
+    "detector's job; this one only reports CONTRADICTIONS between an "
+    "adjacent code cell's stream and the markdown that describes it. See "
+    "`python scripts/check_factual_mislabel.py --help`."
+)
+
+_ORGAN_CLEAN = (
+    "No organ-duplication: no added def/class collides with another series "
+    "organ API (scripts/audit/organ_api_index.yaml)."
+)
+_ORGAN_EXEMPTED = (
+    "Organ duplication DETECTED but EXEMPTED: the PR body declares a "
+    "pedagogical copy. The organ-first rule (5 questions) is satisfied by "
+    "construction. If this copy grows (several consumer notebooks), ask the "
+    "source series for an extraction instead."
+)
+_ORGAN_ABSTAIN = (
+    "Organ-duplication detector ABSTAINS: merge-base unresolved or "
+    "structural error -- no verdict. See workflow log."
+)
+_ORGAN_WARN = (
+    "WARNING: added symbol(s) collide with another series organ API "
+    "(organ-first rule, .claude/rules/organ-first-implementation.md). "
+    "Answer the 5 questions in the PR body, or declare the pedagogical copy "
+    "(« copie pedagogique declaree, motif : ... ») which whitens it. See "
+    "the workflow log for the full collision list (demanding series -> "
+    "bypassed organ -> symbol). Advisory, NOT a merge gate."
+)
+_ORGAN_TRAILER = (
+    "Detector: `python scripts/audit/detect_organ_duplication.py --base "
+    "<merge-base> --body-file <pr body>`\n"
+    "Rationale: `#16776` / `#13564` (rule merged in `#16778`)."
+)
+
+
+def _with_note(sentence: str, ctx: dict) -> str:
+    """Phrase d'etat + note de couverture partielle quand elle existe.
+
+    Le workflow d'origine ecrit cette note sur sa propre ligne, vide quand la
+    PR tient sous la borne (`steps.run.outputs.trunc_note`) : la ligne vide
+    disparait a l'affichage markdown, donc la coller en fin de phrase rend le
+    meme commentaire.
+    """
+    note = (ctx.get("trunc_note") or "").strip()
+    return f"{sentence} {note}".strip() if note else sentence
+
+
+def _exit_state(rc: int, ctx: dict) -> str:
+    # L'abstention des trois detecteurs de prose porte sur le MERGE-BASE, pas
+    # sur `base_sha` : c'est lui qui manque sur une branche non ancree, et
+    # c'est lui que les workflows sources testent avant de lancer le
+    # detecteur (#11754 : « rien regarde » et « rien trouve » doivent rester
+    # distinguables).
+    if not ctx.get("merge_base"):
+        return "abstain"
+    return "ok" if rc == 0 else "warn"
+
+
+def _body_claims_output(rc: int, payload: str, ctx: dict) -> str:
+    state = _exit_state(rc, ctx)
+    sentence = {"ok": _CLAIMS_OK, "abstain": _CLAIMS_ABSTAIN}.get(
+        state, _CLAIMS_WARN)
+    return f"{_with_note(sentence, ctx)}\n\n{_CLAIMS_TRAILER}"
+
+
+def _body_stale_claim(rc: int, payload: str, ctx: dict) -> str:
+    state = _exit_state(rc, ctx)
+    sentence = {"ok": _STALE_OK, "abstain": _STALE_ABSTAIN}.get(
+        state, _STALE_WARN)
+    return f"{_with_note(sentence, ctx)}\n\n{_STALE_TRAILER}"
+
+
+def _body_factual_mislabel(rc: int, payload: str, ctx: dict) -> str:
+    state = _exit_state(rc, ctx)
+    sentence = {"ok": _MISLABEL_OK, "abstain": _MISLABEL_ABSTAIN}.get(
+        state, _MISLABEL_WARN)
+    return f"{_with_note(sentence, ctx)}\n\n{_MISLABEL_TRAILER}"
+
+
+def _organ_status(payload: str) -> str:
+    """Ordre du workflow source : BLOCKED, puis EXEMPTED, puis CLEAN."""
+    for line in payload.splitlines():
+        head = line.strip()
+        if head.startswith("BLOCKED"):
+            return "collision"
+        if head.startswith("EXEMPTED"):
+            return "exempted"
+        if head.startswith("CLEAN"):
+            return "clean"
+    return "abstain"
+
+
+def _body_organ_duplication(rc: int, payload: str, ctx: dict) -> str:
+    state = _organ_status(payload)
+    sentence = {
+        "clean": _ORGAN_CLEAN,
+        "exempted": _ORGAN_EXEMPTED,
+        "abstain": _ORGAN_ABSTAIN,
+    }.get(state, _ORGAN_WARN)
+    return f"{sentence}\n\n{_ORGAN_TRAILER}"
+
+
+def _body_md_hierarchy(rc: int, payload: str, ctx: dict) -> str:
+    """Commentaire du drift markdown, assemble comme dans le workflow source.
+
+    Le workflow ne commente QUE sur rc=2 (derive) : rc=1 est une panne du
+    scanner, pas un constat sur la PR, et rc=0 n'a rien a dire. La reference
+    « avant » est la base de fusion re-scannee quand elle est connue ; sans
+    elle le texte est ATTENUE (mode « derive du corpus »), exactement comme
+    dans la source -- c'est la difference entre « cette PR a ajoute un
+    defaut » et « le corpus en porte ».
+    """
+    if rc != 2:
+        return ""
+    base_short = (ctx.get("base_sha") or "")[:9]
+    head_short = (ctx.get("head_sha") or "")[:9]
+    lines = [f"## MD hierarchy drift -- {head_short}", ""]
+    if base_short:
+        lines += [
+            "Cette PR augmente le compte de defauts de rendu markdown",
+            f"par rapport a la base de fusion {base_short} re-scannee.",
+            "Nouveaux defauts imputables au diff :",
+        ]
+    else:
+        lines += [
+            "Drift vs la baseline stockee (mode dispatch, sans base de",
+            "fusion) -- derive du corpus, pas d'imputation stricte a ce",
+            "diff. Details :",
+        ]
+    lines += ["", "```", payload.strip(), "```", ""]
+    if base_short:
+        lines.append(
+            "Corriger (ex. `- # Indice : ...` -> `- **Indice :** ...`). "
+            "See #11831.")
+    else:
+        lines.append(
+            "Si la regle scanner change dans CETTE PR, re-seeder la baseline")
+        lines.append("dans le meme commit : `--update-baseline`. See #11831.")
+    return "\n".join(lines)
+
+
+_COMMENTS_OUT_GLOB = "**/*.ipynb"
+
+# ---------------------------------------------------------------------------
+# TRANCHE 33 (#22209, tranche 1b) -- emetteur d'effets de bord de la voie
+# rapide (trois stickies + trois artefacts).
+#
+# Renumerote TRANCHE30 -> TRANCHE33 au merge de `main` du 2026-10-31 : `main`
+# porte deja une TRANCHE30 (modele de chat obsolete, #22783) et une TRANCHE32
+# (collision d'index jumeau, #23627). Deux blocs ne peuvent pas porter le meme
+# nom -- precedent : TRANCHE9 -> TRANCHE10, TRANCHE29 -> TRANCHE30. Sans
+# renumerotation, Python ecrase la premiere affectation par la seconde : les
+# trois gardes de cette tranche ne s'executent plus, silencieusement
+# (incident #19374 ; garde `test_no_module_level_name_is_assigned_twice_in_the_registry`).
+TRANCHE33: list[Guard] = [
+    # Un seul job dans le workflow source -> un seul nom de check-run, trois
+    # stickies et trois artefacts a l'interieur. Les trois detecteurs
+    # partagent le meme trigger et le meme join markdown/output (#18354) :
+    # c'est deja un job unique cote GitHub, on ne fait que lui rendre son
+    # cout d'un checkout au lieu de trois.
+    Guard(
+        name="Markdown claims anchored to previous output (#11435 advisory)",
+        source="markdown-claims-output-advisory.yml",
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "scripts/check_markdown_claims_output.py",
+            "scripts/tests/test_check_markdown_claims_output.py",
+            "scripts/check_stale_claims.py",
+            "scripts/tests/test_check_stale_claims.py",
+            "scripts/check_factual_mislabel.py",
+            "scripts/tests/test_check_factual_mislabel.py",
+            ".github/workflows/markdown-claims-output-advisory.yml",
+        ],
+        # Le verdict de ces gardes est leur commentaire : `argv` reste vide et
+        # le moteur execute `commenters` a sa place (cf fast_lane.main).
+        argv=[],
+        blocking=False,
+        absorbed=True,
+        commenters=(
+            Commenter(
+                header="markdown-claims-output-advisory",
+                argv=[
+                    "python", "scripts/check_markdown_claims_output.py",
+                    "--json", "{changed_paths}",
+                ],
+                body=_body_claims_output,
+                artifact_name="markdown-claims-output-report",
+                artifact_file="claims-output.json",
+                paths=["MyIA.AI.Notebooks/**/*.ipynb"],
+                max_paths=50,
+            ),
+            Commenter(
+                header="stale-claim-advisory",
+                argv=[
+                    "python", "scripts/check_stale_claims.py",
+                    "--json", "{changed_paths}",
+                ],
+                body=_body_stale_claim,
+                artifact_name="stale-claim-report",
+                artifact_file="stale-claim.json",
+                paths=["MyIA.AI.Notebooks/**/*.ipynb"],
+                max_paths=50,
+            ),
+            Commenter(
+                header="factual-mislabel-advisory",
+                argv=[
+                    "python", "scripts/check_factual_mislabel.py",
+                    "--json", "{changed_paths}",
+                ],
+                body=_body_factual_mislabel,
+                artifact_name="factual-mislabel-report",
+                artifact_file="factual-mislabel.json",
+                paths=["MyIA.AI.Notebooks/**/*.ipynb"],
+                max_paths=50,
+            ),
+        ),
+    ),
+    Guard(
+        name="Organ-duplication advisory (non-blocking)",
+        source="organ-duplication-advisory.yml",
+        paths=[
+            "**/*.py",
+            "**/*.ipynb",
+            "**/*.lean",
+            "scripts/audit/detect_organ_duplication.py",
+            "scripts/audit/organ_api_index.yaml",
+            ".github/workflows/organ-duplication-advisory.yml",
+        ],
+        # Le verdict de ces gardes est leur commentaire : `argv` reste vide et
+        # le moteur execute `commenters` a sa place (cf fast_lane.main).
+        argv=[],
+        blocking=False,
+        absorbed=True,
+        commenters=(
+            Commenter(
+                header="organ-duplication-advisory",
+                argv=[
+                    "python", "scripts/audit/detect_organ_duplication.py",
+                    "--base", "{merge_base}",
+                    "--head", "HEAD",
+                    "--body-file", "{pr_body_file}",
+                ],
+                body=_body_organ_duplication,
+                needs_pr_body=True,
+            ),
+        ),
+    ),
+    Guard(
+        name="scan_md_hierarchy drift (advisory)",
+        source="scan-md-hierarchy-drift.yml",
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "scripts/notebook_tools/scan_md_hierarchy.py",
+            "scripts/notebook_tools/md_hierarchy_baseline.json",
+        ],
+        # Le verdict de ces gardes est leur commentaire : `argv` reste vide et
+        # le moteur execute `commenters` a sa place (cf fast_lane.main).
+        argv=[],
+        blocking=False,
+        absorbed=True,
+        commenters=(
+            Commenter(
+                header="md-hierarchy-drift-advisory",
+                argv=[
+                    "python", "scripts/notebook_tools/scan_md_hierarchy.py",
+                    "MyIA.AI.Notebooks/",
+                    "--baseline", "--diff",
+                    "--name-status", "{name_status_file}",
+                    "--reference-base", "{base_sha}",
+                ],
+                body=_body_md_hierarchy,
+                fatal_rc=(1,),
+            ),
+        ),
+    ),
+]
+
+# ---------------------------------------------------------------------------
 # TRANCHE 28 -- epingle DWELL regle <-> doc de detail (#22279).
 #
 # Defaut ferme : #21808 (f2833def99) a deporte le recit DWELL (conditions
@@ -2595,10 +3051,19 @@ TRANCHE28: list[Guard] = [
 # TRANCHE 31 (#23073) -- garde des versions de bibliotheques chargees par les
 # carnets.
 #
-# Renumerote TRANCHE29 -> TRANCHE30 au merge de `main` du 2026-10-30 :
-# `main` porte deja une TRANCHE29 (confrontation doc <-> quantification
-# reellement chargee, #23252). Deux blocs ne peuvent pas porter le meme
-# nom -- precedent : TRANCHE9 -> TRANCHE10.
+# Renumerote TRANCHE29 -> TRANCHE30 au merge de `main` du 2026-10-30. Le nom
+# TRANCHE31 est celui que ce bloc porte depuis son introduction (#23079) : il
+# reste le sien, et le conflit de nom est traite chez le bloc qui l avait pris
+# (collision d'index jumeau, #23627, renumerote TRANCHE31 -> TRANCHE32).
+#
+# Historique du conflit : le 2026-10-31, `main` affectait TRANCHE31 deux fois
+# (le present bloc, puis celui de #23627). Python ecrase la premiere
+# affectation par la seconde -- le present bloc (garde des versions de
+# bibliotheques) n'etait donc plus execute, et silencieusement : le garde
+# existe, il ne tourne pas (incident #19374). C'est exactement ce que mesure
+# la garde `test_no_module_level_name_is_assigned_twice_in_the_registry`, et
+# c'est ce que verifiait `test_check_lib_versions.py`, rouge sur `main` avec
+# un `KeyError: 'Library versions guard (advisory, #23073)'`.
 #
 # Mandat user du 2026-10-28, a propos de #23047 : « Ca meritera un organe
 # pour stabiliser les versions d'API et de libs, car ce genre de regressions
@@ -2830,6 +3295,94 @@ TRANCHE32: list[Guard] = [
         blocking=True,
         absorbed=True,
         needs_base=True,
+        warn_rc=(2,),
+    ),
+]
+
+# ---------------------------------------------------------------------------
+# Critere 3 de l'EPIC #13504, en organe (tranche du 2026-11-01).
+#
+# `scripts/ci/check_site_links.py` couvre la direction README -> carnet (un
+# lien qui pointe vers un fichier absent). La direction INVERSE -- un carnet
+# qu'aucune ligne du README de son dossier ne nomme -- n'etait couverte par
+# aucun organe. C'est pourtant elle qui laisse un carnet invisible pour un
+# lecteur qui n'ouvre que le README du dossier, et c'est exactement ce que le
+# critere 3 demandait de tenir a jour « une fois par trimestre, a la main » ;
+# le bloc de fraicheur du 2026-10-28 recommandait d'en faire un organe.
+#
+# Garde de DELTA, sur le modele de `prose-counts` (#17636) : le stock mesure
+# sur `main` au 2026-11-01 (1722 carnets suivis, 1593 couverts, 22 manquants
+# dans un dossier a convention en force) est RAPPORTE et ne rougit personne.
+# Seule une PR qui AJOUTE un carnet sans lui donner sa ligne rougit. Les
+# jumeaux `_en` (12), les dossiers sans README (87 carnets) et les README ne
+# listant aucun carnet (8) sont advisory : la convention mesuree est
+# precisement de ne pas lister les jumeaux (FineTuning, 5/5).
+#
+# L'organe lit les fichiers SUIVIS par git, pas le disque : un carnet ignore
+# (`MyIA.AI.Notebooks/GradeBook.ipynb` l'est) existe sur un poste et pas dans
+# un checkout CI, ce qui ferait diverger les deux mesures sans que l'une soit
+# fausse.
+#
+# rc=2 = incident d'entree (git diff en echec), donc `warn_rc` : un incident
+# n'est ni une faute de la PR ni un quitus (precedent #17941).
+# ---------------------------------------------------------------------------
+TRANCHE34: list[Guard] = [
+    Guard(
+        name="readme-notebook-coverage",
+        source=FAST_LANE_NATIVE,
+        paths=["**/*.ipynb"],
+        argv=["python", "scripts/ci/check_readme_notebook_coverage.py",
+              "--diff-base", "{base_ref}"],
+        blocking=True,           # BLOQUANT : critere 3 de #13504, en delta
+        needs_base=True,
+        absorbed=True,
+        warn_rc=(2,),
+    ),
+]
+
+# ---------------------------------------------------------------------------
+# Garde d'encodage, critere 3 de #23021 (tranche du 2026-11-01).
+#
+# L'organe `scripts/notebook_tools/check_encoding_corruption.py` a ete livre par
+# #23024/#23036 avec DEUX formes : une verification pleine (`<chemins>`, cablee
+# en hook pre-commit sur les carnets stages) et une garde de DELTA
+# (`--base <ref>`, artefacts sur les LIGNES AJOUTEES des carnets changes). Sa
+# docstring annoncait la seconde comme « garde CI bloquante » -- mais mesure du
+# 2026-11-01 : aucun workflow, aucun job, aucune entree de ce registre ne
+# l'invoquait. Une capacite annoncee que rien n'invoque est une garde
+# debranchee, et le hook pre-commit est contournable (`--no-verify`, poste sans
+# `pre-commit install`) : la classe n'etait donc tenue que sur les postes
+# equipes. Cette tranche branche la forme de delta qui manquait.
+#
+# Pourquoi un delta et pas un scan global : le stock de `main` au 2026-11-01
+# mesure **0 artefact** sur les deux carnets repares (controle positif passe :
+# la prose francaise correcte est bien presente, la mesure ne rend pas 0 pour
+# cause de fichier absent). Le stock est donc propre et ne rougit personne ;
+# seule une PR qui REINTRODUIT la corruption sur une ligne ajoutee rougit. Un
+# scan global aurait le meme verdict aujourd'hui mais ferait payer a chaque PR
+# notebook le cout du corpus entier.
+#
+# L'organe apparait dans `paths` : une PR qui change le detecteur doit voir le
+# garde se declencher, sinon un detecteur casse passerait sans temoin (lecon
+# #11685/#12817, meme motif que `pip-leak-guard`).
+#
+# rc=2 = incident d'entree (git diff en echec), donc `warn_rc` : un incident
+# n'est ni une faute de la PR ni un quitus (precedent #17941 / TRANCHE34).
+# ---------------------------------------------------------------------------
+TRANCHE35: list[Guard] = [
+    Guard(
+        name="encoding-corruption-guard",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**/*.ipynb",
+            "scripts/notebook_tools/check_encoding_corruption.py",
+        ],
+        argv=["python", "scripts/notebook_tools/check_encoding_corruption.py",
+              "--base", "{base_ref}"],
+        blocking=True,           # BLOQUANT : critere 3 de #23021, en delta
+        needs_base=True,
+        diff_bounded=True,       # lignes ajoutees seulement : main ne peut pas heriter
+        absorbed=True,
         warn_rc=(2,),
     ),
 ]

@@ -548,9 +548,47 @@ def _markdown(source: str) -> dict:
     return {"cell_type": "markdown", "source": [source], "metadata": {}}
 
 
-def test_une_mention_de_version_perimee_dans_la_prose_est_relevee():
+# --------------------------------------------------------------------------
+# Fixture explicite pour les tests de MENTIONS
+#
+# Un test de mention ne doit pas dependre de l'etat courant du manifeste
+# LIVRE. Le manifeste livre declare les ecarts REELS du corpus : la
+# convergence de `pythonnet` (#23073) a retire 3.0.5 de ses divergences --
+# ce carnet ne l'epingle plus -- donc un test adosse au manifeste livre ne
+# mordrait plus : il passerait sans jamais signaler de mention, et
+# l'echec qu'il doit.watch serait invisible.
+#
+# Le fixture declare donc explicitement l'ecart surveille. Meme convention
+# que `_LIB_IKVM` plus bas, et meme raison qu'il y donne : « un test qui
+# passe sans declencher son constat ne prouve rien ».
+# --------------------------------------------------------------------------
+_LIB_PYTHONNET_AVEC_ECART = [
+    {
+        "id": "pythonnet",
+        "ecosystem": "nuget",
+        "canonical": "3.1.0",
+        "canonical_source": "manifest",
+        "divergences": [
+            {
+                "version": "3.0.5",
+                "decision": "to_converge",
+                "reason": "ecart surveille par le fixture",
+            },
+        ],
+    },
+    {
+        "id": "dotNetRDF",
+        "ecosystem": "nuget",
+        "canonical": "3.4.1",
+        "canonical_source": "manifest",
+        "divergences": [],
+    },
+]
+
+
+def test_une_mention_de_version_perimee_dans_la_prose_est_relevee(tmp_path):
     """La prose qui annonce l'ancienne version est un constat, meme si l'epinglage est a jour."""
-    manifest = clv.load_manifest(MANIFEST_PATH)
+    manifest = _manifest_with(tmp_path, _LIB_PYTHONNET_AVEC_ECART)
     canonicals, _errors = clv.resolve_canonicals(manifest, REPO_ROOT)
     payload = _notebook_with([
         _code('#r "nuget: pythonnet, 3.1.0"'),
@@ -563,9 +601,9 @@ def test_une_mention_de_version_perimee_dans_la_prose_est_relevee():
     )
 
 
-def test_la_ligne_depinglage_n_est_pas_une_mention():
+def test_la_ligne_depinglage_n_est_pas_une_mention(tmp_path):
     """La ligne qui porte l'epinglage n'est pas une mention : elle est l'epinglage."""
-    manifest = clv.load_manifest(MANIFEST_PATH)
+    manifest = _manifest_with(tmp_path, _LIB_PYTHONNET_AVEC_ECART)
     canonicals, _errors = clv.resolve_canonicals(manifest, REPO_ROOT)
     payload = _notebook_with([_code('#r "nuget: pythonnet, 3.0.5"')])
     assert clv.mention_findings("x.ipynb", payload, manifest, canonicals) == []
@@ -605,9 +643,9 @@ def test_une_mention_en_prose_reste_relevee_apres_le_correction_des_lignes_depin
     assert any(f["kind"] == "mention_residuelle" for f in findings), findings
 
 
-def test_une_sortie_affichant_une_version_perimee_est_relevee():
+def test_une_sortie_affichant_une_version_perimee_est_relevee(tmp_path):
     """Le bandeau « Installed Packages » affiche la version reellement chargee."""
-    manifest = clv.load_manifest(MANIFEST_PATH)
+    manifest = _manifest_with(tmp_path, _LIB_PYTHONNET_AVEC_ECART)
     canonicals, _errors = clv.resolve_canonicals(manifest, REPO_ROOT)
     payload = _notebook_with([
         _code(
@@ -619,9 +657,11 @@ def test_une_sortie_affichant_une_version_perimee_est_relevee():
     assert any(f["kind"] == "mention_residuelle" for f in findings)
 
 
-def test_une_mention_d_un_carnet_sans_epinglage_de_cette_bibliotheque_est_ignoree():
+def test_une_mention_d_un_carnet_sans_epinglage_de_cette_bibliotheque_est_ignoree(
+    tmp_path,
+):
     """Le perimetre est borne : on ne parle que des bibliotheques que le carnet epingle."""
-    manifest = clv.load_manifest(MANIFEST_PATH)
+    manifest = _manifest_with(tmp_path, _LIB_PYTHONNET_AVEC_ECART)
     canonicals, _errors = clv.resolve_canonicals(manifest, REPO_ROOT)
     payload = _notebook_with([
         _code('#r "nuget: pythonnet, 3.1.0"'),
@@ -631,9 +671,9 @@ def test_une_mention_d_un_carnet_sans_epinglage_de_cette_bibliotheque_est_ignore
     assert all(f["library"] == "pythonnet" for f in findings)
 
 
-def test_le_delta_ignore_une_mention_deja_presente():
+def test_le_delta_ignore_une_mention_deja_presente(tmp_path):
     """Une mention deja presente et non touchee par la PR est une derive historique."""
-    manifest = clv.load_manifest(MANIFEST_PATH)
+    manifest = _manifest_with(tmp_path, _LIB_PYTHONNET_AVEC_ECART)
     canonicals, _errors = clv.resolve_canonicals(manifest, REPO_ROOT)
     base = _notebook_with([
         _code('#r "nuget: pythonnet, 3.1.0"'),
@@ -649,8 +689,8 @@ def test_le_delta_ignore_une_mention_deja_presente():
     ) == []
 
 
-def test_le_delta_releve_une_mention_introduite_par_la_pr():
-    manifest = clv.load_manifest(MANIFEST_PATH)
+def test_le_delta_releve_une_mention_introduite_par_la_pr(tmp_path):
+    manifest = _manifest_with(tmp_path, _LIB_PYTHONNET_AVEC_ECART)
     canonicals, _errors = clv.resolve_canonicals(manifest, REPO_ROOT)
     base = _notebook_with([_code('#r "nuget: pythonnet, 3.1.0"')])
     head = _notebook_with([
@@ -907,13 +947,14 @@ def test_un_epinglage_pip_est_releve_et_compare_a_la_canonique():
 
 
 def test_le_pin_pip_du_corpus_est_vraiment_relu():
-    """Point 2 (relecture #23079) : l'etat honnete du corpus pip.
+    """Etat honnete du corpus pip apres #23104.
 
-    La mention 3.0.2 du paquet mealpy n'apparait que dans la **prose** (un
-    commentaire C# et un `print` Python) ; sa seule commande d'installation
-    est ecrite dans une cellule markdown, donc hors perimetre de l'organe.
-    L'entree de manifeste ne doit donc pas pretendre que le corpus declare
-    cette version : ni epinglage versionne, ni epinglage flottant.
+    Avant #23104 l'organe ne lisait que les cellules code : il rendait un
+    corpus pip **vide**, alors que deux carnets declarent l'installation de
+    mealpy dans une cellule markdown. Les deux declarations sont **non
+    versionnees** (epinglage flottant) : aucune ne fixe 3.0.2. Le manifeste ne
+    doit donc porter aucun epinglage versionne, et exactement ces deux
+    declarations flottantes.
     """
     manifest = clv.load_manifest(MANIFEST_PATH)
     report = clv.run_census(REPO_ROOT, manifest)
@@ -923,16 +964,78 @@ def test_le_pin_pip_du_corpus_est_vraiment_relu():
     assert pip_libs, "le manifeste doit porter une bibliotheque pip"
     for lib in pip_libs:
         assert lib["versions"] == [], (
-            "aucun carnet ne doit epingler une version pip : "
+            "aucun carnet ne doit epingler une version pip exacte : "
             f"{lib['library']} porte {lib['versions']}"
         )
-        assert lib["floating_notebooks"] == [], (
-            "aucune commande d'installation pip en cellule code : "
+        assert lib["floating_notebooks"] == [
+            "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics.ipynb",
+            "MyIA.AI.Notebooks/Sudoku/Sudoku-05-PSO-Python.ipynb",
+        ], (
+            "les deux declarations markdown de mealpy doivent etre vues : "
             f"{lib['library']} porte {lib['floating_notebooks']}"
         )
-        assert "s'accordent" not in (lib["note"] or ""), (
-            "la note ne doit pas pretendre que le corpus declare la version"
+        assert "hors perimetre de l'organe" not in (lib["note"] or ""), (
+            "la note ne doit plus decrire le markdown comme hors perimetre"
         )
+
+
+def test_les_quatre_formes_de_commande_pip_sont_reconnues():
+    """#23104 : `pip`, `pip3`, `python -m pip` et `uv pip` sont des commandes.
+
+    L'organe ne reconnaissait que la premiere : les six lignes
+    `python -m pip install ...` du corpus (torch, transformers) n'etaient pas
+    des declarations pour lui.
+    """
+    manifest = clv.load_manifest(MANIFEST_PATH)
+    for command in (
+        "pip install mealpy==3.0.2",
+        "pip3 install mealpy==3.0.2",
+        "python -m pip install mealpy==3.0.2",
+        "python3 -m pip install mealpy==3.0.2",
+        "uv pip install mealpy==3.0.2",
+        "!pip install mealpy==3.0.2",
+        "%pip install mealpy==3.0.2",
+    ):
+        pins = clv.pins_from_payload(_notebook([command]), manifest)
+        assert [p.version for p in pins] == ["3.0.2"], command
+
+
+def test_une_declaration_markdown_est_lue_et_la_prose_ne_l_est_pas():
+    """#23104 : le markdown est lu **sur ses lignes-commandes seulement**.
+
+    Mesure du corpus : 36 lignes-commandes ancrees contre 114 mentions en
+    prose. Une phrase qui cite la commande, ou un `print` qui l'imprime, n'est
+    pas une declaration et ne doit pas etre relevee.
+    """
+    manifest = clv.load_manifest(MANIFEST_PATH)
+    payload = {
+        "cells": [
+            {
+                "cell_type": "markdown",
+                "source": ["Installez avec `pip install mealpy==3.0.2` :\n"],
+                "metadata": {},
+            },
+            {
+                "cell_type": "markdown",
+                "source": ["pip install mealpy==3.0.2\n"],
+                "metadata": {},
+            },
+            {
+                "cell_type": "code",
+                "source": ["print('pip install mealpy==3.0.2')\n"],
+                "metadata": {},
+                "outputs": [],
+            },
+        ],
+        "metadata": {},
+        "nbformat": 4,
+        "nbformat_minor": 5,
+    }
+    pins = clv.pins_from_payload(payload, manifest)
+    assert len(pins) == 1, [(p.library, p.version, p.cell_type) for p in pins]
+    pin = pins[0]
+    assert (pin.library, pin.version, pin.cell) == ("mealpy", "3.0.2", 1)
+    assert pin.cell_type == "markdown", "la provenance doit etre portee par le pin"
 
 
 def test_une_version_pip_citee_en_prose_n_est_pas_un_epinglage():
