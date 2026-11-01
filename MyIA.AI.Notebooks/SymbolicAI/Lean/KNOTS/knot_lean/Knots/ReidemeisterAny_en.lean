@@ -82,14 +82,14 @@ tactics, lemma names and Mathlib references stay in English (Mathlib 4
 compatibility); only the docstrings and comments differ.
 -/
 
-import Knots.Basic
-import Knots.ReidemeisterMoves
-import Knots.BoundedEnumeration
+import Knots.Basic_en
+import Knots.ReidemeisterMoves_en
+import Knots.BoundedEnumeration_en
 
 namespace Knots_en.AnyMoves
 
-open Knots
-open Knots.Bounded
+open Knots_en
+open Knots_en.Bounded
 
 /-! ## 1. The canonical form up to renaming
 
