@@ -29,7 +29,7 @@ GitHub auto-closes an issue only when a closing keyword (`close`/`closes`/`close
 - `Fix(ci,#22937): …` **and** a `Closes #22937` line in the commit body (for a squash merge, the PR body becomes that message);
 - `Fix(ci): …` and a `Closes #22937` line in the body.
 
-The lister `python scripts/ci/list_scope_swallowed_issues.py` (`--json`, `--all-forms`) names the pairs (open issue, correction commit) so the residual can be triaged. It closes nothing, comments nothing: triage and closure belong to the coordinator (G.9).
+The lister `python scripts/ci/list_scope_swallowed_issues.py` (`--json`, `--all-forms`) names the pairs (open issue, correction commit) so the residual can be triaged. It closes nothing, comments nothing: triage and closure belong to the coordinator (G.9) — incident fondateur (trois issues fermées par `Refs #N` sur des PRs partielles) : [détail §3](../../docs/reference/git-workflow-detail.md).
 
 ## Safety Rules
 
