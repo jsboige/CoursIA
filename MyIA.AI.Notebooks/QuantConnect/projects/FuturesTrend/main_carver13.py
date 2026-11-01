@@ -18,6 +18,10 @@ from carry_forecast import CARRY_HISTORY_MAX
 from carry_forecast import CARRY_SMOOTHING_SPANS
 from carry_forecast import carry_forecasts as _carry_forecasts_pure
 from carry_forecast import risk_adjusted_carry as _risk_adjusted_carry_pure
+# Pure sizing on notional (#23824). Same pattern: the `fix` branch of
+# `_rebalance` and tests/test_notional_sizing.py share the contract formula.
+from notional_sizing import contract_delta as _contract_delta_pure
+from notional_sizing import target_contracts as _target_contracts_pure
 # endregion
 
 
@@ -862,17 +866,19 @@ class CarverThirteen(QCAlgorithm):
                 security = self.securities[order_sym]
                 price = float(security.price)
                 multiplier = float(security.symbol_properties.contract_multiplier)
-                target_qty = 0
+                target_qty = _target_contracts_pure(
+                    target_weight,
+                    self.portfolio.total_portfolio_value,
+                    price,
+                    multiplier,
+                )
                 if target_weight != 0.0:
                     self._sizing["nonzero_targets"] += 1
-                    if price > 0.0 and multiplier > 0.0:
-                        target_qty = int(round(
-                            target_weight * self.portfolio.total_portfolio_value
-                            / (price * multiplier)
-                        ))
                     if target_qty == 0:
                         self._sizing["rounded_to_zero"] += 1
-                delta = target_qty - int(current_holding)
+                # Futures quantities are integral on QC: the holding is
+                # rounded, never truncated (see notional_sizing.py).
+                delta = _contract_delta_pure(target_qty, current_holding)
                 if delta != 0:
                     self.market_order(order_sym, delta)
                     set_holdings_issued_this_call = True

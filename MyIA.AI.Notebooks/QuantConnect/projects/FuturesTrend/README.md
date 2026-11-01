@@ -395,6 +395,13 @@ et envoie l'écart par `market_order`. `fix=off` rejoue l'ancien chemin : ses
 5 046 ordres sont identiques, un à un, à ceux du code de `main`. Le paramètre
 `cash` lance le même compile à un autre capital de backtest.
 
+La formule vit dans `notional_sizing.py`, module pur (patron
+`breadth_multiplier.py`) que la branche `fix=on` importe :
+`tests/test_notional_sizing.py` la vérifie hors du runtime QC, avec des
+multiplicateurs de 1, 50 et 1 000, l'arrondi à 0 contrat, les garde-fous
+(poids nul, prix ou multiplicateur non positif) et la position détenue, lue
+arrondie plutôt que tronquée.
+
 Runs du 2026-10-31, projet 38722439, dans l'espace QC sponsorisé, qui tronque
 la fin du backtest : la dernière donnée lue est du 2026-08-02. L'exposition est
 la somme des valeurs absolues des positions rapportée à la valeur du
