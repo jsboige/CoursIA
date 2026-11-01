@@ -114,7 +114,7 @@
       "ecosystem": "pip",
       "canonical": "3.0.2",
       "canonical_source": "manifest",
-      "note": "Version du paquet Python mealpy, celle que doit exposer l'environnement charge par `Config/PythonNetLoader.cs` pour les carnets qui l'importent. Le corpus ne l'epingle pas de facon executable : sa seule commande d'installation (`pip install mealpy numpy matplotlib`) est ecrite dans une cellule MARKDOWN (documentation, hors perimetre de l'organe), et les deux occurrences de 3.0.2 dans les cellules code sont de la prose (un `print` et un commentaire C#). L'entree de manifeste ne pretend donc pas que le corpus declare cette version ; c'est un contrat d'environnement, et le suivi de l'installation est dans #23104."
+      "note": "Version du paquet Python mealpy, celle que doit exposer l'environnement charge par `Config/PythonNetLoader.cs` pour les carnets qui l'importent. Depuis #23104 l'organe lit aussi les lignes-commandes des cellules MARKDOWN : le corpus declare mealpy sur deux d'entre elles, et sur aucune avec une version (`pip install mealpy>=3.0` dans Search-11-Metaheuristics, `pip install mealpy numpy matplotlib` dans Sudoku-05-PSO-Python) -- ce sont des epinglages flottants, signales comme tels. Les deux occurrences de 3.0.2 en cellule code restent de la prose (un `print` et un commentaire C#), donc pas des epinglages. L'entree de manifeste ne pretend pas que le corpus declare la version exacte : c'est un contrat d'environnement."
     }
   ],
   "allowlist": [

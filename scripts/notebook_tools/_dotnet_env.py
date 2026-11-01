@@ -121,19 +121,29 @@ def repair_launch_env(root, base_env=None):
 def sdk_bearing_dotnet_root():
     """Return a ``DOTNET_ROOT`` carrying an SDK, or ``None`` when unneeded.
 
-    Returns the repaired root only when the effective one lacks an SDK and a
-    valid alternative is discoverable, ``None`` otherwise. Callers pass it to
-    ``KernelManager.start_kernel(env=...)`` -- only the kernel subprocess env
-    is concerned, the machine-level variable is never written.
+    Returns the repaired root only when the effective one is **unknown or**
+    lacks an SDK, and a valid alternative is discoverable, ``None`` otherwise.
+    Callers pass it to ``KernelManager.start_kernel(env=...)`` -- only the
+    kernel subprocess env is concerned, the machine-level variable is never
+    written.
 
     An unset or empty ``DOTNET_ROOT`` is *not* a reason to stand down: the host
     then resolves itself, and a self-resolution onto a runtime-only root fails
     the restore exactly as a configured one does (#17361). Standing down there
-    was the defect measured on myia-po-2028.
+    was the defect measured on myia-po-2028. The same reasoning applies one
+    step further (#23972): when ``DOTNET_ROOT`` is absent *and* no ``dotnet``
+    sits on ``PATH``, the effective root is unknowable -- the known roots are
+    still probed rather than returning ``None`` unmeasured.
     """
     root = effective_root()
-    if root is None or has_sdk(root):
+    if root is not None and has_sdk(root):
         return None
+    # ``root is None`` -- no ``DOTNET_ROOT`` *and* no ``dotnet`` on PATH, so the
+    # effective root is unknowable -- is not a reason to stand down: a per-user
+    # (``dotnet-install``) or platform install may still carry the SDK the
+    # restore needs (#23972). Standing down there was a residual hole: the
+    # candidates were never probed on exactly the host shape where the variable
+    # is absent, which is the one the repair exists for.
     for candidate in sdk_root_candidates():
         if has_sdk(candidate):
             return candidate
