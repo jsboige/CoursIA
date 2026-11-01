@@ -79,8 +79,18 @@ canonical repair gesture is documented in
 .claude/rules/lane-claim-protocol.md: ONE comment per marker, a broken
 marker is repaired by a NEW comment carrying only `[CLAIMED]`.
 
-Exit codes: 0 ok / 1 blocked (other lane holds active issue claim) /
-2 io-or-gh error (issue mode) OR cross-lane OPEN-PR collision (--paths mode).
+  - **Plafond hebdomadaire des EPICs (#22500 point 3)**: a claim on a DAUGHTER
+    of an `umbrella` (outside the `consolidation` class) that has already been
+    visited this week -- another daughter created, or a claim posted on the EPIC
+    itself -- is BLOCKED with the cause `PLAFOND EPIC (#22500)`. The semantic
+    is NOT re-implemented here: it is `umbrella_visit_cause` / `parent_refs` /
+    `claim_visit_stamp` / `is_consolidation` / `apply_child_visits` from
+    `scripts/pick_idle_grain.py`, imported on demand. Zero extra request when
+    the issue has no parent (the common case); see `epic_visit_cap`.
+
+Exit codes: 0 ok / 1 blocked (other lane holds active issue claim, OR the
+weekly EPIC cap of #22500) / 2 io-or-gh error (issue mode) OR cross-lane
+OPEN-PR collision (--paths mode).
 """
 from __future__ import annotations
 
@@ -162,6 +172,12 @@ _OPEN_PRS_TOTAL_TIMEOUT_S = int(
 # rend le fetch unique par processus ; le fichier-cache (v2) le rend unique
 # par session.
 _OPEN_PRS_MEMO: list[dict] | None = None
+# #22983 -- index des numeros d'issues cites par les bodies des PRs
+# ouvertes. Clé : `id()` de la liste servie (la liste elle-meme est
+# memoisee par `_OPEN_PRS_MEMO`, donc l'identite est stable pendant un
+# tirage). Sans cet index, la jambe IMPLICIT rescannait tous les bodies
+# pour chaque candidat (~0,6 s x 150 = ~105 s mesures).
+_OPEN_PRS_INDEX_MEMO: tuple[list[dict], dict[int, list[dict]]] | None = None
 
 # --- markers -----------------------------------------------------------------
 
@@ -400,6 +416,15 @@ _OVERRIDE = {"OVERRIDE"}
 # a full lane-close, so the scope is informational there), [OVERRIDE], and
 # [CLAIMED-AMEND] (#13022: the clause is the whole point of an amend -- it
 # names the corrected/union scope that replaces the lane's previous claim).
+# #22445 -- [DELIVERED] honours the clause too. It is a CLOSE marker, but the
+# v2 conditional reducer re-marks it as an ACTIVE OPEN claim while its PR is
+# OPEN/MERGED (`_resolve_delivered_v2`), so the lane keeps occupying the
+# issue: with the clause ignored, a lane that delivered a BOUNDED slice
+# re-locked the whole umbrella as epic-wide -- the exact opposite of the
+# protocol's advice to declare `paths:` and stop blocking siblings. On the
+# CLOSED branch the event is popped and the scope stays informational, same as
+# [RELEASED]. A dead glob still lifts the re-marked claim back to epic-wide
+# (`empty_scope`, #10958), so this widening cannot fail open.
 # Same leading-decoration tolerance as `_MARKER_RE` (#10906). In practice the
 # reducer feeds this regex the `_line_for_match` output (which starts at the
 # `[`), so the legacy `^[ \t]*\[` anchor already worked -- the prefix group is
@@ -408,8 +433,29 @@ _OVERRIDE = {"OVERRIDE"}
 # of a bold-wrapped claim): `paths: dir/**` is a legitimate recursive glob,
 # indistinguishable from a closing decorator by suffix alone. Trailing `*` in
 # fnmatch matches empty, so a captured `glob**` still matches `glob`.
+# #23720 (2026-10-31, lane myia-ai-01:CoursIA-2) -- la clause canonique est
+# le SEGMENT FINAL de la ligne du marqueur (`-- paths: g1, g2`). Le motif
+# ci-dessous lit donc la **derniere** occurrence du mot-cle sur la ligne :
+# le quantificateur `[^\n]*` est désormais **greedy** (il etait non-greedy),
+# de sorte que le moteur backtracke depuis la fin de ligne.
+#
+# Pourquoi : une lane qui ecrit "une clause `paths:` ..." dans le texte
+# d'INTENTION de son marqueur detonait le parseur -- le mot-cle etait lu au
+# premier endroit, la truncation d'annotation (` -- `) coupait le reste, et la
+# portee rendue etait un jeton MORT ("`"), c'est-a-dire une claim epic-wide
+# (fail-closed #10958/#11098) : la lane se verrouillait elle-meme sur
+# l'issue entiere. Mesure sur `main` au tip `3c599591c2d2` :
+#
+#   '[CLAIMED] lane X -- une clause `paths:` (backticks) -- paths: a.py'
+#     -> portee rendue : ["`"]      (avant #23720)
+#     -> portee rendue : ["a.py"]   (apres #23720)
+#
+# Le lookbehind `(?<![`"'\w])` refuse une occurrence **encadree** (backtick,
+# guillemet) ou precedee d'un caractere de mot : une mention en prose n'est
+# pas une clause. Une occurrence en MARQUE (`**paths:**`) reste acceptee --
+# la decoration n'est pas un mot.
 _PATHS_CLAUSE_RE = re.compile(
-    r"(?im)^[ \t]*" + _DECOR + r"(?:\*\*|__)?[ \t]*\[\s*(?:CLAIMED-AMEND|CLAIMED|RELEASED|OVERRIDE)\s*\][^\n]*?paths\s*:\s*([^\n]+?)\s*$"
+    r"(?im)^[ \t]*" + _DECOR + r"(?:\*\*|__)?[ \t]*\[\s*(?:CLAIMED-AMEND|CLAIMED|RELEASED|DELIVERED|OVERRIDE)\s*\][^\n]*(?<![`\"'\w])paths\s*:\s*([^\n]+?)\s*$"
 )
 # #12320 -- `[DELIVERED] lane <m:w> -- PR #N`. The PR reference is OPTIONAL on
 # a DELIVERED marker (a DELIVERED without a PR is functionally equivalent to a
@@ -812,6 +858,45 @@ def parse_claim_event(comment: dict,
     return events[-1] if events else None
 
 
+# #23720 -- les wrappers d'un jeton de chemin. Une lane qui ecrit son chemin
+# entre backticks ou guillemets (`paths: \`a/b.py\``) produisait un glob qui
+# ne matche AUCUN fichier suivi : la portee etait lue morte, donc la claim
+# devenait epic-wide (fail-closed #10958/#11098) et verrouillait l'issue
+# entiere au lieu du fichier vise. Le retrait des wrappers est fait ICI, a la
+# lecture, ce qui repare aussi les claims DEJA poses -- aucune re-emission
+# du claim n'est demandee a la lane.
+_PATH_TOKEN_WRAPPERS = ("`", '"', "'")
+
+
+def _normalize_path_token(token: str) -> str:
+    r"""Strip the surrounding backticks/quotes of a declared path token.
+
+    `paths: \`a/b.py\`` and `paths: a/b.py` must denote the SAME scope:
+    otherwise the claim's scope and the caller's `--paths` are compared as
+    two spellings of one path, and the comparison yields nothing.
+
+    The wrappers are removed only when they are **paired** (`\\`a/b.py\\``,
+    `"a/b.py"`, `'a/b.py'`), and the stripping repeats so a doubly-wrapped
+    token (`\\`\\`a/b.py\\`\\``) is unwrapped too. A quote in the MIDDLE of a
+    filename is left untouched -- only the edges are decoration.
+
+    A token that carried nothing but wrappers normalises to the empty
+    string; the caller drops it (a scope made only of decoration was dead
+    before as well -- it simply said so more clearly).
+    """
+    t = token.strip()
+    unwrapped = True
+    while unwrapped and len(t) >= 2:
+        unwrapped = False
+        head, tail = t[0], t[-1]
+        if head in _PATH_TOKEN_WRAPPERS and head == tail:
+            t = t[1:-1].strip()
+            unwrapped = True
+    # Unbalanced leftovers (a single stray quote at one edge) are decoration
+    # too -- `fnmatch` would never match them.
+    return t.strip("`\"'").strip()
+
+
 def _split_paths_brace_aware(raw: str) -> list[str]:
     """Split a comma-separated path list on commas OUTSIDE `{...}` groups.
 
@@ -822,6 +907,13 @@ def _split_paths_brace_aware(raw: str) -> list[str]:
     (#10597). This splitter tracks brace depth and only splits on depth-0
     commas, keeping each brace group intact. Empty fragments from stray
     commas are dropped (`paths: a, , b` -> `["a", "b"]`).
+
+    #23720 -- each fragment is then NORMALIZED (`_normalize_path_token`):
+    the backticks/quotes a lane wrapped its path in are decoration, not part
+    of the path. The normalization runs AFTER the brace-aware split, so a
+    wrapped brace group (`` `search-{6,8,9}-*.yaml` ``) is first kept whole
+    and then unwrapped -- it still expands into three matchable globs
+    (#10597 preserved).
     """
     parts: list[str] = []
     buf: list[str] = []
@@ -837,7 +929,7 @@ def _split_paths_brace_aware(raw: str) -> list[str]:
         else:
             buf.append(ch)
     parts.append("".join(buf).strip())
-    return [p for p in parts if p]
+    return [t for t in (_normalize_path_token(p) for p in parts) if t]
 
 
 def _expand_brace_groups(pattern: str) -> list[str]:
@@ -864,11 +956,14 @@ def _expand_brace_groups(pattern: str) -> list[str]:
 def _extract_paths_clause(text: str | None) -> list[str] | None:
     """Parse the optional `paths: <comma-list>` clause from a marker line.
 
-    Recognised on [CLAIMED], [RELEASED], [OVERRIDE], and [CLAIMED-AMEND]
-    marker lines (#10342 introduced the clause for [OVERRIDE]; #10419
-    extended it to [CLAIMED] and [RELEASED] so disjoint scoped claims no
+    Recognised on [CLAIMED], [RELEASED], [DELIVERED], [OVERRIDE], and
+    [CLAIMED-AMEND] marker lines (#10342 introduced the clause for [OVERRIDE];
+    #10419 extended it to [CLAIMED] and [RELEASED] so disjoint scoped claims no
     longer false-block each other on a multi-instance issue; #13022 added
-    [CLAIMED-AMEND], where the clause names the replacement scope). Returns
+    [CLAIMED-AMEND], where the clause names the replacement scope; #22445 added
+    [DELIVERED], whose v2 re-marking as an active claim while its PR is
+    OPEN/MERGED otherwise re-locked the whole umbrella epic-wide -- a bounded
+    delivery must not narrow back into a full-lane lock). Returns
     the trimmed path list, or None when the
     clause is absent -- the marker is then EPIC-WIDE (legacy semantics: an
     unscoped [CLAIMED] blocks every other lane, an unscoped [OVERRIDE] closes
@@ -892,6 +987,14 @@ def _extract_paths_clause(text: str | None) -> list[str] | None:
     dash sequence (`foo--bar.py`) survives untouched; the truncation cuts at
     the FIRST separator, so glob content after it stays out regardless of
     how the annotation is punctuated.
+
+    #23720 -- the clause is read from the LAST unquoted occurrence of the
+    keyword on the marker line (see `_PATHS_CLAUSE_RE`), and each resulting
+    token is NORMALIZED (`_normalize_path_token`): a path wrapped in
+    backticks or quotes denotes the same scope as the bare path. Without
+    both, a claim written in a natural sentence could end up with a DEAD
+    scope -- and a dead scope is read as epic-wide, which locks the whole
+    issue instead of the file the lane meant to hold.
     """
     m = _PATHS_CLAUSE_RE.search(text or "")
     if not m:
@@ -1215,6 +1318,9 @@ def _rest_issue_payload(issue: str, repo: str | None = None) -> dict:
     return {
         "number": core.get("number"),
         "title": core.get("title") or "",
+        # #22500 point 3 -- meme champ que la voie GraphQL : `parent_refs`
+        # (picker) lit le lien `Part of #N` dans le corps de l'issue.
+        "body": core.get("body") or "",
         "labels": [
             {"name": (lb or {}).get("name")}
             for lb in core.get("labels") or []
@@ -1354,7 +1460,12 @@ def _gh_issue_comments(issue: str) -> dict:
             # picker hydrates from. The label-route is the authoritative one;
             # the title-route stays a fallback for the historic pre-label
             # inventory.
-            "--json", "number,title,labels,comments",
+            # #22500 point 3 -- `body` added for the SAME reason: `parent_refs`
+            # (picker, l. 5904) reads the `Part of #N` link in the body. Asking
+            # for the field costs no extra request (same GraphQL query), and
+            # the plafond would otherwise need a second read of the very issue
+            # we already have.
+            "--json", "number,title,labels,body,comments",
         ],
         # #12811 -- gh emits UTF-8; text=True alone decodes with the Windows
         # locale (cp1252), which raises UnicodeDecodeError on issue bodies
@@ -1599,13 +1710,124 @@ def _resolve_delivered_v2(
     return "close"
 
 
-def _post_comment(issue: str, body: str) -> None:
-    """Post an issue comment via `gh issue comment --body-file`.
+def _issue_comment_count(issue: str, repo: str | None = None) -> int:
+    """Nombre de commentaires de l'issue, mesure NEUVE (#22758).
 
-    A body file (not --body) avoids shell-escaping the marker / em-dash / quotes
-    and keeps the posted text byte-exact. Written under the OS temp dir, not the
-    worktree, so it never leaks into a commit (cf L677-L4 body-file discipline).
+    L'instantane (#22630) sert la LECTURE d'un verdict de claim. Une
+    verification d'ecriture qui le consulterait comparerait l'etat d'avant a
+    lui-meme et validerait une ecriture qui n'a pas eu lieu : d'ou une mesure
+    hors cache, REST d'abord (quota distinct du GraphQL qui porte l'ecriture),
+    GraphQL non cache ensuite.
+
+    Les deux transports morts -> `RuntimeError`, jamais un compte invente :
+    un appelant qui ne peut pas compter ne peut pas constater un succes.
     """
+    slug = repo or _repo_slug()
+    proc = subprocess.run(
+        ["gh", "api", f"repos/{slug}/issues/{issue}", "--jq", ".comments"],
+        capture_output=True, text=True, shell=False,
+        encoding="utf-8", errors="replace",
+    )
+    if proc.returncode == 0:
+        try:
+            return int((proc.stdout or "").strip())
+        except ValueError:
+            rest_err = f"valeur illisible {proc.stdout.strip()[:40]!r}"
+    else:
+        rest_err = (
+            (proc.stderr.strip().splitlines() or [f"exit {proc.returncode}"])[0][:120]
+        )
+        print(
+            f"[TRANSPORT] comptage REST indisponible ({rest_err})"
+            f" -- bascule GraphQL non cache.",
+            file=sys.stderr,
+        )
+    cmd = ["gh", "issue", "view", str(issue), "--json", "comments"]
+    if repo:
+        # Meme depot sur les deux transports (reserve #20248) : sans ce
+        # `--repo`, la voie GraphQL infererait le slug du cwd et pourrait
+        # compter les commentaires d'un autre depot.
+        cmd[3:3] = ["--repo", repo]
+    proc = subprocess.run(
+        cmd,
+        capture_output=True, text=True, shell=False,
+        encoding="utf-8", errors="replace",
+    )
+    if proc.returncode == 0:
+        try:
+            payload = json.loads(proc.stdout)
+        except json.JSONDecodeError as exc:
+            raise RuntimeError(
+                f"comptage des commentaires de #{issue} : GraphQL rendu "
+                f"illisible ({exc})"
+            ) from exc
+        return len(payload.get("comments") or [])
+    gql_err = (proc.stderr.strip().splitlines() or [f"exit {proc.returncode}"])[0][:120]
+    raise RuntimeError(
+        f"comptage des commentaires de #{issue} : REST puis GraphQL tous deux "
+        f"tombes (REST: {rest_err} ; GraphQL: {gql_err}) -- ecriture NON "
+        f"VERIFIABLE, ce n'est pas un succes"
+    )
+
+
+def _post_comment_rest(issue: str, body: str, repo: str | None = None) -> None:
+    """Ecriture de repli par REST (`gh api ... --input`), quota distinct (#22758).
+
+    La LECTURE basculait deja en REST sous panne GraphQL (#17038) ; l'ECRITURE
+    ne le faisait pas, donc un quota GraphQL epuise rendait toute claim
+    impossible. `--input` porte le JSON complet (`{"body": ...}`) : c'est la
+    forme sure de gh-posting-hygiene, jamais `-f body=@fichier` qui publie le
+    chemin au lieu du corps.
+    """
+    slug = repo or _repo_slug()
+    with tempfile.NamedTemporaryFile(
+        "w", suffix=".json", delete=False, encoding="utf-8"
+    ) as fh:
+        json.dump({"body": body}, fh)
+        payload_path = fh.name
+    try:
+        proc = subprocess.run(
+            [
+                "gh", "api", f"repos/{slug}/issues/{issue}/comments",
+                "--method", "POST", "--input", payload_path,
+            ],
+            capture_output=True, text=True, shell=False,
+            encoding="utf-8", errors="replace",
+        )
+    finally:
+        Path(payload_path).unlink(missing_ok=True)
+    if proc.returncode != 0:
+        raise RuntimeError(
+            f"gh api issues/{issue}/comments (REST) failed "
+            f"(exit {proc.returncode}): {proc.stderr.strip()[:200]}"
+        )
+
+
+def _post_comment(issue: str, body: str, repo: str | None = None) -> None:
+    """Poste un commentaire et CONSTATE qu'il existe (#22758).
+
+    Trois garanties, dans cet ordre :
+
+    1. **comptage AVANT** par une mesure neuve (jamais l'instantane) -- sans
+       etat de reference, un compte d'apres ne prouve rien ;
+    2. **GraphQL d'abord, puis bascule REST de l'ECRITURE** en nommant le
+       transport, comme la lecture le fait depuis #17038 ;
+    3. **comptage APRES** : le nombre doit avoir augmente d'exactement un.
+       Sinon `RuntimeError` -- un organe ne rend jamais un succes qu'il n'a
+       pas constate (#22758 : une claim « posee » alors que 0 commentaire
+       existait).
+
+    Le corps passe par un fichier (jamais `--body`) : le marqueur, le tiret
+    cadratin et les guillemets restent byte-exacts, et rien ne fuit dans un
+    commit (cf L677-L4 body-file discipline).
+    """
+    try:
+        before = _issue_comment_count(issue, repo)
+    except RuntimeError as exc:
+        raise RuntimeError(
+            f"{exc} -- refus d'ecrire sans pouvoir verifier l'ecriture "
+            f"(un succes non constatable n'est pas un succes)"
+        ) from exc
     with tempfile.NamedTemporaryFile(
         "w", suffix=".md", delete=False, encoding="utf-8"
     ) as fh:
@@ -1618,9 +1840,29 @@ def _post_comment(issue: str, body: str) -> None:
     )
     Path(path).unlink(missing_ok=True)
     if proc.returncode != 0:
+        graphql_err = (
+            (proc.stderr.strip().splitlines() or [f"exit {proc.returncode}"])[0][:120]
+            if proc.stderr.strip() else f"exit {proc.returncode}"
+        )
+        print(
+            f"[TRANSPORT] gh issue comment (GraphQL) indisponible ({graphql_err})"
+            f" -- bascule REST de l'ECRITURE, quota distinct.",
+            file=sys.stderr,
+        )
+        try:
+            _post_comment_rest(issue, body, repo)
+        except RuntimeError as rest_exc:
+            raise RuntimeError(
+                f"gh issue comment {issue} : GraphQL puis REST tous deux "
+                f"tombes (GraphQL: {graphql_err} ; REST: {rest_exc}) -- "
+                f"ecriture NON POSEE"
+            ) from rest_exc
+    after = _issue_comment_count(issue, repo)
+    if after != before + 1:
         raise RuntimeError(
-            f"gh issue comment {issue} failed (exit {proc.returncode}): "
-            f"{proc.stderr.strip()}"
+            f"gh issue comment {issue} : le transport a rendu succes mais le "
+            f"compte de commentaires n'a pas augmente ({before} -> {after}) -- "
+            f"ecriture NON CONSTATEE, la claim n'est pas posee"
         )
 
 
@@ -2039,6 +2281,47 @@ def _pr_body_references_issue(body: str, issue_number: int) -> bool:
 # markers posted -- the organ said CLEAR and was "right": nobody had
 # claimed. The strongest signal of occupation -- an OPEN PR of another lane
 # already referencing the issue -- lived one `gh pr list` away.
+def _open_prs_by_referenced_issue(prs: list[dict]) -> dict[int, list[dict]]:
+    """Indexe, en UNE passe, les PRs ouvertes par numero d'issue cite.
+
+    #22983 -- la jambe IMPLICIT (#14300) demandait, pour CHAQUE candidat, un
+    balayage de TOUS les bodies de PRs ouvertes : mesure du 27/10, ~0,6 s par
+    candidat (366 PRs ouvertes x un corps de quelques kilo-octets), soit
+    ~105 s pour la fenetre de service de 150 numeros -- le cout dominant du
+    tapis. L'index remplace N balayages par UN : on extrait tous les numeros
+    cites une seule fois, puis on consulte un dict.
+
+    Le predicat reste le meme (`_PR_ISSUE_REF_RE`), donc la correspondance
+    des numeros est identique : c'est le meme regex, sur le meme corps, au
+    meme moment. Seule la repetitions change.
+    """
+    global _OPEN_PRS_INDEX_MEMO
+    index: dict[int, list[dict]] = {}
+    memo = _OPEN_PRS_INDEX_MEMO
+    # La memo porte la LISTE elle-meme (pas son `id()`) : la liste reste
+    # vivante, donc l'identite ne peut pas etre reattribuee par le
+    # collecteur a une autre liste.
+    if memo is not None and memo[0] is prs:
+        return memo[1]
+    for pr in prs:
+        # #19971 -- meme lecture defensive du transport qu'a l'entree des
+        # commentaires : un body de PR piege en payload JSON cache le `lane`
+        # et la reference `#N` exactement de la meme facon (instance fondatrice
+        # #17270, mesuree sur un body de PR).
+        body = _unwrap_trapped_body(pr.get("body") or "")
+        for m in _PR_ISSUE_REF_RE.finditer(body):
+            captured = m.group(1) or m.group(2)
+            if captured is None:
+                continue
+            try:
+                number = int(captured)
+            except ValueError:
+                continue
+            index.setdefault(number, []).append(pr)
+    _OPEN_PRS_INDEX_MEMO = (prs, index)
+    return index
+
+
 def _find_open_prs_referencing_issue(
     issue_number: int,
     my_lane: str,
@@ -2057,14 +2340,8 @@ def _find_open_prs_referencing_issue(
     if prs is None:
         prs = _gh_open_prs_with_files()
     out: list[dict] = []
-    for pr in prs:
-        # #19971 -- meme lecture defensive du transport qu'a l'entree des
-        # commentaires : un body de PR piege en payload JSON cache le `lane`
-        # et la reference `#N` exactement de la meme facon (instance fondatrice
-        # #17270, mesuree sur un body de PR).
+    for pr in _open_prs_by_referenced_issue(prs).get(issue_number, []):
         body = _unwrap_trapped_body(pr.get("body") or "")
-        if not _pr_body_references_issue(body, issue_number):
-            continue
         lane = extract_lane(body)
         if lane == my_lane:
             continue
@@ -2446,10 +2723,19 @@ def _paths_clause(paths: list[str] | None) -> str:
     path was previously DROPPED SILENTLY: the caller believed the claim was
     scoped while the organ read it epic-wide (maximally blocking). This
     function is the fix that makes the scope survive the round-trip.
+
+    #23720 -- the tokens are NORMALIZED before being rendered: the clause
+    that leaves this function is the one the reader will parse, so it must
+    already be in the normalized spelling (a path wrapped in backticks is
+    written back bare). The reader normalizes too -- this is the write-side
+    half of the same contract, so a claim READS the same as it was WRITTEN.
     """
     if not paths:
         return ""
-    return " -- paths: " + ", ".join(paths)
+    normalized = [t for t in (_normalize_path_token(p) for p in paths) if t]
+    if not normalized:
+        return ""
+    return " -- paths: " + ", ".join(normalized)
 
 
 def _fmt_utc(iso: str | None) -> str:
@@ -3168,6 +3454,23 @@ def _claim_age_hours(created_at: str | None, now: datetime) -> float | None:
     return (now - parsed).total_seconds() / 3600.0
 
 
+#: #22983 -- un titre d'EPIC qui nomme un PARENT (`[EPIC #10355] Phase 3`,
+#: `[Epic Origami #19742 - Pli 3]`, `Epic #21424 T3 : ...`) designe une
+#: TRANCHE, pas un conteneur. Mesure du 27/10 (615 issues ouvertes) : 41
+#: issues portent un titre `EPIC...` sans le label `EPIC` ; 10 d'entre elles
+#: nomment un parent, et les 10 sont des tranches (`Phase 2/5`, `Pli 3`,
+#: `Tranche C etape 3`, `T3`, `T5`). Les 31 autres sont de vrais
+#: conteneurs (`[EPIC] Consolidation...`, `[Epic Origami] ...`).
+#:
+#: Pourquoi cela compte : sur une UMBRELLA, le filtre de livraison ne
+#: cherche que le MARQUEUR DE CONTENEUR (`[INFO] candidate-delivered`), pas
+#: le marqueur de grain (`[DELIVERED] lane ... -- motif`). Une tranche
+#: livree et classee umbrella reste donc servable -- mesure du 27/10 sur
+#: #21435 (`[DELIVERED] lane myia-po-2028:CoursIA` present, issue servie
+#: quand meme avec un `[CLAIMED]` fantome).
+EPIC_PARENT_TITLE_RE = re.compile(r"^\s*\[?EPIC\b[^\]]{0,40}#\d+", re.IGNORECASE)
+
+
 def _is_umbrella_issue(payload: dict) -> bool:
     """Return True if `payload` describes an umbrella / EPIC-style issue (#12156).
 
@@ -3178,6 +3481,11 @@ def _is_umbrella_issue(payload: dict) -> bool:
     `[EPIC` / `EPIC` after stripping the leading `[`. The label-route is the
     authoritative one; the title-route catches the historic pre-label inventory
     that the picker also accepts.
+
+    #22983 -- la route par TITRE exclut les TRANCHES : un titre qui nomme
+    un parent (`[EPIC #10355] Phase 3`) designe une tranche, pas un
+    conteneur. Le label reste autoritaire : une issue explicitement
+    labelisee `EPIC` reste une umbrella, quoi que son titre.
 
     Returns False on missing keys (defensive: the from-json path may carry a
     subset of fields). Never raises -- a malformed payload should degrade to
@@ -3190,6 +3498,9 @@ def _is_umbrella_issue(payload: dict) -> bool:
             if isinstance(name, str) and name == "EPIC":
                 return True
         title = payload.get("title") or ""
+        if EPIC_PARENT_TITLE_RE.match(title.lstrip("[")):
+            # Route par titre, mais le titre nomme un parent : TRANCHE.
+            return False
         upper = title.upper().lstrip("[")
         return upper.startswith("EPIC")
     except (AttributeError, TypeError):
@@ -3214,11 +3525,246 @@ def _parse_iso_utc(iso: str) -> datetime | None:
         return None
 
 
+# --- #22500 point 3 -- le plafond hebdomadaire des EPICs s'applique au claim ---
+#
+# Demande (commentaire 6409466826 du 2026-10-26T06:10:07Z sur #22500), verbatim :
+#
+#   « `umbrella_visit_cause` agit au tirage : il retire l'EPIC du tapis. Mais
+#     #22609 (creee 01:45Z, claimee 01:45Z), #22617 et #22618 (03:41Z) n'ont
+#     jamais ete tirees : chaque lane cree l'issue fille « Part of #16334 » et
+#     la claime aussitot. `scripts/check_lane_claim.py`, que chaque lane lance
+#     avant d'editer, ne connait pas le plafond (0 occurrence de
+#     `umbrella_visit_cause` ni de `parent_refs`).
+#     **Attendu** : `check_lane_claim.py N` rend `BLOCKED` avec la cause
+#     `PLAFOND EPIC (#22500)` quand un parent de N (au sens de `parent_refs`)
+#     est une `umbrella` hors classe `consolidation` dont une AUTRE issue
+#     fille a ete creee, ou dont un claim a ete pose, il y a moins de 7 jours.
+#     L'issue N elle-meme ne compte pas, sinon le premier claim legitime de la
+#     semaine se bloquerait. Meme regle pour un claim pose directement sur
+#     l'EPIC. »
+#
+# ORGANE-FIRST : la semantique du plafond n'est PAS re-ecrite ici. Tout vient de
+# `scripts/pick_idle_grain.py`, importe a la demande (`_epic_cap_picker`) :
+#   - `parent_refs(it)` (l. 5904) : la definition d'un parent (prefixe de titre
+#     `[#N`, `Part of #N` en corps, forme `kind(zone,#EPIC):`) ;
+#   - `claim_visit_stamp(comments)` (l. 5987) : la date du dernier marqueur de
+#     lane, lue par la grammaire de CE module (`_sort_events`) -- jamais une
+#     regex propre ;
+#   - `is_consolidation(it)` (l. 5809) : la classe exemptee, lue au label seul ;
+#   - `apply_child_visits(pool, targets)` (l. 5966) : la date de la plus recente
+#     sous-issue creee qui nomme le parent ;
+#   - `umbrella_visit_cause(it)` (l. 5927) : LE LITTERAL de la cause, rendu tel
+#     quel -- aucune seconde ecriture du prefixe `PLAFOND EPIC (#22500)` dans ce
+#     module ; les tests l'epinglent, le code de production ne le reconstruit
+#     pas (une copie divergerait au premier amendement de l'organe) ;
+#   - `fetch_pool()` (l. 1087) : le pool ouvert, une seule requete.
+# `_is_umbrella_issue` (ce module, l. 2928) tient le role du classifieur
+# `klass == "umbrella"` du picker (il documente deja qu'il en est le miroir).
+#
+# COUT -- la contrainte du coordinateur est explicite (274 s pour la commande
+# des lanes, dont 45 s pour 8 sondes de claims) :
+#   - issue sans parent ET pas elle-meme un umbrella : **zero appel, zero
+#     seconde** (c'est le cas le plus frequent, et `parent_refs` se lit sur la
+#     charge deja telechargee) ;
+#   - issue avec parent(s) : 1 appel `gh issue view` par parent, et le pool
+#     (1 appel, 8,6 s mesure le 2026-10-26 sur 555 issues ouvertes) UNIQUEMENT
+#     si au moins un parent est un umbrella hors consolidation -- un parent
+#     ordinaire ne coute donc pas le pool ;
+#   - le pool est memoise par processus (`_EPIC_CAP_POOL_MEMO`) : le mode batch
+#     le paie une fois pour N issues ;
+#   - si une autre lane bloque deja (verdict exit 1 acquis), le plafond n'est
+#     pas mesure du tout : le detour serait paye pour un verdict deja rendu.
+#
+# PORTEE -- `_run_check(epic_cap=True)` est pose par les deux modes de
+# LECTURE/ECRITURE unitaires de la CLI (`check` et `--claim`), c'est-a-dire le
+# geste L898 qu'une lane lance avant d'editer. Le mode **batch** garde
+# `epic_cap=False` : c'est la sonde du tapis roulant, et le point 3 de #22500
+# est un gate de claim, pas un changement de tirage (#22630 possede le tirage).
+# Consequence annoncee : `_summarize_claim` du picker ne lit que
+# `blocking_lanes`/`my_active_claim`/`implicit_occupation`/`stale_claims`, donc
+# une sonde `check_claims([n])` sur une fille plafonnee rend encore FREE tant
+# qu'un suivi n'enseigne pas au picker la cle `epic_visit_cap`. Le gate de la
+# lane, lui, est rendu.
+#
+# ECHEC DE LECTURE -- le plafond est une discipline de visite, pas une garantie
+# anti-collision (celle-ci reste portee, fail-CLOSED, par `blocking_lanes`).
+# Un parent ou un pool illisible ne bloque donc PAS : il est NOMME dans
+# `epic_visit_cap_error` et sur stderr. Un plafond non mesurable ne doit jamais
+# se lire comme un plafond respecte, ni fermer la voie a une lane sur une panne
+# de transport.
+# Memo de processus : le pool coute 1 requete (~8,6 s mesure), le mode batch
+# boucle sur N issues -- sans memo, N requetes.
+_EPIC_CAP_POOL_MEMO: list[dict] | None = None
+_EPIC_CAP_POOL_ERROR: str | None = None
+# Memo des charges parent par numero : deux filles du meme EPIC dans un meme
+# processus ne paient qu'une lecture du parent.
+_EPIC_CAP_PARENT_MEMO: dict[int, dict | None] = {}
+
+
+def _epic_cap_picker():
+    """Le module organe `pick_idle_grain`, importe a la demande.
+
+    Import TARDIF et non un `import` de tete : le picker importe ce module
+    (dans `claim_visit_stamp`, `latest_claim_lane`, ...), donc un import de tete
+    des deux cotes ferait dependre l'ordre de chargement d'un cycle. Tardif, il
+    ne coute rien au chemin courant (issue sans parent), qui n'importe jamais.
+    """
+    scripts_dir = Path(__file__).resolve().parent
+    if str(scripts_dir) not in sys.path:
+        sys.path.insert(0, str(scripts_dir))
+    import pick_idle_grain  # tardif assume : cf la docstring ci-dessus
+    return pick_idle_grain
+
+
+def _epic_cap_parent_payload(number: int) -> dict:
+    """Charge d'un parent : meme forme que `_gh_issue_comments` (1 appel)."""
+    cached = _EPIC_CAP_PARENT_MEMO.get(number)
+    if cached is not None:
+        return cached
+    payload = _gh_issue_comments(str(number))
+    _EPIC_CAP_PARENT_MEMO[number] = payload
+    return payload
+
+
+def _epic_cap_pool() -> tuple[list[dict], str | None]:
+    """Le pool ouvert du picker, une fois par processus.
+
+    Rend `(pool, read_error)`. `read_error` est la chaine nommee par
+    `fetch_pool` quand les deux transports sont tombes ; le pool est alors vide
+    et la mesure est PARTIELLE (le signal `last_child_stamp` manque, le signal
+    `last_claim_stamp` reste lisible sur la charge du parent). L'echec est
+    memoise avec le pool : un processus de CLI est court, et le mode batch ne
+    doit pas repayer N fois une panne.
+    """
+    global _EPIC_CAP_POOL_MEMO, _EPIC_CAP_POOL_ERROR
+    if _EPIC_CAP_POOL_MEMO is not None:
+        return _EPIC_CAP_POOL_MEMO, _EPIC_CAP_POOL_ERROR
+    try:
+        pool, read_error = _epic_cap_picker().fetch_pool(probe=None)
+    except Exception as exc:  # noqa: BLE001 -- mesure best-effort, nommee
+        pool, read_error = [], f"{type(exc).__name__}: {exc}"
+    _EPIC_CAP_POOL_MEMO = pool
+    _EPIC_CAP_POOL_ERROR = read_error
+    return pool, read_error
+
+
+def epic_visit_cap(payload: dict, *, now: datetime | None = None,
+                   parent_loader=None,
+                   pool_loader=None) -> dict:
+    """#22500 point 3 -- verdict du plafond hebdomadaire pour un claim sur N.
+
+    Rend un dict a quatre cles, toutes serialisables dans le rapport JSON :
+
+      - ``cause`` : la cause **rendue par l'organe** (`umbrella_visit_cause`,
+        litteral inchange) ou ``None`` ;
+      - ``epic`` : le numero de l'EPIC qui plafonne (ou ``None``) ;
+      - ``calls`` : ``{"parent_payloads": n, "pool": 0|1}`` -- le cout reseau de
+        CETTE mesure, pour que la borne se verifie au lieu de se croire ;
+      - ``error`` : les lectures qui ont echoue (``None`` si tout a ete lu).
+
+    Sujets examines, dans l'ordre : l'issue N elle-meme si c'est un umbrella
+    (demande explicite : « Meme regle pour un claim pose directement sur
+    l'EPIC »), puis chaque parent de N au sens de `parent_refs`. Un sujet est
+    retenu s'il est un umbrella ET hors classe `consolidation`.
+
+    L'issue N **ne se compte pas comme sa propre visite** : `apply_child_visits`
+    recoit le pool prive de N, sinon la fille creee puis claimee dans la minute
+    -- le scenario fondateur de #22500 -- bloquerait son propre premier claim.
+
+    `parent_loader`/`pool_loader` sont injectables (tests hors reseau) ; par
+    defaut ils lisent GitHub et memoisent par processus.
+    """
+    parent_loader = parent_loader or _epic_cap_parent_payload
+    pool_loader = pool_loader or _epic_cap_pool
+    picker = _epic_cap_picker()
+    calls = {"parent_payloads": 0, "pool": 0}
+    errors: list[str] = []
+    verdict = {"cause": None, "epic": None, "calls": calls,
+               "error": None, "skipped": None}
+
+    number = payload.get("number")
+    number = int(number) if isinstance(number, int) else None
+
+    # (1) les sujets candidats, sans reseau : N si c'est un umbrella, puis ses
+    # parents (`parent_refs` lit titre/corps de la charge DEJA telechargee).
+    subjects: list[tuple[int, dict | None]] = []
+    if number is not None and _is_umbrella_issue(payload):
+        subjects.append((number, payload))
+    for parent in sorted(picker.parent_refs(payload)):
+        if parent == number:
+            continue  # une issue ne se visite pas elle-meme
+        subjects.append((parent, None))
+    if not subjects:
+        return verdict  # zero appel : le cas le plus frequent
+
+    # (2) resoudre les charges parent (1 appel chacune) et ne garder que les
+    # EPICs hors consolidation. AUCUN pool tant qu'aucun sujet n'est retenu.
+    capped: list[tuple[int, dict]] = []
+    for epic, body in subjects:
+        if body is None:
+            try:
+                body = parent_loader(epic)
+                calls["parent_payloads"] += 1
+            except Exception as exc:  # noqa: BLE001 -- nomme, ne bloque pas
+                errors.append(f"#{epic}: {type(exc).__name__}: {exc}")
+                continue
+            if not isinstance(body, dict):
+                errors.append(f"#{epic}: payload inattendu")
+                continue
+        if not _is_umbrella_issue(body):
+            continue
+        if picker.is_consolidation(body):
+            continue  # exemption : une consolidation REVIENT souvent, c'est son travail
+        capped.append((epic, body))
+    if not capped:
+        verdict["error"] = "; ".join(errors) or None
+        return verdict
+
+    # (3) le pool, paye UNE fois, seulement parce qu'un sujet est retenu.
+    pool, pool_error = pool_loader()
+    calls["pool"] = 1
+    if pool_error:
+        errors.append(f"pool: {pool_error}")
+    targets = [
+        {
+            "number": epic,
+            "title": body.get("title"),
+            "labels": body.get("labels"),
+            # `klass` est la cle que lit `umbrella_visit_cause` ; `_is_umbrella_issue`
+            # vient de la trancher, donc la valeur est celle de l'organe.
+            "klass": "umbrella",
+            "last_claim_stamp": picker.claim_visit_stamp(
+                [c for c in (body.get("comments") or []) if isinstance(c, dict)]
+            ),
+        }
+        for epic, body in capped
+    ]
+    if pool:
+        # N ne compte pas parmi les filles visitees (demande explicite).
+        daughters = [c for c in pool if c.get("number") != number]
+        picker.apply_child_visits(daughters, targets)
+
+    # (4) la cause de l'organe, telle quelle : aucune seconde ecriture du
+    # litteral, qui divergerait au premier amendement de l'organe. Le prefixe
+    # attendu (`PLAFOND EPIC (#22500)`) est epingle par les TESTS, pas par une
+    # assertion de production -- un gate de claim ne s'arrete pas sur un
+    # renommage de litteral chez l'organe.
+    for target in targets:
+        cause = picker.umbrella_visit_cause(target, now=now)
+        if cause:
+            verdict.update(cause=cause, epic=target["number"])
+            break
+    verdict["error"] = "; ".join(errors) or None
+    return verdict
+
+
 def _run_check(payload: dict, my_lane: str, stale_threshold=None,
                now: datetime | None = None,
                my_paths: list[str] | None = None,
                pr_states: dict[int, str] | None = None,
-               check_open_pr_paths: bool = False) -> int:
+               check_open_pr_paths: bool = False,
+               epic_cap: bool = False,
+               epic_cap_probe=None) -> int:
     """Issue-claim check: exit 1 if another lane blocks, 0 if clear.
 
     Exit 3 (#14300): IMPLICIT -- no [CLAIMED] marker blocks, but an OPEN PR
@@ -3252,6 +3798,15 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             in the form L898 prescribes (issue + paths). The leg is
             best-effort: on `gh` failure it warns and leaves the primary
             verdict untouched rather than failing the whole check.
+        epic_cap: when True, ALSO apply the #22500 point 3 weekly cap on the
+            EPICs this issue belongs to (see `epic_visit_cap`). Off by default
+            so a direct call -- and every pre-#22500 unit test -- stays
+            network-free; the report then gains only ADDITIVE keys
+            (`epic_visit_cap*`, null), never a changed verdict. The CLI enables
+            it on the two unitary paths (`check`, `--claim`), never on batch
+            (see the region comment above `epic_visit_cap` for why).
+        epic_cap_probe: injectable `(payload) -> verdict dict` seam (tests).
+            Defaults to `epic_visit_cap`, which reads GitHub.
     """
     # One shared tracked-files walk feeds the #10958 empty-scope witness AND
     # the #19435 root-filename acceptance (best-effort: None outside a git
@@ -3391,7 +3946,7 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
                 f"({exc}) : ce CLEAR ne dit rien des PRs OUVERTES touchant "
                 f"ces chemins. Verifier a la main avec "
                 f"`check_lane_claim.py --lane {my_lane} --paths ...` "
-                f"(sans numero d'issue) avant d'editer (#16570, #21742).",
+                f"(sans numero d'issue) avant d'editer (cf. #16570, #21742).",
                 file=sys.stderr,
             )
         except RuntimeError as exc:
@@ -3400,7 +3955,7 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
                 f"`--paths` ({exc}) : ce CLEAR ne dit rien des PRs OUVERTES "
                 f"touchant ces chemins. Verifier a la main avec "
                 f"`check_lane_claim.py --lane {my_lane} --paths ...` "
-                f"(sans numero d'issue) avant d'editer (#16570).",
+                f"(sans numero d'issue) avant d'editer (cf. #16570).",
                 file=sys.stderr,
             )
     # Dead-glob witness on the CALLER side (mirror of `empty_scope` on the
@@ -3644,6 +4199,26 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             my_scope, others, tracked,
         )
 
+    # #22500 point 3 -- plafond hebdomadaire des EPICs. Mesure APRES les
+    # filtres (un verdict deja bloque par une lane ne paie pas le detour) et
+    # AVANT la construction du rapport, qui doit le porter.
+    epic_cap_verdict: dict = {"cause": None, "epic": None, "calls": None,
+                              "error": None, "skipped": None}
+    if epic_cap:
+        if others:
+            # Le verdict est deja exit 1 : payer 8,6 s de pool pour le dire une
+            # seconde fois serait du cout sans information. On le DIT, pour que
+            # `epic_visit_cap: null` ne se lise pas comme « plafond respecte ».
+            epic_cap_verdict["skipped"] = (
+                "another lane already blocks -- verdict is exit 1 without the cap"
+            )
+        else:
+            probe = epic_cap_probe or epic_visit_cap
+            try:
+                epic_cap_verdict = probe(payload) or epic_cap_verdict
+            except Exception as exc:  # noqa: BLE001 -- mesure best-effort, nommee
+                epic_cap_verdict["error"] = f"{type(exc).__name__}: {exc}"
+
     summary = {
         "issue": payload.get("number"),
         "title": payload.get("title"),
@@ -3805,7 +4380,23 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         # here instead of silently swallowing the re-claim.
         "composite_single_line_markers": len(composites),
         "composite_single_line_marker_lines": [s["line"] for s in composites],
-        "blocked": bool(others),
+        "blocked": bool(others) or bool(epic_cap_verdict.get("cause")),
+        # #22500 point 3 -- le plafond hebdomadaire des EPICs (voir
+        # `epic_visit_cap`). `epic_visit_cap` porte le LITTERAL rendu par
+        # l'organe (`PLAFOND EPIC (#22500) : ...`), jamais une reformulation ;
+        # `epic_visit_cap_epic` nomme l'EPIC qui plafonne, pour que la lane
+        # puisse aller lire ses sous-grains ouverts au lieu de re-tenter ;
+        # `epic_visit_cap_calls` publie le cout reseau de CETTE mesure (la
+        # borne du coordinateur se verifie, elle ne se croit pas) ;
+        # `epic_visit_cap_error` nomme les lectures qui ont echoue -- un
+        # plafond non mesurable ne doit pas se confondre avec un plafond
+        # respecte ; `epic_visit_cap_skipped` dit pourquoi la mesure n'a pas
+        # eu lieu (verdict deja bloque par une lane, ou plafond non demande).
+        "epic_visit_cap": epic_cap_verdict.get("cause"),
+        "epic_visit_cap_epic": epic_cap_verdict.get("epic"),
+        "epic_visit_cap_calls": epic_cap_verdict.get("calls"),
+        "epic_visit_cap_error": epic_cap_verdict.get("error"),
+        "epic_visit_cap_skipped": epic_cap_verdict.get("skipped"),
         # #14187 -- free-paths counter: files in the caller's `--paths`
         # that intersect NO blocker. A lane with `--paths 'knot_lean/**'`
         # blocked by 3 lanes whose scopes intersect 3 of 12 sub-files can
@@ -4126,6 +4717,29 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
                 file=sys.stderr,
             )
         return 1
+    # #22500 point 3 -- le plafond hebdomadaire des EPICs : exit 1, comme tout
+    # BLOCKED. Il passe AVANT la branche `NOT_SCOPED` ci-dessous : celle-ci
+    # invite a re-executer avec `--paths`, et re-scoper ne leve PAS un plafond
+    # de visite -- le conseil serait faux. La cause imprimee est le litteral de
+    # l'organe (`umbrella_visit_cause`), inchange.
+    if epic_cap_verdict.get("cause"):
+        epic_number = epic_cap_verdict.get("epic")
+        where = (f"#{epic_number}" if epic_number is not None
+                 else "un EPIC parent")
+        print(
+            f"\nBLOCKED: {epic_cap_verdict['cause']}\n"
+            f"  #{payload.get('number')} appartient a l'EPIC {where}, deja "
+            f"visite cette semaine : une sous-issue y a ete creee, ou un "
+            f"claim y a ete pose, il y a moins de 7 jours (#22500 point 3). "
+            f"Le plafond exempte les EPICs de classe `consolidation`, et "
+            f"l'issue elle-meme ne compte pas comme sa propre visite.\n"
+            f"  ACTION: servir un sous-grain DEJA OUVERT de l'EPIC "
+            f"{where}, ou prendre un autre grain du pool. Re-scoper avec "
+            f"`--paths` ne leve pas ce plafond ; `--force` reste reserve a "
+            f"l'arbitrage coordinateur.",
+            file=sys.stderr,
+        )
+        return 1
     # #12345 -- fail-CLOSED on an entirely-dead scope, EVEN with no
     # blockers. Without this branch, a caller who typo'd every glob in
     # `--paths` would see CLEAR + `exit 0` on an issue no one else has
@@ -4181,8 +4795,18 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             )
         lines.append(
             "\nCoordinate with the owner(s), re-scope to paths no OPEN PR "
-            "touches, or pick another grain (#16570)."
+            "touches, or pick another grain from the GLOBAL POOL "
+            "(`python scripts/pick_idle_grain.py --belt --lane "
+            "<machine:workspace>`)."
         )
+        # Le renvoi porte sur le POOL, jamais sur un numero d'issue.
+        # Mesure du 2026-10-26 (lane myia-ai-01:CoursIA-2) : ce message
+        # pointait « (#16570) » -- l'issue qui a signale cette jambe-meme.
+        # #16570 est LIVREE (fix #16572 MERGED le 2026-09-18, label
+        # `candidate-delivered`) : un worker qui suit le repli atterrit sur
+        # un conteneur livre et peut y poser un claim. Le repli doit
+        # designer la SOURCE DU GRAIN (le pool global), pas un issue
+        # historiquement liee.
         print("\n".join(lines), file=sys.stderr)
         return 2
     # #14300 -- IMPLICIT: an OPEN PR of another lane references this issue
@@ -4245,8 +4869,45 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     return 0
 
 
-def _summarize_run_check_output(stdout_text: str, returncode: int) -> str:
-    """Court libelle machine-consommable issu du stdout d'un `_run_check`.
+def _blocking_lanes_from_summary(stdout_text: str) -> list[str]:
+    """Les lanes bloquantes portees par le resume JSON d'un `_run_check`.
+
+    #22983 -- le resume JSON (`print(json.dumps(summary, ...))`) porte
+    `blocking_lanes` ; le message `NOT_SCOPED:` va, lui, sur **stderr**
+    (`file=sys.stderr`, l.3881). Le reduiteur du picker historique lit le
+    JSON et rend BLOCKED des qu'`blocking_lanes` est non vide ; la voie
+    batch, elle, ne lisait que le **stdout** a la recherche du mot
+    `NOT_SCOPED` -- qui n'y est jamais. Mesure du 27/10 : 14 issues sur
+    150 rendaient le verdict `ERROR` alors que 4 lanes en tenaient le
+    grain.
+
+    Consequence : `ERROR` est **servable** par le tapis (fail-OPEN assume,
+    l.9438 du picker) quand `BLOCKED` est retenu. La voie batch servait
+    donc des grains tenus par d'autres lanes -- exactement la collision que
+    la jambe IMPLICIT (#14300) existe pour empecher.
+
+    Le predicat est celui du reduiteur historique : `blocking_lanes`
+    non vide -> BLOCKED. `raw_decode` (et non `loads`) parce que le stdout
+    porte une phrase humaine APRES l'objet.
+    """
+    text = stdout_text or ""
+    brace = text.find("{")
+    if brace == -1:
+        return []
+    try:
+        data, _ = json.JSONDecoder().raw_decode(text[brace:])
+    except json.JSONDecodeError:
+        return []
+    if not isinstance(data, dict):
+        return []
+    blocking = data.get("blocking_lanes") or []
+    if not isinstance(blocking, list):
+        return []
+    return [str(b) for b in blocking]
+
+
+def _summarize_run_check_output(verdict_text: str, returncode: int) -> str:
+    """Court libelle machine-consommable issu de la sortie d'un `_run_check`.
 
     Le code de retour de `_run_check`:
         0 -> CLEAR (libre)
@@ -4254,9 +4915,19 @@ def _summarize_run_check_output(stdout_text: str, returncode: int) -> str:
         2 -> NOT_SCOPED / path-collision / gh-error
         3 -> IMPLICIT (#14300, PR ouverte d'une autre lane)
 
-    Le stdout contient la phrase "CLEAR: no other lane claims #N" ou
+    Le texte porte la phrase "CLEAR: no other lane claims #N" ou
     "BLOCKED: another lane holds an active claim on #N" ou
     "IMPLICIT: lane X a une PR ouverte ..." ou un WARN NOT_SCOPED.
+
+    #22916 -- ce texte doit etre la CONCATENATION stdout + stderr, pas
+    le seul stdout : les deux verdicts `NOT_SCOPED` (call sans
+    `--paths`, et scope entierement mort #12345) partent sur **stderr**
+    juste avant `return 2`. Un resume nourri du seul stdout ne trouvait
+    donc jamais la phrase et classait tout scope mort en `ERROR`, alors
+    que le verdict est `BLOCKED` pour un appelant -- c'est la meme
+    famille d'echec que #22684 (le verdict existait, le resume ne le
+    voyait pas). Le stream qui porte la phrase est un detail d'emission :
+    un resume qui en depend n'est pas un resume, c'est un couplage.
 
     Pour le batch (#19643, c.1778) on s'en tient a 4 codes. Le picker
     (pick_idle_grain.check_claims) les remappe sur ses propres codes
@@ -4265,7 +4936,7 @@ def _summarize_run_check_output(stdout_text: str, returncode: int) -> str:
     (1 subprocess.run au lieu de N), pas une degradation de la
     discrimination. Source: PR #21373 review ai-01 5571014393.
     """
-    text = stdout_text or ""
+    text = verdict_text or ""
     if returncode == 0:
         return "FREE"
     if returncode == 3:
@@ -4277,10 +4948,98 @@ def _summarize_run_check_output(stdout_text: str, returncode: int) -> str:
         # n'agit pas sur un verdict 2 (sortie du chemin "free" du
         # picker), donc on le note sans le confondre avec un BLOCKED
         # d'une autre lane.
+        #
+        # #23098 : la classe `NOT_SCOPED` **nomme** son bloquant (le
+        # champ `Blocked-by (legacy blocking_lanes field...)` et la
+        # liste des scopes revendiques). Ce n'est donc pas un verdict
+        # muet : le reducer doit le lire comme un blocage, sinon un
+        # grain occupe reste servable (`ERROR` est servable par
+        # defaut, cf pick_idle_grain.py). Le texte peut arriver sur
+        # stdout OU stderr selon la branche -- les deux flux sont
+        # concatenees par l'appelant.
         if "NOT_SCOPED" in text or "OPEN PR(s) of other lanes touch" in text:
             return "BLOCKED"
         return "ERROR"
     return f"EXIT_{returncode}"
+
+
+# Prefixes des lignes-verdict de `_run_check`. Extraits ici parce que
+# deux jambes les consultent (le resume machine et le champ `human`),
+# et que #22916 a montre qu'une jambe qui en oublie une source rend un
+# diagnostic faux sans jamais echouer.
+_VERDICT_LINE_PREFIXES = (
+    "CLEAR:", "BLOCKED:", "IMPLICIT:", "LOCKED",
+    "DEAD-SCOPE", "NOT_SCOPED", "DUMP",
+)
+
+
+def _find_verdict_line(text: str) -> str:
+    """Derniere ligne-verdict de `text`, ou chaine vide (#22916).
+
+    Parcourt de la fin vers le debut pour eviter le bruit du JSON de
+    synthese imprime avant le verdict. Ne regarde qu'un flux a la fois :
+    l'appelant passe stdout puis stderr, dans cet ordre.
+    """
+    for line in reversed((text or "").splitlines()):
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if stripped.startswith(_VERDICT_LINE_PREFIXES):
+            return stripped
+    return ""
+
+
+def _names_a_blocker(evidence: str, stdout_json: str = "") -> bool:
+    """Le verdict nomme-t-il un bloquant ? (predicat #23098)
+
+    `ERROR` est **servable par defaut** cote tapis : on ne refuse pas un
+    grain faute d'avoir pu verifier son claim. Ce fail-open est assume et
+    doit rester entier la ou l'organe est reellement muet.
+
+    Mais un verdict qui **nomme** son bloquant n'est pas muet : `NOT_SCOPED`
+    porte le champ `Blocked-by (legacy blocking_lanes field, taken at face
+    value)` et les scopes revendiques ; `BLOCKED` porte la phrase
+    `BLOCKED: another lane holds an active claim`. Traiter ces deux classes
+    comme `ERROR` laissait un grain **occupe** au fond de l'urne -- mesure
+    du 2026-10-30 (c.746) : #20035, #19741 et #14318 sortaient tous
+    `code=ERROR, human=(ERROR)` du batch alors que le meme appel unitaire
+    rendait `NOT_SCOPED` + `Blocked-by ...` (voir le test du depot
+    `assert "NOT_SCOPED" in captured.err`).
+
+    Ce predicat separe les deux classes : il ne dit PAS que le grain est
+    libre, il dit que l'organe **a repondu** -- donc qu'il n'a pas le droit
+    de le servir en fail-open.
+
+    Sources de preuve :
+    - le JSON de synthese porte `blocking_lanes` (liste non vide = bloquant
+      nomme) ;
+    - le texte porte `Blocked-by (legacy `blocking_lanes` field` ou la
+      phrase `BLOCKED: another lane holds an active claim`.
+    """
+    text = evidence or ""
+    if stdout_json:
+        brace = stdout_json.find("{")
+        if brace != -1:
+            try:
+                data, _ = json.JSONDecoder().raw_decode(stdout_json[brace:])
+            except json.JSONDecodeError:
+                data = None
+            if isinstance(data, dict):
+                if data.get("blocking_lanes"):
+                    return True
+                # Un claim actif d'une autre lane, meme sans
+                # `blocking_lanes` (le champ legacy est parfois vide
+                # alors que `active_claims` est peuple) : le verdict
+                # `BLOCKED:` le dit aussi sur la sortie humaine.
+                if data.get("blocked") is True and data.get("active_claims"):
+                    return True
+    if "Blocked-by (legacy `blocking_lanes` field" in text:
+        return True
+    if "BLOCKED: another lane holds an active claim" in text:
+        return True
+    if "OPEN PR(s) of other lanes touch" in text:
+        return True
+    return False
 
 
 def check_issues_batch(
@@ -4348,15 +5107,24 @@ def check_issues_batch(
                     results[issue] = result
                     continue
             else:
-                try:
-                    payload = _gh_issue_comments(issue)
-                except (RuntimeError, ValueError) as exc:
-                    result["code"] = "ERROR"
-                    result["human"] = f"gh: {exc}"
-                    result["duration"] = round(
-                        _time.monotonic() - issue_t0, 4)
-                    results[issue] = result
-                    continue
+                # #22983 -- l'instantane sert le payload quand il le peut ;
+                # sinon on retombe sur la lecture reseau. Sans cette branche,
+                # la voie EN PROCESSUS (le tapis installe l'instantane puis
+                # appelle cette fonction) reposait sur `gh issue view` pour
+                # chaque issue : mesure du 27/10, 1,19 s par issue, soit
+                # 179 s pour les 150 numeros de la fenetre de service -- la
+                # totalite du cout de la boucle.
+                payload = _snapshot_issue_payload(issue)
+                if payload is None:
+                    try:
+                        payload = _gh_issue_comments(issue)
+                    except (RuntimeError, ValueError) as exc:
+                        result["code"] = "ERROR"
+                        result["human"] = f"gh: {exc}"
+                        result["duration"] = round(
+                            _time.monotonic() - issue_t0, 4)
+                        results[issue] = result
+                        continue
             _phase(f"#{issue} check running")
             with contextlib.redirect_stdout(buf_out), \
                     contextlib.redirect_stderr(buf_err):
@@ -4370,28 +5138,46 @@ def check_issues_batch(
                 )
             result["exit"] = rc
             captured = buf_out.getvalue()
-            result["code"] = _summarize_run_check_output(captured, rc)
-            # Human: on cherche la ligne-verdict parmi les dernieres non
-            # vides du stdout. Le stdout contient d'abord un JSON
-            # summary (`print(json.dumps(summary, ...))` ~L3209) puis
-            # la phrase verdict `CLEAR: ...` / `BLOCKED: ...` /
-            # `IMPLICIT: ...` / `LOCKED (v2): ...` / `DEAD-SCOPE LOCK
-            # ...` / `NOT_SCOPED: ...`. Le pattern prioritaire est
-            # ^CLEAR: / ^BLOCKED: / ^IMPLICIT: / ^LOCKED / ^DEAD-SCOPE
-            # / ^NOT_SCOPED : on parcourt les lignes de la fin vers le
-            # debut pour eviter le bruit du JSON.
-            verdict_line = ""
-            for line in reversed(captured.splitlines()):
-                stripped = line.strip()
-                if not stripped:
-                    continue
-                if any(stripped.startswith(prefix) for prefix in (
-                        "CLEAR:", "BLOCKED:", "IMPLICIT:", "LOCKED",
-                        "DEAD-SCOPE", "NOT_SCOPED", "DUMP",
-                )):
-                    verdict_line = stripped
-                    break
-            if verdict_line:
+            err_captured = buf_err.getvalue()
+            # #22916 / #23098 -- le resume lit les DEUX flux : les verdicts
+            # `NOT_SCOPED` partent sur stderr (#12345, et le call sans
+            # `--paths`), le JSON de synthese et les verdicts BLOCKED /
+            # CLEAR sur stdout. Ne nourrir que stdout classait un scope
+            # mort en ERROR.
+            evidence = captured + "\n" + err_captured
+            result["code"] = _summarize_run_check_output(evidence, rc)
+            # Le bloquant est-il NOMME, quel que soit le code de sortie ?
+            # C'est le predicat que le tapis consomme (#23098, acceptance
+            # 2) : un `ERROR` muet reste servable (fail-open assume), un
+            # `ERROR` qui nomme un bloquant ne l'est plus.
+            result["blocker_named"] = _names_a_blocker(
+                evidence, stdout_json=captured)
+            # #22983 -- la voie batch doit rendre le MEME verdict que le
+            # reduiteur historique du picker : `exit 2` + un resume JSON qui
+            # nomme des lanes bloquantes = BLOCKED. Ce cas est distinct de
+            # `NOT_SCOPED` (#23098, qui lit la mention litterale sur stdout
+            # OU stderr) : ici, c'est le resume JSON sur stdout qui porte la
+            # liste. La clause ne peut qu'ABAISSER `ERROR` vers `BLOCKED`,
+            # jamais l'inverse.
+            bloquantes = []
+            if result["code"] == "ERROR" and rc == 2:
+                bloquantes = _blocking_lanes_from_summary(captured)
+                if bloquantes:
+                    result["code"] = "BLOCKED"
+            # Human: stdout d'abord (verdict canonique), stderr en repli --
+            # jamais un melange, pour qu'une erreur de diagnostic sur stderr
+            # ne puisse pas masquer le verdict rendu sur stdout (#22916).
+            verdict_line = (_find_verdict_line(captured)
+                            or _find_verdict_line(err_captured))
+            if bloquantes:
+                # #22983 -- meme libelle que le reduiteur historique du
+                # picker (« BLOQUE par <lanes> ») : la voie batch et la
+                # voie historique doivent se distinguer sur le VERDICT,
+                # pas sur la phrase. La phrase lue dans le stdout
+                # (« CLEAR: ... ») ne prime pas ici : le resume JSON
+                # fait foi.
+                result["human"] = "BLOQUE par " + ", ".join(bloquantes)
+            elif verdict_line:
                 result["human"] = verdict_line[:200]
             else:
                 # Pas de ligne-verdict : ERROR (exit 2) ou sortie
@@ -4949,7 +5735,9 @@ def _run_check_paths(
             )
         msg.append(
             "\nDo not start -- coordinate with the owner(s), or pick "
-            "another grain that does not intersect the open PR(s)."
+            "another grain from the GLOBAL POOL "
+            "(`python scripts/pick_idle_grain.py --belt --lane "
+            "<machine:workspace>`) that does not intersect the open PR(s)."
         )
         print("\n".join(msg), file=sys.stderr)
         return 2
@@ -5158,6 +5946,13 @@ def main(argv: list[str] | None = None) -> int:
                         "blocked (#11064). Coordinator arbitration only -- "
                         "the reading side still honours [OVERRIDE] markers.")
     args = p.parse_args(argv)
+    # #23720 -- the caller's own scope (`--paths`) is compared with the
+    # claims' scopes: both sides must be spelled the same way, otherwise the
+    # intersection is computed between two spellings of one path and yields
+    # nothing. The reader normalizes the claims' side; the caller's side is
+    # normalized here, at the boundary.
+    if args.paths is not None:
+        args.paths = [t for t in (_normalize_path_token(p) for p in args.paths) if t]
     # #12751 -- default is 48 (measuring). `--no-stale`/threshold=None restores
     # the legacy behaviour (every claim blocks, nothing age-filtered); the
     # disabled state is reported honestly as `stale_detection: "disabled"`.
@@ -5258,11 +6053,19 @@ def main(argv: list[str] | None = None) -> int:
                 return 2
             rc = _run_check(payload, args.lane,
                             stale_threshold=args.stale_threshold,
-                            my_paths=args.paths)
+                            my_paths=args.paths,
+                            # #22500 point 3 -- le plafond des EPICs suit le
+                            # chemin unitaire. `--from-json` est un contrat
+                            # HORS RESEAU : on ne va pas chercher un parent ni
+                            # un pool pour lui.
+                            epic_cap=not args.from_json)
             if rc != 0:
+                # #22500 point 3 -- le refus ne nomme plus une cause unique :
+                # le check peut aussi rendre le plafond hebdomadaire d'un EPIC.
                 print(f"BLOCKED: not posting [CLAIMED] on #{issue} "
-                      f"-- another lane holds an active claim (the check "
-                      f"above names it). Use --force only for coordinator "
+                      f"-- the check above names the blocking cause (another "
+                      f"lane's active claim, or the weekly EPIC cap of "
+                      f"#22500). Use --force only for coordinator "
                       f"arbitration.",
                       file=sys.stderr)
                 return rc
@@ -5372,6 +6175,9 @@ def main(argv: list[str] | None = None) -> int:
         # #16570 -- read path only: the caller is asking "may I start?", so the
         # open-PR leg is exactly what they need and could not reach.
         check_open_pr_paths=True,
+        # #22500 point 3 -- le geste L898 d'une lane. `--from-json` reste un
+        # contrat hors reseau (aucun parent, aucun pool n'est lu).
+        epic_cap=not args.from_json,
     )
 
 

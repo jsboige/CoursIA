@@ -5,6 +5,8 @@ import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+import pytest
+
 CI_DIR = Path(__file__).resolve().parents[1] / "ci"
 sys.path.insert(0, str(CI_DIR))
 
@@ -16,16 +18,43 @@ NOW = datetime(2026, 10, 27, 12, 0, tzinfo=timezone.utc)
 OLD = NOW - timedelta(hours=2)
 
 
+@pytest.fixture(autouse=True)
+def _ecart_du_dernier_passage_simule(monkeypatch):
+    """L'ecart au dernier passage se lit par un appel `gh` : aucun test de
+    cette suite ne doit l'atteindre, sinon la suite dependrait de l'etat
+    reseau de la machine (#21994). Les tests qui verifient la garde ou
+    l'ecart le simulent eux-memes -- celui-ci n'est que le filet."""
+    monkeypatch.setattr(ctl, "last_run_age_minutes", lambda *a, **k: (None, "simule"))
+
+
 def hosted(queued: int = 0, old: int = 0, oldest: float = 0.0,
-           complete: bool = True, truncated: bool = False, reason: str = "") -> ctl.HostedSample:
+           complete: bool = True, truncated: bool = False, reason: str = "",
+           in_progress: int = 0, in_progress_unread: int = 0) -> ctl.HostedSample:
     return ctl.HostedSample(queued=queued, old=old, oldest_age_min=oldest,
-                             complete=complete, truncated=truncated, reason=reason)
+                             complete=complete, truncated=truncated, reason=reason,
+                             in_progress=in_progress,
+                             in_progress_unread=in_progress_unread)
 
 
 def local(free: int = 0, online: int = 0, starved: int = 0,
-          complete: bool = True, truncated: bool = False, reason: str = "") -> ctl.LocalSample:
-    return ctl.LocalSample(online=online, free=free, starved=starved,
-                            complete=complete, truncated=truncated, reason=reason)
+          busy: int = 0, unknown: int = 0,
+          complete: bool = True, truncated: bool = False, reason: str = "",
+          inventory_read: bool = False,
+          cohort_free: int = 0) -> ctl.LocalSample:
+    return ctl.LocalSample(online=online, free=free, starved=starved, busy=busy,
+                            unknown=unknown, complete=complete, truncated=truncated,
+                            reason=reason, inventory_read=inventory_read,
+                            cohort_free=cohort_free)
+
+
+def cohort(queued: int = 0, in_progress: int = 0, complete: bool = True,
+           truncated: bool = False, in_progress_unread: int = 0,
+           reason: str = "") -> ctl.CohortSample:
+    """Charge rendue de la cohorte, mesuree sur le parc local."""
+    return ctl.CohortSample(queued=queued, in_progress=in_progress,
+                            complete=complete, truncated=truncated,
+                            in_progress_unread=in_progress_unread,
+                            reason=reason)
 
 
 # --- Regle de decision (fonction pure) -------------------------------------
@@ -37,8 +66,12 @@ def test_offre_saturee_et_parc_local_libre_bascule_vers_true():
 
 
 def test_file_hebergee_videe_bascule_vers_false():
+    # La liberation exige une charge rendue de cohorte dans la marge
+    # hebergee ET sa confirmation : la cohorte ne rend rien sur les DEUX
+    # lectures.
     d = ctl.evaluate(hosted(queued=0, old=0, oldest=0.0), local(free=7, online=14),
-                     current="true", now=NOW)
+                     current="true", cohort=cohort(), cohort_confirm=cohort(),
+                     now=NOW)
     assert d.action == "SWITCH_FALSE" and d.target == "false"
 
 
@@ -89,8 +122,10 @@ def test_mesure_locale_illisible_ne_bascule_jamais():
 
 
 def test_dwell_differe_la_bascule():
+    # Backlog SOFT (le plus ancien attend 20 min, sous le seuil de panique
+    # de 30 min) : le dwell oppose la re-absorption.
     recent = NOW - timedelta(minutes=5)
-    d = ctl.evaluate(hosted(queued=9, old=6, oldest=41.0), local(free=7, online=14),
+    d = ctl.evaluate(hosted(queued=9, old=6, oldest=20.0), local(free=7, online=14),
                      current="false", dwell_minutes=30, last_change_at=recent, now=NOW)
     assert d.action == "HOLD" and "dwell" in d.reason
 
@@ -456,6 +491,60 @@ def test_troncature_locale_bloque_la_bascule_vers_true():
     assert "TRONQUEE" in d.reason
 
 
+# --- Tranche du 31/10 : la troncature locale n'est plus une impasse --------
+#
+# Rejeu de la mesure du coordinateur (31/10, 16:07-16:20Z) : 162 jobs
+# heberges ages (le plus ancien 69,7 min, marge hebergee negative) et 28
+# slots locaux libres, mais la lecture locale est tronquee (530 runs non
+# lus, budget 120). Le controleur rendait HOLD au motif que « le parc local
+# n'est pas affame » n'etait pas etablie -- donc la bascule devenait
+# impossible exactement dans le regime qu'elle doit traiter. L'inventaire
+# des runners porte desormais cette premisse par une affirmation POSITIVE.
+
+def test_inventaire_etablit_le_parc_libre_sous_troncature_locale():
+    d = ctl.evaluate(
+        hosted(queued=162, old=162, oldest=69.7, in_progress=11),
+        local(free=28, online=38, busy=11,
+              truncated=True,
+              reason="530 run(s) local(aux) non lu(s) (budget de lecture 120 atteint)",
+              inventory_read=True, cohort_free=28),
+        current="false", now=NOW,
+    )
+    assert d.action == "SWITCH_TRUE" and d.target == "true"
+    # Le motif nomme l'organe qui a porte la premisse, et non la troncature.
+    assert "inventaire" in d.reason and "28 runner(s)" in d.reason
+
+
+def test_inventaire_sans_slot_de_cohorte_ne_leve_pas_la_troncature():
+    # Inventaire LU, mais un seul slot de cohorte libre pour un seuil de 2 :
+    # la premisse n'est pas etablie, et le motif dit lequel des deux organes
+    # a parle (inventaire, pas troncature seule).
+    d = ctl.evaluate(
+        hosted(queued=162, old=162, oldest=69.7, in_progress=11),
+        local(free=28, online=38, truncated=True,
+              reason="530 run(s) local(aux) non lu(s)",
+              inventory_read=True, cohort_free=1),
+        current="false", now=NOW,
+    )
+    assert d.action == "HOLD"
+    assert "TRONQUEE" in d.reason
+    assert "1 runner(s) de cohorte" in d.reason
+
+
+def test_inventaire_illisible_ne_leve_pas_la_troncature():
+    # Fail-CLOSED : sans inventaire lisible, la troncature locale garde son
+    # effet, meme avec des slots annonces par la lecture des runs.
+    d = ctl.evaluate(
+        hosted(queued=162, old=162, oldest=69.7),
+        local(free=28, online=38, truncated=True,
+              reason="530 run(s) local(aux) non lu(s)",
+              inventory_read=False, cohort_free=0),
+        current="false", now=NOW,
+    )
+    assert d.action == "HOLD"
+    assert "inventaire des runners illisible" in d.reason
+
+
 def test_troncature_hebergee_ne_bloque_pas_la_saturation():
     # « l'offre hebergee est saturee » est POSITIVE : la troncature ne fait
     # que sous-compter, elle n'annule pas la saturation etablie par les jobs
@@ -474,3 +563,646 @@ def test_troncature_locale_ne_bloque_pas_la_constatation_d_affamescence():
                            reason="15 run(s) non lu(s)"),
                      current="true", now=NOW)
     assert d.action == "SWITCH_FALSE" and d.target == "false"
+
+
+# --- #22937 vague 2 : la premise de liberation est l'AGE, pas le VIDE ------
+
+def test_offre_hebergee_suit_bascule_vers_false_malgre_une_file_non_vide():
+    """Une file hebergee NON VIDE dont rien n'attend au-dela du seuil de
+    saturation, et une cohorte qui ne rend rien : la cohorte rend la main.
+
+    La mesure du 27/10 (`hosted.queued = 74`, `old = 0`) ne suffit plus a
+    elle seule : 74 jobs heberges depassent le plafond de l'offre
+    (`HOSTED_CONCURRENCY_CAP`), la marge est negative, il n'y a donc pas de
+    place ou rendre la cohorte. Le cas garde son interet sous le plafond :
+    « aucun job n'attend » n'exige pas « aucune file ».
+
+    La liberation exige DEUX lectures de la charge rendue qui tiennent dans
+    la marge : sans la seconde, elle n'est pas confirmee et le controleur
+    attend.
+    """
+    d = ctl.evaluate(hosted(queued=5, old=0, oldest=15.0),
+                     local(free=29, online=32), current="true",
+                     cohort=cohort(), cohort_confirm=cohort(), now=NOW)
+    assert d.action == "SWITCH_FALSE" and d.target == "false"
+    assert "charge rendue" in d.reason
+
+
+def test_offre_hebergee_en_retard_de_1_a_2_jobs_ne_bascule_pas():
+    """Bande morte entre les deux premises : 1 ou 2 jobs ages ne declenchent
+    ni la liberation (l'offre suit -> aucun job de plus de 15 min) ni le
+    debordement (seuil de saturation = 3). Le controleur attend."""
+    d = ctl.evaluate(hosted(queued=9, old=2, oldest=20.0),
+                     local(free=7, online=14), current="false", now=NOW)
+    assert d.action == "HOLD"
+
+
+def test_offre_hebergee_suit_mais_troncuree_ne_bascule_pas():
+    """« l'offre hebergee n'attend pas » est une premise NEGATIVE : sous
+    troncature, un job age peut etre dans la part non lue -> on ne rend pas
+    la main."""
+    d = ctl.evaluate(hosted(queued=5, old=0, oldest=15.0, truncated=True,
+                             reason="3 run(s) non lu(s)"),
+                     local(free=29, online=32), current="true",
+                     cohort=cohort(), cohort_confirm=cohort(), now=NOW)
+    assert d.action == "HOLD"
+    assert "TRONQUEE" in d.reason
+
+
+def test_l_offre_hebergee_suit_prime_sur_la_saturation():
+    """Les deux premises ne peuvent pas etre vraies en meme temps : un job
+    age de plus de 15 min est par definition un job en file. Ce test
+    verifie l'ordre des regles quand la lecture est incoherente (old > 0 et
+    oldest < seuil) : la saturation -- premise POSITIVE -- l'emporte, elle
+    est confirmee par les jobs effectivement lus."""
+    d = ctl.evaluate(hosted(queued=9, old=6, oldest=41.0),
+                     local(free=7, online=14), current="false", now=NOW)
+    assert d.action == "SWITCH_TRUE" and d.target == "true"
+
+
+# --- #22937 vague 3 : la liberation mesure la COHORTE dans la MARGE ---------
+#
+# La regle `hosted.old == 0` seule est un ARTEFACT : pendant que la cohorte
+# tourne en local, l'offre hebergee ne porte que les jobs hors debordement,
+# elle parait donc allegee meme quand la charge de la cohorte est enorme.
+# Liberer sur cette seule lecture rend la cohorte entiere a une offre qui
+# s'etouffe derriere, et le dwell de 90 min interdit ensuite de revenir a
+# `true` : on rejoue la nuit du 27/10 (reserve du coordinateur, 28/10).
+#
+# La vague 2 corrigeait ce defaut en mesurant l'occupation du PARC ENTIER
+# contre un seuil absolu (2) -- et remplacait le pendule par un verrou : le
+# parc porte en permanence des jobs STATIQUES qui ne reviendront jamais sur
+# l'heberge, donc `charge > 2` des trois jobs statiques et la liberation
+# n'avait plus jamais lieu (review du coordinateur, 28/10).
+#
+# La vague 3 mesure la charge rendue de la COHORTE (les workflows qui lisent
+# `vars.CI_OVERFLOW_LOCAL`), et la compare a la MARGE hebergee (plafond moins
+# les jobs heberges en file et en cours), sur deux lectures.
+
+
+def test_liberation_exige_une_charge_rendue_dans_la_marge():
+    """La cohorte rend 5 jobs, la marge hebergee n'en vaut que 2 : on ne rend
+    pas la main. L'occupation du parc (busy/unknown) n'entre plus dans le
+    calcul -- ici elle vaut 5 aussi, mais c'est la cohorte qui decide."""
+    d = ctl.evaluate(hosted(queued=17, old=0, oldest=15.0, in_progress=1),
+                     local(free=29, online=32, busy=5), current="true",
+                     cohort=cohort(queued=5), cohort_confirm=cohort(queued=5),
+                     now=NOW)
+    assert d.action == "HOLD"
+    assert "charge rendue" in d.reason
+    assert "marge hebergee" in d.reason
+
+
+def test_liberation_exige_la_confirmation_de_la_lecture():
+    """Sans seconde lecture de la charge rendue, elle n'est pas confirmee."""
+    d = ctl.evaluate(hosted(queued=5, old=0, oldest=15.0),
+                     local(free=29, online=32), current="true",
+                     cohort=cohort(), now=NOW)
+    assert d.action == "HOLD"
+    assert "confirmation" in d.reason
+
+
+def test_liberation_refusee_par_une_confirmation_qui_contredit():
+    """La premiere lecture tient dans la marge, la seconde la depasse :
+    la charge rendue n'est pas confirmee, on attend."""
+    d = ctl.evaluate(hosted(queued=17, old=0, oldest=15.0, in_progress=1),
+                     local(free=29, online=32), current="true",
+                     cohort=cohort(), cohort_confirm=cohort(queued=3), now=NOW)
+    assert d.action == "HOLD"
+    assert "confirmation" in d.reason
+
+
+def test_marge_hebergee_nulle_ou_negative_ne_libere_pas():
+    """L'offre hebergee est au-dela de son plafond : il n'y a pas de place ou
+    rendre la cohorte, meme si la cohorte ne rend rien."""
+    d = ctl.evaluate(hosted(queued=18, old=0, oldest=15.0, in_progress=2),
+                     local(free=29, online=32), current="true",
+                     cohort=cohort(), cohort_confirm=cohort(), now=NOW)
+    assert d.action == "HOLD"
+    assert "marge hebergee" in d.reason
+
+
+def test_charge_rendue_tronquee_ne_libere_pas():
+    """Une lecture tronquee fait de la charge rendue une borne INFERIEURE :
+    « la charge tient dans la marge » est une affirmation NEGATIVE, elle
+    n'est pas etablie."""
+    d = ctl.evaluate(hosted(queued=5, old=0, oldest=15.0),
+                     local(free=29, online=32), current="true",
+                     cohort=cohort(truncated=True, reason="2 run(s) non lu(s)"),
+                     cohort_confirm=cohort(), now=NOW)
+    assert d.action == "HOLD"
+    assert "TRONQUEE" in d.reason
+
+
+def test_runs_locaux_en_cours_non_lus_ne_liberent_pas():
+    """Des runs locaux en cours non lus rendent la charge de cohorte une
+    borne INFERIEURE : on ne libere pas sur une borne inferieure."""
+    d = ctl.evaluate(hosted(queued=5, old=0, oldest=15.0),
+                     local(free=29, online=32), current="true",
+                     cohort=cohort(in_progress_unread=4),
+                     cohort_confirm=cohort(), now=NOW)
+    assert d.action == "HOLD"
+    assert "borne INFERIEURE" in d.reason
+
+
+def test_occupation_hebergee_non_lue_rend_la_marge_non_etablie():
+    """Des runs heberges en cours non lus rendent la marge une borne
+    SUPERIEURE : on ne libere pas dessus."""
+    d = ctl.evaluate(hosted(queued=2, old=0, oldest=15.0, in_progress_unread=6),
+                     local(free=29, online=32), current="true",
+                     cohort=cohort(), cohort_confirm=cohort(), now=NOW)
+    assert d.action == "HOLD"
+    assert "borne SUPERIEURE" in d.reason
+
+
+def test_deux_lectures_dans_la_marge_liberent():
+    """Les DEUX lectures tiennent dans la marge : la liberation a lieu."""
+    d = ctl.evaluate(hosted(queued=5, old=0, oldest=15.0),
+                     local(free=29, online=32), current="true",
+                     cohort=cohort(queued=2, in_progress=1),
+                     cohort_confirm=cohort(queued=1), now=NOW)
+    assert d.action == "SWITCH_FALSE" and d.target == "false"
+
+
+def test_le_dwell_ne_derange_jamais_la_liberation():
+    """Le dwell oppose la LIBERATION comme il oppose la re-absorption : c'est
+    elle qui fait revenir la cohorte, donc c'est elle qui reste freinee."""
+    recent = NOW - timedelta(minutes=5)
+    d = ctl.evaluate(hosted(queued=5, old=0, oldest=15.0),
+                     local(free=29, online=32), current="true",
+                     cohort=cohort(), cohort_confirm=cohort(), dwell_minutes=90,
+                     last_change_at=recent, now=NOW)
+    assert d.action == "HOLD" and "dwell" in d.reason
+
+
+def test_le_dwell_derape_la_reabsorption_quand_le_backlog_est_dur():
+    """Backlog DUR (le plus ancien attend 41 min > 30) : la re-absorption
+    n'est plus differee par le dwell. C'est la starvation qu'on a vecue le
+    27/10 : attendre 90 min la prolonge.
+
+    L'echappement ne peut pas creer d'oscillation : il exige un backlog dur
+    (le plus ancien job attend), ce qui est incompatible avec la premise de
+    liberation (« l'offre hebergee n'attend pas »).
+    """
+    recent = NOW - timedelta(minutes=5)
+    d = ctl.evaluate(hosted(queued=9, old=6, oldest=41.0),
+                     local(free=7, online=14), current="false",
+                     dwell_minutes=90, last_change_at=recent, now=NOW)
+    assert d.action == "SWITCH_TRUE" and d.target == "true"
+    assert "backlog dur" in d.reason
+
+
+# --- La COHORTE : derivee du depot, jamais recopiee ------------------------
+#
+# La charge rendue n'est pas celle du parc : c'est celle des jobs dont le
+# workflow lit `vars.CI_OVERFLOW_LOCAL`. La liste se derive du checkout a
+# chaque passage (un workflow qui rejoint la forme hybride entre dans le
+# calcul sans qu'on touche a l'organe), et une liste VIDE est un echec de
+# derivation, jamais une cohorte qui ne rend rien.
+
+def _workflow(root: Path, name: str, body: str) -> None:
+    directory = root / ".github" / "workflows"
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / name).write_text(body, encoding="utf-8")
+
+
+def test_derive_cohort_workflows_lit_les_fichiers_qui_chargent_la_variable(tmp_path):
+    _workflow(tmp_path, "cohorte.yml",
+              "runs-on: ${{ vars.CI_OVERFLOW_LOCAL == 'true' && 'x' || 'y' }}\n")
+    _workflow(tmp_path, "cohorte-b.yaml",
+              "env:\n  DEBORDEMENT: ${{ vars.CI_OVERFLOW_LOCAL }}\n")
+    _workflow(tmp_path, "statique.yml",
+              "runs-on: [self-hosted, coursia-ephemeral, coursia-linux]\n")
+    # Le nom de la variable en COMMENTAIRE ne fait pas un workflow de
+    # cohorte : c'est un job STATIQUE du parc, qui ne revient jamais sur
+    # l'heberge. Le controleur lui-meme est dans ce cas, et son en-tete cite
+    # la forme exacte -- en commentaire.
+    _workflow(tmp_path, "commentaire.yml",
+              "# pilote vars.CI_OVERFLOW_LOCAL, sans jamais le lire\n"
+              "runs-on: [self-hosted, coursia-ephemeral, coursia-linux]\n")
+    paths, reason = ctl.derive_cohort_workflows(tmp_path)
+    assert reason == ""
+    assert paths == {
+        ".github/workflows/cohorte.yml",
+        ".github/workflows/cohorte-b.yaml",
+    }
+
+
+def test_derive_cohort_workflows_repertoire_absent(tmp_path):
+    paths, reason = ctl.derive_cohort_workflows(tmp_path)
+    assert paths == set()
+    assert "absent" in reason
+
+
+def test_derive_cohort_workflows_liste_vide_rend_un_motif(tmp_path):
+    _workflow(tmp_path, "statique.yml", "runs-on: ubuntu-latest\n")
+    paths, reason = ctl.derive_cohort_workflows(tmp_path)
+    assert paths == set()
+    assert reason != ""
+
+
+def _job(path: str, *, status: str = "queued", age: float = 3.0,
+         run_id: int = 11) -> ctl.crs.JobRow:
+    return ctl.crs.JobRow(workflow="W", run_number=1, run_id=run_id,
+                          job_name="j", status=status, age_min=age,
+                          run_path=path)
+
+
+def test_collect_cohort_charge_ignore_les_jobs_statiques(monkeypatch):
+    """Le parc porte deux jobs de cohorte et deux jobs qui n'en sont pas (un
+    workflow statique, un run sans chemin) : la charge rendue vaut 2."""
+    starv = ctl.crs.Starvation(
+        starved=[
+            _job(".github/workflows/cohorte.yml"),
+            _job(".github/workflows/statique.yml", run_id=12),
+            _job("", run_id=13),
+        ],
+        in_progress=[
+            _job(".github/workflows/cohorte.yml", status="in_progress", run_id=14)
+        ],
+    )
+    monkeypatch.setattr(ctl.crs, "fetch_starvation", lambda *a, **k: starv)
+    sample = ctl.collect_cohort_charge(
+        "jsboige/CoursIA", {".github/workflows/cohorte.yml"}, 120, NOW, "t")
+    assert sample.complete is True and sample.truncated is False
+    assert sample.queued == 1 and sample.in_progress == 1 and sample.charge == 2
+
+
+def test_collect_cohort_charge_sans_liste_ne_mesure_rien(monkeypatch):
+    monkeypatch.setattr(ctl.crs, "fetch_starvation",
+                        lambda *a, **k: (_ for _ in ()).throw(
+                            AssertionError("aucune lecture sans liste de cohorte")))
+    sample = ctl.collect_cohort_charge("jsboige/CoursIA", set(), 120, NOW, "t")
+    assert sample.complete is False
+    assert "cohorte vide" in sample.reason
+
+
+def test_collect_cohort_charge_tronquee_est_une_borne_inferieure(monkeypatch):
+    starv = ctl.crs.Starvation(
+        starved=[_job(".github/workflows/cohorte.yml")],
+        budget_unread=[("W", 1, 20.0)],
+    )
+    monkeypatch.setattr(ctl.crs, "fetch_starvation", lambda *a, **k: starv)
+    sample = ctl.collect_cohort_charge(
+        "jsboige/CoursIA", {".github/workflows/cohorte.yml"}, 120, NOW, "t")
+    assert sample.truncated is True
+    assert "borne INFERIEURE" in sample.reason
+
+
+# --- Les trois cas de la review du coordinateur (28/10) --------------------
+
+def test_parc_charge_de_jobs_statiques_cohorte_vide_libere():
+    """LE cas que la version precedente VERROUILLAIT : le parc local porte
+    11 jobs statiques (le regime normal d'une journee de PRs), la cohorte ne
+    rend rien et l'heberge est sous son plafond.
+
+    L'ancienne condition (`local.charge <= 2`) rendait un HOLD : 11 > 2, pour
+    toujours, et la variable restait a `true` a perpetuite. La charge qui
+    revient est celle de la COHORTE, pas celle du parc : la liberation a
+    lieu.
+    """
+    d = ctl.evaluate(
+        hosted(queued=5, old=0, oldest=15.0, in_progress=2),
+        local(free=21, online=32, busy=11, unknown=2),
+        current="true",
+        cohort=cohort(),
+        cohort_confirm=cohort(),
+        now=NOW,
+    )
+    assert d.action == "SWITCH_FALSE" and d.target == "false"
+    assert "marge" in d.reason
+
+
+def test_charge_rendue_superieure_a_la_marge_hebergee_tient():
+    """La cohorte rend 3 jobs, la marge hebergee vaut 1 : on tient."""
+    d = ctl.evaluate(
+        hosted(queued=16, old=0, oldest=15.0, in_progress=3),
+        local(free=21, online=32, busy=3),
+        current="true",
+        cohort=cohort(queued=3),
+        cohort_confirm=cohort(queued=3),
+        now=NOW,
+    )
+    assert d.action == "HOLD"
+    assert "marge hebergee (1" in d.reason
+
+
+def test_liste_de_cohorte_vide_ou_illisible_rend_unreadable():
+    """Une cohorte non etablie n'est pas « une cohorte qui ne rend rien » :
+    c'est une mesure ILLISIBLE, et elle ne libere jamais."""
+    d = ctl.evaluate(
+        hosted(queued=5, old=0, oldest=15.0),
+        local(free=21, online=32),
+        current="true",
+        cohort=ctl.CohortSample(
+            complete=False,
+            reason="liste de la cohorte vide ou illisible, derivee du depot",
+        ),
+        now=NOW,
+    )
+    assert d.action == "UNREADABLE"
+    assert d.target is None
+    assert "cohorte" in d.reason
+
+
+def test_cli_liberation_mesure_la_cohorte_deux_fois(monkeypatch, capsys, tmp_path):
+    """Le chemin de bout en bout de la liberation : la charge rendue de la
+    cohorte est mesuree, puis CONFIRMEE par une seconde lecture espacee de
+    `--confirm-seconds`, et le rapport porte la marge hebergee."""
+    _env(monkeypatch, write_token="pat-variables")
+    monkeypatch.setattr(ctl, "read_variable", lambda *a, **k: ("true", OLD, ""))
+    monkeypatch.setattr(ctl, "collect_hosted",
+                        lambda *a, **k: hosted(queued=5, old=0, oldest=15.0))
+    monkeypatch.setattr(ctl, "collect_local",
+                        lambda *a, **k: local(free=21, online=32, busy=11))
+    monkeypatch.setattr(ctl, "derive_cohort_workflows",
+                        lambda root: ({".github/workflows/cohorte.yml"}, ""))
+    calls = []
+
+    def fake_charge(repo, paths, budget, now, token, delay_seconds=0.0):
+        calls.append(delay_seconds)
+        return cohort(queued=0)
+
+    monkeypatch.setattr(ctl, "collect_cohort_charge", fake_charge)
+    seen = {}
+
+    def fake_write(repo, name, value, token):
+        seen["value"] = value
+        return True, "variable mise a jour"
+
+    monkeypatch.setattr(ctl, "write_variable", fake_write)
+    out = tmp_path / "summary.md"
+    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json",
+                   "--summary-out", str(out), "--confirm-seconds", "7"])
+    assert rc == ctl.EXIT_OK
+    assert seen["value"] == "false"
+    # Une mesure, puis une confirmation espacee de --confirm-seconds.
+    assert calls == [0.0, 7.0]
+    report = json.loads(capsys.readouterr().out)
+    assert report["verdict"] == "SWITCH_FALSE"
+    assert report["cohort"]["workflows"] == 1
+    assert report["cohort"]["measured"] is True
+    assert report["cohort_confirm"]["measured"] is True
+    assert report["hosted_margin"] == 15
+    text = out.read_text(encoding="utf-8")
+    assert "cohorte" in text
+    assert "confirmation" in text
+    assert "marge 15" in text
+
+
+def test_cli_liste_de_cohorte_illisible_rend_unreadable(monkeypatch, capsys):
+    """Sans liste de cohorte derivee, la liberation est impossible : le
+    verdict est UNREADABLE, et rien n'est ecrit."""
+    _env(monkeypatch, write_token="pat-variables")
+    monkeypatch.setattr(ctl, "read_variable", lambda *a, **k: ("true", OLD, ""))
+    monkeypatch.setattr(ctl, "collect_hosted",
+                        lambda *a, **k: hosted(queued=5, old=0, oldest=15.0))
+    monkeypatch.setattr(ctl, "collect_local",
+                        lambda *a, **k: local(free=21, online=32))
+    monkeypatch.setattr(ctl, "derive_cohort_workflows",
+                        lambda root: (set(), "repertoire des workflows absent"))
+    monkeypatch.setattr(ctl, "write_variable", lambda *a, **k: (_ for _ in ()).throw(
+        AssertionError("aucune ecriture sur une cohorte non etablie")))
+    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json"])
+    assert rc == ctl.EXIT_UNREADABLE
+    report = json.loads(capsys.readouterr().out)
+    assert report["verdict"] == "UNREADABLE"
+    assert report["written"] is False
+    assert "cohorte" in report["reason"]
+
+
+# --- (a) LECTURE LOCALE CIBLEE (#22937 phase A) ---------------------------
+#
+# Mesure du coordinateur (2026-10-28 16:55Z, run 40730110344) : 129 job(s)
+# heberge(s) en file au-dela de 15 min, 16 slot(s) local(aux) libre(s), et la
+# LECTURE LOCALE TRONQUEE -- 67 run(s) non lu(s), budget de 120 atteint.
+# Les runs anciens de la file etaient presque tous des runs qui attendent
+# `ubuntu-latest` : ils consommaient SEULS le budget de lecture, et la
+# soupave se fermait exactement dans le regime ou elle devait s'ouvrir.
+#
+# Le correctif : la lecture locale ne lit QUE les runs dont le workflow PEUT
+# porter un job local (liste derivee des fichiers de workflow, jamais
+# recopiee). Les runs des workflows statiquement heberges ne coutent alors
+# AUCUNE lecture.
+
+LOCAL_WORKFLOW = ".github/workflows/guard-local.yml"
+HOSTED_WORKFLOW = ".github/workflows/guard-heberge.yml"
+
+
+def _queue_payload(count: int, path: str, created: datetime) -> dict:
+    return {"workflow_runs": [
+        {"id": 1000 + i, "name": f"Run {i}", "run_number": i,
+         "created_at": created.isoformat(), "path": path}
+        for i in range(count)
+    ]}
+
+
+def _inventory_payload(free: int) -> dict:
+    return {"runners": [
+        {"name": f"slot-{i}", "status": "online",
+         "labels": [{"name": "coursia-linux"}], "busy": False}
+        for i in range(free)
+    ]}
+
+
+def test_file_hebergee_saturee_250_runs_et_16_slots_libres_le_controleur_s_enclenche(monkeypatch):
+    """Le test nomme par le coordinateur (c2725) : sous saturation de
+    l'offre hebergee, la lecture locale n'est plus tronquee -> le controleur
+    s'enclenche."""
+    now = datetime(2026, 10, 28, 16, 55, tzinfo=timezone.utc)
+    created = now - timedelta(minutes=63)
+    job_reads: list[str] = []
+
+    def fake_gh(args, token=None, stats=None):
+        if "actions/runners" in args[0]:
+            return _inventory_payload(16)
+        if "status=queued" in args[0]:
+            return _queue_payload(250, HOSTED_WORKFLOW, created)
+        if "status=in_progress" in args[0]:
+            return {"workflow_runs": []}
+        if "/jobs" in args[0]:
+            job_reads.append(args[0])
+            return {"jobs": []}
+        return None
+
+    monkeypatch.setattr(ctl.crs, "_gh_json", fake_gh)
+    sample = ctl.collect_local("jsboige/CoursIA", 15.0, 120, now, None,
+                                local_paths={LOCAL_WORKFLOW})
+    decision = ctl.evaluate(hosted(queued=250, old=250, oldest=63.2),
+                             sample, current="false", now=now)
+    # Le VERDICT d'abord : c'est lui qui est le temoin, pas le mecanisme.
+    assert decision.action == "SWITCH_TRUE"
+    # Aucun run heberge n'a coute une lecture, et la lecture n'est PAS
+    # tronquee : « le parc local n'est pas affame » EST etablie.
+    assert job_reads == []
+    assert sample.complete is True
+    assert sample.truncated is False
+    assert sample.free == 16
+
+
+def test_un_job_local_statiquement_file_depuis_plus_de_15_min_tient(monkeypatch):
+    """Le second test nomme par le coordinateur : un job STATIQUEMENT local en
+    file depuis plus de 15 min est vu, et le controleur NE deborde pas vers un
+    parc qui est lui-meme affame."""
+    now = datetime(2026, 10, 28, 16, 55, tzinfo=timezone.utc)
+    created = now - timedelta(minutes=63)
+
+    def fake_gh(args, token=None, stats=None):
+        if "actions/runners" in args[0]:
+            return _inventory_payload(16)
+        if "status=queued" in args[0]:
+            return _queue_payload(1, LOCAL_WORKFLOW, created)
+        if "status=in_progress" in args[0]:
+            return {"workflow_runs": []}
+        if "/jobs" in args[0]:
+            return {"jobs": [
+                {"name": "guard-on-label", "status": "queued",
+                 "labels": ["self-hosted", "coursia-linux"],
+                 "created_at": created.isoformat()},
+            ]}
+        return None
+
+    monkeypatch.setattr(ctl.crs, "_gh_json", fake_gh)
+    sample = ctl.collect_local("jsboige/CoursIA", 15.0, 120, now, None,
+                                local_paths={LOCAL_WORKFLOW})
+    assert sample.starved == 1
+    decision = ctl.evaluate(hosted(queued=250, old=250, oldest=63.2),
+                             sample, current="false", now=now)
+    assert decision.action != "SWITCH_TRUE"
+    assert "affame" in decision.reason
+
+
+def test_liste_des_workflows_illisible_ou_vide_rend_unreadable_et_jamais_un_enclenchement(monkeypatch, tmp_path):
+    """Le troisieme test nomme par le coordinateur : liste des workflows
+    illisible ou vide -> UNREADABLE, jamais un enclenchement."""
+    paths, reason = ctl.derive_local_capable_workflows(tmp_path)
+    assert paths == set()
+    assert reason != ""
+    now = datetime(2026, 10, 28, 16, 55, tzinfo=timezone.utc)
+
+    def fake_gh(args, token=None, stats=None):
+        if "actions/runners" in args[0]:
+            return _inventory_payload(16)
+        return None
+
+    monkeypatch.setattr(ctl.crs, "_gh_json", fake_gh)
+    sample = ctl.collect_local("jsboige/CoursIA", 15.0, 120, now, None,
+                                local_paths=None, local_paths_reason=reason)
+    assert sample.complete is False
+    decision = ctl.evaluate(hosted(queued=250, old=250, oldest=63.2),
+                             sample, current="false", now=now)
+    assert decision.action == "UNREADABLE"
+
+
+def test_derive_local_capable_workflows_separe_le_local_du_heberge(tmp_path):
+    _workflow(tmp_path, "local.yml",
+              "on: push\njobs:\n  j:\n    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]\n")
+    _workflow(tmp_path, "heberge.yml",
+              "on: push\njobs:\n  j:\n    runs-on: ubuntu-latest\n")
+    paths, reason = ctl.derive_local_capable_workflows(tmp_path)
+    assert reason == ""
+    assert ".github/workflows/local.yml" in paths
+    assert ".github/workflows/heberge.yml" not in paths
+
+
+def test_derive_local_capable_workflows_propage_un_appel_reutilisable(tmp_path):
+    """Le `run.path` d'un run designe le workflow APPELANT : un appelant
+    d'un workflow local est donc capable lui aussi (sinon ses jobs locaux
+    seraient invisibles a la mesure)."""
+    _workflow(tmp_path, "appele.yml",
+              "on: push\njobs:\n  j:\n    runs-on: [self-hosted, coursia-linux]\n")
+    _workflow(tmp_path, "appelant.yml",
+              "on: push\njobs:\n  j:\n    uses: ./.github/workflows/appele.yml\n")
+    paths, reason = ctl.derive_local_capable_workflows(tmp_path)
+    assert reason == ""
+    assert ".github/workflows/appele.yml" in paths
+    assert ".github/workflows/appelant.yml" in paths
+
+
+# --- (b) GARDE DE CADENCE --------------------------------------------------
+#
+# Le declencheur tire plus souvent que le cron horaire. L'ecart minimal
+# entre deux passages borne ce que le declencheur consomme -- en occupation
+# du parc local (le controleur tourne SUR ce parc) et en appels API. Le
+# controle est fait AVANT toute mesure : un passage ecarte ne lit rien.
+
+def test_le_garde_de_cadence_ecomporte_sans_mesure_ni_ecriture(monkeypatch, capsys):
+    monkeypatch.setenv("GH_TOKEN", "t")
+    monkeypatch.setattr(ctl, "last_run_age_minutes", lambda *a, **k: (5.0, ""))
+    monkeypatch.setattr(ctl, "read_variable", lambda *a, **k: (_ for _ in ()).throw(
+        AssertionError("aucune lecture de variable quand la cadence n'est pas ecoulee")))
+    monkeypatch.setattr(ctl, "write_variable", lambda *a, **k: (_ for _ in ()).throw(
+        AssertionError("aucune ecriture quand la cadence n'est pas ecoulee")))
+    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json",
+                    "--min-interval", "15"])
+    assert rc == ctl.EXIT_OK
+    report = json.loads(capsys.readouterr().out)
+    assert report["verdict"] == "SKIPPED"
+    assert report["written"] is False
+    assert report["last_run_age_min"] == 5.0
+
+
+def test_le_garde_de_cadence_laisse_passer_un_passage_ancien(monkeypatch, capsys):
+    monkeypatch.setenv("GH_TOKEN", "t")
+    monkeypatch.setattr(ctl, "last_run_age_minutes", lambda *a, **k: (40.0, ""))
+    _env(monkeypatch, write_token="pat-variables")
+    monkeypatch.setattr(ctl, "read_variable", lambda *a, **k: ("false", OLD, ""))
+    monkeypatch.setattr(ctl, "collect_hosted",
+                        lambda *a, **k: hosted(queued=0, old=0, oldest=0.0))
+    monkeypatch.setattr(ctl, "collect_local",
+                        lambda *a, **k: local(free=21, online=22))
+    monkeypatch.setattr(ctl, "derive_cohort_workflows",
+                        lambda root: ({".github/workflows/x.yml"}, ""))
+    monkeypatch.setattr(ctl, "collect_cohort_charge",
+                        lambda *a, **k: cohort(queued=0, in_progress=0))
+    monkeypatch.setattr(ctl, "write_variable", lambda *a, **k: (True, "ok"))
+    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json",
+                    "--min-interval", "15"])
+    report = json.loads(capsys.readouterr().out)
+    assert report["verdict"] != "SKIPPED"
+
+
+def test_l_ecart_au_dernier_passage_est_rapporte_meme_sans_garde(monkeypatch, capsys):
+    """L'ecart au dernier passage est l'instrument qui rend visible la mort
+    du declencheur local (un ecart qui grandit) : il est donc mesure et
+    RAPPORTE dans tous les cas -- y compris quand aucune garde n'est posee
+    (le passage manuel et le cron horaire du depot)."""
+    monkeypatch.setenv("GH_TOKEN", "t")
+    monkeypatch.setattr(ctl, "last_run_age_minutes", lambda *a, **k: (42.0, ""))
+    _env(monkeypatch, write_token="pat-variables")
+    monkeypatch.setattr(ctl, "read_variable", lambda *a, **k: ("false", OLD, ""))
+    monkeypatch.setattr(ctl, "collect_hosted",
+                        lambda *a, **k: hosted(queued=0, old=0, oldest=0.0))
+    monkeypatch.setattr(ctl, "collect_local",
+                        lambda *a, **k: local(free=21, online=22))
+    monkeypatch.setattr(ctl, "derive_cohort_workflows",
+                        lambda root: ({".github/workflows/x.yml"}, ""))
+    monkeypatch.setattr(ctl, "collect_cohort_charge",
+                        lambda *a, **k: cohort(queued=0, in_progress=0))
+    monkeypatch.setattr(ctl, "write_variable", lambda *a, **k: (True, "ok"))
+    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json"])
+    report = json.loads(capsys.readouterr().out)
+    assert report["verdict"] != "SKIPPED"
+    assert report["last_run_age_min"] == 42.0
+
+
+def test_un_ecart_non_etabli_ne_bloque_pas_le_passage(monkeypatch, capsys):
+    """Un listing illisible ne doit pas eteindre la soupape : le passage
+    continue, et le motif est dit."""
+    monkeypatch.setenv("GH_TOKEN", "t")
+    monkeypatch.setattr(ctl, "last_run_age_minutes", lambda *a, **k: (None, "listing illisible"))
+    _env(monkeypatch, write_token="pat-variables")
+    monkeypatch.setattr(ctl, "read_variable", lambda *a, **k: ("false", OLD, ""))
+    monkeypatch.setattr(ctl, "collect_hosted",
+                        lambda *a, **k: hosted(queued=0, old=0, oldest=0.0))
+    monkeypatch.setattr(ctl, "collect_local",
+                        lambda *a, **k: local(free=21, online=22))
+    monkeypatch.setattr(ctl, "derive_cohort_workflows",
+                        lambda root: ({".github/workflows/x.yml"}, ""))
+    monkeypatch.setattr(ctl, "collect_cohort_charge",
+                        lambda *a, **k: cohort(queued=0, in_progress=0))
+    monkeypatch.setattr(ctl, "write_variable", lambda *a, **k: (True, "ok"))
+    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json",
+                    "--min-interval", "15"])
+    report = json.loads(capsys.readouterr().out)
+    assert report["verdict"] != "SKIPPED"

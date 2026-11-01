@@ -86,6 +86,7 @@ from . import sensitivity
 from . import meta_proxy
 from . import reversibility_budget
 from . import argumentation
+from . import triplet
 from . import inhibited_action
 from . import learned_valence
 from . import pregnance_animat
@@ -114,6 +115,7 @@ __all__ = [
     "spectral", "sensitivity", "meta_proxy",
     "reversibility_budget",
     "argumentation",
+    "triplet",
     "inhibited_action",
     "learned_valence",
     "pregnance_animat",

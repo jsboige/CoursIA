@@ -20,6 +20,8 @@ Ce module présente des cas d'usage concrets et des workflows de production pour
 
 ## Notebooks
 
+Les sections de cet index sont **thématiques** : deux carnets peuvent y voisiner sans se suivre par le rang. La numérotation `04-NN` fixe l'**ordre de lecture**, et c'est elle que suit le fil de navigation — chaque carnet renvoie à son `NN+1`. L'écart est assumé : `04-18` (transcription note à note) est présenté dans la famille YuE2 dont il partage le service, avant `04-17` (MIR classique), qui vient ensuite comme le socle DSP de cette famille.
+
 ### Workflows généraux
 
 | # | Notebook | Contenu | Service | VRAM |
@@ -66,7 +68,7 @@ Là où SheetSage2 (04-16) produit une partition symbolique globale, la **transc
 
 | # | Notebook | Contenu | Service | VRAM |
 |---|----------|---------|---------|------|
-| 17 | [04-17-Basic-Pitch-Transcription](04-17-Basic-Pitch-Transcription.ipynb) | Transcription note à note : basic-pitch (ICASSP 2022, ONNX) sur vérité terrain synthétique (11 notes à onsets exacts) et trois accords (9 notes superposées) ; rappel/précision/écart d'onset mesurés, piano-roll vérité vs détection, balayage des seuils du décodeur (onset et frame), trois exercices | CPU local (kernel `basicpitch-t4`, onnxruntime) | 0 (CPU) |
+| 18 | [04-18-Basic-Pitch-Transcription](04-18-Basic-Pitch-Transcription.ipynb) | Transcription note à note : basic-pitch (ICASSP 2022, ONNX) sur vérité terrain synthétique (11 notes à onsets exacts) et trois accords (9 notes superposées) ; rappel/précision/écart d'onset mesurés, piano-roll vérité vs détection, balayage des seuils du décodeur (onset et frame), trois exercices | CPU local (kernel `basicpitch-t4`, onnxruntime) | 0 (CPU) |
 
 > **Note (consolidation #13741)** : un sibling pédagogique plus minimal (re-voicing CP-SAT + MIDI synthèse, version allégée du canonique) a été archivé sous [`MyIA.AI.Notebooks/GenAI/Audio/_archive/04-14-VoiceLeading-RenduGenAI.ipynb`](../_archive/04-14-VoiceLeading-RenduGenAI.ipynb) pour éliminer le doublon de slot 04-14. Le contenu reste préservé (re-voicing, synthèse MIDI, MusicGen, spectrogrammes, export WAV) ; ce notebook canonique `Rendu-GenAI` (version complète re-exécutée #13398) reste la référence.
 
@@ -92,6 +94,14 @@ Un rating subjectif n'est interprétable qu'accompagné de son protocole : dans 
 | # | Notebook | Contenu | Service | VRAM |
 |---|----------|---------|---------|------|
 | 19 | [04-19-Evaluation-MOS](04-19-Evaluation-MOS.ipynb) | Protocole d'écoute subjective (ITU-T P.800) et agrégateur (ITU-R P.808) : lecture de la rubrique depuis le `04-7`, liste d'essais rejouable, fiche de notation pré-remplie, MOS + IC 95 % + rejet des auditeurs aberrants, proxies (SNR, SI-SDR, LSD, STOI) sur référence source-filtre et dégradations maîtrisées, 3 exercices | CPU local (numpy, scipy, torchmetrics, pystoi) | 0 |
+
+### Séparation avancée — qualité mesurée
+
+Là où [02-4](../02-Advanced/02-4-Demucs-Source-Separation.ipynb) sépare un mélange synthétique (qualité évidente, non mesurée), ce carnet entre sur une **vraie chanson du corpus MUSDB18** avec ses **4 stems de référence studio** : le SDR par stem et par architecture devient une mesure. Trois modèles Demucs sur deux générations (v3 Hybrid Demucs, v4 Hybrid Transformer, v4 fine-tune par source) sont comparés à géométrie égale, avec témoin négatif (SDR effondré face à la référence d'une autre piste) et contrôle de cohérence d'énergie du remix.
+
+| # | Notebook | Contenu | Service | VRAM |
+|---|----------|---------|---------|------|
+| 20 | [04-20-Separation-Avancee-Qualite](04-20-Separation-Avancee-Qualite.ipynb) | Trois modèles Demucs sur deux générations (hdemucs_mmi v3, htdemucs v4, htdemucs_ft) comparés sur piste MUSDB18 avec stems de référence : SDR par stem, témoin négatif, cohérence d'énergie, mini-benchmark médian 3 pistes, 3 exercices | Local GPU (demucs 4.1.0, HuggingFace streaming) | ~6 GB |
 
 ## Prérequis
 
@@ -148,3 +158,4 @@ Texte littéraire -> Benchmark voix (P0)
 - [Documentation Audio principale](../README.md)
 - [Live Coding Guide](04-5-LiveCoding-LLM-Music.ipynb)
 - [GenAI Services Documentation](../../../../docs/genai/genai-services.md)
+

@@ -36,17 +36,19 @@ name: Markdown claims anchored to previous output (advisory)
 # like "only flag claims present elsewhere in the notebook as tables"),
 # promote this to a blocking gate.
 
+# ABSORBEE PAR LA VOIE RAPIDE (#22209, tranche 1b, voie A) -- le declencheur
+# `pull_request` est retire : ce job tourne desormais dans
+# `always-on-guards.yml :: Always-on commenters`, qui paie un checkout pour
+# trois organes au lieu d'un, et dont le registre porte les memes `paths:`.
+# Le fichier est CONSERVE : il porte le nom canonique du check-run (contrat
+# `check_absorbed_check_run_identity.py`) et reste le chemin de re-mesure
+# manuelle (`workflow_dispatch`). Retour arriere = restaurer le bloc `on:`
+# documente ci-dessous et retirer le garde du registre.
+# Ancien declencheur (a restaurer pour un retour arriere) :
+#   pull_request: paths: MyIA.AI.Notebooks/**/*.ipynb,
+#   scripts/check_markdown_claims_output.py (+ tests), check_stale_claims.py
+#   (+ tests), check_factual_mislabel.py (+ tests), ce fichier.
 on:
-  pull_request:
-    paths:
-      - 'MyIA.AI.Notebooks/**/*.ipynb'
-      - 'scripts/check_markdown_claims_output.py'
-      - 'scripts/tests/test_check_markdown_claims_output.py'
-      - 'scripts/check_stale_claims.py'
-      - 'scripts/tests/test_check_stale_claims.py'
-      - 'scripts/check_factual_mislabel.py'
-      - 'scripts/tests/test_check_factual_mislabel.py'
-      - '.github/workflows/markdown-claims-output-advisory.yml'
   workflow_dispatch:
 
 permissions:
@@ -74,6 +76,7 @@ jobs:
           # The detector requires merge-base(origin/main, HEAD). A depth-1
           # checkout made the advisory abstain on ordinary pull requests.
           fetch-depth: 0
+          filter: blob:none
 
       - uses: actions/setup-python@v5
         with:

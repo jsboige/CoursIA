@@ -81,6 +81,17 @@ La classe par defaut reste ``artifact`` : le contrat CI
 exact. Les classes #9434 s'auditent en opt-in, pour poser le before/after d'un
 drainage par classe.
 
+Certaines occurrences sont des faux positifs de SENS, pas des mesures d'etat :
+« 36 cellules vivantes » d'un canon du Jeu de la Vie compte des cellules de
+l'automate, et « 248 818 lignes » d'un depot externe pine mesure un run, pas un
+compteur du depot. Les supprimer n'aurait pas de sens, et les laisser flaguer
+fait re-trancher le meme arbitrage a chaque tranche. Elles sont couvertes par
+une allowlist ``(fichier, motif)`` -- ``ARTIFACT_EXEMPTIONS`` -- ou chaque
+entree porte son motif ECRIT, et dont le motif ne couvre que son propre span
+sur la ligne. Une entree qui ne couvre plus rien est signalee
+``[ALLOWLIST-PERIMEE]`` en ``--all`` : une exemption se perime en silence si
+rien ne la relit (#23111).
+
 Usage
 -----
     # CI sur une PR : ne juge que les lignes AJOUTEES (classe artifact, defaut)
@@ -111,6 +122,7 @@ import re
 import subprocess
 import sys
 from pathlib import Path
+from typing import NamedTuple
 
 # ----------------------------------------------------------------------------
 # Classe « artifact » (#9377) -- compteurs d'artefacts du depot
@@ -130,6 +142,158 @@ ARTIFACT_NOUNS = r"(?:lignes?|lines?|cellules?|cells?|notebooks?|modules?|fichie
 COUNT_RE = re.compile(
     r"(?<![\w.#])~?\*{0,2}\d{1,6}\*{0,2}\s+" + ARTIFACT_NOUNS + r"(?![\w-])",
     re.IGNORECASE,
+)
+
+# ----------------------------------------------------------------------------
+# Allowlist MOTIVEE de la classe « artifact » (#23111)
+# ----------------------------------------------------------------------------
+# Un compte peut etre un faux positif de SENS et non une mesure d'etat : « 36
+# cellules vivantes » d'un canon du Jeu de la Vie compte les cellules de
+# l'automate, pas celles d'un carnet ; « 248 818 lignes » d'un depot externe
+# pine mesure un run, il ne derive pas avec CE depot. Supprimer le nombre
+# n'aurait alors aucun sens -- il faudrait reecrire le propos -- et le laisser
+# flaguer fait re-trancher le meme arbitrage a chaque tranche.
+#
+# Trois proprietes rendent l'exemption auditable plutot que commode :
+#
+# 1. Elle est un TRIO (chemin exact, motif de ligne, raison ECRITE). Pas de
+#    glob : une exemption large se perime en silence.
+# 2. Le motif ne couvre que les compteurs dont le span tombe DANS un de ses
+#    matches. Un « 87 cellules » sur la meme ligne reste flague, et un compte
+#    de cellules de carnet ajoute ailleurs dans le meme fichier aussi.
+# 3. Le motif est ETROIT : il nomme le contexte, pas seulement le nombre. S'il
+#    cesse de matcher apres une reecriture, l'occurrence est re-signalee et un
+#    humain re-tranche -- le sens contraire (motif large qui avale en silence
+#    un vrai compteur ajoute plus tard) est le seul vrai danger.
+#
+# L'allowlist est relue a chaque ``--all`` : ce qu'elle couvre est restitue,
+# et une entree qui ne couvre plus rien est nommee PERIMEE.
+
+
+class ArtifactExemption(NamedTuple):
+    """Une exemption motivee de la classe ``artifact``."""
+
+    path: str                  # chemin relatif POSIX exact, jamais un glob
+    motif: re.Pattern[str]     # motif de LIGNE ; couvre les compteurs dans son span
+    raison: str                # pourquoi ce nombre n'est pas un etat du depot
+
+
+ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/README.md",
+        motif=re.compile(r"Gosper Glider Gun \(36 cellules vivantes"),
+        raison=(
+            "« 36 cellules » = cellules VIVANTES du canon de Gosper dans le Jeu "
+            "de la Vie, pas des cellules de carnet. Le nombre est une propriete "
+            "du motif (il definit le canon), il ne derive pas avec le depot."
+        ),
+    ),
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/README.md",
+        motif=re.compile(r"Pulsar \(48 cellules\)"),
+        raison=(
+            "« 48 cellules » = periode-3 Pulsar du Jeu de la Vie, cite comme cas "
+            "a la limite de native_decide ; ce sont des cellules de l'automate."
+        ),
+    ),
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/README.en.md",
+        motif=re.compile(r"Pulsar \(48 cells\)"),
+        raison=(
+            "Sibling anglais du README precedent : meme Pulsar, memes cellules de "
+            "l'automate. Une paire FR/EN se traite ensemble, sinon le drainage "
+            "rouvre le meme arbitrage sur l'autre langue."
+        ),
+    ),
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/SymbolicAI/Lean/README.md",
+        motif=re.compile(r"248 818 lignes compil"),
+        raison=(
+            "Mesure d'un run de reproduction sur le depot externe pine "
+            "plby/HopfProblem : ce ne sont pas les lignes de CE depot, et le "
+            "nombre decrit le resultat du run (248 818 lignes compilees en "
+            "1154 s), pas un etat de CoursIA qui derive a chaque ajout."
+        ),
+    ),
+    # Mesures de la page DarkSnail (EPIC #21310, PR #23302) : toutes decrivent
+    # le depot externe sneed-and-feed/projectdarksnail tel que fige a la tete
+    # 043c9d26 du 2026-10-29 (blobs cites dans la page de mesure). Ces nombres
+    # ne derivent pas avec CoursIA -- upstream peut bouger, la tete mesuree
+    # reste celle de son blob. Meme classe que l'entree HopfProblem ci-dessus.
+    ArtifactExemption(
+        path="docs/lean/darksnail/concern-2026-10-29-build-verification.md",
+        motif=re.compile(
+            r"Taille d'`OcclusionTriad\.lean` \| 510 lignes \(blob `72b0b676`\) \| \*\*999 lignes\*\*"
+        ),
+        raison=(
+            "Tailles du fichier OcclusionTriad.lean du depot externe "
+            "projectdarksnail aux deux tetes mesurees (18/10 et 29/10), blobs "
+            "cites sur la ligne : la derive constatee EST le propos de la page."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/lean/darksnail/concern-2026-10-29-build-verification.md",
+        motif=re.compile(
+            r"BlockBridge\.lean` \| inexistant \| \*\*nouveau, 289 lignes\*\*"
+        ),
+        raison=(
+            "Taille du nouveau fichier BlockBridge.lean du depot externe "
+            "projectdarksnail a la tete 043c9d26 : pas une ligne de CE depot."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/lean/darksnail/concern-2026-10-29-build-verification.md",
+        motif=re.compile(
+            r"lake exe cache get` \(rc=0, 8 690 fichiers déjà en cache\)"
+        ),
+        raison=(
+            "Compte du cache Mathlib local au moment du run de build (WSL, "
+            "environnement jete) : resultat d'un run, pas un etat du depot."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/lean/darksnail/concern-2026-10-29-build-verification.md",
+        motif=re.compile(r"41 357 lignes Python au même commit"),
+        raison=(
+            "Inventaire structurel du code Python du depot externe "
+            "projectdarksnail au commit fige 043c9d26 : mesure de clone "
+            "externe, ne derive pas avec CoursIA."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/lean/darksnail/concern-2026-10-29-build-verification.md",
+        motif=re.compile(r"5 fichiers de tests \(`test_darksnail\.py`"),
+        raison=(
+            "Denombrement des fichiers de tests du depot externe "
+            "projectdarksnail (noms cites sur la ligne) au commit fige : "
+            "mesure de clone externe."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/lean/darksnail/concern-2026-10-29-build-verification.md",
+        motif=re.compile(r"OcclusionTriad\.lean` \| 999 lignes, blob"),
+        raison=(
+            "Table de provenance : taille du fichier amont au blob SHA cite "
+            "sur la meme ligne -- le blob fige le nombre, pas le depot."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/lean/darksnail/concern-2026-10-29-build-verification.md",
+        motif=re.compile(r"BlockBridge\.lean` \| 289 lignes, blob"),
+        raison=(
+            "Table de provenance : taille du fichier amont au blob SHA cite "
+            "sur la meme ligne -- le blob fige le nombre, pas le depot."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/lean/README.md",
+        motif=re.compile(r"inventaire Python \(41 357 lignes\)"),
+        raison=(
+            "Index README de la page de mesure DarkSnail : meme inventaire du "
+            "clone externe fige a 043c9d26 (exemption detaillee ci-dessus), "
+            "resume en une ligne d'index."
+        ),
+    ),
 )
 
 # ----------------------------------------------------------------------------
@@ -361,7 +525,24 @@ def _notebook_is_seeded(nb_path: Path) -> bool:
     return False
 
 
-def _findings_in_text(text: str, location: str, classes: set[str]) -> list[tuple[str, str, str]]:
+def _exempt_spans(path: str, line: str) -> list[tuple[int, int]]:
+    """Spans de la ligne couverts par une exemption motivee propre a ce fichier.
+
+    Le span est ce qui rend l'exemption BORNEE : elle ne protege pas le
+    fichier, elle protege une portion de ligne. Un compteur voisin -- meme
+    ligne, meme nom d'artefact -- reste flague.
+    """
+    spans: list[tuple[int, int]] = []
+    for exemption in ARTIFACT_EXEMPTIONS:
+        if exemption.path != path:
+            continue
+        spans.extend(m.span() for m in exemption.motif.finditer(line))
+    return spans
+
+
+def _findings_in_text(
+    text: str, location: str, classes: set[str], path: str | None = None
+) -> list[tuple[str, str, str]]:
     """Rend [(location, classe, snippet)] pour les classes demandees.
 
     La ligne est l'unite de co-occurrence pour stochastic (mot-clef + nombre sur
@@ -369,7 +550,12 @@ def _findings_in_text(text: str, location: str, classes: set[str]) -> list[tuple
     La ligne est aussi l'unite d'exemption pacing (cf STUDENT_PACING_RE) : un
     « (Duree) (estimée) : X minutes » est TN pedagogique, jamais un compteur
     machine ; la ligne entiere est exoneree de la classe ``machine``.
+
+    ``path`` (defaut : la partie fichier de ``location``, qui porte un suffixe
+    `` MD[<i>]`` pour une cellule de carnet) selectionne les exemptions motivees
+    de la classe ``artifact`` (cf ARTIFACT_EXEMPTIONS).
     """
+    target = location.split(" MD[")[0] if path is None else path
     out: list[tuple[str, str, str]] = []
     for line in text.splitlines():
         if any(m in line for m in GENERATED_MARKERS):
@@ -380,7 +566,10 @@ def _findings_in_text(text: str, location: str, classes: set[str]) -> list[tuple
         # actives : un « ~50 minutes » colle a un artefact (lignes) reste flag.
         is_pacing = STUDENT_PACING_RE.search(line) is not None
         if "artifact" in classes:
+            exempt = _exempt_spans(target, line)
             for m in COUNT_RE.finditer(line):
+                if any(start <= m.start() and m.end() <= end for start, end in exempt):
+                    continue
                 out.append((location, "artifact", m.group(0).strip()))
         if "machine" in classes and not is_pacing:
             for m in MACHINE_RE.finditer(line):
@@ -680,6 +869,67 @@ def _emit_legacy(findings: list[tuple[str, str, str]], strict: bool) -> int:
     return 1 if strict else 0
 
 
+def _exemption_audit(root: Path) -> tuple[list[tuple[ArtifactExemption, int]], list[ArtifactExemption]]:
+    """Rend (exemptions vivantes avec le nombre de compteurs couverts, perimees).
+
+    « Vivante » veut dire : le motif matche encore ET il couvre au moins un
+    compteur que COUNT_RE aurait flague. Un motif qui matche sans couvrir de
+    compteur ne protege rien non plus : il est perime au meme titre.
+    """
+    live: list[tuple[ArtifactExemption, int]] = []
+    stale: list[ArtifactExemption] = []
+    for exemption in ARTIFACT_EXEMPTIONS:
+        try:
+            text = (root / exemption.path).read_text(encoding="utf-8")
+        except OSError:
+            stale.append(exemption)
+            continue
+        covered = 0
+        for line in text.splitlines():
+            spans = [m.span() for m in exemption.motif.finditer(line)]
+            if not spans:
+                continue
+            covered += sum(
+                1
+                for m in COUNT_RE.finditer(line)
+                if any(start <= m.start() and m.end() <= end for start, end in spans)
+            )
+        if covered:
+            live.append((exemption, covered))
+        else:
+            stale.append(exemption)
+    return live, stale
+
+
+def _report_exemptions(root: Path) -> None:
+    """Restitue l'allowlist en ``--all`` : ce qu'elle couvre, et ce qui est mort.
+
+    Jamais un echec : le stock ne fait rougir aucune PR (#17636). Ce qui est
+    rendu visible, c'est la DECISION -- et son eventuelle peremption, qui sans
+    cette ligne se lirait comme une exemption encore vivante.
+    """
+    if not ARTIFACT_EXEMPTIONS:
+        return
+    live, stale = _exemption_audit(root)
+    if live:
+        total = sum(n for _exemption, n in live)
+        print(
+            f"\n[ALLOWLIST] {len(live)} exemption(s) motivee(s) de la classe artifact, "
+            f"{total} compteur(s) couvert(s) :"
+        )
+        for exemption, covered in live:
+            print(f"  {exemption.path}  ({covered})  {exemption.motif.pattern}")
+            print(f"    pourquoi : {exemption.raison}")
+    if stale:
+        print(
+            f"\n[ALLOWLIST-PERIMEE] {len(stale)} entree(s) ne couvre(nt) plus aucun "
+            f"compteur -- retirer l'entree : une decision morte se lit comme une "
+            f"decision vivante."
+        )
+        for exemption in stale:
+            print(f"  {exemption.path}  {exemption.motif.pattern}")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     g = ap.add_mutually_exclusive_group(required=True)
@@ -714,8 +964,16 @@ def main() -> int:
 
     # Format legacy exact pour la classe artifact seule (contrat CI : --diff sans --class).
     if args.klass == "artifact":
-        return _emit_legacy(findings, args.strict)
-    return _emit_grouped(findings, args.strict, structural_only)
+        rc = _emit_legacy(findings, args.strict)
+    else:
+        rc = _emit_grouped(findings, args.strict, structural_only)
+
+    # L'allowlist ne se relit qu'en inventaire : en mode --diff, un fichier non
+    # touche par la PR n'est pas "perime", il est simplement hors champ.
+    if args.all and "artifact" in classes:
+        _report_exemptions(Path(args.root).resolve())
+
+    return rc
 
 
 if __name__ == "__main__":

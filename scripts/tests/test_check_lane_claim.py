@@ -1758,6 +1758,100 @@ def test_paths_multiple_prs_mixed(capsys):
     assert "BLOCKED" in captured.err
 
 
+# --- Le repli pointe sur le POOL, pas sur une issue (#16570 livree) --------
+#
+# Mesure du 2026-10-26 (lane myia-ai-01:CoursIA-2, signalee par la session
+# jumelle `coursia-2-25`) : le message de blocage de la jambe PR-ouverte se
+# terminait par « or pick another grain (#16570) ». #16570 est l'ISSUE qui a
+# signale cette jambe-meme ; elle est LIVREE (fix #16572 MERGED le
+# 2026-09-18, label `candidate-delivered`). Un worker qui suit le repli
+# atterrit donc sur un conteneur livre et peut y poser un claim.
+#
+# Le repli doit designer la SOURCE DU GRAIN -- le pool global -- pas un
+# issue historiquement liee.
+
+
+def _open_pr_other_lane(number=9012, path="scripts/check_lane_claim.py"):
+    """PR ouverte d'une AUTRE lane, touchant `path`."""
+    return {
+        "number": number,
+        "title": f"feat(pr-{number})",
+        "headRefName": f"feat/pr-{number}",
+        "body": ("Grain: MED/lean -- lane myia-po-2026:CoursIA-2 -- prev: ...\n"
+                 "See #16570"),
+        "files": [{"path": path}],
+        "additions": 3,
+        "deletions": 1,
+    }
+
+
+def test_le_repli_de_la_collision_pointe_sur_le_pool(monkeypatch, capsys):
+    """Le message nomme le pool global, et pas un numero d'issue.
+
+    Chemin ISSUE (`_run_check` avec `--paths` + la jambe PR-ouverte) : c'est
+    celui que la session jumelle a mesure sur #21100 -- `BLOCKED: OPEN PR(s)
+    of other lanes touch this call's --paths`.
+    """
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files",
+                        lambda: [_open_pr_other_lane()])
+    p = payload(number=21100)
+    rc = clc._run_check(p, "myia-po-2024:CoursIA-2",
+                        my_paths=["scripts/check_lane_claim.py"],
+                        check_open_pr_paths=True)
+    assert rc == 2
+    err = capsys.readouterr().err
+    assert "BLOCKED: OPEN PR(s) of other lanes touch" in err
+    assert "pick another grain from the GLOBAL POOL" in err
+    assert "pick_idle_grain.py --belt" in err
+    # Le repli ne nomme PLUS l'issue livree comme destination.
+    assert "pick another grain (#16570)" not in err
+
+
+def test_le_repli_ne_designe_aucune_issue_comme_destination(monkeypatch, capsys):
+    """Controle generique : aucune forme « pick another grain (#N) » ne doit
+    survivre dans la sortie de la garde.
+
+    Un numero d'issue dans un renvoi de routage est un piege de lecture :
+    le worker qui le suit part sur l'issue, pas sur le pool. La forme
+    testee ici est la seule qui exprimait cette destination ; le test la
+    verrouille contre une regression sur N'importe quel numero.
+
+    Il couvre les DEUX chemins qui rendent un message de collision : le
+    chemin ISSUE (`_run_check`) et le chemin `--paths` seul
+    (`_run_check_paths`).
+    """
+    import re as _re
+
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files",
+                        lambda: [_open_pr_other_lane()])
+    p = payload(number=21100)
+    rc = clc._run_check(p, "myia-po-2024:CoursIA-2",
+                        my_paths=["scripts/check_lane_claim.py"],
+                        check_open_pr_paths=True)
+    assert rc == 2
+    err = capsys.readouterr().err
+    routing = [m for m in _re.finditer(r"pick another grain[^\n]*", err)
+               if _re.search(r"#\d+", m.group(0))]
+    assert not routing, (
+        "un renvoi de routage ne doit pas designer un issue : "
+        + "; ".join(m.group(0) for m in routing))
+
+    # Le chemin `--paths` seul rend le meme genre de repli : il doit
+    # designer le pool, lui aussi.
+    rc = clc._run_check_paths(
+        paths=["scripts/check_lane_claim.py"],
+        my_lane="myia-po-2024:CoursIA-2",
+        prs=[_open_pr_other_lane(number=9013)],
+    )
+    assert rc == 2
+    err = capsys.readouterr().err
+    routing = [m for m in _re.finditer(r"pick another grain[^\n]*", err)
+               if _re.search(r"#\d+", m.group(0))]
+    assert not routing, (
+        "un renvoi de routage ne doit pas designer un issue : "
+        + "; ".join(m.group(0) for m in routing))
+
+
 # --- --open-prs-on mode (#13595) --------------------------------------------
 #
 # The `--paths` guard filters by lane: an OPEN PR of the caller's OWN lane
@@ -5461,6 +5555,120 @@ def test_delivered_replay_locks_again_after_open_then_merged(capsys):
     assert "LOCKED (v2)" in captured.err
 
 
+# --- #22445 -- the `paths:` clause on a [DELIVERED] is honoured --------------
+#
+# Measured defect (myia-po-2023:CoursIA, c.2360, issue #16334): the v2
+# conditional reducer re-marks a [DELIVERED] as an ACTIVE claim while its PR is
+# OPEN/MERGED, but `_PATHS_CLAUSE_RE` did not list DELIVERED -- so the marker's
+# `paths:` clause parsed to `None` and the re-marked claim came back EPIC-WIDE.
+# The very gesture meant to narrow the lock (`[DELIVERED] ... -- paths: ...`,
+# the form lane-claim-protocol.md prescribes) re-locked the whole umbrella.
+# The four tests below pin the fix and, just as importantly, its boundaries.
+
+def test_delivered_scope_clause_bounds_the_relock_on_open_pr(capsys):
+    """#22445 core: a scoped [DELIVERED] stays scoped while its PR is OPEN.
+
+    Pre-fix `active_claims[lane]["paths"]` was `null` and the disjoint caller
+    was BLOCKED (epic-wide relock). Post-fix the re-marked claim carries the
+    declared scope, and a caller whose scope is disjoint is CLEAR.
+    """
+    p = payload(
+        comment("[CLAIMED] lane myia-po-2026:CoursIA -- paths: "
+                "scripts/check_lane_claim.py",
+                "2026-10-25T03:39:12Z"),
+        comment("[DELIVERED] lane myia-po-2026:CoursIA -- PR #22400 -- paths: "
+                "scripts/check_lane_claim.py",
+                "2026-10-25T03:39:56Z"),
+        number=16334,
+        labels=[{"name": "EPIC"}],
+    )
+    rc = clc._run_check(p, "myia-po-2027:CoursIA-2",
+                       pr_states=_pr_states(22400, "OPEN"),
+                       my_paths=["MyIA.AI.Notebooks/IIT/ICT-Series/ICT-0-Framing.md"])
+    assert rc == 0
+    out = _json_out(capsys.readouterr())
+    assert out["blocking_lanes"] == []
+    assert out["active_claims"]["myia-po-2026:CoursIA"]["paths"] == [
+        "scripts/check_lane_claim.py"
+    ]
+    assert out["is_umbrella"] is True
+    assert out["epic_wide_on_umbrella"] is False
+
+
+def test_delivered_scope_clause_still_blocks_an_intersecting_caller(capsys):
+    """#22445 boundary: the clause bounds the lock, it does not remove it.
+
+    A scope that intersects the delivered slice keeps blocking -- the fix must
+    not turn [DELIVERED] into a free pass for siblings working the same files
+    (that would be the rejected option 2, which contradicts the v2 semantics).
+    """
+    p = payload(
+        comment("[DELIVERED] lane myia-po-2026:CoursIA -- PR #22400 -- paths: "
+                "scripts/check_lane_claim.py",
+                "2026-10-25T03:39:56Z"),
+        number=16334,
+        labels=[{"name": "EPIC"}],
+    )
+    rc = clc._run_check(p, "myia-po-2027:CoursIA-2",
+                       pr_states=_pr_states(22400, "OPEN"),
+                       my_paths=["scripts/check_lane_claim.py"])
+    assert rc == 1
+    out = _json_out(capsys.readouterr())
+    assert out["blocking_lanes"] == ["myia-po-2026:CoursIA"]
+    assert out["epic_wide_on_umbrella"] is False
+
+
+def test_delivered_scope_clause_with_dead_glob_lifts_to_epic_wide(capsys):
+    """#22445 fail-CLOSED: a scoped [DELIVERED] whose glob is dead relocks.
+
+    The #10958 hardener must keep working through the widened parser: a claim
+    whose entire scope matches no tracked file is a BROKEN claim, not a
+    permissive one, and is lifted back to epic-wide. Without this, honouring
+    the clause would open a fail-OPEN hole (a typo would free the umbrella).
+    """
+    p = payload(
+        comment("[DELIVERED] lane myia-po-2026:CoursIA -- PR #22400 -- paths: "
+                "scripts/no_such_directory/**",
+                "2026-10-25T03:39:56Z"),
+        number=16334,
+        labels=[{"name": "EPIC"}],
+    )
+    rc = clc._run_check(p, "myia-po-2027:CoursIA-2",
+                       pr_states=_pr_states(22400, "OPEN"),
+                       my_paths=["MyIA.AI.Notebooks/IIT/ICT-Series/ICT-0-Framing.md"])
+    assert rc == 1
+    out = _json_out(capsys.readouterr())
+    assert out["blocking_lanes"] == ["myia-po-2026:CoursIA"]
+    assert out["epic_wide_on_umbrella"] is True
+    # The dead glob is surfaced in the JSON (not only on stderr, #12740).
+    assert "scripts/no_such_directory/**" in out["dead_scope_globs"]["myia-po-2026:CoursIA"]
+
+
+def test_delivered_scope_clause_on_closed_pr_is_informational(capsys):
+    """#22445 no-regression: on the CLOSED branch the scope stays cosmetic.
+
+    A [DELIVERED] whose PR was closed without merge pops the lane, exactly as
+    [RELEASED] does. Honouring the clause must not resurrect a closed claim in
+    a bounded form -- there is nothing left to hold.
+    """
+    p = payload(
+        comment("[DELIVERED] lane myia-po-2026:CoursIA -- PR #22400 -- paths: "
+                "scripts/check_lane_claim.py",
+                "2026-10-25T03:39:56Z"),
+        number=16334,
+        labels=[{"name": "EPIC"}],
+    )
+    rc = clc._run_check(p, "myia-po-2027:CoursIA-2",
+                       pr_states=_pr_states(22400, "CLOSED"),
+                       my_paths=["scripts/check_lane_claim.py"])
+    assert rc == 0
+    out = _json_out(capsys.readouterr())
+    assert out["blocking_lanes"] == []
+    assert out["active_claims"] == {}
+    assert out["delivered_claims"] == [22400]
+    assert out["delivered_claims_pr_states"] == {"22400": "CLOSED"}
+
+
 def test_pr_states_signature_is_optional_no_behavioural_change(capsys):
     """v2: callers that don't pass `pr_states` keep the v1 surface.
 
@@ -8126,3 +8334,130 @@ def test_scopes_may_overlap_by_pattern():
     assert clc._scopes_may_overlap_by_pattern(creation, creation) is True
     # An empty side -> no overlap.
     assert clc._scopes_may_overlap_by_pattern(creation, []) is False
+
+
+# --- #23720: la clause de portee doit survivre a son enveloppe ---------------
+#
+# Defaut mesure le 2026-10-31 (lane myia-ai-01:CoursIA-2, issue #23720) :
+# une lane qui ecrit son chemin entre backticks ou guillemets produisait un
+# glob qui ne matche AUCUN fichier suivi -> la portee etait lue MORTE -> la
+# claim etait remontee EPIC-WIDE (fail-closed #10958/#11098) et verrouillait
+# l'issue ENTIERE au lieu du fichier vise. 3 lanes en ont subi les
+# consequences sur #23384 le meme jour.
+#
+# Seconde cause, mesuree sur le meme ticket : une mention de la clause EN
+# PROSE dans le texte d'intention ("une clause `paths:` ...") detonait le
+# parseur, qui retenait la PREMIERE occurrence du mot-cle au lieu de la
+# clause reelle en fin de ligne.
+#
+# Ces tests fixent les DEUX causes, avec un controle NEGATIF : la
+# normalisation retire de la decoration, elle ne rend pas matching un chemin
+# qui n'existe pas -- le fail-closed du garde reste intact.
+
+
+def test_paths_clause_normalizes_backticked_path():
+    line = "[CLAIMED] lane X:CoursIA -- paths: `scripts/check_lane_claim.py`"
+    assert clc._extract_paths_clause(line) == ["scripts/check_lane_claim.py"]
+
+
+def test_paths_clause_normalizes_quoted_path():
+    for wrapper in ('"', "'"):
+        line = ("[CLAIMED] lane X:CoursIA -- paths: %s"
+                "scripts/check_lane_claim.py%s" % (wrapper, wrapper))
+        assert clc._extract_paths_clause(line) == ["scripts/check_lane_claim.py"]
+
+
+def test_paths_clause_normalizes_double_wrapped_path():
+    line = "[CLAIMED] lane X:CoursIA -- paths: ``scripts/check_lane_claim.py``"
+    assert clc._extract_paths_clause(line) == ["scripts/check_lane_claim.py"]
+
+
+def test_paths_clause_normalizes_each_token_of_a_list():
+    line = '[CLAIMED] lane X:CoursIA -- paths: `a.py`, "b.py", c.py'
+    assert clc._extract_paths_clause(line) == ["a.py", "b.py", "c.py"]
+
+
+def test_normalized_scope_actually_matches_the_targeted_file():
+    # Le symptome mesure : avant #23720 la portee rendue ne matchait aucun
+    # fichier suivi, donc la claim etait lue epic-wide.
+    scope = clc._extract_paths_clause(
+        "[CLAIMED] lane X:CoursIA -- paths: `scripts/check_lane_claim.py`")
+    assert clc._path_matches_any(["scripts/check_lane_claim.py"], scope)
+
+
+def test_paths_clause_prose_mention_does_not_hijack_the_clause():
+    # La mention en prose ne doit pas detourner le parseur : la clause
+    # canonique est le segment FINAL de la ligne du marqueur.
+    line = ("[CLAIMED] lane X:CoursIA -- une clause `paths:` (backticks) "
+            "-- paths: scripts/check_lane_claim.py")
+    assert clc._extract_paths_clause(line) == ["scripts/check_lane_claim.py"]
+
+
+def test_paths_clause_prose_mention_does_not_hijack_a_quoted_clause():
+    line = ("[CLAIMED] lane X:CoursIA -- une clause `paths:` (backticks) "
+            "-- paths: `scripts/check_lane_claim.py`")
+    assert clc._extract_paths_clause(line) == ["scripts/check_lane_claim.py"]
+
+
+def test_paths_clause_wrapped_brace_group_still_expands():
+    # #10597 preserve : un groupe d'accolades encadre reste parsable en
+    # trois globs matchables.
+    line = ("[CLAIMED] lane X:CoursIA -- paths: "
+            "`scripts/notebook_tools/twin_pairs.d/search-{6,8,9}-*.yaml`")
+    assert clc._extract_paths_clause(line) == [
+        "scripts/notebook_tools/twin_pairs.d/search-6-*.yaml",
+        "scripts/notebook_tools/twin_pairs.d/search-8-*.yaml",
+        "scripts/notebook_tools/twin_pairs.d/search-9-*.yaml",
+    ]
+
+
+def test_paths_clause_dead_path_stays_dead():
+    # Controle NEGATIF : la normalisation retire de la decoration, elle ne
+    # rend pas matching un chemin qui n'existe pas. La preuve est la meme
+    # que celle du garde : le motif ne matche aucun fichier SUIVI, donc la
+    # portee reste morte et le claim reste fail-CLOSED.
+    line = ("[CLAIMED] lane X:CoursIA -- "
+            "paths: `does/not/exist/in/repo.ipynb`")
+    scope = clc._extract_paths_clause(line)
+    assert scope == ["does/not/exist/in/repo.ipynb"]
+    tracked = ["scripts/check_lane_claim.py"]
+    assert clc._empty_scope_in(scope, tracked) == scope, \
+        "un chemin inexistant reste mort apres normalisation"
+
+
+def test_path_token_normalization_does_not_swallow_inner_quotes():
+    # Un guillemet au MILIEU d'un nom de fichier est legitime : seuls les
+    # bords sont de la decoration.
+    assert clc._normalize_path_token('dir/na"me.py') == 'dir/na"me.py'
+
+
+def test_rendered_paths_clause_is_normalized():
+    # Contrat d'ecriture : la clause produite est deja normalisee, donc ce
+    # qui est poste se relit exactement comme ce qui est lu.
+    rendered = clc._paths_clause(["`scripts/check_lane_claim.py`"])
+    assert rendered == " -- paths: scripts/check_lane_claim.py"
+    line = "[CLAIMED] lane X:CoursIA" + rendered
+    assert clc._extract_paths_clause(line) == ["scripts/check_lane_claim.py"]
+
+
+def test_parsed_event_scope_is_normalized_end_to_end():
+    body = ("[CLAIMED] lane myia-ai-01:CoursIA-2 -- intention -- "
+            "paths: `scripts/check_lane_claim.py`\n")
+    evs = clc._parse_claim_events(comment(body, "2026-10-31T11:00:00Z"))
+    assert len(evs) == 1
+    assert evs[0].paths == ["scripts/check_lane_claim.py"]
+
+
+def test_backticked_scope_is_not_read_as_epic_wide():
+    # Le symptome complet : avant, la portee normalisee etant morte, la
+    # claim etait lue epic-wide -- elle verrouillait l'issue entiere.
+    body = ("[CLAIMED] lane myia-ai-01:CoursIA-2 -- intention -- "
+            "paths: `scripts/check_lane_claim.py`\n")
+    tracked = ["scripts/check_lane_claim.py"]
+    evs = clc._parse_claim_events(
+        comment(body, "2026-10-31T11:00:00Z"), tracked=tracked)
+    ev = evs[0]
+    assert ev.paths == ["scripts/check_lane_claim.py"]
+    assert clc._empty_scope_in(ev.paths, tracked) == [], \
+        "la portee normalisee n'est pas morte"
+    assert not clc._claim_scope_effectively_epic_wide(ev)

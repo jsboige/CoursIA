@@ -126,18 +126,73 @@ def _install_sk_mock():
         # class-level knobs so tests can drive the async generator deterministically
         YIELD_NAMES = ["ProjectManagerAgent", "Worker"]
         RAISE = None
+        # #18776 reprise ciblée : side-effect appelé avant chaque tour rendu
+        # (permet à un test de simuler un agent qui comble le déficit).
+        ON_TURN = None
+        # instances created since the last reset (order-preserving)
+        instances = []
 
-        def __init__(self, agents=None, chat_history=None):
+        def __init__(
+            self,
+            agents=None,
+            chat_history=None,
+            termination_strategy=None,
+            selection_strategy=None,
+        ):
             self.agents = agents or []
             self.chat_history = chat_history
+            self.termination_strategy = termination_strategy
+            self.selection_strategy = selection_strategy
+            AgentGroupChat.instances.append(self)
 
         async def invoke(self):
             if AgentGroupChat.RAISE is not None:
                 raise AgentGroupChat.RAISE
             for name in AgentGroupChat.YIELD_NAMES:
-                yield SimpleNamespace(name=name)
+                if AgentGroupChat.ON_TURN is not None:
+                    AgentGroupChat.ON_TURN(name, self)
+                # content : lu par run_conversational (journal), pas par run()
+                yield SimpleNamespace(name=name, content="")
 
     mod_gc.AgentGroupChat = AgentGroupChat
+
+    # semantic_kernel.agents.strategies.termination.default_termination_strategy
+    # (#18776) : le runner passe une stratégie explicite pour que les budgets
+    # de phase mordent — le fake enregistre ses instances pour l'assertion.
+    strategies = ModuleType("semantic_kernel.agents.strategies")
+    term_parent = ModuleType("semantic_kernel.agents.strategies.termination")
+    mod_dts = ModuleType(
+        "semantic_kernel.agents.strategies.termination.default_termination_strategy"
+    )
+
+    class DefaultTerminationStrategy:
+        instances = []
+
+        def __init__(self, maximum_iterations=5):
+            self.maximum_iterations = maximum_iterations
+            DefaultTerminationStrategy.instances.append(self)
+
+    mod_dts.DefaultTerminationStrategy = DefaultTerminationStrategy
+    agents.strategies = strategies
+    strategies.termination = term_parent
+    term_parent.default_termination_strategy = mod_dts
+
+    # semantic_kernel.agents.strategies.selection.selection_strategy
+    # (#23726) : base de DelegatingSelectionStrategy, importée par
+    # run_conversational. Squelette minimal pour tester l'orchestration
+    # conversationnelle sans SK réel.
+    sel_parent = ModuleType("semantic_kernel.agents.strategies.selection")
+    mod_sel = ModuleType(
+        "semantic_kernel.agents.strategies.selection.selection_strategy"
+    )
+
+    class SelectionStrategy:
+        def __init__(self):
+            pass
+
+    mod_sel.SelectionStrategy = SelectionStrategy
+    strategies.selection = sel_parent
+    sel_parent.selection_strategy = mod_sel
 
     # contents
     contents = ModuleType("semantic_kernel.contents")
@@ -193,6 +248,11 @@ def _install_sk_mock():
         "semantic_kernel.agents.chat_completion.chat_completion_agent": mod_agent,
         "semantic_kernel.agents.group_chat": gc_parent,
         "semantic_kernel.agents.group_chat.agent_group_chat": mod_gc,
+        "semantic_kernel.agents.strategies": strategies,
+        "semantic_kernel.agents.strategies.termination": term_parent,
+        "semantic_kernel.agents.strategies.termination.default_termination_strategy": mod_dts,
+        "semantic_kernel.agents.strategies.selection": sel_parent,
+        "semantic_kernel.agents.strategies.selection.selection_strategy": mod_sel,
         "semantic_kernel.contents": contents,
         "semantic_kernel.contents.chat_message_content": mod_cmc,
         "semantic_kernel.contents.utils": utils,
@@ -229,6 +289,16 @@ def _state(text="Le chat est sur le paillasson. Donc le chat est a l'interieur."
     return RhetoricalAnalysisState(text)
 
 
+def _count_plugins(kernel, name):
+    """Nombre de plugins enregistres SOUS le nom donne.
+
+    Le kernel porte plusieurs plugins (StateManager, Reasoner depuis
+    #22981) : l'assertion d'idempotence porte sur le nom, pas sur le
+    nombre total de plugins.
+    """
+    return sum(1 for plugin_name in kernel.plugins if plugin_name == name)
+
+
 def _run(runner):
     """Drive the async runner from a sync test without requiring pytest-asyncio."""
     return asyncio.run(runner.run())
@@ -247,8 +317,12 @@ def _reset_chat_knobs():
     saved_names, saved_raise = AGC.YIELD_NAMES, AGC.RAISE
     AGC.YIELD_NAMES = ["ProjectManagerAgent", "Worker"]
     AGC.RAISE = None
+    saved_on_turn, saved_instances = AGC.ON_TURN, AGC.instances
+    AGC.ON_TURN = None
+    AGC.instances = []
     yield
     AGC.YIELD_NAMES, AGC.RAISE = saved_names, saved_raise
+    AGC.ON_TURN, AGC.instances = saved_on_turn, saved_instances
 
 
 # ---------------------------------------------------------------------------
@@ -402,11 +476,22 @@ def test_agent_builders_are_idempotent_on_plugin_registration():
     """If StateManager is already on the kernel, builders must NOT re-add it."""
     k, s = _kernel(), _state()
     create_pm_agent(k, "svc", s)
-    assert len(k.plugins) == 1
+    assert _count_plugins(k, "StateManager") == 1
     create_informal_agent(k, "svc", s)
     create_logic_agent(k, "svc", s)
-    assert len(k.plugins) == 1  # still exactly one StateManager plugin
+    # still exactly one StateManager plugin (the kernel also carries the
+    # `Reasoner` plugin since #22981 : the solver is a separate plugin)
+    assert _count_plugins(k, "StateManager") == 1
     assert "StateManager" in k.plugins
+
+
+def test_logic_agent_registers_the_reasoner_plugin_once():
+    """Le solveur propositionnel est expose aux agents (#22981), sans doublon."""
+    k, s = _kernel(), _state()
+    create_logic_agent(k, "svc", s)
+    assert _count_plugins(k, "Reasoner") == 1
+    create_logic_agent(k, "svc", s)
+    assert _count_plugins(k, "Reasoner") == 1
 
 
 def test_informal_builder_registers_plugin_when_absent():
@@ -448,7 +533,7 @@ def test_runner_init_does_not_re_register_when_present():
     runner = AnalysisRunner(k, "svc", s)
     # plugin already there -> runner leaves it and holds no new smp
     assert runner._smp is None
-    assert len(k.plugins) == 1
+    assert _count_plugins(k, "StateManager") == 1
 
 
 # ---------------------------------------------------------------------------
@@ -668,11 +753,14 @@ def _substantive_fallacy():
     }
 
 
-def test_study_metrics_empty_state_is_incomplete():
+def test_study_metrics_empty_state_is_not_validated():
     from argumentation_lib import budget_variance_study as bvs
 
     m = bvs.compute_verdict_metrics(_StudyState())
-    assert m["validation_status"] == "INCOMPLETE"
+    # port strict : l'état vide porte QUERIES_NONE, donc FAILED_FORMAL (le
+    # statut de confiance ne s'applique qu'après les échecs de forme et de
+    # couche formelle — un état vide n'est jamais « validé »)
+    assert m["validation_status"] == "FAILED_FORMAL"
     assert m["failed_reason"] == "ARGUMENTS_NONE"
     assert m["substantive_arguments"] == 0
     assert m["substantive_fallacies"] == 0
@@ -752,3 +840,619 @@ def test_study_load_batch_text_reads_notebook_example():
     text = bvs._load_batch_text()
     assert len(text) > 1000
     assert "transition energetique" in text
+
+
+# ---------------------------------------------------------------------------
+# Budgets qui mordent (#18776 tranche reprise) — la stratégie de terminaison
+# explicite remplace le DefaultTerminationStrategy SK (maximum_iterations=5)
+# qui plafonnait silencieusement toute phase sous son budget déclaré.
+# ---------------------------------------------------------------------------
+def _agc():
+    return sys.modules[
+        "semantic_kernel.agents.group_chat.agent_group_chat"
+    ].AgentGroupChat
+
+
+def _dts():
+    return sys.modules[
+        "semantic_kernel.agents.strategies.termination."
+        "default_termination_strategy"
+    ].DefaultTerminationStrategy
+
+
+def test_group_chats_receive_explicit_termination_strategy():
+    """Chaque phase doit porter SON budget dans la stratégie de terminaison.
+
+    Sans stratégie explicite, SK plafonne tout group chat à 5 itérations :
+    les budgets #18785 (10/15) étaient des boutons morts — 20/20 runs réels
+    arrêtés à 5 tours par phase (#18776, campagnes 1-2). Le mock enregistre
+    les stratégies reçues : informal=15, formal=10, synthesis=3.
+    """
+    AGC = _agc()
+    AGC.YIELD_NAMES = [f"turn{i}" for i in range(50)]
+    runner = AnalysisRunner(
+        _kernel(), "svc", _state(),
+        max_turns=20, max_informal_turns=15, max_formal_turns=10,
+    )
+    _run(runner)
+    strategies = [c.termination_strategy for c in AGC.instances]
+    assert len(strategies) == 3  # informal, formal, synthesis (pas de reprise)
+    assert [s.maximum_iterations for s in strategies] == [15, 10, 3]
+
+
+def test_termination_strategy_cap_matches_legacy_default_when_unset():
+    """Sans budgets explicites, la stratégie porte le repli max_turns // 2."""
+    AGC = _agc()
+    AGC.YIELD_NAMES = [f"turn{i}" for i in range(50)]
+    _run(AnalysisRunner(_kernel(), "svc", _state(), max_turns=20))
+    strategies = [c.termination_strategy for c in AGC.instances]
+    assert [s.maximum_iterations for s in strategies] == [10, 10, 3]
+
+
+# ---------------------------------------------------------------------------
+# Reprise ciblée de la phase déficitaire (#18776, branche « ou »)
+# ---------------------------------------------------------------------------
+def _substantive_arg_desc():
+    # phrase du texte par défaut de _state() — recouvrement >= 12 chars
+    return "Le chat est sur le paillasson depuis le debut de l'apres-midi"
+
+
+def _substantive_fallacy_add(state, target="arg_1"):
+    state.add_fallacy(
+        "Appel a l'autorite",
+        "L'orateur invoque son voisin ingenieur comme expert absolu.",
+        target,
+    )
+
+
+def _anchor_argument(state):
+    """Argument court (non substantif, non clé d'état) : fournit un id
+    ciblable aux sophismes des tests — le validateur strict exige une
+    cible réellement présente dans l'état."""
+    return state.add_argument("argument court")
+
+
+def test_resumption_defaults_off():
+    """La reprise est opt-in : attributs par défaut verrouillés."""
+    runner = AnalysisRunner(_kernel(), "svc", _state())
+    assert runner.targeted_resumption is False
+    assert runner.max_resumption_argument_turns == 4
+    assert runner.max_resumption_fallacy_turns == 4
+    assert runner.resumption_max_rounds == 2
+    assert runner.min_substantive_arguments == 2
+    assert runner.min_substantive_fallacies == 2
+
+
+def test_resumption_off_keeps_exactly_three_phases():
+    """targeted_resumption=False (défaut) : rien entre informal et formal."""
+    out = _run(AnalysisRunner(_kernel(), "svc", _state()))
+    assert [p["name"] for p in out["phases"]] == ["informal", "formal", "synthesis"]
+
+
+def test_resumption_noop_when_both_targets_met():
+    """État déjà substantif des deux côtés -> aucune entrée de reprise."""
+    s = _state()
+    s.add_argument(_substantive_arg_desc())
+    s.add_argument("Donc le chat est a l'interieur selon le raisonnement du texte")
+    _substantive_fallacy_add(s, target="arg_1")
+    _substantive_fallacy_add(s, target="arg_2")
+    runner = AnalysisRunner(_kernel(), "svc", s, targeted_resumption=True)
+    out = _run(runner)
+    assert [p["name"] for p in out["phases"]] == ["informal", "formal", "synthesis"]
+
+
+def test_resumption_triggers_on_argument_deficit_only():
+    """Sophismes substantifs présents, zéro argument -> seule la reprise
+    arguments tourne (c'est la séparation arguments/sophismes demandée)."""
+    s = _state()
+    # ancres : ids ciblables — sinon les sophismes sont des cibles fantômes
+    # que le nettoyage retirerait, ouvrant un second déficit
+    _anchor_argument(s)
+    _anchor_argument(s)
+    _substantive_fallacy_add(s)
+    _substantive_fallacy_add(s)
+    runner = AnalysisRunner(_kernel(), "svc", s, targeted_resumption=True)
+    out = _run(runner)
+    names = [p["name"] for p in out["phases"]]
+    assert names[0] == "informal"
+    assert "resumption_arguments" in names
+    assert "resumption_fallacies" not in names
+    # la reprise s'insère AVANT la phase formelle : celle-ci encode des
+    # arguments, elle doit trouver les arguments comblés
+    assert names.index("resumption_arguments") < names.index("formal")
+
+
+def test_resumption_triggers_on_fallacy_deficit_only():
+    """Arguments substantifs présents, zéro sophisme -> seule la reprise
+    sophismes tourne."""
+    s = _state()
+    s.add_argument(_substantive_arg_desc())
+    s.add_argument("Donc le chat est a l'interieur selon le raisonnement du texte")
+    runner = AnalysisRunner(_kernel(), "svc", s, targeted_resumption=True)
+    out = _run(runner)
+    names = [p["name"] for p in out["phases"]]
+    assert "resumption_fallacies" in names
+    assert "resumption_arguments" not in names
+
+
+def test_resumption_rounds_bounded_when_deficit_persists():
+    """Le mock ne comble jamais le déficit -> exactement resumption_max_rounds
+    rounds de reprise, pas plus."""
+    s = _state()  # 0 argument, 0 sophisme -> les deux déficits persistent
+    runner = AnalysisRunner(
+        _kernel(), "svc", s, targeted_resumption=True, resumption_max_rounds=2
+    )
+    out = _run(runner)
+    args_rounds = [
+        p["round"] for p in out["phases"] if p["name"] == "resumption_arguments"
+    ]
+    fall_rounds = [
+        p["round"] for p in out["phases"] if p["name"] == "resumption_fallacies"
+    ]
+    assert args_rounds == [1, 2]
+    assert fall_rounds == [1, 2]
+
+
+def test_resumption_stops_when_chat_resolves_deficit():
+    """Un chat de reprise qui comble le déficit -> pas de second round."""
+    AGC = _agc()
+    s = _state()
+    _anchor_argument(s)
+    _anchor_argument(s)
+    _substantive_fallacy_add(s)
+    _substantive_fallacy_add(s)
+
+    fill_calls = {"n": 0}
+    fill_arguments_descs = [
+        _substantive_arg_desc(),
+        "Donc le chat est a l'interieur selon le raisonnement du texte",
+    ]
+
+    def _fill_arguments(name, chat):
+        # seule la reprise comble : le chat informel (agents PM+Informal)
+        # ne doit pas produire les arguments ici. Un argument par tour.
+        agent_names = [getattr(a, "name", "") for a in chat.agents]
+        if "ResumptionArgumentsAgent" in agent_names and fill_calls["n"] < 2:
+            s.add_argument(fill_arguments_descs[fill_calls["n"]])
+            fill_calls["n"] += 1
+
+    AGC.YIELD_NAMES = ["ResumptionArgumentsAgent", "ResumptionArgumentsAgent"]
+    AGC.ON_TURN = _fill_arguments
+    runner = AnalysisRunner(_kernel(), "svc", s, targeted_resumption=True)
+    out = _run(runner)
+    args_entries = [
+        p for p in out["phases"] if p["name"] == "resumption_arguments"
+    ]
+    assert len(args_entries) == 1  # round 1 a comblé -> pas de round 2
+    entry = args_entries[0]
+    assert entry["status"] == "completed"
+    assert entry["substantive_before"] == 0
+    assert entry["substantive_after"] == 2
+
+
+def test_resumption_budgets_carried_by_termination_strategy():
+    """Les budgets de reprise arguments/sophismes sont séparés et portés
+    chacun par SA stratégie de terminaison (budget par phase au sens de
+    l'issue : arguments vs sophismes)."""
+    AGC = _agc()
+    s = _state()  # les deux déficits
+    runner = AnalysisRunner(
+        _kernel(), "svc", s, targeted_resumption=True,
+        max_informal_turns=10, max_formal_turns=10,
+        max_resumption_argument_turns=3, max_resumption_fallacy_turns=2,
+        resumption_max_rounds=1,
+    )
+    _run(runner)
+    caps = [c.termination_strategy.maximum_iterations for c in AGC.instances]
+    # informal(10), res_args(3), res_fall(2), formal(10), synthesis(3)
+    assert caps == [10, 3, 2, 10, 3]
+
+
+def test_resumption_entry_records_turns_and_budget():
+    """L'entrée de reprise rapporte tours consommés, budget et comptes."""
+    AGC = _agc()
+    AGC.YIELD_NAMES = [f"t{i}" for i in range(10)]
+    s = _state()  # deux déficits
+    runner = AnalysisRunner(
+        _kernel(), "svc", s, targeted_resumption=True,
+        max_resumption_argument_turns=4, resumption_max_rounds=1,
+    )
+    out = _run(runner)
+    entry = next(p for p in out["phases"] if p["name"] == "resumption_arguments")
+    assert entry["turns"] == 4  # borné par le budget, pas par le générateur
+    assert entry["budget_turns"] == 4
+
+
+def test_resumption_phase_error_isolated():
+    """Une reprise qui échoue est isolée : le pipeline continue."""
+    AGC = _agc()
+    s = _state()
+    _anchor_argument(s)
+    _anchor_argument(s)
+    _substantive_fallacy_add(s)
+    _substantive_fallacy_add(s)
+    # Le knob RAISE est lu au DÉMARRAGE de chaque générateur invoke : on
+    # l'arme pendant le premier tour de la phase informelle (qui se termine
+    # normalement — son contrôle a déjà eu lieu), si bien que le PREMIER
+    # chat démarré ensuite est la reprise arguments, qui explose.
+    state = {"armed": False}
+
+    def _boom_after_informal(name, chat):
+        if not state["armed"]:
+            state["armed"] = True
+            AGC.RAISE = RuntimeError("resumption blow-up")
+
+    AGC.ON_TURN = _boom_after_informal
+    runner = AnalysisRunner(_kernel(), "svc", s, targeted_resumption=True)
+    out = _run(runner)
+    entry = next(p for p in out["phases"] if p["name"] == "resumption_arguments")
+    assert entry["status"] == "error"
+    assert "resumption blow-up" in entry["error"]
+    # le pipeline continue malgré l'échec de la reprise : les trois phases
+    # principales restent présentes dans le rapport
+    assert [p["name"] for p in out["phases"]][-1] == "synthesis"
+
+
+# ---------------------------------------------------------------------------
+# _verdict — source unique des seuils de substance (#18776)
+# ---------------------------------------------------------------------------
+def test_verdict_module_is_single_source_for_study():
+    """budget_variance_study ré-exporte bien depuis _verdict (source unique)."""
+    from argumentation_lib import _verdict
+    from argumentation_lib import budget_variance_study as bvs
+
+    assert bvs.compute_verdict_metrics is _verdict.compute_verdict_metrics
+    assert bvs.argument_has_substance is _verdict.argument_has_substance
+    assert bvs.fallacy_has_substance is _verdict.fallacy_has_substance
+
+
+def test_verdict_count_substantive_on_real_state():
+    from argumentation_lib._verdict import (
+        count_substantive_arguments,
+        count_substantive_fallacies,
+    )
+
+    s = _state()
+    s.add_argument(_substantive_arg_desc())
+    s.add_argument("analysis_state")  # clé d'état -> non substantif
+    _substantive_fallacy_add(s)
+    s.add_fallacy("Type Inconnu", "Justification manquante", "arg_1")
+    assert count_substantive_arguments(s) == 1
+    assert count_substantive_fallacies(s) == 1
+
+
+def test_verdict_module_reads_no_env():
+    """_verdict ne lit ni env ni réseau (contrat runner zéro-env)."""
+    import argumentation_lib._verdict as v
+
+    with open(v.__file__, encoding="utf-8") as fh:
+        src = fh.read()
+    for needle in ("os.getenv", "os.environ", "getenv(", "load_dotenv"):
+        assert needle not in src, f"env read found: {needle}"
+
+
+def test_verdict_constants_match_notebook_validation_cell():
+    """Les constantes de _verdict sont celles de la cellule de validation du
+    carnet 08b (port verbatim) — ce test rougit si l'une des deux dérive."""
+    import ast
+    import json as _json
+    import pathlib
+
+    import argumentation_lib._verdict as v
+
+    nb_path = (
+        pathlib.Path(__file__).resolve().parents[1]
+        / "Argumentation-08b-Executor-Python.ipynb"
+    )
+    nb = _json.loads(nb_path.read_text(encoding="utf-8"))
+    cell_src = next(
+        "".join(c["source"])
+        for c in nb["cells"]
+        if c["cell_type"] == "code"
+        and "CELLULE DE VALIDATION FINALE" in "".join(c["source"])
+    )
+
+    # constantes scalaires : assignations litterales en tête de cellule
+    scalars = {}
+    for node in ast.parse(cell_src).body:
+        if (
+            isinstance(node, ast.AnnAssign)
+            and isinstance(node.target, ast.Name)
+            and isinstance(node.value, ast.Constant)
+        ):
+            scalars[node.target.id] = node.value.value
+    assert scalars.get("MIN_ARGUMENT_WORDS") == v.MIN_ARGUMENT_WORDS
+    assert scalars.get("MIN_ARGUMENT_TEXT_OVERLAP") == v.MIN_ARGUMENT_TEXT_OVERLAP
+
+    # liste noire des clés d'état : comparer le set littéral, assignation
+    # par expression (set display), nom pour nom
+    for node in ast.parse(cell_src).body:
+        if (
+            isinstance(node, ast.AnnAssign)
+            and isinstance(node.target, ast.Name)
+            and node.target.id == "STATE_KEYS_BLACKLIST"
+        ):
+            cell_blacklist = ast.literal_eval(node.value)
+            assert cell_blacklist == v.STATE_KEYS_BLACKLIST
+            break
+    else:
+        raise AssertionError("STATE_KEYS_BLACKLIST introuvable dans la cellule")
+
+
+def test_verdict_fallacy_requires_existing_target():
+    """Strict (#18395, check 2b) : une cible inexistante n'est pas un lien
+    faible mais un lien absent. Le prédicat historique (cible non vide)
+    reste disponible pour les appelants sans état sous la main."""
+    from argumentation_lib._verdict import (
+        count_substantive_fallacies,
+        fallacy_has_substance,
+    )
+
+    ghost = {
+        "type": "Appel a l'autorite",
+        "justification": "L'orateur invoque son voisin ingenieur comme expert absolu.",
+        "target_argument_id": "arg_9",
+    }
+    assert fallacy_has_substance(ghost) is True  # historique : cible non vide
+
+    s = _state()
+    s.add_argument(_substantive_arg_desc())  # arg_1
+    s.add_fallacy(ghost["type"], ghost["justification"], "arg_9")
+    assert count_substantive_fallacies(s) == 0  # strict : cible fantôme
+
+
+def test_verdict_normalizes_argument_id_families():
+    """argument_3 / arg_3 / arg_N3 désignent le même objet : un sophisme
+    qui cite l'une pendant que l'état nomme l'autre reste substantif."""
+    from argumentation_lib._verdict import (
+        count_substantive_fallacies,
+        normalize_argument_id,
+    )
+
+    assert normalize_argument_id("argument_3") == "arg_3"
+    assert normalize_argument_id("arg_N3") == "arg_3"
+    assert normalize_argument_id("arg_3") == "arg_3"
+
+    s = _state()
+    s.add_argument(_substantive_arg_desc())  # arg_1
+    # le sophisme cite la forme longue de l'id que l'état a généré
+    s.add_fallacy(
+        "Appel a l'autorite",
+        "L'orateur invoque son voisin ingenieur comme expert absolu.",
+        "argument_1",
+    )
+    assert count_substantive_fallacies(s) == 1
+
+
+def test_verdict_state_key_and_phantom_reported_in_metrics():
+    """compute_verdict_metrics expose les deux symptômes mesurés (#18395)
+    pour le carnet comme pour la porte de reprise."""
+    from argumentation_lib._verdict import compute_verdict_metrics
+
+    s = _state()
+    s.add_argument(_substantive_arg_desc())
+    s.add_argument("analysis_state")  # clé d'état -> check 1b
+    _substantive_fallacy_add(s, target="arg_1")
+    s.add_fallacy(
+        "Appel a l'autorite",
+        "L'orateur invoque son voisin ingenieur comme expert absolu.",
+        "arg_99",
+    )  # cible fantôme -> check 2b
+    m = compute_verdict_metrics(s)
+    assert m["state_key_arguments"] == 1
+    assert m["phantom_target_fallacies"] == 1
+    assert m["validation_status"] == "INVALIDATED_FORM"
+    assert m["failed_reason"] == "ARGUMENTS_STATE_KEY"
+
+
+def test_verdict_failed_formal_when_no_meaningful_query():
+    """Sans un seul verdict du moteur formel, le run est FAILED_FORMAL —
+    pas COMPLETE_VALIDATED (port verbatim du durcissement du carnet 08b)."""
+    from argumentation_lib._verdict import compute_verdict_metrics
+
+    s = _state()
+    s.add_argument(_substantive_arg_desc())
+    s.add_argument("Donc le chat est a l'interieur selon le raisonnement du texte")
+    _substantive_fallacy_add(s, target="arg_1")
+    _substantive_fallacy_add(s, target="arg_2")
+    s.add_belief_set("propositional", "Le chat est sur le paillasson.")
+    s.query_log.append({"raw_result": "timeout"})  # soumis, non significatif
+    s.final_conclusion = "Synthese du texte."
+    m = compute_verdict_metrics(s)
+    assert m["failed_reason"] == "QUERIES_NOT_MEANINGFUL"
+    assert m["validation_status"] == "FAILED_FORMAL"
+
+
+def test_resumption_hygiene_prunes_poisoned_entries():
+    """Le nettoyage déterministe précède la porte : clé d'état et cible
+    fantôme sont retirées AVANT tout remplissage (aucun ajout ne peut les
+    éliminer), et l'entrée resumption_hygiene le rapporte."""
+    s = _state()
+    s.add_argument(_substantive_arg_desc())  # arg_1 substantif
+    poisoned_id = s.add_argument("analysis_state")  # arg_2 : clé d'état
+    _substantive_fallacy_add(s, target="arg_1")  # fallacy_1 valide
+    phantom_id = s.add_fallacy(
+        "Appel a l'autorite",
+        "L'orateur invoque son voisin ingenieur comme expert absolu.",
+        "arg_99",
+    )
+    runner = AnalysisRunner(
+        _kernel(), "svc", s, targeted_resumption=True,
+        min_substantive_arguments=1, min_substantive_fallacies=1,
+    )
+    out = _run(runner)
+    hygiene = [p for p in out["phases"] if p["name"] == "resumption_hygiene"]
+    assert len(hygiene) == 1
+    assert hygiene[0]["state_key_arguments"] == [poisoned_id]
+    assert hygiene[0]["phantom_target_fallacies"] == [phantom_id]
+    assert poisoned_id not in s.identified_arguments
+    assert phantom_id not in s.identified_fallacies
+    # après purge les seuils 1/1 sont tenus : aucune phase de reprise
+    names = [p["name"] for p in out["phases"]]
+    assert names == ["informal", "resumption_hygiene", "formal", "synthesis"]
+
+
+# ---------------------------------------------------------------------------
+# Contrat tâche / réponse (#23726)
+# ---------------------------------------------------------------------------
+# Sans tâche ouverte, `analysis_tasks` reste VIDE : l'agent n'a aucun
+# identifiant à fournir et n'invent qu'un nom de rôle ; or
+# `mark_task_as_answered` refuse un identifiant inconnu en SILENCE
+# (_shared_state.py : garde `task_id not in self.analysis_tasks` → warning +
+# return). La réponse de l'agent était donc perdue, sans trace.
+def test_phase_task_is_opened_and_named_in_the_worker_instructions():
+    """Une tâche par phase, et son identifiant EXACT dans les instructions."""
+    AGC = _agc()
+    s = _state()
+    out = _run(AnalysisRunner(_kernel(), "svc", s))
+
+    assert list(s.analysis_tasks) == ["task_1", "task_2"]
+
+    informal = [p for p in out["phases"] if p["name"] == "informal"][0]
+    formal = [p for p in out["phases"] if p["name"] == "formal"][0]
+    assert informal["task_id"] == "task_1"
+    assert formal["task_id"] == "task_2"
+
+    agents = [a for chat in AGC.instances for a in chat.agents]
+    informal_agent = [a for a in agents if a.name == "InformalAgent"][0]
+    logic_agent = [a for a in agents if a.name == "LogicAgent"][0]
+    assert "task_1" in informal_agent.instructions
+    assert "task_2" in logic_agent.instructions
+    assert "mark_task_as_answered" in informal_agent.instructions
+    assert "mark_task_as_answered" in logic_agent.instructions
+
+
+def test_worker_answer_is_recorded_instead_of_being_dropped():
+    """La réponse de l'agent EST conservée quand il clôture sa tâche."""
+    AGC = _agc()
+    AGC.YIELD_NAMES = ["ProjectManagerAgent", "InformalAgent"]
+    s = _state()
+
+    def close_task(name, chat):
+        # l'agent worker clôture la tâche ouverte par le runner
+        if name == "InformalAgent" and "task_1" not in s.answers:
+            s.mark_task_as_answered(
+                "task_1", "arguments et sophismes identifies", "InformalAgent"
+            )
+
+    AGC.ON_TURN = close_task
+    out = _run(AnalysisRunner(_kernel(), "svc", s))
+
+    informal = [p for p in out["phases"] if p["name"] == "informal"][0]
+    assert informal["task_closed"] is True
+    assert "task_1" in s.answers
+    assert s.answers["task_1"]["answer_text"] == "arguments et sophismes identifies"
+
+
+def test_unclosed_task_is_reported_not_silently_absorbed():
+    """Une tâche non close est TRACÉE dans l'état, pas absorbée en silence."""
+    s = _state()
+    out = _run(AnalysisRunner(_kernel(), "svc", s))
+
+    informal = [p for p in out["phases"] if p["name"] == "informal"][0]
+    formal = [p for p in out["phases"] if p["name"] == "formal"][0]
+    assert informal["task_closed"] is False
+    assert formal["task_closed"] is False
+    assert s.errors, "la non-clôture doit etre tracee dans l'etat"
+    assert any("task_1" in str(e["message"]) for e in s.errors)
+    assert any("task_2" in str(e["message"]) for e in s.errors)
+
+
+def test_prompt_contract_names_the_exact_task_id():
+    """Les prompts de travail nomment le mécanisme de clôture et l'interdit
+    d'identifiant inventé (le prompt vendangé ne donnait aucun id)."""
+    from argumentation_lib._runner import _task_instructions
+
+    block = _task_instructions("task_7", "analyse informelle")
+    assert "task_7" in block
+    assert "mark_task_as_answered" in block
+    # le PM prompt n'ouvre plus de tache concurrente et interdit l'identifiant invente
+    assert "ne créez PAS de tâche" in PROMPT_DEFINE_TASKS
+    assert "n'inventEZ JAMAIS" in PROMPT_DEFINE_TASKS
+    # les prompts de travail pointent la fonction kernel de clôture
+    assert "mark_task_as_answered" in PROMPT_INFORMAL_ANALYSIS
+    assert "mark_task_as_answered" in PROMPT_LOGIC_ANALYSIS
+
+
+def test_agents_built_without_task_id_keep_the_vendored_prompt():
+    """Hors runner (appel direct), les instructions restent celles du prompt
+    vendangé : le contrat historique n'est pas cassé par le #23726."""
+    k, s = _kernel(), _state()
+    create_pm_agent(k, "svc", s)
+    informal = create_informal_agent(k, "svc", s)
+    logic = create_logic_agent(k, "svc", s)
+    assert informal.instructions is PROMPT_INFORMAL_ANALYSIS
+    assert logic.instructions is PROMPT_LOGIC_ANALYSIS
+
+
+# ---------------------------------------------------------------------------
+# run_conversational — une tâche par agent (#23726, réserve Hermes v2)
+# ---------------------------------------------------------------------------
+# Défaut originel : run_conversational ouvrait UNE tâche et donnait son
+# identifiant AUX DEUX agents (informal + logic). Le second à appeler
+# mark_task_as_answered écrasait l'entrée du premier dans state.answers
+# (self.answers[task_id] = ...), et la réponse de l'agent le plus prompt
+# disparaissait SANS TRACE — le mode de panne que #23726 documente, reproduit
+# à l'intérieur du correctif. Correction : une tâche par agent. Ces deux tests
+# étaient absents de la suite (qui ne pilotait que run(), d'où le passage à
+# l'interstice) : ils verrouillent la conversational sur le même contrat.
+
+
+def _drive_conversational(runner, close=None):
+    """Piloter run_conversational (async) depuis un test sync, en jouant la
+    clôture des tâches comme le ferait un agent (via ON_TURN)."""
+    AGC = _agc()
+    if close is not None:
+        AGC.ON_TURN = close
+    return asyncio.run(runner.run_conversational(max_turns=2))
+
+
+def test_conversation_opens_one_task_per_agent_not_one_shared():
+    """run_conversational : chaque agent porte l'identifiant de SA tâche,
+    jamais un identifiant commun (réserve Hermes v2, head 375c09c13e)."""
+    AGC = _agc()
+    out = _drive_conversational(
+        AnalysisRunner(_kernel(), "svc", _state(), max_turns=2)
+    )
+
+    # deux tâches de conversation distinctes, pas une seule partagée
+    assert set(out["task_id"].keys()) == {"informal", "logic"}
+    informal_id, logic_id = out["task_id"]["informal"], out["task_id"]["logic"]
+    assert informal_id != logic_id
+
+    # chaque instructions d'agent nomme son propre id, PAS celui de l'autre
+    agents = {a.name: a for chat in AGC.instances for a in chat.agents}
+    assert informal_id in agents["InformalAgent"].instructions
+    assert logic_id in agents["LogicAgent"].instructions
+    assert logic_id not in agents["InformalAgent"].instructions
+    assert informal_id not in agents["LogicAgent"].instructions
+
+
+def test_conversational_answers_of_both_agents_are_both_retained():
+    """Anti-régression centrale : les réponses des DEUX agents sont conservées
+    — l'une n'écrase plus l'autre dans state.answers."""
+    AGC = _agc()
+    s = _state()
+
+    def close_both(name, chat):
+        # chaque agent clôture SA propre tâche (ids distincts) ; avant la
+        # correction les deux partageaient un id et le second écrasait le
+        # premier dans state.answers.
+        agent = next(a for a in chat.agents if a.name == name)
+        for tid in s.analysis_tasks:
+            if f"`{tid}`" in agent.instructions and tid not in s.answers:
+                s.mark_task_as_answered(tid, f"reponse de {name}", name)
+
+    AGC.YIELD_NAMES = ["InformalAgent", "LogicAgent"]
+    out = _drive_conversational(
+        AnalysisRunner(_kernel(), "svc", s, max_turns=2), close=close_both
+    )
+
+    informal_id, logic_id = out["task_id"]["informal"], out["task_id"]["logic"]
+    # les deux réponses survivent, chacune sous son propre id
+    assert set(s.answers.keys()) >= {informal_id, logic_id}
+    assert s.answers[informal_id]["author_agent"] == "InformalAgent"
+    assert s.answers[logic_id]["author_agent"] == "LogicAgent"
+    # et la clôture des deux tâches est rapportée, pas une seule
+    assert out["task_closed"]["informal"] is True
+    assert out["task_closed"]["logic"] is True

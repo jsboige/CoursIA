@@ -28,6 +28,22 @@ PR is currently failing on `Always-on guards`, append an idempotent
 --body-file`. That re-fires the `pull_request: edited` event and the guard
 recomputes with the current sequence -- which is now PASS.
 
+## Les deux jambes qui portent l'organe (#22748)
+
+Depuis #22331/#22333 les organes de body ont leur propre workflow, et
+l'adjacence y tourne aussi (`scripts/ci/always_on_body_organs.sh:21`). Un
+verdict G-VAR-3 perime peut donc tomber sur `Always-on guards -- body`, et
+cette jambe etait invisible pour cet organe : elle n'etait resolue nulle
+part (le fichier de contenu ne la declare pas) et un filtre la rejetait
+explicitement. Le sweep voyait une PR candidate, ne trouvait jamais de jambe
+rouge, et se taisait -- #22748 est restee ~12 h rouge.
+
+`adjacency_leg_state()` tranche les deux jambes : le job de CONTENU ne porte
+que des organes de contenu, sa causalite est non ambigue ; le job de BODY
+porte CINQ organes, et n'est retenu que si ses annotations nomment
+l'adjacence. Un rouge `tag_required` / `close_keyword` de la jambe body ne
+fait donc jamais editer un corps pour rien.
+
 ## What it does NOT do
 
 - It does NOT bypass the G-VAR-3 rule. If the simulated verdict FAILS, the
@@ -92,6 +108,23 @@ MARKER_TZ = "%Y-%m-%dT%H:%M:%SZ"
 GUARDS_JOB_PREFIX = "Always-on guards"
 # Marqueur du job d'organes de BODY (#22333) : meme prefixe, autre sujet.
 BODY_JOB_MARKER = "body"
+# Le job de body vit dans son PROPRE workflow (#22331/#22333) : le resoudre
+# depuis `always-on-guards.yml` etait structurellement impossible (#22748).
+BODY_WORKFLOW_NAME = "always-on-guards-body.yml"
+# Banniere d'agregat du job de body -- `scripts/ci/always_on_body_organs.sh`
+# termine par `::error::Organes de body bloquants en echec :$FAILED`. C'est la
+# seule surface qui NOMME l'organe tombe (meme doctrine que
+# `pick_idle_grain.fetch_check_organs`) : le nom du check-run ne le porte pas.
+BODY_ORGAN_BANNER_RE = re.compile(
+    r"Organes de body bloquants en echec\s*:\s*([a-z_ ]+)")
+# L'organe d'adjacence prefixe son propre verdict `::error::G-VAR-3 ...`.
+# Second temoin, lui aussi specifique a l'organe : aucun autre organe de body
+# n'emet ce marqueur.
+ADJACENCY_ORGAN_MARKER = "G-VAR-3"
+# URL d'un check-run Actions : `.../<owner>/<repo>/actions/runs/<run>/job/<id>`.
+# Le slug et l'id se lisent de la, sans appel `gh` supplementaire.
+_CHECK_JOB_URL_RE = re.compile(
+    r"https?://[^/]+/(?P<slug>[^/]+/[^/]+)/actions/runs/\d+/job/(?P<job_id>\d+)")
 
 
 def now_marker() -> str:
@@ -146,17 +179,83 @@ def get_pr_comments(pr_number: int) -> list[dict]:
         return []
 
 
-def get_pr_checks(pr_number: int) -> dict:
-    """Return the current check state of `pr_number` (name -> conclusion)."""
+def get_pr_check_rows(pr_number: int) -> list[dict] | None:
+    """Lignes de `gh pr checks` : `{name, conclusion, url}`, ou `None`.
+
+    L'URL etait deja dans la sortie et etait jetee : elle seule permet de
+    remonter a l'id du check-run, donc de lire les annotations qui NOMMENT
+    l'organe tombe (`check_run_annotations`).
+
+    `None` (et non `[]`) signifie **la mesure n'a pas abouti** -- meme
+    doctrine que `check_run_annotations`. Les trois cas sont distincts et le
+    sweep doit les distinguer, sinon le silence se lit comme un vert
+    (#11808 : un filtre deconnecte et un filtre vide sont indistinguables) :
+
+    * `stdout` non vide et au moins une ligne exploitable -> la liste ;
+    * `stdout` vide **et** rc non nul -> `None` : `gh pr checks` n'ecrit rien
+      sur stdout quand il n'a pas pu mesurer (branche sans aucun check :
+      `no checks reported on the '<branch>' branch`, ou appel casse). Le
+      **rc** et le **silence** disent ensemble « illisible » ;
+    * `stdout` vide et rc=0 -> `[]` : `gh` a conclu, il n'y avait rien a
+      imprimer. C'est une **mesure** d'absence, pas un echec de mesure.
+
+    Un `rc` **non nul avec** des lignes (typiquement `rc=8`, « checks
+    pending/failing ») reste une mesure : les lignes sont rendues et le
+    sweep les lit normalement.
+
+    Note sur le pliage : les lignes viennent du **texte** de `gh pr checks`,
+    qui plie lui-meme les executions repetees (`eliminateDuplicates`,
+    latest-`startedAt` d'abord, cle `nom/workflow/event`). Le script herite
+    de ce pliage et ne replie rien lui-meme ; une ligne `failure` encore
+    presente dans l'API check-runs pour le MEME triplet est donc un doublon
+    perime, pas un rouge vivant (#22893).
+    """
     proc = run_gh("pr", "checks", str(pr_number))
-    checks: dict[str, str] = {}
-    for line in proc.stdout.splitlines():
+    stdout = proc.stdout or ""
+    if not stdout.strip():
+        return [] if proc.returncode == 0 else None
+    rows: list[dict] = []
+    for line in stdout.splitlines():
         # Format: NAME<tab>CONCLUSION<tab>DURATION<tab>URL
         parts = line.split("\t")
         if len(parts) < 2:
             continue
-        checks[parts[0]] = parts[1]
-    return checks
+        rows.append({
+            "name": parts[0],
+            "conclusion": parts[1],
+            "url": parts[3] if len(parts) > 3 else "",
+        })
+    # Sortie non vide mais aucune ligne exploitable : la forme de la sortie a
+    # change. C'est illisible, jamais « aucun rouge ».
+    return rows or None
+
+
+def get_pr_checks(pr_number: int) -> dict[str, str] | None:
+    """Return the current check state of `pr_number` (name -> conclusion).
+
+    `None` propage « illisible » (`get_pr_check_rows`), pour qu'un appelant
+    ne prenne pas un echec de mesure pour une absence de rouge.
+    """
+    rows = get_pr_check_rows(pr_number)
+    if rows is None:
+        return None
+    return {row["name"]: row["conclusion"] for row in rows}
+
+
+def guard_workflow_path(*, body: bool = False) -> Path:
+    """Chemin du workflow des organes de contenu, ou de ceux de body."""
+    name = BODY_WORKFLOW_NAME if body else "always-on-guards.yml"
+    return Path(__file__).resolve().parents[2] / ".github" / "workflows" / name
+
+
+def _job_names_in(path: Path) -> list[str]:
+    """Noms declares (`name:`) par les jobs d'un fichier de workflow."""
+    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    return [
+        n for n in ((job or {}).get("name")
+                    for job in (data.get("jobs") or {}).values())
+        if isinstance(n, str)
+    ]
 
 
 def content_guard_job_names(workflow_path=None) -> list[str]:
@@ -173,23 +272,20 @@ def content_guard_job_names(workflow_path=None) -> list[str]:
     laisser croire a un balayage propre.
 
     Le filtre est le prefixe `Always-on guards` dans CE workflow uniquement :
-    le job de body (`Always-on guards -- body`, #22333) vit dans un autre
-    fichier et n'a rien a voir avec l'adjacence de contenu. Un match par
+    le job de body (`Always-on guards -- body`, #22333) vit dans son propre
+    fichier et se resout par `body_guard_job_names()`. Un match par
     sous-chaine sur `gh pr checks` fusionnerait les deux -- cf. le fold de
     check-runs qui a deja produit un faux vert rassurant.
+
+    `BODY_JOB_MARKER` reste donc exclu ICI : si le job de body revenait dans
+    ce fichier, l'inclure ferait passer un rouge `close_keyword` pour un
+    rouge de contenu. C'est `adjacency_leg_state()` qui porte la distinction
+    des deux jambes, pas ce filtre.
     """
-    path = Path(workflow_path) if workflow_path else (
-        Path(__file__).resolve().parents[2]
-        / ".github" / "workflows" / "always-on-guards.yml")
-    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
-    names = [
-        (job or {}).get("name")
-        for job in (data.get("jobs") or {}).values()
-    ]
+    path = Path(workflow_path) if workflow_path else guard_workflow_path()
     resolved = [
-        n for n in names
-        if isinstance(n, str)
-        and n.startswith(GUARDS_JOB_PREFIX)
+        n for n in _job_names_in(path)
+        if n.startswith(GUARDS_JOB_PREFIX)
         # #22333 a separe les organes de body dans leur propre job. Il porte le
         # meme prefixe : s'il vivait un jour dans ce fichier, l'inclure ferait
         # rafraichir une PR pour un rouge qui ne dit rien de l'adjacence.
@@ -202,12 +298,133 @@ def content_guard_job_names(workflow_path=None) -> list[str]:
     return resolved
 
 
+def body_guard_job_names(workflow_path=None) -> list[str]:
+    """Noms des jobs de `always-on-guards-body.yml` (#22748).
+
+    Le job de body **execute l'organe d'adjacence** depuis #22333
+    (`scripts/ci/always_on_body_organs.sh:21` : `adjacency) organ_adjacency ;;`).
+    Il vit dans son propre fichier : l'exclusion par marqueur de
+    `content_guard_job_names()` ne pouvait donc rien y voir, et un verdict
+    G-VAR-3 perime tombe sur cette jambe n'etait jamais rafraichi -- #22748
+    est restee ~12 h rouge pour cette raison.
+
+    `RuntimeError` sur resolution vide, meme doctrine que la jambe de
+    contenu : un renommage du job rendrait l'organe muet, et le silence se
+    lirait « rien a rafraichir ».
+    """
+    path = Path(workflow_path) if workflow_path else guard_workflow_path(body=True)
+    resolved = [
+        n for n in _job_names_in(path)
+        if n.startswith(GUARDS_JOB_PREFIX)
+    ]
+    if not resolved:
+        raise RuntimeError(
+            f"aucun job nomme '{GUARDS_JOB_PREFIX}...' dans {path} -- "
+            "l'organe refuse de mesurer a l'aveugle (renommage du job ?)")
+    return resolved
+
+
+def check_run_annotations(url: str) -> list[str] | None:
+    """Messages d'annotation du check-run designe par `url`, ou None.
+
+    `None` (et non `[]`) distingue « lu, aucune annotation » de « pas pu
+    lire » -- le rapport du sweep porte cette difference au lieu de la
+    confondre avec « pas d'adjacence » (cf. #11808 : un filtre deconnecte et
+    un filtre vide sont indistinguables).
+    """
+    m = _CHECK_JOB_URL_RE.match(url or "")
+    if not m:
+        return None
+    proc = run_gh(
+        "api", f"repos/{m.group('slug')}/check-runs/{m.group('job_id')}/annotations")
+    if proc.returncode != 0:
+        return None
+    try:
+        data = json.loads(proc.stdout)
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(data, list):
+        return None
+    return [str((a or {}).get("message") or "") for a in data]
+
+
+def annotations_name_adjacency(annotations: list[str]) -> bool:
+    """Ces annotations attribuent-elles le rouge a l'organe d'adjacence ?"""
+    for message in annotations:
+        banner = BODY_ORGAN_BANNER_RE.search(message)
+        if banner and "adjacency" in banner.group(1).split():
+            return True
+        if ADJACENCY_ORGAN_MARKER in message:
+            return True
+    return False
+
+
+def adjacency_leg_state(pr_number: int,
+                        job_names: list[str] | None = None) -> dict:
+    """Quelle jambe `Always-on guards` est rouge, et par la faute de qui.
+
+    Rend ``{"failing", "job", "cause"}`` ; ``failing`` est le predicat que
+    `refresh_one` consomme, les deux autres champs sont du diagnostic.
+
+    Les deux jambes n'ont pas la meme valeur de preuve :
+
+    * jambe de CONTENU rouge -- causalite non ambigue : ce job ne porte que
+      les organes de contenu, dont l'adjacence (`cause: content-job`) ;
+    * jambe de BODY rouge -- elle porte CINQ organes (Grain, prev:,
+      close-keyword, adjacence, claim). Sans attribution, un rouge
+      `close_keyword` ferait editer un body pour rien : churn de la file
+      `cancel-in-progress` (#22331) et sweep rapportant un refresh qui ne
+      leve rien. La jambe n'est donc retenue que si ses annotations nomment
+      l'adjacence (`cause: body-adjacency`) ; sinon `body-other-organ`, ou
+      `body-unreadable` si l'API ne rend pas les annotations -- fail-CLOSED,
+      dans les deux cas sans ecriture.
+
+    Troisieme silence, celui de la **mesure elle-meme** (#22893) : quand
+    `gh pr checks` ne rend rien d'exploitable, `checks-unreadable` le nomme
+    au lieu de le laisser se confondre avec « aucun rouge ». Le predicat
+    `failing` ne change pas -- illisible n'est pas rouge, et ce n'est pas
+    vert non plus : c'est un troisieme etat, porte par `cause`. Un `rc=0`
+    avec `stdout` vide rend `checks-empty` : la mesure a abouti, la PR ne
+    porte aucun check.
+
+    `job_names` force la liste des jambes de contenu (tests, appelants qui
+    veulent ignorer la jambe de body).
+    """
+    if job_names is not None:
+        content_names, body_names = job_names, []
+    else:
+        content_names = content_guard_job_names()
+        body_names = body_guard_job_names()
+    rows = get_pr_check_rows(pr_number)
+    if rows is None:
+        return {"failing": False, "job": None, "cause": "checks-unreadable"}
+    if not rows:
+        return {"failing": False, "job": None, "cause": "checks-empty"}
+
+    for row in rows:
+        if row["name"] in content_names and row["conclusion"] == "fail":
+            return {"failing": True, "job": row["name"], "cause": "content-job"}
+
+    for row in rows:
+        if row["name"] not in body_names or row["conclusion"] != "fail":
+            continue
+        annotations = check_run_annotations(row["url"])
+        if annotations is None:
+            return {"failing": False, "job": row["name"],
+                    "cause": "body-unreadable"}
+        if annotations_name_adjacency(annotations):
+            return {"failing": True, "job": row["name"],
+                    "cause": "body-adjacency"}
+        return {"failing": False, "job": row["name"],
+                "cause": "body-other-organ"}
+
+    return {"failing": False, "job": None, "cause": None}
+
+
 def is_always_on_guards_failing(pr_number: int,
                                job_names: list[str] | None = None) -> bool:
-    """True si un des jobs `Always-on guards` du workflow est FAIL sur la PR."""
-    names = job_names if job_names is not None else content_guard_job_names()
-    checks = get_pr_checks(pr_number)
-    return any(checks.get(n) == "fail" for n in names)
+    """True si une jambe `Always-on guards` est FAIL pour cause d'adjacence."""
+    return adjacency_leg_state(pr_number, job_names)["failing"]
 
 
 def append_marker(body: str, marker: str) -> str:
@@ -252,10 +469,19 @@ def simulate_adjacency(pr_number: int, body: str, merged_window: list[dict]) -> 
 
 
 def refresh_one(pr_number: int, dry_run: bool, merged_window: list[dict]) -> dict:
-    """Run the full refresh cycle for `pr_number`. Returns a status dict."""
+    """Run the full refresh cycle for `pr_number`. Returns a status dict.
+
+    L'ordre est deliberé : le verdict d'adjacence est RE-SIMULE avant tout
+    acces en ecriture (`simulate_adjacency`), et l'edition du body est
+    inconditionnellement gardee par `would_refresh`, qui exige ce
+    `guard_pass`. Aucune branche d'ecriture ne peut donc etre atteinte sans
+    re-simulation -- c'est la garantie qui rend sur d'ouvrir le
+    rafraichissement a la jambe de body (#22748).
+    """
     body = get_pr_body(pr_number)
     verdict = simulate_adjacency(pr_number, body, merged_window)
-    always_on_failing = is_always_on_guards_failing(pr_number)
+    leg = adjacency_leg_state(pr_number)
+    always_on_failing = leg["failing"]
     new_body = append_marker(body, now_marker())
     would_refresh = (
         always_on_failing
@@ -264,25 +490,26 @@ def refresh_one(pr_number: int, dry_run: bool, merged_window: list[dict]) -> dic
     )
     refreshed = False
     if would_refresh and not dry_run:
-        proc = run_gh("pr", "edit", str(pr_number), "--body-file", "-",
-                      check=False)
-        # Need to pipe stdin -- the `--body-file -` reads from stdin in some
-        # gh versions; if not supported, fall back to a temp file.
-        if "unknown flag" in proc.stderr or "flag" in proc.stderr.lower():
+        # UN SEUL appel, stdin = le nouveau corps. La sonde `--body-file -`
+        # SANS stdin (avant #22748) lisait EOF et gh publiait alors un corps
+        # VIDE, que le second appel restaurait : deux evenements `edited`, et
+        # une fenetre ou le job de body -- qui relit le corps par API a
+        # l'execution (#15697) -- pouvait juger `tag_required` sur un corps
+        # vide. Le repli fichier ne sert plus qu'au cas ou le `-` est refuse.
+        proc = subprocess.run(
+            ["gh", "pr", "edit", str(pr_number), "--body-file", "-"],
+            input=new_body,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+        )
+        refreshed = proc.returncode == 0
+        if not refreshed and "flag" in (proc.stderr or "").lower():
             tmp = Path(f"/tmp/refresh_body_{pr_number}.md")
             tmp.write_text(new_body, encoding="utf-8")
             proc2 = run_gh("pr", "edit", str(pr_number), "--body-file", str(tmp))
             tmp.unlink(missing_ok=True)
-            refreshed = proc2.returncode == 0
-        else:
-            proc2 = subprocess.run(
-                ["gh", "pr", "edit", str(pr_number), "--body-file", "-"],
-                input=new_body,
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                errors="replace",
-            )
             refreshed = proc2.returncode == 0
     elif would_refresh and dry_run:
         refreshed = True  # virtual: would have been done
@@ -290,6 +517,11 @@ def refresh_one(pr_number: int, dry_run: bool, merged_window: list[dict]) -> dic
     return {
         "pr": pr_number,
         "always_on_failing": always_on_failing,
+        # Quelle jambe est rouge et par la faute de qui (#22748) : sans ce
+        # champ, un rouge de body non attribuable et un balayage propre
+        # rendaient le meme JSON.
+        "guard_leg": leg["job"],
+        "guard_leg_cause": leg["cause"],
         "guard_pass": verdict["guard_pass"],
         "adjacent": verdict.get("adjacent"),
         "prev_genre": verdict.get("prev_genre"),

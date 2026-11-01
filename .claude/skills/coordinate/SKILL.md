@@ -62,7 +62,7 @@ Les phases ci-dessous s'executent sous le budget defini par la section `## Budge
 2. **Grouper LA QUEUE par lane, et dispatcher le deblocage.** Les ~20 PRs les plus vieilles, regroupees par leur tag `Grain: ... lane`, partent en mandat de deblocage a leur lane. Une PR est vieille **parce qu'**elle est bloquee : ce qui se dispatche est le deblocage, pas le merge qui s'attend. Le lot d'une lane se derive du sweep seul -- aucun re-audit prealable n'est requis pour l'envoyer.
 3. **Relancer les nits bloquants, nommement.** Chaque reserve non levee (`[Hermes] COMMENT_WITH_CONCERNS`, `CHANGES_REQUESTED`, nit user, thread inline non resolu) est renvoyee a la lane de l'auteur de la PR **avec le point cite**. Une reserve qu'on ne relance pas devient un grain qu'aucune lane ne sait qu'elle doit executer -- et celles posees par ai-01 ne peuvent etre levees par personne d'autre.
 4. **Le rouge sans lane est a MOI.** Le garde "reparer son rouge d'abord" ([proactive-coordination](../../rules/proactive-coordination.md) R5) renvoie chaque lane sur ses propres PRs bloquees -- mais une PR **sans tag `Grain:` lisible** n'est imputable a aucune lane et reste invisible a tous les gardes. Lire le commentaire marker-guarde `GRAIN-ORPHANS-SWEEP` sur #13086 (rafraichi via `python scripts/pick_idle_grain.py --orphans-report`) et traiter chaque orpheline nommee avec son auteur : reparer, dispatcher nommement, ou fermer en le disant. Le coordinateur est soumis au meme garde pour **sa propre** lane.
-5. **Trancher les design-gates en attente** dans le cycle -- ne pas deferer une option deja investiguee. Regles : [coordinator-discipline.md](../../rules/coordinator-discipline.md) (R3 lanes independantes, R4 jamais sanctionner l'idle, R5 steer qui ATTEINT/VRAI/DECIDE).
+5. **Trancher les design-gates en attente** dans le cycle -- ne pas deferer une option deja investiguee. Regles : [coordinator-discipline.md](coordinator-discipline.md) (corps complet, colocalise dans ce skill depuis la tranche 1 de #11554 ; R3 lanes independantes, R4 jamais sanctionner l'idle, R5 steer qui ATTEINT/VRAI/DECIDE).
 6. **Grounder chaque grain firsthand** (`gh issue view N` / `gh pr view N`) AVANT de dispatcher -- jamais depuis un status condense.
 7. **Double canal obligatoire** : DM `roosync_messages(action:"send", to:"<machine>:<workspace>", ...)` (le worker lit l'inbox en premier, le DM survit a la condensation) **+** pointeur `[DISPATCH->inbox]` sur le dashboard de la lane (sonnette persistante).
 8. **Une lane sans grain = echec coordinateur.** Le coordinateur tire la tete du tapis **une fois par tour, pour toute la flotte** (mandat user 2026-10-06), puis compose lui-meme les files :
@@ -140,10 +140,19 @@ Deux circuits asynchrones tournent **pendant** que le cycle merge. Ce sont deux 
 ### Phase 5 - Fin de cycle (obligatoire)
 
 1. **Commit + PR AVANT le rapport** — ne jamais annoncer un travail non commite.
-2. `[DONE]` lane-specific sur **les deux** dashboards (jamais un miroir copie-colle).
-3. **Bloqueurs user** : restituer en un bloc les questions ouvertes du registre durable ; aucun re-poke intermédiaire ni liste parallèle ([user-blocker-signaling](../../rules/user-blocker-signaling.md)).
-4. MAJ `coordinator-durable-state.md` si l'etat durable a change (PR#/SHA ephemeres → dashboard, pas la memoire).
-5. **Une seule investigation par cycle, et en fin de session.** Toute question ouverte qui n'est **pas** un bloqueur de merge se note et attend le cycle suivant : mesurer un organe, verifier une provenance, instruire un doute de securite sont des gestes utiles et couteux, qui n'ont leur place qu'apres les dispatchs, les relances et la passe de merge. Une investigation qui deborde sur le cycle suivant est une investigation de trop -- elle a mange le temps des lanes. Si l'objet est reellement urgent, il devient un **grain dispatche**, pas une enquete du coordinateur.
+2. `[DONE]` lane-specific sur **les deux** dashboards (jamais un miroir copie-colle). Chaque bilan **ouvre sur l'heure explicite du cycle**, relevee a la source au moment de la redaction -- jamais reprise d'un cycle precedent :
+
+   ```
+   Heure de cycle : 2026-07-02 14:37 UTC / 16:37 locale (UTC+02:00)
+   ```
+
+   L'exemple est date d'un jour en **heure d'ete** (Europe/Paris, UTC+02:00) : le couple y est vrai. En heure d'hiver (UTC+01:00), le meme 14:37 UTC vaut 15:37 locale -- un couple (date, decalage) recopie a l'aveugle est faux une fois sur deux.
+
+   L'heure locale porte **son decalage** (l'heure de la machine, plus le decalage -- `date -u` d'un cote, heure locale de l'autre), parce que c'est cette double lecture qui distingue « le cron a tire et n'a rien trouve a merger » de « le cron n'a pas tire » : sans elle, un bilan sans merge est **indistinguable** d'un cron muet (#14728, item 3). La duree totale du cycle (mesuree a l'entree et a la sortie de chaque phase) **accompagne** l'heure, elle ne la remplace pas.
+3. **Filet Concerns issues (#20183)** : le `[DONE]` porte une ligne `[CONCERNS] <synthese>` produite par `python scripts/ci/check_issue_concerns.py` (sortie texte : la 2e ligne est la synthese, les numeros d'issues non resolus suivent). Chaque constat non resolu que l'organe nomme est un grain du cycle suivant — y repondre soi-meme ou dispatcher la reponse a la lane concernee. L'organe est relance a chaque restitution et reste la **seule source** : jamais de registre parallele, jamais de copie du detail dans le post.
+4. **Bloqueurs user** : restituer en un bloc les questions ouvertes du registre durable ; aucun re-poke intermédiaire ni liste parallèle ([user-blocker-signaling](../../rules/user-blocker-signaling.md)).
+5. MAJ `coordinator-durable-state.md` si l'etat durable a change (PR#/SHA ephemeres → dashboard, pas la memoire).
+6. **Une seule investigation par cycle, et en fin de session.** Toute question ouverte qui n'est **pas** un bloqueur de merge se note et attend le cycle suivant : mesurer un organe, verifier une provenance, instruire un doute de securite sont des gestes utiles et couteux, qui n'ont leur place qu'apres les dispatchs, les relances et la passe de merge. Une investigation qui deborde sur le cycle suivant est une investigation de trop -- elle a mange le temps des lanes. Si l'objet est reellement urgent, il devient un **grain dispatche**, pas une enquete du coordinateur.
 
 ## Amelioration continue des skills (mandat user 2026-09-21)
 
