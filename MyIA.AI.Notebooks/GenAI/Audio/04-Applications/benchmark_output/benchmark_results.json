@@ -2,7 +2,7 @@
   {
     "model": "kokoro",
     "voice": "af_sky",
-    "latency_ms": 2732.206499960739,
+    "latency_ms": 7254.641000006814,
     "audio_size_bytes": 368300,
     "status": "ok",
     "sample": "narration"
@@ -11,20 +11,20 @@
     "model": "qwen3",
     "sample": "narration",
     "status": "error",
-    "error": "401 Client Error: Unauthorized for url: https://tts-multi.myia.io/qwen/v1/audio/"
+    "error": "401 Client Error: Unauthorized for url: http://localhost:8196/qwen/v1/audio/spee"
   },
   {
     "model": "openai/tts-1",
     "voice": "alloy",
-    "latency_ms": 9615.12179998681,
-    "audio_size_bytes": 404736,
+    "latency_ms": 2935.9021999989636,
+    "audio_size_bytes": 409728,
     "status": "ok",
     "sample": "narration"
   },
   {
     "model": "kokoro",
     "voice": "af_sky",
-    "latency_ms": 3118.35110001266,
+    "latency_ms": 3464.88970000064,
     "audio_size_bytes": 541868,
     "status": "ok",
     "sample": "dialogue"
@@ -33,20 +33,20 @@
     "model": "qwen3",
     "sample": "dialogue",
     "status": "error",
-    "error": "401 Client Error: Unauthorized for url: https://tts-multi.myia.io/qwen/v1/audio/"
+    "error": "401 Client Error: Unauthorized for url: http://localhost:8196/qwen/v1/audio/spee"
   },
   {
     "model": "openai/tts-1",
     "voice": "nova",
-    "latency_ms": 3510.8875000150874,
-    "audio_size_bytes": 416256,
+    "latency_ms": 4428.306600006181,
+    "audio_size_bytes": 417024,
     "status": "ok",
     "sample": "dialogue"
   },
   {
     "model": "kokoro",
     "voice": "af_bella",
-    "latency_ms": 2685.3916000109166,
+    "latency_ms": 2906.2468000047375,
     "audio_size_bytes": 409772,
     "status": "ok",
     "sample": "monologue"
@@ -55,13 +55,13 @@
     "model": "qwen3",
     "sample": "monologue",
     "status": "error",
-    "error": "401 Client Error: Unauthorized for url: https://tts-multi.myia.io/qwen/v1/audio/"
+    "error": "401 Client Error: Unauthorized for url: http://localhost:8196/qwen/v1/audio/spee"
   },
   {
     "model": "openai/tts-1",
     "voice": "shimmer",
-    "latency_ms": 2790.3153999941424,
-    "audio_size_bytes": 396672,
+    "latency_ms": 1879.5518999977503,
+    "audio_size_bytes": 396288,
     "status": "ok",
     "sample": "monologue"
   }
