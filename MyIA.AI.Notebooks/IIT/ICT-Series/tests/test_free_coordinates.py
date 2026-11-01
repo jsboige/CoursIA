@@ -10,12 +10,15 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from ict.free_coordinates import (  # noqa: E402
+    BenchVerdict,
     EvolutiveGame,
     FixedSpacePredictor,
     OntologicalMove,
     apply_ontology,
     authority_mechanism,
+    bancher_mecanisme,
     candidate_key,
+    classer_proxys,
     compose_ontology,
     composition_report,
     competing_mechanisms,
@@ -27,6 +30,7 @@ from ict.free_coordinates import (  # noqa: E402
     performative_power,
     political_opening,
     quorum_mechanism,
+    temoin_decoratif,
 )
 
 
@@ -276,3 +280,180 @@ def test_composition_irreversibilite_sadditionne_independamment_de_l_ordre():
     d12 = irreversibility_debt(eta_pm) + irreversibility_debt(eta_hy)
     d21 = irreversibility_debt(eta_hy) + irreversibility_debt(eta_pm)
     assert d12 == d21 == 60.0  # 50.0 (personne morale) + 10.0 (defauts pose 1, undo 10)
+
+
+# ---------------------------------------------------------------------------
+# Banc unique : classer_proxys / temoin_decoratif / bancher_mecanisme
+# (#23900 — reprise Hermes : branche renommage, quotient, dualite)
+# ---------------------------------------------------------------------------
+
+
+def test_classer_renommage_pur_est_decoratif():
+    # o=0, dA brut=3, dA marginalise=0 : le renommage s'evapore sous quotient.
+    # Avant la branche manquante, ce cas tombait dans '?' (review #23900 pt 4).
+    assert classer_proxys(0, 3, 1, 0.0026, 0.0, d_a_t_marg=0) == "decoratif"
+
+
+def test_classer_renommage_actif_ouvre_des_classes():
+    assert classer_proxys(0, 3, 1, 0.5, 0.4, d_a_t_marg=2) == "nouveau (renommage actif)"
+    assert (
+        classer_proxys(0, 3, 1, 0.5, 0.0, d_a_t_marg=2)
+        == "nouveau (renommage actif, non institutionnalise)"
+    )
+
+
+def test_classer_concept_ornemental_est_nomme():
+    # o>0, dA=0 : un concept qui n'ouvre rien — verbiage, sorti du '?'.
+    assert classer_proxys(2, 0, 1, 0.0, 0.0) == "ornamental (concept sans action ouverte)"
+
+
+def test_classer_sans_d_marg_reste_compatible_avec_la_lecture_brute():
+    assert classer_proxys(0, 0, 1, 0.0, 0.0) == "decoratif"
+    assert classer_proxys(0, 0, 1, 0.5, 0.0) == "latent"
+    # d_a_t_marg None => d_marg = d_a_t = 3 : lecture brute — le renommage
+    # est indistinguable d'une ouverture, il se lit actif (c'est le point
+    # du quotient : sans equivalence, pas de verdict decoratif).
+    assert (
+        classer_proxys(0, 3, 1, 0.0, 0.0)
+        == "nouveau (renommage actif, non institutionnalise)"
+    )
+    assert classer_proxys(0, 3, 1, 0.5, 0.4) == "nouveau (renommage actif)"
+
+
+def test_temoin_est_le_dual_exact_du_classifieur():
+    # Propriete enforcee par test (mesuree empiriquement dans la review #23900
+    # pt 5) : temoin vide <=> classe 'decoratif', sur TOUTE la grille.
+    for o_t in (0, 1, 2):
+        for d_a_t in (0, 1, 5):
+            for d_marg in (None, 0, 1, 5):
+                for c_t in (1, 2):
+                    for p_r_marg in (0.0, 0.005, 0.05, 4.0):
+                        for inst in (0.0, 0.3):
+                            classe = classer_proxys(
+                                o_t, d_a_t, c_t, p_r_marg, inst, d_a_t_marg=d_marg
+                            )
+                            temoin = temoin_decoratif(
+                                o_t, d_a_t, c_t, p_r_marg, d_a_t_marg=d_marg
+                            )
+                            assert (classe == "decoratif") == (temoin == ()), (
+                                f"dualite brisee : o={o_t} dA={d_a_t} d_marg={d_marg} "
+                                f"c={c_t} p_marg={p_r_marg} -> {classe!r} vs {temoin!r}"
+                            )
+
+
+def test_temoin_ne_compte_pas_l_ouverture_brute_d_un_renommage():
+    # dA brut=3 mais marginalise=0 : le temoin du decoratif reste PROPRE.
+    assert temoin_decoratif(0, 3, 1, 0.0026, d_a_t_marg=0) == ()
+    # L'ouverture brute SEULE (sans quotient) rougissait a tort :
+    assert temoin_decoratif(0, 3, 1, 0.0026) != ()
+
+
+def test_non_canonicite_quotiente_les_renommages():
+    g0 = EvolutiveGame(
+        agents=("electeur",),
+        lexicon=frozenset({"a", "b", "c"}),
+        actions=frozenset({"comite a", "comite b", "comite c"}),
+        payoffs={("electeur", "comite a"): 2.0},
+    )
+    ren1 = OntologicalMove(
+        proposer="electeur",
+        new_concepts=(),
+        opened_actions={"": ("comite a'", "comite b'", "comite c'")},
+    )
+    ren2 = OntologicalMove(
+        proposer="electeur",
+        new_concepts=(),
+        opened_actions={"": ("comite a''", "comite b''", "comite c''")},
+    )
+    eq = {
+        "comite a'": "comite a", "comite b'": "comite b", "comite c'": "comite c",
+        "comite a''": "comite a", "comite b''": "comite b", "comite c''": "comite c",
+    }
+    # Brutes : deux schemas de noms = deux ensembles d'actions distincts.
+    assert non_canonicity(g0, (ren1, ren2)) == 2
+    # Sous quotient : une seule famille d'extensions, canonique.
+    assert non_canonicity(g0, (ren1, ren2), eq) == 1
+
+
+def _banc_vote() -> tuple:
+    g0 = EvolutiveGame(
+        agents=("electeur",),
+        lexicon=frozenset({"a", "b", "c"}),
+        actions=frozenset({"comite a", "comite b", "comite c"}),
+        payoffs={
+            ("electeur", "comite a"): 2.0,
+            ("electeur", "comite b"): 0.3,
+            ("electeur", "comite c"): 0.3,
+        },
+    )
+    eta = OntologicalMove(proposer="electeur", new_concepts=(), opened_actions={})
+    return g0, eta
+
+
+def test_bancher_renommage_pur_est_decoratif_sous_quotient():
+    g0, eta = _banc_vote()
+    g1 = EvolutiveGame(
+        agents=("electeur",),
+        lexicon=frozenset({"a", "b", "c"}),
+        actions=frozenset({"comite a'", "comite b'", "comite c'"}),
+        payoffs={
+            ("electeur", "comite a'"): 2.0,
+            ("electeur", "comite b'"): 0.3,
+            ("electeur", "comite c'"): 0.3,
+        },
+    )
+    eq = {"comite a'": "comite a", "comite b'": "comite b", "comite c'": "comite c"}
+    ren1 = OntologicalMove(
+        proposer="electeur", new_concepts=(),
+        opened_actions={"": ("comite a'", "comite b'", "comite c'")},
+    )
+    ren2 = OntologicalMove(
+        proposer="electeur", new_concepts=(),
+        opened_actions={"": ("comite a''", "comite b''", "comite c''")},
+    )
+    eq_cand = dict(eq)
+    eq_cand.update({
+        "comite a''": "comite a", "comite b''": "comite b", "comite c''": "comite c",
+    })
+    v = bancher_mecanisme(
+        "vote renomme", g0, g1, eta, (ren1, ren2),
+        equivalence=eq_cand, horizon=40, n_sim=80, rng=np.random.default_rng(4),
+    )
+    assert v.O_t == 0 and v.dA_t == 3 and v.dA_t_marg == 0
+    assert v.C_t == 1
+    assert v.P_R > 1.0  # brut : supports disjoints, le renommage se VOIT
+    assert v.P_R_marg < 1e-2  # sous quotient : l'effet s'evapore
+    assert v.classe == "decoratif"
+    assert v.temoin == ()
+
+
+def test_bancher_renommage_drifté_est_latent_et_le_temoin_rougit():
+    g0, eta = _banc_vote()
+    # Renommage MAIS la copie agit : le payoff porte sur une AUTRE classe.
+    g1 = EvolutiveGame(
+        agents=("electeur",),
+        lexicon=frozenset({"a", "b", "c"}),
+        actions=frozenset({"comite a'", "comite b'", "comite c'"}),
+        payoffs={
+            ("electeur", "comite a'"): 0.3,
+            ("electeur", "comite b'"): 0.3,
+            ("electeur", "comite c'"): 2.0,
+        },
+    )
+    eq = {"comite a'": "comite a", "comite b'": "comite b", "comite c'": "comite c"}
+    v = bancher_mecanisme(
+        "vote renomme drift", g0, g1, eta, (eta,),
+        equivalence=eq, horizon=40, n_sim=80, rng=np.random.default_rng(5),
+    )
+    assert v.O_t == 0 and v.dA_t_marg == 0
+    assert v.P_R_marg > 1e-2  # la trajectoire change SOUS quotient
+    assert v.classe == "latent"
+    assert any("trajectoire" in v for v in v.temoin)
+
+
+def test_bench_verdict_porte_l_ouverture_marginalisee():
+    v = BenchVerdict(
+        mecanisme="x", O_t=0, dA_t=3, C_t=1, P_R=11.2, P_R_marg=0.0026,
+        institutionnalisation=0.0, I_R=10.0, classe="decoratif",
+    )
+    assert v.dA_t_marg == 0  # defaut : champ present, valeur neutre

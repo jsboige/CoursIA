@@ -66,6 +66,8 @@ Une règle du harnais est **datée de sa rédaction, pas de sa lecture**. Quand 
 
 **Problème mesuré (2026-09-02)** : chaque review de PR notebook / build Lean crée un worktree ; sans organe de retrait, ces worktrees s'accumulent — **265 sur po-2026 en 36 h**, **103 sur ai-01** (précédent #8924). Le mécanisme est nommé depuis le 2026-08-05, mais l'organe n'avait jamais été construit (`scripts/ci/prune_merged_worktrees.py`).
 
+**Pourquoi une tâche planifiée et pas la règle seule** : la prose d'une règle ne s'exécute pas seule — les règles sont injectées au démarrage de session et perdues en cas de crash, si bien qu'une consigne « purger en fin de cycle » ne s'applique que si la session se termine proprement. La tâche planifiée est donc le mécanisme, et l'appel manuel de fin de cycle le filet.
+
 **Refus ≠ échec — mesure (roo-extensions #3895, 27/09)** : sur 3 machines, **86-100 %** des worktrees vus sont REFUSE (worktrees de cycle nés HEAD-détachés ou sales par construction — po-2023 a saturé ses disques dessus). Un REFUS est une **décision** de l'organe (exit 0), pas une panne : la règle qui en découle reste dans `.claude/rules/git-workflow.md`.
 
 **Mesure 2026-09-03 (po-2027, cycle #14195)** :
