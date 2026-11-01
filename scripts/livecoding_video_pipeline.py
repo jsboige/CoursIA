@@ -663,7 +663,8 @@ def compose_narration_llm(
     echoue explicitement, elle n'est jamais rafistolee.
     """
     client = llm_client if llm_client is not None else _build_llm_client()
-    model = llm_model or os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
+    # #14755 : gpt-4o-mini (OBS 2024) -> gpt-5.6-luna (mini du mapping)
+    model = llm_model or os.environ.get("OPENAI_MODEL", "gpt-5.6-luna")
     plan = NARRATION_PLANS[style_name]
     span = min(plan.span_fraction * duration_seconds, plan.span_max_s)
     window_start = plan.start_offset_s
