@@ -1,6 +1,6 @@
 import Mathlib.Tactic
 
-import RepeatedGames.Stage
+import RepeatedGames.Stage_en
 import RepeatedGames.Discounting_en
 
 /-!
@@ -34,7 +34,7 @@ import RepeatedGames.Discounting_en
 
 namespace RepeatedGames_en
 
-open RepeatedGames
+open RepeatedGames_en
 open PDAction
 
 /-! ## Grim trigger strategy -/

@@ -521,6 +521,7 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/output_kg_recent.html
 # Note: Les binaires PRECIEUX sont maintenant versionnés (voir exceptions positives ci-dessous)
 MyIA.AI.Notebooks/SymbolicAI/resources/
 MyIA.AI.Notebooks/SymbolicAI/Tweety/libs/
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/ontologies/*.nt
 MyIA.AI.Notebooks/SymbolicAI/Tweety/jdk-17-portable/
 MyIA.AI.Notebooks/SymbolicAI/Tweety/resources/
 MyIA.AI.Notebooks/SymbolicAI/Tweety/ext_tools/
