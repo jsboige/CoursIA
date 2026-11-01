@@ -401,13 +401,42 @@ def test_qc_daily_equity_refuses_series_gap():
         qc_daily_equity(chart)
 
 
-def test_ingest_qc_accepts_short_window_with_matching_count():
+def test_ingest_qc_accepts_short_window_ending_near_the_pass_date():
+    # Fenetre courte (trois seances) dont la derniere cloture est proche de la date de
+    # passage : les comptes n'ont pas besoin d'etre egaux, la complétude se lit au
+    # calendrier.
     candidate = _qc_candidate()
     plan = _qc_plan(candidate)
-    days = _sessions("2025-10-01", 3)
-    row = ingest_qc(candidate, plan, _backtest(plan, tradeableDates=3),
+    days = _sessions("2025-11-10", 3)
+    row = ingest_qc(candidate, plan, _backtest(plan, tradeableDates=9),
                     _chart(days, _equity(3)))
     assert row["period_end"] == days[-1]
+
+
+def test_ingest_qc_accepts_universe_dates_beyond_the_traced_closes():
+    # Cas fs774 (passe du 2026-10-27) : la candidate declare un `add_universe` de 500
+    # titres et une donnee CBOE, donc `tradeableDates` (22) depasse les clotures SPY
+    # tracees (15). L'ancienne garde d'egalite refusait ce graphique complet ; la
+    # derniere cloture (vendredi 23) reste recente au regard du passage (mardi 27).
+    candidate = _qc_candidate()
+    plan = _qc_plan(candidate, pass_date="2026-10-27")
+    days = _sessions("2026-10-05", 15)
+    assert days[-1] == "2026-10-23"
+    row = ingest_qc(candidate, plan, _backtest(plan, tradeableDates=22),
+                    _chart(days, _equity(15)))
+    assert row["period_end"] == "2026-10-23" and row["n_days"] == 14
+
+
+def test_ingest_qc_refuses_trailing_truncation():
+    # Chart ampute de ses dix dernieres seances : le cycle e0..e4 reste intact, seule
+    # la derniere cloture (2025-10-30, quinze jours avant le passage) trahit la coupe.
+    candidate = _qc_candidate()
+    plan = _qc_plan(candidate)
+    days = _sessions("2025-10-01", 32)
+    equity = _equity(32)
+    chart = _chart(days[:22], equity[:22])
+    with pytest.raises(ValueError, match="chart truncated or incomplete"):
+        ingest_qc(candidate, plan, _backtest(plan, tradeableDates=32), chart)
 
 
 def test_ingest_qc_matches_direct_metrics(tmp_path):
