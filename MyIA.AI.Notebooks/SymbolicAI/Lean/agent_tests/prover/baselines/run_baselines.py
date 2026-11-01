@@ -23,6 +23,10 @@ from prover import DEMOS, TraceLogger
 from prover.provers import MultiAgentSorryProver, AutonomousProver
 from prover.config import create_client
 from prover.lean_utils import count_real_sorries  # #9402: real-token counter
+from prover.baselines.calibration_stub import (  # #1453 / #13907
+    calibration_stub,
+    flag_false_green,
+)
 
 
 BASELINES_DIR = Path(__file__).parent
@@ -35,19 +39,27 @@ def run_multi_baseline(demo_num: int, max_iterations: int = 5,
     demo = DEMOS[demo_num]
     filepath = demo["file"]
     original = Path(filepath).read_text(encoding="utf-8")
-    original_sorry = count_real_sorries(original)
+    committed_sorry = count_real_sorries(original)
 
     trace = TraceLogger(output_dir=str(TRACES_DIR))
     prover = MultiAgentSorryProver(trace=trace, provider=provider)
 
     start = time.time()
-    result = asyncio.run(prover.prove_sorry(demo=demo, max_iterations=max_iterations))
+    with calibration_stub(demo) as prepared:
+        # Le point de depart est celui que le prouveur voit REELLEMENT : sur une
+        # cible de calibration il vaut 1 (scaffolding stubbe), pas 0 (scaffolding
+        # committe avec sa preuve approuvee). Mesurer avant le stub rendait
+        # `sorry_eliminated` structurellement faux sur ces DEMOS.
+        original_sorry = count_real_sorries(Path(filepath).read_text(encoding="utf-8"))
+        result = asyncio.run(prover.prove_sorry(demo=prepared, max_iterations=max_iterations))
     elapsed = time.time() - start
 
     # Verify file was restored
     final = Path(filepath).read_text(encoding="utf-8")
     final_sorry = count_real_sorries(final)
     file_ok = final == original or final_sorry < original_sorry
+
+    false_green = flag_false_green(prepared, result)
 
     trace.save(f"multi_demo{demo_num}")
 
@@ -62,8 +74,11 @@ def run_multi_baseline(demo_num: int, max_iterations: int = 5,
         "sorry_eliminated": original_sorry - final_sorry,
         "file_restored": file_ok,
         "total_s": round(elapsed, 1),
-        "success": result.get("success", False),
+        "success": result.get("success", False) and not false_green,
         "attempts": result.get("attempts", 0),
+        "committed_sorry": committed_sorry,
+        "calibration_stubbed": bool(prepared.get("calibration_stubbed")),
+        "false_green": false_green,
     }
 
     print(f"\n{'='*60}")
@@ -81,18 +96,22 @@ def run_auto_baseline(demo_num: int, max_iterations: int = 5,
     demo = DEMOS[demo_num]
     filepath = demo["file"]
     original = Path(filepath).read_text(encoding="utf-8")
-    original_sorry = count_real_sorries(original)
+    committed_sorry = count_real_sorries(original)
 
     trace = TraceLogger(output_dir=str(TRACES_DIR))
     prover = AutonomousProver(trace=trace, provider=provider)
 
     start = time.time()
-    result = prover.prove_sorry(demo=demo, max_iterations=max_iterations)
+    with calibration_stub(demo) as prepared:
+        original_sorry = count_real_sorries(Path(filepath).read_text(encoding="utf-8"))
+        result = prover.prove_sorry(demo=prepared, max_iterations=max_iterations)
     elapsed = time.time() - start
 
     final = Path(filepath).read_text(encoding="utf-8")
     final_sorry = count_real_sorries(final)
     file_ok = final == original or final_sorry < original_sorry
+
+    false_green = flag_false_green(prepared, result)
 
     trace.save(f"auto_demo{demo_num}")
 
@@ -107,8 +126,11 @@ def run_auto_baseline(demo_num: int, max_iterations: int = 5,
         "sorry_eliminated": original_sorry - final_sorry,
         "file_restored": file_ok,
         "total_s": round(elapsed, 1),
-        "success": result.get("success", False),
+        "success": result.get("success", False) and not false_green,
         "attempts": result.get("attempts", 0),
+        "committed_sorry": committed_sorry,
+        "calibration_stubbed": bool(prepared.get("calibration_stubbed")),
+        "false_green": false_green,
     }
 
     print(f"\n{'='*60}")
@@ -152,7 +174,8 @@ def main():
     print(f"{'-'*70}")
     for r in results:
         sorry_str = f"{r['original_sorry']}->{r['final_sorry']} ({r['sorry_eliminated']:+d})"
-        print(f"{r['mode']:<15} {r['name']:<25} {sorry_str:<15} {r['total_s']:.0f}s{'':<5} {'OK' if r['file_restored'] else 'CORRUPTED'}")
+        health = "CORRUPTED" if not r["file_restored"] else ("FALSE GREEN" if r.get("false_green") else "OK")
+        print(f"{r['mode']:<15} {r['name']:<25} {sorry_str:<15} {r['total_s']:.0f}s{'':<5} {health}")
     print(f"{'='*70}")
 
 
