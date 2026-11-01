@@ -31,6 +31,37 @@ Deux raisons rendaient la case vide, et aucune n'était un obstacle réel :
    prouvait pas la version de runtime qui l'avait produite. Un carnet affiche
    la version du runtime de la machine ; ce n'est pas une donnée de mesure.
 
+## 1bis. L'organe voisin, et pourquoi les deux coexistent
+
+`scripts/notebook_tools/multiruntime_probe.py` mesure déjà un carnet .NET sous
+plusieurs runtimes. Il n'est pas remplacé ici : les deux organes n'ont ni le
+même grain, ni la même grandeur mesurée.
+
+| | `multiruntime_probe.py` (déjà sur `main`) | `measure_runtime_variants.py` (cette fiche) |
+|---|---|---|
+| Unité mesurée | **une cellule** désignée par index ou id | **le carnet entier**, cellules dans l'ordre |
+| Sélection du runtime | `DOTNET_ROOT` d'environnement, **un seul** build de kernel | kernelspec généré par bras (`JUPYTER_PATH` temporaire) |
+| Preuve de runtime | cellule de provenance exécutée **dans le même** kernel | cellule-sonde écrivant dans un fichier, relue ensuite — parce que `--cell-by-cell` ouvre un kernel par cellule |
+| Répétitions | agrégées par runtime | **entrelacées** A, B, A, B : la dérive du poste n'est pas attribuée au bras qui a tourné en premier |
+| Verdict | `DELTA ETABLI` / `INCONCLUSIF` (intervalles disjoints) | aucun verdict : tableau + JSON reproductible, la lecture revient au tableau de référence |
+| Métrique | celle que l'outil extrait de la cellule | celle de l'organe canonique `notebook_tools.py execute --cell-by-cell` |
+
+Trois raisons de ne pas fusionner :
+
+1. **Grain** : l'axe 1 publie un temps *de carnet* comparable à la colonne
+   net10 du tableau de référence ; une mesure de cellule ne remplit pas cette case.
+2. **Kernelspec** : le résultat secondaire de la §4 (un nom de spec non pointé
+   coûte ~5 s de démarrage par exécution) ne peut pas être observé par un organe
+   qui lance le noyau directement avec un `env` — il ne passe jamais par un
+   kernelspec.
+3. **Entrelacement** : la §3 lit un écart de l'ordre de la seconde sur ~12 s ;
+   sans entrelacement, l'ordre des bras se confond avec la dérive du poste.
+
+Le partage est donc : **« cette cellule tourne-t-elle plus vite sous net11 ? »
+→ le probe ; « quel temps de carnet sous quel runtime ? » → cet organe.** La
+mesure n'est pas réimplémentée ici : l'exécution passe par l'organe canonique,
+ce qui rend les deux temps directement comparables.
+
 ## 2. Méthode
 
 Un organe dédié rend la comparaison rejouable :
@@ -178,6 +209,8 @@ l'identique ; c'est la preuve opposable du tableau ci-dessus.
 - `docs/dotnet/net11-runtime-deltas.md` — tableau de référence (axe 1 et bancs)
 - `docs/dotnet/net11-toub-digest.md` — digest de performance
 - `scripts/notebook_tools/measure_runtime_variants.py` — l'organe de mesure
+- `scripts/notebook_tools/multiruntime_probe.py` — l'organe **voisin** (mesure
+  de cellule, verdict de delta) : partage des rôles en §1bis
 - EPIC #18695 — mesure progressive des gains runtime async
 - #23441 (axe 1, instrument de la §4) et #23444 (organe multi-runtime) — les
   deux autres grains de la même famille, **`myia-po-2023:CoursIA`** ; leurs

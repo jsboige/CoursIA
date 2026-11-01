@@ -73,7 +73,7 @@
       "label": "net11",
       "kernel": ".net-csharp-net11",
       "generated": true,
-      "dotnet_root": "C:/Users/jsboi/.dotnet-r11",
+      "dotnet_root": "~/.dotnet-r11",
       "runtime": ".NET 11.0.0-rc.3.26522.148",
       "reps": [
         {

@@ -42,6 +42,19 @@ le muxer ``dotnet`` exigerait un SDK pour lancer un outil global.
 
 Aucune sortie de cellule du carnet cible n'est modifiee : l'execution passe
 par ``--cell-by-cell``, qui n'ecrit pas les sorties dans le carnet.
+
+Voisinage d'organes
+-------------------
+``scripts/notebook_tools/multiruntime_probe.py`` mesure deja un carnet .NET
+sous plusieurs runtimes, et il n'est pas remplace ici : son unite est **une
+cellule**, lancee sous un ``DOTNET_ROOT`` d'environnement avec un seul build de
+kernel, et il declare un verdict ``DELTA ETABLI`` / ``INCONCLUSIF`` sur la
+disjonction des intervalles. Cet outil-ci mesure **le carnet entier** par
+kernelspec, entrelace les bras, et produit un JSON reproductible sans verdict.
+Deux besoins distincts en decoulent, et le second n'est pas atteignable par le
+probe : un organe qui lance le noyau avec un ``env`` ne passe jamais par un
+kernelspec, donc il ne peut pas observer l'artefact de nom de spec (~5 s de
+demarrage par execution, mesure dans ``docs/dotnet/net11-axis1-async.md`` §4).
 """
 
 from __future__ import annotations
@@ -165,20 +178,43 @@ def probe_runtime(kernel: str, workdir: Path, timeout: int, env: dict) -> str:
     return seen.get("RUNTIME", "inconnue")
 
 
+def _separator_variants(path: str) -> list[str]:
+    """Les ecritures d'un meme chemin : separateur natif, slashes, antislashs.
+
+    ``Path`` rend le separateur natif, mais les chemins arrivent aussi sous
+    l'autre forme -- un ``--arm auto@C:/Users/<login>/.dotnet-r11`` saisi en
+    slashes ressort tel quel dans l'artefact. Comparer sur la seule forme
+    native laissait donc passer la valeur (defaut constate sur
+    ``scripts/results/net11_axis1_2026-10-30.json``).
+    """
+    if not path:
+        return []
+    variants = {path, path.replace(os.sep, "/"), path.replace(os.sep, "\\"),
+                path.replace("/", os.sep), path.replace("\\", os.sep)}
+    return sorted((v for v in variants if v), key=len, reverse=True)
+
+
 def redact_paths(text: str) -> str:
     """Remplace les prefixes machine (home, repertoire courant) par des formes stables.
 
     Un artefact commite ne doit pas porter le chemin du poste de mesure :
     la preuve utile est le nom du carnet et la version de runtime, pas
-    l'arborescence du siege.
+    l'arborescence du siege. Les deux ecritures du separateur sont traitees.
     """
     if not text:
         return text
     home = str(Path.home())
     cwd = str(Path.cwd())
-    out = text.replace(home + os.sep, "~/").replace(home, "~")
+    out = text
+    for variant in _separator_variants(home):
+        out = out.replace(variant + os.sep, "~/").replace(variant + "/", "~/")
+        out = out.replace(variant + "\\", "~/").replace(variant, "~")
     if cwd and cwd not in (os.sep, home):
-        out = out.replace(cwd + os.sep, "./").replace(cwd, ".")
+        for variant in _separator_variants(cwd):
+            if variant == home or variant in (os.sep, "/"):
+                continue
+            out = out.replace(variant + os.sep, "./").replace(variant + "/", "./")
+            out = out.replace(variant + "\\", "./").replace(variant, ".")
     return out
 
 

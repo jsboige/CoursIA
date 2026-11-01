@@ -97,3 +97,26 @@ def test_probe_notebook_embeds_the_probe_path(tmp_path):
     source = "".join(nb["cells"][0]["source"])
     assert "RuntimeInformation.FrameworkDescription" in source
     assert str(probe_out).replace("\\", "/") in source
+
+
+# --- redaction --------------------------------------------------------------
+
+def test_redact_paths_covers_both_separator_forms(monkeypatch, tmp_path):
+    """Le home est masque quelle que soit l'ecriture du chemin.
+
+    Defaut constate sur `scripts/results/net11_axis1_2026-10-30.json` : le
+    `dotnet_root` d'un bras etait passe en slashes, la redaction ne comparait
+    que la forme native et la valeur machine restait dans l'artefact.
+    """
+    home = tmp_path / "home"
+    home.mkdir()
+    monkeypatch.setattr(mrv.Path, "home", classmethod(lambda cls: home))
+    monkeypatch.setattr(mrv.Path, "cwd", classmethod(lambda cls: tmp_path / "work"))
+
+    slashed = str(home).replace("\\", "/") + "/.dotnet-r11"
+    native = str(home) + "\\.dotnet-r11"
+
+    assert mrv.redact_paths(slashed) == "~/.dotnet-r11"
+    assert mrv.redact_paths(native) == "~/.dotnet-r11"
+    assert "dotnet-r11" in mrv.redact_paths(slashed)  # le reste de la valeur survit
+
