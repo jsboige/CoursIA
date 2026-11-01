@@ -70,12 +70,12 @@ def test_self_test_reports_its_failures(monkeypatch):
 
 
 def test_ordinal_drift_is_detected(tmp_path):
-    p = _write(tmp_path, "GameTheory-03c-Chambres-et-Murs-Python.ipynb",
-               _notebook("# GameTheory 3b : Chambres"))
+    p = _write(tmp_path, "GameTheory-03b-Chambres-Murs-Chemins-Lean-Python.ipynb",
+               _notebook("# GameTheory 3c : Chambres"))
     found = organ.classify(p, json.loads(p.read_text(encoding="utf-8")))
     assert found["kind"] == "drift"
-    assert found["says"] == "gametheory-3b"
-    assert found["file_says"] == "gametheory-3c"
+    assert found["says"] == "gametheory-3c"
+    assert found["file_says"] == "gametheory-3b"
 
 
 def test_series_reclass_is_drift_not_generic(tmp_path):

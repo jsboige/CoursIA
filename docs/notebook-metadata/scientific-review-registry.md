@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-10-25
+> REFERENCE — vivante — dernière révision 2026-10-31
 
 # Registre des revues scientifiques — `scientific_reviewed_by`
 
@@ -296,31 +296,31 @@ fera se périmer dès que le code de la série bougera.
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12-ValenceFieldsAndAnimats-Python.ipynb
   confidence: research
   reviewed_code_sha: 4bd52d81b4f2544a47c1a782de08927bb978f38ca85fa7873ddd4e978b9e8760
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-12b-LearnedValence-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12b-LearnedValence-Python.ipynb
   confidence: research
   reviewed_code_sha: fd2fcc293543c537a4e0c7477d0729eb7b8b321fa8eab194c1d8e3b424dcd926
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-12c-PregnanceAnimat-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12c-PregnanceAnimat-Python.ipynb
   confidence: research
   reviewed_code_sha: 60af22936f3a15fc94cbeed9e864952e0026d5af20e9c3c082ec918ec237b28c
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-12d-InhibitedActionAnimat-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12d-InhibitedActionAnimat-Python.ipynb
   confidence: research
   reviewed_code_sha: 44c3406ede520ac19295c8d46ac29324e1286d73141e4caf0b436360f8849a84
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-12e-Value-of-Information-Animat-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12e-Value-of-Information-Animat-Python.ipynb
   confidence: research
   reviewed_code_sha: 865df6eec48b8704606ededa7b24a92bdc98da851b3f05c274a7c70aa0e186ec
   review_date: "2026-09-21"
@@ -338,85 +338,85 @@ fera se périmer dès que le code de la série bougera.
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-14-FreeEnergySurprise-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-14-FreeEnergySurprise/ICT-14-FreeEnergySurprise-Python.ipynb
   confidence: research
   reviewed_code_sha: d2326c85498fac62beffe840f44f3f2c0778e969aa77e4ab819f88930adf9a3e
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-14b-ActiveInferenceEFE-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-14-FreeEnergySurprise/ICT-14b-ActiveInferenceEFE-Python.ipynb
   confidence: research
   reviewed_code_sha: 218e88ac3418e0b48f5a743d3e9fdaf94f4d5d735ae7ee2d817dbcb4a412b936
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-15/ICT-15-IntegratedComplexity-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15-IntegratedComplexity-Python.ipynb
   confidence: research
   reviewed_code_sha: 0ae984bc61c4e62287b50339752455fa316e81435412d9409c5a1a5412c56ef5
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-15/ICT-15b-SensitivityCanonicity-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15b-SensitivityCanonicity-Python.ipynb
   confidence: research
   reviewed_code_sha: 5880f18b92eaa0abd4b87b8e84998f62df1a7cb450b5e37bda059b1bf94af05e
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-15/ICT-15c-MetaProxyObstruction-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15c-MetaProxyObstruction-Python.ipynb
   confidence: research
   reviewed_code_sha: 7d9c985f85328e517e3425c6b7809732c987980962853bbef3d0a84333fdb3ea
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-15/ICT-15d-CechObstruction-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15d-CechObstruction-Python.ipynb
   confidence: research
   reviewed_code_sha: acbce2cbd8bd0cefa0ae06251f4c2062c5f9f3409db8e0f798188c48996784d2
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-15/ICT-15e-Bridge2-RecoverabilityAgency-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15e-Bridge2-RecoverabilityAgency-Python.ipynb
   confidence: research
   reviewed_code_sha: 3a9b70a316b2ab08ef6dd9fece703e97df070eb74005b37dff078654cc7b2ee0
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-15/ICT-15f-Bridge1bis-DecoupledFamily-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15f-Bridge1bis-DecoupledFamily-Python.ipynb
   confidence: research
   reviewed_code_sha: 6312b51ab9076ee6217c84ba2d5c8240f1f7b73b3f80dfb3dcd5902e7df552df
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-15/ICT-15g-EmpiricalHuangExploitation-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15g-EmpiricalHuangExploitation-Python.ipynb
   confidence: research
   reviewed_code_sha: 7d4b66eda31f97fa86c0ea89e3e22c4d23d5bb9bd2b6cdbe9cbdba7510e8235a
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-15/ICT-15h-Bridge1bis-AsymmetricFamily-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15h-Bridge1bis-AsymmetricFamily-Python.ipynb
   confidence: research
   reviewed_code_sha: 19af91ab897c3cbb9e12dcd23147a3b1359503657b8a44f41ff555a850b7ebe9
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-15/ICT-15i-Bridge1bis-2DLandscape-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15i-Bridge1bis-2DLandscape-Python.ipynb
   confidence: research
   reviewed_code_sha: 668abad364ee819539cf5c2cba4f39c22958bc1233ef21a9fc6d42385ae0f201
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-15/ICT-15j-NerveDiscriminant-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15j-NerveDiscriminant-Python.ipynb
   confidence: research
   reviewed_code_sha: 8728a4fd458b0ebba17bd8c81f6d032e0466e8ae7e93df561a1592eee0c31196
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-15/ICT-15k-RecollementMacroCells-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15k-RecollementMacroCells-Python.ipynb
   confidence: research
   reviewed_code_sha: 525b3ad7fdc9037e4673a22841276405eafbdf6e4c963cde35b8da9be54b1e41
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-15/ICT-15l-IndependanceGenerateur-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15l-IndependanceGenerateur-Python.ipynb
   confidence: research
   reviewed_code_sha: 797597f4fac1e53b80f2a4ce2e4d71a4b098ba1b5c4eabe65498a015ec5ceafe
   review_date: "2026-09-21"
@@ -452,13 +452,13 @@ fera se périmer dès que le code de la série bougera.
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-19-EnjeuBattery-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-19-EnjeuBattery/ICT-19-EnjeuBattery-Python.ipynb
   confidence: research
   reviewed_code_sha: 66d81b8d05d75489fa4faf5f1ccb7f4a880d1efb290e4c6f5c652e2560242ebe
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-19b-EnjeuBattery-Raffinement-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-19-EnjeuBattery/ICT-19b-EnjeuBattery-Raffinement-Python.ipynb
   confidence: research
   reviewed_code_sha: 1e7b15fc0d10978baea4106bfcad65eecb46aae89c14b23998759c9b16da86c2
   review_date: "2026-09-21"
