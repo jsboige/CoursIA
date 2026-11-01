@@ -537,16 +537,20 @@ def test_canonical_transition_scoped_series_02ml_accepted():
 
 
 def test_canonical_transition_scoped_series_02ml_310_accepted():
-    # Positif, deuxieme direction (#23187) : a l'epoque de l'entree de serie,
-    # 2.9d et 2.9g etaient a 3.10.19. La direction est devenue NOMINATIVE
-    # (#23667) : 2.9d est le seul carnet admis -- ses sorties sont
-    # re-executees -- et 2.9g reste rouge jusqu'a la livraison de sa tranche
-    # (#23292).
+    # Positif, deuxieme direction (#23187). A l'epoque de l'entree de serie,
+    # 2.9d et 2.9g etaient tous deux a 3.10.19. La direction est devenue
+    # NOMINATIVE (#23667) : chaque carnet porte sa propre entree. 2.9d est
+    # admis depuis sa re-execution ; 2.9g l'est par cette tranche (#23292),
+    # qui livre ses sorties re-executees dans le meme diff -- une entree
+    # n'est jamais accordee avant la mesure, c'est ce que gardait le test
+    # ``test_canonical_transition_scoped_29g_still_refused``, retire ici avec
+    # la tranche qu'il protegeait.
     a = {"language_version": "3.10.19",
          "kernelspec_name": "coursia-ml-training"}
     b = {"language_version": "3.13.14",
          "kernelspec_name": "coursia-ml-training"}
-    for name in ("2.9d-Features-Circulaires-Helice-Nombres.ipynb",):
+    for name in ("2.9d-Features-Circulaires-Helice-Nombres.ipynb",
+                 "2.9g-Geometrie-de-la-Verite.ipynb"):
         path = ("MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/"
                 + name)
         assert ckd.accepted_canonical_transition(a, b, nb_path=path) is True
@@ -596,22 +600,20 @@ def test_canonical_transition_scoped_series_reverse_still_refused():
 
 def test_canonical_transition_scoped_series_310_is_nominative():
     # #23667 : la direction 3.10 -> 3.13 n'est plus une PORTEE de serie,
-    # elle est nominative (2.9d). Un carnet de la serie qui n'est pas 2.9d,
-    # et dont les sorties n'ont pas ete re-executees, reste donc rouge --
-    # quelle que soit sa place dans le repertoire. Le second chemin est un
-    # carnet fictif de la serie : il controle que la PORTE, et pas seulement
-    # le cas nomme 2.9g, est restee fermee.
+    # elle est nominative. Un carnet de la serie qui n'a pas sa propre
+    # entree, et dont les sorties n'ont pas ete re-executees, reste donc
+    # rouge -- quelle que soit sa place dans le repertoire.
+    # 2.9g figurait ici jusqu'a #23292, dont la tranche livre ses sorties
+    # re-executees et l'entree nominative qui va avec. Le chemin conserve
+    # est donc un carnet FICTIF de la serie : il controle que la PORTE est
+    # restee fermee, et pas seulement que le cas nomme 2.9g s'est ouvert.
     a = {"language_version": "3.10.19",
          "kernelspec_name": "coursia-ml-training"}
     b = {"language_version": "3.13.14",
          "kernelspec_name": "coursia-ml-training"}
-    for path in (
-        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/"
-        "2.9g-Geometrie-de-la-Verite.ipynb",
-        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/"
-        "2.9h-Carnet-Inexistant-Sur-La-Serie.ipynb",
-    ):
-        assert ckd.accepted_canonical_transition(a, b, nb_path=path) is False
+    path = ("MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/"
+            "2.9h-Carnet-Inexistant-Sur-La-Serie.ipynb")
+    assert ckd.accepted_canonical_transition(a, b, nb_path=path) is False
 
 
 def test_canonical_transition_scoped_ml06_312_to_313_accepted():
@@ -652,9 +654,10 @@ def test_canonical_transition_scoped_ml06_reverse_still_refused():
 # chemin. Les tests ci-dessous portent la positive (2.9d, dont les sorties
 # sont re-executees dans la meme PR) et les controles negatifs que
 # l'acceptance de #23292 exige nominativement : un carnet hors serie
-# partageant le kernelspec reste rouge, la direction inverse le reste aussi,
-# et 2.9g -- dont la re-execution est due mais pas encore faite -- reste
-# rouge tant que la mesure n'existe pas.
+# partageant le kernelspec reste rouge, la direction inverse le reste aussi.
+# 2.9g etait la porte fermee -- refusee tant que sa mesure n'existait pas ;
+# sa tranche est livree ici, l'entree et le carnet re-execute dans le meme
+# diff, et le test passe du refus a l'acceptation dans ce meme geste.
 
 _02ML = "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/"
 _29D = _02ML + "2.9d-Features-Circulaires-Helice-Nombres.ipynb"
@@ -670,15 +673,22 @@ def test_canonical_transition_scoped_02ml_310_to_313_accepted():
     assert ckd.accepted_canonical_transition(a, b, nb_path=_29D) is True
 
 
-def test_canonical_transition_scoped_29g_still_refused():
-    # 2.9g partage la serie et la direction, mais pas la mesure : ses sorties
-    # ne sont pas re-executees. Une entree accorde la permission de bouger la
-    # version d'un carnet ; l'accorder avant la mesure laisserait passer un
-    # hand-edit sous couvert de convergence. Le carnet reste donc rouge, et
-    # ce test tombe le jour ou sa tranche est livree.
+def test_canonical_transition_scoped_29g_accepted():
+    # Dernier carnet de la serie reste a 3.10.19, et la porte qui gardait son
+    # entree : une entree accorde la permission de bouger la version d'un
+    # carnet, donc elle s'ajoute AVEC la mesure, jamais avant. Les sorties de
+    # 2.9g sont re-executees dans le diff qui porte cette entree (#23292,
+    # voie 1), ce qui est exactement la condition que ce test exigeait.
     a = {"language_version": "3.10.19", "kernelspec_name": "coursia-ml-training"}
     b = {"language_version": "3.13.15", "kernelspec_name": "coursia-ml-training"}
-    assert ckd.accepted_canonical_transition(a, b, nb_path=_29G) is False
+    assert ckd.accepted_canonical_transition(a, b, nb_path=_29G) is True
+    # La portee reste nominative : le meme couple SANS chemin reste rouge.
+    assert ckd.accepted_canonical_transition(a, b) is False
+    # Et l'entree ne dispense ni de la direction exacte ni de l'egalite de
+    # kernelspec -- les deux refus survivent a l'acceptation.
+    assert ckd.accepted_canonical_transition(b, a, nb_path=_29G) is False
+    c = {"language_version": "3.13.15", "kernelspec_name": "python3"}
+    assert ckd.accepted_canonical_transition(a, c, nb_path=_29G) is False
 
 
 def test_canonical_transition_scoped_02ml_does_not_leak_outside_series():

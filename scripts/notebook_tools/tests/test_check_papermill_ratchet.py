@@ -299,3 +299,44 @@ class TestSanctionedOutputStrips:
         recs = gate.ratchet(base, cwd=repo)
         assert [r["verdict"] for r in recs] == ["STALE_BLOCK"]
         assert recs[0]["regression"] is True
+
+    DISCOVERY = ('<div id="dotnet-interactive-this-cell-131112">'
+                 "<script>var b = 'dotnet-interactive-this-cell';</script>"
+                 "</div>")
+
+    def test_discovery_variant_strip_is_not_a_stale_block(self, repo):
+        """#23677: the hook ran ``--variant discovery``; the gate must see it.
+
+        ``stripped_evidence`` replayed the base through
+        ``strip_banner_in_place``'s own default (``probe``), which does not
+        match the discovery bootstrap, so a strip the repository sanctions came
+        back as ``STALE_BLOCK`` -- six of them plus one ``BLOCK_REMOVED`` on the
+        Sudoku sweep. The replay now uses ``both``, and this is the positive
+        control: the base carries the bootstrap alone, the branch drops that
+        output and edits a markdown cell, and the verdict must be the
+        sanctioned ``OUTPUTS_STRIPPED`` rather than a regression.
+        """
+        discovery = [{"output_type": "display_data", "metadata": {},
+                      "data": {"text/html": self.DISCOVERY}}]
+        write_nb(repo, "a.ipynb", make_nb([discovery], papermill=PM))
+        base = commit(repo, "base: discovery bootstrap output")
+        git_ok(repo, "checkout", "-q", "-b", "feature")
+        nb = make_nb([[]], papermill=PM)
+        nb["cells"].insert(0, {"cell_type": "markdown",
+                               "source": "# prose", "metadata": {}})
+        write_nb(repo, "a.ipynb", nb)
+        commit(repo, "feature: strip the bootstrap")
+
+        # Positive control on the replay itself: with the old ``probe``
+        # variant the base keeps its bootstrap and the equality cannot hold.
+        probe = gate.stripped_evidence(
+            json.dumps(make_nb([discovery], papermill=PM)), variant="probe")
+        both = gate.stripped_evidence(
+            json.dumps(make_nb([discovery], papermill=PM)))
+        assert probe != both, (
+            "the discovery output must be stripped only by the extended "
+            "variant set, otherwise this test passes for the wrong reason")
+
+        recs = gate.ratchet(base, cwd=repo)
+        assert [r["verdict"] for r in recs] == ["OUTPUTS_STRIPPED"]
+        assert recs[0]["regression"] is False
