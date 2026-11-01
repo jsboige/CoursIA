@@ -86,6 +86,42 @@ def test_concept_ornamental_nouvre_rien():
     assert political_opening(g0, g1) == 0
 
 
+def test_renommage_mesure_zero_dans_le_quotient_equivalence():
+    """Contrôle positif du banc 'decoratif' de M5a (#23900) : un simple
+    RENOMMAGE (a -> a') fait APPARAITRE de nouveaux symboles a l'identite
+    (O_t = dA_t > 0) mais n'ajoute AUCUNE CLASSE dans le quotient
+    d'equivalence (O_t = dA_t = 0). La mesure dans le quotient — et non
+    l'identite forcee g1 = g0 — est ce qui rend le verdict 'decoratif'."""
+    g0 = EvolutiveGame(
+        agents=("electeur",),
+        lexicon=frozenset({"a", "b", "c"}),
+        actions=frozenset({"comite a", "comite b", "comite c"}),
+        payoffs={
+            ("electeur", "comite a"): 2.0,
+            ("electeur", "comite b"): 0.3,
+            ("electeur", "comite c"): 0.3,
+        },
+    )
+    ren = {"a": "a'", "b": "b'", "c": "c'"}
+    act_ren = {f"comite {c}": f"comite {ren[c]}" for c in ren}
+    g1 = EvolutiveGame(
+        agents=("electeur",),
+        lexicon=frozenset(ren[c] for c in g0.lexicon),
+        actions=frozenset(act_ren[a] for a in g0.actions),
+        payoffs={(ag, act_ren[act]): pay for (ag, act), pay in g0.payoffs.items()},
+    )
+    # g1 porte REELLEMENT le renommage : il differe de g0 symbole par symbole
+    assert g1 is not g0 and g1.lexicon != g0.lexicon
+    # a l'identite : le renommage fait apparaitre de nouveaux symboles
+    assert expansion_ontology(g0, g1) > 0
+    assert political_opening(g0, g1) > 0
+    # dans le quotient d'equivalence : aucune CLASSE nouvelle
+    eq = {v: k for k, v in ren.items()}
+    eq.update({act_ren[a]: a for a in act_ren})
+    assert expansion_ontology(g0, g1, eq) == 0
+    assert political_opening(g0, g1, eq) == 0
+
+
 def test_quorum_rejette_puis_accepte():
     g0, eta = _game(), _eta_personne_morale()
     _, rejected = quorum_mechanism(g0, (eta,), votes={}, quorum=2)

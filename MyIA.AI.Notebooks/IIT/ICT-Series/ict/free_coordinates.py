@@ -220,14 +220,40 @@ def competing_mechanisms(
     return result, tuple(accepted), tuple(litiges)
 
 
-def expansion_ontology(g0: EvolutiveGame, g1: EvolutiveGame) -> int:
-    """Proxy ``O_t = |L_{t+1} \\ L_t|`` — ouverture linguistique."""
-    return len(g1.lexicon - g0.lexicon)
+def expansion_ontology(
+    g0: EvolutiveGame,
+    g1: EvolutiveGame,
+    equivalence: dict[str, str] | None = None,
+) -> int:
+    """Proxy ``O_t = |L_{t+1} \\ L_t|`` — ouverture linguistique.
+
+    Mesure dans le **quotient** par ``equivalence`` quand celle-ci est fournie :
+    on compte les **classes** de concepts nouveaux, pas les symboles. Un
+    renommage ``a' ≡ a`` n'ajoute aucune classe, donc ``O_t = 0`` **par
+    mesure** (et non par l'identité ``g1 = g0``). Sans ``equivalence`` : l'identité.
+    """
+    equiv = equivalence or {}
+    classes0 = {equiv.get(x, x) for x in g0.lexicon}
+    classes1 = {equiv.get(x, x) for x in g1.lexicon}
+    return len(classes1 - classes0)
 
 
-def political_opening(g0: EvolutiveGame, g1: EvolutiveGame) -> int:
-    """Proxy ``Delta A_t = |A_{t+1} \\ A_t|`` — garde-fou contre le verbiage."""
-    return len(g1.actions - g0.actions)
+def political_opening(
+    g0: EvolutiveGame,
+    g1: EvolutiveGame,
+    equivalence: dict[str, str] | None = None,
+) -> int:
+    """Proxy ``Delta A_t = |A_{t+1} \\ A_t|`` — garde-fou contre le verbiage.
+
+    Mesure dans le **quotient** par ``equivalence`` : on compte les **classes**
+    d'actions nouvelles, pas les symboles. Un renommage d'action
+    ``a' ≡ a`` n'ouvre aucune classe, ``Delta A_t = 0`` **par mesure**.
+    Sans ``equivalence`` : l'identité.
+    """
+    equiv = equivalence or {}
+    classes0 = {equiv.get(x, x) for x in g0.actions}
+    classes1 = {equiv.get(x, x) for x in g1.actions}
+    return len(classes1 - classes0)
 
 
 def non_canonicity(
@@ -580,8 +606,8 @@ def bancher_mecanisme(
     """
     if rng is None:
         rng = np.random.default_rng(0)
-    o_t = expansion_ontology(g0, g1)
-    d_a_t = political_opening(g0, g1)
+    o_t = expansion_ontology(g0, g1, equivalence)
+    d_a_t = political_opening(g0, g1, equivalence)
     c_t = non_canonicity(g0, candidate_extensions)
     p_r = performative_power(g1, g0, horizon, n_sim, rng)
     p_r_marg = performative_power(g1, g0, horizon, n_sim, rng, equivalence)
