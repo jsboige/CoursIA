@@ -644,11 +644,11 @@ maturity: PRODUCTION=27
 
 **Paragraphe « effet de composition — SmartContracts = carrefour trust/privacy »** :
 
-Là où Planners est le carrefour **simulation/proof intra-série** (Python ⇄ Lean 4 sur l'admissibilité d'heuristique, cycle 29), SmartContracts est le carrefour **trust/privacy inter-séries** : la **confiance** (vérification formelle Lean + tests Foundry + fuzzing), la **confidentialité** (ZKP + chiffrement homomorphe + vote E2E), et la **décision collective** (Arrow + Voting + DAOs). Cette série est l'une des rares à aligner **trois dimensions critiques de la blockchain** dans un même parcours pédagogique.
+Là où Planners est le carrefour **simulation/proof intra-série** (Python ⇄ Lean 4 sur l'admissibilité d'heuristique), SmartContracts est le carrefour **trust/privacy inter-séries** : la **confiance** (vérification formelle Lean + tests Foundry + fuzzing), la **confidentialité** (ZKP + chiffrement homomorphe + vote E2E), et la **décision collective** (Arrow + Voting + DAOs). Cette série est l'une des rares à aligner **trois dimensions critiques de la blockchain** dans un même parcours pédagogique.
 
 Le pipeline de notebooks aligne l'évolution paradigmatique de la blockchain (2008 Bitcoin → 2024 L2 + ZK rollups) sur la **frontière de vérification** (tests unitaires → fuzzing → vérification formelle SMT → potentielle preuve Lean). Chaque notebook est un maillon du triptyque *construire → tester → prouver*.
 
-**Version 1.2.0** — Juillet 2026 — section Statistiques catalogue à jour + section Écosystème MCP et parenté cross-lane. EPIC #3975 tranche smartcontracts.
+**Version 1.2.0** — Juillet 2026 — section Statistiques catalogue à jour + section Écosystème MCP et parenté cross-lane.
 
 ---
 
