@@ -825,7 +825,6 @@ Le pitch de Tweety tient en un mot : **explicabilité**. Là où un LLM produit 
 
 ---
 
-
 ## Statistiques catalogue à jour
 
 Statistiques détaillées de la sous-série Tweety. Le `pedagogical_count: 36` est lu depuis le marqueur `<!-- CATALOG-STATUS -->` (l. 5-10). Le détail par sous-catégorie ci-dessous est réconcilié avec les étiquettes par-notebook du tableau **Structure** (source granulaire). NB : le marqueur indique `maturity: BETA=33, ALPHA=3` — l'heuristique catalogue ne distingue pas les statuts PROD/BETA/DRAFT du tableau **Structure** (qui fait foi au niveau granulaire, DRAFT = `Tweety-03-Advanced-Logics-CSharp` BROKEN inclus) ; la prose ne s'aligne donc pas sur le marqueur (cf. catalog-pr-hygiene : ne pas s'aligner sur un catalogue faux). Un écart d'une unité subsiste, et il est **attendu** : le marqueur, régénéré par l'automatisation, décrit `main` **avant** l'ajout de `Tweety-02e` (36 racine), quand le recensement de cette page en compte **38** — le bloc `CATALOG-STATUS` n'est jamais réécrit à la main sur une branche feature (`catalog-pr-hygiene`), la résorption se fait donc à la prochaine régénération, pas ici :
