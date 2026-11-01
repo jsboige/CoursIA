@@ -8,13 +8,18 @@ son tour** — l'issue servie a ete servie par un tirage du tapis
 Ce que ces tests verrouillent :
 
   1. la detection du **carnet neuf** — un `added` est un carnet neuf, un
-     deménagement (`added` + `removed` de meme nom) n'en est pas un, un
-     jumeau `_en` non plus ;
+     deménagement (`added` + `removed` de meme nom) n'en est pas un ; un
+     `.ipynb` ajoute suffixe d'une langue (`_en`...) est un **carnet de
+     langue** : constat `LANG_SIBLING`, plus une exemption (#23174) ;
   2. les **deux conformites** (l'age, le tirage) et la sanction quand
      aucune n'est remplie ;
   3. le **fail-OPEN du journal** : un journal absent rend le critere du
      tirage NON EVALUABLE, et le motif le dit ;
-  4. la **sortie advisory** : la garde signale, elle ne bloque pas.
+  4. la **sortie advisory** : la garde signale, elle ne bloque pas ;
+  5. le **veto de creation** et les **carnets de langue** (#23174) : la
+     variable posee + compte atteint = constat `VETO_ACTIVE` ; un compte
+     injoignable = NON EVALUABLE, jamais un faux constat ; un `.ipynb`
+     suffixe d'une langue = constat `LANG_SIBLING` (#1650 §1).
 
 Les cas sont des MESURES : ils reprennent des PRs et des issues REELS du
 2026-10-21 (semaine de la simulation), pour qu'une regression se relise
@@ -45,19 +50,32 @@ def fichier(nom, statut):
 # --- la detection du carnet neuf --------------------------------------------
 
 def test_un_carnet_ajoute_est_un_carnet_neuf():
-    neufs, demenages = cp.new_notebooks([
+    neufs, demenages, langues = cp.new_notebooks([
         fichier("MyIA.AI.Notebooks/NLP/07-NaiveBayes.ipynb", "added")])
     assert neufs == ["MyIA.AI.Notebooks/NLP/07-NaiveBayes.ipynb"]
     assert demenages == []
+    assert langues == []
 
 
-def test_un_jumeau_en_nest_pas_un_carnet_neuf():
-    """#23038 — une PR `Add` livre la paire FR + EN : le carnet neuf c'est
-    le FR, le jumeau `_en` en est la traduction."""
-    neufs, _ = cp.new_notebooks([
+def test_un_jumeau_en_est_un_carnet_de_langue_pas_un_neuf():
+    """#23038 livrait la paire FR + EN ; #23174 retire l'exemption `_en` :
+    le carnet neuf reste le FR, le jumeau devient un **carnet de langue**
+    (constat `LANG_SIBLING`), il ne disparait plus de la mesure."""
+    neufs, _, langues = cp.new_notebooks([
         fichier("MyIA.AI.Notebooks/GenAI/Texte/07-Embedding.ipynb", "added"),
         fichier("MyIA.AI.Notebooks/GenAI/Texte/07-Embedding_en.ipynb", "added")])
     assert neufs == ["MyIA.AI.Notebooks/GenAI/Texte/07-Embedding.ipynb"]
+    assert langues == ["MyIA.AI.Notebooks/GenAI/Texte/07-Embedding_en.ipynb"]
+
+
+def test_chaque_suffixe_de_langue_est_reconnu():
+    """La liste est une constante posee par l'issue : le test verrouille
+    qu'aucun suffixe ne glisse hors du motif."""
+    for suffixe in cp.LANG_SUFFIXES:
+        nom = f" Serie-01-Carnet{suffixe}.ipynb"
+        assert cp.lang_suffix(nom.strip()) == suffixe, suffixe
+    assert cp.lang_suffix("Serie-01-Carnet_en_v2.ipynb") is None
+    assert cp.lang_suffix("Serie-01-Carnet.ipynb") is None
 
 
 def test_un_demenagement_nest_pas_un_carnet_neuf():
@@ -73,15 +91,20 @@ def test_un_demenagement_nest_pas_un_carnet_neuf():
                      "added") for n in noms]
     files += [fichier(f"MyIA.AI.Notebooks/Search/Applications/{n}.ipynb",
                       "removed") for n in noms]
-    neufs, demenages = cp.new_notebooks(files)
+    neufs, demenages, _ = cp.new_notebooks(files)
     assert neufs == []
     assert len(demenages) == 9
 
 
 def test_un_fichier_non_carnet_ne_compte_pas():
-    neufs, _ = cp.new_notebooks([
-        fichier("scripts/lean/knot_anymoves_search.py", "added")])
+    """Un `Foo_en.lean` tombe dans la meme classe : sans extension
+    `.ipynb`, ni carnet neuf ni carnet de langue — le suffixe ne suffit
+    pas, il faut un CARNET."""
+    neufs, _, langues = cp.new_notebooks([
+        fichier("scripts/lean/knot_anymoves_search.py", "added"),
+        fichier("MyIA.AI.Notebooks/SymbolicAI/Lean/Foo_en.lean", "added")])
     assert neufs == []
+    assert langues == []
 
 
 # --- le verdict --------------------------------------------------------------
@@ -305,6 +328,10 @@ def _pr_conforme(monkeypatch):
         "createdAt": "2026-10-29T10:00:00Z", "body": "Closes #4242"})
     monkeypatch.setattr(cp, "pr_files", lambda pr: [
         {"filename": "a/b/carnet.ipynb", "status": "added"}])
+    # Une variable veto residue de l'environnement ne doit jamais faire
+    # diverger les tests : le critere ne s'evalue que si la variable est
+    # posee par le test lui-meme.
+    monkeypatch.delenv(cp.VETO_VAR, raising=False)
 
 
 def test_une_panne_sur_issue_created_rend_unknown_et_sort_0(
@@ -363,4 +390,165 @@ def test_gh_classe_la_panne_de_transport_et_le_verdict_d_entree(monkeypatch):
                              "with the number of 99999."))
     with pytest.raises(cp.GhError):
         cp.pr_files(99999)
+
+
+# --- le veto de creation et les carnets de langue (#23174) -------------------
+
+def _pr_fichiers(monkeypatch, fichiers, auteur="jsboige",
+                 body="Closes #4242"):
+    monkeypatch.setattr(cp, "pr_meta", lambda pr: {
+        "title": "t", "author": {"login": auteur},
+        "createdAt": "2026-10-29T10:00:00Z", "body": body})
+    monkeypatch.setattr(cp, "pr_files", lambda pr: fichiers)
+    monkeypatch.delenv(cp.VETO_VAR, raising=False)
+
+
+def _conforme_48h(monkeypatch):
+    monkeypatch.setattr(cp, "issue_created",
+                        lambda n: "2026-10-01T00:00:00Z")
+    monkeypatch.setattr(cp, "draws_for",
+                        lambda i, j: {"disponible": True, "vues": 0,
+                                      "retenue": None})
+
+
+def test_veto_absent_ne_s_evalue_pas():
+    """Le seuil vit dans la variable, jamais dans le code : absente ou
+    vide, le critere ne s'evalue pas — meme avec un compte sous la main."""
+    assert cp.veto_verdict(None, 651) == {"pose": False}
+    assert cp.veto_verdict("", 651) == {"pose": False}
+    assert cp.veto_verdict("   ", None) == {"pose": False}
+
+
+def test_veto_atteint_est_actif_avec_compte_et_seuil():
+    v = cp.veto_verdict("400", 651)
+    assert v["pose"] is True
+    assert v["evaluable"] is True
+    assert v["actif"] is True
+    assert v["seuil"] == 400
+    assert v["issues_ouvertes"] == 651
+
+
+def test_veto_sous_le_seuil_est_inactif():
+    v = cp.veto_verdict("700", 651)
+    assert v["actif"] is False
+    assert v["evaluable"] is True
+
+
+def test_veto_illisible_ou_non_mesure_est_non_evaluable():
+    """Un seuil pourri ou un compte absent rendent le critere NON
+    EVALUABLE : ni veto actif ni veto inactif fabriques — un faux constat
+    cote PR bloque une livraison sur une mesure qui n'a pas eu lieu."""
+    v = cp.veto_verdict("quatre-cents", 651)
+    assert v["pose"] is True and v["evaluable"] is False
+    assert "actif" not in v
+    v = cp.veto_verdict("-1", 651)
+    assert v["evaluable"] is False
+    v = cp.veto_verdict("400", None)
+    assert v["evaluable"] is False
+    assert "actif" not in v
+
+
+def test_lang_sibling_positif_sur_la_pr_23653(monkeypatch, capsys):
+    """Controle positif demande par l'issue : #23653 a ajoute
+    `FT-00c-LoRA-SOTA-Comparison-Python_en.ipynb` et l'exemption `_en` a
+    laisse passer sans un mot. Le constat doit maintenant nommer le
+    fichier ET la regle (#1650 §1)."""
+    _pr_fichiers(monkeypatch, [
+        fichier("MyIA.AI.Notebooks/GenAI/FineTuning/"
+                "FT-00c-LoRA-SOTA-Comparison-Python.ipynb", "modified"),
+        fichier("MyIA.AI.Notebooks/GenAI/FineTuning/"
+                "FT-00c-LoRA-SOTA-Comparison-Python_en.ipynb", "added")])
+
+    assert cp.main(["--pr", "23653", "--strict"]) == 1
+    sortie = capsys.readouterr().out
+    assert "constat LANG_SIBLING" in sortie
+    assert "FT-00c-LoRA-SOTA-Comparison-Python_en.ipynb" in sortie
+    assert "#1650" in sortie
+
+
+def test_veto_actif_positif_sur_la_pr_23745(monkeypatch, capsys):
+    """Controle positif demande par l'issue : #23745 ajoute un carnet KNOTS
+    pendant le veto. La variable est simulee localement, le compte avec
+    elle : compte et seuil doivent paraitre dans le resume."""
+    _pr_fichiers(monkeypatch, [
+        fichier("MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/"
+                "KNOTS-05-Dynamique-Tresses-Python.ipynb", "added")])
+    monkeypatch.setenv(cp.VETO_VAR, "400")
+    monkeypatch.setattr(cp, "open_issue_count", lambda: 651)
+    _conforme_48h(monkeypatch)
+
+    assert cp.main(["--pr", "23745", "--strict"]) == 1
+    sortie = capsys.readouterr().out
+    assert "constat VETO_ACTIVE" in sortie
+    assert "651" in sortie
+    assert "400" in sortie
+
+
+def test_un_renamed_ne_declenche_rien(monkeypatch, capsys):
+    """Controle negatif : un `renamed` n'est pas un ajout — ni LANG_SIBLING
+    ni VETO_ACTIVE ne s'appliquent a un carnet qui change de place."""
+    _pr_fichiers(monkeypatch, [
+        {"filename": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/"
+                     "App-1-NQueens.ipynb", "status": "renamed"}])
+    monkeypatch.setenv(cp.VETO_VAR, "400")
+    monkeypatch.setattr(cp, "open_issue_count", lambda: 651)
+
+    assert cp.main(["--pr", "1"]) == 0
+    sortie = capsys.readouterr().out
+    assert "aucun carnet neuf" in sortie
+    assert "LANG_SIBLING" not in sortie
+    assert "VETO_ACTIVE" not in sortie
+
+
+def test_une_pr_etudiante_avec_jumeau_nest_pas_constatee(monkeypatch, capsys):
+    """Controle negatif : le perimetre flotte passe AVANT les constats —
+    une PR etudiante qui ajoute un `_en` reste hors perimetre (exemption
+    posee par l'issue, inchangee par l'extension)."""
+    _pr_fichiers(monkeypatch, [
+        fichier("MyIA.AI.Notebooks/GenAI/Texte/07-Embedding_en.ipynb",
+                "added")], auteur="etudiant-epita")
+
+    assert cp.main(["--pr", "1"]) == 0
+    sortie = capsys.readouterr().out
+    assert "hors perimetre" in sortie
+    assert "LANG_SIBLING" not in sortie
+
+
+def test_compte_veto_injoignable_ne_fabrique_rien(monkeypatch, capsys):
+    """Famine sur le compte d'issues : le critere veto est NON EVALUABLE
+    (annonce dans le resume), le 48 h reste evalue et conforme — une PR
+    conforme ne doit pas rougir parce qu'un second appel reseau a famine."""
+    _pr_fichiers(monkeypatch, [
+        fichier("MyIA.AI.Notebooks/NLP/07-NaiveBayes.ipynb", "added")])
+    monkeypatch.setenv(cp.VETO_VAR, "400")
+
+    def compte_famine():
+        raise cp.InstrumentError(
+            "gh api search/issues a echoue : gh: API rate limit exceeded")
+
+    monkeypatch.setattr(cp, "open_issue_count", compte_famine)
+    _conforme_48h(monkeypatch)
+
+    rc = cp.main(["--pr", "1", "--strict"])
+    sortie = capsys.readouterr().out
+    assert "VETO_ACTIVE" not in sortie
+    assert "NON EVALUABLE" in sortie
+    assert "CONFORME" in sortie
+    assert rc == 0, "une mesure indisponible ne produit pas un constat"
+
+
+def test_variable_posee_sans_carnet_neuf_ne_compte_pas(monkeypatch, capsys):
+    """Le veto ne s'applique qu'a la creation : une PR sans carnet ajoute
+    ne declenche pas le compte, meme variable posee."""
+    _pr_fichiers(monkeypatch, [
+        fichier("scripts/ci/check_creation_provenance.py", "modified")])
+
+    def compte_interdit():
+        raise AssertionError("le compte ne doit pas etre sollicite")
+
+    monkeypatch.setenv(cp.VETO_VAR, "400")
+    monkeypatch.setattr(cp, "open_issue_count", compte_interdit)
+
+    assert cp.main(["--pr", "1"]) == 0
+    assert "aucun carnet neuf" in capsys.readouterr().out
 
