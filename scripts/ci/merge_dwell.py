@@ -552,7 +552,10 @@ def _ancestry_readable(sha, run_git):
     apparait comme une racine) ; pour chaque racine on relit ses parents
     BRUTS dans l'objet, et on repart au-dessus de ceux qui en ont encore un.
     Une racine dont les parents bruts sont absents de la liste est une vraie
-    racine. Le parcours s'arrete donc apres un bond par greffe rencontree.
+    racine ; celle qui en porte encore un est une frontiere de graft et se
+    detend a son tour. Le parcours ne conclut que lorsque la pile est vide :
+    une seule branche qui atteint une vraie racine ne suffit pas, car une
+    frontiere de FUSION peut en avoir une complete et l'autre tronquee.
 
     Ce que la fonction mesure est le graphe de COMMITS, pas les arbres : un
     blob absent ne fait pas echouer un `rev-list` de commits, et le graft
@@ -562,11 +565,15 @@ def _ancestry_readable(sha, run_git):
     retire jamais rien.
     """
     pending = [sha]
+    seen = set()
     hops = 0
     while pending:
+        current = pending.pop()
+        if current in seen:
+            continue  # deja detendu : ne depense pas le budget deux fois
+        seen.add(current)
         if hops >= _ANCESTRY_GRAFT_HOPS_MAX:
             return False
-        current = pending.pop()
         hops += 1
         try:
             rc, out = run_git(["rev-list", "--max-parents=0", current])
@@ -577,20 +584,24 @@ def _ancestry_readable(sha, run_git):
         roots = (out or "").split()
         if not roots:
             return False
-        reached_true_root = False
         for root in roots:
             parents = _raw_parents(root, run_git)
             if parents is None:
                 return False
-            if not parents:
-                # une vraie racine d'histoire a ete atteinte sans objet
-                # manquant : toute l'ascendance traverse est presente.
-                reached_true_root = True
-            else:
-                pending.extend(parents)
-        if reached_true_root:
-            return True
-    return False
+            # Une racine SANS parent brut est une vraie racine d'histoire :
+            # rien a detendre. Une racine qui porte encore un parent brut est
+            # une frontiere de graft, et son ascendance masquee doit etre
+            # parcourue comme les autres. On empile dans les deux cas ; la
+            # boucle s'arrete quand la pile est vide, c'est-a-dire quand
+            # TOUTES les branches atteintes ont rendu une vraie racine.
+            #
+            # Ne JAMAIS rendre True des qu'une branche atteint une vraie
+            # racine : sur une frontiere de FUSION dont un seul cote est
+            # complet, l'autre cote resterait non parcouru et la frontiere
+            # serait retiree alors que son ascendance est tronquee (#23089,
+            # review du coordinateur, 2026-11-01).
+            pending.extend(parents)
+    return True
 
 
 #: Borne de lecture des reflogs dans `_alive_tips`. Un reflog de depot actif
