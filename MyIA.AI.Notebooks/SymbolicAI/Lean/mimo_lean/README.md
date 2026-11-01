@@ -33,8 +33,10 @@ lake build   # 6 libs × 2 namespaces (Mimo + Mimo_en) — Descent (cœur,
              # (Mathlib + SLT requis)
 ```
 
-CI : `lean-mimo.yml` (baseline sorry = 0, filtre standalone-tactic — cf les
-autres lakes du dépôt).
+CI : matrice [`lean-ci-matrix.yml`](https://github.com/jsboige/CoursIA/blob/main/.github/workflows/lean-ci-matrix.yml),
+entrée `mimo` du manifeste `scripts/lean/ci_lakes.json` depuis la consolidation
+#13751 (`sorry-baseline: "0"`, `sorry-filter-mode: real`, `axiom-target-modules: "*"`,
+`axiom-include-i18n-siblings: "true"` : les jumelles `_en` restent dans la cible).
 
 ## Dépendances externes
 
