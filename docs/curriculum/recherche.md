@@ -63,14 +63,14 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 32 | [GameTheory-05c — Conditions KKT : la dualité…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-05c-KKT-Dualite-Lagrangienne-Python.ipynb) | BETA | Oui |
 | 33 | [GameTheory-6 : Évolution et Confiance — Twin C#…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06-EvolutionTrust-CSharp.ipynb) | BETA | Oui |
 | 34 | [GameTheory-06-EvolutionTrust-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06-EvolutionTrust-Python.ipynb) | BETA | Oui |
-| 35 | [GameTheory-6c (C#) : Jeux Répétés et Théorème Folk](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-CSharp.ipynb) | BETA | Oui |
-| 36 | [GameTheory-6c : Jeux Répétés et Théorème Folk (Folk…](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb) | BETA | Oui |
-| 37 | [GameTheory-06d : Sympathie contre Engagement — la…](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-03-Sympathie-vs-Engagement-Python.ipynb) | BETA | Oui |
-| 38 | [GameTheory-06f — Agents à budget explicite (companion…](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-05-Agents-Bornes-Lean.ipynb) | BETA | Non |
-| 39 | [GameTheory-06g — Équilibres de jeux-programmes fondés…](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-07-Equilibres-par-Simulation-Python.ipynb) | BETA | Oui |
-| 40 | [GameTheory-06h — Programmes transparents comme…](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-08-Institutions-Transparentes-Python.ipynb) | BETA | Oui |
+| 35 | [Dynamics 01 (C#) — Jeux répétés et théorème Folk](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-CSharp.ipynb) | BETA | Oui |
+| 36 | [Dynamics 01 — Jeux répétés et théorème Folk (Folk…](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb) | BETA | Oui |
+| 37 | [Dynamics 03 — Sympathie contre engagement : la statique…](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-03-Sympathie-vs-Engagement-Python.ipynb) | BETA | Oui |
+| 38 | [Dynamics 05 — Agents à budget explicite (companion Lean…](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-05-Agents-Bornes-Lean.ipynb) | BETA | Non |
+| 39 | [Dynamics 07 — Équilibres de jeux-programmes fondés sur…](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-07-Equilibres-par-Simulation-Python.ipynb) | BETA | Oui |
+| 40 | [Dynamics 08 — Programmes transparents comme…](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-08-Institutions-Transparentes-Python.ipynb) | BETA | Oui |
 | 41 | [GameTheory-06i — Ensembles limites : Poincaré-Bendixson…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06i-Ensembles-Limites-Poincare-Bendixson-Python.ipynb) | BETA | Oui |
-| 42 | [GameTheory-06j — Preuves bornees et cout du…](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-06-Preuves-Bornees-Cout-du-Raisonnement-Python.ipynb) | BETA | Oui |
+| 42 | [Dynamics 06 — Preuves bornées et coût du raisonnement…](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-06-Preuves-Bornees-Cout-du-Raisonnement-Python.ipynb) | BETA | Oui |
 | 43 | [GameTheory-06k — FairBot par le théorème de Löb…](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-04b-FairBot-Loeb-Lean.ipynb) | BETA | Non |
 | 44 | [GameTheory-07-ExtensiveForm-Python (Twin C#)](../../MyIA.AI.Notebooks/GameTheory/GameTheory-07-ExtensiveForm-CSharp.ipynb) | BETA | Oui |
 | 45 | [GameTheory-07-ExtensiveForm-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-07-ExtensiveForm-Python.ipynb) | BETA | Oui |
@@ -193,30 +193,30 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 9 | [ICT-9 — Agence & regeneration : *reparer sa forme, ou…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-09-AgencyRegeneration-Python.ipynb) | BETA | Oui |
 | 10 | [ICT-10 — Grammaire des catastrophes : *l'obstacle qui…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar-Python.ipynb) | BETA | Oui |
 | 11 | [ICT-11 — Profils d'agence causale : à quelle échelle…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-11-CausalAgencyProfiles-Python.ipynb) | BETA | Oui |
-| 12 | [ICT-12 — Champs de valence et animats : rôles mesures,…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats-Python.ipynb) | BETA | Oui |
-| 13 | [ICT-12b — Valence APPRISE, transferable, reversible :…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12b-LearnedValence-Python.ipynb) | BETA | Oui |
-| 14 | [ICT-12c — Animat prégnance/valence incarné : la…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12c-PregnanceAnimat-Python.ipynb) | BETA | Oui |
-| 15 | [ICT-12d — Animat inhibé (Laborit) : contrôlabilité,…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12d-InhibitedActionAnimat-Python.ipynb) | BETA | Oui |
-| 16 | [ICT-12e — Valeur de l'information pour l'animat incarné…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12e-Value-of-Information-Animat-Python.ipynb) | BETA | Oui |
+| 12 | [ICT-12 — Champs de valence et animats : rôles mesures,…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12-ValenceFieldsAndAnimats-Python.ipynb) | BETA | Oui |
+| 13 | [ICT-12b — Valence APPRISE, transferable, reversible :…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12b-LearnedValence-Python.ipynb) | BETA | Oui |
+| 14 | [ICT-12c — Animat prégnance/valence incarné : la…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12c-PregnanceAnimat-Python.ipynb) | BETA | Oui |
+| 15 | [ICT-12d — Animat inhibé (Laborit) : contrôlabilité,…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12d-InhibitedActionAnimat-Python.ipynb) | BETA | Oui |
+| 16 | [ICT-12e — Valeur de l'information pour l'animat incarné…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12e-Value-of-Information-Animat-Python.ipynb) | BETA | Oui |
 | 17 | [ICT-13 — Morphodynamique stratégique : une stratégie…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb) | BETA | Oui |
 | 18 | [ICT-13b — Décroisement dynamique × observable : d'où…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb) | ALPHA | Oui |
-| 19 | [ICT-14 — Énergie libre et surprise du représentant…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14-FreeEnergySurprise-Python.ipynb) | BETA | Oui |
-| 20 | [ICT-15 — Integrated Complexity : convergence Φ / F / K…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15/ICT-15-IntegratedComplexity-Python.ipynb) | BETA | Oui |
-| 21 | [ICT-15c — Méta-proxy d'obstruction : structure des…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15/ICT-15c-MetaProxyObstruction-Python.ipynb) | BETA | Oui |
-| 22 | [ICT-15d — Cochaîne de Čech pondérée : obstruction…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15/ICT-15d-CechObstruction-Python.ipynb) | BETA | Oui |
-| 23 | [ICT-15e -- Bridge #2 : recouvrabilite *est* agentivite…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15/ICT-15e-Bridge2-RecoverabilityAgency-Python.ipynb) | BETA | Oui |
-| 24 | [ICT-15f -- Pont #1-bis : la famille decouplee tranche…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15/ICT-15f-Bridge1bis-DecoupledFamily-Python.ipynb) | BETA | Oui |
-| 25 | [ICT-15h -- Pont #1-bis (chantier 2/3) : le regime…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15/ICT-15h-Bridge1bis-AsymmetricFamily-Python.ipynb) | BETA | Oui |
-| 26 | [ICT-15i -- Pont #1-bis : le paysage 2D anisotrope clot…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15/ICT-15i-Bridge1bis-2DLandscape-Python.ipynb) | BETA | Oui |
-| 27 | [ICT-15j — Discriminant Čech par nerf simplicial (gudhi)](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15/ICT-15j-NerveDiscriminant-Python.ipynb) | BETA | Oui |
-| 28 | [ICT-15k — Recollement des macrocells : le quadtree de…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15/ICT-15k-RecollementMacroCells-Python.ipynb) | BETA | Oui |
-| 29 | [ICT-15l — Indépendance au générateur de nouveauté : le…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15/ICT-15l-IndependanceGenerateur-Python.ipynb) | BETA | Oui |
+| 19 | [ICT-14 — Énergie libre et surprise du représentant…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14-FreeEnergySurprise/ICT-14-FreeEnergySurprise-Python.ipynb) | BETA | Oui |
+| 20 | [ICT-15 — Integrated Complexity : convergence Φ / F / K…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15-IntegratedComplexity-Python.ipynb) | BETA | Oui |
+| 21 | [ICT-15c — Méta-proxy d'obstruction : structure des…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15c-MetaProxyObstruction-Python.ipynb) | BETA | Oui |
+| 22 | [ICT-15d — Cochaîne de Čech pondérée : obstruction…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15d-CechObstruction-Python.ipynb) | BETA | Oui |
+| 23 | [ICT-15e -- Bridge #2 : recouvrabilite *est* agentivite…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15e-Bridge2-RecoverabilityAgency-Python.ipynb) | BETA | Oui |
+| 24 | [ICT-15f -- Pont #1-bis : la famille decouplee tranche…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15f-Bridge1bis-DecoupledFamily-Python.ipynb) | BETA | Oui |
+| 25 | [ICT-15h -- Pont #1-bis (chantier 2/3) : le regime…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15h-Bridge1bis-AsymmetricFamily-Python.ipynb) | BETA | Oui |
+| 26 | [ICT-15i -- Pont #1-bis : le paysage 2D anisotrope clot…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15i-Bridge1bis-2DLandscape-Python.ipynb) | BETA | Oui |
+| 27 | [ICT-15j — Discriminant Čech par nerf simplicial (gudhi)](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15j-NerveDiscriminant-Python.ipynb) | BETA | Oui |
+| 28 | [ICT-15k — Recollement des macrocells : le quadtree de…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15k-RecollementMacroCells-Python.ipynb) | BETA | Oui |
+| 29 | [ICT-15l — Indépendance au générateur de nouveauté : le…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15l-IndependanceGenerateur-Python.ipynb) | BETA | Oui |
 | 30 | [ICT-16 — MDL / code en deux parties et bosse…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-16-MDLTwoPartCode-Python.ipynb) | BETA | Oui |
 | 31 | [ICT-17b — Grokking et compression-progress : la jambe K…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb) | BETA | Oui |
 | 32 | [ICT-18 -- Fleche du temps et reversibilisation (strate…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization-Python.ipynb) | BETA | Oui |
 | 33 | [ICT-18b — Budget de réversibilité : la jambe « fin » de…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18b-ReversibilityBudget-Python.ipynb) | BETA | Oui |
-| 34 | [ICT-19 — La batterie de l'ENJEU : auto-maintien vs pur…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery-Python.ipynb) | BETA | Oui |
-| 35 | [ICT-19b — Raffinement et résolution des stubs (tranche…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19b-EnjeuBattery-Raffinement-Python.ipynb) | BETA | Non |
+| 34 | [ICT-19 — La batterie de l'ENJEU : auto-maintien vs pur…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery/ICT-19-EnjeuBattery-Python.ipynb) | BETA | Oui |
+| 35 | [ICT-19b — Raffinement et résolution des stubs (tranche…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery/ICT-19b-EnjeuBattery-Raffinement-Python.ipynb) | BETA | Non |
 | 36 | [ICT-20 — FeatureCatastrophes : *calibration de méthode*](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-20-FeatureCatastrophes-Python.ipynb) | ALPHA | Non |
 | 37 | [ICT-21 — SAETrajectoires : le substrat S4 entre au banc](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-21-SAETrajectoires-Python.ipynb) | BETA | Non |
 | 38 | [ICT-21b-SAECalibration-Python — que reconstruit…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-21b-SAECalibration-Python.ipynb) | BETA | Non |

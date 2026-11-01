@@ -101,6 +101,26 @@ complete (`budget_unread = 0`), lecture locale tronquee a 15 runs ages de
 15 a 20 min -- donc au-dessus du seuil de 15 min, donc desertes par une
 lecture complete : le « parc local non affame » n'etait PAS etabli.
 
+**La troncature locale n'est plus une impasse (tranche du 31/10).** Une
+affirmation negative « le parc n'est pas affame » se lit sur les RUNS, dont
+la lecture tronque des que la file local est longue -- donc precisement
+dans le regime que l'organe existe pour traiter. Le 31/10 a 16:07Z, le
+controleur a rendu HOLD avec 162 jobs heberges ages (le plus ancien 69,7
+min, marge -145) et 28 slots locaux libres, au motif « lecture locale
+TRONQUEE (530 runs non lus) » : plus la file est longue, plus la lecture
+tronque, plus la bascule devient impossible. La meme affirmation se lit
+cependant sur un AUTRE organe, insensible a la troncature : l'**inventaire
+des runners** (`/actions/runners`) dit, a l'instant, combien de slots sont
+en ligne ET inoccupes. « Au moins K runner(s) en ligne et libre(s) portant
+les labels de la cohorte » est une affirmation POSITIVE : elle est etablie
+par l'inventaire seul, quelle que soit la lecture des runs. Quand la
+lecture locale tronque, c'est donc cet inventaire qui etablit (ou non) la
+premisse, et le motif rendu nomme lequel des deux organes a parle. Sans
+inventaire lisible, la regle par defaut revient : fail-CLOSED, pas de
+bascule. La symetrie est preservee : la **liberation** vers `false` reste
+interdite tant que la lecture HEBERGEE tronque (aucun inventaire ne dit si
+un job heberge attend encore).
+
 Le cout de l'organe est borne : deux lectures de file systematiques
 (hebergee, locale), plafonnees par `--job-budget` (defaut 120) et
 `--local-job-budget` (defaut 120) lectures de jobs, plus **une troisieme**
@@ -118,6 +138,17 @@ preference. Le budget local a ete aligne sur le budget hebergee (40 -> 120)
 pour que la lecture locale soit **complete** dans le regime nominal : un
 budget trop bas produit une troncature systematique, donc une lecture
 locale toujours « non etablie », donc une bascule vers `true` impossible.
+
+Le plafond du jeton du depot (`github.token`) est de **1 000 appels/h pour
+le repo**, partage avec les autres jobs : c'est lui qui borne la cadence,
+et non une preference. Le cron horaire du depot consomme 313 appels/h ; la
+minuterie locale sur ai-01 en ajoute **un passage par heure** -- soit
+**~630 appels/h, 63 % du plafond**. Une cadence locale a 15 min aurait porte
+le seul declencheur local a ~1 250 appels/h : au-dessus du plafond, l'organe
+se serait affame lui-meme, et son etat rendu serait devenu illisible
+(UNREADABLE -- sur mais muet). Ce que la minuterie locale apporte n'est donc
+pas de la frequence mais de la fiabilite : la livraison des crons du depot
+est mesuree a 22 % des tics servis (mediane 289 min de retard).
 """
 
 from __future__ import annotations
@@ -135,6 +166,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import check_runner_starvation as crs  # noqa: E402  (organe voisin, meme dossier)
+import check_self_hosted_runner_policy as csrp  # noqa: E402  (organe voisin)
 
 EXIT_OK = 0
 EXIT_UNREADABLE = 1
@@ -142,8 +174,16 @@ EXIT_REFUSED = 2
 
 DEFAULT_REPO = "jsboige/CoursIA"
 DEFAULT_VARIABLE = "CI_OVERFLOW_LOCAL"
+# Fichier du workflow qui porte cet organe : le garde-fou de cadence lit
+# les runs de CE workflow pour mesurer l'ecart depuis le dernier passage.
+CONTROLLER_WORKFLOW_FILE = "ci-overflow-controller.yml"
 HOSTED_LABEL = "ubuntu-latest"
 LOCAL_LABEL = "coursia-linux"
+# Labels que porte un runner pour accepter un job de la cohorte : la forme
+# hybride des workflows est `["self-hosted","coursia-ephemeral","coursia-linux"]`,
+# donc les DEUX labels sont requis. Un runner qui n'en porterait qu'un ne peut
+# pas absorber le debordement et ne compte pas comme slot libre de cohorte.
+COHORT_LABELS = ("coursia-ephemeral", "coursia-linux")
 
 # Seuil de saturation : au-dela de ce nombre de jobs hebergees en file
 # depuis plus de `--saturation-minutes`, l'offre hebergee est saturee.
@@ -226,6 +266,16 @@ class LocalSample:
     # la reponse) : ils sont comptes comme occupes (fail-CLOSED), jamais
     # comme libres.
     unknown: int = 0
+    # Inventaire des runners LU (et non deduit) : c'est la condition qui
+    # autorise `cohort_free` a porter la premisse « le parc local n'est pas
+    # affame » quand la lecture des runs tronque. Defaut False : un
+    # `LocalSample` construit sans inventaire ne peut PAS lever la
+    # troncature (fail-CLOSED, y compris pour les appelants de test).
+    inventory_read: bool = False
+    # Slots en ligne ET inoccupes portant TOUS les labels de la cohorte
+    # (`coursia-ephemeral` ET `coursia-linux`) : affirmation POSITIVE,
+    # insensible a la troncature de la lecture des runs.
+    cohort_free: int = 0
 
     @property
     def charge(self) -> int:
@@ -579,28 +629,52 @@ def evaluate(
     # 3. Offre hebergee saturee ET parc local libre : le local absorbe.
     #    « saturee » est une premisse POSITIVE (« au moins N jobs ages ») :
     #    la troncature de l'offre hebergee ne l'annule pas, elle ne fait que
-    #    sous-compter. En revanche « le parc local n'est PAS affame » est
-    #    une premisse NEGATIVE : sous troncature locale elle n'est pas
-    #    etablie, et on n'envoie pas de debordement vers un parc dont on
-    #    ignore l'occupation.
+    #    sous-compter. « Le parc local n'est PAS affame » est une premisse
+    #    NEGATIVE : sous troncature locale elle n'est pas etablie par la
+    #    lecture des runs -- mais l'INVENTAIRE des runners l'etablit alors
+    #    par une affirmation positive (« au moins K slots en ligne et
+    #    inoccupes »), insensible a la troncature (tranche du 31/10). Sans
+    #    inventaire lisible, la regle fail-CLOSED revient.
+    inventory_establishes = (
+        local.inventory_read and local.cohort_free >= min_free_slots
+    )
     if (
         hosted.old >= saturation_jobs
         and local.free >= min_free_slots
-        and not local.truncated
+        and (not local.truncated or inventory_establishes)
     ):
+        if local.truncated:
+            evidence = (
+                f"lecture locale tronquee ({local.reason}) mais l'inventaire "
+                f"etablit le parc : {local.cohort_free} runner(s) de cohorte "
+                f"en ligne et inoccupes (seuil {min_free_slots})"
+            )
+        else:
+            evidence = f"parc local libre ({local.free} slot(s))"
         return switch(
             "true",
             f"offre hebergee saturee ({hosted.old} job(s) en file depuis plus "
             f"de {saturation_minutes:.0f} min, plus ancien {hosted.oldest_age_min:.0f} min) "
-            f"et parc local libre ({local.free} slot(s)) -- le local absorbe",
+            f"et {evidence} -- le local absorbe",
         )
 
     notes = []
-    if local.truncated:
+    if local.truncated and not inventory_establishes:
+        # Deux causes distinctes, nommees separement : l'inventaire n'a pas
+        # ete lu, ou il ne montre pas assez de slots libres de cohorte. Une
+        # cause silencieuse ferait lire « troncature » la ou l'inventaire a
+        # en fait parle.
+        if not local.inventory_read:
+            pourquoi = "inventaire des runners illisible"
+        else:
+            pourquoi = (
+                f"{local.cohort_free} runner(s) de cohorte en ligne et "
+                f"inoccupes (seuil {min_free_slots})"
+            )
         notes.append(
-            f"lecture locale TRONQUEE ({local.reason}) : « le parc local "
-            f"n'est pas affame » n'est pas etablie -> pas de debordement "
-            f"vers le local"
+            f"lecture locale TRONQUEE ({local.reason}) et {pourquoi} : "
+            f"« le parc local n'est pas affame » n'est pas etablie -> pas de "
+            f"debordement vers le local"
         )
     # Un operateur doit pouvoir lire l'etat des deux cotes du calcul de
     # liberation, meme quand la liberation n'a meme pas ete tentee.
@@ -657,6 +731,60 @@ def _gh_api(
         env=env,
     )
     return proc.returncode, proc.stdout, proc.stderr
+
+
+def last_run_age_minutes(
+    repo: str,
+    workflow_file: str,
+    now: datetime,
+    token: str | None,
+    current_run_id: str | None = None,
+) -> tuple[float | None, str]:
+    """Age du dernier passage du controleur, en minutes.
+
+    L'ecart se lit dans l'API des runs du controleur LUI-MEME : etat sans
+    etat ajoute (ni variable, ni cache, ni fichier). Le run COURANT est
+    exclu -- il est deja dans la liste, et sans cette exclusion l'ecart
+    serait toujours nul et le declencheur ne declencherait jamais.
+
+    Rend `(age, motif)`. `age` a `None` quand l'ecart n'a pas pu etre
+    etabli (listing illisible, aucun passage anterieur) : le garde-fou ne
+    peut alors rien interdire, et l'absence d'interdiction est la direction
+    qui laisse la soupape fonctionner.
+    """
+    rc, out, err = _gh_api(
+        [f"repos/{repo}/actions/workflows/{workflow_file}/runs?per_page=10"],
+        token=token,
+    )
+    if rc != 0:
+        message = (err or out or "").strip().splitlines()
+        return None, (
+            "listing des runs du controleur illisible ("
+            + (message[-1] if message else "raison inconnue")
+            + ")"
+        )
+    try:
+        data = json.loads(out)
+    except json.JSONDecodeError:
+        return None, "reponse non-JSON"
+    runs = data.get("workflow_runs") if isinstance(data, dict) else None
+    if not isinstance(runs, list):
+        return None, "reponse inattendue"
+    for run in runs:
+        if not isinstance(run, dict):
+            continue
+        rid = run.get("id")
+        if current_run_id and str(rid) == str(current_run_id):
+            continue
+        created = run.get("created_at")
+        if not isinstance(created, str):
+            continue
+        try:
+            stamp = datetime.fromisoformat(created.replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        return (now - stamp).total_seconds() / 60.0, ""
+    return None, "aucun passage anterieur du controleur"
 
 
 def read_variable(
@@ -767,6 +895,44 @@ def collect_hosted(
     )
 
 
+def fetch_cohort_idle(
+    repo: str,
+    token: str | None,
+    *,
+    local_inventory: crs.RunnerInventory | None = None,
+) -> tuple[int, bool, str]:
+    """Slots de la COHORTE en ligne et inoccupes, lus sur l'inventaire.
+
+    Rend `(slots, lisible, motif)`. Un slot de cohorte porte **tous** les
+    labels de `COHORT_LABELS` : l'inventaire est lu une fois par label et les
+    ensembles de runners LIBRES sont intercedes (un runner qui n'en porterait
+    qu'un ne peut pas accepter la forme hybride).
+
+    `local_inventory` evite de relire le label local quand l'appelant vient
+    de le lire : le cout de l'organe est un budget d'appels partage (volet 5
+    de #22937), on ne paie pas deux fois la meme requete.
+
+    C'est cette mesure qui porte la premisse « le parc local n'est pas
+    affame » quand la lecture des runs tronque : elle est POSITIVE (elle
+    nomme des runners precis en ligne et inoccupes), donc insensible a la
+    troncature. Inventaire illisible sur n'importe lequel des labels ->
+    `lisible=False` et l'appelant retombe sur la regle fail-CLOSED : une
+    capacite partiellement lue n'est pas une capacite etablie.
+    """
+    free_sets: list[set[str]] = []
+    for label in COHORT_LABELS:
+        if label == LOCAL_LABEL and local_inventory is not None:
+            inv = local_inventory
+        else:
+            inv = crs.fetch_inventory(repo, label, token)
+        if not inv.available:
+            return 0, False, inv.reason or "inventaire des runners illisible"
+        free_sets.append(set(inv.idle))
+    if not free_sets:
+        return 0, False, "aucun label de cohorte configure"
+    return len(set.intersection(*free_sets)), True, ""
+
+
 def collect_local(
     repo: str,
     saturation_minutes: float,
@@ -775,6 +941,8 @@ def collect_local(
     token: str | None,
     measure_starvation: bool = True,
     runners_token: str | None = None,
+    local_paths: set[str] | None = None,
+    local_paths_reason: str = "",
 ) -> LocalSample:
     """Mesure le parc local : slots libres, et affames si demande.
 
@@ -800,6 +968,29 @@ def collect_local(
                 f"jeton courant sans droit sur actions/runners -- {reason}"
             )
         return LocalSample(complete=False, reason=reason)
+    if local_paths_reason:
+        # La liste des workflows porteurs d'un job local n'est pas etablie :
+        # la lecture ciblee ne peut pas etre lancee, donc « le parc local
+        # n'est pas affame » ne peut etre affirme -> fail-CLOSED, jamais un
+        # enclenchement par defaut.
+        return LocalSample(
+            online=len(inv.online),
+            free=inv.free,
+            busy=len(inv.busy),
+            unknown=len(inv.unknown),
+            complete=False,
+            reason=(
+                "liste des workflows porteurs d'un job local non etablie "
+                f"({local_paths_reason}) -- « le parc local n'est pas affame » "
+                f"n'est PAS etablie"
+            ),
+        )
+    # Slots de la COHORTE (tous labels), lus sur l'inventaire deja paye pour
+    # le label local : c'est l'organe qui etablit la premisse quand la
+    # lecture des runs tronque (tranche du 31/10, #22937).
+    cohort_free, cohort_readable, cohort_reason = fetch_cohort_idle(
+        repo, runners_token or token, local_inventory=inv
+    )
     starved = 0
     truncated = False
     in_progress_unread = 0
@@ -811,6 +1002,7 @@ def collect_local(
             starve_minutes=saturation_minutes,
             now=now,
             job_read_budget=job_budget,
+            local_paths=local_paths,
         )
         if not starv.complete:
             return LocalSample(
@@ -819,7 +1011,10 @@ def collect_local(
                 busy=len(inv.busy),
                 unknown=len(inv.unknown),
                 complete=False,
-                reason="lecture de la file locale incomplete",
+                inventory_read=cohort_readable,
+                cohort_free=cohort_free,
+                reason="lecture de la file locale incomplete"
+                + (f" ; {cohort_reason}" if cohort_reason else ""),
             )
         starved = len(starv.starved)
         truncated = starv.truncated
@@ -829,6 +1024,12 @@ def collect_local(
                 f"{len(starv.budget_unread)} run(s) local(aux) non lu(s) "
                 f"(budget de lecture {job_budget} atteint) -- « le parc local "
                 f"n'est pas affame » n'est PAS etablie"
+                + (
+                    f" ({starv.skipped_other_workflow} run(s) hors perimetre "
+                    f"ecarte(s) sans lecture)"
+                    if starv.skipped_other_workflow
+                    else ""
+                )
             )
     else:
         reason = "affamescence locale non mesuree (--no-local-starvation)"
@@ -842,6 +1043,8 @@ def collect_local(
         reason=reason,
         busy=len(inv.busy),
         unknown=len(inv.unknown),
+        inventory_read=cohort_readable,
+        cohort_free=cohort_free,
     )
 
 
@@ -909,6 +1112,39 @@ def derive_cohort_workflows(repo_root: Path) -> tuple[set[str], str]:
             f"`{COHORT_MARKER}` -- la cohorte n'est pas etablie"
         )
     return paths, ""
+
+
+def derive_local_capable_workflows(repo_root: Path) -> tuple[set[str], str]:
+    """Derive du depot la liste des workflows QUI PEUVENT porter un job local.
+
+    Deux sources, lues dans le checkout a chaque passage, jamais recopiees :
+    les workflows STATIQUEMENT locaux (par l'organe de politique des runners,
+    qui possede la connaissance « quel runner porte quel workflow ») et la
+    cohorte hybride (par le marqueur `vars.CI_OVERFLOW_LOCAL`).
+
+    Rend `(chemins, motif)`, chemins sous la forme de `run.path`
+    (`.github/workflows/<fichier>`). Motif vide = derivation reussie.
+
+    Echec -- la liste locale est vide ou illisible -- : ensemble VIDE et
+    motif. La lecture ciblee ne peut alors pas etre lancee : « le parc local
+    n'est pas affame » ne peut pas etre affirme, donc le controleur ne peut
+    pas enclencher (fail-CLOSED, meme convention que la cohorte).
+    """
+    workflows_dir = Path(repo_root) / ".github" / "workflows"
+    local_paths, local_reason = csrp.local_capable_workflows(workflows_dir)
+    if local_reason:
+        return set(), local_reason
+    if not local_paths:
+        return set(), (
+            f"aucun workflow de {workflows_dir} ne peut porter un job "
+            f"`{LOCAL_LABEL}` -- la liste n'est pas etablie"
+        )
+    cohort_paths, _cohort_reason = derive_cohort_workflows(repo_root)
+    # Une cohorte VIDE n'est PAS « la cohorte ne rend rien » : son absence
+    # est signalee par le echantillon de charge (illisible), ailleurs. Elle
+    # ne doit donc pas casser la lecture ciblee, dont la liste statique
+    # suffit.
+    return local_paths | cohort_paths, ""
 
 
 def collect_cohort_charge(
@@ -1004,6 +1240,19 @@ def render_summary(report: dict, rc: int) -> str:
     emettre une annotation, un lecteur la voit dans le resume.
     """
     thresholds = report.get("thresholds", {})
+    if report.get("skipped"):
+        # Passage ecarte par la garde de cadence : aucune mesure n'a eu
+        # lieu, donc le resume ne parle QUE de l'ecart constate.
+        return "\n".join([
+            "### CI overflow controller (phase B) -- VERDICT",
+            "",
+            f"- code retour : {rc}",
+            f"- verdict : {report.get('verdict')}",
+            f"- raison : {report.get('reason')}",
+            f"- dernier passage : {report.get('last_run_age_min')} min "
+            f"(minimum {report.get('min_interval_min')} min)",
+            "",
+        ])
     hosted = report.get("hosted", {})
     local = report.get("local", {})
     cohort = report.get("cohort", {})
@@ -1014,6 +1263,12 @@ def render_summary(report: dict, rc: int) -> str:
         f"- code retour : {rc}",
         f"- verdict : {report.get('verdict')}",
         f"- raison : {report.get('reason')}",
+        f"- dernier passage : "
+        + (
+            f"{report.get('last_run_age_min')} min"
+            if report.get("last_run_age_min") is not None
+            else f"illisible ({report.get('last_run_age_reason')})"
+        ),
         f"- variable : {report.get('current')} -> {report.get('target')} "
         f"({'ECRIT' if report.get('written') else 'NON ECRIT'})",
         f"- hebergee : {hosted.get('queued')} job(s) en file, "
@@ -1025,7 +1280,13 @@ def render_summary(report: dict, rc: int) -> str:
         + (" [LECTURE TRONQUEE]" if hosted.get("truncated") else ""),
         f"- local : {local.get('online')} slot(s) en ligne, "
         f"{local.get('free')} libre(s), {local.get('starved')} affame(s)"
-        + (" [LECTURE TRONQUEE]" if local.get("truncated") else ""),
+        + (" [LECTURE TRONQUEE]" if local.get("truncated") else "")
+        + (
+            f" ; inventaire : {local.get('cohort_free')} slot(s) de cohorte "
+            f"libre(s)"
+            if local.get("inventory_read")
+            else " ; inventaire : ILLISIBLE"
+        ),
         f"- cohorte : charge rendue {cohort.get('charge')} job(s) "
         f"({cohort.get('queued')} en file + {cohort.get('in_progress')} en "
         f"cours) sur {cohort.get('workflows')} workflow(s) derive(s) du "
@@ -1135,6 +1396,18 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="ne mesure pas l'affamescence du parc local (garde secondaire)",
     )
+    parser.add_argument(
+        "--min-interval",
+        type=float,
+        default=0.0,
+        metavar="MINUTES",
+        help=(
+            "intervalle minimal entre deux passages, en minutes : si le "
+            "dernier passage du controleur est plus recent, ce passage rend "
+            "SKIPPED sans mesurer et sans ecrire (0 = pas de garde, le "
+            "comportement d'un declenchement manuel)"
+        ),
+    )
     parser.add_argument("--json", action="store_true")
     parser.add_argument(
         "--summary-out",
@@ -1178,6 +1451,67 @@ def main(argv: list[str] | None = None) -> int:
         else datetime.now(timezone.utc)
     )
 
+    # Garde-fou de cadence : le declencheur tire plus souvent que le cron
+    # horaire (cadence locale sur ai-01, ou fin de PR gate). L'ecart minimal
+    # entre deux passages borne ce que le declencheur consomme -- en occupation
+    # du parc local (le controleur tourne SUR ce parc) et en appels API. Le
+    # controle est fait AVANT toute mesure : un passage ecarte ne doit rien
+    # lire du tout.
+    # L'ecart au dernier passage est mesure AVANT la garde, et reporte dans
+    # TOUS les cas : c'est l'instrument qui rend visible la mort du
+    # declencheur local (un ecart qui grandit) au lieu de la laisser
+    # silencieuse. Il coute UN appel, dans un passage qui en compte 313.
+    age, age_reason = last_run_age_minutes(
+        args.repo,
+        CONTROLLER_WORKFLOW_FILE,
+        now,
+        token,
+        current_run_id=os.environ.get("GITHUB_RUN_ID"),
+    )
+    if args.min_interval > 0:
+        if age is not None and age < args.min_interval:
+            report = {
+                "verdict": "SKIPPED",
+                "reason": (
+                    f"intervalle minimal non ecoule : {age:.1f} min depuis le "
+                    f"dernier passage, minimum {args.min_interval:.0f} min -- "
+                    f"aucune mesure, aucune ecriture"
+                ),
+                "skipped": True,
+                "last_run_age_min": age,
+                "min_interval_min": args.min_interval,
+                "current": None,
+                "target": None,
+                "written": False,
+                "thresholds": {
+                    "saturation_jobs": args.saturation_jobs,
+                    "saturation_minutes": args.saturation_minutes,
+                    "min_free_slots": args.min_free_slots,
+                    "dwell_minutes": args.dwell_minutes,
+                    "hosted_cap": args.hosted_cap,
+                    "confirm_seconds": args.confirm_seconds,
+                },
+            }
+            rc = EXIT_OK
+            if args.json:
+                print(json.dumps(report, indent=2, ensure_ascii=False))
+            else:
+                print(f"[ci-overflow] SKIPPED -- {report['reason']}")
+            if args.summary_out:
+                Path(args.summary_out).write_text(
+                    render_summary(report, rc), encoding="utf-8"
+                )
+            return rc
+        if age is None:
+            # L'ecart n'a pas pu etre etabli : le garde-fou ne peut rien
+            # interdire. On continue (mesurer vaut mieux que ne rien
+            # faire), et le motif est dit dans le rapport.
+            print(
+                f"[ci-overflow] garde de cadence inoperante ({age_reason}) -- "
+                f"le passage continue",
+                file=sys.stderr,
+            )
+
     # Lecture de la variable : le jeton d'ecriture d'abord (il porte le droit
     # `Variables: read-write`), le jeton de mesure en repli LECTURE SEULE
     # (le cas d'un operateur qui n'a pose que le jeton de mesure). Ce repli ne
@@ -1192,6 +1526,18 @@ def main(argv: list[str] | None = None) -> int:
             f"Le jeton a-t-il le droit `variables: read` ?"
         )
 
+    # Liste de la COHORTE : derivee du depot a chaque passage, jamais
+    # recopiee (un workflow qui rejoint la forme hybride entre dans le calcul
+    # sans qu'on touche a cet organe).
+    repo_root = Path(__file__).resolve().parents[2]
+    cohort_paths, cohort_reason = derive_cohort_workflows(repo_root)
+
+    # Liste des workflows QUI PEUVENT porter un job local : c'est elle qui
+    # cible la lecture locale. Sans elle, la lecture consomme son budget sur
+    # des runs qui n'ont aucun job local (mesure du coordinateur, 2026-10-28
+    # 16:55Z : 250 runs anciens en file, budget 120, lecture tronquee).
+    local_paths, local_paths_reason = derive_local_capable_workflows(repo_root)
+
     hosted = collect_hosted(
         args.repo, args.saturation_minutes, args.job_budget, now, token
     )
@@ -1204,13 +1550,9 @@ def main(argv: list[str] | None = None) -> int:
         token,
         measure_starvation=not args.no_local_starvation,
         runners_token=runners_token,
+        local_paths=None if local_paths_reason else local_paths,
+        local_paths_reason=local_paths_reason,
     )
-
-    # Liste de la COHORTE : derivee du depot a chaque passage, jamais
-    # recopiee (un workflow qui rejoint la forme hybride entre dans le calcul
-    # sans qu'on touche a cet organe).
-    repo_root = Path(__file__).resolve().parents[2]
-    cohort_paths, cohort_reason = derive_cohort_workflows(repo_root)
 
     # Charge rendue de la cohorte : elle n'est lue QUE si la liberation est
     # autrement candidate (l'offre hebergee n'attend pas et le parc local
@@ -1312,6 +1654,8 @@ def main(argv: list[str] | None = None) -> int:
         "write_token_env": args.write_token_env,
         "write_token_present": bool(write_token),
         "write_blocked": write_blocked,
+        "last_run_age_min": round(age, 1) if age is not None else None,
+        "last_run_age_reason": age_reason,
         "state_known": not state_unknown,
         "state_reason": state_reason,
         "hosted": {
@@ -1336,6 +1680,11 @@ def main(argv: list[str] | None = None) -> int:
             "busy": local.busy,
             "unknown": local.unknown,
             "charge": local.charge,
+            # Tranche du 31/10 : l'inventaire porte la premisse quand la
+            # lecture des runs tronque -- l'operateur doit le lire dans le
+            # rapport, pas le deduire du motif.
+            "inventory_read": local.inventory_read,
+            "cohort_free": local.cohort_free,
         },
         # La cohorte, ce sont les workflows qui LISENT la variable : la liste
         # est derivee du depot a chaque passage (`derive_cohort_workflows`),
@@ -1363,6 +1712,15 @@ def main(argv: list[str] | None = None) -> int:
                 cohort_confirm.in_progress_unread if cohort_confirm else 0
             ),
             "reason": cohort_confirm.reason if cohort_confirm else "",
+        },
+        # Les workflows porteurs d'un job LOCAL : c'est la liste qui cible la
+        # lecture locale (`derive_local_capable_workflows`), derivee du depot
+        # a chaque passage. Le compte la rend verifiable sans recopier les
+        # chemins ; la derivation vide signale que la lecture ciblee n'a pas
+        # pu etre lancee.
+        "local_capable": {
+            "workflows": len(local_paths),
+            "derivation": local_paths_reason,
         },
         "thresholds": {
             "saturation_jobs": args.saturation_jobs,

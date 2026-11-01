@@ -95,6 +95,14 @@ Un rating subjectif n'est interprétable qu'accompagné de son protocole : dans 
 |---|----------|---------|---------|------|
 | 19 | [04-19-Evaluation-MOS](04-19-Evaluation-MOS.ipynb) | Protocole d'écoute subjective (ITU-T P.800) et agrégateur (ITU-R P.808) : lecture de la rubrique depuis le `04-7`, liste d'essais rejouable, fiche de notation pré-remplie, MOS + IC 95 % + rejet des auditeurs aberrants, proxies (SNR, SI-SDR, LSD, STOI) sur référence source-filtre et dégradations maîtrisées, 3 exercices | CPU local (numpy, scipy, torchmetrics, pystoi) | 0 |
 
+### Séparation avancée — qualité mesurée
+
+Là où [02-4](../02-Advanced/02-4-Demucs-Source-Separation.ipynb) sépare un mélange synthétique (qualité évidente, non mesurée), ce carnet entre sur une **vraie chanson du corpus MUSDB18** avec ses **4 stems de référence studio** : le SDR par stem et par architecture devient une mesure. Trois modèles Demucs sur deux générations (v3 Hybrid Demucs, v4 Hybrid Transformer, v4 fine-tune par source) sont comparés à géométrie égale, avec témoin négatif (SDR effondré face à la référence d'une autre piste) et contrôle de cohérence d'énergie du remix.
+
+| # | Notebook | Contenu | Service | VRAM |
+|---|----------|---------|---------|------|
+| 20 | [04-20-Separation-Avancee-Qualite](04-20-Separation-Avancee-Qualite.ipynb) | Trois modèles Demucs sur deux générations (hdemucs_mmi v3, htdemucs v4, htdemucs_ft) comparés sur piste MUSDB18 avec stems de référence : SDR par stem, témoin négatif, cohérence d'énergie, mini-benchmark médian 3 pistes, 3 exercices | Local GPU (demucs 4.1.0, HuggingFace streaming) | ~6 GB |
+
 ## Prérequis
 
 ### API Keys
@@ -150,3 +158,4 @@ Texte littéraire -> Benchmark voix (P0)
 - [Documentation Audio principale](../README.md)
 - [Live Coding Guide](04-5-LiveCoding-LLM-Music.ipynb)
 - [GenAI Services Documentation](../../../../docs/genai/genai-services.md)
+

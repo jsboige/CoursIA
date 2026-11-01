@@ -13,14 +13,18 @@ name: MD Hierarchy Drift Advisory
 # artefact d'automatisation : elle est re-seedee dans le MEME commit que toute
 # regle de scanner (via --update-baseline), jamais a la main.
 
+# ABSORBEE PAR LA VOIE RAPIDE (#22209, tranche 1b, voie A) -- le declencheur
+# `pull_request` est retire : ce job tourne desormais dans
+# `always-on-guards.yml :: Always-on commenters`, qui paie un checkout pour
+# trois organes au lieu d'un, et dont le registre porte les memes `paths:`.
+# Le fichier est CONSERVE : il porte le nom canonique du check-run (contrat
+# `check_absorbed_check_run_identity.py`) et reste le chemin de re-mesure
+# manuelle (`workflow_dispatch`). Retour arriere = restaurer le bloc `on:`
+# documente ci-dessous et retirer le garde du registre.
+# Ancien declencheur (a restaurer pour un retour arriere) :
+#   pull_request: [opened, synchronize, edited, reopened] sur main,
+#   paths: MyIA.AI.Notebooks/**/*.ipynb, le scanner, la baseline.
 on:
-  pull_request:
-    types: [opened, synchronize, edited, reopened]
-    branches: [main]
-    paths:
-      - "MyIA.AI.Notebooks/**/*.ipynb"
-      - "scripts/notebook_tools/scan_md_hierarchy.py"
-      - "scripts/notebook_tools/md_hierarchy_baseline.json"
   workflow_dispatch:
 
 permissions:
@@ -49,6 +53,10 @@ jobs:
     # heberge, sans toucher ce fichier. Limite : runs-on se resout a la
     # creation du job, les runs deja en file ne bougent pas.
     runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
+    # #22954 : borne explicite. Mesure du 2026-10-29 sur les 4 derniers
+    # runs verts de ce job : max 1.1 min. Marge large (le defaut
+    # d'Actions est 6 h, et un job fige tient son slot tout ce temps).
+    timeout-minutes: 10
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - uses: actions/checkout@v4

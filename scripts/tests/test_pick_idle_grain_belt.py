@@ -2689,6 +2689,133 @@ def test_belt_publishes_the_run_deadline_before_the_claims_phase(
     assert pig._BELT_DEADLINE[0] is None, "l'echeance fuit apres le run"
 
 
+def test_belt_arms_the_run_wall_before_the_pool_load(monkeypatch, capsys):
+    """#23090 : le mur est DEJA publie quand `fetch_pool` s'ouvre.
+
+    Mesure fondatrice (po-2025, clone superficiel) : `--belt --lane` lance en
+    debut de cycle n'a rien rendu dans les 900 s de son propre budget, puis
+    plus de 40 min. Le diagnostic de l'issue est exact -- `_BELT_DEADLINE`
+    etait arme dans la branche `--belt`, donc apres le chargement du pool, et
+    les phases d'amont couraient sans aucune borne.
+
+    Le predicat est l'INTERIEUR de `fetch_pool` : c'est la que la sonde doit
+    deja lire une echeance, et lire un timeout ramene au budget du run.
+    """
+    _patch_belt_network(monkeypatch, prs=[], red_state=_state_red())
+    clock = _patched_clock(monkeypatch, start=3000.0)
+    seen = {}
+
+    def spy_pool(**kwargs):
+        seen["deadline"] = pig._BELT_DEADLINE[0]
+        seen["clamped"] = pig._clamp_timeout(90)
+        return [], None
+
+    monkeypatch.setattr(pig, "fetch_pool", spy_pool)
+    pig._BELT_DEADLINE[0] = None
+    try:
+        rc = pig.main(["--lane", "myia-po-2025:CoursIA", "--belt",
+                       "--belt-time-budget", "60", "--json"])
+        assert rc == 0
+        assert seen["deadline"] == pytest.approx(3060.0), (
+            "le chargement du pool s'ouvre sans echeance publiee (#23090) : "
+            "le budget du run ne borne pas ses phases d'amont")
+        assert seen["clamped"] == pytest.approx(60.0), (
+            "la sonde de pool garde son timeout par defaut malgre un budget")
+        assert pig._BELT_DEADLINE[0] is None, "l'echeance fuit apres le run"
+    finally:
+        pig._BELT_DEADLINE[0] = None
+    _ = clock
+
+
+def test_phase_deadline_can_only_shrink_the_run_wall(monkeypatch):
+    """#23090 : une phase retrecit le mur du run, elle ne l'etend jamais.
+
+    Sans ce sens unique, armer le mur avant les phases d'amont n'aurait servi
+    a rien : `red_backlog` publie sa propre echeance (`--red-budget`, 300 s par
+    defaut) et l'aurait REPOUSSEE a chaque appel, rendant au run exactement le
+    sursis que #23090 veut lui retirer.
+    """
+    clock = _patched_clock(monkeypatch, start=4000.0)
+    pig._BELT_DEADLINE[0] = 4060.0  # mur du run : 60 s
+    try:
+        token = pig._publish_phase_deadline(300)  # phase plus genereuse
+        assert pig._BELT_DEADLINE[0] == pytest.approx(4060.0), (
+            "une phase a 300 s a repousse le mur du run")
+        pig._restore_phase_deadline(token)
+        assert pig._BELT_DEADLINE[0] == pytest.approx(4060.0)
+
+        token = pig._publish_phase_deadline(10)  # phase plus etroite
+        assert pig._BELT_DEADLINE[0] == pytest.approx(4010.0), (
+            "une phase plus etroite doit borner plus court")
+        pig._restore_phase_deadline(token)
+        assert pig._BELT_DEADLINE[0] == pytest.approx(4060.0), (
+            "le `finally` de la phase doit rendre le mur du run")
+    finally:
+        pig._BELT_DEADLINE[0] = None
+    _ = clock
+
+
+def test_each_rest_page_pays_the_remaining_wall_not_its_default(monkeypatch):
+    """#23090 : la boucle REST clampe CHAQUE page, pas la boucle entiere.
+
+    Armer le mur avant `fetch_pool` ne servait a rien tant que les transports
+    d'amont lisaient leur defaut : `_rest_pages` payait 120 s par page, soit
+    600 s pour cinq pages, sous un budget de 120 s. C'est la moitie « rendre la
+    borne effective » du fix -- l'autre moitie (armer tot) est mesuree
+    au-dessus.
+    """
+    clock = _patched_clock(monkeypatch, start=5000.0)
+    seen = []
+
+    class _Stop(Exception):
+        pass
+
+    def fake_run(cmd, **kwargs):
+        seen.append(kwargs.get("timeout"))
+        raise _Stop
+
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+    pig._BELT_DEADLINE[0] = 5020.0  # 20 s de mur
+    try:
+        with pytest.raises(_Stop):
+            pig._rest_pages("repos/jsboige/CoursIA/issues", max_pages=5)
+        assert seen == [pytest.approx(20.0)], (
+            "la premiere page a garde son defaut de 120 s sous un mur de 20 s")
+    finally:
+        pig._BELT_DEADLINE[0] = None
+    _ = clock
+
+
+def test_pool_transports_honour_the_run_wall(monkeypatch):
+    """#23090 : les DEUX transports de `fetch_pool` paient le reste du mur.
+
+    Le premier est `gh issue list` (defaut 120 s), le second le listing REST
+    pagine. Le predicat ne depend pas de l'ordre : aucun appel ne peut
+    demander plus que le reste a courir.
+    """
+    clock = _patched_clock(monkeypatch, start=6000.0)
+    seen = []
+
+    def fake_run(cmd, **kwargs):
+        seen.append(kwargs.get("timeout"))
+        raise RuntimeError("transport tombe")
+
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+    pig._BELT_DEADLINE[0] = 6030.0  # 30 s de mur
+    try:
+        try:
+            pig.fetch_pool(cache=None, cache_mode="off", cache_status=None,
+                           probe=None)
+        except pig.TransportUnavailable:
+            pass
+        assert seen, "aucun transport sollicite"
+        assert all(t == pytest.approx(30.0) for t in seen), (
+            f"un transport a depasse le mur du run : {seen}")
+    finally:
+        pig._BELT_DEADLINE[0] = None
+    _ = clock
+
+
 def test_publish_phase_deadline_bounds_probes_and_lends_its_budget(monkeypatch):
     """#21436 : la phase de reparation a sa PROPRE echeance.
 
@@ -2785,3 +2912,224 @@ def test_main_runs_the_repair_phase_inside_its_own_deadline(monkeypatch):
         nits.NITS_PASS_BUDGET_S = previous_budget
         nits._NITS_PASS_DEADLINE = None
     _ = clock
+
+
+def test_belt_withdraws_candidate_covered_by_open_pr():
+    """#16589 sur le TAPIS : une PR ouverte qui porte deja l'issue ecarte
+    le candidat, et le suivant le remplace.
+
+    Controle positif du defaut mesure le 2026-10-27 : la sonde de
+    couverture n'etait cablee que sur la voie PONDEREE
+    (``draw_unclaimed``). Le tapis, lui, rendait ``ACTION REQUISE : poser
+    [CLAIMED] ... sur #22374`` alors que ``#22515`` est OUVERTE et porte
+    l'issue dans son titre et son body -- un claim qui aurait ete VOID a
+    la seconde ou il etait pose.
+    """
+    covered = _make_item(22374, age_days=3, idle=1, last=None)
+    clean = _make_item(19002, age_days=49, idle=5, last=None)
+    pool = [covered, clean]
+
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        pool, _free_claims(pool), _belt_args(), probe_budget=8,
+        cover_probe=lambda n: "PR #22515" if n == 22374 else "")
+
+    assert [p["number"] for p in picks] == [19002]
+    assert len(withheld) == 1
+    number, cause = withheld[0]
+    assert number["number"] == 22374
+    assert cause.startswith("EN COURS : ")
+    assert "PR #22515" in cause
+    # Aucun echec de sonde : la sonde a repondu.
+    assert state.get("cover_failures", []) == []
+
+
+def test_belt_cover_probe_failure_is_fail_open_and_reported():
+    """Sonde de couverture ratee : le candidat est CONSERVE et le fait est
+    RAPPORTE -- meme tri-etat que la sonde de livraison.
+
+    Une lecture qui n'a pas ABOUTI n'est pas une absence de PR couvrante :
+    ecarter ici couterait a la lane un grain disponible a chaque 403.
+    """
+    pool = [_make_item(19001, age_days=50, idle=5, last=None)]
+
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        pool, _free_claims(pool), _belt_args(), probe_budget=8,
+        cover_probe=lambda n: None)
+
+    assert [p["number"] for p in picks] == [19001]
+    assert withheld == []
+    assert state["cover_failures"] == [19001]
+
+
+def test_belt_cover_probe_shares_the_delivery_budget():
+    """Sonde de couverture et sonde de livraison parent le MEME plafond.
+
+    Un plafond double laisserait le tapis depenser deux fois le cout
+    annonce par ``probe_budget`` -- la doctrine de la voie ponderee
+    (#16589) est « au meme rang, donc au meme cout borne ».
+    """
+    pool = [_make_item(19001 + i, age_days=50 - i, idle=5, last=None)
+            for i in range(4)]
+    seen = []
+
+    def cover(n):
+        seen.append(n)
+        return ""
+
+    # probe_budget=1 : la premiere sonde de livraison (inerte) consomme
+    # l'unite, la couverture n'a plus de budget et rend UNPROBED sans
+    # appeler la sonde injectee.
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        pool, _free_claims(pool), _belt_args(grains=4), probe_budget=1,
+        cover_probe=cover)
+
+    assert seen == []
+    assert state["budget_hit"] is True
+    # Fail-OPEN : les candidats restent servis.
+    assert [p["number"] for p in picks] == [19001, 19002, 19003, 19004]
+
+
+def test_belt_cover_probe_budget_exhausts_mid_hand():
+    """Le plafond partage s'epuise AU MILIEU d'une poignee, pas a sa frontiere.
+
+    Le test precedent prouve le partage a ``probe_budget=1`` : l'unite est
+    consommee par la sonde de livraison, la couverture rend ``UNPROBED`` sans
+    etre appelee. C'est une frontiere. Ici le plafond couvre plusieurs
+    candidats et le cout se cumule : chaque candidat paie sa sonde de
+    livraison PUIS sa sonde de couverture, et la couverture cesse d'etre
+    sonder alors que des candidats restent servables -- l'endroit ou le
+    double cout de ``counted_cover_probe`` devient reel (reserve Hermes,
+    #22986).
+
+    Cout mesure sur cette poignee de 4, plafond -> nombre de sondes de
+    couverture effectivement emises : 2 -> 0, 3 a 5 -> 1, 6 et plus -> 2.
+    Un candidat entierement servi coute donc 3 unites, et c'est ce chiffre
+    qui dit ou le plafond mord.
+    """
+    pool = [_make_item(19011 + i, age_days=50 - i, idle=5, last=None)
+            for i in range(4)]
+    seen = []
+
+    def cover(n):
+        seen.append(n)
+        return ""
+
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        pool, _free_claims(pool), _belt_args(grains=4), probe_budget=3,
+        cover_probe=cover)
+
+    # Plafond 3 pour une poignee de 4 : la couverture s'arrete apres le
+    # PREMIER candidat, alors que trois restent servables.
+    assert seen == [19011]
+    assert state["budget_hit"] is True
+    # Fail-OPEN : les 4 candidats restent servis malgre le plafond atteint.
+    assert [p["number"] for p in picks] == [19011, 19012, 19013, 19014]
+    # Le contrat d'etat porte la cle de couverture des le depart (#22986).
+    assert state["cover_failures"] == []
+
+
+
+# ==================================================================
+# #23340 point 1 -- un test par sortie anticipee du run `--belt`.
+# Le principe : chaque sortie court-circuitee DESARME l'echeance du
+# run. Sans ces tests, supprimer les trois `_disarm_belt_run_clock()`
+# laissait la suite verte alors que c'est la propriete « aucune fuite
+# hors du run » que le docstring revendique. Chaque temoin releve
+# l'echeance AU MOMENT de la sortie (elle doit etre armee, sinon le
+# assert final ne prouverait rien) puis verifie `_BELT_DEADLINE[0] is
+# None` au retour de main.
+# ==================================================================
+
+
+def test_belt_disarms_on_the_board_consumer_exit(monkeypatch, tmp_path):
+    """Sortie « tableau consomme » (#20053) : picks retenus, return 0.
+
+    La sortie est AVANT l'ardoise de lane et le garde rouge -- c'est tout
+    l'objet du court-circuit. Si son `_disarm` disparaissait, l'echeance
+    armee par `--belt-time-budget` fuirait dans le process du test."""
+    _patch_belt_network(monkeypatch, prs=[], red_state=_state_red())
+    board_file = tmp_path / "board.json"
+    board_file.write_text("{}", encoding="utf-8")
+    seen = {}
+
+    monkeypatch.setattr(pig, "read_board_snapshot", lambda path: {"board": True})
+    monkeypatch.setattr(pig, "board_age_minutes", lambda snap, **kw: 0.0)
+
+    def fake_consume_board(snapshot, args, **kw):
+        seen["deadline"] = pig._BELT_DEADLINE[0]
+        return [{"number": 21125, "title": "temoin"}], {"reason": ""}
+
+    monkeypatch.setattr(pig, "consume_board", fake_consume_board)
+    monkeypatch.setattr(pig, "print_board_consumer", lambda *a, **kw: None)
+    pig._BELT_DEADLINE[0] = None
+    try:
+        rc = pig.main(["--lane", "myia-po-2025:CoursIA", "--belt",
+                       "--belt-time-budget", "60", "--json",
+                       "--board-export", str(board_file)])
+        assert rc == 0
+        assert seen["deadline"] is not None, (
+            "le temoin n'a pas vu d'echeance armee : le run n'est pas "
+            "passe par le chemin arme, l'assert final serait vide")
+        assert pig._BELT_DEADLINE[0] is None, (
+            "l'echeance fuit apres la sortie tableau consomme (#23340 point 1)")
+    finally:
+        pig._BELT_DEADLINE[0] = None
+
+
+def test_belt_disarms_on_the_pool_unmeasured_exit(monkeypatch):
+    """Sortie RC_POOL_UNMEASURED (#17038) : pool illisible, rc dedie.
+
+    « Je n'ai pas pu lire » n'est pas « aucun candidat » -- la sortie est
+    AVANT tout tirage, et son `_disarm` evite qu'une echeance armee pour
+    un run qui n'a rien servi borne les sondes d'un appel ulterieur du
+    meme process."""
+    _patch_belt_network(monkeypatch, prs=[], red_state=_state_red())
+    seen = {}
+
+    def unmeasured_pool(**kw):
+        seen["deadline"] = pig._BELT_DEADLINE[0]
+        return [], "gh: injoignable (temoin du test)"
+
+    monkeypatch.setattr(pig, "fetch_pool", unmeasured_pool)
+    pig._BELT_DEADLINE[0] = None
+    try:
+        rc = pig.main(["--lane", "myia-po-2025:CoursIA", "--belt",
+                       "--belt-time-budget", "60", "--json"])
+        assert rc == pig.RC_POOL_UNMEASURED
+        assert seen["deadline"] is not None, (
+            "le temoin n'a pas vu d'echeance armee : l'assert final "
+            "serait vide")
+        assert pig._BELT_DEADLINE[0] is None, (
+            "l'echeance fuit apres la sortie pool non mesure "
+            "(#23340 point 1)")
+    finally:
+        pig._BELT_DEADLINE[0] = None
+
+
+def test_belt_disarms_on_the_report_exit(monkeypatch):
+    """Sortie `--report` (#18832) : deux nombres, pas de tirage.
+
+    La sortie est APRES `fetch_pool` (elle mesure la passe complete) mais
+    AVANT la fenetre de claims et la boucle -- son `_disarm` est le seul
+    a rendre la main au caller sans mur pose."""
+    _patch_belt_network(monkeypatch, prs=[], red_state=_state_red())
+    seen = {}
+
+    def fake_metrics(pool, **kw):
+        seen["deadline"] = pig._BELT_DEADLINE[0]
+        return {"pool": 0, "max_gap_days": None}
+
+    monkeypatch.setattr(pig, "belt_report_metrics", fake_metrics)
+    monkeypatch.setattr(pig, "print_belt_report", lambda *a, **kw: None)
+    pig._BELT_DEADLINE[0] = None
+    try:
+        rc = pig.main(["--lane", "myia-po-2025:CoursIA", "--belt",
+                       "--belt-time-budget", "60", "--json", "--report"])
+        assert rc == 0
+        assert seen["deadline"] is not None, (
+            "le temoin n'a pas vu d'echeance armee : l'assert final "
+            "serait vide")
+        assert pig._BELT_DEADLINE[0] is None, (
+            "l'echeance fuit apres la sortie --report (#23340 point 1)")
+    finally:
+        pig._BELT_DEADLINE[0] = None
