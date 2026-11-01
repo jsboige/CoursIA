@@ -4313,7 +4313,15 @@ def check_claims(numbers: list[int], lane: str) -> dict[int, tuple[str, str]]:
         # qu'il simule. Sans cette condition, la voie en processus
         # court-circuite ce seam ET rafraichit l'instantane par de vrais
         # appels `gh api` sur un simple appel de `check_claims`.
-        if _pass_snapshot_enabled():
+        # #21882 -- la voie en processus est SERIE sur les payloads qu'elle
+        # doit hydrater : ~1 s/numero mesure (l'hydratation de la fenetre de
+        # service, 300 numeros a --grains 50, a pris 295 s toute seule,
+        # alors que le mur du tapis est a 240 s). On ne la garde que SOUS le
+        # seuil de decoupage, son regime rentable ; au-dela, les tranches
+        # paralleles la remplacent.
+        if _pass_snapshot_enabled() and not (
+                BELT_CLAIMS_WORKERS > 1
+                and len(numbers) >= BELT_CLAIMS_SLICE_MIN):
             in_process = _claims_in_process(numbers, lane, cache_path)
             if in_process is not None:
                 return in_process

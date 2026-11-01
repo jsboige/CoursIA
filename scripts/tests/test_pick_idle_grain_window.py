@@ -124,6 +124,46 @@ def test_check_claims_workers_1_force_la_serie(monkeypatch):
     assert list(verdicts.keys()) == numbers
 
 
+def test_fenetre_large_bypass_la_voie_en_processus(monkeypatch):
+    """#21882 -- la voie en processus (#22630) hydrate ses payloads en SERIE
+    (~1 s/numero) : a l'echelle de la fenetre de service elle dure plus que
+    le mur du tapis toute seule (mesure : 295 s pour 300 numeros, mur a
+    240 s). Au-dela du seuil, elle est remplacee par les tranches -- meme
+    avec l'instantane actif."""
+    calls: list[list[int]] = []
+    threads: set[int] = set()
+    monkeypatch.setattr(pig, "_build_open_prs_cache_for_belt",
+                        lambda lane: None)
+    monkeypatch.setattr(pig, "_pass_snapshot_enabled", lambda: True)
+    monkeypatch.setattr(pig, "_claims_in_process",
+                        lambda numbers, lane, cache=None: (
+                            {n: (pig.CLAIM_CODE_FREE, "in-process")
+                             for n in numbers}))
+    monkeypatch.setattr(pig, "_run_bounded", _stub_batch(calls, threads))
+    numbers = list(range(8001, 8031))
+    verdicts = pig.check_claims(numbers, "lane")
+    # La voie en processus N'A PAS servi : ses verdicts marker "in-process"
+    # sont absents, ceux des tranches (stub) sont la.
+    assert all(h != "in-process" for _, h in verdicts.values())
+    assert len(threads) >= 2
+    assert list(verdicts.keys()) == numbers
+
+
+def test_petite_fenetre_garde_la_voie_en_processus(monkeypatch):
+    """Sous le seuil, l'instantane actif reste prioritaire (regime rentable
+    de la voie #22630) : decouper 3 numeros serait de l'overhead."""
+    monkeypatch.setattr(pig, "_build_open_prs_cache_for_belt",
+                        lambda lane: None)
+    monkeypatch.setattr(pig, "_pass_snapshot_enabled", lambda: True)
+    monkeypatch.setattr(pig, "_claims_in_process",
+                        lambda numbers, lane, cache=None: (
+                            {n: (pig.CLAIM_CODE_FREE, "in-process")
+                             for n in numbers}))
+    monkeypatch.setattr(pig, "_run_bounded", _stub_batch([], set()))
+    verdicts = pig.check_claims([8101, 8102], "lane")
+    assert all(h == "in-process" for _, h in verdicts.values())
+
+
 def test_tranche_en_echec_n_emporte_pas_les_autres(monkeypatch):
     """Un subprocess qui leve rend ERROR pour SA tranche seulement :
     fail-OPEN borne, les autres tranches gardent leurs verdicts. 30
