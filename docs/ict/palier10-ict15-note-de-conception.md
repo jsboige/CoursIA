@@ -4,6 +4,8 @@
 **Palier 10** : « Capstone Φ/F/K, obstruction et recollement » — source famille ICT-15, escalier 15b–15l, rangs 23–34 du tableau de correspondance.
 **Statut** : design **arbitré** (note de l'adjoint → arbitrage coordinateur → correction). Ce document en fixe l'état final. Le déplacement de la famille dans `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15/` est le geste d'application du cadrage ci-dessous (portant la PR de déplacement associée).
 
+> **Renommage (28/10, #22949)** : la convention uniforme `ICT-<NN>-<Sujet>/` est appliquée — la sous-série porte désormais le nom `ICT-15-IntegratedComplexity/` ; le `ICT-15/` cité ci-dessous est l'état intermédiaire de la PR de déplacement (palier 10, #22289), antérieur au nommage par sujet.
+
 ## Synthèse du cadrage arbitré (état final, après correction c.6136874723)
 
 | Point | Décision arbitrée |
