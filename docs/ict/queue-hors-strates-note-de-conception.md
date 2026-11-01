@@ -5,7 +5,7 @@ Cette note donne à chacun des carnets « hors strates » une **destination**, e
 
 ### Plateau mesure (origin/main = `e89519fe26fd`)
 
-- 83 carnets au premier niveau d'`ICT-Series/`, 99 en comptant les sous-séries.
+- le nombre de carnets au premier niveau d'`ICT-Series/` est porté par le catalogue (`COURSE_CATALOG`) ; 99 en comptant les sous-séries.
 - Le README (`MyIA.AI.Notebooks/IIT/ICT-Series/README.md`, section `### Distillation externe — hors strates`, l.248) range **sept** carnets vivants sous « Distillation externe — hors strates » : **40a, 40b, 47, 47b, 48-WolframClasses-ThermoSignature, 49, 50**. Trois « marchepieds » déjà descendus y figurent aussi (ex-41 → PT-15b, ex-41b → PT-15c, ex-44/22c → 2.9g) — ils ne sont plus dans la série et ne sont pas objets de cette note.
 - **ICT-48-Onset9B-Aggregate** n'apparaît **pas** dans cette section du README (le seul `ICT-48-` de la section est `48-WolframClasses`, l.261) ; il n'entre dans le périmètre que par la table de la carte du 11/10. Il est donc traité ici comme 8ᵉ carnet de la queue.
 - La carte du 11/10 (commentaire `#20298#issuecomment-6546758063`) couvre déjà et laisse ouvertes :
