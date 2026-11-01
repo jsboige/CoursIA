@@ -3880,7 +3880,16 @@ def test_unaddressed_review_points_derive_de_contrat_visible(monkeypatch):
 
 def test_unaddressed_review_points_pr_illisible_ne_bloque_pas_les_autres(monkeypatch):
     """Une PR illisible (gh en erreur) reste avalee par PR : la panne d'UNE
-    PR ne doit pas empecher la detection sur les autres."""
+    PR ne doit pas empecher la detection sur les autres.
+
+    Depuis #21882, la passe est parallelisee (pool borne `NITS_PASS_WORKERS`) :
+    l'ordre d'APPEL de ``analyse_pr`` n'est plus garanti (ordonnancement
+    preemptif des threads), seul le dict agrege l'est. On epingle donc
+    l'ENSEMBLE des appels, pas leur ordre -- meme contrat que
+    ``test_unaddressed_review_points_delegue_a_analyse_pr``, pose par #21882
+    et oublie ici : cette assertion d'ordre rougissait par intermittence sur
+    le runner (mesure : ``assert [15081, 15049] == [15049, 15081]``,
+    1 failed / 23917 passed, run 41335963637 du 2026-11-01)."""
     import check_unaddressed_nits as nits
     calls = []
 
@@ -3892,7 +3901,9 @@ def test_unaddressed_review_points_pr_illisible_ne_bloque_pas_les_autres(monkeyp
 
     monkeypatch.setattr(nits, "analyse_pr", flaky_analyse_pr)
     assert pig.unaddressed_review_points([15049, 15081]) == {15081: 1}
-    assert calls == [15049, 15081]
+    # Les deux PRs ont bien ete tentees : l'illisible n'a pas court-circuite
+    # l'autre. Seul l'ordre d'arrivee des threads est libre.
+    assert sorted(calls) == [15049, 15081]
 
 
 def test_unaddressed_review_points_detail_carries_authors_and_verdict(monkeypatch):
