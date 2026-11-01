@@ -3892,7 +3892,11 @@ def test_unaddressed_review_points_pr_illisible_ne_bloque_pas_les_autres(monkeyp
 
     monkeypatch.setattr(nits, "analyse_pr", flaky_analyse_pr)
     assert pig.unaddressed_review_points([15049, 15081]) == {15081: 1}
-    assert calls == [15049, 15081]
+    # #21882 : meme contrat que le test voisin -- sous pool, l'ordre d'appel
+    # n'est pas garanti (le dict agrege, lui, est deterministe) ; on pinne
+    # l'ensemble des appels, pas l'ordre. Rouge CI mesure le 2026-11-01 sur
+    # la tete 01e5fdf : "assert [15081, 15049] == [15049, 15081]".
+    assert sorted(calls) == [15049, 15081]
 
 
 def test_unaddressed_review_points_detail_carries_authors_and_verdict(monkeypatch):
