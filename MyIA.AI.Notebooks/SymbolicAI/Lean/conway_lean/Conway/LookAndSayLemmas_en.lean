@@ -23,11 +23,11 @@ prover co-evolution calibration ladder (Epic #1453):
 The proof holes in the original calibration scaffold are intentional, not regressions (Epic #1453).
 -/
 
-import Conway.LookAndSay
+import Conway.LookAndSay_en
 
 namespace Conway_en
 
-open Conway
+open Conway_en
 
 /-- CALIBRATION (decide): [1,2,1,1] decodes to 1211. -/
 theorem digitsToNat_example : digitsToNat [1, 2, 1, 1] = 1211 := by
