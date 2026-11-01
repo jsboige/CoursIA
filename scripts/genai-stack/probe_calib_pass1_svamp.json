@@ -1,0 +1,1639 @@
+{
+ "probe": "calib_pass1",
+ "issue": 15294,
+ "bande": [
+  0.2,
+  0.7
+ ],
+ "seed": 13,
+ "items": 100,
+ "concurrency": 8,
+ "started_utc": "2026-11-01T19:14:06Z",
+ "runs": [
+  {
+   "corpus": "svamp",
+   "model": "openbmb/MiniCPM5-2B",
+   "n": 100,
+   "pass1": 0.7,
+   "errors": 0,
+   "wall_s": 26.7,
+   "items": [
+    {
+     "id": "chal-266",
+     "gold": 997.0,
+     "pred": "997.0",
+     "ok": 1,
+     "err": "",
+     "raw": "the packages is 43 × 23 = 989. Adding the 8 extra pieces gives 989 + 8 = 997.\n\nAnswer: 997"
+    },
+    {
+     "id": "chal-298",
+     "gold": 654.0,
+     "pred": "654.0",
+     "ok": 1,
+     "err": "",
+     "raw": " and there are 22 parents. Therefore, the number of pupils is 676 - 22 = 654.\n\nAnswer: 654"
+    },
+    {
+     "id": "chal-702",
+     "gold": 45.0,
+     "pred": "45.0",
+     "ok": 1,
+     "err": "",
+     "raw": ". He did 17 less crunches than Zachary, so his crunches count is 62 - 17 = 45.\n\nAnswer: 45"
+    },
+    {
+     "id": "chal-932",
+     "gold": 3021.0,
+     "pred": "3021.0",
+     "ok": 1,
+     "err": "",
+     "raw": "3 = 3021. The information about trousers is not needed for this calculation.\n\nAnswer: 3021"
+    },
+    {
+     "id": "chal-701",
+     "gold": 4.0,
+     "pred": "4.0",
+     "ok": 1,
+     "err": "",
+     "raw": "ours spent on learning english compared to learning chinese is 6 - 2 = 4 hours.\n\nAnswer: 4"
+    },
+    {
+     "id": "chal-822",
+     "gold": 90.0,
+     "pred": "90.0",
+     "ok": 1,
+     "err": "",
+     "raw": "rom washing cars. The total amount earned over the weekend is $16 + $74 = $90.\n\nAnswer: 90"
+    },
+    {
+     "id": "chal-870",
+     "gold": 2.0,
+     "pred": "13.0",
+     "ok": 0,
+     "err": "",
+     "raw": "rbles, so we divide 26 by 13. So answer would be 2.\n\nBut let's check: \"In Haley's class 13"
+    },
+    {
+     "id": "chal-912",
+     "gold": 11.0,
+     "pred": "11.0",
+     "ok": 1,
+     "err": "",
+     "raw": "\n\nThe baker sold 158 cakes and 147 pastries. The difference is 158 - 147 = 11.\n\nAnswer: 11"
+    },
+    {
+     "id": "chal-191",
+     "gold": 76.0,
+     "pred": "76.0",
+     "ok": 1,
+     "err": "",
+     "raw": "k>\n\nThe baker sold 154 pastries and 78 cakes. The difference is 154 - 78 = 76.\n\nAnswer: 76"
+    },
+    {
+     "id": "chal-668",
+     "gold": 9.0,
+     "pred": "11.0",
+     "ok": 0,
+     "err": "",
+     "raw": " 11 cups of sugar and some number of cups of flour. The number of cups of flour is unknown"
+    },
+    {
+     "id": "chal-237",
+     "gold": 482.0,
+     "pred": "482.0",
+     "ok": 1,
+     "err": "",
+     "raw": "he sum of the raisin cookies from yesterday and this morning: 397 + 85 = 482.\n\nAnswer: 482"
+    },
+    {
+     "id": "chal-683",
+     "gold": 7.0,
+     "pred": "7.0",
+     "ok": 1,
+     "err": "",
+     "raw": "find the points per game, divide the total by the number of games: 91 ÷ 13 = 7.\n\nAnswer: 7"
+    },
+    {
+     "id": "chal-151",
+     "gold": 12.0,
+     "pred": "12.0",
+     "ok": 1,
+     "err": "",
+     "raw": "ight is 14 - 8 = 6 feet. Therefore, the depth of the water is 2 × 6 = 12 feet.\n\nAnswer: 12"
+    },
+    {
+     "id": "chal-891",
+     "gold": 136.0,
+     "pred": "136.0",
+     "ok": 1,
+     "err": "",
+     "raw": "left?\" It might be asking for the number of tomatoes left and the number of potatoes left."
+    },
+    {
+     "id": "chal-231",
+     "gold": 16.0,
+     "pred": "-23.0",
+     "ok": 0,
+     "err": "",
+     "raw": " after he found them, but maybe he also gave some away? The problem statement is ambiguous"
+    },
+    {
+     "id": "chal-657",
+     "gold": 1363293.0,
+     "pred": "1363293.0",
+     "ok": 1,
+     "err": "",
+     "raw": "ho stayed home and those who went to camp: 907,611 + 455,682 = 1,363,293.\n\nAnswer: 1363293"
+    },
+    {
+     "id": "chal-752",
+     "gold": 2.0,
+     "pred": "2.0",
+     "ok": 1,
+     "err": "",
+     "raw": "/think>\n\nThe difference between the marbles found and those lost is 10 - 8 = 2.\n\nAnswer: 2"
+    },
+    {
+     "id": "chal-192",
+     "gold": 10.0,
+     "pred": "10.0",
+     "ok": 1,
+     "err": "",
+     "raw": "stribute them equally among 2 boys. Dividing 20 by 2 gives 10 marbles per boy.\n\nAnswer: 10"
+    },
+    {
+     "id": "chal-134",
+     "gold": 1.0,
+     "pred": "10.0",
+     "ok": 0,
+     "err": "",
+     "raw": " 13 of the books\" might be impossible because there are only 10 different books. But maybe"
+    },
+    {
+     "id": "chal-73",
+     "gold": 8.0,
+     "pred": "8.0",
+     "ok": 1,
+     "err": "",
+     "raw": ".\" Then final line.\n\nThus final answer: Answer: 8.\n\nWe need to ensure we don't include any"
+    },
+    {
+     "id": "chal-545",
+     "gold": 1.0,
+     "pred": "21.0",
+     "ok": 0,
+     "err": "",
+     "raw": "rowing away 35, he has: x + 36 - 35 = x + 1. And that equals 22. So x + 1 = 22, so x = 21."
+    },
+    {
+     "id": "chal-867",
+     "gold": 146.0,
+     "pred": "146.0",
+     "ok": 1,
+     "err": "",
+     "raw": "currently has 20 grams. The additional amount needed is 166 - 20 = 146 grams.\n\nAnswer: 146"
+    },
+    {
+     "id": "chal-220",
+     "gold": 184.0,
+     "pred": "144.0",
+     "ok": 0,
+     "err": "",
+     "raw": "But let's check: Sometimes such problems might be interpreted as: He made 144 cakes, sold "
+    },
+    {
+     "id": "chal-763",
+     "gold": 28.0,
+     "pred": "28.0",
+     "ok": 1,
+     "err": "",
+     "raw": "\n\nWe need to end with \"Answer: 28\".\n</think>\n\nSteven has 17 + 11 = 28 peaches.\n\nAnswer: 28"
+    },
+    {
+     "id": "chal-302",
+     "gold": 3.0,
+     "pred": "5.0",
+     "ok": 0,
+     "err": "",
+     "raw": " doesn't mention any sugar added. So we assume she hasn't added any sugar. So she needs to"
+    },
+    {
+     "id": "chal-31",
+     "gold": 5.0,
+     "pred": "5.0",
+     "ok": 1,
+     "err": "",
+     "raw": "s found on the next day and the number of bags she had on Monday is 12 - 7 = 5.\n\nAnswer: 5"
+    },
+    {
+     "id": "chal-442",
+     "gold": 587.0,
+     "pred": "535.0",
+     "ok": 0,
+     "err": "",
+     "raw": " gave away 52 and lost 535, then the total number of crayons he had to start with would be"
+    },
+    {
+     "id": "chal-130",
+     "gold": 7.0,
+     "pred": "7.0",
+     "ok": 1,
+     "err": "",
+     "raw": "our. Mary has already added 7 cups, so she needs 14 - 7 = 7 more cups of flour.\n\nAnswer: 7"
+    },
+    {
+     "id": "chal-858",
+     "gold": 24.0,
+     "pred": "24.0",
+     "ok": 1,
+     "err": "",
+     "raw": "the afternoon is 34, and in the evening is 10. The difference is 34 - 10 = 24.\n\nAnswer: 24"
+    },
+    {
+     "id": "chal-996",
+     "gold": 3.0,
+     "pred": "12.0",
+     "ok": 0,
+     "err": "",
+     "raw": "ew into flowers. But they only put 12 seeds in each bed, so that would mean 58 > 12, which"
+    },
+    {
+     "id": "chal-624",
+     "gold": 2.0,
+     "pred": "2.0",
+     "ok": 1,
+     "err": "",
+     "raw": " answer.\n</think>\n\nEdward had $18 and spent $16, so he has $18 - $16 = $2 left.\n\nAnswer: 2"
+    },
+    {
+     "id": "chal-15",
+     "gold": 10.0,
+     "pred": "10.0",
+     "ok": 1,
+     "err": "",
+     "raw": "s 6 + 4 = 10. The storks are not birds, so they are not included in the count.\n\nAnswer: 10"
+    },
+    {
+     "id": "chal-283",
+     "gold": 34.0,
+     "pred": "34.0",
+     "ok": 1,
+     "err": "",
+     "raw": "ut wait: Could there be overlap? For example, some campers might have rowed in the morning"
+    },
+    {
+     "id": "chal-855",
+     "gold": 11.0,
+     "pred": "11.0",
+     "ok": 1,
+     "err": "",
+     "raw": "ls are 3, and the evening emails are 8. Adding them together gives 3 + 8 = 11.\n\nAnswer: 11"
+    },
+    {
+     "id": "chal-988",
+     "gold": 5.0,
+     "pred": "5.0",
+     "ok": 1,
+     "err": "",
+     "raw": " had 2 ripe apples (after picking) plus 3 picked = 5 ripe apples initially. And the unripe"
+    },
+    {
+     "id": "chal-87",
+     "gold": 1.0,
+     "pred": "",
+     "ok": 0,
+     "err": "",
+     "raw": "ks remains 6. The difference between the number of storks and birds is 6 - 5 = 1.\n\nAnswer:"
+    },
+    {
+     "id": "chal-893",
+     "gold": 9.0,
+     "pred": "9.0",
+     "ok": 1,
+     "err": "",
+     "raw": " between the number of campers in the afternoon and the morning is 61 - 52 = 9.\n\nAnswer: 9"
+    },
+    {
+     "id": "chal-814",
+     "gold": 33.0,
+     "pred": "33.0",
+     "ok": 1,
+     "err": "",
+     "raw": "chapter, subtract the pages of the first chapter from the total: 93 - 60 = 33.\n\nAnswer: 33"
+    },
+    {
+     "id": "chal-830",
+     "gold": 1.0,
+     "pred": "1.0",
+     "ok": 1,
+     "err": "",
+     "raw": " difference between the number of red peaches and green peaches is 17 - 16 = 1.\n\nAnswer: 1"
+    },
+    {
+     "id": "chal-910",
+     "gold": 53.0,
+     "pred": "",
+     "ok": 0,
+     "err": "",
+     "raw": "nswer: <number>' containing only the final numeric answer.\" So we need to output \"Answer: "
+    },
+    {
+     "id": "chal-826",
+     "gold": 10.0,
+     "pred": "19.0",
+     "ok": 0,
+     "err": "",
+     "raw": "ies How many more movies do you still have to watch?\" The phrase \"read 19 of the books\" is"
+    },
+    {
+     "id": "chal-269",
+     "gold": 27.0,
+     "pred": "27.0",
+     "ok": 1,
+     "err": "",
+     "raw": ": 27.\n\nWe can also include a brief explanation before that.\n\nThus final answer: Answer: 27"
+    },
+    {
+     "id": "chal-847",
+     "gold": 2080.0,
+     "pred": "2080.0",
+     "ok": 1,
+     "err": "",
+     "raw": " day is 28 + 52 = 80 sacks. Over 26 days, the total is 80 × 26 = 2080 sacks.\n\nAnswer: 2080"
+    },
+    {
+     "id": "chal-462",
+     "gold": 3.0,
+     "pred": "3.0",
+     "ok": 1,
+     "err": "",
+     "raw": "ow many more cups of flour does she need to add compared to how many cups of salt does she"
+    },
+    {
+     "id": "chal-977",
+     "gold": 41.0,
+     "pred": "41.0",
+     "ok": 1,
+     "err": "",
+     "raw": "in 12 days. Over 492 days, the number of books he can finish is 492 ÷ 12 = 41.\n\nAnswer: 41"
+    },
+    {
+     "id": "chal-448",
+     "gold": 1.0,
+     "pred": "1.0",
+     "ok": 1,
+     "err": "",
+     "raw": "he spends 2 hours on English, then the time spent on Chinese is 3 - 2 = 1 hour.\n\nAnswer: 1"
+    },
+    {
+     "id": "chal-143",
+     "gold": 30.0,
+     "pred": "30.0",
+     "ok": 1,
+     "err": "",
+     "raw": "is found by adding the counts of each color: 7 red + 15 yellow + 8 green = 30.\n\nAnswer: 30"
+    },
+    {
+     "id": "chal-813",
+     "gold": 1.0,
+     "pred": "1.0",
+     "ok": 1,
+     "err": "",
+     "raw": " has 27 - 16 = 11 peaches. The difference between Jill and Jake is 12 - 11 = 1.\n\nAnswer: 1"
+    },
+    {
+     "id": "chal-899",
+     "gold": 13.0,
+     "pred": "13.0",
+     "ok": 1,
+     "err": "",
+     "raw": "on. To find the total for these two periods, we add them together: 5 + 8 = 13.\n\nAnswer: 13"
+    },
+    {
+     "id": "chal-263",
+     "gold": 26.0,
+     "pred": "26.0",
+     "ok": 1,
+     "err": "",
+     "raw": "e used 89 blocks and the tower used 63 blocks. The difference is 89 - 63 = 26.\n\nAnswer: 26"
+    },
+    {
+     "id": "chal-365",
+     "gold": 2.0,
+     "pred": "2.0",
+     "ok": 1,
+     "err": "",
+     "raw": " apples remaining, with 3 being ripe. The number of unripe apples is 5 - 3 = 2.\n\nAnswer: 2"
+    },
+    {
+     "id": "chal-871",
+     "gold": 10.0,
+     "pred": "10.0",
+     "ok": 1,
+     "err": "",
+     "raw": "nswer is 10.\n\nWe need to end with \"Answer: 10\".\n</think>\n\nJill has 10 peaches.\n\nAnswer: 10"
+    },
+    {
+     "id": "chal-240",
+     "gold": 69.0,
+     "pred": "69.0",
+     "ok": 1,
+     "err": "",
+     "raw": " 69.\n</think>\n\nDavid did 51 + 22 = 73 push-ups. John did 73 - 4 = 69 push-ups.\n\nAnswer: 69"
+    },
+    {
+     "id": "chal-499",
+     "gold": 9.0,
+     "pred": "14.0",
+     "ok": 0,
+     "err": "",
+     "raw": "op 63 children got off the bus while some more got on the bus. Then there were 14 children"
+    },
+    {
+     "id": "chal-920",
+     "gold": 2.0,
+     "pred": "2.0",
+     "ok": 1,
+     "err": "",
+     "raw": "ride the Ferris wheel at the same time. If each seat holds 2 people, how many seats are on"
+    },
+    {
+     "id": "chal-774",
+     "gold": 121.0,
+     "pred": "3.0",
+     "ok": 0,
+     "err": "",
+     "raw": " character. Or maybe it's \"How many old games do they have 3?\" meaning \"How many old games"
+    },
+    {
+     "id": "chal-563",
+     "gold": 1145.0,
+     "pred": "1145.0",
+     "ok": 1,
+     "err": "",
+     "raw": "of girls. Since there are 635 girls, the number of boys is 635 + 510 = 1145.\n\nAnswer: 1145"
+    },
+    {
+     "id": "chal-578",
+     "gold": 82.0,
+     "pred": "82.0",
+     "ok": 1,
+     "err": "",
+     "raw": "think>\n\nThe baker made 133 cakes and sold 51. The difference is 133 - 51 = 82.\n\nAnswer: 82"
+    },
+    {
+     "id": "chal-440",
+     "gold": 5.0,
+     "pred": "7.0",
+     "ok": 0,
+     "err": "",
+     "raw": "s. Setting up the equation: English hours = Chinese hours + 2. Given English hours = 7, we"
+    },
+    {
+     "id": "chal-687",
+     "gold": 8265.0,
+     "pred": "47.0",
+     "ok": 0,
+     "err": "",
+     "raw": "But we also have the Arkansas game sold 47 t-shirts. That might be extra info? The problem"
+    },
+    {
+     "id": "chal-373",
+     "gold": 3.0,
+     "pred": "3.0",
+     "ok": 1,
+     "err": "",
+     "raw": "her dad, so she had $2 + $4 = $6. After spending $3, she had $6 - $3 = $3 left.\n\nAnswer: 3"
+    },
+    {
+     "id": "chal-961",
+     "gold": 92.0,
+     "pred": "92.0",
+     "ok": 1,
+     "err": "",
+     "raw": "games is the sum of Katie's new games and her friends' new games: 84 + 8 = 92.\n\nAnswer: 92"
+    },
+    {
+     "id": "chal-441",
+     "gold": 141.0,
+     "pred": "53.0",
+     "ok": 0,
+     "err": "",
+     "raw": "just \"games\". So we have three groups: Katie, new friends, old friends. The question: \"How"
+    },
+    {
+     "id": "chal-654",
+     "gold": 14.0,
+     "pred": "14.0",
+     "ok": 1,
+     "err": "",
+     "raw": "n spent $8 and has $6 left, so the total amount she received is $8 + $6 = $14.\n\nAnswer: 14"
+    },
+    {
+     "id": "chal-322",
+     "gold": 78.0,
+     "pred": "78.0",
+     "ok": 1,
+     "err": "",
+     "raw": "that line. The answer should be just that line.\n\nThus final answer: Answer: 78.\n\nWe should"
+    },
+    {
+     "id": "chal-671",
+     "gold": 20.0,
+     "pred": "20.0",
+     "ok": 1,
+     "err": "",
+     "raw": "she played tag with is 7 + 13 = 20. The Wednesday activity involves playing cards, not tag"
+    },
+    {
+     "id": "chal-121",
+     "gold": 3.0,
+     "pred": "4.0",
+     "ok": 0,
+     "err": "",
+     "raw": "end with \"Answer: <number>\".\n</think>\n\nThe math homework is 7 pages, and it is 4 more than"
+    },
+    {
+     "id": "chal-355",
+     "gold": 26.0,
+     "pred": "26.0",
+     "ok": 1,
+     "err": "",
+     "raw": "ickets left. So the total number of tickets he originally had is 12 + 14 = 26.\n\nAnswer: 26"
+    },
+    {
+     "id": "chal-840",
+     "gold": 946.0,
+     "pred": "946.0",
+     "ok": 1,
+     "err": "",
+     "raw": "s final answer: Answer: 946.\n\nWe need to ensure we don't include any other text after that"
+    },
+    {
+     "id": "chal-609",
+     "gold": 5.0,
+     "pred": "",
+     "ok": 0,
+     "err": "",
+     "raw": " did to buy clothes?\" So we compute 12 - 7 = 5. So answer: 5.\n\nThus final answer: Answer: "
+    },
+    {
+     "id": "chal-818",
+     "gold": 32.0,
+     "pred": "32.0",
+     "ok": 1,
+     "err": "",
+     "raw": "many cakes would he still have? That is simply 169 - 137 = 32.\n\nBut wait: The problem says"
+    },
+    {
+     "id": "chal-649",
+     "gold": 2.0,
+     "pred": "2.0",
+     "ok": 1,
+     "err": "",
+     "raw": "boys are 23 - 15 = 8. There are 4 boys, so each boy receives 8 ÷ 4 = 2 marbles.\n\nAnswer: 2"
+    },
+    {
+     "id": "chal-270",
+     "gold": 91.0,
+     "pred": "495.0",
+     "ok": 0,
+     "err": "",
+     "raw": "m is that she gave some cards to Jeff, but the numbers given are the total number of cards"
+    },
+    {
+     "id": "chal-708",
+     "gold": 4.0,
+     "pred": "4.0",
+     "ok": 1,
+     "err": "",
+     "raw": "action figures and ended with 8. The number added is the difference: 8 - 4 = 4.\n\nAnswer: 4"
+    },
+    {
+     "id": "chal-460",
+     "gold": 34.0,
+     "pred": "34.0",
+     "ok": 1,
+     "err": "",
+     "raw": "ence between the number of cookies bought and the number eaten is 36 - 2 = 34.\n\nAnswer: 34"
+    },
+    {
+     "id": "chal-568",
+     "gold": 1.0,
+     "pred": "1.0",
+     "ok": 1,
+     "err": "",
+     "raw": " needs 12 more cups, then the amount she has already put in is 13 - 12 = 1 cup.\n\nAnswer: 1"
+    },
+    {
+     "id": "chal-626",
+     "gold": 2.0,
+     "pred": "2.0",
+     "ok": 1,
+     "err": "",
+     "raw": "+ 8 = 22 inches. After cutting off 20 inches, the length is 22 - 20 = 2 inches.\n\nAnswer: 2"
+    },
+    {
+     "id": "chal-767",
+     "gold": 14.0,
+     "pred": "14.0",
+     "ok": 1,
+     "err": "",
+     "raw": "nk>\n\nThe difference between the number of eggs and marbles is \\(20 - 6 = 14\\).\n\nAnswer: 14"
+    },
+    {
+     "id": "chal-139",
+     "gold": 2.0,
+     "pred": "10.0",
+     "ok": 0,
+     "err": "",
+     "raw": "s initially How many cakes did each person eat?\" So Matthew initially has 10 crackers and "
+    },
+    {
+     "id": "chal-451",
+     "gold": 3.0,
+     "pred": "3.0",
+     "ok": 1,
+     "err": "",
+     "raw": "d the number of days, divide the total sacks by the daily harvest: 54 ÷ 18 = 3.\n\nAnswer: 3"
+    },
+    {
+     "id": "chal-694",
+     "gold": 4.0,
+     "pred": "4.0",
+     "ok": 1,
+     "err": "",
+     "raw": "etween the number of trees that died and the number that survived is 9 - 5 = 4.\n\nAnswer: 4"
+    },
+    {
+     "id": "chal-747",
+     "gold": 2.0,
+     "pred": "6.0",
+     "ok": 0,
+     "err": "",
+     "raw": "r? The problem doesn't ask about flour. It asks about sugar and salt. She hasn't added any"
+    },
+    {
+     "id": "chal-455",
+     "gold": 1.0,
+     "pred": "1.0",
+     "ok": 1,
+     "err": "",
+     "raw": "hours spent on learning chinese compared to learning english is 7 - 6 = 1 hour.\n\nAnswer: 1"
+    },
+    {
+     "id": "chal-549",
+     "gold": 3.0,
+     "pred": "3.0",
+     "ok": 1,
+     "err": "",
+     "raw": "eads by the number of necklaces: 18 beads ÷ 6 necklaces = 3 beads per necklace.\n\nAnswer: 3"
+    },
+    {
+     "id": "chal-181",
+     "gold": 229.0,
+     "pred": "8.0",
+     "ok": 0,
+     "err": "",
+     "raw": "tal nails.\n\nMaybe the problem implies that there are only large planks? But then it says \""
+    },
+    {
+     "id": "chal-301",
+     "gold": 28.0,
+     "pred": "260.0",
+     "ok": 0,
+     "err": "",
+     "raw": "s require 288 g of wax and right now he just needs 260 g.\" Possibly it means: The feathers"
+    },
+    {
+     "id": "chal-208",
+     "gold": 1.0,
+     "pred": "1.0",
+     "ok": 1,
+     "err": "",
+     "raw": "e in hours spent on learning chinese compared to learning spanish is 5 - 4 = 1.\n\nAnswer: 1"
+    },
+    {
+     "id": "chal-184",
+     "gold": 420.0,
+     "pred": "420.0",
+     "ok": 1,
+     "err": "",
+     "raw": "iply the number of people by the number of cookies per person: 14 × 30 = 420.\n\nAnswer: 420"
+    },
+    {
+     "id": "chal-536",
+     "gold": 481.0,
+     "pred": "481.0",
+     "ok": 1,
+     "err": "",
+     "raw": "he currently has 11 grams. The additional wax needed is 492 - 11 = 481 grams.\n\nAnswer: 481"
+    },
+    {
+     "id": "chal-950",
+     "gold": 7.0,
+     "pred": "7.0",
+     "ok": 1,
+     "err": "",
+     "raw": " by subtracting the 16 roses added from the final total of 23. So, 23 - 16 = 7.\n\nAnswer: 7"
+    },
+    {
+     "id": "chal-260",
+     "gold": 183.0,
+     "pred": "183.0",
+     "ok": 1,
+     "err": "",
+     "raw": "number of games, add the number given away to the number left: 91 + 92 = 183.\n\nAnswer: 183"
+    },
+    {
+     "id": "chal-381",
+     "gold": 15.0,
+     "pred": "41.0",
+     "ok": 0,
+     "err": "",
+     "raw": "istent? Or maybe the problem expects us to ignore the chapter count and just compute pages"
+    },
+    {
+     "id": "chal-471",
+     "gold": 17.0,
+     "pred": "0.0",
+     "ok": 0,
+     "err": "",
+     "raw": "ange). Then we have E1 = D1 + 19 (Ed has 19 more marbles than Doug now). So we have:\n\nE0 ="
+    },
+    {
+     "id": "chal-959",
+     "gold": 8.0,
+     "pred": "12.0",
+     "ok": 0,
+     "err": "",
+     "raw": "ther than the frog, and the mouse jumped 12 inches less than the frog. That's what we used"
+    },
+    {
+     "id": "chal-621",
+     "gold": 2.0,
+     "pred": "2.0",
+     "ok": 1,
+     "err": "",
+     "raw": "loons.\n\nWe need to answer with \"Answer: 2\".\n</think>\n\nAllan brought 2 balloons.\n\nAnswer: 2"
+    },
+    {
+     "id": "chal-287",
+     "gold": 410.0,
+     "pred": "571.0",
+     "ok": 0,
+     "err": "",
+     "raw": " any nuance: The problem mentions he got a box of 589 crayons. He gave 571 to his friends,"
+    },
+    {
+     "id": "chal-406",
+     "gold": 1.0,
+     "pred": "1.0",
+     "ok": 1,
+     "err": "",
+     "raw": " 13 - 6 = 7. The difference between survivors and those that died is 7 - 6 = 1.\n\nAnswer: 1"
+    },
+    {
+     "id": "chal-982",
+     "gold": 23.0,
+     "pred": "23.0",
+     "ok": 1,
+     "err": "",
+     "raw": "etween the number of campers in the morning and the afternoon is 62 - 39 = 23.\n\nAnswer: 23"
+    },
+    {
+     "id": "chal-592",
+     "gold": 5.0,
+     "pred": "80.0",
+     "ok": 0,
+     "err": "",
+     "raw": "e end with: Answer: 5.\n</think>\n\nThe harvest rate is 16 sacks per day. To harvest 80 sacks"
+    },
+    {
+     "id": "chal-503",
+     "gold": 5700.0,
+     "pred": "15.0",
+     "ok": 0,
+     "err": "",
+     "raw": " Ferris wheel can hold 15 people\" might mean that each seat is like a basket that can hold"
+    }
+   ],
+   "model_tag": "mini",
+   "verdict": "DANS_LA_BANDE (calibre)"
+  },
+  {
+   "corpus": "svamp",
+   "model": "Qwen/Qwen3.5-0.8B",
+   "n": 100,
+   "pass1": 0.7,
+   "errors": 0,
+   "wall_s": 40.8,
+   "items": [
+    {
+     "id": "chal-266",
+     "gold": 997.0,
+     "pred": "997.0",
+     "ok": 1,
+     "err": "",
+     "raw": " pieces:**\n    Robin has 8 extra pieces.\n    $$989 + 8 = 997 \\text{ pieces}$$\n\nAnswer: 997"
+    },
+    {
+     "id": "chal-298",
+     "gold": 654.0,
+     "pred": "654.0",
+     "ok": 1,
+     "err": "",
+     "raw": "    $$ 676 - 22 = 654 $$\n\nThe number of pupils present in the program is 654.\n\nAnswer: 654"
+    },
+    {
+     "id": "chal-702",
+     "gold": 45.0,
+     "pred": "45.0",
+     "ok": 1,
+     "err": "",
+     "raw": " David's crunches.\n\n4.  **Calculate the Final Answer:**\n    David did 45 crunches.\n\nAnswer"
+    },
+    {
+     "id": "chal-932",
+     "gold": 3021.0,
+     "pred": "3055.0",
+     "ok": 0,
+     "err": "",
+     "raw": "ht)\n    Total white t-shirts = $3021 + 34$\n    Total white t-shirts = $3055$\n\nAnswer: 3055"
+    },
+    {
+     "id": "chal-701",
+     "gold": 4.0,
+     "pred": "4.0",
+     "ok": 1,
+     "err": "",
+     "raw": "ours}$$\n\nRyan spends 4 more hours on learning English than on learning Chinese.\n\nAnswer: 4"
+    },
+    {
+     "id": "chal-822",
+     "gold": 90.0,
+     "pred": "90.0",
+     "ok": 1,
+     "err": "",
+     "raw": "se two amounts:\n$$16 + 74 = 90$$\n\nFred earned a total of $90 over the weekend.\n\nAnswer: 90"
+    },
+    {
+     "id": "chal-870",
+     "gold": 2.0,
+     "pred": "2.0",
+     "ok": 1,
+     "err": "",
+     "raw": "  **Perform the division**: $26 \\div 13 = 2$.\n\nEach boy will receive 2 marbles.\n\nAnswer: 2"
+    },
+    {
+     "id": "chal-912",
+     "gold": 11.0,
+     "pred": "11.0",
+     "ok": 1,
+     "err": "",
+     "raw": ".  **Determine the final answer:**\n    Baker sold 11 more cakes than pastries.\n\nAnswer: 11"
+    },
+    {
+     "id": "chal-191",
+     "gold": 76.0,
+     "pred": "76.0",
+     "ok": 1,
+     "err": "",
+     "raw": "astries)} - 78 \\text{ (cakes)} = 76$$\n\nBaker sold 76 more pastries than cakes.\n\nAnswer: 76"
+    },
+    {
+     "id": "chal-668",
+     "gold": 9.0,
+     "pred": "9.0",
+     "ok": 1,
+     "err": "",
+     "raw": "\n2.  **Amount still needed**: 6 cups.\n3.  **Total required**: $3 + 6 = 9$ cups.\n\nAnswer: 9"
+    },
+    {
+     "id": "chal-237",
+     "gold": 482.0,
+     "pred": "482.0",
+     "ok": 1,
+     "err": "",
+     "raw": "from this morning = $85$\n\n3.  **Calculate the total:**\n    $$397 + 85 = 482$$\n\nAnswer: 482"
+    },
+    {
+     "id": "chal-683",
+     "gold": 7.0,
+     "pred": "7.0",
+     "ok": 1,
+     "err": "",
+     "raw": "c{91}{13}$$\n\nPerforming the division:\n$$x = 7$$\n\nVerifying: $7 \\times 13 = 91$.\n\nAnswer: 7"
+    },
+    {
+     "id": "chal-151",
+     "gold": 12.0,
+     "pred": "6.0",
+     "ok": 0,
+     "err": "",
+     "raw": "2D $$\n    *   Substitute $D = 6$:\n        $$ \\text{Depth} = 2 \\times 6 $$\n        $$ \\text"
+    },
+    {
+     "id": "chal-891",
+     "gold": 136.0,
+     "pred": "136.0",
+     "ok": 1,
+     "err": "",
+     "raw": "emaining tomatoes + Remaining potatoes\n    Total remaining = $124 + 12 = 136$\n\nAnswer: 136"
+    },
+    {
+     "id": "chal-231",
+     "gold": 16.0,
+     "pred": "16.0",
+     "ok": 1,
+     "err": "",
+     "raw": " - 14 \\text{ (wrappers)} = 16$\n\nDanny found 16 more bottle caps than wrappers.\n\nAnswer: 16"
+    },
+    {
+     "id": "chal-657",
+     "gold": 1363293.0,
+     "pred": "546443.0",
+     "ok": 0,
+     "err": "",
+     "raw": "  Kids going to camp: 455,682\n\nCalculation:\n$$90,761 + 455,682 = 546,443$$\n\nAnswer: 546443"
+    },
+    {
+     "id": "chal-752",
+     "gold": 2.0,
+     "pred": "2.0",
+     "ok": 1,
+     "err": "",
+     "raw": " he find than those he lost?\", which implies finding the difference ($10 - 8$).\n\nAnswer: 2"
+    },
+    {
+     "id": "chal-192",
+     "gold": 10.0,
+     "pred": "10.0",
+     "ok": 1,
+     "err": "",
+     "raw": " of boys}} = \\frac{20}{2} = 10 $$\n\nEach of the 2 boys will receive 10 marbles.\n\nAnswer: 10"
+    },
+    {
+     "id": "chal-134",
+     "gold": 1.0,
+     "pred": "1.0",
+     "ok": 1,
+     "err": "",
+     "raw": "  $$ \\text{Difference} = 13 - 12 = 1 $$\n\nYou have read 1 more book than movies.\n\nAnswer: 1"
+    },
+    {
+     "id": "chal-73",
+     "gold": 8.0,
+     "pred": "8.0",
+     "ok": 1,
+     "err": "",
+     "raw": "ation**:\n    $$3 \\text{ (morning)} + 5 \\text{ (afternoon)} = 8 \\text{ emails}$$\n\nAnswer: 8"
+    },
+    {
+     "id": "chal-545",
+     "gold": 1.0,
+     "pred": "1.0",
+     "ok": 1,
+     "err": "",
+     "raw": "ference: $36 - 35 = 1$\n\nDanny found 1 more bottle cap than those he threw away.\n\nAnswer: 1"
+    },
+    {
+     "id": "chal-867",
+     "gold": 146.0,
+     "pred": "146.0",
+     "ok": 1,
+     "err": "",
+     "raw": "uired wax: 166 g\n\nCalculation: $166 \\text{ g} - 20 \\text{ g} = 146 \\text{ g}$\n\nAnswer: 146"
+    },
+    {
+     "id": "chal-220",
+     "gold": 184.0,
+     "pred": "184.0",
+     "ok": 1,
+     "err": "",
+     "raw": " the total number of cakes made.\n    $$ \\text{Difference} = 255 - 71 = 184 $$\n\nAnswer: 184"
+    },
+    {
+     "id": "chal-763",
+     "gold": 28.0,
+     "pred": "28.0",
+     "ok": 1,
+     "err": "",
+     "raw": "of $J$ into the first equation:\n$S = 17 + 11$\n$S = 28$\n\nSteven has 28 peaches.\n\nAnswer: 28"
+    },
+    {
+     "id": "chal-302",
+     "gold": 3.0,
+     "pred": "8.0",
+     "ok": 0,
+     "err": "",
+     "raw": " - 6\n    *   Difference = 8\n\nMary needs to add 8 more cups of flour than sugar.\n\nAnswer: 8"
+    },
+    {
+     "id": "chal-31",
+     "gold": 5.0,
+     "pred": "5.0",
+     "ok": 1,
+     "err": "",
+     "raw": "next day.\n    $$12 - 7 = 5$$\n\nTiffany found 5 more bags than she had on Monday.\n\nAnswer: 5"
+    },
+    {
+     "id": "chal-442",
+     "gold": 587.0,
+     "pred": "492.0",
+     "ok": 0,
+     "err": "",
+     "raw": "culation:**\n    *   Remaining: 492\n    *   Lost: 535\n    *   Given: 52\n    *   Sum: $492 +"
+    },
+    {
+     "id": "chal-130",
+     "gold": 7.0,
+     "pred": "7.0",
+     "ok": 1,
+     "err": "",
+     "raw": "{ (already in)} = 7 \\text{ (needed)}$$\n\nMary needs to add 7 more cups of flour.\n\nAnswer: 7"
+    },
+    {
+     "id": "chal-858",
+     "gold": 24.0,
+     "pred": "24.0",
+     "ok": 1,
+     "err": "",
+     "raw": "er of more campers who went rowing in the afternoon than in the evening is 24.\n\nAnswer: 24"
+    },
+    {
+     "id": "chal-996",
+     "gold": 3.0,
+     "pred": "1.0",
+     "ok": 0,
+     "err": "",
+     "raw": "nd to the nearest whole number.\n$$ 0.62... \\approx 1 $$\n\nThey had 1 flower bed.\n\nAnswer: 1"
+    },
+    {
+     "id": "chal-624",
+     "gold": 2.0,
+     "pred": "2.0",
+     "ok": 1,
+     "err": "",
+     "raw": "h $18.\n2.  **Amount spent**: He spent $16.\n3.  **Calculation**: $18 - $16 = $2.\n\nAnswer: 2"
+    },
+    {
+     "id": "chal-15",
+     "gold": 10.0,
+     "pred": "18.0",
+     "ok": 0,
+     "err": "",
+     "raw": "he birds that came: $4 + 8 = 12$.\nThen, add the original birds: $6 + 12 = 18$.\n\nAnswer: 18"
+    },
+    {
+     "id": "chal-283",
+     "gold": 34.0,
+     "pred": "80.0",
+     "ok": 0,
+     "err": "",
+     "raw": "**Total rowing campers**: Add these two numbers together.\n    $$59 + 21 = 80$$\n\nAnswer: 80"
+    },
+    {
+     "id": "chal-855",
+     "gold": 11.0,
+     "pred": "11.0",
+     "ok": 1,
+     "err": "",
+     "raw": "d 8 emails in the evening.\n\nNow, add these two values together:\n$$3 + 8 = 11$$\n\nAnswer: 11"
+    },
+    {
+     "id": "chal-988",
+     "gold": 5.0,
+     "pred": "2.0",
+     "ok": 0,
+     "err": "",
+     "raw": "s lost is the difference between the initial ripe count and the final ripe count: $R - 2$."
+    },
+    {
+     "id": "chal-87",
+     "gold": 1.0,
+     "pred": "1.0",
+     "ok": 1,
+     "err": "",
+     "raw": "ks - Total birds\n    Difference = $6 - 5 = 1$\n\nThere is 1 more stork than bird.\n\nAnswer: 1"
+    },
+    {
+     "id": "chal-893",
+     "gold": 9.0,
+     "pred": "9.0",
+     "ok": 1,
+     "err": "",
+     "raw": "mber of more campers who went rowing in the afternoon than in the morning is 9.\n\nAnswer: 9"
+    },
+    {
+     "id": "chal-814",
+     "gold": 33.0,
+     "pred": "33.0",
+     "ok": 1,
+     "err": "",
+     "raw": "3\n2.  **First chapter pages**: 60\n3.  **Second chapter pages**: $93 - 60 = 33$\n\nAnswer: 33"
+    },
+    {
+     "id": "chal-830",
+     "gold": 1.0,
+     "pred": "1.0",
+     "ok": 1,
+     "err": "",
+     "raw": "\n    $$17 - 16 = 1$$\n\nThere is 1 more red peach than green peach in the basket.\n\nAnswer: 1"
+    },
+    {
+     "id": "chal-910",
+     "gold": 53.0,
+     "pred": "53.0",
+     "ok": 1,
+     "err": "",
+     "raw": "ks specifically for the distance the frog jumped.\nFrog's distance = 53 inches.\n\nAnswer: 53"
+    },
+    {
+     "id": "chal-826",
+     "gold": 10.0,
+     "pred": "10.0",
+     "ok": 1,
+     "err": "",
+     "raw": "number of movies.\n    $$17 - 7 = 10$$\n\nYou still have to watch 10 more movies.\n\nAnswer: 10"
+    },
+    {
+     "id": "chal-269",
+     "gold": 27.0,
+     "pred": "27.0",
+     "ok": 1,
+     "err": "",
+     "raw": " by 3:\n$$x = \\frac{81}{3}$$\n$$x = 27$$\n\nMelissa scored 27 points in each game.\n\nAnswer: 27"
+    },
+    {
+     "id": "chal-847",
+     "gold": 2080.0,
+     "pred": "2080.0",
+     "ok": 1,
+     "err": "",
+     "raw": "ipe and unripe oranges together:\n        $$728 + 1352 = 2080 \\text{ sacks}$$\n\nAnswer: 2080"
+    },
+    {
+     "id": "chal-462",
+     "gold": 3.0,
+     "pred": "31.0",
+     "ok": 0,
+     "err": "",
+     "raw": " 31$ cups.\n\nThe calculation shows that she needs to add 31 more cups of flour.\n\nAnswer: 31"
+    },
+    {
+     "id": "chal-977",
+     "gold": 41.0,
+     "pred": "89.4545",
+     "ok": 0,
+     "err": "",
+     "raw": "4 / 66 = 5904 / (6 \\times 11) = 984 / 11$\n\nPerforming the division:\n$984 \\div 11 = 89.4545"
+    },
+    {
+     "id": "chal-448",
+     "gold": 1.0,
+     "pred": "1.0",
+     "ok": 1,
+     "err": "",
+     "raw": "3 \\text{ hours (total)} - 2 \\text{ hours (English)} = 1 \\text{ hour (Chinese)}$.\nAnswer: 1"
+    },
+    {
+     "id": "chal-143",
+     "gold": 30.0,
+     "pred": "30.0",
+     "ok": 1,
+     "err": "",
+     "raw": " 15\n- Number of green peaches: 8\n\nTotal = 7 + 15 + 8\nTotal = 22 + 8\nTotal = 30\n\nAnswer: 30"
+    },
+    {
+     "id": "chal-813",
+     "gold": 1.0,
+     "pred": "4.0",
+     "ok": 0,
+     "err": "",
+     "raw": "ore peaches does Jill have than Jake?\"\n    *   Difference = $J - P$\n    *   Difference = $"
+    },
+    {
+     "id": "chal-899",
+     "gold": 13.0,
+     "pred": "13.0",
+     "ok": 1,
+     "err": "",
+     "raw": "mails**: Jack received 8 emails.\n\nNow, we sum these two values:\n$$5 + 8 = 13$$\n\nAnswer: 13"
+    },
+    {
+     "id": "chal-263",
+     "gold": 26.0,
+     "pred": "26.0",
+     "ok": 1,
+     "err": "",
+     "raw": "$$89 - 63 = 26$$\n\nRandy used 26 more blocks to build the house than the tower.\n\nAnswer: 26"
+    },
+    {
+     "id": "chal-365",
+     "gold": 2.0,
+     "pred": "2.0",
+     "ok": 1,
+     "err": "",
+     "raw": "it as:\n*   Total apples = 5\n*   Ripe apples = 3\n*   Unripe apples = $5 - 3 = 2$\n\nAnswer: 2"
+    },
+    {
+     "id": "chal-871",
+     "gold": 10.0,
+     "pred": "-2.0",
+     "ok": 0,
+     "err": "",
+     "raw": "n the given numbers (ignoring the negative result), the calculation yields -2.\n\nAnswer: -2"
+    },
+    {
+     "id": "chal-240",
+     "gold": 69.0,
+     "pred": "69.0",
+     "ok": 1,
+     "err": "",
+     "raw": "   John's count = David's count - 4\n    John's count = $73 - 4 = 69$ push-ups.\n\nAnswer: 69"
+    },
+    {
+     "id": "chal-499",
+     "gold": 9.0,
+     "pred": "6.0",
+     "ok": 0,
+     "err": "",
+     "raw": "n who got on = 72\n    *   Number of children who got off = 63\n    *   Difference = $72 - 6"
+    },
+    {
+     "id": "chal-920",
+     "gold": 2.0,
+     "pred": "8.0",
+     "ok": 0,
+     "err": "",
+     "raw": "times 2 \\text{ seats/person} = 8 \\text{ seats}$$\n\nThe Ferris wheel has 8 seats.\n\nAnswer: 8"
+    },
+    {
+     "id": "chal-774",
+     "gold": 121.0,
+     "pred": "28.0",
+     "ok": 0,
+     "err": "",
+     "raw": " 142$\nTotal games for friends = $73 + 41 = 114$\nDifference = $142 - 114 = 28$.\n\nAnswer: 28"
+    },
+    {
+     "id": "chal-563",
+     "gold": 1145.0,
+     "pred": "1145.0",
+     "ok": 1,
+     "err": "",
+     "raw": "he sum**:\n    *   $635 + 510 = 1145$\n\nSo, there are 1145 boys in the school.\n\nAnswer: 1145"
+    },
+    {
+     "id": "chal-578",
+     "gold": 82.0,
+     "pred": "82.0",
+     "ok": 1,
+     "err": "",
+     "raw": "akes made.\n    $$133 - 51 = 82$$\n\nBaker made 82 more cakes than those he sold.\n\nAnswer: 82"
+    },
+    {
+     "id": "chal-440",
+     "gold": 5.0,
+     "pred": "7.0",
+     "ok": 0,
+     "err": "",
+     "raw": "s, and the total is 7.\nLet $E$ be English hours and $C$ be Chinese hours.\n$E = 7$\n$C = E -"
+    },
+    {
+     "id": "chal-687",
+     "gold": 8265.0,
+     "pred": "6.0",
+     "ok": 0,
+     "err": "",
+     "raw": "as}}) $$\n\n6.  **Calculate the profit for the Texas game**:\n    The problem states that the"
+    },
+    {
+     "id": "chal-373",
+     "gold": 3.0,
+     "pred": "3.0",
+     "ok": 1,
+     "err": "",
+     "raw": "e spent 3 dollars.\n    $$6 - 3 = 3 \\text{ dollars}$$\n\nGwen still had 3 dollars.\n\nAnswer: 3"
+    },
+    {
+     "id": "chal-961",
+     "gold": 92.0,
+     "pred": "92.0",
+     "ok": 1,
+     "err": "",
+     "raw": " of new games her friends have**: 8\n\nNow, we sum these values:\n$$84 + 8 = 92$$\n\nAnswer: 92"
+    },
+    {
+     "id": "chal-441",
+     "gold": 141.0,
+     "pred": "232.0",
+     "ok": 0,
+     "err": "",
+     "raw": "+ 88 = 179$\n\nNext, add the old friends' games to the result:\n$179 + 53 = 232$\n\nAnswer: 232"
+    },
+    {
+     "id": "chal-654",
+     "gold": 14.0,
+     "pred": "14.0",
+     "ok": 1,
+     "err": "",
+     "raw": "tion:\n$$ x = 6 + 8 $$\n$$ x = 14 $$\n\nGwen received 14 dollars for her birthday.\n\nAnswer: 14"
+    },
+    {
+     "id": "chal-322",
+     "gold": 78.0,
+     "pred": "78.0",
+     "ok": 1,
+     "err": "",
+     "raw": " cakes bought.\n    $$167 - 89 = 78$$\n\nBaker bought 78 more cakes than he sold.\n\nAnswer: 78"
+    },
+    {
+     "id": "chal-671",
+     "gold": 20.0,
+     "pred": "40.0",
+     "ok": 0,
+     "err": "",
+     "raw": "esday**: 13 kids\n3.  **Wednesday**: 20 kids\n\nCalculation:\n$$7 + 13 + 20 = 40$$\n\nAnswer: 40"
+    },
+    {
+     "id": "chal-121",
+     "gold": 3.0,
+     "pred": "1.5",
+     "ok": 0,
+     "err": "",
+     "raw": "vide by 2:\n$$x = 1.5$$\n\nRachel had to complete 1.5 pages of reading homework.\n\nAnswer: 1.5"
+    },
+    {
+     "id": "chal-355",
+     "gold": 26.0,
+     "pred": "26.0",
+     "ok": 1,
+     "err": "",
+     "raw": "uation:\n    $$x = 14 + 12$$\n    $$x = 26$$\n\nDave won 26 tickets at the arcade.\n\nAnswer: 26"
+    },
+    {
+     "id": "chal-840",
+     "gold": 946.0,
+     "pred": "946.0",
+     "ok": 1,
+     "err": "",
+     "raw": "44\n3.  **Total number of girls**: $902 + 44$\n\nCalculation:\n$$902 + 44 = 946$$\n\nAnswer: 946"
+    },
+    {
+     "id": "chal-609",
+     "gold": 5.0,
+     "pred": "7.0",
+     "ok": 0,
+     "err": "",
+     "raw": " \\text{ (clothes)} = -7$$\n\nDave used 7 fewer tickets for toys than for clothes.\n\nAnswer: 7"
+    },
+    {
+     "id": "chal-818",
+     "gold": 32.0,
+     "pred": "32.0",
+     "ok": 1,
+     "err": "",
+     "raw": "e cakes initially than he bought. Therefore, he would still have **32** cakes.\n\nAnswer: 32"
+    },
+    {
+     "id": "chal-649",
+     "gold": 2.0,
+     "pred": "5.0",
+     "ok": 0,
+     "err": "",
+     "raw": "les, which is not distributed to a whole person).\n\nEach boy receives 5 marbles.\n\nAnswer: 5"
+    },
+    {
+     "id": "chal-270",
+     "gold": 91.0,
+     "pred": "-158.0",
+     "ok": 0,
+     "err": "",
+     "raw": " in $x = 246 - 404 = -158$.\nThis is impossible. Therefore, the interpretation must be that"
+    },
+    {
+     "id": "chal-708",
+     "gold": 4.0,
+     "pred": "4.0",
+     "ok": 1,
+     "err": "",
+     "raw": "he initial count.\n    $$8 - 4 = 4$$\n\nJerry added 4 action figures to the shelf.\n\nAnswer: 4"
+    },
+    {
+     "id": "chal-460",
+     "gold": 34.0,
+     "pred": "36.0",
+     "ok": 0,
+     "err": "",
+     "raw": " the number of cookies eaten from the total number bought:\n    $$38 - 2 = 36$$\n\nAnswer: 36"
+    },
+    {
+     "id": "chal-568",
+     "gold": 1.0,
+     "pred": "13.0",
+     "ok": 0,
+     "err": "",
+     "raw": "(still needed)} = 13 \\text{ cups}$$\n\nMary has already put in 13 cups of flour.\n\nAnswer: 13"
+    },
+    {
+     "id": "chal-626",
+     "gold": 2.0,
+     "pred": "2.0",
+     "ok": 1,
+     "err": "",
+     "raw": "  Calculation: $22 - 20 = 2$ inches.\n\nThe final length of his hair is 2 inches.\n\nAnswer: 2"
+    },
+    {
+     "id": "chal-767",
+     "gold": 14.0,
+     "pred": "14.0",
+     "ok": 1,
+     "err": "",
+     "raw": "{ (eggs)} - 6 \\text{ (marbles)} = 14$$\n\nRebecca has 14 more eggs than marbles.\n\nAnswer: 14"
+    },
+    {
+     "id": "chal-139",
+     "gold": 2.0,
+     "pred": "2.0",
+     "ok": 1,
+     "err": "",
+     "raw": " friend ate:**\n    Since each friend received 2 cakes, each person ate 2 cakes.\n\nAnswer: 2"
+    },
+    {
+     "id": "chal-451",
+     "gold": 3.0,
+     "pred": "3.0",
+     "ok": 1,
+     "err": "",
+     "raw": "{Total Sacks}}{\\text{Daily Sacks}} = \\frac{54}{18} $$\n    $$ \\text{Days} = 3 $$\n\nAnswer: 3"
+    },
+    {
+     "id": "chal-694",
+     "gold": 4.0,
+     "pred": "4.0",
+     "ok": 1,
+     "err": "",
+     "raw": "er of trees that died (9) is 4 more than the number of trees that survived (5).\n\nAnswer: 4"
+    },
+    {
+     "id": "chal-747",
+     "gold": 2.0,
+     "pred": "2.0",
+     "ok": 1,
+     "err": "",
+     "raw": " 9$\n    *   Difference = $2$\n\nMary needs to add 2 more cups of sugar than salt.\n\nAnswer: 2"
+    },
+    {
+     "id": "chal-455",
+     "gold": 1.0,
+     "pred": "1.0",
+     "ok": 1,
+     "err": "",
+     "raw": " hour}$$\n\nRyan spends 1 more hour on learning Chinese than on learning English.\n\nAnswer: 1"
+    },
+    {
+     "id": "chal-549",
+     "gold": 3.0,
+     "pred": "3.0",
+     "ok": 1,
+     "err": "",
+     "raw": "necklaces.\n3.  **Calculation**: $18 \\div 6 = 3$.\n\nEach necklace needed 3 beads.\n\nAnswer: 3"
+    },
+    {
+     "id": "chal-181",
+     "gold": 229.0,
+     "pred": "229.0",
+     "ok": 1,
+     "err": "",
+     "raw": "r.\n    $$221 + 8 = 229$$\n\nJohn needs a total of 229 nails for the house wall.\n\nAnswer: 229"
+    },
+    {
+     "id": "chal-301",
+     "gold": 28.0,
+     "pred": "49.0",
+     "ok": 0,
+     "err": "",
+     "raw": "amount of wax he has already used is:\n    $$ \\text{Used wax} = \\text{Total wax needed} - \\"
+    },
+    {
+     "id": "chal-208",
+     "gold": 1.0,
+     "pred": "1.0",
+     "ok": 1,
+     "err": "",
+     "raw": "= 1 hour\n\nRyan spends 1 more hour on learning Chinese than on learning Spanish.\n\nAnswer: 1"
+    },
+    {
+     "id": "chal-184",
+     "gold": 420.0,
+     "pred": "420.0",
+     "ok": 1,
+     "err": "",
+     "raw": "per person.\n    $$14 \\times 30 = 420$$\n\nBrenda's mother prepared 420 cookies.\n\nAnswer: 420"
+    },
+    {
+     "id": "chal-536",
+     "gold": 481.0,
+     "pred": "481.0",
+     "ok": 1,
+     "err": "",
+     "raw": "n:\n$$492 \\text{ g} - 11 \\text{ g} = 481 \\text{ g}$$\n\nHe needs 481 more grams.\n\nAnswer: 481"
+    },
+    {
+     "id": "chal-950",
+     "gold": 7.0,
+     "pred": "23.0",
+     "ok": 0,
+     "err": "",
+     "raw": " 23$$\n    $$x = 23$$\n\nThe number of roses in the vase at the beginning was 23.\n\nAnswer: 23"
+    },
+    {
+     "id": "chal-260",
+     "gold": 183.0,
+     "pred": "183.0",
+     "ok": 1,
+     "err": "",
+     "raw": "the equation:\n$$ x = 92 + 91 $$\n$$ x = 183 $$\n\nKelly initially had 183 games.\n\nAnswer: 183"
+    },
+    {
+     "id": "chal-381",
+     "gold": 15.0,
+     "pred": "15.0",
+     "ok": 1,
+     "err": "",
+     "raw": "\\text{Number of Days}} = \\frac{450}{30} $$\n    $$ \\text{Pages per Day} = 15 $$\n\nAnswer: 15"
+    },
+    {
+     "id": "chal-471",
+     "gold": 17.0,
+     "pred": "19.0",
+     "ok": 0,
+     "err": "",
+     "raw": "$\n\nSince the total number of marbles is conserved, $E_{new} = E$.\nTherefore, $D + 19 = D +"
+    },
+    {
+     "id": "chal-959",
+     "gold": 8.0,
+     "pred": "8.0",
+     "ok": 1,
+     "err": "",
+     "raw": " mouse jumped ($M$).**\nUsing the equation $M = F - 12$:\n$$M = 20 - 12$$\n$$M = 8$$\n\nSo, the"
+    },
+    {
+     "id": "chal-621",
+     "gold": 2.0,
+     "pred": "2.0",
+     "ok": 1,
+     "err": "",
+     "raw": "\nNow, solve for $B$:\n$B = 6 - 4$\n$B = 2$\n\nAllan brought 2 balloons to the park.\n\nAnswer: 2"
+    },
+    {
+     "id": "chal-287",
+     "gold": 410.0,
+     "pred": "410.0",
+     "ok": 1,
+     "err": "",
+     "raw": "$571 - 161$\n\n   $$571 - 161 = 410$$\n\nPaul gave 410 more crayons than he lost.\n\nAnswer: 410"
+    },
+    {
+     "id": "chal-406",
+     "gold": 1.0,
+     "pred": "1.0",
+     "ok": 1,
+     "err": "",
+     "raw": "- 6 \\text{ (dead)} = 1$$\n\nTherefore, 1 more tree survived than those that died.\n\nAnswer: 1"
+    },
+    {
+     "id": "chal-982",
+     "gold": 23.0,
+     "pred": "23.0",
+     "ok": 1,
+     "err": "",
+     "raw": "2 - 39 = 23$$\n\nThere are 23 more campers in the morning than in the afternoon.\n\nAnswer: 23"
+    },
+    {
+     "id": "chal-592",
+     "gold": 5.0,
+     "pred": "0.087719",
+     "ok": 0,
+     "err": "",
+     "raw": "ss it as a decimal rounded to a reasonable number of significant figures or exact fraction"
+    },
+    {
+     "id": "chal-503",
+     "gold": 5700.0,
+     "pred": "5700.0",
+     "ok": 1,
+     "err": "",
+     "raw": ", using the formula $N \\times S \\times P$:\n$$20 \\times 19 \\times 15 = 5700$$\n\nAnswer: 5700"
+    }
+   ],
+   "model_tag": "qwen",
+   "verdict": "DANS_LA_BANDE (calibre)"
+  }
+ ],
+ "finished_utc": "2026-11-01T19:15:13Z"
+}
