@@ -31,19 +31,33 @@ garde vérifie qu'elle est déclarée ET qu'un workflow fige pytest >= 8 : sur
 une version antérieure, l'option serait ignorée SANS BRUIT (simple
 `PytestConfigWarning`) et le défaut reviendrait sans laisser de trace.
 
+Quatrième sens (#23359, `--inventory`) : les trois précédents partent tous de
+la DÉCLARATION (`pytest.ini`, dicts du garde), donc une suite que rien ne
+déclare reste invisible. `--inventory` part de l'ARBORESCENCE et liste les
+dossiers de tests qu'aucune des trois sources ne joue — `testpaths` de
+pytest.ini, cibles de `WORKFLOW_COVERAGE`, périmètres `test-cwd` de
+`WORKFLOW_TEST_CWD`. Un périmètre `test-cwd` existe parce que certains
+workflows (matrice `ict-tests.yml`) jouent pytest DANS un dossier sans que ce
+chemin apparaisse dans un bloc `run:` : il se déclare dans le dict et se
+confronte au fichier, comme les cibles de `WORKFLOW_COVERAGE`.
+
 Usage:
     python scripts/check_testpaths_coverage.py [--verbose] [--repo-root DIR]
+    python scripts/check_testpaths_coverage.py --inventory [--strict]
 
 Exit 0 = aucune dérive. Exit 1 = au moins un testpath non couvert non exclu,
 une cible déclarée disparue de son workflow, une suite sur disque non
-exécutée par la CI, une suite déclarée disparue de l'arbre, ou l'invariant de
-résolution des noms de modules pytest violé.
+exécutée par la CI, une suite déclarée disparue de l'arbre, l'invariant de
+résolution des noms de modules pytest violé, un périmètre `test-cwd` déclaré
+absent de son workflow, ou (avec `--inventory --strict`) un dossier de tests
+que rien ne surveille.
 """
 
 from __future__ import annotations
 
 import argparse
 import configparser
+import posixpath
 import re
 import sys
 from pathlib import Path
@@ -98,6 +112,13 @@ WORKFLOW_COVERAGE: dict[str, list[str]] = {
         # local <-> CI est un invariant de ce garde (#22735).
         "scripts/ci/tests",
         "MyIA.AI.Notebooks/GameTheory/tests",
+        # ICT-Series scripts/tests : dir entier (#23730, classe #22735) —
+        # 45 tests sur 3 fichiers (protocol, records, reward_dynamics),
+        # hermétiques (stdlib, 0,2 s mesuré). La suite était collectée par
+        # ict-tests.yml en cwd local mais absente des testpaths de la racine
+        # ET de la jambe CPU : câblée des trois côtés dans la même PR
+        # (pytest.ini testpaths, liste pytest de ce workflow, ce dict).
+        "MyIA.AI.Notebooks/IIT/ICT-Series/scripts/tests",
         "MyIA.AI.Notebooks/QuantConnect/scripts/tests",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_bg_tree_lock.py",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_forensic_guards.py",
@@ -151,6 +172,39 @@ WORKFLOW_COVERAGE: dict[str, list[str]] = {
     # d'entrée `pytest.ini` testpaths et pas de cible-dossier ici.
     ".github/workflows/sudoku-tests.yml": [
         "MyIA.AI.Notebooks/Sudoku/tests/test_dlx_certificates.py",
+    ],
+    # geometry-tests.yml : dir entier (issue #23359) — 13 tests Z3/sympy du
+    # pont réel real_geometry_bridge.py (tests/test_real_geometry_bridge.py
+    # seul fichier), 1.7 s, deps sympy + z3-solver au pip install du job.
+    # Avant ce câblage, le dossier n'était ni dans pytest.ini ni collecté
+    # par aucune CI : le guard restait vert parce qu'il ne compare que les
+    # testpaths DÉCLARÉS (même angle mort que #17248 sur Argument_Analysis).
+    ".github/workflows/geometry-tests.yml": [
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/tests",
+    ],
+}
+
+# Périmètres `test-cwd` (inventaire #23359, review ai-01 sur #23648) : un
+# workflow peut jouer pytest DANS un dossier sans que ce chemin apparaisse dans
+# un bloc `run:` — `ict-tests.yml` porte un couple `test-cwd:` / `test-args:`
+# par entrée de matrice et sa commande est `pytest ${{ matrix.test-args }}`.
+# Le contrat de `WORKFLOW_COVERAGE` (cible verbatim dans un bloc `run:`) ne peut
+# donc pas l'exprimer, et un inventaire qui ne lit que pytest.ini annonce comme
+# « non surveillés » des dossiers qu'un workflow joue : mesuré sur la tête de
+# #23648, `tests/` et `ict/tests/` de la série ICT en faisaient partie.
+#
+# Le périmètre se DÉCLARE ici plutôt que de se parser depuis la matrice (choix
+# laissé à la lane par la review), puis se CONFRONTE au fichier via
+# `verify_declared_test_cwd` : une entrée doit être un `test-cwd` du workflow ou
+# la jointure `<test-cwd>/<test-args>` d'une paire réellement écrite dans ce
+# fichier. Une dérive du workflow sans mise à jour d'ici rougit, dans les deux
+# sens, comme pour `WORKFLOW_COVERAGE`.
+WORKFLOW_TEST_CWD: dict[str, list[str]] = {
+    ".github/workflows/ict-tests.yml": [
+        # test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series + test-args: tests
+        "MyIA.AI.Notebooks/IIT/ICT-Series/tests",
+        # test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests + test-args: .
+        "MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests",
     ],
 }
 
@@ -353,6 +407,47 @@ def verify_declared_targets(repo_root: Path, verbose: bool) -> list[str]:
     return problems
 
 
+def verify_declared_test_cwd(
+    repo_root: Path,
+    verbose: bool,
+    test_cwd: dict[str, list[str]] | None = None,
+) -> list[str]:
+    """Confronte les périmètres `test-cwd` déclarés au fichier workflow.
+
+    Une entrée de `WORKFLOW_TEST_CWD` est valide si le workflow porte un
+    `test-cwd: <dir>` égal au périmètre, ou un couple `test-cwd: <dir>` /
+    `test-args: <arg>` dont la jointure normalisée donne le périmètre. Le
+    produit cartésien des valeurs du fichier est volontairement large : toute
+    jointure acceptée est réellement écrite dans le fichier, et un chemin qui
+    n'y figure pas rougit — c'est la dérive que ce contrôle doit attraper.
+    """
+    problems: list[str] = []
+    declared = WORKFLOW_TEST_CWD if test_cwd is None else test_cwd
+    for wf_rel, perimeters in declared.items():
+        wf_path = repo_root / wf_rel
+        if not wf_path.exists():
+            problems.append(f"workflow déclaré introuvable: {wf_rel}")
+            continue
+        text = wf_path.read_text(encoding="utf-8")
+        cwds = re.findall(r"test-cwd:\s*(\S+)", text)
+        # `test-args` peut porter des drapeaux (`-n $XDIST_N`) : seule la
+        # première valeur non vide compte, et un drapeau ne produira jamais une
+        # jointure égale à un périmètre réel.
+        args = re.findall(r"test-args:\s*\"?([^\s\"]+)", text) or ["."]
+        joints = {posixpath.normpath(c) for c in cwds}
+        joints |= {posixpath.normpath(f"{c}/{a}") for c in cwds for a in args}
+        for perim in perimeters:
+            if posixpath.normpath(perim) not in joints:
+                problems.append(
+                    "périmètre test-cwd déclaré absent du workflow: "
+                    f"{wf_rel} -> {perim} (workflow modifié ? mettre à jour "
+                    "WORKFLOW_TEST_CWD)"
+                )
+            elif verbose:
+                print(f"  [ok] {wf_rel} joue {perim}")
+    return problems
+
+
 def is_covered(testpath: str, covered_dirs: list[str]) -> bool:
     """Un testpath est couvert si une cible-dossier lui est égale ou ancêtre."""
     return any(
@@ -360,6 +455,111 @@ def is_covered(testpath: str, covered_dirs: list[str]) -> bool:
     )
 
 
+# Racines balayées par l'inventaire. Le guard ci-dessus ne compare que les
+# testpaths DÉCLARÉS dans pytest.ini : un dossier de tests présent dans le
+# dépôt mais absent de pytest.ini lui est invisible, et il reste VERT dessus
+# (constat mesuré sur SymbolicAI/Argument_Analysis, 174 tests non collectés —
+# cf. le commentaire de WORKFLOW_COVERAGE). L'inventaire ferme ce côté-là :
+# il part du dépôt, pas de la déclaration.
+INVENTORY_ROOTS = ("MyIA.AI.Notebooks", "scripts", "GradeBookApp")
+
+
+TEST_DIR_NAMES = {"tests", "test"}
+SKIP_PARTS = {"__pycache__", ".ipynb_checkpoints", ".lake", "_archive"}
+
+
+def discover_test_dirs(repo_root: Path) -> list[str]:
+    """Dossiers-racines de tests du dépôt, hors caches et archives.
+
+    Critère : le dossier s'appelle `tests`/`test` ET porte au moins un
+    `test_*.py`. Volontairement borné à la convention de nommage : un module
+    `test_*.py` co-localisé avec du code (gateway, helpers, config) est un test
+    unitaire de voisinage, pas une suite — l'inventaire ne prétend pas le
+    juger, il ne nomme que les suites qu'aucune déclaration ne vise.
+    """
+    found: set[str] = set()
+    for root_rel in INVENTORY_ROOTS:
+        root = repo_root / root_rel
+        if not root.is_dir():
+            continue
+        for module in root.rglob("test_*.py"):
+            parts = module.parts
+            if any(p in SKIP_PARTS for p in parts):
+                continue
+            if module.parent.name not in TEST_DIR_NAMES:
+                continue
+            found.add(module.parent.relative_to(repo_root).as_posix())
+    return sorted(found)
+
+
+def run_inventory(
+    repo_root: Path,
+    testpaths: list[str],
+    excluded: dict[str, str],
+    strict: bool,
+    workflow_coverage: dict[str, list[str]] | None = None,
+    workflow_test_cwd: dict[str, list[str]] | None = None,
+) -> list[str]:
+    """Liste les dossiers de tests qu'aucune déclaration ne surveille.
+
+    Un dossier est surveillé s'il est un testpath déclaré, contenu dans un
+    testpath déclaré, CI-EXCLUDED, ou joué par un workflow — cible-dossier de
+    `WORKFLOW_COVERAGE` ou périmètre `test-cwd` de `WORKFLOW_TEST_CWD`. Les
+    trois sources comptent : un dossier peut n'être couvert que par un workflow
+    dédié, et le taire ferait dire à l'inventaire l'inverse de ce qu'il mesure.
+
+    Un dossier dont une cible-FICHIER de `WORKFLOW_COVERAGE` tombe à
+    l'intérieur est « partiellement surveillé » : certains de ses tests
+    tournent, pas les autres. Il ne sort pas comme trou, mais il n'est pas
+    déclaré couvert non plus — la mesure exacte est celle-là.
+    """
+    folder_targets: list[str] = []
+    file_targets: list[str] = []
+    coverage = WORKFLOW_COVERAGE if workflow_coverage is None else workflow_coverage
+    perimeters_by_wf = (
+        WORKFLOW_TEST_CWD if workflow_test_cwd is None else workflow_test_cwd
+    )
+    for targets in coverage.values():
+        for target in targets:
+            (file_targets if target.endswith(".py") else folder_targets).append(target)
+    for perimeters in perimeters_by_wf.values():
+        folder_targets.extend(perimeters)
+
+    unwatched: list[str] = []
+    partial: list[str] = []
+    for d in discover_test_dirs(repo_root):
+        if any(d == tp or d.startswith(tp + "/") for tp in testpaths):
+            continue
+        if d in excluded:
+            continue
+        if is_covered(d, folder_targets):
+            continue
+        if any(f.startswith(d + "/") for f in file_targets):
+            partial.append(d)
+            continue
+        unwatched.append(d)
+
+    print(
+        "Inventaire des dossiers de tests hors pytest.ini et hors couverture "
+        f"workflow : {len(unwatched)} non surveillé(s)"
+    )
+    for d in unwatched:
+        print(f"  {'FAIL' if strict else 'INFO'} {d}")
+    if partial:
+        print(
+            f"  Partiellement surveillés (une cible-fichier de workflow tombe "
+            f"dedans) : {len(partial)}"
+        )
+        for d in partial:
+            print(f"    - {d}")
+    if unwatched and not strict:
+        print(
+            "  (advisory : exit 0. Se câblent en ajoutant le dossier à "
+            "`testpaths` de pytest.ini, en le déclarant comme cible de "
+            "`WORKFLOW_COVERAGE` s'il a son workflow dédié, ou en le nommant "
+            "`# CI-EXCLUDED: <dossier> — <raison>` ; `--strict` fait rougir.)"
+        )
+    return unwatched if strict else []
 # --- #22735 : second sens, l'arborescence confrontée à la couverture ---
 
 
@@ -493,6 +693,17 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--verbose", action="store_true")
     ap.add_argument("--repo-root", type=Path, default=REPO_ROOT)
+    ap.add_argument(
+        "--inventory",
+        action="store_true",
+        help="Inventorier les dossiers de tests du dépôt qu'aucune déclaration "
+        "pytest.ini ne surveille (advisory, exit 0 sauf --strict).",
+    )
+    ap.add_argument(
+        "--strict",
+        action="store_true",
+        help="Avec --inventory : faire rougir sur un dossier non surveillé.",
+    )
     args = ap.parse_args()
 
     repo_root = args.repo_root.resolve()
@@ -515,6 +726,7 @@ def main() -> int:
               f"{len(excluded)} exclusions CI-EXCLUDED")
 
     problems = verify_declared_targets(repo_root, args.verbose)
+    problems += verify_declared_test_cwd(repo_root, args.verbose)
 
     uncovered: list[str] = []
     for tp in testpaths:
@@ -563,8 +775,22 @@ def main() -> int:
         for p in namespace_problems:
             print(f"  FAIL {p}")
 
+    # Inventaire (#23359) : les suites qu'aucune declaration pytest.ini ne vise.
+    # Sens distinct des deux precedents -- ceux-ci confrontent l'arbre aux
+    # workflows, celui-ci aux testpaths declares de pytest.ini.
+    inventory = (
+        run_inventory(repo_root, testpaths, excluded, args.strict)
+        if args.inventory
+        else []
+    )
+
     return 1 if (
-        uncovered or problems or uncovered_disk or missing or namespace_problems
+        uncovered
+        or problems
+        or uncovered_disk
+        or missing
+        or namespace_problems
+        or inventory
     ) else 0
 
 

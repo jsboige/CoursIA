@@ -95,7 +95,7 @@ concurrency:
 
 jobs:
   always-on-guards:
-    name: "Always-on guards -- 16 organes, 1 checkout"
+    name: "Always-on guards -- 17 organes, 1 checkout"
     # Routage #14283 : premier consommateur GitHub-hosted du depot une fois
     # secret-scan bascule -- 2650 runs same-repo en 5 jours (2026-08-28 ->
     # 2026-09-02), timeout 25 min, aucun filtre `paths:`. Le pool Linux
@@ -1316,6 +1316,33 @@ jobs:
           exit 1
 
       # -----------------------------------------------------------------
+      # #22957 -- signature d'execution des carnets .NET Interactive.
+      #
+      # La trace `metadata.papermill` (presente sur ces carnets) porte par
+      # cellule la duree, les horodatages et le statut -- mais elle ne lie NI la
+      # source executee NI l'outillage. Une source editee apres execution y
+      # laisse une trace intacte : rien ne signale que la sortie commitee ne
+      # correspond plus au code. La signature (`metadata.execution_signature`)
+      # lie les deux, et la garde verifie que le lien tient encore.
+      #
+      # Portee : les carnets **touches par la PR** -- la seule fenetre ou une
+      # signature peut devenir perimee, puisque seule l'edition du carnet
+      # atteste peut l'invalider. Les carnets sans signature sont ignores
+      # (opt-in) : le stock du depot reste vert, et l'auto-test prouve que le
+      # temoin negatif (source editee apres execution) est bien detecte.
+      # -----------------------------------------------------------------
+      - name: "Signature d'execution des carnets (#22957)"
+        id: execution_signature
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        run: |
+          set -uo pipefail
+          python3 scripts/notebook_tools/check_execution_signature.py --self-test
+          git fetch origin "${{ github.base_ref }}" -q
+          python3 scripts/notebook_tools/check_execution_signature.py \
+            --changed-from "origin/${{ github.base_ref }}"
+
+      # -----------------------------------------------------------------
       # AGREGAT : la couleur du job. Un organe bloquant echoue -> rouge.
       # Les organes advisory ne figurent pas ici (ils sortent toujours 0 ;
       # si l'un crashe, le step lui-meme rougit le job -- meme posture que
@@ -1344,6 +1371,7 @@ jobs:
           check secret_paths_ignored "${{ steps.secret_paths_ignored.outcome }}"
           check env_example_secrets "${{ steps.env_example_secrets.outcome }}"
           check oss_signature "${{ steps.oss_signature.outcome }}"
+          check execution_signature "${{ steps.execution_signature.outcome }}"
           if [ -n "$FAILED" ]; then
             echo "::error::Organes bloquants en echec :$FAILED (le detail est dans les steps correspondants ci-dessus)."
             exit 1
@@ -1360,3 +1388,12 @@ jobs:
               ;;
           esac
           echo "Tous les organes always-on sont verts (ou skips d'evenement)${HS_REGIME:+ ; hot-subset : ${HS_REGIME}}."
+  # EFFETS DE BORD PR (#22209, tranche 1b, voie A) : le job
+  # `always-on-commenters` vit dans SON PROPRE fichier
+  # (always-on-commenters.yml). Deux raisons mesurees : (1) un workflow
+  # YAML invalide est rejete EN ENTIER par GitHub, et colocaliser
+  # l'emetteur de commentaires avec le umbrella des 16 organes a tue le
+  # gate de contenu avec lui (PR #22244 : contexte runner dans un
+  # env: de niveau job, fichier rejete, 6 runs a zero jobs) ; (2) la
+  # famille always-on est un job par fichier
+  # (test_always_on_body_split.py::test_job_names_are_distinct).
