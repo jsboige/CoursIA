@@ -433,8 +433,29 @@ _OVERRIDE = {"OVERRIDE"}
 # of a bold-wrapped claim): `paths: dir/**` is a legitimate recursive glob,
 # indistinguishable from a closing decorator by suffix alone. Trailing `*` in
 # fnmatch matches empty, so a captured `glob**` still matches `glob`.
+# #23720 (2026-10-31, lane myia-ai-01:CoursIA-2) -- la clause canonique est
+# le SEGMENT FINAL de la ligne du marqueur (`-- paths: g1, g2`). Le motif
+# ci-dessous lit donc la **derniere** occurrence du mot-cle sur la ligne :
+# le quantificateur `[^\n]*` est désormais **greedy** (il etait non-greedy),
+# de sorte que le moteur backtracke depuis la fin de ligne.
+#
+# Pourquoi : une lane qui ecrit "une clause `paths:` ..." dans le texte
+# d'INTENTION de son marqueur detonait le parseur -- le mot-cle etait lu au
+# premier endroit, la truncation d'annotation (` -- `) coupait le reste, et la
+# portee rendue etait un jeton MORT ("`"), c'est-a-dire une claim epic-wide
+# (fail-closed #10958/#11098) : la lane se verrouillait elle-meme sur
+# l'issue entiere. Mesure sur `main` au tip `3c599591c2d2` :
+#
+#   '[CLAIMED] lane X -- une clause `paths:` (backticks) -- paths: a.py'
+#     -> portee rendue : ["`"]      (avant #23720)
+#     -> portee rendue : ["a.py"]   (apres #23720)
+#
+# Le lookbehind `(?<![`"'\w])` refuse une occurrence **encadree** (backtick,
+# guillemet) ou precedee d'un caractere de mot : une mention en prose n'est
+# pas une clause. Une occurrence en MARQUE (`**paths:**`) reste acceptee --
+# la decoration n'est pas un mot.
 _PATHS_CLAUSE_RE = re.compile(
-    r"(?im)^[ \t]*" + _DECOR + r"(?:\*\*|__)?[ \t]*\[\s*(?:CLAIMED-AMEND|CLAIMED|RELEASED|DELIVERED|OVERRIDE)\s*\][^\n]*?paths\s*:\s*([^\n]+?)\s*$"
+    r"(?im)^[ \t]*" + _DECOR + r"(?:\*\*|__)?[ \t]*\[\s*(?:CLAIMED-AMEND|CLAIMED|RELEASED|DELIVERED|OVERRIDE)\s*\][^\n]*(?<![`\"'\w])paths\s*:\s*([^\n]+?)\s*$"
 )
 # #12320 -- `[DELIVERED] lane <m:w> -- PR #N`. The PR reference is OPTIONAL on
 # a DELIVERED marker (a DELIVERED without a PR is functionally equivalent to a
@@ -837,6 +858,45 @@ def parse_claim_event(comment: dict,
     return events[-1] if events else None
 
 
+# #23720 -- les wrappers d'un jeton de chemin. Une lane qui ecrit son chemin
+# entre backticks ou guillemets (`paths: \`a/b.py\``) produisait un glob qui
+# ne matche AUCUN fichier suivi : la portee etait lue morte, donc la claim
+# devenait epic-wide (fail-closed #10958/#11098) et verrouillait l'issue
+# entiere au lieu du fichier vise. Le retrait des wrappers est fait ICI, a la
+# lecture, ce qui repare aussi les claims DEJA poses -- aucune re-emission
+# du claim n'est demandee a la lane.
+_PATH_TOKEN_WRAPPERS = ("`", '"', "'")
+
+
+def _normalize_path_token(token: str) -> str:
+    r"""Strip the surrounding backticks/quotes of a declared path token.
+
+    `paths: \`a/b.py\`` and `paths: a/b.py` must denote the SAME scope:
+    otherwise the claim's scope and the caller's `--paths` are compared as
+    two spellings of one path, and the comparison yields nothing.
+
+    The wrappers are removed only when they are **paired** (`\\`a/b.py\\``,
+    `"a/b.py"`, `'a/b.py'`), and the stripping repeats so a doubly-wrapped
+    token (`\\`\\`a/b.py\\`\\``) is unwrapped too. A quote in the MIDDLE of a
+    filename is left untouched -- only the edges are decoration.
+
+    A token that carried nothing but wrappers normalises to the empty
+    string; the caller drops it (a scope made only of decoration was dead
+    before as well -- it simply said so more clearly).
+    """
+    t = token.strip()
+    unwrapped = True
+    while unwrapped and len(t) >= 2:
+        unwrapped = False
+        head, tail = t[0], t[-1]
+        if head in _PATH_TOKEN_WRAPPERS and head == tail:
+            t = t[1:-1].strip()
+            unwrapped = True
+    # Unbalanced leftovers (a single stray quote at one edge) are decoration
+    # too -- `fnmatch` would never match them.
+    return t.strip("`\"'").strip()
+
+
 def _split_paths_brace_aware(raw: str) -> list[str]:
     """Split a comma-separated path list on commas OUTSIDE `{...}` groups.
 
@@ -847,6 +907,13 @@ def _split_paths_brace_aware(raw: str) -> list[str]:
     (#10597). This splitter tracks brace depth and only splits on depth-0
     commas, keeping each brace group intact. Empty fragments from stray
     commas are dropped (`paths: a, , b` -> `["a", "b"]`).
+
+    #23720 -- each fragment is then NORMALIZED (`_normalize_path_token`):
+    the backticks/quotes a lane wrapped its path in are decoration, not part
+    of the path. The normalization runs AFTER the brace-aware split, so a
+    wrapped brace group (`` `search-{6,8,9}-*.yaml` ``) is first kept whole
+    and then unwrapped -- it still expands into three matchable globs
+    (#10597 preserved).
     """
     parts: list[str] = []
     buf: list[str] = []
@@ -862,7 +929,7 @@ def _split_paths_brace_aware(raw: str) -> list[str]:
         else:
             buf.append(ch)
     parts.append("".join(buf).strip())
-    return [p for p in parts if p]
+    return [t for t in (_normalize_path_token(p) for p in parts) if t]
 
 
 def _expand_brace_groups(pattern: str) -> list[str]:
@@ -920,6 +987,14 @@ def _extract_paths_clause(text: str | None) -> list[str] | None:
     dash sequence (`foo--bar.py`) survives untouched; the truncation cuts at
     the FIRST separator, so glob content after it stays out regardless of
     how the annotation is punctuated.
+
+    #23720 -- the clause is read from the LAST unquoted occurrence of the
+    keyword on the marker line (see `_PATHS_CLAUSE_RE`), and each resulting
+    token is NORMALIZED (`_normalize_path_token`): a path wrapped in
+    backticks or quotes denotes the same scope as the bare path. Without
+    both, a claim written in a natural sentence could end up with a DEAD
+    scope -- and a dead scope is read as epic-wide, which locks the whole
+    issue instead of the file the lane meant to hold.
     """
     m = _PATHS_CLAUSE_RE.search(text or "")
     if not m:
@@ -2648,10 +2723,19 @@ def _paths_clause(paths: list[str] | None) -> str:
     path was previously DROPPED SILENTLY: the caller believed the claim was
     scoped while the organ read it epic-wide (maximally blocking). This
     function is the fix that makes the scope survive the round-trip.
+
+    #23720 -- the tokens are NORMALIZED before being rendered: the clause
+    that leaves this function is the one the reader will parse, so it must
+    already be in the normalized spelling (a path wrapped in backticks is
+    written back bare). The reader normalizes too -- this is the write-side
+    half of the same contract, so a claim READS the same as it was WRITTEN.
     """
     if not paths:
         return ""
-    return " -- paths: " + ", ".join(paths)
+    normalized = [t for t in (_normalize_path_token(p) for p in paths) if t]
+    if not normalized:
+        return ""
+    return " -- paths: " + ", ".join(normalized)
 
 
 def _fmt_utc(iso: str | None) -> str:
@@ -5846,6 +5930,13 @@ def main(argv: list[str] | None = None) -> int:
                         "blocked (#11064). Coordinator arbitration only -- "
                         "the reading side still honours [OVERRIDE] markers.")
     args = p.parse_args(argv)
+    # #23720 -- the caller's own scope (`--paths`) is compared with the
+    # claims' scopes: both sides must be spelled the same way, otherwise the
+    # intersection is computed between two spellings of one path and yields
+    # nothing. The reader normalizes the claims' side; the caller's side is
+    # normalized here, at the boundary.
+    if args.paths is not None:
+        args.paths = [t for t in (_normalize_path_token(p) for p in args.paths) if t]
     # #12751 -- default is 48 (measuring). `--no-stale`/threshold=None restores
     # the legacy behaviour (every claim blocks, nothing age-filtered); the
     # disabled state is reported honestly as `stale_detection: "disabled"`.
