@@ -67,6 +67,7 @@ liens de navigation rétablis après la descente d'un niveau.
 | Document | Rôle |
 |----------|------|
 | [`palier14-ict19-note-de-conception.md`](palier14-ict19-note-de-conception.md) | Palier 14 « Enjeu » : déplacement de `ICT-19` et `ICT-19b` vers la sous-série `ICT-19/`, périmètre choisi contre les paliers 11-13, et réparation des liens entrants comme sortants. |
+| [`banc-strate7-note-de-conception.md`](banc-strate7-note-de-conception.md) | Note de conception du **banc unique de la strate 7** (capstone, tête du palier) : les six proxys d'`ict/free_coordinates.py` employés comme lentille sur les mécanismes inter-séries qui changent l'espace des actions, chacun appelé par son organe natif et classé latent / nouveau / décoratif. Issue [#23778](https://github.com/jsboige/CoursIA/issues/23778). |
 
 ## Parcours suggéré
 
