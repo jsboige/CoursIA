@@ -44,14 +44,22 @@ from __future__ import annotations
 import argparse
 import asyncio
 import faulthandler
+import io
 import os
 import sys
 import time
 from pathlib import Path
 
 # Dump native tracebacks on fatal signals (SIGSEGV/SIGABRT...) so a future
-# run-6-style silent death leaves a signature in the log (#6790).
-faulthandler.enable()
+# run-6-style silent death leaves a signature in the log (#6790). Sous capture
+# pytest, sys.stderr est un tampon sans fileno : enable() y leve
+# io.UnsupportedOperation et tuait l'import du lanceur (2 tests rouges sur
+# main, #24015). En lancement reel (console ou fichier redirige), le dump
+# reste actif.
+try:
+    faulthandler.enable()
+except (AttributeError, io.UnsupportedOperation, ValueError):
+    pass
 
 PROVER_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(PROVER_DIR))
