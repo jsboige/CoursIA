@@ -24,7 +24,7 @@ sys.path.insert(
     0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "repro")
 )
 
-from ws_probes_margin import DEFAULT_NOISE_BOUND, analyse  # noqa: E402
+from ws_probes_margin import DEFAULT_NOISE_BOUND, analyse, strict_exit_code  # noqa: E402
 
 
 # Quatre items, construits pour que la marge minimale du jeu ne soit ni gagnable
@@ -106,3 +106,59 @@ def test_measured_scale_is_not_arithmetic():
     """A l'echelle mesuree, la perturbation requise depasse largement le bruit."""
     rep = analyse("translated", _data(), other_accuracy=0.25)
     assert rep["required_perturbation"] > DEFAULT_NOISE_BOUND * 1e6
+
+
+def test_agreement_is_an_accord_not_a_gain_of_zero_items():
+    """Deux sieges d'accord au dixieme d'item pres : verdict ACCORD, pas GAGNER 0.
+
+    C'est le cas nominal (la doc invite a passer la valeur de l'autre siege) :
+    l'ancien code y affichait << il faut GAGNER 0 item(s) >> puis << non
+    atteignable >>, deux assertions fausses sur un jeu concordant.
+    """
+    rep = analyse("translated", _data(), other_accuracy=0.5)
+    assert rep["delta_items"] == 0
+    assert rep["direction"] == "ACCORD"
+    assert rep["required_perturbation"] == 0.0
+    assert strict_exit_code({"translated": rep}, DEFAULT_NOISE_BOUND, strict=True, observed=0.5) == 0
+
+
+def test_empty_pools_return_none_not_crash():
+    """Aucun item correct et aucun gagnable : None, pas un IndexError.
+
+    Un jeu entierement rate (etat degrade, ou `y` en desordre) vide les deux
+    viviers. L'ancien code indexait `winnable[0]` sans garde alors que le
+    voisin `len(pool) >= k` gerait deja le vivier insuffisant : deux
+    conventions pour le meme cas d'absence.
+    """
+    data = _data(pred=[1, 2, 3, 1], y=[0, 0, 0, 0], runner_up_is_true=[False] * 4)
+    rep = analyse("translated", data, other_accuracy=0.75)
+    assert rep["cheapest_gain_margin"] is None
+    assert rep["cheapest_loss_margin"] is None
+    assert rep["cheapest_perturbation"] is None
+    assert rep["direction"] == "GAGNER"
+    assert rep["required_perturbation"] is None
+
+
+def test_strict_exit_never_zero_on_undecidable():
+    """Ecart reel mais vivier insuffisant : sortie 2, jamais 0.
+
+    Un gate CI lit 0 comme << rien a signaler >> ; rendre 0 sur une question
+    sans reponse a cette taille de jeu est le pire cas du contrat de sortie.
+    """
+    rep = analyse("translated", _data(), other_accuracy=-1.0)  # 3 items d'ecart, 2 perdables
+    assert rep["required_perturbation"] is None
+    assert rep["delta_items"] > 0
+    assert strict_exit_code({"translated": rep}, DEFAULT_NOISE_BOUND, strict=True, observed=-1.0) == 2
+
+
+def test_strict_exit_one_when_model_differs():
+    """Perturbation requise au-dessus du seuil de bruit : sortie 1."""
+    rep = analyse("translated", _data(), other_accuracy=0.25)
+    assert strict_exit_code({"translated": rep}, DEFAULT_NOISE_BOUND, strict=True, observed=0.25) == 1
+
+
+def test_strict_exit_zero_without_strict_or_observed():
+    """Sans --strict ou sans --observed, le contrat ne s'active pas."""
+    rep = analyse("translated", _data(), other_accuracy=0.25)
+    assert strict_exit_code({"translated": rep}, DEFAULT_NOISE_BOUND, strict=False, observed=0.25) == 0
+    assert strict_exit_code({"translated": rep}, DEFAULT_NOISE_BOUND, strict=True, observed=None) == 0

@@ -199,8 +199,10 @@ python scripts/repro/ws_probes_margin.py --out marges.json
 ```
 
 `--strict` sort `1` quand la perturbation requise depasse `--noise-bound` : l'ecart observe
-n'est alors pas de l'arithmetique. `--tol` rejoue l'ajustement a chaque tolerance et nomme les
-items dont la classe predite change.
+n'est alors pas de l'arithmetique. Il sort `2` quand l'ecart depasse le vivier (question reelle,
+indecidable a cette taille de jeu) — jamais `0`, qu'une CI lirait « rien a signaler » ; `0`
+reste l'accord au dixieme d'item pres ou l'arithmetique. `--tol` rejoue l'ajustement a chaque
+tolerance et nomme les items dont la classe predite change.
 
 ## Voir aussi
 

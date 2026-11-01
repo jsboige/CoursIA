@@ -31,15 +31,19 @@ Usage :
     python scripts/repro/ws_probes_margin.py --tol 1e-4 --tol 1e-6 --tol 1e-8
     python scripts/repro/ws_probes_margin.py --out marges.json
 
-Sortie de code : `0` si la mesure aboutit. Avec `--strict` et `--observed`, `1` si
-l'ecart observe exige une perturbation superieure a `--noise-bound` (donc s'il ne
-s'explique pas par de l'arithmetique), `0` sinon.
+Sortie de code : `0` si la mesure aboutit sans signal. Avec `--strict` et
+`--observed` : `1` si l'ecart observe exige une perturbation superieure a
+`--noise-bound` (il ne s'explique pas par de l'arithmetique) ; `2` si l'ecart
+depasse le vivier -- question reelle mais indecidable a cette taille de jeu,
+et jamais `0`, qu'une CI lirait << rien a signaler >> ; `0` sinon (accord au
+dixieme d'item pres, ou arithmetique).
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 
 import numpy as np
@@ -139,26 +143,36 @@ def analyse(state_name, data, other_accuracy=None):
     wrong = data["pred"] != data["y"]
     winnable = order[runner_up_is_true[order]]
     losable = order[~wrong[order]]
-    report["cheapest_gain_margin"] = float(gap[winnable[0]])
-    report["cheapest_loss_margin"] = float(gap[losable[0]])
-    # Plancher de perturbation : le moins cher des deux sens.
-    report["cheapest_perturbation"] = min(
-        report["cheapest_gain_margin"], report["cheapest_loss_margin"]
-    )
+    # Vivier vide (aucun item correct, ou aucun dont la classe reelle est le
+    # second score) : la question n'a pas de reponse dans ce sens, meme
+    # convention que le vivier insuffisant plus bas -- jamais un IndexError.
+    report["cheapest_gain_margin"] = float(gap[winnable[0]]) if len(winnable) else None
+    report["cheapest_loss_margin"] = float(gap[losable[0]]) if len(losable) else None
+    # Plancher de perturbation : le moins cher des sens qui existent.
+    margins = [m for m in (report["cheapest_gain_margin"], report["cheapest_loss_margin"]) if m is not None]
+    report["cheapest_perturbation"] = min(margins) if margins else None
 
     if other_accuracy is not None:
         delta_items = round((data["accuracy"] - other_accuracy) * data["n_test"])
         report["observed_other"] = round(other_accuracy, 4)
         report["delta_items"] = int(delta_items)
-        # `delta_items > 0` veut dire que NOUS sommes plus haut : pour rejoindre
-        # l'autre environnement, il faut donc DETRUIRE |delta| items que nous
-        # reussissons, donc puiser dans les perdables. Le sens s'inverse quand
-        # l'autre environnement est au-dessus : il faut GAGNER des items, et le
-        # vivier est celui des items dont la classe reelle est le second score.
-        pool = losable if delta_items > 0 else winnable
-        k = abs(int(delta_items))
-        report["direction"] = "PERDRE" if delta_items > 0 else "GAGNER"
-        report["required_perturbation"] = float(gap[pool[k - 1]]) if k and len(pool) >= k else None
+        if delta_items == 0:
+            # Accord au dixieme d'item pres : il n'y a RIEN a perturber, le
+            # verdict est l'accord -- pas un gain de zero items, qui afficherait
+            # a tort << non atteignable >> (le cas nominal de deux sieges
+            # concordants tombait dans cette branche).
+            report["direction"] = "ACCORD"
+            report["required_perturbation"] = 0.0
+        else:
+            # `delta_items > 0` veut dire que NOUS sommes plus haut : pour rejoindre
+            # l'autre environnement, il faut donc DETRUIRE |delta| items que nous
+            # reussissons, donc puiser dans les perdables. Le sens s'inverse quand
+            # l'autre environnement est au-dessus : il faut GAGNER des items, et le
+            # vivier est celui des items dont la classe reelle est le second score.
+            pool = losable if delta_items > 0 else winnable
+            k = abs(int(delta_items))
+            report["direction"] = "PERDRE" if delta_items > 0 else "GAGNER"
+            report["required_perturbation"] = float(gap[pool[k - 1]]) if k and len(pool) >= k else None
     return report
 
 
@@ -186,8 +200,8 @@ def tol_sweep(x_tr, y_tr, x_te, x_dec, y, tols, reference):
             row[state] = {
                 "accuracy": round(data["accuracy"], 4),
                 "n_iter": row["n_iter"],
-                "cheapest_gain_margin": float(gaps[gainable[0]]),
-                "cheapest_loss_margin": float(gaps[losable[0]]),
+                "cheapest_gain_margin": float(gaps[gainable[0]]) if len(gainable) else None,
+                "cheapest_loss_margin": float(gaps[losable[0]]) if len(losable) else None,
                 "changed_items": [int(i) for i in moved],
                 "changed_kinds": [
                     "GAIN" if data["pred"][i] == y[i] else "PERTE" for i in moved
@@ -195,6 +209,30 @@ def tol_sweep(x_tr, y_tr, x_te, x_dec, y, tols, reference):
             }
         rows.append(row)
     return rows
+
+
+def strict_exit_code(reports, noise_bound, strict, observed):
+    """Le contrat de sortie de `--strict`, isole pour etre testable sans corpus.
+
+    Trois etats, jamais deux : `1` = l'ecart exige une vraie difference de
+    modele (perturbation requise > seuil de bruit) ; `2` = l'ecart est reel
+    mais depasse le vivier (question indecidable a cette taille de jeu) ; `0`
+    = accord au dixieme d'item pres, ou arithmetique. Le cas `2` ne doit
+    JAMAIS rendre `0` : c'est le code qu'une CI lit comme << rien a signaler >>.
+    """
+    if not (strict and observed is not None):
+        return 0
+    for rep in reports.values():
+        if "delta_items" not in rep:
+            continue
+        if rep["delta_items"] != 0 and rep["required_perturbation"] is None:
+            return 2
+    if any(
+        r.get("required_perturbation") is not None and r["required_perturbation"] > noise_bound
+        for r in reports.values()
+    ):
+        return 1
+    return 0
 
 
 def main(argv=None) -> int:
@@ -237,11 +275,13 @@ def main(argv=None) -> int:
         metavar="TOL",
         help="rejouer l'ajustement a cette tolerance de solveur (repetable)",
     )
-    parser.add_argument("--strict", action="store_true", help="sortir 1 si l'ecart n'est pas arithmetique")
+    parser.add_argument(
+        "--strict",
+        action="store_true",
+        help="sortir 1 si l'ecart n'est pas arithmetique, 2 s'il depasse le vivier (indecidable)",
+    )
     parser.add_argument("--out", default=None, help="chemin d'ecriture du rapport JSON")
     args = parser.parse_args(argv)
-
-    import os
 
     cache = args.cache or os.path.join(os.path.expanduser("~"), ".cache", "ft00a")
     ims_tr, labs_tr, _ims_te, _labs_te, source_used = load_fashion_mnist(cache, args.source)
@@ -262,6 +302,9 @@ def main(argv=None) -> int:
         for state in ("clean", "translated")
     }
 
+    def fmt_margin(m):
+        return f"{m:.6e}" if m is not None else "aucun vivier"
+
     print(f"source du corpus : {source_used} | graine {SEED}")
     print("ajustement du carnet : LogisticRegression(max_iter=3000, C=1.0), sans random_state ni tol")
     print()
@@ -273,26 +316,32 @@ def main(argv=None) -> int:
             f" | items < 1e-3 : {rep['n_below_1e-3']} | < 1e-2 : {rep['n_below_1e-2']}"
         )
         print(
-            f"  item le moins cher a GAGNER : {rep['cheapest_gain_margin']:.6e}"
-            f" | a PERDRE : {rep['cheapest_loss_margin']:.6e}"
+            f"  item le moins cher a GAGNER : {fmt_margin(rep['cheapest_gain_margin'])}"
+            f" | a PERDRE : {fmt_margin(rep['cheapest_loss_margin'])}"
         )
         if "required_perturbation" in rep:
             req = rep["required_perturbation"]
             d = rep["delta_items"]
-            print(
-                f"  ecart observe {rep['observed_other']:.4f} -> il faut"
-                f" {rep['direction']} {abs(d)} item(s)"
-            )
-            if req is None:
-                print("  perturbation requise : non atteignable par bascule d'items seuls")
-            else:
-                ratio = req / args.noise_bound if args.noise_bound else float("inf")
+            if rep["direction"] == "ACCORD":
                 print(
-                    f"  perturbation minimale requise : {req:.6e}"
-                    f" ({ratio:.1e} fois le seuil de bruit {args.noise_bound:.0e})"
+                    f"  ecart observe {rep['observed_other']:.4f} -> accord au dixieme"
+                    " d'item pres, aucune perturbation requise"
                 )
-                verdict = "ARITHMETIQUE" if req <= args.noise_bound else "MODELE-DIFFERE"
-                print(f"  verdict : {verdict}")
+            else:
+                print(
+                    f"  ecart observe {rep['observed_other']:.4f} -> il faut"
+                    f" {rep['direction']} {abs(d)} item(s)"
+                )
+                if req is None:
+                    print("  perturbation requise : non atteignable par bascule d'items seuls")
+                else:
+                    ratio = req / args.noise_bound if args.noise_bound else float("inf")
+                    print(
+                        f"  perturbation minimale requise : {req:.6e}"
+                        f" ({ratio:.1e} fois le seuil de bruit {args.noise_bound:.0e})"
+                    )
+                    verdict = "ARITHMETIQUE" if req <= args.noise_bound else "MODELE-DIFFERE"
+                    print(f"  verdict : {verdict}")
         print()
 
     sweep = None
@@ -330,6 +379,10 @@ def main(argv=None) -> int:
         for r in reports.values()
     ]
     not_arithmetic = any(verdicts)
+    undecidable = any(
+        r.get("delta_items", 0) != 0 and r.get("required_perturbation") is None
+        for r in reports.values()
+    )
 
     if args.out:
         payload = {
@@ -340,14 +393,13 @@ def main(argv=None) -> int:
             "states": reports,
             "tol_sweep": sweep,
             "not_arithmetic": not_arithmetic,
+            "undecidable": undecidable,
         }
         with open(args.out, "w", encoding="utf-8") as fh:
             json.dump(payload, fh, ensure_ascii=False, indent=2)
         print(f"rapport ecrit : {args.out}")
 
-    if args.strict and args.observed is not None and not_arithmetic:
-        return 1
-    return 0
+    return strict_exit_code(reports, args.noise_bound, args.strict, args.observed)
 
 
 if __name__ == "__main__":
