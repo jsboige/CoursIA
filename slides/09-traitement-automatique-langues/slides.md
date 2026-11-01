@@ -507,7 +507,7 @@ structurée — sur audio réel, API et local.
 **Vers les applications** :
 
 - **Pipeline de transcription** : [04-2-Transcription-Pipeline](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-2-Transcription-Pipeline.ipynb) — du fichier audio au texte exploitable, enchaîné
-- **Prosodie** : [04-10-Annotation-Prosodique](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-10-Annotation-Prosodique.ipynb) — l'annotation prosodique : ce que la courbe mélodique ajoute au mot
+- **Prosodie** : [04-10-Annotation-Prosodique](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-10-Annotation-Prosodique.ipynb) — l'annotation prosodique : ce que la courbe mélodique ajoute au mot
 - **Voix temps réel** : [03-3-Realtime-Voice-API](../../MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-3-Realtime-Voice-API.ipynb) — la boucle complète écouter-répondre
 
 > La reconnaissance de la parole n'est plus un exemple de manuel : le dépôt la
