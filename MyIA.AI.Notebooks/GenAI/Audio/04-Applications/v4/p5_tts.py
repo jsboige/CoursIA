@@ -17,6 +17,8 @@ import os
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import re
+import contextlib
+import tempfile
 
 logger = logging.getLogger(__name__)
 
@@ -91,8 +93,12 @@ _NARRATOR_COSYVOICE3_ROUTING: bool = os.getenv("NARRATOR_COSYVOICE3_ROUTING", "0
 # text (tags included) is unchanged, so its hash -- the other cache key --
 # cannot see the fix; only this sentinel re-renders the glued narrators
 # (measured: 16/20 sampled segments carried omissions traced to glue
-# points like "route,[short pause] quand" -> "route,quand").
-_CV3_NARRATOR_REFERENCE_ID: str = "cosyvoice3-zeroshot-narrator-fr-v3"
+# points like "route,[short pause] quand" -> "route,quand"). v4 = the
+# attack guard (#19739): a chunk that passes the duration floor can still
+# start mid-text (onset-drop), and the guard re-rolls it -- segments the
+# pre-guard run shipped with a dropped attack must not stay cached as
+# "generated".
+_CV3_NARRATOR_REFERENCE_ID: str = "cosyvoice3-zeroshot-narrator-fr-v4"
 
 # Engine -> reference_id sentinel. The narrator cache is keyed on it
 # (#19692): an MP3 rendered by one engine is never served for another.
@@ -234,6 +240,15 @@ def _synthesize_narrator_customvoice(
     if base_url.endswith("/v1"):
         base_url = base_url[: -len("/v1")]
 
+    # Attack guard (#19739): the chunked render concatenates sentence chunks,
+    # and a chunk can start mid-text (onset-drop) without any duration check
+    # seeing it -- only the ASR can. Same organ and same hard-failure
+    # contract as the CV3 narrator path: a chunk whose attack could not be
+    # obtained is re-rendered, and the passage is refused if the attack is
+    # still missing. The lever here is the re-render (the gateway takes no
+    # seed and samples at temperature 0.9), not the CV3 seeded re-roll.
+    attack_report: dict = {}
+
     wav_bytes = qwen_tts_customvoice_chunked(
         plain_text,
         voice=_CUSTOMVOICE_NARRATOR_SPEAKER,
@@ -245,11 +260,16 @@ def _synthesize_narrator_customvoice(
         gap_ms=120,
         base_url=base_url,
         model=_CUSTOMVOICE_SERVED_MODEL,
+        attack_guard=True,
+        attack_report=attack_report,
     )
     if not wav_bytes:
         raise NarratorCustomVoiceUnavailable(
             f"seg {seg.seg_index}: CustomVoice gateway returned no audio "
-            f"(unreachable, 4xx/5xx, or a failed chunk) at {endpoint}"
+            f"(unreachable, 4xx/5xx, a failed chunk, or an attack the guard "
+            f"could not obtain after {attack_report.get('attempts', 0)} "
+            f"render(s) on chunk {attack_report.get('aborted_chunk')}) "
+            f"at {endpoint}"
         )
 
     try:
@@ -343,7 +363,7 @@ def _text_hash(text: str) -> str:
 # Global cache: seg_index → English instruction string
 _dramatic_translations: dict[int, str] = {}
 
-# LLM batch size for translation (gpt-4o-mini, cheap)
+# LLM batch size for translation (chat mini du mapping, #14755)
 _TRANSLATION_BATCH_SIZE = 40
 
 _DRAMATIC_KEYWORD_MAP: list[tuple[list[str], str]] = [
@@ -459,7 +479,7 @@ def _get_vocal_reinforcement(instruction: str) -> str | None:
 def _translate_prompts_batch(
     segments: list[AnnotatedSegment],
 ) -> dict[int, str]:
-    """Translate all dramatic prompts via LLM (gpt-4o-mini) in batches.
+    """Translate all dramatic prompts via LLM (chat mini du mapping, #14755) in batches.
 
     Returns {seg_index: english_instruction} mapping.  Results are cached
     to ``outputs/dramatic_translations.json`` — subsequent runs skip the LLM.
@@ -486,8 +506,9 @@ def _translate_prompts_batch(
         from openai import OpenAI
         import os
 
-        client = OpenAI()  # Uses OPENAI_API_KEY from env
-        model = os.getenv("TRANSLATION_MODEL", "gpt-4o-mini")
+        client = OpenAI()  # OPENAI_API_KEY / OPENAI_BASE_URL depuis l'environnement
+        # #14755 : gpt-4o-mini (OBS 2024) -> gpt-5.6-luna (mini du mapping)
+        model = os.getenv("TRANSLATION_MODEL", "gpt-5.6-luna")
 
         system_msg = (
             "You are a voice direction translator. Convert French dramatic "
@@ -1041,14 +1062,52 @@ def _synthesize_fishaudio_path(
         # Multi-chunk: synthesize SEQUENTIALLY (FishAudio is single-threaded)
         audio_results: list[bytes | None] = []
         attempts = 0
-        for req in tts_requests:
+        failed_chunks: list[int] = []
+        for i, req in enumerate(tts_requests, start=1):
             audio = fishaudio_tts(**req)
             attempts += 1
             if audio is None:
                 thermal_wait()
                 audio = fishaudio_tts(**req)
                 attempts += 1
+            if not audio:
+                # A falsy render is a failed render: the single-chunk branch
+                # below already treats an empty body as a failure ("[audio] if
+                # audio else []"), so b"" must not count as a delivered chunk.
+                failed_chunks.append(i)
             audio_results.append(audio)
+
+        if failed_chunks:
+            # A failed chunk used to be silently DROPPED: the remaining chunks
+            # were concatenated, the segment was written and reported
+            # "generated", and the audiobook simply lost up to ~220 characters
+            # of dialogue with nothing anywhere saying so. That is the exact
+            # opposite of the contract the other render paths hold -- the Qwen
+            # client returns None "so a partial passage is never silently
+            # measured", and the single-chunk branch here fails the segment.
+            # A missing segment is visible in the report; a hole is not, so
+            # the segment fails as a whole when any of its chunks failed.
+            logger.error(
+                "[P5] seg %s: %d chunk(s) failed (%s) - segment failed, "
+                "no partial passage is shipped",
+                seg.seg_index, len(failed_chunks), failed_chunks,
+            )
+            print(
+                f"  [P5] seg {seg.seg_index} FAILED: {len(failed_chunks)} "
+                f"chunk(s) failed {failed_chunks} of {len(tts_requests)} - "
+                f"no partial passage is shipped"
+            )
+            return TTSResult(
+                seg_index=seg.seg_index,
+                speaker=seg.speaker,
+                reference_id=reference_id,
+                mp3_path="",
+                duration_s=0.0,
+                seed=seed,
+                status="failed",
+                attempts=attempts,
+                text_hash=current_hash,
+            )
 
         audio_parts = [a for a in audio_results if a is not None]
 
@@ -1194,6 +1253,12 @@ def _synthesize_narrator_qwen(
             f"seg {seg.seg_index}: empty text after stripping brackets"
         )
 
+    # Attack guard (#19739): same organ and same hard-failure contract as the
+    # CV3 narrator path -- a chunk that starts mid-text loses its attack and
+    # only the ASR sees it. The lever is the re-render (no seed on this
+    # transport), and the passage is refused if the attack is still missing.
+    attack_report: dict = {}
+
     wav_bytes = qwen_tts_voicedesign_chunked(
         plain_text,
         instructions=_QWEN_NARRATOR_INSTRUCTIONS,
@@ -1202,11 +1267,15 @@ def _synthesize_narrator_qwen(
         max_chars=_MAX_CHUNK_CHARS,
         per_chunk_timeout=290,
         gap_ms=120,
+        attack_guard=True,
+        attack_report=attack_report,
     )
     if not wav_bytes:
         raise NarratorQwenUnavailable(
-            f"seg {seg.seg_index}: Qwen returned None (gateway unreachable "
-            f"or render failed)"
+            f"seg {seg.seg_index}: Qwen returned None (gateway unreachable, "
+            f"render failed, or an attack the guard could not obtain after "
+            f"{attack_report.get('attempts', 0)} render(s) on chunk "
+            f"{attack_report.get('aborted_chunk')})"
         )
 
     # VoiceDesign returns WAV; downstream pipeline writes MP3 (same naming
@@ -1346,6 +1415,78 @@ _CV3_RENDER_ATTEMPTS = 5
 # attempt 0 reproduces the pre-guard seed exactly, so a healthy chunk renders
 # bit-identically and only a degenerate one is perturbed.
 _CV3_RETRY_SEED_STRIDE = 104_729  # prime, unrelated to seed + seg_index
+
+# Attack guard (#19739, phase 2): a chunk that passes the duration floor can
+# still start mid-text -- the onset-drop measured in phase 1 (PR #19699) is
+# seed-dependent and invisible to any duration check (the chars/s bands of
+# clean and omitting renders overlap fully), so only the ASR can see it. The
+# verdict organ is v4.attack_guard (delivered by #21459); this loop is where
+# it plugs in: a floor-passing render is accepted only if the ASR hears the
+# chunk's first words, otherwise the same spaced-seed re-roll that answers a
+# degenerate render answers the dropped attack. V4_ATTACK_GUARD=off restores
+# the pre-guard acceptance (one ASR call less) -- that is the A/B arm the
+# measured comparison needs, not a production mode: a run with the guard off
+# ships the onset-drop the issue exists to close.
+_ATTACK_GUARD_ENV = "V4_ATTACK_GUARD"
+_ATTACK_GUARD_ASR_BASE_URL_ENV = "V4_ASR_BASE_URL"
+# Same endpoint and model as the omission organ p7 (localhost:8190,
+# large-v3-turbo): the guard must measure exactly what p7 measures, so an
+# "attack dropped" verdict and a p7 omission span cannot diverge.
+_ATTACK_GUARD_ASR_BASE_URL = "http://localhost:8190"
+
+
+def _attack_guard_enabled() -> bool:
+    """V4_ATTACK_GUARD reads on, off, 0/1 -- default ON (the correction is the
+    phase-2 deliverable, not an opt-in)."""
+    return os.getenv(_ATTACK_GUARD_ENV, "on").strip().lower() not in {
+        "0", "off", "no", "false",
+    }
+
+
+def _resolve_attack_asr():
+    """wav path -> transcript, on the organ's http client (asr_http).
+
+    The callable is resolved per segment, not at import: tests inject their
+    own, and the run can point V4_ASR_BASE_URL at the Whisper server of the
+    machine that carries the services.
+    """
+    from .attack_guard import asr_http
+
+    base_url = os.getenv(
+        _ATTACK_GUARD_ASR_BASE_URL_ENV, _ATTACK_GUARD_ASR_BASE_URL
+    )
+
+    def _transcribe(wav_path) -> str:
+        return asr_http({"audio": str(wav_path)}, base_url=base_url)
+
+    return _transcribe
+
+
+def _cv3_attack_verdict(candidate, sr, chunk, chunk_index, chunk_seed, asr_fn, tmp_dir):
+    """Floor passed -- does the ASR hear the chunk's first words? (#19739)
+
+    Writes the candidate to a scratch wav (the organ's clients read a file),
+    transcribes it with the injected asr_fn and delegates the verdict to
+    attack_guard.evaluate_chunk. Returns the organ's verdict dict; the caller
+    decides what a dropped attack costs.
+    """
+    import torchaudio
+
+    from .attack_guard import evaluate_chunk
+
+    wav_path = Path(tmp_dir) / f"chunk_{chunk_index}_attack.wav"
+    torchaudio.save(str(wav_path), candidate, sr, format="wav")
+    transcript = asr_fn(wav_path)
+    return evaluate_chunk(
+        {
+            "chunk_index": chunk_index,
+            "text": chunk,
+            "seed": chunk_seed,
+            "engine": "cosyvoice3",
+            "audio": str(wav_path),
+        },
+        transcript,
+    )
 
 # CosyVoice3 AutoModel: ~3.4 GB VRAM, tens of seconds to load — one instance
 # per process, not per segment.
@@ -1607,54 +1748,106 @@ def _synthesize_narrator_cosyvoice3(
     prompt_text = cv3_client.PROMPT_TEXT_ZH + cv3_client.ENDOFPROMPT
     sr = int(model.sample_rate)
 
+    # Attack guard (#19739): on by default -- see _attack_guard_enabled. The
+    # ASR callable is resolved once per segment; the scratch dir holds the
+    # candidate wavs the organ's clients transcribe (system temp, never the
+    # repo, and it goes away with the segment).
+    attack_asr = _resolve_attack_asr() if _attack_guard_enabled() else None
+    tmp_ctx = (
+        tempfile.TemporaryDirectory(prefix="v4_attack_guard_")
+        if attack_asr is not None
+        else contextlib.nullcontext(None)
+    )
+
     t0 = time.time()
     wavs = []
     attempts = 0
-    for i, chunk in enumerate(chunks):
-        floor_s = _cv3_min_expected_s(chunk)
-        wav = None
-        last_dur = 0.0
-        last_exc: Exception | None = None
-        for attempt in range(_CV3_RENDER_ATTEMPTS):
-            attempts += 1
-            # attempt 0 keeps the pre-guard seed, so a healthy chunk is
-            # unchanged and only a degenerate one is perturbed.
-            torch.manual_seed(seed + i + attempt * _CV3_RETRY_SEED_STRIDE)
-            try:
-                gen = model.inference_zero_shot(
-                    chunk, prompt_text, str(asset_wav), stream=False
+    attack_checks = 0
+    attack_rerolls = 0
+    with tmp_ctx as attack_tmp:
+        for i, chunk in enumerate(chunks):
+            floor_s = _cv3_min_expected_s(chunk)
+            wav = None
+            last_dur = 0.0
+            last_exc: Exception | None = None
+            last_attack: dict | None = None
+            for attempt in range(_CV3_RENDER_ATTEMPTS):
+                attempts += 1
+                # attempt 0 keeps the pre-guard seed, so a healthy chunk is
+                # unchanged and only a degenerate one is perturbed. The same
+                # formula answers a dropped attack (attack_guard.spaced_seed).
+                chunk_seed = seed + i + attempt * _CV3_RETRY_SEED_STRIDE
+                torch.manual_seed(chunk_seed)
+                try:
+                    gen = model.inference_zero_shot(
+                        chunk, prompt_text, str(asset_wav), stream=False
+                    )
+                    parts = [j["tts_speech"] for j in gen]
+                    candidate = (
+                        torch.cat(parts, dim=-1) if len(parts) > 1 else parts[0]
+                    )
+                except Exception as exc:  # noqa: BLE001
+                    # The crash and the silent 0.04 s are the same event: too few
+                    # speech tokens. Here the mel was short enough to break the f0
+                    # predictor's conv1d before anything was yielded, so it is the
+                    # same re-roll that answers it.
+                    last_exc, last_dur = exc, 0.0
+                else:
+                    last_dur = candidate.shape[-1] / sr
+                    if last_dur >= floor_s:
+                        if attack_asr is None:
+                            wav = candidate
+                            break
+                        attack_checks += 1
+                        verdict = _cv3_attack_verdict(
+                            candidate, sr, chunk, i, chunk_seed,
+                            attack_asr, attack_tmp,
+                        )
+                        if verdict["attack_dropped"]:
+                            attack_rerolls += 1
+                            last_attack = verdict
+                            logger.warning(
+                                "[CV3] seg %s chunk %d/%d attempt %d/%d: attack "
+                                "dropped (%s, %d leading word(s) lost) - re-"
+                                "rolling seed (#19739)",
+                                seg.seg_index, i + 1, len(chunks), attempt + 1,
+                                _CV3_RENDER_ATTEMPTS, verdict["reason"],
+                                verdict["n_missing_leading"],
+                            )
+                            continue
+                        wav = candidate
+                        break
+                logger.warning(
+                    "[CV3] seg %s chunk %d/%d attempt %d/%d: degenerate render "
+                    "(%.2fs for %d chars, floor %.2fs%s) - re-rolling seed",
+                    seg.seg_index, i + 1, len(chunks), attempt + 1,
+                    _CV3_RENDER_ATTEMPTS, last_dur, len(chunk), floor_s,
+                    f", {type(last_exc).__name__}" if last_exc else "",
                 )
-                parts = [j["tts_speech"] for j in gen]
-                candidate = torch.cat(parts, dim=-1) if len(parts) > 1 else parts[0]
-            except Exception as exc:  # noqa: BLE001
-                # The crash and the silent 0.04 s are the same event: too few
-                # speech tokens. Here the mel was short enough to break the f0
-                # predictor's conv1d before anything was yielded, so it is the
-                # same re-roll that answers it.
-                last_exc, last_dur = exc, 0.0
-            else:
-                last_dur = candidate.shape[-1] / sr
-                if last_dur >= floor_s:
-                    wav = candidate
-                    break
-            logger.warning(
-                "[CV3] seg %s chunk %d/%d attempt %d/%d: degenerate render "
-                "(%.2fs for %d chars, floor %.2fs%s) - re-rolling seed",
-                seg.seg_index, i + 1, len(chunks), attempt + 1,
-                _CV3_RENDER_ATTEMPTS, last_dur, len(chunk), floor_s,
-                f", {type(last_exc).__name__}" if last_exc else "",
-            )
-        if wav is None:
-            # Hard failure, never a silent short MP3: the run counts it in
-            # Failed, which is honest, where a 0.10 s file is not.
-            raise NarratorCosyVoice3Unavailable(
-                f"seg {seg.seg_index}: chunk {i + 1}/{len(chunks)} still "
-                f"degenerate after {_CV3_RENDER_ATTEMPTS} attempts (last "
-                f"{last_dur:.2f}s for {len(chunk)} chars, floor "
-                f"{floor_s:.2f}s): {chunk[:60]!r}"
-            ) from last_exc
-        wavs.append(wav)
+            if wav is None:
+                # Hard failure, never a silent short MP3: the run counts it in
+                # Failed, which is honest, where a 0.10 s file is not.
+                if last_attack is not None and last_dur >= floor_s:
+                    raise NarratorCosyVoice3Unavailable(
+                        f"seg {seg.seg_index}: chunk {i + 1}/{len(chunks)} "
+                        f"attack still dropped after {_CV3_RENDER_ATTEMPTS} "
+                        f"attempts (last verdict: {last_attack['reason']}, "
+                        f"{last_attack['n_missing_leading']} leading word(s) "
+                        f"lost): {chunk[:60]!r} (#19739)"
+                    )
+                raise NarratorCosyVoice3Unavailable(
+                    f"seg {seg.seg_index}: chunk {i + 1}/{len(chunks)} still "
+                    f"degenerate after {_CV3_RENDER_ATTEMPTS} attempts (last "
+                    f"{last_dur:.2f}s for {len(chunk)} chars, floor "
+                    f"{floor_s:.2f}s): {chunk[:60]!r}"
+                ) from last_exc
+            wavs.append(wav)
     elapsed = time.time() - t0
+    if attack_asr is not None:
+        logger.info(
+            "[CV3] seg %s: attack guard checked %d render(s), re-rolled %d (#19739)",
+            seg.seg_index, attack_checks, attack_rerolls,
+        )
 
     pause = torch.zeros(1, int(_CV3_PAUSE_S * sr))
     parts_audio: list[torch.Tensor] = []

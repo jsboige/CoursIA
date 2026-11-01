@@ -66,16 +66,27 @@ Controles (mesures le 2026-10-09, a la pose de l'organe)
 Un organe qui resterait vert sur le controle positif ne serait pas livre ;
 c'est la seule chose qui separe un invariant d'un blanc-seing.
 
+L'invariant INVERSE (#22041)
+----------------------------
+
+Le registre et l'organe vont registre -> cellule. Rien ne verifiait l'autre
+sens : une cellule live-read AJOUTEE sans declaration ne declenchait ni le
+garde ni un test, par l'autre bout du mode de defaillance de #21899. Le meme
+passage desormais part aussi des carnets et remonte vers le registre ; une
+cellule non declaree hors du socle mesure ci-dessous fait rougir l'organe.
+
 Usage
 -----
 
-    python check_live_read_freshness.py                 # arbre de travail
+    python check_live_read_freshness.py                 # arbre de travail (+ socle)
     python check_live_read_freshness.py --ref origin/main
     python check_live_read_freshness.py --json
+    python check_live_read_freshness.py --check-declarations
     python check_live_read_freshness.py --self-test
 
-Sortie 0 si toutes les declarations sont fraiches, 1 sinon (un rouge est un
-findings nommant la ligne et les deux textes).
+Sortie 0 si toutes les declarations sont fraiches ET si aucun nouveau couple
+cellule/source n'est apparu, 1 sinon (un rouge est un findings nommant la
+ligne et les deux textes, ou la cellule a declarer).
 """
 
 from __future__ import annotations
@@ -98,6 +109,30 @@ CITE_RE = re.compile(r"\bL\s*(\d+)\s*:\s*(.*)")
 # AUTRE fichier ». Exige une lettre avant le point, donc un decimal (« 0.9326 »)
 # n'est pas pris pour un nom de fichier.
 FILEISH_RE = re.compile(r"[\w/-]*[A-Za-z_][\w/-]*\.[A-Za-z]\w{0,7}")
+
+# Invariant INVERSE (#22041, reserve 2) : le registre ne dit que « ces cellules
+# lisent ces fichiers ». Rien ne dit « aucune AUTRE cellule ne lit un fichier »
+# -- une cellule live-read ajoutee sans declaration ne declenche donc ni le
+# garde ni un test, par l'autre bout du mode de defaillance de #21899.
+READ_CALL_RE = re.compile(r"\bopen\s*\(|\.read_text\s*\(|\.readlines\s*\(")
+CITATION_PREFILTER_RE = re.compile(r"L\s*\d+\s*:")
+STR_LIT_RE = re.compile(r"[\"']([^\"'\n]{3,200})[\"']")
+SOURCE_EXTS = (".lean", ".py", ".cs", ".md", ".txt", ".json", ".yml", ".yaml", ".tex")
+NOTEBOOK_ROOT = REPO_ROOT / "MyIA.AI.Notebooks"
+# Socle pose le 2026-10-23 a l'invariant inverse de #22041 avec deux cellules
+# nommees, VIDE par #22129 apres mesure : les deux sont desormais declarees au
+# registre. Ce socle ne peut que RETRECIR -- une cellule qui n'y figure pas et
+# n'est pas declaree rougit l'organe -- donc il doit rester vide.
+#
+# Ce que la mesure de #22129 a corrige : la seconde entree (`chsh-code-inv`)
+# etait un FAUX POSITIF. La sortie committee de cette cellule reproduit
+# exactement la source courante (CHSH.lean 88 lignes, declarations L33/39/44/
+# 52/58/70/75) ; les lignes L43 `abbrev Profile` et L53 `def Profile.score`
+# appartiennent a CHSHRandomized.lean et figurent bien dans la sortie, sous ce
+# fichier. Il n'y avait la aucune peremption, et re-executer ce carnet n'aurait
+# produit aucun changement. Seule `lean13b-project-overview` etait perimee
+# (Grothendieck.lean 414 -> 490 lignes) et a ete re-executee.
+UNDECLARED_BASELINE = set()
 
 
 def _norm(text: str) -> str:
@@ -166,13 +201,50 @@ def count_claims(text: str, basename: str) -> list[tuple[int, str]]:
     return claims
 
 
-def citations(text: str) -> list[tuple[int, str]]:
-    """Citations ``L<n>: <texte>`` portees par la sortie."""
-    found: list[tuple[int, str]] = []
+def file_sections(text: str) -> list[str | None]:
+    """Basename du fichier dont depend chaque ligne de sortie.
+
+    Une ligne ouvre une section quand elle nomme UN seul fichier et qu'elle se
+    presente comme un en-tete (compte de lignes, ou separateur ``---``). Une
+    simple mention en prose ne reouvre rien : sans cette borne, « voir
+    Pillars.lean » au milieu d'un commentaire detournerait les citations
+    suivantes vers un fichier qu'elles ne decrivent pas.
+
+    Une ligne de citation ne reouvre jamais de section : elle porte le numero
+    de ligne d'un fichier deja annonce.
+    """
+    owners: list[str | None] = []
+    current: str | None = None
     for line in text.splitlines():
+        if not CITE_RE.search(line):
+            names = {Path(t).name for t in FILEISH_RE.findall(line)}
+            looks_like_header = bool(COUNT_RE.search(line)) or "---" in line
+            if len(names) == 1 and looks_like_header:
+                current = next(iter(names))
+        owners.append(current)
+    return owners
+
+
+def citations(text: str, basename: str | None = None) -> list[tuple[int, str]]:
+    """Citations ``L<n>: <texte>`` portees par la sortie.
+
+    Avec ``basename``, une citation n'est retenue que si sa section nomme ce
+    fichier. Sans portee de section, les citations d'un fichier etaient
+    confrontees a l'AUTRE : une cellule qui lit deux fichiers ne pouvait donc
+    jamais etre declaree fraiche -- les 19 citations de ``CHSHRandomized.lean``
+    sortaient « hors du fichier (88 lignes) » contre ``CHSH.lean`` (#22129).
+    Une citation hors de toute section est conservee : sans attribution
+    possible, elle reste confrontee au fichier declare (fail-closed).
+    """
+    found: list[tuple[int, str]] = []
+    owners = file_sections(text) if basename else []
+    for i, line in enumerate(text.splitlines()):
         m = CITE_RE.search(line)
-        if m:
-            found.append((int(m.group(1)), m.group(2).strip()))
+        if not m:
+            continue
+        if basename and owners[i] is not None and owners[i] != basename:
+            continue
+        found.append((int(m.group(1)), m.group(2).strip()))
     return found
 
 
@@ -213,7 +285,7 @@ def audit_cell(src_lines: list[str], text: str, basename: str) -> list[str]:
                 f"{basename}, le fichier en porte {n_lines} ({line!r})"
             )
 
-    for n, cited in citations(text):
+    for n, cited in citations(text, basename):
         if n < 1 or n > n_lines:
             findings.append(
                 f"LINE_CITATION: la sortie cite L{n}, hors du fichier "
@@ -323,6 +395,140 @@ def run(ref: str | None = None) -> dict:
             "stale": stale, "rows": rows}
 
 
+def _repo_basenames(repo_root: Path) -> set[str]:
+    """Noms de fichiers source du depot, pour resoudre un chemin construit par
+    SEGMENTS aussi bien qu'un chemin complet.
+
+    La cellule declaree de `GOL-01` ecrit `WIN_LEAN_PROJECT / 'Conway' /
+    'Life' / 'Pillars.lean'` : aucun litteral n'est un chemin resolvable, mais
+    le dernier segment est un nom de fichier reel. Un detecteur qui n'accepterait
+    que les chemins complets serait AVEUGLE a la cellule qu'il est cense
+    proteger -- c'est pourquoi la resolution se fait par nom de fichier.
+    """
+    proc = subprocess.run(
+        ["git", "-C", str(repo_root), "ls-files"],
+        capture_output=True, text=True, encoding="utf-8",
+    )
+    if proc.returncode == 0:
+        return {
+            p.replace("\\", "/").rsplit("/", 1)[-1]
+            for p in proc.stdout.split()
+            if p.endswith(SOURCE_EXTS)
+        }
+    return {p.name for p in repo_root.rglob("*") if p.suffix in SOURCE_EXTS}
+
+
+def _live_read_candidates(source: str, output: str, known: set[str]) -> list[str]:
+    """Litteraux qui font d'une cellule une lecture live-read, ou vide.
+
+    La signature exige trois choses ensemble : un appel de lecture, un
+    litteral designant un fichier source REEL du depot, et un invariant
+    (compte de lignes ou citation) dans la sortie COMMITTEE. Le troisieme
+    critere est ce qui distingue une cellule qui lit un fichier pour
+    l'afficher d'une cellule qui en committent les numeros de ligne.
+    """
+    if not READ_CALL_RE.search(source):
+        return []
+    cites = citations(output)
+    found: list[str] = []
+    for lit in STR_LIT_RE.findall(source):
+        name = lit.replace("\\", "/").rsplit("/", 1)[-1]
+        if not (name.endswith(SOURCE_EXTS) and name in known):
+            continue
+        # L'invariant doit etre RATTACHE au fichier, comme le fait deja
+        # `count_claims` pour le verdict : un compte de lignes voisin ne
+        # qualifie pas une lecture. Mesure : sans ce scoping, un carnet qui
+        # affiche « 12 lignes » d'un tableau apres avoir nomme un script
+        # (m3_har_asymmetric) entrait dans la liste.
+        if count_claims(output, name) or (cites and name in output):
+            found.append(lit)
+    return found
+
+
+def undeclared_live_read_cells(notebook_root: Path | None = None,
+                               registry_path: Path | None = None) -> list[dict]:
+    """Cellules a signature live-read absentes du registre (#22041, reserve 2).
+
+    Le registre et l'organe de fraicheur vont tous deux registre -> cellule.
+    Cette fonction remonte le chemin inverse : elle part des carnets et rend
+    les cellules qui ont la signature d'une lecture live-read sans declaration.
+    Sans elle, ajouter une telle cellule ne rougit nulle part -- exactement ce
+    qui a laisse passer #21899.
+    """
+    root = Path(notebook_root) if notebook_root is not None else NOTEBOOK_ROOT
+    registry = Path(registry_path) if registry_path is not None else REGISTRY
+    try:
+        data = json.loads(registry.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise RuntimeError(f"registre live-read illisible : {registry} ({exc})") from exc
+    declared = {(entry.get("notebook"), entry.get("cell_id"))
+                for entry in data.get("cells", [])}
+    repo_base = root.parent
+    known = _repo_basenames(repo_base)
+
+    findings: list[dict] = []
+    for nb_path in sorted(root.rglob("*.ipynb")):
+        try:
+            raw = nb_path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        # Prefiltre texte : eviter de parser 1 600 carnets (mesure : 30 s de
+        # json.loads contre 19 s avec le prefiltre, sur 235 candidats). Il doit
+        # etre un SUPERSET du test par cellule : dans le JSON brut, `\nL1: a`
+        # n'a pas de frontiere de mot avant le `L`, donc `CITE_RE` y est muet
+        # et un prefilter qui l'utiliserait rendrait le scan AVEUGLE a toute
+        # cellule dont les citations sont la seule signature.
+        if not READ_CALL_RE.search(raw):
+            continue
+        if "lign" not in raw.lower() and not CITATION_PREFILTER_RE.search(raw):
+            continue
+        try:
+            nb = json.loads(raw)
+        except ValueError:
+            continue
+        rel = nb_path.relative_to(repo_base).as_posix()
+        for cell in nb.get("cells", []) or []:
+            if cell.get("cell_type") != "code":
+                continue
+            source = "".join(cell.get("source") or [])
+            candidates = _live_read_candidates(
+                source, cell_output_text(cell), known)
+            if not candidates:
+                continue
+            if (rel, cell.get("id")) in declared:
+                continue
+            findings.append({"notebook": rel, "cell_id": cell.get("id"),
+                             "literals": candidates})
+    return findings
+
+
+def _declaration_verdict(report: dict | None = None):
+    """Cellules non declarees HORS socle (rouge) et socle deja resolu (info)."""
+    findings = undeclared_live_read_cells()
+    found = {(f["notebook"], f["cell_id"]) for f in findings}
+    new = [f for f in findings if (f["notebook"], f["cell_id"]) not in UNDECLARED_BASELINE]
+    resolved = sorted(UNDECLARED_BASELINE - found)
+    if report is not None:
+        report["undeclared_new"] = new
+        report["undeclared_resolved"] = resolved
+    return new, resolved
+
+
+def _print_declarations(new: list[dict], resolved: list[tuple]) -> None:
+    if resolved:
+        print(f"\n{len(resolved)} cellule(s) du socle desormais declaree(s) -- "
+              "retrecir UNDECLARED_BASELINE :")
+        for nb, cid in resolved:
+            print(f"  {nb}::{cid}")
+    if new:
+        print(f"\n{len(new)} cellule(s) live-read NON declaree(s) :")
+        for f in new:
+            print(f"  {f['notebook']}::{f['cell_id']} "
+                  f"(litteraux : {', '.join(f['literals'])})")
+        print("Declarer la cellule dans live_read_registry.json, sinon une "
+              "revision de la source ne declenchera rien (#22041).")
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(
         description="Fraicheur des cellules qui lisent un fichier du depot.")
@@ -330,12 +536,33 @@ def main(argv=None) -> int:
                     help="git-ref a evaluer (defaut : l'arbre de travail)")
     ap.add_argument("--json", action="store_true", dest="as_json")
     ap.add_argument("--self-test", action="store_true")
+    ap.add_argument("--check-declarations", action="store_true",
+                    help="invariant inverse seul : toute cellule live-read des "
+                         "carnets est-elle declaree au registre ?")
+    ap.add_argument("--no-declarations", action="store_true",
+                    help="ne pas passer l'invariant inverse (diagnostic rapide)")
     args = ap.parse_args(argv)
 
     if args.self_test:
         return _self_test()
 
+    if args.check_declarations:
+        new, resolved = _declaration_verdict()
+        if args.as_json:
+            print(json.dumps({"undeclared_new": new,
+                              "undeclared_resolved": resolved},
+                             ensure_ascii=False, indent=2))
+        elif new or resolved:
+            _print_declarations(new, resolved)
+        else:
+            print("Registre complet : toutes les cellules live-read sont declarees.")
+        return 1 if new else 0
+
     report = run(args.ref)
+    new: list[dict] = []
+    resolved: list[tuple] = []
+    if not args.no_declarations:
+        new, resolved = _declaration_verdict(report)
     if args.as_json:
         print(json.dumps(report, ensure_ascii=False, indent=2))
     else:
@@ -350,7 +577,9 @@ def main(argv=None) -> int:
         if report["stale"]:
             print(f"\n{report['stale']} cellule(s) perimee(s) : re-executer le "
                   "carnet (Stop & Repair), jamais editer la sortie a la main.")
-    return 1 if report["stale"] else 0
+        if not args.no_declarations:
+            _print_declarations(new, resolved)
+    return 1 if (report["stale"] or new) else 0
 
 
 def _self_test() -> int:

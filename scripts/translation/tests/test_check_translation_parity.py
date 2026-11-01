@@ -800,7 +800,13 @@ def test_is_scannable_matches_on_relative_parts_only(tmp_path):
 # 2026-10-26 (PR #21509, resolution du merge) : la paire Complexity-03
 # FR/_en est ajoutee par cette branche ; l'arbre fusionne porte 19 paires
 # (mesure discover_pairs post-merge), les deux bumps sont conscients.
-EXPECTED_PAIR_COUNT = 19
+# 2026-10-29 (rebase de #23156 sur main post-#21509) : +1 paire de plus --
+#   ANALYSE-13-Smoothing-Local-Kakeya_en (#23142). La base ayant pris le
+#   bump Complexity-03 (19), l'arbre fusionne porte 19 + 1 = 20. Meme
+#   classe que #19996/#20392 : la paire arrivee avec son carnet sans
+#   mettre a jour cette ligne a la livraison rougit pair_count_declared
+#   (#21391) sur la PR.
+EXPECTED_PAIR_COUNT = 21
 
 
 def _collect_parity_failures(repo_root: Path,
