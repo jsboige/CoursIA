@@ -18,9 +18,11 @@ Les trois prongs de la règle en dérivent directement : msg1 → Prong A (5 ver
 
 **Grille de référence — la règle y renvoie par « [detail §2](../../docs/reference/sota-verdicts-detail.md) ».**
 
+`INTRINSIC` déclare une impossibilité : il justifie une substitution durable, invisible pour les auditeurs suivants — d'où la grille nominative, qui rend l'omission visible au reviewer.
+
 **Condition d'entrée, avant la grille** : prouver que l'outil visé n'est pas disponible, par une recherche à la source (dépôt, registre de paquets, page du projet), URL et date dans le body. Une grille remplie « N/A » sur un outil qui existe est un faux `INTRINSIC` (#21121 : TorchLean, public depuis le 2026-05-11).
 
-Chaque verdict `INTRINSIC` doit répondre **nominativement** les 6 axes suivants, par « non applicable, parce que… » ou « oui, mais testé, résultat : ... » :
+Chaque verdict `INTRINSIC` doit répondre **nominativement** les 6 axes suivants, par « non applicable, parce que… » ou « oui, mais testé, résultat : ... ». Une réponse « N/A » valide **nomme sa preuve** — ex : « axe 5 N/A parce que la cible n'a pas de binding Python, vérifié sur PyPI au commit SHA … » :
 
 | # | Axe | Question a repondre dans le body PR |
 |---|---|---|
