@@ -3652,6 +3652,103 @@ def test_orphan_report_positive_control_same_repo_untagged_stays(monkeypatch):
     assert [r["number"] for r in pig.unattributed_blocked_prs()] == [21]
 
 
+# --- #23732 : une PR de TP STUDIANTE relayee n'est pas du travail de lane ----
+# Meme classe que #22362 ci-dessus, prise par l'autre bout : le groupe n'a pas
+# pu ouvrir de PR depuis son fork, l'enseignant a pousse le carnet LUI-MEME
+# dans `jsboige/CoursIA`. `isCrossRepository` vaut alors `False`, donc
+# l'exemption fork ne les attrape pas -- mesure du 2026-10-31 : le tirage
+# imprimait « Portee : 2 autre(s) PR(s) bloquee(s) (#22969, #22991) ... Leur
+# tag manquant est lui-meme le defaut a corriger » sur deux rendus dont le
+# corps dit « Comme pour toute PR de TP, le tag Grain et les checklists
+# internes ne s'appliquent pas » (student-pr-reviews.md).
+# Le predicat est la DECLARATION en PREMIERE LIGNE du corps, et rien d'autre :
+# une PR de lane qui mentionne un TP plus bas doit rester dans la file
+# (controle negatif ci-dessous). Le sens dangereux -- retirer de la file une
+# vraie PR de flotte a reparer -- est donc ferme par construction.
+
+# Premiere ligne reelle des deux corps mesures (verbatim, tronquee au premier
+# point pour ne pas figer une phrase qui n'a pas de role dans le predicat).
+REAL_TP_HEAD = ("PR de TP étudiante **relayée par l'enseignant**. Le groupe "
+                "n'a pas réussi à ouvrir la PR depuis son fork.")
+
+
+def test_is_student_tp_pr_reads_the_declaration_line():
+    """Predicat : la premiere ligne non vide, et rien d'autre."""
+    assert pig.is_student_tp_pr({"body": REAL_TP_HEAD + "\n\n## Summary\n"}) is True
+    # Decorations markdown usuelles devant la declaration : toujours en tete.
+    assert pig.is_student_tp_pr({"body": "> " + REAL_TP_HEAD}) is True
+    assert pig.is_student_tp_pr({"body": "\n\n  " + REAL_TP_HEAD}) is True
+    assert pig.is_student_tp_pr({"body": "PR de TP\n"}) is True
+    # Corps vide, absent, ou sans declaration : pas un rendu de TP.
+    assert pig.is_student_tp_pr({"body": ""}) is False
+    assert pig.is_student_tp_pr({"body": None}) is False
+    assert pig.is_student_tp_pr({}) is False
+    assert pig.is_student_tp_pr({"body": "## Summary\n\nPR de TP etudiante\n"}) is False
+    # Une PR de lane ordinaire ne matche jamais.
+    assert pig.is_student_tp_pr({
+        "body": "Grain: MED/guard -- lane myia-po-2028:CoursIA-2\n"}) is False
+
+
+def test_is_student_tp_pr_couvre_les_marqueurs_de_liste():
+    """Revue Hermes du 2026-10-31 (#23733) : « la couverture des marqueurs de
+    liste dans le bruit de tete -- une classe de faux negatifs latente ».
+
+    Un `lstrip` de caracteres ne sait pas enjamber `1.` ni `[ ]` : la
+    declaration etait invisible des qu'elle etait mise en liste. La couverture
+    est donc mesuree ici, jeton par jeton, y compris composes (`1. [ ]`).
+    """
+    for prefix in ("- ", "* ", "+ ", "1. ", "2) ", "(3) ", "- [ ] ", "- [x] ",
+                   "> - ", "1. [ ] ", "   >  -  ", "`", "``", "- `"):
+        assert pig.is_student_tp_pr({"body": prefix + REAL_TP_HEAD}) is True, prefix
+    # Code span : la revue nommait la forme `` `PR de TP` etudiante `` ; le
+    # backtick de tete est un jeton de bruit comme les autres.
+    assert pig.is_student_tp_pr({"body": "`PR de TP` etudiante relayee\n"}) is True
+    assert pig.is_student_tp_pr({"body": "- [x] `PR de TP` etudiante\n"}) is True
+    # Le sens dangereux reste ferme : une PR de lane qui met un TP en liste
+    # plus bas dans son corps n'est pas un rendu etudiant.
+    assert pig.is_student_tp_pr({
+        "body": "Grain: MED/guard -- lane myia-po-2028:CoursIA-2\n\n"
+                "- PR de TP etudiante relayee\n"}) is False
+
+
+def test_student_tp_pr_excluded_from_orphans_report(monkeypatch):
+    """#23732, controle NEGATIF : un rendu de TP relaye bloquee sort de la file.
+
+    Population du cas reel : untagged, non-draft, `PR gate` rouge,
+    `isCrossRepository: False` (poussee dans le depot). Sur le code d'avant,
+    elle etait listee -- ce test est donc rouge avant le fix, et vert apres.
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [
+        _untagged_pr(22969, branch="tp1-mis-g01-search02b-networkx",
+                     body=REAL_TP_HEAD + "\n\n## Summary\n\n- Cours : EPF\n"),
+        _untagged_pr(22991, branch="tp1-mis-g03-search01-exercice2",
+                     body=REAL_TP_HEAD + "\n\n## Summary\n\n- Cours : EPF\n"),
+    ], {22969: dict(red, isCrossRepository=False),
+        22991: dict(red, isCrossRepository=False)})
+    assert pig.unattributed_blocked_prs() == []
+
+
+def test_orphan_report_positive_control_tp_mention_below_first_line_stays(
+        monkeypatch):
+    """#23732, controle POSITIF : une PR de lane qui PARLE d'un TP reste listee.
+
+    Les DEUX PRs sont dans la meme population et bloquent pour la meme cause ;
+    seule la premiere ligne differe. Un predicat qui chercherait `PR de TP`
+    n'importe ou dans le corps -- ou qui viderait la file (always-True) --
+    passerait le controle negatif ci-dessus mais rougirait ici.
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [
+        _untagged_pr(30, branch="feature/revue-tp",
+                     body="## Summary\n\nRevue d'une PR de TP etudiante.\n"),
+        _untagged_pr(31, branch="feature/autre",
+                     body="Note sur le rendu. Une PR de TP a ete relayee.\n"),
+    ], {30: dict(red, isCrossRepository=False),
+        31: dict(red, isCrossRepository=False)})
+    assert [r["number"] for r in pig.unattributed_blocked_prs()] == [30, 31]
+
+
 # --- #17474 : le plafond de `fetch_open_prs` amputait la traine -------------
 # `gh pr list` rend du plus RECENT au plus ancien (mesure firsthand du
 # 2026-09-23 sur ce depot : #17565 `2026-09-23T13:29:52Z` en tete, #15942
@@ -3748,7 +3845,10 @@ def test_the_oldest_blocked_orphan_survives_the_cap(monkeypatch):
 
 def test_unaddressed_review_points_delegue_a_analyse_pr(monkeypatch):
     """La delegation passe par le point d'entree `analyse_pr` de l'organe --
-    un seul assemblage des kwargs, celui du merge-gate."""
+    un seul assemblage des kwargs, celui du merge-gate. Depuis #21882, la
+    passe est parallelisee (pool borne NITS_PASS_WORKERS) : l'ordre d'APPEL
+    de analyse_pr n'est plus garanti (ordonnancement preemptif des threads) --
+    le contrat ici est la delegation et le resultat agrege, pas l'ordre."""
     import check_unaddressed_nits as nits
     calls = []
 
@@ -3758,7 +3858,9 @@ def test_unaddressed_review_points_delegue_a_analyse_pr(monkeypatch):
 
     monkeypatch.setattr(nits, "analyse_pr", fake_analyse_pr)
     assert pig.unaddressed_review_points([15049, 15081]) == {15049: 2, 15081: 2}
-    assert calls == [15049, 15081]
+    # #21882 : sous pool, l'ordre d'appel n'est pas garanti (le dict agrege,
+    # lui, est deterministe) -- on pinnne l'ensemble des appels, pas l'ordre.
+    assert sorted(calls) == [15049, 15081]
 
 
 def test_unaddressed_review_points_derive_de_contrat_visible(monkeypatch):
@@ -3790,7 +3892,11 @@ def test_unaddressed_review_points_pr_illisible_ne_bloque_pas_les_autres(monkeyp
 
     monkeypatch.setattr(nits, "analyse_pr", flaky_analyse_pr)
     assert pig.unaddressed_review_points([15049, 15081]) == {15081: 1}
-    assert calls == [15049, 15081]
+    # #21882 : meme contrat que le test voisin -- sous pool, l'ordre d'appel
+    # n'est pas garanti (le dict agrege, lui, est deterministe) ; on pinne
+    # l'ensemble des appels, pas l'ordre. Rouge CI mesure le 2026-11-01 sur
+    # la tete 01e5fdf : "assert [15081, 15049] == [15049, 15081]".
+    assert sorted(calls) == [15049, 15081]
 
 
 def test_unaddressed_review_points_detail_carries_authors_and_verdict(monkeypatch):

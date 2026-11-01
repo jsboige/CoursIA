@@ -25,7 +25,6 @@ on:
       - '.github/workflows/dotnet-AgentSafetyAnalyzer.yml'
       - 'MyIA.CoursIA.sln'
   pull_request:
-    branches: [main]
     types: [opened, synchronize, edited, reopened]
     paths:
       - 'MyIA.AI.Notebooks/GenAI/Vibe-Coding/analyzers/**'

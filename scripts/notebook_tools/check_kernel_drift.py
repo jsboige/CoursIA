@@ -553,19 +553,26 @@ CANONICAL_LANGUAGE_TRANSITIONS_SCOPED = {
     # chemin avant cette entree. Le scope reste nominatif (un carnet par
     # entree) pour la meme raison que 2.8c : le kernelspec est partage par
     # une trentaine de carnets hors serie (reserve de revue #22979).
-    #
-    # 2.9g ne figure PAS ici tant que ses sorties ne sont pas re-executees :
-    # une entree accorde la permission de bouger la version du carnet, et
-    # l'accorder avant la mesure laisserait passer un hand-edit sous couvert
-    # de convergence. Son venv exige un modele 7B quantifie sur une RTX 4060
-    # de 8 Go que la grille ICT-25 occupe jusqu'a la fin de la campagne ; la
-    # tranche est due et suivie sur #23292, pas abandonnee.
     ("MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/"
      "2.9d-Features-Circulaires-Helice-Nombres.ipynb",
      "coursia-ml-training", "3.10", "3.13"):
         "Python 3.10 -> 3.13 sous `coursia-ml-training` : convergence vers le "
         "canon de la serie 02-ML-Cours par re-execution (#23292, voie 1) ; "
         "venv du kernelspec mesure a 3.13.15, sorties re-executees",
+    # 2.9g est le DERNIER carnet de la serie reste a 3.10.19, et sa ligne
+    # suit la meme regle que celle de 2.9d : une entree accorde la permission
+    # de bouger la version d'un carnet, elle s'ajoute donc AVEC ses sorties
+    # re-executees, dans le meme diff. L'accorder avant la mesure laisserait
+    # passer un hand-edit sous couvert de convergence -- c'est le test
+    # ``test_canonical_transition_scoped_29g_still_refused`` qui gardait cette
+    # porte, il tombe avec sa tranche (voie 1 de #23292).
+    ("MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/"
+     "2.9g-Geometrie-de-la-Verite.ipynb",
+     "coursia-ml-training", "3.10", "3.13"):
+        "Python 3.10 -> 3.13 sous `coursia-ml-training` : convergence vers le "
+        "canon de la serie 02-ML-Cours par re-execution (#23292, voie 1) ; "
+        "sorties re-executees sous un kernelspec du meme nom mesure a "
+        "3.13.14 (le venv canon de flotte est a 3.13.15)",
 }
 
 

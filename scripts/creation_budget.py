@@ -659,11 +659,13 @@ def creation_gate(pool: Sequence[dict],
                 f"servir un grain de reparation ou un grain de consolidation. "
                 f"Motif : {proof}")
 
-    # Le CLIQUET (#23175) : quand le registre anti-entropie dit que le
-    # chantier de padding RECULE, un carnet neuf au nom NON CONFORME est
-    # retenu — meme si le budget n'est pas depasse. C'est le lien que
-    # l'issue #23174 nomme : « le budget de #23174 lit le verdict RECULE de
-    # l'entree "padding et nommage" ».
+    # Le CLIQUET (#23175) : quand le registre anti-entropie ne peut pas
+    # prouver que le chantier de padding progresse, un carnet neuf au nom
+    # NON CONFORME est retenu — meme si le budget n'est pas depasse. C'est
+    # le lien que l'issue #23174 nomme : « le budget de #23174 lit le
+    # verdict RECULE de l'entree "padding et nommage" » — et, depuis le
+    # rebasage du 2026-10-30, aussi les verdicts non comparables
+    # (`INSTRUMENT ILLEGIBLE`), qui ne prouvent rien non plus.
     if cliquet_actif():
         for it in pool:
             if it["number"] in out:
@@ -674,9 +676,10 @@ def creation_gate(pool: Sequence[dict],
             non_conforme, motif = nom_non_conforme(it, cat)
             if non_conforme:
                 out[it["number"]] = (
-                    f"{CAUSE_NOM} : le chantier de padding recule "
-                    f"(registre anti-entropie) -- un carnet neuf au nom non "
-                    f"conforme aggraverait le chantier. Motif : {motif}")
+                    f"{CAUSE_NOM} : le chantier de padding ne progresse "
+                    f"pas de facon etablie (registre anti-entropie) -- un "
+                    f"carnet neuf au nom non conforme aggraverait le "
+                    f"chantier. Motif : {motif}")
     return out
 
 
@@ -702,10 +705,31 @@ def _chemin_anti_entropie() -> pathlib.Path | None:
 
 
 def cliquet_actif(chemin: str | None = None) -> bool:
-    """Le chantier de padding recule-t-il ?
+    """Le chantier de padding progresse-t-il ?
 
-    Fail-OPEN : un etat absent, illisible, ou qui ne parle pas de padding
-    ne retient **rien**. L'absence de mesure n'est pas une sanction.
+    Le cliquet retient un carnet neuf au nom non conforme **tant qu'on ne
+    peut pas prouver que le chantier progresse** :
+
+      * `RECULE` — le chantier recule : on retient ;
+      * `STAGNE` — le chantier n'a pas bouge : le progres n'est pas prouve,
+        donc on retient ;
+      * `INSTRUMENT ILLEGIBLE` — la mesure n'est **pas comparable** (l'instrument
+        a change, ou il est muet) : on ne peut rien prouver, donc on retient ;
+      * une **comparaison suspendue** (fenetre de rebasage : la reference
+        n'est pas une publication de sept jours) : le verdict porte sur un
+        intervalle plus court, donc il ne prouve rien — on retient.
+
+    C'est un garde fail-CLOSED sur la *comparabilite* de la mesure : avant
+    le rebasage du 2026-10-30, l'entree « padding et nommage » comparait la
+    valeur du jour (44, nouvel instrument) a une reference produite par
+    l'ancien instrument (776) et affichait un `AVANCE` fabrique -- le cliquet
+    s'ouvrait a contresens sur une base qui ne mesurait rien. Le verdict
+    `INSTRUMENT ILLEGIBLE` existe deja dans l'organe ; il n'etait produit
+    que par un echec de lecture.
+
+    L'absence d'etat reste fail-OPEN : un etat absent, illisible, ou qui ne
+    parle pas de padding, ne retient **rien** — l'absence de mesure n'est
+    pas une sanction, et le registre n'a encore rien publie.
     """
     p = pathlib.Path(chemin) if chemin else _chemin_anti_entropie()
     if p is None:
@@ -722,7 +746,29 @@ def cliquet_actif(chemin: str | None = None) -> bool:
     entree = entrees.get(CLE_PADDING)
     if not isinstance(entree, dict):
         return False
-    return str(entree.get("verdict") or "").upper() == "RECULE"
+    # La fenetre de comparaison est lue AVANT le verdict : une comparaison
+    # SUSPENDUE (fenetre de rebasage : la reference n'est pas une
+    # publication de sept jours) ne prouve aucun progres, quel que soit
+    # le verdict affiche. Le fail-CLOSED doit etre VISIBLE -- un lecteur
+    # qui ne voit que le verdict lit « STAGNE » comme « le chantier n'a
+    # pas bouge depuis sept jours », et « aucune retention » comme « le
+    # chantier s'est ameneliore ».
+    if entree.get("comparaison_suspendue"):
+        return True
+    verdict = str(entree.get("verdict") or "").upper()
+    # Seul un verdict etabli qui PROUVE le progres libere. Tout le reste
+    # retient :
+    #
+    #   * `RECULE` — le chantier recule ;
+    #   * `STAGNE` — le chantier n'a pas bouge : rien n'est prouve, donc
+    #     rien n'est libere (c'est le meme principe que pour une mesure
+    #     non comparable) ;
+    #   * `INSTRUMENT ILLEGIBLE` — la mesure n'est pas comparable ;
+    #   * `PREMIERE MESURE`, verdict inconnu — rien a dire.
+    #
+    # On ne presume jamais le progres : le cliquet retient par defaut et
+    # ne s'ouvre que sur une preuve.
+    return verdict != "AVANCE"
 
 
 def _organe_noms():
