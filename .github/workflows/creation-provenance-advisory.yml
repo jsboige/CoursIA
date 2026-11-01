@@ -11,8 +11,19 @@ name: Creation provenance advisory
 # explicitement « Advisory d'abord ».
 #
 # Ce que la garde mesure :
-#   - la PR ajoute-t-elle un carnet NEUF (statut `added`, hors deménagement,
-#     hors jumeau `_en`) ?
+#   - la PR ajoute-t-elle un carnet NEUF (statut `added`, hors deménagement) ?
+#   - un `.ipynb` AJOUTE porte-t-il un suffixe de langue (`_en`, `_es`,
+#     `_de`, `_it`, `_pt`, `_zh`, `_ja`, `_ar`) ? Constat LANG_SIBLING :
+#     #1650 §1 — la version localisée se produit dans le dépôt de langue
+#     (#23174 : l'exemption `_en` est retiree, elle laissait passer les
+#     jumeaux sans un mot) ;
+#   - le veto de creation est-il actif ? Variable Actions
+#     NOTEBOOK_CREATION_VETO_MIN_OPEN_ISSUES posee et atteinte par le
+#     compte d'issues ouvertes = constat VETO_ACTIVE sur tout carnet neuf.
+#     Le seuil vit dans la variable, JAMAIS dans le code : le coordinateur
+#     le pose (`gh variable set NOTEBOOK_CREATION_VETO_MIN_OPEN_ISSUES
+#     --body 400 --repo jsboige/CoursIA`) et le retire sans toucher ce
+#     fichier. Absente ou vide = pas de veto ;
 #   - l'issue servie existe-t-elle, et depuis combien de temps ?
 #   - a-t-elle ete servie par un tirage nomme ?
 #
@@ -21,7 +32,7 @@ name: Creation provenance advisory
 # script le dit ; il ne pretend jamais avoir mesure ce qu'il n'a pas mesure.
 #
 # Exemptions (posees par l'issue) : PRs étudiantes et externes,
-# demenagements, jumeaux `_en`.
+# demenagements.
 #
 # Declencheur : `pull_request` sur les PRs qui touchent un `.ipynb`. Le job
 # porte la garde same-repo universelle (forme acceptee par
@@ -89,6 +100,11 @@ jobs:
       - name: "Provenance des carnets neufs"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Le seuil du veto vit dans une variable Actions du depot : le
+          # workflow ne fait que la DECLARER a l'organe. Absente ou vide =
+          # pas de veto -- aucune valeur par defaut ici, le seuil n'est
+          # jamais dans le code (#23174).
+          NOTEBOOK_CREATION_VETO_MIN_OPEN_ISSUES: ${{ vars.NOTEBOOK_CREATION_VETO_MIN_OPEN_ISSUES }}
         run: |
           # `pipefail` + `exit 0` se contredisaient : sous `bash -e`, un
           # non-zero de l'organe tuait l'etape AVANT le `exit 0`, et le job
