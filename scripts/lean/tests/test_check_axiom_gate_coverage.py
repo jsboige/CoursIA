@@ -327,6 +327,82 @@ class TestClassifyDeleted:
         assert r["lost"] == [] and r["relocated"] == []
         assert [e["dispatcher"] for e in r["never"]] == ["lean-y.yml"]
 
+    # -- le lake qui se deplace (#23871) --------------------------------
+    # Un rename T2 supprime le dispatcher et le recree sous un autre dossier :
+    # le project-path change, la couverture suit. La reconnaitre exige la
+    # PREUVE d'absence de l'ancien chemin -- sans elle, on blanchirait une
+    # vraie perte.
+
+    def test_a_moved_lake_is_relocation_not_loss(self):
+        """Old path gone from the tree + same-basename successor gated today."""
+        d = self._d(["A/Lean/galois_lean"])
+        gated = {"A/Lean/GALOIS/galois_lean"}
+        r = classify_deleted([d], gated, exists_at=lambda p: p in gated)
+        assert r["lost"] == []
+        [entry] = r["relocated"]
+        assert entry["moved_to"] == "A/Lean/GALOIS/galois_lean"
+
+    def test_a_surviving_old_path_keeps_it_lost(self):
+        """Negative control: both paths exist -> the old lake lives there, ungated."""
+        d = self._d(["A/Lean/galois_lean"])
+        present = {"A/Lean/galois_lean", "A/Lean/GALOIS/galois_lean"}
+        gated = {"A/Lean/GALOIS/galois_lean"}
+        r = classify_deleted([d], gated, exists_at=lambda p: p in present)
+        assert r["relocated"] == []
+        assert [e["dispatcher"] for e in r["lost"]] == ["lean-x.yml"]
+
+    def test_no_gated_successor_keeps_it_lost(self):
+        """Negative control: the lake vanished and nothing gated took its place."""
+        d = self._d(["A/Lean/galois_lean"])
+        r = classify_deleted([d], {"C/c_lean"}, exists_at=lambda p: False)
+        assert r["relocated"] == []
+        assert [e["dispatcher"] for e in r["lost"]] == ["lean-x.yml"]
+
+    def test_a_move_without_absence_probe_stays_lost(self):
+        """No probe is no evidence: the second shape stays fail-closed."""
+        d = self._d(["A/Lean/galois_lean"])
+        r = classify_deleted([d], {"A/Lean/GALOIS/galois_lean"})
+        assert r["relocated"] == []
+        assert [e["dispatcher"] for e in r["lost"]] == ["lean-x.yml"]
+
+    def test_an_ambiguous_successor_stays_lost(self):
+        """Two same-basename successors make the move unprovable: no credit."""
+        d = self._d(["A/Lean/galois_lean"])
+        gated = {"B/Lean/galois_lean", "C/Lean/galois_lean"}
+        r = classify_deleted([d], gated, exists_at=lambda p: p in gated)
+        assert r["relocated"] == []
+        assert [e["dispatcher"] for e in r["lost"]] == ["lean-x.yml"]
+
+    def test_a_homonym_outside_the_parent_tree_stays_lost(self):
+        """Jaune 1 (#23908) : meme basename, autre sous-arbre = homonyme.
+
+        Crediter ce chemin rapporterait un deplacement que personne n'a fait
+        et tairait la perte reelle du lake.
+        """
+        d = self._d(["A/Lean/galois_lean"])
+        gated = {"Elsewhere/Lean/galois_lean"}
+        r = classify_deleted([d], gated, exists_at=lambda p: p in gated)
+        assert r["relocated"] == []
+        assert [e["dispatcher"] for e in r["lost"]] == ["lean-x.yml"]
+
+    def test_a_sibling_prefix_is_not_filiation(self):
+        """Controle negatif de `_is_under` : `A/LeanX` n'est pas sous `A/Lean`."""
+        from check_axiom_gate_coverage import _is_under
+        assert _is_under("A/Lean/GALOIS/galois_lean", "A/Lean") is True
+        assert _is_under("A/LeanX/galois_lean", "A/Lean") is False
+        assert _is_under("A/Lean", "A/Lean") is False
+
+    def test_a_multi_lake_dispatcher_stays_lost(self):
+        """Jaune 2 (#23908) : un `moved_to` unique ne peut pas temoigner de
+        DEUX lakes. Meme si chaque basename a un successeur, le dispatcher
+        retombe en `lost` (fail-closed) au lieu d'etre credite en bloc.
+        """
+        d = self._d(["A/Lean/alpha_lean", "A/Lean/beta_lean"])
+        gated = {"A/Lean/NEW/alpha_lean", "A/Lean/NEW/beta_lean"}
+        r = classify_deleted([d], gated, exists_at=lambda p: p in gated)
+        assert r["relocated"] == []
+        assert [e["dispatcher"] for e in r["lost"]] == ["lean-x.yml"]
+
 
 class TestMeasurePartition:
     """Logic invariants — deliberately NOT exact counts, which drift legitimately."""

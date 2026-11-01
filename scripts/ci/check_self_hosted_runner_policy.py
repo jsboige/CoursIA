@@ -742,6 +742,32 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "cycle-time-guard.yml",
 
     # ------------------------------------------------------------------
+    # #23053 famille (c) -- Lean, Quarto et slides.
+    # 2026-10-28 (lane myia-ai-01:CoursIA-2) : les jobs declenches par
+    # `pull_request` de ces workflows passent a la forme hybride de debordement
+    # (#22937/#22944/#23016) : garde meme-depot && vars.CI_OVERFLOW_LOCAL ==
+    # 'true' -> LINUX_RUNNER_LABELS, sinon ubuntu-latest. Par defaut (variable
+    # absente ou != 'true'), chaque job resout sur ubuntu-latest : l'etat du
+    # 27/10 est conserve, et l'entree d'allowlist ne rend le pool local
+    # atteignable QUE si un operateur bascule la variable.
+    # Les six autres workflows de la famille (lean-conway, lean-i18n-drift,
+    # lean-knot, quarto-pages-deploy, slides-build-advisory,
+    # slides-composition-pr-relay) etaient DEJA declares plus haut : seul
+    # l'absent est ajoute ici.
+    # `lean-planning.yml` n'est PAS declare : le workflow a ete SUPPRIME sur
+    # main par #23467 (#13751 -- migration de planning_lean vers la matrice
+    # CI, le wrapper est retire) entre la base de cette PR et aujourd'hui. Une
+    # entree d'allowlist pointant un workflow inexistant serait une reference
+    # morte ; la forme hybride de la famille (c) s'applique donc a
+    # `lean-ci-matrix.yml`, qui porte les jobs planning_lean depuis la
+    # migration.
+    # Exceptions nommees, laissees hebergees : quarto-pages-deploy `build`
+    # (OOM mesure sur le pool, #15202) et `deploy` (push-only, deploy-pages +
+    # OIDC/PAGES). Rollback = revert de la PR (l'entree disparait de
+    # l'allowlist, et le garde fail-closed refuse alors le runs-on).
+    # ------------------------------------------------------------------
+    "lean-ci-matrix.yml",
+
     # 2026-10-28 (#23053 famille b -- « les tests », lane
     #   myia-ai-01:CoursIA-2) : ces 6 suites de tests n'avaient AUCUNE jambe
     #   self-hosted sur main ; elles recoivent une jambe CONDITIONNELLE, la
@@ -800,6 +826,14 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #     ligne `runs-on` du fichier n'est pas honoree ;
     #   - lean-ci-matrix.yml : la toolchain Lean vit dans une image distincte
     #     (label `coursia-lean`), pas dans le pool `coursia-linux` ;
+    #     [2026-10-29, fusion de main dans #23053 famille (c) : ce motif vise
+    #     les jobs de BUILD, pas le dispatcher. Sur main, ce fichier n'a qu'un
+    #     job, `lean-matrix-changes`, qui checkout, calcule les fichiers
+    #     changes et appelle `scripts/lean/lake_matrix_dispatch.py` -- il
+    #     n'execute aucun `lake`. Le build reste delegue au workflow
+    #     reutilisable `lean-build.yml`, qui porte ses propres labels. Le
+    #     dispatcher est donc convertible vers `coursia-linux`, et il l'est
+    #     ci-dessous.]
     #   - local-path-waiver-guard.yml et perimeter-review-guard.yml :
     #     declencheurs `issue_comment` et `pull_request_review`, classes
     #     FORK_REACHABLE par l'instrument (default-deny) ;
