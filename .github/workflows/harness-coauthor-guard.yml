@@ -28,7 +28,6 @@ name: harness-coauthor-guard
 on:
   pull_request:
     types: [opened, synchronize, edited, reopened]
-    branches: [main]
     paths:
       - '.claude/skills/**'
       - '.claude/agents/**'
