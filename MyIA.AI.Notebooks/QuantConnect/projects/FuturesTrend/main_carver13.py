@@ -22,6 +22,7 @@ from carry_forecast import risk_adjusted_carry as _risk_adjusted_carry_pure
 # `_rebalance` and tests/test_notional_sizing.py share the contract formula.
 from notional_sizing import contract_delta as _contract_delta_pure
 from notional_sizing import target_contracts as _target_contracts_pure
+from contract_roll import roll_orders as _roll_orders_pure
 # endregion
 
 
@@ -234,6 +235,16 @@ class CarverThirteen(QCAlgorithm):
         self._gross = []
         self._net = []
         self._sizing = {"nonzero_targets": 0, "rounded_to_zero": 0}
+        # #23841: `_rebalance` reads and orders on the mapped contract only
+        # (#16051), so a position on the previous contract stayed open until
+        # its expiry when the mapping moved. `roll=on` (default, effective
+        # with `fix=on`) closes every holding on a contract that is no longer
+        # mapped and carries the target on the mapped one; `roll=off`
+        # replays the #23824 path order for order. Passive counters: rolls
+        # (stale-contract closes), fills tagged as a delisting liquidation
+        # (positions kept to expiry) and fills tagged as a margin call.
+        self.roll = (self.get_parameter("roll") or "on") == "on"
+        self._roll_stats = {"rolls": 0, "expiry_liquidations": 0, "margin_calls": 0}
         self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
 
         # 18 liquid continuous futures, diversified across asset classes.
@@ -876,6 +887,17 @@ class CarverThirteen(QCAlgorithm):
                     self._sizing["nonzero_targets"] += 1
                     if target_qty == 0:
                         self._sizing["rounded_to_zero"] += 1
+                if self.roll:
+                    # #23841: the instrument's position is the sum over ALL
+                    # its contracts; stale contracts are closed and the
+                    # target is carried by the mapped one (contract_roll.py).
+                    holdings = self._instrument_holdings(sym)
+                    for contract, qty in _roll_orders_pure(target_qty, holdings, order_sym):
+                        self.market_order(contract, qty)
+                        set_holdings_issued_this_call = True
+                        if contract != order_sym:
+                            self._roll_stats["rolls"] += 1
+                    continue
                 # Futures quantities are integral on QC: the holding is
                 # rounded, never truncated (see notional_sizing.py).
                 delta = _contract_delta_pure(target_qty, current_holding)
@@ -909,6 +931,34 @@ class CarverThirteen(QCAlgorithm):
         self._fc_s += time.perf_counter() - t_fc
         self._wall_s += time.perf_counter() - t_wall_start
 
+    def _instrument_holdings(self, continuous):
+        """#23841: contract -> quantity for every held contract of a future.
+
+        `portfolio[<continuous>]` does not aggregate the contracts (#16051),
+        so the contracts are found by their canonical symbol.
+        """
+        holdings = {}
+        for symbol in list(self.portfolio.keys()):
+            if symbol.security_type != SecurityType.FUTURE or symbol == continuous:
+                continue
+            if symbol.canonical != continuous:
+                continue
+            quantity = self.portfolio[symbol].quantity
+            if quantity != 0:
+                holdings[symbol] = quantity
+        return holdings
+
+    def on_order_event(self, order_event):
+        """#23841: count fills of engine-generated liquidations by their tag."""
+        if order_event.status != OrderStatus.FILLED:
+            return
+        order = self.transactions.get_order_by_id(order_event.order_id)
+        tag = (order.tag or "").lower() if order is not None else ""
+        if "delisting" in tag:
+            self._roll_stats["expiry_liquidations"] += 1
+        elif "margin call" in tag:
+            self._roll_stats["margin_calls"] += 1
+
     def _sample_exposure(self):
         """#23824: gross and net notional exposure over portfolio value."""
         tpv = float(self.portfolio.total_portfolio_value)
@@ -938,6 +988,12 @@ class CarverThirteen(QCAlgorithm):
         self.set_runtime_statistic(
             "sizing",
             f"zero={self._sizing['rounded_to_zero']}/{self._sizing['nonzero_targets']}",
+        )
+        rs = self._roll_stats
+        self.set_runtime_statistic(
+            "roll",
+            f"{'on' if self.roll else 'off'} rolls={rs['rolls']} "
+            f"expiry={rs['expiry_liquidations']} margin={rs['margin_calls']}",
         )
         # REPAIR-9 c.1117: log the instrumentation tally so the QC backtest
         # output carries the diagnostic discriminators that allow the
