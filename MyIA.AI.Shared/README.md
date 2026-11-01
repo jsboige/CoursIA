@@ -208,7 +208,7 @@ wrapper Aricie expose — la base de connaissances `PLKbInfo` devient
 | `PlInference` | les six procédures : `TTEntails`, `Resolve`, `DPLLEntails`, `DPLLSatisfiable`, `WalkSatKb`, `WalkSatPredicate` |
 
 Chaque procédure publie son **coût mesuré** et son **unité** (`lignes de table de
-verite`, `resolvantes derivees`, `decisions DPLL`, `flips`) : c'est ce qui les rend
+verite`, `resolvantes derivees`, `tentatives de branchement DPLL`, `flips`) : c'est ce qui les rend
 falsifiables entre elles, et pas seulement correctes. Une conséquence mesurée : sur
 une base insatisfiable, `DPLLEntails` ne prend **aucune** décision quand
 `DPLLSatisfiable` en prend, parce que la négation de la requête est elle-même une

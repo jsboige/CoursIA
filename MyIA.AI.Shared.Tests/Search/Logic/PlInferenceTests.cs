@@ -224,7 +224,7 @@ public sealed class PlInferenceTests
         // 2. Unites distinctes : sans elles, les couts ne seraient pas comparables.
         Assert.Equal("lignes de table de verite", truthTable.StepUnit);
         Assert.Equal("resolvantes derivees", resolution.StepUnit);
-        Assert.Equal("decisions DPLL", dpll.StepUnit);
+        Assert.Equal("tentatives de branchement DPLL", dpll.StepUnit);
         Assert.Equal("flips", walkSat.StepUnit);
 
         // 3. La table de verite paie l'exponentielle : 4 symboles, donc 16 lignes.
@@ -336,6 +336,84 @@ public sealed class PlInferenceTests
         knowledgeBase.Tell(string.Join(" & ", symbols));
 
         Assert.Throws<InvalidOperationException>(() => PlInference.TtEntails(knowledgeBase, PlParser.Parse("S0")));
+    }
+
+    [Fact]
+    public void IsSatisfiable_RendUnModeleTotalConsommableParLaBase()
+    {
+        // Repro de la reserve 1 de la review : DPLL n'assigne que A dans "B | A",
+        // le modele rendu doit quand meme couvrir B, sinon IsSatisfiedBy leve.
+        PlKnowledgeBase knowledgeBase = new PlKnowledgeBase().Tell("B | A");
+
+        bool satisfiable = PlInference.IsSatisfiable(knowledgeBase.ToClauses(), out IReadOnlyDictionary<string, bool>? model);
+
+        Assert.True(satisfiable);
+        Assert.NotNull(model);
+        Assert.True(
+            knowledgeBase.IsSatisfiedBy(model!),
+            "le modele rendu doit etre total et consumable par la base, pas seulement annoncer satisfiabilite");
+        Assert.Contains("B", model!);
+    }
+
+    [Fact]
+    public void TtEntails_RefuseUneBorneDepasseeAuLieuDeTronquerLaTable()
+    {
+        // Repro de la reserve 2 : maxSymbols: 32 sur 32 symboles tronquait la table
+        // (le decalage d'un int est masque sur 5 bits, donc 1 << 32 == 1) et rendait
+        // un verdict sur une seule ligne. La borne publique desormais refuse.
+        PlKnowledgeBase knowledgeBase = new PlKnowledgeBase();
+        List<string> symbols = new();
+
+        for (int index = 0; index < 32; index++)
+        {
+            symbols.Add($"S{index}");
+        }
+
+        knowledgeBase.Tell(string.Join(" & ", symbols));
+
+        Assert.Throws<ArgumentOutOfRangeException>(
+            () => PlInference.TtEntails(knowledgeBase, PlParser.Parse("S0"), maxSymbols: 32));
+    }
+
+    [Fact]
+    public void Resolve_RefuseUnBudgetNulDeResolvantes()
+    {
+        // maxResolvents: 0 levait apres la premiere resolvante avec un message
+        // qui decrivait un depassement de regime ; la borne refuse en entree.
+        PlKnowledgeBase knowledgeBase = AimaChapter7();
+
+        Assert.Throws<ArgumentOutOfRangeException>(
+            () => PlInference.Resolve(knowledgeBase, PlParser.Parse("B"), maxResolvents: 0));
+    }
+
+    [Fact]
+    public void WalkSat_RefuseUnBudgetNulDeFlips()
+    {
+        // maxFlips: 0 rendait Unknown silencieux, indiscernable d'un vrai echec.
+        PlKnowledgeBase knowledgeBase = AimaChapter7();
+
+        Assert.Throws<ArgumentOutOfRangeException>(
+            () => PlInference.WalkSatKb(knowledgeBase, maxFlips: 0));
+    }
+
+    [Fact]
+    public void PlCnf_RefuseUneDistributionExponentielleSansBudget()
+    {
+        // Repro de la reserve 3 : (a1 & b1) | ... | (a15 & b15) produit 2^15 = 32768
+        // clauses avant que le moindre budget de procedure ne s'applique. La
+        // conversion CNF desormais bornee le dit au lieu de deriver.
+        List<string> conjunctions = new();
+
+        for (int index = 1; index <= 15; index++)
+        {
+            conjunctions.Add($"(a{index} & b{index})");
+        }
+
+        PlFormula formula = PlParser.Parse(string.Join(" | ", conjunctions));
+
+        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(
+            () => PlCnf.ToClauses(formula));
+        Assert.Contains("clauses", exception.Message);
     }
 
     [Fact]

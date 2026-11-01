@@ -93,6 +93,7 @@ public static class PlInference
     {
         ArgumentNullException.ThrowIfNull(knowledgeBase);
         ArgumentNullException.ThrowIfNull(query);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(maxSymbols, 30, nameof(maxSymbols));
 
         string[] symbols = knowledgeBase.Symbols
             .Concat(query.Symbols)
@@ -153,6 +154,7 @@ public static class PlInference
     {
         ArgumentNullException.ThrowIfNull(knowledgeBase);
         ArgumentNullException.ThrowIfNull(query);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxResolvents, nameof(maxResolvents));
 
         List<PlClause> clauses = new(knowledgeBase.ToClauses());
         clauses.AddRange(PlCnf.ToClauses(new PlNot(query)));
@@ -186,7 +188,7 @@ public static class PlInference
             "KB |= requete",
             satisfiable ? PlVerdict.No : PlVerdict.Yes,
             decisions,
-            "decisions DPLL");
+            "tentatives de branchement DPLL");
     }
 
     /// <summary>Satisfiabilite de la base par DPLL.</summary>
@@ -205,7 +207,7 @@ public static class PlInference
             "KB est satisfiable",
             satisfiable ? PlVerdict.Yes : PlVerdict.No,
             decisions,
-            "decisions DPLL",
+            "tentatives de branchement DPLL",
             satisfiable ? Complete(knowledgeBase, assignment) : null);
     }
 
@@ -259,6 +261,8 @@ public static class PlInference
             return new PlInferenceResult(procedure, question, PlVerdict.No, 0, "flips");
         }
 
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxFlips, nameof(maxFlips));
+
         Random random = new(seed);
         bool satisfiable = WalkSat(clauses, random, maxFlips, out int flips, out IReadOnlyDictionary<string, bool>? model);
 
@@ -271,7 +275,13 @@ public static class PlInference
             model);
     }
 
-    /// <summary>Determine si un ensemble de clauses est satisfiable, et rend un modele s'il en existe un.</summary>
+    /// <summary>
+    /// Determine si un ensemble de clauses est satisfiable, et rend un modele s'il en existe un.
+    /// Le modele rendu est total : tout symbole des clauses absent de l'affectation partielle
+    /// de DPLL y vaut false, comme dans <see cref="DpllSatisfiable"/>. L'evaluation d'une
+    /// formule exige une affectation totale (<see cref="PlFormula.PlAtom"/> leve sinon),
+    /// donc un modele partiel ne serait consommable par aucune base.
+    /// </summary>
     public static bool IsSatisfiable(IReadOnlyList<PlClause> clauses, out IReadOnlyDictionary<string, bool>? model)
     {
         ArgumentNullException.ThrowIfNull(clauses);
@@ -280,8 +290,30 @@ public static class PlInference
         int propagations = 0;
         Dictionary<string, bool> assignment = new(StringComparer.Ordinal);
         bool satisfiable = Dpll(clauses, assignment, ref decisions, ref propagations);
-        model = satisfiable ? new Dictionary<string, bool>(assignment, StringComparer.Ordinal) : null;
+        model = satisfiable ? CompleteClauses(clauses, assignment) : null;
         return satisfiable;
+    }
+
+    /// <summary>
+    /// Complete une affectation partielle de DPLL en affectation totale sur les symboles
+    /// des clauses, avec false par defaut. Le complement de <see cref="Complete"/> (qui part
+    /// des symboles de la base) pour les clauses brutes.
+    /// </summary>
+    private static IReadOnlyDictionary<string, bool> CompleteClauses(
+        IReadOnlyList<PlClause> clauses,
+        Dictionary<string, bool> assignment)
+    {
+        Dictionary<string, bool> complete = new(assignment, StringComparer.Ordinal);
+
+        foreach (string symbol in clauses.SelectMany(clause => clause.Literals).Select(literal => literal.Name))
+        {
+            if (!complete.ContainsKey(symbol))
+            {
+                complete[symbol] = false;
+            }
+        }
+
+        return complete;
     }
 
     private static bool ResolveRefutation(IReadOnlyList<PlClause> clauses, int maxResolvents, out int derived)
@@ -618,7 +650,9 @@ public static class PlInference
 
             PlLiteral flip;
 
-            if (random.Next(2) == 0 || literals.Length == 0)
+            // Les clauses vides sont ecartees en entree de WalkSatOnClauses : toute
+            // clause insatisfaite ici porte au moins un litteral a retourner.
+            if (random.Next(2) == 0)
             {
                 flip = literals[random.Next(literals.Length)];
             }

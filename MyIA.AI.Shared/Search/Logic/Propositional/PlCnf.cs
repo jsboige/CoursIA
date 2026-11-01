@@ -52,6 +52,14 @@ public sealed class PlClause
 /// </remarks>
 public static class PlCnf
 {
+    /// <summary>
+    /// Nombre maximal de clauses que la distribution peut produire avant de lever.
+    /// Une formule du type (a1 &amp; b1) | ... | (an &amp; bn) produit 2^n clauses :
+    /// cette borne evite que la conversion elle-meme derive sans budget, alors que
+    /// toutes les procedures qui la consomment sont, elles, budgetees.
+    /// </summary>
+    public const int MaxClauses = 20000;
+
     /// <summary>Convertit une formule en ensemble de clauses.</summary>
     public static IReadOnlyList<PlClause> ToClauses(PlFormula formula)
     {
@@ -59,7 +67,7 @@ public static class PlCnf
 
         PlFormula eliminated = Eliminate(formula);
         PlFormula nnf = ToNegationNormalForm(eliminated, negated: false);
-        List<PlClause> clauses = Distribut(nnf);
+        List<PlClause> clauses = Distribut(nnf, budget: MaxClauses);
 
         return clauses
             .Where(clause => !clause.IsTautology)
@@ -108,7 +116,7 @@ public static class PlCnf
         }
     }
 
-    private static List<PlClause> Distribut(PlFormula nnf)
+    private static List<PlClause> Distribut(PlFormula nnf, int budget)
     {
         switch (nnf)
         {
@@ -120,15 +128,15 @@ public static class PlCnf
 
             case PlAnd and:
                 {
-                    List<PlClause> clauses = Distribut(and.Left);
-                    clauses.AddRange(Distribut(and.Right));
+                    List<PlClause> clauses = Distribut(and.Left, budget);
+                    clauses.AddRange(Distribut(and.Right, budget));
                     return clauses;
                 }
 
             case PlOr or:
                 {
-                    List<PlClause> left = Distribut(or.Left);
-                    List<PlClause> right = Distribut(or.Right);
+                    List<PlClause> left = Distribut(or.Left, budget);
+                    List<PlClause> right = Distribut(or.Right, budget);
                     List<PlClause> product = new(left.Count * right.Count);
 
                     foreach (PlClause leftClause in left)
@@ -137,6 +145,14 @@ public static class PlCnf
                         {
                             product.Add(new PlClause(leftClause.Literals.Concat(rightClause.Literals)));
                         }
+                    }
+
+                    if (product.Count > budget)
+                    {
+                        throw new InvalidOperationException(
+                            $"La distribution produit plus de {budget} clauses ; " +
+                            "l'instance sort du regime de la conversion CNF. " +
+                            "Utiliser DPLL ou une decomposition de la formule.");
                     }
 
                     return product;
