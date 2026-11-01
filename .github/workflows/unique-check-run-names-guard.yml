@@ -32,7 +32,6 @@ name: Unique Check-Run Names Guard
 
 on:
   pull_request:
-    branches: [main]
     types: [opened, synchronize, edited, reopened]
     paths:
       - '.github/workflows/**'
@@ -42,6 +41,13 @@ on:
 
 permissions:
   contents: read
+
+# Condition jointe de la disposition ai-01 du 20/10 (option b, #19426) :
+# tout workflow touche sans bloc `concurrency:` en recoit un, `cancel-in-progress`
+# vrai en `pull_request` -- un `workflow_dispatch` manuel n'annule pas un run de PR.
+concurrency:
+  group: unique-check-run-names-guard-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   # Nom portant `-required` -> is_advisory() = False (pr_gate.py, motif etabli
