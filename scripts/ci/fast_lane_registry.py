@@ -3339,3 +3339,50 @@ TRANCHE34: list[Guard] = [
         warn_rc=(2,),
     ),
 ]
+
+# ---------------------------------------------------------------------------
+# Garde d'encodage, critere 3 de #23021 (tranche du 2026-11-01).
+#
+# L'organe `scripts/notebook_tools/check_encoding_corruption.py` a ete livre par
+# #23024/#23036 avec DEUX formes : une verification pleine (`<chemins>`, cablee
+# en hook pre-commit sur les carnets stages) et une garde de DELTA
+# (`--base <ref>`, artefacts sur les LIGNES AJOUTEES des carnets changes). Sa
+# docstring annoncait la seconde comme « garde CI bloquante » -- mais mesure du
+# 2026-11-01 : aucun workflow, aucun job, aucune entree de ce registre ne
+# l'invoquait. Une capacite annoncee que rien n'invoque est une garde
+# debranchee, et le hook pre-commit est contournable (`--no-verify`, poste sans
+# `pre-commit install`) : la classe n'etait donc tenue que sur les postes
+# equipes. Cette tranche branche la forme de delta qui manquait.
+#
+# Pourquoi un delta et pas un scan global : le stock de `main` au 2026-11-01
+# mesure **0 artefact** sur les deux carnets repares (controle positif passe :
+# la prose francaise correcte est bien presente, la mesure ne rend pas 0 pour
+# cause de fichier absent). Le stock est donc propre et ne rougit personne ;
+# seule une PR qui REINTRODUIT la corruption sur une ligne ajoutee rougit. Un
+# scan global aurait le meme verdict aujourd'hui mais ferait payer a chaque PR
+# notebook le cout du corpus entier.
+#
+# L'organe apparait dans `paths` : une PR qui change le detecteur doit voir le
+# garde se declencher, sinon un detecteur casse passerait sans temoin (lecon
+# #11685/#12817, meme motif que `pip-leak-guard`).
+#
+# rc=2 = incident d'entree (git diff en echec), donc `warn_rc` : un incident
+# n'est ni une faute de la PR ni un quitus (precedent #17941 / TRANCHE34).
+# ---------------------------------------------------------------------------
+TRANCHE35: list[Guard] = [
+    Guard(
+        name="encoding-corruption-guard",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**/*.ipynb",
+            "scripts/notebook_tools/check_encoding_corruption.py",
+        ],
+        argv=["python", "scripts/notebook_tools/check_encoding_corruption.py",
+              "--base", "{base_ref}"],
+        blocking=True,           # BLOQUANT : critere 3 de #23021, en delta
+        needs_base=True,
+        diff_bounded=True,       # lignes ajoutees seulement : main ne peut pas heriter
+        absorbed=True,
+        warn_rc=(2,),
+    ),
+]
