@@ -198,6 +198,23 @@ ARM_CONFIGS = {
 }
 
 
+def _system_prompt_kind(prompt: str) -> str:
+    """Etiquette de regime du system prompt, telle qu'enregistree dans les metriques."""
+    return ("NEUTRAL" if prompt == SYSTEM_NEUTRAL
+            else "PERMITTED" if prompt == SYSTEM_PERMITTED
+            else "INFORMED" if prompt == SYSTEM_INFORMED
+            else "EMPTY")
+
+
+def _signal_kind(signal: str) -> str:
+    """Etiquette de regime du few-shot, telle qu'enregistree dans les metriques."""
+    return ("FEWSHOT_NEUTRAL" if signal == FEWSHOT_NEUTRAL
+            else "FEWSHOT_SIGNAL_ON" if signal == FEWSHOT_SIGNAL_ON
+            else "SIGNAL_W" if signal == SIGNAL_W
+            else "SIGNAL_S" if signal == SIGNAL_S
+            else "OTHER")
+
+
 # === Helpers (verbatim cell[17] d'ICT-25) ===
 
 def _extract_int(text: str) -> int | None:
@@ -406,19 +423,12 @@ def run_seed(arm: str, seed: int, steps: int, model_name: str = MODEL, gpu: int 
         "learning_rate": cfg_arm["learning_rate"],
         "num_generations": cfg_arm["num_generations"],
         "max_completion_length": max_completion_length,
-        "system_prompt_kind": (
-            "NEUTRAL" if cfg_arm["system_prompt"] == SYSTEM_NEUTRAL
-            else "PERMITTED" if cfg_arm["system_prompt"] == SYSTEM_PERMITTED
-            else "INFORMED" if cfg_arm["system_prompt"] == SYSTEM_INFORMED
-            else "EMPTY"
-        ),
-        "signal_kind": (
-            "FEWSHOT_NEUTRAL" if cfg_arm["signal"] == FEWSHOT_NEUTRAL
-            else "FEWSHOT_SIGNAL_ON" if cfg_arm["signal"] == FEWSHOT_SIGNAL_ON
-            else "SIGNAL_W" if cfg_arm["signal"] == SIGNAL_W
-            else "SIGNAL_S" if cfg_arm["signal"] == SIGNAL_S
-            else "OTHER"
-        ),
+        "system_prompt_kind": _system_prompt_kind(cfg_arm["system_prompt"]),
+        "signal_kind": _signal_kind(cfg_arm["signal"]),
+        # Nom du facteur de recompense (#22133, review #23087) : sans ce champ,
+        # un changement de formule a arm/seed/steps/cap constants reste
+        # invisible a la reprise -- c'est exactement la classe du defaut du 21/10.
+        "reward": cfg_arm["reward"],
     }
 
     del trainer, model
@@ -436,19 +446,40 @@ def _seed_entry_matches(entry, arm, seed, steps, max_completion_length):
 
     La comparaison porte sur les champs de regime des metriques (bras, seed,
     steps, budget de completion, lr, generations, kind de system_prompt et de
-    signal) : un ecart quelconque force le re-entrainement de la graine -- la
-    reprise ne doit jamais melanger deux regimes dans un meme agrege (defaut
-    mesure sur ict25_N_120steps.json du 21/10, `length_bonus` d'un autre
-    regime servi comme baseline).
+    signal, nom du facteur de recompense) : un ecart quelconque force le
+    re-entrainement de la graine -- la reprise ne doit jamais melanger deux
+    regimes dans un meme agrege (defaut mesure sur ict25_N_120steps.json du
+    21/10, `length_bonus` d'un autre regime servi comme baseline).
+
+    Les cles de regime sont **comparees** a la configuration du bras, pas
+    seulement testees en presence (review #23087, point 1) : un artefact produit
+    en `lr=1e-5` etait repris par une invocation `lr=1e-6` du meme bras, et
+    l'agrege melangeait deux regimes en silence.
     """
     m = entry.get("metrics") or {}
     ref = {"arm": arm, "seed": seed, "steps": steps,
            "max_completion_length": max_completion_length}
     if any(m.get(k) != v for k, v in ref.items()):
         return False
-    regime_keys = ("learning_rate", "num_generations", "system_prompt_kind",
-                   "signal_kind")
-    return all(m.get(k) is not None for k in regime_keys)
+    cfg_arm = ARM_CONFIGS.get(arm) or {}
+    expected = {
+        "learning_rate": cfg_arm.get("learning_rate"),
+        "num_generations": cfg_arm.get("num_generations"),
+        "system_prompt_kind": _system_prompt_kind(cfg_arm.get("system_prompt")),
+        "signal_kind": _signal_kind(cfg_arm.get("signal")),
+    }
+    if any(m.get(k) is None for k in expected):
+        return False
+    if any(m.get(k) != v for k, v in expected.items()):
+        return False
+    # `reward` est absent des artefacts produits avant le 2026-10-29. Son absence
+    # ne force pas un re-entrainement -- une graine deja entrainee reste valide,
+    # et invalider 11 h de run pour un champ nouveau serait un cout sans gain --
+    # mais des qu'il est present, l'ecart ferme la reprise.
+    reward_kind = cfg_arm.get("reward")
+    if m.get("reward") is not None and reward_kind is not None:
+        return m["reward"] == reward_kind
+    return True
 
 
 def _load_resumable_seed(seed_path, arm, seed, steps, max_completion_length):
@@ -470,7 +501,23 @@ def _load_resumable_seed(seed_path, arm, seed, steps, max_completion_length):
 
 
 def _write_artifact(out_path, args, seeds, all_metrics, resumed_seeds):
-    """Ecrit un artefact agrege (schema inchange + champ additive resumed_seeds)."""
+    """Ecrit un artefact agrege (schema inchange + champ additive resumed_seeds).
+
+    Le bloc `provenance` n'est pas produit par ce script : il est **preserve**
+    quand le fichier cible en porte deja un (lecture-avant-ecriture). Sans cela,
+    toute reecriture de l'agregat -- y compris une invocation qui ne fait que
+    reprendre les graines depuis le disque -- l'effacait sans aucun signal
+    (review #23087, point 2).
+    """
+    preserved_provenance = None
+    if out_path.exists():
+        try:
+            previous = json.loads(out_path.read_text(encoding="utf-8"))
+            if isinstance(previous, dict) and isinstance(previous.get("provenance"), dict):
+                preserved_provenance = previous["provenance"]
+        except Exception as exc:
+            print(f"[ict25_arms] provenance: {out_path.name} illisible ({exc}), "
+                  f"bloc non preserve", file=sys.stderr)
     artifact = {
         "schema": 1,
         "script": "ict25_arms.py",
@@ -490,11 +537,15 @@ def _write_artifact(out_path, args, seeds, all_metrics, resumed_seeds):
         "resumed_seeds": resumed_seeds,
         "per_seed": all_metrics,
     }
+    if preserved_provenance is not None:
+        artifact["provenance"] = preserved_provenance
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(artifact, f, ensure_ascii=False, indent=2)
     size_kb = out_path.stat().st_size / 1024
     print(f"\n[ict25_arms] artefact ecrit: {out_path} ({size_kb:.1f} Ko)", flush=True)
+    if preserved_provenance is not None:
+        print(f"[ict25_arms] provenance preservee: {out_path.name}", flush=True)
     if size_kb > 512:
         print(f"[ict25_arms] WARNING: artefact > 512 Ko (results-artifact-policy)",
               file=sys.stderr)
