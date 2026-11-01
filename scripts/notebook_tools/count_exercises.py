@@ -1696,7 +1696,7 @@ def count_exercises_in_notebook(path: Path) -> NotebookCount:
                 break
         # ---- Commit by preference (#18146). NUMBERED headers prefer the
         # candidate that MATCHES the exercise number in either direction
-        # (Lean-29: the Lean stub below carries ``-- Exercice N : ...`` and
+        # (Langlands 06, ex-Lean-29: the Lean stub below carries ``-- Exercice N : ...`` and
         # must pair its own header, not let a preceding undescribing example
         # cell steal the pairing and leave the stub double-counted by pass 2),
         # then the PT_13 undescribing-backward shape -- restricted to the

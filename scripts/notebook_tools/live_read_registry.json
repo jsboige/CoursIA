@@ -101,7 +101,7 @@
     {
       "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/03-chaine-de-modularite-vers-fermat.ipynb",
       "cell_id": "cell-17",
-      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/Hecke/FltRoute.lean",
+      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/hecke_lean/Hecke/FltRoute.lean",
       "note": "Compte de lignes et table des declarations de FltRoute.lean ; trouvee par l'invariant inverse apres fusion de main"
     },
     {

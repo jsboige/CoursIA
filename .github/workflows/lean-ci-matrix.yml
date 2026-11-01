@@ -144,9 +144,9 @@ on:
       # hecke_lean (herite du wrapper lean-hecke.yml supprime, #13751 :
       # 0 sorry verifie, axiom target-modules "*" + allow-axioms vide,
       # fail-on-sorry true par defaut -- parametres reportes au manifeste)
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/**.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/hecke_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/hecke_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/hecke_lean/lean-toolchain'
       # formal_groups_lean (herite du wrapper lean-formal-groups.yml supprime,
       # #13751 : 0 sorry par construction, axiom target-modules "*" +
       # allow-axioms vide, fail-on-sorry true -- parametres reportes au
@@ -352,9 +352,9 @@ on:
       # hecke_lean (herite du wrapper lean-hecke.yml supprime, #13751 :
       # 0 sorry verifie, axiom target-modules "*" + allow-axioms vide,
       # fail-on-sorry true par defaut -- parametres reportes au manifeste)
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/**.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/hecke_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/hecke_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/hecke_lean/lean-toolchain'
       # formal_groups_lean (herite du wrapper lean-formal-groups.yml supprime,
       # #13751 : 0 sorry par construction, axiom target-modules "*" +
       # allow-axioms vide, fail-on-sorry true -- parametres reportes au

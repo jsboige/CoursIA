@@ -21,7 +21,7 @@ Cette page est regeneree par `scripts/lean/lean_material_map.py`. Une table reco
 | `MyIA.AI.Notebooks/Probas/DecisionTheory/decision_theory_lean` | 14 | 13 | declare | sans gate | 2026-10-02 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean` | 12 | 10 | declare | couverte | 2026-05-15 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean` | 11 | 0 | declare | sans gate | 2026-09-21 |
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean` | 9 | 8 | declare | couverte | 2026-09-06 |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/hecke_lean` | 9 | 8 | declare | couverte | 2026-09-06 |
 | `MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean` | 8 | 7 | declare | couverte | 2026-09-06 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean` | 8 | 0 | declare | couverte | 2026-09-11 |
 | `MyIA.AI.Notebooks/SymbolicAI/Tweety/argumentation_lean` | 8 | 6 | declare | sans gate | 2026-06-24 |
