@@ -41,14 +41,14 @@
 
 import Mathlib.Data.Finset.Basic
 import Mathlib.Tactic.Common
-import StableMarriage.Definitions
-import StableMarriage.Lemmas
-import StableMarriage.Lattice
+import StableMarriage.Definitions_en
+import StableMarriage.Lemmas_en
+import StableMarriage.Lattice_en
 
 namespace StableMarriage_en
 
 open Function Finset Classical
-open StableMarriage
+open StableMarriage_en
 
 variable {n : Nat} [NeZero n]
 
