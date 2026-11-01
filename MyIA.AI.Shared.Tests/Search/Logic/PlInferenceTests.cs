@@ -245,6 +245,11 @@ public sealed class PlInferenceTests
         //    unitaire (~D), qui propage D=false puis C=false, A=false et B=true jusqu'a
         //    la clause contradictoire. Aucune decision n'est necessaire.
         Assert.Equal(0, dpll.Steps);
+
+        // 6. Pincage exact des deux couts restants de la table de mesures (15 resolvantes,
+        //    1 flip) : procedures deterministes, WalkSAT seedee -- compteurs reproductibles.
+        Assert.Equal(15, resolution.Steps);
+        Assert.Equal(1, walkSat.Steps);
     }
 
     /// <summary>
@@ -319,6 +324,11 @@ public sealed class PlInferenceTests
 
         // La resolution doit atteindre la clause vide, donc deriver au moins une resolvante.
         Assert.True(resolution.Steps >= 1, "la refutation doit deriver au moins la clause vide");
+
+        // Pincage exact des deux couts restants de la table de mesures (63 resolvantes,
+        // 2 decisions) : procedures deterministes -- compteurs reproductibles.
+        Assert.Equal(63, resolution.Steps);
+        Assert.Equal(2, satisfiable.Steps);
     }
 
     [Fact]
