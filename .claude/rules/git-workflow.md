@@ -24,7 +24,7 @@ GitHub auto-closes an issue only when a closing keyword (`close`/`closes`/`close
 | Close when ALL criteria met | `Closes #N` on its own line (verify acceptance first) | ~~`Fixes #N`~~ for partial |
 | Partial delivery | `See #N` (partial: X/Y criteria) | ~~`Refs #N`~~ |
 
-**The scope swallows the keyword (#23348).** The mandated `type(scope): subject` form has an inviting place for the issue number — `type(scope,#N): subject` — and that form closes nothing: `(` and the scope sit between the keyword and the number. Never rely on the subject alone to close (mesure sur `origin/main` : 500 commits, **186 issues restées ouvertes** malgré le fix livré — [détail §6](../../docs/reference/git-workflow-detail.md)). Two forms that work:
+**The scope swallows the keyword (#23348).** The mandated `type(scope): subject` form has an inviting place for the issue number — `type(scope,#N): subject` — and that form closes nothing: `(` and the scope sit between the keyword and the number. Never rely on the subject alone to close (mesure sur `origin/main` : 500 commits, 299 numéros cités ainsi, **186 encore ouverts** ; parmi les 162 cités par un verbe de correction, **95 encore ouverts** — des fixes déjà sur `main` — [détail §6](../../docs/reference/git-workflow-detail.md)). Two forms that work:
 
 - `Fix(ci,#22937): …` **and** a `Closes #22937` line in the commit body (for a squash merge, the PR body becomes that message);
 - `Fix(ci): …` and a `Closes #22937` line in the body.

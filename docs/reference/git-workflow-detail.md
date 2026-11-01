@@ -54,6 +54,12 @@ L'affirmation de la règle a été **confrontée à l'organe** avant d'être cor
 
 Le défaut était donc **documentaire** : la règle contredisait un organe correct et testé. Le second écart (« balayage horaire ») a été trouvé par la même passe et corrigé dans le même geste — les deux vivaient sur la même ligne.
 
+### Le rouge `DWELL` n'est pas un défaut de la PR — c'est le balayage qui le lève
+
+Le gate **nomme lui-même** la cause dans son message : la tête est trop récente pour le plancher, rien n'est à corriger dans le code. Un `DWELL` rouge se résorbe donc **sans geste de la lane**, quand le balayage repasse et re-mesure la tête. C'est la raison pour laquelle un rouge de cette classe peut rester affiché des heures sans que personne ne soit en faute.
+
+La cadence réelle du balayage est **lente et irrégulière** : la mesure de **#15197** la situe entre **178 et 341 minutes** — le message du gate, sur une autre fenêtre, annonce « 2 h 33 – 5 h 18 ». Les deux lectures s'accordent sur ce qui compte ici : ce n'est **pas** horaire, et une PR peut légitimement attendre plusieurs heures avant que la jambe repasse au vert. Attendre n'est donc pas un échec de lane ; c'est le fonctionnement nominal.
+
 ### Pourquoi un rejeu de jambe est gratuit
 
 `gh run rerun <run_id> --job <job_id>` ne crée **aucun commit** : la tête ne bouge pas, donc le plancher non plus. C'est le remède que le message du gate nomme lui-même, et il est préférable à `update-branch` quand le seul rouge est `DWELL` — ce dernier n'est pas nuisible, mais il déclenche une rafale CI complète sur un pool de runners partagé.
