@@ -650,6 +650,15 @@ conda env list
 wsl -l -v
 ```
 
+**Un kernelspec enregistré peut survivre à son interpréteur.** Un `argv[0]` qui pointe sous un répertoire temporaire (scratchpad de session, `%TEMP%`) donne un noyau qui fonctionne le jour de son enregistrement puis meurt au premier nettoyage — et le symptôme (carnet qui échoue sur un chemin absent) est éloigné de la cause. Le détecteur, à lancer sur un poste et non en CI (le défaut vit dans la config utilisateur, pas dans le dépôt) :
+
+```bash
+python scripts/notebook_tools/check_kernelspec_temp_paths.py          # rc 0 propre, 1 offenders, 2 incident
+python scripts/notebook_tools/check_kernelspec_temp_paths.py --json    # sortie machine
+```
+
+Il ne mesure que les `argv[0]` **absolus** : les commandes nues (`dotnet`, `wsl`, `python`) se résolvent par `PATH` et ne vivent sous aucun temporaire. `--check-exists` ajoute les interpréteurs absents, `MISSING_INTERPRETER` n'étant jamais confondu avec `TEMP_ROOT` (deux causes, deux remèdes).
+
 ## Si un kernel manque
 
 Cf règle F (CLAUDE.md) : réparer plutôt que contourner. Installer le kernel manquant, ne pas déléguer. Pour kernels privilégiés (UAC), demander au user.
