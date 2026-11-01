@@ -52,7 +52,8 @@ Agents are auto-discovered by Claude Code. Each has YAML frontmatter with model,
 | `anti-regression` | patterns red-flag, protocole avant suppression de preuve/implémentation |
 | `notebook-conventions` | structure, exécution kernel, C.1-C.5 |
 | `exercise-example-labeling` | classification par contenu, fin du flip-flop exercice/exemple |
-| `code-style` | PEP 8, .NET 9, pas d'emojis, i18n Lean FR/EN siblings |
+| `code-style` | PEP 8, .NET 9, pas d'emojis |
+| `lean-i18n` | docstrings FR + siblings EN `*_en.lean`, checker `check_i18n_siblings.py` (gatée `**/*.lean`) |
 | `genai-config` | services, env, scripts, architecture GenAI |
 | `wsl-kernels` | kernels WSL (`GameTheory/**`, `Lean/**`) |
 | `student-pr-reviews` | anti-fuite soutenance, review bienveillante |
