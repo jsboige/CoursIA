@@ -26,8 +26,8 @@ import Mathlib.Topology.Basic
   Namespace sibling : `RepeatedGames_en` (the FR canonical stays
   `RepeatedGames`). Shared types `PrisonersDilemma`, `PDAction` are defined
   in `Stage_en.lean` under `namespace RepeatedGames_en` and consumed via
-  `import RepeatedGames.Stage_en`; the EN sibling resolves them through
-  `open RepeatedGames_en`, as `GrimTrigger_en` already does. Field
+  `import RepeatedGames.Stage_en`; every higher-level EN sibling of this
+  series resolves them through `open RepeatedGames_en`. Field
   projections `g.P`/`g.R`/`g.S`/`g.T` are structure-field access
   (not namespace dot-notation), hence unaffected by the open.
 
