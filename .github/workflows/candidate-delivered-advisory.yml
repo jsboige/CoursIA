@@ -100,10 +100,23 @@ jobs:
         uses: actions/checkout@v4
         with:
           sparse-checkout-cone-mode: false
+          # Cloture module-level de `import pick_idle_grain` (l.133, #23762) :
+          # le sweep ne demarrait plus depuis 4656f964 (28/10) -- ModuleNotFoundError
+          # sur les 3 jours 29-31/10. Chaque entree est requise au chargement du
+          # module (verifie en replica sparse local : dry-run --limit 3 rc=0) ou
+          # en import paresseux sur le chemin du sweep (gh_identity).
           sparse-checkout: |
             .github/workflows/candidate-delivered-advisory.yml
             scripts/candidate_delivered.py
+            scripts/check_run_state.py
+            scripts/gh_identity.py
+            scripts/gh_payload_cache.py
+            scripts/grain_tag.py
             scripts/issue_containers.py
+            scripts/pick_idle_grain.py
+            scripts/series_saturation.py
+            scripts/variation_light_cap.py
+            scripts/ci/fetch_merged_prs_since.py
 
       - name: Set up Python
         uses: actions/setup-python@v5
