@@ -310,6 +310,9 @@ PILOT_SHADOW_NATIF = (
 #   - bare-cross-dir-load-gate : bloquant, EXECUTION PAR FICHIER (Pattern 1)
 #   - notebook-navlink-check   : bloquant, scan global
 #   - notebook-interp-positioning-guard : bloquant, scan global baselined
+#   - readme-notebook-coverage : bloquant, delta base-vs-head sur les carnets
+#                           AJOUTES (critere 3 de #13504 ; le stock mesure ne
+#                           rougit personne)
 #   - markdown-rendering-guard : bloquant, scan global baselined
 #   - self-hosted-runner-policy : bloquant, scan statique des workflows
 #   - duplicate-notebook-index-guard : bloquant, delta base-vs-head sur
@@ -3296,9 +3299,8 @@ TRANCHE32: list[Guard] = [
     ),
 ]
 
-
 # ---------------------------------------------------------------------------
-# TRANCHE 34 -- denominateur de serie dans l'en-tete d'un carnet (#23678/#23738).
+# TRANCHE 35 -- denominateur de serie dans l'en-tete d'un carnet (#23678/#23738).
 #
 # Le champ `**Notebook** : 6f/13` porte l'effectif de la serie, une donnee
 # DERIVEE dont la source de verite est le catalogue genere : il est perime par
@@ -3327,7 +3329,7 @@ TRANCHE32: list[Guard] = [
 # `pre_argv` : le detecteur prouve qu'il tire avant de rendre un vert (#11685).
 # `absorbed=True` : meme convention que TRANCHE11/13/22/32.
 # ---------------------------------------------------------------------------
-TRANCHE34: list[Guard] = [
+TRANCHE35: list[Guard] = [
     Guard(
         name="Series-denominator advisory (denominateur d'en-tete, #23678)",
         source=FAST_LANE_NATIVE,
@@ -3349,5 +3351,46 @@ TRANCHE34: list[Guard] = [
         blocking=False,
         iterates_paths=True,
         absorbed=True,
+    ),
+]
+
+# ---------------------------------------------------------------------------
+# Critere 3 de l'EPIC #13504, en organe (tranche du 2026-11-01).
+#
+# `scripts/ci/check_site_links.py` couvre la direction README -> carnet (un
+# lien qui pointe vers un fichier absent). La direction INVERSE -- un carnet
+# qu'aucune ligne du README de son dossier ne nomme -- n'etait couverte par
+# aucun organe. C'est pourtant elle qui laisse un carnet invisible pour un
+# lecteur qui n'ouvre que le README du dossier, et c'est exactement ce que le
+# critere 3 demandait de tenir a jour « une fois par trimestre, a la main » ;
+# le bloc de fraicheur du 2026-10-28 recommandait d'en faire un organe.
+#
+# Garde de DELTA, sur le modele de `prose-counts` (#17636) : le stock mesure
+# sur `main` au 2026-11-01 (1722 carnets suivis, 1593 couverts, 22 manquants
+# dans un dossier a convention en force) est RAPPORTE et ne rougit personne.
+# Seule une PR qui AJOUTE un carnet sans lui donner sa ligne rougit. Les
+# jumeaux `_en` (12), les dossiers sans README (87 carnets) et les README ne
+# listant aucun carnet (8) sont advisory : la convention mesuree est
+# precisement de ne pas lister les jumeaux (FineTuning, 5/5).
+#
+# L'organe lit les fichiers SUIVIS par git, pas le disque : un carnet ignore
+# (`MyIA.AI.Notebooks/GradeBook.ipynb` l'est) existe sur un poste et pas dans
+# un checkout CI, ce qui ferait diverger les deux mesures sans que l'une soit
+# fausse.
+#
+# rc=2 = incident d'entree (git diff en echec), donc `warn_rc` : un incident
+# n'est ni une faute de la PR ni un quitus (precedent #17941).
+# ---------------------------------------------------------------------------
+TRANCHE34: list[Guard] = [
+    Guard(
+        name="readme-notebook-coverage",
+        source=FAST_LANE_NATIVE,
+        paths=["**/*.ipynb"],
+        argv=["python", "scripts/ci/check_readme_notebook_coverage.py",
+              "--diff-base", "{base_ref}"],
+        blocking=True,           # BLOQUANT : critere 3 de #13504, en delta
+        needs_base=True,
+        absorbed=True,
+        warn_rc=(2,),
     ),
 ]
