@@ -51,7 +51,24 @@ from pathlib import Path
 
 # Dump native tracebacks on fatal signals (SIGSEGV/SIGABRT...) so a future
 # run-6-style silent death leaves a signature in the log (#6790).
-faulthandler.enable()
+# Le garde est best-effort : sous pytest, sys.stderr est un tampon de capture
+# sans descripteur de fichier et faulthandler.enable() leve
+# io.UnsupportedOperation des l'import, ce qui cassait deux tests (#24015).
+# On retombe sur le vrai stderr, et on ne casse jamais l'import.
+def _enable_faulthandler() -> None:
+    for stream in (sys.stderr, sys.__stderr__):
+        if stream is None:
+            continue
+        try:
+            faulthandler.enable(stream)
+        except (OSError, ValueError):
+            # io.UnsupportedOperation (pas de fileno) et flux ferme tombent ici.
+            continue
+        else:
+            return
+
+
+_enable_faulthandler()
 
 PROVER_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(PROVER_DIR))
