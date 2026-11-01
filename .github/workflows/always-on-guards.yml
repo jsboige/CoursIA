@@ -1368,12 +1368,47 @@ jobs:
       # checkout fetch-depth: 0 + blob:none que l'organe exige : git log
       # --diff-filter=D pour les dispatchers supprimes, git show ref:path
       # pour les ~40 workflows de .github/workflows/.
+      #
+      # Portee exacte, en deux phrases (revue NanoClaw + Hermes, c2751) :
+      # 1. Le cliquet est `pull_request` SEULEMENT (`if:` ci-dessous) : il est
+      #    donc MUET sur `merge_group`. Aucun workflow du depot ne s'y
+      #    declenche aujourd'hui (mesure Hermes), donc rien n'est perdu
+      #    maintenant -- mais une future merge queue ne serait pas couverte.
+      # 2. `--strict` ne protege que le lake ajoute SANS cablage. Un lake
+      #    ajoute AVEC `axiom-target-modules` est credite par la PRESENCE du
+      #    `uses:` qui le nomme, PAS par une execution : le cliquet mesure le
+      #    cable, il ne prouve pas que le gate tourne sur ce lake.
       # -----------------------------------------------------------------
       - name: "Cliquet de couverture du gate d'axiomes (#23046)"
         id: axiom_gate_coverage
         if: github.event_name == 'pull_request'
         continue-on-error: true
-        run: python3 scripts/lean/check_axiom_gate_coverage.py --ref HEAD --check --strict
+        # `set -o pipefail` : la sortie streame par `tee` ne doit pas masquer
+        # le rc de l'organe (le rc du pipeline est celui du dernier maillon
+        # non nul). `|| RC=$?` capture ce rc sans declencher l'errexit
+        # (idiome du fichier, cf step hot_subset) ; le rc de l'organe est
+        # rendu tel quel en fin de step, donc `outcome` reste fidele.
+        run: |
+          set -uo pipefail
+          OUT="$(mktemp)"
+          python3 scripts/lean/check_axiom_gate_coverage.py --ref HEAD --check --strict \
+            2>&1 | tee "$OUT" && RC=0 || RC=$?
+          # Comptes publies vers l'agregat (revue NanoClaw c2751) : sans eux,
+          # un lake qui sort du manifeste EN MEME TEMPS que son gate laisse un
+          # vert indiscernable du vert complet. On lit la ligne SYNTHESE de
+          # l'organe, seule surface stable : ses listes de details varient.
+          SYN="$(grep -m1 '^SYNTHESE' "$OUT" || true)"
+          n_field() { printf '%s' "$SYN" | awk -F'|' -v f="$1" '{print $f}' | grep -oE '[0-9]+' | head -1; }
+          COVERED="$(n_field 1)"
+          UNDECIDED="$(n_field 3)"
+          LOST="$(n_field 4)"
+          {
+            echo "covered=${COVERED:-?}"
+            echo "undecided=${UNDECIDED:-?}"
+            echo "lost=${LOST:-?}"
+          } >> "${GITHUB_OUTPUT:-/dev/null}"
+          echo "Cliquet axiom-gate : covered=${COVERED:-?} undecided=${UNDECIDED:-?} lost=${LOST:-?} (rc ${RC})."
+          exit "$RC"
 
       # -----------------------------------------------------------------
       # AGREGAT : la couleur du job. Un organe bloquant echoue -> rouge.
@@ -1421,7 +1456,21 @@ jobs:
               echo "::warning::Hot-subset ratchet : organes verts ou NON MESURES (${HS_REGIME}) -- la mesure n'a pas eu lieu sur cette PR, ce n'est pas un verdict de contenu (#22435, precedent #8819). Le detail est dans le step hot_subset."
               ;;
           esac
-          echo "Tous les organes always-on sont verts (ou skips d'evenement)${HS_REGIME:+ ; hot-subset : ${HS_REGIME}}."
+          # #23046 (revue NanoClaw c2751) : les COMPTES du cliquet axiom-gate
+          # remontent sur la ligne d'agregat. Un `--check` vert ne dit que
+          # « rien n'a ete perdu » ; sans le compte de lakes couverts, une PR
+          # qui fait sortir un lake du manifeste en meme temps que son gate
+          # laisse un vert indiscernable du vert complet. Meme doctrine que le
+          # regime hot-subset juste au-dessus : ce qui n'est pas mesure doit
+          # se lire au niveau du JOB. Vide quand le step est skippe (evenement
+          # non-PR) -- l'agregat reste alors muet plutot que d'afficher `?`.
+          AGC_SUMMARY=""
+          AGC_COVERED="${{ steps.axiom_gate_coverage.outputs.covered }}"
+          if [ -n "$AGC_COVERED" ]; then
+            AGC_SUMMARY="cliquet axiom-gate : covered=${AGC_COVERED} lost=${{ steps.axiom_gate_coverage.outputs.lost }} undecided=${{ steps.axiom_gate_coverage.outputs.undecided }}"
+            echo "${AGC_SUMMARY}."
+          fi
+          echo "Tous les organes always-on sont verts (ou skips d'evenement)${HS_REGIME:+ ; hot-subset : ${HS_REGIME}}${AGC_SUMMARY:+ ; ${AGC_SUMMARY}}."
   # EFFETS DE BORD PR (#22209, tranche 1b, voie A) : le job
   # `always-on-commenters` vit dans SON PROPRE fichier
   # (always-on-commenters.yml). Deux raisons mesurees : (1) un workflow
