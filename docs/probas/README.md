@@ -18,7 +18,7 @@ Les séries vivent sous `MyIA.AI.Notebooks/Probas/`. Le chemin est celui de l'ar
 
 Deux inventaires transverses vivent dans la série : [`Probas/LEAN_INVENTORY.md`](../../MyIA.AI.Notebooks/Probas/LEAN_INVENTORY.md) (projets Lean 4, comptes `sorry` tenus par la CI) et [`Probas/PARITY-INVENTORY.md`](../../MyIA.AI.Notebooks/Probas/PARITY-INVENTORY.md) (parité Infer ⇄ PyMC, tranche de l'EPIC #12933).
 
-Un consommateur cross-série mérite d'être signalé : `ML/ML.Net/TP-prevision-ventes.ipynb` emploie Infer.NET pour une régression bayésienne, comme pont entre le ML classique et la modélisation probabiliste (`ML/` n'est donc pas une série probabiliste à proprement parler, la série Infer.NET vit sous `Probas/Infer/`).
+Un consommateur cross-série mérite d'être signalé : `ML/ML.Net/TP-Prevision-Ventes-CSharp.ipynb` emploie Infer.NET pour une régression bayésienne, comme pont entre le ML classique et la modélisation probabiliste (`ML/` n'est donc pas une série probabiliste à proprement parler, la série Infer.NET vit sous `Probas/Infer/`).
 
 ## Documents déportés actifs
 
