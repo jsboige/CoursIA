@@ -10,9 +10,9 @@ C'est la raison d'être de la série : ailleurs, un résultat numérique se juge
 plausibilité ; ici, il se juge contre une référence exacte, une identité de symétrie ou
 une limite analytique.
 
-## Trois sous-séries
+## Quatre sous-séries
 
-Les carnets vivent dans trois dossiers, chacun avec son propre `README.md` qui présente
+Les carnets vivent dans quatre dossiers, chacun avec son propre `README.md` qui présente
 ses carnets un par un.
 
 ### `Jauge/` — symétries et théories de jauge
@@ -42,6 +42,14 @@ détecté sans ambiguïté.
 Le versant calculatoire : intégrales définies et impropres, méthodes analytiques et
 vérification numérique croisée. Ces carnets viennent de la série Probas, où ils
 servaient d'outils ; ils sont ici chez eux.
+
+### `Constructeur/` — les lois comme tâches possibles / impossibles
+
+Le versant conceptuel : la théorie du constructeur (Deutsch 2013 ; Deutsch & Marletto
+2015) énonce les lois fondamentales comme des énoncés sur les transformations possibles
+et impossibles, plutôt que comme des équations de mouvement. Le carnet-01 distille ce
+changement de point de vue et le relie à `Jauge/` (Noether), à la localité (causal
+bridges) et à l'hybridation quantique (gravité).
 
 ## Ce que la série suppose acquis
 
