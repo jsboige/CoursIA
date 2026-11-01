@@ -25,20 +25,18 @@ name: Organ-duplication advisory
 # etudiantes) sautent le job -- review bienveillante, pas de critere
 # interne de contenu.
 
+# ABSORBEE PAR LA VOIE RAPIDE (#22209, tranche 1b, voie A) -- le declencheur
+# `pull_request` est retire : ce job tourne desormais dans
+# `always-on-guards.yml :: Always-on commenters`, qui paie un checkout pour
+# trois organes au lieu d'un, et dont le registre porte les memes `paths:`.
+# Le fichier est CONSERVE : il porte le nom canonique du check-run (contrat
+# `check_absorbed_check_run_identity.py`) et reste le chemin de re-mesure
+# manuelle (`workflow_dispatch`). Retour arriere = restaurer le bloc `on:`
+# documente ci-dessous et retirer le garde du registre.
+# Ancien declencheur (a restaurer pour un retour arriere) :
+#   pull_request: [opened, synchronize, edited, reopened] sur main,
+#   paths: **/*.py, **/*.ipynb, **/*.lean, le detecteur, l'index, ce fichier.
 on:
-  pull_request:
-    types: [opened, synchronize, edited, reopened]
-    branches: [main]
-    paths:
-      - '**/*.py'
-      - '**/*.ipynb'
-      # Lakes Lean (#20210) : declarations + citations de source (index derive a l execution).
-      - '**/*.lean'
-      # Self-cover (#8822) : l'organe se liste lui-meme, sinon il ne peut
-      # plus se re-evaluer une fois ses paths sortis du diff.
-      - 'scripts/audit/detect_organ_duplication.py'
-      - 'scripts/audit/organ_api_index.yaml'
-      - '.github/workflows/organ-duplication-advisory.yml'
   workflow_dispatch:
 
 permissions:
