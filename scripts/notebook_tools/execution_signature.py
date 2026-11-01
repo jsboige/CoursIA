@@ -129,14 +129,12 @@ def compute_signature(
     celui du run qui a produit les sorties committees -- plutot que l'heure du
     tampon. Format attendu : `YYYY-MM-DDTHH:MM:SSZ` (UTC).
     """
-    cells = code_cells(notebook)
     executed = executed_code_cells(notebook)
     return {
         "schema": SCHEMA_VERSION,
         "kernel": kernel_of(notebook),
         "executed_at": executed_at or datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "tool_versions": dict(tool_versions or {}),
-        "code_cells": len(cells),
         "executed_cells": len(executed),
         "source_digest": source_digest(notebook),
     }

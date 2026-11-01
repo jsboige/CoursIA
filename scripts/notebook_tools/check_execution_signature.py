@@ -9,8 +9,16 @@ Usage :
 
 `--all` parcourt le depot et verifie **les seuls carnets qui portent une signature**
 (`metadata.execution_signature`) : l'organe est opt-in, il ne rend donc rouge aucun
-carnet existant. `--notebook` verifie un carnet donne ; si ce carnet ne porte pas de
-signature, il est signale (`SIGNATURE_ABSENTE`) et la commande echoue.
+carnet existant. `--notebook` verifie un carnet donne ; sans `--require-signature`,
+un carnet sans signature ne produit **aucun constat** (rc=0) -- l'organe reste
+opt-in meme sur un carnet nomme explicitement ; c'est `--require-signature` qui
+porte l'exigence : l'absence devient alors un constat `SIGNATURE_ABSENTE`, et la
+commande echoue. (Docstring alignee sur le comportement mesure, review #23391
+point 1 : le defaut de `main()` est conserve, c'est le texte qui etait faux.)
+
+Codes de retour : 0 = rien a signaler ; 1 = constats mesures ; 2 = NON-MESURE
+(la fenetre de verification n'a pas pu etre etablie -- jamais un acquittement,
+cf :func:`changed_notebooks` et la lecon #8819).
 
 `--stamp` ecrit la signature dans le carnet (apres une execution) : c'est le geste
 d'outillage qui remplace, cote .NET Interactive, le tampon `metadata.papermill`.
@@ -70,6 +78,16 @@ def check_notebook(path: Path, require_signature: bool = False) -> list[dict]:
     return findings
 
 
+class MeasurementError(RuntimeError):
+    """La fenetre de verification n'a pas pu etre etablie (git diff injoignable ou en echec).
+
+    Lecon #8819 : « je n'ai pas pu mesurer » et « j'ai mesure, rien a signaler »
+    ne doivent jamais se confondre -- le second est un vert, le premier n'est pas
+    un resultat. La CI voit la difference via errexit (rc!=0) ; l'instrument
+    lance a la main la voit via le code 2 et le prefixe ``NON-MESURE``.
+    """
+
+
 def changed_notebooks(root: Path, base_ref: str) -> list[Path]:
     """Renvoie les carnets modifies entre `base_ref` et HEAD.
 
@@ -78,6 +96,9 @@ def changed_notebooks(root: Path, base_ref: str) -> list[Path]:
     atteste, et cette edition figure alors dans le diff. Verifier le depot
     entier n'apporterait rien de plus, pour un cout de lecture de l'integralite
     des carnets.
+
+    Leve :class:`MeasurementError` si `git diff` echoue -- jamais de retour
+    silencieux a ``[]``, qui se lirait comme « rien a verifier » (faux vert).
     """
     try:
         completed = subprocess.run(
@@ -88,10 +109,13 @@ def changed_notebooks(root: Path, base_ref: str) -> list[Path]:
             errors="replace",
             timeout=120,
         )
-    except (OSError, subprocess.SubprocessError):
-        return []
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise MeasurementError(f"git diff {base_ref}...HEAD injoignable : {exc}") from exc
     if completed.returncode != 0:
-        return []
+        raise MeasurementError(
+            f"git diff {base_ref}...HEAD a echoue (rc={completed.returncode}) : "
+            f"{completed.stderr.strip() or 'aucun message d erreur'}"
+        )
     out = []
     for line in completed.stdout.splitlines():
         candidate = (root / line.strip())
@@ -174,6 +198,12 @@ def self_test() -> int:
     codes = [f["code"] for f in absent]
     checks.append(("carnet non signe : SIGNATURE_ABSENTE", "SIGNATURE_ABSENTE" in codes))
 
+    try:
+        changed_notebooks(REPO_ROOT, "refs/heads/inexistant-auto-test-23391")
+        checks.append(("fenetre non mesurable : MeasurementError", False))
+    except MeasurementError:
+        checks.append(("fenetre non mesurable : MeasurementError", True))
+
     ok = True
     for label, passed in checks:
         print(f"[{'OK' if passed else 'ECHEC'}] {label}")
@@ -218,7 +248,16 @@ def main(argv: list[str] | None = None) -> int:
     root = Path(args.root)
     targets: list[Path] = [Path(p) for p in args.notebook]
     if args.changed_from:
-        targets.extend(changed_notebooks(root, args.changed_from))
+        try:
+            targets.extend(changed_notebooks(root, args.changed_from))
+        except MeasurementError as exc:
+            detail = str(exc)
+            if args.json:
+                print(json.dumps({"non_mesure": True, "detail": detail}, ensure_ascii=False))
+            else:
+                print(f"[NON-MESURE] {detail}")
+                print("la fenetre de verification n'a pas pu etre etablie : ce n'est pas un acquittement")
+            return 2
     if args.all:
         targets.extend(signed_notebooks(root))
 
