@@ -5,6 +5,8 @@ import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+import pytest
+
 CI_DIR = Path(__file__).resolve().parents[1] / "ci"
 sys.path.insert(0, str(CI_DIR))
 
@@ -14,6 +16,15 @@ NOW = datetime(2026, 10, 27, 12, 0, tzinfo=timezone.utc)
 # Derniere ecriture de la variable, hors fenetre de dwell : le controleur
 # n'est pas bloque par son propre dwell dans ces tests de CLI.
 OLD = NOW - timedelta(hours=2)
+
+
+@pytest.fixture(autouse=True)
+def _ecart_du_dernier_passage_simule(monkeypatch):
+    """L'ecart au dernier passage se lit par un appel `gh` : aucun test de
+    cette suite ne doit l'atteindre, sinon la suite dependrait de l'etat
+    reseau de la machine (#21994). Les tests qui verifient la garde ou
+    l'ecart le simulent eux-memes -- celui-ci n'est que le filet."""
+    monkeypatch.setattr(ctl, "last_run_age_minutes", lambda *a, **k: (None, "simule"))
 
 
 def hosted(queued: int = 0, old: int = 0, oldest: float = 0.0,
@@ -27,10 +38,13 @@ def hosted(queued: int = 0, old: int = 0, oldest: float = 0.0,
 
 def local(free: int = 0, online: int = 0, starved: int = 0,
           busy: int = 0, unknown: int = 0,
-          complete: bool = True, truncated: bool = False, reason: str = "") -> ctl.LocalSample:
+          complete: bool = True, truncated: bool = False, reason: str = "",
+          inventory_read: bool = False,
+          cohort_free: int = 0) -> ctl.LocalSample:
     return ctl.LocalSample(online=online, free=free, starved=starved, busy=busy,
                             unknown=unknown, complete=complete, truncated=truncated,
-                            reason=reason)
+                            reason=reason, inventory_read=inventory_read,
+                            cohort_free=cohort_free)
 
 
 def cohort(queued: int = 0, in_progress: int = 0, complete: bool = True,
@@ -475,6 +489,60 @@ def test_troncature_locale_bloque_la_bascule_vers_true():
                      current="false", now=NOW)
     assert d.action == "HOLD"
     assert "TRONQUEE" in d.reason
+
+
+# --- Tranche du 31/10 : la troncature locale n'est plus une impasse --------
+#
+# Rejeu de la mesure du coordinateur (31/10, 16:07-16:20Z) : 162 jobs
+# heberges ages (le plus ancien 69,7 min, marge hebergee negative) et 28
+# slots locaux libres, mais la lecture locale est tronquee (530 runs non
+# lus, budget 120). Le controleur rendait HOLD au motif que « le parc local
+# n'est pas affame » n'etait pas etablie -- donc la bascule devenait
+# impossible exactement dans le regime qu'elle doit traiter. L'inventaire
+# des runners porte desormais cette premisse par une affirmation POSITIVE.
+
+def test_inventaire_etablit_le_parc_libre_sous_troncature_locale():
+    d = ctl.evaluate(
+        hosted(queued=162, old=162, oldest=69.7, in_progress=11),
+        local(free=28, online=38, busy=11,
+              truncated=True,
+              reason="530 run(s) local(aux) non lu(s) (budget de lecture 120 atteint)",
+              inventory_read=True, cohort_free=28),
+        current="false", now=NOW,
+    )
+    assert d.action == "SWITCH_TRUE" and d.target == "true"
+    # Le motif nomme l'organe qui a porte la premisse, et non la troncature.
+    assert "inventaire" in d.reason and "28 runner(s)" in d.reason
+
+
+def test_inventaire_sans_slot_de_cohorte_ne_leve_pas_la_troncature():
+    # Inventaire LU, mais un seul slot de cohorte libre pour un seuil de 2 :
+    # la premisse n'est pas etablie, et le motif dit lequel des deux organes
+    # a parle (inventaire, pas troncature seule).
+    d = ctl.evaluate(
+        hosted(queued=162, old=162, oldest=69.7, in_progress=11),
+        local(free=28, online=38, truncated=True,
+              reason="530 run(s) local(aux) non lu(s)",
+              inventory_read=True, cohort_free=1),
+        current="false", now=NOW,
+    )
+    assert d.action == "HOLD"
+    assert "TRONQUEE" in d.reason
+    assert "1 runner(s) de cohorte" in d.reason
+
+
+def test_inventaire_illisible_ne_leve_pas_la_troncature():
+    # Fail-CLOSED : sans inventaire lisible, la troncature locale garde son
+    # effet, meme avec des slots annonces par la lecture des runs.
+    d = ctl.evaluate(
+        hosted(queued=162, old=162, oldest=69.7),
+        local(free=28, online=38, truncated=True,
+              reason="530 run(s) local(aux) non lu(s)",
+              inventory_read=False, cohort_free=0),
+        current="false", now=NOW,
+    )
+    assert d.action == "HOLD"
+    assert "inventaire des runners illisible" in d.reason
 
 
 def test_troncature_hebergee_ne_bloque_pas_la_saturation():
@@ -1049,3 +1117,92 @@ def test_derive_local_capable_workflows_propage_un_appel_reutilisable(tmp_path):
     assert reason == ""
     assert ".github/workflows/appele.yml" in paths
     assert ".github/workflows/appelant.yml" in paths
+
+
+# --- (b) GARDE DE CADENCE --------------------------------------------------
+#
+# Le declencheur tire plus souvent que le cron horaire. L'ecart minimal
+# entre deux passages borne ce que le declencheur consomme -- en occupation
+# du parc local (le controleur tourne SUR ce parc) et en appels API. Le
+# controle est fait AVANT toute mesure : un passage ecarte ne lit rien.
+
+def test_le_garde_de_cadence_ecomporte_sans_mesure_ni_ecriture(monkeypatch, capsys):
+    monkeypatch.setenv("GH_TOKEN", "t")
+    monkeypatch.setattr(ctl, "last_run_age_minutes", lambda *a, **k: (5.0, ""))
+    monkeypatch.setattr(ctl, "read_variable", lambda *a, **k: (_ for _ in ()).throw(
+        AssertionError("aucune lecture de variable quand la cadence n'est pas ecoulee")))
+    monkeypatch.setattr(ctl, "write_variable", lambda *a, **k: (_ for _ in ()).throw(
+        AssertionError("aucune ecriture quand la cadence n'est pas ecoulee")))
+    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json",
+                    "--min-interval", "15"])
+    assert rc == ctl.EXIT_OK
+    report = json.loads(capsys.readouterr().out)
+    assert report["verdict"] == "SKIPPED"
+    assert report["written"] is False
+    assert report["last_run_age_min"] == 5.0
+
+
+def test_le_garde_de_cadence_laisse_passer_un_passage_ancien(monkeypatch, capsys):
+    monkeypatch.setenv("GH_TOKEN", "t")
+    monkeypatch.setattr(ctl, "last_run_age_minutes", lambda *a, **k: (40.0, ""))
+    _env(monkeypatch, write_token="pat-variables")
+    monkeypatch.setattr(ctl, "read_variable", lambda *a, **k: ("false", OLD, ""))
+    monkeypatch.setattr(ctl, "collect_hosted",
+                        lambda *a, **k: hosted(queued=0, old=0, oldest=0.0))
+    monkeypatch.setattr(ctl, "collect_local",
+                        lambda *a, **k: local(free=21, online=22))
+    monkeypatch.setattr(ctl, "derive_cohort_workflows",
+                        lambda root: ({".github/workflows/x.yml"}, ""))
+    monkeypatch.setattr(ctl, "collect_cohort_charge",
+                        lambda *a, **k: cohort(queued=0, in_progress=0))
+    monkeypatch.setattr(ctl, "write_variable", lambda *a, **k: (True, "ok"))
+    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json",
+                    "--min-interval", "15"])
+    report = json.loads(capsys.readouterr().out)
+    assert report["verdict"] != "SKIPPED"
+
+
+def test_l_ecart_au_dernier_passage_est_rapporte_meme_sans_garde(monkeypatch, capsys):
+    """L'ecart au dernier passage est l'instrument qui rend visible la mort
+    du declencheur local (un ecart qui grandit) : il est donc mesure et
+    RAPPORTE dans tous les cas -- y compris quand aucune garde n'est posee
+    (le passage manuel et le cron horaire du depot)."""
+    monkeypatch.setenv("GH_TOKEN", "t")
+    monkeypatch.setattr(ctl, "last_run_age_minutes", lambda *a, **k: (42.0, ""))
+    _env(monkeypatch, write_token="pat-variables")
+    monkeypatch.setattr(ctl, "read_variable", lambda *a, **k: ("false", OLD, ""))
+    monkeypatch.setattr(ctl, "collect_hosted",
+                        lambda *a, **k: hosted(queued=0, old=0, oldest=0.0))
+    monkeypatch.setattr(ctl, "collect_local",
+                        lambda *a, **k: local(free=21, online=22))
+    monkeypatch.setattr(ctl, "derive_cohort_workflows",
+                        lambda root: ({".github/workflows/x.yml"}, ""))
+    monkeypatch.setattr(ctl, "collect_cohort_charge",
+                        lambda *a, **k: cohort(queued=0, in_progress=0))
+    monkeypatch.setattr(ctl, "write_variable", lambda *a, **k: (True, "ok"))
+    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json"])
+    report = json.loads(capsys.readouterr().out)
+    assert report["verdict"] != "SKIPPED"
+    assert report["last_run_age_min"] == 42.0
+
+
+def test_un_ecart_non_etabli_ne_bloque_pas_le_passage(monkeypatch, capsys):
+    """Un listing illisible ne doit pas eteindre la soupape : le passage
+    continue, et le motif est dit."""
+    monkeypatch.setenv("GH_TOKEN", "t")
+    monkeypatch.setattr(ctl, "last_run_age_minutes", lambda *a, **k: (None, "listing illisible"))
+    _env(monkeypatch, write_token="pat-variables")
+    monkeypatch.setattr(ctl, "read_variable", lambda *a, **k: ("false", OLD, ""))
+    monkeypatch.setattr(ctl, "collect_hosted",
+                        lambda *a, **k: hosted(queued=0, old=0, oldest=0.0))
+    monkeypatch.setattr(ctl, "collect_local",
+                        lambda *a, **k: local(free=21, online=22))
+    monkeypatch.setattr(ctl, "derive_cohort_workflows",
+                        lambda root: ({".github/workflows/x.yml"}, ""))
+    monkeypatch.setattr(ctl, "collect_cohort_charge",
+                        lambda *a, **k: cohort(queued=0, in_progress=0))
+    monkeypatch.setattr(ctl, "write_variable", lambda *a, **k: (True, "ok"))
+    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json",
+                    "--min-interval", "15"])
+    report = json.loads(capsys.readouterr().out)
+    assert report["verdict"] != "SKIPPED"

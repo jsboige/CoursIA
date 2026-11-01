@@ -211,7 +211,7 @@ class RegimeSwitching(QCAlgorithm):
                 self.equity_high_water[ticker] = self.securities[sym].price
 
     # ----------------------------------------------------------------
-    # Anti-micro-rebalancing + Beta-annealing (Maisonnave concepts)
+    # Anti-micro-rebalancing (Maisonnave concept)
     # ----------------------------------------------------------------
 
     def set_holdings_with_threshold(self, symbol, target_weight):

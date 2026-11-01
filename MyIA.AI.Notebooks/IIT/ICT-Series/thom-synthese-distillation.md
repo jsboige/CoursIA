@@ -27,7 +27,7 @@ La série ICT a déjà rencontré Thom — mais en **pointillés** :
   **lacet de prédation** (cycle d'hystérésis à 2 catastrophes avec
   perception J et capture K, aire signée non nulle, représentant interne
   `p̂`).
-- [ICT-12-ValenceFieldsAndAnimats-Python](ICT-12-ValenceFieldsAndAnimats-Python.ipynb)
+- [ICT-12-ValenceFieldsAndAnimats-Python](ICT-12-ValenceFieldsAndAnimats/ICT-12-ValenceFieldsAndAnimats-Python.ipynb)
   prolonge en mesurant les rôles actantiels (capture, évasion, irréversibilité,
   switching) — l'animat anticipateur `p̂` y gagne en balistique, perd en
   erratique.
@@ -123,13 +123,21 @@ les transitions ne se font pas « gratuitement » entre les trois genres —
 elles passent par des points critiques (changement d'état), donc des
 catastrophes.
 
-**Usage ICT strate 6.** Les **classes de drift Argumentum** (IN_SYNC,
-SRC_DRIFT, TRAD_DRIFT, MISSING_LANG, ORPHAN_ROW, mesurées dans
-[ICT-Argumentation-BeliefTrajectories](ICT-Argumentation-BeliefTrajectories.ipynb))
-sont des **espèces** au sens de Thom — elles ne se confondent pas, et leurs
-transitions sont des catastrophes : passage IN_SYNC → SRC_DRIFT = une
-scission (le corpus se dédouble), TRAD_DRIFT → MISSING_LANG = une
-disparition (l'espèce cible n'est plus instanciée).
+**Usage ICT strate 6.** Les **régimes discursifs** de
+[ICT-Argumentation-BeliefTrajectories](ICT-Argumentation-BeliefTrajectories.ipynb)
+— régimes structurels synthétiques (anneau délibératif, cascade populiste),
+deux fables La Fontaine en codage manuel (Loup et l'Agneau n=7, Loup et le
+Chien n=9), paire appariée de témoins Chaplin 1940 — sont des **espèces**
+au sens de Thom : deux fables du même fabuliste ne passent pas l'une dans
+l'autre (issues opposées — capture chez l'Agneau, issue inverse chez le
+Chien), et la capture d'englobement de l'Agneau (§8bis du carnet) est une
+catastrophe sans retour — son issue est une **chronologie** (la clause de
+clôture arrivée en dernier décide), pas une topologie négociable.
+
+*Correction pré-J3 (revue consultant 21/10)* : l'ancienne rédaction faisait
+des « 5 classes de drift Argumentum » (IN_SYNC / SRC_DRIFT / TRAD_DRIFT /
+MISSING_LANG / ORPHAN_ROW) des espèces mesurées par le carnet — elles ne
+sont mesurées dans aucun code du dépôt.
 
 ### Ch.8 §C — Hypergenres et opérations catégorielles
 
@@ -538,7 +546,7 @@ d'hystérésis » — image topologique d'une anticipation structurelle.
 **Usage ICT strate 5-7.** Le **cycle d'hystérésis** est l'objet mesuré par
 [ICT-10-CatastropheGrammar-Python](ICT-10-CatastropheGrammar-Python.ipynb)
 (lacet de prédation = cycle à 2 catastrophes J/K) et
-[ICT-12c-PregnanceAnimat-Python](ICT-12c-PregnanceAnimat-Python.ipynb)
+[ICT-12c-PregnanceAnimat-Python](ICT-12-ValenceFieldsAndAnimats/ICT-12c-PregnanceAnimat-Python.ipynb)
 (prégnance = potentiel gradient). Les **« rivières »** de Diener sont une
 **anticipation visuelle** du cycle d'hystérésis : même quand l'attracteur
 ponctuel est encore stable, les courbes stables du futur cycle
@@ -1116,7 +1124,7 @@ qualités sensorielles : odeur/couleur/son), itérables deux à trois
 2. **Logos = spectre de réactions.** Le *logos* thomien (ensemble des
    actes/réactions aux perturbations) est structurellement un
    **spectre** — ce qu'on mesure en
-   [ICT-15b-SensitivityCanonicity-Python](ICT-15/ICT-15b-SensitivityCanonicity-Python.ipynb)
+   [ICT-15b-SensitivityCanonicity-Python](ICT-15-IntegratedComplexity/ICT-15b-SensitivityCanonicity-Python.ipynb)
    (sensibilité locale $s(f)$) : un proxy n'est pas défini par une
    valeur ponctuelle mais par son **comportement sous perturbation**.
    Pont vers Huang 2019 $s(f) \geq \sqrt{\deg(f)}$ (cf. matrice #7734
@@ -1323,7 +1331,7 @@ extension, pas une redite.
   linguistique, valence Tesnière, transitivité prototypique).
 - **Ch.3 — Modélisation mathématique et Philosophie** : cf. §Strate 6
   (généralisation, invention de l'instrument) + usages
-  [ICT-12](ICT-12-ValenceFieldsAndAnimats-Python.ipynb)
+  [ICT-12](ICT-12-ValenceFieldsAndAnimats/ICT-12-ValenceFieldsAndAnimats-Python.ipynb)
   (coplis, prolongement analytique).
 - **Ch.4 — Embryologie et dynamique** : cf. §Socle transversal
   [Ch.4 §C](#socle-transversal--la-dynamique-de-prédation-ch4-c-et-lorigine-du-représentant-interne-p)
@@ -1354,7 +1362,7 @@ extension, pas une redite.
   — fondements théoriques complémentaires.
 - [ICT-10](ICT-10-CatastropheGrammar-Python.ipynb)
   — catastrophe fronce + lacet de prédation + `p̂`.
-- [ICT-12](ICT-12-ValenceFieldsAndAnimats-Python.ipynb)
+- [ICT-12](ICT-12-ValenceFieldsAndAnimats/ICT-12-ValenceFieldsAndAnimats-Python.ipynb)
   — animats actantiels, mesure de la valence.
 - [ICT-13](ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb)
   — préprogrammes morphologiques du dilemme itéré.

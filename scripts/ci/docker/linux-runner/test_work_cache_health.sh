@@ -755,7 +755,7 @@ echo ""
   # deux sites. Il doit survivre, meme s'il est plus ancien que la borne.
   mkdir -p "$P/slug1/notes.stale-manuel"
 
-  out="$(WCH_STALE_KEEP=2 wch_prune_quarantines "$P" 2>&1)"
+  out="$(WCH_STALE_KEEP=2 WCH_STALE_MAX_AGE_HOURS=0 wch_prune_quarantines "$P" 2>&1)"
   echo "$out" >> "$LOG"
 
   if [ -d "$P/slug1/CoursIA.stale-20260101T000000Z" ] || [ -d "$P/slug1/CoursIA.stale-20260102T000000Z" ]; then
@@ -786,7 +786,7 @@ echo ""
 
   # Plafond bas : 0 retirerait TOUT, y compris la quarantaine du dernier
   # incident. La borne doit se clamper a 1, pas obeir.
-  out="$(WCH_STALE_KEEP=0 wch_prune_quarantines "$P" 2>&1)"
+  out="$(WCH_STALE_KEEP=0 WCH_STALE_MAX_AGE_HOURS=0 wch_prune_quarantines "$P" 2>&1)"
   echo "$out" >> "$LOG"
   n_left="$(find "$P/slug1" -mindepth 1 -maxdepth 1 -type d -name 'CoursIA.stale-*' | wc -l)"
   if [ "$n_left" = "1" ]; then
@@ -796,7 +796,7 @@ echo ""
   fi
 
   # Passages repetes : le second ne doit plus rien retirer (idempotence).
-  out="$(WCH_STALE_KEEP=2 wch_prune_quarantines "$P" 2>&1)"
+  out="$(WCH_STALE_KEEP=2 WCH_STALE_MAX_AGE_HOURS=0 wch_prune_quarantines "$P" 2>&1)"
   if [ -z "$out" ]; then
     ok "idempotence : un passage sans rien a retirer n'ecrit rien"
   else
@@ -842,7 +842,10 @@ echo "Test : quarantaines empilees -- maintenance exclue, retention par generati
   wch_maintenance_pass() { printf '%s\n' "${1##*/}" >> "$seen"; return 0; }
   wch_integrity_pass() { return 0; }
 
-  wch_check_workdir "$W" 1 >/dev/null 2>&1
+  # La borne d'AGE est desactivee ici : ce controle porte sur l'EXCLUSION de
+  # la maintenance, pas sur la retention (la borne d'age a ses propres
+  # controles, plus bas).
+  WCH_STALE_MAX_AGE_HOURS=0 wch_check_workdir "$W" 1 >/dev/null 2>&1
 
   if grep -qx 'CoursIA' "$seen"; then
     ok "quarantaine : controle POSITIF -- le clone vivant passe bien en maintenance"
@@ -884,7 +887,7 @@ echo "Test : quarantaines empilees -- maintenance exclue, retention par generati
   mkdir -p "$CH"
   head -c 4096 /dev/zero > "$CH/payload"
 
-  out="$(WCH_STALE_KEEP=2 wch_prune_quarantines "$TEST_DIR/stack-prune" 2>&1)"
+  out="$(WCH_STALE_KEEP=2 WCH_STALE_MAX_AGE_HOURS=0 wch_prune_quarantines "$TEST_DIR/stack-prune" 2>&1)"
   echo "$out" >> "$LOG"
   if [ -d "$S/CoursIA.stale-20260102T000000Z.stale-20260103T000000Z" ]; then
     ok "empilement : ramene a 2 generations (les plus anciennes ecartees)"
@@ -909,12 +912,76 @@ echo "Test : quarantaines empilees -- maintenance exclue, retention par generati
   fi
 
   # Plafond 1 : la chaine se ramene a sa seule generation la plus recente.
-  out="$(WCH_STALE_KEEP=1 wch_prune_quarantines "$TEST_DIR/stack-prune" 2>&1)"
+  out="$(WCH_STALE_KEEP=1 WCH_STALE_MAX_AGE_HOURS=0 wch_prune_quarantines "$TEST_DIR/stack-prune" 2>&1)"
   echo "$out" >> "$LOG"
   if [ -d "$S/CoursIA.stale-20260103T000000Z" ] && [ ! -d "$S/CoursIA.stale-20260102T000000Z.stale-20260103T000000Z" ]; then
     ok "empilement : plafond 1 ramene la chaine a une generation"
   else
     ko "empilement : plafond 1 inoperant ($(ls "$S"))"
+  fi
+)
+echo ""
+
+# --- Borne d'AGE des quarantaines -------------------------------------------
+# La borne de NOMBRE (#23076) borne la retention en NOMBRE, pas en DUREE :
+# mesure ai-01 du 2026-10-31, 15 clones en quarantaine (24 Gio) ages de
+# 59 a 114 h, tous retenus par la seule borne de nombre. La borne d'AGE ferme
+# la DUREE.
+#
+# Le controle DISCRIMINANT est l'age lu dans le NOM : le mtime d'une
+# quarantaine est preserve par le renommage (`rename(2)`), donc un mtime
+# ancien ne prouve rien -- et un age lu dans le mtime supprimerait des clones
+# recemment mis de cote.
+echo "Test : borne d'age des quarantaines (fenetre d'inspection)"
+(
+  P="$TEST_DIR/age"
+  mkdir -p "$P/slug1"
+  # temoin permanent : le clone VIVANT du slot
+  mkdir -p "$P/slug1/CoursIA/.git"
+  # quarantaine VIEILLE (nom de 2025) et quarantaine RECENTE (nom d'aujourd'hui)
+  mkdir -p "$P/slug1/CoursIA.stale-20250101T000000Z"
+  head -c 4096 /dev/zero > "$P/slug1/CoursIA.stale-20250101T000000Z/payload"
+  recent="$(date -u +%Y%m%dT%H%M%SZ)"
+  mkdir -p "$P/slug1/CoursIA.stale-$recent"
+  head -c 4096 /dev/zero > "$P/slug1/CoursIA.stale-$recent/payload"
+  # temoin du discriminant : mtime ANCIEN, nom RECENT -> doit SURVIVRE
+  touch -d '2020-01-01 00:00:00' "$P/slug1/CoursIA.stale-$recent" 2>/dev/null || true
+
+  # Plafond de nombre 5 : le compte seul ne retirerait RIEN (une seule
+  # quarantaine passe le seuil). Ce qui part, c'est l'AGE.
+  out="$(WCH_STALE_KEEP=5 WCH_STALE_MAX_AGE_HOURS=48 wch_prune_quarantines "$P" 2>&1)"
+  echo "$out" >> "$LOG"
+
+  if [ -d "$P/slug1/CoursIA.stale-20250101T000000Z" ]; then
+    ko "borne d'age : une quarantaine de 2025 a survecu (plafond 5, fenetre 48 h)"
+  else
+    ok "borne d'age : la quarantaine hors fenetre part malgre le plafond de nombre"
+  fi
+  if [ -d "$P/slug1/CoursIA.stale-$recent" ]; then
+    ok "borne d'age : la quarantaine recente survit (meme avec un mtime ancien)"
+  else
+    ko "borne d'age : la quarantaine RECENTE a ete retiree -- l'age n'est pas lu dans le nom"
+  fi
+  if [ -d "$P/slug1/CoursIA/.git" ]; then
+    ok "temoin : le clone vivant n'est jamais touche"
+  else
+    ko "temoin : le clone VIVANT a ete retire -- le motif est trop large"
+  fi
+  if echo "$out" | grep -q "hors fenetre d'age"; then
+    ok "borne d'age : le journal nomme la cause du retrait"
+  else
+    ko "borne d'age : le journal ne nomme pas la cause ($out)"
+  fi
+
+  # La borne d'AGE est DESACTIVABLE (0) : un parc qui veut la seule borne de
+  # nombre la pose explicitement.
+  mkdir -p "$P/slug1/CoursIA.stale-20250101T000000Z"
+  out="$(WCH_STALE_KEEP=5 WCH_STALE_MAX_AGE_HOURS=0 wch_prune_quarantines "$P" 2>&1)"
+  echo "$out" >> "$LOG"
+  if [ -d "$P/slug1/CoursIA.stale-20250101T000000Z" ]; then
+    ok "borne d'age desactivee (0) : la quarantaine hors fenetre survit"
+  else
+    ko "borne d'age desactivee (0) : la quarantaine a ete retiree quand meme"
   fi
 )
 echo ""

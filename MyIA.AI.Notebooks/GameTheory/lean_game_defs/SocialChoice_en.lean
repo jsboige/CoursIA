@@ -21,7 +21,7 @@
   self-contained and re-declares its types (`Preference`, `SocialWelfareFunction`,
   ...) inside `namespace SocialChoiceEn` to avoid name collisions with the FR
   `SocialChoice` module when both live in the same lake. The body of
-  definitions, signatures, tactics and the `arrow_impossibility` axiom is
+  definitions, signatures, tactics and the `arrow_impossibility` proof is
   byte-identical between the two files; only the docstrings `/-! ... -/`
   (section headings) and `/-- ... -/` (declaration docstrings) differ — EN in
   this file, FR in `SocialChoice.lean`.
@@ -86,26 +86,21 @@ def NonDictatorial {I A : Type} (swf : SocialWelfareFunction I A) : Prop :=
 ## Arrow's Impossibility Theorem
 -/
 
-/--
-Arrow's Impossibility Theorem (Statement):
-There is no social welfare function with ≥3 alternatives that satisfies:
-1. Weak Pareto
-2. Independence of Irrelevant Alternatives
-3. Non-dictatorship
+/-!
+**Statement.** There is no social welfare function over at least three
+alternatives that simultaneously satisfies:
 
-Note: Stated with explicit `Fin n` types instead of generic `Fintype`
-to avoid Mathlib dependency. The theorem's mathematical content is identical.
+1. Weak Pareto;
+2. Independence of Irrelevant Alternatives (IIA);
+3. non-dictatorship.
+
+Stated with explicit `Fin n` types instead of a generic `Fintype` to avoid the
+Mathlib dependency: the mathematical content of the theorem is identical.
+
+The proof is given at the end of the file (the "Stage 4b" section); the
+`axiom arrow_impossibility` declaration that stated it without proof has been
+removed (#23022).
 -/
--- Port in progress (#23022): the building blocks of the proof live in the
--- "Decisive coalitions" section below; the theorem stays stated as an axiom
--- until the reduction is complete.
-axiom arrow_impossibility {nI nA : Nat}
-    (hI : nI ≥ 2)
-    (hA : nA ≥ 3)
-    (swf : SocialWelfareFunction (Fin nI) (Fin nA))
-    (h_pareto : WeakPareto swf)
-    (h_iia : IIA swf) :
-    ¬NonDictatorial swf
 
 /-!
 ## Examples
@@ -546,5 +541,393 @@ theorem decisive_split {I A : Type} [DecidableEq A]
     have hiff₂ : (swf.aggregate P).R z x ↔ (swf.aggregate prefs).R z x :=
       h_iia P prefs z x h₂ h₁
     exact ⟨hiff₁.mp hxzS.1, fun hzx' => hxzS.2 (hiff₂.mpr hzx')⟩
+
+/-!
+## Stage 4a: global decisiveness and the dictator
+
+Second-to-last stage of the reduction of the `arrow_impossibility` axiom
+(#23022). What remains afterwards is producing a decisive singleton — stage 4b
+does it by descending over the tails `{i | m ≤ i}` pre-split by
+`decisive_split`, with no cardinality measure at all (the induction runs on
+`nI - m`).
+
+- `decisive_global`: a coalition decisive on a single pair of distinct
+  alternatives is decisive on every pair. The two expansion lemmas move each
+  coordinate independently; only folding the first coordinate onto `y` needs a
+  third alternative outside `{x, y}` (hypothesis `hcard`, satisfied as soon as
+  the set has three elements).
+- `empty_not_decisive`: no empty coalition is decisive under Pareto — the
+  unanimous `y ≻ x` profile puts the conclusion in direct contradiction with
+  Pareto. This is the anchor that will prevent the contraction from reaching
+  the empty set.
+- `decisive_singleton_dictator`: a singleton decisive on every pair is a
+  dictator in the exact sense of `NonDictatorial`. On the auxiliary profile
+  where `d` ranks `z` strictly between `x` and `y` and every other agent keeps
+  their exact `x`/`y` relations with `z` moved to last position (`zLast`),
+  Pareto yields `x ≻ₛ z` (unanimity) and decisiveness yields `z ≻ₛ y`;
+  transitivity produces `x ≻ₛ y`, which IIA transports back to the original
+  profile, individual by individual. The `zLast` construction preserves both
+  directions of the `x`/`y` relation with no case analysis on other agents'
+  preferences; its order proofs (`complete`, `antisymm`) do split on equalities
+  over `A` via `by_cases` with no `DecidableEq` instance, which draws
+  `Classical.choice` — `zLast` carries `[propext, Classical.choice, Quot.sound]`,
+  just like `decisive_split`.
+-/
+
+/-- Preference where `z` moves to a strict last position: relations between
+alternatives distinct from `z` are exactly those of `p`, and every alternative
+distinct from `z` is strictly preferred to `z`. -/
+def zLast {A : Type} (p : Preference A) (z : A) : Preference A where
+  R := fun a b => (a = z ∧ b = z) ∨ (b = z ∧ a ≠ z) ∨ (a ≠ z ∧ b ≠ z ∧ p.R a b)
+  complete := by
+    intro a b
+    by_cases haz : a = z
+    · by_cases hbz : b = z
+      · exact Or.inl (Or.inl ⟨haz, hbz⟩)
+      · exact Or.inr (Or.inr (Or.inl ⟨haz, hbz⟩))
+    · by_cases hbz : b = z
+      · exact Or.inl (Or.inr (Or.inl ⟨hbz, haz⟩))
+      · rcases p.complete a b with h | h
+        · exact Or.inl (Or.inr (Or.inr ⟨haz, hbz, h⟩))
+        · exact Or.inr (Or.inr (Or.inr ⟨hbz, haz, h⟩))
+  trans := by
+    intro a b c hab hbc
+    rcases hab with ⟨haz, hbz⟩ | ⟨hbz, haz⟩ | ⟨haz, hbz, hpab⟩
+    · rcases hbc with ⟨_, hcz⟩ | ⟨hcz, _⟩ | ⟨hnb, _, _⟩
+      · exact Or.inl ⟨haz, hcz⟩
+      · exact Or.inl ⟨haz, hcz⟩
+      · exact absurd hbz hnb
+    · rcases hbc with ⟨_, hcz⟩ | ⟨hcz, _⟩ | ⟨hnb, _, _⟩
+      · exact Or.inr (Or.inl ⟨hcz, haz⟩)
+      · exact Or.inr (Or.inl ⟨hcz, haz⟩)
+      · exact absurd hbz hnb
+    · rcases hbc with ⟨hbz', _⟩ | ⟨hcz, _⟩ | ⟨_, hcz, hpbc⟩
+      · exact absurd hbz' hbz
+      · exact Or.inr (Or.inl ⟨hcz, haz⟩)
+      · exact Or.inr (Or.inr ⟨haz, hcz, p.trans a b c hpab hpbc⟩)
+
+/-- No empty coalition is decisive as long as Pareto holds: on the unanimous
+`y ≻ x` profile, the "member" premise is vacuous and the "non-member" premise
+is satisfied by everyone, so the conclusion would force `x ≻ₛ y` against the
+unanimous Pareto verdict. -/
+theorem empty_not_decisive {I A : Type} [DecidableEq A]
+    (swf : SocialWelfareFunction I A) (h_pareto : WeakPareto swf)
+    {x y : A} (hxy : x ≠ y)
+    (h : Decisive swf (fun _ => False) x y) : False := by
+  let P : I → Preference A := fun _ => prefOfUtility (rank3 y x y 2 1 0)
+  have hyx : ∀ i, StrictPref (P i) y x := fun i =>
+    ⟨by simp [P, prefOfUtility, rank3, hxy],
+     by simp [P, prefOfUtility, rank3, hxy]⟩
+  have hsoc : StrictPref (swf.aggregate P) x y :=
+    h P (fun i hi => False.elim hi) (fun i _ => hyx i)
+  have hpar : StrictPref (swf.aggregate P) y x :=
+    h_pareto P y x hyx
+  exact hsoc.2 hpar.1
+
+/-- A coalition decisive on a single pair of distinct alternatives is decisive
+on every pair: the expansion lemmas move each coordinate independently, and the
+only resistant case (folding the first coordinate onto `y`) goes through a
+third alternative `w` outside `{x, y}`. -/
+theorem decisive_global {I A : Type} [DecidableEq A]
+    (swf : SocialWelfareFunction I A)
+    (D : I → Prop) [DecidablePred D]
+    (h_iia : IIA swf) (h_pareto : WeakPareto swf)
+    {x y : A} (hxy : x ≠ y)
+    (hcard : ∃ w : A, w ≠ x ∧ w ≠ y)
+    (h : Decisive swf D x y) :
+    ∀ a b : A, a ≠ b → Decisive swf D a b := by
+  intro a b hab
+  by_cases hax : a = x
+  · by_cases hby : b = y
+    · rw [hax, hby]; exact h
+    · rw [hax]
+      exact decisive_expand_right swf D h_iia h_pareto hxy
+        (fun hc => hab (hax.trans hc)) (fun hc => hby hc.symm) h
+  · by_cases hay : a = y
+    · obtain ⟨w, hwx, hwy⟩ := hcard
+      have hxw : Decisive swf D x w :=
+        decisive_expand_right swf D h_iia h_pareto hxy
+          (fun hc => hwx hc.symm) (fun hc => hwy hc.symm) h
+      have hyw : Decisive swf D y w :=
+        decisive_expand_left swf D h_iia h_pareto
+          (fun hc => hwx hc.symm) hxy hwy hxw
+      by_cases hbw : b = w
+      · rw [hay, hbw]; exact hyw
+      · rw [hay]
+        exact decisive_expand_right swf D h_iia h_pareto
+          (fun hc => hwy hc.symm) (fun hc => hab (hay.trans hc))
+          (fun hc => hbw hc.symm) hyw
+    · have hay' : Decisive swf D a y :=
+        decisive_expand_left swf D h_iia h_pareto hxy
+          (fun hc => hax hc.symm) (fun hc => hay hc.symm) h
+      by_cases hby : b = y
+      · rw [hby]; exact hay'
+      · exact decisive_expand_right swf D h_iia h_pareto hay hab
+          (fun hc => hby hc.symm) hay'
+
+/-- A singleton decisive on every pair is a dictator in the sense of
+`NonDictatorial`: every strict preference of the dictator becomes the strict
+preference of society, on every profile. -/
+theorem decisive_singleton_dictator {I A : Type} [DecidableEq I] [DecidableEq A]
+    (swf : SocialWelfareFunction I A)
+    (h_iia : IIA swf) (h_pareto : WeakPareto swf)
+    (d : I) (hdec : ∀ x y : A, x ≠ y → Decisive swf (fun i => i = d) x y)
+    (prefs : I → Preference A) {x y z : A}
+    (hxy : x ≠ y) (hxz : x ≠ z) (hyz : y ≠ z)
+    (hd : StrictPref (prefs d) x y) :
+    StrictPref (swf.aggregate prefs) x y := by
+  let P : I → Preference A :=
+    fun i => if i = d then prefOfUtility (rank3 x z y 3 2 1) else zLast (prefs i) z
+  have hPd : ∀ i, i = d → P i = prefOfUtility (rank3 x z y 3 2 1) := by
+    intro i hi; simp [P, hi]
+  have hPo : ∀ i, i ≠ d → P i = zLast (prefs i) z := by
+    intro i hi; simp [P, hi]
+  -- Pareto leg: strict unanimity `x ≻ z` on the auxiliary profile.
+  have hPxz : StrictPref (swf.aggregate P) x z :=
+    h_pareto P x z (fun i => by
+      by_cases hid : i = d
+      · rw [hPd i hid]
+        exact ⟨by simp [prefOfUtility, rank3, hxz.symm],
+               by simp [prefOfUtility, rank3, hxz.symm]⟩
+      · rw [hPo i hid]
+        exact ⟨Or.inr (Or.inl ⟨rfl, hxz⟩), by simp [zLast, hxz]⟩)
+  -- Decisiveness leg: `z ≻ y` -- the dictator has `z ≻ y`, everyone else has
+  -- `y ≻ z` strictly since `z` is their last choice.
+  have hPzy : StrictPref (swf.aggregate P) z y :=
+    hdec z y (fun hc => hyz hc.symm) P
+      (fun i hid => by
+        rw [hPd i hid]
+        exact ⟨by simp [prefOfUtility, rank3, hyz, hxy.symm, hxz.symm],
+               by simp [prefOfUtility, rank3, hyz, hxy.symm, hxz.symm]⟩)
+      (fun i hid => by
+        rw [hPo i hid]
+        exact ⟨Or.inr (Or.inl ⟨rfl, hyz⟩), by simp [zLast, hyz]⟩)
+  -- Individual agreement on the `x`/`y` relations: the `zLast` construction.
+  have h₁ : ∀ i, (P i).R x y ↔ (prefs i).R x y := by
+    intro i
+    by_cases hid : i = d
+    · rw [hPd i hid, hid]
+      exact ⟨fun _ => hd.1,
+             fun _ => by simp [prefOfUtility, rank3, hyz, hxy.symm]⟩
+    · rw [hPo i hid]
+      constructor
+      · intro hc
+        rcases hc with ⟨_, hyz1⟩ | ⟨hyz1, _⟩ | ⟨_, _, hp⟩
+        · exact absurd hyz1 hyz
+        · exact absurd hyz1 hyz
+        · exact hp
+      · intro hp
+        exact Or.inr (Or.inr ⟨hxz, hyz, hp⟩)
+  have h₂ : ∀ i, (P i).R y x ↔ (prefs i).R y x := by
+    intro i
+    by_cases hid : i = d
+    · rw [hPd i hid, hid]
+      have hPF : ¬ (prefOfUtility (rank3 x z y 3 2 1)).R y x := by
+        simp [prefOfUtility, rank3, hyz, hxy.symm]
+      exact ⟨fun hc => absurd hc hPF, fun hc => absurd hc hd.2⟩
+    · rw [hPo i hid]
+      constructor
+      · intro hc
+        rcases hc with ⟨_, hxz1⟩ | ⟨hxz1, _⟩ | ⟨_, _, hp⟩
+        · exact absurd hxz1 hxz
+        · exact absurd hxz1 hxz
+        · exact hp
+      · intro hp
+        exact Or.inr (Or.inr ⟨hyz, hxz, hp⟩)
+  -- Social transitivity, then IIA transport back to the original profile.
+  have hPxy : StrictPref (swf.aggregate P) x y :=
+    ⟨(swf.aggregate P).trans x z y hPxz.1 hPzy.1,
+     fun hyx => hPzy.2 ((swf.aggregate P).trans y x z hyx hPxz.1)⟩
+  have hiff₁ : (swf.aggregate P).R x y ↔ (swf.aggregate prefs).R x y :=
+    h_iia P prefs x y h₁ h₂
+  have hiff₂ : (swf.aggregate P).R y x ↔ (swf.aggregate prefs).R y x :=
+    h_iia P prefs y x h₂ h₁
+  exact ⟨hiff₁.mp hPxy.1, fun hyx => hPxy.2 (hiff₂.mpr hyx)⟩
+
+/-!
+## Stage 4b: extracting the dictator
+
+Final stage of the direct port (#23022): it extracts a dictator from a decisive
+coalition, which makes it possible to **prove** `arrow_impossibility` instead of
+stating it.
+
+The machinery of stage 4a suffices, **with no cardinality measure at all** —
+hence no `Finset`, and without leaving Lean core. Rather than searching for a
+minimum among all decisive coalitions (which would require counting them), the
+proof splits an **explicit** family of coalitions: the sequence of "tails"
+`{i | m ≤ i}`.
+
+- The empty tail is never decisive (`empty_not_decisive`), so the descent cannot
+  run out without having found a dictator.
+- `decisive_split` on the tail `m` offers two outcomes. Either the singleton
+  `{m}` is decisive on the pair `(x₀, w)`, and `decisive_global` turns it into a
+  dictator (`decisive_singleton_dictator`). Or the tail `m + 1` is decisive on
+  `(w, y₀)`, and the descent proceeds one step further.
+
+The induction runs on `nI - m`, which strictly decreases at each step: no
+cardinality measure is needed, and `Finset` stays out of the lake.
+
+Measured axiomatic closure (`#print axioms`): `propext`, `Quot.sound`, and
+`Classical.choice` **inherited from two independent sources**, `decisive_split`
+and `zLast`. The former decides the social preference on a pair by `by_cases`
+with no decidability instance on the social relation; the latter splits on
+equalities over `A` in its order proofs, with no `DecidableEq`. Purging
+`decisive_split` alone would therefore not remove `Classical.choice` from
+`arrow_impossibility` — both would need a decidability instance. This stage
+introduces no new axiom; it removes none either.
+-/
+
+/-- Individual `d` is a dictator: each of its strict preferences becomes the
+society's strict preference, on every profile and every pair. This is exactly the
+predicate whose existence `NonDictatorial` denies. -/
+def Dictator {I A : Type} (swf : SocialWelfareFunction I A) (d : I) : Prop :=
+  ∀ prefs : I → Preference A, ∀ x y : A,
+    StrictPref (prefs d) x y → StrictPref (swf.aggregate prefs) x y
+
+/-- Two extensionally equal coalitions have the same decisiveness. -/
+theorem decisive_congr {I A : Type} (swf : SocialWelfareFunction I A)
+    {D D' : I → Prop} {x y : A} (h : ∀ i, D i ↔ D' i)
+    (hdec : Decisive swf D x y) : Decisive swf D' x y := by
+  intro prefs hD hND
+  exact hdec prefs (fun i hi => hD i ((h i).mp hi))
+    (fun i hi => hND i (fun hc => hi ((h i).mpr hc)))
+
+/-- The coalition of agents whose index is at least `m`. -/
+def tailCoal {n : Nat} (m : Nat) : Fin n → Prop := fun i => m ≤ i.val
+
+/-- As soon as the set has at least three alternatives, any pair of alternatives
+leaves an alternative distinct from both. The witness is looked up among `0`, `1`
+and `2`: at most two values are taken. -/
+theorem exists_third {n : Nat} (h : n ≥ 3) (x y : Fin n) :
+    ∃ z : Fin n, z ≠ x ∧ z ≠ y := by
+  by_cases h0 : (0 : Nat) = x.val ∨ 0 = y.val
+  · by_cases h1 : (1 : Nat) = x.val ∨ 1 = y.val
+    · refine ⟨⟨2, by omega⟩, ?_, ?_⟩
+      · intro hc
+        have hv : (2 : Nat) = x.val := congrArg Fin.val hc
+        rcases h0 with h0 | h0 <;> rcases h1 with h1 | h1 <;> omega
+      · intro hc
+        have hv : (2 : Nat) = y.val := congrArg Fin.val hc
+        rcases h0 with h0 | h0 <;> rcases h1 with h1 | h1 <;> omega
+    · have h1x : (1 : Nat) ≠ x.val := fun e => h1 (Or.inl e)
+      have h1y : (1 : Nat) ≠ y.val := fun e => h1 (Or.inr e)
+      exact ⟨⟨1, by omega⟩, fun hc => h1x (congrArg Fin.val hc),
+        fun hc => h1y (congrArg Fin.val hc)⟩
+  · have h0x : (0 : Nat) ≠ x.val := fun e => h0 (Or.inl e)
+    have h0y : (0 : Nat) ≠ y.val := fun e => h0 (Or.inr e)
+    exact ⟨⟨0, by omega⟩, fun hc => h0x (congrArg Fin.val hc),
+      fun hc => h0y (congrArg Fin.val hc)⟩
+
+/-- Under Pareto and IIA, a coalition decisive on a pair of distinct
+alternatives contains a dictator.
+
+The descent runs on `nI - m`: at each step, `decisive_split` detaches agent `m`
+from the tail, and the empty tail is excluded by `empty_not_decisive`. -/
+theorem exists_dictator_of_decisive {nI nA : Nat} (hA : nA ≥ 3)
+    (swf : SocialWelfareFunction (Fin nI) (Fin nA))
+    (h_iia : IIA swf) (h_pareto : WeakPareto swf)
+    {x0 y0 w : Fin nA} (hx0y0 : x0 ≠ y0) (hx0w : x0 ≠ w) (hy0w : y0 ≠ w) :
+    ∀ (k : Nat) (m : Nat), m + k = nI →
+      Decisive swf (tailCoal m) x0 y0 → ∃ d : Fin nI, Dictator swf d := by
+  intro k
+  induction k with
+  | zero =>
+      intro m hm hdec
+      have hemp : Decisive swf (fun _ => False) x0 y0 :=
+        decisive_congr swf (D := tailCoal m) (D' := fun _ => False)
+          (fun i => ⟨fun hi => by
+            have hi' : m ≤ i.val := hi
+            omega, fun hf => False.elim hf⟩) hdec
+      exact False.elim (empty_not_decisive swf h_pareto hx0y0 hemp)
+  | succ k ih =>
+      intro m hm hdec
+      have hmn : m < nI := by omega
+      have hsplit :
+          Decisive swf (fun i : Fin nI => i = ⟨m, hmn⟩) x0 w ∨
+            Decisive swf (fun i : Fin nI => m + 1 ≤ i.val) w y0 :=
+        decisive_split swf (tailCoal m) (fun i : Fin nI => i = ⟨m, hmn⟩)
+          (fun i : Fin nI => m + 1 ≤ i.val) h_iia
+          (fun i hi => by rw [hi]; exact Nat.le_refl m)
+          (fun i hi => Nat.le_of_succ_le hi)
+          (fun i hi => by
+            have hi' : m ≤ i.val := hi
+            by_cases hc : i.val = m
+            · exact Or.inl (Fin.ext hc)
+            · exact Or.inr (by omega))
+          (fun i => by
+            rintro ⟨h1, h2⟩
+            have h2' : m + 1 ≤ i.val := h2
+            have h1' : i.val = m := by rw [h1]
+            omega)
+          hx0y0 hx0w hy0w hdec
+      rcases hsplit with hsingle | htail
+      · have hall : ∀ a b : Fin nA, a ≠ b →
+            Decisive swf (fun i : Fin nI => i = ⟨m, hmn⟩) a b :=
+          decisive_global (x := x0) (y := w) swf
+            (fun i : Fin nI => i = ⟨m, hmn⟩) h_iia h_pareto
+            hx0w ⟨y0, hx0y0.symm, hy0w⟩ hsingle
+        refine ⟨⟨m, hmn⟩, ?_⟩
+        intro prefs a b hab
+        have hne : a ≠ b := by
+          intro heq
+          subst heq
+          exact hab.2 hab.1
+        obtain ⟨z, hzx, hzy⟩ := exists_third hA a b
+        exact decisive_singleton_dictator swf h_iia h_pareto ⟨m, hmn⟩ hall prefs
+          hne hzx.symm hzy.symm hab
+      · have hall : ∀ a b : Fin nA, a ≠ b →
+            Decisive swf (fun i : Fin nI => m + 1 ≤ i.val) a b :=
+          decisive_global (x := w) (y := y0) swf
+            (fun i : Fin nI => m + 1 ≤ i.val) h_iia h_pareto
+            hy0w.symm ⟨x0, hx0w, hx0y0⟩ htail
+        exact ih (m + 1) (by omega) (hall x0 y0 hx0y0)
+
+/-- **Arrow's impossibility theorem.** There is no social welfare function over
+at least three alternatives that simultaneously satisfies weak Pareto,
+independence of irrelevant alternatives and non-dictatorship.
+
+The theorem is **proved** here: the unanimous profile makes the whole coalition
+decisive, and `exists_dictator_of_decisive` extracts a dictator as soon as the
+set of alternatives has three elements.
+
+The hypothesis `nI ≥ 2` is the one of the historical statement, kept for fidelity
+to the literature; the proof below holds for any `nI`, hence the `_hI` name of
+the parameter. -/
+theorem arrow_impossibility {nI nA : Nat}
+    (_hI : nI ≥ 2)
+    (hA : nA ≥ 3)
+    (swf : SocialWelfareFunction (Fin nI) (Fin nA))
+    (h_pareto : WeakPareto swf)
+    (h_iia : IIA swf) :
+    ¬NonDictatorial swf := by
+  intro hnd
+  let x0 : Fin nA := ⟨0, by omega⟩
+  let y0 : Fin nA := ⟨1, by omega⟩
+  let w : Fin nA := ⟨2, by omega⟩
+  have hx0y0 : x0 ≠ y0 := by
+    intro h
+    have hv : x0.val = y0.val := congrArg Fin.val h
+    have h0v : x0.val = 0 := rfl
+    have h1v : y0.val = 1 := rfl
+    omega
+  have hx0w : x0 ≠ w := by
+    intro h
+    have hv : x0.val = w.val := congrArg Fin.val h
+    have h0v : x0.val = 0 := rfl
+    have hwv : w.val = 2 := rfl
+    omega
+  have hy0w : y0 ≠ w := by
+    intro h
+    have hv : y0.val = w.val := congrArg Fin.val h
+    have h1v : y0.val = 1 := rfl
+    have hwv : w.val = 2 := rfl
+    omega
+  have hunan : Decisive swf (fun _ => True) x0 y0 := decisive_unanimous swf h_pareto
+  have h0 : Decisive swf (tailCoal 0) x0 y0 :=
+    decisive_congr swf (D := fun _ => True) (D' := tailCoal 0)
+      (fun i => ⟨fun _ => Nat.zero_le i.val, fun _ => trivial⟩) hunan
+  obtain ⟨d, hd⟩ := exists_dictator_of_decisive hA swf h_iia h_pareto
+    hx0y0 hx0w hy0w nI 0 (by omega) h0
+  exact hnd ⟨d, hd⟩
 
 end SocialChoiceEn

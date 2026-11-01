@@ -474,6 +474,24 @@ CANONICAL_LANGUAGE_TRANSITIONS_SCOPED = {
      "python3", "3.8", "3.13"):
         "Python 3.8 -> 3.13 : re-execution selective du sous-ensemble local "
         "de QC-Py-16 (#19181, cas par cas)",
+    # SL-14 : son 3.9 etait un artefact de PACKAGING, pas une contrainte
+    # fonctionnelle. `pip install aifeynman` (sdist fige en 2021) est
+    # impossible sous 3.13 : son `setup.py` importe `numpy.distutils`,
+    # retire de NumPy 2, et NumPy 1.26 n'a pas de roue cp313 -- le carnet
+    # etait donc epingle au conteneur fondateur 3.9 par cette seule
+    # raison. La reconstruction des 7 extensions Fortran par le f2py de
+    # NumPy 2 (#23443) demontre que l'echantillon s'execute sous 3.13 :
+    # la contrainte tombe. L'entree reste NOMINATIVE (chemin exact) -- la
+    # direction 3.9 -> 3.13 demeure rouge partout ailleurs, ce que la
+    # reserve de revue sur la serie ICT (pyphi==1.2.0, requires-python
+    # >=3.9,<3.10) exige.
+    ("MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/"
+     "SL-14-AIFeynman-Discover-Equations.ipynb",
+     "python3", "3.9", "3.13"):
+        "Python 3.9 -> 3.13 : convergence vers le canon d'execution 3.13 ; "
+        "le 3.9 du carnet etait impose par le packaging de `aifeynman` "
+        "(numpy.distutils), leve par la reconstruction des extensions "
+        "Fortran sous 3.13 dans la meme PR (#23443)",
     # 2.8c est le premier carnet dont la re-execution sous 3.13 est la
     # convergence attendue vers le canon de SA serie. Le kernelspec
     # ``coursia-ml-training`` est partage par 50 carnets hors 02-ML-Cours
@@ -514,12 +532,6 @@ CANONICAL_LANGUAGE_TRANSITIONS_SCOPED = {
         "Python 3.11 -> 3.13 sous `coursia-ml-training` pour tout carnet de "
         "la serie 02-ML-Cours : convergence vers le canon 3.13 declare par "
         "le requirements.txt de la serie (#23187, suite de #22889)",
-    ("MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/",
-     "coursia-ml-training", "3.10", "3.13"):
-        "Python 3.10 -> 3.13 sous `coursia-ml-training` pour tout carnet de "
-        "la serie 02-ML-Cours : meme convergence vers le canon 3.13, pour "
-        "les carnets de la serie restes en 3.10 (2.9d et 2.9g mesures a "
-        "3.10.19 le 2026-10-29, #23187)",
     # ML-06 est le seul carnet Python de la serie ML.Net sous kernel NOMME :
     # hors du census #23379 (kernel python3 uniquement), sa convergence exige
     # sa propre entree scopee. Le kernelspec ``coursia-ml-training`` reste
@@ -532,6 +544,35 @@ CANONICAL_LANGUAGE_TRANSITIONS_SCOPED = {
         "sont converges par #23379 (ML-04b #23382, ML-09 #23388, ML-07 "
         "#23389, ML-05 #23424) ; ML-06 est le dernier hors canon, tous "
         "kernels confondus (#23426)",
+    # 2.9d est le premier des deux derniers carnets de la serie restes a
+    # 3.10.19. Sa convergence est la voie 1 de #23292 (re-execution sous le
+    # venv canon `coursia-ml-training`, mesure a 3.13.15) : elle evite une
+    # seconde tolerance pour le repertoire, mais la direction `3.10 -> 3.13`
+    # n'existait dans AUCUNE des deux tables pour ce kernelspec -- mesure
+    # firsthand : `accepted_canonical_transition` rend False avec et sans
+    # chemin avant cette entree. Le scope reste nominatif (un carnet par
+    # entree) pour la meme raison que 2.8c : le kernelspec est partage par
+    # une trentaine de carnets hors serie (reserve de revue #22979).
+    ("MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/"
+     "2.9d-Features-Circulaires-Helice-Nombres.ipynb",
+     "coursia-ml-training", "3.10", "3.13"):
+        "Python 3.10 -> 3.13 sous `coursia-ml-training` : convergence vers le "
+        "canon de la serie 02-ML-Cours par re-execution (#23292, voie 1) ; "
+        "venv du kernelspec mesure a 3.13.15, sorties re-executees",
+    # 2.9g est le DERNIER carnet de la serie reste a 3.10.19, et sa ligne
+    # suit la meme regle que celle de 2.9d : une entree accorde la permission
+    # de bouger la version d'un carnet, elle s'ajoute donc AVEC ses sorties
+    # re-executees, dans le meme diff. L'accorder avant la mesure laisserait
+    # passer un hand-edit sous couvert de convergence -- c'est le test
+    # ``test_canonical_transition_scoped_29g_still_refused`` qui gardait cette
+    # porte, il tombe avec sa tranche (voie 1 de #23292).
+    ("MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/"
+     "2.9g-Geometrie-de-la-Verite.ipynb",
+     "coursia-ml-training", "3.10", "3.13"):
+        "Python 3.10 -> 3.13 sous `coursia-ml-training` : convergence vers le "
+        "canon de la serie 02-ML-Cours par re-execution (#23292, voie 1) ; "
+        "sorties re-executees sous un kernelspec du meme nom mesure a "
+        "3.13.14 (le venv canon de flotte est a 3.13.15)",
 }
 
 
@@ -637,6 +678,28 @@ def _code_index_by_id(nb):
     return result
 
 
+def _code_source_by_id(nb):
+    """Map code-cell id -> its source text, whitespace-stripped.
+
+    The source is the stable identity of a cell across base and head: a
+    re-serialisation regenerates the nbformat ids and touches nothing else,
+    so an id-only comparison cannot tell "this cell was replaced" from
+    "this cell is new".
+    """
+    out = {}
+    for cell in nb.get("cells", []):
+        if cell.get("cell_type") != "code":
+            continue
+        cid = cell.get("id")
+        if not cid:
+            continue
+        src = cell.get("source", "")
+        if isinstance(src, list):
+            src = "".join(src)
+        out[cid] = src.strip()
+    return out
+
+
 def diff_signatures(base_sig, head_sig, base_nb=None, head_nb=None):
     """Return a list of cell identifiers whose float signature changed.
 
@@ -652,8 +715,11 @@ def diff_signatures(base_sig, head_sig, base_nb=None, head_nb=None):
     themselves nor shift code cells' indices.
 
     #17232: added code cells are no longer reported unconditionally --
-    only those carrying a non-empty float signature are (see the loop in
-    the id-aligned branch below).
+    only those carrying a non-empty float signature are.
+    #23364: and, among those, only when a base-only cell carries the same
+    source, i.e. when the cell was re-identified rather than added. A
+    genuinely added cell has no base signature to drift from (see the loop
+    in the id-aligned branch below).
     """
     # If we have notebooks with cell ids, align by id
     if base_nb is not None and head_nb is not None:
@@ -678,18 +744,39 @@ def diff_signatures(base_sig, head_sig, base_nb=None, head_nb=None):
             h = head_sig[h_idx] if h_idx < len(head_sig) else ()
             if b != h and not _signatures_equivalent(b, h):
                 diffs.append(cid)
-        # Added code cells (only in head), reported ONLY when they actually
-        # carry a float-array signature (#17232). An added cell with no
-        # signature cannot be a float-repr drift, and reporting it
-        # unconditionally made papermill's `injected-parameters` cell look
-        # like one: papermill replaces that cell on every re-execution and
-        # nbformat 4.5 hands the replacement a fresh cell id, so the
-        # (one id removed, one id added) pair is the normal fingerprint of a
-        # re-execution -- measured on PR #17145, where the added cell had 0
-        # outputs and every common cell had an identical signature.
+        # Added code cells: a cell present only in head. Two very different
+        # things hide here, and only one of them can drift.
+        #
+        #   * A cell RE-IDENTIFIED by a re-serialisation: nbformat hands it a
+        #     fresh id while its source is untouched (#17232 -- papermill's
+        #     `injected-parameters` cell is the measured case). Its source
+        #     still matches a base cell that disappeared, so a base signature
+        #     exists and the comparison is meaningful.
+        #   * A cell genuinely ADDED by the PR. It has no base counterpart and
+        #     therefore nothing to drift FROM. Reporting it unconditionally
+        #     reddened every PR whose new cell printed numbers shaped like a
+        #     float array -- Wilson intervals such as `[0.57,1.00]`, which
+        #     FLOAT_ARRAY_RE cannot tell from a 2-element ndarray (#23364,
+        #     measured on PR #23273: 8 -> 10 code cells, 0 id lost, the two
+        #     flagged cells had no base cell with the same source).
+        #
+        # So an added cell is reported ONLY when a base-only cell carries the
+        # same source; otherwise it is new content, not drift.
+        base_only = set(base_ids.keys()) - set(head_ids.keys())
+        base_src = _code_source_by_id(base_nb)
+        head_src = _code_source_by_id(head_nb)
         for cid in sorted(set(head_ids.keys()) - set(base_ids.keys())):
             h_idx = head_ids[cid]
-            if h_idx < len(head_sig) and head_sig[h_idx]:
+            if not (h_idx < len(head_sig) and head_sig[h_idx]):
+                continue
+            twin = next((b for b in sorted(base_only)
+                         if base_src.get(b) == head_src.get(cid)), None)
+            if twin is None:
+                continue
+            b_idx = base_ids[twin]
+            b = base_sig[b_idx] if b_idx < len(base_sig) else ()
+            if b != head_sig[h_idx] and not _signatures_equivalent(
+                    b, head_sig[h_idx]):
                 diffs.append(cid)
         return diffs
     return _diff_signatures_ordinal(base_sig, head_sig)

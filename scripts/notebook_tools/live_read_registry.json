@@ -9,10 +9,10 @@
       "note": "Annexe F -- compte des lignes de Pillars.lean et citations L<n> des declarations des temoins"
     },
     {
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-03b-Chemins-de-Swaps-Lean-Python.ipynb",
-      "cell_id": "6b4a335f",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-03b-Chambres-Murs-Chemins-Lean-Python.ipynb",
+      "cell_id": "61b519cc",
       "source": "MyIA.AI.Notebooks/GameTheory/game_theory_lean/Swaps/Basic.lean",
-      "note": "§5-bis -- compte des lignes de Swaps/Basic.lean et numeros des declarations citees ; trouvee par l'invariant inverse de #22041"
+      "note": "§10-bis -- compte des lignes de Swaps/Basic.lean et numeros des declarations citees ; trouvee par l'invariant inverse de #22041"
     },
     {
       "notebook": "MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-02-Jeux-Repetes-Lean-Python.ipynb",
@@ -75,9 +75,9 @@
       "note": "Declarations reelles de FreeWillTheorem.lean (source de verite, pas une paraphrase)"
     },
     {
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-22-Galois-Probleme-Inverse-M23.ipynb",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb",
       "cell_id": "21fed7ef",
-      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/galois_lean/Galois/M23Lean4Web.lean",
+      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/galois_lean/Galois/M23Lean4Web.lean",
       "note": "Lecture directe du module M23Lean4Web.lean"
     },
     {
@@ -103,6 +103,24 @@
       "cell_id": "cell-17",
       "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/Hecke/FltRoute.lean",
       "note": "Compte de lignes et table des declarations de FltRoute.lean ; trouvee par l'invariant inverse apres fusion de main"
+    },
+    {
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15b-Lean-Grothendieck.ipynb",
+      "cell_id": "lean13b-project-overview",
+      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck.lean",
+      "note": "Vue d'ensemble du projet -- compte des lignes du module racine Grothendieck.lean (#22129)"
+    },
+    {
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb",
+      "cell_id": "chsh-code-inv",
+      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/CHSH.lean",
+      "note": "Inventaire des declarations reelles de CHSH.lean et CHSHRandomized.lean -- comptes de lignes et numeros L<n> (#22129)"
+    },
+    {
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb",
+      "cell_id": "chsh-code-inv",
+      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/CHSHRandomized.lean",
+      "note": "Seconde source lue par la meme cellule : ses citations L43-L167 sont celles de CHSHRandomized.lean, pas de CHSH.lean (#22129)"
     },
     {
       "notebook": "MyIA.AI.Notebooks/Compression/Compression-04-ANS-Python.ipynb",
