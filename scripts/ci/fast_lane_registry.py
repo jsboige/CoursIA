@@ -3386,3 +3386,57 @@ TRANCHE35: list[Guard] = [
         warn_rc=(2,),
     ),
 ]
+
+# Renumerote TRANCHE35 -> TRANCHE36 le 2026-11-01 (#3436) : `main` avait affecte
+# TRANCHE35 a la garde d'encodage (#23021) pendant que cette branche lui
+# affectait le garde des chemins machine ; meme precedent que TRANCHE31 ->
+# TRANCHE32 (c2740, 2026-10-31).
+
+# TRANCHE36 -- chemins machine dans metadata.papermill (#3436, delta borne)
+#
+# Le hook `scrub-papermill-paths` de `.pre-commit-config.yaml` est la premiere
+# ligne, et il fonctionne : mesure du 2026-11-01 sur une sonde Windows, `--scan`
+# detecte 2 chemins absolus, `--apply` les ramene aux basenames. Mais un hook
+# client se contourne par construction (`--no-verify`, `SKIP`, tout commit hors
+# hooks git), et QUATRE fuites ont atterri le meme jour (#23914, #23917,
+# #23943, #23958) avant d'etre reparees apres coup. Aucun organe CI ne les
+# voyait : les checks lisent les sorties, pas `metadata.papermill`.
+#
+# DELTA et pas absolu : `main` porte 22 carnets / 42 chemins absolus
+# (`scrub_papermill_paths.py --scan-all`, meme jour). Un gate absolu rougirait
+# toute PR touchant un de ces carnets pour une raison sans rapport -- le piege
+# que `pip_leak_delta.py` documente (#6314). Le stock herite ne rougit
+# personne ; une introduction, si.
+#
+# Durci post-review NanoClaw (2026-11-01) : le delta porte sur les VALEURS
+# (une substitution C:\old -> D:\new rougit a compte constant), le predicat
+# est insensible a la casse et couvre racines POSIX, UNC et lecteur minuscule,
+# et un renommage pur d'un carnet du stock fuyard reste vert (git diff -M).
+#
+# Controles du detecteur, rejoues : positif sur la fuite reelle de #23958 avant
+# scrub (`--base-ref 3b199d3d8d --head-ref 8e54b1335` : 0 -> 2 chemins, rc=1),
+# negatif sur `main` (rc=0) et negatif apres le scrub de la meme PR
+# (`2639f9214de`, rc=0). Bout en bout par `fast_lane.py --only` : success sur
+# une branche propre, failure sur un commit jetable portant les deux chemins.
+# ---------------------------------------------------------------------------
+TRANCHE36: list[Guard] = [
+    Guard(
+        name="papermill machine paths (delta vs base)",
+        source=FAST_LANE_NATIVE,
+        paths=NOTEBOOK_GLOBS + [
+            "scripts/ci/check_papermill_machine_paths.py",
+            "scripts/notebook_tools/scrub_papermill_paths.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python", "scripts/ci/check_papermill_machine_paths.py",
+            "--base-ref", "{base_ref}",
+        ],
+        blocking=True,
+        needs_base=True,
+        diff_bounded=True,
+        absorbed=True,
+        warn_rc=(2,),            # 2 = base injoignable : UNKNOWN, pas un rouge
+    ),
+]
