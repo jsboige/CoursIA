@@ -19753,9 +19753,9 @@ def analyze_best_responses(game: NormalFormGame):
 # Analyser le Dilemme du Prisonnier
 pd = create_prisoners_dilemma()
 analyze_best_responses(pd)",,,,,,,,d4b7ddd149fa9ec7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm-Python.ipynb,30a2fe15,markdown,fr,9bc69d64e5d7390f,"### Calcul de l'équilibre mixte
+MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm-Python.ipynb,30a2fe15,markdown,fr,55975bef299235d1,"### Meilleures réponses : exemple de la Bataille des Sexes
 
-Puisque RPS n'a pas d'équilibre en stratégies pures, cherchons l'équilibre en **stratégies mixtes** avec Nashpy.",,,,,,,,9bc69d64e5d7390f,,,,,,,,,,,,,,,
+Appliquons l'analyse de meilleures réponses à un jeu de **coordination** où la meilleure réponse change selon l'action adverse : la Bataille des Sexes. (L'équilibre en **stratégies mixtes** de Pierre-Feuille-Ciseaux, jeu sans équilibre pur, sera calculé avec Nashpy à la section 7.)",,,,,,,,55975bef299235d1,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm-Python.ipynb,c07ec621,markdown,fr,1730b2bd3da151e6,"### Interprétation - Équilibre symétrique
 
 **Résultat** : L'unique équilibre de Nash est **complètement mixte** avec probabilités égales (1/3, 1/3, 1/3).
@@ -20097,6 +20097,21 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm-Python.ipynb,73c26033,mark
 > **Theoreme de minimax (von Neumann, 1928)** : Dans un jeu a somme nulle, la valeur du jeu est unique et peut etre atteinte par des stratégies mixtes optimales.
 > **Théorème (Nash, 1950)** : tout jeu fini possède au moins un équilibre de Nash (pur ou mixte).
 ",,,,,,,,153e0784587a2fa5,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm-Python.ipynb,05ff0a43,code,fr,bfeb1e4ef3d99a4b,"# Verification : equilibres purs ET mixtes des jeux classiques + RPS
+# (ancre le tableau du resume qui suit -- chaque compte y est imprime ici)
+print(""Equilibres de Nash (purs et mixtes) des jeux classiques"")
+print(""="" * 55)
+
+for game in games + [rps]:
+    purs = find_pure_nash_equilibria(game)
+    tous = list(game.nash_game.support_enumeration())
+    mixtes = [(s_row, s_col) for s_row, s_col in tous
+              if np.sum(s_row > 0.01) > 1 or np.sum(s_col > 0.01) > 1]
+    print(f""\n{game.name}:"")
+    print(f""  {len(purs)} pur(s) + {len(mixtes)} mixte(s) ""
+          f""(total enumeration : {len(tous)})"")
+    for s_row, s_col in mixtes:
+        print(f""  mixte : Ligne {np.round(s_row, 3)} / Colonne {np.round(s_col, 3)}"")",,,,,,,,bfeb1e4ef3d99a4b,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm-Python.ipynb,95af00c2,markdown,fr,3d481f6ead25b8a7,"## 8. Resume
 
 ### Concepts cles
@@ -44641,7 +44656,7 @@ Cette tranche 2 a résolu le **gap de la tranche 1** : la **support enumeration*
 ***
 
 *Tranche 2 du twin .NET⇄Python (#4956 marathon). Support enumeration = résolution exacte des équilibres mixtes, pont théorie-jeux ↔ algèbre linéaire. Vérifié contre nashpy (SOTA-OK).*",,,,,,,,4bee8c6b453e229e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm-Python.ipynb,gt2-nash-count-interp,markdown,fr,2f0f796e772e2fa2,"### Interprétation — ce que révèle le NOMBRE d'équilibres (1, 2, 2, 2, 0)
+MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm-Python.ipynb,gt2-nash-count-interp,markdown,fr,dfe9a06d897aad0c,"### Interprétation — ce que révèle le NOMBRE d'équilibres (1, 2, 2, 2, 0)
 
 Le dump ci-dessus énumère les équilibres de Nash *purs* de cinq jeux canoniques. La quantité qui saute aux yeux n'est pas tel ou tel profil, mais le **nombre** d'équilibres par jeu — et ce nombre est une véritable **taxonomie** des jeux sous forme normale.
 
@@ -44657,9 +44672,9 @@ Le dump ci-dessus énumère les équilibres de Nash *purs* de cinq jeux canoniqu
 
 → Pour ces jeux, le problème n'est plus de *trouver* un équilibre (ils existent), mais de le **choisir** : c'est le problème de la *sélection d'équilibre*, qui exigera des concepts complémentaires (focal points, évolution, communication).
 
-**0 équilibre — Matching Pennies** : aucune stratégie pure n'est stable, car les meilleures réponses **cyclent** (si Ligne joue Pile, Colonne répond Pile ; alors Ligne bascule sur Face ; alors Colonne suit sur Face ; etc.) sans point fixe. C'est précisément ce qui **force à sortir du cadre déterministe** : sans stratégie pure stable, la seule issue est la **randomisation**.
+**0 équilibre — Matching Pennies** : aucune stratégie pure n'est stable, car les meilleures réponses **cyclent** (si Ligne joue Pile, Colonne répond **Face** — elle gagne à dématcher ; Ligne suit alors sur **Face** — il gagne à matcher ; Colonne bascule sur **Pile** ; etc.) sans point fixe. C'est précisément ce qui **force à sortir du cadre déterministe** : sans stratégie pure stable, la seule issue est la **randomisation**.
 
-La grille `1 / 2 / 2 / 2 / 0` n'est donc pas anecdotique : elle prédit la pathologie du jeu (dilemme social / sélection / instabilité) et dicte l'outil approprié (pur / coordination / mixte). Les sections suivantes explorent ces trois issues — la visualisation (§5) pour *voir* les meilleures réponses s'aligner, IESDS (§6) pour simplifier un jeu par élimination, puis **Pierre-Feuille-Ciseaux (§7)** qui retrouvera la structure cyclique du *0 équilibre*, résolue par les **stratégies mixtes (§8)**.",,,,,,,,2f0f796e772e2fa2,,,,,,,,,,,,,,,
+La grille `1 / 2 / 2 / 2 / 0` n'est donc pas anecdotique : elle prédit la pathologie du jeu (dilemme social / sélection / instabilité) et dicte l'outil approprié (pur / coordination / mixte). Les sections suivantes explorent ces trois issues — la visualisation (§5) pour *voir* les meilleures réponses s'aligner, IESDS (§6) pour simplifier un jeu par élimination, puis **Pierre-Feuille-Ciseaux (§7)** qui retrouvera la structure cyclique du *0 équilibre*, résolue dans la même section par les **stratégies mixtes**.",,,,,,,,dfe9a06d897aad0c,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-03-Topology2x2-CSharp.ipynb,83889397e656425db789ab3f3ff6b080,markdown,fr,2c85850b12252356,"## 10. Tranche 2 — Graphe des swaps via QuikGraph (moteur .NET natif)
 
 Le jumeau Python construit ce graphe via **networkx** (`build_swap_graph`, `nx.Graph`) et calcule
