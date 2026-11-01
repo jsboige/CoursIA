@@ -47,7 +47,6 @@ on:
       - 'MyIA.AI.Notebooks/GenAI/shared/**'
       - '.github/workflows/genai-helpers-tests.yml'
   pull_request:
-    branches: [main]
     types: [opened, synchronize, edited, reopened]
     paths:
       - 'MyIA.AI.Notebooks/GenAI/shared/**'

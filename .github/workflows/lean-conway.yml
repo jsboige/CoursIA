@@ -239,7 +239,10 @@ jobs:
       # construction now.
       target-modules: "*"
       include-i18n-siblings: "true"
-      # allow-axioms: 79 native_decide axioms = the 38 HashlifeCorrectness-era
+      # allow-axioms: 79 native_decide axioms (liste dans le fichier, #21905 --
+      # source de verite deplacee ; 77 mesurees au move + les 2 ancres du
+      # temoin de machine de Turing ajoutees par #17465) = the 38
+      # HashlifeCorrectness-era
       # empirical footprint (revealed by this job's first CI run, #8782/#9341,
       # shrunk by the #9571 still-life + #9595 spaceship decide flips) + 21
       # build-enumerated entries added by the #10889 "*" widening (probe: this
@@ -335,7 +338,7 @@ jobs:
       # Names stay explicit -- no wildcard entry in allow-axioms: a NEW
       # native_decide anywhere in the lake = a new red ("new native_decide =
       # new red"), the property the no-wildcard rule preserves.
-      allow-axioms: "Conway.Life.hashlife_correct_implies_block_2._native.native_decide.ax_1_1,Conway.Life.hashlife_correct_implies_toad_2._native.native_decide.ax_1_1,Conway.Life.hashlife_correct_implies_glider_2._native.native_decide.ax_1_1,Conway.Life.hashlife_correct_implies_blinker_h_2._native.native_decide.ax_1_1,Conway.Life.hashlife_correct_implies_beacon_2._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_single_cell._native.native_decide.ax_1_4,Conway.Life.box_assez_grandN_single_cell._native.native_decide.ax_1_2,Conway.Life.box_assez_grandN_single_cell._native.native_decide.ax_1_3,Conway.Life.box_assez_grandN_single_cell._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_single_cell_8._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_single_cell_3._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_block_8._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_glider_8._native.native_decide.ax_1_1,Conway.Life.boxAssezGrandN_block_8._native.native_decide.ax_1_1,Conway.Life.boxAssezGrandN_glider_8._native.native_decide.ax_1_1,Conway.Life.box_assez_grand_single_cell_3_false._native.native_decide.ax_1_1,Conway.Life.box_assez_grand_single_cell_8_false._native.native_decide.ax_1_1,Conway.Life.box_assez_grand_single_cell_2._native.native_decide.ax_1_1,Conway.Life.box_assez_grand_not_vacuous._native.native_decide.ax_1_1,Conway.Life.p4_wf_witness_k2._native.native_decide.ax_1_1,Conway.Life.p4_wf_witness_k1._native.native_decide.ax_1_1,Conway.Life.p4at_witness_k1._native.native_decide.ax_1_1,Conway.Life.p4at_witness_k2._native.native_decide.ax_1_1,Conway.Life.p4_base_exhaustive._native.native_decide.ax_1_1✝,Conway.Life.p4_base_blinker._native.native_decide.ax_1_1,Conway.Life.p4_base_block._native.native_decide.ax_1_1,Conway.Life.p4_base_glider._native.native_decide.ax_1_1,Conway.Life.p4_base_dead._native.native_decide.ax_1_1,Conway.Life.p4_unrestricted_counterexample._native.native_decide.ax_1_1,Conway.Life.padCenter2_correct_block_level1._native.native_decide.ax_1_1,Conway.Life.pulsar_period_three._native.native_decide.ax_1_1,Conway.Life.pentadecathlon_period_15._native.native_decide.ax_1_1,Conway.Life.RLE.glider_parse_ok._native.native_decide.ax_1_1,Conway.Life.RLE.lwss_parse_ok._native.native_decide.ax_1_1,Conway.Life.RLE.pulsar_parse_ok._native.native_decide.ax_1_1,Conway.Life.RLE.gosper_gun_parse_ok._native.native_decide.ax_1_1,Conway.Life.RLE.lwss_rle_roundtrip._native.native_decide.ax_1_1,Conway.Life.RLE.pulsar_rle_roundtrip._native.native_decide.ax_1_1,Conway.Life.RLE.gosper_gun_cell_count._native.native_decide.ax_1_1,Conway.Life.RLE.glider_parsed_cell_count._native.native_decide.ax_1_1,Conway.Life.jumpCaptured_block._native.native_decide.ax_1_1,Conway.Life.jumpCaptured_glider._native.native_decide.ax_1_1,Conway.Life.jumpCaptured_not_trivial._native.native_decide.ax_1_1,Conway.Life.jumpCaptured_beehive._native.native_decide.ax_1_1,Conway.Life.jumpCaptured_beehive._native.native_decide.ax_1_2,Conway.Life.jumpCaptured_blinker._native.native_decide.ax_1_1,Conway.Life.jumpCaptured_blinker._native.native_decide.ax_1_3,Conway.Life.jumpCaptured_blinker._native.native_decide.ax_1_4,Conway.Life.jumpCaptured_block_of_class._native.native_decide.ax_1_1,Conway.Life.jumpCaptured_block_of_class._native.native_decide.ax_1_2,Conway.Life.jumpCaptured_block_of_class._native.native_decide.ax_1_3,Conway.Life.pulsar_is_oscillator._native.native_decide.ax_1_1,Conway.Life.Pillars.pulsar_period3._native.native_decide.ax_1_1,Conway.Life.Pillars.unitcell_initial_population._native.native_decide.ax_1_1,Conway.Life.Pillars.pulsar_period1_negative._native.native_decide.ax_1_1,Conway.Life.Pillars.pulsar_period2_negative._native.native_decide.ax_1_1,Conway.Life.Pillars.otca_initial_population._native.native_decide.ax_1_1,Conway.digitsToNat_example._native.native_decide.ax_1_1,Conway.lookAndSay_4._native.native_decide.ax_1_1,Conway_en.Life_en.pulsar_period_three._native.native_decide.ax_1_1,Conway_en.Life_en.pentadecathlon_period_15._native.native_decide.ax_1_1,Conway_en.Life_en.pulsar_is_oscillator._native.native_decide.ax_1_1,Conway.Life.Pillars_en.pulsar_period3._native.native_decide.ax_1_1,Conway.Life.Pillars_en.unitcell_initial_population._native.native_decide.ax_1_1,Conway.Life.Pillars_en.pulsar_period1_negative._native.native_decide.ax_1_1,Conway.Life.Pillars_en.pulsar_period2_negative._native.native_decide.ax_1_1,Conway.Life.Pillars_en.otca_initial_population._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.glider_parse_ok._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.lwss_parse_ok._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.pulsar_parse_ok._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.gosper_gun_parse_ok._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.lwss_rle_roundtrip._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.pulsar_rle_roundtrip._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.gosper_gun_cell_count._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.glider_parsed_cell_count._native.native_decide.ax_1_1,Conway_en.digitsToNat_example._native.native_decide.ax_1_1,Conway_en.lookAndSay_4._native.native_decide.ax_1_1,Conway.Life.Pillars.turingmachine_facts._native.native_decide.ax_1_1,Conway.Life.Pillars_en.turingmachine_facts._native.native_decide.ax_1_1"
+      allow-axioms: "@scripts/lean/allow_axioms_conway.txt"
       fail-on-sorry: false
       build-threads: "1"  # #23247, voir le commentaire du job ci
 
@@ -356,13 +359,24 @@ jobs:
   target-coverage:
     name: conway target-coverage
     # Routage #14283 tranche 3 (decision ai-01 2026-09-02) : jambe Linux
-    # auto-hebergee. Le `if:` ci-dessous est la garde anti-fork exigee par
-    # scripts/ci/check_self_hosted_runner_policy.py ; un `runs-on` STATIQUE la
-    # rend auditable (une expression dynamique leve DYNAMIC_RUNS_ON).
-    # Les PRs de fork sautent le job -- pr_gate.py compte `skipped` comme OK.
-    # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # auto-hebergee.
+    # 2026-10-28 (#23053 famille (c), lane myia-ai-01:CoursIA-2) : forme hybride
+    # de debordement CI (#22937/#22944/#23016). PR meme-depot ET
+    # vars.CI_OVERFLOW_LOCAL == 'true' -> jambe Linux locale ; tout le reste
+    # (variable absente ou fausse, forks, push/dispatch) retombe sur
+    # ubuntu-latest. La garde same-repo vit dans l'expression elle-meme : le
+    # `if:` ci-dessous reste inchange. Bascule : `gh variable set
+    # CI_OVERFLOW_LOCAL --body true|false --repo jsboige/CoursIA`. Retour
+    # arriere = variable a `false` ou supprimee, sans toucher ce fichier.
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
     if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && always()
+    # Borne de duree (#23053) : 360 min, qui EST le plafond GitHub. La mesure des
+    # 8 derniers runs reussis du workflow donne 832 min au maximum, portees par
+    # les jobs Lean reutilisables : 3 x ce maximum depasse le plafond, donc la
+    # borne posee est le plafond lui-meme, et c'est assume explicitement ici.
+    # Sans borne ecrite, un job qui pend garde le meme defaut sans que personne
+    # ne l'ait choisi ; au-dela de 360 min c'est un echec, pas une attente.
+    timeout-minutes: 360
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
