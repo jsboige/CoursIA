@@ -54,12 +54,25 @@ from pathlib import Path
 # run-6-style silent death leaves a signature in the log (#6790). Sous capture
 # pytest, sys.stderr est un tampon sans fileno : enable() y leve
 # io.UnsupportedOperation et tuait l'import du lanceur (2 tests rouges sur
-# main, #24015). En lancement reel (console ou fichier redirige), le dump
-# reste actif.
-try:
-    faulthandler.enable()
-except (AttributeError, io.UnsupportedOperation, ValueError):
-    pass
+# main, #24015). Un abandon silencieux y desactiverait le dump -- exactement
+# ce que #6790 avait installe. Repli sur sys.__stderr__, le stderr d'origine
+# du processus, qui porte un vrai descripteur : mesure au 01/11 (sonde
+# capture 'sys' simulee), enable(stderr sans fileno) LEVE, enable(__stderr__)
+# OK, dump ACTIF apres repli. Idee du repli : myia-po-2028:CoursIA-2 (#24023,
+# retire comme doublon).
+def _enable_faulthandler() -> None:
+    for stream in (sys.stderr, sys.__stderr__):
+        if stream is None:
+            continue
+        try:
+            faulthandler.enable(stream)
+        except (AttributeError, io.UnsupportedOperation, OSError, ValueError):
+            continue
+        else:
+            return
+
+
+_enable_faulthandler()
 
 PROVER_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(PROVER_DIR))
