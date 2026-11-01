@@ -310,6 +310,9 @@ PILOT_SHADOW_NATIF = (
 #   - bare-cross-dir-load-gate : bloquant, EXECUTION PAR FICHIER (Pattern 1)
 #   - notebook-navlink-check   : bloquant, scan global
 #   - notebook-interp-positioning-guard : bloquant, scan global baselined
+#   - readme-notebook-coverage : bloquant, delta base-vs-head sur les carnets
+#                           AJOUTES (critere 3 de #13504 ; le stock mesure ne
+#                           rougit personne)
 #   - markdown-rendering-guard : bloquant, scan global baselined
 #   - self-hosted-runner-policy : bloquant, scan statique des workflows
 #   - duplicate-notebook-index-guard : bloquant, delta base-vs-head sur
@@ -3292,6 +3295,94 @@ TRANCHE32: list[Guard] = [
         blocking=True,
         absorbed=True,
         needs_base=True,
+        warn_rc=(2,),
+    ),
+]
+
+# ---------------------------------------------------------------------------
+# Critere 3 de l'EPIC #13504, en organe (tranche du 2026-11-01).
+#
+# `scripts/ci/check_site_links.py` couvre la direction README -> carnet (un
+# lien qui pointe vers un fichier absent). La direction INVERSE -- un carnet
+# qu'aucune ligne du README de son dossier ne nomme -- n'etait couverte par
+# aucun organe. C'est pourtant elle qui laisse un carnet invisible pour un
+# lecteur qui n'ouvre que le README du dossier, et c'est exactement ce que le
+# critere 3 demandait de tenir a jour « une fois par trimestre, a la main » ;
+# le bloc de fraicheur du 2026-10-28 recommandait d'en faire un organe.
+#
+# Garde de DELTA, sur le modele de `prose-counts` (#17636) : le stock mesure
+# sur `main` au 2026-11-01 (1722 carnets suivis, 1593 couverts, 22 manquants
+# dans un dossier a convention en force) est RAPPORTE et ne rougit personne.
+# Seule une PR qui AJOUTE un carnet sans lui donner sa ligne rougit. Les
+# jumeaux `_en` (12), les dossiers sans README (87 carnets) et les README ne
+# listant aucun carnet (8) sont advisory : la convention mesuree est
+# precisement de ne pas lister les jumeaux (FineTuning, 5/5).
+#
+# L'organe lit les fichiers SUIVIS par git, pas le disque : un carnet ignore
+# (`MyIA.AI.Notebooks/GradeBook.ipynb` l'est) existe sur un poste et pas dans
+# un checkout CI, ce qui ferait diverger les deux mesures sans que l'une soit
+# fausse.
+#
+# rc=2 = incident d'entree (git diff en echec), donc `warn_rc` : un incident
+# n'est ni une faute de la PR ni un quitus (precedent #17941).
+# ---------------------------------------------------------------------------
+TRANCHE34: list[Guard] = [
+    Guard(
+        name="readme-notebook-coverage",
+        source=FAST_LANE_NATIVE,
+        paths=["**/*.ipynb"],
+        argv=["python", "scripts/ci/check_readme_notebook_coverage.py",
+              "--diff-base", "{base_ref}"],
+        blocking=True,           # BLOQUANT : critere 3 de #13504, en delta
+        needs_base=True,
+        absorbed=True,
+        warn_rc=(2,),
+    ),
+]
+
+# ---------------------------------------------------------------------------
+# Garde d'encodage, critere 3 de #23021 (tranche du 2026-11-01).
+#
+# L'organe `scripts/notebook_tools/check_encoding_corruption.py` a ete livre par
+# #23024/#23036 avec DEUX formes : une verification pleine (`<chemins>`, cablee
+# en hook pre-commit sur les carnets stages) et une garde de DELTA
+# (`--base <ref>`, artefacts sur les LIGNES AJOUTEES des carnets changes). Sa
+# docstring annoncait la seconde comme « garde CI bloquante » -- mais mesure du
+# 2026-11-01 : aucun workflow, aucun job, aucune entree de ce registre ne
+# l'invoquait. Une capacite annoncee que rien n'invoque est une garde
+# debranchee, et le hook pre-commit est contournable (`--no-verify`, poste sans
+# `pre-commit install`) : la classe n'etait donc tenue que sur les postes
+# equipes. Cette tranche branche la forme de delta qui manquait.
+#
+# Pourquoi un delta et pas un scan global : le stock de `main` au 2026-11-01
+# mesure **0 artefact** sur les deux carnets repares (controle positif passe :
+# la prose francaise correcte est bien presente, la mesure ne rend pas 0 pour
+# cause de fichier absent). Le stock est donc propre et ne rougit personne ;
+# seule une PR qui REINTRODUIT la corruption sur une ligne ajoutee rougit. Un
+# scan global aurait le meme verdict aujourd'hui mais ferait payer a chaque PR
+# notebook le cout du corpus entier.
+#
+# L'organe apparait dans `paths` : une PR qui change le detecteur doit voir le
+# garde se declencher, sinon un detecteur casse passerait sans temoin (lecon
+# #11685/#12817, meme motif que `pip-leak-guard`).
+#
+# rc=2 = incident d'entree (git diff en echec), donc `warn_rc` : un incident
+# n'est ni une faute de la PR ni un quitus (precedent #17941 / TRANCHE34).
+# ---------------------------------------------------------------------------
+TRANCHE35: list[Guard] = [
+    Guard(
+        name="encoding-corruption-guard",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**/*.ipynb",
+            "scripts/notebook_tools/check_encoding_corruption.py",
+        ],
+        argv=["python", "scripts/notebook_tools/check_encoding_corruption.py",
+              "--base", "{base_ref}"],
+        blocking=True,           # BLOQUANT : critere 3 de #23021, en delta
+        needs_base=True,
+        diff_bounded=True,       # lignes ajoutees seulement : main ne peut pas heriter
+        absorbed=True,
         warn_rc=(2,),
     ),
 ]

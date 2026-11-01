@@ -214,6 +214,7 @@ renouveler la poignee apres l'avoir consommee, jamais a justifier un arret.
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
 import copy
 import datetime as dt
 import hashlib
@@ -225,6 +226,7 @@ import random
 import re
 import subprocess
 import sys
+import threading
 import time
 import tempfile
 import unicodedata
@@ -1759,6 +1761,17 @@ CLAIMS_OPEN_PRS_SNAPSHOT_TTL_S = 120
 B0_PAYLOAD_MAX_BYTES = 65536
 B0_ENTRY_MAX_BYTES = 1048576
 B0_SNAPSHOT_MAX_BYTES = 4194304
+#: Largeur du fan-out de la passe nits (#21882). Mesure du 2026-10-31 : la
+#: passe coute ~7 appels `gh` SERIES par PR (~0,75 s chacun, le demarrage de
+#: process Windows domine) -- 62 s pour 6 PRs, 211 s pour les 41 PRs d'une
+#: lane chargee. Le mur de temps du tapis (#21436) clampe alors la boucle et
+#: les candidats servis au-dela ne sont plus verifies. Le cout est LINEAIRE en
+#: nombre de PRs de la lane et les PRs sont independantes entre elles : un
+#: pool de threads borne les ramene sous le mur. 6 par defaut : assez pour
+#: diviser le cout par ~5-6, pas assez pour jouer avec le rate limit `gh`
+#: (l'organe garde par ailleurs son budget de passe `NITS_PASS_BUDGET_S`).
+#: Pilotable comme lui : `NITS_PASS_WORKERS=1` force le chemin serie.
+NITS_PASS_WORKERS = max(1, int(os.environ.get("NITS_PASS_WORKERS", "6")))
 
 
 def _gh_snapshot_module():
@@ -1893,6 +1906,33 @@ def _open_prs_from_snapshot() -> list[dict] | None:
     return copy.deepcopy(prs)
 
 
+#: Etat du patch `gh_json` sous fan-out parallel (#21882). L'attribut de
+#: module est PARTAGE par tous les threads : l'ancien enter/exit qui
+#: patchait/restaurait directement faisait router les appels de l'organe
+#: (thread B) par le cache de la PR du thread A -- payloads d'une autre PR,
+#: invalidation par un fingerprint etranger. On installe donc UNE fonction
+#: de dispatch, comptee en references : chaque thread retrouve son cache
+#: par la pile TLS, et le `gh_json` d'origine n'est restaure qu'au retour
+#: a profondeur zero (semantique exacte du chemin serie, y compris pour un
+#: test qui patcherait `gh_json` lui-meme avant nous).
+_B0_TLS = threading.local()
+_B0_INSTALL = {"depth": 0, "original": None}
+_B0_INSTALL_LOCK = threading.Lock()
+
+
+def _b0_thread_dispatch(args):
+    stack = getattr(_B0_TLS, "stack", None)
+    if stack:
+        return stack[-1]._cached_call(args)
+    original = _B0_INSTALL["original"]
+    if original is not None:
+        # Thread sans pile active (hors passe nits) pendant qu'une passe
+        # tourne ailleurs : passer par le vrai `gh_json`, pas par le notre.
+        return original(args)
+    raise RuntimeError(
+        "dispatch gh_json appele hors install -- pile TLS vide et original absent")
+
+
 class _B0TransportCache:
     """Sert le transport de l'organe B.0 depuis l'instantane (#22630).
 
@@ -1910,6 +1950,12 @@ class _B0TransportCache:
     Le `with` restaure `gh_json` dans tous les cas ; `store()` n'ecrit que si
     au moins un appel a reellement abouti. La passe suivante reessaie donc
     exactement comme avant.
+
+    Thread-safe (#21882) : le patch de `gh_json` est un dispatch compté en
+    references (cf `_B0_INSTALL`), et chaque thread empile SON cache en TLS.
+    En entree imbriquee, le cache interieur appelle le `gh_json` d'ORIGINE
+    sur ses misses (pas le cache englobant) : pas de detournement de payloads
+    d'autrui, pas de recursion.
     """
 
     def __init__(self, module, n: int, fingerprint: str | None):
@@ -1927,12 +1973,34 @@ class _B0TransportCache:
         self.payloads = cached if isinstance(cached, dict) else {}
         self._original = getattr(self.module, "gh_json", None)
         if self._original is not None:
-            self.module.gh_json = self._cached_call
+            with _B0_INSTALL_LOCK:
+                if _B0_INSTALL["depth"] == 0:
+                    _B0_INSTALL["original"] = self._original
+                    self.module.gh_json = _b0_thread_dispatch
+                else:
+                    # Deja installe : `module.gh_json` est NOTRE dispatch --
+                    # l'appeler sur miss ferait une recursion. Brancher sur
+                    # le vrai original, capture au premier install.
+                    self._original = _B0_INSTALL["original"]
+                _B0_INSTALL["depth"] += 1
+            stack = getattr(_B0_TLS, "stack", None)
+            if stack is None:
+                stack = []
+                _B0_TLS.stack = stack
+            stack.append(self)
         return self
 
     def __exit__(self, *exc_info) -> bool:
         if self._original is not None:
-            self.module.gh_json = self._original
+            stack = getattr(_B0_TLS, "stack", None)
+            if stack and stack[-1] is self:
+                stack.pop()
+            with _B0_INSTALL_LOCK:
+                _B0_INSTALL["depth"] -= 1
+                if _B0_INSTALL["depth"] <= 0:
+                    self.module.gh_json = _B0_INSTALL["original"]
+                    _B0_INSTALL["original"] = None
+                    _B0_INSTALL["depth"] = 0
         return False
 
     def _cached_call(self, args):
@@ -6283,8 +6351,7 @@ def unaddressed_review_points(numbers: list[int]) -> dict[int, int]:
     if not numbers:
         return {}
     out: dict[int, int] = {}
-    for n in numbers:
-        info = _nits_blocking_entries(n)
+    for n, info in _nits_blocking_entries_many(numbers).items():
         if info is None:
             continue
         if info["blocking"]:
@@ -6356,6 +6423,42 @@ def _nits_blocking_entries(n: int) -> dict | None:
     return projected
 
 
+def _nits_blocking_entries_many(numbers: list[int]) -> dict[int, dict | None]:
+    """Fan-out borne de `_nits_blocking_entries` sur une liste de PRs (#21882).
+
+    Les PRs sont independantes entre elles et le cout par PR est domine par
+    ~7 appels `gh` SERIES (demarrage de process) : la passe est LINEAIRE en
+    nombre de PRs de la lane (62 s pour 6, 211 s pour 41) et fait exploser
+    le mur de temps du tapis (#21436). Un pool de threads borne par
+    `NITS_PASS_WORKERS` ramene le mur sous controle sans toucher a l'organe
+    B.0 lui-meme (merge-critique) ni a son budget de passe.
+
+    Semantique identique au chemin serie :
+    - ordre : `pool.map` rend les resultats dans l'ordre d'entree, la dict
+      de sortie preserve cet ordre comme la boucle for d'origine ;
+    - exceptions : une TypeError/AttributeError de contrat (#15139) se
+      propage depuis l'iteration, exactement comme la boucle serie qui
+      s'arretait a la PR fautive ; seul ecart, les PRs deja en vol peuvent
+      finir d'ecrire leur cache -- des evaluations legitimes, pas une panne
+      persistee ;
+    - repli serie : `NITS_PASS_WORKERS=1` ou une seule PR retire le pool.
+
+    Surete des partages sous GIL : `_repair_cached_result`/
+    `_repair_store_result` sont des lectures/ecritures dict par cle (les
+    threads ne partagent jamais le meme numero), et le patch `gh_json` de
+    l'organe est servi par le dispatch TLS compte en references
+    (`_B0TransportCache`) -- chaque thread route par SON cache.
+    """
+    if len(numbers) <= 1 or NITS_PASS_WORKERS <= 1:
+        return {n: _nits_blocking_entries(n) for n in numbers}
+    out: dict[int, dict | None] = {}
+    with concurrent.futures.ThreadPoolExecutor(
+            max_workers=min(NITS_PASS_WORKERS, len(numbers))) as pool:
+        for n, info in zip(numbers, pool.map(_nits_blocking_entries, numbers)):
+            out[n] = info
+    return out
+
+
 def unaddressed_review_points_detail(numbers: list[int]) -> dict[int, dict]:
     """Variante enrichie de `unaddressed_review_points` pour la file de reparation (#16926).
 
@@ -6378,8 +6481,7 @@ def unaddressed_review_points_detail(numbers: list[int]) -> dict[int, dict]:
     out: dict[int, dict] = {}
     numbers_with_points: list[int] = []
     voice_numbers: list[int] = []
-    for n in numbers:
-        info = _nits_blocking_entries(n)
+    for n, info in _nits_blocking_entries_many(numbers).items():
         if info is None:
             continue
         if info["blocking"]:
