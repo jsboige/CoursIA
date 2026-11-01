@@ -2,7 +2,7 @@
 
 [← DataScienceWithAgents (série parente)](../README.md) | [02-ML-Cours (prérequis)](../02-ML-Cours/README.md)
 
-**Kernel** : Python 3 (`coursia-ml-training` pour 3.4c, 3.7, 3.12 et 3.13) · **Bibliothèques** : NumPy (implémentations from scratch), matplotlib, torch (moteur principal de 3.6b à 3.13 ; parité ailleurs), torchvision, diffusers (3.10) · **Niveau** : intermédiaire (post socle ML) · **CPU** : oui (exceptions : famille compression 3.9/3.9b/3.9e/3.9f/3.9g, recette complète ResNet-20 sur GPU ~8 min (~30 min pour 3.9b, bras de réentraînement compris) — recette CPU 6 époques sinon ; 3.6c ~19 min CPU ; 3.13b : deux cartes CUDA et conteneur Linux requis — `nccl` n'existe pas sous Windows, exécution via l'image PyTorch officielle, dite comme tel dans le carnet)
+**Kernel** : Python 3 (`coursia-ml-training` pour 3.4c, 3.7, 3.12 et 3.13) · **Bibliothèques** : NumPy (implémentations from scratch), matplotlib, torch (moteur principal de 3.6b à 3.13 ; parité ailleurs), torchvision, diffusers (3.10) · **Niveau** : intermédiaire (post socle ML) · **CPU** : oui (exceptions : famille compression 3.9/3.9b/3.9e/3.9g, recette complète ResNet-20 sur GPU ~8 min (~30 min pour 3.9b, bras de réentraînement compris) — recette CPU 6 époques sinon ; 3.6c ~19 min CPU ; 3.13b : deux cartes CUDA et conteneur Linux requis — `nccl` n'existe pas sous Windows, exécution via l'image PyTorch officielle, dite comme tel dans le carnet)
 
 ## Pourquoi cette série
 
@@ -75,9 +75,9 @@ puis consommé via l'API officielle.
 
 **Bloc A — Compression de modèles from scratch** (EPIC #16060, clos — sous-notebooks par technique, tous livrés) :
 - Bloc A.1 — Quantification FP32→FP16 [3.9] (#16127, MERGED 2026-09-15)
-- Bloc A.2 — Quantification INT8 [3.9a] (#16094, MERGED po-2023 — absorbé dans la partie II de [3.9](3.9-Compression-Quantization-FP.ipynb))
+- Bloc A.2 — Quantification INT8 [3.9 partie II] (#16094, MERGED po-2023 — absorbé dans la partie II de [3.9](3.9-Compression-Quantization-FP.ipynb))
 - Bloc A.3 — Pruning from scratch [3.9b], et son compagnon CPU [3.9c] (MERGED po-2025 le 2026-10-21 par #21649 — unstructured magnitude, structured filter pruning, Lottery Ticket Hypothesis ; partition des rôles entre les deux carnets livrée par #21648)
-- Bloc A.4 — Distillation teacher/student [3.7] (#12675, MERGED — teacher/student sur MLP, puis le terrain ResNet-20/CIFAR-10 de `3.9d` fusionné dedans : hints FitNets et section température approfondie)
+- Bloc A.4 — Distillation teacher/student [3.7] (#12675, MERGED — teacher/student sur MLP, puis le terrain ResNet-20/CIFAR-10 du carnet de distillation archivé fusionné dedans : hints FitNets et section température approfondie)
 
 **Bloc B — Confrontation au SOTA** (mêmes techniques, via les libs standard) :
 - Bloc B.2 — `torch.ao.quantization` + `torch.nn.utils.prune` [3.9e] (fusion ; 3.9f archivé).
