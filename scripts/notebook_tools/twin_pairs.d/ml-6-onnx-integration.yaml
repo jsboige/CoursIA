@@ -1,7 +1,7 @@
 - name: "ML-6 ONNX Integration"
   family: ML.NET/Python
   python: MyIA.AI.Notebooks/ML/ML.Net/ML-06-ONNX-Python.ipynb
-  csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-06-ONNX.ipynb
+  csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-06-ONNX-CSharp.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: |

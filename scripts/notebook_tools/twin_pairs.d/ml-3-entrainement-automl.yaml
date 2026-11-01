@@ -1,7 +1,7 @@
-- name: "ML-3 Entrainement&AutoML"
+- name: "ML-3 Entrainement-AutoML"
   family: ML.NET/Python
-  python: MyIA.AI.Notebooks/ML/ML.Net/ML-03-Entrainement&AutoML-Python.ipynb
-  csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-03-Entrainement&AutoML.ipynb
+  python: MyIA.AI.Notebooks/ML/ML.Net/ML-03-Entrainement-AutoML-Python.ipynb
+  csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-03-Entrainement-AutoML-CSharp.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Modele nominal lib-vs-lib #10382 (moteurs distincts, chacun prod) : C# = Microsoft.ML (NuGet officiel Microsoft.ML, native .NET : Microsoft.ML.Transforms/Regression/Clustering/TimeSeries) et Python = scikit-learn (pip sklearn, native Python) -- chaque cote atteint le moteur SOTA ML de son ecosysteme, ni pont intermediaire ni reimplementation. Aucune asymetrie de machinerie a corriger. Verifie firsthand : C# Microsoft.ML refs + execution_count, Python sklearn imports."
