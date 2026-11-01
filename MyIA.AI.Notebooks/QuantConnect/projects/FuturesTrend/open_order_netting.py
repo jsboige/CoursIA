@@ -30,11 +30,11 @@ This module composes with `contract_roll.roll_orders` without overlapping
 it: the roll decides **which** contract carries the target (the mapped
 one, stale contracts closed), this rule decides **how much** to actually
 send once the live orders are accounted for. It is intentionally **pure
-Python** (no `AlgorithmImports`), on the same pattern as `contract_roll.py`
-and `notional_sizing.py`: contracts are any hashable keys — QC `Symbol`
-objects in production, strings in the tests. The wiring into
-`main_carver13` (items 1 and 3) deliberately waits for the merge of
-#23847 and #23961, which both carry `main_carver13.py`.
+Python** (no `AlgorithmImports`), on the same pattern as
+`carry_forecast.py` and `breadth_multiplier.py`: contracts are any
+hashable keys — QC `Symbol` objects in production, strings in the tests.
+The wiring into `main_carver13` (items 1 and 3) deliberately waits for
+the merge of #23847 and #23961, which both carry `main_carver13.py`.
 """
 
 
@@ -169,6 +169,16 @@ def reconcile_orders(target_qty, holdings, mapped, open_orders, mode=NET):
         with a live remainder is listed for cancellation and the orders
         are the naive gaps — a fresh decision that never stacks behind a
         stale price.
+
+    The judged set is the UNION of ``holdings`` and the contracts of the
+    live orders, not ``holdings`` alone: a stale contract whose position
+    was already liquidated (held 0) but that still carries a live
+    remainder is judged too — exactly the state right after a liquidation
+    by a previous rebalance, the #23841 scenario once the engine closed
+    the delivery-month position on its own. Without the union, such a
+    contract is invisible in both modes (no compensator in NET, absent
+    from ``cancels`` in CANCEL) and its live order survives every
+    decision that claims to supersede it.
     """
     live = [order for order in open_orders if order.remaining != 0]
     orders = []
@@ -189,11 +199,17 @@ def reconcile_orders(target_qty, holdings, mapped, open_orders, mode=NET):
         if gap != 0:
             orders.append((contract, gap))
 
-    for contract, quantity in holdings.items():
+    judged = list(holdings)
+    seen = set(judged)
+    for order in live:
+        if order.contract not in seen:
+            seen.add(order.contract)
+            judged.append(order.contract)
+    for contract in judged:
         if contract == mapped:
             continue
-        held = int(round(float(quantity)))
-        if held != 0:
+        held = int(round(float(holdings.get(contract, 0.0))))
+        if held != 0 or open_order_remainder(live, contract) != 0:
             one_contract(contract, 0, held)
     one_contract(
         mapped, target_qty, int(round(float(holdings.get(mapped, 0.0))))

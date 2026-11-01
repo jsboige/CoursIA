@@ -172,6 +172,40 @@ class TestReconcileNetMode(unittest.TestCase):
             decision.orders, [("SI27F16", +2), ("SI28F16", -2)]
         )
 
+    def test_stale_zero_avec_reste_vivant_compense(self):
+        # Angle mort mesure par la review Hermes du 01/11 : contrat stale
+        # a position NULLE mais porteur d'un ordre vivant — l'ensemble
+        # juge est l'union holdings ∪ contrats des ordres vivants, pas
+        # holdings seul. Position deja liquidee par un rebalance
+        # anterieur, l'ordre de cloture -2 pas encore annule : le NET
+        # emet l'ordre compensateur +2 au lieu de laisser l'ordre vivre.
+        decision = reconcile_orders(
+            target_qty=0,
+            holdings={"SI27F16": 0, "SI28F16": 0},
+            mapped="SI28F16",
+            open_orders=[OpenOrder("SI27F16", -2)],
+            mode=NET,
+        )
+        self.assertEqual(decision.orders, [("SI27F16", +2)])
+        self.assertEqual(decision.cancels, [])
+        self.assertEqual(decision.resubmissions_avoided, 0)
+
+    def test_ordre_integrallement_rempli_hors_holdings_ignore(self):
+        # Cas H : un ordre integralement rempli encore present dans
+        # l'ensemble vivant, sur un contrat absent des holdings. Le
+        # filtre order.remaining != 0 de reconcile_orders (le mecanisme
+        # reel, distinct de celui de open_order_remainder) l'ignore :
+        # ni ordre, ni annulation, le contrat n'entre pas dans l'union.
+        decision = reconcile_orders(
+            target_qty=0,
+            holdings={"SI28F16": 0},
+            mapped="SI28F16",
+            open_orders=[OpenOrder("SI27F16", -2, filled_quantity=-2)],
+            mode=NET,
+        )
+        self.assertEqual(decision.orders, [])
+        self.assertEqual(decision.cancels, [])
+
 
 class TestReconcileCancelMode(unittest.TestCase):
     """Mode CANCEL : annuler puis decider frais sur les positions."""
@@ -218,6 +252,21 @@ class TestReconcileCancelMode(unittest.TestCase):
         )
         self.assertEqual(decision.cancels, ["SI27F16"])
         self.assertEqual(decision.orders, [("SI27F16", +4)])
+
+    def test_stale_zero_avec_reste_vivant_annule(self):
+        # Meme etat que le cas NET (contrat stale a position nulle,
+        # ordre vivant -2), mode CANCEL : le contrat entre dans les
+        # annulations — la decision fraiche ne laisse pas survivre un
+        # ordre qu'elle pretend remplacer — et aucun ordre n'est envoye.
+        decision = reconcile_orders(
+            target_qty=0,
+            holdings={"SI27F16": 0, "SI28F16": 0},
+            mapped="SI28F16",
+            open_orders=[OpenOrder("SI27F16", -2)],
+            mode=CANCEL,
+        )
+        self.assertEqual(decision.cancels, ["SI27F16"])
+        self.assertEqual(decision.orders, [])
 
 
 if __name__ == "__main__":
