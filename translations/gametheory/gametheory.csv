@@ -44264,7 +44264,7 @@ sb.AppendLine($"">>> Bilan : {okTotal}/{bridgeGames.Length} jeux concordent. L'o
 sb.AppendLine(""    valide le from-scratch BCL .NET : les deux implementent la meme notion d'equilibre de Nash."");
 sb.ToString().Display();
 ",,,,,,,,7a93f5f245dc10aa,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm-Part2-Python.ipynb,gt2p2-00,markdown,fr,1f33796219513813,"# GameTheory-2 (Part 2) : Support Enumeration — Équilibre mixte NxN (Python)
+MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm-Part2-Python.ipynb,gt2p2-00,markdown,fr,d8eea9112f18ab3a,"# GameTheory-2 (Part 2) : Support Enumeration — Équilibre mixte NxN (Python)
 
 **Navigation** : [<< GameTheory-2 tranche 1](GameTheory-02-NormalForm-Python.ipynb) | [Twin .NET](GameTheory-02-NormalForm-Part2-CSharp.ipynb) | [Index](../README.md)
 
@@ -44295,7 +44295,7 @@ La résolution exacte d'un équilibre mixte NxN se décompose en : (1) énumére
 
 ### Durée estimée : 50 minutes
 
-> **Note** : Le théorème de Nash (1950) garantit l'existence d'un équilibre, mais sa **recherche** est algorithmiquement non-triviale. L'énumération des supports (Dantzig 1963) est exacte mais **exponentielle** dans le pire cas — Lemke-Howson (1965) est plus efficace en pratique mais complexe à implémenter. Nous faisons l'énumération, la plus pédagogique.",,,,,,,,1f33796219513813,,,,,,,,,,,,,,,
+> **Note** : Le théorème de Nash (1950) garantit l'existence d'un équilibre, mais sa **recherche** est algorithmiquement non-triviale. L'énumération des supports est exacte mais **exponentielle** dans le pire cas — Lemke-Howson (1964) est plus efficace en pratique mais complexe à implémenter. Nous faisons l'énumération, la plus pédagogique.",,,,,,,,d8eea9112f18ab3a,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm-Part2-Python.ipynb,gt2p2-01,code,fr,ff123c783a23a8a1,"# Setup : support enumeration from-scratch, uniquement numpy (stdlib numérique).
 # nashpy n'est importé qu'à la fin, comme vérification indépendante (le vrai outil SOTA).
 import numpy as np
@@ -44494,13 +44494,13 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm-Part2-Python.ipynb,gt2p2-1
 MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm-Part2-Python.ipynb,gt2p2-13,markdown,fr,40171c3f479f10ed,"## 5. Un jeu 3x3 asymétrique
 
 Pour montrer que l'algorithme gère le non-symétrique, prenons un jeu où RPS est **biaisé** : la matière (Rock) rapporte double. L'équilibre n'est plus uniforme — la résolution exacte le révèle.",,,,,,,,40171c3f479f10ed,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm-Part2-Python.ipynb,gt2p2-14,code,fr,501a4a07cde666d2,"# RPS biaise : Rock rapporte double pour j1. Equilibre non-uniforme.
+MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm-Part2-Python.ipynb,gt2p2-14,code,fr,0b2d6ec85d49ebee,"# RPS biaise : Rock rapporte double pour j1. Equilibre non-uniforme.
 Biased = NormalFormGame(
     [""R"", ""P"", ""S""], [""R"", ""P"", ""S""],
-    [[0.0, -1.0, 2.0], [1.0, 0.0, -1.0], [-2.0, 1.0, 0.0]],   # j1 : S bat R = +2 (au lieu de +1)
+    [[0.0, -1.0, 2.0], [1.0, 0.0, -1.0], [-2.0, 1.0, 0.0]],   # j1 : R bat S = +2 (au lieu de +1)
     [[0.0, 1.0, -2.0], [-1.0, 0.0, 1.0], [2.0, -1.0, 0.0]])
 
-print(""=== RPS biaise (S bat R rapporte double) ==="")
+print(""=== RPS biaise (R bat S rapporte double) ==="")
 print(Biased)
 eqs = support_enumeration(Biased)
 print(f""Equilibres trouves : {len(eqs)}"")
@@ -44511,7 +44511,7 @@ for s1, s2 in eqs:
     print(f""sigma2 = {sig2}"")
     v1 = expected_vs_mixed1(Biased, 0, s2)
     print(f""Valeur du jeu pour j1 : {v1:.4f}"")
-print("">>> Paper monte a 50%, R et S tombent a 25% chacun (rupture de symetrie)."")",,,,,,,,501a4a07cde666d2,,,,,,,,,,,,,,,
+print("">>> Paper monte a 50%, R et S tombent a 25% chacun (rupture de symetrie)."")",,,,,,,,0b2d6ec85d49ebee,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm-Part2-Python.ipynb,gt2p2-15,markdown,fr,bf68f07a33711c84,"**Interprétation — rupture de symétrie, Paper devient modal.** Doubler le gain de Rock contre Scissors brise la symétrie : Rock devient une menace renforcée (il bat Scissors de +2 au lieu de +1). Anticipant cela, les deux joueurs déplacent leur probabilité vers **Paper** — l'action qui bat Rock — qui atteint 50 %, tandis que Rock et Scissors tombent à 25 % chacun. La valeur du jeu reste nulle (le biais est symétrique entre les deux joueurs). Cet équilibre non-uniforme est exactement le genre de résultat **non évident à l'intuition** que la support enumeration révèle : aucun argument heuristique simple ne dirait « Paper 50 % » sans résoudre le système.",,,,,,,,bf68f07a33711c84,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm-Part2-Python.ipynb,gt2p2-16,markdown,fr,0ec0741c3321413d,"## 6. Vérification : le Dilemme du Prisonnier
 
@@ -44606,7 +44606,7 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm-Part2-Python.ipynb,gt2p2-3
 from math import comb
 Ns = [2, 4, 6, 8, 10]
 print(""Exercice 3 a completer - complexite C(2N,N)-1 pour N in {2,4,6,8,10}."")",,,,,,,,e78b4929457485e1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm-Part2-Python.ipynb,gt2p2-31,markdown,fr,4bee8c6b453e229e,"## Conclusion (tranche 2)
+MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm-Part2-Python.ipynb,gt2p2-31,markdown,fr,5b719a999af22a84,"## Conclusion (tranche 2)
 
 Cette tranche 2 a résolu le **gap de la tranche 1** : la **support enumeration** permet de calculer **tous les équilibres de Nash** (purs et mixtes) d'un jeu quelconque.
 
@@ -44624,13 +44624,13 @@ Cette tranche 2 a résolu le **gap de la tranche 1** : la **support enumeration*
 
 1. **Indifférence = système linéaire** : le principe d'indifférence de Nash se traduit en un système linéaire résolvable par Gauss — c'est le pont entre théorie des jeux et algèbre linéaire.
 2. **Équilibres purs et mixtes unifiés** : un équilibre pur est un cas particulier de support (taille 1) — le même algorithme les trouve tous.
-3. **Complexité exponentielle** : le nombre de paires de supports croît comme $\binom{2N}{N}$ — impraticable au-delà de N≈10. En pratique, on utilise **Lemke-Howson** (1965), plus rapide mais complexe.
+3. **Complexité exponentielle** : le nombre de paires de supports croît comme $\binom{2N}{N}$ — impraticable au-delà de N≈10. En pratique, on utilise **Lemke-Howson** (1964), plus rapide mais complexe.
 4. **Fidélité vérifiée** : nos équilibres from-scratch coïncident avec `nashpy` — l'algorithme pédagogique est exact.
 
-### Tranches suivantes (marathon #4956)
+### Pour poursuivre
 
-- **Tranche 3** : jeux bayésiens (information incomplète).
-- **Tranche 4** : forme extensive et équilibre de sous-jeu parfait (backward induction).
+- **Jeux bayésiens** (information incomplète) — carnet [GameTheory-11-BayesianGames-Python](GameTheory-11-BayesianGames-Python.ipynb).
+- **Forme extensive et équilibre de sous-jeu parfait** (backward induction) — carnets [GameTheory-07-ExtensiveForm-Python](GameTheory-07-ExtensiveForm-Python.ipynb) et [GameTheory-09-BackwardInduction-Python](GameTheory-09-BackwardInduction-Python.ipynb).
 
 ### Références
 
@@ -44638,9 +44638,7 @@ Cette tranche 2 a résolu le **gap de la tranche 1** : la **support enumeration*
 - Knight, V. (2017). *Nashpy : a python library for 2-player strategic games*.
 - Twin .NET : [GameTheory-02-NormalForm-Part2-CSharp](GameTheory-02-NormalForm-Part2-CSharp.ipynb) (même algorithme en C#/BCL).
 
-***
-
-*Tranche 2 du twin .NET⇄Python (#4956 marathon). Support enumeration = résolution exacte des équilibres mixtes, pont théorie-jeux ↔ algèbre linéaire. Vérifié contre nashpy (SOTA-OK).*",,,,,,,,4bee8c6b453e229e,,,,,,,,,,,,,,,
+***",,,,,,,,5b719a999af22a84,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm-Python.ipynb,gt2-nash-count-interp,markdown,fr,2f0f796e772e2fa2,"### Interprétation — ce que révèle le NOMBRE d'équilibres (1, 2, 2, 2, 0)
 
 Le dump ci-dessus énumère les équilibres de Nash *purs* de cinq jeux canoniques. La quantité qui saute aux yeux n'est pas tel ou tel profil, mais le **nombre** d'équilibres par jeu — et ce nombre est une véritable **taxonomie** des jeux sous forme normale.
