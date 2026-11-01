@@ -9,9 +9,24 @@ running _run_check or scan_source through a bypassed argv hides CLI bugs).
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import check_subprocess_encoding as cse  # noqa: E402
+
+# Kept before any fixture replaces it: the two #24039 parsing tests below
+# restore the real probe to exercise it against a synthetic git payload.
+_REAL_STAGED_PURE_RENAMES = cse.staged_pure_renames
+
+
+@pytest.fixture(autouse=True)
+def _hermetic_renames(monkeypatch):
+    """Pin the rename probe to "no rename": a unit test must not read the
+    contributor's staging area, which would make the suite depend on whatever
+    happens to be ``git add``-ed at the time it runs. The #24039 tests below
+    patch it again themselves."""
+    monkeypatch.setattr(cse, "staged_pure_renames", lambda: set())
 
 
 def test_clean_text_with_encoding():
@@ -171,6 +186,47 @@ def test_main_base_mode(monkeypatch, capsys):
     out = capsys.readouterr().out
     assert "= 2 changed file(s)" in out
     assert ".ipynb" in out
+
+
+# ---- #24039: a pure rename cannot introduce a site ----
+
+def test_staged_pure_renames_keeps_only_r100_destination(monkeypatch):
+    payload = ("R100\0old/dir/x.py\0new/dir/x.py\0"
+               "R087\0a.py\0b.py\0"
+               "M\0c.py\0"
+               "A\0d.py\0")
+    monkeypatch.setattr(cse, "staged_pure_renames", _REAL_STAGED_PURE_RENAMES)
+    monkeypatch.setattr(cse, "git_out", lambda *a: payload)
+    # R087 is a rename *with edits*: its content did change, so it is scanned.
+    assert cse.staged_pure_renames() == {"new/dir/x.py"}
+
+
+def test_staged_pure_renames_without_git_is_empty(monkeypatch):
+    monkeypatch.setattr(cse, "staged_pure_renames", _REAL_STAGED_PURE_RENAMES)
+    monkeypatch.setattr(cse, "git_out", lambda *a: None)
+    assert cse.staged_pure_renames() == set()
+
+
+def test_main_files_mode_skips_pure_rename(tmp_path, capsys, monkeypatch):
+    moved = tmp_path / "moved.py"
+    moved.write_text("import subprocess\nsubprocess.run(['x'], text=True)\n",
+                     encoding="utf-8")
+    monkeypatch.setattr(cse, "staged_pure_renames", lambda: {moved.as_posix()})
+    assert cse.main([str(moved)]) == 0
+    out = capsys.readouterr().out
+    assert "pure rename(s) ignored" in out
+    assert "#24039" in out
+
+
+def test_main_files_mode_still_scans_non_rename(tmp_path, capsys, monkeypatch):
+    """The skip must not become a blanket silence: a file that is not a pure
+    rename keeps its own sites reported."""
+    bad = tmp_path / "bad.py"
+    bad.write_text("import subprocess\nsubprocess.run(['x'], text=True)\n",
+                   encoding="utf-8")
+    monkeypatch.setattr(cse, "staged_pure_renames", lambda: {"/elsewhere.py"})
+    assert cse.main([str(bad)]) == 1
+    assert "text=True without encoding=" in capsys.readouterr().out
 
 
 # ---- #19475: ipynb code-cell extraction ----

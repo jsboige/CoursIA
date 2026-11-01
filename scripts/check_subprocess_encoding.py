@@ -25,6 +25,8 @@ Usage (two modes):
         Scan the given files (pre-commit mode: pre-commit passes the staged
         filenames). For .ipynb inputs, every Python code cell whose source
         contains a violating call is reported as ``path:cell_NN:line``.
+        A file staged as a pure rename is skipped, like CI mode does: the
+        sites it carries predate the move (#24039).
 
     python check_subprocess_encoding.py --base origin/main
         Scan every .py/.ipynb file changed between merge-base(REF, HEAD)
@@ -208,6 +210,41 @@ def changed_python_files(base: str) -> list[str]:
             if l.strip().endswith(keep) and not excluded(l.strip())]
 
 
+def staged_pure_renames() -> set[str]:
+    """Paths arriving in the index as a *pure* rename (similarity 100%).
+
+    A pure rename moves content without touching it, so it cannot introduce a
+    defect site: the sites it carries predate the move. CI mode already sees
+    this (``--diff-filter=AM`` drops status ``R``); pre-commit receives only
+    the new filename and could not tell the two apart, so a moved file
+    re-exposed its inherited sites as NEW -- and the only visible way out was
+    ``SKIP=``, i.e. disabling the gate rather than making it just (#24039).
+
+    Returns an empty set when git cannot answer (not a repository, no index),
+    which keeps both modes and the unit tests' synthetic paths unchanged.
+    """
+    out = git_out("diff", "--cached", "--find-renames", "--name-status", "-z")
+    if out is None:
+        return set()
+    parts = out.split("\0")
+    dest: set[str] = set()
+    i = 0
+    while i < len(parts):
+        status = parts[i]
+        if not status:
+            i += 1
+            continue
+        if status[0] in ("R", "C"):
+            if i + 2 >= len(parts):
+                break
+            if status.startswith("R100"):
+                dest.add(parts[i + 2])
+            i += 3
+        else:
+            i += 2
+    return dest
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(
         description="Refuse NEW subprocess text=True calls without encoding=")
@@ -219,10 +256,17 @@ def main(argv: list[str] | None = None) -> int:
     if args.base:
         targets = changed_python_files(args.base)
     else:
+        renamed = staged_pure_renames()
+        skipped = [f for f in args.files if Path(f).as_posix() in renamed]
         targets = [
             f for f in args.files
-            if (f.endswith(".py") or f.endswith(".ipynb")) and not excluded(f)
+            if (f.endswith(".py") or f.endswith(".ipynb"))
+            and not excluded(f)
+            and f not in skipped
         ]
+        if skipped:
+            print(f"subprocess-encoding ratchet: {len(skipped)} pure rename(s) "
+                  "ignored -- their sites predate the move (#24039)")
 
     violations = 0
     py_count = 0
