@@ -675,8 +675,10 @@ def test_no_repair_when_unset_and_the_resolved_root_has_sdk(monkeypatch, tmp_pat
 # unknowable effective root is the shape the repair exists for, and standing
 # down there was the hole (measured: ``None`` returned while a per-user install
 # carried the SDK). The module's contract now lives in
-# ``tests/test_dotnet_env.py``, hermetically (this site depended on the host's
-# own ``LOCALAPPDATA``); the executor suite keeps the cases below, which pin the
+# ``tests/test_dotnet_env.py``, hermetically: under the #23972 contract this
+# site would depend on the host's own ``LOCALAPPDATA`` (the old unconditional
+# ``None`` did not), which is why the pin belongs in a file that controls that
+# variable itself. The executor suite keeps the cases below, which pin the
 # *repair* paths it consumes.
 
 
