@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-10-31
+
 # GenAI Audio — pattern d'embed audio + leçons de réparation
 
 Consolide les leçons durables de l'audio-roll (#4520 MusicGen, #4522 Demucs, #4540 MIDI, #4549 Dia, #4550 TTS-Gateway) sur la stack GenAI Audio self-hostée. Destiné à tout worker abordant un notebook `GenAI/Audio/*.ipynb` en défaut C.2 (committé sans embeds → l'étudiant n'entend rien).

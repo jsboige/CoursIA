@@ -70,6 +70,29 @@ from pathlib import Path
 WORKFLOWS_DIR = ".github/workflows"
 GATE_FILENAME = "lean-axiom.yml"
 MANIFEST = "scripts/lean/ci_lakes.json"
+COVERAGE_DOC = "docs/reference/lean-axiom-coverage.md"
+
+# Un lake laisse SANS gate doit porter sa decision ecrite (critere 3 de #17097,
+# tranche #22519) : la ligne de doc nomme le ``project-path`` et dit « sans
+# gate ». Le critere reste textuel et volontairement pauvre -- il doit rester
+# lisible par un humain dans le document qui l'explique.
+_GATE_ABSENT_RE = re.compile(r"sans\s+gate", re.I)
+
+# Reserve Hermes 🟠1 (review #23019) : une mention « sans gate » precedee, dans
+# la meme cellule, d'une negation (« n'est plus sans gate », « n'a plus sans
+# gate », « plus sans gate ») dit que le lake N'EST PLUS sans gate -- elle ne
+# justifie rien. La fenetre de 20 caracteres borne la negation a la cellule qui
+# porte la mention, pas a la ligne entiere.
+_NEGATION_RE = re.compile(r"\b(n'est|n'a)\s+plus\b|\bplus\b", re.I)
+_NEGATION_WINDOW = 20
+
+
+def _bounded_path_re(path: str) -> re.Pattern:
+    """Le ``project-path`` en position delimitee (backticks, cellule de table,
+    espace) : une occurrence qui est le PREFIXE d'un chemin plus long sur la
+    ligne (``lean_game_defs`` dans ``lean_game_defs_ext``) ne matche pas.
+    Reserve Hermes 🟠1 (review #23019)."""
+    return re.compile(r"(?<![\w./-])" + re.escape(path) + r"(?![\w.-])")
 
 # Un APPEL du gate : un job dont le `uses:` resout vers lean-axiom.yml.
 # Ancre en debut de ligne (indentation admise) et non `re.search` libre : un
@@ -88,6 +111,17 @@ def _git(*args: str) -> str:
     env = {**os.environ, "MSYS_NO_PATHCONV": "1"}
     proc = subprocess.run(["git", *args], capture_output=True, env=env)
     return proc.stdout.decode("utf-8", "replace")
+
+
+@functools.lru_cache(maxsize=None)
+def path_exists_at(ref: str, path: str) -> bool:
+    """Whether ``path`` is present in the tree of ``ref``.
+
+    ``ls-tree`` renders empty for an absent path and exits 0, so the emptiness
+    is the answer -- the exit code is not. Memoized per (ref, path): the tree of
+    a ref cannot change within a run, so a cached answer cannot go stale.
+    """
+    return bool(_git("ls-tree", ref, "--", path).strip())
 
 
 # Each of the three readers below spawns one `git` per candidate file (~40 in
@@ -261,19 +295,33 @@ def matrix_lakes(ref: str) -> list[dict]:
 
 @functools.lru_cache(maxsize=None)
 def deleted_dispatchers(ref: str) -> list[dict]:
-    """Every deleted ``lean-*`` dispatcher, with its last existing content.
+    """Every ``lean-*`` dispatcher deleted from the history of ``ref``.
 
-    ``git rev-list -n 1 --all -- <path>`` returns the newest commit touching
-    the path across all refs; for a deleted file that is the deletion commit,
-    so its parent holds the last version that existed. We therefore report
-    ``had_gate`` on ``<sha>^:<path>``.
+    The scan is **restricted to commits reachable from ``ref``**. A deletion
+    that happened on some other ref never removed the dispatcher from the
+    audited history, and counting it reports a loss this ref never suffered:
+    a rename commit shows up as the newest commit touching the path, its
+    parent holds the pre-rename content, and the old project-path reads as
+    ungated while the dispatcher is alive and gating at its new path.
+
+    That is measured, not hypothetical (2026-10-31): ``lean-galois.yml`` was
+    never deleted on ``main`` -- ``git log --diff-filter=D origin/main`` over
+    it is empty -- yet ``--all`` found a deletion on a ref ``main`` does not
+    carry and ``rev-list -n 1 --all`` returned the rename commit ``88edc37b4``
+    instead, so the pre-rename path ``.../Lean/galois_lean`` was reported
+    lost while the live job gates ``.../Lean/GALOIS/galois_lean``.
+
+    For each deletion commit, ``<sha>^:<path>`` holds the last version that
+    existed on the ref's history, so ``had_gate`` and ``gated_paths`` are read
+    from there.
     """
-    listed = _git("log", "--all", "--diff-filter=D", "--name-only",
+    listed = _git("log", ref, "--diff-filter=D", "--name-only",
                   "--format=", "--", f"{WORKFLOWS_DIR}/lean-*.yml")
     paths = sorted({p for p in listed.split("\n") if p.startswith(f"{WORKFLOWS_DIR}/lean-")})
     out = []
     for path in paths:
-        sha = _git("rev-list", "-n", "1", "--all", "--", path).strip()
+        sha = _git("log", "-n", "1", "--diff-filter=D", "--format=%H",
+                   ref, "--", path).strip()
         if not sha:
             continue
         last = _git("show", f"{sha}^:{path}")
@@ -286,7 +334,37 @@ def deleted_dispatchers(ref: str) -> list[dict]:
     return out
 
 
-def classify_deleted(deleted: list[dict], gated_now: set[str]) -> dict:
+def _moved_successor(d: dict, gated_now: set[str], exists_at) -> str | None:
+    """The live gated path that took over ``d``'s lake, if the move is provable.
+
+    Two evidences are required together, and each closes one way of being
+    wrong:
+
+    * **absence** -- none of the dispatcher's former project-paths may still
+      exist in the tree at the measured ref. A path that survives is a lake
+      that still lives there and is simply not gated any more: that is a real
+      loss, and treating it as a move would hide it;
+    * **a single successor** -- exactly one gated path today carries the same
+      lake basename (``.../Lean/galois_lean`` -> ``.../Lean/GALOIS/galois_lean``)
+      and exists in the tree. Two candidates make the move unprovable, and a
+      candidate that does not exist credits a coverage nobody holds.
+
+    No probe, or a dispatcher that passed no project-path, yields ``None``:
+    the caller keeps it "lost" (§ fail-closed).
+    """
+    old = d["gated_paths"]
+    if not old or exists_at is None:
+        return None
+    if any(exists_at(p) for p in old):
+        return None
+    names = {Path(p).name for p in old}
+    candidates = sorted(g for g in gated_now
+                        if Path(g).name in names and g not in old and exists_at(g))
+    return candidates[0] if len(candidates) == 1 else None
+
+
+def classify_deleted(deleted: list[dict], gated_now: set[str],
+                     exists_at=None) -> dict:
     """Partition deleted dispatchers into lost / relocated / never.
 
     "Perdu" means lost COVERAGE, not lost FILE: a dispatcher that had the
@@ -294,16 +372,68 @@ def classify_deleted(deleted: list[dict], gated_now: set[str]) -> dict:
     today moved its coverage rather than dropping it. Fail-closed on the
     unreadable cases: a dispatcher that called the gate without passing a
     project-path cannot prove its coverage moved, so it stays "lost".
+
+    Two shapes of move are recognised. The first keeps the path: the same
+    project-path is still gated. The second moves the lake itself -- a T2
+    rename deletes the dispatcher and recreates it under a new directory --
+    and needs ``exists_at`` to prove the old path is gone (see
+    ``_moved_successor``). Without that probe the second shape stays "lost":
+    an absent evidence is not a proof of absence.
     """
     lost, relocated, never = [], [], []
     for d in deleted:
         if not d["had_gate"]:
             never.append(d)
-        elif d["gated_paths"] and set(d["gated_paths"]) <= gated_now:
+            continue
+        if d["gated_paths"] and set(d["gated_paths"]) <= gated_now:
             relocated.append(d)
-        else:
-            lost.append(d)
+            continue
+        successor = _moved_successor(d, gated_now, exists_at)
+        if successor:
+            relocated.append({**d, "moved_to": successor})
+            continue
+        lost.append(d)
     return {"lost": lost, "relocated": relocated, "never": never}
+
+
+@functools.lru_cache(maxsize=None)
+def coverage_doc(ref: str) -> str:
+    """Texte de la doc de reference lue a ``ref`` (worktree en repli)."""
+    text = _git("show", f"{ref}:{COVERAGE_DOC}")
+    if text:
+        return text
+    local = Path(__file__).resolve().parents[2] / COVERAGE_DOC
+    return local.read_text(encoding="utf-8") if local.is_file() else ""
+
+
+def justified_ungated(ref: str, ungated: list[str]) -> set[str]:
+    """Lakes sans gate qui portent neanmoins leur decision ecrite.
+
+    Un lake sans gate d'axiomes n'est pas illicite, il doit seulement etre CONNU
+    comme tel (#17097 critere 3, tranche #22519). « Connu » se lit dans la doc de
+    reference : la ligne porte le ``project-path`` **et** la mention « sans
+    gate ». Deux portes sont closes (reserve Hermes 🟠1, review #23019) : le
+    chemin doit etre en position delimitee -- une occurrence prefixe d'un chemin
+    plus long ne compte pas -- et la mention negative (« n'est plus sans gate »)
+    ne justifie rien. Ce qui n'est pas justifie n'est pas un silence tolerable :
+    c'est un lake dont personne n'a tranche, et c'est ce que
+    ``--check --strict`` refuse.
+    """
+    text = coverage_doc(ref)
+    justified = set()
+    for p in ungated:
+        path_re = _bounded_path_re(p)
+        for line in text.splitlines():
+            m = _GATE_ABSENT_RE.search(line)
+            if not m:
+                continue
+            before = line[max(0, m.start() - _NEGATION_WINDOW):m.start()]
+            if _NEGATION_RE.search(before):
+                continue
+            if path_re.search(line):
+                justified.add(p)
+                break
+    return justified
 
 
 def measure(ref: str) -> dict:
@@ -325,9 +455,12 @@ def measure(ref: str) -> dict:
     manifest_paths = {lk.get("project-path") for lk in lakes}
     ungated = sorted(p for p in manifest_paths
                      if p and p not in set(gated_paths))
-    parts = classify_deleted(deleted, set(gated_paths))
+    parts = classify_deleted(deleted, set(gated_paths),
+                             exists_at=lambda p: path_exists_at(ref, p))
     lost, relocated = parts["lost"], parts["relocated"]
     never = parts["never"]
+    justified = justified_ungated(ref, ungated)
+    unjustified = sorted(set(ungated) - justified)
 
     # What the file-wide scan would have credited *beyond* the job-scoped one:
     # the measure of the defect the scoping closes. Empty is the good news, not
@@ -347,6 +480,8 @@ def measure(ref: str) -> dict:
         "gated_lakes": gated_paths,
         "matrix_lakes": sorted(p for p in manifest_paths if p),
         "matrix_lakes_without_gate": ungated,
+        "matrix_lakes_without_gate_justified": sorted(justified),
+        "ungated_without_justification": unjustified,
         "deleted_dispatchers": len(deleted),
         "lost_gate": sorted(lost, key=lambda d: d["dispatcher"]),
         "gate_relocated": sorted(relocated, key=lambda d: d["dispatcher"]),
@@ -377,6 +512,12 @@ def _print_human(r: dict) -> None:
     print(f"   dont SANS gate d'axiomes : {len(sans)}")
     for p in sans:
         print(f"   sans gate  {p}")
+    unjustified = r["ungated_without_justification"]
+    print(f"   dont sans justification ecrite : {len(unjustified)}"
+          + ("  (decision ecrite dans la doc de reference)"
+             if r["matrix_lakes_without_gate_justified"] else ""))
+    for p in unjustified:
+        print(f"      SANS DECISION  {p}")
 
     print(f"\n3. Dispatchers lean-* supprimes : {r['deleted_dispatchers']}")
     print(f"   AVAIENT le gate -> PERDU : {len(r['lost_gate'])}")
@@ -384,13 +525,16 @@ def _print_human(r: dict) -> None:
         print(f"      PERDU  {d['dispatcher']:42} (supprime par {d['deleted_by']})")
     print(f"   gate DEPLACE (couverture reprise ailleurs) : {len(r['gate_relocated'])}")
     for d in r["gate_relocated"]:
-        print(f"      deplace {d['dispatcher']:42} (supprime par {d['deleted_by']})")
+        suffix = f"  -> {d['moved_to']}" if d.get("moved_to") else ""
+        print(f"      deplace {d['dispatcher']:42} "
+              f"(supprime par {d['deleted_by']}){suffix}")
     print(f"   n'avaient pas le gate   : {len(r['never_had_gate'])}")
     for d in r["never_had_gate"]:
         print(f"      jamais {d['dispatcher']:42} (supprime par {d['deleted_by']})")
 
     print(f"\nSYNTHESE : {len(r['gated_lakes'])} lakes couverts | "
           f"{len(r['matrix_lakes_without_gate'])} sans gate (jamais eu) | "
+          f"{len(r['ungated_without_justification'])} sans decision ecrite | "
           f"{len(r['lost_gate'])} PERDUS")
     print(f"\nRAPPEL : {r['not_an_acceptance_criterion']}")
 
@@ -405,6 +549,12 @@ def main() -> int:
                     help="Exit 1 si un lake a PERDU le gate (regression). "
                          "Un lake qui ne l'a jamais eu ne fait pas echouer : "
                          "c'est une decision de politique, pas une regression.")
+    ap.add_argument("--strict", action="store_true",
+                    help="Avec --check : exit 1 aussi quand un lake du manifeste "
+                         "n'a pas le gate ET ne porte aucune decision ecrite dans "
+                         f"{COVERAGE_DOC}. C'est le cliquet de la tranche #22519 : "
+                         "un lake ajoute demain a la matrice doit etre cable ou "
+                         "justifie, jamais laisse en silence.")
     args = ap.parse_args()
 
     r = measure(args.ref)
@@ -413,6 +563,8 @@ def main() -> int:
     else:
         _print_human(r)
     if args.check and r["lost_gate"]:
+        return 1
+    if args.check and args.strict and r["ungated_without_justification"]:
         return 1
     return 0
 

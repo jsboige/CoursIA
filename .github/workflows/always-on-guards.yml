@@ -921,6 +921,32 @@ jobs:
           # rouge faute de moyen de la declarer.
           LEAN_CLIQUET_PR_BODY: ${{ github.event.pull_request.body }}
         run: |
+          # #23146 : les trois canaux ci-dessus portent la PHOTOGRAPHIE du
+          # payload, figee a l'evenement declencheur. Une PR dont le body est
+          # edite APRES le dernier push -- justification `## Output-collapse
+          # justification` ecrite, `Grain:` corrige, `[LEAN-ANCHOR-DECLARED]`
+          # ajoute -- voyait donc les gardes juger un corps perime, et le
+          # rouge n'etait levable par AUCUN geste de lane : ce job ne se
+          # declenche pas sur `edited` (#22331) et `gh run rerun` rejoue le
+          # meme payload.
+          # Mesure #23047 (28/10) : l'organe a lu 9543 caracteres la ou le
+          # body en portait 10759, `0 justified in body` sur une justification
+          # presente et valide -- le meme organe, lance a la main avec le
+          # corps reel, rendait « Gate passes ».
+          # L'etape « Body live » plus haut dans ce job lit deja le corps
+          # COURANT par API dans `PR_BODY` (les etapes shell du job s'en
+          # servent) : on le promeut ici. Le payload ne reste que le repli
+          # quand cette lecture a echoue, cas ou elle emet un `::warning::`.
+          #
+          # Limite assumee du decoupage #22333, ecrite plutot que decouverte
+          # en rouge : une echappatoire portee par le body et hebergee dans un
+          # organe de CONTENU (comme `Output-collapse`) n'est reevaluee qu'au
+          # prochain evenement de contenu. La fraicheur est corrigee ici ; la
+          # reevaluation d'une edition seule reste due a un push.
+          MD_CONTENT_LOSS_PR_BODY="${PR_BODY:-$MD_CONTENT_LOSS_PR_BODY}"
+          COLLAPSE_PR_BODY="${PR_BODY:-$COLLAPSE_PR_BODY}"
+          LEAN_CLIQUET_PR_BODY="${PR_BODY:-$LEAN_CLIQUET_PR_BODY}"
+          export MD_CONTENT_LOSS_PR_BODY COLLAPSE_PR_BODY LEAN_CLIQUET_PR_BODY
           git fetch origin "${{ github.base_ref }}" -q
           python scripts/ci/fast_lane.py --shadow
 
@@ -1334,3 +1360,12 @@ jobs:
               ;;
           esac
           echo "Tous les organes always-on sont verts (ou skips d'evenement)${HS_REGIME:+ ; hot-subset : ${HS_REGIME}}."
+  # EFFETS DE BORD PR (#22209, tranche 1b, voie A) : le job
+  # `always-on-commenters` vit dans SON PROPRE fichier
+  # (always-on-commenters.yml). Deux raisons mesurees : (1) un workflow
+  # YAML invalide est rejete EN ENTIER par GitHub, et colocaliser
+  # l'emetteur de commentaires avec le umbrella des 16 organes a tue le
+  # gate de contenu avec lui (PR #22244 : contexte runner dans un
+  # env: de niveau job, fichier rejete, 6 runs a zero jobs) ; (2) la
+  # famille always-on est un job par fichier
+  # (test_always_on_body_split.py::test_job_names_are_distinct).
