@@ -1,0 +1,170 @@
+{
+  "openai/gpt-4.1-nano": {
+    "text": "```python\ndef choose_move(n: int) -> int:\n    # Si le nombre de jetons est un multiple de 3, il vaut mieux retirer 1 pour laisser l'adversaire face à un multiple de 3 moins 1.\n    # Sinon, retirer 2 pour forcer l'adversaire à jouer face à un multiple de 3.\n    if n % 3 == 0:\n        return 1\n    else:\n        return 2\n```",
+    "model_returned": "openai/gpt-4.1-nano",
+    "usage": {
+      "prompt_tokens": 166,
+      "completion_tokens": 100,
+      "total_tokens": 266,
+      "cost": 5.66e-05,
+      "is_byok": false,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "cache_write_tokens": 0,
+        "audio_tokens": 0,
+        "video_tokens": 0
+      },
+      "cost_details": {
+        "upstream_inference_cost": 5.66e-05,
+        "upstream_inference_prompt_cost": 1.66e-05,
+        "upstream_inference_completions_cost": 4e-05
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 0,
+        "image_tokens": 0,
+        "audio_tokens": 0
+      }
+    },
+    "id": "gen-1793271088-wgHebpU7UNrlsvrYLcTd"
+  },
+  "meta-llama/llama-3.1-8b-instruct": {
+    "text": "```python\ndef choose_move(n: int) -> int:\n    \"\"\"\n    Cette fonction décide si le joueur doit retirer 1 ou 2 jetons du tas.\n    \n    Si le nombre de jetons restants est pair, le joueur doit retirer 2 jetons pour gagner.\n    Si le nombre de jetons restants est impair, le joueur doit retirer 1 jeton pour gagner.\n    \n    :param n: Le nombre de jetons restants dans le tas.\n    :return: 1 si le joueur doit retirer 1 jeton, 2 si le joueur doit retirer 2 jetons.\n    \"\"\"\n    # Si le nombre de jetons restants est pair, le joueur doit retirer 2 jetons.\n    if n % 2 == 0:\n        return 2\n    # Si le nombre de jetons restants est impair, le joueur doit retirer 1 jeton.\n    else:\n        return 1\n```",
+    "model_returned": "meta-llama/llama-3.1-8b-instruct",
+    "usage": {
+      "prompt_tokens": 183,
+      "completion_tokens": 207,
+      "total_tokens": 390,
+      "cost": 1.194e-05,
+      "is_byok": false,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "cache_write_tokens": 0,
+        "audio_tokens": 0,
+        "video_tokens": 0
+      },
+      "cost_details": {
+        "upstream_inference_cost": 1.194e-05,
+        "upstream_inference_prompt_cost": 3.66e-06,
+        "upstream_inference_completions_cost": 8.28e-06
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 0,
+        "image_tokens": 0,
+        "audio_tokens": 0
+      }
+    },
+    "id": "gen-1793271089-6DQ6ADKsLOao86FXBC6x"
+  },
+  "google/gemini-2.5-flash-lite": {
+    "text": "```python\ndef choose_move(n: int) -> int:\n    \"\"\"\n    Détermine le coup optimal pour le jeu du Counting-to-21.\n\n    Args:\n        n: Le nombre de jetons restants dans le tas.\n\n    Returns:\n        1 ou 2, le nombre de jetons à retirer.\n    \"\"\"\n    # Le joueur qui commence avec un nombre de jetons multiple de 3 perdra\n    # si l'adversaire joue de manière optimale.\n    # Donc, si n est un multiple de 3, le joueur actuel doit retirer 1 jeton\n    # pour laisser un nombre non multiple de 3 à l'adversaire.\n    # Sinon, le joueur actuel peut retirer 2 jetons pour laisser un multiple de 3\n    # à l'adversaire, le forçant ainsi à perdre.\n    if n % 3 == 0:\n        return 1\n    else:\n        return 2\n```",
+    "model_returned": "google/gemini-2.5-flash-lite",
+    "usage": {
+      "prompt_tokens": 170,
+      "completion_tokens": 215,
+      "total_tokens": 385,
+      "cost": 0,
+      "is_byok": true,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "cache_write_tokens": 0,
+        "audio_tokens": 0,
+        "video_tokens": 0
+      },
+      "cost_details": {
+        "upstream_inference_cost": 0.000103,
+        "upstream_inference_prompt_cost": 1.7e-05,
+        "upstream_inference_completions_cost": 8.6e-05
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 0,
+        "image_tokens": 0,
+        "audio_tokens": 0
+      }
+    },
+    "id": "gen-1793271095-1KJSuaWuxASyIbHkDLw4"
+  },
+  "openai/gpt-4o-mini": {
+    "text": "```python\ndef choose_move(n: int) -> int:\n    if n % 3 == 1:\n        return 2\n    else:\n        return 1\n```",
+    "model_returned": "openai/gpt-4o-mini",
+    "usage": {
+      "prompt_tokens": 166,
+      "completion_tokens": 37,
+      "total_tokens": 203,
+      "cost": 0,
+      "is_byok": true,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "cache_write_tokens": 0,
+        "audio_tokens": 0,
+        "video_tokens": 0
+      },
+      "cost_details": {
+        "upstream_inference_cost": 4.71e-05,
+        "upstream_inference_prompt_cost": 2.49e-05,
+        "upstream_inference_completions_cost": 2.22e-05
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 0,
+        "image_tokens": 0,
+        "audio_tokens": 0
+      }
+    },
+    "id": "gen-1793271097-HHNPO9kuKDr4hvgsR4Gr"
+  },
+  "meta-llama/llama-3.3-70b-instruct": {
+    "text": "```python\ndef choose_move(n: int) -> int:\n    \"\"\"\n    Cette fonction détermine le nombre de jetons à retirer pour gagner au jeu du Counting-to-21.\n    \n    Parameters:\n    n (int): Le nombre de jetons restants dans le tas.\n    \n    Returns:\n    int: Le nombre de jetons à retirer (1 ou 2).\n    \"\"\"\n    # Si le nombre de jetons restants est pair, on retire 1 jeton pour laisser un nombre impair à l'adversaire\n    if n % 2 == 0:\n        return 1\n    # Si le nombre de jetons restants est impair, on retire 2 jetons pour laisser un nombre pair à l'adversaire\n    else:\n        return 2\n```",
+    "model_returned": "meta-llama/llama-3.3-70b-instruct",
+    "usage": {
+      "prompt_tokens": 208,
+      "completion_tokens": 173,
+      "total_tokens": 381,
+      "cost": 0.00012996,
+      "is_byok": false,
+      "prompt_tokens_details": {
+        "cached_tokens": 16,
+        "cache_write_tokens": 0,
+        "audio_tokens": 0,
+        "video_tokens": 0
+      },
+      "cost_details": {
+        "upstream_inference_cost": 0.00012996,
+        "upstream_inference_prompt_cost": 4e-05,
+        "upstream_inference_completions_cost": 8.996e-05
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 0,
+        "image_tokens": 0,
+        "audio_tokens": 0
+      }
+    },
+    "id": "gen-1793271098-ce5okp4sq3qeeqs1hTSR"
+  },
+  "deepseek/deepseek-chat-v3.1": {
+    "text": "```python\ndef choose_move(n: int) -> int:\n    # Le joueur perd si n est un multiple de 3 (0, 3, 6, 9, etc.)\n    # Dans ce cas, on retourne 1 (le choix n'a pas d'importance car on perd)\n    # Sinon, on retourne le nombre de jetons à retirer pour laisser un multiple de 3\n    if n % 3 == 0:\n        return 1\n    else:\n        return n % 3\n```",
+    "model_returned": "deepseek/deepseek-chat-v3.1",
+    "usage": {
+      "prompt_tokens": 175,
+      "completion_tokens": 116,
+      "total_tokens": 291,
+      "cost": 0.0003022,
+      "is_byok": false,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "cache_write_tokens": 0,
+        "audio_tokens": 0,
+        "video_tokens": 0
+      },
+      "cost_details": {
+        "upstream_inference_cost": 0.0003022,
+        "upstream_inference_prompt_cost": 0.000105,
+        "upstream_inference_completions_cost": 0.0001972
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 0,
+        "image_tokens": 0,
+        "audio_tokens": 0
+      }
+    },
+    "id": "gen-1793271102-c8ZJ4Oyju1GhHUdJ6GA8"
+  }
+}
