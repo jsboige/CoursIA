@@ -54,6 +54,12 @@ L'affirmation de la règle a été **confrontée à l'organe** avant d'être cor
 
 Le défaut était donc **documentaire** : la règle contredisait un organe correct et testé. Le second écart (« balayage horaire ») a été trouvé par la même passe et corrigé dans le même geste — les deux vivaient sur la même ligne.
 
+### Le rouge `DWELL` n'est pas un défaut de la PR — c'est le balayage qui le lève
+
+Le gate **nomme lui-même** la cause dans son message : la tête est trop récente pour le plancher, rien n'est à corriger dans le code. Un `DWELL` rouge se résorbe donc **sans geste de la lane**, quand le balayage repasse et re-mesure la tête. C'est la raison pour laquelle un rouge de cette classe peut rester affiché des heures sans que personne ne soit en faute.
+
+La cadence réelle du balayage est **lente et irrégulière** : la mesure de **#15197** la situe entre **178 et 341 minutes** — le message du gate, sur une autre fenêtre, annonce « 2 h 33 – 5 h 18 ». Les deux lectures s'accordent sur ce qui compte ici : ce n'est **pas** horaire, et une PR peut légitimement attendre plusieurs heures avant que la jambe repasse au vert. Attendre n'est donc pas un échec de lane ; c'est le fonctionnement nominal.
+
 ### Pourquoi un rejeu de jambe est gratuit
 
 `gh run rerun <run_id> --job <job_id>` ne crée **aucun commit** : la tête ne bouge pas, donc le plancher non plus. C'est le remède que le message du gate nomme lui-même, et il est préférable à `update-branch` quand le seul rouge est `DWELL` — ce dernier n'est pas nuisible, mais il déclenche une rafale CI complète sur un pool de runners partagé.
@@ -77,6 +83,14 @@ Une règle du harnais est **datée de sa rédaction, pas de sa lecture**. Quand 
 | … REFUSE | 4 (main + 3 PR OPEN) | 4 |
 
 Le worktree de test créé sur `fix/14142-qc40-followup-state` (PR #14403 mergée par squash 2026-09-02) a été retiré — c'est le **contrôle positif** manquant à tout prédicat d'ascendance : un squash-merge efface l'ascendance, mais `gh pr list --state all --search` retrouve la PR par le nom de branche.
+
+## 6. Le scope avale le mot-clé — la mesure sur 500 commits (#23348)
+
+Détail déporté de la puce « Safe reference syntax » de la règle. Le mandat `type(scope): subject` a une place invite pour le numéro d'issue — `type(scope,#N): subject` — et cette forme ne ferme rien : `(` et le scope s'assoient entre le mot-clé de fermeture et le numéro.
+
+Mesuré sur `origin/main` sur 500 commits : **299 numéros d'issues distincts cités de cette façon, 186 encore ouverts** ; parmi les **162** cités par un verbe de correction, **95 encore ouverts** — des issues dont le fix est déjà sur `main`, qui gonflent le tapis de travail déjà fait. GitHub ne ferme que si le mot-clé **précède immédiatement** la référence ; tout ce qui s'intercale est du texte.
+
+L'organe de triage : `python scripts/ci/list_scope_swallowed_issues.py` (`--json`, `--all-forms`) nomme les paires (issue ouverte, commit de correction). Il ne ferme rien, ne commente rien : triage et fermeture reviennent au coordinateur (G.9).
 
 ## Voir aussi
 

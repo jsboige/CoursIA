@@ -24,7 +24,7 @@ GitHub auto-closes an issue only when a closing keyword (`close`/`closes`/`close
 | Close when ALL criteria met | `Closes #N` on its own line (verify acceptance first) | ~~`Fixes #N`~~ for partial |
 | Partial delivery | `See #N` (partial: X/Y criteria) | ~~`Refs #N`~~ |
 
-**The scope swallows the keyword (#23348).** The mandated `type(scope): subject` form has an inviting place for the issue number — `type(scope,#N): subject` — and that form closes nothing: `(` and the scope sit between the keyword and the number. Measured on `origin/main` over 500 commits: 299 distinct issue numbers cited this way, **186 still open**; among the 162 cited by a correction verb, **95 still open** — issues whose fix is already on `main`, inflating the belt with work already done. Never rely on the subject alone to close. Two forms that work:
+**The scope swallows the keyword (#23348).** The mandated `type(scope): subject` form has an inviting place for the issue number — `type(scope,#N): subject` — and that form closes nothing: `(` and the scope sit between the keyword and the number. Never rely on the subject alone to close (mesure sur `origin/main` : 500 commits, 299 numéros cités ainsi, **186 encore ouverts** ; parmi les 162 cités par un verbe de correction, **95 encore ouverts** — des fixes déjà sur `main` — [détail §6](../../docs/reference/git-workflow-detail.md)). Two forms that work:
 
 - `Fix(ci,#22937): …` **and** a `Closes #22937` line in the commit body (for a squash merge, the PR body becomes that message);
 - `Fix(ci): …` and a `Closes #22937` line in the body.
@@ -46,7 +46,7 @@ The lister `python scripts/ci/list_scope_swallowed_issues.py` (`--json`, `--all-
 | **Branche manipulée par plusieurs agents de front** | **INTERDIT** | un `[CLAIMED]` d'une autre lane sur l'issue vaut « plusieurs agents » → [lane-claim-protocol.md](lane-claim-protocol.md) |
 
 - **L'alternative merge d'abord, quand elle existe** : `git merge origin/main`, `gh pr update-branch`, cherry-pick, revert, nouveaux commits. Le force-push est le dernier recours, jamais le réflexe de rebase par défaut.
-- **`gh pr update-branch` ne remet PAS le plancher DWELL à zéro quand la fusion est sans conflit** (#16149) : `last_authoritative_committed_at` saute les fusions de rafraîchissement **prouvées content-free**, et fail-close sur tout le reste (résolution manuelle de conflit, rebase, preuve indisponible = **ré-armé**). **Rafraîchir une branche propre pour récupérer un fix de `main` est donc gratuit.** Ce rouge n'est pas un défaut de la PR — le gate le nomme et le balayage le lève seul ; sur une PR dont le **seul** rouge est `DWELL`, le geste **gratuit** est de rejouer la jambe (`gh run rerun <run_id> --job <job_id>`) : aucun commit, donc aucun ré-armement. Prédicat conjonctif, cadence réelle du balayage (178-341 min, #15197) et récit de la correction (#16962) : [git-workflow-detail.md §4](../../docs/reference/git-workflow-detail.md#4-dwell--pourquoi-update-branch-ne-re-arme-plus-le-plancher-16962).
+- **`gh pr update-branch` ne remet PAS le plancher DWELL à zéro quand la fusion est sans conflit** (#16149) : le plancher se mesure par `last_authoritative_committed_at` (le dernier commit qui **modifie le côté PR**) — les fusions de rafraîchissement **prouvées content-free** sont sautées, tout le reste (conflit résolu à la main, rebase, preuve indisponible) **ré-arme**. **Rafraîchir une branche propre pour récupérer un fix de `main` est donc gratuit** ; sur une PR dont le **seul** rouge est `DWELL`, le geste gratuit est de rejouer la jambe (`gh run rerun <run_id> --job <job_id>`). Prédicat conjonctif, cadence du balayage et récit de la correction : [git-workflow-detail.md §4](../../docs/reference/git-workflow-detail.md#4-dwell--pourquoi-update-branch-ne-re-arme-plus-le-plancher-16962).
 - **Ce que chaque geste fait au plancher** :
   - `gh pr update-branch` **sans conflit** : **inchangé** — fusion content-free, sautée.
   - `gh pr update-branch` **avec résolution de conflit** : **ré-armé** — l'arbre diffère de l'auto-merge.
@@ -68,7 +68,7 @@ The lister `python scripts/ci/list_scope_swallowed_issues.py` (`--json`, `--all-
 - **Jamais de `reset --hard`** sur `main` ni sur une branche partagée.
 - **Un secret déjà commité ne se répare PAS par réécriture d'historique** : branche propre + cherry-pick, et **rotation de la clé** (cf [secrets-hygiene.md](secrets-hygiene.md) règle 5).
 
-**`allow_force_pushes` n'est PAS lisible sans droit admin** : `gh api .../branches/main/protection` renvoie **404** sous `myia-ai-01` (#9991). Un 404 y est **une question, pas une absence mesurée** — l'interpréter comme « pas de protection » conclut l'inverse de la vérité. Ce qu'une lane peut vérifier sans admin, c'est le comportement : un `push --force` sur `main` est rejeté par le serveur.
+**`allow_force_pushes` n'est PAS lisible sans droit admin** : un 404 sur `branches/main/protection` est **une question, pas une absence mesurée** (#9991) — [détail §1](../../docs/reference/git-workflow-detail.md). Ce qu'une lane peut vérifier sans admin, c'est le comportement : un `push --force` sur `main` est rejeté par le serveur.
 
 ---
 
