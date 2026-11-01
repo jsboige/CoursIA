@@ -49,15 +49,26 @@ def run_multi_baseline(demo_num: int, max_iterations: int = 5,
         # Le point de depart est celui que le prouveur voit REELLEMENT : sur une
         # cible de calibration il vaut 1 (scaffolding stubbe), pas 0 (scaffolding
         # committe avec sa preuve approuvee). Mesurer avant le stub rendait
-        # `sorry_eliminated` structurellement faux sur ces DEMOS.
+        # `sorry_eliminated` structurellement faux dans l'autre sens.
         original_sorry = count_real_sorries(Path(filepath).read_text(encoding="utf-8"))
         result = asyncio.run(prover.prove_sorry(demo=prepared, max_iterations=max_iterations))
+        # L'etat final qui mesure le prouveur est celui qu'il LAISSE, lu a
+        # l'interieur du bloc — AVANT la restauration du finally. Le lire apres
+        # la sortie mesurait les octets committes (preuve approuvee restauree),
+        # donc `sorry_eliminated = +1` constant sur les rangs de calibration,
+        # que le prouveur ait travaille ou non (reserve Hermes #23990, 01/11).
+        final_sorry = count_real_sorries(Path(filepath).read_text(encoding="utf-8"))
     elapsed = time.time() - start
 
-    # Verify file was restored
-    final = Path(filepath).read_text(encoding="utf-8")
-    final_sorry = count_real_sorries(final)
-    file_ok = final == original or final_sorry < original_sorry
+    # La restauration se verifie SEULE, apres sortie : egalite stricte aux
+    # octets committes sur une cible stubbee. L'ancienne disjonction
+    # `final_sorry < original_sorry` pardonnait une restauration ratee des
+    # que le prouveur avait laisse une preuve (garde unilaterale).
+    restored = Path(filepath).read_text(encoding="utf-8")
+    if bool(prepared.get("calibration_stubbed")):
+        file_ok = restored == original
+    else:
+        file_ok = restored == original or final_sorry < original_sorry
 
     false_green = flag_false_green(prepared, result)
 
@@ -105,11 +116,16 @@ def run_auto_baseline(demo_num: int, max_iterations: int = 5,
     with calibration_stub(demo) as prepared:
         original_sorry = count_real_sorries(Path(filepath).read_text(encoding="utf-8"))
         result = prover.prove_sorry(demo=prepared, max_iterations=max_iterations)
+        # Meme regle que le mode multi (reserve Hermes #23990) : l'etat final
+        # se lit AVANT la restauration, sinon `sorry_eliminated` est constant.
+        final_sorry = count_real_sorries(Path(filepath).read_text(encoding="utf-8"))
     elapsed = time.time() - start
 
-    final = Path(filepath).read_text(encoding="utf-8")
-    final_sorry = count_real_sorries(final)
-    file_ok = final == original or final_sorry < original_sorry
+    restored = Path(filepath).read_text(encoding="utf-8")
+    if bool(prepared.get("calibration_stubbed")):
+        file_ok = restored == original
+    else:
+        file_ok = restored == original or final_sorry < original_sorry
 
     false_green = flag_false_green(prepared, result)
 

@@ -150,3 +150,134 @@ def test_flag_false_green_ignores_a_genuine_already_solved():
 def test_flag_false_green_ignores_a_real_run():
     prepared = {"name": "CALIBRATION_FIXTURE", "calibration_stubbed": True}
     assert flag_false_green(prepared, {"success": True, "iterations": 3}) is False
+
+
+# --- Metrique de sortie des rangs de calibration (reserve Hermes #23990, 01/11) ---
+#
+# `final_sorry` se lit a l'INTERIEUR du bloc `with` (etat laisse par le prouveur,
+# avant la restauration) : lu a la sortie, il mesurait les octets committes et
+# `sorry_eliminated` valait +1 constant sur les rangs de calibration — un
+# prouveur qui echoue et un prouveur qui prouvent imprimaient la meme ligne.
+# Ces deux tests verrouillent que la metrique PEUT echouer.
+
+import contextlib
+import sys
+import types
+
+
+@contextlib.contextmanager
+def _bare_runner_llm_stack():
+    """Placeholders ``agent_framework``(_``openai``) sur runner nu (#21331).
+
+    L'import de ``run_baselines`` tire ``provers`` et ``config``, qui importent
+    la stack au niveau module ; le prouveur reel est monkeypatch de toute facon.
+    Purge des ``prover.*`` apparus pendant le contexte en sortie : ils portent
+    des classes definies sur les bases placeholder (precedent
+    ``test_provider_gate_18709``). Stack reelle presente : no-op.
+    """
+    try:
+        import agent_framework  # noqa: F401
+        yield
+        return
+    except ModuleNotFoundError:
+        pass
+
+    class _Placeholder:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def __class_getitem__(cls, item):  # WorkflowContext[ProofMessage]
+            return cls
+
+    class _StubModule(types.ModuleType):
+        # Tout nom absent resolve en placeholder : provers/agents/config
+        # importent bien plus que les deux symboles qui echouent en premier.
+        def __getattr__(self, name):
+            if name.startswith("__"):
+                raise AttributeError(name)
+            return _Placeholder
+
+    af = _StubModule("agent_framework")
+    afo = _StubModule("agent_framework_openai")
+    afo.OpenAIChatCompletionClient = _Placeholder
+    saved = {k: sys.modules.get(k)
+             for k in ("agent_framework", "agent_framework_openai")}
+    pre_existing = {n for n in sys.modules
+                    if n == "prover" or n.startswith("prover.")}
+    sys.modules["agent_framework"] = af
+    sys.modules["agent_framework_openai"] = afo
+    try:
+        yield
+    finally:
+        for name in [n for n in sys.modules
+                     if (n == "prover" or n.startswith("prover."))
+                     and n not in pre_existing]:
+            del sys.modules[name]
+        for key, previous in saved.items():
+            if previous is None:
+                sys.modules.pop(key, None)
+            else:
+                sys.modules[key] = previous
+
+
+class _FailingProver:
+    """Prouveur factice : echoue sans toucher le fichier."""
+
+    def __init__(self, *args, **kwargs):
+        pass
+
+    async def prove_sorry(self, demo, max_iterations):
+        return {"success": False, "iterations": max_iterations, "attempts": 0}
+
+
+class _SolvingProver:
+    """Prouveur factice : ecrit une preuve a la place du sorry laisse par le stub."""
+
+    def __init__(self, *args, **kwargs):
+        pass
+
+    async def prove_sorry(self, demo, max_iterations):
+        from pathlib import Path
+        target = Path(demo["file"])
+        target.write_text(
+            target.read_text(encoding="utf-8").replace("sorry", "rfl"),
+            encoding="utf-8",
+        )
+        return {"success": True, "iterations": 1, "attempts": 1}
+
+
+def _wire(monkeypatch, tmp_path, demo_num, fake_prover):
+    with _bare_runner_llm_stack():
+        from prover.baselines import run_baselines as rb
+
+    monkeypatch.setattr(rb, "TRACES_DIR", tmp_path / "traces")
+    monkeypatch.setitem(rb.DEMOS, demo_num, _demo(_write(tmp_path)))
+    monkeypatch.setattr(rb, "MultiAgentSorryProver", fake_prover)
+    return rb
+
+
+def test_calibration_row_reports_zero_eliminated_when_the_prover_fails(tmp_path, monkeypatch):
+    rb = _wire(monkeypatch, tmp_path, 4242, _FailingProver)
+
+    baseline = rb.run_multi_baseline(4242, max_iterations=2, provider="test")
+
+    assert baseline["calibration_stubbed"] is True
+    assert baseline["original_sorry"] == 1        # le trou que le prouveur voit
+    assert baseline["final_sorry"] == 1           # il n'a rien ecrit
+    assert baseline["sorry_eliminated"] == 0      # la metrique peut echouer
+    assert baseline["success"] is False
+    assert baseline["file_restored"] is True      # egalite stricte aux octets committes
+
+
+def test_calibration_row_reports_the_state_the_prover_left(tmp_path, monkeypatch):
+    rb = _wire(monkeypatch, tmp_path, 4243, _SolvingProver)
+    target = tmp_path / "Calibration" / "Fixture.lean"
+    original_bytes = target.read_bytes()
+
+    baseline = rb.run_multi_baseline(4243, max_iterations=2, provider="test")
+
+    assert baseline["original_sorry"] == 1
+    assert baseline["final_sorry"] == 0           # preuve ecrite, lue avant restauration
+    assert baseline["sorry_eliminated"] == 1
+    assert baseline["file_restored"] is True      # restauration aux octets committes
+    assert target.read_bytes() == original_bytes  # le depot n'a rien garde du run
