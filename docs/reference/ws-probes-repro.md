@@ -45,12 +45,34 @@ corpus `torchvision` (cache `~/.cache/ft00a`).
 d'affichage ; la quatrième (WS-00c translaté) s'écarte d'**un item** (`86/200` mesuré vs
 `85/200` cités).
 
-## Lecture de l'écart WS-00c : un item sur le test translaté
+### Contre-mesure du 2026-11-01 : même script, scikit-learn 1.8.0
 
-Le test propre se reproduit **à l'identique** (`0.790 = 158/200`). Le seul écart est le test
-translaté : `0.430` mesuré contre `0.425` cités, soit **un item** (`86/200` vs `85/200`).
-Un point de test vaut `1/200 = 0.005`, donc l'écart est exactement un item — de même ordre
-que la variabilité intrinsèque de la sonde.
+Exécution du 2026-11-01, Python 3.13.14, numpy 2.4.2, **scikit-learn 1.8.0**, graine 42,
+corpus `torchvision`, même cache. **Le script est inchangé** — seule la bibliothèque diffère.
+
+| Sonde | État | 2026-10-24 | 2026-11-01 | Cité | Verdict 11-01 |
+|---|---|---:|---:|---:|---|
+| WS-00c | test propre | 0.7900 | 0.7900 | 0.790 | **ok** |
+| WS-00c | test translaté | 0.4300 | **0.4350** | 0.425 | écart |
+| WS-03 | test propre | 0.7800 | 0.7800 | 0.780 | **ok** |
+| WS-03 | test translaté | 0.3107 | 0.3107 | 0.311 | **ok** |
+
+Le test **propre** de WS-00c et **les deux** valeurs de WS-03 sont identiques au chiffre près
+entre les deux versions. Seul le test **translaté** de WS-00c se déplace : `0.4300 → 0.4350`,
+soit **un item de plus**, et **deux items** au-dessus de la valeur citée.
+
+## Lecture de l'écart WS-00c : une dépendance d'environnement, pas un item
+
+Le test propre se reproduit **à l'identique** dans les deux versions (`0.790 = 158/200`).
+Le seul écart est le test translaté, et il **grandit avec la version de scikit-learn** :
+`0.425` cités, `0.430` sous 1.6.1, `0.435` sous 1.8.0. Un point de test vaut
+`1/200 = 0.005` : l'écart vaut donc un item pour 1.6.1 et **deux** pour 1.8.0.
+
+La lecture « l'écart est exactement un item, de même ordre que la variabilité intrinsèque de
+la sonde » ne vaut donc que pour la version qui l'a produite. Ce n'est pas de la variabilité
+intrinsèque : c'est une **dépendance au couple (source de données, version de la sonde)**,
+qui se déplace d'un cran à chaque changement de l'un des deux. Le chiffre d'un carnet qui ne
+fixe ni l'un ni l'autre est une mesure d'environnement.
 
 Les valeurs citées sont **les sorties committées** du carnet WS-00c, ligne `pixels` de la table
 de `WS-00c-Scattering-from-scratch.ipynb` (artefact committé : `pixels | 0.790 | 0.425`) — et non
@@ -70,7 +92,8 @@ reproduit le classifieur linéaire sur pixels bruts, donc cette ligne-là.
   découpage de WS-03 — mais cette compatibilité **n'est pas une provenance** : elle dit
   seulement que ce n'est pas une mesure de WS-00c.
 
-Deux causes candidates pour ce décalage d'un item, aucune prouvée ici :
+Deux causes candidates pour ce décalage, la première restant non testée, la seconde
+désormais mesurée :
 
 1. **Fork de source dans la cellule du carnet (cause structurelle).** La cellule 20 essaie
    `torchvision.datasets.FashionMNIST` puis retombe sur `fetch_openml("Fashion-MNIST")`.
@@ -82,13 +105,26 @@ Deux causes candidates pour ce décalage d'un item, aucune prouvée ici :
    (`URLError: [WinError 10060]`), donc la branche openml n'a pas pu être exécutée. Le script
    expose `--source openml` pour que le test soit rejouable sur une machine qui atteint OpenML.
 
-2. **Dérive de version de scikit-learn.** La version employée par l'auteur n'est pas
-   consignée dans le carnet ; une évolution du comportement de `LogisticRegression`
-   (solveur, multimodal) peut déplacer une prédiction. Non testé non plus : il faudrait
-   l'empreinte de l'environnement d'origine, que le carnet ne porte pas.
+2. **Dérive de version de scikit-learn — mesurée le 2026-11-01.** La version employée par
+   l'auteur n'est pas consignée dans le carnet ; une évolution du comportement de
+   `LogisticRegression` (solveur, multimodal) peut déplacer une prédiction. Le test est
+   désormais fait, sans réimplémentation : **le script de ce dépôt, inchangé**, rejoué sous
+   `scikit-learn 1.8.0` rend `0.4350` là où `1.6.1` rendait `0.4300` (tableau ci-dessus).
+   Le test propre et WS-03 ne bougent pas. La cause est donc **confirmée**, et elle seule
+   explique un déplacement d'un item vers le haut ; elle n'explique pas l'écart initial de
+   `0.425` cités vers `0.430` mesurés, qui reste attribuable à la cause 1 ou à la version
+   employée par l'auteur — laquelle n'est toujours pas connue.
 
-Ce qui est **mesuré** : sur la branche `torchvision` avec scikit-learn 1.6.1, le test propre
-est exact et le test translaté s'écarte d'un item.
+Ce qui est **mesuré** : sur la branche `torchvision`, le test propre est exact et le test
+translaté s'écarte de la valeur citée — d'un item sous 1.6.1, de deux sous 1.8.0. Le chiffre
+dépend donc de la version de la sonde, et cette dépendance est reproductible.
+
+**Contrôle indépendant du finding de parité (2026-11-01).** Une réimplémentation
+indépendante de WS-00c, écrite sans lire cette section, a fait basculer le test translaté sur
+la parité **locale** au lieu de la parité **globale** `te_i`, et a obtenu `0.410` au lieu de
+`0.430`. C'est exactement le piège décrit plus haut, et il coûte quatre items — soit plus que
+l'écart total étudié. Le finding de parité n'est donc pas théorique : il a été vérifié par un
+agent qui s'y est fait prendre.
 
 ## Ce que WS-03 établit, en revanche
 
