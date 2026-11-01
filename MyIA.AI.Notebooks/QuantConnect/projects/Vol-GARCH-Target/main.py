@@ -159,16 +159,22 @@ class GarchVolTargetAlgorithm(QCAlgorithm):
 
         Fenetre large (#20286 / #21471). Sur une demi-seance, `self.history()`
         rend moins de barres que demande : le raccourcissement mesure vaut 21
-        barres (105 servies pour 126 demandees, #20286). Ici le seuil n'est que
-        de 2 clotures, donc une fenetre double (4) laisserait une marge de 2
-        barres -- sous le raccourcissement observe. On demande 30 barres : la
-        marge (28) depasse le raccourcissement mesure, et la paire lue reste
-        celle des deux dernieres barres. Le calcul est inchange, c'est la marge
-        qui grandit. Cout : un `history` journalier de 30 barres, negligeable.
+        barres (105 servies pour 126 demandees, soit 16,7 %, #20286 / #21471).
+        Ici le seuil n'est que de 2 clotures, donc une fenetre double (4)
+        laisserait une marge de 2 barres -- sous le raccourcissement observe. On
+        demande 30 barres : la marge (28) depasse le raccourcissement mesure, et
+        la paire lue reste celle des deux dernieres barres. Le calcul est
+        inchange, c'est la marge qui grandit. Cout : un `history` journalier de
+        30 barres, negligeable.
+
+        Ce correctif **elargit la marge** ; il ne repare pas un echec observe sur
+        ce projet. Le re-slice ne cree aucun invariant : **2 barres suffisent a la
+        paire**, c'est le nombre demande qui porte le correctif, pas le slice.
         """
         hist = self.history(self.symbols[ticker], 30, Resolution.DAILY)
         if hist is None or len(hist) < 2:
             return None
+        hist = hist.iloc[-3:]
         closes = hist["close"]
         # Un historique LEAN porte parfois un MultiIndex (symbole, horodatage) :
         # `list(hist.index)` rend alors des tuples, pas des dates. On prend le
