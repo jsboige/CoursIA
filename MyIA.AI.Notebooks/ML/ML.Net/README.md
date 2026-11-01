@@ -33,23 +33,23 @@ Le parcours va du premier pipeline (ML-01) jusqu'à une application complète : 
 
 | # | Notebook | Contenu | Durée |
 |---|----------|---------|-------|
-| 01 | [ML-01-Introduction](ML-01-Introduction.ipynb) | Hello ML.NET World, pipeline de base · *jumeau [Python](ML-01-Introduction-Python.ipynb)* | 30-40 min |
-| 02 | [ML-02-Data&Features](ML-02-Data&Features.ipynb) | IDataView, TextLoader, encodage · *jumeau [Python](ML-02-Data&Features-Python.ipynb)* | 40-50 min |
-| 03 | [ML-03-Entrainement&AutoML](ML-03-Entrainement&AutoML.ipynb) | SDCA, LightGBM, AutoML · *jumeau [Python](ML-03-Entrainement&AutoML-Python.ipynb)* | 45-60 min |
-| 04 | [ML-04-Evaluation](ML-04-Evaluation.ipynb) | Cross-validation, métriques, PFI · *jumeau [Python](ML-04-Evaluation-Python.ipynb)* | 40-50 min |
+| 01 | [ML-01-Introduction-CSharp](ML-01-Introduction-CSharp.ipynb) | Hello ML.NET World, pipeline de base · *jumeau [Python](ML-01-Introduction-Python.ipynb)* | 30-40 min |
+| 02 | [ML-02-Data-Features-CSharp](ML-02-Data-Features-CSharp.ipynb) | IDataView, TextLoader, encodage · *jumeau [Python](ML-02-Data-Features-Python.ipynb)* | 40-50 min |
+| 03 | [ML-03-Entrainement-AutoML-CSharp](ML-03-Entrainement-AutoML-CSharp.ipynb) | SDCA, LightGBM, AutoML · *jumeau [Python](ML-03-Entrainement-AutoML-Python.ipynb)* | 45-60 min |
+| 04 | [ML-04-Evaluation-CSharp](ML-04-Evaluation-CSharp.ipynb) | Cross-validation, métriques, PFI · *jumeau [Python](ML-04-Evaluation-Python.ipynb)* | 40-50 min |
 | 04b | [ML-04b-ModelComparison-Validity](ML-04b-ModelComparison-Validity-Python.ipynb) | Validité statistique des comparaisons de modèles : variance d'un split, bootstrap, t-test corrigé (Nadeau-Bengio), Bonferroni · *standalone Python (scikit-learn, scipy)* | 45-60 min |
 
 ### Fonctionnalités avancées (ML-05 à ML-09c)
 
 | # | Notebook | Contenu | Jumeau Python (scikit-learn / statsmodels) | Durée |
 |---|----------|---------|------------------------------------------|-------|
-| 05 | [ML-05-TimeSeries](ML-05-TimeSeries.ipynb) | **Time Series Forecasting** avec ForecastBySsa (SSA) | [ML-05-Python](ML-05-TimeSeries-Python.ipynb) — STL + SARIMA | 45-60 min |
+| 05 | [ML-05-TimeSeries-CSharp](ML-05-TimeSeries-CSharp.ipynb) | **Time Series Forecasting** avec ForecastBySsa (SSA) | [ML-05-Python](ML-05-TimeSeries-Python.ipynb) — STL + SARIMA | 45-60 min |
 | 05b | [ML-05b-Series-Temporelles-Classiques](ML-05b-Series-Temporelles-Classiques-Python.ipynb) | **Socle statistique des séries temporelles** : ADF (stationnarité), ACF/PACF (ordres p/q), ARIMA/SARIMA, lissage exponentiel, backtest glissant | *standalone Python (statsmodels — le socle que ML-05 suppose)* | 60-75 min |
-| 06 | [ML-06-ONNX](ML-06-ONNX.ipynb) | **ONNX Integration** : modèles Python/PyTorch dans .NET | [ML-06-Python](ML-06-ONNX-Python.ipynb) — skl2onnx + onnxruntime (export côté Python du pont inter-langage) | 45-60 min |
-| 07 | [ML-07-Recommendation](ML-07-Recommendation.ipynb) | **Recommandation** : Matrix Factorization, collaborative filtering | [ML-07-Python](ML-07-Recommendation-Python.ipynb) — NMF | 45-60 min |
+| 06 | [ML-06-ONNX-CSharp](ML-06-ONNX-CSharp.ipynb) | **ONNX Integration** : modèles Python/PyTorch dans .NET | [ML-06-Python](ML-06-ONNX-Python.ipynb) — skl2onnx + onnxruntime (export côté Python du pont inter-langage) | 45-60 min |
+| 07 | [ML-07-Recommendation-CSharp](ML-07-Recommendation-CSharp.ipynb) | **Recommandation** : Matrix Factorization, collaborative filtering | [ML-07-Python](ML-07-Recommendation-Python.ipynb) — NMF | 45-60 min |
+| 08 | [ML-08-Clustering-CSharp](ML-08-Clustering-CSharp.ipynb) | **Clustering non-supervisé** : K-Means, segmentation RFM, méthode du coude | [ML-08-Python](ML-08-Clustering-Python.ipynb) — KMeans scikit-learn + méthode du coude | 45-60 min |
+| 09 | [ML-09-Anomaly-Detection-CSharp](ML-09-Anomaly-Detection-CSharp.ipynb) | **Détection d'anomalies** : Randomized PCA, AUC, seuil de décision | [ML-09-Python](ML-09-Anomaly-Detection-Python.ipynb) — PCA + erreur de reconstruction | 45-60 min |
 | 07b | [ML-07b-SemanticIDs-Recommandation](ML-07b-SemanticIDs-Recommandation-Python.ipynb) | **Identifiants sémantiques** : tokeniser un item en codes quantifiés (le dispositif des recommandateurs génératifs), mesurer ce que cela vaut au démarrage à froid contre populaires, collaboratif et contenu, et tester les écarts au bruit (McNemar, bootstrap) | *standalone Python (scikit-learn, scipy — la limite froide de la factorisation matricielle, mesurée)* | 45-60 min |
-| 08 | [ML-08-Clustering](ML-08-Clustering.ipynb) | **Clustering non-supervisé** : K-Means, segmentation RFM, méthode du coude | [ML-08-Python](ML-08-Clustering-Python.ipynb) — KMeans scikit-learn + méthode du coude | 45-60 min |
-| 09 | [ML-09-Anomaly-Detection](ML-09-Anomaly-Detection.ipynb) | **Détection d'anomalies** : Randomized PCA, AUC, seuil de décision | [ML-09-Python](ML-09-Anomaly-Detection-Python.ipynb) — PCA + erreur de reconstruction | 45-60 min |
 | 09b | [ML-09b-TSAD-Benchmark-Flaws](ML-09b-TSAD-Benchmark-Flaws-Python.ipynb) | **Introspection des benchmarks** : pourquoi un détecteur de 1924 (SPC `M+3σ`) bat un auto-encodeur, les 4 pièges de Wu & Keogh, UCR Archive | *standalone Python (scikit-learn — anti-dote aux benchmarks triviaux)* | 45-60 min |
 | 09c | [ML-09c-MatrixProfile-Multidim](ML-09c-MatrixProfile-Multidim-Python.ipynb) | **Matrix Profile multidimensionnel** : détection sans apprentissage (`stumpy`), condensation `min`/`max`, mSTAMP, l'anomalie répétée que `k=1` cesse de voir | *standalone Python (stumpy — la réponse constructive à ML-09b)* | 45-60 min |
 
@@ -57,7 +57,7 @@ Le parcours va du premier pipeline (ML-01) jusqu'à une application complète : 
 
 | # | Notebook | Contenu | Durée |
 |---|----------|---------|-------|
-| TP | [TP-prevision-ventes](TP-prevision-ventes.ipynb) | Régression avec ML.NET + Infer.NET bayésien | 45-60 min |
+| TP | [TP-Prevision-Ventes-CSharp](TP-Prevision-Ventes-CSharp.ipynb) | Régression avec ML.NET + Infer.NET bayésien | 45-60 min |
 
 ## Parcours d'apprentissage
 
@@ -68,7 +68,7 @@ Le parcours débute par le notebook 1 qui présente l'écosystème ML.NET et con
 Le notebook 2 plonge dans la préparation des données — l'étape la plus chronophage en pratique. Vous apprendrez à manipuler `IDataView`, la structure colonnaire performante de ML.NET, à charger des fichiers CSV, à encoder des variables catégorielles, à gérer les valeurs manquantes, et à concaténer des features. Ce notebook utilise le dataset taxi-fare pour un exercice concret de prédiction de prix immobiliers.
 
 ![Régression linéaire : prix d'une maison selon sa taille — droite apprise sur 4 points d'entraînement (cercles bleus) avec 15 points test (carrés orange), évaluation par hold-out et prédiction unique (étoile rouge, 2.5 kpi → 2.76)](assets/readme/ml-regression.png)
-*Figure extraite du jumeau Python ML-01-Introduction-Python (cellule 17, output 0). La relation linéaire entre la taille (en milliers de pieds carrés) et le prix (en centaines de milliers de dollars) est apprise sur un split entraînement/test explicite ; l'étoile rouge matérialise une prédiction ponctuelle (2.5 kpi → 2.76). Le pipeline ML.NET `IDataView` → `EstimatorChain` produit la même droite côté C# — limitation illustrative assumée : la figure documente le concept de régression linéaire et la mécanique split/prédiction, pas le code ML.NET lui-même (voir cellules 9-22 de `ML-01-Introduction.ipynb`).*
+*Figure extraite du jumeau Python ML-01-Introduction-Python (cellule 17, output 0). La relation linéaire entre la taille (en milliers de pieds carrés) et le prix (en centaines de milliers de dollars) est apprise sur un split entraînement/test explicite ; l'étoile rouge matérialise une prédiction ponctuelle (2.5 kpi → 2.76). Le pipeline ML.NET `IDataView` → `EstimatorChain` produit la même droite côté C# — limitation illustrative assumée : la figure documente le concept de régression linéaire et la mécanique split/prédiction, pas le code ML.NET lui-même (voir cellules 9-22 de `ML-01-Introduction-CSharp.ipynb`).*
 
 Le notebook 3 introduit l'entraînement proprement dit. Vous découvrirez SDCA (Stochastic Dual Coordinate Ascent) pour la régression linéaire, LightGBM pour les problèmes non linéaires, et surtout l'AutoML de ML.NET qui automatise la recherche d'hyperparamètres et la sélection d'algorithme. Vous verrez aussi les dangers du surapprentissage et comment l'arrêter précocement.
 
@@ -86,7 +86,7 @@ Le notebook **5b** ([ML-05b-Series-Temporelles-Classiques-Python](ML-05b-Series-
 *Figure extraite du jumeau Python ML-05-TimeSeries-Python (cellule 7, output 0). La série journalière court sur 2023-01 → 2025-01 (deux ans), valeurs de 50 à 250 ventes/jour, avec un split explicite Train/Test au 2024-01-01 (matérialisé en rouge pointillé). On y lit la tendance haussière de fond et la saisonnalité hebdomadaire superposée — les deux ingredients que `ForecastBySsa` et la décomposition STL cherchent à séparer.*
 
 ![Décomposition STL sur la série d'entraînement (période = 7 jours) — 4 panneaux : Observé, Tendance, Saisonnalité, Bruit/Résidu](assets/readme/ml-ts-stl.png)
-*Figure extraite du jumeau Python ML-05-TimeSeries-Python (cellule 11, output 0). La décomposition STL sépare la série Observée en trois composantes additives : Tendance (croissance lente 105 → 155 sur 2023), Saisonnalité (cycle hebdomadaire d'amplitude ±35), Bruit/Résidu (écart ±20, stationnaire). La période 7 jours est explicite dans le titre de la figure. La décomposition permet d'attaquer le forecast composante par composante plutôt que sur le signal brut — limitation illustrative assumée : la figure montre la décomposition Python (statsmodels), pas la sortie `ForecastBySsa` côté ML.NET (le résultat conceptuel est équivalent mais l'API diffère ; voir cellules 9-18 de `ML-05-TimeSeries.ipynb`).*
+*Figure extraite du jumeau Python ML-05-TimeSeries-Python (cellule 11, output 0). La décomposition STL sépare la série Observée en trois composantes additives : Tendance (croissance lente 105 → 155 sur 2023), Saisonnalité (cycle hebdomadaire d'amplitude ±35), Bruit/Résidu (écart ±20, stationnaire). La période 7 jours est explicite dans le titre de la figure. La décomposition permet d'attaquer le forecast composante par composante plutôt que sur le signal brut — limitation illustrative assumée : la figure montre la décomposition Python (statsmodels), pas la sortie `ForecastBySsa` côté ML.NET (le résultat conceptuel est équivalent mais l'API diffère ; voir cellules 9-18 de `ML-05-TimeSeries-CSharp.ipynb`).*
 
 ![Prévision SARIMA vs réel sur les 90 premiers jours de 2024 — ventes réelles, prévision, intervalle de confiance 95%](assets/readme/ml-ts-forecast.png)
 *Figure extraite du jumeau Python ML-05-TimeSeries-Python (cellule 20, output 0). Sur la fenêtre de test (2024-01-01 → 2024-04-01, soit 90 jours), la prévision SARIMA (orange) suit la réalité (bleu) avec un intervalle de confiance 95% (zone orange pâle) qui capture l'essentiel de la variabilité — l'écart-type grandit aux extrema, signature d'un modèle qui reconnaît l'incertitude. La figure compare explicitement `statsmodels SARIMA` côté Python, pas `ForecastBySsa` côté ML.NET ; les deux approches traitent la saisonnalité 7 jours mais la décomposition du signal diffère. Limitation illustrative assumée : un forecast réussi sur 90 jours n'est pas un forecast réussi sur 90 jours avec un seul hyperparamètre — la robustesse multi-seed + walk-forward est traitée dans les cellules 22-28 du notebook ML-05-TimeSeries-Python.*
@@ -147,7 +147,7 @@ Avoir une intuition de ces concepts aidera, mais ils sont **expliqués dans les 
 
 ## Contenu détaillé
 
-### ML-01-Introduction
+### ML-01-Introduction-CSharp
 
 | Section | Contenu |
 |---------|---------|
@@ -155,7 +155,7 @@ Avoir une intuition de ces concepts aidera, mais ils sont **expliqués dans les 
 | Pipeline | Chargement, transformation, entraînement |
 | Prediction | Modèle et prédiction simple |
 
-### ML-02-Data&Features
+### ML-02-Data-Features-CSharp
 
 | Section | Contenu |
 |---------|---------|
@@ -164,7 +164,7 @@ Avoir une intuition de ces concepts aidera, mais ils sont **expliqués dans les 
 | Transformations | One-hot encoding, normalisation |
 | Concatenation | Combinaison de features |
 
-### ML-03-Entrainement&AutoML
+### ML-03-Entrainement-AutoML-CSharp
 
 | Section | Contenu |
 |---------|---------|
@@ -173,7 +173,7 @@ Avoir une intuition de ces concepts aidera, mais ils sont **expliqués dans les 
 | AutoML | Recherche automatique d'hyperparamètres |
 | Comparaison | Benchmarking des algorithmes |
 
-### ML-04-Evaluation
+### ML-04-Evaluation-CSharp
 
 | Section | Contenu |
 |---------|---------|
@@ -193,7 +193,7 @@ Avoir une intuition de ces concepts aidera, mais ils sont **expliqués dans les 
 | Nadeau-Bengio | t-test corrigé pour la validation croisée, face au t-test naïf sur les plis |
 | Taille d'effet, Bonferroni | « Significatif » n'est pas « important » ; correction des comparaisons multiples |
 
-### TP-prevision-ventes
+### TP-Prevision-Ventes-CSharp
 
 | Section | Contenu |
 |---------|---------|
@@ -201,7 +201,7 @@ Avoir une intuition de ces concepts aidera, mais ils sont **expliqués dans les 
 | Régression bayésienne | Prévision avec incertitude |
 | Application | Cas d'usage ventes |
 
-### ML-05-TimeSeries
+### ML-05-TimeSeries-CSharp
 
 | Section | Contenu |
 |---------|---------|
@@ -222,7 +222,7 @@ Avoir une intuition de ces concepts aidera, mais ils sont **expliqués dans les 
 | Lissage exponentiel | Simple, Holt, Holt-Winters (saisonnalité 7) |
 | Backtest glissant | Naïf, Holt-Winters et SARIMA comparés sur un horizon de 7 jours (walk-forward) |
 
-### ML-06-ONNX
+### ML-06-ONNX-CSharp
 
 | Section | Contenu |
 |---------|---------|
@@ -231,7 +231,7 @@ Avoir une intuition de ces concepts aidera, mais ils sont **expliqués dans les 
 | Export ML.NET | Sauvegarder en ONNX |
 | Hugging Face | Intégration BERT, Whisper |
 
-### ML-07-Recommendation
+### ML-07-Recommendation-CSharp
 
 | Section | Contenu |
 |---------|---------|
@@ -250,7 +250,7 @@ Avoir une intuition de ces concepts aidera, mais ils sont **expliqués dans les 
 | Ce que la mesure refuse de dire | Que la quantification vaille mieux que le contenu direct : les deux écarts de signe opposé sont non concluants, et le balayage des tailles de dictionnaire ne montre pas de tendance monotone |
 | Exercices | Trois stubs sans erreur volontaire : deux niveaux suffisent-ils, le partage du premier code aide-t-il, et lequel des deux modèles résiste à un contenu bruité |
 
-### ML-08-Clustering
+### ML-08-Clustering-CSharp
 
 | Section | Contenu |
 |---------|---------|
@@ -259,7 +259,7 @@ Avoir une intuition de ces concepts aidera, mais ils sont **expliqués dans les 
 | Évaluation | AverageDistance (inertie), DaviesBouldinIndex (séparation) |
 | Choix de K | Méthode du coude (elbow method), Thorndike 1953 |
 
-### ML-09-Anomaly-Detection
+### ML-09-Anomaly-Detection-CSharp
 
 | Section | Contenu |
 |---------|---------|
@@ -348,33 +348,33 @@ jupyter kernelspec list  # doit montrer .net-csharp
 ### Parcours fondamental (débutant)
 
 ```text
-ML-01-Introduction (bases)
+ML-01-Introduction-CSharp (bases)
     |
-ML-02-Data&Features (données)
+ML-02-Data-Features-CSharp (données)
     |
-ML-03-Entrainement&AutoML (modèles)
+ML-03-Entrainement-AutoML-CSharp (modèles)
     |
-ML-04-Evaluation (validation)
+ML-04-Evaluation-CSharp (validation)
     |
 ML-04b-ModelComparison-Validity-Python (comparaison statistique, facultatif, Python)
     |
-TP-prevision-ventes (application)
+TP-Prevision-Ventes-CSharp (application)
 ```
 
 ### Parcours avancé (ML.NET moderne)
 
 ```text
-ML-05-TimeSeries (forecasting)
+ML-05-TimeSeries-CSharp (forecasting)
     |
 ML-05b-Series-Temporelles-Classiques-Python (socle statistique des séries temporelles)
     |
-ML-06-ONNX (interopérabilité)
+ML-06-ONNX-CSharp (interopérabilité)
     |
-ML-07-Recommendation (systèmes de recommandation)
+ML-07-Recommendation-CSharp (systèmes de recommandation)
     |
-ML-08-Clustering (clustering non-supervisé)
+ML-08-Clustering-CSharp (clustering non-supervisé)
     |
-ML-09-Anomaly-Detection (détection d'anomalies)
+ML-09-Anomaly-Detection-CSharp (détection d'anomalies)
     |
 ML-09b-TSAD-Benchmark-Flaws (introspection des benchmarks)
     |
@@ -483,17 +483,17 @@ Voir la licence du repository principal.
 
 ### Ce que vous avez appris
 
-Cette série vous a fait passer du **premier pipeline ML en C#** ([ML-01](ML-01-Introduction.ipynb)) à une **application complète de bout en bout**, en consolidant trois acquis cibles pour un praticien .NET :
+Cette série vous a fait passer du **premier pipeline ML en C#** ([ML-01](ML-01-Introduction-CSharp.ipynb)) à une **application complète de bout en bout**, en consolidant trois acquis cibles pour un praticien .NET :
 
-- **Construire et justifier un pipeline ML.NET complet** — de `MLContext` au `PredictionEngine`, vous savez enchaîner chargement ([ML-02](ML-02-Data&Features.ipynb)), entraînement ([ML-03](ML-03-Entrainement&AutoML.ipynb)) et prédiction, en laissant l'AutoML explorer l'espace des algorithmes (SDCA, LightGBM) plutôt que de choisir à l'aveugle.
-- **Évaluer rigoureusement et expliquer** — [ML-04](ML-04-Evaluation.ipynb) (le notebook le plus dense) vous a armé pour ne plus vous contenter d'un « ça marche » : cross-validation K-fold, R²/MAE/RMSE, Permutation Feature Importance. Un modèle que vous comprenez et pouvez défendre devant un stakeholder, pas seulement un score. Et quand il faut dire qu'un modèle en bat un autre, [ML-04b](ML-04b-ModelComparison-Validity-Python.ipynb) vous apprend à le démontrer par un test (bootstrap, t-test corrigé) plutôt qu'à l'affirmer à partir d'un seul chiffre.
-- **Servir en production sans quitter .NET** — les notebooks avancés couvrent les cas où ML.NET excelle en entreprise : prévision par [SSA](ML-05-TimeSeries.ipynb), [interop ONNX](ML-06-ONNX.ipynb) (modèles scikit-learn/PyTorch/Hugging Face consommés en C#), [recommandation](ML-07-Recommendation.ipynb) par factorisation matricielle. Le R&D reste en Python, la production tourne en .NET.
+- **Construire et justifier un pipeline ML.NET complet** — de `MLContext` au `PredictionEngine`, vous savez enchaîner chargement ([ML-02](ML-02-Data-Features-CSharp.ipynb)), entraînement ([ML-03](ML-03-Entrainement-AutoML-CSharp.ipynb)) et prédiction, en laissant l'AutoML explorer l'espace des algorithmes (SDCA, LightGBM) plutôt que de choisir à l'aveugle.
+- **Évaluer rigoureusement et expliquer** — [ML-04](ML-04-Evaluation-CSharp.ipynb) (le notebook le plus dense) vous a armé pour ne plus vous contenter d'un « ça marche » : cross-validation K-fold, R²/MAE/RMSE, Permutation Feature Importance. Un modèle que vous comprenez et pouvez défendre devant un stakeholder, pas seulement un score. Et quand il faut dire qu'un modèle en bat un autre, [ML-04b](ML-04b-ModelComparison-Validity-Python.ipynb) vous apprend à le démontrer par un test (bootstrap, t-test corrigé) plutôt qu'à l'affirmer à partir d'un seul chiffre.
+- **Servir en production sans quitter .NET** — les notebooks avancés couvrent les cas où ML.NET excelle en entreprise : prévision par [SSA](ML-05-TimeSeries-CSharp.ipynb), [interop ONNX](ML-06-ONNX-CSharp.ipynb) (modèles scikit-learn/PyTorch/Hugging Face consommés en C#), [recommandation](ML-07-Recommendation-CSharp.ipynb) par factorisation matricielle. Le R&D reste en Python, la production tourne en .NET.
 
 ### Prochaines étapes
 
-- **Approfondir l'incertitude** — le [TP capstone](TP-prevision-ventes.ipynb) introduit la régression bayésienne via Infer.NET ; la série [Probas/Infer](../../Probas/Infer/README.md) en est le prolongement natural (même moteur probabiliste, même stack .NET).
+- **Approfondir l'incertitude** — le [TP capstone](TP-Prevision-Ventes-CSharp.ipynb) introduit la régression bayésienne via Infer.NET ; la série [Probas/Infer](../../Probas/Infer/README.md) en est le prolongement natural (même moteur probabiliste, même stack .NET).
 - **Aller plus loin en ML appliqué** — *Hands-On AI Trading* (cité en Ressources) montre ML.NET en production sur un pipeline de trading réel ; les notebooks [DataScienceWithAgents](../DataScienceWithAgents/README.md) (Python) donnent le contrepoint agentique du même métier.
-- **Déployer des LLM/NLP** — [ML-06 ONNX](ML-06-ONNX.ipynb) ouvre la voie : servir BERT, Whisper ou d'autres modèles Hugging Face dans une appli .NET via ONNX Runtime, sans dépendance Python.
+- **Déployer des LLM/NLP** — [ML-06 ONNX](ML-06-ONNX-CSharp.ipynb) ouvre la voie : servir BERT, Whisper ou d'autres modèles Hugging Face dans une appli .NET via ONNX Runtime, sans dépendance Python.
 
 ### Le fil rouge
 
