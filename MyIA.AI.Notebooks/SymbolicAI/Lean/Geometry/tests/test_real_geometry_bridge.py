@@ -489,10 +489,13 @@ def test_solver_is_built_for_non_linear_real_arithmetic(monkeypatch):
     rbg._make_solver()
     assert demandes == ["QF_NRA"]
 
-    # Contrôle positif : ce solveur décide bien une impossibilité RÉELLE.
-    # x² + y² + 1 ≤ 0 n'a aucune solution sur R (la somme de deux carrés est
-    # positive) ; un solveur qui répondrait sat nommerait un autre domaine.
+    # Contrôle positif : ce solveur décide bien une contrainte qui n'a de
+    # témoin que dans le domaine des réels. x*x == 2 est satisfiable sur R
+    # (√2) mais insatisfiable sur Z : c'est cette asymétrie que le domaine
+    # réel apporte, et le test ne surpromet rien au-delà — sous une autre
+    # étiquette de logique avec les mêmes sorts Real, la sonde resterait
+    # sat ; seule l'espion ci-dessus distingue les étiquettes.
     s = rbg._make_solver()
-    x, y = rbg._z3.Real('sonde_x'), rbg._z3.Real('sonde_y')
-    s.add(x * x + y * y + 1 <= 0)
-    assert s.check() == rbg._z3.unsat
+    x = rbg._z3.Real('sonde_sqrt2')
+    s.add(x * x == 2)
+    assert s.check() == rbg._z3.sat

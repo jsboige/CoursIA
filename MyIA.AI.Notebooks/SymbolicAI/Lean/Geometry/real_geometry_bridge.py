@@ -75,7 +75,7 @@ def _poly_to_z3(expr, symbols: List, zvars: Dict) -> "_z3.ExprRef":
             fr = Fraction(int(coef.p), int(coef.q))
         else:
             # Un coefficient non rationnel (√2, π, …) ne se représente pas
-            # exactement en QF_NIA (coefficients rationnels). L'ancien
+            # exactement dans la syntaxe Z3 (coefficients rationnels). L'ancien
             # `Fraction(int(coef), 1)` le TRONQUAIT (√2 → 1, π → 3) et
             # produisait des verdicts faux, dont un faux VALID (review Hermes
             # #23018). On refuse donc explicitement ; supporter √2 exactement
@@ -99,7 +99,7 @@ def _z3num_to_sympy(v: "_z3.ExprRef"):
     """
     Renvoie la valeur d'un numéral du modèle Z3 comme nombre ``sympy``.
 
-    Deux classes de numéraux sortent d'un modèle ``QF_NIA`` :
+    Deux classes de numéraux sortent d'un modèle du solveur ``QF_NRA`` :
 
     * un ``RatNumRef`` — sa représentation texte **est** la fraction exacte
       (``'1/2'``, ``'3'``) ; ``sp.Rational`` la lit sans perte, le témoin est
