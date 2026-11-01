@@ -117,10 +117,16 @@ def test_timeout_valeur_explicite_120_pour_transport_principal():
     Une borne inferieure timeout systematiquement sur de gros pools
     (POOL_FETCH_LIMIT=2000). 120 s = 2x la mesure observee a cache chaud.
     """
-    captured = {}
+    timeouts = []
 
     def fake_run(cmd, **kwargs):
-        captured["timeout"] = kwargs.get("timeout")
+        # On releve TOUS les appels, pas seulement le dernier : `fetch_pool`
+        # peut enchainer sur un autre transport, et une sonde bornee par
+        # `_clamp_timeout` rend alors un temps restant (`43.79...` mesure en
+        # CI, cf #23977). Un scalaire ecrase faisait donc echouer ce test sur
+        # un chemin parfaitement correct -- il mesurait l'ordre des appels au
+        # lieu de la borne, alors que son enonce dit « au moins un appel ».
+        timeouts.append(kwargs.get("timeout"))
         result = subprocess.CompletedProcess(
             cmd, 0, stdout="[]", stderr="")
         return result
@@ -133,4 +139,6 @@ def test_timeout_valeur_explicite_120_pour_transport_principal():
             # ce qui compte ici est la borne du 1er transport.
             pass
     # Au moins un appel (le transport GraphQL) doit avoir timeout=120
-    assert captured.get("timeout") == 120
+    assert timeouts, "aucun appel `gh` n'a ete emis -- le test ne mesurerait rien"
+    assert 120 in timeouts, (
+        f"aucun appel a timeout=120 ; timeouts releves : {timeouts}")
