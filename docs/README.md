@@ -214,6 +214,7 @@ Suivi d'origine, par livrable : grille des trois régimes de lecture #7399 · ma
 |---------|------|
 | [ict/README.md](ict/README.md) | **Index** — cartographie des 10 docs par mode (vertical / horizontal / méta) + parcours suggéré |
 | [ict/palier10-ict15-note-de-conception.md](ict/palier10-ict15-note-de-conception.md) | Note de conception du palier 10 (famille ICT-15, capstone Φ/F/K, obstruction et recollement) — cadrage arbitré et décision du 11/10, portée par la PR de déplacement #20298 |
+| [ict/palier21-argumentation-note-de-conception.md](ict/palier21-argumentation-note-de-conception.md) | Note de conception du palier 21 (capstone strate 6 argumentation — chaîne des cinq maillons, cinq questions organ-first, corpus Argumentum sous licence, gate re-découpé) — feu vert Phase 2 #23777 (31/10) |
 | [ict/synthese-invariants-dissociations-obstructions.md](ict/synthese-invariants-dissociations-obstructions.md) | Fils 1–3 : trois régimes de lecture (invariants / dissociations / obstructions) |
 | [ict/genealogy-representation-interne.md](ict/genealogy-representation-interne.md) | 4e fil : généalogie de `p̂` (représentation interne, ICT-10 → ICT-17) |
 | [ict/dissolution-scalaires.md](ict/dissolution-scalaires.md) | 5e fil : dissolution successive des scalaires Φ / F / K |
