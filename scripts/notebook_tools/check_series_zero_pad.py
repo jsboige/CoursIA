@@ -76,6 +76,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -94,6 +95,38 @@ from naming_canon import parse_name  # noqa: E402
 REGISTRY_PATH = Path(__file__).resolve().parent / "zero_pad_series.json"
 
 
+def _ignored_paths(series_dir: Path) -> set[Path]:
+    """Chemins sous ``series_dir`` qu'un ``.gitignore`` ecarte (vide hors depot).
+
+    Le balayage de ce garde est un ``rglob`` : il voit donc AUSSI les fichiers
+    que git ne versionne pas. Tant que ce sont des carnets committes, c'est la
+    propriete voulue. Mais ``*_output.ipynb`` est ignore par le depot
+    (``.gitignore``, ligne ``*_output.ipynb``) : ce sont des sous-produits
+    locaux d'execution, regeneres a chaque passage, jamais livres. Les
+    compter fait rougir l'admission sur une machine et pas sur une autre --
+    mesuree le 2026-11-01 sur po-2025 : 11 artefacts d'anciens noms, tous
+    untracked et ignores, zero ``*_output.ipynb`` versionne dans tout le
+    depot. Le garde doit donc ignorer ce que git ignore, et rien d'autre.
+
+    Un ``git`` injoignable (repertoire hors depot, binaire absent) rend un
+    ensemble vide : le balayage reste alors complet, comme avant. Ce repli est
+    deliberé -- un garde ne doit pas devenir muet parce qu'il n'a pas pu
+    interroger git.
+    """
+    try:
+        proc = subprocess.run(
+            ["git", "ls-files", "--others", "--ignored", "--exclude-standard",
+             "-z", "--", "."],
+            cwd=str(series_dir), capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=60, check=False)
+    except (OSError, subprocess.SubprocessError):
+        return set()
+    if proc.returncode != 0:
+        return set()
+    return {(series_dir / rel).resolve()
+            for rel in proc.stdout.split("\0") if rel}
+
+
 def violations(series_dir: Path, prefix: str = "GameTheory") -> list[dict]:
     """Fichiers de la serie dont le numero n'est PAS zero-pade.
 
@@ -109,8 +142,13 @@ def violations(series_dir: Path, prefix: str = "GameTheory") -> list[dict]:
     sans quoi une sous-serie pourrait deriver sans que le garde le voie.
     """
     out: list[dict] = []
+    ignored = _ignored_paths(series_dir)
     for path in sorted(series_dir.rglob(f"{prefix}-*")):
         if not path.is_file():
+            continue
+        if ignored and path.resolve() in ignored:
+            # sous-produit local, jamais livre : sa convention de nom ne
+            # regarde pas le depot (cf. _ignored_paths).
             continue
         parsed = parse_name(path.name)
         if parsed.series != prefix or parsed.number is None:

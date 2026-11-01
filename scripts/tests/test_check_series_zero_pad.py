@@ -15,6 +15,7 @@ et c'est precisement le silence que cette tranche supprime.
 from __future__ import annotations
 
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -330,3 +331,48 @@ def test_fast_lane_garde_nomme_la_portee_reelle():
                  if getattr(g, "source", None) == "series-naming-gate.yml")
     assert "GameTheory" not in guard.name
     assert REGISTRY_PATH.name not in guard.argv  # lit le registre via son defaut
+
+
+# --- Portee : ce que git versionne, pas ce que le disque porte --------------
+#
+# Le balayage est un `rglob`, donc il voit aussi ce que git ignore. Or le depot
+# ignore `*_output.ipynb` : des sous-produits d'execution locaux, regeneres a
+# chaque passage, jamais livres. Les compter rend l'admission dependante de la
+# MACHINE -- mesuree le 2026-11-01 sur po-2025, ou 11 artefacts d'anciens noms
+# (tous untracked, tous ignores, zero `*_output.ipynb` versionne dans le depot)
+# faisaient rougir `test_registre_aujourd_hui_vert_sur_l_arbre_reel`.
+
+def _git_repo(tmp_path: Path, ignore: str | None = None) -> Path:
+    """Une serie qui est un vrai depot git, avec un `.gitignore` optionnel."""
+    d = tmp_path / "SerieGit"
+    d.mkdir()
+    subprocess.run(["git", "init", "-q"], cwd=str(d), check=True)
+    if ignore:
+        (d / ".gitignore").write_text(ignore, encoding="utf-8")
+    return d
+
+
+def test_artefact_ignore_par_git_n_est_pas_une_violation(tmp_path: Path):
+    """Controle positif : l'artefact ignore disparait de la liste."""
+    d = _git_repo(tmp_path, ignore="*_output.ipynb\n")
+    (d / "GameTheory-01-Ok.ipynb").write_text("x", encoding="utf-8")
+    (d / "GameTheory-3-Avant_output.ipynb").write_text("x", encoding="utf-8")
+    assert violations(d) == []
+
+
+def test_carnet_non_ignore_reste_une_violation(tmp_path: Path):
+    """Controle NEGATIF, le point qui compte : le filtre ne doit pas blanchir
+    un vrai carnet. Un `GameTheory-3-` au chiffre unique, non ignore, reste
+    attrape dans le meme depot qui ignore les artefacts."""
+    d = _git_repo(tmp_path, ignore="*_output.ipynb\n")
+    (d / "GameTheory-3-Avant_output.ipynb").write_text("x", encoding="utf-8")
+    (d / "GameTheory-3-Avant.ipynb").write_text("x", encoding="utf-8")
+    found = violations(d)
+    assert [v["name"] for v in found] == ["GameTheory-3-Avant.ipynb"]
+
+
+def test_hors_depot_le_balayage_reste_complet(series: Path):
+    """Repli delibere : sans git joignable, un nom ignore est quand meme
+    scanne. Un garde ne doit pas devenir muet faute d'avoir pu interroger git."""
+    (series / "GameTheory-3-Avant_output.ipynb").write_text("x", encoding="utf-8")
+    assert len(violations(series)) == 1
