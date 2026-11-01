@@ -13,7 +13,11 @@ Sondes reproduites :
     150 images d'entrainement / 75 de test par classe, StandardScaler ajuste sur
     le train seul, LogisticRegression (max_iter=3000, C=1.0, random_state=42).
 
-Valeurs citees a confirmer : 0.790 / 0.425 (WS-00c) et 0.780 / 0.311 (WS-03).
+Valeurs citees a confirmer : 0.790 / 0.430 (WS-00c) et 0.780 / 0.311 (WS-03).
+
+La sonde WS-00c epingle la tolerance d'arret du solveur (tol=1e-6), comme le
+carnet qu'elle rejoue : la valeur par defaut (1e-4) arrete lbfgs avant
+l'optimum, et le score se deplace d'un item sans qu'aucune donnee n'ait change.
 """
 
 from __future__ import annotations
@@ -33,7 +37,7 @@ from sklearn.preprocessing import StandardScaler
 SEED = 42
 
 CITED = {
-    "WS-00c": {"clean": 0.790, "translated": 0.425},
+    "WS-00c": {"clean": 0.790, "translated": 0.430},
     "WS-03": {"clean": 0.780, "translated": 0.311},
 }
 
@@ -85,6 +89,30 @@ def alternating_shift(images: np.ndarray) -> np.ndarray:
     )
 
 
+def blas_chain() -> dict:
+    """Implementation, version et nombre de fils de la chaine BLAS effective.
+
+    Le rapport imprimait python / numpy / scikit-learn, jamais la chaine BLAS :
+    deux sieges sous la meme version de numpy peuvent servir deux BLAS
+    differents. C'etait un angle mort du RAPPORT, pas de la mesure (#24075).
+    Lecture defensive : la structure de `show_config(mode="dicts")` depend du
+    backend, et un numpy sans ce mode rend la main autrement -- chaque champ
+    degrade en "inconnu" plutot que de casser le rapport.
+    """
+    try:
+        info = np.show_config(mode="dicts") or {}
+    except TypeError:  # numpy sans le mode dicts
+        info = {}
+    except Exception:  # noqa: BLE001 - le rapport ne doit pas mourir d'env
+        info = {}
+    blas = (info.get("Build Dependencies") or {}).get("blas") or {}
+    return {
+        "implementation": blas.get("name", "inconnu"),
+        "version": blas.get("version", "inconnue"),
+        "threads_env": os.environ.get("OPENBLAS_NUM_THREADS") or "defaut du runtime",
+    }
+
+
 def probe_ws00c(ims_tr, labs_tr):
     """WS-00c §6: pixels bruts, 80/Classe, pad 28->32, split 75/25 stratifie."""
     idx = np.concatenate([np.where(labs_tr == c)[0][:80] for c in range(10)])
@@ -105,7 +133,10 @@ def probe_ws00c(ims_tr, labs_tr):
     )
     x_dec = ims_dec.reshape(len(te_i), -1)
 
-    clf = LogisticRegression(max_iter=3000, C=1.0).fit(x_tr, labs[tr_i])
+    # tol epinglee : le carnet eponge le meme reglage -- sans lui, lbfgs
+    # s'arrete sur une norme de gradient et le score se deplace d'un item
+    # sans qu'aucune donnee n'ait change (#24075).
+    clf = LogisticRegression(max_iter=3000, C=1.0, tol=1e-6).fit(x_tr, labs[tr_i])
     return {
         "clean": float(clf.score(x_te, labs[te_i])),
         "translated": float(clf.score(x_dec, labs[te_i])),
@@ -198,13 +229,18 @@ def main(argv=None) -> int:
         "python": sys.version.split()[0],
         "numpy": np.__version__,
         "scikit_learn": sklearn.__version__,
+        "blas": blas_chain(),
         "cache_root": args.cache,
         "corpus_source": source_used,
         "probes": results,
     }
 
+    blas = report["blas"]
     print(
         f"python {report['python']} | numpy {report['numpy']} | scikit-learn {report['scikit_learn']}"
+    )
+    print(
+        f"blas {blas['implementation']} {blas['version']} | fils : {blas['threads_env']}"
     )
     print(f"graine {SEED} | source {source_used} | cache {args.cache}")
     print()
