@@ -192,6 +192,36 @@ Vérification locale : `dotnet build MyIA.AI.Shared.sln -c Release` (0 warning,
 > mergées. La substance est intégralement livrée ; l'issue peut être fermée
 > (coordinateur, règle worker #1502 — un worker ne ferme JAMAIS les issues).
 
+## B2-T1 — Noyau propositionnel PL (#7265, #23584)
+
+Première tranche du **volet B2** (port du patrimoine `Logic.cs`). Elle livre le noyau
+**propositionnel** en C# nu, sous `Search/Logic/Propositional/`, sur la surface que le
+wrapper Aricie expose — la base de connaissances `PLKbInfo` devient
+`PlKnowledgeBase`, et `PLKbInferProcedureInfo` devient `PlKbInferProcedureInfo`.
+
+| Élément | Rôle |
+|---------|------|
+| `PlFormula` et ses noeuds | arbre syntaxique (`PlAtom`, `PlNot`, `PlAnd`, `PlOr`, `PlImplies`, `PlBiconditional`), évaluation sous affectation totale |
+| `PlParser` | syntaxe du chapitre 7 d'AIMA : `~` `&` `\|` `=>` `<=>`, plus `!` `->` `<->` ; erreur positionnée, jamais de formule approximative |
+| `PlCnf` | mise sous forme normale conjonctive (élimination, négation normalisée, distribution), clauses tautologiques écartées |
+| `PlKnowledgeBase` | phrases, clauses, satisfaction |
+| `PlInference` | les six procédures : `TTEntails`, `Resolve`, `DPLLEntails`, `DPLLSatisfiable`, `WalkSatKb`, `WalkSatPredicate` |
+
+Chaque procédure publie son **coût mesuré** et son **unité** (`lignes de table de
+verite`, `resolvantes derivees`, `decisions DPLL`, `flips`) : c'est ce qui les rend
+falsifiables entre elles, et pas seulement correctes. Une conséquence mesurée : sur
+une base insatisfiable, `DPLLEntails` ne prend **aucune** décision quand
+`DPLLSatisfiable` en prend, parce que la négation de la requête est elle-même une
+clause unitaire qui propage. `WalkSAT` rend `Unknown` et jamais `No` quand il échoue :
+une recherche locale qui n'aboutit pas ne prouve pas l'insatisfiabilité.
+
+**Hors de cette tranche**, et pour des raisons écrites dans #23584 : FOL (point de
+décision n°1 de #21909), `Probability.cs` (n°2), `Neural.cs` (n°3), et `PLFCEntails`
+dont la sémantique derrière `aima-core.dll` n'est pas établie.
+
+Vérification locale du 2026-11-01 : `dotnet test MyIA.AI.Shared.Tests` —
+**436/436 PASS** sur la suite complète, dont 39 témoins pour cette tranche.
+
 ## Tranches suivantes (hors cette ancre)
 
 - **A3-T2** — Attributs PropertyEditor (le vocabulaire metadata renderer-agnostique complet).
