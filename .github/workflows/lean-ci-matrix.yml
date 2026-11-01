@@ -196,6 +196,20 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/lake-manifest.json'
+      # grothendieck_lean (herite du wrapper lean-grothendieck.yml supprime,
+      # #13751 : 0 sorry reel verifie -- distinct_code_sorry = 0 sur 198
+      # fichiers, naive_sorry = 156 tous en prose -- donc sorry-baseline "0"
+      # est vrai ; axiom target-modules "*" + allow-axioms vide,
+      # fail-on-sorry true -- parametres reportes au manifeste. Le wrapper
+      # declarait aussi lakefile.toml : le lake n'en a pas (mesure au
+      # repertoire), le pattern mort n'est pas reporte. lake-manifest.json
+      # reste un declencheur (#8712) : un depin de Mathlib doit rejouer le
+      # lake. lean_server.py / lean_utils.py restent des entrees de gate du
+      # lac au manifeste, comme formal_groups.)
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/lake-manifest.json'
       # Self-cover B.3 herite du wrapper lean-serre.yml supprime (#17336) :
       # le moteur d'axiomes change -> le gate axiom de serre100 rejoue.
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
@@ -376,6 +390,20 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/lake-manifest.json'
+      # grothendieck_lean (herite du wrapper lean-grothendieck.yml supprime,
+      # #13751 : 0 sorry reel verifie -- distinct_code_sorry = 0 sur 198
+      # fichiers, naive_sorry = 156 tous en prose -- donc sorry-baseline "0"
+      # est vrai ; axiom target-modules "*" + allow-axioms vide,
+      # fail-on-sorry true -- parametres reportes au manifeste. Le wrapper
+      # declarait aussi lakefile.toml : le lake n'en a pas (mesure au
+      # repertoire), le pattern mort n'est pas reporte. lake-manifest.json
+      # reste un declencheur (#8712) : un depin de Mathlib doit rejouer le
+      # lake. lean_server.py / lean_utils.py restent des entrees de gate du
+      # lac au manifeste, comme formal_groups.)
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/lake-manifest.json'
       # Self-cover B.3 herite du wrapper lean-serre.yml supprime (#17336) :
       # le moteur d'axiomes change -> le gate axiom de serre100 rejoue.
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
@@ -412,7 +440,16 @@ jobs:
   # arrive par le self-cover).
   changes:
     name: lean-matrix-changes
-    runs-on: ubuntu-latest
+    # 2026-10-28 (#23053 famille (c), lane myia-ai-01:CoursIA-2) : forme hybride
+    # de debordement CI (#22937/#22944/#23016). PR meme-depot ET
+    # vars.CI_OVERFLOW_LOCAL == 'true' -> jambe Linux locale ; tout le reste
+    # (variable absente ou fausse, forks, push/dispatch) retombe sur
+    # ubuntu-latest. La garde same-repo vit dans l'expression elle-meme : c'est
+    # la forme hybride acceptee par scripts/ci/check_self_hosted_runner_policy.py.
+    # Bascule : `gh variable set CI_OVERFLOW_LOCAL --body true|false --repo
+    # jsboige/CoursIA`. Retour arriere = variable a `false` ou supprimee, sans
+    # toucher ce fichier.
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
     timeout-minutes: 10
     outputs:
       any: ${{ steps.dispatch.outputs.any }}

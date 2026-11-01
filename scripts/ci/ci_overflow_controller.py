@@ -101,6 +101,26 @@ complete (`budget_unread = 0`), lecture locale tronquee a 15 runs ages de
 15 a 20 min -- donc au-dessus du seuil de 15 min, donc desertes par une
 lecture complete : le « parc local non affame » n'etait PAS etabli.
 
+**La troncature locale n'est plus une impasse (tranche du 31/10).** Une
+affirmation negative « le parc n'est pas affame » se lit sur les RUNS, dont
+la lecture tronque des que la file local est longue -- donc precisement
+dans le regime que l'organe existe pour traiter. Le 31/10 a 16:07Z, le
+controleur a rendu HOLD avec 162 jobs heberges ages (le plus ancien 69,7
+min, marge -145) et 28 slots locaux libres, au motif « lecture locale
+TRONQUEE (530 runs non lus) » : plus la file est longue, plus la lecture
+tronque, plus la bascule devient impossible. La meme affirmation se lit
+cependant sur un AUTRE organe, insensible a la troncature : l'**inventaire
+des runners** (`/actions/runners`) dit, a l'instant, combien de slots sont
+en ligne ET inoccupes. « Au moins K runner(s) en ligne et libre(s) portant
+les labels de la cohorte » est une affirmation POSITIVE : elle est etablie
+par l'inventaire seul, quelle que soit la lecture des runs. Quand la
+lecture locale tronque, c'est donc cet inventaire qui etablit (ou non) la
+premisse, et le motif rendu nomme lequel des deux organes a parle. Sans
+inventaire lisible, la regle par defaut revient : fail-CLOSED, pas de
+bascule. La symetrie est preservee : la **liberation** vers `false` reste
+interdite tant que la lecture HEBERGEE tronque (aucun inventaire ne dit si
+un job heberge attend encore).
+
 Le cout de l'organe est borne : deux lectures de file systematiques
 (hebergee, locale), plafonnees par `--job-budget` (defaut 120) et
 `--local-job-budget` (defaut 120) lectures de jobs, plus **une troisieme**
@@ -159,6 +179,11 @@ DEFAULT_VARIABLE = "CI_OVERFLOW_LOCAL"
 CONTROLLER_WORKFLOW_FILE = "ci-overflow-controller.yml"
 HOSTED_LABEL = "ubuntu-latest"
 LOCAL_LABEL = "coursia-linux"
+# Labels que porte un runner pour accepter un job de la cohorte : la forme
+# hybride des workflows est `["self-hosted","coursia-ephemeral","coursia-linux"]`,
+# donc les DEUX labels sont requis. Un runner qui n'en porterait qu'un ne peut
+# pas absorber le debordement et ne compte pas comme slot libre de cohorte.
+COHORT_LABELS = ("coursia-ephemeral", "coursia-linux")
 
 # Seuil de saturation : au-dela de ce nombre de jobs hebergees en file
 # depuis plus de `--saturation-minutes`, l'offre hebergee est saturee.
@@ -241,6 +266,16 @@ class LocalSample:
     # la reponse) : ils sont comptes comme occupes (fail-CLOSED), jamais
     # comme libres.
     unknown: int = 0
+    # Inventaire des runners LU (et non deduit) : c'est la condition qui
+    # autorise `cohort_free` a porter la premisse « le parc local n'est pas
+    # affame » quand la lecture des runs tronque. Defaut False : un
+    # `LocalSample` construit sans inventaire ne peut PAS lever la
+    # troncature (fail-CLOSED, y compris pour les appelants de test).
+    inventory_read: bool = False
+    # Slots en ligne ET inoccupes portant TOUS les labels de la cohorte
+    # (`coursia-ephemeral` ET `coursia-linux`) : affirmation POSITIVE,
+    # insensible a la troncature de la lecture des runs.
+    cohort_free: int = 0
 
     @property
     def charge(self) -> int:
@@ -594,28 +629,52 @@ def evaluate(
     # 3. Offre hebergee saturee ET parc local libre : le local absorbe.
     #    « saturee » est une premisse POSITIVE (« au moins N jobs ages ») :
     #    la troncature de l'offre hebergee ne l'annule pas, elle ne fait que
-    #    sous-compter. En revanche « le parc local n'est PAS affame » est
-    #    une premisse NEGATIVE : sous troncature locale elle n'est pas
-    #    etablie, et on n'envoie pas de debordement vers un parc dont on
-    #    ignore l'occupation.
+    #    sous-compter. « Le parc local n'est PAS affame » est une premisse
+    #    NEGATIVE : sous troncature locale elle n'est pas etablie par la
+    #    lecture des runs -- mais l'INVENTAIRE des runners l'etablit alors
+    #    par une affirmation positive (« au moins K slots en ligne et
+    #    inoccupes »), insensible a la troncature (tranche du 31/10). Sans
+    #    inventaire lisible, la regle fail-CLOSED revient.
+    inventory_establishes = (
+        local.inventory_read and local.cohort_free >= min_free_slots
+    )
     if (
         hosted.old >= saturation_jobs
         and local.free >= min_free_slots
-        and not local.truncated
+        and (not local.truncated or inventory_establishes)
     ):
+        if local.truncated:
+            evidence = (
+                f"lecture locale tronquee ({local.reason}) mais l'inventaire "
+                f"etablit le parc : {local.cohort_free} runner(s) de cohorte "
+                f"en ligne et inoccupes (seuil {min_free_slots})"
+            )
+        else:
+            evidence = f"parc local libre ({local.free} slot(s))"
         return switch(
             "true",
             f"offre hebergee saturee ({hosted.old} job(s) en file depuis plus "
             f"de {saturation_minutes:.0f} min, plus ancien {hosted.oldest_age_min:.0f} min) "
-            f"et parc local libre ({local.free} slot(s)) -- le local absorbe",
+            f"et {evidence} -- le local absorbe",
         )
 
     notes = []
-    if local.truncated:
+    if local.truncated and not inventory_establishes:
+        # Deux causes distinctes, nommees separement : l'inventaire n'a pas
+        # ete lu, ou il ne montre pas assez de slots libres de cohorte. Une
+        # cause silencieuse ferait lire « troncature » la ou l'inventaire a
+        # en fait parle.
+        if not local.inventory_read:
+            pourquoi = "inventaire des runners illisible"
+        else:
+            pourquoi = (
+                f"{local.cohort_free} runner(s) de cohorte en ligne et "
+                f"inoccupes (seuil {min_free_slots})"
+            )
         notes.append(
-            f"lecture locale TRONQUEE ({local.reason}) : « le parc local "
-            f"n'est pas affame » n'est pas etablie -> pas de debordement "
-            f"vers le local"
+            f"lecture locale TRONQUEE ({local.reason}) et {pourquoi} : "
+            f"« le parc local n'est pas affame » n'est pas etablie -> pas de "
+            f"debordement vers le local"
         )
     # Un operateur doit pouvoir lire l'etat des deux cotes du calcul de
     # liberation, meme quand la liberation n'a meme pas ete tentee.
@@ -836,6 +895,44 @@ def collect_hosted(
     )
 
 
+def fetch_cohort_idle(
+    repo: str,
+    token: str | None,
+    *,
+    local_inventory: crs.RunnerInventory | None = None,
+) -> tuple[int, bool, str]:
+    """Slots de la COHORTE en ligne et inoccupes, lus sur l'inventaire.
+
+    Rend `(slots, lisible, motif)`. Un slot de cohorte porte **tous** les
+    labels de `COHORT_LABELS` : l'inventaire est lu une fois par label et les
+    ensembles de runners LIBRES sont intercedes (un runner qui n'en porterait
+    qu'un ne peut pas accepter la forme hybride).
+
+    `local_inventory` evite de relire le label local quand l'appelant vient
+    de le lire : le cout de l'organe est un budget d'appels partage (volet 5
+    de #22937), on ne paie pas deux fois la meme requete.
+
+    C'est cette mesure qui porte la premisse « le parc local n'est pas
+    affame » quand la lecture des runs tronque : elle est POSITIVE (elle
+    nomme des runners precis en ligne et inoccupes), donc insensible a la
+    troncature. Inventaire illisible sur n'importe lequel des labels ->
+    `lisible=False` et l'appelant retombe sur la regle fail-CLOSED : une
+    capacite partiellement lue n'est pas une capacite etablie.
+    """
+    free_sets: list[set[str]] = []
+    for label in COHORT_LABELS:
+        if label == LOCAL_LABEL and local_inventory is not None:
+            inv = local_inventory
+        else:
+            inv = crs.fetch_inventory(repo, label, token)
+        if not inv.available:
+            return 0, False, inv.reason or "inventaire des runners illisible"
+        free_sets.append(set(inv.idle))
+    if not free_sets:
+        return 0, False, "aucun label de cohorte configure"
+    return len(set.intersection(*free_sets)), True, ""
+
+
 def collect_local(
     repo: str,
     saturation_minutes: float,
@@ -888,6 +985,12 @@ def collect_local(
                 f"n'est PAS etablie"
             ),
         )
+    # Slots de la COHORTE (tous labels), lus sur l'inventaire deja paye pour
+    # le label local : c'est l'organe qui etablit la premisse quand la
+    # lecture des runs tronque (tranche du 31/10, #22937).
+    cohort_free, cohort_readable, cohort_reason = fetch_cohort_idle(
+        repo, runners_token or token, local_inventory=inv
+    )
     starved = 0
     truncated = False
     in_progress_unread = 0
@@ -908,7 +1011,10 @@ def collect_local(
                 busy=len(inv.busy),
                 unknown=len(inv.unknown),
                 complete=False,
-                reason="lecture de la file locale incomplete",
+                inventory_read=cohort_readable,
+                cohort_free=cohort_free,
+                reason="lecture de la file locale incomplete"
+                + (f" ; {cohort_reason}" if cohort_reason else ""),
             )
         starved = len(starv.starved)
         truncated = starv.truncated
@@ -937,6 +1043,8 @@ def collect_local(
         reason=reason,
         busy=len(inv.busy),
         unknown=len(inv.unknown),
+        inventory_read=cohort_readable,
+        cohort_free=cohort_free,
     )
 
 
@@ -1172,7 +1280,13 @@ def render_summary(report: dict, rc: int) -> str:
         + (" [LECTURE TRONQUEE]" if hosted.get("truncated") else ""),
         f"- local : {local.get('online')} slot(s) en ligne, "
         f"{local.get('free')} libre(s), {local.get('starved')} affame(s)"
-        + (" [LECTURE TRONQUEE]" if local.get("truncated") else ""),
+        + (" [LECTURE TRONQUEE]" if local.get("truncated") else "")
+        + (
+            f" ; inventaire : {local.get('cohort_free')} slot(s) de cohorte "
+            f"libre(s)"
+            if local.get("inventory_read")
+            else " ; inventaire : ILLISIBLE"
+        ),
         f"- cohorte : charge rendue {cohort.get('charge')} job(s) "
         f"({cohort.get('queued')} en file + {cohort.get('in_progress')} en "
         f"cours) sur {cohort.get('workflows')} workflow(s) derive(s) du "
@@ -1566,6 +1680,11 @@ def main(argv: list[str] | None = None) -> int:
             "busy": local.busy,
             "unknown": local.unknown,
             "charge": local.charge,
+            # Tranche du 31/10 : l'inventaire porte la premisse quand la
+            # lecture des runs tronque -- l'operateur doit le lire dans le
+            # rapport, pas le deduire du motif.
+            "inventory_read": local.inventory_read,
+            "cohort_free": local.cohort_free,
         },
         # La cohorte, ce sont les workflows qui LISENT la variable : la liste
         # est derivee du depot a chaque passage (`derive_cohort_workflows`),
