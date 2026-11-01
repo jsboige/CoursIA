@@ -119,6 +119,19 @@ AGENT_PREFIXES = (
     "[REPLY", "[PROPOSAL", "[BLOCKED", "[ESCALATION", "[DELIVERED",
 )
 
+# #15511 (P1) -- taxonomie d'emission des commentaires agent, premiere
+# ligne NON VIDE du corps : [ACTION] (le commentaire porte une action --
+# patch, rebase, rerun, fix), [DIAG] (diagnostic pur, sans action
+# attachee), [ASK] (attente d'une decision tierce). Le contrat est cote
+# EMISSION (meme parti que #14682 : elargir le filet a la prose
+# sur-accuse d'un facteur 5) : un commentaire non tague est INVISIBLE
+# pour ce detecteur -- il ne compte ni comme [DIAG] ni comme [ACTION].
+# Ces tags ne touchent NI `classify`, NI les levees : ils mesurent la
+# boucle de pompage, pas le verdict (un [DIAG] portant une reserve vivante
+# reste un nit par la voie habituelle).
+COMMENT_TAG_RE = re.compile(r"\[(ACTION|DIAG|ASK)\](?=\s|$)")
+DIAG_LOOP_LIMIT = 3  # > 3 [DIAG] consecutifs sans [ACTION] = PR bloquee
+
 # #11639 — l'arbitrage ECRIT du coordinateur. B.0 ne restreint pas l'auteur
 # d'une reponse de levée (« une reponse ecrite sur la PR qui nomme la
 # remarque »), mais `_lift_eligible` ne creditait que l'auteur du nit ou
@@ -4667,6 +4680,54 @@ def _override_scopes_reserve(lift_body: str, nit_author: str) -> bool:
     return False
 
 
+def _diag_loop(pr_data: dict, cutoff: datetime) -> dict:
+    """#15511 (P1) : plus longue serie de [DIAG] sans [ACTION] intercale.
+
+    Mesure fondatrice : PR #14821 -- 31 commentaires / 68 101 caracteres
+    d'infra-diagnostic sur 5 jours, pour un livrable qui n'avait pas bouge
+    depuis le commit du premier jour. Le pompage se detecte a la structure,
+    pas au contenu : seul un commentaire tague [ACTION] interrompt la
+    serie ; un commentaire non tague ou tague [ASK] est TRANSPARENT
+    (« sans [ACTION] intercale » -- l'issue P1 mot pour mot). Les bots et
+    les commentaires posterieurs au cutoff sont exclus, comme partout
+    ailleurs dans l'organe.
+    """
+    tagged = []
+    for c in pr_data.get("comments") or []:
+        login = (c.get("author") or {}).get("login", "")
+        if login in BOT_LOGINS:
+            continue
+        body = (c.get("body") or "").strip()
+        when = ts(c.get("createdAt"))
+        if not body or when is None or when > cutoff:
+            continue
+        first = next((ln.strip() for ln in body.splitlines() if ln.strip()), "")
+        m = COMMENT_TAG_RE.match(first)
+        if m:
+            tagged.append((m.group(1), login, when, first))
+    best_run, best_authors, best_at, best_line = 0, "", None, ""
+    run, authors = 0, []
+    for tag, login, when, first in tagged:
+        if tag == "ACTION":
+            run, authors = 0, []
+            continue
+        if tag != "DIAG":
+            continue  # [ASK] : transparent, ni serie ni interruption
+        run += 1
+        authors.append(login)
+        if run > best_run:
+            best_run, best_authors, best_at, best_line = (
+                run, ", ".join(dict.fromkeys(authors)), when, first)
+    return {
+        "max_run": best_run,
+        "authors": best_authors,
+        "at": best_at.isoformat() if best_at else None,
+        "line": best_line,
+        "diag_count": sum(1 for t, *_ in tagged if t == "DIAG"),
+        "action_count": sum(1 for t, *_ in tagged if t == "ACTION"),
+    }
+
+
 def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
             issue_info=None, dismissed_improperly=None) -> dict:
     """cutoff = mergedAt (audit retro) ou now (gate pre-merge)."""
@@ -5511,6 +5572,22 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
     before_lc = [u for u in unevaluated if not u["after_last_commit"]]
     to_read = sorted(after_lc + before_lc[-3:], key=lambda u: u["at"] or "")
 
+    # #15511 (P1) -- boucle de diagnostic sans action : > 3 [DIAG]
+    # consecutifs sans [ACTION] intercale. Ne lit QUE les commentaires
+    # tagues (contrat d'emission) : rien ne change pour une PR dont
+    # personne n'utilise la taxonomie -- le detecteur rend max_run=0.
+    diag_loop = _diag_loop(pr_data, cutoff)
+    if diag_loop["max_run"] > DIAG_LOOP_LIMIT:
+        at_dt = ts(diag_loop["at"])
+        blocking.append({
+            "kind": "DIAG-LOOP", "author": diag_loop["authors"],
+            "src": "comment", "channel": "comment",
+            "at": diag_loop["at"] or "?",
+            "gap_hours": (round((cutoff - at_dt).total_seconds() / 3600.0, 1)
+                          if at_dt else None),
+            "excerpt": _excerpt(diag_loop["line"]),
+        })
+
     return {
         "pr": pr_data.get("number"),
         "title": (pr_data.get("title") or "")[:110],
@@ -5522,6 +5599,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         "rewind_artifacts": rewind_artifacts,
         "unevaluated": to_read,
         "unevaluated_total": len(unevaluated),
+        "diag_loop": diag_loop,
     }
 
 
