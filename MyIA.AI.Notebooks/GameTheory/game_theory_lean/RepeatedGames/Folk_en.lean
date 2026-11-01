@@ -24,11 +24,12 @@ import Mathlib.Topology.Basic
   EN historique pré-Option A à recover, fichier FR-first depuis origin).
 
   Namespace sibling : `RepeatedGames_en` (the FR canonical stays
-  `RepeatedGames`). Shared types `PrisonersDilemma`, `PDAction` (defined in
-  `Stage.lean` under `namespace RepeatedGames`) are re-exposed via
-  `open RepeatedGames` so the EN sibling resolves them as FR `GrimTrigger_en`
-  does. Field projections `g.P`/`g.R`/`g.S`/`g.T` are structure-field access
-  (not namespace dot-notation), hence safe under the open.
+  `RepeatedGames`). Shared types `PrisonersDilemma`, `PDAction` are defined
+  in `Stage_en.lean` under `namespace RepeatedGames_en` and consumed via
+  `import RepeatedGames.Stage_en`; the EN sibling resolves them through
+  `open RepeatedGames_en`, as `GrimTrigger_en` already does. Field
+  projections `g.P`/`g.R`/`g.S`/`g.T` are structure-field access
+  (not namespace dot-notation), hence unaffected by the open.
 
   See #4980. Part of #4208 (axe E).
 -/
