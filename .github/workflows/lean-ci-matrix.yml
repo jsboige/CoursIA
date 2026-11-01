@@ -176,6 +176,16 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200/riemann200_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200/riemann200_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200/riemann200_lean/lake-manifest.json'
+      # galois_lean (28e lake, #13751 item 4 -- wrapper lean-galois.yml
+      # supprime, recette #20526/#20527. Module unique M23Lean4Web.lean
+      # vendu (8115 l., Apache-2.0), 0 sorry reel (mesure c.1039),
+      # axiom target-modules "*" + fail-on-sorry true (defaut matrice) =
+      # parametres exacts du wrapper. lean_server/lean_utils deja
+      # self-cover ci-dessous, cites au manifeste comme serre100.)
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/galois_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/galois_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/galois_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/galois_lean/lean-toolchain'
       # planning_lean (herite du wrapper lean-planning.yml supprime, #13751 :
       # 0 sorry verifie de naissance, axiom target-modules "*" -- parametres
       # reportes au manifeste ; lake-manifest.json ajoute au declenchement,
@@ -196,6 +206,21 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/lake-manifest.json'
+      # formal_logic_lean (herite du wrapper lean-formal-logic.yml supprime,
+      # #13751 : 0 sorry reel re-mesure -- distinct_code_sorry = 0 sur 8
+      # fichiers, naive 0 aussi -- donc sorry-baseline "0" est vrai.
+      # Contrairement aux migrations soeurs, axiom target-modules =
+      # enumeration explicite des 6 sous-modules (anti-derive #10889, pas
+      # "*"), reportee telle quelle au manifeste. allow-axioms vide,
+      # fail-on-sorry true. Le wrapper declarait aussi lakefile.toml : le
+      # lake n'en a pas (mesure au repertoire), le pattern mort n'est pas
+      # reporte. lake-manifest.json reste un declencheur (#8712) : un depin
+      # de Mathlib doit rejouer le lake. lean_server.py / lean_utils.py
+      # restent des entrees de gate du lac au manifeste, comme formal_groups.)
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/lake-manifest.json'
       # grothendieck_lean (herite du wrapper lean-grothendieck.yml supprime,
       # #13751 : 0 sorry reel verifie -- distinct_code_sorry = 0 sur 198
       # fichiers, naive_sorry = 156 tous en prose -- donc sorry-baseline "0"
@@ -370,6 +395,16 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200/riemann200_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200/riemann200_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200/riemann200_lean/lake-manifest.json'
+      # galois_lean (28e lake, #13751 item 4 -- wrapper lean-galois.yml
+      # supprime, recette #20526/#20527. Module unique M23Lean4Web.lean
+      # vendu (8115 l., Apache-2.0), 0 sorry reel (mesure c.1039),
+      # axiom target-modules "*" + fail-on-sorry true (defaut matrice) =
+      # parametres exacts du wrapper. lean_server/lean_utils deja
+      # self-cover ci-dessous, cites au manifeste comme serre100.)
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/galois_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/galois_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/galois_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/galois_lean/lean-toolchain'
       # planning_lean (herite du wrapper lean-planning.yml supprime, #13751 :
       # 0 sorry verifie de naissance, axiom target-modules "*" -- parametres
       # reportes au manifeste ; lake-manifest.json ajoute au declenchement,
@@ -390,6 +425,21 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/lake-manifest.json'
+      # formal_logic_lean (herite du wrapper lean-formal-logic.yml supprime,
+      # #13751 : 0 sorry reel re-mesure -- distinct_code_sorry = 0 sur 8
+      # fichiers, naive 0 aussi -- donc sorry-baseline "0" est vrai.
+      # Contrairement aux migrations soeurs, axiom target-modules =
+      # enumeration explicite des 6 sous-modules (anti-derive #10889, pas
+      # "*"), reportee telle quelle au manifeste. allow-axioms vide,
+      # fail-on-sorry true. Le wrapper declarait aussi lakefile.toml : le
+      # lake n'en a pas (mesure au repertoire), le pattern mort n'est pas
+      # reporte. lake-manifest.json reste un declencheur (#8712) : un depin
+      # de Mathlib doit rejouer le lake. lean_server.py / lean_utils.py
+      # restent des entrees de gate du lac au manifeste, comme formal_groups.)
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/lake-manifest.json'
       # grothendieck_lean (herite du wrapper lean-grothendieck.yml supprime,
       # #13751 : 0 sorry reel verifie -- distinct_code_sorry = 0 sur 198
       # fichiers, naive_sorry = 156 tous en prose -- donc sorry-baseline "0"
