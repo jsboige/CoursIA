@@ -3408,6 +3408,11 @@ TRANCHE35: list[Guard] = [
 # que `pip_leak_delta.py` documente (#6314). Le stock herite ne rougit
 # personne ; une introduction, si.
 #
+# Durci post-review NanoClaw (2026-11-01) : le delta porte sur les VALEURS
+# (une substitution C:\old -> D:\new rougit a compte constant), le predicat
+# est insensible a la casse et couvre racines POSIX, UNC et lecteur minuscule,
+# et un renommage pur d'un carnet du stock fuyard reste vert (git diff -M).
+#
 # Controles du detecteur, rejoues : positif sur la fuite reelle de #23958 avant
 # scrub (`--base-ref 3b199d3d8d --head-ref 8e54b1335` : 0 -> 2 chemins, rc=1),
 # negatif sur `main` (rc=0) et negatif apres le scrub de la meme PR

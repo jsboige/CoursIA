@@ -9,8 +9,10 @@ paths on ``main``** (measured 2026-11-01, see the body of the PR that wired
 this guard). An absolute gate would redden every PR touching one of those
 notebooks for an unrelated reason and freeze the cluster -- the same trap
 ``pip_leak_delta.py`` documents (#6314). The durable transposition is a
-**delta**: compare the count on the pull-request base with the count on the
-head, and fail only when the head *introduces* a new absolute path.
+**delta on values**: fail only when the head carries an absolute-path value
+that the base did not have. A substitution (``C:\\old`` replaced by
+``D:\\new``) counts as an introduction even though the count is unchanged; a
+removal (the scrubber at work) never reddens.
 
 Why a CI guard when a pre-commit hook already exists
 ----------------------------------------------------
@@ -25,8 +27,10 @@ one that cannot be skipped.
 Scope
 -----
 Only notebooks the PR **changes** are compared, so the stock on ``main`` never
-reddens anybody. Submodule contents are out of scope (``git diff`` names a
-submodule as a single path). Generated files are irrelevant here: only
+reddens anybody -- a pure rename included: the base side is resolved through
+``git diff -M`` rename detection, so renaming one of the 22 leaky-stock
+notebooks stays green. Submodule contents are out of scope (``git diff`` names
+a submodule as a single path). Generated files are irrelevant here: only
 ``metadata.papermill`` is read.
 
 Exit codes: 0 = no new absolute path ; 1 = the head introduces at least one ;
@@ -39,8 +43,30 @@ import json
 import subprocess
 import sys
 
-ABS_MARKERS = ("C:\\", "C:/", "D:\\", "D:/", "/home/", "/Users/", "/mnt/", "/tmp/")
 PA_FORMAT_KEYS = ("input_path", "output_path")
+
+
+def _is_machine_path(value: str) -> bool:
+    """True for an absolute machine path, case-insensitive.
+
+    Covers Windows drive letters in either case and either slash, UNC shares
+    (``\\\\serveur\\partage``) and any POSIX absolute root (``/home/``,
+    ``/root/``, ``/workspace/``, ``/data/``, ``/srv/`` ...) -- a fixed marker
+    list under-detected exactly the roots a container or NAS produces.
+    """
+    stripped = value.strip()
+    if stripped.startswith("\\\\"):  # UNC share
+        return True
+    if stripped.startswith("/"):  # any POSIX absolute root
+        return True
+    if (
+        len(stripped) >= 3
+        and stripped[0].isalpha()
+        and stripped[1] == ":"
+        and stripped[2] in ("\\", "/")
+    ):
+        return True  # drive letter, any case
+    return False
 
 
 def _git(*args: str) -> str:
@@ -58,6 +84,22 @@ def changed_notebooks(base_ref: str, head_ref: str) -> list[str]:
     return [line.strip() for line in out.splitlines() if line.strip()]
 
 
+def rename_sources(base_ref: str, head_ref: str) -> dict[str, str]:
+    """``new path -> old path`` for notebooks renamed between base and head.
+
+    Without this, ``git show base:<new path>`` fails on a pure rename and the
+    base side reads as empty -- reddening a PR that introduced nothing (the
+    one case that contradicted "the stock on ``main`` never reddens anybody").
+    """
+    out = _git("diff", "-M", "--name-status", f"{base_ref}...{head_ref}", "--", "*.ipynb")
+    sources: dict[str, str] = {}
+    for line in out.splitlines():
+        parts = line.split("\t")
+        if len(parts) == 3 and parts[0].upper().startswith("R"):
+            sources[parts[2].strip()] = parts[1].strip()
+    return sources
+
+
 def papermill_paths(ref: str, path: str) -> list[str]:
     """Absolute papermill paths recorded in ``path`` at ``ref`` ([] if absent)."""
     try:
@@ -72,7 +114,7 @@ def papermill_paths(ref: str, path: str) -> list[str]:
     found = []
     for key in PA_FORMAT_KEYS:
         value = papermill.get(key)
-        if isinstance(value, str) and value.startswith(ABS_MARKERS):
+        if isinstance(value, str) and _is_machine_path(value):
             found.append(f"{key}: {value}")
     return found
 
@@ -86,19 +128,25 @@ def main() -> int:
 
     try:
         notebooks = changed_notebooks(args.base_ref, args.head_ref)
+        renames = rename_sources(args.base_ref, args.head_ref)
     except RuntimeError as exc:
         print(f"[ERREUR] {exc}", file=sys.stderr)
         return 2
 
     introduced = []
     for path in notebooks:
-        base_paths = papermill_paths(args.base_ref, path)
+        base_paths = papermill_paths(args.base_ref, renames.get(path, path))
         head_paths = papermill_paths(args.head_ref, path)
-        delta = len(head_paths) - len(base_paths)
-        if delta > 0:
-            introduced.append({"file": path, "base": len(base_paths), "head": len(head_paths)})
-            print(f"[DEFECT] {path} -- {len(base_paths)} -> {len(head_paths)} chemin(s) absolu(s)")
-            for entry in head_paths:
+        # Delta on VALUES, not on counts: a substitution (old value replaced
+        # by a new one) is an introduction even at constant count, and an
+        # input/output swap introduces two new entries.
+        new_values = sorted(set(head_paths) - set(base_paths))
+        if new_values:
+            introduced.append(
+                {"file": path, "base": len(base_paths), "head": len(head_paths), "new": new_values}
+            )
+            print(f"[DEFECT] {path} -- {len(new_values)} chemin(s) absolu(s) introduit(s)")
+            for entry in new_values:
                 print(f"         {entry}")
 
     if args.json:
