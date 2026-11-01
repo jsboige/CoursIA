@@ -22,18 +22,21 @@ product of their coordinate correlations),
 `sum_cubeF_sq`, `shiftBox`, `support_gridF_subset_shiftBox`,
 `support_gridF_sub_subset_shiftBox`.
 
-**Deferred to k4.2b**: the oracle's bound `shiftDist_cubeP_sq_le`
-(`shiftDist (cubeP d N) h ^ 2 ≤ (∑ k, (h k / N) ^ 2) / 12`), which consumes
-the "distribution" version of the Hellinger inequality (`tvDist_sq_le` in
-Dahia) — itself deferred by `Hellinger.lean` until this module fixes its call
-— then the chain `Cube` → `NearInvariant` (Lemma 1.5, k4.3 tranche: the
-transport from the integer lattice to the grid `N⁻¹ • ℤ^d`).
+**Delivered by k4.2b**: the oracle's bound `shiftDist_cubeP_sq_le`
+(`shiftDist (cubeP d N) h ^ 2 ≤ (∑ k, (h k / N) ^ 2) / 12`), under the name
+`shiftDistance_cubeF_sq_le`. It consumes the "distribution" version of the
+Hellinger inequality (`tvDist_sq_le` in Dahia) — deferred by `Hellinger.lean`
+until this module fixed its call — now delivered by `Komlos/TvDistance.lean`
+(k4.2b, same commit). Remains the chain `Cube` → `NearInvariant` (Lemma 1.5,
+k4.3 tranche: the transport from the integer lattice to the grid
+`N⁻¹ • ℤ^d`), which awaits `shiftDist_push` (k2.3's only deferral).
 
 The detailed state lives in `FORMAL_STATUS.md` (« Distillation
 Karingula–Lovett, briques k1..k5 »).
 -/
 
 import Discrepancy.Komlos.Grid_en
+import Discrepancy.Komlos.TvDistance_en
 
 /-!
 # A product weight on the integer lattice (Lemma 1.5, Karingula–Lovett)
@@ -126,12 +129,83 @@ lemma support_gridF_sub_subset_shiftBox {d : ℕ} (N : ℕ) (h : Fin d → ℤ) 
   right
   exact ⟨k, mem_coe.2 (mem_univ k), j - h k, support_gridF_subset N hj, by simp⟩
 
-/-! ## Adaptation note (k4.2a tranche)
+/-- The squared shift of the product weight `cubeF d N ^ 2` is at most
+`(∑ k, ((h k) / N) ^ 2) / 12`.
 
-**Status**: 9 bricks closed — the **first half** of the oracle's
-`Komlos/Cube.lean` is ported. The `d`-dimensional product weight exists, its
-support is a box, its correlation factors over the coordinates, and its mass
-is `1`.
+This is the oracle's `shiftDist_cubeP_sq_le` — the **last** brick of boute
+k4.2: the total variation between the product distribution and its translate is
+quadratically small, which is exactly the form Lemma 1.5 (k4.3) then
+transports to the grid `N⁻¹ • ℤ^d`.
+
+`h` is the shift of the **weight** (the translate being `cubeF d N (· - h)`),
+so the corresponding `shiftDistance` shift is `-h` (the
+`½ · Σ |P (x + u) − P x|` convention of k1.1). The zero shift is the case
+`h = 0`.
+
+The `Finset` over which `shiftDistance` sums is the **box**
+`(shiftBox N h)^d` (`Fintype.piFinset`): it is the explicit analogue of the
+support the oracle leaves implicit — `shiftDist` sums over the support of
+`cubeP - tr h cubeP`, which is contained in that box
+(`support_cubeF_sub_subset`, k4.2a).
+
+Proof: `tvDistance_sq_le` (k4.2b) reduces the total variation to the `L²`
+distance between the weights, `sum_cubeF_sub_mul_cubeF_sub` (k4.2a) factors the
+correlation over the coordinates, `one_sub_sum_le_prod` (k4.1, Weierstrass)
+turns the additive bound into a bound on the product, and
+`sum_gridF_sub_sq_le` (k3.2) supplies the one-dimensional bound. -/
+lemma shiftDistance_cubeF_sq_le {d N : ℕ} (hN : 0 < N) (h : Fin d → ℤ) :
+    shiftDistance (Fintype.piFinset fun _ : Fin d ↦ shiftBox N h)
+      (fun g ↦ cubeF d N g ^ 2) (-h) ^ 2
+      ≤ (∑ k, ((h k : ℝ) / N) ^ 2) / 12 := by
+  set K := shiftBox N h
+  set A : Fin d → ℝ := fun k ↦ ∑ j ∈ K, gridF N j * gridF N (j - h k)
+  have hp : ∑ g ∈ Fintype.piFinset (fun _ ↦ K), cubeF d N (g - 0) ^ 2 = 1 :=
+    sum_cubeF_sub_sq hN 0 (fun k ↦ by
+      simpa only [Pi.zero_apply, sub_zero] using support_gridF_subset_shiftBox N h)
+  have hq : ∑ g ∈ Fintype.piFinset (fun _ ↦ K), cubeF d N (g - h) ^ 2 = 1 :=
+    sum_cubeF_sub_sq hN h (support_gridF_sub_subset_shiftBox N h)
+  rw [shiftDistance_eq_tvDistance, tvDistance_comm]
+  refine (tvDistance_sq_le (s := Fintype.piFinset (fun _ ↦ K))
+    (p := fun g ↦ cubeF d N (g - 0)) (q := fun g ↦ cubeF d N (g - h))
+    ?_ ?_ hp hq).trans ?_
+  · intro g _
+    simp only [sub_zero]
+  · intro g _
+    simp only [sub_eq_add_neg]
+  · rw [sum_sub_sq_eq hp hq, sum_cubeF_sub_mul_cubeF_sub]
+    simp only [Pi.zero_apply, sub_zero]
+    refine le_trans (b := ∑ k, 2 * (1 - A k)) ?_ ?_
+    · suffices 1 - ∏ k, A k ≤ ∑ k, (1 - A k) by
+        simpa only [Finset.mul_sum, mul_sub, mul_one] using
+          mul_le_mul_of_nonneg_left this (by norm_num : (0 : ℝ) ≤ 2)
+      rw [sub_le_comm]
+      refine (one_sub_sum_le_prod univ (fun k ↦ 1 - A k) ?_ ?_).trans_eq ?_
+      · intro k _
+        apply sub_nonneg.mpr
+        apply (Real.sum_mul_le_sqrt_mul_sqrt K (gridF N) (fun j ↦ gridF N (j - h k))).trans
+        rw [sum_gridF_sq hN (support_gridF_subset_shiftBox N h),
+          sum_gridF_sub_sq hN (h k) (support_gridF_sub_subset_shiftBox N h k),
+          Real.sqrt_one, mul_one]
+      · intro k _
+        exact sub_le_self _ (sum_nonneg fun j _ ↦
+          mul_nonneg (gridF_nonneg N j) (gridF_nonneg N (j - h k)))
+      · simp only [sub_sub_cancel]
+    · rw [sum_div]
+      refine sum_le_sum ?_
+      intro k _
+      rw [mul_sub, mul_one, ← sum_sub_sq_eq
+        (sum_gridF_sq hN (support_gridF_subset_shiftBox N h))
+        (sum_gridF_sub_sq hN (h k) (support_gridF_sub_subset_shiftBox N h k))]
+      simpa only [div_pow, div_div, mul_comm (12 : ℝ)] using
+        sum_gridF_sub_sq_le hN (h k) K
+
+/-! ## Adaptation note (k4.2 tranche)
+
+**Status**: 10 bricks closed — the oracle's `Komlos/Cube.lean` is ported **in
+full**. The `d`-dimensional product weight exists, its support is a box, its
+correlation factors over the coordinates, its mass is `1`, and its shift is
+quadratically small (`shiftDistance_cubeF_sq_le`, the second half of the boute,
+delivered by k4.2b).
 
 **Encoding barrier, crossed by the lake convention.** The oracle states
 `cubeP d N : (Fin d → ℤ) →₀ ℝ` (a `Finsupp` supported on
@@ -140,8 +214,8 @@ through `IsDist`/`mass_eq_sum`. This lake has neither `IsDist` nor `Finsupp`
 in its Komlos chain: the weight is a **function** and the support is
 **passed** (the `shiftDistance S P u` convention of k1.1). Nothing is lost —
 `sum_cubeF_sub_sq` is the exact mass statement, on any `Finset` containing the
-support — and the gain is that k4.2b will consume `shiftDistance` as it
-stands, without a `Finsupp → Finset` bridge.
+support — and the gain is that k4.2b consumes `shiftDistance` as it stands,
+without a `Finsupp → Finset` bridge.
 
 **v4.34 → v4.33.0 port, proof by proof**:
 
@@ -156,7 +230,15 @@ stands, without a `Finsupp → Finset` bridge.
   through `Fintype`/`DecidableEq` on `Fin d`).
 - `sum_cubeF_sq` has no counterpart in the oracle: it is the
   "no translation" form of `sum_cubeF_sub_sq`, written here because k4.2b
-  uses it as it stands (`a = 0`, the untranslated copy).
+  uses it (`a = 0`, the untranslated copy).
+- `shiftDistance_cubeF_sq_le` (k4.2b): port of `shiftDist_cubeP_sq_le`. Two
+  deviations only, both **by disappearance** — the oracle passes six arguments
+  to `tvDist_sq_le` (the two support hypotheses `hPs`/`hQs`, then `hP`, `hQ`,
+  `hp`, `hq`), this module four (the support hypotheses are absorbed by the
+  explicit sum over `Fintype.piFinset K`); and the shift is written `-h` where
+  `shiftDist (cubeP d N) h` carries `h` in its argument, the
+  `P (· + u) − P` orientation of `shiftDistance` (k1.1) being the reverse of
+  that of `tr h P`. The proof body is verbatim.
 
 The detailed state lives in `FORMAL_STATUS.md` (« Distillation Karingula–Lovett »).
 -/
