@@ -38,10 +38,13 @@ def hosted(queued: int = 0, old: int = 0, oldest: float = 0.0,
 
 def local(free: int = 0, online: int = 0, starved: int = 0,
           busy: int = 0, unknown: int = 0,
-          complete: bool = True, truncated: bool = False, reason: str = "") -> ctl.LocalSample:
+          complete: bool = True, truncated: bool = False, reason: str = "",
+          inventory_read: bool = False,
+          cohort_free: int = 0) -> ctl.LocalSample:
     return ctl.LocalSample(online=online, free=free, starved=starved, busy=busy,
                             unknown=unknown, complete=complete, truncated=truncated,
-                            reason=reason)
+                            reason=reason, inventory_read=inventory_read,
+                            cohort_free=cohort_free)
 
 
 def cohort(queued: int = 0, in_progress: int = 0, complete: bool = True,
@@ -486,6 +489,60 @@ def test_troncature_locale_bloque_la_bascule_vers_true():
                      current="false", now=NOW)
     assert d.action == "HOLD"
     assert "TRONQUEE" in d.reason
+
+
+# --- Tranche du 31/10 : la troncature locale n'est plus une impasse --------
+#
+# Rejeu de la mesure du coordinateur (31/10, 16:07-16:20Z) : 162 jobs
+# heberges ages (le plus ancien 69,7 min, marge hebergee negative) et 28
+# slots locaux libres, mais la lecture locale est tronquee (530 runs non
+# lus, budget 120). Le controleur rendait HOLD au motif que « le parc local
+# n'est pas affame » n'etait pas etablie -- donc la bascule devenait
+# impossible exactement dans le regime qu'elle doit traiter. L'inventaire
+# des runners porte desormais cette premisse par une affirmation POSITIVE.
+
+def test_inventaire_etablit_le_parc_libre_sous_troncature_locale():
+    d = ctl.evaluate(
+        hosted(queued=162, old=162, oldest=69.7, in_progress=11),
+        local(free=28, online=38, busy=11,
+              truncated=True,
+              reason="530 run(s) local(aux) non lu(s) (budget de lecture 120 atteint)",
+              inventory_read=True, cohort_free=28),
+        current="false", now=NOW,
+    )
+    assert d.action == "SWITCH_TRUE" and d.target == "true"
+    # Le motif nomme l'organe qui a porte la premisse, et non la troncature.
+    assert "inventaire" in d.reason and "28 runner(s)" in d.reason
+
+
+def test_inventaire_sans_slot_de_cohorte_ne_leve_pas_la_troncature():
+    # Inventaire LU, mais un seul slot de cohorte libre pour un seuil de 2 :
+    # la premisse n'est pas etablie, et le motif dit lequel des deux organes
+    # a parle (inventaire, pas troncature seule).
+    d = ctl.evaluate(
+        hosted(queued=162, old=162, oldest=69.7, in_progress=11),
+        local(free=28, online=38, truncated=True,
+              reason="530 run(s) local(aux) non lu(s)",
+              inventory_read=True, cohort_free=1),
+        current="false", now=NOW,
+    )
+    assert d.action == "HOLD"
+    assert "TRONQUEE" in d.reason
+    assert "1 runner(s) de cohorte" in d.reason
+
+
+def test_inventaire_illisible_ne_leve_pas_la_troncature():
+    # Fail-CLOSED : sans inventaire lisible, la troncature locale garde son
+    # effet, meme avec des slots annonces par la lecture des runs.
+    d = ctl.evaluate(
+        hosted(queued=162, old=162, oldest=69.7),
+        local(free=28, online=38, truncated=True,
+              reason="530 run(s) local(aux) non lu(s)",
+              inventory_read=False, cohort_free=0),
+        current="false", now=NOW,
+    )
+    assert d.action == "HOLD"
+    assert "inventaire des runners illisible" in d.reason
 
 
 def test_troncature_hebergee_ne_bloque_pas_la_saturation():
