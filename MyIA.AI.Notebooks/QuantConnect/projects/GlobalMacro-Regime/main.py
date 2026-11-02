@@ -6,7 +6,7 @@ from datetime import datetime
 
 class GlobalMacroRegime(QCAlgorithm):
     """
-    Global Macro Regime v3 BEST: Rank-based Risk Parity + Regime Switch
+    Global Macro Regime v3: Rank-based Risk Parity + Regime Switch
     =====================================================================
     Measured (current code, 2018-01-01 -> 2025-01-01, 1761 jours, mode strategy): Sharpe 0.456, CAGR 9.790%, MaxDD 22.800%.
 
