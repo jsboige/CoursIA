@@ -372,10 +372,26 @@ HOLD_TAGGED_HEAD = re.compile(r"^[\s*_#]*\[HOLD\b[^\]]*\]")
 # Volontairement LARGE : c'est le cote permissif du garde (il MAINTIENT le
 # blocage), donc un faux positif ici ne coute qu'une phrase de levee, tandis
 # qu'un trou coute un merge non mesure.
+# #24141 — l'alternative « avec <reserve> » ne matchait que « avec reserve » /
+# « avec reserves ». Le COMPTE, l'ARTICLE ou le DETERMINANT place ENTRE « avec »
+# et « reserve » cassait l'alternative : la review Hermes de #24117 (« Verdict :
+# APPROVE avec 1 reserve 🟡 ») n'etait pas reconnue comme une reserve VIVANTE,
+# et la PR est partie en merge le 02/11 05:07Z avec cette reserve en suspens —
+# B.0 rendait rc=0 (aucun bloquant).
+#
+# La quantite compte ici le NOMBRE de reserves : « 0 reserve » n'en est pas
+# une (meme logique que les CITERS, qui excluent « zero » et « 0 »). Les
+# nombres en toutes lettres sont pris pour ne pas laisser la meme famille de
+# trou ouvert (« avec deux reserves »).
+_APPROVE_RESERVATION_QUANTITE = (
+    r"(?:[1-9]\d*|une?|deux|trois|quatre|cinq|six|sept|huit|neuf|dix"
+    r"|quelques|plusieurs|des|les|la|ma|mon|tes|ses)"
+)
+
 _APPROVE_RESERVATION_RE = re.compile(
     r"(?i)("
     r"sous\s+r[ée]serve"
-    r"|avec\s+r[ée]serves?\b"
+    r"|avec\s+(?:" + _APPROVE_RESERVATION_QUANTITE + r"\s+)?r[ée]serves?\b"
     r"|r[ée]serve\s+(?:maintenue|subsiste|demeure|tient)"
     r"|je\s+maintiens"
     r"|je\s+conserve\s+(?:ma|mon|la)\b"
