@@ -15,13 +15,16 @@ This checker measures it, comment by comment:
   syntax example, a generic word) is ADVISORY, because a translation may
   legitimately drop it.
 * **numbers** -- a numeric literal in prose (an arc count, a bound, a date)
-  must survive the translation. HARD finding. Dates are compared as a
-  *multiset of their parts*, so ``2026-10-27`` and ``27/10/2026`` match.
+  must survive the translation. HARD finding. A **date** is compared as a
+  *multiset of its parts*, so ``2026-10-27`` and ``27/10/2026`` match; any
+  other numeric group is ONE literal, its decimal separator normalized
+  (``1,5`` and ``1.5`` are the same number) but not split -- splitting it
+  made ``1.5`` and ``5.1`` compare equal.
 * **technical identifiers** outside code spans (camelCase, ``snake_case``,
   ``ALLCAPS``) -- a translation may legitimately rephrase such a mention, so
   these are ADVISORY.
 
-Three mechanisms keep the measure from drowning in false positives:
+Five mechanisms keep the measure from drowning in false positives:
 
 * the ``_en`` anti-collision suffix is collapsed **symmetrically** on both
   sides (the convention's two validated variants name the same entity ``Foo``
@@ -33,7 +36,26 @@ Three mechanisms keep the measure from drowning in false positives:
   own way;
 * the two comment sequences are paired **by code anchor** (the number of code
   tokens preceding the comment), not by index: a mirror that carries one
-  extra comment must not shift the comparison of every later comment.
+  extra comment must not shift the comparison of every later comment. The
+  anchor offset between the two sequences is measured (a constant shift) and
+  the leftovers are repaired within a small tolerance of code tokens, so an
+  alignment artefact is not published as an orphan;
+* a **metadata header** is excluded, and the test reads the **bodies** of the
+  pair: the ``_en`` header declares itself the mirror of the canonical file
+  ("English mirror of ``Foo.lean``"), which has no FR counterpart **by
+  design** -- the FR file carries its own translated docstring at the same
+  code position. Comparing the two would report every metadata token of one
+  side as the loss of the other;
+* a number is excused only when it belongs to a **full date** on one side and
+  the other side carries a full date too. The mere presence of a year
+  somewhere in the body excuses nothing: that exemption hid 29 findings of
+  the repository, among them plain arc counts.
+
+Every file reports its **coverage**: how many comment pairs were compared, how
+many were excluded as headers, how many were repaired by alignment, and how
+many are left unpaired. A file where no pair could be aligned says so
+explicitly -- a "0 finding" on such a file means "nothing was measured", not
+"nothing was wrong".
 
 What the checker does **not** do: it does not replace a phrase-by-phrase
 relecture. A translation can keep every token and still mistranslate the
@@ -77,6 +99,19 @@ _CODE_SPAN = re.compile(r"`([^`]{1,600})`")
 # A numeric group: a digit run possibly made of several parts separated by a
 # decimal/thousand/date separator (``2026-10-27``, ``27/10/2026``, ``1.5``).
 _NUMBER_GROUP = re.compile(r"\d+(?:[.,/\-]\d+)*")
+
+# The same group, but a separator may be followed by a space: a date written
+# in the English convention ("April 7, 2026") is ONE group. The number
+# extraction keeps the space out -- there "7, 2026" is a decimal pair, not a
+# date.
+_DATE_GROUP = re.compile(r"\d+(?:\s*[.,/\-]\s*\d+)*")
+
+# The mirror declaration of an EN header: it says it is the mirror of a
+# canonical file. Such a comment has no FR counterpart BY DESIGN -- the FR
+# file carries its own (translated) docstring at the same code position --
+# so comparing them would report every metadata token of one side as the
+# loss of the other. This is the marker that tells the two apart.
+_MIRROR_DECLARATION = re.compile(r"\b(?:mirror\s+of|miroir\s+de)\b", re.I)
 
 # A word-shaped token (identifier, keyword, ordinary English word).
 _WORD = re.compile(r"[A-Za-z_][A-Za-z0-9_']*")
@@ -235,6 +270,7 @@ def scan_comments(src: str) -> list[tuple[int, str, str, int]]:
             is_doc = src.startswith("/-!", i)
             depth = 0
             j = i
+            start_line = line
             while j < n:
                 if src.startswith("/-", j):
                     depth += 1
@@ -251,8 +287,8 @@ def scan_comments(src: str) -> list[tuple[int, str, str, int]]:
             else:
                 raise ValueError("unterminated block comment at line %d" % line)
             inner = i + (3 if is_doc else 2)
-            out.append((line, "doc" if is_doc else "block", src[inner: j - 2],
-                        counter.count))
+            out.append((start_line, "doc" if is_doc else "block",
+                        src[inner: j - 2], counter.count))
             i = j
             continue
         counter.feed(c)
@@ -322,26 +358,51 @@ def code_spans(body: str) -> list[str]:
 
 
 def number_parts(body: str) -> list[str]:
-    """The digit parts of ``body``, code spans excluded.
+    """The numeric literals of ``body``, code spans excluded.
 
-    A group is split on its separators, so ``2026-10-27`` contributes the
-    parts ``2026``, ``10`` and ``27``: a date reads the same whether it is
-    written in one format or another.
+    A group that carries a four-digit year is a DATE: it is split on its
+    separators, so ``2026-10-27`` and ``27/10/2026`` contribute the same
+    parts ``2026``, ``10`` and ``27`` -- a date reads the same whether it
+    is written in one format or another.
+
+    Any other group is split on its SLASH and its DASH (a ratio ``0/1``, a
+    range ``65-979``) but its decimal separator is NOT a separator: ``1,5``
+    and ``1.5`` are one number written in the two conventions. Splitting
+    the decimal made ``1.5`` and ``5.1`` compare equal, because the parts
+    of both are ``{1, 5}`` (measured, review of #24148).
     """
     stripped = _CODE_SPAN.sub(" ", body)
     parts: list[str] = []
     for m in _NUMBER_GROUP.finditer(stripped):
-        for p in re.split(r"[.,/\-]", m.group(0)):
-            if p:
-                parts.append(p)
+        raw = m.group(0)
+        pieces = [p for p in re.split(r"[.,/\-]", raw) if p]
+        if any(len(p) == 4 for p in pieces):
+            parts.extend(pieces)
+        else:
+            for piece in re.split(r"[/\-]", raw):
+                piece = piece.replace(",", ".")
+                if piece:
+                    parts.append(piece)
     return parts
 
 
-def has_year(body: str) -> bool:
-    """True when ``body`` carries a four-digit year somewhere."""
+def date_groups(body: str) -> list[list[str]]:
+    """The numeric groups of ``body`` that spell a FULL date.
+
+    A full date carries at least two components and one of them is a
+    four-digit year: ``2026-10-27``, ``27/10/2026``, ``7, 2026``. A bare
+    year (``2026``) is not a date -- it is the mere presence of a year
+    that used to excuse every small number of the other side (measured:
+    29 findings of the repository rested on that exemption, review of
+    #24148).
+    """
+    out: list[list[str]] = []
     stripped = _CODE_SPAN.sub(" ", body)
-    return any(re.search(r"\b\d{4}\b", m.group(0))
-               for m in _NUMBER_GROUP.finditer(stripped))
+    for m in _DATE_GROUP.finditer(stripped):
+        pieces = [p.strip() for p in re.split(r"[.,/\-]", m.group(0)) if p.strip()]
+        if len(pieces) >= 2 and any(len(p) == 4 for p in pieces):
+            out.append(pieces)
+    return out
 
 
 # The English words that carry a small number in a translation.
@@ -354,20 +415,35 @@ _NUMBER_WORDS = {
 }
 
 
-def number_is_carried_elsewhere(part: str, other_body: str) -> bool:
+def number_is_carried_elsewhere(part: str, other_body: str,
+                                own_body: str | None = None) -> bool:
     """True when the other side carries the number in another form.
 
     Two mitigations keep the number class from drowning in false positives:
     a translation may spell a small number in words ("one" for ``1``), and it
     may express a date differently ("April 7, 2026" for ``2026-04-07``).
+
+    The date mitigation asks for a DATE NEIGHBOURHOOD, not for the presence
+    of a year somewhere in the body: the number must belong to a full date
+    of the other side, or to a full date of this side whose counterpart the
+    other side spells in another convention. A bare year excuses nothing
+    (measured: the arc counts of the repository rested on that exemption,
+    review of #24148).
     """
-    if part.isdigit():
-        value = int(part)
-        word = _NUMBER_WORDS.get(value)
-        if word and re.search(r"\b%s\b" % word, other_body, re.IGNORECASE):
+    if not part.isdigit():
+        return False
+    value = int(part)
+    word = _NUMBER_WORDS.get(value)
+    if word and re.search(r"\b%s\b" % word, other_body, re.IGNORECASE):
+        return True
+    other_dates = date_groups(other_body)
+    for pieces in other_dates:
+        if part in pieces:
             return True
-        if len(part) <= 2 and has_year(other_body):
-            return True
+    if own_body:
+        for pieces in date_groups(own_body):
+            if part in pieces and other_dates:
+                return True
     return False
 
 
@@ -435,12 +511,12 @@ def compare_bodies(fr_body: str, en_body: str,
     fr_nums = Counter(number_parts(fr_body))
     en_nums = Counter(number_parts(en_body))
     for num, count in sorted((fr_nums - en_nums).items()):
-        if number_is_carried_elsewhere(num, en_body):
+        if number_is_carried_elsewhere(num, en_body, fr_body):
             continue
         findings.append({"severity": HARD, "kind": "number",
                          "token": num, "side": "FR"})
     for num, count in sorted((en_nums - fr_nums).items()):
-        if number_is_carried_elsewhere(num, fr_body):
+        if number_is_carried_elsewhere(num, fr_body, en_body):
             continue
         findings.append({"severity": HARD, "kind": "number",
                          "token": num, "side": "EN"})
@@ -479,6 +555,101 @@ def _best_shift(fr_anchors: set[int], en_anchors: set[int]) -> int:
     return best
 
 
+# The tolerance of the anchor pairing, in code tokens. The EN mirror adds
+# its `_en` imports and its `_en` namespace, which shifts the code position
+# of the comments that follow: a comment whose counterpart sits a few
+# tokens away is an ALIGNMENT ARTEFACT, not an orphan comment.
+ANCHOR_TOLERANCE = 3
+
+
+def is_mirror_metadata_header(fr_body: str, en_body: str) -> bool:
+    """True when the EN body is a mirror header and the FR body is not.
+
+    The EN header of a mirror states its own metadata ("English mirror of
+    `X.lean` (FR-first canonical, tranche N EPIC #4980, <date>)"): it has no
+    FR counterpart BY DESIGN, because the FR file carries its own docstring
+    at the same code position. Comparing the two would report every
+    metadata token of one side as the loss of the other.
+
+    The test therefore reads the BODIES of the pair, not the position of
+    its anchor. Excluding the lowest shared anchor whatever it is dropped
+    real translation checks: measured on the repository, 94 files lost a
+    HARD finding that way (review of #24148).
+
+    When BOTH sides declare the mirror, they are two metadata headers and
+    comparing them is meaningful: the exclusion does not apply.
+    """
+    return (bool(_MIRROR_DECLARATION.search(en_body))
+            and not _MIRROR_DECLARATION.search(fr_body))
+
+
+def pair_comments(fr_comments: list, en_comments: list, shift: int,
+                  tol: int = ANCHOR_TOLERANCE):
+    """Pair the FR and EN comments by code anchor.
+
+    Two passes: an exact pass (the counterpart sits at ``anchor + shift``)
+    then a repair pass for the leftovers (the counterpart sits within
+    ``tol`` code tokens). The repair pass never breaks an exact pair and
+    keeps the order of the two sequences.
+
+    Returns ``(pairs, orphans_fr, orphans_en, repaired)``: the pairs are
+    ``(fr_group, en_group, fr_anchor)``, the orphans are the comments that
+    have no counterpart at all.
+    """
+    fr_by: dict[int, list] = {}
+    for c in fr_comments:
+        fr_by.setdefault(c[3], []).append(c)
+    en_by: dict[int, list] = {}
+    for c in en_comments:
+        en_by.setdefault(c[3], []).append(c)
+    fr_anchors = sorted(fr_by)
+    en_anchors = sorted(en_by)
+
+    pairs: list[tuple] = []
+    matched_fr: set[int] = set()
+    matched_en: set[int] = set()
+
+    # exact pass
+    i = j = 0
+    while i < len(fr_anchors) and j < len(en_anchors):
+        fa, ea = fr_anchors[i], en_anchors[j]
+        if fa + shift == ea:
+            pairs.append((fr_by[fa], en_by[ea], fa))
+            matched_fr.add(fa)
+            matched_en.add(ea)
+            i += 1
+            j += 1
+        elif fa + shift < ea:
+            i += 1
+        else:
+            j += 1
+
+    # repair pass: the leftovers whose counterpart is a few tokens away
+    left_fr = [a for a in fr_anchors if a not in matched_fr]
+    left_en = [b for b in en_anchors if b not in matched_en]
+    repaired = 0
+    i = j = 0
+    while i < len(left_fr) and j < len(left_en):
+        fa, ea = left_fr[i], left_en[j]
+        delta = (ea - shift) - fa
+        if delta < -tol:
+            j += 1
+        elif delta > tol:
+            i += 1
+        else:
+            pairs.append((fr_by[fa], en_by[ea], fa))
+            matched_fr.add(fa)
+            matched_en.add(ea)
+            repaired += 1
+            i += 1
+            j += 1
+
+    orphans_fr = [c for a in left_fr if a not in matched_fr for c in fr_by[a]]
+    orphans_en = [c for b in left_en if b not in matched_en for c in en_by[b]]
+    pairs.sort(key=lambda p: p[2])
+    return pairs, orphans_fr, orphans_en, repaired
+
+
 def compare_files(fr_path: Path, en_path: Path) -> dict:
     """Compare the FR canonical and its EN mirror; return a pair report."""
     fr_src = fr_path.read_text(encoding="utf-8", errors="replace")
@@ -487,30 +658,16 @@ def compare_files(fr_path: Path, en_path: Path) -> dict:
     en_comments = scan_comments(en_src)
     decls = declaration_names(fr_src) | declaration_names(en_src)
 
-    fr_by_anchor: dict[int, list] = {}
-    for c in fr_comments:
-        fr_by_anchor.setdefault(c[3], []).append(c)
-    en_by_anchor: dict[int, list] = {}
-    for c in en_comments:
-        en_by_anchor.setdefault(c[3], []).append(c)
-
-    shift = _best_shift(set(fr_by_anchor), set(en_by_anchor))
-
-    # The FIRST comment of a file is its presentation header. The EN mirror
-    # states its own metadata there ("English mirror of <path> (FR-first
-    # canonical, tranche N EPIC #4980, <date>)"), which has no FR counterpart
-    # by design: comparing it would report every metadata token of one side
-    # as a loss of the other. The header is therefore excluded from the token
-    # comparison -- when both sides carry one at the same anchor.
-    shared_anchors = set(fr_by_anchor) & {a + shift for a in en_by_anchor}
-    header_anchor = min(shared_anchors) if shared_anchors else None
+    shift = _best_shift({c[3] for c in fr_comments},
+                        {c[3] for c in en_comments})
+    raw_pairs, orphans_fr, orphans_en, repaired = pair_comments(
+        fr_comments, en_comments, shift)
 
     pairs: list[dict] = []
     unpaired: list[dict] = []
-    for anchor in sorted(set(fr_by_anchor) | {a - shift for a in en_by_anchor}):
-        fr_group = fr_by_anchor.get(anchor, [])
-        en_group = en_by_anchor.get(anchor + shift, [])
-        is_header = anchor == header_anchor
+    compared = 0
+    excluded = 0
+    for fr_group, en_group, anchor in raw_pairs:
         for k in range(max(len(fr_group), len(en_group))):
             if k < len(fr_group):
                 fr_line, fr_kind, fr_body, _ = fr_group[k]
@@ -520,8 +677,16 @@ def compare_files(fr_path: Path, en_path: Path) -> dict:
                 en_line, en_kind, en_body, _ = en_group[k]
             else:
                 en_line, en_kind, en_body = (0, "-", "")
-            findings = (compare_bodies(fr_body, en_body, decls)
-                        if (fr_body and en_body and not is_header) else [])
+            is_header = is_mirror_metadata_header(fr_body, en_body)
+            if fr_body and en_body:
+                if is_header:
+                    excluded += 1
+                    findings = []
+                else:
+                    compared += 1
+                    findings = compare_bodies(fr_body, en_body, decls)
+            else:
+                findings = []
             pair = {
                 "index": len(pairs) + 1,
                 "anchor": anchor,
@@ -529,15 +694,23 @@ def compare_files(fr_path: Path, en_path: Path) -> dict:
                 "en_line": en_line,
                 "fr_kind": fr_kind,
                 "en_kind": en_kind,
+                "excluded": is_header,
                 "findings": findings,
             }
             pairs.append(pair)
-            if not (fr_body and en_body) and not is_header:
-                side = "EN" if fr_body else "FR"
-                unpaired.append({"severity": ADVISORY, "kind": "unpaired-comment",
-                                 "side": side, "line": fr_line or en_line,
-                                 "anchor": anchor,
-                                 "body": (fr_body or en_body).strip()[:120]})
+
+    for line, kind, body, anchor in orphans_fr:
+        unpaired.append({"severity": ADVISORY, "kind": "unpaired-comment",
+                         "side": "FR", "line": line, "anchor": anchor,
+                         "body": body.strip()[:120]})
+    for line, kind, body, anchor in orphans_en:
+        # A mirror header has no FR counterpart by design: it is a header,
+        # not an orphan comment.
+        if _MIRROR_DECLARATION.search(body):
+            continue
+        unpaired.append({"severity": ADVISORY, "kind": "unpaired-comment",
+                         "side": "EN", "line": line, "anchor": anchor,
+                         "body": body.strip()[:120]})
 
     report = {
         "fr": str(fr_path),
@@ -545,6 +718,9 @@ def compare_files(fr_path: Path, en_path: Path) -> dict:
         "fr_comments": len(fr_comments),
         "en_comments": len(en_comments),
         "anchor_shift": shift,
+        "pairs_repaired": repaired,
+        "pairs_compared": compared,
+        "pairs_excluded": excluded,
         "pairs": pairs,
         "unpaired": unpaired,
         "findings": [dict(f, pair=p["index"], fr_line=p["fr_line"],
@@ -569,12 +745,26 @@ def format_report(reports: list[dict], max_per_file: int = MAX_PER_FILE) -> str:
     lines: list[str] = []
     hard = 0
     advisory = 0
-    compared = 0
+    pairs_with_finding = 0
+    compared_total = 0
     for rep in reports:
         all_findings = list(rep["findings"]) + list(rep.get("unpaired", []))
-        if not all_findings and not rep.get("count_mismatch"):
+        compared_total += rep.get("pairs_compared", 0)
+        pairs_with_finding += sum(1 for p in rep["pairs"] if p["findings"])
+        if (not all_findings and not rep.get("count_mismatch")
+                and rep.get("pairs_compared", 0) > 0):
             continue
         lines.append("TOKEN-FIDELITY  %s" % rep["en"])
+        lines.append(
+            "  coverage: %d comment pair(s) compared, %d excluded (mirror header),"
+            " %d repaired by alignment, %d unpaired"
+            % (rep.get("pairs_compared", 0), rep.get("pairs_excluded", 0),
+               rep.get("pairs_repaired", 0), len(rep.get("unpaired", []))))
+        if rep.get("pairs_compared", 0) == 0:
+            # "0 finding" here does not mean "faithful": nothing was measured.
+            lines.append(
+                "  NOTHING COMPARED: no comment pair could be aligned --"
+                " a '0 finding' on this file means 'nothing was measured'")
         if rep.get("count_mismatch"):
             mm = rep["count_mismatch"]
             advisory += 1
@@ -585,9 +775,8 @@ def format_report(reports: list[dict], max_per_file: int = MAX_PER_FILE) -> str:
         for pair in rep["pairs"]:
             if not pair["findings"]:
                 continue
-            compared += 1
             if shown >= max_per_file:
-                break
+                continue
             shown += 1
             lines.append("  pair %d  (FR L%d %s / EN L%d %s)"
                          % (pair["index"], pair["fr_line"], pair["fr_kind"],
@@ -612,9 +801,9 @@ def format_report(reports: list[dict], max_per_file: int = MAX_PER_FILE) -> str:
         advisory += sum(1 for f in rep["findings"] if f["severity"] != HARD)
         advisory += len(rep.get("unpaired", []))
     lines.append(
-        "SUMMARY  %d file(s) | %d pair(s) with a finding | %d hard | %d advisory"
-        % (len([r for r in reports if r["findings"] or r.get("unpaired")
-                 or r.get("count_mismatch")]), compared, hard, advisory))
+        "SUMMARY  %d file(s) | %d comment pair(s) compared | %d pair(s) with a"
+        " finding | %d hard | %d advisory"
+        % (len(reports), compared_total, pairs_with_finding, hard, advisory))
     return "\n".join(lines)
 
 

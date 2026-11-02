@@ -22,6 +22,7 @@ from check_i18n_token_fidelity import (  # noqa: E402
     compare_files,
     declaration_names,
     designation_exemptions,
+    is_mirror_metadata_header,
     is_technical,
     number_is_carried_elsewhere,
     number_parts,
@@ -87,9 +88,19 @@ def test_code_spans_ignore_numbers_outside_backticks():
     assert code_spans(body) == ["arcPartition"]
 
 
-def test_number_parts_split_dates_and_decimals():
+def test_number_parts_split_a_date_but_keep_a_decimal():
+    # A date is split on its separators (the two formats give the same parts);
+    # a decimal is NOT split, otherwise ``1.5`` and ``5.1`` compare equal.
     assert sorted(number_parts("le 2026-10-27 et 1.5")) == sorted(
-        ["2026", "10", "27", "1", "5"])
+        ["2026", "10", "27", "1.5"])
+    assert sorted(number_parts("le 27/10/2026")) == sorted(["2026", "10", "27"])
+    assert number_parts("pi 1,5") == ["1.5"]
+
+
+def test_number_parts_split_a_ratio_on_its_slash():
+    # A slash is a separator (a ratio, a fraction), a dot is a decimal point.
+    assert sorted(number_parts("la trame 0/1")) == sorted(["0", "1"])
+    assert sorted(number_parts("lignes 65-979")) == sorted(["65", "979"])
 
 
 def test_number_parts_exclude_code_spans():
@@ -102,8 +113,30 @@ def test_number_is_carried_elsewhere_by_word():
 
 
 def test_number_is_carried_elsewhere_by_date_format():
-    assert number_is_carried_elsewhere("04", "April 7, 2026")
+    # A number is excused only when it belongs to a FULL DATE on one side and
+    # the other side carries a full date too: the mere presence of a year
+    # excuses nothing (review of #24148).
+    assert number_is_carried_elsewhere("7", "April 7, 2026")
+    assert number_is_carried_elsewhere("04", "April 7, 2026", "le 2026-04-07")
+    assert not number_is_carried_elsewhere("04", "April 7, 2026")
     assert not number_is_carried_elsewhere("04", "plain text")
+
+
+def test_a_bare_year_excuses_no_small_number():
+    # Regression of the review of #24148: ``2026`` alone used to excuse every
+    # one- or two-digit number of the other side.
+    findings = compare_bodies("il y a 3 aretes", "the set in 2026", set())
+    hard = [f for f in findings if f["severity"] == HARD]
+    assert "3" in [f["token"] for f in hard]
+
+
+def test_a_decimal_is_not_its_mirror():
+    # Regression of the review of #24148: splitting on the decimal separator
+    # made ``1.5`` and ``5.1`` compare equal.
+    findings = compare_bodies("pi=1.5", "pi=5.1", set())
+    hard = [f for f in findings if f["severity"] == HARD]
+    assert "1.5" in [f["token"] for f in hard]
+    assert "5.1" in [f["token"] for f in hard]
 
 
 def test_is_technical():
@@ -188,6 +221,25 @@ def test_compare_bodies_ignores_a_dropped_header_metadata():
     assert any(f["kind"] == "number" for f in findings)
 
 
+def test_the_mirror_header_is_recognized_by_the_bodies():
+    # The EN body declares the mirror, the FR body does not: the pair is a
+    # metadata header and comparing it would report every token of one side
+    # as the loss of the other. When BOTH sides declare it, the comparison is
+    # meaningful and the exclusion does not apply.
+    assert is_mirror_metadata_header(
+        "le lemme `arcPartition`",
+        "English mirror of `Foo.lean` (EPIC #4980, tranche 1)",
+    )
+    assert not is_mirror_metadata_header(
+        "ce fichier est le miroir de `Foo.lean` (EPIC #4980, tranche 1)",
+        "English mirror of `Foo.lean` (EPIC #4980, tranche 1)",
+    )
+    assert not is_mirror_metadata_header(
+        "le lemme `arcPartition`",
+        "the lemma makes the link",
+    )
+
+
 def test_best_shift_aligns_a_constant_offset():
     fr = {0, 10, 20}
     en = {2, 12, 22}
@@ -216,6 +268,10 @@ def test_compare_files_excludes_the_header(tmp_path=None):
     report = compare_files(fr, en)
     hard = [f for f in report["findings"] if f["severity"] == HARD]
     assert [f["token"] for f in hard] == ["arcPartition"]
+    # The header pair is excluded, the lemma pair is compared: the coverage
+    # counters say what was actually measured.
+    assert report["pairs_excluded"] == 1
+    assert report["pairs_compared"] == 1
 
 
 def test_compare_files_reports_an_unpaired_comment(tmp_path=None):
