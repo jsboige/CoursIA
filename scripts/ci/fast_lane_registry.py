@@ -3328,8 +3328,16 @@ TRANCHE32: list[Guard] = [
 #
 # `pre_argv` : le detecteur prouve qu'il tire avant de rendre un vert (#11685).
 # `absorbed=True` : meme convention que TRANCHE11/13/22/32.
+#
+# Numero : `TRANCHE37`, pas `TRANCHE35`. Deux tranches se sont disputé le nom
+# `TRANCHE35` -- celle-ci (advisory de denominateur, #23678, #23951) et la
+# garde d'encodage (#23021, #24037). La seconde affectation ecrase la premiere
+# en Python : le registre portait une garde **muette**, celle de #23678 ne
+# tournait pas (incident #19374). `TRANCHE35` reste a la garde d'encodage, qui
+# avait deja ete evacuee en amont ; `TRANCHE36` est reserve a la PR #24063
+# (garde des chemins machine), en vol sur une autre lane -- d'ou `TRANCHE37`.
 # ---------------------------------------------------------------------------
-TRANCHE35: list[Guard] = [
+TRANCHE37: list[Guard] = [
     Guard(
         name="Series-denominator advisory (denominateur d'en-tete, #23678)",
         source=FAST_LANE_NATIVE,
