@@ -9486,7 +9486,7 @@ LEAN_PROJECT = win_to_wsl(WIN_LEAN_PROJECT)
 
 # Chemins portables dans les sorties : le prefixe absolu varie par machine
 # (D:\... ou /mnt/d/...) et n'a pas sa place dans un output commite.
-REPO_RELATIVE_PROJECT = '<repo>/MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean'
+REPO_RELATIVE_PROJECT = '<repo>/MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean'
 
 def sanitize_lean_paths(text):
     variants = {str(WIN_LEAN_PROJECT), str(WIN_LEAN_PROJECT).replace('\\', '/'), LEAN_PROJECT}
@@ -9963,7 +9963,7 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Grothendieck-Tribute.ipynb,lean13-sect
 
 **Note de scope (PR / Epic)**
 
-Le sous-projet `MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/` (workspace Lake avec `lakefile.lean`) accompagne cet hommage. Le projet a evolue depuis sa création :
+Le sous-projet `MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/` (workspace Lake avec `lakefile.lean`) accompagne cet hommage. Le projet a evolue depuis sa création :
 
 - **Modules** sous `Grothendieck/` (catégories, cribles, schemas, Zariski, calibration, mais aussi treillis de cribles, générateurs de coverage, propriétés canoniques, topologie dense, faisceautisation, exactitude a gauche, sous-canonicite, points d'un site, hom-faisceaux, faisceau constant, familles conservatives, cohomologie des faisceaux par Ext, carrés de Mayer-Vietoris, suite exacte longue de Mayer-Vietoris, cohomologie de Cech ; + fondamentaux catégoriels : Adjunction, Comma, Construction, Equivalences, KanExtensions, Limits, Monads, MonoidalCategories, YonedaLemma).
 - **Aucun sorry** comme terme de preuve.
@@ -39335,70 +39335,70 @@ EVIDENCE = [
 ""GROTH"",
 1,
 ""PARTIAL"",
-""MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/README.md"",
+""MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/README.md"",
 ""garantie « 0 `sorry`, 0 axiome ajouté »""
 ],
 [
 ""GROTH"",
 2,
 ""PARTIAL"",
-""MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/README.md"",
+""MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/README.md"",
 ""- **Mac Lane, S.; Moerdijk, I.** *Sheaves in Geometry and Logic""
 ],
 [
 ""GROTH"",
 3,
 ""PARTIAL"",
-""MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/README.md"",
+""MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/README.md"",
 ""frontière indexée par la Partie 4 (`#check`)""
 ],
 [
 ""GROTH"",
 4,
 ""PRESENT"",
-""MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/README.md"",
+""MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/README.md"",
 ""**Toolchain** : `leanprover/lean4:v4.33.0`""
 ],
 [
 ""GROTH"",
 5,
 ""PARTIAL"",
-""MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/README.md"",
+""MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/README.md"",
 ""la trajectoire (sites→faisceaux→cohomologie) hiérarchise""
 ],
 [
 ""GROTH"",
 6,
 ""PARTIAL"",
-""MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/README.md"",
+""MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/README.md"",
 ""### Point 6 — friction naturelle (comblement)""
 ],
 [
 ""GROTH"",
 7,
 ""PARTIAL"",
-""MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/README.md"",
+""MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/README.md"",
 ""c'est une **visite indexée**, et ce fait est la découverte centrale""
 ],
 [
 ""GROTH"",
 8,
 ""PRESENT"",
-""MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/README.md"",
+""MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/README.md"",
 ""## Le périmètre, honnêtement""
 ],
 [
 ""GROTH"",
 9,
 ""PRESENT"",
-""MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/README.md"",
+""MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/README.md"",
 ""navlinks `Lean-15-Grothendieck-Tribute.ipynb`""
 ],
 [
 ""GROTH"",
 10,
 ""PARTIAL"",
-""MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/README.md"",
+""MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/README.md"",
 ""Trois parcours sont proposés selon ton but""
 ]
 ]
