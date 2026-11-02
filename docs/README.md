@@ -138,6 +138,7 @@ Documentation détaillée de l'infrastructure GenAI (ComfyUI, Docker, modèles l
 | [genai/decision-models.md](genai/decision-models.md) | Modèles de décision — relevé et shortlist |
 | [genai/decision-models-local-verification.md](genai/decision-models-local-verification.md) | Vérification locale du Decision Index — mesure sur carte 8 Go, obstacle de données (charges utiles non publiées) et limites (#21910) |
 | [genai/dm-jepa-local-validation.md](genai/dm-jepa-local-validation.md) | Validation locale du moteur DM-JEPA 1.7 — rang contre tri aléatoire, entrées adverses, latence et findings de l'artefact (#21997) |
+| [genai/darksnail-pli1-reconnaissance.md](genai/darksnail-pli1-reconnaissance.md) | EPIC DarkSnail — page de persistance Pli 1 : sources et licence CC0, micro-vérification Lean, audit ARC-AGI-1 (PLAUSIBLE), inventaire des modèles H_L/H_R (#21310) |
 | [genai/model-mapping-openai.md](genai/model-mapping-openai.md) | Mapping des modèles OpenAI — génération courante |
 | [genai/model-mapping.md](genai/model-mapping.md) | Inventaire et table de correspondance — modèles GenAI/OpenAI |
 | [genai/parametres-par-modele.md](genai/parametres-par-modele.md) | Paramètres servis par modèle — table mesurée par appels réels et garde de cohérence (#20682) |
@@ -454,6 +455,7 @@ Deltas runtime et digests de performance .NET, mesurés sur les bancs et les car
 | [dotnet/net11-runtime-deltas.md](dotnet/net11-runtime-deltas.md) | .NET 9 → 10 → 11 — Deltas runtime mesurés sur les bancs et carnets types du dépôt |
 | [dotnet/net11-async-ffi-deltas.md](dotnet/net11-async-ffi-deltas.md) | .NET 10 → 11 — Delta runtime mesuré sur l'axe 1 (awaits profonds) du carnet Aspire AsyncFFI — compatibilité .NET 11 établie, verdict à n=25 |
 | [dotnet/net11-toub-digest.md](dotnet/net11-toub-digest.md) | .NET 11 — Digest de performance |
+| [dotnet/net11-axis1-async.md](dotnet/net11-axis1-async.md) | .NET 10 vs 11 — axe 1 (awaits profonds / Runtime Async) : mesure rejouable sur un carnet, runtime prouvé par sonde et non déduit du nom de variante |
 
 
 ## Rapports transients (docs/transients/)
