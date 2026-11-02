@@ -83,11 +83,7 @@ def test_broken_link_detected(tmp_path: Path) -> None:
 
 def test_real_memory_dir() -> None:
     """Vérifie que l'organe fonctionne contre le MEMORY.md de la machine."""
-    import os
-
-    real_dir = Path(
-        r"C:\Users\Jesse\.claude\projects\d--dev-CoursIA-2\memory"
-    )
+    real_dir = Path.home() / ".claude" / "projects" / "d--dev-CoursIA-2" / "memory"
     if not real_dir.exists():
         return  # CI sans le bon chemin
     out = subprocess.run(
@@ -334,3 +330,103 @@ def test_strict_direct_et_les_evenus_listent_le_meme_etat(tmp_path: Path) -> Non
     strict = _run_custom(tmp_path, mem, ["--strict-direct"])
     assert lenient["verdict"] == "OK" and strict["verdict"] == "OK"
     assert lenient["referenced_files"] == strict["referenced_files"] == 2
+
+
+# --- Hub à la racine (forme « index de hubs ») — réserve du coordinateur du
+#     2026-11-02 sur PR #24096 : une mémoire consolidée par des fiches-hub de
+#     la racine était mesurée comme un index d'orphelins (578 « orphelins » pour
+#     27 réels sur la mémoire d'ai-01). Une fiche-racine citée par MEMORY.md
+#     ouvre une grappe ; le décompte direct / via hub / via grappe reste séparé.
+
+
+def test_hub_racine_ouvre_une_grappe(tmp_path: Path) -> None:
+    """MEMORY.md pointe un hub racine, le hub liste gamma => gamma couvert."""
+    (tmp_path / "lesson-index.md").write_text(
+        "# hub" + NL + NL + "- [[gamma]] c.3" + NL, encoding="utf-8"
+    )
+    (tmp_path / "gamma.md").write_text("# gamma", encoding="utf-8")
+    report = _run_custom(
+        tmp_path,
+        "# Memoire" + NL + NL + "- [lesson-index](lesson-index.md)" + NL,
+    )
+    assert report["verdict"] == "OK"
+    assert report["orphan_count"] == 0
+    assert report["direct_referenced_files"] == 1      # le hub lui-même
+    assert report["via_hub_referenced_files"] == 1     # gamma, atteint par le hub
+    assert report["via_cluster_referenced_files"] == 0
+    assert report["referenced_files"] == 2
+
+
+def test_les_fiches_atteintes_par_un_hub_ne_sont_pas_des_directes(tmp_path: Path) -> None:
+    """Le décompte direct reste le direct : une fiche atteinte par un hub n'est
+    jamais comptée comme citée par MEMORY.md."""
+    (tmp_path / "hub.md").write_text("# hub" + NL + NL + "- [[gamma]] c.3" + NL, encoding="utf-8")
+    (tmp_path / "gamma.md").write_text("# gamma", encoding="utf-8")
+    report = _run_custom(tmp_path, "# Memoire" + NL + NL + "- [[hub]] c.1" + NL)
+    assert report["direct_referenced_files"] == 1
+    assert report["via_hub_referenced_files"] == 1
+    assert report["cluster_referenced_files"] == 2
+
+
+def test_strict_direct_ignore_le_hub(tmp_path: Path) -> None:
+    """--strict-direct : un hub ne couvre rien (le direct seul compte)."""
+    (tmp_path / "hub.md").write_text("# hub" + NL + NL + "- [[gamma]] c.3" + NL, encoding="utf-8")
+    (tmp_path / "gamma.md").write_text("# gamma", encoding="utf-8")
+    report = _run_custom(
+        tmp_path, "# Memoire" + NL + NL + "- [[hub]] c.1" + NL, ["--strict-direct"]
+    )
+    assert report["strict_direct"] is True
+    assert report["referenced_files"] == 1     # le hub seul
+    assert report["orphan_count"] == 1         # gamma n'est pas couvert en strict
+    assert report["verdict"] == "FAIL"
+
+
+def test_lien_non_resolu_dans_un_hub_est_advisory(tmp_path: Path) -> None:
+    """Un hub cite une règle du dépôt hors memory/ : c'est listé, pas bloquant."""
+    (tmp_path / "hub.md").write_text(
+        "# hub" + NL + NL + "- [[verify-before-claiming]] c.3" + NL, encoding="utf-8"
+    )
+    (tmp_path / "gamma.md").write_text("# gamma", encoding="utf-8")
+    report = _run_custom(tmp_path, "# Memoire" + NL + NL + "- [[hub]] c.1" + NL)
+    assert report["hub_broken_link_count"] == 1
+    assert report["hub_broken_link_advisory"] is True
+    assert "liens_morts_hubs" not in report["fail_reasons"]
+    # gamma n'est pas listé par le hub : reste orphelin (le hub ne couvre que
+    # ce qu'il cite), mais le lien non résolu n'est pas la raison du verdict.
+    assert report["orphan_count"] == 1
+    assert report["fail_reasons"] == ["orphelins"]
+
+
+def test_l_index_cite_par_un_hub_ne_compte_pas_comme_couvert(tmp_path: Path) -> None:
+    """Un hub qui cite [[MEMORY]] ne rend pas l'index « couvert » : le compte
+    d'orphelins reste exact (mesuré : 27 orphans réels, pas 28)."""
+    (tmp_path / "hub.md").write_text("# hub" + NL + NL + "- [[MEMORY]] c.3" + NL, encoding="utf-8")
+    (tmp_path / "gamma.md").write_text("# gamma", encoding="utf-8")
+    report = _run_custom(tmp_path, "# Memoire" + NL + NL + "- [[hub]] c.1" + NL)
+    assert report["total_files"] == 2          # hub.md + gamma.md (MEMORY.md exclu)
+    assert report["referenced_files"] == 1     # le hub seul
+    assert report["orphan_count"] == 1         # gamma
+
+
+def test_une_reference_externe_est_hors_perimetre(tmp_path: Path) -> None:
+    """Un hub cite un document du dépôt (hors memory/) : ni fiche, ni grappe,
+    ni lien mort -- et le document n'est pas parcouru."""
+    externe = tmp_path.parent / (tmp_path.name + "-externe.md")
+    externe.write_text("# doc du repo" + NL + NL + "- [[gamma]] c.9" + NL, encoding="utf-8")
+    try:
+        (tmp_path / "hub.md").write_text(
+            "# hub" + NL + NL + "- [doc](../" + externe.name + ")" + NL, encoding="utf-8"
+        )
+        (tmp_path / "gamma.md").write_text("# gamma", encoding="utf-8")
+        report = _run_custom(tmp_path, "# Memoire" + NL + NL + "- [[hub]] c.1" + NL)
+        assert report["external_references"] == 1
+        assert report["cluster_files_present"] == 0
+        assert report["cluster_files_reachable"] == 0
+        assert report["broken_link_count"] == 0
+        assert report["hub_broken_link_count"] == 0
+        # gamma n'est atteint que par le document EXTERNE : hors périmètre.
+        assert report["referenced_files"] == 1
+        assert report["orphan_count"] == 1
+        assert report["fail_reasons"] == ["orphelins"]
+    finally:
+        externe.unlink()

@@ -20,6 +20,11 @@ n'est pas une fiche perdue) :
   - chemin en backticks ``annexes/xxx.md`` : un POINTEUR. Résolu, il ouvre une
     grappe ; non résolu, il est ignoré (une prose peut citer un .md du dépôt).
 
+Une référence qui résout **hors** de ``memory/`` (règle du dépôt, document du
+repo) est une référence **externe** : le fichier existe, il n'est ni une fiche
+ni une grappe de la mémoire, et il n'est pas parcouru (`external_references`).
+C'est la situation normale d'une fiche qui cite ``.claude/rules/…``.
+
 Un index **compacté** ne référence pas ses fiches une par une : il pointe vers
 des **grappes** (annexes) qui les listent. L'acceptance Q10 du 2026-09-26 dit
 explicitement « complétude et consolidation en grappes » : une fiche listée dans
@@ -30,17 +35,40 @@ deux niveaux :
   - via grappe  : résolu depuis une grappe joignable depuis MEMORY.md (un seul
                    saut -- `--cluster-depth` permet d'aller plus loin).
 
-Le rapport **décompose** les deux niveaux : la couverture reste auditable, et
-le verdict continue de tomber sur un vrai orphelin. Les liens morts **dans**
-les grappes sont listés à part et **bloquent** aussi le verdict (0 lien mort),
-mais sous une raison distincte (`fail_reasons`), jamais masqués derrière la
-couverture.
+**Hub à la racine (forme « index de hubs »).** La mémoire d'une machine peut
+consolider autrement : MEMORY.md pointe des **fiches-hub de la racine**
+(`lesson-index.md`, `affaires-courantes.md`…), et chaque hub liste lui-même ses
+membres. Une telle fiche **ouvre une grappe** au même titre qu'un fichier de
+sous-dossier : ses liens sont parcourus, et les fiches qu'elle atteint comptent
+comme « via grappe » — **jamais comme direct**. Sans cela, l'organe mesure une
+forme qu'il ne connaît pas et déclare orphelines des fiches joignables (constat
+du coordinateur du 2026-11-02 : 578 « orphelins » sur une mémoire d'ai-01 dont
+27 seulement l'étaient réellement ; 637/664 atteints à un saut en suivant les
+hubs, 654/664 à trois sauts).
+
+Le décompte reste **triple et auditable** : `direct_referenced_files` (les
+fiches que MEMORY.md cite), `via_hub_referenced_files` (les fiches atteintes
+par un hub de la racine) et `via_cluster_referenced_files` (les fiches atteintes
+par une grappe de sous-dossier). `--strict-direct` conserve la mesure stricte
+(le direct seul) — la PR ne relâche rien, elle mesure les deux formes.
+
+Les liens morts **dans** les grappes sont listés à part et **bloquent** aussi le
+verdict (0 lien mort), mais sous une raison distincte (`fail_reasons`), jamais
+masqués derrière la couverture.
+
+Les liens non résolus **dans un hub** sont **advisory** : un hub est une fiche
+de connaissance, qui cite légitimement des règles du dépôt
+(`.claude/rules/…`) et des documents du dépôt — hors `memory/`. L'organe ne
+peut pas juger de ces cibles : il les **liste** (`hub_broken_link_details`,
+`hub_broken_link_advisory: true`) sans les faire peser sur le verdict. Même
+raison pour un hub qui cite une règle par wikilink (`[[verify-before-claiming]]`),
+convention des fiches de lane.
 
 Usage :
 
     python scripts/coordination/check_memory_index_coverage.py \\
-        --memory-dir C:/Users/Jesse/.claude/projects/<hash>/memory \\
-        [--json] [--max-bytes N] [--no-max-bytes] [--cluster-depth N]
+        --memory-dir <user>/.claude/projects/<hash>/memory \\
+        [--json] [--max-bytes N] [--no-max-bytes] [--cluster-depth N] [--strict-direct]
 
 Exit 0 si 0 orphelin ET 0 lien mort ET taille <= plafond ; exit 1 sinon.
 L'alerte 90 % est un avertissement, pas un échec.
@@ -128,11 +156,22 @@ class Resolver:
 
 def _collect(
     texte: str, resolver: Resolver, mem_dir: Path, base: Path | None = None
-) -> tuple[set[str], set[Path], list[tuple[str, str, str]]]:
-    """Références d'un document : (fiches directes, grappes, liens morts)."""
-    fiches: set[str] = set()
+) -> tuple[set[Path], set[Path], list[tuple[str, str, str]], set[str]]:
+    """Références d'un document : (fiches, grappes, liens morts, externes).
+
+    Les fiches sont des .md **à la racine** de memory/ ; tout .md rangé dans un
+    sous-dossier est une grappe (annexe, digest). Les chemins sont conservés :
+    une fiche racine citée par l'index peut être un **hub**, dont les liens
+    doivent être parcourus (forme « index de hubs »).
+
+    Une référence qui résout **hors** de memory/ (règle du dépôt, document du
+    dépôt) est une référence **externe** : le fichier existe, il n'est ni une
+    fiche ni une grappe de la mémoire, et il n'est pas parcouru.
+    """
+    fiches: set[Path] = set()
     grappes: set[Path] = set()
     morts: list[tuple[str, str, str]] = []
+    externes: set[str] = set()
     for surface, libelle, cible in extract_references(texte):
         resolu = resolver.resolve(cible, base)
         if resolu is None:
@@ -140,10 +179,14 @@ def _collect(
                 morts.append((surface, libelle, cible))
             continue
         if resolu.parent == mem_dir:
-            fiches.add(resolu.name)
-        else:
+            if resolu.stem == "MEMORY":
+                continue  # l'index qui se cite lui-même n'est pas une fiche
+            fiches.add(resolu)
+        elif mem_dir in resolu.parents:
             grappes.add(resolu)
-    return fiches, grappes, morts
+        else:
+            externes.add(resolu.name)
+    return fiches, grappes, morts, externes
 
 
 def main() -> int:
@@ -201,27 +244,48 @@ def main() -> int:
     resolver = Resolver(mem_dir, all_files + cluster_files)
 
     # Niveau 1 : ce que MEMORY.md atteint lui-même.
-    direct_fiches, grappes_niveau1, morts_index = _collect(mem_text, resolver, mem_dir)
+    direct_paths, grappes_niveau1, morts_index, externes = _collect(mem_text, resolver, mem_dir)
+    direct_fiches = {p.name for p in direct_paths}
 
-    # Niveau 2 : ce qu'atteignent les grappes joignables (un saut par défaut).
-    via_fiches: set[str] = set()
+    # Niveau 2 : ce qu'atteignent les **hubs** (fiches-racine citées par l'index)
+    # et les **grappes** (sous-dossiers) joignables (un saut par défaut).
+    #
+    # Un hub racine ouvre une grappe : ses liens sont parcourus comme ceux
+    # d'une annexe. Le parcours est un **parcours en largeur** sur les DEUX
+    # familles (fiches-racine et grappes) : une fiche atteinte par un hub est
+    # elle-même un hub au tour suivant (c'est une fiche de la racine). Le
+    # décompte reste triple et auditable -- direct / via hub / via grappe.
+    via_hub: set[str] = set()
+    via_cluster: set[str] = set()
     morts_clusters: list[tuple[str, str, str, str]] = []
+    morts_hubs: list[tuple[str, str, str, str]] = []
     grappes_atteignables: set[Path] = set(grappes_niveau1)
-    frontiere = set(grappes_niveau1)
+    vus: set[Path] = set(direct_paths) | set(grappes_niveau1)
+    frontiere: set[Path] = set(vus)
     for _ in range(max(0, args.cluster_depth)):
         if not frontiere:
             break
         suivants: set[Path] = set()
-        for grappe in sorted(frontiere):
-            fiches, sous_grappes, morts = _collect(
-                grappe.read_text(encoding="utf-8"), resolver, mem_dir, base=grappe.parent
+        for doc in sorted(frontiere):
+            est_hub = doc.parent == mem_dir
+            fiches, sous_grappes, morts, ext = _collect(
+                doc.read_text(encoding="utf-8"), resolver, mem_dir, base=doc.parent
             )
-            via_fiches |= fiches
-            morts_clusters.extend((grappe.name, *m) for m in morts)
-            suivants |= sous_grappes - grappes_atteignables
-        grappes_atteignables |= suivants
+            if est_hub:
+                via_hub |= {p.name for p in fiches}
+                morts_hubs.extend((doc.name, *m) for m in morts)
+            else:
+                via_cluster |= {p.name for p in fiches}
+                morts_clusters.extend((doc.name, *m) for m in morts)
+            externes |= ext
+            for cible in fiches | sous_grappes:
+                if cible not in vus:
+                    vus.add(cible)
+                    suivants.add(cible)
+            grappes_atteignables |= sous_grappes
         frontiere = suivants
 
+    via_fiches = via_hub | via_cluster
     covered = direct_fiches | via_fiches
     # Mode strict : seule la référence directe vaut couverture (sémantique
     # d'origine de l'organe). Par défaut, une fiche listée dans une grappe
@@ -258,7 +322,9 @@ def main() -> int:
         "total_files": len(all_files),
         "referenced_files": len(effectif),
         "direct_referenced_files": len(direct_fiches),
-        "via_cluster_referenced_files": len(via_fiches - direct_fiches),
+        "via_hub_referenced_files": len(via_hub - direct_fiches),
+        "via_cluster_referenced_files": len(via_cluster - direct_fiches),
+        "hub_files": len(direct_paths),
         "cluster_referenced_files": len(covered),
         "strict_direct": args.strict_direct,
         "grappe_coverage_pct": grappe_coverage_pct,
@@ -275,9 +341,18 @@ def main() -> int:
             {"source": src, "surface": surf, "label": lab, "target": tgt}
             for (src, surf, lab, tgt) in morts_clusters
         ],
+        "hub_broken_links": [(lab, tgt) for (_src, _surf, lab, tgt) in morts_hubs],
+        "hub_broken_link_count": len(morts_hubs),
+        "hub_broken_link_advisory": True,
+        "hub_broken_link_details": [
+            {"source": src, "surface": surf, "label": lab, "target": tgt}
+            for (src, surf, lab, tgt) in morts_hubs
+        ],
         "cluster_files_present": len(cluster_names),
         "cluster_files_reachable": len(cluster_reachable),
         "cluster_files_unreachable": clusters_unreachable,
+        "external_references": len(externes),
+        "external_reference_names": sorted(externes),
         "cluster_depth": args.cluster_depth,
         "coverage_pct": coverage_pct,
         "max_bytes": max_bytes,
@@ -301,13 +376,20 @@ def main() -> int:
         mode = "strict direct" if args.strict_direct else "grappes acceptées"
         print(
             f"  couverture: {len(effectif)}/{len(all_files)} = {coverage_pct:.1f}%"
-            f" (direct {len(direct_fiches)}, via grappes {len(via_fiches - direct_fiches)})"
+            f" (direct {len(direct_fiches)},"
+            f" via hubs {len(via_hub - direct_fiches)},"
+            f" via grappes {len(via_cluster - direct_fiches)})"
             f" — mode: {mode}"
+        )
+        print(
+            f"  hubs racine: {len(direct_paths)} fiches-racine citées par l'index"
+            f" (elles ouvrent une grappe)"
         )
         print(
             f"  grappes: {len(cluster_reachable)}/{len(cluster_names)} joignables"
             f" (profondeur {args.cluster_depth})"
         )
+        print(f"  références externes (hors memory/): {len(externes)}")
         print(f"  orphelins: {len(orphan_files)}")
         if orphan_files:
             for f in orphan_files[:5]:
@@ -324,6 +406,11 @@ def main() -> int:
             print(f"    - [{src}] [{surf}] {libelle} -> {cible}")
         if len(morts_clusters) > 5:
             print(f"    ... ({len(morts_clusters) - 5} de plus)")
+        print(f"  liens cassés (hubs racine, advisory): {len(morts_hubs)}")
+        for src, surf, libelle, cible in morts_hubs[:5]:
+            print(f"    - [{src}] [{surf}] {libelle} -> {cible}")
+        if len(morts_hubs) > 5:
+            print(f"    ... ({len(morts_hubs) - 5} de plus)")
         if clusters_unreachable:
             print(f"  grappes non joignables: {len(clusters_unreachable)}")
             for nom in clusters_unreachable[:5]:
