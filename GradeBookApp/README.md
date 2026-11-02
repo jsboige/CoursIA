@@ -114,11 +114,11 @@ dotnet restore GradeBookApp/GradeBookApp.csproj
 ## Tests
 
 Le moteur de notation est couvert par une suite de tests xUnit dans
-[`GradeBookApp.Tests/`](../GradeBookApp.Tests/) (#1928) : pliage des accents
+[`Tests/`](Tests/) (#1928) : pliage des accents
 (`FoldAccents`), modèles `StudentRecord` / `ProjectModel` / `EvaluationRecord`.
 
 ```bash
-dotnet test GradeBookApp.Tests
+dotnet test GradeBookApp/Tests
 ```
 
 ## Licence

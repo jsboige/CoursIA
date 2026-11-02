@@ -436,8 +436,7 @@ CoursIA/
   translations/                Corpus de traduction des notebooks (inventaire et statut dans son README)
   slides/                      Présentations pédagogiques
   docker-configurations/       Infrastructure Docker GPU
-  GradeBookApp/                Notation étudiants
-  GradeBookApp.Tests/          Tests du moteur de notation
+  GradeBookApp/                Notation étudiants (tests xUnit dans Tests/)
   MyIA.AI.Shared/              Bibliothèque C# partagée
   MyIA.AI.Shared.Tests/        Tests de la bibliothèque partagée
   MyIA.Trading.Converter/      Conversion de formats de données de trading

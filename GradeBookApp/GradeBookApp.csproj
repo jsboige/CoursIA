@@ -14,4 +14,14 @@
     <PackageReference Include="Lucene.Net.Analysis.Common" Version="4.8.0-beta00017" />
   </ItemGroup>
 
+  <!-- Le projet de tests vit desormais sous ce dossier (fenetre 3 de l'axe
+       racine, issue #13751) : l'exclure du globbing par defaut pour que ce
+       projet ne compile pas les sources xunit qu'il ne reference pas. -->
+  <ItemGroup>
+    <Compile Remove="Tests\**" />
+    <None Remove="Tests\**" />
+    <Content Remove="Tests\**" />
+    <EmbeddedResource Remove="Tests\**" />
+  </ItemGroup>
+
 </Project>

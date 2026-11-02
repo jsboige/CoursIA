@@ -19,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\GradeBookApp\GradeBookApp.csproj" />
+    <ProjectReference Include="..\GradeBookApp.csproj" />
   </ItemGroup>
 
 </Project>
