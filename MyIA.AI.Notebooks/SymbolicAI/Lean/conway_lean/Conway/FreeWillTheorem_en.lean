@@ -19,6 +19,11 @@
   This file formalizes the structure of the theorem and connects it to
   the context of the `conway_lein` project (Kochen-Specker, Conway's legacy).
 
+  **Key insight (Conway-Kochen)**: here, "free will" is a *mathematical*
+  definition, not a philosophical thesis. It means the particle's response
+  is not a function of the past; the theorem proves this rigorously from
+  three modest physical axioms (SPIN, TWIN, MIN).
+
   ### i18n — convention #4980 (ratified 2026-07-04)
 
   This file is the **French canonical**. The English mirror is the sibling
@@ -35,6 +40,12 @@
   sibling pair (MERGED — standalone EN twin created), c.457 `Conway/LookAndSay`
   sibling pair (MERGED), c.518 `Conway/Nim` sibling pair (MERGED),
   **c.519 `Conway/FreeWillTheorem` FR canonical bilingual strip (this PR)**.
+
+  Sources:
+  - J. H. Conway and S. Kochen, "The Free Will Theorem",
+    Found. Phys. 36 (2006), 1441-1473.
+  - J. H. Conway and S. Kochen, "The Strong Free Will Theorem",
+    Notices AMS 56 (2009), 226-232.
 -/
 
 import Conway.KochenSpecker_en
