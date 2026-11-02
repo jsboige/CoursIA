@@ -162,14 +162,14 @@ au-delà du choix social pur vers la **théorie des mécanismes** (incitations e
 > `SocialChoice.lean`, `SocialChoice/*.lean` et `examples/*.lean` ne sont **plus présents
 > ici** : ils vivent dans [`game_theory_lean/SocialChoice/`](../game_theory_lean/SocialChoice/).
 > La coquille technique (`lakefile.lean`, `lean-toolchain`, `lake-manifest.json`) a en outre été
-> retirée (follow-up #4365) : ce répertoire n'est plus un lake. Ne subsistent que les 4 markdown
-> (`README.md`, `STATUS.md`, `NOTICE.md`, `LEAN_PREREQUISITES.md`) comme tombstone documentaire.
+> retirée (follow-up #4365) : ce répertoire n'est plus un lake. Ne subsistent que les 3 markdown
+> (`README.md`, `STATUS.md`, `LEAN_PREREQUISITES.md`) comme tombstone documentaire — la `NOTICE`
+> d'attribution a rejoint son code le 2026-11-02 (#24183), voir le renvoi en tête de ce fichier.
 
 ```text
 social_choice_lean/                     (tombstone documentaire — plus un lake)
 ├── README.md                          # Documentation historique (cette tombstone)
 ├── STATUS.md                          # Statut (historique, figé à l'absorption)
-├── NOTICE.md                          # Provenance et état de licence des sources amont
 ├── LEAN_PREREQUISITES.md              # Prérequis pédagogiques Lean 4 / Mathlib
 │
 │   ── retiré (follow-up #4365) : lakefile.lean, lean-toolchain, lake-manifest.json ──
@@ -218,7 +218,7 @@ Le paradoxe de Sen (`Sen.lean`) utilise `is_decisive_over` comme décisivité **
 
 ### Reprise depuis Lean 3 — partielle et mesurée
 
-Ce répertoire n'est pas un portage intégral de [asouther4/lean-social-choice](https://github.com/asouther4/lean-social-choice) : seuls `Basic.lean` (25 noms de déclarations repris sur 29) et `Arrow.lean` (19 sur 29) sont des portages ; `Voting.lean` (4 sur 53) est une réécriture, et `Sen.lean` (0 sur 4 — le paradoxe libéral est absent de l'amont, qui porte le théorème de Sen sur la fonction de choix), `MechanismDesign.lean`, `AMD.lean` et `SortedListCounting.lean` (0 chacun) sont des ajouts CoursIA. Taux complets et règle de comptage : [NOTICE.md](NOTICE.md) (mesures du 2026-10-25). Sur la partie réellement portée, les adaptations principales :
+Ce répertoire n'est pas un portage intégral de [asouther4/lean-social-choice](https://github.com/asouther4/lean-social-choice) : seuls `Basic.lean` (25 noms de déclarations repris sur 29) et `Arrow.lean` (19 sur 29) sont des portages ; `Voting.lean` (4 sur 53) est une réécriture, et `Sen.lean` (0 sur 4 — le paradoxe libéral est absent de l'amont, qui porte le théorème de Sen sur la fonction de choix), `MechanismDesign.lean`, `AMD.lean` et `SortedListCounting.lean` (0 chacun) sont des ajouts CoursIA. Taux complets et règle de comptage : [NOTICE.md](../game_theory_lean/SocialChoice/NOTICE.md) (mesures du 2026-10-25). Sur la partie réellement portée, les adaptations principales :
 
 - Remplacement des `definition` Lean 3 par `def` Lean 4
 - Migration des tactiques Lean 3 vers Lean 4 (syntaxe `split_ifs`, `rcases`)
