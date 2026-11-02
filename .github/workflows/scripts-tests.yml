@@ -426,6 +426,17 @@ jobs:
           # collection errors for test_trust_simulation.py and skips the
           # entire suite, masking every other test result. See #4937.
           pip install matplotlib
+          # scikit-learn : DEPENDANCE HERITEE DU TOOLCACHE, desormais declaree.
+          # scripts/tests/test_golden_quantitative_claims.py l'importe deja, et
+          # scripts/tests/test_ws_probes_margin.py ajoute par #24073 l'importe
+          # via scripts/repro/ws_probes_margin.py. La suite ne collectait que
+          # parce que le pool `coursia-linux` porte scikit-learn en residu d'un
+          # job ML -- une dependance qui n'est declaree nulle part est une
+          # panne en attente (le jour ou le toolcache change, la collecte rend
+          # une erreur bruyante sur une PR innocente). Meme motif que
+          # `qc-mcp-lite` / `ModuleNotFoundError: mcp`. Regle F : l'environnement
+          # se repare, il ne se contourne pas par un skip.
+          pip install scikit-learn
           # papermill + nbformat: genai-stack/commands/notebooks.py imports
           # papermill at top level, so test_genai_notebooks.py needs it at
           # collection time. Both are declared deps of genai-stack
