@@ -84,7 +84,16 @@ on:
         type: string
 
 permissions:
-  actions: read
+  # `actions: write` : le controleur ANNULE puis RELANCE des runs de cohorte
+  # (volet (c) de #22937). Le `runs-on` d'un job se resout a la CREATION du
+  # job : un run de cohorte cree avant le basculement reste sur l'offre
+  # hebergee. Or une RELANCE relit `vars.*` (mesure du 28/10, run
+  # 40707135271 : job d'origine `ubuntu-latest`, job recree
+  # `[self-hosted, coursia-ephemeral, coursia-linux]`). Sans ce droit, la
+  # reorientation est refusee et le rapport la nomme.
+  # Le declencheur est `schedule`/`workflow_dispatch` : aucun code de fork
+  # n'atteint ce job.
+  actions: write
   contents: read
 
 concurrency:
