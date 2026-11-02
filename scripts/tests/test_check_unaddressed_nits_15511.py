@@ -122,6 +122,30 @@ def test_tag_lu_sur_la_premiere_ligne_non_vide():
     assert res["blocked"] is False
 
 
+def test_marqueurs_de_protocole_ne_sont_ni_diag_ni_action():
+    # Un commentaire de protocole dont le marqueur occupe deja la premiere
+    # ligne -- dossier de prevalidation, claim, livraison, levee, verdict --
+    # n'est pas un commentaire de diagnostic : il ne compte ni comme [DIAG]
+    # ni comme [ACTION], et il ne rompt pas une serie en cours. Sans cette
+    # borne, une lane qui taguerait son dossier `[ACTION]` le rendrait
+    # invalide (check_adjoint_prevalidation.py exige le marqueur en tete).
+    res = _analyse([
+        _c("jsboige", 0, "[DIAG] premiere mesure"),
+        _c("myia-po-2028", 5, "[ADJOINT PREFLIGHT] READY -- #23877 @ c209582157"),
+        _c("myia-ai-01", 10, "[CLAIMED] lane myia-ai-01:CoursIA -- paths: scripts/**"),
+        _c("myia-ai-01", 15, "[DELIVERED] lane myia-ai-01:CoursIA -- PR #23912"),
+        _c("myia-ai-01", 20, "[OVERRIDE] lane myia-ai-01:CoursIA -- reserve levee"),
+        _c("clusterManager-Myia", 25, "[Hermes] COMMENT_WITH_CONCERNS"),
+        _c("jsboige", 30, "[DIAG] deuxieme mesure"),
+        _c("jsboige", 35, "[DIAG] troisieme mesure"),
+        _c("jsboige", 40, "[DIAG] quatrieme mesure"),
+    ])
+    assert res["diag_loop"]["diag_count"] == 4
+    assert res["diag_loop"]["action_count"] == 0
+    assert res["diag_loop"]["max_run"] == 4
+    assert any(b["kind"] == "DIAG-LOOP" for b in res["blocking"])
+
+
 def test_pr_sans_taxonomie_inchangee():
     # Contrat d'emission : sans aucun tag, le detecteur rend max_run=0 et
     # le verdict de l'organe ne change pas d'un iota.
