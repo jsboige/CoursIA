@@ -277,25 +277,43 @@ def test_container_corpus_never_candidate_and_never_ready(monkeypatch):
     # recevoir l'etiquette (candidate_delivered) ET ne doit pas etre
     # READY (verifier_cleanup). Les deux organes partagent le predicat --
     # ce test alimente le MEME corpus + les MEMES refs declarees a chacun
-    # et exige la coherence des deux cotes, plus le cas sain (feuille) qui
-    # reste candidate/READY des deux cotes.
+    # et exige la coherence des deux cotes, plus les cas sains (feuille).
+    #
+    # #23762 a change la regle cote labeler : un PR mergée qui declare
+    # `See #N` (marqueur de contribution PARTIELLE) sans `Closes` rend
+    # desormais `partial`, plus `candidate`. La fixture le porte donc
+    # explicitement, et le controle positif (feuille reellement livree)
+    # se fait sur un marqueur fermant. La divergence qui reste -- le
+    # verificateur dit READY la ou le labeler dit partial, faute de lire
+    # la classe du marqueur -- est suivie en #23815 et n'est PAS assertée
+    # comme coherence : elle est nommee ici pour qu'elle ne se perde pas.
     from candidate_delivered import classify as cd_classify
 
-    declared_ref = [{"pr_number": 17754, "merged_at": "2026-09-20T10:00:00Z",
-                     "body": "Grain: DEEP/notebook-python -- See #{n} (tranche)."}]
+    REF_PARTIAL = "Grain: DEEP/notebook-python -- See #{n} (tranche)."
+    REF_CLOSING = "Grain: DEEP/notebook-python -- Closes #{n}."
     timeline = [_timeline_event(17754, "2026-09-20T10:00:00Z")]
 
     corpus = [
-        # (number, title, body, expected_verifier, expected_labeler)
+        # (number, title, body, expected_verifier, expected_labeler, ref_body)
         (17073, "[Audit #17073] Serie GameTheory — partition Hermes",
-         "27 notebooks.", "CONTAINER", "container"),
-        (17903, "EPIC: rollout nav-chain", "", "CONTAINER", "epic"),
+         "27 notebooks.", "CONTAINER", "container", REF_PARTIAL),
+        (17903, "EPIC: rollout nav-chain", "", "CONTAINER", "epic", REF_PARTIAL),
         (17900, "Fermer la dette de rendu des notebooks",
-         "Tranches:\n\n- [x] #17070 A\n- [ ] #17071 B\n", "CONTAINER", "container"),
+         "Tranches:\n\n- [x] #17070 A\n- [ ] #17071 B\n", "CONTAINER", "container",
+         REF_PARTIAL),
+        # Feuille declaree par une tranche : `See` n'est pas une livraison
+        # complete (#23762) -- le labeler refuse l'etiquette.
         (17902, "Corriger le rendu SVG de la cellule 12",
-         "Acceptance:\n\n- [x] SVG\n", "READY", "candidate"),
+         "Acceptance:\n\n- [x] SVG\n", "READY", "partial", REF_PARTIAL),
+        # Controle positif : la meme feuille, livree par un marqueur
+        # fermant, reste candidate. Sans ce cas le test ne prouverait plus
+        # qu'une feuille peut etre etiquetee.
+        (17904, "Corriger le rendu PNG de la cellule 7",
+         "Acceptance:\n\n- [x] PNG\n", "READY", "candidate", REF_CLOSING),
     ]
-    for n, title, body, want_verifier, want_labeler in corpus:
+    for n, title, body, want_verifier, want_labeler, ref_body in corpus:
+        declared_ref = [{"pr_number": 17754, "merged_at": "2026-09-20T10:00:00Z",
+                         "body": ref_body}]
         mapping = {
             ("api", f"repos/o/r/issues/{n}/timeline", "--paginate"): timeline,
             ("search", "issues", "--json", "number", "--limit", "20"): [],

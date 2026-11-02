@@ -2270,7 +2270,7 @@ class TestBoldTitlesAndPairing:
         )
 
     def test_lean_stub_with_number_pairs_own_header(self, tmp_path):
-        """Lean-29 cells 5-8: an undescribing worked-example code cell, then
+        """Langlands 06 (ex-Lean-29) cells 5-8: an undescribing worked-example code cell, then
         `### Exercice 1`, then the Lean stub `-- Exercice 1 : ...`. The
         greedy backward absorb used to pair the header with the EXAMPLE,
         leaving the stub double-counted by pass 2 (12 for 6)."""

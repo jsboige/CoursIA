@@ -258,6 +258,37 @@ def classify_creation_cost(git_meta_entry: dict | None) -> dict:
 # publier un catalogue faux en concluant `success`.
 GIT_LOG_TIMEOUT_SECONDS = 180
 
+# Detection de renommages : EXACTEMENT identique au contenu.
+#
+# Le checkout de `catalog-cron.yml` est un clone PARTIEL (`actions/checkout@v4`
+# avec `filter: blob:none`) : le contenu des blobs est absent du runner et
+# recupere a la demande depuis le remote promisor. Or la detection de
+# renommages par defaut compare le CONTENU des blobs (similarite) -- la passe
+# `git log --name-only` devenait donc une commande liee au RESEAU, chaque blob
+# candidat etant recupere sur le fil. Le cout suivait la bande passante du
+# runner, pas son CPU, son disque ni son overlayfs : d'ou le facteur 50 mesure
+# entre runners (3,6 s -> 149 s) et le depassement de la borne de 180 s du
+# 2026-11-02 (#24230).
+#
+# Mesure du 2026-11-02, meme conteneur, meme overlayfs, meme disque, reseau
+# injoignable :
+#   defaut        -> rc=128 en 44 s ("fatal: could not fetch <sha> from promisor remote")
+#   -M100%       -> rc=0  en  2 s
+#   --no-renames -> rc=0  en  2 s
+# Cote clone local, `GIT_NO_LAZY_FETCH=1` : defaut 6 s / -M100% 1 s / --no-renames 2 s.
+#
+# `-M100%` garde la detection de renommages mais la restreint aux renommages
+# EXACTS (OID de blob identique), que les objets d'arbre repondent sans aucun
+# contenu de blob : la commande est donc hors-ligne et deterministe.
+#
+# Le choix de la variante est fait sur la SEMANTIQUE PUBLIEE, pas sur la
+# vitesse : comparees a travers le parseur de production sur les 1746 carnets
+# suivis, les deux variantes sans renommages different du comportement
+# actuel sur 10 carnets (`--no-renames`) et sur 5 (famille `--diff-filter=AM`),
+# la ou `-M100%` n'en differt qu'UN -- et cette difference est une
+# CORRECTION (voir le body de la PR).
+GIT_LOG_RENAME_FLAG = "-M100%"
+
 # Restreindre l'historique aux notebooks : c'est le seul sous-arbre que le
 # parser ci-dessous retient, et 40 % de la sortie de `git log` n'en releve pas.
 # Equivalence verifiee en passant les deux sorties par ce meme parser
@@ -353,7 +384,8 @@ def build_git_metadata() -> dict[str, dict]:
     try:
         result = subprocess.run(
             [
-                "git", "log", "--name-only", "--format=COMMIT:%H|%ai|%ae|%s",
+                "git", "log", GIT_LOG_RENAME_FLAG,
+                "--name-only", "--format=COMMIT:%H|%ai|%ae|%s",
                 "--", GIT_LOG_PATHSPEC,
             ],
             capture_output=True, text=True, encoding="utf-8", errors="replace",
