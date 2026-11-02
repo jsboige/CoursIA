@@ -304,6 +304,12 @@ Les concepts se correspondent directement :
 
 Le Lab 8 (ADK Introduction) reprend les mêmes concepts avec la syntaxe ADK.
 
+### Quelle version de `google-adk` utiliser ?
+
+Le paquet PyPI `google-adk` et la documentation `adk.dev/2.0` sont la **même lignée 2.x** (GA `2.0.0` le 2026-05-19) : choisir une version revient à choisir un point de cette lignée, pas un fork. Le runtime de la série (`utils/adk_runtime.py`) ne consomme que des API publiques stables — `Agent`, `LiteLlm`, `Runner`, `InMemorySessionService`, `runner.run_async`, lecture des attributs d'`event` — et n'utilise **ni** callbacks (`before_tool_callback`…), **ni** Workflow Graph, **ni** artifacts : les breaking changes mineurs de la lignée 2.x ne l'atteignent pas. Seul point de vigilance : depuis `2.9.0`, `InMemorySessionService` lève `SessionNotFoundError` sur une session inconnue (à surveiller si une session est purgée entre deux appels).
+
+L'audit complet de la lignée 2.0.0 → 2.9.0 (changelog analysé motif par motif) vit dans la lane transiente : [`docs/transients/2026-09-13-adk-migration-2-eval.md`](../../../../docs/transients/2026-09-13-adk-migration-2-eval.md) (audit #14498, verdict « pas de migration immédiate », historique).
+
 ### Les Labs 16-17 (GCP) échouent sans projet Google Cloud
 
 Les Labs 16-17 nécessitent un projet GCP avec Vertex AI et BigQuery activés. Si vous n'avez pas accès GCP :
