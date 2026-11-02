@@ -69,7 +69,7 @@ Tous les verdicts de la table ci-dessous sont **GREEN-par-grep** / **RED-par-gre
 | `MyIA.AI.Notebooks/Probas/decision_theory_lean` | 13 | 0 | 0 | 1 | 0 | borderline (1 occurrence : lottery axioms) |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean` | 6 | 0 | 0 | 0 | 0 | GREEN |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples` | 3 | 0 | 0 | 0 | 0 | GREEN |
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean` | 33 | 0 | 0 | 0† | 0 | **GREEN-par-grep** (⚠️ mesuré : `Classical.choice` PRÉSENT en clôture — cf §1.1, §3.5) |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean` | 33 | 0 | 0 | 0† | 0 | **GREEN-par-grep** (⚠️ mesuré : `Classical.choice` PRÉSENT en clôture — cf §1.1, §3.5) |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/finiteness_lean` | 3 | 0 | 0 | 0 | 0 | GREEN |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean` | 5 | 0 | 0 | 0 | 0 | GREEN |
 | `MyIA.AI.Notebooks/Search/search_lean` | 6 | 0 | 0 | 0 | 0 | GREEN |
