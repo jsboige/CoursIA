@@ -445,6 +445,33 @@ pip install jpype1 requests tqdm clingo z3-solver python-sat
 - **JDK 17+** — telechargé automatiquement (Zulu) par le notebook de setup
 - **JPype** — bridge Python ↔ Java (charge automatiquement les JARs)
 
+#### Carnets qui importent `tweety_init`
+
+Le module `tweety_init.py` (démarrage JVM mutualisé) n'est importé que par
+les carnets qui ont besoin de la JVM **et** réutilisent cette configuration
+partagée ; les autres portent leur propre configuration dans le carnet, ou
+n'utilisent pas la JVM.
+
+Liste vivante, mesurée au head par relecture des **cellules de code** (une
+mention dans une cellule de markdown ne compte pas comme un import) :
+
+- `Tweety-02d-FOL-Lab-Lean-Python.ipynb`
+- `Tweety-02e-Preuves-Hilbert-Gentzen-Lean-Python.ipynb`
+- `Tweety-03b-Modal-Lab-Lean-Python.ipynb`
+- `Tweety-07a-Extended-Frameworks-Python.ipynb`
+- `Tweety-10-MLN-Python.ipynb`
+- `Tweety-11-Causal-Python.ipynb`
+
+Pour re-mesurer après l'ajout d'un carnet :
+
+```python
+import glob, nbformat
+for p in sorted(glob.glob("Tweety-*-Python.ipynb")):
+    nb = nbformat.reads(open(p, encoding="utf-8").read(), as_version=4)
+    if any(c.cell_type == "code" and "tweety_init" in (c.source or "") for c in nb.cells):
+        print(p)
+```
+
 #### Outils externes (optionnels mais recommandés)
 
 | Outil | Usage | Installation |
