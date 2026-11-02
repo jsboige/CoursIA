@@ -210,15 +210,21 @@ SECTION_TITLE_AFTER_EXERCISE_RE = re.compile(
     re.IGNORECASE,
 )
 # Carve-out #24164 : une **prose de transition vers l'etape suivante** n'est pas
-# une lecture de la sortie qui la precede. Deux formes mesurees sur 10
-# signalements (PR #23840, `App-3-NurseScheduling.ipynb`) :
+# une lecture de la sortie qui la precede. Classes mesurees sur 10
+# signalements (PR #23840, `App-3-NurseScheduling.ipynb`) -- decomposition
+# rejouee sur le head (revue Hermes #24309), l'issue melangeait gras et
+# non-gras dans son compte 8/2 :
 #   (a) une cellule de **separateur horizontal** (`***`) posee devant un titre
-#       de section -- `***` puis `## 2. Formulation du probleme`. La cellule ne
-#       commence pas par `#`, donc `is_reading_or_prose` la voyait comme de la
-#       prose et elle gonflait le compte de la sortie precedente ;
+#       de section -- `***` puis `## 2. Formulation du probleme` : 3 des 10.
+#       La cellule ne commence pas par `#`, donc `is_reading_or_prose` la
+#       voyait comme de la prose et elle gonflait le compte de la sortie
+#       precedente ;
 #   (b) un **libelle d'etape en gras** (`**Etape 2 : contrainte de couverture
-#       (C1)**`) : 8 des 10 signalements. `EXERCISE_STATEMENT_TITLE_RE` couvre
+#       (C1)**`) : 4 des 10 signalements. `EXERCISE_STATEMENT_TITLE_RE` couvre
 #       deja le gras `**Exercice N**` (#23439) ; il manquait la forme `Etape`.
+#   (c) prose de transition NON GRASSEE sans titre (`Definissons...`,
+#       `Construisons...`) : 3 des 10, hors carve-out (limite assumee
+#       documentee dans la docstring de `is_step_transition`).
 # Les garde-fous sont ceux des autres carve-outs : une lecture TITREE reste une
 # lecture, un titre d'interpretation dissimule dans le corps et une citation de
 # sortie (`OUTPUT_CITATION_RE`) disqualifient le carve-out.
@@ -590,8 +596,10 @@ def is_step_transition(cell: dict) -> bool:
     (``Construisons maintenant le modele CP-SAT...``) ne sont pas couvertes.
     Leur blanchiment demanderait de decider qu'une prose sans titre qui precede
     du code n'est jamais une lecture -- changement semantique que #24164 laisse
-    a l'arbitrage du proprietaire de l'organe (option 3). Mesure : 8 des 10
-    signalements de #23840 tombent sous (b), 2 sous (a).
+    a l'arbitrage du proprietaire de l'organe (option 3). Mesure (rejouee sur
+    le head, revue Hermes #24309) : 4 des 10 signalements de #23840 tombent
+    sous (b), 3 sous (a), 3 restent hors carve-out (prose non grassee sans
+    titre) -- la decomposition 8/2 heritait du classement mixte de l'issue.
     """
     if cell.get("cell_type") != "markdown":
         return False
