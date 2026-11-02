@@ -10,11 +10,25 @@ Mesure du 2026-11-02 sur `origin/main`, sortie de l'organe en mode `--json` (14 
 et 12 faibles). Chaque verdict ci-dessous vient de la lecture des enonces a la source, pas du
 label de l'organe.
 
+## Criteres de triage
+
+Le mot « doublon » dit trois choses differentes ; le triage les separe explicitement :
+
+- **doublon reel** : memes hypotheses et meme conclusion au contenu mathematique pres, la
+  formalisation et le vocabulaire pouvant differer totalement — un resultat, deux preuves. La
+  traduction d'un enonce a l'autre est un changement de vocabulaire, pas de theoreme.
+- **double formalisme** : le meme resultat informel porte par deux enonces dont aucun n'est un cas
+  de l'autre — deux structures (un modele de jeu contre une theorie arithmetique, par exemple)
+  qu'aucune traduction directe ne relie. Renvoi croise legitime, pas de preuve a economiser.
+- **homonymes** : deux enonces distincts — hypotheses de force differente, conclusion de forme
+  differente — qui partagent un nom ou un token. Le lien est de famille, pas de theoreme.
+
 ## Verdict par famille
 
 | Famille | Paires | Verdict | Raison mesuree |
 |---|---|---|---|
-| Arrow et Sen | 2 | **doublons reels** | meme enonce dans deux lakes GT ; traites par T1 (#24193, #24206) |
+| Arrow | 1 | **doublon reel** | meme theoreme d'impossibilite (pareto faible + IIA entrainent la dictature) sous deux encodages disjoints — Mathlib sur `Finset` contre core sur `Fin` ; consolidation en cours au triage : T1 (#24193) et T2 (#24206), ouvertes |
+| Sen | 1 | **homonymes apparentes** | deux enonces du meme paradoxe, pas le meme theoreme : `minimal_liberal` (une paire decisive par individu, sans chaine imposee) contre `SenLiberalism` (chaine x≠y≠z imposee), existence d'un profil sans optimum contre negation d'une propriete — mesure T1 (#24193) |
 | `fairBot_*_cooperation` | 4 | **pas des doublons** | meme theoreme, **deux formalismes** : egalite d'actions dans un modele de jeu contre prouvabilite dans une theorie de Hilbert |
 | `one_sub_pow_le_exp` | 1 | **doublon reel** | meme inegalite, la seconde etant une **specialisation** de la premiere |
 | `reconstruction` | 6 | faux positifs | homonymes : reconstruction de trames de Conway contre reconstruction de Fourier |
@@ -65,10 +79,11 @@ Un renvoi croise y serait legitime ; il n'y a pas de preuve a economiser, donc p
 
 ## Consequences pour la suite
 
-1. **La duplication de preuves est locale.** Sur 14 candidates, l'organe en trouve 2 de reelles dans
-   GameTheory (Arrow, Sen — le Concern d'origine), 1 helper analytique partage hors GameTheory, et
-   11 homonymes ou doubles formalismes. La phrase de #23097 (« aucune duplication de preuves entre
-   lacs ») etait fausse pour GameTheory, mais elle decrivait correctement le reste du depot.
+1. **La duplication de preuves est locale.** Sur 14 candidates, l'organe en trouve 1 de reelle dans
+   GameTheory (Arrow — le Concern d'origine citait aussi Sen, requalifie homonyme apparente par la
+   mesure T1 #24193), 1 helper analytique partage hors GameTheory, et 12 homonymes ou doubles
+   formalismes. La phrase de #23097 (« aucune duplication de preuves entre lacs ») etait fausse
+   pour Arrow, mais elle decrivait correctement le reste du depot.
 2. **Un doublon sans fusion possible n'est pas une dette.** `one_sub_pow_le_exp` et
    `one_sub_pow_le_exp_mul` se dupliquent legitimement ; le defaut a corriger est le **silence**,
    pas la copie.
