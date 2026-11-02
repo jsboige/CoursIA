@@ -7,7 +7,8 @@ class DualMomentum(QCAlgorithm):
     """
     Dual Momentum v6b: All Candidates + Momentum Tilt
     ========================================================
-    Measured (current code, 2015-01-01 -> 2024-12-31, 2516 jours, mode strategy): Sharpe 0.372, CAGR 7.754%, MaxDD 15.10%.
+    Measured (current code, fenêtre codée 2015-01-01 -> 2024-12-31, 2516 séances négociées, mode strategy) : Sharpe 0.372, CAGR 7.754%, MaxDD 15.10%.
+    Source : QC Cloud, dossier #23315 (2026-10-29), projet de référence 20286-DMo-baseline (2516 séances négociées, 442 ordres).
 
     Universe (risky): SPY, EFA, EEM, TLT, GLD, DBC
     Safe refuge: BND
@@ -20,7 +21,7 @@ class DualMomentum(QCAlgorithm):
     v4: Sharpe 0.391, CAGR 9.15%, MaxDD 23.9% (Core5, top-2, equal)
     v5: Sharpe 0.526, CAGR 11.31%, MaxDD 19.0% (+DBC, top-3, weighted)
     v6: Sharpe 0.473, CAGR 9.42%, MaxDD 16.4% (defensive 80/20 - worse Sharpe)
-    v6b: Sharpe 0.557, CAGR 11.22%, MaxDD 15.3% (all candidates, mom tilt) < best de l'iteration
+    v6b: Sharpe 0.557, CAGR 11.22%, MaxDD 15.3% (all candidates, mom tilt) — record de l'itération de conception
 
     Reference: Antonacci (2014) + AQR Trend Following
     """
