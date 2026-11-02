@@ -102,7 +102,7 @@ Le lake suit la convention i18n FR/EN de la série (fichiers `*_en.lean` miroirs
 - **Piste PyMC (`DecPyMC/`), pont causal (`Causal-Bridges/`) et règles de décision (`Regles-De-Decision/`)** : Python 3.12+ (PyMC 6 et ArviZ 1.x ne s'installent pas sur une version antérieure), dépendances `pymc`, `arviz`, `dowhy` dans [`../requirements.txt`](../requirements.txt). Les notebooks `DecPyMC` et `ReglesDeDecision` déclarent le kernel `python3` ; la plupart des `Causal-Bridges` déclarent encore `coursia-ml-training`, un kernel propre aux machines de la flotte ([#17654](https://github.com/jsboige/CoursIA/issues/17654)).
 - **Companions Lean (`DecInfer-02`, `DecInfer-02b`, `DecInfer-08b`)** : kernel Lean 4 (WSL) + lake [`decision_theory_lean`](decision_theory_lean/). Compilation : `lake -R build` dans le dossier du lake.
 
-Chaque sous-série démarre par ses fondations (`DecInfer-01` / `DecPyMC-1`) et se lit dans l'ordre numérique — la progression est cumulative.
+Chaque sous-série démarre par ses fondations (`DecInfer-01` / `DecPyMC-01`) et se lit dans l'ordre numérique — la progression est cumulative.
 
 ## Références
 
