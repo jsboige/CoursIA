@@ -26,11 +26,11 @@ No `sorry` in this module — all results are proved via `native_decide`
 or direct computation.
 -/
 
-import Conway.Fractran
+import Conway.Fractran_en
 
 namespace Conway_en
 
-open Conway
+open Conway_en
 
 /-! ## Piecewise-linear functions
 

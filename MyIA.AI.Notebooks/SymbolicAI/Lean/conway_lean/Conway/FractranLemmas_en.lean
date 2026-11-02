@@ -29,11 +29,11 @@ docstring and the public theorem docstrings below differ from the FR version; th
 signatures, proofs and tactics remain byte-identical between the two files.
 -/
 
-import Conway.Fractran
+import Conway.Fractran_en
 
 namespace Conway_en
 
-open Conway
+open Conway_en
 
 /-- BASE (rfl): an empty FRACTRAN program halts immediately — no fraction applies. -/
 theorem fractranStep_empty (n : Nat) : fractranStep [] n = none := rfl

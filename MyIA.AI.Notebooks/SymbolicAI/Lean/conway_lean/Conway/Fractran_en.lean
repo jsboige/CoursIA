@@ -19,11 +19,10 @@ Example — prime generation (Conway's 14-fraction program):
   for each prime p: 2^2, 2^3, 2^5, 2^7, 2^11, ...
 -/
 
-import Conway.Fractran
 
 namespace Conway_en
 
-open Conway
+open Conway_en
 
 /-- A FRACTRAN instruction: fraction num/den stored as two Nats.
   den must be positive (ensured by construction). -/

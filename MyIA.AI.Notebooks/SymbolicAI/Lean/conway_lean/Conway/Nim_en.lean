@@ -24,11 +24,12 @@ This file formalizes:
     founding theorem of CGT).
 -/
 
-import Conway.Nim
+import Mathlib.Data.Nat.Bitwise
+import Mathlib.Data.List.Basic
 
 namespace Conway_en
 
-open Conway
+open Conway_en
 /-- The nim-sum of a position: XOR-fold of the heap sizes. -/
 def nimSum (heaps : List Nat) : Nat :=
   heaps.foldl (· ^^^ ·) 0
