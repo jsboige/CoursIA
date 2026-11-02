@@ -94,7 +94,7 @@ Ce qui les sépare, mesuré sur les deux fichiers :
 | Hypothèses de Sen | **sans** IIA, **sans** `Fintype`, **sans** hypothèse de cardinalité sur `I` | `2 ≤ Fintype.card ι` et `3 ≤ X.card` |
 | Notion de libéralisme | `SenLiberalism` : deux individus **distincts**, deux paires **croisées**, trois alternatives distinctes | `minimal_liberal` : deux individus distincts, chacun décisif sur **une** paire non dégénérée — les paires peuvent ne pas se croiser |
 | Preuve de Sen | calculatoire : profils d'utilité entière (`rank3 z x y 3 2 1`), obligations closes par `decide` | abstraite, cas « chevauchement » et cas « paires disjointes » |
-| Taille | 1045 lignes, Arrow et Sen dans le même fichier | 714 (`Arrow.lean`) + 363 (`Sen.lean`) |
+| Répartition | les deux théorèmes dans un seul fichier | deux fichiers, un par théorème (`Arrow.lean`, `Sen.lean`) |
 
 **Ce que chaque côté apprend, et que l'autre ne montre pas.**
 
