@@ -14,7 +14,7 @@
 
 **Lecture honnête** : la divergence entre les trois mesures **n'est pas un bug** — ce sont **trois implémentations distinctes** du même concept dual-momentum :
 - `research.ipynb` utilise la définition classique Antonacci (3-asset, lookback 12m, seuil absolu 0, 5 bps TC).
-- `main.py` v6b utilise une version enrichie (6-asset, filtre SMA200 + 6m, momentum tilt weighting) — **BEST iter** parmi les variantes testées (cf log v4→v6b dans le docstring).
+- `main.py` v6b utilise une version enrichie (6-asset, filtre SMA200 + 6m, momentum tilt weighting) — **itération retenue** parmi les variantes testées (cf log v4→v6b dans le docstring).
 - `quantbook.ipynb` utilise la version 3-asset sans coûts de transaction sur **19 ans** (incl. GFC 2008 + COVID 2020 + bear 2022).
 
 Pour un usage pédagogique en 2026, **`research.ipynb` est la référence** (période complète 2015-2026, méthode Antonacci pure). Pour un déploiement LEANT, **`main.py` v6b est la version recommandée** (Sharpe reproduit). Pour comprendre la sensibilité aux paramètres, **`quantbook.ipynb` cell[3-7]** montre la grille lookback × seuil × refuge × univers × régime. Provenance détaillée : [`MANIFEST.md`](assets/readme/MANIFEST.md).
