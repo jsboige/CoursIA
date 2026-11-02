@@ -124,11 +124,12 @@ abandonné : le namespace n'existe pas sur net9 et la méthode était inatteigna
 ## Build & tests
 
 ```bash
-dotnet build MyIA.AI.Shared.sln -c Release
-dotnet test  MyIA.AI.Shared.sln -c Release
+dotnet build MyIA.AI.Shared/MyIA.AI.Shared.sln -c Release
+dotnet test MyIA.AI.Shared/MyIA.AI.Shared.sln -c Release
 ```
 
-Solution `MyIA.AI.Shared.sln` (socle-only : lib + tests) pour un build/test isolé,
+Solution `MyIA.AI.Shared/MyIA.AI.Shared.sln` (socle-only : lib + tests, logée dans
+le socle depuis #13751 fenêtre 2) pour un build/test isolé,
 sans tirer `MyIA.AI.Notebooks`. La solution racine `MyIA.CoursIA.sln` référence déjà
 le projet lib.
 
@@ -173,7 +174,7 @@ reflected["Payment"]; simple["Payment"]; auto["Payment"];
 
 Pipeline A1→A2 absorbé par 4 PRs mergées le 2026-07-21, dans cet ordre. Chaque PR
 a livré ses primitives + sa batterie de tests xUnit ; **48/48 tests PASS** sur la
-solution `MyIA.AI.Shared.sln` (couvrant les 4 tranches). Cette section sert
+solution `MyIA.AI.Shared/MyIA.AI.Shared.sln` (couvrant les 4 tranches). Cette section sert
 d'**index de traçabilité** pour quiconque navigue vers le socle depuis #7265
 ou la pépite dispatch #8031 (déjà livrée avant sa création, voir note).
 
@@ -184,13 +185,43 @@ ou la pépite dispatch #8031 (déjà livrée avant sa création, voir note).
 | **A2** JSON | [#7661](https://github.com/jsboige/CoursIA/pull/7661) | 2026-07-21 | 2 (`MetadataContractResolver`, `MetadataJsonSerializer`) | 9 |
 | **A2+** XML | [#7677](https://github.com/jsboige/CoursIA/pull/7677) | 2026-07-21 | 3 (`XmlAwareContractResolver`, `NodeSurrogate`, `MetadataXmlSerializer`) | 9 |
 
-Vérification locale : `dotnet build MyIA.AI.Shared.sln -c Release` (0 warning,
-0 error) + `dotnet test MyIA.AI.Shared.sln -c Release --no-build` (48/48 PASS).
+Vérification locale : `dotnet build MyIA.AI.Shared/MyIA.AI.Shared.sln -c Release` (0 warning,
+0 error) + `dotnet test MyIA.AI.Shared/MyIA.AI.Shared.sln -c Release --no-build` (48/48 PASS).
 
 > **Note** : la pépite dispatch **#8031** (« A1 socle + tests xUnit ») a été
 > ouverte le 2026-07-22T20:13Z — **6h après** que les 4 PRs ci-dessus aient été
 > mergées. La substance est intégralement livrée ; l'issue peut être fermée
 > (coordinateur, règle worker #1502 — un worker ne ferme JAMAIS les issues).
+
+## B2-T1 — Noyau propositionnel PL (#7265, #23584)
+
+Première tranche du **volet B2** (port du patrimoine `Logic.cs`). Elle livre le noyau
+**propositionnel** en C# nu, sous `Search/Logic/Propositional/`, sur la surface que le
+wrapper Aricie expose — la base de connaissances `PLKbInfo` devient
+`PlKnowledgeBase`, et `PLKbInferProcedureInfo` devient `PlKbInferProcedureInfo`.
+
+| Élément | Rôle |
+|---------|------|
+| `PlFormula` et ses noeuds | arbre syntaxique (`PlAtom`, `PlNot`, `PlAnd`, `PlOr`, `PlImplies`, `PlBiconditional`), évaluation sous affectation totale |
+| `PlParser` | syntaxe du chapitre 7 d'AIMA : `~` `&` `\|` `=>` `<=>`, plus `!` `->` `<->` ; erreur positionnée, jamais de formule approximative |
+| `PlCnf` | mise sous forme normale conjonctive (élimination, négation normalisée, distribution), clauses tautologiques écartées |
+| `PlKnowledgeBase` | phrases, clauses, satisfaction |
+| `PlInference` | les six procédures : `TTEntails`, `Resolve`, `DPLLEntails`, `DPLLSatisfiable`, `WalkSatKb`, `WalkSatPredicate` |
+
+Chaque procédure publie son **coût mesuré** et son **unité** (`lignes de table de
+verite`, `resolvantes derivees`, `tentatives de branchement DPLL`, `flips`) : c'est ce qui les rend
+falsifiables entre elles, et pas seulement correctes. Une conséquence mesurée : sur
+une base insatisfiable, `DPLLEntails` ne prend **aucune** décision quand
+`DPLLSatisfiable` en prend, parce que la négation de la requête est elle-même une
+clause unitaire qui propage. `WalkSAT` rend `Unknown` et jamais `No` quand il échoue :
+une recherche locale qui n'aboutit pas ne prouve pas l'insatisfiabilité.
+
+**Hors de cette tranche**, et pour des raisons écrites dans #23584 : FOL (point de
+décision n°1 de #21909), `Probability.cs` (n°2), `Neural.cs` (n°3), et `PLFCEntails`
+dont la sémantique derrière `aima-core.dll` n'est pas établie.
+
+Vérification locale du 2026-11-01 : `dotnet test MyIA.AI.Shared.Tests` —
+**436/436 PASS** sur la suite complète, dont 39 témoins pour cette tranche.
 
 ## Tranches suivantes (hors cette ancre)
 
