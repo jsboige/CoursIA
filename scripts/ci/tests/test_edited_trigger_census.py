@@ -39,6 +39,7 @@ def _load(name: str):
 
 census = _load("list_edited_trigger_workflows")
 measure = _load("measure_redundant_runs")
+guards = _load("body_consuming_guards")
 
 
 # ---------------------------------------------------------------------------
@@ -130,6 +131,112 @@ def test_le_verdict_content_only_exige_aucun_axe(rows):
 
 
 # ---------------------------------------------------------------------------
+# Formes de lecture du body reconnues par l'inventaire (#22467, R2)
+# ---------------------------------------------------------------------------
+
+
+def _channels(source: str) -> dict[str, dict]:
+    import ast
+
+    return guards._scan_tree(ast.parse(source))
+
+
+def test_le_detecteur_reconnait_le_body_lu_par_jq_rest():
+    """`gh api repos/<o>/<r>/pulls/<n> --jq .body` lit le body de la PR.
+
+    Cette forme n'etait pas reconnue : un script qui lisait le body par elle
+    echappait a l'inventaire, et le census pouvait alors classer `CONTENT_ONLY`
+    un workflow dont le verdict depend en realite du body."""
+    channels = _channels(
+        "def read(pr):\n"
+        "    return _run(['gh', 'api', f'repos/{o}/{r}/pulls/{pr}', '--jq', '.body'])\n"
+    )
+    assert "api-gh" in channels
+
+
+def test_le_detecteur_reconnait_le_body_lu_par_graphql():
+    """Une requete GraphQL nommant `pullRequest` et `body` lit le body."""
+    channels = _channels(
+        "def read():\n"
+        "    return _run(['gh', 'api', 'graphql', '-f', "
+        "'query=query{pullRequest{number body}}'])\n"
+    )
+    assert "api-gh" in channels
+
+
+def test_le_detecteur_ne_compte_pas_le_body_d_un_commentaire():
+    """Le `body` d'un COMMENTAIRE ou d'une REVIEW n'est pas le body de la PR.
+
+    Compter ces lectures ferait de `check_unaddressed_nits.py` un consommateur
+    de body : l'inventaire dirait alors qu'un workflow garde `edited` pour une
+    raison qui n'est pas la sienne."""
+    channels = _channels(
+        "def read(pr):\n"
+        "    return _run(['gh', 'api', f'repos/{o}/{r}/pulls/{pr}/reviews', "
+        "'--jq', '.[] | {author: .user.login, body: .body}'])\n"
+    )
+    assert "api-gh" not in channels
+
+
+def test_le_detecteur_reconnait_toujours_la_forme_virgule():
+    """Contre-pied du fix de #22467 : `--json body,reviews,author` doit rester
+    visible (8 consommateurs en dependaient)."""
+    channels = _channels(
+        "def read(pr):\n"
+        "    return _run(['gh', 'pr', 'view', str(pr), "
+        "'--json', 'body,reviews,author'])\n"
+    )
+    assert "api-gh" in channels
+
+
+# ---------------------------------------------------------------------------
+# Ablation : le verdict depend-il de la couverture de l'inventaire ?
+# ---------------------------------------------------------------------------
+
+
+def test_l_ablation_publie_le_verdict_sans_inventaire(rows):
+    """Chaque workflow porte son verdict recalcule sans l'inventaire.
+
+    Une dependance invisible serait une conclusion fragile : elle doit etre
+    lisible, pas supposee."""
+    for row in rows:
+        assert row["verdict_without_detector"] in ("CONTENT_ONLY", "PR_METADATA_DEPENDENT")
+        if row["verdict_without_detector"] == "CONTENT_ONLY":
+            assert row["depends_on_without_detector"] == []
+
+
+def test_l_ablation_ne_revele_aucun_content_only(rows):
+    """Aucun workflow ne peut devenir `CONTENT_ONLY` quand on retire
+    l'inventaire : le census complet les couvre tous."""
+    without = [
+        row["workflow"]
+        for row in rows
+        if row["verdict_without_detector"] == "CONTENT_ONLY"
+    ]
+    with_detector = [
+        row["workflow"] for row in rows if row["verdict"] == "CONTENT_ONLY"
+    ]
+    assert with_detector == []
+    # Un workflow qui ne dependait que de l'inventaire peut apparaitre ici :
+    # c'est le cas, et c'est **voulu** -- la dependance est nommee, pas
+    # cachee. Ce qui ne doit jamais arriver, c'est un workflow que le census
+    # complet classe `CONTENT_ONLY` et que l'ablation ne voit pas.
+    assert set(with_detector) <= set(without)
+
+
+def test_le_rapport_d_ablation_nomme_les_workflows_dependants(rows):
+    report = census.render_ablation(rows)
+    dependent = [
+        row["workflow"]
+        for row in rows
+        if row["verdict"] != row["verdict_without_detector"]
+    ]
+    for workflow in dependent:
+        assert workflow in report
+    assert "CONTENT_ONLY" in report
+
+
+# ---------------------------------------------------------------------------
 # Mesure des redondances
 # ---------------------------------------------------------------------------
 
@@ -172,8 +279,9 @@ def test_la_mesure_compte_les_premieres_tentatives_redondantes():
 def test_la_mesure_classe_la_redondance_meme_tete_pull_request():
     """Deux premieres tentatives du meme workflow sur la MEME tete, toutes
     deux declenchees par `pull_request` : sur une meme tete, le workflow PR ne
-    peut rejouer que via `edited` ou `reopened`. C'est donc la classe
-    `edited`."""
+    peut rejouer que via `edited` **ou** `reopened`. La classe dit donc
+    `edited` ∪ `reopened` -- elle ne separe pas les deux, et `reopened` n'est
+    compte nulle part ailleurs : le nombre est un minorant pour `edited`."""
     runs = [
         _run(1, "aaa", "2026-11-01T10:00:00Z"),
         _run(2, "aaa", "2026-11-01T10:05:00Z"),

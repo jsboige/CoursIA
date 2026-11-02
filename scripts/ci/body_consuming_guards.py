@@ -32,6 +32,47 @@ Les cinq formes de canal reconnues
 ``env-file:NAME``        la variable d'environnement nomme un fichier a lire.
 ``api-gh``               le script va lui-meme chercher le body (`gh pr view --json body`).
 
+Formes de recuperation reconnues pour le canal ``api-gh``
+---------------------------------------------------------
+
+Le canal ``api-gh`` est reconnu sur **trois** formes, chacune avec un
+predicat precis (une detection large aurait produit des faux positifs, et
+un faux positif ici est sans consequence -- il ajoute un consommateur
+inexistant a l'inventaire) :
+
+1. ``gh pr view <n> --json body`` -- les constantes de l'appel contiennent
+   ``pr``, ``view`` et ``body``. Le champ peut etre seul ou **accompagne**
+   d'autres dans une seule chaine (``--json body,reviews,author``) : c'est
+   la decoupe sur la virgule qui rend cette forme visible (mesure : 8
+   consommateurs invisibles sans elle, #22467).
+2. ``gh api repos/<o>/<r>/pulls/<n> --jq .body`` -- l'endpoint porte sur
+   **une** PR (pas de sous-ressource ``/reviews``, ``/comments``,
+   ``/files``, pas de liste) et l'expression jq est exactement ``.body``.
+   Une expression qui lit ``.body`` d'un **commentaire** ou d'une **review**
+   (``.[] | {author: .user.login, body: .body}``) n'est **pas** un body de
+   PR : elle ne doit pas etre comptee.
+3. ``gh api graphql -f query=...pullRequest{...body...}`` -- la requete
+   GraphQL nomme `pullRequest` et `body`.
+
+Formes **non** reconnues (l'inventaire les ignore -- elles sont enumerees
+ici pour que la limite soit connue, pas supposee) :
+
+* un body lu par une expression jq **autre** que ``.body`` sur l'endpoint
+  d'une PR (``--jq '{body: .body}'``, ``--jq '.body'`` avec un decorateur) ;
+* un body lu via l'API HTTP de GitHub sans passer par ``gh`` (``urllib``,
+  ``requests``) ;
+* un body lu dans un fichier ecrit par un **autre** outil (le canal
+  ``env-file:`` ne couvre que la variable d'environnement du depot) ;
+* un body lu depuis un script **shell** : l'organe n'analyse que les
+  modules Python (les scripts shell ont leur propre inventaire,
+  ``scripts/ci/always_on_body_organs.sh``).
+
+Ce perimetre est **verifie par ablation** par le census
+`scripts/ci/list_edited_trigger_workflows.py` : il recalcule le verdict en
+supprimant la contribution du detecteur, et publie les workflows dont le
+verdict en depend. Une conclusion qui ne tient que sur une forme non
+reconnue serait alors visible au lieu d'etre supposee fausse.
+
 Perimetre -- ce que l'organe ne couvre pas, et pourquoi
 ------------------------------------------------------
 
@@ -92,6 +133,15 @@ ENV_CHANNEL_PREFIXES = (ENV_PREFIX, ENV_FILE_PREFIX)
 #: d'environnement, valeur par defaut d'une option, acces indexe), jamais dans
 #: une chaine quelconque : une docstring ne peut donc pas fabriquer un canal.
 ENV_NAME_RE = re.compile(r"^(?:[A-Z][A-Z0-9_]*)?PR_BODY[A-Z0-9_]*$")
+
+#: Endpoint REST d'**une seule** PR, sans sous-ressource ni liste : c'est la
+#: forme sous laquelle `gh api ... --jq .body` rend le body de la PR.
+#: `/pulls/<n>/reviews` et `/pulls?state=open` ne sont volontairement pas
+#: couverts : ils portent des bodies de review ou une liste, pas le body de
+#: la PR (#22467).
+_API_GH_PR_ENDPOINT_RE = re.compile(
+    r"^repos/[^/\s]+/[^/\s]+/pulls/(?:\d+|\{[^}]*\})$"
+)
 
 #: Fonctions de lecture d'environnement reconnues, telles que `ast.unparse` les
 #: rend. La forme nue (`environ.get`) vient de `from os import environ`.
@@ -160,6 +210,30 @@ def _channel_for_env_name(name: str) -> str:
 def _const_str(node: ast.AST) -> str | None:
     if isinstance(node, ast.Constant) and isinstance(node.value, str):
         return node.value
+    return None
+
+
+def _string_template(node: ast.AST) -> str | None:
+    """Valeur d'une chaine : litteral, ou **gabarit** d'une f-string.
+
+    Une f-string n'est pas une constante, mais elle porte la forme de la
+    chaine : `f"repos/{repo}/pulls/{pr}"` est un endpoint de PR. On rend donc
+    `repos/{}/pulls/{}` -- le contenu des champs n'a pas besoin d'etre connu,
+    seule la **forme** l'est. C'est ce qui permet de reconnaitre la forme
+    REST sans exiger un endpoint entierement litteral.
+    """
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        return node.value
+    if isinstance(node, ast.JoinedStr):
+        parts: list[str] = []
+        for value in node.values:
+            if isinstance(value, ast.Constant) and isinstance(value.value, str):
+                parts.append(value.value)
+            elif isinstance(value, ast.FormattedValue):
+                parts.append("{}")
+            else:
+                return None
+        return "".join(parts)
     return None
 
 
@@ -234,6 +308,32 @@ def _scan_tree(tree: ast.AST) -> dict[str, dict]:
                 if part
             }
             if {"pr", "view", "body"} <= constants:
+                bump(API_GH, node.lineno)
+
+        # 5. Autres formes de recuperation du body par l'API gh, au-dela de
+        #    `gh pr view --json body` :
+        #      - REST : `gh api repos/<o>/<r>/pulls/<n> --jq .body`
+        #      - GraphQL : une requete nommant `pullRequest` et `body`
+        #    Ces formes n'etaient pas reconnues : un script qui lisait le body
+        #    par elles echappait a l'inventaire (faux negatif, #22467).
+        #    Les predicats sont volontairement stricts : une expression jq qui
+        #    lit le `body` d'un COMMENTAIRE ou d'une REVIEW n'est pas un body
+        #    de PR et ne doit pas etre comptee.
+        if isinstance(node, (ast.List, ast.Tuple)) and node.elts:
+            raw = [
+                value
+                for value in map(_string_template, node.elts)
+                if value is not None
+            ]
+            if "api" in raw:
+                if any(
+                    _API_GH_PR_ENDPOINT_RE.match(value) for value in raw
+                ) and any(value.strip() == ".body" for value in raw):
+                    bump(API_GH, node.lineno)
+            if "graphql" in raw and any(
+                "pullrequest" in value.lower() and "body" in value.lower()
+                for value in raw
+            ):
                 bump(API_GH, node.lineno)
 
     if dynamic_env_reads:

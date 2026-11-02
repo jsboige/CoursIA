@@ -23,7 +23,10 @@ l'edition :
     tous les essais du groupe sont declenches par `pull_request`. Sur une meme
     tete, un workflow `pull_request` ne peut rejouer que via `edited` ou
     `reopened` : `synchronize` implique une tete changee, `opened` implique
-    le premier essai. C'est donc la classe `edited`.
+    le premier essai. Cette classe dit donc que le re-fire vient de
+    ``edited`` **ou** ``reopened`` -- elle ne separe pas les deux, et
+    ``reopened`` n'est compte nulle part ailleurs : le nombre est un
+    **minorant** pour `edited`, pas un compte exact.
 ``MIXED_EVENT``
     le groupe melange des familles d'evenements (double declenchement
     `push` + `pull_request` sur la meme tete, par exemple).

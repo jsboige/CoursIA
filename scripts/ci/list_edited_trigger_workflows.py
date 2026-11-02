@@ -50,6 +50,23 @@ Exemples
     python scripts/ci/list_edited_trigger_workflows.py
     python scripts/ci/list_edited_trigger_workflows.py --json
     python scripts/ci/list_edited_trigger_workflows.py --only content-only
+    python scripts/ci/list_edited_trigger_workflows.py --ablate-detector
+
+Ablation
+--------
+
+L'axe `body` s'appuie sur l'inventaire `body_consuming_guards.py`, qui
+reconnait un nombre **ferme** de formes de lecture du body (les trois formes
+`api-gh` sont enoncees dans la docstring de cet organe, avec les formes non
+reconnues). Une conclusion qui ne tiendrait que sur une de ces formes serait
+fragile.
+
+`--ablate-detector` recalcule donc le verdict **sans** la contribution de
+l'inventaire : l'axe `body` ne vient plus que de la lecture directe dans le
+fichier de workflow. Si l'ensemble `CONTENT_ONLY` ne change pas, la
+couverture des formes ne peut pas changer la conclusion ; sinon, les
+workflows concernes sont nommes. Chaque ligne porte d'ailleurs son
+`verdict_without_detector` : la dependance est **visible**, pas supposee.
 """
 
 from __future__ import annotations
@@ -172,9 +189,18 @@ def _paths_filtered(data: dict, events: list[str]) -> bool:
     return False
 
 
-def survey(root: Path) -> list[dict]:
-    """Census complet des workflows qui ecoutent `edited`."""
-    consumers = discover_consumers(root)
+def survey(root: Path, use_detector: bool = True) -> list[dict]:
+    """Census complet des workflows qui ecoutent `edited`.
+
+    `use_detector=False` retire la contribution de l'inventaire
+    `body_consuming_guards.py` : l'axe `body` ne vient plus que de la lecture
+    directe dans le workflow. C'est l'**ablation** : elle repond a « la
+    conclusion du census depend-elle de l'exhaustivite du detecteur ? »
+    (#22467). Le verdict `verdict_without_detector` est calcule pour chaque
+    workflow, meme quand l'ablation n'est pas demandee : la dependance est
+    donc visible, pas supposee.
+    """
+    consumers = discover_consumers(root) if use_detector else {}
     workflows_dir = root / WORKFLOW_DIR
     rows: list[dict] = []
     for path in sorted(workflows_dir.glob("*.yml")):
@@ -204,6 +230,13 @@ def survey(root: Path) -> list[dict]:
         if paths:
             depends.append("paths")
         verdict = CONTENT_ONLY if not depends else PR_METADATA_DEPENDENT
+        # Ablation : sans la contribution du detecteur, l'axe `body` ne peut
+        # venir que de la lecture directe dans le workflow.
+        depends_without_detector = [
+            axis
+            for axis in depends
+            if axis != "body" or direct
+        ]
         rows.append(
             {
                 "workflow": rel,
@@ -217,6 +250,12 @@ def survey(root: Path) -> list[dict]:
                 "direct_body_read": direct,
                 "depends_on": depends,
                 "verdict": verdict,
+                "depends_on_without_detector": depends_without_detector,
+                "verdict_without_detector": (
+                    CONTENT_ONLY
+                    if not depends_without_detector
+                    else PR_METADATA_DEPENDENT
+                ),
             }
         )
     return rows
@@ -240,6 +279,54 @@ def render(rows: list[dict]) -> str:
         f"{len(rows)} workflow(s) ecoutent `edited` -- "
         + ", ".join(f"{k}: {v}" for k, v in sorted(counts.items()))
     )
+    dependent = [
+        row["workflow"]
+        for row in rows
+        if row["verdict"] != row["verdict_without_detector"]
+    ]
+    lines.append(
+        f"verdict dependant de l'inventaire `body_consuming_guards` : "
+        f"{len(dependent)} workflow(s)"
+    )
+    for workflow in dependent:
+        lines.append(f"    {workflow}")
+    return "\n".join(lines)
+
+
+def render_ablation(rows: list[dict]) -> str:
+    """Rapport d'ablation : le verdict tient-il sans l'inventaire ?
+
+    On recalcule le census en retirant la contribution du detecteur
+    canonique. Si l'ensemble `CONTENT_ONLY` ne change pas, la couverture des
+    formes du detecteur ne peut pas changer la conclusion ; s'il change, les
+    workflows concernes sont nommes -- la dependance est visible, pas
+    supposee (#22467).
+    """
+    lines = ["Ablation -- census recalcule SANS l'inventaire `body_consuming_guards`", ""]
+    with_detector = {
+        row["workflow"] for row in rows if row["verdict"] == CONTENT_ONLY
+    }
+    without_detector = {
+        row["workflow"]
+        for row in rows
+        if row["verdict_without_detector"] == CONTENT_ONLY
+    }
+    lines.append(f"CONTENT_ONLY avec le detecteur   : {len(with_detector)}")
+    lines.append(f"CONTENT_ONLY sans le detecteur   : {len(without_detector)}")
+    lines.append("")
+    if with_detector == without_detector:
+        lines.append(
+            "Conclusion : identique. La couverture des formes du detecteur "
+            "ne change pas le verdict du census."
+        )
+    else:
+        lines.append(
+            "Conclusion : DIFFERENTE. Les workflows ci-dessous ont un verdict "
+            "qui repose sur l'inventaire : la forme reconnue par le detecteur "
+            "doit etre verifiee a la main."
+        )
+        for workflow in sorted(without_detector - with_detector):
+            lines.append(f"    {workflow}")
     return "\n".join(lines)
 
 
@@ -257,6 +344,15 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="filtrer sur le verdict",
     )
+    parser.add_argument(
+        "--ablate-detector",
+        action="store_true",
+        help=(
+            "affiche l'ablation : le verdict recalcule SANS l'inventaire "
+            "`body_consuming_guards.py`, pour montrer si la conclusion du "
+            "census depend de la couverture des formes de ce detecteur"
+        ),
+    )
     args = parser.parse_args(argv)
 
     root = Path(args.root).resolve() if args.root else Path(__file__).resolve().parents[2]
@@ -268,6 +364,8 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.json:
         print(json.dumps(rows, ensure_ascii=False, indent=1))
+    elif args.ablate_detector:
+        print(render_ablation(survey(root)))
     else:
         print(render(rows))
     return 0
