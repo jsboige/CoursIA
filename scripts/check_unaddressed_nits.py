@@ -113,11 +113,32 @@ REPO = "jsboige/CoursIA"
 BOT_LOGINS = {"github-actions", "codecov", "dependabot", "copilot-pull-request-reviewer"}
 
 # Prefixes de tags utilises par les agents du cluster (protocole dashboard/PR).
+# Consommee par classify (exemption) ET can_lift (voie 3 de B.0) : la
+# constante reste stricte -- n'y ajouter que des tags de PROTOCOLE pur. Un
+# tag ici n'est pas seulement « pas un nit », il est aussi « pas une levee »
+# (can_lift l. 41xx ecarte le corps du nommage de suivi) : ce double effet
+# doit rester voulu, jamais accidentel.
 AGENT_PREFIXES = (
     "[PART-OF-EPIC", "[GRAIN", "[CLAIMED", "[DONE", "[INFO", "[DISPATCH",
     "[ACK", "[RELEASED", "[OVERRIDE", "[MERGED", "[WARN", "[ERROR", "[ASK",
     "[REPLY", "[PROPOSAL", "[BLOCKED", "[ESCALATION", "[DELIVERED",
 )
+
+# `[ACTION` et `[DIAG` (taxonomie d'emission P1 de #15511, cf COMMENT_TAG_RE
+# ci-dessous) servent la CLASSIFICATION, pas la levee. Mesure fondatrice
+# (po-2028:CoursIA, 2026-11-02 13:30Z) : sans eux, un compte-rendu CONFORME a
+# la regle sortait de l'exemption de classify (l. 44xx) et tombait dans la
+# branche CRLF/HUMAN des qu'il etait poste par un transport Windows -- le
+# compte-rendu d'une action devenait un nit bloquant la PR qu'il documente.
+# Reserve NanoClaw #24243 : les ajouter a AGENT_PREFIXES aurait un second
+# effet, invisible au diff : can_lift lit la meme constante pour ecarter les
+# narrations de protocole des levees, or un compte-rendu tague [ACTION] qui
+# NOMME une issue de suivi (« suivi ouvert : #N ») est un report delibere --
+# exactement le geste que la voie 3 de B.0 credite (collect_followup_lifts,
+# #13495/#14218 : l'auteur de la PR y est nommeur valide). L'extension vit
+# donc dans cette constante, consommee uniquement par classify ; can_lift
+# reste sur AGENT_PREFIXES.
+CLASSIFY_AGENT_PREFIXES = AGENT_PREFIXES + ("[ACTION", "[DIAG")
 
 # #15511 (P1) -- taxonomie d'emission des commentaires agent, premiere
 # ligne NON VIDE du corps : [ACTION] (le commentaire porte une action --
@@ -4409,7 +4430,7 @@ def classify(author: str, body: str) -> str | None:
         return None  # verdict humain positif (APPROVE / APPROVED / LGTM) SANS reserve vivante : equivalent state:APPROVED
     if not live_concern and has_live_marker(body, POSITIVE_MARKERS):
         return None  # approbation sans reserve vivante : la review conclut, ne reserve pas
-    if stripped.startswith(AGENT_PREFIXES):
+    if stripped.startswith(CLASSIFY_AGENT_PREFIXES):
         # Tag de protocole agent : informatif, pas un nit — sauf s'il porte une reserve.
         return "BOT-CONCERN" if live_concern else None
     # #19810 — proxy CRLF serre : un corps CRLF ne tient HUMAN que s'il porte
