@@ -1306,7 +1306,7 @@
     },
     {
       "series": "MyIA.AI.Notebooks/GameTheory/Dynamics",
-      "notebooks": 12
+      "notebooks": 13
     },
     {
       "series": "MyIA.AI.Notebooks/GenAI/Audio/01-Foundation",
@@ -1398,7 +1398,7 @@
     },
     {
       "series": "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands",
-      "notebooks": 5
+      "notebooks": 6
     },
     {
       "series": "MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO",

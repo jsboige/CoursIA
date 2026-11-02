@@ -23,14 +23,14 @@ import Mathlib.Data.Finset.Card
 import Mathlib.Data.Fintype.Card
 import Mathlib.Data.Fintype.Prod
 import Mathlib.Tactic.Common
-import StableMarriage.Definitions
-import StableMarriage.GSState
+import StableMarriage.Definitions_en
+import StableMarriage.GSState_en
 
 namespace StableMarriage_en
 
 
 open Function Finset Classical
-open StableMarriage
+open StableMarriage_en
 
 variable {n : Nat} [NeZero n]
 

@@ -373,6 +373,36 @@ class TestClassifyDeleted:
         assert r["relocated"] == []
         assert [e["dispatcher"] for e in r["lost"]] == ["lean-x.yml"]
 
+    def test_a_homonym_outside_the_parent_tree_stays_lost(self):
+        """Jaune 1 (#23908) : meme basename, autre sous-arbre = homonyme.
+
+        Crediter ce chemin rapporterait un deplacement que personne n'a fait
+        et tairait la perte reelle du lake.
+        """
+        d = self._d(["A/Lean/galois_lean"])
+        gated = {"Elsewhere/Lean/galois_lean"}
+        r = classify_deleted([d], gated, exists_at=lambda p: p in gated)
+        assert r["relocated"] == []
+        assert [e["dispatcher"] for e in r["lost"]] == ["lean-x.yml"]
+
+    def test_a_sibling_prefix_is_not_filiation(self):
+        """Controle negatif de `_is_under` : `A/LeanX` n'est pas sous `A/Lean`."""
+        from check_axiom_gate_coverage import _is_under
+        assert _is_under("A/Lean/GALOIS/galois_lean", "A/Lean") is True
+        assert _is_under("A/LeanX/galois_lean", "A/Lean") is False
+        assert _is_under("A/Lean", "A/Lean") is False
+
+    def test_a_multi_lake_dispatcher_stays_lost(self):
+        """Jaune 2 (#23908) : un `moved_to` unique ne peut pas temoigner de
+        DEUX lakes. Meme si chaque basename a un successeur, le dispatcher
+        retombe en `lost` (fail-closed) au lieu d'etre credite en bloc.
+        """
+        d = self._d(["A/Lean/alpha_lean", "A/Lean/beta_lean"])
+        gated = {"A/Lean/NEW/alpha_lean", "A/Lean/NEW/beta_lean"}
+        r = classify_deleted([d], gated, exists_at=lambda p: p in gated)
+        assert r["relocated"] == []
+        assert [e["dispatcher"] for e in r["lost"]] == ["lean-x.yml"]
+
 
 class TestMeasurePartition:
     """Logic invariants — deliberately NOT exact counts, which drift legitimately."""
