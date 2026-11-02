@@ -12,7 +12,7 @@ constantes.
 
 | Élément | Rôle |
 |---|---|
-| `problems/forage-petrolier.json` | Problème de forage extrait de DecInfer-06 cell. 32/35 + DecPyMC-05 cell. 33 (contrôle discriminant) |
+| `problems/forage-petrolier.json` | Problème de forage extrait de DecInfer-06 (cellules 32 et 35) et de DecPyMC-05 (cellule 33) — contrôle discriminant |
 | `problems/forage-non-informatif.json` | Contrôle négatif : vraisemblance indépendante de l'état → EVSI = 0 |
 | `InferNetVoi/` | Adaptateur C# : **Infer.NET réel** (`Microsoft.ML.Probabilistic`) infère les postérieurs de chaque signal et les marginales du signal |
 | `pymc_voi.py` | Adaptateur Python : **PyMC réel** échantillonne le même modèle génératif (prior predictive seedé, conditionnement empirique) |
