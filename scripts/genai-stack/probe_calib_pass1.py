@@ -85,12 +85,16 @@ def chat(base_url: str, model: str, messages: list[dict],
 
 # ---------------------------------------------------------------- SVAMP ---
 
-_NUM = re.compile(r"-?\d+(?:[.,]\d+)?")
+# Un nombre peut porter PLUSIEURS groupes de milliers ('1,000,000'). La regexp
+# doit les tenir ensemble : sinon '1,000,000' se decoupe en ('1,000','000') et
+# le dernier fragment se lit 0.0 -- un faux resultat, pas une absence.
+_NUM = re.compile(r"-?\d{1,3}(?:[.,]\d{3})+(?:[.,]\d+)?|-?\d+(?:[.,]\d+)?")
 
 
 def _to_float(txt: str) -> float | None:
-    """Accepte '1.5', '1,5' (virgule decimale) et '1,000' (separateur de
-    milliers). Sans cette distinction, un gold '1,000' se lirait 1.0."""
+    """Accepte '1.5', '1,5' (virgule decimale), '1,000' et '1,000,000'
+    (separateur de milliers). Sans cette distinction, un gold '1,000' se
+    lirait 1.0."""
     if not isinstance(txt, str):
         return None
     s = txt.strip().replace(" ", "")
@@ -114,25 +118,52 @@ def svamp_prompt(item: dict) -> list[dict]:
     ]
 
 
-def svamp_reward(item: dict, reply: str) -> tuple[int, int, str, bool]:
-    """(ok_strict, ok_avec_repli, pred, ligne_answer_presente).
+def svamp_reward(item: dict, reply: str) -> dict:
+    """Trois lectures nommees + les deux marqueurs de structure.
 
-    Le contrat annonce -- le prompt exige une ligne 'Answer: <nombre>' et la
-    docstring disait 'le DERNIER nombre du passage Answer' -- est STRICT : seul
-    le passage 'Answer:' compte, et une reponse qui n'en contient pas vaut
-    zero. Le repli historique (dernier nombre de TOUTE la reponse) est
-    conserve et PUBLIE SEPAREMENT : sans lui, une reponse tronquee dont le
-    dernier nombre tombe juste est comptee comme un succes."""
-    gold = float(item["Answer"])
-    strict_nums: list[str] = []
-    if "Answer:" in reply:
-        strict_nums = _NUM.findall(reply.rsplit("Answer:", 1)[-1])
-    pred = _to_float(strict_nums[-1]) if strict_nums else None
-    ok_strict = int(pred is not None and abs(pred - gold) < 1e-4)
-    loose_nums = _NUM.findall(reply)
-    loose = _to_float(loose_nums[-1]) if loose_nums else None
-    ok_loose = int(loose is not None and abs(loose - gold) < 1e-4)
-    return ok_strict, ok_loose, ("" if pred is None else str(pred)), bool(strict_nums)
+    - stricte  : le CONTRAT annonce -- le marqueur 'Answer:' est present ET
+                 un nombre suit. Une reponse sans ligne 'Answer:' vaut zero.
+    - repli    : la lecture permissive HISTORIQUE (regle d'origine du
+                 probe) -- le passage apres le dernier 'Answer:' s'il y en a
+                 un, SINON toute la reponse.
+    - dernier  : le dernier nombre de TOUTE la reponse. C'est une
+                 TROISIEME regle, publiee sous SON nom : ce n'est pas le
+                 repli historique, et l'identifier comme tel est ce qui
+                 evite de lui attribuer le nom du repli.
+
+    Les deux marqueurs sont distincts et ne doivent pas etre confondus :
+    'marqueur_answer' = le marqueur 'Answer:' est present ; 'nombre_apres_
+    answer' = un nombre suit ce marqueur. Une reponse peut porter le
+    marqueur sans nombre (pensee tronquee) -- d'ou deux compteurs distincts.
+    """
+    # Le GOLD passe par le meme parseur que la prediction : un gold ecrit
+    # '1,000,000' (separateur de milliers) doit se lire 1000000.0, pas
+    # exploser -- le gold est lu tel quel dans la colonne du dataset.
+    gold = _to_float(str(item["Answer"]))
+    if gold is None:
+        raise ValueError(f"gold illisible: {item['Answer']!r}")
+    marqueur = "Answer:" in reply
+    queue = reply.rsplit("Answer:", 1)[-1] if marqueur else ""
+    nums_queue = _NUM.findall(queue)
+    pred = _to_float(nums_queue[-1]) if nums_queue else None
+    ok_strict = int(marqueur and pred is not None and abs(pred - gold) < 1e-4)
+
+    # repli historique : la queue si le marqueur est present, sinon la
+    # reponse entiere
+    nums_repli = nums_queue if marqueur else _NUM.findall(reply)
+    pred_repli = _to_float(nums_repli[-1]) if nums_repli else None
+    ok_repli = int(pred_repli is not None and abs(pred_repli - gold) < 1e-4)
+
+    # troisieme lecture : dernier nombre de toute la reponse
+    nums_dernier = _NUM.findall(reply)
+    pred_dernier = _to_float(nums_dernier[-1]) if nums_dernier else None
+    ok_dernier = int(pred_dernier is not None and abs(pred_dernier - gold) < 1e-4)
+
+    return {"ok": ok_strict, "ok_avec_repli": ok_repli,
+            "ok_dernier_nombre": ok_dernier,
+            "pred": "" if pred is None else str(pred),
+            "marqueur_answer": marqueur,
+            "nombre_apres_answer": bool(nums_queue)}
 
 
 # ------------------------------------------------------------------ xLAM ---
@@ -200,15 +231,20 @@ def run_svamp(base: str, model: str, items: list[dict],
     def _one(it: dict) -> dict:
         try:
             reply, finish = chat(base, model, svamp_prompt(it), max_tokens=300)
-            ok, ok_loose, pred, has_answer = svamp_reward(it, reply)
+            sc = svamp_reward(it, reply)
             err = ""
         except Exception as exc:  # noqa: BLE001 - item servi en echec, pas d'arret
-            reply, finish, ok, ok_loose, pred, has_answer, err = (
-                "", "", 0, 0, "", False, f"{type(exc).__name__}")
+            reply, finish, err = "", "", f"{type(exc).__name__}"
+            sc = {"ok": 0, "ok_avec_repli": 0, "ok_dernier_nombre": 0,
+                  "pred": "", "marqueur_answer": False,
+                  "nombre_apres_answer": False}
         return {"id": it.get("ID"), "gold": it.get("Answer"),
-                "pred": pred, "ok": ok, "ok_avec_repli": ok_loose,
-                "ligne_answer": has_answer, "finish_reason": finish,
-                "err": err, "raw": reply[-90:]}
+                "pred": sc["pred"], "ok": sc["ok"],
+                "ok_avec_repli": sc["ok_avec_repli"],
+                "ok_dernier_nombre": sc["ok_dernier_nombre"],
+                "marqueur_answer": sc["marqueur_answer"],
+                "nombre_apres_answer": sc["nombre_apres_answer"],
+                "finish_reason": finish, "err": err, "raw": reply[-90:]}
 
     # vLLM batche les requetes concurrentes ; ex.map garde l'ordre d'entree
     # (rapport deterministe) sans lier la collecte a l'ordre de completion.
@@ -218,7 +254,16 @@ def run_svamp(base: str, model: str, items: list[dict],
     return {"corpus": "svamp", "model": model, "n": len(rows),
             "pass1": round(sum(r["ok"] for r in rows) / n, 4),
             "pass1_avec_repli": round(sum(r["ok_avec_repli"] for r in rows) / n, 4),
-            "items_sans_ligne_answer": sum(1 for r in rows if not r["ligne_answer"]),
+            "pass1_dernier_nombre": round(
+                sum(r["ok_dernier_nombre"] for r in rows) / n, 4),
+            # deux compteurs DISTINCTS : l'un mesure l'absence du marqueur
+            # 'Answer:', l'autre celle d'un nombre apres ce marqueur. Une
+            # reponse peut porter le marqueur sans nombre (pensee tronquee).
+            "items_sans_marqueur_answer": sum(
+                1 for r in rows if not r["marqueur_answer"]),
+            "items_sans_nombre_apres_answer": sum(
+                1 for r in rows if r["marqueur_answer"]
+                and not r["nombre_apres_answer"]),
             "items_tronques": sum(1 for r in rows if r["finish_reason"] == "length"),
             "errors": sum(1 for r in rows if r["err"]),
             "wall_s": round(time.monotonic() - t0, 1),
@@ -268,6 +313,11 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--svamp-file", type=Path)
     ap.add_argument("--xlam-file", type=Path)
     ap.add_argument("--items", type=int, default=100)
+    ap.add_argument("--reps", type=int, default=1,
+                    help="repetitions par modele. Chaque repetition ajoute un "
+                         "run a la meme liste 'runs' de l'artefact : les runs "
+                         "sont ainsi AUDITABLES depuis le fichier (une "
+                         "mesure d'atelier non jointe n'est pas auditable).")
     ap.add_argument("--seed", type=int, default=13)
     ap.add_argument("--concurrency", type=int, default=8,
                     help="requetes en vol par modele (le serveur vLLM batche)")
@@ -291,6 +341,21 @@ def main(argv: list[str] | None = None) -> int:
     report: dict = {"probe": "calib_pass1", "issue": 15294,
                     "bande": list(BANDE), "seed": args.seed,
                     "items": args.items, "concurrency": args.concurrency,
+                    "reps": args.reps,
+                    # Les lectures sont DEFINIES dans l'artefact : une colonne
+                    # dont le nom porte une regle doit pouvoir dire laquelle,
+                    # sans dependre d'une prose qui peutderive.
+                    "lectures": {
+                        "pass1": "CONTRAT : le marqueur 'Answer:' est present "
+                                 "ET un nombre suit ; sans marqueur, zero.",
+                        "pass1_avec_repli": "LECTURE PERMISSIVE HISTORIQUE : "
+                                            "le passage apres le dernier "
+                                            "'Answer:' s'il y en a un, sinon "
+                                            "toute la reponse.",
+                        "pass1_dernier_nombre": "TROISIEME LECTURE : le dernier "
+                                                "nombre de toute la reponse. "
+                                                "Ce n'est PAS le repli.",
+                    },
                     "started_utc": utcnow(), "runs": []}
 
     if args.svamp_file:
@@ -301,23 +366,32 @@ def main(argv: list[str] | None = None) -> int:
         # graine ne suffit pas (rng.sample depend de l'ORDRE du pool).
         report["corpus_sha256"] = hashlib.sha256(raw).hexdigest()
         report["corpus_items"] = len(pool)
+        # rng.sample PERMUTE le pool : l'ordre des items dans l'artefact est
+        # une permutation du corpus, pas sa copie. L'appariement avec la
+        # source se fait par IDENTIFIANT, jamais par position.
         sample = rng.sample(pool, min(args.items, len(pool)))
         for tag, base, model in targets:
-            r = run_svamp(base, model, sample, args.concurrency)
-            r["model_tag"] = tag
-            r["verdict"] = verdict(r["pass1"])
-            r["verdict_avec_repli"] = verdict(r["pass1_avec_repli"])
-            report["runs"].append(r)
+            for rep in range(1, args.reps + 1):
+                r = run_svamp(base, model, sample, args.concurrency)
+                r["model_tag"] = tag
+                r["rep"] = rep
+                r["run_id"] = f"{tag}#{rep}"
+                r["verdict"] = verdict(r["pass1"])
+                r["verdict_avec_repli"] = verdict(r["pass1_avec_repli"])
+                report["runs"].append(r)
 
     if args.xlam_file:
         pool = json.loads(args.xlam_file.read_text(encoding="utf-8"))
         sample = rng.sample(pool, min(args.items, len(pool)))
         for tag, base, model in targets:
-            r = run_xlam(base, model, sample, args.concurrency)
-            r["model_tag"] = tag
-            r["verdict_name"] = verdict(r["pass1_name"])
-            r["verdict_name_args"] = verdict(r["pass1_name_args"])
-            report["runs"].append(r)
+            for rep in range(1, args.reps + 1):
+                r = run_xlam(base, model, sample, args.concurrency)
+                r["model_tag"] = tag
+                r["rep"] = rep
+                r["run_id"] = f"{tag}#{rep}"
+                r["verdict_name"] = verdict(r["pass1_name"])
+                r["verdict_name_args"] = verdict(r["pass1_name_args"])
+                report["runs"].append(r)
 
     report["finished_utc"] = utcnow()
     args.out.parent.mkdir(parents=True, exist_ok=True)
@@ -328,9 +402,11 @@ def main(argv: list[str] | None = None) -> int:
         val = (f"{r['pass1']:.1%}" if "pass1" in r
                else f"{r['pass1_name']:.1%} / {r['pass1_name_args']:.1%}")
         if "pass1_avec_repli" in r:
-            val += f" (avec repli {r['pass1_avec_repli']:.1%})"
+            val += (f" (repli historique {r['pass1_avec_repli']:.1%}"
+                    f", dernier nombre {r['pass1_dernier_nombre']:.1%})")
         v = r.get("verdict") or f"{r.get('verdict_name')} / {r.get('verdict_name_args')}"
-        print(f"[calib] {r['corpus']:6s} {r['model_tag']:5s} {keys}={val}  -> {v}")
+        print(f"[calib] {r['corpus']:6s} {r.get('run_id', r['model_tag']):8s} "
+              f"{keys}={val}  -> {v}")
     print(f"[calib] rapport: {args.out}")
     return 0
 
