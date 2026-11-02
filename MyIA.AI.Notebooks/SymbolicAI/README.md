@@ -1,3 +1,7 @@
+---
+pagetitle: "SymbolicAI - Intelligence Artificielle Symbolique"
+---
+
 # SymbolicAI - Intelligence Artificielle Symbolique
 
 [← Notebooks](../README.md) | [→ Sudoku](../Sudoku/README.md)

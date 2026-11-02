@@ -1,3 +1,7 @@
+---
+pagetitle: "GenAI - Écosystème IA Générative"
+---
+
 # GenAI - Écosystème IA Générative
 
 Ce parcours vous forme à la maîtrise de l'IA générative dans toute sa diversité : générer des images, synthétiser la voix, composer de la musique, produire des vidéos, orchestrer des agents autonomes, et déployer des applications en production. Chaque modalité suit une progression en quatre niveaux, du premier pas avec une API jusqu'aux pipelines multi-modèles de production. Les décomptes par sous-domaine et la maturité de chaque notebook se lisent dans le marqueur `CATALOG-STATUS` en fin de fichier (source autoritative régénérée chaque nuit par `catalog-cron.yml` à 03:37 UTC sur `main`).

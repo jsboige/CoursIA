@@ -1,3 +1,7 @@
+---
+pagetitle: "Théorie des Jeux - Game Theory"
+---
+
 # Théorie des Jeux - Game Theory
 
 [← Notebooks](../README.md) | [↑ ..](../README.md) | [→ RL](../RL/README.md)

@@ -1,3 +1,7 @@
+---
+pagetitle: "Search - Algorithmes de Recherche et Programmation par Contraintes"
+---
+
 # Search - Algorithmes de Recherche et Programmation par Contraintes
 
 <!-- CATALOG-STATUS

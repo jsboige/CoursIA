@@ -1,3 +1,7 @@
+---
+pagetitle: "ML - Machine Learning"
+---
+
 # ML - Machine Learning
 
 <!-- CATALOG-STATUS
