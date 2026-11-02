@@ -290,7 +290,7 @@ modules concernés.
 |---|---|---|
 | `MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters` | `"*"` | 0 `native_decide` en tactique (2 mentions en docstring), `distinct_code_sorry = 0` |
 | `MyIA.AI.Notebooks/GameTheory/conway_cgt_lean` | **sans gate** (décision écrite) | Le lake ne **déclare rien** : `CGTTour.lean` est une visite guidée faite de blocs `/-! … -/` qui *citent* du code et de lignes `#check` sur les déclarations de la dépendance `CombinatorialGames`. Une fois les commentaires retirés (`_enumerate_module_declarations`), il ne reste que des `import`, un `namespace` et des `#check` : **0 déclaration**, donc rien que `#print axioms` puisse interroger. Câblé, le gate rougit sur la non-vacuité de lake — à raison : il n'inspecte rien. Mesuré localement le 2026-10-27 (`_enumerate_module_declarations` → `[]`, `_classify_empty_enumeration` → `declaration_free_module`) |
-| `MyIA.AI.Notebooks/GameTheory/lean_game_defs` | `"*"` + `axiom-allow-axioms: "arrow_impossibility"` | 0 `native_decide`, 0 `sorry`, mais **un axiome déclaré** : `arrow_impossibility` (`SocialChoice.lean`) est assumé, pas prouvé. Nommé dans le manifeste pour que le gate reste actif sur tout axiome **nouveau** ; l'écart de preuve est suivi par #23022 |
+| `MyIA.AI.Notebooks/GameTheory/lean_game_defs` | `"*"` (whitelist vide) | 0 `native_decide`, 0 `sorry`. L'axiome `arrow_impossibility` est **tombé** le 2026-10-28 : c'est un `theorem` prouvé (mesure §4.1.1), et son nom a quitté `axiom-allow-axioms` du manifeste. Le gate reste actif sur tout axiome **nouveau**, sans nom |
 | `MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext` | `"*"` | 0 `native_decide` en tactique (1 mention en docstring), `distinct_code_sorry = 0` |
 | `MyIA.AI.Notebooks/IIT/iit_lean` | `"*"` | 0 `native_decide`, 0 `sorry` |
 | `MyIA.AI.Notebooks/ML/learning_theory_lean` | `"*"` | 0 `native_decide` en tactique, `distinct_code_sorry = 0` (les occurrences de la prose sont des docstrings sur `Classical.choice`, accepté par défaut) |
@@ -318,8 +318,7 @@ représentable : un lake ajouté demain à la matrice doit être câblé ou just
 
 ### 4.2. `gamedefs` — sortie retenue pour la preuve d'Arrow (#23022, 2026-10-28)
 
-Depuis la tranche #22519 (§4.1), `gamedefs` n'est plus un lac sans gate : il est câblé `"*"` + `axiom-allow-axioms: "arrow_impossibility"`, l'axiome déclaré de `SocialChoice.lean` étant **nommé** dans la whitelist du manifeste — le gate reste actif sur tout axiome nouveau, l'écart de preuve restant suivi par #23022.
-`gamedefs` figure parmi les 15 lacs **sans** clé `axiom-target-modules` : il n'a **aucun gate d'axiomes**. L'axiome `arrow_impossibility` de `SocialChoice.lean` n'apparaît donc dans aucune whitelist, et le laisser en place ne change rien à un gate qui ne le lit pas.
+Depuis la tranche #22519 (§4.1), `gamedefs` n'est plus un lac sans gate : il est câblé `"*"`. À l'époque du câblage, l'axiome encore déclaré `arrow_impossibility` était **nommé** dans `axiom-allow-axioms` pour que le gate reste actif sur tout axiome nouveau ; depuis sa chute (2026-10-28, §4.1.1), la whitelist du manifeste est **vide** — le gate reste actif sur tout axiome nouveau, sans nom.
 
 Le port de sa preuve se fait **par étages**, et l'axiome reste déclaré tant que la réduction n'est pas achevée. Le renommer ou le retirer sans sa preuve serait un blanchiment, pas un progrès : c'est la raison pour laquelle le critère « l'axiome a disparu » de #23022 n'est pas encore satisfait.
 
