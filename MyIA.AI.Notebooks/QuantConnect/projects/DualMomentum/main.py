@@ -5,7 +5,7 @@ from AlgorithmImports import *
 
 class DualMomentum(QCAlgorithm):
     """
-    Dual Momentum v6b: All Candidates + Momentum Tilt (BEST)
+    Dual Momentum v6b: All Candidates + Momentum Tilt
     ========================================================
     Measured (current code, 2015-01-01 -> 2024-12-31, 2516 jours, mode strategy): Sharpe 0.372, CAGR 7.754%, MaxDD 15.10%.
 
