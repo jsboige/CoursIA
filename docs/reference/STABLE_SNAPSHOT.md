@@ -106,6 +106,6 @@
 ## References
 
 - `scripts/notebook_tools/forensic_scan.py` — scan source
-- [CLAUDE.md §H.7](CLAUDE.md) — Plan P0-P4 cycle perpétuel (P4 = monthly regen)
+- [CLAUDE.md §H.7](../../CLAUDE.md) — Plan P0-P4 cycle perpétuel (P4 = monthly regen)
 - Previous snapshot: see `docs/archive/STABLE_SNAPSHOT.md`
 
