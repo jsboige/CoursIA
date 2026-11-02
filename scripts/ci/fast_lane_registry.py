@@ -3424,7 +3424,11 @@ TRANCHE34: list[Guard] = [
 # rc=2 = incident d'entree (git diff en echec), donc `warn_rc` : un incident
 # n'est ni une faute de la PR ni un quitus (precedent #17941 / TRANCHE34).
 # ---------------------------------------------------------------------------
-TRANCHE35: list[Guard] = [
+# Renomme TRANCHE35 -> TRANCHE36 le 2026-11-02 : `main` affectait TRANCHE35
+# deux fois (l'advisory Series-denominator l.3332, puis ce bloc), donc le
+# premier garde etait ecrase en silence et ne tirait jamais -- meme forme
+# que TRANCHE9 -> TRANCHE10 et TRANCHE29 -> TRANCHE30 (cf. #19374).
+TRANCHE36: list[Guard] = [
     Guard(
         name="encoding-corruption-guard",
         source=FAST_LANE_NATIVE,
