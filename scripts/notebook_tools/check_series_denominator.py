@@ -20,6 +20,12 @@ Deux formes coexistent dans les carnets et sont toutes deux detectees :
     **Notebook** : 6f/13      (le gras ferme avant le deux-points)
     **Notebook : 10/26**      (le gras couvre tout le champ)
 
+Les **cellules de code** sont ignorees, et les **spans inline / blocs clotures**
+d'une cellule markdown aussi : un exemple cite en code (`` `**Notebook** : 6f/13`
+``) documente la regle, il ne la viole pas. Sans cette echappatoire, la cellule
+qui ecrit la convention rougirait sur son propre exemple -- un faux rouge
+structurel des la mise en CI (revue NanoClaw de #23739, reserve 1).
+
 Usage :
 
     python scripts/notebook_tools/check_series_denominator.py <chemin>... [--json]
@@ -43,6 +49,21 @@ from pathlib import Path
 
 DENOMINATOR_RE = re.compile(r"\*\*Notebook(?:\*\*)?\s*:\s*\d+[a-z]?\s*/\s*\d+(?:\*\*)?")
 
+# Un span de code inline (`` `...` ``) ou un bloc cloture (```` ``` ... ``` ````)
+# qui CITE la convention interdite n'est pas un denominateur declare. Sans cette
+# echappatoire, la cellule qui documente la regle -- et que ce garde existe pour
+# rendre ecrivable -- rougirait sur son propre exemple. Les cellules de code sont
+# deja ignorees par `scan_notebook` ; c'est le pendant markdown de cette regle.
+# La classe de guillemets est capturee pour que les spans a plusieurs backticks
+# se ferment sur leur propre longueur (`` ``a`b`` `` ne se ferme pas sur le
+# premier backtick interne).
+INLINE_CODE_RE = re.compile(r"(`+)(?:(?!\1).)*?\1", re.DOTALL)
+
+
+def strip_inline_code(text):
+    """Retire les spans inline et les blocs clotures : ils citent, ils ne declarent pas."""
+    return INLINE_CODE_RE.sub("", text)
+
 
 def iter_notebooks(paths):
     """Rend les chemins de carnets : un fichier est rendu tel quel, un dossier est parcouru."""
@@ -65,7 +86,7 @@ def scan_notebook(path):
     for index, cell in enumerate(notebook.get("cells", [])):
         if cell.get("cell_type") != "markdown":
             continue
-        source = "".join(cell.get("source", []))
+        source = strip_inline_code("".join(cell.get("source", [])))
         for match in DENOMINATOR_RE.finditer(source):
             findings.append((index, match.group(0)))
     return findings, None
