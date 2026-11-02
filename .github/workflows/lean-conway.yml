@@ -71,6 +71,10 @@ on:
       # The gate's own implementation: a change to it must re-run the gate.
       # knot lists it already; conway did not (added with #8951's startup break).
       - '.github/workflows/lean-axiom.yml'
+      # The axiom step ITSELF (extracted from the reusable workflow in
+      # #17336): it is the program the gate runs, so a change to it must
+      # re-run the gate -- the #8712 lesson applied one layer down.
+      - 'scripts/lean/axiom_check_step.py'
       - 'scripts/lean/check_target_coverage.py'
   pull_request:
     types: [opened, synchronize, edited, reopened]
@@ -83,6 +87,10 @@ on:
       # The gate's own implementation: a change to it must re-run the gate.
       # knot lists it already; conway did not (added with #8951's startup break).
       - '.github/workflows/lean-axiom.yml'
+      # The axiom step ITSELF (extracted from the reusable workflow in
+      # #17336): it is the program the gate runs, so a change to it must
+      # re-run the gate -- the #8712 lesson applied one layer down.
+      - 'scripts/lean/axiom_check_step.py'
       - 'scripts/lean/check_target_coverage.py'
   workflow_dispatch:
 

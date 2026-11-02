@@ -22,6 +22,11 @@ environment variables, never via cwd --
   FAIL_ON_SORRY         'true' (default) gates on transitive sorryAx
   INCLUDE_I18N_SIBLINGS 'true' keeps `_en` siblings in the '*' derivation
 
+The step also REPORTS the i18n surface it did (or did not) inspect: the
+`_en` modules are derived from the same `filter_i18n_siblings` call, and
+the log says whether they are in or out (#22453 -- a gate that silently
+skips half of a bilingual lake reads like a gate that inspected all of it).
+
 Both roots come from GITHUB_WORKSPACE + PROJECT_PATH, never from the cwd
 (the #8712 defect). stdlib-only at import time; lean_server and
 check_target_coverage are imported lazily from the repo checkout.
@@ -74,6 +79,8 @@ if not project_path.is_dir():
     sys.exit(f"lake project path does not exist: {project_path}")
 
 modules_raw = os.environ["MODULES"].strip()
+include_i18n = (os.environ.get("INCLUDE_I18N_SIBLINGS", "false").strip().lower()
+                == "true")
 if modules_raw == "*":
     sys.path.insert(0, str(repo_root / "scripts" / "lean"))
     from check_target_coverage import (  # noqa: E402
@@ -81,21 +88,36 @@ if modules_raw == "*":
         filter_i18n_siblings,
     )
 
-    modules = sorted(discover_modules(project_path, None))
     # i18n `_en` siblings are excluded by default: any path SEGMENT
     # ending in `_en` (dir or stem -- e.g. `Conway/Life_en.lean`), not
     # only a root-level stem. Mirrors the FR-only measurement of #10889;
     # a caller that wants the full bilingual surface opts in via
     # `include-i18n-siblings: "true"`. The filter lives in the script
     # (unit-tested) so the gate never carries a second copy of the rule.
-    if os.environ.get("INCLUDE_I18N_SIBLINGS", "false").strip().lower() != "true":
-        modules = sorted(filter_i18n_siblings(modules))
+    #
+    # The EXCLUDED surface is DERIVED from that same call (#22453): the
+    # set difference `discovered - filter(discovered)` is what the gate
+    # skipped, and it is printed below. A gate that silently inspects
+    # half a bilingual lake reads like a gate that inspected all of it.
+    discovered = set(discover_modules(project_path, None))
+    fr_only = set(filter_i18n_siblings(discovered))
+    i18n_siblings = sorted(discovered - fr_only)
+    i18n_status = "INCLUS" if include_i18n else "EXCLUS"
+    modules = sorted(discovered) if include_i18n else sorted(fr_only)
     if not modules:
         sys.exit("target-modules='*' enumerated no modules under "
                  f"{project_path} (no .lean outside .lake/?). "
                  "A gate that inspects nothing must fail, not pass silently.")
 else:
+    sys.path.insert(0, str(repo_root / "scripts" / "lean"))
+    from check_target_coverage import filter_i18n_siblings  # noqa: E402
+
     modules = [m.strip() for m in modules_raw.split(",") if m.strip()]
+    # An explicit list may already name `_en` modules (the gametheory
+    # entry does): the SAME filter says which ones, so the rule stays in
+    # one place. Those modules ARE inspected -- they are in the list.
+    i18n_siblings = sorted(set(modules) - set(filter_i18n_siblings(set(modules))))
+    i18n_status = "INCLUS (liste explicite)"
 # ALLOW accepte la liste a virgules historique OU '@<chemin>' vers un
 # fichier source de verite (un nom par ligne, #21905). Le parsing vit
 # dans allow_list.py (unit-teste) pour que le gate ne porte pas une
@@ -120,6 +142,13 @@ print(f"=== Proof integrity axiom check ({display_name}) ===")
 print(f"Project: {project_path}")
 print(f"Gate on sorry: {'yes' if fail_on_sorry else 'no (reported, not gated)'}")
 print(f"Modules: {modules}")
+if i18n_siblings:
+    _shown = i18n_siblings[:12]
+    _omitted = len(i18n_siblings) - len(_shown)
+    print(f"i18n siblings (_en): {len(i18n_siblings)} {i18n_status} -> {_shown}"
+          + (f" ... (+{_omitted} more)" if _omitted else ""))
+else:
+    print(f"i18n siblings (_en): 0")
 print(f"Additional allow-list: {allow if allow else '(none)'}")
 print()
 for mod in modules:
