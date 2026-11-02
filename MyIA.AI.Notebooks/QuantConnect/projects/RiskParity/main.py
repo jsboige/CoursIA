@@ -7,16 +7,17 @@ class RiskParity(QCAlgorithm):
     """
     Risk Parity v4: Trend Filter + Rank-based Risk Parity + BND (BEST)
     ==================================================================
-    Best variant: Sharpe 0.515, CAGR 10.04%, MaxDD 20.1%
+    Measured (current code, 2015-01-01 -> 2024-12-31, 2516 jours, mode strategy): Sharpe 0.360, CAGR 7.294%, MaxDD 18.400%.
 
     Combines inverse-volatility weighting with trend filtering.
     BND safe haven when <2 assets trending.
 
-    Iteration results:
+    Iteration results (historique des iterations de conception, mesurees sous des
+    conditions anterieures ; non reproduites par le code actuel, refactors #21420/#22869/#22923) :
     v1: Sharpe 0.395, CAGR 7.84%, MaxDD 20.9% (baseline risk parity)
     v2: Sharpe 0.436, CAGR 8.64%, MaxDD 20.7% (+ trend filter + BND)
     v3: Sharpe 0.480, CAGR 9.26%, MaxDD 19.8% (+ momentum tilt)
-    v4: Sharpe 0.515, CAGR 10.04%, MaxDD 20.1% (+ rank-based RP) <-- BEST
+    v4: Sharpe 0.515, CAGR 10.04%, MaxDD 20.1% (+ rank-based RP) < best de l'iteration
     v5: Sharpe 0.488, CAGR 10.03%, MaxDD 17.1% (equal RP - worse Sharpe)
 
     Reference: Asness/Frazzini 2012, Bridgewater Risk Parity
