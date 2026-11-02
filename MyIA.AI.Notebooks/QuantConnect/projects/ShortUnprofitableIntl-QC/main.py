@@ -40,6 +40,11 @@ class ShortUnprofitableIntlAlgorithm(QCAlgorithm):
         # les modes partagent le modèle par défaut de Lean.
 
         self._minimum_market_cap = float(self.get_parameter("min_market_cap", "10000000000"))
+        # Correction de données (#24228) : le 2014-02-18, LBTYB est rempli à
+        # 51 329,82 au lieu d'environ 51, et ce seul prix porte 94 % de la valeur
+        # finale de `strategy`. Le titre est retiré de l'univers éligible ;
+        # `exclude=` (vide) rejoue la série d'origine.
+        self._excluded = {s.strip().upper() for s in self.get_parameter("exclude", "LBTYB").split(",") if s.strip()}
         self._spy = self.add_equity("SPY", Resolution.DAILY).symbol
         self._bnd = self.add_equity("BND", Resolution.DAILY).symbol if self._mode == "6040" else None
 
@@ -93,7 +98,9 @@ class ShortUnprofitableIntlAlgorithm(QCAlgorithm):
             return []
         stocks = [
             f for f in fundamental
-            if f.market_cap > self._minimum_market_cap and not np.isnan(self._return_on_equity(f))
+            if f.market_cap > self._minimum_market_cap
+            and f.symbol.value not in self._excluded
+            and not np.isnan(self._return_on_equity(f))
         ]
         return_on_equity = pd.Series({f.symbol: self._return_on_equity(f) for f in stocks})
         non_us_stocks = [
