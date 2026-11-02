@@ -15,7 +15,7 @@ Sondes reproduites :
 
 Valeurs citees a confirmer : 0.790 / 0.430 (WS-00c) et 0.780 / 0.311 (WS-03).
 
-La sonde WS-00c epingle la tolerance d'arret du solveur (tol=1e-6), comme le
+La sonde WS-00c epingle la tolerance d'arret du solveur (tol=1e-8), comme le
 carnet qu'elle rejoue : la valeur par defaut (1e-4) arrete lbfgs avant
 l'optimum, et le score se deplace d'un item sans qu'aucune donnee n'ait change.
 """
@@ -136,7 +136,7 @@ def probe_ws00c(ims_tr, labs_tr):
     # tol epinglee : le carnet eponge le meme reglage -- sans lui, lbfgs
     # s'arrete sur une norme de gradient et le score se deplace d'un item
     # sans qu'aucune donnee n'ait change (#24075).
-    clf = LogisticRegression(max_iter=3000, C=1.0, tol=1e-6).fit(x_tr, labs[tr_i])
+    clf = LogisticRegression(max_iter=3000, C=1.0, tol=1e-8).fit(x_tr, labs[tr_i])
     return {
         "clean": float(clf.score(x_te, labs[te_i])),
         "translated": float(clf.score(x_dec, labs[te_i])),
