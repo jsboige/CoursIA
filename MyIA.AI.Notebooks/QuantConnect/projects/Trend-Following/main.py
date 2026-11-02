@@ -8,7 +8,7 @@ class TrendFollowingAQR(QCAlgorithm):
     """
     Trend Following Multi-Asset v7
     ======================================
-    Measured (current code, 2015-01-01 -> 2024-12-31, 2516 jours, mode strategy): Sharpe 0.362, CAGR 7.294%, MaxDD 15.000%.
+    Measured (current code, fenêtre codée 2015-01-01 -> 2024-12-31, 2516 séances de marché (3653 jours calendaires), mode strategy): Sharpe 0.362, CAGR 7.294%, MaxDD 15.000%.
 
     Iteration results (historique des iterations de conception, mesurees sous des
     conditions anterieures ; non reproduites par le code actuel, refactors #21420/#22869/#22923) :
