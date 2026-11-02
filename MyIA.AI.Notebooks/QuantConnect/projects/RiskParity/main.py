@@ -5,7 +5,7 @@ from AlgorithmImports import *
 
 class RiskParity(QCAlgorithm):
     """
-    Risk Parity v4: Trend Filter + Rank-based Risk Parity + BND (BEST)
+    Risk Parity v4: Trend Filter + Rank-based Risk Parity + BND
     ==================================================================
     Measured (current code, 2015-01-01 -> 2024-12-31, 2516 jours, mode strategy): Sharpe 0.360, CAGR 7.294%, MaxDD 18.400%.
 
