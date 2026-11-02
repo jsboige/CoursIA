@@ -100,8 +100,9 @@ ouverte et déclarée.
 9. **Raccord au corpus** : quatrième module de la série CHSH de `conway_lean`
    (avec `CHSH`, `CHSHRandomized`, `CHSHQuantum`) ; renvois côté notebooks :
    `Lean-13b-CHSH-Tsirelson-Native` (exécution native de la série sous kernel
-   `lean4-wsl` — une tranche future peut y exécuter les énoncés du présent
-   module), `Lean-13-Kochen-Specker`, `Lean-16f-Conway-Free-Will-Theorem`.
+   `lean4-wsl-conway` — une tranche future peut y exécuter les énoncés du
+   présent module), `Lean-13-Kochen-Specker`,
+   `Lean-16c-Conway-Free-Will-Theorem`.
 10. **Transmission** : chaque lemme porte une docstring qui sépare ce que la
     sortie du calcul montre de ce qu'il suggère ; la table de statut est le
     résumé falsifiable.

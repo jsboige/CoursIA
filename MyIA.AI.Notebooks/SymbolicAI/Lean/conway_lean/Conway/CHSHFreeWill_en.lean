@@ -13,7 +13,7 @@ saturated Tsirelson with an explicit witness and checked Landau's criterion
 
 What the pilot was still missing is the bridge its Epic announced: the CHSH
 series and the Free Will Theorem (`Conway.FreeWillTheorem`, notebook
-`Lean-16f`) **both** conclude that quantum responses are indeterministic,
+`Lean-16c`) **both** conclude that quantum responses are indeterministic,
 yet through two formally disconnected routes:
 
 - the **contextual route** (Free Will Theorem): three measurement
@@ -84,7 +84,7 @@ conclusion as the FWT, obtained without any coloring.
    envelope).
 9. **Corpus connection**: consumed by the notebook
    `Lean-13d-CHSH-Indeterminisme-Native.ipynb` (cross bridge with
-   `Lean-16f`), prolongation of the 13b/13c series; prerequisites: CHSH
+   `Lean-16c`), prolongation of the 13b/13c series; prerequisites: CHSH
    score and classical frontier (`Lean-13b`).
 10. **Transmission**: native notebook with a computed witness,
     correspondence table of the two routes, and cross-review at review
@@ -236,7 +236,7 @@ theorem chsh_indeterminism :
 /-!
 ## Step 4: structural correspondence of the two routes
 
-  | | Contextual route (FWT, `Lean-16f`) | Statistical route (CHSH, `Lean-13b/13c/13d`) |
+  | | Contextual route (FWT, `Lean-16c`) | Statistical route (CHSH, `Lean-13b/13c/13d`) |
   |---|---|---|
   | Settings per party | 3 orthogonal directions | 2 binary settings |
   | Axioms | SPIN + TWIN + MIN | locality (by signature) + quantum statistics |

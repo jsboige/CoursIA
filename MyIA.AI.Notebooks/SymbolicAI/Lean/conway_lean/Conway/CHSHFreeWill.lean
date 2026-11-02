@@ -10,7 +10,7 @@
 
   Il manquait au pilote le pont annoncé par l'Epic : la série CHSH et le
   théorème du libre arbitre (`Conway.FreeWillTheorem`, notebook
-  `Lean-16f`) concluent **tous deux** à l'indéterminisme des réponses
+  `Lean-16c`) concluent **tous deux** à l'indéterminisme des réponses
   quantiques, mais par deux routes formellement déconnectées :
 
   - la **route contextuelle** (Free Will Theorem) : trois directions de
@@ -82,7 +82,7 @@
      probabiliste classique).
   9. **Raccord au corpus** : consommé par le notebook
      `Lean-13d-CHSH-Indeterminisme-Native.ipynb` (pont croisé avec
-     `Lean-16f`), prolongement de la série 13b/13c ; prérequis : score CHSH
+     `Lean-16c`), prolongement de la série 13b/13c ; prérequis : score CHSH
      et frontière classique (`Lean-13b`).
   10. **Transmission** : notebook natif avec témoin calculé, tableau de
       correspondance des deux routes, et relecture croisée à la revue.
@@ -233,7 +233,7 @@ theorem chsh_indeterminism :
 /-!
 ## Étape 4 : correspondance structurelle des deux routes
 
-  | | Route contextuelle (FWT, `Lean-16f`) | Route statistique (CHSH, `Lean-13b/13c/13d`) |
+  | | Route contextuelle (FWT, `Lean-16c`) | Route statistique (CHSH, `Lean-13b/13c/13d`) |
   |---|---|---|
   | Réglages par parti | 3 directions orthogonales | 2 réglages binaires |
   | Axiomes | SPIN + TWIN + MIN | localité (par signature) + statistiques quantiques |
