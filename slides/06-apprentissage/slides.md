@@ -1761,7 +1761,7 @@ layout: dense
 /* La derniere puce s'ecrivait PAR-DESSUS le pied de page « Intelligence(s) »,
    et la figure du dernier groupe `v-click` sortait du canvas. L'export rend
    tous les clics (`?clicks=99`), donc c'est bien l'etat complet qui doit
-   tenir. Mesure : ink 0.0502 a 10 lignes de fond. */
+   tenir. Mesure : ink 0.0502 sur la bande de fond. */
 :deep(ul) { font-size: 0.8em !important; }
 :deep(li) { margin: 0 !important; line-height: 1.1 !important; }
 img { max-height: 120px !important; }
