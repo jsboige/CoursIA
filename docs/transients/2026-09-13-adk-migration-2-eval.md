@@ -1,3 +1,5 @@
+> RAPPORT — 2026-09-13 — audit de migration ADK 2.0 sur Track2-GoogleADK (noyau durable remonté au README de la série) — figé
+
 # Audit migration ADK 2.0 — `google-adk==2.8.0` sur Track2-GoogleADK
 
 **Issue :** #14498
