@@ -108,16 +108,16 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 77 | [GameTheory 15b - Jeux Cooperatifs en Lean :…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-15b-Lean-CooperativeGames-Lean.ipynb) | BETA | Non |
 | 78 | [GameTheory 15c - Jeux Cooperatifs (C# / .NET)](../../MyIA.AI.Notebooks/GameTheory/GameTheory-15c-CooperativeGames-CSharp.ipynb) | BETA | Oui |
 | 79 | [GameTheory 15c - Jeux Cooperatifs Lean (Python)](../../MyIA.AI.Notebooks/GameTheory/GameTheory-15c-CooperativeGames-Python.ipynb) | BETA | Oui |
-| 80 | [GameTheory 15d - La decomposition de Mobius sur le…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-15d-Mobius-Coalitions-Lean-Python.ipynb) | BETA | Non |
+| 80 | [SocialChoice 06b - La decomposition de Mobius sur le…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/06b-Mobius-Coalitions-Lean-Python.ipynb) | BETA | Non |
 | 81 | [GameTheory-15e — Pouvoir coalitionnel : calcul, SMT…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-15e-Coalition-Power-SMT-Python.ipynb) | BETA | Oui |
-| 82 | [GameTheory 15f - Valeur de Shapley de groupe : évaluer…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-15f-Shapley-Groupes-Python.ipynb) | BETA | Oui |
+| 82 | [GameTheory 15d - Valeur de Shapley de groupe : évaluer…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-15d-Shapley-Groupes-Python.ipynb) | BETA | Oui |
 | 83 | [GameTheory 15g - Assistance Games (résultat 2026)](../../MyIA.AI.Notebooks/GameTheory/GameTheory-15g-AssistanceGames-2026-Python.ipynb) | BETA | Oui |
 | 84 | [GameTheory-16-MechanismDesign-Python (C#)](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16-MechanismDesign-CSharp.ipynb) | BETA | Oui |
 | 85 | [GameTheory-16 : Théorie des Mécanismes et Principe de…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16-MechanismDesign-Python.ipynb) | BETA | Oui |
 | 86 | [GameTheory-16b : Automated Mechanism Design (AMD)](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16b-Automated-Mechanism-Design-Python.ipynb) | BETA | Oui |
 | 87 | [GameTheory-16c : La dimension paiement que le designer…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16c-Extraction-de-Revenu-DSIC-IR-Python.ipynb) | BETA | Oui |
 | 88 | [GameTheory-16d — L'echange de reins : de la valeur…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16d-Echange-de-Reins-Lean-Python.ipynb) | BETA | Non |
-| 89 | [GameTheory-16e : Pilote — joueurs LLM hétérogènes sur…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16e-LLM-Players-Othman-Sandholm-Python.ipynb) | BETA | Non |
+| 89 | [GameTheory-16d : Pilote — joueurs LLM hétérogènes sur…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16d-LLM-Players-Othman-Sandholm-Python.ipynb) | BETA | Non |
 | 90 | [GameTheory 16f — Le lake assignment_lean par son…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16f-Lean-Assignment-Lean.ipynb) | BETA | Non |
 | 91 | [GameTheory-16f — L'algorithme de Kuhn-Munkres :…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16f-Munkres-Assignment-Python.ipynb) | BETA | Oui |
 | 92 | [GameTheory-16h : Coopération LLM — protocole multi-seed…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16h-Cooperation-LLM-Python.ipynb) | BETA | Oui |
