@@ -310,7 +310,7 @@ Le paquet PyPI `google-adk` et la documentation `adk.dev/2.0` sont la **même li
 
 Ce que la série installe réellement aujourd'hui : `google-adk==2.8.0`, épinglé dans `requirements.txt` (l. 33). `2.9.0` n'apporte rien que ce runtime consomme, donc aucun bump n'est justifié à ce stade.
 
-L'audit complet de la lignée 2.0.0 → 2.9.0 (changelog analysé motif par motif) vit dans la lane transiente : [`docs/transients/2026-09-13-adk-migration-2-eval.md`](../../../../docs/transients/2026-09-13-adk-migration-2-eval.md) (audit #14498, verdict « pas de migration immédiate », historique).
+L'audit complet de la lignée 2.0.0 → 2.9.0 (changelog analysé motif par motif, **daté du 2026-09-10**) vit dans la lane transiente : [`docs/transients/2026-09-13-adk-migration-2-eval.md`](../../../../docs/transients/2026-09-13-adk-migration-2-eval.md) (audit #14498, verdict « pas de migration immédiate », historique). C'est une **photo datée** : ses entrées décrivent le changelog tel qu'il se lisait ce jour-là et ne sont pas re-vérifiées à chaque lecture. La décision de ne pas bumper ne s'appuie pas sur ce tableau mais sur la construction du service de session dans `utils/adk_runtime.py` (l. 213 et 219), lue à la source.
 
 ### Les Labs 16-17 (GCP) échouent sans projet Google Cloud
 
