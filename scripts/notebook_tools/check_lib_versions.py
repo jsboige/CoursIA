@@ -103,8 +103,30 @@ FLOATING_PIN_REASON = (
 # du corpus (relecture #23079, point 2). La version du groupe 2 est
 # facultative : `pip install mealpy` (sans version) est un epinglage
 # **flottant**, signale comme tel et non jete (cf #23086).
+#
+# Les QUATRE formes ecrites par un lecteur sont couvertes (#23104) : `pip`,
+# `pip3`, `python -m pip` (et sa variante `python3`), `uv pip`. Le corps
+# #23104 nomme l'angle mort -- l'organe ne reconnaissait que la premiere, donc
+# `python -m pip install torch==2.8.0` (6 lignes du corpus) n'etait pas une
+# declaration pour lui.
+_PIP_INSTALL = (
+    r"(?:(?:python3?(?:\.\d+)?\s+-m\s+pip)|(?:uv\s+pip)|(?:pip3?(?:\.\d+)?))"
+    r"\s+install\b"
+)
+
+# Reconnaisseur de **ligne-commande**, sans capture : il sert a decider si une
+# ligne d'une cellule MARKDOWN est une commande d'installation. C'est lui qui
+# rend l'extension au markdown sure -- mesure du corpus : 36 lignes-commandes
+# ancrees contre 114 mentions en prose (« installez avec `pip install x` »,
+# commentaires, chaines). Un motif non ancre prendrait les 114 pour des
+# declarations.
+PIP_COMMAND_RE = re.compile(
+    r"^\s*(?:[%!$]\s*)?" + _PIP_INSTALL,
+    re.IGNORECASE,
+)
+
 PIP_PIN_RE = re.compile(
-    r"^\s*[%!]?\s*pip\s+install\s+(?:--\S+\s+)*([A-Za-z0-9._\-]+)"
+    r"^\s*(?:[%!$]\s*)?" + _PIP_INSTALL + r"\s+(?:--?\S+\s+)*([A-Za-z0-9._\-]+)"
     r"(?:\s*==\s*([A-Za-z0-9._\-+!]+))?",
     re.IGNORECASE,
 )
@@ -280,6 +302,7 @@ class Pin:
     cell: int = -1
     line: str = ""
     line_no: int = 0
+    cell_type: str = "code"
 
 
 def _cell_text(cell: dict) -> str:
@@ -289,14 +312,28 @@ def _cell_text(cell: dict) -> str:
     return str(source)
 
 
-def _code_lines(payload: dict):
-    """Yield (index de cellule, numero de ligne, ligne) des cellules code."""
+def _declaration_lines(payload: dict):
+    """Yield (index de cellule, numero de ligne, ligne, type de cellule).
+
+    Deux perimetres, deux regles (#23104) :
+
+    - une cellule **code** est lue entierement -- une commande peut y etre
+      prefixee (`!`, `%`, `$`) ou ecrite sur une ligne `python -m pip ...` ;
+    - une cellule **markdown** n'est lue que sur ses **lignes-commandes**
+      (`PIP_COMMAND_RE`, ancre en debut de ligne). C'est la restriction qui
+      rend l'extension sure : une declaration d'installation logee en markdown
+      *est* la commande que le lecteur execute, alors qu'une phrase qui la
+      cite ne l'est pas.
+    """
     for index, cell in enumerate(payload.get("cells", [])):
-        if cell.get("cell_type") != "code":
+        cell_type = cell.get("cell_type") or ""
+        if cell_type not in ("code", "markdown"):
             continue
         text = _cell_text(cell)
         for line_number, line in enumerate(text.splitlines(), start=1):
-            yield index, line_number, line
+            if cell_type == "markdown" and not PIP_COMMAND_RE.match(line):
+                continue
+            yield index, line_number, line, cell_type
 
 
 def pins_from_payload(payload: dict, manifest: Manifest) -> list[Pin]:
@@ -322,7 +359,7 @@ def pins_from_payload(payload: dict, manifest: Manifest) -> list[Pin]:
         lib.local_symbol: lib for lib in manifest.libraries.values() if lib.local_symbol
     }
     pins: list[Pin] = []
-    for cell_index, line_number, line in _code_lines(payload):
+    for cell_index, line_number, line, cell_type in _declaration_lines(payload):
         # Redeclaration locale d'un symbole que l'organe de serie possede.
         for symbol, lib in symbol_owners.items():
             match = re.match(
@@ -370,6 +407,7 @@ def pins_from_payload(payload: dict, manifest: Manifest) -> list[Pin]:
                     cell_index,
                     line.strip(),
                     line_no=line_number,
+                    cell_type=cell_type,
                 )
             )
         for lib in provisioning_libs:

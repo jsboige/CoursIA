@@ -342,6 +342,28 @@ Le port de sa preuve se fait **par étages**, et l'axiome reste déclaré tant q
 
 **Où la preuve d'Arrow est déjà complète** : `game_theory_lean/SocialChoice/Arrow.lean` (`0` `sorry`, `CERTIFIED.txt`) porte la chaîne achevée `pivot_exists` → `pivot_is_dictator_except_b` → `partial_dictator_is_full_dictator`. Les deux lacs sont **distincts par construction** — celui-ci est zéro-dépendance (`Int`-utilitaires, aucune bibliothèque), l'autre s'appuie sur `Finset` — et ce port ne prétend pas le remplacer : il construit la même preuve dans le fragment de Lean qui n'a aucune dépendance. Ce renvoi est ici pour que le lecteur du registre sache que la preuve complète existe à côté, plutôt que de conclure d'un axiome encore en place que le dépôt n'a rien.
 
+#### 4.1.1. L'axiome est tombé — mesure du 2026-10-28
+
+L'énoncé ci-dessus est conservé comme état daté. Depuis, `axiom arrow_impossibility` **n'existe plus** : c'est un `theorem` prouvé, sur les deux siblings FR/EN.
+
+| Étage | Contenu | Livraison |
+|---|---|---|
+| 1 | `Decisive`, `decisive_unanimous`, `decisive_expand_right`/`_left` | PR #23030 |
+| 3 (2 fusionné) | `decisive_swap`, `decisive_field`, `decisive_split` | PR #23030 |
+| 4a | `zLast`, `empty_not_decisive`, `decisive_global`, `decisive_singleton_dictator` | PR #23074 |
+| 4b | `Dictator`, `decisive_congr`, `tailCoal`, `exists_third`, `exists_dictator_of_decisive`, `theorem arrow_impossibility` | PR de l'étage 4b |
+
+**Le choix de conception de l'étage 4b** : pas de minimum sur les coalitions décisives (il faudrait les compter, donc `Finset`, donc Mathlib). La preuve **induit sur une famille explicite**, les queues `tailCoal m = {i | m ≤ i}`, et sur la mesure `nI - m` : à chaque cran `decisive_split` détache l'agent `m` ; soit `{m}` est décisif sur `(x₀, w)` et devient dictateur, soit la queue `m + 1` est décisive sur `(w, y₀)` et la descente continue. La queue vide est exclue par `empty_not_decisive`, donc la descente ne peut pas s'éteindre sans dictateur.
+
+**Mesures (2026-10-28, worktree de l'étage 4b)** :
+
+- `lake build` du lac entier : **14 jobs SUCCESS**, 0 erreur, 0 warning (les deux siblings compilent).
+- `count_code_sorry.py` sur `lean_game_defs` : `distinct_code_sorry = 0` (inchangé — ce n'était pas un `sorry`).
+- `check_i18n_siblings.py <lac>` : **6/6 paires byte-identiques**, 0 drift, 0 orphan.
+- `#print axioms arrow_impossibility` (FR) et `#print axioms SocialChoiceEn.arrow_impossibility` (EN) : `propext`, `Quot.sound`, **`Classical.choice`**.
+
+**Ce que la mesure change pour le câblage du gate** — et c'est la partie qu'on ne peut pas anticiper : la whitelist **vide** annoncée ci-dessus ne suffit **pas**. `Classical.choice` vient de **deux sources indépendantes**. (1) `decisive_split`, qui tranche `(swf.aggregate P).R z x` par `by_cases` sur une proposition arbitraire : `Preference.R` n'a aucune instance de décidabilité, donc `by_cases` tire `Classical.propDecidable`. (2) `zLast`, dont les preuves d'ordre (`complete`, `antisymm`) tranchent des égalités sur `A` par `by_cases` sans instance `DecidableEq` — et qui se propage via `decisive_singleton_dictator` (re-mesure complète au head de l'étage 4b : `zLast`, `decisive_singleton_dictator`, `decisive_split`, `arrow_impossibility` portent `Classical.choice` ; `decisive_unanimous` sans axiome, `decisive_expand_*`/`decisive_swap`/`decisive_field`/`empty_not_decisive`/`decisive_global`/`decisive_congr`/`exists_third` à `propext`+`Quot.sound`). Deux sorties, à trancher au câblage : nommer `Classical.choice` (précédents assumés : `learningtheory`, `decisiontheory`, `mimo`), ou **purger les deux sources** — purger la seule `decisive_split` ne retirerait pas l'axiome de `arrow_impossibility`, il faudrait aussi une décidabilité sur les égalités de `zLast`. Le câblage reste un **livrable séparé** (§4, roadmap #11699) ; il n'est pas fait ici.
+
 ## 5. Acceptance step 3 — verdict
 
 - [x] **knot_lean re-mesuré** : GREEN post-#8725 (cf. [#8738](https://github.com/jsboige/CoursIA/issues/8738) body §« Mesure firsthand »)
