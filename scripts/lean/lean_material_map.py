@@ -44,6 +44,42 @@ GENERATED_HEADER = (
     "ne pas editer a la main ; relancer le generateur -->"
 )
 
+# T2 #23097 : la regle d'accretion d'un lac, tranchee par la mesure.
+# Les verdicts sont datees : la mesure qui les fonde est citee dans la cellule.
+ACCRETION_RULE = (
+    "Un lac nouveau dans une serie existante est legitime si (1) sa toolchain"
+    " diverge de celle du lac de la serie, (2) sa theorie est distincte au sens"
+    " de la clause anti-god-lake (#4365), ou (3) a toolchain egale il est le"
+    " compagnon de construction d'un arc numerote de carnets -- importe par au"
+    " moins un carnet Lean de cet arc, sans import croise avec le lac de la"
+    " serie, et sans lui imposer une dependance (un path dep d'un lac tiers"
+    " deviendrait sinon facteur commun). A defaut, c'est un module de plus du"
+    " lac de la serie."
+)
+
+ACCRETION_VERDICTS = [
+    (
+        "assignment_lean",
+        "(3) compagnon d'arc",
+        "legitime-documente",
+        "Arc 16f : `GameTheory-16f-Lean-Assignment-Lean.ipynb` importe"
+        " `Assignment.KuhnMunkres`. Toolchain et pin Mathlib identiques a"
+        " `game_theory_lean` (v4.33.0, db584cd6), zero import croise, theorie"
+        " (affectation hongroise, Kuhn-Munkres) absente des 8 branches du lac"
+        " de la serie.",
+    ),
+    (
+        "asymmetric_information_lean",
+        "(3) compagnon d'arc",
+        "legitime-documente",
+        "Arc 17b-17e : `GameTheory-17c-Lean-Lemons-Certificat-Lean.ipynb`"
+        " importe `AsymmetricInformation.Lemons`, `GameTheory-17d-Lean-"
+        "Screening-Signaling-Lean.ipynb` en importe 4 modules. Path dep non"
+        " negociable vers `lean_game_defs_ext` (#12848) : la fusion imposerait"
+        " ce pont aux 38 modules de `game_theory_lean`. Zero import croise.",
+    ),
+]
+
 # Un lakefile dont le dossier porte l'un de ces fragments est vendu, pas a nous.
 VENDORED_MARKERS = (".lake/packages", "_peters/", "reference_docs/")
 
@@ -398,6 +434,24 @@ def render(
         for path in orphans:
             lines.append("- `%s`" % path)
         lines.append("")
+
+    lines.append("## Regle d'accretion d'un lac")
+    lines.append("")
+    lines.append(ACCRETION_RULE)
+    lines.append("")
+    lines.append("Verdicts tranches par la mesure (T2 #23097) :")
+    lines.append("")
+    lines.append("| Lac | Cas | Verdict | Mesure fondatrice |")
+    lines.append("|---|---|---|---|")
+    for name, case, verdict, why in ACCRETION_VERDICTS:
+        lines.append("| `%s` | %s | %s | %s |" % (name, case, verdict, why))
+    lines.append("")
+    lines.append(
+        "Les cas (1) toolchain divergente et (2) theorie distincte sont deja"
+        " tranches : `social_choice_lean_peters` pour (1) (INTRINSIC #7081),"
+        " `minimax_lean` et `conway_cgt_lean` pour (2)."
+    )
+    lines.append("")
 
     if with_sorry:
         lines.append("## Dette formelle")
