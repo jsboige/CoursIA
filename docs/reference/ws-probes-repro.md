@@ -175,11 +175,19 @@ c'est la variabilité de son **approvisionnement en données** (WS-00c) qui n'es
 ## Conséquence pour la série (hors périmètre de cette PR)
 
 La cellule WS-00c gagnerait à **épingler sa source** au lieu de laisser un `try/except`
-choisir implicitement, à consigner la version de scikit-learn à côté des valeurs citées, et à
-**fixer la tolérance du solveur** (ou à ajuster jusqu'à convergence) : à données et versions
-identiques, le défaut `tol=1e-4` déplace déjà la valeur d'un item. Tant que ce n'est pas fait,
-un chiffre de WS-00c est une **mesure d'environnement**, pas une propriété du carnet. Suivi à
-ouvrir ; cette PR ne modifie aucun carnet.
+choisir implicitement, à consigner l'environnement (versions et siège) à côté des valeurs
+citées, et à **fixer la tolérance du solveur** (ou à ajuster jusqu'à convergence) : à données,
+graine et versions identiques, le défaut `tol=1e-4` déplace déjà les coefficients de
+`1.76e-02` et un item. Tant que ce n'est pas fait, un chiffre de WS-00c est une **mesure
+d'environnement**, pas une propriété du carnet.
+
+**Un `random_state` ne remplacerait pas cette prescription.** Sous `lbfgs`, le solveur par
+défaut de `LogisticRegression`, la graine est **inerte** : mesuré sur scikit-learn 1.8.0,
+`random_state` 42, 7 et 123 rendent des coefficients **identiques au bit près**. Le contrôle
+positif sous `saga`, où la graine déplace bien les coefficients (`3.45e-04`), montre que
+l'instrument n'est pas aveugle : l'inertie est une propriété du solveur, pas du test. Fixer
+la graine ne coûte rien, mais c'est la **tolérance** qui opère ici — et si un jour le solveur
+change, la graine redeviendra pertinente. Suivi à ouvrir ; cette PR ne modifie aucun carnet.
 
 ## Reproduction
 
