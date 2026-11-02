@@ -1,11 +1,11 @@
-> RAPPORT — 2026-11-02 — Tri des 56 fichiers pérennes intouchés 5+ semaines (#14623, critère de sortie « les 29 fichiers intouchés ») — figé
+> RAPPORT — 2026-11-02 — Tri des intouchés 5+ semaines de l'arbre pérennel (#14623, critère de sortie : les intouchés hors archive sont triés) — figé
 
-# Tri de l'arbre pérenne — 56 fichiers intouchés 5+ semaines (2026-11-02)
+# Tri de l'arbre pérenne — les intouchés de 5+ semaines (2026-11-02)
 
 Mesure : fichiers sous `docs/` hors `docs/archive/` et hors `docs/transients/`, dernier
 commit antérieur au **2026-09-28** (5 semaines), sur `origin/main` (`f00b2f1764`).
 La mesure a grandi à chaque passage : **29 → ~41 → 56** (l'arbre pérenne continue
-d'accueillir des documents qui ne bougent plus). Sur 316 fichiers pérennes, 56 sont
+d'accueillir des documents qui ne bougent plus). Sur 316 documents pérennes, 56 sont
 concernés.
 
 ## Verdict 1 — déplacés vers cette lane (8)
