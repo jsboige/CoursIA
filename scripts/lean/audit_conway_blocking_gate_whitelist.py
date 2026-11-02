@@ -64,7 +64,7 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
 DEFAULT_WORKFLOW = REPO / ".github" / "workflows" / "lean-conway.yml"
-DEFAULT_PROJECT_PATH = REPO / "MyIA.AI.Notebooks" / "SymbolicAI" / "Lean" / "conway_lean"
+DEFAULT_PROJECT_PATH = REPO / "MyIA.AI.Notebooks" / "SymbolicAI" / "Lean" / "GOL" / "conway_lean"
 
 
 def _parse_gate_block(workflow_text: str) -> tuple[list[str], list[str], str]:
