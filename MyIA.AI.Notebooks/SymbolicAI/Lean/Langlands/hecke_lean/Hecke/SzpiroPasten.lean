@@ -5,59 +5,62 @@ import Mathlib.Algebra.Squarefree.Basic
 import Mathlib.Analysis.SpecialFunctions.Log.Basic
 
 /-!
-# Szpiro--Pasten 2026: admissible factorization and the formal statement of Theorem 1.1
+# Szpiro--Pasten 2026 : factorisation admissible et énoncé formel du théorème 1.1
 
-This module delivers grain 6 of the Langlands Epic (#17969): the formal Lean
-statement of Theorem 1.1 in Hector Pasten's preprint, *Improved Bounds for
-Szpiro's Conjecture* (arXiv 2609.17390, September 16, 2026), whose
-computational playground is the notebook
+Ce module réalise le grain 6 de l'Epic Langlands (#17969) : l'énoncé Lean
+formel du théorème 1.1 du preprint d'Hector Pasten, *Improved Bounds for
+Szpiro's Conjecture* (arXiv 2609.17390, 16 septembre 2026), dont le terrain
+calculatoire est le notebook
 `Search/App-32-Szpiro-Pasten-2026.ipynb`.
 
-* `omega n`: the number ω(n) of distinct prime factors of `n`;
-* `IsAdmissibleFactorization N D M`: the key definition of the preprint —
-  `N = DM` with `gcd(D, M) = 1`, `D` squarefree, and an **even** number of
-  prime factors (the parity comes from the sign of the quaternionic space
-  `S_D(M)` in Jacquet--Langlands);
-* `szpiroPastenThm11`: the formal statement of Theorem 1.1 –
-  `h(E) ≤ C * M * φ(D) * log ℓ` with an effective absolute constant – as a
-  `Prop`, **not proved here** (honesty note below);
-* the computational side of the definition is proved without sorry:
-  the trivial factorization is always admissible, the admissible
-  factorizations of `N = 30` are exactly `{1, 6, 10, 15}` –
-  `2^(ω(N)-1) = 4` on the notebook's running example – and `D = 2`, `D = 5`,
-  `D = 30` are rejected (odd parity of ω(D)). These facts go through
-  compositional lemmas: naive `decide` gets kernel-stuck on `Nat.minSqFac`
-  (well-founded recursion); factorization does the work.
+* `omega n` : le nombre ω(n) de facteurs premiers distincts de `n` ;
+* `IsAdmissibleFactorization N D M` : la définition-clé du preprint —
+  `N = DM` avec `gcd(D, M) = 1`, `D` carré-libre, et un nombre **pair** de
+  facteurs premiers (la parité vient du signe de l'espace quaternionique
+  `S_D(M)` de Jacquet--Langlands) ;
+* `szpiroPastenThm11` : l'énoncé formel du théorème 1.1 —
+  `h(E) ≤ C * M * φ(D) * log ℓ` à constante absolue effective — comme
+  `Prop`, **non prouvé ici** (note d'honnêteté ci-dessous) ;
+* le versant calculable de la définition est prouvé sans sorry :
+  la factorisation triviale est toujours admissible, les factorisations
+  admissibles de `N = 30` sont exactement `{1, 6, 10, 15}` —
+  `2^(ω(N)-1) = 4` sur l'exemple filé du notebook — et `D = 2`, `D = 5`,
+  `D = 30` sont rejetés (parité impaire de ω(D)). Ces faits passent par des
+  lemmes compositionnels : le `decide` naïf bloque au noyau sur `Nat.minSqFac`
+  (récursion bien fondée), la factorisation fait le travail.
 
-## Scope honesty (G.3/G.9)
+## Honnêteté du périmètre (G.3/G.9)
 
-The general Theorem 1.1 (Shimura curves, the Jacquet--Langlands
-correspondence, the Hecke eigenvalue multiplicity lemma) is **OPEN in this
-lake, without `sorry`**: it lives in `szpiroPastenThm11 : Prop`, on the same
-honesty pattern as the reachability of `h*` in `search_lean` – the statement
-is a first-class Lean object, `#check`-able, never a proof in disguise. What
-is proved below is proved in full (zero sorry).
+Le théorème 1.1 général (courbes de Shimura, correspondance de
+Jacquet--Langlands, lemme de multiplicité des valeurs propres de Hecke)
+est **OPEN dans ce lake, sans `sorry`** : il vit dans
+`szpiroPastenThm11 : Prop`, sur le même patron d'honnêteté que
+l'atteignabilité de `h*` dans `search_lean` — l'énoncé est un objet Lean
+du premier ordre, `#check`-able, jamais une preuve déguisée. Ce qui est
+prouvé ci-dessous l'est intégralement (zéro sorry).
 
-**Bridges to the notebooks**: the mechanics of choosing `D` and the proxy
-`log|Δ| / log rad(|Δ|)` live in `App-32` (python3 kernel); modular forms
-and Hecke operators in `SymbolicAI/Lean/Langlands/` (01, 02) and `Lean-29`.
-This module is their formal counterpart: same definitions, kernel-proved.
+**Ponts vers les notebooks** : la mécanique du choix de `D` et le proxy
+`log|Δ| / log rad(|Δ|)` vivent dans `App-32` (kernel python3) ; les formes
+modulaires et les opérateurs de Hecke dans `SymbolicAI/Lean/Langlands/`
+(01, 02) et le carnet 06 (ex-`Lean-29`). Ce module en est le versant formel : mêmes
+définitions, preuve par le noyau.
 -/
 
 set_option autoImplicit false
 
-namespace SzpiroPasten_en
+namespace SzpiroPasten
 
-/-! ### The key definition: admissible factorization -/
+/-! ### La définition-clé : factorisation admissible -/
 
-/-- Number of distinct prime factors ω(n), read off the support of the
-factorization. -/
+/-- Nombre de facteurs premiers distincts ω(n), lu sur le support de la
+factorisation. -/
 def omega (n : ℕ) : ℕ := (Nat.factorization n).support.card
 
-/-- Admissible factorization `N = DM` (§2 definition of the preprint):
-`D` and `M` coprime, `D` squarefree, and ω(D) **even**. The parity is not
-decorative: it comes from the sign of the quaternionic forms space `S_D(M)`
-where the curve's newform lives via Jacquet--Langlands. -/
+/-- Factorisation admissible `N = DM` (définition §2 du preprint) :
+`D` et `M` premiers entre eux, `D` carré-libre, et ω(D) **pair**. La parité
+n'est pas décorative : elle vient du signe de l'espace de formes
+quaternioniques `S_D(M)` dans lequel vit la newform de la courbe par
+Jacquet--Langlands. -/
 def IsAdmissibleFactorization (N D M : ℕ) : Prop :=
   D * M = N ∧ D.Coprime M ∧ Squarefree D ∧ Even (omega D)
 
@@ -66,25 +69,25 @@ instance decidableIsAdmissible (N D M : ℕ) :
   unfold IsAdmissibleFactorization
   infer_instance
 
-/-- The trivial factorization `D = 1, M = N` is always admissible
-(ω(1) = 0 is even, 1 is squarefree, coprime to everything): the domain of
-Theorem 1.1 is never empty. -/
+/-- La factorisation triviale `D = 1, M = N` est toujours admissible
+(ω(1) = 0 est pair, 1 est carré-libre, premier à tout) : le domaine du
+théorème 1.1 n'est jamais vide. -/
 theorem one_admissible (N : ℕ) : IsAdmissibleFactorization N 1 N := by
   refine ⟨by norm_num, Nat.coprime_one_left N, squarefree_one, ?_⟩
   simp only [omega, Nat.factorization_one, Finsupp.support_zero, Finset.card_empty]
   exact ⟨0, by norm_num⟩
 
-/-! ### `N = 30`: the notebook's running example, proved compositionally
+/-! ### `N = 30` : l'exemple filé du notebook, prouvé compositionnellement
 
-Naive `decide` on `IsAdmissibleFactorization` gets kernel-stuck: the
-decidability instance of `Squarefree` rests on `Nat.minSqFac`, a
-**well-founded** recursion the kernel cannot reduce. The technical lemmas
-below redo the work through unique factorization – a fully compositional
-proof, with `decide` reserved for literals (distinct primes, coprimality,
-non-divisibility). -/
+Un `decide` naïf sur `IsAdmissibleFactorization` bloque au noyau :
+l'instance de décidabilité de `Squarefree` repose sur `Nat.minSqFac`,
+récursion **bien fondée** que le noyau ne réduit pas. Les lemmes techniques
+ci-dessous refont le travail par le théorème de factorisation — preuve
+complètement compositionnelle, `decide` réservé aux littéraux (premiers
+distincts, coprimalité, non-divisibilité). -/
 
-/-- Squarefree product of two distinct primes, via the factorization
-characterization: every exponent is 0 or 1. -/
+/-- Carré-libre d'un produit de deux premiers distincts, par la
+caractérisation factorielle : chaque exposant vaut 0 ou 1. -/
 theorem squarefree_two_primes {p q : ℕ} (hp : p.Prime) (hq : q.Prime) (hne : p ≠ q) :
     Squarefree (p * q) := by
   rw [Nat.squarefree_iff_factorization_le_one
@@ -95,8 +98,8 @@ theorem squarefree_two_primes {p q : ℕ} (hp : p.Prime) (hq : q.Prime) (hne : p
     Finsupp.coe_add, Pi.add_apply, Finsupp.single_apply]
   split_ifs <;> simp_all
 
-/-- Extending a squarefree factorization by a foreign prime: `n`
-squarefree, `p` prime not dividing `n` ⇒ `np` squarefree. -/
+/-- Extension d'une factorisation carré-libre par un premier étranger :
+`n` carré-libre, `p` premier ne divisant pas `n` ⇒ `np` carré-libre. -/
 theorem squarefree_mul_prime {n p : ℕ} (hn : n ≠ 0) (hsq : Squarefree n)
     (hp : p.Prime) (hnd : ¬ p ∣ n) : Squarefree (n * p) := by
   have h0 : n.factorization p = 0 := by
@@ -114,12 +117,12 @@ theorem squarefree_mul_prime {n p : ℕ} (hn : n ≠ 0) (hsq : Squarefree n)
     have := hle r
     omega
 
-/-- ω of a prime: 1 – the support of its factorization is a singleton. -/
+/-- ω d'un premier : 1 — le support de sa factorisation est un singleton. -/
 theorem omega_prime {p : ℕ} (hp : p.Prime) : omega p = 1 := by
   simp [omega, Nat.Prime.factorization hp]
 
-/-- ω of a product by a foreign prime: `ω(n·p) = ω(n) + 1` – the
-factorization support gains exactly the singleton `{p}`. -/
+/-- ω d'un produit par un premier étranger : `ω(n·p) = ω(n) + 1` — le
+support de la factorisation gagne exactement le singleton `{p}`. -/
 theorem omega_mul_prime {n p : ℕ} (hn : n ≠ 0) (hp : p.Prime) (hnd : ¬ p ∣ n) :
     omega (n * p) = omega n + 1 := by
   have hmem : p ∉ (n.factorization).support := by
@@ -174,10 +177,10 @@ theorem squarefree_thirty : Squarefree 30 := by
     squarefree_six Nat.prime_five (by decide)
   exact h
 
-/-- On `N = 30` (ω(N) = 3: primes 2, 3, 5), the four admissible
-factorizations `D ∈ {1, 6, 10, 15}` – exactly `2^(ω(N)-1) = 4`, half of the
-subsets of primes of even cardinality. Product, coprimality, squarefree and
-parity proved one by one. -/
+/-- Sur `N = 30` (ω(N) = 3 : premiers 2, 3, 5), les quatre factorisations
+admissibles `D ∈ {1, 6, 10, 15}` — exactement `2^(ω(N)-1) = 4`, la moitié
+des sous-ensembles de premiers de cardinal pair. Produit, coprimalité,
+carré-libre et parité prouvés un à un. -/
 theorem admissible_thirty :
     IsAdmissibleFactorization 30 1 30 ∧
     IsAdmissibleFactorization 30 6 5 ∧
@@ -191,8 +194,8 @@ theorem admissible_thirty :
   · refine ⟨by norm_num, by decide, squarefree_fifteen, ?_⟩
     rw [omega_fifteen]; exact ⟨1, rfl⟩
 
-/-- `D = 2` is NOT admissible: ω(2) = 1 is odd. The parity constraint
-excludes singleton prime sets. -/
+/-- `D = 2` n'est PAS admissible : ω(2) = 1 est impair. La contrainte de
+parité exclut les singletons de premiers. -/
 theorem not_admissible_thirty_two : ¬IsAdmissibleFactorization 30 2 15 := by
   intro h
   obtain ⟨-, -, -, heven⟩ := h
@@ -200,7 +203,7 @@ theorem not_admissible_thirty_two : ¬IsAdmissibleFactorization 30 2 15 := by
   obtain ⟨k, hk⟩ := heven
   omega
 
-/-- `D = 5`: same rejection, ω(5) = 1 odd. -/
+/-- `D = 5` : même rejet, ω(5) = 1 impair. -/
 theorem not_admissible_thirty_five : ¬IsAdmissibleFactorization 30 5 6 := by
   intro h
   obtain ⟨-, -, -, heven⟩ := h
@@ -208,7 +211,7 @@ theorem not_admissible_thirty_five : ¬IsAdmissibleFactorization 30 5 6 := by
   obtain ⟨k, hk⟩ := heven
   omega
 
-/-- `D = 30`: ω(30) = 3 odd – even the full factor is excluded. -/
+/-- `D = 30` : ω(30) = 3 impair — même le facteur plein est exclu. -/
 theorem not_admissible_thirty_thirty : ¬IsAdmissibleFactorization 30 30 1 := by
   intro h
   obtain ⟨-, -, -, heven⟩ := h
@@ -216,30 +219,30 @@ theorem not_admissible_thirty_thirty : ¬IsAdmissibleFactorization 30 30 1 := by
   obtain ⟨k, hk⟩ := heven
   omega
 
-/-! ### The formal statement of Theorem 1.1 -/
+/-! ### L'énoncé formel du théorème 1.1 -/
 
-/-- Pair (height, conductor): the carrier of the formal statement. That
-`hE` is the Faltings height of an elliptic curve of conductor `N` is a
-typing hypothesis, taken as given – the arithmetic depth is out of the
-lake's scope. -/
+/-- Paire (hauteur, conducteur) : support de l'énoncé formel. Que `hE` soit
+la hauteur de Faltings d'une courbe elliptique de conducteur `N` est une
+hypothèse de typage, prise telle quelle — la profondeur arithmétique est
+hors périmètre du lake. -/
 structure CourbeHN where
-  /-- Faltings height (abstract). -/
+  /-- Hauteur de Faltings (abstraite). -/
   hE : ℝ
-  /-- Conductor (abstract). -/
+  /-- Conducteur (abstrait). -/
   N : ℕ
 
-/-- **Formal statement of Theorem 1.1 (Pasten 2026, arXiv 2609.17390)**:
-there exists an *effective* absolute constant `C > 0` such that, for every
-curve `E/ℚ` (carried by `CourbeHN`), every admissible factorization
-`E.N = D * M` and every prime `ℓ` not dividing `E.N`:
+/-- **Énoncé formel du théorème 1.1 (Pasten 2026, arXiv 2609.17390)** :
+il existe une constante absolue *effective* `C > 0` telle que, pour toute
+courbe `E/ℚ` (portée par `CourbeHN`), toute factorisation admissible
+`E.N = D * M` et tout premier `ℓ` ne divisant pas `E.N` :
 
 `h(E) ≤ C * M * φ(D) * log ℓ`
 
-NOT proved in this lake: the statement itself – a first-class Lean object,
-`#check`-able – is the deliverable of grain 6 of #17969. The proof (Shimura
-curves, Jacquet--Langlands, Hecke eigenvalue multiplicity in `S_D(M)`) is
-documented in `App-32` §Conclusion and remains out of scope, following the
-honesty pattern of `search_lean`. -/
+NON prouvé dans ce lake : c'est l'énoncé lui-même — objet Lean du premier
+ordre, `#check`-able — qui est le livrable du grain 6 de #17969. La preuve
+(courbes de Shimura, Jacquet--Langlands, multiplicité des valeurs propres
+de Hecke dans `S_D(M)`) est documentée dans `App-32` §Conclusion et reste
+hors scope, conformément au patron d'honnêteté de `search_lean`. -/
 def szpiroPastenThm11 : Prop :=
   ∃ C : ℝ, 0 < C ∧
     ∀ E : CourbeHN, ∀ D M ℓ : ℕ,
@@ -249,4 +252,4 @@ def szpiroPastenThm11 : Prop :=
 
 #check @szpiroPastenThm11
 
-end SzpiroPasten_en
+end SzpiroPasten
