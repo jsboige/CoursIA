@@ -34,7 +34,6 @@ on:
       - '.github/workflows/dotnet-OrphanApps.yml'
       - 'MyIA.CoursIA.sln'
   pull_request:
-    branches: [main]
     types: [opened, synchronize, edited, reopened]
     paths:
       - 'MyIA.AI.Notebooks/GenAI/Integrations-DotNet/**'

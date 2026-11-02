@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-10-31
+
 # Runbook — Flip d'authentification des services exposés (#16 P2)
 
 **Issue** : #16 — Sécurisation des services IA exposés.

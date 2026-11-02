@@ -7,7 +7,6 @@ on:
       - '**.ipynb'
       - 'scripts/validation/**'
   pull_request:
-    branches: [main]
     types: [opened, synchronize, edited, reopened]
     paths:
       - '**.ipynb'

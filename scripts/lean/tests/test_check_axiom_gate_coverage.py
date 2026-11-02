@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -16,6 +17,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from check_axiom_gate_coverage import (  # noqa: E402
+    WORKFLOWS_DIR,
     composite_axiom_coverage,
     calls_gate,
     classify_deleted,
@@ -31,6 +33,16 @@ from check_axiom_gate_coverage import (  # noqa: E402
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 _REF = os.environ.get("AXIOM_GATE_COVERAGE_REF", "origin/main")
+
+
+def _run_git(*args):
+    """Run git, keeping the exit code (``cat-file -e`` answers by code, not output)."""
+    env = {**os.environ, "MSYS_NO_PATHCONV": "1"}
+    return subprocess.run(["git", *args], capture_output=True, env=env)
+
+
+def _path_exists_at_ref(path, ref):
+    return _run_git("cat-file", "-e", f"{ref}:{path}").returncode == 0
 
 
 class TestCallsGate:
@@ -242,6 +254,45 @@ class TestDeletedDispatchers:
             assert e["deleted_by"], "a deletion must carry the commit that made it"
             assert isinstance(e["gated_paths"], list)
 
+    def test_a_live_dispatcher_is_never_reported_deleted(self):
+        """A file alive at the measured ref cannot have been deleted there.
+
+        Measuring deletions across ALL refs fabricates some: ``--all`` sees a
+        deletion made on a branch the ref never carried, then ``rev-list -n 1
+        --all`` attributes it to the newest commit merely TOUCHING the path --
+        a rename -- and the pre-rename project-path reads as ungated while the
+        live job gates it under its new name. Measured 2026-10-31: four live
+        callers (formal-logic, galois, grothendieck, mimo) were reported
+        deleted, one of them as LOST coverage on a green main.
+        """
+        entries = deleted_dispatchers(_REF)
+        if not entries:
+            pytest.skip(f"no deleted dispatchers visible at {_REF}")
+        alive = [e["dispatcher"] for e in entries
+                 if _path_exists_at_ref(f"{WORKFLOWS_DIR}/{e['dispatcher']}", _REF)]
+        assert alive == [], (
+            f"{alive} are deleted at some ref but ALIVE at {_REF}: reporting them "
+            "as deletions measures history the audited ref never had. Restrict the "
+            "deletion scan to commits reachable from the ref."
+        )
+
+    def test_deleted_by_really_deletes_the_file(self):
+        """``deleted_by`` must be a commit that removes the path, not one that moves it."""
+        entries = deleted_dispatchers(_REF)
+        if not entries:
+            pytest.skip(f"no deleted dispatchers visible at {_REF}")
+        for e in entries:
+            path = f"{WORKFLOWS_DIR}/{e['dispatcher']}"
+            sha = _run_git("rev-parse", e["deleted_by"]).stdout.decode().strip()
+            assert _path_exists_at_ref(path, f"{sha}^"), (
+                f"{e['dispatcher']}: the parent of {e['deleted_by']} did not carry it"
+            )
+            assert not _path_exists_at_ref(path, sha), (
+                f"{e['dispatcher']}: {e['deleted_by']} still carries {path} — that "
+                "commit MODIFIED it (a rename), so the recorded content is not the "
+                "last version before a deletion."
+            )
+
 
 class TestClassifyDeleted:
     """Deplacer le gate n'est pas le perdre — et l'illisible reste PERDU."""
@@ -275,6 +326,82 @@ class TestClassifyDeleted:
         r = classify_deleted([d], set())
         assert r["lost"] == [] and r["relocated"] == []
         assert [e["dispatcher"] for e in r["never"]] == ["lean-y.yml"]
+
+    # -- le lake qui se deplace (#23871) --------------------------------
+    # Un rename T2 supprime le dispatcher et le recree sous un autre dossier :
+    # le project-path change, la couverture suit. La reconnaitre exige la
+    # PREUVE d'absence de l'ancien chemin -- sans elle, on blanchirait une
+    # vraie perte.
+
+    def test_a_moved_lake_is_relocation_not_loss(self):
+        """Old path gone from the tree + same-basename successor gated today."""
+        d = self._d(["A/Lean/galois_lean"])
+        gated = {"A/Lean/GALOIS/galois_lean"}
+        r = classify_deleted([d], gated, exists_at=lambda p: p in gated)
+        assert r["lost"] == []
+        [entry] = r["relocated"]
+        assert entry["moved_to"] == "A/Lean/GALOIS/galois_lean"
+
+    def test_a_surviving_old_path_keeps_it_lost(self):
+        """Negative control: both paths exist -> the old lake lives there, ungated."""
+        d = self._d(["A/Lean/galois_lean"])
+        present = {"A/Lean/galois_lean", "A/Lean/GALOIS/galois_lean"}
+        gated = {"A/Lean/GALOIS/galois_lean"}
+        r = classify_deleted([d], gated, exists_at=lambda p: p in present)
+        assert r["relocated"] == []
+        assert [e["dispatcher"] for e in r["lost"]] == ["lean-x.yml"]
+
+    def test_no_gated_successor_keeps_it_lost(self):
+        """Negative control: the lake vanished and nothing gated took its place."""
+        d = self._d(["A/Lean/galois_lean"])
+        r = classify_deleted([d], {"C/c_lean"}, exists_at=lambda p: False)
+        assert r["relocated"] == []
+        assert [e["dispatcher"] for e in r["lost"]] == ["lean-x.yml"]
+
+    def test_a_move_without_absence_probe_stays_lost(self):
+        """No probe is no evidence: the second shape stays fail-closed."""
+        d = self._d(["A/Lean/galois_lean"])
+        r = classify_deleted([d], {"A/Lean/GALOIS/galois_lean"})
+        assert r["relocated"] == []
+        assert [e["dispatcher"] for e in r["lost"]] == ["lean-x.yml"]
+
+    def test_an_ambiguous_successor_stays_lost(self):
+        """Two same-basename successors make the move unprovable: no credit."""
+        d = self._d(["A/Lean/galois_lean"])
+        gated = {"B/Lean/galois_lean", "C/Lean/galois_lean"}
+        r = classify_deleted([d], gated, exists_at=lambda p: p in gated)
+        assert r["relocated"] == []
+        assert [e["dispatcher"] for e in r["lost"]] == ["lean-x.yml"]
+
+    def test_a_homonym_outside_the_parent_tree_stays_lost(self):
+        """Jaune 1 (#23908) : meme basename, autre sous-arbre = homonyme.
+
+        Crediter ce chemin rapporterait un deplacement que personne n'a fait
+        et tairait la perte reelle du lake.
+        """
+        d = self._d(["A/Lean/galois_lean"])
+        gated = {"Elsewhere/Lean/galois_lean"}
+        r = classify_deleted([d], gated, exists_at=lambda p: p in gated)
+        assert r["relocated"] == []
+        assert [e["dispatcher"] for e in r["lost"]] == ["lean-x.yml"]
+
+    def test_a_sibling_prefix_is_not_filiation(self):
+        """Controle negatif de `_is_under` : `A/LeanX` n'est pas sous `A/Lean`."""
+        from check_axiom_gate_coverage import _is_under
+        assert _is_under("A/Lean/GALOIS/galois_lean", "A/Lean") is True
+        assert _is_under("A/LeanX/galois_lean", "A/Lean") is False
+        assert _is_under("A/Lean", "A/Lean") is False
+
+    def test_a_multi_lake_dispatcher_stays_lost(self):
+        """Jaune 2 (#23908) : un `moved_to` unique ne peut pas temoigner de
+        DEUX lakes. Meme si chaque basename a un successeur, le dispatcher
+        retombe en `lost` (fail-closed) au lieu d'etre credite en bloc.
+        """
+        d = self._d(["A/Lean/alpha_lean", "A/Lean/beta_lean"])
+        gated = {"A/Lean/NEW/alpha_lean", "A/Lean/NEW/beta_lean"}
+        r = classify_deleted([d], gated, exists_at=lambda p: p in gated)
+        assert r["relocated"] == []
+        assert [e["dispatcher"] for e in r["lost"]] == ["lean-x.yml"]
 
 
 class TestMeasurePartition:

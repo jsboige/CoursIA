@@ -113,6 +113,17 @@ def _git(*args: str) -> str:
     return proc.stdout.decode("utf-8", "replace")
 
 
+@functools.lru_cache(maxsize=None)
+def path_exists_at(ref: str, path: str) -> bool:
+    """Whether ``path`` is present in the tree of ``ref``.
+
+    ``ls-tree`` renders empty for an absent path and exits 0, so the emptiness
+    is the answer -- the exit code is not. Memoized per (ref, path): the tree of
+    a ref cannot change within a run, so a cached answer cannot go stale.
+    """
+    return bool(_git("ls-tree", ref, "--", path).strip())
+
+
 # Each of the three readers below spawns one `git` per candidate file (~40 in
 # total), so a test suite that probes several invariants pays that cost several
 # times over (89 s -> 17 s once memoized). Memoized per ref: the measurement is
@@ -284,19 +295,33 @@ def matrix_lakes(ref: str) -> list[dict]:
 
 @functools.lru_cache(maxsize=None)
 def deleted_dispatchers(ref: str) -> list[dict]:
-    """Every deleted ``lean-*`` dispatcher, with its last existing content.
+    """Every ``lean-*`` dispatcher deleted from the history of ``ref``.
 
-    ``git rev-list -n 1 --all -- <path>`` returns the newest commit touching
-    the path across all refs; for a deleted file that is the deletion commit,
-    so its parent holds the last version that existed. We therefore report
-    ``had_gate`` on ``<sha>^:<path>``.
+    The scan is **restricted to commits reachable from ``ref``**. A deletion
+    that happened on some other ref never removed the dispatcher from the
+    audited history, and counting it reports a loss this ref never suffered:
+    a rename commit shows up as the newest commit touching the path, its
+    parent holds the pre-rename content, and the old project-path reads as
+    ungated while the dispatcher is alive and gating at its new path.
+
+    That is measured, not hypothetical (2026-10-31): ``lean-galois.yml`` was
+    never deleted on ``main`` -- ``git log --diff-filter=D origin/main`` over
+    it is empty -- yet ``--all`` found a deletion on a ref ``main`` does not
+    carry and ``rev-list -n 1 --all`` returned the rename commit ``88edc37b4``
+    instead, so the pre-rename path ``.../Lean/galois_lean`` was reported
+    lost while the live job gates ``.../Lean/GALOIS/galois_lean``.
+
+    For each deletion commit, ``<sha>^:<path>`` holds the last version that
+    existed on the ref's history, so ``had_gate`` and ``gated_paths`` are read
+    from there.
     """
-    listed = _git("log", "--all", "--diff-filter=D", "--name-only",
+    listed = _git("log", ref, "--diff-filter=D", "--name-only",
                   "--format=", "--", f"{WORKFLOWS_DIR}/lean-*.yml")
     paths = sorted({p for p in listed.split("\n") if p.startswith(f"{WORKFLOWS_DIR}/lean-")})
     out = []
     for path in paths:
-        sha = _git("rev-list", "-n", "1", "--all", "--", path).strip()
+        sha = _git("log", "-n", "1", "--diff-filter=D", "--format=%H",
+                   ref, "--", path).strip()
         if not sha:
             continue
         last = _git("show", f"{sha}^:{path}")
@@ -309,7 +334,64 @@ def deleted_dispatchers(ref: str) -> list[dict]:
     return out
 
 
-def classify_deleted(deleted: list[dict], gated_now: set[str]) -> dict:
+def _is_under(path: str, parent: str) -> bool:
+    """True when ``path`` lives strictly below the directory ``parent``.
+
+    Pure string segmentation on ``/`` (a Windows separator is normalised
+    first): the repository's project-paths are POSIX, and a prefix test on
+    raw characters would credit ``.../LeanX/foo`` as living under ``.../Lean``.
+    """
+    p = path.replace("\\", "/").rstrip("/").split("/")
+    q = parent.replace("\\", "/").rstrip("/").split("/")
+    return len(p) > len(q) and p[:len(q)] == q
+
+
+def _moved_successor(d: dict, gated_now: set[str], exists_at) -> str | None:
+    """The live gated path that took over ``d``'s lake, if the move is provable.
+
+    Four evidences are required together, and each closes one way of being
+    wrong:
+
+    * **absence** -- none of the dispatcher's former project-paths may still
+      exist in the tree at the measured ref. A path that survives is a lake
+      that still lives there and is simply not gated any more: that is a real
+      loss, and treating it as a move would hide it;
+    * **filiation** -- the successor must live *under the former parent
+      directory* (``.../Lean/galois_lean`` -> ``.../Lean/GALOIS/galois_lean``).
+      A same-basename path in an unrelated subtree is a homonym, not a
+      successor: crediting it would report a move nobody made and silence the
+      real loss (#23908, review Hermes du 31/10) ;
+    * **one lake** -- a dispatcher gating several lakes is not provable at
+      all, even when every basename has a successor: a single ``moved_to``
+      cannot witness that *each* of its lakes survived, so the whole
+      dispatcher would be credited on one lake's evidence and the other's
+      loss would be reported nowhere. It stays ``lost`` (fail-closed,
+      #23908) ;
+    * **a single successor** -- exactly one gated path today carries the same
+      lake basename and exists in the tree. Two candidates make the move
+      unprovable, and a candidate that does not exist credits a coverage
+      nobody holds.
+
+    No probe, or a dispatcher that passed no project-path, yields ``None``:
+    the caller keeps it "lost" (§ fail-closed).
+    """
+    old = d["gated_paths"]
+    if not old or exists_at is None:
+        return None
+    if any(exists_at(p) for p in old):
+        return None
+    names = {Path(p).name for p in old}
+    if len(old) != 1 or len(names) != 1:
+        return None  # multi-lake dispatcher: no single successor can witness it
+    parent = str(Path(old[0]).parent)
+    candidates = sorted(g for g in gated_now
+                        if Path(g).name in names and g not in old and exists_at(g)
+                        and _is_under(g, parent))
+    return candidates[0] if len(candidates) == 1 else None
+
+
+def classify_deleted(deleted: list[dict], gated_now: set[str],
+                     exists_at=None) -> dict:
     """Partition deleted dispatchers into lost / relocated / never.
 
     "Perdu" means lost COVERAGE, not lost FILE: a dispatcher that had the
@@ -317,15 +399,27 @@ def classify_deleted(deleted: list[dict], gated_now: set[str]) -> dict:
     today moved its coverage rather than dropping it. Fail-closed on the
     unreadable cases: a dispatcher that called the gate without passing a
     project-path cannot prove its coverage moved, so it stays "lost".
+
+    Two shapes of move are recognised. The first keeps the path: the same
+    project-path is still gated. The second moves the lake itself -- a T2
+    rename deletes the dispatcher and recreates it under a new directory --
+    and needs ``exists_at`` to prove the old path is gone (see
+    ``_moved_successor``). Without that probe the second shape stays "lost":
+    an absent evidence is not a proof of absence.
     """
     lost, relocated, never = [], [], []
     for d in deleted:
         if not d["had_gate"]:
             never.append(d)
-        elif d["gated_paths"] and set(d["gated_paths"]) <= gated_now:
+            continue
+        if d["gated_paths"] and set(d["gated_paths"]) <= gated_now:
             relocated.append(d)
-        else:
-            lost.append(d)
+            continue
+        successor = _moved_successor(d, gated_now, exists_at)
+        if successor:
+            relocated.append({**d, "moved_to": successor})
+            continue
+        lost.append(d)
     return {"lost": lost, "relocated": relocated, "never": never}
 
 
@@ -388,7 +482,8 @@ def measure(ref: str) -> dict:
     manifest_paths = {lk.get("project-path") for lk in lakes}
     ungated = sorted(p for p in manifest_paths
                      if p and p not in set(gated_paths))
-    parts = classify_deleted(deleted, set(gated_paths))
+    parts = classify_deleted(deleted, set(gated_paths),
+                             exists_at=lambda p: path_exists_at(ref, p))
     lost, relocated = parts["lost"], parts["relocated"]
     never = parts["never"]
     justified = justified_ungated(ref, ungated)
@@ -457,7 +552,9 @@ def _print_human(r: dict) -> None:
         print(f"      PERDU  {d['dispatcher']:42} (supprime par {d['deleted_by']})")
     print(f"   gate DEPLACE (couverture reprise ailleurs) : {len(r['gate_relocated'])}")
     for d in r["gate_relocated"]:
-        print(f"      deplace {d['dispatcher']:42} (supprime par {d['deleted_by']})")
+        suffix = f"  -> {d['moved_to']}" if d.get("moved_to") else ""
+        print(f"      deplace {d['dispatcher']:42} "
+              f"(supprime par {d['deleted_by']}){suffix}")
     print(f"   n'avaient pas le gate   : {len(r['never_had_gate'])}")
     for d in r["never_had_gate"]:
         print(f"      jamais {d['dispatcher']:42} (supprime par {d['deleted_by']})")

@@ -57,7 +57,6 @@ on:
       - 'MyIA.AI.Notebooks/GameTheory/**'
       - '.github/workflows/gametheory-tests.yml'
   pull_request:
-    branches: [main]
     types: [opened, synchronize, edited, reopened]
     paths:
       - 'MyIA.AI.Notebooks/GameTheory/**'
