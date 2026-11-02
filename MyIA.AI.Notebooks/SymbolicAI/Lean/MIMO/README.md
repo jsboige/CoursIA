@@ -4,7 +4,7 @@ Sous-série de la série [Lean](../README.md) (décision de gradation #17545, 24
 
 Les numéros de la table ci-dessous renvoient à l'ancien identifiant de série (`Lean-21c` → `MIMO-01`, `Lean-21` → `MIMO-02`, `Lean-21b` → `MIMO-03` — table de correspondance dans `docs/reference/rename-ledger.tsv`).
 
-**Escalier depuis la série principale** : le carnet d'entrée est [Lean-20 — Capstone](../Lean-20-Capstone-Digestions-Tao-Python.ipynb) ; la sous-série se referme sur MIMO-04, puis le parcours principal reprend à [Lean-22 — Galois](../Lean-22-Galois-Probleme-Inverse-M23.ipynb).
+**Escalier depuis la série principale** : le carnet d'entrée est [Lean-20 — Capstone](../Lean-20-Capstone-Digestions-Tao-Python.ipynb) ; la sous-série se referme sur MIMO-04, puis le parcours principal reprend à [Lean-22 — Galois](../GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb).
 
 | Carnet | Contenu | Durée |
 |---|---|---|

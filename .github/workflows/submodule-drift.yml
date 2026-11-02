@@ -86,7 +86,22 @@ permissions:
 
 jobs:
   drift:
-    runs-on: ubuntu-latest
+    # Forme hybride de debordement (#22937/#22944/#23016) : meme-depot et
+    # `vars.CI_OVERFLOW_LOCAL == 'true'` -> pool Linux local ; sinon
+    # `ubuntu-latest`. La garde anti-fork vit DANS l'expression `runs-on` :
+    # une PR de fork n'atteint jamais le runner local, et son job reste
+    # heberge comme avant.
+    #
+    # Pourquoi ce workflow etait nu : il est arrive sur main par #23314
+    # (2026-10-31 09:33:12Z), soit 16 min APRES que le cliquet de politique
+    # (#23053) ait ete corrige par #23670 (08:17:40Z) -- il n'a donc pas pu
+    # connaitre la regle. Forme identique a celle des workflows convertis
+    # le meme jour (`cycle-time-guard.yml`, `creation-provenance-advisory.yml`).
+    # Rollback = variable a `false` ou supprimee, sans toucher ce fichier.
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
+    # Borne de temps : le job devient atteignable sur le parc local, et un
+    # job sans borne peut y retenir un slot six heures (defaut Actions).
+    timeout-minutes: 10
     env:
       # Seuil unique. La mesure ET le verdict le lisent ici : une valeur
       # recopiee dans deux steps est une valeur qui finit par diverger.

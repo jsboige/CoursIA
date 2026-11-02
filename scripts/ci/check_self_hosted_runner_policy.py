@@ -101,6 +101,25 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     # (mesure 00:45Z : 11 des 12 slots occupes dans `actions/checkout`). Sortis
     # de SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit. Precedent :
     # repeated-prose-advisory.yml (#17443).
+    # #22209 (tranche 1b) : l'emetteur des effets de bord de la voie rapide,
+    # moitie extraite d'always-on-guards.yml (meme garde anti-fork). Fichier
+    # propre depuis le correctif de la PR #22244 : un workflow YAML rejete en
+    # entier (contexte runner dans un env: de niveau job) ne doit pas emporter
+    # le umbrella des 16 organes avec lui.
+    #
+    # 2026-10-28 (#22244, revue du coordinateur) : always-on-commenters.yml
+    #   SORT de l'allowlist. Il porte la forme hybride de debordement de main
+    #   (meme-depot && vars.CI_OVERFLOW_LOCAL == 'true' -> pool Linux, sinon
+    #   ubuntu-latest) : sa jambe locale n'est atteinte QUE si un operateur a
+    #   bascule la variable de depot. L'autorisation EST ce basculement (un
+    #   geste d'operateur sur le depot, reversible par `gh variable set
+    #   CI_OVERFLOW_LOCAL --body false`), et l'etat par defaut -- variable
+    #   absente ou false, etat mesure au 2026-10-28 -- le laisse entierement
+    #   heberge. L'entree d'allowlist ne ferait donc que DUPLIQUER cette
+    #   autorisation (cf. `operator_gated` dans `scan_workflows`) : elle est
+    #   retiree, et la regle devient « une jambe locale non conditionnee par
+    #   un operateur exige une entree d'allowlist ; une jambe de debordement
+    #   est autorisee par le basculement ».
     "pr-gate-stale-sweep.yml",
     "windows-self-hosted-tests.yml",
     "linux-self-hosted-tests.yml",
@@ -723,6 +742,32 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "cycle-time-guard.yml",
 
     # ------------------------------------------------------------------
+    # #23053 famille (c) -- Lean, Quarto et slides.
+    # 2026-10-28 (lane myia-ai-01:CoursIA-2) : les jobs declenches par
+    # `pull_request` de ces workflows passent a la forme hybride de debordement
+    # (#22937/#22944/#23016) : garde meme-depot && vars.CI_OVERFLOW_LOCAL ==
+    # 'true' -> LINUX_RUNNER_LABELS, sinon ubuntu-latest. Par defaut (variable
+    # absente ou != 'true'), chaque job resout sur ubuntu-latest : l'etat du
+    # 27/10 est conserve, et l'entree d'allowlist ne rend le pool local
+    # atteignable QUE si un operateur bascule la variable.
+    # Les six autres workflows de la famille (lean-conway, lean-i18n-drift,
+    # lean-knot, quarto-pages-deploy, slides-build-advisory,
+    # slides-composition-pr-relay) etaient DEJA declares plus haut : seul
+    # l'absent est ajoute ici.
+    # `lean-planning.yml` n'est PAS declare : le workflow a ete SUPPRIME sur
+    # main par #23467 (#13751 -- migration de planning_lean vers la matrice
+    # CI, le wrapper est retire) entre la base de cette PR et aujourd'hui. Une
+    # entree d'allowlist pointant un workflow inexistant serait une reference
+    # morte ; la forme hybride de la famille (c) s'applique donc a
+    # `lean-ci-matrix.yml`, qui porte les jobs planning_lean depuis la
+    # migration.
+    # Exceptions nommees, laissees hebergees : quarto-pages-deploy `build`
+    # (OOM mesure sur le pool, #15202) et `deploy` (push-only, deploy-pages +
+    # OIDC/PAGES). Rollback = revert de la PR (l'entree disparait de
+    # l'allowlist, et le garde fail-closed refuse alors le runs-on).
+    # ------------------------------------------------------------------
+    "lean-ci-matrix.yml",
+
     # 2026-10-28 (#23053 famille b -- « les tests », lane
     #   myia-ai-01:CoursIA-2) : ces 6 suites de tests n'avaient AUCUNE jambe
     #   self-hosted sur main ; elles recoivent une jambe CONDITIONNELLE, la
@@ -746,6 +791,23 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "dotnet-ArgumentAnalysis.yml",
     "dotnet-OrphanApps.yml",
     "dotnet-Shared.Tests.yml",
+    # 2026-10-31 (#23359, lane myia-po-2028:CoursIA-2) : meme famille que
+    #   `gametheory-tests.yml` ci-dessus -- une suite de tests dediee, cablee
+    #   par PR, qui n'avait aucune jambe self-hosted. Le workflow NEUF
+    #   `geometry-tests.yml` est arrive apres que le cliquet (#23053) a ete
+    #   ecrit : son job etait nu sur `ubuntu-latest` (violation
+    #   `HOSTED_PR_JOB_UNEXCEPTED`). Il est converti dans la meme PR en
+    #   forme hybride de debordement (meme expression que
+    #   `gametheory-tests.yml`, meme `if:` anti-fork conserve, meme
+    #   `timeout-minutes: 10`) et entre ici dans l'allowlist -- une forme
+    #   hybride dans un workflow NON allowliste est refusee par construction
+    #   (`WORKFLOW_NOT_ALLOWED`, cf. le test
+    #   `test_hybrid_runs_on_in_non_allowlisted_workflow_is_rejected`).
+    #   La variable vaut `false` au 2026-10-31 : le routage est donc INCHANGE
+    #   (100 % heberge) -- la conversion retire la violation sans changer ou
+    #   le job s'execute. Rollback = variable a `false` ou supprimee, sans
+    #   toucher les fichiers.
+    "geometry-tests.yml",
     "gametheory-tests.yml",
     "genai-helpers-tests.yml",
     # 2026-10-27 (#22937 vague 2, lane myia-ai-01:CoursIA-2) : meme forme
@@ -764,6 +826,14 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #     ligne `runs-on` du fichier n'est pas honoree ;
     #   - lean-ci-matrix.yml : la toolchain Lean vit dans une image distincte
     #     (label `coursia-lean`), pas dans le pool `coursia-linux` ;
+    #     [2026-10-29, fusion de main dans #23053 famille (c) : ce motif vise
+    #     les jobs de BUILD, pas le dispatcher. Sur main, ce fichier n'a qu'un
+    #     job, `lean-matrix-changes`, qui checkout, calcule les fichiers
+    #     changes et appelle `scripts/lean/lake_matrix_dispatch.py` -- il
+    #     n'execute aucun `lake`. Le build reste delegue au workflow
+    #     reutilisable `lean-build.yml`, qui porte ses propres labels. Le
+    #     dispatcher est donc convertible vers `coursia-linux`, et il l'est
+    #     ci-dessous.]
     #   - local-path-waiver-guard.yml et perimeter-review-guard.yml :
     #     declencheurs `issue_comment` et `pull_request_review`, classes
     #     FORK_REACHABLE par l'instrument (default-deny) ;
@@ -782,6 +852,23 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #     seul `validate-pr` est portable (Quarto par tarball curl).
     "quarto-render-list-freshness.yml",
     "enrich-quality-gate.yml",
+    # 2026-10-31 (#23666, lane myia-ai-01:CoursIA-2) : `submodule-drift.yml`
+    #   est un workflow NEUF pour le cliquet -- il est arrive sur main par
+    #   #23314 le 2026-10-31 a 09:33:12Z, soit 16 min APRES que #23670
+    #   (08:17:40Z)
+    #   ait corrige le cliquet : il n'a pas pu connaitre la regle. Son job
+    #   `drift` etait nu sur `ubuntu-latest` (violation
+    #   `HOSTED_PR_JOB_UNEXCEPTED`), avec un trigger `pull_request` (paths
+    #   filtre sur `.gitmodules` et les cinq sous-modules).
+    #   Conversion en forme hybride de debordement, meme expression que les
+    #   workflows convertis le meme jour (`cycle-time-guard.yml`,
+    #   `creation-provenance-advisory.yml`) : la garde anti-fork vit DANS
+    #   l'expression `runs-on`, donc une PR de fork reste hebergee et
+    #   n'atteint jamais le parc local. `timeout-minutes: 10` ajoute au job.
+    #   La variable vaut `true` depuis le 2026-10-31T04:09Z : le routage
+    #   change reellement quand la variable est activee.
+    #   Rollback = variable a `false`, sans toucher les fichiers.
+    "submodule-drift.yml",
 }
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",
@@ -1158,7 +1245,7 @@ _HYBRID_PATTERN = re.compile(
 )
 
 
-def _hybrid_runs_on(runs_on: Any) -> dict[str, set[str]] | None:
+def _hybrid_runs_on(runs_on: Any) -> dict[str, Any] | None:
     """Return the audited hybrid legs for ``runs_on``, or None if it is not
     one of the enumerated forms (#13363, then the #22461 overflow guard).
     The caller keeps the DYNAMIC_RUNS_ON rejection for every other
@@ -1183,7 +1270,11 @@ def _hybrid_runs_on(runs_on: Any) -> dict[str, set[str]] | None:
         return None
     if labels not in allowed_label_sets:
         return None
-    return {"labels": labels}
+    # La garde qui a matche est rendue avec les labels : c'est elle qui dit
+    # si la jambe locale est atteignable par un simple push de meme depot
+    # (garde meme-depot) ou seulement apres un basculement d'operateur
+    # (garde de debordement #22461).
+    return {"labels": labels, "guard": guard}
 
 
 # --- Parc local mesure par le controleur de debordement (#22937 phase A) ----
@@ -1633,9 +1724,14 @@ def scan_workflows(
                 labels = hybrid["labels"]
                 selection_error = None
                 hybrid_leg = True
+                # Une jambe de DEBORDEMENT (#22461) n'atteint le pool local
+                # que si un operateur a bascule vars.CI_OVERFLOW_LOCAL : son
+                # autorisation est ce geste, pas une entree d'allowlist.
+                operator_gated = hybrid["guard"] == HYBRID_RUNS_ON_OVERFLOW_GUARD
             else:
                 is_self_hosted, group, labels, selection_error = _runner_selection(runs_on)
                 hybrid_leg = False
+                operator_gated = False
                 if selection_error is not None:
                     broken.append(f"{path.name}:{job_name}: {selection_error}")
                     continue
@@ -1717,7 +1813,15 @@ def scan_workflows(
                     + ", ".join(unknown_unsafe),
                 ))
 
-            if path.name not in SELF_HOSTED_WORKFLOW_ALLOWLIST:
+            if (
+                path.name not in SELF_HOSTED_WORKFLOW_ALLOWLIST
+                and not operator_gated
+            ):
+                # Fail-closed : une jambe locale atteignable par le seul
+                # push d'un meme depot exige une entree d'allowlist. La
+                # jambe de DEBORDEMENT est exemptee : son acces depend d'un
+                # basculement d'operateur sur la variable de depot (cf.
+                # `operator_gated`), et l'etat par defaut la laisse hebergee.
                 violations.append(Violation(
                     path.name,
                     str(job_name),

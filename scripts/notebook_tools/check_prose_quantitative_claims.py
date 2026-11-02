@@ -215,6 +215,85 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
             "1154 s), pas un etat de CoursIA qui derive a chaque ajout."
         ),
     ),
+    # Mesures de la page DarkSnail (EPIC #21310, PR #23302) : toutes decrivent
+    # le depot externe sneed-and-feed/projectdarksnail tel que fige a la tete
+    # 043c9d26 du 2026-10-29 (blobs cites dans la page de mesure). Ces nombres
+    # ne derivent pas avec CoursIA -- upstream peut bouger, la tete mesuree
+    # reste celle de son blob. Meme classe que l'entree HopfProblem ci-dessus.
+    ArtifactExemption(
+        path="docs/lean/darksnail/concern-2026-10-29-build-verification.md",
+        motif=re.compile(
+            r"Taille d'`OcclusionTriad\.lean` \| 510 lignes \(blob `72b0b676`\) \| \*\*999 lignes\*\*"
+        ),
+        raison=(
+            "Tailles du fichier OcclusionTriad.lean du depot externe "
+            "projectdarksnail aux deux tetes mesurees (18/10 et 29/10), blobs "
+            "cites sur la ligne : la derive constatee EST le propos de la page."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/lean/darksnail/concern-2026-10-29-build-verification.md",
+        motif=re.compile(
+            r"BlockBridge\.lean` \| inexistant \| \*\*nouveau, 289 lignes\*\*"
+        ),
+        raison=(
+            "Taille du nouveau fichier BlockBridge.lean du depot externe "
+            "projectdarksnail a la tete 043c9d26 : pas une ligne de CE depot."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/lean/darksnail/concern-2026-10-29-build-verification.md",
+        motif=re.compile(
+            r"lake exe cache get` \(rc=0, 8 690 fichiers déjà en cache\)"
+        ),
+        raison=(
+            "Compte du cache Mathlib local au moment du run de build (WSL, "
+            "environnement jete) : resultat d'un run, pas un etat du depot."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/lean/darksnail/concern-2026-10-29-build-verification.md",
+        motif=re.compile(r"41 357 lignes Python au même commit"),
+        raison=(
+            "Inventaire structurel du code Python du depot externe "
+            "projectdarksnail au commit fige 043c9d26 : mesure de clone "
+            "externe, ne derive pas avec CoursIA."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/lean/darksnail/concern-2026-10-29-build-verification.md",
+        motif=re.compile(r"5 fichiers de tests \(`test_darksnail\.py`"),
+        raison=(
+            "Denombrement des fichiers de tests du depot externe "
+            "projectdarksnail (noms cites sur la ligne) au commit fige : "
+            "mesure de clone externe."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/lean/darksnail/concern-2026-10-29-build-verification.md",
+        motif=re.compile(r"OcclusionTriad\.lean` \| 999 lignes, blob"),
+        raison=(
+            "Table de provenance : taille du fichier amont au blob SHA cite "
+            "sur la meme ligne -- le blob fige le nombre, pas le depot."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/lean/darksnail/concern-2026-10-29-build-verification.md",
+        motif=re.compile(r"BlockBridge\.lean` \| 289 lignes, blob"),
+        raison=(
+            "Table de provenance : taille du fichier amont au blob SHA cite "
+            "sur la meme ligne -- le blob fige le nombre, pas le depot."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/lean/README.md",
+        motif=re.compile(r"inventaire Python \(41 357 lignes\)"),
+        raison=(
+            "Index README de la page de mesure DarkSnail : meme inventaire du "
+            "clone externe fige a 043c9d26 (exemption detaillee ci-dessus), "
+            "resume en une ligne d'index."
+        ),
+    ),
 )
 
 # ----------------------------------------------------------------------------

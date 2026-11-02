@@ -14,7 +14,6 @@ name: Notebook Execution Required
 
 on:
   pull_request:
-    branches: [main]
     types: [opened, synchronize, edited, reopened]
     paths:
       - '**.ipynb'
