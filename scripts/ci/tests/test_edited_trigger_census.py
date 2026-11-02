@@ -3,15 +3,17 @@
 Deux organes sont pins ici :
 
 * `scripts/ci/list_edited_trigger_workflows.py` -- quels workflows ecoutent
-  `pull_request: edited` et si leur verdict bouge quand le body, le titre ou
-  la base de la PR bougent ;
+  `pull_request: edited` et si leur verdict bouge quand le body, le titre, la
+  base ou le filtre `paths:` de la PR bougent ;
 * `scripts/ci/measure_redundant_runs.py` -- combien de premieres tentatives
-  redondantes la flotte produit, et combien sont imputables a un evenement
-  `edited`.
+  redondantes la flotte produit, et **de quelle classe** elles sont.
 
-Le pin le plus important est **negatif** : les wrappers Lean ne doivent PLUS
-ecouter `edited`. C'est le geste de la PR, et un test qui l'oublierait
-laisserait revenir le declencheur sans que rien ne le dise.
+Le pin le plus important est **negatif, dans les deux sens** : les wrappers
+Lean **doivent** continuer d'ecouter `edited`. Le retrait de ce declencheur
+re-ouvrirait le defect #15652 (une PR empilee retargetee vers `main` n'a
+plus de CI Lean, parce que `base_ref_changed` emet un `edited` que les
+workflows sans `edited` ignorent). Ce pin est donc le **contre-pied** de
+l'intuition -- d'ou sa valeur.
 """
 
 from __future__ import annotations
@@ -80,15 +82,24 @@ def test_le_census_ignore_un_workflow_sans_declencheur_edited(rows):
         ".github/workflows/lean-conway.yml",
     ],
 )
-def test_les_wrappers_lean_n_ecoutent_plus_edited(rows, workflow):
-    """Le geste de la PR : le verdict Lean ne depend ni du body, ni du titre,
-    ni de la base de la PR -- donc `edited` ne peut que rejouer le meme
-    verdict sur la meme tete."""
+def test_les_wrappers_lean_continuent_d_ecouter_edited(rows, workflow):
+    """Contre-pied du defaut #15652.
+
+    Ces wrappers portent un filtre `paths:`. Le filtre est evalue sur le diff
+    **base-relative** : changer la base change la liste des fichiers qui
+    matchent. Un workflow qui n'ecoute pas `edited` ne voit jamais le
+    retarget d'une PR empilee apres le merge de sa parente -- et la PR traverse
+    tout son cycle de review SANS CI Lean. Le retrait du declencheur serait
+    donc une regression, pas un gain.
+    """
     found = _by_workflow(rows)
-    assert workflow not in found, (
-        f"{workflow} ecoute encore `edited` : son verdict de contenu est "
-        "rejoue a chaque edition de body"
+    assert workflow in found, (
+        f"{workflow} n'ecoute plus `edited` : une PR empilee retargetee vers "
+        "`main` n'aura plus de CI Lean (defaut #15652)"
     )
+    row = found[workflow]
+    assert "paths" in row["depends_on"]
+    assert row["verdict"] == "PR_METADATA_DEPENDENT"
 
 
 def test_le_census_signale_le_dependance_a_la_base(rows):
@@ -99,12 +110,39 @@ def test_le_census_signale_le_dependance_a_la_base(rows):
     assert "base" in row["depends_on"]
 
 
+def test_le_census_signale_le_dependance_au_filtre_paths(rows):
+    """Un workflow filtre par `paths:` est, par construction, dependant de la
+    base : c'est l'axe qui empeche de classer `CONTENT_ONLY` un workflow
+    filtre."""
+    found = _by_workflow(rows)
+    filtered = [row for row in rows if row["paths_filtered"]]
+    assert filtered, "aucun workflow filtre par `paths:` -- le census est suspect"
+    for row in filtered:
+        assert "paths" in row["depends_on"]
+        assert row["verdict"] == "PR_METADATA_DEPENDENT"
+
+
+def test_le_verdict_content_only_exige_aucun_axe(rows):
+    """Un `CONTENT_ONLY` n'a aucun axe : son verdict ne depend que du code."""
+    for row in rows:
+        if row["verdict"] == "CONTENT_ONLY":
+            assert row["depends_on"] == []
+
+
 # ---------------------------------------------------------------------------
 # Mesure des redondances
 # ---------------------------------------------------------------------------
 
 
-def _run(run_id: int, sha: str, created: str, attempt: int = 1, path: str = ".github/workflows/x.yml", pr: int | None = 7):
+def _run(
+    run_id: int,
+    sha: str,
+    created: str,
+    attempt: int = 1,
+    path: str = ".github/workflows/x.yml",
+    pr: int | None = 7,
+    event: str = "pull_request",
+):
     return {
         "id": run_id,
         "path": path,
@@ -112,7 +150,7 @@ def _run(run_id: int, sha: str, created: str, attempt: int = 1, path: str = ".gi
         "head_sha": sha,
         "run_attempt": attempt,
         "created_at": created,
-        "event": "pull_request",
+        "event": event,
         "pull_requests": [{"number": pr}] if pr else [],
     }
 
@@ -131,25 +169,64 @@ def test_la_mesure_compte_les_premieres_tentatives_redondantes():
     assert totals["heads"] == 2
 
 
-def test_la_mesure_attribue_la_redondance_a_un_evenement_edited():
+def test_la_mesure_classe_la_redondance_meme_tete_pull_request():
+    """Deux premieres tentatives du meme workflow sur la MEME tete, toutes
+    deux declenchees par `pull_request` : sur une meme tete, le workflow PR ne
+    peut rejouer que via `edited` ou `reopened`. C'est donc la classe
+    `edited`."""
     runs = [
         _run(1, "aaa", "2026-11-01T10:00:00Z"),
         _run(2, "aaa", "2026-11-01T10:05:00Z"),
     ]
-    edits = {"7": ["2026-11-01T10:04:30Z"]}
-    report = measure.analyze(runs, edits)
-    assert report["totals"]["redundant_attributed_to_edited"] == 1
+    report = measure.analyze(runs, {})
+    totals = report["totals"]
+    assert totals["redundant_same_head_pull_request"] == 1
+    assert totals["redundant_without_linked_pr"] == 0
 
 
-def test_la_mesure_ne_attribue_pas_sans_evenement_edited():
+def test_la_mesure_classe_le_melange_d_evenements():
+    runs = [
+        _run(1, "aaa", "2026-11-01T10:00:00Z"),
+        _run(2, "aaa", "2026-11-01T10:05:00Z", event="push"),
+    ]
+    report = measure.analyze(runs, {})
+    assert report["totals"]["redundant_mixed_event"] == 1
+
+
+def test_la_mesure_signale_la_redondance_sans_pr_liable():
+    """Aucune PR liee -> la timeline est illisible : l'attribution est
+    IMPOSSIBLE, ce qui n'est pas « non imputable a `edited` ». Le compteur
+    existe pour qu'un zero ne soit pas lu comme une absence de cause."""
+    runs = [
+        _run(1, "aaa", "2026-11-01T10:00:00Z", pr=None),
+        _run(2, "aaa", "2026-11-01T10:05:00Z", pr=None),
+    ]
+    report = measure.analyze(runs, {})
+    totals = report["totals"]
+    assert totals["redundant_without_linked_pr"] == 1
+    assert totals["redundant_same_head_pull_request"] == 0
+
+
+def test_la_mesure_corrobore_par_un_retarget_de_base():
+    """`base_ref_changed` est lisible sur la timeline : il corrobore qu'un
+    `edited` a bien ete emis (donc que le re-fire etait legitime)."""
     runs = [
         _run(1, "aaa", "2026-11-01T10:00:00Z"),
         _run(2, "aaa", "2026-11-01T10:05:00Z"),
     ]
-    edits = {"7": ["2026-11-01T18:00:00Z"]}
-    report = measure.analyze(runs, edits)
-    assert report["totals"]["redundant_first_attempts"] == 1
-    assert report["totals"]["redundant_attributed_to_edited"] == 0
+    report = measure.analyze(runs, {"7": ["2026-11-01T10:04:30Z"]})
+    assert report["totals"]["redundant_corroborated_base_change"] == 1
+
+
+def test_la_mesure_ne_corrobore_pas_sans_retarget():
+    runs = [
+        _run(1, "aaa", "2026-11-01T10:00:00Z"),
+        _run(2, "aaa", "2026-11-01T10:05:00Z"),
+    ]
+    report = measure.analyze(runs, {"7": ["2026-11-01T18:00:00Z"]})
+    totals = report["totals"]
+    assert totals["redundant_first_attempts"] == 1
+    assert totals["redundant_corroborated_base_change"] == 0
 
 
 def test_la_mesure_compte_par_workflow():

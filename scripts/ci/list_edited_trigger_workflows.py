@@ -1,33 +1,47 @@
 #!/usr/bin/env python3
 """Census des workflows qui rejouent sur `pull_request: edited` (#22467).
 
-Le declencheur `edited` rejoue le workflow a chaque edition du titre ou du
-body d'une PR. Sur un workflow filtre par `paths`, le filtre reste vrai -- les
-fichiers modifies n'ont pas bouge -- donc **chaque edition de body relance le
-verdict** sur la meme tete de commit. C'est la source des « premieres
+Le declencheur `edited` rejoue un workflow a chaque edition du titre, du body
+**ou de la base** d'une PR. Sur un workflow filtre par `paths`, le filtre reste
+vrai -- les fichiers modifies n'ont pas bouge -- donc chaque edition rejouait
+le verdict sur la meme tete de commit. C'est la source des « premieres
 tentatives redondantes » mesurees par `scripts/ci/measure_redundant_runs.py`.
 
 Ce module repond a la question que l'issue #22467 pose en son point 1 :
-**quels workflows ecoutent `edited` alors que leur verdict ne depend ni du
-titre ni du body ?** La reponse se lit dans le code, pas dans une liste ecrite
-a la main :
+**quels workflows ecoutent `edited` alors que leur verdict n'en depend pas ?**
 
-1. les declencheurs sont lus dans le YAML de chaque workflow ;
-2. les scripts appeles par le workflow (et par les actions composites qu'il
-   reference) sont releves dans son texte ;
-3. la dependance au body est etablie par l'inventaire deja existant
-   `scripts/ci/body_consuming_guards.py`, qui decouvre mecaniquement quels
-   scripts lisent le body de la PR et par quel canal ;
-4. une lecture directe de `github.event.pull_request.body` dans le workflow
-   compte aussi comme dependance.
+Quatre axes de dependance, parce qu'un `edited` peut ne changer que le titre,
+que le body, ou que la **base** :
+
+``body``
+    le verdict bouge quand le body bouge. Etabli par l'inventaire deja
+    existant `scripts/ci/body_consuming_guards.py`, qui decouvre mecaniquement
+    quels scripts lisent le body et par quel canal.
+``title``
+    le verdict bouge quand le titre bouge (lecture directe).
+``base``
+    le verdict bouge quand la base bouge (lecture directe de la base).
+``paths``
+    le filtre `paths:` est evalue sur le **diff base-relative** : changer la
+    base change la liste des fichiers qui matchent, donc un workflow qui ne
+    matchait pas peut matcher apres un retarget -- et un workflow qui
+    matchait peut ne plus matcher. Sans `edited`, il ne le saurait jamais.
+
+L'axe `paths` est **load-bearing** et il est documente dans le depot :
+`lean-knot.yml` porte l'issue #15652 -- « un workflow PR qui combine
+`branches: [main]` + `paths:` + une cle `types:` SANS `edited` rate
+systematiquement les PR empilees ... quand la parente est mergee et l'enfant
+retarget vers main, l'evenement `base_ref_changed` emet un `edited` que les
+workflows sans `edited` ignorent ». Le retrait du `edited` y re-ouvrirait la
+PR empilee sans CI Lean.
 
 Verdict par workflow :
 
 ``PR_METADATA_DEPENDENT``
-    le verdict bouge quand le body, le titre ou la base de la PR bouge ->
-    `edited` reste utile.
+    au moins un axe est present -> `edited` est utile, il ne doit pas etre
+    retire.
 ``CONTENT_ONLY``
-    le verdict ne depend que du code -> `edited` est gratuit.
+    aucun axe -> `edited` est gratuit : le verdict ne depend que du code.
 
 Exemples
 --------
@@ -88,14 +102,17 @@ def _load_yaml(path: Path):
     return data if isinstance(data, dict) else {}
 
 
+def _on_block(data: dict) -> dict:
+    """Bloc `on:` du workflow (PyYAML lit `on:` comme le booleen True)."""
+    on = data.get(True, data.get("on"))
+    return on if isinstance(on, dict) else {}
+
+
 def _trigger_types(data: dict) -> dict:
-    """Retourne les types declencheurs de `pull_request` / `pull_request_target`."""
-    on = data.get(True, data.get("on"))  # PyYAML lit `on:` comme le booleen True
-    if not isinstance(on, dict):
-        return {}
+    """Types declencheurs de `pull_request` / `pull_request_target`."""
     found: dict[str, list] = {}
     for event in ("pull_request", "pull_request_target"):
-        block = on.get(event)
+        block = _on_block(data).get(event)
         if not isinstance(block, dict):
             continue
         types = block.get("types")
@@ -141,6 +158,20 @@ def _collect_scripts(root: Path, workflow_text: str) -> tuple[set[str], set[str]
     return scripts, from_composite
 
 
+def _paths_filtered(data: dict, events: list[str]) -> bool:
+    """Le bloc `pull_request` porte-t-il un filtre `paths:` ?
+
+    Ce filtre est evalue sur le diff **base-relative** : un retarget change la
+    liste des fichiers qui matchent. C'est l'axe `paths` du verdict.
+    """
+    on = _on_block(data)
+    for event in events:
+        block = on.get(event)
+        if isinstance(block, dict) and isinstance(block.get("paths"), list):
+            return True
+    return False
+
+
 def survey(root: Path) -> list[dict]:
     """Census complet des workflows qui ecoutent `edited`."""
     consumers = discover_consumers(root)
@@ -162,6 +193,7 @@ def survey(root: Path) -> list[dict]:
         direct = bool(DIRECT_BODY_RE.search(stripped))
         title = bool(DIRECT_TITLE_RE.search(stripped))
         base = bool(DIRECT_BASE_RE.search(stripped))
+        paths = _paths_filtered(data, listening)
         depends = []
         if direct or body_scripts:
             depends.append("body")
@@ -169,16 +201,15 @@ def survey(root: Path) -> list[dict]:
             depends.append("title")
         if base:
             depends.append("base")
+        if paths:
+            depends.append("paths")
         verdict = CONTENT_ONLY if not depends else PR_METADATA_DEPENDENT
         rows.append(
             {
                 "workflow": rel,
                 "listening_events": listening,
                 "trigger_types": {e: triggers[e] for e in listening},
-                "paths_filtered": any(
-                    isinstance(_pull_request_block(data, e).get("paths"), list)
-                    for e in listening
-                ),
+                "paths_filtered": paths,
                 "body_scripts": body_scripts,
                 "body_scripts_via_composite": sorted(
                     s for s in body_scripts if s in from_composite
@@ -191,26 +222,17 @@ def survey(root: Path) -> list[dict]:
     return rows
 
 
-def _pull_request_block(data: dict, event: str) -> dict:
-    on = data.get(True, data.get("on"))
-    if not isinstance(on, dict):
-        return {}
-    block = on.get(event)
-    return block if isinstance(block, dict) else {}
-
-
 def render(rows: list[dict]) -> str:
-    lines = []
-    lines.append(
+    lines = [
         f"{'workflow':52s} {'verdict':22s} {'depend de':16s} body(scripts)"
-    )
+    ]
     for row in rows:
         body = ",".join(row["body_scripts"]) or "-"
         lines.append(
             f"{row['workflow'][:52]:52s} {row['verdict']:22s} "
             f"{','.join(row['depends_on']) or '-':16s} {body[:28]}"
         )
-    counts = {}
+    counts: dict[str, int] = {}
     for row in rows:
         counts[row["verdict"]] = counts.get(row["verdict"], 0) + 1
     lines.append("")

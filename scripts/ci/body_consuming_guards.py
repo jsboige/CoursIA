@@ -222,6 +222,17 @@ def _scan_tree(tree: ast.AST) -> dict[str, dict]:
             constants = {
                 value for value in map(_const_str, node.elts) if value is not None
             }
+            # `--json` accepte une liste de champs dans UNE seule chaine
+            # (`--json body,reviews,author`) : sans decoupe sur la virgule, le
+            # champ `body` reste invisible et le consommateur echappe a
+            # l'inventaire (faux negatif mesure sur
+            # `scripts/check_pr_perimeter.py`, #22467).
+            constants |= {
+                part
+                for value in list(constants)
+                for part in value.split(",")
+                if part
+            }
             if {"pr", "view", "body"} <= constants:
                 bump(API_GH, node.lineno)
 
@@ -390,6 +401,36 @@ def find_cabling(root: Path, script: str, channel: str) -> list[str]:
 #: puis reporter les `uncabled_reason` (seule partie non derivable : elle dit
 #: pourquoi une absence est volontaire).
 REFERENCE: dict[str, dict[str, dict]] = {
+    "scripts/audit/check_orphan_merged_pr.py": {
+        "channels": {
+            "api-gh": {
+                "cabled_in": [],
+                "uncabled_reason": (
+                    "va chercher le body lui-meme (`gh pr view --json ...,body`, l.336) ; aucun workflow ne le lui passe."
+                ),
+            },
+        },
+    },
+    "scripts/candidate_delivered.py": {
+        "channels": {
+            "api-gh": {
+                "cabled_in": [],
+                "uncabled_reason": (
+                    "va chercher le body lui-meme (`gh pr view --json body,...`) ; aucun workflow ne le lui passe."
+                ),
+            },
+        },
+    },
+    "scripts/check_already_delivered.py": {
+        "channels": {
+            "api-gh": {
+                "cabled_in": [],
+                "uncabled_reason": (
+                    "va chercher le body lui-meme (`gh pr view --json ...,body`, l.255) ; aucun workflow ne le lui passe."
+                ),
+            },
+        },
+    },
     "scripts/check_closure_dossier.py": {
         "channels": {
             "api-gh": {
@@ -397,6 +438,26 @@ REFERENCE: dict[str, dict[str, dict]] = {
                 "uncabled_reason": (
                     "va chercher le body lui-meme (`gh pr view --json body`, "
                     "l.260-261) ; aucun workflow ne le lui passe."
+                ),
+            },
+        },
+    },
+    "scripts/check_pr_perimeter.py": {
+        "channels": {
+            "api-gh": {
+                "cabled_in": [],
+                "uncabled_reason": (
+                    "va chercher le body lui-meme (`gh pr view --json body,reviews,author`, l.2486) ; `perimeter-review-guard.yml` le lance en `--scan-thread`, mais ne lui passe pas le body."
+                ),
+            },
+        },
+    },
+    "scripts/ci/check_creation_provenance.py": {
+        "channels": {
+            "api-gh": {
+                "cabled_in": [],
+                "uncabled_reason": (
+                    "va chercher le body lui-meme (`gh pr view --json ...,body`, l.136) ; aucun workflow ne le lui passe."
                 ),
             },
         },
@@ -416,6 +477,36 @@ REFERENCE: dict[str, dict[str, dict]] = {
         "channels": {
             "env:FAST_LANE_PR_BODY": {
                 "cabled_in": ["always-on-commenters.yml"],
+            },
+        },
+    },
+    "scripts/ci/variation_adjacency_guard.py": {
+        "channels": {
+            "api-gh": {
+                "cabled_in": [],
+                "uncabled_reason": (
+                    "va chercher le body lui-meme (`gh pr view --json body,comments,...`, l.142) ; aucun workflow ne le lui passe."
+                ),
+            },
+        },
+    },
+    "scripts/coordination/post_dossier.py": {
+        "channels": {
+            "api-gh": {
+                "cabled_in": [],
+                "uncabled_reason": (
+                    "va chercher le body lui-meme (`gh pr view --json headRefOid,body`, l.462) ; aucun workflow ne le lui passe."
+                ),
+            },
+        },
+    },
+    "scripts/coordination/pr_comment_pretriage.py": {
+        "channels": {
+            "api-gh": {
+                "cabled_in": [],
+                "uncabled_reason": (
+                    "va chercher le body lui-meme (`gh pr view --json title,body,...`, l.226) ; aucun workflow ne le lui passe."
+                ),
             },
         },
     },

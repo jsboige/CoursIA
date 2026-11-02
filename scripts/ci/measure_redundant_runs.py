@@ -7,29 +7,59 @@ l'identique arbre. Ce n'est pas un re-run d'un job interrompu (ceux-la ont
 `run_attempt > 1` et sont comptes a part) : c'est un **declencheur** qui
 rejoue.
 
-Deux familles distinctes :
+## Ce que l'organe classe, et pourquoi pas une attribution par evenement
 
-* le double declenchement `push` + `pull_request` sur la meme tete ;
-* le declencheur `edited`, qui rejoue le workflow a chaque edition du titre
-  ou du body d'une PR (le filtre `paths` reste vrai, les fichiers n'ont pas
-  bouge).
+La premiere version de cet organe attribuait chaque redondance a un evenement
+`edited` lu sur la **timeline d'issue**. Cet axe est **structurellement
+aveugle** : la timeline REST n'expose aucune entree `edited` (mesure : 0
+entree pour #24102, dont le body a ete republie a 01:33Z). Le chiffre
+« 0 redondance imputable a `edited` » qu'il produisait était donc un **faux
+zero** : l'absence de lecture, pas l'absence de cause.
 
-L'organe **attribue** chaque redondance a la cause mesurable : pour chaque
-run redondant, il cherche un evenement `edited` sur la timeline de la PR
-concernant, a moins de trois minutes du debut du run. Une redondance sans
-cet evenement n'est pas imputable a `edited` -- et le dire est aussi utile
-que le chiffre.
+L'organe classe donc la **cause** plutot que de pretendre identifier
+l'edition :
 
-Le collecteur de runs est celui de `scripts/ci/measure_runner_demand.py` :
-il decoupe la fenetre quand l'API plafonne a 1000 runs, donc la mesure ne
-depend pas d'un plafond silencieux.
+``SAME_HEAD_PULL_REQUEST``
+    tous les essais du groupe sont declenches par `pull_request`. Sur une meme
+    tete, un workflow `pull_request` ne peut rejouer que via `edited` ou
+    `reopened` : `synchronize` implique une tete changee, `opened` implique
+    le premier essai. C'est donc la classe `edited`.
+``MIXED_EVENT``
+    le groupe melange des familles d'evenements (double declenchement
+    `push` + `pull_request` sur la meme tete, par exemple).
+``WITHOUT_LINKED_PR``
+    aucun run du groupe ne porte de PR liee (PR fermee, lien absent). Aucune
+    timeline n'est alors lisible : l'**attribution est impossible**, ce qui
+    n'est pas « non imputable a `edited` ».
+
+La **corroboration** vient d'un evenement de timeline qui, lui, est lisible :
+`base_ref_changed`. C'est le signal qu'un retarget a bien eu lieu -- donc
+qu'un `edited` a bien ete emis, et que le re-fire etait **legitime** (le
+filtre `paths:` est evalue sur le diff base-relative, cf #15652). Le compteur
+`redundant_corroborated_base_change` compte ces redondances.
+
+## Collecte
+
+Deux collecteurs, car l'API plafonne a **1000 runs** par requete :
+
+* ``--fleet`` (defaut) : l'endpoint global, plafonne a 1000 runs. Ce que
+  l'echantillon couvre est alors **une fenetre implicite**, pas la fenetre
+  demandee -- l'organe le signale dans le rapport (``sample_truncated``).
+* ``--per-workflow`` : un appel par workflow, avec la fenetre passee sous la
+  forme **canonique** ``created=<debut>..<fin>`` (les formes ``created=>=X``
+  et ``created<=Y`` sont **ignorees** par l'API, qui rend alors toute
+  l'historique du workflow) et un **re-filtre cote client** sur la fenetre.
+
+Le mode par workflow est aussi le mode **economique** : l'endpoint global
+consomme le quota REST `core` de la flotte (partagee par tous les agents
+sous le login `jsboige`) -- une collecte fleet-wide sur 48 h l'a epuisee.
 
 Exemples
 --------
 ::
 
     python scripts/ci/measure_redundant_runs.py --repo jsboige/CoursIA \
-        --since 2026-10-31T02:00:00Z --until 2026-11-02T02:00:00Z \
+        --per-workflow --since 2026-10-31T02:00:00Z --until 2026-11-02T02:00:00Z \
         --output redundant.json
     python scripts/ci/measure_redundant_runs.py --input redundant.json
 """
@@ -54,50 +84,71 @@ from measure_runner_demand import (  # noqa: E402
     parse_time,
 )
 
-#: tolerance d'attribution : un evenement `edited` declenche le run dans les
-#: secondes qui suivent ; trois minutes couvre la latence de l'API sans
-#: confondre deux editions successives.
+#: tolerance de corroboration : un retarget suivi du run tombe dans les
+#: secondes qui suivent ; trois minutes couvre la latence de l'API.
 ATTRIBUTION_WINDOW_SECONDS = 180
+
+#: Plafond de l'endpoint global `actions/runs`.
+FLEET_ENDPOINT_CAP = 1000
+
+SAME_HEAD_PULL_REQUEST = "SAME_HEAD_PULL_REQUEST"
+MIXED_EVENT = "MIXED_EVENT"
+WITHOUT_LINKED_PR = "WITHOUT_LINKED_PR"
 
 EXIT_OK = 0
 EXIT_BROKEN = 2
 
 
-def _edited_events(repo: str, pr_number: int) -> list[str]:
-    """Horodatages des evenements `edited` de la timeline d'une issue."""
-    payload = gh_api(
-        f"repos/{repo}/issues/{pr_number}/timeline?per_page=100"
-    )
+def _base_changes(repo: str, pr_number: int) -> list[str]:
+    """Horodatages des evenements `base_ref_changed` de la timeline d'une issue.
+
+    C'est le seul axe de retarget que la timeline REST expose -- et c'est
+    l'axe qui **corrobore** qu'un `edited` a bien ete emis.
+    """
+    payload = gh_api(f"repos/{repo}/issues/{pr_number}/timeline?per_page=100")
     if not isinstance(payload, list):
         raise MeasurementError(f"invalid timeline for issue {pr_number}")
     stamps = []
     for entry in payload:
-        if isinstance(entry, dict) and entry.get("event") == "edited":
+        if isinstance(entry, dict) and entry.get("event") == "base_ref_changed":
             created = entry.get("created_at")
             if isinstance(created, str):
                 stamps.append(created)
     return stamps
 
 
-def _attributable(run_started: str, edits: list[str]) -> bool:
+def _corroborated(run_started: str, stamps: list[str]) -> bool:
     start = parse_time(run_started)
-    for stamp in edits:
+    for stamp in stamps:
         delta = abs((start - parse_time(stamp)).total_seconds())
         if delta <= ATTRIBUTION_WINDOW_SECONDS:
             return True
     return False
 
 
-def analyze(runs: list[dict], edits_by_pr: dict[str, list[str]]) -> dict:
-    """Redondances par workflow, et attribution a `edited`."""
+def classify(group: list[dict]) -> str:
+    """Classe de cause d'un groupe de premieres tentatives sur une tete."""
+    events = {run.get("event") for run in group}
+    if events == {"pull_request"}:
+        return SAME_HEAD_PULL_REQUEST
+    if events == {"pull_request_target"}:
+        return SAME_HEAD_PULL_REQUEST
+    return MIXED_EVENT
+
+
+def analyze(runs: list[dict], base_changes_by_pr: dict[str, list[str]]) -> dict:
+    """Redondances par workflow, classees par cause."""
     per_workflow: dict[str, dict] = defaultdict(
         lambda: {
             "runs": 0,
             "first_attempts": 0,
             "reruns": 0,
-            "redundant_first_attempts": 0,
-            "redundant_attributed_to_edited": 0,
             "heads": set(),
+            "redundant_first_attempts": 0,
+            "redundant_same_head_pull_request": 0,
+            "redundant_mixed_event": 0,
+            "redundant_without_linked_pr": 0,
+            "redundant_corroborated_base_change": 0,
         }
     )
     by_head: dict[tuple[str, str], list[dict]] = defaultdict(list)
@@ -111,9 +162,9 @@ def analyze(runs: list[dict], edits_by_pr: dict[str, list[str]]) -> dict:
         else:
             bucket["reruns"] += 1
 
-    for (path, _sha), group in by_head.items():
+    for (path, sha), group in by_head.items():
         bucket = per_workflow[path]
-        bucket["heads"].add(_sha)
+        bucket["heads"].add(sha)
         if len(group) < 2:
             continue
         ordered = sorted(group, key=lambda r: (r.get("created_at") or "", r["id"]))
@@ -125,13 +176,21 @@ def analyze(runs: list[dict], edits_by_pr: dict[str, list[str]]) -> dict:
                 if isinstance(pr, dict) and "number" in pr
             }
         )
-        edits: list[str] = []
+        stamps: list[str] = []
         for pr in prs:
-            edits.extend(edits_by_pr.get(str(pr), []))
+            stamps.extend(base_changes_by_pr.get(str(pr), []))
+        linked = bool(prs)
+        cause = classify(ordered) if linked else WITHOUT_LINKED_PR
         for run in ordered[1:]:
             bucket["redundant_first_attempts"] += 1
-            if _attributable(run.get("created_at") or "", edits):
-                bucket["redundant_attributed_to_edited"] += 1
+            if cause == SAME_HEAD_PULL_REQUEST:
+                bucket["redundant_same_head_pull_request"] += 1
+            elif cause == MIXED_EVENT:
+                bucket["redundant_mixed_event"] += 1
+            else:
+                bucket["redundant_without_linked_pr"] += 1
+            if linked and _corroborated(run.get("created_at") or "", stamps):
+                bucket["redundant_corroborated_base_change"] += 1
 
     workflows = []
     for path, bucket in per_workflow.items():
@@ -139,28 +198,46 @@ def analyze(runs: list[dict], edits_by_pr: dict[str, list[str]]) -> dict:
             {
                 "workflow": path,
                 "runs": bucket["runs"],
+                "at_cap": bucket["runs"] >= FLEET_ENDPOINT_CAP,
                 "first_attempts": bucket["first_attempts"],
                 "reruns": bucket["reruns"],
                 "heads": len(bucket["heads"]),
                 "redundant_first_attempts": bucket["redundant_first_attempts"],
-                "redundant_attributed_to_edited": bucket[
-                    "redundant_attributed_to_edited"
+                "redundant_same_head_pull_request": bucket[
+                    "redundant_same_head_pull_request"
+                ],
+                "redundant_mixed_event": bucket["redundant_mixed_event"],
+                "redundant_without_linked_pr": bucket[
+                    "redundant_without_linked_pr"
+                ],
+                "redundant_corroborated_base_change": bucket[
+                    "redundant_corroborated_base_change"
                 ],
             }
         )
     workflows.sort(key=lambda row: -row["redundant_first_attempts"])
-    total_redundant = sum(w["redundant_first_attempts"] for w in workflows)
-    total_edited = sum(w["redundant_attributed_to_edited"] for w in workflows)
+    totals = {
+        "runs": sum(w["runs"] for w in workflows),
+        "first_attempts": sum(w["first_attempts"] for w in workflows),
+        "reruns": sum(w["reruns"] for w in workflows),
+        "heads": len({r.get("head_sha") for r in runs}),
+        "redundant_first_attempts": sum(
+            w["redundant_first_attempts"] for w in workflows
+        ),
+        "redundant_same_head_pull_request": sum(
+            w["redundant_same_head_pull_request"] for w in workflows
+        ),
+        "redundant_mixed_event": sum(w["redundant_mixed_event"] for w in workflows),
+        "redundant_without_linked_pr": sum(
+            w["redundant_without_linked_pr"] for w in workflows
+        ),
+        "redundant_corroborated_base_change": sum(
+            w["redundant_corroborated_base_change"] for w in workflows
+        ),
+    }
     return {
         "workflows": workflows,
-        "totals": {
-            "runs": sum(w["runs"] for w in workflows),
-            "first_attempts": sum(w["first_attempts"] for w in workflows),
-            "reruns": sum(w["reruns"] for w in workflows),
-            "heads": len({r.get("head_sha") for r in runs}),
-            "redundant_first_attempts": total_redundant,
-            "redundant_attributed_to_edited": total_edited,
-        },
+        "totals": totals,
         "attribution_window_seconds": ATTRIBUTION_WINDOW_SECONDS,
     }
 
@@ -168,32 +245,151 @@ def analyze(runs: list[dict], edits_by_pr: dict[str, list[str]]) -> dict:
 def render(report: dict) -> str:
     totals = report["totals"]
     lines = [
-        f"{'workflow':52s} {'runs':>6s} {'tetes':>6s} {'redond.':>8s} {'dont edited':>12s}"
+        f"{'workflow':46s} {'runs':>6s} {'tetes':>6s} {'redond.':>8s} "
+        f"{'edited?':>8s} {'melange':>8s} {'sans PR':>8s} {'retarget':>8s}"
     ]
     for row in report["workflows"]:
         if not row["redundant_first_attempts"]:
             continue
         lines.append(
-            f"{row['workflow'][:52]:52s} {row['runs']:6d} {row['heads']:6d} "
+            f"{row['workflow'][:46]:46s} {row['runs']:6d} {row['heads']:6d} "
             f"{row['redundant_first_attempts']:8d} "
-            f"{row['redundant_attributed_to_edited']:12d}"
+            f"{row['redundant_same_head_pull_request']:8d} "
+            f"{row['redundant_mixed_event']:8d} "
+            f"{row['redundant_without_linked_pr']:8d} "
+            f"{row['redundant_corroborated_base_change']:8d}"
         )
     lines.append("")
     lines.append(
         f"{totals['runs']} runs, {totals['heads']} tetes, "
-        f"{totals['redundant_first_attempts']} premieres tentatives redondantes, "
-        f"dont {totals['redundant_attributed_to_edited']} imputables a un "
-        f"evenement `edited` (+/- {report['attribution_window_seconds']} s)"
+        f"{totals['redundant_first_attempts']} premieres tentatives redondantes"
     )
+    lines.append(
+        f"  dont {totals['redundant_same_head_pull_request']} de classe "
+        f"{SAME_HEAD_PULL_REQUEST} (meme tete, evenement `pull_request` -- "
+        f"donc `edited` ou `reopen`)"
+    )
+    lines.append(
+        f"       {totals['redundant_mixed_event']} de classe {MIXED_EVENT} "
+        f"(familles d'evenements melangees)"
+    )
+    lines.append(
+        f"       {totals['redundant_without_linked_pr']} de classe "
+        f"{WITHOUT_LINKED_PR} (aucune PR liee -> attribution IMPOSSIBLE, "
+        f"pas « non imputable »)"
+    )
+    lines.append(
+        f"  {totals['redundant_corroborated_base_change']} corroborees par un "
+        f"evenement `base_ref_changed` lisible (retarget -> `edited` legitime)"
+    )
+    note = report.get("truncation_note")
+    if note:
+        lines.append(f"ATTENTION : {note}")
     return "\n".join(lines)
 
 
-def collect(repo: str, since: str, until: str) -> tuple[list[dict], dict[str, list[str]]]:
+def _workflow_ids(repo: str) -> list[tuple[int, str]]:
+    """(id numerique, chemin) des workflows du depot, via l'API (une requete).
+
+    L'endpoint `actions/workflows/{id}/runs` attend un **identifiant** (numerique
+    ou nom de fichier) : un chemin complet (`actions/stale/.github/workflows/…`)
+    renvoie un 404, et un nom de fichier peut rester ambigu. On passe donc par
+    l'id numerique, qui est sans ambiguite.
+    """
+    payload = gh_api(f"repos/{repo}/actions/workflows?per_page=100")
+    if not isinstance(payload, dict):
+        raise MeasurementError("invalid workflows payload")
+    workflows = payload.get("workflows")
+    if not isinstance(workflows, list):
+        raise MeasurementError("invalid workflows list")
+    out: list[tuple[int, str]] = []
+    for wf in workflows:
+        if not isinstance(wf, dict):
+            continue
+        wid = wf.get("id")
+        path = wf.get("path")
+        if isinstance(wid, int) and isinstance(path, str):
+            out.append((wid, path))
+    return out
+
+
+def collect_per_workflow(
+    repo: str, since: str, until: str, paths: list[str] | None = None
+) -> tuple[list[dict], list[str]]:
+    """Collecte workflow par workflow, fenetre canonique, re-filtre client.
+
+    Rend les runs retenus et la liste des workflows dont l'echantillon a
+    touche le **plafond de 1000 runs** de l'endpoint : pour eux, la fenetre
+    couverte n'est pas celle qui a ete demandee, et leur ligne de rapport est
+    un minimum, pas une mesure.
+    """
     start = parse_time(since)
     end = parse_time(until)
-    runs = collect_runs(repo, start, end)
-    # Seules les PRs impliquées dans une tete dupliquée peuvent porter une
-    # attribution : on ne lit donc pas la timeline de toute la flotte.
+    if paths:
+        targets = [(None, path) for path in paths]
+    else:
+        targets = _workflow_ids(repo)
+    runs: list[dict] = []
+    truncated: list[str] = []
+    for wid, path in targets:
+        key = wid if wid is not None else path
+        page = 1
+        seen = 0
+        while True:
+            payload = gh_api(
+                f"repos/{repo}/actions/workflows/{key}/runs"
+                f"?created={since}..{until}&per_page=100&page={page}"
+            )
+            if not isinstance(payload, dict):
+                raise MeasurementError(f"invalid runs payload for {path}")
+            chunk = payload.get("workflow_runs")
+            if not isinstance(chunk, list):
+                raise MeasurementError(f"invalid runs list for {path}")
+            runs.extend(chunk)
+            seen += len(chunk)
+            if len(chunk) < 100 or page >= 50:
+                break
+            page += 1
+        if seen >= FLEET_ENDPOINT_CAP:
+            truncated.append(path)
+    # Re-filtre cote client : seule la fenetre demandee compte.
+    kept = [
+        {
+            "id": run.get("id"),
+            "path": run.get("path"),
+            "name": run.get("name"),
+            "head_sha": run.get("head_sha", ""),
+            "run_attempt": run.get("run_attempt", 1),
+            "created_at": run.get("created_at"),
+            "event": run.get("event"),
+            "head_branch": run.get("head_branch"),
+            "pull_requests": run.get("pull_requests") or [],
+        }
+        for run in runs
+        if start <= parse_time(str(run.get("created_at") or "")) < end
+    ]
+    return kept, truncated
+
+
+def collect(
+    repo: str, since: str, until: str, per_workflow: bool = False
+) -> tuple[list[dict], dict[str, list[str]], bool, list[str]]:
+    """Runs + evenements `base_ref_changed` des PRs impliquees.
+
+    Le troisieme element indique si l'echantillon de l'endpoint global a ete
+    tronque (plafond de 1000 runs) -- dans ce cas, la fenetre couverte n'est
+    pas celle qui a ete demandee. Le quatrieme liste les workflows **individuels**
+    qui ont eux-memes touche le plafond, en mode par workflow.
+    """
+    start = parse_time(since)
+    end = parse_time(until)
+    if per_workflow:
+        runs, truncated_workflows = collect_per_workflow(repo, since, until)
+        truncated = False
+    else:
+        runs = collect_runs(repo, start, end)
+        truncated = len(runs) >= FLEET_ENDPOINT_CAP
+        truncated_workflows = []
     heads: Counter = Counter(
         (run.get("path") or run.get("name"), run.get("head_sha", ""))
         for run in runs
@@ -208,8 +404,8 @@ def collect(repo: str, since: str, until: str) -> tuple[list[dict], dict[str, li
             if isinstance(pr, dict) and "number" in pr
         }
     )
-    edits_by_pr = {str(pr): _edited_events(repo, pr) for pr in prs}
-    return runs, edits_by_pr
+    base_changes = {str(pr): _base_changes(repo, pr) for pr in prs}
+    return runs, base_changes, truncated, truncated_workflows
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -217,6 +413,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--repo", default="jsboige/CoursIA")
     parser.add_argument("--since", required=False, help="debut de fenetre (ISO-8601, TZ)")
     parser.add_argument("--until", required=False, help="fin de fenetre (ISO-8601, TZ)")
+    parser.add_argument(
+        "--per-workflow",
+        action="store_true",
+        help="collecter workflow par workflow (evite le plafond de 1000 runs "
+        "et la consommation du quota REST de la flotte)",
+    )
     parser.add_argument("--output", default=None, help="snapshot JSON")
     parser.add_argument("--input", default=None, help="rejouer un snapshot")
     parser.add_argument("--json", action="store_true")
@@ -225,19 +427,45 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.input:
             snapshot = json.loads(Path(args.input).read_text(encoding="utf-8"))
-            report = analyze(snapshot["runs"], snapshot["edited_events"])
+            report = analyze(snapshot["runs"], snapshot.get("base_changes", {}))
+            report["sample_truncated"] = bool(snapshot.get("sample_truncated"))
+            capped = [w["workflow"] for w in report["workflows"] if w["at_cap"]]
+            report["truncated_workflows"] = sorted(capped)
+            if capped:
+                report["truncation_note"] = (
+                    "workflow(s) dont l'echantillon touche le plafond de 1000 "
+                    "runs : leur ligne est un MINIMUM, pas une mesure de la "
+                    "fenetre demandee -- " + ", ".join(sorted(capped))
+                )
         else:
             if not args.since or not args.until:
                 parser.error("--since et --until sont requis hors mode --input")
-            runs, edits = collect(args.repo, args.since, args.until)
-            report = analyze(runs, edits)
+            runs, base_changes, truncated, truncated_workflows = collect(
+                args.repo, args.since, args.until, per_workflow=args.per_workflow
+            )
+            report = analyze(runs, base_changes)
+            report["sample_truncated"] = truncated
+            report["truncated_workflows"] = sorted(truncated_workflows)
+            if truncated:
+                report["truncation_note"] = (
+                    "echantillon tronque au plafond de 1000 runs de l'endpoint "
+                    "global : la fenetre couverte n'est PAS celle demandee "
+                    "(utiliser --per-workflow)"
+                )
+            if truncated_workflows:
+                report["truncation_note"] = (
+                    "workflow(s) dont l'echantillon touche le plafond de 1000 "
+                    "runs : leur ligne est un MINIMUM, pas une mesure de la "
+                    "fenetre demandee -- " + ", ".join(sorted(truncated_workflows))
+                )
             if args.output:
                 snapshot = {
                     "repo": args.repo,
                     "since": iso_z(parse_time(args.since)),
                     "until": iso_z(parse_time(args.until)),
+                    "sample_truncated": truncated,
                     "runs": runs,
-                    "edited_events": edits,
+                    "base_changes": base_changes,
                 }
                 Path(args.output).write_text(
                     json.dumps(snapshot, ensure_ascii=False), encoding="utf-8"
