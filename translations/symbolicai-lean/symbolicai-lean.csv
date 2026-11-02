@@ -42975,7 +42975,7 @@ n'existe pas. Après ce compagnon, `PatternTour` n'est plus un module noir — l
 `GOL-01` (la simulation côté Python et Golly), `Lean-16b` (FRACTRAN natif), `GOL-04` (les
 canons à gliders) et le corpus Hashlife du lake (`HashlifeCorrectness`), dont les murs `NE`/`SW`
 attendent encore leur visiteur.",,,,,,,,a7ca87cfa7274f93,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-06-Translateur-Life.ipynb,2ab31b05,markdown,fr,41c3fc1ff23bfb59,"# GOL-06 — Synthèse d'un translateur minuscule : franchir la Loi II
+MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-06-Translateur-Life.ipynb,2ab31b05,markdown,fr,f6b7e8d870706a62,"# GOL-06 — Synthèse d'un translateur minuscule : franchir la Loi II
 
 **Navigation** : [<< GOL-05 Tournée des motifs](GOL-05-Pattern-Tour.ipynb) | [Index](../README.md) | [GOL-07 Hashlife >>](GOL-07-Hashlife-Correctness.ipynb)> **Grain B1 du [Chantier 2 #12205](https://github.com/jsboige/CoursIA/issues/12205).**
 > Loi II : *« recoordonner + passer du vérificateur au constructeur »* (relie
@@ -42984,7 +42984,7 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-06-Translateur-Life.ipynb,2ab31b05,mar
 Aujourd'hui, le module `conway_lean/Conway/Life/Computation.lean` certifie
 qu'un motif (par ex. `glider`) translate correctement
 (`theorem glider_2periods : evolve 8 glider = shift (2, -2) glider := by decide`,
-[L176](../blob/main/MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/Computation.lean#L176)).
+[L176](conway_lean/Conway/Life/Computation.lean#L176)).
 Le **générateur** n'existe pas. Le cran non franchi : personne ne **demande**
 un motif et ne le **reçoit**.
 
@@ -43020,7 +43020,7 @@ Le moteur de synthèse reste **hors Lean**. L'internalisation est progressive.
 Ce qui est certifié est **le témoin**, pas le chercheur.
 
 See #12205 · See #12223 · See #12204
-",,,,,,,,41c3fc1ff23bfb59,,,,,,,,,,,,,,,
+",,,,,,,,f6b7e8d870706a62,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-06-Translateur-Life.ipynb,7b25e893,markdown,fr,4e73cbe2f1e8aea6,"## Outils
 
 | Bibliothèque | Version | Rôle |
