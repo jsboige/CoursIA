@@ -127,17 +127,26 @@ def get_delegating_selection_strategy():
 def get_taxonomy_sophism_detector():
     """Lazy import for the TaxonomySophismDetector.
 
-    Note: This module depends on `InformalAnalysisPlugin` from EPITA-IS upstream,
-    which is NOT vendored in this tranche (Semantic-Kernel coupled, 891 lines).
-    Importing the module raises ModuleNotFoundError today, in two stacked
-    layers (measured 2026-10-31, issue #10355): the vendored detector keeps
-    its upstream relative import `from .informal_definitions import ...`
-    while the sibling on disk is `_informal_definitions.py`, and even with
-    that name fixed, `_informal_definitions.py` itself imports
-    `argumentation_analysis.*` (upstream package, absent from this tree).
-    Both files are verbatim copies by design; runtime usability awaits
-    Volet B etape 4 (SK shim), which will re-export the public symbols.
+    Historique (mesure 2026-10-31, issue #10355) : ce module levait
+    ``ModuleNotFoundError`` en deux couches empilées -- l'import relatif
+    litteral ``from .informal_definitions import ...`` du détecteur vendé
+    (le sibling sur disque s'appelle ``_informal_definitions.py``), puis les
+    imports ``argumentation_analysis.*`` de ce sibling (package amont absent
+    de l'arbre). **Résolu par #23633 (Volet B étape 4)** : cet accesseur
+    installe d'abord le shim runtime
+    (:func:`argumentation_lib._epita_vendor_shim.install_informal_runtime_shim`)
+    qui registre les 3 helpers amont vendés byte-identiques
+    (``_file_loaders``/``_taxonomy_loader``/``_epita_paths``, commit épinglé
+    a8025f60) sous leurs noms amont + les alias siblings ``prompts`` et
+    ``informal_definitions``.
+
+    Prérequis mesuré : ``semantic_kernel`` au niveau module (requis par le
+    corps de ``_informal_definitions``) -- absent => l'erreur remonte
+    honnêtement (comportement CI sans requirements de série ; localement,
+    règle F : installer).
     """
+    from argumentation_lib._epita_vendor_shim import install_informal_runtime_shim
+    install_informal_runtime_shim()
     from argumentation_lib._taxonomy_sophism_detector import (
         TaxonomySophismDetector,
         create_unified_detector,
@@ -157,18 +166,19 @@ def get_informal_definitions_symbols():
         (InformalAnalysisPlugin, IdentifiedFallacy, FallacyAnalysisResult,
          setup_informal_kernel, INFORMAL_AGENT_INSTRUCTIONS)
 
-    Note (G.9 honest caveat): the upstream module imports
-    `semantic_kernel`, `pandas`, `pydantic`, `requests` and three
-    EPITA-internal helpers (`load_csv_file`, `get_taxonomy_path`,
-    `DATA_DIR`) that are NOT vendored in `argumentation_lib/`. Even the
-    module-level `import` will raise `ModuleNotFoundError:
-    No module named 'argumentation_analysis'` today -- this lazy
-    accessor exists for completeness with C184's accessor pattern, but
-    C185 realizes it does not bypass the top-level imports. Runtime
-    usability awaits Volet B etape 4 (TweetyBridge shim JPype).
-    The verbatim copy is preserved here for the future shim that will
-    re-export its public symbols.
+    Note (G.9, historique avant #23633) : le module amont importe
+    `semantic_kernel`, `pandas`, `pydantic`, `requests` et trois helpers
+    internes EPITA (`load_csv_file`, `get_taxonomy_path`, `DATA_DIR`)
+    absents de `argumentation_lib/` -- l'import levait
+    `ModuleNotFoundError: No module named 'argumentation_analysis'`.
+    **Résolu par #23633 (Volet B étape 4)** : cet accesseur installe le
+    shim runtime (`install_informal_runtime_shim`), qui vendé les 3
+    helpers au commit épinglé a8025f60 (NOTICE-EPITA) et les registre
+    sous leurs noms amont + l'alias sibling `prompts`. Seul
+    `semantic_kernel` reste un prérequis d'environnement (règle F).
     """
+    from argumentation_lib._epita_vendor_shim import install_informal_runtime_shim
+    install_informal_runtime_shim()
     from argumentation_lib._informal_definitions import (
         InformalAnalysisPlugin,
         IdentifiedFallacy,

@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-10-31
+
 # Inventaire et table de correspondance — modèles GenAI/OpenAI (issue #14755, tranche 1)
 
 > **Statut** : tranche 1/5 de #14755. Cadrage uniquement. Aucune substitution de notebook dans cette PR — la substitution était gelée tant que la table n'était pas validée contre l'API du fournisseur. **Gel levé le 2026-09-09** par la validation API (section 8).

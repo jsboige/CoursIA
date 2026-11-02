@@ -474,6 +474,24 @@ CANONICAL_LANGUAGE_TRANSITIONS_SCOPED = {
      "python3", "3.8", "3.13"):
         "Python 3.8 -> 3.13 : re-execution selective du sous-ensemble local "
         "de QC-Py-16 (#19181, cas par cas)",
+    # SL-14 : son 3.9 etait un artefact de PACKAGING, pas une contrainte
+    # fonctionnelle. `pip install aifeynman` (sdist fige en 2021) est
+    # impossible sous 3.13 : son `setup.py` importe `numpy.distutils`,
+    # retire de NumPy 2, et NumPy 1.26 n'a pas de roue cp313 -- le carnet
+    # etait donc epingle au conteneur fondateur 3.9 par cette seule
+    # raison. La reconstruction des 7 extensions Fortran par le f2py de
+    # NumPy 2 (#23443) demontre que l'echantillon s'execute sous 3.13 :
+    # la contrainte tombe. L'entree reste NOMINATIVE (chemin exact) -- la
+    # direction 3.9 -> 3.13 demeure rouge partout ailleurs, ce que la
+    # reserve de revue sur la serie ICT (pyphi==1.2.0, requires-python
+    # >=3.9,<3.10) exige.
+    ("MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/"
+     "SL-14-AIFeynman-Discover-Equations.ipynb",
+     "python3", "3.9", "3.13"):
+        "Python 3.9 -> 3.13 : convergence vers le canon d'execution 3.13 ; "
+        "le 3.9 du carnet etait impose par le packaging de `aifeynman` "
+        "(numpy.distutils), leve par la reconstruction des extensions "
+        "Fortran sous 3.13 dans la meme PR (#23443)",
     # 2.8c est le premier carnet dont la re-execution sous 3.13 est la
     # convergence attendue vers le canon de SA serie. Le kernelspec
     # ``coursia-ml-training`` est partage par 50 carnets hors 02-ML-Cours
@@ -535,19 +553,26 @@ CANONICAL_LANGUAGE_TRANSITIONS_SCOPED = {
     # chemin avant cette entree. Le scope reste nominatif (un carnet par
     # entree) pour la meme raison que 2.8c : le kernelspec est partage par
     # une trentaine de carnets hors serie (reserve de revue #22979).
-    #
-    # 2.9g ne figure PAS ici tant que ses sorties ne sont pas re-executees :
-    # une entree accorde la permission de bouger la version du carnet, et
-    # l'accorder avant la mesure laisserait passer un hand-edit sous couvert
-    # de convergence. Son venv exige un modele 7B quantifie sur une RTX 4060
-    # de 8 Go que la grille ICT-25 occupe jusqu'a la fin de la campagne ; la
-    # tranche est due et suivie sur #23292, pas abandonnee.
     ("MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/"
      "2.9d-Features-Circulaires-Helice-Nombres.ipynb",
      "coursia-ml-training", "3.10", "3.13"):
         "Python 3.10 -> 3.13 sous `coursia-ml-training` : convergence vers le "
         "canon de la serie 02-ML-Cours par re-execution (#23292, voie 1) ; "
         "venv du kernelspec mesure a 3.13.15, sorties re-executees",
+    # 2.9g est le DERNIER carnet de la serie reste a 3.10.19, et sa ligne
+    # suit la meme regle que celle de 2.9d : une entree accorde la permission
+    # de bouger la version d'un carnet, elle s'ajoute donc AVEC ses sorties
+    # re-executees, dans le meme diff. L'accorder avant la mesure laisserait
+    # passer un hand-edit sous couvert de convergence -- c'est le test
+    # ``test_canonical_transition_scoped_29g_still_refused`` qui gardait cette
+    # porte, il tombe avec sa tranche (voie 1 de #23292).
+    ("MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/"
+     "2.9g-Geometrie-de-la-Verite.ipynb",
+     "coursia-ml-training", "3.10", "3.13"):
+        "Python 3.10 -> 3.13 sous `coursia-ml-training` : convergence vers le "
+        "canon de la serie 02-ML-Cours par re-execution (#23292, voie 1) ; "
+        "sorties re-executees sous un kernelspec du meme nom mesure a "
+        "3.13.14 (le venv canon de flotte est a 3.13.15)",
 }
 
 
