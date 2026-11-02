@@ -765,17 +765,17 @@ model_qlora.print_trainable_parameters()
 trainable = sum(p.numel() for p in model_qlora.parameters() if p.requires_grad)
 total = sum(p.numel() for p in model_qlora.parameters())
 print(f""\nParams entrainables : {trainable:,} ({trainable/total*100:.2f}%)"")",,,,,,,,1ad918e3943af2b3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,464aab75,markdown,fr,36b8c7c22542a47a,"### Tokenisation du modèle
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,464aab75,markdown,fr,831ab1637f62c193,"### Tokenisation du modèle
 
 Le modèle OPT-1.3B est maintenant charge en 4-bit avec les adaptateurs LoRA configures (r=16, target q_proj/v_proj). Chargeons le tokenizer associe pour preparer le dataset d'entraînement.
 
 
-**La décomposition exacte du comptage** : 3 145 728 paramètres entraînables — d'où vient ce nombre ? OPT-1.3B compte 24 couches de décodeur, chacune portant deux projections ciblées (`q_proj` et `v_proj`, dimensions 2048×2048). Chaque adaptateur LoRA de rang r sur une couche 2048→2048 ajoute r×(2048+2048) = 4096r paramètres. Total : 24 couches × 2 modules × 4096 × r = 196 608 × r. Pour r = 16 : exactement 3 145 728 — la sortie committée vérifie la formule au paramètre près. Sur le dénominateur canonique de 1,32 Md, cela fait 0,24 % du modèle entraînable, un rapport de 419 pour 1 : 99,76 % des poids restent figés en NF4. Les deux pourcentages affichés par la cellule se lisent avec leur dénominateur propre : le « 0.38 % » divise par le modèle sous-compté de la cellule précédente (815 M), le « 0.2212 % » de PEFT divise par le total enrichi (1,42 Md, adaptateurs inclus) — le rapport canonique, lui, reste 0,2385 %.","### Model tokenization
+**La décomposition exacte du comptage** : 3 145 728 paramètres entraînables — d'où vient ce nombre ? OPT-1.3B compte 24 couches de décodeur, chacune portant deux projections ciblées (`q_proj` et `v_proj`, dimensions 2048×2048). Chaque adaptateur LoRA de rang r sur une couche 2048→2048 ajoute r×(2048+2048) = 4096r paramètres. Total : sur chaque couche, `q_proj` et `v_proj` portent chacune un adaptateur, soit 24 × 2 × 4096 × r = 196 608 × r. Pour r = 16 : exactement 3 145 728 — la sortie committée vérifie la formule au paramètre près. Sur le dénominateur canonique de 1,32 Md, cela fait 0,24 % du modèle entraînable, un rapport de 419 pour 1 : 99,76 % des poids restent figés en NF4. Les deux pourcentages affichés par la cellule se lisent avec leur dénominateur propre : le « 0.38 % » divise par le modèle sous-compté de la cellule précédente (815 M), le « 0.2212 % » de PEFT divise par le total enrichi (1,42 Md, adaptateurs inclus) — le rapport canonique, lui, reste 0,2385 %.","### Model tokenization
 
 The OPT-1.3B model is now loaded in 4-bit with the LoRA adapters configured (r=16, target q_proj/v_proj). Let's load the associated tokenizer to prepare the training dataset.
 
 
-**The exact breakdown of the count**: 3,145,728 trainable parameters -- where does that number come from? OPT-1.3B has 24 decoder layers, each carrying two targeted projections (`q_proj` and `v_proj`, dimensions 2048x2048). Each rank-r LoRA adapter on a 2048->2048 layer adds r x (2048+2048) = 4096r parameters. Total: the 24 decoder layers, with two targeted projections each, give 24 x 2 x 4096 x r = 196,608 x r. For r = 16: exactly 3,145,728 -- the committed output verifies the formula to the parameter. Against the canonical denominator of 1.32B (PEFT), that is 0.24% of the model trainable, a ratio of 419 to 1: 99.76% of the weights stay frozen in NF4. The two percentages displayed by the cell are read against their own denominator: the ""0.38%"" divides by the undercounted model of the previous cell (815M), PEFT's ""0.2212%"" divides by the enriched total (1.42B, adapters included) -- the canonical ratio remains 0.2385%.",,,,,,,36b8c7c22542a47a,9b17b549cab2f0b1,,,,,,,36b8c7c22542a47a,,,,,,,
+**The exact breakdown of the count**: 3,145,728 trainable parameters -- where does that number come from? OPT-1.3B has 24 decoder layers, each carrying two targeted projections (`q_proj` and `v_proj`, dimensions 2048x2048). Each rank-r LoRA adapter on a 2048->2048 layer adds r x (2048+2048) = 4096r parameters. Total: the 24 decoder layers, with two targeted projections each, give 24 x 2 x 4096 x r = 196,608 x r. For r = 16: exactly 3,145,728 -- the committed output verifies the formula to the parameter. Against the canonical denominator of 1.32B (PEFT), that is 0.24% of the model trainable, a ratio of 419 to 1: 99.76% of the weights stay frozen in NF4. The two percentages displayed by the cell are read against their own denominator: the ""0.38%"" divides by the undercounted model of the previous cell (815M), PEFT's ""0.2212%"" divides by the enriched total (1.42B, adapters included) -- the canonical ratio remains 0.2385%.",,,,,,,831ab1637f62c193,9b17b549cab2f0b1,,,,,,,36b8c7c22542a47a,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,a0b80355,code,fr,eb0b8741da2602cf,"# Tokenizer
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
 tokenizer.pad_token = tokenizer.eos_token
@@ -7574,16 +7574,20 @@ parameters, or small scale) preserves generalization on this small corpus; ampli
 (large rank, large scale) buys memorization at the price of the retained texts. Both levers
 act on the same quantity — the effective norm of the LoRA correction — which is why their
 curves look so alike.",,,,,,,83f821e104d28277,33155acbb3727f27,,,,,,,83f821e104d28277,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,697ea204,markdown,fr,e27fcfe58cee1f1e,"Le rang règle **combien** de paramètres l'adaptateur ajoute. Les modules ciblés règlent **où** il les ajoute. `q_proj` et `v_proj` est le choix minimal du papier LoRA ; les quatre projections `q, k, v, o` touchent deux fois plus de couches à rang égal.
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,697ea204,markdown,fr,64885fc9a4f19741,"### Où greffer les adaptateurs ? La question posée avant la mesure
 
-La question est la même que pour le rang et le rapport `alpha / r` : à taux, rang et époques constants, la perplexité retenue bouge-t-elle plus que la dispersion entre graines ? Si oui, « où greffer » compte autant que « combien ». Si non, le choix des modules est une affaire de coût et de surface mémoire, pas de qualité — et c'est ce qu'il faut écrire.","The rank sets **how many** parameters the adapter adds. The target modules set **where** it
+Le rang règle **combien** de paramètres l'adaptateur ajoute. Les modules ciblés règlent **où** il les ajoute. `q_proj` et `v_proj` est le choix minimal du papier LoRA ; les quatre projections `q, k, v, o` touchent deux fois plus de couches à rang égal.
+
+La question est la même que pour le rang et le rapport `alpha / r` : à taux, rang et époques constants, la perplexité retenue bouge-t-elle plus que la dispersion entre graines ? Si oui, « où greffer » compte autant que « combien ». Si non, le choix des modules est une affaire de coût et de surface mémoire, pas de qualité — et le balayage ci-dessous le tranche.","### Where to graft the adapters? The question asked before the measurement
+
+The rank sets **how many** parameters the adapter adds. The target modules set **where** it
 adds them. `q_proj` and `v_proj` is the minimal choice of the LoRA paper; the four
 projections `q, k, v, o` touch twice as many layers at equal rank.
 
 The question is the same as for rank and for the `alpha / r` ratio: at constant rate, rank
 and epochs, does the retained perplexity move more than the dispersion across seeds? If
 yes, ""where to graft"" matters as much as ""how much"". If no, the choice of modules is a
-matter of cost and memory footprint, not of quality — and that is what must be written.",,,,,,,e27fcfe58cee1f1e,16e1c7ad93c2b5c1,,,,,,,e27fcfe58cee1f1e,,,,,,,
+matter of cost and memory footprint, not of quality — and the sweep below settles it.",,,,,,,64885fc9a4f19741,5ad8ae2d76095be8,,,,,,,64885fc9a4f19741,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,d09572a2,code,fr,12af8078b23f4e9a,"# --- Balayage multi-graines : quelles projections porter avec LoRA ? ---
 # Meme rang, meme taux, memes graines : seule la liste des projections change.
 MODULES_CIBLES = {
