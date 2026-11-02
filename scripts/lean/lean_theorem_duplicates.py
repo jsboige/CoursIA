@@ -297,10 +297,13 @@ def parse_file(path: str, text: str, lake: str) -> list[Declaration]:
         #
         # La regle stricte (lignes vides seulement) perdait la docstring des
         # declarations precedees d'un attribut (`@[simp]`), d'un commentaire ou
-        # d'un modificateur : mesure du 2026-11-02 sur le corpus, 16
-        # declarations sur 4 640 (dont 12 derriere un `@[simp]`). Une
-        # declaration sans docstring sort de l'index de signature, donc de
-        # TOUTE paire possible, sans trace.
+        # d'un modificateur : mesure du 2026-11-02 sur le corpus, 14
+        # declarations sur 4 629 (douze derriere un `@[simp]`, une derriere un
+        # autre attribut, une derriere des commentaires). Les deux populations
+        # -- stricte et toleree -- comptent les memes 4 629 declarations : la
+        # regle ne change que l'attachement, pas l'index. Une declaration sans
+        # docstring sort de l'index de signature, donc de TOUTE paire possible,
+        # sans trace.
         doc = ""
         best = -1
         for end_line, block in blocks:
