@@ -113,10 +113,16 @@ REPO = "jsboige/CoursIA"
 BOT_LOGINS = {"github-actions", "codecov", "dependabot", "copilot-pull-request-reviewer"}
 
 # Prefixes de tags utilises par les agents du cluster (protocole dashboard/PR).
+# `[ACTION` et `[DIAG` sont la taxonomie d'emission P1 de #15511 : sans eux,
+# un commentaire CONFORME a la regle sortait de l'exemption ci-dessous (l. 44xx)
+# et tombait dans la branche CRLF/HUMAN des qu'il etait poste par un transport
+# Windows -- le compte-rendu d'une action devenait un nit bloquant la PR qu'il
+# documente. Mesure fondatrice : po-2028:CoursIA, 2026-11-02 13:30Z.
 AGENT_PREFIXES = (
     "[PART-OF-EPIC", "[GRAIN", "[CLAIMED", "[DONE", "[INFO", "[DISPATCH",
     "[ACK", "[RELEASED", "[OVERRIDE", "[MERGED", "[WARN", "[ERROR", "[ASK",
     "[REPLY", "[PROPOSAL", "[BLOCKED", "[ESCALATION", "[DELIVERED",
+    "[ACTION", "[DIAG",
 )
 
 # #15511 (P1) -- taxonomie d'emission des commentaires agent, premiere
