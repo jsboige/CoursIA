@@ -3300,6 +3300,69 @@ TRANCHE32: list[Guard] = [
 ]
 
 # ---------------------------------------------------------------------------
+# TRANCHE 35 -- denominateur de serie dans l'en-tete d'un carnet (#23678/#23738).
+#
+# Le champ `**Notebook** : 6f/13` porte l'effectif de la serie, une donnee
+# DERIVEE dont la source de verite est le catalogue genere : il est perime par
+# construction des qu'un carnet est ajoute a la racine. Mesure du 2026-10-31 sur
+# la serie RL : 18 carnets le declaraient, tous faux, et l'accretion de `RL-06f`
+# en a perime 14 d'un coup sans qu'aucun signal ne tire. L'organe existe depuis
+# le corpus de #23739 mais rien ne l'executait -- un organe que rien n'execute
+# ne garde rien.
+#
+# ADVISORY (`blocking=False`) : c'est la forme qui n'exige aucun sign-off
+# (`CLAUDE.md` section A reserve le sign-off aux ajouts normatifs et aux
+# changements de registre de gates ; un advisory publie un verdict sans jamais
+# tenir le merge). La bascule en bloquant reste un geste trace a part, qui
+# appartient au coordinateur.
+#
+# Mesure prerable au cablage (demande NanoClaw 2 de la revue de #23739) :
+# `check_series_denominator.py MyIA.AI.Notebooks --json` rend **0 constat** sur
+# l'arbre entier a la tete de `main` du 2026-11-01, controle independamment par
+# `grep -E '\*\*Notebook(\*\*)? *: *[0-9]+[a-z]? */ *[0-9]+'` -> 0 fichier.
+# Le garde nait donc vert : aucun rouge heritee ne tombe sur une PR innocente.
+#
+# Forme : iter par carnet modifie (`--check` n'existe pas dans l'organe, il
+# prend des chemins positionnels -- `{changed_paths}` substitue un fichier a la
+# fois). Un carnet modifie qui declare encore un denominateur remonte sur la PR.
+#
+# `pre_argv` : le detecteur prouve qu'il tire avant de rendre un vert (#11685).
+# `absorbed=True` : meme convention que TRANCHE11/13/22/32.
+#
+# Numero : `TRANCHE37`, pas `TRANCHE35`. Deux tranches se sont disputé le nom
+# `TRANCHE35` -- celle-ci (advisory de denominateur, #23678, #23951) et la
+# garde d'encodage (#23021, #24037). La seconde affectation ecrase la premiere
+# en Python : le registre portait une garde **muette**, celle de #23678 ne
+# tournait pas (incident #19374). `TRANCHE35` reste a la garde d'encodage, qui
+# avait deja ete evacuee en amont ; `TRANCHE36` est reserve a la PR #24063
+# (garde des chemins machine), en vol sur une autre lane -- d'ou `TRANCHE37`.
+# ---------------------------------------------------------------------------
+TRANCHE37: list[Guard] = [
+    Guard(
+        name="Series-denominator advisory (denominateur d'en-tete, #23678)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "scripts/notebook_tools/check_series_denominator.py",
+            "scripts/tests/test_check_series_denominator.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        iterate_paths=["MyIA.AI.Notebooks/**/*.ipynb"],
+        pre_argv=[
+            "python", "scripts/tests/test_check_series_denominator.py",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_series_denominator.py",
+            "{changed_paths}",
+        ],
+        blocking=False,
+        iterates_paths=True,
+        absorbed=True,
+    ),
+]
+
+# ---------------------------------------------------------------------------
 # Critere 3 de l'EPIC #13504, en organe (tranche du 2026-11-01).
 #
 # `scripts/ci/check_site_links.py` couvre la direction README -> carnet (un
@@ -3335,6 +3398,53 @@ TRANCHE34: list[Guard] = [
               "--diff-base", "{base_ref}"],
         blocking=True,           # BLOQUANT : critere 3 de #13504, en delta
         needs_base=True,
+        absorbed=True,
+        warn_rc=(2,),
+    ),
+]
+
+# ---------------------------------------------------------------------------
+# Garde d'encodage, critere 3 de #23021 (tranche du 2026-11-01).
+#
+# L'organe `scripts/notebook_tools/check_encoding_corruption.py` a ete livre par
+# #23024/#23036 avec DEUX formes : une verification pleine (`<chemins>`, cablee
+# en hook pre-commit sur les carnets stages) et une garde de DELTA
+# (`--base <ref>`, artefacts sur les LIGNES AJOUTEES des carnets changes). Sa
+# docstring annoncait la seconde comme « garde CI bloquante » -- mais mesure du
+# 2026-11-01 : aucun workflow, aucun job, aucune entree de ce registre ne
+# l'invoquait. Une capacite annoncee que rien n'invoque est une garde
+# debranchee, et le hook pre-commit est contournable (`--no-verify`, poste sans
+# `pre-commit install`) : la classe n'etait donc tenue que sur les postes
+# equipes. Cette tranche branche la forme de delta qui manquait.
+#
+# Pourquoi un delta et pas un scan global : le stock de `main` au 2026-11-01
+# mesure **0 artefact** sur les deux carnets repares (controle positif passe :
+# la prose francaise correcte est bien presente, la mesure ne rend pas 0 pour
+# cause de fichier absent). Le stock est donc propre et ne rougit personne ;
+# seule une PR qui REINTRODUIT la corruption sur une ligne ajoutee rougit. Un
+# scan global aurait le meme verdict aujourd'hui mais ferait payer a chaque PR
+# notebook le cout du corpus entier.
+#
+# L'organe apparait dans `paths` : une PR qui change le detecteur doit voir le
+# garde se declencher, sinon un detecteur casse passerait sans temoin (lecon
+# #11685/#12817, meme motif que `pip-leak-guard`).
+#
+# rc=2 = incident d'entree (git diff en echec), donc `warn_rc` : un incident
+# n'est ni une faute de la PR ni un quitus (precedent #17941 / TRANCHE34).
+# ---------------------------------------------------------------------------
+TRANCHE35: list[Guard] = [
+    Guard(
+        name="encoding-corruption-guard",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**/*.ipynb",
+            "scripts/notebook_tools/check_encoding_corruption.py",
+        ],
+        argv=["python", "scripts/notebook_tools/check_encoding_corruption.py",
+              "--base", "{base_ref}"],
+        blocking=True,           # BLOQUANT : critere 3 de #23021, en delta
+        needs_base=True,
+        diff_bounded=True,       # lignes ajoutees seulement : main ne peut pas heriter
         absorbed=True,
         warn_rc=(2,),
     ),
