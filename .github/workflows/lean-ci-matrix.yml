@@ -195,6 +195,21 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lake-manifest.json'
+      # formal_logic_lean (herite du wrapper lean-formal-logic.yml supprime,
+      # #13751 : 0 sorry reel re-mesure -- distinct_code_sorry = 0 sur 8
+      # fichiers, naive 0 aussi -- donc sorry-baseline "0" est vrai.
+      # Contrairement aux migrations soeurs, axiom target-modules =
+      # enumeration explicite des 6 sous-modules (anti-derive #10889, pas
+      # "*"), reportee telle quelle au manifeste. allow-axioms vide,
+      # fail-on-sorry true. Le wrapper declarait aussi lakefile.toml : le
+      # lake n'en a pas (mesure au repertoire), le pattern mort n'est pas
+      # reporte. lake-manifest.json reste un declencheur (#8712) : un depin
+      # de Mathlib doit rejouer le lake. lean_server.py / lean_utils.py
+      # restent des entrees de gate du lac au manifeste, comme formal_groups.)
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/lake-manifest.json'
       # grothendieck_lean (herite du wrapper lean-grothendieck.yml supprime,
       # #13751 : 0 sorry reel verifie -- distinct_code_sorry = 0 sur 198
       # fichiers, naive_sorry = 156 tous en prose -- donc sorry-baseline "0"
@@ -388,6 +403,21 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lake-manifest.json'
+      # formal_logic_lean (herite du wrapper lean-formal-logic.yml supprime,
+      # #13751 : 0 sorry reel re-mesure -- distinct_code_sorry = 0 sur 8
+      # fichiers, naive 0 aussi -- donc sorry-baseline "0" est vrai.
+      # Contrairement aux migrations soeurs, axiom target-modules =
+      # enumeration explicite des 6 sous-modules (anti-derive #10889, pas
+      # "*"), reportee telle quelle au manifeste. allow-axioms vide,
+      # fail-on-sorry true. Le wrapper declarait aussi lakefile.toml : le
+      # lake n'en a pas (mesure au repertoire), le pattern mort n'est pas
+      # reporte. lake-manifest.json reste un declencheur (#8712) : un depin
+      # de Mathlib doit rejouer le lake. lean_server.py / lean_utils.py
+      # restent des entrees de gate du lac au manifeste, comme formal_groups.)
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/lake-manifest.json'
       # grothendieck_lean (herite du wrapper lean-grothendieck.yml supprime,
       # #13751 : 0 sorry reel verifie -- distinct_code_sorry = 0 sur 198
       # fichiers, naive_sorry = 156 tous en prose -- donc sorry-baseline "0"
