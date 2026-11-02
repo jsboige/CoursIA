@@ -1,7 +1,7 @@
 import Mathlib.Analysis.SpecificLimits.Basic
 import Mathlib.Tactic
 
-import RepeatedGames.Stage
+import RepeatedGames.Stage_en
 
 /-!
   Discounting and geometric series (EN sibling)
@@ -31,7 +31,7 @@ import RepeatedGames.Stage
 namespace RepeatedGames_en
 
 open Real
-open RepeatedGames
+open RepeatedGames_en
 
 /-- Geometric series: for `δ ∈ [0, 1)`, `Σ' n, δⁿ = (1 − δ)⁻¹`. -/
 lemma geom_sum {δ : ℝ} (h0 : 0 ≤ δ) (h1 : δ < 1) :

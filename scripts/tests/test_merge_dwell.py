@@ -1872,3 +1872,203 @@ def test_une_borne_atteinte_par_le_head_d_un_worktree_lie_survit(
     ).stdout.strip() == ""
     assert _git(clone, "rev-parse", "HEAD").stdout.strip() != foreign
     assert merge_dwell.prune_dead_shallow_roots() == []
+
+
+def test_une_frontiere_dont_l_ascendance_est_presente_est_retiree(
+    tmp_path, monkeypatch
+):
+    """#23089, option (a) du coordinateur, mesuree sur ai-01 le 2026-11-01 :
+    une frontiere shallow dont le parent EST present et dont l'ascendance
+    complete est lisible ne masque rien -- son retrait ne coupe aucun
+    parcours.
+
+    C'est la forme que prend un depot apres un `git fetch --unshallow` qui
+    laisse en place des frontieres ETRANGERES : le `.git/shallow` du clone du
+    coordinateur portait six frontieres de cette sorte, **toutes** avec leur
+    parent present. L'ancien critere les gardait donc toutes, `--prune-shallow`
+    rendait 0 et `is-shallow-repository` restait `true` pour toujours.
+    """
+    origin, clone, _side = _disposable_repo(tmp_path)
+    work = tmp_path / "work"
+    _git_ok(_git(work, "checkout", "-q", "--orphan", "orpheline"), "orphan")
+    _git_ok(_git(work, "rm", "-rq", "--cached", "."), "rm cached")
+    (work / "o.txt").write_text("o\n", encoding="utf-8")
+    _git_ok(_git(work, "add", "o.txt"), "add o.txt")
+    _git_ok(_git(work, "commit", "-m", "racine orpheline"), "commit racine")
+    (work / "o2.txt").write_text("o2\n", encoding="utf-8")
+    _git_ok(_git(work, "add", "o2.txt"), "add o2.txt")
+    _git_ok(_git(work, "commit", "-m", "orpheline 2"), "commit orpheline 2")
+    _git_ok(_git(work, "push", "-q", "origin", "orpheline"), "push orpheline")
+    tip = _git(work, "rev-parse", "HEAD").stdout.strip()
+    monkeypatch.chdir(clone)
+    # fetch COMPLET (aucun `--depth`) : le parent et toute l'ascendance
+    # arrivent dans la base d'objets. Un fetch par nom de branche n'ecrit que
+    # `FETCH_HEAD` dans un clone `--single-branch` : aucune ref ne contient le
+    # sommet, et aucun reflog ne l'atteint.
+    _git_ok(_git(clone, "fetch", "-q", "origin", "orpheline"), "fetch complet")
+    assert _git(clone, "cat-file", "-e", tip + "^^{commit}").returncode == 0, (
+        "le parent doit etre present : c'est la forme mesuree sur ai-01"
+    )
+    (clone / ".git" / "shallow").write_text(tip + "\n", encoding="utf-8")
+    assert merge_dwell._default_run_git(
+        ["rev-parse", "--is-shallow-repository"]
+    )[1].strip() == "true"
+    assert merge_dwell._ancestry_readable(tip, merge_dwell._default_run_git) is True
+    assert merge_dwell.prune_dead_shallow_roots() == [tip]
+    assert merge_dwell._default_run_git(
+        ["rev-parse", "--is-shallow-repository"]
+    )[1].strip() == "false"
+
+
+def test_un_parent_present_mais_une_ascendance_illisible_garde_la_frontiere(
+    tmp_path, monkeypatch
+):
+    """#23089, controle NEGATIF de l'option (a) : le parent est present, mais
+    l'ascendance au-dela ne l'est pas. La frontiere masque encore une histoire
+    tronquee -- elle est GARDEE.
+
+    Sans ce controle, la fonction retirerait toute frontiere dont le seul
+    premier parent est present, et exposerait un `git log` a un objet absent.
+    """
+    origin, clone, _side = _disposable_repo(tmp_path)
+    work = tmp_path / "work"
+    _git_ok(_git(work, "checkout", "-q", "--orphan", "orpheline"), "orphan")
+    _git_ok(_git(work, "rm", "-rq", "--cached", "."), "rm cached")
+    (work / "o0.txt").write_text("o0\n", encoding="utf-8")
+    _git_ok(_git(work, "add", "o0.txt"), "add o0.txt")
+    _git_ok(_git(work, "commit", "-m", "racine orpheline"), "commit racine")
+    (work / "o1.txt").write_text("o1\n", encoding="utf-8")
+    _git_ok(_git(work, "add", "o1.txt"), "add o1.txt")
+    _git_ok(_git(work, "commit", "-m", "orpheline 1"), "commit orpheline 1")
+    middle = _git(work, "rev-parse", "HEAD").stdout.strip()
+    (work / "o2.txt").write_text("o2\n", encoding="utf-8")
+    _git_ok(_git(work, "add", "o2.txt"), "add o2.txt")
+    _git_ok(_git(work, "commit", "-m", "orpheline 2"), "commit orpheline 2")
+    tip = _git(work, "rev-parse", "HEAD").stdout.strip()
+    _git_ok(_git(work, "push", "-q", "origin", "orpheline"), "push orpheline")
+    monkeypatch.chdir(clone)
+    # Deux fetches bornes : le sommet ET son parent arrivent, la racine de la
+    # chaine reste absente du depot.
+    _git_ok(
+        _git(clone, "fetch", "--depth=1", "--quiet", "origin", tip),
+        "fetch sommet",
+    )
+    _git_ok(
+        _git(clone, "fetch", "--depth=1", "--quiet", "origin", middle),
+        "fetch parent",
+    )
+    # la frontiere declaree ne porte QUE le sommet : son parent est present,
+    # la frontiere parente (que le fetch aurait ecrite) n'y est plus.
+    (clone / ".git" / "shallow").write_text(tip + "\n", encoding="utf-8")
+    # `tip^^` ne traverse pas un graft : le parent se lit dans l'OBJET commit.
+    raw_parents = merge_dwell._raw_parents(tip, merge_dwell._default_run_git)
+    assert raw_parents == [middle]
+    assert _git(clone, "cat-file", "-e", middle + "^{commit}").returncode == 0
+    assert merge_dwell._ancestry_readable(tip, merge_dwell._default_run_git) is False
+    assert merge_dwell.prune_dead_shallow_roots() == []
+    assert merge_dwell._default_run_git(
+        ["rev-parse", "--is-shallow-repository"]
+    )[1].strip() == "true"
+
+
+class _GrapheSimule:
+    """`run_git` simule : un graphe de commits + les frontieres de graft.
+
+    Permet d'encoder une topologie que git ne fabrique pas commodement --
+    une frontiere de FUSION dont un seul cote est complet, par exemple --
+    sans dependre de la forme que `git fetch --depth` veut bien produire.
+    `rev-list --max-parents=0` honore les grafts : il s'arrete sur une
+    frontiere et la rend comme racine, exactement comme le vrai git.
+    """
+
+    def __init__(self, parents, grafts):
+        self.parents = parents  # sha -> [parents bruts]
+        self.grafts = set(grafts)
+
+    def __call__(self, args):
+        if list(args[:2]) == ["cat-file", "commit"]:
+            sha = args[2]
+            if sha not in self.parents:
+                return 1, ""  # objet absent de la base
+            nl = chr(10)
+            body = "".join("parent %s%s" % (q, nl) for q in self.parents[sha])
+            return 0, "tree 0000%s%s%s" % (nl, body, nl)
+        if list(args[:2]) == ["rev-list", "--max-parents=0"]:
+            sommet = args[2]
+            vus, racines, pile = set(), [], [sommet]
+            while pile:
+                courant = pile.pop()
+                if courant in vus:
+                    continue
+                vus.add(courant)
+                if courant not in self.parents:
+                    return 128, ""  # objet absent : lecture refusee
+                if courant in self.grafts:
+                    racines.append(courant)  # le graft coupe ici
+                    continue
+                ps = self.parents[courant]
+                if not ps:
+                    racines.append(courant)
+                else:
+                    pile.extend(ps)
+            return 0, chr(10).join(racines) + chr(10)
+        return 1, ""
+
+
+def test_une_frontiere_de_fusion_a_un_seul_cote_tronque_est_gardee():
+    """#23089, review du coordinateur (2026-11-01) : le retour anticipe.
+
+    Une frontiere de FUSION `M` porte deux parents bruts, `P0` et `P1`.
+    `P1` remonte a une vraie racine ; `P0` s'appuie sur `G0`, dont le parent
+    n'est plus dans la base. La premiere version rendait `True` des que `P1`
+    atteignait sa racine, sans avoir parcouru `P0` -- donc en retirant une
+    frontiere dont l'ascendance est tronquee, c'est-a-dire le defaut meme que
+    `_raw_parents` avait ete ecrit pour couvrir.
+    """
+    graphe = _GrapheSimule(
+        {
+            "P1": ["R1"],
+            "R1": [],
+            "P0": ["G0"],
+            "G0": ["ABSENT"],
+            "M": ["P0", "P1"],
+        },
+        grafts={"M", "P0"},
+    )
+    assert merge_dwell._ancestry_readable("M", graphe) is False
+
+
+def test_un_lot_de_racines_dont_une_est_complete_est_garde():
+    """#23089, second cas du coordinateur : un LOT de racines heterogene.
+
+    Un seul bond rend `R` (vraie racine) et `S2` (frontiere dont le parent
+    manque). Rendre `True` parce que `R` est une vraie racine ignorerait
+    `S2` : la frontiere doit etre gardee.
+    """
+    graphe = _GrapheSimule(
+        {
+            "R": [],
+            "S2": ["ABSENT"],
+            "T": ["R", "S2"],
+        },
+        grafts={"S2"},
+    )
+    assert merge_dwell._ancestry_readable("T", graphe) is False
+
+
+def test_un_graphe_entierement_lisible_rend_vrai():
+    """Controle POSITIF des deux cas precedents : sans trou, la fonction rend
+    `True` et la frontiere est bien retiree. Sans lui, les deux tests
+    ci-dessus passeraient aussi sur une fonction qui rend toujours `False`.
+    """
+    graphe = _GrapheSimule(
+        {
+            "R1": [],
+            "R2": [],
+            "P0": ["R2"],
+            "P1": ["R1"],
+            "M": ["P0", "P1"],
+        },
+        grafts={"M"},
+    )
+    assert merge_dwell._ancestry_readable("M", graphe) is True

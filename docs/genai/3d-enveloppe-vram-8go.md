@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-10-31
+
 # Enveloppe GPU de la famille NeRF sur l'étage pionnier 8 Go
 
 **Question.** L'EPIC Origami #18605 répartit le travail GPU en trois étages. Le premier — *pionnier*, petite carte 8 Go — est le rôle où l'on **défriche** : c'est là qu'on vérifie qu'un pipeline tient, avant de le passer à l'étage moyen. Pour la famille **0,8 B en GRPO+QLoRA**, l'enveloppe est mesurée : **pic 7 844 Mio sur 8 192 (95,7 %)** — 4 % de marge, donc rien de plus lourd n'y passe (mesure #21620, PR #21624).
