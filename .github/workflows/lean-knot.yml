@@ -118,7 +118,13 @@ on:
       # must run it.
       - 'scripts/lean/check_target_coverage.py'
   pull_request:
-    types: [opened, synchronize, edited, reopened]
+    # `edited` retire (#22467) : ce gate ne lit ni le titre ni le body de la PR
+    # -- son verdict ne depend que du contenu Lean. Le filtre `paths` reste
+    # vrai sur une edition de body, donc chaque edition rejouait le verdict
+    # sur la MEME tete (et pouvait annuler un run en cours via
+    # `cancel-in-progress`). Le workflow des organes de body garde son
+    # declencheur : `always-on-guards-body.yml`.
+    types: [opened, synchronize, reopened]
     paths:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/**.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/lakefile.lean'
