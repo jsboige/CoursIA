@@ -21,11 +21,10 @@ Conway passed away on Saturday, April 11, 2020.
 -/
 
 import Mathlib.Data.Int.ModEq
-import Conway.Doomsday
 
 namespace Conway_en
 
-open Conway
+open Conway_en
 
 /-- Days of the week, starting from Sunday = 0 -/
 inductive DayOfWeek where
