@@ -2589,6 +2589,41 @@ theorem conwayMutant_eq_sphereMutate :
       sphereMutate conwayKnotDiagram.crossings 5 11 KleinRot.r13 conwayJunctionSwap := by
   rfl
 
+/-- Le recollement `conwayJunctionSwap` est une involution (deux
+transpositions disjointes, 8↔11 et 13↔22) : c'est un élément du groupe de
+Klein sur les quatre points de bord — la condition de recollement exigée par
+`AreMutantDiagrams`. -/
+theorem conwayJunctionSwap_involutive :
+    ∀ e, conwayJunctionSwap (conwayJunctionSwap e) = e := by
+  intro e
+  by_cases h8 : e = 8
+  · subst h8; rfl
+  by_cases h11 : e = 11
+  · subst h11; rfl
+  by_cases h13 : e = 13
+  · subst h13; rfl
+  by_cases h22 : e = 22
+  · subst h22; rfl
+  · simp [conwayJunctionSwap, h8, h11, h13, h22]
+
+/-- **Témoin de profondeur 0 (C, M)** sous la définition de mutation amendée
+(maillon 8, 2bis) : la paire (Conway, mutant de sphère) satisfait
+`AreMutantDiagrams` sans aucun gadget — l'unique mutation de sphère du census
+(fenêtre [5, 11), rotation r13, recollement `conwayJunctionSwap`) la réalise.
+C'est le témoin que la notion fenêtre-nue ne fournissait pas (obstruction
+mesurée du maillon 7, #2874 c.6258386829). -/
+theorem areMutantDiagrams_conway_conwayMutant :
+    AreMutantDiagrams conwayKnotDiagram conwayMutantDiagram :=
+  ⟨5, 11, KleinRot.r13, conwayJunctionSwap, conwayJunctionSwap_involutive,
+    conwayMutant_eq_sphereMutate.symm⟩
+
+/-- Corollaire nœuds du témoin de profondeur 0 : le nœud de Conway et son
+mutant de sphère sont mutants au sens de `AreMutants`. -/
+theorem areMutants_conway_conwayMutant :
+    AreMutants conwayKnot ⟨conwayMutantDiagram⟩ :=
+  ⟨conwayKnotDiagram, conwayMutantDiagram, ReidemeisterEquiv.refl _,
+    ReidemeisterEquiv.refl _, areMutantDiagrams_conway_conwayMutant⟩
+
 /-- Matrice intermediaire 0 de l'elimination de Gauss du mutant (genere). -/
 noncomputable def conwayMutantM0 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![
     ![((0 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) : Polynomial ℤ), ((1 : Polynomial ℤ) - Polynomial.X : Polynomial ℤ), ((-1 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) + Polynomial.X : Polynomial ℤ), ((0 : Polynomial ℤ) : Polynomial ℤ), ((0 : Polynomial ℤ) : Polynomial ℤ)],
