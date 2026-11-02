@@ -1,7 +1,7 @@
-- name: "ML-2 Data&Features"
+- name: "ML-2 Data-Features"
   family: ML.NET/Python
-  python: MyIA.AI.Notebooks/ML/ML.Net/ML-02-Data&Features-Python.ipynb
-  csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-02-Data&Features.ipynb
+  python: MyIA.AI.Notebooks/ML/ML.Net/ML-02-Data-Features-Python.ipynb
+  csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-02-Data-Features-CSharp.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Modele nominal lib-vs-lib #10382 (moteurs distincts, chacun prod) : C# = Microsoft.ML (NuGet officiel Microsoft.ML, native .NET : Microsoft.ML.Transforms/Regression/Clustering/TimeSeries) et Python = scikit-learn (pip sklearn, native Python) -- chaque cote atteint le moteur SOTA ML de son ecosysteme, ni pont intermediaire ni reimplementation. Aucune asymetrie de machinerie a corriger. Verifie firsthand : C# Microsoft.ML refs + execution_count, Python sklearn imports."

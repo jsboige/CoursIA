@@ -1,7 +1,7 @@
 - name: "ML-5 TimeSeries"
   family: ML.NET/Python
   python: MyIA.AI.Notebooks/ML/ML.Net/ML-05-TimeSeries-Python.ipynb
-  csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-05-TimeSeries.ipynb
+  csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-05-TimeSeries-CSharp.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Modele nominal lib-vs-lib #10382 (moteurs distincts, algorithmes differents) : C# = Microsoft.ML.Transforms.TimeSeries ForecastBySsa (Singular Spectrum Analysis, ML.NET-native) et Python = statsmodels (STL decomposition + SARIMAX, native Python) -- familles algorithmiques differentes (SSA vs SARIMAX) mais CHAQUE COTE atteint un moteur SOTA de forecast saisonnier de son ecosysteme. Aucun pont intermediaire, aucune reimplementation from-scratch. Verifie firsthand C# + exec, Python statsmodels imports. Adjudication 2026-08-19 (dispatch #10382, comment 5335643895, lane myia-po-2026:CoursIA) : le test du schema est PASSE des deux cotes -- C# : moteur Microsoft.ML.TimeSeries 5.0.0 (nuget cell[1], using cell[14]), point d'entree ForecastBySsa, 15/15 cellules code execution_count != null ; Python : moteur statsmodels, points d'entree STL.fit cell[11] + SARIMAX cell[14], 12/12 execution_count != null. La difference de famille algorithmique n'empeche PAS native-both (le schema le dit explicitement : native-both ne dit rien de la correspondance structurelle cellule-par-cellule) -- c'est la forme exacte du modele nominal PyMC-vs-Infer.NET du mandat owner. Reclassification surface -> native-both."

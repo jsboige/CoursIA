@@ -1,6 +1,6 @@
 import Mathlib.Tactic
 
-import RepeatedGames.Stage
+import RepeatedGames.Stage_en
 import RepeatedGames.Discounting_en
 import RepeatedGames.GrimTrigger_en
 import Mathlib.Topology.Algebra.InfiniteSum.Defs
@@ -74,7 +74,7 @@ import Mathlib.Topology.Basic
 
 namespace RepeatedGames_en
 
-open RepeatedGames
+open RepeatedGames_en
 open scoped Topology
 open Filter
 
