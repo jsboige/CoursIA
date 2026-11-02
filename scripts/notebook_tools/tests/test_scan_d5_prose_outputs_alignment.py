@@ -563,6 +563,36 @@ class TestDetectProseEnumeration:
         assert mod._detect_prose_enumeration(
             "Chaque bloc contient 81 valeurs 1—9 initialisees.") is None
 
+    def test_french_word_range_not_enumeration(self):
+        # #24294 : le range mot-a-mot francais « X a Y » est une borne de
+        # domaine, pas une enumeration de niveaux output. Cas mesure
+        # Infer-02-Gaussian-Mixtures cell[41] : le mot-cle « Les 9
+        # observations » engageait le detecteur, la paire [11, 25] passait
+        # pour une enumeration de 2 niveaux, et orphelinisait ensuite les
+        # vraies sorties (Gaussian(16,04, 17,11), 4.14, 0.68 -- tous
+        # enonces par la meme prose). Formes non accentuee, accentuee,
+        # et borne « jusqu'a » ; chaque phrase porte un mot-cle reel
+        # (les N ...) pour que l'assertion None ne soit pas vacue.
+        assert mod._detect_prose_enumeration(
+            "Les 9 observations incluent des extremes (11 a 25 min)") is None
+        assert mod._detect_prose_enumeration(
+            "Les 9 trajets varient de 11 à 25 minutes selon le jour.") is None
+        assert mod._detect_prose_enumeration(
+            "Les 4 grilles couvrent 1 jusqu'à 9 cases par ligne.") is None
+
+    def test_french_word_range_does_not_mask_real_enumeration(self):
+        # Temoin negatif du critere de mort #24294 : retirer le range ne doit
+        # pas blanchir une prose qui n'enonce PAS une valeur -- une vraie
+        # enumeration cohabitante reste lue comme enumeration, et le range
+        # n'y figure plus comme niveau.
+        nums = mod._detect_prose_enumeration(
+            "2 niveaux : 0,19 et 2,31, pour des extremes qui couvrent 11 a 25 min.")
+        assert nums is not None
+        assert 0.19 in nums
+        assert 2.31 in nums
+        assert 11.0 not in nums
+        assert 25.0 not in nums
+
     def test_latex_decimal_span_preserved(self):
         # $2{,}31$ is a LaTeX decimal == 2.31 -- a real value, must be kept.
         nums = mod._detect_prose_enumeration("2 niveaux : $0{,}19$ et $2{,}31$.")

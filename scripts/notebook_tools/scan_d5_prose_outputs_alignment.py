@@ -936,6 +936,17 @@ def _detect_prose_enumeration(text: str) -> list[float] | None:
     # enumeration de 2 niveaux (1 et 9) puis comparee aux outputs globaux ->
     # FP systematique (confirme firsthand Sudoku-05-PSO cell[9], GameTheory).
     sentence = re.sub(r"\b\d{1,4}\s*[-–—]\s*\d{1,4}\b", " ", sentence)
+    # #24294 -- meme classe pour le range mot-a-mot francais : « 11 a 25 min »
+    # est une borne de domaine, pas une enumeration de niveaux output. Cas
+    # mesure Infer-02-Gaussian-Mixtures cell[41] : le mot-cle « Les 9
+    # observations » engageait le detecteur sur la phrase « incluent des
+    # extremes (11 a 25 min) », la paire [11, 25] passait pour une
+    # enumeration de 2 niveaux et orphelinisait ensuite les vraies sorties
+    # (Gaussian(16,04, 17,11), 4.14, 0.68 -- tous enonces par la prose).
+    # Formes accentuee et non accentuee (le carnet ecrit « a » sans accent),
+    # plus la borne « jusqu'a ».
+    sentence = re.sub(r"\b\d{1,4}\s*(?:à|a|jusqu'à|jusqu'a)\s*\d{1,4}\b",
+                      " ", sentence)
     nums = _extract_prose_numbers(sentence)
     return nums if len(nums) >= 2 else None
 
