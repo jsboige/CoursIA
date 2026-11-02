@@ -45,12 +45,68 @@ corpus `torchvision` (cache `~/.cache/ft00a`).
 d'affichage ; la quatrième (WS-00c translaté) s'écarte d'**un item** (`86/200` mesuré vs
 `85/200` cités).
 
-## Lecture de l'écart WS-00c : un item sur le test translaté
+### Contre-mesure du 2026-11-01 : même script, environnement différent
 
-Le test propre se reproduit **à l'identique** (`0.790 = 158/200`). Le seul écart est le test
-translaté : `0.430` mesuré contre `0.425` cités, soit **un item** (`86/200` vs `85/200`).
-Un point de test vaut `1/200 = 0.005`, donc l'écart est exactement un item — de même ordre
-que la variabilité intrinsèque de la sonde.
+Exécution du 2026-11-01 sur ce même siège, Python 3.13.14, numpy 2.4.2, **scikit-learn 1.8.0**,
+graine 42, corpus `torchvision`, cache `~/.cache/ft00a`. **Le script est inchangé** — mais
+**trois** versions ont bougé depuis le 2026-10-24 (Python `3.13.3 → 3.13.14`,
+numpy `2.3.5 → 2.4.2`, scikit-learn `1.6.1 → 1.8.0`). La comparaison ci-dessous porte donc
+sur **deux environnements**, pas sur deux versions d'une seule bibliothèque.
+
+| Sonde | État | 2026-10-24 | 2026-11-01 | Cité | Verdict 11-01 |
+|---|---|---:|---:|---:|---|
+| WS-00c | test propre | 0.7900 | 0.7900 | 0.790 | **ok** |
+| WS-00c | test translaté | 0.4300 | **0.4350** | 0.425 | écart |
+| WS-03 | test propre | 0.7800 | 0.7800 | 0.780 | **ok** |
+| WS-03 | test translaté | 0.3107 | 0.3107 | 0.311 | **ok** |
+
+Le test **propre** de WS-00c et **les deux** valeurs de WS-03 sont identiques au chiffre près
+d'un environnement à l'autre. Seul le test **translaté** de WS-00c se déplace : `0.4300 → 0.4350`,
+soit **un item de plus**, et **deux items** au-dessus de la valeur citée.
+
+### Troisième point : même version de scikit-learn, deux résultats
+
+Une contre-mesure indépendante (lane `myia-po-2025:CoursIA-2`, 2026-11-01) rejoue **le script
+du dépôt, inchangé**, sous **la même version de scikit-learn** que ci-dessus (1.8.0) et le même
+Python (3.13.14), sur un autre siège, six exécutions et deux caches distincts :
+
+| Siège | Python | numpy | scikit-learn | WS-00c translaté |
+|---|---|---|---:|---:|
+| po-2024 (ce siège) | 3.13.14 | 2.4.2 | 1.8.0 | **0.4350** (87/200) |
+| po-2025 | 3.13.14 | 2.4.6 | 1.8.0 | **0.4300** (86/200), 6/6 runs |
+| po-2024, 2026-10-24 | 3.13.3 | 2.3.5 | 1.6.1 | 0.4300 (86/200) |
+
+La ligne de référence vaut donc `0.4300`, et elle se retrouve **sous deux versions différentes**
+de scikit-learn (1.6.1 comme 1.8.0). Sous 1.8.0, deux sièges rendent deux valeurs différentes.
+Le déplacement observé le 2026-11-01 sur ce siège n'est donc pas attribuable à `scikit-learn`.
+
+## Lecture de l'écart WS-00c : dépendance d'environnement, cause non établie
+
+Le test propre de WS-00c se reproduit **à l'identique** partout (`0.7900 = 158/200`), ainsi que
+les deux valeurs de WS-03. Seul le test translaté de WS-00c varie : `0.4350` et `0.4300` sous
+`scikit-learn 1.8.0` selon le siège, `0.4300` sous `1.6.1`. Un point de test vaut `1/200 = 0.005`.
+
+Ce qui **est** établi : la valeur du test translaté de WS-00c n'est pas une propriété du carnet —
+elle dépend de l'environnement d'exécution, et le `LogisticRegression` de cette sonde est
+instancié **sans `random_state`**.
+
+Ce qui n'est **pas** établi : **lequel** des facteurs est causal. Trois candidats restent en
+lice, qu'aucune mesure disponible ne départage :
+
+- la version de `scikit-learn` — **infirmée comme cause unique**, puisqu'à version identique
+  (1.8.0) deux sièges divergent ;
+- la version de `numpy`, seul facteur visible qui distingue les deux sièges sous 1.8.0
+  (`2.4.2 → 0.4350`, `2.4.6 → 0.4300`) ;
+- la chaîne BLAS du siège, qui varie avec lui et n'a pas été relevée.
+
+Départager demanderait de rejouer les deux sièges sous un `numpy` épinglé identique — numpy seul
+variant, tout le reste tenu — puis, si l'écart subsiste, de comparer les BLAS. **Mesure non faite
+à ce jour** ; ce document ne la remplace pas par une attribution.
+
+La lecture « l'écart est de l'ordre d'un ou deux items, comparable à la variabilité intrinsèque de
+la sonde » vaut donc pour les environnements qui l'ont produite, pas au-delà. Le chiffre d'un
+carnet qui ne fixe ni la source de données, ni les versions, ni le siège est une **mesure
+d'environnement**.
 
 Les valeurs citées sont **les sorties committées** du carnet WS-00c, ligne `pixels` de la table
 de `WS-00c-Scattering-from-scratch.ipynb` (artefact committé : `pixels | 0.790 | 0.425`) — et non
@@ -70,7 +126,8 @@ reproduit le classifieur linéaire sur pixels bruts, donc cette ligne-là.
   découpage de WS-03 — mais cette compatibilité **n'est pas une provenance** : elle dit
   seulement que ce n'est pas une mesure de WS-00c.
 
-Deux causes candidates pour ce décalage d'un item, aucune prouvée ici :
+Deux causes candidates pour ce décalage, la première restant non testée, la seconde
+désormais mesurée :
 
 1. **Fork de source dans la cellule du carnet (cause structurelle).** La cellule 20 essaie
    `torchvision.datasets.FashionMNIST` puis retombe sur `fetch_openml("Fashion-MNIST")`.
@@ -82,13 +139,27 @@ Deux causes candidates pour ce décalage d'un item, aucune prouvée ici :
    (`URLError: [WinError 10060]`), donc la branche openml n'a pas pu être exécutée. Le script
    expose `--source openml` pour que le test soit rejouable sur une machine qui atteint OpenML.
 
-2. **Dérive de version de scikit-learn.** La version employée par l'auteur n'est pas
-   consignée dans le carnet ; une évolution du comportement de `LogisticRegression`
-   (solveur, multimodal) peut déplacer une prédiction. Non testé non plus : il faudrait
-   l'empreinte de l'environnement d'origine, que le carnet ne porte pas.
+2. **Dérive de version de scikit-learn — testée le 2026-11-01, non concluante.** La version
+   employée par l'auteur n'est pas consignée dans le carnet ; une évolution du comportement de
+   `LogisticRegression` (solveur, multimodal) pouvait déplacer une prédiction. Le test est fait,
+   sans réimplémentation : **le script de ce dépôt, inchangé**, rejoué sous `scikit-learn 1.8.0`
+   rend `0.4350` sur ce siège — mais `0.4300` sur un second siège sous **la même version 1.8.0**
+   et le même Python (tableau ci-dessus). Une version qui rend deux valeurs n'explique pas le
+   déplacement à elle seule : **la cause reste plausible, elle n'est pas établie.** Le test propre
+   et WS-03 ne bougent pas, ni ici ni là-bas.
 
-Ce qui est **mesuré** : sur la branche `torchvision` avec scikit-learn 1.6.1, le test propre
-est exact et le test translaté s'écarte d'un item.
+Ce qui est **mesuré** : sur la branche `torchvision`, le test propre est exact partout et le test
+translaté s'écarte de la valeur citée — d'un item sur deux sièges, de deux sur un troisième. Le
+chiffre dépend donc de l'**environnement** d'exécution, et cette dépendance est reproductible au
+sens où elle se répète run après run sur un siège donné (6/6 sur po-2025, déterministe ici) ;
+**quel** facteur de l'environnement la porte n'est pas établi.
+
+**Contrôle indépendant du finding de parité (2026-11-01).** Une réimplémentation
+indépendante de WS-00c, écrite sans lire cette section, a fait basculer le test translaté sur
+la parité **locale** au lieu de la parité **globale** `te_i`, et a obtenu `0.410` au lieu de
+`0.430`. C'est exactement le piège décrit plus haut, et il coûte quatre items — soit plus que
+l'écart total étudié. Le finding de parité n'est donc pas théorique : il a été vérifié par un
+agent qui s'y est fait prendre.
 
 ## Ce que WS-03 établit, en revanche
 
@@ -100,9 +171,17 @@ c'est la variabilité de son **approvisionnement en données** (WS-00c) qui n'es
 ## Conséquence pour la série (hors périmètre de cette PR)
 
 La cellule WS-00c gagnerait à **épingler sa source** au lieu de laisser un `try/except`
-choisir implicitement, et à consigner la version de scikit-learn à côté des valeurs citées.
-Tant que ce n'est pas fait, un chiffre de WS-00c est une **mesure d'environnement**, pas une
-propriété du carnet. Suivi à ouvrir ; cette PR ne modifie aucun carnet.
+choisir implicitement, à consigner l'environnement (versions et siège) à côté des valeurs
+citées, et à **fixer la tolérance de son solveur**. Tant que ce n'est pas fait, un chiffre de
+WS-00c est une **mesure d'environnement**, pas une propriété du carnet : deux sièges sous les
+mêmes versions de `scikit-learn` et de Python en rendent deux différentes.
+
+Un `random_state` ne remplacerait pas cette prescription : sous `lbfgs`, le solveur par défaut
+de `LogisticRegression`, la graine est **inerte** — mesuré sur scikit-learn 1.8.0, `random_state`
+42, 7 et 123 rendent des coefficients identiques au bit près, alors qu'elle les déplace sous
+`saga` (`3.45e-04`, contrôle positif). Le levier opérant est la **tolérance** : mesuré sur cette
+sonde (#21823), à données, graine et versions identiques, passer de `tol=1e-4` à `1e-6` déplace
+les coefficients de `1.76e-02` et un item. Suivi à ouvrir ; cette PR ne modifie aucun carnet.
 
 ## Reproduction
 
