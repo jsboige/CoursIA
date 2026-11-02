@@ -93,6 +93,37 @@ def test_23020_drift_resolu_nest_pas_reclassifie():
 
 
 # ---------------------------------------------------------------------------
+# Les deux residus releves par la review du 2026-11-02
+# ---------------------------------------------------------------------------
+
+
+def test_23020_perte_de_reference_au_head_reste_introduite():
+    # Residu 2 : la PR SUPPRIME l'attestation. Au base la paire a une
+    # reference (etait donc en DRIFT sur python), au HEAD elle n'en a plus :
+    # l'ensemble de cotes du HEAD est VIDE, et l'ensemble vide est contenu
+    # dans n'importe quel ensemble -- la regle de sous-ensemble classait donc
+    # "pre-existant" (gate VERT) une PR qui retire une attestation. Les
+    # attestations sont append-only : la perte d'une reference est un
+    # changement INTRODUIT par la PR.
+    verdict = mod._classify_per_pair("DRIFT", "DRIFT", {"python"}, set(),
+                                     False, True)
+    assert verdict == "DRIFT_INTRODUCED"
+
+
+def test_23020_absence_de_reference_des_deux_cotes_ne_change_nothing():
+    # Controle : si la paire n'a de reference ni au base ni au HEAD, la PR
+    # n'a rien change -> PRE_EXISTING (le gate ne rougit pas sur un etat
+    # degrade herite).
+    assert mod._classify_per_pair("DRIFT", "DRIFT", set(), set(),
+                                  True, True) == "DRIFT_PRE_EXISTING"
+
+
+def test_23020_sem_detail_de_reference_semantique_historique():
+    # Sans les drapeaux de reference, la semantique historique est conservee.
+    assert mod._classify_per_pair("DRIFT", "DRIFT", {"python"}, set()) == "DRIFT_PRE_EXISTING"
+
+
+# ---------------------------------------------------------------------------
 # Recette end-to-end : mini-depot git
 # ---------------------------------------------------------------------------
 
@@ -206,3 +237,101 @@ def test_23020_non_regression_le_gate_ne_roughit_pas_sans_nouveau_drift(mini_rep
     assert out["drift_pre_existing"] == 1
     assert out["pairs"][0]["verdict"] == "DRIFT_PRE_EXISTING"
     assert out["pairs"][0]["introduced_twins"] == []
+
+
+def test_23020_gate_rouge_quand_la_pr_supprime_l_attestation(mini_repo):
+    # Residu 2, de bout en bout : la PR retire l'attestation du registre.
+    # L'ensemble de cotes du HEAD est vide (aucune reference), celui du base
+    # vaut {python} -> la regle de sous-ensemble classait "pre-existant"
+    # (gate VERT). Les attestations sont append-only : la perte d'une
+    # reference est introduite par la PR -> gate ROUGE.
+    repo = mini_repo["repo"]
+    reg = repo / "scripts" / "notebook_tools" / "twin_pairs.d" / "twin-01.yaml"
+    reg.write_text(
+        "name: Twin-01\n"
+        "family: Serie/Test\n"
+        "parity_level: full\n"
+        f"python: {PY_REL}\n"
+        f"csharp: {CS_REL}\n",
+        encoding="utf-8",
+    )
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-q", "-m", "head: la PR retire l'attestation")
+
+    rc, out = _run(repo, mini_repo["base"])
+    assert rc == 1, out
+    pair = out["pairs"][0]
+    assert pair["verdict"] == "DRIFT_INTRODUCED"
+    assert pair["base_no_baseline"] is False
+    assert pair["head_no_baseline"] is True
+
+
+# ---------------------------------------------------------------------------
+# Recette end-to-end : numerotation divergente (residu 1)
+# ---------------------------------------------------------------------------
+
+NUM_PY_REL = "Notebooks/Serie-02/Twin-01-Python.ipynb"
+NUM_CS_REL = "Notebooks/Serie-02/Twin-02-CSharp.ipynb"
+
+
+@pytest.fixture
+def mini_repo_numbering(tmp_path: Path):
+    """Mini-depot : une paire dont les numeros de base DIVERGENT (01 vs 02).
+
+    - commit 1 : les deux carnets en v1 + l'attestation (sha de v1) ;
+      le statut est NUMBERING-DRIFT des le base (renommage unilateral) ;
+    - commit 2 (HEAD) : le carnet PYTHON bouge -> drift de contenu SOUS
+      couvert de la divergence de numerotation.
+    """
+    pytest.importorskip("yaml")
+    repo = tmp_path / "repo"
+    (repo / "Notebooks" / "Serie-02").mkdir(parents=True)
+    py = repo / NUM_PY_REL
+    cs = repo / NUM_CS_REL
+    py.write_text('{"cells": [], "version": "v1"}\n', encoding="utf-8")
+    cs.write_text('{"cells": [], "version": "v1"}\n', encoding="utf-8")
+    reg_dir = repo / "scripts" / "notebook_tools" / "twin_pairs.d"
+    reg_dir.mkdir(parents=True, exist_ok=True)
+    (reg_dir / "twin-02.yaml").write_text(
+        "name: Twin-02\n"
+        "family: Serie/Test\n"
+        "parity_level: full\n"
+        f"python: {NUM_PY_REL}\n"
+        f"csharp: {NUM_CS_REL}\n"
+        "last_audit:\n"
+        "  date: '2026-11-01'\n"
+        "  by: lane-de-test\n"
+        f"  python_sha: {_blob_sha(repo, NUM_PY_REL)}\n"
+        f"  csharp_sha: {_blob_sha(repo, NUM_CS_REL)}\n",
+        encoding="utf-8",
+    )
+
+    _git(repo, "init", "-q")
+    _git(repo, "config", "user.email", "test@example.com")
+    _git(repo, "config", "user.name", "Test")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-q", "-m", "init")
+    base_sha = _git(repo, "rev-parse", "HEAD")
+
+    py.write_text('{"cells": [], "version": "v2-python"}\n', encoding="utf-8")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-q", "-m", "head: la PR touche le jumeau python")
+
+    return {"repo": repo, "base": base_sha}
+
+
+def test_23020_naming_drift_popule_les_cotes_en_drift(mini_repo_numbering):
+    # Residu 1 : le statut NUMBERING-DRIFT masquait le drift de contenu.
+    # La garde `status == "OK"` laissait `drift_sides` VIDE, donc une PR qui
+    # introduisait un drift sous couvert d'une divergence de numerotation
+    # etait classee "pre-existant" (gate VERT). Les cotes en drift sont
+    # desormais populated, et le verdict per-pair peut les comparer.
+    repo = mini_repo_numbering["repo"]
+    rc, out = _run(repo, mini_repo_numbering["base"])
+    assert rc == 1, out
+    pair = out["pairs"][0]
+    assert pair["head_status"] == "NUMBERING-DRIFT"
+    assert pair["base_drift_sides"] == []
+    assert pair["head_drift_sides"] == ["python"]
+    assert pair["verdict"] == "DRIFT_INTRODUCED"
+    assert pair["introduced_twins"] == ["python"]
