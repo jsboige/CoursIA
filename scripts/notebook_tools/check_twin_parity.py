@@ -820,6 +820,12 @@ def check_pair(repo_root: Path, pair: dict, git_ref: str = "HEAD") -> dict:
     status in {OK, DRIFT, NUMBERING-DRIFT, MISSING}. details = liste de chaines
     explicatives. `git_ref` permet de checker a un instant arbitraire (HEAD,
     origin/main, <sha>...).
+
+    `drift_sides` (#23020) = les COTES en drift a cette ref ("python" /
+    "csharp"), sous forme de liste triee. Le `status` agrege ne dit pas quel
+    jumeau a bouge : sans ce detail par cote, un drift AJOUTE par la PR sur
+    un jumeau pouvait etre classe "pre-existant" des lors que la paire etait
+    deja en drift sur l'AUTRE jumeau.
     """
     name = pair.get("name", "?")
     py = pair["python"]
@@ -833,13 +839,21 @@ def check_pair(repo_root: Path, pair: dict, git_ref: str = "HEAD") -> dict:
 
     details = []
     status = "OK"
+    # #23020 : ensemble des COTES en drift a cette ref. Le `status` agrege ne
+    # dit pas QUEL jumeau a bouge -- c'est ce qui faisait classer "pre-existant"
+    # un drift AJOUTE par la PR sur l'autre jumeau.
+    drift_sides: set[str] = set()
+    py_drift = False
+    cs_drift = False
 
     if cur_py is None:
         details.append(f"Python MANQUANT dans git : {py}")
         status = "MISSING"
+        drift_sides.add("python")
     if cur_cs is None:
         details.append(f"C# MANQUANT dans git : {cs}")
         status = "MISSING"
+        drift_sides.add("csharp")
 
     # Verdict NUMBERING-DRIFT (EPIC #12933) : numeros de base distincts entre
     # les jumeaux DECLARES. Evalue AVANT la comparaison de SHAs : si la
@@ -904,6 +918,10 @@ def check_pair(repo_root: Path, pair: dict, git_ref: str = "HEAD") -> dict:
                 details.append(f"C# a drift : {rec_cs[:8]} -> {cur_cs[:8]}")
         if no_baseline:
             details.append("Pas de last_audit_sha enregistre (--update requis)")
+        if py_drift:
+            drift_sides.add("python")
+        if cs_drift:
+            drift_sides.add("csharp")
         if py_drift or cs_drift or no_baseline:
             status = "DRIFT"
 
@@ -915,6 +933,7 @@ def check_pair(repo_root: Path, pair: dict, git_ref: str = "HEAD") -> dict:
         "parity_level": pair.get("parity_level", "?"),
         "bridge_verdict": pair.get("bridge_verdict"),
         "status": status,
+        "drift_sides": sorted(drift_sides),
         "current_python_sha": cur_py,
         "current_csharp_sha": cur_cs,
         "current_content_python_sha": cur_cpy,
@@ -1763,7 +1782,9 @@ def migrate_registry_files_per_audit(registry_dir: Path,
     return {"migrated": migrated, "audits_moved": audits_moved}
 
 
-def _classify_per_pair(base_status: str, head_status: str) -> str:
+def _classify_per_pair(base_status: str, head_status: str,
+                       base_drift: set[str] | None = None,
+                       head_drift: set[str] | None = None) -> str:
     """Verdict per-pair pour le mode --per-pair (compare HEAD vs base-ref).
 
     Retourne un de : OK / DRIFT_INTRODUCED / DRIFT_RESOLVED / DRIFT_PRE_EXISTING.
@@ -1780,6 +1801,16 @@ def _classify_per_pair(base_status: str, head_status: str) -> str:
     PR (base OK -> head NUMBERING-DRIFT, ex. renommage unilateral dans cette PR) =
     DRIFT_INTRODUCED, gate ROUGE ; resolu par la PR (renommage realigne, OU
     divergence documentee via numbering_exception au HEAD) = DRIFT_RESOLVED.
+
+    #23020 -- le verdict "pre-existant" exige que le drift du HEAD soit un
+    SOUS-ENSEMBLE du drift du base. Les deux entrees `base_drift` /
+    `head_drift` portent les COTES en drift (voir `check_pair`). Sans eux, le
+    statut AGREGE decide seul : une paire deja en drift sur python au base,
+    dont la PR touche le jumeau C#, donnait DRIFT -> DRIFT (donc
+    DRIFT_PRE_EXISTING, gate VERT) alors que la PR INTRODUISAIT le drift C#.
+    Les ensembles sont optionnels : sans eux, la semantique historique est
+    conservee (les appelants qui n'ont pas le detail par cote ne changent
+    pas de verdict).
     """
     if base_status == "MISSING":
         return "OK" if head_status == "OK" else "DRIFT_INTRODUCED"
@@ -1789,6 +1820,9 @@ def _classify_per_pair(base_status: str, head_status: str) -> str:
         return "DRIFT_INTRODUCED"
     if base_status in ("DRIFT", "NUMBERING-DRIFT") and head_status == "OK":
         return "DRIFT_RESOLVED"
+    if base_drift is not None and head_drift is not None:
+        if set(head_drift) - set(base_drift):
+            return "DRIFT_INTRODUCED"
     return "DRIFT_PRE_EXISTING"
 
 
@@ -2466,13 +2500,16 @@ def _main(argv=None) -> int:
             if base_pp is None:
                 # Paire ajoutee par la PR -> si elle n'est PAS OK au HEAD, c'est du drift introduit
                 base_status = "MISSING"
+                base_drift: set[str] = set()
                 base_details = [f"Paire '{name}' absente du registre au base-ref '{args.base}' (ajoutee par la PR)"]
             else:
                 base_check = check_pair(repo_root, base_pp, git_ref=args.base)
                 base_status = base_check["status"]
+                base_drift = set(base_check.get("drift_sides") or ())
                 base_details = base_check["details"]
 
             head_status = head_state["status"]
+            head_drift = set(head_state.get("drift_sides") or ())
             # #22920 : branche perimee ? Paire deplacee par la branche base apres
             # le fork -- le registre de la tete declare encore l'ancien chemin.
             # Sondes croisees + orientation, uniquement si les chemins divergent.
@@ -2488,7 +2525,8 @@ def _main(argv=None) -> int:
             else:
                 # Classification per-pair (cf _classify_per_pair -- le cas paire ajoutee
                 # est special : pas d'etat pre-existant, l'etat HEAD = ce que la PR introduit).
-                verdict = _classify_per_pair(base_status, head_status)
+                verdict = _classify_per_pair(base_status, head_status,
+                                            base_drift, head_drift)
 
             entry = {
                 "name": name,
@@ -2498,6 +2536,11 @@ def _main(argv=None) -> int:
                 "base_status": base_status,
                 "head_status": head_status,
                 "verdict": verdict,
+                # #23020 : les COTES en drift a chaque ref, et le nom du jumeau
+                # que la PR a mis en drift -- le verdict ne le disait pas.
+                "base_drift_sides": sorted(base_drift),
+                "head_drift_sides": sorted(head_drift),
+                "introduced_twins": sorted(head_drift - base_drift),
                 "base_details": base_details,
                 "head_details": head_state["details"],
             }
@@ -2541,6 +2584,10 @@ def _main(argv=None) -> int:
                 if r["verdict"] != "OK":
                     for d in r["head_details"]:
                         print(f"       HEAD: {d}")
+                if r["verdict"] == "DRIFT_INTRODUCED" and r.get("introduced_twins"):
+                    # #23020 : le message nomme LE jumeau en cause.
+                    print(f"       Jumeau(x) mis en drift par la PR : "
+                          f"{', '.join(r['introduced_twins'])}")
             print(f"\nTotal : {len(results)} paire(s) | "
                   f"OK={n_ok} INTRO={n_introduced} FIXED={n_resolved} "
                   f"PRE={n_pre_existing} STALE={n_stale}")
@@ -2570,6 +2617,21 @@ def _main(argv=None) -> int:
                 # rouge STALE_BRANCH seule, ce rappel (rebaseline apres strips)
                 # ne s'applique pas -- le remede est `gh pr update-branch`.
                 if n_introduced > 0:
+                    # #23020 : le message d'erreur nomme le jumeau en cause.
+                    intro = [
+                        f"{r['name']} ({', '.join(r['introduced_twins'])})"
+                        for r in results
+                        if r["verdict"] == "DRIFT_INTRODUCED"
+                    ]
+                    if intro:
+                        print(
+                            "\nJumeau(x) mis(s) en drift par la PR : "
+                            + " ; ".join(intro)
+                            + " -- rebaseline l'attestation de la paire "
+                            "(check_twin_parity.py --update) ou deplace le "
+                            "jumeau en lockstep.",
+                            file=sys.stderr,
+                        )
                     print(
                         "\nRappel : si le DRIFT vient d'une normalisation outillee qui "
                         "deplace le blob SHA (strip_probe_banner.py --apply, "
