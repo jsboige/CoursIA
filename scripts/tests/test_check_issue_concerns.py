@@ -617,5 +617,34 @@ class RenderTests(unittest.TestCase):
         self.assertIn("cycle-watermark 1", text)
 
 
+class Utf8OutputTests(unittest.TestCase):
+    def test_emoji_excerpt_survives_a_cp1252_stdout(self):
+        # Mesure 2026-10-30 : un emoji dans un extrait de commentaire crashait
+        # le print sur un stdout redirige en page de codes ANSI (cp1252,
+        # UnicodeEncodeError apres lecture de 686 issues) -- exactement le
+        # canal de la ligne [CONCERNS] de la restitution coordinateur (#20183).
+        import io as _io
+
+        emoji_concern = "Concern: le rendu casse \U0001f680 partout"
+        original = sys.stdout
+        original_fetch = mod.fetch_comments
+        raw = _io.BytesIO()
+        sys.stdout = _io.TextIOWrapper(raw, encoding="cp1252")
+        try:
+            mod.fetch_comments = lambda number: [
+                c(60, "2026-10-19T09:00:00Z", emoji_concern)
+            ]
+            rc = mod.main(["--issues", "15"])
+            sys.stdout.flush()
+            payload = raw.getvalue()
+        finally:
+            sys.stdout = original
+            mod.fetch_comments = original_fetch
+        self.assertEqual(rc, 0)
+        out = payload.decode("utf-8")
+        self.assertIn("non resolu", out)
+        self.assertIn("\U0001f680", out)
+
+
 if __name__ == "__main__":
     unittest.main()

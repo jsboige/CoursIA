@@ -8,7 +8,8 @@ class AllWeatherPortfolio(QCAlgorithm):
     All-Weather Portfolio Strategy v5.0
 
     Key change from v4.0: Reduce IEF from 40% to 30%, increase GLD from 20% to 30%.
-    Research (iter5, weight grid search 2015-2026): IEF returned only 1.47% annualized
+    Research (iter5, weight grid search 2015-2026 ; voir la note de
+    reproductibilite plus bas) : IEF returned only 1.47% annualized
     due to the 2020-2023 Fed rate hike cycle, while GLD returned 13.24% annualized.
     Both are diversifiers (GLD corr=0.044 with SPY, IEF corr=-0.161), but GLD dominates
     on risk-adjusted return. Beta increase is marginal (+0.009: 0.328 -> 0.337).
@@ -28,6 +29,11 @@ class AllWeatherPortfolio(QCAlgorithm):
     - Alpha improves: 0.033->0.043 (diversification quality gain)
     - SPY held constant at 30% (no equity beta loading)
 
+    Note de reproductibilite : les chiffres de la campagne iter5 ci-dessus
+    (Sharpe yfinance 1.101 puis 1.149, beta 0.328 -> 0.337, alpha 0.033 -> 0.043)
+    ne sont pas dans le carnet `research.ipynb` du depot, qui ne mesure que
+    l'exploration H1-H4 ; ils ne sont pas rejouables en l'etat.
+
     Integrity check: improvement is NOT beta loading.
     - SPY weight unchanged at 30%
     - Beta increase only +0.009 (within noise)
@@ -41,9 +47,19 @@ class AllWeatherPortfolio(QCAlgorithm):
     v2.2: Sharpe 0.325, CAGR 6.5%,  MaxDD 20.4% (SMA25%, worse)
     v3.0: Sharpe 0.482, CAGR 8.2%,  MaxDD 20.7%, Net +140.3%
     v4.0: Sharpe 0.520, CAGR 8.2%,  MaxDD 17.0% (TLT eliminated, IEF 40%)
-    v5.0: Sharpe 0.602, CAGR 9.5%,  MaxDD 16.4% (IEF 30%, GLD 30%)
+    v5.0: Sharpe 0.474, CAGR 7.551%, MaxDD 16.400%, Net +107.2% (IEF 30%, GLD 30%)
 
-    Ref: Dalio (2017), research.ipynb (H5 sweep, iter5 weight grid search)
+    v5.0 : mesure du backtest QC Cloud de ce fichier sur sa fenetre codee
+    (2015-01-01 -> 2024-12-31, 2516 seances negociables, 130 ordres). Les lignes
+    v1.0 a v4.0 sont un historique de conception : ce fichier n'implemente que
+    la v5.0 et ne rejoue aucune des versions anterieures. Pour le modele de
+    portefeuille du carnet `quantbook.ipynb` (prix QC natifs, taux sans risque
+    3 %, sans couts de transaction), la meme allocation rend Sharpe 0.603 /
+    CAGR 8.0 % / MaxDD -17.2 % sur la fenetre du carnet : modele et fenetre
+    differents, les deux jeux de chiffres ne se comparent pas directement.
+
+    Ref: Dalio (2017), research.ipynb (exploration H1-H4, yfinance
+    2015-01-02 -> 2025-12-31) et quantbook.ipynb (mesure QC native)
     """
 
     def initialize(self):

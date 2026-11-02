@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-10-31
+
 # Decision Index — verification locale du classement sur une carte 8 Go
 
 Pli 1 de #18204. Issue de grain : #21910.

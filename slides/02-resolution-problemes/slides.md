@@ -849,7 +849,12 @@ algorithme génétique (selection, reproduction, mutation, retour meilleur indiv
    +150px de colonne libellé +12px de gap = ~777px de rangée. À 230px, le bloc
    « Phénotype » était éjecté sous le canvas (commit 72c10a3e). Ne pas remonter
    sans re-mesurer l'encre au bas de la diapo (scanner slidev_overflow). */
-.slidev-layout img { height: 190px !important; width: auto !important; }
+.slidev-layout img { height: 160px !important; width: auto !important; }
+/* Trois figures depuis l'ajout de « Le but » : 190px etait mesure pour DEUX
+   (380px de figures). A trois, 160+160+110 = 430px tient le canvas a 720px ;
+   190x3 le depassait (encre 14,6 % au bas de la diapo, mesuree au scanner).
+   Re-mesurer au scanner slidev_overflow avant toute remontee. */
+.slidev-layout img.but-solution { height: 110px !important; }
 h2 { margin-top: 0.2em !important; margin-bottom: 0.1em !important; }
 </style>
 
@@ -866,6 +871,11 @@ h2 { margin-top: 0.2em !important; margin-bottom: 0.1em !important; }
 </div>
 
 - Diagramme: 3 échiquiers (addition de deux, résultat)
+
+<div style="display:grid; grid-template-columns:150px 1fr; gap:12px; align-items:center; margin:2px 0;">
+<span style="font-weight:600; font-size:1.15em;">Le but</span>
+<img src="./images/img_ga_8queens_solution.png" class="but-solution" alt="Solution du problème des 8 reines : huit reines dont aucune ne se menace" />
+</div>
 
 ---
 layout: section

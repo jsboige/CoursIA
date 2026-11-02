@@ -2259,27 +2259,27 @@ if notebook_mode == ""interactive"" and not skip_widgets:
 else:
     print(""\n🤖 Mode batch - Interface interactive désactivée"")
     print(""💡 Pour mode interactif: notebook_mode = 'interactive'"")",,,,,,,,5bb341f4638450f9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,gkk2vqpxov,markdown,fr,92fb9089c9f4fc4e,"Le mode interactif etant traite, la cellule suivante presente les principaux cas d'usage applicatifs de l'analyse visuelle par GPT-5 dans un contexte professionnel et pedagogique.
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,gkk2vqpxov,markdown,fr,97a6bbacd3d789b8,"Le mode interactif etant traite, la cellule suivante presente les principaux cas d'usage applicatifs de l'analyse visuelle par GPT-5 dans un contexte professionnel et pedagogique.
 
 
 ### Lecture du résultat — matrice domaine × prompt
 
 La cellule précédente catalogue cinq domaines d'application (Histoire, Sciences, Géographie, Art et Culture, Médecine) avec pour chacun un `prompt_template` prédéfini qui peut être passé directement à `analyze_image_with_gpt5()`. Chaque template impose un rôle disciplinaire, un format de sortie, et un ton adapté au domaine — par exemple, le prompt `Médecine` spécifie *Analyse cette image médicale pour des étudiants en médecine. Explique l'anatomie visible et les points d'intérêt clinique.*
 
-L'output ne contient pas de sortie GPT-5 visible — la cellule a uniquement *annoncé* les cas d'usage, sans encore les exécuter. L'exemple guidé qui suit en exécute un pour la géographie, et les exercices de fin de notebook demandent de recombiner ces ingrédients. C'est une inversion pédagogique intéressante : la cellule 24 montre les templates, les exercices demandent de les recombiner.","With the interactive mode handled, the next cell presents the main application use cases of visual analysis by GPT-5 in a professional and pedagogical context.
+L'output ne contient pas de sortie GPT-5 visible — la cellule a uniquement *annoncé* les cas d'usage, sans encore les exécuter. L'exemple guidé qui suit en exécute un pour la géographie, et les exercices de fin de notebook réutilisent la même fonction d'analyse sur d'autres questions : stabilité d'une sortie répétée, fidélité d'un alt text, notation structurée en JSON. C'est une inversion pédagogique intéressante : la cellule 24 montre les templates, les exercices demandent d'appliquer la fonction d'analyse à d'autres questions.","With the interactive mode handled, the next cell presents the main application use cases of visual analysis by GPT-5 in a professional and pedagogical context.
 
 
 ### Reading the result — domain × prompt matrix
 
 The previous cell catalogs five application domains (History, Science, Geography, Art and Culture, Medicine) with for each a predefined `prompt_template` that can be passed directly to `analyze_image_with_gpt5()`. Each template imposes a disciplinary role, an output format, and a tone suited to the domain — for example, the `Médecine` prompt specifies *Analyse cette image médicale pour des étudiants en médecine. Explique l'anatomie visible et les points d'intérêt clinique.*
 
-The output contains no visible GPT-5 output — the cell only *announced* the use cases, without executing them yet. The guided example that follows runs one of them for geography, and the exercises at the end of the notebook ask to recombine these ingredients. This is an interesting pedagogical inversion: cell 24 shows the templates, the exercises ask to recombine them.",,,,,"Интерактивный режим рассмотрен, и следующая ячейка представляет основные прикладные сценарии использования визуального анализа GPT-5 в профессиональном и педагогическом контексте.
+The output contains no visible GPT-5 output — the cell only *announced* the use cases, without executing them yet. The guided example that follows runs one of them for geography, and the exercises at the end of the notebook reuse the same analysis function on other questions: stability of a repeated response, fidelity of an alt text, structured scoring in JSON. This is an interesting pedagogical inversion: cell 24 shows the templates, the exercises ask to apply the analysis function to other questions.",,,,,"Интерактивный режим рассмотрен, и следующая ячейка представляет основные прикладные сценарии использования визуального анализа GPT-5 в профессиональном и педагогическом контексте.
 
 ### Чтение результата — матрица домен × промпт
 
 Предыдущая ячейка каталогизирует пять доменов применения (История, Науки, География, Искусство и культура, Медицина), каждому из которых соответствует предустановленный `prompt_template`, который можно передать напрямую в `analyze_image_with_gpt5()`. Каждый шаблон задаёт дисциплинарную роль, формат вывода и тон, адаптированный к домену, — например, промпт `Médecine` задаёт *Analyse cette image médicale pour des étudiants en médecine. Explique l'anatomie visible et les points d'intérêt clinique.*
 
-Вывод не содержит видимого результата GPT-5 — ячейка лишь *анонсировала* сценарии использования, не исполняя их. Фактические выполнения оставлены упражнению 3 (ячейка 27), где студент сам составляет свой шаблон, комбинируя наблюдаемые здесь ингредиенты. Это интересная педагогическая инверсия: ячейка 24 показывает шаблоны, упражнение требует их рекомбинировать.",,92fb9089c9f4fc4e,9a360728c63231fa,,,,,11d0972728d5abb5,,,,,,,,,
+Вывод не содержит видимого результата GPT-5 — ячейка лишь *анонсировала* сценарии использования, не исполняя их. Фактические выполнения оставлены упражнению 3 (ячейка 27), где студент сам составляет свой шаблон, комбинируя наблюдаемые здесь ингредиенты. Это интересная педагогическая инверсия: ячейка 24 показывает шаблоны, упражнение требует их рекомбинировать.",,97a6bbacd3d789b8,6473fa1e2834a273,,,,,11d0972728d5abb5,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,03146442,code,fr,583bd43216b1385e,"# Cas d'usage pédagogiques avec GPT-5
 print(""\n🎓 CAS D'USAGE PÉDAGOGIQUES GPT-5"")
 print(""="" * 45)
@@ -2499,16 +2499,15 @@ The `print('Cas d'usage pédagogiques')` above is a **static catalog**, not an e
 1. API OpenRouter выставляет 26 различных моделей GPT-5 — номенклатура шире официальной номенклатуры OpenAI, и выбор делается по компромиссу `контекст × стоимость × возможности` (зрение, tools и т.д.).
 2. Три режима анализа (quick/detailed/educational) не взаимозаменяемы: quick оптимизирован под alt-text WCAG, educational даёт наводящие вопросы для ученика — это единственный режим, дающий готовый педагогический результат.
 3. Мультимодальный пайплайн (encode → POST → parse) одинаков для любого изображения — сложность живёт в промпте, а не в транспорте.",,fdb32ce3796d93f1,0f434e59eed8ba0c,,,,,2de15031478a994d,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,ubm6sfxypqb,markdown,fr,ff3fc815c4cb740d,"***
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,ubm6sfxypqb,markdown,fr,2c703bc7de7a4b02,"***
 
-## Exercices à compléter
+## Exemples guidés : trois gestes mesurés
 
-Les trois exercices suivants prolongent les exemples guidés de ce notebook : sensibilité de l'analyse à la formulation du prompt, adaptation d'un alt text à son contexte de publication, et comparaison de deux images d'un même domaine. Chaque squelette s'exécute sans erreur tel quel — à vous de remplir les `TODO etudiant`.
-","***
+Trois exemples guidés issus d'une contribution étudiante closent la partie « analyse » du carnet : mesurer la sensibilité d'une analyse à la formulation du prompt (similarité lexicale entre deux sorties à format constant), adapter un alt text à son contexte de publication sous une limite de longueur vérifiée par mesure, et comparer deux images d'un même domaine avec un prompt d'analyse identique. Le code est conservé tel qu'il a été rendu — il s'exécute et imprime ses propres contrôles.","***
 
-## Exercises to complete
+## Guided examples: three measured gestures
 
-The following three exercises extend the guided examples of this notebook: sensitivity of the analysis to the wording of the prompt, adapting an alt text to its publication context, and comparing two images from the same domain. Each skeleton runs without error as is — it is up to you to fill in the `TODO etudiant`.",,,,,"### Упражнение 3: Синтез — полный workflow мультимодального анализа
+Three guided examples from a student contribution close the « analysis » part of the notebook: measuring the sensitivity of an analysis to the prompt wording (lexical similarity between two texts at constant format), adapting an alt text to its publication context under a length limit verified by measurement, and comparing two images from the same domain with an identical analysis prompt. The code is kept as it was delivered — it runs and prints its own checks.",,,,,"### Упражнение 3: Синтез — полный workflow мультимодального анализа
 
 **Оценочная продолжительность:** 15-20 минут
 
@@ -2528,85 +2527,121 @@ The following three exercises extend the guided examples of this notebook: sensi
 
 - Подсказка 1: Используйте функцию `analyze_image_with_gpt5()` с параметром `prompt` для вашего персонализированного prompt
 - Подсказка 2: Режим ""educational"" автоматически генерирует 3 вопроса для размышления для студентов
-- Подсказка 3: Адаптируйте лексику prompt к уровню (elementary, secondary, university)",,ff3fc815c4cb740d,4a927ff5835987b2,,,,,6b20b97c4063d231,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,tvhxa6pat2h,code,fr,9a0d91072759ecc9,"# Exercice 3 : Comparateur d'images -- deux images du meme domaine cote a cote
-# TODO etudiant : implementer compare_images() pour deux images d'un meme domaine
+- Подсказка 3: Адаптируйте лексику prompt к уровню (elementary, secondary, university)",,2c703bc7de7a4b02,a92d4639ec2c4d76,,,,,6b20b97c4063d231,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,tvhxa6pat2h,code,fr,e9d75f2b8f0e0ae6,"# Exemple guide : comparateur d'images -- deux images du meme domaine cote a cote
+# (contribution etudiante, PR #23305 -- github.com/Perr1neF0)
+import pprint, time
 
 # 1. Selection des deux images
-image_a = example_images[0]['url']  # TODO etudiant : premiere image du domaine choisi
-image_b = example_images[3]['url']  # TODO etudiant : remplacer par une image du MEME domaine
+domaine = ""Géographie""
+image_a = example_images[3]['url']  # Paysage naturel (Géographie/Environnement)
+image_b = ""https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRPQ_gGhRNQdk5gxBqyA9diGOVps2ZliOpWX2ifjfPSPg&s=10""  # carte de France (image deja utilisee plus haut)
 
 # 2. Prompt d'analyse pour chaque image
-# TODO etudiant : redigez un prompt qui impose une structure comparable entre les deux analyses
-# Indice : meme format de sortie pour les deux images -- sinon la comparaison est arbitraire
+prompt_analyse = f""""""Tu es professeur de {domaine}. Réponds en {language}.
+Analyse cette image avec exactement cette structure :
+**Type d'image** : (photo, carte, schéma...) en une ligne
+**Éléments principaux** : 3 à 5 puces
+**Information géographique** : 3 lignes maximum
+**Intérêt pédagogique** : une phrase""""""
 
 # 3. Fonction de comparaison
 def compare_images(url_a, url_b, prompt):
     """"""
     Analyse deux images du meme domaine et produit une comparaison structuree.
 
-    Args:
-        url_a: URL de la premiere image
-        url_b: URL de la seconde image
-        prompt: prompt d'analyse (format identique pour les deux images)
-
     Returns:
-        Dict avec les deux analyses et leur comparaison
+        Dict avec les deux analyses, leur comparaison et le temps total.
     """"""
+    debut = time.time()
     comparaison = {}
 
-    # TODO etudiant : analyser chaque image individuellement avec analyze_image_with_gpt5
-    # TODO etudiant : croiser les resultats -- points communs, differences, verdict
-    # Indice : le texte de la premiere analyse peut etre injecte dans le prompt de la seconde
+    # a) Analyse individuelle, meme prompt pour les deux images
+    for cle, url in [(""analyse_a"", url_a), (""analyse_b"", url_b)]:
+        r = analyze_image_with_gpt5(url, prompt=prompt)
+        if not r['success']:
+            comparaison[cle] = None
+            comparaison[""erreur""] = f""{cle} : {r['error']}""
+            return comparaison  # inutile de croiser si une analyse manque
+        comparaison[cle] = r['analysis']
 
-    pass  # Remplacer par votre implementation
+    # b) Croisement : on injecte les deux analyses dans le prompt, et on joint
+    #    l'image B pour que GPT-5 puisse verifier les affirmations sur l'image visible
+    prompt_croisement = f""""""Tu compares deux images de {domaine}. Réponds en {language}.
+Voici l'analyse de l'image A :
+\""\""\""{comparaison['analyse_a']}\""\""\""
 
+Voici l'analyse de l'image B (l'image jointe) :
+\""\""\""{comparaison['analyse_b']}\""\""\""
+
+Produis exactement ces trois sections :
+**Points communs** : 3 puces
+**Différences** : 3 puces
+**Verdict** : laquelle des deux images est la plus utile pour introduire le domaine à des étudiants, et pourquoi (3 lignes maximum).""""""
+
+    r = analyze_image_with_gpt5(url_b, prompt=prompt_croisement)
+    comparaison[""comparaison""] = r['analysis'] if r['success'] else f""ERREUR : {r['error']}""
+    comparaison[""temps_total_s""] = round(time.time() - debut, 1)
     return comparaison
 
 # 4. Executer et afficher
-# Indice : pprint.pprint pour un affichage lisible du dict
-resultat_comparaison = None  # TODO etudiant : compare_images(image_a, image_b, prompt)
+resultat_comparaison = compare_images(image_a, image_b, prompt_analyse)
+pprint.pprint(resultat_comparaison, width=100)",,,,,,,,e9d75f2b8f0e0ae6,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,cuqkx7t59ob,markdown,fr,93e5b853cd3d92a9,"### Critères de succès
 
-print(""Exercice a completer"")
-",,,,,,,,9a0d91072759ecc9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,cuqkx7t59ob,markdown,fr,68468125c9faf6c6,"### Critères de succès
+**Exercice 1 — reproductibilité**
+- [ ] Trois analyses identiques lancées, et leurs similarités deux à deux mesurées (pas estimées), présentées comme **descriptives**
+- [ ] Les `supported_parameters` du modèle consultés, la conclusion limitée au support **annoncé** de `temperature` — aucun comportement (ignoration, rejet, normalisation) inféré des seules métadonnées
+- [ ] Toute comparaison d'échantillons additionnels (facultative, payante) reste descriptive, jamais présentée comme preuve causale ; `temperature` est remise à `0.7` en fin de cellule si l'expérience est faite
 
-- [ ] Les deux images appartiennent au même domaine et les analyses utilisent le même format
-- [ ] `compare_images()` retourne un dictionnaire avec les deux analyses et la comparaison
-- [ ] La comparaison distingue points communs et différences de façon structurée
-- [ ] Les résultats sont présentés clairement (`pprint` ou affichage formaté)
-- [ ] Le temps de réponse total reste raisonnable (2 analyses + croisement)
+**Exercice 2 — audit de fidélité**
+- [ ] Inventaire et alt text produits par deux appels **séparés**, chacun sous une consigne unique
+- [ ] Les termes de l'alt text sont confrontés à l'inventaire par un calcul, avec la liste des termes non étayés
+- [ ] Le verdict dit « à réviser » et nomme la limite de la vérification lexicale
+
+**Exercice 3 — évaluation structurée**
+- [ ] La rubrique compte trois critères notés de 0 à 2
+- [ ] Le JSON est parsé et validé (clés présentes, entiers, bornes) — un échec de parsing est signalé, jamais contourné
+- [ ] La note totale et les cas d'échec sont affichés, avec la nature **indicative** de la note rappelée
 
 ### Extension (optionnelle)
 
 Pour les étudiants avancés :
-- Implémenter une **évaluation** des réponses étudiant avec GPT-5
+- Exposer `seed` dans `analyze_image_with_gpt5()` (adaptation explicite du payload) et mesurer si deux exécutions à `seed` fixé se rapprochent
 - Créer un **quiz interactif** basé sur les questions générées
 - Étendre le comparateur à **trois images** ou plus (matrice de comparaison)
+- Rejouer l'exercice 3 avec une seconde évaluation indépendante (même rubrique, prompt différent) et mesurer l'accord entre les deux notes
 
+### Lecture du résultat — les exercices en synthèse
 
-### Lecture du résultat — exercice 3 (synthèse)
+Les trois exemples guidés de la section précédente montrent chacun un geste mesuré : comparer deux formulations à format constant, adapter un alt text à son contexte sous contrainte de longueur, croiser deux analyses avec un prompt identique. Les trois exercices qui les complètent portent sur ce que ces gestes ne mesurent pas encore : la **stabilité** d'une sortie répétée, la **fidélité** d'un alt text aux éléments visibles, et la **structuration** d'une note en JSON validable. Le carnet s'exécute de bout en bout tant que les exercices restent des stubs.","### Success criteria
 
-La cellule précédente pose un exercice de synthèse structurant : choisir un domaine parmi les cinq catalogués dans la cellule *Cas d'usage pédagogiques*, sélectionner deux images de ce domaine, imposer un format d'analyse identique, et implémenter `compare_images()` qui croise les résultats. Le squelette fourni se contente de `pass` et renvoie un dictionnaire vide : le carnet s'exécute de bout en bout tant que l'exercice n'est pas complété. Les exercices 1 et 2, plus courts, se préparent avec les exemples guidés du corps du notebook : le premier mesure la sensibilité à la formulation, le second adapte un alt text à son contexte de publication.
-","### Success criteria
+**Exercise 1 — reproducibility**
+- [ ] Three identical analyses run, and their pairwise similarities measured (not estimated), presented as **descriptive**
+- [ ] The model's `supported_parameters` consulted, the conclusion limited to the **advertised** support of `temperature` — no behavior (ignoring, rejection, normalization) inferred from the metadata alone
+- [ ] Any comparison of additional samples (optional, paid) remains descriptive, never presented as causal proof; `temperature` is restored to `0.7` at the end of the cell if the experiment is done
 
-- [ ] Both images belong to the same domain and the analyses use the same format
-- [ ] `compare_images()` returns a dictionary with both analyses and the comparison
-- [ ] The comparison separates common points and differences in a structured way
-- [ ] The results are clearly presented (`pprint` or formatted display)
-- [ ] The total response time stays reasonable (2 analyses + cross-comparison)
+**Exercise 2 — fidelity audit**
+- [ ] Inventory and alt text produced by two **separate** calls, each under a single instruction
+- [ ] The terms of the alt text are checked against the inventory by a computation, with the list of unsupported terms
+- [ ] The verdict says « to revise » and names the limit of the lexical verification
+
+**Exercise 3 — structured evaluation**
+- [ ] The rubric has three criteria scored from 0 to 2
+- [ ] The JSON is parsed and validated (keys present, integers, bounds) — a parsing failure is reported, never worked around
+- [ ] The total score and the failure cases are displayed, with the **indicative** nature of the score recalled
 
 ### Extension (optional)
 
 For advanced students:
-- Implement an **evaluation** of student answers with GPT-5
+- Expose `seed` in `analyze_image_with_gpt5()` (explicit payload adaptation) and measure whether two runs with a fixed `seed` get closer
 - Create an **interactive quiz** based on the generated questions
 - Extend the comparator to **three images** or more (comparison matrix)
+- Replay exercise 3 with a second independent evaluation (same rubric, different prompt) and measure the agreement between the two scores
 
+### Reading the result — the exercises in synthesis
 
-### Reading the result — exercise 3 (synthesis)
-
-The previous cell poses a structuring synthesis exercise: choose a domain among the five cataloged in the *Pedagogical use cases* cell, select two images from this domain, impose an identical analysis format, and implement `compare_images()`, which cross-compares the results. The provided skeleton only contains `pass` and returns an empty dictionary: the notebook runs end to end as long as the exercise is not completed. Exercises 1 and 2, which are shorter, build on the guided examples in the body of the notebook: the first measures sensitivity to wording, the second adapts an alt text to its publication context.",,,,,,,68468125c9faf6c6,20e792b9b1b6cb7c,,,,,,,,,,,,,,
+The three guided examples of the previous section each show a measured gesture: comparing two wordings at constant format, adapting an alt text to its context under a length constraint, crossing two analyses with an identical prompt. The three exercises that complete them address what these gestures do not yet measure: the **stability** of a repeated response, the **fidelity** of an alt text to the visible elements, and the **structuring** of a score into validatable JSON. The notebook runs end to end as long as the exercises remain stubs.",,,,,,,93e5b853cd3d92a9,f6be807159e14745,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb,c7eec602,markdown,fr,b4d84fb200146d2f,"**Navigation** : [Index](../../README.md) | [<< Précédent](01-2-GPT-5-Image-Generation.ipynb) | [Suivant >>](01-4-Forge-SD-XL-Turbo.ipynb)
 
 # Opérations de Base sur les Images
@@ -22030,7 +22065,7 @@ GPT-5 image generation (via OpenRouter) embodies the **native multimodal** appro
 **Positioning in the ecosystem**: GPT-5 completes the course's palette by covering the *comprehension + generation* axis, where DALL-E 3 focuses on generation alone and SD XL Turbo exposes the internal workings. The large family of GPT-5 models exposed by the OpenRouter API opens a wide comparative experimentation ground but introduces a strong dependency on the routing provider.
 
 **To go further**: explore the `04-1-Educational-Content-Generation` notebook which orchestrates several models to produce a complete pedagogical deliverable (image + alt text + structured metadata).",,,,,,,52999168987cebf9,163ad7407b7aaac6,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,32bae159,code,fr,d8cfd07b7b0f3965,"# Parameters
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,d19f9c6c,code,fr,d8cfd07b7b0f3965,"# Parameters
 BATCH_MODE = ""true""
 ",,,,,,,,d8cfd07b7b0f3965,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,nv-exemple-3modes-md,markdown,fr,b667b1b68a05e661,"### Exemple guidé : analyse personnalisée à trois modes pour un domaine
@@ -22103,133 +22138,388 @@ import pprint
 results = analyse_complete(image_source, custom_prompt, domain)
 pprint.pprint(results)
 ",,,,,,,,9c488597d8da6e0b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,nv-exo1-md,markdown,fr,6f2e3887c3ff7ae7,"### Exercice 1 : Prompt neutre vs prompt orienté — mesurer la sensibilité de la formulation
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,nv-exo1-md,markdown,fr,5a143c138393c776,"### Exemple guidé : prompt neutre vs prompt orienté — mesurer la sensibilité de la formulation
 
-Une même image analysée par GPT-5 peut produire des réponses très différentes selon la formulation du prompt. L'objectif est de **mesurer** cette sensibilité au lieu de la subir : deux prompts qui ne diffèrent que par leur angle (neutre vs orienté vers un cadre de lecture), même image, même format de sortie.
+*Contribution étudiante (PR #23305, github.com/Perr1neF0), intégrée comme exemple guidé.*
 
-**Étapes** :
-1. Choisissez une image parmi `example_images`
-2. Rédigez un `prompt_neutre` : description objective, sans orientation théorique
-3. Rédigez un `prompt_oriente` : même format de sortie, mais qui oriente l'analyse vers un cadre (historique, esthétique, technique...)
-4. Lancez les deux analyses et comparez : éléments cités, vocabulaire, structure
-5. Concluez en une phrase : quelle formulation sert quel usage pédagogique ?
+Une même image analysée par GPT-5 peut produire des réponses très différentes selon la formulation du prompt. L'exemple mesure cette sensibilité au lieu de la subir : deux prompts qui ne diffèrent que par leur **angle** (neutre vs orienté vers l'histoire des sciences), même image, même format de sortie imposé.
 
-**Indice** : ne changez QUE la consigne d'orientation entre les deux prompts — si le format de sortie diffère aussi, la comparaison ne mesure plus la formulation.
-","### Exercise 1 : Neutral prompt vs oriented prompt — measuring the sensitivity to wording
+**Points clés** :
+- Le format de sortie est factorisé dans une seule variable (`format_sortie`) — si le format différait aussi, la comparaison ne mesurerait plus la formulation
+- La comparaison est **chiffrée** : un Jaccard lexical sur les mots de cinq lettres et plus, calculé par `mots_cles()`, remplace l'estimation à l'œil
+- Un contrôle vérifie que les trois sections demandées sont présentes dans chaque sortie ; sans lui, un écart pourrait n'être qu'un non-respect du format
+- La conclusion imprimée relie chaque formulation à un usage : inventaire visuel d'un côté, cours disciplinaire de l'autre","### Guided example: neutral prompt vs oriented prompt — measuring the sensitivity to wording
 
-The same image analyzed by GPT-5 can produce very different answers depending on how the prompt is worded. The goal is to **measure** this sensitivity instead of undergoing it: two prompts that differ only in their angle (neutral vs oriented toward a reading frame), same image, same output format.
+*Student contribution (PR #23305, github.com/Perr1neF0), integrated as a guided example.*
 
-**Steps**:
-1. Choose an image from `example_images`
-2. Write a `prompt_neutre`: objective description, without theoretical orientation
-3. Write a `prompt_oriente`: same output format, but it orients the analysis toward a frame (historical, aesthetic, technical...)
-4. Run both analyses and compare: elements mentioned, vocabulary, structure
-5. Conclude in one sentence: which wording serves which pedagogical use?
+The same image analyzed by GPT-5 can produce very different answers depending on the prompt wording. The example measures this sensitivity instead of suffering it: two prompts differing only in their **angle** (neutral vs oriented toward the history of science), same image, same imposed answer format.
 
-**Hint**: change ONLY the orientation instruction between the two prompts — if the output format also differs, the comparison no longer measures the wording.",,,,,,,6f2e3887c3ff7ae7,71ca99cb1e66f5f8,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,nv-exo1-code,code,fr,5fb17155d5ea3bc3,"# Exercice 1 : Prompt neutre vs prompt oriente -- mesurer la sensibilite de la formulation
-# TODO etudiant : comparer deux analyses de la MEME image sous deux formulations
+**Key points**:
+- The answer format is factored into a single variable (`format_sortie`) — if the format also differed, the comparison would no longer measure the wording
+- The comparison is **quantified**: a lexical Jaccard over words of five letters and more, computed by `mots_cles()`, replaces eyeball estimation
+- A check verifies that the three requested sections are present in each text; without it, a gap could be a mere format violation
+- The printed conclusion links each wording to a use: visual inventory on one side, disciplinary course on the other",,,,,,,5a143c138393c776,7152123ec67866a4,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,nv-exo1-code,code,fr,65d7b11a5fb4915f,"# Exemple guide : prompt neutre vs prompt oriente -- mesurer la sensibilite de la formulation
+# (contribution etudiante, PR #23305 -- github.com/Perr1neF0)
+import re
 
 # Etape 1 : Choix de l'image
 image_exo1 = example_images[1]['url']  # Laboratoire (Science et Technologie)
 
 # Etape 2 : Redaction des deux prompts
-prompt_neutre = ""...""   # TODO etudiant : description objective, format de sortie en sections
-prompt_oriente = ""...""  # TODO etudiant : meme format, mais oriente vers UN cadre de lecture
+format_sortie = f""""""Réponds en {language}, avec exactement ces 3 sections :
+**1. Éléments visibles** : liste à puces (5 à 8 éléments)
+**2. Analyse** : 5 lignes maximum
+**3. Conclusion** : une seule phrase""""""
+prompt_neutre = (
+    ""Décris cette image de façon objective, sans cadre théorique particulier.\n\n""
+    + format_sortie
+)
+prompt_oriente = (
+    ""Analyse cette image sous l'angle de l'histoire des sciences : ""
+    ""instruments, méthodes de travail et évolution des pratiques de laboratoire.\n\n""
+    + format_sortie
+)
 # Indice : seul l'angle change -- le format de sortie reste identique
 
 # Etape 3 : Lancement des deux analyses
-# TODO etudiant : resultat_neutre = analyze_image_with_gpt5(image_exo1, prompt=prompt_neutre)
-# TODO etudiant : resultat_oriente = analyze_image_with_gpt5(image_exo1, prompt=prompt_oriente)
+resultat_neutre = analyze_image_with_gpt5(image_exo1, prompt=prompt_neutre)
+resultat_oriente = analyze_image_with_gpt5(image_exo1, prompt=prompt_oriente)
 
 # Etape 4 : Comparaison mesuree
-# TODO etudiant : les deux analyses citent-elles les memes elements visuels ?
-# TODO etudiant : quels termes apparaissent chez l'une et pas chez l'autre ?
+def mots_cles(texte, taille_min=5):
+    """"""Ensemble des mots significatifs (hors mots courts) d'un texte.""""""
+    return {m for m in re.findall(r""[a-zàâçéèêëîïôûùüÿœ'-]+"", texte.lower())
+            if len(m) >= taille_min}
 
-resultat_neutre = None   # TODO etudiant : remplacer par l'appel a analyze_image_with_gpt5
-resultat_oriente = None  # TODO etudiant
+if resultat_neutre['success'] and resultat_oriente['success']:
+    t_neutre = resultat_neutre['analysis']
+    t_oriente = resultat_oriente['analysis']
+    m_neutre, m_oriente = mots_cles(t_neutre), mots_cles(t_oriente)
 
-print(""Exercice a completer"")
-",,,,,,,,5fb17155d5ea3bc3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,nv-exo2-md,markdown,fr,00cd7ee3c99af9d4,"### Exercice 2 : Alt text contextuel — une image, trois contextes
+    print(f""Longueur : neutre={len(t_neutre)} car. | orienté={len(t_oriente)} car."")
+    print(f""Mots communs : {len(m_neutre & m_oriente)}"")
+    print(f""Jaccard (similarité lexicale) : ""
+          f""{len(m_neutre & m_oriente) / len(m_neutre | m_oriente):.2f}"")
+    print(""\nSeulement dans le NEUTRE  :"", sorted(m_neutre - m_oriente)[:15])
+    print(""Seulement dans l'ORIENTÉ  :"", sorted(m_oriente - m_neutre)[:15])
 
-L'exemple guidé d'accessibilité a généré trois **longueurs** de description pour une même image. Le niveau suivant : la même image publiée dans trois **contextes** différents demande trois alt texts différents, même si la limite de 125 caractères reste la même. Un alt text pertinent dépend de ce que le lecteur est venu chercher.
+    # Sections respectees ? (le format doit etre identique pour que la comparaison soit valide)
+    for nom, t in [(""neutre"", t_neutre), (""orienté"", t_oriente)]:
+        ok = all(s in t.lower() for s in [""éléments visibles"", ""analyse"", ""conclusion""])
+        print(f""Format respecté ({nom}) : {'OUI' if ok else 'NON'}"")
 
-**Étapes** :
-1. Choisissez une image parmi `example_images` (ou votre propre URL)
-2. Définissez trois contextes de publication : article de vulgarisation scientifique, réseau social, manuel scolaire
-3. Rédigez un prompt par contexte : même limite ≤ 125 caractères, mais l'angle d'information s'adapte au contexte
-4. Générez les trois textes et vérifiez : chacun ≤ 125 caractères, et les trois textes sont bien **distincts**
+    print(""\n--- NEUTRE ---\n"", t_neutre)
+    print(""\n--- ORIENTÉ ---\n"", t_oriente)
 
-**Indice** : posez-vous la question « que vient faire le lecteur sur cette page ? » — c'est elle qui détermine quoi garder dans les 125 caractères.
-","### Exercise 2 : Contextual alt text — one image, three contexts
+    print(""\nConclusion : le prompt neutre convient à un inventaire visuel (observation, ""
+          ""alt text, premier contact avec l'image) ; le prompt orienté convient à un ""
+          ""cours disciplinaire, car il fait émerger interprétation et vocabulaire du cadre choisi."")
+else:
+    for nom, r in [(""neutre"", resultat_neutre), (""orienté"", resultat_oriente)]:
+        if not r['success']:
+            print(f""Échec ({nom}) : {r['error']}"")",,,,,,,,65d7b11a5fb4915f,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,nv-exo2-md,markdown,fr,cb5bbe45db5bee54,"### Exemple guidé : alt text contextuel — une image, trois contextes
 
-The accessibility guided example generated three description **lengths** for the same image. The next level: the same image published in three different **contexts** calls for three different alt texts, even if the 125-character limit stays the same. A relevant alt text depends on what the reader came looking for.
+*Contribution étudiante (PR #23305, github.com/Perr1neF0), intégrée comme exemple guidé.*
 
-**Steps**:
-1. Choose an image from `example_images` (or your own URL)
-2. Define three publication contexts: popular-science article, social network, school textbook
-3. Write one prompt per context: same ≤ 125-character limit, but the information angle adapts to the context
-4. Generate the three texts and check: each one is ≤ 125 characters, and the three texts are indeed **distinct**
+L'exemple guidé d'accessibilité a montré trois **longueurs** de description pour une même image. Ici, c'est le **contexte de publication** qui change à longueur constante : un alt text pertinent dépend de ce que le lecteur est venu chercher.
 
-**Hint**: ask yourself ""what did the reader come to do on this page?"" — that question determines what to keep in the 125 characters.",,,,,,,00cd7ee3c99af9d4,d4133e2e75d3e7d3,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,nv-exo2-code,code,fr,a82719dd72ed6dd5,"# Exercice 2 : Alt text contextuel -- une image, trois contextes
-# TODO etudiant : produire trois alt texts DIFFERENTS pour la meme image
+**Points clés** :
+- Les trois consignes de contexte vivent dans un dictionnaire `contextes`, la contrainte de longueur est partagée (`LIMITE = 125`)
+- La contrainte est **vérifiée par mesure** (`len(texte)`), pas à l'œil, avec une relance qui durcit la consigne quand la sortie dépasse la limite
+- Deux contrôles terminaux : chaque texte tient sous la limite, et les trois textes sont **distincts** — sans le second, trois reformulations interchangeables passeraient le test","### Guided example: contextual alt text — one image, three contexts
+
+*Student contribution (PR #23305, github.com/Perr1neF0), integrated as a guided example.*
+
+The accessibility guided example showed three **lengths** of description for the same image. Here, it is the **publication context** that changes at constant length: a relevant alt text depends on what the reader came for.
+
+**Key points**:
+- The three context instructions live in a `contextes` dictionary, the length constraint is shared (`LIMITE = 125`)
+- The constraint is **verified by measurement** (`len(texte)`), not by eye, with a retry that hardens the instruction when the text exceeds the limit
+- Two final checks: each text fits under the limit, and the three texts are **distinct** — without the second, three interchangeable rephrasings would pass the test",,,,,,,cb5bbe45db5bee54,20616386eb07729b,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,nv-exo2-code,code,fr,b17fda52c5ba5857,"# Exemple guide : alt text contextuel -- une image, trois contextes
+# (contribution etudiante, PR #23305 -- github.com/Perr1neF0)
 
 # Etape 1 : Choix de l'image
 image_exo2 = example_images[3]['url']  # Paysage naturel
 
 # Etape 2 : Definition des trois contextes de publication
-contexte_article = ""article de vulgarisation scientifique""  # TODO etudiant : affiner le lectorat vise
-contexte_social = ""publication sur un reseau social""        # TODO etudiant
-contexte_manuel = ""manuel scolaire de geographie""           # TODO etudiant
+contextes = {
+    ""article de vulgarisation scientifique"": (
+        ""Contexte : article de vulgarisation scientifique pour un public curieux ""
+        ""mais non spécialiste. Privilégie le phénomène naturel ou géologique visible ""
+        ""(relief, eau, végétation, climat).""
+    ),
+    ""publication sur un reseau social"": (
+        ""Contexte : publication sur un réseau social. Privilégie l'ambiance, la ""
+        ""lumière et l'impression d'ensemble, avec un ton vivant mais factuel.""
+    ),
+    ""manuel scolaire de geographie"": (
+        ""Contexte : manuel scolaire de géographie pour des élèves. Privilégie le ""
+        ""vocabulaire géographique précis (type de paysage, composantes, échelle).""
+    ),
+}
 
 # Etape 3 : Redaction d'un prompt par contexte
-# TODO etudiant : chaque prompt exige une description <= 125 caracteres ADAPTEE au contexte
-# Indice : meme limite partout -- seul l'angle d'information change
+LIMITE = 125
+
+def prompt_alt(consigne_contexte, limite=LIMITE):
+    return (
+        f""Génère un alt text en {language} pour cette image.\n""
+        f""{consigne_contexte}\n""
+        f""Contraintes : {limite} caractères MAXIMUM (espaces compris), ""
+        ""description factuelle, une seule phrase, aucune interprétation subjective.\n""
+        ""Réponds UNIQUEMENT avec le texte, sans guillemets ni préambule.""
+    )
+
+def generer_alt_text(consigne_contexte, tentatives=3):
+    """"""Appelle GPT-5 et relance si la limite de 125 caracteres est depassee.""""""
+    prompt = prompt_alt(consigne_contexte)
+    texte = """"
+    for _ in range(tentatives):
+        r = analyze_image_with_gpt5(image_exo2, prompt=prompt)
+        if not r['success']:
+            return f""ERREUR : {r['error']}""
+        texte = r['analysis'].strip().strip('""\'«» ')
+        if len(texte) <= LIMITE:
+            return texte
+        # On renforce la contrainte avec la longueur reelle constatee
+        prompt = prompt_alt(consigne_contexte, limite=LIMITE - 20) + (
+            f""\nTa version précédente faisait {len(texte)} caractères : raccourcis-la.""
+        )
+    return texte  # derniere version, meme si trop longue (signalee plus bas)
 
 # Etape 4 : Generation et verification
-# TODO etudiant : alt_texts = {contexte: texte} rempli par les appels a analyze_image_with_gpt5
-# TODO etudiant : verifier len(texte) <= 125 pour chacun, et que les trois textes different
+alt_texts = {ctx: generer_alt_text(consigne) for ctx, consigne in contextes.items()}
 
-alt_texts = {}  # TODO etudiant
+print(""--- Alt texts générés ---"")
+for ctx, texte in alt_texts.items():
+    statut = ""OK"" if len(texte) <= LIMITE else ""TROP LONG""
+    print(f""[{statut}] ({len(texte):3d} car.) {ctx}\n    -> {texte}\n"")
 
-print(""Exercice a completer"")
-",,,,,,,,a82719dd72ed6dd5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,nv-exo3-md,markdown,fr,275eaceb6f66a2d9,"### Exercice 3 : Comparateur d'images — deux images du même domaine côte à côte
+# Les trois textes doivent etre distincts
+textes = [t.lower() for t in alt_texts.values()]
+print(""Trois textes distincts :"", ""OUI"" if len(set(textes)) == len(textes) else ""NON"")
+print(""Tous <= 125 caractères  :"", ""OUI"" if all(len(t) <= LIMITE for t in alt_texts.values()) else ""NON"")",,,,,,,,b17fda52c5ba5857,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,nv-exo3-md,markdown,fr,1dd753d734ab9829,"### Exemple guidé : comparateur d'images — deux images du même domaine côte à côte
 
-**Durée estimée :** 15-20 minutes
+*Contribution étudiante (PR #23305, github.com/Perr1neF0), intégrée comme exemple guidé.*
 
-**Objectif** : comparer deux images d'une même catégorie en un seul workflow — analyses individuelles avec un format identique, puis croisement des résultats.
+Comparer deux images d'un même domaine en un seul workflow : analyse individuelle de chaque image, puis croisement des deux analyses.
 
-**Instructions** :
-1. **Choisissez un domaine** parmi les cas d'usage pédagogiques présentés plus haut
-2. **Sélectionnez deux images** pertinentes pour ce domaine (URLs publiques ou images locales)
-3. **Rédigez un prompt d'analyse** qui impose une structure identique pour les deux images
-4. **Implémentez `compare_images()`** : analyse de chaque image, puis croisement — points communs, différences, verdict
-5. **Affichez le résultat** de façon lisible (dictionnaire + `pprint`)
+**Points clés** :
+- Le prompt d'analyse est **le même** pour les deux images — c'est la condition qui rend la comparaison mécanique plutôt qu'arbitraire
+- Le croisement est un troisième appel qui reçoit les deux analyses et **joint l'image B**, pour que le modèle vérifie ses affirmations sur l'image visible
+- Une analyse en échec interrompt le croisement (`return` immédiat) : croiser une analyse absente produirait un verdict inventé
+- Le temps total est mesuré et renvoyé avec le résultat
+","### Guided example: image comparator — two images from the same domain side by side
 
-> **Indices :**
-- Indice 1 : `analyze_image_with_gpt5()` accepte n'importe quelle URL — appelez-la une fois par image
-- Indice 2 : pour croiser, injectez le texte de la première analyse dans le prompt de la seconde — GPT-5 comparera l'image visible au texte fourni
-- Indice 3 : un même format de sortie pour les deux analyses rend la comparaison mécanique
-","### Exercise 3 : Image comparator — two images from the same domain side by side
+*Student contribution (PR #23305, github.com/Perr1neF0), integrated as a guided example.*
 
-**Estimated duration :** 15-20 minutes
+Comparing two images from the same domain in a single workflow: individual analysis of each image, then cross-comparison of the two analyses.
 
-**Objective**: compare two images from the same category in a single workflow — individual analyses with an identical format, then cross-comparison of the results.
+**Key points**:
+- The analysis prompt is **the same** for both images — this is the condition that makes the comparison mechanical rather than arbitrary
+- The cross-comparison is a third call that receives both analyses and **joins image B**, so that the model checks its claims against the visible image
+- A failed analysis interrupts the cross-comparison (immediate `return`): crossing a missing analysis would produce an invented verdict
+- The total time is measured and returned with the result",,,,,,,1dd753d734ab9829,b0cbe829d3e2b2a9,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,67e3bf57,markdown,fr,d28690d38e9d7e8f,"## Exercices à compléter
 
-**Instructions**:
-1. **Choose a domain** among the pedagogical use cases presented above
-2. **Select two images** relevant to this domain (public URLs or local images)
-3. **Write an analysis prompt** that imposes an identical structure for both images
-4. **Implement `compare_images()`**: analysis of each image, then cross-comparison — common points, differences, verdict
-5. **Display the result** in a readable way (dictionary + `pprint`)
+Les trois exercices qui suivent portent sur ce que ces exemples ne mesurent pas encore : la **stabilité** d'une sortie répétée à prompt constant, la **fidélité** d'un alt text aux éléments réellement visibles, et la **structuration** d'une note d'évaluation en JSON validable. Chaque squelette s'exécute sans erreur tel quel — à vous de remplir les `TODO etudiant`.","## Exercises to complete
 
-> **Hints:**
-- Hint 1 : `analyze_image_with_gpt5()` accepts any URL — call it once per image
-- Hint 2 : to cross-compare, inject the text of the first analysis into the prompt of the second — GPT-5 will compare the visible image to the provided text
-- Hint 3 : the same output format for both analyses makes the comparison mechanical",,,,,,,275eaceb6f66a2d9,72a9f5c422432eaf,,,,,,,,,,,,,,
+The three exercises that follow address what these examples do not yet measure: the **stability** of a repeated response at constant prompt, the **fidelity** of an alt text to the elements actually visible, and the **structuring** of an evaluation score into validatable JSON. Each skeleton runs without error as is — it is up to you to fill in the `TODO etudiant`.",,,,,,,d28690d38e9d7e8f,74d7205bcbd60f42,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,53b4a16d,markdown,fr,6cb14879167345ca,"### Exercice 1 : Reproductibilité — la même question posée trois fois
+
+L'exemple guidé *prompt neutre vs prompt orienté* mesurait l'effet de l'**angle** du prompt. Ici, tout est figé : même image, même prompt, même modèle. La question devient donc *la sortie est-elle stable ?* Un modèle d'inférence échantillonne, et deux appels identiques peuvent ne pas rendre le même texte.
+
+**Objectif** : mesurer la dispersion de trois analyses identiques, puis examiner ce que l'API **annonce** comme levier de stabilisation.
+
+**Un fait à connaître avant l'étape 4** — vérifié sur l'API : `openai/gpt-5` ne liste **ni `temperature` ni `top_p`** dans ses paramètres supportés (champ `supported_parameters` de `GET /models/openai/gpt-5/endpoints` : `reasoning`, `seed`, `max_tokens`…). Cela établit une **absence de support annoncé**, pas un comportement : les métadonnées ne disent pas ce que le fournisseur fait d'une valeur `temperature` envoyée quand même (rejet, routage, normalisation) — ce comportement réel se vérifie dans la réponse API, pas dans les métadonnées. Le paramètre de stabilisation **annoncé** est `seed`.
+
+**Étapes** :
+1. Choisissez une image et un prompt court à sections fixes
+2. Lancez **trois** analyses identiques et conservez les trois textes
+3. Mesurez la similarité deux à deux — un Jaccard lexical comme dans l'exemple guidé (réutilisez `mots_cles`), ou un simple taux de sections communes — et présentez le résultat comme **descriptif**
+4. Consultez les `supported_parameters` du modèle et concluez sur le support **annoncé** de `temperature`, sans en inférer un comportement
+5. Concluez en une phrase : quel levier l'API annonce-t-elle pour rapprocher deux exécutions, et pour quel usage faut-il une sortie stable ?
+
+**Facultatif — deux appels payants sur un paramètre non annoncé** : le squelette propose en étape 4 de réassigner `temperature = 0.0` puis de relancer. L'expérience est faisable mais **non concluante en l'état** : comparer la dispersion de trois échantillons à celle de deux échantillons ne prouve ni honoration ni non-honoration du paramètre — c'est une observation descriptive, à présenter comme telle. Si vous la faites, remettez `temperature = 0.7` en fin de cellule.
+
+**Extension — le levier annoncé** : `seed` n'est pas exposé par `analyze_image_with_gpt5()`. L'utiliser suppose d'**adapter explicitement la fonction** (ajouter `""seed"": ...` au payload de la requête), puis de mesurer si deux exécutions à `seed` fixé se rapprochent effectivement.
+
+**Indices** :
+- `analyze_image_with_gpt5()` lit `temperature` dans les variables globales du carnet : une réaffectation en cellule suffit, sans modifier la fonction
+- paramètres supportés d'un modèle : `GET https://openrouter.ai/api/v1/models/openai/gpt-5/endpoints`, champ `supported_parameters`
+- trois appels identiques coûtent trois fois le prix d'un appel — gardez un prompt court (`analysis_type=""quick""` ou peu de sections)
+- un Jaccard proche de 1 signale deux sorties quasi identiques, un Jaccard bas une reformulation complète","### Exercise 1 : Reproducibility — the same question asked three times
+
+The guided example *neutral prompt vs oriented prompt* measured the effect of the prompt's **angle**. Here, everything is frozen: same image, same prompt, same model. The question becomes *is the answer stable?* An inference model samples, and two identical calls may not return the same text.
+
+**Goal**: measure the dispersion of three identical analyses, then examine what the API **advertises** as a stabilization lever.
+
+**A fact to know before step 4** — verified on the API: `openai/gpt-5` lists **neither `temperature` nor `top_p`** among its supported parameters (`supported_parameters` field of `GET /models/openai/gpt-5/endpoints`: `reasoning`, `seed`, `max_tokens`…). This establishes an **absence of advertised support**, not a behavior: the metadata does not say what the provider does with a `temperature` value sent anyway (rejection, routing, normalization) — that actual behavior is verified in the API response, not in the metadata. The **advertised** stabilization parameter is `seed`.
+
+**Steps**:
+1. Choose an image and a short prompt with fixed sections
+2. Run **three** identical analyses and keep the three texts
+3. Measure the pairwise similarity — a lexical Jaccard as in the guided example (reuse `mots_cles`), or a simple rate of common sections — and present the result as **descriptive**
+4. Consult the model's `supported_parameters` and conclude on the **advertised** support for `temperature`, without inferring a behavior
+5. Conclude in one sentence: which lever does the API advertise to bring two runs closer, and for which use is a stable answer needed?
+
+**Optional — two paid calls on a non-advertised parameter**: the skeleton suggests in step 4 reassigning `temperature = 0.0` then running again. The experiment is feasible but **not conclusive as it stands**: comparing the dispersion of three samples with that of two samples proves neither honoring nor non-honoring of the parameter — it is a descriptive observation, to be presented as such. If you do it, restore `temperature = 0.7` at the end of the cell.
+
+**Extension — the advertised lever**: `seed` is not exposed by `analyze_image_with_gpt5()`. Using it requires **explicitly adapting the function** (adding `""seed"": ...` to the request payload), then measuring whether two runs with a fixed `seed` actually get closer.
+
+**Hints**:
+- `analyze_image_with_gpt5()` reads `temperature` from the notebook's global variables: a reassignment in a cell is enough, without modifying the function
+- supported parameters of a model: `GET https://openrouter.ai/api/v1/models/openai/gpt-5/endpoints`, field `supported_parameters`
+- three identical calls cost three times the price of one call — keep the prompt short (`analysis_type=""quick""` or few sections)
+- a Jaccard close to 1 signals two nearly identical texts, a low Jaccard a complete rephrasing",,,,,,,6cb14879167345ca,42240f9b672c0b9a,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,3e36808f,code,fr,1475266f6ffaffe4,"# Exercice 1 : Reproductibilite -- la meme question posee trois fois
+# TODO etudiant : mesurer la dispersion de trois analyses identiques, puis a temperature = 0.0
+
+# Etape 1 : Image et prompt fixes (aucune variation d'angle ici)
+image_exo1_rep = example_images[3]['url']
+prompt_repete = f""""""Réponds en {language}, avec exactement ces 2 sections :
+**1. Éléments visibles** : 3 puces
+**2. Conclusion** : une seule phrase""""""
+
+# Etape 2 : Trois analyses identiques
+# TODO etudiant : construire une liste de trois analyses via
+#                 analyze_image_with_gpt5(image_exo1_rep, prompt=prompt_repete)
+analyses_repetees = []  # TODO etudiant
+
+# Etape 3 : Similarite deux a deux
+# TODO etudiant : calculer la similarite de chaque paire (Jaccard lexical via mots_cles,
+#                 ou taux de sections communes) et afficher les valeurs
+similarites = []  # TODO etudiant
+
+# Etape 4 : Effet de la temperature
+# TODO etudiant : reassigner temperature = 0.0, relancer deux analyses, comparer la dispersion,
+#                 puis restaurer temperature = 0.7
+analyses_froides = []  # TODO etudiant
+
+# Etape 5 : Conclusion en une phrase (a afficher)
+print(""Exercice a completer"")",,,,,,,,1475266f6ffaffe4,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,733f0bd9,markdown,fr,baf0ef6166bfe93e,"### Exercice 2 : Audit de fidélité — un alt text n'affirme que ce qui est visible
+
+L'exemple guidé *alt text contextuel* produisait trois textes conformes à une limite de longueur et à un contexte. Une qualité échappe à ces deux contrôles : la **fidélité**. Un alt text court et bien tourné peut citer une couleur, un objet ou un lieu que l'image ne contient pas — et le lecteur d'écran ne peut pas le contredire.
+
+**Objectif** : construire un audit en deux temps — un inventaire des éléments visibles, puis un alt text vérifié terme à terme contre cet inventaire.
+
+**Étapes** :
+1. Choisissez une image parmi `example_images`
+2. Demandez un **inventaire** : liste à puces des éléments visibles, sans interprétation
+3. Demandez un **alt text** de 125 caractères maximum pour la même image
+4. Extrayez les termes significatifs de l'alt text (réutilisez `mots_cles`) et relevez ceux qui n'apparaissent pas dans l'inventaire
+5. Affichez le verdict et rappelez la limite de la méthode
+
+**Pourquoi deux appels séparés ?** Les appels à `analyze_image_with_gpt5()` sont **indépendants** : aucun historique conversationnel ne circule de l'un à l'autre, et l'ordre des deux demandes n'a donc pas d'effet causal. L'intérêt de la séparation est ailleurs : deux prompts courts et ciblés, au lieu d'un prompt fusionné où le modèle verrait l'alt text au moment de dresser l'inventaire — et répondrait en conséquence à sa propre conclusion.
+
+**Indices** :
+- un terme absent de l'inventaire n'est pas nécessairement inventé (synonyme, reformulation) : le verdict dit « à réviser », pas « faux »
+- l'inventaire et l'alt text sont deux **mesures distinctes** de la même image : les comparer n'a de sens que si chacune a été produite sous une consigne unique","### Exercise 2 : Fidelity audit — an alt text claims only what is visible
+
+The guided example *contextual alt text* produced three texts compliant with a length limit and a context. One quality escapes these two controls: **fidelity**. A short, well-turned alt text can cite a color, an object or a place the image does not contain — and the screen reader cannot contradict it.
+
+**Goal**: build an audit in two steps — an inventory of the visible elements, then an alt text checked term by term against that inventory.
+
+**Steps**:
+1. Choose an image among `example_images`
+2. Ask for an **inventory**: bulleted list of the visible elements, without interpretation
+3. Ask for an **alt text** of 125 characters maximum for the same image
+4. Extract the significant terms of the alt text (reuse `mots_cles`) and note those that do not appear in the inventory
+5. Display the verdict and recall the limit of the method
+
+**Why two separate calls?** Calls to `analyze_image_with_gpt5()` are **independent**: no conversational history circulates from one to the other, and the order of the two requests therefore has no causal effect. The point of separating them lies elsewhere: two short, targeted prompts, instead of a merged prompt where the model would see the alt text while drawing up the inventory — and would answer its own conclusion accordingly.
+
+**Hints**:
+- a term absent from the inventory is not necessarily invented (synonym, rephrasing): the verdict says « to revise », not « false »
+- the inventory and the alt text are two **distinct measurements** of the same image: comparing them only makes sense if each was produced under a single instruction",,,,,,,baf0ef6166bfe93e,f60a127d022f1792,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,11f6adc1,code,fr,6baac784813e8f66,"# Exercice 2 : Audit de fidelite -- un alt text n'affirme que ce qui est visible
+# TODO etudiant : inventaire des elements visibles, alt text, puis verification terme a terme
+
+# Etape 1 : Image
+image_exo2_audit = example_images[2]['url']
+
+# Etape 2 : Inventaire des elements visibles (demande AVANT l'alt text)
+prompt_inventaire = f""""""Liste en {language} les éléments visibles de cette image.
+Réponds uniquement par une liste à puces de 5 à 8 éléments factuels, sans interprétation.""""""
+# TODO etudiant : inventaire = analyze_image_with_gpt5(image_exo2_audit, prompt=prompt_inventaire)
+inventaire = None  # TODO etudiant
+
+# Etape 3 : Alt text soumis a l'audit
+prompt_alt_audit = f""""""Génère un alt text en {language} de 125 caractères maximum,
+une seule phrase factuelle, sans interprétation subjective.""""""
+# TODO etudiant : alt_text_audit = analyze_image_with_gpt5(image_exo2_audit, prompt=prompt_alt_audit)
+alt_text_audit = None  # TODO etudiant
+
+# Etape 4 : Verification terme a terme contre l'inventaire
+# TODO etudiant : termes de l'alt text (mots_cles) absents de l'inventaire (mots_cles)
+termes_non_etayes = []  # TODO etudiant
+
+# Etape 5 : Verdict
+# TODO etudiant : afficher la liste des termes non etayes et rappeler la limite de la
+#                 verification lexicale (un synonyme n'est pas une invention)
+print(""Exercice a completer"")",,,,,,,,6baac784813e8f66,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,009bfc93,markdown,fr,3e80b20b0b47449e,"### Exercice 3 : Évaluation structurée — noter une réponse en JSON validable
+
+Les exemples guidés produisent des analyses en texte libre. Un usage courant en enseignement est l'inverse : **noter** une réponse selon des critères explicites, et rendre cette note exploitable par un programme. La difficulté n'est pas la note elle-même, c'est d'obtenir une réponse **structurée et validable** — un modèle qui rend une phrase d'appréciation ne rend pas une note.
+
+**Objectif** : écrire une fonction qui évalue un alt text selon trois critères et retourne un JSON strict, puis **valider** ce JSON (parsing, clés, bornes).
+
+**Étapes** :
+1. Choisissez l'image et la réponse à noter (un alt text généré plus haut convient)
+2. Définissez une rubrique de trois critères, chacun noté de 0 à 2
+3. Rédigez un prompt qui exige **uniquement** un objet JSON avec les clés attendues — sans préambule ni bloc de code markdown
+4. Parsez la réponse (`json.loads`) et validez : trois critères présents, chaque note entière et comprise entre 0 et 2
+5. Affichez la note totale, et **signalez** les cas où le parsing échoue au lieu de les contourner
+
+**Indices** :
+- `json.loads()` échoue sur un bloc de code markdown : demandez le texte brut, sans balises
+- une validation stricte (`isinstance(..., int)` et bornes) transforme « ça a l'air bon » en verdict binaire
+- l'évaluateur est un modèle **stochastique** : la note est indicative, pas une vérité — sa propre répétabilité se mesure (relancez l'évaluation à l'identique et comparez les deux notes)
+","### Exercise 3 : Structured evaluation — grading a response into validatable JSON
+
+The guided examples produce free-text analyses. A common use in teaching is the opposite: **grade** a response against explicit criteria, and make that score usable by a program. The difficulty is not the score itself, it is obtaining a **structured and validatable** response — a model that returns a sentence of appreciation does not return a score.
+
+**Goal**: write a function that grades an alt text against three criteria and returns a strict JSON, then **validate** that JSON (parsing, keys, bounds).
+
+**Steps**:
+1. Choose the image and the response to grade (an alt text generated above will do)
+2. Define a rubric of three criteria, each scored from 0 to 2
+3. Write a prompt that requires **only** a JSON object with the expected keys — no preamble, no markdown code block
+4. Parse the response (`json.loads`) and validate: three criteria present, each score an integer between 0 and 2
+5. Display the total score, and **report** the cases where parsing fails instead of working around them
+
+**Hints**:
+- `json.loads()` fails on a markdown code block: ask for the raw text, without tags
+- strict validation (`isinstance(..., int)` and bounds) turns « looks fine » into a binary verdict
+- the grader is a **stochastic** model: the score is indicative, not a truth — its own repeatability can be measured (run the evaluation again identically and compare the two scores)",,,,,,,3e80b20b0b47449e,c8d5d35eda01d7a7,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,1f6e23c5,code,fr,a1740e798a35f9a0,"# Exercice 3 : Evaluation structuree -- noter un alt text avec une rubrique, en JSON
+# TODO etudiant : obtenir une note JSON valide (3 criteres, chacun de 0 a 2)
+
+# Etape 1 : La reponse a evaluer
+reponse_a_noter = ""Vue aérienne d'une ville au crépuscule avec un dôme doré et des montagnes.""  # TODO etudiant : votre propre alt text
+image_eval = example_images[0]['url']
+
+# Etape 2 : La rubrique (3 criteres, notes de 0 a 2)
+RUBRIQUE = {
+    ""fidelite"": ""0-2 : chaque element de l'alt text est visible sur l'image"",
+    ""longueur"": ""0-2 : respecte la limite de 125 caracteres"",
+    ""objectivite"": ""0-2 : aucune interpretation subjective"",
+}
+
+# Etape 3 : Prompt exigeant un JSON strict
+# TODO etudiant : rediger le prompt (rubrique + reponse + format JSON exact, sans preambule)
+
+# Etape 4 : Appel, parsing et validation
+# TODO etudiant : note = json.loads(reponse) puis verifier les cles, le type entier et les bornes
+note_json = None  # TODO etudiant
+
+# Etape 5 : Affichage du verdict
+print(""Exercice a completer"")",,,,,,,,a1740e798a35f9a0,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb,ex1-vignettes-md,markdown,fr,ff695ea94ad6158a,"### Exercice 1 : Vignettes sans déformation
 
 L'exemple guidé 1 force chaque variante dans une vignette de `250 x 188` pixels. Une image dont le rapport largeur / hauteur diffère de celui de la vignette est alors étirée : la rotation de 90° en est le cas extrême. PIL propose trois stratégies qui conservent les proportions, chacune avec son prix :

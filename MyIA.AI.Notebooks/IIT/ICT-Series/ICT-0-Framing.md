@@ -346,7 +346,7 @@ Les insertions se font par suffixe `b`, sous la clause **zéro renumérotation**
 (#5081) les absorbera en une PR atomique unique, déclenchée par la livraison d'ICT-24b + ICT-24c + les
 verdicts de #7287/#7288 (décision complète : [#7260](https://github.com/jsboige/CoursIA/issues/7260)).
 
-Détail des quatre fronts, verbatim : [`docs/ict/extensions-2026-07.md`](../../../docs/ict/extensions-2026-07.md).
+Détail des quatre fronts, verbatim : [`docs/transients/2026-07-23-ict-extensions-quatre-fronts.md`](../../../docs/transients/2026-07-23-ict-extensions-quatre-fronts.md) (rapport daté, figé dans la lane transiente).
 
 ## Deux axes de lecture : strates verticales × tresse transverse
 

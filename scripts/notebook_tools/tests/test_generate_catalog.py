@@ -827,21 +827,52 @@ class TestPedagogicalRolesRegistry:
 
     def test_le_registre_reel_porte_les_cinq_cites(self):
         """Controle positif sur le fichier reel : le critere 4 de #15080 exige
-        le champ rempli pour AU MOINS les cinq notebooks lus firsthand."""
-        from generate_catalog import _load_pedagogical_roles_registry
-        reg = _load_pedagogical_roles_registry()
+        le champ rempli pour AU MOINS les cinq notebooks lus firsthand.
+
+        Ce que le test verifie est ce que son nom annonce : le registre REEL
+        **porte** les cinq cites, avec un champ rempli et un role dans le
+        vocabulaire ferme. Les **valeurs** ne sont pas figees ici, et c'est
+        delibere : le registre est une reference VIVANTE (son en-tete porte
+        « REFERENCE -- vivante ») et le role est un jugement editorial cure,
+        relu quand le carnet change. La fusion #23588 a ainsi fait passer
+        `05b-Stockage-Vectoriel-Serveur` de `method_demo` a `open_subject` --
+        le carnet fusionne porte six exercices enonces et stubbes (cellules 18,
+        20, 26, 48, 50, 52, verifie firsthand), donc l'etudiant a un travail a
+        produire : c'est la definition meme du sujet ouvert. Epingler les
+        valeurs transformait chaque re-curation legitime en echec de CI (vu
+        sur #23593) ; le controle doit figer une **coherence**, pas un
+        instantane de contenu vivant.
+        """
+        import generate_catalog as gc
+        reg = gc._load_pedagogical_roles_registry()
         if not reg:
             import pytest
             pytest.skip("registre absent de cet arbre")
-        attendu = {
-            "GenAI/RAG-et-Memoire-Semantique/05-Stockage-Vectoriel.ipynb": "worked_solution",
-            "GenAI/Integrations-DotNet/CopilotSDK/01-GitHub-Copilot-SDK-Binding.ipynb": "open_subject",
-            "GenAI/RAG-et-Memoire-Semantique/05b-Stockage-Vectoriel-Serveur.ipynb": "method_demo",
-            "GenAI/Video/01-Foundation/01-1b-Video-Slideshow-Bonus.ipynb": "open_subject",
-            "GenAI/Texte/10e_LLamaSharp_DotNet_BakeOff.ipynb": "method_demo",
-        }
-        for path, role in attendu.items():
-            assert reg.get(path) == role, f"{path}: {reg.get(path)!r} != {role!r}"
+        cites = [
+            "GenAI/RAG-et-Memoire-Semantique/05-Stockage-Vectoriel.ipynb",
+            "GenAI/Integrations-DotNet/CopilotSDK/01-GitHub-Copilot-SDK-Binding.ipynb",
+            "GenAI/RAG-et-Memoire-Semantique/05b-Stockage-Vectoriel-Serveur.ipynb",
+            "GenAI/Video/01-Foundation/01-1b-Video-Slideshow-Bonus.ipynb",
+            "GenAI/Texte/10e_LLamaSharp_DotNet_BakeOff.ipynb",
+        ]
+        for path in cites:
+            role = reg.get(path)
+            assert role, f"{path} : absent du registre, ou champ vide"
+            assert role in gc.PEDAGOGICAL_ROLE_VOCAB, (
+                f"{path} : role {role!r} hors vocabulaire ferme "
+                f"{sorted(gc.PEDAGOGICAL_ROLE_VOCAB)}"
+            )
+        # Coherence avec la source : le fichier du registre declare lui-meme les
+        # cinq cites. Le loader n'invente aucune entree -- si une disparait du
+        # fichier, elle disparait du mapping, et la ligne ci-dessus le voit
+        # deja ; on verifie donc aussi la source elle-meme, pour que le controle
+        # ne depende pas du seul loader.
+        source = gc.PEDAGOGICAL_ROLES_REGISTRY_PATH.read_text(encoding="utf-8")
+        for path in cites:
+            assert f"notebook_path: {path}" in source, (
+                f"{path} : absent du fichier du registre "
+                f"{gc.PEDAGOGICAL_ROLES_REGISTRY_PATH.name}"
+            )
 
     def test_hors_vocabulaire_ecarte_avec_avertissement(self, tmp_path, capsys):
         """Une valeur hors vocabulaire ferme n'entre JAMAIS au catalogue -- elle

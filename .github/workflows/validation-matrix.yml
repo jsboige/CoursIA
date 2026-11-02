@@ -7,7 +7,6 @@ on:
       - '**.ipynb'
       - 'scripts/validation/**'
   pull_request:
-    branches: [main]
     types: [opened, synchronize, edited, reopened]
     paths:
       - '**.ipynb'
@@ -45,6 +44,16 @@ jobs:
     # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    # Borne de duree posee le 2026-10-28 (#23053 famille b, lane
+    # myia-ai-01:CoursIA-2). Valeur : 10 min = 3 x le maximum mesure sur les
+    # 8 derniers runs REUSSIS du workflow (duree totale du run), arrondi a la
+    # minute superieure, plancher 5 min, plafond 360 min (defaut GitHub).
+    # Ce qu'elle evite : un job sans borne herite des 360 min par defaut et
+    # peut figer un slot ephemere du parc local pendant six heures. Ce job
+    # tourne sur la jambe Linux auto-hebergee STATIQUE -- il ne recoit pas la
+    # forme hybride de debordement, parce qu'il est deja 100 % local : le
+    # faire basculer par defaut sur `ubuntu-latest` serait un recul.
+    timeout-minutes: 10
 
     steps:
     - uses: actions/checkout@v4

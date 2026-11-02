@@ -1,0 +1,40 @@
+{
+ "n": 20000,
+ "data_seed": 1,
+ "shift": 1,
+ "mesures": {
+  "etat_couple": {
+   "r2_token_belief_b": 1.0,
+   "variance_belief_b": 0.6666621600000632,
+   "prime_belief": 1.0986055279705873,
+   "prime_observation": 0.009608071649402703
+  },
+  "emission_variante": {
+   "r2_token_belief_b": -0.00017034584219910442,
+   "variance_belief_b": 0.5048970827278729,
+   "prime_belief": 5.0481337930214634e-05,
+   "prime_observation": 2.2207792991119925e-05
+  },
+  "independant": {
+   "r2_token_belief_b": -0.011366541259782093,
+   "variance_belief_b": 0.041766261260617735,
+   "prime_belief": 0.0002435083137904289,
+   "prime_observation": 5.079269364341595e-05
+  }
+ },
+ "appariement": {
+  "marginales_exactes": true,
+  "ecart_theorique_max": 0.0,
+  "ecart_empirique_max": 0.005249999999999977,
+  "marginale_couple": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "marginale_independant": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ]
+ }
+}

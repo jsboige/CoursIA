@@ -25,9 +25,13 @@ It is derived from multiple open-source projects and academic work.
   **Licence demandée le 2026-10-25** ([asouther4/lean-social-choice#12](https://github.com/asouther4/lean-social-choice/issues/12)) :
   demande déposée auprès de l'amont, restée sans réponse à cette date — la mesure du
   2026-10-06 ci-dessus demeure donc celle en vigueur.
-- **Usage**: Original Lean 3 formalization of Arrow's theorem and Sen's paradox.
-  Ported to Lean 4 with significant modifications including the Geanakoplos (2005)
-  proof approach for Arrow's theorem and bidirectional formulation for Sen's theorem.
+- **Usage** : formalisation Lean 3 du théorème d'Arrow et des lemmes de Sen ; notre portage
+  Lean 4 en reprend `basic.lean` et `arrows_theorem.lean` (taux de reprise mesurés ci-dessous,
+  section « Mesure de reprise »). L'approche de preuve d'Arrow et les manipulations de
+  préférence `maketop` / `makebot` / `makeabove` **sont déjà dans l'amont** : son en-tête
+  d'`arrows_theorem.lean` annonce suivre la première preuve de Geanakoplos (2005) et s'inspirer,
+  pour ces trois fonctions, de la formalisation Isabelle/HOL. Notre portage **reprend** cette
+  approche, il ne l'introduit pas.
 
 ### chasenorman/lean-social-choice (Lean 3 fork)
 - **URL**: https://github.com/chasenorman/lean-social-choice
@@ -42,7 +46,53 @@ It is derived from multiple open-source projects and academic work.
   du 2026-10-06.
 - **Usage**: Fork with alternative proof structures consulted during development.
 
+## Mesure de reprise (2026-10-25)
+
+Ce que le portage doit à l'amont, et ce qu'il ajoute. Méthode : intersection des **noms de
+déclarations** (`theorem`, `lemma`, `def`, `abbrev`, `structure`, `inductive`, `class`,
+`instance`) entre chaque module canonique et l'ensemble des six fichiers `.lean` de `src/`
+amont ; les instances anonymes ne sont pas comptées.
+
+Le comptage est fait sur le code hors commentaires, en reconnaissant les déclarations
+précédées d'attributs et de modificateurs (`@[...]`, `private`, `protected`,
+`noncomputable`, `partial`) — un chiffre de reprise n'est rejouable qu'avec la règle de
+comptage qui l'a produit (une re-mesure à grammaire plus stricte donne 23/27, 3/17 et 3/44
+pour `Basic`, `Framework` et `Voting` : lecture inchangée).
+
+La règle exacte, telle qu'elle a produit le tableau ci-dessous (appliquée au code dont les
+commentaires `--` et les blocs `/- … -/` imbriqués sont retirés et les attributs `@[ … ]`
+effacés) :
+
+```
+(?:^|\n)[ \t]*(?:(?:private|protected|noncomputable|partial|unsafe|scoped|local|public)[ \t]+|@\[[^\]\n]*\][ \t]*)*
+(theorem|lemma|def|abbrev|structure|inductive|class|instance)[ \t]+
+([A-Za-z_][\w'!?]*(?:\.[A-Za-z_][\w'!?]*)*)?
+```
+
+Les instances sans nom (`instance : Foo`) sont écartées, faute de nom capturé. Un nom est
+« présent dans l'amont » quand son **dernier composant** figure parmi les 188 noms distincts
+des six fichiers `.lean` de `src/`. Cette règle reproduit les huit lignes du tableau, ce qui
+rend la mesure rejouable en un passage.
+
+| Module canonique | Déclarations | Nom présent dans l'amont | Lecture |
+|---|---|---|---|
+| `Basic.lean` | 29 | **25** | portage de `basic.lean` |
+| `Arrow.lean` | 29 | **19** | portage d'`arrows_theorem.lean` |
+| `Framework.lean` | 24 | **6** | les 6 noms communs viennent d'`arrows_theorem.lean` (`makeabove`) ; le reste est propre |
+| `Voting.lean` | 53 | **4** | ajout CoursIA (électeur médian, Split Cycle, Banks) — l'amont possède ses propres `split_cycle.lean` (28 déclarations sous la règle ci-dessus) et `stable_voting.lean` (56) : l'ajout est une réécriture, pas l'invention de ces concepts |
+| `Sen.lean` | 4 | **0** | ajout CoursIA (paradoxe libéral, décisivité bidirectionnelle) |
+| `MechanismDesign.lean` | 64 | **0** | ajout CoursIA (Vickrey, VCG) |
+| `AMD.lean` | 16 | **0** | ajout CoursIA |
+| `SortedListCounting.lean` | 5 | **0** | ajout CoursIA |
+
+En résumé : `Basic` et `Arrow` sont un portage Lean 4 des fichiers `basic.lean` et
+`arrows_theorem.lean` de l'amont ; `Sen`, le vote (électeur médian, Split Cycle, Banks), les
+mécanismes (Vickrey, VCG) et le comptage sont des **ajouts CoursIA**.
+
 ## Academic References
+
+Ces références nomment les **auteurs des théorèmes**, pas les auteurs du code amont — le code
+amont est cité par le nom de son dépôt, plus haut.
 
 - **Arrow, K.J.** (1951). *Social Choice and Individual Values*. Wiley.
 - **Sen, A.** (1970). *Collective Choice and Social Welfare*. Holden-Day.

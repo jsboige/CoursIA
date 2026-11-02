@@ -85,6 +85,11 @@ channel_params = {
 | `fix_ipynb_quotes.py` | Utilitaire de nettoyage pour le notebook research |
 | `research.ipynb` | Notebook de recherche et visualisation (cloud QC) |
 | `research_archive.ipynb` | Version archivée du notebook research |
+| `research_archive_en.ipynb` | Jumeau anglais du carnet archivé |
+
+### État d'archive des carnets `research_archive`
+
+Les deux carnets `research_archive*.ipynb` sont des **archives d'expérimentation by-design**, arbitrées par ai-01 le 2026-06-20 (issue #3164) : leurs erreurs d'exécution résiduelles — `NameError`/`KeyError` en cascade sur des variables renommées au fil du prototypage QC Cloud — sont un état commis délibérément, consigné dans `scripts/notebook_tools/regression_allowlist.json`. Le livrable exécutable du dossier est `research.ipynb` (exécuté de bout en bout sans erreur via le cloud QC). Les carnets archivés ne se déplacent pas : l'entrée d'allowlist qui porte l'arbitrage est indexée par chemin.
 
 ## Concepts pédagogiques
 

@@ -1,0 +1,10 @@
+- name: "DT-1 Utility-Foundations"
+  family: Probas/DecisionTheory-Infer.NET-PyMC
+  python: MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-1-Utility-Foundations.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-01-Utility-Foundations.ipynb
+  parity_level: native-both
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Enregistrement initial (2026-10-26, lane myia-po-2023:CoursIA), tranche P0bis de l'EPIC #12933 (recommandation §5 de l'inventaire DecisionTheory). Lib-vs-lib : C# = Microsoft Infer.NET (Microsoft.ML.Probabilistic, NuGet officiel, inference compilee EP/VMP), Python = PyMC (NUTS/HMC + ADVI) -- chacun le moteur SOTA de son ecosysteme probabiliste, meme configuration que la famille Probas/Infer.NET-PyMC. Verifie firsthand sur les 7 paires le 2026-10-26 : kernel .net-csharp + Microsoft.ML.Probabilistic/InferenceEngine cote C#, kernel python3 + pymc/pm.sample cote Python."
+  numbering_exception: "Zero-pad asymetrique seulement (DecInfer-01 vs DecPyMC-1, concept aligne et titres en miroir). Mesure 2026-10-26. Le realignement numerique est la tranche gatee sur l'arbitrage §3 de l'inventaire (EPIC #12933)."
+  known_differences:
+    - "Paradigmes d'inference distincts (precedent famille Probas) : C# Infer.NET = inference deterministe approchee (Expectation Propagation, modele compile en code d'inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC) + ADVI sur PyTensor. Les ecarts numeriques attendus ne sont pas des defauts (doctrine #12933 : parite des identifiants, liberte des contenus)."

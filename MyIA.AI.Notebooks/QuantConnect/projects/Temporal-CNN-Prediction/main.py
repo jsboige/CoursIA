@@ -18,7 +18,11 @@ class TemporalCNNPrediction(QCAlgorithm):
     Reference: Hands-On AI Trading with Python, QuantConnect, and AWS
     Chapter 06 - Applied Machine Learning, Example 14
 
-    Key improvements vs v1 (fake CNN, SPY only, Sharpe 0.169):
+    Key improvements vs v1 (design note: "fake CNN, SPY only, Sharpe
+    0.169" predates the first commit of this file and has no source in
+    this repository -- the recorded Ex14 v1 artifact is the real-Conv1D
+    Temporal CNN of QC Cloud project 29816576, measured Sharpe 0.734,
+    see Python/QC-Py-Cloud-07-TemporalCNN.ipynb):
     - Real sklearn MLPClassifier(128, 64, 32) trained on historical data
     - 3-class prediction: UP (>0.5%), DOWN (<-0.5%), NEUTRAL
     - 8 diversified ETFs: SPY, QQQ, IWM, XLK, XLF, XLV, DIA, EFA

@@ -1,0 +1,11 @@
+- name: App-34 15-puzzle
+  family: Search/Part3-Cas-pratiques
+  python: MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-34-15Puzzle-Admissible-Astar-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-34b-15Puzzle-Admissible-Astar-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Le 15-puzzle et l'A* admissible sont reconstruits from-scratch des deux cotes : Python en numpy autonome (pas d'ortools, pas de deap) sur des etats tuples immuables, C# en BCL pure 0 NuGet avec l'etat encode en 4 bits par case dans un `ulong`. Aucun moteur SOTA partage n'est invoque ni invocable a la place des deux implementations : le sujet pedagogique EST l'ecriture de la recherche informee, pas l'appel a un solveur. Les DEUX jumeaux couvrent les memes cinq sections (espace d'etats, invariant de parite des inversions, Manhattan et linear conflict, mesure noeuds x longueur contre glouton, trois exercices) avec les MÊMES trois exercices. Verdict SOTA-OK : le from-scratch est la contrepartie attendue (bucket 3 de #10382), et l'asymetrie de representation de l'etat (tuples Python vs `ulong` C#) est un idiome de langage, pas une asymetrie de couverture moteur."
+  known_differences:
+    - "Representation de l'etat : Python = tuples immuables hachables (idiome collections/typing) ; C# = encodage 4 bits par case dans un `ulong` (idiome BCL, pas de dependance). Meme espace d'etats (S, s0, A, T, G), meme definition des successeurs."
+    - "Le carnet C# declare expliciter l'encodage en `ulong` comme motif de performance BCL ; le carnet Python s'appuie sur les tuples et laisse numpy porter les mesures. Aucun des deux n'introduit de bibliotheque de recherche."
+    - "Le carnet Python porte l'expose de mesure le plus detaille (diagramme noeuds x profondeur, echelle log) ; le C# reste compact et renvoie au carnet Python pour le protocole experimental, dont il reproduit les sections."

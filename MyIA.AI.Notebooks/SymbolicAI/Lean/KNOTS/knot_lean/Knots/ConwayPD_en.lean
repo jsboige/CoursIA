@@ -125,10 +125,12 @@ Prior measurement (faithful Python probe, controlled against the proven
 values −t⁶/t⁵ of 11n34/11n42): among the 96 well-formed non-trivial
 mutants of the construction (4 rotations × 24 re-attachments), **exactly
 one** carries a trivial minor — this one, with designated value t⁵. The
-mutant is NOT the 11n42 census code (measured: no (ρ, perm, σ) superposes
-the two lists): it is a second drawing of the same isotopy type, the
-isotopy equality remaining a documented gap (the PL topology of the
-regluing is not formalized, cf. `Knots.Mutation`).
+mutant is not the 11n42 census code in the strict sense of the lists (no
+(ρ, perm, boundary-σ) combination superposes them, link-4 measurement),
+but link 5 (`Knots.Conway_en`, `conwayMutant_redraws_kinoshitaTerasaka`)
+establishes that it is a **redraw** of it: same crossings, another list
+order and other label names. The isotopy gap remains documented (the PL
+topology of the regluing is not formalized, cf. `Knots.Mutation_en`).
 -/
 
 /-- Sphere-mutant diagram of the Conway knot: crossings 1-5 (outside the

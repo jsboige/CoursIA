@@ -10,8 +10,8 @@ pettingzoo[classic]>=1.24.0    # Multi-agent environments — notebook 6 (IQL, P
 # Environments
 highway-env>=1.8               # Highway driving environment (Notebook 3)
 
-# Post-training SOTA (rlpt_0d, rlpt_0e, rlpt_0f) : bras trl compares aux boucles maison
-trl>=1.10                      # RewardTrainer, DPOTrainer, GRPOTrainer (PPOTrainer retire en 1.10)
+# Post-training SOTA (rlpt_0d, rlpt_0e, rlpt_0f, rlpt_0g) : bras trl compares aux boucles maison
+trl>=1.10                      # RewardTrainer, DPOTrainer, GRPOTrainer (surface PPO `trl.experimental.ppo` : presente de 1.10 a 1.12, retiree du paquet en 1.13.0)
 transformers>=5.12
 datasets>=5.0
 tokenizers>=0.21

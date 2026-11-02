@@ -47,6 +47,41 @@ Le pilote T8 (MAF couche agents — GroupChat et Magentic) est mesuré sur une
 <venv>/Scripts/python maf_groupchat_magentic_pilot.py   # T8 — GroupChat + Magentic, budget dur 60 appels
 ```
 
+Le pilote P1 (issue #14499, point 3 — réplique SK du **pilote identique** sur une
+vraie charge) utilise la même ligne SK que T2/T4. La charge n'est pas un scénario
+écrit pour l'occasion mais la **fixture figée** `distill_charge_fixture.md` :
+cellules 0..8 du carnet `01-SemanticKernel-Intro.ipynb`, figées à une tête — les
+répliques P2 (MAF) et P3 (ADK) distilleront ce même fichier, byte-stable :
+
+```bash
+py -3.11 sk_distillation_pilot.py   # P1 — GroupChat à manager custom, budget dur 16 appels
+```
+
+Le pilote P2 (réplique **MAF** du même pilote identique) utilise le venv MAF de
+T7/T8 (`agent-framework-core 1.21.0` + `orchestrations 1.3.1` ; connecteur
+`agent-framework-openai` résolu par pip, 1.16.0 mesuré — la 1.21.0 n'existe pas
+sur PyPI). Même fixture figée, mêmes instructions, même modèle épinglé, même
+budget dur de 16 appels ; la boucle est scellée par une `termination_condition`
+posée sur le builder :
+
+```bash
+<venv-maf>/Scripts/python maf_distillation_pilot.py   # P2 — GroupChatBuilder + selection function, budget dur 16 appels
+```
+
+Le pilote P3 (réplique **ADK** du même pilote identique) utilise un venv dédié
+portant `google-adk 2.8.0` + `openai` + `litellm` + `pydantic-settings` (le pilote
+réutilise l'organe du Track2 — `utils/adk_runtime.build_agent`, `config/providers`
+— qui importe ces dépendances). Même fixture figée, mêmes instructions, même
+modèle épinglé, même budget dur de 16 appels. Il n'y a **pas** de manager de
+group-chat en ADK : la politique de tour vit dans une boucle Python de
+**désignation explicite** sur une `InMemorySessionService` partagée ; chaque rôle
+est invoqué avec un prompt de désignation (passer `prompt=None` laisserait ADK
+router par handoff implicite et produirait des `Event from an unknown agent`) :
+
+```bash
+<venv-adk>/Scripts/python adk_distillation_pilot.py   # P3 — boucle de désignation explicite, budget dur 16 appels
+```
+
 Le pilote T3 (Google ADK) vit dans la série Track2 :
 
 ```bash
@@ -77,7 +112,7 @@ fusionnent), et elle dépend de ce que le projet hôte a restauré.
 
 ## Traces committées
 
-`traces/out-T*.txt` sont les **stdout** des pilotes, telles quelles. Elles sont
+`traces/out-*.txt` sont les **stdout** des pilotes, telles quelles. Elles sont
 committées pour qu'une affirmation `VÉRIFIÉ` du doc soit une propriété du dépôt et
 non du poste de l'auteur.
 
@@ -90,3 +125,17 @@ visible sans le stderr.
 
 Une trace committée **n'est pas** un contrôle : le contrôle est le pilote, rejouable
 par la commande ci-dessus. La trace est le témoin daté de ce qu'il a produit.
+
+Deuxième piège de capture, mesuré sur P3 : le bandeau d'échec de `litellm` part sur
+**stdout**, et il est **coloré**. Une trace qui le porte laisse des séquences ANSI dans
+le fichier committé, et `gh pr diff` refuse alors de rendre le diff de la PR — le garde
+de périmètre n'a plus rien à mesurer (`rc=2`, verdict `UNKNOWN`), donc un rouge qui
+n'accuse aucun défaut de périmètre. Le pilote neutralise ces séquences **dans son
+propre stdout** (`_StdoutSansAnsi`), la trace restant son stdout et non une version
+filtrée à la capture ; et la capture force l'UTF-8, sans quoi les accents sortent dans
+la page de code de la console :
+
+```bash
+PYTHONIOENCODING=utf-8 <venv-adk>/Scripts/python adk_distillation_pilot.py \
+    > traces/out-P3-adk-distillation.txt 2> /dev/null
+```

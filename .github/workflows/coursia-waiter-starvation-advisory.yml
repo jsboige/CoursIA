@@ -66,6 +66,16 @@ name: Waiter runner starvation advisory
 # « Secret Scan » -- elle ne se declenche que sur les evenements qui
 # touchent un *.ipynb, que Secret Scan voit aussi -- la garder ne doublait
 # que le volume.
+# #23195 : ce constat laisse une place VACANTE -- aucune ancre restante n'est
+# a la fois GitHub-hosted de fait et declenchee sur l'activite PR, alors que
+# c'est la jambe qui survit a un parc eteint (la jambe « push » de Secret Scan
+# s'eteint avec lui : sans pool, les merges s'arretent). « Enrich-quality
+# gate » occupe cette place : job unique ubuntu-latest, declenche par
+# pull_request sur MyIA.AI.Notebooks/**/*.ipynb -- evenement que GitHub
+# delivre sans le parc. Mesure du 2026-10-29 : 3 runs, 3 jobs, 100 %
+# heberges. L'organe scripts/ci/check_heartbeat_anchor_independence.py
+# re-mesure ce fait a chaque passage de l'advisory Linux et rougit si l'ancre
+# cesse de l'etre.
 # La cadence SERVIE est mesuree par le script lui-meme (runs event=schedule
 # uniquement -- les runs workflow_run ne faussent pas la mesure).
 #
@@ -92,7 +102,7 @@ on:
     - cron: '11,41 * * * *'
   workflow_dispatch:
   workflow_run:
-    workflows: ["Secret Scan"]
+    workflows: ["Secret Scan", "Enrich-quality gate"]
     types: [completed]
 
 permissions:

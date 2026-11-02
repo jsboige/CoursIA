@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-10-31
+
 # Secrets management — central source of truth
 
 **Objectif :** une gestion propre et durable de TOUS les secrets de l'infrastructure GenAI / CoursIA, pour que le drift (un secret édité à un endroit mais pas ailleurs) soit mécaniquement impossible.

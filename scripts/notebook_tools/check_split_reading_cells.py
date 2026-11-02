@@ -155,6 +155,7 @@ from collections import Counter
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from check_credited_examples import is_credited_example_header  # noqa: E402
 from detect_repeated_prose import content_words, markdown_cells  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -195,7 +196,15 @@ EXERCISE_TOKENS = ("TODO", "A completer", "à compléter", "Exercice")
 # entre les stubs (forme canonique, grandfathered) rougissait EXERCISE_READING
 # sur chaque enonce -- mesure sur 01-2-GPT-5-Image-Generation_en (cellules 31
 # et 33, miroir exact des cellules 31/33 du FR source sur main).
-EXERCISE_STATEMENT_TITLE_RE = re.compile(r"^#{1,6}\s*exerci[cs]e\b", re.IGNORECASE)
+# La forme GRAS (`**Exercice 1** -- ...`) est celle de 111 carnets du depot
+# (mesure au 30/10/2026) : sans elle, l'enonce echappait au carve-out
+# #17777 et passait pour « un paragraphe non titre » qui commente une sortie
+# -- donc pour une lecture. Mesure : PR #23439 (Z3-16c-Meal-Planner), ou
+# l'enonce en gras depose entre le code et son stub gonflait le compte de la
+# sortie precedente, et la PREMIERE lecture ajoutee sous ce code etait signalee
+# SECOND_READING a tort.
+EXERCISE_STATEMENT_TITLE_RE = re.compile(
+    r"^(?:#{1,6}\s*|\*+|_+)\s*exerci[cs]e\b", re.IGNORECASE)
 SECTION_TITLE_AFTER_EXERCISE_RE = re.compile(
     r"^(conclusion|ressources?|plan|references?|bibliographie|synthese|pour aller plus loin)\b",
     re.IGNORECASE,
@@ -368,31 +377,109 @@ def looks_like_reading_after_exercise(cell: dict) -> bool:
     return len(src) > 80
 
 
-def is_exercise_cell(cell: dict) -> bool:
+def _governing_header(cells: list[dict], idx: int) -> dict | None:
+    """En-tete markdown qui commande la cellule `idx` (None s'il n'y en a pas).
+
+    Remontee en arriere : les cellules markdown SANS titre sont ignorees
+    (c'est de la prose, pas un en-tete) ; le premier TITRE markdown trouve
+    commande la cellule. Une cellule de CODE interrompt la remontee : le lien
+    de section est rompu, et l'on ne rattache pas la cellule a un titre qui
+    precede une autre section de code.
+    """
+    for j in range(idx - 1, -1, -1):
+        cell = cells[j]
+        if cell.get("cell_type") == "code":
+            return None
+        if cell.get("cell_type") != "markdown":
+            continue
+        src = cell_source(cell).strip()
+        if not src:
+            continue
+        if src.split("\n", 1)[0].lstrip().startswith("#"):
+            return cell
+    return None
+
+
+def is_credited_example_code(cells: list[dict], idx: int) -> bool:
+    """Vrai si la cellule de code `idx` est le code d'un EXEMPLE GUIDE CREDITE.
+
+    La digestion des travaux etudiants (#15042) convertit l'exercice d'un
+    etudiant en **exemple guide credite** : le titre de section porte
+    `### Exemple ... (credite #PR)` et le code de l'etudiant est conserve
+    VERBATIM -- en-tete d'origine `# Exercice N - ...` compris. Le jeton
+    « Exercice » est donc present PAR CONSTRUCTION dans un exemple, et
+    `is_exercise_cell` le classait « exercice » : la lecture posee apres
+    l'exemple etait alors signalee EXERCISE_READING (faux positif mesure sur
+    #23378, PR #23368).
+
+    Le role d'une cellule de code se lit dans l'en-tete qui la commande :
+    sous `### Exemple ... (credite #PR)` le code est un exemple resolu ;
+    sous `### Exercice N` il reste un stub. L'ATTRIBUTION est exigee : un
+    simple `### Exemple` sans credit ne dit rien du role du code.
+
+    LIMITE ASSUMEE -- le lien de section s'arrete a la PREMIERE cellule de
+    code (`_governing_header`), donc un exemple credite qui porte plusieurs
+    cellules de code n'est blanchi que sur la premiere ; les suivantes
+    restent classees « exercice ». La limite est codifiee par
+    `test_carveout_code_avant_titre_ne_rattache_pas`, et l'elargir changerait
+    cette semantique (une cellule de code sans titre ouvre une nouvelle
+    section : sans cela, un exercice pose apres un code quelconque serait
+    blanchi).
+
+    Mesure du 2026-10-29 sur le depot (151 en-tetes credites) : 133 sections
+    portent une seule cellule de code, 15 en portent deux, 3 en portent trois
+    -- soit 18 sections hors du carve-out. Aucune ne produit le faux positif :
+    sur ces 18 sections, aucune cellule non blanchie n'est classee « exercice »
+    par `is_exercise_cell` en etant suivie d'une lecture. La limite est donc
+    REELLE EN FORME et SANS INSTANCE mesuree : la documenter suffit, l'elargir
+    serait un changement de semantique non motive par une mesure.
+    """
+    header = _governing_header(cells, idx)
+    return header is not None and is_credited_example_header(header)
+
+
+def is_exercise_cell(
+    cell: dict,
+    cells: list[dict] | None = None,
+    idx: int | None = None,
+) -> bool:
     """Une cellule de code est 'exercise' si elle porte un marqueur d'exercice
-    OU un stub TODO dans son source. On accepte aussi une sortie litterale
-    ``Exercice a completer`` : la convention des carnets CoursIA est d'afficher
+    OU un stub TODO dans sa source. On accepte aussi une sortie litterale
+    `Exercice a completer` : la convention des carnets CoursIA est d'afficher
     ce message quand l'etudiant n'a pas complete (cf C.1) -- la cellule reste
     pedagogiquement un exercice, meme si elle a ete executee une fois.
 
-    Cette definition suit le contrat C.1 (``pas d'erreur volontaire dans un
-    exercice``) : un exercice abouti a execution_count != None et une sortie
+    Cette definition suit le contrat C.1 (`pas d'erreur volontaire dans un
+    exercice`) : un exercice abouti a execution_count != None et une sortie
     utile, donc il ne ressemble plus a un stub -- l'heuristique reste
-    aplicable tant que la cellule declare sa nature d'exercice.
+    applicable tant que la cellule declare sa nature d'exercice.
+
+    Carve-out #23378 : une cellule placee sous un en-tete d'EXEMPLE GUIDE
+    CREDITE n'est pas un exercice, meme si sa source porte le jeton
+    « Exercice » (l'en-tete etudiant est conserve verbatim par la
+    digestion). Le carve-out porte sur le JETON seul : une sortie litterale
+    « Exercice a completer » reste, elle, le signal d'un travail NON acheve
+    -- sous un exemple ou ailleurs.
     """
     if cell.get("cell_type") != "code":
         return False
-    src = cell_source(cell)
-    if any(tok in src for tok in EXERCISE_TOKENS):
-        return True
-    # Sortie litterale "Exercice a completer" (avec/sans accent, casse libre)
+    # Signal le plus FORT d'abord : une sortie litterale « Exercice a completer »
+    # dit un travail NON acheve, et cela prime sur le jeton de l'en-tete
+    # etudiant conserve verbatim. Le carve-out #23378 porte sur le JETON seul.
     out_text = cell_output_text(cell).strip().lower()
     out_text_deac = deaccent(out_text)
-    return (
+    if (
         "exercice a completer" in out_text_deac
         or "exercice a terminer" in out_text_deac
         or "a completer" in out_text_deac
-    )
+    ):
+        return True
+    src = cell_source(cell)
+    if any(tok in src for tok in EXERCISE_TOKENS):
+        if cells is not None and idx is not None and is_credited_example_code(cells, idx):
+            return False
+        return True
+    return False
 
 
 def is_reading_or_prose(cell: dict) -> bool:
@@ -449,8 +536,9 @@ def is_exercise_statement(cell: dict, cells: list[dict], idx: int) -> bool:
         return False
     prev_cell = cells[idx - 1] if idx > 0 else None
     next_cell = cells[idx + 1] if idx + 1 < len(cells) else None
+    neighbours = ((prev_cell, idx - 1), (next_cell, idx + 1))
     if not any(
-        c is not None and is_exercise_cell(c) for c in (prev_cell, next_cell)
+        c is not None and is_exercise_cell(c, cells, c_idx) for c, c_idx in neighbours
     ):
         return False
     body = lines[k + 1:]
@@ -573,18 +661,18 @@ def _classify_context(cells: list[dict], idx: int) -> tuple[str, str]:
     prev_role / next_role sont parmi : "md", "code_with_output", "exercise", "BOUNDARY".
     "code_with_output" = cellule de code executee (a une sortie ou un exec_count).
     """
-    def role(c):
+    def role(c, c_idx):
         if c is None:
             return "BOUNDARY"
         if c.get("cell_type") == "markdown":
             return "md"
-        if is_exercise_cell(c):
+        if is_exercise_cell(c, cells, c_idx):
             return "exercise"
         return "code_with_output"
 
     prev = cells[idx - 1] if idx > 0 else None
     nxt = cells[idx + 1] if idx + 1 < len(cells) else None
-    return role(prev), role(nxt)
+    return role(prev, idx - 1), role(nxt, idx + 1)
 
 
 _PURE_FENCE_RE = re.compile(r"```[^\n]*\n.*?```\Z", re.DOTALL)
@@ -628,7 +716,7 @@ def _output_key_above(cells: list[dict], idx: int) -> str | None:
             if _is_pure_fence(c):
                 return None
             continue
-        if is_exercise_cell(c):
+        if is_exercise_cell(c, cells, j):
             return None
         if c.get("execution_count") is not None or (c.get("outputs") or []):
             return cell_source(c)
@@ -650,6 +738,13 @@ def readings_by_output(nb: dict) -> Counter[str]:
     counts: Counter[str] = Counter()
     for i, c in enumerate(cells):
         if not is_reading_or_prose(c) or _is_pure_fence(c):
+            continue
+        # Meme carve-out que la boucle principale (ligne ~832) : un enonce
+        # d'exercice n'est PAS une lecture. Sans lui, un enonce place entre une
+        # sortie et son stub etait compte comme une lecture de cette sortie --
+        # et la premiere lecture ajoutee sous cette sortie etait signalee
+        # SECOND_READING (faux positif mesure sur #23439).
+        if is_exercise_statement(c, cells, i):
             continue
         key = _output_key_above(cells, i)
         if key is not None:

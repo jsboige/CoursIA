@@ -127,13 +127,23 @@ class TrendFollowingAQR(QCAlgorithm):
             close = self.securities[self.symbols[ticker]].close
             if close <= sma_val:
                 continue
-            hist_6m = self.history(self.symbols[ticker], self.mom_lookback_6m + 5, Resolution.DAILY)
+            # Fenetre double (#20286) : sur une demi-seance, history() rend moins
+            # de barres que demandees et la garde ecarte le titre. On demande le
+            # double puis on re-slice sur la fenetre d'origine : la garde porte
+            # sur la fenetre reellement utilisee, son verdict ne change pas.
+            hist_6m = self.history(self.symbols[ticker], 2 * (self.mom_lookback_6m + 5), Resolution.DAILY)
+            hist_6m = hist_6m.iloc[-(self.mom_lookback_6m + 5):]
             if len(hist_6m) < self.mom_lookback_6m * 0.8:
                 continue
             ret_6m = hist_6m["close"].iloc[-1] / hist_6m["close"].iloc[-self.mom_lookback_6m] - 1
             if ret_6m <= 0:
                 continue
-            hist_12m = self.history(self.symbols[ticker], self.mom_lookback_12m + 5, Resolution.DAILY)
+            # Fenetre double (#20286) : sur une demi-seance, history() rend moins
+            # de barres que demandees et la garde ecarte le titre. On demande le
+            # double puis on re-slice sur la fenetre d'origine : la garde porte
+            # sur la fenetre reellement utilisee, son verdict ne change pas.
+            hist_12m = self.history(self.symbols[ticker], 2 * (self.mom_lookback_12m + 5), Resolution.DAILY)
+            hist_12m = hist_12m.iloc[-(self.mom_lookback_12m + 5):]
             if len(hist_12m) < self.mom_lookback_12m * 0.8:
                 ret_12m = ret_6m
             else:

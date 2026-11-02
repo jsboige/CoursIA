@@ -16,7 +16,9 @@ environment variables, never via cwd --
                         project root, exactly what `lake build` compiles)
   PROJECT_PATH          repo-relative lake root
   DISPLAY_NAME          job label
-  ALLOW                 comma-separated extra whitelisted axioms
+  ALLOW                 comma-separated extra whitelisted axioms, OR
+                        '@<repo-relative path>' to a file source of truth,
+                        one name per line (#21905)
   FAIL_ON_SORRY         'true' (default) gates on transitive sorryAx
   INCLUDE_I18N_SIBLINGS 'true' keeps `_en` siblings in the '*' derivation
 
@@ -94,7 +96,15 @@ if modules_raw == "*":
                  "A gate that inspects nothing must fail, not pass silently.")
 else:
     modules = [m.strip() for m in modules_raw.split(",") if m.strip()]
-allow = [a.strip() for a in os.environ.get("ALLOW", "").split(",") if a.strip()]
+# ALLOW accepte la liste a virgules historique OU '@<chemin>' vers un
+# fichier source de verite (un nom par ligne, #21905). Le parsing vit
+# dans allow_list.py (unit-teste) pour que le gate ne porte pas une
+# seconde copie de la regle -- meme design rule que check_target_coverage
+# pour target-modules '*'.
+sys.path.insert(0, str(repo_root / "scripts" / "lean"))
+from allow_list import parse_allow  # noqa: E402
+
+allow = parse_allow(os.environ.get("ALLOW", ""), repo_root)
 display_name = os.environ["DISPLAY_NAME"]
 
 fail_on_sorry = os.environ.get("FAIL_ON_SORRY", "true").strip().lower() == "true"

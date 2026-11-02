@@ -1,0 +1,10 @@
+- name: "GameTheory-02e IESDS-Rationalisation"
+  family: GameTheory/.NET-Parity
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-02e-IESDS-Rationalisation-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-02e-IESDS-Rationalisation-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Jumeau C# du carnet GT-02e (residu nomme par le CLOSURE PREFLIGHT #21925 du 2026-10-25, partie Python livree par #21956). Census moteur : PY=NumPy + scipy.optimize.linprog (rationalisabilite par LP) ; CS=.NET BCL pur, 0 NuGet -- les memes algorithmes reimplantes from scratch, dont un simplex a deux phases avec regle de Bland (~80 lignes) qui remplace linprog, confronte a l'enumeration des sommets du polyedre sur 5440 instances (1440 + 4000) sans desaccord. Tous les compteurs deterministes reproduisent le jumeau Python : 4096 jeux 2x3 analyses, 0 divergences d'ordre (IESDS stricte), 1536 contre-exemples en dominance faible, 4066 jeux avec Nash, 11520 profils de Nash, 20286 profils rationalisables, filtres ponctuel/mixte confondus sur toute la famille, 0 violations Nash<=rat, 0 violations rat<=IESDS, 372 jeux ou l'IESDS garde plus, lemme de Pearce 400 jeux / 0 ecarts."
+  known_differences:
+    - "PRNG : mulberry32 maison (CS) vs numpy.random.default_rng (PY) -- memes graines (0 et 1), memes tailles d'echantillon, memes conclusions ; les tirages individuels different, les compteurs deterministes non."
+    - "Solveur LP : simplex a deux phases maison (CS) vs scipy.optimize.linprog (PY) -- les deux references exactes sont confrontees l'une a l'autre dans le carnet (enumeration des sommets vs LP)."

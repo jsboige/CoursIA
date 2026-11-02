@@ -2,7 +2,11 @@
   Sen's Liberal Paradox
   =====================
 
-  Port of asouther4/lean-social-choice to Lean 4
+  CoursIA addition — not a port. The upstream asouther4/lean-social-choice does not
+  contain the liberal paradox: its `basic.lean` carries Sen's theorem on the existence
+  of a choice function (lemma 1*l), and the word "liberal" appears in none of its files.
+  The four declarations of this module (0/4 names shared with upstream, measured
+  2026-10-25) are written here, with a bidirectional decisiveness.
 
   Sen's impossibility theorem shows that no social decision procedure
   can simultaneously satisfy:

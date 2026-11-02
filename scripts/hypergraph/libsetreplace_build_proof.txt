@@ -1,0 +1,37 @@
+# Preuve de construction -- libSetReplace officiel (maxitg/SetReplace, MIT)
+# Mesure du 2026-10-29, lane myia-po-2024:CoursIA, issue #23093 grain A.
+# Environnement : WSL Ubuntu 24.04, g++ 13.3.0, cmake 4.4.4, 16 coeurs.
+# Commande : cmake .. -DSET_REPLACE_BUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Release
+#            cmake --build . -j 14 ; puis execution des binaires de test.
+# Sortie verbatim ci-dessous ; ne pas editer a la main.
+
+=== BUILD ===
+[ 90%] Linking CXX executable HypergraphSubstitutionSystem_test
+[ 95%] Linking CXX executable profile_tests
+[ 95%] Built target HypergraphSubstitutionSystem_test
+[100%] Linking CXX static library ../../../lib/libgmock_main.a
+[100%] Built target gmock_main
+[100%] Built target profile_tests
+=== BINAIRES DE TEST ===
+./libSetReplace/test/HypergraphSubstitutionSystem_test
+./libSetReplace/test/profile_tests
+./libSetReplace/test/Parallelism_test
+=== RUN TESTS ===
+--- ./libSetReplace/test/HypergraphSubstitutionSystem_test : rc=0 ---
+
+[----------] Global test environment tear-down
+[==========] 7 tests from 1 test suite ran. (405 ms total)
+[  PASSED  ] 7 tests.
+--- ./libSetReplace/test/profile_tests : rc=0 ---
+
+[----------] Global test environment tear-down
+[==========] 6 tests from 1 test suite ran. (3008 ms total)
+[  PASSED  ] 6 tests.
+--- ./libSetReplace/test/Parallelism_test : rc=0 ---
+
+[----------] Global test environment tear-down
+[==========] 4 tests from 1 test suite ran. (643 ms total)
+[  PASSED  ] 4 tests.
+RESUME: 3 binaire(s) de test, 0 en echec
+
+[exited with code 0]

@@ -66,6 +66,8 @@ ou un modèle vivant) :
 
 - `o4-mini` : **déprécié** chez OpenAI (404 deprecation sur `o4-mini` et `o4-mini-2025-04-16`).
   Conséquence immédiate : toute cellule qui l'appelle en direct saute ou échoue — voir l'audit ci-dessous.
+  Le mécanisme, et la distinction avec un simple refus d'accès, sont documentés dans
+  « Cycle de vie d'un identifiant » plus bas.
 - `deepseek/deepseek-r1` : **plus servi par aucun fournisseur OpenRouter**
   (`no provider serves this model anymore`).
 
@@ -96,6 +98,46 @@ paramètres nommés. Sondes de surface du 2026-10-26 depuis `po-2027` : LAN `192
 (timeout), `comfyui.myia.io` (SSLError), `comfyui-video.myia.io/system_info` (502) — aucune
 surface atteinte ce jour-là ; à compléter depuis une machine du stack quand besoin.
 
+## Cycle de vie d'un identifiant — le catalogue ne dit pas si l'appel passe
+
+Un identifiant que le fournisseur annonce n'est **pas** forcément appelable avec notre clé.
+Ce n'est pas une supposition : c'est mesuré. Le 2026-10-26, `GET /v1/models` renvoyait une
+liste de 140 identifiants où `o4-mini` et `o3-mini` figuraient toujours — et l'appel direct
+refusait les deux.
+
+| Identifiant | `POST /v1/chat/completions` | `GET /v1/models` |
+|---|---|---|
+| `o4-mini` | **404** `model_not_found` — « The model `o4-mini` has been deprecated » | présent |
+| `o3-mini` | **404** `model_not_found` — « The model `o3-mini` has been deprecated » | présent |
+| `gpt-5` | 200 | présent |
+| `gpt-5-mini` | 200 | présent |
+| `gpt-5.6-sol` | 200 | présent |
+
+Mesures : [#22707](https://github.com/jsboige/CoursIA/pull/22707) (lane `myia-ai-01:CoursIA-2`)
+et [#22605](https://github.com/jsboige/CoursIA/pull/22605) (lane `myia-po-2027:CoursIA`,
+mergée le 2026-10-28) — toutes deux du 2026-10-26, clé lue dans le `.env` du dépôt et jamais
+affichée.
+
+**La règle : tester l'endpoint du modèle, pas la liste.** Avant d'écrire un identifiant dans
+un carnet, envoyer un appel minimal — `POST /v1/chat/completions`, une consigne minimale,
+sortie plafonnée — et lire le verdict. `GET /v1/models` est le catalogue de ce que le
+fournisseur déclare : il ne dit ni si notre clé atteint le modèle, ni si le modèle a été
+retiré. Le catalogue et l'appel sont deux surfaces distinctes, et c'est la seconde qui fait
+foi.
+
+**Deux refus qui ne se confondent pas.** Un `404` `model_not_found` « has been deprecated »
+annonce un **retrait par le fournisseur** : l'identifiant ne reviendra pas. Un
+`400 The model '<modele>' does not exist` annonce un **accès clé/organisation** : le modèle
+existe côté fournisseur, c'est notre clé qui n'y accède pas. Le second cas est celui mesuré
+sur `gpt-image-1` et `dall-e-3` avec la clé partagée `master.env`, alors que
+[#21340](https://github.com/jsboige/CoursIA/pull/21340) exécutait `gpt-image-1` avec succès
+depuis le `.env` du carnet.
+
+Un état de cycle de vie est une **mesure d'API**, pas une donnée de documentation : il se
+périme comme le reste de la table et se re-mesure par appel. Le mapping courant reste
+[`model-mapping-openai.md`](model-mapping-openai.md) ; l'état de cycle de vie des
+identifiants se consigne ici, avec sa date de mesure.
+
 ## Utiliser la garde dans un carnet
 
 ```python
@@ -124,3 +166,7 @@ appel minimal par case (le payload type ci-dessus), consigner verdict + date + `
 et régénérer `param_matrix.json` — la garde et cette page lisent la même donnée. Les
 paramètres de sonde ci-dessus sont volontairement les plus petits qui déclenchent le refus
 ou l'acceptation (16 tokens de sortie maximum hors raisonnement).
+
+Re-mesurer l'état de cycle de vie d'un identifiant suit la même exigence : un appel par
+identifiant, pas une lecture de `GET /v1/models` — voir « Cycle de vie d'un identifiant »
+plus haut.

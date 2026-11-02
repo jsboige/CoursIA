@@ -33,6 +33,9 @@ on:
     # cible du garde = fichiers de traduction derives : `translations/**`
     # (CSV de sync, derives par T1/T3) et les `*_<lang>.ipynb` rendus.
     # Hermetique : sans `translations/**` le garde est desarme sur sa cible
+    # principale. NB : le declencheur reste large, mais le filtre de fond
+    # (ALL_CHANGED, step guard) ne retient que `translations/**/*.csv` --
+    # les README/PERIMETER/golden_set manuscrits declenchent puis passent.
     # principale (86 fichiers mesures firsthand par Hermes sur `main`).
     paths:
       - '.github/workflows/translation-guard.yml'
@@ -126,7 +129,13 @@ jobs:
           fi
 
           # 3-dot diff: translation-owned files changed on the PR branch.
-          # translations/** = sync CSVs (derived). *_<lang>.ipynb = rendered
+          # translations/**/*.csv = sync CSVs (derived by T1/T3). Les autres
+          # fichiers sous translations/ (README.md, PERIMETER.md,
+          # translation_golden_set.json) sont manuscrits -- mesuré firsthand
+          # 2026-10-30 : 36 CSV derives vs 28 fichiers manuscrits sur main,
+          # aucun generateur de README dans scripts/translation/. Les exclure
+          # evite le faux positif #23401 (PR prose-counts sur les README de
+          # couverture). *_<lang>.ipynb = rendered
           # translation notebooks (derived by render_notebook.py T4). Target
           # langs match check_perimeter.py TARGET_LANGS (en/es/ar/fa/zh/ru/pt),
           # the single source of truth (#10109).
@@ -140,7 +149,7 @@ jobs:
           # premier cas déclencheur : PR #10306 deep_research_optimization_en
           # jamais rendu auparavant).
           ALL_CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- \
-            'translations/**' \
+            'translations/**/*.csv' \
             'MyIA.AI.Notebooks/**/*_en.ipynb' \
             'MyIA.AI.Notebooks/**/*_ru.ipynb' \
             'MyIA.AI.Notebooks/**/*_pt.ipynb' \
@@ -179,7 +188,7 @@ jobs:
             echo "" >> "$GITHUB_STEP_SUMMARY"
             echo "### How to fix" >> "$GITHUB_STEP_SUMMARY"
             echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo "Translation CSVs (\`translations/**\`) and rendered notebooks (\`*_<lang>.ipynb\`) are **derived** from the source notebook + the T1/T3/T4 toolchain. The canonical exit is to edit the **source notebook** (FR); \`translation-sync.yml\` then re-extracts, re-translates (changed cells only), and re-renders." >> "$GITHUB_STEP_SUMMARY"
+            echo "Translation CSVs (\`translations/**/*.csv\`) and rendered notebooks (\`*_<lang>.ipynb\`) are **derived** from the source notebook + the T1/T3/T4 toolchain. The canonical exit is to edit the **source notebook** (FR); \`translation-sync.yml\` then re-extracts, re-translates (changed cells only), and re-renders." >> "$GITHUB_STEP_SUMMARY"
             echo "" >> "$GITHUB_STEP_SUMMARY"
             echo "**State of the engine (#15198, #10038):** \`translation-sync.yml\` is on a manual-maintainer hold since 2026-08-12 -- it no longer runs per-PR, so editing the FR source does **not** refresh the derived file until the hold is lifted. While the hold stands, the auditable exit for a legitimate derived-file change is the dual-key override (#10332), never a silent hand-edit." >> "$GITHUB_STEP_SUMMARY"
             echo "" >> "$GITHUB_STEP_SUMMARY"

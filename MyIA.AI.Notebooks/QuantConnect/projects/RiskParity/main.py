@@ -147,7 +147,12 @@ class RiskParity(QCAlgorithm):
             close = self.securities[sym].close
             if close <= ind.current.value:
                 continue
-            hist = self.history(sym, self.MOM_LOOKBACK + 5, Resolution.DAILY)
+            # Fenetre double (#20286) : sur une demi-seance, history() rend moins
+            # de barres que demandees et la garde ecarte le titre. On demande le
+            # double puis on re-slice sur la fenetre d'origine : la garde porte
+            # sur la fenetre reellement utilisee, son verdict ne change pas.
+            hist = self.history(sym, 2 * (self.MOM_LOOKBACK + 5), Resolution.DAILY)
+            hist = hist.iloc[-(self.MOM_LOOKBACK + 5):]
             if len(hist) < self.MOM_LOOKBACK * 0.8:
                 continue
             ret_12m = hist["close"].iloc[-1] / hist["close"].iloc[-self.MOM_LOOKBACK] - 1

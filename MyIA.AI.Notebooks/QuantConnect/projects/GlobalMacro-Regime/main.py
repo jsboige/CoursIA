@@ -119,7 +119,12 @@ class GlobalMacroRegime(QCAlgorithm):
         spy_price = self.securities[self.spy_sym].close
         if spy_price <= self.spy_sma.current.value:
             return False
-        hist = self.history(self.spy_sym, self.MOM_6M + 5, Resolution.DAILY)
+        # Fenetre double (#20286) : sur une demi-seance, history() rend moins
+        # de barres que demandees et la garde ecarte le titre. On demande le
+        # double puis on re-slice sur la fenetre d'origine : la garde porte
+        # sur la fenetre reellement utilisee, son verdict ne change pas.
+        hist = self.history(self.spy_sym, 2 * (self.MOM_6M + 5), Resolution.DAILY)
+        hist = hist.iloc[-(self.MOM_6M + 5):]
         if len(hist) < self.MOM_6M * 0.8:
             return True
         ret_6m = hist["close"].iloc[-1] / hist["close"].iloc[-self.MOM_6M] - 1
@@ -162,13 +167,23 @@ class GlobalMacroRegime(QCAlgorithm):
                 close = self.securities[sym].close
                 if close <= ind.current.value:
                     continue
-                hist_6m = self.history(sym, self.MOM_6M + 5, Resolution.DAILY)
+                # Fenetre double (#20286) : sur une demi-seance, history() rend moins
+                # de barres que demandees et la garde ecarte le titre. On demande le
+                # double puis on re-slice sur la fenetre d'origine : la garde porte
+                # sur la fenetre reellement utilisee, son verdict ne change pas.
+                hist_6m = self.history(sym, 2 * (self.MOM_6M + 5), Resolution.DAILY)
+                hist_6m = hist_6m.iloc[-(self.MOM_6M + 5):]
                 if len(hist_6m) < self.MOM_6M * 0.8:
                     continue
                 ret_6m = hist_6m["close"].iloc[-1] / hist_6m["close"].iloc[-self.MOM_6M] - 1
                 if ret_6m <= 0:
                     continue
-                hist_12m = self.history(sym, self.MOM_12M + 5, Resolution.DAILY)
+                # Fenetre double (#20286) : sur une demi-seance, history() rend moins
+                # de barres que demandees et la garde ecarte le titre. On demande le
+                # double puis on re-slice sur la fenetre d'origine : la garde porte
+                # sur la fenetre reellement utilisee, son verdict ne change pas.
+                hist_12m = self.history(sym, 2 * (self.MOM_12M + 5), Resolution.DAILY)
+                hist_12m = hist_12m.iloc[-(self.MOM_12M + 5):]
                 if len(hist_12m) < self.MOM_12M * 0.8:
                     ret_12m = ret_6m
                 else:

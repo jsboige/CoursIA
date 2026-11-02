@@ -2,7 +2,12 @@
   Paradoxe libéral de Sen
   ========================
 
-  Port de asouther4/lean-social-choice vers Lean 4
+  Ajout CoursIA — pas un portage. L'amont asouther4/lean-social-choice ne contient pas
+  le paradoxe libéral : son `basic.lean` porte le théorème de Sen sur l'existence d'une
+  fonction de choix (lemme 1*l), et le mot « liberal » ne figure dans aucun de ses
+  fichiers. Les quatre déclarations de ce module sont écrites ici — aucune ne porte un
+  nom présent dans l'amont (0 sur 4, mesure du 2026-10-25) — avec une décisivité
+  bidirectionnelle.
 
   Le théorème d'impossibilité de Sen montre qu'aucune procédure de décision sociale
   ne peut simultanément satisfaire :

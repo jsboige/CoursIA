@@ -5,15 +5,27 @@ import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+import pytest
+
 CI_DIR = Path(__file__).resolve().parents[1] / "ci"
 sys.path.insert(0, str(CI_DIR))
 
 import ci_overflow_controller as ctl  # noqa: E402
 
 NOW = datetime(2026, 10, 27, 12, 0, tzinfo=timezone.utc)
+NOW_ISO = "2026-10-27T12:00:00+00:00"
 # Derniere ecriture de la variable, hors fenetre de dwell : le controleur
 # n'est pas bloque par son propre dwell dans ces tests de CLI.
 OLD = NOW - timedelta(hours=2)
+
+
+@pytest.fixture(autouse=True)
+def _ecart_du_dernier_passage_simule(monkeypatch):
+    """L'ecart au dernier passage se lit par un appel `gh` : aucun test de
+    cette suite ne doit l'atteindre, sinon la suite dependrait de l'etat
+    reseau de la machine (#21994). Les tests qui verifient la garde ou
+    l'ecart le simulent eux-memes -- celui-ci n'est que le filet."""
+    monkeypatch.setattr(ctl, "last_run_age_minutes", lambda *a, **k: (None, "simule"))
 
 
 def hosted(queued: int = 0, old: int = 0, oldest: float = 0.0,
@@ -27,10 +39,13 @@ def hosted(queued: int = 0, old: int = 0, oldest: float = 0.0,
 
 def local(free: int = 0, online: int = 0, starved: int = 0,
           busy: int = 0, unknown: int = 0,
-          complete: bool = True, truncated: bool = False, reason: str = "") -> ctl.LocalSample:
+          complete: bool = True, truncated: bool = False, reason: str = "",
+          inventory_read: bool = False,
+          cohort_free: int = 0) -> ctl.LocalSample:
     return ctl.LocalSample(online=online, free=free, starved=starved, busy=busy,
                             unknown=unknown, complete=complete, truncated=truncated,
-                            reason=reason)
+                            reason=reason, inventory_read=inventory_read,
+                            cohort_free=cohort_free)
 
 
 def cohort(queued: int = 0, in_progress: int = 0, complete: bool = True,
@@ -153,7 +168,7 @@ def test_cli_dry_run_ne_bascule_pas(monkeypatch, capsys):
     written = []
     monkeypatch.setattr(ctl, "write_variable",
                         lambda *a, **k: (written.append(a), (True, "ok"))[1])
-    rc = ctl.main(["--repo", "jsboige/CoursIA", "--json"])
+    rc = ctl.main(["--repo", "jsboige/CoursIA", "--json", "--now", NOW_ISO])
     assert rc == ctl.EXIT_OK
     assert written == []
     report = json.loads(capsys.readouterr().out)
@@ -176,7 +191,7 @@ def test_cli_apply_bascule_et_ecrit(monkeypatch, capsys):
         return True, "variable mise a jour"
 
     monkeypatch.setattr(ctl, "write_variable", fake_write)
-    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json"])
+    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json", "--now", NOW_ISO])
     assert rc == ctl.EXIT_OK
     assert seen["value"] == "true"
     # L'ecriture passe par le jeton DEDIE, pas par le jeton de mesure.
@@ -196,7 +211,7 @@ def test_cli_ecriture_refusee_rend_refused(monkeypatch, capsys):
                         lambda *a, **k: local(free=7, online=14))
     monkeypatch.setattr(ctl, "write_variable",
                         lambda *a, **k: (False, "HTTP 403: Resource not accessible"))
-    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json"])
+    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json", "--now", NOW_ISO])
     assert rc == ctl.EXIT_REFUSED
     report = json.loads(capsys.readouterr().out)
     assert report["verdict"] == "REFUSED"
@@ -216,7 +231,7 @@ def test_cli_lecture_impossible_rend_le_verdict_sans_ecrire(monkeypatch, capsys)
                         lambda *a, **k: local(free=7, online=14))
     monkeypatch.setattr(ctl, "write_variable", lambda *a, **k: (_ for _ in ()).throw(
         AssertionError("aucune ecriture si l'etat de la variable est inconnu")))
-    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json"])
+    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json", "--now", NOW_ISO])
     report = json.loads(capsys.readouterr().out)
     assert report["verdict"] == "SWITCH_TRUE"
     assert report["written"] is False
@@ -240,7 +255,7 @@ def test_etat_inconnu_bloque_l_ecriture_meme_avec_le_secret_present(monkeypatch,
                         lambda *a, **k: local(free=7, online=14))
     monkeypatch.setattr(ctl, "write_variable", lambda *a, **k: (_ for _ in ()).throw(
         AssertionError("aucune ecriture si l'etat de la variable est inconnu")))
-    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json"])
+    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json", "--now", NOW_ISO])
     report = json.loads(capsys.readouterr().out)
     assert report["verdict"] == "SWITCH_TRUE"
     assert report["written"] is False
@@ -257,7 +272,7 @@ def test_cli_mesure_illisible_sort_en_1(monkeypatch, capsys):
                         lambda *a, **k: hosted(complete=False, reason="listing en echec"))
     monkeypatch.setattr(ctl, "collect_local",
                         lambda *a, **k: local(free=7, online=14))
-    rc = ctl.main(["--repo", "jsboige/CoursIA", "--json"])
+    rc = ctl.main(["--repo", "jsboige/CoursIA", "--json", "--now", NOW_ISO])
     assert rc == ctl.EXIT_UNREADABLE
     assert json.loads(capsys.readouterr().out)["verdict"] == "UNREADABLE"
 
@@ -334,7 +349,7 @@ def test_cli_sans_jeton_d_inventaire_sort_unreadable_nomme(monkeypatch, capsys):
         ctl.crs, "fetch_inventory",
         lambda repo, label, token: _inventory_unavailable(),
     )
-    rc = ctl.main(["--repo", "jsboige/CoursIA", "--json"])
+    rc = ctl.main(["--repo", "jsboige/CoursIA", "--json", "--now", NOW_ISO])
     assert rc == ctl.EXIT_UNREADABLE
     report = json.loads(capsys.readouterr().out)
     assert report["verdict"] == "UNREADABLE"
@@ -363,7 +378,7 @@ def test_secret_present_ecrit_avec_le_jeton_dedie(monkeypatch, capsys):
         return True, "variable mise a jour"
 
     monkeypatch.setattr(ctl, "write_variable", fake_write)
-    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json"])
+    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json", "--now", NOW_ISO])
     assert rc == ctl.EXIT_OK
     assert seen["value"] == "true"
     assert seen["token"] == "pat-variables"
@@ -382,7 +397,7 @@ def test_secret_absent_verdict_seul_et_aucune_ecriture(monkeypatch, capsys):
                         lambda *a, **k: local(free=7, online=14))
     monkeypatch.setattr(ctl, "write_variable", lambda *a, **k: (_ for _ in ()).throw(
         AssertionError("aucune ecriture sans jeton d'ecriture")))
-    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json"])
+    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json", "--now", NOW_ISO])
     assert rc == ctl.EXIT_OK
     report = json.loads(capsys.readouterr().out)
     # Le VERDICT est rendu...
@@ -406,7 +421,7 @@ def test_secret_absent_et_vide_est_traite_comme_absent(monkeypatch, capsys):
                         lambda *a, **k: local(free=7, online=14))
     monkeypatch.setattr(ctl, "write_variable", lambda *a, **k: (_ for _ in ()).throw(
         AssertionError("aucune ecriture avec un secret vide")))
-    ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json"])
+    ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json", "--now", NOW_ISO])
     report = json.loads(capsys.readouterr().out)
     assert report["written"] is False
     assert report["write_token_present"] is False
@@ -475,6 +490,60 @@ def test_troncature_locale_bloque_la_bascule_vers_true():
                      current="false", now=NOW)
     assert d.action == "HOLD"
     assert "TRONQUEE" in d.reason
+
+
+# --- Tranche du 31/10 : la troncature locale n'est plus une impasse --------
+#
+# Rejeu de la mesure du coordinateur (31/10, 16:07-16:20Z) : 162 jobs
+# heberges ages (le plus ancien 69,7 min, marge hebergee negative) et 28
+# slots locaux libres, mais la lecture locale est tronquee (530 runs non
+# lus, budget 120). Le controleur rendait HOLD au motif que « le parc local
+# n'est pas affame » n'etait pas etablie -- donc la bascule devenait
+# impossible exactement dans le regime qu'elle doit traiter. L'inventaire
+# des runners porte desormais cette premisse par une affirmation POSITIVE.
+
+def test_inventaire_etablit_le_parc_libre_sous_troncature_locale():
+    d = ctl.evaluate(
+        hosted(queued=162, old=162, oldest=69.7, in_progress=11),
+        local(free=28, online=38, busy=11,
+              truncated=True,
+              reason="530 run(s) local(aux) non lu(s) (budget de lecture 120 atteint)",
+              inventory_read=True, cohort_free=28),
+        current="false", now=NOW,
+    )
+    assert d.action == "SWITCH_TRUE" and d.target == "true"
+    # Le motif nomme l'organe qui a porte la premisse, et non la troncature.
+    assert "inventaire" in d.reason and "28 runner(s)" in d.reason
+
+
+def test_inventaire_sans_slot_de_cohorte_ne_leve_pas_la_troncature():
+    # Inventaire LU, mais un seul slot de cohorte libre pour un seuil de 2 :
+    # la premisse n'est pas etablie, et le motif dit lequel des deux organes
+    # a parle (inventaire, pas troncature seule).
+    d = ctl.evaluate(
+        hosted(queued=162, old=162, oldest=69.7, in_progress=11),
+        local(free=28, online=38, truncated=True,
+              reason="530 run(s) local(aux) non lu(s)",
+              inventory_read=True, cohort_free=1),
+        current="false", now=NOW,
+    )
+    assert d.action == "HOLD"
+    assert "TRONQUEE" in d.reason
+    assert "1 runner(s) de cohorte" in d.reason
+
+
+def test_inventaire_illisible_ne_leve_pas_la_troncature():
+    # Fail-CLOSED : sans inventaire lisible, la troncature locale garde son
+    # effet, meme avec des slots annonces par la lecture des runs.
+    d = ctl.evaluate(
+        hosted(queued=162, old=162, oldest=69.7),
+        local(free=28, online=38, truncated=True,
+              reason="530 run(s) local(aux) non lu(s)",
+              inventory_read=False, cohort_free=0),
+        current="false", now=NOW,
+    )
+    assert d.action == "HOLD"
+    assert "inventaire des runners illisible" in d.reason
 
 
 def test_troncature_hebergee_ne_bloque_pas_la_saturation():
@@ -895,9 +964,502 @@ def test_cli_liste_de_cohorte_illisible_rend_unreadable(monkeypatch, capsys):
                         lambda root: (set(), "repertoire des workflows absent"))
     monkeypatch.setattr(ctl, "write_variable", lambda *a, **k: (_ for _ in ()).throw(
         AssertionError("aucune ecriture sur une cohorte non etablie")))
-    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json"])
+    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json", "--now", NOW_ISO])
     assert rc == ctl.EXIT_UNREADABLE
     report = json.loads(capsys.readouterr().out)
     assert report["verdict"] == "UNREADABLE"
     assert report["written"] is False
     assert "cohorte" in report["reason"]
+
+
+# --- (a) LECTURE LOCALE CIBLEE (#22937 phase A) ---------------------------
+#
+# Mesure du coordinateur (2026-10-28 16:55Z, run 40730110344) : 129 job(s)
+# heberge(s) en file au-dela de 15 min, 16 slot(s) local(aux) libre(s), et la
+# LECTURE LOCALE TRONQUEE -- 67 run(s) non lu(s), budget de 120 atteint.
+# Les runs anciens de la file etaient presque tous des runs qui attendent
+# `ubuntu-latest` : ils consommaient SEULS le budget de lecture, et la
+# soupave se fermait exactement dans le regime ou elle devait s'ouvrir.
+#
+# Le correctif : la lecture locale ne lit QUE les runs dont le workflow PEUT
+# porter un job local (liste derivee des fichiers de workflow, jamais
+# recopiee). Les runs des workflows statiquement heberges ne coutent alors
+# AUCUNE lecture.
+
+LOCAL_WORKFLOW = ".github/workflows/guard-local.yml"
+HOSTED_WORKFLOW = ".github/workflows/guard-heberge.yml"
+
+
+def _queue_payload(count: int, path: str, created: datetime) -> dict:
+    return {"workflow_runs": [
+        {"id": 1000 + i, "name": f"Run {i}", "run_number": i,
+         "created_at": created.isoformat(), "path": path}
+        for i in range(count)
+    ]}
+
+
+def _inventory_payload(free: int) -> dict:
+    return {"runners": [
+        {"name": f"slot-{i}", "status": "online",
+         "labels": [{"name": "coursia-linux"}], "busy": False}
+        for i in range(free)
+    ]}
+
+
+def test_file_hebergee_saturee_250_runs_et_16_slots_libres_le_controleur_s_enclenche(monkeypatch):
+    """Le test nomme par le coordinateur (c2725) : sous saturation de
+    l'offre hebergee, la lecture locale n'est plus tronquee -> le controleur
+    s'enclenche."""
+    now = datetime(2026, 10, 28, 16, 55, tzinfo=timezone.utc)
+    created = now - timedelta(minutes=63)
+    job_reads: list[str] = []
+
+    def fake_gh(args, token=None, stats=None):
+        if "actions/runners" in args[0]:
+            return _inventory_payload(16)
+        if "status=queued" in args[0]:
+            return _queue_payload(250, HOSTED_WORKFLOW, created)
+        if "status=in_progress" in args[0]:
+            return {"workflow_runs": []}
+        if "/jobs" in args[0]:
+            job_reads.append(args[0])
+            return {"jobs": []}
+        return None
+
+    monkeypatch.setattr(ctl.crs, "_gh_json", fake_gh)
+    sample = ctl.collect_local("jsboige/CoursIA", 15.0, 120, now, None,
+                                local_paths={LOCAL_WORKFLOW})
+    decision = ctl.evaluate(hosted(queued=250, old=250, oldest=63.2),
+                             sample, current="false", now=now)
+    # Le VERDICT d'abord : c'est lui qui est le temoin, pas le mecanisme.
+    assert decision.action == "SWITCH_TRUE"
+    # Aucun run heberge n'a coute une lecture, et la lecture n'est PAS
+    # tronquee : « le parc local n'est pas affame » EST etablie.
+    assert job_reads == []
+    assert sample.complete is True
+    assert sample.truncated is False
+    assert sample.free == 16
+
+
+def test_un_job_local_statiquement_file_depuis_plus_de_15_min_tient(monkeypatch):
+    """Le second test nomme par le coordinateur : un job STATIQUEMENT local en
+    file depuis plus de 15 min est vu, et le controleur NE deborde pas vers un
+    parc qui est lui-meme affame."""
+    now = datetime(2026, 10, 28, 16, 55, tzinfo=timezone.utc)
+    created = now - timedelta(minutes=63)
+
+    def fake_gh(args, token=None, stats=None):
+        if "actions/runners" in args[0]:
+            return _inventory_payload(16)
+        if "status=queued" in args[0]:
+            return _queue_payload(1, LOCAL_WORKFLOW, created)
+        if "status=in_progress" in args[0]:
+            return {"workflow_runs": []}
+        if "/jobs" in args[0]:
+            return {"jobs": [
+                {"name": "guard-on-label", "status": "queued",
+                 "labels": ["self-hosted", "coursia-linux"],
+                 "created_at": created.isoformat()},
+            ]}
+        return None
+
+    monkeypatch.setattr(ctl.crs, "_gh_json", fake_gh)
+    sample = ctl.collect_local("jsboige/CoursIA", 15.0, 120, now, None,
+                                local_paths={LOCAL_WORKFLOW})
+    assert sample.starved == 1
+    decision = ctl.evaluate(hosted(queued=250, old=250, oldest=63.2),
+                             sample, current="false", now=now)
+    assert decision.action != "SWITCH_TRUE"
+    assert "affame" in decision.reason
+
+
+def test_liste_des_workflows_illisible_ou_vide_rend_unreadable_et_jamais_un_enclenchement(monkeypatch, tmp_path):
+    """Le troisieme test nomme par le coordinateur : liste des workflows
+    illisible ou vide -> UNREADABLE, jamais un enclenchement."""
+    paths, reason = ctl.derive_local_capable_workflows(tmp_path)
+    assert paths == set()
+    assert reason != ""
+    now = datetime(2026, 10, 28, 16, 55, tzinfo=timezone.utc)
+
+    def fake_gh(args, token=None, stats=None):
+        if "actions/runners" in args[0]:
+            return _inventory_payload(16)
+        return None
+
+    monkeypatch.setattr(ctl.crs, "_gh_json", fake_gh)
+    sample = ctl.collect_local("jsboige/CoursIA", 15.0, 120, now, None,
+                                local_paths=None, local_paths_reason=reason)
+    assert sample.complete is False
+    decision = ctl.evaluate(hosted(queued=250, old=250, oldest=63.2),
+                             sample, current="false", now=now)
+    assert decision.action == "UNREADABLE"
+
+
+def test_derive_local_capable_workflows_separe_le_local_du_heberge(tmp_path):
+    _workflow(tmp_path, "local.yml",
+              "on: push\njobs:\n  j:\n    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]\n")
+    _workflow(tmp_path, "heberge.yml",
+              "on: push\njobs:\n  j:\n    runs-on: ubuntu-latest\n")
+    paths, reason = ctl.derive_local_capable_workflows(tmp_path)
+    assert reason == ""
+    assert ".github/workflows/local.yml" in paths
+    assert ".github/workflows/heberge.yml" not in paths
+
+
+def test_derive_local_capable_workflows_propage_un_appel_reutilisable(tmp_path):
+    """Le `run.path` d'un run designe le workflow APPELANT : un appelant
+    d'un workflow local est donc capable lui aussi (sinon ses jobs locaux
+    seraient invisibles a la mesure)."""
+    _workflow(tmp_path, "appele.yml",
+              "on: push\njobs:\n  j:\n    runs-on: [self-hosted, coursia-linux]\n")
+    _workflow(tmp_path, "appelant.yml",
+              "on: push\njobs:\n  j:\n    uses: ./.github/workflows/appele.yml\n")
+    paths, reason = ctl.derive_local_capable_workflows(tmp_path)
+    assert reason == ""
+    assert ".github/workflows/appele.yml" in paths
+    assert ".github/workflows/appelant.yml" in paths
+
+
+# --- (b) GARDE DE CADENCE --------------------------------------------------
+#
+# Le declencheur tire plus souvent que le cron horaire. L'ecart minimal
+# entre deux passages borne ce que le declencheur consomme -- en occupation
+# du parc local (le controleur tourne SUR ce parc) et en appels API. Le
+# controle est fait AVANT toute mesure : un passage ecarte ne lit rien.
+
+def test_le_garde_de_cadence_ecomporte_sans_mesure_ni_ecriture(monkeypatch, capsys):
+    monkeypatch.setenv("GH_TOKEN", "t")
+    monkeypatch.setattr(ctl, "last_run_age_minutes", lambda *a, **k: (5.0, ""))
+    monkeypatch.setattr(ctl, "read_variable", lambda *a, **k: (_ for _ in ()).throw(
+        AssertionError("aucune lecture de variable quand la cadence n'est pas ecoulee")))
+    monkeypatch.setattr(ctl, "write_variable", lambda *a, **k: (_ for _ in ()).throw(
+        AssertionError("aucune ecriture quand la cadence n'est pas ecoulee")))
+    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json",
+                    "--min-interval", "15"])
+    assert rc == ctl.EXIT_OK
+    report = json.loads(capsys.readouterr().out)
+    assert report["verdict"] == "SKIPPED"
+    assert report["written"] is False
+    assert report["last_run_age_min"] == 5.0
+
+
+def test_le_garde_de_cadence_laisse_passer_un_passage_ancien(monkeypatch, capsys):
+    monkeypatch.setenv("GH_TOKEN", "t")
+    monkeypatch.setattr(ctl, "last_run_age_minutes", lambda *a, **k: (40.0, ""))
+    _env(monkeypatch, write_token="pat-variables")
+    monkeypatch.setattr(ctl, "read_variable", lambda *a, **k: ("false", OLD, ""))
+    monkeypatch.setattr(ctl, "collect_hosted",
+                        lambda *a, **k: hosted(queued=0, old=0, oldest=0.0))
+    monkeypatch.setattr(ctl, "collect_local",
+                        lambda *a, **k: local(free=21, online=22))
+    monkeypatch.setattr(ctl, "derive_cohort_workflows",
+                        lambda root: ({".github/workflows/x.yml"}, ""))
+    monkeypatch.setattr(ctl, "collect_cohort_charge",
+                        lambda *a, **k: cohort(queued=0, in_progress=0))
+    monkeypatch.setattr(ctl, "write_variable", lambda *a, **k: (True, "ok"))
+    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json",
+                    "--min-interval", "15"])
+    report = json.loads(capsys.readouterr().out)
+    assert report["verdict"] != "SKIPPED"
+
+
+def test_l_ecart_au_dernier_passage_est_rapporte_meme_sans_garde(monkeypatch, capsys):
+    """L'ecart au dernier passage est l'instrument qui rend visible la mort
+    du declencheur local (un ecart qui grandit) : il est donc mesure et
+    RAPPORTE dans tous les cas -- y compris quand aucune garde n'est posee
+    (le passage manuel et le cron horaire du depot)."""
+    monkeypatch.setenv("GH_TOKEN", "t")
+    monkeypatch.setattr(ctl, "last_run_age_minutes", lambda *a, **k: (42.0, ""))
+    _env(monkeypatch, write_token="pat-variables")
+    monkeypatch.setattr(ctl, "read_variable", lambda *a, **k: ("false", OLD, ""))
+    monkeypatch.setattr(ctl, "collect_hosted",
+                        lambda *a, **k: hosted(queued=0, old=0, oldest=0.0))
+    monkeypatch.setattr(ctl, "collect_local",
+                        lambda *a, **k: local(free=21, online=22))
+    monkeypatch.setattr(ctl, "derive_cohort_workflows",
+                        lambda root: ({".github/workflows/x.yml"}, ""))
+    monkeypatch.setattr(ctl, "collect_cohort_charge",
+                        lambda *a, **k: cohort(queued=0, in_progress=0))
+    monkeypatch.setattr(ctl, "write_variable", lambda *a, **k: (True, "ok"))
+    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json"])
+    report = json.loads(capsys.readouterr().out)
+    assert report["verdict"] != "SKIPPED"
+    assert report["last_run_age_min"] == 42.0
+
+
+def test_un_ecart_non_etabli_ne_bloque_pas_le_passage(monkeypatch, capsys):
+    """Un listing illisible ne doit pas eteindre la soupape : le passage
+    continue, et le motif est dit."""
+    monkeypatch.setenv("GH_TOKEN", "t")
+    monkeypatch.setattr(ctl, "last_run_age_minutes", lambda *a, **k: (None, "listing illisible"))
+    _env(monkeypatch, write_token="pat-variables")
+    monkeypatch.setattr(ctl, "read_variable", lambda *a, **k: ("false", OLD, ""))
+    monkeypatch.setattr(ctl, "collect_hosted",
+                        lambda *a, **k: hosted(queued=0, old=0, oldest=0.0))
+    monkeypatch.setattr(ctl, "collect_local",
+                        lambda *a, **k: local(free=21, online=22))
+    monkeypatch.setattr(ctl, "derive_cohort_workflows",
+                        lambda root: ({".github/workflows/x.yml"}, ""))
+    monkeypatch.setattr(ctl, "collect_cohort_charge",
+                        lambda *a, **k: cohort(queued=0, in_progress=0))
+    monkeypatch.setattr(ctl, "write_variable", lambda *a, **k: (True, "ok"))
+    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json",
+                    "--min-interval", "15"])
+    report = json.loads(capsys.readouterr().out)
+    assert report["verdict"] != "SKIPPED"
+
+
+# --- Volet (c) : reorientation de la file de cohorte deja constituee -------
+
+COHORT_PATH = ".github/workflows/cohorte.yml"
+STATIC_PATH = ".github/workflows/statique.yml"
+
+
+def _queued_rows(count: int, minutes_old: float = 60.0, path: str = COHORT_PATH,
+                 first_id: int = 1000):
+    stamp = (NOW - timedelta(minutes=minutes_old)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return [
+        {"id": first_id + i, "path": path, "created_at": stamp}
+        for i in range(count)
+    ]
+
+
+def test_trente_runs_de_cohorte_et_huit_slots_libres_huit_sont_reorientes(
+    monkeypatch, capsys
+):
+    """La borne est le nombre de slots LIBRES mesure : 30 runs en file,
+    8 slots libres -> 8 reorientes, pas plus."""
+    _env(monkeypatch, write_token="pat-variables")
+    monkeypatch.setattr(ctl, "read_variable", lambda *a, **k: ("false", OLD, ""))
+    monkeypatch.setattr(ctl, "collect_hosted",
+                        lambda *a, **k: hosted(queued=9, old=6, oldest=41.0))
+    monkeypatch.setattr(ctl, "collect_local",
+                        lambda *a, **k: local(free=8, online=22))
+    monkeypatch.setattr(ctl, "derive_cohort_workflows",
+                        lambda root: ({COHORT_PATH}, ""))
+    monkeypatch.setattr(ctl, "derive_local_capable_workflows",
+                        lambda root: ({COHORT_PATH}, ""))
+    monkeypatch.setattr(ctl, "write_variable", lambda *a, **k: (True, "ok"))
+    monkeypatch.setattr(ctl, "collect_queued_cohort_runs",
+                        lambda *a, **k: (_queued_rows(30), True, ""))
+    reoriented = []
+    monkeypatch.setattr(
+        ctl, "reorient_run",
+        lambda repo, token, run_id: (reoriented.append(run_id), (True, "ok"))[1],
+    )
+    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json", "--now", NOW_ISO])
+    report = json.loads(capsys.readouterr().out)
+    assert rc == ctl.EXIT_OK
+    assert report["verdict"] == "SWITCH_TRUE"
+    assert report["reorientation"]["candidates"] == 30
+    assert len(report["reorientation"]["reoriented"]) == 8
+    assert len(reoriented) == 8
+    assert report["reorientation"]["failed"] == []
+
+
+def test_un_run_statique_heberge_n_est_jamais_touche(monkeypatch, capsys):
+    """Un workflow qui ne lit pas la variable reste sur l'offre hebergee :
+    il n'entre pas dans la file de cohorte, donc il n'est pas reoriente."""
+    _env(monkeypatch, write_token="pat-variables")
+    monkeypatch.setattr(ctl, "read_variable", lambda *a, **k: ("false", OLD, ""))
+    monkeypatch.setattr(ctl, "collect_hosted",
+                        lambda *a, **k: hosted(queued=9, old=6, oldest=41.0))
+    monkeypatch.setattr(ctl, "collect_local",
+                        lambda *a, **k: local(free=8, online=22))
+    monkeypatch.setattr(ctl, "derive_cohort_workflows",
+                        lambda root: ({COHORT_PATH}, ""))
+    monkeypatch.setattr(ctl, "derive_local_capable_workflows",
+                        lambda root: ({COHORT_PATH}, ""))
+    monkeypatch.setattr(ctl, "write_variable", lambda *a, **k: (True, "ok"))
+    rows = _queued_rows(30) + _queued_rows(5, path=STATIC_PATH, first_id=2000)
+    monkeypatch.setattr(ctl, "collect_queued_cohort_runs",
+                        lambda *a, **k: (rows, True, ""))
+    reoriented = []
+    monkeypatch.setattr(
+        ctl, "reorient_run",
+        lambda repo, token, run_id: (reoriented.append(run_id), (True, "ok"))[1],
+    )
+    ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json", "--now", NOW_ISO])
+    static_ids = {row["id"] for row in _queued_rows(5, path=STATIC_PATH, first_id=2000)}
+    assert not (static_ids & set(reoriented))
+
+
+def test_une_lecture_des_slots_tronquee_ne_reoriente_rien(monkeypatch, capsys):
+    """Slots illisibles -> aucune reorientation : on ne peut pas borner par
+    une borne qu'on n'a pas mesuree."""
+    _env(monkeypatch, write_token="pat-variables")
+    monkeypatch.setattr(ctl, "read_variable", lambda *a, **k: ("true", OLD, ""))
+    monkeypatch.setattr(ctl, "collect_hosted",
+                        lambda *a, **k: hosted(queued=9, old=6, oldest=41.0))
+    monkeypatch.setattr(ctl, "collect_local",
+                        lambda *a, **k: local(free=8, online=22, truncated=True,
+                                             reason="budget de lecture atteint"))
+    monkeypatch.setattr(ctl, "derive_cohort_workflows",
+                        lambda root: ({COHORT_PATH}, ""))
+    monkeypatch.setattr(ctl, "derive_local_capable_workflows",
+                        lambda root: ({COHORT_PATH}, ""))
+    monkeypatch.setattr(ctl, "write_variable", lambda *a, **k: (True, "ok"))
+    monkeypatch.setattr(ctl, "collect_queued_cohort_runs", lambda *a, **k: (
+        (_ for _ in ()).throw(
+            AssertionError("aucune lecture de file quand les slots sont illisibles"))
+    ))
+    monkeypatch.setattr(ctl, "reorient_run", lambda *a, **k: (
+        (_ for _ in ()).throw(AssertionError("aucune reorientation sans slots")))
+    )
+    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json", "--now", NOW_ISO])
+    report = json.loads(capsys.readouterr().out)
+    assert rc == ctl.EXIT_OK
+    assert report["reorientation"]["reoriented"] == []
+    assert "tronquee" in report["reorientation"]["reason"]
+
+
+def test_le_dry_run_annonce_les_cibles_sans_reorienter(monkeypatch, capsys):
+    _env(monkeypatch)
+    monkeypatch.setattr(ctl, "read_variable", lambda *a, **k: ("true", OLD, ""))
+    monkeypatch.setattr(ctl, "collect_hosted",
+                        lambda *a, **k: hosted(queued=9, old=6, oldest=41.0))
+    monkeypatch.setattr(ctl, "collect_local",
+                        lambda *a, **k: local(free=8, online=22))
+    monkeypatch.setattr(ctl, "derive_cohort_workflows",
+                        lambda root: ({COHORT_PATH}, ""))
+    monkeypatch.setattr(ctl, "derive_local_capable_workflows",
+                        lambda root: ({COHORT_PATH}, ""))
+    monkeypatch.setattr(ctl, "collect_queued_cohort_runs",
+                        lambda *a, **k: (_queued_rows(30), True, ""))
+    monkeypatch.setattr(ctl, "reorient_run", lambda *a, **k: (
+        (_ for _ in ()).throw(AssertionError("aucune reorientation en dry-run"))
+    ))
+    rc = ctl.main(["--repo", "jsboige/CoursIA", "--json", "--now", NOW_ISO])
+    report = json.loads(capsys.readouterr().out)
+    assert rc == ctl.EXIT_OK
+    assert len(report["reorientation"]["targets"]) == 8
+    assert report["reorientation"]["reoriented"] == []
+    assert "dry-run" in report["reorientation"]["reason"]
+
+
+def test_la_collecte_ne_garde_que_les_workflows_de_la_cohorte(monkeypatch):
+    """Le filtre est sur le `path` du run : un workflow statique heberge
+    n'entre pas dans la file de cohorte."""
+    payload = {
+        "workflow_runs": [
+            {"id": 1, "path": COHORT_PATH, "created_at": "2026-10-27T10:00:00Z"},
+            {"id": 2, "path": STATIC_PATH, "created_at": "2026-10-27T10:00:00Z"},
+            {"id": 3, "path": ".github/workflows/appelant.yml",
+             "created_at": "2026-10-27T10:00:00Z"},
+        ]
+    }
+    monkeypatch.setattr(
+        ctl, "_gh_api", lambda *a, **k: (0, json.dumps(payload), "")
+    )
+    lines, complete, reason = ctl.collect_queued_cohort_runs(
+        "jsboige/CoursIA", {COHORT_PATH}, "t"
+    )
+    assert complete is True and reason == ""
+    assert [row["id"] for row in lines] == [1]
+
+
+def test_une_file_illisible_bloque_la_reorientation(monkeypatch):
+    monkeypatch.setattr(ctl, "_gh_api", lambda *a, **k: (1, "", "boom"))
+    lines, complete, reason = ctl.collect_queued_cohort_runs(
+        "jsboige/CoursIA", {COHORT_PATH}, "t"
+    )
+    assert complete is False
+    assert "illisible" in reason
+
+
+def test_la_reorientation_annule_puis_relance(monkeypatch):
+    """L'ordre est ANNULATION puis RELANCE : un run encore en file n'accepte
+    pas la relance."""
+    calls = []
+
+    def fake(args, token=None, method=None, payload=None):
+        calls.append((args[-1], method))
+        return (0, "", "")
+
+    monkeypatch.setattr(ctl, "_gh_api", fake)
+    ok, reason = ctl.reorient_run("jsboige/CoursIA", "t", 4242)
+    assert ok is True
+    assert len(calls) == 2
+    assert calls[0][0].endswith("/actions/runs/4242/cancel")
+    assert calls[1][0].endswith("/actions/runs/4242/rerun")
+    assert [method for _path, method in calls] == ["POST", "POST"]
+
+
+def test_la_relance_refusee_est_reessayee_apres_attente_de_l_annulation(monkeypatch):
+    """La transition d'etat peut refuser une relance lancee trop tot : le
+    run resterait annule SANS relance, perdu pour la passe. On attend l'etat
+    effectif, puis on retente une fois."""
+    calls = []
+
+    def fake(args, token=None, method=None, payload=None):
+        path = args[-1]
+        calls.append((path, method))
+        if path.endswith("/cancel"):
+            return (0, "", "")
+        if path.endswith("/rerun"):
+            # premier essai refuse, second accepte
+            if sum(1 for p, _m in calls if p.endswith("/rerun")) == 1:
+                return (1, "", "run is still in progress")
+            return (0, "", "")
+        if path.endswith("/actions/runs/4242"):
+            return (0, json.dumps({"status": "completed"}), "")
+        raise AssertionError(f"appel inattendu : {path}")
+
+    monkeypatch.setattr(ctl, "_gh_api", fake)
+    ok, reason = ctl.reorient_run("jsboige/CoursIA", "t", 4242)
+    assert ok is True
+    assert "reussie apres attente" in reason
+    paths = [p for p, _m in calls]
+    assert paths[0].endswith("/actions/runs/4242/cancel")
+    assert paths[1].endswith("/actions/runs/4242/rerun")
+    assert paths[2].endswith("/actions/runs/4242")
+    assert paths[3].endswith("/actions/runs/4242/rerun")
+
+
+def test_une_annulation_non_effective_ne_declenche_pas_de_relance_inutile(monkeypatch):
+    """Si l'annulation n'aboutit pas dans la borne, on ne relance pas : le
+    motif est nomme, et le run reste pour la passe suivante."""
+    monkeypatch.setattr(ctl, "CANCEL_WAIT_TIMEOUT_S", 0.01)
+    monkeypatch.setattr(ctl, "CANCEL_POLL_S", 0.01)
+    calls = []
+
+    def fake(args, token=None, method=None, payload=None):
+        path = args[-1]
+        calls.append((path, method))
+        if path.endswith("/cancel"):
+            return (0, "", "")
+        if path.endswith("/rerun"):
+            return (1, "", "run is still in progress")
+        return (0, json.dumps({"status": "cancelling"}), "")
+
+    monkeypatch.setattr(ctl, "_gh_api", fake)
+    ok, reason = ctl.reorient_run("jsboige/CoursIA", "t", 4242)
+    assert ok is False
+    assert "annulation non effective" in reason
+    # une seule relance demandee : celle qui a ete refusee
+    assert sum(1 for p, _m in calls if p.endswith("/rerun")) == 1
+
+
+def test_les_cibles_sont_les_plus_anciennes_et_respectent_le_seuil_d_age():
+    rows = _queued_rows(3, minutes_old=60.0) + _queued_rows(2, minutes_old=5.0)
+    targets, ghosts = ctl.select_reorientation_targets(
+        rows, free_slots=10, min_age_minutes=15.0, now=NOW
+    )
+    assert len(targets) == 3
+    assert ghosts == 0
+    assert all(row["age_min"] >= 15.0 for row in targets)
+    assert [row["age_min"] for row in targets] == sorted(
+        [row["age_min"] for row in targets], reverse=True
+    )
+
+
+def test_les_fantomes_sont_exclus_et_ne_consomment_pas_la_borne():
+    """Un run de 45 jours (PR disparue) ne doit pas manger un slot local :
+    il est compte comme fantome, pas reoriente."""
+    rows = _queued_rows(2, minutes_old=60.0) + _queued_rows(45, minutes_old=45 * 24 * 60)
+    targets, ghosts = ctl.select_reorientation_targets(
+        rows, free_slots=2, min_age_minutes=15.0, now=NOW
+    )
+    assert ghosts == 45
+    assert len(targets) == 2
+    assert all(row["age_min"] <= 360.0 for row in targets)

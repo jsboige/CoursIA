@@ -138,11 +138,11 @@ Fit-track sur paysages alignés : convergence triviale aussi (moyenne intra-fibr
 - C.2 : artefact `results/hoffman_interface_toy_n8_relaxed_results.json` commite
 - C.3 : scope strict ; pas de modification cellules ICT existantes
 - H.1 : 18+ tests pytest verts (test_hoffman_interface_toy_n8_relaxed.py)
-- bibliography-hygiene : PDF Prakash et al. 2017 archive GDrive (deja fait case 11)
+- bibliography-hygiene : préprint Prakash et al. (30 juillet 2017) archivé au gisement le 2026-10-25 — la mention antérieure « déjà fait case 11 » était inexacte, le fichier était absent du gisement
 
 ## Crédits / Suite
 
-- **Source primaire** : Prakash, Stephens, Hoffman, Singh & Fields (2017), arXiv:1505.04322
+- **Source primaire** : Prakash, Stephens, Hoffman, Singh & Fields (2021), *Acta Biotheoretica* 69(3) : 319-341, doi:10.1007/s10441-020-09400-0 (§4 du préprint du 30 juillet 2017, archivé au gisement)
 - **Antécedents directs** : case 11 (#14535 MERGED), case 12 (#14544 OPEN), case 13 (#14548 OPEN)
 - **Issue tracker** : #8182 (Veille & distillation TOE ↔ conscience)
 - **EPIC parent** : ICT (#4588)

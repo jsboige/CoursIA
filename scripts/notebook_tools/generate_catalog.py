@@ -50,7 +50,7 @@ RESEARCH_DIR_KEYWORDS = {"research", "archive", "_archive", "_archives", "exampl
 
 SERIES_ORDER = [
     "GenAI", "Search", "ML", "SymbolicAI", "QuantConnect",
-    "GameTheory", "Sudoku", "Probas", "IIT", "RL", "EPF",
+    "GameTheory", "Sudoku", "Probas", "Physique", "IIT", "RL", "EPF",
 ]
 
 # Keywords indicating special requirements
@@ -72,6 +72,11 @@ OWNER_MAP = {
     "RL": "po-2025",
     "EPF": "ai-01",
 }
+# "Physique" is deliberately absent: the map is per-serie and this one is served
+# by three lanes on disjoint sub-trees (Jauge, Numerique, Integrales -- EPIC
+# #23161). Naming a single owner would credit one lane for another's notebooks,
+# which is exactly what owner_logique feeds (auto-review detection). It stays
+# empty until the EPIC names one owner for the whole serie.
 
 
 def estimate_duration(cells_code: int, kernel: str, requirements: dict) -> str:
