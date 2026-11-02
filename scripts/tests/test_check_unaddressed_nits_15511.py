@@ -184,3 +184,39 @@ def test_action_portant_une_vraie_reserve_reste_un_nit():
     verdict = "[ACTION] suite a ta reserve\nCHANGES_REQUESTED toujours en vigueur\n"
     assert mod.classify("jsboige", verdict) == "BOT-CONCERN"
     assert mod.classify("jsboige", _crlf(verdict)) == "BOT-CONCERN"
+
+
+# --- Voie 3 preservee : le tag ne desactive pas le nommage de suivi ---------
+#
+# Reserve NanoClaw #24243 : AGENT_PREFIXES a un second consommateur, can_lift
+# (gate de collect_followup_lifts, voie 3 de B.0). Un compte-rendu tague
+# [ACTION] qui nomme une issue de suivi reste un nommeur valide -- les deux
+# prefixes vivent dans CLASSIFY_AGENT_PREFIXES, consommee par classify seul.
+
+def _comment(login, body):
+    return {"author": {"login": login}, "createdAt": "2026-10-01T10:00:00+00:00",
+            "body": body}
+
+
+def test_action_tague_reste_un_nommeur_voie3():
+    suivi = "[ACTION] point 2 reporte sciemment : suivi ouvert #24999\n"
+    assert mod.can_lift(_comment("jsboige", suivi)) is True
+    # [DIAG] : le tag decrit le genre du commentaire, pas un pouvoir de
+    # nomination -- un diagnostic qui reporte nomme autant.
+    assert mod.can_lift(_comment("jsboige", suivi.replace("[ACTION]", "[DIAG]"))) is True
+    # Borne : les tags de protocole purs restent non-leveurs (can_lift lit
+    # AGENT_PREFIXES, qui ne contient ni [ACTION ni [DIAG).
+    assert mod.can_lift(_comment("jsboige", "[INFO] panorama du cycle\n")) is False
+    assert mod.can_lift(_comment("jsboige", "[ACK] recu\n")) is False
+
+
+def test_classify_lit_bien_les_deux_tags():
+    # La classification, elle, lit l'extension : CRLF compris (couverture
+    # croisee avec test_tags_p1_en_crlf_ne_sont_plus_des_nits, ici via la
+    # constante nommee). AGENT_PREFIXES, elle, ne les contient plus.
+    for pre in ("[ACTION", "[DIAG"):
+        corps = pre + "]\n" + CORPS
+        assert mod.classify("jsboige", corps) is None, pre
+        assert mod.classify("jsboige", _crlf(corps)) is None, pre
+    assert "[ACTION" not in mod.AGENT_PREFIXES
+    assert "[DIAG" not in mod.AGENT_PREFIXES
