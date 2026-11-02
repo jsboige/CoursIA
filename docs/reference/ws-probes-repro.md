@@ -80,6 +80,37 @@ La ligne de référence vaut donc `0.4300`, et elle se retrouve **sous deux vers
 de scikit-learn (1.6.1 comme 1.8.0). Sous 1.8.0, deux sièges rendent deux valeurs différentes.
 Le déplacement observé le 2026-11-01 sur ce siège n'est donc pas attribuable à `scikit-learn`.
 
+### Quatrième point : les versions n'expliquent rien — élimination contrôlée sur un seul siège (2026-11-02)
+
+Les mesures ci-dessus font varier **plusieurs facteurs à la fois** : du 2026-10-24 au 2026-11-01,
+trois versions ont bougé ensemble. Une campagne à **un seul facteur** départage autrement. Elle
+porte sur le siège `po-2024`, sur le script du dépôt inchangé (`ebba155ebae`, aucun diff avec
+`main`), et ne change **qu'une** chose à la fois — une version de paquet surchargée par
+`PYTHONPATH`, ou une variable d'environnement — sans toucher à l'environnement de base :
+
+| numpy | scikit-learn | threads OpenBLAS | WS-00c translaté | facteur mis en cause |
+|---|---|---:|---:|---|
+| 2.4.2 (base) | 1.8.0 (base) | 24 (base) | **0.4350** | référence du jour |
+| **2.4.6** | 1.8.0 | 24 | **0.4350** | `numpy` seul |
+| 2.4.2 | 1.8.0 | **1** | **0.4350** | threads BLAS seuls |
+| 2.4.2 | **1.6.1** | 24 | **0.4350** | `scikit-learn` seul |
+| **2.3.5** | **1.6.1** | 24 | **0.4350** | les deux versions du 2026-10-24 |
+
+Cinq exécutions, aucune ne s'écarte de `0.4350`. **Les versions de `numpy` et de
+`scikit-learn`, ainsi que le parallélisme BLAS, sont donc réfutés comme cause** : sur ce siège,
+la valeur ne bouge pas quand ils changent, y compris en reconstituant exactement le jeu de
+bibliothèques qui rendait `0.4300` le 2026-10-24.
+
+Le seul facteur que cette campagne n'a pas pu tenir constant entre ce `0.4300` et le `0.4350`
+d'aujourd'hui est l'**interpréteur lui-même** — `Python 3.13.3` le 24/10, `3.13.15` aujourd'hui —
+qu'on ne remplace pas sans reconstruire l'environnement du siège. Cela reste une **hypothèse non
+testée**, pas une attribution.
+
+Conséquence pour la lecture de l'écart : ce n'est pas « `numpy 2.4.6` contre `2.4.2` » qui sépare
+les deux sièges. **C'est le siège.** Deux machines peuvent rendre deux valeurs sans qu'aucune
+version de paquet ne les distingue, et épingler les paquets ne fait donc pas converger deux
+exécutions.
+
 ## Lecture de l'écart WS-00c : dépendance d'environnement, cause non établie
 
 Le test propre de WS-00c se reproduit **à l'identique** partout (`0.7900 = 158/200`), ainsi que
@@ -90,18 +121,21 @@ Ce qui **est** établi : la valeur du test translaté de WS-00c n'est pas une pr
 elle dépend de l'environnement d'exécution, et le `LogisticRegression` de cette sonde est
 instancié **sans `random_state`**.
 
-Ce qui n'est **pas** établi : **lequel** des facteurs est causal. Trois candidats restent en
-lice, qu'aucune mesure disponible ne départage :
+Ce qui n'est **pas** établi : **lequel** des facteurs est causal. L'état de chaque candidat après
+la campagne d'élimination contrôlée du 2026-11-02 (section « Quatrième point ») :
 
-- la version de `scikit-learn` — **infirmée comme cause unique**, puisqu'à version identique
-  (1.8.0) deux sièges divergent ;
-- la version de `numpy`, seul facteur visible qui distingue les deux sièges sous 1.8.0
-  (`2.4.2 → 0.4350`, `2.4.6 → 0.4300`) ;
-- la chaîne BLAS du siège, qui varie avec lui et n'a pas été relevée.
+| Candidat | État | Ce qui l'établit |
+|---|---|---|
+| la version de `scikit-learn` | **réfutée** | à version identique (1.8.0) deux sièges divergent ; et `1.6.1` sur ce siège ne reproduit pas `0.4300` |
+| la version de `numpy` | **réfutée** | `2.4.2`, `2.4.6` et `2.3.5` rendent `0.4350` sur ce siège ; elle n'était « le seul facteur visible » que d'une comparaison **entre deux sièges**, où elle covariait avec le siège lui-même |
+| le parallélisme BLAS | **réfuté** | `OPENBLAS_NUM_THREADS=1` contre 24 threads : `0.4350` dans les deux cas |
+| la chaîne BLAS du siège (sélection de noyau à l'exécution) | **ouverte** | reste le mécanisme plausible par lequel deux sièges aux mêmes paquets divergent ; non départageable sur un seul siège |
+| l'interpréteur (`3.13.3` → `3.13.15`) | **ouvert, non testé** | seul facteur non tenu entre le `0.4300` du 24/10 et le `0.4350` du jour ; non remplaçable sans reconstruire l'environnement |
 
-Départager demanderait de rejouer les deux sièges sous un `numpy` épinglé identique — numpy seul
-variant, tout le reste tenu — puis, si l'écart subsiste, de comparer les BLAS. **Mesure non faite
-à ce jour** ; ce document ne la remplace pas par une attribution.
+Ce qui **reste** à faire pour départager : relever la chaîne BLAS des deux sièges
+(`numpy.show_config()`, version d'OpenBLAS et noyau sélectionné) et comparer — c'est une mesure
+de siège, pas de bibliothèque. **Non faite à ce jour** ; ce document ne la remplace pas par une
+attribution.
 
 La lecture « l'écart est de l'ordre d'un ou deux items, comparable à la variabilité intrinsèque de
 la sonde » vaut donc pour les environnements qui l'ont produite, pas au-delà. Le chiffre d'un
@@ -251,6 +285,12 @@ citées, et à **fixer la tolérance de son solveur**. Tant que ce n'est pas fai
 WS-00c est une **mesure d'environnement**, pas une propriété du carnet : deux sièges sous les
 mêmes versions de `scikit-learn` et de Python en rendent deux différentes.
 
+Épingler les paquets ne suffit donc **pas** à faire converger deux exécutions — c'est le résultat
+direct de la campagne du 2026-11-02 : sur un siège donné, faire varier `numpy`, `scikit-learn` et
+le parallélisme BLAS ne déplace pas la valeur ; ce sont les sièges qui diffèrent entre eux. Une
+valeur citée sans son siège reste donc une mesure d'environnement, **quelles que soient** les
+versions consignées à côté.
+
 Un `random_state` ne remplacerait pas cette prescription : sous `lbfgs`, le solveur par défaut
 de `LogisticRegression`, la graine est **inerte** — mesuré sur scikit-learn 1.8.0, `random_state`
 42, 7 et 123 rendent des coefficients identiques au bit près, alors qu'elle les déplace sous
@@ -266,6 +306,34 @@ solveur change, la graine redeviendra pertinente. Suivi à ouvrir ; cette PR ne 
 python scripts/repro/ws_probes_repro.py                     # source torchvision (auto)
 python scripts/repro/ws_probes_repro.py --source openml      # branche de repli du carnet
 python scripts/repro/ws_probes_repro.py --out rapport.json   # rapport structure
+```
+
+### Élimination contrôlée : une seule variable à la fois
+
+Les paquets variants sont installés dans un répertoire isolé et surchargés par `PYTHONPATH` —
+l'environnement de base n'est pas modifié, et le script reste celui du dépôt :
+
+```bash
+SP=/chemin/isolé            # numpy 2.4.6, puis scikit-learn 1.6.1
+SP2=/chemin/isolé-2         # numpy 2.3.5
+
+pip install --target $SP "numpy==2.4.6"
+PYTHONPATH=$SP python scripts/repro/ws_probes_repro.py            # numpy seul
+
+pip install --target $SP --no-deps "scikit-learn==1.6.1"
+PYTHONPATH=$SP python scripts/repro/ws_probes_repro.py            # scikit-learn seul
+
+OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 \
+  python scripts/repro/ws_probes_repro.py                         # threads BLAS seuls
+
+pip install --target $SP2 "numpy==2.3.5"                          # + le 1.6.1 ci-dessus
+PYTHONPATH=$SP2:$SP python scripts/repro/ws_probes_repro.py       # les deux versions du 24/10
+```
+
+Relever la chaîne BLAS du siège, à joindre à toute valeur citée :
+
+```bash
+python -c "import numpy; numpy.show_config()"
 ```
 
 Le script sort `0` si les quatre valeurs concordent, `1` sinon.
