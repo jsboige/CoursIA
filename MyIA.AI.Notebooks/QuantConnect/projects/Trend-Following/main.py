@@ -6,7 +6,7 @@ from datetime import datetime
 
 class TrendFollowingAQR(QCAlgorithm):
     """
-    Trend Following Multi-Asset v7 (BEST)
+    Trend Following Multi-Asset v7
     ======================================
     Measured (current code, 2015-01-01 -> 2024-12-31, 2516 jours, mode strategy): Sharpe 0.362, CAGR 7.294%, MaxDD 15.000%.
 
