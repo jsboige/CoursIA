@@ -209,6 +209,22 @@ SECTION_TITLE_AFTER_EXERCISE_RE = re.compile(
     r"^(conclusion|ressources?|plan|references?|bibliographie|synthese|pour aller plus loin)\b",
     re.IGNORECASE,
 )
+# Carve-out #24164 : une **prose de transition vers l'etape suivante** n'est pas
+# une lecture de la sortie qui la precede. Deux formes mesurees sur 10
+# signalements (PR #23840, `App-3-NurseScheduling.ipynb`) :
+#   (a) une cellule de **separateur horizontal** (`***`) posee devant un titre
+#       de section -- `***` puis `## 2. Formulation du probleme`. La cellule ne
+#       commence pas par `#`, donc `is_reading_or_prose` la voyait comme de la
+#       prose et elle gonflait le compte de la sortie precedente ;
+#   (b) un **libelle d'etape en gras** (`**Etape 2 : contrainte de couverture
+#       (C1)**`) : 8 des 10 signalements. `EXERCISE_STATEMENT_TITLE_RE` couvre
+#       deja le gras `**Exercice N**` (#23439) ; il manquait la forme `Etape`.
+# Les garde-fous sont ceux des autres carve-outs : une lecture TITREE reste une
+# lecture, un titre d'interpretation dissimule dans le corps et une citation de
+# sortie (`OUTPUT_CITATION_RE`) disqualifient le carve-out.
+HORIZONTAL_RULE_RE = re.compile(r"^(?:\*{3,}|-{3,}|_{3,})\s*$")
+STEP_BOLD_LABEL_RE = re.compile(r"^\*\*[^*]+\*\*\s*$")
+STEP_LABEL_WORD_RE = re.compile(r"\b(?:etape|étape|step|partie)\b", re.IGNORECASE)
 # Miroir anglais des deux garde-fous du carve-out (#20777) : le titre s'est
 # ouvert a « Exercise » pour les jumeaux `_en`, les gardes suivent -- ouvrir
 # le titre sans ouvrir les gardes rouvrirait le trou que la decision #17777
@@ -552,6 +568,57 @@ def is_exercise_statement(cell: dict, cells: list[dict], idx: int) -> bool:
     return not (has_hidden_heading or cites_output)
 
 
+def is_step_transition(cell: dict) -> bool:
+    """Vrai si ``cell`` est une **prose de transition** vers l'etape suivante.
+
+    Carve-out #24164. Une transition annonce le code qui SUIT ; elle ne
+    commente pas la sortie qui la precede, et ne doit donc pas gonfler le
+    compte de lectures de cette sortie. Deux formes admises :
+
+      (a) un **separateur horizontal** (``***``) seul, ou suivi d'un titre de
+          section ``#`` -- la forme ``*** \\n\\n ## 2. ...`` mesuree ;
+      (b) un **libelle d'etape entierement en gras** portant le mot
+          ``Etape``/``Step``/``Partie`` (``**Etape 2 : contrainte (C1)**``).
+
+    Quatre garde-fous, les memes que ``is_exercise_statement`` :
+    une lecture TITREE reste une lecture (``is_reading_cell``) ; un titre
+    d'interpretation dissimule dans le corps disqualifie ; une citation de
+    sortie disqualifie ; et pour (a) un separateur suivi de PROSE (et non d'un
+    titre) reste du texte, donc une lecture.
+
+    LIMITE ASSUMEE : les transitions en prose NON GRASSEE sans titre
+    (``Construisons maintenant le modele CP-SAT...``) ne sont pas couvertes.
+    Leur blanchiment demanderait de decider qu'une prose sans titre qui precede
+    du code n'est jamais une lecture -- changement semantique que #24164 laisse
+    a l'arbitrage du proprietaire de l'organe (option 3). Mesure : 8 des 10
+    signalements de #23840 tombent sous (b), 2 sous (a).
+    """
+    if cell.get("cell_type") != "markdown":
+        return False
+    if is_reading_cell(cell):
+        return False
+    lines = [line.strip() for line in cell_source(cell).splitlines()]
+    first_k = next((k for k, line in enumerate(lines) if line), None)
+    if first_k is None:
+        return False
+    first = lines[first_k]
+    rest = [line for line in lines[first_k + 1:] if line]
+    is_rule = bool(HORIZONTAL_RULE_RE.match(first))
+    is_step_label = bool(STEP_BOLD_LABEL_RE.match(first)) and bool(
+        STEP_LABEL_WORD_RE.search(deaccent(first))
+    )
+    if not (is_rule or is_step_label):
+        return False
+    if is_rule and rest and not rest[0].startswith("#"):
+        # separateur suivi de prose : decoration de texte, pas de titre
+        return False
+    if any(HIDDEN_INTERPRETATION_HEADING_RE.match(line) for line in rest):
+        return False
+    if OUTPUT_CITATION_RE.search(deaccent("\n".join(rest)).lower()):
+        return False
+    return True
+
+
 def is_section_intro(cell: dict) -> bool:
     """Vrai si ``cell`` est un **en-tete de section** au sens du carve-out
     #17777 : un titre d'organisation (``## 2. Tests statistiques``,
@@ -746,6 +813,11 @@ def readings_by_output(nb: dict) -> Counter[str]:
         # SECOND_READING (faux positif mesure sur #23439).
         if is_exercise_statement(c, cells, i):
             continue
+        # Carve-out #24164 : une prose de transition (`***` devant un titre,
+        # libelle d'etape en gras) annonce le code qui suit, elle ne commente
+        # pas la sortie qui precede -- elle ne compte pas comme lecture.
+        if is_step_transition(c):
+            continue
         key = _output_key_above(cells, i)
         if key is not None:
             counts[key] += 1
@@ -925,6 +997,14 @@ def detect_added_readings(head_nb: dict, base_nb: dict | None,
         # enonce|stub s'enchainent) -- mesure sur #17777 : 11 findings sur 3
         # carnets, tous des enonces.
         if is_exercise_statement(cell, head_cells, idx):
+            base_counter[src] += 1
+            continue
+
+        # Carve-out #24164 : meme filtre qu'a `readings_by_output`. Sans lui, le
+        # compte de la boucle principale (qui emet les findings) et celui du
+        # ratchet par sortie divergeraient sur la MEME cellule -- la boucle
+        # marquerait une transition comme lecture quand le compte la saute.
+        if is_step_transition(cell):
             base_counter[src] += 1
             continue
 
