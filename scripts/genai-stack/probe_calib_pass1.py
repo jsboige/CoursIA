@@ -28,6 +28,7 @@ Aucune donnee n'est telechargee ici : les corpus arrivent par --svamp-file /
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import random
 import re
@@ -70,12 +71,16 @@ def wait_ready(base_url: str, model: str, deadline_s: float = 600.0) -> bool:
 
 
 def chat(base_url: str, model: str, messages: list[dict],
-         max_tokens: int, timeout: int = 180) -> str:
+         max_tokens: int, timeout: int = 180) -> tuple[str, str]:
+    """(contenu, finish_reason) -- le finish_reason rend la troncature
+    auditable : sans lui, un arret sur plafond de tokens est indistinguable
+    d'une erreur de raisonnement (reserve NanoClaw #24055)."""
     out = http_json(f"{base_url}/v1/chat/completions", {
         "model": model, "messages": messages,
         "temperature": 0.0, "max_tokens": max_tokens,
     }, timeout=timeout)
-    return out["choices"][0]["message"].get("content") or ""
+    choice = out["choices"][0]
+    return choice["message"].get("content") or "", (choice.get("finish_reason") or "")
 
 
 # ---------------------------------------------------------------- SVAMP ---
@@ -84,8 +89,17 @@ _NUM = re.compile(r"-?\d+(?:[.,]\d+)?")
 
 
 def _to_float(txt: str) -> float | None:
+    """Accepte '1.5', '1,5' (virgule decimale) et '1,000' (separateur de
+    milliers). Sans cette distinction, un gold '1,000' se lirait 1.0."""
+    if not isinstance(txt, str):
+        return None
+    s = txt.strip().replace(" ", "")
+    if re.fullmatch(r"-?\d{1,3}(,\d{3})+(\.\d+)?", s):
+        s = s.replace(",", "")          # separateur de milliers
+    else:
+        s = s.replace(",", ".")         # virgule decimale
     try:
-        return float(txt.replace(",", "."))
+        return float(s)
     except (TypeError, ValueError):
         return None
 
@@ -100,16 +114,25 @@ def svamp_prompt(item: dict) -> list[dict]:
     ]
 
 
-def svamp_reward(item: dict, reply: str) -> tuple[int, str]:
-    """1 si le DERNIER nombre du passage 'Answer:' matche la reference."""
+def svamp_reward(item: dict, reply: str) -> tuple[int, int, str, bool]:
+    """(ok_strict, ok_avec_repli, pred, ligne_answer_presente).
+
+    Le contrat annonce -- le prompt exige une ligne 'Answer: <nombre>' et la
+    docstring disait 'le DERNIER nombre du passage Answer' -- est STRICT : seul
+    le passage 'Answer:' compte, et une reponse qui n'en contient pas vaut
+    zero. Le repli historique (dernier nombre de TOUTE la reponse) est
+    conserve et PUBLIE SEPAREMENT : sans lui, une reponse tronquee dont le
+    dernier nombre tombe juste est comptee comme un succes."""
     gold = float(item["Answer"])
-    tail = reply.rsplit("Answer:", 1)[-1] if "Answer:" in reply else reply
-    nums = _NUM.findall(tail)
-    if not nums:
-        return 0, ""
-    pred = _to_float(nums[-1])
-    ok = pred is not None and abs(pred - gold) < 1e-4
-    return int(ok), ("" if pred is None else str(pred))
+    strict_nums: list[str] = []
+    if "Answer:" in reply:
+        strict_nums = _NUM.findall(reply.rsplit("Answer:", 1)[-1])
+    pred = _to_float(strict_nums[-1]) if strict_nums else None
+    ok_strict = int(pred is not None and abs(pred - gold) < 1e-4)
+    loose_nums = _NUM.findall(reply)
+    loose = _to_float(loose_nums[-1]) if loose_nums else None
+    ok_loose = int(loose is not None and abs(loose - gold) < 1e-4)
+    return ok_strict, ok_loose, ("" if pred is None else str(pred)), bool(strict_nums)
 
 
 # ------------------------------------------------------------------ xLAM ---
@@ -176,22 +199,27 @@ def run_svamp(base: str, model: str, items: list[dict],
 
     def _one(it: dict) -> dict:
         try:
-            reply = chat(base, model, svamp_prompt(it), max_tokens=300)
-            ok, pred = svamp_reward(it, reply)
+            reply, finish = chat(base, model, svamp_prompt(it), max_tokens=300)
+            ok, ok_loose, pred, has_answer = svamp_reward(it, reply)
             err = ""
         except Exception as exc:  # noqa: BLE001 - item servi en echec, pas d'arret
-            reply, ok, pred, err = "", 0, "", f"{type(exc).__name__}"
+            reply, finish, ok, ok_loose, pred, has_answer, err = (
+                "", "", 0, 0, "", False, f"{type(exc).__name__}")
         return {"id": it.get("ID"), "gold": it.get("Answer"),
-                "pred": pred, "ok": ok, "err": err,
-                "raw": reply[-90:]}
+                "pred": pred, "ok": ok, "ok_avec_repli": ok_loose,
+                "ligne_answer": has_answer, "finish_reason": finish,
+                "err": err, "raw": reply[-90:]}
 
     # vLLM batche les requetes concurrentes ; ex.map garde l'ordre d'entree
     # (rapport deterministe) sans lier la collecte a l'ordre de completion.
     with ThreadPoolExecutor(max_workers=concurrency) as ex:
         rows = list(ex.map(_one, items))
-    good = sum(r["ok"] for r in rows)
+    n = max(len(rows), 1)
     return {"corpus": "svamp", "model": model, "n": len(rows),
-            "pass1": round(good / max(len(rows), 1), 4),
+            "pass1": round(sum(r["ok"] for r in rows) / n, 4),
+            "pass1_avec_repli": round(sum(r["ok_avec_repli"] for r in rows) / n, 4),
+            "items_sans_ligne_answer": sum(1 for r in rows if not r["ligne_answer"]),
+            "items_tronques": sum(1 for r in rows if r["finish_reason"] == "length"),
             "errors": sum(1 for r in rows if r["err"]),
             "wall_s": round(time.monotonic() - t0, 1),
             "items": rows}
@@ -203,13 +231,15 @@ def run_xlam(base: str, model: str, items: list[dict],
 
     def _one(it: dict) -> dict:
         try:
-            reply = chat(base, model, xlam_prompt(it), max_tokens=400)
+            reply, finish = chat(base, model, xlam_prompt(it), max_tokens=400)
             name_ok, args_ok, p_name = xlam_reward(it, reply)
             err = ""
         except Exception as exc:  # noqa: BLE001
-            reply, name_ok, args_ok, p_name, err = "", 0, 0, "", f"{type(exc).__name__}"
+            reply, finish, name_ok, args_ok, p_name, err = (
+                "", "", 0, 0, "", f"{type(exc).__name__}")
         return {"id": it.get("id"), "ok_name": name_ok,
-                "ok_args": args_ok, "pred_name": p_name, "err": err,
+                "ok_args": args_ok, "pred_name": p_name,
+                "finish_reason": finish, "err": err,
                 "raw": reply[-90:]}
 
     with ThreadPoolExecutor(max_workers=concurrency) as ex:
@@ -224,6 +254,8 @@ def run_xlam(base: str, model: str, items: list[dict],
 
 
 def verdict(pass1: float) -> str:
+    """Bande [20 %, 70 %] INCLUSIVE : 0,70 exactement est DANS_LA_BANDE
+    (les bornes sont testes avec < et > stricts)."""
     if pass1 < BANDE[0]:
         return "SOUS_LA_BANDE (trop dur : recompense trop rare pour RL)"
     if pass1 > BANDE[1]:
@@ -262,12 +294,19 @@ def main(argv: list[str] | None = None) -> int:
                     "started_utc": utcnow(), "runs": []}
 
     if args.svamp_file:
-        pool = json.loads(args.svamp_file.read_text(encoding="utf-8"))
+        raw = args.svamp_file.read_bytes()
+        pool = json.loads(raw.decode("utf-8"))
+        # Provenance du corpus DANS l'artefact : sha256 + taille. Sans elle,
+        # l'artefact ne dit pas sur quel corpus il a ete mesure -- et la
+        # graine ne suffit pas (rng.sample depend de l'ORDRE du pool).
+        report["corpus_sha256"] = hashlib.sha256(raw).hexdigest()
+        report["corpus_items"] = len(pool)
         sample = rng.sample(pool, min(args.items, len(pool)))
         for tag, base, model in targets:
             r = run_svamp(base, model, sample, args.concurrency)
             r["model_tag"] = tag
             r["verdict"] = verdict(r["pass1"])
+            r["verdict_avec_repli"] = verdict(r["pass1_avec_repli"])
             report["runs"].append(r)
 
     if args.xlam_file:
@@ -288,6 +327,8 @@ def main(argv: list[str] | None = None) -> int:
         keys = ("pass1" if "pass1" in r else "pass1_name/pass1_name_args")
         val = (f"{r['pass1']:.1%}" if "pass1" in r
                else f"{r['pass1_name']:.1%} / {r['pass1_name_args']:.1%}")
+        if "pass1_avec_repli" in r:
+            val += f" (avec repli {r['pass1_avec_repli']:.1%})"
         v = r.get("verdict") or f"{r.get('verdict_name')} / {r.get('verdict_name_args')}"
         print(f"[calib] {r['corpus']:6s} {r['model_tag']:5s} {keys}={val}  -> {v}")
     print(f"[calib] rapport: {args.out}")
