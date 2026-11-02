@@ -20,6 +20,8 @@ Cette série couvre les **mêmes modèles** que la série [Infer.NET](../Infer/)
 | **Diagnostics** | Factor graphs | ArviZ (trace, ESS, R-hat) |
 | **Écosystème** | .NET | NumPy/Pandas/Matplotlib |
 
+> **Paires jumelles (Infer.NET ↔ PyMC)** — déclaration de maintenance (EPIC #24197, section C) : ces deux séries enseignent le *même plan* sur *deux moteurs* (message passing compilé vs échantillonnage MCMC) ; elles ne sont pas des doublons. Un changement pédagogique commun (un modèle ajouté ou retiré du plan, une notion renvoyée de l'une à l'autre) se porte **dans les deux** : si tu modifies l'une, vérifie l'autre.
+
 Aucune des deux librairies n'est purement déterministe ou purement stochastique — Infer.NET propose aussi un échantillonneur de **Gibbs**, PyMC une inférence variationnelle (**ADVI**) — mais leur moteur *par défaut* incarne deux familles d'algorithmes : le message passing sur graphe de facteurs (Infer.NET/EP) et l'échantillonnage MCMC (PyMC/NUTS). Avoir les deux sur les mêmes modèles permet de comprendre ce **compromis**, une compétence clé pour tout praticien.
 
 ```mermaid

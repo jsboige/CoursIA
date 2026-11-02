@@ -32,6 +32,8 @@ Le trait distinctif d'Infer.NET : le modèle déclaratif est **compilé** (via R
 
 **Double approche** : Cette série est le versant C#/.NET de la programmation probabiliste. Le versant Python (PyMC) couvre les mêmes modèles avec un moteur d'inférence différent. Voir [PyMC/](../PyMC/) pour la comparaison.
 
+> **Paires jumelles (Infer.NET ↔ PyMC)** — déclaration de maintenance (EPIC #24197, section C) : ces deux séries enseignent le *même plan* sur *deux moteurs* (message passing compilé vs échantillonnage MCMC) ; elles ne sont pas des doublons. Un changement pédagogique commun (un modèle ajouté ou retiré du plan, une notion renvoyée de l'une à l'autre) se porte **dans les deux** : si tu modifies l'une, vérifie l'autre.
+
 **Applications réelles couvertes** : TrueSkill (Xbox Live, 100M+ joueurs), Item Response Theory (GMAT/GRE), LDA (Google News), systèmes de recommandation, diagnostic médical.
 
 ## Objectifs d'apprentissage
