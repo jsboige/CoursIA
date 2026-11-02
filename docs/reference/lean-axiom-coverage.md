@@ -11,11 +11,14 @@ Ce doc est la **preuve d'acceptance step 3** du ticket #8738 (« Les 10 lakes ca
 Depuis la migration matrice (#13751 et suivantes), la couverture du gate se lit dans le manifeste `scripts/lean/ci_lakes.json` : un lake y est **câblé** s'il porte `axiom-target-modules` (le step `Proof integrity` de `lean-build.yml` ne tourne que pour lui). La commande unique, réexécutable par un reviewer pour trancher B.3 sans enquête :
 
 ```bash
-python scripts/lean/axiom_coverage.py            # table + verdicts (WIRED / WIRED-DEAD / BARE)
+python scripts/lean/axiom_coverage.py            # table + verdicts (WIRED / WIRED-DEAD / BARE / NOT-APPLICABLE)
 python scripts/lean/axiom_coverage.py --json     # pour dossier/CI
 ```
 
 Elle vérifie de surcroît que chaque module **explicitement** nommé existe sur disque (notation pointée du manifeste ↔ chemin `.lean`) — un `WIRED-DEAD` dénonce un vert hors-cible (cas #8782). L'état vivant est celui de la commande (le compte des wired/bare dérive à chaque câblage, il ne se recopie pas en prose — #9377) ; au 2026-09-27 il était de **2 wired** (`gametheory` à liste explicite vérifiée sur disque, `serre100` passe-partout `*`) et **18 bare** — gap de naissance constaté par #17097, câblage progressif suivi par #18038. Le triage statique §2-3 ci-dessous date de la pré-matrice (22 lakes sur disque, grep-firsthand) et reste valable comme exposition *par lake* ; la colonne « câblé » qu'il portait est supplantée par la commande.
+
+**Le quatrième verdict — `NOT-APPLICABLE` (#24092, 2026-11-02).** La tranche #22519 a laissé deux lakes **sans gate par décision écrite** (§4.1) parce qu'ils ne déclarent rien d'énumérable. Le census les comptait pourtant `BARE`, c'est-à-dire « à câbler » — et la première lane qui a suivi ce verdict a produit une jambe rouge permanente (`axiom-target-modules: "*"` sur `conway_cgt_lean` : `FAIL: lake-level non-vacuity -- all module(s) enumerated zero declarations`, job `125031198506`). Le census distingue désormais les deux états **avec l'énumérateur du gate lui-même** (`lean_server._enumerate_module_declarations` / `_classify_empty_enumeration`, chargé par le même chemin que `axiom_check_step.py` — jamais un second lexique de mots-clés, qui dériverait du premier : la première version comptait les `example` et rendait `mathlib_examples` « câblable »). `NOT-APPLICABLE` exige `declaration_free_module` sur **tous** les modules : un `source_not_found` (checkout partiel) ou un `all_private_declarations` reste `BARE`, à instruire. **Ce classement suit le contenu du module, il ne l'exonère pas d'un contrôle de code réel** : un module dont le code passerait massivement en commentaire lirait `NOT-APPLICABLE` au lieu de `BARE`, et le gate ne tourne pas sur ces lakes par construction — c'est pourquoi §4.1 les nomme un par un, et pourquoi une entrée nouvelle dans cette classe demande une lecture, pas un classement automatique. État mesuré sur `origin/main` au 2026-11-02 : **31 wired, 0 wired-dead, 0 bare, 2 sans déclaration** — le zéro de `BARE` n'est pas une case vide, c'est la vérification que la décision de §4.1 est complète.
+
 
 ### 0.1 Câblage tranche par tranche (critère 2 de #18038)
 
@@ -341,6 +344,28 @@ Le port de sa preuve se fait **par étages**, et l'axiome reste déclaré tant q
 **Ce qui reste** : la **récupération** — en itérant `decisive_split` sur un ensemble fini d'agents on obtient une coalition décisive minimale, dont la minimalité force un dictateur, et c'est cet assemblage final qui retirera `arrow_impossibility`. Les trois étages livrés fournissent les deux hypothèses qu'il consomme (décision lisible sur toute paire, coalitions strictement décroissantes) ; la marche restante est l'itération jusqu'au point fixe sur `Finset`, c'est-à-dire précisément la dépendance que ce lac évite encore. **Quand** l'axiome tombera, la whitelist `axiom-allow-axioms` de ce lac se videra ; tant qu'il est là, c'est son nom explicite dans le manifeste (#22519, §4.1) qui l'autorise à passer le gate — jamais un wildcard.
 
 **Où la preuve d'Arrow est déjà complète** : `game_theory_lean/SocialChoice/Arrow.lean` (`0` `sorry`, `CERTIFIED.txt`) porte la chaîne achevée `pivot_exists` → `pivot_is_dictator_except_b` → `partial_dictator_is_full_dictator`. Les deux lacs sont **distincts par construction** — celui-ci est zéro-dépendance (`Int`-utilitaires, aucune bibliothèque), l'autre s'appuie sur `Finset` — et ce port ne prétend pas le remplacer : il construit la même preuve dans le fragment de Lean qui n'a aucune dépendance. Ce renvoi est ici pour que le lecteur du registre sache que la preuve complète existe à côté, plutôt que de conclure d'un axiome encore en place que le dépôt n'a rien.
+
+#### 4.1.1. L'axiome est tombé — mesure du 2026-10-28
+
+L'énoncé ci-dessus est conservé comme état daté. Depuis, `axiom arrow_impossibility` **n'existe plus** : c'est un `theorem` prouvé, sur les deux siblings FR/EN.
+
+| Étage | Contenu | Livraison |
+|---|---|---|
+| 1 | `Decisive`, `decisive_unanimous`, `decisive_expand_right`/`_left` | PR #23030 |
+| 3 (2 fusionné) | `decisive_swap`, `decisive_field`, `decisive_split` | PR #23030 |
+| 4a | `zLast`, `empty_not_decisive`, `decisive_global`, `decisive_singleton_dictator` | PR #23074 |
+| 4b | `Dictator`, `decisive_congr`, `tailCoal`, `exists_third`, `exists_dictator_of_decisive`, `theorem arrow_impossibility` | PR de l'étage 4b |
+
+**Le choix de conception de l'étage 4b** : pas de minimum sur les coalitions décisives (il faudrait les compter, donc `Finset`, donc Mathlib). La preuve **induit sur une famille explicite**, les queues `tailCoal m = {i | m ≤ i}`, et sur la mesure `nI - m` : à chaque cran `decisive_split` détache l'agent `m` ; soit `{m}` est décisif sur `(x₀, w)` et devient dictateur, soit la queue `m + 1` est décisive sur `(w, y₀)` et la descente continue. La queue vide est exclue par `empty_not_decisive`, donc la descente ne peut pas s'éteindre sans dictateur.
+
+**Mesures (2026-10-28, worktree de l'étage 4b)** :
+
+- `lake build` du lac entier : **14 jobs SUCCESS**, 0 erreur, 0 warning (les deux siblings compilent).
+- `count_code_sorry.py` sur `lean_game_defs` : `distinct_code_sorry = 0` (inchangé — ce n'était pas un `sorry`).
+- `check_i18n_siblings.py <lac>` : **6/6 paires byte-identiques**, 0 drift, 0 orphan.
+- `#print axioms arrow_impossibility` (FR) et `#print axioms SocialChoiceEn.arrow_impossibility` (EN) : `propext`, `Quot.sound`, **`Classical.choice`**.
+
+**Ce que la mesure change pour le câblage du gate** — et c'est la partie qu'on ne peut pas anticiper : la whitelist **vide** annoncée ci-dessus ne suffit **pas**. `Classical.choice` vient de **deux sources indépendantes**. (1) `decisive_split`, qui tranche `(swf.aggregate P).R z x` par `by_cases` sur une proposition arbitraire : `Preference.R` n'a aucune instance de décidabilité, donc `by_cases` tire `Classical.propDecidable`. (2) `zLast`, dont les preuves d'ordre (`complete`, `antisymm`) tranchent des égalités sur `A` par `by_cases` sans instance `DecidableEq` — et qui se propage via `decisive_singleton_dictator` (re-mesure complète au head de l'étage 4b : `zLast`, `decisive_singleton_dictator`, `decisive_split`, `arrow_impossibility` portent `Classical.choice` ; `decisive_unanimous` sans axiome, `decisive_expand_*`/`decisive_swap`/`decisive_field`/`empty_not_decisive`/`decisive_global`/`decisive_congr`/`exists_third` à `propext`+`Quot.sound`). Deux sorties, à trancher au câblage : nommer `Classical.choice` (précédents assumés : `learningtheory`, `decisiontheory`, `mimo`), ou **purger les deux sources** — purger la seule `decisive_split` ne retirerait pas l'axiome de `arrow_impossibility`, il faudrait aussi une décidabilité sur les égalités de `zLast`. Le câblage reste un **livrable séparé** (§4, roadmap #11699) ; il n'est pas fait ici.
 
 ## 5. Acceptance step 3 — verdict
 

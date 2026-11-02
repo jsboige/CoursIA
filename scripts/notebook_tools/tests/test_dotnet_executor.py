@@ -670,13 +670,16 @@ def test_no_repair_when_unset_and_the_resolved_root_has_sdk(monkeypatch, tmp_pat
     assert _dotnet_env.sdk_bearing_dotnet_root() is None
 
 
-def test_no_repair_when_dotnet_is_not_on_path_and_the_variable_is_unset(
-        monkeypatch):
-    """Nothing resolved, nothing configured: no effective root to judge, so no
-    repair. The repair never invents a root."""
-    monkeypatch.delenv("DOTNET_ROOT", raising=False)
-    monkeypatch.setattr(_dotnet_env.shutil, "which", lambda name: None)
-    assert _dotnet_env.sdk_bearing_dotnet_root() is None
+# ``sdk_bearing_dotnet_root()`` -- the "nothing resolved, nothing configured"
+# case used to be pinned here as "no repair". #23972 reversed that contract: an
+# unknowable effective root is the shape the repair exists for, and standing
+# down there was the hole (measured: ``None`` returned while a per-user install
+# carried the SDK). The module's contract now lives in
+# ``tests/test_dotnet_env.py``, hermetically: under the #23972 contract this
+# site would depend on the host's own ``LOCALAPPDATA`` (the old unconditional
+# ``None`` did not), which is why the pin belongs in a file that controls that
+# variable itself. The executor suite keeps the cases below, which pin the
+# *repair* paths it consumes.
 
 
 def test_candidates_include_the_per_user_install_root_on_windows(

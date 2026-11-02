@@ -334,20 +334,43 @@ def deleted_dispatchers(ref: str) -> list[dict]:
     return out
 
 
+def _is_under(path: str, parent: str) -> bool:
+    """True when ``path`` lives strictly below the directory ``parent``.
+
+    Pure string segmentation on ``/`` (a Windows separator is normalised
+    first): the repository's project-paths are POSIX, and a prefix test on
+    raw characters would credit ``.../LeanX/foo`` as living under ``.../Lean``.
+    """
+    p = path.replace("\\", "/").rstrip("/").split("/")
+    q = parent.replace("\\", "/").rstrip("/").split("/")
+    return len(p) > len(q) and p[:len(q)] == q
+
+
 def _moved_successor(d: dict, gated_now: set[str], exists_at) -> str | None:
     """The live gated path that took over ``d``'s lake, if the move is provable.
 
-    Two evidences are required together, and each closes one way of being
+    Four evidences are required together, and each closes one way of being
     wrong:
 
     * **absence** -- none of the dispatcher's former project-paths may still
       exist in the tree at the measured ref. A path that survives is a lake
       that still lives there and is simply not gated any more: that is a real
       loss, and treating it as a move would hide it;
+    * **filiation** -- the successor must live *under the former parent
+      directory* (``.../Lean/galois_lean`` -> ``.../Lean/GALOIS/galois_lean``).
+      A same-basename path in an unrelated subtree is a homonym, not a
+      successor: crediting it would report a move nobody made and silence the
+      real loss (#23908, review Hermes du 31/10) ;
+    * **one lake** -- a dispatcher gating several lakes is not provable at
+      all, even when every basename has a successor: a single ``moved_to``
+      cannot witness that *each* of its lakes survived, so the whole
+      dispatcher would be credited on one lake's evidence and the other's
+      loss would be reported nowhere. It stays ``lost`` (fail-closed,
+      #23908) ;
     * **a single successor** -- exactly one gated path today carries the same
-      lake basename (``.../Lean/galois_lean`` -> ``.../Lean/GALOIS/galois_lean``)
-      and exists in the tree. Two candidates make the move unprovable, and a
-      candidate that does not exist credits a coverage nobody holds.
+      lake basename and exists in the tree. Two candidates make the move
+      unprovable, and a candidate that does not exist credits a coverage
+      nobody holds.
 
     No probe, or a dispatcher that passed no project-path, yields ``None``:
     the caller keeps it "lost" (§ fail-closed).
@@ -358,8 +381,12 @@ def _moved_successor(d: dict, gated_now: set[str], exists_at) -> str | None:
     if any(exists_at(p) for p in old):
         return None
     names = {Path(p).name for p in old}
+    if len(old) != 1 or len(names) != 1:
+        return None  # multi-lake dispatcher: no single successor can witness it
+    parent = str(Path(old[0]).parent)
     candidates = sorted(g for g in gated_now
-                        if Path(g).name in names and g not in old and exists_at(g))
+                        if Path(g).name in names and g not in old and exists_at(g)
+                        and _is_under(g, parent))
     return candidates[0] if len(candidates) == 1 else None
 
 

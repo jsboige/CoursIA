@@ -2050,6 +2050,8 @@ Part of #3801
 
 **Total** : 24 lakefiles · 282 fichiers · 59 710 lignes · 21 sorry tactiques (61 % dans knot_lean SCAFFOLDING) · 17 mentions docstring de "sorry-free" · 1 seul vrai `axiom` (`lean_game_defs/SocialChoice.lean:135 axiom arrow_impossibility`) · 23/24 toolchains v4.31.0-rc1 (1 seule divergence = `social_choice_lean_peters` v4.27.0-rc1) · 22/24 avec mathlib4 dep (4 self-contained).
 
+> **Péremption mesurée le 2026-10-28 (#23022)** — les deux mentions du « 1 seul vrai `axiom` » ci-dessus (ce total et la ligne 23) sont un **état daté**, plus l'état courant : `arrow_impossibility` est désormais un `theorem` prouvé dans `lean_game_defs`, sur les deux siblings FR/EN. Le recensement n'est pas refait ici ; l'état courant et ses mesures vivent dans [`lean-axiom-coverage.md` §4.1.1](../reference/lean-axiom-coverage.md) — dont la clôture axiomatique mesurée (`propext`, `Quot.sound`, `Classical.choice` hérité de `decisive_split`), qui n'est pas nulle et doit être lue avant tout câblage de gate sur ce lac.
+
 ### Métrique résumée (worker firsthand python3, vérifiée c.424)
 
 | Métrique | Valeur | Evidence |

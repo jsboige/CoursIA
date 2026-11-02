@@ -44,6 +44,12 @@ Pour la pédagogie Lean (notebooks étudiants), voir [`MyIA.AI.Notebooks/Symboli
 | [darksnail/pli2-lake-enveloppe-verdict.md](darksnail/pli2-lake-enveloppe-verdict.md) | Pli 2, DarkSnail (EPIC #21310) — reconstruction du lake d'enveloppe `OcclusionTriad` et verdict first-hand `INSUFFISANT_BLOQUANT` : le code reference des modules absents du depot upstream, donc la badge « 0 sorry » n'est pas falsifiable. Recommandation : arret du Pli 2 et pivot `so(M)`. **Prémisse falsifiée le 2026-10-29** (imports réparés upstream) — voir la ligne suivante. |
 | [darksnail/concern-2026-10-29-build-verification.md](darksnail/concern-2026-10-29-build-verification.md) | Réponse au Concern user du 2026-10-18 sur l'EPIC #21310 — build first-hand du contenu Lean amont à la tête du 2026-10-29 : **SUCCESS** (Mathlib v4.33.0, 0 sorry, 0 `sorryAx`, 0 `native_decide`, 67 théorèmes), inventaire Python (41 357 lignes), assessment d'extension. La décision de rouvrir Pli 2 reste au coordinateur. |
 
+## Organisation des lakes
+
+| Document | Sujet |
+|---|---|
+| [lean-lakes-doctrine.md](../reference/lean-lakes-doctrine.md) | **Doctrine des lakes (validée par le user le 2026-11-02)** : le site d'un lake suit ses carnets consommateurs, aucune fusion pour le disque ou la CI, fusion seulement par les imports, et un doublon de théorème se déclare. À lire avant de créer, déplacer ou fusionner un lake, et avant d'écrire un théorème qui existe peut-être déjà ailleurs. |
+
 ## Toolchain
 
 | Document | Sujet |
