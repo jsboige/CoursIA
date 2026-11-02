@@ -24,11 +24,11 @@ Le defaut paresseux (« ASCII art / reimplementation jouet / 'Java absent' / 'ke
 
 ### Procedure d'etablissement INTRINSIC — checklist 6 axes obligatoire (NEW c.8243, #10459)
 
-`INTRINSIC` declare une impossibilite : il justifie une substitution durable, invisible pour les auditeurs suivants. **Condition d'entree, avant la grille** : prouver que l'outil vise n'est pas disponible, par une recherche a la source (depot, registre de paquets, page du projet), URL et date dans le body — une grille remplie « N/A » sur un outil qui existe est un faux `INTRINSIC` (#21121 : TorchLean, public depuis le 2026-05-11).
+**Condition d'entree, avant la grille** : prouver que l'outil vise n'est pas disponible, par une recherche a la source (depot, registre de paquets, page du projet), URL et date dans le body. Grille nominative, forme de reponse attendue (le « N/A » valide nomme sa preuve) et recits fondateurs (#21121 TorchLean, #10459 PythonNet) : [detail §2](../../docs/reference/sota-verdicts-detail.md).
 
-**Chaque verdict `INTRINSIC` doit repondre nominativement les 6 axes** de la grille (binding .NET/NuGet · `P/Invoke` · CLI `Process.Start` · `IKVM` · `PythonNet` · lib equivalente — **tableau des questions : [detail §2](../../docs/reference/sota-verdicts-detail.md)**), par « non applicable, parce que… » ou « oui, mais testé, résultat : ... ». Origine de la grille (#10459, omission PythonNet, axe prouve par 5 PRs mergees) : meme section du detail.
+**Chaque verdict `INTRINSIC` doit repondre nominativement les 6 axes** (binding .NET/NuGet · `P/Invoke` · CLI `Process.Start` · `IKVM` · `PythonNet` · lib equivalente).
 
-**Regle d'enforcement** : un verdict `INTRINSIC` dont le body **ne repond pas nominativement les 6 axes** (y compris « axe 5 N/A parce que la cible n'a pas de binding Python, vérifié sur PyPI au commit SHA … ») est **incomplet** → **`CHANGES_REQUESTED`** ([pr-review-discipline.md](pr-review-discipline.md) §H). La taxonomie des 5 verdicts est **inchangee** : seul l'etablissement d'`INTRINSIC` se durcit.
+**Regle d'enforcement** : un verdict `INTRINSIC` dont le body **ne repond pas nominativement les 6 axes** est **incomplet** → **`CHANGES_REQUESTED`** ([pr-review-discipline.md](pr-review-discipline.md) §H). La taxonomie des 5 verdicts est **inchangee** : seul l'etablissement d'`INTRINSIC` se durcit.
 
 ### Stop & Repair — JAMAIS hand-editer une sortie de cellule (mandat user 2026-06-22)
 
@@ -46,9 +46,7 @@ Action : **complexifier le probleme existant** OU **ajouter un probleme addition
 
 ### Verification anti-fabrication — mesurer la discrimination AVANT de clamer « heuristique X echoue »
 
-Un enrichissement Prong-B ne se declare pas sur un **pitch plausible** : on **mesure** d'abord la discrimination firsthand (installer le solveur — regle F — et comparer resultat-heuristique vs optimum exact). Un pitch non mesure = violation G.9 en attente d'etre livree.
-
-Anti-exemple mesure (le folklore « greedy rate Mycielski » ne reproduit pas), faux signal de grep MiniZinc et instance fondatrice (commit `8905f8845`) : [detail §3](../../docs/reference/sota-verdicts-detail.md).
+Un enrichissement Prong-B ne se declare pas sur un **pitch plausible** : on **mesure** d'abord la discrimination firsthand (installer le solveur — regle F — et comparer resultat-heuristique vs optimum exact). Un pitch non mesure = violation G.9 en attente d'etre livree. Recits fondateurs (anti-exemple Mycielski, faux signal grep MiniZinc, commit `8905f8845`) : [detail §3](../../docs/reference/sota-verdicts-detail.md).
 
 ## Comportement des bots reviewers (signaler + enforce)
 
@@ -65,18 +63,11 @@ Les bots **DOIVENT** poster `CHANGES_REQUESTED` quand une PR notebook (interne/c
 
 **Une entree va dans le ledger, jamais dans un commentaire d'issue.** Le ledger est
 [`docs/ledgers/3801-sota-axe2.md`](../../docs/ledgers/3801-sota-axe2.md) (section
-`## Entry #NNN — <Famille> (owner <lane>, c.NNN)` par PR) ; le precedent qui fonde
-l'interdit est en [detail §4](../../docs/reference/sota-verdicts-detail.md).
-
-**Critere de fin de l'axe-2** (3 conditions mesurables), **pieges de denombrement** (grain par famille,
-deux tableaux « Cumul entries » perimes a fusionner) et commandes de mesure : [sota-verdicts-detail.md
-§4](../../docs/reference/sota-verdicts-detail.md).
+`## Entry #NNN — <Famille> (owner <lane>, c.NNN)` par PR). **Critere de fin de l'axe-2** (3 conditions mesurables), **pieges de denombrement** et commandes de mesure : [detail §4](../../docs/reference/sota-verdicts-detail.md).
 
 ## Voir aussi
 - CLAUDE.md section F — env/kernel : reparer, jamais contourner
 - [pr-review-discipline.md](pr-review-discipline.md) §H — critere bots SOTA + non-trivialite
 - [anti-regression.md](anti-regression.md) — ne pas stripper le code reel
 - [three-exercises-per-notebook.md](three-exercises-per-notebook.md) — richesse pedagogique (exercices)
-- [`docs/ledgers/3801-sota-axe2.md`](../../docs/ledgers/3801-sota-axe2.md) — **le registre** axe-2 SOTA + problem-richness, par famille (30 entrees au 2026-09-03)
-- **EPIC #3801** (CLOSE) — provenance doctrinale du mandat ; **ne rien y deposer** (cf §Registre axe-2).
-- **#10459** — omission d'axe PythonNet, close par la checklist 6 axes ([detail §2](../../docs/reference/sota-verdicts-detail.md))
+- [`docs/ledgers/3801-sota-axe2.md`](../../docs/ledgers/3801-sota-axe2.md) — **le registre** axe-2 SOTA + problem-richness, par famille (30 entrees au 2026-09-03) ; EPIC #3801 (CLOSE) = provenance doctrinale, **ne rien y deposer** ; #10459 = omission PythonNet, close par la checklist 6 axes ([detail §2](../../docs/reference/sota-verdicts-detail.md))
