@@ -202,6 +202,8 @@ Folk (`folk_theorem_discounted`) porte 1 sorry stretch, toléré au titre de #48
 
 **Objectif** : jeux bayésiens & design de mécanismes — véracité Vickrey, équilibre bayésien de Nash, enchères, réputation, jeu fictif, regret. Extension de `lean_game_defs` (définitions partagées), sans Mathlib.
 
+**Séparation par design + condition de réveil** : la base (définitions introductives) et l'ext (preuve, vendore ses propres defs) restent **tenus séparés par design** ; leur seul nom commun, `externalRegret` (signatures distinctes Float/Int), est une **collision dormante** (aucun consommateur n'importe les deux). **Le premier carnet ou lake qui importera les deux lakes renomme d'abord `externalRegret` côté ext (`bayesianExternalRegret`)** — décision ai-01 2026-11-02 (c2756, mesure 0/242 Bayesian + 1/39 Regret).
+
 **Toolchain** : v4.33.0 | **Dépendances** : Lean core (sans Mathlib)
 
 | Fichier (FR + jumeau `_en`) | sorry | Description |
