@@ -38,7 +38,7 @@ from v4.narration import (  # noqa: E402  (apres l'insertion de sys.path)
 _APPS = _V4.parent
 _NOTEBOOKS = (
     "04-1-Educational-Audio-Content.ipynb",
-    "04-6-Audiobook-Pipeline.ipynb",
+    "04-Audiobook/04-6-Audiobook-Pipeline.ipynb",
 )
 
 
@@ -107,7 +107,7 @@ def _script_committe_04_6() -> str:
     est mesuree, donc celle que le lecteur du carnet voit. Une fixture se
     desynchronise du carnet sans que rien ne le signale.
     """
-    nb = json.loads((_APPS / "04-6-Audiobook-Pipeline.ipynb").read_text(encoding="utf-8"))
+    nb = json.loads((_APPS / "04-Audiobook/04-6-Audiobook-Pipeline.ipynb").read_text(encoding="utf-8"))
     for cell in nb["cells"]:
         for out in cell.get("outputs", []):
             text = out.get("text") or (out.get("data", {}) or {}).get("text/plain") or []
