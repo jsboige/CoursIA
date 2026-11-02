@@ -423,5 +423,17 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-03b-Chemins-de-Swaps-Lean-Python.ipynb	M
 MyIA.AI.Notebooks/GameTheory/GameTheory-03c-Chambres-et-Murs-Python.ipynb	MyIA.AI.Notebooks/GameTheory/GameTheory-03b-Chambres-Murs-Chemins-Lean-Python.ipynb	2026-10-30	myia-po-2028:CoursIA-2
 MyIA.AI.Notebooks/GameTheory/GameTheory-03d-Le-Joueur-LLM-Python.ipynb	MyIA.AI.Notebooks/GameTheory/GameTheory-03c-Le-Joueur-LLM-Python.ipynb	2026-10-30	myia-po-2028:CoursIA-2
 MyIA.AI.Notebooks/GameTheory/GameTheory-03f-Deux-Especes-de-Fleches-Python.ipynb	MyIA.AI.Notebooks/GameTheory/GameTheory-03d-Deux-Especes-de-Fleches-Python.ipynb	2026-10-30	myia-po-2028:CoursIA-2
-
+MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction-CSharp.ipynb	2026-10-27	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/ML-02-Data&Features.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-02-Data-Features-CSharp.ipynb	2026-10-27	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/ML-02-Data&Features-Python.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-02-Data-Features-Python.ipynb	2026-10-27	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/ML-03-Entrainement&AutoML.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-03-Entrainement-AutoML-CSharp.ipynb	2026-10-27	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/ML-03-Entrainement&AutoML-Python.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-03-Entrainement-AutoML-Python.ipynb	2026-10-27	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/ML-04-Evaluation.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-04-Evaluation-CSharp.ipynb	2026-10-27	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/ML-05-TimeSeries.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-05-TimeSeries-CSharp.ipynb	2026-10-27	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/ML-06-ONNX.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-06-ONNX-CSharp.ipynb	2026-10-27	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/ML-07-Recommendation.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-07-Recommendation-CSharp.ipynb	2026-10-27	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/ML-08-Clustering.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-08-Clustering-CSharp.ipynb	2026-10-27	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/ML-09-Anomaly-Detection.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-09-Anomaly-Detection-CSharp.ipynb	2026-10-27	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/TP-prevision-ventes.ipynb	MyIA.AI.Notebooks/ML/ML.Net/TP-Prevision-Ventes-CSharp.ipynb	2026-10-27	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/GameTheory/GameTheory-11e-Jeux-Globaux-Selection-Equilibre-Python.ipynb	MyIA.AI.Notebooks/GameTheory/GameTheory-11f-Jeux-Globaux-Selection-Equilibre-Python.ipynb	2026-10-30	myia-po-2023:CoursIA-2
 MyIA.AI.Notebooks/GameTheory/GameTheory-03c-Le-Joueur-LLM-Python.ipynb	MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-10-Joueur-LLM-Python.ipynb	2026-10-31	myia-po-2024:CoursIA

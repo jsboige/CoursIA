@@ -623,7 +623,7 @@ maturity: PRODUCTION=27
 
 **Paragraphe conformité C.1** : stubs `student/` (patterns `pass` / `return None` / `print("Exercice à compléter")` / `result = None  # TODO étudiant`) dans tous les notebooks Solidity. Les fonctions Solidity elles-mêmes ne suivent pas C.1 (elles sont des contrats déployés, pas des stubs Python), mais les **cellules Python** (déploiement web3.py, simulation Anvil, tests Foundry en Python) respectent C.1. Dépendances : `web3>=6.0`, `py-solc-x>=1.12`, `eth-account>=0.10`, `eth-abi>=4.0`, `pytest>=7.0`, Foundry stable externe.
 
-## Écosystème MCP et parenté cross-lane
+## Écosystème MCP et parenté inter-séries
 
 **3 outils d'infrastructure MCP** (cohérent avec cycles 19-29 hubs) :
 
@@ -631,7 +631,7 @@ maturity: PRODUCTION=27
 2. **Validation pre-commit** (`.pre-commit-config.yaml`) — `gitleaks` détecte les secrets inline (clés privées ETH, mnemonics, RPC URLs) ; le validateur notebook `validate_pr_notebooks.py` enforce C.1 (stubs sans `NotImplementedError`) et C.2 (notebooks commités AVEC outputs, `execution_count != null`). **Note spécifique SmartContracts** : les fichiers `foundry.toml` ou variables `.env` (PRIVATE_KEY, RPC_URL) doivent vivre dans `.gitignore`, jamais en clair dans un notebook.
 3. **MCP QC Cloud (`mcp__qc-mcp-lite__*`)** — backtest QuantConnect partagé. SmartContracts n'utilise pas QC Cloud directement, mais partage avec QC le même besoin de **reproductibilité déterministe** : Anvil local déterministe (seed fixe, block pre-Merge), seed Foundry (fuzz avec seed), déploiement testnet reproductible (même bytecode, même timestamp block) — un smart contract audité doit être ré-exécutable bit-pour-bit.
 
-**Table parenté cross-lane 6 colonnes** (SmartContracts se situe au croisement de plusieurs séries du dépôt) :
+**Table parenté inter-séries 6 colonnes** (SmartContracts se situe au croisement de plusieurs séries du dépôt) :
 
 | Notebook SmartContracts | Série parente | Pont conceptuel |
 |------------------------|---------------|-----------------|
@@ -648,7 +648,7 @@ Là où Planners est le carrefour **simulation/proof intra-série** (Python ⇄ 
 
 Le pipeline de notebooks aligne l'évolution paradigmatique de la blockchain (2008 Bitcoin → 2024 L2 + ZK rollups) sur la **frontière de vérification** (tests unitaires → fuzzing → vérification formelle SMT → potentielle preuve Lean). Chaque notebook est un maillon du triptyque *construire → tester → prouver*.
 
-**Version 1.2.0** — Juillet 2026 — section Statistiques catalogue à jour + section Écosystème MCP et parenté cross-lane.
+**Version 1.2.0** — Juillet 2026 — section Statistiques catalogue à jour + section Écosystème MCP et parenté inter-séries.
 
 ---
 
