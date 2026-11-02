@@ -20,7 +20,6 @@ name: Notebook Kernel Drift Guard
 on:
   pull_request:
     types: [opened, synchronize, edited, reopened]
-    branches: [main]
     paths:
       - '**.ipynb'
       - 'scripts/notebook_tools/check_kernel_drift.py'

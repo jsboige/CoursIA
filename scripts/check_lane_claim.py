@@ -433,8 +433,29 @@ _OVERRIDE = {"OVERRIDE"}
 # of a bold-wrapped claim): `paths: dir/**` is a legitimate recursive glob,
 # indistinguishable from a closing decorator by suffix alone. Trailing `*` in
 # fnmatch matches empty, so a captured `glob**` still matches `glob`.
+# #23720 (2026-10-31, lane myia-ai-01:CoursIA-2) -- la clause canonique est
+# le SEGMENT FINAL de la ligne du marqueur (`-- paths: g1, g2`). Le motif
+# ci-dessous lit donc la **derniere** occurrence du mot-cle sur la ligne :
+# le quantificateur `[^\n]*` est désormais **greedy** (il etait non-greedy),
+# de sorte que le moteur backtracke depuis la fin de ligne.
+#
+# Pourquoi : une lane qui ecrit "une clause `paths:` ..." dans le texte
+# d'INTENTION de son marqueur detonait le parseur -- le mot-cle etait lu au
+# premier endroit, la truncation d'annotation (` -- `) coupait le reste, et la
+# portee rendue etait un jeton MORT ("`"), c'est-a-dire une claim epic-wide
+# (fail-closed #10958/#11098) : la lane se verrouillait elle-meme sur
+# l'issue entiere. Mesure sur `main` au tip `3c599591c2d2` :
+#
+#   '[CLAIMED] lane X -- une clause `paths:` (backticks) -- paths: a.py'
+#     -> portee rendue : ["`"]      (avant #23720)
+#     -> portee rendue : ["a.py"]   (apres #23720)
+#
+# Le lookbehind `(?<![`"'\w])` refuse une occurrence **encadree** (backtick,
+# guillemet) ou precedee d'un caractere de mot : une mention en prose n'est
+# pas une clause. Une occurrence en MARQUE (`**paths:**`) reste acceptee --
+# la decoration n'est pas un mot.
 _PATHS_CLAUSE_RE = re.compile(
-    r"(?im)^[ \t]*" + _DECOR + r"(?:\*\*|__)?[ \t]*\[\s*(?:CLAIMED-AMEND|CLAIMED|RELEASED|DELIVERED|OVERRIDE)\s*\][^\n]*?paths\s*:\s*([^\n]+?)\s*$"
+    r"(?im)^[ \t]*" + _DECOR + r"(?:\*\*|__)?[ \t]*\[\s*(?:CLAIMED-AMEND|CLAIMED|RELEASED|DELIVERED|OVERRIDE)\s*\][^\n]*(?<![`\"'\w])paths\s*:\s*([^\n]+?)\s*$"
 )
 # #12320 -- `[DELIVERED] lane <m:w> -- PR #N`. The PR reference is OPTIONAL on
 # a DELIVERED marker (a DELIVERED without a PR is functionally equivalent to a
@@ -837,6 +858,45 @@ def parse_claim_event(comment: dict,
     return events[-1] if events else None
 
 
+# #23720 -- les wrappers d'un jeton de chemin. Une lane qui ecrit son chemin
+# entre backticks ou guillemets (`paths: \`a/b.py\``) produisait un glob qui
+# ne matche AUCUN fichier suivi : la portee etait lue morte, donc la claim
+# devenait epic-wide (fail-closed #10958/#11098) et verrouillait l'issue
+# entiere au lieu du fichier vise. Le retrait des wrappers est fait ICI, a la
+# lecture, ce qui repare aussi les claims DEJA poses -- aucune re-emission
+# du claim n'est demandee a la lane.
+_PATH_TOKEN_WRAPPERS = ("`", '"', "'")
+
+
+def _normalize_path_token(token: str) -> str:
+    r"""Strip the surrounding backticks/quotes of a declared path token.
+
+    `paths: \`a/b.py\`` and `paths: a/b.py` must denote the SAME scope:
+    otherwise the claim's scope and the caller's `--paths` are compared as
+    two spellings of one path, and the comparison yields nothing.
+
+    The wrappers are removed only when they are **paired** (`\\`a/b.py\\``,
+    `"a/b.py"`, `'a/b.py'`), and the stripping repeats so a doubly-wrapped
+    token (`\\`\\`a/b.py\\`\\``) is unwrapped too. A quote in the MIDDLE of a
+    filename is left untouched -- only the edges are decoration.
+
+    A token that carried nothing but wrappers normalises to the empty
+    string; the caller drops it (a scope made only of decoration was dead
+    before as well -- it simply said so more clearly).
+    """
+    t = token.strip()
+    unwrapped = True
+    while unwrapped and len(t) >= 2:
+        unwrapped = False
+        head, tail = t[0], t[-1]
+        if head in _PATH_TOKEN_WRAPPERS and head == tail:
+            t = t[1:-1].strip()
+            unwrapped = True
+    # Unbalanced leftovers (a single stray quote at one edge) are decoration
+    # too -- `fnmatch` would never match them.
+    return t.strip("`\"'").strip()
+
+
 def _split_paths_brace_aware(raw: str) -> list[str]:
     """Split a comma-separated path list on commas OUTSIDE `{...}` groups.
 
@@ -847,6 +907,13 @@ def _split_paths_brace_aware(raw: str) -> list[str]:
     (#10597). This splitter tracks brace depth and only splits on depth-0
     commas, keeping each brace group intact. Empty fragments from stray
     commas are dropped (`paths: a, , b` -> `["a", "b"]`).
+
+    #23720 -- each fragment is then NORMALIZED (`_normalize_path_token`):
+    the backticks/quotes a lane wrapped its path in are decoration, not part
+    of the path. The normalization runs AFTER the brace-aware split, so a
+    wrapped brace group (`` `search-{6,8,9}-*.yaml` ``) is first kept whole
+    and then unwrapped -- it still expands into three matchable globs
+    (#10597 preserved).
     """
     parts: list[str] = []
     buf: list[str] = []
@@ -862,7 +929,7 @@ def _split_paths_brace_aware(raw: str) -> list[str]:
         else:
             buf.append(ch)
     parts.append("".join(buf).strip())
-    return [p for p in parts if p]
+    return [t for t in (_normalize_path_token(p) for p in parts) if t]
 
 
 def _expand_brace_groups(pattern: str) -> list[str]:
@@ -920,6 +987,14 @@ def _extract_paths_clause(text: str | None) -> list[str] | None:
     dash sequence (`foo--bar.py`) survives untouched; the truncation cuts at
     the FIRST separator, so glob content after it stays out regardless of
     how the annotation is punctuated.
+
+    #23720 -- the clause is read from the LAST unquoted occurrence of the
+    keyword on the marker line (see `_PATHS_CLAUSE_RE`), and each resulting
+    token is NORMALIZED (`_normalize_path_token`): a path wrapped in
+    backticks or quotes denotes the same scope as the bare path. Without
+    both, a claim written in a natural sentence could end up with a DEAD
+    scope -- and a dead scope is read as epic-wide, which locks the whole
+    issue instead of the file the lane meant to hold.
     """
     m = _PATHS_CLAUSE_RE.search(text or "")
     if not m:
@@ -2648,10 +2723,19 @@ def _paths_clause(paths: list[str] | None) -> str:
     path was previously DROPPED SILENTLY: the caller believed the claim was
     scoped while the organ read it epic-wide (maximally blocking). This
     function is the fix that makes the scope survive the round-trip.
+
+    #23720 -- the tokens are NORMALIZED before being rendered: the clause
+    that leaves this function is the one the reader will parse, so it must
+    already be in the normalized spelling (a path wrapped in backticks is
+    written back bare). The reader normalizes too -- this is the write-side
+    half of the same contract, so a claim READS the same as it was WRITTEN.
     """
     if not paths:
         return ""
-    return " -- paths: " + ", ".join(paths)
+    normalized = [t for t in (_normalize_path_token(p) for p in paths) if t]
+    if not normalized:
+        return ""
+    return " -- paths: " + ", ".join(normalized)
 
 
 def _fmt_utc(iso: str | None) -> str:
@@ -4822,8 +4906,8 @@ def _blocking_lanes_from_summary(stdout_text: str) -> list[str]:
     return [str(b) for b in blocking]
 
 
-def _summarize_run_check_output(stdout_text: str, returncode: int) -> str:
-    """Court libelle machine-consommable issu du stdout d'un `_run_check`.
+def _summarize_run_check_output(verdict_text: str, returncode: int) -> str:
+    """Court libelle machine-consommable issu de la sortie d'un `_run_check`.
 
     Le code de retour de `_run_check`:
         0 -> CLEAR (libre)
@@ -4831,9 +4915,19 @@ def _summarize_run_check_output(stdout_text: str, returncode: int) -> str:
         2 -> NOT_SCOPED / path-collision / gh-error
         3 -> IMPLICIT (#14300, PR ouverte d'une autre lane)
 
-    Le stdout contient la phrase "CLEAR: no other lane claims #N" ou
+    Le texte porte la phrase "CLEAR: no other lane claims #N" ou
     "BLOCKED: another lane holds an active claim on #N" ou
     "IMPLICIT: lane X a une PR ouverte ..." ou un WARN NOT_SCOPED.
+
+    #22916 -- ce texte doit etre la CONCATENATION stdout + stderr, pas
+    le seul stdout : les deux verdicts `NOT_SCOPED` (call sans
+    `--paths`, et scope entierement mort #12345) partent sur **stderr**
+    juste avant `return 2`. Un resume nourri du seul stdout ne trouvait
+    donc jamais la phrase et classait tout scope mort en `ERROR`, alors
+    que le verdict est `BLOCKED` pour un appelant -- c'est la meme
+    famille d'echec que #22684 (le verdict existait, le resume ne le
+    voyait pas). Le stream qui porte la phrase est un detail d'emission :
+    un resume qui en depend n'est pas un resume, c'est un couplage.
 
     Pour le batch (#19643, c.1778) on s'en tient a 4 codes. Le picker
     (pick_idle_grain.check_claims) les remappe sur ses propres codes
@@ -4842,7 +4936,7 @@ def _summarize_run_check_output(stdout_text: str, returncode: int) -> str:
     (1 subprocess.run au lieu de N), pas une degradation de la
     discrimination. Source: PR #21373 review ai-01 5571014393.
     """
-    text = stdout_text or ""
+    text = verdict_text or ""
     if returncode == 0:
         return "FREE"
     if returncode == 3:
@@ -4867,6 +4961,32 @@ def _summarize_run_check_output(stdout_text: str, returncode: int) -> str:
             return "BLOCKED"
         return "ERROR"
     return f"EXIT_{returncode}"
+
+
+# Prefixes des lignes-verdict de `_run_check`. Extraits ici parce que
+# deux jambes les consultent (le resume machine et le champ `human`),
+# et que #22916 a montre qu'une jambe qui en oublie une source rend un
+# diagnostic faux sans jamais echouer.
+_VERDICT_LINE_PREFIXES = (
+    "CLEAR:", "BLOCKED:", "IMPLICIT:", "LOCKED",
+    "DEAD-SCOPE", "NOT_SCOPED", "DUMP",
+)
+
+
+def _find_verdict_line(text: str) -> str:
+    """Derniere ligne-verdict de `text`, ou chaine vide (#22916).
+
+    Parcourt de la fin vers le debut pour eviter le bruit du JSON de
+    synthese imprime avant le verdict. Ne regarde qu'un flux a la fois :
+    l'appelant passe stdout puis stderr, dans cet ordre.
+    """
+    for line in reversed((text or "").splitlines()):
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if stripped.startswith(_VERDICT_LINE_PREFIXES):
+            return stripped
+    return ""
 
 
 def _names_a_blocker(evidence: str, stdout_json: str = "") -> bool:
@@ -5018,18 +5138,13 @@ def check_issues_batch(
                 )
             result["exit"] = rc
             captured = buf_out.getvalue()
-            # #23098 -- le verdict n'est PAS toujours sur stdout : la
-            # classe `NOT_SCOPED` (exit 2) est ecrite sur **stderr** par
-            # `_run_check`, et le test du depot l'y lit
-            # (`assert "NOT_SCOPED" in captured.err`). Ne reduire que
-            # stdout faisait donc classer `ERROR` un verdict qui NOMAIT
-            # son bloquant -- et `ERROR` est servable par defaut cote
-            # tapis : un grain occupe etait retenu. Mesure du 2026-10-30
-            # (c.746) : #20035, #19741, #14318 -> `code=ERROR`,
-            # `human=(ERROR)`, alors que le meme appel unitaire rend
-            # `NOT_SCOPED` + `Blocked-by` sur stderr.
-            captured_err = buf_err.getvalue()
-            evidence = captured + "\n" + captured_err
+            err_captured = buf_err.getvalue()
+            # #22916 / #23098 -- le resume lit les DEUX flux : les verdicts
+            # `NOT_SCOPED` partent sur stderr (#12345, et le call sans
+            # `--paths`), le JSON de synthese et les verdicts BLOCKED /
+            # CLEAR sur stdout. Ne nourrir que stdout classait un scope
+            # mort en ERROR.
+            evidence = captured + "\n" + err_captured
             result["code"] = _summarize_run_check_output(evidence, rc)
             # Le bloquant est-il NOMME, quel que soit le code de sortie ?
             # C'est le predicat que le tapis consomme (#23098, acceptance
@@ -5049,26 +5164,11 @@ def check_issues_batch(
                 bloquantes = _blocking_lanes_from_summary(captured)
                 if bloquantes:
                     result["code"] = "BLOCKED"
-            # Human: on cherche la ligne-verdict parmi les dernieres non
-            # vides des deux flux. Le stdout contient d'abord un JSON
-            # summary (`print(json.dumps(summary, ...))` ~L3209) puis
-            # la phrase verdict `CLEAR: ...` / `BLOCKED: ...` /
-            # `IMPLICIT: ...` / `LOCKED (v2): ...` / `DEAD-SCOPE LOCK
-            # ...` ; `NOT_SCOPED: ...` sort sur **stderr**. Le pattern
-            # prioritaire est ^CLEAR: / ^BLOCKED: / ^IMPLICIT: / ^LOCKED
-            # / ^DEAD-SCOPE / ^NOT_SCOPED : on parcourt les lignes de la
-            # fin vers le debut pour eviter le bruit du JSON.
-            verdict_line = ""
-            for line in reversed(evidence.splitlines()):
-                stripped = line.strip()
-                if not stripped:
-                    continue
-                if any(stripped.startswith(prefix) for prefix in (
-                        "CLEAR:", "BLOCKED:", "IMPLICIT:", "LOCKED",
-                        "DEAD-SCOPE", "NOT_SCOPED", "DUMP",
-                )):
-                    verdict_line = stripped
-                    break
+            # Human: stdout d'abord (verdict canonique), stderr en repli --
+            # jamais un melange, pour qu'une erreur de diagnostic sur stderr
+            # ne puisse pas masquer le verdict rendu sur stdout (#22916).
+            verdict_line = (_find_verdict_line(captured)
+                            or _find_verdict_line(err_captured))
             if bloquantes:
                 # #22983 -- meme libelle que le reduiteur historique du
                 # picker (« BLOQUE par <lanes> ») : la voie batch et la
@@ -5846,6 +5946,13 @@ def main(argv: list[str] | None = None) -> int:
                         "blocked (#11064). Coordinator arbitration only -- "
                         "the reading side still honours [OVERRIDE] markers.")
     args = p.parse_args(argv)
+    # #23720 -- the caller's own scope (`--paths`) is compared with the
+    # claims' scopes: both sides must be spelled the same way, otherwise the
+    # intersection is computed between two spellings of one path and yields
+    # nothing. The reader normalizes the claims' side; the caller's side is
+    # normalized here, at the boundary.
+    if args.paths is not None:
+        args.paths = [t for t in (_normalize_path_token(p) for p in args.paths) if t]
     # #12751 -- default is 48 (measuring). `--no-stale`/threshold=None restores
     # the legacy behaviour (every claim blocks, nothing age-filtered); the
     # disabled state is reported honestly as `stale_detection: "disabled"`.

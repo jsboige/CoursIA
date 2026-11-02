@@ -129,8 +129,10 @@ from typing import Iterable
 import issue_containers
 # The coverage predicate is imported, not re-implemented: `[RELEASED]` means
 # two different things and the picker is the organ that already tells them
-# apart (see the block above `_is_protocol_attestation`).
-from pick_idle_grain import _released_covers_acceptance
+# apart (see the block above `_is_protocol_attestation`). It lives in
+# `released_covers`, a dependency-free module, because this file runs in CI
+# from a sparse-checkout that cannot host `pick_idle_grain` (#23762).
+from released_covers import _released_covers_acceptance
 
 LABEL_DEFAULT = "candidate-delivered"
 LABEL_COLOR = "5319e7"  # purple -- "delivered, awaiting close triage"
@@ -186,12 +188,13 @@ def _is_bot(actor: str) -> bool:
 
 # Which protocol comments count as ATTESTATIONS -- i.e. do not break the
 # silence precondition -- is NOT a decision this module gets to make alone.
-# `pick_idle_grain.py` already draws that line on the same markers, and a
-# second, independently written rule diverged from it on the very first real
-# comment (measured 2026-10-27, Hermes review of this PR): `[RELEASED]` has
-# TWO senses -- a lane hands the item back on a real barrier, or it reports
-# the acceptance as already covered. The picker separates them with
-# ``_released_covers_acceptance``; this module now IMPORTS that predicate
+# The picker already draws that line on the same markers, and a second,
+# independently written rule diverged from it on the very first real comment
+# (measured 2026-10-27, Hermes review of this PR): `[RELEASED]` has TWO
+# senses -- a lane hands the item back on a real barrier, or it reports the
+# acceptance as already covered. `released_covers.py` (ex-pick_idle_grain)
+# separates them with ``_released_covers_acceptance``; this module IMPORTS
+# that predicate
 # instead of re-deriving it, so the label decision and the belt decision
 # cannot disagree on the same comment (class #17956, the same argument the
 # ``issue_containers`` branch below invokes for itself).
