@@ -44,7 +44,7 @@ Le graphique `shadow` porte la valeur du portefeuille à l'ouverture de chaque s
 Le protocole complet, avec les prédictions, est le commentaire de pré-enregistrement de #24228. En résumé :
 
 - **une fenêtre**, 2009-10-01 → 2026-07-31, celle de l'article raccourcie de trois mois. La fin est fixée dans le code, pour que la coupure d'environ 90 jours de certains nœuds de backtest ne la raccourcisse pas en silence. **C'est la fenêtre de l'article : la mesure est une reproduction, pas un test hors échantillon** ;
-- **contrôle de reproduction** : le CAGR QC de `strategy` doit être compris entre 1,5 % et 5 %, et son bêta QC inférieur à 0,1 en valeur absolue ;
+- **contrôle de reproduction** : le CAGR QC de `strategy` doit être compris entre 1,5 % et 5 %, et son bêta QC contre SPY inférieur à 0,1 en valeur absolue ;
 - **contrôle de propriété** : le nombre moyen de lignes courtes de `strategy` doit valoir entre 0,45 et 0,50 fois celui de `all` ;
 - **tests** : `Paradox46Benchmarks/significance.py`, taux sans risque nul (écart de Sharpe de Ledoit-Wolf, bootstrap stationnaire, écart de moyennes de Newey-West). Verdict : `strategy` contre `spy` et `6040`, Holm sur six p-valeurs. Diagnostics : `strategy` contre `half` et contre `all`, Holm sur trois p-valeurs chacun ; ils ne modifient pas le verdict ;
 - **règle de verdict** : `BEATS` si l'écart de Sharpe est positif et significatif (Holm < 0,05, Ledoit-Wolf) contre les deux références ; `NO BEATS` si le Sharpe de la stratégie est inférieur à celui de SPY détenu ; `INCONCLUSIVE` dans tous les autres cas.
@@ -68,7 +68,7 @@ Propriétés du code :
 | `spy` | 14,32 % | 0,633 | 33,7 % |
 | `6040` | 9,67 % | 0,596 | 21,6 % |
 
-- **Contrôles.** Reproduction tenue sur la série relancée (CAGR 2,62 %, bêta QC 0,022 ; l'article publie 3,16 %), échouée sur la série d'origine. Propriété tenue : 44,02 lignes courtes en moyenne contre 88,56 pour `all`, soit un rapport de 0,497.
+- **Contrôles.** Reproduction tenue sur la série relancée (CAGR 2,62 %, bêta QC contre SPY 0,022 ; l'article publie 3,16 %), échouée sur la série d'origine. Propriété tenue : 44,02 lignes courtes en moyenne contre 88,56 pour `all`, soit un rapport de 0,497.
 - **Jambe courte : elle n'apporte rien.** L'écart de rendement moyen `strategy` − `half` est négatif, −4,6 % par an (p de Holm 0,13). Sur la fenêtre, vendre à découvert les grandes sociétés étrangères peu rentables coûte du rendement.
 - **Filtre de rentabilité : question ouverte.** L'écart `strategy` − `all` est positif mais minime, +0,43 % par an (p de Holm 1,0), avec une corrélation de 0,93.
 - **Ce que reproduit la mesure** : un rendement d'environ 3 % par an à bêta quasi nul, qui ne rémunère pas le risque mieux que les références. Le coût d'emprunt n'étant pas modélisé, la mesure est favorable à la stratégie.
