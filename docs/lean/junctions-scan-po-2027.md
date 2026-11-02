@@ -44,7 +44,7 @@ Voir aussi :
   MyIA.AI.Notebooks/Probas/decision_theory_lean                          pas de checkout local
   MyIA.AI.Notebooks/QuantConnect/kelly_lean                              pas de checkout local
   MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean                     pas de checkout local
-  MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean                          pas de checkout local
+  MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean                          pas de checkout local
   MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean                            pas de checkout local
   MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples                     pas de checkout local
   MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean                    pas de checkout local

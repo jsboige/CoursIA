@@ -214,7 +214,7 @@ La correction est portée dans la même PR.
   MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean     JUNCTIONED
   MyIA.AI.Notebooks/Probas/decision_theory_lean                          JUNCTIONED
   MyIA.AI.Notebooks/QuantConnect/kelly_lean                              JUNCTIONED
-  MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean                          pas de checkout local
+  MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean                          pas de checkout local
   MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean                            JUNCTIONED
   MyIA.AI.Notebooks/SymbolicAI/Tweety/argumentation_lean                 JUNCTIONED
 

@@ -47,7 +47,7 @@ Donneur : MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean -> D:\dev\CoursIA-2\
   junction : MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean -> leanprover_lean4_v4.33.0-db584cd6 
   junction : MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean -> leanprover_lean4_v4.33.0-db584cd6 
   junction : MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean -> leanprover_lean4_v4.33.0-db584cd6 
-  junction REPOINTEE : MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean
+  junction REPOINTEE : MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean
   junction : MyIA.AI.Notebooks/SymbolicAI/Lean/formal_groups_lean -> leanprover_lean4_v4.33.0-db584cd6 
   junction : MyIA.AI.Notebooks/SymbolicAI/Lean/galois_lean -> leanprover_lean4_v4.33.0-db584cd6 
   junction : MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean -> leanprover_lean4_v4.33.0-db584cd6 

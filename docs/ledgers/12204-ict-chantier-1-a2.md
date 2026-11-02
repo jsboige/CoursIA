@@ -54,7 +54,7 @@ Le notebook distingue par ailleurs **reconnaître** de **résoudre**, et note qu
 
 ## Attestation 3 — `conway_lean/Conway/Life.lean` (Lean-formel)
 
-`MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life.lean`
+`MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life.lean`
 
 Le module porte **deux recoordinations emboîtées**, chacune justifiée par une mesure et non par un goût :
 

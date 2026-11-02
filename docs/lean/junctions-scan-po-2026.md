@@ -36,7 +36,7 @@ fondamentalement évolué : **14 lacs du cluster `db584cd6` ont depuis acquis un
   MyIA.AI.Notebooks/Sudoku/sudoku_lean                                   checkout physique (0 GB)
   MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean               pas de checkout local
   MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean                     pas de checkout local
-  MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean                          checkout physique (0.58 GB)
+  MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean                          checkout physique (0.58 GB)
   MyIA.AI.Notebooks/SymbolicAI/Lean/formal_groups_lean                   pas de checkout local
   MyIA.AI.Notebooks/SymbolicAI/Lean/galois_lean                          pas de checkout local
   MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean                    checkout physique (2.93 GB)
