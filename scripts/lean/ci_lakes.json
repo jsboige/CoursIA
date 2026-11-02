@@ -393,6 +393,22 @@
       ]
     },
     {
+      "lake": "galois",
+      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/galois_lean",
+      "display-name": "galois_lean",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "axiom-target-modules": "*",
+      "paths": [
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/galois_lean/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/galois_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/galois_lean/lakefile.toml",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/galois_lean/lean-toolchain",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py"
+      ]
+    },
+    {
       "lake": "planning",
       "project-path": "MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean",
       "display-name": "planning_lean",
@@ -404,6 +420,22 @@
         "MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lakefile.lean",
         "MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lean-toolchain",
         "MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lake-manifest.json"
+      ]
+    },
+    {
+      "lake": "formal_logic",
+      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean",
+      "display-name": "formal_logic_lean",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "axiom-target-modules": "FormalLogic.Bridge,FormalLogic.FolBridge,FormalLogic.GLBridge,FormalLogic.ModalBridge,FormalLogic.FairBotLoeb,FormalLogic.ModalZoo",
+      "paths": [
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/lean-toolchain",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/lake-manifest.json",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py"
       ]
     },
     {

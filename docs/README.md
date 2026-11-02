@@ -171,6 +171,7 @@ Iteration history prover, intractable diagnosis, LLM endpoints. **Index du sous-
 | [lean/ab-methodology.md](lean/ab-methodology.md) | Méthodologie d'A/B pour le harnais prover Lean |
 | [lean/i18n-inventory-cycle-38.md → transients/2026-07-04-…](transients/2026-07-04-lean-i18n-inventory-cycle-38.md) | Lean i18n — inventaire FR/EN et proposition de convention (cycle 38, See #4980) — déplacé en lane transiente (tranche 3b #14623) |
 | [lean/i18n-sibling-patterns.md](lean/i18n-sibling-patterns.md) | Lean i18n — patterns de paires FR/EN et discipline du checker (#4980) |
+| [lean/lean-anchor-naming.md](lean/lean-anchor-naming.md) | Nommage des ancres `#print axioms` — matching normalisé des deux côtés par `normalize_axiom_name` (décoration terminale croix latine U+271D, allow-list `scripts/lean/allow_axioms_conway.txt`) |
 | [lean/iit-lean-escalier.md](lean/iit-lean-escalier.md) | Note de conception de l'escalier du lake `iit_lean` — inventaire, escalier 3 marches, capstone, modules non exposés (Epic #16781, sous-grain #20414) |
 | [lean/mimo-converse-cartography.md](lean/mimo-converse-cartography.md) | Cartographie converse MIMO (#11152) — correspondance brique → source, mesurée le 2026-08-16 sur le Mathlib et le SLT du manifest `mimo_lean` courant |
 | [lean/junctions-scan-po-2026.md](lean/junctions-scan-po-2026.md) | Scan des jonctions NTFS Mathlib sur `myia-po-2026` (2026-09-01) — #13962, enfant de #4362 (mutualisation du cluster) |
@@ -183,6 +184,7 @@ Iteration history prover, intractable diagnosis, LLM endpoints. **Index du sous-
 | [lean/junctions-scan-po-2027-CoursIA2.md](lean/junctions-scan-po-2027-CoursIA2.md) | Mathlib NTFS Junctions — Scan po-2027 |
 | [lean/junctions-scan-po-2027.md](lean/junctions-scan-po-2027.md) | Junctions Mathlib — scan po-2027 |
 | [lean/junctions-apply-po-2027-c1731.md](lean/junctions-apply-po-2027-c1731.md) | Apply V5 Mathlib NTFS junctions po-2027 (c.1731) — donneur knot_lean, 7 PERIMEE re-pointées vers db584cd6, anti-régression `distinct_code_sorry` 12→12 |
+| [lean/junctions-apply-po-2028-c4362.md](lean/junctions-apply-po-2028-c4362.md) | Apply Mathlib WSL po-2028 (2026-10-31) — trois checkouts `db584cd6` remplacés par des symlinks vers le magasin `perc19494`, rollback en poubelle, et la mesure qui corrige le surcompte « 8 physiques » du bloc précédent. See #4362 |
 | [lean/knot-4.33-investigation.md](lean/knot-4.33-investigation.md) | Lean 4 — knot_lean 4.33.0 bloquée par synthèse Decidable |
 | [lean/l750-pivot-scope-discipline.md](lean/l750-pivot-scope-discipline.md) | L750 ★★ — Pivot Lean specialist, discipline de scope, remédiation OOM |
 | [lean/life-components-schema.md](lean/life-components-schema.md) | Schéma de motifs et de réactions de Game of Life — tranches 1-4 de #15635 |
@@ -214,6 +216,7 @@ Suivi d'origine, par livrable : grille des trois régimes de lecture #7399 · ma
 |---------|------|
 | [ict/README.md](ict/README.md) | **Index** — cartographie des 10 docs par mode (vertical / horizontal / méta) + parcours suggéré |
 | [ict/palier10-ict15-note-de-conception.md](ict/palier10-ict15-note-de-conception.md) | Note de conception du palier 10 (famille ICT-15, capstone Φ/F/K, obstruction et recollement) — cadrage arbitré et décision du 11/10, portée par la PR de déplacement #20298 |
+| [ict/palier21-argumentation-note-de-conception.md](ict/palier21-argumentation-note-de-conception.md) | Note de conception du palier 21 (capstone strate 6 argumentation — chaîne des cinq maillons, cinq questions organ-first, corpus Argumentum sous licence, gate re-découpé) — feu vert Phase 2 #23777 (31/10) |
 | [ict/synthese-invariants-dissociations-obstructions.md](ict/synthese-invariants-dissociations-obstructions.md) | Fils 1–3 : trois régimes de lecture (invariants / dissociations / obstructions) |
 | [ict/genealogy-representation-interne.md](ict/genealogy-representation-interne.md) | 4e fil : généalogie de `p̂` (représentation interne, ICT-10 → ICT-17) |
 | [ict/dissolution-scalaires.md](ict/dissolution-scalaires.md) | 5e fil : dissolution successive des scalaires Φ / F / K |
@@ -451,6 +454,7 @@ Deltas runtime et digests de performance .NET, mesurés sur les bancs et les car
 | [dotnet/net11-runtime-deltas.md](dotnet/net11-runtime-deltas.md) | .NET 9 → 10 → 11 — Deltas runtime mesurés sur les bancs et carnets types du dépôt |
 | [dotnet/net11-async-ffi-deltas.md](dotnet/net11-async-ffi-deltas.md) | .NET 10 → 11 — Delta runtime mesuré sur l'axe 1 (awaits profonds) du carnet Aspire AsyncFFI — compatibilité .NET 11 établie, verdict à n=25 |
 | [dotnet/net11-toub-digest.md](dotnet/net11-toub-digest.md) | .NET 11 — Digest de performance |
+| [dotnet/net11-axis1-async.md](dotnet/net11-axis1-async.md) | .NET 10 vs 11 — axe 1 (awaits profonds / Runtime Async) : mesure rejouable sur un carnet, runtime prouvé par sonde et non déduit du nom de variante |
 
 
 ## Rapports transients (docs/transients/)

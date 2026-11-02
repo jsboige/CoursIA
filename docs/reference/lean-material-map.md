@@ -99,3 +99,16 @@ Traces par git, mais dans aucun dossier portant un `lakefile` : ils ne sont cons
 - `MyIA.AI.Notebooks/SymbolicAI/Lean/examples/quantifiers_en.lean`
 - `MyIA.AI.Notebooks/SymbolicAI/Lean/examples/tactics_demo.lean`
 - `MyIA.AI.Notebooks/SymbolicAI/Lean/examples/tactics_demo_en.lean`
+
+## Regle d'accretion d'un lac
+
+Un lac nouveau dans une serie existante est legitime si (1) sa toolchain diverge de celle du lac de la serie, (2) sa theorie est distincte au sens de la clause anti-god-lake (#4365), ou (3) a toolchain egale il est le compagnon de construction d'un arc numerote de carnets -- importe par au moins un carnet Lean de cet arc, sans import croise avec le lac de la serie, et sans lui imposer une dependance (un path dep d'un lac tiers deviendrait sinon facteur commun). A defaut, c'est un module de plus du lac de la serie.
+
+Verdicts tranches par la mesure (T2 #23097) :
+
+| Lac | Cas | Verdict | Mesure fondatrice |
+|---|---|---|---|
+| `assignment_lean` | (3) compagnon d'arc | legitime-documente | Arc 16f : `GameTheory-16f-Lean-Assignment-Lean.ipynb` importe `Assignment.KuhnMunkres`. Toolchain et pin Mathlib identiques a `game_theory_lean` (v4.33.0, db584cd6), zero import croise, theorie (affectation hongroise, Kuhn-Munkres) absente des 8 branches du lac de la serie. |
+| `asymmetric_information_lean` | (3) compagnon d'arc | legitime-documente | Arc 17b-17e : `GameTheory-17c-Lean-Lemons-Certificat-Lean.ipynb` importe `AsymmetricInformation.Lemons`, `GameTheory-17d-Lean-Screening-Signaling-Lean.ipynb` en importe 4 modules. Path dep non negociable vers `lean_game_defs_ext` (#12848) : la fusion imposerait ce pont aux 38 modules de `game_theory_lean`. Zero import croise. |
+
+Les cas (1) toolchain divergente et (2) theorie distincte sont deja tranches : `social_choice_lean_peters` pour (1) (INTRINSIC #7081), `minimax_lean` et `conway_cgt_lean` pour (2).

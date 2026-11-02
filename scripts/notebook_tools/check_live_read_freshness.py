@@ -119,18 +119,20 @@ CITATION_PREFILTER_RE = re.compile(r"L\s*\d+\s*:")
 STR_LIT_RE = re.compile(r"[\"']([^\"'\n]{3,200})[\"']")
 SOURCE_EXTS = (".lean", ".py", ".cs", ".md", ".txt", ".json", ".yml", ".yaml", ".tex")
 NOTEBOOK_ROOT = REPO_ROOT / "MyIA.AI.Notebooks"
-# Socle mesure le 2026-10-23 a la pose de l'invariant inverse : deux cellules
-# dont la sortie est PERIMEE vis-a-vis de la source (Grothendieck.lean 414 ->
-# 490 lignes ; citations CHSH deplacees). Les declarer demanderait de
-# re-executer les carnets -- hors perimetre de #22041 -- donc elles restent
-# hors registre, NOMMEES ici. Ce socle ne peut que RETRECIR : une cellule qui
-# n'y figure pas et n'est pas declaree rougit l'organe.
-UNDECLARED_BASELINE = {
-    ("MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15b-Lean-Grothendieck.ipynb",
-     "lean13b-project-overview"),
-    ("MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb",
-     "chsh-code-inv"),
-}
+# Socle pose le 2026-10-23 a l'invariant inverse de #22041 avec deux cellules
+# nommees, VIDE par #22129 apres mesure : les deux sont desormais declarees au
+# registre. Ce socle ne peut que RETRECIR -- une cellule qui n'y figure pas et
+# n'est pas declaree rougit l'organe -- donc il doit rester vide.
+#
+# Ce que la mesure de #22129 a corrige : la seconde entree (`chsh-code-inv`)
+# etait un FAUX POSITIF. La sortie committee de cette cellule reproduit
+# exactement la source courante (CHSH.lean 88 lignes, declarations L33/39/44/
+# 52/58/70/75) ; les lignes L43 `abbrev Profile` et L53 `def Profile.score`
+# appartiennent a CHSHRandomized.lean et figurent bien dans la sortie, sous ce
+# fichier. Il n'y avait la aucune peremption, et re-executer ce carnet n'aurait
+# produit aucun changement. Seule `lean13b-project-overview` etait perimee
+# (Grothendieck.lean 414 -> 490 lignes) et a ete re-executee.
+UNDECLARED_BASELINE = set()
 
 
 def _norm(text: str) -> str:
@@ -199,13 +201,50 @@ def count_claims(text: str, basename: str) -> list[tuple[int, str]]:
     return claims
 
 
-def citations(text: str) -> list[tuple[int, str]]:
-    """Citations ``L<n>: <texte>`` portees par la sortie."""
-    found: list[tuple[int, str]] = []
+def file_sections(text: str) -> list[str | None]:
+    """Basename du fichier dont depend chaque ligne de sortie.
+
+    Une ligne ouvre une section quand elle nomme UN seul fichier et qu'elle se
+    presente comme un en-tete (compte de lignes, ou separateur ``---``). Une
+    simple mention en prose ne reouvre rien : sans cette borne, « voir
+    Pillars.lean » au milieu d'un commentaire detournerait les citations
+    suivantes vers un fichier qu'elles ne decrivent pas.
+
+    Une ligne de citation ne reouvre jamais de section : elle porte le numero
+    de ligne d'un fichier deja annonce.
+    """
+    owners: list[str | None] = []
+    current: str | None = None
     for line in text.splitlines():
+        if not CITE_RE.search(line):
+            names = {Path(t).name for t in FILEISH_RE.findall(line)}
+            looks_like_header = bool(COUNT_RE.search(line)) or "---" in line
+            if len(names) == 1 and looks_like_header:
+                current = next(iter(names))
+        owners.append(current)
+    return owners
+
+
+def citations(text: str, basename: str | None = None) -> list[tuple[int, str]]:
+    """Citations ``L<n>: <texte>`` portees par la sortie.
+
+    Avec ``basename``, une citation n'est retenue que si sa section nomme ce
+    fichier. Sans portee de section, les citations d'un fichier etaient
+    confrontees a l'AUTRE : une cellule qui lit deux fichiers ne pouvait donc
+    jamais etre declaree fraiche -- les 19 citations de ``CHSHRandomized.lean``
+    sortaient « hors du fichier (88 lignes) » contre ``CHSH.lean`` (#22129).
+    Une citation hors de toute section est conservee : sans attribution
+    possible, elle reste confrontee au fichier declare (fail-closed).
+    """
+    found: list[tuple[int, str]] = []
+    owners = file_sections(text) if basename else []
+    for i, line in enumerate(text.splitlines()):
         m = CITE_RE.search(line)
-        if m:
-            found.append((int(m.group(1)), m.group(2).strip()))
+        if not m:
+            continue
+        if basename and owners[i] is not None and owners[i] != basename:
+            continue
+        found.append((int(m.group(1)), m.group(2).strip()))
     return found
 
 
@@ -246,7 +285,7 @@ def audit_cell(src_lines: list[str], text: str, basename: str) -> list[str]:
                 f"{basename}, le fichier en porte {n_lines} ({line!r})"
             )
 
-    for n, cited in citations(text):
+    for n, cited in citations(text, basename):
         if n < 1 or n > n_lines:
             findings.append(
                 f"LINE_CITATION: la sortie cite L{n}, hors du fichier "

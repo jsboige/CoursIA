@@ -18,7 +18,7 @@ Définitions de types partagées en Lean 4, utilisées par plusieurs projets Lea
 - [Basic.lean](Basic.lean) — voir catalogue. Structures `NormalFormGame`, `FiniteGame`, `Game2x2` + paiements espérés. Source : `GameTheory-16-Lean-Definitions.ipynb`.
 - [Nash.lean](Nash.lean) — voir catalogue. Meilleure réponse, équilibre de Nash pur/mixte, dominance stricte. Source : `GameTheory-16-Lean-Definitions.ipynb`.
 - [Combinatorial.lean](Combinatorial.lean) — voir catalogue. `GameTree`, évaluation minimax, détermination victoire/défaite. Source : `GameTheory-18-Lean-CombinatorialGames.ipynb`.
-- [SocialChoice.lean](SocialChoice.lean) — voir catalogue. `Preference`, `StrictPref`, axiomes d'Arrow (énoncés). Source : `GameTheory-19-Lean-SocialChoice.ipynb`.
+- [SocialChoice.lean](SocialChoice.lean) — voir catalogue. `Preference`, `StrictPref`, axiomes d'Arrow et théorème d'impossibilité **prouvé**. Source : `GameTheory-19-Lean-SocialChoice.ipynb`.
 - [Bayesian.lean](Bayesian.lean) — Jeux bayésiens à information incomplète : `BayesianGame`, `TypeStrategy`, `BayesianNashEquilibrium`, `InformationSet`, `SignalingGame`, `FirstPriceAuction`, définitions du poker de Kuhn. Source : `GameTheory-11-BayesianGames-Python.ipynb`, `GameTheory-13-ImperfectInfo-CFR-Python.ipynb`.
 - [Regret.lean](Regret.lean) — Minimisation du regret et CFR : `CumulativeRegret`, `regretMatchingStrategy`, `CounterfactualRegret`, `CFRState`, `FictitiousPlayState`. Source : `GameTheory-13-ImperfectInfo-CFR-Python.ipynb`, `GameTheory-17-MultiAgent-RL-Python.ipynb`.
 
@@ -108,7 +108,7 @@ flowchart LR
     BASIC["Basic.lean<br/>NormalFormGame · FiniteGame · Game2x2<br/><i>16-Lean-Definitions</i>"]
     NASH["Nash.lean<br/>meilleure réponse · Nash pur/mixte<br/>dominance stricte<br/><i>16-Lean-Definitions</i>"]
     COMB["Combinatorial.lean<br/>GameTree · minimax · détermination<br/><i>18-CombinatorialGames</i>"]
-    SC["SocialChoice.lean<br/>Preference · axiomes d'Arrow<br/><i>19-SocialChoice</i>"]
+    SC["SocialChoice.lean<br/>Preference · Arrow prouvé<br/><i>19-SocialChoice</i>"]
     BAY["Bayesian.lean<br/>BayesianGame · Nash bayésien · poker de Kuhn<br/><i>11-Bayesian · 13-CFR</i>"]
     REG["Regret.lean<br/>CumulativeRegret · CFR · FictitiousPlay<br/><i>13-CFR · 17-MultiAgent-RL</i>"]
 
