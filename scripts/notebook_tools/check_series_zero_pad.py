@@ -76,6 +76,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -94,8 +95,46 @@ from naming_canon import parse_name  # noqa: E402
 REGISTRY_PATH = Path(__file__).resolve().parent / "zero_pad_series.json"
 
 
-def violations(series_dir: Path, prefix: str = "GameTheory") -> list[dict]:
-    """Fichiers de la serie dont le numero n'est PAS zero-pade.
+def _ignored_paths(series_dir: Path) -> tuple[set[Path], bool]:
+    """Chemins ignores sous ``series_dir``, ET si git a repondu (vide hors depot).
+
+    Le balayage de ce garde est un ``rglob`` : il voit donc AUSSI les fichiers
+    que git ne versionne pas. Tant que ce sont des carnets committes, c'est la
+    propriete voulue. Mais ``*_output.ipynb`` est ignore par le depot
+    (``.gitignore``, ligne ``*_output.ipynb``) : ce sont des sous-produits
+    locaux d'execution, regeneres a chaque passage, jamais livres. Les
+    compter fait rougir l'admission sur une machine et pas sur une autre --
+    mesuree le 2026-11-01 sur po-2025 : 11 artefacts d'anciens noms, tous
+    untracked et ignores, zero ``*_output.ipynb`` versionne dans tout le
+    depot. Le garde doit donc ignorer ce que git ignore, et rien d'autre.
+
+    Un ``git`` injoignable (repertoire hors depot, binaire absent) rend un
+    ensemble vide : le balayage reste alors complet, comme avant. Ce repli est
+    delibere -- un garde ne doit pas devenir muet parce qu'il n'a pas pu
+    interroger git.
+
+    Mais un ensemble vide a DEUX causes -- « rien n'est ignore » et « je n'ai
+    pas pu demander » -- et le premier membre seul ne les distingue pas : le
+    rapport affirmait alors une portee qu'il n'avait pas mesuree. Le second
+    membre de retour dit si git a repondu ; les appelants le portent jusqu'au
+    rapport et signalent la degradation au lieu de la taire (revue #24080).
+    """
+    try:
+        proc = subprocess.run(
+            ["git", "ls-files", "--others", "--ignored", "--exclude-standard",
+             "-z", "--", "."],
+            cwd=str(series_dir), capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=60, check=False)
+    except (OSError, subprocess.SubprocessError):
+        return set(), False
+    if proc.returncode != 0:
+        return set(), False
+    return {(series_dir / rel).resolve()
+            for rel in proc.stdout.split("\0") if rel}, True
+
+
+def scan(series_dir: Path, prefix: str = "GameTheory") -> tuple[list[dict], bool]:
+    """Violations de la serie, ET disponibilite de la portee « ignoree ».
 
     Le chiffre unique se lit dans le numero rendu par le parseur du canon
     (#15489) : ``GameTheory-3a`` livre ``number="3"`` (un chiffre), ``GameTheory-26``
@@ -107,10 +146,20 @@ def violations(series_dir: Path, prefix: str = "GameTheory") -> list[dict]:
     Le balayage est RECURSIF : un sous-dossier non declare compte. C'est
     volontaire -- l'arbre entier d'une serie declaree est sous la convention,
     sans quoi une sous-serie pourrait deriver sans que le garde le voie.
+
+    Le second membre dit si la portee « ignoree » a pu etre mesuree ; il vaut
+    ``False`` hors depot, ou quand git n'a pas repondu. Le rapport le porte :
+    un booleen perdu en route rend la degradation invisible, ce qui est
+    exactement le defaut corrige ici.
     """
     out: list[dict] = []
+    ignored, ignored_ok = _ignored_paths(series_dir)
     for path in sorted(series_dir.rglob(f"{prefix}-*")):
         if not path.is_file():
+            continue
+        if ignored and path.resolve() in ignored:
+            # sous-produit local, jamais livre : sa convention de nom ne
+            # regarde pas le depot (cf. _ignored_paths).
             continue
         parsed = parse_name(path.name)
         if parsed.series != prefix or parsed.number is None:
@@ -121,7 +170,12 @@ def violations(series_dir: Path, prefix: str = "GameTheory") -> list[dict]:
             except ValueError:
                 shown = path.as_posix()
             out.append({"file": shown, "name": path.name})
-    return out
+    return out, ignored_ok
+
+
+def violations(series_dir: Path, prefix: str = "GameTheory") -> list[dict]:
+    """Les seules violations ; la portee mesuree est dans ``scan``."""
+    return scan(series_dir, prefix)[0]
 
 
 def load_registry(path: Path | None = None) -> list[dict]:
@@ -181,9 +235,10 @@ def _scan_registry(entries: list[dict]) -> tuple[list[dict], list[str]]:
         if not series_dir.is_dir():
             missing.append(entry["dir"])
             continue
-        found = violations(series_dir, entry["series"])
+        found, ignored_ok = scan(series_dir, entry["series"])
         report.append({"series": entry["series"], "dir": entry["dir"],
-                       "count": len(found), "violations": found})
+                       "count": len(found), "violations": found,
+                       "ignored_scope": ignored_ok})
     return report, missing
 
 
@@ -193,18 +248,40 @@ def _emit_text(report: list[dict]) -> None:
             print(f"VIOLATION {block['series']} {v['file']}")
     for block in report:
         state = "OK" if not block["count"] else f"{block['count']} violation(s)"
+        if not block.get("ignored_scope", True):
+            state += " (portee ignoree NON mesuree)"
         print(f"[zero-pad] {block['series']:<12} {block['dir']} : {state}")
+
+
+def _warn_unmeasured(report: list[dict]) -> None:
+    """Dit sur stderr ce que le rapport ne peut pas garantir.
+
+    Un ensemble ignore vide a deux causes ; quand git n'a pas repondu, le
+    balayage est complet mais un artefact ignore (*_output.ipynb) compterait
+    comme violation. Le taire ferait passer une portee inconnue pour une
+    portee mesuree (revue #24080).
+    """
+    for block in report:
+        if block.get("ignored_scope", True):
+            continue
+        print(f"[zero-pad] portee « ignoree » indisponible pour "
+              f"{block['series']} ({block['dir']}) : git n'a pas repondu -- "
+              f"le balayage reste complet, mais un artefact local ignore "
+              f"compterait comme violation.", file=sys.stderr)
 
 
 def _summarize(report: list[dict]) -> str:
     total = sum(b["count"] for b in report)
     clean = [b["series"] for b in report if not b["count"]]
     dirty = [f"{b['series']} ({b['count']})" for b in report if b["count"]]
+    blind = [b["series"] for b in report if not b.get("ignored_scope", True)]
     parts = [f"{len(report)} serie(s) declaree(s), {total} violation(s)"]
     if clean:
         parts.append("conformes : " + ", ".join(clean))
     if dirty:
         parts.append("a corriger : " + ", ".join(dirty))
+    if blind:
+        parts.append("portee ignoree non mesuree : " + ", ".join(blind))
     return "[zero-pad] " + " | ".join(parts)
 
 
@@ -246,7 +323,12 @@ def main(argv: list[str] | None = None) -> int:
             print(f"[zero-pad] repertoire introuvable : {series_dir}",
                   file=sys.stderr)
             return 2
-        found = violations(series_dir, args.prefix)
+        found, ignored_ok = scan(series_dir, args.prefix)
+        if not ignored_ok:
+            print(f"[zero-pad] portee « ignoree » indisponible pour "
+                  f"{series_dir} : git n'a pas repondu -- le balayage reste "
+                  f"complet, mais un artefact local ignore compterait comme "
+                  f"violation.", file=sys.stderr)
         if args.json:
             print(json.dumps({
                 "schema": 2,
@@ -255,6 +337,7 @@ def main(argv: list[str] | None = None) -> int:
                 "prefix": args.prefix,
                 "count": len(found),
                 "violations": found,
+                "ignored_scope": ignored_ok,
             }, ensure_ascii=False, indent=1))
         else:
             for v in found:
@@ -281,6 +364,7 @@ def main(argv: list[str] | None = None) -> int:
     for d in missing:
         print(f"[zero-pad] serie declaree introuvable sur le disque : {d}",
               file=sys.stderr)
+    _warn_unmeasured(report)
 
     total = sum(b["count"] for b in report)
     if args.json:
