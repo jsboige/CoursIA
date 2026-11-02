@@ -30,6 +30,7 @@ ACTION = ROOT / ".github" / "actions" / "heal-worktree" / "action.yml"
 WORKFLOWS = ROOT / ".github" / "workflows"
 STEP_NAME = "Restore the warm work tree before the sparse checkout"
 MARKER = "# --- corps extrait : byte-identique au bloc des workflows (#23287) ---"
+REMOTE_REF = "jsboige/CoursIA/.github/actions/heal-worktree@main"
 
 BASH = shutil.which("bash")
 
@@ -145,7 +146,12 @@ def test_sans_depot_git_le_soin_ne_fait_rien(tmp_path):
 
 
 def _workflow_bodies():
-    """Corps (`run: |` dedente) de chaque occurrence du bloc dans les workflows."""
+    """Corps (`run: |` dedente) de chaque occurrence du bloc dans les workflows.
+
+    Obsolete depuis le raccordement (#23287) : le corps inline a ete retire des
+    workflows, qui appellent desormais l'action composite distante. La fonction
+    reste pour le controle positif : elle doit ne plus rien trouver.
+    """
     bodies = []
     for path in sorted(WORKFLOWS.glob("*.yml")):
         text = io.open(path, encoding="utf-8", newline="").read()
@@ -159,25 +165,64 @@ def _workflow_bodies():
             m = re.search(r"\n      - ", rest[1:])
             end = i + 1 + (m.start() if m else len(rest) - 1)
             lines = text[start:end].splitlines()
-            assert lines[1].strip() == "run: |", path
-            bodies.append((path.name, [ln[10:] for ln in lines[2:]]))
+            if len(lines) > 1 and lines[1].strip() == "run: |":
+                bodies.append((path.name, [ln[10:] for ln in lines[2:]]))
             idx = i + len(STEP_NAME)
     return bodies
 
 
 def test_le_script_est_le_corps_des_workflows():
-    """Anti-divergence : le corps sous le marqueur reste byte-identique au bloc."""
+    """Anti-divergence : le corps vit dans le script, et nulle part ailleurs.
+
+    Depuis le raccordement (#23287), les workflows n'portent plus le corps : ils
+    appellent l'action composite distante. Ce test verifie les deux moities du
+    contrat de copie unique -- le corps est dans le script, et il n'est plus
+    dans aucun workflow (c'etait le motif de l'issue : douze editions
+    synchrones pour une correction).
+    """
     text = SCRIPT.read_text(encoding="utf-8")
     assert MARKER in text, "le marqueur de corps a disparu : garde sans objet"
-    script_body = text.split(MARKER + "\n", 1)[1].splitlines()
-    bodies = _workflow_bodies()
+    assert text.split(MARKER + "\n", 1)[1].strip(), "le corps sous le marqueur est vide"
 
-    assert bodies, "aucune occurrence du bloc dans les workflows : garde sans objet"
-    for name, body in bodies:
-        assert body == script_body, (
-            "le script a diverge du bloc porte par %s : la factorisation se defait "
-            "avant meme le basculement des appelants" % name
+    bodies = _workflow_bodies()
+    assert not bodies, (
+        "le corps du soin est encore inline dans un workflow (%s) : la copie "
+        "unique n'est pas etablie" % ", ".join(name for name, _ in bodies)
+    )
+
+
+def test_chaque_etape_appelle_l_action_distante():
+    """Raccordement : chaque occurrence du soin est un `uses:` vers l'action.
+
+    L'appel est DISTANT (`jsboige/CoursIA/...@main`) et non local (`./...`) :
+    l'etape tourne AVANT `actions/checkout`, donc `.github/actions/` n'existe
+    pas encore dans l'espace de travail -- une action locale est
+    structurellement impossible a cet endroit.
+    """
+    occurrences = 0
+    for path in sorted(WORKFLOWS.glob("*.yml")):
+        text = io.open(path, encoding="utf-8", newline="").read()
+        assert "[heal-worktree]" not in text, (
+            "%s porte encore le corps du soin : une copie inline est revenue" % path.name
         )
+        idx = 0
+        while True:
+            i = text.find(STEP_NAME, idx)
+            if i < 0:
+                break
+            end_of_line = text.find("\n", i)
+            following = text[end_of_line + 1: text.find("\n", end_of_line + 1)]
+            assert following.strip() == "uses: " + REMOTE_REF, (
+                "%s : l'etape de soin n'appelle pas l'action distante (%r)"
+                % (path.name, following.strip())
+            )
+            occurrences += 1
+            idx = i + len(STEP_NAME)
+
+    assert occurrences >= 12, (
+        "seulement %d appel(s) a l'action composite : les 12 workflows du pool "
+        "persistant ne sont pas tous raccordes" % occurrences
+    )
 
 
 def test_action_reference_le_script():
