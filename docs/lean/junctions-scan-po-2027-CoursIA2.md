@@ -38,7 +38,7 @@ Liste (les 8 du cluster principal + kelly_lean qui partage la même cible) :
 - `MyIA.AI.Notebooks/ML/learning_theory_lean`
 - `MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean`
 - `MyIA.AI.Notebooks/Probas/decision_theory_lean`
-- `MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean`
+- `MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean`
 - `MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean`
 - `MyIA.AI.Notebooks/SymbolicAI/Tweety/argumentation_lean`
 - `MyIA.AI.Notebooks/QuantConnect/kelly_lean` *(cible mesurée : v4.32.1, pas v4.33.0 — voir §Note sur kelly_lean ci-dessous)*
@@ -218,7 +218,7 @@ par un seul `Invoke-Apply` (logique du script : enregistrement post-Apply).
   "createdAt": "2026-09-14T00:18:52.9763479+02:00",
   "members": [
     ...
-    {"relPath": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean",
+    {"relPath": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean",
      "isDonor": true},
     ...
   ]

@@ -33,7 +33,7 @@ l'auteur de #13962 le 2026-09-01.
   MyIA.AI.Notebooks/Search/search_lean                                   pas de checkout local
   MyIA.AI.Notebooks/Sudoku/sudoku_lean                                   pas de checkout local
   MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean                     pas de checkout local
-  MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean                          pas de checkout local
+  MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean                          pas de checkout local
   MyIA.AI.Notebooks/SymbolicAI/Lean/galois_lean                          pas de checkout local
   MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean                    pas de checkout local
   MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean                            pas de checkout local

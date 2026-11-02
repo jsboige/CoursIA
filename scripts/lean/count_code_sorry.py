@@ -47,7 +47,7 @@ Usage
     python scripts/lean/count_code_sorry.py
 
     # Single lake:
-    python scripts/lean/count_code_sorry.py --lake MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean
+    python scripts/lean/count_code_sorry.py --lake MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean
 
     # Machine-readable JSON (for CI / PR-body generation):
     python scripts/lean/count_code_sorry.py --json

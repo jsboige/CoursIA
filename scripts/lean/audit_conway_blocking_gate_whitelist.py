@@ -40,7 +40,7 @@ Usage (local)::
 
     python scripts/lean/audit_conway_blocking_gate_whitelist.py
     python scripts/lean/audit_conway_blocking_gate_whitelist.py --workflow .github/workflows/lean-conway.yml
-    python scripts/lean/audit_conway_blocking_gate_whitelist.py --project-path MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean
+    python scripts/lean/audit_conway_blocking_gate_whitelist.py --project-path MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean
 
 Empirical output (c.8133, post-#9512 merge, base=475677a92, wsl Ubuntu
 v4.31.0-rc1): 19/19 hitelist entries are unreachable from the gate's target

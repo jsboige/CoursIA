@@ -84,7 +84,7 @@ Economie potentielle sur **myia-po-2023** : **0,09 GB** (re-mesure c.809 : seul 
   MyIA.AI.Notebooks/Probas/decision_theory_lean                          pas de checkout local
   MyIA.AI.Notebooks/QuantConnect/kelly_lean                              pas de checkout local
   MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean                     pas de checkout local
-  MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean                          checkout physique (0.09 GB)
+  MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean                          checkout physique (0.09 GB)
   MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean                            pas de checkout local
   MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples                     pas de checkout local
   MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean                    pas de checkout local

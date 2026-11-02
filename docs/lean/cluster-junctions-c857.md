@@ -39,7 +39,7 @@ MyIA.AI.Notebooks/QuantConnect/kelly_lean
 MyIA.AI.Notebooks/Search/search_lean
 MyIA.AI.Notebooks/Sudoku/sudoku_lean
 MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean
-MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean
+MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean
 MyIA.AI.Notebooks/SymbolicAI/Lean/galois_lean
 MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean
 MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean

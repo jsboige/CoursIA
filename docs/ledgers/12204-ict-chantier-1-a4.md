@@ -17,7 +17,7 @@ Elle ne touche à aucune autre opération (l'opération 5 est tombée — Tombé
 
 ## Attestation 1 — Hashlife, *la marge prouvée avant la correction de la section* (Lean-formel, non-jouet)
 
-`MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/HashlifeCorrectness/Foundation.lean`
+`MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/HashlifeCorrectness/Foundation.lean`
 Companion : `HashlifeMarginFragment.lean` (même lake) ; notebook `Lean-16j-Conway-Hashlife-Correctness-Native.ipynb` (**43 cellules, 15 code, `execution_count` 1..15, 0 erreur**).
 
 C'est l'attestation la plus littérale de l'énoncé, et c'est le **témoin non-jouet** que l'EPIC demandait : la preuve de correction de l'algorithme Hashlife réel, où la décomposition en macro-cellules **ne commence qu'après** que les bords (les marges) sont prouvés assez larges. La chaîne, dans l'ordre où le lake la construit :
