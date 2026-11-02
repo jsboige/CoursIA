@@ -109,15 +109,35 @@ def test_call_site_passes_the_utf8_env():
 
     # v5 : les lancements d'enfants sont soit des subprocess.run directs
     # (chemin legacy), soit des _run_bounded (transport borne, #21436).
-    bounded = [n for n in ast.walk(fn)
-               if isinstance(n, ast.Call)
-               and isinstance(n.func, ast.Name)
-               and n.func.id == "_run_bounded"]
-    runs = calls_named(fn, "run")
+    # v6 (#21882) : check_claims delegue son transport a des helpers nommes
+    # (_check_claims_one_batch, _check_claims_sliced) -- l'invariant ne
+    # change pas (l'UTF-8 du sous-process), il se prouve a travers la
+    # delegation : les appels d'enfants vivent dans les helpers, ou
+    # ``env=env`` refere le PARAMETRE (cas 3), et chaque site d'appel de la
+    # chaine transmet l'env construit par check_claims.
+    TRANSPORTS = ("_check_claims_one_batch", "_check_claims_sliced")
+    helpers = [n for n in tree.body
+               if isinstance(n, ast.FunctionDef) and n.name in TRANSPORTS]
+    fn_scopes = [fn] + helpers
+
+    def child_calls(scope):
+        bounded = [n for n in ast.walk(scope)
+                   if isinstance(n, ast.Call)
+                   and isinstance(n.func, ast.Name)
+                   and n.func.id == "_run_bounded"]
+        return bounded, calls_named(scope, "run")
+
+    bounded, runs = [], []
+    scope_calls = []
+    for scope in fn_scopes:
+        b, r = child_calls(scope)
+        scope_calls.append((scope, b, r))
+        bounded += b
+        runs += r
     assert runs or bounded, (
         f"attendu au moins 1 subprocess.run ou _run_bounded dans "
-        f"check_claims (v5), vu {len(runs)} run(s) et {len(bounded)} "
-        f"_run_bounded(s)"
+        f"check_claims ou ses transports {TRANSPORTS} (v6), vu {len(runs)} "
+        f"run(s) et {len(bounded)} _run_bounded(s)"
     )
 
     # Noms locaux (Name) assignes a _utf8_child_env() dans la meme fonction
@@ -133,7 +153,20 @@ def test_call_site_passes_the_utf8_env():
         and n.value.func.id == "_utf8_child_env"
     }
 
-    def env_kw_ok(call):
+    # Cas 3 (v6) : dans un helper de transport, ``env=env`` refere le
+    # PARAMETRE env -- legitimate seulement parce que la transmission au
+    # site d'appel est prouvee plus bas.
+    param_env = {
+        h.name for h in helpers
+        if any(a.arg == "env" for a in h.args.args)
+    }
+
+    def ok_names_for(scope):
+        if scope is fn:
+            return set(local_env_aliases)
+        return {"env"} if scope.name in param_env else set()
+
+    def env_kw_ok(call, ok_names):
         kwargs = {kw.arg for kw in call.keywords}
         if "env" not in kwargs:
             return False, None
@@ -144,20 +177,62 @@ def test_call_site_passes_the_utf8_env():
                 and env_kw.value.func.id == "_utf8_child_env"):
             return True, env_kw
         # Cas 2 : alias local assigne a _utf8_child_env() dans la fonction
-        if isinstance(env_kw.value, ast.Name) and env_kw.value.id in local_env_aliases:
+        # Cas 3 : parametre env du helper de transport (v6)
+        if (isinstance(env_kw.value, ast.Name)
+                and env_kw.value.id in ok_names):
             return True, env_kw
         return False, env_kw
 
-    for i, call in enumerate(runs + bounded):
-        ok, env_kw = env_kw_ok(call)
-        kind = "subprocess.run" if call in runs else "_run_bounded"
-        assert ok, (
-            f"{kind} #{i} dans check_claims lance un enfant Python sans "
-            f"env= (ou env= n'est ni _utf8_child_env() ni un alias local) : "
-            f"son stdout sera encode en cp1252 sous Windows FR et le "
-            f"decodage UTF-8 du parent plantera. Trouve : "
-            f"{ast.dump(env_kw.value)[:80] if env_kw is not None else 'aucun env='}"
-        )
+    for scope, scope_bounded, scope_runs in scope_calls:
+        scope_ok = ok_names_for(scope)
+        for i, call in enumerate(scope_runs + scope_bounded):
+            # Les appels d'un scope se prouvent contre SES noms admis ;
+            # renumerotes par scope pour qu'un echec nomme l'endroit.
+            ok, env_kw = env_kw_ok(call, scope_ok)
+            kind = "subprocess.run" if call in scope_runs else "_run_bounded"
+            assert ok, (
+                f"{kind} #{i} dans {scope.name} lance un enfant Python sans "
+                f"env= (ou env= n'est ni _utf8_child_env() ni un alias "
+                f"local ni le parametre env du transport) : son stdout sera "
+                f"encode en cp1252 sous Windows FR et le decodage UTF-8 du "
+                f"parent plantera. Trouve : "
+                f"{ast.dump(env_kw.value)[:80] if env_kw is not None else 'aucun env='}"
+            )
+
+    # v6, transmission : chaque invocation d'un helper de transport -- directe
+    # ou via ThreadPoolExecutor.submit -- passe l'env, en mot-cle ou en 3e
+    # argument positionnel (numbers, lane, env). Sans cette preuve, le cas 3
+    # ci-dessus serait un envoi a vide.
+    def transport_invocations(scope):
+        for n in ast.walk(scope):
+            if not isinstance(n, ast.Call):
+                continue
+            if isinstance(n.func, ast.Name) and n.func.id in TRANSPORTS:
+                yield n.func.id, n.args, n.keywords
+            elif (isinstance(n.func, ast.Attribute)
+                    and n.func.attr == "submit" and n.args
+                    and isinstance(n.args[0], ast.Name)
+                    and n.args[0].id in TRANSPORTS):
+                # ex.submit(_check_claims_one_batch, s, lane, env) : les
+                # vrais arguments de la tranche suivent la reference.
+                yield n.args[0].id, n.args[1:], n.keywords
+
+    for scope in fn_scopes:
+        scope_ok = ok_names_for(scope)
+        for tname, pos_args, kw_args in transport_invocations(scope):
+            env_kw = next((kw for kw in kw_args if kw.arg == "env"), None)
+            by_kw = (env_kw is not None
+                     and isinstance(env_kw.value, ast.Name)
+                     and env_kw.value.id in scope_ok)
+            by_pos = (len(pos_args) >= 3
+                      and isinstance(pos_args[2], ast.Name)
+                      and pos_args[2].id in scope_ok)
+            assert by_kw or by_pos, (
+                f"invocation de {tname} dans {scope.name} sans transmission "
+                f"de l'env UTF-8 (ni env=<admis>, ni 3e argument positionnel "
+                f"admis) : la tranche lancerait ses enfants sans l'env, et "
+                f"le cas 3 du gate serait un envoi a vide"
+            )
 
     # v5, second saut : _run_bounded doit transmettre son env au vrai
     # subprocess.run -- sinon l'env pose en amont meurt au bord du seam.
