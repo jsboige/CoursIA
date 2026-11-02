@@ -62,7 +62,12 @@ jobs:
     # creation du job, les runs deja en file ne bougent pas.
     runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
-    timeout-minutes: 5
+    # 2026-11-02 : 5 -> 15 min. Le checkout `fetch-depth: 0` d'un depot de
+    # ~15 000 fichiers consomme a lui seul la quasi-totalite des 5 min : 5
+    # annulations sur les 30 derniers runs, dont #24115 coupee 2 s APRES un
+    # `Kernel drift check` rendu `Exit code: 0` (run 41378044015). La logique
+    # du controle n'est pas en cause, seul le budget l'etait.
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
