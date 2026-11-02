@@ -497,7 +497,7 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,ce
 **Next steps** (FT-02): LoRA on a larger model with 4-bit quantization (QLoRA).
 
 **What this notebook measured, not merely announced**: 124,439,808 total parameters for GPT-2; 294,912 trainable parameters with LoRA r=8 (0.24%, `trainable%: 0.2364` on the PEFT side); a **1.18 MB** adapter against **497.8 MB** for the full model; and, in this committed run, a post-fine-tuning generation whose first prompt stays French-dominant while the second opens in French and then slides into an English dialogue -- where the original model switched to English immediately: a fragile, indicative contrast at best, absent controlled re-sampling (cf. the caveat in section 5). The logical next step is FT-02: quantizing the base model to 4 bits (QLoRA) in order to train those same adapters on a fraction of the VRAM.",,,,,,,21f4f07539a903ea,ecc1a72af6878dfa,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,b4fb8592,markdown,fr,cb538db4930d1efe,"# FT-02 : QLoRA — Fine-Tuning avec Quantization
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,b4fb8592,markdown,fr,fcd498cf7d199e67,"# FT-02 : QLoRA — Fine-Tuning avec Quantization
 **Navigation** : [Index](README.md) | [<< 01 — Introduction](FT-01-Introduction-FineTuning-Python.ipynb) | [03 — SFT >>](FT-03-Supervised-FineTuning-SFT-Python.ipynb)
 
 **Version anglaise** : [FT-02 — QLoRA (en)](FT-02-QLoRA-Quantization-Python_en.ipynb)
@@ -518,11 +518,10 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,b4fb859
 
 **Prerequis** : FT-01 (Introduction au Fine-Tuning) — LoRA, rang, adaptateurs.
 
-**Materiel requis** : GPU avec ~8 Go VRAM (QLoRA OPT-1.3B 4-bit = ~2 Go).
+**Materiel requis** : GPU avec ~8 Go VRAM (QLoRA OPT-1.3B 4-bit = ~2,7 Go).
 
 
-**Lecture de la sortie committée** : la cellule suivante imprime l'environnement complet (version PyTorch, GPU, VRAM) -- sa sortie committee est la source unique, la prose ne la re-epinglera plus (#9434). L'environnement d'exécution (carte, VRAM totale et libre au démarrage) se lit dans la sortie committée de la cellule suivante -- qui reste la source unique. Le paradoxe pédagogique de ce notebook : cette carte embarquerait OPT-1.3B en FP16 sans aucune difficulté (4,03 Go mesurés plus loin, section 8). Ce n'est pas elle qui justifie QLoRA — c'est la généralisation : la même recette qui tient un 1,3 Md dans ~1,7 Go en fera tenir un 7 Md dans ~6 Go, sur une carte à 300 €. Le notebook déroule la chaîne complète : quantization NF4 (section 2), la mécanique LoRA écrite à la main (section 4), greffe LoRA via l'API (section 5), entraînement réel mesuré (section 6), génération avant/après (section 7), et comparatif mémoire FP16 vs 4-bit (section 8).
-","# FT-02: QLoRA — Fine-Tuning with Quantization
+**Lecture de la sortie committée** : la cellule suivante imprime l'environnement complet (version PyTorch, GPU, VRAM) -- sa sortie committee est la source unique, la prose ne la re-epinglera plus (#9434). L'environnement d'exécution (carte, VRAM totale et libre au démarrage) se lit dans la sortie committée de la cellule suivante -- qui reste la source unique. Le paradoxe pédagogique de ce notebook : cette carte embarquerait OPT-1.3B en FP16 sans aucune difficulté (2,84 Go d'empreinte mesurés plus loin, section 10). Ce n'est pas elle qui justifie QLoRA — c'est la généralisation : la même recette qui tient un 1,3 Md dans ~1 Go de poids quantifiés en fera tenir un 7 Md dans ~6 Go, sur une carte à 300 €. Le notebook déroule la chaîne complète : quantization NF4 (section 2), la mécanique LoRA écrite à la main (section 4), greffe LoRA via l'API (section 5), entraînement réel mesuré (section 6), génération avant/après (section 7), et comparatif mémoire FP16 vs 4-bit (section 8).","# FT-02: QLoRA — Fine-Tuning with Quantization
 **Navigation**: [Index](README.md) | [<< 01 — Introduction](FT-01-Introduction-FineTuning-Python.ipynb) | [03 — SFT >>](FT-03-Supervised-FineTuning-SFT-Python.ipynb)
 
 **French version**: [FT-02 — QLoRA](FT-02-QLoRA-Quantization-Python.ipynb)
@@ -543,9 +542,9 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,b4fb859
 
 **Prerequisites**: FT-01 (Introduction to Fine-Tuning) — LoRA, rank, adapters.
 
-**Required hardware**: GPU with ~8 GB VRAM (QLoRA OPT-1.3B 4-bit = ~2 GB).
+**Required hardware**: GPU with ~8 GB VRAM (QLoRA OPT-1.3B 4-bit = ~2.7 GB).
 
-**Reading the committed output**: the next cell prints the full environment (PyTorch version, GPU, VRAM) -- its committed output is the single source of truth, the prose will no longer re-pin it (#9434). The execution environment (card, total and free VRAM at startup) reads directly from the committed output of the next cell -- which remains the single source of truth. This notebook's pedagogical paradox: this card would hold OPT-1.3B in FP16 without any difficulty (4.03 GB measured further down, section 8). It is not this card that justifies QLoRA — it is generalization: the same recipe that holds a 1.3B model in ~1.7 GB will hold a 7B model in ~6 GB, on a 300-euro card. The notebook walks through the full chain: NF4 quantization (section 2), hand-written LoRA mechanics (section 4), LoRA grafting via the API (section 5), real measured training (section 6), before/after generation (section 7), and the FP16 vs 4-bit memory comparison (section 8).",,,,,,,cb538db4930d1efe,a13aa345007fdc9f,,,,,,,,,,,,,,
+**Reading the committed output**: the next cell prints the full environment (PyTorch version, GPU, VRAM) -- its committed output is the single source of truth, the prose will no longer re-pin it (#9434). The execution environment (card, total and free VRAM at startup) reads directly from the committed output of the next cell -- which remains the single source of truth. This notebook's pedagogical paradox: this card would hold OPT-1.3B in FP16 without any difficulty (2.84 GB of footprint measured further down, section 10). It is not this card that justifies QLoRA — it is generalization: the same recipe that holds a 1.3B model in ~1 GB of quantized weights will hold a 7B model in ~6 GB, on a 300-euro card. The notebook walks through the full chain: NF4 quantization (section 2), hand-written LoRA mechanics (section 4), LoRA grafting via the API (section 5), real measured training (section 6), before/after generation (section 7), and the FP16 vs 4-bit memory comparison (section 8).",,,,,,,fcd498cf7d199e67,e728ef292c66e820,,,,,,,fcd498cf7d199e67,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,482ed3ca,code,fr,d41754f5f50a5760,"import gc
 import os
 import time
@@ -713,19 +712,17 @@ else:
     vram_before = 0
 
 print(f""VRAM avant chargement : {vram_before:.2f} Go"")",,,,,,,,4610db9bb7117f8a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,872b697a,markdown,fr,c31458a81472b717,"## 5. QLoRA : quantized base + LoRA adapters
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,872b697a,markdown,fr,8d477d8e5e0544e9,"## 5. QLoRA : quantized base + LoRA adapters
 
 Chargeons OPT-1.3B en 4-bit et comparons avec le chargement FP16 classique.
 
 
-**Comment lire la sortie committée** : le chargement 4-bit d'OPT-1.3B occupe 1,25 Go de VRAM mesurés, contre 0,36 Go théoriques pour les seuls poids — l'écart (activations résiduelles, tampons de déquantization, tables d'embeddings parfois conservées en 16 bits) est le prix du passage à l'échelle réel. Notez aussi l'artefact de comptage : la cellule affiche « 711 778 304 params (0.71B) » alors que le comptage canonique d'OPT-1.3B est 1 318 903 808 (1,32 Md, confirmé par PEFT à la cellule suivante). Sommer `numel()` sur un modèle déjà quantifié ne retourne pas les tailles denses d'origine — un `Params4bit` ne se compte pas comme un tenseur FP16. Retenez le chiffre de PEFT : c'est le dénominateur honnête, celui sur lequel les pourcentages suivants doivent se lire. Le même sous-compte contamine les lignes théoriques : « Théorie 4-bit : 0.36 Go » ci-dessous et « FP16 = 1.42 Go » en section 8 multiplient 711 M par 0,5 et 2 octets. En dénominateur canonique, les poids seuls feraient ~0,66 Go en 4-bit et ~2,6 Go en FP16 — l'exemple guidé 1 de la section 10 mesure d'ailleurs l'empreinte FP16 réelle à 2,63 Go. Le ratio théorique 4× tient dans les deux lectures.
-","## 5. QLoRA: quantized base + LoRA adapters
+**Comment lire la sortie committée** : le chargement 4-bit d'OPT-1.3B occupe 2,72 Go de VRAM mesurés, contre 0,41 Go théoriques pour les seuls poids — l'écart (activations résiduelles, tampons de déquantization, tables d'embeddings parfois conservées en 16 bits) est le prix du passage à l'échelle réel. Notez aussi l'artefact de comptage : la cellule affiche « 814 735 360 params (0.81B) » alors que le comptage canonique d'OPT-1.3B est 1 318 903 808 (1,32 Md, confirmé par PEFT à la cellule suivante). Sommer `numel()` sur un modèle déjà quantifié ne retourne pas les tailles denses d'origine — un `Params4bit` ne se compte pas comme un tenseur FP16. Retenez le chiffre de PEFT : c'est le dénominateur honnête, celui sur lequel les pourcentages suivants doivent se lire. Le même sous-compte contamine les lignes théoriques : « Théorie 4-bit : 0.41 Go » ci-dessous et « FP16 = 1.63 Go » en section 8 multiplient 815 M par 0,5 et 2 octets. En dénominateur canonique, les poids seuls feraient ~0,66 Go en 4-bit et ~2,6 Go en FP16 — l'exemple guidé 1 de la section 10 mesure d'ailleurs l'empreinte FP16 réelle à 2,84 Go. Le ratio théorique 4× tient dans les deux lectures.","## 5. QLoRA: quantized base + LoRA adapters
 
 Let's load OPT-1.3B in 4-bit and compare it with standard FP16 loading.
 
 
-**How to read the committed output**: the 4-bit loading of OPT-1.3B occupies 1.25 GB of measured VRAM, against 0.36 GB theoretical for the weights alone -- the gap (residual activations, dequantization buffers, embedding tables sometimes kept in 16 bits) is the price of real scaling. Note also the counting artefact: the cell displays ""711,778,304 params (0.71B)"" whereas the canonical count for OPT-1.3B is 1,318,903,808 (1.32B, confirmed by PEFT in the next cell). Summing `numel()` over an already quantized model does not return the original dense sizes -- a `Params4bit` does not count like an FP16 tensor. Keep PEFT's number: it is the honest denominator, the one the following percentages must be read against.
-",,,,,,,c31458a81472b717,dba66cc720fb5ccb,,,,,,,,,,,,,,
+**How to read the committed output**: the 4-bit loading of OPT-1.3B occupies 2.72 GB of measured VRAM, against 0.41 GB theoretical for the weights alone -- the gap (residual activations, dequantization buffers, embedding tables sometimes kept in 16 bits) is the price of real scaling. Note also the counting artefact: the cell displays ""814,735,360 params (0.81B)"" whereas the canonical count for OPT-1.3B is 1,318,903,808 (1.32B, confirmed by PEFT in the next cell). Summing `numel()` over an already quantized model does not return the original dense sizes -- a `Params4bit` does not count like an FP16 tensor. Keep PEFT's number: it is the honest denominator, the one the following percentages must be read against. The same undercount contaminates the theory lines: ""Theorie 4-bit : 0.41 Go"" below and ""FP16 = 1.63 Go"" in section 8 multiply 815M by 0.5 and 2 bytes. Against the canonical denominator, the weights alone would be ~0.66 GB in 4-bit and ~2.6 GB in FP16 -- guided example 1 of section 10 measures the real FP16 footprint at 2.84 GB. The theoretical 4x ratio holds in both readings.",,,,,,,8d477d8e5e0544e9,7ea207bf720c9a3b,,,,,,,8d477d8e5e0544e9,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,c18d2f35,code,fr,987ed8bcd8ae989b,"from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 
@@ -768,18 +765,17 @@ model_qlora.print_trainable_parameters()
 trainable = sum(p.numel() for p in model_qlora.parameters() if p.requires_grad)
 total = sum(p.numel() for p in model_qlora.parameters())
 print(f""\nParams entrainables : {trainable:,} ({trainable/total*100:.2f}%)"")",,,,,,,,1ad918e3943af2b3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,464aab75,markdown,fr,17c0d753c3da0fe7,"### Tokenisation du modèle
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,464aab75,markdown,fr,36b8c7c22542a47a,"### Tokenisation du modèle
 
 Le modèle OPT-1.3B est maintenant charge en 4-bit avec les adaptateurs LoRA configures (r=16, target q_proj/v_proj). Chargeons le tokenizer associe pour preparer le dataset d'entraînement.
 
 
-**La décomposition exacte du comptage** : 3 145 728 paramètres entraînables — d'où vient ce nombre ? OPT-1.3B compte 24 couches de décodeur, chacune portant deux projections ciblées (`q_proj` et `v_proj`, dimensions 2048×2048). Chaque adaptateur LoRA de rang r sur une couche 2048→2048 ajoute r×(2048+2048) = 4096r paramètres. Total : 24 couches × 2 modules × 4096 × r = 196 608 × r. Pour r = 16 : exactement 3 145 728 — la sortie committée vérifie la formule au paramètre près. Sur le dénominateur canonique de 1,32 Md (PEFT), cela fait 0,24 % du modèle entraînable, un rapport de 419 pour 1 : 99,76 % des poids restent figés en NF4. Le « 0.44 % » affiché par la cellule divise par le dénominateur sous-compté de la cellule précédente (711 M) — lisez le 0,2385 % de PEFT.","### Model tokenization
+**La décomposition exacte du comptage** : 3 145 728 paramètres entraînables — d'où vient ce nombre ? OPT-1.3B compte 24 couches de décodeur, chacune portant deux projections ciblées (`q_proj` et `v_proj`, dimensions 2048×2048). Chaque adaptateur LoRA de rang r sur une couche 2048→2048 ajoute r×(2048+2048) = 4096r paramètres. Total : 24 couches × 2 modules × 4096 × r = 196 608 × r. Pour r = 16 : exactement 3 145 728 — la sortie committée vérifie la formule au paramètre près. Sur le dénominateur canonique de 1,32 Md, cela fait 0,24 % du modèle entraînable, un rapport de 419 pour 1 : 99,76 % des poids restent figés en NF4. Les deux pourcentages affichés par la cellule se lisent avec leur dénominateur propre : le « 0.38 % » divise par le modèle sous-compté de la cellule précédente (815 M), le « 0.2212 % » de PEFT divise par le total enrichi (1,42 Md, adaptateurs inclus) — le rapport canonique, lui, reste 0,2385 %.","### Model tokenization
 
 The OPT-1.3B model is now loaded in 4-bit with the LoRA adapters configured (r=16, target q_proj/v_proj). Let's load the associated tokenizer to prepare the training dataset.
 
 
-**The exact breakdown of the count**: 3,145,728 trainable parameters -- where does that number come from? OPT-1.3B has 24 decoder layers, each carrying two targeted projections (`q_proj` and `v_proj`, dimensions 2048x2048). Each rank-r LoRA adapter on a 2048->2048 layer adds r x (2048+2048) = 4096r parameters. Total: the 24 decoder layers, with two targeted projections each, give 24 x 2 x 4096 x r = 196,608 x r. For r = 16: exactly 3,145,728 -- the committed output verifies the formula to the parameter. Against the canonical denominator of 1.32B (PEFT), that is 0.24% of the model trainable, a ratio of 419 to 1: 99.76% of the weights stay frozen in NF4. The ""0.44%"" displayed by the cell divides by the undercounted denominator of the previous cell (711M) -- read PEFT's 0.2385%.
-",,,,,,,17c0d753c3da0fe7,fc4101b1f43902d4,,,,,,,,,,,,,,
+**The exact breakdown of the count**: 3,145,728 trainable parameters -- where does that number come from? OPT-1.3B has 24 decoder layers, each carrying two targeted projections (`q_proj` and `v_proj`, dimensions 2048x2048). Each rank-r LoRA adapter on a 2048->2048 layer adds r x (2048+2048) = 4096r parameters. Total: the 24 decoder layers, with two targeted projections each, give 24 x 2 x 4096 x r = 196,608 x r. For r = 16: exactly 3,145,728 -- the committed output verifies the formula to the parameter. Against the canonical denominator of 1.32B (PEFT), that is 0.24% of the model trainable, a ratio of 419 to 1: 99.76% of the weights stay frozen in NF4. The two percentages displayed by the cell are read against their own denominator: the ""0.38%"" divides by the undercounted model of the previous cell (815M), PEFT's ""0.2212%"" divides by the enriched total (1.42B, adapters included) -- the canonical ratio remains 0.2385%.",,,,,,,36b8c7c22542a47a,9b17b549cab2f0b1,,,,,,,36b8c7c22542a47a,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,a0b80355,code,fr,eb0b8741da2602cf,"# Tokenizer
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
 tokenizer.pad_token = tokenizer.eos_token
@@ -1385,14 +1381,14 @@ print(f""\nEconomie mesuree (memoire allouee) : {ecart_mo:.1f} Mo"")
 # Theorie : seules les couches lineaires des blocs sont quantifiees (pas les embeddings / lm_head)
 n_quant = 24 * (4 * 2048 * 2048 + 2 * 2048 * 8192)
 print(f""Params quantifies : {n_quant:,} -> theorie 0.373 bit/param = {n_quant * 0.373 / 8 / 1e6:.1f} Mo"")",,,,,,,,a60f63a2800a011e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,3e1127c5,markdown,fr,854a30310a2a2fc2,"## Resume
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,3e1127c5,markdown,fr,7ee595a4928ea018,"## Resume
 
 | Aspect | LoRA (FT-01) | QLoRA (FT-02) |
 |--------|-------------|---------------|
 | Poids du modèle | FP16 (16 bits) | NF4 (4 bits) |
 | Adaptateurs | LoRA en FP16 | LoRA en FP16 |
 | Calculs forward | FP16 natif | Dequantize → FP16 → re-quantize |
-| Économie mémoire | ~1.1x modèle base | **~3,9x sur les poids seuls** (0,36 contre 1,42 Go) |
+| Économie mémoire | ~1.1x modèle base | **~4x sur les poids seuls** (0,41 contre 1,63 Go) |
 | Qualité | ~98-99% du full FT | ~97-99% du full FT *(ordre de grandeur)* |
 | Modèle recommandé | < 1B params | **> 1B params** |
 
@@ -1411,36 +1407,38 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,3e1127c
 **Le parcours mesuré se lit dans les outputs** : le chargement NF4, le nombre exact de
 paramètres entraînables, la durée, le pic VRAM et la perte finale sont produits par les
 cellules précédentes. La grille de la section 4 prédit le compte d'adaptateurs au paramètre
-près ; les générations de la section 7 montrent ensuite le mémo-styling à l'œuvre. La boucle
-FT-01 → FT-02 est close : même mécanique LoRA, seule la résidence mémoire des poids change.
-FT-03 ouvre le multi-tâches : plusieurs adaptateurs, un modèle de base, et la question du
-partage de rang.
+près ; les générations de la section 7 montrent ensuite le mémo-styling à l'œuvre. Le
+balayage étendu de la section 10 ajoute 30 entraînements sur trois graines : le rang et le
+rapport alpha/r déplacent la perplexité retenue de plusieurs points, les modules ciblés
+n'en déplacent pas assez pour sortir du bruit, et la courbe par époque situe le minimum aux
+époques 2-3. La boucle FT-01 → FT-02 est close : même mécanique LoRA, seule la résidence
+mémoire des poids change. FT-03 ouvre le multi-tâches : plusieurs adaptateurs, un modèle de
+base, et la question du partage de rang.
 
 
 **Les deux lignes du tableau qui ne sont pas des mesures** : la ligne « Qualité » et le
 chiffre « ~3-4x » de l'économie mémoire sont des **ordres de grandeur** (rapport de poids
 théoriques et papier QLoRA), pas des sorties de ce carnet. Ce que l'exécution **mesure** :
-l'empreinte résiduelle du modèle 4 bits après chargement (**1,25 Go**) contre sa théorie de
-poids seuls (**0,36 Go**), le pic de chargement du même modèle (**6,10 Go**) contre le FP16
-(**7,38 Go**, soit 17,4 % d'économie), le pic d'entraînement QLoRA de la configuration
-nominale (**1,71 Go**), et la perplexité sur le corpus retenu (**27,772** après adaptateur
-contre **31,596** pour la base NF4 seule). C'est sur ces nombres -- et non sur les
-ordres de grandeur du tableau -- que porte la lecture du carnet.
+l'empreinte résiduelle du modèle 4 bits après chargement (**2,72 Go**) contre sa théorie de
+poids seuls (**0,41 Go**), le pic de chargement du même modèle (**8,06 Go**, au-dessus du
+FP16 à 7,39 Go -- le transitoire de conversion domine ce pic), le pic d'entraînement QLoRA
+de la configuration nominale (**2,13 Go**), et la perplexité sur le corpus retenu
+(**29,440** après adaptateur contre **31,594** pour la base NF4 seule). C'est sur ces
+nombres -- et non sur les ordres de grandeur du tableau -- que porte la lecture du carnet.
 
 
 **Vérification de l'affirmation « un 7B tient sur 6 Go »** : poids 4-bit = 0,5 octet par
 paramètre, soit 3,5 Go pour 7 Md, contre 14 Go en FP16. Les adaptateurs LoRA et
 l'optimiseur paginé portent sur une petite fraction des paramètres. La marge dépend ensuite
 de la longueur de contexte, du batch et des activations : c'est pourquoi le notebook mesure
-le pic réel au lieu de se contenter de l'arithmétique des poids.
-","## Summary
+le pic réel au lieu de se contenter de l'arithmétique des poids.","## Summary
 
 | Aspect | LoRA (FT-01) | QLoRA (FT-02) |
 |--------|-------------|---------------|
 | Model weights | FP16 (16 bits) | NF4 (4 bits) |
 | Adapters | LoRA in FP16 | LoRA in FP16 |
 | Forward computations | Native FP16 | Dequantize → FP16 → re-quantize |
-| Memory savings | ~1.1x base model | **~3.9x on weights alone** (0.36 vs 1.42 GB) |
+| Memory savings | ~1.1x base model | **~4x on weights alone** (0.41 vs 1.63 GB) |
 | Quality | ~98-99% of full FT | ~97-99% of full FT *(order of magnitude)* |
 | Recommended model | < 1B params | **> 1B params** |
 
@@ -1459,27 +1457,31 @@ le pic réel au lieu de se contenter de l'arithmétique des poids.
 **The measured journey reads in the outputs**: the NF4 loading, the exact number of
 trainable parameters, the duration, the VRAM peak and the final loss are produced by the
 preceding cells. The section 4 grid predicts the adapter count to the exact parameter;
-the section 7 generations then show memo-styling at work. The FT-01 → FT-02 loop is
-closed: same LoRA mechanics, only the memory residency of the weights changes. FT-03
-opens multi-task: several adapters, one base model, and the question of rank sharing.
+the section 7 generations then show memo-styling at work. The extended sweep of section 10
+adds 30 trainings over three seeds: rank and the alpha/r ratio move the retained
+perplexity by several points, the target modules do not move it enough to stand out from
+the noise, and the per-epoch curve places the minimum at epochs 2-3. The FT-01 → FT-02
+loop is closed: same LoRA mechanics, only the memory residency of the weights changes.
+FT-03 opens multi-task: several adapters, one base model, and the question of rank
+sharing.
 
 
 **The two table rows that are not measurements**: the ""Quality"" row and the ""~3-4x""
 figure of the memory savings are **orders of magnitude** (theoretical weight ratios and
 the QLoRA paper), not outputs of this notebook. What the run **measures**: the residual
-footprint of the 4-bit model after loading (**1.25 GB**) against its weights-only theory
-(**0.36 GB**), the loading peak of the same model (**6.10 GB**) against FP16 (**7.38 GB**,
-i.e. 17.4% saved), the QLoRA training peak of the nominal configuration (**1.71 GB**),
-and the perplexity on the retained corpus (**27.772** after adapter vs **31.596** for the
-NF4 base alone). It is on these numbers -- and not on the orders of magnitude of the
-table -- that the reading of this notebook rests.
+footprint of the 4-bit model after loading (**2.72 GB**) against its weights-only theory
+(**0.41 GB**), the loading peak of the same model (**8.06 GB**, above FP16 at 7.39 GB --
+the conversion transient dominates this peak), the QLoRA training peak of the nominal
+configuration (**2.13 GB**), and the perplexity on the retained corpus (**29.440** after
+adapter vs **31.594** for the NF4 base alone). It is on these numbers -- and not on the
+orders of magnitude of the table -- that the reading of this notebook rests.
 
 
 **Verifying the ""a 7B fits on 6 GB"" claim**: 4-bit weights = 0.5 byte per parameter,
 i.e. 3.5 GB for 7B, against 14 GB in FP16. The LoRA adapters and the paged optimizer
 apply to a small fraction of the parameters. The margin then depends on context length,
 batch size and activations: this is why the notebook measures the real peak instead of
-settling for weight arithmetic.",,,,,,,854a30310a2a2fc2,44dd04be67cb4e9c,,,,,,,,,,,,,,
+settling for weight arithmetic.",,,,,,,7ee595a4928ea018,df789f310896c26f,,,,,,,7ee595a4928ea018,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb,0e944cc3,markdown,fr,c0c9fdc1b3bba541,"# FT-03 : Supervised Fine-Tuning (SFT) — Enseigner un format de reponse
 **Navigation** : [Index](README.md) | [<< 02 — QLoRA](FT-02-QLoRA-Quantization-Python.ipynb) | [04 — RLHF/DPO >>](FT-04-RLHF-DPO-Python.ipynb)
 
@@ -3780,7 +3782,7 @@ identical on both sides, which is what the comparison demands. One precaution do
 appear in the result yet conditions it entirely: `model_qlora.eval()` -- without it, LoRA
 dropout stays active during sampling and both columns collapse into repetitive noise
 (""a a a a a a a"").",,,,,,,60f7d2eb536f8a6d,597fbf3bca13edef,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ift02-cmp,markdown,fr,d0220e1915661949,"### Lecture du résultat : le triptyque VRAM / qualité / vitesse
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ift02-cmp,markdown,fr,6a2353fb546c056d,"### Lecture du résultat : le triptyque VRAM / qualité / vitesse
 
 Le tableau récapitulatif condense la **promesse et le coût** de QLoRA sur trois axes. Une
 précaution d'abord : **ce tableau n'est pas une sortie de mesure** -- ses valeurs de mémoire,
@@ -3813,36 +3815,38 @@ Ce que le tableau **énonce** (et qui reste vrai) :
 
 | Mesure | Valeur mesurée | Où |
 |--------|----------------|-----|
-| Empreinte résiduelle du modèle 4 bits (après chargement) | 1,25 Go | section 5 |
-| Pic de chargement du même modèle 4 bits | 6,10 Go | section 8 |
-| Pic de chargement FP16 | 7,38 Go | section 8 |
-| Économie du pic de chargement (NF4 contre FP16) | 17,4 % | section 8 |
-| Pic d'entraînement QLoRA (configuration nominale) | 1,71 Go | section 8 |
-| Poids FP16 (théorie, 2 octets par paramètre) | 1,42 Go | section 8 |
+| Empreinte résiduelle du modèle 4 bits (après chargement) | 2,72 Go | section 5 |
+| Pic de chargement du même modèle 4 bits | 8,06 Go | section 8 |
+| Pic de chargement FP16 | 7,39 Go | section 8 |
+| Pic de chargement (NF4 contre FP16) | +9,0 % (surcoût) | section 8 |
+| Pic d'entraînement QLoRA (configuration nominale) | 2,13 Go | section 8 |
+| Poids FP16 (théorie, 2 octets par paramètre) | 1,63 Go | section 8 |
 
 Trois enseignements que le tableau seul ne donne pas :
 
-1. **Le pic de chargement n'est pas l'empreinte.** Le même modèle 4 bits pèse **1,25 Go** en
-   mémoire une fois chargé et **6,10 Go** au pic du chargement : le transitoire de conversion
-   représente plusieurs fois l'empreinte finale. C'est le pic de chargement, et non
-   l'empreinte, qu'il faut comparer à la capacité de la carte.
+1. **Le pic de chargement n'est pas l'empreinte.** Le même modèle 4 bits pèse **2,72 Go** en
+   mémoire une fois chargé et **8,06 Go** au pic du chargement : le transitoire de conversion
+   représente près de trois fois l'empreinte finale -- il peut même inverser l'ordre avec le
+   FP16, comme ici. C'est le pic de chargement, et non l'empreinte, qu'il faut comparer à la
+   capacité de la carte.
 2. **L'écart à la théorie vient du rapport entre le transitoire et le résiduel**, pas d'une
    « quantification moins efficace qu'annoncé » : sur les poids seuls, NF4 fait bien ce qu'il
-   annonce (0,36 Go de théorie pour 1,21 Md de paramètres quantifiés, et 0,82 Go
+   annonce (0,41 Go de théorie pour 1,21 Md de paramètres quantifiés, et 1,03 Go
    d'empreinte de poids mesurés, les embeddings et `lm_head` restant en FP16) ; c'est
    l'ensemble du chargement qui est bruité.
-3. **Fine-tuner en QLoRA coûte moins de VRAM que charger seul en FP16** -- 1,71 Go contre
-   7,38 Go -- **mais** les deux nombres ne sont pas de même nature : le premier est un pic
+3. **Fine-tuner en QLoRA coûte moins de VRAM que charger seul en FP16** -- 2,13 Go contre
+   7,39 Go -- **mais** les deux nombres ne sont pas de même nature : le premier est un pic
    d'entraînement, le second un pic de chargement. La comparaison honnête se fait à
-   l'intérieur de chaque catégorie : chargement FP16 7,38 Go contre 4 bits 6,10 Go ;
-   entraînement 4 bits + LoRA 1,71 Go contre le seul modèle quantifié en mémoire, 1,25 Go.
+   l'intérieur de chaque catégorie : chargement FP16 7,39 Go contre 4 bits 8,06 Go (le
+   transitoire de conversion inverse l'ordre) ; entraînement 4 bits + LoRA 2,13 Go, à
+   rapprocher du modèle quantifié en mémoire, 2,72 Go -- deux bases de mesure différentes,
+   donc une comparaison à manier avec les mêmes précautions.
 
 **La recommandation** qui clôt le tableau encode la règle de décision : LoRA (FP16) si la
 VRAM le permet (plus simple, plus rapide), QLoRA dès que le modèle dépasse ~1 Md de
 paramètres ou que la VRAM est contrainte. C'est ce positionnement -- *fine-tuner de gros
 modèles sur du petit matériel* -- qui a fait de QLoRA le standard du fine-tuning ouvert sur
-GPU *consumer*.
-","### Reading the result: the VRAM / quality / speed triptych
+GPU *consumer*.","### Reading the result: the VRAM / quality / speed triptych
 
 The summary table condenses the **promise and the cost** of QLoRA along three axes. A
 precaution first: **this table is not a measurement output** -- its memory, quality, and
@@ -3855,7 +3859,7 @@ figure.
 What the table **states** (and which remains true):
 
 - **VRAM (the decisive axis)**: `~0.7 GB` (QLoRA) vs `~2.6 GB` (LoRA FP16) for the
-  **weights alone** of a 1.3B model, i.e. a ratio of about **3.7×**. This is what makes a
+  **weights alone** of a 1.3B model, i.e. a ratio of about **3.7x**. This is what makes a
   1.3B model fine-tunable on a *consumer* card (8-12 GB) instead of a 24 GB one. The key:
   only the **NF4 (4-bit)** weights live in VRAM; gradients and optimizer only carry the
   **LoRA adapters** (FP16), hence the line `Grad + optimizer: FP16 (LoRA only)` identical
@@ -3866,7 +3870,7 @@ What the table **states** (and which remains true):
   loss. **This is an order of magnitude, not a measurement from this notebook**: the only
   quality measurement available here is perplexity, and it covers other corpora (section 6,
   guided example 1, guided example 3).
-- **Speed (the hidden cost)**: `~0.8×`, i.e. ~20% slowdown. The NF4->FP16
+- **Speed (the hidden cost)**: `~0.8x`, i.e. ~20% slowdown. The NF4->FP16
   **dequantization** at each *forward pass* has a computational overhead -- QLoRA is not
   free in training time. Here again an order of magnitude: the notebook does not measure
   the speed ratio between LoRA and QLoRA.
@@ -3875,34 +3879,37 @@ What the table **states** (and which remains true):
 
 | Measurement | Measured value | Where |
 |--------|----------------|-----|
-| Residual footprint of the 4-bit model (after loading) | 1.25 GB | section 5 |
-| Loading peak of the same 4-bit model | 6.10 GB | section 8 |
-| FP16 loading peak | 7.38 GB | section 8 |
-| Loading-peak saving (NF4 vs FP16) | 17.4% | section 8 |
-| QLoRA training peak (nominal configuration) | 1.71 GB | section 8 |
-| FP16 weights (theory, 2 bytes per parameter) | 1.42 GB | section 8 |
+| Residual footprint of the 4-bit model (after loading) | 2.72 GB | section 5 |
+| Loading peak of the same 4-bit model | 8.06 GB | section 8 |
+| FP16 loading peak | 7.39 GB | section 8 |
+| Loading peak (NF4 vs FP16) | +9.0% (overhead) | section 8 |
+| QLoRA training peak (nominal configuration) | 2.13 GB | section 8 |
+| FP16 weights (theory, 2 bytes per parameter) | 1.63 GB | section 8 |
 
 Three lessons that the table alone does not give:
 
-1. **The loading peak is not the footprint.** The same 4-bit model weighs **1.25 GB** in
-   memory once loaded and **6.10 GB** at the loading peak: the conversion transient
-   amounts to several times the final footprint. It is the loading peak, not the
-   footprint, that must be compared to the capacity of the card.
+1. **The loading peak is not the footprint.** The same 4-bit model weighs **2.72 GB** in
+   memory once loaded and **8.06 GB** at the loading peak: the conversion transient
+   amounts to nearly three times the final footprint -- it can even invert the order with
+   FP16, as here. It is the loading peak, not the footprint, that must be compared to the
+   capacity of the card.
 2. **The gap to theory comes from the ratio between the transient and the residual**, not
    from ""quantization less efficient than advertised"": on the weights alone, NF4 does what
-   it announces (0.36 GB of theory for 1.21B quantized parameters, and 0.82 GB of measured
+   it announces (0.41 GB of theory for 1.21B quantized parameters, and 1.03 GB of measured
    weight footprint, the embeddings and `lm_head` remaining in FP16); it is the loading as
    a whole that is noisy.
-3. **Fine-tuning in QLoRA costs less VRAM than loading alone in FP16** -- 1.71 GB vs
-   7.38 GB -- **but** the two numbers are not of the same nature: the first is a training
+3. **Fine-tuning in QLoRA costs less VRAM than loading alone in FP16** -- 2.13 GB vs
+   7.39 GB -- **but** the two numbers are not of the same nature: the first is a training
    peak, the second a loading peak. The honest comparison happens within each category:
-   FP16 loading 7.38 GB vs 4-bit 6.10 GB; 4-bit + LoRA training 1.71 GB vs the quantized
-   model alone in memory, 1.25 GB.
+   FP16 loading 7.39 GB vs 4-bit 8.06 GB (the conversion transient inverts the order);
+   4-bit + LoRA training 2.13 GB, to be put next to the quantized model in memory,
+   2.72 GB -- two different measurement bases, so a comparison to handle with the same
+   precautions.
 
 **The recommendation** that closes the table encodes the decision rule: LoRA (FP16) if
 VRAM allows (simpler, faster), QLoRA as soon as the model exceeds ~1B parameters or VRAM
 is constrained. This positioning -- *fine-tuning large models on small hardware* -- is
-what made QLoRA the open fine-tuning standard on *consumer* GPUs.",,,,,,,d0220e1915661949,0ec2104c25167015,,,,,,,,,,,,,,
+what made QLoRA the open fine-tuning standard on *consumer* GPUs.",,,,,,,6a2353fb546c056d,8c16a24e4676d70e,,,,,,,6a2353fb546c056d,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,cell-add26685b1114b1f,markdown,fr,3143d9cb29bc67d3,"### Vérification de l'environnement
 
 Avant tout chargement de modèle, on vérifie la disponibilité du GPU et sa capacité. Ce notebook est dimensionné pour un GPU avec environ 4 Go de VRAM (GPT-2 = 124M params en float32 = ~500 Mo, plus les états d'optimiseur Adam qui doublent la consommation). Sur un GPU plus modeste (CPU-only), le notebook reste fonctionnel mais l'étape de fine-tuning sera **très** lente — à titre indicatif, comptez 5-10 minutes au lieu de ~13 secondes pour les 10 époques sur un CPU moderne.
@@ -5401,36 +5408,36 @@ The training arguments above encode several coupled decisions:
 **The intuition to keep**: LoRA/QLoRA uses the same optimization toolbox as dense fine-tuning, but over a much smaller parameter surface. Read the loss curve, the memory peak, and the generations together: no isolated number suffices to conclude on generalization.
 
 **The values come from `CONFIG`**, the papermill parameters cell at the head of the notebook: learning rate, number of epochs, rank and alpha/r ratio, target modules, seed. Replaying the notebook with other values requires no code editing -- and it is this same configuration that the multi-seed sweep of the next section varies.",,,,,,,5b022857d5f40716,90bccfc6a78df8b6,,,,,,,,,,,,,,verbatim
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,efe835af,markdown,fr,fdb108feab8e02ad,"### Lecture du résultat : le moment où la mesure se fait, et ses limites
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,efe835af,markdown,fr,0dbb0ae5c35a10a0,"### Lecture du résultat : le moment où la mesure se fait, et ses limites
 
 La cellule précédente a **trois mesures de mémoire** dont il faut connaître la définition
 avant de lire le tableau de la cellule suivante -- elles ne mesurent pas la même chose :
 
 - **Premier chargement (`model_fp16`)** : pic de mémoire allouée pendant le chargement d'un
-  OPT-1.3B non quantifié, **7,38 Go**. Le `del model_fp16, model_lora_fp16` +
+  OPT-1.3B non quantifié, **7,39 Go**. Le `del model_fp16, model_lora_fp16` +
   `gc.collect() + torch.cuda.empty_cache()` qui suit est **non optionnel** : PyTorch ne
   libère pas explicitement la mémoire GPU tant qu'il peut la recycler pour des allocations
   futures. Sans ce nettoyage, la mesure du deuxième chargement (`model_4b`) **inclurait**
   l'empreinte du premier, faussant l'économie affichée.
-- **Deuxième chargement (`model_4b`)** : pic de chargement d'OPT-1.3B en NF4, **6,10 Go**,
-  soit **17,4 %** de moins que le FP16. La **théorie** annonce un ratio de 4× (16 bits ->
-  4 bits) : l'écart entre 17,4 % et 4× n'est pas un défaut de la mesure, c'est la différence
-  entre **deux grandeurs**. Le pic de chargement est un **transitoire** : il inclut les
-  tampons de conversion temporaires que `bitsandbytes` alloue pour la quantification, ainsi
-  que les états internes de HuggingFace (cache d'attention, *KV cache*). L'**empreinte
-  résiduelle** du même modèle 4 bits, mesurée en section 5 après chargement, n'est que de
-  **1,25 Go** -- et la théorie des poids seuls annonce 0,36 Go. C'est le rapport entre le
-  transitoire et le résiduel qui explique l'écart au ratio théorique : sur un 1,3B, les
-  surcoûts fixes pèsent une part importante du total ; sur un 7B+, le ratio se rapproche de
-  la théorie.
-- **Pic d'entraînement (`vram_peak`)** : **1,71 Go**, mesuré pendant l'entraînement QLoRA de
+- **Deuxième chargement (`model_4b`)** : pic de chargement d'OPT-1.3B en NF4, **8,06 Go** --
+  soit **9,0 % de PLUS** que le FP16, alors que la théorie des poids annonce un ratio de 4×
+  dans l'autre sens. Ce renversement n'est pas un défaut de la mesure, il en est la
+  démonstration : le pic de chargement est un **transitoire**, dominé par les tampons de
+  conversion que `bitsandbytes` alloue pour quantifier (au point qu'une partie des poids
+  passe ici temporairement par le CPU), ainsi que par les états internes de HuggingFace
+  (cache d'attention, *KV cache*). L'**empreinte résiduelle** du même modèle 4 bits,
+  mesurée en section 5 après chargement, n'est que de **2,72 Go** -- et la théorie des
+  poids seuls annonce 0,41 Go. C'est le rapport entre le transitoire et le résiduel qui
+  explique l'écart au ratio théorique : sur un 1,3B, les surcoûts fixes pèsent une part
+  importante du total ; sur un 7B+, le ratio se rapproche de la théorie.
+- **Pic d'entraînement (`vram_peak`)** : **2,13 Go**, mesuré pendant l'entraînement QLoRA de
   la section 6. C'est ce chiffre qui importe pour **savoir si le fine-tuning tient** dans
   votre VRAM -- pas la mesure statique de chargement, qui ignore les activations forward,
-  les gradients LoRA et les moments Adam. Il est aussi **nettement plus bas que le pic de
-  chargement** (1,71 contre 6,10 Go), pour une raison simple : l'entraînement ne refait pas
-  la conversion, il travaille sur un modèle déjà quantifié en mémoire. Un pic de chargement
-  et un pic d'entraînement ne se comparent pas -- ils ne se comparent qu'à l'intérieur de
-  leur catégorie.
+  les gradients LoRA et les moments Adam. Il est aussi **près de quatre fois plus bas que
+  le pic de chargement** (2,13 contre 8,06 Go), pour une raison simple : l'entraînement ne
+  refait pas la conversion, il travaille sur un modèle déjà quantifié en mémoire. Un pic de
+  chargement et un pic d'entraînement ne se comparent pas -- ils ne se comparent qu'à
+  l'intérieur de leur catégorie.
 
 **L'intuition à retenir** : l'empreinte d'un modèle ne se mesure **jamais** une seule fois.
 Trois mesures (FP16 chargé / base 4 bits chargée / entraînement 4 bits + LoRA) parce que
@@ -5441,44 +5448,45 @@ de GPU, c'est `vram_peak`, pas `vram_fp16`.
 **Le piège à éviter** : croire que la mesure sera reproductible au bit près. CUDA
 non-deterministic memory allocation, l'ordre des `del`, la présence d'autres processus sur le
 GPU font varier le chiffre. Le carnet en donne la mesure : l'exemple guidé 1 remesure le
-**même** chargement FP16 à **7,24 Go**, contre 7,38 Go dans la section 8 -- **1,9 % d'écart**
-entre deux mesures du même objet, sur la même machine, dans la même exécution. Pour les
-comparaisons sérieuses (publication, calibration), faire une **moyenne sur plusieurs runs
-avec `torch.cuda.empty_cache()` intercalés**.
+**même** chargement FP16 à **7,14 Go**, contre 7,39 Go dans la section 8 -- **3,4 % d'écart**
+entre deux mesures du même objet, sur la même machine, dans la même exécution ; et le pic
+NF4 de cette section passe au-dessus du FP16 pour les mêmes raisons. Pour les comparaisons
+sérieuses (publication, calibration), faire une **moyenne sur plusieurs runs avec
+`torch.cuda.empty_cache()` intercalés**.
 
 La cellule qui suit imprime un tableau récapitulatif -- mais attention : **ses valeurs de
 mémoire, de qualité et de vitesse sont des ordres de grandeur écrits en dur, pas des mesures
 de ce carnet**. Elles viennent du papier QLoRA et du rapport de poids théoriques (16 bits ->
 2 octets, 4 bits -> 0,5 octet par paramètre). Les seules mesures de mémoire de cette
-exécution sont celles des sections 5 et 8 et de l'exemple guidé 1, citées ci-dessus.
-","### Reading the result: when the measurement happens, and its limits
+exécution sont celles des sections 5 et 8 et de l'exemple guidé 1, citées ci-dessus.","### Reading the result: when the measurement happens, and its limits
 
 The previous cell has **three memory measurements** whose definition you need to know
 before reading the table in the next cell -- they do not measure the same thing:
 
 - **First load (`model_fp16`)**: peak of allocated memory during the loading of an
-  unquantized OPT-1.3B, **7.38 GB**. The `del model_fp16, model_lora_fp16` +
+  unquantized OPT-1.3B, **7.39 GB**. The `del model_fp16, model_lora_fp16` +
   `gc.collect() + torch.cuda.empty_cache()` that follows is **non-optional**: PyTorch does
   not explicitly release GPU memory as long as it can recycle it for future allocations.
   Without this cleanup, the second load's measurement (`model_4b`) **would include** the
   first one's footprint, skewing the displayed saving.
-- **Second load (`model_4b`)**: loading peak of OPT-1.3B in NF4, **6.10 GB**, i.e. **17.4%**
-  less than FP16. **Theory** announces a 4× ratio (16 bits -> 4 bits): the gap between
-  17.4% and 4× is not a defect of the measurement, it is the difference between **two
-  quantities**. The loading peak is a **transient**: it includes the temporary conversion
-  buffers that `bitsandbytes` allocates for quantization, as well as HuggingFace's internal
-  states (attention cache, *KV cache*). The **residual footprint** of the same 4-bit model,
-  measured in section 5 after loading, is only **1.25 GB** -- and theory for the weights
-  alone announces 0.36 GB. It is the ratio between the transient and the residual that
+- **Second load (`model_4b`)**: loading peak of OPT-1.3B in NF4, **8.06 GB** -- that is
+  **9.0% MORE** than FP16, whereas the weights-only theory announces a 4x ratio in the
+  other direction. This reversal is not a defect of the measurement, it is its
+  demonstration: the loading peak is a **transient**, dominated by the conversion buffers
+  that `bitsandbytes` allocates to quantize (to the point that part of the weights
+  temporarily transits through the CPU here), as well as by HuggingFace's internal states
+  (attention cache, *KV cache*). The **residual footprint** of the same 4-bit model,
+  measured in section 5 after loading, is only **2.72 GB** -- and theory for the weights
+  alone announces 0.41 GB. It is the ratio between the transient and the residual that
   explains the gap to the theoretical ratio: on a 1.3B, the fixed overheads weigh a
   significant share of the total; on a 7B+, the ratio gets closer to theory.
-- **Training peak (`vram_peak`)**: **1.71 GB**, measured during the QLoRA training of
+- **Training peak (`vram_peak`)**: **2.13 GB**, measured during the QLoRA training of
   section 6. This is the figure that matters to **know whether the fine-tuning fits** in
   your VRAM -- not the static loading measurement, which ignores forward activations, LoRA
-  gradients, and Adam moments. It is also **markedly lower than the loading peak** (1.71 vs
-  6.10 GB), for a simple reason: training does not redo the conversion, it works on a model
-  already quantized in memory. A loading peak and a training peak do not compare with each
-  other -- they are only compared within their own category.
+  gradients, and Adam moments. It is also **nearly four times lower than the loading
+  peak** (2.13 vs 8.06 GB), for a simple reason: training does not redo the conversion, it
+  works on a model already quantized in memory. A loading peak and a training peak do not
+  compare with each other -- they are only compared within their own category.
 
 **The intuition to keep**: a model's footprint is **never** measured just once. Three
 measurements (FP16 loaded / 4-bit base loaded / 4-bit + LoRA training) because three
@@ -5489,16 +5497,17 @@ much does the full training cost?*. The number that should trigger a GPU purchas
 **The trap to avoid**: believing the measurement will reproduce bit for bit. CUDA
 non-deterministic memory allocation, the order of the `del`s, the presence of other
 processes on the GPU make the figure vary. The notebook gives the measurement: guided
-example 1 re-measures the **same** FP16 load at **7.24 GB**, versus 7.38 GB in section 8 --
-**1.9% deviation** between two measurements of the same object, on the same machine, in the
-same run. For serious comparisons (publication, calibration), take an **average over
-several runs with `torch.cuda.empty_cache()` interleaved**.
+example 1 re-measures the **same** FP16 load at **7.14 GB**, versus 7.39 GB in section 8 --
+**3.4% deviation** between two measurements of the same object, on the same machine, in
+the same run; and the NF4 peak of this section moves above FP16 for the same reasons. For
+serious comparisons (publication, calibration), take an **average over several runs with
+`torch.cuda.empty_cache()` interleaved**.
 
 The cell that follows prints a summary table -- but beware: **its memory, quality, and
 speed values are hard-coded orders of magnitude, not measurements from this notebook**.
 They come from the QLoRA paper and from theoretical weight ratios (16 bits -> 2 bytes,
 4 bits -> 0.5 byte per parameter). The only memory measurements of this run are those of
-sections 5 and 8 and of guided example 1, cited above.",,,,,,,fdb108feab8e02ad,cf0b3f9e66342084,,,,,,,,,,,,,,verbatim
+sections 5 and 8 and of guided example 1, cited above.",,,,,,,0dbb0ae5c35a10a0,0ec5e5ea467074ac,,,,,,,0dbb0ae5c35a10a0,,,,,,,verbatim
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02_exo4_md,markdown,fr,a2092eb001b2de1f,"### Exemple guidé 4 : casser l'invariant d'initialisation
 
 *Contribution étudiante de Nassim JAZOULI (@nassimJaz) et Minh NGUYEN (PR #18550), intégrée comme exemple guidé.*
@@ -5595,43 +5604,46 @@ Steps followed by the solution:
 1. Define the three loading configurations (one `torch_dtype`, two `BitsAndBytesConfig`).
 2. For each: `reset_peak_memory_stats()`, load, measure peak and footprint, generate, compute the perplexity over the excerpts, then free the memory.
 3. Summarize in a table with the VRAM saving relative to FP16.",,,,,,,ebd2b66a37ca7d6c,2adf94d93319e483,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02-eg1-lecture,markdown,fr,c631a46f0961497f,"### Lecture du résultat — exemple guidé 1 : la précision achète de la VRAM, pas de la qualité
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02-eg1-lecture,markdown,fr,e5ba002cf3fc1fae,"### Lecture du résultat — exemple guidé 1 : la précision achète de la VRAM, pas de la qualité
 
-- **VRAM** : l'ordre attendu est bien respecté, FP16 (7,24 Go) > INT8 (6,04 Go) > NF4
-  (5,45 Go) en pic de chargement, soit 24,7 % d'économie pour le NF4. L'empreinte des poids
-  (`get_memory_footprint` : 2,63 / 1,42 / 0,82 Go) suit de près la théorie (2 octets, 1 octet,
-  0,5 octet par paramètre quantifié). L'écart au ratio théorique de 4× vient de trois
-  choses : les couches qui **ne sont pas quantifiées** (les embeddings token + positions,
-  50 272 × 2048, et `lm_head`, laissés en FP16), le transitoire de chargement qui domine le
-  pic, et les tampons de conversion de `bitsandbytes`. Sur un 1,3B ces parts fixes pèsent
-  lourd, donc le gain relatif est plus faible que sur un 7B.
-- **Qualité** : la perplexité mesurée sur les 10 extraits varie de moins d'un point entre les
-  trois formats (33,89 / 33,30 / 34,47). Le classement théorique FP16 ≤ INT8 ≤ NF4 n'est
-  **pas** confirmé par la mesure : l'INT8 s'affiche même **sous** le FP16, de 0,59 point --
-  un écart du même ordre que celui qui sépare le NF4 du FP16 (0,58 point). L'ordre des trois
-  formats n'est donc pas établi par cette mesure, et la seule conclusion qui y **survit** est
-  que, à cette échelle, la précision n'achète pas de qualité mesurable : elle achète de la
-  VRAM. Les générations greedy sont identiques sur les premiers tokens (« Dans les rues
-  sombres de Paris, des... »), puis divergent : les trois modèles restent lisibles, NF4
-  conserve l'essentiel de l'information.
+- **VRAM** : les pics de chargement des trois formats sont ici **presque identiques** — FP16
+  7,14 Go, INT8 6,94 Go, NF4 7,00 Go, soit moins de 3 % d'écart et aucun ordre stable.
+  C'est la leçon de la section 8 qui se rejoue : le pic de chargement est un **transitoire**
+  dominé par les tampons de conversion, il ne discrimine pas les formats sur un 1,3B. Ce qui
+  discriminate, c'est l'empreinte des poids (`get_memory_footprint` : **2,84 / 1,63 /
+  1,03 Go**), qui suit la théorie (2 octets, 1 octet, 0,5 octet par paramètre quantifié) —
+  rapport mesuré de 2,8× entre FP16 et NF4 au lieu des 4× théoriques, l'écart venant des
+  couches qui **ne sont pas quantifiées** (les embeddings token + positions, 50 272 × 2048,
+  et `lm_head`, laissés en FP16). Sur un 1,3B ces parts fixes pèsent lourd, donc le gain
+  relatif est plus faible que sur un 7B.
+- **Qualité** : la perplexité mesurée sur les 10 extraits varie d'un peu plus d'un point
+  entre les trois formats (33,89 / 33,45 / 34,48). Le classement théorique FP16 ≤ INT8 ≤ NF4
+  n'est **pas** confirmé par la mesure : l'INT8 s'affiche même **sous** le FP16, de 0,44
+  point -- un écart du même ordre que celui qui sépare le NF4 du FP16 (0,59 point). L'ordre
+  des trois formats n'est donc pas établi par cette mesure, et la seule conclusion qui y
+  **survit** est que, à cette échelle, la précision n'achète pas de qualité mesurable : elle
+  achète de la VRAM. Les générations greedy sont identiques sur les premiers tokens (« Dans
+  les rues sombres de Paris, des... »), puis divergent : les trois modèles restent lisibles,
+  NF4 conserve l'essentiel de l'information.
 - **Remarque** : INT8 (LLM.int8()) est souvent **plus lent** que FP16 à cause de la
   décomposition des outliers, alors que NF4 déquantifie par blocs en FP16. INT8 n'est donc
   pas un compromis évident : pour le fine-tuning mémoire-contraint, NF4 est le meilleur
-  choix, ce qui justifie QLoRA.
-","### Reading the result — guided example 1: precision buys VRAM, not quality
+  choix, ce qui justifie QLoRA.","### Reading the result — guided example 1: precision buys VRAM, not quality
 
-- **VRAM**: the expected order holds, FP16 (7.24 GB) > INT8 (6.04 GB) > NF4 (5.45 GB) at
-  the loading peak, i.e. 24.7% saved for NF4. The weight footprint (`get_memory_footprint`:
-  2.63 / 1.42 / 0.82 GB) closely follows theory (2 bytes, 1 byte, 0.5 byte per quantized
-  parameter). The gap from the theoretical 4x ratio comes from three things: the layers that
-  are **not quantized** (the token + position embeddings, 50,272 x 2048, and `lm_head`, left
-  in FP16), the loading transient that dominates the peak, and the conversion buffers of
-  `bitsandbytes`. On a 1.3B these fixed parts weigh heavily, so the relative gain is smaller
-  than on a 7B.
-- **Quality**: the perplexity measured over the 10 excerpts varies by less than one point
-  across the three formats (33.89 / 33.30 / 34.47). The theoretical ranking FP16 ≤ INT8 ≤
-  NF4 is **not** confirmed by the measurement: INT8 even displays **below** FP16, by 0.59
-  points -- a gap of the same order as the one separating NF4 from FP16 (0.58 points). The
+- **VRAM**: the loading peaks of the three formats are here **almost identical** -- FP16
+  7.14 GB, INT8 6.94 GB, NF4 7.00 GB, i.e. less than 3% apart and no stable order. This
+  is the lesson of section 8 replaying itself: the loading peak is a **transient**
+  dominated by the conversion buffers, it does not discriminate the formats on a 1.3B.
+  What discriminates is the weight footprint (`get_memory_footprint`: **2.84 / 1.63 /
+  1.03 GB**), which follows theory (2 bytes, 1 byte, 0.5 byte per quantized parameter) --
+  a measured ratio of 2.8x between FP16 and NF4 instead of the theoretical 4x, the gap
+  coming from the layers that are **not quantized** (the token + position embeddings,
+  50,272 x 2048, and `lm_head`, left in FP16). On a 1.3B these fixed parts weigh heavily,
+  so the relative gain is smaller than on a 7B.
+- **Quality**: the perplexity measured over the 10 excerpts varies by just over one point
+  across the three formats (33.89 / 33.45 / 34.48). The theoretical ranking FP16 ≤ INT8 ≤
+  NF4 is **not** confirmed by the measurement: INT8 even displays **below** FP16, by 0.44
+  points -- a gap of the same order as the one separating NF4 from FP16 (0.59 points). The
   order of the three formats is therefore not established by this measurement, and the only
   conclusion that **survives** it is that, at this scale, precision does not buy measurable
   quality: it buys VRAM. The greedy generations are identical on the first tokens (« Dans
@@ -5640,7 +5652,7 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02-eg
 - **Remark**: INT8 (LLM.int8()) is often **slower** than FP16 because of the outlier
   decomposition, whereas NF4 dequantizes by blocks in FP16. INT8 is therefore not an
   obvious compromise: for memory-constrained fine-tuning, NF4 is the best choice, which
-  justifies QLoRA.",,,,,,,c631a46f0961497f,0455e8831e351604,,,,,,,,,,,,,,
+  justifies QLoRA.",,,,,,,e5ba002cf3fc1fae,8c4a4cd09d4745e4,,,,,,,e5ba002cf3fc1fae,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02-eg2-md,markdown,fr,e945707fe21b90d7,"### Exemple guidé 2 : rang LoRA et mémoire (r = 4, 16, 64)
 
 *Contribution étudiante de Nassim JAZOULI (@nassimJaz) et Minh NGUYEN (PR #18550), intégrée comme exemple guidé.*
@@ -5666,12 +5678,12 @@ Steps followed by the solution:
 1. Define a function that loads OPT-1.3B in NF4, grafts a rank-r LoRA (alpha = 2r), and trains 15 epochs with the hyperparameters of section 6.
 2. Call it for r = 4, 16, 64; measure each time the VRAM peak, the final loss, and the duration.
 3. Compare in a table: rank, trainable parameters (measured against predicted by 196,608 x r), VRAM peak, final loss, time.",,,,,,,e945707fe21b90d7,1749b480458f351e,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02-eg2-lecture,markdown,fr,f341cd0721b79a30,"### Lecture du résultat — exemple guidé 2 : le rang achète de la capacité, pas un meilleur modèle
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02-eg2-lecture,markdown,fr,f4b4295f0b2a5dc8,"### Lecture du résultat — exemple guidé 2 : le rang achète de la capacité, pas un meilleur modèle
 
 - **Paramètres entraînables** : ils suivent exactement la formule `196 608 × r` démontrée en
   section 4 (786 432 / 3 145 728 / 12 582 912) -- la colonne « prédit » coïncide avec le
   comptage réel.
-- **VRAM pic** : elle grimpe de **5,99 Go** (r=4) à **6,43 Go** (r=16) puis **6,89 Go**
+- **VRAM pic** : elle grimpe de **6,40 Go** (r=4) à **6,84 Go** (r=16) puis **7,30 Go**
   (r=64), soit 0,90 Go d'écart sur les trois rangs. Les adaptateurs seuls restent minuscules
   (~12,6 M paramètres à r=64, soit ~25 Mo de poids FP16) : la différence vient des
   gradients, des états de l'optimiseur paginé et des tampons intermédiaires qui accompagnent
@@ -5679,28 +5691,29 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02-eg
   paramètres. Les poids NF4 figés et les activations (séquences de 256 tokens) dominent
   toujours la mémoire, mais à r=64 l'adaptateur n'est plus gratuit. Ces pics sont mesurés
   dans le contexte propre à cet exemple (chaque rang recharge sa base) : ils ne sont pas
-  directement comparables au pic d'entraînement de la section 8 (1,71 Go), mesuré sur le
+  directement comparables au pic d'entraînement de la section 8 (2,13 Go), mesuré sur le
   modèle déjà chargé et quantifié.
-- **Perte finale** : elle diminue quand r augmente (2,8473 -> 2,4100 -> 1,8944), mais avec 10
+- **Perte finale** : elle diminue quand r augmente (2,8443 -> 2,3948 -> 1,8907), mais avec 10
   exemples vus 15 fois, un rang élevé sert surtout à **mémoriser** le corpus. Les générations
-  le montrent : à r=4, le modèle s'en tient à des phrases courtes et interchangeables (« Les
-  garçons de la rue ne faisaient que jouer », « Les hommes dormaient parlementaires ») ; à
-  r=16 et r=64, il s'aventures dans des tournures plus ambitieuses mais fautives (« ce figure
-  du suivant etait toujours le lien entre les gamines », « Cosette regardait son mariage, et
-  lui en voyait rapporter un partavet ») -- la perte baisse, la grammaire ne suit pas. Une
-  perte plus basse n'est donc pas synonyme d'un meilleur modèle : sans jeu de validation, on
-  ne mesure que la mémorisation -- c'est exactement la question que l'exercice 2 ci-dessous
-  retourne. Pour ce dataset, r=8-16 reste le compromis raisonnable.
-- **Coût** : 68,4 s à r=4, 82,0 s à r=16, 106,5 s à r=64 : le temps d'entraînement croît avec
-  le rang, à VRAM croissante. Le rang élevé se paie deux fois.
+  le montrent : à r=4, le modèle boucle sur une phrase courte et interchangeable (« Les
+  garçons de la prison ne pouvaient que dormir », répétée telle quelle) ; à r=16, il
+  s'aventure dans des tournures plus construites mais fautives (« Ce que l'homme de la loi
+  n'ait jamais vu dans les années suivantes ») ; à r=64, le vocabulaire devient ambitieux et
+  se casse (« Le houleur d'un mouvement intolérable n'était pas sûr ») -- la perte baisse, la
+  grammaire ne suit pas. Une perte plus basse n'est donc pas synonyme d'un meilleur modèle :
+  sans jeu de validation, on ne mesure que la mémorisation -- c'est exactement la question
+  que le balayage multi-graines étendu ci-dessous retourne sur quatre leviers. Pour ce
+  dataset, r=8-16 reste le compromis raisonnable.
+- **Coût** : 34,6 s à r=4, 32,2 s à r=16, 38,1 s à r=64 : à cette échelle le temps de calcul
+  ne suit le rang que grossièrement -- seule la VRAM le suit nettement. Le rang élevé se
+  paie surtout en mémoire.
 - Pour que la comparaison soit équitable, `alpha = 2r` : l'échelle `alpha/r = 2` est
-  identique pour les trois rangs, seule la capacité change.
-","### Reading the result — guided example 2: rank buys capacity, not a better model
+  identique pour les trois rangs, seule la capacité change.","### Reading the result — guided example 2: rank buys capacity, not a better model
 
 - **Trainable parameters**: they follow exactly the formula `196,608 x r` proven in section
   4 (786,432 / 3,145,728 / 12,582,912) -- the ""predicted"" column coincides with the actual
   count.
-- **VRAM peak**: it climbs from **5.99 GB** (r=4) to **6.43 GB** (r=16) then **6.89 GB**
+- **VRAM peak**: it climbs from **6.40 GB** (r=4) to **6.84 GB** (r=16) then **7.30 GB**
   (r=64), i.e. 0.90 GB of spread across the three ranks. The adapters alone stay tiny
   (~12.6M parameters at r=64, i.e. ~25 MB of FP16 weights): the difference comes from the
   gradients, from the paged optimizer states, and from the intermediate buffers that
@@ -5708,23 +5721,25 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02-eg
   parameter count. The frozen NF4 weights and the activations (256-token sequences) still
   dominate memory, but at r=64 the adapter is no longer free. These peaks are measured in
   the context specific to this example (each rank reloads its base): they are not directly
-  comparable to the training peak of section 8 (1.71 GB), measured on the already loaded
+  comparable to the training peak of section 8 (2.13 GB), measured on the already loaded
   and quantized model.
-- **Final loss**: it decreases as r rises (2.8473 -> 2.4100 -> 1.8944), but with 10 examples
+- **Final loss**: it decreases as r rises (2.8443 -> 2.3948 -> 1.8907), but with 10 examples
   seen 15 times, a high rank mostly serves to **memorize** the corpus. The generations show
-  it: at r=4, the model sticks to short interchangeable sentences (« Les garçons de la rue
-  ne faisaient que jouer », « Les hommes dormaient parlementaires »); at r=16 and r=64, it
-  ventures into more ambitious but faulty turns of phrase (« ce figure du suivant etait
-  toujours le lien entre les gamines », « Cosette regardait son mariage, et lui en voyait
-  rapporter un partavet ») -- the loss drops, the grammar does not follow. A lower loss is
-  therefore not synonymous with a better model: without a validation set, you only measure
-  memorization -- which is exactly the question exercise 2 below turns back on. For this
-  dataset, r=8-16 remains the reasonable compromise.
-- **Cost**: 68.4 s at r=4, 82.0 s at r=16, 106.5 s at r=64: training time grows with the
-  rank, while VRAM rises with it. A high rank is paid for twice.
+  it: at r=4, the model loops over one short interchangeable sentence (« Les garçons de la
+  prison ne pouvaient que dormir », repeated verbatim); at r=16, it ventures into more
+  constructed but faulty turns of phrase (« Ce que l'homme de la loi n'ait jamais vu dans
+  les années suivantes »); at r=64, the vocabulary turns ambitious and breaks (« Le
+  houleur d'un mouvement intolérable n'était pas sûr ») -- the loss drops, the grammar does
+  not follow. A lower loss is therefore not synonymous with a better model: without a
+  validation set, you only measure memorization -- which is exactly the question the
+  extended multi-seed sweep below turns back on over four levers. For this dataset, r=8-16
+  remains the reasonable compromise.
+- **Cost**: 34.6 s at r=4, 32.2 s at r=16, 38.1 s at r=64: at this scale the compute time
+  follows the rank only loosely -- VRAM alone follows it clearly. A high rank is paid for
+  mostly in memory.
 - For the comparison to be fair, `alpha = 2r`: the scale `alpha/r = 2` is identical for the
-  three ranks, only the capacity changes.",,,,,,,f341cd0721b79a30,db44360f52bd1763,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02-eg3-lecture,markdown,fr,ac0d33d1d5c53b8f,"### Lecture du résultat — exemple guidé 3 : un gain minuscule, linéaire dans la taille du modèle
+  three ranks, only the capacity changes.",,,,,,,f4b4295f0b2a5dc8,c10c07c8cd2aafa7,,,,,,,f4b4295f0b2a5dc8,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02-eg3-lecture,markdown,fr,52dd3b6684055539,"### Lecture du résultat — exemple guidé 3 : un gain minuscule, linéaire dans la taille du modèle
 
 - **Théorie** : sans double quantization, chaque bloc de 64 poids a une constante d'échelle
   en FP32 -> 32/64 = 0,5 bit/param. Avec double quantization, ces constantes sont stockées en
@@ -5734,18 +5749,17 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02-eg
   (1 207 959 552 paramètres, soit ≈ 1,21 Md ; les embeddings et `lm_head` restent en FP16).
   L'économie attendue est donc ≈ 56 Mo -- et l'écart mesuré sur la mémoire allouée tombe
   dessus : **56,1 Mo mesurés** contre **56,3 Mo prédits** par la théorie. Sur le **pic** de
-  chargement, l'écart du même ordre (6,794 contre 6,738 Go, soit 56 Mo) est plus bruité car
-  le pic contient des tampons temporaires de conversion : d'où l'intérêt de répéter la mesure
-  et de comparer les minima.
+  chargement, la même comparaison (8,290 contre 8,154 Go) est plus bruitée encore -- le
+  signe même de l'écart y change -- car le pic contient des tampons temporaires de
+  conversion : d'où l'intérêt de répéter la mesure et de comparer les minima.
 - **Qualité** : la perplexité est pratiquement identique entre les deux configurations
-  (34,450 contre 34,472 -- 0,022 point, de l'ordre du bruit numérique) : les constantes
+  (34,450 contre 34,480 -- 0,030 point, de l'ordre du bruit numérique) : les constantes
   d'échelle quantifiées en 8 bits sont assez précises pour ne rien changer au résultat.
 - **Conclusion** : sur OPT-1.3B le gain est marginal -- 56 Mo sur une mémoire allouée de
-  6,5 Go, soit moins de 1 % -- mais il grandit **linéairement** avec la taille : ~ 0,3 Go
+  6,7 Go, soit moins de 1 % -- mais il grandit **linéairement** avec la taille : ~ 0,3 Go
   pour un 7B, ~ 3 Go pour un 65B -- c'est ce qui permettait dans le papier QLoRA de faire
   tenir un 65B sur un seul GPU de 48 Go. C'est un gain « gratuit », d'où son activation par
-  défaut.
-","### Reading the result — guided example 3: a minuscule gain, linear in model size
+  défaut.","### Reading the result — guided example 3: a minuscule gain, linear in model size
 
 - **Theory**: without double quantization, each block of 64 weights has an FP32 scale
   constant -> 32/64 = 0.5 bit/param. With double quantization, those constants are stored
@@ -5755,16 +5769,16 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02-eg
   (1,207,959,552 parameters, i.e. ≈ 1.21B; the embeddings and `lm_head` stay in FP16). The
   expected saving is therefore ≈ 56 MB -- and the measured gap on allocated memory lands
   right on it: **56.1 MB measured** vs **56.3 MB predicted** by theory. On the loading
-  **peak**, the same-order gap (6.794 vs 6.738 GB, i.e. 56 MB) is noisier because the peak
-  contains temporary conversion buffers: hence the value of repeating the measurement and
-  comparing minima.
+  **peak**, the same comparison (8.290 vs 8.154 GB) is noisier still -- the very sign of
+  the gap changes there -- because the peak contains temporary conversion buffers: hence
+  the value of repeating the measurement and comparing minima.
 - **Quality**: the perplexity is practically identical between the two configurations
-  (34.450 vs 34.472 -- 0.022 points, on the order of numerical noise): the scale constants
+  (34.450 vs 34.480 -- 0.030 points, on the order of numerical noise): the scale constants
   quantized to 8 bits are precise enough to change nothing in the result.
-- **Conclusion**: on OPT-1.3B the gain is marginal -- 56 MB on an allocated memory of 6.5
-  GB, i.e. less than 1% -- but it grows **linearly** with size: ~0.3 GB for a 7B, ~3 GB
+- **Conclusion**: on OPT-1.3B the gain is marginal -- 56 MB on an allocated memory of
+  6.7 GB, i.e. less than 1% -- but it grows **linearly** with size: ~0.3 GB for a 7B, ~3 GB
   for a 65B -- this is what allowed the QLoRA paper to fit a 65B on a single 48 GB GPU.
-  It is a ""free"" gain, hence its activation by default.",,,,,,,ac0d33d1d5c53b8f,801b8702dc87cc99,,,,,,,,,,,,,,
+  It is a ""free"" gain, hence its activation by default.",,,,,,,52dd3b6684055539,91899e368125b430,,,,,,,52dd3b6684055539,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02-eg4-lecture,markdown,fr,876f38adfe8f8657,"### Lecture du résultat — exemple guidé 4 : pourquoi B doit naître nul
 
 - Avec `B = 0` (b_std = 0), on retrouve l'invariant : `ΔW = 0`, `forward == base → True`,
@@ -5858,42 +5872,79 @@ W_rec_nf4 = None   # TODO etudiant
 W_rec_int8 = None  # TODO etudiant
 
 print(""Exercice a completer : erreur de reconstruction des poids NF4/INT8 vs FP16"")",,,,,,,,5f9fadfdd8445738,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02-nex2-md,markdown,fr,6a8ea136df3be4dc,"#### Exercice 2 : mémorisation contre généralisation
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02-nex2-md,markdown,fr,9176a72a65066aa7,"#### Exercice 2 : arrêt précoce sur la perplexité retenue
 
-L'exemple guidé 2 conclut que sans jeu de validation, la perte finale ne mesure que la **mémorisation**. Testez-le : couper les 10 extraits d'entraînement en 8 textes d'entraînement + 2 textes retenus (*held-out*), réentraîner QLoRA aux rangs r = 4, 16, 64 sur les 8 seulement, et mesurer la perplexité sur les 2 textes retenus **avant et après** entraînement.
+La courbe de la section précédente montre **où** la perplexité retenue cesse de baisser, mais elle ne dit pas **quoi en faire** : le carnet entraîne encore quinze époques fixes et garde l'adaptateur de la dernière, quel que soit le trajet. Un entraînement réel ne paie pas la mesure d'un corpus retenu à chaque époque sans en tirer parti.
 
-1. Construire `train_texts_8` (8 premiers extraits de `training_texts`) et `held_out_texts` (2 derniers) ; reprendre la tokenisation de la section 6 sur les 8.
-2. Pour chaque rang r ∈ {4, 16, 64} : mesurer la perplexité held-out du modèle NF4 **avant** entraînement, puis entraîner sur les 8 extraits (mêmes hyperparamètres que l'exemple guidé 2).
-3. Après entraînement, mesurer de nouveau la perplexité held-out.
-4. Reporter un tableau `r | ppl held-out avant | ppl held-out après | perte d'entraînement finale`.
+L'arrêt précoce est la règle qui exploite cette courbe : on garde l'adaptateur de la meilleure époque, et on arrête dès que la perplexité retenue n'a pas progressé depuis `patience` époques.
+
+1. Écrire `entrainer_avec_arret_precoce(config, patience)`, sur le modèle de `entrainer_avec_courbe`, qui :
+   - mesure la perplexité retenue à chaque fin d'époque (même sonde `SondeRetenue`) ;
+   - **conserve une copie de l'état de l'adaptateur** à chaque nouvelle meilleure époque ;
+   - **interrompt l'entraînement** (`control.should_training_stop = True`) dès que `patience` époques se sont écoulées sans amélioration.
+2. Rejouer sur les trois graines `0`, `7` et `42`, avec `patience = 3`.
+3. Reporter un tableau : `graine | meilleure époque | ppl retenue à l'arrêt | ppl retenue à l'époque 15 | époques économisées`.
+4. Conclure : la meilleure époque est-elle la même pour les trois graines ? Si oui, le budget fixe de quinze époques est un mauvais réglage ; si non, l'arrêt précoce est la seule règle qui s'adapte au tirage.
 
 **Indices** :
-- Réutiliser la boucle de perplexité de l'exemple guidé 1 (somme des pertes pondérée par le nombre de tokens).
-- **Hypothèse à tester** : sur ce découpage 8/2, la perplexité held-out *devrait* baisser pour les petits rangs (généralisation) puis se dégrader à r = 64 (mémorisation des 8 extraits). C'est une prédiction plausible, pas un résultat garanti — avec seulement 2 textes held-out, l'incertitude est grande. Le rang qui minimise la ppl held-out peut différer de celui qui minimise la perte d'entraînement, ou les trois rangs peuvent être indistinguables.
 
-**Critère de réussite** : le tableau des 3 rangs avec ppl held-out avant/après, et le nom du rang qui minimise la perplexité held-out.","#### Exercise 2: memorization vs generalization
+- La sonde voit le même objet modèle que l'entraînement : `{k: v.detach().clone() for k, v in modele.named_parameters() if v.requires_grad}` capture l'adaptateur seul, sans les poids quantifiés figés — c'est ce qui rend la copie peu coûteuse.
+- `control.should_training_stop = True` dans `on_epoch_end` arrête proprement la boucle ; `state.global_step` reste cohérent avec les époques réellement effectuées.
+- Comparer à **travail effectué**, pas seulement à perplexité : l'époque 15 coûte quinze époques, l'arrêt précoce en coûte `meilleure époque + patience`. Un gain de perplexité obtenu en deux fois moins d'époques est un gain réel ; un gain nul payé au même prix ne l'est pas.
 
-Guided example 2 concludes that without a validation set, the final loss only measures **memorization**. Test it: split the 10 training excerpts into 8 training texts + 2 held-out texts, retrain QLoRA at ranks r = 4, 16, 64 on the 8 only, and measure the perplexity over the 2 held-out texts **before and after** training.
+**Critère de réussite** : le tableau des trois graines avec la meilleure époque, la perplexité retenue à l'arrêt et celle de l'époque 15, et une phrase qui dit si le gain dépasse la dispersion entre graines.","#### Exercise 2: early stopping on the retained perplexity
 
-1. Build `train_texts_8` (the first 8 excerpts of `training_texts`) and `held_out_texts` (the last 2); redo the tokenization of section 6 on the 8.
-2. For each rank r ∈ {4, 16, 64}: measure the held-out perplexity of the NF4 model **before** training, then train on the 8 excerpts (same hyperparameters as guided example 2).
-3. After training, measure the held-out perplexity again.
-4. Report a table `r | held-out ppl before | held-out ppl after | final training loss`.
+The curve of the previous section shows **where** the retained perplexity stops falling,
+but it does not say **what to do with it**: the notebook still trains a fixed fifteen
+epochs and keeps the adapter from the last one, whatever the path. A real training does
+not pay for measuring a retained corpus at every epoch without taking advantage of it.
+
+Early stopping is the rule that exploits this curve: keep the adapter from the best epoch,
+and stop as soon as the retained perplexity has not improved for `patience` epochs.
+
+1. Write `entrainer_avec_arret_precoce(config, patience)`, modeled on
+   `entrainer_avec_courbe`, which:
+   - measures the retained perplexity at each epoch end (same `SondeRetenue` probe);
+   - **keeps a copy of the adapter's state** at each new best epoch;
+   - **interrupts training** (`control.should_training_stop = True`) as soon as `patience`
+     epochs have passed without improvement.
+2. Replay over the three seeds `0`, `7` and `42`, with `patience = 3`.
+3. Report a table: `seed | best epoch | retained ppl at stop | retained ppl at epoch 15 |
+   epochs saved`.
+4. Conclude: is the best epoch the same for the three seeds? If yes, the fixed budget of
+   fifteen epochs is a bad setting; if no, early stopping is the only rule that adapts to
+   the draw.
 
 **Hints**:
-- Reuse the perplexity loop of guided example 1 (sum of the losses weighted by the token count).
-- **Hypothesis to test**: on this 8/2 split, the held-out perplexity *should* drop for small ranks (generalization) then degrade at r = 64 (memorization of the 8 excerpts). This is a plausible prediction, not a guaranteed result -- with only 2 held-out texts, the uncertainty is large. The rank that minimizes the held-out ppl may differ from the one that minimizes the training loss, or the three ranks may be indistinguishable.
 
-**Success criterion**: the table of the 3 ranks with held-out ppl before/after, and the name of the rank that minimizes the held-out perplexity.",,,,,,,6a8ea136df3be4dc,c135c22a5cbee4f0,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02-nex2,code,fr,352e9b24c6fa22e0,"# Exercice 2 : mémorisation contre généralisation (split 8/2 des extraits)
-# Etape 1 : couper training_texts en 8 extraits d'entrainement + 2 extraits held-out.
-# Etape 2 : pour r = 4, 16, 64, entrainer QLoRA sur les 8 extraits (protocole de l'exemple guide 2).
-# Etape 3 : perplexite sur les 2 extraits held-out AVANT (base NF4) et APRES entrainement.
-# Indice : reutiliser la boucle de perplexite de l'exemple guide 1.
+- The probe sees the same model object as the training: `{k: v.detach().clone() for k, v in
+  modele.named_parameters() if v.requires_grad}` captures the adapter alone, without the
+  frozen quantized weights -- this is what keeps the copy cheap.
+- `control.should_training_stop = True` in `on_epoch_end` stops the loop cleanly;
+  `state.global_step` stays consistent with the epochs actually performed.
+- Compare at **work done**, not only at perplexity: epoch 15 costs fifteen epochs, early
+  stopping costs `best epoch + patience`. A perplexity gain obtained in half the epochs is
+  a real gain; a null gain paid at the same price is not.
 
-resultats_exo2 = None  # TODO etudiant
+**Success criterion**: the table of the three seeds with the best epoch, the retained
+perplexity at the stop and that of epoch 15, and one sentence saying whether the gain
+exceeds the dispersion across seeds.",,,,,,,9176a72a65066aa7,9fd47a81c4061bed,,,,,,,9176a72a65066aa7,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02-nex2,code,fr,08cb79b798355136,"# Exercice 2 : arret precoce sur la perplexite retenue
+# Etape 1 : ecrire entrainer_avec_arret_precoce(config, patience) sur le modele
+#           de `entrainer_avec_courbe` : sonde a chaque epoque, copie des
+#           parametres entrainables a chaque nouvelle meilleure epoque, et
+#           interruption (control.should_training_stop = True) apres `patience`
+#           epoques sans amelioration.
+# Etape 2 : rejouer sur les graines 0, 7 et 42 avec patience = 3.
+# Etape 3 : comparer la perplexite retenue a l'arret, celle de l'epoque 15,
+#           et le nombre d'epoques reellement effectuees.
+# Indice : seuls les parametres entrainables portent l'adaptateur (requires_grad),
+#          et l'arret precoce coute `meilleure epoque + patience` epoques.
 
-print(""Exercice a completer : quel rang generalise le mieux sur les 2 extraits held-out ?"")",,,,,,,,352e9b24c6fa22e0,,,,,,,,,,,,,,,
+resultats_arret_precoce = None  # TODO etudiant
+
+print(""Exercice a completer : a quelle epoque arreter sur chaque graine, ""
+      ""et que coute l'arret precoce face aux quinze epoques fixes ?"")",,,,,,,,08cb79b798355136,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02-nex3-md,markdown,fr,00b13b8e29637823,"#### Exercice 3 : NF4 contre FP4 à mémoire égale
 
 NF4 et FP4 occupent exactement la même place (4 bits par poids) : la différence est purement dans la **forme des niveaux de quantization**. Comparer les deux à mémoire égale sur OPT-1.3B.
@@ -6711,42 +6762,41 @@ print(f""  variation ................. {ppl_retenue_apres - ppl_retenue_avant:+8
 print(f""Corpus d'ENTRAINEMENT ({len(training_texts)} extraits, vus {CONFIG['num_train_epochs']} fois)"")
 print(f""  apres QLoRA ............... {ppl_entrainement_apres:8.3f}"")
 ",,,,,,,,b7ff72ae713c18d1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02-gen-lecture,markdown,fr,a655f8b10b3c1d43,"### Lecture du résultat : ce que l'adaptateur fait sur ce qu'il n'a pas vu
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02-gen-lecture,markdown,fr,5be98ef9174fd0fa,"### Lecture du résultat : ce que l'adaptateur fait sur ce qu'il n'a pas vu
 
 Les quatre lignes ci-dessus se lisent ensemble, et c'est leur **rapport** qui parle, pas chacune isolément.
 
-La perplexité sur le corpus **d'entraînement** (dernière ligne) est le score de mémorisation : l'adaptateur a vu ces dix extraits quinze fois chacun, il les a appris — 5,288. La perplexité sur le corpus **retenu** est le score de généralisation : ces douze passages sont du même registre, mais aucun n'a été vu.
+La perplexité sur le corpus **d'entraînement** (dernière ligne) est le score de mémorisation : l'adaptateur a vu ces dix extraits quinze fois chacun, il les a appris — 5,150. La perplexité sur le corpus **retenu** est le score de généralisation : ces douze passages sont du même registre, mais aucun n'a été vu.
 
-Ce que la mesure montre, chiffres à l'appui : sur le corpus retenu, la base NF4 seule est à **31,596** et l'adaptateur à **27,772**, soit **−3,824**. L'écart est **négatif** : l'adaptateur fait *mieux* que la base sur des textes qu'il n'a jamais vus. Il a donc appris quelque chose du **style**, et pas seulement du contenu.
+Ce que la mesure montre, chiffres à l'appui : sur le corpus retenu, la base NF4 seule est à **31,594** et l'adaptateur à **29,440**, soit **−2,154**. L'écart est **négatif** : l'adaptateur fait *mieux* que la base sur des textes qu'il n'a jamais vus. Il a donc appris quelque chose du **style**, et pas seulement du contenu.
 
-Le contraste entre les deux lignes est ce qui rend la mesure interprétable. Si l'adaptateur n'avait fait que mémoriser, la perplexité sur le corpus retenu resterait celle de la base : l'écart serait nul ou positif. Ici, l'écart est négatif sur les retenus **et** la valeur sur les entraînés est presque cinq fois plus basse (5,288 contre 27,772) — la mémorisation est massive, mais elle n'est pas tout ce qui s'est installé.
+Le contraste entre les deux lignes est ce qui rend la mesure interprétable. Si l'adaptateur n'avait fait que mémoriser, la perplexité sur le corpus retenu resterait celle de la base : l'écart serait nul ou positif. Ici, l'écart est négatif sur les retenus **et** la valeur sur les entraînés est presque six fois plus basse (5,150 contre 29,440) — la mémorisation est massive, mais elle n'est pas tout ce qui s'est installé.
 
-C'est le point que l'exemple guidé 2 ne pouvait pas trancher : la perte finale y variait avec le rang, mais sur des extraits vus quinze fois. Ici, la grandeur mesurée est sur des extraits retenus, et elle est reproductible : la même base, le même adaptateur, les mêmes textes, la perplexité par token sans padding.
-","### Reading the result: what the adapter does on what it has not seen
+C'est le point que l'exemple guidé 2 ne pouvait pas trancher : la perte finale y variait avec le rang, mais sur des extraits vus quinze fois. Ici, la grandeur mesurée est sur des extraits retenus, et elle est reproductible : la même base, le même adaptateur, les mêmes textes, la perplexité par token sans padding.","### Reading the result: what the adapter does on what it has not seen
 
 The four lines above are read together, and it is their **relationship** that speaks, not
 each one in isolation.
 
 The perplexity on the **training** corpus (last line) is the memorization score: the adapter
-has seen these ten excerpts fifteen times each, it has learned them -- 5,288. The perplexity
+has seen these ten excerpts fifteen times each, it has learned them -- 5.150. The perplexity
 on the **retained** corpus is the generalization score: these twelve passages are from the
 same register, but none of them has been seen.
 
 What the measurement shows, with numbers to back it: on the retained corpus, the NF4 base
-alone is at **31,596** and the adapter at **27,772**, that is **−3,824**. The gap is
+alone is at **31.594** and the adapter at **29.440**, that is **−2.154**. The gap is
 **negative**: the adapter does *better* than the base on texts it has never seen. It has
 therefore learned something about the **style**, and not only about the content.
 
 The contrast between the two lines is what makes the measurement interpretable. If the
 adapter had only memorized, the perplexity on the retained corpus would stay that of the
 base: the gap would be zero or positive. Here, the gap is negative on the retained texts
-**and** the value on the training ones is almost five times lower (5,288 against 27,772) --
+**and** the value on the training ones is almost six times lower (5.150 against 29.440) --
 memorization is massive, but it is not all that has settled in.
 
 This is the point that guided example 2 could not settle: there, the final loss varied with
 rank, but on excerpts seen fifteen times. Here, the quantity measured is on retained
 excerpts, and it is reproducible: the same base, the same adapter, the same texts, per-token
-perplexity without padding.",,,,,,,a655f8b10b3c1d43,ad63fb7a66113e8b,,,,,,,,,,,,,,
+perplexity without padding.",,,,,,,5be98ef9174fd0fa,635e0253b5aa4c79,,,,,,,5be98ef9174fd0fa,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02-balayage,code,fr,eec63e5509619f91,"# --- Balayage multi-graines : le taux d'apprentissage, effet ou bruit ? ---
 #
 # Une variation sur UNE graine ne dit rien : le bruit d'entrainement peut
@@ -6845,27 +6895,26 @@ for taux in TAUX_APPRENTISSAGE:
     moy_ppl = sum(r[""ppl_apres""] for r in lignes) / len(lignes)
     moy_var = sum(variations) / len(variations)
     print(f""{taux:>8.0e} {moy_perte:>12.4f} {ecart:>20.4f} {moy_ppl:>18.3f} {moy_var:>+17.3f}"")",,,,,,,,eec63e5509619f91,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02-balayage-lecture,markdown,fr,e4a1545a499c04fa,"### Lecture du résultat : un effet, ou du bruit ?
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02-balayage-lecture,markdown,fr,5ade4f1bc75dfaf9,"### Lecture du résultat : un effet, ou du bruit ?
 
 Le tableau de synthèse porte trois taux d'apprentissage, chacun rejoué sur **trois graines**. La colonne qui décide est l'écart-type de la perte : il mesure la dispersion **à configuration identique**.
 
 - Si la dispersion **d'un** taux est du même ordre que l'**écart entre** deux taux, alors l'écart observé n'est pas un effet du taux d'apprentissage : c'est du bruit d'entraînement, et le carnet doit le dire ainsi.
 - Si au contraire un taux se distingue nettement des deux autres — dispersion faible, écart entre taux grand — alors l'effet est réel, et il se lit dans la variation moyenne de la perplexité retenue : un taux qui abaisse la perplexité sur le corpus retenu fait généraliser l'adaptateur, pas seulement mémoriser.
 
-Ce qui est mesuré ici : les dispersions sont de l'ordre de 0,017 à 0,020 (écart-type de la perte), alors que l'écart entre deux taux est de l'ordre de 0,7 point de perte et de 4,5 à 20 points de perplexité. L'écart est donc **un ordre de grandeur au-dessus** du bruit de graine : l'effet du taux d'apprentissage est réel, pas un artefact du tirage.
+Ce qui est mesuré ici : les dispersions sont de l'ordre de 0,010 à 0,015 (écart-type de la perte), alors que l'écart entre deux taux est de l'ordre de 0,7 à 1 point de perte et de 5 à 20 points de perplexité. L'écart est donc **un ordre de grandeur au-dessus** du bruit de graine : l'effet du taux d'apprentissage est réel, pas un artefact du tirage.
 
 La lecture se fait alors sur la **dernière** colonne, et elle porte une leçon contre-intuitive :
 
-- à `5e-05`, la variation moyenne de perplexité est la plus favorable (**−7,409**) ;
-- à `2e-04` (le taux nominal du carnet), elle est intermédiaire (**−2,867**) ;
-- à `1e-03`, elle est **positive** (**+17,618**) : après entraînement, le modèle est nettement moins bon qu'avant, y compris sur le corpus retenu.
+- à `5e-05`, la variation moyenne de perplexité est la plus favorable (**−7,563**) ;
+- à `2e-04` (le taux nominal du carnet), elle est intermédiaire (**−2,619**) ;
+- à `1e-03`, elle est **positive** (**+17,292**) : après entraînement, le modèle est nettement moins bon qu'avant, y compris sur le corpus retenu.
 
-Le taux `1e-03` est aussi celui dont la **perte d'entraînement est la plus basse** (1,4135 contre 3,1012 à `5e-05`). Les deux lignes disent la même chose : à ce taux, l'adaptateur a convergé plus vite vers une solution qui **mémorise** le corpus au point de dégrader le texte qu'il n'a pas vu. La perte d'entraînement et la perplexité retenue ne sont donc pas deux façons de dire la même chose — l'une peut descendre pendant que l'autre monte. C'est exactement la séparation mémorisation / généralisation que l'exercice 2 cherche à rendre visible.
+Le taux `1e-03` est aussi celui dont la **perte d'entraînement est la plus basse** (1,3994 contre 3,0989 à `5e-05`). Les deux lignes disent la même chose : à ce taux, l'adaptateur a convergé plus vite vers une solution qui **mémorise** le corpus au point de dégrader le texte qu'il n'a pas vu. La perte d'entraînement et la perplexité retenue ne sont donc pas deux façons de dire la même chose — l'une peut descendre pendant que l'autre monte. C'est exactement la séparation mémorisation / généralisation que le balayage étendu de la section 10 retourne sur quatre leviers — et que le nouvel exercice 2 exploite pour arrêter l'entraînement au bon moment.
 
 La lecture honnête d'un balayage multi-graines commence donc par l'écart-type, jamais par la moyenne seule. C'est la différence entre « cet hyperparamètre change le résultat » et « cet hyperparamètre semble changer le résultat, dans le bruit de la graine ».
 
-Le coût du protocole est assumé : chaque configuration recharge sa propre base quantifiée et libère la mémoire à la fin. C'est ce qui permet de rejouer le même code sur des graines différentes, sans que l'état d'un entraînement ne contamine le suivant.
-","### Reading the result: an effect, or noise?
+Le coût du protocole est assumé : chaque configuration recharge sa propre base quantifiée et libère la mémoire à la fin. C'est ce qui permet de rejouer le même code sur des graines différentes, sans que l'état d'un entraînement ne contamine le suivant.","### Reading the result: an effect, or noise?
 
 The summary table carries three learning rates, each replayed over **three seeds**. The
 column that decides is the standard deviation of the loss: it measures the dispersion **at
@@ -6879,24 +6928,26 @@ identical configuration**.
   variation of the retained perplexity: a rate that lowers the perplexity on the retained
   corpus makes the adapter generalize, not only memorize.
 
-What is measured here: the dispersions are on the order of 0,017 to 0,020 (standard deviation
-of the loss), while the gap between two rates is on the order of 0,7 point of loss and of
-4,5 to 20 points of perplexity. The gap is therefore **an order of magnitude above** the
+What is measured here: the dispersions are on the order of 0.010 to 0.015 (standard deviation
+of the loss), while the gap between two rates is on the order of 0.7 to 1 point of loss and
+of 5 to 20 points of perplexity. The gap is therefore **an order of magnitude above** the
 seed noise: the effect of the learning rate is real, not an artifact of the draw.
 
 The reading then happens on the **last** column, and it carries a counter-intuitive lesson:
 
-- at `5e-05`, the average perplexity variation is the most favorable (**−7,409**);
-- at `2e-04` (the notebook's nominal rate), it is intermediate (**−2,867**);
-- at `1e-03`, it is **positive** (**+17,618**): after training, the model is clearly worse
+- at `5e-05`, the average perplexity variation is the most favorable (**−7.563**);
+- at `2e-04` (the notebook's nominal rate), it is intermediate (**−2.619**);
+- at `1e-03`, it is **positive** (**+17.292**): after training, the model is clearly worse
   than before, including on the retained corpus.
 
-The `1e-03` rate is also the one whose **training loss is the lowest** (1,4135 against
-3,1012 at `5e-05`). The two lines say the same thing: at this rate, the adapter has
+The `1e-03` rate is also the one whose **training loss is the lowest** (1.3994 against
+3.0989 at `5e-05`). The two lines say the same thing: at this rate, the adapter has
 converged faster toward a solution that **memorizes** the corpus to the point of degrading
 the text it has not seen. The training loss and the retained perplexity are therefore not
 two ways of saying the same thing -- one can go down while the other goes up. This is exactly
-the memorization / generalization separation that exercise 2 seeks to make visible.
+the memorization / generalization separation that the extended sweep of section 10 returns
+over four levers -- and that the new exercise 2 exploits to stop training at the right
+moment.
 
 The honest reading of a multi-seed sweep therefore starts with the standard deviation, never
 with the average alone. It is the difference between ""this hyperparameter changes the
@@ -6904,7 +6955,7 @@ result"" and ""this hyperparameter seems to change the result, within the seed n
 
 The cost of the protocol is assumed: each configuration reloads its own quantized base and
 frees the memory at the end. This is what makes it possible to replay the same code on
-different seeds, without the state of one training contaminating the next.",,,,,,,e4a1545a499c04fa,8245ee480b61fab9,,,,,,,,,,,,,,
+different seeds, without the state of one training contaminating the next.",,,,,,,5ade4f1bc75dfaf9,4e63e5e609f0492f,,,,,,,5ade4f1bc75dfaf9,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-00c-LoRA-SOTA-Comparison-Python.ipynb,cell-00,markdown,fr,ceada9b42cebebd2,"# FT-00c : LoRA SOTA — la même adaptation, cette fois avec `peft`
 **Navigation** : [Index](README.md) | [00b — Hyperparams](FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb) | [00d — QLoRA SOTA](FT-00d-LoRA-QLoRA-SOTA-Comparison-Python.ipynb)
 
@@ -7345,3 +7396,355 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-00c-LoRA-SOTA-Comparison-Python.ipynb,cell
 | when to use what | from scratch to understand and debug (FT-00a); `peft` to produce — HuggingFace ecosystem, `Trainer`, `accelerate`, export |
 
 **To go further**: [21_LoRA_FineTuning](../Texte/21_LoRA_FineTuning.ipynb) applies this same `peft` to a HuggingFace LLM; [FT-02](FT-02-QLoRA-Quantization-Python.ipynb) adds 4-bit quantization (QLoRA) to it; [FT-06](FT-06-Vision-Language-LoRA-Python.ipynb) extends it to vision-language.",,,,,,,326cedee133d2a22,48304c3bb00aff03,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,981a7ee1,markdown,fr,353f49a542dae9d3,"### Balayage multi-graines étendu : le rang, le rapport alpha/r, les modules et les époques
+
+L'exemple guidé 2 a mesuré le rang sur **une seule graine**, et sur la perte d'entraînement. Une variation sur une graine ne dit rien : le bruit d'entraînement peut produire l'écart à lui seul. Ce qui suit rejoue chaque configuration sur les trois graines `0`, `7` et `42`, et mesure la **perplexité retenue** — celle qui distingue mémoriser de généraliser.
+
+Quatre leviers sont balayés, un à la fois :
+
+| Levier | Valeurs | Ce qui est tenu constant, et pourquoi |
+|---|---|---|
+| **Rang** `r` | 4, 16, 64 | l'échelle `alpha / r = 2` : sinon deux grandeurs changent ensemble et l'écart n'est attribuable à aucune des deux |
+| **Rapport** `alpha / r` | 0,5 · 1 · 2 · 4 | le rang `r = 16` : le rapport ne peut être isolé qu'à capacité constante |
+| **Modules ciblés** | `q_proj` + `v_proj` ; les quatre projections `q, k, v, o` | le rang, le taux, le rapport, les époques |
+| **Époques** | 15, perplexité retenue mesurée **à chaque époque** | la configuration nominale du carnet |
+
+La règle de lecture est la même que pour le taux d'apprentissage : la colonne qui décide est l'**écart-type entre graines**. Un écart entre deux configurations qui ne dépasse pas cette dispersion est du bruit, et le carnet doit l'écrire ainsi.
+
+Le dernier levier ne produit pas un tableau mais une **courbe** : c'est lui qui montre le moment où la perplexité retenue cesse de baisser alors que la perte d'entraînement continue de descendre. C'est ce que l'arrêt précoce exploite, et c'est l'objet du nouvel exercice 2.
+
+La grille complète fait **30 entraînements** ; sur le GPU de la machine de référence, chacun coûte quelques dizaines de secondes, la section entière une quinzaine de minutes. C'est le prix d'un balayage qui distingue un effet d'une fluctuation — et c'est exactement ce qu'une graine unique ne peut pas acheter.","### Extended multi-seed sweep: rank, alpha/r ratio, modules and epochs
+
+Guided example 2 measured rank on **a single seed**, and on the training loss. A variation
+on one seed says nothing: training noise alone can produce the gap. What follows replays
+each configuration over the three seeds `0`, `7` and `42`, and measures the **retained
+perplexity** — the one that tells memorizing from generalizing.
+
+Four levers are swept, one at a time:
+
+| Lever | Values | What is held constant, and why |
+|---|---|---|
+| **Rank** `r` | 4, 16, 64 | the scale `alpha / r = 2`: otherwise two quantities change together and the gap is attributable to neither |
+| **Ratio** `alpha / r` | 0.5 · 1 · 2 · 4 | the rank `r = 16`: the ratio can only be isolated at constant capacity |
+| **Target modules** | `q_proj` + `v_proj`; the four projections `q, k, v, o` | rank, rate, ratio, epochs |
+| **Epochs** | 15, retained perplexity measured **at every epoch** | the notebook's nominal configuration |
+
+The reading rule is the same as for the learning rate: the deciding column is the
+**standard deviation across seeds**. A gap between two configurations that does not exceed
+this dispersion is noise, and the notebook must say so.
+
+The last lever produces not a table but a **curve**: it is the one that shows the moment
+when the retained perplexity stops falling while the training loss keeps going down. This
+is what early stopping exploits, and it is the subject of the new exercise 2.
+
+The full grid is **30 trainings**; on the reference machine's GPU, each costs a few dozen
+seconds, the whole section about fifteen minutes. That is the price of a sweep that tells
+an effect from a fluctuation — and it is exactly what a single seed cannot buy.",,,,,,,353f49a542dae9d3,2c9ab66bc15e532e,,,,,,,353f49a542dae9d3,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,b505c2f4,code,fr,c5f5ec6bb1449922,"# --- Balayage multi-graines : le rang LoRA, a echelle alpha/r constante ---
+# `entrainer_et_evaluer` est reutilisee telle quelle : meme protocole, meme
+# corpus retenu, memes graines. Seuls le rang et alpha changent, ensemble,
+# pour que alpha/r = 2 reste vrai a chaque rang.
+RANGS = [4, 16, 64]
+
+resultats_rang = []
+for rang in RANGS:
+    for graine in GRAINES:
+        cfg = dict(CONFIG, lora_r=rang, lora_alpha=2 * rang, seed=graine)
+        res_rang = entrainer_et_evaluer(cfg)
+        resultats_rang.append(res_rang)
+        print(f""r={rang:<3} graine={graine:<3} perte={res_rang['perte']:.4f}  ""
+              f""ppl {res_rang['ppl_avant']:.3f} -> {res_rang['ppl_apres']:.3f} ""
+              f""({res_rang['delta']:+.3f})  vram={res_rang['vram_peak_go']:.2f} Go  ""
+              f""{res_rang['duree_s']:.0f}s"")
+
+
+def synthese(resultats, cle, valeurs):
+    """"""Tableau de synthese : moyenne ET dispersion, pour chaque valeur de `cle`.""""""
+    print(f""{'config':>10} {'perte (moy)':>12} {'perte (ect)':>12} ""
+          f""{'ppl apres (moy)':>16} {'ppl (ect)':>10} {'variation (moy)':>16}"")
+    for valeur in valeurs:
+        lignes = [r for r in resultats if r[cle] == valeur]
+        pertes = [r[""perte""] for r in lignes]
+        ppls = [r[""ppl_apres""] for r in lignes]
+        moy_p = sum(pertes) / len(pertes)
+        ect_p = (sum((x - moy_p) ** 2 for x in pertes) / len(pertes)) ** 0.5
+        moy_q = sum(ppls) / len(ppls)
+        ect_q = (sum((x - moy_q) ** 2 for x in ppls) / len(ppls)) ** 0.5
+        moy_v = sum(r[""delta""] for r in lignes) / len(lignes)
+        print(f""{str(valeur):>10} {moy_p:>12.4f} {ect_p:>12.4f} {moy_q:>16.3f} ""
+              f""{ect_q:>10.3f} {moy_v:>+16.3f}"")
+
+
+print()
+print(""="" * 78)
+print(""SYNTHESE -- le rang LoRA (3 graines par rang)"")
+print(""="" * 78)
+synthese(resultats_rang, ""lora_r"", RANGS)",,,,,,,,c5f5ec6bb1449922,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,51b6c15d,markdown,fr,7bf2b5e2e351f8fc,"### Lecture du résultat — le rang achète de la mémorisation, pas de la généralisation
+
+Sur une seule graine et sur la seule perte d'entraînement, l'exemple guidé 2 concluait que la perte baisse quand le rang monte. Les trois graines et la perplexité retenue renversent la moitié de cette conclusion :
+
+- la **perte d'entraînement** descend bien avec le rang (2,860 → 2,398 → 1,875) ;
+- la **perplexité retenue** remonte au contraire (24,964 → 28,910 → 34,383) : à `r = 64`, l'adaptateur est *pire que la base* (+2,785) sur des textes qu'il n'a jamais vus.
+
+L'effet est réel, pas un bruit de graine : l'écart entre deux rangs adjacents va de 4 à 5 points de perplexité, quand la dispersion entre graines reste entre 0,265 et 0,567 — un ordre de grandeur d'écart, dans le même sens sur les trois graines. Les deux colonnes disent ensemble que le rang supplémentaire sert à mémoriser les dix extraits, et que cette mémorisation dégrade le reste : la conclusion de l'exemple guidé 2 (« le rang achète de la capacité ») reste vraie en capacité, fausse en généralisation — sur ce corpus, le petit rang gagne.
+
+La colonne « perte (écart-type) » mérite d'être lue aussi : elle est minuscule (0,004 à 0,011) devant les écarts de perte entre rangs (0,46 à 0,52). Autrement dit, le rang est un levier dont l'effet **dépasse massivement** le bruit d'entraînement — c'est exactement la question que la graine unique de l'exemple guidé 2 ne pouvait pas trancher.","### Reading the result — rank buys memorization, not generalization
+
+On a single seed and on the training loss alone, guided example 2 concluded that the loss
+falls as rank rises. The three seeds and the retained perplexity overturn half of that
+conclusion:
+
+- the **training loss** does fall with rank (2.860 → 2.398 → 1.875);
+- the **retained perplexity** on the contrary rises (24.964 → 28.910 → 34.383): at
+  `r = 64`, the adapter is *worse than the base* (+2.785) on texts it has never seen.
+
+The effect is real, not seed noise: the gap between two adjacent ranks runs 4 to 5
+perplexity points, while the dispersion across seeds stays between 0.265 and 0.567 — an
+order of magnitude apart, in the same direction on all three seeds. The two columns
+together say that the extra rank serves to memorize the ten excerpts, and that this
+memorization degrades the rest: guided example 2's conclusion (""rank buys capacity"")
+remains true in capacity, false in generalization — on this corpus, small rank wins.
+
+The ""loss (std)"" column deserves reading too: it is minuscule (0.004 to 0.011) against the
+loss gaps between ranks (0.46 to 0.52). In other words, rank is a lever whose effect
+**massively exceeds** the training noise — exactly the question the single seed of guided
+example 2 could not settle.",,,,,,,7bf2b5e2e351f8fc,c13caaef67ef7db7,,,,,,,7bf2b5e2e351f8fc,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,c3fed041,markdown,fr,289584a024c0ff96,"Le balayage du rang a tenu `alpha / r = 2` constant, ce qui est la bonne façon de mesurer l'effet du rang seul — mais cela laisse une question ouverte : lequel des deux réglages porte l'effet ? Le rang fixe la **capacité** de l'adaptateur ; `alpha` fixe l'**échelle** de sa mise à jour, et c'est leur rapport qui décide de la force du signal en retour.
+
+Pour séparer les deux, le rang est figé (r = 16, le choix nominal du carnet) et seul `alpha` varie, ce qui fait prendre au rapport `alpha / r` les valeurs **0,5 · 1 · 2 · 4**. Le point 2 est la configuration déjà mesurée plus haut — il sert de repère, et retrouver la même valeur est le contrôle que le protocole est bien le même.","The rank sweep held `alpha / r = 2` constant, which is the right way to measure the effect
+of rank alone — but it leaves an open question: which of the two settings carries the
+effect? The rank fixes the adapter's **capacity**; `alpha` fixes the **scale** of its
+update, and it is their ratio that decides the strength of the feedback signal.
+
+To separate the two, the rank is frozen (r = 16, the notebook's nominal choice) and only
+`alpha` varies, which makes the ratio `alpha / r` take the values **0.5 · 1 · 2 · 4**.
+Point 2 is the configuration already measured above — it serves as a benchmark, and finding
+the same value again is the check that the protocol is indeed the same.",,,,,,,289584a024c0ff96,5f4a714b84521c3d,,,,,,,289584a024c0ff96,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,bc008932,code,fr,c558e94cf173ca46,"# --- Balayage multi-graines : le rapport alpha/r, a rang fige ---
+# r = 16 constant ; alpha varie, donc alpha/r prend les valeurs 0.5, 1, 2, 4.
+RATIOS_ALPHA = [0.5, 1, 2, 4]
+RANG_FIGE = 16
+
+resultats_ratio = []
+for ratio in RATIOS_ALPHA:
+    for graine in GRAINES:
+        cfg = dict(CONFIG, lora_r=RANG_FIGE,
+                   lora_alpha=int(ratio * RANG_FIGE), seed=graine)
+        res_ratio = entrainer_et_evaluer(cfg)
+        res_ratio[""ratio""] = ratio
+        resultats_ratio.append(res_ratio)
+        print(f""alpha/r={ratio:<4} graine={graine:<3} perte={res_ratio['perte']:.4f}  ""
+              f""ppl {res_ratio['ppl_avant']:.3f} -> {res_ratio['ppl_apres']:.3f} ""
+              f""({res_ratio['delta']:+.3f})  vram={res_ratio['vram_peak_go']:.2f} Go  ""
+              f""{res_ratio['duree_s']:.0f}s"")
+
+print()
+print(""="" * 78)
+print(""SYNTHESE -- le rapport alpha/r (rang 16, 3 graines par rapport)"")
+print(""="" * 78)
+synthese(resultats_ratio, ""ratio"", RATIOS_ALPHA)",,,,,,,,c558e94cf173ca46,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ad8e12f5,markdown,fr,83f821e104d28277,"### Lecture du résultat — plus l'échelle `alpha/r` est petite, mieux le corpus retenu
+
+À rang constant, la réponse est **monotone** : plus `alpha/r` grandit, plus la perte d'entraînement descend (2,872 → 2,626 → 2,396 → 2,156) et plus la perplexité retenue se dégrade (25,063 → 26,635 → 28,992 → 30,808). La variation passe de −6,536 à −0,791 : à `alpha/r = 4`, l'adaptateur n'améliore presque plus les textes qu'il n'a pas vus, alors qu'il mémorise mieux que jamais.
+
+Chaque écart entre deux rapports adjacents (1,6 à 2,4 points de perplexité) dépasse la dispersion entre graines (0,283 à 0,663) : l'effet de l'échelle est réel, lui aussi.
+
+**Le contrôle interne tombe juste** : la ligne `alpha/r = 2` de ce balayage et la ligne `r = 16` du balayage du rang décrivent la même configuration (rang 16, échelle 2) mesurée deux fois, à six configurations d'intervalle. Elles rendent 28,992 et 28,910 — écart de 0,08, inférieur à la dispersion de chacune. Le protocole est répétable à l'intérieur du même run ; c'est ce qui autorise à lire les quatre tableaux de la section comme une seule expérience.
+
+Le rang et l'échelle racontent donc **la même histoire par deux chemins** : restreindre la mise à jour (peu de paramètres, ou petite échelle) préserve la généralisation sur ce petit corpus ; l'amplifier (grand rang, grande échelle) achète de la mémorisation au prix des textes retenus. Les deux leviers agissent sur la même grandeur — la norme effective de la correction LoRA — et c'est pourquoi leurs courbes se ressemblent autant.","### Reading the result — the smaller the alpha/r scale, the better the retained corpus
+
+At constant rank, the answer is **monotone**: the larger `alpha/r` grows, the lower the
+training loss falls (2.872 → 2.626 → 2.396 → 2.156) and the more the retained perplexity
+degrades (25.063 → 26.635 → 28.992 → 30.808). The variation goes from −6.536 to −0.791:
+at `alpha/r = 4`, the adapter almost no longer improves the texts it has not seen, while
+it memorizes better than ever.
+
+Each gap between two adjacent ratios (1.6 to 2.4 perplexity points) exceeds the dispersion
+across seeds (0.283 to 0.663): the effect of the scale is real too.
+
+**The internal control lands on target**: the `alpha/r = 2` row of this sweep and the
+`r = 16` row of the rank sweep describe the same configuration (rank 16, scale 2) measured
+twice, six configurations apart. They return 28.992 and 28.910 — a gap of 0.08, below the
+dispersion of either. The protocol is repeatable within the same run; this is what
+authorizes reading the four tables of the section as one experiment.
+
+Rank and scale therefore tell **the same story by two roads**: restricting the update (few
+parameters, or small scale) preserves generalization on this small corpus; amplifying it
+(large rank, large scale) buys memorization at the price of the retained texts. Both levers
+act on the same quantity — the effective norm of the LoRA correction — which is why their
+curves look so alike.",,,,,,,83f821e104d28277,33155acbb3727f27,,,,,,,83f821e104d28277,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,697ea204,markdown,fr,e27fcfe58cee1f1e,"Le rang règle **combien** de paramètres l'adaptateur ajoute. Les modules ciblés règlent **où** il les ajoute. `q_proj` et `v_proj` est le choix minimal du papier LoRA ; les quatre projections `q, k, v, o` touchent deux fois plus de couches à rang égal.
+
+La question est la même que pour le rang et le rapport `alpha / r` : à taux, rang et époques constants, la perplexité retenue bouge-t-elle plus que la dispersion entre graines ? Si oui, « où greffer » compte autant que « combien ». Si non, le choix des modules est une affaire de coût et de surface mémoire, pas de qualité — et c'est ce qu'il faut écrire.","The rank sets **how many** parameters the adapter adds. The target modules set **where** it
+adds them. `q_proj` and `v_proj` is the minimal choice of the LoRA paper; the four
+projections `q, k, v, o` touch twice as many layers at equal rank.
+
+The question is the same as for rank and for the `alpha / r` ratio: at constant rate, rank
+and epochs, does the retained perplexity move more than the dispersion across seeds? If
+yes, ""where to graft"" matters as much as ""how much"". If no, the choice of modules is a
+matter of cost and memory footprint, not of quality — and that is what must be written.",,,,,,,e27fcfe58cee1f1e,16e1c7ad93c2b5c1,,,,,,,e27fcfe58cee1f1e,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,d09572a2,code,fr,12af8078b23f4e9a,"# --- Balayage multi-graines : quelles projections porter avec LoRA ? ---
+# Meme rang, meme taux, memes graines : seule la liste des projections change.
+MODULES_CIBLES = {
+    ""q+v"": [""q_proj"", ""v_proj""],
+    ""q+k+v+o"": [""q_proj"", ""k_proj"", ""v_proj"", ""o_proj""],
+}
+
+resultats_modules = []
+for nom_modules, modules in MODULES_CIBLES.items():
+    for graine in GRAINES:
+        cfg = dict(CONFIG, target_modules=modules, seed=graine)
+        res_mod = entrainer_et_evaluer(cfg)
+        res_mod[""modules""] = nom_modules
+        resultats_modules.append(res_mod)
+        print(f""{nom_modules:<8} graine={graine:<3} perte={res_mod['perte']:.4f}  ""
+              f""ppl {res_mod['ppl_avant']:.3f} -> {res_mod['ppl_apres']:.3f} ""
+              f""({res_mod['delta']:+.3f})  vram={res_mod['vram_peak_go']:.2f} Go  ""
+              f""{res_mod['duree_s']:.0f}s"")
+
+print()
+print(""="" * 78)
+print(""SYNTHESE -- les modules cibles (3 graines par configuration)"")
+print(""="" * 78)
+synthese(resultats_modules, ""modules"", list(MODULES_CIBLES))",,,,,,,,12af8078b23f4e9a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,1dae0a93,markdown,fr,7570688c7667dda5,"### Lecture du résultat — où greffer : indiscernable du bruit
+
+Les quatre projections font mieux que deux sur la perte d'entraînement (2,301 contre 2,396 — un écart de 0,095, pour des dispersions de l'ordre de 0,01) : à rang égal, toucher `k_proj` et `o_proj` en plus donne réellement plus de capacité à mémoriser. Mais la perplexité retenue ne suit pas : 28,768 contre 28,663, un écart de **0,105 point**, six fois plus petit que la dispersion entre graines (0,631 à 0,724). Sur ce corpus, le choix des modules ciblés ne se distingue pas du bruit : il se règle sur le coût — temps et VRAM, mesurés dans les colonnes du balayage — pas sur la qualité.
+
+C'est la contre-épreuve de la section. Un levier réel (le rang, l'échelle, le taux d'apprentissage) produit des écarts de 1,6 à 5 points de perplexité retenue ; un levier inopérant ici en produit 0,1. La même règle de lecture — « l'écart dépasse-t-il la dispersion entre graines ? » — rend les deux verdicts, et c'est précisément pourquoi elle est appliquée systématiquement au lieu de commenter les moyennes seules.","### Reading the result — where to graft: indistinguishable from noise
+
+The four projections beat the two on the training loss (2.301 against 2.396 — a gap of
+0.095, for dispersions on the order of 0.01): at equal rank, touching `k_proj` and
+`o_proj` as well genuinely gives more capacity to memorize. But the retained perplexity
+does not follow: 28.768 against 28.663, a gap of **0.105 point**, six times smaller than
+the dispersion across seeds (0.631 to 0.724). On this corpus, the choice of target modules
+does not stand out from the noise: it is settled on cost — time and VRAM, measured in the
+sweep's columns — not on quality.
+
+This is the section's counter-proof. A real lever (rank, scale, learning rate) produces
+gaps of 1.6 to 5 retained-perplexity points; a lever inert here produces 0.1. The same
+reading rule — ""does the gap exceed the dispersion across seeds?"" — returns both verdicts,
+and that is precisely why it is applied systematically instead of commenting on averages
+alone.",,,,,,,7570688c7667dda5,ce8f91cc43d0050b,,,,,,,7570688c7667dda5,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,83623a68,markdown,fr,7c10f7fa7a8956ca,"Les trois balayages précédents choisissent une **configuration** et la mènent à son terme : quinze époques, toujours. Or rien ne garantit que l'époque 15 soit la meilleure. Sur dix extraits vus quinze fois, la perplexité retenue peut avoir atteint son minimum bien avant, puis remonter — l'adaptateur commence alors à mémoriser au lieu de styliser.
+
+Pour le voir, il faut mesurer **pendant** l'entraînement, pas seulement à la fin. La sonde ci-dessous est un `TrainerCallback` : à chaque fin d'époque, elle mesure la perplexité sur le même corpus retenu que le reste du carnet, et l'empile. La courbe qui en sort se lit toujours avec la dispersion entre graines, parce que le minimum d'une graine n'est pas forcément celui d'une autre.
+
+C'est cette courbe qui rend l'arrêt précoce possible : au lieu de fixer les époques, on arrête quand la perplexité retenue ne s'améliore plus, et on garde l'adaptateur de la meilleure époque.","The three previous sweeps choose a **configuration** and run it to its end: fifteen epochs,
+always. Yet nothing guarantees that epoch 15 is the best. On ten excerpts seen fifteen
+times, the retained perplexity may have reached its minimum much earlier, then risen again
+— the adapter then starts memorizing instead of styling.
+
+To see it, one must measure **during** training, not only at the end. The probe below is a
+`TrainerCallback`: at each epoch end, it measures the perplexity on the same retained
+corpus as the rest of the notebook, and stacks it. The curve that comes out is still read
+with the dispersion across seeds, because one seed's minimum is not necessarily another's.
+
+It is this curve that makes early stopping possible: instead of fixing the epochs, one
+stops when the retained perplexity no longer improves, and keeps the adapter from the best
+epoch.",,,,,,,7c10f7fa7a8956ca,e69efb4cb5d2c43f,,,,,,,7c10f7fa7a8956ca,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,c8ef09ea,code,fr,6487269f3cb97698,"# --- Perplexite retenue epoque par epoque, sur les trois graines ---
+# La question n'est plus ""quelle configuration gagne"" mais ""a quel moment
+# l'adaptateur cesse de generaliser"". On mesure APRES CHAQUE epoque.
+from transformers import TrainerCallback
+
+
+class SondeRetenue(TrainerCallback):
+    """"""Mesure la perplexite retenue a la fin de chaque epoque.""""""
+
+    def __init__(self, modele, textes):
+        self.modele = modele
+        self.textes = textes
+        self.courbe = []
+
+    def on_epoch_end(self, args, state, control, **kwargs):
+        self.modele.eval()
+        self.courbe.append((round(state.epoch), perplexite(self.modele, self.textes)))
+        self.modele.train()
+        return control
+
+
+def entrainer_avec_courbe(config, textes_retenus):
+    """"""Entraine et rend la perplexite retenue a chaque epoque.""""""
+    gc.collect()
+    torch.cuda.empty_cache()
+
+    base = AutoModelForCausalLM.from_pretrained(
+        MODEL_NAME, quantization_config=bnb_config, device_map=""auto"")
+    base = prepare_model_for_kbit_training(base)
+    ppl_avant = perplexite(base, textes_retenus)
+
+    lora = LoraConfig(
+        r=config[""lora_r""], lora_alpha=config[""lora_alpha""],
+        target_modules=config[""target_modules""], lora_dropout=config[""lora_dropout""],
+        bias=""none"", task_type=""CAUSAL_LM"")
+    modele = get_peft_model(base, lora)
+
+    sonde = SondeRetenue(modele, textes_retenus)
+    args = TrainingArguments(
+        output_dir=tempfile.mkdtemp(prefix=f""ft02_courbe_s{config['seed']}_""),
+        num_train_epochs=config[""num_train_epochs""],
+        per_device_train_batch_size=config[""batch_size""],
+        learning_rate=config[""learning_rate""], weight_decay=0.01,
+        logging_steps=25, save_strategy=""no"", report_to=""none"",
+        fp16=torch.cuda.is_available(), seed=config[""seed""],
+        optim=""paged_adamw_8bit"",
+    )
+    trainer = Trainer(model=modele, args=args, train_dataset=tokenized_dataset,
+                      data_collator=data_collator, callbacks=[sonde])
+
+    torch.cuda.reset_peak_memory_stats()
+    t0 = time.time()
+    res = trainer.train()
+    duree = time.time() - t0
+
+    del modele, base, trainer
+    gc.collect()
+    torch.cuda.empty_cache()
+    shutil.rmtree(args.output_dir, ignore_errors=True)
+    return {""seed"": config[""seed""], ""ppl_avant"": ppl_avant,
+            ""perte"": res.training_loss, ""courbe"": sonde.courbe, ""duree_s"": duree}
+
+
+courbes = []
+for graine in GRAINES:
+    res_courbe = entrainer_avec_courbe(dict(CONFIG, seed=graine), heldout_texts)
+    courbes.append(res_courbe)
+    epoque_min, ppl_min = min(res_courbe[""courbe""], key=lambda point: point[1])
+    print(f""graine={graine:<3} ppl avant={res_courbe['ppl_avant']:.3f}  ""
+          f""meilleure epoque={epoque_min:>2} (ppl {ppl_min:.3f})  ""
+          f""ppl a la derniere epoque={res_courbe['courbe'][-1][1]:.3f}  ""
+          f""{res_courbe['duree_s']:.0f}s"")
+
+print()
+print(""="" * 78)
+print(""COURBE -- perplexite retenue par epoque (moyenne et ecart-type sur 3 graines)"")
+print(""="" * 78)
+print(f""{'epoque':>7} {'ppl (moy)':>12} {'ppl (ect)':>12}"")
+for i in range(CONFIG[""num_train_epochs""]):
+    valeurs = [r[""courbe""][i][1] for r in courbes if len(r[""courbe""]) > i]
+    if not valeurs:
+        continue
+    moy = sum(valeurs) / len(valeurs)
+    ect = (sum((v - moy) ** 2 for v in valeurs) / len(valeurs)) ** 0.5
+    print(f""{i + 1:>7} {moy:>12.3f} {ect:>12.3f}"")",,,,,,,,6487269f3cb97698,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,858e0038,markdown,fr,27392cca5572d0b9,"### Lecture du résultat — le minimum est aux époques 2-3, pas à 15
+
+La courbe moyenne dit la même chose que les trois graines prises une à une : la perplexité retenue chute pendant les deux premières époques (27,111 → 24,658), atteint son minimum à l'époque 3 (**24,447**, écart-type 0,144), puis **remonte sans retour** jusqu'à 28,990 à l'époque 15. Les douze dernières époques dégradent le modèle sur les textes qu'il n'a pas vus — pendant que la perte d'entraînement, elle, continue de descendre : c'est la définition même du sur-entraînement, et il coûte ici **4,5 points** de perplexité retenue, plus que la plupart des écarts d'hyperparamètres mesurés dans cette section.
+
+Et la meilleure époque bouge d'une graine à l'autre (2, 3, 3) : même si le régime général est stable — minimum précoce, remontée ensuite — un budget fixe de quinze époques ne peut pas être optimal pour tous les tirages. La seule règle qui s'adapte au tirage est un critère d'arrêt : mesurer la perplexité retenue à chaque époque et s'arrêter quand elle ne s'améliore plus. C'est exactement ce que l'exercice 2 construit.","### Reading the result — the minimum sits at epochs 2-3, not 15
+
+The averaged curve says the same thing as the three seeds taken one by one: the retained
+perplexity drops during the first two epochs (27.111 → 24.658), reaches its minimum at
+epoch 3 (**24.447**, standard deviation 0.144), then **climbs back without return** up to
+28.990 at epoch 15. The last twelve epochs degrade the model on texts it has not seen —
+while the training loss, for its part, keeps falling: this is the very definition of
+over-training, and it costs here **4.5 points** of retained perplexity, more than most of
+the hyperparameter gaps measured in this section.
+
+And the best epoch moves from one seed to the next (2, 3, 3): even if the general regime
+is stable — early minimum, climb afterwards — a fixed budget of fifteen epochs cannot be
+optimal for every draw. The only rule that adapts to the draw is a stopping criterion:
+measure the retained perplexity at every epoch and stop when it no longer improves. This
+is exactly what exercise 2 builds.",,,,,,,27392cca5572d0b9,3e42a356a36f2384,,,,,,,27392cca5572d0b9,,,,,,,
