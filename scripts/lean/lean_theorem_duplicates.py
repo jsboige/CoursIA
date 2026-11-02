@@ -32,11 +32,11 @@ paire Sen (`.../game_theory_lean/SocialChoice/Sen.lean` contre le meme
 fichier) doivent apparaitre.
 
 Usage :
-    python scripts/lean/lean_duplicate_theorems.py             # candidats (texte)
-    python scripts/lean/lean_duplicate_theorems.py --json      # sortie machine
-    python scripts/lean/lean_duplicate_theorems.py --write      # regenere la page
-    python scripts/lean/lean_duplicate_theorems.py --check      # exit 1 si derive
-    python scripts/lean/lean_duplicate_theorems.py --df-max 8
+    python scripts/lean/lean_theorem_duplicates.py             # candidats (texte)
+    python scripts/lean/lean_theorem_duplicates.py --json      # sortie machine
+    python scripts/lean/lean_theorem_duplicates.py --write      # regenere la page
+    python scripts/lean/lean_theorem_duplicates.py --check      # exit 1 si derive
+    python scripts/lean/lean_theorem_duplicates.py --df-max 8
 """
 
 from __future__ import annotations
@@ -52,6 +52,15 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+
+# Le nom du script, deduit du fichier lui-meme : un nom ecrit en dur dans la
+# docstring d'usage ou dans l'en-tete de la page peut deriver de la reality (le
+# nom livre a ete `lean_theorem_duplicates.py`, l'organe en citait un autre --
+# sept occurrences, dont une sur la page commitee, qui ne pouvait donc etre
+# copie sans `No such file or directory`). Le nom vient donc de `__file__`, et
+# un test verifie que la docstring d'usage et l'en-tete de page nomment
+# exactement ce fichier.
+SCRIPT_NAME = Path(__file__).name
 
 # La page generee : son propre fichier, distinct de la carte du materiel
 # (`lean-material-map.md`, touchee par une autre lane). Le contenu est
@@ -232,6 +241,39 @@ def _doc_blocks(lines: list[str]) -> list[tuple[int, str]]:
     return blocks
 
 
+_ATTRIBUTE_LINE = re.compile(r"^@\[[^\]]*\]$")
+_MODIFIER_ONLY = re.compile(
+    r"^(?:private|protected|noncomputable|local|scoped|partial|unsafe|nonrec)$"
+)
+
+
+def _is_transparent(line: str) -> bool:
+    """Une ligne intercalee n'emporte-t-elle aucune declaration ?
+
+    Transparente, et RIEN D'AUTRE : une ligne vide, un attribut **seul** sur
+    sa ligne (`@[simp]`), un commentaire, une `set_option`, ou un
+    modificateur seul (`noncomputable`).
+
+    La reponse est volontairement **stricte** : une ligne qui declare ou
+    definit quoi que ce soit -- meme precedee d'un attribut
+    (`@[reducible] def scaleW ...`), meme un champ de classe
+    (`amalgamates : forall ...`) -- n'est PAS transparente. Rattacher une
+    docstring par-dessus une commande intermediaire ferait porter a une
+    declaration le texte d'une autre : c'est une faute de l'organe, pire que
+    la perte qu'on pretend corriger. Mesure du 2026-11-02 : la regle stricte
+    perd 14 docstrings sur la population, la regle tolerante en regagne 14 et
+    n'en deplace aucune.
+    """
+    s = line.strip()
+    if not s:
+        return True
+    if s.startswith("--") or s.startswith("set_option "):
+        return True
+    if _ATTRIBUTE_LINE.match(s):
+        return True
+    return bool(_MODIFIER_ONLY.match(s))
+
+
 def parse_file(path: str, text: str, lake: str) -> list[Declaration]:
     """Les declarations d'un fichier Lean, avec leur docstring et leur enonce."""
     lines = text.splitlines()
@@ -251,12 +293,19 @@ def parse_file(path: str, text: str, lake: str) -> list[Declaration]:
             buf.append(lines[j])
         statement = "\n".join(buf).split(":=", 1)[0]
         # La docstring : le bloc `/--` qui se termine le plus tot avant la
-        # declaration, sans ligne non vide entre les deux.
+        # declaration, sans ligne **non transparente** entre les deux.
+        #
+        # La regle stricte (lignes vides seulement) perdait la docstring des
+        # declarations precedees d'un attribut (`@[simp]`), d'un commentaire ou
+        # d'un modificateur : mesure du 2026-11-02 sur le corpus, 16
+        # declarations sur 4 640 (dont 12 derriere un `@[simp]`). Une
+        # declaration sans docstring sort de l'index de signature, donc de
+        # TOUTE paire possible, sans trace.
         doc = ""
         best = -1
         for end_line, block in blocks:
             if end_line < i and all(
-                not lines[k].strip() for k in range(end_line + 1, i)
+                _is_transparent(lines[k]) for k in range(end_line + 1, i)
             ):
                 if end_line > best:
                     best = end_line
@@ -555,9 +604,9 @@ def render_page(pairs: list[dict], df_max: int, min_containment: float) -> str:
     lines.append("# Theoremes en double entre lacs Lean")
     lines.append("")
     lines.append(
-        "Page regeneree par `scripts/lean/lean_duplicate_theorems.py`"
+        "Page regeneree par `scripts/lean/%s`"
         " (`--write` pour la reecrire, `--check` pour verifier qu'elle suit"
-        " l'arbre). Ne pas l'editer a la main."
+        " l'arbre). Ne pas l'editer a la main." % SCRIPT_NAME
     )
     lines.append("")
     lines.extend(render_section(pairs, df_max, min_containment))
@@ -650,7 +699,11 @@ def main(argv: list[str] | None = None) -> int:
             PAGE.parent.mkdir(parents=True, exist_ok=True)
             PAGE.write_text(page, encoding="utf-8", newline="\n")
             print("ecrit : %s" % PAGE)
-            return 0
+        # `--check` est evalue MEME avec `--write`. Avant, le chemin `write`
+        # sortait en premier : `--write --check` rendait 0 sans jamais
+        # comparer -- un faux feu vert. La comparaison porte desormais sur le
+        # fichier reellement present sur le disque, donc elle verifie aussi
+        # que l'ecriture a bien atterri.
         current = ""
         if PAGE.is_file():
             current = PAGE.read_text(encoding="utf-8")
@@ -660,7 +713,8 @@ def main(argv: list[str] | None = None) -> int:
                 " relancer avec --write." % PAGE
             )
             return 1
-        print("OK : %s suit l'arbre." % PAGE)
+        if args.check:
+            print("OK : %s suit l'arbre." % PAGE)
         return 0
 
     for line in render_section(pairs, args.df_max, args.min_containment):

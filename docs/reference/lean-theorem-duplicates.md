@@ -1,6 +1,6 @@
 # Theoremes en double entre lacs Lean
 
-Page regeneree par `scripts/lean/lean_duplicate_theorems.py` (`--write` pour la reecrire, `--check` pour verifier qu'elle suit l'arbre). Ne pas l'editer a la main.
+Page regeneree par `scripts/lean/lean_theorem_duplicates.py` (`--write` pour la reecrire, `--check` pour verifier qu'elle suit l'arbre). Ne pas l'editer a la main.
 
 ## Theoremes en double entre lacs
 
