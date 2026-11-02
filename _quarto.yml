@@ -249,7 +249,7 @@ project:
     - "MyIA.AI.Notebooks/Physique/Jauge/README.md"
     - "MyIA.AI.Notebooks/Physique/Numerique/README.md"
     - "MyIA.AI.Notebooks/Physique/README.md"
-        - "MyIA.AI.Notebooks/Probas/Applications/Percolation/README.md"
+    - "MyIA.AI.Notebooks/Probas/Applications/Percolation/README.md"
     - "MyIA.AI.Notebooks/Probas/Applications/README.md"
     - "MyIA.AI.Notebooks/Probas/DecisionTheory/Actuariat/README.md"
     - "MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/data/acic2016/README.md"

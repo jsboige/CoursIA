@@ -54,6 +54,9 @@ pièces de Schwartz, est dans sa section « Références ») :
 - G. N. Watson, « Three Triple Integrals », *Q. J. Math.* **10**(1), 266–276
   (1939), doi:10.1093/qmath/os-10.1.266 — non disponible en accès ouvert
   (citation bibliographique seule).
+- G. S. Joyce, « On the simple cubic lattice Green function », *Phil. Trans.
+  R. Soc. Lond. A* **273**, 583–610 (1973) — la forme fermée de $G_3(1)$, dont
+  la valeur $1{,}5164$ est reprise par le carnet.
 - M. D. Schwartz, *Vibe physics* et *Claude-shaped science* (Anthropic, 2025),
   arXiv:2601.02484 (2026) — archivés au gisement
   `G:\Mon Drive\MyIA\IA\Bibliographie IA\Physics\` (rayon Physics).
