@@ -36,7 +36,6 @@ name: Paragraph Length Advisory
 on:
   pull_request:
     types: [opened, synchronize, edited, reopened]
-    branches: [main]
     paths:
       - '**/*.md'
       # Self-cover (#8822): a paths-filtered label-poser must list its own file,

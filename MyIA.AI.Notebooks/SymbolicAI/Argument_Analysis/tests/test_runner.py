@@ -132,10 +132,17 @@ def _install_sk_mock():
         # instances created since the last reset (order-preserving)
         instances = []
 
-        def __init__(self, agents=None, chat_history=None, termination_strategy=None):
+        def __init__(
+            self,
+            agents=None,
+            chat_history=None,
+            termination_strategy=None,
+            selection_strategy=None,
+        ):
             self.agents = agents or []
             self.chat_history = chat_history
             self.termination_strategy = termination_strategy
+            self.selection_strategy = selection_strategy
             AgentGroupChat.instances.append(self)
 
         async def invoke(self):
@@ -144,7 +151,8 @@ def _install_sk_mock():
             for name in AgentGroupChat.YIELD_NAMES:
                 if AgentGroupChat.ON_TURN is not None:
                     AgentGroupChat.ON_TURN(name, self)
-                yield SimpleNamespace(name=name)
+                # content : lu par run_conversational (journal), pas par run()
+                yield SimpleNamespace(name=name, content="")
 
     mod_gc.AgentGroupChat = AgentGroupChat
 
@@ -168,6 +176,23 @@ def _install_sk_mock():
     agents.strategies = strategies
     strategies.termination = term_parent
     term_parent.default_termination_strategy = mod_dts
+
+    # semantic_kernel.agents.strategies.selection.selection_strategy
+    # (#23726) : base de DelegatingSelectionStrategy, importée par
+    # run_conversational. Squelette minimal pour tester l'orchestration
+    # conversationnelle sans SK réel.
+    sel_parent = ModuleType("semantic_kernel.agents.strategies.selection")
+    mod_sel = ModuleType(
+        "semantic_kernel.agents.strategies.selection.selection_strategy"
+    )
+
+    class SelectionStrategy:
+        def __init__(self):
+            pass
+
+    mod_sel.SelectionStrategy = SelectionStrategy
+    strategies.selection = sel_parent
+    sel_parent.selection_strategy = mod_sel
 
     # contents
     contents = ModuleType("semantic_kernel.contents")
@@ -226,6 +251,8 @@ def _install_sk_mock():
         "semantic_kernel.agents.strategies": strategies,
         "semantic_kernel.agents.strategies.termination": term_parent,
         "semantic_kernel.agents.strategies.termination.default_termination_strategy": mod_dts,
+        "semantic_kernel.agents.strategies.selection": sel_parent,
+        "semantic_kernel.agents.strategies.selection.selection_strategy": mod_sel,
         "semantic_kernel.contents": contents,
         "semantic_kernel.contents.chat_message_content": mod_cmc,
         "semantic_kernel.contents.utils": utils,
@@ -1263,3 +1290,169 @@ def test_resumption_hygiene_prunes_poisoned_entries():
     # après purge les seuils 1/1 sont tenus : aucune phase de reprise
     names = [p["name"] for p in out["phases"]]
     assert names == ["informal", "resumption_hygiene", "formal", "synthesis"]
+
+
+# ---------------------------------------------------------------------------
+# Contrat tâche / réponse (#23726)
+# ---------------------------------------------------------------------------
+# Sans tâche ouverte, `analysis_tasks` reste VIDE : l'agent n'a aucun
+# identifiant à fournir et n'invent qu'un nom de rôle ; or
+# `mark_task_as_answered` refuse un identifiant inconnu en SILENCE
+# (_shared_state.py : garde `task_id not in self.analysis_tasks` → warning +
+# return). La réponse de l'agent était donc perdue, sans trace.
+def test_phase_task_is_opened_and_named_in_the_worker_instructions():
+    """Une tâche par phase, et son identifiant EXACT dans les instructions."""
+    AGC = _agc()
+    s = _state()
+    out = _run(AnalysisRunner(_kernel(), "svc", s))
+
+    assert list(s.analysis_tasks) == ["task_1", "task_2"]
+
+    informal = [p for p in out["phases"] if p["name"] == "informal"][0]
+    formal = [p for p in out["phases"] if p["name"] == "formal"][0]
+    assert informal["task_id"] == "task_1"
+    assert formal["task_id"] == "task_2"
+
+    agents = [a for chat in AGC.instances for a in chat.agents]
+    informal_agent = [a for a in agents if a.name == "InformalAgent"][0]
+    logic_agent = [a for a in agents if a.name == "LogicAgent"][0]
+    assert "task_1" in informal_agent.instructions
+    assert "task_2" in logic_agent.instructions
+    assert "mark_task_as_answered" in informal_agent.instructions
+    assert "mark_task_as_answered" in logic_agent.instructions
+
+
+def test_worker_answer_is_recorded_instead_of_being_dropped():
+    """La réponse de l'agent EST conservée quand il clôture sa tâche."""
+    AGC = _agc()
+    AGC.YIELD_NAMES = ["ProjectManagerAgent", "InformalAgent"]
+    s = _state()
+
+    def close_task(name, chat):
+        # l'agent worker clôture la tâche ouverte par le runner
+        if name == "InformalAgent" and "task_1" not in s.answers:
+            s.mark_task_as_answered(
+                "task_1", "arguments et sophismes identifies", "InformalAgent"
+            )
+
+    AGC.ON_TURN = close_task
+    out = _run(AnalysisRunner(_kernel(), "svc", s))
+
+    informal = [p for p in out["phases"] if p["name"] == "informal"][0]
+    assert informal["task_closed"] is True
+    assert "task_1" in s.answers
+    assert s.answers["task_1"]["answer_text"] == "arguments et sophismes identifies"
+
+
+def test_unclosed_task_is_reported_not_silently_absorbed():
+    """Une tâche non close est TRACÉE dans l'état, pas absorbée en silence."""
+    s = _state()
+    out = _run(AnalysisRunner(_kernel(), "svc", s))
+
+    informal = [p for p in out["phases"] if p["name"] == "informal"][0]
+    formal = [p for p in out["phases"] if p["name"] == "formal"][0]
+    assert informal["task_closed"] is False
+    assert formal["task_closed"] is False
+    assert s.errors, "la non-clôture doit etre tracee dans l'etat"
+    assert any("task_1" in str(e["message"]) for e in s.errors)
+    assert any("task_2" in str(e["message"]) for e in s.errors)
+
+
+def test_prompt_contract_names_the_exact_task_id():
+    """Les prompts de travail nomment le mécanisme de clôture et l'interdit
+    d'identifiant inventé (le prompt vendangé ne donnait aucun id)."""
+    from argumentation_lib._runner import _task_instructions
+
+    block = _task_instructions("task_7", "analyse informelle")
+    assert "task_7" in block
+    assert "mark_task_as_answered" in block
+    # le PM prompt n'ouvre plus de tache concurrente et interdit l'identifiant invente
+    assert "ne créez PAS de tâche" in PROMPT_DEFINE_TASKS
+    assert "n'inventEZ JAMAIS" in PROMPT_DEFINE_TASKS
+    # les prompts de travail pointent la fonction kernel de clôture
+    assert "mark_task_as_answered" in PROMPT_INFORMAL_ANALYSIS
+    assert "mark_task_as_answered" in PROMPT_LOGIC_ANALYSIS
+
+
+def test_agents_built_without_task_id_keep_the_vendored_prompt():
+    """Hors runner (appel direct), les instructions restent celles du prompt
+    vendangé : le contrat historique n'est pas cassé par le #23726."""
+    k, s = _kernel(), _state()
+    create_pm_agent(k, "svc", s)
+    informal = create_informal_agent(k, "svc", s)
+    logic = create_logic_agent(k, "svc", s)
+    assert informal.instructions is PROMPT_INFORMAL_ANALYSIS
+    assert logic.instructions is PROMPT_LOGIC_ANALYSIS
+
+
+# ---------------------------------------------------------------------------
+# run_conversational — une tâche par agent (#23726, réserve Hermes v2)
+# ---------------------------------------------------------------------------
+# Défaut originel : run_conversational ouvrait UNE tâche et donnait son
+# identifiant AUX DEUX agents (informal + logic). Le second à appeler
+# mark_task_as_answered écrasait l'entrée du premier dans state.answers
+# (self.answers[task_id] = ...), et la réponse de l'agent le plus prompt
+# disparaissait SANS TRACE — le mode de panne que #23726 documente, reproduit
+# à l'intérieur du correctif. Correction : une tâche par agent. Ces deux tests
+# étaient absents de la suite (qui ne pilotait que run(), d'où le passage à
+# l'interstice) : ils verrouillent la conversational sur le même contrat.
+
+
+def _drive_conversational(runner, close=None):
+    """Piloter run_conversational (async) depuis un test sync, en jouant la
+    clôture des tâches comme le ferait un agent (via ON_TURN)."""
+    AGC = _agc()
+    if close is not None:
+        AGC.ON_TURN = close
+    return asyncio.run(runner.run_conversational(max_turns=2))
+
+
+def test_conversation_opens_one_task_per_agent_not_one_shared():
+    """run_conversational : chaque agent porte l'identifiant de SA tâche,
+    jamais un identifiant commun (réserve Hermes v2, head 375c09c13e)."""
+    AGC = _agc()
+    out = _drive_conversational(
+        AnalysisRunner(_kernel(), "svc", _state(), max_turns=2)
+    )
+
+    # deux tâches de conversation distinctes, pas une seule partagée
+    assert set(out["task_id"].keys()) == {"informal", "logic"}
+    informal_id, logic_id = out["task_id"]["informal"], out["task_id"]["logic"]
+    assert informal_id != logic_id
+
+    # chaque instructions d'agent nomme son propre id, PAS celui de l'autre
+    agents = {a.name: a for chat in AGC.instances for a in chat.agents}
+    assert informal_id in agents["InformalAgent"].instructions
+    assert logic_id in agents["LogicAgent"].instructions
+    assert logic_id not in agents["InformalAgent"].instructions
+    assert informal_id not in agents["LogicAgent"].instructions
+
+
+def test_conversational_answers_of_both_agents_are_both_retained():
+    """Anti-régression centrale : les réponses des DEUX agents sont conservées
+    — l'une n'écrase plus l'autre dans state.answers."""
+    AGC = _agc()
+    s = _state()
+
+    def close_both(name, chat):
+        # chaque agent clôture SA propre tâche (ids distincts) ; avant la
+        # correction les deux partageaient un id et le second écrasait le
+        # premier dans state.answers.
+        agent = next(a for a in chat.agents if a.name == name)
+        for tid in s.analysis_tasks:
+            if f"`{tid}`" in agent.instructions and tid not in s.answers:
+                s.mark_task_as_answered(tid, f"reponse de {name}", name)
+
+    AGC.YIELD_NAMES = ["InformalAgent", "LogicAgent"]
+    out = _drive_conversational(
+        AnalysisRunner(_kernel(), "svc", s, max_turns=2), close=close_both
+    )
+
+    informal_id, logic_id = out["task_id"]["informal"], out["task_id"]["logic"]
+    # les deux réponses survivent, chacune sous son propre id
+    assert set(s.answers.keys()) >= {informal_id, logic_id}
+    assert s.answers[informal_id]["author_agent"] == "InformalAgent"
+    assert s.answers[logic_id]["author_agent"] == "LogicAgent"
+    # et la clôture des deux tâches est rapportée, pas une seule
+    assert out["task_closed"]["informal"] is True
+    assert out["task_closed"]["logic"] is True
