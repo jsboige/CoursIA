@@ -9,7 +9,7 @@
 | Source | Sharpe | CAGR | Max DD | Period | Universe |
 |--------|--------|------|--------|--------|----------|
 | [`research.ipynb`](research.ipynb) cell[10/25] (default 12m, 5 bps TC) | **0.460** | **7.89%** | **-19.81%** | 2015-2026 | SPY/EFA/BND |
-| [`main.py`](main.py) v6b docstring (LEANT backtest, IBKR margin) | **0.557** | **11.22%** | **-15.3%** | 2015-2024 | SPY/EFA/EEM/TLT/GLD/DBC |
+| [`main.py`](main.py) v6b (LEANT backtest, IBKR margin, mode `strategy`) | **0.372** | **7.754%** | **-15.10%** | 2015-2024 | SPY/EFA/EEM/TLT/GLD/DBC |
 | [`quantbook.ipynb`](quantbook.ipynb) cell[3] (default 12m, 0 TC) | **0.213** | **6.2%** | **-34.1%** | 2007-2025 | SPY/EFA/BND |
 
 **Honest reading**: the divergence between the three measures **is not a bug** — they are **three distinct implementations** of the same dual-momentum concept:
