@@ -104,6 +104,7 @@ jobs:
             .github/workflows/candidate-delivered-advisory.yml
             scripts/candidate_delivered.py
             scripts/issue_containers.py
+            scripts/released_covers.py
 
       - name: Set up Python
         uses: actions/setup-python@v5
