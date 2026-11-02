@@ -1,8 +1,8 @@
-> REFERENCE — vivante — dernière révision 2026-10-31
+> REFERENCE — vivante — dernière révision 2026-11-02
 
 # Modèles de décision — relevé et shortlist (issue #18204, Pli 1)
 
-> **Statut** : Pli 1/4 de #18204. **Cadrage et relevé** uniquement. Aucune substitution de notebook dans cette PR. La **vérification locale** (rejouer 2-3 tranches de benchmarks) est **mesurée pour la liste courte `0.8b`** : pic VRAM 1,47 Go, ~0,23 s/item (po-2028, PR #21921 — script `scripts/genai-stack/decision_local_check.py`, agrégat `scripts/results/decision_local_2026-10-22.json`). L'exigence d'un GPU 24 Go est donc **réfutée pour `0.8b`** ; l'obstacle réel est la **non-publication des charges utiles** (`decision-index-suite-0.3` -> 401), pas la carte. Le besoin 24 Go **reste non réfuté pour `4b`** (non mesuré).
+> **Statut** : Pli 1/4 de #18204. **Cadrage et relevé** uniquement. Aucune substitution de notebook dans cette PR. La **vérification locale** (rejouer 2-3 tranches de benchmarks) est **mesurée pour la liste courte `0.8b`** : pic VRAM 1,47 Go, ~0,23 s/item (po-2028, PR #21921 — script `scripts/genai-stack/decision_local_check.py`, agrégat `scripts/results/decision_local_2026-10-22.json`). L'exigence d'un GPU 24 Go est donc **réfutée pour `0.8b`** ; l'obstacle réel est la **non-publication des charges utiles** (`decision-index-suite-0.3` -> 401), pas la carte. Le besoin 24 Go est **réfuté aussi pour `4b`** : les deux checkpoints `jiwo-4b` (v1, v2) sont servis sur GPU avec un pic VRAM de **8,02 Gio** sur une carte de 23,99 Gio (RTX 4090, mesure du 2026-10-30) — la classe servie est « carte 16 Go » ([`decision-models-4b-local-verification.md`](decision-models-4b-local-verification.md)).
 >
 > **Date du relevé** : 2026-10-03. **Source primaire** : Hugging Face, espace `multimodalart/jev-decision-index`, édition `0.2.1` du 2026-09-28 (`data/index.json`, 70 implémentations sur ~120 000 requêtes, 38 benchmarks statiques).
 
