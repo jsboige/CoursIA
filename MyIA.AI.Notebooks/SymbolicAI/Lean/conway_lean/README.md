@@ -218,6 +218,8 @@ flowchart TD
 - Round-trip MacroCell vérifié par `#eval` et théorème `native_decide`
 - HashlifeMemo : couche de mémoïsation pour les témoins des piliers, `9^k` pire cas réduit à tractable
 
+**Acte de revue humaine à signer** : lorsqu'une revue humaine aura lieu (pilote proposé le 2026-11-02 dans le fil #13106, dossier de relecture borné aux modules `Conway/CHSH.lean` et `Conway/CHSHQuantum.lean`), l'acte prendra la forme `Revue par <nom, affiliation> — date <YYYY-MM-DD> — scope <lake entier / module> — vérifications : structure / preuves principales / i18n FR-EN — verdict global` et sera inséré dans ce README. La grille **#13106 critère 2** est satisfaite par le premier acte signé ; aucun acte partiel n'est consigné en silence, et la présente section reste honnête tant que l'acte n'est pas posé.
+
 ## Références
 
 Sources fondatrices des résultats formalisés à travers les trois phases. Chaque entrée correspond à un module de ce workspace.
