@@ -207,11 +207,21 @@ class ProjectEvaluation:
         return unidecode(text)
 
     def project_name(self, name):
+        """Cle de rapprochement d'un nom ou prenom : 5 premiers caracteres, sans accents.
+
+        Le decoupage se fait apres ``strip()`` : un espace de tete livrait une cle
+        vide, si bien qu'un evaluateur inscrit ne correspondait a aucun etudiant et
+        que son evaluation etait ecartee par la regle 3 (#24246). ``split()`` sans
+        argument traite tous les blancs (espaces multiples, tabulations, insecables)
+        et rend une liste vide sur une chaine vide, d'ou la garde ``tokens``.
+        """
         if not isinstance(name, str):
             return ""
-        first_name = name.split(" ")[0].split("-")[0]
-        first_name = first_name[:5]
-        return self.fold_accents(first_name.lower().strip())
+        tokens = name.strip().split()
+        if not tokens:
+            return ""
+        first_name = tokens[0].split("-")[0][:5]
+        return self.fold_accents(first_name.lower())
 
     def match_names(self, student_or_eval1, eval2):
         name1 = student_or_eval1.nom
