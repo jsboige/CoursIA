@@ -90,6 +90,81 @@ Deux causes candidates pour ce décalage d'un item, aucune prouvée ici :
 Ce qui est **mesuré** : sur la branche `torchvision` avec scikit-learn 1.6.1, le test propre
 est exact et le test translaté s'écarte d'un item.
 
+## Troisième cause, celle-ci mesurée : la tolérance d'arrêt du solveur
+
+Les deux causes ci-dessus sont restées non testées. Une troisième, absente de la liste, est
+maintenant **mesurée** : `LogisticRegression` ne s'arrête pas sur un optimum unique mais sur
+un **critère de norme de gradient** (`tol`, défaut `1e-4`). L'objectif L2 est strictement
+convexe, donc l'optimum est unique — mais deux chemins numériques différents (version de
+scikit-learn, chaîne BLAS, ordre de réduction) peuvent s'arrêter à des points **différents**,
+et l'écart entre ces points n'est pas de l'ordre du bruit d'arrondi.
+
+L'outil est [`scripts/repro/ws_probes_margin.py`](../../scripts/repro/ws_probes_margin.py).
+Il mesure les deux moitiés de cette phrase.
+
+**1. L'amplitude nécessaire pour déplacer un item.** La classe prédite d'un item ne change
+que si son écart `score(top1) − score(top2)` traverse zéro ; cet écart est donc la
+perturbation **minimale** que le mécanisme doit atteindre pour changer le compte. Ajustement
+du carnet au siège `po-2024` (Python 3.13.14, numpy 2.4.2, scikit-learn 1.8.0), test
+translaté, 200 items :
+
+| Mesure | Valeur |
+|---|---|
+| marge minimale du jeu (item 123) | `9.282508e-03` |
+| marge la moins chère pour **gagner** un item (item 123, classe réelle = second score) | `9.282508e-03` |
+| marge la moins chère pour **perdre** un item (item 178) | `1.240631e-02` |
+| items sous `1e-3` | `0` |
+| items sous `1e-2` | `1` |
+| perturbation requise pour l'écart d'un item observé | `1.240631e-02`, soit `1,2e7` fois le seuil de bruit `1e-9` |
+
+Un désaccord d'un item exige donc de l'ordre de `1e-2`, là où une réduction de somme en
+float64 déplace un score de `1e-16` relatif : l'écart entre sièges **n'est pas** un effet
+d'ordre de réduction, il faut que le modèle ajusté diffère réellement.
+
+**Le sens de l'écart décide du vivier.** Ce siège mesure `0.4350`, l'autre `0.4300` : nous
+sommes **plus haut**, donc réconcilier les deux suppose de **détruire** un item que nous
+réussissons — pas d'en gagner un. La marge pertinente est celle des items **perdables**
+(`1.240631e-02`), et non la plus petite marge du jeu (`9.282508e-03`, item 123, qui est
+*winnable*). Ce sont deux nombres différents, et prendre le premier pour le second sous-estime
+la perturbation requise. L'instrument sépare les deux sens pour cette raison.
+
+**2. La tolérance suffit, à elle seule, à produire cet écart.** Même siège, mêmes données,
+même graine, même version : seule la tolérance change.
+
+| `tol` | exactitude | itérations | déplacement max des coefficients | items qui changent |
+|---|---:|---:|---|---|
+| `1e-4` (défaut du carnet) | `0.4350` | 210 | référence | aucun |
+| `1e-6` | `0.4300` | 492 | `1.76e-02` | item 181 (**perte**) |
+| `1e-8` | `0.4300` | 765 | `1.74e-02` | item 181 (**perte**) |
+
+Trois lectures, dans l'ordre de ce qu'elles changent pour la série :
+
+- Les deux valeurs observées entre sièges (`0.4350` et `0.4300`) sont **reproduites sur un
+  seul siège** par un réglage de solveur légitime. Aucune différence de données ni de version
+  n'est nécessaire pour les obtenir.
+- À `1e-4` l'ajustement s'arrête à 210 itérations ; à `1e-6` il en faut 492 et les
+  coefficients se déplacent de `1.76e-02`, du même ordre que la marge à franchir. C'est le
+  mécanisme : le critère d'arrêt laisse le modèle à une distance des données qui suffit à
+  faire basculer un item.
+- L'item qui bascule est **181** (`1.328711e-02`). Ni **123**, la marge minimale du jeu
+  (`9.282508e-03`, et de surcroît *winnable*, mauvais sens), ni **178**, le perdable le moins
+  cher (`1.240631e-02`). La marge est une **borne** sur la perturbation requise, elle n'est pas
+  un **sélecteur** : elle dit ce qu'il faut au minimum pour que *quelque chose* bascule, pas ce
+  qui basculera. La perturbation a une direction propre, et c'est elle qui décide. Annoncer
+  « c'est l'item le plus proche qui bougera » serait doublement faux — de sens et de sélection —
+  et c'est exactement ce que la mesure évite.
+
+Cette lecture **réunit les deux premières causes** au lieu de les opposer. La valeur mesurée
+en 1.6.1 (section précédente) est `0.4300` ; l'ajustement 1.8.0 **convergé** rend `0.4300` ;
+seul l'ajustement 1.8.0 arrêté au défaut rend `0.4350`. Un changement de version déplace le
+chemin des itérées, et le critère d'arrêt transforme ce déplacement en un item d'écart. Épingler
+la source et la version, comme le demande la section suivante, **ne suffit donc pas** : la
+tolérance doit être fixée elle aussi.
+
+**Ce qui n'est pas établi** : que le siège `po-2025` s'arrête effectivement plus près de
+l'optimum. La mesure démontre qu'un tel arrêt **suffit** à produire l'écart, pas qu'il en est
+la cause là-bas. Les deux premières causes restent donc ouvertes.
+
 ## Ce que WS-03 établit, en revanche
 
 Les deux valeurs de `WS-03` sont reproduites à la troisième décimale **et** la sonde WS-03
@@ -100,9 +175,19 @@ c'est la variabilité de son **approvisionnement en données** (WS-00c) qui n'es
 ## Conséquence pour la série (hors périmètre de cette PR)
 
 La cellule WS-00c gagnerait à **épingler sa source** au lieu de laisser un `try/except`
-choisir implicitement, et à consigner la version de scikit-learn à côté des valeurs citées.
-Tant que ce n'est pas fait, un chiffre de WS-00c est une **mesure d'environnement**, pas une
-propriété du carnet. Suivi à ouvrir ; cette PR ne modifie aucun carnet.
+choisir implicitement, à consigner l'environnement (versions et siège) à côté des valeurs
+citées, et à **fixer la tolérance du solveur** (ou à ajuster jusqu'à convergence) : à données,
+graine et versions identiques, le défaut `tol=1e-4` déplace déjà les coefficients de
+`1.76e-02` et un item. Tant que ce n'est pas fait, un chiffre de WS-00c est une **mesure
+d'environnement**, pas une propriété du carnet.
+
+**Un `random_state` ne remplacerait pas cette prescription.** Sous `lbfgs`, le solveur par
+défaut de `LogisticRegression`, la graine est **inerte** : mesuré sur scikit-learn 1.8.0,
+`random_state` 42, 7 et 123 rendent des coefficients **identiques au bit près**. Le contrôle
+positif sous `saga`, où la graine déplace bien les coefficients (`3.45e-04`), montre que
+l'instrument n'est pas aveugle : l'inertie est une propriété du solveur, pas du test. Fixer
+la graine ne coûte rien, mais c'est la **tolérance** qui opère ici — et si un jour le solveur
+change, la graine redeviendra pertinente. Suivi à ouvrir ; cette PR ne modifie aucun carnet.
 
 ## Reproduction
 
@@ -113,6 +198,19 @@ python scripts/repro/ws_probes_repro.py --out rapport.json   # rapport structure
 ```
 
 Le script sort `0` si les quatre valeurs concordent, `1` sinon.
+
+```bash
+python scripts/repro/ws_probes_margin.py                             # structure de marge seule
+python scripts/repro/ws_probes_margin.py --observed 0.4300 --strict   # l'ecart d'un item est-il arithmetique ?
+python scripts/repro/ws_probes_margin.py --observed 0.4300 --tol 1e-4 --tol 1e-6 --tol 1e-8
+python scripts/repro/ws_probes_margin.py --out marges.json
+```
+
+`--strict` sort `1` quand la perturbation requise depasse `--noise-bound` : l'ecart observe
+n'est alors pas de l'arithmetique. Il sort `2` quand l'ecart depasse le vivier (question reelle,
+indecidable a cette taille de jeu) — jamais `0`, qu'une CI lirait « rien a signaler » ; `0`
+reste l'accord au dixieme d'item pres ou l'arithmetique. `--tol` rejoue l'ajustement a chaque
+tolerance et nomme les items dont la classe predite change.
 
 ## Voir aussi
 
