@@ -3328,8 +3328,16 @@ TRANCHE32: list[Guard] = [
 #
 # `pre_argv` : le detecteur prouve qu'il tire avant de rendre un vert (#11685).
 # `absorbed=True` : meme convention que TRANCHE11/13/22/32.
+#
+# Renumerote TRANCHE35 -> TRANCHE36 le 2026-11-02 : deux tranches livrees en
+# parallele avaient pris TRANCHE35, et la decouverte dynamique (`vars(registry)`,
+# #19171) ne voit qu'un nom par module. La seconde affectation ecrasait la
+# premiere, donc CE garde n'etait jamais enregistre -- la classe #23678 restait
+# sans temoin. `test_no_module_level_name_is_assigned_twice_in_the_registry`
+# (#19374) a fini par le nommer, et rougissait le job `Scripts Tests` de
+# TOUTES les PRs, pas seulement de celles qui touchaient ce registre.
 # ---------------------------------------------------------------------------
-TRANCHE35: list[Guard] = [
+TRANCHE36: list[Guard] = [
     Guard(
         name="Series-denominator advisory (denominateur d'en-tete, #23678)",
         source=FAST_LANE_NATIVE,
