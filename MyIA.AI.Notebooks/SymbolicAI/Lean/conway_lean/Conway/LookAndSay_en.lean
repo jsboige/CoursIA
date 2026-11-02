@@ -20,11 +20,11 @@ Conway proved remarkable properties:
 This file formalizes the sequence generation and verifies the first terms.
 -/
 
-import Conway.LookAndSay
+import Mathlib.Data.List.Basic
 
 namespace Conway_en
 
-open Conway
+open Conway_en
 
 /-- Split a number into its decimal digits (most significant first).
   1211 → [1, 2, 1, 1]  -/

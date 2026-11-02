@@ -23,7 +23,7 @@
 | **Disque** | **946** | tous les `*.ipynb` sous `MyIA.AI.Notebooks/` (récursif) | `find -name '*.ipynb'` |
 | **Forensic scan** | **944** | disque moins `_archives/` (2 notebooks exclus) | `scripts/notebook_tools/forensic_scan.py --root MyIA.AI.Notebooks` |
 | **Catalogue** | **830** | forensic moins `research/`, `partner-course-quant-trading/`, `examples/`, et **non-curés** (drift) | `scripts/notebook_tools/generate_catalog.py` |
-| **STABLE_SNAPSHOT** | **934** | snapshot daté **2026-07-17** (SHA `d8ea11a`), stale de 6 jours | `STABLE_SNAPSHOT.md` |
+| **STABLE_SNAPSHOT** | **934** | snapshot daté **2026-07-17** (SHA `d8ea11a`), stale de 6 jours | `docs/reference/STABLE_SNAPSHOT.md` |
 
 **Écart catalogue / disque = 116 = (2 exclusions forensic `_archives/`) + (31 exclusions catalogue par design) + (83 drift curé réel) — dont écart brut catalogue/forensic 114 = 31 exclusions + 83 drift**.
 
@@ -69,7 +69,7 @@ RESEARCH_DIR_KEYWORDS = {"research", "archive", "examples", "partner-course"}
 
 **Effet exclusions catalogue = 31 notebooks (de forensic 944 → catalogue 913 attendus)**. **Mais catalogue = 830, écart 83 = notebooks curés manquants** (drift catalogue).
 
-### 4. STABLE_SNAPSHOT (`STABLE_SNAPSHOT.md`)
+### 4. STABLE_SNAPSHOT (`docs/reference/STABLE_SNAPSHOT.md`)
 **Snapshot daté 2026-07-17, SHA `d8ea11a`** — stale de 6 jours et 10 commits de retard. Ne reflète pas l'état main actuel.
 
 ---
@@ -106,7 +106,7 @@ Les 3 notebooks GenAI/Image/examples présents sur disque mais absents du catalo
 
 **Pas un bug** : la règle est intentionnelle. Les `examples/` sont des **démonstrations techniques** (showcases ComfyUI/Qwen) sans valeur pédagogique au sens catalogue (`issue_pr_associee`, `owner_logique`, etc.). Ils restent visibles dans le forensic scan = signal qu'ils existent et sont sains.
 
-**Recommandation** : ajouter une note explicite dans `STABLE_SNAPSHOT.md` disant « GenAI = 144 inclut 3 examples pédagogiques exclus du catalogue par design ». Ce qui supprime l'ambiguïté « 144-vs-141 » à la source.
+**Recommandation** : ajouter une note explicite dans `docs/reference/STABLE_SNAPSHOT.md` disant « GenAI = 144 inclut 3 examples pédagogiques exclus du catalogue par design ». Ce qui supprime l'ambiguïté « 144-vs-141 » à la source.
 
 ---
 
@@ -152,7 +152,7 @@ Les 83 notebooks curés-manquants ne sont **pas** des exclusions explicites ; il
 - [x] Règles d'exclusion de chaque outil explicitées (`EXCLUDE_DIRS` forensic ligne 25-32, `EXCLUDE_PEDAGOGICAL` catalogue ligne 39).
 - [x] Écart GenAI 144-vs-141 expliqué ligne par ligne (3 `examples/` exclus par design).
 - [x] CI léger `scripts/audit/check_denominators.py` qui alerte si divergence > exclusions déclarées.
-- [ ] Note explicite dans `STABLE_SNAPSHOT.md` que GenAI inclut 3 examples pédagogiques exclus du catalogue (recommandation, hors scope).
+- [ ] Note explicite dans `docs/reference/STABLE_SNAPSHOT.md` que GenAI inclut 3 examples pédagogiques exclus du catalogue (recommandation, hors scope).
 
 ---
 
@@ -179,4 +179,4 @@ py scripts/audit/check_denominators.py --root MyIA.AI.Notebooks
 
 - **Régénération catalogue** : le cron quotidien devrait auto-curer les 83 drift → à confirmer avec ai-01 si le cron gère ou non les ajouts récents.
 - **Split QC `projects/` curé-manuellement** : 61 notebooks non-curés = demande substantielle (notebook par notebook). Priorité basse car `projects/` = notebooks de recherche jetables.
-- **Note STABLE_SNAPSHOT.md** : ajouter la note GenAI examples dans la prochaine PR de mise à jour snapshot (recommandation #8050, hors scope de cette PR).
+- **Note docs/reference/STABLE_SNAPSHOT.md** : ajouter la note GenAI examples dans la prochaine PR de mise à jour snapshot (recommandation #8050, hors scope de cette PR).
