@@ -1,0 +1,8 @@
+# KNOTS-05 — dynamique des tresses : dépendances Python
+# Install: pip install -r KNOTS-05-Dynamique-Tresses-Python-requirements.txt
+#
+# Le carnet ne demande qu'une bibliothèque : les mots du groupe libre sont des
+# tuples d'entiers (arithmétique exacte, aucune dépendance), et seul le spectre
+# des matrices de transition passe par l'algèbre linéaire numérique.
+
+numpy>=2.0
