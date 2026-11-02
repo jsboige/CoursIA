@@ -6,8 +6,37 @@ Ce module présente des cas d'usage concrets et des workflows de production pour
 
 **Fil rouge podcast** : [04-1](04-1-Educational-Audio-Content.ipynb) automatise la narration de cours. [04-2](04-2-Transcription-Pipeline.ipynb) gère la transcription batch avec sous-titres SRT. [04-3](04-3-Music-Composition-Workflow.ipynb) compose des bandes sonores. [04-4](04-4-Audio-Video-Sync.ipynb) synchronise l'audio avec la vidéo.
 
-**Fil rouge audiobook (Epic #1028)** : [04-6](04-6-Audiobook-Pipeline.ipynb) a [04-12](04-12-Compilation-Audio.ipynb) forment un pipeline agentique 5-pass complet : benchmark des voix, analyse littéraire, casting vocal, annotation prosodique, génération TTS et compilation finale. [04-13](04-13-Audiobook-FishAudio-S2Pro.ipynb) étend le pipeline avec FishAudio S2-Pro, 29 tags prosodiques officiels et validation WER.
+**Fil rouge audiobook (Epic #1028)** : [04-6](04-Audiobook/04-6-Audiobook-Pipeline.ipynb) a [04-12](04-Audiobook/04-12-Compilation-Audio.ipynb) forment un pipeline agentique 5-pass complet : benchmark des voix, analyse littéraire, casting vocal, annotation prosodique, génération TTS et compilation finale. [04-13](04-Audiobook/04-13-Audiobook-FishAudio-S2Pro.ipynb) étend le pipeline avec FishAudio S2-Pro, 29 tags prosodiques officiels et validation WER.
 
+
+## Trois sous-séries
+
+Ce module se lit sur un axe — produire un audiobook — que trois métiers différents traversent. Le découpage physique suit ces métiers plutôt que le rang du carnet : un lecteur qui cherche « comment mesure-t-on une voix » n'a pas à trier tout le dossier de production pour trouver sa réponse.
+
+| Sous-série | Ce qu'elle traite | Carnets |
+|---|---|---|
+| [`04-Audiobook/`](04-Audiobook/) | La chaîne de production : segmenter un texte, annoter la prosodie, générer la voix, compiler le résultat. Le fil va d'un texte littéraire à un MP3 final. | 04-6, 04-8, 04-10, 04-11, 04-12, 04-13 |
+| [`04-Voix/`](04-Voix/) | La voix comme objet de mesure : comparer des modèles TTS, attribuer une voix à un personnage, noter subjectivement un rendu avec son protocole et son incertitude. | 04-7, 04-9, 04-19 |
+| [`04-Musique/`](04-Musique/) | Le signal musical : embeddings, transcription symbole, MIR classique, transcription note à note, séparation de sources mesurée. | 04-15, 04-16, 04-17, 04-18, 04-20 |
+
+Les workflows généraux (04-1 à 04-5) et l'hommage Munkres (04-14) restent à la racine : ils ne relèvent d'aucun des trois métiers et servent de porte d'entrée au module.
+
+**Le rang ne change pas.** `04-NN` reste l'ordre de lecture et l'identifiant stable du carnet ; un carnet continue de renvoyer à son `NN+1` où qu'il vive. Un carnet de `04-Voix/` qui cite un carnet de `04-Audiobook/` le fait par un lien relatif d'un cran (`../04-Audiobook/...`).
+
+### Deux numérotations de phases dans `04-Audiobook/`
+
+Les carnets de la chaîne se renvoient entre eux **par numéro de phase** (« contrat P1 canonique v1 », « passage à P3 », « contrat lu par P4 »). Deux vocabulaires y coexistent, nés dans le même commit le 2026-10-17 et jamais réconciliés : `04-6` décrit cinq passes `P1`–`P5`, `04-13` décrit huit phases `P0`–`P7`. Quatre des cinq étapes changent de numéro d'une table à l'autre.
+
+| Étape | `04-6` (P1–P5) | `04-13` (P0–P7) |
+|---|---|---|
+| Analyse / contexte | P1 Lecture analytique | P0 `p0_narrative_research` + P2 `p2_segmentation` |
+| Casting | P2 Voice casting | P1 `p1_voice_cloning` (+ P1.5 `p1_5_speaker_catalog`) |
+| Annotation prosodique | **P3** | **P4** `p4_annotation` |
+| Génération TTS | **P4** | **P5** `p5_tts` |
+| Compilation | **P5** | **P6** `p6_compile` |
+| Vérification | — | P7 `p7_verify` |
+
+**Règle de lecture** : la table à cinq passes est la **vue grossière** — cinq étages, un par carnet `04-6`/`04-8`/`04-10`/`04-11`/`04-12`. Les huit phases en sont le **raffinement d'implémentation**, celui de `04-13` : elles séparent la recherche narrative de la segmentation, isolent le catalogue de locuteurs, et ajoutent la vérification finale. Un renvoi « P4 » se lit donc selon le carnet qui le porte — `04-10` (annotation) dans le vocabulaire à cinq passes, `p5_tts` (génération) dans celui à huit. Cette correspondance est la seule table d'équivalence ; il n'y en a pas d'autre dans le dossier.
 
 ## Vue d'ensemble
 
@@ -38,14 +67,14 @@ Pipeline complet pour générer un audiobook à partir d'un texte littéraire, a
 
 | # | Notebook | Pass | Contenu | Service | VRAM |
 | --- | ---------- | ------ | --------- | --------- | ------ |
-| 6 | [04-6-Audiobook-Pipeline](04-6-Audiobook-Pipeline.ipynb) | P0 | Pipeline audiobook orchestrateur | Mixed | ~5 GB |
-| 7 | [04-7-TTS-Voice-Benchmark](04-7-TTS-Voice-Benchmark.ipynb) | P0 | Benchmark comparatif des modèles TTS | Kokoro + Qwen3 TTS + OpenAI | ~2 GB |
-| 8 | [04-8-Lecture-Analytique](04-8-Lecture-Analytique.ipynb) | P1 | Analyse littéraire, segmentation dialogues/narration | OpenAI API | 0 |
-| 9 | [04-9-Voice-Casting](04-9-Voice-Casting.ipynb) | P2 | Attribution de voix par personnage, casting vocal | OpenAI API | 0 |
-| 10 | [04-10-Annotation-Prosodique](04-10-Annotation-Prosodique.ipynb) | P3 | Tags prosodiques FishAudio S2-Pro | OpenAI API | 0 |
-| 11 | [04-11-Generation-TTS](04-11-Generation-TTS.ipynb) | P4 | Génération audio Kokoro multi-voix | Kokoro TTS | ~2 GB |
-| 12 | [04-12-Compilation-Audio](04-12-Compilation-Audio.ipynb) | P5 | Concaténation FFmpeg + normalisation loudness | FFmpeg | 0 |
-| 13 | [04-13-Audiobook-FishAudio-S2Pro](04-13-Audiobook-FishAudio-S2Pro.ipynb) | Full | Pipeline v4 FishAudio S2-Pro, 29 tags prosodiques, validation WER | FishAudio + Whisper | ~6 GB |
+| 6 | [04-6-Audiobook-Pipeline](04-Audiobook/04-6-Audiobook-Pipeline.ipynb) | P0 | Pipeline audiobook orchestrateur | Mixed | ~5 GB |
+| 7 | [04-7-TTS-Voice-Benchmark](04-Voix/04-7-TTS-Voice-Benchmark.ipynb) | P0 | Benchmark comparatif des modèles TTS | Kokoro + Qwen3 TTS + OpenAI | ~2 GB |
+| 8 | [04-8-Lecture-Analytique](04-Audiobook/04-8-Lecture-Analytique.ipynb) | P1 | Analyse littéraire, segmentation dialogues/narration | OpenAI API | 0 |
+| 9 | [04-9-Voice-Casting](04-Voix/04-9-Voice-Casting.ipynb) | P2 | Attribution de voix par personnage, casting vocal | OpenAI API | 0 |
+| 10 | [04-10-Annotation-Prosodique](04-Audiobook/04-10-Annotation-Prosodique.ipynb) | P3 | Tags prosodiques FishAudio S2-Pro | OpenAI API | 0 |
+| 11 | [04-11-Generation-TTS](04-Audiobook/04-11-Generation-TTS.ipynb) | P4 | Génération audio Kokoro multi-voix | Kokoro TTS | ~2 GB |
+| 12 | [04-12-Compilation-Audio](04-Audiobook/04-12-Compilation-Audio.ipynb) | P5 | Concaténation FFmpeg + normalisation loudness | FFmpeg | 0 |
+| 13 | [04-13-Audiobook-FishAudio-S2Pro](04-Audiobook/04-13-Audiobook-FishAudio-S2Pro.ipynb) | Full | Pipeline v4 FishAudio S2-Pro, 29 tags prosodiques, validation WER | FishAudio + Whisper | ~6 GB |
 
 ### Hommage Munkres — musique et mathématiques
 
@@ -59,8 +88,8 @@ Trois satellites : la **compréhension** (MERT2, 04-15), la **génération** ([Y
 
 | # | Notebook | Contenu | Service | VRAM |
 |---|----------|---------|---------|------|
-| 15 | [04-15-MERT2-Music-Understanding](04-15-MERT2-Music-Understanding.ipynb) | Embeddings MERT2 (632 M, self-supervised, poids CC BY-NC 4.0) : corpus contrôlé 3 motifs × 4 timbres × 2 transpositions, similarité cosinus, retrieval contexte long FullSong (medley 120 s), sondes linéaires LOO motif vs timbre sur couches L1/L23/L24 | Local GPU (kernel `mert2-gpu`, pins torch 2.6.0 / transformers 4.53.2) | ~4 GB |
-| 16 | [04-16-SheetSage2-Audio-To-Score](04-16-SheetSage2-Audio-To-Score.ipynb) | Transcription audio vers partition éditable : SheetSage2 (677 M, base MERT-v2-FullSong + adaptateurs), cinq têtes (mélodie, accords, temps forts, tonalité, structure), artefacts ABC/MIDI/événements horodatés, comparaison à vérité-terrain connue par construction, cycle symbolique→audio→symbolique mesuré | Local GPU (kernel `sheetsage2-gpu`) ; poids CC BY-NC 4.0 (usage commercial interdit) | ~8 GB |
+| 15 | [04-15-MERT2-Music-Understanding](04-Musique/04-15-MERT2-Music-Understanding.ipynb) | Embeddings MERT2 (632 M, self-supervised, poids CC BY-NC 4.0) : corpus contrôlé 3 motifs × 4 timbres × 2 transpositions, similarité cosinus, retrieval contexte long FullSong (medley 120 s), sondes linéaires LOO motif vs timbre sur couches L1/L23/L24 | Local GPU (kernel `mert2-gpu`, pins torch 2.6.0 / transformers 4.53.2) | ~4 GB |
+| 16 | [04-16-SheetSage2-Audio-To-Score](04-Musique/04-16-SheetSage2-Audio-To-Score.ipynb) | Transcription audio vers partition éditable : SheetSage2 (677 M, base MERT-v2-FullSong + adaptateurs), cinq têtes (mélodie, accords, temps forts, tonalité, structure), artefacts ABC/MIDI/événements horodatés, comparaison à vérité-terrain connue par construction, cycle symbolique→audio→symbolique mesuré | Local GPU (kernel `sheetsage2-gpu`) ; poids CC BY-NC 4.0 (usage commercial interdit) | ~8 GB |
 
 ### Transcription note à note — basic-pitch
 
@@ -68,7 +97,7 @@ Là où SheetSage2 (04-16) produit une partition symbolique globale, la **transc
 
 | # | Notebook | Contenu | Service | VRAM |
 |---|----------|---------|---------|------|
-| 18 | [04-18-Basic-Pitch-Transcription](04-18-Basic-Pitch-Transcription.ipynb) | Transcription note à note : basic-pitch (ICASSP 2022, ONNX) sur vérité terrain synthétique (11 notes à onsets exacts) et trois accords (9 notes superposées) ; rappel/précision/écart d'onset mesurés, piano-roll vérité vs détection, balayage des seuils du décodeur (onset et frame), trois exercices | CPU local (kernel `basicpitch-t4`, onnxruntime) | 0 (CPU) |
+| 18 | [04-18-Basic-Pitch-Transcription](04-Musique/04-18-Basic-Pitch-Transcription.ipynb) | Transcription note à note : basic-pitch (ICASSP 2022, ONNX) sur vérité terrain synthétique (11 notes à onsets exacts) et trois accords (9 notes superposées) ; rappel/précision/écart d'onset mesurés, piano-roll vérité vs détection, balayage des seuils du décodeur (onset et frame), trois exercices | CPU local (kernel `basicpitch-t4`, onnxruntime) | 0 (CPU) |
 
 > **Note (consolidation #13741)** : un sibling pédagogique plus minimal (re-voicing CP-SAT + MIDI synthèse, version allégée du canonique) a été archivé sous [`MyIA.AI.Notebooks/GenAI/Audio/_archive/04-14-VoiceLeading-RenduGenAI.ipynb`](../_archive/04-14-VoiceLeading-RenduGenAI.ipynb) pour éliminer le doublon de slot 04-14. Le contenu reste préservé (re-voicing, synthèse MIDI, MusicGen, spectrogrammes, export WAV) ; ce notebook canonique `Rendu-GenAI` (version complète re-exécutée #13398) reste la référence.
 
@@ -78,7 +107,7 @@ Le socle DSP et statistique sous les approches neuronales de la famille YuE2 : l
 
 | # | Notebook | Contenu | Service | VRAM |
 |---|----------|---------|---------|------|
-| 17 | [04-17-MIR-Classique](04-17-MIR-Classique.ipynb) | MIR classique librosa : beat tracking + tempo (enveloppe d'onsets, dynamic programming), tonalité Krumhansl–Schmuckler sur chroma CQT, grille d'accords par templates triades — validés sur vérité terrain synthétique (100 BPM, Do majeur, C–Am–F–G) puis vraie musique (exemples librosa brahms/nutcracker), 3 exercices (tempo 140 BPM, tonalité en mode mineur, banque étendue aux accords de septième) | librosa (CPU local) | 0 |
+| 17 | [04-17-MIR-Classique](04-Musique/04-17-MIR-Classique.ipynb) | MIR classique librosa : beat tracking + tempo (enveloppe d'onsets, dynamic programming), tonalité Krumhansl–Schmuckler sur chroma CQT, grille d'accords par templates triades — validés sur vérité terrain synthétique (100 BPM, Do majeur, C–Am–F–G) puis vraie musique (exemples librosa brahms/nutcracker), 3 exercices (tempo 140 BPM, tonalité en mode mineur, banque étendue aux accords de septième) | librosa (CPU local) | 0 |
 
 **Flux du pipeline audiobook** :
 
@@ -93,7 +122,7 @@ Un rating subjectif n'est interprétable qu'accompagné de son protocole : dans 
 
 | # | Notebook | Contenu | Service | VRAM |
 |---|----------|---------|---------|------|
-| 19 | [04-19-Evaluation-MOS](04-19-Evaluation-MOS.ipynb) | Protocole d'écoute subjective (ITU-T P.800) et agrégateur (ITU-R P.808) : lecture de la rubrique depuis le `04-7`, liste d'essais rejouable, fiche de notation pré-remplie, MOS + IC 95 % + rejet des auditeurs aberrants, proxies (SNR, SI-SDR, LSD, STOI) sur référence source-filtre et dégradations maîtrisées, 3 exercices | CPU local (numpy, scipy, torchmetrics, pystoi) | 0 |
+| 19 | [04-19-Evaluation-MOS](04-Voix/04-19-Evaluation-MOS.ipynb) | Protocole d'écoute subjective (ITU-T P.800) et agrégateur (ITU-R P.808) : lecture de la rubrique depuis le `04-7`, liste d'essais rejouable, fiche de notation pré-remplie, MOS + IC 95 % + rejet des auditeurs aberrants, proxies (SNR, SI-SDR, LSD, STOI) sur référence source-filtre et dégradations maîtrisées, 3 exercices | CPU local (numpy, scipy, torchmetrics, pystoi) | 0 |
 
 ### Séparation avancée — qualité mesurée
 
@@ -101,7 +130,7 @@ Là où [02-4](../02-Advanced/02-4-Demucs-Source-Separation.ipynb) sépare un m�
 
 | # | Notebook | Contenu | Service | VRAM |
 |---|----------|---------|---------|------|
-| 20 | [04-20-Separation-Avancee-Qualite](04-20-Separation-Avancee-Qualite.ipynb) | Trois modèles Demucs sur deux générations (hdemucs_mmi v3, htdemucs v4, htdemucs_ft) comparés sur piste MUSDB18 avec stems de référence : SDR par stem, témoin négatif, cohérence d'énergie, mini-benchmark médian 3 pistes, 3 exercices | Local GPU (demucs 4.1.0, HuggingFace streaming) | ~6 GB |
+| 20 | [04-20-Separation-Avancee-Qualite](04-Musique/04-20-Separation-Avancee-Qualite.ipynb) | Trois modèles Demucs sur deux générations (hdemucs_mmi v3, htdemucs v4, htdemucs_ft) comparés sur piste MUSDB18 avec stems de référence : SDR par stem, témoin négatif, cohérence d'énergie, mini-benchmark médian 3 pistes, 3 exercices | Local GPU (demucs 4.1.0, HuggingFace streaming) | ~6 GB |
 
 ## Prérequis
 
