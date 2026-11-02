@@ -141,4 +141,37 @@ public abstract record FolFormula
             _ => throw new InvalidOperationException($"Formule inconnue : {GetType().Name}"),
         };
     }
+
+    /// <summary>
+    /// Constantes apparaissant dans la formule. L'ancrage sur domaine fini itere
+    /// <see cref="FolDomain"/> : une constante utilisee sans etre declaree y est
+    /// invisible pour les quantificateurs, d'ou la garde du meme nom dans
+    /// <see cref="FolInference"/> (revue Hermes #24324, point 1).
+    /// </summary>
+    public IEnumerable<string> AllConstants()
+    {
+        return this switch
+        {
+            Predicate p => p.Arguments.SelectMany(ConstantNames),
+            Not n => n.Operand.AllConstants(),
+            Implies i => i.Left.AllConstants().Concat(i.Right.AllConstants()),
+            Biconditional b => b.Left.AllConstants().Concat(b.Right.AllConstants()),
+            And a => a.Left.AllConstants().Concat(a.Right.AllConstants()),
+            Or o => o.Left.AllConstants().Concat(o.Right.AllConstants()),
+            ForAll f => f.Body.AllConstants(),
+            Exists e => e.Body.AllConstants(),
+            _ => throw new InvalidOperationException($"Formule inconnue : {GetType().Name}"),
+        };
+    }
+
+    /// <summary>Constantes d'un terme, fonction recursive comprise.</summary>
+    private static IEnumerable<string> ConstantNames(FolTerm term)
+    {
+        return term switch
+        {
+            FolTerm.Constant c => new[] { c.Name },
+            FolTerm.FunctionApplication f => f.Arguments.SelectMany(ConstantNames),
+            _ => Array.Empty<string>(),
+        };
+    }
 }

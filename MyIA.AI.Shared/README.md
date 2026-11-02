@@ -245,20 +245,26 @@ Le pont Z3 (`Z3Entails`) traite `KB ∧ ¬∃(variables libres de la question)` 
 chaque quantificateur devient itération sur les constantes (`∀` conjonction,
 `∃` disjonction), chaque atome un booléen symbolique d'un théorème
 `Theorem<FolGrounding>` ; l'entraînement est l'insatisfiabilité rendue par
-`TrySolve == false`. **Limite honnête, documentée dans le code** : phrases
-relationnelles (pas de fonctions dans l'ancrage — le chaînage les accepte).
+`TrySolve == false`. **Limites honnêtes, documentées dans le code** : phrases
+relationnelles (pas de fonctions dans l'ancrage — le chaînage les accepte) ;
+toute constante d'une phrase doit être déclarée au domaine (garde nommant la
+constante : les quantificateurs n'itèrent que les constantes déclarées, une
+constante silencieuse fabriquerait un ancrage amputé) ; le chaînage arrière
+borne sa profondeur à 16 — un non-démontré au-delà, désaccord avec Z3 épinglé
+par un témoin dédié.
 
 Chaque procédure publie son **coût mesuré** et son **unité** (faits ajoutés,
 sous-buts explorés, atomes ancrés + contraintes, affectations essayées) : les
 quatre chemins sont falsifiables entre eux sur la **même** instance. Témoin de
 discrimination mesuré (chaîne de cinq prédicats binaires, 20 atomes ancrés,
 même entraînement) : **Z3 26 contraintes / 40 ms** contre **naïve 1 048 576
-affectations / 2 432 ms** — et la naïve refuse honnêtement au-delà de 30 atomes.
+affectations / 2 432 ms** — et la naïve refuse honnêtement au-delà de 24
+atomes (seuil recalibré : 2^24 affectations ≈ 40 s au plafond).
 Le chaînage arrière garde une garde anti-cycles (buts sols) + borne de
 profondeur : une KB cyclique termine par un échec.
 
 Vérification locale du 2026-11-02 : `dotnet test MyIA.AI.Shared.Tests` —
-**475/475 PASS** sur la suite complète, dont 34 témoins pour cette tranche.
+**477/477 PASS** sur la suite complète, dont 36 témoins pour cette tranche.
 
 ## Tranches suivantes (hors cette ancre)
 

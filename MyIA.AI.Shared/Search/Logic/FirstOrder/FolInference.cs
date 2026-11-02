@@ -84,7 +84,11 @@ public static class FolInference
     /// composee d'une premisse satisfaite reflue vers les suivantes. Un but sol
     /// deja present sur la branche courante echoue (garde anti-cycles) ; une
     /// borne de profondeur termine les cycles par variables, qui ne sont pas
-    /// detectables par la garde.
+    /// detectables par la garde. La borne (16) est un NON-DEMO au-dela, pas une
+    /// lenteur : une preuve plus profonde rend faux alors que l'ancrage Z3
+    /// demontre -- le desaccord est epingle par le temoin
+    /// <c>ChaineProfonde_LeCapDeProfondeurDuBCProvoqueLeDesaccordDocumente</c>
+    /// (revue Hermes #24324, point 2).
     /// </remarks>
     public static FolAskResult BcEntails(FolKnowledgeBase kb, FolFormula.Predicate query)
     {
@@ -203,6 +207,7 @@ public static class FolInference
         }
 
         Grounding grounding = new(kb.Domain);
+        grounding.ValidateDeclaredConstants(kb.Sentences, query);
         List<Expression<Func<FolGrounding, bool>>> constraints = new();
         foreach (FolFormula sentence in kb.Sentences)
         {
@@ -237,12 +242,17 @@ public static class FolInference
         ArgumentNullException.ThrowIfNull(query);
 
         Grounding grounding = new(kb.Domain);
+        grounding.ValidateDeclaredConstants(kb.Sentences, query);
         FolFormula target = CloseExistentially(query);
         int atomCount = grounding.ProbeAtomCount(kb.Sentences, target);
-        if (atomCount > 30)
+        // Seuil recalibre a 24 atomes (revue Hermes #24324, point 3) : au-dela de
+        // 2^24 affectations (~40 s au plafond, mesure 2^20 = 2,4 s), la baseline
+        // coute plus cher que la decision Z3 qu'elle est censee verifier.
+        if (atomCount > 24)
         {
             throw new InvalidOperationException(
-                $"L'enumeration naive exige au plus 30 atomes ancres (trouves : {atomCount}).");
+                $"L'enumeration naive exige au plus 24 atomes ancres (trouves : {atomCount}) : "
+                + "au-dela, la decision Z3 reste le seul chemin praticable.");
         }
 
         long tried = 0;
@@ -369,6 +379,28 @@ public static class FolInference
         public int AtomCount => this.atomIndices.Count;
 
         public IEnumerable<string> DomainConstants() => this.domain.Constants;
+
+        /// <summary>
+        /// Garde de l'ancrage (revue Hermes #24324, point 1) : les quantificateurs
+        /// iterent les constantes declarees, donc une constante non declaree y est
+        /// invisible -- refuser ici plutot que d'ancrer une phrase amputee.
+        /// </summary>
+        public void ValidateDeclaredConstants(IReadOnlyList<FolFormula> sentences, FolFormula query)
+        {
+            HashSet<string> declared = new(this.domain.Constants, StringComparer.Ordinal);
+            foreach (FolFormula sentence in sentences.Append(query))
+            {
+                foreach (string constant in sentence.AllConstants())
+                {
+                    if (!declared.Contains(constant))
+                    {
+                        throw new InvalidOperationException(
+                            $"La constante '{constant}' de la phrase {sentence} n'est pas declaree au domaine : "
+                            + $"l'ancrage itererait les quantificateurs sans jamais la couvrir. Ajouter AddConstant(\"{constant}\").");
+                    }
+                }
+            }
+        }
 
         public int IndexOf(string predicateName, IReadOnlyList<FolTerm> arguments)
         {

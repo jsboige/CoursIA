@@ -184,6 +184,63 @@ public sealed class FolInferenceTests
     }
 
     /// <summary>
+    /// Une constante utilisee sans etre declaree au domaine serait invisible aux
+    /// quantificateurs de l'ancrage (ils iterent les constantes declarees) : la
+    /// garde la refuse en nommant la constante et la phrase, des l'ancrage Z3
+    /// comme a l'enumeration naive (revue Hermes #24324, point 1 -- le piege
+    /// etait silencieux avant).
+    /// </summary>
+    [Fact]
+    public void ConstanteNonDeclaree_LAncrageRefusePlutotQuAncrerAmpute()
+    {
+        FolKnowledgeBase kb = new();
+        kb.Domain.AddConstant("Armand");
+        kb.Domain.AddPredicate("Aime/2");
+        kb.Tell("Aime(Armand, Cedric)"); // Cedric n'est pas declare au domaine.
+
+        FolFormula.Predicate query =
+            Assert.IsType<FolFormula.Predicate>(FolParser.Parse("Aime(Armand, Cedric)"));
+
+        InvalidOperationException z3Error = Assert.Throws<InvalidOperationException>(
+            () => FolInference.Z3Entails(kb, query));
+        Assert.Contains("Cedric", z3Error.Message, StringComparison.Ordinal);
+        Assert.Throws<InvalidOperationException>(() => FolInference.NaiveEntails(kb, query));
+    }
+
+    /// <summary>
+    /// Le plafond de profondeur du chainage arriere (16) est un NON-DEMO, pas une
+    /// lenteur : sur une chaine de vingt implications (profondeur de preuve 20),
+    /// BC rend faux alors que l'ancrage Z3 demontre l'entaillement. Ce temoin
+    /// epingle le desaccord documente dans les remarques de <c>BcEntails</c>
+    /// (revue Hermes #24324, point 2) : au-dela de la borne, croiser avec Z3
+    /// avant de conclure.
+    /// </summary>
+    [Fact]
+    public void ChaineProfonde_LeCapDeProfondeurDuBCProvoqueLeDesaccordDocumente()
+    {
+        FolKnowledgeBase kb = new();
+        kb.Domain.AddConstant("Armand");
+        for (int level = 1; level <= 20; level++)
+        {
+            kb.Domain.AddPredicate($"Palier{level}/1");
+        }
+
+        for (int level = 1; level < 20; level++)
+        {
+            kb.Tell($"FORALL x (Palier{level}(x) => Palier{level + 1}(x))");
+        }
+
+        kb.Tell("Palier1(Armand)");
+
+        FolFormula.Predicate query =
+            Assert.IsType<FolFormula.Predicate>(FolParser.Parse("Palier20(Armand)"));
+
+        Assert.True(FolInference.Z3Entails(kb, query).Entailed);
+        // Profondeur de preuve 20 > borne 16 : non-demo, pas refus.
+        Assert.False(FolInference.BcEntails(kb, query).Entailed);
+    }
+
+    /// <summary>
     /// Témoin de discrimination : chaine de cinq predicats binaires sur deux
     /// constantes (20 atomes ancrés). Le meme entaillement est decide par Z3 en
     /// un appel du solveur et par la naive par balayage integral des 2^20
@@ -227,9 +284,13 @@ public sealed class FolInferenceTests
         _output.WriteLine($"naive : {naive.Cost} {naive.CostUnit} en {naiveWatch.ElapsedMilliseconds} ms");
     }
 
-    /// <summary>Au-dela de 30 atomes ancrés, l'enumeration naive refuse, honnetement.</summary>
+    /// <summary>
+    /// Au-dela de 24 atomes ancrés (seuil recalibre par la revue Hermes #24324,
+    /// point 3 : 2^24 affectations ≈ 40 s au plafond, mesure 2^20 = 2,4 s),
+    /// l'enumeration naive refuse, honnetement.
+    /// </summary>
     [Fact]
-    public void EnumerationNaive_RefuseAuDelaDeTrenteAtomes()
+    public void EnumerationNaive_RefuseAuDelaDeVingtQuatreAtomes()
     {
         FolKnowledgeBase kb = new();
         kb.Domain.AddConstant("Armand").AddConstant("Cedric");
