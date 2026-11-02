@@ -32247,7 +32247,7 @@ result_pn2 = exercice_classification_pn(20, {2, 5})
 print(f""\nP-positions S({{2,5}}): {result_pn2['p_positions']}"")
 
 print(""Exercice a completer"")",,,,,,,,d43282a7fabd027e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-08-CombinatorialGames-Python.ipynb,44637721,markdown,fr,71edfc0a0f058827,"**Observation** : Les P-positions sont exactement les multiples de 4 !
+MyIA.AI.Notebooks/GameTheory/GameTheory-08-CombinatorialGames-Python.ipynb,44637721,markdown,fr,325efff7f8ed95af,"**Observation** : pour le jeu 1-2-3 de la section precedente, les P-positions tombent sur les multiples de 4 (periode 4). L'exercice ci-dessus invite a decouvrir que ce motif de periode change quand on change l'ensemble des coups — il n'est plus 4 pour S({1,3}).
 
 ***
 
@@ -32263,7 +32263,7 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-08-CombinatorialGames-Python.ipynb,44637
 
 Une position de Nim avec des tas de tailles n1, n2, ..., nk est une :
 - **P-position** si n1 XOR n2 XOR ... XOR nk = 0
-- **N-position** sinon",,,,,,,,71edfc0a0f058827,,,,,,,,,,,,,,,
+- **N-position** sinon",,,,,,,,325efff7f8ed95af,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-08-CombinatorialGames-Python.ipynb,376cfa99,code,fr,472034d74d803e3e,"def nim_sum(*heaps) -> int:
     """"""Calcule la nim-sum (XOR) des tailles de tas.""""""
     result = 0
