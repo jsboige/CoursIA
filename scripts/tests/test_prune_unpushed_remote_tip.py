@@ -6,11 +6,9 @@ locale :
 
 1. tip distant == HEAD          -> le motif ne s'applique pas (leve) ;
 2. HEAD ancetre du tip distant  -> leve aussi ;
-3. tip distant hors base locale -> decompte vrai (aucun commit n'est
-   atteignable depuis les refs origin connues), jamais un zero ;
-4. branche absente du distant   -> refus conserve, avec un decompte vrai ;
-5. API indeterminable           -> fail-CLOSED : le decompte local (donc
-   le refus) est conserve tel quel ;
+3. tip distant hors base locale -> fail-CLOSED : decompte local conserve ;
+4. branche absente du distant   -> fail-CLOSED : refus conserve tel quel ;
+5. API indeterminable           -> fail-CLOSED : decompte local conserve ;
 6. mode degrade gh (#21753)     -> aucun appel reseau tente ;
 7. aucun canal `ls-remote` introduit.
 
@@ -131,7 +129,9 @@ class TestTipDistantPorteLeLocal:
 # ---------------------------------------------------------------------------
 
 class TestRefusConserveDitVrai:
-    def test_tip_hors_base_locale_compte_not_on_origin(self, tmp_path, monkeypatch):
+    def test_tip_hors_base_locale_conserve_le_decompte_local(self, tmp_path, monkeypatch):
+        """Tip annonce mais absent de la base locale : on ne peut pas le
+        confronter, donc on ne disculpe rien -- fail-CLOSED."""
         repo = _make_repo(tmp_path)
         _git(repo, "checkout", "-q", "-b", "feat/locale")
         _commit(repo, "c2")
@@ -140,10 +140,11 @@ class TestRefusConserveDitVrai:
         inconnu = "0" * 40  # SHA absent de la base locale
 
         info = _info(repo, monkeypatch, "ok", inconnu)
-        # c2 et c3 sur feat/locale, c1 etant deja sur origin/main
-        assert info["ahead_count"] == 2
+        assert info["ahead_count"] == 2   # le local, non confronte -> refus
 
     def test_branche_absente_du_distant_reste_refusee(self, tmp_path, monkeypatch):
+        """Branche absente du distant : le distant ne peut pas disculper,
+        le refus local est conserve tel quel (#23330, fail-CLOSED)."""
         repo = _make_repo(tmp_path)
         _git(repo, "checkout", "-q", "-b", "feat/jamais-poussee")
         _commit(repo, "c2")

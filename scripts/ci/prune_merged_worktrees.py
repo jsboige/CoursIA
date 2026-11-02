@@ -1386,11 +1386,13 @@ def _unpushed_vs_remote(wt_path: str, branch: str, head_sha: str,
     if state == "unknown":
         return local_ahead
     if state == "absent":
-        # Aucune branche distante ne porte ce nom : le travail est non
-        # pousse s'il n'est atteignable depuis AUCUNE ref d'origin (une
-        # branche renommee ou une PR peut avoir pousse ces commits).
-        count = _count_not_on_origin(wt_path)
-        return local_ahead if count is None else count
+        # Aucune branche distante ne porte ce nom. Le distant ne peut donc
+        # pas disculper le local : fail-CLOSED, exactement comme une API
+        # muette (#23330, « si tip est absent -> on conserve le refus »).
+        # Ne PAS substituer un decompte `--not --remotes=origin` : il
+        # abaisserait le compte et leverait un refus que le distant n'a
+        # pas autorise a lever (temoin #20009 `fix/artifact`).
+        return local_ahead
     # state == "ok"
     if tip == head_sha:
         REMOTE_TIP_STATS["cleared_equal"] += 1
@@ -1413,27 +1415,9 @@ def _unpushed_vs_remote(wt_path: str, branch: str, head_sha: str,
             return count
         return local_ahead
     # Le tip distant n'est pas dans la base locale : on ne peut pas
-    # compter contre lui. Borne basse honnete, et jamais un decompte nul.
-    count = _count_not_on_origin(wt_path)
-    return local_ahead if count is None else count
-
-
-def _count_not_on_origin(wt_path: str) -> Optional[int]:
-    """Commits de HEAD atteignables depuis aucune ref `origin/*` connue.
-
-    Mesure conservatrice : un clone dont les refs distantes sont en retard
-    sur-compte (donc refuse), jamais l'inverse.
-    """
-    count_proc = run_git(
-        wt_path, "rev-list", "--count", "HEAD", "--not", "--remotes=origin",
-        check=False,
-    )
-    if count_proc.returncode != 0:
-        return None
-    try:
-        return int(count_proc.stdout.strip())
-    except ValueError:
-        return None
+    # compter contre lui, donc on ne peut pas non plus disculper le
+    # local. Fail-CLOSED sur le compte local.
+    return local_ahead
 
 
 def get_worktree_info(wt_path: str, current_path: str) -> dict:
