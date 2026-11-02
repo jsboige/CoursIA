@@ -73,6 +73,58 @@ flowchart TD
     PROJ --> CGT
 ```
 
+## Les deux preuves d'Arrow et de Sen : ce que chacune établit
+
+Depuis le 2026-11-02 (#24183), les énoncés d'Arrow et de Sen existent en **deux
+formalisations indépendantes**. Ce lake porte la **maison canonique** de ces énoncés,
+[`SocialChoice.lean`](SocialChoice.lean) ; l'autre vit dans
+[`game_theory_lean/SocialChoice/`](../game_theory_lean/SocialChoice/) (`Arrow.lean` +
+`Sen.lean`) et reste une **preuve alternative déclarée** — conservée, pas dépréciée : elle
+enseigne une autre stratégie de preuve sur les mêmes énoncés.
+
+Ce qui les sépare, mesuré sur les deux fichiers :
+
+| Axe | `lean_game_defs/SocialChoice.lean` (canonique) | `game_theory_lean/SocialChoice/` (alternative) |
+|---|---|---|
+| Socle | cœur Lean seul, zéro dépendance | Mathlib |
+| Généralité | `Fin nI` / `Fin nA`, `nA ≥ 3` global | `ι` et `σ` arbitraires, agenda **local** (`Finset σ`, `3 ≤ X.card`) |
+| Forme d'Arrow | négative : `¬ NonDictatorial swf` | positive : `is_dictatorship f X`, d'où le corollaire `no_perfect_swf` |
+| Stratégie d'Arrow | propagation de la décisivité, chaque palier nommé (`Decisive`, `decisive_*`, `exists_dictator_of_decisive`) | méthode du pivot (Geanakoplos) : `pivot_exists`, `pivot_is_dictator_except_b`, `partial_dictator_is_full_dictator` |
+| Forme de Sen | réfutation universelle de l'axiomatique : `¬ SenLiberalism swf` | contre-exemple existentiel : `∃ prof, ¬∃ best, is_best_element best X (f prof).rel` |
+| Hypothèses de Sen | **sans** IIA, **sans** `Fintype`, **sans** hypothèse de cardinalité sur `I` | `2 ≤ Fintype.card ι` et `3 ≤ X.card` |
+| Notion de libéralisme | `SenLiberalism` : deux individus **distincts**, deux paires **croisées**, trois alternatives distinctes | `minimal_liberal` : deux individus distincts, chacun décisif sur **une** paire non dégénérée — les paires peuvent ne pas se croiser |
+| Preuve de Sen | calculatoire : profils d'utilité entière (`rank3 z x y 3 2 1`), obligations closes par `decide` | abstraite, cas « chevauchement » et cas « paires disjointes » |
+| Taille | 1045 lignes, Arrow et Sen dans le même fichier | 714 (`Arrow.lean`) + 363 (`Sen.lean`) |
+
+**Ce que chaque côté apprend, et que l'autre ne montre pas.**
+
+- La formalisation canonique montre qu'**on peut faire les deux théorèmes sans Mathlib**. Elle
+  paie ce choix par le bornage à `Fin n` et par un agenda global, parce que `Finset` est une
+  dépendance Mathlib : ce plafond est le prix du socle, pas un oubli.
+- La formalisation alternative montre ce que la **généralité** achète : société de taille
+  arbitraire (y compris infinie) et agenda local, c'est-à-dire la forme sous laquelle le
+  théorème se cite dans la littérature. Elle montre aussi la **deuxième stratégie de preuve**
+  (pivot) et une lecture **contre-existentielle** de Sen : « voici le profil qui cycle »
+  plutôt que « ces axiomes ne peuvent pas coexister ».
+- **Trois notions de libéralisme** coexistent, et les confondre ferait perdre le sens des deux
+  énoncés. `MinimalLiberalism` (canonique, dans `SocialChoice.lean`) admet une paire
+  dégénérée, et une dictature la satisfait — le fichier le prouve
+  (`dictatorship_minimally_liberal`), et c'est pourquoi l'énoncé de Sen y utilise
+  `SenLiberalism` : deux individus distincts, deux paires réellement croisées, sur trois
+  alternatives distinctes. `minimal_liberal` (alternative, `Sen.lean`) exige des paires non
+  dégénérées mais **n'exige pas qu'elles se croisent** : elle est strictement plus faible que
+  `SenLiberalism`, et l'impossibilité y est obtenue sous des hypothèses de cardinalité
+  explicites (`2 ≤ Fintype.card ι`, `3 ≤ X.card`).
+- Les deux ensemble donnent le seul point qu'aucune ne donne seule : les mêmes énoncés atteints
+  par deux routes, avec des axiomes de clôture différents.
+
+**Provenance.** `SocialChoice.lean` est écrit intégralement par CoursIA (commits `jsboige`,
+2026-10-28 → 2026-11-01) ; son en-tête le dit « inspiré de `asouther4/lean-social-choice` »,
+ce qui est une inspiration et non un portage. L'attribution, l'état des licences et le taux de
+reprise module par module sont consignés dans
+[`game_theory_lean/SocialChoice/NOTICE.md`](../game_theory_lean/SocialChoice/NOTICE.md) :
+`Arrow.lean` y est un portage mesuré (19 noms sur 29), `Sen.lean` un ajout CoursIA (0 sur 4).
+
 ## Voir aussi
 
 - [GameTheory/README.md](../README.md) — Vue d'ensemble de la série (tracks OpenSpiel + Lean)

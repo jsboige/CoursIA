@@ -13,9 +13,11 @@
 > **Ce répertoire n'est plus un lake.** La coquille technique (`lakefile.lean`, `lean-toolchain`,
 > `lake-manifest.json`) a été retirée (follow-up #4365) : elle faisait passer le dossier pour un lake
 > vivant auprès de tout outil énumérant les lakes par leur `lakefile*` (p. ex. `check_i18n_siblings`),
-> alors qu'il ne contenait **plus aucun module** depuis l'absorption. Ne subsistent que les 4
-> markdown (`README`, `STATUS`, `NOTICE`, `LEAN_PREREQUISITES`) — documentation historique, choix de
-> design et prérequis pédagogiques — conservés intentionnellement comme tombstone. Le contenu
+> alors qu'il ne contenait **plus aucun module** depuis l'absorption. Ne subsistent que les 3
+> markdown (`README`, `STATUS`, `LEAN_PREREQUISITES`) — documentation historique, choix de
+> design et prérequis pédagogiques — conservés intentionnellement comme tombstone. La **NOTICE
+> d'attribution** a rejoint son code le 2026-11-02 : [`game_theory_lean/SocialChoice/NOTICE.md`](../game_theory_lean/SocialChoice/NOTICE.md).
+> Le contenu
 > mathématique (théorèmes, preuves) vit dans le home canonique ; la suite de ce README le décrit
 > tel qu'il existait **historiquement** ici, et reste **entièrement valable**.
 
