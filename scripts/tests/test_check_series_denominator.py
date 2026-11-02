@@ -19,7 +19,12 @@ Cas couverts :
 5. `main()` rend **1** sur un dossier rouge et **0** sur un dossier vert ;
 6. un chemin **inexistant** rend **2** (un perimetre muet ne passe jamais pour
    un vert) ;
-7. les cellules de **code** sont ignorees, meme si elles contiennent la chaine.
+7. les cellules de **code** sont ignorees, meme si elles contiennent la chaine ;
+8. un **span inline** ou un **bloc cloture** qui CITE la convention est echanappe
+   (#23738, demande NanoClaw 1 de la revue de #23739) -- et l'echappatoire ne
+   masque PAS une declaration reelle ecrite dans la meme cellule (controle
+   negatif du controle negatif : sans lui, une regex trop gourmande rendrait
+   l'organe vert sur un vrai defaut).
 
 Le module est charge **par chemin** : `scripts/notebook_tools/` n'est pas un
 paquet importable depuis la racine du depot.
@@ -114,6 +119,54 @@ def test_code_cells_are_ignored():
         make_notebook(notebook, [("code", "# **Notebook** : 14/26 dans un commentaire")])
         findings, _ = tool.scan_notebook(notebook)
         assert findings == [], findings
+
+
+def test_inline_code_span_is_escaped():
+    """Un span inline qui CITE la convention n'est pas un denominateur declare."""
+    tool = load_tool()
+    with tempfile.TemporaryDirectory() as tmp:
+        notebook = Path(tmp) / "GameTheory-01.Setup.ipynb"
+        make_notebook(
+            notebook,
+            [("markdown", "Forme interdite : `**Notebook** : 6f/13` (ne pas recopier l'effectif).")],
+        )
+        findings, error = tool.scan_notebook(notebook)
+        assert error is None, error
+        assert findings == [], findings
+
+
+def test_fenced_block_is_escaped():
+    """Un bloc cloture qui documente la regle est echanappe lui aussi."""
+    tool = load_tool()
+    with tempfile.TemporaryDirectory() as tmp:
+        notebook = Path(tmp) / "GameTheory-01.Setup.ipynb"
+        make_notebook(
+            notebook,
+            [("markdown", "Exemple de forme perimee :\n\n```markdown\n**Notebook** : 6f/13\n```\n")],
+        )
+        findings, error = tool.scan_notebook(notebook)
+        assert error is None, error
+        assert findings == [], findings
+
+
+def test_escape_does_not_swallow_a_real_declaration():
+    """CONTROLE NEGATIF : citation ET declaration dans la meme cellule -> 1 constat."""
+    tool = load_tool()
+    with tempfile.TemporaryDirectory() as tmp:
+        notebook = Path(tmp) / "RL-06f.Deep.ipynb"
+        make_notebook(
+            notebook,
+            [
+                (
+                    "markdown",
+                    "La forme interdite est `**Notebook** : 6f/13`.\n\n"
+                    "**Notebook** : 6f/26 | **Duree** : 45 min\n",
+                )
+            ],
+        )
+        findings, error = tool.scan_notebook(notebook)
+        assert error is None, error
+        assert findings == [(0, "**Notebook** : 6f/26")], findings
 
 
 def test_main_returns_one_on_red_directory():
