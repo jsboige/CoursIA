@@ -72,7 +72,7 @@
 
   Cross-références : c.366 `#6111` `Conway.lean` racine bilingue inline
   (MERGED, initie rollout Phase 1+) + c.377 `#6178`
-  `Conway/MathlibMap` bilingue (1ᵉʳ sous-module rollout conway_lein,
+  `Conway/MathlibMap` bilingue (1ᵉʳ sous-module rollout conway_lean,
   PIVOT L335 strict, analogue structurel c.382) + c.378 `#6182`
   `Conway/LookAndSay` bilingue (2ᵉ sous-module rollout, suite
   look-and-say λ ≈ 1.303577) + c.379 `#6190` `Conway/Fractran` bilingue
@@ -81,19 +81,19 @@
   Doomsday Conway 1973 + 4 `#eval!` cas réels Conway mort 2020/4/11,
   9/11, Moon 1969/7/20, D-Day 1944/6/6, **analogue structurel direct
   c.385 CollatzLike**) + c.381 `#6197` `Grothendieck/YonedaLemma`
-  bilingue (1ᵉʳ sous-module rollout grothendieck_lein Phase 2+,
+  bilingue (1ᵉʳ sous-module rollout grothendieck_lean Phase 2+,
   PIVOT L335 strict c.381) + c.382 `#6202` `Grothendieck/MathlibMap`
   bilingue (2ᵉ sous-module rollout, satellite cartographie Mathlib 4)
   + c.383 `#6208` `Grothendieck/SheafBasics` bilingue (3ᵉ sous-module
   rollout, fondations faisceaux = 6 theorem, 3ᵉ cycle R6 Sustained
-  intra-R6 sur registre `grothendieck_lein` ouvert = au seuil R5.4b
+  intra-R6 sur registre `grothendieck_lean` ouvert = au seuil R5.4b
   MUST avant PIVOT obligatoire c.384) + c.384 `#6212` `Conway/Nim`
-  bilingue (5ᵉ sous-module rollout conway_lein Phase 1+, Nim + Bouton
+  bilingue (5ᵉ sous-module rollout conway_lean Phase 1+, Nim + Bouton
   1901 + Sprague-Grundy = analogue structurel direct c.385 CollatzLike
   par algorithme mathématique concret + `#eval!`/theorem cas concrets)
   + **c.385 `Conway/CollatzLike` bilingue (cette PR, 6ᵉ sous-module
-  rollout conway_lein Phase 1+, conjecture Collatz 3n+1 + Conway 1972
-  indécidabilité)** ← **continuité registre `conway_lein` Phase 1+
+  rollout conway_lean Phase 1+, conjecture Collatz 3n+1 + Conway 1972
+  indécidabilité)** ← **continuité registre `conway_lean` Phase 1+
   ouvert post-c.384 PIVOT strict obligatoire**.
 -/
 

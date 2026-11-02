@@ -41,16 +41,16 @@ champs, des topos — bien au-delà des espaces topologiques classiques.
 
 Epic #1646, Phase 2 (#2159). Tous les `sorry`s éliminés à la création.
 
-### Hommage calibration harness + Phase 2+ rollout grothendieck_lein (#4980)
+### Hommage calibration harness + Phase 2+ rollout grothendieck_lean (#4980)
 
-9ᵉ sous-module rollout `grothendieck_lein` Phase 2+ — analogue
+9ᵉ sous-module rollout `grothendieck_lean` Phase 2+ — analogue
 structurel direct c.388 `SieveOps` (5ᵉ, treillis ⊥ ≤ J ≤ ⊤, 9 theorem)
 + c.389 `CanonicalProps` (6ᵉ, topologie canonique, 8 theorem) + c.390
 `SieveGenerate` (7ᵉ, Galois insertion + idempotence, 7 theorem) + c.393
 `SieveLattice` (8ᵉ, axiomes functoriels pullback, 4 theorem) =
-continuité registre `grothendieck_lein` Phase 2+ ouvert post-c.390 =
-**4ᵉ cycle R6 Sustained intra-R6 sur registre `grothendieck_lein`
-post-c.391** = retour Phase 2+ post-c.392 ACHEVÉ 9/9 `conway_lein`
+continuité registre `grothendieck_lean` Phase 2+ ouvert post-c.390 =
+**4ᵉ cycle R6 Sustained intra-R6 sur registre `grothendieck_lean`
+post-c.391** = retour Phase 2+ post-c.392 ACHEVÉ 9/9 `conway_lean`
 Phase 1+.
 
 ### Substance réelle — catégories sous-jacentes + axiomes topologie de Grothendieck (SGA 4 II §1-3)
@@ -117,33 +117,33 @@ Mathlib i18n #4980 ratifiée par user 2026-07-04 (Option A pragmatique
 : deux blocs `/` top-level distincts, sans `---` interne, comme
 c.366-c.393).
 
-### Cycle L335 anti-monoculture Sustained — c.394 = 4ᵉ cycle R6 Sustained intra-R6 `grothendieck_lein` ≠ `conway_lein` ≠ `knot_lein` post-c.391
+### Cycle L335 anti-monoculture Sustained — c.394 = 4ᵉ cycle R6 Sustained intra-R6 `grothendieck_lean` ≠ `conway_lean` ≠ `knot_lean` post-c.391
 
 - c.388 = 1ᵉʳ cycle R6 Sustained intra-R6 sur registre
-  `grothendieck_lein` ≠ `conway_lein` ≠ `knot_lein` post-c.387
+  `grothendieck_lean` ≠ `conway_lean` ≠ `knot_lean` post-c.387
 - c.389 = 2ᵉ cycle R6 Sustained intra-R6 sur registre
-  `grothendieck_lein` ≠ `conway_lein` ≠ `knot_lein` post-c.388
+  `grothendieck_lean` ≠ `conway_lean` ≠ `knot_lean` post-c.388
 - c.390 = 3ᵉ cycle R6 Sustained intra-R6 sur registre
-  `grothendieck_lein` ≠ `conway_lein` ≠ `knot_lein` post-c.389 =
+  `grothendieck_lean` ≠ `conway_lean` ≠ `knot_lean` post-c.389 =
   c.391 = PIVOT strict obligatoire R5.4b MUST anti-tunneling
 - c.391 = PIVOT strict obligatoire R5.4b MUST anti-tunneling
-  post-c.388-c.390 = retour `conway_lein` Phase 1+ satellites =
-  1ᵉʳ cycle R6 Sustained intra-R6 `conway_lein` ≠ `grothendieck_lein`
-  ≠ `knot_lein` post-c.386
-- c.392 = 2ᵉ cycle R6 Sustained intra-R6 sur registre `conway_lein`
-  ≠ `grothendieck_lein` ≠ `knot_lein` post-c.391 = rollout Phase 1+
-  `conway_lein` ACHEVÉ 9/9
+  post-c.388-c.390 = retour `conway_lean` Phase 1+ satellites =
+  1ᵉʳ cycle R6 Sustained intra-R6 `conway_lean` ≠ `grothendieck_lean`
+  ≠ `knot_lean` post-c.386
+- c.392 = 2ᵉ cycle R6 Sustained intra-R6 sur registre `conway_lean`
+  ≠ `grothendieck_lean` ≠ `knot_lean` post-c.391 = rollout Phase 1+
+  `conway_lean` ACHEVÉ 9/9
 - c.393 = 3ᵉ cycle R6 Sustained intra-R6 sur registre
-  `grothendieck_lein` ≠ `conway_lein` ≠ `knot_lein` post-c.391 =
+  `grothendieck_lean` ≠ `conway_lean` ≠ `knot_lean` post-c.391 =
   retour Phase 2+ registre ouvert post-c.390 = 8ᵉ sous-module
-  rollout `grothendieck_lein` Phase 2+
+  rollout `grothendieck_lean` Phase 2+
 - **c.394 = 4ᵉ cycle R6 Sustained intra-R6 sur registre
-  `grothendieck_lein`** = continuation registre Phase 2+ ouvert
-  post-c.393 = cohérence post-c.392 ACHEVÉ 9/9 `conway_lein` Phase
-  1+ = **9ᵉ sous-module rollout `grothendieck_lein` Phase 2+ =
+  `grothendieck_lean`** = continuation registre Phase 2+ ouvert
+  post-c.393 = cohérence post-c.392 ACHEVÉ 9/9 `conway_lean` Phase
+  1+ = **9ᵉ sous-module rollout `grothendieck_lean` Phase 2+ =
   `CategoryAndSites`** = SGA 4 II §1-3 catégories sous-jacentes +
   axiomes canoniques topologie + treillis des topologies.
-- Post-c.394 backlog c.395+ : autres `grothendieck_lein` Phase 2+
+- Post-c.394 backlog c.395+ : autres `grothendieck_lean` Phase 2+
   restants (13 après c.394 : Calibration, Subcanonical, DenseTopology,
   CoverageGen, SheafHom, SheafCohomology/{MayerVietoris,Basic},
   ConstantSheaf, ZariskiSite, Conservative, MayerVietorisSquare,

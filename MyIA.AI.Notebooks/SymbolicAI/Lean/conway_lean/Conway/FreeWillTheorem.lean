@@ -18,7 +18,7 @@
   être prédéterminée sans conspiration.
 
   Ce fichier formalise la structure du théorème et la connecte au
-  contexte du projet `conway_lein` (Kochen-Specker, Conway's legacy).
+  contexte du projet `conway_lean` (Kochen-Specker, Conway's legacy).
 
   ### i18n — convention #4980 (ratifiée 2026-07-04)
 
