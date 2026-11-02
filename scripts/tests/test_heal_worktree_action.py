@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """Controle du soin d'arbre chaud, extrait en action composite (#23287).
 
-Trois choses sont verifiees ici, et deux d'entre elles n'etaient mesurees nulle
-part avant l'extraction :
+Plusieurs choses sont verifiees ici, et deux d'entre elles n'etaient mesurees
+nulle part avant l'extraction :
 
 - **controle positif** (critere 4 de l'issue) : sur un arbre volontairement
   pollue par un fichier non suivi, le soin rapporte la salissure ET dit qu'il ne
@@ -12,6 +12,15 @@ part avant l'extraction :
 - **anti-divergence** (le motif de l'issue) : le corps du script reste
   byte-identique au bloc que les workflows portent encore, pour que la
   factorisation ne se defasse pas en silence d'ici le basculement des appelants.
+
+Le raccordement **distant** des workflows a l'action composite est explicitement
+ecarte : l'etape de soin tourne AVANT `actions/checkout`, donc une action
+locale n'existe pas encore dans l'espace de travail ; l'appel distant
+(`jsboige/CoursIA/.github/actions/heal-worktree@main`) oblige en revanche
+GitHub a telecharger l'archive codeload du depot ENTIER a l'etape « Set up
+job » -- de quoi faire tomber la totalite des workflows qui l'utilisent. Les
+copies inline restent donc en place, et c'est ce test qui porte l'objectif de
+source unique (#23287) : chaque copie doit etre byte-identique au script.
 """
 
 import io
@@ -30,7 +39,26 @@ ACTION = ROOT / ".github" / "actions" / "heal-worktree" / "action.yml"
 WORKFLOWS = ROOT / ".github" / "workflows"
 STEP_NAME = "Restore the warm work tree before the sparse checkout"
 MARKER = "# --- corps extrait : byte-identique au bloc des workflows (#23287) ---"
-REMOTE_REF = "jsboige/CoursIA/.github/actions/heal-worktree@main"
+REMOTE_REF = "jsboige/CoursIA/.github/actions/heal-worktree"
+
+# Les workflows qui portent le soin d'arbre chaud. La liste est explicite :
+# une garde qui compte les occurrences passe aussi quand une seule en porte
+# une -- c'etait le trou du controle d'identite, qui verifiait la copie sans
+# verifier la couverture.
+EXPECTED_WORKFLOWS = (
+    "adjacency-stale-sweep.yml",
+    "candidate-delivered-advisory.yml",
+    "concurrency-conj-guard.yml",
+    "harness-coauthor-guard.yml",
+    "hooks-parity.yml",
+    "lane-claim-guard.yml",
+    "markdown-table-guard.yml",
+    "pr-gate-rerun.yml",
+    "pr-gate-sweep-health-advisory.yml",
+    "stale-guard-red-sweep.yml",
+    "unique-check-run-names-guard.yml",
+    "variation-light-genre.yml",
+)
 
 BASH = shutil.which("bash")
 
@@ -146,12 +174,7 @@ def test_sans_depot_git_le_soin_ne_fait_rien(tmp_path):
 
 
 def _workflow_bodies():
-    """Corps (`run: |` dedente) de chaque occurrence du bloc dans les workflows.
-
-    Obsolete depuis le raccordement (#23287) : le corps inline a ete retire des
-    workflows, qui appellent desormais l'action composite distante. La fonction
-    reste pour le controle positif : elle doit ne plus rien trouver.
-    """
+    """Corps (`run: |` dedente) de chaque occurrence du bloc dans les workflows."""
     bodies = []
     for path in sorted(WORKFLOWS.glob("*.yml")):
         text = io.open(path, encoding="utf-8", newline="").read()
@@ -165,64 +188,57 @@ def _workflow_bodies():
             m = re.search(r"\n      - ", rest[1:])
             end = i + 1 + (m.start() if m else len(rest) - 1)
             lines = text[start:end].splitlines()
-            if len(lines) > 1 and lines[1].strip() == "run: |":
-                bodies.append((path.name, [ln[10:] for ln in lines[2:]]))
+            assert lines[1].strip() == "run: |", path
+            bodies.append((path.name, [ln[10:] for ln in lines[2:]]))
             idx = i + len(STEP_NAME)
     return bodies
 
 
 def test_le_script_est_le_corps_des_workflows():
-    """Anti-divergence : le corps vit dans le script, et nulle part ailleurs.
+    """Anti-divergence : le corps sous le marqueur reste byte-identique au bloc.
 
-    Depuis le raccordement (#23287), les workflows n'portent plus le corps : ils
-    appellent l'action composite distante. Ce test verifie les deux moities du
-    contrat de copie unique -- le corps est dans le script, et il n'est plus
-    dans aucun workflow (c'etait le motif de l'issue : douze editions
-    synchrones pour une correction).
+    Le controle porte DEUX choses : l'identite de chaque copie (le script est
+    la source), et la COUVERTURE (chacun des workflows attendus porte bien une
+    copie). La couverture etait absente : la garde passait avec une seule
+    occurrence dans l'ensemble du pool.
     """
     text = SCRIPT.read_text(encoding="utf-8")
     assert MARKER in text, "le marqueur de corps a disparu : garde sans objet"
-    assert text.split(MARKER + "\n", 1)[1].strip(), "le corps sous le marqueur est vide"
-
+    script_body = text.split(MARKER + "\n", 1)[1].splitlines()
     bodies = _workflow_bodies()
-    assert not bodies, (
-        "le corps du soin est encore inline dans un workflow (%s) : la copie "
-        "unique n'est pas etablie" % ", ".join(name for name, _ in bodies)
+
+    assert bodies, "aucune occurrence du bloc dans les workflows : garde sans objet"
+    for name, body in bodies:
+        assert body == script_body, (
+            "le script a diverge du bloc porte par %s : la factorisation se defait "
+            "avant meme le basculement des appelants" % name
+        )
+
+    portraits = {name for name, _ in bodies}
+    manquants = [name for name in EXPECTED_WORKFLOWS if name not in portraits]
+    assert not manquants, (
+        "workflow(s) du pool sans copie du soin : %s -- le soin d'arbre chaud "
+        "manque a ces run(s), la source unique n'y est pas portee"
+        % ", ".join(manquants)
     )
 
 
-def test_chaque_etape_appelle_l_action_distante():
-    """Raccordement : chaque occurrence du soin est un `uses:` vers l'action.
+def test_aucun_workflow_n_appelle_l_action_distante():
+    """Controle negatif : l'appel distant a l'action composite est exclu.
 
-    L'appel est DISTANT (`jsboige/CoursIA/...@main`) et non local (`./...`) :
-    l'etape tourne AVANT `actions/checkout`, donc `.github/actions/` n'existe
-    pas encore dans l'espace de travail -- une action locale est
-    structurellement impossible a cet endroit.
+    L'action composite existe, mais l'appeler a distance (`...@main`) force
+    GitHub a telecharger l'archive codeload du depot ENTIER (~3,5 Go) a
+    l'etape « Set up job » -- avant meme le checkout. Chaque workflow qui
+    l'appelle fait tomber son propre run ; l'action locale est exclue par la
+    position de l'etape (avant le checkout). Le soin reste donc inline, et ce
+    test interdit qu'on reintroduise l'appel distant.
     """
-    occurrences = 0
     for path in sorted(WORKFLOWS.glob("*.yml")):
         text = io.open(path, encoding="utf-8", newline="").read()
-        assert "[heal-worktree]" not in text, (
-            "%s porte encore le corps du soin : une copie inline est revenue" % path.name
+        assert REMOTE_REF not in text, (
+            "%s appelle l'action composite a distance : le run telechargera "
+            "l'archive du depot entier avant le checkout" % path.name
         )
-        idx = 0
-        while True:
-            i = text.find(STEP_NAME, idx)
-            if i < 0:
-                break
-            end_of_line = text.find("\n", i)
-            following = text[end_of_line + 1: text.find("\n", end_of_line + 1)]
-            assert following.strip() == "uses: " + REMOTE_REF, (
-                "%s : l'etape de soin n'appelle pas l'action distante (%r)"
-                % (path.name, following.strip())
-            )
-            occurrences += 1
-            idx = i + len(STEP_NAME)
-
-    assert occurrences >= 12, (
-        "seulement %d appel(s) a l'action composite : les 12 workflows du pool "
-        "persistant ne sont pas tous raccordes" % occurrences
-    )
 
 
 def test_action_reference_le_script():
