@@ -30,6 +30,7 @@ from check_series_zero_pad import (  # noqa: E402
     RegistryError,
     load_registry,
     main,
+    scan,
     violations,
 )
 
@@ -376,3 +377,41 @@ def test_hors_depot_le_balayage_reste_complet(series: Path):
     scanne. Un garde ne doit pas devenir muet faute d'avoir pu interroger git."""
     (series / "GameTheory-3-Avant_output.ipynb").write_text("x", encoding="utf-8")
     assert len(violations(series)) == 1
+
+
+# --- La degradation est SIGNALEE, pas silencieuse (revue #24080) ------------
+#
+# Un ensemble ignore vide a deux causes : « rien n'est ignore » et « je n'ai
+# pas pu demander a git ». Le rapport ne les distinguait pas, donc il
+# affirmait une portee qu'il n'avait pas mesuree. Ces tests verrouillent le
+# signal dans les deux sens -- sans le controle positif, un booleen fige a
+# True passerait.
+
+def test_portee_ignoree_mesuree_dans_un_depot(tmp_path: Path):
+    """Controle POSITIF : dans un depot, la portee est mesuree (ok=True)."""
+    d = _git_repo(tmp_path, ignore="*_output.ipynb\n")
+    (d / "GameTheory-01-Ok.ipynb").write_text("x", encoding="utf-8")
+    found, ignored_ok = scan(d)
+    assert found == []
+    assert ignored_ok is True
+
+
+def test_portee_ignoree_indisponible_hors_depot(series: Path):
+    """Controle NEGATIF : sans depot, le second membre dit la degradation."""
+    (series / "GameTheory-3-Avant_output.ipynb").write_text("x", encoding="utf-8")
+    found, ignored_ok = scan(series)
+    assert len(found) == 1
+    assert ignored_ok is False
+
+
+def test_main_serie_signale_la_portee_non_mesuree(series: Path, capsys):
+    """Le booleen va JUSQU'AU rapport : JSON et stderr le portent.
+
+    C'est le defaut d'origine -- le repli existait, mais l'appelant ne pouvait
+    pas le distinguer d'une absence d'artefact ignore."""
+    (series / "GameTheory-01-Ok.ipynb").write_text("x", encoding="utf-8")
+    assert main(["--series-dir", str(series), "--json"]) == 0
+    captured = capsys.readouterr()
+    payload = json.loads(captured.out)
+    assert payload["ignored_scope"] is False
+    assert "indisponible" in captured.err
