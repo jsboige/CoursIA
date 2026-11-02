@@ -474,7 +474,8 @@ naturelle, l'hypothèse `h_central` du cadre ne coûte rien — au même titre q
 `centralCorrect` en `hcap` (capture de la trajectoire entière `∀ t ≤ 2^k`).
 
 La brique de traversée existe déjà, prouvée : les murs
-`p4_{nw,ne,se,sw}_overlap_wall` (Walls/, privés, sorry-free) donnent l'accord
+`p4_{nw,ne,se,sw}_overlap_wall` (Walls/, sorry-free -- NW, NE et SW privés, SE
+public depuis le découpage #23234) donnent l'accord
 **pointwise** entre la trajectoire de référence `evolve (2^(k-1))` de la grille
 parent et la reconstruction `node R1 R2 R4 R5` du second flot, sur chaque
 sous-fenêtre `[2^k, 2^k + 2^((k-1)+1))²` et sa boîte Chebyshev `2^(k-1)`, sous
@@ -544,14 +545,16 @@ theorem padCenter2_support_in_window (c : MacroCell) (hc : cellWf c)
 L'inventaire P4.4 (tranche 18) a nommé les quatre murs `p4_{nw,ne,se,sw}_overlap_wall`
 de `Walls/` comme briques de croisement du résidu L3 : l'accord point par point, sur
 la sous-fenêtre centrale, entre la trajectoire de référence et la reconstruction
-seconde vague. Ces murs sont **privés** dans leurs fichiers — l'assemblage P4
-(itération dyadique de l'accord le long de la décomposition de `t`) ne peut pas les
-invoquer depuis ce fragment. La tranche restitue le mur NW sous le toit du fragment
+seconde vague. Trois de ces murs (NW, NE, SW) restent **privés** dans leurs fichiers —
+l'assemblage P4 (itération dyadique de l'accord le long de la décomposition de `t`) ne
+peut pas les invoquer depuis ce fragment ; le quatrième, SE, est devenu public avec le
+découpage #23234 (`Walls/SE/Overlap.lean`). La tranche restitue le mur NW sous le toit
+du fragment
 en énoncé **public** `wall_nw_agreement`, exclusivement à partir des briques
 publiques de `Foundation` : `p4_nw_parent_agree_n*`, `p4_nw_rside_char_*`,
 `evolve_box_agree_local`, `p4_isAlive_toGrid_shift`, `coord_bound_of_chebDist_le`.
-Énoncé et preuve sont la copie fidèle du mur original — aucune déprivatisation dans
-`Walls/`, aucun impact i18n.
+Énoncé et preuve sont la copie fidèle du mur original — cette tranche ne déprivatise
+aucun mur de `Walls/` (le mur NW reste privé dans `Walls/NW.lean`), aucun impact i18n.
 
 Les 8 hypothèses structurelles `hn*_l`/`hn*_w` (niveau `k+1` et `wf` des quatre
 nœuds de recombinaison) sont **porteuses** : le bloc de réfutation de
@@ -731,7 +734,8 @@ Trois écarts avec le mur NW, tous portés par l'énoncé :
 Seuls `n3` (enfant NE du parent) et `n6` sont neufs côté briques d'accord :
 `p4_ne_parent_agree_n3` (Foundation.lean:3453) et `p4_ne_parent_agree_n6`
 (:3491), toutes deux publiques. Énoncé et preuve sont la copie fidèle du mur
-original ; aucune déprivatisation, aucun impact i18n. -/
+original ; aucune déprivatisation par cette tranche (le mur NE reste privé dans
+`Walls/NE.lean`), aucun impact i18n. -/
 
 set_option maxHeartbeats 4000000 in
 /-- **Mur NE (restitution publique de `p4_ne_overlap_wall`).** Sur la boîte
@@ -906,7 +910,7 @@ theorem wall_ne_agreement
 /-! ### Tranche 22 — restitution publique du mur SE (`wall_se_agreement`)
 
 Troisième mur restitué, en miroir **diagonal** de NW (indices `{5,6,8,9}`). Le mur SE
-(`Walls/SE.lean:120`, miroir de NW par réflexion diagonale) couvre le supercell
+(`Walls/SE/Overlap.lean`, miroir de NW par réflexion diagonale) couvre le supercell
 `node R5 R6 R8 R9` ancré à `(2^k + 2^(k-1), 2^k + 2^(k-1))` dans le parent :
 la fenêtre est décalée sur les **deux** coordonnées et la conclusion translatée
 d'autant.
@@ -917,15 +921,17 @@ Deux écarts avec les murs NW/NE :
   supercell est un nœud distinct de la couronne, `n7` et `n8` n'étant atteints que
   par les quadrants SO/SE ;
 * trois des quatre briques de quadrant sont **publiques** (`p4_nw_parent_agree_n5`,
-  `p4_ne_parent_agree_n6`, `p4_sw_parent_agree_n8`), mais la quatrième
-  (`p4_se_parent_agree_n9`) est **privée dans `Walls/SE.lean` et n'a aucun
-  analogue public** dans le lake : la tranche la restitue donc aussi, sous le nom
-  `se_parent_agree_n9`, avant le mur — ses quatre briques (`p4_bool_eq_of_iff`,
-  `isAlive_true_iff_mem_local`, `mem_toGrid_node`, `p4_mem_toGrid_lt`) sont
-  publiques dans `Foundation`.
+  `p4_ne_parent_agree_n6`, `p4_sw_parent_agree_n8`), et la quatrième
+  (`p4_se_parent_agree_n9`) l'est devenue : restée privée dans l'agrégat d'origine
+  jusqu'au découpage #23234, qui la rend publique dans `Walls/SE/Basic.lean`. La
+  tranche la restitue néanmoins, sous le nom `se_parent_agree_n9`, avant le mur —
+  écrit à l'époque où elle était privée et conservé depuis — ses quatre briques
+  (`p4_bool_eq_of_iff`, `isAlive_true_iff_mem_local`, `mem_toGrid_node`,
+  `p4_mem_toGrid_lt`) sont publiques dans `Foundation`.
 
-Énoncés et preuves sont les copies fidèles des originaux ; aucune
-déprivatisation dans `Walls/`, aucun impact i18n. -/
+Énoncés et preuves sont les copies fidèles des originaux ; cette tranche ne
+déprivatise aucun mur de `Walls/` (la déprivatisation des cinq théorèmes SE est le
+fait du découpage #23234, dans `Walls/SE/`), aucun impact i18n. -/
 
 /-- **Accord parent / `n9` (restitution publique de `p4_se_parent_agree_n9`).**
     Sur le quadrant SE du parent trois-fois-paddé (`[2·2^k, 4·2^k)²`), l'état
@@ -978,8 +984,9 @@ set_option maxHeartbeats 4000000 in
     `[2·2^k, 2·2^k + 2^((k-1)+1))²`, la trajectoire de référence du supernœud
     16-cellules (une génération `2^(k-1)`) coïncide avec la recombinaison
     seconde vague `(node R5 R6 R8 R9).toGrid`, lue translatée de
-    `(-(2^k + 2^(k-1)), -(2^k + 2^(k-1)))`. Copie fidèle du mur privé
-    `p4_se_overlap_wall` (`Walls/SE.lean`), en public sous le toit du fragment
+    `(-(2^k + 2^(k-1)), -(2^k + 2^(k-1)))`. Copie fidèle du mur
+    `p4_se_overlap_wall` (public depuis le découpage #23234, dans
+    `Walls/SE/Overlap.lean`), restituée en public sous le toit du fragment
     pour l'assemblage P4 : fenêtre → quadrant (n5 réutilisé du mur NW, n6 du mur
     NE, n8 du mur SW, n9 restitué ci-dessus) → localité Chebyshev →
     caractérisation `p4_nw_rside_char_*` paramétrique du supernœud résultat. -/

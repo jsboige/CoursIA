@@ -221,7 +221,7 @@ def test_non_rational_coefficient_is_refused_not_truncated():
     # x = √2 ne force pas x = 2 : le théorème est FAUX. Avant la garde, la
     # troncation √2 → 1 faisait de `x - 1` une hypothèse *autrement fausse*
     # et le système renvoyait un faux VALID, sans témoin. Le refus est
-    # l'issue honnête d'un décideur QF_NIA à coefficients rationnels.
+    # l'issue honnête d'un décideur QF_NRA à coefficients rationnels.
     x = sp.symbols('x')
     with pytest.raises(ValueError, match="non rationnel"):
         rbg.decide_real([x - sp.sqrt(2), x ** 2 - 2], x - 2, [x])
@@ -424,7 +424,7 @@ def test_non_rational_coefficient_is_refused_not_truncated():
     # x = √2 ne force pas x = 2 : le théorème est FAUX. Avant la garde, la
     # troncation √2 → 1 faisait de `x - 1` une hypothèse *autrement fausse*
     # et le système renvoyait un faux VALID, sans témoin. Le refus est
-    # l'issue honnête d'un décideur QF_NIA à coefficients rationnels.
+    # l'issue honnête d'un décideur QF_NRA à coefficients rationnels.
     x = sp.symbols('x')
     with pytest.raises(ValueError, match="non rationnel"):
         rbg.decide_real([x - sp.sqrt(2), x ** 2 - 2], x - 2, [x])
@@ -465,3 +465,37 @@ def test_symbolic_assumption_residual_is_not_non_degenerate():
     check = rbg.verify_witness([x - 1], x - 2, [x], {x: sp.Integer(1)},
                                assumptions=[z])
     assert not check.non_degenerate
+
+
+# ---------------------------------------------------------------------------
+# Critère 1 de #22379 : la logique interrogée est celle des réels
+# ---------------------------------------------------------------------------
+
+def test_solver_is_built_for_non_linear_real_arithmetic(monkeypatch):
+    # Les variables du module sont des z3.Real : la logique demandée doit être
+    # QF_NRA (arithmétique non linéaire sur les réels), pas QF_NIA — qui nomme
+    # la même théorie sur les ENTIERS, un domaine étranger à celui que le
+    # module décide. Le test épingle ce que le module DEMANDE à Z3, et non un
+    # détail d'implantation : les contraintes restent réelles, seul le
+    # tactique choisi change.
+    demandes = []
+    vrai_solver_for = rbg._z3.SolverFor
+
+    def espion(logique, *args, **kwargs):
+        demandes.append(logique)
+        return vrai_solver_for(logique, *args, **kwargs)
+
+    monkeypatch.setattr(rbg._z3, "SolverFor", espion)
+    rbg._make_solver()
+    assert demandes == ["QF_NRA"]
+
+    # Contrôle positif : ce solveur décide bien une contrainte qui n'a de
+    # témoin que dans le domaine des réels. x*x == 2 est satisfiable sur R
+    # (√2) mais insatisfiable sur Z : c'est cette asymétrie que le domaine
+    # réel apporte, et le test ne surpromet rien au-delà — sous une autre
+    # étiquette de logique avec les mêmes sorts Real, la sonde resterait
+    # sat ; seule l'espion ci-dessus distingue les étiquettes.
+    s = rbg._make_solver()
+    x = rbg._z3.Real('sonde_sqrt2')
+    s.add(x * x == 2)
+    assert s.check() == rbg._z3.sat
