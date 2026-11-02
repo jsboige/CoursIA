@@ -8,7 +8,7 @@ class VolTargetMomentum(QCAlgorithm):
     """
     VolTarget-Momentum v5: Wider leverage range + 15% target
     ===========================================================
-    Measured (current code, 2015-01-01 -> 2024-12-31, 2516 jours, mode strategy): Sharpe 0.441, CAGR 10.131%, MaxDD 20.800%.
+    Measured (current code, fenêtre codée 2015-01-01 -> 2025-01-01, 2516 séances de marché (3654 jours calendaires), mode strategy): Sharpe 0.441, CAGR 10.131%, MaxDD 20.800%.
 
     Iteration results (historique des iterations de conception, mesurees sous des
     conditions anterieures ; non reproduites par le code actuel, refactors #21420/#22869/#22923) :
