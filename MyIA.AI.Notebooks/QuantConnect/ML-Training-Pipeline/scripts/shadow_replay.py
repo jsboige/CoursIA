@@ -359,6 +359,11 @@ def qc_daily_equity(chart: dict,
     pour tous les points suivants. Sans `window_start` (appel direct,
     `league_correlation`), le cycle doit partir de e0 : fail-CLOSED.
 
+    La premiere seance EST la date de gel, en jours calendaires -- pas en jours ouvrés :
+    une candidate crypto cote 7/7 et peut geler un samedi (`btc-voltarget-base`,
+    2026-10-17), qu'un calendrier ouvré roulerait au lundi suivant. Une premiere seance
+    reellement perdue (premier point = deuxieme seance) reste refusee.
+
     Une fenetre de moins de cinq seances ne remplit que le debut du cycle : les series
     absentes sont tolerees quand elles ferment le cycle (prefixe contigu du cycle) et
     refusees quand elles le trouent (telechargement tronque). Une troncature de fin, elle,
@@ -373,7 +378,10 @@ def qc_daily_equity(chart: dict,
     points = sorted((t, k, v) for k in present
                     for t, v in _chart_points(chart, QC_EQUITY_SERIES[k]))
     offset = points[0][1]
-    if set(present) != {(offset + i) % 5 for i in range(len(points))}:
+    # Attendu indice sur len(present) (series distinctes), pas len(points) : une serie
+    # portant deux points elargirait l'ensemble attendu et rendrait le message
+    # "contiguous prefix" au lieu du "two equity points on the same session" qui suit.
+    if set(present) != {(offset + i) % 5 for i in range(len(present))}:
         raise ValueError(f"chart {QC_CHART!r}: series e0..e4 must form a contiguous "
                          f"prefix of the cycle from one offset, present are {present}")
     for i, (t, k, _) in enumerate(points):
@@ -384,16 +392,15 @@ def qc_daily_equity(chart: dict,
     if len(set(dates)) != len(dates):
         raise ValueError("two equity points on the same session")
     if offset != 0:
-        first_session = None
-        if window_start:
-            try:
-                first_session = str(np.busday_offset(window_start, 0, roll="forward"))
-            except (TypeError, ValueError):
-                first_session = None
-        if first_session is None or dates[0] != first_session:
+        # Ancrage calendaire : la premiere seance EST la date de gel. Pas de calendrier
+        # ouvré -- `btc-voltarget-base` a gelé un samedi (Bitfinex cote 7/7) et
+        # np.busday_offset l'aurait roulée au lundi suivant, refusant sous un autre
+        # message le cas même que ce garde doit admettre (revue Hermes #24288) :
+        # gel le samedi => admis ; premiere seance reellement perdue => refuse.
+        if not window_start or dates[0] != window_start:
             raise ValueError(
                 f"equity cycle starts at e{offset} and its first point {dates[0]} is not "
-                f"the first session of the window ({first_session or 'unknown'}): a point "
+                f"the first session of the window ({window_start or 'unknown'}): a point "
                 f"was lost before it")
     return dates, [v for _, _, v in points]
 

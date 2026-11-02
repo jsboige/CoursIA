@@ -262,6 +262,14 @@ def _sessions(start: str, n: int) -> list[str]:
     return [str(d) for d in np.busday_offset(start, np.arange(n), roll="forward")]
 
 
+def _calendar_sessions(start: str, n: int) -> list[str]:
+    # Jours calendaires consecutifs -- une candidate crypto cote 7/7 et peut geler un
+    # samedi, jour qu'aucun `np.busday_offset` ne produit (revue Hermes #24288 : les
+    # fixtures en jours ouvrés ne peuvent PAS pinner l'ancrage calendaire du garde).
+    d0 = dt.date.fromisoformat(start)
+    return [str(d0 + dt.timedelta(days=i)) for i in range(n)]
+
+
 def _chart(days: list[str], equity, fees: float = 0.0012, turnover: float = 1.6,
            shift: int = 0) -> dict:
     """Chart `shadow` as the candidate contract plots it: equity in e0..e4 in turn, cumulative
@@ -430,6 +438,28 @@ def test_qc_daily_equity_refuses_a_shift_without_window_start():
     days = _sessions("2025-10-01", 7)
     with pytest.raises(ValueError, match="starts at e1"):
         qc_daily_equity(_chart(days, _equity(7), shift=1))
+
+
+def test_qc_daily_equity_accepts_a_saturday_freeze_shifted_cycle():
+    # Le cas REEL de #24153 : `btc-voltarget-base` a gele le samedi 2026-10-17 (Bitfinex
+    # cote 7/7) et le cycle part de e1. Un ancrage en jours ouvrés roulerait la premiere
+    # seance au lundi 19 et refuserait sous un autre message le cas meme que le garde
+    # doit admettre. En jours calendaires : premiere seance = date de gel -> admis.
+    days = _calendar_sessions("2026-10-17", 6)  # samedi -> jeudi
+    assert dt.date.fromisoformat(days[0]).weekday() == 5  # samedi, pinné
+    dates, _ = qc_daily_equity(_chart(days, _equity(6), shift=1),
+                               window_start=days[0])
+    assert dates == days
+
+
+def test_qc_daily_equity_refuses_a_lost_first_session_on_calendar_days():
+    # Contre-epreuve sur les memes jours calendaires : la premiere seance (samedi) est
+    # reellement perdue -- le premier point tombe au dimanche. Refuse, alors que
+    # l'ancrage en jours ouvrés l'admettait (samedi roule au lundi = lundi observe).
+    days = _calendar_sessions("2026-10-17", 6)
+    with pytest.raises(ValueError, match="not the first session of the window"):
+        qc_daily_equity(_chart(days[1:], _equity(5), shift=1),
+                        window_start=days[0])
 
 
 def test_ingest_qc_accepts_the_btc_voltarget_shift():
