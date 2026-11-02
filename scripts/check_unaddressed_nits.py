@@ -1592,8 +1592,22 @@ _SEVERITY_GLYPH_CLASS_RE = re.compile(f"[{''.join(SEVERITY_GLYPHS)}]")
 _GLYPH_REPLY_MARKER_RE = re.compile(r"(?i)\b(?:r[ée]ponses?|responses?)\b")
 _GLYPH_RESPONSE_NOUN_RE = re.compile(
     r"(?i)\b(?:r[ée]serves?|r[ée]ponses?|remarques?|observations?|points?|items?|"
-    r"responses?)\b[\s:,'’\-]{0,12}$"
+    r"responses?|concerns?)\b[\s:,'’\-]{0,12}$"
 )
+# #22911 — SURFACE CONNUE, DELIBEREMENT LAISSEE OUVERTE (review du 2026-11-02,
+# point 2) : la regle (D) neutralise un glyphe ADJACENT a un nom de reprise
+# des lors que la ligne porte un marqueur de reponse. Une reserve NEUVE
+# emise DANS une reponse (« Reponse au point 🟡 : a corriger avant merge »)
+# partage cette forme et disparait donc de l'analyse. La regle (D) ne peut
+# pas distinguer une levee d'une levee-sans-levee : le discriminant serait
+# la queue semantique de la ligne (« traitee » vs « a corriger »), ce que
+# l'organe refuse de faire (un mot de contexte ne prouve pas une
+# intention). PARADE : une reserve neuve s'emet dans un commentaire
+# DISTINCT, sans marqueur de reponse sur la ligne. La surface est
+# verrouillee par un test (`test_22911_surface_connue_reserve_neuve_dans_reponse`
+# dans
+# scripts/tests/test_check_unaddressed_nits_22911.py) pour qu'un changement
+# du comportement soit visible.
 # #22911 — Position J (E) LIBELLE EN GRAS : une étiquette de réponse point par
 # point ouvre la ligne en gras et referme son glyphe entre parenthèses —
 # « **Live-read freshness (🟡)** : ... ». Le glyphe y désigne l'item nommé,

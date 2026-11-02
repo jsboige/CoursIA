@@ -93,6 +93,52 @@ def test_22911_variante_anglais_neutralisee():
             "nothing left.")
     assert live_markers(body) == []
     assert mod.classify("jsboige", body) is None
+    # `concern` est dans le set de noms de reprise de la regle (D) : la
+    # variante anglaise passe par la REGLE, et non par le chemin
+    # d'attribution preexistant (« the » ∈ CITERS, citer + un mot). Sans ce
+    # token, « **Response to my concern 🟡 ...** » resterait vivant — « my »
+    # est hors CITERS par construction (« my CONCERN is... » est une emission
+    # reelle).
+    assert mod._GLYPH_RESPONSE_NOUN_RE.search(
+        "**Response to the concern "), "« concern » absent du set de (D)"
+    assert mod._GLYPH_RESPONSE_NOUN_RE.search(
+        "**Response to my concern "), "« my concern » absent du set de (D)"
+
+
+# --- Surface CONNUE, verrouillee (review du 2026-11-02, point 2) ---
+#
+# La regle (D) neutralise un glyphe adjacent a un nom de reprise des lors que
+# la ligne porte un marqueur de reponse. Une reserve NEUVE emise DANS une
+# reponse partage cette forme et disparait donc de l'analyse -- faux vert
+# ASSUME et documente : l'organe ne peut pas distinguer une levee d'une
+# reserve neuve sans lire la queue semantique de la ligne, ce qu'il refuse de
+# faire. Parade : une reserve neuve s'emet dans un commentaire distinct, sans
+# marqueur de reponse sur la ligne.
+#
+# Ce test verrouille l'etat courant pour qu'un changement soit visible.
+
+
+def test_22911_surface_connue_reserve_neuve_dans_reponse():
+    prefix = "Réponse au point "
+    assert mod._GLYPH_REPLY_MARKER_RE.search(prefix), "marqueur de reponse absent"
+    assert mod._GLYPH_RESPONSE_NOUN_RE.search(prefix), "nom de reprise absent"
+    # Surface residuelle : le glyphe disparait, et aucun autre marqueur ne
+    # rattrape la reserve.
+    body = "Réponse au point 🟡 : ce point n’est pas traité."
+    assert live_markers(body) == []
+    assert mod.classify("clusterManager-Myia", body) is None
+
+
+def test_22911_surface_connue_le_marqueur_cotier_rattrape_la_reserve():
+    # L'exemple cite par la review (« a corriger avant merge ») n'est PAS un
+    # faux vert : « avant merge » est lui-meme un marqueur de reserve
+    # (`CONCERN_MARKERS`), donc la reserve reste bloquee meme glyphe
+    # neutralise. C'est le cas general sans marqueur cotier qui reste le
+    # residuel documente ci-dessus.
+    body = "Réponse au point 🟡 : à corriger avant merge."
+    assert "avant merge" in mod.CONCERN_MARKERS
+    assert live_markers(body) == ["avant merge"]
+    assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
 
 
 def test_22911_variantes_accentu_neutralisees():
