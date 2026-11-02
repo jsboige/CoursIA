@@ -171,11 +171,17 @@ c'est la variabilité de son **approvisionnement en données** (WS-00c) qui n'es
 ## Conséquence pour la série (hors périmètre de cette PR)
 
 La cellule WS-00c gagnerait à **épingler sa source** au lieu de laisser un `try/except`
-choisir implicitement, à **fixer un `random_state`** sur son `LogisticRegression`, et à consigner
-l'environnement (versions et siège) à côté des valeurs citées. Tant que ce n'est pas fait, un
-chiffre de WS-00c est une **mesure d'environnement**, pas une propriété du carnet : deux sièges
-sous les mêmes versions de `scikit-learn` et de Python en rendent deux différentes. Suivi à
-ouvrir ; cette PR ne modifie aucun carnet.
+choisir implicitement, à consigner l'environnement (versions et siège) à côté des valeurs
+citées, et à **fixer la tolérance de son solveur**. Tant que ce n'est pas fait, un chiffre de
+WS-00c est une **mesure d'environnement**, pas une propriété du carnet : deux sièges sous les
+mêmes versions de `scikit-learn` et de Python en rendent deux différentes.
+
+Un `random_state` ne remplacerait pas cette prescription : sous `lbfgs`, le solveur par défaut
+de `LogisticRegression`, la graine est **inerte** — mesuré sur scikit-learn 1.8.0, `random_state`
+42, 7 et 123 rendent des coefficients identiques au bit près, alors qu'elle les déplace sous
+`saga` (`3.45e-04`, contrôle positif). Le levier opérant est la **tolérance** : mesuré sur cette
+sonde (#21823), à données, graine et versions identiques, passer de `tol=1e-4` à `1e-6` déplace
+les coefficients de `1.76e-02` et un item. Suivi à ouvrir ; cette PR ne modifie aucun carnet.
 
 ## Reproduction
 
