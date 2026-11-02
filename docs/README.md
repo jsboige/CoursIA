@@ -119,6 +119,7 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 | [reference/branch-cleanup-manifest.README.md](reference/branch-cleanup-manifest.README.md) | Manifeste de préservation des branches distantes — issue #14238 |
 | [reference/shared-keyring-myia-keys.md](reference/shared-keyring-myia-keys.md) | Trousseau partagé MyIA-Keys — organe d'accès, bootstrap par machine, empreinte de preuve |
 | [reference/tricephale-circulation.md](reference/tricephale-circulation.md) | Tricéphalie — coordinateur, titulaire, secrétaire |
+| [reference/lean-theorem-duplicates.md](reference/lean-theorem-duplicates.md) | Théorèmes Lean prouvés **deux fois** dans des lacs différents — paires de déclarations dont les noms se recouvrent et dont les docstrings décrivent le même résultat. Régénérée par `scripts/lean/lean_theorem_duplicates.py`, `--check` rend 1 quand page et arbre divergent. Contrôle positif : les paires Arrow et Sen. See #24183 (T0) |
 
 ## GenAI (docs/genai/)
 
