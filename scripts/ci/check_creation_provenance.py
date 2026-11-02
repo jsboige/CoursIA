@@ -8,6 +8,16 @@ tapis (journal de tirage, `draw_id`), ou creee au moins 48 h avant la PR. »
 Ce que la garde mesure, et rien d'autre :
 
   * la PR ajoute-t-elle un **carnet neuf** ? (statut `added`, pas `renamed`)
+  * un `.ipynb` **ajoute** porte-t-il un **suffixe de langue** (`_en`, `_es`,
+    `_de`, `_it`, `_pt`, `_zh`, `_ja`, `_ar`) ? Constat `LANG_SIBLING` :
+    contraire a #1650 §1, la version localisee se produit dans le depot de
+    langue. L'exemption `_en` a ete retiree (#23174) : un jumeau passait la
+    garde silencieusement (mesure #23653, `FT-00c-...-Python_en.ipynb`) ;
+  * le **veto de creation** est-il actif ? Quand la variable Actions
+    `NOTEBOOK_CREATION_VETO_MIN_OPEN_ISSUES` est posee et que le compte
+    d'issues ouvertes l'atteint, tout carnet neuf recoit le constat
+    `VETO_ACTIVE` (compte et seuil dans le resume). Le seuil vit dans la
+    variable, jamais dans le code ;
   * l'issue **servie** existe-t-elle, et depuis quand ?
   * a-t-elle ete servie par un **tirage** du tapis (`draw_id`) ?
   * a-t-elle **attendu son tour** (>= 48 h avant l'ouverture de la PR) ?
@@ -16,9 +26,7 @@ Exemptions (posees par l'issue) :
 
   * PRs **etudiantes et externes** (auteur hors flotte) ;
   * **demenagements** (`RENAMED`) : un carnet deplace n'est pas un carnet
-    neuf ;
-  * **jumeaux `_en`** : la version anglaise d'un carnet deja cree n'est pas
-    un carnet neuf.
+    neuf.
 
 Verdict : **ADVISORY**. Le job sort TOUJOURS en 0 et porte son verdict par
 des annotations `::warning::` et par le resume de job — un garde qui
@@ -62,6 +70,16 @@ AGE_MIN_H = 48.0
 
 # Les logins de la flotte : les PRs des autres auteurs sont hors perimetre.
 FLEET_PREFIXES = ("jsboige", "myia-")
+
+# Les suffixes de langue qui font un constat LANG_SIBLING (#23174) : la
+# version localisee d'un carnet se produit dans le depot de langue (#1650
+# §1), pas ici. Un `Foo_en.lean` n'est pas un carnet : hors perimetre.
+LANG_SUFFIXES = ("_en", "_es", "_de", "_it", "_pt", "_zh", "_ja", "_ar")
+
+# Le veto de creation vit dans une variable Actions du depot, JAMAIS dans le
+# code : absente ou vide = pas de veto ; posee et atteinte par le compte
+# d'issues ouvertes = tout carnet neuf recoit le constat VETO_ACTIVE.
+VETO_VAR = "NOTEBOOK_CREATION_VETO_MIN_OPEN_ISSUES"
 
 
 class InstrumentError(RuntimeError):
@@ -166,25 +184,41 @@ def is_fleet(pr: dict) -> bool:
     return login.startswith(FLEET_PREFIXES)
 
 
-def new_notebooks(files: list[dict]) -> tuple[list[str], list[str]]:
-    """Les `.ipynb` VRAIMENT neufs, et les demenagements exclus.
+def lang_suffix(nom: str) -> str | None:
+    """Le suffixe de langue du nom de carnet, ou `None`.
 
-    Trois exemptions, toutes posees par l'issue :
+    `Foo_en.ipynb` porte `_en` ; `Foo_es.ipynb` porte `_es`. Le suffixe doit
+    coller au `.ipynb` : `Foo_en_v2.ipynb` n'en porte pas. Un nom de fichier
+    qui n'est pas un carnet (`Foo_en.lean`) n'entre jamais ici — le filtrage
+    `.ipynb` est en amont.
+    """
+    for suffixe in LANG_SUFFIXES:
+        if nom.endswith(suffixe + ".ipynb"):
+            return suffixe
+    return None
+
+
+def new_notebooks(files: list[dict]) -> tuple[list[str], list[str], list[str]]:
+    """Les `.ipynb` VRAIMENT neufs, les demenagements, les carnets de langue.
 
       * un **demenagement** : GitHub rapporte un deplacement comme
         `added` + `removed` quand la similarite est sous son seuil ; le
         carnet n'est pas neuf, il a change de place. On le reconnait a
         l'egalite du NOM de fichier entre un `added` et un `removed` de la
         meme PR ;
-      * un **jumeau `_en`** : la version anglaise d'un carnet deja cree ;
+      * un **suffixe de langue** : le carnet n'est ni exempté ni ignorant --
+        il est RENDU dans `langues`, la classe du constat `LANG_SIBLING`.
+        L'exemption `_en` a ete retiree (#23174) : elle rendait la garde
+        aveugle a ce qu'elle devait voir ;
       * un `renamed` pur : jamais ajoute.
 
-    Le rendu est `(carnets_neufs, demenagements)`.
+    Le rendu est `(carnets_neufs, demenagements, carnets_langue)`.
     """
     supprimes = {f.get("filename", "").rsplit("/", 1)[-1]
                  for f in files if f.get("status") == "removed"}
     neufs: list[str] = []
     demenages: list[str] = []
+    langues: list[str] = []
     for f in files:
         path = f.get("filename") or ""
         if not path.endswith(".ipynb"):
@@ -192,13 +226,14 @@ def new_notebooks(files: list[dict]) -> tuple[list[str], list[str]]:
         if f.get("status") != "added":
             continue
         nom = path.rsplit("/", 1)[-1]
-        if nom.endswith("_en.ipynb"):
+        if lang_suffix(nom):
+            langues.append(path)
             continue
         if nom in supprimes:
             demenages.append(path)
             continue
         neufs.append(path)
-    return neufs, demenages
+    return neufs, demenages, langues
 
 
 def draws_for(issue: int, journal_path: str | None) -> dict:
@@ -232,6 +267,55 @@ def draws_for(issue: int, journal_path: str | None) -> dict:
             vues += 1
     return {"disponible": True, "retenue": retenue, "vues": vues,
             "raison": ""}
+
+
+def open_issue_count() -> int:
+    """Le nombre d'ISSUES ouvertes du depot (les PRs ne comptent pas).
+
+    Le champ `open_issues_count` du depot melange issues et PRs : le seuil
+    du veto est calibre sur les issues seules, la source est donc la
+    recherche `type:issue state:open`. Une reponse sans `total_count` est
+    une mesure ratee, pas un compte nul : rendre 0 fabriquerait un
+    « veto inactif » jamais mesure.
+    """
+    data = _gh_json(["api", f"search/issues?"
+                          f"q=repo:{REPO}%20type:issue%20state:open"
+                          f"&per_page=1"])
+    if "total_count" not in data:
+        raise InstrumentError(
+            "gh api search/issues a repondu sans total_count : compte "
+            "d'issues ouvertes non lisible")
+    return int(data["total_count"])
+
+
+def veto_verdict(seuil_texte: str | None,
+                 issues_ouvertes: int | None) -> dict:
+    """Le verdict du veto de creation, en fonction pure.
+
+    Le seuil vient de la variable Actions `NOTEBOOK_CREATION_VETO_MIN_OPEN
+    ISSUES` -- absente ou vide : pas de veto, le critere ne s'evalue pas.
+    Un seuil illisible ou un compte non mesure rendent le critere NON
+    EVALUABLE (`evaluable: False`), jamais un verdict actif ou inactif
+    fabrique : un faux constat cote PR, c'est un blocage de livraison sur
+    une mesure qui n'a pas eu lieu.
+    """
+    texte = (seuil_texte or "").strip()
+    if not texte:
+        return {"pose": False}
+    try:
+        seuil = int(texte)
+    except ValueError:
+        return {"pose": True, "evaluable": False,
+                "raison": f"seuil illisible dans la variable : {texte!r}"}
+    if seuil < 0:
+        return {"pose": True, "evaluable": False,
+                "raison": f"seuil negatif dans la variable : {texte!r}"}
+    if issues_ouvertes is None:
+        return {"pose": True, "evaluable": False, "seuil": seuil,
+                "raison": "compte d'issues ouvertes non mesure"}
+    return {"pose": True, "evaluable": True, "seuil": seuil,
+            "issues_ouvertes": issues_ouvertes,
+            "actif": issues_ouvertes >= seuil}
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -305,20 +389,74 @@ def main(argv: list[str] | None = None) -> int:
         _emit(rapport, args)
         return 0
 
-    # 2. La PR ajoute-t-elle un carnet neuf ?
+    # 2. La PR ajoute-t-elle un carnet neuf ? un carnet de langue ?
     ajoutes = [f.get("filename") for f in files
                if (f.get("filename") or "").endswith(".ipynb")
                and f.get("status") == "added"]
-    neufs, demenages = new_notebooks(files)
-    jumeaux = [p for p in ajoutes if p.rsplit("/", 1)[-1].endswith("_en.ipynb")]
+    neufs, demenages, langues = new_notebooks(files)
     rapport["carnets_ajoutes"] = ajoutes
-    rapport["jumeaux_en_exemptes"] = jumeaux
     rapport["demenagements_exemptes"] = demenages
+    rapport["carnets_langue"] = langues
+
+    # 2a. Constat LANG_SIBLING : un `.ipynb` ajoute suffixe d'une langue
+    #     produit sa version localisee ICI, contrairement a #1650 §1.
+    #     L'exemption `_en` est retiree : un jumeau passait la garde
+    #     silencieusement (mesure #23653).
+    for chemin in langues:
+        suffixe = lang_suffix(chemin.rsplit("/", 1)[-1])
+        motif = (f"constat LANG_SIBLING : {chemin} (suffixe de langue "
+                 f"`{suffixe}`) — contraire à #1650 §1 : la version "
+                 "localisée se produit dans le dépôt de langue")
+        rapport["constats"].append(motif)
+        note(motif)
+
+    # 2b. Veto de creation : la variable est un ETAT du depot, pas du code.
+    #     Le compte est une requete POSTERIEURE au `try` initial : une
+    #     famine y rend le critere non evaluable (jamais un faux constat),
+    #     sans arreter le reste de la mesure -- le 48 h reste evaluable.
+    #     Le veto couvre TOUT carnet ajoute non deplace : un `_en` ajoute
+    #     pendant le veto cumule ses deux constats.
+    veto: dict = {"pose": False}
+    if neufs or langues:
+        seuil_texte = os.environ.get(VETO_VAR)
+        if (seuil_texte or "").strip():
+            compte = None
+            try:
+                compte = open_issue_count()
+            except InstrumentError as exc:
+                veto = veto_verdict(seuil_texte, None)
+                veto["raison"] = (f"compte d'issues ouvertes injoignable : "
+                                  f"{str(exc).strip()[:180]}")
+            except (OSError, subprocess.TimeoutExpired) as exc:
+                veto = veto_verdict(seuil_texte, None)
+                veto["raison"] = (f"compte d'issues ouvertes injoignable : "
+                                  f"{str(exc).strip()[:180]}")
+            else:
+                veto = veto_verdict(seuil_texte, compte)
+            if veto.get("actif"):
+                motif = (f"constat VETO_ACTIVE : veto de creation actif — "
+                         f"{veto['issues_ouvertes']} issues ouvertes >= "
+                         f"seuil {veto['seuil']} ({VETO_VAR}) ; "
+                         f"{len(neufs) + len(langues)} carnet(s) neuf(s) "
+                         "ajouté(s) pendant le veto")
+                rapport["constats"].append(motif)
+                note(motif)
+            if veto.get("pose") and veto.get("evaluable") is False:
+                print(f"::notice::creation-provenance: critere veto non "
+                      f"evaluable ({veto.get('raison')}) : le veto n'est "
+                      "pas constaté sur une mesure qui n'a pas eu lieu")
+    rapport["veto"] = veto
+
     if not neufs:
+        if langues:
+            # Le carnet de langue est un constat, pas une exemption : une
+            # PR qui n'ajoute QUE un jumeau `_en` est SIGNALÉE.
+            rapport["statut"] = "SIGNALE"
+            _emit(rapport, args)
+            return 1 if args.strict else 0
         motif = ("aucun carnet neuf dans la PR"
                  + (f" ({len(demenages)} deménagement(s) exempté(s))"
-                    if demenages else "")
-                 + (f" ({len(jumeaux)} jumeau(x) `_en`)" if jumeaux else ""))
+                    if demenages else ""))
         rapport["statut"] = "EXEMPTE"
         rapport["exemptions"].append(motif)
         note(motif)
@@ -371,9 +509,11 @@ def main(argv: list[str] | None = None) -> int:
     rapport["verdict"] = verdict
     # `statut` est pose sur TOUS les chemins : un consommateur de `--json`
     # doit pouvoir distinguer CONFORME de « pas de statut » sans repliquer
-    # la logique de `decide` (revue du 2026-10-29, PR #23283).
+    # la logique de `decide` (revue du 2026-10-29, PR #23283). Un verdict
+    # 48 h CONFORME n'efface pas un constat pose plus tot (LANG_SIBLING,
+    # VETO_ACTIVE) : les constats governent le statut final.
     rapport["statut"] = ("SIGNALE" if verdict.startswith("SIGNALE")
-                         else "CONFORME")
+                         or rapport["constats"] else "CONFORME")
     if verdict.startswith("SIGNALE"):
         rapport["constats"].append(motif)
         note(motif)
@@ -433,6 +573,16 @@ def _emit(rapport: dict, args) -> None:
               f"(ouverte le {rapport['pr_meta'].get('creee')})")
     if rapport.get("carnets_ajoutes"):
         print(f"- carnets ajoutes : {', '.join(rapport['carnets_ajoutes'])}")
+    veto = rapport.get("veto")
+    if isinstance(veto, dict) and veto.get("pose"):
+        if veto.get("actif"):
+            print(f"- veto de creation : ACTIF — {veto['issues_ouvertes']} "
+                  f"issues ouvertes >= seuil {veto['seuil']} ({VETO_VAR})")
+        elif veto.get("evaluable") is False:
+            print(f"- veto de creation : NON EVALUABLE — {veto.get('raison')}")
+        else:
+            print(f"- veto de creation : inactif — {veto['issues_ouvertes']} "
+                  f"issues ouvertes < seuil {veto['seuil']} ({VETO_VAR})")
     if rapport.get("issue_servie"):
         print(f"- issue servie : #{rapport['issue_servie']}")
     if rapport.get("age_heures") is not None:
