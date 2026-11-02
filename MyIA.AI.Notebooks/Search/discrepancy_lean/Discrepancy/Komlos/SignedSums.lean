@@ -943,4 +943,67 @@ theorem old_form_unsatisfiable_for_gridV :
   exact gridV_nonzero
     (contention_stability_forces_zero gridV hA0 (fun a ha _ => hAstab a ha) 0)
 
+/-! ### Le certificat de satisfiabilité générale du correctif #21417
+
+La porte `exists_colouring_aux` ne porte plus d'ensemble stable `A` : elle
+attend un **jeu de clauses** `B` contenant les sommes à coefficients bornés
+par `2` en les générateurs `3 • v i`. Les contrôles livrés jusqu'ici sont
+particuliers — `gridClauses` (témoin grille `d = 1`, P4) — ou négatifs
+(`contention_stability_forces_zero` pour la forme historique).
+
+Cette section livre l'instance **générale** : pour toute famille
+`v : Fin n → (Fin d → ℤ)`, y compris non nulle, la boîte des coefficients
+`[-2, 2]^n` a une image finie de cardinal majoré par `5 ^ n`, et cette image
+satisfait l'hypothèse de la porte. C'est le « 5ⁿ points » du chantier,
+**mesuré** ici plutôt que décrit. -/
+
+/-- **Le jeu de clauses explicite** : l'image de la boîte `[-2, 2]^n` des
+coefficients par la somme `c ↦ ∑ i, c i • (3 • v i)`.
+
+Aucune stabilité n'est requise de cet ensemble : la croissance de `S`
+suffit à satisfaire `SupportContained S P (clauseSet v)`
+(`supportContained_biUnion`), ce qui est précisément la propriété que
+l'ancienne forme de la contention n'avait pas. -/
+noncomputable def clauseSet {d n : ℕ} (v : Fin n → (Fin d → ℤ)) : Finset (Fin d → ℤ) :=
+  (Fintype.piFinset (fun _ : Fin n => Finset.Icc (-2 : ℤ) 2)).image
+    (fun c => ∑ i, c i • (3 • v i))
+
+/-- L'hypothèse de la porte est satisfaite **par construction** : toute
+somme à coefficients bornés par `2` est dans `clauseSet v`. -/
+theorem clauseSet_clauses {d n : ℕ} (v : Fin n → (Fin d → ℤ))
+    (f : Fin n → ℤ) (hf : ∀ i, |f i| ≤ 2) :
+    ∑ i, f i • (3 • v i) ∈ clauseSet v := by
+  refine Finset.mem_image.mpr ⟨f, ?_, rfl⟩
+  rw [Fintype.mem_piFinset]
+  intro i
+  obtain ⟨h1, h2⟩ := abs_le.mp (hf i)
+  exact Finset.mem_Icc.mpr ⟨h1, h2⟩
+
+/-- **Borne de taille** : le jeu de clauses a au plus `5 ^ n` points — la
+boîte a `5 ^ n` coefficients, et l'image ne peut qu'en réduire le
+cardinal. -/
+theorem clauseSet_card_le {d n : ℕ} (v : Fin n → (Fin d → ℤ)) :
+    (clauseSet v).card ≤ 5 ^ n := by
+  calc (clauseSet v).card
+      ≤ (Fintype.piFinset (fun _ : Fin n => Finset.Icc (-2 : ℤ) 2)).card :=
+        Finset.card_image_le
+    _ = (Finset.Icc (-2 : ℤ) 2).card ^ n := Fintype.card_piFinset_const _ n
+    _ = 5 ^ n := by
+        have h5 : (Finset.Icc (-2 : ℤ) 2).card = 5 := by
+          rw [Int.card_Icc]
+          simp
+        rw [h5]
+
+/-- **Le certificat de non-vacuité du correctif #21417** : pour *toute*
+famille `v`, y compris non nulle, il existe un jeu de clauses fini de
+cardinal `≤ 5 ^ n` qui satisfait l'hypothèse de la porte. Combiné au témoin
+`contention_stability_forces_zero` — la forme historique, elle,
+insatisfiable dès `v ≠ 0` — c'est la preuve que le correctif a rendu
+l'énoncé instanciable hors du régime `v = 0`. -/
+theorem exists_clauseSet_of_any_family {d n : ℕ} (v : Fin n → (Fin d → ℤ)) :
+    ∃ B : Finset (Fin d → ℤ),
+      (∀ f : Fin n → ℤ, (∀ i, |f i| ≤ 2) → ∑ i, f i • (3 • v i) ∈ B) ∧
+        B.card ≤ 5 ^ n :=
+  ⟨clauseSet v, clauseSet_clauses v, clauseSet_card_le v⟩
+
 end Discrepancy.Komlos
