@@ -57,14 +57,21 @@ def _safe_lwsc(self, *a, **k):
 ssl.SSLContext._load_windows_store_certs = _safe_lwsc
 
 # === Garde de prevol memoire (#24180) ======================================
-# Le harnais QLoRA 4-bit + GRPO tire ~10 Go de commit par bras ; sur un siege
+# Le harnais QLoRA 4-bit + GRPO tire ~11 Go de commit par bras ; sur un siege
 # dont la baseline approche deja le plafond (vmmemWSL + MCP), le run monte
 # seul a ~99,8 % de commit et tue la machine (autopsie 02/11, 7e vague sur
 # myia-po-2027, Event 2004). La garde mesure la marge AVANT tout import
 # lourd -- sinon elle consomme la marge qu'elle mesure -- et refuse de
 # demarrer sous le seuil.
+#
+# Calibration du seuil (Maintenance 02/11, csv commit-pressure 20261102) :
+# le siege mort avait deja 85,3 % de commit AVANT le bras, soit ~14 Go de
+# marge -- un seuil a 12 Go LAISSAIT PASSER ce bras. La mort est venue de
+# l'empreinte du bras (~11 Go) + la croissance CI concurrente (~8-10 Go)
+# sur la marge restante : le defaut exige donc bras + burst, ~20 Go. Un
+# siege leger peut baisser via --min-commit-headroom-go.
 
-DEFAULT_MIN_COMMIT_HEADROOM_GO = 12.0
+DEFAULT_MIN_COMMIT_HEADROOM_GO = 20.0
 _HEADROOM_MEASURED_GO = None
 
 
@@ -144,8 +151,9 @@ def _preflight_headroom(argv):
         sys.exit(
             f"[ict25_arms] REFUS DE DEMARRAGE: marge de commit disponible "
             f"{_HEADROOM_MEASURED_GO:.1f} Go < seuil {seuil:.1f} Go sur {siege}. "
-            "Le bras tire ~10 Go de commit (QLoRA 4-bit + GRPO) et etoufferait "
-            "le siege. Router ce bras vers un GPU de flotte avec de la marge, "
+            "Le bras tire ~11 Go de commit (QLoRA 4-bit + GRPO) et la CI "
+            "concurrente (~8-10 Go de burst) mangerait le reste. "
+            "Router ce bras vers un GPU de flotte avec de la marge, "
             "ou liberer de la memoire avant de relancer. Seuil surchargeable "
             "par --min-commit-headroom-go."
         )
