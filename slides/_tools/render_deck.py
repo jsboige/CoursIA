@@ -346,9 +346,11 @@ def main() -> int:
         default="1440x900",
         help=(
             "Taille de la capture, 'LxH' (defaut 1440x900). Pour une preuve "
-            "conforme au deck, utiliser le canvas declare dans son headmatter "
-            "(souvent 980x552) : c'est la taille a laquelle "
-            "scan_slidev_composition.py mesure les debordements."
+            "conforme au deck, utiliser le canvas du scanner (980x552 par "
+            "defaut) : c'est la taille a laquelle scan_slidev_composition.py "
+            "mesure les debordements. 980x552 est CANVAS_DEFAULT du scanner ; "
+            "un deck peut le declarer dans son headmatter (canvasWidth / "
+            "canvasHeight / aspectRatio)."
         ),
     )
     parser.add_argument(
