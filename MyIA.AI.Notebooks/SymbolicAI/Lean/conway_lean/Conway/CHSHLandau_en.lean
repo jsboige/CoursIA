@@ -100,9 +100,9 @@ remains open and declared.
 9. **Corpus connection**: fourth module of the CHSH series of `conway_lean`
    (with `CHSH`, `CHSHRandomized`, `CHSHQuantum`); notebook pointers:
    `Lean-13b-CHSH-Tsirelson-Native` (native execution of the series under
-   the `lean4-wsl` kernel — a future tranche may execute this module's
-   statements there), `Lean-13-Kochen-Specker`,
-   `Lean-16f-Conway-Free-Will-Theorem`.
+   the `lean4-wsl-conway` kernel — a future tranche may execute this
+   module's statements there), `Lean-13-Kochen-Specker`,
+   `Lean-16c-Conway-Free-Will-Theorem`.
 10. **Transmission**: each lemma carries a docstring separating what the
     computation's output shows from what it suggests; the status table is
     the falsifiable summary.
