@@ -457,6 +457,26 @@ DATASETS: dict[str, dict[str, Any]] = {
 # ---------------------------------------------------------------------------
 
 
+def grad_norm_carries(g: float) -> bool:
+    """Une observation `grad_norm` porte-t-elle un gradient ?
+
+    `grad_norm` est une NORME de gradient : sa valeur legitime est finie et
+    >= 0. Le predicat historique est `g > 0`, qui vaut DEJA False pour un
+    `nan` (IEEE-754 : toute comparaison avec NaN est False) et pour une
+    valeur negative. Le comportement etait donc correct, mais IMPLICITE --
+    il est ecrit ici pour etre fige par le selftest.
+
+    - finie et > 0  : le pas a porte un gradient (vivant).
+    - == 0          : aucun gradient porte (signature de la graine 42).
+    - negative      : mesure invalide -- une norme ne peut pas etre negative.
+    - `nan`         : divergence silencieuse -- ni vivante, ni inexploitable
+                      ; elle compte comme une observation (elle a ete tracee)
+                      mais jamais comme porteuse.
+    - `+inf`        : debordement de la norme -> invalide, pas un signal.
+    """
+    return math.isfinite(g) and g > 0.0
+
+
 def no_signal_verdict(grad_norms: list[float], threshold: int) -> dict[str, Any]:
     """Verdict pur : le run a-t-il porte un gradient dans les `threshold` premiers pas ?
 
@@ -475,14 +495,23 @@ def no_signal_verdict(grad_norms: list[float], threshold: int) -> dict[str, Any]
 
     - `threshold <= 0`  : garde desactivee, protocole inchange.
     - moins de `threshold` observations : pas assez de preuves, on ne decide pas.
-    - aucune observation > 0 : ABANDON (le run ne portera rien).
+    - aucune observation porteuse : ABANDON (le run ne portera rien).
+
+    Une observation est PORTEUSE si elle est finie et strictement positive
+    (`grad_norm_carries`). Un `nan` (divergence silencieuse), une valeur
+    negative ou un `+inf` sont des mesures INVALIDES : ils comptent comme
+    observations (ils ont ete traces) mais jamais comme porteuses -- donc un
+    run dont les N premieres mesures sont toutes invalides est abandonne
+    lui aussi, avec la raison `grad_norm_invalid_on_first_steps`.
     """
     observed = [float(g) for g in grad_norms if g is not None]
-    alive = [g for g in observed if g > 0]
+    alive = [g for g in observed if grad_norm_carries(g)]
+    invalid = [g for g in observed if not grad_norm_carries(g) and g != 0.0]
     verdict: dict[str, Any] = {
         "threshold": threshold,
         "steps_observed": len(observed),
         "steps_alive": len(alive),
+        "steps_invalid": len(invalid),
         "abort": False,
         "reason": "",
     }
@@ -492,7 +521,8 @@ def no_signal_verdict(grad_norms: list[float], threshold: int) -> dict[str, Any]
         verdict["reason"] = "not_enough_observations"
     elif not alive:
         verdict["abort"] = True
-        verdict["reason"] = "grad_norm_zero_on_first_steps"
+        verdict["reason"] = ("grad_norm_invalid_on_first_steps" if invalid
+                             else "grad_norm_zero_on_first_steps")
     else:
         verdict["reason"] = "signal_alive"
     return verdict
@@ -534,7 +564,16 @@ def build_no_signal_guard(threshold: int) -> Any:
             if g is None:
                 # pas de grad_norm dans ce log : ce pas ne dit rien du signal
                 return control
-            self.grad_norms.append(float(g))
+            try:
+                value = float(g)
+            except (TypeError, ValueError):
+                # mesure illisible : on ne leve pas le callback -- une exception
+                # ici tuerait un run de 6 h 30 de GPU pour un probleme de log.
+                # La mesure est traitee comme invalide, donc comme non
+                # porteuse ; un run dont toutes les mesures sont illisibles est
+                # abandonne avec la raison "invalid".
+                value = float("nan")
+            self.grad_norms.append(value)
             self.verdict = no_signal_verdict(self.grad_norms, threshold)
             if self.verdict["abort"]:
                 control.should_training_stop = True
@@ -733,6 +772,19 @@ def mode_selftest() -> int:
         ([0.0, 0.0, 0.0], 0, False, "disabled"),
         ([], 3, False, "not_enough_observations"),
         ([0.0, 0.7, 0.0], 3, False, "signal_alive"),
+        # un `nan` (divergence silencieuse) n'est PAS porteur, mais compte
+        # comme observation : N mesures invalides -> abandon, raison
+        # "invalid" -- la raison "zero" serait un motif faux.
+        ([float("nan"), float("nan"), float("nan")], 3, True,
+         "grad_norm_invalid_on_first_steps"),
+        # une valeur negative est une mesure invalide (une norme n'est pas
+        # negative) : meme traitement qu'un `nan`.
+        ([-1.0, -1.0, -1.0], 3, True, "grad_norm_invalid_on_first_steps"),
+        # un `nan` melange a un gradient porteur : le pas a porte, on
+        # n'abandonne pas.
+        ([1.4, float("nan"), 0.0], 3, False, "signal_alive"),
+        # un `nan` ne comble pas le seuil : c'est UNE observation, pas plus.
+        ([float("nan"), 0.0], 3, False, "not_enough_observations"),
     ]
     guard_fails = []
     for norms, thr, want_abort, want_reason in guard_cases:
@@ -802,6 +854,17 @@ def mode_selftest() -> int:
         if guard_silent.verdict["steps_observed"] != 0 or ctrl_silent.should_training_stop:
             wire_fails.append("log_sans_grad_norm")
             print("FAIL: un log sans grad_norm a ete compte comme observation")
+
+        # un `nan` (divergence silencieuse) doit armer l'arret : il ne porte
+        # rien, donc N mesures invalides -> abandon propre.
+        guard_nan = build_no_signal_guard(2)
+        ctrl_nan = _Ctrl()
+        guard_nan.on_log(None, None, ctrl_nan, logs={"grad_norm": float("nan")})
+        guard_nan.on_log(None, None, ctrl_nan, logs={"grad_norm": float("nan")})
+        wire_total += 1
+        if not ctrl_nan.should_training_stop:
+            wire_fails.append("nan")
+            print("FAIL: arret non arme sur un grad_norm nan (divergence)")
     except ImportError as exc:
         wire_skipped = True
         print(f"selftest: cablage du callback NON teste ({exc}) -- transformers absent")
