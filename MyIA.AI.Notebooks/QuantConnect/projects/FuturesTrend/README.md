@@ -380,6 +380,160 @@ full), repoussée au suivi #17320. Les arbitrages reportés (scalaires sqrt vs
 Table 29, FDM-Table-52 vs breadth) restent ouverts et sont désormais
 motivés par ce finding.
 
+**Addendum 2026-10-31 (#23824) — la ruine vient d'abord du dimensionnement
+sur marge.** Des compteurs passifs (`set_runtime_statistic`, relus par
+`read_backtest` sans le log du run) mesurent maintenant ce que le finding
+ci-dessus supposait. Sur un contrat à terme, `set_holdings` dimensionne la
+position sur la **marge initiale**, pas sur le notionnel : un poids de 0,05
+achète des contrats dont la marge vaut 5 % du portefeuille, soit un notionnel
+10 à 20 fois plus grand. Le plafond du breadth multiplier (« soft cap on gross
+leverage ») bornait donc une somme de marges, pas l'exposition.
+
+Le correctif (`fix=on`, défaut) dimensionne en contrats entiers sur le
+notionnel, `round(poids × valeur du portefeuille / (prix × multiplicateur))`,
+et envoie l'écart par `market_order`. `fix=off` rejoue l'ancien chemin : ses
+5 046 ordres sont identiques, un à un, à ceux du code de `main`. Le paramètre
+`cash` lance le même compile à un autre capital de backtest.
+
+La formule vit dans `notional_sizing.py`, module pur (patron
+`breadth_multiplier.py`) que la branche `fix=on` importe :
+`tests/test_notional_sizing.py` la vérifie hors du runtime QC, avec des
+multiplicateurs de 1, 50 et 1 000, l'arrondi à 0 contrat, les garde-fous
+(poids nul, prix ou multiplicateur non positif) et la position détenue, lue
+arrondie plutôt que tronquée.
+
+Runs du 2026-10-31, projet 38722439, dans l'espace QC sponsorisé, qui tronque
+la fin du backtest : la dernière donnée lue est du 2026-08-02. L'exposition est
+la somme des valeurs absolues des positions rapportée à la valeur du
+portefeuille, échantillonnée à chaque rebalancement après le warmup.
+
+| Bras | Run | Exposition brute (méd. / p90 / max) | Cibles arrondies à 0 contrat | Ordres | dont appels de marge | dont liquidations à l'échéance | Sharpe QC | CAR | MaxDD |
+|---|---|---|---|---|---|---|---|---|---|
+| code de `main`, 100 k | `3d7d03b1` | non instrumenté | — | 5 046 | 1 556 | 74 | 0.237 | −33.5 % | 100 % |
+| `fix=off`, 100 k | `e7ca126b` | 0.00 / 56.2 / 192.1 | — | 5 046 | 1 556 | 74 | 0.237 | −33.5 % | 100 % |
+| `fix=on`, 100 k | `bcf50b4b` | 0.35 / 1.15 / 8.13 | 16 359 / 17 834 | 201 | 39 | 30 | −0.452 | ruine le 2020-05-19 | 117.8 % |
+| `fix=off`, 2 M | `08a0884a` | 0.00 / 41.4 / 182.6 | — | 8 314 | 2 138 | 121 | −0.101 | −49.6 % | 100 % |
+| `fix=on`, 2 M | `87723ec5` | 2.77 / 3.31 / 10.64 | 2 565 / 17 782 | 3 847 | 172 | 449 | −0.442 | ruine le 2020-05-19 | 118.8 % |
+| `fix=on`, 2 M, dev 2016-2021 | `ae07629d` | identique au run complet | 2 565 / 17 782 | 3 847 | 172 | 449 | −0.442 | ruine le 2020-05-19 | 118.8 % |
+| `fix=on`, 2 M, OOS 2021-2026 | `8d5bc88f` | 2.57 / 3.08 / 4.26 | 6 096 / 24 063 | 3 940 | 0 | 523 | −0.539 | −12.7 % | 58.1 % |
+
+Lecture :
+
+- **Le chemin sur marge est ruiné à tout capital.** À 100 k comme à 2 M,
+  l'exposition atteint 40 à 56 fois la valeur du portefeuille au 90ᵉ centile,
+  et un quart à un tiers des ordres sont des appels de marge. La médiane à 0.00 dit
+  que, la majeure partie du temps, le portefeuille ruiné ne porte plus de position.
+  Le Sharpe positif du témoin est celui que QC calcule sur un portefeuille ruiné : il
+  ne se lit pas comme une performance.
+- **À 100 k, les contrats entiers n'expriment pas les poids.** 92 % des cibles
+  non nulles s'arrondissent à 0 contrat ; seuls six instruments (ZC, ZS, CL,
+  ZW, RB, NG) traitent, et un seul contrat pèse encore jusqu'à 8 fois la
+  valeur du portefeuille. C'est pourquoi le verdict se mesure à 2 M, où 14 %
+  des cibles (25 % sur l'OOS) s'arrondissent encore à 0 contrat.
+- **Un second défaut, distinct du dimensionnement, ruine le bras corrigé à
+  100 k comme à 2 M : les positions ne roulent pas.** `_rebalance` lit la
+  position et envoie l'ordre sur le seul contrat mappé (#16051). Au changement
+  de contrat, la position sur l'ancien reste ouverte jusqu'à son échéance
+  (« Liquidate from delisting », 30 à 523 ordres selon le bras). Instance
+  mesurée dans les deux runs complets : une position courte sur `CL19M20`,
+  gardée après le passage à `CL22N20` le 27 avril 2020, est fermée le 19 mai
+  par un appel de marge rempli à 70,0, quand `CL22N20` se remplit à 31,88 à la
+  même minute. Suivi : **#23841**.
+- **Le témoin ne reproduit pas `b35d302d`** (3 104 ordres, Sharpe −0.19),
+  alors que `main_carver13.py` n'a pas changé depuis #19408. Les deux runs
+  diffèrent par l'espace QC, la fin tronquée et un mois de données ; la cause
+  de l'écart n'est pas établie. Seules les comparaisons entre runs du même jour
+  sont tenues ici.
+
+**Verdict (#23824).** Le correctif borne l'exposition. À 2 M, l'exposition
+brute médiane passe de 0.00 (portefeuille ruiné) à 2.77, son maximum de 182.6 à
+10.64, et les appels de marge de 2 138 à 172. Sur l'OOS 2021-2026, qui ne
+contient pas mai 2020, il ne reste aucun appel de marge et l'exposition ne
+dépasse pas 4.26. Le code corrigé reste **NO BEATS** : sur l'OOS, Sharpe QC
+−0.539, CAR −12.7 %, MaxDD 58.1 %, sous le cash. Ce n'est pas encore le verdict
+de la stratégie de Carver, car le bras corrigé garde le défaut de roulement
+(#23841) : 523 positions tenues jusqu'à l'échéance sur l'OOS, et une ruine sur
+les fenêtres qui couvrent mai 2020. Le verdict de la stratégie reste
+**INCONCLUSIVE** jusqu'à la correction de #23841, qui rejouera ces bras. Un
+backtest QC est déterministe à code et données fixés : la dispersion entre
+graines de la règle multi-seed ne s'applique pas, la robustesse se lit entre
+fenêtres.
+
+**Addendum 2026-11-01 (#23841) — le roulement retire la ruine, pas la
+perte.** `_rebalance` lisait et passait ses ordres sur le seul contrat mappé
+(#16051) : au changement de contrat, la position sur l'ancien restait ouverte
+jusqu'à son échéance. Le paramètre `roll` (défaut `on`, actif avec `fix=on`)
+compare maintenant la cible à la somme des positions sur **tous** les contrats
+de l'instrument, ferme toute position sur un contrat qui n'est plus mappé et
+porte la cible sur le contrat mappé. La règle d'ordres vit dans
+`contract_roll.py`, module pur que `tests/test_contract_roll.py` vérifie hors
+du runtime QC (instance `CL19M20` → `CL22N20`, report avec redimensionnement,
+report vers une cible nulle, doublon déjà construit, arrondi). Trois compteurs
+passifs (`set_runtime_statistic("roll", …)`) comptent les roulements, les
+remplissages étiquetés « Liquidate from delisting » et ceux étiquetés « Margin
+Call ». `roll=off` rejoue le chemin de #23824 : sur l'OOS, ses 3 941 ordres
+sont identiques, un à un, à ceux du run `9b9b539a` (code de #23824 après
+extraction de `notional_sizing.py`), compteurs d'exposition compris. Les bras
+`fix=off` ne passent pas par cette branche et restent ceux du tableau
+précédent.
+
+Runs du 2026-11-01, même projet et même espace QC, mêmes fenêtres.
+
+| Bras | Run | Exposition brute (méd. / p90 / max) | Cibles arrondies à 0 contrat | Ordres | Roulements | dont appels de marge | dont liquidations à l'échéance | Sharpe QC | CAR | MaxDD |
+|---|---|---|---|---|---|---|---|---|---|---|
+| `roll=on`, 100 k | `b6916bee` | 0.18 / 0.68 / 1.67 | 41 952 / 44 322 | 239 | 50 | 0 | 0 | −0.515 | −3.2 % | 39.0 % |
+| `roll=on`, 2 M | `9d2f0670` | 1.88 / 2.04 / 4.04 | 12 973 / 44 324 | 6 140 | 999 | 0 | 1 | −0.778 | −10.3 % | 71.0 % |
+| `roll=on`, 2 M, dev 2016-2021 | `b230c517` | 1.96 / 2.06 / 3.92 | 3 720 / 20 484 | 3 811 | 545 | 0 | 1 | −0.766 | −12.3 % | 54.5 % |
+| `roll=on`, 2 M, OOS 2021-2026 | `8f983964` | 1.87 / 2.02 / 4.08 | 7 565 / 24 064 | 3 175 | 514 | 0 | 0 | −1.282 | −17.6 % | 67.5 % |
+| `roll=off`, 2 M, OOS 2021-2026 (témoin) | `89cbe34d` | 2.57 / 3.08 / 4.26 | 6 105 / 24 081 | 3 941 | 0 | 0 | 523 | −0.540 | −12.7 % | 58.2 % |
+
+Lecture :
+
+- **Les liquidations à l'échéance disparaissent, et la ruine de mai 2020 avec
+  elles.** Sur l'OOS, elles passent de 523 à 0. Sur la fenêtre dev comme sur
+  la fenêtre complète, elles passent de 449 à 1 et les appels de marge de 172
+  à 0. La position `CL19M20` est fermée le
+  27 avril 2020 dans le même rééquilibrage que l'ouverture sur `CL22N20`. À
+  100 k comme à 2 M, les fenêtres qui couvrent mai 2020 ne finissent plus en
+  valeur de portefeuille négative.
+- **Le cas résiduel est un contrat qui ne se traite plus.** Sur les fenêtres
+  dev et complète, qui partent du même état, c'est `SI27F16` (argent, échéance
+  janvier 2016, en mois de livraison) : ses
+  ordres du 15 et du 18 janvier ne sont remplis que le 20 au soir, après le
+  changement de mapping, puis les ordres de clôture envoyés à partir du 21
+  restent soumis sans remplissage et sont annulés le 28, jour où le moteur
+  liquide la position à l'échéance. Le roulement envoie la clôture ; c'est
+  l'absence d'échange sur l'ancien contrat qui la laisse en attente. Ces
+  ordres en attente ne sont pas lus par `_rebalance`, qui renvoie donc chaque
+  jour un nouvel ordre de clôture : ici aucun n'est rempli, mais un
+  remplissage tardif les aurait cumulés. Le même angle mort existe sur le
+  chemin `roll=off` (ordres d'un jour férié remplis le lendemain).
+- **Sans roulement, l'OOS portait une exposition en plus.** Entre le
+  changement de mapping et l'échéance, l'ancien chemin gardait la position sur
+  l'ancien contrat **et** en ouvrait une sur le nouveau : avec le roulement,
+  l'exposition brute médiane passe de 2.57 à 1.87, et la volatilité annuelle
+  de 0.197 à 0.119.
+- **La perte augmente pourtant sur l'OOS** : Sharpe QC −1.282 contre −0.540,
+  CAR −17.6 % contre −12.7 %. Les frais ne l'expliquent pas (11,7 k contre
+  11,6 k sur 2 M). Les deux bras ne diffèrent que par les positions gardées
+  sur les anciens contrats jusqu'à leur échéance, et, par elles, par la valeur
+  de portefeuille qui dimensionne les cibles. La contribution de ces positions
+  n'est pas mesurée séparément : la cause de l'écart n'est pas établie.
+
+**Verdict (#23841).** Le roulement retire le défaut qui ruinait le bras
+corrigé : à 2 M, aucune fenêtre ne finit ruinée, et sur la fenêtre complète
+il ne reste aucun appel de marge et une seule liquidation à l'échéance, le cas
+`SI27F16` ci-dessus. Avec le dimensionnement au notionnel et le roulement, la
+stratégie de Carver telle qu'implémentée ici est **NO BEATS** sur les trois
+fenêtres à 2 M : Sharpe QC −0.778 sur la fenêtre complète (CAR −10.3 %, MaxDD
+71.0 %), −0.766 sur la fenêtre dev, −1.282 sur l'OOS. À 100 k, où 95 % des
+cibles s'arrondissent à 0 contrat, il vaut −0.515. Les quatre bras perdent, et
+font donc moins bien que le cash. Ce verdict remplace l'**INCONCLUSIVE** de
+#23824, qui attendait cette correction. Il ne dit pas pourquoi la stratégie
+perd. Il est mesuré dans l'espace QC sponsorisé, dont la fin est tronquée au
+2026-08-02. L'angle mort des ordres en attente reste à corriger avant toute
+nouvelle mesure de ce code.
+
 ### Note — FDM requalifié en breadth multiplier (c.1109 REPAIR-3 + c.1111 REPAIR-5)
 
 Le préflight adjoint po-2025 (`msg-20260911T043805-i7tl0g` pour c.1109,
@@ -471,6 +625,12 @@ quand la cible est proche de la position actuelle.
   (ajustement à la cible absolue, pas de commission synthétique sur la
   jambe existante quand le signe est conservé).
 - Les coûts backtestés deviennent comparables à un rebalancement réel.
+
+Depuis #23824, ce chemin n'est plus que celui de `fix=off`. Sous `fix=on`
+(défaut), la cible est un nombre entier de contrats calculé sur le notionnel,
+et un seul `market_order` envoie l'écart à la position détenue : un changement
+de signe ou une cible nulle relèvent de la même soustraction, sans liquidation
+séparée.
 
 ### Statut courant (c.1111, lane `myia-po-2027:CoursIA-2` ; mis à jour 2026-09-13, lane `myia-po-2026:CoursIA` ; verdict borné 2026-09-15, lane `myia-po-2023:CoursIA`)
 - Le code **compile et tourne sur QC Cloud** (projet dédié `36488678`

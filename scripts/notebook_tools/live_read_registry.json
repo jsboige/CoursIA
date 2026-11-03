@@ -39,10 +39,10 @@
       "note": "Lecture directe du module _SmokeTest.lean"
     },
     {
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-15d-Mobius-Coalitions-Lean-Python.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/SocialChoice/06b-Mobius-Coalitions-Lean-Python.ipynb",
       "cell_id": "ea6530ce",
       "source": "MyIA.AI.Notebooks/GameTheory/game_theory_lean/CooperativeGames/Shapley.lean",
-      "note": "Lecture directe du namespace Mobius dans Shapley.lean"
+      "note": "Code 3.1 -- extraction des signatures des declarations de Shapley.lean, source de verite de la loi de Mobius ; chemin SocialChoice/06b depuis le re-lettrage T5b (#20316)"
     },
     {
       "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-01-Regles-Vie-Lean.ipynb",

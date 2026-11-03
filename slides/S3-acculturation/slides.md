@@ -1969,6 +1969,8 @@ layout: section
 
 <div class="grid grid-cols-2 gap-x-8 text-sm -mt-1">
 
+<div>
+
 - Pas d'exemple
   - Feedback = bon ou mauvais
 - Processus de décision de Markov
@@ -1987,9 +1989,13 @@ layout: section
 
 </div>
 
-<div class="flex justify-center gap-6 mt-1 px-8">
-<img src="./images/img_120.png" class="max-h-[130px] w-[45%] object-contain" alt="Boucle d'apprentissage par renforcement : agent, environnement, échanges récompense/état/action" />
-<img src="./images/img_121.png" class="max-h-[130px] w-[45%] object-contain" alt="Jeu Atari Breakout : deux captures d'écran avec score — terrain classique du RL" />
+<div class="flex flex-col items-center justify-center gap-3">
+
+<img src="./images/img_120.png" class="max-h-[150px] w-full object-contain" alt="Boucle d'apprentissage par renforcement : agent, environnement, échanges récompense/état/action" />
+<img src="./images/img_121.png" class="max-h-[150px] w-full object-contain" alt="Jeu Atari Breakout : deux captures d'écran avec score — terrain classique du RL" />
+
+</div>
+
 </div>
 
 <p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/RL-01-Premiers-Pas-Stable-Baselines3-Python.ipynb">RL-01-Premiers-Pas-Stable-Baselines3-Python.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/RL-05-MDP-Programmation-Dynamique-Q-Learning-Python.ipynb">RL-05-MDP-Programmation-Dynamique-Q-Learning-Python.ipynb</a> (MDP, TD, Q-learning).</p>

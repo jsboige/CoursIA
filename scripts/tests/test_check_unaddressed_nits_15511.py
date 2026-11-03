@@ -157,3 +157,90 @@ def test_pr_sans_taxonomie_inchangee():
     assert res["diag_loop"]["diag_count"] == 0
     assert res["diag_loop"]["action_count"] == 0
     assert res["blocked"] is False
+
+
+# --- Les deux tags P1 doivent sortir de la branche CRLF/HUMAN ------------
+#
+# Mesure fondatrice : po-2028:CoursIA, 2026-11-02 13:30Z. Un commentaire
+# conforme a la regle (`[ACTION]` ou `[DIAG]` en premiere ligne) poste par
+# un transport Windows (corps en CRLF) tombait dans la branche heuristique
+# `"\r\n" in body` de `classify` et ressortait `HUMAN` -- le compte-rendu
+# d'une action devenait un nit bloquant la PR qu'il documente. Les tags
+# P1 manquaient a `AGENT_PREFIXES`, seul le vocabulaire dashboard y etait.
+
+CORPS = "Le point est traite.\n\n- rebase fait\n- rerun lance\n- fix pousse\n"
+
+
+def _crlf(txt):
+    return txt.replace("\n", "\r\n")
+
+
+def test_tags_p1_en_crlf_ne_sont_plus_des_nits():
+    for pre in ("[ACTION]", "[DIAG]", "[ASK]", "[INFO]", "[ACTION][INFO]"):
+        corps = _crlf(pre + "\n" + CORPS)
+        assert mod.classify("jsboige", corps) is None, pre
+
+
+def test_tags_p1_en_lf_inchange():
+    # Non-regression : la correction ne doit rien changer au transport LF,
+    # qui sortait deja par la branche `AGENT_PREFIXES`.
+    for pre in ("[ACTION]", "[DIAG]", "[ASK]", "[INFO]", "[ACTION][INFO]"):
+        assert mod.classify("jsboige", pre + "\n" + CORPS) is None, pre
+
+
+def test_corps_non_tague_en_crlf_reste_un_nit():
+    # La correction ajoute deux prefixes, elle n'elargit pas le filet :
+    # un corps sans tag garde exactement le verdict d'avant (branche
+    # CRLF + puces = heuristique UI web).
+    assert mod.classify("jsboige", _crlf(CORPS)) == "HUMAN"
+
+
+def test_action_portant_une_vraie_reserve_reste_un_nit():
+    # Le point decisif : prefixer un commentaire `[ACTION]` ne blanchit
+    # PAS son contenu. Une reserve vivante (glyphe de severite, ou prefixe
+    # de verdict nomme) rend toujours `BOT-CONCERN`, dans les deux
+    # transports. Sans ce test, le correctif minimal deviendrait un
+    # contournement du gate.
+    glyphe = "[ACTION] il reste un point\n\U0001F7E1 le seuil n'est pas atteint\n"
+    assert mod.classify("jsboige", glyphe) == "BOT-CONCERN"
+    assert mod.classify("jsboige", _crlf(glyphe)) == "BOT-CONCERN"
+
+    verdict = "[ACTION] suite a ta reserve\nCHANGES_REQUESTED toujours en vigueur\n"
+    assert mod.classify("jsboige", verdict) == "BOT-CONCERN"
+    assert mod.classify("jsboige", _crlf(verdict)) == "BOT-CONCERN"
+
+
+# --- Voie 3 preservee : le tag ne desactive pas le nommage de suivi ---------
+#
+# Reserve NanoClaw #24243 : AGENT_PREFIXES a un second consommateur, can_lift
+# (gate de collect_followup_lifts, voie 3 de B.0). Un compte-rendu tague
+# [ACTION] qui nomme une issue de suivi reste un nommeur valide -- les deux
+# prefixes vivent dans CLASSIFY_AGENT_PREFIXES, consommee par classify seul.
+
+def _comment(login, body):
+    return {"author": {"login": login}, "createdAt": "2026-10-01T10:00:00+00:00",
+            "body": body}
+
+
+def test_action_tague_reste_un_nommeur_voie3():
+    suivi = "[ACTION] point 2 reporte sciemment : suivi ouvert #24999\n"
+    assert mod.can_lift(_comment("jsboige", suivi)) is True
+    # [DIAG] : le tag decrit le genre du commentaire, pas un pouvoir de
+    # nomination -- un diagnostic qui reporte nomme autant.
+    assert mod.can_lift(_comment("jsboige", suivi.replace("[ACTION]", "[DIAG]"))) is True
+    # Borne : les tags de protocole purs restent non-leveurs (can_lift lit
+    # AGENT_PREFIXES, qui ne contient ni [ACTION ni [DIAG).
+    assert mod.can_lift(_comment("jsboige", "[INFO] panorama du cycle\n")) is False
+    assert mod.can_lift(_comment("jsboige", "[ACK] recu\n")) is False
+
+
+def test_classify_lit_bien_les_deux_tags():
+    # La classification, elle, lit l'extension : CRLF compris (couverture
+    # croisee avec test_tags_p1_en_crlf_ne_sont_plus_des_nits, ici via la
+    # constante nommee). AGENT_PREFIXES, elle, ne les contient plus.
+    for pre in ("[ACTION", "[DIAG"):
+        corps = pre + "]\n" + CORPS
+        assert mod.classify("jsboige", corps) is None, pre
+        assert mod.classify("jsboige", _crlf(corps)) is None, pre
+    assert "[ACTION" not in mod.AGENT_PREFIXES
+    assert "[DIAG" not in mod.AGENT_PREFIXES
