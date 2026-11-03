@@ -19,6 +19,8 @@ from check_i18n_siblings import (  # noqa: E402
     find_en_files,
     fr_sibling,
     imports_fr_sibling,
+    is_half_done,
+    is_repo_boilerplate,
     lake_targets,
     normalize_body,
     split_decls,
@@ -479,6 +481,81 @@ def test_enclosing_lake_walks_up_to_nearest(tmp_path):
     found = enclosing_lake(lake / "sub" / "X_en.lean", tmp_path)
     assert found == lf
     assert enclosing_lake(tmp_path / "Nowhere_en.lean", tmp_path) is None
+
+
+def test_licence_header_is_repository_boilerplate():
+    """The Apache-2.0 header is identical in every pair by construction: it is
+    boilerplate, not prose, and must not be read as an untranslated body."""
+    assert is_repo_boilerplate(
+        "Copyright (c) 2026 CoursIA. All rights reserved.\n"
+        "Released under Apache 2.0 license as described in the file LICENSE."
+    )
+    # A body that merely starts like the header is NOT boilerplate: the match
+    # is anchored on both ends.
+    assert not is_repo_boilerplate(
+        "Copyright (c) 2026 CoursIA. All rights reserved.\n"
+        "Released under Apache 2.0 license as described in the file LICENSE.\n"
+        "The arcs of a diagram: partition of the edge labels."
+    )
+    assert not is_repo_boilerplate(
+        "Les arcs d'un diagramme : partition des étiquettes d'arêtes."
+    )
+
+
+def test_half_done_ignores_shared_licence_header(tmp_path):
+    """A pair whose only shared body is the licence header is NOT half-done."""
+    fr = tmp_path / "Baz.lean"
+    en = tmp_path / "Baz_en.lean"
+    header = ("/-\nCopyright (c) 2026 CoursIA. All rights reserved.\n"
+              "Released under Apache 2.0 license as described in the file "
+              "LICENSE.\n-/\n")
+    fr.write_text(header + "/-- Les arcs d'un diagramme. -/\n"
+                  "namespace Conway\ndef answer : Nat := 42\nend Conway\n",
+                  encoding="utf-8")
+    en.write_text(header + "/-- The arcs of a diagram. -/\n"
+                  "namespace Conway_en\ndef answer : Nat := 42\nend Conway_en\n",
+                  encoding="utf-8")
+    flagged, n_identical = is_half_done(fr, en)
+    assert not flagged
+    assert n_identical == 0
+
+
+def test_half_done_still_flags_shared_prose(tmp_path):
+    """Negative control: a genuinely shared prose body is still reported.
+
+    The boilerplate exclusion must not silence the advisory it refines."""
+    fr = tmp_path / "Qux.lean"
+    en = tmp_path / "Qux_en.lean"
+    header = ("/-\nCopyright (c) 2026 CoursIA. All rights reserved.\n"
+              "Released under Apache 2.0 license as described in the file "
+              "LICENSE.\n-/\n")
+    shared = ("/-- Les arcs d'un diagramme : partition des etiquettes d'aretes "
+              "par la fermeture des paires de passage-dessus. -/\n")
+    fr.write_text(header + shared + "namespace Conway\n"
+                  "def answer : Nat := 42\nend Conway\n", encoding="utf-8")
+    en.write_text(header + shared + "namespace Conway_en\n"
+                  "def answer : Nat := 42\nend Conway_en\n", encoding="utf-8")
+    flagged, n_identical = is_half_done(fr, en)
+    assert flagged
+    assert n_identical == 1
+
+
+def test_real_grothendieck_godement_pairs_are_not_half_done():
+    """Measured 2026-11-02 (lane myia-po-2028:CoursIA-2): the nine Grothendieck
+    ``Godement*_en`` mirrors are OK-CONSUMER siblings whose module docstring is
+    translated; the HALF-DONE hit came from the shared licence header alone.
+    They must no longer be reported."""
+    groth = (REPO_ROOT / "MyIA.AI.Notebooks" / "SymbolicAI" / "Lean"
+             / "grothendieck_lean" / "Grothendieck")
+    names = ["Godement", "GodementAcyclicity", "GodementCanonicalDiff",
+             "GodementComplex", "GodementExactness", "GodementFunctor",
+             "GodementMono", "GodementResolution"]
+    for name in names:
+        fr = groth / f"{name}.lean"
+        en = groth / f"{name}_en.lean"
+        assert fr.exists() and en.exists(), name
+        flagged, n_identical = is_half_done(fr, en)
+        assert not flagged, f"{name}: {n_identical} shared body(ies)"
 
 
 def _run_direct() -> int:
