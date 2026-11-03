@@ -115,6 +115,7 @@ Deux limites propres aux colonnes ajoutées par cette mise à jour (déjà nomm�
 
 > **Ce que les sections ci-dessous disent** : sections 1 à 8 = relevé du 2026-10-03 sur `0.2.1` ; section 0 = mise à jour du 2026-10-10 sur `0.3.1` (115 implémentations).
 > **Ce qui est mesuré ici** : l'index est passé à **Decision Index `0.4.1`** (base `release-v2.1`), **247 implémentations**, `generated_utc` **2026-10-29T14:04:16Z** (suite : 110 201 requêtes, 42 benchmarks, 5 catégories). Fichier téléchargé, classé et sondé par l'outil livré en section 0 (`decision_index_report.py --licenses --top 4`) ; les licences ci-dessous viennent de ses requêtes API Hugging Face, recoupées par des sondes manuelles concordantes sur 7 dépôts.
+> **Que recouvre « suite »** : le compte de requêtes est le `headline` que l'édition déclare pour sa propre suite d'évaluation — champ `suite` de `data/index.json`, repris tel quel par l'outil — ce n'est pas un décompte nôtre. L'édition `0.2.1` déclarait ~120 000 requêtes pour une autre suite : ces comptes sont des **métadonnées d'édition**, sans lien monotone avec les implémentations (70 → 247) ni les benchmarks (38 → 42) — la lecture « plus de modèles ⇒ plus de requêtes » ne tient pas.
 
 **Provenance du fichier relevé** — `data/index.json`, **3 359 745 octets**,
 `sha256` **`bdfdd5ff3e7700f66e27b4d31274830d8136344d732487a00f74af5c936c72e2`**,
@@ -173,10 +174,12 @@ L'entrée « Jev 1.13 » (59.22) qui domine ce palier dans l'index brut est un `
 
 | # | Palier | Modèle | Score | Licence | Voie |
 |---:|---|---|---:|---|---|
-| 1 | 26-35B | **KnowLine 31B Gen1** (LoRA, à assembler) — repli : `vLLM-SR d3-ultra` (checkpoint épinglé) | 71.86 / 70.18 | apache-2.0 | vLLM (quantifié 4 bits) |
-| 2 | 9-12B | **baselabs elephant-1** | 60.26 | **mit** | vLLM |
-| 3 | 2-4B | **KnowLine 4B Gen5.5** — repli : `Jeffan-4B-2010` | 55.99 / 52.21 | apache-2.0 | vLLM |
-| 4 | <=1B | **OneJev1.6-0.8B** | 29.58 | apache-2.0 | vLLM (BF16, mesuré 1,47 Gio) |
+| 1 | 26-35B | **KnowLine 31B Gen1** (LoRA, à assembler) — repli : `vLLM-SR d3-ultra` (checkpoint épinglé) | 71.86 / 70.18 | apache-2.0 | vLLM (quantifié 4 bits) — **heuristique** §0.5 |
+| 2 | 9-12B | **baselabs elephant-1** | 60.26 | **mit** | vLLM — **heuristique** §0.5 |
+| 3 | 2-4B | **KnowLine 4B Gen5.5** — repli : `Jeffan-4B-2010` | 55.99 / 52.21 | apache-2.0 | vLLM — **heuristique** pour ce modèle ; palier borné par la mesure `jiwo-4b` (8,02 Gio, borne 16 Go) |
+| 4 | <=1B | **OneJev1.6-0.8B** | 29.58 | apache-2.0 | vLLM (BF16, **mesuré** : 1,47 Gio) |
+
+Statut par ligne : **mesuré** = servabilité mesurée chez nous sur ce modèle ; **heuristique** = voie déduite de la taille servie et du tag GGUF (§0.5), jamais servie ici. Aucune tête des paliers 26-35B et 9-12B n'est mesurée ; le repli `d3-ultra` (checkpoint serveur épinglé dans le meta de l'index) est la ligne la mieux ancrée du palier 1 — sans être servi chez nous non plus.
 
 ## 1. Périmètre de mesure
 
