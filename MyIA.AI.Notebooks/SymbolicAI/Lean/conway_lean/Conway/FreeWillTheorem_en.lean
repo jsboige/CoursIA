@@ -39,7 +39,7 @@
   `Conway/Fractran` sibling pair (MERGED), c.456 `Conway/FreeWillTheorem`
   sibling pair (MERGED — standalone EN twin created), c.457 `Conway/LookAndSay`
   sibling pair (MERGED), c.518 `Conway/Nim` sibling pair (MERGED),
-  **c.519 `Conway/FreeWillTheorem` FR canonical bilingual strip (this PR)**.
+  **c.519 `Conway/FreeWillTheorem` FR canonical bilingual strip (MERGED — #6712)**.
 
   Sources:
   - J. H. Conway and S. Kochen, "The Free Will Theorem",

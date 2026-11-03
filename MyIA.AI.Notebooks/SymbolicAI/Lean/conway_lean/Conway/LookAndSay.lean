@@ -26,8 +26,8 @@
 
   Cross-références : c.366 `Conway.lean` racine bilingue (MERGED), c.451
   `Conway/Fractran` sibling pair (MERGED), c.456 `Conway/FreeWillTheorem`
-  sibling pair (MERGED), **c.457 `Conway/LookAndSay` sibling pair (ce PR)**,
-  c.518 `Conway/Nim` sibling pair (à suivre).
+  sibling pair (MERGED), **c.457 `Conway/LookAndSay` sibling pair (MERGED — #6707)**,
+  c.518 `Conway/Nim` sibling pair (MERGED — #6710).
 -/
 
 import Mathlib.Data.List.Basic
