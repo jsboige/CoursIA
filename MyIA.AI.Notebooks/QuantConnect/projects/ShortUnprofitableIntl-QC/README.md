@@ -68,7 +68,7 @@ Propriétés du code :
 | `spy` | 14,32 % | 0,633 | 33,7 % |
 | `6040` | 9,67 % | 0,596 | 21,6 % |
 
-- **Contrôles.** Reproduction tenue sur la série relancée (CAGR 2,62 %, bêta QC contre SPY 0,022 ; l'article publie 3,16 %), échouée sur la série d'origine. Propriété tenue : 44,02 lignes courtes en moyenne contre 88,56 pour `all`, soit un rapport de 0,497.
+- **Contrôles.** Reproduction tenue sur la série relancée (CAGR 2,62 %, bêta QC contre SPY 0,022 ; l'article publie 3,16 %), échouée sur la série d'origine. Propriété tenue : le nombre moyen de lignes courtes vaut 44,02 pour `strategy` contre 88,56 pour `all`, soit un rapport de 0,497.
 - **Jambe courte : elle n'apporte rien.** L'écart de rendement moyen `strategy` − `half` est négatif, −4,6 % par an (p de Holm 0,13). Sur la fenêtre, vendre à découvert les grandes sociétés étrangères peu rentables coûte du rendement.
 - **Filtre de rentabilité : question ouverte.** L'écart `strategy` − `all` est positif mais minime, +0,43 % par an (p de Holm 1,0), avec une corrélation de 0,93.
 - **Ce que reproduit la mesure** : un rendement d'environ 3 % par an à bêta quasi nul, qui ne rémunère pas le risque mieux que les références. Le coût d'emprunt n'étant pas modélisé, la mesure est favorable à la stratégie.
