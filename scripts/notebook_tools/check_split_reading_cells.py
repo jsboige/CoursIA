@@ -223,7 +223,7 @@ SECTION_TITLE_AFTER_EXERCISE_RE = re.compile(
 # L'exemption reste fondee sur le TITRE (meme principe que la liste fermee
 # ci-dessus) mais avec un ANCRAGE COMPLET : le titre doit etre le mot-cle
 # lui-meme, eventuellement precede d'une numerotation de section. Une PHRASE
-# qui commence par le mot-cle n'est passtructurelle : « Navigation dans un
+# qui commence par le mot-cle n'est pas structurelle : « Navigation dans un
 # graphe RDF » reste signale comme lecture.
 #
 # Mesure (corpus `main`, 2026-11-03) : 17 cellules portent un titre exact de
