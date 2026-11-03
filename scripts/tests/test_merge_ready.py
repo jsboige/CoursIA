@@ -1103,6 +1103,59 @@ def test_twin_organ_unreadable_is_fail_closed(tmp_path):
     assert lines[0]["reason"] == "twin-collision-unreadable:rc=2"
 
 
+def test_twin_organ_is_called_with_the_merged_judgment(tmp_path):
+    """L'organe est appele en mode `--merged` : c'est l'arbre de fusion qui
+    repond a « `main` sera-t-il rouge apres ce merge ? » (mesure du
+    2026-11-03 : #23832 et #24010 ont alloue les memes ordinals et sont
+    passees tous les deux)."""
+    view = default_view(files=(TWIN_FILE,))
+    runner = ScriptedRunner(views={123: view}, twin_rc=0)
+    run_organ(tmp_path, runner)
+    twin = [c for c in runner.cmds()
+            if len(c) > 1 and "check_twin_index_collisions.py" in c[1]]
+    assert len(twin) == 1
+    assert "--merged" in twin[0]
+
+
+def test_twin_collision_introduite_par_le_merge_skips(tmp_path):
+    """Un doublon que le MERGE introduit (et qu'aucune revision ne porte
+    isolement) doit faire sauter le merge : c'est exactement le cas que le
+    seul jugement base+tete laissait passer."""
+    payload = json.dumps({
+        "cross_ref": [],
+        "merged_reasons": [{
+            "pair": "search-05-geneticalgorithms",
+            "index": "0024",
+            "names": ["0024-a.yaml", "0024-b.yaml"],
+            "added": ["0024-b.yaml"],
+            "gist": "renumeroter par `git mv` PUR",
+        }],
+        "merged_unreadable": None,
+    })
+    view = default_view(files=(TWIN_FILE,))
+    runner = ScriptedRunner(views={123: view}, twin_rc=1, twin_stdout=payload)
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[0]["verdict"] == "skipped"
+    assert lines[0]["reason"].startswith("twin-collision-on-merge:")
+    assert "search-05-geneticalgorithms/0024" in lines[0]["reason"]
+
+
+def test_twin_arbre_de_fusion_illisible_is_fail_closed(tmp_path):
+    """« je n'ai pas pu lire » n'est pas « c'est propre » : l'arbre de fusion
+    illisible (merge en conflit) fait sauter le merge, meme quand le jugement
+    classique ne bloque rien (rc 0)."""
+    payload = json.dumps({
+        "cross_ref": [],
+        "merged_reasons": [],
+        "merged_unreadable": "merge-tree --write-tree : conflit",
+    })
+    view = default_view(files=(TWIN_FILE,))
+    runner = ScriptedRunner(views={123: view}, twin_rc=0, twin_stdout=payload)
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[0]["verdict"] == "skipped"
+    assert lines[0]["reason"] == "twin-collision-unreadable:merged"
+
+
 def test_twin_fetch_failure_is_fail_closed(tmp_path):
     view = default_view(files=(TWIN_FILE,))
     runner = ScriptedRunner(views={123: view}, fetch_rc=128)

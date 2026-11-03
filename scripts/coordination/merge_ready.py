@@ -884,6 +884,15 @@ def twin_collision_reason(
                  mergee gagne, la seconde renumerote. Avertissement seul,
                  le merge continue (le gate CI bloque de toute facon si la
                  seconde arrive avant renumerotation).
+
+    Le jugement le plus tranchant est celui de l'ARBRE DE FUSION (`--merged`) :
+    il repond a la seule question qui compte au merge -- « `main` sera-t-il
+    rouge apres ce merge ? ». Le jugement base+tete compare deux revisions
+    prises separement, et la base lue est celle du MOMENT DE LA LECTURE ;
+    une collision introduite sur `main` par une autre PR entretemps n'y est
+    pas visible, alors qu'elle est dans l'arbre de fusion (mesure du
+    2026-11-03 : #23832 et #24010 ont alloue les memes ordinals 0024-0026
+    sur `search-05-geneticalgorithms`, et les deux PRs sont passees).
     """
     touched = any(
         str((row or {}).get("path") or "").startswith(TWIN_REGISTRY_PREFIX)
@@ -899,19 +908,46 @@ def twin_collision_reason(
         return "twin-collision-unreadable:fetch"
     res = runner.run(
         [sys.executable, str(TWIN_PATH), "--repo", str(REPO_ROOT),
-         "--base", "origin/main", "--head", head, "--json"]
+         "--base", "origin/main", "--head", head, "--merged", "--json"]
     )
+    # Le rapport JSON est lu MEME quand l'organe rend 0 : le mode `--merged`
+    # peut etre ILLISIBLE (merge en conflit) alors que le jugement classique
+    # ne bloque rien -- et « je n'ai pas pu lire » n'est pas « c'est propre ».
+    # Lecture JSON tolérante : si le champ `verdict` est absent (organe
+    # anterieur a #18683), on retombe sur le motif historique
+    # ``twin-index-collision`` pour rétro-compat.
+    try:
+        data = json.loads(res.stdout)
+    except (json.JSONDecodeError, ValueError):
+        data = None
+    if isinstance(data, dict):
+        # --- ARBRE DE FUSION (le jugement qui repond a la question du merge)
+        # Le jugement base+tete dit ce que la base et la tete portent
+        # separement. L'arbre de fusion dit ce que le MERGE rend visible --
+        # c'est le seul verdict qui repond a « `main` sera-t-il rouge apres
+        # ce merge ? ». Il est juge AVANT le classement ON-MAIN/MULTI-PR :
+        # un doublon que le merge INTRODUIT ne se classe pas (il n'existe
+        # dans aucune revision prise isolement), et le laisser passer parce
+        # que `cross_ref` est vide laisserait merger la PR qui casse `main`.
+        merged_reasons = data.get("merged_reasons") or []
+        if merged_reasons:
+            first = merged_reasons[0]
+            return (
+                "twin-collision-on-merge:%s/%s -- %s"
+                % (first.get("pair"), first.get("index"),
+                   first.get("gist")
+                   or "renumeroter le fichier que la tete ajoute vers le "
+                      "premier index libre de la paire par `git mv` PUR")
+            )
+        if data.get("merged_unreadable"):
+            # « je n'ai pas pu lire » n'est pas « c'est propre » : l'arbre de
+            # fusion n'est pas definissable (merge en conflit). Skip dur --
+            # la PR sera rejugee apres rebasage.
+            return "twin-collision-unreadable:merged"
     if res.returncode == 0:
         return None
     if res.returncode == 1:
         # L'organe a detecte une collision ; on la classifie par verdict.
-        # Lecture JSON tolérante : si le champ `verdict` est absent (organe
-        # anterieur a #18683), on retombe sur le motif historique
-        # ``twin-index-collision`` pour rétro-compat.
-        try:
-            data = json.loads(res.stdout)
-        except (json.JSONDecodeError, ValueError):
-            return "twin-index-collision"
         if not isinstance(data, dict):
             return "twin-index-collision"
         cross_ref = data.get("cross_ref") or []
