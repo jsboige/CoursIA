@@ -10066,6 +10066,30 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
         user_delivery_event_probe = (delivery_event_probe
                                       or delivery_event_probe_inert)
 
+        def marker_read_is_local(number):
+            """Le DERNIER commentaire de `number` est-il deja en memoire ?
+
+            Le mur de temps (`expired`) borne le RESEAU ; il ne borne pas une
+            lecture locale. Les deux filtres de marqueur (recent, conteneur)
+            lisent `_last_comment`, qui sert depuis l'instantane de la passe
+            quand il le peut (#22630). Les sauter au motif de l'echeance sert
+            donc un candidat dont la cloture etait CONNUE.
+
+            Mesure du 2026-11-03 (draw `32e6c570269a`, lane
+            `myia-po-2027:CoursIA`) : le tapis a servi 4 candidats sur 4
+            portant chacun un marqueur de livraison dans leur dernier
+            commentaire, avec un `ACTION REQUISE` « poser [CLAIMED] sur
+            #19694 » -- alors que l'instantane avait servi 36 stamps sur 36
+            SANS une seule requete et que `time_budget_hit` etait vrai. Le
+            cout du filtre n'etait pas le reseau : c'etait le mur.
+
+            Le predicat est lu sur la MEME surface que la sonde
+            (`_snapshot_comments`), donc il ne peut pas promettre une lecture
+            locale que la sonde ne ferait pas : hors instantane, la garde
+            `expired()` reste entiere et le fail-OPEN reste celui d'avant.
+            """
+            return _snapshot_comments(number) is not None
+
         def counted_probe(number, lane_name):
             # L'echeance passe AVANT le plafond de sondes : les deux produisent le
             # meme fail-OPEN, mais elles ne disent pas la meme chose a la lane
@@ -10260,8 +10284,9 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                         and age_h is not None
                         and age_h >= CONSOLIDATION_LAG_H)
                 else:
-                    recent_flag = (False if expired()
-                                   else user_recent_marker_probe(n))
+                    recent_flag = (
+                        False if (expired() and not marker_read_is_local(n))
+                        else user_recent_marker_probe(n))
                     if recent_flag is None:
                         # Meme traitement que ci-dessus : le fail-OPEN reste
                         # assume, le SILENCE ne l'est pas. La sonde du marqueur
@@ -10324,7 +10349,8 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                 # s'appliquait qu'a l'urne `grain`. La lecture est HORS budget de
                 # sonde (1 requete, comme le filtre recent) et reste fail-OPEN :
                 # une lecture en echec laisse l'umbrella servable.
-                recent = False if expired() else user_container_marker_probe(n)
+                recent = (False if (expired() and not marker_read_is_local(n))
+                          else user_container_marker_probe(n))
                 if recent is None:
                     # La lecture a ECHOUE (reseau, 403, payload illisible) : l'etat
                     # de livraison du CONTENEUR est INCONNU, pas « libre ». Le
@@ -11585,6 +11611,19 @@ def main(argv: list[str] | None = None) -> int:
                 top = belt_picks[0]
                 print(f"   ACTION REQUISE : poser [CLAIMED] lane {args.lane} sur "
                       f"#{top['number']} avant edition -- cf lane-claim-protocol.")
+                if belt_time_budget_hit[0]:
+                    # Une tete servie au-dela du mur n'est pas verifiee : la
+                    # ligne ci-dessus est une INJONCTION, elle doit donc dire
+                    # a cote d'elle que son objet n'a pas ete lu. Mesure du
+                    # 2026-11-03 : le tirage au mur a servi 4 candidats sur 4
+                    # portant un marqueur de livraison, et la lane recevait
+                    # « poser [CLAIMED] sur #19694 » sans reserve.
+                    print("   CANDIDAT NON VERIFIE (#21436) : le mur de temps a")
+                    print("   ete atteint avant ses lectures de livraison et de")
+                    print("   claim. Lire le dernier commentaire AVANT de claimer.")
+                    print("   La lecture locale du marqueur (instantane) reste")
+                    print("   faite au-dela du mur : seules les sondes RESEAU")
+                    print("   s'arretent.")
             # #17038 (residu du 2026-10-09) -- contrat de verdict : un pick
             # dont le claim est ERROR n'est PAS un candidat libre, c'est un
             # candidat NON MESURE. Le servir reste le comportement (le tapis

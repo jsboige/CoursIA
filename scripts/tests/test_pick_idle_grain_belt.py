@@ -3133,3 +3133,73 @@ def test_belt_disarms_on_the_report_exit(monkeypatch):
             "l'echeance fuit apres la sortie --report (#23340 point 1)")
     finally:
         pig._BELT_DEADLINE[0] = None
+
+
+def test_belt_deadline_keeps_the_marker_filter_when_the_read_is_local(monkeypatch):
+    """Le mur de temps arrete le RESEAU ; il n'a aucune raison d'arreter une
+    lecture deja en memoire.
+
+    Defaut mesure le 2026-11-03 (draw `32e6c570269a`, lane
+    `myia-po-2027:CoursIA`) : les deux filtres de marqueur (recent, conteneur)
+    etaient sautes des que `expired()` rendait vrai, alors que l'instantane
+    de la passe avait deja lu les commentaires de la fenetre (36 stamps sur
+    36 servis sans une seule requete). Le tapis a servi 4 candidats sur 4
+    portant chacun un marqueur de livraison dans leur dernier commentaire, et
+    la lane recevait « ACTION REQUISE : poser [CLAIMED] sur #19694 » pour une
+    issue livree depuis le 20/10.
+
+    Ici `30201` a ses commentaires en memoire et porte un marqueur : il doit
+    etre ECARTE malgre l'echeance. `30202` n'a pas d'entree locale : sa sonde
+    reste sautee (comportement d'avant, fail-OPEN rapporte).
+    """
+    _patched_clock(monkeypatch)
+    local = _make_item(30201, age_days=100, idle=9, last=None)
+    remote = _make_item(30202, age_days=99, idle=9, last=None)
+    monkeypatch.setattr(
+        pig, "_snapshot_comments",
+        lambda n: ([{"body": "[INFO] candidate-delivered -- lane x",
+                     "createdAt": "2026-11-03T10:00:00Z"}]
+                   if n == 30201 else None))
+    calls = []
+
+    def marker(n):
+        calls.append(n)
+        return n == 30201
+
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        [local, remote], {}, _belt_args(grains=2), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        claims_probe=lambda nums: {},
+        recent_marker_probe=marker,
+        time_budget_s=0.0)
+
+    assert calls == [30201], (
+        "seul un candidat dont la lecture est LOCALE est filtre apres le mur")
+    assert [p["number"] for p in picks] == [30202]
+    assert [w[0]["number"] for w in withheld] == [30201]
+    assert "LIVRAISON (recent)" in withheld[0][1]
+    assert state["time_budget_hit"] is True
+
+
+def test_belt_deadline_still_skips_the_marker_filter_without_local_read(monkeypatch):
+    """Controle negatif : sans instantane, le filtre coute une requete et
+    reste soumis au mur. Le correctif ne rallume pas le reseau apres
+    l'echeance."""
+    _patched_clock(monkeypatch)
+    a = _make_item(30211, age_days=100, idle=9, last=None)
+    b = _make_item(30212, age_days=99, idle=9, last=None)
+    monkeypatch.setattr(pig, "_snapshot_comments", lambda n: None)
+    calls = []
+
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        [a, b], {}, _belt_args(grains=2), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        claims_probe=lambda nums: {},
+        recent_marker_probe=lambda n: calls.append(n) or True,
+        time_budget_s=0.0)
+
+    assert calls == [], "aucune sonde de marqueur ne part apres le mur"
+    assert [p["number"] for p in picks] == [30211, 30212]
+    assert withheld == []
