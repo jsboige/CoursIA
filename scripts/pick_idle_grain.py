@@ -238,6 +238,20 @@ except ImportError:  # charge via importlib dans les tests (hors scripts/)
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     import gh_identity
 
+# #24461 -- grammaire de l'etat de livraison, source UNIQUE partagee avec le
+# poseur de label (`scripts/candidate_delivered.py`). Module SANS dependance :
+# il n'importe que `released_covers` (present dans le checkout reduit du cron)
+# et, pour le dossier de cloture, `check_closure_dossier` (absent de ce
+# checkout, et c'est pourquoi le labeler lit les marqueurs avec
+# `dossier=False` -- le balayage local et le balayage CI doivent se
+# comporter pareil). L'import est ici, AVANT les alias de grammaire qui le
+# referencent.
+try:
+    import delivery_grammar
+except ImportError:  # charge via importlib dans les tests (hors scripts/)
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import delivery_grammar  # type: ignore[no-redef]
+
 # Geste 5 #18203 : journal des tirages, module separe par construction
 # (scripts/coordination/tirage_journal.py, merge #19945). Import best-effort :
 # un environnement sans le module tire SANS journal plutot que de refuser --
@@ -314,19 +328,14 @@ REPO = "jsboige/CoursIA"
 # d'un ack coordinateur, etc.), que le filtre recent ne voit pas par
 # construction. Relevable par `_DELIVERED_MARKER_REVOKED_RE` comme les autres
 # formes : un [NOT-DELIVERED] posterieur remet l'issue sur le tapis.
-_DELIVERED_MARKER_RE = re.compile(
-    r"(?:"
-    r"^\s*(?:#{1,6}\s*)?\[DELIVERED\]\s+lane\b"
-    r"|"
-    r"^\s*(?:#{1,6}\s*)?\[INFO\]\s+candidate-delivered(?![-_\w])"
-    r"|"
-    r"^\s*(?:#{1,6}\s*)?\[INFO\s+candidate-delivered(?![-_\w])[^\n\]]*\]"
-    r"|"
-    r"^\s*(?:#{1,6}\s*)?\[INFO\][^\n]*\b(?:lane\s+\S+:\S+|signal|livr[ée]e?|"
-    r"verification first-hand)[^\n]*\bcandidate-delivered(?![-_\w])"
-    r")",
-    re.IGNORECASE | re.MULTILINE,
-)
+# #24461 -- la grammaire des marqueurs vit dans `scripts/delivery_grammar.py`,
+# module SANS dependance, importe ici ET par le poseur de label
+# (`scripts/candidate_delivered.py`) : une seule definition, deux organes,
+# aucune derive possible. Les trois noms ci-dessous restent ceux que les
+# tests et les appelants existants lisent -- ce sont des ALIAS, pas des
+# copies. Les commentaires qui suivent decrivent la grammaire ; ils sont
+# restes ici, et leur source est desormais le module.
+_DELIVERED_MARKER_RE = delivery_grammar.DELIVERED_MARKER_RE
 
 # Retractation du marqueur (mesure du 12/10 : sur 80 issues marquees livrees,
 # 20 l'etaient partiellement). Le marqueur etait PERMANENT par accident
@@ -341,14 +350,10 @@ _DELIVERED_MARKER_RE = re.compile(
 # devant `-revoked`. Le regex de livraison n'est donc pas elargi, et le sens
 # est porte par l'ORDRE : une retractation defait les marqueurs posterieurs
 # a elle, un marqueur repose apres elle rearme (cf `_delivered_state`).
-_DELIVERED_MARKER_REVOKED_RE = re.compile(
-    r"(?:"
-    r"^\s*(?:#{1,6}\s*)?\[NOT-DELIVERED\]"
-    r"|"
-    r"^\s*(?:#{1,6}\s*)?\[INFO\]\s+candidate-delivered-revoked"
-    r")",
-    re.IGNORECASE | re.MULTILINE,
-)
+# #24461 -- alias vers la grammaire unique (`scripts/delivery_grammar.py`) ;
+# les commentaires qui suivent decrivent cette grammaire, dont la source est
+# desormais ce module.
+_DELIVERED_MARKER_REVOKED_RE = delivery_grammar.DELIVERED_MARKER_REVOKED_RE
 
 # Le marqueur de CONTENEUR : une issue (ou une umbrella) dont le dernier
 # commentaire dit « le CONTENEUR est livre ». C'est la seule forme qui
@@ -360,17 +365,10 @@ _DELIVERED_MARKER_REVOKED_RE = re.compile(
 # de `_DELIVERED_MARKER_RE` (memes regex, meme lookahead anti-`-revoked` /
 # `-partial`) ; la forme `[DELIVERED] lane` en est VOLONTAIREMENT absente :
 # sur une umbrella, elle est une livraison de sous-grain, pas une fermeture.
-_CONTAINER_DELIVERY_MARKER_RE = re.compile(
-    r"(?:"
-    r"^\s*(?:#{1,6}\s*)?\[INFO\]\s+candidate-delivered(?![-_\w])"
-    r"|"
-    r"^\s*(?:#{1,6}\s*)?\[INFO\s+candidate-delivered(?![-_\w])[^\n\]]*\]"
-    r"|"
-    r"^\s*(?:#{1,6}\s*)?\[INFO\][^\n]*\b(?:lane\s+\S+:\S+|signal|livr[ée]e?|"
-    r"verification first-hand)[^\n]*\bcandidate-delivered(?![-_\w])"
-    r")",
-    re.IGNORECASE | re.MULTILINE,
-)
+# #24461 -- alias vers la grammaire unique (`scripts/delivery_grammar.py`) ;
+# les commentaires qui suivent decrivent cette grammaire, dont la source est
+# desormais ce module.
+_CONTAINER_DELIVERY_MARKER_RE = delivery_grammar.CONTAINER_DELIVERY_MARKER_RE
 
 # --- Dossier de cloture : un signal de livraison TERMINAL --------------------
 #
@@ -678,26 +676,19 @@ def _delivered_state(comment_bodies: list[str]) -> bool:
     ne reordonne rien). Aucun tri n'est donc fait ici -- en ajouter un ferait
     dependre le sens d'un champ que le transport REST ne porte pas.
     """
-    delivered = False
-    for body in comment_bodies:
-        if _DELIVERED_MARKER_REVOKED_RE.search(body or ""):
-            delivered = False
-        elif _DELIVERED_MARKER_RE.search(body or ""):
-            delivered = True
-        elif _closure_dossier_verdict(body or "") == "CLOSE":
-            # Dossier de cloture CLOSE : l'issue est RESOLUE au sens du
-            # depot. C'est un evenement d'arming comme les autres -- une
-            # retractation posterieure le desarme, un marqueur plus recent le
-            # rearme -- mais il n'EXPIRE PAS (la terminalite est portee par
-            # `_delivery_event_from_comments`, qui rend `stamp=None`).
-            delivered = True
-        elif _released_covers_acceptance(body or ""):
-            # #20351 : `[RELEASED]` + « acceptance deja couverte » est une
-            # livraison au sens du tapis. Reste un EVENEMENT comme les autres :
-            # une retractation posterieure la desarme, un marqueur plus
-            # recent la rearme.
-            delivered = True
-    return delivered
+    # #24461 -- la machine d'etat elle-meme vit dans
+    # `scripts/delivery_grammar.py`, lue par le poseur de label
+    # (`scripts/candidate_delivered.py`) comme par le tapis. Deux organes,
+    # une grammaire : c'est la condition pour que le LABEL arme par
+    # l'attestation et l'ECART lu par le tapis disent la MEME chose.
+    #
+    # Les quatre formes d'arming sont celles du module : le marqueur
+    # `[INFO] candidate-delivered` et ses variantes, la cloture explicite
+    # `[DELIVERED] lane`, le dossier `[CLOSURE PREFLIGHT]` de verdict CLOSE
+    # (terminal : il n'EXPIRE PAS -- la terminalite est portee par
+    # `_delivery_event_from_comments`, qui rend `stamp=None`), et
+    # `[RELEASED] ... acceptance deja couverte` (#20351).
+    return delivery_grammar.delivered_state(comment_bodies)
 
 
 def _has_delivered_marker(issue_number: int) -> bool | None:
@@ -1649,6 +1640,13 @@ def apply_delivered_urn_gate(lane, urns_arg, urns_default, selected_urns):
 # sonde que sur les candidats TIRES -- jamais un balayage du pool. La meme
 # borne que `recent_delivery`.
 DELIVERED_LABEL = "candidate-delivered"
+# Cause nommee de l'exclusion par LABEL (#24461). Elle commence par
+# "LIVRAISON :" pour etre rendue par `print_delivered_signal_report`, qui
+# distingue le filtre recent (hors budget) du signal de livraison.
+_DELIVERED_LABEL_CAUSE = (
+    "LIVRAISON : label `candidate-delivered` pose -- issue reservee au "
+    "coordinateur/adjoint (urne `delivered`, #15069) ; exclusion lue dans le "
+    "payload du pool, sans sonde par issue (#24461).")
 DELIVERED_COMMENT_MARKER = "[INFO] candidate-delivered"
 # Plafond dur de sondes par tirage : la boucle de remplacement d'une urne peut
 # en theorie la parcourir entiere, et une urne de 167 grains ne doit pas
@@ -8484,6 +8482,7 @@ def belt_filter(
     urns: set[str] | None = None,
     epic_deliveries: dict[int, int] | None = None,
     drops: list[tuple[dict, str]] | None = None,
+    label_drops: list[tuple[dict, str]] | None = None,
 ) -> list[dict]:
     """Filtre le pool admissible pour le mode --belt.
 
@@ -8511,6 +8510,26 @@ def belt_filter(
         if n in excluded_issues_set:
             return False
         labels = set(item.get("labels") or [])
+        # #24461 -- le LABEL `candidate-delivered` est DEJA dans le payload du
+        # pool (une seule requete `gh issue list --json labels` pour tout le
+        # pool) : l'exclure ici ne coute AUCUNE sonde par issue, la ou la
+        # sonde de livraison en coute une et sature -- et quand le budget ou
+        # le mur de temps est atteint, elle rend fail-OPEN et l'issue est
+        # servie comme un grain neuf (mesure #24461 : 37 des 120 grains
+        # servis portaient un marqueur vivant).
+        #
+        # L'exclusion vise les lanes HORS `DELIVERED_URN_LANES` (#15069) :
+        # l'urne `delivered` -- et la lecture du label -- sont reservees au
+        # coordinateur et a l'adjoint, qui decident de la fermeture.
+        # `--include-delivered` reste l'echappatoire NOMMEE (son help dit
+        # « typiquement pour une lane habilitee a fermer ») : il leve
+        # l'exclusion comme il leve les exclusions par sonde.
+        if (DELIVERED_LABEL in labels
+                and not delivered_urn_allowed(getattr(args, "lane", None))
+                and not getattr(args, "include_delivered", False)):
+            if label_drops is not None:
+                label_drops.append((item, _DELIVERED_LABEL_CAUSE))
+            return False
         if required_labels_set and not required_labels_set.issubset(labels):
             return False
         if excluded_labels_set and excluded_labels_set.intersection(labels):
@@ -11266,9 +11285,17 @@ def main(argv: list[str] | None = None) -> int:
             _belt_phase(f"plafond livraisons EPIC: MESURE, "
                         f"{sum(_epic_deliveries.values())} livraison(s) sur "
                         f"{len(_epic_deliveries)} EPIC(s)")
+        # #24461 -- les issues porteuses du LABEL `candidate-delivered` sont
+        # exclues du tapis des lanes hors `DELIVERED_URN_LANES` A LA LECTURE
+        # DE LA LISTE (le label est dans le payload du pool) : aucune sonde
+        # par issue n'est depensee, et l'exclusion ne peut pas s'eteindre sur
+        # un budget de sondes-epuise. Le compte est RAPPORTE : une exclusion
+        # invisible est un silence, et un silence se lit comme une absence.
+        _label_drops: list[tuple[dict, str]] = []
         belt_pool = belt_filter(admitted, args, urns=selected_urns,
                                 epic_deliveries=_epic_deliveries,
-                                drops=_epic_drops)
+                                drops=_epic_drops,
+                                label_drops=_label_drops)
         belt_pool.sort(key=belt_sort_key)
         _belt_phase(f"pool charge: {len(belt_pool)} candidates "
                     f"(apres belt_filter)")
@@ -11278,6 +11305,14 @@ def main(argv: list[str] | None = None) -> int:
                                     for it, cause in _epic_drops[:6])
                         + (f" (+{len(_epic_drops) - 6})"
                            if len(_epic_drops) > 6 else ""))
+        if _label_drops:
+            _belt_phase("label `candidate-delivered` : "
+                        f"{len(_label_drops)} issue(s) exclue(s) a la lecture "
+                        "de la liste, sans sonde (#24461) : "
+                        + ", ".join(f"#{it['number']}"
+                                    for it, _ in _label_drops[:6])
+                        + (f" (+{len(_label_drops) - 6})"
+                           if len(_label_drops) > 6 else ""))
         # Verification des claims tenes par une autre lane : on regarde
         # plus large que `args.grains` pour tolerer un remplacement si
         # la tete de file est tenue. Cout borne : au plus `grains + 4`

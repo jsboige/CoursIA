@@ -3133,3 +3133,75 @@ def test_belt_disarms_on_the_report_exit(monkeypatch):
             "l'echeance fuit apres la sortie --report (#23340 point 1)")
     finally:
         pig._BELT_DEADLINE[0] = None
+
+
+# --- #24461 : le LABEL `candidate-delivered` exclu A LA LECTURE de la liste --
+#
+# Le label est DEJA dans le payload du pool (une seule requete
+# `gh issue list --json labels` pour tout le pool). L'exclure ici ne coute
+# donc AUCUNE sonde par issue, la ou la sonde de livraison en coute une et
+# sature -- et quand le budget ou le mur de temps est atteint, elle rend
+# fail-OPEN et l'issue est servie comme un grain neuf (mesure #24461 : 37
+# des 120 grains servis portaient un marqueur vivant).
+#
+# L'exclusion vise les lanes HORS `DELIVERED_URN_LANES` (#15069) : l'urne
+# `delivered` et la lecture du label sont reservees au coordinateur et a
+# l'adjoint, qui decident de la fermeture.
+
+
+def _labelled_delivered_pool():
+    pool = [_make_item(80, age_days=10, idle=1, klass="grain"),
+            _make_item(81, age_days=10, idle=1, klass="grain")]
+    pool[0]["labels"].append("candidate-delivered")
+    return pool
+
+
+def test_belt_filter_exclut_le_label_pour_une_lane_worker():
+    args = _FakeArgs()
+    args.lane = "myia-po-2023:CoursIA"
+    args.include_delivered = False
+    drops = []
+    kept = pig.belt_filter(_labelled_delivered_pool(), args,
+                           urns={"grain", "umbrella"}, label_drops=drops)
+    assert [it["number"] for it in kept] == [81]
+    assert [it["number"] for it, _ in drops] == [80]
+    assert "LIVRAISON" in drops[0][1]
+
+
+def test_belt_filter_conserve_le_label_pour_une_lane_habilitee():
+    args = _FakeArgs()
+    args.lane = "myia-ai-01:CoursIA"
+    args.include_delivered = False
+    drops = []
+    kept = pig.belt_filter(_labelled_delivered_pool(), args,
+                           urns={"grain", "umbrella"}, label_drops=drops)
+    assert [it["number"] for it in kept] == [80, 81]
+    assert drops == []
+
+
+def test_include_delivered_leve_l_exclusion_par_label():
+    """L'echappatoire nommee reste l'echappatoire : `--include-delivered`
+    leve l'exclusion comme il leve les exclusions par sonde."""
+    args = _FakeArgs()
+    args.lane = "myia-po-2023:CoursIA"
+    args.include_delivered = True
+    drops = []
+    kept = pig.belt_filter(_labelled_delivered_pool(), args,
+                           urns={"grain", "umbrella"}, label_drops=drops)
+    assert [it["number"] for it in kept] == [80, 81]
+    assert drops == []
+
+
+def test_l_exclusion_par_label_ne_coute_aucune_sonde():
+    """L'exclusion est LUE dans le payload : elle ne passe pas par la sonde
+    de livraison, donc elle ne peut pas s'eteindre sur un budget epuise."""
+    args = _FakeArgs()
+    args.lane = "myia-po-2023:CoursIA"
+    args.include_delivered = False
+    drops = []
+    kept = pig.belt_filter(_labelled_delivered_pool(), args,
+                           urns={"grain", "umbrella"}, label_drops=drops)
+    # l'item ecarte est rendu dans les drops : une exclusion invisible est
+    # un silence, et un silence se lit comme une absence.
+    assert len(drops) == 1
+    assert kept[0]["number"] == 81
