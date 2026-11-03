@@ -6,7 +6,7 @@ Ce document répond à la demande du pre-flight du [runbook de flip d'authentifi
 
 ## Instrument
 
-Parse JSON des cellules de code, jamais un `grep` de chaîne : dans un `.ipynb`, les guillemets des littéraux sont échappés, et un `grep` naïf sous-compte massivement (il trouvait 1 fichier là où le parse en trouve 8). Le relevé ci-dessous porte sur les seules cellules `code`, pas sur la prose markdown.
+Parse JSON des cellules de code, jamais un `grep` de chaîne : dans un `.ipynb`, les guillemets des littéraux sont échappés, et un `grep` naïf sous-compte massivement — il ne voit qu'une fraction de ce que le parse trouve. Le relevé ci-dessous porte sur les seules cellules `code`, pas sur la prose markdown.
 
 ## Le périmètre mesuré
 
