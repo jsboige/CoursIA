@@ -1393,6 +1393,10 @@ def fetch_pool(
         title = it["title"]
         is_umbrella = is_umbrella_classification(title, labels)
         body = it.get("body") or ""
+        # #24516 -- le corps est aussi la source qui fait foi pour le GEL
+        # (regle A) : on le met en cache ici, pour que le filtre de gel le
+        # lise sans requete (le pool le paie deja).
+        _POOL_BODIES[it["number"]] = body
         # #13972 : le genre que l'AUTEUR de l'issue a declare dans le body
         # (`Grain: TIER/GENRE -- lane ...`) prime sur l'inference du titre.
         # Mesure du 2026-09-01 (lane ai-01) : `infer_genre` declarait
@@ -1717,6 +1721,39 @@ DELIVERED_SIGNAL_UNPROBED = object()
 # l'ordre de merge que donne le coordinateur.
 _RECENT_DELIVERY_MARKER_RE = re.compile(
     r"^\s*(?:#{1,6}\s*)?\[(?:DELIVERED|FROZEN)\](?=\s|:|$)",
+    re.MULTILINE,
+)
+
+# --- GEL (#24516) -- la grammaire tranchee par le coordinateur le 2026-11-03 ---
+#
+# Un gel est une **decision**, pas une propriete de position. Deux sources,
+# dans cet ordre d'autorite :
+#
+#   * **(A) le BODY fait foi** : le gel vit dans le corps de l'issue, sur une
+#     ligne canonique `[FROZEN] <motif court> -- <autorite>`. Le degel
+#     consiste a **RETIRER cette ligne** : c'est un geste du coordinateur,
+#     visible, et il ne laisse aucun etat cache derriere lui. Aucun
+#     commentaire ne leve un gel de body.
+#   * **(B) le FIL est le filet** des gels deja poses en commentaire : un
+#     en-tete `[FROZEN]` dans N'IMPORTE QUEL commentaire du fil -- et non
+#     seulement le dernier -- gele l'item. C'est une passerelle : ces gels
+#     migrent vers le body.
+#
+# Un `[RELEASED]` ne leve **aucun** gel : c'est un acquiescement de lane
+# (« je confirme la barriere »), pas la levee d'une decision du coordinateur.
+# C'est exactement le defaut mesure sur #19309 (43 commentaires, 37
+# `[RELEASED]` pour un seul gel) : le filtre lisait l'acquiescement comme
+# une reouverture.
+_FROZEN_HEADER_RE = re.compile(
+    r"^\s*(?:#{1,6}\s*)?\[FROZEN\](?=\s|:|$)",
+    re.MULTILINE,
+)
+
+#: Trace de degel. Sur un gel de BODY elle ne fait **pas** foi (seul le
+#: retrait de la ligne du body leve ce gel). Sur un gel pose en COMMENTAIRE
+#: elle est la seule sortie : sans elle, le filet serait un gel eternel.
+_UNFROZEN_HEADER_RE = re.compile(
+    r"^\s*(?:#{1,6}\s*)?\[UNFROZEN\](?=\s|:|$)",
     re.MULTILINE,
 )
 
@@ -2397,8 +2434,10 @@ def has_recent_delivery_marker(issue_number: int) -> bool | None:
     """Le DERNIER commentaire porte-t-il un marqueur de cloture recent ?
 
     TRI-ETAT (cf. `has_delivered_signal`) :
-    - ``True``  : le dernier commentaire a un en-tete `[DELIVERED]` ou
-      `[FROZEN]`, ou porte un marqueur de livraison
+    - ``True``  : l'item est **GEL** (regle A : le BODY porte la ligne
+      `[FROZEN] ...` ; regle B : un en-tete `[FROZEN]` dans le FIL), ou le
+      dernier commentaire a un en-tete `[DELIVERED]` ou `[FROZEN]`, ou porte
+      un marqueur de livraison
       ``[INFO] candidate-delivered`` (grammaire `_DELIVERED_MARKER_RE`).
       Le candidat doit etre ecarte SANS
       appeler la sonde pleine -- c'est le filtre bon marche de #19768 ;
@@ -2410,7 +2449,12 @@ def has_recent_delivery_marker(issue_number: int) -> bool | None:
     - ``None``  : la lecture a echoue (reseau, 403, payload illisible).
       Fail-OPEN : l'appelant procede a la sonde pleine en le disant.
 
-    Cout : **1 requete** `gh issue view --json comments`, identique a
+    Le corps de l'issue n'est pas un parametre : il est lu dans le cache
+    du pool (`_POOL_BODIES`), que la lecture du pool remplit deja. C'est
+    la source qui fait foi pour le gel (regle A) ; a defaut, il est lu
+    dans la meme requete que les commentaires.
+
+    Cout : **1 requete** `gh issue view --json body,comments`, identique a
     `has_delivered_signal`, mais **HORS budget** (`DELIVERED_SIGNAL_MAX_PROBES`
     reste intact). Pourquoi separer : la sonde pleine peut etre
     epuisee par un pool charge, et le marqueur recent etant
@@ -2421,9 +2465,33 @@ def has_recent_delivery_marker(issue_number: int) -> bool | None:
     recentes servies par le tapis -- cette fonction les aurait
     ecartes avant l'epuisement du budget de la sonde pleine.
     """
-    last = _last_comment(issue_number)
-    if last is None:
+    verdict = _recent_marker_verdict(issue_number)
+    return verdict
+
+
+def _recent_marker_verdict(issue_number: int) -> bool | None:
+    """Le detail de `has_recent_delivery_marker` (meme verdict, meme cout).
+
+    Separer les deux permet de garder `has_recent_delivery_marker` comme le
+    **seam** stable : c'est elle que les tests et les autres organes
+    patchent. Le detail lit le corps de l'issue dans le cache du pool
+    (`_POOL_BODIES`) -- le pool le porte deja, donc **aucune requete de
+    plus** -- et le filet des commentaires dans la requete qu'il fait de
+    toute facon.
+    """
+    comments, fetched_body = _issue_comments(issue_number)
+    if comments is None:
         return None
+    body_of_issue = _issue_body(issue_number)
+    if body_of_issue is None:
+        body_of_issue = fetched_body
+
+    if _issue_is_frozen(body_of_issue, comments) is not None:
+        return True
+
+    last = comments[-1] if comments else {}
+    if not isinstance(last, dict):
+        last = {}
     body = last.get("body") or ""
     if not isinstance(body, str):
         body = ""
@@ -2451,6 +2519,118 @@ def has_recent_delivery_marker(issue_number: int) -> bool | None:
                 or _closure_announced_close(body))
 
 
+def _issue_is_frozen(issue_body: str | None,
+                     comments: list[dict] | None) -> str | None:
+    """L'item est-il GEL ? Renvoie la SOURCE du gel, ou None.
+
+    - ``"body"``    -- regle A : le corps de l'issue porte la ligne
+      `[FROZEN] <motif court> -- <autorite>`. C'est la forme qui fait foi :
+      le degel consiste a retirer la ligne, et rien d'autre (ni un
+      `[RELEASED]`, ni un `[UNFROZEN]`) ne leve un gel de body.
+    - ``"comment"`` -- regle B : un en-tete `[FROZEN]` dans le FIL, quelle
+      que soit sa position (c'est le filet des gels deja poses en
+      commentaire, en attendant leur migration vers le body). Un `[UNFROZEN]`
+      posterieur ferme ce gel : c'est sa seule sortie, sinon le filet
+      serait un gel eternel.
+
+    Le gel est evalue **avant** la reouverture du user (#24250) : un gel est
+    une decision explicite du coordinateur, et une reouverture du user ne
+    la leve pas. La sortie reste simple : retirer la ligne du body.
+
+    Le corps est lu **en ligne**, jamais dans la prose : un corps qui
+    *parle* d'un gel (`Un [FROZEN] du coordinateur...`) n'en porte pas.
+    """
+    if isinstance(issue_body, str) and _FROZEN_HEADER_RE.search(issue_body):
+        return "body"
+    if not comments:
+        return None
+    frozen = False
+    for comment in comments:
+        if not isinstance(comment, dict):
+            continue
+        text = comment.get("body") or ""
+        if not isinstance(text, str) or not text:
+            continue
+        if _UNFROZEN_HEADER_RE.search(text):
+            # Un degel posterieur efface le gel anterieur : le fil se lit
+            # dans l'ordre, et le dernier etat gagne.
+            frozen = False
+            continue
+        if _FROZEN_HEADER_RE.search(text):
+            frozen = True
+    return "comment" if frozen else None
+
+
+#: Corps des issues du pool, indexes par numero. Rempli par la lecture du
+#: pool (`fetch_pool`), qui porte deja le body de chaque issue : c'est ce
+#: qui permet au filtre de gel de lire la regle A (le gel vit dans le body)
+#: **sans requete** -- la regle du compteur de requetes par candidat.
+#: Remplace le parametre `issue_body` : `has_recent_delivery_marker` reste
+#: le seam stable (une seule positional), patche par les tests et les
+#: autres organes.
+_POOL_BODIES: dict[int, str] = {}
+
+
+def _issue_body(issue_number: int) -> str | None:
+    """Le corps de l'issue, d'apres le cache du pool (None si absent)."""
+    return _POOL_BODIES.get(issue_number)
+
+
+def _issue_comments(issue_number: int) -> tuple[list[dict] | None, str | None]:
+    """TOUS les commentaires d'une issue ET son corps, en 1 requete.
+
+    TRI-ETAT :
+    - ``(None, None)`` : la lecture a echoue (reseau, 403, payload
+      illisible) -- fail-OPEN, l'appelant le dit ;
+    - ``([], "")``     : l'issue n'a aucun commentaire exploitable (aucun
+      commentaire, payload inattendu) ;
+    - ``(liste, corps)`` : les commentaires (ordre chronologique de l'API
+      `gh issue view --json body,comments`) et le corps de l'issue.
+
+    Pourquoi tout le fil et pas seulement la queue : un gel pose en
+    commentaire peut etre enterre par n'importe quel commentaire
+    posterieur (#24516, mesure sur #19309 : 37 `[RELEASED]` pour un seul
+    `[FROZEN]`). La requete ramene deja le fil entier -- `_last_comment` n'en
+    gardait que la queue -- donc le balayer **ne coute aucune requete de
+    plus**.
+
+    Pourquoi le corps : le gel vit dans le **body** (regle A de la
+    grammaire du coordinateur, 2026-11-03). Il est demande DANS LA MEME
+    requete, donc le compte de requetes par candidat ne bouge pas.
+
+    #22630 -- l'instantane local rend les memes commentaires, sans requete :
+    la lecture passe par `_snapshot_comments` quand l'instantane de la passe
+    est disponible, et retombe sur la requete historique sinon. L'instantane
+    ne porte pas le corps : le corps vient alors de l'appelant (le pool le
+    porte deja).
+    """
+    snapshot_comments = _snapshot_comments(issue_number)
+    if snapshot_comments is not None:
+        return snapshot_comments, None
+    try:
+        out = subprocess.run(
+            ["gh", "issue", "view", str(issue_number), "--repo", REPO,
+             "--json", "body,comments"],
+            capture_output=True, text=True, encoding="utf-8", check=True,
+            timeout=_clamp_timeout(30),
+        ).stdout
+    except Exception:  # noqa: BLE001 - lecture best-effort, l'echec est DIT
+        return None, None
+    try:
+        payload = json.loads(out)
+    except Exception:  # noqa: BLE001 - payload illisible = pas de signal
+        return None, None
+    if not isinstance(payload, dict):
+        return [], ""
+    comments = payload.get("comments") or []
+    if not isinstance(comments, list):
+        comments = []
+    body = payload.get("body") or ""
+    if not isinstance(body, str):
+        body = ""
+    return comments, body
+
+
 def _last_comment(issue_number: int) -> dict | None:
     """Le DERNIER commentaire d'une issue (dictionnaire), en 1 requete.
 
@@ -2465,32 +2645,11 @@ def _last_comment(issue_number: int) -> dict | None:
     L'horodatage est HERE parce que la regle de la reouverture (#24250) doit
     dater la decision de cloture : le corps seul ne permet pas de dire si la
     reouverture lui est posterieure.
-
-    #22630 -- l'instantane local rend les memes commentaires, sans requete :
-    la lecture passe par `_snapshot_comments` quand l'instantane de la passe
-    est disponible, et retombe sur la requete historique sinon.
     """
-    snapshot_comments = _snapshot_comments(issue_number)
-    if snapshot_comments is not None:
-        comments = snapshot_comments
-    else:
-        try:
-            out = subprocess.run(
-                ["gh", "issue", "view", str(issue_number), "--repo", REPO,
-                 "--json", "comments"],
-                capture_output=True, text=True, encoding="utf-8", check=True,
-                timeout=_clamp_timeout(30),
-            ).stdout
-        except Exception:  # noqa: BLE001 - lecture best-effort, l'echec est DIT
-            return None
-        try:
-            payload = json.loads(out)
-        except Exception:  # noqa: BLE001 - payload illisible = pas de signal
-            return None
-        if not isinstance(payload, dict):
-            return {}
-        comments = payload.get("comments") or []
-    if not isinstance(comments, list) or not comments:
+    comments, _body = _issue_comments(issue_number)
+    if comments is None:
+        return None
+    if not comments:
         return {}
     last = comments[-1]
     if not isinstance(last, dict):
@@ -5044,7 +5203,8 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
                             conflicts.append((c, "LIVRAISON (recent) : "
                                 "marqueur de cloture sur le dernier "
                                 "commentaire ([DELIVERED] / [FROZEN] "
-                                "/ [INFO] candidate-delivered)."
+                                "/ [INFO] candidate-delivered), ou GEL "
+                                "de l'item (body ou fil)."
                                 " Candidat remplace dans "
                                 "la meme urne, hors budget de sonde."))
                             continue
