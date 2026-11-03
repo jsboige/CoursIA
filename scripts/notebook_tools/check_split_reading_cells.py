@@ -209,6 +209,41 @@ SECTION_TITLE_AFTER_EXERCISE_RE = re.compile(
     r"^(conclusion|ressources?|plan|references?|bibliographie|synthese|pour aller plus loin)\b",
     re.IGNORECASE,
 )
+# Titres de TRANSITION de fin de carnet -- deuxieme famille structurelle.
+#
+# La liste fermee ci-dessus couvre les sections de FIN (conclusion, ressources,
+# plan, references, synthese, pour aller plus loin). Elle ne couvre pas les
+# sections de NAVIGATION que le corpus utilise massivement : « Navigation »,
+# « Liens », « Prochaines etapes » (+ « Next steps » pour les jumeaux `_en`).
+# Ces cellules sont des TRANSITIONS -- un lien vers le carnet suivant, une
+# liste de liens -- : elles ne commentent AUCUNE sortie. Les placer apres un
+# exercice n'empeche l'etudiant de rien voir ; au contraire, la navigation de
+# fin de carnet doit rester visible meme si l'exercice n'est pas fait.
+#
+# L'exemption reste fondee sur le TITRE (meme principe que la liste fermee
+# ci-dessus) mais avec un ANCRAGE COMPLET : le titre doit etre le mot-cle
+# lui-meme, eventuellement precede d'une numerotation de section. Une PHRASE
+# qui commence par le mot-cle n'est passtructurelle : « Navigation dans un
+# graphe RDF » reste signale comme lecture.
+#
+# Mesure (corpus `main`, 2026-11-03) : 17 cellules portent un titre exact de
+# cette famille (10 « Navigation », 7 « Liens »), toutes des sections de liens ;
+# la premiere occurrence « Prochaines etapes » apres un exercice est mesuree
+# sur la PR #24303 (`Tweety-07b-Ranking-Probabilistic-Python.ipynb`, cellule
+# 23), ou la cellule de cloture du carnet (transition vers le carnet suivant +
+# liens de navigation) est ajoutee juste apres le stub du dernier exercice.
+#
+# Hors perimetre DELIBERE : les titres de RECAP (« Resume », « A retenir »,
+# « Recapitulatif », « Bilan ») ne sont PAS ajoutes -- un recapitulatif peut
+# etre un contenu que l'etudiant doit lire APRES l'exercice ; leur nombre
+# (mesure : 29 « Resume », 19 « A retenir », 7 « Recapitulatif », 5 « Bilan »
+# sur le corpus) est laisse a l'arbitrage du coordinateur.
+CLOSING_NAV_TITLE_RE = re.compile(
+    r"^(?:\d+(?:\.\d+)*\.?\s+)?"
+    r"(?:prochaines etapes|next steps|navigation|liens|links)"
+    r"(?:\s+et\s+suite)?$",
+    re.IGNORECASE,
+)
 # Miroir anglais des deux garde-fous du carve-out (#20777) : le titre s'est
 # ouvert a « Exercise » pour les jumeaux `_en`, les gardes suivent -- ouvrir
 # le titre sans ouvrir les gardes rouvrirait le trou que la decision #17777
@@ -341,7 +376,10 @@ def looks_like_reading_after_exercise(cell: dict) -> bool:
 
     On REJETTE les md purement structurels (## Conclusion, ## Exercice
     N, ## References), qui n'ont qu'un en-tete suivi d'un corps court
-    ou vide -- ce sont des transitions, pas des lectures.
+    ou vide -- ce sont des transitions, pas des lectures. La meme
+    exemption vaut pour les titres de TRANSITION de fin de carnet
+    (``## Navigation``, ``## Liens``, ``## Prochaines etapes``) : ce sont
+    des liens, pas une lecture d'une sortie (cf ``CLOSING_NAV_TITLE_RE``).
 
     Garde-fou #17777 (meme discriminant qu'``is_reading_or_prose`` : le titre,
     pas la longueur du corps) : un titre de section (``## Conclusion``,
@@ -365,9 +403,9 @@ def looks_like_reading_after_exercise(cell: dict) -> bool:
         # Titre de section (## Conclusion / ## Ressources / ## Plan ...) :
         # structurel par le titre, jamais une lecture -- la longueur du corps
         # est hors discriminant (meme principe que ``is_reading_or_prose``).
-        if SECTION_TITLE_AFTER_EXERCISE_RE.match(
-            deaccent(cell_title(src)).lower()
-        ):
+        title = deaccent(cell_title(src)).lower()
+        if (SECTION_TITLE_AFTER_EXERCISE_RE.match(title)
+                or CLOSING_NAV_TITLE_RE.match(title)):
             return False
         body = src.split("\n", 1)[1].strip() if "\n" in src else ""
         return len(body) > 80

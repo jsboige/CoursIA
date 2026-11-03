@@ -2264,3 +2264,142 @@ def test_carveout_code_avant_titre_ne_rattache_pas():
         _student_solution_verbatim(),
     ]
     assert is_exercise_cell(cells[3], cells, 3) is True
+
+
+# --- Titres de TRANSITION de fin de carnet (CLOSING_NAV_TITLE_RE) -------------
+#
+# Surface mesuree sur la PR #24303 : la cellule de CLOTURE d'un carnet
+# (`## Prochaines etapes` + liens de navigation vers le carnet suivant) ajoutee
+# juste apres le stub du dernier exercice etait signalee EXERCISE_READING.
+# La regle « l'etudiant ne verra pas la lecture tant qu'il n'a pas complete »
+# ne s'applique pas a une cellule de NAVIGATION : elle ne commente aucune
+# sortie, et la navigation de fin de carnet doit rester visible meme si
+# l'exercice n'est pas fait.
+#
+# Les controles sont doubles : POSITIFS (la transition n'est pas signalee) et
+# NEGATIFS (une lecture reste signalee, une PHRASE qui commence par le mot-cle
+# n'est pas blanchie par raccourci).
+
+
+def test_titre_prochaines_etapes_apres_exercice_n_est_pas_signale():
+    """POSITIF : `## Prochaines etapes` apres un exercice n'est pas une lecture."""
+    base = nb(
+        _stub_exercise(),
+    )
+    head = nb(
+        _stub_exercise(),
+        md("## Prochaines etapes\n\nLe notebook suivant explore les "
+           "dialogues argumentatifs multi-agents avec le module `agents.dialogues`.\n\n"
+           "***\n\n**Navigation** : [Index](README.md) | [Suivant >>](Tweety-08-Python.ipynb)"),
+    )
+    assert detect_added_readings(head, base) == []
+
+
+def test_titre_next_steps_apres_exercice_n_est_pas_signale():
+    """POSITIF : le jumeau `_en` (`## Next steps`) suit la meme regle."""
+    base = nb(
+        _stub_exercise(),
+    )
+    head = nb(
+        _stub_exercise(),
+        md("## Next steps\n\nThe next notebook explores multi-agent argumentation "
+           "dialogues with the `agents.dialogues` module."),
+    )
+    assert detect_added_readings(head, base) == []
+
+
+def test_titre_navigation_apres_exercice_n_est_pas_signale():
+    """POSITIF : `## Navigation` (section de liens) apres un exercice."""
+    base = nb(
+        _stub_exercise(),
+    )
+    head = nb(
+        _stub_exercise(),
+        md("## Navigation\n\n- [Precedent](Notebook-03-Python.ipynb) — le coeur du moteur\n"
+           "- [Index](README.md)"),
+    )
+    assert detect_added_readings(head, base) == []
+
+
+def test_titre_liens_apres_exercice_n_est_pas_signale():
+    """POSITIF : `## Liens` (liste de references vers les autres carnets)."""
+    base = nb(
+        _stub_exercise(),
+    )
+    head = nb(
+        _stub_exercise(),
+        md("## Liens\n\n- [MGS-1 Introduction](MGS-01-Introduction.ipynb) — le moteur autonome\n"
+           "- [MGS-2 Composition](MGS-02-Composition.ipynb) — les primitives"),
+    )
+    assert detect_added_readings(head, base) == []
+
+
+def test_titre_numerote_prochaines_etapes_n_est_pas_signale():
+    """POSITIF : la numerotation de section (`### 7.3 Prochaines etapes`) est tolerated."""
+    base = nb(
+        _stub_exercise(),
+    )
+    head = nb(
+        _stub_exercise(),
+        md("### 7.3 Prochaines etapes\n\nLe chapitre suivant traite du cout des "
+           "operations de mutation sur les automates."),
+    )
+    assert detect_added_readings(head, base) == []
+
+
+def test_phrase_commencant_par_navigation_reste_signalee():
+    """NEGATIF : `## Navigation dans un graphe RDF` n'est PAS une transition.
+
+    L'exemption est fondee sur un ANCRAGE COMPLET du titre : une section qui
+    commence par le mot-cle mais qui parle d'autre chose reste une lecture.
+    """
+    base = nb(
+        _stub_exercise(),
+    )
+    head = nb(
+        _stub_exercise(),
+        md("## Navigation dans un graphe RDF\n\nLe parcours du graphe part de la "
+           "source et suit les aretes ; chaque saut ajoute un fait au contexte."),
+    )
+    findings = detect_added_readings(head, base)
+    assert len(findings) == 1
+    assert findings[0]["type"] == "EXERCISE_READING"
+
+
+def test_lecture_apres_exercice_reste_signalee():
+    """NEGATIF (garde-fou de non-regression) : une vraie lecture reste signalee.
+
+    L'extension des titres de transition ne doit pas affaiblir la regle
+    « l'etudiant ne verra pas la lecture tant qu'il n'a pas complete ».
+    """
+    base = nb(
+        _todo_stub_unexec(),
+    )
+    head = nb(
+        _todo_stub_unexec(),
+        md("### Lecture du resultat\nSortie attendue : le rang de chaque argument "
+           "une fois le classement probabiliste applique."),
+    )
+    findings = detect_added_readings(head, base)
+    assert len(findings) == 1
+    assert findings[0]["type"] == "EXERCISE_READING"
+
+
+def test_resume_apres_exercice_reste_signale():
+    """NEGATIF : `## Resume` n'est PAS dans la famille des transitions.
+
+    Un recapitulatif peut etre un contenu que l'etudiant doit lire APRES
+    l'exercice : il reste signale (perimetre volontairement laisse a
+    l'arbitrage du coordinateur).
+    """
+    base = nb(
+        _stub_exercise(),
+    )
+    head = nb(
+        _stub_exercise(),
+        md("## Resume\n\nLe classement probabiliste combine la force des arguments "
+           "et la coherence du debat ; les deux termes se compensent."),
+    )
+    findings = detect_added_readings(head, base)
+    assert len(findings) == 1
+    assert findings[0]["type"] == "EXERCISE_READING"
