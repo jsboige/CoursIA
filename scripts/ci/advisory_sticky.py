@@ -363,9 +363,28 @@ def _upsert_attempt(organ: str, body: str, pr: int, repo: str, runner: Callable,
     sections = parse_sections(existing_body)
     sections[organ] = (body or "").strip()
     new_body = render(sections)
-    if cid is not None:
-        if new_body == existing_body:
+    if cid is not None and new_body == existing_body:
+        return {"action": "unchanged", "comment_id": cid}
+    # --- relecture juste avant l'ecriture --------------------------------
+    # Fenetre de perte d'ecriture : entre notre lecture et notre PATCH, un
+    # autre ecrivain peut avoir ajoute SA section. Ecrire le corps derive
+    # de la lecture perimee EFFACE sa section -- et notre verification, qui
+    # ne regarde que notre organe, ne le verrait pas : le succes serait
+    # rendu sur un etat ou l'autre avertissement a disparu.
+    # On relit donc juste avant d'ecrire, et si le corps a bouge, on
+    # reapplique notre section sur le corps COURANT.
+    comments = list_comments(pr, repo, runner, timeout)
+    fresh_cid = find_sticky_id(comments)
+    fresh_body = _body_of(comments, fresh_cid)
+    if fresh_cid != cid or fresh_body != existing_body:
+        cid = fresh_cid
+        existing_body = fresh_body
+        sections = parse_sections(existing_body)
+        sections[organ] = (body or "").strip()
+        new_body = render(sections)
+        if cid is not None and new_body == existing_body:
             return {"action": "unchanged", "comment_id": cid}
+    if cid is not None:
         return _patch_comment(cid, new_body, repo, runner, timeout)
     return _create_comment(pr, new_body, repo, runner, timeout)
 
@@ -383,7 +402,24 @@ def _clear_attempt(organ: str, pr: int, repo: str, runner: Callable,
     if organ not in sections:
         return {"action": "unchanged", "comment_id": cid}
     del sections[organ]
-    return _patch_comment(cid, render(sections), repo, runner, timeout)
+    new_body = render(sections)
+    # Meme fenetre que pour l'upsert : on relit avant d'ecrire, et on
+    # reapplique le retrait sur le corps courant plutot que d'effacer la
+    # section qu'un autre ecrivain y aurait ajoutee entre-temps.
+    comments = list_comments(pr, repo, runner, timeout)
+    fresh_cid = find_sticky_id(comments)
+    fresh_body = _body_of(comments, fresh_cid)
+    if fresh_cid != cid or fresh_body != existing_body:
+        cid = fresh_cid
+        existing_body = fresh_body
+        sections = parse_sections(existing_body)
+        if organ not in sections:
+            return {"action": "unchanged", "comment_id": cid}
+        del sections[organ]
+        new_body = render(sections)
+    if cid is None:
+        return {"action": "silent", "comment_id": None}
+    return _patch_comment(cid, new_body, repo, runner, timeout)
 
 
 def upsert_section(organ: str, body: str, pr: int, repo: str = DEFAULT_REPO,

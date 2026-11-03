@@ -82,6 +82,43 @@ def human_comment(cid, body):
     return {"id": cid, "body": body, "user": {"login": "jsboige"}}
 
 
+class StaleReadRunner(FakeRunner):
+    """Runner dont la PREMIERE lecture est **perimee**.
+
+    L'autre ecrivain ecrit entre notre lecture et notre ecriture : le corps
+    que nous allons PATCHer est derive d'un etat qui ne contenait pas sa
+    section. C'est la fenetre de perte d'ecriture.
+
+    C'est le **miroir** de `InterleavingRunner(clobber_section=...)` : la,
+    l'autre efface notre section ; ici, c'est nous qui effacons la sienne --
+    et notre verification, qui ne regarde que notre organe, ne le voit pas.
+    """
+
+    def __init__(self, other, store, other_sections=None):
+        super().__init__(store=store)
+        self.other = other
+        self.other_sections = dict(other_sections or {})
+        self._injected = False
+
+    def __call__(self, cmd, **kwargs):
+        method = ""
+        if "--method" in cmd:
+            method = cmd[cmd.index("--method") + 1]
+        if method == "" and not self._injected:
+            # Notre lecture : on rend l'etat d'aujourd'hui, puis l'autre
+            # ecrivain ecrit -- AVANT notre PATCH.
+            self._injected = True
+            snapshot = json.dumps([self.comments])
+            target = self.comments[0]["id"]
+            self.other(
+                ["gh", "api", "--method", "PATCH",
+                 f"repos/jsboige/CoursIA/issues/comments/{target}",
+                 "-f", f"body={a_s.render(self.other_sections)}"],
+                capture_output=True, text=True, timeout=15)
+            return FakeProc(snapshot, 0)
+        return super().__call__(cmd, **kwargs)
+
+
 class InterleavingRunner(FakeRunner):
     """Runner A ; le runner B (le **second ecrivain**) agit au moment de
     l'ecriture, sur le meme etat partage.
@@ -357,3 +394,56 @@ def test_le_retrait_concurrent_est_verifie():
     body = runner.comments[0]["body"]
     assert "averti" not in body
     assert "<!-- organ:organ-b -->" in body
+
+
+def test_la_section_d_un_autre_ecrivain_survit_a_notre_lecture_perimee():
+    """Le contre-exemple manquant : **notre** ecriture effacait la section
+    de l'autre ecrivain.
+
+    Mesure (adjoint `myia-po-2025:CoursIA-2`, 2026-11-03, contre-exemple
+    `sections[organ]`) : B capture le corps initial ; A ecrit `organ-a` ;
+    B reprend sa lecture **perimee**, PATCH son `organ-b` et termine
+    `verified: true`. Etat final : `initial + organ-b`, `organ-a` **absente**
+    -- et personne ne l'a vu, parce que la verification ne regarde que la
+    section qu'on a ecrite. Un seul collant, donc `merge_duplicates` ne
+    rattrape rien.
+
+    La relecture d'avant-ecriture referme la fenetre : si le corps a bouge
+    depuis notre lecture, notre section est reappliquee sur le corps
+    courant au lieu de l'ecraser.
+    """
+    store = SharedStore([
+        bot_comment(7, a_s.render({"initial": "etat initial"}))])
+    other = FakeRunner(store=store, post_id=4243)
+    runner = StaleReadRunner(other, store, other_sections={
+        "initial": "etat initial", "organ-a": "avertissement A"})
+    out = a_s.upsert_section("organ-b", "avertissement B", 123, runner=runner,
+                              sleep=lambda _s: None)
+    assert out["verified"] is True
+    sections = a_s.parse_sections(
+        next(c["body"] for c in runner.comments if a_s.MARKER in c["body"]))
+    assert sections.get("organ-a") == "avertissement A", (
+        "la section de l'autre ecrivain ne doit pas disparaitre")
+    assert sections.get("organ-b") == "avertissement B"
+    assert sections.get("initial") == "etat initial"
+
+
+def test_le_retrait_n_efface_pas_la_section_ajoutee_par_un_autre():
+    """Meme fenetre, cote retrait : retirer notre section ne doit pas
+    effacer celle qu'un autre ecrivain a ajoutee entre-temps."""
+    store = SharedStore([
+        bot_comment(7, a_s.render({"initial": "etat initial",
+                                    "organ-a": "avertissement A"}))])
+    other = FakeRunner(store=store, post_id=4243)
+    runner = StaleReadRunner(other, store, other_sections={
+        "initial": "etat initial", "organ-a": "avertissement A",
+        "organ-b": "avertissement B"})
+    out = a_s.clear_section("organ-a", 123, runner=runner,
+                             sleep=lambda _s: None)
+    assert out["verified"] is True
+    sections = a_s.parse_sections(
+        next(c["body"] for c in runner.comments if a_s.MARKER in c["body"]))
+    assert "organ-a" not in sections, "notre section doit etre retiree"
+    assert sections.get("organ-b") == "avertissement B", (
+        "la section de l'autre ecrivain ne doit pas disparaitre")
+    assert sections.get("initial") == "etat initial"
