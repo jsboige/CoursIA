@@ -405,13 +405,37 @@ def date_groups(body: str) -> list[list[str]]:
     return out
 
 
-# The English words that carry a small number in a translation.
+# The words that carry a small number in a translation, in both languages.
+# The FR side may spell it in French ("nul", "zéro", "deux"); the EN side in
+# English ("zero", "two"). Both spell the same small number, so a number the
+# other side carries in words is not a loss. The list was English-only in the
+# original, which made every faithful "FR word / EN digit" pair a false HARD
+# (measured: 41 findings, tokens 0-6, review of #24148). 17-19 stay English
+# only: their French forms are compound ("dix-sept") and were not in the
+# measured class. "un"/"une" is deliberately NOT a word for 1: it is the
+# common French article, and matching it would excuse every "1" of a file.
 _NUMBER_WORDS = {
-    0: "zero", 1: "one", 2: "two", 3: "three", 4: "four", 5: "five",
-    6: "six", 7: "seven", 8: "eight", 9: "nine", 10: "ten", 11: "eleven",
-    12: "twelve", 13: "thirteen", 14: "fourteen", 15: "fifteen",
-    16: "sixteen", 17: "seventeen", 18: "eighteen", 19: "nineteen",
-    20: "twenty",
+    0: ["zero", "zéro", "nul", "nulle"],
+    1: ["one"],
+    2: ["two", "deux"],
+    3: ["three", "trois"],
+    4: ["four", "quatre"],
+    5: ["five", "cinq"],
+    6: ["six"],
+    7: ["seven", "sept"],
+    8: ["eight", "huit"],
+    9: ["nine", "neuf"],
+    10: ["ten", "dix"],
+    11: ["eleven", "onze"],
+    12: ["twelve", "douze"],
+    13: ["thirteen", "treize"],
+    14: ["fourteen", "quatorze"],
+    15: ["fifteen", "quinze"],
+    16: ["sixteen", "seize"],
+    17: ["seventeen"],
+    18: ["eighteen"],
+    19: ["nineteen"],
+    20: ["twenty", "vingt"],
 }
 
 
@@ -433,8 +457,11 @@ def number_is_carried_elsewhere(part: str, other_body: str,
     if not part.isdigit():
         return False
     value = int(part)
-    word = _NUMBER_WORDS.get(value)
-    if word and re.search(r"\b%s\b" % word, other_body, re.IGNORECASE):
+    words = _NUMBER_WORDS.get(value)
+    if words and any(
+        re.search(r"\b%s\b" % re.escape(w), other_body, re.IGNORECASE)
+        for w in words
+    ):
         return True
     other_dates = date_groups(other_body)
     for pieces in other_dates:

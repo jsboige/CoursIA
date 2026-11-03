@@ -122,6 +122,22 @@ def test_number_is_carried_elsewhere_by_date_format():
     assert not number_is_carried_elsewhere("04", "plain text")
 
 
+def test_number_is_carried_elsewhere_by_french_word():
+    # The FR side spells a small number in a French word; the EN side carries
+    # the digit. Both spell the same number, so the digit is not a loss.
+    assert number_is_carried_elsewhere("0", "la position vide a un nim-sum nul")
+    assert number_is_carried_elsewhere("2", "deux aretes")
+    assert number_is_carried_elsewhere("3", "trois aretes")
+    assert number_is_carried_elsewhere("5", "cinq noeuds")
+
+
+def test_number_is_not_carried_by_the_french_article():
+    # "un" is the French indefinite article, not the number one: matching it
+    # would excuse every "1" wherever an article happens to sit.
+    assert not number_is_carried_elsewhere("1", "un arete")
+    assert not number_is_carried_elsewhere("1", "une trame")
+
+
 def test_a_bare_year_excuses_no_small_number():
     # Regression of the review of #24148: ``2026`` alone used to excuse every
     # one- or two-digit number of the other side.
@@ -212,6 +228,33 @@ def test_compare_bodies_accepts_a_translated_number_in_words():
         set(),
     )
     assert not [f for f in findings if f["severity"] == HARD]
+
+
+def test_compare_bodies_accepts_a_french_word_for_the_digit():
+    # The Nim anchor (review of #24148): the FR says "nim-sum nul", the EN says
+    # "nim-sum 0". A faithful translation -- the digit is carried by the French
+    # word on the other side, so it is not a loss.
+    findings = compare_bodies(
+        "la position vide a un nim-sum nul",
+        "the empty position has nim-sum 0",
+        set(),
+    )
+    assert not [
+        f for f in findings if f["severity"] == HARD and f["kind"] == "number"]
+
+
+def test_compare_bodies_a_lost_number_stays_hard_without_the_word():
+    # Control negative: "2" is in the lexicon, but the EN side carries neither
+    # "two" nor "deux", so the number is genuinely lost and stays HARD. The
+    # French lexicon mitigates a carried number, it does not excuse a lost one.
+    findings = compare_bodies(
+        "l'ensemble compte 2 aretes",
+        "the set has edges",
+        set(),
+    )
+    hard = [f for f in findings
+            if f["severity"] == HARD and f["kind"] == "number"]
+    assert [f["token"] for f in hard] == ["2"]
 
 
 def test_compare_bodies_ignores_a_dropped_header_metadata():
