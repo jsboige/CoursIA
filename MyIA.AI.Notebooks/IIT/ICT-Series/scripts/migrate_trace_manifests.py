@@ -11,12 +11,25 @@ declaration explicite a l'inference. » Apres migration, le chargement ne
 warn plus : l'anti-melange (acceptance #1) est RENFORCE, la donnee
 s'autodeclare au lieu d'etre inferee.
 
-Discriminants (memes regles que ``ict.trace_contract.validate_manifest``,
-aucune reimplementation du cote inference -- la valeur stampee est celle
-que le contrat infererait, verifiee par revalidation post-ecriture) :
+Discriminants -- regles du contrat v1, appliquees ici a la lecture hors
+ligne du manifeste seul :
 
+- ``track`` commencant par ``P``          -> ``instrument = "jlens_trackp"``
+- ``track`` commencant par ``S``          -> ``instrument = "jlens"``
 - ``sae_repo`` ou ``sae_k`` presents      -> ``instrument = "sae"``
 - ``lens_repo`` / ``lens_kind`` / ``lens_rank`` -> ``instrument = "jlens"``
+
+**Le champ ``track`` prime sur les cles ``lens_*``**, et c'est la raison
+d'etre de cette regle : ``ict.jlens_trackP_traces.load_traces`` charge avec
+``expected="jlens_trackp"``, si bien qu'un manifeste Track P estampille
+``jlens`` par la seule lecture des cles ``lens_*`` fait lever
+``enforce_instrument`` -- l'inference par cles ne voit que deux
+instruments la ou le contrat en connait trois. Le migrateur ne peut pas
+deviner le chargeur ; le manifeste doit donc porter le discriminant qui
+le nomme.
+
+Un manifeste sans ``track`` ni cles ``lens_*`` reste hors perimetre : la
+valeur dependrait du chargeur, on ne l'invente pas.
 
 Les tableaux sont recopies inchanges (verification ``array_equal`` par
 cle, dtype inclus) ; seul ``__meta__`` gagne des cles. Le format de
@@ -28,7 +41,11 @@ Usage :
     python scripts/migrate_trace_manifests.py --apply      # ecrit
     python scripts/migrate_trace_manifests.py --check      # verifie sans ecrire
 
-Idempotent : un manifeste deja declare ``instrument`` n'est pas retouche.
+Idempotent et auto-correcteur : un manifeste deja declare un ``instrument``
+coherent avec ses discriminants n'est pas retouche (``DEJA``) ; un
+``instrument`` qui les contredit est reecrit (``CORRIGE``) -- c'est ce qui
+repare une migration anterieure qui aurait fige une valeur que seul le
+contexte du chargeur pouvait determiner.
 """
 from __future__ import annotations
 
@@ -59,6 +76,7 @@ TRACES_DIR = ROOT / "traces"
 
 # Statuts rendus par migrate_file.
 MIGRATED = "MIGRATED"
+CORRIGE = "CORRIGE"
 DEJA = "DEJA"
 SANS_META = "SANS_META"
 SANS_DISCRIMINANT = "SANS_DISCRIMINANT"
@@ -72,10 +90,17 @@ def read_meta(z: np.lib.npyio.NpzFile) -> dict:
 def infer_instrument(meta: dict) -> str | None:
     """Instrument declare par les champs specifiques du manifeste.
 
-    Miroir exact de la branche d'inference de ``validate_manifest`` : la
-    valeur stampee est celle que le contrat infererait au chargement -- la
-    migration ne fait qu'expliciter ce que la trace porte deja.
+    Reprend les regles du contrat v1, y compris celle que sa branche
+    d'inference par cles ne peut pas exprimer : ``track`` distingue les
+    deux instruments J-Lens (``jlens`` pour Track S, ``jlens_trackp`` pour
+    Track P). Sans cette primaute, un manifeste Track P serait estampille
+    ``jlens`` et le chargement Track P leverait ``enforce_instrument``.
     """
+    track = meta.get("track")
+    if isinstance(track, str) and track[:1].upper() == "P":
+        return "jlens_trackp"
+    if isinstance(track, str) and track[:1].upper() == "S":
+        return "jlens"
     if "sae_repo" in meta or "sae_k" in meta:
         return "sae"
     if any(k in meta for k in ("lens_repo", "lens_kind", "lens_rank")):
@@ -111,18 +136,30 @@ def migrate_file(path: Path, *, apply: bool = False) -> tuple[str, str, str]:
     finally:
         z.close()
 
-    if "instrument" in meta:
-        return DEJA, str(meta["instrument"]), "deja declare"
-
+    declare = meta.get("instrument")
     inst = infer_instrument(meta)
+
+    if declare is not None:
+        declare = str(declare)
+        if inst is None or declare == inst:
+            return DEJA, declare, "deja declare"
+        # Le manifeste se contredit : une migration anterieure a fige une
+        # valeur que les discriminants du fichier dementent. On reecrit.
+        correction = True
+    else:
+        correction = False
+
     if inst is None:
         return SANS_DISCRIMINANT, "", (
-            "ni instrument ni discriminant (sae_*/lens_*) : "
+            "ni instrument ni discriminant (sae_*/lens_*/track) : "
             "hors perimetre, a trancher a la main"
         )
 
     if not apply:
-        return "TODO", inst, f"stamp instrument={inst!r} + contract_version"
+        return "TODO", inst, (
+            f"corriger instrument -> {inst!r}" if correction
+            else f"stamp instrument={inst!r} + contract_version"
+        )
 
     z = np.load(path, allow_pickle=False)
     try:
@@ -155,7 +192,10 @@ def migrate_file(path: Path, *, apply: bool = False) -> tuple[str, str, str]:
         enforce_instrument(valide, inst)
     if not valide["instrument"] == inst:
         raise RuntimeError(f"{path.name}: instrument non stampé")
-    return MIGRATED, inst, "stamp + revalidation sans warning"
+    statut = CORRIGE if correction else MIGRATED
+    detail = "correction + revalidation sans warning" if correction \
+        else "stamp + revalidation sans warning"
+    return statut, inst, detail
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -191,11 +231,13 @@ def main(argv: list[str] | None = None) -> int:
                     meta = read_meta(z)
                     inst = str(meta.get("instrument", ""))
                     status = DEJA if inst in INSTRUMENTS else SANS_DISCRIMINANT
-                    if inst not in INSTRUMENTS and infer_instrument(meta) is not None:
-                        # discriminant present mais instrument absent : la
-                        # migration n'a pas couvert ce fichier.
+                    derive = infer_instrument(meta)
+                    if derive is not None and derive != inst:
+                        # instrument absent, ou present mais dementi par les
+                        # discriminants du fichier (contradiction a corriger).
                         problems += 1
-                        status = "MIGRATION_MANQUANTE"
+                        status = ("MIGRATION_MANQUANTE"
+                                  if inst not in INSTRUMENTS else "CONTREDIT")
             finally:
                 z.close()
             detail = ""
@@ -204,7 +246,8 @@ def main(argv: list[str] | None = None) -> int:
         counts[status] = counts.get(status, 0) + 1
         if status not in (DEJA, SANS_META, SANS_DISCRIMINANT) or args.check:
             print(f"  {status:18s} {inst:6s} {path.name}  {detail}")
-        if status == MIGRATED and args.apply and "revalidation sans warning" not in detail:
+        if (status in (MIGRATED, CORRIGE) and args.apply
+                and "sans warning" not in detail):
             problems += 1
 
     print("--")

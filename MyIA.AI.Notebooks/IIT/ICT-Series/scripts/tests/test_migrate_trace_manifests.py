@@ -26,6 +26,7 @@ for cand in (SCRIPTS, SERIES):
 
 from ict.trace_contract import validate_manifest  # noqa: E402
 from migrate_trace_manifests import (  # noqa: E402
+    CORRIGE,
     DEJA,
     MIGRATED,
     SANS_DISCRIMINANT,
@@ -119,3 +120,45 @@ def test_dry_run_necrit_pas(tmp_path: Path) -> None:
     status, inst, _ = migrate_file(p, apply=False)
     assert (status, inst) == ("TODO", "sae")
     assert p.read_bytes() == before
+
+
+def test_track_p_prime_sur_les_cles_lens(tmp_path: Path) -> None:
+    """Le champ ``track`` tranche entre les deux instruments J-Lens.
+
+    ``ict.jlens_trackP_traces.load_traces`` charge avec
+    ``expected="jlens_trackp"`` : une migration qui ne lit que les cles
+    ``lens_*`` estampe ``jlens`` et fait lever ``enforce_instrument`` au
+    chargement. Regression mesuree en CI sur les deux fixtures Track P
+    (#24466, job ``ICT tests/``).
+    """
+    p = tmp_path / "trackp.npz"
+    _write_npz(p, _base_meta(lens_repo="jlens-9b", lens_rank=32,
+                             track="P persona-4B"))
+    status, inst, _ = migrate_file(p, apply=True)
+    assert (status, inst) == (MIGRATED, "jlens_trackp")
+    with np.load(p, allow_pickle=False) as z:
+        meta = json.loads(str(z["__meta__"]))
+    assert meta["instrument"] == "jlens_trackp"
+
+
+def test_track_s_reste_jlens(tmp_path: Path) -> None:
+    """Track S est un substrat J-Lens distinct, pas un Track P."""
+    p = tmp_path / "tracks.npz"
+    _write_npz(p, _base_meta(lens_rank=32, track="S structure-track"))
+    status, inst, _ = migrate_file(p, apply=True)
+    assert (status, inst) == (MIGRATED, "jlens")
+
+
+def test_instrument_contredit_par_le_manifeste_est_corrige(tmp_path: Path) -> None:
+    """Un instrument fige qui contredit ``track`` est reecrit, pas conserve.
+
+    C'est la reparation de la migration anterieure : sans ce chemin, les
+    fichiers deja estampilles resteraient ``DEJA`` avec la mauvaise valeur.
+    """
+    p = tmp_path / "contredit.npz"
+    _write_npz(p, _base_meta(lens_rank=32, track="P persona-4B",
+                             instrument="jlens", contract_version="v1.0.0"))
+    status, inst, _ = migrate_file(p, apply=True)
+    assert (status, inst) == (CORRIGE, "jlens_trackp")
+    # idempotent apres correction
+    assert migrate_file(p, apply=True)[0] == DEJA
