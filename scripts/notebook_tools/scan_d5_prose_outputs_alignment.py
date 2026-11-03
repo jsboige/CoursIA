@@ -244,7 +244,7 @@ MISSING_FROM_OUTPUTS_CELL_MIN = 3        # seuil "dense" (cell >=3 nombres prose
 # de sortie reelle ("Exercice a completer") donc ne peut rien verifier contre.
 # Falsifiable both-directions : un stub n'a pas de sortie reelle -> ne peut
 # pas deriver. Un stub qui produirait des nombres n'est PAS un stub (ses nombres
-# sont des sorties reelles). Verifie firsthand : DecPyMC-1 cell[25]->[26],
+# sont des sorties reelles). Verifie firsthand : DecPyMC-01 cell[25]->[26],
 # Pyro_RSA_Hyperbole cell[15]->[16] (corpus Probas : 112/1023 = 11% FP).
 _STUB_OUTPUT_RE = re.compile(
     r"(?:exercice|exercise|exerc[cí]icio).{0,20}(?:compl[eé]t|termin[eé])"
