@@ -581,7 +581,7 @@ Les carnets listés ci-dessous importent le module d'initialisation `tweety_init
 | `Tweety-10-MLN-Python.ipynb` | 1 | `from tweety_init import init_tweety` |
 | `Tweety-11-Causal-Python.ipynb` | 4 | `from tweety_init import init_tweety` |
 
-Les autres carnets Python de la série configurent la JVM dans leur propre cellule d'initialisation — c'est le cas de `Tweety-09-Preferences-Python.ipynb`, qui déroule la configuration JVM en ligne.
+Les autres carnets Python de la série configurent la JVM eux-mêmes, dans une cellule de code dédiée — c'est le cas de `Tweety-09-Preferences-Python.ipynb` (cellule 1, « Initialisation JVM Tweety + Outils Externes »). Bilan mesuré sur les 18 carnets `Tweety-*-Python.ipynb` de la série : **6** importent `tweety_init` (tableau ci-dessus), **11** configurent la JVM en ligne, et `Tweety-05d-Stable-Synthesis-Lean-Python.ipynb` n'utilise pas la JVM.
 
 > **À maintenir** : toute addition de carnet qui importe `tweety_init` doit être reportée dans ce tableau. La liste se remesure par recherche de la chaîne `from tweety_init import` dans les cellules de **code** des carnets de la série (les occurrences en prose ne comptent pas).
 
