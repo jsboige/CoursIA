@@ -13,19 +13,20 @@ Parse JSON des cellules de code, jamais un `grep` de chaîne : dans un `.ipynb`,
 | Carnet | lit `VLLM_API_KEY` | présente `CLAUDISH_PROXY_KEY` | paramètres vLLM natifs | classe |
 |---|---|---|---|---|
 | `GenAI/SemanticKernel/04-SemanticKernel-Filters-Observability.ipynb` | oui | **oui** | — | **migré** |
-| `GameTheory/GameTheory-16e-LLM-Players-Othman-Sandholm-Python.ipynb` | oui | **oui** | — | **migré** |
+| `GameTheory/GameTheory-16e-LLM-Players-Othman-Sandholm-Python.ipynb` | non | **oui** | — | **migré** |
 | `GenAI/RAG-et-Memoire-Semantique/09-KernelMemory-Multimodal.ipynb` | oui | non | `chat_template_kwargs` | exception — paramètres |
 | `GenAI/Texte/10b_Inference_Mechanics.ipynb` | oui | non | `chat_template_kwargs` | exception — paramètres |
 | `GenAI/Texte/10c_Long_Context_Strategies.ipynb` | oui | non | `chat_template_kwargs` | exception — paramètres |
-| `GameTheory/GameTheory-18c-Humour-Banc-Python.ipynb` | oui | non | `chat_template_kwargs` | exception — paramètres |
 | `GenAI/Texte/10_LocalLlama.ipynb` | oui | non | — | exception — sujet serving |
 | `GenAI/_research/e2e_quant_validation.ipynb` | oui | non | — | exception — sujet serving |
 
 ## Les trois classes, et le motif de chacune
 
-**1. Migrés.** `04-SemanticKernel-Filters-Observability` est la forme de référence : une clé dédiée à la façade, **sans repli** sur `OPENAI_API_KEY` (un repli enverrait le credential marchand au mauvais hôte — credential cross-provider interdit), et un commentaire qui dit que le recâblage de l'endpoint impose celui de la clé. Tout consommateur migrable doit prendre cette forme, pas une variante.
+**1. Migrés.** `04-SemanticKernel-Filters-Observability` est la forme de référence : une clé dédiée à la façade, **sans repli** sur `OPENAI_API_KEY` (un repli enverrait le credential marchand au mauvais hôte — credential cross-provider interdit), et un commentaire qui dit que le recâblage de l'endpoint impose celui de la clé. Tout consommateur migrable doit prendre cette forme, pas une variante. La colonne « lit `VLLM_API_KEY` » décrit l'état **courant** du code, pas l'historique de migration : `04-SK` garde une occurrence de l'ancienne variable à côté des trois `CLAUDISH_PROXY_KEY`, tandis que `16e-LLM-Players`, migré de bout en bout, ne lit plus que la nouvelle.
 
-**2. Exception — paramètres de serving.** Quatre carnets passent `chat_template_kwargs` au moteur. C'est le **sujet** de ces carnets, pas un détail d'implémentation : `10b_Inference_Mechanics` enseigne le contrôle du gabarit de conversation, `10c_Long_Context_Strategies` la tenue du contexte sous ce gabarit, `09-KernelMemory-Multimodal` et `18c-Humour-Banc` l'utilisent pour leur propre démonstration. La passerelle claudish ne relaie pas cette sémantique ; router ces carnets à travers elle **viderait la leçon de son objet** tout en laissant des sorties plausibles — exactement le workaround dégradé que [`sota-not-workaround.md`](../../.claude/rules/sota-not-workaround.md) interdit avant même C.2.
+**2. Exception — paramètres de serving.** Trois carnets passent `chat_template_kwargs` au moteur vLLM. C'est le **sujet** de ces carnets, pas un détail d'implémentation : `10b_Inference_Mechanics` enseigne le contrôle du gabarit de conversation, `10c_Long_Context_Strategies` la tenue du contexte sous ce gabarit, `09-KernelMemory-Multimodal` l'utilise pour sa propre démonstration. La passerelle claudish ne relaie pas cette sémantique ; router ces carnets à travers elle **viderait la leçon de son objet** tout en laissant des sorties plausibles — exactement le workaround dégradé que [`sota-not-workaround.md`](../../.claude/rules/sota-not-workaround.md) interdit avant même C.2.
+
+`GameTheory-18c-Humour-Banc-Python` passe aussi `chat_template_kwargs`, mais à **OpenRouter** (`OPENROUTER_API_KEY`, zéro occurrence de `VLLM_API_KEY` ou `CLAUDISH_PROXY_KEY`) : il n'appelle ni la pile vLLM ni la passerelle, et n'a donc pas sa place dans ce périmètre. Le motif pédagogique y est le même — le paramètre natif est le sujet — et il ne deviendrait consommateur qu'à la condition d'une migration OpenRouter→pile locale qui n'est pas à l'étude.
 
 **3. Exception — le sujet est le serving.** `10_LocalLlama` et `e2e_quant_validation` parlent du serveur vLLM et de sa quantization. On ne démontre pas une quantization à travers un proxy qui n'expose pas le modèle quantifié.
 
@@ -61,7 +62,7 @@ Le geste correctif n'appartient donc pas à une lane de ce dépôt : il se deman
 
 ## Condition de réouverture
 
-La fournée A redevient migrable — en **une seule PR pour les deux carnets**, jamais une PR par carnet — quand les trois conditions suivantes sont réunies :
+La fournée A redevient migrable — en **une seule PR pour les deux carnets**, jamais une PR par carnet — quand les quatre conditions suivantes sont réunies :
 
 1. la passerelle sert les modèles visés et les expose sur `/v1/models` ;
 2. elle relaie `chat_template_kwargs`, `seed` et `logprobs` sans les perdre (la liste est close et chiffrée par la mesure du 2026-10-07) ;
