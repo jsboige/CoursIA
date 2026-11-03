@@ -27,6 +27,7 @@ from scripts.ci.check_umbrella_freshness import (  # noqa: E402
     main,
     missing_paths,
     render_text,
+    resolution_hints,
     resolve_cited_path,
 )
 
@@ -217,6 +218,63 @@ def test_missing_paths_still_reports_a_genuinely_absent_series_path(tmp_path):
     _series_file(tmp_path, "SymbolicAI/Lean/Lean-01-Setup-Lean-Python.ipynb")
     assert missing_paths(["SymbolicAI/Lean/Lean-1-Setup.ipynb"], tmp_path) == [
         "SymbolicAI/Lean/Lean-1-Setup.ipynb"
+    ]
+
+
+# --------------------------------------------------------------------------
+# #24286 : un chemin cite relativement a la SOUS-SERIE est present, pas absent
+# --------------------------------------------------------------------------
+
+class _LsFiles:
+    """Sortie minimale de `git ls-files`, sans dependre d'un depot reel."""
+
+    def __init__(self, tracked, returncode=0):
+        self.stdout = "\n".join(tracked) + "\n"
+        self.stderr = ""
+        self.returncode = returncode
+
+
+def _fake_ls_files(monkeypatch, tracked, returncode=0):
+    monkeypatch.setattr(
+        "scripts.ci.check_umbrella_freshness.subprocess.run",
+        lambda *a, **k: _LsFiles(tracked, returncode),
+    )
+
+
+def test_resolution_hints_names_a_series_relative_citation(tmp_path, monkeypatch):
+    # Mesure #19309 : l'EPIC cite `ict/active_inference.py` relativement a la
+    # racine de la sous-serie ; le fichier est bien suivi par git.
+    _fake_ls_files(monkeypatch, [
+        "README.md",
+        "MyIA.AI.Notebooks/IIT/ICT-Series/ict/active_inference.py",
+    ])
+    assert resolution_hints(["ict/active_inference.py"], tmp_path) == {
+        "ict/active_inference.py":
+            "MyIA.AI.Notebooks/IIT/ICT-Series/ict/active_inference.py"
+    }
+
+
+def test_resolution_hints_stays_empty_when_git_fails(tmp_path, monkeypatch):
+    # Best-effort : une panne de git ne doit jamais lever, ni inventer un hint.
+    _fake_ls_files(monkeypatch, [], returncode=128)
+    assert resolution_hints(["ict/active_inference.py"], tmp_path) == {}
+
+
+def test_classify_appends_the_hint_without_touching_the_verdict():
+    refs = [_issue(15047, "OPEN")]
+    hint = {"ict/active_inference.py":
+            "MyIA.AI.Notebooks/IIT/ICT-Series/ict/active_inference.py"}
+    result = classify(refs, ["ict/active_inference.py"], path_hints=hint)
+    assert result["verdict"] == "FRESH"
+    assert any("present sous MyIA.AI.Notebooks/IIT/ICT-Series" in w
+               for w in result["warnings"])
+
+
+def test_classify_without_hints_keeps_the_warning_byte_identical():
+    # Controle negatif : sans hints, le message est celui d'avant, a l'octet.
+    result = classify([_issue(15047, "OPEN")], ["ict/active_inference.py"])
+    assert result["warnings"] == [
+        "cited path not found in the working tree: ict/active_inference.py"
     ]
 
 
