@@ -1171,7 +1171,7 @@ project:
     - "MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/10-Aspire-AppHost-Frontend.ipynb"
     - "MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/11-Aspire-Copilot-Harness-AppHost.ipynb"
     - "MyIA.AI.Notebooks/GenAI/Integrations-DotNet/CopilotSDK/01-GitHub-Copilot-SDK-Binding.ipynb"
-    - "MyIA.AI.Notebooks/GenAI/Integrations-DotNet/EFCore/01-EFCore-Requetes-Compilees.ipynb"
+    - "MyIA.AI.Notebooks/GenAI/Integrations-DotNet/01-EFCore-Requetes-Compilees.ipynb"
     - "MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Orleans/01-Orleans-Grains-Agents.ipynb"
     - "MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Orleans/02-Orleans-Aspire-CoHost.ipynb"
     - "MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Orleans/03-Orleans-Persistance-Redis.ipynb"
