@@ -954,12 +954,12 @@ class TestStubCellExerciseFilter:
     La prose d'enonce decrit le PROBLEME (donnees : maison 200 000 EUR,
     P=2%, prime 5 000), pas un RESULTAT. Le stub suivant ("Exercice a
     completer") n'a pas de sortie reelle -> ne peut rien verifier contre.
-    Verifie firsthand DecPyMC-1 cell[25]->[26], Pyro_RSA_Hyperbole
+    Verifie firsthand DecPyMC-01 cell[25]->[26], Pyro_RSA_Hyperbole
     cell[15]->[16]. Corpus Probas : 112/1023 findings = 11% FP de cette classe.
     """
 
     def test_exercise_stub_output_suppresses(self, tmp_path):
-        # Cas fondateur DecPyMC-1 : enonce d'exercice -> stub "a completer".
+        # Cas fondateur DecPyMC-01 : enonce d'exercice -> stub "a completer".
         # Les 3 nombres de l'enonce (200000, 0.02, 5000) sont des donnees,
         # pas des mesures -> MISSING_FROM_OUTPUTS supprime.
         nb = tmp_path / "stub.ipynb"
@@ -1072,7 +1072,7 @@ class TestBibliographicReferenceFilter:
     PAS des mesures calculees -- ce sont des identifiants de citation. Verifie
     firsthand : 38/10895 orphelins corpus (0.35%), concentres dans
     ML\\DataScienceWithAgents (textbook 12:2825-2830, 8+ notebooks) + Comptes
-    Rendus 25:536-538 (DecPyMC-2) + NumPy 585:357-362 + GameTheory.
+    Rendus 25:536-538 (DecPyMC-02) + NumPy 585:357-362 + GameTheory.
     """
 
     def test_helper_volume_match_with_context(self):
@@ -1141,7 +1141,7 @@ class TestBibliographicReferenceFilter:
 
     def test_helper_extended_journal_econometrica(self):
         # Econometrica est dans _BIBLIO_EXTENDED_CONTEXT_RE sans "Journal" dans
-        # le nom. DecPyMC-2 corpus : "Econometrica 32:122-136".
+        # le nom. DecPyMC-02 corpus : "Econometrica 32:122-136".
         text = "Theorie de l'utilite, Econometrica 32:122-136 (1964)."
         assert mod._is_bibliographic_reference(32.0, text) is True
         assert mod._is_bibliographic_reference(122.0, text) is True
@@ -1159,7 +1159,7 @@ class TestBibliographicReferenceFilter:
         assert mod._is_bibliographic_reference(15.0, text) is False
 
     def test_integration_comptes_rendus_suppressed(self, tmp_path):
-        # Cas fondateur DecPyMC-2 cell[23] : prose cite "Comptes Rendus
+        # Cas fondateur DecPyMC-02 cell[23] : prose cite "Comptes Rendus
         # 25:536-538" -- 25, 536, 538 sont des identifiants de citation,
         # aucun output ne peut les "verifier" -> MISSING_FROM_OUTPUTS supprime.
         nb = tmp_path / "biblio.ipynb"
