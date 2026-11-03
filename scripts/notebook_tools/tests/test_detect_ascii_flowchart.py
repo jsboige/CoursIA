@@ -632,7 +632,7 @@ class TestJsonModeWarningFlood:
 #   PR #12637 : 29 findings / 21 files, re-mesure 2026-08-24 sur le merge-ref
 #                  reconstruit (origin/main 0f4b5835fa + conversion Mermaid) :
 #                  la conversion des 3 flowcharts DecInfer-01 / DecInfer-07 /
-#                  DecPyMC-6 retire exactement 1 finding par fichier (aucun
+#                  DecPyMC-06 retire exactement 1 finding par fichier (aucun
 #                  des 3 n'etait dans les +9 du fix multi-colonnes). Le 20/15
 #                  de la branche originale etait mesure sur un main
 #                  pre-#12729 (23/18) : obsolete au moment du rebase.

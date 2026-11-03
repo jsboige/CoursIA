@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Check Lean i18n sibling-pair body byte-identity (EPIC #4980).
 
-Convention #4980 (ratified 2026-07-04, cf ``.claude/rules/code-style.md`` §Lean
+Convention #4980 (ratified 2026-07-04, cf ``.claude/rules/lean-i18n.md`` §Lean
 i18n): a French-canonical ``Foo.lean`` may have an English mirror ``Foo_en.lean``.
 Only the **docstrings** (``/-- ... -/``, ``/- ... -/``) and **comments**
 (``-- ...``) differ between the two files; the code **body** — signatures,
@@ -80,7 +80,7 @@ from collections import Counter
 from pathlib import Path
 
 # Trees out of scope for the #4980 convention (vendored Mathlib, external lakes,
-# third-party fixtures) — cf code-style.md §Lean i18n "Hors scope".
+# third-party fixtures) — cf lean-i18n.md §Lean i18n "Hors scope".
 EXCLUDE_PARTS = frozenset(
     {".lake", "_peters", "reference_docs", "agent_tests", ".git", ".claude",
      "node_modules", "foundry-lib"}

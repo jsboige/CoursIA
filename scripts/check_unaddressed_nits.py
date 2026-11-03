@@ -113,11 +113,32 @@ REPO = "jsboige/CoursIA"
 BOT_LOGINS = {"github-actions", "codecov", "dependabot", "copilot-pull-request-reviewer"}
 
 # Prefixes de tags utilises par les agents du cluster (protocole dashboard/PR).
+# Consommee par classify (exemption) ET can_lift (voie 3 de B.0) : la
+# constante reste stricte -- n'y ajouter que des tags de PROTOCOLE pur. Un
+# tag ici n'est pas seulement « pas un nit », il est aussi « pas une levee »
+# (can_lift l. 41xx ecarte le corps du nommage de suivi) : ce double effet
+# doit rester voulu, jamais accidentel.
 AGENT_PREFIXES = (
     "[PART-OF-EPIC", "[GRAIN", "[CLAIMED", "[DONE", "[INFO", "[DISPATCH",
     "[ACK", "[RELEASED", "[OVERRIDE", "[MERGED", "[WARN", "[ERROR", "[ASK",
     "[REPLY", "[PROPOSAL", "[BLOCKED", "[ESCALATION", "[DELIVERED",
 )
+
+# `[ACTION` et `[DIAG` (taxonomie d'emission P1 de #15511, cf COMMENT_TAG_RE
+# ci-dessous) servent la CLASSIFICATION, pas la levee. Mesure fondatrice
+# (po-2028:CoursIA, 2026-11-02 13:30Z) : sans eux, un compte-rendu CONFORME a
+# la regle sortait de l'exemption de classify (l. 44xx) et tombait dans la
+# branche CRLF/HUMAN des qu'il etait poste par un transport Windows -- le
+# compte-rendu d'une action devenait un nit bloquant la PR qu'il documente.
+# Reserve NanoClaw #24243 : les ajouter a AGENT_PREFIXES aurait un second
+# effet, invisible au diff : can_lift lit la meme constante pour ecarter les
+# narrations de protocole des levees, or un compte-rendu tague [ACTION] qui
+# NOMME une issue de suivi (« suivi ouvert : #N ») est un report delibere --
+# exactement le geste que la voie 3 de B.0 credite (collect_followup_lifts,
+# #13495/#14218 : l'auteur de la PR y est nommeur valide). L'extension vit
+# donc dans cette constante, consommee uniquement par classify ; can_lift
+# reste sur AGENT_PREFIXES.
+CLASSIFY_AGENT_PREFIXES = AGENT_PREFIXES + ("[ACTION", "[DIAG")
 
 # #15511 (P1) -- taxonomie d'emission des commentaires agent, premiere
 # ligne NON VIDE du corps : [ACTION] (le commentaire porte une action --
@@ -1550,13 +1571,74 @@ _GLYPH_DETERMINER_PRECEDER_RE = re.compile(
 )
 _SEVERITY_GLYPH_CLASS_RE = re.compile(f"[{''.join(SEVERITY_GLYPHS)}]")
 
+# #22911 — Position J (D) REPRISE : le vocabulaire de reprise d'une réserve
+# (ce qu'une lane écrit en répondant point par point) n'était pas dans le set
+# de méta-noms (A). Mesuré : « **Réponse a la réserve 🟡 de la review
+# `clusterManager-Myia` du 2026-10-25T16:47:21Z** » — le préfixe porte
+# `réserve`, pas `marqueur` : rien ne neutralisait, et la réponse qui
+# DOCUMENTE la levée était classée réserve neuve (rc=1 auto-infligé).
+#
+# DEUX conditions cumulatives, et la seconde est mesurée :
+#   (1) un MARQUEUR DE RÉPONSE sur la ligne (« Réponse à », « Response to »)
+#       — c'est ce qui distingue la lane qui RÉPOND d'un reviewer qui ÉMET ;
+#   (2) un nom de reprise ADJACENT au glyphe (au plus quelques caractères de
+#       remplissage entre le nom et le glyphe).
+# La condition (1) est indispensable : sans elle, le seul nom adjacent
+# (`réserve 🟡`) éteindait des RÉSERVES RÉELLES — mesuré sur la suite de
+# l'organe, 5 fixtures rotent (réponses de reviewer « APPROVE avec 1
+# réserve 🟡 », « **Réserve 🟡 — ...** », « Je lève ma propre reserve 🟡 »).
+# Un reviewer qui émet « réserve 🟡 » et une lane qui REPOND à une réserve
+# partagent le mot ; seul le marqueur de réponse les sépare.
+_GLYPH_REPLY_MARKER_RE = re.compile(r"(?i)\b(?:r[ée]ponses?|responses?)\b")
+_GLYPH_RESPONSE_NOUN_RE = re.compile(
+    r"(?i)\b(?:r[ée]serves?|r[ée]ponses?|remarques?|observations?|points?|items?|"
+    r"responses?|concerns?)\b[\s:,'’\-]{0,12}$"
+)
+# #22911 — SURFACE CONNUE, DELIBEREMENT LAISSEE OUVERTE (review du 2026-11-02,
+# point 2) : la regle (D) neutralise un glyphe ADJACENT a un nom de reprise
+# des lors que la ligne porte un marqueur de reponse. Une reserve NEUVE
+# emise DANS une reponse (« Reponse au point 🟡 : a corriger avant merge »)
+# partage cette forme et disparait donc de l'analyse. La regle (D) ne peut
+# pas distinguer une levee d'une levee-sans-levee : le discriminant serait
+# la queue semantique de la ligne (« traitee » vs « a corriger »), ce que
+# l'organe refuse de faire (un mot de contexte ne prouve pas une
+# intention). PARADE : une reserve neuve s'emet dans un commentaire
+# DISTINCT, sans marqueur de reponse sur la ligne. La surface est
+# verrouillee par un test (`test_22911_surface_connue_reserve_neuve_dans_reponse`
+# dans
+# scripts/tests/test_check_unaddressed_nits_22911.py) pour qu'un changement
+# du comportement soit visible.
+# #22911 — Position J (E) LIBELLE EN GRAS : une étiquette de réponse point par
+# point ouvre la ligne en gras et referme son glyphe entre parenthèses —
+# « **Live-read freshness (🟡)** : ... ». Le glyphe y désigne l'item nommé,
+# il ne l'émet pas : l'émission Hermes OUVRE la ligne, elle ne se cache pas
+# dans un libellé refermé. Trois conditions cumulatives : le libellé gras
+# s'ouvre en tête de ligne, il reste ouvert, et le glyphe ferme la
+# parenthèse.
+_GLYPH_LABEL_PAREN_RE = re.compile(r"\(\s*$")
+
+
+def _is_label_paren_mention(prefix: str, body: str, m: re.Match[str]) -> bool:
+    """Le glyphe referme un libellé en gras ouvert en tête de ligne (#22911 E)."""
+    stripped = prefix.lstrip()
+    if not stripped.startswith("**"):
+        return False
+    if stripped.count("**") % 2 == 0:
+        return False
+    if not _GLYPH_LABEL_PAREN_RE.search(prefix):
+        return False
+    return body[m.end():m.end() + 1] == ")"
+
 
 def _strip_glyphe_mentions(body: str) -> str:
     """Neutralise les glyphes de sévérité en position de mention (Position J, #14277).
 
     Chaque glyphe (🟡/🔴) dont la ligne porte un méta-nom le nommant (A),
-    qui est un item d'énumération `,`/`+` (B), ou qui est immédiatement
-    précédé d'un déterminant/possessif — un référent, (C) #16688 — est
+    qui est un item d'énumération `,`/`+` (B), qui est immédiatement
+    précédé d'un déterminant/possessif — un référent, (C) #16688 — qui est
+    nommé par un mot de reprise adjacent sur une ligne qui porte un marqueur
+    de réponse — une réponse, (D) #22911 — ou qui referme un libellé en gras
+    ouvert en tête de ligne (E) #22911, est
     remplacé par une espace : c'est une mention, pas une émission. Le glyphe
     en tête de ligne (en-tête de verdict Hermes) reste vivant.
     """
@@ -1566,7 +1648,10 @@ def _strip_glyphe_mentions(body: str) -> str:
         prefix = body[line_start:m.start()]
         if (_GLYPH_META_NOUN_RE.search(prefix)
                 or _GLYPH_ENUM_PRECEDER_RE.search(prefix)
-                or _GLYPH_DETERMINER_PRECEDER_RE.search(prefix)):
+                or _GLYPH_DETERMINER_PRECEDER_RE.search(prefix)
+                or (_GLYPH_REPLY_MARKER_RE.search(prefix)
+                    and _GLYPH_RESPONSE_NOUN_RE.search(prefix))
+                or _is_label_paren_mention(prefix, body, m)):
             out[m.start()] = " "
     return "".join(out)
 
@@ -4409,7 +4494,7 @@ def classify(author: str, body: str) -> str | None:
         return None  # verdict humain positif (APPROVE / APPROVED / LGTM) SANS reserve vivante : equivalent state:APPROVED
     if not live_concern and has_live_marker(body, POSITIVE_MARKERS):
         return None  # approbation sans reserve vivante : la review conclut, ne reserve pas
-    if stripped.startswith(AGENT_PREFIXES):
+    if stripped.startswith(CLASSIFY_AGENT_PREFIXES):
         # Tag de protocole agent : informatif, pas un nit — sauf s'il porte une reserve.
         return "BOT-CONCERN" if live_concern else None
     # #19810 — proxy CRLF serre : un corps CRLF ne tient HUMAN que s'il porte
