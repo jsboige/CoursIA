@@ -30,6 +30,32 @@ import urllib.request
 import zipfile
 from typing import Dict, List, Optional
 
+
+def _ensure_unicode_marks_printable() -> None:
+    """Garantit que les marques ✓/✗ du resume peuvent s'ecrire sur stdout.
+
+    Sous Windows, un stdout redirige vers un pipe utilise l'encodage ANSI
+    (cp1252) : le resume final leve alors ``UnicodeEncodeError``, le processus
+    meurt avant de l'imprimer et l'appelant ne recoit qu'un traceback. On
+    bascule sur UTF-8, qui est l'encodage du projet (carnets, sorties Jupyter),
+    uniquement lorsque l'encodage courant ne sait pas representer ces marques.
+    """
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is None:
+            continue
+        encoding = getattr(stream, "encoding", None) or "utf-8"
+        try:
+            "✓".encode(encoding)
+        except (UnicodeEncodeError, LookupError):
+            try:
+                reconfigure(encoding="utf-8", errors="replace")
+            except (ValueError, OSError):
+                pass
+
+
+_ensure_unicode_marks_printable()
+
 try:
     from tqdm.auto import tqdm
     HAS_TQDM = True
