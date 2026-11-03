@@ -43,6 +43,7 @@ fichier en vol ferait rougir ce test pour une raison sans rapport.
 
 import contextlib
 import io
+import json
 import os
 import pathlib
 import re
@@ -220,6 +221,13 @@ def _fake_runner(calls, api_fail=False, write_fail=False):
     en etre extrait.
     """
 
+    # Le faux `gh` tient un **etat** : un commentaire cree est relu par la
+    # lecture suivante. L'organe verifie l'ecriture apres coup (concurrence
+    # des workflows, review ai-01 5752268155) : sans etat, un succes ne
+    # serait jamais constate.
+    comments = []
+    next_id = 4242
+
     def runner(cmd, **kwargs):
         calls.append(" ".join(cmd))
         method = ""
@@ -230,17 +238,29 @@ def _fake_runner(calls, api_fail=False, write_fail=False):
                 return _Proc(
                     '{"message":"API rate limit exceeded for installation.","status":"403"}',
                     1, "boom")
-            return _Proc('{"id": 4242}', 0)
+            body = ""
+            if "-f" in cmd:
+                body = cmd[cmd.index("-f") + 1].split("=", 1)[1]
+            comments.append({
+                "id": next_id, "body": body,
+                "user": {"login": "github-actions[bot]"},
+            })
+            return _Proc(json.dumps({"id": next_id}), 0)
         if method == "PATCH":
             if write_fail:
                 return _Proc("", 1, "boom")
-            return _Proc('{"id": 4242}', 0)
+            body = cmd[cmd.index("-f") + 1].split("=", 1)[1]
+            target = next(e for e in cmd if "/comments/" in e).split("/")[-1]
+            for c in comments:
+                if c["id"] == int(target):
+                    c["body"] = body
+            return _Proc(json.dumps({"id": int(target)}), 0)
         if api_fail:
             return _Proc(
                 '{"message":"API rate limit exceeded for installation.","status":"403"}',
                 1, "boom")
         # lecture des commentaires : forme `--slurp` (liste de pages)
-        return _Proc("[[]]", 0)
+        return _Proc(json.dumps([comments]), 0)
 
     return runner
 

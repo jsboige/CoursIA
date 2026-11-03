@@ -22,6 +22,28 @@ Ce module remplace le create-only par un **upsert de section** :
   commentaire ; voir le garde-fou de test
   ``scripts/ci/tests/test_advisory_sticky.py``.
 
+**Ecritures concurrentes** (reserve ai-01, review 5752268155, 2026-11-03) : les
+six workflows ont chacun leur propre groupe ``concurrency``, donc ils tournent
+**en parallele** sur un meme ``synchronize``. Une lecture-modification-ecriture
+sans verrou produit deux defauts :
+
+1. deux runs lisent l'absence de commentaire et font chacun un POST -> deux
+   commentaires collants, dont un garde une section perimee ;
+2. deux runs lisent le meme corps et font chacun un PATCH -> le dernier ecrit,
+   et la section de l'autre **disparait** jusqu'au run suivant de cet organe —
+   un avertissement qui n'est pas un succes pourrait ne jamais s'afficher.
+
+Le contrat tient donc par trois mecaniques, sans verrou externe :
+
+* **verifier apres ecriture** : relire et controler que l'etat attendu est
+  constate ; sinon **reessayer** (au plus ``MAX_ATTEMPTS`` fois, avec un
+  delai aleatoire), puis echouer franchement (``::warning::``) ;
+* **reparer les doublons** : si plusieurs commentaires du bot portent le
+  marqueur, les sections sont fusionnees dans l'**id max** et les autres sont
+  reecrits en une ligne de **renvoi** (rien n'est supprime) ;
+* le **succes** d'un organe ne parle toujours pas : le retrait de section suit
+  la meme lecture-modification-ecriture verifiee.
+
 Les appels ``gh`` passent par un ``runner`` injectable (pattern
 ``guard_comment_upsert``) pour que les tests rejouent le corpus reel sans
 reseau.
@@ -31,9 +53,9 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import random
 import re
 import sys
-from datetime import datetime, timezone
 from typing import Callable, Optional
 
 # Meme contrainte que ``guard_comment_upsert.GUARD_BOT_LOGINS`` : les seuls
@@ -45,6 +67,12 @@ GUARD_BOT_LOGINS = frozenset({"github-actions", "github-actions[bot]"})
 # Le marqueur du commentaire unique. Un PR porte au plus UN commentaire qui
 # le contient : c'est ce qui rend le regroupement verifiable de l'exterieur.
 MARKER = "<!-- coursia:advisory-sticky -->"
+
+#: Marqueur du commentaire **renvoi** : un doublon fusionne qui ne porte plus
+#: de section et ne se presente plus comme collant (le marqueur principal lui
+#: est retire), mais qui n'est **pas supprime** — son contenu a ete porte par
+#: le commentaire canonique.
+FORWARD_MARKER = "<!-- coursia:advisory-sticky:forwarded -->"
 
 # Encadrement d'une section d'organe.
 _SECTION_RE = re.compile(
@@ -64,10 +92,26 @@ EMPTY_NOTE = (
 DEFAULT_TIMEOUT = 15
 DEFAULT_REPO = "jsboige/CoursIA"
 
+#: Nombre maximal de tours lecture-modification-ecriture-verification.
+MAX_ATTEMPTS = 3
+
+#: Fourchette du delai aleatoire entre deux tentatives (secondes). Le jitter
+#: est ce qui evite que deux workflows qui se sont percutes rejouent en phase.
+RETRY_JITTER = (0.4, 1.6)
+
 
 def _default_runner(cmd, **kwargs):  # pragma: no cover - trivial default
     import subprocess
     return subprocess.run(cmd, **kwargs)
+
+
+def _sleep(seconds):  # pragma: no cover - trivial default
+    import time
+    time.sleep(seconds)
+
+
+def _jitter_delay() -> float:
+    return random.uniform(*RETRY_JITTER)
 
 
 # --------------------------------------------------------------------------
@@ -114,6 +158,21 @@ def strip_sections(body: str) -> str:
     return _SECTION_RE.sub("", body or "")
 
 
+def forward_body(canonical_id: int) -> str:
+    r"""Corps de renvoi d'un doublon fusionne.
+
+    Le marqueur principal est **retire** : ce commentaire ne se presente plus
+    comme un collant (le PR n'en porte plus qu'un), mais il **n'est pas
+    supprime** et son contenu a ete porte par le commentaire canonique.
+    """
+    return (
+        f"{FORWARD_MARKER}\n\n"
+        f"*Ce commentaire a ete fusionne dans le commentaire collant "
+        f"canonique (id {canonical_id}) : ses sections y sont integrees. "
+        f"Rien n'est efface.*\n"
+    )
+
+
 # --------------------------------------------------------------------------
 # API GitHub
 # --------------------------------------------------------------------------
@@ -141,6 +200,22 @@ def list_comments(pr: int, repo: str, runner: Optional[Callable] = None,
     return [row for page in data for row in page]
 
 
+def _is_bot(row: dict) -> bool:
+    login = ((row.get("user") or {}).get("login") or "")
+    return login in GUARD_BOT_LOGINS
+
+
+def sticky_comments(comments: list) -> list:
+    r"""Commentaires DU BOT portant le marqueur collant, tries par id."""
+    out = []
+    for row in comments or []:
+        body = row.get("body") or ""
+        cid = row.get("id")
+        if MARKER in body and _is_bot(row) and isinstance(cid, int):
+            out.append(row)
+    return sorted(out, key=lambda r: r["id"])
+
+
 def find_sticky_id(comments: list, marker: str = MARKER) -> Optional[int]:
     r"""Dernier commentaire DU BOT portant le marqueur (id max).
 
@@ -151,12 +226,18 @@ def find_sticky_id(comments: list, marker: str = MARKER) -> Optional[int]:
     best: Optional[int] = None
     for c in comments or []:
         body = c.get("body") or ""
-        login = ((c.get("user") or {}).get("login") or "")
-        if marker in body and login in GUARD_BOT_LOGINS:
+        if marker in body and _is_bot(c):
             cid = c.get("id")
             if isinstance(cid, int) and (best is None or cid > best):
                 best = cid
     return best
+
+
+def _body_of(comments: list, cid: Optional[int]) -> str:
+    for c in comments or []:
+        if c.get("id") == cid:
+            return c.get("body") or ""
+    return ""
 
 
 def _patch_comment(comment_id: int, body: str, repo: str, runner: Callable,
@@ -198,20 +279,87 @@ def _create_comment(pr: int, body: str, repo: str, runner: Callable,
     return {"action": "created", "comment_id": cid}
 
 
-def upsert_section(organ: str, body: str, pr: int, repo: str = DEFAULT_REPO,
-                   runner: Optional[Callable] = None,
-                   timeout: int = DEFAULT_TIMEOUT) -> dict:
-    r"""Ecrit (ou reecrit) la section d'un organe dans le commentaire unique."""
-    _validate_organ(organ)
+# --------------------------------------------------------------------------
+# Concurrence : reparation des doublons, verification apres ecriture
+# --------------------------------------------------------------------------
+
+def merge_duplicates(pr: int, repo: str = DEFAULT_REPO,
+                     runner: Optional[Callable] = None,
+                     timeout: int = DEFAULT_TIMEOUT) -> dict:
+    r"""Fusionne les commentaires collants en doublon dans l'**id max**.
+
+    Deux workflows en parallele peuvent chacun creer un commentaire : le PR
+    en porte alors deux, dont un garde une section perimee. Ici, toutes les
+    sections sont reunies dans le commentaire d'**id max** (canonique), et les
+    autres sont reecrits en une ligne de **renvoi** — **rien n'est supprime**,
+    et le PR n'en porte plus qu'un collant.
+    """
     if runner is None:  # pragma: no cover - trivial default
         runner = _default_runner
     comments = list_comments(pr, repo, runner, timeout)
+    stickies = sticky_comments(comments)
+    if len(stickies) <= 1:
+        return {"action": "noop",
+                "comment_id": stickies[0]["id"] if stickies else None,
+                "merged": []}
+    canonical = stickies[-1]
+    merged = parse_sections(canonical.get("body") or "")
+    for row in stickies:
+        if row["id"] == canonical["id"]:
+            continue
+        for name, text in parse_sections(row.get("body") or "").items():
+            # Le canonique gagne en cas de conflit : son contenu est le plus
+            # recent ; le doublon n'apporte que ce qui manque.
+            merged.setdefault(name, text)
+    _patch_comment(canonical["id"], render(merged), repo, runner, timeout)
+    others = []
+    for row in stickies:
+        if row["id"] == canonical["id"]:
+            continue
+        _patch_comment(row["id"], forward_body(canonical["id"]), repo, runner,
+                       timeout)
+        others.append(row["id"])
+    return {"action": "merged", "comment_id": canonical["id"], "merged": others}
+
+
+def _verify_upsert(organ: str, body: str, pr: int, repo: str,
+                    runner: Callable, timeout: int) -> bool:
+    r"""L'ecriture est-elle **constatee** dans l'etat attendu ?
+
+    On relit le commentaire canonique : la section doit y porter exactement
+    le corps ecrit. Une section **absente** apres un POST concurrent est un
+    echec d'ecriture, pas un succes.
+    """
+    want = (body or "").strip()
+    comments = list_comments(pr, repo, runner, timeout)
     cid = find_sticky_id(comments)
-    existing_body = ""
-    for c in comments:
-        if c.get("id") == cid:
-            existing_body = c.get("body") or ""
-            break
+    if cid is None:
+        return False
+    sections = parse_sections(_body_of(comments, cid))
+    if not want:
+        return organ not in sections
+    return sections.get(organ, "") == want
+
+
+def _verify_clear(organ: str, pr: int, repo: str, runner: Callable,
+                  timeout: int) -> bool:
+    r"""Le retrait est-il constate (la section a disparu partout) ?"""
+    comments = list_comments(pr, repo, runner, timeout)
+    for row in sticky_comments(comments):
+        if organ in parse_sections(row.get("body") or ""):
+            return False
+    return True
+
+
+# --------------------------------------------------------------------------
+# Operations
+# --------------------------------------------------------------------------
+
+def _upsert_attempt(organ: str, body: str, pr: int, repo: str, runner: Callable,
+                    timeout: int) -> dict:
+    comments = list_comments(pr, repo, runner, timeout)
+    cid = find_sticky_id(comments)
+    existing_body = _body_of(comments, cid)
     sections = parse_sections(existing_body)
     sections[organ] = (body or "").strip()
     new_body = render(sections)
@@ -222,35 +370,87 @@ def upsert_section(organ: str, body: str, pr: int, repo: str = DEFAULT_REPO,
     return _create_comment(pr, new_body, repo, runner, timeout)
 
 
-def clear_section(organ: str, pr: int, repo: str = DEFAULT_REPO,
-                  runner: Optional[Callable] = None,
-                  timeout: int = DEFAULT_TIMEOUT) -> dict:
-    r"""Retire la section d'un organe qui redevient vert.
-
-    Le commentaire n'est **jamais supprime** : il est reecrit en place avec
-    l'etat « plus aucun avertissement consultatif » (#15372 : pas
-    d'effacement d'historique).
-    """
-    _validate_organ(organ)
-    if runner is None:  # pragma: no cover - trivial default
-        runner = _default_runner
+def _clear_attempt(organ: str, pr: int, repo: str, runner: Callable,
+                   timeout: int) -> dict:
     comments = list_comments(pr, repo, runner, timeout)
     cid = find_sticky_id(comments)
     if cid is None:
         # Rien a retirer : l'organe n'a jamais eu d'avertissement -> le
         # succes ne parle pas. Aucun commentaire n'est cree.
         return {"action": "silent", "comment_id": None}
-    existing_body = ""
-    for c in comments:
-        if c.get("id") == cid:
-            existing_body = c.get("body") or ""
-            break
+    existing_body = _body_of(comments, cid)
     sections = parse_sections(existing_body)
     if organ not in sections:
         return {"action": "unchanged", "comment_id": cid}
     del sections[organ]
-    new_body = render(sections)
-    return _patch_comment(cid, new_body, repo, runner, timeout)
+    return _patch_comment(cid, render(sections), repo, runner, timeout)
+
+
+def upsert_section(organ: str, body: str, pr: int, repo: str = DEFAULT_REPO,
+                   runner: Optional[Callable] = None,
+                   timeout: int = DEFAULT_TIMEOUT,
+                   attempts: int = MAX_ATTEMPTS,
+                   sleep: Optional[Callable] = None) -> dict:
+    r"""Ecrit (ou reecrit) la section d'un organe dans le commentaire unique.
+
+    L'ecriture est **verifiee** : apres chaque tour, l'etat est relu ; s'il
+    n'est pas celui attendu (section ecrasee par un ecrivain concurrent,
+    doublon cree en parallele), on **retente** avec un delai aleatoire, au
+    plus ``attempts`` fois. A defaut de verification, l'echec est remonte :
+    un succes ne se rend pas sur une ecriture non constatee.
+    """
+    _validate_organ(organ)
+    if runner is None:  # pragma: no cover - trivial default
+        runner = _default_runner
+    if sleep is None:
+        sleep = _sleep
+    for attempt in range(1, max(1, attempts) + 1):
+        out = _upsert_attempt(organ, body, pr, repo, runner, timeout)
+        merged = merge_duplicates(pr, repo, runner, timeout)
+        if merged.get("action") == "merged":
+            out = dict(out)
+            out["merged"] = merged.get("merged", [])
+        if _verify_upsert(organ, body, pr, repo, runner, timeout):
+            out["verified"] = True
+            return out
+        if attempt < attempts:
+            sleep(_jitter_delay())
+    raise RuntimeError(
+        f"section {organ!r} non constatee apres {attempts} tentative(s) "
+        f"(ecriture concurrente ?) -- succes refuse")
+
+
+def clear_section(organ: str, pr: int, repo: str = DEFAULT_REPO,
+                  runner: Optional[Callable] = None,
+                  timeout: int = DEFAULT_TIMEOUT,
+                  attempts: int = MAX_ATTEMPTS,
+                  sleep: Optional[Callable] = None) -> dict:
+    r"""Retire la section d'un organe qui redevient vert.
+
+    Le commentaire n'est **jamais supprime** : il est reecrit en place avec
+    l'etat « plus aucun avertissement consultatif » (#15372 : pas
+    d'effacement d'historique). Comme l'ecriture, le retrait est **verifie**
+    (la section doit avoir disparu) et rejoue en cas de conflit concurrent.
+    """
+    _validate_organ(organ)
+    if runner is None:  # pragma: no cover - trivial default
+        runner = _default_runner
+    if sleep is None:
+        sleep = _sleep
+    for attempt in range(1, max(1, attempts) + 1):
+        out = _clear_attempt(organ, pr, repo, runner, timeout)
+        merged = merge_duplicates(pr, repo, runner, timeout)
+        if merged.get("action") == "merged":
+            out = dict(out)
+            out["merged"] = merged.get("merged", [])
+        if _verify_clear(organ, pr, repo, runner, timeout):
+            out["verified"] = True
+            return out
+        if attempt < attempts:
+            sleep(_jitter_delay())
+    raise RuntimeError(
+        f"retrait de la section {organ!r} non constate apres {attempts} "
+        f"tentative(s) (ecriture concurrente ?) -- succes refuse")
 
 
 def _validate_organ(organ: str) -> None:

@@ -33,12 +33,22 @@ class FakeProc:
         self.stderr = stderr
 
 
+class SharedStore:
+    """Etat partage par deux runners : deux ecrivains concurrents ecrivent
+    dans le meme fil de commentaires."""
+
+    def __init__(self, comments=None):
+        self.comments = list(comments or [])
+
+
 class FakeRunner:
     """Enregistre les appels `gh` et rejoue des reponses script."""
 
-    def __init__(self, comments=None, post_id=4242):
+    def __init__(self, comments=None, post_id=4242, store=None):
         self.calls = []
-        self.comments = list(comments or [])
+        self.store = store
+        self.comments = (store.comments if store is not None
+                         else list(comments or []))
         self.post_id = post_id
 
     def __call__(self, cmd, **kwargs):
@@ -70,6 +80,65 @@ def bot_comment(cid, body):
 
 def human_comment(cid, body):
     return {"id": cid, "body": body, "user": {"login": "jsboige"}}
+
+
+class InterleavingRunner(FakeRunner):
+    """Runner A ; le runner B (le **second ecrivain**) agit au moment de
+    l'ecriture, sur le meme etat partage.
+
+    Les six workflows ont chacun leur groupe ``concurrency`` : sur un meme
+    ``synchronize`` ils tournent en parallele. Deux defauts sont simules :
+
+    * ``concurrent_section`` : B cree son commentaire collant juste apres
+      notre POST -> deux commentaires collants ;
+    * ``clobber_section`` : B ecrase notre ecriture et **perd** la section
+      que nous venions d'ecrire (mise a jour perdue).
+    """
+
+    def __init__(self, other, store, concurrent_section=None,
+                 concurrent_body="contenu de l'autre organe",
+                 clobber_section=None, clobber_always=False):
+        super().__init__(store=store)
+        self.other = other
+        self.concurrent_section = concurrent_section
+        self.concurrent_body = concurrent_body
+        self.clobber_section = clobber_section
+        self.clobber_always = clobber_always
+        self._post_done = False
+        self._patch_done = False
+
+    def __call__(self, cmd, **kwargs):
+        method = ""
+        if "--method" in cmd:
+            method = cmd[cmd.index("--method") + 1]
+        if method == "POST" and not self._post_done and self.concurrent_section:
+            self._post_done = True
+            out = super().__call__(cmd, **kwargs)
+            self.other(
+                ["gh", "api", "--method", "POST",
+                 "repos/jsboige/CoursIA/issues/123/comments",
+                 "-f", f"body={a_s.render({self.concurrent_section: self.concurrent_body})}"],
+                capture_output=True, text=True, timeout=15)
+            return out
+        if method in ("POST", "PATCH") and self.clobber_section and (
+                self.clobber_always or not self._patch_done):
+            self._patch_done = True
+            out = super().__call__(cmd, **kwargs)
+            body = cmd[cmd.index("-f") + 1].split("=", 1)[1]
+            if method == "PATCH":
+                target = next(e for e in cmd if "/comments/" in e).split("/")[-1]
+                target_id = int(target)
+            else:
+                target_id = self.post_id
+            sections = a_s.parse_sections(body)
+            sections.pop(self.clobber_section, None)
+            self.other(
+                ["gh", "api", "--method", "PATCH",
+                 f"repos/jsboige/CoursIA/issues/comments/{target_id}",
+                 "-f", f"body={a_s.render(sections)}"],
+                capture_output=True, text=True, timeout=15)
+            return out
+        return super().__call__(cmd, **kwargs)
 
 
 # --------------------------------------------------------------------------
@@ -220,3 +289,71 @@ def test_echec_gh_remonte():
 
     with pytest.raises(RuntimeError):
         a_s.upsert_section("organ-a", "x", 1, runner=FailingRunner())
+
+
+# --------------------------------------------------------------------------
+# Ecritures concurrentes (reserve ai-01, review 5752268155)
+# --------------------------------------------------------------------------
+
+def test_deux_posts_concurrents_sont_fusionnes_dans_le_canonique():
+    """Deux workflows en parallele ne doivent pas laisser deux collants."""
+    store = SharedStore()
+    other = FakeRunner(store=store, post_id=4243)
+    runner = InterleavingRunner(other, store, concurrent_section="organ-b",
+                                concurrent_body="avertissement B")
+    out = a_s.upsert_section("organ-a", "avertissement A", 123, runner=runner,
+                              sleep=lambda _s: None)
+    assert out["verified"] is True
+    stickies = [c for c in runner.comments if a_s.MARKER in c["body"]]
+    assert len(stickies) == 1, "le PR ne doit porter qu'un commentaire collant"
+    sections = a_s.parse_sections(stickies[0]["body"])
+    assert sections["organ-a"] == "avertissement A"
+    assert sections["organ-b"] == "avertissement B"
+    # le doublon n'est pas supprime : il devient un renvoi vers le canonique
+    others = [c for c in runner.comments if c is not stickies[0]]
+    assert len(others) == 1
+    assert a_s.FORWARD_MARKER in others[0]["body"]
+    assert a_s.MARKER not in others[0]["body"]
+
+
+def test_une_section_ecraseee_par_un_patch_concurrent_est_reprise():
+    """Mise a jour perdue : la verification relit et reapplique."""
+    store = SharedStore()
+    other = FakeRunner(store=store, post_id=4243)
+    runner = InterleavingRunner(other, store, clobber_section="organ-a")
+    out = a_s.upsert_section("organ-a", "avertissement A", 123, runner=runner,
+                              sleep=lambda _s: None)
+    assert out["verified"] is True
+    sections = a_s.parse_sections(
+        next(c["body"] for c in runner.comments if a_s.MARKER in c["body"])
+    )
+    assert sections["organ-a"] == "avertissement A"
+
+
+def test_une_verification_qui_echoue_toujours_est_remontee():
+    """Trois tentatives, puis l'echec est remonte : pas de succes sur une
+    ecriture non constatee."""
+    store = SharedStore()
+    other = FakeRunner(store=store, post_id=4243)
+    runner = InterleavingRunner(other, store, clobber_section="organ-a",
+                                clobber_always=True)
+    sleeps = []
+    with pytest.raises(RuntimeError):
+        a_s.upsert_section("organ-a", "avertissement A", 123, runner=runner,
+                           attempts=3, sleep=sleeps.append)
+    # un delai aleatoire entre deux tentatives (et pas entre la derniere)
+    assert len(sleeps) == 2
+    assert all(s > 0 for s in sleeps)
+
+
+def test_le_retrait_concurrent_est_verifie():
+    """Le succes d'un organe ne parle toujours pas, et le retrait se vérifie."""
+    runner = FakeRunner(comments=[
+        bot_comment(7, a_s.render({"organ-a": "averti", "organ-b": "garde"}))])
+    out = a_s.clear_section("organ-a", 123, runner=runner,
+                             sleep=lambda _s: None)
+    assert out["action"] == "patched"
+    assert out["verified"] is True
+    body = runner.comments[0]["body"]
+    assert "averti" not in body
+    assert "<!-- organ:organ-b -->" in body
