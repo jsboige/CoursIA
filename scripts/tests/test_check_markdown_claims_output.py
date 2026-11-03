@@ -1097,7 +1097,7 @@ class TestThresholdExpression:
 class TestCoordinateTupleFilter:
     """#14905: '(2,2)' is a grid coordinate, not the decimal 2.2.
 
-    Founding FP: DecPyMC-7 md[67] 'un but en (2,2) et un obstacle en (1,1)'
+    Founding FP: DecPyMC-07 md[67] 'un but en (2,2) et un obstacle en (1,1)'
     -- grid cells flattened into '2.2' / '1.1' then reported as fabricated.
     The discriminator is one digit per comma-separated group inside the
     parentheses; '(0,75)' (two-digit group) stays a francophone decimal.
@@ -1159,7 +1159,7 @@ class TestCoordinateTupleFilter:
 class TestInputSpecificationFilter:
     """#14905 Family D: inputs are legitimately absent from the output
     because nothing measured them. Three tight form signals, each measured on
-    DecPyMC-7: math parameter definitions (md[15]/md[19]), spec vectors
+    DecPyMC-07: math parameter definitions (md[15]/md[19]), spec vectors
     (md[36]), labeled enumerations (md[38]). A fourth form (bare paren
     apposition) was measured on fleet collateral and deliberately REJECTED:
     spec restatement and cited statistic share the same shape.
@@ -1390,7 +1390,7 @@ class TestCoordinateTupleFilter:
     (grille), PAS un decimal francais. `_normalize_num` collapsait
     '(2,2)' -> '2.2', donc le detecteur cherchait un '2.2' inexistant
     dans la sortie d'une grille 3x3 et flaguait une prose pedagogique
-    legitime comme fabriquee (DecPyMC-7 md[67]). Criteres d'acceptation
+    legitime comme fabriquee (DecPyMC-07 md[67]). Criteres d'acceptation
     (#14905) : '(0,75)' -- deux chiffres apres la virgule -- reste un
     vrai decimal (eligibile), et une VRAIE fabrication reste attrapee.
     """
@@ -1403,7 +1403,7 @@ class TestCoordinateTupleFilter:
         return check_notebook(p)
 
     def test_grid_coordinates_clean(self, tmp_path):
-        """Founding case: DecPyMC-7 md[67] -- cible/obstacle positions on a
+        """Founding case: DecPyMC-07 md[67] -- cible/obstacle positions on a
         3x3 grid. Prose cites '(2,2)' and '(1,1)'; the grid output never
         prints '2.2' nor '1.1'. BEFORE (issue #14905) this returned
         FABRICATION_DETECTED; AFTER the filter it is CLEAN."""
