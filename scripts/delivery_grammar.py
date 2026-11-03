@@ -250,6 +250,38 @@ def is_tranche_marker(body: str) -> bool:
     return False
 
 
+# Le separateur qui porte le motif dans une cause RENDUE. Il est defini
+# ici, avec la grammaire, pour qu'aucune surface ne le recompose.
+MOTIF_SUFFIX = "-- motif : "
+
+
+def motif_class(cause: str) -> str | None:
+    """La CLASSE du motif d'un ecartement, lue dans une cause rendue.
+
+    Deux classes, les deux que la decision #24461 nomme :
+
+    - ``living_dossier`` : un dossier `[CLOSURE PREFLIGHT]` VIVANT (KEEP) ;
+    - ``epic_wide`` : une livraison de l'issue ENTIERE.
+
+    La classe est lue dans le MOTIF lui-meme, jamais par une recherche de
+    sous-chaine dans toute la cause : une cause « dossier CLOSE » porte
+    aussi la chaine `CLOSURE PREFLIGHT`, et une sous-chaine la classait a
+    tort comme « dossier vivant ».
+
+    ``None`` = la cause ne nomme aucun motif (ecartement d'un autre
+    genre, ou motif absent).
+    """
+    text = cause or ""
+    if MOTIF_SUFFIX not in text:
+        return None
+    motif = text.split(MOTIF_SUFFIX, 1)[1]
+    if "CLOSURE PREFLIGHT" in motif and "VIVANT" in motif:
+        return "living_dossier"
+    if "epic-wide" in motif:
+        return "epic_wide"
+    return None
+
+
 def delivery_motif(bodies: list[str]) -> str | None:
     """Le MOTIF d'un ecartement de livraison, **nomme** (decision #24461, point 4).
 

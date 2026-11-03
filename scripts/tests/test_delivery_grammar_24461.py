@@ -149,3 +149,33 @@ def test_le_dernier_evenement_decide_du_motif():
 
 def test_aucun_motif_pour_un_fil_vide():
     assert dg.delivery_motif([]) is None
+
+
+# --- 4. la CLASSE d'un motif, lue dans une cause rendue -------------------
+
+def test_la_classe_du_dossier_vivant():
+    cause = ("LIVRAISON (recent) : marqueur de cloture sur le dernier "
+             "commentaire. " + dg.MOTIF_SUFFIX
+             + "dossier `[CLOSURE PREFLIGHT]` VIVANT (verdict KEEP) : la "
+               "cloture est en cours.")
+    assert dg.motif_class(cause) == "living_dossier"
+
+
+def test_la_classe_de_la_livraison_epic_wide():
+    cause = ("LIVRAISON : raison. " + dg.MOTIF_SUFFIX
+             + "livraison epic-wide : un `[DELIVERED]` sans clause "
+               "`paths:` livre l'issue ENTIERE.")
+    assert dg.motif_class(cause) == "epic_wide"
+
+
+def test_une_cause_sans_motif_nest_pas_classee():
+    assert dg.motif_class("LIVRAISON (recent) : marqueur de cloture.") is None
+
+
+def test_un_dossier_CLOSE_ne_vaut_pas_dossier_vivant():
+    """Une cause « dossier CLOSE » porte aussi la chaine `CLOSURE PREFLIGHT` :
+    la classe se lit dans le MOTIF, jamais dans toute la cause."""
+    cause = ("LIVRAISON (dossier de cloture CLOSE) : le dossier "
+             "`[CLOSURE PREFLIGHT]` de cette issue porte un verdict CLOSE "
+             "-- elle est resolue.")
+    assert dg.motif_class(cause) is None

@@ -97,11 +97,28 @@ def test_le_dossier_close_est_reconnu():
     assert pig._closure_dossier_verdict(DOSSIER_CLOSE) == "CLOSE"
 
 
-def test_le_dossier_keep_nest_pas_un_signal_de_cloture():
-    """Un dossier KEEP dit « l'issue reste ouverte » : il ne doit rien
-    ecarter du tapis."""
+def test_le_dossier_keep_ecarte_le_tapis_mais_expire():
+    """Decision #24461 (c), point 2 -- le tapis ecarte en plus, a la lecture
+    de la liste et sans sonde, les issues qui portent un dossier
+    `[CLOSURE PREFLIGHT]` VIVANT (verdict KEEP) : la cloture est EN COURS,
+    l'issue n'est pas un grain de production.
+
+    Ce test portait la semantique OPPOSEE (le KEEP n'ecarte rien) ; la
+    decision l'inverse explicitement. Ce qui reste vrai, et qui est
+    verifie ici, c'est la DIFFERENCE avec un dossier CLOSE : le KEEP porte
+    une HEURE, donc il EXPIRE (48 h, #22500) ; le CLOSE est terminal et
+    n'expire jamais. Et le LABEL reste etroit (borne 1 de la decision) : un
+    dossier KEEP n'arme pas le label."""
     assert pig._closure_dossier_verdict(DOSSIER_KEEP) == "KEEP"
-    assert pig._delivered_state([DOSSIER_KEEP]) is False
+    # KEEP : la cloture est en cours -> l'issue sort du tapis.
+    assert pig._delivered_state([DOSSIER_KEEP]) is True
+    # ... mais le dossier KEEP est EXPIRABLE (il porte une heure).
+    assert pig._delivery_event_from_comments(
+        [{"body": DOSSIER_KEEP, "createdAt": _iso(1)}])[2] is not None
+    # ... et il n'arme PAS le label (borne 1 : attestation dediee seule).
+    assert pig.delivery_grammar.attestation_state([DOSSIER_KEEP],
+                                                   dossier=False) == (
+        pig.delivery_grammar.NONE)
 
 
 def test_un_dossier_malforme_est_ignore():

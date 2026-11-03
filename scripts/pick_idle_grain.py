@@ -10454,6 +10454,12 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                         state.setdefault("marker_unread", []).append(n)
                 if recent_flag is True and not marker_expired:
                     state["recent_filtered"] += 1
+                    # #24461 (c) point 4 -- le MOTIF d'ecartement est
+                    # NOMME : la cause rendue dit POURQUOI l'issue a ete
+                    # ecartee, pour que l'urne de l'adjoint l'instruise
+                    # sans re-deriver la grammaire. Lecture par l'instantane
+                    # local : ZERO requete.
+                    motif = _delivery_motif(n)
                     belt_withheld.append(
                         (it,
                          ("LIVRAISON (dossier de cloture CLOSE) : le dossier "
@@ -10464,9 +10470,15 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                           "sonde." if terminal_closure else
                           "LIVRAISON (recent) : marqueur de cloture sur le "
                           "dernier commentaire ([DELIVERED] / "
-                          "[FROZEN] / [INFO] candidate-delivered). "
-                          "Candidat remplace hors budget de sonde.")))
+                          "[FROZEN] / [INFO] candidate-delivered)."
+                          + ((" " + delivery_grammar.MOTIF_SUFFIX + motif)
+                             if motif else "")
+                          + " Candidat remplace hors budget de sonde.")))
                     continue
+                # Le motif est calcule UNE FOIS par candidat, avant les deux
+                # sites d'ecartement : il est lu dans l'instantane local
+                # (ZERO requete) et sert a nommer la cause.
+                motif = _delivery_motif(n)
                 reason = delivered_signal_reason(
                     it, args.lane, counted_probe, state["failures"],
                     counted_merged_pr_probe, counted_revocation_probe,
@@ -10475,6 +10487,8 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                 if reason is not None:
                     belt_withheld.append(
                         (it, "LIVRAISON : " + reason
+                         + ((" " + delivery_grammar.MOTIF_SUFFIX + motif)
+                            if motif else "")
                          + " Candidat remplace dans la meme urne."))
                     continue
                 # #16589/#21757 : la sonde de PR couvrante vient APRES le filtre
@@ -11953,14 +11967,22 @@ def main(argv: list[str] | None = None) -> int:
             # pas : la liste des issues ecartees pour CHACUN des deux motifs
             # est nommee, separement, dans la sortie JSON.
             _motif_withheld = [
-                {"number": it["number"], "cause": c or ""}
+                {"number": it["number"], "cause": c or "",
+                 "classe": delivery_grammar.motif_class(c or "")}
                 for it, c in belt_withheld
             ]
             out_belt["delivery_motifs"] = {
                 "epic_wide": sorted({w["number"] for w in _motif_withheld
-                                     if "epic-wide" in w["cause"]}),
+                                     if w["classe"] == "epic_wide"}),
                 "living_dossier": sorted({w["number"] for w in _motif_withheld
-                                          if "CLOSURE PREFLIGHT" in w["cause"]}),
+                                          if w["classe"] == "living_dossier"}),
+                # La classe est lue dans le MOTIF, pas dans toute la cause :
+                # une cause « dossier CLOSE » porte aussi la chaine
+                # `CLOSURE PREFLIGHT`, et une sous-chaine la classait a tort
+                # comme « dossier vivant ».
+                "unclassified": sorted({w["number"] for w in _motif_withheld
+                                        if w["classe"] is None
+                                        and w["cause"].startswith("LIVRAISON")}),
             }
             print(json.dumps(out_belt, ensure_ascii=False, indent=2))
         else:

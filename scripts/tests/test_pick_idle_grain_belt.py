@@ -3205,3 +3205,70 @@ def test_l_exclusion_par_label_ne_coute_aucune_sonde():
     # un silence, et un silence se lit comme une absence.
     assert len(drops) == 1
     assert kept[0]["number"] == 81
+
+
+# --- #24461 (c) point 4 : le MOTIF d'ecartement est NOMME dans le tapis ---
+#
+# Le correctif initial nommait le motif dans les causes du chemin PONDERE
+# (`conflicts.append`), pas dans celles du TAPIS (`belt_withheld.append`) :
+# le tapis ecarte dans une autre famille de sites, et `delivery_motifs`
+# rendait deux listes VIDES alors que le tapis ecarte reellement des issues
+# pour ces deux motifs. Ces tests_branchent le chemin du tapis.
+
+def test_belt_nomme_le_motif_du_dossier_vivant(monkeypatch):
+    """Le filtre recent du tapis nomme le motif du dossier VIVANT."""
+    marked = _make_item(7742, age_days=90, idle=9, last=None)
+    clean = _make_item(19008, age_days=40, idle=4, last=None)
+    motif = ("dossier `[CLOSURE PREFLIGHT]` VIVANT (verdict KEEP) : la "
+             "cloture est en cours, l'issue n'est pas un grain de production.")
+    monkeypatch.setattr(pig, "_delivery_motif", lambda n: motif)
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        [marked, clean], _free_claims([marked, clean]),
+        _belt_args(grains=2), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        recent_marker_probe=lambda n: n == 7742)
+    assert [p["number"] for p in picks] == [19008]
+    causes = {w[0]["number"]: w[1] for w in withheld}
+    assert causes[7742].startswith("LIVRAISON (recent)")
+    assert pig.delivery_grammar.MOTIF_SUFFIX + motif in causes[7742]
+    assert pig.delivery_grammar.motif_class(causes[7742]) == "living_dossier"
+
+
+def test_belt_nomme_le_motif_de_la_livraison_epic_wide(monkeypatch):
+    """La sonde pleine du tapis nomme le motif de la livraison ENTIERE."""
+    marked = _make_item(16048, age_days=99, idle=9, last=None)
+    clean = _make_item(19009, age_days=41, idle=4, last=None)
+    motif = ("livraison epic-wide : un `[DELIVERED]` sans clause `paths:` "
+             "livre l'issue ENTIERE.")
+    monkeypatch.setattr(pig, "_delivery_motif", lambda n: motif)
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        [marked, clean], _free_claims([marked, clean]),
+        _belt_args(grains=2), probe_budget=8,
+        delivered_probe=lambda n, lane=None: n == 16048,
+        merged_pr_probe=lambda n, lane=None: False,
+        recent_marker_probe=lambda n: False)
+    assert [p["number"] for p in picks] == [19009]
+    causes = {w[0]["number"]: w[1] for w in withheld}
+    assert 16048 in causes
+    assert pig.delivery_grammar.MOTIF_SUFFIX + motif in causes[16048]
+    assert pig.delivery_grammar.motif_class(causes[16048]) == "epic_wide"
+
+
+def test_belt_sans_motif_ne_fabrique_pas_de_motif(monkeypatch):
+    """Pas d'instantane -> pas de motif : la cause reste generique.
+
+    fail-OPEN : un motif fabrique serait pire qu'un motif absent.
+    """
+    marked = _make_item(7743, age_days=91, idle=9, last=None)
+    clean = _make_item(19010, age_days=42, idle=4, last=None)
+    monkeypatch.setattr(pig, "_delivery_motif", lambda n: None)
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        [marked, clean], _free_claims([marked, clean]),
+        _belt_args(grains=2), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        recent_marker_probe=lambda n: n == 7743)
+    causes = {w[0]["number"]: w[1] for w in withheld}
+    assert "motif" not in causes[7743]
+    assert pig.delivery_grammar.motif_class(causes[7743]) is None
