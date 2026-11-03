@@ -37,13 +37,17 @@ corpus `torchvision` (cache `~/.cache/ft00a`).
 | Sonde | État | Mesuré | Cité | Écart | Verdict |
 |---|---|---:|---:|---:|---|
 | WS-00c | test propre | 0.7900 | 0.790 | 0.0000 | **ok** |
-| WS-00c | test translaté | 0.4300 | 0.425 | **+0.0050** | écart |
+| WS-00c | test translaté | 0.4300 | 0.430 | 0.0000 | **ok** |
 | WS-03 | test propre | 0.7800 | 0.780 | 0.0000 | **ok** |
 | WS-03 | test translaté | 0.3107 | 0.311 | −0.0003 | **ok** |
 
-**Verdict global : `MISMATCH`** — trois valeurs sur quatre reproduites à la précision
-d'affichage ; la quatrième (WS-00c translaté) s'écarte d'**un item** (`86/200` mesuré vs
-`85/200` cités).
+**Verdict contre l'artefact committé d'octobre : `MISMATCH`** — trois valeurs sur quatre
+reproduites à la précision d'affichage ; la quatrième (WS-00c translaté) s'écarte d'**un
+item** (`86/200` mesuré vs `85/200` cités — la ligne `pixels` committait alors `0.425`).
+C'est cet écart qui a ouvert #21823. **Contre l'artefact committé au head** — `0.430`
+(`86/200`) depuis le rejeu du 2026-11-01 (#23812) — **la mesure du 10-24 est exacte** : la
+dérive étudiée ici a rattrapé l'artefact lui-même. La colonne « Cité » des tables de ce
+document référence le head.
 
 ### Contre-mesure du 2026-11-01 : même script, environnement différent
 
@@ -56,13 +60,15 @@ sur **deux environnements**, pas sur deux versions d'une seule bibliothèque.
 | Sonde | État | 2026-10-24 | 2026-11-01 | Cité | Verdict 11-01 |
 |---|---|---:|---:|---:|---|
 | WS-00c | test propre | 0.7900 | 0.7900 | 0.790 | **ok** |
-| WS-00c | test translaté | 0.4300 | **0.4350** | 0.425 | écart |
+| WS-00c | test translaté | 0.4300 | **0.4350** | 0.430 | écart |
 | WS-03 | test propre | 0.7800 | 0.7800 | 0.780 | **ok** |
 | WS-03 | test translaté | 0.3107 | 0.3107 | 0.311 | **ok** |
 
 Le test **propre** de WS-00c et **les deux** valeurs de WS-03 sont identiques au chiffre près
 d'un environnement à l'autre. Seul le test **translaté** de WS-00c se déplace : `0.4300 → 0.4350`,
-soit **un item de plus**, et **deux items** au-dessus de la valeur citée.
+soit **un item de plus** — **un item** au-dessus de la valeur committée au head (`0.430`,
+`86/200`), deux au-dessus de l'artefact d'octobre (`0.425`, `85/200`, committé jusqu'au
+rejeu du 2026-11-01, #23812).
 
 ### Troisième point : même version de scikit-learn, deux résultats
 
@@ -79,6 +85,12 @@ Python (3.13.14), sur un autre siège, six exécutions et deux caches distincts 
 La ligne de référence vaut donc `0.4300`, et elle se retrouve **sous deux versions différentes**
 de scikit-learn (1.6.1 comme 1.8.0). Sous 1.8.0, deux sièges rendent deux valeurs différentes.
 Le déplacement observé le 2026-11-01 sur ce siège n'est donc pas attribuable à `scikit-learn`.
+
+Noter l'interpréteur : les exécutions du 2026-11-01 et la campagne du 2026-11-02 ont tourné
+sous `Python 3.13.14` ; le siège est passé à `3.13.15` dans la matinée du 01/11 — le rejeu du
+carnet de #23812 (mergé 08:50Z) déclare déjà `3.13.15` en `language_info` — et c'est encore sa
+version au jour de cette PR. L'interpréteur n'est donc pas tenu constant **à l'intérieur même
+du 01/11**, ce qui laisse intact son statut « ouvert » dans la table des causes ci-dessous.
 
 ### Quatrième point : les versions n'expliquent rien — élimination contrôlée sur un seul siège (2026-11-02)
 
@@ -102,7 +114,8 @@ la valeur ne bouge pas quand ils changent, y compris en reconstituant exactement
 bibliothèques qui rendait `0.4300` le 2026-10-24.
 
 Le seul facteur que cette campagne n'a pas pu tenir constant entre ce `0.4300` et le `0.4350`
-d'aujourd'hui est l'**interpréteur lui-même** — `Python 3.13.3` le 24/10, `3.13.15` aujourd'hui —
+d'aujourd'hui est l'**interpréteur lui-même** — `Python 3.13.3` le 24/10, `3.13.14` le 01/11,
+`3.13.15` aujourd'hui —
 qu'on ne remplace pas sans reconstruire l'environnement du siège. Cela reste une **hypothèse non
 testée**, pas une attribution.
 
@@ -130,7 +143,7 @@ la campagne d'élimination contrôlée du 2026-11-02 (section « Quatrième poin
 | la version de `numpy` | **réfutée** | `2.4.2`, `2.4.6` et `2.3.5` rendent `0.4350` sur ce siège ; elle n'était « le seul facteur visible » que d'une comparaison **entre deux sièges**, où elle covariait avec le siège lui-même |
 | le parallélisme BLAS | **réfuté** | `OPENBLAS_NUM_THREADS=1` contre 24 threads : `0.4350` dans les deux cas |
 | la chaîne BLAS du siège (sélection de noyau à l'exécution) | **ouverte** | reste le mécanisme plausible par lequel deux sièges aux mêmes paquets divergent ; non départageable sur un seul siège |
-| l'interpréteur (`3.13.3` → `3.13.15`) | **ouvert, non testé** | seul facteur non tenu entre le `0.4300` du 24/10 et le `0.4350` du jour ; non remplaçable sans reconstruire l'environnement |
+| l'interpréteur (`3.13.3` → `3.13.14` → `3.13.15`) | **ouvert, non testé** | seul facteur non tenu entre le `0.4300` du 24/10 et le `0.4350` du jour ; non remplaçable sans reconstruire l'environnement |
 
 Ce qui **reste** à faire pour départager : relever la chaîne BLAS des deux sièges
 (`numpy.show_config()`, version d'OpenBLAS et noyau sélectionné) et comparer — c'est une mesure
@@ -142,17 +155,22 @@ la sonde » vaut donc pour les environnements qui l'ont produite, pas au-delà. 
 carnet qui ne fixe ni la source de données, ni les versions, ni le siège est une **mesure
 d'environnement**.
 
-Les valeurs citées sont **les sorties committées** du carnet WS-00c, ligne `pixels` de la table
-de `WS-00c-Scattering-from-scratch.ipynb` (artefact committé : `pixels | 0.790 | 0.425`) — et non
-les lignes `scattering S1` (`0.810 / 0.700`) ni `scattering complet` (`0.825 / 0.765`). La sonde
-reproduit le classifieur linéaire sur pixels bruts, donc cette ligne-là.
+Les valeurs citées sont **les sorties committées au head** du carnet WS-00c, ligne `pixels` de
+la table de `WS-00c-Scattering-from-scratch.ipynb` (artefact committé :
+`pixels | 0.790 | 0.430`) — et non les lignes `scattering S1` (`0.805 / 0.700`) ni
+`scattering complet` (`0.825 / 0.760`). La sonde reproduit le classifieur linéaire sur pixels
+bruts, donc cette ligne-là. La ligne committée elle-même a dérivé : `0.425` (`85/200`) jusqu'au
+2026-11-01, `0.430` (`86/200`) depuis le rejeu sous noyau 3.13.15 (#23812, `fb453c45aca`),
+puis `tol=1e-8` épinglée le 2026-11-02 (#24083, `c1174b7f84f`) sans que la valeur bouge.
 
 **Provenance du couple `0.773 / 0.431` cité par une version antérieure de ce script : non
 établie.** Deux mesures indépendantes l'écartent de WS-00c :
 
 - il n'apparaît dans **aucun fichier** de la série (`git grep` sur les fichiers de
   `05-Wavelet-Scattering` à `origin/main` : 0 occurrence des deux valeurs) — alors que
-  `0.790 / 0.425` y est bien présent, sur la ligne citée ci-dessus ;
+  `0.425` y est traçable : un commentaire de la cellule 21 le cite, la ligne `pixels`
+  committée le portait jusqu'au rejeu du 01/11, et WS-03 l'imprime comme score de
+  scattering construit ;
 - il est **arithmétiquement impossible** sur le corpus de WS-00c : la cellule 20 imprime
   `corpus : 600 train / 200 test`, et aucune accuracy sur 200 items ne peut s'écrire `0.773`
   ni `0.431` (il faudrait un `k` tel que `k/200` s'arrondisse à ces valeurs ; il n'en existe
@@ -183,7 +201,9 @@ désormais mesurée :
    et WS-03 ne bougent pas, ni ici ni là-bas.
 
 Ce qui est **mesuré** : sur la branche `torchvision`, le test propre est exact partout et le test
-translaté s'écarte de la valeur citée — d'un item sur deux sièges, de deux sur un troisième. Le
+translaté s'écarte de la valeur committée d'octobre (`0.425`) — d'un item sur deux sièges, de
+deux sur un troisième ; contre le head (`0.430`), l'écart d'un item ne subsiste que sur ce
+siège. Le
 chiffre dépend donc de l'**environnement** d'exécution, et cette dépendance est reproductible au
 sens où elle se répète run après run sur un siège donné (6/6 sur po-2025, déterministe ici) ;
 **quel** facteur de l'environnement la porte n'est pas établi.
@@ -264,7 +284,7 @@ en 1.6.1 (section précédente) est `0.4300` ; l'ajustement 1.8.0 **convergé** 
 seul l'ajustement 1.8.0 arrêté au défaut rend `0.4350`. Un changement de version déplace le
 chemin des itérées, et le critère d'arrêt transforme ce déplacement en un item d'écart. Épingler
 la source et la version, comme le demande la section suivante, **ne suffit donc pas** : la
-tolérance doit être fixée elle aussi.
+tolérance doit être fixée elle aussi — c'est fait depuis le 2026-11-02 (#24083).
 
 **Ce qui n'est pas établi** : que le siège `po-2025` s'arrête effectivement plus près de
 l'optimum. La mesure démontre qu'un tel arrêt **suffit** à produire l'écart, pas qu'il en est
@@ -280,10 +300,13 @@ c'est la variabilité de son **approvisionnement en données** (WS-00c) qui n'es
 ## Conséquence pour la série (hors périmètre de cette PR)
 
 La cellule WS-00c gagnerait à **épingler sa source** au lieu de laisser un `try/except`
-choisir implicitement, à consigner l'environnement (versions et siège) à côté des valeurs
-citées, et à **fixer la tolérance de son solveur**. Tant que ce n'est pas fait, un chiffre de
-WS-00c est une **mesure d'environnement**, pas une propriété du carnet : deux sièges sous les
-mêmes versions de `scikit-learn` et de Python en rendent deux différentes.
+choisir implicitement, et à consigner l'environnement (versions et siège) à côté des valeurs
+citées. La **tolérance du solveur est épinglée depuis le 2026-11-02** (#24083, `c1174b7f84f` :
+`tol=1e-8`, la sortie committée porte `tol=1e-8 epingle` et rend `0.430`) — le levier mesuré
+en troisième cause ci-dessus est retiré. Tant que la source n'est pas épinglée, un chiffre de
+WS-00c reste une **mesure d'environnement**, pas une propriété du carnet : deux sièges sous les
+mêmes versions de `scikit-learn` et de Python en rendent deux différentes. Le suivi ouvert est
+**#24075**.
 
 Épingler les paquets ne suffit donc **pas** à faire converger deux exécutions — c'est le résultat
 direct de la campagne du 2026-11-02 : sur un siège donné, faire varier `numpy`, `scikit-learn` et
@@ -298,7 +321,8 @@ de `LogisticRegression`, la graine est **inerte** — mesuré sur scikit-learn 1
 Le levier opérant est la **tolérance** : mesuré sur cette sonde (#21823), à données, graine et
 versions identiques, passer de `tol=1e-4` à `1e-6` déplace les coefficients de `1.76e-02` et un
 item. Fixer la graine ne coûte rien, mais c'est la tolérance qui opère ici — et si un jour le
-solveur change, la graine redeviendra pertinente. Suivi à ouvrir ; cette PR ne modifie aucun carnet.
+solveur change, la graine redeviendra pertinente. Le suivi est ouvert : **#24075** (source du
+corpus et chaîne BLAS ; la tolérance y est réglée par #24083). Cette PR ne modifie aucun carnet.
 
 ## Reproduction
 
