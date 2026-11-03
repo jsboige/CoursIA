@@ -378,12 +378,13 @@ Depuis le parcours principal, on y entre après le palier 16 : le [capstone 21](
 | # | Notebook | Ce qu'on y apprend | Noyau | Public |
 |---|----------|--------------------|-------|--------|
 | 01 | Théorème d'Arrow — [Python](SocialChoice/01-Arrow-Impossibility-Theorem.ipynb) · [C#](SocialChoice/01-Arrow-Impossibility-Theorem-Csharp.ipynb) | L'impossibilité d'Arrow, par la preuve et par la simulation | Python · C# | Licence |
-| 01b | [Choix social formel en Lean](SocialChoice/01b-Lean-SocialChoice-Formal.ipynb) | Arrow, Sen et l'électeur médian en Lean, et une visite du lake de référence de D. Peters | Lean | Recherche |
 | 03 | Méthodes de vote — [Python](SocialChoice/03-Voting-Methods.ipynb) · [C#](SocialChoice/03-Voting-Methods-Csharp.ipynb) | Condorcet, Borda, Copeland, modèle de Downs, paradoxes électoraux | Python · C# | Découverte |
 | 04 | Agrégation par SAT et Z3 — [Python (WSL)](SocialChoice/04-Computational-Aggregation-SAT-Z3.ipynb) · [C#](SocialChoice/04-Computational-Aggregation-SAT-Z3-Csharp.ipynb) | Arrow encodé en SAT, preuve d'insatisfiabilité, relaxations | Python · C# | Licence |
 | 05 | [Gibbard-Satterthwaite](SocialChoice/05-Gibbard-Satterthwaite.ipynb) | La manipulation comme témoin : la manipulabilité exhibée par le code, pas postulée | Python | Licence |
 | 06 | [Möbius, pouvoir et manipulation](SocialChoice/06-Mobius-Aggregation-Pouvoir-Manipulation.ipynb) | Dividendes de Harsanyi, poids contre pouvoir, manipulation pondérée | Python | Recherche |
 | 07 | [Comités et Core](SocialChoice/07-Committees-Core.ipynb) | Élections de comité par approbation : core, quotas, certificats de paiement | Python | Recherche |
+
+L'approfondissement [01b — choix social formel en Lean](SocialChoice/01b-Lean-SocialChoice-Formal.ipynb) (Arrow, Sen, électeur médian, visite du lake de référence de D. Peters, niveau Recherche) creuse le palier 01 ; il ne fait pas avancer le parcours.
 
 ## Sous-série Coalitions
 
