@@ -175,7 +175,7 @@ REAL = Path(__file__).resolve().parents[2] / "MyIA.AI.Notebooks" / "Probas"
 
 
 @pytest.mark.parametrize("rel", [
-    "DecisionTheory/DecPyMC/DecPyMC-2-Utility-Money.ipynb",
+    "DecisionTheory/DecPyMC/DecPyMC-02-Utility-Money.ipynb",
     "DecisionTheory/Actuariat/Actuariat-03-Actuarial-Credibility.ipynb",
 ])
 def test_baseline_hdi_reelle_est_coherente(rel: str):
