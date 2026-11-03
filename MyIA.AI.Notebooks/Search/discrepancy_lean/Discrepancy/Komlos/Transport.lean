@@ -41,19 +41,26 @@ Transposé de `Komlos/Transport.lean` (l.27-67) :
 - `toReal_mem_map_iff`, `toReal_mem_coe_iff` — le pont d'appartenance que
   `convexHull ℝ ↑(S.map …)` consommera en k2.4.
 
-**Reportés, avec raison mesurée** :
+**Reportés par k2.3, et leur sort** :
 
-1. `shiftDist_push` (l.63-64) — la distance de décalage transportée. Chez
-   l'oracle, `shiftDist` vit sur le support Finsupp **canonique** ; la
-   convention du lake (k1.1) passe le support `Finset` **explicitement**, et
-   l'énoncé transporté exige côté cible une ré-indexation de `S ∪ (S + u)` —
-   une union de `Finset` dont la somme n'est pas la somme des sommes.
-   Aucun consommateur k2.4 ne la lit : la conclusion de convexité ne lit que
-   le support et le barycentre, tous deux livrés ci-dessus.
-2. `tvDist_push`, `IsDist.push` (l.44-55) — le vocabulaire `tvDist`/`IsDist`
-   n'existe pas dans ce lake (décision de cadre k1.1 : fonctions simples,
-   support explicite). Les re-stater ici serait du **nouveau vocabulaire**,
-   pas du transport ; si k4 en a besoin, il viendra avec son cadre.
+1. `shiftDist_push` (l.63-64) — **livré** par la brique k4.2c
+   (`ShiftPush.lean`, `shiftDistanceTV_push`). La raison mesurée du report est
+   conservée ici telle qu'elle a été écrite : chez l'oracle, `shiftDist` vit
+   sur le support Finsupp **canonique** ; la convention du lake (k1.1) passe
+   le support `Finset` **explicitement**, et l'énoncé transporté semblait
+   exiger côté cible une ré-indexation de `S ∪ (S + u)` — une union de
+   `Finset` dont la somme n'est pas la somme des sommes. La barrière s'est
+   **dissoute plutôt que franchie** : sous la forme que k4.2b a livrée
+   (`tvDistance`, générique, et sa passerelle `shiftDistance_eq_tvDistance`),
+   le décalage est porté par la **fonction** (`shiftDistanceTV`) et non par
+   l'ensemble de sommation — une seule `Finset` suffit des deux côtés, et la
+   ré-indexation requise est celle, déjà livrée ci-dessous, de `sum_push`.
+2. `tvDist_push` (l.54-55) — **livré** par k4.2c (`tvDistance_push`).
+3. `IsDist.push` (l.44-49) — **toujours reporté, raison inchangée** : il
+   attend le vocabulaire `IsDist` (« est une distribution »), que ce lake n'a
+   pas (décision de cadre k1.1 : fonctions simples, support explicite). Ce
+   n'est pas du transport à re-stater, c'est un vocabulaire à payer **avec son
+   consommateur**.
 
 L'état détaillé vit dans `FORMAL_STATUS.md`.
 -/
