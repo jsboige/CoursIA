@@ -122,11 +122,16 @@ jobs:
           case "$N" in ''|*[!0-9]*|0) N=1 ;; esac
           FAILS=0
 
+          # stdin epingle par passe, en plus de la fermeture que la suite
+          # fait elle-meme : le runner maintient un stdin ouvert, et le
+          # cablage de l appelant ne doit jamais etre une entree du harnais
+          # (cf #23051 point 3 -- la suite sautait des cas quand son stdin
+          # heritait d un canal ouvert).
           i=0
           while [ "$i" -lt "$N" ]; do
             i=$((i + 1))
             echo "::group::Passe $i/$N"
-            TMPDIR=/tmp bash "$SUITE"
+            TMPDIR=/tmp bash "$SUITE" </dev/null
             rc=$?
             echo "::endgroup::"
             case "$rc" in

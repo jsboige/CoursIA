@@ -12,6 +12,16 @@
 
 set -uo pipefail
 
+# La suite ne lit RIEN sur stdin : chaque entree vient de fixtures ou de
+# variables. Elle ferme donc son propre stdin au lieu d'heriter de celui de
+# l appelant. Mesure faite (#23051 point 3, N=20 sur ce siege) : invoquee
+# depuis une boucle en tache de fond -- stdin herite d un canal qui reste
+# ouvert -- la suite a saute un cas entier puis aborte sur une erreur de
+# syntaxe a numero de ligne decale, 3 passes sur 5, sans jamais se reproduire
+# quand stdin etait epingle (</dev/null) ou au premier plan, 0 sur 9. Un
+# harnais de test ne doit pas dependre du cablage stdin de son appelant.
+exec 0</dev/null
+
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SUT="$HERE/dryrun-sizing-control.sh"
 [ -x "$SUT" ] || [ -r "$SUT" ] || { echo "introuvable : $SUT" >&2; exit 2; }
@@ -175,6 +185,25 @@ expect_succes() {   # $1 = libelle
   else
     ok "$1"
   fi
+}
+
+# Les trois helpers ci-dessous sont definis ICI, avant leur premiere use,
+# et pas dans la section qui les a introduits (L). Mesure faite au N=20
+# (#23051 point 3) : definis apres les cas S, ils rendaient « command not
+# found » a CHAQUE passe et leurs assertions ne comptaient jamais -- la
+# suite restait verte sans jamais verifier ce qu'ils devaient verifier.
+expect_rc() {      # $1 = libelle, $2 = rc attendu
+  if [ "$RC" -eq "$2" ]; then ok "$1"
+  else ko "$1" "attendu rc=$2, obtenu rc=$RC : $(printf '%s' "$OUTPUT" | tail -3)"; fi
+}
+expect_out() {     # $1 = libelle, $2 = motif attendu
+  if printf '%s' "$OUTPUT" | grep -qF "$2"; then ok "$1"
+  else ko "$1" "motif absent de la sortie : « $2 »"; fi
+}
+expect_no_out() {  # $1 = libelle, $2 = motif qui ne doit PAS apparaitre
+  if printf '%s' "$OUTPUT" | grep -qF "$2"; then
+    ko "$1" "motif PRESENT alors qu il ne devait pas : « $2 »"
+  else ok "$1"; fi
 }
 
 echo "=== A. Validation des entrees ==="
@@ -776,20 +805,6 @@ make_cgroup() {   # $1 = fixture, $2 = nr_throttled, $3 = throttled_usec, $4 = n
   printf '123456789\n' > "$cg/memory.current"
   printf 'max 0\n' > "$cg/memory.events"
   printf 'max 0\n' > "$cg/memory.events.local"
-}
-
-expect_rc() {      # $1 = libelle, $2 = rc attendu
-  if [ "$RC" -eq "$2" ]; then ok "$1"
-  else ko "$1" "attendu rc=$2, obtenu rc=$RC : $(printf '%s' "$OUTPUT" | tail -3)"; fi
-}
-expect_out() {     # $1 = libelle, $2 = motif attendu
-  if printf '%s' "$OUTPUT" | grep -qF "$2"; then ok "$1"
-  else ko "$1" "motif absent de la sortie : « $2 »"; fi
-}
-expect_no_out() {  # $1 = libelle, $2 = motif qui ne doit PAS apparaitre
-  if printf '%s' "$OUTPUT" | grep -qF "$2"; then
-    ko "$1" "motif PRESENT alors qu il ne devait pas : « $2 »"
-  else ok "$1"; fi
 }
 
 echo "=== L. Temoin de throttling ==="
