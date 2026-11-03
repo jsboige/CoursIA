@@ -81,8 +81,11 @@ jobs:
               > lean_derived_pages.json 2>lean_derived_pages_stderr.log
           EXIT=$?
           set -e
+          # En mode `--json`, le garde ecrit le JSON **pure** sur stdout et la
+          # ligne de verdict (`VERDICT: ...`) sur stderr : le rapport reste
+          # donc parsable, et le verdict reste lisible dans le journal.
           if [ -s lean_derived_pages_stderr.log ]; then
-            echo "Derived-pages tool diagnostics (stderr, non-fatal):"
+            echo "Derived-pages tool output (stderr):"
             cat lean_derived_pages_stderr.log
           fi
           if ! python3 -c "import json; json.load(open('lean_derived_pages.json'))" 2>/dev/null; then

@@ -22,7 +22,10 @@ Usage :
 
 from __future__ import annotations
 
+import contextlib
 import importlib.util
+import io
+import json
 import sys
 from pathlib import Path
 
@@ -121,6 +124,70 @@ def test_le_garde_couvre_les_pages_attendues():
     for generator, page in mod.PAGES:
         assert generator.endswith(".py")
         assert page.startswith("docs/reference/")
+
+
+# --- la sortie machine doit etre un FICHIER, pas un flux melange -----------
+
+def _run_main(argv, monkeypatched_results):
+    """Lance `main()` sur des resultats synthetiques.
+
+    Les generateurs reels ne sont pas appeles : le test porte sur la FORME de
+    la sortie, pas sur l'etat de l'arbre.
+    """
+    saved = mod.check_all
+    mod.check_all = lambda timeout=900, repo_root=None: monkeypatched_results
+    out, err = io.StringIO(), io.StringIO()
+    try:
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            rc = mod.main(list(argv))
+    finally:
+        mod.check_all = saved
+    return rc, out.getvalue(), err.getvalue()
+
+
+def _one_conforme():
+    return [{"generator": GEN, "page": PAGE, "status": "conforme",
+             "drifted": False, "rc": 0, "duration_s": 0.1,
+             "detail": "A JOUR : 41 lacs"}]
+
+
+def test_le_mode_json_ecrit_un_json_PARSABLE_sur_stdout():
+    """Regression (mesure du 2026-11-03) : la porte CI a echoue sur un
+    `json.load` alors que le verdict etait « CONFORME (2 pages) » -- la ligne
+    de verdict sortait sur stdout, APRES le JSON. Le rapport ecrit sur disque
+    etait donc un fichier casse : un garde vert, une porte rouge.
+
+    stdout doit etre un JSON parsable, et rien d'autre."""
+    rc, out, err = _run_main(["--json"], _one_conforme())
+    assert rc == 0
+    data = json.loads(out)  # leve si stdout est contamine
+    assert data["n_pages"] == 1
+    assert data["drifted"] is False
+    assert "VERDICT" not in out
+    assert "VERDICT" in err, "le verdict reste lisible (stderr)"
+
+
+def test_le_verdict_dune_divergence_part_sur_stderr_en_mode_json():
+    """Meme contrat pour le verdict bloquant : il ne doit jamais contaminer
+    le rapport machine."""
+    divergente = [{"generator": GEN, "page": PAGE, "status": "divergente",
+                   "drifted": True, "rc": 1, "duration_s": 0.1,
+                   "detail": "la page ne suit plus l'arbre"}]
+    rc, out, err = _run_main(["--json"], divergente)
+    assert rc == 1
+    data = json.loads(out)
+    assert data["drifted"] is True
+    assert "DIVERGENCE" in err
+    assert "DIVERGENCE" not in out
+
+
+def test_le_mode_humain_ecrit_le_verdict_sur_stdout():
+    """Hors mode `--json`, le verdict reste sur stdout : c'est la sortie
+    lue par un humain."""
+    rc, out, err = _run_main([], _one_conforme())
+    assert rc == 0
+    assert "VERDICT: CONFORME" in out
+    assert err == ""
 
 
 def main() -> int:

@@ -146,11 +146,19 @@ def main(argv: list | None = None) -> int:
 
     # Une seule ligne de verdict : un « conforme » qui suivrait une ligne
     # « DIVERGENTE » se lirait comme un acquittement.
+    #
+    # En mode `--json`, cette ligne part sur **stderr** : stdout doit rester
+    # un JSON PARSABLE, sinon le rapport se lit comme un fichier casse. Mesure
+    # du 2026-11-03 : la premiere passe de la porte CI a echoue sur un
+    # `json.load` alors que le verdict etait « CONFORME (2 pages) » -- les
+    # deux pages suivaient l'arbre, mais la sortie melangeait JSON et texte.
+    stream = sys.stderr if args.json else sys.stdout
     if drifted:
         print("VERDICT: DIVERGENCE (%d page(s) sur %d)" % (len(drifted),
-                                                           len(results)))
+                                                           len(results)),
+              file=stream)
         return 1
-    print("VERDICT: CONFORME (%d page(s))" % len(results))
+    print("VERDICT: CONFORME (%d page(s))" % len(results), file=stream)
     return 0
 
 
