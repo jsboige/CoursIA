@@ -11343,14 +11343,15 @@ def main(argv: list[str] | None = None) -> int:
         # Le geste est fail-OPEN : sans mesure, rien n'est parque.
         _origami_parked, _origami_state = _origami_parking_state(pool)
         if _origami_parked:
-            _belt_pool = []
             for it in belt_pool:
                 verdict = _origami_parked.get(int(it["number"]))
                 if verdict is None:
-                    _belt_pool.append(it)
                     continue
-                _epic_drops.append((it, f"PARCAGE ORIGAMI (#24373) : {verdict}"))
-            belt_pool = _belt_pool
+                _origami_state.setdefault("dropped", []).append(
+                    {"number": int(it["number"]), "title": it.get("title"),
+                     "cause": f"PARCAGE ORIGAMI (#24373) : {verdict}"})
+            belt_pool = [it for it in belt_pool
+                         if int(it["number"]) not in _origami_parked]
             _belt_phase(f"parcage origami: {len(_origami_parked)} EPIC(s) "
                         f"parque(s) -- " + ", ".join(
                             f"#{n}" for n in sorted(_origami_parked)[:8])
