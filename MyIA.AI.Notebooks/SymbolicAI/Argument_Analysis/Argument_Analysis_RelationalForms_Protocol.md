@@ -58,7 +58,7 @@ Ce point n'est pas une précaution rhétorique : **il décide du barreau atteign
 |---|---|---|---|---|
 | Tweets publics « I want X » | utilisateurs Twitter actifs, anglophones, 18-35 ans, politiquement engagés | population offline, >35 ans, non-anglophone, abstentionnistes | sur-représentation des désirs exprimés publiquement ; sous-représentation des désirs tus | comparaison intra-plateforme par cohorte d'âge (si la plateforme ventile) |
 | Forums Reddit r/relationship_advice | posters qui ont **choisi** de demander conseil public | posters qui ont résolu en privé, ou qui n'ont pas ressenti le besoin de poster | sur-représentation des cas **non résolus** ; sous-représentation des résolutions paisibles | panel représentatif (ex. NORC AmeriSpeak) si accessible |
-| Bumble Opening Moves (variantes 2024+) | femmes 18-30 ans qui utilisent l'app quotidiennement | app-light users, populations rurales, hors-app | sur-représentation des désir exprimés dans un contexte de **sélection explicite** | difficile — la plateforme n'expose pas les non-clics |
+| Application de rencontre, initiative d'ouverture (variantes 2024+) | femmes 18-30 ans qui utilisent l'app quotidiennement | app-light users, populations rurales, hors-app | sur-représentation des désir exprimés dans un contexte de **sélection explicite** | difficile — la plateforme n'expose pas les non-clics |
 
 ### 2.2 Pourquoi signé
 
@@ -82,9 +82,9 @@ Un cas dont **aucune observation ne pourrait décevoir l'hypothèse** ne rentre 
 
 > **Pré-inscription datée 2026-09-XX.**
 >
-> **Cas** : modification de l'algorithme de matching de Hinge (release T1 2025).
+> **Cas** : modification de l'algorithme de matching d'une application de rencontre (release T1 2025).
 >
-> **Date du changement** : 2025-03-15 (release publique annoncée par Hinge Engineering).
+> **Date du changement** : 2025-03-15 (release publique annoncée par l'équipe de l'application).
 >
 > **Fenêtre pré/post** : 2024-03 → 2025-03 (pré, 12 mois) ; 2025-03 → 2026-03 (post, 12 mois).
 >
@@ -123,7 +123,7 @@ Ce notebook porte : différence-en-différences, contrôle synthétique (Synthet
 ## 6. Ce que ce protocole refuse délibérément
 
 - **Ne pas créer trois notebooks ICT** (humour / désir / attachement) : la recommandation retenue sous #13303 est un observatoire transversal, pas une famille de plus.
-- **Ne pas trancher** le choix du cas Bumble Opening Moves ni d'un autre : ce serait pré-choisir le résultat que le protocole doit pouvoir refuser.
+- **Ne pas trancher** le choix du cas (application de rencontre) ni d'un autre : ce serait pré-choisir le résultat que le protocole doit pouvoir refuser.
 - **Ne pas produire de mesure** : la production de mesures est un grain séparé, qui devra citer ce protocole et passer ses trois pièces.
 
 ---
