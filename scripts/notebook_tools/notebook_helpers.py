@@ -1421,9 +1421,21 @@ def read_notebook(path: str) -> Dict[str, Any]:
     return helper.notebook
 
 
-def write_notebook(path: str, notebook: Dict[str, Any]) -> None:
-    """Write notebook JSON to file."""
-    strip_stale_papermill_metadata(notebook)
+def write_notebook(path: str, notebook: Dict[str, Any], strip_stale_metadata: bool = False) -> None:
+    """Write notebook JSON to file.
+
+    Ne retire PAS ``metadata.papermill`` / ``metadata.execution`` par defaut :
+    ce writer ne reexecute aucune cellule, donc il ne peut pas fabriquer de
+    bloc perime -- il ne peut que detruire la provenance d'un carnet deja
+    execute (mesure #24434 : une edition markdown-only de 2 phrases
+    supprimait 344 lignes de metadonnees papermill). Les executeurs qui
+    reecrivent des sorties sans passer par Papermill appellent
+    ``strip_stale_papermill_metadata`` directement (cf. ``_papermill_meta``).
+    Passer ``strip_stale_metadata=True`` uniquement si l'appelant vient
+    d'ecrire des sorties fraiches.
+    """
+    if strip_stale_metadata:
+        strip_stale_papermill_metadata(notebook)
     with open(path, 'w', encoding='utf-8', newline='\n') as f:
         json.dump(notebook, f, indent=1, ensure_ascii=False)
         f.write('\n')
