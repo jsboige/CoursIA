@@ -578,13 +578,17 @@ Lecture :
   premiers ordres de l'OOS sont identiques, un à un, à ceux de `8f983964`,
   compteurs d'exposition et de roulement compris. Les deux ordres en plus sont
   datés du 4 et du 5 août 2026, les deux jours de données gagnés.
-- **Les renvois étaient bien remplis ensemble.** Dans les ordres du témoin,
-  on compte 54 cas où plusieurs ordres du même contrat, envoyés des jours
-  différents, sont remplis le même jour, tous dans le même sens ; 81 sur la
-  fenêtre dev de #23841 (`b230c517`), dont 80 dans le même sens. Avec
-  `cancel`, il n'en reste aucun sur la fenêtre dev. Avec `net`, il en reste
-  15, mais les ordres suivants n'y portent plus que l'écart résiduel, pas un
-  renvoi de l'ordre en attente. L'exposition brute maximale passe de 4.08 à
+- **Les renvois étaient bien remplis ensemble.** On appelle cumul un contrat
+  dont au moins deux ordres, envoyés des jours différents, sont remplis le
+  même jour. Dans les ordres du témoin, on compte 54 cumuls, tous dans le
+  même sens ; 81 sur la fenêtre dev de #23841 (`b230c517`), dont 80 dans le
+  même sens. Avec `cancel`, il n'en reste aucun sur la fenêtre dev. Avec
+  `net`, il en reste 15 sur la fenêtre dev, dont 5 dans le même sens, et les
+  ordres suivants n'y portent plus que l'écart résiduel, pas un renvoi de
+  l'ordre en attente. Ces comptes se refont avec `count_cumulated_fills.py`
+  sur les journaux d'ordres, conservés hors dépôt avec les plans, empreintes
+  et statistiques des runs, sous `QC-traces/23962-carver13-open-orders/`.
+  L'exposition brute maximale passe de 4.08 à
   2.31 sur l'OOS à 2 M, et de 4.04 à 2.31 sur la fenêtre complète ; la
   médiane et le p90 bougent à peine.
 - **Le cas `SI27F16` de #23841 était lui-même un cumul.** Dans `b230c517`, les
@@ -604,7 +608,12 @@ Lecture :
   déjà parti et ne dépend pas de l'acquittement d'une annulation. En
   backtest, l'annulation est immédiate. Chez un courtier, elle peut arriver
   après le remplissage, et l'ordre renvoyé s'ajouterait alors à celui qui
-  vient d'être rempli. Ce risque n'est pas mesuré ici.
+  vient d'être rempli. Ce risque n'est pas mesuré ici. En retour, `net`
+  suppose que le reste en attente finisse par se remplir, y compris quand
+  l'ordre envoyé compense un reste plus grand que l'écart à la cible. Tant
+  que ce reste est ouvert, la position tenue diffère de la cible de ce
+  reste ; s'il est annulé ou expire, il sort des ordres vivants et le
+  rééquilibrage suivant repart des seules positions.
 - **Sans roulement, la règle ne joue que sur le contrat mappé.** Avec
   `roll=off`, `net` évite 57 renvois et passe 3 863 ordres contre 3 941 pour
   `89cbe34d`. Les 523 liquidations à l'échéance restent, puisque ce chemin
