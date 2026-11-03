@@ -82,12 +82,21 @@ def test_notebook_helpers_save_strips_stale_block(tmp_path):
         "fraiches decrivent CE run, pas la passe papermill du 2026-05-31")
 
 
-def test_notebook_helpers_write_notebook_strips_stale_block(tmp_path):
+def test_notebook_helpers_write_notebook_strip_is_optin(tmp_path):
     from notebook_helpers import write_notebook
     p = _write_fake_nb(tmp_path / "nb.ipynb")
     nb = json.loads(p.read_text(encoding="utf-8"))
+    # Depuis #24434, write_notebook est un writer generique : le strip est
+    # opt-in (strip_stale_metadata=True). Les executeurs qui reecrivent les
+    # sorties strippent explicitement ; une ecriture sans re-execution
+    # preserve la provenance papermill du carnet.
     write_notebook(str(p), nb)
-    assert _papermill_block_of(p) is None
+    assert _papermill_block_of(p) is not None, (
+        "write_notebook sans re-execution ne doit PAS retirer le bloc "
+        "papermill (provenance du dernier run, #24434)")
+    write_notebook(str(p), nb, strip_stale_metadata=True)
+    assert _papermill_block_of(p) is None, (
+        "l'opt-in strip_stale_metadata=True doit retirer le bloc perime")
 
 
 # --- exec_dotnet_persist : point d'ecriture extrait (kernel .NET requis sinon) ---
