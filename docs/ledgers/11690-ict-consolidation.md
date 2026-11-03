@@ -873,6 +873,8 @@ Six carnets, **toutes les cellules de code exécutées, zéro erreur, `metadata.
 
 Indices cités : position de la cellule dans l'ordre du carnet, **à partir de 1**, tous types confondus.
 
+Les en-têtes de ce strand portent la décomposition `md / code` plutôt que le total de cellules, conformément à #17636 (doctrine #9377) : les strands antérieurs sont grandfatherés et leurs en-têtes portent un total. Comparer un en-tête de ce strand à celui d'un strand antérieur revient donc à comparer deux grandeurs différentes, et non à constater une baisse.
+
 ### `ICT-42-InoculationBifurcation-Pilot-Python.ipynb` (42) — 18 md / 13 code, 13/13 exécutées
 
 | Colonne | Contenu |
