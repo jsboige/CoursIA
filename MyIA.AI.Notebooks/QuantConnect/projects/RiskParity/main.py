@@ -7,7 +7,7 @@ class RiskParity(QCAlgorithm):
     """
     Risk Parity v4: Trend Filter + Rank-based Risk Parity + BND
     ==================================================================
-    Measured (current code, fenêtre codée 2015-01-01 -> 2024-12-31, 2516 séances de marché (3653 jours calendaires), mode strategy): Sharpe 0.360, CAGR 7.294%, MaxDD 18.400%.
+    Measured (current code, fenêtre codée 2015-01-01 -> 2024-12-31, 2516 séances négociées (3653 jours calendaires), mode strategy): Sharpe 0.360, CAGR 7.294%, MaxDD 18.400%.
 
     Combines inverse-volatility weighting with trend filtering.
     BND safe haven when <2 assets trending.
