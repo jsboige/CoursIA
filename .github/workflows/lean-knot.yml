@@ -113,6 +113,11 @@ on:
       # a bare runner reached main unobserved (#8722).
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py'
+      # The axiom step ITSELF (extracted from the reusable workflow in
+      # #17336): it is the program the gate runs, so a change to it must
+      # re-run the gate -- the #8712 lesson applied one layer down, like
+      # lean_server.py above.
+      - 'scripts/lean/axiom_check_step.py'
       # Advisory target-coverage check (See #8782): the target-modules list is
       # hand-maintained while the lakefile glob grows; a change to the checker
       # must run it.
@@ -131,6 +136,7 @@ on:
       - '.github/actions/lean-axiom/action.yml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py'
+      - 'scripts/lean/axiom_check_step.py'
       - 'scripts/lean/check_target_coverage.py'
   workflow_dispatch:
 
@@ -199,6 +205,14 @@ jobs:
       # The per-module enumeration now lives in the gate's runtime derivation
       # (issue #10889) -- flip to `true` when the baseline reaches 0.
       fail-on-sorry: false
+      # The derivation `'*'` enumerates 48 modules on this lake, of which
+      # the FR-only filter kept 24: the 24 `_en` siblings carried 751
+      # declarations that NO axiom gate inspected (#22453). The siblings
+      # are byte-identical on the code side, and the ones that declare
+      # nothing are root aggregators (`declaration_free_module`), which
+      # the gate passes -- measured locally, without Lean, over the whole
+      # lake. Same opt-in as lean-conway.yml and lean-mimo.yml.
+      include-i18n-siblings: "true"
 
   # Advisory proof-integrity coverage (See #8782). Same pattern as conway_lean
   # (#8787): the `target-modules` list above is hand-maintained while the
