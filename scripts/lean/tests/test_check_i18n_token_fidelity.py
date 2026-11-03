@@ -22,6 +22,7 @@ from check_i18n_token_fidelity import (  # noqa: E402
     compare_files,
     declaration_names,
     designation_exemptions,
+    is_i18n_convention_block,
     is_mirror_metadata_header,
     is_technical,
     number_is_carried_elsewhere,
@@ -257,6 +258,36 @@ def test_compare_bodies_a_lost_number_stays_hard_without_the_word():
     assert [f["token"] for f in hard] == ["2"]
 
 
+def test_module_docstring_decl_reference_is_advisory():
+    # Control positive Generators_en.lean (review of #24148): the EN module
+    # docstring names a module declaration (`termA2`) the FR summary does not.
+    # The declaration is defined in the file (both twins); a summary naming a
+    # different subset of the module's declarations is a divergence, not a
+    # loss. In a module docstring it is advisory.
+    findings = compare_bodies(
+        "le pont vers la structure : `relA1_iff_generated`",
+        "the bridge: `termA2` and `relA1_iff_generated`",
+        {"termA2", "relA1_iff_generated"},
+        is_module=True,
+    )
+    assert findings
+    assert all(f["severity"] == ADVISORY for f in findings)
+
+
+def test_local_docstring_decl_reference_stays_hard():
+    # Narrow-control for the module-docstring exemption: the SAME declaration
+    # reference dropped from a LOCAL docstring (attached to a definition, not
+    # the file summary) is still a real fidelity loss and stays hard.
+    findings = compare_bodies(
+        "le lemme `arcPartition` fait le lien",
+        "the lemma makes the link",
+        {"arcPartition"},
+        is_module=False,
+    )
+    hard = [f for f in findings if f["severity"] == HARD]
+    assert [f["token"] for f in hard] == ["arcPartition"]
+
+
 def test_compare_bodies_ignores_a_dropped_header_metadata():
     # The header of a mirror states its own metadata; it is excluded from
     # the comparison by compare_files, not by compare_bodies.
@@ -281,6 +312,18 @@ def test_the_mirror_header_is_recognized_by_the_bodies():
         "le lemme `arcPartition`",
         "the lemma makes the link",
     )
+
+
+def test_i18n_convention_block_is_recognized():
+    # Control Conway/Doomsday.lean (review of #24148): a `### i18n` convention
+    # note documents the sibling-pair convention (here an option-A exception);
+    # it is metadata, so it is recognized and excluded from the comparison.
+    assert is_i18n_convention_block(
+        "### i18n -- convention #4980 ratifiee 2026-07-04\n"
+        "Ce sous-module suit l'option A (bilingue inline FR/EN).")
+    assert is_i18n_convention_block("voir le bloc ### i18n ci-dessus")
+    assert not is_i18n_convention_block(
+        "le lemme `arcPartition` fait le lien")
 
 
 def test_best_shift_aligns_a_constant_offset():
@@ -326,6 +369,68 @@ def test_compare_files_reports_an_unpaired_comment(tmp_path=None):
                   encoding="utf-8")
     report = compare_files(fr, en)
     assert any(u["kind"] == "unpaired-comment" for u in report["unpaired"])
+
+
+def test_compare_files_module_docstring_decl_is_advisory(tmp_path=None):
+    # End-to-end for the module-docstring exemption (control
+    # Generators_en.lean, review of #24148): the EN file's module docstring
+    # (its first block-doc comment) names a module declaration the FR summary
+    # does not. Detected as the module docstring by its anchor, the reference
+    # is advisory, not a hard loss.
+    fr = tmp_path / "Generators.lean" if tmp_path else Path("/tmp/G.lean")
+    en = tmp_path / "Generators_en.lean" if tmp_path else Path("/tmp/G_en.lean")
+    fr.parent.mkdir(parents=True, exist_ok=True)
+    fr.write_text(
+        "/-!\n"
+        "# Generators : le pont vers la structure\n"
+        "`relA1_iff_generated` relie les tables -/\n"
+        "def termA2 : Nat := 0\n"
+        "def relA1_iff_generated : Prop := True\n",
+        encoding="utf-8",
+    )
+    en.write_text(
+        "/-!\n"
+        "# Generators : the bridge to the structure\n"
+        "`termA2` and `relA1_iff_generated` relate the tables -/\n"
+        "def termA2 : Nat := 0\n"
+        "def relA1_iff_generated : Prop := True\n",
+        encoding="utf-8",
+    )
+    report = compare_files(fr, en)
+    hard = [f for f in report["findings"] if f["severity"] == HARD]
+    assert hard == [], hard
+
+
+def test_compare_files_excludes_an_unpaired_i18n_block(tmp_path=None):
+    # End-to-end for the `### i18n` exemption (control Conway/Doomsday.lean,
+    # review of #24148): a `### i18n` convention note present in the FR file,
+    # absent from the EN mirror, is metadata -- it is NOT reported as a lost /
+    # unpaired comment. The narrow guard: a genuine non-i18n orphan on the same
+    # file is still reported, so the exemption is scoped to the convention note.
+    fr = tmp_path / "Doomsday.lean" if tmp_path else Path("/tmp/D.lean")
+    en = tmp_path / "Doomsday_en.lean" if tmp_path else Path("/tmp/D_en.lean")
+    fr.parent.mkdir(parents=True, exist_ok=True)
+    fr.write_text(
+        "/- Conway's Doomsday Algorithm (original EN) -/\n"
+        "def dayOfWeek : Nat := 0\n"
+        "/-\n"
+        "`Conway.Doomsday` -- l'algorithme du Doomsday\n"
+        "  ### i18n -- convention #4980\n"
+        "  Ce sous-module suit l'option A (bilingue inline FR/EN).\n"
+        "-/\n"
+        "def anchor : Nat := 1\n"
+        "-- une note propre au fichier FR\n",
+        encoding="utf-8",
+    )
+    en.write_text(
+        "/- English mirror of `Doomsday.lean` (FR canonical) -/\n"
+        "def dayOfWeek : Nat := 0\n",
+        encoding="utf-8",
+    )
+    report = compare_files(fr, en)
+    unpaired_bodies = " ".join(u["body"] for u in report["unpaired"])
+    assert "i18n" not in unpaired_bodies
+    assert "une note propre au fichier FR" in unpaired_bodies
 
 
 # --- the repository itself ------------------------------------------------

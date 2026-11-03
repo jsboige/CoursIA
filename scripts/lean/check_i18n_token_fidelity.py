@@ -113,6 +113,20 @@ _DATE_GROUP = re.compile(r"\d+(?:\s*[.,/\-]\s*\d+)*")
 # loss of the other. This is the marker that tells the two apart.
 _MIRROR_DECLARATION = re.compile(r"\b(?:mirror\s+of|miroir\s+de)\b", re.I)
 
+# A `### i18n` convention note: a comment (or a section of one) that documents
+# the sibling-pair convention itself -- e.g. an option-A bilingual-inline
+# module that explains WHY it deviates from the `_en` sibling rule. It is
+# metadata about the file, not translatable content: the EN mirror owes it
+# nothing, so it is excluded from the comparison (a false "loss" / "orphan"
+# otherwise, control Conway/Doomsday.lean, review of #24148).
+_I18N_CONVENTION = re.compile(r"###\s*i18n\b", re.I)
+
+
+def is_i18n_convention_block(body: str) -> bool:
+    """True when ``body`` is, or embeds, a `### i18n` convention note."""
+    return bool(_I18N_CONVENTION.search(body))
+
+
 # A word-shaped token (identifier, keyword, ordinary English word).
 _WORD = re.compile(r"[A-Za-z_][A-Za-z0-9_']*")
 
@@ -517,8 +531,18 @@ def span_is_decl_ref(span: str, decls: set[str]) -> bool:
 # --------------------------------------------------------------------------
 
 def compare_bodies(fr_body: str, en_body: str,
-                   decls: set[str] | None = None) -> list[dict]:
-    """Compare one FR/EN comment-body pair; return the list of findings."""
+                   decls: set[str] | None = None,
+                   is_module: bool = False) -> list[dict]:
+    """Compare one FR/EN comment-body pair; return the list of findings.
+
+    ``is_module`` marks a pair that is the file's MODULE docstring (the
+    top-of-file summary). A summary legitimately diverges between the FR and
+    EN twins in wording and in WHICH cross-references it carries (declaration
+    names, issue / arXiv ids, section numbers): the byte-identity contract
+    binds the code, not the summary prose. So in a module docstring a
+    divergent code-span or number is advisory, not a hard loss (control
+    ``Generators_en.lean``, review of #24148).
+    """
     decls = decls or set()
     findings: list[dict] = []
     drop_fr, drop_en = designation_exemptions(fr_body, en_body)
@@ -529,23 +553,26 @@ def compare_bodies(fr_body: str, en_body: str,
         collapse_en(s) for s in drop_en}
 
     for span in sorted(fr_spans - en_spans):
-        findings.append({"severity": span_severity(span, decls), "kind": "code-span",
-                         "token": span, "side": "FR"})
+        findings.append({"severity": span_severity(span, decls, is_module),
+                         "kind": "code-span", "token": span, "side": "FR"})
     for span in sorted(en_spans - fr_spans):
-        findings.append({"severity": span_severity(span, decls), "kind": "code-span",
-                         "token": span, "side": "EN"})
+        findings.append({"severity": span_severity(span, decls, is_module),
+                         "kind": "code-span", "token": span, "side": "EN"})
 
+    # In a module docstring a divergent number is a summary difference, not a
+    # loss: it is advisory (see ``is_module`` above).
+    num_severity = ADVISORY if is_module else HARD
     fr_nums = Counter(number_parts(fr_body))
     en_nums = Counter(number_parts(en_body))
     for num, count in sorted((fr_nums - en_nums).items()):
         if number_is_carried_elsewhere(num, en_body, fr_body):
             continue
-        findings.append({"severity": HARD, "kind": "number",
+        findings.append({"severity": num_severity, "kind": "number",
                          "token": num, "side": "FR"})
     for num, count in sorted((en_nums - fr_nums).items()):
         if number_is_carried_elsewhere(num, fr_body, en_body):
             continue
-        findings.append({"severity": HARD, "kind": "number",
+        findings.append({"severity": num_severity, "kind": "number",
                          "token": num, "side": "EN"})
 
     fr_ids = technical_identifiers(fr_body)
@@ -559,8 +586,15 @@ def compare_bodies(fr_body: str, en_body: str,
     return findings
 
 
-def span_severity(span: str, decls: set[str]) -> str:
-    """A dropped span is HARD when it names a declaration of the file."""
+def span_severity(span: str, decls: set[str], is_module: bool = False) -> str:
+    """A dropped span is HARD when it names a declaration of the file.
+
+    In a module docstring the summary may legitimately name a different
+    subset of the module's declarations on each side, so a declaration
+    reference is advisory there (control ``Generators_en.lean``, #24148).
+    """
+    if is_module:
+        return ADVISORY
     return HARD if span_is_decl_ref(span, decls) else ADVISORY
 
 
@@ -685,6 +719,14 @@ def compare_files(fr_path: Path, en_path: Path) -> dict:
     en_comments = scan_comments(en_src)
     decls = declaration_names(fr_src) | declaration_names(en_src)
 
+    # The module docstring is the file's first (lowest-anchor) block-doc
+    # comment. A pair whose FR or EN side is that docstring is a summary,
+    # compared as such (see ``compare_bodies`` / ``is_module``).
+    fr_module_anchor = min((c[3] for c in fr_comments if c[1] == "doc"),
+                           default=None)
+    en_module_anchor = min((c[3] for c in en_comments if c[1] == "doc"),
+                           default=None)
+
     shift = _best_shift({c[3] for c in fr_comments},
                         {c[3] for c in en_comments})
     raw_pairs, orphans_fr, orphans_en, repaired = pair_comments(
@@ -697,21 +739,30 @@ def compare_files(fr_path: Path, en_path: Path) -> dict:
     for fr_group, en_group, anchor in raw_pairs:
         for k in range(max(len(fr_group), len(en_group))):
             if k < len(fr_group):
-                fr_line, fr_kind, fr_body, _ = fr_group[k]
+                fr_line, fr_kind, fr_body, fr_anchor = fr_group[k]
             else:
-                fr_line, fr_kind, fr_body = (0, "-", "")
+                fr_line, fr_kind, fr_body, fr_anchor = (0, "-", "", None)
             if k < len(en_group):
-                en_line, en_kind, en_body, _ = en_group[k]
+                en_line, en_kind, en_body, en_anchor = en_group[k]
             else:
-                en_line, en_kind, en_body = (0, "-", "")
-            is_header = is_mirror_metadata_header(fr_body, en_body)
+                en_line, en_kind, en_body, en_anchor = (0, "-", "", None)
+            # A pair whose side is the module docstring is a summary, not
+            # translatable content: its cross-references are advisory.
+            is_module = (fr_anchor == fr_module_anchor
+                         or en_anchor == en_module_anchor)
+            # A mirror header or a `### i18n` convention note has no
+            # counterpart by design: exclude it from the comparison.
+            is_header = (is_mirror_metadata_header(fr_body, en_body)
+                         or is_i18n_convention_block(fr_body)
+                         or is_i18n_convention_block(en_body))
             if fr_body and en_body:
                 if is_header:
                     excluded += 1
                     findings = []
                 else:
                     compared += 1
-                    findings = compare_bodies(fr_body, en_body, decls)
+                    findings = compare_bodies(fr_body, en_body, decls,
+                                               is_module=is_module)
             else:
                 findings = []
             pair = {
@@ -727,13 +778,18 @@ def compare_files(fr_path: Path, en_path: Path) -> dict:
             pairs.append(pair)
 
     for line, kind, body, anchor in orphans_fr:
+        # A `### i18n` convention note is metadata, not a lost comment: the
+        # EN mirror owes it nothing (control Conway/Doomsday.lean, #24148).
+        if is_i18n_convention_block(body):
+            continue
         unpaired.append({"severity": ADVISORY, "kind": "unpaired-comment",
                          "side": "FR", "line": line, "anchor": anchor,
                          "body": body.strip()[:120]})
     for line, kind, body, anchor in orphans_en:
         # A mirror header has no FR counterpart by design: it is a header,
-        # not an orphan comment.
-        if _MIRROR_DECLARATION.search(body):
+        # not an orphan comment. A `### i18n` note is metadata, same reason.
+        if (_MIRROR_DECLARATION.search(body)
+                or is_i18n_convention_block(body)):
             continue
         unpaired.append({"severity": ADVISORY, "kind": "unpaired-comment",
                          "side": "EN", "line": line, "anchor": anchor,
