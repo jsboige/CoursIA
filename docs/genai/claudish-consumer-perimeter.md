@@ -37,7 +37,7 @@ Le cadrage du 2026-10-14 pose une décision binaire : **(a)** exception document
 **La branche retenue est (a)**, pour trois raisons qui ne dépendent pas d'une préférence :
 
 1. **(b) n'est pas dans ce dépôt.** Le compose et le code de la passerelle vivent hors CoursIA (`D:\Dev\claudish`) ; une lane de ce dépôt ne modifie pas l'infrastructure d'un autre propriétaire — elle la demande.
-2. **(b) n'aurait pas d'objet mesurable aujourd'hui** : la passerelle joignable sur `localhost:3000` rend `{"object":"list","data":[]}` sur `/v1/models` — elle ne sert aucun modèle. Étendre son relais ne migrerait rien.
+2. **(b) serait bâti sur une passe en repli** : la passerelle répond aux appels réels — un `POST /v1/messages` avec la clé courante rend 200 — mais elle les sert aujourd'hui par son modèle de **repli** (`deepseek-flash`), pas par le modèle nominal. Étendre son relais maintenant consacrerait un chemin dégradé ; le préalable est que la passe reprenne son modèle nominal, pas qu'on lui ajoute des paramètres.
 3. **Le motif pédagogique est le fond, pas la commodité.** Ces carnets n'évitent pas la passerelle par confort : ils ont besoin des paramètres natifs pour tenir leur propos.
 
 La branche (a) **n'est pas un contournement** : elle déclare le périmètre au lieu de le laisser implicite, ce qui est précisément ce qui manquait pour que l'audit suivant n'ait pas à refaire — et à faire dériver — l'énumération.
@@ -46,28 +46,31 @@ La branche (a) **n'est pas un contournement** : elle déclare le périmètre au 
 
 | Mesure | Résultat | Conséquence |
 |---|---|---|
-| `GET localhost:3000/v1/models` | `{"object":"list","data":[]}` | aucun modèle servi par la passerelle |
-| `POST /v1/chat/completions` avec la clé du `.env` local | `{"type":"error","error":{"type":"authentication_error","message":"invalid proxy authentication"}}` | la passerelle en cours ne reconnaît pas cette valeur |
-| `python scripts/secrets/render_envs.py --check` | `[OK] 12/19 target .env on disk, in sync with master.env` | le `.env` consommateur est **en phase** avec `master.env` — la divergence n'est donc pas côté client |
+| `GET localhost:3000/v1/models` | `{"object":"list","data":[]}` | **n'est pas un indicateur** : un sidecar relais rend une liste vide par construction (mesure du 2026-11-03) — n'en conclure aucun défaut |
+| `POST /v1/messages` avec la clé courante | 200 en 1,04 s, réponse servie par `deepseek-flash` | la passe **fonctionne**, mais en **repli** — c'est précisément ce qui la rend inutilisable pour ces carnets |
+| `POST /v1/chat/completions` avec la clé du `.env` local, avant correction | `{"type":"error","error":{"type":"authentication_error","message":"invalid proxy authentication"}}` | clé **inconnue** du sidecar, rapportée comme une requête **sans** clé : la valeur locale était en retard d'une rotation (mesure et correction du 2026-11-03, ci-dessous) |
+| `python scripts/secrets/render_envs.py --check` | `[OK] 12/19 target .env on disk, in sync with master.env` | la distribution est en phase — **après** resynchronisation de `master.env` sur la valeur courante |
 
-Conséquence directe : **sur `po-2027`, aucune des deux voies n'exécute un appel de modèle**. Aucun carnet de ce périmètre ne peut donc être ré-exécuté, et C.2 interdit de committer une édition de carnet non ré-exécutée. C'est ce qui borne la livraison de #14926 à la décision et au périmètre, sans toucher aux carnets.
+Conséquence directe : **sur `po-2027`, un appel de modèle s'exécute** — mais par le modèle de **repli** de la passe, jamais par le modèle nominal que ces carnets visent, et sans les paramètres natifs dont ils ont besoin. Ce qui manque n'est donc pas l'accès : c'est l'accès au **bon** modèle. Aucun carnet de ce périmètre n'est ré-exécuté ici, et C.2 interdit de committer une édition de carnet non ré-exécutée — c'est ce qui borne la livraison de #14926 à la décision et au périmètre.
 
-### Ce que la dernière ligne déplace
+### Ce que la mesure du 2026-11-03 a corrigé
 
-Elle retire l'explication commode. Le réflexe est de conclure « la clé cliente locale est périmée, c'est l'acceptance 2 qui n'est pas faite sur cette machine ». La mesure dit l'inverse : `master.env` porte la clé, et le `.env` consommateur est **en phase avec elle**. La valeur refusée est donc celle que la distribution a correctement livrée — ce qui place la divergence **entre `master.env` et la passerelle en cours d'exécution**, côté serveur, dans un dépôt qui n'est pas celui-ci.
+Le raisonnement qui suivait concluait que la divergence siégeait **côté serveur**, dans un dépôt qui n'est pas celui-ci. La mesure l'a démenti, et le chemin de l'erreur vaut d'être gardé : le sidecar rapporte une clé **inconnue** comme une requête **sans clé** (`keyless request … proxy key required`). Cela se lit comme un défaut d'en-tête ou de passerelle, alors que la distribution locale était simplement en retard d'une rotation — et c'est exactement le diagnostic qu'un audit pressé aurait repris tel quel.
 
-C'est cohérent avec la mécanique de rotation : changer la valeur serveur impose de **redémarrer le service** (le compose ComfyUI-Login ne régénère son hash qu'au démarrage ; même famille de piège documentée dans [secrets-management.md](secrets-management.md)). Une valeur mise à jour sans redémarrage laisse exactement cette signature — client à jour, serveur qui refuse encore l'ancienne.
+Ce qui tient, mesuré : le conteneur `claudish-sidecar` de `po-2027` porte la clé **courante** — il n'a donc pas à être recréé — et c'est `master.env` qui portait la précédente, d'où le refus. La correction est locale et a été faite : `master.env` aligné sur la valeur courante, puis `render_envs.py` pour les `.env` consommateurs (`--check` rend « in sync »).
 
-Le geste correctif n'appartient donc pas à une lane de ce dépôt : il se demande au propriétaire de la passerelle. L'écrire ici évite qu'un prochain audit referme la boucle sur « acceptance 2 non faite ».
+La règle de redémarrage ne s'applique pas ici : elle vise les services qui recalculent un secret **au démarrage** (ComfyUI-Login, [secrets-management.md](secrets-management.md)). Un sidecar dont l'environnement est déjà correct n'a rien à redémarrer — un redémarrage n'aurait rien changé et aurait coupé la passe.
+
+Le geste correctif de **cette** panne appartient donc à cette lane, et il est fait. Reste ce qui n'est pas à nous : que la passe serve le modèle nominal et relaie les paramètres natifs — cela se demande à son propriétaire.
 
 ## Condition de réouverture
 
 La fournée A redevient migrable — en **une seule PR pour les deux carnets**, jamais une PR par carnet — quand les quatre conditions suivantes sont réunies :
 
-1. la passerelle sert les modèles visés et les expose sur `/v1/models` ;
+1. la passerelle sert les modèles visés **hors repli** — mesuré par un vrai `POST /v1/messages`, jamais par `/v1/models` (une liste vide est le comportement normal d'un sidecar relais) ;
 2. elle relaie `chat_template_kwargs`, `seed` et `logprobs` sans les perdre (la liste est close et chiffrée par la mesure du 2026-10-07) ;
 3. `render_envs.py --check` rend 0 sur la machine qui exécute — **déjà vérifié sur `po-2027`** au 2026-11-03 ;
-4. la valeur serveur de la passerelle correspond à celle que `master.env` distribue, et le service a été redémarré après la rotation.
+4. la valeur serveur de la passerelle correspond à celle que `master.env` distribue — **vérifié sur `po-2027`** au 2026-11-03 ; tout écart se corrige côté distribution locale, sans redémarrage quand le conteneur porte déjà la bonne valeur.
 
 Tant que ces conditions ne sont pas réunies, la classe 2 et la classe 3 ci-dessus restent telles quelles. Le geste utile n'est pas de les migrer, c'est de constater qu'elles n'ont pas bougé.
 
