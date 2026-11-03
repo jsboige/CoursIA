@@ -2980,8 +2980,12 @@ def revoked_after_merge_signal(issue_number: int, lane: str | None = None,
             return None
     if not isinstance(comments, list):
         return None
-    # Le repli REST ne rend que des CORPS, sans horodatage : il ne permet pas
-    # la comparaison a l'instant de fusion, donc il ne revoque pas. Le
+    # Le repli passe par le MEME transport que la voie nominale
+    # (`gh issue view --json comments`), qui rend bien `createdAt` : une
+    # revision (Hermes, 2026-11-03) decrivait ici un transport qui n'en
+    # rendait pas -- c'etait la PHRASE qui etait erronee, pas le code, et le
+    # test « sans horodatage » prouve que l'absence de `createdAt` DISABLE la
+    # revocation. Un commentaire sans `createdAt` ne revoque donc rien : le
     # desaccord est assume et documente plutot que comble par une supposition.
     newest_revocation = None
     for comment in comments:
