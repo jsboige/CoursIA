@@ -113,11 +113,45 @@ REPO = "jsboige/CoursIA"
 BOT_LOGINS = {"github-actions", "codecov", "dependabot", "copilot-pull-request-reviewer"}
 
 # Prefixes de tags utilises par les agents du cluster (protocole dashboard/PR).
+# Consommee par classify (exemption) ET can_lift (voie 3 de B.0) : la
+# constante reste stricte -- n'y ajouter que des tags de PROTOCOLE pur. Un
+# tag ici n'est pas seulement « pas un nit », il est aussi « pas une levee »
+# (can_lift l. 41xx ecarte le corps du nommage de suivi) : ce double effet
+# doit rester voulu, jamais accidentel.
 AGENT_PREFIXES = (
     "[PART-OF-EPIC", "[GRAIN", "[CLAIMED", "[DONE", "[INFO", "[DISPATCH",
     "[ACK", "[RELEASED", "[OVERRIDE", "[MERGED", "[WARN", "[ERROR", "[ASK",
     "[REPLY", "[PROPOSAL", "[BLOCKED", "[ESCALATION", "[DELIVERED",
 )
+
+# `[ACTION` et `[DIAG` (taxonomie d'emission P1 de #15511, cf COMMENT_TAG_RE
+# ci-dessous) servent la CLASSIFICATION, pas la levee. Mesure fondatrice
+# (po-2028:CoursIA, 2026-11-02 13:30Z) : sans eux, un compte-rendu CONFORME a
+# la regle sortait de l'exemption de classify (l. 44xx) et tombait dans la
+# branche CRLF/HUMAN des qu'il etait poste par un transport Windows -- le
+# compte-rendu d'une action devenait un nit bloquant la PR qu'il documente.
+# Reserve NanoClaw #24243 : les ajouter a AGENT_PREFIXES aurait un second
+# effet, invisible au diff : can_lift lit la meme constante pour ecarter les
+# narrations de protocole des levees, or un compte-rendu tague [ACTION] qui
+# NOMME une issue de suivi (« suivi ouvert : #N ») est un report delibere --
+# exactement le geste que la voie 3 de B.0 credite (collect_followup_lifts,
+# #13495/#14218 : l'auteur de la PR y est nommeur valide). L'extension vit
+# donc dans cette constante, consommee uniquement par classify ; can_lift
+# reste sur AGENT_PREFIXES.
+CLASSIFY_AGENT_PREFIXES = AGENT_PREFIXES + ("[ACTION", "[DIAG")
+
+# #15511 (P1) -- taxonomie d'emission des commentaires agent, premiere
+# ligne NON VIDE du corps : [ACTION] (le commentaire porte une action --
+# patch, rebase, rerun, fix), [DIAG] (diagnostic pur, sans action
+# attachee), [ASK] (attente d'une decision tierce). Le contrat est cote
+# EMISSION (meme parti que #14682 : elargir le filet a la prose
+# sur-accuse d'un facteur 5) : un commentaire non tague est INVISIBLE
+# pour ce detecteur -- il ne compte ni comme [DIAG] ni comme [ACTION].
+# Ces tags ne touchent NI `classify`, NI les levees : ils mesurent la
+# boucle de pompage, pas le verdict (un [DIAG] portant une reserve vivante
+# reste un nit par la voie habituelle).
+COMMENT_TAG_RE = re.compile(r"\[(ACTION|DIAG|ASK)\](?=\s|$)")
+DIAG_LOOP_LIMIT = 3  # > 3 [DIAG] consecutifs sans [ACTION] = PR bloquee
 
 # #11639 — l'arbitrage ECRIT du coordinateur. B.0 ne restreint pas l'auteur
 # d'une reponse de levée (« une reponse ecrite sur la PR qui nomme la
@@ -372,10 +406,26 @@ HOLD_TAGGED_HEAD = re.compile(r"^[\s*_#]*\[HOLD\b[^\]]*\]")
 # Volontairement LARGE : c'est le cote permissif du garde (il MAINTIENT le
 # blocage), donc un faux positif ici ne coute qu'une phrase de levee, tandis
 # qu'un trou coute un merge non mesure.
+# #24141 — l'alternative « avec <reserve> » ne matchait que « avec reserve » /
+# « avec reserves ». Le COMPTE, l'ARTICLE ou le DETERMINANT place ENTRE « avec »
+# et « reserve » cassait l'alternative : la review Hermes de #24117 (« Verdict :
+# APPROVE avec 1 reserve 🟡 ») n'etait pas reconnue comme une reserve VIVANTE,
+# et la PR est partie en merge le 02/11 05:07Z avec cette reserve en suspens —
+# B.0 rendait rc=0 (aucun bloquant).
+#
+# La quantite compte ici le NOMBRE de reserves : « 0 reserve » n'en est pas
+# une (meme logique que les CITERS, qui excluent « zero » et « 0 »). Les
+# nombres en toutes lettres sont pris pour ne pas laisser la meme famille de
+# trou ouvert (« avec deux reserves »).
+_APPROVE_RESERVATION_QUANTITE = (
+    r"(?:[1-9]\d*|une?|deux|trois|quatre|cinq|six|sept|huit|neuf|dix"
+    r"|quelques|plusieurs|des|les|la|ma|mon|tes|ses)"
+)
+
 _APPROVE_RESERVATION_RE = re.compile(
     r"(?i)("
     r"sous\s+r[ée]serve"
-    r"|avec\s+r[ée]serves?\b"
+    r"|avec\s+(?:" + _APPROVE_RESERVATION_QUANTITE + r"\s+)?r[ée]serves?\b"
     r"|r[ée]serve\s+(?:maintenue|subsiste|demeure|tient)"
     r"|je\s+maintiens"
     r"|je\s+conserve\s+(?:ma|mon|la)\b"
@@ -4380,7 +4430,7 @@ def classify(author: str, body: str) -> str | None:
         return None  # verdict humain positif (APPROVE / APPROVED / LGTM) SANS reserve vivante : equivalent state:APPROVED
     if not live_concern and has_live_marker(body, POSITIVE_MARKERS):
         return None  # approbation sans reserve vivante : la review conclut, ne reserve pas
-    if stripped.startswith(AGENT_PREFIXES):
+    if stripped.startswith(CLASSIFY_AGENT_PREFIXES):
         # Tag de protocole agent : informatif, pas un nit — sauf s'il porte une reserve.
         return "BOT-CONCERN" if live_concern else None
     # #19810 — proxy CRLF serre : un corps CRLF ne tient HUMAN que s'il porte
@@ -4665,6 +4715,54 @@ def _override_scopes_reserve(lift_body: str, nit_author: str) -> bool:
         return _scope_lifted_sentence(
             body, re.compile(r"(?i)\b(?:hermes|nanoclaw)\b"))
     return False
+
+
+def _diag_loop(pr_data: dict, cutoff: datetime) -> dict:
+    """#15511 (P1) : plus longue serie de [DIAG] sans [ACTION] intercale.
+
+    Mesure fondatrice : PR #14821 -- 31 commentaires / 68 101 caracteres
+    d'infra-diagnostic sur 5 jours, pour un livrable qui n'avait pas bouge
+    depuis le commit du premier jour. Le pompage se detecte a la structure,
+    pas au contenu : seul un commentaire tague [ACTION] interrompt la
+    serie ; un commentaire non tague ou tague [ASK] est TRANSPARENT
+    (« sans [ACTION] intercale » -- l'issue P1 mot pour mot). Les bots et
+    les commentaires posterieurs au cutoff sont exclus, comme partout
+    ailleurs dans l'organe.
+    """
+    tagged = []
+    for c in pr_data.get("comments") or []:
+        login = (c.get("author") or {}).get("login", "")
+        if login in BOT_LOGINS:
+            continue
+        body = (c.get("body") or "").strip()
+        when = ts(c.get("createdAt"))
+        if not body or when is None or when > cutoff:
+            continue
+        first = next((ln.strip() for ln in body.splitlines() if ln.strip()), "")
+        m = COMMENT_TAG_RE.match(first)
+        if m:
+            tagged.append((m.group(1), login, when, first))
+    best_run, best_authors, best_at, best_line = 0, "", None, ""
+    run, authors = 0, []
+    for tag, login, when, first in tagged:
+        if tag == "ACTION":
+            run, authors = 0, []
+            continue
+        if tag != "DIAG":
+            continue  # [ASK] : transparent, ni serie ni interruption
+        run += 1
+        authors.append(login)
+        if run > best_run:
+            best_run, best_authors, best_at, best_line = (
+                run, ", ".join(dict.fromkeys(authors)), when, first)
+    return {
+        "max_run": best_run,
+        "authors": best_authors,
+        "at": best_at.isoformat() if best_at else None,
+        "line": best_line,
+        "diag_count": sum(1 for t, *_ in tagged if t == "DIAG"),
+        "action_count": sum(1 for t, *_ in tagged if t == "ACTION"),
+    }
 
 
 def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
@@ -5511,6 +5609,22 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
     before_lc = [u for u in unevaluated if not u["after_last_commit"]]
     to_read = sorted(after_lc + before_lc[-3:], key=lambda u: u["at"] or "")
 
+    # #15511 (P1) -- boucle de diagnostic sans action : > 3 [DIAG]
+    # consecutifs sans [ACTION] intercale. Ne lit QUE les commentaires
+    # tagues (contrat d'emission) : rien ne change pour une PR dont
+    # personne n'utilise la taxonomie -- le detecteur rend max_run=0.
+    diag_loop = _diag_loop(pr_data, cutoff)
+    if diag_loop["max_run"] > DIAG_LOOP_LIMIT:
+        at_dt = ts(diag_loop["at"])
+        blocking.append({
+            "kind": "DIAG-LOOP", "author": diag_loop["authors"],
+            "src": "comment", "channel": "comment",
+            "at": diag_loop["at"] or "?",
+            "gap_hours": (round((cutoff - at_dt).total_seconds() / 3600.0, 1)
+                          if at_dt else None),
+            "excerpt": _excerpt(diag_loop["line"]),
+        })
+
     return {
         "pr": pr_data.get("number"),
         "title": (pr_data.get("title") or "")[:110],
@@ -5522,6 +5636,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         "rewind_artifacts": rewind_artifacts,
         "unevaluated": to_read,
         "unevaluated_total": len(unevaluated),
+        "diag_loop": diag_loop,
     }
 
 
