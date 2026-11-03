@@ -53,6 +53,24 @@ Le trio coordinateur, titulaire et secrétaire est décrit, avec la circulation 
 
 **Anti-collision.** Un seul éditeur par notebook ou par série à la fois ; deux sessions sur une même machine (`CoursIA` et `CoursIA-2`) sont deux lanes distinctes, et un worker qui refuse un pivot vers la session voisine a raison.
 
+### Établir qu'une lane est active — quatre familles de preuves
+
+Une lane n'est ni « vivante » ni « morte » sur un coup d'œil au dashboard : la question se tranche sur quatre preuves, et une seule ne suffit pas.
+
+| Preuve | Ce qu'elle demande |
+|---|---|
+| **EXISTS** | la machine et le workspace existent : cette page, plus `roosync_inventory(type:"machines")` |
+| **RECENT** | activité documentée sur les 7 derniers jours : DM, dashboard, cron, commit |
+| **CONTRIBUTES** | production mesurable : grain livré, dossier de prévalidation posé, PR mergée, ou service rendu au cluster |
+| **REACHABLE** | joignable par l'un des canaux : LAN, dashboard, DM, ou l'un des mécanismes de réveil |
+
+Les quatre preuves se lisent ensemble, et le croisement range la lane dans l'un de quatre groupes : **active et joignable**, **dormante côté VS Code mais joignable par cession ou réveil**, **joignable sans activité connue**, **optionnelle ou redondante** (ses canaux sont déjà couverts par une autre lane). Le dernier groupe est le seul qui autorise à proposer une extinction ; il ne l'autorise pas à l'exécuter — un redémarrage ou un réveil reste une décision user.
+
+Deux garde-fous, l'un et l'autre mesurés à l'usage :
+
+- **Le silence n'est pas la dormance.** Une lane dont le dashboard est muet peut être en train de servir un grain long ; une absence de message ne vaut pas absence d'activité, et une grille qui la classe « dormante » sur ce seul signe se trompe.
+- **Une classification est datée.** Le roster complet, avec sa grille remplie au 2026-10-08 et les quatre familles de preuves telles qu'elles ont servi à l'acceptance de #14527, est conservé comme rapport figé : [2026-10-08-roster-machine-workspace.md](../transients/2026-10-08-roster-machine-workspace.md). La **méthode** est ici ; les verdicts par lane y sont périmés par construction et ne se recopient pas dans cette page.
+
 ## D'où vient le grain d'une lane
 
 Il n'y a **aucune table de spécialités** dans cette page, et c'est délibéré. Une table « tel sujet va à telle lane » contredit le tirage sur le pool entier ([proactive-coordination.md](../../.claude/rules/proactive-coordination.md), R5), et la dernière qui figurait ici n'était plus appliquée par aucune lane.

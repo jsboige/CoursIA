@@ -372,6 +372,233 @@ _CONTAINER_DELIVERY_MARKER_RE = re.compile(
     re.IGNORECASE | re.MULTILINE,
 )
 
+# --- Dossier de cloture : un signal de livraison TERMINAL --------------------
+#
+# Le dossier `[CLOSURE PREFLIGHT]` est l'ORGANE canonique de cloture du depot
+# (`scripts/check_closure_dossier.py`) : c'est lui qui dit « cette issue est
+# resolue, elle n'a plus de grain a servir ». Le tapis, lui, ne connaissait que
+# la grammaire des marqueurs (`[INFO] candidate-delivered`, `[DELIVERED] lane`),
+# et ces marqueurs sont PERISSABLES : pour une issue `consolidation`, #22500
+# les fait expirer au-dela de 48 h.
+#
+# Mesure du 2026-11-02 (#19253, label `consolidation`) : le marqueur du
+# 30/10 16:49Z a expire le 01/11 16:49Z, et le tapis a resservi l'issue
+# TROIS fois dans la journee alors que son dossier de cloture CLOSE datait du
+# 02/11 08:29Z. Le dossier etait la ; le tapis ne le voyait pas.
+#
+# Le dossier est donc reconnu comme un signal TERMINAL : il n'expire pas, et
+# la regle des 48 h ne peut pas le neutraliser.
+#
+# L'ANNONCE de cloture (`Fermeture sur dossier `[CLOSURE PREFLIGHT]`
+# (verdict CLOSE, ...)`) est la meme decision, ecrite en prose par l'adjoint
+# juste apres le dossier : elle est reconnue aussi, sinon le DERNIER
+# commentaire du fil redevenirait le seul point lu et le dossier serait
+# invisible.
+_CLOSURE_ANNOUNCEMENT_RE = re.compile(
+    r"^\s*(?:#{1,6}\s*)?Fermeture sur dossier\b[^\n]*?\bverdict\s+CLOSE\b",
+    re.IGNORECASE | re.MULTILINE,
+)
+
+
+def _closure_dossier_verdict(body: str) -> str | None:
+    """Verdict d'un dossier `[CLOSURE PREFLIGHT]`, ou ``None``.
+
+    REUTILISE L'ORGANE canonique (`scripts/check_closure_dossier.py`), jamais
+    une copie de sa grammaire : le dossier a ses propres champs obligatoires,
+    ses regles de forme, et un gate (`check_closure_dossier.py rc=0`) qui le
+    valide. Un dossier qui ne parse PAS (champ manquant, ligne malformee,
+    marqueur fermant absent) n'est PAS un signal : il est ignore (fail-OPEN),
+    plutot que devine.
+
+    Import tardif : l'organe n'est charge que si un corps contient la
+    marqueur d'ouverture -- le tapis ne paie pas l'import pour un pool
+    entierement depourvu de dossier.
+    """
+    if not body or "[CLOSURE PREFLIGHT]" not in body:
+        return None
+    try:
+        from check_closure_dossier import parse_dossier
+    except Exception:  # noqa: BLE001 - organe absent -> pas de signal
+        return None
+    try:
+        dossier, errors = parse_dossier(body, 0, "", "")
+    except Exception:  # noqa: BLE001 - parseur en faute -> pas de signal
+        return None
+    if dossier is None or errors:
+        return None
+    return (dossier.fields.get("verdict") or "").strip().upper()
+
+
+def _closure_announced_close(body: str) -> bool:
+    """L'annonce de cloture (`Fermeture sur dossier ... verdict CLOSE`)."""
+    return bool(_CLOSURE_ANNOUNCEMENT_RE.search(body or ""))
+
+
+# --- REOUVERTURE : la decision de cloture peut etre REPRISE ------------------
+#
+# Un dossier `[CLOSURE PREFLIGHT]` de verdict CLOSE est TERMINAL : il n'a pas
+# d'age, donc la regle des 48 h (#22500) ne peut pas l'expirer. C'est le
+# comportement voulu, mesure sur #19253 (#24172, #24173).
+#
+# Mais une decision de cloture prise sur une issue que le USER rouvre ensuite
+# n'est plus la decision finale : le user dit « ce n'est pas regle ». Or le
+# tapis ne lit que le FIL (des commentaires) : il voit le dossier, il ne voit
+# pas l'ETAT de l'issue (fermee, puis rouverte). Une issue rouverte apres son
+# dossier CLOSE, sans `[NOT-DELIVERED]`, resterait donc ecartee du tapis POUR
+# TOUJOURS -- le dossier etait la, la reouverture aussi, et le tapis ne
+# regardait que le fil (#24250).
+#
+# Le predicat est « une REOUVERTURE posterieure a la decision de cloture », et
+# NON « une annonce de fermeture presente ET issue ouverte » : ce second
+# predicat ressortirait toute issue livree et non closee -- c'est-a-dire la
+# majorite du pool ecarte par le filtre de livraison -- et le filtre
+# s'effondrerait.
+#
+# Cout : UNE lecture REST du TIMELINE de l'issue, et UNIQUEMENT pour les
+# candidats qui portent une decision de cloture (rares). Le bucket REST est
+# distinct du bucket GraphQL (#17038). Un marqueur ordinaire ne declenche
+# rien : il expire a 48 h de toute facon.
+_REOPEN_CACHE: dict[int, list[str]] = {}
+
+_ISO_Z_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$")
+
+
+def _parse_iso(value):
+    """Horodatage ISO lu en UTC ; `None` s'il est illisible.
+
+    Meme convention que `_visit_age_hours` : le suffixe `Z` devient un offset
+    explicite, et un horodatage naif est relu en UTC.
+    """
+    if not isinstance(value, str) or not value.strip():
+        return None
+    text = value.strip()
+    if text.endswith("Z"):
+        text = text[:-1] + "+00:00"
+    try:
+        when = dt.datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    if when.tzinfo is None:
+        return when.replace(tzinfo=dt.timezone.utc)
+    return when
+
+
+def _iso_after(later, earlier) -> bool:
+    """`later` est-il posterieur a `earlier` ? (illisible -> faux)"""
+    a = _parse_iso(later)
+    b = _parse_iso(earlier)
+    if a is None or b is None:
+        return False
+    return a > b
+
+
+def _reopen_events(issue_number: int) -> list[str]:
+    """Horodatages des evenements `reopened` de l'issue.
+
+    Lecture REST du TIMELINE (`repos/.../issues/N/timeline`) : c'est le seul
+    endroit ou l'etat de l'issue -- fermee, puis rouverte -- est visible ; le
+    fil (commentaires) ne le porte pas.
+
+    Liste VIDE si la lecture echoue : fail-OPEN, la decision de cloture garde
+    alors sa terminalite. Le resultat est memorise par issue : la lecture
+    n'est faite qu'une fois par passe, meme quand les trois surfaces la
+    consultent.
+
+    Seules les chaines strictement ISO (`...Z`) sont retenues : une sortie de
+    `gh` inattendue ne doit pas pouvoir fabriquer une reouverture.
+    """
+    cached = _REOPEN_CACHE.get(issue_number)
+    if cached is not None:
+        return cached
+    events: list[str] = []
+    try:
+        out = subprocess.run(
+            ["gh", "api", "--paginate",
+             "repos/%s/issues/%d/timeline?per_page=100" % (REPO, issue_number),
+             "--jq", '.[] | select(.event == "reopened") | .created_at'],
+            capture_output=True, text=True, encoding="utf-8", check=True,
+            timeout=_clamp_timeout(20),
+        ).stdout
+        events = [line.strip() for line in out.splitlines()
+                  if _ISO_Z_RE.match(line.strip())]
+    except Exception:  # noqa: BLE001 - lecture best-effort : fail-OPEN
+        events = []
+    _REOPEN_CACHE[issue_number] = events
+    return events
+
+
+def _closure_stamp(comments) -> str | None:
+    """Horodatage de la DERNIERE decision de cloture portee par le fil.
+
+    Une decision de cloture = un dossier `[CLOSURE PREFLIGHT]` de verdict
+    CLOSE, ou son annonce en prose (`Fermeture sur dossier ... verdict
+    CLOSE`) : les deux sont la meme decision, ecrite par l'adjoint.
+    """
+    if not isinstance(comments, list):
+        return None
+    stamp = None
+    for c in comments:
+        if not isinstance(c, dict):
+            continue
+        body = c.get("body") or ""
+        if not isinstance(body, str):
+            continue
+        if (_closure_dossier_verdict(body) == "CLOSE"
+                or _closure_announced_close(body)):
+            stamp = c.get("createdAt")
+    return stamp
+
+
+def _last_event_stamp(comments) -> str | None:
+    """Horodatage du DERNIER evenement de livraison du fil.
+
+    Mêmes grammaires que le reducteur d'evenement : une retractation, un
+    dossier de cloture, un marqueur de livraison, un marqueur RECENT. Sert a
+    savoir si une reouverture est le dernier evenement du fil -- auquel cas
+    elle l'emporte sur les marqueurs qui la precedent.
+    """
+    if not isinstance(comments, list):
+        return None
+    stamp = None
+    for c in comments:
+        if not isinstance(c, dict):
+            continue
+        body = c.get("body") or ""
+        if not isinstance(body, str):
+            continue
+        created = c.get("createdAt")
+        if (_DELIVERED_MARKER_REVOKED_RE.search(body)
+                or _closure_dossier_verdict(body) == "CLOSE"
+                or _DELIVERED_MARKER_RE.search(body)
+                or _released_covers_acceptance(body)
+                or _RECENT_DELIVERY_MARKER_RE.search(body)):
+            stamp = created
+    return stamp
+
+
+def _delivery_voided_by_reopen(issue_number: int, comments) -> bool:
+    """La decision de cloture de cette issue a-t-elle ete REPRISE ?
+
+    Vrai si le fil porte une decision de cloture ET qu'une REOUVERTURE lui est
+    posterieure -- et qu'aucune decision plus recente ne la rearme.
+
+    Les trois surfaces qui ecartent un candidat (sonde RECENTE, sonde PLEINE,
+    reducteur d'evenement) appellent CE predicat : elles ne peuvent pas
+    diverger sur un fil qui change entre deux lectures.
+    """
+    stamp = _closure_stamp(comments)
+    if not stamp:
+        return False
+    reopen = None
+    for ts in _reopen_events(issue_number):
+        if _iso_after(ts, stamp):
+            reopen = ts if reopen is None or _iso_after(ts, reopen) else reopen
+    if reopen is None:
+        return False
+    last_event = _last_event_stamp(comments)
+    return last_event is None or _iso_after(reopen, last_event)
+
+
 # #20351 : le predicat « [RELEASED] + acceptance deja couverte » vit desormais
 # dans `released_covers`, module SANS dependance -- le balayage CI
 # `candidate-delivered-advisory` ne met dans son sparse-checkout que quatre
@@ -456,6 +683,13 @@ def _delivered_state(comment_bodies: list[str]) -> bool:
         if _DELIVERED_MARKER_REVOKED_RE.search(body or ""):
             delivered = False
         elif _DELIVERED_MARKER_RE.search(body or ""):
+            delivered = True
+        elif _closure_dossier_verdict(body or "") == "CLOSE":
+            # Dossier de cloture CLOSE : l'issue est RESOLUE au sens du
+            # depot. C'est un evenement d'arming comme les autres -- une
+            # retractation posterieure le desarme, un marqueur plus recent le
+            # rearme -- mais il n'EXPIRE PAS (la terminalite est portee par
+            # `_delivery_event_from_comments`, qui rend `stamp=None`).
             delivered = True
         elif _released_covers_acceptance(body or ""):
             # #20351 : `[RELEASED]` + « acceptance deja couverte » est une
@@ -2187,11 +2421,21 @@ def has_recent_delivery_marker(issue_number: int) -> bool | None:
     recentes servies par le tapis -- cette fonction les aurait
     ecartes avant l'epuisement du budget de la sonde pleine.
     """
-    body = _last_comment_body(issue_number)
-    if body is None:
+    last = _last_comment(issue_number)
+    if last is None:
         return None
+    body = last.get("body") or ""
+    if not isinstance(body, str):
+        body = ""
     if not body:
         return False
+    # #24250 -- une decision de cloture REPRISE par une reouverture du user
+    # n'ecarte plus rien. La lecture du timeline n'est faite que dans ce cas
+    # (le dossier est rare) : un marqueur ordinaire ne coute rien de plus.
+    if (_closure_dossier_verdict(body) == "CLOSE"
+            or _closure_announced_close(body)):
+        if _delivery_voided_by_reopen(issue_number, [last]):
+            return False
     # Deux grammaires, un seul verdict : les en-tetes de cloture ci-dessus,
     # PLUS le marqueur de livraison `[INFO] candidate-delivered` (mesure
     # 2026-10-17 : une issue rendue au coordinateur par ce marqueur et
@@ -2202,23 +2446,25 @@ def has_recent_delivery_marker(issue_number: int) -> bool | None:
     # ce que ce filtre attrape, la sonde pleine l'aurait ecarte aussi -- il
     # n'introduit aucun verdict nouveau, il avance le meme.
     return bool(_RECENT_DELIVERY_MARKER_RE.search(body)
-                or _DELIVERED_MARKER_RE.search(body))
+                or _DELIVERED_MARKER_RE.search(body)
+                or _closure_dossier_verdict(body) == "CLOSE"
+                or _closure_announced_close(body))
 
 
-def _last_comment_body(issue_number: int) -> str | None:
-    """Le corps du DERNIER commentaire d'une issue, en 1 requete.
+def _last_comment(issue_number: int) -> dict | None:
+    """Le DERNIER commentaire d'une issue (dictionnaire), en 1 requete.
 
     TRI-ETAT :
     - ``None``  : la lecture a echoue (reseau, 403, payload illisible) --
       fail-OPEN, l'appelant le dit ;
-    - ``""``    : il n'y a pas de dernier commentaire exploitable (aucun
-      commentaire, payload inattendu, corps non textuel) ;
-    - le corps  : celui du dernier commentaire (ordre chronologique de
-      l'API `gh issue view --json comments`).
+    - ``{}``    : il n'y a pas de dernier commentaire exploitable (aucun
+      commentaire, payload inattendu) ;
+    - le dict   : celui du dernier commentaire (ordre chronologique de
+      l'API `gh issue view --json comments`), corps et horodatage.
 
-    Facteurise pour que le filtre « marqueur recent » et le filtre
-    « marqueur de CONTENEUR » lisent le meme octet : deux lectures du meme
-    fil ne peuvent pas diverger sur un fil qui change entre les deux.
+    L'horodatage est HERE parce que la regle de la reouverture (#24250) doit
+    dater la decision de cloture : le corps seul ne permet pas de dire si la
+    reouverture lui est posterieure.
 
     #22630 -- l'instantane local rend les memes commentaires, sans requete :
     la lecture passe par `_snapshot_comments` quand l'instantane de la passe
@@ -2242,13 +2488,38 @@ def _last_comment_body(issue_number: int) -> str | None:
         except Exception:  # noqa: BLE001 - payload illisible = pas de signal
             return None
         if not isinstance(payload, dict):
-            return ""
+            return {}
         comments = payload.get("comments") or []
     if not isinstance(comments, list) or not comments:
-        return ""
+        return {}
     last = comments[-1]
     if not isinstance(last, dict):
-        return ""
+        return {}
+    return last
+
+
+def _last_comment_body(issue_number: int) -> str | None:
+    """Le corps du DERNIER commentaire d'une issue, en 1 requete.
+
+    TRI-ETAT :
+    - ``None``  : la lecture a echoue (reseau, 403, payload illisible) --
+      fail-OPEN, l'appelant le dit ;
+    - ``""``    : il n'y a pas de dernier commentaire exploitable (aucun
+      commentaire, payload inattendu, corps non textuel) ;
+    - le corps  : celui du dernier commentaire (ordre chronologique de
+      l'API `gh issue view --json comments`).
+
+    Facteurise pour que le filtre « marqueur recent » et le filtre
+    « marqueur de CONTENEUR » lisent le meme octet : deux lectures du meme
+    fil ne peuvent pas diverger sur un fil qui change entre les deux.
+
+    #22630 -- l'instantane local rend les memes commentaires, sans requete :
+    la lecture passe par `_snapshot_comments` quand l'instantane de la passe
+    est disponible, et retombe sur la requete historique sinon.
+    """
+    last = _last_comment(issue_number)
+    if last is None:
+        return None
     body = last.get("body") or ""
     if not isinstance(body, str):
         return ""
@@ -2344,7 +2615,7 @@ def delivery_event(issue_number: int) -> tuple[bool, bool, str | None] | None:
     # donc les deux voies ne peuvent pas diverger.
     snapshot_comments = _snapshot_comments(issue_number)
     if snapshot_comments is not None:
-        return _delivery_event_from_comments(snapshot_comments)
+        return _delivery_event_from_comments(snapshot_comments, issue_number)
     try:
         out = subprocess.run(
             ["gh", "issue", "view", str(issue_number), "--repo", REPO,
@@ -2358,20 +2629,32 @@ def delivery_event(issue_number: int) -> tuple[bool, bool, str | None] | None:
     if not isinstance(payload, dict):
         return (False, False, None)
     comments = payload.get("comments") or []
-    return _delivery_event_from_comments(comments)
+    return _delivery_event_from_comments(comments, issue_number)
 
 
 def _delivery_event_from_comments(
-        comments: list | None) -> tuple[bool, bool, str | None]:
+        comments: list | None,
+        issue_number: int | None = None) -> tuple[bool, bool, str | None]:
     """Reducteur de l'evenement de livraison, depuis la liste de commentaires.
 
     Factorise pour que l'instantane et la lecture historique rendent le
     **meme** verdict : une seule implementation des trois grammaires.
+
+    `issue_number` active la regle de la REOUVERTURE (#24250) : sans lui, le
+    reducteur est une fonction pure des commentaires (les tests l'appellent
+    ainsi). Avec lui, une decision de cloture reprise par une reouverture du
+    user VOIDE le signal de livraison : l'issue redevient servable.
     """
     if not isinstance(comments, list) or not comments:
         return (False, False, None)
+    if (issue_number is not None
+            and _delivery_voided_by_reopen(issue_number, comments)):
+        # La decision de cloture a ete reprise : le signal de livraison est
+        # VOID. Ni RECENT, ni etat, ni heure -- l'issue redevient servable.
+        return (False, False, None)
     state = False
     stamp = None
+    closed = False
     for c in comments:
         if not isinstance(c, dict):
             continue
@@ -2381,6 +2664,16 @@ def _delivery_event_from_comments(
         created = c.get("createdAt")
         if _DELIVERED_MARKER_REVOKED_RE.search(body):
             state, stamp = False, None
+            closed = False
+        elif _closure_dossier_verdict(body) == "CLOSE":
+            # Dossier de cloture CLOSE : signal TERMINAL. `stamp` reste
+            # `None` -> `_visit_age_hours(None)` rend `None` -> la regle des
+            # 48 h (#22500) ne peut pas l'expirer, et la consolidation
+            # cloturee reste ecartee du tapis au-dela de 48 h. C'est
+            # exactement le trou mesure sur #19253 (marqueur du 30/10
+            # expire, dossier CLOSE du 02/11 invisible).
+            state, stamp = True, None
+            closed = True
         elif (_DELIVERED_MARKER_RE.search(body)
               or _released_covers_acceptance(body)):
             state, stamp = True, created
@@ -2393,8 +2686,36 @@ def _delivery_event_from_comments(
     if not isinstance(last_body, str):
         last_body = ""
     recent = bool(_RECENT_DELIVERY_MARKER_RE.search(last_body)
-                  or _DELIVERED_MARKER_RE.search(last_body))
+                  or _DELIVERED_MARKER_RE.search(last_body)
+                  or closed
+                  or _closure_dossier_verdict(last_body) == "CLOSE"
+                  or _closure_announced_close(last_body))
+    if closed and state:
+        # La terminalite PRIME sur l'heure : un dossier CLOSE n'expire pas,
+        # meme si un marqueur plus recent a reecrit `stamp`.
+        stamp = None
     return (recent, state, stamp)
+
+
+def _delivered_state_with_reopen(comments, issue_number: int) -> bool:
+    """Etat de livraison d'un fil de commentaires, reouverture comprise.
+
+    Meme chronologie que `_delivered_state` (le marqueur est un ETAT, chaque
+    corps est un evenement), PLUS la regle de la REOUVERTURE (#24250) : une
+    decision de cloture reprise par une reouverture du user VOIDE le signal
+    de livraison -- l'issue redevient servable.
+
+    Le repli REST (bucket GraphQL tombe) ne donne que des CORPS, sans
+    horodatage : il passe par `_delivered_state` seul, la reouverture n'y est
+    pas lue, et le signal est conserve (comportement anterieur).
+    """
+    state = _delivered_state([(c.get("body") or "") if isinstance(c, dict)
+                              else "" for c in comments])
+    if not state:
+        return False
+    if _delivery_voided_by_reopen(issue_number, comments):
+        return False
+    return True
 
 
 def has_delivered_signal(issue_number: int,
@@ -2426,8 +2747,7 @@ def has_delivered_signal(issue_number: int,
     # #22630 -- l'instantane local rend les memes commentaires, sans requete.
     snapshot_comments = _snapshot_comments(issue_number)
     if snapshot_comments is not None:
-        return _delivered_state([(c.get("body") or "") if isinstance(c, dict)
-                                 else "" for c in snapshot_comments])
+        return _delivered_state_with_reopen(snapshot_comments, issue_number)
     try:
         out = subprocess.run(
             ["gh", "issue", "view", str(issue_number), "--repo", REPO,
@@ -2444,7 +2764,8 @@ def has_delivered_signal(issue_number: int,
         # repli que `_has_delivered_marker`, par le meme helper : une seule
         # implementation du repli, un seul point a corriger. Reste TRI-ETAT --
         # `None` si la lecture REST echoue aussi, jamais une exclusion
-        # fabriquee.
+        # fabriquee. Le repli ne donne que des CORPS : la reouverture
+        # (#24250) n'y est pas lue, le signal est conserve.
         bodies = _issue_comment_bodies_rest(issue_number)
         if bodies is None:
             return None
@@ -2456,8 +2777,7 @@ def has_delivered_signal(issue_number: int,
     # candidat sur un faux positif. La voie ponderee et le tapis
     # partagent cette seule grammaire -- et depuis la retractation, le meme
     # parcours ordonne que `_has_delivered_marker`.
-    return _delivered_state([(c.get("body") or "") if isinstance(c, dict)
-                             else "" for c in comments])
+    return _delivered_state_with_reopen(comments, issue_number)
 
 
 def delivered_probe_inert(issue_number: int, lane: str | None = None) -> bool:
@@ -9882,6 +10202,12 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                 # plus de 48 h ne dit plus « la consolidation est finie ».
                 marker_expired = False
                 merged_pr_expired = False
+                # `True` quand l'evenement de livraison est un DOSSIER DE
+                # CLOTURE CLOSE : la sonde rend alors `stamp=None` (aucune
+                # heure), donc la regle des 48 h ne peut pas l'expirer. La
+                # surface est NOMMEE dans la sortie, sinon le retrait du
+                # candidat serait lu comme un simple marqueur perime.
+                terminal_closure = False
                 if is_consolidation(it):
                     # #22500 -- la surface « PR MERGEE » cesse elle aussi
                     # d'ecarter la consolidation au-dela de 48 h : le timestamp
@@ -9921,6 +10247,13 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                         state.setdefault("marker_unread", []).append(n)
                         verdict = (False, False, None)
                     recent_flag, delivered_flag, stamp = verdict
+                    # Un dossier de cloture CLOSE est TERMINAL : il rend
+                    # `stamp=None`, donc `_visit_age_hours` rend `None` et la
+                    # regle des 48 h (#22500) ne peut pas l'expirer. Mesure
+                    # #19253 : le marqueur du 30/10 a expire et la
+                    # consolidation a ete resservie trois fois dans la
+                    # journee, alors que son dossier CLOSE datait du 02/11.
+                    terminal_closure = bool(delivered_flag and stamp is None)
                     age_h = _visit_age_hours(stamp, NOW)
                     marker_expired = bool(
                         delivered_flag
@@ -9941,7 +10274,13 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                     state["recent_filtered"] += 1
                     belt_withheld.append(
                         (it,
-                         ("LIVRAISON (recent) : marqueur de cloture sur le "
+                         ("LIVRAISON (dossier de cloture CLOSE) : le dossier "
+                          "`[CLOSURE PREFLIGHT]` de cette issue porte un "
+                          "verdict CLOSE -- elle est resolue, aucun grain a "
+                          "servir. Signal terminal : la regle des 48 h ne "
+                          "l'expire pas. Candidat remplace hors budget de "
+                          "sonde." if terminal_closure else
+                          "LIVRAISON (recent) : marqueur de cloture sur le "
                           "dernier commentaire ([DELIVERED] / "
                           "[FROZEN] / [INFO] candidate-delivered). "
                           "Candidat remplace hors budget de sonde.")))
