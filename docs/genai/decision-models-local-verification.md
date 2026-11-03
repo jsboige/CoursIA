@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-10-31
+> REFERENCE — vivante — dernière révision 2026-11-02
 
 # Decision Index — verification locale du classement sur une carte 8 Go
 
@@ -127,7 +127,7 @@ Formulation de replacement proposee :
 
 - **Le score de l'index** (29,58 / 28,72 pour `0.8b`, 45,76 / 46,06 pour `4b`) : **non reproduit**, charges utiles non publiees. C'est l'echec attendu et il est un echec de donnees.
 - **La base non entrainee** (`Qwen3.5-0.8B` sur l'edition 0.2.1, 6,99 publie) : **non mesuree** — elle suppose l'index.
-- **Les modeles `4b`** : **non mesures**. Un modele de 4 milliards de parametres en `bf16` represente ~8 Go de poids seuls, ce qui ne tient pas dans 8 Go de VRAM avec les activations ; les verifier demanderait soit un depot CPU (hors delai raisonnable), soit une carte plus large. L'affirmation « 24 Go » reste donc **non refutee pour `4b`** : elle est refutee pour `0.8b`.
+- **Les modeles `4b`** : **mesures** (mesure du 2026-10-30). Les deux checkpoints `jiwo-4b` (v1, v2) sont servis sur GPU — RTX 4090, 23,99 Gio — avec un pic VRAM de **8,02 Gio** : l'affirmation « 24 Go » est **refutee pour `4b`** comme pour `0.8b` (borne servie deduite : carte 16 Go, 8,02 Gio < 16 Go). Le detail et les resultats sont dans [`decision-models-4b-local-verification.md`](decision-models-4b-local-verification.md).
 - **L'ordre du classement au niveau modele** (`4b` v1/v2, `0.8b` v1/v2 sur l'index) : **non verifie** — c'est precisement ce que l'index publie et que la tranche reconstruite ne peut pas reproduire.
 - **La taxonomie des aires** : le mapping mesure est une reconstruction ; l'inversion du profil est un signal, pas une preuve.
 
