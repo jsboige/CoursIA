@@ -157,18 +157,33 @@ jobs:
           path: /tmp/claims-output.json
           retention-days: 7
 
-      - name: Post advisory comment
+      # #15511 -- UN SEUL commentaire collant par PR, une section par
+      # organe (`scripts/ci/advisory_sticky.py`). Le SUCCES (exit 0) ne
+      # parle plus : la section est RETIREE, ou rien n'est ecrit si elle
+      # n'existe pas. Les etats "rien a scanner" et "abstenu" restent
+      # publies -- ils ne sont pas des succes, et les confondre avec un
+      # succes serait le defaut que ce detecteur existe pour eviter.
+      - name: Publish (or retract) the markdown-claims advisory section
         if: github.event_name == 'pull_request'
-        uses: marocchino/sticky-pull-request-comment@v2
-        with:
-          header: markdown-claims-output-advisory
-          message: |
-            ${{ steps.run.outputs.exit == '0' && '✅ No prose/output mismatch detected in the notebooks this PR changed.' || steps.run.outputs.exit == 'none' && '⚪ Nothing to scan: this diff opens no notebook — the advisory looked at nothing, this is NOT a clean result.' || steps.run.outputs.exit == 'abstain' && '⚠️ Detector abstained (merge-base introuvable, shallow fetch or unanchored branch).' || '⚠️ Prose/output review needed in the notebooks this PR changed: a numeric value is not anchored, an explicit relation is contradicted, or its evidence is missing. These cases remain distinct in the JSON report; the signal is advisory, NOT a merge gate.' }}
-            ${{ steps.run.outputs.trunc_note }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.number }}
+          DETECTOR_EXIT: ${{ steps.run.outputs.exit }}
+        run: |
+          set -e
+          if [ "$DETECTOR_EXIT" = "0" ]; then
+            python3 scripts/ci/advisory_sticky.py --pr "$PR" --organ markdown-claims-output-advisory --clear
+          else
+            cat > /tmp/advisory_body.md <<'EOF'
+          ${{ steps.run.outputs.exit == '0' && '✅ No prose/output mismatch detected in the notebooks this PR changed.' || steps.run.outputs.exit == 'none' && '⚪ Nothing to scan: this diff opens no notebook — the advisory looked at nothing, this is NOT a clean result.' || steps.run.outputs.exit == 'abstain' && '⚠️ Detector abstained (merge-base introuvable, shallow fetch or unanchored branch).' || '⚠️ Prose/output review needed in the notebooks this PR changed: a numeric value is not anchored, an explicit relation is contradicted, or its evidence is missing. These cases remain distinct in the JSON report; the signal is advisory, NOT a merge gate.' }}
+          ${{ steps.run.outputs.trunc_note }}
 
-            Scope = notebooks CHANGED in this PR, not the whole corpus. Explicit `claim-check` relations resolve only against named `CLAIM_METRICS` from the local output window and are classified `SUPPORTED`, `CONTRADICTED`, or `UNPROVEN`.
-            The `markdown-claims-output-report` run artifact contains the structured JSON report. See `python scripts/check_markdown_claims_output.py --help` for re-running locally.
-            Detector rationale: c.290 / c.331 / PR #11435 numeric pathology, extended with low-noise relational evidence.
+          Scope = notebooks CHANGED in this PR, not the whole corpus. Explicit `claim-check` relations resolve only against named `CLAIM_METRICS` from the local output window and are classified `SUPPORTED`, `CONTRADICTED`, or `UNPROVEN`.
+          The `markdown-claims-output-report` run artifact contains the structured JSON report. See `python scripts/check_markdown_claims_output.py --help` for re-running locally.
+          Detector rationale: c.290 / c.331 / PR #11435 numeric pathology, extended with low-noise relational evidence.
+          EOF
+            python3 scripts/ci/advisory_sticky.py --pr "$PR" --organ markdown-claims-output-advisory --body-file /tmp/advisory_body.md
+          fi
 
       # --- Sibling detector 1/2 (#18354): unanchored measurement claims -----
       - name: Run stale-claim detector (advisory, do not gate)
@@ -220,17 +235,26 @@ jobs:
           path: /tmp/stale-claim.json
           retention-days: 7
 
-      - name: Post stale-claim comment
+      - name: Publish (or retract) the stale-claim advisory section
         if: github.event_name == 'pull_request'
-        uses: marocchino/sticky-pull-request-comment@v2
-        with:
-          header: stale-claim-advisory
-          message: |
-            ${{ steps.stale.outputs.exit == '0' && '✅ No unanchored measurement claim detected in the notebooks this PR changed.' || steps.stale.outputs.exit == 'none' && '⚪ Nothing to scan: this diff opens no notebook — the stale-claim detector looked at nothing, this is NOT a clean result.' || steps.stale.outputs.exit == 'abstain' && '⚠️ Stale-claim detector abstained (merge-base introuvable, shallow fetch or unanchored branch).' || '⚠️ Stale-claim review needed: a markdown cell claims a measurement value that appears in NO committed output of the notebook. Advisory, NOT a merge gate — triage against the JSON artifact.' }}
-            ${{ steps.stale.outputs.trunc_note }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.number }}
+          DETECTOR_EXIT: ${{ steps.stale.outputs.exit }}
+        run: |
+          set -e
+          if [ "$DETECTOR_EXIT" = "0" ]; then
+            python3 scripts/ci/advisory_sticky.py --pr "$PR" --organ stale-claim-advisory --clear
+          else
+            cat > /tmp/advisory_body.md <<'EOF'
+          ${{ steps.stale.outputs.exit == '0' && '✅ No unanchored measurement claim detected in the notebooks this PR changed.' || steps.stale.outputs.exit == 'none' && '⚪ Nothing to scan: this diff opens no notebook — the stale-claim detector looked at nothing, this is NOT a clean result.' || steps.stale.outputs.exit == 'abstain' && '⚠️ Stale-claim detector abstained (merge-base introuvable, shallow fetch or unanchored branch).' || '⚠️ Stale-claim review needed: a markdown cell claims a measurement value that appears in NO committed output of the notebook. Advisory, NOT a merge gate — triage against the JSON artifact.' }}
+          ${{ steps.stale.outputs.trunc_note }}
 
-            Scope = notebooks CHANGED in this PR, not the whole corpus. The `stale-claim-report` run artifact holds the structured JSON.
-            Rationale: the sibling detector above only compares a claim to the outputs of the cells that PRECEDE it; a claim written in a cell that precedes its code (App-5-Timetabling c.2/c.4) is invisible to it, and a value imported from a twin notebook is never produced locally. See `python scripts/check_stale_claims.py --help`.
+          Scope = notebooks CHANGED in this PR, not the whole corpus. The `stale-claim-report` run artifact holds the structured JSON.
+          Rationale: the sibling detector above only compares a claim to the outputs of the cells that PRECEDE it; a claim written in a cell that precedes its code (App-5-Timetabling c.2/c.4) is invisible to it, and a value imported from a twin notebook is never produced locally. See `python scripts/check_stale_claims.py --help`.
+          EOF
+            python3 scripts/ci/advisory_sticky.py --pr "$PR" --organ stale-claim-advisory --body-file /tmp/advisory_body.md
+          fi
 
       # --- Sibling detector 2/2 (#18354): contradicted entity counts --------
       - name: Run factual-mislabel detector (advisory, do not gate)
@@ -275,14 +299,23 @@ jobs:
           path: /tmp/factual-mislabel.json
           retention-days: 7
 
-      - name: Post factual-mislabel comment
+      - name: Publish (or retract) the factual-mislabel advisory section
         if: github.event_name == 'pull_request'
-        uses: marocchino/sticky-pull-request-comment@v2
-        with:
-          header: factual-mislabel-advisory
-          message: |
-            ${{ steps.mislabel.outputs.exit == '0' && '✅ No factual mislabel detected in the notebooks this PR changed (entity counts and tuple formulas checked against nearby committed streams).' || steps.mislabel.outputs.exit == 'none' && '⚪ Nothing to scan: this diff opens no notebook — the factual-mislabel detector looked at nothing, this is NOT a clean result.' || steps.mislabel.outputs.exit == 'abstain' && '⚠️ Factual-mislabel detector abstained (merge-base introuvable, shallow fetch or unanchored branch).' || '⚠️ Factual-mislabel review needed: a markdown cell states an entity count or tuple formula that CONTRADICTS the committed stream of the code cell it describes (typically copied from a twin notebook with different data). Advisory, NOT a merge gate — triage against the JSON artifact.' }}
-            ${{ steps.mislabel.outputs.trunc_note }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.number }}
+          DETECTOR_EXIT: ${{ steps.mislabel.outputs.exit }}
+        run: |
+          set -e
+          if [ "$DETECTOR_EXIT" = "0" ]; then
+            python3 scripts/ci/advisory_sticky.py --pr "$PR" --organ factual-mislabel-advisory --clear
+          else
+            cat > /tmp/advisory_body.md <<'EOF'
+          ${{ steps.mislabel.outputs.exit == '0' && '✅ No factual mislabel detected in the notebooks this PR changed (entity counts and tuple formulas checked against nearby committed streams).' || steps.mislabel.outputs.exit == 'none' && '⚪ Nothing to scan: this diff opens no notebook — the factual-mislabel detector looked at nothing, this is NOT a clean result.' || steps.mislabel.outputs.exit == 'abstain' && '⚠️ Factual-mislabel detector abstained (merge-base introuvable, shallow fetch or unanchored branch).' || '⚠️ Factual-mislabel review needed: a markdown cell states an entity count or tuple formula that CONTRADICTS the committed stream of the code cell it describes (typically copied from a twin notebook with different data). Advisory, NOT a merge gate — triage against the JSON artifact.' }}
+          ${{ steps.mislabel.outputs.trunc_note }}
 
-            Scope = notebooks CHANGED in this PR, not the whole corpus. The `factual-mislabel-report` run artifact holds the structured JSON.
-            Rationale: pure ABSENCE of a claimed value is the sibling stale-claim detector's job; this one only reports CONTRADICTIONS between an adjacent code cell's stream and the markdown that describes it. See `python scripts/check_factual_mislabel.py --help`.
+          Scope = notebooks CHANGED in this PR, not the whole corpus. The `factual-mislabel-report` run artifact holds the structured JSON.
+          Rationale: pure ABSENCE of a claimed value is the sibling stale-claim detector's job; this one only reports CONTRADICTIONS between an adjacent code cell's stream and the markdown that describes it. See `python scripts/check_factual_mislabel.py --help`.
+          EOF
+            python3 scripts/ci/advisory_sticky.py --pr "$PR" --organ factual-mislabel-advisory --body-file /tmp/advisory_body.md
+          fi

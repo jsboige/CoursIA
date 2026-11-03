@@ -147,6 +147,10 @@ _NEUTRAL_PREFIXES = (
     "<!-- variation-genre-signals -->",
     "<!-- gvar2-light-cap -->",
     "<!-- trivial-diff-15740 -->",
+    # #15511 : le commentaire collant unique des advisory (une section par
+    # organe) -- reecrit en place a chaque run, donc neutre pour la
+    # posteriorite d'un dossier.
+    "<!-- coursia:advisory-sticky -->",
 )
 
 

@@ -199,31 +199,41 @@ jobs:
             }
             core.info(summary);
 
-            // Post/update the PR comment. Wrap in try/catch : un 403 sur
-            // createComment ne doit JAMAIS rougir la gate (cf. lecon
-            // notebook-execution-required -- un cosmetic step ne rougit
+            // #15511 -- le SUCCES ne parle plus. Le resume part dans un
+            // FICHIER ; l'etape suivante decide : section ecrite si
+            // l'organe a quelque chose a signaler, section RETIREE (et rien
+            // ecrit si elle n'existe pas) sur un run vert.
+            // L'echec de cette ecriture ne doit JAMAIS rougir la gate (lecon
+            // notebook-execution-required : un step cosmique ne rougit
             // jamais une execution-verdict step).
             try {
-              if (context.eventName === 'pull_request') {
-                const { data: comments } = await github.rest.issues.listComments({
-                  owner: context.repo.owner, repo: context.repo.repo,
-                  issue_number: context.issue.number,
-                });
-                const marker = 'Notebook outputs-required (H.4 schema):';
-                const existing = comments.find(c =>
-                  c.user.type === 'Bot' && c.body.includes(marker));
-                if (existing) {
-                  await github.rest.issues.updateComment({
-                    owner: context.repo.owner, repo: context.repo.repo,
-                    comment_id: existing.id, body: summary,
-                  });
-                } else {
-                  await github.rest.issues.createComment({
-                    owner: context.repo.owner, repo: context.repo.repo,
-                    issue_number: context.issue.number, body: summary,
-                  });
-                }
-              }
+              fs.writeFileSync('/tmp/outputs_required_summary.md', summary);
+              fs.writeFileSync(
+                '/tmp/outputs_required_state',
+                (status === 'PASS' ? 'success' : 'advisory'));
             } catch (e) {
-              core.warning('Could not post outputs-required summary comment: ' + e.message);
+              core.warning('Could not stage outputs-required summary: ' + e.message);
             }
+
+      # #15511 -- UN SEUL commentaire collant par PR, une section par
+      # organe (`scripts/ci/advisory_sticky.py`). Le succes ne cree aucun
+      # commentaire : il retire sa section, ou ne fait rien s'il n'y en a
+      # pas. Le signal BLOQUANT reste dans le check-run rouge de l'etape
+      # "Run outputs-required check" : ce commentaire n'en est qu'un
+      # recapitulatif, jamais son canal.
+      - name: Publish (or retract) the outputs-required advisory section
+        if: always() && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -e
+          if [ ! -f /tmp/outputs_required_state ]; then
+            echo "::warning::outputs-required: no staged summary (validator did not run)."
+            exit 0
+          fi
+          if [ "$(cat /tmp/outputs_required_state)" = "success" ]; then
+            python3 scripts/ci/advisory_sticky.py --pr "$PR" --organ notebook-outputs-required --clear
+          else
+            python3 scripts/ci/advisory_sticky.py --pr "$PR" --organ notebook-outputs-required --body-file /tmp/outputs_required_summary.md
+          fi
