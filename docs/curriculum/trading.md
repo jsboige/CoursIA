@@ -231,7 +231,7 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 34 | [DecPyMC-05-Valeur de l'Information](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-05-Value-Information.ipynb) | ALPHA | Oui |
 | 35 | [DecPyMC-06-Systèmes Experts et Decisions Robustes](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-06-Expert-Systems.ipynb) | BETA | Oui |
 | 36 | [DecPyMC-07-MDPs, Bandits et POMDPs](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-07-Sequential.ipynb) | BETA | Oui |
-| 37 | [Règles de décision : EDT, CDT, CCDT et la lignée UDT](../../MyIA.AI.Notebooks/Probas/DecisionTheory/Regles-De-Decision/ReglesDeDecision-01-EDT-CDT-CCDT-UDT.ipynb) | BETA | Oui |
+| 37 | [Règles de décision : EDT, CDT, CCDT et la lignée UDT](../../MyIA.AI.Notebooks/Probas/DecisionTheory/ReglesDeDecision-01-EDT-CDT-CCDT-UDT.ipynb) | BETA | Oui |
 
 ## Probas/Infer (21 notebooks)
 
