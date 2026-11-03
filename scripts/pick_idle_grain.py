@@ -2833,6 +2833,65 @@ def merged_pr_probe_inert(issue_number: int, lane: str | None = None):
     return None
 
 
+# Un `#N` dans un corps de PR n'est pas toujours une citation de `#N`. La
+# surface « PR MERGEE » lit le corps entier, donc un bilan qui ENUMERE des
+# numeros d'issues retenait le candidat comme livre. Mesure #24418 sur le
+# pool du 2026-11-03 : 4 candidats `withheld` par cette surface, dont 1
+# (#18763) n'apparaissait que dans des listes -- PR #19232, deux lignes de
+# la forme « …, #18671, #18763, #18770) » et « #18423 #18430 #18434 … ».
+# Le cout n'est pas proportionnel au taux : une issue jamais livree reste
+# invisible a chaque tirage tant que la PR de bilan est dans la fenetre.
+#
+# Deux formes sont distinguees, dans cet ordre :
+#   - CITATION : une forme de liaison precede l'ancre -- `type(scope,#N)`
+#     (`Add(ci,#21978)`, `fix(genai,#21097)`) ou un mot-cle (`Closes`,
+#     `Fixes`, `Resolves`, `See`, `Part of`, `Refs`, `Suite de`) ;
+#   - ENUMERATION : sinon, quand la ligne porte au moins
+#     `_ENUMERATION_MIN_ANCHORS` ancres `#digits`. C'est la signature d'une
+#     liste, pas d'une revendication de livraison.
+# Une seule citation suffit a retenir la PR : les trois autres candidats
+# mesures (#21978, #21221, #21097) sont restes `withheld` a l'identique.
+_ANCHOR_LINKING_PREFIX_RE = re.compile(
+    r"(?:"
+    r"\w+\([^)\n]*,\s*"
+    r"|"
+    r"(?:clos(?:es?|ed)|fix(?:es|ed)?|r[eé]sout|resolv(?:es|ed)?"
+    r"|see|voir|part\s+of|refs?|suite\s+de)\s*:?\s*"
+    r")\s*$",
+    re.IGNORECASE)
+_ENUMERATION_MIN_ANCHORS = 4
+_ANY_ANCHOR_RE = re.compile(r"#\d+\b")
+
+
+def anchor_is_citation(text: str, issue_number: int) -> bool:
+    """Au moins une occurrence de `#N` est-elle une citation, pas une liste ?
+
+    Rend ``False`` quand TOUTES les occurrences sont des enumerations de
+    prose : c'est le cas mesure en #24418, ou une PR de bilan cite des
+    dizaines de numeros d'issues sans en livrer aucune. Rend ``True`` des
+    qu'une occurrence porte une forme de liaison, ou se trouve sur une ligne
+    qui ne ressemble pas a une liste (< 4 ancres).
+
+    La voie par defaut est ``True`` -- une ligne courte qui cite `#N` sans
+    mot-cle reste une citation. Le filtre ne retire que la forme dont la
+    signature est sans ambiguite (liste), pour ne pas transformer une
+    livraison reelle en candidat re-servi.
+    """
+    anchor = re.compile(rf"#{issue_number}\b")
+    for line in text.split("\n"):
+        if not anchor.search(line):
+            continue
+        if len(_ANY_ANCHOR_RE.findall(line)) < _ENUMERATION_MIN_ANCHORS:
+            # Ligne courte : une citation, quelle que soit la forme.
+            return True
+        # Ligne de liste : seule une occurrence explicitement liee compte.
+        for match in anchor.finditer(line):
+            prefix = line[max(0, match.start() - 60):match.start()]
+            if _ANCHOR_LINKING_PREFIX_RE.search(prefix):
+                return True
+    return False
+
+
 def merged_pr_signal(issue_number: int, lane: str | None = None):
     """Une PR MERGEE citant `#N` est-elle dans la fenetre de 90 jours ?
 
@@ -2864,14 +2923,15 @@ def merged_pr_signal(issue_number: int, lane: str | None = None):
         return None
     if not isinstance(prs, list):
         return None
-    anchor = re.compile(rf"#{issue_number}\b")
     now = dt.datetime.now(dt.timezone.utc)
     window = dt.timedelta(days=MERGED_PR_WINDOW_DAYS)
     for pr in prs:
         if pr.get("state") != "MERGED":
             continue
-        if not anchor.search((pr.get("title") or "") + "\n" +
-                             (pr.get("body") or "")):
+        # #24418 : `anchor.search` retenait une enumeration de prose comme
+        # une livraison. La citation est desormais exigeante sur la forme.
+        if not anchor_is_citation((pr.get("title") or "") + "\n" +
+                                 (pr.get("body") or ""), issue_number):
             continue
         merged_at = pr.get("mergedAt")
         if not merged_at:
