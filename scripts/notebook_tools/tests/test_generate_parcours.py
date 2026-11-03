@@ -610,9 +610,9 @@ class TestActuariatManifest:
         speed_run = ["fondations-probabilistes", "decision-sous-incertitude",
                      "actuariat", "theorie-des-jeux"]
         baseline = _expected_total_minutes(manifest, catalog, speed_run)
-        # +15 min on DecPyMC-2 (45min -> 1h)
+        # +15 min on DecPyMC-02 (45min -> 1h)
         target = next(entry for entry in catalog
-                      if entry["path"] == "Probas/DecisionTheory/DecPyMC/DecPyMC-2-Utility-Money.ipynb")
+                      if entry["path"] == "Probas/DecisionTheory/DecPyMC/DecPyMC-02-Utility-Money.ipynb")
         target["duree_estimee"] = "1h"
         after = _expected_total_minutes(manifest, catalog, speed_run)
         assert after == baseline + 15, (
