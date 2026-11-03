@@ -277,13 +277,37 @@ def segment_chunk(
 
 # ── Coverage check ──
 
+# Seuil de couverture partage avec l'ancien avertissement : le seuil n'est
+# pas change par cette PR, seule sa consequence l'est (avertissement -> blocage).
+COVERAGE_MIN_RATIO = 0.85
 
-def compute_coverage(segments: list[Segment], source_text: str) -> dict:
+
+class IncompleteSegmentationError(RuntimeError):
+    """La segmentation ne couvre pas le texte source.
+
+    levee par :func:`run` quand le ratio de couverture passe sous
+    :data:`COVERAGE_MIN_RATIO`. Le fichier de segments est ecrit AVANT
+    l'elevation : les artefacts sont conserves, la phase ne declare pas une
+    reussite qu'elle n'a pas mesuree.
+    """
+
+
+def compute_coverage(
+    segments: list[Segment],
+    source_text: str,
+    paragraphs: list[dict] | None = None,
+) -> dict:
     """Compute rough coverage metrics: concatenated segment text vs source.
 
     Returns a dict with total source chars, total segment chars, and
     coverage ratio. This is a heuristic check, not an exact match,
     because LLM segmentation may split/merge slightly differently.
+
+    When ``paragraphs`` is given, the report also names the source paragraphs
+    that carry no segment at all: the ratio says *how much* text is missing,
+    the paragraph list says *where*. It is a locator, not a criterion -- a
+    paragraph merged into a neighbour legitimately carries the neighbour's
+    ``paragraph_id``, and its text is then present without its own id.
     """
     source_clean = " ".join(source_text.split())
     segments_text = " ".join(seg.text for seg in segments)
@@ -292,55 +316,123 @@ def compute_coverage(segments: list[Segment], source_text: str) -> dict:
     source_len = len(source_clean)
     segments_len = len(segments_clean)
 
+    covered = {seg.paragraph_id for seg in segments}
+    if paragraphs is None:
+        paragraphs_expected = None
+        paragraphs_covered = None
+        missing_paragraphs: list[int] = []
+    else:
+        expected_ids = {p["paragraph_id"] for p in paragraphs}
+        paragraphs_expected = len(expected_ids)
+        paragraphs_covered = len(expected_ids & covered)
+        missing_paragraphs = sorted(expected_ids - covered)
+
     if source_len == 0:
-        return {"source_chars": 0, "segment_chars": 0, "coverage_ratio": 0.0}
+        return {
+            "source_chars": 0,
+            "segment_chars": 0,
+            "coverage_ratio": 0.0,
+            "paragraphs_expected": paragraphs_expected,
+            "paragraphs_covered": paragraphs_covered,
+            "missing_paragraphs": missing_paragraphs,
+        }
 
     coverage = segments_len / source_len
     return {
         "source_chars": source_len,
         "segment_chars": segments_len,
         "coverage_ratio": round(coverage, 3),
+        "paragraphs_expected": paragraphs_expected,
+        "paragraphs_covered": paragraphs_covered,
+        "missing_paragraphs": missing_paragraphs,
     }
 
 
 # ── Deduplication ──
 
 
+def _last_chunk_per_paragraph(
+    all_segments: list[Segment],
+    chunk_sizes: list[int],
+) -> list[int]:
+    """Indexes of the segments kept when the chunk boundaries are known.
+
+    A paragraph covered by several chunks is segmented once per chunk. The
+    rule is to keep every segment of the LAST chunk that produced it.
+    """
+    chunk_of: list[int] = []
+    for chunk_index, size in enumerate(chunk_sizes):
+        chunk_of.extend([chunk_index] * size)
+
+    if len(chunk_of) != len(all_segments):
+        raise ValueError(
+            f"chunk_sizes describes {len(chunk_of)} segments "
+            f"but {len(all_segments)} segments were produced"
+        )
+
+    last_chunk: dict[int, int] = {}
+    for seg, chunk_index in zip(all_segments, chunk_of):
+        current = last_chunk.get(seg.paragraph_id, -1)
+        if chunk_index > current:
+            last_chunk[seg.paragraph_id] = chunk_index
+
+    return [
+        i
+        for i, seg in enumerate(all_segments)
+        if chunk_of[i] == last_chunk[seg.paragraph_id]
+    ]
+
+
+def _last_occurrence_by_text(all_segments: list[Segment]) -> list[int]:
+    """Indexes of the segments kept when the chunk boundaries are unknown.
+
+    Fallback: two segments are duplicates only when they share their
+    ``(paragraph_id, text)``. A segment whose text is unique to its paragraph
+    is never dropped -- the paragraph may legitimately yield several segments.
+    """
+    last: dict[tuple[int, str], int] = {}
+    for i, seg in enumerate(all_segments):
+        last[(seg.paragraph_id, seg.text)] = i
+
+    return [
+        i
+        for i, seg in enumerate(all_segments)
+        if last[(seg.paragraph_id, seg.text)] == i
+    ]
+
+
 def deduplicate_overlaps(
     all_segments: list[Segment],
-    overlap: int = OVERLAP,
+    chunk_sizes: list[int] | None = None,
 ) -> list[Segment]:
-    """Remove duplicate segments produced by overlapping chunks.
+    """Remove the segments produced twice by the overlapping chunks.
 
-    Overlapping chunks produce duplicate paragraph_ids. We keep the
-    segments from the later chunk (which had more context) and discard
-    the earlier ones for the overlapping paragraph_ids.
+    A paragraph covered by two chunks is segmented twice. The rule is to keep
+    EVERY segment of the LAST chunk that produced the paragraph: a paragraph
+    legitimately yields several segments (SYSTEM_PROMPT rules 2 and 4 -- a
+    mixed paragraph is cut into distinct segments of 15 to 60 words, all
+    carrying the same ``paragraph_id``), so keeping a single one drops the
+    rest of the paragraph without a word of warning.
+
+    Args:
+        all_segments: all the segments, chunk by chunk, in order.
+        chunk_sizes: number of segments produced by each chunk, in order.
+            When given, the paragraph overlap is resolved at the chunk
+            boundary. When omitted, the fallback is segment-level (see
+            :func:`_last_occurrence_by_text`).
+
+    Returns:
+        The deduplicated segments, re-indexed from 0.
     """
     if not all_segments:
         return []
 
-    # Group segments by paragraph_id
-    by_paragraph: dict[int, list[Segment]] = {}
-    for seg in all_segments:
-        by_paragraph.setdefault(seg.paragraph_id, []).append(seg)
+    if chunk_sizes is None:
+        kept_indexes = _last_occurrence_by_text(all_segments)
+    else:
+        kept_indexes = _last_chunk_per_paragraph(all_segments, chunk_sizes)
 
-    # For each paragraph with duplicates, keep only the later ones
-    deduped: list[Segment] = []
-    seen_paragraphs: set[int] = set()
-
-    for seg in all_segments:
-        pid = seg.paragraph_id
-        if pid in seen_paragraphs:
-            continue
-
-        candidates = by_paragraph[pid]
-        if len(candidates) == 1:
-            deduped.append(candidates[0])
-        else:
-            # Keep the last occurrence (from the later chunk with more context)
-            deduped.append(candidates[-1])
-
-        seen_paragraphs.add(pid)
+    deduped = [all_segments[i] for i in kept_indexes]
 
     # Re-index segments sequentially
     reindexed = []
@@ -355,11 +447,41 @@ def deduplicate_overlaps(
 # ── Main entry point ──
 
 
-def run(force: bool = False) -> Path:
+def _check_cached_completeness(output_path: Path) -> None:
+    """Check a cached segmentation before handing it to the next phase.
+
+    An incomplete segmentation is written before the phase raises: without
+    this check, a rerun without ``--force`` would hand that same incomplete
+    file to the next phase, silently. A cache with no report (written before
+    this contract existed) is returned as it was.
+    """
+    report_path = output_path.parent / "segmentation_report.json"
+    if not report_path.exists():
+        return
+
+    try:
+        report = json.loads(report_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return
+
+    if report.get("complete") is False:
+        ratio = report.get("coverage_ratio", 0.0)
+        raise IncompleteSegmentationError(
+            f"Segmentation incomplete (cache) : couverture {ratio:.1%} "
+            f"< {COVERAGE_MIN_RATIO:.0%} -- voir {report_path.name}. "
+            "Relancer avec force=True pour refaire la segmentation."
+        )
+
+
+def run(force: bool = False, allow_incomplete: bool = False) -> Path:
     """Run P2 -- text segmentation. Returns path to segments_v4.json.
 
     Args:
         force: If True, re-run even if cached output exists.
+        allow_incomplete: If True, a segmentation that does not cover the
+            source text is reported but does not raise. The default is to
+            raise :class:`IncompleteSegmentationError`: a segmentation that
+            lost text must not be handed to the next phase as a success.
 
     Returns:
         Path to the saved segments_v4.json file.
@@ -368,6 +490,7 @@ def run(force: bool = False) -> Path:
 
     if output_path.exists() and not force:
         print(f"[P2] Cached: {output_path}")
+        _check_cached_completeness(output_path)
         return output_path
 
     print("[P2] Running text segmentation...")
@@ -386,6 +509,7 @@ def run(force: bool = False) -> Path:
     # Step 3: LLM segmentation per chunk
     print("[P2] Step 3: LLM segmentation...")
     all_segments: list[Segment] = []
+    chunk_segment_counts: list[int] = []
     seg_index = 0
 
     for i, chunk in enumerate(chunks):
@@ -399,23 +523,45 @@ def run(force: bool = False) -> Path:
         )
 
         all_segments.extend(new_segments)
+        chunk_segment_counts.append(len(new_segments))
         seg_index += len(new_segments)
 
     print(f"  Raw segments: {len(all_segments)}")
 
     # Step 4: Deduplicate overlapping regions
     print("[P2] Step 4: Deduplicating overlaps...")
-    segments = deduplicate_overlaps(all_segments)
+    segments = deduplicate_overlaps(all_segments, chunk_sizes=chunk_segment_counts)
     print(f"  Deduplicated segments: {len(segments)}")
 
     # Step 5: Coverage check
     print("[P2] Step 5: Coverage check...")
-    coverage = compute_coverage(segments, source_text)
+    coverage = compute_coverage(segments, source_text, paragraphs=paragraphs)
     print(f"  Source: {coverage['source_chars']:,} chars")
     print(f"  Segments: {coverage['segment_chars']:,} chars")
     print(f"  Coverage ratio: {coverage['coverage_ratio']:.1%}")
 
-    if coverage["coverage_ratio"] < 0.85:
+    complete = coverage["coverage_ratio"] >= COVERAGE_MIN_RATIO
+
+    report = {
+        "source_chars": coverage["source_chars"],
+        "segment_chars": coverage["segment_chars"],
+        "coverage_ratio": coverage["coverage_ratio"],
+        "coverage_min_ratio": COVERAGE_MIN_RATIO,
+        "complete": complete,
+        "segments": len(segments),
+        "paragraphs_expected": coverage["paragraphs_expected"],
+        "paragraphs_covered": coverage["paragraphs_covered"],
+        "missing_paragraphs": coverage["missing_paragraphs"],
+    }
+    report_path = OUTPUTS / "segmentation_report.json"
+    report_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
+
+    if coverage["missing_paragraphs"]:
+        print(f"  WARNING: {len(coverage['missing_paragraphs'])} paragraph(s) without any "
+              f"segment (first ids: {coverage['missing_paragraphs'][:10]}) "
+              f"-- see {report_path.name}")
+
+    if not complete:
         print(f"  WARNING: Low coverage ({coverage['coverage_ratio']:.1%}). "
               "Some text may not be represented in segments.")
 
@@ -429,6 +575,19 @@ def run(force: bool = False) -> Path:
     print(f"[P2] Saved: {output_path}")
     print(f"  Segments: {len(segments)}")
     print(f"  Coverage: {coverage['coverage_ratio']:.1%}")
+
+    # Step 7: the phase does not report a success it did not measure
+    if not complete:
+        print(f"  INCOMPLETE: coverage {coverage['coverage_ratio']:.1%} "
+              f"< {COVERAGE_MIN_RATIO:.0%} -- report: {report_path.name}")
+        if not allow_incomplete:
+            raise IncompleteSegmentationError(
+                f"Segmentation incomplete : couverture {coverage['coverage_ratio']:.1%} "
+                f"(< {COVERAGE_MIN_RATIO:.0%}), {len(coverage['missing_paragraphs'])} "
+                f"paragraphe(s) sans segment. Les segments sont ecrits dans "
+                f"{output_path.name} et le rapport dans {report_path.name}. "
+                "Relancer avec allow_incomplete=True pour un run de diagnostic."
+            )
 
     return output_path
 

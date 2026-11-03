@@ -25,6 +25,8 @@ La racine portait encore six fichiers hétérogènes en plus de cet index à la 
 | `qc-research-issue-template.md` | — (supprimé) | doublon de [qc/qc-research-issue-template.md](qc/qc-research-issue-template.md). La copie racine n'était référencée par aucun script ni lien entrant — supprimée pour réduire la surface de désynchronisation ; la version `qc/` est l'unique source. EPIC #11698 inchangé (#19283) |
 | `data-policy.md` (ajouté 2026-09-02) | [cadrage/data-policy.md](cadrage/data-policy.md) | migré #19283 — le cadrage agrégateur n'indexe pas les politiques techniques, et son sommaire ne le porte pas non plus (communauté interlocutrice ≠ règle de dépôt). Reste un statut *cadrage*, pas une doctrine exécutable : 4 catégories (curée / brute téléchargeable + fetch / checkpoint documenté / trace régénérable) + arbitrage par cas. #13742 |
 | `suivis/iit-ict-transition.md` | [reference/iit-ict-transition.md](reference/iit-ict-transition.md) | reclassé pérenne : le suivi est tenu à jour au fil des livraisons — tranche 2 de #19283 ([#21564](https://github.com/jsboige/CoursIA/pull/21564)) |
+| `STABLE_SNAPSHOT.md` | [reference/STABLE_SNAPSHOT.md](reference/STABLE_SNAPSHOT.md) | relocalisé : le snapshot vivant (régénéré selon H.7) rejoint la documentation de référence — fenêtre 1 de #13751 ([#24126](https://github.com/jsboige/CoursIA/pull/24126)) |
+| `STABLE_SNAPSHOT_GENAI.md` | [archive/STABLE_SNAPSHOT_GENAI.md](archive/STABLE_SNAPSHOT_GENAI.md) | archivé : snapshot GenAI daté sans référence entrante, rejoint l'exemplaire historique de la matrice — même fenêtre (#13751) |
 
 Trois autres documents racine ont rejoint `cadrage/` par les tranches de #17525 — `grothendieckian-lens.md` et `leiden-declaration-position.md` (#19022), puis `magnifica-humanitas-dialogue.md` (#19283) ; provenance et règle d'agrégation : [Cadrage épistémique](#cadrage-épistémique-docscadrage).
 
@@ -39,6 +41,7 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 | [reference/architecture_mcp_roo.md](reference/architecture_mcp_roo.md) | Cycle de vie, logs et diagnostic des serveurs MCP (l'inventaire des 15 outils roo-state-manager vit en amont : [HARNESS-OVERVIEW.md](https://github.com/jsboige/roo-extensions/blob/main/docs/harness/HARNESS-OVERVIEW.md) §2) |
 | [reference/kernels-runtime.md](reference/kernels-runtime.md) | .NET, Python, WSL, conda envs |
 | [reference/env-python-reparation.md](reference/env-python-reparation.md) | Réparation environnements Python |
+| [reference/STABLE_SNAPSHOT.md](reference/STABLE_SNAPSHOT.md) | Matrice d'état d'exécution des carnets — snapshot canonique, régénéré selon le plan H.7 (prescriptions P1/P4 de [regles-validation-detail.md](reference/regles-validation-detail.md)) ; déplacé de la racine du dépôt, fenêtre 1 de #13751 |
 | [reference/claude-code-config.md](reference/claude-code-config.md) | Agents, skills, rules, model selection |
 | [reference/cluster-agents.md](reference/cluster-agents.md) | Machines cluster, GPU topology |
 | [reference/teaching-context.md](reference/teaching-context.md) | Calendrier, scope EPITA-IS, agents par école |
@@ -110,12 +113,13 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 | [reference/slides-layout-pattern.md](reference/slides-layout-pattern.md) | Motif de mise en page des decks Slidev (campagne #10950) — écrit après qu'un diagnostic « les grilles sont impossibles dans Slidev » ait bloqué trois itérations : le contre-exemple est dans le document |
 | [reference/backtester-e2-cadrage.md](reference/backtester-e2-cadrage.md) | Cadrage Option C du port `MyIA.Trading.Backtester` (E2) et déblocage des préconditions — #7357 (EPIC différée), parent #7265 |
 | [reference/backtester-e2-svm-kernel.md](reference/backtester-e2-svm-kernel.md) | Substitution du SVM à noyau dans le port E2 du Backtester Aricie — grain prescrit par le body de #7357, cadrage #12541 |
-| [reference/adk-migration-2-eval.md](reference/adk-migration-2-eval.md) | Audit migration ADK 2.0 — google-adk==2.8.0 sur Track2-GoogleADK |
+| [reference/adk-migration-2-eval.md → transients/2026-09-13-…](transients/2026-09-13-adk-migration-2-eval.md) | Audit migration ADK 2.0 (verdict historique, #14498/#13925 closes) — déplacé en lane transiente ; le noyau durable (lignée google-adk, APIs consommées par `adk_runtime.py`) vit dans le README Track2-GoogleADK (vague 4 #14623) |
 | [reference/agent-cloud-agnosticisme.md](reference/agent-cloud-agnosticisme.md) | Session cloud d'agnosticisme — rôle et circulation |
 | [reference/bot-review-harness.md](reference/bot-review-harness.md) | Bot Review Harness — pointer externe |
 | [reference/branch-cleanup-manifest.README.md](reference/branch-cleanup-manifest.README.md) | Manifeste de préservation des branches distantes — issue #14238 |
 | [reference/shared-keyring-myia-keys.md](reference/shared-keyring-myia-keys.md) | Trousseau partagé MyIA-Keys — organe d'accès, bootstrap par machine, empreinte de preuve |
 | [reference/tricephale-circulation.md](reference/tricephale-circulation.md) | Tricéphalie — coordinateur, titulaire, secrétaire |
+| [reference/lean-theorem-duplicates.md](reference/lean-theorem-duplicates.md) | Théorèmes Lean prouvés **deux fois** dans des lacs différents — paires de déclarations dont les noms se recouvrent et dont les docstrings décrivent le même résultat. Régénérée par `scripts/lean/lean_theorem_duplicates.py`, `--check` rend 1 quand page et arbre divergent. Contrôle positif : les paires Arrow et Sen. See #24183 (T0) |
 
 ## GenAI (docs/genai/)
 
@@ -138,6 +142,7 @@ Documentation détaillée de l'infrastructure GenAI (ComfyUI, Docker, modèles l
 | [genai/decision-models.md](genai/decision-models.md) | Modèles de décision — relevé et shortlist |
 | [genai/decision-models-local-verification.md](genai/decision-models-local-verification.md) | Vérification locale du Decision Index — mesure sur carte 8 Go, obstacle de données (charges utiles non publiées) et limites (#21910) |
 | [genai/dm-jepa-local-validation.md](genai/dm-jepa-local-validation.md) | Validation locale du moteur DM-JEPA 1.7 — rang contre tri aléatoire, entrées adverses, latence et findings de l'artefact (#21997) |
+| [genai/darksnail-pli1-reconnaissance.md](genai/darksnail-pli1-reconnaissance.md) | EPIC DarkSnail — page de persistance Pli 1 : sources et licence CC0, micro-vérification Lean, audit ARC-AGI-1 (PLAUSIBLE), inventaire des modèles H_L/H_R (#21310) |
 | [genai/model-mapping-openai.md](genai/model-mapping-openai.md) | Mapping des modèles OpenAI — génération courante |
 | [genai/model-mapping.md](genai/model-mapping.md) | Inventaire et table de correspondance — modèles GenAI/OpenAI |
 | [genai/parametres-par-modele.md](genai/parametres-par-modele.md) | Paramètres servis par modèle — table mesurée par appels réels et garde de cohérence (#20682) |
@@ -171,6 +176,7 @@ Iteration history prover, intractable diagnosis, LLM endpoints. **Index du sous-
 | [lean/ab-methodology.md](lean/ab-methodology.md) | Méthodologie d'A/B pour le harnais prover Lean |
 | [lean/i18n-inventory-cycle-38.md → transients/2026-07-04-…](transients/2026-07-04-lean-i18n-inventory-cycle-38.md) | Lean i18n — inventaire FR/EN et proposition de convention (cycle 38, See #4980) — déplacé en lane transiente (tranche 3b #14623) |
 | [lean/i18n-sibling-patterns.md](lean/i18n-sibling-patterns.md) | Lean i18n — patterns de paires FR/EN et discipline du checker (#4980) |
+| [lean/lean-anchor-naming.md](lean/lean-anchor-naming.md) | Nommage des ancres `#print axioms` — matching normalisé des deux côtés par `normalize_axiom_name` (décoration terminale croix latine U+271D, allow-list `scripts/lean/allow_axioms_conway.txt`) |
 | [lean/iit-lean-escalier.md](lean/iit-lean-escalier.md) | Note de conception de l'escalier du lake `iit_lean` — inventaire, escalier 3 marches, capstone, modules non exposés (Epic #16781, sous-grain #20414) |
 | [lean/mimo-converse-cartography.md](lean/mimo-converse-cartography.md) | Cartographie converse MIMO (#11152) — correspondance brique → source, mesurée le 2026-08-16 sur le Mathlib et le SLT du manifest `mimo_lean` courant |
 | [lean/junctions-scan-po-2026.md](lean/junctions-scan-po-2026.md) | Scan des jonctions NTFS Mathlib sur `myia-po-2026` (2026-09-01) — #13962, enfant de #4362 (mutualisation du cluster) |
@@ -183,6 +189,7 @@ Iteration history prover, intractable diagnosis, LLM endpoints. **Index du sous-
 | [lean/junctions-scan-po-2027-CoursIA2.md](lean/junctions-scan-po-2027-CoursIA2.md) | Mathlib NTFS Junctions — Scan po-2027 |
 | [lean/junctions-scan-po-2027.md](lean/junctions-scan-po-2027.md) | Junctions Mathlib — scan po-2027 |
 | [lean/junctions-apply-po-2027-c1731.md](lean/junctions-apply-po-2027-c1731.md) | Apply V5 Mathlib NTFS junctions po-2027 (c.1731) — donneur knot_lean, 7 PERIMEE re-pointées vers db584cd6, anti-régression `distinct_code_sorry` 12→12 |
+| [lean/junctions-apply-po-2028-c4362.md](lean/junctions-apply-po-2028-c4362.md) | Apply Mathlib WSL po-2028 (2026-10-31) — trois checkouts `db584cd6` remplacés par des symlinks vers le magasin `perc19494`, rollback en poubelle, et la mesure qui corrige le surcompte « 8 physiques » du bloc précédent. See #4362 |
 | [lean/knot-4.33-investigation.md](lean/knot-4.33-investigation.md) | Lean 4 — knot_lean 4.33.0 bloquée par synthèse Decidable |
 | [lean/l750-pivot-scope-discipline.md](lean/l750-pivot-scope-discipline.md) | L750 ★★ — Pivot Lean specialist, discipline de scope, remédiation OOM |
 | [lean/life-components-schema.md](lean/life-components-schema.md) | Schéma de motifs et de réactions de Game of Life — tranches 1-4 de #15635 |
@@ -214,6 +221,7 @@ Suivi d'origine, par livrable : grille des trois régimes de lecture #7399 · ma
 |---------|------|
 | [ict/README.md](ict/README.md) | **Index** — cartographie des 10 docs par mode (vertical / horizontal / méta) + parcours suggéré |
 | [ict/palier10-ict15-note-de-conception.md](ict/palier10-ict15-note-de-conception.md) | Note de conception du palier 10 (famille ICT-15, capstone Φ/F/K, obstruction et recollement) — cadrage arbitré et décision du 11/10, portée par la PR de déplacement #20298 |
+| [ict/palier21-argumentation-note-de-conception.md](ict/palier21-argumentation-note-de-conception.md) | Note de conception du palier 21 (capstone strate 6 argumentation — chaîne des cinq maillons, cinq questions organ-first, corpus Argumentum sous licence, gate re-découpé) — feu vert Phase 2 #23777 (31/10) |
 | [ict/synthese-invariants-dissociations-obstructions.md](ict/synthese-invariants-dissociations-obstructions.md) | Fils 1–3 : trois régimes de lecture (invariants / dissociations / obstructions) |
 | [ict/genealogy-representation-interne.md](ict/genealogy-representation-interne.md) | 4e fil : généalogie de `p̂` (représentation interne, ICT-10 → ICT-17) |
 | [ict/dissolution-scalaires.md](ict/dissolution-scalaires.md) | 5e fil : dissolution successive des scalaires Φ / F / K |
@@ -451,6 +459,7 @@ Deltas runtime et digests de performance .NET, mesurés sur les bancs et les car
 | [dotnet/net11-runtime-deltas.md](dotnet/net11-runtime-deltas.md) | .NET 9 → 10 → 11 — Deltas runtime mesurés sur les bancs et carnets types du dépôt |
 | [dotnet/net11-async-ffi-deltas.md](dotnet/net11-async-ffi-deltas.md) | .NET 10 → 11 — Delta runtime mesuré sur l'axe 1 (awaits profonds) du carnet Aspire AsyncFFI — compatibilité .NET 11 établie, verdict à n=25 |
 | [dotnet/net11-toub-digest.md](dotnet/net11-toub-digest.md) | .NET 11 — Digest de performance |
+| [dotnet/net11-axis1-async.md](dotnet/net11-axis1-async.md) | .NET 10 vs 11 — axe 1 (awaits profonds / Runtime Async) : mesure rejouable sur un carnet, runtime prouvé par sonde et non déduit du nom de variante |
 
 
 ## Rapports transients (docs/transients/)

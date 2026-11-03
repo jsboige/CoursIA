@@ -6,7 +6,7 @@
 
 | Fichier | Série | Notebooks | Cellules |
 |---------|-------|-----------|----------|
-| [`mlnet.csv`](mlnet.csv) | `ML/ML.Net/` | 19 (ML-1 → ML-9 + TP-prevision-ventes ; jumeaux Python `-Python.ipynb` co-localisés) | 599 (header + 599 lignes, 12 colonnes) |
+| [`mlnet.csv`](mlnet.csv) | `ML/ML.Net/` | 19 (ML-1 → ML-9 + TP-Prevision-Ventes-CSharp ; jumeaux Python `-Python.ipynb` co-localisés) | header + lignes de données, 12 colonnes (compte tenu par le CI, cf. régénération du catalogue) |
 
 **Note parité** : la série ML/ML.Net expose des **jumeaux C# ⇄ Python** co-localisés (`ML-1-Introduction.ipynb` ⇄ `ML-1-Introduction-Python.ipynb`). Le script d'extraction prend **les deux langues** verbatim (chaque notebook est une cellule source indépendante). La traduction future T3 (moteur Argumentum) appliquera les deux familles de cellules.
 
@@ -31,7 +31,7 @@ Sortie = JSON `{"csvs_checked": 1, "anomalies": [], "anomaly_count": 0}` (IN_SYN
 
 ## Acceptance #4957 Phase 2
 
-- [x] T1 extraction OK : 599 cellules / 19 notebooks .NET Interactive + Python jumeaux
+- [x] T1 extraction OK : tous les notebooks .NET Interactive et leurs jumeaux Python (compte tenu par le CI, cf. régénération du catalogue)
 - [x] T2 round-trip IN_SYNC : 0 anomaly
 - [x] Script T1+T2 inchangés (Phase 1 INFRA #5657 réutilisée telle quelle)
 - [x] Workflow CI `.github/workflows/translation-drift.yml` non touché

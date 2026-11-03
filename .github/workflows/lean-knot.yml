@@ -217,16 +217,24 @@ jobs:
   target-coverage:
     name: knot target-coverage
     # Routage #14283 tranche 3 (decision ai-01 2026-09-02) : jambe Linux
-    # auto-hebergee. Le `if:` ci-dessous est la garde anti-fork exigee par
-    # scripts/ci/check_self_hosted_runner_policy.py ; un `runs-on` STATIQUE la
-    # rend auditable (une expression dynamique leve DYNAMIC_RUNS_ON).
-    # Les PRs de fork sautent le job -- pr_gate.py compte `skipped` comme OK.
-    # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # auto-hebergee.
+    # 2026-10-28 (#23053 famille (c), lane myia-ai-01:CoursIA-2) : forme hybride
+    # de debordement CI (#22937/#22944/#23016). PR meme-depot ET
+    # vars.CI_OVERFLOW_LOCAL == 'true' -> jambe Linux locale ; tout le reste
+    # (variable absente ou fausse, forks, push/dispatch) retombe sur
+    # ubuntu-latest. La garde same-repo vit dans l'expression elle-meme : le
+    # `if:` ci-dessous reste inchange. Bascule : `gh variable set
+    # CI_OVERFLOW_LOCAL --body true|false --repo jsboige/CoursIA`. Retour
+    # arriere = variable a `false` ou supprimee, sans toucher ce fichier.
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
     if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && always()
     # Bound at 30 minutes (See #15698): this is a lightweight Python scan,
     # not a Lean build -- a wedge here is much cheaper than on `ci`/`proof-
     # integrity`, but still must not pin a runner forever.
+    # Borne existante conservee (#23053) : 3 x le maximum mesure du workflow
+    # (1256 min) depasse le plafond, donc la borne du workflow vaut 360 min ;
+    # ce job-ci est un balayage Python borne par construction, sa borne de
+    # 30 min est plus serree et reste telle quelle.
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4

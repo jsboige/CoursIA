@@ -282,16 +282,24 @@ jobs:
     # passe en PR, le push sur main passera aussi.
     name: Validate Quarto build (PR)
     # Routage #14283 fin de chantier (feu vert ai-01 2026-09-02) : setup par
-    # tarball (voir le job `build`). Garde anti-fork au niveau job + runs-on
-    # STATIQUE — une expression leverait DYNAMIC_RUNS_ON dans
-    # check_self_hosted_runner_policy.py.
+    # tarball (voir le job `build`).
+    # 2026-10-28 (#23053 famille (c), lane myia-ai-01:CoursIA-2) : forme hybride
+    # de debordement CI (#22937/#22944/#23016). PR meme-depot ET
+    # vars.CI_OVERFLOW_LOCAL == 'true' -> jambe Linux locale ; tout le reste
+    # (variable absente ou fausse, forks, push/dispatch) retombe sur
+    # ubuntu-latest. La garde same-repo vit dans l'expression elle-meme : le
+    # `if:` ci-dessous reste inchange. Bascule : `gh variable set
+    # CI_OVERFLOW_LOCAL --body true|false --repo jsboige/CoursIA`. Retour
+    # arriere = variable a `false` ou supprimee, sans toucher ce fichier.
     if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && github.event_name == 'pull_request'
-    # Offre GitHub d'abord (#17397, consigne user du 2026-10-25) : le CI local pallie ses limites. Retour = remettre le label.
-    runs-on: ubuntu-latest
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
     # 60 et non 30 depuis #14283 : le meme rendu prend 19-24 min sur
     # `ubuntu-latest` et 25-31 min sur le pool auto-heberge. Le plafond de 30
     # etait calibre sur la machine d'avant la bascule ; apres elle, il tombe
     # AU MILIEU de la distribution et coupe le job a 30 min 19 s.
+    # Borne existante conservee (#23053) : 3 x le maximum mesure du workflow
+    # (12 min) donnerait 36 min ; la borne calibree sur la distribution reelle
+    # du job (60 min) couvre les deux jambes et reste.
     timeout-minutes: 60
     permissions:
       contents: read

@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI-Argument_Analysis
-pedagogical_count: 33
-breakdown: Argument_Analysis=33
-maturity: BETA=31, ALPHA=1, DRAFT=1
+pedagogical_count: 38
+breakdown: Argument_Analysis=38
+maturity: BETA=36, ALPHA=1, DRAFT=1
 -->
 
 [← SmartContracts](../SmartContracts/README.md) | [↑ SymbolicAI](../README.md) | [SymbolicLearning →](../SymbolicLearning/README.md)
@@ -97,7 +97,7 @@ L'analyse argumentative outillée s'inscrit dans plusieurs cas concrets où la d
 | 2* | [Agentic-2-pl_agent](_archive/Argument_Analysis_Agentic-2-pl_agent.ipynb) | *(legacy, archivé)* Agent logique propositionnelle | Formalisation |
 | 3* | [Agentic-3-orchestration_agent](_archive/Argument_Analysis_Agentic-3-orchestration_agent.ipynb) | *(legacy, archivé)* Orchestration multi-agents (semantic_kernel) | Coordination |
 | Obs-01 | [Obs-01-Graphes-Dates](Argumentation-Obs-01-Graphes-Dates-Python.ipynb) | Instrument $G_t^{arg} \to G_{t+1}^{arg}$ (Epic #13303, issue #13310) : corpus daté → graphe AIF conforme (critère d'inclusion C1–C3 écrit, exclusions publiées) → projection Dung ; deux mesures d'écart de familles différentes (Jaccard structurelle nœuds/attaques + Jaccard sémantique sur extensions grounded), **contrôle négatif** (plancher de bruit par split de la même période) publié à côté de tout écart, **contrôle positif** à magnitude attendue écrite avant mesure (attaque de racine : sortie directe + réhabilitation paradoxale de la victime + cascade) — pur Python + rdflib, validation synthétique uniquement ; **hypothèse monotone** posée, vérifiée par inclusion et violée délibérément (retrait d'un déchu vs d'un accepté : ce que voient les deux mesures) | Argumentation temporelle / mesure |
-| Obs-02 | [Obs-02-Initiation](Argumentation-Obs-02-Initiation-Python.ipynb) | Cas 1 de l'Observatoire (Epic #13303, livré #16431) : Bumble « Opening Moves » (mars–avril 2024), DiD imparfait sur avis datés — instrument Obs-01 **rebranché, pas réécrit** (module `_dated_graphs_mod.py`), corpus Arctic Shift 4 bras × 2 fenêtres stratifiés mensuellement, extraction LLM Ollama (qwen2.5:7b-instruct-q4_K_M, température 0, échantillon complet), agrégats public-safe, plancher de bruit split-half chronologique — verdict sur quatre observations conjointes, plafond de preuve déclaré | Étude de cas / mesure empirique |
+| Obs-02 | [Obs-02-Initiation](Argumentation-Obs-02-Initiation-Python.ipynb) | Cas 1 de l'Observatoire (Epic #13303, livré #16431) : application de rencontre, politique d'initiation (mars–avril 2024), DiD imparfait sur avis datés — instrument Obs-01 **rebranché, pas réécrit** (module `_dated_graphs_mod.py`), corpus Arctic Shift 4 bras × 2 fenêtres stratifiés mensuellement, extraction LLM Ollama (qwen2.5:7b-instruct-q4_K_M, température 0, échantillon complet), agrégats public-safe, plancher de bruit split-half chronologique — verdict sur quatre observations conjointes, plafond de preuve déclaré | Étude de cas / mesure empirique |
 | Obs-03 | [Obs-03-Recollement-Lectures](Argumentation-Obs-03-Recollement-Lectures-Python.ipynb) | Lectures croisées de la série (récollement) | Consolidation |
 | Obs-04 | [Obs-04-Recollement-Strate6](Argumentation-Obs-04-Recollement-Strate6-Python.ipynb) | Strate 6 du récollement | Consolidation |
 | Onto-01 | [Onto-01-AIF-OWL2](Argumentation-Onto-01-AIF-OWL2-Python.ipynb) | Socle ontologique Argumentum (`ontologies/argumentum_fallacies.owl`, OWL2/XML) : parseur regex tolérant obligatoire (`rdflib` et `owlready2` échouent sur l'OWL/XML fonctionnel ; `ObjectExactCardinality` bien formées), inventaire des `owl:Class` (concepts et nœuds AIF), des ObjectProperty et des AnnotationAssertion, recherche des schemes Walton dans les labels, sous-graphe autour de l'Equivoque — lien entre la série et l'ontologie upstream Argumentum | Socle ontologique |

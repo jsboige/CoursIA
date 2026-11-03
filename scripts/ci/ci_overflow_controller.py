@@ -101,6 +101,26 @@ complete (`budget_unread = 0`), lecture locale tronquee a 15 runs ages de
 15 a 20 min -- donc au-dessus du seuil de 15 min, donc desertes par une
 lecture complete : le « parc local non affame » n'etait PAS etabli.
 
+**La troncature locale n'est plus une impasse (tranche du 31/10).** Une
+affirmation negative « le parc n'est pas affame » se lit sur les RUNS, dont
+la lecture tronque des que la file local est longue -- donc precisement
+dans le regime que l'organe existe pour traiter. Le 31/10 a 16:07Z, le
+controleur a rendu HOLD avec 162 jobs heberges ages (le plus ancien 69,7
+min, marge -145) et 28 slots locaux libres, au motif « lecture locale
+TRONQUEE (530 runs non lus) » : plus la file est longue, plus la lecture
+tronque, plus la bascule devient impossible. La meme affirmation se lit
+cependant sur un AUTRE organe, insensible a la troncature : l'**inventaire
+des runners** (`/actions/runners`) dit, a l'instant, combien de slots sont
+en ligne ET inoccupes. « Au moins K runner(s) en ligne et libre(s) portant
+les labels de la cohorte » est une affirmation POSITIVE : elle est etablie
+par l'inventaire seul, quelle que soit la lecture des runs. Quand la
+lecture locale tronque, c'est donc cet inventaire qui etablit (ou non) la
+premisse, et le motif rendu nomme lequel des deux organes a parle. Sans
+inventaire lisible, la regle par defaut revient : fail-CLOSED, pas de
+bascule. La symetrie est preservee : la **liberation** vers `false` reste
+interdite tant que la lecture HEBERGEE tronque (aucun inventaire ne dit si
+un job heberge attend encore).
+
 Le cout de l'organe est borne : deux lectures de file systematiques
 (hebergee, locale), plafonnees par `--job-budget` (defaut 120) et
 `--local-job-budget` (defaut 120) lectures de jobs, plus **une troisieme**
@@ -159,6 +179,11 @@ DEFAULT_VARIABLE = "CI_OVERFLOW_LOCAL"
 CONTROLLER_WORKFLOW_FILE = "ci-overflow-controller.yml"
 HOSTED_LABEL = "ubuntu-latest"
 LOCAL_LABEL = "coursia-linux"
+# Labels que porte un runner pour accepter un job de la cohorte : la forme
+# hybride des workflows est `["self-hosted","coursia-ephemeral","coursia-linux"]`,
+# donc les DEUX labels sont requis. Un runner qui n'en porterait qu'un ne peut
+# pas absorber le debordement et ne compte pas comme slot libre de cohorte.
+COHORT_LABELS = ("coursia-ephemeral", "coursia-linux")
 
 # Seuil de saturation : au-dela de ce nombre de jobs hebergees en file
 # depuis plus de `--saturation-minutes`, l'offre hebergee est saturee.
@@ -174,6 +199,13 @@ DEFAULT_MIN_FREE_SLOTS = 2
 # inerte, un decor et non une protection. Regle appliquee : le dwell depasse
 # la cadence (90 > 60).
 DEFAULT_DWELL_MINUTES = 90.0
+# Annulation -> relance : l'annulation n'est pas instantanee. Un run passe
+# par l'etat `cancelling` avant `completed`, et une relance demandee pendant
+# la transition est refusee -- le run resterait alors annule SANS relance,
+# perdu pour la passe (reserve Hermes du 28/10). Bornes : 30 s d'attente de
+# l'etat, un seul essai supplementaire de relance.
+CANCEL_WAIT_TIMEOUT_S = 30.0
+CANCEL_POLL_S = 5.0
 # Plafond de concurrence de l'offre hebergee, en jobs. Mesure du 2026-10-16 :
 # 19 jobs heberges en concurrence au pic observe ; on retient 20 (arrondi
 # superieur de la mesure). La MARGE hebergee est ce plafond moins les jobs
@@ -196,6 +228,18 @@ DEFAULT_CONFIRM_SECONDS = 30.0
 # alors plus bloquee par le dwell : c'est la starvation qu'on a vecue, et
 # attendre 90 min la prolonge. La LIBERATION n'echappe jamais au dwell.
 DEFAULT_PANIC_MINUTES = 30.0
+
+# Age minimal d'un run de cohorte en file pour etre REORIENTE (annulation
+# puis relance) vers le parc local (volet (c) de #22937). Meme ordre de
+# grandeur que le seuil d'age de saturation : un run plus jeune n'a pas
+# encore consommé d'attente.
+DEFAULT_REORIENT_MIN_AGE = 15.0
+# Age MAXIMAL d'un run reoriente. Au-dela, le run est un FANTOME : mesure
+# du 28/10, 51 runs de cohorte en file, dont 45 crees le 13/09 (45 jours) --
+# des runs de PR disparues, jamais servis. Ils faussent le compte de file
+# (coordinateur, 28/10) ET consommeraient la borne des slots libres pour
+# rien : on ne reressuscite pas une PR qui n'existe plus.
+DEFAULT_REORIENT_MAX_AGE = 360.0
 
 
 @dataclass
@@ -241,6 +285,16 @@ class LocalSample:
     # la reponse) : ils sont comptes comme occupes (fail-CLOSED), jamais
     # comme libres.
     unknown: int = 0
+    # Inventaire des runners LU (et non deduit) : c'est la condition qui
+    # autorise `cohort_free` a porter la premisse « le parc local n'est pas
+    # affame » quand la lecture des runs tronque. Defaut False : un
+    # `LocalSample` construit sans inventaire ne peut PAS lever la
+    # troncature (fail-CLOSED, y compris pour les appelants de test).
+    inventory_read: bool = False
+    # Slots en ligne ET inoccupes portant TOUS les labels de la cohorte
+    # (`coursia-ephemeral` ET `coursia-linux`) : affirmation POSITIVE,
+    # insensible a la troncature de la lecture des runs.
+    cohort_free: int = 0
 
     @property
     def charge(self) -> int:
@@ -276,6 +330,41 @@ class CohortSample:
     def charge(self) -> int:
         """Charge rendue : jobs de la cohorte en file et en cours."""
         return self.queued + self.in_progress
+
+
+@dataclass
+class Reorientation:
+    """Etat de la REORIENTATION de la file de cohorte deja constituee.
+
+    Le `runs-on` d'un job se resout a la CREATION du job : un run de cohorte
+    cree avant le basculement de la variable reste sur `ubuntu-latest` meme
+    apres le basculement (mesure du coordinateur, 28/10 17:15Z : 155 runs de
+    cohorte en file, tous crees avant le flip).
+
+    Le levier mesure (28/10 17:48Z, run 40707135271 de `docs-transients-guard`) :
+    **une RELANCE relit `vars.*`**. Le job d'origine (cree a 14:33Z, variable
+    a `false`) portait `labels: [ubuntu-latest]` ; le job recree par la
+    relance (17:48Z, variable a `true`) porte
+    `labels: [self-hosted, coursia-ephemeral, coursia-linux]` et a demarre
+    sur `myia-ai-01-wsl-4`. Annuler puis relancer un run reoriente donc son
+    job vers le parc local.
+
+    `candidates` : runs de cohorte en file (tous ages). `targets` : ceux
+    qui passent le seuil d'age ET la borne des slots libres. `reoriented` :
+    ceux dont l'annulation puis la relance ont reussi. `failed` : les autres,
+    avec le motif -- un echec partiel est nomme, jamais masque.
+    """
+
+    measured: bool = False
+    candidates: int = 0
+    targets: list = field(default_factory=list)
+    reoriented: list = field(default_factory=list)
+    failed: list = field(default_factory=list)
+    free_slots: int = 0
+    min_age_min: float = 0.0
+    max_age_min: float = 0.0
+    ghosts: int = 0
+    reason: str = ""
 
 
 def hosted_margin(hosted: HostedSample, cap: int = HOSTED_CONCURRENCY_CAP) -> int:
@@ -594,28 +683,52 @@ def evaluate(
     # 3. Offre hebergee saturee ET parc local libre : le local absorbe.
     #    « saturee » est une premisse POSITIVE (« au moins N jobs ages ») :
     #    la troncature de l'offre hebergee ne l'annule pas, elle ne fait que
-    #    sous-compter. En revanche « le parc local n'est PAS affame » est
-    #    une premisse NEGATIVE : sous troncature locale elle n'est pas
-    #    etablie, et on n'envoie pas de debordement vers un parc dont on
-    #    ignore l'occupation.
+    #    sous-compter. « Le parc local n'est PAS affame » est une premisse
+    #    NEGATIVE : sous troncature locale elle n'est pas etablie par la
+    #    lecture des runs -- mais l'INVENTAIRE des runners l'etablit alors
+    #    par une affirmation positive (« au moins K slots en ligne et
+    #    inoccupes »), insensible a la troncature (tranche du 31/10). Sans
+    #    inventaire lisible, la regle fail-CLOSED revient.
+    inventory_establishes = (
+        local.inventory_read and local.cohort_free >= min_free_slots
+    )
     if (
         hosted.old >= saturation_jobs
         and local.free >= min_free_slots
-        and not local.truncated
+        and (not local.truncated or inventory_establishes)
     ):
+        if local.truncated:
+            evidence = (
+                f"lecture locale tronquee ({local.reason}) mais l'inventaire "
+                f"etablit le parc : {local.cohort_free} runner(s) de cohorte "
+                f"en ligne et inoccupes (seuil {min_free_slots})"
+            )
+        else:
+            evidence = f"parc local libre ({local.free} slot(s))"
         return switch(
             "true",
             f"offre hebergee saturee ({hosted.old} job(s) en file depuis plus "
             f"de {saturation_minutes:.0f} min, plus ancien {hosted.oldest_age_min:.0f} min) "
-            f"et parc local libre ({local.free} slot(s)) -- le local absorbe",
+            f"et {evidence} -- le local absorbe",
         )
 
     notes = []
-    if local.truncated:
+    if local.truncated and not inventory_establishes:
+        # Deux causes distinctes, nommees separement : l'inventaire n'a pas
+        # ete lu, ou il ne montre pas assez de slots libres de cohorte. Une
+        # cause silencieuse ferait lire « troncature » la ou l'inventaire a
+        # en fait parle.
+        if not local.inventory_read:
+            pourquoi = "inventaire des runners illisible"
+        else:
+            pourquoi = (
+                f"{local.cohort_free} runner(s) de cohorte en ligne et "
+                f"inoccupes (seuil {min_free_slots})"
+            )
         notes.append(
-            f"lecture locale TRONQUEE ({local.reason}) : « le parc local "
-            f"n'est pas affame » n'est pas etablie -> pas de debordement "
-            f"vers le local"
+            f"lecture locale TRONQUEE ({local.reason}) et {pourquoi} : "
+            f"« le parc local n'est pas affame » n'est pas etablie -> pas de "
+            f"debordement vers le local"
         )
     # Un operateur doit pouvoir lire l'etat des deux cotes du calcul de
     # liberation, meme quand la liberation n'a meme pas ete tentee.
@@ -836,6 +949,44 @@ def collect_hosted(
     )
 
 
+def fetch_cohort_idle(
+    repo: str,
+    token: str | None,
+    *,
+    local_inventory: crs.RunnerInventory | None = None,
+) -> tuple[int, bool, str]:
+    """Slots de la COHORTE en ligne et inoccupes, lus sur l'inventaire.
+
+    Rend `(slots, lisible, motif)`. Un slot de cohorte porte **tous** les
+    labels de `COHORT_LABELS` : l'inventaire est lu une fois par label et les
+    ensembles de runners LIBRES sont intercedes (un runner qui n'en porterait
+    qu'un ne peut pas accepter la forme hybride).
+
+    `local_inventory` evite de relire le label local quand l'appelant vient
+    de le lire : le cout de l'organe est un budget d'appels partage (volet 5
+    de #22937), on ne paie pas deux fois la meme requete.
+
+    C'est cette mesure qui porte la premisse « le parc local n'est pas
+    affame » quand la lecture des runs tronque : elle est POSITIVE (elle
+    nomme des runners precis en ligne et inoccupes), donc insensible a la
+    troncature. Inventaire illisible sur n'importe lequel des labels ->
+    `lisible=False` et l'appelant retombe sur la regle fail-CLOSED : une
+    capacite partiellement lue n'est pas une capacite etablie.
+    """
+    free_sets: list[set[str]] = []
+    for label in COHORT_LABELS:
+        if label == LOCAL_LABEL and local_inventory is not None:
+            inv = local_inventory
+        else:
+            inv = crs.fetch_inventory(repo, label, token)
+        if not inv.available:
+            return 0, False, inv.reason or "inventaire des runners illisible"
+        free_sets.append(set(inv.idle))
+    if not free_sets:
+        return 0, False, "aucun label de cohorte configure"
+    return len(set.intersection(*free_sets)), True, ""
+
+
 def collect_local(
     repo: str,
     saturation_minutes: float,
@@ -888,6 +1039,12 @@ def collect_local(
                 f"n'est PAS etablie"
             ),
         )
+    # Slots de la COHORTE (tous labels), lus sur l'inventaire deja paye pour
+    # le label local : c'est l'organe qui etablit la premisse quand la
+    # lecture des runs tronque (tranche du 31/10, #22937).
+    cohort_free, cohort_readable, cohort_reason = fetch_cohort_idle(
+        repo, runners_token or token, local_inventory=inv
+    )
     starved = 0
     truncated = False
     in_progress_unread = 0
@@ -908,7 +1065,10 @@ def collect_local(
                 busy=len(inv.busy),
                 unknown=len(inv.unknown),
                 complete=False,
-                reason="lecture de la file locale incomplete",
+                inventory_read=cohort_readable,
+                cohort_free=cohort_free,
+                reason="lecture de la file locale incomplete"
+                + (f" ; {cohort_reason}" if cohort_reason else ""),
             )
         starved = len(starv.starved)
         truncated = starv.truncated
@@ -937,6 +1097,8 @@ def collect_local(
         reason=reason,
         busy=len(inv.busy),
         unknown=len(inv.unknown),
+        inventory_read=cohort_readable,
+        cohort_free=cohort_free,
     )
 
 
@@ -1123,6 +1285,205 @@ def collect_cohort_charge(
     )
 
 
+def collect_queued_cohort_runs(
+    repo: str,
+    cohort_paths: set[str],
+    token: str | None,
+    max_pages: int = 5,
+) -> tuple[list[dict], bool, str]:
+    """Runs EN FILE dont le workflow appartient a la cohorte.
+
+    Le chemin du workflow est dans la reponse des runs (`path`) : le filtre
+    ne coute aucun appel de plus, et la liste des chemins de la cohorte est
+    DERIVEE du depot (jamais recopiee).
+
+    Rend `(lignes, complet, motif)`. `complet=False` quand un listing est
+    illisible : la reorientation est alors bloquee (fail-CLOSED) -- on ne
+    peut pas affirmer « la file de cohorte est connue » sur une lecture
+    partielle.
+    """
+    lines: list[dict] = []
+    if not cohort_paths:
+        return lines, False, "liste de la cohorte vide"
+    for page in range(1, max_pages + 1):
+        rc, out, err = _gh_api(
+            [
+                f"repos/{repo}/actions/runs?status=queued&per_page=100&page={page}"
+            ],
+            token=token,
+        )
+        if rc != 0:
+            message = (err or out or "").strip().splitlines()
+            return lines, False, (
+                "listing de la file illisible ("
+                + (message[-1] if message else "raison inconnue")
+                + ")"
+            )
+        try:
+            data = json.loads(out)
+        except json.JSONDecodeError:
+            return lines, False, "reponse non-JSON"
+        runs = data.get("workflow_runs") if isinstance(data, dict) else None
+        if not isinstance(runs, list):
+            return lines, False, "reponse inattendue"
+        for run in runs:
+            if not isinstance(run, dict):
+                continue
+            path = run.get("path")
+            if not isinstance(path, str) or path not in cohort_paths:
+                continue
+            run_id = run.get("id")
+            created = run.get("created_at")
+            if run_id is None or not isinstance(created, str):
+                continue
+            lines.append({"id": run_id, "path": path, "created_at": created})
+        if len(runs) < 100:
+            break
+    return lines, True, ""
+
+
+def select_reorientation_targets(
+    lines: list[dict],
+    free_slots: int,
+    min_age_minutes: float,
+    now: datetime,
+    max_age_minutes: float = DEFAULT_REORIENT_MAX_AGE,
+) -> tuple[list[dict], int]:
+    """Cibles de la reorientation : les plus ANCIENS d'abord, bornees par les
+    slots locaux libres.
+
+    La borne est le nombre de slots LIBRES mesure : chaque run reoriente
+    occupe un slot du parc local. Sans borne, une file de 155 runs
+    declencherait 155 jobs locaux d'un coup sur un parc de 22 slots -- le
+    parc local sature est exactement le symptome que le controleur combat.
+
+    Deux filtres d'age, tous deux mesures :
+
+    - **plus vieux que `min_age_minutes`** : le run a deja consomme de
+      l'attente, c'est lui qu'il faut reparer ;
+    - **plus vieux que `max_age_minutes`** : le run est un **fantome** (sa PR
+      a disparu ; mesure du 28/10 : 45 des 51 runs de cohorte en file
+      avaient 45 jours). Le reorienter consommerait un slot pour une PR
+      qui n'existe plus, et ferait passer un vrai travail pour un fantome.
+
+    Rend `(cibles, fantomes_exclus)`. Un run dont la date de creation est
+    illisible est IGNORE (il ne peut pas etre age) : reorienter un run
+    d'age inconnu, c'est risquer de reorienter un run qui vient de partir.
+    """
+    if free_slots <= 0:
+        return [], 0
+    aged: list[dict] = []
+    ghosts = 0
+    for line in lines:
+        try:
+            stamp = datetime.fromisoformat(
+                str(line["created_at"]).replace("Z", "+00:00")
+            )
+        except (KeyError, ValueError):
+            continue
+        age = (now - stamp).total_seconds() / 60.0
+        if age < min_age_minutes:
+            continue
+        if age > max_age_minutes:
+            ghosts += 1
+            continue
+        aged.append({**line, "age_min": round(age, 1)})
+    aged.sort(key=lambda row: (-row["age_min"], str(row["id"])))
+    return aged[:free_slots], ghosts
+
+
+def _wait_for_completed(
+    repo: str,
+    token: str | None,
+    run_id,
+    timeout_s: float | None = None,
+) -> tuple[bool, str]:
+    """Attend la fin EFFECTIVE de l'annulation (etat `completed`).
+
+    L'etat se lit sur le run lui-meme. Un etat non atteint dans la borne
+    rend l'echec : la relance serait refusee, autant le dire plutot que de
+    la demander en vain. La borne est lue AU MOMENT de l'appel (pas en
+    argument par defaut) : les tests peuvent la raccourcir.
+    """
+    timeout_s = CANCEL_WAIT_TIMEOUT_S if timeout_s is None else timeout_s
+    deadline = time.monotonic() + timeout_s
+    while True:
+        rc, out, err = _gh_api(
+            [f"repos/{repo}/actions/runs/{run_id}"],
+            token=token,
+        )
+        if rc != 0:
+            message = (err or out or "").strip().splitlines()
+            return False, (
+                "etat du run illisible ("
+                + (message[-1] if message else "raison inconnue")
+                + ")"
+            )
+        try:
+            data = json.loads(out)
+        except json.JSONDecodeError:
+            return False, "etat du run illisible (reponse non-JSON)"
+        status = data.get("status") if isinstance(data, dict) else None
+        if status == "completed":
+            return True, ""
+        if time.monotonic() >= deadline:
+            return False, (
+                f"annulation non effective apres {timeout_s:.0f} s "
+                f"(etat {status})"
+            )
+        time.sleep(CANCEL_POLL_S)
+
+
+def reorient_run(repo: str, token: str | None, run_id) -> tuple[bool, str]:
+    """ANNULE puis RELANCE un run : le job recree relit `vars.*`.
+
+    L'annulation precede la relance : un run encore en file n'accepte pas la
+    relance (`rerun` ne porte que sur un run termine ou annule). Mesure du
+    28/10 : le job recree porte les labels du parc local quand la variable
+    est a `true`.
+    """
+    rc, out, err = _gh_api(
+        [f"repos/{repo}/actions/runs/{run_id}/cancel"],
+        token=token,
+        method="POST",
+    )
+    if rc != 0:
+        message = (err or out or "").strip().splitlines()
+        return False, (
+            "annulation refusee : "
+            + (message[-1] if message else "raison inconnue")
+        )
+    rc, out, err = _gh_api(
+        [f"repos/{repo}/actions/runs/{run_id}/rerun"],
+        token=token,
+        method="POST",
+    )
+    if rc == 0:
+        return True, "run annule puis relance"
+    # La transition d'etat peut encore etre en cours cote serveur : on
+    # attend l'etat effectif de l'annulation, puis on retente UNE fois.
+    # Sans cette attente, un run annule resterait SANS relance -- perdu
+    # pour la passe (reserve Hermes du 28/10).
+    waited, why = _wait_for_completed(repo, token, run_id)
+    if not waited:
+        return False, "relance refusee : annulation non effective (" + why + ")"
+    rc, out, err = _gh_api(
+        [f"repos/{repo}/actions/runs/{run_id}/rerun"],
+        token=token,
+        method="POST",
+    )
+    if rc != 0:
+        message = (err or out or "").strip().splitlines()
+        return False, (
+            "relance refusee apres attente de l'annulation : "
+            + (message[-1] if message else "raison inconnue")
+        )
+    return True, (
+        "run annule puis relance (relance refusee au premier essai, "
+        "reussie apres attente de l'annulation)"
+    )
+
+
 def render_summary(report: dict, rc: int) -> str:
     """Rend le resume du job (markdown) a partir du rapport JSON.
 
@@ -1172,7 +1533,13 @@ def render_summary(report: dict, rc: int) -> str:
         + (" [LECTURE TRONQUEE]" if hosted.get("truncated") else ""),
         f"- local : {local.get('online')} slot(s) en ligne, "
         f"{local.get('free')} libre(s), {local.get('starved')} affame(s)"
-        + (" [LECTURE TRONQUEE]" if local.get("truncated") else ""),
+        + (" [LECTURE TRONQUEE]" if local.get("truncated") else "")
+        + (
+            f" ; inventaire : {local.get('cohort_free')} slot(s) de cohorte "
+            f"libre(s)"
+            if local.get("inventory_read")
+            else " ; inventaire : ILLISIBLE"
+        ),
         f"- cohorte : charge rendue {cohort.get('charge')} job(s) "
         f"({cohort.get('queued')} en file + {cohort.get('in_progress')} en "
         f"cours) sur {cohort.get('workflows')} workflow(s) derive(s) du "
@@ -1191,6 +1558,20 @@ def render_summary(report: dict, rc: int) -> str:
             else "NON MESUREE (pas de seconde lecture)"
         ),
     ]
+    reorientation = report.get("reorientation", {})
+    if reorientation:
+        lines.append(
+            f"- reorientation : {len(reorientation.get('reoriented') or [])} "
+            f"run(s) de cohorte reoriente(s) vers le parc local, "
+            f"{len(reorientation.get('failed') or [])} en echec, "
+            f"{reorientation.get('candidates')} candidat(s) en file, "
+            f"{reorientation.get('free_slots')} slot(s) libre(s), "
+            f"{reorientation.get('ghosts')} fantome(s) exclu(s) "
+            f"(age seuil {reorientation.get('min_age_min')} min, "
+            f"max {reorientation.get('max_age_min')} min)"
+        )
+        if reorientation.get("reason"):
+            lines.append(f"  - motif : {reorientation.get('reason')}")
     degraded = [
         item for item in (report.get("write_blocked"), report.get("state_reason"))
         if item
@@ -1292,6 +1673,29 @@ def main(argv: list[str] | None = None) -> int:
             "dernier passage du controleur est plus recent, ce passage rend "
             "SKIPPED sans mesurer et sans ecrire (0 = pas de garde, le "
             "comportement d'un declenchement manuel)"
+        ),
+    )
+    parser.add_argument(
+        "--reorient-min-age",
+        type=float,
+        default=DEFAULT_REORIENT_MIN_AGE,
+        metavar="MINUTES",
+        help=(
+            "age minimal d'un run de cohorte en file pour etre reoriente "
+            "(annulation puis relance) vers le parc local (volet (c)) : "
+            "reorienter un run qui vient d'etre cree n'apporte rien, il "
+            "reparait deja le run seul"
+        ),
+    )
+    parser.add_argument(
+        "--reorient-max-age",
+        type=float,
+        default=DEFAULT_REORIENT_MAX_AGE,
+        metavar="MINUTES",
+        help=(
+            "age maximal d'un run de cohorte pour etre reoriente : au-dela, "
+            "le run est un FANTOME (sa PR a disparu) -- le reorienter "
+            "consommerait un slot local pour rien"
         ),
     )
     parser.add_argument("--json", action="store_true")
@@ -1528,6 +1932,74 @@ def main(argv: list[str] | None = None) -> int:
                 decision.action = "REFUSED"
                 decision.reason = f"ecriture refusee : {write_error}"
 
+    # Volet (c) : REORIENTATION de la file de cohorte deja constituee.
+    # Le `runs-on` se resout a la creation du job : un run de cohorte cree
+    # avant le basculement reste sur l'offre hebergee. Le levier mesure est
+    # la RELANCE (elle relit `vars.*`, mesure du 28/10 17:48Z) -- donc
+    # annuler puis relancer, dans la limite des slots locaux libres.
+    # Rien n'est fait si la variable n'est pas a `true`, si la lecture des
+    # slots est tronquee, ou en mode dry-run.
+    effective = (decision.target if written else current) or ""
+    reorientation = Reorientation(
+        free_slots=local.free, min_age_min=args.reorient_min_age,
+        max_age_min=args.reorient_max_age,
+    )
+    if not cohort_paths:
+        reorientation.reason = (
+            "liste de la cohorte derivee du depot vide ou illisible "
+            f"({cohort_reason}) : aucune reorientation"
+        )
+    elif effective != "true":
+        reorientation.reason = (
+            f"variable {args.variable} a {effective or 'inconnue'!r} : le "
+            "levier de reorientation n'a de sens qu'a `true`"
+        )
+    elif not (local.complete and not local.truncated):
+        reorientation.reason = (
+            "lecture des slots locaux tronquee ou illisible "
+            f"({local.reason}) : aucune reorientation"
+        )
+    elif local.free <= 0:
+        reorientation.reason = "aucun slot local libre : rien a reorienter"
+    else:
+        lines, complete, reason = collect_queued_cohort_runs(
+            args.repo, cohort_paths, token
+        )
+        reorientation.measured = True
+        reorientation.candidates = len(lines)
+        if not complete:
+            reorientation.reason = reason
+        else:
+            targets, ghosts = select_reorientation_targets(
+                lines, local.free, args.reorient_min_age, now,
+                args.reorient_max_age,
+            )
+            reorientation.targets = targets
+            reorientation.ghosts = ghosts
+            if not targets:
+                reorientation.reason = (
+                    "aucun run de cohorte en file depuis plus de "
+                    f"{args.reorient_min_age:.0f} min"
+                )
+            elif not args.apply:
+                reorientation.reason = (
+                    f"{len(targets)} cible(s) identifiee(s) -- mode dry-run : "
+                    "aucune reorientation executee"
+                )
+            else:
+                for target in targets:
+                    ok, why = reorient_run(args.repo, token, target["id"])
+                    entry = {**target, "ok": ok, "reason": why}
+                    if ok:
+                        reorientation.reoriented.append(entry)
+                    else:
+                        reorientation.failed.append(entry)
+                reorientation.reason = (
+                    f"{len(reorientation.reoriented)} run(s) de cohorte "
+                    f"reoriente(s) vers le parc local, "
+                    f"{len(reorientation.failed)} en echec"
+                )
+
     report = {
         "verdict": decision.action,
         "reason": decision.reason,
@@ -1566,6 +2038,11 @@ def main(argv: list[str] | None = None) -> int:
             "busy": local.busy,
             "unknown": local.unknown,
             "charge": local.charge,
+            # Tranche du 31/10 : l'inventaire porte la premisse quand la
+            # lecture des runs tronque -- l'operateur doit le lire dans le
+            # rapport, pas le deduire du motif.
+            "inventory_read": local.inventory_read,
+            "cohort_free": local.cohort_free,
         },
         # La cohorte, ce sont les workflows qui LISENT la variable : la liste
         # est derivee du depot a chaque passage (`derive_cohort_workflows`),
@@ -1602,6 +2079,20 @@ def main(argv: list[str] | None = None) -> int:
         "local_capable": {
             "workflows": len(local_paths),
             "derivation": local_paths_reason,
+        },
+        # La REORIENTATION de la file de cohorte deja constitutee (volet (c)) :
+        # ce qui a ete vise, ce qui a ete reoriente, ce qui a echoue.
+        "reorientation": {
+            "measured": reorientation.measured,
+            "candidates": reorientation.candidates,
+            "targets": reorientation.targets,
+            "reoriented": reorientation.reoriented,
+            "failed": reorientation.failed,
+            "free_slots": reorientation.free_slots,
+            "min_age_min": reorientation.min_age_min,
+            "max_age_min": reorientation.max_age_min,
+            "ghosts": reorientation.ghosts,
+            "reason": reorientation.reason,
         },
         "thresholds": {
             "saturation_jobs": args.saturation_jobs,
@@ -1657,6 +2148,10 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  ecriture : REFUSEE -- {write_blocked}")
         if state_reason and not write_blocked:
             print(f"  etat     : {state_reason}")
+        print(
+            f"  reorient.: {len(reorientation.reoriented)} run(s) reoriente(s), "
+            f"{len(reorientation.failed)} en echec -- {reorientation.reason}"
+        )
 
     if decision.action == "UNREADABLE":
         rc = EXIT_UNREADABLE

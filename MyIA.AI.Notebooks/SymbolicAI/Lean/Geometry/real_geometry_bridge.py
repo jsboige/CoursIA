@@ -7,7 +7,7 @@ des nombres **complexes**. La question qu'elle répond est « le théorème
 ``H ⟹ g`` tient-il ? », mais *sur les complexes*.
 
 Ce module apporte la même question **sur les réels**, résolue nativement par
-l'organe Z3 (théorie des corps ordonnés réels, ``QF_NIA``). Deux faces :
+l'organe Z3 (théorie des corps ordonnés réels, ``QF_NRA``). Deux faces :
 
 * :func:`decide_real` — valide-t-il sur ``R`` ? Trois verdicts :
   * ``valid``   — aucun contre-exemple réel (la réfutation est insatisfiable) ;
@@ -75,7 +75,7 @@ def _poly_to_z3(expr, symbols: List, zvars: Dict) -> "_z3.ExprRef":
             fr = Fraction(int(coef.p), int(coef.q))
         else:
             # Un coefficient non rationnel (√2, π, …) ne se représente pas
-            # exactement en QF_NIA (coefficients rationnels). L'ancien
+            # exactement dans la syntaxe Z3 (coefficients rationnels). L'ancien
             # `Fraction(int(coef), 1)` le TRONQUAIT (√2 → 1, π → 3) et
             # produisait des verdicts faux, dont un faux VALID (review Hermes
             # #23018). On refuse donc explicitement ; supporter √2 exactement
@@ -99,7 +99,7 @@ def _z3num_to_sympy(v: "_z3.ExprRef"):
     """
     Renvoie la valeur d'un numéral du modèle Z3 comme nombre ``sympy``.
 
-    Deux classes de numéraux sortent d'un modèle ``QF_NIA`` :
+    Deux classes de numéraux sortent d'un modèle du solveur ``QF_NRA`` :
 
     * un ``RatNumRef`` — sa représentation texte **est** la fraction exacte
       (``'1/2'``, ``'3'``) ; ``sp.Rational`` la lit sans perte, le témoin est
@@ -144,8 +144,13 @@ def _z3num_is_exact(v: "_z3.ExprRef") -> bool:
 
 
 def _make_solver(timeout_ms: Optional[int] = None) -> "_z3.Solver":
-    """Un solveur ``QF_NIA`` ; le timeout n'est posé que si l'API le permet."""
-    s = _z3.SolverFor("QF_NIA")
+    """Un solveur ``QF_NRA`` ; le timeout n'est posé que si l'API le permet.
+
+    Les variables du module sont des ``_z3.Real`` : la logique demandée est
+    l'arithmétique non linéaire **sur les réels**, pas ``QF_NIA`` (la même
+    théorie sur les entiers), qui nommerait un domaine étranger à celui décidé.
+    """
+    s = _z3.SolverFor("QF_NRA")
     if timeout_ms is not None:
         try:
             s.set_option("timeout", int(timeout_ms))

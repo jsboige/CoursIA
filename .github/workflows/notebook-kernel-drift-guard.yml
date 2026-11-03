@@ -20,7 +20,6 @@ name: Notebook Kernel Drift Guard
 on:
   pull_request:
     types: [opened, synchronize, edited, reopened]
-    branches: [main]
     paths:
       - '**.ipynb'
       - 'scripts/notebook_tools/check_kernel_drift.py'
@@ -63,7 +62,14 @@ jobs:
     # creation du job, les runs deja en file ne bougent pas.
     runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
-    timeout-minutes: 5
+    # 2026-11-02 (#22937) : 5 min annulait le job APRES un verdict vert --
+    # mesure run 41378044015 (PR #24115) : le checkout seul prend 286 s sur
+    # 300 (fetch-depth: 0, depot de 14 911 fichiers, ubuntu-latest), le
+    # controle lui-meme 14 s (exit 0), et l'etape de tests unitaires est
+    # restee skipped : 5 cancellations / 30 derniers runs. La borne doit
+    # couvrir le clone froid heberge, pas seulement le clone chaud du parc
+    # local : 15 min.
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
