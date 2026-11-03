@@ -139,6 +139,8 @@ Ces corrections sont **éditoriales** (prose, pas de modification des figures su
 | 19 | [PyMC-19-Survival-Analysis](PyMC-19-Survival-Analysis.ipynb) | 50 min | Analyse de survie, exponentiel conjugué (Gamma), Weibull `k` inféré directement (NUTS), sélection LOO (arviZ), censure à droite exécutée (naïf vs `S(c_i)` vs Kaplan–Meier) |
 | 20 | [PyMC-Observabilite-OTel](PyMC-Observabilite-OTel.ipynb) | 40 min | Instrumentation OpenTelemetry d'un modèle hiérarchique (spans console `pymc.compile.*` / `pymc.sample`, attributs du run, capture mémoire) — le miroir Python de la série Aspire/OTel |
 
+> **Durée** : durée d'**étude** de l'exercice (lecture, exécution, exercices) — pas un temps d'exécution machine. La valeur est unique par exercice : PyMC-NN et Infer-NN portent la même durée quand leurs carnets sont équivalents ; quand une section n'existe que d'un côté, chaque carnet porte sa propre durée.
+
 > **Théorie de la décision** : les notebooks décisionnels (utilité espérée, EVPI, MDPs, bandits, plus la jambe actuarielle) forment désormais une sous-série autonome dans [DecisionTheory/DecPyMC/](../DecisionTheory/DecPyMC/README.md) (1 à 12), miroir Python de [DecisionTheory/DecInfer/](../DecisionTheory/DecInfer/README.md).
 
 > **Numérotation** : la série PyMC est **numérotée 1:1** avec son jumeau C# Infer (PyMC-5 ↔ Infer-5 = inférence causale, PyMC-14 ↔ Infer-14 = séquences, etc.) pour faciliter la comparaison des deux moteurs sur les mêmes modèles. Le sujet de [Infer-10-Thompson-Sampling](../DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb) est, côté Python, **intégré dans** [PyMC-7-Sequential](../DecisionTheory/DecPyMC/DecPyMC-7-Sequential.ipynb) (section bandits bayésiens MCMC) — d'où l'absence d'un PyMC-21 distinct.

@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: Search
-pedagogical_count: 160
-breakdown: Part3-Cas-pratiques=49, Part1-Foundations=47, Part4-Metaheuristics=35, Part2-CSP=18, Part5-Frontieres=11
-maturity: BETA=146, ALPHA=9, DRAFT=5
+pedagogical_count: 165
+breakdown: Part3-Cas-pratiques=51, Part1-Foundations=49, Part4-Metaheuristics=35, Part2-CSP=19, Part5-Frontieres=11
+maturity: BETA=151, ALPHA=8, DRAFT=6
 -->
 
 [← Notebooks](../README.md) | [↑ ..](../README.md) | [→ SymbolicAI](../SymbolicAI/README.md)

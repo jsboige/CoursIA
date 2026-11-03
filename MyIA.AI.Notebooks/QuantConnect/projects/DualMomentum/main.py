@@ -5,9 +5,10 @@ from AlgorithmImports import *
 
 class DualMomentum(QCAlgorithm):
     """
-    Dual Momentum v6b: All Candidates + Momentum Tilt (BEST)
+    Dual Momentum v6b: All Candidates + Momentum Tilt
     ========================================================
-    Best variant: Sharpe 0.557, CAGR 11.22%, MaxDD 15.3%
+    Measured (current code, fenêtre codée 2015-01-01 -> 2024-12-31, 2516 séances négociées, mode strategy) : Sharpe 0.372, CAGR 7.754%, MaxDD 15.10%.
+    Source : QC Cloud, dossier #23315 (2026-10-29), projet de référence 20286-DMo-baseline (2516 séances négociées, 442 ordres).
 
     Universe (risky): SPY, EFA, EEM, TLT, GLD, DBC
     Safe refuge: BND
@@ -15,11 +16,12 @@ class DualMomentum(QCAlgorithm):
     Relative ranking: 12m return, ALL candidates, momentum-tilt weighted
     Rebalance: Monthly
 
-    Iteration results:
+    Iteration results (historique des iterations de conception, mesurees sous des
+    conditions anterieures ; non reproduites par le code actuel, refactors #21420/#22869/#22923) :
     v4: Sharpe 0.391, CAGR 9.15%, MaxDD 23.9% (Core5, top-2, equal)
     v5: Sharpe 0.526, CAGR 11.31%, MaxDD 19.0% (+DBC, top-3, weighted)
     v6: Sharpe 0.473, CAGR 9.42%, MaxDD 16.4% (defensive 80/20 - worse Sharpe)
-    v6b: Sharpe 0.557, CAGR 11.22%, MaxDD 15.3% (all candidates, mom tilt) <-- BEST
+    v6b: Sharpe 0.557, CAGR 11.22%, MaxDD 15.3% (all candidates, mom tilt) — record de l'itération de conception
 
     Reference: Antonacci (2014) + AQR Trend Following
     """

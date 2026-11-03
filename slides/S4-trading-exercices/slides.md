@@ -651,9 +651,13 @@ layout: default
 
 </v-click>
 
-<v-click>
+---
+layout: default
+---
 
-### Hints
+# Ex08 - Hints
+
+<v-click>
 
 - `epsilon` decroit de 0.3 a 0.05 (exploration -> exploitation)
 - Expérience replay : le modèle re-apprend de situations passees
@@ -734,9 +738,13 @@ layout: default
 
 </v-click>
 
-<v-click>
+---
+layout: default
+---
 
-### Hints
+# Ex09 - Hints
+
+<v-click>
 
 - Chronos tokenize les valeurs en entiers via quantization
 - Le forecasting devient un problème de "language modeling"
