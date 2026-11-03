@@ -87,10 +87,14 @@ def test_regexes_directly():
 
 
 # --- workflow concurrency lock ----------------------------------------------
-# The guard's workflow fires on `issue_comment` AND `pull_request`. A comment
+# The guard's workflow fired on `issue_comment` AND `pull_request`. A comment
 # run executes against `main`, so it must never share a concurrency group with
 # the PR-head run: with `cancel-in-progress`, it would cancel that run and leave
 # a `cancelled` check on the head, which `PR gate` fails as "never concluded".
+# The `issue_comment` leg was removed in #22937 (vague 2) -- its verdict
+# attached to `main` and was invisible on every PR, and it was 71 of the 100
+# most recent runs of this workflow. The event key is kept so the two
+# remaining kinds (`pull_request`, `workflow_dispatch`) stay separated.
 
 WORKFLOW = Path(__file__).resolve().parents[2] / ".github" / "workflows" / "local-path-waiver-guard.yml"
 
@@ -110,12 +114,17 @@ def test_negative_control_defective_group_is_caught():
     assert not _group_isolates_events(DEFECTIVE_GROUP)
 
 
-def test_workflow_group_isolates_comment_runs_from_pr_runs():
+def test_workflow_has_no_comment_leg_and_keeps_the_event_key():
+    """La jambe `issue_comment` est retiree (#22937 vague 2) -- le defaut qu'elle
+    rendait possible (un run sur `main` qui annule le run de tete de PR) ne peut
+    plus se produire ; la cle par evenement reste pour les deux genres
+    restants (`pull_request`, `workflow_dispatch`)."""
     import yaml
 
     wf = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
     triggers = wf.get("on", wf.get(True))  # PyYAML reads a bare `on:` as True
-    assert "issue_comment" in triggers and "pull_request" in triggers
+    assert "pull_request" in triggers
+    assert "issue_comment" not in triggers
     concurrency = wf["concurrency"]
     if concurrency.get("cancel-in-progress"):
         assert _group_isolates_events(concurrency["group"]), concurrency["group"]

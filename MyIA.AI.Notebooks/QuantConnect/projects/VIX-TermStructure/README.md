@@ -61,6 +61,7 @@ Historique : v2.0 −0.97 · v3.1 −0.27 · v4.0 −0.65 · v4.1 +0.05 · v4.2 
 
 - main.py - Stratégie (v6.0, dual-signal eVRP + term structure)
 - research.ipynb - Analyse du spread VIX et test de régimes (analyse **pré-v6.0** : SVXY, signal de terme seul — la v6.0 dual-signal est mesurée dans le tableau ci-dessus)
+- quantbook.ipynb - Reprise de cette analyse sur les données natives QuantConnect (taille de position, seuils VIX et contango, trailing stop), elle aussi **pré-v6.0** ; les séries VIX viennent des CSV décrits plus haut
 - ARCHIVE.md - Historique complet des itérations et analyse du plafond structurel v2-v5.1
 
 ## Références

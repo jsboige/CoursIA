@@ -1,0 +1,10 @@
+- name: "GameTheory-13b Safe Subgame Solving"
+  family: GameTheory
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-13b-Safe-Subgame-Solving-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-13c-Safe-Subgame-Solving-CSharp.ipynb
+  parity_level: semantic
+  numbering_exception: "Quasi-paire 13b/13c (inventaire P2 #23119, section GameTheory) : meme numero de base 13 et meme titre Safe-Subgame-Solving, lettres d'accretion differentes (b cote Python, c cote CSharp ; ni 13c-Python ni 13b-CSharp dans l'arbre, mesure au main 2026-10-31). Promouvoir la paire en accrétions alignees est une decision de mapping renvoyee a l'arbitrage EPIC (#12933 section 6) ; cette entree documente l'etat reel sans le prejudger."
+  known_differences:
+    - "[2026-10-31 myia-po-2028:CoursIA #12933 tranche P2ter] Enregistrement initial (trou du registre nomme par l'inventaire P2 #23119, grep NONE re-verifie par P2 puis par cette tranche). Audit structurel firsthand au main 2026-10-31 : 14 cellules markdown de chaque cote, 12 cellules code Python / 10 cote CSharp ; le jumeau CSharp se presente comme le port fidele de l'enumeration de 13b (Section 1 -- Reproduire) et ajoute une Section 2 -- Auditer (verification que les chemins forment une distribution) ; le Python porte le blueprint cfr_vanilla et les exercices. Meme socle mathematique (resolution sure de sous-jeux, recollement, exploitabilite baseline)."
+    - "Divergence d'implementation attendue : Python = numpy + code CFR pedagogique du carnet (cfr_vanilla, from-scratch) ; CSharp = pur System.* (from-scratch de l'enumeration + audit). Aucun moteur externe des deux cotes -- parite de demonstration pedagogique, pas invocation du meme solveur."
+    - "Socle pedagogique commun : safe subgame solving (Brown-Sandholm) -- mauvais recollement vs recollement sur, exploitabilite baseline du blueprint, enumeration des sous-jeux."

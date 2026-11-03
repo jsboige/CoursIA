@@ -26,6 +26,10 @@ from pathlib import Path
 
 import pytest
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from check_target_coverage import _uses_lean_axiom  # noqa: E402
+
 # scripts/lean/tests/X.py -> parents[3] = repo root
 REPO = Path(__file__).resolve().parents[3]
 CONWAY_WF = REPO / ".github" / "workflows" / "lean-conway.yml"
@@ -36,6 +40,21 @@ def _load_jobs():
     with CONWAY_WF.open(encoding="utf-8") as fh:
         doc = yaml.safe_load(fh)
     return doc.get("jobs", {})
+
+
+def _resolve_allow(raw):
+    """Resout la valeur ``allow-axioms`` du workflow en liste de noms.
+
+    Depuis #21905 la source de verite de l'allow-list est un fichier
+    (``@scripts/lean/allow_axioms_conway.txt``) : lire la valeur brute ne
+    dirait plus rien du contenu. On passe par le module du gate
+    (``scripts/lean/allow_list.py``), donc ces pins portent sur ce que le
+    job resout reellement -- pas sur la forme de transport.
+    """
+    sys.path.insert(0, str(REPO / "scripts" / "lean"))
+    from allow_list import parse_allow  # noqa: PLC0415 (import tardif: sys.path)
+
+    return parse_allow(raw, REPO)
 
 
 def test_workflow_exists():
@@ -57,13 +76,27 @@ def test_blocking_proof_integrity_targets_showcase_modules():
 
 def test_advisory_audit_job_wired():
     """Option (b): an ADVISORY proof-integrity-audit job exists, uses the
-    reusable lean-axiom workflow, and is non-blocking on sorry."""
+    reusable lean-axiom workflow, and is non-blocking on sorry.
+
+    **La forme de l'appel n'est pas figée, la cible l'est (#23247).** Ce pin
+    exigeait le littéral ``lean-axiom.yml@main``. Une PR qui ajoute un input au
+    workflow réutilisable ET le passe depuis cet appelant ne PEUT pas garder
+    ``@main`` : GitHub résout ``@main`` vers le fichier tel qu'il existe sur la
+    branche par défaut, qui ne déclare pas encore ``build-threads``, et rejette
+    l'appel avant tout job (``startup_failure``, 0 job — run 40854017279
+    mesuré). La règle vérifiée ici est inchangée — l'appelant doit résoudre vers
+    ``lean-axiom.yml`` — donc le pin applique la même normalisation que les deux
+    organes qui lisent ce même fait (``check_target_coverage._uses_lean_axiom``,
+    ``check_axiom_gate_coverage._GATE_CALL_RE``), lesquels acceptent déjà
+    ``jsboige/CoursIA/...@main`` comme ``./.github/workflows/...``.
+    """
     jobs = _load_jobs()
     assert "proof-integrity-audit" in jobs, (
         "#8782 (b): proof-integrity-audit job missing from lean-conway.yml")
     audit = jobs["proof-integrity-audit"]
-    assert "lean-axiom.yml@main" in audit.get("uses", ""), (
-        "audit must reuse the lean-axiom workflow")
+    uses = audit.get("uses", "")
+    assert _uses_lean_axiom(uses), (
+        f"audit must reuse the lean-axiom workflow, got uses={uses!r}")
     with_opts = audit.get("with", {})
     assert with_opts.get("fail-on-sorry") is False, (
         "the audit job must be advisory on sorry (fail-on-sorry: false)")
@@ -247,14 +280,20 @@ def test_audit_allowlists_native_decide_axioms():
     jobs = _load_jobs()
     audit = jobs["proof-integrity-audit"].get("with", {})
     allow = audit.get("allow-axioms", "")
-    assert "native_decide" in allow, (
+    names = _resolve_allow(allow)
+    assert any("native_decide" in n for n in names), (
         "audit must allow-list the native_decide axioms or it false-fails")
     # Pin the empirical footprint so a silent re-shrink (or accidental copy of
     # the blocking gate's 19) is caught -- and so any future widening has to
     # come with the module-attribution argument, as #9341's did.
-    names = [a.strip() for a in allow.split(",") if a.strip()]
-    assert len(names) == 77, (
-        f"audit allow-list must carry the 77 native_decide axioms of the whole "
+    # La source de verite est le fichier (allow-axioms: "@path", #21905) :
+    # `_resolve_allow` resout le "@chemin" ET la forme inline ; on garde donc
+    # la liste resolue plus haut (la reparse comma-separated de main
+    # s'appliquerait a la chaine "@scripts/lean/allow_axioms_conway.txt" et
+    # compterait 1 element). Le compte suit `main` : 79 ancres (77 mesurees
+    # au move #21905 + les 2 ancres du temoin de machine de Turing #17465).
+    assert len(names) == 79, (
+        f"audit allow-list must carry the 79 native_decide axioms of the whole "
         f"lake under the #10889 '*' derivation (38 HashlifeCorrectness-era "
         f"footprint + 21 build-enumerated entries of the newly covered "
         f"modules + 2 P4-At standalone witnesses from grain 3a #11303 + 8 "
@@ -263,6 +302,9 @@ def test_audit_allowlists_native_decide_axioms():
         f"+ 4 Pillars entries from the OTCA tranche 3 of #19989 "
         f"- 4 Pillars `_initial_nonempty` entries derived (not native_decide) "
         f"by #21833, "
+        f"+ 2 Turing-machine entries from #17465 (the FR + _en twins of "
+        f"turingmachine_facts, the single anchor of the Turing-machine "
+        f"witness), "
         f"each attributed in the workflow comment); got {len(names)}")
     # Sample members from each family revealed by the audit (P4 base cases,
     # box-assez-grand lemmas, hashlife_correct_implies bridges, plus one
@@ -275,6 +317,8 @@ def test_audit_allowlists_native_decide_axioms():
         "Conway.Life.jumpCaptured_block._native.native_decide.ax_1_1",
         "Conway.Life.jumpCaptured_beehive._native.native_decide.ax_1_1",
         "Conway_en.Life_en.RLE_en.glider_parse_ok._native.native_decide.ax_1_1",
+        "Conway.Life.Pillars.turingmachine_facts._native.native_decide.ax_1_1",
+        "Conway.Life.Pillars_en.turingmachine_facts._native.native_decide.ax_1_1",
     ]:
         assert sample in names, (
             f"audit allow-list missing revealed axiom {sample!r}")
@@ -287,9 +331,8 @@ def test_audit_allowlist_is_distinct_from_blocking_gate():
     a future copy-paste of the blocking gate's 19 into the audit (which would
     re-open the vert-hors-cible the audit exists to close)."""
     jobs = _load_jobs()
-    audit_set = {a.strip() for a in
-                 jobs["proof-integrity-audit"].get("with", {}).get("allow-axioms", "").split(",")
-                 if a.strip()}
+    audit_set = set(_resolve_allow(
+        jobs["proof-integrity-audit"].get("with", {}).get("allow-axioms", "")))
     blocking_set = {a.strip() for a in
                     jobs["proof-integrity"].get("with", {}).get("allow-axioms", "").split(",")
                     if a.strip()}

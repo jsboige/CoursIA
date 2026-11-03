@@ -7,7 +7,7 @@ Source : miroir [copy.sh/life](https://copy.sh/life/) des motifs de [LifeWiki](h
 | Fichier | Motif | Auteur | Taille | Grille | Période |
 |---------|-------|--------|--------|--------|---------|
 | `otcametapixel.rle` | OTCA Metapixel | Brice Due (2006) | 165 KB | 2058x2058 | 35 328 |
-| `turingmachine.rle` | Machine de Turing | Paul Rendell (2000) | 104 KB | variable | N/A |
+| `turingmachine.rle` | Machine de Turing | Paul Rendell (2000) | 104 KB | 1714x1647 | N/A |
 | `p5760unitlifecell.rle` | Cellule de Vie unitaire p5760 | David Bell | 15 KB | 499x499 | 5 760 |
 | `gemini.rle` | Auto-réplicateur Gemini | Andrew Wade (2010) | 5,3 MB | immense | 33 699 586 |
 
@@ -20,6 +20,7 @@ Ces fichiers RLE correspondent aux théorèmes témoins échafaudés dans
 |-----------------|-------------|------------------------|
 | `otca_initial_population` | `otcametapixel.rle` | 35 328 (cycle publié ; confinement observé sur 1 800 générations — période non vérifiée ; évaluation du témoin de période non terminée en 2 h) |
 | `unitcell_initial_population` | `p5760unitlifecell.rle` | 5 760 (période mesurée) |
+| `turingmachine_initial_population` | `turingmachine.rle` | N/A (témoin de chargement et de dynamique : la grille n'est pas inerte, aucune période n'est visée) |
 | `gemini_witness` | `gemini.rle` | 33 699 586 |
 | `cpu_witness` | pas encore disponible | 1 048 576 |
 

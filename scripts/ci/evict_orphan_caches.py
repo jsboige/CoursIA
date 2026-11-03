@@ -77,7 +77,25 @@ Criteres d'eviction (cf. issue #16088 acceptance) :
    ET celle de `--main-branch` (le repli des branches sans copie propre), on
    evince les autres. Mesure du 2026-10-25 : 76 entrees `setup-python-*` pour
    5 cles distinctes, 4,85 Go du quota de 10 Go, dont 4,48 Go de doublons.
-5. **Ou cache TRAP CodeQL supersede** (#22937) : les cles
+5. **Ou cle que plus aucun workflow de `main` ne demande** (#19658,
+   decision A du coordinateur, 2026-10-26) : une cle
+   `setup-python-<...>-python-<version>-<pm>-<hash>` n'est relisible que par un
+   run dont le workflow **de `main`** pose le meme `cache:` ET resout la meme
+   version. Le couple `(cache, version)` demande est derive **a la lecture des
+   workflows** (jamais d'une liste figee dans le script) ; quand aucun
+   workflow de `main` ne demande plus ce couple, la cle est prouvee orpheline
+   et evincee, **meme sur une PR ouverte** : la regle fail-closed « copie de
+   PR ouverte » ne protege que les cles encore demandees.
+
+   Ce que la mesure dit du plafond de ce critere : la resolution de la version
+   depend du **runner**, pas du YAML (`3.12` se resout en `3.12.14` sur l'image
+   du pool). Le critere compare donc la version **resolue** de la cle a la
+   version **declaree** dans les workflows -- une spec de minor (`3.12`)
+   couvre toutes les patchs de cette minor. Une cle dont la version n'est
+   couverte par aucune spec de `main` est donc evincee ; une cle encore
+   couverte est conservee, quelle que soit sa PR.
+
+6. **Ou cache TRAP CodeQL supersede** (#22937) : les cles
    `codeql-trap-<ver>-<toolchain>-<lang>-<sha40>` ne sont adressables que
    par restore-key, qui rend la plus RECENTE entree du prefixe -- jamais
    une autre. On garde les `--keep-latest-traps` plus recentes par
@@ -96,6 +114,13 @@ Criteres d'eviction (cf. issue #16088 acceptance) :
   quota (lean, dotnet, node) qui est reutilise. La seule famille ouverte est
   `DEDUPE_KEY_PREFIXES`, et seulement pour ses **doublons de cle** : la
   nouvelle entree et celle de la branche par defaut survivent toujours.
+- **Le critere « non demandee par main » est fail-CLOSED** : si les workflows
+  de `main` ne sont pas lisibles (checkout incomplet, repertoire absent), la
+  demande est **inconnue** et aucune cle `setup-python` n'est evincee -- la
+  passe le dit dans sa raison (`unrequested_check_failed`) au lieu de
+  presumer une absence. Une spec de version illisible (`${{ matrix.x }}`)
+  couvre toutes les versions : une demande qu'on ne sait pas lire ne peut
+  pas etre niee.
 - **Pas d'appel DELETE sans confirmation visuelle** : le dry-run affiche
   l'identifiant de cache, la cle tronquee, la raison, et la taille. Le
   `--apply` ne supprime que les evictables listes au dry-run.
@@ -250,6 +275,27 @@ DEDUPE_KEY_PREFIXES = ("setup-python-",)
 # `refs/pull/<n>/merge` et `refs/pull/<n>/head` : deux formes pour la meme PR.
 PR_REF_RE = re.compile(r"^refs/pull/(\d+)/(?:merge|head)$")
 
+# #19658 (decision A du coordinateur, 2026-10-26) : format de cle
+# `actions/setup-python`, mesure sur les logs de run (job « Golden-set
+# execution (H.7 P3) », run 40270198774, 2026-10-26T04:41Z) :
+#
+#   setup-python-Linux-x64-24.04-Ubuntu-python-3.12.14-pip-<fileHash 64 hex>
+#
+# - `<OS>-<arch>-<image>` : le triplet du runner (le prefixe `24.04-Ubuntu`
+#   est l'image du runner, pas une partie de la version python) ;
+# - `python-<version>` : la version **resolue** par le runner, pas la version
+#   demandee dans le YAML (`3.12` se resout en `3.12.14` sur l'image du pool) ;
+# - `<pm>` : le gestionnaire de paquets (`pip`) ;
+# - `<fileHash>` : le hash des fichiers de `cache-dependency-path`, **independant
+#   de la version** -- c'est pourquoi une meme empreinte apparait sous deux
+#   versions (3.12.14 et 3.12.15 pour le meme job).
+SETUP_PYTHON_RE = re.compile(
+    r"^setup-python-[^-]+-[^-]+-.+-python-"
+    r"(?P<version>\d+\.\d+\.\d+)-"
+    r"(?P<pm>[a-z]+)-"
+    r"(?P<filehash>[0-9a-f]{64})$"
+)
+
 
 def _parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(
@@ -299,6 +345,20 @@ def _parse_args() -> argparse.Namespace:
         "content-addressed key (%s) beyond the newest one are evicted, except "
         "the entry on --main-branch, which stays as every other branch's "
         "fallback." % ", ".join(DEDUPE_KEY_PREFIXES),
+    )
+    p.add_argument(
+        "--no-unrequested",
+        action="store_true",
+        help="Disable the unrequested-key pass (#19658, decision A). By default, a "
+        "setup-python cache key whose (package manager, python version) pair is "
+        "no longer declared by any workflow of main is evicted, even on an open "
+        "PR.",
+    )
+    p.add_argument(
+        "--workflows-dir",
+        default=str(REPO_ROOT / ".github" / "workflows"),
+        help="Directory holding the workflows the demand is derived from "
+        "(default: <repo>/.github/workflows).",
     )
     p.add_argument(
         "--repo",
@@ -691,6 +751,205 @@ def _mark_duplicate_keys(
             r.update({"verdict": "EVICT", "reason": "duplicate_key_superseded"})
 
 
+def _strip_quotes(value: str) -> str:
+    v = (value or "").strip()
+    if len(v) >= 2 and v[0] == v[-1] and v[0] in ("'", '"'):
+        v = v[1:-1]
+    return v.strip()
+
+
+def _spec_covers(spec: str, version: str) -> bool:
+    """Une spec de version YAML couvre-t-elle une version resolue ?
+
+    `3.12` couvre `3.12.14` ; `3.x` couvre `3.12.14` ; `3.12.14` ne couvre
+    que lui-meme. Une spec **illisible** (vide, expression `${{ ... }}`) couvre
+    tout : une demande qu'on ne sait pas lire ne peut pas etre niee.
+    """
+    s = (spec or "").strip()
+    if not s or "${{" in s:
+        return True
+    if s == version:
+        return True
+    parts = s.split(".")
+    vparts = version.split(".")
+    if len(parts) > len(vparts):
+        return False
+    for a, b in zip(parts, vparts):
+        if a in ("x", "X", "*"):
+            return True
+        if a != b:
+            return False
+    return True
+
+
+def _parse_step(rest: str, block: list[str]) -> dict[str, str]:
+    """Extrait les cles d'un step (dont `uses` et le contenu de `with:`)."""
+    out: dict[str, str] = {}
+
+    def add(key: str, value: str) -> None:
+        out.setdefault(key, value)
+
+    m = re.match(r"^(?P<k>[\w.-]+)\s*:\s*(?P<v>.*)$", rest.strip())
+    if m:
+        add(m.group("k"), m.group("v"))
+
+    indents = [len(ln) - len(ln.lstrip()) for ln in block if ln.strip()]
+    if not indents:
+        return out
+    child_indent = min(indents)
+
+    with_indent: Optional[int] = None
+    with_entries: list[tuple[int, str]] = []
+    for ln in block:
+        if not ln.strip():
+            continue
+        ind = len(ln) - len(ln.lstrip())
+        s = ln.strip()
+        if with_indent is not None:
+            if ind <= with_indent:
+                with_indent = None
+            else:
+                with_entries.append((ind, s))
+                continue
+        if ind != child_indent:
+            continue
+        mm = re.match(r"^(?P<k>[\w.-]+)\s*:\s*(?P<v>.*)$", s)
+        if not mm:
+            continue
+        key, value = mm.group("k"), mm.group("v")
+        if key == "with" and not value.strip():
+            with_indent = ind
+            continue
+        add(key, value)
+
+    if with_entries:
+        entry_indent = min(i for i, _ in with_entries)
+        for ind, s in with_entries:
+            if ind != entry_indent:
+                continue
+            mm = re.match(r"^(?P<k>[\w.-]+)\s*:\s*(?P<v>.*)$", s)
+            if mm:
+                add(mm.group("k"), mm.group("v"))
+    return out
+
+
+def _demand_from_workflow_text(text: str) -> list[dict[str, str]]:
+    """Couples (package manager, version) demandes par les steps setup-python.
+
+    Seul un step `actions/setup-python` **avec** une entree `cache:` compte :
+    c'est lui qui écrit une cle de cache Actions. Le couple produit est
+    `(cache, python-version)`.
+    """
+    lines = text.splitlines()
+    out: list[dict[str, str]] = []
+    i = 0
+    while i < len(lines):
+        m = re.match(r"^(?P<indent>\s*)-\s+(?P<rest>.*)$", lines[i])
+        if not m:
+            i += 1
+            continue
+        step_indent = len(m.group("indent"))
+        j = i + 1
+        block: list[str] = []
+        while j < len(lines):
+            ln = lines[j]
+            if not ln.strip():
+                block.append(ln)
+                j += 1
+                continue
+            ind = len(ln) - len(ln.lstrip())
+            if ind <= step_indent:
+                break
+            block.append(ln)
+            j += 1
+        step = _parse_step(m.group("rest"), block)
+        if "actions/setup-python" in str(step.get("uses", "")):
+            cache = _strip_quotes(str(step.get("cache", "")))
+            if cache:
+                out.append(
+                    {
+                        "pm": cache,
+                        "version": _strip_quotes(str(step.get("python-version", ""))),
+                    }
+                )
+        i = j
+    return out
+
+
+def _declared_demand(workflows_dir: Path) -> Optional[list[dict[str, str]]]:
+    """Couples (cache, version) declares par les workflows de `main`, a la lecture.
+
+    Retourne `None` quand la lecture est impossible ( repertoire absent,
+    fichier illisible) : c'est le signal fail-CLOSED -- rien n'est evince.
+    La liste est **derivee des workflows**, jamais figee dans le script : le
+    critere suit les workflows au lieu de les deviner.
+    """
+    try:
+        files = sorted(
+            p for p in Path(workflows_dir).iterdir() if p.suffix in (".yml", ".yaml")
+        )
+    except OSError:
+        return None
+    if not files:
+        return None
+    demand: list[dict[str, str]] = []
+    for f in files:
+        try:
+            text = f.read_text(encoding="utf-8")
+        except OSError:
+            return None
+        demand.extend(_demand_from_workflow_text(text))
+    return demand
+
+
+def _mark_unrequested_keys(
+    records: list[dict[str, Any]], demand: Optional[list[dict[str, str]]]
+) -> None:
+    """Evince les cles `setup-python` que plus aucun workflow de `main` ne demande.
+
+    Decision A du coordinateur (2026-10-26, #19658) : une cle de cache
+    `setup-python-<...>-python-<version>-<pm>-<hash>` n'est relisible que par un
+    run dont le workflow **de `main`** pose le meme `cache:` ET resout la meme
+    version. Quand aucun workflow de `main` ne demande plus ce couple
+    `(cache, version)`, la cle est **prouvee orpheline** : elle ne peut plus
+    etre relue ni reecrite, et sa copie sur une PR ouverte n'a plus de valeur
+    (la regle fail-closed « copie de PR ouverte » ne protege que les cles
+    **encore demandees**).
+
+    La regle fail-closed « copie de PR ouverte » reste intacte pour toute cle
+    encore demandee : cette passe ne contourne le garde des PRs ouvertes que
+    pour une cle dont l'orphelinage est etabli.
+
+    `demand is None` (workflows illisibles) : rien n'est evince, chaque cle
+    `setup-python` est conservee avec la raison `unrequested_check_failed`.
+    """
+    for r in records:
+        if r.get("verdict") != "KEEP":
+            continue
+        m = SETUP_PYTHON_RE.match(str(r.get("key", "")))
+        if not m:
+            continue
+        pm = m.group("pm")
+        version = m.group("version")
+        r["setup_python_pm"] = pm
+        r["setup_python_version"] = version
+        r["setup_python_filehash"] = m.group("filehash")
+        if demand is None:
+            # Fail-CLOSED : la demande est inconnue, donc rien n'est affirme.
+            r["reason"] = "unrequested_check_failed"
+            continue
+        covering = [
+            d
+            for d in demand
+            if d.get("pm") == pm and _spec_covers(d.get("version", ""), version)
+        ]
+        if covering:
+            r["reason"] = "requested_by_main"
+            r["declared_by"] = covering[0].get("version", "")
+            continue
+        r.update({"verdict": "EVICT", "reason": "unrequested_by_main_workflows"})
+
+
 def _print_human(records: list[dict[str, Any]], applied: bool) -> None:
     for r in records:
         verdict = r["verdict"]
@@ -775,6 +1034,28 @@ def main() -> int:
                 file=sys.stderr,
             )
         _mark_duplicate_keys(records, args.main_branch, open_prs)
+
+    if not args.no_unrequested:
+        # La demande est derivee des workflows de `main` lus sur le checkout du
+        # sweep (sur le push vers `main`, ce checkout EST `main`). Une lecture
+        # impossible rend la demande INCONNUE : fail-CLOSED, aucune cle
+        # `setup-python` n'est evincee.
+        demand = _declared_demand(Path(args.workflows_dir))
+        if demand is None:
+            print(
+                "[WARN] Workflows de main illisibles : la demande est inconnue, "
+                "aucune cle setup-python n'est evincee (fail-CLOSED).",
+                file=sys.stderr,
+            )
+        else:
+            pairs = sorted({(d.get("pm", ""), d.get("version", "")) for d in demand})
+            print(
+                f"[INFO] Demande derivee de {args.workflows_dir} : "
+                f"{len(pairs)} couple(s) (cache, version) : "
+                + ", ".join(f"{pm}/{ver}" for pm, ver in pairs),
+                file=sys.stderr,
+            )
+        _mark_unrequested_keys(records, demand)
 
     applied = args.apply
     if applied:

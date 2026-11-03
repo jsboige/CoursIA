@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-10-31
+
 # Garde d'attaque par chunk — détection de l'onset-drop et re-roll ciblé
 
 > Cadrage : issue [#19739](https://github.com/jsboige/CoursIA/issues/19739) — `feat(audio,#19692): phase 2 -- garde d'attaque ASR par chunk (onset-drop CV3 mesure, porte #17586 non conforme)`. Phase 1 : [PR #19699](https://github.com/jsboige/CoursIA/pull/19699) (organe `p7`, vote 2/3 ASR). Phase 2 CPU : [PR #19829](https://github.com/jsboige/CoursIA/pull/19829) (`corpus_damage_chunk.py`, classification des spans déjà mesurés). **Cette étape : la garde elle-même, son plan de re-roll, et leur mesure sur un corpus réel.**

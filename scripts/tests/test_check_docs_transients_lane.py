@@ -237,3 +237,170 @@ def test_cli_base_flag_reports_archive_line(
     assert lane.main(["--root", str(tree), "--base", "origin/main"]) == 0
     out = capsys.readouterr().out
     assert "archive" in out and "origin/main" in out
+
+
+# --- distillation -- the fourth direction (#14623) --------------------------
+
+
+def test_undated_slug_strips_the_lane_date_prefix() -> None:
+    assert (
+        lane._undated_slug("2026-08-10-variation-genre-census.md")
+        == "variation-genre-census"
+    )
+    # Not in the lane's naming convention: nothing to strip, nothing to match.
+    assert lane._undated_slug("README.md") is None
+    assert lane._undated_slug("notes-diverses.md") is None
+
+
+def test_distillation_flags_a_report_cited_only_by_navigation(
+    tree: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A sidebar entry proves reachability, not that the conclusion landed."""
+    name = "2026-09-29-audit-exemple.md"
+    _write_report(tree, name, f"# Audit\n{HEADER}\n\ntexte\n")
+    monkeypatch.setattr(
+        lane,
+        "_git_citations",
+        lambda root, needles: {name: {"_quarto.yml", "docs/README.md"}},
+    )
+
+    report = lane.run(root=tree, distillation=True)
+
+    assert report["verdict"] == "CONFORME", "advisory by default: no exit change"
+    summary = report["distillation"]
+    assert summary["measured"] is True
+    assert summary["reports"] == 1
+    assert summary["distilled"] == 0
+    assert summary["index_only"] == [name]
+    assert _reasons(report) == []  # not in ``findings`` without --strict
+    assert [f["reason"].split(":")[0] for f in report["distillation_findings"]] == [
+        "DISTILLATION_MISSING"
+    ]
+    assert "_quarto.yml" in report["distillation_findings"][0]["reason"]
+
+
+def test_distillation_accepts_a_perennial_citation(
+    tree: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    name = "2026-09-29-audit-exemple.md"
+    _write_report(tree, name, f"# Audit\n{HEADER}\n\ntexte\n")
+    monkeypatch.setattr(
+        lane,
+        "_git_citations",
+        lambda root, needles: {name: {".claude/rules/une-regle.md"}},
+    )
+
+    report = lane.run(root=tree, distillation=True)
+
+    assert report["distillation"]["distilled"] == 1
+    assert report["distillation"]["index_only"] == []
+    assert report["distillation_findings"] == []
+
+
+def test_distillation_matches_the_undated_name_a_perennial_still_cites(
+    tree: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Control against the false negative this organ itself hit.
+
+    ``variation-genre-census.md`` was written in the perennial tree, then moved
+    into the lane as ``2026-08-10-variation-genre-census.md``. The perennial
+    that cites it still carries the old name -- matching only the dated
+    basename reports it undistilled, which is false (measured on
+    ``scripts/variation_light_cap.py``).
+    """
+    name = "2026-08-10-variation-genre-census.md"
+    _write_report(tree, name, f"# Census\n{HEADER}\n\ntexte\n")
+    monkeypatch.setattr(
+        lane,
+        "_git_citations",
+        lambda root, needles: {
+            name: set(),
+            "variation-genre-census": {"scripts/variation_light_cap.py"},
+        },
+    )
+
+    report = lane.run(root=tree, distillation=True)
+
+    assert report["distillation"]["distilled"] == 1, report["distillation"]
+    assert report["distillation"]["index_only"] == []
+
+
+def test_distillation_is_off_by_default(
+    tree: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The historical two-direction contract must not pay for the new sense."""
+    name = "2026-09-29-audit-exemple.md"
+    _write_report(tree, name, f"# Audit\n{HEADER}\n\ntexte\n")
+    called: list[set[str]] = []
+    monkeypatch.setattr(
+        lane, "_git_citations", lambda root, needles: called.append(needles) or {}
+    )
+
+    report = lane.run(root=tree)
+
+    assert called == []
+    assert report["distillation"] is None
+    assert report["distillation_findings"] == []
+
+
+def test_strict_distillation_turns_the_measurement_into_a_finding(
+    tree: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    name = "2026-09-29-audit-exemple.md"
+    _write_report(tree, name, f"# Audit\n{HEADER}\n\ntexte\n")
+    monkeypatch.setattr(
+        lane, "_git_citations", lambda root, needles: {name: {"_quarto.yml"}}
+    )
+
+    report = lane.run(root=tree, strict_distillation=True)
+
+    assert report["verdict"] == "VIOLATION"
+    assert _reasons(report) == ["DISTILLATION_MISSING"]
+
+
+def test_cli_strict_distillation_exits_one(
+    tree: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    name = "2026-09-29-audit-exemple.md"
+    _write_report(tree, name, f"# Audit\n{HEADER}\n\ntexte\n")
+    monkeypatch.setattr(
+        lane, "_git_citations", lambda root, needles: {name: {"docs/README.md"}}
+    )
+
+    assert lane.main(["--root", str(tree), "--strict-distillation"]) == 1
+    assert lane.main(["--root", str(tree), "--distillation"]) == 0
+
+
+def test_unmeasurable_distillation_is_not_a_pass(
+    tree: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """git unreachable: the sense was not run, which is never an acquittal."""
+    name = "2026-09-29-audit-exemple.md"
+    _write_report(tree, name, f"# Audit\n{HEADER}\n\ntexte\n")
+    monkeypatch.setattr(lane, "_git_citations", lambda root, needles: None)
+
+    report = lane.run(root=tree, distillation=True)
+
+    assert report["distillation"]["measured"] is False
+    assert [f["reason"].split(":")[0] for f in report["distillation_findings"]] == [
+        "DISTILLATION_UNMEASURABLE"
+    ]
+    assert report["verdict"] == "CONFORME"  # advisory
+    assert lane.main(["--root", str(tree), "--strict-distillation"]) == 1
+
+
+def test_git_citations_reads_the_real_repository() -> None:
+    """Positive control on the real instrument, not on a stub.
+
+    Every other test monkeypatches ``_git_citations``; without this one the
+    suite would still pass if the git wiring were broken (the blind spot of
+    testing a detector only through its own substitution).
+    """
+    root = Path(__file__).resolve().parents[2]
+    citations = lane._git_citations(root, {"check_docs_transients_lane"})
+
+    assert citations is not None, "git must be able to answer inside the repo"
+    hits = citations["check_docs_transients_lane"]
+    assert any(hit.endswith("check_docs_transients_lane.py") for hit in hits), hits
+    assert all(not hit.startswith("docs/transients/") for hit in hits)
+    assert all(not hit.startswith("docs/archive/") for hit in hits)

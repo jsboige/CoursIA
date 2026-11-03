@@ -355,6 +355,44 @@ class TestRoundsToClaim:
         """French outputs print the decimal comma: '1,7465' rounds to 1.75."""
         assert _rounds_to_claim("1.75", "SA | 1,7465 | 12,8907")
 
+    def test_thousands_group_with_decimal_is_one_number(self):
+        """A three-digit comma group followed by a decimal point is a
+        thousands separator, not a decimal comma: '1,234.5678' is one number.
+
+        This is the rule the #22827 fix introduced; the test pins it so that a
+        later simplification cannot quietly read the group as the decimal 1.234
+        and start flagging prose that quotes the output verbatim."""
+        assert _rounds_to_claim("1234.5678", "params 1,234.5678 total")
+        assert not _rounds_to_claim("1.2345678", "params 1,234.5678 total")
+
+    def test_bare_comma_groups_stay_decimal(self):
+        """Without a decimal point to arbitrate, a three-digit comma group keeps
+        its French decimal reading even when several such groups appear side by
+        side. The rule is decidable on its own terms ('no point, no
+        arbitration'), so it is pinned rather than left to drift."""
+        assert _rounds_to_claim("1.798", "1,798 2,798 3,798")
+        assert not _rounds_to_claim("1798", "1,798 2,798 3,798")
+
+    def test_thousands_separator_is_not_a_decimal(self):
+        """A comma group followed by a decimal point is a thousands separator
+        (#22827): '19.80' must NOT be anchored on '19,798.0862', whose
+        two-decimal rounding is 19798.09."""
+        assert not _rounds_to_claim("19.80", "19,798.0862")
+        assert not _rounds_to_claim("19.79", "19,798.0862")
+        assert _rounds_to_claim("19798.09", "19,798.0862")
+
+    def test_three_digit_comma_group_stays_decimal(self):
+        """Counter-example: without a decimal point the group is genuinely
+        ambiguous and the francophone decimal reading wins -- '1,798' is
+        1.798, so it rounds to 1.80."""
+        assert _rounds_to_claim("1.80", "1,798")
+        assert not _rounds_to_claim("1798.00", "1,798")
+
+    def test_multi_group_thousands_with_decimals(self):
+        """Several thousands groups before the decimal point."""
+        assert not _rounds_to_claim("1.23", "1,234,567.89")
+        assert _rounds_to_claim("1234567.89", "1,234,567.89")
+
 
 class TestCanonicalClean:
     """Markdown that quotes numbers from the previous code output is CLEAN."""
@@ -1059,7 +1097,7 @@ class TestThresholdExpression:
 class TestCoordinateTupleFilter:
     """#14905: '(2,2)' is a grid coordinate, not the decimal 2.2.
 
-    Founding FP: DecPyMC-7 md[67] 'un but en (2,2) et un obstacle en (1,1)'
+    Founding FP: DecPyMC-07 md[67] 'un but en (2,2) et un obstacle en (1,1)'
     -- grid cells flattened into '2.2' / '1.1' then reported as fabricated.
     The discriminator is one digit per comma-separated group inside the
     parentheses; '(0,75)' (two-digit group) stays a francophone decimal.
@@ -1121,7 +1159,7 @@ class TestCoordinateTupleFilter:
 class TestInputSpecificationFilter:
     """#14905 Family D: inputs are legitimately absent from the output
     because nothing measured them. Three tight form signals, each measured on
-    DecPyMC-7: math parameter definitions (md[15]/md[19]), spec vectors
+    DecPyMC-07: math parameter definitions (md[15]/md[19]), spec vectors
     (md[36]), labeled enumerations (md[38]). A fourth form (bare paren
     apposition) was measured on fleet collateral and deliberately REJECTED:
     spec restatement and cited statistic share the same shape.
@@ -1352,7 +1390,7 @@ class TestCoordinateTupleFilter:
     (grille), PAS un decimal francais. `_normalize_num` collapsait
     '(2,2)' -> '2.2', donc le detecteur cherchait un '2.2' inexistant
     dans la sortie d'une grille 3x3 et flaguait une prose pedagogique
-    legitime comme fabriquee (DecPyMC-7 md[67]). Criteres d'acceptation
+    legitime comme fabriquee (DecPyMC-07 md[67]). Criteres d'acceptation
     (#14905) : '(0,75)' -- deux chiffres apres la virgule -- reste un
     vrai decimal (eligibile), et une VRAIE fabrication reste attrapee.
     """
@@ -1365,7 +1403,7 @@ class TestCoordinateTupleFilter:
         return check_notebook(p)
 
     def test_grid_coordinates_clean(self, tmp_path):
-        """Founding case: DecPyMC-7 md[67] -- cible/obstacle positions on a
+        """Founding case: DecPyMC-07 md[67] -- cible/obstacle positions on a
         3x3 grid. Prose cites '(2,2)' and '(1,1)'; the grid output never
         prints '2.2' nor '1.1'. BEFORE (issue #14905) this returned
         FABRICATION_DETECTED; AFTER the filter it is CLEAN."""

@@ -1,0 +1,83 @@
+# SL-14 -- aifeynman 2.0.7 sous CPython 3.13 (canon d'execution de la flotte).
+#
+# Pourquoi ce fichier existe
+# --------------------------
+# Le sdist PyPI de aifeynman date de 2021. Son `setup.py` importe
+# `numpy.distutils`, qui a disparu de NumPy 2 (NumPy >= 2.1 est obligatoire
+# sous CPython 3.13, et NumPy 1.26 n'a pas de roue cp313). Un
+# `pip install aifeynman` est donc IMPOSSIBLE sous 3.13 -- l'installation
+# echoue sur l'import de `numpy.distutils`, avant meme la compilation.
+#
+# Le conteneur fondateur (`Dockerfile.aifeynman`, CPython 3.9) contourne le
+# probleme par le jeu de versions : numpy 1.26.4 fournit encore
+# `numpy.distutils`, et `setuptools<60` fournit le `distutils` de la stdlib
+# (absent de Python 3.12+). C'est un environnement fige de 2021.
+#
+# Ce fichier reconstruit les 7 extensions Fortran avec le f2py de NumPy 2 :
+# meme mecanique que celle de `numpy.distutils` (lecture du .f90, generation
+# du wrapper C, compilation gfortran), mais sans la dependance supprimee.
+# Le paquet python et les scripts de console sont ensuite installes a la main,
+# puisque le `setup.py` d'origine reste inutilisable.
+#
+# Le `subroutine go` des .f90 ne prend aucun argument (il lit la ligne de
+# commande Fortran) : f2py l'expose donc tel quel, et les scripts de console
+# reproduisent les `entry_points` d'origine :
+#   feynman_sr1 / sr2 / sr3 / sr_mdl_mult / sr_mdl_plus / sr_mdl4 / sr_mdl5
+FROM public.ecr.aws/docker/library/python:3.13-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        gfortran build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# torch CPU d'abord : l'index pytorch ecarte le wheel de numpy, qui doit
+# venir de PyPI (cf. le conteneur fondateur et son meme piege).
+RUN pip install --no-cache-dir "typing-extensions>=4.10" \
+    && pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu
+
+RUN pip install --no-cache-dir "numpy>=2.1" matplotlib seaborn scikit-learn \
+        sortedcontainers "sympy>=1.4" papermill ipykernel meson ninja meson-python
+
+# aifeynman 2.0.7 : sdist PyPI, empreinte sha256 verifiee a la construction.
+ADD https://files.pythonhosted.org/packages/cc/bb/4bc8ff86c30af40015c486b45209548cc927e31268e69bea7cff1a0b1555/aifeynman-2.0.7.tar.gz /tmp/aifeynman.tar.gz
+RUN printf '%s  %s\n' \
+        "2577f9f88b0c32dbbd8eebd5b8067ee9e5980df304a311f8a2fb732b34cc3905" /tmp/aifeynman.tar.gz \
+        | sha256sum -c - \
+    && tar -xzf /tmp/aifeynman.tar.gz -C /tmp \
+    && cd /tmp/aifeynman-2.0.7 \
+    && for f in symbolic_regress1 symbolic_regress2 symbolic_regress3 \
+                symbolic_regress_mdl3 symbolic_regress_mdl2 \
+                symbolic_regress_mdl4 symbolic_regress_mdl5; do \
+           echo "--- f2py : construction de _$f ---"; \
+           python -m numpy.f2py -c -m "_$f" --f90flags="-I$(pwd)/aifeynman" \
+               "aifeynman/$f.f90" || exit 1; \
+       done
+
+# Installation du paquet et des scripts de console (le `setup.py` d'origine
+# est inutilisable : il depend de `numpy.distutils`).
+RUN cd /tmp/aifeynman-2.0.7 \
+    && SP="$(python -c 'import site; print(site.getsitepackages()[0])')" \
+    && mkdir -p "$SP/aifeynman" \
+    && cp aifeynman/*.py aifeynman/*.txt aifeynman/*.f90 "$SP/aifeynman/" \
+    && mv _symbolic_regress*.so "$SP/aifeynman/" \
+    && ls -1 "$SP/aifeynman/" | grep -c '\.so$' | grep -qx 7 \
+    && echo "7 extensions Fortran installees dans le paquet aifeynman" \
+    && for pair in "sr1:_symbolic_regress1" "sr2:_symbolic_regress2" \
+                  "sr3:_symbolic_regress3" "sr_mdl_mult:_symbolic_regress_mdl3" \
+                  "sr_mdl_plus:_symbolic_regress_mdl2" "sr_mdl4:_symbolic_regress_mdl4" \
+                  "sr_mdl5:_symbolic_regress_mdl5"; do \
+           script="${pair%%:*}"; module="${pair##*:}"; \
+           printf '#!/usr/local/bin/python\nimport sys\nfrom aifeynman.%s import go\nsys.exit(go())\n' \
+               "$module" > "/usr/local/bin/feynman_$script"; \
+           chmod +x "/usr/local/bin/feynman_$script"; \
+       done \
+    && rm -rf /tmp/aifeynman-2.0.7 /tmp/aifeynman.tar.gz
+
+# Preuve de construction : les 7 modules s'importent et exposent `go`.
+RUN for m in _symbolic_regress1 _symbolic_regress2 _symbolic_regress3 \
+           _symbolic_regress_mdl3 _symbolic_regress_mdl2 \
+           _symbolic_regress_mdl4 _symbolic_regress_mdl5; do \
+       python -c "from aifeynman.$m import go; assert callable(go)"; \
+   done \
+    && python -c "import aifeynman, numpy, torch; print('aifeynman OK', numpy.__version__, torch.__version__)"
+
+WORKDIR /work

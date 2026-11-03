@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: Probas
-pedagogical_count: 89
-breakdown: DecisionTheory=36, Infer=21, PyMC=20, Applications=11, root=1
-maturity: BETA=83, ALPHA=4, DRAFT=2
+pedagogical_count: 92
+breakdown: DecisionTheory=37, Infer=21, PyMC=20, Applications=11, root=3
+maturity: BETA=86, ALPHA=5, DRAFT=1
 -->
 
 > **À propos des décomptes** : le marqueur `CATALOG-STATUS` ci-dessus est la **source de vérité autoritative** pour les volumes (total de la famille, notebooks par sous-série, maturité). Il est régénéré chaque nuit par le workflow [`catalog-cron.yml`](../../.github/workflows/catalog-cron.yml) à 03:37 UTC sur `main` (commit par `github-actions[bot]`, livré par la PR permanente `chore/catalog-refresh-pending`). Pour la **répartition par kernel** (C#/.NET vs Python vs Lean 4) au sein d'une sous-série — la décomposition **technique** par interpréteur, que le marqueur n'agrège pas —, la source est la lecture directe des `metadata.kernelspec` des notebooks : ces volumes dérivent à chaque ajout et **aucun chiffre n'est maintenu ici en prose**. Si vous observez un décalage entre ce marqueur et une phrase en prose de ce README, **fiez-vous au marqueur** ; la prose sera ré-alignée lors du prochain passage.
@@ -68,9 +68,9 @@ La différence fondatrice : le ML classique produit un **point**, la programmati
 
 La maximisation de `E[U]` repose sur une hypothèse centrale de la théorie de la décision sous incertitude : l'utilité est une fonction **concave** de la richesse. Trois fonctions fondamentales l'illustrent ci-dessous — racine carrée `√x`, logarithme `ln(x)` (toutes deux concaves) et fonction linéaire `x` (neutre au risque, en référence) — chacune traduisant l'utilité marginale décroissante (chaque euro supplémentaire apporte moins d'utilité que le précédent pour les courbes concaves), fondement de l'aversion au risque :
 
-![Trois fonctions d'utilité fondamentales sur trois panneaux côte-à-côte : racine carrée U(x)=√x (concave), logarithme U(x)=ln(x) (concave), et linéaire U(x)=x (neutre au risque, en référence) — montrant l'utilité marginale décroissante : les deux courbes concaves s'aplatissent quand la richesse x augmente (chaque euro supplémentaire apporte moins d'utilité que le précédent), tandis que la linéaire reste constante (aversion nulle). Fondement de la théorie de la décision sous incertitude (Pratt 1964, Arrow 1965). Extrait du notebook DecPyMC-2-Utility-Money, cellule « Démonstration numérique : utilité marginale décroissante ».](assets/readme/probas-utility-functions.png)
+![Trois fonctions d'utilité fondamentales sur trois panneaux côte-à-côte : racine carrée U(x)=√x (concave), logarithme U(x)=ln(x) (concave), et linéaire U(x)=x (neutre au risque, en référence) — montrant l'utilité marginale décroissante : les deux courbes concaves s'aplatissent quand la richesse x augmente (chaque euro supplémentaire apporte moins d'utilité que le précédent), tandis que la linéaire reste constante (aversion nulle). Fondement de la théorie de la décision sous incertitude (Pratt 1964, Arrow 1965). Extrait du notebook DecPyMC-02-Utility-Money, cellule « Démonstration numérique : utilité marginale décroissante ».](assets/readme/probas-utility-functions.png)
 
-*Source : [`DecPyMC-2-Utility-Money.ipynb`](DecisionTheory/DecPyMC/DecPyMC-2-Utility-Money.ipynb) (cellule 10 « Démonstration numérique : utilité marginale décroissante », index toutes-cellules), track DecisionTheory/DecPyMC.*
+*Source : [`DecPyMC-02-Utility-Money.ipynb`](DecisionTheory/DecPyMC/DecPyMC-02-Utility-Money.ipynb) (cellule 10 « Démonstration numérique : utilité marginale décroissante », index toutes-cellules), track DecisionTheory/DecPyMC.*
 
 ## Objectifs d'apprentissage
 
@@ -227,6 +227,7 @@ Deux stacks, un même parcours de 20 modèles : **Infer.NET** (C#, message passi
 ```
 Probas/
 ├── Probas-KLS-Concentration.ipynb # Carnet transverse : Cheeger, hit-and-run, thin-shell (Python)
+├── Probas-CLT-Theoreme-Central-Limite.ipynb # Carnet transverse : TCL mesuré, variance finie porteuse (Python)
 ├── Probas-MCMC-Echantillonnage-Metropolis-Python.ipynb # Carnet transverse : Metropolis-Hastings + Gibbs from-scratch, diagnostics ESS/R-hat (Python)
 ├── Applications/                # Applications standalone
 │   ├── Quotients-Fibres-Recollement-Python.ipynb # Géométrie catégorique (kernel Python, ex-Infer-20)
@@ -246,7 +247,7 @@ Probas/
 │   └── scripts/                 # test_notebooks.py + setup_environment.ps1
 └── DecisionTheory/              # Arc théorie de la décision : Infer.NET + PyMC (miroirs) + pont causal
     ├── DecInfer/                # DecInfer-01-Utility-Foundations ... DecInfer-10-Thompson-Sampling (+ companions Lean 02/02b/08b)
-    ├── DecPyMC/                 # DecPyMC-1-Utility-Foundations ... DecPyMC-7-Sequential + DecPyMC-08-Actuariat-Capstone (escalier vers Actuariat/)
+    ├── DecPyMC/                 # DecPyMC-01-Utility-Foundations ... DecPyMC-07-Sequential + DecPyMC-08-Actuariat-Capstone (escalier vers Actuariat/)
     ├── Actuariat/               # Sous-série actuarielle T1-T5 : Actuariat-01 ... Actuariat-05 (ex-DecPyMC-8..12, descente #14873)
     ├── decision_theory_lean/    # Projet Lake descendu auprès de ses consommateurs (#4362) : escompte géométrique + théorème de Gittins ; héberge les preuves VNM et Coherence/Dutch Book
     ├── Causal-Bridges/          # CausalBridges-01..08 : pont causal unifié (Pearl, dowhy), jusqu'à l'équité causale (08)
@@ -308,7 +309,7 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 | 18 | Change-Point | Switch bayésien, catastrophes minières (Poisson) |
 | 19 | Survival Analysis | Weibull inféré directement, sélection LOO arviZ |
 
-> **Note** : l'arc **théorie de la décision** PyMC (socle 1-7 + capstone 08) vit dans [`DecisionTheory/DecPyMC/`](DecisionTheory/DecPyMC/README.md) (socle `DecPyMC-1..7` + capstone `DecPyMC-08` ; l'ancienne jambe actuarielle 8-12 vit dans [`DecisionTheory/Actuariat/`](DecisionTheory/Actuariat/README.md), T1-T5), voir tableau dédié ci-dessous.
+> **Note** : l'arc **théorie de la décision** PyMC (socle 1-7 + capstone 08) vit dans [`DecisionTheory/DecPyMC/`](DecisionTheory/DecPyMC/README.md) (socle `DecPyMC-01..07` + capstone `DecPyMC-08` ; l'ancienne jambe actuarielle 8-12 vit dans [`DecisionTheory/Actuariat/`](DecisionTheory/Actuariat/README.md), T1-T5), voir tableau dédié ci-dessous.
 
 ## Série Infer.NET (corpus bayésien + accretions 1b/2b · arc décision C# et companions Lean 4)
 
@@ -359,13 +360,13 @@ Port Python des modèles Infer.NET, utilisant l'échantillonnage MCMC (NUTS) au 
 
 | # | Notebook | Sujet |
 |---|----------|-------|
-| 1 | [DecPyMC-1-Utility-Foundations](DecisionTheory/DecPyMC/DecPyMC-1-Utility-Foundations.ipynb) | Loteries, axiomes Von Neumann-Morgenstern, utilité espérée |
-| 2 | [DecPyMC-2-Utility-Money](DecisionTheory/DecPyMC/DecPyMC-2-Utility-Money.ipynb) | Aversion au risque, CARA, CRRA, paradoxe Saint-Petersbourg |
-| 3 | [DecPyMC-3-Multi-Attribute](DecisionTheory/DecPyMC/DecPyMC-3-Multi-Attribute.ipynb) | MAUT, SMART, swing weights, décisions multi-critères |
-| 4 | [DecPyMC-4-Decision-Networks](DecisionTheory/DecPyMC/DecPyMC-4-Decision-Networks.ipynb) | Réseaux de décision, diagrammes d'influence, politique optimale |
-| 5 | [DecPyMC-5-Value-Information](DecisionTheory/DecPyMC/DecPyMC-5-Value-Information.ipynb) | EVPI, EVSI, valeur de l'information parfaite et d'échantillon |
-| 6 | [DecPyMC-6-Expert-Systems](DecisionTheory/DecPyMC/DecPyMC-6-Expert-Systems.ipynb) | Systèmes experts, Minimax, Minimax Regret, décisions robustes |
-| 7 | [DecPyMC-7-Sequential](DecisionTheory/DecPyMC/DecPyMC-7-Sequential.ipynb) | MDPs, itération de valeur/politique, bandits, POMDPs |
+| 1 | [DecPyMC-01-Utility-Foundations](DecisionTheory/DecPyMC/DecPyMC-01-Utility-Foundations.ipynb) | Loteries, axiomes Von Neumann-Morgenstern, utilité espérée |
+| 2 | [DecPyMC-02-Utility-Money](DecisionTheory/DecPyMC/DecPyMC-02-Utility-Money.ipynb) | Aversion au risque, CARA, CRRA, paradoxe Saint-Petersbourg |
+| 3 | [DecPyMC-03-Multi-Attribute](DecisionTheory/DecPyMC/DecPyMC-03-Multi-Attribute.ipynb) | MAUT, SMART, swing weights, décisions multi-critères |
+| 4 | [DecPyMC-04-Decision-Networks](DecisionTheory/DecPyMC/DecPyMC-04-Decision-Networks.ipynb) | Réseaux de décision, diagrammes d'influence, politique optimale |
+| 5 | [DecPyMC-05-Value-Information](DecisionTheory/DecPyMC/DecPyMC-05-Value-Information.ipynb) | EVPI, EVSI, valeur de l'information parfaite et d'échantillon |
+| 6 | [DecPyMC-06-Expert-Systems](DecisionTheory/DecPyMC/DecPyMC-06-Expert-Systems.ipynb) | Systèmes experts, Minimax, Minimax Regret, décisions robustes |
+| 7 | [DecPyMC-07-Sequential](DecisionTheory/DecPyMC/DecPyMC-07-Sequential.ipynb) | MDPs, itération de valeur/politique, bandits, POMDPs |
 | 8 | [DecPyMC-08-Actuariat-Capstone](DecisionTheory/DecPyMC/DecPyMC-08-Actuariat-Capstone.ipynb) | Capstone : l'escalier vers la sous-série [Actuariat](DecisionTheory/Actuariat/README.md) (T1-T5) |
 | — | [Sous-série Actuariat T1-T5](DecisionTheory/Actuariat/README.md) | Prime pure et chargement · fréquence × sévérité · crédibilité · ruine · valeur de l'information en souscription |
 
@@ -462,6 +463,12 @@ Le carnet [`Probas-KLS-Concentration.ipynb`](Probas-KLS-Concentration.ipynb) (ke
 - **Marche hit-and-run** sur les trois corps : temps d'autocorrélation en dimension croissante, estimateur validé au préalable sur un contrôle AR(1) à trou spectral connu (avec son biais de troncature mesuré), et contrôle de domaine qui attrape l'erreur de bornes la plus fréquente de l'algorithme.
 - **Variance thin-shell** : les valeurs exactes sont retrouvées — `2n` pour la gaussienne, `4n/5` pour le cube, et une formule dérivée dans le carnet même pour le simplexe isotrope, vérifiée par assertion sur six dimensions ; les largeurs de couronne convergent vers 1/2, 1/5 et 1, **constantes en n**.
 - 3 exercices (directions de la sonde, AR(1) à deux modes, effet de l'isotropisation) ; sorties réelles committées, exécution `papermill --kernel python3`.
+
+Le carnet [`Probas-CLT-Theoreme-Central-Limite.ipynb`](Probas-CLT-Theoreme-Central-Limite.ipynb) (kernel `python3`, numpy) est un second contrepoint non-bayésien : il **mesure** le théorème central limite au lieu de l'énoncer. Deux résultats, tous deux mesurés :
+
+- **Le taux `1/√n` est une borne, sous hypothèse de troisième moment fini** : pour quatre lois de départ très différentes (uniforme, Bernoulli, exponentielle, log-normale), le produit `d_K(n)·√n` — où `d_K` est la distance de Kolmogorov à la gaussienne — varie peu quand `n` croît de 10 à 160. C'est une observation numérique cohérente avec la borne de Berry–Esseen `d_K(n) ≤ C·E|X−μ|³/(σ³√n)`, qui exige le **troisième moment absolu fini** — la variance finie du TCL ne suffit pas à donner ce taux — et n'impose aucune constante asymptotique non nulle : pour une loi normale, la distance de population est nulle à toute taille.
+- **L'hypothèse de variance finie est porteuse** : une loi à queue lourde à variance infinie (Lomax, `α = 1.5`) ne se normalise pas en gaussienne — l'échelle robuste des fluctuations de sa somme normalisée par `√n` **croît** avec `n` (en `n^{1/α − 1/2}`) au lieu de se stabiliser.
+- 3 exercices (distance de Kolmogorov, courbe de convergence, reproduction du contre-exemple à queue lourde) ; sorties réelles committées, exécution `papermill --kernel python3`.
 
 ### Probas-MCMC-Echantillonnage-Metropolis-Python.ipynb
 
@@ -725,7 +732,7 @@ La thèse pratique est honnête : un modèle probabiliste est plus lourd à bât
 
 - **Passer à la décision séquentielle** : les MDP de l'arc décision ([`DecisionTheory/DecInfer/`](DecisionTheory/DecInfer/README.md) ou [`DecisionTheory/DecPyMC/`](DecisionTheory/DecPyMC/README.md)) préparent directement [RL](../RL/README.md), où l'agent **apprend** la politique optimale par interaction plutôt que de la calculer hors ligne — la frontière naturelle entre inférence probabiliste et apprentissage par renforcement.
 - **Croiser la théorie des jeux** : [GameTheory](../GameTheory/README.md) partage la notion de **décision sous incertitude**, mais l'incertitude y vient d'un adversaire rationnel plutôt que d'un processus stochastique. Les fonctions d'utilité multi-attributs trouvent leur miroir dans le choix social et l'utilité collective.
-- **Revenir au ML appliqué** : le [TP prévision de ventes](../ML/ML.Net/TP-prevision-ventes.ipynb) de la série ML est une porte d'entrée — il traite la régression bayésienne comme cas d'application ; cette série en donne le langage complet (distributions, facteurs, inférence).
+- **Revenir au ML appliqué** : le [TP prévision de ventes](../ML/ML.Net/TP-Prevision-Ventes-CSharp.ipynb) de la série ML est une porte d'entrée — il traite la régression bayésienne comme cas d'application ; cette série en donne le langage complet (distributions, facteurs, inférence).
 - Pour la pratique : reprenez un même modèle (par exemple TrueSkill, Infer-8 / PyMC-8) dans les deux stacks, comparez les intervalles de crédibilité, et observez comment EP (déterministe) et NUTS (stochastique) convergent vers des conclusions cohérentes — c'est l'exercice le plus formateur pour saisir le champ d'application de chaque approche.
 
 ### Le fil rouge

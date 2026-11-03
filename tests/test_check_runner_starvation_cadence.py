@@ -77,7 +77,7 @@ def test_un_seul_run_visible_note_sans_intervalle() -> None:
 def test_fetch_scheduled_runs_filtre_et_degrade(monkeypatch) -> None:
     # Deux runs rendus par l'API (un schedule, un workflow_run heartbeat) :
     # seules les dates des runs planifies sont retenues, ordre conserve.
-    def fake_gh_json(args, token=None):
+    def fake_gh_json(args, token=None, stats=None):
         if "event=schedule" not in args[0]:
             return {"workflow_runs": []}
         return {
@@ -93,5 +93,5 @@ def test_fetch_scheduled_runs_filtre_et_degrade(monkeypatch) -> None:
     assert runs[0] == datetime(2026, 9, 16, 6, 51, 15, tzinfo=timezone.utc)
 
     # Echec API -> liste vide (l'evaluateur le traduit en warning, pas en crash).
-    monkeypatch.setattr(crs, "_gh_json", lambda args, token=None: None)
+    monkeypatch.setattr(crs, "_gh_json", lambda args, token=None, stats=None: None)
     assert crs.fetch_scheduled_runs("jsboige/CoursIA", "linux-runner-starvation-advisory.yml") == []

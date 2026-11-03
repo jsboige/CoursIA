@@ -214,8 +214,16 @@ def iter_repo_notebooks():
 
 
 def pr_diff_files(base: str, head: str) -> list[Path]:
+    """Notebooks dont le CONTENU change dans `base...head` (trois points).
+
+    Trois points et non deux (residu de #10403) : `base head` compare deux arbres, donc
+    sur une PR empilee dont la base a gagne des commits depuis le fork, il
+    liste aussi les notebooks que `main` a modifies, et leurs defauts sont
+    imputes a la PR (mesure : 287 carnets "audites" pour une PR d'un seul).
+    `base...head` ne rend que l'apport de la PR (merge-base..head).
+    """
     proc = subprocess.run(
-        ["git", "diff", "--name-only", base, head],
+        ["git", "diff", "--name-only", f"{base}...{head}"],
         cwd=REPO_ROOT, capture_output=True, text=True, check=True,
         encoding="utf-8", errors="replace",
     )
@@ -232,7 +240,7 @@ def main(argv=None) -> int:
     scope = p.add_mutually_exclusive_group()
     scope.add_argument("--path", metavar="FILE", help="single notebook")
     scope.add_argument("--pr-diff", nargs=2, metavar=("BASE", "HEAD"),
-                       help="notebooks changed in BASE..HEAD")
+                       help="notebooks changed in BASE...HEAD")
     p.add_argument("--json", action="store_true", help="JSON output")
     args = p.parse_args(argv)
 

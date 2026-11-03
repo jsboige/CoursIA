@@ -106,6 +106,40 @@ class TestShouldSkip:
         assert _should_skip(p) is True
 
 
+class TestSiteArtifactSkip:
+    """`_site/` (Quarto build artifact) is not repository source.
+
+    `_site/` is gitignored and GENERATED from our own docs. A broken link
+    inside it is a re-render of a link the source already declares, so the
+    organ must not report it as a repository defect.
+
+    Before this entry, the organ's verdict depended on the machine: on a
+    workstation that had run a Quarto build it reported dead links for pages
+    that are not in the repository at all, while CI -- where the artifact is
+    gitignored and therefore never checked out -- stayed green. A verdict
+    that depends on the machine is not a verdict.
+    """
+
+    def test_site_root_skipped(self):
+        p = REPO_ROOT / "_site" / "index.html"
+        assert _should_skip(p) is True
+
+    def test_site_nested_skipped(self):
+        """A nested `_site/` is skipped too -- the skip is by directory NAME."""
+        p = REPO_ROOT / "docs" / "_site" / "reference" / "index.html"
+        assert _should_skip(p) is True
+
+    def test_site_is_gitignored(self):
+        """The skip list and `.gitignore` must agree on `_site/`.
+
+        Tying them by test rather than by comment: if `_site/` were ever
+        un-ignored, the skip would start masking real content, and this test
+        is what would notice.
+        """
+        gitignore = (REPO_ROOT / ".gitignore").read_text(encoding="utf-8")
+        assert "_site/" in gitignore
+
+
 class TestShouldSkipArchiveVariants:
     """Lock the archive-skip design decision (EPIC #9535 item 10, incident #9814).
 

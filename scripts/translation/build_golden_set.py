@@ -47,11 +47,12 @@ KIND_LEAN = "lean"
 
 
 def _sha1(path: Path) -> str:
-    h = hashlib.sha1()
-    with path.open("rb") as f:
-        for chunk in iter(lambda: f.read(1 << 16), b""):
-            h.update(chunk)
-    return h.hexdigest()
+    # Empreinte canonique LF : un checkout Windows (core.autocrlf=true)
+    # materialise les CRLF ; sans normalisation, l'empreinte depend de la
+    # plateforme qui regenere (mesure #22261 : scripts/datasets/README.md =
+    # 5ee6ceb071… en LF, d2247a88bc… en CRLF).
+    raw = path.read_bytes().replace(b"\r\n", b"\n")
+    return hashlib.sha1(raw).hexdigest()
 
 
 def _iter_files() -> list[Path]:
@@ -134,6 +135,12 @@ def collect() -> dict:
             entry["sources_sha1_fr"] = _notebook_source_sha1(fr_path)
             entry["sources_sha1_en"] = _notebook_source_sha1(p)
         pairs.append(entry)
+
+    # Tri par chemin FR (cle stable) : un deplacement de chemin ne decale que
+    # ses propres lignes, pas toute la table. L'ordre precedent (par chemin EN,
+    # via l'iteration sorted(by_rel)) brassait 459/460 paires pour deux chemins
+    # deplaces (iit_lean, PR #22008) : le diff rendu etait du bruit, pas du travail.
+    pairs.sort(key=lambda e: (e["fr"], e["en"]))
 
     return {
         "pairs": pairs,

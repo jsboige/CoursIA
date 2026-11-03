@@ -1,0 +1,17 @@
+﻿=== 2026-10-21T01:17:41.5330533+02:00 depart (copie hors depot) ===
+GPU avant : NVIDIA GeForce RTX 3070 Ti Laptop GPU, 428 MiB, 45
+[96m[i][0m Found 1 notebook(s) to execute
+
+[3D-02-NeRF-Critic.ipynb] (kernel: python3)
+  [+] SUCCESS
+
+[1m[94m============================================================[0m
+[1m[94m                     EXECUTION SUMMARY                      [0m
+[1m[94m============================================================[0m
+
+  Success: 1
+  Failed: 0
+  Total time: 1222.3s
+3D-02 rc=0 duree_s=1226.7
+GPU apres : NVIDIA GeForce RTX 3070 Ti Laptop GPU, 427 MiB, 54
+=== 2026-10-21T01:38:09.2918713+02:00 fin ===

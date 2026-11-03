@@ -27,6 +27,7 @@ from scripts.ci.check_umbrella_freshness import (  # noqa: E402
     main,
     missing_paths,
     render_text,
+    resolve_cited_path,
 )
 
 
@@ -162,6 +163,61 @@ def test_missing_paths_handles_directory_trailing_slash(tmp_path):
     (tmp_path / "RL").mkdir()
     assert missing_paths(["RL/"], tmp_path) == []
     assert missing_paths(["Gone/"], tmp_path) == ["Gone/"]
+
+
+# --------------------------------------------------------------------------
+# prefixe des series (#10643 : 6 faux positifs mesures sur 10 avertissements)
+# --------------------------------------------------------------------------
+
+def _series_file(root: Path, relative: str) -> Path:
+    target = root / "MyIA.AI.Notebooks" / relative
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text("x", encoding="utf-8")
+    return target
+
+
+def test_missing_paths_resolves_series_relative_citation(tmp_path):
+    # Le corps de #10643 cite `GameTheory/scripts/setup_lean4_kernel.ps1` ;
+    # le fichier vit sous la racine des series. Il ne doit pas etre dit absent.
+    _series_file(tmp_path, "GameTheory/scripts/setup_lean4_kernel.ps1")
+    assert missing_paths(["GameTheory/scripts/setup_lean4_kernel.ps1"], tmp_path) == []
+
+
+def test_extract_paths_drops_abbreviated_citation():
+    # `docs/archive/.../phase-12a/scripts/` est une citation tronquee : rien a
+    # confronter a l'arbre, donc rien a declarer absent.
+    body = "voir `docs/archive/.../phase-12a/scripts/` et `docs/real.md`"
+    assert extract_paths(body) == ["docs/real.md"]
+
+
+def test_resolve_cited_path_prefers_the_repository_root(tmp_path):
+    root_file = tmp_path / "RL" / "x.md"
+    root_file.parent.mkdir(parents=True)
+    root_file.write_text("x", encoding="utf-8")
+    _series_file(tmp_path, "RL/x.md")
+    assert resolve_cited_path("RL/x.md", tmp_path) == root_file
+
+
+def test_missing_paths_accepts_a_series_homonym_when_the_root_path_is_gone(tmp_path):
+    # Reserve 2 de la review NanoClaw du 2026-10-29 : l'arbitrage de
+    # precedence est fige ici plutot que laisse implicite. Une citation qui
+    # visait la RACINE, dont le fichier a ete supprime alors qu'un homonyme
+    # survit sous les series, est declaree PRESENTE. Cout accepte : une
+    # sous-declaration d'avertissement (missing_paths n'alimente que des
+    # warnings, jamais le code de sortie) -- preferee a un faux « path not
+    # found », la classe de faux positif qui a fait publier un constat errone
+    # sur #10643 (6 faux positifs sur 10 avertissements).
+    _series_file(tmp_path, "RL/x.md")
+    assert missing_paths(["RL/x.md"], tmp_path) == []
+
+
+def test_missing_paths_still_reports_a_genuinely_absent_series_path(tmp_path):
+    # Controle negatif : la resolution ne doit pas blanchir une vraie absence.
+    # `Lean-1-Setup.ipynb` a ete renumerote en `Lean-01-Setup-Lean-Python.ipynb`.
+    _series_file(tmp_path, "SymbolicAI/Lean/Lean-01-Setup-Lean-Python.ipynb")
+    assert missing_paths(["SymbolicAI/Lean/Lean-1-Setup.ipynb"], tmp_path) == [
+        "SymbolicAI/Lean/Lean-1-Setup.ipynb"
+    ]
 
 
 # --------------------------------------------------------------------------
@@ -319,6 +375,58 @@ def test_render_text_announces_the_direction_in_both_senses():
         text = render_text(result)
         assert label in text
         assert "enfant declare" not in text
+
+
+# --------------------------------------------------------------------------
+# lecture en echec (#23406) -- l'organe avertit, il ne meurt pas
+#
+# Les tests ci-dessus passent a `render_text` des dictionnaires construits a
+# la main, `title` et `reason` fournis. Aucun ne traversait la chaine REELLE
+# `assess()` en echec -> `main()` -> `render_text()`, qui est precisement le
+# chemin ou l'organe plantait (KeyError 'title', mesure du 2026-10-30).
+# --------------------------------------------------------------------------
+
+def test_render_text_survives_a_failed_read(monkeypatch, tmp_path):
+    monkeypatch.setattr(
+        "scripts.ci.check_umbrella_freshness._gh_json", lambda args: None)
+    result = assess(11900, tmp_path, "jsboige/CoursIA")
+    text = render_text(result)                       # ne doit pas lever
+    lowered = text.lower()
+    # Le texte NOMME l'echec de lecture : il ne se confond ni avec un
+    # conteneur sature mesure, ni avec un « aucun enfant cite » metier.
+    # Le mot SATURATED peut apparaitre dans la clause NEGATIVE (« ce n'est
+    # ni un SATURATED mesure... ») : ce qui compte est le VERDICT rendu.
+    assert "echoue" in lowered or "échec" in lowered
+    assert "inconnu" in lowered
+    assert "verdict: unknown" in lowered
+    assert "verdict: saturated" not in lowered
+    assert "aucun enfant" not in lowered
+
+
+def test_main_warns_instead_of_crashing_when_read_fails(monkeypatch, capsys):
+    monkeypatch.setattr(
+        "scripts.ci.check_umbrella_freshness._gh_json", lambda args: None)
+    rc = main(["11900", "--repo-root", "."])         # ne doit pas lever
+    captured = capsys.readouterr()
+    # Advisory : la lecture en echec ne rougit pas l'organe (#11900), et
+    # seul SATURATED sort en 1.
+    assert rc == 0
+    assert "::warning::#11900" in captured.err
+    assert "#11900" in captured.out
+
+
+def test_a_failed_read_is_not_a_business_unresolved(monkeypatch, tmp_path):
+    # Controle de distinction : deux etats differents ne doivent pas rendre
+    # le meme texte, sinon l'avertissement se perd dans le verdict metier.
+    monkeypatch.setattr(
+        "scripts.ci.check_umbrella_freshness._gh_json",
+        lambda args: {"number": 11900, "title": "t", "state": "OPEN",
+                      "body": "rien qui cite une enfant"})
+    unresolved = render_text(assess(11900, tmp_path, "jsboige/CoursIA"))
+    monkeypatch.setattr(
+        "scripts.ci.check_umbrella_freshness._gh_json", lambda args: None)
+    unreadable = render_text(assess(11900, tmp_path, "jsboige/CoursIA"))
+    assert unresolved != unreadable
 
 
 if __name__ == "__main__":

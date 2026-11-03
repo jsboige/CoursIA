@@ -3,8 +3,14 @@
 > **Statut.** Case **13** du tracker de veille/distillation #8182 (TOE ↔ conscience,
 > Hoffman FBT). Distillation **grade C** du toy formel de Hoffman
 > (D. Hoffman, *Objects of Consciousness*, 2019) formalisé par Prakash, Stephens,
-> Hoffman, Singh & Fields (2017, *Fitness Beats Truth in the Evolution of Perception*,
-> arXiv [1505.04322](https://arxiv.org/abs/1505.04322)).
+> Hoffman, Singh & Fields (2021, *Fitness Beats Truth in the Evolution of Perception*,
+> *Acta Biotheoretica* 69(3) : 319-341,
+> [doi:10.1007/s10441-020-09400-0](https://doi.org/10.1007/s10441-020-09400-0)).
+>
+> Les renvois « §4 » de cette fiche désignent la **section 4 du préprint** du
+> 30 juillet 2017 (« Comparing perceptual strategies: Truth vs. Fitness-only »),
+> seule version dont la numérotation est vérifiée ici ; c'est cette version qui est
+> archivée au gisement bibliographique, l'article publié étant sous accès payant.
 >
 > **Verdict mesuré : NULL sur 16/16 paysages** (gap `|α*_truth - α*_fit| ≤ 0.05`).
 > Cette case **RÉFUTE** la prédiction P2c du pré-enregistrement (gap `≥ 0.70` sur bit3 family)
@@ -167,7 +173,7 @@ restaurée, et le toy rejoint la **borne FBT asymptotique** — mais en avance s
 - C.3 (scope re-exécutions) : pas de notebook ICT touché
 - H.1 (validation exec réelle) : 23/23 tests pytest verts (0.7 s)
 - H.3 (pre-commit notebook) : N/A (toy.py, pas de notebook)
-- bibliography-hygiene : PDF Prakash et al. 2017 archivé sur GDrive bibliographie (déjà fait case 11)
+- bibliography-hygiene : préprint Prakash et al. (30 juillet 2017) archivé au gisement le 2026-10-25 — la mention antérieure « déjà fait case 11 » était inexacte, le fichier était absent du gisement
 
 ## Prédiction actualisée pour case 14+ (N=32, M=2)
 
@@ -193,12 +199,12 @@ Case 14+ testera **l'hypothèse 2** (relâchement compression canonique) avant *
 - `MyIA.AI.Notebooks/IIT/ICT-Series/ict/hoffman_interface_toy_n16.py` (toy)
 - `MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests/test_hoffman_interface_toy_n16.py` (23 tests)
 - `MyIA.AI.Notebooks/IIT/ICT-Series/ict/results/hoffman_interface_toy_n16_results.json` (artefact)
-- Prakash, Stephens, Hoffman, Singh & Fields (2017), *Fitness Beats Truth in the Evolution of Perception*, arXiv:1505.04322
+- Prakash, C., Stephens, K. D., Hoffman, D. D., Singh, M. & Fields, C. (2021), *Fitness Beats Truth in the Evolution of Perception*, *Acta Biotheoretica* 69(3) : 319-341, doi:10.1007/s10441-020-09400-0
 - D. Hoffman, *Objects of Consciousness* (2019), Oxford University Press
 
 ## Crédits
 
-- **Source primaire** : Prakash et al. (2017), arXiv:1505.04322 — formalisation mathématique du toy
+- **Source primaire** : Prakash et al. (2021), *Acta Biotheoretica* 69(3) : 319-341, doi:10.1007/s10441-020-09400-0 — formalisation mathématique du toy (§4 du préprint du 30 juillet 2017, archivé au gisement)
 - **Source secondaire** : D. Hoffman, *Objects of Consciousness* (2019) — vulgarisation du théorème
 - **Carrefour** : K. Jaimungal, *Theories of Everything* (iceberg de la conscience, venue Schreiber 8 mars 2025)
 - **Antécédents directs** : Case 11 (PR #14535, null N=4) + Case 12 (PR #14544, dissociation N=8)

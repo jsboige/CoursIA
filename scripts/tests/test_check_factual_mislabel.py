@@ -30,12 +30,14 @@ def _code(out_text):
     }
 
 
-def _run(cells, tmp_path, *, units=None):
+def _run(cells, tmp_path, *, units=None, forms=None):
     p = tmp_path / "fixture.ipynb"
     p.write_text(json.dumps(_nb(cells), ensure_ascii=False), encoding="utf-8")
     args = [sys.executable, str(SCRIPT), "--json"]
     if units is not None:
         args.extend(["--units", units])
+    if forms is not None:
+        args.extend(["--forms", forms])
     args.append(str(p))
     r = subprocess.run(args, capture_output=True, text=True, encoding="utf-8")
     return r.returncode, json.loads(r.stdout)
@@ -417,3 +419,196 @@ def test_20956_borne_gauche_ne_neutralise_pas_le_compte_entier(tmp_path):
     assert any(f["unit"] == "episode" and f["claimed"] == "10"
                and f["stream"] == [7] for f in units), (
         f"finding episode 10 vs 7 absent : {units!r}")
+
+
+# === #20035 (suite) : LES FORMES (`--forms broad`).
+#
+# L'extension du VOCABULAIRE (`--units extended`) ne suffit pas a couvrir le
+# cas fondateur #19918 : la session cloud du mainteneur (13/10) a mesure
+# les trois leviers sur la tete d'avant correction (`6986f3f43b`) --
+#   vocabulaire seul ............... 0 finding
+#   les trois leviers ensemble ..... 3 findings (1 vrai, 2 FP)
+#
+# Les deux leviers manquants sont des FORMES, pas du vocabulaire :
+#   1. le stream « N unite » (« 15 carnets dans Serre100/ ») -- l'organe ne
+#      lisait que la forme « Unite : M » ;
+#   2. les nombres en TOUTES LETTRES de la prose (« les huit carnets ») --
+#      `MD_COUNT_RE` n'accepte que des chiffres.
+#
+# `--forms broad` est un OPT-IN EXPLICITE, comme `--units extended`. Le
+# defaut `strict` conserve exactement le perimetre mesure.
+
+FOUNDER_STREAM_NOUN = "Listing de Serre100/\n================\n15 carnets dans Serre100/\n"
+
+
+def test_20035_broad_catches_word_form_founder(tmp_path):
+    """Cas fondateur #19918 : « les huit carnets » vs 15 dans le stream.
+
+    En mode `strict` (defaut), l'organe rend 0 finding -- le nombre est en
+    toutes lettres. En mode `broad`, il doit attraper la contradiction.
+    """
+    cells = [_code(FOUNDER_STREAM_NOUN),
+             _md("## Section 2\n\nLes huit carnets couvrent les theoremes.")]
+    rc_strict, out_strict = _run(cells, tmp_path, units="extended", forms="strict")
+    assert rc_strict == 0, (
+        f"le mode strict ne voit pas les nombres en lettres : "
+        f"rc={rc_strict}, out={out_strict!r}")
+    rc, out = _run(cells, tmp_path, units="extended", forms="broad")
+    assert rc == 1, (
+        f"le mode broad DOIT attraper le cas fondateur : rc={rc}, out={out!r}")
+    units = [f for f in out["findings"] if f["kind"] == "unit-count"]
+    assert any(f["unit"] == "carnet" and f["claimed"] == "8"
+               and f["stream"] == [15] for f in units), (
+        f"finding carnet 8 vs 15 absent : {units!r}")
+
+
+def test_20035_broad_catches_stream_noun_form(tmp_path):
+    """LEVIER 2 : le stream annonce « 15 carnets dans Serre100/ ».
+
+    La forme « Unite : M » ne voit rien ici : le stream ne porte pas le
+    separateur `:` apres l'unite. En `strict`, l'organe rend 0 finding
+    meme si la prose compte en chiffres ; en `broad`, il doit attraper.
+    """
+    cells = [_code(FOUNDER_STREAM_NOUN),
+             _md("Les 8 carnets couvrent les theoremes.")]
+    rc_strict, out_strict = _run(cells, tmp_path, units="extended", forms="strict")
+    assert rc_strict == 0, (
+        f"le mode strict ne voit pas la forme « N unite » du stream : "
+        f"rc={rc_strict}, out={out_strict!r}")
+    rc, out = _run(cells, tmp_path, units="extended", forms="broad")
+    assert rc == 1, (
+        f"le mode broad DOIT attraper la forme « N unite » : rc={rc}, out={out!r}")
+    units = [f for f in out["findings"] if f["kind"] == "unit-count"]
+    assert any(f["unit"] == "carnet" and f["claimed"] == "8"
+               and f["stream"] == [15] for f in units), (
+        f"finding carnet 8 vs 15 absent : {units!r}")
+
+
+def test_20035_broad_ratio_is_not_a_total(tmp_path):
+    """« Les sept carnets sur huit » : X est un SOUS-compte, pas le total.
+
+    Faux positif mesure par la session cloud (13/10). Le mode `broad` doit
+    l'ecarter.
+
+    Le determinant defini (« Les ») est OBLIGATOIRE dans la prose du test :
+    sans lui, le motif `broad` ne matche rien du tout et la garde `RATIO`
+    n'est jamais consultee. Mesure par mutation du 2026-10-29 (review
+    NanoClaw) : neutraliser `RATIO_SUFFIX_RE` laissait la suite verte sur
+    la phrase sans determinant, donc la garde n'etait couverte par aucun
+    test.
+    """
+    rc, out = _run(
+        [_code("Carnets : 15\n"),
+         _md("Les sept carnets sur huit couvrent les theoremes.")],
+        tmp_path,
+        units="extended",
+        forms="broad",
+    )
+    assert rc == 0, (
+        f"un ratio « X sur Y » n'est pas un compte total : rc={rc}, out={out!r}")
+
+
+def test_20035_broad_enumeration_is_not_a_total(tmp_path):
+    """« deux carnets, 05 et 06 » : le nombre designe les items listes.
+
+    Deuxieme faux positif mesure par la session cloud (13/10).
+    """
+    rc, out = _run(
+        [_code("Carnets : 15\n"),
+         _md("Les deux carnets, 05 et 06, sont les plus courts.")],
+        tmp_path,
+        units="extended",
+        forms="broad",
+    )
+    assert rc == 0, (
+        f"une enumeration d'identifiants n'est pas un compte total : "
+        f"rc={rc}, out={out!r}")
+
+
+def test_20035_broad_determiner_after_a_separator_is_not_a_count(tmp_path):
+    """Un determinant colle a un separateur n'ouvre pas un compte.
+
+    La borne gauche `(?<![\\w.,-])` du motif prose refuse une reprise apres
+    un separateur : dans « 12.Les huit carnets » (liste numerotee markdown
+    sans espace apres le point), le « Les » est precede d'un point, donc le
+    compte ne doit pas etre lu. Sans la borne, le finding apparait (claimed
+    8 contre stream 15) -- mesure par mutation du 2026-10-29.
+
+    Ce test ne couvre PAS la classe « nombre compose », contrairement a ce
+    qu'annoncait sa premiere version : « Les dix-huit carnets » ne matche
+    deja pas sans la borne, parce que le motif exige un determinant juste
+    devant le mot-nombre et que « huit » y est precede d'un tiret. Et la
+    variante « 12-Les huit carnets » n'est pas discriminante non plus : la
+    garde de plage (`re.search(r"\\d\\s*-\\s*$", before)`) l'ecarte deja.
+    Le docstring annoncait donc un mecanisme que l'entree n'exercait pas.
+    """
+    rc, out = _run(
+        [_code("Carnets : 15\n"),
+         _md("12.Les huit carnets couvrent tout.")],
+        tmp_path,
+        units="extended",
+        forms="broad",
+    )
+    assert rc == 0, (
+        f"un determinant colle a un separateur ne compte pas : rc={rc}, out={out!r}")
+
+
+def test_20035_broad_value_range_is_not_a_count(tmp_path):
+    """« 12-18 creneaux » : la borne haute d'une plage n'est pas un compte.
+
+    Classe de faux positifs deja mesuree en `strict` (6 findings sur le
+    corpus) ; le mode `broad` l'ecarte par sa garde de plage.
+    """
+    rc_strict, out_strict = _run(
+        [_code("Creneaux : 20\n"),
+         _md("Les 12-18 creneaux couvrent tout.")],
+        tmp_path,
+        units="extended",
+        forms="strict",
+    )
+    assert rc_strict == 1, (
+        f"CONTROLE : la plage reste un faux positif connu en strict : "
+        f"rc={rc_strict}, out={out_strict!r}")
+    rc, out = _run(
+        [_code("Creneaux : 20\n"),
+         _md("Les 12-18 creneaux couvrent tout.")],
+        tmp_path,
+        units="extended",
+        forms="broad",
+    )
+    assert rc == 0, (
+        f"le mode broad ecarte la plage de valeurs : rc={rc}, out={out!r}")
+
+
+def test_20035_broad_subcount_guard_still_works(tmp_path):
+    """SUBCOUNT_CONTEXT_RE doit continuer a filtrer les sous-comptes dans
+    le mode `broad` (garde `chacun`/`par`/...)."""
+    rc, out = _run(
+        [_code("Carnets : 15\nLemmes par carnet : 3\n"),
+         _md("Dans chacun des six carnets, on compte 3 lemmes par section.")],
+        tmp_path,
+        units="extended",
+        forms="broad",
+    )
+    assert rc == 0, (
+        f"les sous-comptes filtres ne doivent pas etre releves en broad : "
+        f"rc={rc}, out={out!r}")
+
+
+def test_20035_forms_strict_is_the_default(tmp_path):
+    """Le defaut (sans --forms) est `strict`.
+
+    Pin structurel : `broad` est un opt-in explicite, comme `--units
+    extended`. Le defaut conserve le perimetre mesure.
+    """
+    rc, out = _run(
+        [_code(FOUNDER_STREAM_NOUN),
+         _md("Les huit carnets couvrent les theoremes.")],
+        tmp_path,
+        units="extended",
+        # PAS d'argument --forms : on teste le defaut.
+    )
+    assert rc == 0, (
+        f"le defaut DOIT etre `strict` (forme « N unite » non vue) : "
+        f"rc={rc}, out={out!r}")
+    assert out["anomaly_count"] == 0

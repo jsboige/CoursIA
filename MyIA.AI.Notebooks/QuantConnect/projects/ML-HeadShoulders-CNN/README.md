@@ -5,7 +5,7 @@
 
 ## Description
 
-CNN Keras pour la détection de figure tête-épaules sur USDCAD. Requiert le modèle pré-entraîné issu de research.ipynb.
+CNN Keras pour la détection de figure tête-épaules sur USDCAD. `main.py` charge le modèle pré-entraîné depuis l'Object Store, sous la clé `head-and-shoulders-model.keras`. S'il n'y est pas, l'algorithme entraîne au démarrage un petit CNN sur des figures synthétiques, moins riche que celui de research.ipynb.
 
 ## Comment exécuter
 
@@ -24,6 +24,7 @@ CNN Keras pour la détection de figure tête-épaules sur USDCAD. Requiert le mo
 
 - main.py - Stratégie (v1.0, CNN de figures)
 - research.ipynb - Labellisation des figures et entraînement du CNN
+- head-and-shoulders-model.keras - Modèle CNN entraîné par research.ipynb, à déposer dans l'Object Store pour que main.py l'utilise
 
 ## Références
 

@@ -1,8 +1,8 @@
 <!-- CATALOG-STATUS
 series: QuantConnect-Python
-pedagogical_count: 63
-breakdown: Python=63
-maturity: BETA=33, DRAFT=27, ALPHA=3
+pedagogical_count: 64
+breakdown: Python=64
+maturity: BETA=35, DRAFT=27, ALPHA=2
 -->
 
 # QuantConnect Python Notebooks

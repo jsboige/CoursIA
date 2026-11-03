@@ -48,7 +48,7 @@ reconstituée par inspection du texte (`grep` des en-têtes, lignes de
 | 6 | Corollary 4 — *Deterministic polynomial-time evaluation* | 457-481 | preuve informelle Schoof + Miller ; eq. (31) `total = Schoof(p) + O((log p)^3)` |
 | 7 | Application to the original quarter point sum | 484-548 | courbe `E: y² = x³ + 2x` (j=1728), `a_n ≡ τ (mod p)` |
 | 8 | Computational verification | 580-620 | 4 072 queries admissibles character-sum agrees ; 92 primes 10 809 stopping points |
-| 9 | References | 622-679 | Cartier 1957, Miller 2004, Schoof 1985, Satoh-Araki 1998, Smart 1999, Rück 1999, Voloch 1990/1997, Bostan et al. 2007, Harvey 2007, Cosgrave-Dilcher 2010 |
+| 9 | References | 622-679 | Cartier 1957 (*C. R. Acad. Sci.* t. 244, p. 426-428 — voir « Référence externe : Cartier 1957 »), Miller 2004, Schoof 1985, Satoh-Araki 1998, Smart 1999, Rück 1999, Voloch 1990/1997, Bostan et al. 2007, Harvey 2007, Cosgrave-Dilcher 2010 |
 | 10 | Appendix: Pilot Benchmark | 727-771 | Table 1 : 7 primes 1 (mod 4), Python CM vs C++ Harvey/BGS ; reproduction commands |
 
 **Observations structurelles (sans porter de jugement de fond) :**
@@ -181,7 +181,47 @@ confrontation = `[REVIEWED ligne-par-ligne]`).
   une lane qui l'a (ai-01 historique ? po-2024 ? à mesurer).
 
 Refs #19452 (issue distillation) · modèle #17845 (Karingula-Lovett
-Lean 4 distillation) · références externes : Cartier 1957
-([zbmath 0077.04502](https://zbmath.org/?q=an:0077.04502)) · Miller 2004
+Lean 4 distillation) · références externes : Miller 2004
 ([doi:10.1007/s00145-004-0315-8](https://doi.org/10.1007/s00145-004-0315-8)) ·
-Schoof 1985.
+Schoof 1985 · Cartier 1957 (voir la section suivante).
+
+### Référence externe : Cartier 1957
+
+Le manuscrit ne cite que « Cartier 1957 » (References, l. 622-679). La
+référence complète est :
+
+> Pierre Cartier, « Une nouvelle opération sur les formes
+> différentielles », *Comptes rendus hebdomadaires des séances de
+> l'Académie des sciences*, sér. I (math.), t. 244 (1957), p. 426-428.
+
+Identifiants : zbMATH `an:0077.04502`
+([zbmath](https://zbmath.org/?q=an:0077.04502)) · MR 18,870b.
+
+**Identité établie par des sources bibliographiques indépendantes.** La
+bibliographie de l'article de Cartier lui-même — « Questions de
+rationalité des diviseurs en géométrie algébrique », *BSMF* 86 (1958)
+177-251 ([doi:10.24033/bsmf.1503](https://doi.org/10.24033/bsmf.1503)),
+référence [7] : « Une nouvelle opération sur les formes différentielles
+(C. R. Acad. Sc., t. 244, 1957, p. 426-428) », avec le même
+`an:0077.04502` — et les bibliographies de travaux ultérieurs du même
+auteur et de ses lecteurs (*AST* 2002, *MSMF* 2000, *SB* 1956-1958)
+redonnent la même mention.
+
+**Statut d'accès : texte original consulté et archivé (2026-10-29).**
+La note n'est ni numérisée en accès libre sur Numdam, ni présente dans
+les collections Wikisource des *C. R. Acad. Sci.*, ni indexée par la
+recherche plein texte Gallica pour l'année 1957 (les fascicules de 1957
+n'ont pas de couche OCR). Elle n'existe que dans le périodique
+*C. R. Acad. Sci.* (Gallica, série `cb343481087`, tome 244, p. 426-428) ;
+le parcours par date de ce périodique passe par un accès BnF, et les
+images de page ne sont servies qu'en session authentifiée.
+
+Les trois pages (p. 426-428) ont été **extraites et déposées au
+gisement** : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\1957 - Cartier - Une nouvelle operation sur les formes differentielles (C. R. Acad. Sci., t. 244, p. 426-428).pdf`
+(496 320 octets, sha256 `195953e928bdf6d52b0e1f3a4f495ddb5807bf5ae151b75a57d2da4b07e3994f`).
+
+**Identité vérifiée sur la première page** : « ALGEBRE. — Une nouvelle
+opération sur les formes différentielles. Note de M. Pierre Cartier,
+présentée par M. Jacques Hadamard », p. 426 ; la p. 427 porte la mention
+« SÉANCE DU 21 JANVIER 1957 ». Le texte est donc désormais **lu**, et
+non plus cité sur la seule donnée bibliographique.

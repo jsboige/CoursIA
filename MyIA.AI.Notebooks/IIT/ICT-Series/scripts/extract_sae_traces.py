@@ -86,9 +86,11 @@ from ict.sae_traces import (  # noqa: E402  (necessairement apres sys.path)
     assert_sae_topk_compatible,
     check_sae_model_match,
     ramp_alpha,
+    ramp_band_mask,
     resolve_capture_layer,
     trace_filename,
     w_dec_needs_transpose,
+    witness_alpha,
 )
 
 # ---------------------------------------------------------------------------
@@ -379,6 +381,17 @@ def parse_args() -> argparse.Namespace:
                    help="amplitude maximale du profil --clamp-ramp (defaut 1.0 = "
                         "annulation complete des features du panel au sommet). "
                         "Bornes (0, 1], comme --clamp-scale.")
+    p.add_argument("--clamp-band", default=None, metavar="CYCLES:CYCLE:BRANCH:BAND:N",
+                   help="temoin negatif ICT-42e (#20772) : passe REINITIALISEE — "
+                        "alpha vaut BAND/N constant sur la plage de tokens ou la "
+                        "rampe CYCLES cycles visite la bande BAND de la branche "
+                        "BRANCH (montee|descente) du cycle CYCLE (1-based), et 0 "
+                        "PARTOUT AILLEURS (prefixe vierge par construction). "
+                        "N = nombre de bandes (protocole 42e : 4, aligne sur la "
+                        "grille const-alpha du pilote). Exige --clamp-ids et le "
+                        "mode inoculation ; exclusif de --clamp-ramp et d'un "
+                        "--clamp-scale explicite. Le profil effectif est "
+                        "enregistre par prompt ({set}__{i}__alpha).")
     p.add_argument("--clamp-frac", type=float, default=None,
                    help="profondeur RELATIVE de la couche D'INOCULATION dans "
                         "[0, 1] (pilote #8236 ; defaut 0.5 = mi-reseau). Le SAE "
@@ -830,6 +843,37 @@ def main() -> None:
             sys.exit("ERREUR: --clamp-ramp exige le mode inoculation "
                      "(--clamp-frac et/ou --read-frac) : l'hysteresis se "
                      "mesure en AVAL de l'inoculation, comme la bifurcation.")
+    clamp_witness = None
+    if args.clamp_band is not None:
+        # Temoin negatif ICT-42e (#20772) : toutes les validations de
+        # geometrie passent par l'organe (ramp_band_mask leve lui-meme) —
+        # ici AVANT tout chargement de poids, une spec fausse ne coute rien.
+        if not clamp_ids:
+            sys.exit("ERREUR: --clamp-band exige --clamp-ids : le temoin "
+                     "module un clamp, il ne cree pas un panel.")
+        if args.clamp_ramp is not None:
+            sys.exit("ERREUR: --clamp-band et --clamp-ramp sont exclusifs : "
+                     "le temoin REMPLACE la trajectoire rampante par une "
+                     "passe reinitialisee, pas les deux a la fois.")
+        if args.clamp_scale != 1.0:
+            sys.exit("ERREUR: --clamp-band et --clamp-scale=<alpha> sont "
+                     "exclusifs : l'intensite du temoin est celle de la "
+                     "bande, pas une constante globale.")
+        if args.clamp_frac is None and args.read_frac is None:
+            sys.exit("ERREUR: --clamp-band exige le mode inoculation "
+                     "(--clamp-frac et/ou --read-frac) : le temoin se mesure "
+                     "en AVAL de l'inoculation, comme la rampe.")
+        parts = str(args.clamp_band).split(":")
+        try:
+            if len(parts) != 5:
+                raise ValueError("5 champs CYCLES:CYCLE:BRANCH:BAND:N attendus "
+                                 f"({len(parts)} recus).")
+            w_cycles, w_cycle = int(parts[0]), int(parts[1])
+            w_branch, w_band, w_n = parts[2], int(parts[3]), int(parts[4])
+            ramp_band_mask(8, w_cycles, w_cycle, w_branch, w_band, w_n)
+        except ValueError as e:
+            sys.exit(f"ERREUR: --clamp-band={args.clamp_band!r} hors protocole : {e}")
+        clamp_witness = (w_cycles, w_cycle, w_branch, w_band, w_n)
 
     from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 
@@ -931,7 +975,8 @@ def main() -> None:
             n_layers=n_layers, n_clamp=len(clamp_ids),
             clamp_scale=args.clamp_scale, prefix=args.prefix,
             clamp_ramp=(None if args.clamp_ramp is None
-                        else (int(args.clamp_ramp), float(args.ramp_peak))))
+                        else (int(args.clamp_ramp), float(args.ramp_peak))),
+            clamp_witness=clamp_witness)
         if out_path.exists() and not args.overwrite:
             sys.exit(f"ERREUR: {out_path} existe deja. Deux runs d'echelles "
                      "differentes ne doivent jamais partager un nom : verifier "
@@ -1011,7 +1056,13 @@ def main() -> None:
         _guard(check_sae_model_match, int(sae_clamp["W_enc"].shape[1]),
                int(d_model), args.sae_repo, args.model)
         alpha_fn = None
-        if args.clamp_ramp is not None:
+        if clamp_witness is not None:
+            w_cycles, w_cycle, w_branch, w_band, w_n = clamp_witness
+            w_level = float(w_band) / float(w_n)
+            alpha_fn = (lambda T: witness_alpha(
+                T, ramp_band_mask(T, w_cycles, w_cycle, w_branch, w_band, w_n),
+                w_level))
+        elif args.clamp_ramp is not None:
             alpha_fn = (lambda T: ramp_alpha(T, cycles=int(args.clamp_ramp),
                                              peak=float(args.ramp_peak)))
         clamp_hook = ClampHook(sae_clamp, clamp_ids, args.clamp_scale,
@@ -1065,7 +1116,8 @@ def main() -> None:
             # s'applique a lui aussi, sinon divergence(t) serait decalee d'un
             # token par position exclue.
             alpha_prof = (clamp_hook.last_alpha
-                          if args.clamp_ramp is not None else None)
+                          if (args.clamp_ramp is not None
+                              or clamp_witness is not None) else None)
             n_bad = int((~finite).sum())
             if n_bad:
                 bad_pos = (~finite).nonzero().flatten().tolist()
@@ -1162,7 +1214,8 @@ def main() -> None:
             # Sous rampe (hysteresis), l'intensite est PAR TOKEN : clamp_scale
             # devient null (une constante unique serait mensongere) et le
             # profil effectif vit dans les arrays {set}__{i}__alpha.
-            "clamp_scale": (None if args.clamp_ramp is not None
+            "clamp_scale": (None if (args.clamp_ramp is not None
+                                     or clamp_witness is not None)
                             else float(args.clamp_scale)),
             # Hysteresis multi-passes (limite 1 pilote ICT-42, #8236) : null
             # par defaut ; sinon profil triangulaire alpha(t) de cycles
@@ -1170,6 +1223,19 @@ def main() -> None:
             "clamp_ramp": (None if args.clamp_ramp is None
                            else {"cycles": int(args.clamp_ramp),
                                  "peak": float(args.ramp_peak)}),
+            # Temoin negatif ICT-42e (#20772) : null par defaut ; sinon la
+            # passe reinitialisee — bande BAND de la branche BRANCH (montee/
+            # descente) du cycle CYCLE d'une geometrie de rampe CYCLES cycles,
+            # intensite constante BAND/N_BANDS sur la bande, nulle ailleurs
+            # (prefixe vierge par construction). Le niveau protocolaire vit
+            # ici ET dans les arrays {set}__{i}__alpha.
+            "clamp_band": (None if clamp_witness is None
+                           else {"cycles": clamp_witness[0],
+                                 "cycle": clamp_witness[1],
+                                 "branch": clamp_witness[2],
+                                 "band": clamp_witness[3],
+                                 "n_bands": clamp_witness[4],
+                                 "level": clamp_witness[3] / clamp_witness[4]}),
             # Mode inoculation : couche d'inoculation (SAE du hook) DISTINCTE
             # de la couche de lecture — "layer"/"layer_frac" ci-dessus
             # designent la lecture (SAE + encodage top-k de la trace). Null

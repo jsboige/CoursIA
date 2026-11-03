@@ -180,10 +180,13 @@ def test_un_grain_ordinaire_n_est_jamais_sous_plafond_epic():
     assert pig.umbrella_visit_cause(grain, now=NOW) is None
 
 
-def test_la_boucle_ecarte_l_epic_et_sert_le_suivant():
+def test_la_boucle_ecarte_l_epic_et_sert_le_suivant(monkeypatch):
     """Bout en bout sur la boucle du tapis : l'EPIC sous plafond part en
     `withheld` avec sa cause, le candidat suivant est servi, et un
     sous-grain ouvert de l'EPIC est nomme pour que la lane sache ou aller."""
+    # La boucle n'injecte pas `now` : le plafond lit l'horloge du module.
+    # Sans epingle, le test expire 7 jours apres NOW (rouge de main le 31/10).
+    monkeypatch.setattr(pig, "NOW", NOW)
     epic = _item(4001, klass="umbrella", title="[EPIC] Serre100",
                  last_child_stamp=_iso(24))
     enfant = _item(4002, title="[#4001 - carnet 29] suite",

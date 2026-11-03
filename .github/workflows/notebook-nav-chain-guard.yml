@@ -43,6 +43,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          filter: blob:none
 
       # La jambe Linux conteneurisee n'expose pas de `python` systeme (job
       # 100021313259, exit 127) : l'interprete vient de setup-python, comme

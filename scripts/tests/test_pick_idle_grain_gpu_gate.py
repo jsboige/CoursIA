@@ -42,6 +42,7 @@ celle-ci ne se recouvrent pas sur le meme fichier de test.
 
 import json
 import random
+import subprocess
 import sys
 import types
 from pathlib import Path
@@ -158,6 +159,7 @@ def test_observation_absente_le_grain_est_ecarte_avec_motif_nomme():
     ("STALE", "[DEFER gpu-reservation stale]"),
     ("UNPOSTED", "[DEFER gpu-reservation unposted]"),
     ("GATE_UNREAD", "[DEFER gpu-reservation gate-unreadable]"),
+    ("UNREADABLE", "[DEFER gpu-reservation unreadable]"),
     ("TARGET_UNRESOLVED", "[DEFER gpu-reservation target-unresolved]"),
 ])
 def test_chaque_verdict_non_servable_a_son_marqueur(verdict, marker):
@@ -358,6 +360,56 @@ def test_gate_qui_echoue_est_un_gate_illisible(monkeypatch):
         _item(body=BODY_DECLARED), _args())
     assert verdict == "GATE_UNREAD"
     assert "myia-ai-01#gpu2" in reason
+
+
+# --- `UNREADABLE` : le verdict que le transport git rend routinier --------
+
+
+def test_verdict_unreadable_nomme_le_geste_de_siege():
+    """`UNREADABLE` est le verdict que le transport git rend ROUTINIER sur
+    un siege sans remote `gpu-ledger` (#22755) : le gate refuse de repondre
+    autour d'une source qu'il n'a pas pu lire. Le motif doit nommer le
+    geste, sinon le grain est ecarte sans que la lane sache quoi faire --
+    et il ne doit pas tomber dans le repli `unknown-verdict`."""
+    reason = pig.gpu_gate_reason(
+        _item(body=BODY_DECLARED), _args(),
+        lambda i, a: ("UNREADABLE",
+                       "myia-ai-01#gpu2 : source git indisponible : "
+                       "remote 'gpu-ledger' introuvable"))
+    assert reason is not None
+    assert "[DEFER gpu-reservation unreadable]" in reason
+    assert "git remote add gpu-ledger" in reason
+    assert "unknown-verdict" not in reason
+
+
+@pytest.mark.parametrize("reader", ["timeout", "exception", "non-json"])
+def test_gate_illisible_nomme_le_remote_avant_le_cache(monkeypatch, reader):
+    """Les trois lectures 'gate illisible' nomment le remote d'abord.
+
+    Apres #22755, le cache local n'est plus une autorite : un remede qui
+    n'ouvre que cette porte est faux sur un siege configure. Le texte est
+    ecrit pour rester vrai dans les deux etats, et son ordre est fige.
+    """
+    if reader == "timeout":
+        def _timeout(cmd, **kw):
+            raise subprocess.TimeoutExpired(cmd, kw.get("timeout", 30))
+
+        monkeypatch.setattr(pig, "_run_bounded", _timeout)
+    elif reader == "exception":
+        def _boom(cmd, **kw):
+            raise OSError("permission denied")
+
+        monkeypatch.setattr(pig, "_run_bounded", _boom)
+    else:
+        monkeypatch.setattr(pig, "_run_bounded",
+                            lambda cmd, **kw: _FakeCompleted("pas du json",
+                                                             returncode=0))
+    verdict, reason = pig.gpu_gate_probe(
+        _item(body=BODY_DECLARED), _args())
+    assert verdict == "GATE_UNREAD"
+    assert "git remote get-url gpu-ledger" in reason
+    assert reason.index("git remote get-url gpu-ledger") < \
+        reason.index("debt_ledger.py reduce")
 
 
 def test_le_gate_recoit_bien_le_mandat_du_ledger(monkeypatch):

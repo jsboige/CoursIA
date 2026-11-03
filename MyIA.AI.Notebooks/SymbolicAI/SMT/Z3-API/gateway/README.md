@@ -21,6 +21,9 @@ plusieurs lignes est acceptée.
 
 ## Démarrage
 
+La forme recommandée passe par le lanceur, qui fait un pré-vol puis sonde
+l'endpoint avant de déclarer le service disponible (voir « Rejeu des deux cas ») :
+
 ```bash
 pip install -r requirements.txt
 python run_gateway.py                 # port 8899
@@ -35,7 +38,12 @@ Il peut donc être lancé depuis n'importe quel répertoire : c'est la forme à
 préférer, y compris depuis un script d'orchestration qui ne se place pas dans
 le dossier.
 
-Le lancement manuel reste possible, mais **doit se faire depuis ce dossier** :
+Le lancement manuel reste possible. Lancé depuis n'importe quel répertoire
+**du dépôt**, le kernel trouve son cœur sans rien poser : la cellule de
+préparation du carnet la résout d'elle-même (variable d'environnement, puis
+répertoire courant, puis remontée des parents — défaut a de #22439). Depuis un
+répertoire **sans rapport avec le dépôt**, se placer dans le dossier ou poser
+`Z3_GATEWAY_CORE_DIR` explicitement :
 
 ```bash
 cd MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway
@@ -45,6 +53,12 @@ python -m kernel_gateway \
   --KernelGatewayApp.port=8899 \
   --JupyterWebsocketPersonality.list_kernels=True
 ```
+
+Le **lanceur**, lui, n'a pas cette limite : il résout le dossier du cœur depuis
+son propre emplacement et le publie au processus kernel via
+`Z3_GATEWAY_CORE_DIR`, que la cellule de préparation du carnet lit en premier
+candidat. La passe de main lanceur → kernel est ainsi explicite, et le pré-vol
+vert du lanceur prouve bien que le kernel trouvera le cœur.
 
 `python -m kernel_gateway` est équivalent à `jupyter kernelgateway` quand le
 dossier `Scripts` du Python est dans le `PATH`. `list_kernels=True` est requis
@@ -90,6 +104,39 @@ $ echo $?
 
 Corollaire pour un client : `swagger` en 200 **ne prouve pas** que le kernel est
 prêt. C'est `/sudoku/solve` qui le prouve.
+
+## Rejeu des deux cas
+
+Les commandes se lancent **depuis la racine du dépôt** — c'est le cas qui
+échouait avant la correction du défaut a (issue #22439).
+
+**Cas nominal.** Le preflight du lanceur vérifie le cœur (`--check-only`, code
+de sortie `0`), puis le service répond sur `/sudoku/solve` (puzzle de
+démonstration, `status=sat`).
+
+**Cas où le cœur n'est pas chargeable.** Deux refus, chacun à son étage :
+
+- le lanceur refuse de démarrer (preflight, code de sortie `2` — voir
+  ci-dessus) ;
+- si le gateway a été démarré à la main (sans lanceur) et que le kernel survit
+  sans son cœur, l'endpoint **répond** au lieu de laisser expirer le client :
+
+```json
+{"status": "error", "error": "kernel core unavailable", "detail": "module z3_sudoku_core.py introuvable ; dossiers essayes : ..."}
+```
+
+Mesuré le 2026-10-25 : réponse en **1,61 s**, là où la même situation laissait
+auparavant le client expirer sans aucune réponse (90 s côté client, descripteur
+`/_api/spec/swagger.json` à `200` entre-temps).
+
+Le cœur est cherché dans cet ordre : `Z3_GATEWAY_CORE_DIR` si la variable est
+posée, puis le répertoire courant, puis le chemin du cœur relativement à chaque
+répertoire parent (8 niveaux). La variable d'environnement est le recours
+explicite quand le service est lancé depuis un répertoire arbitraire. C'est un
+**candidat, pas une contrainte** : si le dossier qu'elle désigne ne porte pas
+le cœur, la recherche continue et un avertissement l'indique dans la sortie de
+la cellule de préparation — l'opérateur sait alors que sa variable a été
+ignorée.
 
 ## Usage (exemples réellement exécutés le 2026-10-16)
 
@@ -160,6 +207,14 @@ Les deux fichiers sont câblés dans `.github/workflows/scripts-tests.yml`
 - Le carnet s'exécute aussi **hors gateway** (mode local) : l'endpoint retombe
   alors sur le puzzle de démonstration du carnet phare — c'est ce que montrent
   les sorties enregistrées dans le carnet.
+- Le cœur n'est plus cherché dans `os.getcwd()` seul : la cellule de préparation
+  essaie `Z3_GATEWAY_CORE_DIR`, puis le répertoire courant, puis le chemin du
+  cœur relativement à chaque répertoire parent. Un import qui échoue **ne tue
+  plus le kernel** — la cause est conservée et l'endpoint la restitue, parce
+  qu'un kernel mort laissait le pool vide et faisait pendre chaque requête.
 - Sous Kernel Gateway 3.x, la variable injectée `REQUEST` est une **chaîne
   JSON** (sérialisée deux fois côté serveur) ; le carnet accepte chaîne et
-  dictionnaire pour rester compatible entre versions.
+  dictionnaire pour rester compatible entre versions. Même chose pour le corps
+  dans la clé `body` : dict déjà parsé ou chaîne JSON brute (double encodage),
+  les deux formes sont décodées — un corps en chaîne non décodé partait
+  auparavant tout entier dans le solveur et revenait en `invalid` silencieux.

@@ -184,6 +184,46 @@ def test_among_windows_of_equal_verdict_the_more_concentrated_one_is_the_worst()
     assert agg["worst_window"]["motif3_repeat_pct"] == 58.0
 
 
+def test_an_unassessed_window_never_outranks_a_measured_one():
+    """A window whose structure was NOT measured must never win the tie-break.
+
+    ``melody_stats`` refuses to return a silent zero under
+    ``MIN_SYLL_FOR_STRUCTURE``; the fold honours that refusal by ranking the
+    window on its severity, never on a concentration of 0.0 that would make an
+    unlooked-at window read as the cleanest one.
+
+    Locked because the ``or 0.0`` fallback in the rank is otherwise
+    unexercised: no production window should ever reach the fold unmeasured (a
+    180-s window carries ~540 syllables, and a merged queue is at least half a
+    window), so this is the only place that would notice the day one does.
+    """
+    unassessed = _window(melody_verdict="INSUFFICIENT",
+                         motif3_repeat_pct=None, effective_notes=None,
+                         n_syllables=20)
+    measured = _window(melody_verdict="DRONE", motif3_repeat_pct=75.0)
+
+    agg = aggregate_window_measurements([unassessed, measured])
+
+    assert agg["melody_verdict"] == "DRONE"
+    assert agg["worst_window"] is measured
+
+
+def test_a_fold_of_unassessed_windows_abstains_rather_than_reads_clean():
+    """(not looked) must not become (looked, clean) one level up either.
+
+    Mirrors ``test_unassessed_structure_yields_none_not_empty_list`` at the
+    segment level: two windows nobody assessed fold to ``INSUFFICIENT``, which
+    ``classify_segment`` maps to an abstention -- not to a pass.
+    """
+    agg = aggregate_window_measurements([
+        _window(melody_verdict="INSUFFICIENT", motif3_repeat_pct=None),
+        _window(melody_verdict="INSUFFICIENT", motif3_repeat_pct=None),
+    ])
+
+    assert agg["melody_verdict"] == "INSUFFICIENT"
+    assert agg["n_syllables"] == 2 * 460
+
+
 # --- the fold, on the MEASURED windows of the chapter-1 delivery ------------
 # Frozen values, measured 2026-10-19 by this lane on the delivered chapter
 # (voice B, 1364.96 s). PROVENANCE of the cut (#21521 item 4): these values

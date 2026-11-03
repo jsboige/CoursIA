@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-10-30
+
 # Exécuter un carnet QuantBook et rapporter ses sorties
 
 Un carnet QuantBook (`qb = QuantBook()`, `qb.History(...)`) ne s'exécute que dans un noyau LEAN Research. Les sorties committées doivent être celles de ce noyau (règle C.2 et procédure « Exécution Quantbooks » de [procedures-recurrentes.md](../reference/procedures-recurrentes.md)). Elles ne se reconstruisent pas à la main et ne viennent pas d'une substitution de source de données.

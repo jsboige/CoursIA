@@ -526,7 +526,7 @@ _THRESHOLD_OP_RE = re.compile(
 # '(2,2)' / '(1,1)', are TUPLES (cell positions), not francophone decimals.
 # _normalize_num collapses '(2,2)' -> '2.2', so the detector searches for a
 # '2.2' that never exists in the 3x3-grid code output and flags a legitimate
-# prose coordinate as fabricated (DecPyMC-7 md[67]: 'un but en (2,2) et un
+# prose coordinate as fabricated (DecPyMC-07 md[67]: 'un but en (2,2) et un
 # obstacle en (1,1)'). Criterion (acceptance #14905): a SINGLE digit on each
 # side of a comma, wrapped in a parenthesized pair. '(0,75)' -- two digits
 # after the comma -- is a genuine decimal and stays eligible.
@@ -626,7 +626,7 @@ def _is_threshold_expression(src: str, match_pos: int, match_end: int) -> bool:
 # #14905 Family D -- input numbers: legitimately absent from the output
 # because they are inputs (hyperparameters, problem specifications). A class
 # distinct from the coordinate fix (different cause, separate filter -- the
-# issue pins this separation). Measured instances on DecPyMC-7:
+# issue pins this separation). Measured instances on DecPyMC-07:
 #   md[15]/md[19]  '$\gamma = 0.9$' / '$V_1 = \gamma(0.8 + 0.2\,V_1)$'
 #   md[36]         '`[0.2, 0.4, 0.6, 0.8, 0.5]`' (arm means = problem spec)
 #   md[38]         'Bras 1=0.3, Bras 2=0.5' (enumerated environment spec)
@@ -687,7 +687,7 @@ def _is_math_parameter_definition(prose: str, match_pos: int, match_end: int) ->
     - a greek symbol holding an ESTIMATED value (`$\\mu = 20.8$` read off a
       plot) is a citation too -- no definition verb on the line, stays
       checked. The verb gate separates 'Avec $\\gamma = 0.9$' (founding
-      instance, DecPyMC-7 md[15]/md[19]) from it.
+      instance, DecPyMC-07 md[15]/md[19]) from it.
     """
     span = _nearest_math_span(prose, match_pos)
     if span is None or "=" not in span:
@@ -720,7 +720,7 @@ def _is_numeric_list_literal(prose: str, match_pos: int, match_end: int) -> bool
 def _is_labeled_enumeration_value(prose: str, match_pos: int, match_end: int) -> bool:
     """Family D3 (#14905): the match is the value side of a labeled
     enumeration in prose -- 'Bras 1=0.3', 'Couche 2=0.5' (a word, a numeral,
-    then `=`). The founding instance is DecPyMC-7 md[38] 'Bras 1=0.3, Bras
+    then `=`). The founding instance is DecPyMC-07 md[38] 'Bras 1=0.3, Bras
     2=0.5': the environment's arm means, given as spec, never printed.
 
     The word+numeral LHS is the discriminator: 'accuracy=0.9' (no numeral in
@@ -883,7 +883,7 @@ def _is_coordinate_tuple(prose: str, match_pos: int, match_end: int) -> bool:
     each side of the comma ('(2,2)', '(1,1)', '(1,2,3)') is a coordinate /
     tuple element, not a francophone decimal.
 
-    The founding FP: DecPyMC-7 md[67] 'un but en (2,2) et un obstacle en
+    The founding FP: DecPyMC-07 md[67] 'un but en (2,2) et un obstacle en
     (1,1)' -- cells of a 3x3 grid, flattened by `_normalize_num` into the
     '2.2' / '1.1' decimals, then reported as fabricated because no output
     contains them. The discriminator is deliberately tight: every integer
@@ -1265,6 +1265,14 @@ def check_notebook(path: Path) -> dict:
 
 _DECIMAL_TOKEN_RE = re.compile(r"(?<![\d.,])\d+[.,]\d+(?![\d,])")
 
+# A number that carries BOTH a comma group and a decimal point uses the comma
+# as a thousands separator: French decimals never take a second separator
+# after a three-digit group ('19,798.0862' is 19798.0862, not 19.7980862).
+# The bare three-digit group ('1,798') stays a decimal -- without a decimal
+# point to disambiguate, both readings are legitimate and the francophone
+# decimal reading is the dominant one.
+_THOUSANDS_WITH_DECIMAL_RE = re.compile(r"(\d{1,3}(?:,\d{3})+)(\.\d+)")
+
 
 def _rounds_to_claim(norm: str, out_text: str) -> bool:
     """True when an output number rounds to the claimed value.
@@ -1284,15 +1292,13 @@ def _rounds_to_claim(norm: str, out_text: str) -> bool:
     except ValueError:
         return False
     half_ulp = 0.5 * 10 ** -decimals
+    out_text = _THOUSANDS_WITH_DECIMAL_RE.sub(
+        lambda m: m.group(1).replace(",", "") + m.group(2), out_text
+    )
     for match in _DECIMAL_TOKEN_RE.finditer(out_text):
         token = match.group(0).replace(",", ".")
         # An output coarser than the claim cannot round UP to it: '1.7'
         # never satisfies '1.75'.
-        # Known limitation, measured: the comma is read as a decimal point,
-        # so a thousand separator is matched as one -- '19.80' matches
-        # '19,798.0862' through the token '19,798' read as 19.798. The two
-        # readings are genuinely ambiguous in French output ('1,798' may be
-        # 1.798 or 1,798); deciding it needs its own change, not this one.
         if len(token.split(".", 1)[1]) < decimals:
             continue
         try:

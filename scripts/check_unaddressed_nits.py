@@ -113,11 +113,45 @@ REPO = "jsboige/CoursIA"
 BOT_LOGINS = {"github-actions", "codecov", "dependabot", "copilot-pull-request-reviewer"}
 
 # Prefixes de tags utilises par les agents du cluster (protocole dashboard/PR).
+# Consommee par classify (exemption) ET can_lift (voie 3 de B.0) : la
+# constante reste stricte -- n'y ajouter que des tags de PROTOCOLE pur. Un
+# tag ici n'est pas seulement « pas un nit », il est aussi « pas une levee »
+# (can_lift l. 41xx ecarte le corps du nommage de suivi) : ce double effet
+# doit rester voulu, jamais accidentel.
 AGENT_PREFIXES = (
     "[PART-OF-EPIC", "[GRAIN", "[CLAIMED", "[DONE", "[INFO", "[DISPATCH",
     "[ACK", "[RELEASED", "[OVERRIDE", "[MERGED", "[WARN", "[ERROR", "[ASK",
     "[REPLY", "[PROPOSAL", "[BLOCKED", "[ESCALATION", "[DELIVERED",
 )
+
+# `[ACTION` et `[DIAG` (taxonomie d'emission P1 de #15511, cf COMMENT_TAG_RE
+# ci-dessous) servent la CLASSIFICATION, pas la levee. Mesure fondatrice
+# (po-2028:CoursIA, 2026-11-02 13:30Z) : sans eux, un compte-rendu CONFORME a
+# la regle sortait de l'exemption de classify (l. 44xx) et tombait dans la
+# branche CRLF/HUMAN des qu'il etait poste par un transport Windows -- le
+# compte-rendu d'une action devenait un nit bloquant la PR qu'il documente.
+# Reserve NanoClaw #24243 : les ajouter a AGENT_PREFIXES aurait un second
+# effet, invisible au diff : can_lift lit la meme constante pour ecarter les
+# narrations de protocole des levees, or un compte-rendu tague [ACTION] qui
+# NOMME une issue de suivi (« suivi ouvert : #N ») est un report delibere --
+# exactement le geste que la voie 3 de B.0 credite (collect_followup_lifts,
+# #13495/#14218 : l'auteur de la PR y est nommeur valide). L'extension vit
+# donc dans cette constante, consommee uniquement par classify ; can_lift
+# reste sur AGENT_PREFIXES.
+CLASSIFY_AGENT_PREFIXES = AGENT_PREFIXES + ("[ACTION", "[DIAG")
+
+# #15511 (P1) -- taxonomie d'emission des commentaires agent, premiere
+# ligne NON VIDE du corps : [ACTION] (le commentaire porte une action --
+# patch, rebase, rerun, fix), [DIAG] (diagnostic pur, sans action
+# attachee), [ASK] (attente d'une decision tierce). Le contrat est cote
+# EMISSION (meme parti que #14682 : elargir le filet a la prose
+# sur-accuse d'un facteur 5) : un commentaire non tague est INVISIBLE
+# pour ce detecteur -- il ne compte ni comme [DIAG] ni comme [ACTION].
+# Ces tags ne touchent NI `classify`, NI les levees : ils mesurent la
+# boucle de pompage, pas le verdict (un [DIAG] portant une reserve vivante
+# reste un nit par la voie habituelle).
+COMMENT_TAG_RE = re.compile(r"\[(ACTION|DIAG|ASK)\](?=\s|$)")
+DIAG_LOOP_LIMIT = 3  # > 3 [DIAG] consecutifs sans [ACTION] = PR bloquee
 
 # #11639 — l'arbitrage ECRIT du coordinateur. B.0 ne restreint pas l'auteur
 # d'une reponse de levée (« une reponse ecrite sur la PR qui nomme la
@@ -372,10 +406,26 @@ HOLD_TAGGED_HEAD = re.compile(r"^[\s*_#]*\[HOLD\b[^\]]*\]")
 # Volontairement LARGE : c'est le cote permissif du garde (il MAINTIENT le
 # blocage), donc un faux positif ici ne coute qu'une phrase de levee, tandis
 # qu'un trou coute un merge non mesure.
+# #24141 — l'alternative « avec <reserve> » ne matchait que « avec reserve » /
+# « avec reserves ». Le COMPTE, l'ARTICLE ou le DETERMINANT place ENTRE « avec »
+# et « reserve » cassait l'alternative : la review Hermes de #24117 (« Verdict :
+# APPROVE avec 1 reserve 🟡 ») n'etait pas reconnue comme une reserve VIVANTE,
+# et la PR est partie en merge le 02/11 05:07Z avec cette reserve en suspens —
+# B.0 rendait rc=0 (aucun bloquant).
+#
+# La quantite compte ici le NOMBRE de reserves : « 0 reserve » n'en est pas
+# une (meme logique que les CITERS, qui excluent « zero » et « 0 »). Les
+# nombres en toutes lettres sont pris pour ne pas laisser la meme famille de
+# trou ouvert (« avec deux reserves »).
+_APPROVE_RESERVATION_QUANTITE = (
+    r"(?:[1-9]\d*|une?|deux|trois|quatre|cinq|six|sept|huit|neuf|dix"
+    r"|quelques|plusieurs|des|les|la|ma|mon|tes|ses)"
+)
+
 _APPROVE_RESERVATION_RE = re.compile(
     r"(?i)("
     r"sous\s+r[ée]serve"
-    r"|avec\s+r[ée]serves?\b"
+    r"|avec\s+(?:" + _APPROVE_RESERVATION_QUANTITE + r"\s+)?r[ée]serves?\b"
     r"|r[ée]serve\s+(?:maintenue|subsiste|demeure|tient)"
     r"|je\s+maintiens"
     r"|je\s+conserve\s+(?:ma|mon|la)\b"
@@ -1521,13 +1571,74 @@ _GLYPH_DETERMINER_PRECEDER_RE = re.compile(
 )
 _SEVERITY_GLYPH_CLASS_RE = re.compile(f"[{''.join(SEVERITY_GLYPHS)}]")
 
+# #22911 — Position J (D) REPRISE : le vocabulaire de reprise d'une réserve
+# (ce qu'une lane écrit en répondant point par point) n'était pas dans le set
+# de méta-noms (A). Mesuré : « **Réponse a la réserve 🟡 de la review
+# `clusterManager-Myia` du 2026-10-25T16:47:21Z** » — le préfixe porte
+# `réserve`, pas `marqueur` : rien ne neutralisait, et la réponse qui
+# DOCUMENTE la levée était classée réserve neuve (rc=1 auto-infligé).
+#
+# DEUX conditions cumulatives, et la seconde est mesurée :
+#   (1) un MARQUEUR DE RÉPONSE sur la ligne (« Réponse à », « Response to »)
+#       — c'est ce qui distingue la lane qui RÉPOND d'un reviewer qui ÉMET ;
+#   (2) un nom de reprise ADJACENT au glyphe (au plus quelques caractères de
+#       remplissage entre le nom et le glyphe).
+# La condition (1) est indispensable : sans elle, le seul nom adjacent
+# (`réserve 🟡`) éteindait des RÉSERVES RÉELLES — mesuré sur la suite de
+# l'organe, 5 fixtures rotent (réponses de reviewer « APPROVE avec 1
+# réserve 🟡 », « **Réserve 🟡 — ...** », « Je lève ma propre reserve 🟡 »).
+# Un reviewer qui émet « réserve 🟡 » et une lane qui REPOND à une réserve
+# partagent le mot ; seul le marqueur de réponse les sépare.
+_GLYPH_REPLY_MARKER_RE = re.compile(r"(?i)\b(?:r[ée]ponses?|responses?)\b")
+_GLYPH_RESPONSE_NOUN_RE = re.compile(
+    r"(?i)\b(?:r[ée]serves?|r[ée]ponses?|remarques?|observations?|points?|items?|"
+    r"responses?|concerns?)\b[\s:,'’\-]{0,12}$"
+)
+# #22911 — SURFACE CONNUE, DELIBEREMENT LAISSEE OUVERTE (review du 2026-11-02,
+# point 2) : la regle (D) neutralise un glyphe ADJACENT a un nom de reprise
+# des lors que la ligne porte un marqueur de reponse. Une reserve NEUVE
+# emise DANS une reponse (« Reponse au point 🟡 : a corriger avant merge »)
+# partage cette forme et disparait donc de l'analyse. La regle (D) ne peut
+# pas distinguer une levee d'une levee-sans-levee : le discriminant serait
+# la queue semantique de la ligne (« traitee » vs « a corriger »), ce que
+# l'organe refuse de faire (un mot de contexte ne prouve pas une
+# intention). PARADE : une reserve neuve s'emet dans un commentaire
+# DISTINCT, sans marqueur de reponse sur la ligne. La surface est
+# verrouillee par un test (`test_22911_surface_connue_reserve_neuve_dans_reponse`
+# dans
+# scripts/tests/test_check_unaddressed_nits_22911.py) pour qu'un changement
+# du comportement soit visible.
+# #22911 — Position J (E) LIBELLE EN GRAS : une étiquette de réponse point par
+# point ouvre la ligne en gras et referme son glyphe entre parenthèses —
+# « **Live-read freshness (🟡)** : ... ». Le glyphe y désigne l'item nommé,
+# il ne l'émet pas : l'émission Hermes OUVRE la ligne, elle ne se cache pas
+# dans un libellé refermé. Trois conditions cumulatives : le libellé gras
+# s'ouvre en tête de ligne, il reste ouvert, et le glyphe ferme la
+# parenthèse.
+_GLYPH_LABEL_PAREN_RE = re.compile(r"\(\s*$")
+
+
+def _is_label_paren_mention(prefix: str, body: str, m: re.Match[str]) -> bool:
+    """Le glyphe referme un libellé en gras ouvert en tête de ligne (#22911 E)."""
+    stripped = prefix.lstrip()
+    if not stripped.startswith("**"):
+        return False
+    if stripped.count("**") % 2 == 0:
+        return False
+    if not _GLYPH_LABEL_PAREN_RE.search(prefix):
+        return False
+    return body[m.end():m.end() + 1] == ")"
+
 
 def _strip_glyphe_mentions(body: str) -> str:
     """Neutralise les glyphes de sévérité en position de mention (Position J, #14277).
 
     Chaque glyphe (🟡/🔴) dont la ligne porte un méta-nom le nommant (A),
-    qui est un item d'énumération `,`/`+` (B), ou qui est immédiatement
-    précédé d'un déterminant/possessif — un référent, (C) #16688 — est
+    qui est un item d'énumération `,`/`+` (B), qui est immédiatement
+    précédé d'un déterminant/possessif — un référent, (C) #16688 — qui est
+    nommé par un mot de reprise adjacent sur une ligne qui porte un marqueur
+    de réponse — une réponse, (D) #22911 — ou qui referme un libellé en gras
+    ouvert en tête de ligne (E) #22911, est
     remplacé par une espace : c'est une mention, pas une émission. Le glyphe
     en tête de ligne (en-tête de verdict Hermes) reste vivant.
     """
@@ -1537,7 +1648,10 @@ def _strip_glyphe_mentions(body: str) -> str:
         prefix = body[line_start:m.start()]
         if (_GLYPH_META_NOUN_RE.search(prefix)
                 or _GLYPH_ENUM_PRECEDER_RE.search(prefix)
-                or _GLYPH_DETERMINER_PRECEDER_RE.search(prefix)):
+                or _GLYPH_DETERMINER_PRECEDER_RE.search(prefix)
+                or (_GLYPH_REPLY_MARKER_RE.search(prefix)
+                    and _GLYPH_RESPONSE_NOUN_RE.search(prefix))
+                or _is_label_paren_mention(prefix, body, m)):
             out[m.start()] = " "
     return "".join(out)
 
@@ -3914,40 +4028,63 @@ def _resolve_absent_sha_state(data: dict, cap: int = 5) -> dict[str, dict]:
 # carte vide, arbre tronque, statut non reconnu) y retombe.
 
 
-def _rebase_preserved_by_path(rewound_files, head_blobs) -> bool:
+# #20066 -- trois etats, pas deux. « blob different » et « aucun blob
+# comparable » appellent le MEME refus, mais pas la meme lecture : le premier
+# dit que le travail a bouge, le second dit seulement que l'organe n'a pas pu
+# regarder. Les confondre fait affirmer a l'organe une comparaison qu'il n'a
+# pas faite.
+_BLOB_PRESERVED = "preserved"
+_BLOB_DIFFERS = "differs"
+_BLOB_UNCOMPARABLE = "uncomparable"
+
+
+def _rebase_blob_state(rewound_files, head_blobs) -> str:
     """#15973 : chaque chemin touche par le commit rembobine doit se
     retrouver dans la tete, byte pour byte -- modification presente au meme
     blob, deletion toujours absente, rename installe au nouveau chemin et
-    parti de l'ancien. Fail-closed sur toute donnee manquante ou statut non
-    reconnu : un organe de merge-gate ne devient jamais permissif sur un
-    doute, c'est le refus #15556 qui reste la reponse par defaut.
+    parti de l'ancien.
+
+    Rend `_BLOB_PRESERVED` (identite prouvee), `_BLOB_DIFFERS` (au moins un
+    blob compare et different) ou `_BLOB_UNCOMPARABLE` (aucun blob compare :
+    donnee absente, carte vide, liste tronquee, statut inconnu). Fail-closed
+    dans les trois cas autres que `preserved` : un organe de merge-gate ne
+    devient jamais permissif sur un doute, c'est le refus #15556 qui reste la
+    reponse par defaut. #20066 : le troisieme etat existe pour que le LIBELLE
+    du refus n'annonce jamais une mesure qui n'a pas eu lieu.
     """
     if not rewound_files or not head_blobs:
-        return False
+        return _BLOB_UNCOMPARABLE
     # L'API commits plafonne `files` a 300 entrees sans drapeau de
     # troncature : au-dela, la verification ne porterait qu'un sous-ensemble
     # -- une identite demi-prouvee est un fail-open, pas une preuve.
     if len(rewound_files) >= 300:
-        return False
+        return _BLOB_UNCOMPARABLE
     for filename, blob, status, previous in rewound_files:
         if not filename or not blob:
-            return False
+            return _BLOB_UNCOMPARABLE
         if status == "removed":
             if filename in head_blobs:
-                return False
+                return _BLOB_DIFFERS
             continue
         if status == "renamed":
             if not previous or previous in head_blobs:
-                return False
+                return _BLOB_DIFFERS
             if head_blobs.get(filename) != blob:
-                return False
+                return _BLOB_DIFFERS
             continue
         if status in ("added", "modified", "changed", "copied"):
             if head_blobs.get(filename) != blob:
-                return False
+                return _BLOB_DIFFERS
             continue
-        return False  # statut inconnu : refus conservateur
-    return True
+        return _BLOB_UNCOMPARABLE  # statut inconnu : refus conservateur
+    return _BLOB_PRESERVED
+
+
+def _rebase_preserved_by_path(rewound_files, head_blobs) -> bool:
+    """Contrat booleen de #15973, conserve : `True` seulement si l'identite
+    par chemin est PROUVEE. Les deux etats non prouvables (`differs`,
+    `uncomparable`) rendent `False`, comme avant #20066."""
+    return _rebase_blob_state(rewound_files, head_blobs) == _BLOB_PRESERVED
 
 
 def _pr_head_oid(data: dict) -> str:
@@ -4357,7 +4494,7 @@ def classify(author: str, body: str) -> str | None:
         return None  # verdict humain positif (APPROVE / APPROVED / LGTM) SANS reserve vivante : equivalent state:APPROVED
     if not live_concern and has_live_marker(body, POSITIVE_MARKERS):
         return None  # approbation sans reserve vivante : la review conclut, ne reserve pas
-    if stripped.startswith(AGENT_PREFIXES):
+    if stripped.startswith(CLASSIFY_AGENT_PREFIXES):
         # Tag de protocole agent : informatif, pas un nit — sauf s'il porte une reserve.
         return "BOT-CONCERN" if live_concern else None
     # #19810 — proxy CRLF serre : un corps CRLF ne tient HUMAN que s'il porte
@@ -4642,6 +4779,54 @@ def _override_scopes_reserve(lift_body: str, nit_author: str) -> bool:
         return _scope_lifted_sentence(
             body, re.compile(r"(?i)\b(?:hermes|nanoclaw)\b"))
     return False
+
+
+def _diag_loop(pr_data: dict, cutoff: datetime) -> dict:
+    """#15511 (P1) : plus longue serie de [DIAG] sans [ACTION] intercale.
+
+    Mesure fondatrice : PR #14821 -- 31 commentaires / 68 101 caracteres
+    d'infra-diagnostic sur 5 jours, pour un livrable qui n'avait pas bouge
+    depuis le commit du premier jour. Le pompage se detecte a la structure,
+    pas au contenu : seul un commentaire tague [ACTION] interrompt la
+    serie ; un commentaire non tague ou tague [ASK] est TRANSPARENT
+    (« sans [ACTION] intercale » -- l'issue P1 mot pour mot). Les bots et
+    les commentaires posterieurs au cutoff sont exclus, comme partout
+    ailleurs dans l'organe.
+    """
+    tagged = []
+    for c in pr_data.get("comments") or []:
+        login = (c.get("author") or {}).get("login", "")
+        if login in BOT_LOGINS:
+            continue
+        body = (c.get("body") or "").strip()
+        when = ts(c.get("createdAt"))
+        if not body or when is None or when > cutoff:
+            continue
+        first = next((ln.strip() for ln in body.splitlines() if ln.strip()), "")
+        m = COMMENT_TAG_RE.match(first)
+        if m:
+            tagged.append((m.group(1), login, when, first))
+    best_run, best_authors, best_at, best_line = 0, "", None, ""
+    run, authors = 0, []
+    for tag, login, when, first in tagged:
+        if tag == "ACTION":
+            run, authors = 0, []
+            continue
+        if tag != "DIAG":
+            continue  # [ASK] : transparent, ni serie ni interruption
+        run += 1
+        authors.append(login)
+        if run > best_run:
+            best_run, best_authors, best_at, best_line = (
+                run, ", ".join(dict.fromkeys(authors)), when, first)
+    return {
+        "max_run": best_run,
+        "authors": best_authors,
+        "at": best_at.isoformat() if best_at else None,
+        "line": best_line,
+        "diag_count": sum(1 for t, *_ in tagged if t == "DIAG"),
+        "action_count": sum(1 for t, *_ in tagged if t == "ACTION"),
+    }
 
 
 def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
@@ -5086,6 +5271,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         for (t, lifter, lift_body) in explicit_lifts:
             refused = None
             refused_known_change = False
+            refused_blob_state = None
             warned = None
             artifact = None
             for sha in sorted(_cited_shas(lift_body)):
@@ -5118,11 +5304,13 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
                     # la tete). Fail-closed : sans donnees ou sans identite,
                     # le refus #15556 reste la reponse.
                     sha_files = rewound_files_map.get(sha) or []
-                    if _rebase_preserved_by_path(sha_files, head_blobs):
+                    blob_state = _rebase_blob_state(sha_files, head_blobs)
+                    if blob_state == _BLOB_PRESERVED:
                         if artifact is None:
                             artifact = (sha, "rebase_preserved")
                         continue
                     refused = sha
+                    refused_blob_state = blob_state
                     if tree and head_tree:
                         refused_known_change = True
                     break
@@ -5130,7 +5318,8 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
             if refused:
                 voided_lifts.append(
                     {"author": lifter, "at": t.isoformat(), "sha": refused,
-                     "tree_differs": refused_known_change})
+                     "tree_differs": refused_known_change,
+                     "blob_state": refused_blob_state})
             else:
                 kept_lifts.append((t, lifter, lift_body))
                 if artifact:
@@ -5484,6 +5673,22 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
     before_lc = [u for u in unevaluated if not u["after_last_commit"]]
     to_read = sorted(after_lc + before_lc[-3:], key=lambda u: u["at"] or "")
 
+    # #15511 (P1) -- boucle de diagnostic sans action : > 3 [DIAG]
+    # consecutifs sans [ACTION] intercale. Ne lit QUE les commentaires
+    # tagues (contrat d'emission) : rien ne change pour une PR dont
+    # personne n'utilise la taxonomie -- le detecteur rend max_run=0.
+    diag_loop = _diag_loop(pr_data, cutoff)
+    if diag_loop["max_run"] > DIAG_LOOP_LIMIT:
+        at_dt = ts(diag_loop["at"])
+        blocking.append({
+            "kind": "DIAG-LOOP", "author": diag_loop["authors"],
+            "src": "comment", "channel": "comment",
+            "at": diag_loop["at"] or "?",
+            "gap_hours": (round((cutoff - at_dt).total_seconds() / 3600.0, 1)
+                          if at_dt else None),
+            "excerpt": _excerpt(diag_loop["line"]),
+        })
+
     return {
         "pr": pr_data.get("number"),
         "title": (pr_data.get("title") or "")[:110],
@@ -5495,6 +5700,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         "rewind_artifacts": rewind_artifacts,
         "unevaluated": to_read,
         "unevaluated_total": len(unevaluated),
+        "diag_loop": diag_loop,
     }
 
 
@@ -5592,9 +5798,18 @@ def _print_sha_notes(result: dict) -> None:
               f"rembobiné par un push muet ({why}) — preuve conservée, "
               f"non bloquant")
     for v in result.get("voided_lifts") or []:
-        detail = (" — l'arbre DIFFÈRE de la tête : blob modifié depuis la levée, fond non vérifié"
-                  if v.get("tree_differs")
-                  else " — arbre non comparable, refus conservateur")
+        # #20066 -- `tree_differs` dit que les deux arbres sont connus et
+        # differents ; il ne dit pas qu'un BLOB a ete compare. Quand
+        # `sha_files` est vide (pas d'entree pour ce SHA), ou la carte de la
+        # tete vide, `_rebase_blob_state` rend `uncomparable` : le refus est
+        # le meme, le libelle doit dire qu'aucun blob n'a ete regarde.
+        if not v.get("tree_differs"):
+            detail = " — arbre non comparable, refus conservateur"
+        elif v.get("blob_state") == _BLOB_UNCOMPARABLE:
+            detail = (" — l'arbre DIFFÈRE de la tête : aucun blob comparable, "
+                      "refus conservateur")
+        else:
+            detail = (" — l'arbre DIFFÈRE de la tête : blob modifié depuis la levée, fond non vérifié")
         print(f"  [!] NON LEVE — levee de {v['author']} à {v['at']} : cite "
               f"{v['sha']}, absent des commits de la PR (résolu côté serveur, "
               f"mais rembobiné par un push ultérieur){detail}")

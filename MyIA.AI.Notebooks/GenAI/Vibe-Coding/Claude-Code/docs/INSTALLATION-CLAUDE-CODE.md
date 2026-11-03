@@ -98,51 +98,23 @@ Cliquez sur ce lien : [Installer Claude Code pour VS Code](vscode:extension/anth
 
 ## Configuration avec OpenRouter (couche d'accès aux modèles — distincte de l'installation)
 
-**Condition qui sélectionne cette voie d'accès** : vous passez par OpenRouter (clé fournie par le formateur) plutôt que par un compte Anthropic direct. Ce n'est pas un second chemin d'installation : l'outil `claude` installé ci-dessus est le même, seule la couche d'accès aux modèles change. Le proxy est un script Node issu d'un dépôt Git (zéro dépendance) : Node.js est requis pour cette brique, même si Claude Code a été installé nativement.
+**Condition qui sélectionne cette voie d'accès** : vous passez par OpenRouter (clé fournie par le formateur) plutôt que par un compte Anthropic direct. Ce n'est pas un second chemin d'installation : l'outil `claude` installé ci-dessus est le même, seule la couche d'accès aux modèles change. **Aucun proxy n'est à installer** : OpenRouter sert nativement le protocole Anthropic.
 
-> **Diagnostic du proxy** : vérifiez qu'il tourne avec `curl http://127.0.0.1:8899/api/v1/models` — une réponse JSON avec la liste des modèles confirme qu'il est actif. **Symptôme s'il ne tourne pas** : chaque appel modèle de Claude Code échoue avec une erreur de connexion (`fetch failed` / `connection refused`) vers `http://127.0.0.1:8899` — y compris des jours plus tard si le proxy a été lancé détaché en arrière-plan et que la machine a redémarré. Rattachez d'abord la panne au proxy avant de soupçonner votre clé ou votre installation.
+### Étape 0 : rien à installer — OpenRouter parle le protocole Anthropic
 
-### Étape 0 : Installer le proxy OpenRouter (Requis pour l'accès OpenRouter)
+> **Mesure du 2026-10-29.** La version précédente de ce guide demandait de cloner `openrouter-proxy` et de lancer `node proxy.js`, au motif que « les requêtes OpenRouter ne sont pas strictement compatibles avec le protocole Anthropic ». Ce n'est plus vrai : `POST https://openrouter.ai/api/v1/messages` existe et rend ses erreurs au format Anthropic.
+>
+> | Sonde | Résultat | Ce qu'elle établit |
+> |---|---|---|
+> | `POST /api/v1/nonexistent-xyz-42` (témoin) | **404** | un chemin absent rend bien 404 |
+> | `POST /api/v1/messages` sans clé | **401** | la route **existe** |
+> | `POST /api/v1/messages`, clé invalide | `{"type":"error","error":{"type":"authentication_error",...}}` | format d'erreur **Anthropic**, pas OpenAI |
+> | `GET /api/v1/messages` | **404** | route **POST seule**, comme chez Anthropic |
+> | `claude -p` avec `ANTHROPIC_BASE_URL=https://openrouter.ai/api` | **`OK`, code retour 0** | la chaîne complète fonctionne **sans proxy** |
+>
+> Le témoin 404 est la pièce qui rend la mesure valide : sans lui, un 401 sur `/messages` ne distinguerait pas « route présente » de « tout rend 401 ».
 
-Les requêtes OpenRouter ne sont pas strictement compatibles avec le protocole Anthropic utilise par Claude Code (bug connu : réponses mal formatées, erreurs d'authentification intermittentes). Le proxy [openrouter-proxy](https://github.com/ahaostudy/openrouter-proxy) traduit les requêtes correctement.
-
-**Installation :**
-
-> **Vérifié le 2026-09-09 (#15419)** : le paquet `openrouter-proxy` **n'existe pas sur le registre npm** (`npm install -g openrouter-proxy` → 404). L'installation réelle, conforme au dépôt upstream, est un clonage Git — zéro dépendance, seul Node.js (≥ 16) est requis.
-
-```bash
-git clone https://github.com/ahaostudy/openrouter-proxy.git
-```
-
-**Lancement :**
-
-```bash
-# Lance le proxy sur le port 8899 par defaut
-cd openrouter-proxy
-node proxy.js
-```
-
-Le proxy doit tourner en arrière-plan tant que vous utilisez Claude Code. Verifiez qu'il fonctionne :
-
-```bash
-curl http://127.0.0.1:8899/api/v1/models
-```
-
-Une réponse JSON avec la liste des modèles confirme que le proxy est actif.
-
-**Lancement automatique (optionnel) :**
-
-Windows - Ajoutez a votre profil PowerShell (`notepad $PROFILE`), en adaptant le chemin du clone :
-
-```powershell
-Start-Process -WindowStyle Hidden -FilePath "node" -ArgumentList "$HOME\openrouter-proxy\proxy.js"
-```
-
-macOS / Linux - Ajoutez a `~/.zshrc` ou `~/.bashrc` :
-
-```bash
-(node ~/openrouter-proxy/proxy.js &>/dev/null &)
-```
+**Ce qu'il reste à faire** : renseigner `ANTHROPIC_BASE_URL=https://openrouter.ai/api` avec votre clé OpenRouter (Étape 2 et suivantes). Si vous avez déjà installé le proxy, arrêtez-le et supprimez le clone — il n'a plus d'usage pour OpenRouter.
 
 ### Étape 1 : Obtenir la Clé API OpenRouter
 
@@ -171,7 +143,7 @@ Contenu :
 ```json
 {
   "env": {
-    "ANTHROPIC_BASE_URL": "http://127.0.0.1:8899/api",
+    "ANTHROPIC_BASE_URL": "https://openrouter.ai/api",
     "ANTHROPIC_AUTH_TOKEN": "sk-or-v1-VOTRE_CLE_OPENROUTER",
     "ANTHROPIC_API_KEY": "",
     "ANTHROPIC_DEFAULT_OPUS_MODEL": "qwen/qwen3.6-plus",
@@ -195,7 +167,7 @@ Créez `.claude/settings.json` a la racine du projet :
 ```json
 {
   "env": {
-    "ANTHROPIC_BASE_URL": "http://127.0.0.1:8899/api",
+    "ANTHROPIC_BASE_URL": "https://openrouter.ai/api",
     "ANTHROPIC_AUTH_TOKEN": "sk-or-v1-VOTRE_CLE_OPENROUTER",
     "ANTHROPIC_API_KEY": ""
   }
@@ -226,7 +198,7 @@ Si vous préférez utiliser les variables d'environnement, cette méthode foncti
 **Configuration temporaire (session actuelle) :**
 
 ```powershell
-$env:ANTHROPIC_BASE_URL = "http://127.0.0.1:8899/api"
+$env:ANTHROPIC_BASE_URL = "https://openrouter.ai/api"
 $env:ANTHROPIC_AUTH_TOKEN = "VOTRE_CLE_OPENROUTER"
 $env:ANTHROPIC_API_KEY = ""
 ```
@@ -247,7 +219,7 @@ Ajoutez les lignes suivantes :
 # ============================================
 
 # Configuration de base OpenRouter
-$env:ANTHROPIC_BASE_URL = "http://127.0.0.1:8899/api"
+$env:ANTHROPIC_BASE_URL = "https://openrouter.ai/api"
 $env:ANTHROPIC_AUTH_TOKEN = "sk-or-v1-VOTRE_CLE_OPENROUTER"
 $env:ANTHROPIC_API_KEY = ""
 
@@ -300,7 +272,7 @@ Ajoutez les lignes suivantes a la fin du fichier :
 # ============================================
 
 # Configuration de base OpenRouter
-export ANTHROPIC_BASE_URL="http://127.0.0.1:8899/api"
+export ANTHROPIC_BASE_URL="https://openrouter.ai/api"
 export ANTHROPIC_AUTH_TOKEN="sk-or-v1-VOTRE_CLE_OPENROUTER"
 export ANTHROPIC_API_KEY=""
 
@@ -333,7 +305,7 @@ Vous devriez voir :
 ```text
 Connected to OpenRouter
 Model: minimax/minimax-m2.7 (sonnet alias)
-Base URL: http://127.0.0.1:8899/api
+Base URL: https://openrouter.ai/api
 ```
 
 #### Via VS Code Extension
@@ -776,7 +748,7 @@ Claude générera automatiquement un fichier `CLAUDE.md` adapte a votre projet.
 Verifiez que les variables d'environnement sont bien definies :
 
 ```bash
-echo $ANTHROPIC_BASE_URL       # Doit afficher http://127.0.0.1:8899/api
+echo $ANTHROPIC_BASE_URL       # Doit afficher https://openrouter.ai/api
 echo $ANTHROPIC_AUTH_TOKEN     # Doit afficher votre cle sk-or-v1-...
 echo $ANTHROPIC_API_KEY        # Doit afficher une ligne vide
 ```

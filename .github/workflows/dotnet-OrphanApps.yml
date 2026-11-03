@@ -1,9 +1,10 @@
 name: dotnet-OrphanApps
 
-# Tranche 3 de #14696 (orphelins .sln) : les 8 apps .NET sans projet de
+# Tranche 3 de #14696 (orphelins .sln) : les 9 apps .NET sans projet de
 # tests, exclues du glob parent par #14695 — cluster Aspire Integrations-DotNet
 # (AgentGuard x3, IntegrationTests, StreamingAgent.App), CopilotAgent.App,
-# LiveOrderApp (csharprepl demo), InferNetVoi (Probas).
+# LiveOrderApp (csharprepl demo), InferNetVoi (Probas), ScrutorLab (lab
+# minimal API de la serie Scrutor).
 #
 # Aucune ne porte de projet xunit : le garde est BUILD-ONLY (dotnet build par
 # csproj, echec au premier code d'erreur) — pas de floor-guard de collecte
@@ -33,7 +34,6 @@ on:
       - '.github/workflows/dotnet-OrphanApps.yml'
       - 'MyIA.CoursIA.sln'
   pull_request:
-    branches: [main]
     types: [opened, synchronize, edited, reopened]
     paths:
       - 'MyIA.AI.Notebooks/GenAI/Integrations-DotNet/**'
@@ -60,15 +60,32 @@ env:
     MyIA.AI.Notebooks/GenAI/Integrations-DotNet/CopilotSDK/CopilotAgent.App/CopilotAgent.App.csproj
     MyIA.AI.Notebooks/GenAI/Vibe-Coding/docs/csharprepl-demo/LiveOrderApp.csproj
     MyIA.AI.Notebooks/Probas/DecisionTheory/voi/InferNetVoi/InferNetVoi.csproj
+    MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Scrutor/ScrutorLab/ScrutorLab.csproj
 
 jobs:
   dotnet-orphanapps-linux:
-    name: OrphanApps build (ubuntu-latest, 8 csproj)
-    runs-on: ubuntu-latest
+    name: OrphanApps build (ubuntu-latest, 9 csproj)
+    # 2026-10-28 (#23053 b, lane myia-ai-01:CoursIA-2) : forme hybride de
+    # debordement (#22461 phase A) -- PR meme-depot ET vars.CI_OVERFLOW_LOCAL
+    # == 'true' -> jambe Linux locale ; sinon `ubuntu-latest` (etat du 27/10).
+    # Retour arriere = variable `false` ou supprimee, sans toucher ce fichier.
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
     timeout-minutes: 25
 
     steps:
       - uses: actions/checkout@v4
+
+      # Le pool auto-heberge tourne en uid 1001, sans sudo ni dpkg :
+      # `setup-dotnet` y echoue sur son repertoire d'installation par
+      # defaut ("mkdir: cannot create directory '/usr/share/dotnet':
+      # Permission denied" -- job 122655198139, 2026-10-28). Meme cause,
+      # meme remede que le workflow Windows self-hosted deja en service
+      # (run 37396937471) : l'installation est dirigee vers le tool-cache
+      # du runner, inscriptible par le compte et persistant entre jobs.
+      # La branche hebergee reste intacte (elle ecrit dans /usr/share/dotnet).
+      - name: Route dotnet installs to the runner tool cache
+        if: github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true'
+        run: echo "DOTNET_INSTALL_DIR=$RUNNER_TOOL_CACHE/dotnet" >> "$GITHUB_ENV"
 
       - uses: actions/setup-dotnet@v4
         with:
@@ -77,7 +94,7 @@ jobs:
             9.0.x
             10.0.x
 
-      - name: Build the eight orphan apps
+      - name: Build the nine orphan apps
         run: |
           for csproj in $ORPHAN_APPS; do
             echo "--- $csproj"
@@ -85,7 +102,7 @@ jobs:
           done
 
   dotnet-orphanapps-windows:
-    name: OrphanApps build (windows-latest, 8 csproj)
+    name: OrphanApps build (windows-latest, 9 csproj)
     runs-on: windows-latest
     timeout-minutes: 25
 
@@ -99,7 +116,7 @@ jobs:
             9.0.x
             10.0.x
 
-      - name: Build the eight orphan apps
+      - name: Build the nine orphan apps
         shell: bash
         run: |
           for csproj in $ORPHAN_APPS; do

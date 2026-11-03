@@ -5,4 +5,5 @@ françaises (convention i18n du dépôt, pattern #4980 : l'agrégateur racine
 n'a pas de sibling `_en`).
 -/
 
+import Riemann200.LiminfForme
 import Riemann200.Memoire1859

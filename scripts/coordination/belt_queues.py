@@ -137,18 +137,49 @@ def lane_served_since(payload: dict, lane: str, since: str,
 
 
 def measure_plates(previous: dict, fetch_issue, pr_states: dict[int, str] | None = None) -> dict[str, dict]:
-    """Ce qui reste dans l'assiette de chaque lane depuis la repartition precedente."""
+    """Ce qui reste dans l'assiette de chaque lane depuis la repartition precedente.
+
+    Une issue **illisible** n'interrompt pas la mesure (#23115) : l'echec est
+    consigne et nomme, l'issue **reste en assiette** (fail-closed — une issue
+    qu'on n'a pas pu lire ne peut pas etre declaree servie), et les autres
+    items sont mesures normalement. Seul le binaire ``gh`` absent remonte
+    (c'est un incident global, pas un incident de lecture).
+    """
     since = previous["assigned_at"]
     plates = {}
     for lane, info in previous["lanes"].items():
         remaining = []
+        unreadable = []
         for it in info["queue"]:
-            payload = fetch_issue(it["number"])
+            try:
+                payload = fetch_issue(it["number"])
+            except (subprocess.CalledProcessError, json.JSONDecodeError) as exc:
+                unreadable.append({"number": it["number"], "error": error_label(exc)})
+                remaining.append(it)
+                continue
             if payload.get("state", "OPEN").upper() != "OPEN" or lane_served_since(payload, lane, since, pr_states):
                 continue
             remaining.append(it)
-        plates[lane] = {"assigned": len(info["queue"]), "remaining": remaining, "arc": info.get("arc")}
+        plates[lane] = {"assigned": len(info["queue"]), "remaining": remaining,
+                        "arc": info.get("arc"), "unreadable": unreadable}
     return plates
+
+
+def error_label(exc: BaseException) -> str:
+    """Cause courte et nommable d'un echec de lecture (#23115).
+
+    Le message doit permettre de reconnaitre l'incident sans ouvrir les
+    journaux : numero de l'issue cote appelant, cause ici.
+    """
+    if isinstance(exc, subprocess.CalledProcessError):
+        stderr = (exc.stderr or "").strip().splitlines()
+        tail = stderr[-1][:160] if stderr else ""
+        return f"gh rc={exc.returncode}" + (f" : {tail}" if tail else "")
+    if isinstance(exc, json.JSONDecodeError):
+        return f"json illisible ({exc.msg})"
+    if isinstance(exc, FileNotFoundError):
+        return "binaire gh introuvable"
+    return type(exc).__name__
 
 
 def gh_issue_state(number: int) -> dict:
@@ -159,21 +190,38 @@ def gh_issue_state(number: int) -> dict:
 
 
 def board(belt: dict, lanes: list[str], previous: dict | None, now: datetime,
-          fetch_issue=gh_issue_state, recette=None) -> dict:
+          fetch_issue=None, recette=None) -> dict:
+    # `fetch_issue` est resolu a l'appel (et non a la definition) pour que le
+    # defaut reste le vrai lecteur `gh` tout en restant substituable en test.
+    fetch_issue = fetch_issue or gh_issue_state
     plates = measure_plates(previous, fetch_issue) if previous else {}
     on_plate = {it["number"] for p in plates.values() for it in p["remaining"]}
     picks = [p for p in belt.get("picks", []) if p["number"] not in on_plate]
+    incidents: list[dict] = []
     out_lanes = {}
     for lane in list(dict.fromkeys(lanes + list(plates))):
         plate = plates.get(lane)
+        for inc in (plate["unreadable"] if plate else []):
+            incidents.append({"kind": "issue", "lane": lane, **inc})
+        rec = None
+        if recette:
+            try:
+                rec = recette(lane)
+            except (subprocess.CalledProcessError, json.JSONDecodeError) as exc:
+                # La recette d'une lane ne doit pas tuer le tableau des autres
+                # (#23115) : elle est declaree illisible, elle est nommee.
+                rec = {"verdict": "UNKNOWN", "reason": error_label(exc)}
+                incidents.append({"kind": "recette", "lane": lane, "number": None,
+                                  "error": error_label(exc)})
         out_lanes[lane] = {
             "assigned": plate["assigned"] if plate else 0,
             "remaining": plate["remaining"] if plate else [],
             "arc": plate["arc"] if plate else None,
-            "recette": recette(lane) if recette else None,
+            "recette": rec,
         }
     return {"drawn": len(belt.get("picks", [])), "families": group_picks(picks, now), "lanes": out_lanes,
-            "previous_at": previous["assigned_at"] if previous else None}
+            "previous_at": previous["assigned_at"] if previous else None,
+            "unreadable": incidents}
 
 
 def render_board(b: dict) -> str:
@@ -192,6 +240,12 @@ def render_board(b: dict) -> str:
         rec = info["recette"] or {}
         rec_txt = f" | recette {rec.get('verdict')}" + (f" #{rec['issue']}" if rec.get("verdict") == "DUE" else "")
         lines.append(f"  {lane} : {served}/{info['assigned']} rendues, assiette {rest}{rec_txt if rec else ''}")
+    unreadable = b.get("unreadable") or []
+    if unreadable:
+        lines += ["", "# Lectures impossibles (la mesure a echoue pour ces la)"]
+        for inc in unreadable:
+            what = f"#{inc['number']}" if inc.get("number") else "tour de recette"
+            lines.append(f"  {inc['lane']} : {what} — {inc['error']}")
     return "\n".join(lines)
 
 
@@ -272,7 +326,17 @@ def main(argv: list[str] | None = None) -> int:
                 return rd.run(lane, rd.DEFAULT_WINDOW_DAYS, now, list_issues=lambda: listed, fetch_issue=fetch)
         result = board(_read_json(args.belt_json), lanes, _load_previous(args.previous), now, recette=recette)
     except (subprocess.CalledProcessError, FileNotFoundError, json.JSONDecodeError) as exc:
-        print(f"UNKNOWN: belt_queues injoignable ({type(exc).__name__})")
+        print(f"UNKNOWN: belt_queues injoignable ({type(exc).__name__}) — {error_label(exc)}")
+        return 2
+    unreadable_issues = [i for i in result.get("unreadable") or [] if i["kind"] == "issue"]
+    assigned = sum(info.get("assigned", 0) for info in result["lanes"].values())
+    if assigned and len(unreadable_issues) >= assigned:
+        # Toutes les assiettes sont illisibles : le tableau ne mesurerait rien.
+        # UNKNOWN honnete, nomme — plutot qu'un tableau vide qui se lit comme
+        # « aucune issue servie » (#23115).
+        first = unreadable_issues[0]
+        print(f"UNKNOWN: belt_queues illisible ({len(unreadable_issues)}/{assigned} issues de "
+              f"l'assiette non lisibles) — premiere : #{first['number']} ({first['error']})")
         return 2
     print(json.dumps(result, ensure_ascii=False, indent=1) if args.json else render_board(result))
     return 0

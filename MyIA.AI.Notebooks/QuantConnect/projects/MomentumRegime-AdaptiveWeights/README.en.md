@@ -89,11 +89,10 @@ difference.
 **Choice of the default.** The protocol provided that `intent` becomes the default mode if the
 defect was observed under either of two criteria: under `base`, fewer than half of the calls
 see SectorMomentum (0 of 403); or the gross exposure of `base` is more than 10 points below
-that of `intent` (0.15 vs 1.00).
-Le compteur constate le filtrage sous `base`, mais reste à zéro dans les deux modes : il ne
-vérifie pas la reconstruction. La preuve qui discrimine les modes est l'exposition brute,
-confortée par les corrélations du tableau. Le changement rend le code conforme à ce qu'annonce
-`MultiStrategyPCM` ; il ne crée pas d'avantage démontré.
+that of `intent` (0.15 vs 1.00). The counter shows the filtering under `base`, but stays at
+zero in both modes: it does not check the reconstruction. The evidence that tells the modes
+apart is the gross exposure, supported by the correlations of the table. The change makes the
+code match what `MultiStrategyPCM` announces; it creates no demonstrated advantage.
 
 **Limits.**
 - The variant (sleeves, QQQ, return weights) was chosen after seeing the out-of-sample Sharpe
@@ -181,7 +180,27 @@ The variant dramatically underperforms the baseline. Root causes:
 
 - main.py - Strategy (T85/RS15 allocation), instrumented for measure #19759
 - alpha_models.py - SectorMomentum + RegimeSwitching alpha models
-- `SharedPCM/pouches_pcm.py` (bibliothèque de projet QC) — `MultiStrategyPouchesPCM`, PCM par poches canonique importé par `main.py` (extraction #19821 brique 1, tranche dedup)
+- `SharedPCM/pouches_pcm.py` (QC project library) — `MultiStrategyPouchesPCM`, the canonical pouch PCM imported by `main.py` (extraction #19821 brick 1, dedup slice)
+
+## Shared module non-regression (#20188)
+
+Since #21140, `main.py` imports `MultiStrategyPouchesPCM` from `SharedPCM/pouches_pcm.py` instead of the local copy `portfolio_construction.py`. Two QC Cloud backtests run on 2026-10-26, with the default parameters and the window 2018-01-01 → 2025-01-01, check that this change alters no order:
+
+- **A**: the `main` code at commit `54f9b9eec1`, with the shared module;
+- **B**: the same `main.py` and `alpha_models.py`, with the old `portfolio_construction.py` copy taken at the commit before the migration (`fb3d05db0a^`). The argument the old copy does not know (`watch_source="SectorMomentum"`) is removed from the call, and two read-only properties expose its diagnostic counters under the names `main.py` reads.
+
+A and B carry the same instrumentation, which places no order. It records the portfolio value every day at midnight, warm-up included (252 sessions). At the end of the backtest it computes a SHA-256 fingerprint per year of the orders (id, date, security, quantity, status, price) and of the recorded values.
+
+| | A (shared module) | B (old copy) |
+|---|---|---|
+| Orders | 376 | 376 |
+| Recorded values | 2,924 | 2,924 |
+| Last recorded value | 183,024.44 | 183,024.44 |
+| Sharpe (QC) | 0.303 | 0.303 |
+| CAGR | 8.889% | 8.889% |
+| Max drawdown | 28.0% | 28.0% |
+
+The yearly fingerprints are equal: 8 of 8 for the orders, 9 of 9 for the values. The 27 QC statistics are equal, turnover included. The diagnostic counters of the portfolio construction model are equal as well. The migration therefore does not change the project's behaviour. Traces kept outside the repository: `QC-traces/20188-nr/`.
 
 ## References
 

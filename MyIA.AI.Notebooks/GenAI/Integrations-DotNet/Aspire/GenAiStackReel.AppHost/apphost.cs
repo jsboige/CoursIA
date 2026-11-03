@@ -12,7 +12,7 @@ using Aspire.Hosting;
 //     deviennent des ressources de premier plan dans le dashboard, sans être
 //     recréés.
 //       - comfyui : génération d'images Qwen (po-2023, 127.0.0.1:8188)
-//       - vllm    : LLM qwen3.6-35b-a3b auto-hébergé (ai-01, LAN :5002),
+//       - vllm    : LLM swift-1.5-27b auto-hébergé (ai-01, LAN :5002),
 //                   endpoint OpenAI-compatible partagé par toute la flotte
 //
 //  2. Conteneur ORCHESTRABLE — le service léger de la même pile, lazy-load,

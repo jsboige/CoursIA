@@ -29,10 +29,30 @@ The portfolio construction model (`MultiStrategyPCM`) splits capital between the
 
 ## Files
 
-- `main.py`: Algorithm setup with CompositeAlpha and MultiStrategyPCM
+- `main.py`: Algorithm setup with CompositeAlpha and MultiStrategyPouchesPCM
 - `alpha_models.py`: FamaFrenchAlpha and AllWeatherAlpha classes
-- `portfolio_construction.py`: MultiStrategyPCM for capital allocation per strategy
+- `SharedPCM/pouches_pcm.py` (QC project library): `MultiStrategyPouchesPCM`, the canonical pouch PCM imported by `main.py` (extraction #19821 brick 1)
 - `quantbook.ipynb`: Research notebook with backtest analysis
+
+## Shared module non-regression (#20188)
+
+Since #21134, `main.py` imports `MultiStrategyPouchesPCM` from `SharedPCM/pouches_pcm.py` instead of the local copy `portfolio_construction.py`. Two QC Cloud backtests run on 2026-10-26, with the default parameters and the window 2018-01-01 → 2025-01-01, check that this change alters no order:
+
+- **A**: the `main` code at commit `54f9b9eec1`, with the shared module;
+- **B**: the same `main.py` and `alpha_models.py`, with the old `portfolio_construction.py` copy taken at the commit before the migration (`777f502a2a^`). The two arguments the old copy does not know (`additive=True`, `algorithm=self`) are removed from the call. The two slices share no security, so `additive=True` should change nothing, and this is what the measurement checks.
+
+A and B carry the same instrumentation, which places no order. It records the portfolio value every day at midnight, warm-up included (252 sessions). At the end of the backtest it computes a SHA-256 fingerprint per year of the orders (id, date, security, quantity, status, price) and of the recorded values.
+
+| | A (shared module) | B (old copy) |
+|---|---|---|
+| Orders | 517 | 517 |
+| Recorded values | 2,924 | 2,924 |
+| Last recorded value | 178,975.17 | 178,975.17 |
+| Sharpe (QC) | 0.429 | 0.429 |
+| CAGR | 8.671% | 8.671% |
+| Max drawdown | 17.6% | 17.6% |
+
+The yearly fingerprints are equal: 8 of 8 for the orders, 9 of 9 for the values. The 27 QC statistics are equal, turnover included. The migration therefore does not change the project's behaviour. Traces kept outside the repository: `QC-traces/20188-nr/`.
 
 ## Performance
 

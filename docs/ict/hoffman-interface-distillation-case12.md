@@ -3,8 +3,14 @@
 > **Statut.** Case **12** du tracker de veille/distillation #8182 (TOE ↔ conscience,
 > Hoffman FBT). Distillation **grade C documentaire** du toy formel de Hoffman
 > (D. Hoffman, *Objects of Consciousness*, 2019) formalisé par Prakash, Stephens,
-> Hoffman, Singh & Fields (2017, *Fitness Beats Truth in the Evolution of Perception*,
-> arXiv [1505.04322](https://arxiv.org/abs/1505.04322)).
+> Hoffman, Singh & Fields (2021, *Fitness Beats Truth in the Evolution of Perception*,
+> *Acta Biotheoretica* 69(3) : 319-341,
+> [doi:10.1007/s10441-020-09400-0](https://doi.org/10.1007/s10441-020-09400-0)).
+>
+> Les renvois « §4 » de cette fiche désignent la **section 4 du préprint** du
+> 30 juillet 2017 (« Comparing perceptual strategies: Truth vs. Fitness-only »),
+> seule version dont la numérotation est vérifiée ici ; c'est cette version qui est
+> archivée au gisement bibliographique, l'article publié étant sous accès payant.
 >
 > Suite directe de la case 11 (PR #14535, null de référence N=4/M=2). Cette case
 > passe à **N=8 ontic states (3 bits)** avec M=2 sensory states (compression 4:1) —
@@ -179,12 +185,12 @@ seul (évolution sur la structure complète de la map).
 - `MyIA.AI.Notebooks/IIT/ICT-Series/ict/hoffman_interface_toy_n8.py` (toy)
 - `MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests/test_hoffman_interface_toy_n8.py` (15 tests)
 - `MyIA.AI.Notebooks/IIT/ICT-Series/ict/results/hoffman_interface_toy_n8_results.json` (artefact)
-- Prakash, Stephens, Hoffman, Singh & Fields (2017), *Fitness Beats Truth in the Evolution of Perception*, arXiv:1505.04322
+- Prakash, C., Stephens, K. D., Hoffman, D. D., Singh, M. & Fields, C. (2021), *Fitness Beats Truth in the Evolution of Perception*, *Acta Biotheoretica* 69(3) : 319-341, doi:10.1007/s10441-020-09400-0
 - D. Hoffman, *Objects of Consciousness* (2019), Oxford University Press
 
 ## Crédits
 
-- **Source primaire** : Prakash et al. (2017), arXiv:1505.04322 — formalisation mathématique du toy
+- **Source primaire** : Prakash et al. (2021), *Acta Biotheoretica* 69(3) : 319-341, doi:10.1007/s10441-020-09400-0 — formalisation mathématique du toy (§4 du préprint du 30 juillet 2017, archivé au gisement)
 - **Source secondaire** : D. Hoffman, *Objects of Consciousness* (2019) — vulgarisation du théorème
 - **Carrefour** : K. Jaimungal, *Theories of Everything* (iceberg de la conscience, venue Schreiber 8 mars 2025) — lieu où l'insight Hoffman s'inscrit dans la carte TOE ↔ conscience du tracker #8182
 - **Antécédent direct** : Case 11 (PR #14535) — null mesuré 2-bit qui borne le régime où la dissociation peut être conduite. Cette case 12 valide la mise à l'échelle prédite.

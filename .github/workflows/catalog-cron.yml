@@ -110,6 +110,7 @@ jobs:
         with:
           ref: main
           fetch-depth: 0          # full history so git-derived fields are exact
+          filter: blob:none
           persist-credentials: true
 
       # Prepare the long-lived branch from origin/main. We reset (not rebase)

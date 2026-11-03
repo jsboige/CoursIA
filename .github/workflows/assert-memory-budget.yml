@@ -60,7 +60,21 @@ permissions:
 jobs:
   assert:
     name: Composition vs RAM VM
-    runs-on: ubuntu-latest
+    # 2026-10-28 (#23053 vague 3, famille (a) gardes/advisories) : forme
+    # hybride de debordement -- PR meme-depot ET vars.CI_OVERFLOW_LOCAL ==
+    # 'true' -> jambe Linux locale ; tout le reste (variable absente ou fausse,
+    # forks, push/schedule/dispatch) retombe sur ubuntu-latest. Bascule :
+    # `gh variable set CI_OVERFLOW_LOCAL --body true|false --repo jsboige/CoursIA`.
+    # Retour arriere = variable a `false` ou supprimee : routage 100 % heberge,
+    # sans toucher ce fichier. Limite : runs-on se resout a la creation du job,
+    # les runs deja en file ne bougent pas.
+    # La garde anti-fork vit DANS l'expression : aucune ligne `if:` ajoutee ni
+    # retiree.
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
+    # Borne de duree (#23053) : 70 s mesures sur le dernier succes (run
+    # 40630215290, job `assert`), soit ~4x la duree observee avec la marge d'un
+    # clone froid. Sans borne, un job herite de 360 min et fige un slot
+    # ephemerel (16 slots sur 18 tenus le 15/10).
     timeout-minutes: 5
     steps:
       - name: Checkout
@@ -97,3 +111,13 @@ jobs:
           python -m pytest scripts/tests/test_assert_memory_budget.py -v
         env:
           PYTHONIOENCODING: utf-8
+
+      # Harnais de la purge de sentinelle (#15163, #21527). Il etait HORS CI :
+      # ses cas ne tournaient qu'a la main, donc la regression du predicat
+      # (per-machine au lieu de per-checkout) n'aurait rougi nulle part. Le
+      # harnais est purement bash, lit un /proc FAKE (aucun etat reel touche)
+      # et rend en quelques secondes.
+      - name: Sentinel purge harness (per-checkout predicate)
+        run: |
+          set -uo pipefail
+          bash scripts/ci/docker/linux-runner/persist/test_sentinel_purge.sh

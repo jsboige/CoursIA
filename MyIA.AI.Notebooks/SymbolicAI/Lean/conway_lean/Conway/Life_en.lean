@@ -242,5 +242,63 @@ theorem beacon_period_two : isOscillator beacon 2 = true := by decide
 /-- The Glider is a spaceship of period 4, displacement `(1, -1)`. -/
 theorem glider_spaceship : isSpaceship glider 4 (1, -1) = true := by decide
 
+/-! ## Birth site: a local fact is enough to certify non-inertia
+
+A grid is a fixed point of the evolution (a "still life") when no cell
+changes state. To prove that a **loaded** pattern is not inert, one does
+not have to run the evolution at all: it is enough to exhibit a
+**birth site**, that is a dead cell with exactly three live Moore
+neighbors (rule B3). That cell neighbors a live cell — so it is a
+candidate for the next step — and rule B3 brings it to life: it belongs
+to `step g` without belonging to `g`, which refutes `step g = g`.
+
+This lemma is **general**: it holds for any grid of the lake, and its
+proof is **local** (no evolution is computed). That is what makes it
+applicable to large patterns, whose full evolution is not computable by
+the reference engine. -/
+
+/-- A **birth site** refutes the inertia of the grid: `step g ≠ g`.
+
+    Hypotheses:
+    - `hpabsent`: cell `p` is **dead** in `g`;
+    - `hadj`: `p` is a Moore neighbor of at least one cell of `g`,
+      hence a candidate for the next step;
+    - `hcount`: `p` has exactly three live Moore neighbors.
+
+    Rule B3 brings `p` to life; rule S23 keeps it alive. Both branches
+    of `aliveNext` therefore yield `true`: the proof does not need to
+    know whether `p` is alive or dead, only the neighbor count. -/
+theorem birthSiteNotFixed {g : Grid} {p : Int × Int}
+    (hpabsent : p ∉ g)
+    (hadj : p ∈ g.flatMap mooreNeighbors)
+    (hcount : liveNeighborCount g p = 3) :
+    step g ≠ g := by
+  intro hstep
+  -- `p` is a candidate for the next step.
+  have hpCand : p ∈ candidates g := by
+    simp only [candidates, List.mem_append]
+    exact Or.inr hadj
+  -- Rule B3 (or S23) brings `p` to life: three live neighbors suffice
+  -- in both cases.
+  have hpAlive : aliveNext g p = true := by
+    simp only [aliveNext]
+    split <;> simp [hcount]
+  -- Hence `p ∈ step g` ...
+  have hpStep : p ∈ step g := by
+    rw [step, mem_sortDedup, List.mem_filter]
+    exact ⟨hpCand, hpAlive⟩
+  -- ... while `p ∉ g`: contradiction.
+  exact hpabsent (hstep ▸ hpStep)
+
+/-- **Paired negative witness** for `birthSiteNotFixed`: the empty grid —
+    the placeholder that would stand in for an unloaded pattern — is a
+    fixed point of the evolution (`step [] = []`). It therefore **does
+    not satisfy** a "the grid is not a fixed point" witness. The pair
+    shows that the witness discriminates, rather than holding of every
+    grid: without this control, nothing would indicate that
+    `birthSiteNotFixed` tells a loaded pattern apart from a static grid. -/
+theorem emptyGridIsStillLife : step ([] : Grid) = ([] : Grid) := by
+  rfl
+
 end Life_en
 end Conway_en

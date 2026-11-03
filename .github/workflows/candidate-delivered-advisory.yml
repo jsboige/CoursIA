@@ -84,21 +84,41 @@ jobs:
         run: |
           set -u
           if [ -d "$GITHUB_WORKSPACE/.git" ]; then
-            dirty=$(git -C "$GITHUB_WORKSPACE" -c safe.directory="$GITHUB_WORKSPACE" status --porcelain 2>/dev/null | head -n 1)
+            if ! dirty=$(git -C "$GITHUB_WORKSPACE" -c safe.directory="$GITHUB_WORKSPACE" status --porcelain 2>/dev/null); then
+              echo "::warning::[heal-worktree] probe git status muet -- etat de l'arbre inconnu, reset applique quand meme (#22722)"
+              dirty=""
+            fi
+            untracked=$(printf '%s\n' "$dirty" | grep -c '^??' || true)
+            first_dirty=$(printf '%s\n' "$dirty" | head -n 1)
             if ! git -C "$GITHUB_WORKSPACE" -c safe.directory="$GITHUB_WORKSPACE" reset --hard --quiet; then
               echo "::warning::[heal-worktree] reset --hard a echoue -- le retrecissement sparse peut refuser (#22722)"
             elif [ -n "$dirty" ]; then
-              echo "::notice::[heal-worktree] arbre restaure -- le job precedent avait laisse un etat sale (${dirty}) -- le retrecissement sparse passe (#22722)"
+              echo "::notice::[heal-worktree] reset --hard effectue -- le job precedent avait laisse un etat sale (${first_dirty}) -- ${untracked} entree(s) non suivie(s) laissee(s) en place -- le retrecissement sparse passe (#22722)"
             fi
           fi
       - name: Checkout
         uses: actions/checkout@v4
         with:
           sparse-checkout-cone-mode: false
+          # Cloture module-level de `import pick_idle_grain` (l.133, #23762) :
+          # le sweep ne demarrait plus depuis 4656f964 (28/10) -- ModuleNotFoundError
+          # sur les 3 jours 29-31/10. Chaque entree est requise au chargement du
+          # module (verifie en replica sparse local : dry-run --limit 3 rc=0) ou
+          # en import paresseux sur le chemin du sweep (gh_identity).
+          # La dependance `pick_idle_grain` (et ses voisins `series_saturation`,
+          # `variation_light_cap`, `ci/fetch_merged_prs_since`) a ete SUPPRIMEE
+          # de la liste par #24082 : le predicat a ete extrait dans
+          # `released_covers`, un module sans dependance -- la liste porte donc
+          # l'UNION des deux PRs, sans les 4 modules devenus inutiles.
           sparse-checkout: |
             .github/workflows/candidate-delivered-advisory.yml
             scripts/candidate_delivered.py
+            scripts/check_run_state.py
+            scripts/gh_identity.py
+            scripts/gh_payload_cache.py
+            scripts/grain_tag.py
             scripts/issue_containers.py
+            scripts/released_covers.py
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -108,7 +128,23 @@ jobs:
       - name: Run sweep
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Fenetre tournante (#10466, mesure du 2026-10-27) : le depot portait
+          # 588 issues ouvertes alors que la lecture s'arretait a 200 -- les 388
+          # du dessous n'etaient JAMAIS classifiees, donc jamais etiquetees, donc
+          # re-servies indefiniment aux lanes (#20078 -> #20079, #19241 -> #22454,
+          # #22715 -> #22719). Lire tout d'un coup ne tient pas dans le plafond
+          # GITHUB_TOKEN (1000 appels/h, ~2 par issue) : on garde une fenetre
+          # bornee et on fait tourner son point de depart a chaque run.
+          # CE QUE LA ROTATION EST, dit sans l'embellir : un ECHANTILLONNAGE, pas
+          # une couverture. Le depart avance de WINDOW modulo le nombre d'issues
+          # ouvertes ; a N=590 et WINDOW=400 la suite revient sur elle-meme tous
+          # les 59 runs, soit 59 jours au cron quotidien, et deux fenetres
+          # consecutives se recouvrent. La queue est ATTEINTE (c'est le defaut
+          # corrige), elle n'est pas balayee de facon exhaustive.
+          WINDOW: '400'
         run: |
           DRY=""
           if [ "${{ inputs.dry_run }}" = "true" ]; then DRY="--dry-run"; fi
-          python scripts/candidate_delivered.py $DRY --sleep 2.0
+          OFFSET=$(( ${{ github.run_number }} * WINDOW ))
+          python scripts/candidate_delivered.py $DRY --sleep 2.0 \
+            --limit "$WINDOW" --offset "$OFFSET"

@@ -77,6 +77,7 @@ import Grothendieck.SerreMap
 import Grothendieck.SheafBasics
 import Grothendieck.SheafCohomology.Basic
 import Grothendieck.SheafCohomology.Cech
+import Grothendieck.SheafCohomology.Godement
 import Grothendieck.SheafCohomology.MayerVietoris
 import Grothendieck.SheafCondition
 import Grothendieck.SheafConditionCharacterization
@@ -191,6 +192,9 @@ Substance réelle :
   cohomologie des faisceaux (analogue à la topologie algébrique).
 - `Grothendieck.SheafCohomology.Cech` : cohomologie Čech comme cas
   particulier du complexe de Godement (Grothendieck 1957).
+- `Grothendieck.SheafCohomology.Godement` (Partie 95) : la cohomologie de
+  Godement de `F` sur `U` — homologie du complexe des sections du complexe
+  canonique (définition historique, [God58, Chap. II §5.1]).
 - `Grothendieck.YonedaLemma` : lemme de Yoneda — plongement pleinement
   fidèle d'une catégorie C dans la catégorie de foncteurs [C^op, Ens],
   c_{x} ↦ Hom_C(-, x) (Grothendieck 1960, CatAlg).

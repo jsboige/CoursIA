@@ -170,9 +170,12 @@ def test_diff_signatures_by_cell_id_stable():
     base_sig = ckd.float_signatures(base_nb)
     head_sig = ckd.float_signatures(head_nb)
     diffs = ckd.diff_signatures(base_sig, head_sig, base_nb=base_nb, head_nb=head_nb)
-    # abc and def unchanged, only 'new' added (by id)
-    assert diffs == ["new"], \
-        f"Expected only 'new' as drift, got {diffs}"
+    # abc and def unchanged; 'new' is an insertion with no base cell of the
+    # same source, so under #23364 it is an addition, not a drift. The
+    # protection this test carries (the unchanged cells must NOT be
+    # reported) still holds: any regression there yields a non-empty list.
+    assert diffs == [], \
+        f"Expected no drift (pure insertion before unchanged cells), got {diffs}"
 
 
 def test_diff_signatures_fallback_ordinal():
@@ -491,13 +494,17 @@ def test_diff_signatures_md_inserted_unchanged_code():
 
 
 def test_diff_signatures_new_code_added_mixte_unchanged():
-    """[existing code unchanged, new code appended]: drift must be the
-    NEW code cell only.
+    """[existing code unchanged, new code appended]: no drift at all.
 
     Pre-fix: ``_cell_index_by_id`` indexed markdown before the existing
     code, shifting its ordinal by +1 vs ``float_signatures``. The
     unchanged code was reported as drift and the new code also appeared
     as drift (double-counted).
+
+    Since #23364, an appended code cell with no base cell of the same
+    source is an addition, not a drift: the protection this test carries
+    (code-1 must NOT be reported) still holds — any regression of the
+    indexing bug yields a non-empty list.
     """
     base_nb = {
         "cells": [
@@ -520,8 +527,8 @@ def test_diff_signatures_new_code_added_mixte_unchanged():
         ckd.float_signatures(head_nb),
         base_nb=base_nb, head_nb=head_nb,
     )
-    assert diffs == ["code-2"], (
-        f"expected only the newly added code cell, got {diffs} "
+    assert diffs == [], (
+        f"expected no drift (pure append after unchanged code), got {diffs} "
         "(pre-fix bug: code-1 was spuriously listed as drift)"
     )
 

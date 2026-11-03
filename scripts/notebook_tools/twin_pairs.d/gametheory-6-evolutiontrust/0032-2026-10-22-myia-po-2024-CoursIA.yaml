@@ -1,0 +1,14 @@
+date: '2026-10-22'
+by: myia-po-2024:CoursIA
+reason: 'Merge origin/main dans PR #20724 : le cote Python porte desormais ENSEMBLE la
+  cellule markdown References (position 1, delta symetrique #20724/#19274, attestee
+  0031) et les changements de reproducibilite #21662/#21763 (clone(), random.Random(42),
+  graine incrementee par match, seed=42 au Tournament) deja attestes 0028/0029 par
+  CoursIA-2 comme preservant la parite. Cote C# inchange par le merge (blob identique
+  a l''attestation 0031). Conflit known_differences du registre de paire resolu par
+  union avec note de merge. La composition de deux deltas independants et symetriques
+  ne cree aucune divergence : niveau de parite semantic preserve.'
+python_sha: 1499cd2f4f64535239a3855aa57c6fe46ed80a92
+csharp_sha: fc83adb13c5fcdd57fcfec5972c5493e0472bb97
+content_python_sha: 941c7692f2ea6e754e4de59d729072dd78bee907a2d2f9dd5b6671d00fcf05c8
+content_csharp_sha: bb4a9c1e292d616b34324ff5c6259adf00d4fc161c0de7517584947ae202cc49
