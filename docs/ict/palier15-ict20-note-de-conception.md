@@ -52,15 +52,15 @@ sous-série avait une seule entrée de chaîne.
 
 ## Addendum T1 — ce que la PR a fait de plus que le geste minimal
 
-- **`_quarto.yml` mis à jour** (6 lignes) : la note disait « non touché » en
+- **`_quarto.yml` mis à jour** : la note disait « non touché » en
   calquant le diff du palier 14, mais le palier 14 avait laissé la liste
   Quarto périmée et #23295 l'a réparée après coup. L'invariant sur `main`
   est un `_quarto.yml` cohérent avec le disque ; la réparation est pliée
   dans la PR qui déplace (précédent #23295).
 - **ICT-22 ré-exécuté** : deux accès `Path("traces/…")` cwd-relatifs et un
   `sys.path.insert(0, os.getcwd())` cassaient depuis la profondeur +1
-  (lecture `p.stat()` à l'impression). Source réparée (3 lignes de code) +
-  re-exécution Papermill complète (C.2) : 9 cellules code, 0 erreur,
+  (lecture `p.stat()` à l'impression). Source réparée +
+  re-exécution Papermill complète (C.2) : 0 erreur,
   chiffres identiques (509/484 Kio, ec_gain 3.438…) ; deux nouveaux flux
   `UserWarning` de `sae_traces.py:131` (évolution du module depuis la
   dernière exécution — traces legacy sans champ `instrument`).
