@@ -93,6 +93,8 @@ jobs:
           echo "Les deux scripts parsent."
 
       - name: Suite de controle (fixtures, aucune machine reelle)
+        env:
+          REPEAT_PASSES: ${{ inputs.repeat || 1 }}
         run: |
           # `set -e` est volontairement ABSENT : il faut lire le code de retour
           # de chaque passe pour distinguer une assertion cassee d'un abandon
@@ -114,7 +116,9 @@ jobs:
           # chaque passe garde sa sortie dans son groupe de log, et le job est
           # rouge si AU MOINS UNE passe echoue -- N passes dont une seule rouge
           # restent un echec, jamais une moyenne.
-          N="${{ inputs.repeat || 1 }}"
+          # L input transite par env, jamais par interpolation directe dans le
+          # run : un dispatcher ne doit pas pouvoir injecter du shell.
+          N="${REPEAT_PASSES:-1}"
           case "$N" in ''|*[!0-9]*|0) N=1 ;; esac
           FAILS=0
 
