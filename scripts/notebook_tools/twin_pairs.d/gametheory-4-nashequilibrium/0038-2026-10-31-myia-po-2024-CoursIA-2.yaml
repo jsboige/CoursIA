@@ -1,0 +1,20 @@
+date: '2026-10-31'
+by: myia-po-2024:CoursIA-2
+python_sha: 81df55454ac907e1d2915e85aadc21ad150ba75e
+csharp_sha: c025c03907172aae1ab8b078d07c0d6466d52680
+content_python_sha: 34e455ec0c6588cb179c851d0871ef0d3241e92feeeb7a9b1741c60cb2def421
+content_csharp_sha: 4a28748267396313f09f1667d95496ac6f85e34eefe5c9a098661b29a7b67c9c
+reason: 'PR #22813 (lane myia-po-2024:CoursIA-2, branche feature/gt-correlated-equilibrium) :
+  le carnet Python GT-04 gagne dans sa cellule 0 le lien side-track `4k-Equilibre-Correle`
+  (carnet 04k cree par cette PR), et le carnet est re-execute par papermill (kernel python3)
+  -- le blob Python change (a3bae99aece -> 81df55454a) et le contenu normalise change
+  (4811663a -> 34e455ec). Audit firsthand de la paire AVANT re-attestation : (a) le jumeau
+  C# n est PAS touche (csharp_sha c025c039 inchange, content_csharp_sha 4a287482 inchange) ;
+  (b) 0 occurrence de "Side tracks" dans le notebook C# (premier bloc = Navigation seule) --
+  l asymetrie nav reste structurelle et Python-only, les side-tracks etant des carnets
+  Python-only (04i, 04j, 04k n ont pas de jumeau C#) ; (c) le diff source du carnet Python
+  vs main ne porte QUE la ligne "Side tracks" de la cellule 0 (markdown) -- toutes les
+  autres lignes du diff sont des sorties et metadonnees de re-execution ; (d) le socle de
+  parite (theorie, algorithmes, exercices) est intact des deux cotes. Re-attestation posee
+  EN DERNIERE operation (cf #8957) : apres le merge de main, apres la resolution du conflit
+  README, avant tout strip outille.'

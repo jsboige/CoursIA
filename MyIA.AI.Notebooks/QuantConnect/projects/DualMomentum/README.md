@@ -9,12 +9,12 @@
 | Source | Sharpe | CAGR | Max DD | Période | Univers |
 |--------|--------|------|--------|---------|---------|
 | [`research.ipynb`](research.ipynb) cell[10/25] (default 12m, 5 bps TC) | **0.460** | **7.89 %** | **-19.81 %** | 2015-2026 | SPY/EFA/BND |
-| [`main.py`](main.py) v6b docstring (LEANT backtest, IBKR margin) | **0.557** | **11.22 %** | **-15.3 %** | 2015-2024 | SPY/EFA/EEM/TLT/GLD/DBC |
+| [`main.py`](main.py) v6b (LEANT backtest, IBKR margin, mode `strategy`) | **0.372** | **7.754 %** | **-15.10 %** | 2015-2024 | SPY/EFA/EEM/TLT/GLD/DBC |
 | [`quantbook.ipynb`](quantbook.ipynb) cell[3] (default 12m, 0 TC) | **0.213** | **6.2 %** | **-34.1 %** | 2007-2025 | SPY/EFA/BND |
 
 **Lecture honnête** : la divergence entre les trois mesures **n'est pas un bug** — ce sont **trois implémentations distinctes** du même concept dual-momentum :
 - `research.ipynb` utilise la définition classique Antonacci (3-asset, lookback 12m, seuil absolu 0, 5 bps TC).
-- `main.py` v6b utilise une version enrichie (6-asset, filtre SMA200 + 6m, momentum tilt weighting) — **BEST iter** parmi les variantes testées (cf log v4→v6b dans le docstring).
+- `main.py` v6b utilise une version enrichie (6-asset, filtre SMA200 + 6m, momentum tilt weighting) — **itération retenue** parmi les variantes testées (cf log v4→v6b dans le docstring).
 - `quantbook.ipynb` utilise la version 3-asset sans coûts de transaction sur **19 ans** (incl. GFC 2008 + COVID 2020 + bear 2022).
 
 Pour un usage pédagogique en 2026, **`research.ipynb` est la référence** (période complète 2015-2026, méthode Antonacci pure). Pour un déploiement LEANT, **`main.py` v6b est la version recommandée** (Sharpe reproduit). Pour comprendre la sensibilité aux paramètres, **`quantbook.ipynb` cell[3-7]** montre la grille lookback × seuil × refuge × univers × régime. Provenance détaillée : [`MANIFEST.md`](assets/readme/MANIFEST.md).
