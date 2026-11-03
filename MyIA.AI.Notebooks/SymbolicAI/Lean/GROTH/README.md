@@ -11,6 +11,7 @@ accueille la **marche manquante** puis les descentes correspondantes.
 | GROTH-02 (tribut) | à venir | Migration du carnet d'hommage [Lean-15](../Lean-15-Grothendieck-Tribute.ipynb) — attend la clôture des PRs vivantes sur le lake |
 | GROTH-03 (atelier) | à venir | Migration de l'atelier texte [Lean-15b](../Lean-15b-Lean-Grothendieck.ipynb) |
 | GROTH-04 (companion) | à venir | Migration du companion [Lean-15c](../Lean-15c-Lean-Grothendieck-Companion.ipynb) |
+| [GROTH-05-MvPowerSeries-Lean.ipynb](GROTH-05-MvPowerSeries-Lean.ipynb) | présent | La seconde marche « à écrire dans tous les cas » de la carte : séries formelles multivariées `MvPowerSeries` **exécutées nativement** (kernel `lean4-wsl`, pur Mathlib au pin de `formal_groups_lean`) — lecture par coefficients, produit de Cauchy, idéal d'augmentation, substitution, inversion, et l'axiome d'identité d'une loi de groupe formel refermé — le vocabulaire que consomme [Lean-30](../Lean-30-FormalGroups-Native.ipynb) |
 
 Les migrations 02-04 suivent la contrainte de séquençage de la carte (§8 : pas de
 renommage sous une PR vivante) — les PRs [#21223](https://github.com/jsboige/CoursIA/pull/21223),
