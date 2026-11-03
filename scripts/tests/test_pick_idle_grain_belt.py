@@ -3203,3 +3203,101 @@ def test_belt_deadline_still_skips_the_marker_filter_without_local_read(monkeypa
     assert calls == [], "aucune sonde de marqueur ne part apres le mur"
     assert [p["number"] for p in picks] == [30211, 30212]
     assert withheld == []
+
+
+# Corps reel d'un dossier de cloture CLOSE (grammaire canonique de
+# `check_closure_dossier.py` -- meme fixture que test_pick_closure_reopened).
+DOSSIER_CLOSE_24505 = """[CLOSURE PREFLIGHT]
+schema: 1
+lane: myia-po-2025:CoursIA
+issue: 40003
+verdict: CLOSE
+acceptance:
+  - "criteres confrontes a main avec preuve citee"
+residue: none
+open-prs: 0
+comments-reviewed: 3
+[/CLOSURE PREFLIGHT]"""
+
+
+def test_belt_deadline_skips_the_marker_filter_on_closure_dossier(monkeypatch):
+    """Reserve review #24505, reproduite par execution : un dossier de
+    cloture en dernier commentaire rallume le RESEAU meme apres le mur.
+
+    Le corps CLOSE declenche dans `has_recent_delivery_marker` la regle de
+    reouverture (#24250) -> `_reopen_events` -> une requete REST du timeline.
+    Le predicat `marker_read_is_local` d'avant la correction repondait
+    « True » des que l'instantane existait : le filtre de marqueur passait,
+    et la requete timeline partait au-dela de l'echeance (reproduit par
+    Hermes sur un dossier CLOSE valide ET sur l'annonce en prose : appels
+    `gh api --paginate ... issues/<N>/timeline` malgre le mur).
+
+    Apres correction, les deux classes dans le meme tirage : le porteur du
+    dossier n'est PAS sonde (lecture non locale -> filtre saute, fail-OPEN
+    historique, silence rapporte) ; le porteur d'un marqueur ordinaire reste
+    filtre comme avant le mur -- le correctif ne dessert pas la classe que
+    la mesure fondatrice (#21436) couvrait."""
+    _patched_clock(monkeypatch)
+    dossier = _make_item(30301, age_days=100, idle=9, last=None)
+    ordinary = _make_item(30302, age_days=99, idle=9, last=None)
+    bodies = {
+        30301: [{"body": DOSSIER_CLOSE_24505,
+                 "createdAt": "2026-11-03T10:00:00Z"}],
+        30302: [{"body": "[INFO] candidate-delivered -- lane x",
+                 "createdAt": "2026-11-03T10:00:00Z"}],
+    }
+    monkeypatch.setattr(pig, "_snapshot_comments", lambda n: bodies.get(n))
+    calls = []
+
+    def marker(n):
+        calls.append(n)
+        return True
+
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        [dossier, ordinary], {}, _belt_args(grains=2), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        claims_probe=lambda nums: {},
+        recent_marker_probe=marker,
+        time_budget_s=0.0)
+
+    assert calls == [30302], (
+        "seul le marqueur ordinaire (lecture locale) est sonde apres le mur ; "
+        "le dossier CLOSE ne doit pas y rattacher une requete timeline")
+    assert [p["number"] for p in picks] == [30301], (
+        "le porteur du dossier reste servi : filtre saute (fail-OPEN)")
+    assert [w[0]["number"] for w in withheld] == [30302]
+    assert "LIVRAISON (recent)" in withheld[0][1]
+    assert state["time_budget_hit"] is True
+
+
+def test_belt_deadline_skips_marker_filter_on_prose_close_announcement(
+        monkeypatch):
+    """Meme reserve #24505, seconde classe reproduite par Hermes : l'annonce
+    de fermeture EN PROSE (« Fermeture sur dossier ... verdict CLOSE »)-
+    declenche la meme regle de reouverture qu'un dossier qui parse. Le
+    predicat doit la traiter pareil : lecture non locale -> filtre saute
+    apres le mur, aucune sonde."""
+    _patched_clock(monkeypatch)
+    annonce = _make_item(30311, age_days=100, idle=9, last=None)
+    body = ("Fermeture sur dossier `[CLOSURE PREFLIGHT]` (verdict CLOSE, "
+            "gate `check_closure_dossier.py` rc=0, commentaire ci-dessus).")
+    monkeypatch.setattr(
+        pig, "_snapshot_comments",
+        lambda n: ([{"body": body, "createdAt": "2026-11-03T10:00:00Z"}]
+                   if n == 30311 else None))
+    calls = []
+
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        [annonce], {}, _belt_args(grains=1), probe_budget=4,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        claims_probe=lambda nums: {},
+        recent_marker_probe=lambda n: calls.append(n) or True,
+        time_budget_s=0.0)
+
+    assert calls == [], (
+        "l'annonce en prose ne doit pas rattacher une sonde apres le mur")
+    assert [p["number"] for p in picks] == [30311]
+    assert withheld == []
+    assert state["time_budget_hit"] is True

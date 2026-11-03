@@ -10067,7 +10067,7 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                                       or delivery_event_probe_inert)
 
         def marker_read_is_local(number):
-            """Le DERNIER commentaire de `number` est-il deja en memoire ?
+            """La lecture du marqueur de `number` resterait-elle LOCALE ?
 
             Le mur de temps (`expired`) borne le RESEAU ; il ne borne pas une
             lecture locale. Les deux filtres de marqueur (recent, conteneur)
@@ -10085,10 +10085,34 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
 
             Le predicat est lu sur la MEME surface que la sonde
             (`_snapshot_comments`), donc il ne peut pas promettre une lecture
-            locale que la sonde ne ferait pas : hors instantane, la garde
+            locale que la sonde ne ferait pas : hors instantané, la garde
             `expired()` reste entiere et le fail-OPEN reste celui d'avant.
+
+            RESERVE #24505 (review Hermes, reproduite par execution) :
+            « instantané présent » ne suffit pas. Un corps de DOSSIER DE
+            CLOTURE (verdict CLOSE, ou annonce en prose) déclenche dans
+            `has_recent_delivery_marker` l'appel `_delivery_voided_by_reopen`
+            -> `_reopen_events` -> une requete REST du TIMELINE, tiree
+            APRES le mur. Le predicat rend donc faux pour cette classe de
+            corps : le fail-OPEN historique (sauter le filtre, le dire)
+            reprend, au lieu d'une requete reseau non budgetee. Les corps
+            ordinaires (`[DELIVERED]`, `[FROZEN]`, `[INFO]
+            candidate-delivered`, `[RELEASED]`) restent 100 % locaux --
+            c'est exactement la classe que la mesure fondatrice couvrait.
             """
-            return _snapshot_comments(number) is not None
+            comments = _snapshot_comments(number)
+            if comments is None:
+                return False
+            if not isinstance(comments, list) or not comments:
+                return True
+            last = comments[-1]
+            body = (last or {}).get("body") if isinstance(last, dict) else None
+            if not isinstance(body, str):
+                return True
+            # Un dossier de cloture rallume le reseau (regle de reouverture
+            # #24250) : il ne compte pas comme une lecture locale.
+            return not (_closure_dossier_verdict(body) == "CLOSE"
+                        or _closure_announced_close(body))
 
         def counted_probe(number, lane_name):
             # L'echeance passe AVANT le plafond de sondes : les deux produisent le
@@ -11621,9 +11645,11 @@ def main(argv: list[str] | None = None) -> int:
                     print("   CANDIDAT NON VERIFIE (#21436) : le mur de temps a")
                     print("   ete atteint avant ses lectures de livraison et de")
                     print("   claim. Lire le dernier commentaire AVANT de claimer.")
-                    print("   La lecture locale du marqueur (instantane) reste")
-                    print("   faite au-dela du mur : seules les sondes RESEAU")
-                    print("   s'arretent.")
+                    print("   Les lectures restees LOCALES apres le mur : le")
+                    print("   dernier commentaire en instantane, sauf dossier de")
+                    print("   cloture (qui rallume la regle de reouverture, donc")
+                    print("   du reseau) -- pour lui, le filtre est saute et le")
+                    print("   silence est rapporte. Les sondes RESEAU s'arretent.")
             # #17038 (residu du 2026-10-09) -- contrat de verdict : un pick
             # dont le claim est ERROR n'est PAS un candidat libre, c'est un
             # candidat NON MESURE. Le servir reste le comportement (le tapis
