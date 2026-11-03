@@ -285,19 +285,26 @@ def _resolve_code_target(cells: list, anchor_cell_idx: int, code_n: int | None,
     """Resout la cellule de code visee par une ancre markdown.
 
     Strategies (du plus precis au plus tolérant) :
-      1. `code[N]` -- N est l'index 1-based parmi les cellules CODE.
+      1. `code[N]` -- N est l'index 0-based parmi les cellules CODE, comme
+         partout ailleurs dans le depot (`scan_enrich_quality.py` : « code[N] =
+         the N-th CODE cell, 0-based, counted in the HEAD layout »).
       2. `cellule ci-dessus` -- premiere cellule code rencontree en remontant.
       3. `cellule ci-dessous` -- premiere cellule code en descendant.
       4. `raw output` -- premiere cellule code non-vide en-dessous.
 
+    Le 1-based a ete l'erreur de cet organe jusqu'a #24269 : il visait la
+    cellule de rang N-1 dans la liste des cellules de code, donc desactivait
+    la verification d'une cellule et en controlait une autre, produisant des
+    faux positifs (Infer-02, `code[5]` -> cellule 13 au lieu de 18).
+
     Retourne l'index 0-based dans `cells`, ou None si non resolu.
     """
     if code_n is not None:
-        # Index 1-based parmi les CODE cells. On enumere toutes les cellules
-        # code et on prend la N-ieme.
+        # Index 0-based parmi les CODE cells. On enumere toutes les cellules
+        # code et on prend celle de rang N.
         code_idxs = [i for i, c in enumerate(cells) if c.get("cell_type") == "code"]
-        if 1 <= code_n <= len(code_idxs):
-            return code_idxs[code_n - 1]
+        if 0 <= code_n < len(code_idxs):
+            return code_idxs[code_n]
         return None
 
     if direction in ("ci-dessus", "ci‑dessus", "ci­dessus"):

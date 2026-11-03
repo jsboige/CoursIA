@@ -822,6 +822,7 @@ TRANCHE1: list[Guard] = [
             "MyIA.AI.Notebooks/GenAI/FineTuning/**",
             "MyIA.AI.Notebooks/IIT/**",
             "MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/**",
+            "MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/**",
             "MyIA.AI.Notebooks/Probas/Infer/**",
             "MyIA.AI.Notebooks/Probas/PyMC/**",
             "MyIA.AI.Notebooks/Search/Part1-Foundations/**",

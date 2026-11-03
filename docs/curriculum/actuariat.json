@@ -1,29 +1,29 @@
 {
-  "description": "Parcours Actuariat : le socle décisionnel DecPyMC-1 à 7 mène au capstone DecPyMC-08, qui ouvre la sous-série Actuariat T1-T5 (Actuariat-01 à 05, ex-DecPyMC-8 à 12) ; le parcours conserve l'ordre pédagogique sans réduire la décision sous incertitude aux seules applications d'assurance. Les détours restent optionnels et indépendants ; ils enseignent des méthodes transférables, non des prérequis actuariels universels.",
+  "description": "Parcours Actuariat : le socle décisionnel DecPyMC-01 à 07 mène au capstone DecPyMC-08, qui ouvre la sous-série Actuariat T1-T5 (Actuariat-01 à 05, ex-DecPyMC-8 à 12) ; le parcours conserve l'ordre pédagogique sans réduire la décision sous incertitude aux seules applications d'assurance. Les détours restent optionnels et indépendants ; ils enseignent des méthodes transférables, non des prérequis actuariels universels.",
   "branches": [
     {
       "id": "fondations-probabilistes",
-      "description": "PyMC : mise en route, réseaux bayésiens et hiérarchie avant les axiomes de décision DecPyMC-1 à 3. Le prérequis relève de la modélisation probabiliste, sans confondre les séries.",
+      "description": "PyMC : mise en route, réseaux bayésiens et hiérarchie avant les axiomes de décision DecPyMC-01 à 03. Le prérequis relève de la modélisation probabiliste, sans confondre les séries.",
       "notebooks": [
         "Probas/PyMC/PyMC-01-Setup.ipynb",
         "Probas/PyMC/PyMC-04-Bayesian-Networks.ipynb",
         "Probas/PyMC/PyMC-12-Modeles-Hierarchiques.ipynb",
-        "Probas/DecisionTheory/DecPyMC/DecPyMC-1-Utility-Foundations.ipynb",
-        "Probas/DecisionTheory/DecPyMC/DecPyMC-2-Utility-Money.ipynb",
-        "Probas/DecisionTheory/DecPyMC/DecPyMC-3-Multi-Attribute.ipynb"
+        "Probas/DecisionTheory/DecPyMC/DecPyMC-01-Utility-Foundations.ipynb",
+        "Probas/DecisionTheory/DecPyMC/DecPyMC-02-Utility-Money.ipynb",
+        "Probas/DecisionTheory/DecPyMC/DecPyMC-03-Multi-Attribute.ipynb"
       ]
     },
     {
       "id": "decision-sous-incertitude",
-      "description": "DecPyMC-4 à 7 : réseaux de décision, valeur de l'information, systèmes experts et décisions séquentielles, avant les cas d'assurance.",
+      "description": "DecPyMC-04 à 07 : réseaux de décision, valeur de l'information, systèmes experts et décisions séquentielles, avant les cas d'assurance.",
       "prerequisites": [
         "fondations-probabilistes"
       ],
       "notebooks": [
-        "Probas/DecisionTheory/DecPyMC/DecPyMC-4-Decision-Networks.ipynb",
-        "Probas/DecisionTheory/DecPyMC/DecPyMC-5-Value-Information.ipynb",
-        "Probas/DecisionTheory/DecPyMC/DecPyMC-6-Expert-Systems.ipynb",
-        "Probas/DecisionTheory/DecPyMC/DecPyMC-7-Sequential.ipynb",
+        "Probas/DecisionTheory/DecPyMC/DecPyMC-04-Decision-Networks.ipynb",
+        "Probas/DecisionTheory/DecPyMC/DecPyMC-05-Value-Information.ipynb",
+        "Probas/DecisionTheory/DecPyMC/DecPyMC-06-Expert-Systems.ipynb",
+        "Probas/DecisionTheory/DecPyMC/DecPyMC-07-Sequential.ipynb",
         "Probas/DecisionTheory/DecPyMC/DecPyMC-08-Actuariat-Capstone.ipynb"
       ]
     },
@@ -49,7 +49,7 @@
       ],
       "notebooks": [
         "GameTheory/GameTheory-15-CooperativeGames-Python.ipynb",
-        "GameTheory/GameTheory-15f-Shapley-Groupes-Python.ipynb",
+        "GameTheory/GameTheory-15d-Shapley-Groupes-Python.ipynb",
         "GameTheory/GameTheory-17b-Asymmetric-Information-Python.ipynb"
       ]
     }

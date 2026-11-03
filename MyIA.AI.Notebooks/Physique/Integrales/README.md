@@ -35,7 +35,7 @@ précision ≠ bornes certifiées, identifiée ≠ dérivée.
 
 La série n'est pas née d'un carnet isolé : elle est la **veine V3** de la
 distillation [#20428](https://github.com/jsboige/CoursIA/issues/20428), son aînée
-V1 ([Marches](../../Probas/Applications/Marches/README.md)) est déjà fusionnée, et son fil directeur est
+V1 ([Marches](../../Probas/Applications/Marches-01-Retour-Polya-Watson-Python.ipynb)) est déjà fusionnée, et son fil directeur est
 la classification du harnais BootLoops — polylogarithmes → elliptique → K3 →
 Calabi-Yau. Les carnets de la série ont été livrés comme des **candidats
 bornés**, arbitrés à l'usage — aucun n'était promis :
@@ -92,12 +92,12 @@ Feynman ne sont pas des objets probabilistes, et `MyIA.AI.Notebooks/Physique/`
 est le toit commun des distillations de physique numérique
 ([#19741](https://github.com/jsboige/CoursIA/issues/19741),
 [#20428](https://github.com/jsboige/CoursIA/issues/20428)). L'aînée V1 reste dans
-`Probas/Applications/Marches/` — la récurrence de Pólya est probabiliste native
+`Probas/Applications/` — la récurrence de Pólya est probabiliste native
 — mais les deux séries se touchent par les fonctions de Green.
 
 ## Ponts vers le reste du dépôt
 
-- **Marches** ([../../Probas/Applications/Marches/](../../Probas/Applications/Marches/README.md)) : les deux séries calculent
+- **Marches** ([../../Probas/Applications/Marches-01-Retour-Polya-Watson-Python.ipynb](../../Probas/Applications/Marches-01-Retour-Polya-Watson-Python.ipynb)) : les deux séries calculent
   des fonctions de Green — sur $\mathbb{Z}^d$ discret chez Marches, sur des
   boucles continues ici — et les mêmes protocoles les traversent.
 - **Distillation Schwartz** ([issue #20428](https://github.com/jsboige/CoursIA/issues/20428)) :

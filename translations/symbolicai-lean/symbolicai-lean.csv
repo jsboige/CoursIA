@@ -58293,20 +58293,20 @@ assert n_distinct == 0, (
 print()
 print(""Baseline mimo_lean OK : 0 sorry code-only, 0 vacuous -- le lac est la base formelle de la sous-serie."")
 ",,,,,,,,c0fde6cc49c37e61,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-41-Capstone-MIMO-Python.ipynb,1008adf1,markdown,fr,8657601a24a63c32,"### Lecture du résultat
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-41-Capstone-MIMO-Python.ipynb,1008adf1,markdown,fr,7aa31dbff7a3afab,"### Lecture du résultat
 
-La sous-série `MIMO/` porte un carnet par marche de l'escalier (le minimum conventionnel de la série) ; le lac `mimo_lean/` est **sorry-free** (baseline 0, vérifiée par `lean-mimo.yml`). Les chiffres exacts varieront au fil des PRs — c'est l'**écart** entre ce que cet organe compte et ce que les autres (README du lac, scripts/lean) comptent qui fait foi (cf. §5).
-",,,,,,,,8657601a24a63c32,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-41-Capstone-MIMO-Python.ipynb,1372b9e1,markdown,fr,a65be2768776d70d,"## 5. L'écart promesse / organe : `56` vs `57`
+La sous-série `MIMO/` porte un carnet par marche de l'escalier (le minimum conventionnel de la série) ; le lac `mimo_lean/` est **sorry-free** (baseline 0, vérifiée par la matrice CI — job `Lean CI (mimo_lean)`, entrée `mimo` de `scripts/lean/ci_lakes.json`). Les chiffres exacts varieront au fil des PRs — c'est l'**écart** entre ce que cet organe compte et ce que les autres (README du lac, scripts/lean) comptent qui fait foi (cf. §5).
+",,,,,,,,7aa31dbff7a3afab,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-41-Capstone-MIMO-Python.ipynb,1372b9e1,markdown,fr,a5a11b923e9d2fdf,"## 5. L'écart promesse / organe : `56` vs `57`
 
 L'écart 56 / 57 est **réel**, et il est instrumenté : l'organe canonique `scripts/lean/scan_lake_notebook_visibility.py --lake mimo_lean` rend `56` là où un comptage direct des sources en rend `57`. La cause est dans son motif de nom : `DECL_RE` capture `([A-Za-z_][A-Za-z0-9_']*)`, donc la capture s'arrête au **premier caractère non ASCII**. (Le script `scripts/lean/extract_decls.py` que citait un premier récit n'existe pas dans l'arbre : `git ls-tree -r origin/main --name-only | grep extract_decls` rend 0 hit.)
 
 **Le 57ᵉ n'est pas un nom commençant par un caractère grec** (Π ou Θ), comme on a pu le croire. C'est `B_ρ` : un `noncomputable def` (donc pas un `theorem` / `lemma`), dans `MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/Lmmse.lean:84`. Le motif s'arrêtant au premier caractère non ASCII, `B_ρ` est capturé comme `B_` — exactement comme `B_ρ_posSemidef` (`Lmmse.lean:90`) : les deux déclarations se replient sur le même nom, et le compte en perd une. Recensement exhaustif des fichiers du lac : aucun nom de déclaration ne commence par un caractère non-ASCII.
 
-**Le 56 / 57 n'est pas mesuré dans ce carnet.** La cellule §4 ne compte que les carnets, lignes de code, exercices et la baseline sorry du lac (`mimo_lean` : 0 `distinct_code_sorry`, vérifié par `lean-mimo.yml`). Le compte de déclarations theorem / lemma / def du lac, lui, vit dans **MIMO-04** (la mesure sœur), qui porte en cellule c17 le tableau détaillé par module (`Descent 7+3`, `Objective 4+2`, `Bridge 13+2`, `Converse 16`, `NormTails 6`, `Lmmse 3+1` — où le `+1` final de Lmmse est précisément `B_ρ`). Pour qui entre dans la sous-série : **lire MIMO-04 c17 pour la mesure brute**, et ne pas chercher 56 ou 57 dans les sorties committées du présent carnet — elles n'y sont pas.
+**Le 56 / 57 n'est pas mesuré dans ce carnet.** La cellule §4 ne compte que les carnets, lignes de code, exercices et la baseline sorry du lac (`mimo_lean` : 0 `distinct_code_sorry`, vérifié par la matrice CI — job `Lean CI (mimo_lean)`). Le compte de déclarations theorem / lemma / def du lac, lui, vit dans **MIMO-04** (la mesure sœur), qui porte en cellule c17 le tableau détaillé par module (`Descent 7+3`, `Objective 4+2`, `Bridge 13+2`, `Converse 16`, `NormTails 6`, `Lmmse 3+1` — où le `+1` final de Lmmse est précisément `B_ρ`). Pour qui entre dans la sous-série : **lire MIMO-04 c17 pour la mesure brute**, et ne pas chercher 56 ou 57 dans les sorties committées du présent carnet — elles n'y sont pas.
 
 La leçon tient : **ne pas se fier au seul chiffre d'un organe**. Croiser avec un `grep` direct sur `mimo_lean/` pour la mesure brute, citer l'instrument **réellement présent dans l'arbre** pour la mesure reproductible. L'écart 56 / 57 est documenté dans la PR de digestion de MIMO-04.
-",,,,,,,,a65be2768776d70d,,,,,,,,,,,,,,,
+",,,,,,,,a5a11b923e9d2fdf,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-41-Capstone-MIMO-Python.ipynb,0e81eb67,markdown,fr,97f2c0314a267dfe,"## 6. Itinéraire de lecture : trois parcours au choix
 
 Trois parcours sont possibles, selon le temps et la curiosité :
