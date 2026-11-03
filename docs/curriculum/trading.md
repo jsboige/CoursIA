@@ -179,7 +179,7 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
-| 1 | [Marches aléatoires : le retour — de Pólya (1921) au «…](../../MyIA.AI.Notebooks/Probas/Applications/Marches/Marches-01-Retour-Polya-Watson-Python.ipynb) | BETA | Oui |
+| 1 | [Marches aléatoires : le retour — de Pólya (1921) au «…](../../MyIA.AI.Notebooks/Probas/Applications/Marches-01-Retour-Polya-Watson-Python.ipynb) | BETA | Oui |
 | 2 | [Percolation supercritique : le géant au-dessus du seuil](../../MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-01-Supercritique-Python.ipynb) | ALPHA | Oui |
 | 3 | [Percolation-02-Lean — le noyau fini de percolation,…](../../MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-02-Lean.ipynb) | BETA | Oui |
 | 4 | [Percolation au point critique : exposants finis et loi…](../../MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-03-Critique-Python.ipynb) | BETA | Oui |
@@ -224,13 +224,13 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 27 | [DecInfer-08b-Preuves formelles — Indice de Gittins](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08b-Lean-Gittins.ipynb) | BETA | Oui |
 | 28 | [DecInfer-10-Thompson-Sampling : Bandits bayesiens par…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb) | BETA | Oui |
 | 29 | [DecPyMC-08 : Capstone — la sous-série Actuariat](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-08-Actuariat-Capstone.ipynb) | BETA | Oui |
-| 30 | [DecPyMC-1-Utility-Foundations : Axiomes et Fondements](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-1-Utility-Foundations.ipynb) | BETA | Oui |
-| 31 | [DecPyMC-2-Utility-Money : Utilite de l'Argent et…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-2-Utility-Money.ipynb) | BETA | Oui |
-| 32 | [DecPyMC-3-Multi-Attribute : Utilite Multi-Attributs](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-3-Multi-Attribute.ipynb) | BETA | Oui |
-| 33 | [DecPyMC-4-Decision-Networks : Réseaux de Decision](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-4-Decision-Networks.ipynb) | BETA | Oui |
-| 34 | [DecPyMC-5-Valeur de l'Information](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-5-Value-Information.ipynb) | ALPHA | Oui |
-| 35 | [DecPyMC-6-Systèmes Experts et Decisions Robustes](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-6-Expert-Systems.ipynb) | BETA | Oui |
-| 36 | [DecPyMC-7-MDPs, Bandits et POMDPs](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-7-Sequential.ipynb) | BETA | Oui |
+| 30 | [DecPyMC-01-Utility-Foundations : Axiomes et Fondements](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-01-Utility-Foundations.ipynb) | BETA | Oui |
+| 31 | [DecPyMC-02-Utility-Money : Utilite de l'Argent et…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-02-Utility-Money.ipynb) | BETA | Oui |
+| 32 | [DecPyMC-03-Multi-Attribute : Utilite Multi-Attributs](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-03-Multi-Attribute.ipynb) | BETA | Oui |
+| 33 | [DecPyMC-04-Decision-Networks : Réseaux de Decision](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-04-Decision-Networks.ipynb) | BETA | Oui |
+| 34 | [DecPyMC-05-Valeur de l'Information](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-05-Value-Information.ipynb) | ALPHA | Oui |
+| 35 | [DecPyMC-06-Systèmes Experts et Decisions Robustes](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-06-Expert-Systems.ipynb) | BETA | Oui |
+| 36 | [DecPyMC-07-MDPs, Bandits et POMDPs](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-07-Sequential.ipynb) | BETA | Oui |
 | 37 | [Règles de décision : EDT, CDT, CCDT et la lignée UDT](../../MyIA.AI.Notebooks/Probas/DecisionTheory/Regles-De-Decision/ReglesDeDecision-01-EDT-CDT-CCDT-UDT.ipynb) | BETA | Oui |
 
 ## Probas/Infer (21 notebooks)
