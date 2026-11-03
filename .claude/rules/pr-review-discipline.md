@@ -37,6 +37,17 @@ Un reviewer **DOIT** poster `state: CHANGES_REQUESTED` (pas COMMENTED, pas APPRO
 | Features distinctes dans `## Summary` | > 4 |
 | Domaines différents (ML + Lean + GenAI mêlés) | > 1 domaine |
 
+**Fournée homogène : exemptée des seuils (décision user 2026-11-03, Q162 a).** Une PR qui applique **une seule classe de correction**, produite par un fixer déterministe et vérifiée par l'organe de cette classe, a pour plafond **une série entière**. Le body nomme le fixer, l'organe et la sortie de l'organe avant et après. Si la PR ajoute une deuxième classe ou une retouche à la main, l'exemption tombe et les seuils s'appliquent.
+
+### A bis. PR trop fine : elle attend sa fournée (décision user 2026-11-03, Q162 b)
+
+Le coût d'une PR se paie **par PR**, pas par ligne : 8 commentaires et reviews en moyenne pour un diff de 4 lignes, contre 15 pour plus de 1 000 lignes (mesure du 2026-11-03, 2 075 PRs). D'où deux règles :
+
+- Une PR de **moins de 20 lignes** de diff ne s'ouvre pas seule, sauf urgence CI ou correctif bloquant. Elle rejoint la fournée de sa classe ou de sa série, par cherry-pick, et n'est jamais jetée.
+- Le constat qui la motive, quand il est **petit et local**, s'écrit en **une ligne dans l'issue de série ou de famille**, et non dans une issue neuve.
+
+Devant une PR fine, le reviewer ne commence pas par refuser. Il demande « **le geste peut-il être étendu ?** » et propose l'élargissement qui évite le saucissonnage : les fichiers voisins de la même série, les occurrences sœurs du même défaut. Le refus ne vient que si l'extension proposée est écartée sans motif.
+
 ### B. Lean : preuve de progrès vérifiable
 
 Toute PR touchant `*.lean` ou `agent_tests/prover/` **DOIT** inclure dans le body :
@@ -82,7 +93,7 @@ Single-seed ou single-fold = **CHANGES_REQUESTED** sauf flag explicite `[POC]` d
 
 ### E. Documentation / Admin : groupement obligatoire
 
-PRs uniquement docs/README/CLAUDE.md/rules : quand le diff est **fin**, le reflexe n'est pas le refus mais la question « **le geste peut-il etre etendu ?** » — proposer l'elargissement qui evite le saucissonnage (les fichiers voisins de la meme serie, les occurrences sœurs du meme defaut). Le refus reste la sortie quand l'extension a ete proposee et ecartee sans motif, et pour de multiples READMEs sans coherence cross-series.
+PRs uniquement docs/README/CLAUDE.md/rules : un diff **fin** suit le §A bis. Le refus reste aussi la sortie pour de multiples READMEs sans cohérence entre séries.
 
 **Feuille README — les totaux ne se mettent pas à jour à la main (arbitrage user 2026-09-24, #17029 revertée).** Total de notebooks, comptes par langage ou par sous-dossier, comptes de cellules, bandeaux « N notebooks » : ces statistiques dérivent à chaque ajout et relèvent de la **régénération du catalogue** (`CATALOG-STATUS` ; mandat user du 2026-08-04, #9377). Une PR de README dont la substance est une mise à jour de totaux = `CHANGES_REQUESTED`, quelle que soit la qualité de son audit. L'organe qui les repère est `python scripts/notebook_tools/check_prose_quantitative_claims.py --diff origin/main...HEAD` : son check-run `prose-counts` est **bloquant sur les lignes ajoutées** depuis #17636 (durci par #17645) — un compte faux en ligne ajoutée rougit la PR ; une ligne de compte fausse se **supprime** au profit du renvoi au catalogue, elle ne se remet pas à jour. Après l'ajout d'un notebook, la PR de README livre le **corps qui le présente** : sa section (ce qu'il démontre, ses outils, sa place dans le fil de la série), ses lignes dans les tables de navigation, les acquis et les parcours — contenu fidèle au notebook, lu avant d'écrire. Une PR qui corrige un passage d'un README ne laisse pas d'incohérence ailleurs dans le fichier (listes, arbres, liens) ; corriger l'intro en laissant une liste obsolète 100 lignes plus bas = `CHANGES_REQUESTED`.
 
@@ -103,6 +114,10 @@ Refus (`CHANGES_REQUESTED`) si :
 3. **Sortie de cellule hand-éditée** au lieu de corriger la cause + re-exécuter (Stop & Repair, [secrets-hygiene.md](secrets-hygiene.md) règle 6) — hors quantbook QC, `metadata.papermill`, et `probeAddresses` strip post-re-exec .NET.
 
 Détail des 5 verdicts : [sota-not-workaround.md](sota-not-workaround.md).
+
+### I. Organe neuf : avec son plan de fournées (décision user 2026-11-03, Q162 d)
+
+Un nouvel organe (détecteur, census, garde) ne se merge qu'avec son **plan de remédiation** écrit dans le body : la lane qui corrige, le nombre de PRs de fournée prévues, l'issue qui les porte. Il doit aussi mesurer une classe de défaut **substantielle**. Un census qui ouvrirait des issues sans lane pour les traiter = `CHANGES_REQUESTED`.
 
 ## Voir aussi
 
