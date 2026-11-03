@@ -205,6 +205,48 @@ def test_parent_references_are_not_successors(body):
     assert lcu.closing_evidence(body, [], CLOSED)[0] is None
 
 
+# --- vocabulaire des fournees (Q162, 03/11) -- instance #24196 -----------------------
+
+@pytest.mark.parametrize("body,expected", [
+    # verbatim du commentaire de fermeture de #24196 (03:16:42Z)
+    ("Contenu fondu en fournee dans #24354 (contre-audit GameTheory, concern #24280) "
+     "-- le commit est preserve par cherry-pick, rien n'est reecrit. "
+     "Cette PR se ferme vers la fournee.", 24354),
+    # meme forme, avec l'accent
+    ("Contenu fondu en fournée dans #24354", 24354),
+    # verbatim du second commentaire de fermeture de #24196 (04:21:36Z)
+    ("[REPLIÉE] Repliée en fournée dans la PR #24361 "
+     "(classe contre-audit GameTheory, mandat user 02/11 "
+     "« thin-prs-go-out-in-class-batches »).", 24361),
+    # meme forme, sans accents
+    ("[REPLIE] Repliee en fournee dans la PR #24361", 24361),
+    # sans la mention « la PR »
+    ("Repliee en fournee dans #24361", 24361),
+    ("Repliée en fournée dans #24361", 24361),
+    # la forme anglaise
+    ("folded into #24354", 24354),
+    ("Folded into #24354", 24354),
+])
+def test_fournee_vocabulary_names_a_successor(body, expected):
+    """Le vocabulaire des fournees nomme un successeur.
+
+    Sans ces formes, une PR repliee proprement sortait ``ORPHANED_CONTENT``
+    (« aucune raison de fermeture nommee ») alors que ses commentaires
+    nommaient le successeur -- instance mesuree : #24196.
+    """
+    assert lcu.closing_evidence("", [_c(body)], CLOSED)[0] == expected
+
+
+@pytest.mark.parametrize("body", [
+    "Contenu fondu en fournee dans le batch de relecture de la semaine",
+    "Le contenu a fondu dans la fournee, sans PR nommee",
+    "Repliee en fournee, a confirmer",
+])
+def test_fournee_without_a_number_is_not_a_successor(body):
+    """Un vocabulaire de fournee sans numero ne nomme rien : pas de successeur."""
+    assert lcu.closing_evidence("", [_c(body)], CLOSED)[0] is None
+
+
 def test_abandon_reason_is_recognised():
     assert lcu.closing_evidence("", [_c("PR obsolete, sans objet")], CLOSED)[1] is True
 
@@ -303,10 +345,21 @@ def test_upsert_replaces_existing_block_without_duplicating():
 # --- 5. controle POSITIF sur le cas reel #20374 ------------------------------------
 
 def _gh_ready() -> bool:
+    """Le controle reseau est-il possible ?
+
+    On interroge l'API (`GET /user`) plutot que `gh auth status` : ce
+    dernier est un probe **instable** sur cette machine -- mesure le
+    2026-11-03, le meme jeton valide a rendu `rc=1` puis `rc=0` sur trois
+    appels consecutifs. Un probe instable fait **sauter silencieusement**
+    un controle exige : un « skipped » se lit comme un vert, alors que le
+    controle n'a pas ete joue. L'API est l'etat reel du jeton ; elle
+    repond, et son echec se voit.
+    """
     try:
-        proc = subprocess.run(["gh", "auth", "status"], capture_output=True, text=True,
-                              check=False, encoding="utf-8", errors="replace")
-        return proc.returncode == 0
+        proc = subprocess.run(["gh", "api", "user", "--jq", ".login"],
+                              capture_output=True, text=True, check=False,
+                              encoding="utf-8", errors="replace")
+        return proc.returncode == 0 and bool(proc.stdout.strip())
     except (OSError, FileNotFoundError):
         return False
 
@@ -327,6 +380,25 @@ def test_real_20374_is_accidental_empty_close():
     assert row["verdict"] == lcu.ACCIDENTAL, row
     assert row["force_push_to_close_s"] is not None and row["force_push_to_close_s"] <= 60.0
     assert row["files_lost"] and row["files_lost"] > 0
+
+
+@needs_gh
+def test_real_24196_is_superseded():
+    """Controle positif exige par la reouverture (Q162, 03/11).
+
+    #24196 a ete repliee dans une fournee : ses commentaires de fermeture
+    nomment le successeur (« Contenu fondu en fournee dans #24354 » a 03:16:42Z,
+    « [REPLIEE] Repliee en fournee dans la PR #24361 » a 04:21:36Z). Elle doit
+    donc sortir SUPERSEDED, et plus ORPHANED_CONTENT.
+    """
+    pr = json.loads(subprocess.run(
+        ["gh", "api", f"repos/{REPO}/pulls/24196"],
+        capture_output=True, text=True, check=True,
+        encoding="utf-8", errors="replace").stdout)
+    branches = lcu.obs.remote_branches(REPO)
+    row = lcu.evaluate_pr(pr, REPO, "origin/main", branches)
+    assert row["verdict"] == lcu.SUPERSEDED, row
+    assert "successeur nomme" in row["detail"], row
 
 
 # --- 6. controle NEGATIF ------------------------------------------------------------
