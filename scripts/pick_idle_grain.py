@@ -2327,6 +2327,21 @@ _BELT_SNAPSHOT: dict | None = None
 _BELT_PRIMED_WINDOW: set[int] = set()
 
 
+def _delivery_motif(issue_number: int) -> str | None:
+    """Le MOTIF d'ecartement d'une issue livree, nomme (decision #24461, point 4).
+
+    Lecture par l'instantane local (`_snapshot_comments`) : **ZERO requete**.
+    En l'absence d'instantane (hors tapis), la fonction rend `None` et
+    l'appelant garde sa cause generique -- fail-OPEN, jamais un motif
+    fabrique.
+    """
+    comments = _snapshot_comments(issue_number)
+    if comments is None:
+        return None
+    bodies = [c.get("body") or "" for c in comments if isinstance(c, dict)]
+    return delivery_grammar.delivery_motif(bodies)
+
+
 def _belt_snapshot_prime(repo: str, numbers: list[int]) -> None:
     """Rafraichit UNE FOIS l'instantane pour les candidats tires (#22630, #22983).
 
@@ -2443,10 +2458,13 @@ def has_recent_delivery_marker(issue_number: int) -> bool | None:
     # (`_DELIVERED_MARKER_RE`, lookahead anti-`-revoked`/`-partial`) : tout
     # ce que ce filtre attrape, la sonde pleine l'aurait ecarte aussi -- il
     # n'introduit aucun verdict nouveau, il avance le meme.
-    return bool(_RECENT_DELIVERY_MARKER_RE.search(body)
-                or _DELIVERED_MARKER_RE.search(body)
-                or _closure_dossier_verdict(body) == "CLOSE"
-                or _closure_announced_close(body))
+    tranche = delivery_grammar.is_tranche_marker(body)
+    return bool(
+        _closure_dossier_verdict(body) in ("CLOSE", "KEEP")
+        or _closure_announced_close(body)
+        or (not tranche and (
+            _RECENT_DELIVERY_MARKER_RE.search(body)
+            or _DELIVERED_MARKER_RE.search(body))))
 
 
 def _last_comment(issue_number: int) -> dict | None:
@@ -2672,22 +2690,37 @@ def _delivery_event_from_comments(
             # expire, dossier CLOSE du 02/11 invisible).
             state, stamp = True, None
             closed = True
-        elif (_DELIVERED_MARKER_RE.search(body)
-              or _released_covers_acceptance(body)):
+        elif _closure_dossier_verdict(body) == "KEEP":
+            # Dossier `[CLOSURE PREFLIGHT]` VIVANT (verdict KEEP) : la
+            # cloture est EN COURS, l'issue n'est pas un grain de
+            # production (decision #24461 (c), point 2). Expirable comme un
+            # marqueur de livraison (48 h, #22500).
             state, stamp = True, created
-        elif _RECENT_DELIVERY_MARKER_RE.search(body):
+        elif (delivery_grammar.delivery_marker_is_epic_wide(body)
+              or _released_covers_acceptance(body)):
+            # #24461 (c) point 3 : une livraison de TRANCHE (`paths:` sur la
+            # ligne du marqueur) ne livre pas l'issue -- elle ne l'arme ni ne
+            # la desarme.
+            state, stamp = True, created
+        elif (_RECENT_DELIVERY_MARKER_RE.search(body)
+              and not delivery_grammar.is_tranche_marker(body)):
             # `[FROZEN]` et consorts : le filtre recent les voit, la sonde
             # pleine non. L'HEURE compte quand meme pour la regle des 48 h.
+            # Une livraison de TRANCHE n'est pas un evenement de cloture :
+            # elle ne pose ni l'etat ni l'heure (decision #24461 (c)).
             stamp = created
     last = comments[-1]
     last_body = last.get("body") if isinstance(last, dict) else ""
     if not isinstance(last_body, str):
         last_body = ""
-    recent = bool(_RECENT_DELIVERY_MARKER_RE.search(last_body)
-                  or _DELIVERED_MARKER_RE.search(last_body)
-                  or closed
-                  or _closure_dossier_verdict(last_body) == "CLOSE"
-                  or _closure_announced_close(last_body))
+    tranche = delivery_grammar.is_tranche_marker(last_body)
+    recent = bool(
+        closed
+        or _closure_dossier_verdict(last_body) in ("CLOSE", "KEEP")
+        or _closure_announced_close(last_body)
+        or (not tranche and (
+            _RECENT_DELIVERY_MARKER_RE.search(last_body)
+            or _DELIVERED_MARKER_RE.search(last_body))))
     if closed and state:
         # La terminalite PRIME sur l'heure : un dossier CLOSE n'expire pas,
         # meme si un marqueur plus recent a reecrit `stamp`.
@@ -5035,15 +5068,22 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
                         # Cout : 1 requete, hors budget, fail-OPEN sur
                         # lecture en echec (l'appelant enchaine sur la
                         # sonde pleine dans ce cas).
+                        # #24461 (c) point 4 -- le MOTIF d'ecartement est
+                        # NOMME : la cause rendue dit POURQUOI l'issue a
+                        # ete ecartee, pour que l'urne de l'adjoint
+                        # l'instruise sans re-deriver la grammaire. Lecture
+                        # par l'instantane local : ZERO requete.
+                        motif = _delivery_motif(c["number"])
                         recent = has_recent_delivery_marker(c["number"])
                         if recent is True:
                             state["recent_filtered"] = state.get(
                                 "recent_filtered", 0) + 1
-                            conflicts.append((c, "LIVRAISON (recent) : "
+                            conflicts.append((c, "LIVRAISON (recent) : " + (
+                                motif or
                                 "marqueur de cloture sur le dernier "
                                 "commentaire ([DELIVERED] / [FROZEN] "
-                                "/ [INFO] candidate-delivered)."
-                                " Candidat remplace dans "
+                                "/ [INFO] candidate-delivered).")
+                                + " Candidat remplace dans "
                                 "la meme urne, hors budget de sonde."))
                             continue
                         # Le label est teste A COUT NUL et vaut meme quand le
@@ -5055,6 +5095,7 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
                             _counted_merged_pr_probe, _counted_revocation_probe)
                         if reason is not None:
                             conflicts.append((c, "LIVRAISON : " + reason + (
+                                (" -- motif : " + motif) if motif else "") + (
                                 " Candidat remplace dans la meme urne.")))
                             continue
                         # #16589 : la sonde de PR couvrante vient APRES le
@@ -11908,6 +11949,19 @@ def main(argv: list[str] | None = None) -> int:
                 out_belt["repair"] = repair_payload
             else:
                 out_belt["repair"] = None
+            # #24461 (c) point 4 -- ce que le tapis ecarte ne disparait
+            # pas : la liste des issues ecartees pour CHACUN des deux motifs
+            # est nommee, separement, dans la sortie JSON.
+            _motif_withheld = [
+                {"number": it["number"], "cause": c or ""}
+                for it, c in belt_withheld
+            ]
+            out_belt["delivery_motifs"] = {
+                "epic_wide": sorted({w["number"] for w in _motif_withheld
+                                     if "epic-wide" in w["cause"]}),
+                "living_dossier": sorted({w["number"] for w in _motif_withheld
+                                          if "CLOSURE PREFLIGHT" in w["cause"]}),
+            }
             print(json.dumps(out_belt, ensure_ascii=False, indent=2))
         else:
             # Sortie texte : un tableau compact, aligne sur la volee
