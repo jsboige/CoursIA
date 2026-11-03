@@ -115,7 +115,8 @@ Lemme analytique générique (pas spécifique à PAC). Preuve par route du logar
 ≤ exp(−ε·n)` par monotonie de `exp`. Le cas `x = 1` (`(1−x) = 0`) est traité à part.
 
 Forme **générale** du couple : `mimo_lean` en porte l'instance `ε = p` sous le nom
-`one_sub_pow_le_exp_mul` (`SymbolicAI/Lean/mimo_lean/Converse.lean`). Les deux lacs ne
+`one_sub_pow_le_exp_mul` (avec `0 < n` en supplément, requis par sa preuve Mathlib)
+(`MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/Converse.lean`). Les deux lacs ne
 s'importent pas et gardent chacun leur copie — le doublon est déclaré des deux côtés. -/
 theorem one_sub_pow_le_exp (x : ℝ) (n : ℕ) (hx0 : 0 ≤ x) (hx1 : x ≤ 1) (ε : ℝ)
     (hxe : ε ≤ x) : (1 - x) ^ n ≤ Real.exp (-(ε * n)) := by

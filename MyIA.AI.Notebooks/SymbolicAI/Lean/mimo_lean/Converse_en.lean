@@ -179,7 +179,10 @@ theorem gaussian_interval_mass_lower_inv_sqrt {ρ₀ c : ℝ} (hρ : 0 < ρ₀)
 Direct instance of Mathlib `one_sub_div_pow_le_exp_neg`.
 
 The `ε = p` instance of the **general** form `one_sub_pow_le_exp`
-(`ML/learning_theory_lean/PacLearning/PacFiniteBound.lean`); the two lakes do not import
+(`MyIA.AI.Notebooks/ML/learning_theory_lean/PacLearning/PacFiniteBound.lean`), with
+`0 < n` as an extra hypothesis — required by the Mathlib proof
+`one_sub_div_pow_le_exp_neg`, not by the bound itself (which also holds for `n = 0`);
+the two lakes do not import
 each other and each keeps its own copy — the duplicate is declared on both sides. -/
 theorem one_sub_pow_le_exp_mul {n : ℕ} {p : ℝ} (hn : 0 < n) (hp0 : 0 ≤ p) (hp : p ≤ 1) :
     (1 - p) ^ n ≤ Real.exp (-((n : ℝ) * p)) := by

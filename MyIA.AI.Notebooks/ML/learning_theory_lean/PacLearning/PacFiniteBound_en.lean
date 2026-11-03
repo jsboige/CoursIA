@@ -117,7 +117,8 @@ Generic analytic lemma (not PAC-specific). Proof via the logarithm route:
 separately.
 
 **General** form of the pair: `mimo_lean` carries its instance `ε = p` under the name
-`one_sub_pow_le_exp_mul` (`SymbolicAI/Lean/mimo_lean/Converse.lean`). The two lakes do
+`one_sub_pow_le_exp_mul` (with `0 < n` as an extra hypothesis, required by its Mathlib
+proof) (`MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/Converse.lean`). The two lakes do
 not import each other and each keeps its own copy — the duplicate is declared on both
 sides. -/
 theorem one_sub_pow_le_exp (x : ℝ) (n : ℕ) (hx0 : 0 ≤ x) (hx1 : x ≤ 1) (ε : ℝ)

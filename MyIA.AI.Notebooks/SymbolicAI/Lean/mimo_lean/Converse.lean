@@ -178,7 +178,9 @@ theorem gaussian_interval_mass_lower_inv_sqrt {ρ₀ c : ℝ} (hρ : 0 < ρ₀)
 Instance directe de Mathlib `one_sub_div_pow_le_exp_neg`.
 
 Instance `ε = p` de la **forme générale** `one_sub_pow_le_exp`
-(`ML/learning_theory_lean/PacLearning/PacFiniteBound.lean`) ; les deux lacs ne s'importent
+(`MyIA.AI.Notebooks/ML/learning_theory_lean/PacLearning/PacFiniteBound.lean`), avec
+`0 < n` en supplément — requis par la preuve Mathlib `one_sub_div_pow_le_exp_neg`, pas
+par la borne (qui vaut aussi pour `n = 0`) ; les deux lacs ne s'importent
 pas et gardent chacun leur copie — le doublon est déclaré des deux côtés. -/
 theorem one_sub_pow_le_exp_mul {n : ℕ} {p : ℝ} (hn : 0 < n) (hp0 : 0 ≤ p) (hp : p ≤ 1) :
     (1 - p) ^ n ≤ Real.exp (-((n : ℝ) * p)) := by
