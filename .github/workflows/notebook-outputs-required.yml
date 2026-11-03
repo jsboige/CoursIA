@@ -223,6 +223,17 @@ jobs:
       # recapitulatif, jamais son canal.
       - name: Publish (or retract) the outputs-required advisory section
         if: always() && github.event_name == 'pull_request'
+        # #24441 -- la publication est COSMETIQUE : elle ne porte ni le
+        # verdict outputs (qui reste dans le check-run rouge de l'etape
+        # "Run outputs-required check") ni aucun canal de blocage. Une
+        # erreur d'API ici (quota, 5xx, PR fermee entre-temps) ne doit
+        # donc JAMAIS rougir la gate -- c'est le contrat que le commentaire
+        # :206-208 pose pour l'ecriture du resume, et l'etape qui publie
+        # ce resume portait l'inverse. Motif maison : `continue-on-error`
+        # (cf. always-on-guards.yml, always-on-metadata-guards.yml).
+        # `if: always()` reste : un verdict ROUGE doit toujours pouvoir
+        # publier son recapitulatif.
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR: ${{ github.event.pull_request.number }}
