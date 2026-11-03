@@ -9,6 +9,7 @@ class TrendFollowingAQR(QCAlgorithm):
     Trend Following Multi-Asset v7
     ======================================
     Measured (current code, fenêtre codée 2015-01-01 -> 2024-12-31, 2516 séances négociées (3653 jours calendaires), mode strategy): Sharpe 0.362, CAGR 7.294%, MaxDD 15.000%.
+    Source : QC Cloud, dossier #23315 (2026-10-29), projet de référence 20286-TF-baseline (2516 séances négociées, 451 ordres).
 
     Iteration results (historique des iterations de conception, mesurees sous des
     conditions anterieures ; non reproduites par le code actuel, refactors #21420/#22869/#22923) :
