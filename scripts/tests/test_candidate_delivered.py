@@ -1201,3 +1201,38 @@ def test_le_marqueur_delivered_lane_arme_le_tapis_mais_pas_le_label():
     corps = ["[DELIVERED] lane myia-po-2027:CoursIA-2 -- PR #23830"]
     assert pig._delivered_state(corps) is True
     assert attestation_state(corps) != ATTESTED
+
+
+def test_sans_commentaires_pas_d_attestation_voyait():
+    """CONTRAT du payload : l'attestation est lue DANS ``issue["comments"]``.
+
+    Note de suivi de la revue Hermes (2026-11-03) : la branche attestation
+    lit les commentaires charges par l'appelant ; un payload qui ne les
+    porte pas ne voit donc aucune attestation vivante, et l'issue retombe
+    sur l'heuristique de references. Ce n'est pas un defaut aujourd'hui
+    (`main` charge les commentaires), mais le contrat etait IMPLICIT : il
+    est desormais ecrit dans la docstring de `classify` et verrouille ici.
+
+    Le test est une assertion de CONTRAT, pas un comportement voulu : il
+    dit ce qui se passe si un appelant change, pour que le changement soit
+    visible et non subi.
+    """
+    refs = [{"pr_number": 20079, "merged_at": "2026-10-09T21:50:49Z",
+             "body": "See #20078."}]
+
+    avec_fil = _issue(title="x", number=20078, created_at="2026-10-01T00:00:00Z")
+    avec_fil["comments"] = _comments_with_bodies(
+        ("2026-10-20T00:00:00Z",
+         "[INFO] candidate-delivered -- preuve first-hand, la main est rendue"),
+    )
+    assert classify(avec_fil, refs)[0] == "attested"
+
+    # Meme issue, payload SANS le fil : l'attestation n'est plus visible.
+    sans_fil = _issue(title="x", number=20078, created_at="2026-10-01T00:00:00Z")
+    sans_fil["comments"] = []
+    verdict, _why = classify(sans_fil, refs)
+    assert verdict != "attested", (
+        "le contrat a change : les commentaires ne sont plus lus dans le "
+        "payload -- verifier les deux organes avant de l'accepter")
+    assert verdict == "partial", (
+        "sans le fil, l'issue doit retomber sur l'heuristique de references")
