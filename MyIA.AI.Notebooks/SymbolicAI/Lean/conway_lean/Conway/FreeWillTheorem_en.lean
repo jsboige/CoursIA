@@ -50,7 +50,7 @@ Sources:
   combinatorial kernel (resolution cascades through the open namespace chain to
   `Conway.KochenSpecker`).
 -/
-import Conway.KochenSpecker
+import Conway.KochenSpecker_en
 
 namespace Conway_en
 
@@ -58,7 +58,7 @@ open Conway_en
 
 namespace FreeWillTheorem_en
 
-open Conway.KochenSpecker
+open KochenSpecker_en
 
 /-!
 ## Stage 1: Single-particle Free Will Theorem
