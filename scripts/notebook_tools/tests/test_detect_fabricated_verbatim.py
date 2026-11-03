@@ -344,7 +344,7 @@ class TestLiteralVoie:
         cells = [
             md_cell(
                 "## Chargement\n\n"
-                "Apres demarrage (code[1] ci-dessous) :\n\n"
+                "Apres demarrage (code[0] ci-dessous) :\n\n"
                 "```\n"
                 "JVM operationnelle : False\n"
                 "```\n"
@@ -378,7 +378,7 @@ class TestLiteralVoie:
         """
         cells = [
             md_cell(
-                "## Sortie code[1]\n\n"
+                "## Sortie code[0]\n\n"
                 "Voici la valeur obtenu :\n\n"
                 "```\n"
                 "score de demonstration 1.213061\n"
@@ -410,7 +410,7 @@ class TestLiteralVoie:
         """
         cells = [
             md_cell(
-                "## Sortie code[1]\n\n"
+                "## Sortie code[0]\n\n"
                 "```\n"
                 "1.213061\n"
                 "```\n"
@@ -437,7 +437,7 @@ class TestLiteralVoie:
         cells = [
             md_cell(
                 "## Chargement\n\n"
-                "voir code[1] :\n\n"
+                "voir code[0] :\n\n"
                 "```\n"
                 "JVM operationnelle : True\n"
                 "```\n"
@@ -498,16 +498,36 @@ class TestResolveCodeTarget:
             code_cell(),
             code_cell(),
             code_cell("print('hello')", [stream_output("hello")]),
-            md_cell("See code[3] above"),
+            md_cell("See code[2] above"),
         ]
-        # code[3] -> 3rd code cell = index 3 (cells 1, 2, 3 are code)
-        target = _resolve_code_target(cells, anchor_cell_idx=4, code_n=3, direction=None)
+        # code[2] -> 3rd code cell = index 3 (cells 1, 2, 3 are code), 0-based
+        target = _resolve_code_target(cells, anchor_cell_idx=4, code_n=2, direction=None)
         assert target == 3
 
     def test_code_n_out_of_range_returns_none(self):
         cells = [code_cell(), md_cell("See code[5]")]
         target = _resolve_code_target(cells, anchor_cell_idx=1, code_n=5, direction=None)
         assert target is None
+
+    def test_code_n_is_zero_based_not_one_based(self):
+        """Temoin de #24269 : `code[1]` vise la DEUXIEME cellule de code.
+
+        Le corpus est 0-based (`scan_enrich_quality.py` : « code[N] = the N-th
+        CODE cell, 0-based »). L'organe lisait 1-based : `code[1]` tombait sur
+        la premiere cellule, donc la prose etait confrontee a la sortie d'une
+        AUTRE cellule que celle qu'elle citait -- le faux positif mesure sur
+        `Infer-02` (`code[5]` -> cellule 13 au lieu de 18).
+        """
+        cells = [
+            md_cell("# Title"),
+            code_cell("a", [stream_output("alpha")]),
+            code_cell("b", [stream_output("beta")]),
+        ]
+        assert _resolve_code_target(cells, 0, 0, None) == 1
+        assert _resolve_code_target(cells, 0, 1, None) == 2
+        # une seule cellule de code : `code[1]` est hors bornes, pas `code[0]`
+        assert _resolve_code_target([code_cell()], 0, 1, None) is None
+        assert _resolve_code_target([code_cell()], 0, 0, None) == 0
 
     def test_cellule_ci_dessus_walks_back(self):
         cells = [
@@ -526,6 +546,64 @@ class TestResolveCodeTarget:
         ]
         target = _resolve_code_target(cells, anchor_cell_idx=0, code_n=None, direction="ci-dessous")
         assert target == 2
+
+
+# ---------------------------------------------------------------------------
+# 5bis. Ancre 0-based, de bout en bout (#24269)
+# ---------------------------------------------------------------------------
+
+class TestZeroBasedAnchorEndToEnd:
+    """La prose confrontee a la BONNE cellule, et le controle negatif qui reste.
+
+    Avant #24269, `code[1]` tombait sur la premiere cellule de code : une prose
+    citant la sortie de la deuxieme cellule etait declaree fabriquee.
+    """
+
+    # Les fragments doivent depasser MIN_PROBE_CHARS (12) pour etre sondes :
+    # une citation plus courte n'est deliberement pas verifiee (cf
+    # `test_short_numeric_only_fragment_below_threshold`), et un temoin bati
+    # sur un fragment court serait vert pour la mauvaise raison. Ils doivent
+    # aussi ressembler a une SORTIE (multi-mots) et pas a un identifiant, que
+    # `_is_identifier_only` ecarte a juste titre.
+    OUT_FIRST = "mean=41.7321 sd=2.8814"
+    OUT_SECOND = "mean=77.2508 sd=5.1137"
+    OUT_ABSENT = "mean=63.9015 sd=9.4420"
+
+    @classmethod
+    def _cells(cls, anchor_n: int, quoted: str):
+        return [
+            code_cell("a", [stream_output(cls.OUT_FIRST)], execution_count=1),
+            code_cell("b", [stream_output(cls.OUT_SECOND)], execution_count=2),
+            md_cell(
+                "## Sortie observee de code[%d]\n\nLa valeur rendue est `%s`.\n"
+                % (anchor_n, quoted)
+            ),
+        ]
+
+    def test_value_of_the_second_code_cell_is_not_fabricated(self):
+        result = _scan_notebook_from_nb(make_notebook(self._cells(1, self.OUT_SECOND)))
+        assert result["anchors_total"] == 1
+        assert result["findings"] == [], (
+            f"faux positif #24269 : {[f['fragment'] for f in result['findings']]}"
+        )
+
+    def test_absent_value_on_the_second_code_cell_is_still_reported(self):
+        result = _scan_notebook_from_nb(make_notebook(self._cells(1, self.OUT_ABSENT)))
+        assert result["anchors_total"] == 1
+        assert any(self.OUT_ABSENT in f["fragment"] for f in result["findings"]), (
+            "le detecteur doit continuer de declarer une fabrication reelle"
+        )
+
+    def test_the_same_prose_against_the_first_cell_is_still_a_finding(self):
+        """Controle croise : le texte de la cellule 2 n'existe pas dans la 1.
+
+        Ce cas prouve que le temoin positif ci-dessus n'est pas vert parce que
+        l'ancre serait ignoree : sous `code[0]`, la meme prose est bien vue
+        comme fabriquee.
+        """
+        result = _scan_notebook_from_nb(make_notebook(self._cells(0, self.OUT_SECOND)))
+        assert result["anchors_total"] == 1
+        assert any(self.OUT_SECOND in f["fragment"] for f in result["findings"])
 
 
 # ---------------------------------------------------------------------------
@@ -554,7 +632,7 @@ class TestGoldenSetFabricated:
         """
         cells = [
             md_cell(
-                "## Sortie observee de code[1] (verbatim)\n"
+                "## Sortie observee de code[0] (verbatim)\n"
                 "\n"
                 "Le calcul rend :\n"
                 "```\n"
@@ -611,7 +689,7 @@ class TestGoldenSetFabricated:
             md_cell(
                 "## Chargement des JARs\n"
                 "\n"
-                "Apres demarrage de la JVM (voir code[1] ci-dessous), on observe :\n"
+                "Apres demarrage de la JVM (voir code[0] ci-dessous), on observe :\n"
                 "\n"
                 "```\n"
                 "JDK portable: /opt/jdk\n"
@@ -669,7 +747,7 @@ class TestGoldenSetFabricated:
         import pytest
         cells = [
             md_cell(
-                "## Sortie observee de code[2] (verbatim)\n"
+                "## Sortie observee de code[1] (verbatim)\n"
                 "\n"
                 "```\n"
                 "(f : ERC20.Address n -> Nat)\n"
@@ -736,7 +814,7 @@ class TestGoldenSetLegitimate:
         that IS in the real output."""
         cells = [
             md_cell(
-                "## Sortie observee de code[1] (verbatim)\n"
+                "## Sortie observee de code[0] (verbatim)\n"
                 "\n"
                 "```\n"
                 "2*exp(-t^2/2) at t=1 = 0.2706705664732254\n"
@@ -802,7 +880,7 @@ class TestGoldenSetLegitimate:
         including `{n : Nat}` quantifier at the beginning."""
         cells = [
             md_cell(
-                "## Sortie observee de code[2] (verbatim)\n"
+                "## Sortie observee de code[1] (verbatim)\n"
                 "\n"
                 "```\n"
                 "balanceOf : {n : Nat} (f : ERC20.Address n -> Nat) ->\n"
@@ -843,7 +921,7 @@ class TestGoldenSetLegitimate:
     def test_short_citation_ignored(self):
         """A short fragment (< MIN_CITATION_CHARS) is ignored -- single `True`."""
         cells = [
-            md_cell("See code[1] above for the value `True`."),
+            md_cell("See code[0] above for the value `True`."),
             code_cell("print('True')", outputs=[stream_output("True")]),
         ]
         nb = make_notebook(cells)
@@ -862,7 +940,7 @@ class TestMainExitCodes:
         nb_path = tmp_path / "legit.ipynb"
         nb = make_notebook([
             md_cell(
-                "## Sortie observee de code[1] (verbatim)\n"
+                "## Sortie observee de code[0] (verbatim)\n"
                 "\n"
                 "```\n"
                 "2*exp(-t^2/2) at t=1 = 0.2706705664732254\n"
@@ -889,7 +967,7 @@ class TestMainExitCodes:
         # Use a multi-word fragment with structural chars (NOT identifier-only).
         nb = make_notebook([
             md_cell(
-                "## Sortie observee de code[1] (verbatim)\n"
+                "## Sortie observee de code[0] (verbatim)\n"
                 "\n"
                 "```\n"
                 "this_string_with_marker_does_not_exist_in_output = absent_value_xyz\n"
