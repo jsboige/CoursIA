@@ -199,7 +199,7 @@ Détail G.1-G.9 + incidents : [regles-vigilance-detail.md](docs/reference/regles
 | G.1 | Vérifier claims ET verdicts contre la source | `grep`/`Read` avant d'affirmer une absence. **Un verdict d'un autre agent se relit contre le scope réel AVANT d'agir : le label n'est pas la preuve** |
 | G.2 | Métriques honnêtes pas binaires | sorry=0 sans lake build SUCCESS = invalide. BEATS sans multi-seed = invalide |
 | G.3 | Pas de « DONE » sur progrès marginal | Pourcentage explicite + liste résiduelle obligatoires |
-| G.4 | Composites trop larges = split | > 3000 lignes / 15 fichiers / 4 features / 1 domaine = CHANGES_REQUESTED |
+| G.4 | Composites trop larges = split | > 3000 lignes / 15 fichiers / 4 features / 1 domaine = CHANGES_REQUESTED, sauf fournée homogène ; une PR de moins de 20 lignes attend sa fournée ([pr-review-discipline.md](.claude/rules/pr-review-discipline.md) §A, §A bis) |
 | G.5 | Shopping cart interdit | 2 deep tracks max par agent + critères de sortie vérifiables |
 | G.6 | Audit avant merge cascade | Lire le diff + vérifier 1 claim par PR avant merge |
 | G.7 | Stagnation cross-cycle = escalade | Pas d'acceptation « BLOCKED » sans preuve concrète |
