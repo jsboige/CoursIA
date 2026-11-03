@@ -21,3 +21,5 @@
     Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
     (variationnel) sur backend PyTensor. Memes concepts, paradigmes d''inference differents.'
 
+  - '2026-11-02 (myia-ai-01:CoursIA-2, PR #24145) : REBASELINE cote Python -- tranche daudit de la partition #17222 : 10 corrections markdown-only sur PyMC-08-TrueSkill.ipynb (forme consommee par le carnet rappelee dans le resume, section 7 bis verifiee dans le carnet, gains par membre explicites, valeurs de sigma relues sur les sorties commitees, exercices recadres). 17 cellules de code byte-identiques (source, sorties, execution_count) ; aucune re-execution due. Jumeau C# non touche. Aucun strip outille en attente.'
+  - '2026-11-03 (myia-ai-01:CoursIA-2, PR #24145) : fusion de main -- le carnet PyMC-08-TrueSkill.ipynb a ete auto-fusionne avec la version de main (#24181), donc son blob SHA bouge ; attestation re-emise a l''index 0022 (0021 est deja publie sur main, collision d''index). Aucun strip outille ; le jumeau C# n''est pas touche.'

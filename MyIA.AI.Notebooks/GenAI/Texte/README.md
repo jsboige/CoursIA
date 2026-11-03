@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: GenAI-Texte
-pedagogical_count: 46
-breakdown: Texte=46
-maturity: BETA=39, DRAFT=4, ALPHA=3
+pedagogical_count: 48
+breakdown: Texte=48
+maturity: BETA=41, ALPHA=4, DRAFT=3
 -->
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Semantic Kernel](../SemanticKernel/README.md)
@@ -29,34 +29,34 @@ La maîtrise des LLMs constitue la pierre angulaire de toute expertise en Géné
 
 | # | Notebook | Description | Durée |
 |---|----------|-------------|-------|
-| 1 | `1_OpenAI_Intro.ipynb` | Introduction à l'API OpenAI, tokens, Chat Completions, Responses API | 45 min |
-| 2 | `2_PromptEngineering.ipynb` | Zero-shot, few-shot, Chain-of-Thought, modèles raisonnants | 50 min |
+| 1 | `01_OpenAI_Intro.ipynb` | Introduction à l'API OpenAI, tokens, Chat Completions, Responses API | 45 min |
+| 2 | `02_PromptEngineering.ipynb` | Zero-shot, few-shot, Chain-of-Thought, modèles raisonnants | 50 min |
 
 ### Tier 2 : Sorties Structurées (Intermédiaire)
 
 | # | Notebook | Description | Durée |
 |---|----------|-------------|-------|
-| 3 | `3_Structured_Outputs.ipynb` | JSON Schema, Pydantic, mode strict, extraction de données | 55 min |
-| 3b | `3b_Typed_Decisions_System1.ipynb` | Décisions typées « système 1 » : contrat choice/score/noul, LLM gelé lu sur ses logits, tête d'attention fine-tunée (jevlike) et moteur de décision pré-entraîné (laya : zéro-shot puis fine-tuné) contre témoin classique, calibration (NLL, Brier, ECE, température), escalade, banc tiers CC0 hors domaine (v1/v2, chute mesurée) | 60 min |
-| 3c | `3c_Constrained_Decoding_Python.ipynb` | Décodage contraint au niveau du token : automate fini (DFA) codé à la main pour le format date ISO `\d{4}-\d{2}-\d{2}`, dérivation du masque de logits depuis les états de l'automate, génération pas à pas d'une date valide — le complément token-level du 3 (JSON Schema agit au niveau API, le masque agit sur la distribution elle-même) | — |
-| 3d | `3d_JEPA_PredictionLatente_System1.ipynb` | Prédiction latente sans génération : DM-JEPA 1.7 (moteur non-autorégressif, 349 M paramètres) exécuté via le harnais de validation local (#21997) — le distracteur qui partage l'ancre coule (rang moyen 5,7 sur 6), la négation reste au rang du hasard (3,75 contre 3,5), baseline du tri aléatoire à côté ; les chiffres de la page de validation reproduits en direct | 35 min |
-| 4 | `4_Function_Calling.ipynb` | Tools API, appels parallèles, boucle agentique | 60 min |
+| 3 | `03_Structured_Outputs.ipynb` | JSON Schema, Pydantic, mode strict, extraction de données | 55 min |
+| 3b | `03b_Typed_Decisions_System1.ipynb` | Décisions typées « système 1 » : contrat choice/score/noul, LLM gelé lu sur ses logits, tête d'attention fine-tunée (jevlike) et moteur de décision pré-entraîné (laya : zéro-shot puis fine-tuné) contre témoin classique, calibration (NLL, Brier, ECE, température), escalade, banc tiers CC0 hors domaine (v1/v2, chute mesurée) | 60 min |
+| 3c | `03c_Constrained_Decoding_Python.ipynb` | Décodage contraint au niveau du token : automate fini (DFA) codé à la main pour le format date ISO `\d{4}-\d{2}-\d{2}`, dérivation du masque de logits depuis les états de l'automate, génération pas à pas d'une date valide — le complément token-level du 3 (JSON Schema agit au niveau API, le masque agit sur la distribution elle-même) | — |
+| 3d | `03d_JEPA_PredictionLatente_System1.ipynb` | Prédiction latente sans génération : DM-JEPA 1.7 (moteur non-autorégressif, 349 M paramètres) exécuté via le harnais de validation local (#21997) — le distracteur qui partage l'ancre coule (rang moyen 5,7 sur 6), la négation reste au rang du hasard (3,75 contre 3,5), baseline du tri aléatoire à côté ; les chiffres de la page de validation reproduits en direct | 35 min |
+| 4 | `04_Function_Calling.ipynb` | Tools API, appels parallèles, boucle agentique | 60 min |
 
 ### Tier 3 : Augmentation (Intermédiaire)
 
 | # | Notebook | Description | Durée |
 |---|----------|-------------|-------|
-| 5 | `5_RAG_Modern.ipynb` | RAG, embeddings, chunking, Responses API multi-turn, citations | 65 min |
-| 6 | `6_PDF_Web_Search.ipynb` | Support PDF (base64/file_id), web_search intégré | 50 min |
-| 7 | `7_Code_Interpreter.ipynb` | Code interpreter, analyse de données, génération de graphiques | 55 min |
+| 5 | `05_RAG_Modern.ipynb` | RAG, embeddings, chunking, Responses API multi-turn, citations | 65 min |
+| 6 | `06_PDF_Web_Search.ipynb` | Support PDF (base64/file_id), web_search intégré | 50 min |
+| 7 | `07_Code_Interpreter.ipynb` | Code interpreter, analyse de données, génération de graphiques | 55 min |
 
 ### Tier 4 : Fonctionnalités Avancées
 
 | # | Notebook | Description | Durée |
 |---|----------|-------------|-------|
-| 8 | `8_Reasoning_Models.ipynb` | o4-mini, gpt-5-thinking, reasoning_effort, comparaisons | 60 min |
-| 9 | `9_Production_Patterns.ipynb` | Conversations API, background mode, retry, batch processing | 70 min |
-| 9b | `9b_Prompt_Security_RedTeam.ipynb` | Versant **adversarial** du 9 : taxonomie de l'injection (directe / indirecte RAG / jailbreak / exfiltration), 3 attaques mesurées sur le routeur DeepSeek self-hosted (≥1 réussie avant défense), défenses testées + tableau attaque × défense, suite de tests rejouable (propriété « PWNED jamais délivré »), 3 exercices stubs C.1 | 70 min |
+| 8 | `08_Reasoning_Models.ipynb` | o4-mini, gpt-5-thinking, reasoning_effort, comparaisons | 60 min |
+| 9 | `09_Production_Patterns.ipynb` | Conversations API, background mode, retry, batch processing | 70 min |
+| 9b | `09b_Prompt_Security_RedTeam.ipynb` | Versant **adversarial** du 9 : taxonomie de l'injection (directe / indirecte RAG / jailbreak / exfiltration), 3 attaques mesurées sur le routeur DeepSeek self-hosted (≥1 réussie avant défense), défenses testées + tableau attaque × défense, suite de tests rejouable (propriété « PWNED jamais délivré »), 3 exercices stubs C.1 | 70 min |
 | 9c | `09c_Production_Routage_Repli.ipynb` | Choisir le bon modèle au bon moment : catalogue et prix, banque de questions à réponse vérifiable, baselines locale et distante, routage par politique (coût × difficulté × budget), cascade petit-vers-grand sur seuil de confiance, repli sur panne fournisseur simulée, synthèse du coût par stratégie | — |
 | 9d | `09d_Production_Caches.ipynb` | Payer une fois, servir mille fois : remplissage du cache sur inférence réelle, embeddings et similarité, cache exact, cache sémantique (seuil et prix), cache de préfixe fournisseur lu dans `cached_tokens` | — |
 | 9e | `09e_Production_Exploitation.ipynb` | L'exploitation en production : coût par requête mesuré sur appels réels, budget (trajectoire, seuil d'alerte, date de franchissement), shadow, canary et auto-rollback sur erreurs réelles, SLO et error budget | — |

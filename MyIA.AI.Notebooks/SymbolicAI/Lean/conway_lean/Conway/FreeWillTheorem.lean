@@ -20,6 +20,12 @@
   Ce fichier formalise la structure du théorème et la connecte au
   contexte du projet `conway_lean` (Kochen-Specker, Conway's legacy).
 
+  **Insight clé (Conway-Kochen)** : ici, le « libre arbitre » est une
+  *définition mathématique*, non une thèse philosophique. Cela signifie que
+  la réponse d'une particule n'est pas une fonction du passé ; le théorème
+  le démontre rigoureusement à partir de trois axiomes physiques modestes
+  (SPIN, TWIN, MIN).
+
   ### i18n — convention #4980 (ratifiée 2026-07-04)
 
   Ce fichier est le **canonique français**. Le miroir anglais est le fichier
@@ -36,6 +42,12 @@
   sibling pair (MERGED — EN twin standalone créé), c.457 `Conway/LookAndSay`
   sibling pair (MERGED), c.518 `Conway/Nim` sibling pair (MERGED),
   **c.519 `Conway/FreeWillTheorem` strip bilingue FR canonical (ce PR)**.
+
+  Sources :
+  - J. H. Conway et S. Kochen, « The Free Will Theorem »,
+    Found. Phys. 36 (2006), 1441-1473.
+  - J. H. Conway et S. Kochen, « The Strong Free Will Theorem »,
+    Notices AMS 56 (2009), 226-232.
 -/
 
 import Conway.KochenSpecker

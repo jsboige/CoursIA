@@ -25,6 +25,8 @@ La racine portait encore six fichiers hétérogènes en plus de cet index à la 
 | `qc-research-issue-template.md` | — (supprimé) | doublon de [qc/qc-research-issue-template.md](qc/qc-research-issue-template.md). La copie racine n'était référencée par aucun script ni lien entrant — supprimée pour réduire la surface de désynchronisation ; la version `qc/` est l'unique source. EPIC #11698 inchangé (#19283) |
 | `data-policy.md` (ajouté 2026-09-02) | [cadrage/data-policy.md](cadrage/data-policy.md) | migré #19283 — le cadrage agrégateur n'indexe pas les politiques techniques, et son sommaire ne le porte pas non plus (communauté interlocutrice ≠ règle de dépôt). Reste un statut *cadrage*, pas une doctrine exécutable : 4 catégories (curée / brute téléchargeable + fetch / checkpoint documenté / trace régénérable) + arbitrage par cas. #13742 |
 | `suivis/iit-ict-transition.md` | [reference/iit-ict-transition.md](reference/iit-ict-transition.md) | reclassé pérenne : le suivi est tenu à jour au fil des livraisons — tranche 2 de #19283 ([#21564](https://github.com/jsboige/CoursIA/pull/21564)) |
+| `STABLE_SNAPSHOT.md` | [reference/STABLE_SNAPSHOT.md](reference/STABLE_SNAPSHOT.md) | relocalisé : le snapshot vivant (régénéré selon H.7) rejoint la documentation de référence — fenêtre 1 de #13751 ([#24126](https://github.com/jsboige/CoursIA/pull/24126)) |
+| `STABLE_SNAPSHOT_GENAI.md` | [archive/STABLE_SNAPSHOT_GENAI.md](archive/STABLE_SNAPSHOT_GENAI.md) | archivé : snapshot GenAI daté sans référence entrante, rejoint l'exemplaire historique de la matrice — même fenêtre (#13751) |
 
 Trois autres documents racine ont rejoint `cadrage/` par les tranches de #17525 — `grothendieckian-lens.md` et `leiden-declaration-position.md` (#19022), puis `magnifica-humanitas-dialogue.md` (#19283) ; provenance et règle d'agrégation : [Cadrage épistémique](#cadrage-épistémique-docscadrage).
 
@@ -39,6 +41,7 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 | [reference/architecture_mcp_roo.md](reference/architecture_mcp_roo.md) | Cycle de vie, logs et diagnostic des serveurs MCP (l'inventaire des 15 outils roo-state-manager vit en amont : [HARNESS-OVERVIEW.md](https://github.com/jsboige/roo-extensions/blob/main/docs/harness/HARNESS-OVERVIEW.md) §2) |
 | [reference/kernels-runtime.md](reference/kernels-runtime.md) | .NET, Python, WSL, conda envs |
 | [reference/env-python-reparation.md](reference/env-python-reparation.md) | Réparation environnements Python |
+| [reference/STABLE_SNAPSHOT.md](reference/STABLE_SNAPSHOT.md) | Matrice d'état d'exécution des carnets — snapshot canonique, régénéré selon le plan H.7 (prescriptions P1/P4 de [regles-validation-detail.md](reference/regles-validation-detail.md)) ; déplacé de la racine du dépôt, fenêtre 1 de #13751 |
 | [reference/claude-code-config.md](reference/claude-code-config.md) | Agents, skills, rules, model selection |
 | [reference/cluster-agents.md](reference/cluster-agents.md) | Machines cluster, GPU topology |
 | [reference/teaching-context.md](reference/teaching-context.md) | Calendrier, scope EPITA-IS, agents par école |
@@ -110,12 +113,13 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 | [reference/slides-layout-pattern.md](reference/slides-layout-pattern.md) | Motif de mise en page des decks Slidev (campagne #10950) — écrit après qu'un diagnostic « les grilles sont impossibles dans Slidev » ait bloqué trois itérations : le contre-exemple est dans le document |
 | [reference/backtester-e2-cadrage.md](reference/backtester-e2-cadrage.md) | Cadrage Option C du port `MyIA.Trading.Backtester` (E2) et déblocage des préconditions — #7357 (EPIC différée), parent #7265 |
 | [reference/backtester-e2-svm-kernel.md](reference/backtester-e2-svm-kernel.md) | Substitution du SVM à noyau dans le port E2 du Backtester Aricie — grain prescrit par le body de #7357, cadrage #12541 |
-| [reference/adk-migration-2-eval.md](reference/adk-migration-2-eval.md) | Audit migration ADK 2.0 — google-adk==2.8.0 sur Track2-GoogleADK |
+| [reference/adk-migration-2-eval.md → transients/2026-09-13-…](transients/2026-09-13-adk-migration-2-eval.md) | Audit migration ADK 2.0 (verdict historique, #14498/#13925 closes) — déplacé en lane transiente ; le noyau durable (lignée google-adk, APIs consommées par `adk_runtime.py`) vit dans le README Track2-GoogleADK (vague 4 #14623) |
 | [reference/agent-cloud-agnosticisme.md](reference/agent-cloud-agnosticisme.md) | Session cloud d'agnosticisme — rôle et circulation |
 | [reference/bot-review-harness.md](reference/bot-review-harness.md) | Bot Review Harness — pointer externe |
 | [reference/branch-cleanup-manifest.README.md](reference/branch-cleanup-manifest.README.md) | Manifeste de préservation des branches distantes — issue #14238 |
 | [reference/shared-keyring-myia-keys.md](reference/shared-keyring-myia-keys.md) | Trousseau partagé MyIA-Keys — organe d'accès, bootstrap par machine, empreinte de preuve |
 | [reference/tricephale-circulation.md](reference/tricephale-circulation.md) | Tricéphalie — coordinateur, titulaire, secrétaire |
+| [reference/lean-theorem-duplicates.md](reference/lean-theorem-duplicates.md) | Théorèmes Lean prouvés **deux fois** dans des lacs différents — paires de déclarations dont les noms se recouvrent et dont les docstrings décrivent le même résultat. Régénérée par `scripts/lean/lean_theorem_duplicates.py`, `--check` rend 1 quand page et arbre divergent. Contrôle positif : les paires Arrow et Sen. See #24183 (T0) |
 
 ## GenAI (docs/genai/)
 

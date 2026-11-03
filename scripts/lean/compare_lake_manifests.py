@@ -20,7 +20,7 @@ Lakes excluded by the EPIC's own analysis are skipped with their reasons:
   means bumping a project we deliberately reference, not our parc (#6116,
   #13146).
 - ``agent_tests/prover/session_state/reference_docs/*/upstream``: third-party
-  fixtures, out of scope per ``.claude/rules/code-style.md``.
+  fixtures, out of scope per ``.claude/rules/lean-i18n.md``.
 
 Output is a per-identity-cluster report: identical lakes together, divergent
 lakes with the exact package/rev pairs that differ. ``--json`` returns the
@@ -39,7 +39,7 @@ from pathlib import Path
 # Documented exclusions of EPIC #4362 (see module docstring for the reasons).
 DEFAULT_EXCLUDES: dict[str, str] = {
     "conway_cgt_lean": "transitive upstream pin (vihdzp/combinatorial-games), not ours to converge (#6116/#13146)",
-    "reference_docs": "third-party prover fixtures, out of scope (code-style.md)",
+    "reference_docs": "third-party prover fixtures, out of scope (lean-i18n.md)",
 }
 
 
