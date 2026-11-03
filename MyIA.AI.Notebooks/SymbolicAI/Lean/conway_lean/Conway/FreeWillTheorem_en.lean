@@ -1,55 +1,53 @@
 /-
-Copyright (c) 2026 CoursIA. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
+  `Conway.FreeWillTheorem` — Conway-Kochen's Free Will Theorem
+  ======================================================================
+  The Free Will Theorem (Conway-Kochen 2006/2009, "Strong Free Will
+  Theorem") asserts that, under reasonable physical assumptions
+  (compatibility with quantum mechanics + non-conspiracy), elementary
+  particles possess a property analogous to "free will": their responses
+  to spin experiments are not entirely fixed by the distant past of the
+  universe.
 
-## Free Will Theorem (Conway-Kochen 2006/2009)
+  More precisely, if Alice and Bob perform spin measurements (three
+  orthogonal directions of an entangled photon), and if the particles had
+  a hidden response function that depended with certainty only on the
+  shared past (non-conspiracy), then the function would have to depend
+  on the measured directions — and this dependence violates the
+  "Kochen-Specker" property that no function of a quantum measurement
+  with a classical eigenvalue can be predetermined without conspiracy.
 
-Pilier 2 of Epic #1651. Proves that particle responses cannot be
-deterministic functions of prior information, assuming three physically
-motivated axioms: SPIN, TWIN, and MIN.
+  This file formalizes the structure of the theorem and connects it to
+  the context of the `conway_lein` project (Kochen-Specker, Conway's legacy).
 
-The argument proceeds in two stages:
+  **Key insight (Conway-Kochen)**: here, "free will" is a *mathematical*
+  definition, not a philosophical thesis. It means the particle's response
+  is not a function of the past; the theorem proves this rigorously from
+  three modest physical axioms (SPIN, TWIN, MIN).
 
-**Stage 1 (Single-particle)**:
-A deterministic model assigns a fixed {0,1} response to each measurement
-direction, for each hidden state. SPIN forces this to be a valid coloring
-of the Cabello vectors (exactly one `true` per orthogonal basis). But the
-Kochen-Specker theorem (Pilier 1) says no such coloring exists.
-Contradiction.
+  ### i18n — convention #4980 (ratified 2026-07-04)
 
-**Stage 2 (Two-particle)**:
-With two entangled particles measured by spatially separated experimenters,
-TWIN forces both particles to share the same response function, and MIN
-ensures experimenter independence. The same KS contradiction applies.
+  This file is the **French canonical**. The English mirror is the sibling
+  file `FreeWillTheorem_en.lean` (`namespace Conway_en > namespace FreeWillTheorem_en`,
+  `open Conway_en`, `open Conway.KochenSpecker`, `import Conway.KochenSpecker`)
+  — sibling pair V2 nested model (cf `code-style.md` §Lean i18n and the analogue
+  `Conway/Fractran` c.451 Pattern A, `Conway/LookAndSay` c.457, `Conway/Nim` c.518).
+  Docstrings in French here; the body (signatures, defs, proofs) stays
+  byte-identical between the two files. No inline bilingual block (option B
+  rejected, ratified 2026-07-04).
 
-**Key insight (Conway-Kochen)**: "Free will" here is a *mathematical*
-definition, not a philosophical thesis. It means: the particle's response
-is not a function of the past. The theorem proves this rigorously from
-three modest physical axioms.
+  Cross-references: c.366 `Conway.lean` bilingual root (MERGED), c.451
+  `Conway/Fractran` sibling pair (MERGED), c.456 `Conway/FreeWillTheorem`
+  sibling pair (MERGED — standalone EN twin created), c.457 `Conway/LookAndSay`
+  sibling pair (MERGED), c.518 `Conway/Nim` sibling pair (MERGED),
+  **c.519 `Conway/FreeWillTheorem` FR canonical bilingual strip (this PR)**.
 
-Sources:
-  Conway & Kochen, "The Free Will Theorem",
+  Sources:
+  - J. H. Conway and S. Kochen, "The Free Will Theorem",
     Found. Phys. 36 (2006), 1441-1473.
-  Conway & Kochen, "The Strong Free Will Theorem",
+  - J. H. Conway and S. Kochen, "The Strong Free Will Theorem",
     Notices AMS 56 (2009), 226-232.
 -/
 
-
-/-
-  English mirror of `FreeWillTheorem.lean` (FR canonical). Convention EPIC #4980
-  (decision ratified 2026-07-04, cf `code-style.md` §Lean i18n): distinct FR + EN
-  sibling files — no inline bilingual block in a single file (Option B rejected).
-  The module docstring above mirrors the FR copyright + FR-orbit description; the
-  body signatures, proofs and tactics remain byte-identical between the two files.
-
-  Architecture: `Conway.FreeWillTheorem` uses a nested namespace (`Conway > FreeWillTheorem`),
-  with `open KochenSpecker` to access the 18-vector Cabello kernel. The EN sibling
-  mirrors this nested structure (`Conway_en > FreeWillTheorem_en`), following the
-  precedent of `KochenSpecker_en.lean` (PR #6211 MERGED 2026-07-12): `open Conway_en`
-  to expose the parent sibling namespace, `open KochenSpecker` for the FR canonical
-  combinatorial kernel (resolution cascades through the open namespace chain to
-  `Conway.KochenSpecker`).
--/
 import Conway.KochenSpecker_en
 
 namespace Conway_en
