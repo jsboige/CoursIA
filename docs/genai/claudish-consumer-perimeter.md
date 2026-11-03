@@ -46,10 +46,18 @@ La branche (a) **n'est pas un contournement** : elle déclare le périmètre au 
 | Mesure | Résultat | Conséquence |
 |---|---|---|
 | `GET localhost:3000/v1/models` | `{"object":"list","data":[]}` | aucun modèle servi par la passerelle |
-| `POST /v1/chat/completions` avec la clé du `.env` local | `{"type":"error","error":{"type":"authentication_error","message":"invalid proxy authentication"}}` | la clé cliente locale est **périmée** face à la passerelle en cours — c'est exactement l'acceptance 2 (« reste locale, par machine ») |
-| variables `VLLM_*` / `OPENAI_BASE_URL_n` dans `MyIA.AI.Notebooks/GenAI/.env` | aucune | le sidebar vLLM n'est pas configuré sur cette machine |
+| `POST /v1/chat/completions` avec la clé du `.env` local | `{"type":"error","error":{"type":"authentication_error","message":"invalid proxy authentication"}}` | la passerelle en cours ne reconnaît pas cette valeur |
+| `python scripts/secrets/render_envs.py --check` | `[OK] 12/19 target .env on disk, in sync with master.env` | le `.env` consommateur est **en phase** avec `master.env` — la divergence n'est donc pas côté client |
 
 Conséquence directe : **sur `po-2027`, aucune des deux voies n'exécute un appel de modèle**. Aucun carnet de ce périmètre ne peut donc être ré-exécuté, et C.2 interdit de committer une édition de carnet non ré-exécutée. C'est ce qui borne la livraison de #14926 à la décision et au périmètre, sans toucher aux carnets.
+
+### Ce que la dernière ligne déplace
+
+Elle retire l'explication commode. Le réflexe est de conclure « la clé cliente locale est périmée, c'est l'acceptance 2 qui n'est pas faite sur cette machine ». La mesure dit l'inverse : `master.env` porte la clé, et le `.env` consommateur est **en phase avec elle**. La valeur refusée est donc celle que la distribution a correctement livrée — ce qui place la divergence **entre `master.env` et la passerelle en cours d'exécution**, côté serveur, dans un dépôt qui n'est pas celui-ci.
+
+C'est cohérent avec la mécanique de rotation : changer la valeur serveur impose de **redémarrer le service** (le compose ComfyUI-Login ne régénère son hash qu'au démarrage ; même famille de piège documentée dans [secrets-management.md](secrets-management.md)). Une valeur mise à jour sans redémarrage laisse exactement cette signature — client à jour, serveur qui refuse encore l'ancienne.
+
+Le geste correctif n'appartient donc pas à une lane de ce dépôt : il se demande au propriétaire de la passerelle. L'écrire ici évite qu'un prochain audit referme la boucle sur « acceptance 2 non faite ».
 
 ## Condition de réouverture
 
@@ -57,7 +65,8 @@ La fournée A redevient migrable — en **une seule PR pour les deux carnets**, 
 
 1. la passerelle sert les modèles visés et les expose sur `/v1/models` ;
 2. elle relaie `chat_template_kwargs`, `seed` et `logprobs` sans les perdre (la liste est close et chiffrée par la mesure du 2026-10-07) ;
-3. `render_envs.py --check` rend 0 sur la machine qui exécute.
+3. `render_envs.py --check` rend 0 sur la machine qui exécute — **déjà vérifié sur `po-2027`** au 2026-11-03 ;
+4. la valeur serveur de la passerelle correspond à celle que `master.env` distribue, et le service a été redémarré après la rotation.
 
 Tant que ces conditions ne sont pas réunies, la classe 2 et la classe 3 ci-dessus restent telles quelles. Le geste utile n'est pas de les migrer, c'est de constater qu'elles n'ont pas bougé.
 
