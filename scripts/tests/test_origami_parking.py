@@ -27,6 +27,7 @@ from pathlib import Path
 
 import pytest
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "coordination"))
 
 import origami_parking as op  # noqa: E402
@@ -215,3 +216,64 @@ def test_un_pli_est_termine_selon_son_etat(state, delivered, expected):
     folds = [{"number": 2, "pli": 1, "state": state, "delivered": delivered}]
     verdict = op.parking_verdict(epic, folds, [])
     assert verdict["parked"] is expected
+
+
+# ---------------------------------------------------------------------------
+# L'integration dans le tapis
+# ---------------------------------------------------------------------------
+
+def _pool_item(number, title, last_delivery_stamp=None):
+    return {"number": number, "title": title, "body": "",
+            "labels": ["EPIC"], "last_delivery_stamp": last_delivery_stamp}
+
+
+def test_le_tapis_ecarte_un_epic_parque(monkeypatch):
+    """Le parcage retire l'EPIC du tirage et le nomme dans la mesure."""
+    import pick_idle_grain as pig
+
+    def _fake_measure(pool, delivered_probe=None):
+        return [{"epic": 19309, "parked": True,
+                 "reason": "tous les plis materialises sont termines",
+                 "title": "[Epic] constellation causale", "next_pli": 4}]
+
+    monkeypatch.setattr(pig.origami_parking, "measure", _fake_measure)
+    parked, state = pig._origami_parking_state([_pool_item(19309, "[Epic] X")])
+    assert list(parked) == [19309]
+    assert state["measured"] is True
+    assert state["parked"] == [19309]
+
+
+def test_le_tapis_ne_parque_rien_sans_mesure(monkeypatch):
+    """Fail-OPEN : une mesure qui echoue ne retire aucun grain du tapis."""
+    import pick_idle_grain as pig
+
+    def _boom(pool, delivered_probe=None):
+        raise RuntimeError("reseau tombe")
+
+    monkeypatch.setattr(pig.origami_parking, "measure", _boom)
+    parked, state = pig._origami_parking_state([_pool_item(19309, "[Epic] X")])
+    assert parked == {}
+    assert state["measured"] is False
+    assert "echec" in state["reason"]
+
+
+def test_la_livraison_d_un_pli_vient_du_corpus_de_prs_du_tapis(monkeypatch):
+    """Le probe de livraison lit le pool, pas le reseau."""
+    import pick_idle_grain as pig
+
+    seen = {}
+
+    def _fake_measure(pool, delivered_probe=None):
+        seen["delivered"] = delivered_probe(23499)
+        return []
+
+    monkeypatch.setattr(pig.origami_parking, "measure", _fake_measure)
+    pool = [_pool_item(23499, "Pli 2 (#18205) : ...", last_delivery_stamp=None)]
+    pig._origami_parking_state(pool)
+    assert seen["delivered"] is False
+
+    seen.clear()
+    pool = [_pool_item(23499, "Pli 2 (#18205) : ...",
+                       last_delivery_stamp="2026-10-30T00:00:00Z")]
+    pig._origami_parking_state(pool)
+    assert seen["delivered"] is True
