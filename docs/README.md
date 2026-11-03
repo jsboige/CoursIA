@@ -113,7 +113,7 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 | [reference/slides-layout-pattern.md](reference/slides-layout-pattern.md) | Motif de mise en page des decks Slidev (campagne #10950) — écrit après qu'un diagnostic « les grilles sont impossibles dans Slidev » ait bloqué trois itérations : le contre-exemple est dans le document |
 | [reference/backtester-e2-cadrage.md](reference/backtester-e2-cadrage.md) | Cadrage Option C du port `MyIA.Trading.Backtester` (E2) et déblocage des préconditions — #7357 (EPIC différée), parent #7265 |
 | [reference/backtester-e2-svm-kernel.md](reference/backtester-e2-svm-kernel.md) | Substitution du SVM à noyau dans le port E2 du Backtester Aricie — grain prescrit par le body de #7357, cadrage #12541 |
-| [reference/adk-migration-2-eval.md](reference/adk-migration-2-eval.md) | Audit migration ADK 2.0 — google-adk==2.8.0 sur Track2-GoogleADK |
+| [reference/adk-migration-2-eval.md → transients/2026-09-13-…](transients/2026-09-13-adk-migration-2-eval.md) | Audit migration ADK 2.0 (verdict historique, #14498/#13925 closes) — déplacé en lane transiente ; le noyau durable (lignée google-adk, APIs consommées par `adk_runtime.py`) vit dans le README Track2-GoogleADK (vague 4 #14623) |
 | [reference/agent-cloud-agnosticisme.md](reference/agent-cloud-agnosticisme.md) | Session cloud d'agnosticisme — rôle et circulation |
 | [reference/bot-review-harness.md](reference/bot-review-harness.md) | Bot Review Harness — pointer externe |
 | [reference/branch-cleanup-manifest.README.md](reference/branch-cleanup-manifest.README.md) | Manifeste de préservation des branches distantes — issue #14238 |
