@@ -21,6 +21,13 @@ def _tools():
     return SimpleNamespace(proof_latched=False, reset_stagnation=lambda: None)
 
 
+def _kb(tmp_path):
+    # An isolated KB: the default one is the committed proof_knowledge.json,
+    # which a passing verify would otherwise write into.
+    from prover.knowledge import ProofKnowledgeBase
+    return ProofKnowledgeBase(path=tmp_path / "kb.json")
+
+
 def _run(executor, msg):
     ctx = AsyncMock()
     ctx.yield_output = AsyncMock()
@@ -67,7 +74,8 @@ def test_verify_success_latches_the_proof(tmp_path, monkeypatch):
     sctx = SorryContext(filepath=str(f), sorry_line=1, indentation=0,
                         indent_str="", full_file=src, goal_state="0 + n = n")
     tools = _tools()
-    ex = VerifyExecutor(sorry_context=sctx, imports="", tactic_tools=tools)
+    ex = VerifyExecutor(sorry_context=sctx, imports="", tactic_tools=tools,
+                        kb=_kb(tmp_path))
     msg = ProofMessage(content="x", tactic="exact Nat.zero_add n", sorry_count=1)
     ctx = _run(ex, msg)
 
@@ -90,7 +98,8 @@ def test_failed_verify_does_not_latch(tmp_path, monkeypatch):
     sctx = SorryContext(filepath=str(f), sorry_line=1, indentation=0,
                         indent_str="", full_file=src, goal_state="0 + n = n")
     tools = _tools()
-    ex = VerifyExecutor(sorry_context=sctx, imports="", tactic_tools=tools)
+    ex = VerifyExecutor(sorry_context=sctx, imports="", tactic_tools=tools,
+                        kb=_kb(tmp_path))
     msg = ProofMessage(content="x", tactic="rfl", sorry_count=1)
     _run(ex, msg)
 
