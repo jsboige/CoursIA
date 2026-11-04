@@ -36,7 +36,16 @@ from check_series_zero_pad import (  # noqa: E402
 
 
 @pytest.fixture
-def series(tmp_path: Path) -> Path:
+def series(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """Une serie HORS depot, sur n'importe quelle machine.
+
+    Le plafond de decouverte git est pose sur `tmp_path` : sans lui, les tests
+    qui exercent le repli « git injoignable » supposent que le repertoire
+    temporaire de pytest n'est lui-meme contenu dans aucun depot. C'est vrai
+    par defaut, faux sur une machine dont le `TMPDIR` serait versionne -- le
+    test dirait alors l'inverse de ce qu'il veut dire (revue #24080, note b).
+    """
+    monkeypatch.setenv("GIT_CEILING_DIRECTORIES", str(tmp_path))
     d = tmp_path / "GameTheory"
     d.mkdir()
     return d
