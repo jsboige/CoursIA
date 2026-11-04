@@ -3,7 +3,7 @@
   <!--
     Port MyIA.Trading.Backtester (fork MyIntelligenceAgency/Lean, branche MyIABacktesting_integration)
     vers CoursIA net9.0 — EPIC #7357 geste 3, tranche 1 (scaffold).
-    Substitutions mesurees (docs/reference/backtester-e2-cadrage.md, geste 2) :
+    Substitutions mesurees (docs/transients/2026-08-23-backtester-e2-cadrage.md, geste 2) :
     - HintPath DLL Aricie/DNN : abandonnees, socle = MyIA.AI.Shared
     - Accord.MachineLearning 3.8.2-alpha : CONSERVE (tranche 4). Le cadrage anticipait une
       substitution vers ML.NET ; mesure faite, elle est sans objet — ML.NET n'expose pas de

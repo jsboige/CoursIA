@@ -42,6 +42,21 @@ def _load_jobs():
     return doc.get("jobs", {})
 
 
+def _resolve_allow(raw):
+    """Resout la valeur ``allow-axioms`` du workflow en liste de noms.
+
+    Depuis #21905 la source de verite de l'allow-list est un fichier
+    (``@scripts/lean/allow_axioms_conway.txt``) : lire la valeur brute ne
+    dirait plus rien du contenu. On passe par le module du gate
+    (``scripts/lean/allow_list.py``), donc ces pins portent sur ce que le
+    job resout reellement -- pas sur la forme de transport.
+    """
+    sys.path.insert(0, str(REPO / "scripts" / "lean"))
+    from allow_list import parse_allow  # noqa: PLC0415 (import tardif: sys.path)
+
+    return parse_allow(raw, REPO)
+
+
 def test_workflow_exists():
     assert CONWAY_WF.is_file(), f"missing {CONWAY_WF}"
 
@@ -265,12 +280,18 @@ def test_audit_allowlists_native_decide_axioms():
     jobs = _load_jobs()
     audit = jobs["proof-integrity-audit"].get("with", {})
     allow = audit.get("allow-axioms", "")
-    assert "native_decide" in allow, (
+    names = _resolve_allow(allow)
+    assert any("native_decide" in n for n in names), (
         "audit must allow-list the native_decide axioms or it false-fails")
     # Pin the empirical footprint so a silent re-shrink (or accidental copy of
     # the blocking gate's 19) is caught -- and so any future widening has to
     # come with the module-attribution argument, as #9341's did.
-    names = [a.strip() for a in allow.split(",") if a.strip()]
+    # La source de verite est le fichier (allow-axioms: "@path", #21905) :
+    # `_resolve_allow` resout le "@chemin" ET la forme inline ; on garde donc
+    # la liste resolue plus haut (la reparse comma-separated de main
+    # s'appliquerait a la chaine "@scripts/lean/allow_axioms_conway.txt" et
+    # compterait 1 element). Le compte suit `main` : 79 ancres (77 mesurees
+    # au move #21905 + les 2 ancres du temoin de machine de Turing #17465).
     assert len(names) == 79, (
         f"audit allow-list must carry the 79 native_decide axioms of the whole "
         f"lake under the #10889 '*' derivation (38 HashlifeCorrectness-era "
@@ -310,9 +331,8 @@ def test_audit_allowlist_is_distinct_from_blocking_gate():
     a future copy-paste of the blocking gate's 19 into the audit (which would
     re-open the vert-hors-cible the audit exists to close)."""
     jobs = _load_jobs()
-    audit_set = {a.strip() for a in
-                 jobs["proof-integrity-audit"].get("with", {}).get("allow-axioms", "").split(",")
-                 if a.strip()}
+    audit_set = set(_resolve_allow(
+        jobs["proof-integrity-audit"].get("with", {}).get("allow-axioms", "")))
     blocking_set = {a.strip() for a in
                     jobs["proof-integrity"].get("with", {}).get("allow-axioms", "").split(",")
                     if a.strip()}
@@ -347,7 +367,7 @@ def test_blocking_and_audit_are_complementary():
 # unnoticed by the ratchet: the test subject (allow-list footprint) would
 # shift, but no workflow would run on the diff, and the rouge from the new
 # `native_decide` would only land on the NEXT lane to edit any script.
-# The fix in PR #11495 wired `MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/**
+# The fix in PR #11495 wired `MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/**
 # *.lean` (+ lakefile + lean-toolchain) into BOTH `push:` and `pull_request:`
 # `paths:` of `scripts-tests.yml`. This test is the **structural pin**: it
 # greps the YAML to ensure both push and pr trigger blocks still carry those
@@ -371,10 +391,10 @@ SCRIPTS_TESTS_WF = REPO / ".github" / "workflows" / "scripts-tests.yml"
 # a `.lean` file in conway_lean/ should trigger scripts-tests.yml, which runs
 # test_audit_allowlists_native_decide_axioms above.
 _CONWAY_LEAN_TRIGGER_PATHS = [
-    "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/**.lean",
-    "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.lean",
-    "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.toml",
-    "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lean-toolchain",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/**.lean",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.lean",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.toml",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lean-toolchain",
 ]
 
 
@@ -397,7 +417,7 @@ def test_workflow_scripts_tests_exists():
 
 def test_native_decide_ratchet_wired_on_conway_lean_paths():
     """#11349 / PR #11495: scripts-tests.yml MUST carry the four
-    `MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/**` paths (or any glob
+    `MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/**` paths (or any glob
     form that catches them: e.g. `conway_lean/**.lean` with the bare
     `MyIA.AI.Notebooks/SymbolicAI/Lean/` prefix inferred by the workflow
     runtime root, OR `**` at the workflow root -- a future maintainer

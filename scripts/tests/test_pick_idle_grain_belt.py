@@ -2689,6 +2689,133 @@ def test_belt_publishes_the_run_deadline_before_the_claims_phase(
     assert pig._BELT_DEADLINE[0] is None, "l'echeance fuit apres le run"
 
 
+def test_belt_arms_the_run_wall_before_the_pool_load(monkeypatch, capsys):
+    """#23090 : le mur est DEJA publie quand `fetch_pool` s'ouvre.
+
+    Mesure fondatrice (po-2025, clone superficiel) : `--belt --lane` lance en
+    debut de cycle n'a rien rendu dans les 900 s de son propre budget, puis
+    plus de 40 min. Le diagnostic de l'issue est exact -- `_BELT_DEADLINE`
+    etait arme dans la branche `--belt`, donc apres le chargement du pool, et
+    les phases d'amont couraient sans aucune borne.
+
+    Le predicat est l'INTERIEUR de `fetch_pool` : c'est la que la sonde doit
+    deja lire une echeance, et lire un timeout ramene au budget du run.
+    """
+    _patch_belt_network(monkeypatch, prs=[], red_state=_state_red())
+    clock = _patched_clock(monkeypatch, start=3000.0)
+    seen = {}
+
+    def spy_pool(**kwargs):
+        seen["deadline"] = pig._BELT_DEADLINE[0]
+        seen["clamped"] = pig._clamp_timeout(90)
+        return [], None
+
+    monkeypatch.setattr(pig, "fetch_pool", spy_pool)
+    pig._BELT_DEADLINE[0] = None
+    try:
+        rc = pig.main(["--lane", "myia-po-2025:CoursIA", "--belt",
+                       "--belt-time-budget", "60", "--json"])
+        assert rc == 0
+        assert seen["deadline"] == pytest.approx(3060.0), (
+            "le chargement du pool s'ouvre sans echeance publiee (#23090) : "
+            "le budget du run ne borne pas ses phases d'amont")
+        assert seen["clamped"] == pytest.approx(60.0), (
+            "la sonde de pool garde son timeout par defaut malgre un budget")
+        assert pig._BELT_DEADLINE[0] is None, "l'echeance fuit apres le run"
+    finally:
+        pig._BELT_DEADLINE[0] = None
+    _ = clock
+
+
+def test_phase_deadline_can_only_shrink_the_run_wall(monkeypatch):
+    """#23090 : une phase retrecit le mur du run, elle ne l'etend jamais.
+
+    Sans ce sens unique, armer le mur avant les phases d'amont n'aurait servi
+    a rien : `red_backlog` publie sa propre echeance (`--red-budget`, 300 s par
+    defaut) et l'aurait REPOUSSEE a chaque appel, rendant au run exactement le
+    sursis que #23090 veut lui retirer.
+    """
+    clock = _patched_clock(monkeypatch, start=4000.0)
+    pig._BELT_DEADLINE[0] = 4060.0  # mur du run : 60 s
+    try:
+        token = pig._publish_phase_deadline(300)  # phase plus genereuse
+        assert pig._BELT_DEADLINE[0] == pytest.approx(4060.0), (
+            "une phase a 300 s a repousse le mur du run")
+        pig._restore_phase_deadline(token)
+        assert pig._BELT_DEADLINE[0] == pytest.approx(4060.0)
+
+        token = pig._publish_phase_deadline(10)  # phase plus etroite
+        assert pig._BELT_DEADLINE[0] == pytest.approx(4010.0), (
+            "une phase plus etroite doit borner plus court")
+        pig._restore_phase_deadline(token)
+        assert pig._BELT_DEADLINE[0] == pytest.approx(4060.0), (
+            "le `finally` de la phase doit rendre le mur du run")
+    finally:
+        pig._BELT_DEADLINE[0] = None
+    _ = clock
+
+
+def test_each_rest_page_pays_the_remaining_wall_not_its_default(monkeypatch):
+    """#23090 : la boucle REST clampe CHAQUE page, pas la boucle entiere.
+
+    Armer le mur avant `fetch_pool` ne servait a rien tant que les transports
+    d'amont lisaient leur defaut : `_rest_pages` payait 120 s par page, soit
+    600 s pour cinq pages, sous un budget de 120 s. C'est la moitie « rendre la
+    borne effective » du fix -- l'autre moitie (armer tot) est mesuree
+    au-dessus.
+    """
+    clock = _patched_clock(monkeypatch, start=5000.0)
+    seen = []
+
+    class _Stop(Exception):
+        pass
+
+    def fake_run(cmd, **kwargs):
+        seen.append(kwargs.get("timeout"))
+        raise _Stop
+
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+    pig._BELT_DEADLINE[0] = 5020.0  # 20 s de mur
+    try:
+        with pytest.raises(_Stop):
+            pig._rest_pages("repos/jsboige/CoursIA/issues", max_pages=5)
+        assert seen == [pytest.approx(20.0)], (
+            "la premiere page a garde son defaut de 120 s sous un mur de 20 s")
+    finally:
+        pig._BELT_DEADLINE[0] = None
+    _ = clock
+
+
+def test_pool_transports_honour_the_run_wall(monkeypatch):
+    """#23090 : les DEUX transports de `fetch_pool` paient le reste du mur.
+
+    Le premier est `gh issue list` (defaut 120 s), le second le listing REST
+    pagine. Le predicat ne depend pas de l'ordre : aucun appel ne peut
+    demander plus que le reste a courir.
+    """
+    clock = _patched_clock(monkeypatch, start=6000.0)
+    seen = []
+
+    def fake_run(cmd, **kwargs):
+        seen.append(kwargs.get("timeout"))
+        raise RuntimeError("transport tombe")
+
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+    pig._BELT_DEADLINE[0] = 6030.0  # 30 s de mur
+    try:
+        try:
+            pig.fetch_pool(cache=None, cache_mode="off", cache_status=None,
+                           probe=None)
+        except pig.TransportUnavailable:
+            pass
+        assert seen, "aucun transport sollicite"
+        assert all(t == pytest.approx(30.0) for t in seen), (
+            f"un transport a depasse le mur du run : {seen}")
+    finally:
+        pig._BELT_DEADLINE[0] = None
+    _ = clock
+
+
 def test_publish_phase_deadline_bounds_probes_and_lends_its_budget(monkeypatch):
     """#21436 : la phase de reparation a sa PROPRE echeance.
 
@@ -2899,3 +3026,278 @@ def test_belt_cover_probe_budget_exhausts_mid_hand():
     assert [p["number"] for p in picks] == [19011, 19012, 19013, 19014]
     # Le contrat d'etat porte la cle de couverture des le depart (#22986).
     assert state["cover_failures"] == []
+
+
+
+# ==================================================================
+# #23340 point 1 -- un test par sortie anticipee du run `--belt`.
+# Le principe : chaque sortie court-circuitee DESARME l'echeance du
+# run. Sans ces tests, supprimer les trois `_disarm_belt_run_clock()`
+# laissait la suite verte alors que c'est la propriete « aucune fuite
+# hors du run » que le docstring revendique. Chaque temoin releve
+# l'echeance AU MOMENT de la sortie (elle doit etre armee, sinon le
+# assert final ne prouverait rien) puis verifie `_BELT_DEADLINE[0] is
+# None` au retour de main.
+# ==================================================================
+
+
+def test_belt_disarms_on_the_board_consumer_exit(monkeypatch, tmp_path):
+    """Sortie « tableau consomme » (#20053) : picks retenus, return 0.
+
+    La sortie est AVANT l'ardoise de lane et le garde rouge -- c'est tout
+    l'objet du court-circuit. Si son `_disarm` disparaissait, l'echeance
+    armee par `--belt-time-budget` fuirait dans le process du test."""
+    _patch_belt_network(monkeypatch, prs=[], red_state=_state_red())
+    board_file = tmp_path / "board.json"
+    board_file.write_text("{}", encoding="utf-8")
+    seen = {}
+
+    monkeypatch.setattr(pig, "read_board_snapshot", lambda path: {"board": True})
+    monkeypatch.setattr(pig, "board_age_minutes", lambda snap, **kw: 0.0)
+
+    def fake_consume_board(snapshot, args, **kw):
+        seen["deadline"] = pig._BELT_DEADLINE[0]
+        return [{"number": 21125, "title": "temoin"}], {"reason": ""}
+
+    monkeypatch.setattr(pig, "consume_board", fake_consume_board)
+    monkeypatch.setattr(pig, "print_board_consumer", lambda *a, **kw: None)
+    pig._BELT_DEADLINE[0] = None
+    try:
+        rc = pig.main(["--lane", "myia-po-2025:CoursIA", "--belt",
+                       "--belt-time-budget", "60", "--json",
+                       "--board-export", str(board_file)])
+        assert rc == 0
+        assert seen["deadline"] is not None, (
+            "le temoin n'a pas vu d'echeance armee : le run n'est pas "
+            "passe par le chemin arme, l'assert final serait vide")
+        assert pig._BELT_DEADLINE[0] is None, (
+            "l'echeance fuit apres la sortie tableau consomme (#23340 point 1)")
+    finally:
+        pig._BELT_DEADLINE[0] = None
+
+
+def test_belt_disarms_on_the_pool_unmeasured_exit(monkeypatch):
+    """Sortie RC_POOL_UNMEASURED (#17038) : pool illisible, rc dedie.
+
+    « Je n'ai pas pu lire » n'est pas « aucun candidat » -- la sortie est
+    AVANT tout tirage, et son `_disarm` evite qu'une echeance armee pour
+    un run qui n'a rien servi borne les sondes d'un appel ulterieur du
+    meme process."""
+    _patch_belt_network(monkeypatch, prs=[], red_state=_state_red())
+    seen = {}
+
+    def unmeasured_pool(**kw):
+        seen["deadline"] = pig._BELT_DEADLINE[0]
+        return [], "gh: injoignable (temoin du test)"
+
+    monkeypatch.setattr(pig, "fetch_pool", unmeasured_pool)
+    pig._BELT_DEADLINE[0] = None
+    try:
+        rc = pig.main(["--lane", "myia-po-2025:CoursIA", "--belt",
+                       "--belt-time-budget", "60", "--json"])
+        assert rc == pig.RC_POOL_UNMEASURED
+        assert seen["deadline"] is not None, (
+            "le temoin n'a pas vu d'echeance armee : l'assert final "
+            "serait vide")
+        assert pig._BELT_DEADLINE[0] is None, (
+            "l'echeance fuit apres la sortie pool non mesure "
+            "(#23340 point 1)")
+    finally:
+        pig._BELT_DEADLINE[0] = None
+
+
+def test_belt_disarms_on_the_report_exit(monkeypatch):
+    """Sortie `--report` (#18832) : deux nombres, pas de tirage.
+
+    La sortie est APRES `fetch_pool` (elle mesure la passe complete) mais
+    AVANT la fenetre de claims et la boucle -- son `_disarm` est le seul
+    a rendre la main au caller sans mur pose."""
+    _patch_belt_network(monkeypatch, prs=[], red_state=_state_red())
+    seen = {}
+
+    def fake_metrics(pool, **kw):
+        seen["deadline"] = pig._BELT_DEADLINE[0]
+        return {"pool": 0, "max_gap_days": None}
+
+    monkeypatch.setattr(pig, "belt_report_metrics", fake_metrics)
+    monkeypatch.setattr(pig, "print_belt_report", lambda *a, **kw: None)
+    pig._BELT_DEADLINE[0] = None
+    try:
+        rc = pig.main(["--lane", "myia-po-2025:CoursIA", "--belt",
+                       "--belt-time-budget", "60", "--json", "--report"])
+        assert rc == 0
+        assert seen["deadline"] is not None, (
+            "le temoin n'a pas vu d'echeance armee : l'assert final "
+            "serait vide")
+        assert pig._BELT_DEADLINE[0] is None, (
+            "l'echeance fuit apres la sortie --report (#23340 point 1)")
+    finally:
+        pig._BELT_DEADLINE[0] = None
+
+
+def test_belt_deadline_keeps_the_marker_filter_when_the_read_is_local(monkeypatch):
+    """Le mur de temps arrete le RESEAU ; il n'a aucune raison d'arreter une
+    lecture deja en memoire.
+
+    Defaut mesure le 2026-11-03 (draw `32e6c570269a`, lane
+    `myia-po-2027:CoursIA`) : les deux filtres de marqueur (recent, conteneur)
+    etaient sautes des que `expired()` rendait vrai, alors que l'instantane
+    de la passe avait deja lu les commentaires de la fenetre (36 stamps sur
+    36 servis sans une seule requete). Le tapis a servi 4 candidats sur 4
+    portant chacun un marqueur de livraison dans leur dernier commentaire, et
+    la lane recevait « ACTION REQUISE : poser [CLAIMED] sur #19694 » pour une
+    issue livree depuis le 20/10.
+
+    Ici `30201` a ses commentaires en memoire et porte un marqueur : il doit
+    etre ECARTE malgre l'echeance. `30202` n'a pas d'entree locale : sa sonde
+    reste sautee (comportement d'avant, fail-OPEN rapporte).
+    """
+    _patched_clock(monkeypatch)
+    local = _make_item(30201, age_days=100, idle=9, last=None)
+    remote = _make_item(30202, age_days=99, idle=9, last=None)
+    monkeypatch.setattr(
+        pig, "_snapshot_comments",
+        lambda n: ([{"body": "[INFO] candidate-delivered -- lane x",
+                     "createdAt": "2026-11-03T10:00:00Z"}]
+                   if n == 30201 else None))
+    calls = []
+
+    def marker(n):
+        calls.append(n)
+        return n == 30201
+
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        [local, remote], {}, _belt_args(grains=2), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        claims_probe=lambda nums: {},
+        recent_marker_probe=marker,
+        time_budget_s=0.0)
+
+    assert calls == [30201], (
+        "seul un candidat dont la lecture est LOCALE est filtre apres le mur")
+    assert [p["number"] for p in picks] == [30202]
+    assert [w[0]["number"] for w in withheld] == [30201]
+    assert "LIVRAISON (recent)" in withheld[0][1]
+    assert state["time_budget_hit"] is True
+
+
+def test_belt_deadline_still_skips_the_marker_filter_without_local_read(monkeypatch):
+    """Controle negatif : sans instantane, le filtre coute une requete et
+    reste soumis au mur. Le correctif ne rallume pas le reseau apres
+    l'echeance."""
+    _patched_clock(monkeypatch)
+    a = _make_item(30211, age_days=100, idle=9, last=None)
+    b = _make_item(30212, age_days=99, idle=9, last=None)
+    monkeypatch.setattr(pig, "_snapshot_comments", lambda n: None)
+    calls = []
+
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        [a, b], {}, _belt_args(grains=2), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        claims_probe=lambda nums: {},
+        recent_marker_probe=lambda n: calls.append(n) or True,
+        time_budget_s=0.0)
+
+    assert calls == [], "aucune sonde de marqueur ne part apres le mur"
+    assert [p["number"] for p in picks] == [30211, 30212]
+    assert withheld == []
+
+
+# Corps reel d'un dossier de cloture CLOSE (grammaire canonique de
+# `check_closure_dossier.py` -- meme fixture que test_pick_closure_reopened).
+DOSSIER_CLOSE_24505 = """[CLOSURE PREFLIGHT]
+schema: 1
+lane: myia-po-2025:CoursIA
+issue: 40003
+verdict: CLOSE
+acceptance:
+  - "criteres confrontes a main avec preuve citee"
+residue: none
+open-prs: 0
+comments-reviewed: 3
+[/CLOSURE PREFLIGHT]"""
+
+
+def test_belt_deadline_skips_the_marker_filter_on_closure_dossier(monkeypatch):
+    """Reserve review #24505, reproduite par execution : un dossier de
+    cloture en dernier commentaire rallume le RESEAU meme apres le mur.
+
+    Le corps CLOSE declenche dans `has_recent_delivery_marker` la regle de
+    reouverture (#24250) -> `_reopen_events` -> une requete REST du timeline.
+    Le predicat `marker_read_is_local` d'avant la correction repondait
+    « True » des que l'instantane existait : le filtre de marqueur passait,
+    et la requete timeline partait au-dela de l'echeance (reproduit par
+    Hermes sur un dossier CLOSE valide ET sur l'annonce en prose : appels
+    `gh api --paginate ... issues/<N>/timeline` malgre le mur).
+
+    Apres correction, les deux classes dans le meme tirage : le porteur du
+    dossier n'est PAS sonde (lecture non locale -> filtre saute, fail-OPEN
+    historique, silence rapporte) ; le porteur d'un marqueur ordinaire reste
+    filtre comme avant le mur -- le correctif ne dessert pas la classe que
+    la mesure fondatrice (#21436) couvrait."""
+    _patched_clock(monkeypatch)
+    dossier = _make_item(30301, age_days=100, idle=9, last=None)
+    ordinary = _make_item(30302, age_days=99, idle=9, last=None)
+    bodies = {
+        30301: [{"body": DOSSIER_CLOSE_24505,
+                 "createdAt": "2026-11-03T10:00:00Z"}],
+        30302: [{"body": "[INFO] candidate-delivered -- lane x",
+                 "createdAt": "2026-11-03T10:00:00Z"}],
+    }
+    monkeypatch.setattr(pig, "_snapshot_comments", lambda n: bodies.get(n))
+    calls = []
+
+    def marker(n):
+        calls.append(n)
+        return True
+
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        [dossier, ordinary], {}, _belt_args(grains=2), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        claims_probe=lambda nums: {},
+        recent_marker_probe=marker,
+        time_budget_s=0.0)
+
+    assert calls == [30302], (
+        "seul le marqueur ordinaire (lecture locale) est sonde apres le mur ; "
+        "le dossier CLOSE ne doit pas y rattacher une requete timeline")
+    assert [p["number"] for p in picks] == [30301], (
+        "le porteur du dossier reste servi : filtre saute (fail-OPEN)")
+    assert [w[0]["number"] for w in withheld] == [30302]
+    assert "LIVRAISON (recent)" in withheld[0][1]
+    assert state["time_budget_hit"] is True
+
+
+def test_belt_deadline_skips_marker_filter_on_prose_close_announcement(
+        monkeypatch):
+    """Meme reserve #24505, seconde classe reproduite par Hermes : l'annonce
+    de fermeture EN PROSE (« Fermeture sur dossier ... verdict CLOSE »)-
+    declenche la meme regle de reouverture qu'un dossier qui parse. Le
+    predicat doit la traiter pareil : lecture non locale -> filtre saute
+    apres le mur, aucune sonde."""
+    _patched_clock(monkeypatch)
+    annonce = _make_item(30311, age_days=100, idle=9, last=None)
+    body = ("Fermeture sur dossier `[CLOSURE PREFLIGHT]` (verdict CLOSE, "
+            "gate `check_closure_dossier.py` rc=0, commentaire ci-dessus).")
+    monkeypatch.setattr(
+        pig, "_snapshot_comments",
+        lambda n: ([{"body": body, "createdAt": "2026-11-03T10:00:00Z"}]
+                   if n == 30311 else None))
+    calls = []
+
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        [annonce], {}, _belt_args(grains=1), probe_budget=4,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        claims_probe=lambda nums: {},
+        recent_marker_probe=lambda n: calls.append(n) or True,
+        time_budget_s=0.0)
+
+    assert calls == [], (
+        "l'annonce en prose ne doit pas rattacher une sonde apres le mur")
+    assert [p["number"] for p in picks] == [30311]
+    assert withheld == []
+    assert state["time_budget_hit"] is True

@@ -65,7 +65,7 @@ Le paramètre `fix` choisit le code exécuté. `fix=off` exécute le code d'orig
 
 Le portage n'utilise pas l'Object Store : ses clés sont partagées entre tous les projets, et un modèle chargé d'un autre run aurait vu le futur.
 
-Le carnet ne prédit pas tout à fait J+1 : sa séquence s'arrête à la ligne i−1, et sa cible compare les rendements de i+1 à i+2. Le portage suit l'intention écrite (« BTC surperforme ETH à J+1 »), c'est-à-dire le rendement que l'algorithme encaisse. L'écart du carnet est suivi en #23564.
+Le carnet suit le même alignement que le portage : sa séquence s'arrête à la clôture t, sa cible compare les rendements de BTC et d'ETH de t à t+1, et le rendement encaissé sur la fenêtre de test est celui de ce même jour. Ré-exécuté avec cet alignement, il garde son verdict, INCONCLUSIVE : DLinear reste devant LSTM, sans se détacher du buy-and-hold BTC (|z| < 2, un z qui mesure la dispersion entre seeds, sans test de Diebold-Mariano).
 
 ## Mesure (#23563)
 

@@ -947,13 +947,14 @@ def test_un_epinglage_pip_est_releve_et_compare_a_la_canonique():
 
 
 def test_le_pin_pip_du_corpus_est_vraiment_relu():
-    """Point 2 (relecture #23079) : l'etat honnete du corpus pip.
+    """Etat honnete du corpus pip apres #23104.
 
-    La mention 3.0.2 du paquet mealpy n'apparait que dans la **prose** (un
-    commentaire C# et un `print` Python) ; sa seule commande d'installation
-    est ecrite dans une cellule markdown, donc hors perimetre de l'organe.
-    L'entree de manifeste ne doit donc pas pretendre que le corpus declare
-    cette version : ni epinglage versionne, ni epinglage flottant.
+    Avant #23104 l'organe ne lisait que les cellules code : il rendait un
+    corpus pip **vide**, alors que deux carnets declarent l'installation de
+    mealpy dans une cellule markdown. Les deux declarations sont **non
+    versionnees** (epinglage flottant) : aucune ne fixe 3.0.2. Le manifeste ne
+    doit donc porter aucun epinglage versionne, et exactement ces deux
+    declarations flottantes.
     """
     manifest = clv.load_manifest(MANIFEST_PATH)
     report = clv.run_census(REPO_ROOT, manifest)
@@ -963,16 +964,78 @@ def test_le_pin_pip_du_corpus_est_vraiment_relu():
     assert pip_libs, "le manifeste doit porter une bibliotheque pip"
     for lib in pip_libs:
         assert lib["versions"] == [], (
-            "aucun carnet ne doit epingler une version pip : "
+            "aucun carnet ne doit epingler une version pip exacte : "
             f"{lib['library']} porte {lib['versions']}"
         )
-        assert lib["floating_notebooks"] == [], (
-            "aucune commande d'installation pip en cellule code : "
+        assert lib["floating_notebooks"] == [
+            "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics.ipynb",
+            "MyIA.AI.Notebooks/Sudoku/Sudoku-05-PSO-Python.ipynb",
+        ], (
+            "les deux declarations markdown de mealpy doivent etre vues : "
             f"{lib['library']} porte {lib['floating_notebooks']}"
         )
-        assert "s'accordent" not in (lib["note"] or ""), (
-            "la note ne doit pas pretendre que le corpus declare la version"
+        assert "hors perimetre de l'organe" not in (lib["note"] or ""), (
+            "la note ne doit plus decrire le markdown comme hors perimetre"
         )
+
+
+def test_les_quatre_formes_de_commande_pip_sont_reconnues():
+    """#23104 : `pip`, `pip3`, `python -m pip` et `uv pip` sont des commandes.
+
+    L'organe ne reconnaissait que la premiere : les six lignes
+    `python -m pip install ...` du corpus (torch, transformers) n'etaient pas
+    des declarations pour lui.
+    """
+    manifest = clv.load_manifest(MANIFEST_PATH)
+    for command in (
+        "pip install mealpy==3.0.2",
+        "pip3 install mealpy==3.0.2",
+        "python -m pip install mealpy==3.0.2",
+        "python3 -m pip install mealpy==3.0.2",
+        "uv pip install mealpy==3.0.2",
+        "!pip install mealpy==3.0.2",
+        "%pip install mealpy==3.0.2",
+    ):
+        pins = clv.pins_from_payload(_notebook([command]), manifest)
+        assert [p.version for p in pins] == ["3.0.2"], command
+
+
+def test_une_declaration_markdown_est_lue_et_la_prose_ne_l_est_pas():
+    """#23104 : le markdown est lu **sur ses lignes-commandes seulement**.
+
+    Mesure du corpus : 36 lignes-commandes ancrees contre 114 mentions en
+    prose. Une phrase qui cite la commande, ou un `print` qui l'imprime, n'est
+    pas une declaration et ne doit pas etre relevee.
+    """
+    manifest = clv.load_manifest(MANIFEST_PATH)
+    payload = {
+        "cells": [
+            {
+                "cell_type": "markdown",
+                "source": ["Installez avec `pip install mealpy==3.0.2` :\n"],
+                "metadata": {},
+            },
+            {
+                "cell_type": "markdown",
+                "source": ["pip install mealpy==3.0.2\n"],
+                "metadata": {},
+            },
+            {
+                "cell_type": "code",
+                "source": ["print('pip install mealpy==3.0.2')\n"],
+                "metadata": {},
+                "outputs": [],
+            },
+        ],
+        "metadata": {},
+        "nbformat": 4,
+        "nbformat_minor": 5,
+    }
+    pins = clv.pins_from_payload(payload, manifest)
+    assert len(pins) == 1, [(p.library, p.version, p.cell_type) for p in pins]
+    pin = pins[0]
+    assert (pin.library, pin.version, pin.cell) == ("mealpy", "3.0.2", 1)
+    assert pin.cell_type == "markdown", "la provenance doit etre portee par le pin"
 
 
 def test_une_version_pip_citee_en_prose_n_est_pas_un_epinglage():

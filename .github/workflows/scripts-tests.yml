@@ -69,10 +69,10 @@ on:
       # to conway_lean could pass un-rattled and the rouge would land on the first
       # next scripts/** pusher. Wire the lake path so the ratchet fires when its
       # subject moves; mirrored under pull_request: below.
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/**.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.toml'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lean-toolchain'
       # #1028 melody verdict: scripts/tests/test_syllable_pitch_verdict.py pins
       # classify_melody, which lives in the prosody_lab module below. Same shape
       # as the conway entry just above -- a test under scripts/** whose SUBJECT
@@ -232,10 +232,10 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/**'
       # #11349 native_decide ratchet rewire (mirror of the push paths above).
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/**.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.toml'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lean-toolchain'
       # #1028 melody verdict (mirror of the push path above).
       - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/syllable_pitch.py'
       # #19695 banc de reference TTS (mirror of the push path above).
@@ -426,6 +426,17 @@ jobs:
           # collection errors for test_trust_simulation.py and skips the
           # entire suite, masking every other test result. See #4937.
           pip install matplotlib
+          # scikit-learn : DEPENDANCE HERITEE DU TOOLCACHE, desormais declaree.
+          # scripts/tests/test_golden_quantitative_claims.py l'importe deja, et
+          # scripts/tests/test_ws_probes_margin.py ajoute par #24073 l'importe
+          # via scripts/repro/ws_probes_margin.py. La suite ne collectait que
+          # parce que le pool `coursia-linux` porte scikit-learn en residu d'un
+          # job ML -- une dependance qui n'est declaree nulle part est une
+          # panne en attente (le jour ou le toolcache change, la collecte rend
+          # une erreur bruyante sur une PR innocente). Meme motif que
+          # `qc-mcp-lite` / `ModuleNotFoundError: mcp`. Regle F : l'environnement
+          # se repare, il ne se contourne pas par un skip.
+          pip install scikit-learn
           # papermill + nbformat: genai-stack/commands/notebooks.py imports
           # papermill at top level, so test_genai_notebooks.py needs it at
           # collection time. Both are declared deps of genai-stack
@@ -689,6 +700,7 @@ jobs:
             scripts/audit/tests \
             scripts/fallacy_detection/tests \
             MyIA.AI.Notebooks/GameTheory/tests \
+            MyIA.AI.Notebooks/IIT/ICT-Series/scripts/tests \
             MyIA.AI.Notebooks/QuantConnect/scripts/tests \
             MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_bg_tree_lock.py \
             MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_guards.py \

@@ -410,7 +410,7 @@ layout: dense
 ## Parcours et extensions
 
 - [GameTheory-03e-Meta-Actions-Tarifees-Python (§4-8)](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03e-Meta-Actions-Tarifees-Python.ipynb) : versant d'integration (absorbé depuis l'ex-03f)
-  - [GameTheory-03e-Meta-Actions-Tarifees-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03e-Meta-Actions-Tarifees-Python.ipynb) · [GameTheory-03d-Deux-Especes-de-Fleches-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03d-Deux-Especes-de-Fleches-Python.ipynb) · [GameTheory-03c-Le-Joueur-LLM-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03c-Le-Joueur-LLM-Python.ipynb)
+  - [GameTheory-03e-Meta-Actions-Tarifees-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03e-Meta-Actions-Tarifees-Python.ipynb) · [GameTheory-03d-Deux-Especes-de-Fleches-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03d-Deux-Especes-de-Fleches-Python.ipynb) · [Dynamics-10-Joueur-LLM-Python](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-10-Joueur-LLM-Python.ipynb)
 
 ---
 layout: default
@@ -611,7 +611,7 @@ layout: dense
 - Structures de coalition optimales: NP-Hard
   - Bons résultats avec exploration du graphe de structure
 
-*Notebooks : [GameTheory-15-CooperativeGames-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Python.ipynb) (Shapley, noyau) · [GameTheory-15b-Lean-CooperativeGames-Lean](../../MyIA.AI.Notebooks/GameTheory/GameTheory-15b-Lean-CooperativeGames-Lean.ipynb) (axiomes de Shapley prouves en Lean) · [GameTheory-15d-Mobius-Coalitions-Lean-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-15d-Mobius-Coalitions-Lean-Python.ipynb).*
+*Notebooks : [GameTheory-15-CooperativeGames-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Python.ipynb) (Shapley, noyau) · [GameTheory-15b-Lean-CooperativeGames-Lean](../../MyIA.AI.Notebooks/GameTheory/GameTheory-15b-Lean-CooperativeGames-Lean.ipynb) (axiomes de Shapley prouves en Lean) · [SocialChoice/06b-Mobius-Coalitions-Lean-Python](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/06b-Mobius-Coalitions-Lean-Python.ipynb).*
 
 ---
 layout: section

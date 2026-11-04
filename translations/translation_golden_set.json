@@ -4,10 +4,10 @@
    "kind": "notebook",
    "fr": "MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb",
    "en": "MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy_en.ipynb",
-   "sha1_fr": "fddeefa8c6270596efcd6eeb609975cfac4a77aa",
-   "sha1_en": "056f86d0ec56b8c8daa0ba5470b862ab91740f0a",
-   "sources_sha1_fr": "40dfa4f7f7ee34f6c972f360fdbcf165413f064e",
-   "sources_sha1_en": "b8f09142b868246708ef37e0e040be26b6a4ee10"
+   "sha1_fr": "66e5269ed1a42fea211ffb9343ed9a9fd20527a8",
+   "sha1_en": "170b0051596786526db41ff16a70a2cb1957e316",
+   "sources_sha1_fr": "022a2b5b57db008ed3f0fa043ba4c0f99430a53f",
+   "sources_sha1_en": "0b2fd860764f4371b5cf0f8851d437b95a47c805"
   },
   {
    "kind": "lean",
@@ -196,7 +196,7 @@
    "fr": "MyIA.AI.Notebooks/GameTheory/game_theory_lean/CooperativeGames/Basic.lean",
    "en": "MyIA.AI.Notebooks/GameTheory/game_theory_lean/CooperativeGames/Basic_en.lean",
    "sha1_fr": "2ff951c3ab4ce267deaff7436b5068d752e07177",
-   "sha1_en": "455eab706cd3bb87719d99f89a8b6a7d10bb67a3"
+   "sha1_en": "d8b18614e2931b64483f9664c8293b942c48cf05"
   },
   {
    "kind": "lean",
@@ -245,28 +245,28 @@
    "fr": "MyIA.AI.Notebooks/GameTheory/game_theory_lean/RepeatedGames/Discounting.lean",
    "en": "MyIA.AI.Notebooks/GameTheory/game_theory_lean/RepeatedGames/Discounting_en.lean",
    "sha1_fr": "d0547cb73f6969be5d1a8cfed460a1e9b9c0dacc",
-   "sha1_en": "a44e1ddf6e2fa1e6324a89f3517606f4b9fda2fb"
+   "sha1_en": "cf6f2bd4e527b1b357c746f1e4b252edf9d29260"
   },
   {
    "kind": "lean",
    "fr": "MyIA.AI.Notebooks/GameTheory/game_theory_lean/RepeatedGames/Folk.lean",
    "en": "MyIA.AI.Notebooks/GameTheory/game_theory_lean/RepeatedGames/Folk_en.lean",
    "sha1_fr": "6eee8a2fd7e2c118e62c86f762c3c6d6f333fe99",
-   "sha1_en": "de8af30133769362abf734c998855555323ca50f"
+   "sha1_en": "d4792e0a7a8b0a099fc099b321bebba7ae01a3a5"
   },
   {
    "kind": "lean",
    "fr": "MyIA.AI.Notebooks/GameTheory/game_theory_lean/RepeatedGames/GrimTrigger.lean",
    "en": "MyIA.AI.Notebooks/GameTheory/game_theory_lean/RepeatedGames/GrimTrigger_en.lean",
    "sha1_fr": "6448205a976b7764ffea1794f6dadd263c2ac5f5",
-   "sha1_en": "0934a8fd3d4f610d1586a2b9bb3a40b86709b432"
+   "sha1_en": "b93a496e49c1df39eb03576262f8a3c09839c297"
   },
   {
    "kind": "lean",
    "fr": "MyIA.AI.Notebooks/GameTheory/game_theory_lean/RepeatedGames/Stage.lean",
    "en": "MyIA.AI.Notebooks/GameTheory/game_theory_lean/RepeatedGames/Stage_en.lean",
    "sha1_fr": "0cb39d2b32feaaa5b5b0eb122f168a5b99932130",
-   "sha1_en": "73343a4e6268360371df4d664eb7a2137215c0ae"
+   "sha1_en": "4c038df9b6e58893fbca080a20ba1ca6209f5e6e"
   },
   {
    "kind": "lean",
@@ -343,28 +343,28 @@
    "fr": "MyIA.AI.Notebooks/GameTheory/game_theory_lean/StableMarriage/GSState.lean",
    "en": "MyIA.AI.Notebooks/GameTheory/game_theory_lean/StableMarriage/GSState_en.lean",
    "sha1_fr": "f606fa7b72845c3dc5a6feb024be51bf6792b8b2",
-   "sha1_en": "df9df058327e03582dbc3555d5acd5e4ea08a53c"
+   "sha1_en": "9188804c85e2c9506c7d2251fc7cc0146a369305"
   },
   {
    "kind": "lean",
    "fr": "MyIA.AI.Notebooks/GameTheory/game_theory_lean/StableMarriage/GaleShapley.lean",
    "en": "MyIA.AI.Notebooks/GameTheory/game_theory_lean/StableMarriage/GaleShapley_en.lean",
    "sha1_fr": "ab6e8dcbf64e90084583dea66b29ff56a2fb41b6",
-   "sha1_en": "35cee4e4a810d6ec1b7c527903c43e2f69328f76"
+   "sha1_en": "620ea01207fc76c20c666319b1f449396febb74a"
   },
   {
    "kind": "lean",
    "fr": "MyIA.AI.Notebooks/GameTheory/game_theory_lean/StableMarriage/Lattice.lean",
    "en": "MyIA.AI.Notebooks/GameTheory/game_theory_lean/StableMarriage/Lattice_en.lean",
    "sha1_fr": "c1ee13c826c31bd88179d20fa1b8d194e9025300",
-   "sha1_en": "792f717c21769ecab61d7d79a0834a467e287ca2"
+   "sha1_en": "b5267249af3b5a2d5c18cc4dbf91df9f1f04027d"
   },
   {
    "kind": "lean",
    "fr": "MyIA.AI.Notebooks/GameTheory/game_theory_lean/StableMarriage/Lemmas.lean",
    "en": "MyIA.AI.Notebooks/GameTheory/game_theory_lean/StableMarriage/Lemmas_en.lean",
    "sha1_fr": "9b6ce09fcba1ce536b19e89a79cf165079596b27",
-   "sha1_en": "388015fdda7085edad0d1c7ba506f5f3cebd5ff4"
+   "sha1_en": "5268da09afa4d51bb0a28a5a7873ae2812f3a7d3"
   },
   {
    "kind": "lean",
@@ -398,8 +398,8 @@
    "kind": "readme",
    "fr": "MyIA.AI.Notebooks/GameTheory/lean_game_defs/README.md",
    "en": "MyIA.AI.Notebooks/GameTheory/lean_game_defs/README.en.md",
-   "sha1_fr": "c0a46242a41fcc37b546f1086a559e845bea86a3",
-   "sha1_en": "0f301b8b150942ee95f76afff184263fa3ef61e3"
+   "sha1_fr": "35d10a0ee05c1ede99cc85e0bcd169ccc4e21911",
+   "sha1_en": "b7fff7a9d3c7461424a1306691b2ee067e15615a"
   },
   {
    "kind": "lean",
@@ -412,8 +412,8 @@
    "kind": "lean",
    "fr": "MyIA.AI.Notebooks/GameTheory/lean_game_defs/SocialChoice.lean",
    "en": "MyIA.AI.Notebooks/GameTheory/lean_game_defs/SocialChoice_en.lean",
-   "sha1_fr": "b59b56a142643ca76445e7aa08147cbd95e510e5",
-   "sha1_en": "103d329e5724fba533e1dfbacccf5ad5617d6ba1"
+   "sha1_fr": "a12701d92694fc5b0d61005e66cd2054061706e9",
+   "sha1_en": "d30388ca619d907aeb51a4d587ba335fd08fb158"
   },
   {
    "kind": "lean",
@@ -558,6 +558,15 @@
    "sha1_en": "8c4014f7789a296da99409ba26c81f951012dc68",
    "sources_sha1_fr": "24488e904f44fc5d3ac215ffebc8e81dbf47a094",
    "sources_sha1_en": "1a318e25303b60b405735234bb128187d44010c6"
+  },
+  {
+   "kind": "notebook",
+   "fr": "MyIA.AI.Notebooks/GenAI/FineTuning/FT-00c-LoRA-SOTA-Comparison-Python.ipynb",
+   "en": "MyIA.AI.Notebooks/GenAI/FineTuning/FT-00c-LoRA-SOTA-Comparison-Python_en.ipynb",
+   "sha1_fr": "5a2ec016530c560a8a85ed1871ef6930ae970646",
+   "sha1_en": "8c16966dfb07018cbbb498ba78256997bdb40d96",
+   "sources_sha1_fr": "de1ebb7742a172bb7dab95c40c34380c7dfdf99a",
+   "sources_sha1_en": "011883b0e2cc4ad70f3efaebd1316e901d3de8a4"
   },
   {
    "kind": "notebook",
@@ -998,7 +1007,7 @@
    "fr": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/README.md",
    "en": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/README.en.md",
    "sha1_fr": "60aa7ac5e0e6b062c144e897abec91376dda1f7b",
-   "sha1_en": "ad3c1bc63a3a97292e45be43b1ce437429333c8a"
+   "sha1_en": "11cdf9559e2693e7a1bf612865ede3b28edaad9c"
   },
   {
    "kind": "readme",
@@ -1131,8 +1140,8 @@
    "kind": "readme",
    "fr": "MyIA.AI.Notebooks/QuantConnect/projects/BlackLitterman-Momentum/README.md",
    "en": "MyIA.AI.Notebooks/QuantConnect/projects/BlackLitterman-Momentum/README.en.md",
-   "sha1_fr": "73aa3720d5201f714b9ad90659ffcfeed1aad0ee",
-   "sha1_en": "511971912b274f100be1f09fea91005ea1fe69f5"
+   "sha1_fr": "b0ea51bf8c54cc7013eab26b4b66afd297a9d91f",
+   "sha1_en": "87f42ea4a6e258088c2f66149ebfa531ef6768b1"
   },
   {
    "kind": "readme",
@@ -1145,8 +1154,8 @@
    "kind": "readme",
    "fr": "MyIA.AI.Notebooks/QuantConnect/projects/Cloud-MeanReversion-Sectors/README.md",
    "en": "MyIA.AI.Notebooks/QuantConnect/projects/Cloud-MeanReversion-Sectors/README.en.md",
-   "sha1_fr": "c38ff36a48caa01a2497f30e4e78f49d87dc6d95",
-   "sha1_en": "a4731e5b906dd5c8840d3d78096a904a9324ad15"
+   "sha1_fr": "d78a9dfc887b5a5d4be33a525a6dca0214118d51",
+   "sha1_en": "e0e8d70fe05de812e25bfab52aa76cb813719714"
   },
   {
    "kind": "readme",
@@ -1180,7 +1189,7 @@
    "kind": "readme",
    "fr": "MyIA.AI.Notebooks/QuantConnect/projects/Crypto-LSTM-Prediction/README.md",
    "en": "MyIA.AI.Notebooks/QuantConnect/projects/Crypto-LSTM-Prediction/README.en.md",
-   "sha1_fr": "d5545c02f79b817757a014ccf74f32bb801ea09c",
+   "sha1_fr": "0fa3952fc2f13b4e25a8bf8d7fa3ebb3c79f5222",
    "sha1_en": "1a53427c100a5c4817b284e13d490269876b4eb3"
   },
   {
@@ -1453,8 +1462,8 @@
    "kind": "readme",
    "fr": "MyIA.AI.Notebooks/QuantConnect/projects/MeanReversion/README.md",
    "en": "MyIA.AI.Notebooks/QuantConnect/projects/MeanReversion/README.en.md",
-   "sha1_fr": "92170e2dd3e13fd3cec150d070d4acb274fcdd6e",
-   "sha1_en": "446560ecfd630ebe1fc61c9dad44af6b89616507"
+   "sha1_fr": "b32d5cfcd384233553fc9d9dd19931c24c3e5547",
+   "sha1_en": "1116eaa70a1555bfe3874ee12a3e64a967bf0dfc"
   },
   {
    "kind": "readme",
@@ -1467,8 +1476,8 @@
    "kind": "readme",
    "fr": "MyIA.AI.Notebooks/QuantConnect/projects/Multi-Layer-EMA/README.md",
    "en": "MyIA.AI.Notebooks/QuantConnect/projects/Multi-Layer-EMA/README.en.md",
-   "sha1_fr": "dbc57061846a9972280f88bedb3f4214b3024a20",
-   "sha1_en": "62ffc37680a9b86974f4822c2e9ca90a8ff9dbcd"
+   "sha1_fr": "45b664b818d49b243808a04d3c32a8bb879f9dd8",
+   "sha1_en": "97402e6e84f3c07fbf35ebe8ce5af49cd39314f2"
   },
   {
    "kind": "readme",
@@ -1502,8 +1511,8 @@
    "kind": "readme",
    "fr": "MyIA.AI.Notebooks/QuantConnect/projects/RegimeSwitching/README.md",
    "en": "MyIA.AI.Notebooks/QuantConnect/projects/RegimeSwitching/README.en.md",
-   "sha1_fr": "66a060cf389bd410283b3341888967702047078a",
-   "sha1_en": "67abbc4cd9a9cb47a3bab2e3de2281b2ad73d1ba"
+   "sha1_fr": "f392fc5587ef8010aa3c13b6727f643fb07a438b",
+   "sha1_en": "149f158ba0dc479255697ab987fd6209aa1fcf92"
   },
   {
    "kind": "readme",
@@ -1621,8 +1630,8 @@
    "kind": "lean",
    "fr": "MyIA.AI.Notebooks/Search/discrepancy_lean/Discrepancy/Komlos/Cube.lean",
    "en": "MyIA.AI.Notebooks/Search/discrepancy_lean/Discrepancy/Komlos/Cube_en.lean",
-   "sha1_fr": "f164dc98c4daa95351121273ff4d54b00d8501be",
-   "sha1_en": "cb9a804fb943068d6545fbb01241fe2a2b3ec385"
+   "sha1_fr": "944cb3639a40704522dd04ffec69a0c3f0de5ace",
+   "sha1_en": "19ba9ffa1221488333e9328d66bf8c1c094a5c2f"
   },
   {
    "kind": "lean",
@@ -1649,8 +1658,8 @@
    "kind": "lean",
    "fr": "MyIA.AI.Notebooks/Search/discrepancy_lean/Discrepancy/Komlos/Hellinger.lean",
    "en": "MyIA.AI.Notebooks/Search/discrepancy_lean/Discrepancy/Komlos/Hellinger_en.lean",
-   "sha1_fr": "514fc97841651dda9293d7a8ec8a4e877934a3f1",
-   "sha1_en": "d833d169dfa9e6382763a6b51ba6067feca3ff86"
+   "sha1_fr": "016e7e9106e8c718b571697f0052ab74180c8ce4",
+   "sha1_en": "9be47968da08017fb16cc5a4ccb84217b98a86b7"
   },
   {
    "kind": "lean",
@@ -1705,8 +1714,8 @@
    "kind": "lean",
    "fr": "MyIA.AI.Notebooks/Search/discrepancy_lean/Discrepancy/Komlos/SignedSums.lean",
    "en": "MyIA.AI.Notebooks/Search/discrepancy_lean/Discrepancy/Komlos/SignedSums_en.lean",
-   "sha1_fr": "0cece51f29544d9bc64f989f8e8bb75a472328f3",
-   "sha1_en": "5c8891cfc182f9d79c5306c78bcc6efe947e6eef"
+   "sha1_fr": "78bfc9207d1c7293c642b373bee78b5ffc58696e",
+   "sha1_en": "66a4cb49d66556a0adfb7bf09a515e04196f17ea"
   },
   {
    "kind": "lean",
@@ -1745,6 +1754,13 @@
   },
   {
    "kind": "lean",
+   "fr": "MyIA.AI.Notebooks/Search/discrepancy_lean/Discrepancy/Komlos/TvDistance.lean",
+   "en": "MyIA.AI.Notebooks/Search/discrepancy_lean/Discrepancy/Komlos/TvDistance_en.lean",
+   "sha1_fr": "0797751d18e4c6bfdc0df2e3de696a9e3243eef1",
+   "sha1_en": "633514c82d62817f2036ddd9646bdd8b42961cb5"
+  },
+  {
+   "kind": "lean",
    "fr": "MyIA.AI.Notebooks/Search/search_lean/Astar.lean",
    "en": "MyIA.AI.Notebooks/Search/search_lean/Astar_en.lean",
    "sha1_fr": "ee3310a867a93286f44aadbaf2a3db7491bda4e8",
@@ -1755,7 +1771,7 @@
    "fr": "MyIA.AI.Notebooks/Search/search_lean/Astar/Consistency.lean",
    "en": "MyIA.AI.Notebooks/Search/search_lean/Astar/Consistency_en.lean",
    "sha1_fr": "ddf476a5e246c53c1289acc3fe74dcb2cbb45e77",
-   "sha1_en": "645b0d63cca874343aef31ff76e38cdb9bccc256"
+   "sha1_en": "106df4696ea2c6a4398e5453d87573cb44c3cdb3"
   },
   {
    "kind": "lean",
@@ -1769,14 +1785,14 @@
    "fr": "MyIA.AI.Notebooks/Search/search_lean/Astar/Heuristic.lean",
    "en": "MyIA.AI.Notebooks/Search/search_lean/Astar/Heuristic_en.lean",
    "sha1_fr": "192cb7c9a65ad7e4223e0f201095e3c43016efdd",
-   "sha1_en": "bf3fd9e038cc5db772e154784f32725532832b59"
+   "sha1_en": "4d4165f3f4ef31e9fd8e4c3f804bbfc087a84c2d"
   },
   {
    "kind": "lean",
    "fr": "MyIA.AI.Notebooks/Search/search_lean/Astar/Optimality.lean",
    "en": "MyIA.AI.Notebooks/Search/search_lean/Astar/Optimality_en.lean",
    "sha1_fr": "c3fd147869d66a9a60ff0ef045d40b43e758d3c3",
-   "sha1_en": "85e62a5287426736b3ab1b60c780ce8d88b4c1c2"
+   "sha1_en": "7dc5403617e8f8dcc1d9b832a387ada818cac941"
   },
   {
    "kind": "lean",
@@ -1824,37 +1840,37 @@
    "kind": "notebook",
    "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean-Python.ipynb",
    "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean-Python_en.ipynb",
-   "sha1_fr": "73f58999db03f9649a7c02db16420528bf1c90e6",
-   "sha1_en": "efdff3c1f2f8c65cf030b7f712d1773bf609781f",
-   "sources_sha1_fr": "56f7459d2a8a55c8c1a34edb62e72de2a5dd86ed",
-   "sources_sha1_en": "14c817e0a9189065340fe6760bde24bfa44fe215"
+   "sha1_fr": "d130ee6e51882d0c8f8dcdaeaea0c1854d516b4b",
+   "sha1_en": "77e79222fb0efd4e837e409344f48e6f80943665",
+   "sources_sha1_fr": "098367b528e2fb500a9603229be218515aa50ff5",
+   "sources_sha1_en": "0e111abfd52abc2430ef28fb1d4d257e0f6f5513"
   },
   {
    "kind": "notebook",
    "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06b-Sensibilite-2026-Lean.ipynb",
    "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06b-Sensibilite-2026-Lean_en.ipynb",
-   "sha1_fr": "14e357387f0a783bc8ff749af51b6ef472cda9cc",
-   "sha1_en": "14632bb3e2d20d4f1dc48e19eab2e08677872d16",
-   "sources_sha1_fr": "e15117978b661aa7179178844ff923ad553f3308",
-   "sources_sha1_en": "65f947050f5f083db280a1563510c7d59ab3d69c"
+   "sha1_fr": "05faaf2fd675097de8744225d2d3e837206508bd",
+   "sha1_en": "b72e18ec08b8a33e84a03d27ca55e2db73ad8f14",
+   "sources_sha1_fr": "437b39498083371ca8181cb3785c1fcce9963a0d",
+   "sources_sha1_en": "9c8a0624a431f1c5a9e8a1f2432185b32b931388"
   },
   {
    "kind": "notebook",
    "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-07-Percolation-Critique.ipynb",
    "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-07-Percolation-Critique_en.ipynb",
-   "sha1_fr": "26ec1af4f3290664f97fe761001eae6471848085",
-   "sha1_en": "371aac88929c2ff86310e44a4299ff781a41906d",
-   "sources_sha1_fr": "f0a8053601a7444b67233aa589a9d0cca184e4c4",
-   "sources_sha1_en": "4c7f0aaa086881a6d32ee1b8c18d85c96ccde96d"
+   "sha1_fr": "fc1ed3022d4595622dd59653b4c7181048ed4a68",
+   "sha1_en": "750c3da001060e714ad7019b011c1a27f68ad4e0",
+   "sources_sha1_fr": "e15d350f69cbf333a0e9e929e0121c03955aed64",
+   "sources_sha1_en": "66662a0f15a7db9b675dda58bd0c378b8f0bcb9b"
   },
   {
    "kind": "notebook",
    "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-09-Tuilage-Aperiodique.ipynb",
    "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-09-Tuilage-Aperiodique_en.ipynb",
    "sha1_fr": "ad27c42458403975fae4ee8180455a4e969116b6",
-   "sha1_en": "4e8a2c7283d2027e464d0eea8a99b633a3f9f785",
+   "sha1_en": "68b6dfeb1cd5e0f1b1dd196a0e5b5bcb32ff0801",
    "sources_sha1_fr": "8b0f9782c539cf742fcaa9f0608c0f77ffc1d228",
-   "sources_sha1_en": "68dc09ebb25d1e53e9d56996578e3e05410e258e"
+   "sources_sha1_en": "2308ae705643ca0631a118d8dd3db3dd2966927a"
   },
   {
    "kind": "notebook",
@@ -1899,8 +1915,8 @@
    "kind": "lean",
    "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/Knots/AlexanderTrivial.lean",
    "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/Knots/AlexanderTrivial_en.lean",
-   "sha1_fr": "af5781af6215b0567587eefb8ce246ce3b567b54",
-   "sha1_en": "396b472946ee406d8f754577ad46beb26f880381"
+   "sha1_fr": "b6cf9da0fa66dcce577e05254d4150508bcfed5d",
+   "sha1_en": "99ad97180b9ae83f1145149645b214b6a337d7ed"
   },
   {
    "kind": "lean",
@@ -1934,8 +1950,8 @@
    "kind": "lean",
    "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/Knots/ConwayKTMutation.lean",
    "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/Knots/ConwayKTMutation_en.lean",
-   "sha1_fr": "91804c19454c06fe1c9aa82cee5a8f4f5db4dfc1",
-   "sha1_en": "590e31554dc33524cd09c8a165918d06ce7289ca"
+   "sha1_fr": "785b5a46dbd5ad6abebb4fa79b5610dae249d81c",
+   "sha1_en": "295869204755ad6f1ef722a2cdbc60e616b0b017"
   },
   {
    "kind": "lean",
@@ -1997,8 +2013,15 @@
    "kind": "lean",
    "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/Knots/Mutation.lean",
    "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/Knots/Mutation_en.lean",
-   "sha1_fr": "18455240aef116e547e69825a85a21c9d7051557",
-   "sha1_en": "3938514ecc10c4cb83260fe46327d61b26dd3463"
+   "sha1_fr": "8fe675d948f03ddcee39b2dc13766906c5049d6e",
+   "sha1_en": "fd05a8f5cd214cdceae7e2c8bb211c52e4fac119"
+  },
+  {
+   "kind": "lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/Knots/Redraw.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/Knots/Redraw_en.lean",
+   "sha1_fr": "f89527f2ea692808ffc264498098ba24842adcdc",
+   "sha1_en": "f5934f10c68c01c6b66b9efde3ca5021061a7395"
   },
   {
    "kind": "lean",
@@ -2011,8 +2034,8 @@
    "kind": "lean",
    "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/Knots/ReidemeisterAny.lean",
    "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/Knots/ReidemeisterAny_en.lean",
-   "sha1_fr": "bbdb8c953b1369a85d97dd53b7d750a6ca75aaf5",
-   "sha1_en": "38714cfb4d65a53d3b0a4108d6fae7d3d0b26f82"
+   "sha1_fr": "679838500362135467827580f1b514cca6d232b4",
+   "sha1_en": "377391209dd9f560cdd7e5c727c38f621de5f609"
   },
   {
    "kind": "lean",
@@ -2055,6 +2078,69 @@
    "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/README.en.md",
    "sha1_fr": "6ec8b965845567d770bcf96a88d3182b8e8ff89d",
    "sha1_en": "c9b43cc6aa2495470a502c0bc93a213ed77c39bd"
+  },
+  {
+   "kind": "lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/hecke_lean/Hecke.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/hecke_lean/Hecke_en.lean",
+   "sha1_fr": "1aee3226602f775d45bca891e62f22d2ff762a87",
+   "sha1_en": "a964da3e1f5e310cfc49d0c65acfbe2f3e0c45e6"
+  },
+  {
+   "kind": "lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/hecke_lean/Hecke/DeltaTau.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/hecke_lean/Hecke/DeltaTau_en.lean",
+   "sha1_fr": "23cfd6a9bb551c9bee4f55d24102eb0c4c6915d2",
+   "sha1_en": "4c1452c39217841474f8db541356d6c51372f20c"
+  },
+  {
+   "kind": "lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/hecke_lean/Hecke/ElevenPid.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/hecke_lean/Hecke/ElevenPid_en.lean",
+   "sha1_fr": "f1419e3102e32d6962878231d51cb03eb8b03cfa",
+   "sha1_en": "9c7d27788146c3050c3d27814af25f04ad6ab726"
+  },
+  {
+   "kind": "lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/hecke_lean/Hecke/FltRoute.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/hecke_lean/Hecke/FltRoute_en.lean",
+   "sha1_fr": "e8cbeda53f534371c1ac33b78b97e48f93b08c0d",
+   "sha1_en": "918da4d0c6d7ef968fd8057d147d2a198ebecdab"
+  },
+  {
+   "kind": "lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/hecke_lean/Hecke/HeckeOperator.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/hecke_lean/Hecke/HeckeOperator_en.lean",
+   "sha1_fr": "7ba4a87d4c87e31895927d18519645dfa93303b2",
+   "sha1_en": "d4c223ce9dade33f16aeb005638c4acc06186fcb"
+  },
+  {
+   "kind": "lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/hecke_lean/Hecke/SevenPid.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/hecke_lean/Hecke/SevenPid_en.lean",
+   "sha1_fr": "23edebbc98bc96aa6dcf23c6a4a959490d97b77d",
+   "sha1_en": "001990d40303f02b9289856577c7dc6a82fe3f1a"
+  },
+  {
+   "kind": "lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/hecke_lean/Hecke/SzpiroPasten.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/hecke_lean/Hecke/SzpiroPasten_en.lean",
+   "sha1_fr": "324047e3b9a6d6825af0ca56479cefa3e71f8f68",
+   "sha1_en": "a93cb19b37a33a676f9b808a0983c4f4999afda6"
+  },
+  {
+   "kind": "lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/hecke_lean/Hecke/ThirteenPid.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/hecke_lean/Hecke/ThirteenPid_en.lean",
+   "sha1_fr": "9239b5d70e625f1744d642348dc1ae450b64459a",
+   "sha1_en": "1cc99d9aaa0d1da2d804bb55c82f7b9bd3052ee9"
+  },
+  {
+   "kind": "readme",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/hecke_lean/README.md",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/hecke_lean/README.en.md",
+   "sha1_fr": "57adcd39b63e22ad5e27cfdd09fb9663fb55542b",
+   "sha1_en": "33dc60a7267f94fb5c4f34e45bd525a88c3528c8"
   },
   {
    "kind": "lean",
@@ -2142,302 +2228,302 @@
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway_en.lean",
    "sha1_fr": "9c12ee83051305727010f47895b2bdff20c65464",
    "sha1_en": "2659e242605b7d5e0c82460f05932d607d4056b6"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Angel.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Angel_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Angel.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Angel_en.lean",
    "sha1_fr": "21cbac41258a0563cd1caaa7644ac28968857be4",
    "sha1_en": "0767d5818bbaccf25bdef3f8fdcfeae75e1f8c6e"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/CHSH.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/CHSH_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/CHSH.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/CHSH_en.lean",
    "sha1_fr": "252b66012c812d452b9ef522d67679d5ff5efd7d",
    "sha1_en": "e0f232fab3e90df21813d20550648e6d344d0a35"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/CHSHFreeWill.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/CHSHFreeWill_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/CHSHFreeWill.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/CHSHFreeWill_en.lean",
    "sha1_fr": "e675d52afb68c1bc395a492710ac6ce044d59f64",
    "sha1_en": "5b4408443140556543c5ca65ffad626554033c73"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/CHSHLandau.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/CHSHLandau_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/CHSHLandau.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/CHSHLandau_en.lean",
    "sha1_fr": "ff9cd1bc206438534477d9690f432658480cc3ef",
    "sha1_en": "aaaf4abacd4c09f7dd1089a7152b653bb46ef4c9"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/CHSHQuantum.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/CHSHQuantum_en.lean",
-   "sha1_fr": "e9b6ebf6ce9385656d6ad618a60dde5b44a9472d",
-   "sha1_en": "79a1c46dd1da052458cfa895dacc29e598ccbe71"
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/CHSHQuantum.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/CHSHQuantum_en.lean",
+   "sha1_fr": "d66e6a3754bff274dbb0a6e50231177997018961",
+   "sha1_en": "a5eeaf2b320e1e5e490527a67a99688fb59365fd"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/CHSHRandomized.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/CHSHRandomized_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/CHSHRandomized.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/CHSHRandomized_en.lean",
    "sha1_fr": "f73e1b2a3e125f7000b758d17e1a09a3d2815753",
    "sha1_en": "1bdfff89cfef12431f2dc304e102b708953b289e"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/CollatzLike.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/CollatzLike_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/CollatzLike.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/CollatzLike_en.lean",
    "sha1_fr": "4f210a671e3941fa2f1d2b13bccea6daa54f610a",
-   "sha1_en": "d2bbf17cb6967ca6dffec0de693920392ec1c39c"
+   "sha1_en": "d3bc336b1ec1364d0c576d6e9abe0b222c3e54f7"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Doomsday.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Doomsday_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Doomsday.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Doomsday_en.lean",
    "sha1_fr": "fa5b9a77adb0c8570c5306dc3f45201830d1f0d0",
-   "sha1_en": "b827cc215121d83f7406f6a14456759a57f39b29"
+   "sha1_en": "849e677cec37267b4db0989527b0065256db0406"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/DoomsdayLemmas.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/DoomsdayLemmas_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/DoomsdayLemmas.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/DoomsdayLemmas_en.lean",
    "sha1_fr": "a64eeed02d7e5c352abb28713f1f66e37be76f31",
-   "sha1_en": "ec445f2378ebeaa176adcdcb6602596c0fa8d6d3"
+   "sha1_en": "b56a158f1e54815c38c603625fe8dc9cbbae013c"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Fractran.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Fractran_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Fractran.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Fractran_en.lean",
    "sha1_fr": "7a371d3ee9748a249de3559bde2b74a75fda9329",
-   "sha1_en": "3391f13a8722cac6c3e6f914f6ef6b36f34a089c"
+   "sha1_en": "c252253b1c3c920acc094472b7f407d0772f35ff"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/FractranLemmas.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/FractranLemmas_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/FractranLemmas.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/FractranLemmas_en.lean",
    "sha1_fr": "24af4d1e286f4bd69581a0ca1044a53234429e89",
-   "sha1_en": "0a93de6ac46d7fdf2eb284f0c770031f69c9e8dc"
+   "sha1_en": "19c8b741ba1489156ae324e5c6436b5048eabb82"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/FreeWillTheorem.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/FreeWillTheorem_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/FreeWillTheorem.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/FreeWillTheorem_en.lean",
    "sha1_fr": "17ad80a2718e71ed8c9e0af65242467fb1875461",
-   "sha1_en": "4b7e926526adea78fdb9ec179b1ec04f0b0d56b4"
+   "sha1_en": "b6fc432b9a1fd8851b47426fe91f7ab3ef435be9"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/KochenSpecker.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/KochenSpecker_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/KochenSpecker.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/KochenSpecker_en.lean",
    "sha1_fr": "429356b7111571987c189da5be11a63a11b9231a",
    "sha1_en": "15c5d0ccb57aa0729a5ac2707c304aa9c417a574"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life_en.lean",
    "sha1_fr": "341db3bb5d8a6460d5fe88b4c7741d0b82e3738a",
    "sha1_en": "ac9f0adf9a7704f2bc99380996f4213de1760d99"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/AdversarialBattery.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/AdversarialBattery_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/AdversarialBattery.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/AdversarialBattery_en.lean",
    "sha1_fr": "32976fc80c9b54c3297cd3929082c0a7b264df82",
    "sha1_en": "31f19a431afba3c1c0a8da4f85eb6c5fb16f7bf3"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/AdversarialBatteryG2.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/AdversarialBatteryG2_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/AdversarialBatteryG2.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/AdversarialBatteryG2_en.lean",
    "sha1_fr": "5a2a822a7a48480905e5b60ede565f0d0e896062",
    "sha1_en": "bdf1f69e80996742bbec5f11c74df374fe7814e3"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/Computation.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/Computation_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/Computation.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/Computation_en.lean",
    "sha1_fr": "6556fed7f964fb819db230929cdb99ffd488ee97",
    "sha1_en": "7a426428b03e69fd59a51515918215e205ed0ab8"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/ConeGeometry.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/ConeGeometry_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/ConeGeometry.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/ConeGeometry_en.lean",
    "sha1_fr": "ca32b9e73034330cebca502b92be2591cdb49da7",
    "sha1_en": "133b831ee8551ac779360b9bd333286f5322d19c"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/DecideProbe.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/DecideProbe_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/DecideProbe.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/DecideProbe_en.lean",
    "sha1_fr": "96456fa90f1cbcbcadfdfa7f07ae1fa155948591",
    "sha1_en": "e9317a7961e53f825ab71583ae40aa838edccc42"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/GridCanonical.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/GridCanonical_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/GridCanonical.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/GridCanonical_en.lean",
    "sha1_fr": "7c6b1e80a88c163a7da6b8b1df1de3b61985bcaf",
    "sha1_en": "68c557be3faa6718de8fcf625aa19bda55663131"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/Hashlife.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/Hashlife_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/Hashlife.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/Hashlife_en.lean",
    "sha1_fr": "82ce6e8ad410ef1d11e3d7691c696e570f1ff451",
    "sha1_en": "6118561ae855a8b432ac61c19ee93a45525dfeb0"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/HashlifeDecideMemo.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/HashlifeDecideMemo_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/HashlifeDecideMemo.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/HashlifeDecideMemo_en.lean",
    "sha1_fr": "e24a4fb10de1e43d075010d93006aa7d62db001c",
    "sha1_en": "adaca8f9295598a7ba04e54fd2d3ef1a2ce7ed9e"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/HashlifeMarginDemo.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/HashlifeMarginDemo_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/HashlifeMarginDemo.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/HashlifeMarginDemo_en.lean",
    "sha1_fr": "9c9648d0e0b5d4e8cef8623a87e50e872176ea8c",
    "sha1_en": "427410709333ed7e9010c1f904e05c63df993856"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/HashlifeMarginFragment.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/HashlifeMarginFragment_en.lean",
-   "sha1_fr": "145d9c36cb47ca14fda3df1e4876d52ae558320b",
-   "sha1_en": "c4986d37d7d3a1c69f927e03d1b1950aca948a47"
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/HashlifeMarginFragment.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/HashlifeMarginFragment_en.lean",
+   "sha1_fr": "02a06aa4f18c626c0f4c1f98fa2c9180f12e5b33",
+   "sha1_en": "2e192f9d26d1608eca649f94706a5919519dd614"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/HashlifeMemo.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/HashlifeMemo_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/HashlifeMemo.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/HashlifeMemo_en.lean",
    "sha1_fr": "84d969a85f8da7757b33ca809ea860bb3a23dbb4",
    "sha1_en": "634839359a3f59e58acca4045293704ba578a1bc"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/LightCone.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/LightCone_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/LightCone.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/LightCone_en.lean",
    "sha1_fr": "0601e77c70408266c4c8ad467835e44347202050",
    "sha1_en": "b7f1c82c560a4053570add988b3bd67a15b2f73d"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/MacroCell.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/MacroCell_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/MacroCell.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/MacroCell_en.lean",
    "sha1_fr": "25e4b82f7f2194abbb81e2407a183bf9787e1603",
    "sha1_en": "8b109cd71a7cc92acc37ad07755d2ee7553dfd8f"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/Novelty.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/Novelty_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/Novelty.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/Novelty_en.lean",
    "sha1_fr": "4d4f3a18e033220938e65fb0ea0b629f334ba78a",
    "sha1_en": "258fab3965f10cd6759df9dd321f84c38ddfad75"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/Oscillators.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/Oscillators_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/Oscillators.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/Oscillators_en.lean",
    "sha1_fr": "aa80ca920a892e7f2ddb93959f447c4249b49bb7",
    "sha1_en": "4f1ac8c97edb865fb67178d391a2604f19883bec"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/PatternTour.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/PatternTour_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/PatternTour.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/PatternTour_en.lean",
    "sha1_fr": "5b615e6edca84bb36792b5490656db74e3701aba",
    "sha1_en": "0757752ad5e44f2ca35c5b1cb2c46ca6f19e379b"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/Perplexity.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/Perplexity_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/Perplexity.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/Perplexity_en.lean",
    "sha1_fr": "0ac32fd3b2faf08fc35cc7fb74862098cb60b177",
    "sha1_en": "14ec1a81e1f2a49b6929260a1cf96c4297ba1b39"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/Pillars.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/Pillars_en.lean",
-   "sha1_fr": "9786cb8a995c11122ac3217a4f9d618382566cba",
-   "sha1_en": "56f3b653abae074b17aad01f250a243981a7819a"
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/Pillars.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/Pillars_en.lean",
+   "sha1_fr": "a618101e0525089bf8fcc1718d3a3a428c9ca635",
+   "sha1_en": "9ec814d52fd1b130f0ea9945dba9b4403fb80b9f"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/RLE.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/RLE_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/RLE.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/RLE_en.lean",
    "sha1_fr": "add6a74ec9dc1097e80fd1fd06c2f7e29211ea61",
    "sha1_en": "5cc246bed0a1b606b40997a43d1e61a6db48b490"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/Spaceships.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/Spaceships_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/Spaceships.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/Spaceships_en.lean",
    "sha1_fr": "e4b5747751ebbe39961a11ee77e0ed2f2335f52b",
    "sha1_en": "6ebaa820d9f0e77af2b9967e67ce078f5ede76c7"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/Torus.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/Torus_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/Torus.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/Torus_en.lean",
    "sha1_fr": "747cb269f947d55131e011e58ee8587dfe68ff93",
    "sha1_en": "2634e22558b9e5faa8c978e74777256259daa3e7"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/Translateur.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/Translateur_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/Translateur.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/Translateur_en.lean",
    "sha1_fr": "01693671533a2e6e212dcd981bcafbb2fc08b090",
    "sha1_en": "f340243f3a2d9846bf7ac5d2aa64302b6b0cbf4c"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/LookAndSay.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/LookAndSay_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/LookAndSay.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/LookAndSay_en.lean",
    "sha1_fr": "cc773bf5f159d91d4c4734eaf2d5bb40cafbd32d",
-   "sha1_en": "d3a900a35c896f5aaa9d3257dbec264538fbdcdf"
+   "sha1_en": "fb7c4168f6e045af4033b8ab2a4ed2dc791d646b"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/LookAndSayLemmas.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/LookAndSayLemmas_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/LookAndSayLemmas.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/LookAndSayLemmas_en.lean",
    "sha1_fr": "5006be39d57eb1585f23770535774fa613f054d5",
-   "sha1_en": "4628351809ef7d16cef9d7152c0cdcee3d784d4d"
+   "sha1_en": "a64dcc71a27072da911bec4b6e271e3a33750843"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/MathlibMap.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/MathlibMap_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/MathlibMap.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/MathlibMap_en.lean",
    "sha1_fr": "1dc5686e772cc07f364bc7d5a20fe74fc86bae00",
    "sha1_en": "f47167d503835d5526a3f42fa779a02d90e00bcd"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Nim.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Nim_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Nim.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Nim_en.lean",
    "sha1_fr": "a8125a072263786184dc87f1aab221b9afb0795f",
-   "sha1_en": "57876f2da71fdd8b8bc5c8ed174b1d41c6dceb04"
+   "sha1_en": "4ab744d4ae24fc6f3b8bf9cda24a676a826435d4"
   },
   {
    "kind": "readme",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/README.md",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/README.en.md",
-   "sha1_fr": "34beb65cdace45b8af9dc4a8b3221d5bfe306949",
-   "sha1_en": "43cef4595299a113bd45e523d6c52adc86858561"
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/README.md",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/README.en.md",
+   "sha1_fr": "1e71343ebadf0c7249a7613304465444f9225fdf",
+   "sha1_en": "57c0cc5df32aa6e3ea6de9f7ee0c60e6170cac78"
   },
   {
    "kind": "readme",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/patterns/README.md",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/patterns/README.en.md",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/patterns/README.md",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/patterns/README.en.md",
    "sha1_fr": "d6698d39ca3d9b73b738eefb68e398ecfcefb2c3",
    "sha1_en": "824c148ab6ad78bdfe98641317d9ed92039bb4b6"
   },
@@ -2879,8 +2965,8 @@
    "kind": "lean",
    "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/GodementComplex.lean",
    "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/GodementComplex_en.lean",
-   "sha1_fr": "b21fa618fabac2d4dc3d0202002bbea424db8e08",
-   "sha1_en": "721e431ddadbabc99ba1970a689f98c7bf5a2072"
+   "sha1_fr": "3b0405f5121eac99aaa8122d386638a8eebe3642",
+   "sha1_en": "6cf4fab848220f2aeb1e2d747a76c987e14e2856"
   },
   {
    "kind": "lean",
@@ -2970,8 +3056,8 @@
    "kind": "lean",
    "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/Monodromie.lean",
    "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/Monodromie_en.lean",
-   "sha1_fr": "69e5eebd7fa04ec59dc177d8cb584b6e9f4136c0",
-   "sha1_en": "70c9860806a3960f7ce04bf8bbd9fb1f79f8769d"
+   "sha1_fr": "c9a9f0567c26486615911b0e5df3f4e4a6466821",
+   "sha1_en": "ca250edcb46c9aedd8928c66147a39721564fc5e"
   },
   {
    "kind": "lean",
@@ -3236,71 +3322,8 @@
    "kind": "readme",
    "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/README.md",
    "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/README.en.md",
-   "sha1_fr": "92cf930b583f373f45d93e298e2672ddd0a35c30",
-   "sha1_en": "bc6a7dbb455dd68449ba37405686f421c3bca89c"
-  },
-  {
-   "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/Hecke.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/Hecke_en.lean",
-   "sha1_fr": "1aee3226602f775d45bca891e62f22d2ff762a87",
-   "sha1_en": "a964da3e1f5e310cfc49d0c65acfbe2f3e0c45e6"
-  },
-  {
-   "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/Hecke/DeltaTau.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/Hecke/DeltaTau_en.lean",
-   "sha1_fr": "23cfd6a9bb551c9bee4f55d24102eb0c4c6915d2",
-   "sha1_en": "4c1452c39217841474f8db541356d6c51372f20c"
-  },
-  {
-   "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/Hecke/ElevenPid.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/Hecke/ElevenPid_en.lean",
-   "sha1_fr": "f1419e3102e32d6962878231d51cb03eb8b03cfa",
-   "sha1_en": "9c7d27788146c3050c3d27814af25f04ad6ab726"
-  },
-  {
-   "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/Hecke/FltRoute.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/Hecke/FltRoute_en.lean",
-   "sha1_fr": "e8cbeda53f534371c1ac33b78b97e48f93b08c0d",
-   "sha1_en": "918da4d0c6d7ef968fd8057d147d2a198ebecdab"
-  },
-  {
-   "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/Hecke/HeckeOperator.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/Hecke/HeckeOperator_en.lean",
-   "sha1_fr": "7ba4a87d4c87e31895927d18519645dfa93303b2",
-   "sha1_en": "d4c223ce9dade33f16aeb005638c4acc06186fcb"
-  },
-  {
-   "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/Hecke/SevenPid.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/Hecke/SevenPid_en.lean",
-   "sha1_fr": "23edebbc98bc96aa6dcf23c6a4a959490d97b77d",
-   "sha1_en": "001990d40303f02b9289856577c7dc6a82fe3f1a"
-  },
-  {
-   "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/Hecke/SzpiroPasten.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/Hecke/SzpiroPasten_en.lean",
-   "sha1_fr": "7f67320c4236ae93edb4d744694499e0338ca96d",
-   "sha1_en": "547f60da823fa764f7c7cbc1634a34e495b4a7a7"
-  },
-  {
-   "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/Hecke/ThirteenPid.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/Hecke/ThirteenPid_en.lean",
-   "sha1_fr": "9239b5d70e625f1744d642348dc1ae450b64459a",
-   "sha1_en": "1cc99d9aaa0d1da2d804bb55c82f7b9bd3052ee9"
-  },
-  {
-   "kind": "readme",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/README.md",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/README.en.md",
-   "sha1_fr": "57adcd39b63e22ad5e27cfdd09fb9663fb55542b",
-   "sha1_en": "33dc60a7267f94fb5c4f34e45bd525a88c3528c8"
+   "sha1_fr": "bf547dd0628a2ba7df3c8f8591aaf70418fb82aa",
+   "sha1_en": "9b7e9884683341af082a9a1e86a595a33b83a431"
   },
   {
    "kind": "lean",
@@ -3362,7 +3385,7 @@
    "kind": "readme",
    "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean/README.md",
    "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean/README.en.md",
-   "sha1_fr": "e5c29e6e1b81853f2ee52411f89f844ec1fd6469",
+   "sha1_fr": "3e01e7830110be53d3efb15ca603549b9aa68f52",
    "sha1_en": "5b9dfc5470c010498674c8ae84eb1df2127e0475"
   },
   {
@@ -3542,9 +3565,9 @@
   }
  ],
  "counts": {
-  "notebook": 20,
+  "notebook": 21,
   "readme": 93,
-  "lean": 387
+  "lean": 389
  },
  "orphans_en": [
   "MyIA.AI.Notebooks/GameTheory/minimax_lean/Minimax.en.md",
