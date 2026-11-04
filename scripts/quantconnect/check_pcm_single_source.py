@@ -76,7 +76,7 @@ CLASS_RE = re.compile(
 )
 
 # Codes de verdict : `blocking` = la garde rougit, `info` = signale sans
-# bloquer (les carnets de reference recopient le code a copier).
+# bloquer (un carnet qui definit une classe de la famille est compte, non bloque).
 CODES = {
     "CANONICAL_MISSING": "La source canonique du PCM par poches est absente du depot.",
     "CANONICAL_DRIFT": "La source canonique a change : le manifeste doit etre re-declare.",
@@ -191,10 +191,12 @@ def scan_copies(root: Path) -> list[dict]:
 
 
 def scan_notebook_copies(root: Path) -> list[str]:
-    """Copies recopiées dans des carnets (informatif : le code est a copier).
+    """Carnets definissant une classe de la famille (informatif, non bloquant).
 
     Un carnet porte le code sous forme de JSON : les sources sont donc
     concatenees cellule par cellule avant d'appliquer le motif de classe.
+    Seul un carnet qui *definit* une classe `MultiStrategy*PCM` est compte —
+    pas tout carnet contenant la chaine.
     """
     base = root / SCAN_SUBTREE
     hits = []
@@ -422,8 +424,8 @@ def main(argv: list[str] | None = None) -> int:
         print("Copies declarees  : %d" % len(report["declared_copies"]))
         if report["notebook_copies"]:
             print(
-                "Copies dans des carnets (informatif, code a copier) : %d"
-                % len(report["notebook_copies"])
+                "Carnets definissant une classe de la famille (informatif, non "
+                "bloquant) : %d" % len(report["notebook_copies"])
             )
         if report["verdict"] == "OK":
             print("VERDICT: OK — aucune copie non declaree, aucune declaration perimee.")
