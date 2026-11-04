@@ -20,9 +20,12 @@ discounting, split into two layers:
 * **INTRINSIC optimality (MDP-gated, court-terme).** The central
   `gittins_optimality` theorem — the Gittins index policy maximizes the expected
   discounted reward — requires the value-function / Bellman / optimal-stopping
-  machinery, which is absent from Mathlib. Its two `sorry` sites (the expected-
-  value operator `V` and the optimality proof) are recorded honestly as the
-  INTRINSIC barrier, not as placeholder workarounds (see #4039).
+  machinery, which is absent from Mathlib. The value operator `V` is no longer a
+  hole: `discountedValue` defines it over what the model actually carries
+  (known means, hence a discounted sum **without expectation**), and it is that
+  definition which makes the statement checkable instead of circular.
+  **One** `sorry` site remains — the optimality proof — recorded honestly as the
+  INTRINSIC barrier, not as a placeholder workaround (see #4039).
 -/
 
 namespace Gittins_en
@@ -70,36 +73,61 @@ noncomputable def gittinsPolicy (inst : BanditInstance) (histories : Array Rewar
         if g > best.2 then (i, g) else best)
     (0, 0)).1
 
-/-- **Gittins Index Theorem** (Gittins 1979, Weber 1992): the Gittins index
-    policy maximizes the total expected discounted reward for the multi-armed
-    bandit with geometric discounting.
+/-- The mean reward of the arm that policy `π` plays at step `n`, and `0` when
+    that index names no arm of the instance.
 
-    **INTRINSIC (MDP-gated, court-terme, #4039).** This is the central result of
-    the theory and the genuine formalization barrier. The two `sorry` sites below
-    are NOT placeholder workarounds; they record precisely what Mathlib lacks:
+    This is the only reward this model can name: `BanditArm` carries only
+    `trueMean`, so there is here neither a distribution to sample nor an
+    expectation to take. -/
+noncomputable def policyMeanAt (inst : BanditInstance) (π : Policy) (n : ℕ) : ℝ :=
+  match inst.arms[π n]? with
+  | some arm => arm.trueMean
+  | none => 0
 
-    * `V` (the expected-value operator): formalizing `E[Σ γⁿ · r_{policy n}]`
-      requires a bandit reward-process type, a probability-coupling / expectation
-      operator over reward distributions, and an infinite-horizon discounted sum
-      over `Float` (`Discount.lean` has the `ℝ` side via Mathlib's `tsum`, not
-      the `Float` side nor the expectation).
-    * the optimality proof: requires the Bellman / dynamic-programming operator,
-      index decomposability across arms, and induction on the planning horizon —
-      i.e. a full MDP / optimal-stopping formalization.
+/-- **Discounted value of a policy** in the known-mean model:
+    `V π = Σₙ γⁿ · μ(π n)`.
 
-    `BanditArm` carries only `trueMean`, so even stating `V` faithfully needs
-    infrastructure beyond the current model. A complete proof is estimated at
-    ~2000–5000 lines of supporting definitions; this is left as the INTRINSIC
-    court-terme target rather than a degraded workaround.
--/
-theorem gittins_optimality {γ : ℝ} (hγ : 0 < γ ∧ γ < 1)
-    (inst : BanditInstance) :
+    This is a `tsum` over `ℝ` and **not an expectation**: the setting `BanditArm`
+    represents is that of arms with known means, where each step's reward equals
+    its true mean, with no randomness. Writing an `E[…]` here would misrepresent
+    what the type carries; the probabilistic version (Beta–Bernoulli posterior,
+    exploration term) is the INTRINSIC barrier documented below — it is not this
+    definition, which is precisely why the statement below is restricted to this
+    setting instead of promising the general theorem.
+
+    Under `0 < γ < 1` and bounded means the series converges;
+    `present_value_constant` is the constant-reward case. -/
+noncomputable def discountedValue (inst : BanditInstance) (π : Policy) : ℝ :=
+  ∑' n : ℕ, inst.discount ^ n * policyMeanAt inst π n
+
+/-- **Gittins Index Theorem, in the setting this lake formalizes**
+    (Gittins 1979, Weber 1992 for the general statement): with known means, the
+    Gittins index policy maximizes the discounted value `discountedValue` over
+    all policies.
+
+    **What this statement does not say, and does not claim to say.** The Gittins
+    theorem concerns *uncertain* arms, where the index arbitrates exploration
+    against exploitation — that is where it differs from the greedy policy. Here
+    `gittinsIndex` equals `trueMean` (`gittins_index_known_arm`) and the index
+    policy **coincides** with the greedy one (`gittinsPolicy_eq_greedyPolicy`), so
+    the statement is the optimality of the greedy policy under known means, and it
+    is true as such. The uncertain setting — hence the theorem in its real scope —
+    remains the INTRINSIC barrier below. Writing the converse (passing this case
+    off as the general theorem) would be exactly the degradation this file
+    refuses.
+
+    **INTRINSIC (MDP-gated, court-terme, #4039) — one `sorry` site remains, the
+    proof.** It requires the Bellman operator / dynamic programming, index
+    decomposability across arms, and induction on the planning horizon — that is,
+    a complete MDP / optimal-stopping formalization. The statement itself is no
+    longer circular: `discountedValue` gives it a meaning independent of what is
+    being proved. -/
+theorem gittins_optimality (inst : BanditInstance)
+    (hγ_pos : 0 < inst.discount) (hγ_lt : inst.discount < 1)
+    (hmean : ∀ arm ∈ inst.arms, 0 ≤ arm.trueMean) :
     ∀ π : Policy,
-      let V (policy : Policy) : ℝ :=
-        sorry
-      V (fun _ => gittinsPolicy inst (Array.replicate inst.arms.size []))
-        ≥
-      V π := by
+      discountedValue inst (fun _ => gittinsPolicy inst (Array.replicate inst.arms.size []))
+        ≥ discountedValue inst π := by
   sorry
 
 /-!
