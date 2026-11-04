@@ -159,15 +159,18 @@ namespace MacroCell
 
 /-- Smallest `n` such that `2 ^ n >= k`.
 
-    Previously defined by well-founded recursion on `(k + 2 + 1) / 2`, which the
-    kernel reducer cannot unfold: that opacity was the *sole* obstruction behind
-    the `native_decide` uses downstream (the `Int` coordinates of `Computation.lean`
-    were a symptom, not an intrinsic necessity). Reformulated via `Nat.log 2`
-    (Mathlib structural recursion, kernel-reducible):
+    Implementation note (#8869, c.847): the previous recursion
+    `| k + 2 => 1 + ceilLog2 ((k + 2 + 1) / 2)` was **WellFounded** (the argument
+    `(k+2+1)/2` is not structurally smaller), hence **opaque to the kernel
+    reducer** — `decide` could not evaluate it, blocking `gridFrame lvl` and then
+    the whole `buildFromGrid`/`toGrid`/`evolveHashlife` chain (the 14 coherence
+    theorems of `Computation.lean` were `native_decide` by symptom, not by
+    intrinsic necessity). Reformulated via `Nat.log 2` (Mathlib structural
+    recursion, kernel-reducible):
     `ceilLog2 k = if k ≤ 1 then 0 else Nat.log 2 (k-1) + 1`. Same function
-    (values unchanged, cf `ceilLog2_spec`), now decidable. Firsthand diagnosis:
-    `ceilLog2 6 = 3` goes through under `decide` after the rewrite (it failed
-    before, even with `maxRecDepth 1000000`, even on a single step). -/
+    (values unchanged, cf `ceilLog2_spec`), but now decidable. Firsthand
+    diagnosis: `ceilLog2 6 = 3` goes through under `decide` after the rewrite (it
+    failed before, even with `maxRecDepth 1000000`, even on 1 step). -/
 def ceilLog2 (k : Nat) : Nat :=
   if k ≤ 1 then 0 else Nat.log 2 (k - 1) + 1
 
