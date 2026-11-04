@@ -790,7 +790,7 @@ theorem tricolorable_forward_r1 {d₁ d₂ : KnotDiagram}
 `numEdges + 4`), l'autre les retire. Le bras ASCENDANT (d₂ = d₁ ++ [c₁, c₂])
 admet un transfert avant complet et simple : sous `wf`, chaque label ancien
 apparaît déjà exactement 2× dans `d₁.edges` (clause b) et exactement 2× dans
-`d₂.edges` — or `d₂.edges = d₁.edges ++ (labels de c₁, c₂)` — donc les
+`d₂.edges` — or `d₂.edges = d₁.edges` ++ (labels de c₁, c₂) — donc les
 croisements appendés n'utilisent QUE les 4 labels fraîches `{n+1..n+4}`. Le
 témoin : les 4 arêtes fraîches reçoivent TOUTES `TriColor.red` ; chaque
 croisement appendé lit alors `(red, red, red, red)` — bornes par wf (a),
@@ -3693,7 +3693,8 @@ theorem trefoil_not_unknot : ¬ KnotEquiv trefoil unknot := by
   -- trefoil ≈ unknot ⇒ trefoil tricolorable ↔ unknot tricolorable (invariant).
   -- trefoil IS tricolorable, unknot IS NOT ⇒ contradiction.
   -- The sketch that was left as `sorry` now type-checks: `tricolorable_invariant`
-  -- is proven, and the two pieces are proven, so the corollary composes them.
+  -- is proven, and the two pieces (`trefoil_tricolorable`, `unknot_not_tricolorable`) are
+  -- proven, so the corollary composes them.
   --
   -- The `Knot`-level wrappers (`KnotEquiv`, `Knot.isTricolorable`) are opaque
   -- `def`s that delta-reduce on demand to the `KnotDiagram` level
