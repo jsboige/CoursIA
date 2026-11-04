@@ -2664,4 +2664,693 @@ theorem no_verifyR1Fwd_renamed_pair (π : Nat → Nat) :
 theorem renamed_target_wf_identity : (renameDiagram id kinkAnyTarget).wf = true := by
   decide
 
+/-! ## 20. Arithmetique des comptes -- briques du certificat negatif borne
+
+Le plancher de comptage (t11 : aucune chaine `_any` bornee ne relie un pli
+de `11n102` au diagramme nœud) se prouve sans enumeration : chaque
+verificateur fixe l'ecart des longueurs **par construction** (`+1` kink,
+`+2` bigon, `0` triangle), et la chaine propage cette comptabilite par
+induction. Les extractions ci-dessous lisent ces conjoncts directement --
+aucun raisonnement sur la chirurgie n'est requis a ce niveau. La partie
+difficile du certificat (les motifs amovibles ne peuvent exceder le surplus
+cree par les pas montants) vient ensuite ; ces briques en sont le socle.
+-/
+
+/-- Le retrait `_any` d'un kink raccourcit exactement d'un croisement :
+    le conjonct de longueur du verificateur, extrait tel quel. -/
+theorem verifyKinkDownAny_length (D d : KnotDiagram)
+    (h : verifyKinkDownAny D d = true) :
+    d.crossings.length + 1 = D.crossings.length := by
+  cases hL : D.crossings.getLast? with
+  | none => simp [verifyKinkDownAny, hL] at h
+  | some K =>
+    simp only [verifyKinkDownAny, hL, Bool.and_eq_true] at h
+    exact (of_decide_eq_true h.2.1).2
+
+/-- Le retrait `_any` d'une paire de bigons raccourcit exactement de deux
+    croisements : conjonct de longueur, extrait tel quel. -/
+theorem verifyBigonDownAny_length (D d : KnotDiagram)
+    (h : verifyBigonDownAny D d = true) :
+    d.crossings.length + 2 = D.crossings.length := by
+  cases hL : D.crossings.getLast? with
+  | none => simp [verifyBigonDownAny, hL] at h
+  | some K₂ =>
+    cases hL2 : D.crossings.dropLast.getLast? with
+    | none => simp [verifyBigonDownAny, hL, hL2] at h
+    | some K₁ =>
+      simp only [verifyBigonDownAny, hL, hL2, Bool.and_eq_true] at h
+      exact (of_decide_eq_true h.2.1).2.2.2
+
+/-- Le glissement triangulaire preserve exactement le compte : conjonct
+    de longueur de `verifyR3Fwd`, extrait tel quel. -/
+theorem verifyR3Fwd_length (d d' : KnotDiagram)
+    (h : verifyR3Fwd d d' = true) :
+    d.crossings.length = d'.crossings.length := by
+  simp only [verifyR3Fwd, Bool.and_eq_true] at h
+  exact of_decide_eq_true h.1.1.2
+
+/-- La forme direction-neutre du triangle preserve le compte (les deux
+    orientations portent la meme egalite). -/
+theorem verifyR3_length (d d' : KnotDiagram)
+    (h : verifyR3 d d' = true) :
+    d.crossings.length = d'.crossings.length := by
+  unfold verifyR3 at h
+  rcases Bool.or_eq_true_iff.mp h with h | h
+  · exact verifyR3Fwd_length d d' h
+  · exact (verifyR3Fwd_length d' d h).symm
+
+/-- Un pas kink `_any` verifie change le compte d'exactement un, dans un
+    sens ou l'autre (le verificateur est direction-neutre). -/
+theorem verifyAnyMove_r1Any_length {s t : KnotDiagram}
+    (h : verifyAnyMove (AnyMove.r1Any s t) = true) :
+    t.crossings.length = s.crossings.length + 1 ∨
+    s.crossings.length = t.crossings.length + 1 := by
+  simp only [verifyAnyMove, Bool.or_eq_true] at h
+  rcases h with h | h
+  · exact Or.inl (verifyKinkDownAny_length t s h).symm
+  · exact Or.inr (verifyKinkDownAny_length s t h).symm
+
+/-- Un pas bigon `_any` verifie change le compte d'exactement deux, dans
+    un sens ou l'autre. -/
+theorem verifyAnyMove_r2Any_length {s t : KnotDiagram}
+    (h : verifyAnyMove (AnyMove.r2Any s t) = true) :
+    t.crossings.length = s.crossings.length + 2 ∨
+    s.crossings.length = t.crossings.length + 2 := by
+  simp only [verifyAnyMove, Bool.or_eq_true] at h
+  rcases h with h | h
+  · exact Or.inl (verifyBigonDownAny_length t s h).symm
+  · exact Or.inr (verifyBigonDownAny_length s t h).symm
+
+/-- Un pas triangle `_any` verifie preserve exactement le compte. -/
+theorem verifyAnyMove_r3Any_length {s t : KnotDiagram}
+    (h : verifyAnyMove (AnyMove.r3Any s t) = true) :
+    t.crossings.length = s.crossings.length := by
+  simp only [verifyAnyMove] at h
+  exact (verifyR3_length s t h).symm
+
+/-! ## 21. Motifs requis -- un retrait verifie exige son motif terminal
+
+Briques du certificat negatif (suite de la section 20) : la baisse de compte
+n'est jamais gratuite. Un retrait de kink verifie exige un kink TERMINAL sur
+le grand diagramme (`e3 = e4` sur le dernier croisement) ; un retrait de bigon
+verifie exige sa paire terminale (silhouettes `e2 = e3` sur les deux derniers,
+arc commun `e1` partage). Ce sont ces motifs que le potentiel du theoreme de
+plancher devra compter : chaque unité de baisse consomme un motif que seul un
+up-move (ou une fusion, cf section 19) peut avoir introduit. -/
+
+/-- Un retrait de kink verifie exige un kink terminal : le dernier croisement
+    du grand diagramme porte `e3 = e4`. -/
+theorem verifyKinkDownAny_last_kink (D d : KnotDiagram)
+    (h : verifyKinkDownAny D d = true) :
+    ∃ K, D.crossings.getLast? = some K ∧ K.e3 = K.e4 := by
+  cases hL : D.crossings.getLast? with
+  | none => simp [verifyKinkDownAny, hL] at h
+  | some K =>
+    simp only [verifyKinkDownAny, hL, Bool.and_eq_true] at h
+    exact ⟨K, rfl, (of_decide_eq_true h.2.1).1⟩
+
+/-- Un retrait de bigon verifie exige sa paire terminale : silhouettes
+    `e2 = e3` sur les deux derniers croisements, arc commun `e1` partage. -/
+theorem verifyBigonDownAny_last_bigon (D d : KnotDiagram)
+    (h : verifyBigonDownAny D d = true) :
+    ∃ K₁ K₂, D.crossings.dropLast.getLast? = some K₁ ∧ D.crossings.getLast? = some K₂ ∧
+      K₂.e2 = K₂.e3 ∧ K₁.e2 = K₁.e3 ∧ K₁.e1 = K₂.e1 := by
+  cases hL : D.crossings.getLast? with
+  | none => simp [verifyBigonDownAny, hL] at h
+  | some K₂ =>
+    cases hL2 : D.crossings.dropLast.getLast? with
+    | none => simp [verifyBigonDownAny, hL, hL2] at h
+    | some K₁ =>
+      simp only [verifyBigonDownAny, hL, hL2, Bool.and_eq_true] at h
+      have hd := of_decide_eq_true h.2.1
+      exact ⟨K₁, K₂, rfl, rfl, hd.1, hd.2.1, hd.2.2.1⟩
+
+/-- Version pas : un pas kink `_any` verifie porte son kink a la fin du GRAND
+    cote, avec le compte correspondant. -/
+theorem verifyAnyMove_r1Any_kink_on_larger {s t : KnotDiagram}
+    (h : verifyAnyMove (AnyMove.r1Any s t) = true) :
+    (t.crossings.length = s.crossings.length + 1 ∧
+      ∃ K, t.crossings.getLast? = some K ∧ K.e3 = K.e4) ∨
+    (s.crossings.length = t.crossings.length + 1 ∧
+      ∃ K, s.crossings.getLast? = some K ∧ K.e3 = K.e4) := by
+  simp only [verifyAnyMove, Bool.or_eq_true] at h
+  rcases h with h | h
+  · exact Or.inl ⟨(verifyKinkDownAny_length t s h).symm, verifyKinkDownAny_last_kink t s h⟩
+  · exact Or.inr ⟨(verifyKinkDownAny_length s t h).symm, verifyKinkDownAny_last_kink s t h⟩
+
+/-- Version pas : un pas bigon `_any` verifie porte sa paire terminale du
+    GRAND cote, avec le compte correspondant. -/
+theorem verifyAnyMove_r2Any_bigon_on_larger {s t : KnotDiagram}
+    (h : verifyAnyMove (AnyMove.r2Any s t) = true) :
+    (t.crossings.length = s.crossings.length + 2 ∧
+      ∃ K₁ K₂, t.crossings.dropLast.getLast? = some K₁ ∧ t.crossings.getLast? = some K₂ ∧
+        K₂.e2 = K₂.e3 ∧ K₁.e2 = K₁.e3 ∧ K₁.e1 = K₂.e1) ∨
+    (s.crossings.length = t.crossings.length + 2 ∧
+      ∃ K₁ K₂, s.crossings.dropLast.getLast? = some K₁ ∧ s.crossings.getLast? = some K₂ ∧
+        K₂.e2 = K₂.e3 ∧ K₁.e2 = K₁.e3 ∧ K₁.e1 = K₂.e1) := by
+  simp only [verifyAnyMove, Bool.or_eq_true] at h
+  rcases h with h | h
+  · exact Or.inl ⟨(verifyBigonDownAny_length t s h).symm, verifyBigonDownAny_last_bigon t s h⟩
+  · exact Or.inr ⟨(verifyBigonDownAny_length s t h).symm, verifyBigonDownAny_last_bigon s t h⟩
+
+
+/-! ## 22. Préservation du motif terminal -- R3 ne fabrique pas de kink
+
+Troisième étape du certificat négatif (suite des sections 20-21) : le pas
+triangle préserve l'absence de kink terminal. Le nouveau croisement écrit
+par R3 en position `i + 2` (quand la fenêtre touche la fin) est
+`⟨e3(i), e4(i), e1(i), e4(i+2)⟩` ; ses champs `e3 = e1(i)` et `e4 = e4(i+2)`
+sont distincts PAR CONSTRUCTION -- le `Nodup` des neuf labels du
+vérificateur les contient tous les deux. Un terminal hors de la fenêtre R3
+est intact : `List.set` ne réécrit que son indice. C'est la brique qui
+fermera l'inductivité du potentiel sur les pas R3 à compte constant. -/
+
+/-- Auxiliaire : le dernier élément d'un `cons` à queue non vide se lit
+    dans la queue (les deux équations du `match` de `getLast?`). -/
+theorem getLast?_cons_of_ne_nil {α : Type*} (a : α) {l : List α}
+    (h : l ≠ []) : (a :: l).getLast? = l.getLast? := by
+  cases l with
+  | nil => exact absurd rfl h
+  | cons b bs => rfl
+
+/-- Auxiliaire : réécrire un indice strictement avant le dernier ne touche
+    pas le dernier élément. -/
+theorem getLast?_set_of_lt_last {α : Type*} : ∀ (l : List α) (i : Nat) (x : α),
+    i + 1 < l.length → (l.set i x).getLast? = l.getLast? := by
+  intro l
+  induction l with
+  | nil => intro i x h; simp only [List.length_nil] at h; omega
+  | cons a as ih =>
+    intro i x h
+    cases i with
+    | zero =>
+      cases as with
+      | nil => simp only [List.length_cons, List.length_nil] at h; omega
+      | cons b bs => rfl
+    | succ k =>
+      cases as with
+      | nil => simp only [List.length_cons, List.length_nil] at h; omega
+      | cons b bs =>
+        simp only [List.set_cons_succ, List.length_cons] at h ⊢
+        have hm : ((b :: bs).set k x) ≠ [] := by
+          cases k with
+          | zero => simp
+          | succ k' => simp only [List.set_cons_succ]; simp
+        rw [getLast?_cons_of_ne_nil a hm, getLast?_cons_of_ne_nil a (by simp)]
+        exact ih k x (by simp only [List.length_cons]; omega)
+
+/-- Auxiliaire : réécrire le dernier indice remplace le dernier élément. -/
+theorem getLast?_set_last_aux {α : Type*} : ∀ (l : List α) (i : Nat) (x : α),
+    i + 1 = l.length → (l.set i x).getLast? = some x := by
+  intro l
+  induction l with
+  | nil => intro i x h; simp only [List.length_nil] at h; omega
+  | cons a as ih =>
+    intro i x h
+    cases i with
+    | zero =>
+      cases as with
+      | nil => rfl
+      | cons b bs => simp only [List.length_cons] at h; omega
+    | succ k =>
+      cases as with
+      | nil => simp only [List.length_cons, List.length_nil] at h; omega
+      | cons b bs =>
+        simp only [List.set_cons_succ, List.length_cons] at h ⊢
+        have hm : ((b :: bs).set k x) ≠ [] := by
+          cases k with
+          | zero => simp
+          | succ k' => simp only [List.set_cons_succ]; simp
+        rw [getLast?_cons_of_ne_nil a hm]
+        exact ih k x (by simp only [List.length_cons]; omega)
+
+/-- Version à arguments implicites, pour la réécriture. -/
+theorem getLast?_set_last {α : Type*} {l : List α} {i : Nat} {x : α}
+    (h : i + 1 = l.length) : (l.set i x).getLast? = some x :=
+  getLast?_set_last_aux l i x h
+
+/-- Auxiliaire R3 : triple réécriture `i, i+1, i+2` dont la fenêtre ne
+    touche pas la fin -- le terminal est celui de la liste source. -/
+theorem getLast?_set3_of_lt_last {α : Type*} {l : List α} {i : Nat} {A B C : α}
+    (h : i + 2 + 1 < l.length) :
+    (((l.set i A).set (i+1) B).set (i+2) C).getLast? = l.getLast? := by
+  have e1 : ((l.set i A).set (i+1) B).length = l.length := by
+    simp only [List.length_set]
+  have e2 : (l.set i A).length = l.length := by
+    simp only [List.length_set]
+  rw [getLast?_set_of_lt_last _ (i + 2) C (by rw [e1]; omega),
+      getLast?_set_of_lt_last _ (i + 1) B (by rw [e2]; omega),
+      getLast?_set_of_lt_last _ i A (by omega)]
+
+/-- Auxiliaire R3 : triple réécriture posée sur la fin -- le nouveau
+    terminal est le troisième croisement écrit. -/
+theorem getLast?_set3_last {α : Type*} {l : List α} {i : Nat} {A B C : α}
+    (h : i + 2 + 1 = l.length) :
+    (((l.set i A).set (i+1) B).set (i+2) C).getLast? = some C := by
+  have e1 : ((l.set i A).set (i+1) B).length = l.length := by
+    simp only [List.length_set]
+  rw [getLast?_set_last (by rw [e1]; omega)]
+
+/-- Le pas triangle ne fabrique pas de kink terminal : si la source est
+    sans kink terminal, la cible l'est aussi. Le `Nodup` des neuf labels
+    suffit -- le nouveau terminal porte `e3 = e1(i)` ≠ `e4 = e4(i+2)`, tous
+    deux dans la liste sans doublon ; un terminal hors fenêtre est intact. -/
+theorem verifyR3Fwd_last_not_kink (D d : KnotDiagram)
+    (h : verifyR3Fwd D d = true)
+    (hD : ∀ K, D.crossings.getLast? = some K → K.e3 ≠ K.e4) :
+    ∀ K, d.crossings.getLast? = some K → K.e3 ≠ K.e4 := by
+  simp only [verifyR3Fwd, Bool.and_eq_true] at h
+  obtain ⟨i, _, hi⟩ := List.any_eq_true.mp h.2
+  have hd := of_decide_eq_true hi
+  rw [hd.2.2.2.2.2]
+  intro K hK
+  rcases Nat.lt_or_ge (i + 2 + 1) D.crossings.length with hlt | hge
+  · rw [getLast?_set3_of_lt_last hlt] at hK
+    exact hD K hK
+  · have hlast : i + 2 + 1 = D.crossings.length := by omega
+    rw [getLast?_set3_last hlast] at hK
+    cases hK
+    intro hkink
+    have hk' : (crossingAt D.crossings i).e1 =
+        (crossingAt D.crossings (i + 2)).e4 := hkink
+    have hN := hd.2.2.2.2.1
+    obtain ⟨h0, _⟩ := List.nodup_cons.mp hN
+    have h5 : (crossingAt D.crossings (i + 2)).e4 ∈
+        [(crossingAt D.crossings i).e2, (crossingAt D.crossings (i + 1)).e1,
+         (crossingAt D.crossings (i + 1)).e4, (crossingAt D.crossings (i + 2)).e3,
+         (crossingAt D.crossings (i + 2)).e4, (crossingAt D.crossings i).e3,
+         (crossingAt D.crossings i).e4, (crossingAt D.crossings (i + 1)).e3] := by
+      simp
+    exact h0 (hk'.symm ▸ h5)
+
+/-! ## 23. Préservation du motif terminal -- R3 ne fabrique pas de bigon
+
+Quatrième étape du certificat négatif (suite de la section 22) : le pas
+triangle préserve aussi l'absence de bigon terminal. La paire exigée par
+`verifyBigonDownAny` se lit `(dropLast.getLast?, getLast?)` ;
+`List.getLast?_dropLast` ramène sa première entrée à l'indice `length - 2`,
+et `List.getElem?_set` dit lequel des trois croisements réécrits occupe
+cette case. Trois fenêtres possibles : la paire tombe entièrement hors de la
+fenêtre (ses deux entrées sont celles de la source), sur sa seconde case
+(`i + 2 = n - 2` : la première entrée devient le croisement neuf `C`), ou sur
+sa première case (`i + 2 = n - 1` : `C` devient la seconde entrée). Dans les
+deux cas de chevauchement, `C` porte `e2 = e4(i)` et `e3 = e1(i)`, distincts
+par le `Nodup` des neuf labels du vérificateur : `C.e2 = C.e3` est
+impossible, donc la paire terminale ne peut pas se former. -/
+
+/-- Auxiliaire R3 : la paire terminale reste celle de la source quand la
+    fenêtre s'arrête deux crans avant la fin. -/
+theorem getLast?_dropLast_set3_of_lt {α : Type*} {l : List α} {i : Nat} {A B C : α}
+    (h : i + 2 + 2 < l.length) :
+    (((l.set i A).set (i+1) B).set (i+2) C).dropLast.getLast? = l.dropLast.getLast? := by
+  have hn : ¬ (l.length ≤ 1) := by omega
+  rw [List.getLast?_dropLast, List.getLast?_dropLast]
+  simp only [List.length_set]
+  rw [if_neg (by omega), if_neg hn]
+  rw [List.getElem?_set_ne (show i + 2 ≠ l.length - 2 by omega),
+      List.getElem?_set_ne (show i + 1 ≠ l.length - 2 by omega),
+      List.getElem?_set_ne (show i ≠ l.length - 2 by omega)]
+
+/-- Auxiliaire R3 : la première entrée de la paire devient le croisement neuf
+    `C` quand la fenêtre se pose sur l'avant-dernière case. -/
+theorem getLast?_dropLast_set3_second {α : Type*} {l : List α} {i : Nat} {A B C : α}
+    (h : i + 2 + 2 = l.length) :
+    (((l.set i A).set (i+1) B).set (i+2) C).dropLast.getLast? = some C := by
+  rw [List.getLast?_dropLast]
+  simp only [List.length_set]
+  rw [if_neg (by omega)]
+  rw [show l.length - 2 = i + 2 by omega]
+  rw [List.getElem?_set_self (by rw [List.length_set, List.length_set]; omega)]
+
+/-- Auxiliaire R3 : la première entrée de la paire est le deuxième croisement
+    écrit (`B`) quand la fenêtre se pose sur la dernière case. -/
+theorem getLast?_dropLast_set3_last {α : Type*} {l : List α} {i : Nat} {A B C : α}
+    (h : i + 2 + 1 = l.length) :
+    (((l.set i A).set (i+1) B).set (i+2) C).dropLast.getLast? = some B := by
+  rw [List.getLast?_dropLast]
+  simp only [List.length_set]
+  rw [if_neg (by omega)]
+  rw [show l.length - 2 = i + 1 by omega]
+  rw [List.getElem?_set_ne (show i + 2 ≠ i + 1 by omega)]
+  rw [List.getElem?_set_self (by rw [List.length_set]; omega)]
+
+/-- Le pas triangle ne fabrique pas de bigon terminal : si la source n'a
+    aucune paire terminale `e2 = e3` à arc commun, la cible non plus. -/
+theorem verifyR3Fwd_last_not_bigon (D d : KnotDiagram)
+    (h : verifyR3Fwd D d = true)
+    (hD : ¬ ∃ K₁ K₂, D.crossings.dropLast.getLast? = some K₁ ∧
+        D.crossings.getLast? = some K₂ ∧
+        K₂.e2 = K₂.e3 ∧ K₁.e2 = K₁.e3 ∧ K₁.e1 = K₂.e1) :
+    ¬ ∃ K₁ K₂, d.crossings.dropLast.getLast? = some K₁ ∧
+        d.crossings.getLast? = some K₂ ∧
+        K₂.e2 = K₂.e3 ∧ K₁.e2 = K₁.e3 ∧ K₁.e1 = K₂.e1 := by
+  simp only [verifyR3Fwd, Bool.and_eq_true] at h
+  obtain ⟨i, _, hi⟩ := List.any_eq_true.mp h.2
+  have hd := of_decide_eq_true hi
+  rw [hd.2.2.2.2.2]
+  rintro ⟨K₁, K₂, h1, h2, hK₂, hK₁, harc⟩
+  have hN := hd.2.2.2.2.1
+  obtain ⟨h0, _⟩ := List.nodup_cons.mp hN
+  have hmem : (crossingAt D.crossings i).e4 ∈
+      [(crossingAt D.crossings i).e2, (crossingAt D.crossings (i + 1)).e1,
+       (crossingAt D.crossings (i + 1)).e4, (crossingAt D.crossings (i + 2)).e3,
+       (crossingAt D.crossings (i + 2)).e4, (crossingAt D.crossings i).e3,
+       (crossingAt D.crossings i).e4, (crossingAt D.crossings (i + 1)).e3] := by
+    simp
+  rcases Nat.lt_trichotomy (i + 2 + 1) (D.crossings.length - 1) with hA | hA | hA
+  · rw [getLast?_dropLast_set3_of_lt (by omega)] at h1
+    rw [getLast?_set3_of_lt_last (by omega)] at h2
+    exact hD ⟨K₁, K₂, h1, h2, hK₂, hK₁, harc⟩
+  · rw [getLast?_dropLast_set3_second (by omega)] at h1
+    cases h1
+    have hkk : (crossingAt D.crossings i).e4 = (crossingAt D.crossings i).e1 := hK₁
+    exact h0 (hkk ▸ hmem)
+  · have hlast : i + 2 + 1 = D.crossings.length := by omega
+    rw [getLast?_dropLast_set3_last hlast] at h1
+    rw [getLast?_set3_last hlast] at h2
+    cases h1
+    cases h2
+    have hkk : (crossingAt D.crossings i).e4 = (crossingAt D.crossings i).e1 := hK₂
+    exact h0 (hkk ▸ hmem)
+
+/-! ## 24. Plancher d'un pas -- de onze croisements on ne redescend pas
+
+Cinquième étape du certificat négatif (suite des sections 20-23). Le compte
+ne peut pas passer sous onze tant que l'état reste sans motif terminal : un
+retrait de kink (`r1Any`) ou de bigon (`r2Any`) qui amènerait dix croisements
+exigerait son motif sur le diagramme de DÉPART (section 21), que l'invariant
+interdit ; un pas triangle (`r3Any`) conserve le compte (section 20). C'est la
+moitié « compte » de l'étape de préservation d'un pas ; la moitié « motif »
+est portée par les sections 22 et 23 pour la direction `verifyR3Fwd` et reste
+à établir pour l'orientation inverse. -/
+
+/-- Un pas kink partant d'un diagramme à onze croisements sans kink terminal
+    ne redescend pas sous onze. -/
+theorem verifyAnyMove_r1Any_length_ge_eleven {s t : KnotDiagram}
+    (h : verifyAnyMove (AnyMove.r1Any s t) = true)
+    (hlen : s.crossings.length = 11)
+    (hnk : ∀ K, s.crossings.getLast? = some K → K.e3 ≠ K.e4) :
+    11 ≤ t.crossings.length := by
+  rcases verifyAnyMove_r1Any_kink_on_larger h with ⟨hl, K, hK, hkk⟩ | ⟨hl, K, hK, hkk⟩
+  · omega
+  · exact absurd hkk (hnk K hK)
+
+/-- Un pas bigon partant d'un diagramme à onze croisements sans paire
+    terminale ne redescend pas sous onze. -/
+theorem verifyAnyMove_r2Any_length_ge_eleven {s t : KnotDiagram}
+    (h : verifyAnyMove (AnyMove.r2Any s t) = true)
+    (hlen : s.crossings.length = 11)
+    (hnb : ¬ ∃ K₁ K₂, s.crossings.dropLast.getLast? = some K₁ ∧
+        s.crossings.getLast? = some K₂ ∧
+        K₂.e2 = K₂.e3 ∧ K₁.e2 = K₁.e3 ∧ K₁.e1 = K₂.e1) :
+    11 ≤ t.crossings.length := by
+  rcases verifyAnyMove_r2Any_bigon_on_larger h with ⟨hl, hb⟩ | ⟨hl, hb⟩
+  · omega
+  · exact absurd hb hnb
+
+/-- Un pas triangle partant d'un diagramme à onze croisements reste à onze
+    (le compte est conservé, sans hypothèse de motif). -/
+theorem verifyAnyMove_r3Any_length_ge_eleven {s t : KnotDiagram}
+    (h : verifyAnyMove (AnyMove.r3Any s t) = true)
+    (hlen : s.crossings.length = 11) :
+    11 ≤ t.crossings.length := by
+  have hl := verifyAnyMove_r3Any_length h
+  omega
+
+/-! ## 25. Motif terminal du côté SOURCE de R3
+
+Sixième étape du certificat négatif (suite des sections 22-24). Les sections
+22 et 23 vont de la source vers la cible (`verifyR3Fwd D d` : absence de motif
+sur `D` implique absence sur `d`). L'invariant de l'ensemble atteignable a
+besoin de l'autre sens : `verifyR3 s t = verifyR3Fwd s t || verifyR3Fwd t s`,
+donc un pas triangle peut être vérifié dans l'orientation où `t` est la
+SOURCE de la chirurgie, et il faut alors montrer que le terminal écrit par
+`t` ne peut pas porter de motif.
+
+La garde du vérificateur contraint la source elle-même : le `Nodup` des neuf
+labels contient `e3(i+2)` et `e4(i+2)` (positions 4 et 5), donc le croisement
+source d'indice `i+2` n'est jamais un kink ; et il contient `e4(i)` (position
+7) alors que la garde impose `e2(i+2) = e4(i)` (troisième conjonction), donc
+la silhouette `e2 = e3` du terminal source est impossible. Quand la fenêtre
+atteint la fin de la liste, ces deux croisements sont exactement les
+croisements terminaux de la source. -/
+
+/-- Auxiliaire : le dernier croisement d'une liste est celui de l'indice
+    `length - 1`. -/
+theorem getLast?_eq_crossingAt {l : List PDCrossing} {i : Nat} (h : i + 1 = l.length) :
+    l.getLast? = some (crossingAt l i) := by
+  have hlt : i < l.length := by omega
+  have hs : l[i]? = some (l[i]'hlt) := List.getElem?_eq_some_iff.mpr ⟨hlt, rfl⟩
+  rw [List.getLast?_eq_getElem?, show l.length - 1 = i by omega, hs]
+  simp only [crossingAt, hs, Option.getD_some]
+
+/-- Auxiliaire : l'avant-dernier croisement d'une liste est celui de l'indice
+    `length - 2`. -/
+theorem dropLast_getLast?_eq_crossingAt {l : List PDCrossing} {i : Nat}
+    (h : i + 2 + 1 = l.length) :
+    l.dropLast.getLast? = some (crossingAt l (i + 1)) := by
+  have hlt : i + 1 < l.length := by omega
+  have hs : l[i + 1]? = some (l[i + 1]'hlt) := List.getElem?_eq_some_iff.mpr ⟨hlt, rfl⟩
+  rw [List.getLast?_dropLast, if_neg (by omega), show l.length - 2 = i + 1 by omega, hs]
+  simp only [crossingAt, hs, Option.getD_some]
+
+/-- Quand la fenêtre R3 atteint la fin de la source, le dernier croisement de
+    la source n'est pas un kink : `e3(i+2)` et `e4(i+2)` sont distincts par le
+    `Nodup` des neuf labels. -/
+theorem r3SrcEnd_not_kink (D : KnotDiagram) (i : Nat)
+    (hlen : i + 2 + 1 = D.crossings.length)
+    (hN : List.Nodup [(crossingAt D.crossings i).e1, (crossingAt D.crossings i).e2,
+      (crossingAt D.crossings (i + 1)).e1, (crossingAt D.crossings (i + 1)).e4,
+      (crossingAt D.crossings (i + 2)).e3, (crossingAt D.crossings (i + 2)).e4,
+      (crossingAt D.crossings i).e3, (crossingAt D.crossings i).e4,
+      (crossingAt D.crossings (i + 1)).e3]) :
+    ∀ K, D.crossings.getLast? = some K → K.e3 ≠ K.e4 := by
+  intro K hK
+  rw [getLast?_eq_crossingAt hlen] at hK
+  cases hK
+  intro hkk
+  rw [hkk] at hN
+  simp at hN
+
+/-- Quand la fenêtre R3 atteint la fin de la source, la paire terminale de la
+    source n'est pas un bigon : la garde impose `e2(i+2) = e4(i)`, et `e4(i)`
+    est distinct de `e3(i+2)` par le `Nodup` des neuf labels. -/
+theorem r3SrcEnd_not_bigon (D : KnotDiagram) (i : Nat)
+    (hlen : i + 2 + 1 = D.crossings.length)
+    (hguard : (crossingAt D.crossings (i + 2)).e2 = (crossingAt D.crossings i).e4)
+    (hN : List.Nodup [(crossingAt D.crossings i).e1, (crossingAt D.crossings i).e2,
+      (crossingAt D.crossings (i + 1)).e1, (crossingAt D.crossings (i + 1)).e4,
+      (crossingAt D.crossings (i + 2)).e3, (crossingAt D.crossings (i + 2)).e4,
+      (crossingAt D.crossings i).e3, (crossingAt D.crossings i).e4,
+      (crossingAt D.crossings (i + 1)).e3]) :
+    ¬ ∃ K₁ K₂, D.crossings.dropLast.getLast? = some K₁ ∧
+      D.crossings.getLast? = some K₂ ∧
+      K₂.e2 = K₂.e3 ∧ K₁.e2 = K₁.e3 ∧ K₁.e1 = K₂.e1 := by
+  rintro ⟨K₁, K₂, h1, h2, hK₂, _, _⟩
+  rw [getLast?_eq_crossingAt hlen] at h2
+  cases h2
+  have hdup : (crossingAt D.crossings i).e4 = (crossingAt D.crossings (i + 2)).e3 := by
+    rw [← hguard]
+    exact hK₂
+  rw [hdup] at hN
+  simp at hN
+
+/-! ## 26. Assemblage : le pas triangle ne fabrique aucun motif terminal
+
+Septième étape du certificat négatif (suite des sections 22-25). Les sections
+22 et 23 prouvent la transmission de l'invariant dans le sens
+`verifyR3Fwd D d` (source vers cible) ; la section 25 donne les deux lemmes
+du côté source quand la fenêtre atteint la fin de la liste. Il restait à
+assembler : `verifyR3 s t` est la **disjonction** des deux orientations, et un
+pas triangle vérifié peut donc être lu dans l'orientation où `t` est la source
+de la chirurgie. Cette section montre que chaque orientation rend les deux
+invariants terminaux (pas de kink, pas de bigon), puis les réunit sous la
+forme exacte que consomme l'induction sur `verifyAnyMoves`. -/
+
+/-- Sens inverse du pas triangle pour le kink terminal : si la **cible** `d`
+    n'a pas de kink terminal, la **source** `D` n'en a pas non plus. Hors de
+    la fenêtre le terminal est transmis tel quel ; quand la fenêtre atteint la
+    fin de la source, c'est `r3SrcEnd_not_kink`. -/
+theorem verifyR3Fwd_src_not_kink (D d : KnotDiagram)
+    (h : verifyR3Fwd D d = true)
+    (hd : ∀ K, d.crossings.getLast? = some K → K.e3 ≠ K.e4) :
+    ∀ K, D.crossings.getLast? = some K → K.e3 ≠ K.e4 := by
+  simp only [verifyR3Fwd, Bool.and_eq_true] at h
+  obtain ⟨i, _, hi⟩ := List.any_eq_true.mp h.2
+  have hguard := of_decide_eq_true hi
+  rw [hguard.2.2.2.2.2] at hd
+  rcases Nat.lt_or_ge (i + 2 + 1) D.crossings.length with hlt | hge
+  · rw [getLast?_set3_of_lt_last hlt] at hd
+    exact hd
+  · exact r3SrcEnd_not_kink D i (by omega) hguard.2.2.2.2.1
+
+/-- Sens direct, sous forme conjointe : les sections 22 et 23 réunies. -/
+theorem verifyR3Fwd_not_motif (D d : KnotDiagram)
+    (h : verifyR3Fwd D d = true)
+    (hk : ∀ K, D.crossings.getLast? = some K → K.e3 ≠ K.e4)
+    (hb : ¬ ∃ K₁ K₂, D.crossings.dropLast.getLast? = some K₁ ∧
+        D.crossings.getLast? = some K₂ ∧
+        K₂.e2 = K₂.e3 ∧ K₁.e2 = K₁.e3 ∧ K₁.e1 = K₂.e1) :
+    (∀ K, d.crossings.getLast? = some K → K.e3 ≠ K.e4) ∧
+    (¬ ∃ K₁ K₂, d.crossings.dropLast.getLast? = some K₁ ∧
+        d.crossings.getLast? = some K₂ ∧
+        K₂.e2 = K₂.e3 ∧ K₁.e2 = K₁.e3 ∧ K₁.e1 = K₂.e1) :=
+  ⟨verifyR3Fwd_last_not_kink D d h hk, verifyR3Fwd_last_not_bigon D d h hb⟩
+
+/-- Sens inverse du pas triangle pour le bigon terminal. Trois cas sur la
+    position de la fenêtre : entièrement avant la paire terminale (transmission),
+    sur l'avant-dernière case (le croisement réécrit porte alors `e4(i)` en `e2`
+    et `e1(i)` en `e3`, tous deux dans le `Nodup`), ou sur la dernière case
+    (section 25). -/
+theorem verifyR3Fwd_src_not_bigon (D d : KnotDiagram)
+    (h : verifyR3Fwd D d = true)
+    (hd : ¬ ∃ K₁ K₂, d.crossings.dropLast.getLast? = some K₁ ∧
+        d.crossings.getLast? = some K₂ ∧
+        K₂.e2 = K₂.e3 ∧ K₁.e2 = K₁.e3 ∧ K₁.e1 = K₂.e1) :
+    ¬ ∃ K₁ K₂, D.crossings.dropLast.getLast? = some K₁ ∧
+        D.crossings.getLast? = some K₂ ∧
+        K₂.e2 = K₂.e3 ∧ K₁.e2 = K₁.e3 ∧ K₁.e1 = K₂.e1 := by
+  simp only [verifyR3Fwd, Bool.and_eq_true] at h
+  obtain ⟨i, _, hi⟩ := List.any_eq_true.mp h.2
+  have hguard := of_decide_eq_true hi
+  rw [hguard.2.2.2.2.2] at hd
+  rintro ⟨K₁, K₂, h1, h2, hK₂, hK₁, harc⟩
+  have hN := hguard.2.2.2.2.1
+  rcases Nat.lt_trichotomy (i + 2 + 2) D.crossings.length with hA | hA | hA
+  · rw [getLast?_dropLast_set3_of_lt hA] at hd
+    rw [getLast?_set3_of_lt_last (by omega)] at hd
+    exact hd ⟨K₁, K₂, h1, h2, hK₂, hK₁, harc⟩
+  · rw [dropLast_getLast?_eq_crossingAt (l := D.crossings) (i := i + 1) (by omega)] at h1
+    cases h1
+    have hdup : (crossingAt D.crossings i).e4 = (crossingAt D.crossings (i + 2)).e3 := by
+      rw [← hguard.2.2.2.1]
+      exact hK₁
+    rw [hdup] at hN
+    simp at hN
+  · exact (r3SrcEnd_not_bigon D i (by omega) hguard.2.2.2.1 hN)
+      ⟨K₁, K₂, h1, h2, hK₂, hK₁, harc⟩
+
+/-- Assemblage : `verifyR3` est la disjonction des deux orientations de
+    `verifyR3Fwd`, et chacune rend les deux invariants terminaux. -/
+theorem verifyR3_not_motif (s t : KnotDiagram)
+    (h : verifyR3 s t = true)
+    (hk : ∀ K, s.crossings.getLast? = some K → K.e3 ≠ K.e4)
+    (hb : ¬ ∃ K₁ K₂, s.crossings.dropLast.getLast? = some K₁ ∧
+        s.crossings.getLast? = some K₂ ∧
+        K₂.e2 = K₂.e3 ∧ K₁.e2 = K₁.e3 ∧ K₁.e1 = K₂.e1) :
+    (∀ K, t.crossings.getLast? = some K → K.e3 ≠ K.e4) ∧
+    (¬ ∃ K₁ K₂, t.crossings.dropLast.getLast? = some K₁ ∧
+        t.crossings.getLast? = some K₂ ∧
+        K₂.e2 = K₂.e3 ∧ K₁.e2 = K₁.e3 ∧ K₁.e1 = K₂.e1) := by
+  simp only [verifyR3, Bool.or_eq_true] at h
+  rcases h with hf | hr
+  · exact verifyR3Fwd_not_motif s t hf hk hb
+  · exact ⟨verifyR3Fwd_src_not_kink t s hr hk, verifyR3Fwd_src_not_bigon t s hr hb⟩
+
+/-- Le mouvement `r3Any` préserve l'absence de motif terminal, dans les deux
+    orientations que `verifyR3` accepte. C'est la forme consommée par
+    l'induction sur `verifyAnyMoves`. -/
+theorem verifyAnyMove_r3Any_not_motif (s t : KnotDiagram)
+    (h : verifyAnyMove (.r3Any s t) = true)
+    (hk : ∀ K, s.crossings.getLast? = some K → K.e3 ≠ K.e4)
+    (hb : ¬ ∃ K₁ K₂, s.crossings.dropLast.getLast? = some K₁ ∧
+        s.crossings.getLast? = some K₂ ∧
+        K₂.e2 = K₂.e3 ∧ K₁.e2 = K₁.e3 ∧ K₁.e1 = K₂.e1) :
+    (∀ K, t.crossings.getLast? = some K → K.e3 ≠ K.e4) ∧
+    (¬ ∃ K₁ K₂, t.crossings.dropLast.getLast? = some K₁ ∧
+        t.crossings.getLast? = some K₂ ∧
+        K₂.e2 = K₂.e3 ∧ K₁.e2 = K₁.e3 ∧ K₁.e1 = K₂.e1) :=
+  verifyR3_not_motif s t (by simpa only [verifyAnyMove] using h) hk hb
+
+/-! ## 27. Chaine conditionnee -- la route sans motif terminal est fermee
+
+Huitieme etape du certificat negatif (suite des sections 21-26). Les sections
+21 a 26 transportent l'absence de motif terminal pas a pas ; le plancher
+conditionne assemble ces briques en theoreme de chaine, miroir exact du
+plancher four-distinct `movesConnects_length_le_of_allFourDistinct`
+(`ReidemeisterMoves.lean`, #20017) : si chaque maillon d'un certificat
+`movesConnectsAny` a une source sans motif terminal, la longueur de depart
+minore celle d'arrivee.
+
+**Portee exacte, sans surestimation.** L'hypothese par maillon interdit de
+fait tout pas R1/R2 dans la chaine couverte : un pas montant cree son motif
+sur la cible (section 21), qui devient la source du maillon suivant, et un pas
+descendant exige son motif sur sa source (section 21 encore). Le theoreme est
+donc la version `_any` du plancher conditionne de #20017 : la route qui
+**maintient** l'hypothese pas a pas est fermee, pas l'existence d'un temoin.
+La version inconditionnee (potentiel : les motifs crees par les up-moves,
+kinks de fusion de la section 19 compris) reste un residu designe. -/
+
+/-- Un diagramme ne porte ni kink terminal (`e3 = e4` sur le dernier
+    croisement) ni paire de bigon terminale (silhouettes `e2 = e3` sur les
+    deux derniers, arc commun partage). C'est l'invariant des sections 22-26,
+    package pour la chaine. -/
+def noTerminalMotif (d : KnotDiagram) : Prop :=
+  (∀ K, d.crossings.getLast? = some K → K.e3 ≠ K.e4) ∧
+  (¬ ∃ K₁ K₂, d.crossings.dropLast.getLast? = some K₁ ∧
+      d.crossings.getLast? = some K₂ ∧
+      K₂.e2 = K₂.e3 ∧ K₁.e2 = K₁.e3 ∧ K₁.e1 = K₂.e1)
+
+/-- Pas elementaire du plancher conditionne : un pas `_any` verifie dont la
+    source est sans motif terminal ne descend jamais. Un retrait de kink ou de
+    bigon exige son motif sur le GRAND cote (section 21) : si le grand cote
+    est la source, l'hypothese est violee ; sinon le pas est montant et le
+    compte monte. Le pas R3 conserve le compte. -/
+theorem verifyAnyMove_length_le_of_noTerminalMotif (m : AnyMove)
+    (h : verifyAnyMove m = true) (hnm : noTerminalMotif m.source) :
+    m.source.crossings.length ≤ m.target.crossings.length := by
+  rcases m with ⟨s, t⟩ | ⟨s, t⟩ | ⟨s, t⟩
+  · simp only [noTerminalMotif, AnyMove.source, AnyMove.target] at hnm ⊢
+    rcases verifyAnyMove_r1Any_kink_on_larger h with ⟨hl, K, hK, hkk⟩ | ⟨hl, K, hK, hkk⟩
+    · omega
+    · exact absurd hkk (hnm.1 K hK)
+  · simp only [noTerminalMotif, AnyMove.source, AnyMove.target] at hnm ⊢
+    rcases verifyAnyMove_r2Any_bigon_on_larger h with
+      ⟨hl, K₁, K₂, h1, h2, hK₂, hK₁, harc⟩ | ⟨hl, K₁, K₂, h1, h2, hK₂, hK₁, harc⟩
+    · omega
+    · exact (hnm.2 ⟨K₁, K₂, h1, h2, hK₂, hK₁, harc⟩).elim
+  · simp only [AnyMove.source, AnyMove.target]
+    have h3 := verifyAnyMove_r3Any_length h
+    omega
+
+/-- Version chaine du plancher conditionne : si chaque maillon d'un certificat
+    `movesConnectsAny` a une source sans motif terminal, la longueur de depart
+    minore celle d'arrivee. Miroir `_any` de
+    `movesConnects_length_le_of_allFourDistinct`. -/
+theorem movesConnectsAny_length_le_of_noTerminalMotif {ms : List AnyMove}
+    {d₂ : KnotDiagram} :
+    ∀ (d₁ : KnotDiagram), movesConnectsAny ms d₁ d₂ →
+      (∀ m ∈ ms, noTerminalMotif m.source) →
+      d₁.crossings.length ≤ d₂.crossings.length := by
+  induction ms with
+  | nil =>
+    intro d₁ h _
+    simp only [movesConnectsAny, verifyAnyMoves] at h
+    rw [of_decide_eq_true h]
+  | cons m ms ih =>
+    intro d₁ h hall
+    simp only [movesConnectsAny, verifyAnyMoves, Bool.and_eq_true] at h
+    obtain ⟨⟨hsrc, hmove⟩, hrest⟩ := h
+    have hsrc' : m.source = d₁ := of_decide_eq_true hsrc
+    have h₁ : d₁.crossings.length ≤ m.target.crossings.length := by
+      rw [← hsrc']
+      exact verifyAnyMove_length_le_of_noTerminalMotif m hmove (hall m (by simp))
+    have h₂ : m.target.crossings.length ≤ d₂.crossings.length :=
+      ih m.target hrest (fun m' hm' => hall m' (by simp [hm']))
+    omega
+
+/-- Corollaire : aucun certificat `movesConnectsAny` dont les sources sont
+    sans motif terminal ne relie un diagramme a croisements non nuls a un
+    diagramme a zero croisements. Forme « route fermee » du plancher
+    conditionne, parametree par la cible : l'application au noeud trivial et
+    au temoin 11n102 vit avec le temoin (`Lidman.lean`). -/
+theorem movesConnectsAny_not_zero_of_noTerminalMotif {ms : List AnyMove}
+    {d₁ d₂ : KnotDiagram} (hn : 0 < d₁.crossings.length)
+    (hz : d₂.crossings.length = 0)
+    (h : movesConnectsAny ms d₁ d₂)
+    (hall : ∀ m ∈ ms, noTerminalMotif m.source) :
+    False := by
+  have hl := movesConnectsAny_length_le_of_noTerminalMotif (d₂ := d₂) d₁ h hall
+  omega
+
 end Knots.AnyMoves
