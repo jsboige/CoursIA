@@ -235,7 +235,13 @@ foreach (var result in results)
 | ★★★★ | URI pour identifier les ressources |
 | ★★★★★ | Liens vers d'autres sources de données |
 
-## Requêtes federees SPARQL
+</div>
+
+---
+
+# Requêtes federees SPARQL
+
+<div class="dense-list">
 
 ```csharp
 // Requete sur l'endpoint public DBpedia
@@ -268,6 +274,8 @@ layout: section
 
 # SW-6 — RDFS : Schema et Inference
 
+<div class="dense-list">
+
 ## Le vocabulaire RDFS
 
 - **`rdfs:subClassOf`** : hiérarchie de classes (transitive)
@@ -296,6 +304,8 @@ Console.WriteLine($"Apres inference : {dataGraph.Triples.Count} triplets");
 - **Open World Assumption** : absence d'information ≠ faux
 
 > **Notebook** : `SW-6-CSharp-RDFS.ipynb` — 45 min
+
+</div>
 
 ---
 
@@ -355,7 +365,13 @@ layout: section
 | Erreur | Incoh coherence logique | Rapport de violations |
 | Outil | Raisonneur (HermiT) | Validateur (pyshacl) |
 
-## Definition d'une Shape SHACL
+</div>
+
+---
+
+# Definition d'une Shape SHACL
+
+<div class="dense-list">
 
 ```python
 from pyshacl import validate

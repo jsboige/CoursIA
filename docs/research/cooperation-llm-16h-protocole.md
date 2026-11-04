@@ -76,5 +76,5 @@ Gisement `G:\Mon Drive\MyIA\IA\Bibliographie IA\GameTheory\` (identité vérifi�
 ## 5. Renvois
 
 - Carnet : [`GameTheory-16h-Cooperation-LLM-Python.ipynb`](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16h-Cooperation-LLM-Python.ipynb) (§0 gel, §2 hétérogénéités, §4 résultats, §7 verdicts, §8 extension).
-- Pilote de la sous-série : `GameTheory-16e` (Othman–Sandholm, SAGT 2009) · populations : `GameTheory-16g`.
+- Pilote de la sous-série : `GameTheory-16d` (Othman–Sandholm, SAGT 2009) · populations : `GameTheory-16e`.
 - Parents : [#14468](https://github.com/jsboige/CoursIA/issues/14468) (Epic distillations), [#15397](https://github.com/jsboige/CoursIA/issues/15397) (sous-série `GameTheory-16`).
