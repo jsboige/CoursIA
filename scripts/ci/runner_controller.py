@@ -153,7 +153,7 @@ def _is_elevated() -> bool:
         return False
 
 
-def task_action(profile: Profile) -> str:
+def task_action(profile: Profile, command: list[str] | None = None) -> str:
     """Le CORPS du script de la tache : lit le mot de passe du fichier machine local
     conventionnel, negocie tout le reste a chaud, logue a cote des autres logs.
 
@@ -161,17 +161,52 @@ def task_action(profile: Profile) -> str:
     declare deja `<Command>pwsh.exe</Command>` et ses arguments. L'ancien enrobage
     empilait deux `pwsh.exe -Command "..."` (le second avec des guillemets
     imbriques non echappes) et rendait l'XML invalide — mesure #20174.
+
+    `command` remplace la commande du controleur : c'est un point d'entree pour
+    les tests, qui ne peuvent pas lancer `ensure --apply` (il enregistre un
+    runner). Sans lui, le corps est exactement celui de la tache installee.
     """
     secrets_file = profile.root.parent / "secrets" / "runner_pwd.txt"
     logs_dir = profile.root.parent / "logs"
     python = Path(sys.executable)
     controller = Path(__file__).resolve()
+    log = logs_dir / "controller.log"
+    if command is None:
+        # La forme d'origine est conservee mot pour mot (`ensure --profile X
+        # --apply` d'un seul tenant) : c'est elle que les controles existants
+        # assertent, et un lanceur VBS qui la recopie doit la retrouver.
+        call = (f"'{python}' '{controller}' ensure --profile {profile.name} --apply")
+    else:
+        # Chaque element est quote comme un litteral PowerShell : un chemin qui
+        # porte un espace ne doit pas se faire couper en deux.
+        call = " ".join("'" + a.replace("'", "''") + "'" for a in command)
+    # Tout le flux passe par controller.log : sortie du controleur ET raison de
+    # l'echec. La redirection shell `*>>` ne portait que la DERNIERE instruction,
+    # donc un echec preparatoire (fichier de mot de passe absent) partait vers la
+    # sortie invisible de la tache : le journal restait absent ou vide alors que
+    # le code retour portait 1 (mesure 2026-11-04, Maintenance#75). Ici l'echec
+    # est attrape et ecrit dans le journal, et la sortie du controleur est
+    # capturee puis ecrite -- ecriture .NET en UTF-8 sans BOM, qui n'ouvre pas
+    # le fichier en exclusif (une ecriture dans le catch ne peut pas se faire
+    # refuser par la redirection, cf. la sonde du 04/11).
     return (
+        f"$log='{log}';"
+        f"try {{"
         f"New-Item -ItemType Directory -Force -Path '{logs_dir}' | Out-Null;"
         f"$ErrorActionPreference='Stop';"
         f"$env:{ACCOUNT_PASSWORD_ENV}=(Get-Content -LiteralPath '{secrets_file}' -Raw).Trim();"
-        f"& '{python}' '{controller}' ensure --profile {profile.name} --apply"
-        f" *>> '{logs_dir}\\controller.log'"
+        f"$ErrorActionPreference='Continue';"
+        f"$out = & {call} 2>&1 | Out-String;"
+        f"$code = $LASTEXITCODE;"
+        f"$ErrorActionPreference='Stop';"
+        f"[IO.File]::AppendAllText($log, $out);"
+        f"if ($code -ne 0) {{ exit $code }}"
+        f"}} catch {{"
+        f"New-Item -ItemType Directory -Force -Path '{logs_dir}' | Out-Null;"
+        f"[IO.File]::AppendAllText($log, ('{{0}} ERREUR : {{1}}' -f (Get-Date -Format s),"
+        f" ($_ | Out-String)));"
+        f"exit 1"
+        f"}}"
     )
 
 
