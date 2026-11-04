@@ -218,6 +218,8 @@ flowchart TD
 - Round-trip MacroCell vérifié par `#eval` et théorème `native_decide`
 - HashlifeMemo : couche de mémoïsation pour les témoins des piliers, `9^k` pire cas réduit à tractable
 
+**Acte de revue humaine à signer** : lorsque la revue humaine sera effectuée, elle prendra la forme `Revue par <nom, affiliation> — date <YYYY-MM-DD> — scope <lake entier / module> — vérifications : structure / preuves principales / i18n FR-EN — verdict global` et sera insérée dans ce README. Le premier acte attendu porte sur le pilote quantique — `Conway/CHSH.lean` (inégalité CHSH classique, borne 2) et `Conway/CHSHQuantum.lean` (violation quantique, borne de Tsirelson 2√2) — avant toute extension au reste du lake (contexte et arbitrage de ce pilote d'abord : voir le fil de l'issue #13106). La grille **#13106 critère 2** est satisfaite par le premier acte signé ; aucun acte partiel n'est consigné en silence, et la présente section reste honnête tant que l'acte n'est pas posé.
+
 ## Références
 
 Sources fondatrices des résultats formalisés à travers les trois phases. Chaque entrée correspond à un module de ce workspace.
