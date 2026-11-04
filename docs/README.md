@@ -433,6 +433,7 @@ Migration par tranches close (#17525) : Grothendieck lens et Leiden position (tr
 |---------|-------------|
 | [harness/global-rules-detail.md](harness/global-rules-detail.md) | **Stub de redirection** : le détail des règles globales machine vit désormais dans `roo-extensions`, à côté du harnais global dont il porte le détail. Le fichier reste ici parce qu'il est cité depuis le `~/.claude/CLAUDE.md` **global** — un lien entrant qu'aucun parcours limité à ce dépôt ne peut voir |
 | [harness/backup-plan.md](harness/backup-plan.md) | Plan de sauvegarde des données **hors git** du workspace `CoursIA-2` — familles, canal, cadence, rétention et tests de restauration datés ([jsboige/Maintenance#126](https://github.com/jsboige/Maintenance/issues/126)) |
+| [harness/bootloops-protocols-crossread.md](harness/bootloops-protocols-crossread.md) | Lecture croisée des 12 protocoles de revue `BootLoops-ai/skills` contre nos règles — 4 déjà là en substance, 5 écarts qualifiés (E1–E5), 3 adoptions proposées une par PR, refus motivés pour les autres (issue #20428) |
 
 ## ML (docs/ml/)
 

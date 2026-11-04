@@ -33,7 +33,7 @@ Verdicts : **DEJA** = nous l'avons, parfois sous un autre nom ; **ECART** = ils 
 | 7 | `prove-protocol` — protocole multi-agents de preuve et de réfutation | harnais prover `agent_tests/prover/` (#1453), comptage `count_code_sorry.py` | **PARTIEL** |
 | 8 | `reading-contract` — n'asserter que ce que le document dit, avec localisateur | G.1 + SDDD (triple ancrage) | **DEJA**, localisateur moins formalisé |
 | 9 | `ref-check` — vérification bibliographique champ par champ | `bibliography-hygiene` (identité en première page) | **PARTIEL** |
-| 10 | `referee-sim` — simuler la meilleure objection de chaque audience | `pr-review-discipline` (critères A-H), pas la simulation | **ECART** |
+| 10 | `referee-sim` — simuler la meilleure objection de chaque audience | `pr-review-discipline` (critères A–I), pas la simulation | **ECART** |
 | 11 | `timing-discipline` — mesurer avant de lancer, projeter par écrit | « Productivité opérations longues » (HARD 2026-05-11) | **ECART** sur la projection écrite |
 | 12 | `tool-stewardship` — consulter l'index avant d'écrire, documenter après | « Catalogue agents / skills / scripts — USAGE MANDATÉ » + `organ-first-implementation` | **DEJA** |
 
@@ -77,15 +77,15 @@ Notre règle « Productivité opérations longues » dit de **lancer en arrière
 
 > "- [ ] Real-progress unit defined, with where it accumulates and the expected rate; monitoring watches it, not the log."
 
-**Ce qu'on gagnerait** : de quoi distinguer un run long d'un run bloqué sans lire 2 000 lignes de log.
+**Ce qu'on gagnerait** : de quoi distinguer un run long d'un run bloqué sans lire un log intégral.
 
 ### E4 — Le lecteur adverse et le contexte neuf, dans `referee-sim`
 
 > "- [ ] The pass ran in a fresh context."
 
-Notre review se fait en contexte partagé, et la discipline B.0 mesure les **verdicts**, pas la fraîcheur du regard. Le protocole demande d'énumérer les audiences, de générer leur meilleure objection **et de vérifier que la réponse est là où l'objecteur la cherchera**. C'est plus exigeant que « répondre à la remarque » : une réponse enterrée en bas d'un dossier de 40 lignes ne compte pas.
+Notre review se fait en contexte partagé, et la discipline B.0 mesure les **verdicts**, pas la fraîcheur du regard. Le protocole demande d'énumérer les audiences, de générer leur meilleure objection **et de vérifier que la réponse est là où l'objecteur la cherchera**. C'est plus exigeant que « répondre à la remarque » : une réponse enterrée au fond d'un long dossier ne compte pas.
 
-**Ce qu'on gagnerait** : une raison mécanique de faire reviewer par un agent qui n'a pas écrit le livrable — ce que `model-delegation.md` recommande déjà sans le fonder sur un protocole.
+**Ce qu'on gagnerait** : une raison mécanique de faire reviewer par un agent qui n'a pas écrit le livrable — ce que la délégation bornée de `model-delegation.md` (déléguer le read-heavy vérifiable, garder la décision et le cross-check G.1) rend possible, sans le fonder sur un protocole.
 
 ### E5 — Le registre de lecture, dans `lit-review`
 
@@ -98,7 +98,7 @@ Notre `bibliography-hygiene` est solide sur l'**archivage** — identité vérif
 **Nous n'adoptons pas les douze.** Deux règles du harnais s'y opposent explicitement, et ce sont de bonnes règles :
 
 - **« Fixing Prompts and Rules — No Pendulum »** (`~/.claude/CLAUDE.md`) : ajouter une obligation pour corriger un défaut observé est l'échec-pendule. Un protocole importé sans le défaut mesuré qu'il corrige **chez nous** est exactement cela.
-- **« Harnais maigre »** (`#3657`) : le harnais est déjà payé à chaque requête. Douze protocoles de plus, ce sont douze sections de plus dans un contexte qui n'en peut plus.
+- **« Harnais maigre »** (`roo-extensions#3657`) : le harnais est déjà payé à chaque requête. Douze protocoles de plus, ce sont douze sections de plus dans un contexte qui n'en peut plus.
 
 **Ce que nous refusons nommément** :
 
@@ -115,7 +115,7 @@ Notre `bibliography-hygiene` est solide sur l'**archivage** — identité vérif
 Trois, pas cinq, et **un par PR**, chacun sous sign-off user puisqu'il ajoute une obligation :
 
 1. **`acceptance-gate` → la condition de clôture d'un résultat** (E1). Un verdict `CLOSED`/`OPEN` avec cases, dont le contrôle négatif. Candidat naturel : `.claude/rules/verify-before-claiming.md`, qui porte déjà la règle voisine.
-2. **`independence-bookkeeping` → le registre de contact dans les dossiers de validation** (E2). Candidat : `.claude/rules/pr-review-discipline.md` §B.0, ou une section de `prevalidation-dossier-order-detail.md` qui décrit déjà la forme du dossier.
+2. **`independence-bookkeeping` → le registre de contact dans les dossiers de validation** (E2). Candidat : `CLAUDE.md` §B.0 (« Aucun nit non levé ne survit à un merge »), ou une section de `prevalidation-dossier-order-detail.md` qui décrit déjà la forme du dossier.
 3. **`timing-discipline` → la projection écrite des runs longs** (E3). Candidat : la section « Productivité opérations longues » de `CLAUDE.md`, qui gagne une ligne et une mesure.
 
 E4 et E5 sont **notés, pas proposés** : ils demandent un instrument (un reviewer en contexte neuf, un registre de lecture lisible par un organe) avant de pouvoir devenir une règle. Une règle sans instrument ne mord pas — c'est la leçon que ce dépôt a déjà payée plusieurs fois.
@@ -132,4 +132,4 @@ C'est aussi l'explication des cinq écarts : ils ne portent pas sur la rigueur, 
 - `.claude/rules/anti-regression.md` — « un motif de détection se valide par ses faux négatifs »
 - `.claude/rules/verify-before-claiming.md` · `.claude/rules/pr-review-discipline.md` — H.1-H.4, B.0, G.1
 - `.claude/rules/bibliography-hygiene.md` — archivage et lecture avant attribution
-- `~/.claude/CLAUDE.md` — « No Pendulum » et « Harnais maigre » (#3657)
+- `~/.claude/CLAUDE.md` — « No Pendulum » et « Harnais maigre » (roo-extensions#3657)
