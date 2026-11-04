@@ -27,6 +27,7 @@ octet a octet.
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -117,7 +118,7 @@ def test_artifact_exemptions_are_motivated_and_point_at_real_files():
             "compilées en 1154 s, 0 sorry/0 axiom)",
         ),
         (
-            "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/scripts/README.md",
+            "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/scripts/README.md",
             "fabriquée : la v1 du gun, 36 cellules fausses, passait le check de règle) ;",
         ),
     ],
@@ -157,7 +158,7 @@ def test_artifact_exemption_on_incident_narrative_is_a_span_not_a_blanket():
 
     Sans ce temoin, l'exemption pourrait se transformer en couperet par fichier
     sans qu'aucun test ne rougisse."""
-    path = "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/scripts/README.md"
+    path = "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/scripts/README.md"
     exempte = "fabriquée : la v1 du gun, 36 cellules fausses, passait le check de règle) ;"
     assert cqc._findings_in_text(exempte, path, {"artifact"}) == []
     out = cqc._findings_in_text(
@@ -213,6 +214,76 @@ def test_exemption_audit_separates_live_from_stale(tmp_path):
     assert cqc._findings_in_text(
         "  - Gosper Glider Gun (36 cellules de carnet)", first.path, {"artifact"}
     ) == [(first.path, "artifact", "36 cellules")]
+
+
+def test_exemption_audit_under_a_subtree_root_judges_the_named_file(tmp_path):
+    """Sous ``--root <sous-arbre>``, une exemption vivante reste vivante (#24587).
+
+    Les ``path`` de ``ARTIFACT_EXEMPTIONS`` sont ecrits depuis la racine du
+    depot ; l'audit les resolvait depuis la racine SCANNEE, donc aucun ne
+    designait un fichier existant et **les 12** se lisaient perimees, avec pour
+    consigne de les retirer -- 100 % de faux positifs sur un dispositif vivant.
+    """
+    first = cqc.ARTIFACT_EXEMPTIONS[0]
+    target = tmp_path / first.path
+    target.parent.mkdir(parents=True)
+    target.write_text("  - Gosper Glider Gun (36 cellules vivantes)\n", encoding="utf-8")
+    subtree = tmp_path / "MyIA.AI.Notebooks" / "SymbolicAI" / "Lean"
+
+    # Controle negatif : sans la racine du depot, l'entree se lit perimee --
+    # c'est exactement le defaut que la correction ferme.
+    _live, stale = cqc._exemption_audit(subtree)
+    assert first.path in [e.path for e in stale]
+
+    live, stale = cqc._exemption_audit(subtree, repo_root=tmp_path)
+    assert [(e.path, n) for e, n in live] == [(first.path, 1)]
+    assert len(stale) == len(cqc.ARTIFACT_EXEMPTIONS) - 1
+
+
+def test_scan_all_under_a_subtree_root_still_applies_live_exemptions(tmp_path):
+    """Le meme ecart faisait re-signaler le compteur pourtant arbitre (#24587).
+
+    Le scan borne rendait ses chemins relatifs a la racine scannee : l'exemption
+    ne pouvait apparier aucun d'eux, et la lane lisait un finding la ou un
+    arbitrage humain avait deja tranche (les compteurs Conway sont des cellules
+    de l'automate, pas des totaux de carnets).
+    """
+    first = cqc.ARTIFACT_EXEMPTIONS[0]
+    target = tmp_path / first.path
+    target.parent.mkdir(parents=True)
+    target.write_text("  - Gosper Glider Gun (36 cellules vivantes)\n", encoding="utf-8")
+    subtree = tmp_path / "MyIA.AI.Notebooks" / "SymbolicAI" / "Lean"
+
+    assert cqc.scan_all(subtree, {"artifact"}) != []
+    assert cqc.scan_all(subtree, {"artifact"}, repo_root=tmp_path) == []
+
+
+def test_all_under_a_subtree_root_never_reports_a_live_exemption_as_perimee(
+    tmp_path, monkeypatch, capsys
+):
+    """Non-regression par la CLI : le bloc ``--all`` reste muet sur la peremption.
+
+    Une entree dont le motif matche encore le fichier qu'elle nomme ne doit
+    jamais sortir dans ``[ALLOWLIST-PERIMEE]``, quel que soit le ``--root``.
+    """
+    exemption = cqc.ArtifactExemption(
+        path="prose/README.md",
+        motif=re.compile(r"Gosper Glider Gun \(36 cellules vivantes"),
+        raison="fixture de test",
+    )
+    target = tmp_path / exemption.path
+    target.parent.mkdir(parents=True)
+    target.write_text("  - Gosper Glider Gun (36 cellules vivantes)\n", encoding="utf-8")
+    monkeypatch.setattr(cqc, "ARTIFACT_EXEMPTIONS", (exemption,))
+    monkeypatch.setattr(cqc, "_REPO_ROOT", tmp_path)
+    monkeypatch.setattr(
+        sys, "argv", ["cqc", "--all", "--root", str(tmp_path / "prose")]
+    )
+
+    assert cqc.main() == 0
+    out = capsys.readouterr().out
+    assert "[ALLOWLIST-PERIMEE]" not in out
+    assert "[ALLOWLIST] 1 exemption" in out
 
 
 # --------------------------------------------------------------------------- #
