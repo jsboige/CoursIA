@@ -56,6 +56,115 @@ def _safe_lwsc(self, *a, **k):
 
 ssl.SSLContext._load_windows_store_certs = _safe_lwsc
 
+# === Garde de prevol memoire (#24180) ======================================
+# Le harnais QLoRA 4-bit + GRPO tire ~11 Go de commit par bras ; sur un siege
+# dont la baseline approche deja le plafond (vmmemWSL + MCP), le run monte
+# seul a ~99,8 % de commit et tue la machine (autopsie 02/11, 7e vague sur
+# myia-po-2027, Event 2004). La garde mesure la marge AVANT tout import
+# lourd -- sinon elle consomme la marge qu'elle mesure -- et refuse de
+# demarrer sous le seuil.
+#
+# Calibration du seuil (Maintenance 02/11, csv commit-pressure 20261102) :
+# le siege mort avait deja 85,3 % de commit AVANT le bras, soit ~14 Go de
+# marge -- un seuil a 12 Go LAISSAIT PASSER ce bras. La mort est venue de
+# l'empreinte du bras (~11 Go) + la croissance CI concurrente (~8-10 Go)
+# sur la marge restante : le defaut exige donc bras + burst, ~20 Go. Un
+# siege leger peut baisser via --min-commit-headroom-go.
+
+DEFAULT_MIN_COMMIT_HEADROOM_GO = 20.0
+_HEADROOM_MEASURED_GO = None
+
+
+def _commit_headroom_bytes():
+    """Marge de commit disponible en octets (None si non mesurable).
+
+    Windows : ``ullAvailPageFile`` de GlobalMemoryStatusEx (commit disponible,
+    pas seulement RAM physique). Linux : MemAvailable + SwapFree de
+    /proc/meminfo.
+    """
+    if sys.platform == "win32":
+        import ctypes
+
+        class _MemoryStatusEx(ctypes.Structure):
+            _fields_ = [
+                ("dwLength", ctypes.c_ulong),
+                ("dwMemoryLoad", ctypes.c_ulong),
+                ("ullTotalPhys", ctypes.c_ulonglong),
+                ("ullAvailPhys", ctypes.c_ulonglong),
+                ("ullTotalPageFile", ctypes.c_ulonglong),
+                ("ullAvailPageFile", ctypes.c_ulonglong),
+                ("ullTotalVirtual", ctypes.c_ulonglong),
+                ("ullAvailVirtual", ctypes.c_ulonglong),
+                ("ullAvailExtendedVirtual", ctypes.c_ulonglong),
+            ]
+
+        status = _MemoryStatusEx()
+        status.dwLength = ctypes.sizeof(_MemoryStatusEx)
+        if ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(status)):
+            return status.ullAvailPageFile
+        return None
+    marge = 0
+    lu = False
+    try:
+        with open("/proc/meminfo", encoding="ascii") as fh:
+            for ligne in fh:
+                if ligne.startswith(("MemAvailable:", "SwapFree:")):
+                    marge += int(ligne.split()[1]) * 1024
+                    lu = True
+    except OSError:
+        return None
+    return marge if lu else None
+
+
+def _preflight_headroom(argv):
+    """Refuse de demarrer si la marge de commit est sous le seuil.
+
+    Pre-scan leger de ``--min-commit-headroom-go`` depuis argv : l'argparse
+    complet vit dans ``main()``, apres les imports lourds, donc trop tard.
+    """
+    global _HEADROOM_MEASURED_GO
+    seuil = DEFAULT_MIN_COMMIT_HEADROOM_GO
+    if "--min-commit-headroom-go" in argv:
+        i = argv.index("--min-commit-headroom-go")
+        if i + 1 < len(argv):
+            try:
+                seuil = float(argv[i + 1])
+            except ValueError:
+                pass  # l'argparse de main() donnera l'erreur canonique
+    elif "--min-commit-headroom-go=" in " ".join(argv):
+        for morceau in argv:
+            if morceau.startswith("--min-commit-headroom-go="):
+                try:
+                    seuil = float(morceau.split("=", 1)[1])
+                except ValueError:
+                    pass
+    marge = _commit_headroom_bytes()
+    if marge is None:
+        print("[ict25_arms] garde memoire: marge de commit non mesurable sur ce "
+              "systeme, verification sautee", file=sys.stderr, flush=True)
+        return
+    _HEADROOM_MEASURED_GO = round(marge / (1024 ** 3), 2)
+    if marge / (1024 ** 3) < seuil:
+        import socket
+
+        siege = socket.gethostname()
+        sys.exit(
+            f"[ict25_arms] REFUS DE DEMARRAGE: marge de commit disponible "
+            f"{_HEADROOM_MEASURED_GO:.1f} Go < seuil {seuil:.1f} Go sur {siege}. "
+            "Le bras tire ~11 Go de commit (QLoRA 4-bit + GRPO) et la CI "
+            "concurrente (~8-10 Go de burst) mangerait le reste. "
+            "Router ce bras vers un GPU de flotte avec de la marge, "
+            "ou liberer de la memoire avant de relancer. Seuil surchargeable "
+            "par --min-commit-headroom-go."
+        )
+    print(f"[ict25_arms] garde memoire: marge de commit "
+          f"{_HEADROOM_MEASURED_GO:.1f} Go >= seuil {seuil:.1f} Go, "
+          "demarrage autorise", flush=True)
+
+
+if __name__ == "__main__" and "-h" not in sys.argv and "--help" not in sys.argv:
+    _preflight_headroom(sys.argv[1:])
+
 import numpy as np  # noqa: E402
 import torch  # noqa: E402
 import datasets  # noqa: E402
@@ -534,6 +643,7 @@ def _write_artifact(out_path, args, seeds, all_metrics, resumed_seeds):
              "rev-parse", "HEAD"], text=True, encoding="utf-8", errors="replace"
         ).strip()[:12],
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "commit_headroom_go": _HEADROOM_MEASURED_GO,
         "resumed_seeds": resumed_seeds,
         "per_seed": all_metrics,
     }
@@ -570,6 +680,11 @@ def main(argv=None):
     p.add_argument("--max-completion-length", type=int, default=DEFAULT_MAX_COMPLETION_LENGTH,
                    help="Budget de completion du run, passe a GRPOConfig et recopie dans "
                         f"l'artefact (#21998, defaut {DEFAULT_MAX_COMPLETION_LENGTH})")
+    p.add_argument("--min-commit-headroom-go", type=float,
+                   default=DEFAULT_MIN_COMMIT_HEADROOM_GO,
+                   help="Marge de commit minimale (Go) exigee au prevol, mesuree avant "
+                        "tout import lourd (#24180, defaut "
+                        f"{DEFAULT_MIN_COMMIT_HEADROOM_GO})")
     args = p.parse_args(argv)
 
     seeds = [int(s.strip()) for s in args.seeds.split(",") if s.strip()]

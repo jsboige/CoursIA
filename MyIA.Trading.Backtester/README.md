@@ -36,7 +36,7 @@ TradeHelper.cs         Sérialisation (Binary=MessagePack, Csv=TinyCsv, Json=UTF
 
 ## Substitutions et verdicts SOTA
 
-Le cadrage complet (mesures firsthand, test de compilations réelles) : [docs/reference/backtester-e2-cadrage.md](../docs/reference/backtester-e2-cadrage.md) et [docs/reference/backtester-e2-svm-kernel.md](../docs/reference/backtester-e2-svm-kernel.md).
+Le cadrage complet (mesures firsthand, test de compilations réelles) : [docs/transients/2026-08-23-backtester-e2-cadrage.md](../docs/transients/2026-08-23-backtester-e2-cadrage.md) et [docs/reference/backtester-e2-svm-kernel.md](../docs/reference/backtester-e2-svm-kernel.md).
 
 | En amont (fork) | Dans ce port | Verdict |
 |---|---|---|
@@ -75,5 +75,5 @@ Dépendances de projet : `MyIA.AI.Shared` (socle transverse, Flee 2.0.0) · `MyI
 
 - [#7357](https://github.com/jsboige/CoursIA/issues/7357) — EPIC du port Option C (historique des tranches)
 - [#7265](https://github.com/jsboige/CoursIA/issues/7265) — EPIC index du patrimoine Aricie
-- [docs/reference/backtester-e2-cadrage.md](../docs/reference/backtester-e2-cadrage.md) — cadrage, préconditions, choix de libs mesurés
+- [docs/transients/2026-08-23-backtester-e2-cadrage.md](../docs/transients/2026-08-23-backtester-e2-cadrage.md) — cadrage, préconditions, choix de libs mesurés (décision consommée : port livré #15510, fermeture CLOSE_OK 2026-09-18)
 - [docs/reference/backtester-e2-svm-kernel.md](../docs/reference/backtester-e2-svm-kernel.md) — verdict SOTA du SVM à noyau et disposition upstream

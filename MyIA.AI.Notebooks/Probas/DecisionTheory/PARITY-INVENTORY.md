@@ -13,6 +13,17 @@
 > [`Actuariat/`](Actuariat/README.md) — régraduation T1-T5 = `Actuariat-01..05` (arbitrage #14873 G3).
 > Le présent document reste le snapshot pré-merge du HEAD `87dffc2bd9c` : ses références à
 > DecPyMC-8/9/12 décrivent l'état historique au moment de la tranche P0 et sont conservées telles quelles.
+>
+> **État mesuré au 2026-11-02** (tranche « zero-pad DecPyMC », lane `myia-ai-01:CoursIA-2`) : la série
+> Python `DecPyMC` a été **migrée en zero-pad** — `DecPyMC-1..7` → `DecPyMC-01..07`, `DecPyMC-08` inchangé
+> (le capstone actuariel portait déjà deux chiffres). Conséquence de parité : l'**asymétrie de zero-pad**
+> entre les deux jumeaux disparaît (DecInfer `01..08` et DecPyMC `01..07` partagent désormais la même
+> convention), et la paire `DT-1` (Utility-Foundations) redevient **alignée** — son `numbering_exception`
+> est supprimé du registre `twin_pairs.d`. La divergence de **slot** (DecInfer-03..08 contre DecPyMC-02..07),
+> causée par les compagnons Lean `DecInfer-02/02b` qui occupent le compteur principal, **subsiste** : elle
+> est seule à rester documentée dans les `numbering_exception` de `DT-2..DT-7`, et demeure le réalignement
+> gate sur l'arbitrage §3. Le tableau §1 et la vue d'ensemble ci-dessous **restent le snapshot P0**
+> (HEAD `87dffc2bd9c`) : ils décrivent l'état au moment de la tranche P0 et ne sont pas réécrits.
 
 ## Périmètre strict de la tranche
 
