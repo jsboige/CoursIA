@@ -67,6 +67,29 @@ def _claudish_machine_tag() -> str:
     return "unknown-prover"
 
 
+# The local vLLM endpoint is provisioned by the machine under two spellings.
+# ``LOCAL_LLM_BASE_URL`` is what THIS module has read since #1453, while the
+# fleet shells (po-2025 measured 2026-11-04) export ``LOCAL_LLM_API_BASE``.
+# Reading only one of them made the #1453 provider gate refuse to launch a
+# run whose endpoint was in fact reachable (401 on port 5003 = auth required,
+# transport alive): the gate was right about its own input and wrong about
+# reality. Accepting both fixes the class, not the instance — neither name is
+# promoted to canonical here, and a machine that sets both keeps the older
+# spelling (``LOCAL_LLM_BASE_URL`` wins) so behaviour never changes silently
+# for an environment that already worked.
+LOCAL_BASE_URL_ENV_NAMES = ("LOCAL_LLM_BASE_URL", "LOCAL_LLM_API_BASE")
+
+
+def _env_first(*names: str) -> str:
+    """Return the first non-empty value among ``names`` (``""`` if none)."""
+    for name in names:
+        value = os.getenv(name, "").strip()
+        if value:
+            return value
+    return ""
+
+
+
 PROVIDERS = {
     "zai": {
         "base_url": os.getenv("ZAI_BASE_URL", "https://api.z.ai/api/coding/paas/v4"),
@@ -77,7 +100,7 @@ PROVIDERS = {
         }
     },
     "local": {
-        "base_url": os.getenv("LOCAL_LLM_BASE_URL", ""),
+        "base_url": _env_first(*LOCAL_BASE_URL_ENV_NAMES),
         "api_key": os.getenv("LOCAL_LLM_API_KEY", ""),
         "models": {
             "reasoning": os.getenv("LOCAL_LLM_MODEL_ID", "qwen3.6-35b-a3b"),
