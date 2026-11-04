@@ -1742,6 +1742,57 @@ def test_container_marker_without_comment_is_false(monkeypatch):
     assert pig.has_recent_container_delivery_marker(17528) is False
 
 
+def _stub_comments(monkeypatch, bodies):
+    """Force le transport : le fil porte `bodies`, dans cet ordre."""
+    payload = json.dumps({"comments": [{"body": b} for b in bodies]})
+
+    def fake_run(cmd, *args, **kwargs):
+        assert cmd[:3] == ["gh", "issue", "view"], f"transport : {cmd}"
+        return subprocess.CompletedProcess(cmd, 0, stdout=payload, stderr="")
+
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+
+
+def test_container_marker_survit_a_un_released_de_queue(monkeypatch):
+    """#24590 -- un `[RELEASED]` de queue sans marqueur ne masque plus le
+    `[INFO] candidate-delivered` qu'il suit.
+
+    Sur une umbrella, ce masquage rendait le conteneur « non livre » : l'issue
+    redevenait servable alors qu'elle etait close. C'est exactement le defaut
+    que #24516 avait corrige sur la sonde de livraison, et qui restait ouvert
+    ici -- les deux filtres lisent le meme octet, ils doivent sauter le meme
+    commentaire.
+
+    Mesure du 2026-11-04 sur #19309 : 46 commentaires, **40** commencant par
+    `[RELEASED]`, **aucun** porteur d'un marqueur d'etat.
+    """
+    _stub_comments(monkeypatch, [
+        "[INFO] candidate-delivered — les cinq arcs sont clos.",
+        "[RELEASED] lane myia-po-2028:CoursIA -- barriere reelle : EPIC gelee",
+    ])
+    assert pig.has_recent_container_delivery_marker(17528) is True
+
+
+def test_container_marker_lit_un_released_qui_porte_un_marqueur(monkeypatch):
+    """Controle negatif : le saut ne porte pas sur l'EN-TETE seul.
+
+    Un `[RELEASED]` dont le corps porte lui-meme un marqueur d'etat est un
+    evenement : il reste le dernier commentaire LU, et ce qu'il dit compte.
+    Ce controle discrimine les deux lectures -- si le `[RELEASED]` etait saute
+    sur son en-tete, la sonde remonterait au `[INFO] candidate-delivered` de
+    tete et rendrait True ; en lisant le corps de queue, elle rend False.
+    """
+    _stub_comments(monkeypatch, [
+        "[INFO] candidate-delivered -- les cinq arcs sont clos.",
+        chr(10).join([
+            "[RELEASED] lane myia-po-2028:CoursIA -- EPIC rouverte",
+            "",
+            "[DELIVERED] lane myia-po-2028:CoursIA -- PR #21212",
+        ]),
+    ])
+    assert pig.has_recent_container_delivery_marker(17528) is False
+
+
 # Retractation du marqueur, cote TAPIS : la sonde que `main` injecte dans
 # cette boucle est `has_delivered_signal`, une implementation SEPAREE de
 # `_has_delivered_marker`. Sans la symetrie, le marqueur restait permanent
