@@ -43,8 +43,10 @@ permissions:
   contents: read
   pull-requests: write
   # #24441 : le verrou d'ecriture du commentaire collant est une
-  # **etiquette du PR** (verrou reel, ajout atomique a un ensemble). Les
-  # quatre autres workflows de publication portent deja `issues: write`.
+  # **etiquette du PR** (verrou reel, ajout atomique a un ensemble, arbitre
+  # par l'identifiant serveur). Sa liberation supprime la **definition**
+  # de l'etiquette au depot : c'est ce droit (`issues: write`) qui
+  # l'autorise. Les six workflows de publication le portent deja.
   issues: write
 
 concurrency:

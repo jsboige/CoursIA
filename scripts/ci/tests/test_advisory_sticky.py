@@ -36,11 +36,42 @@ class FakeProc:
 class SharedStore:
     """Etat partage par deux runners : deux ecrivains concurrents ecrivent
     dans le meme fil de commentaires et sur le meme jeu d'etiquettes (le
-    verrou d'ecriture est une etiquette du PR)."""
+    verrou d'ecriture est une etiquette du PR).
+
+    Les etiquettes portent un **identifiant serveur** attribue par
+    creation (mesure du 2026-11-04) : c'est lui qui donne l'ordre
+    d'arbitrage du verrou -- aucune horloge n'entre dans la decision.
+    """
 
     def __init__(self, comments=None, labels=None):
         self.comments = list(comments or [])
-        self.labels = list(labels or [])
+        self.labels = list(labels or [])   # definitions au niveau du depot
+        self.label_ids = {}                # nom -> identifiant serveur
+        self._next_label_id = 1000
+        for name in self.labels:
+            self.label_ids[name] = self._next_label_id
+            self._next_label_id += 1
+
+    def add_label(self, name):
+        """Ajout a l'ensemble : l'identifiant est attribue par creation."""
+        if name not in self.label_ids:
+            self.label_ids[name] = self._next_label_id
+            self._next_label_id += 1
+        if name not in self.labels:
+            self.labels.append(name)
+        return self.label_ids[name]
+
+    def drop_label(self, name):
+        """Suppression au niveau du DEPOT : la **definition** disparait et
+        le PR perd l'etiquette (mesure du 2026-11-04 : DELETE
+        /repos/{repo}/labels/{nom} -> 204 + detachement)."""
+        while name in self.labels:
+            self.labels.remove(name)
+        self.label_ids.pop(name, None)
+
+    def label_rows(self):
+        return [{"name": n, "id": self.label_ids.get(n)}
+                for n in self.labels]
 
 
 class FakeRunner:
@@ -48,10 +79,9 @@ class FakeRunner:
 
     def __init__(self, comments=None, post_id=4242, store=None):
         self.calls = []
-        self.store = store
-        self.comments = (store.comments if store is not None
-                         else list(comments or []))
-        self.labels = (store.labels if store is not None else [])
+        self.store = store if store is not None else SharedStore(comments)
+        self.comments = self.store.comments
+        self.labels = self.store.labels
         self.post_id = post_id
 
     def __call__(self, cmd, **kwargs):
@@ -63,18 +93,19 @@ class FakeRunner:
         if any("/labels" in c for c in cmd):
             if method == "POST":
                 name = cmd[cmd.index("-f") + 1].split("=", 1)[1]
-                if name not in self.labels:
-                    self.labels.append(name)
-                return FakeProc(json.dumps([{"name": n}
-                                            for n in self.labels]), 0)
+                self.store.add_label(name)
+                # la reponse du serveur porte la liste COMPLETE des
+                # etiquettes du PR (mesure du 2026-11-04)
+                return FakeProc(json.dumps(self.store.label_rows()), 0)
             if method == "DELETE":
+                # DELETE au niveau du DEPOT : la definition disparait ET le
+                # PR perd l'etiquette (mesure du 2026-11-04).
                 name = next(c for c in cmd
                             if "/labels/" in c).split("/labels/", 1)[1]
-                if name in self.labels:
-                    self.labels.remove(name)
+                self.store.drop_label(name)
                 return FakeProc("", 0)
             # GET : `--paginate --slurp` rend une liste de pages
-            return FakeProc(json.dumps([[{"name": n} for n in self.labels]]), 0)
+            return FakeProc(json.dumps([self.store.label_rows()]), 0)
         if method == "PATCH":
             body = cmd[cmd.index("-f") + 1].split("=", 1)[1]
             target = next(e for e in cmd if "/comments/" in e).split("/")[-1]
@@ -545,11 +576,13 @@ class DelayedLabelRunner(FakeRunner):
         if (method == "" and any("/labels" in c for c in cmd)
                 and not self._injected):
             self._injected = True
-            snapshot = list(self.labels)
+            # l'instantane capture AVANT le cycle de A : identifiants
+            # compris (l'ordre d'arbitrage est l'identifiant serveur).
+            snapshot = self.store.label_rows()
             # A termine integralement avant que B ne lise les etiquettes.
             self.other_cycle()
             # B recoit son ancien instantane.
-            return FakeProc(json.dumps([[{"name": n} for n in snapshot]]), 0)
+            return FakeProc(json.dumps([snapshot]), 0)
         if (method == "PATCH" and any("/comments/" in c for c in cmd)
                 and not self._injected):
             # Repli : le mecanisme lu les commentaires et non les
@@ -620,7 +653,7 @@ def test_un_ecrivain_concurrent_attend_le_verrou_au_lieu_d_ecraser():
                 state["locks_during_wait"] = list(store.labels)
                 # A relache : B peut ecrire.
                 for name in list(store.labels):
-                    a_s._remove_label(123, a_s.DEFAULT_REPO, runner, 15, name)
+                    a_s._delete_label(a_s.DEFAULT_REPO, runner, 15, name)
 
         a_s.upsert_section(
             "organ-b", "avertissement B", 123, runner=other,
@@ -643,36 +676,164 @@ def test_un_ecrivain_concurrent_attend_le_verrou_au_lieu_d_ecraser():
     assert sections.get("initial") == "etat initial"
 
 
-def test_un_verrou_tenu_par_un_autre_refuse_l_ecriture_au_bout_de_l_attente():
+def test_un_verrou_tenu_par_un_autre_refuse_l_ecriture_au_bout_de_l_attente(
+        monkeypatch):
     """Le contention n'est pas un echec silencieux : on attend, puis on
-    **refuse** franchement. Le corps du commentaire n'est pas touche."""
+    **refuse** franchement. Le corps du commentaire n'est pas touche.
+
+    Le TTL est neutralise ici : le verrou de l'autre ecrivain est suppose
+    **vivant** pendant toute l'attente -- c'est le cas qui doit finir en
+    refus franc, pas en reclamation."""
+    monkeypatch.setattr(a_s, "LOCK_TTL_SECONDS", 10_000.0)
     body = a_s.render({"organ-a": "A"})
     store = SharedStore([bot_comment(7, body)],
-                         labels=[a_s._lock_label(1000.0, "writer-A")])
+                         labels=[a_s._lock_label("writer-A")])
     runner = FakeRunner(store=store)
     ticks = iter(range(0, 100000))
     with pytest.raises(RuntimeError):
         a_s._acquire_lock(123, a_s.DEFAULT_REPO, runner, 15, "writer-B",
-                          lambda _s: None, clock=lambda: 1000.1,
+                          lambda _s: None,
                           monotonic=lambda: next(ticks))
     assert store.comments[0]["body"] == body, (
         "le verrou de l'autre ecrivain ne doit pas etre vole ni ecrase")
+    assert store.labels == [a_s._lock_label("writer-A")], (
+        "le verrou de l'autre ecrivain doit rester en place")
 
 
 def test_un_verrou_perime_est_vole():
-    """Un ecrivain mort laisse son etiquette : au-dela du TTL elle est
-    perimee -- le suivant la retire et prend la main."""
+    """Un ecrivain mort laisse son etiquette : vue vivante pendant le TTL
+    sans interruption, elle est presumee **perimee** -- le suivant la
+    supprime et prend la main.
+
+    La peremption se mesure sur une **duree d'observation locale** (la
+    fenetre de celui qui observe) : aucune horloge d'une autre machine
+    n'entre dans la comparaison."""
     store = SharedStore([bot_comment(7, a_s.render({"organ-a": "A"}))],
-                         labels=[a_s._lock_label(1000.0, "writer-A")])
+                         labels=[a_s._lock_label("writer-A")])
     runner = FakeRunner(store=store)
+    ticks = iter(range(0, 1000000, 10))
     token = a_s._acquire_lock(
         123, a_s.DEFAULT_REPO, runner, 15, "writer-B", lambda _s: None,
-        clock=lambda: 1000.0 + a_s.LOCK_TTL_SECONDS + 1,
-        monotonic=lambda: 0.0)
+        monotonic=lambda: next(ticks))
     assert token, "le verrou doit etre pris"
-    assert a_s._lock_label(1000.0, "writer-A") not in store.labels, (
-        "le verrou perime doit etre retire")
+    assert a_s._lock_label("writer-A") not in store.labels, (
+        "le verrou perime doit etre supprime")
     assert token in store.labels
+
+
+def test_l_arbitrage_du_verrou_porte_sur_l_identifiant_serveur():
+    """Deux concurrents eligent le **meme** gagnant : l'ordre est
+    l'identifiant serveur (attribue par creation), pas l'ordre des noms,
+    ni une horloge de client.
+
+    Le rival porte ici un nom qui, par ordre alphabetique, passerait
+    **dernier** : s'il l'emporte, c'est bien son identifiant qui decide."""
+    monkeypatch = pytest.MonkeyPatch()
+    try:
+        monkeypatch.setattr(a_s, "LOCK_TTL_SECONDS", 10_000.0)
+        store = SharedStore([bot_comment(7, a_s.render({"organ-a": "A"}))],
+                             labels=["coursia-advisory-lock-zulu"])
+        runner = FakeRunner(store=store)
+        ticks = iter(range(0, 100000))
+        with pytest.raises(RuntimeError):
+            # l'identifiant du rival est plus petit que le notre : il
+            # tient le verrou, nous attendons puis refusons.
+            a_s._acquire_lock(123, a_s.DEFAULT_REPO, runner, 15, "writer-B",
+                              lambda _s: None,
+                              monotonic=lambda: next(ticks))
+    finally:
+        monkeypatch.undo()
+    assert store.labels == ["coursia-advisory-lock-zulu"], (
+        "le verrou du rival (identifiant plus petit) doit rester en place")
+
+
+def test_un_concurrent_qui_s_enregistre_pendant_la_stabilisation_nous_fait_attendre(
+        monkeypatch):
+    """Une lecture peut avoir ete servie **avant** la commit d'un
+    concurrent : la relecture de confirmation, apres le delai de
+    stabilisation, est celle qui tranche.
+
+    Le rival s'enregistre pendant ce delai, avec un identifiant **plus
+    petit** que le notre : nous ne devons pas ecrire."""
+    monkeypatch.setattr(a_s, "LOCK_TTL_SECONDS", 10_000.0)
+    store = SharedStore([bot_comment(7, a_s.render({"organ-a": "A"}))])
+    runner = FakeRunner(store=store)
+    state = {"injected": False}
+
+    def sleep(_seconds):
+        # le rival s'enregistre pendant notre delai de stabilisation
+        if not state["injected"]:
+            state["injected"] = True
+            store.labels.append("coursia-advisory-lock-rival")
+            store.label_ids["coursia-advisory-lock-rival"] = 1  # plus petit
+
+    ticks = iter(range(0, 100000))
+    with pytest.raises(RuntimeError):
+        a_s._acquire_lock(123, a_s.DEFAULT_REPO, runner, 15, "writer-B",
+                          sleep, monotonic=lambda: next(ticks))
+    assert state["injected"] is True, "le rival doit s'etre enregistre"
+
+
+class RacingDeleteRunner(FakeRunner):
+    """Runner dont le **DELETE** peut tomber sur une etiquette deja
+    absente : l'autre ecrivain l'a supprimee entre notre lecture et notre
+    retrait. L'API rend alors **404** (mesure Hermes, 2026-11-04T06:43Z).
+
+    C'est le cas nominal de deux ecrivains qui voient le meme verrou
+    perime : le premier le supprime, le second prend un 404.
+    """
+
+    def __init__(self, store):
+        super().__init__(store=store)
+        self._injected = False
+
+    def __call__(self, cmd, **kwargs):
+        method = ""
+        if "--method" in cmd:
+            method = cmd[cmd.index("--method") + 1]
+        if method == "" and any("/labels" in c for c in cmd) and not self._injected:
+            self._injected = True
+            # l'instantane montre encore le verrou perime...
+            rows = self.store.label_rows()
+            # ...mais l'autre ecrivain vient de le supprimer
+            for name in list(self.store.labels):
+                self.store.drop_label(name)
+            return FakeProc(json.dumps([rows]), 0)
+        if method == "DELETE":
+            name = next(c for c in cmd
+                        if "/labels/" in c).split("/labels/", 1)[1]
+            if name not in self.store.labels:
+                return FakeProc("", 1, "gh: Not Found (HTTP 404)")
+        return super().__call__(cmd, **kwargs)
+
+
+def test_un_404_sur_le_retrait_d_une_etiquette_absente_est_tolere():
+    """DELETE d'une etiquette deja absente rend 404. La purge et la
+    liberation doivent le **tolerer** : sinon deux ecrivains qui voient le
+    meme verrou perime font remonter l'exception, et la publication
+    echoue au lieu de degrader (mesure Hermes, 2026-11-04T06:43Z)."""
+    store = SharedStore([bot_comment(7, a_s.render({"organ-a": "A"}))])
+    runner = RacingDeleteRunner(store=store)
+    # aucune exception : l'etiquette absente reste absente
+    a_s._delete_label(a_s.DEFAULT_REPO, runner, 15,
+                      a_s._lock_label("writer-A"))
+    assert store.labels == []
+    # et la liberation d'un verrou deja vole ne leve pas non plus
+    assert a_s._release_lock(123, a_s.DEFAULT_REPO, runner, 15,
+                              a_s._lock_label("writer-B")) is True
+
+
+def test_deux_ecrivains_purgent_le_meme_verrou_perime_sans_rompre(monkeypatch):
+    """Les deux ecrivains voient le **meme** verrou perime : le premier le
+    supprime, le second prend un 404 sur le meme retrait. Il doit
+    attendre et publier, pas echouer."""
+    monkeypatch.setattr(a_s, "LOCK_TTL_SECONDS", 0.0)
+    store = SharedStore([bot_comment(7, a_s.render({"organ-a": "A"}))],
+                         labels=[a_s._lock_label("writer-A")])
+    runner = RacingDeleteRunner(store=store)
+    token = a_s._acquire_lock(123, a_s.DEFAULT_REPO, runner, 15, "writer-B",
+                              lambda _s: None, monotonic=lambda: 0.0)
+    assert token, "l'ecrivain doit prendre le verrou malgre le 404"
 
 
 def test_le_verrou_est_relache_a_la_fin_de_l_ecriture():
@@ -685,6 +846,26 @@ def test_le_verrou_est_relache_a_la_fin_de_l_ecriture():
     body = store.comments[0]["body"]
     assert not store.labels, "le verrou doit etre relache"
     assert "neuf" in body
+
+
+def test_la_liberation_supprime_la_definition_de_l_etiquette_au_depot():
+    """La liberation doit supprimer la **definition** de l'etiquette au
+    depot, pas seulement le lien sur le PR : sinon une definition par
+    prise de verrou deriverait au depot (fuite mesuree le 2026-11-04)."""
+    store = SharedStore([bot_comment(7, a_s.render({"organ-a": "vieux"}))])
+    runner = FakeRunner(store=store)
+    a_s.upsert_section("organ-a", "neuf", 123, runner=runner,
+                        sleep=lambda _s: None, owner="writer-A")
+    assert store.labels == [], (
+        "aucune definition d'etiquette ne doit rester au depot")
+    deletes = [c for c in runner.calls
+               if "--method" in c and "DELETE" in c and "/labels/" in " ".join(c)]
+    assert deletes, "la liberation doit supprimer l'etiquette"
+    for cmd in deletes:
+        url = next(c for c in cmd if "/labels/" in c)
+        assert "/issues/" not in url, (
+            "la suppression doit viser la definition du depot "
+            "(repos/{repo}/labels/{nom}), pas le seul lien sur le PR")
 
 
 def test_un_run_sans_nouveaute_ne_touche_pas_le_commentaire():

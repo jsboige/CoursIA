@@ -116,24 +116,61 @@ RETRY_JITTER = (0.4, 1.6)
 # lecture precede la prise de l'autre peut ecraser une section deja
 # verifiee, et les deux se croient verifies. Une relecture supplementaire ne
 # ferme pas cette classe de course : l'API refuse l'ecriture conditionnelle
-# (mesure du 2026-11-04 : `If-Match` -> HTTP 400), et l'API des reactions
-# est **idempotente** (mesure du 2026-11-04 : un second POST renvoie la
-# reaction existante en 200, pas 422) -- elle ne peut donc pas servir de
-# test-and-set.
+# (mesure du 2026-11-04 : `If-Match` -> HTTP 400 **sur le commentaire et sur
+#: l'issue**, `If-Unmodified-Since` -> HTTP 400), et l'API des reactions est
+#: **idempotente** (mesure du 2026-11-04 : un second POST renvoie la
+#: reaction existante en 200, pas 422) -- elle ne peut donc pas servir de
+#: test-and-set. Aucun primitive de comparaison-et-echange n'existe sur ce
+#: PR : le verrou doit etre une **serialisation reelle**.
 #:
 #: Le verrou est desormais **une etiquette du PR** :
 #:
 #: * l'ajout d'une etiquette est un **ajout a un ensemble**, atomique cote
 #:   serveur, la ou un PATCH de corps ne l'est pas ; l'ensemble ne
 #:   s'ecrase pas -- deux ecrivains y ajoutent chacun la leur ;
-#: * l'arbitrage se lit dans l'ensemble : parmi les verrous vivants, le plus
-#:   ancien gagne, les egalites etant tranchees par le proprietaire -- les
-#:   deux concurrents eligent donc le **meme** gagnant ;
-#: * ce n'est **ni un commentaire** (le declencheur `issue_comment` ne tire
-#:   pas) **ni une etiquette de gates** (aucun workflow du depot ne se
-#:   declenche sur `labeled`) ;
-#: * les workflows qui publient ont deja `issues: write` : aucun droit
-#:   nouveau, aucune surface d'ecriture elargie.
+#: * l'arbitrage se lit dans l'ensemble et se fait sur l'**identifiant
+#:   serveur** de l'etiquette : cet identifiant est attribue par creation
+#:   (mesure du 2026-11-04 : cinq creations successives ont rendu cinq
+#:   identifiants strictement croissants), donc les deux concurrents lisent
+#:   le meme identifiant et elisent **le meme** gagnant -- l'horloge du
+#:   client n'entre pas dans l'arbitrage, et deux machines dont les
+#:   horloges different ne peuvent pas elire deux gagnants differents ;
+#: * la peremption se mesure sur une **duree d'observation locale**
+#:   (horloge monotone de la machine qui observe), jamais par comparaison
+#:   de deux horloges : une etiquette vue vivante pendant
+#:   :data:`LOCK_TTL_SECONDS` consecutivement est presumee perimee ;
+#: * la liberation et le nettoyage passent par
+#:   `DELETE /repos/{owner}/{repo}/labels/{nom}` : cet appel **detache**
+#:   l'etiquette du PR **et supprime la definition** au niveau du depot
+#:   (mesure du 2026-11-04 : HTTP 204, definition absente de la liste du
+#:   depot, etiquette absente des etiquettes du PR). Deposer le seul lien
+#:   (`DELETE /issues/{n}/labels/{nom}`) laisserait la definition deriver
+#:   au depot -- c'etait la fuite de la premiere version.
+#:
+#: **Ce que ce verrou ne garantit pas.** Il serialise les ecrivains qui
+#: *respectent* le protocole : la garantie porte sur les ecrivains de ce
+#: module, pas sur un ecrivain tiers qui PATCHerait le corps sans passer
+#: par le verrou. Et la peremption est un **bail** : un ecrivain vivant
+#: mais lent au-dela du TTL peut voir son verrou vole. Le TTL (45 s) est
+#: tres superieur a la duree de la section critique (lecture, PATCH,
+#: verification : quelques secondes).
+#:
+#: **Effet de bord mesure.** Poser une etiquette declenche l'evenement
+#: `labeled` : `notebook-exec-sequence-ratchet.yml` est le **seul**
+#: workflow du depot qui **declare** ce declencheur (mesure du
+#: 2026-11-04, scan des blocs `on:` de tous les workflows) ; son filtre
+#: `paths: **.ipynb` le restreint aux PR de carnets, et sur les evenements
+#: d'etiquette dates (des PRs `.ipynb`) **aucun run n'a suivi** (mesure
+#: Hermes, 2026-11-04T06:43Z) -- le filtre `paths` parait neutraliser
+#: l'evenement en pratique. La formulation « aucun workflow ne se declenche
+#: sur `labeled` » est donc **fausse** et retiree : un workflow declare
+#: ce declencheur. Le ratchet ne publie ni collant ni etiquette : **aucune
+#: boucle** n'est possible meme s'il partait. Aucun workflow ne declare
+#: `unlabeled`.
+#:
+#: Les workflows qui publient ont deja `issues: write` : c'est ce droit qui
+#: autorise la suppression de la definition au niveau du depot. Aucun droit
+#: nouveau, aucune surface d'ecriture elargie.
 #:
 #: Un ecrivain mort laisse son etiquette : au-dela du TTL elle est
 #: **perimee**, le suivant la retire (nettoyage) et prend la main.
@@ -177,29 +214,59 @@ def _settle_delay() -> float:
 # Verrou d'ecriture -- helpers d'etiquettes
 # --------------------------------------------------------------------------
 
-def _lock_label(ts: float, owner: str) -> str:
-    r"""Nom de l'etiquette de verrou : horodatage (ms) + proprietaire.
+def _lock_label(owner: str) -> str:
+    r"""Nom de l'etiquette de verrou.
 
-    Le nom porte l'horodatage : c'est lui qui permet de juger un verrou
-    **perime** (ecrivain mort) sans lire le corps du commentaire.
+    Le nom ne porte **plus d'horodatage** : l'ordre d'arbitrage est donne
+    par l'identifiant **serveur** de l'etiquette (attribue par creation),
+    pas par une horloge de client -- deux machines dont les horloges
+    different eligent donc le meme gagnant.
     """
-    return f"{LOCK_LABEL_PREFIX}{int(ts * 1000)}-{owner}"
+    return f"{LOCK_LABEL_PREFIX}{owner}"
 
 
-def _parse_lock_label(name: str):
-    r"""``(horodatage, proprietaire)`` d'une etiquette de verrou, ou ``None``."""
-    if not name or not name.startswith(LOCK_LABEL_PREFIX):
-        return None
-    rest = name[len(LOCK_LABEL_PREFIX):]
-    ts, _, owner = rest.partition("-")
-    try:
-        return float(ts) / 1000.0, owner
-    except ValueError:
-        return None
+def _is_lock_label(name: str) -> bool:
+    r"""`True` si le nom porte le prefixe des verrous d'ecriture."""
+    return bool(name) and name.startswith(LOCK_LABEL_PREFIX)
 
 
-def _list_labels(pr: int, repo: str, runner: Callable, timeout: int) -> list:
-    r"""Noms des etiquettes du PR (une PR est une issue pour l'API)."""
+def _sort_key(label_id, name: str):
+    r"""Cle d'ordre des verrous : l'identifiant serveur (attribue par
+    creation, mesure du 2026-11-04).
+
+    A defaut d'identifiant (reponse degradee), on retombe sur le nom :
+    le tri reste alors **deterministe**, donc encore agree par les deux
+    concurrents.
+    """
+    return (label_id if isinstance(label_id, int) else -1, name)
+
+
+def _rows_from_payload(data) -> list:
+    r"""Aplatit la charge utile de `gh api --paginate --slurp`.
+
+    `--slurp` rend une liste de pages ; chaque page est une liste
+    d'objets. Un testes qui renvoie directement la liste des objets est
+    accepte aussi (la meme fonction sert pour la reponse d'un POST,
+    qui n'est pas paginee).
+    """
+    rows = []
+    if not isinstance(data, list):
+        return rows
+    for page in data:
+        if isinstance(page, list):
+            rows.extend(page)
+        elif isinstance(page, dict):
+            rows.append(page)
+    return rows
+
+
+def _labels_state(pr: int, repo: str, runner: Callable, timeout: int) -> dict:
+    r"""Etat des etiquettes du PR : ``{nom: identifiant serveur}``.
+
+    Une PR est une issue pour l'API. Les identifiants sont attribues par
+    creation : ils fournissent un ordre **serveur**, independant de
+    l'horloge des machines.
+    """
     proc = runner(
         ["gh", "api", "--paginate", "--slurp",
          f"repos/{repo}/issues/{pr}/labels"],
@@ -211,19 +278,23 @@ def _list_labels(pr: int, repo: str, runner: Callable, timeout: int) -> list:
     if not isinstance(data, list):
         raise RuntimeError(
             f"gh api labels: forme inattendue ({type(data).__name__})")
-    names = []
-    for page in data:
-        for row in page:
-            if isinstance(row, dict) and row.get("name"):
-                names.append(row["name"])
-            elif isinstance(row, str):
-                names.append(row)
-    return names
+    state = {}
+    for row in _rows_from_payload(data):
+        if isinstance(row, dict) and row.get("name"):
+            state[row["name"]] = row.get("id")
+        elif isinstance(row, str):
+            state.setdefault(row, None)
+    return state
 
 
 def _add_label(pr: int, repo: str, runner: Callable, timeout: int,
-               name: str) -> None:
-    r"""Ajoute une etiquette au PR -- **ajout a un ensemble**, atomique."""
+               name: str) -> dict:
+    r"""Ajoute une etiquette au PR -- **ajout a un ensemble**, atomique.
+
+    Renvoie l'etat des etiquettes du PR **apres** l'ajout : la reponse du
+    serveur porte la liste complete (mesure du 2026-11-04), ce qui evite
+    une lecture supplementaire.
+    """
     proc = runner(
         ["gh", "api", "--method", "POST",
          f"repos/{repo}/issues/{pr}/labels",
@@ -233,19 +304,44 @@ def _add_label(pr: int, repo: str, runner: Callable, timeout: int,
     if getattr(proc, "returncode", 1) != 0:
         raise RuntimeError(
             f"gh api POST label {name!r} failed: {proc.stderr.strip()}")
+    try:
+        data = json.loads(proc.stdout or "[]")
+    except ValueError:
+        data = []
+    state = {}
+    for row in _rows_from_payload(data):
+        if isinstance(row, dict) and row.get("name"):
+            state[row["name"]] = row.get("id")
+        elif isinstance(row, str):
+            state.setdefault(row, None)
+    return state
 
 
-def _remove_label(pr: int, repo: str, runner: Callable, timeout: int,
+def _delete_label(repo: str, runner: Callable, timeout: int,
                   name: str) -> None:
-    r"""Retire une etiquette du PR."""
+    r"""Supprime l'etiquette **au niveau du depot**.
+
+    `DELETE /repos/{owner}/{repo}/labels/{nom}` **detache** l'etiquette du
+    PR **et supprime la definition** au depot (mesure du 2026-11-04 :
+    HTTP 204, definition absente de la liste du depot, etiquette absente
+    des etiquettes du PR). Deposer le seul lien
+    (`DELETE /issues/{n}/labels/{nom}`) ne supprimerait pas la definition :
+    elle deriverait au depot, une par prise de verrou.
+
+    Une etiquette deja absente (404) n'est pas une erreur : c'est l'etat
+    vise.
+    """
     proc = runner(
         ["gh", "api", "--method", "DELETE",
-         f"repos/{repo}/issues/{pr}/labels/{name}"],
+         f"repos/{repo}/labels/{name}"],
         capture_output=True, text=True, timeout=timeout,
     )
     if getattr(proc, "returncode", 1) != 0:
+        err = getattr(proc, "stderr", "") or ""
+        if "Not Found" in err:
+            return
         raise RuntimeError(
-            f"gh api DELETE label {name!r} failed: {proc.stderr.strip()}")
+            f"gh api DELETE label {name!r} failed: {err.strip()}")
 
 
 def _owner_id() -> str:
@@ -424,21 +520,27 @@ def _create_comment(pr: int, body: str, repo: str, runner: Callable,
 
 def _acquire_lock(pr: int, repo: str, runner: Callable, timeout: int,
                   owner: str, sleep: Callable,
-                  clock: Callable = time.time,
                   monotonic: Callable = time.monotonic):
     r"""Prend le verrou d'ecriture -- **une etiquette du PR**.
 
     Le verrou est un **ajout a un ensemble** (les etiquettes du PR) : la
     prise est atomique cote serveur, la ou un PATCH de corps ne l'est pas.
     Un PATCH de corps n'est jamais conditionnel (mesure du 2026-11-04 :
-    `If-Match` -> HTTP 400) ; l'etiquette, elle, s'ajoute.
+    `If-Match` -> HTTP 400 sur le commentaire et sur l'issue) ; l'etiquette,
+    elle, s'ajoute.
 
-    L'arbitrage se lit dans l'ensemble : parmi les verrous **vivants** (age
-    < :data:`LOCK_TTL_SECONDS`), le plus ancien gagne -- le couple
-    ``(horodatage, proprietaire)``, l'egalite etant tranchee par le
-    proprietaire, donc les deux concurrents eligent le **meme** gagnant.
-    Un ecrivain mort laisse son etiquette : au-dela du TTL elle est
-    **perimee**, elle est retiree (nettoyage) et le suivant prend la main.
+    L'arbitrage se lit dans l'ensemble et se fait sur l'**identifiant
+    serveur** de l'etiquette, attribue par creation : les deux concurrents
+    lisent le meme identifiant et elisent donc le **meme** gagnant. Aucune
+    horloge de client n'entre dans l'arbitrage -- deux machines dont les
+    horloges different ne peuvent pas elire deux gagnants differents.
+
+    Un ecrivain mort laisse son etiquette : la peremption se mesure sur une
+    **duree d'observation locale** (horloge monotone de la machine qui
+    observe -- jamais une comparaison de deux horloges), et au-dela de
+    :data:`LOCK_TTL_SECONDS` d'observation continue l'etiquette est
+    presumee perimee : elle est supprimee (nettoyage) et le suivant prend
+    la main.
 
     Renvoie le **jeton** du verrou (le nom de l'etiquette), ou ``None`` si
     le PR ne porte encore aucun commentaire collant : le premier ecrivain
@@ -447,74 +549,114 @@ def _acquire_lock(pr: int, repo: str, runner: Callable, timeout: int,
     :func:`merge_duplicates`).
     """
     deadline = monotonic() + LOCK_WAIT_SECONDS
+    mine = _lock_label(owner)
+    first_seen: dict = {}   # (nom, identifiant) -> horloge de 1re observation
     while True:
         comments = list_comments(pr, repo, runner, timeout)
         cid = find_sticky_id(comments)
         if cid is None:
             return None
-        now = clock()
-        live = []
-        for name in _list_labels(pr, repo, runner, timeout):
-            parsed = _parse_lock_label(name)
-            if parsed is None:
+        state = _labels_state(pr, repo, runner, timeout)
+        now = monotonic()
+        # --- purge des verrous perimes -----------------------------------
+        # La peremption se mesure sur une **duree d'observation locale** :
+        # une etiquette de verrou vue vivante sans interruption pendant
+        # LOCK_TTL_SECONDS est presumee perimee (ecrivain mort). Aucune
+        # horloge d'une autre machine n'entre dans la comparaison -- deux
+        # machines dont les horloges different ne peuvent pas se voler
+        # mutuellement le verrou. La fenetre est indexee sur le couple
+        # (nom, identifiant) : un **re-enregistrement** (donc un nouvel
+        # identifiant) rouvre une fenetre neuve.
+        purged = False
+        for name in list(state):
+            if name == mine or not _is_lock_label(name):
                 continue
-            ts, holder = parsed
-            if now - ts >= LOCK_TTL_SECONDS:
-                # ecrivain presume mort : on retire le verrou perime
-                _remove_label(pr, repo, runner, timeout, name)
-                continue
-            live.append(((ts, holder), name))
-        live.sort()
-        if live and live[0][0] < (now, owner):
+            key = (name, state[name])
+            seen = first_seen.setdefault(key, now)
+            if now - seen >= LOCK_TTL_SECONDS:
+                # ecrivain presume mort : on supprime le verrou perime
+                first_seen.pop(key, None)
+                _delete_label(repo, runner, timeout, name)
+                purged = True
+        if purged:
+            continue    # on relit l'etat apres nettoyage
+        # --- election : le plus ancien identifiant serveur gagne --------
+        # Tout verrou observe ici a ete enregistre **avant** notre propre
+        # enregistrement : il porte donc un identifiant plus petit que le
+        # notre. On attend.
+        others = sorted((_sort_key(state[n], n), n)
+                        for n in state if n != mine and _is_lock_label(n))
+        if others:
             # un ecrivain tient le verrou : on attend, on n'ecrit pas
             if monotonic() > deadline:
                 raise RuntimeError(
                     f"verrou du commentaire collant {pr} tenu par "
-                    f"{live[0][0][1]!r} -- ecriture refusee (pas de succes "
+                    f"{others[0][1]!r} -- ecriture refusee (pas de succes "
                     f"sur une ecriture non exclusive)")
             sleep(_jitter_delay())
             continue
-        # --- tentative : on ajoute notre etiquette, puis on arbitre -------
-        mine = _lock_label(now, owner)
-        _add_label(pr, repo, runner, timeout, mine)
-        # Relecture : deux ecrivains peuvent avoir ajoute en meme temps.
-        # Le plus ancien gagne ; celui qui perd retire son etiquette.
-        after = []
-        for name in _list_labels(pr, repo, runner, timeout):
-            parsed = _parse_lock_label(name)
-            if parsed is None:
-                continue
-            ts, holder = parsed
-            if now - ts >= LOCK_TTL_SECONDS:
-                continue
-            after.append(((ts, holder), name))
-        after.sort()
-        if after and after[0][1] == mine:
-            return mine
-        # on a perdu l'arbitrage : on retire notre etiquette, on reboucle
-        try:
-            _remove_label(pr, repo, runner, timeout, mine)
-        except RuntimeError:
-            pass
-        if monotonic() > deadline:
-            raise RuntimeError(
-                f"verrou du commentaire collant {pr} pris par un autre "
-                f"ecrivain -- ecriture refusee")
-        sleep(_jitter_delay())
+        # --- tentative : on s'enregistre (ajout atomique) ---------------
+        state = _add_label(pr, repo, runner, timeout, mine)
+        if mine not in state:
+            state = _labels_state(pr, repo, runner, timeout)
+            if mine not in state:
+                raise RuntimeError(
+                    f"verrou du commentaire collant {pr} : l'etiquette de "
+                    f"verrou {mine!r} n'apparait pas apres son ajout")
+        my_key = _sort_key(state.get(mine), mine)
+        others = sorted((_sort_key(state[n], n), n)
+                        for n in state if n != mine and _is_lock_label(n))
+        if others and others[0][0] < my_key:
+            # un ecrivain plus ancien s'est enregistre entre-temps : on
+            # attend (notre etiquette reste posee -- elle porte notre rang)
+            if monotonic() > deadline:
+                raise RuntimeError(
+                    f"verrou du commentaire collant {pr} pris par un autre "
+                    f"ecrivain -- ecriture refusee")
+            sleep(_jitter_delay())
+            continue
+        # --- confirmation -----------------------------------------------
+        # Une lecture peut avoir ete servie **avant** la commit d'un
+        # concurrent : elle ne le montre pas. On relit donc l'etat de
+        # verrou apres un delai de stabilisation, et c'est cette lecture
+        # etablie qui tranche. Ce n'est pas une relecture de plus du
+        # *corps* (elle ne fermerait pas la classe de course) : c'est la
+        # relecture de l'etat de verrou, ou l'ordre serveur est connu.
+        sleep(_settle_delay())
+        state = _labels_state(pr, repo, runner, timeout)
+        if mine not in state:
+            # notre etiquette a disparu (volee entre-temps) : on recommence
+            continue
+        my_key = _sort_key(state.get(mine), mine)
+        others = sorted((_sort_key(state[n], n), n)
+                        for n in state if n != mine and _is_lock_label(n))
+        if others and others[0][0] < my_key:
+            if monotonic() > deadline:
+                raise RuntimeError(
+                    f"verrou du commentaire collant {pr} pris par un autre "
+                    f"ecrivain -- ecriture refusee")
+            sleep(_jitter_delay())
+            continue
+        return mine
 
 
 def _release_lock(pr: int, repo: str, runner: Callable, timeout: int,
                   token: Optional[str]) -> bool:
-    r"""Relache le verrou -- en retirant **notre** etiquette.
+    r"""Relache le verrou -- en supprimant **notre** etiquette.
+
+    La suppression passe par `DELETE /repos/{owner}/{repo}/labels/{nom}` :
+    elle detache l'etiquette du PR **et** supprime la definition, de sorte
+    qu'aucune trace ne reste au depot apres chaque ecriture (mesure du
+    2026-11-04).
 
     Un verrou vole (perime puis repris par un autre) n'est pas relache :
-    ce n'est pas le notre. L'echec du retrait n'est pas fatal : l'etiquette
-    perimee sera retiree par l'ecrivain suivant.
+    ce n'est pas le notre. L'echec de la suppression n'est pas fatal :
+    l'etiquette perimee sera retiree par l'ecrivain suivant.
     """
     if not token:
         return False
     try:
-        _remove_label(pr, repo, runner, timeout, token)
+        _delete_label(repo, runner, timeout, token)
     except RuntimeError:
         return False
     return True
