@@ -17,6 +17,8 @@ organ of this repository.
 from __future__ import annotations
 
 import importlib.util
+import contextlib
+import io
 import json
 import os
 import sys
@@ -135,10 +137,35 @@ class TestFamilyKeys(unittest.TestCase):
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].declared_parent, 102)
         self.assertEqual(result[0].confidence, "a_arbitrer")
-        # un parent declare QUI EST l'hote n'est pas une divergence
+        # un parent declare QUI EST l'hote n'est pas une divergence : c'est
+        # la filiation CONFIRMEE, ni violation ni arbitrage (review 17:24Z).
         issues[1].body = "check_a.py\n\nPart of #100"
         result = detect(issues, {"check_a.py"}, window_days=14, now=NOW)
-        self.assertEqual(result[0].confidence, "forte")
+        self.assertEqual(result[0].confidence, "filiation_confirmee")
+
+    def test_a_declared_parent_equal_to_the_host_is_a_confirmed_filiation(self):
+        """The third state: the declared filiation IS the proposed host.
+
+        Before it existed, the line was counted as a ``forte`` violation --
+        and that label MOVED when a third-party issue was closed (#22827
+        closed on 2026-11-04T16:51Z made #24610 a violation precisely
+        because its declared parent had become the proposed host). A verdict
+        that depends on the calendar is not a verdict: the state is now
+        neutral by construction.
+        """
+        issues = [
+            _issue(100, "check_a.py : le cas de reference", body="check_a.py",
+                   created="2026-10-30T10:00:00Z"),
+            _issue(101, "check_a.py : faux positif", body="check_a.py\n\nPart of #100",
+                   created="2026-11-02T10:00:00Z"),
+        ]
+        result = detect(issues, {"check_a.py"}, window_days=14, now=NOW)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].host, 100)
+        self.assertEqual(result[0].declared_parent, 100)
+        self.assertEqual(result[0].confidence, "filiation_confirmee")
+        # and it is not a violation: the four classes are disjoint
+        self.assertNotIn(result[0].confidence, {"forte", "a_arbitrer"})
 
     def test_a_declared_parent_protects_even_when_closed(self):
         """A declared filiation protects, even if the parent is closed.
@@ -244,17 +271,39 @@ class TestHostSelection(unittest.TestCase):
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].confidence, "forte")
 
-    def test_audit_container_is_preferred_as_host(self):
-        """An ``[Audit #N]`` partition is the host of its own family."""
+    def test_an_audit_partition_is_neither_member_nor_host(self):
+        """A partition is excluded BEFORE any key is produced, on both routes.
+
+        Excluding only the ``title:`` route left the partitions as hosts of
+        the ``organ:`` families they cite: measured on the real pool, 6
+        recurrences proposed to fold real work into ``#17793`` and 2 into
+        ``#24103``, and a partition that enumerates its brothers could take
+        the host role away from the real carrier of the family.
+        """
         issues = [
             _issue(300, "[Audit #17073] Serie Lean — partition Hermes",
                    body="check_a.py", created="2026-10-05T10:00:00Z"),
             _issue(301, "[Audit #17073] Serie Lean — partition Loki",
                    body="check_a.py", created="2026-11-02T10:00:00Z"),
         ]
+        self.assertEqual(detect(issues, {"check_a.py"}, now=NOW), [])
+        self.assertEqual(family_table(issues, {"check_a.py"}), [])
+
+    def test_a_partition_cannot_steal_the_host_role_from_the_real_carrier(self):
+        """The partition loses the host role; the issue that NAMES the organ
+        keeps it."""
+        issues = [
+            _issue(100, "check_a.py : le cas de reference", body="check_a.py",
+                   created="2026-10-05T10:00:00Z"),
+            _issue(300, "[Audit #17073] Serie Lean — partition Hermes",
+                   body="check_a.py #100 #101", created="2026-10-06T10:00:00Z"),
+            _issue(101, "check_a.py : faux positif", body="check_a.py",
+                   created="2026-11-02T10:00:00Z"),
+        ]
         result = detect(issues, {"check_a.py"}, now=NOW)
         self.assertEqual(len(result), 1)
-        self.assertEqual(result[0].host, 300)
+        self.assertEqual(result[0].issue, 101)
+        self.assertEqual(result[0].host, 100)
 
 
 class TestPartition(unittest.TestCase):
@@ -367,6 +416,53 @@ class TestPositiveControl(unittest.TestCase):
             ]), encoding="utf-8")
             rc = main(["--from-file", str(path), "--self-test", "--json"])
         self.assertEqual(rc, 2)
+
+
+class TestPoolVisibility(unittest.TestCase):
+    """The pool status must be visible in EVERY mode (review du 17:24Z, §3).
+
+    The body of the PR copies its table from the ``--json`` output -- the
+    very mode where a silent truncation was the most dangerous: the WARN was
+    under ``if not args.json``, so it fired in the human mode and not in the
+    one the published numbers are taken from.
+    """
+
+    def _pool(self):
+        return [_issue(i, f"check_a.py : cas {i}", body="check_a.py",
+                       created="2026-10-30T10:00:00Z") for i in range(1, 4)]
+
+    def _run(self, total, argv):
+        old_list, old_total = _mod._gh_issue_list, _mod._open_issue_total
+        _mod._gh_issue_list = lambda repo, limit: self._pool()
+        _mod._open_issue_total = lambda repo: total
+        err, out = io.StringIO(), io.StringIO()
+        try:
+            with contextlib.redirect_stderr(err), contextlib.redirect_stdout(out):
+                rc = main(argv)
+        finally:
+            _mod._gh_issue_list, _mod._open_issue_total = old_list, old_total
+        return rc, out.getvalue(), err.getvalue()
+
+    def test_a_truncated_pool_warns_on_stderr_in_json_mode(self):
+        rc, out, err = self._run(596, ["--limit", "400", "--json"])
+        self.assertIn("pool tronque", err)
+        self.assertIn('"dropped": 593', out)
+        self.assertIn('"pool_complete": false', out)
+        self.assertNotIn("pool tronque", out,
+                         "le WARN est sur stderr : stdout reste du JSON pur")
+
+    def test_an_unknown_total_warns_instead_of_reading_as_the_population(self):
+        """``search/issues`` en echec : le total est inconnu, donc la limite
+        de repli (1000) peut avoir tronque le pool sans que rien le dise."""
+        rc, out, err = self._run(None, ["--json"])
+        self.assertIn("INCONNU", err)
+        self.assertIn('"n_open_total": null', out)
+
+    def test_a_complete_pool_does_not_warn(self):
+        rc, out, err = self._run(3, ["--json"])
+        self.assertNotIn("pool tronque", err)
+        self.assertNotIn("INCONNU", err)
+        self.assertIn('"pool_complete": true', out)
 
 
 class TestLiveControl(unittest.TestCase):

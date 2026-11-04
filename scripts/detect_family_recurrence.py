@@ -236,6 +236,16 @@ class Recurrence:
         the organ, or it gathers the family) AND a recurrence that is ABOUT
         that family (its title names it, or points at a member of it).
 
+        Four classes, published separately in the report:
+
+          - ``forte`` -- no declared filiation: the orphan Q162 b targets ;
+          - ``faible`` -- the organ is only USED by the recurrence ;
+          - ``a_arbitrer`` -- a declared filiation that DIFFERS from the
+            proposed host: a human decision, not a violation ;
+          - ``filiation_confirmee`` -- the declared filiation IS the proposed
+            host: the filiation is confirmed, so the line is neither a
+            violation nor an arbitration.
+
         ``faible`` is the large majority of the measured pool, and it is NOT a
         queue of fold-backs: the issue cites the organ in its body because
         the organ MEASURES its work. Every per-series finishing job cites
@@ -248,8 +258,18 @@ class Recurrence:
             # une violation : c'est un arbitrage humain. La protection ne
             # touche que la voie forte -- une recurrence « faible » (l'organe
             # est seulement utilise) reste « faible ».
-            if self.declared_parent is not None and self.declared_parent != self.host:
-                return "a_arbitrer"
+            if self.declared_parent is not None:
+                if self.declared_parent != self.host:
+                    return "a_arbitrer"
+                # §1 (review du 17:24Z) : le parent DECLARE est l'hote
+                # propose -- c'est la filiation CONFIRMEE. Ni violation, ni
+                # arbitrage : un troisieme etat. Sans lui, la classe bougeait
+                # quand une issue TIERCE se fermait (#22827 fermee le
+                # 2026-11-04T16:51Z a fait basculer #24610 de « a arbitrer »
+                # en « violation nette » alors qu'elle nomme son parent).
+                # Un verdict qui depend du calendrier n'est pas un verdict
+                # d'organe.
+                return "filiation_confirmee"
             return "forte"
         return "faible"
 
@@ -305,15 +325,22 @@ def family_keys(issue: Issue, organs: set[str]) -> set[str]:
     (2026-11-01, 22h30Z) makes ``#17073`` and its partitions the pool of the
     audit corrections -- folding them into their parent would destroy the
     backlog the campaign is made of.
+
+    The exclusion is decided by the MARKER and applies to BOTH key routes
+    (organ and title): a partition is excluded **before** any key is
+    produced, so it is neither a member nor a host. Excluding only the
+    ``title:`` route left the partitions as hosts of the ``organ:`` families
+    they cite -- measured on the real pool, 6 recurrences proposed to fold
+    real work into ``#17793`` and 2 into ``#24103``.
     """
     keys: set[str] = set()
+    if _is_audit_partition(issue):
+        return keys  # §2 : a partition is excluded before ANY key, on both routes
     text = issue.text
     for path in set(_SCRIPT_RE.findall(text)):
         base = path.rsplit("/", 1)[-1]
         if base in organs:
             keys.add(f"organ:{base}")
-    if _is_audit_partition(issue):
-        return keys  # a partition is a living piece of the campaign, not a title family
     skeleton = title_skeleton(issue.title)
     if len(skeleton) >= _MIN_SKELETON_CHARS:
         keys.add(f"title:{skeleton}")
@@ -334,7 +361,15 @@ def primary_key(issue: Issue, organs: set[str]) -> str | None:
       1. an organ named in the **title** (the issue IS about that organ);
       2. an organ cited in the body (the issue touches it);
       3. the gabarit of the title (a burst of issues with the same shape).
+
+    An audit partition returns ``None`` **before** any route: it is neither a
+    member nor a host of any family. Excluding it only on the ``title:``
+    route left it as the host of the ``organ:`` families it cites, and a
+    partition that enumerates its brothers could then take the host role
+    away from the real carrier of the family.
     """
+    if _is_audit_partition(issue):
+        return None  # §2 : a partition is excluded before ANY key, on both routes
     title = issue.title or ""
     cited: list[str] = []
     for path in _SCRIPT_RE.findall(issue.text):
@@ -346,8 +381,6 @@ def primary_key(issue: Issue, organs: set[str]) -> str | None:
             return f"organ:{base}"
     if cited:
         return f"organ:{cited[0]}"
-    if _is_audit_partition(issue):
-        return None  # §2 : no title family for a partition, by MARKER
     skeleton = title_skeleton(title)
     if len(skeleton) >= _MIN_SKELETON_CHARS:
         return f"title:{skeleton}"
@@ -426,13 +459,6 @@ def _names_family(issue: Issue, kind: str, detail: str,
         if cited & group_numbers:
             return True
     return False
-
-
-def _cited_issue_count(issue: Issue) -> int:
-    """How many OTHER issues the body of this issue names."""
-    cited = {int(n) for n in re.findall(r"#(\d+)", issue.body or "")}
-    cited.discard(issue.number)
-    return len(cited)
 
 
 def _gathered_siblings(issue: Issue, group_numbers: set[int]) -> int:
@@ -760,6 +786,8 @@ def main(argv: list[str] | None = None) -> int:
         "n_recurrences_faibles": sum(1 for r in recurrences if r.confidence == "faible"),
         "n_recurrences_a_arbitrer": sum(1 for r in recurrences
                                         if r.confidence == "a_arbitrer"),
+        "n_recurrences_filiation_confirmees": sum(
+            1 for r in recurrences if r.confidence == "filiation_confirmee"),
         "n_hosts": len({r.host for r in recurrences}),
         "n_families": len(families),
         "n_covered": sum(row["n_open"] for row in families),
@@ -792,6 +820,8 @@ def main(argv: list[str] | None = None) -> int:
         report["n_recurrences_faibles"] = sum(1 for r in recurrences if r.confidence == "faible")
         report["n_recurrences_a_arbitrer"] = sum(1 for r in recurrences
                                                 if r.confidence == "a_arbitrer")
+        report["n_recurrences_filiation_confirmees"] = sum(
+            1 for r in recurrences if r.confidence == "filiation_confirmee")
         report["recurrences"] = [r.as_dict() for r in recurrences]
         print(json.dumps(report, ensure_ascii=False, indent=2))
         if not ok:
@@ -801,16 +831,26 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     print(json.dumps(report, ensure_ascii=False, indent=2))
+    # §1 (review du 17:24Z) : la troncature doit se voir sur stderr a CHAQUE
+    # run -- le mode --json est precisement celui dont le tableau du corps de
+    # PR est recopie, donc c'est celui ou la troncature doit se voir le plus.
+    if dropped:
+        print(f"[WARN] pool tronque : {report['n_issues']} issue(s) lue(s) sur "
+              f"{total} ouverte(s) -- {dropped} non lue(s) ; les compteurs ne sont "
+              f"pas exhaustifs", file=sys.stderr)
+    elif total is None and not args.from_file:
+        # search/issues a echoue : le total est inconnu, donc la limite de
+        # repli (1000) peut avoir tronque le pool SANS QUE RIEN LE DISE. Un
+        # pool tronque muet se lit comme la population.
+        print("[WARN] total des issues ouvertes INCONNU (search/issues a echoue) : "
+              "le pool lu peut etre tronque sans que la limite soit signalee ; "
+              "les compteurs ne sont pas fiables", file=sys.stderr)
     if not args.json:
-        # §1 : une pool tronquee doit se voir sur stderr, a chaque run.
-        if dropped:
-            print(f"[WARN] pool tronque : {report['n_issues']} issue(s) lue(s) sur "
-                  f"{total} ouverte(s) -- {dropped} non lue(s) ; les compteurs ne sont "
-                  f"pas exhaustifs", file=sys.stderr)
         print(f"\n{len(recurrences)} recurrence(s) sur {report['n_issues']} issues ouvertes "
               f"({report['n_hosts']} famille(s) d'hote) — "
               f"{report['n_recurrences_fortes']} forte(s), {report['n_recurrences_faibles']} faible(s), "
-              f"{report['n_recurrences_a_arbitrer']} a arbitrer",
+              f"{report['n_recurrences_a_arbitrer']} a arbitrer, "
+              f"{report['n_recurrences_filiation_confirmees']} filiation(s) confirmee(s)",
               file=sys.stderr)
         for rec in recurrences:
             print(f"  #{rec.issue} -> #{rec.host}  [{rec.signal}:{rec.detail}] "
