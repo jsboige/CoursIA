@@ -2065,6 +2065,15 @@ def generate_markdown_report(entries: list[dict], repo_root: Path | None = None)
         maturity_counts[m] = maturity_counts.get(m, 0) + 1
 
     lines = [
+        # Quarto takes the browser-tab title from frontmatter pagetitle;
+        # without it the rendered page is titled by its file slug
+        # ("course_catalog.generated", measured 03/11 on #10921 criterion 5).
+        # The README pages get theirs from hand-written frontmatter (#24259);
+        # this file is generated, so the generator owns its title.
+        "---",
+        "pagetitle: \"CoursIA Notebook Catalog\"",
+        "---",
+        "",
         # Page-scoped responsive guard: the 8-column notebook tables are wider
         # than a ~400px viewport; without this rule the PAGE itself scrolls
         # horizontally on mobile (measured: 904px scrollWidth at 400px). The
