@@ -71,6 +71,8 @@ Notation étudiants : moteur générique = [GradeBookApp/configs/README.md](Grad
 | Lean / GameTheory | `wsl-kernels` · `lean-merge-discipline` · `lean-i18n` | Docstrings FR par défaut, traduction en jumeau `_en` (paire `Foo`/`Foo_en`, byte-identité hors commentaires) — détail : [lean-i18n.md](.claude/rules/lean-i18n.md). |
 | Python | `codeql-suppressions-inertes` | Un commentaire `# codeql[rule-id]` est **inerte** sur ce dépôt (CodeQL en *default setup*) : ne pas en ajouter, ne pas en déplacer. |
 
+Ce précis par domaine est une **vue datée** ; la commande fait foi : `grep -l '^paths:' .claude/rules/*.md` (mesuré le 2026-11-04 : 14 règles portant le frontmatter, les 14 citées ci-dessus — et aucune garde ne compare aujourd'hui cette table au disque, de sorte qu'un 15ᵉ ajout la laisserait silencieusement incomplète).
+
 **Travailler sur ces domaines sans toucher les fichiers — reviewer une PR notebook, par exemple — demande de les `Read` explicitement** ; le tableau ci-dessus et le §C de ce fichier en sont le précis toujours chargé, pas une redondance. Inventaire complet : [claude-code-config.md §Rules](docs/reference/claude-code-config.md).
 
 ---
