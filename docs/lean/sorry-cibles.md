@@ -37,7 +37,7 @@ La ligne dit deux choses : le **niveau**, et **ce qui a déjà été tenté**. S
 
 ## Niveaux
 
-Le vocabulaire est celui des `DEMOS` du harnais (`prover/config.py`, champ `difficulty`), pour qu'une cible passe au harnais sans traduction.
+La ligne de cible retient quatre niveaux. Le champ `difficulty` des `DEMOS` du harnais (`prover/config.py`) en emploie neuf ; une démo se range dans la grille ci-dessous par la projection suivante : `trivial` et `simple` vers `easy`, `intermediate` vers `medium`, `advanced` vers `hard`, `open_problem` vers `very_hard` (compte du 2026-11-04 : 19 `easy`, 17 `medium`, 8 `hard`, 13 `very_hard`, et 8 démos hors de la grille, qui se projettent).
 
 | Niveau | Ce que la preuve demande, à titre indicatif |
 |---|---|
@@ -46,13 +46,15 @@ Le vocabulaire est celui des `DEMOS` du harnais (`prover/config.py`, champ `diff
 | `hard` | un lemme intermédiaire à inventer, une preuve de plusieurs dizaines de lignes |
 | `very_hard` | une formalisation longue, ou un résultat de recherche |
 
+Un `sorry` inscrit dans `HONEST_SORRIES` (`prover/config.py`) n'est **pas** une cible : il documente une barrière (classe `INTRINSIC`, #4039) que le harnais refuse d'attaquer. Il ne porte donc pas de ligne `Cible prover`. `very_hard` désigne une preuve difficile mais attendue ; une barrière connue relève du registre, pas de la grille.
+
 « De difficultés variées » se lit sur la sous-série : ses cibles couvrent au moins deux niveaux. Une sous-série dont toutes les cibles sont `very_hard` ne mesure rien de plus qu'une sous-série sans cible.
 
 ## Compter et lister
 
 - Compte réel avant/après, dans le body de la PR : `python scripts/lean/count_code_sorry.py --json`, champ `distinct_code_sorry` ([pr-review-discipline](../../.claude/rules/pr-review-discipline.md) §B.1).
 - Le plancher du lake monte dans la même PR : `sorry-baseline` du workflow appelant `lean-build.yml`, ou entrée du lake dans `scripts/lean/ci_lakes.json`. La gate est bidirectionnelle : quand une cible est prouvée, le plancher redescend dans la PR de preuve.
-- Inventaire des cibles : `git grep -n -e "Cible prover :" -e "Prover target:" -- "*.lean"`.
+- Inventaire des cibles : `git grep -n -i -e "cible prover" -e "prover target" -- "*.lean"`. Le motif est volontairement large : il retrouve aussi les cibles posées avant cette note sous des formes voisines (`-- PROVER TARGET:`, `BG-prover target`, `(cible prover BG)`), soit 11 lignes au 2026-11-04. Les nouvelles cibles prennent le format ci-dessus.
 
 ## Ce qui n'existe pas encore
 
