@@ -62,7 +62,7 @@ Tous les verdicts de la table ci-dessous sont **GREEN-par-grep** / **RED-par-gre
 
 | Lake | Lean files | native_decide (raw) | native_decide (tactic) | Classical.choice | sorryAx | Verdict |
 |---|---:|---:|---:|---:|---:|---|
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean` | 28 | 153 | **113** | 0 | 0 | **RED** (à traiter) |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean` | 28 | 153 | **113** | 0 | 0 | **RED** (à traiter) |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean` | 8 | 4 | 0 | 1 | 0 | **GREEN** (post-#8725) |
 | `MyIA.AI.Notebooks/Sudoku/sudoku_lean` | 5 | 0 | 0 | 4 | 0 | borderline (acceptable : sudoku_lean `Classical.choice` = lemmes de complétude sur les colourings finis, classique assumé) |
 | `MyIA.AI.Notebooks/ML/learning_theory_lean` | 19 | 0 | 0 | 2 | 0 | borderline (2 occurrences : VC-dim classiques) |

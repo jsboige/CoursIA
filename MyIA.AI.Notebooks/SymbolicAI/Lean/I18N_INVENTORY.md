@@ -262,7 +262,7 @@ pattern sibling canonique.
 
 ### 7. `conway_lean` — EXCELLENT (82 % nominal, pédagogique 100 %) (gros volume) ↻08-28
 
-**Chemin** : `MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/`
+**Chemin** : `MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/`
 
 **39 fichiers FR canoniques**, **32 fichiers EN siblings** (↻08-28).
 Le plus gros contributeur de lignes FR du repo. Lake
