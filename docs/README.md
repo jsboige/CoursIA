@@ -79,6 +79,7 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 | [reference/bibliography-hygiene.md](reference/bibliography-hygiene.md) | Détail de `.claude/rules/bibliography-hygiene.md` — gisement partagé `G:\Mon Drive\MyIA\IA\Bibliographie IA`, procédure de dépôt (recherche auteur *et* titre, vérification première page), nomenclature et rayons. Les publications sous droits ne sont jamais committées |
 | [reference/review-coverage-threshold.md](reference/review-coverage-threshold.md) | Document de support de l'organe `scripts/review_coverage.py` — pourquoi le seuil vaut 300 et comment l'ajuster (le nombre n'est pas arbitraire, sa dérivation est écrite) |
 | [transients/2026-08-10-variation-genre-census.md](transients/2026-08-10-variation-genre-census.md) | Census G-VAR-2/G-VAR-3 anti-blanchiment de genre (#10290), fenêtre 7 j 2026-08-03 → 2026-08-10 — mesure fondatrice des plafonds de [variation-protocol.md](../.claude/rules/variation-protocol.md) |
+| [transients/2026-11-02-tri-perennel-stale-56.md](transients/2026-11-02-tri-perennel-stale-56.md) | Tri des intouchés 5+ semaines de l'arbre pérennel (#14623) — les débris datés déplacés en lane transiente, chaque intouché classé (vivant stable / figé par construction / à distiller), figé |
 | [reference/_archive-convention.md](reference/_archive-convention.md) | Convention _archive/ — modèle ML-Training-Pipeline généralisé |
 | [reference/git-workflow-detail.md](reference/git-workflow-detail.md) | Git workflow — détail : verbatim force-push, incidents, rationale |
 | [reference/lane-claim-detail.md](reference/lane-claim-detail.md) | Lane claim protocol — détail (référencé depuis .claude/rules/lane-claim-protocol.md) |
@@ -432,6 +433,7 @@ Migration par tranches close (#17525) : Grothendieck lens et Leiden position (tr
 |---------|-------------|
 | [harness/global-rules-detail.md](harness/global-rules-detail.md) | **Stub de redirection** : le détail des règles globales machine vit désormais dans `roo-extensions`, à côté du harnais global dont il porte le détail. Le fichier reste ici parce qu'il est cité depuis le `~/.claude/CLAUDE.md` **global** — un lien entrant qu'aucun parcours limité à ce dépôt ne peut voir |
 | [harness/backup-plan.md](harness/backup-plan.md) | Plan de sauvegarde des données **hors git** du workspace `CoursIA-2` — familles, canal, cadence, rétention et tests de restauration datés ([jsboige/Maintenance#126](https://github.com/jsboige/Maintenance/issues/126)) |
+| [harness/bootloops-protocols-crossread.md](harness/bootloops-protocols-crossread.md) | Lecture croisée des 12 protocoles de revue `BootLoops-ai/skills` contre nos règles — 4 déjà là en substance, 5 écarts qualifiés (E1–E5), 3 adoptions proposées une par PR, refus motivés pour les autres (issue #20428) |
 
 ## ML (docs/ml/)
 
