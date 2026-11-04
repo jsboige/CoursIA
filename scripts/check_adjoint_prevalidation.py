@@ -540,6 +540,11 @@ _BOT_STICKY_ADVISORY_HEADERS: frozenset[str] = frozenset({
     "ascii-flowchart-advisory",
     "degraded-mode-advisory",
     "factual-mislabel-advisory",
+    # #23394 : quatrieme detecteur de prose de la voie rapide (tableau
+    # d'identifiants tronque). Meme raison que ses trois freres -- son verdict
+    # vit dans un check-run, sa mise a jour de sticky ne doit pas etre lue
+    # comme une surface de discussion modifiee par un tiers.
+    "listing-coherence-advisory",
     "markdown-claims-output-advisory",
     # #22209 tranche 1b : `scan-md-hierarchy-drift.yml` postait un commentaire
     # NEUF a chaque push (aucun marqueur). Absorbe dans la voie rapide, il
