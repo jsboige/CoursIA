@@ -98,6 +98,19 @@ Séance de relecture tenue avec le mainteneur le 2026-10-11 ; décisions consign
 | 16 | Format de référence | ICT-29 devient le format de référence, appliqué à chaque nouvelle retouche, **sans passe de masse** | Décision de méthode, pas une fille ; s'applique aux grains futurs |
 | 17 | Preuve partagée 21/21c | Jamais présentée comme une réplication indépendante | Couvert par la rangée 21c (point 15) et le finding tranche 1 n°2 |
 
+#### État d'exécution des décisions (mesuré le 2026-11-04, `myia-po-2028:CoursIA`)
+
+Trois décisions de la séance ne sont plus ouvertes. Cette table évite qu'une autre lane les refasse ; elle rapporte ce qui est au carnet ou au code, pas ce qui est annoncé.
+
+| # | État | Preuve au 2026-11-04 |
+| --- | --- | --- |
+| 1 (a) — verdict porté par le cocycle | **exécuté** | `ict/cech_obstruction.py::cech_obstruction_verdict` décide sur `mean_cocycle` / `obstruction_ratio` / `sign_consistency` ; le rang SVD n'est plus qu'un témoin de forme. Sorties de tête d'`ICT-15d` : 3/4 `NON_TRIVIAL`, `axelrod` `TRIVIAL` (cocycle 0.0000 vs `s2/s1` 1.0000). Commit `659c57d7ba`, [#20361](https://github.com/jsboige/CoursIA/pull/20361) |
+| 1 (b) — la matrice cesse de citer l'artefact périmé | **exécuté** en correction courte | `docs/ict/dissociations-matrix.md` réaligné. **La décision comptait « deux endroits » : il y en avait quatre** — la rangée ICT-15d, la section 1 de la note (tableau `s2/s1`), la section 3 (réserve annonçant #12257 comme chantier) et l'anti-confusion de la case 6 |
+| 1 (c) — vrai nerf (H¹) en greffe à part | **livré, hors de ce point** | `ICT-15j-NerveDiscriminant-Python.ipynb` invoque `gudhi` (filtration Rips complète). [#12257](https://github.com/jsboige/CoursIA/issues/12257) est close (COMPLETED) : elle ne s'annonce plus comme un chantier ouvert dans la matrice |
+| 2 — ICT-11, ≥ 16 essais + bootstrap | **exécuté** | `N_TRIALS_BASIN = 16` avec masques de disque distincts (`16/16 masques distincts` imprimé) et `bootstrap_corr_ci(..., n_boot=2000, rng=default_rng(3))` ; IC95 % imprimé. Suivi par [#20320](https://github.com/jsboige/CoursIA/issues/20320) |
+| 12 — ICT-21b, sonde J-lens | **exécuté** | La cellule de calibration charge les traces réelles (`calib_jlens_qwen3-1-7b`, `calib_jlens_qwen3-5-2b` ; couches 7/14 et 6/12) et imprime overlap@10, `rel_l2`, KL. Les `J-lens : None` visibles en sortie sont le **stub de l'exercice 4** (règle C.1), pas une sonde manquante |
+
+
 ### Retouches mineures (strands 1 à 7)
 
 Approuvées en bloc, livrées en petits grains vers la lane ICT : les dettes LIGHT listées par les findings transverses — phrases de lecture (ICT-26 graine 7 ; ICT-28 sweep N et plateau de force), pont d'une phrase 18↔18b, retitrage (ou re-exécution) du smoke GPU d'ICT-21, dettes de la tranche A (strand 6, finding 7 : exo 3 d'ICT-07, variance de la TPM 24×24 d'ICT-06, contraste Spearman d'ICT-08, borne de temps de l'exo coûteux d'ICT-09, sortie texte du sweep par taille d'ICT-07, sortie de rappel des stubs d'ICT-02/04), dettes de la tranche B (finding 6 : lectures par graine 14b/15/17b, 4 seeds en 15f/15h, fenêtrage 17b) et les renvois par ancres (point 7). **Groupées par carnet** en filles de correction, pas une issue par phrase.
