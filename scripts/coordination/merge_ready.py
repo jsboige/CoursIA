@@ -139,6 +139,7 @@ import os
 import re
 import subprocess
 import sys
+import tempfile
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -188,6 +189,7 @@ COORDINATOR_USER = "myia-ai-01"
 GATE_PATH = SCRIPTS_DIR / "check_adjoint_prevalidation.py"
 NITS_PATH = SCRIPTS_DIR / "check_unaddressed_nits.py"
 TWIN_PATH = SCRIPTS_DIR / "notebook_tools" / "check_twin_index_collisions.py"
+TWIN_CLAIMS_PATH = SCRIPTS_DIR / "notebook_tools" / "twin_open_claims.py"
 TWIN_REGISTRY_PREFIX = "scripts/notebook_tools/twin_pairs.d/"
 # Issue #20774 : au merge, le slot-reservation-guard doit lire la source
 # `open_prs` (mode en ligne) pour qu'une collision cross-PR rougisse avant
@@ -906,10 +908,40 @@ def twin_collision_reason(
     )
     if fetch.returncode != 0:
         return "twin-collision-unreadable:fetch"
-    res = runner.run(
-        [sys.executable, str(TWIN_PATH), "--repo", str(REPO_ROOT),
-         "--base", "origin/main", "--head", head, "--merged", "--json"]
+    # Les PRs OUVERTES : l'ordinal qu'une PR CONCURRENTE revendique deja. Ni
+    # le jugement base+tete ni l'arbre de fusion ne le voient -- les deux ne
+    # portent que des revisions MERGEES. L'API des PRs ouvertes, elle, sait.
+    # Mesure du 2026-11-04 : 5 collisions de ce type etaient VIVANTES entre PRs
+    # ouvertes (csp-1-fundamentals 0034, csp-6-hybridization 0024/0025,
+    # gametheory-15-cooperativegames 0044, search-13-limited-discrepancy-search
+    # 0013) -- aucune n'etait visible de l'arbre de fusion, puisque aucune des
+    # deux PRs n'etait mergee.
+    claims_res = runner.run(
+        [sys.executable, str(TWIN_CLAIMS_PATH), "--json"]
     )
+    if claims_res.returncode != 0:
+        # « je n'ai pas pu lire » n'est pas « c'est propre » : skip dur, comme
+        # pour le fetch de l'arbre de fusion. La PR sera rejugee.
+        return "twin-collision-unreadable:open-claims"
+    try:
+        fd, claims_path = tempfile.mkstemp(prefix="twin-claims-",
+                                           suffix=".json")
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            fh.write(claims_res.stdout)
+    except OSError:
+        return "twin-collision-unreadable:open-claims"
+    try:
+        res = runner.run(
+            [sys.executable, str(TWIN_PATH), "--repo", str(REPO_ROOT),
+             "--base", "origin/main", "--head", head, "--merged", "--json",
+             "--open-claims", claims_path, "--head-pr", str(pr)]
+        )
+    finally:
+        # L'organe a lu le fichier ; il ne sert plus.
+        try:
+            os.unlink(claims_path)
+        except OSError:
+            pass
     # Le rapport JSON est lu MEME quand l'organe rend 0 : le mode `--merged`
     # peut etre ILLISIBLE (merge en conflit) alors que le jugement classique
     # ne bloque rien -- et « je n'ai pas pu lire » n'est pas « c'est propre ».
@@ -944,6 +976,22 @@ def twin_collision_reason(
             # fusion n'est pas definissable (merge en conflit). Skip dur --
             # la PR sera rejugee apres rebasage.
             return "twin-collision-unreadable:merged"
+        # --- PRs OUVERTES : l'ordinal revendique par une PR concurrente
+        # L'arbre de fusion repond a « que portera `main` apres ce merge ? ».
+        # Il ne voit pas une PR CONCURRENTE non encore mergee : les deux PRs
+        # revendiquent le meme ordinal, aucune n'est dans l'arbre de fusion, et
+        # la collision n'apparait qu'apres le second merge -- en rouge
+        # fleet-wide. Merger celle-ci la rendrait inevitable.
+        open_reasons = data.get("open_pr_reasons") or []
+        if open_reasons:
+            first = open_reasons[0]
+            return (
+                "twin-collision-open-pr:%s/%s -- %s"
+                % (first.get("pair"), first.get("index"),
+                   first.get("gist")
+                   or "renumeroter le fichier de la tete vers le premier "
+                      "index libre de la paire par `git mv` PUR")
+            )
     if res.returncode == 0:
         return None
     if res.returncode == 1:
