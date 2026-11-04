@@ -240,7 +240,7 @@ A l'issue de la série, vous saurez :
 
 - **Séparer exposition et vérification d'un résultat formel profond** : relire les chaînes Euler/BKM et les deux adaptateurs Navier–Stokes sans confondre leur portée mathématique avec l'acceptation mécanique, puis re-dériver un verdict fail-closed depuis huit termes indépendants — identité, dépendances, toolchain, confinement, axiomes, intégrité et deux gates exacts. Notebook 31.
 
-Pour l'état formel détaillé des modules support (preuves résolues vs `sorry` résiduels), voir [LEAN_INVENTORY.md](../../GameTheory/LEAN_INVENTORY.md), le [README du projet conway_lean](GOL/conway_lean/README.md), et le [README du projet grothendieck_lean](grothendieck_lean/README.md).
+Pour l'état formel détaillé des modules support (preuves résolues vs `sorry` résiduels), voir [LEAN_INVENTORY.md](../../GameTheory/LEAN_INVENTORY.md), le [README du projet conway_lean](GOL/conway_lean/README.md), et le [README du projet grothendieck_lean](GROTH/grothendieck_lean/README.md).
 
 ## Statut de maturité
 
@@ -555,6 +555,11 @@ Lean/
 │   ├── GOL-07-Hashlife-Correctness.ipynb  # La correction de Hashlife comme théorème (lean4-wsl)
 │   ├── conway_lean/                       # Lake Conway (0 sorry, Lake build), descendu sous GOL/ (See #23164)
 │   └── README.md
+├── GROTH/                         # Sous-série hommage Grothendieck (catégories et foncteurs par Mathlib, séries formelles multivariées) — lake [grothendieck_lean](GROTH/grothendieck_lean/README.md) descendu sous GROTH/ (See #23164) : [README](GROTH/README.md)
+│   ├── GROTH-01-Categories-Mathlib-Lean.ipynb # Lean4 (WSL) kernel - catégories, cribles et faisceaux par les modules du lake
+│   ├── GROTH-05-MvPowerSeries-Lean.ipynb # Lean4 (WSL) kernel - séries formelles multivariées
+│   ├── grothendieck_lean/         # Grothendieck tribute workspace (0 sorry, Lake build)
+│   └── README.md
 ├── Langlands/                     # Sous-série formes modulaires et ponts (EPIC #17969) : [README](Langlands/README.md)
 │   ├── 01-formes-modulaires-sl2z-hecke.ipynb
 │   ├── 02-monstrous-moonshine-invariant-j.ipynb
@@ -587,7 +592,6 @@ Lean/
 ├── scripts/                       # Helpers de maintenance de la série ([README](scripts/README.md), _archive/)
 ├── sensitivity_lean/               # Théorème de sensibilité (Huang 2019) + algèbre TPR (companions Lean-12/12b/12c) - 0 sorry 0 axiome, Lake build natif (jonction Mathlib)
 ├── finiteness_lean/                # Finitude des dérivées de Brzozowski (companion Lean-14) - 0 sorry, Lake build
-├── grothendieck_lean/              # Grothendieck tribute workspace (0 sorry, Lake build)
 ├── knot_lean/                      # Knot theory workspace (théorie des nœuds, companion Lean-17a/b, sorries résiduels documentés, Lake build)
 ├── calibration_lean/               # Cibles de calibration du prouveur multi-agents (Epic #1453, P1-P5) - 0 sorry, Lake build
 ├── formal_groups_lean/             # Groupes formels multivariés (port de anthropics/fermats-last-theorem, Apache-2.0) - 0 sorry, Lake build ; companion du notebook Lean-30
@@ -758,7 +762,7 @@ Lean 4 signale `type mismatch` quand le type attendu et le type fourni ne coïnc
 **Non** dans les cellules d'exercice (stub pour l'étudiant). **Oui** dans le code de production (preuves formelles). La convention CoursIA :
 
 - Cellules d'exercice : `sorry` = placeholder étudiant, normal et attendu.
-- Preuves certifiées (ex: `GOL/conway_lean/`, `grothendieck_lean/`, `game_theory_lean/`) : `sorry` = axiome implicite = trou dans la chaîne de certification. Le compteur `grep -c sorry` est suivi par les agents du dépôt.
+- Preuves certifiées (ex: `GOL/conway_lean/`, `GROTH/grothendieck_lean/`, `game_theory_lean/`) : `sorry` = axiome implicite = trou dans la chaîne de certification. Le compteur `grep -c sorry` est suivi par les agents du dépôt.
 
 Voir [LEAN_INVENTORY.md](../../GameTheory/LEAN_INVENTORY.md) pour l'état détaillé des preuves par module.
 
