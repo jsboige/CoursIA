@@ -340,6 +340,14 @@ def signature_findings(notebook: dict) -> list[str]:
     Les constats sont prefixes du code rendu par
     ``execution_signature.verify`` : un lecteur doit pouvoir dire quel axe
     rougit -- la fraicheur du fichier lu, ou celle du carnet lui-meme.
+
+    Granularite assumee : le CARNET, pas la cellule declaree. ``verify``
+    atteste le carnet entier ; une cellule annexe commise sans
+    ``execution_count`` emet ``CELLULE_NON_EXECUTEE`` et rougit TOUTES les
+    declarations du carnet, meme celles dont la cellule est fraiche. C'est
+    voulu (un carnet partiellement execute n'est pas une attestation
+    fiable) et pinné par
+    ``test_cellule_annexe_non_executee_rougit_le_carnet_entier``.
     """
     return [f"{f['code']}: {f['detail']}"
             for f in verify_signature(notebook, require_signature=False)]
@@ -377,6 +385,12 @@ def run(ref: str | None = None, with_signature: bool = True) -> dict:
     # verifie qu'une fois, et chaque ligne herite des memes constats.
     sig_cache: dict[str, list[str]] = {}
     signed: set[str] = set()
+    # Carnets signes dont l'axe signature a produit des constats : le compte
+    # se lit au niveau CARNET, alors que ``stale`` compte des DECLARATIONS
+    # (un carnet perime a quatre entrees y compte quatre fois -- reserve 1
+    # de la review #24669 : les deux unites ne s'affichent pas dans la meme
+    # phrase).
+    sig_stale: set[str] = set()
 
     for entry in registry.get("cells", []):
         nb_path = entry["notebook"]
@@ -403,6 +417,14 @@ def run(ref: str | None = None, with_signature: bool = True) -> dict:
                 sig_cache[nb_path] = sig
                 if (nb.get("metadata") or {}).get("execution_signature"):
                     signed.add(nb_path)
+            if sig:
+                sig_stale.add(nb_path)
+        # Pose AVANT les sorties precoces (CELL_NOT_FOUND, SOURCE_MISSING,
+        # NO_OUTPUT, NO_INVARIANT) : ces lignes sont deja rouges, mais le
+        # JSON ne doit pas exposer un champ qui dit "rien a signaler" pour
+        # un carnet dont l'axe signature a des constats -- reserve 3 de la
+        # review #24669.
+        row["signature_findings"] = sig
 
         cell = next((c for c in nb.get("cells", []) if c.get("id") == cell_id), None)
         if cell is None:
@@ -432,7 +454,6 @@ def run(ref: str | None = None, with_signature: bool = True) -> dict:
             stale += 1
             continue
 
-        row["signature_findings"] = sig
         findings = audit_cell(src.splitlines(), text, basename) + sig
         if not count_claims(text, basename) and not citations(text):
             row["verdict"] = "NO_INVARIANT"
@@ -453,7 +474,8 @@ def run(ref: str | None = None, with_signature: bool = True) -> dict:
 
     return {"ref": ref or "WORKTREE", "declared": len(rows),
             "stale": stale, "rows": rows,
-            "signature_notebooks": len(signed)}
+            "signature_notebooks": len(signed),
+            "signature_stale_notebooks": len(sig_stale)}
 
 
 def _repo_basenames(repo_root: Path) -> set[str]:
@@ -636,6 +658,9 @@ def main(argv=None) -> int:
             print(f"Signature d'execution : {report['signature_notebooks']} "
                   f"carnet(s) declare(s) porteur(s) d'une signature -- les "
                   f"autres sont ignores (opt-in, #23390)")
+            if report.get("signature_stale_notebooks"):
+                print(f"  dont {report['signature_stale_notebooks']} carnet(s) "
+                      "signe(s) perime(s) par l'axe signature")
         for row in report["rows"]:
             mark = "OK  " if row["verdict"] == "FRESH" else "ROUGE"
             print(f"  [{mark}] {row['verdict']} -- {Path(row['notebook']).name}"
@@ -643,8 +668,12 @@ def main(argv=None) -> int:
             for f in row["findings"]:
                 print(f"          {f}")
         if report["stale"]:
-            print(f"\n{report['stale']} cellule(s) perimee(s) : re-executer le "
-                  "carnet (Stop & Repair), jamais editer la sortie a la main.")
+            # ``stale`` compte des DECLARATIONS (entrees du registre), pas des
+            # cellules : un carnet perime declare quatre fois y compte quatre
+            # fois -- reserve 1 de la review #24669.
+            print(f"\n{report['stale']} declaration(s) perimee(s) : re-executer "
+                  "le carnet (Stop & Repair), jamais editer la sortie a la "
+                  "main.")
         if not args.no_declarations:
             _print_declarations(new, resolved)
     return 1 if (report["stale"] or new) else 0
