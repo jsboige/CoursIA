@@ -371,7 +371,9 @@ SymbolicAI/
 └── Argument_Analysis/  ← analyse de textes argumentatifs (5 notebooks)
 ```
 
-## Extensions possibles
+---
+
+# Extensions possibles
 
 - Intégration avec **Neo4j** pour les graphes d'argumentation
 - Visualisation interactive des frameworks (D3.js / Cytoscape)
