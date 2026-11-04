@@ -180,7 +180,7 @@ class ArtifactExemption(NamedTuple):
 
 ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
     ArtifactExemption(
-        path="MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/README.md",
+        path="MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/README.md",
         motif=re.compile(r"Gosper Glider Gun \(36 cellules vivantes"),
         raison=(
             "« 36 cellules » = cellules VIVANTES du canon de Gosper dans le Jeu "
@@ -189,7 +189,7 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
         ),
     ),
     ArtifactExemption(
-        path="MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/README.md",
+        path="MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/README.md",
         motif=re.compile(r"Pulsar \(48 cellules\)"),
         raison=(
             "« 48 cellules » = periode-3 Pulsar du Jeu de la Vie, cite comme cas "
@@ -197,7 +197,7 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
         ),
     ),
     ArtifactExemption(
-        path="MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/README.en.md",
+        path="MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/README.en.md",
         motif=re.compile(r"Pulsar \(48 cells\)"),
         raison=(
             "Sibling anglais du README precedent : meme Pulsar, memes cellules de "
@@ -292,6 +292,17 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
             "Index README de la page de mesure DarkSnail : meme inventaire du "
             "clone externe fige a 043c9d26 (exemption detaillee ci-dessus), "
             "resume en une ligne d'index."
+        ),
+    ),
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/scripts/README.md",
+        motif=re.compile(r"la v1 du gun, 36 cellules fausses"),
+        raison=(
+            "« 36 cellules » = population d'une transcription FABRIQUEE du canon "
+            "de Gosper, citee comme temoin d'echec du self-check d'identite. Le "
+            "nombre appartient au recit de l'incident (la v1 fausse), pas a un "
+            "etat du depot : il ne derive pas avec CoursIA, il ne doit pas etre "
+            "mis a jour."
         ),
     ),
 )
