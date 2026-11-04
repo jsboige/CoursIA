@@ -35,6 +35,7 @@ SERIES_ROOT = Path(__file__).resolve().parent
 # mergee, en remplacant son helper local par l'import. Tant qu'il n'y figure
 # pas, la garde ne dit rien de lui — elle ne l'exempte pas, elle ne le voit pas.
 GUARDED_NOTEBOOKS = [
+    "00-Foundations/SC-02-Setup-Web3py-Python.ipynb",
     "01-Solidity-Foundation/SC-03-Solidity-Basics-Python.ipynb",
     "01-Solidity-Foundation/SC-04-Functions-State-Python.ipynb",
     "01-Solidity-Foundation/SC-05-Inheritance-Python.ipynb",
