@@ -2163,6 +2163,25 @@ def _student_solution_verbatim():
     }
 
 
+def _stub_exercise_lean():
+    """Stub d'exercice signale par son JETON de source (`-- Exercice N` /
+    `# TODO`), SANS aucune sortie « a completer ».
+
+    C'est ce qui le distingue de `_stub_exercise` : la classification ne
+    court-circuite PAS par la sortie litterale, elle depend du carve-out
+    d'exemple credite -- donc de `_section_header`. C'est le cas reel du
+    body (Lean-13 / Lean-16c) que le test negatif doit epingler.
+    """
+    return {
+        "cell_type": "code",
+        "source": ["-- Exercice 2 - un enonce a demontrer  # TODO\n"
+                   "def preuve : Prop := sorry"],
+        "outputs": [{"name": "stdout", "output_type": "stream",
+                     "text": ["ok"]}],
+        "execution_count": 1,
+    }
+
+
 def test_carveout_exemple_credite_nest_pas_signale_exercise_reading():
     """POSITIF : la lecture d'un exemple guide CREDITE n'est pas signalee.
 
@@ -2335,6 +2354,31 @@ def test_carveout_section_sans_credit_reste_exercice():
     )
     findings = detect_added_readings(head, base)
     assert [f["type"] for f in findings] == ["EXERCISE_READING"], findings
+
+
+def test_carveout_exercice_apres_separateur_reste_exercice():
+    """NEGATIF (#23397) : un TITRE d'exercice pose APRES un separateur `***`
+    ferme la section -- le stub qui le suit reste classe « exercice ».
+
+    C'est le cas reel du body (Lean-13-Kochen-Specker cell 37, Lean-16c-
+    Conway cell 44) : la cellule markdown qui ouvre la section d'exercice
+    porte `***` + ligne vide AVANT le `### Exercice ...`. L'ancienne regle
+    (premiere ligne seulement) ne le voyait pas comme un titre ; la remontee
+    de `_section_header` passait au-dessus et rattachait le stub a l'en-tete
+    credite deux cellules plus haut. Le stub etait blanchi, et la mesure du
+    body le comptait a tort dans les « gagnees ».
+    """
+    cells = [
+        _credited_example_header(),
+        _student_solution_verbatim(),
+        md("***\n\n### Exercice 2 - Un second passage\n\nUn enonce."),
+        _stub_exercise_lean(),
+    ]
+    # Le stub (cellule 3) est sous le TITRE d'exercice de la cellule 2, pas
+    # sous l'en-tete credite de la cellule 0 : la section est fermee par le
+    # titre pose apres le separateur.
+    assert _section_header(cells, 3) is cells[2]
+    assert is_exercise_cell(cells[3], cells, 3) is True
 
 
 # --- Titres de TRANSITION de fin de carnet (CLOSING_NAV_TITLE_RE) -------------

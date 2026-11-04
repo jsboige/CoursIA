@@ -437,6 +437,34 @@ def looks_like_reading_after_exercise(cell: dict) -> bool:
     return len(src) > 80
 
 
+# Separateur de section horizontal : `***`, `---`, `___` (forme espacee
+# comprise, `* * *`). Une cellule markdown peut OUVRIR sur un tel separateur
+# avant son titre -- c'est le cas des titres d'exercice poses juste apres la
+# section precedante. (#23397)
+_HORIZONTAL_RULE_RE = re.compile(r"^(?:\*\s*){3,}$|^(?:-\s*){3,}$|^(?:_\s*){3,}$")
+
+
+def _first_title_line(src: str) -> str:
+    """Premiere ligne qui porte un TITRE dans `src`, en ignorant les lignes
+    vides et les separateurs de section qui le precedent en tete de cellule.
+
+    Un en-tete `### Exercice ...` qui n'est PAS en premiere ligne (parce
+    qu'un separateur `***`/`---`/`___` ou une ligne vide ouvre la cellule)
+    doit tout de meme compter comme un titre : c'est lui qui ferme la section,
+    pas le separateur. Sans ce geste, la remontee de `_section_header` passait
+    au-dessus du titre d'exercice et rattachait son stub a l'en-tete credite
+    deux cellules plus haut, blanchissant un vrai exercice. (#23397)
+    """
+    for line in src.split("\n"):
+        line = line.strip()
+        if not line:
+            continue
+        if _HORIZONTAL_RULE_RE.match(line):
+            continue
+        return line
+    return ""
+
+
 def _governing_header(cells: list[dict], idx: int) -> dict | None:
     """En-tete markdown qui commande la cellule `idx` (None s'il n'y en a pas).
 
@@ -468,7 +496,13 @@ def _section_header(cells: list[dict], idx: int) -> dict | None:
     que soient les cellules de code entre le titre et la cellule. Elle
     cohabite avec `_governing_header` (regle de LIEN, une cellule de code
     rompt le lien), qui reste la regle du lien generique -- y compris son
-    miroir dans `count_exercises.py`. (#23397)
+    miroir dans `count_exercises.py`.
+
+    Un TITRE compte meme quand il n'est pas en premiere ligne de sa cellule
+    (`_first_title_line` ignore les lignes vides et les separateurs `***` /
+    `---` / `___` qui l'ouvrent) : un titre d'exercice pose apres un
+    separateur ferme la section, sinon son stub serait rattache a l'en-tete
+    credite de la section precedante et blanchi. (#23397)
     """
     for j in range(idx - 1, -1, -1):
         cell = cells[j]
@@ -477,7 +511,7 @@ def _section_header(cells: list[dict], idx: int) -> dict | None:
         src = cell_source(cell).strip()
         if not src:
             continue
-        if src.split("\n", 1)[0].lstrip().startswith("#"):
+        if _first_title_line(src).startswith("#"):
             return cell
     return None
 
