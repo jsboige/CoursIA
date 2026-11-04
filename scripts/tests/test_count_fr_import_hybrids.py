@@ -30,8 +30,14 @@ Cas couverts :
 9. `main --self-test` rend 0 ;
 10. `main` sur une racine absente rend 2 ;
 11. `main` sur un repertoire sans lac rend 2 (perimetre vide = incident) ;
-12. `--json` porte `files`, `edges`, `per_lake` et la liste des lacs ;
-13. `--list` porte le detail par fichier dans la sortie texte.
+12. `main` sur un lac **sans aucun** `_en.lean` rend 2 : un zero qui ne se
+    distingue pas d'un chemin casse n'est pas une mesure ;
+13. `--json` porte `files`, `edges`, `per_lake` et la liste des lacs ;
+14. `--list` porte le detail par fichier dans la sortie texte ;
+15. `strip_comments` retire bloc et ligne : un `import` ou un `def` commentes
+    ne comptent pas ;
+16. `census` compte les `_en.lean` **hors lac** au lieu de les taire ;
+17. la sortie texte nomme le commit mesure (ou dit qu'il est hors depot git).
 
 Le module est charge **par chemin** : `scripts/lean/` n'est pas un paquet
 importable depuis la racine du depot.
@@ -78,6 +84,9 @@ def test_in_scope_excludes_vendored_fragments():
     assert not mod.in_scope(Path("x/.lake/packages/mathlib/Foo_en.lean"))
     assert not mod.in_scope(Path("x/_peters/Foo_en.lean"))
     assert not mod.in_scope(Path("x/reference_docs/Foo_en.lean"))
+    # Un repertoire exclu **a la racine mesuree** : sans son `/` de tete, le
+    # fragment `/_peters/` ne matchait pas et le perimetre fuyait.
+    assert not mod.in_scope(Path("_peters/Foo_en.lean"))
     assert mod.in_scope(Path("x/conway_lean/Conway/Nim_en.lean"))
 
 
@@ -203,6 +212,70 @@ def test_main_missing_root_is_incident():
 def test_main_empty_scope_is_incident():
     with tempfile.TemporaryDirectory() as tmp:
         assert mod.main(["--root", tmp]) == 2
+
+
+def test_main_lake_without_en_twins_is_incident():
+    """Un lac sans aucun `_en.lean` n'est pas un « zero propre » (#24032)."""
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        lake = root / "lonely_lean"
+        lake.mkdir()
+        _write(lake / "lakefile.toml", 'name = "lonely"\n')
+        _write(lake / "Alpha" / "Base.lean", "namespace Alpha.Base\n\ndef b := 1\n")
+        assert mod.main(["--root", str(root)]) == 2
+
+
+def test_strip_comments_hides_commented_imports_and_declarations():
+    text = (
+        "/- import Alpha.Base\n   def commented := 1 -/\n"
+        "import Alpha.Real\n"
+        "-- import Alpha.Other\n"
+        "-- def alsoCommented := 2\n"
+        "namespace Alpha.Real_en\n"
+    )
+    stripped = mod.strip_comments(text)
+    assert "Alpha.Base" not in stripped, stripped
+    assert "Alpha.Other" not in stripped, stripped
+    assert mod.imports_of(stripped) == ["Alpha.Real"], mod.imports_of(stripped)
+    assert mod.DECL_RE.findall(stripped) == [], mod.DECL_RE.findall(stripped)
+
+
+def test_census_counts_en_files_outside_lakes():
+    with tempfile.TemporaryDirectory() as tmp:
+        lake = _lake(tmp)
+        _write(
+            lake / "Alpha" / "Hybrid_en.lean",
+            "import Alpha.Base\n\nnamespace Alpha.Hybrid_en\n\ndef h := 2\n\n"
+            "end Alpha.Hybrid_en\n",
+        )
+        # `_en.lean` hors de tout lac : aucune arete possible, mais il ne doit
+        # pas disparaitre de la mesure.
+        _write(
+            Path(tmp) / "loose" / "Orphan_en.lean",
+            "import Alpha.Base\n\nnamespace Orphan_en\n\ndef o := 1\n",
+        )
+        report = mod.census(Path(tmp))
+    assert report["n_lakes"] == 1, report
+    assert report["n_en_outside_lakes"] == 1, report
+    assert report["files"] == 1, report
+    text = mod.render(report, show_list=False)
+    assert "hors lac" in text, text
+
+
+def test_render_names_the_measured_commit():
+    with tempfile.TemporaryDirectory() as tmp:
+        lake = _lake(tmp)
+        _write(
+            lake / "Alpha" / "Hybrid_en.lean",
+            "import Alpha.Base\n\nnamespace Alpha.Hybrid_en\n\ndef h := 2\n\n"
+            "end Alpha.Hybrid_en\n",
+        )
+        report = mod.census(lake)
+    text = mod.render(report, show_list=False)
+    # Hors depot git (repertoire temporaire) : la sortie le DIT au lieu de
+    # taire la provenance du chiffre.
+    assert report["measured_commit"] is None, report["measured_commit"]
+    assert "Mesure hors depot git" in text, text
 
 
 def test_main_json_payload_shape():

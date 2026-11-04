@@ -49,13 +49,19 @@ dans `check_i18n_siblings.py`) est un choix a part, dont le rayon d'action est
 le nombre de fichiers mesure ci-dessous. Ce script est l'instrument qui rend
 ce choix decidable.
 
-## Mesure du 2026-11-01 (po-2023), pour situer
+## Le compte est DATE, jamais une constante
 
-71 fichiers / 119 aretes / 8 lacs sous le predicat ci-dessus. Le census de
-#23906 (29 / 41) n'est pas reproductible depuis `main` : il omet deux
-repertoires entiers (`ProgramGames`, 2 fichiers, et `Search/discrepancy_lean`,
-4 fichiers) et compte `knot_lean` a 3 alors qu'il mesure 0 (le lac est
-converge). Voir le corps de #24019 pour la comparaison lac par lac.
+Le corps de #24019 porte un releve du 2026-11-01 (71 fichiers / 119 aretes /
+8 lacs). Ce chiffre **n'est pas reproductible a la lettre** et ne doit pas etre
+lu comme tel : le corpus converge a chaque tranche i18n mergee, donc le compte
+du jour est plus bas. C'est pourquoi la sortie nomme le **commit mesure** --
+un chiffre sans son commit n'est pas falsifiable, et deux mesures d'etats
+differents ne peuvent pas etre comparees.
+
+Le census de #23906 (29 / 41), lui, etait faux au meme etat : il omettait deux
+repertoires entiers (`ProgramGames`, `Search/discrepancy_lean`) et comptait
+`knot_lean` a 3 alors qu'il mesure 0. Voir le corps de #24019 pour la
+comparaison lac par lac.
 
 Usage
 -----
@@ -65,9 +71,11 @@ Usage
     python scripts/lean/count_fr_import_hybrids.py --list            # detail par fichier
     python scripts/lean/count_fr_import_hybrids.py --self-test       # controle positif
 
-Codes de sortie : 0 = mesure rendue ; 2 = **incident** (racine absente, ou
-perimetre vide -- un perimetre vide n'est pas un « zero propre », c'est une
-mesure qui n'a pas eu lieu).
+Codes de sortie : 0 = mesure rendue ; 2 = **incident** -- racine absente,
+perimetre vide (aucun lac), ou lacs trouves **sans aucun** fichier `_en.lean`
+mesure. Les deux derniers cas sont traites en incident et non en « zero
+propre » : un compte nul qui ne se distingue pas d'un chemin casse n'est pas
+une mesure.
 """
 
 from __future__ import annotations
@@ -75,6 +83,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -83,7 +92,10 @@ RC_OK = 0
 RC_INCIDENT = 2
 
 #: Exclusions du perimetre i18n (cf `.claude/rules/code-style.md`, EPIC #4980).
-EXCLUDED_FRAGMENTS = (".lake/packages", "/_peters/", "reference_docs")
+#: Les fragments portent leurs deux separateurs : sans le `/` de tete, un
+#: repertoire exclu **a la racine mesuree** (`--root _peters`) passait au
+#: travers, et le fragment n'etait alors qu'un sous-chemin chanceux.
+EXCLUDED_FRAGMENTS = ("/.lake/packages/", "/_peters/", "/reference_docs/")
 
 DECL_RE = re.compile(
     r"^\s*(?:@\[[^\]]*\]\s*)?"
@@ -93,11 +105,24 @@ DECL_RE = re.compile(
 )
 NS_RE = re.compile(r"^\s*namespace\s+([A-Za-z0-9_.'«»]+)", re.MULTILINE)
 IMPORT_RE = re.compile(r"^\s*import\s+(.+)$", re.MULTILINE)
+BLOCK_COMMENT_RE = re.compile(r"/-.*?-/", re.DOTALL)
+LINE_COMMENT_RE = re.compile(r"--[^\n]*")
+
+
+def strip_comments(text: str) -> str:
+    """Retire les commentaires : un motif d'en-tete cite en commentaire n'est pas un en-tete.
+
+    Lean a deux formes : bloc `/- ... -/` (docstrings incluses) et ligne `--`.
+    Sans ce retrait, un `import Foo` ou un `def` commentes comptaient -- faux
+    positif structurel, invisible sur un corpus ou personne ne commente un
+    import.
+    """
+    return LINE_COMMENT_RE.sub("", BLOCK_COMMENT_RE.sub("", text))
 
 
 def in_scope(path: Path) -> bool:
     """Vrai si le chemin est dans le perimetre i18n (hors vendore)."""
-    as_posix = path.as_posix()
+    as_posix = "/" + path.as_posix().strip("/") + "/"
     return not any(fragment in as_posix for fragment in EXCLUDED_FRAGMENTS)
 
 
@@ -113,6 +138,39 @@ def find_lakes(root: Path) -> list[Path]:
 
 def read_source(path: Path) -> str:
     return path.read_text(encoding="utf-8", errors="replace")
+
+
+def measured_commit(root: Path) -> str | None:
+    """Prefixe du commit mesure, ou None hors depot git.
+
+    Le compte derive a chaque tranche i18n mergee : le nommer sans son commit
+    le rend non falsifiable. Une mesure indisponible n'est pas une erreur --
+    on le dit, on n'invente pas une valeur.
+    """
+    try:
+        out = subprocess.run(
+            ["git", "-C", str(root), "rev-parse", "--short=9", "HEAD"],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=10,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    commit = out.stdout.strip()
+    return commit if out.returncode == 0 and commit else None
+
+
+def _under_any(path: Path, parents: list[Path]) -> bool:
+    for parent in parents:
+        try:
+            path.relative_to(parent)
+        except ValueError:
+            continue
+        return True
+    return False
 
 
 def imports_of(text: str) -> list[str]:
@@ -146,7 +204,7 @@ def scan_lake(lake: Path) -> list[dict]:
     for source in sorted(lake.rglob("*_en.lean")):
         if not in_scope(source):
             continue
-        text = read_source(source)
+        text = strip_comments(read_source(source))
         namespaces = [m.group(1) for m in NS_RE.finditer(text)]
         records.append(
             {
@@ -177,6 +235,15 @@ def census(root: Path) -> dict:
     for lake in lakes:
         records.extend(scan_lake(lake))
 
+    # Fichiers `_en.lean` du perimetre qu'aucun lac ne porte : ils ne peuvent
+    # pas produire d'arete (une arete est un import du **meme lac**), mais les
+    # taire ferait passer un perimetre tronque pour un corpus converge.
+    outside = [
+        source
+        for source in root.rglob("*_en.lean")
+        if in_scope(source) and not _under_any(source, lakes)
+    ]
+
     hybrids = [r for r in records if is_hybrid(r)]
     per_lake: dict[str, dict] = {}
     for record in hybrids:
@@ -186,9 +253,11 @@ def census(root: Path) -> dict:
 
     return {
         "root": root.as_posix(),
+        "measured_commit": measured_commit(root),
         "lakes": [lake.name for lake in lakes],
         "n_lakes": len(lakes),
         "n_en_files": len(records),
+        "n_en_outside_lakes": len(outside),
         "files": len(hybrids),
         "edges": sum(len(r["edges"]) for r in hybrids),
         "per_lake": dict(sorted(per_lake.items())),
@@ -205,16 +274,34 @@ def census(root: Path) -> dict:
 
 
 def render(report: dict, show_list: bool) -> str:
+    commit = report.get("measured_commit")
+    provenance = (
+        f"Mesure au commit {commit} : le compte derive quand le corpus converge, "
+        "il ne se compare qu'a un etat, jamais au releve du corps de #24019."
+        if commit
+        else "Mesure hors depot git : le compte est date de l'instant, sans commit "
+        "pour le rattacher."
+    )
     lines = [
         f"Perimetre : {report['root']} ({report['n_lakes']} lacs, "
         f"{report['n_en_files']} fichiers *_en.lean analyses)",
-        "",
-        f"TOTAL hybrides FR-import : {report['files']} fichiers / "
-        f"{report['edges']} aretes",
-        "",
-        f"{'lac':32s} {'fichiers':>9s} {'aretes':>7s}",
-        "-" * 52,
+        provenance,
     ]
+    if report.get("n_en_outside_lakes"):
+        lines.append(
+            f"  ({report['n_en_outside_lakes']} fichiers *_en.lean hors lac, "
+            "non mesures : une arete se mesure dans un lac)"
+        )
+    lines.extend(
+        [
+            "",
+            f"TOTAL hybrides FR-import : {report['files']} fichiers / "
+            f"{report['edges']} aretes",
+            "",
+            f"{'lac':32s} {'fichiers':>9s} {'aretes':>7s}",
+            "-" * 52,
+        ]
+    )
     for lake, entry in report["per_lake"].items():
         lines.append(f"{lake:32s} {entry['files']:9d} {entry['edges']:7d}")
     if show_list:
@@ -346,6 +433,16 @@ def main(argv: list[str] | None = None) -> int:
         print(
             "INCIDENT : aucun lac trouve -- un perimetre vide n'est pas un "
             "zero propre (mauvaise racine ?).",
+            file=sys.stderr,
+        )
+        return RC_INCIDENT
+    if report["n_en_files"] == 0:
+        print(
+            f"INCIDENT : {report['n_lakes']} lac(s) trouve(s) sous {root}, mais "
+            "aucun fichier *_en.lean mesure -- ce zero n'est pas distinguable "
+            "d'un chemin casse, donc il n'est pas rendu comme une mesure. "
+            "Pointer --root sur le repertoire qui contient les lac(s) portant "
+            "les jumeaux.",
             file=sys.stderr,
         )
         return RC_INCIDENT
