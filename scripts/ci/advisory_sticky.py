@@ -33,8 +33,13 @@ sans verrou produit deux defauts :
    et la section de l'autre **disparait** jusqu'au run suivant de cet organe —
    un avertissement qui n'est pas un succes pourrait ne jamais s'afficher.
 
-Le contrat tient donc par trois mecaniques, sans verrou externe :
+Le contrat tient donc par quatre mecaniques :
 
+* **un verrou d'ecriture** : l'ecriture se fait sous un verrou pose dans le
+  corps du commentaire collant (une ligne HTML, invisible au rendu). Un
+  ecrivain concurrent trouve le verrou, il **attend** au lieu d'ecraser ; le
+  verrou a une duree de vie, donc un ecrivain mort ne bloque pas les autres
+  indefiniment ;
 * **verifier apres ecriture** : relire et controler que l'etat attendu est
   constate ; sinon **reessayer** (au plus ``MAX_ATTEMPTS`` fois, avec un
   delai aleatoire), puis echouer franchement (``::warning::``) ;
@@ -56,6 +61,8 @@ import os
 import random
 import re
 import sys
+import time
+import uuid
 from typing import Callable, Optional
 
 # Meme contrainte que ``guard_comment_upsert.GUARD_BOT_LOGINS`` : les seuls
@@ -96,8 +103,45 @@ DEFAULT_REPO = "jsboige/CoursIA"
 MAX_ATTEMPTS = 3
 
 #: Fourchette du delai aleatoire entre deux tentatives (secondes). Le jitter
-#: est ce qui evite que deux workflows qui se sont percutes rejouent en phase.
+#: est ce qui evite que deux workflows qui se sont percoutes rejouent en phase.
 RETRY_JITTER = (0.4, 1.6)
+
+# --------------------------------------------------------------------------
+# Verrou d'ecriture
+# --------------------------------------------------------------------------
+# Le contrat tient par trois mecaniques **sans verrou externe** (adjoint
+# `myia-po-2025:CoursIA-2`, contre-exemple du 2026-11-04 :
+# `B.relecture < A.PATCH < A.verify < B.PATCH` -> les deux ecrivains se
+# croient verifies et la section de A a disparu). La relecture
+# d'**avant** ecriture rattrape l'entre-deux lectures ; la relecture de
+# **stabilisation** rattrape l'ecriture tombee pendant le delai ; ce qui
+# reste est l'ecriture tombee **apres la derniere relecture** -- une
+# fenetre qu'aucune relecture ne ferme, parce que l'API refuse l'ecriture
+# conditionnelle (mesure du 2026-11-04 : `If-Match` -> HTTP 400).
+#
+# Le verrou ferme cette fenetre : l'ecriture elle-meme se fait sous un
+# verrou, pose **dans le corps du commentaire collant**. Deux ecrivains ne
+# peuvent plus s'entrelacer, donc plus s'ecraser mutuellement.
+#:
+#: Le verrou est une **ligne HTML** : invisible au rendu du commentaire,
+#: mais lisible par l'API. Il porte son proprietaire et son horodatage --
+#: un ecrivain mort laisse un verrou perime, que le suivant peut voler
+#: apres le delai de vie.
+LOCK_MARKER = "coursia:advisory-lock"
+
+#: Duree de vie d'un verrou (secondes). Au-dela, le verrou est considere
+#: perime : l'ecrivain qui le detient est presume mort.
+LOCK_TTL_SECONDS = 45.0
+
+#: Duree maximale d'attente d'un verrou (secondes). Au-dela, l'ecriture
+#: est **refusee** : on ne certifie pas une ecriture sous contention.
+LOCK_WAIT_SECONDS = 60.0
+
+_LOCK_LINE_RE = re.compile(
+    r"^[ \t]*<!--[ \t]*" + re.escape(LOCK_MARKER) +
+    r"[ \t]+owner=(?P<owner>\S+)[ \t]+ts=(?P<ts>[0-9.]+)[ \t]*-->[ \t]*\n?",
+    re.M,
+)
 
 
 def _default_runner(cmd, **kwargs):  # pragma: no cover - trivial default
@@ -123,6 +167,43 @@ SETTLE_DELAY = (0.5, 1.5)
 
 def _settle_delay() -> float:
     return random.uniform(*SETTLE_DELAY)
+
+
+# --------------------------------------------------------------------------
+# Verrou d'ecriture -- helpers de corps
+# --------------------------------------------------------------------------
+
+def _lock_line(body: str) -> Optional[str]:
+    r"""La ligne de verrou portee par un corps, ou ``None``."""
+    m = _LOCK_LINE_RE.search(body or "")
+    return m.group(0).strip() if m else None
+
+
+def _lock_holder(body: str):
+    r"""``(proprietaire, horodatage)`` du verrou present, ou ``None``."""
+    m = _LOCK_LINE_RE.search(body or "")
+    if not m:
+        return None
+    try:
+        return m.group("owner"), float(m.group("ts"))
+    except (TypeError, ValueError):
+        return None
+
+
+def _strip_lock(body: str) -> str:
+    r"""Corps sans sa ligne de verrou."""
+    return _LOCK_LINE_RE.sub("", body or "")
+
+
+def _with_lock(body: str, lock_line: str) -> str:
+    r"""Corps portant une ligne de verrou (une seule, la derniere posee)."""
+    base = _strip_lock(body or "").rstrip("\n")
+    return base + "\n" + lock_line.strip() + "\n"
+
+
+def _owner_id() -> str:
+    r"""Identite d'un ecrivain : unique par processus et par tentative."""
+    return "%d-%s" % (os.getpid(), uuid.uuid4().hex[:8])
 
 
 # --------------------------------------------------------------------------
@@ -294,6 +375,88 @@ def _create_comment(pr: int, body: str, repo: str, runner: Callable,
 # Concurrence : reparation des doublons, verification apres ecriture
 # --------------------------------------------------------------------------
 
+def _acquire_lock(pr: int, repo: str, runner: Callable, timeout: int,
+                  owner: str, sleep: Callable,
+                  clock: Callable = time.time,
+                  monotonic: Callable = time.monotonic):
+    r"""Prend le verrou d'ecriture du commentaire collant.
+
+    Le verrou est une ligne HTML **dans le corps** du commentaire collant :
+    invisible au rendu, lisible par l'API. Il porte son proprietaire et son
+    horodatage, donc un ecrivain mort laisse un verrou **perime** que le
+    suivant peut voler apres :data:`LOCK_TTL_SECONDS`.
+
+    L'ecriture sous verrou est ce qui ferme la fenetre du residu signale
+    par l'adjoint (contre-exemple du 2026-11-04 : `B.relecture < A.PATCH <
+    A.verify < B.PATCH`). Sans exclusion mutuelle, deux ecrivains se
+    croient verifies et la section de l'un disparait ; avec elle, le second
+    **attend** au lieu d'ecraser.
+
+    Renvoie l'id du commentaire verrouille, ou ``None`` s'il n'existe pas
+    encore : le premier ecrivain le cree, il n'y a alors rien a verrouiller
+    (et le cas des deux commentaires collants naissants est traite par
+    :func:`merge_duplicates`).
+    """
+    deadline = monotonic() + LOCK_WAIT_SECONDS
+    while True:
+        comments = list_comments(pr, repo, runner, timeout)
+        cid = find_sticky_id(comments)
+        if cid is None:
+            return None
+        body = _body_of(comments, cid)
+        held = _lock_holder(body)
+        now = clock()
+        if (held is not None and held[0] != owner
+                and (now - held[1]) < LOCK_TTL_SECONDS):
+            if monotonic() > deadline:
+                raise RuntimeError(
+                    f"verrou du commentaire collant {pr} tenu par "
+                    f"{held[0]!r} depuis {now - held[1]:.1f}s -- ecriture "
+                    f"refusee (pas de succes sur une ecriture non "
+                    f"exclusive)")
+            sleep(_jitter_delay())
+            continue
+        # Relecture juste avant d'ecrire : le corps peut avoir bouge entre
+        # notre lecture et maintenant, et ecrire une version perimee
+        # effacerait la section d'un autre ecrivain.
+        comments = list_comments(pr, repo, runner, timeout)
+        fresh_cid = find_sticky_id(comments)
+        if fresh_cid != cid:
+            continue
+        fresh_body = _body_of(comments, cid)
+        line = f"<!-- {LOCK_MARKER} owner={owner} ts={now:.3f} -->"
+        _patch_comment(cid, _with_lock(fresh_body, line), repo, runner, timeout)
+        # On relit : le verrou est-il a nous ? Un autre peut l'avoir pris
+        # entre notre lecture et notre PATCH -- dans ce cas on reboucle.
+        comments = list_comments(pr, repo, runner, timeout)
+        if find_sticky_id(comments) != cid:
+            return None
+        mine = _lock_holder(_body_of(comments, cid))
+        if mine is not None and mine[0] == owner:
+            return cid
+        if monotonic() > deadline:
+            raise RuntimeError(
+                f"verrou du commentaire collant {pr} pris par un autre "
+                f"ecrivain -- ecriture refusee")
+        sleep(_jitter_delay())
+
+
+def _release_lock(pr: int, repo: str, runner: Callable, timeout: int,
+                  cid: int, owner: str) -> bool:
+    r"""Relache le verrou -- **seulement** s'il est encore le notre.
+
+    Un verrou vole (perime puis repris par un autre) n'est pas relache :
+    ce n'est pas le nôtre.
+    """
+    comments = list_comments(pr, repo, runner, timeout)
+    body = _body_of(comments, cid)
+    mine = _lock_holder(body)
+    if mine is None or mine[0] != owner:
+        return False
+    _patch_comment(cid, _strip_lock(body), repo, runner, timeout)
+    return True
+
+
 def merge_duplicates(pr: int, repo: str = DEFAULT_REPO,
                      runner: Optional[Callable] = None,
                      timeout: int = DEFAULT_TIMEOUT) -> dict:
@@ -314,7 +477,8 @@ def merge_duplicates(pr: int, repo: str = DEFAULT_REPO,
                 "comment_id": stickies[0]["id"] if stickies else None,
                 "merged": []}
     canonical = stickies[-1]
-    merged = parse_sections(canonical.get("body") or "")
+    canonical_body = canonical.get("body") or ""
+    merged = parse_sections(canonical_body)
     for row in stickies:
         if row["id"] == canonical["id"]:
             continue
@@ -322,7 +486,13 @@ def merge_duplicates(pr: int, repo: str = DEFAULT_REPO,
             # Le canonique gagne en cas de conflit : son contenu est le plus
             # recent ; le doublon n'apporte que ce qui manque.
             merged.setdefault(name, text)
-    _patch_comment(canonical["id"], render(merged), repo, runner, timeout)
+    # Le verrou du canonique est **conserve** : la fusion se fait sous
+    # verrou, et le rendre ici casserait l'exclusion mutuelle en cours.
+    new_body = render(merged)
+    lock_line = _lock_line(canonical_body)
+    if lock_line:
+        new_body = _with_lock(new_body, lock_line)
+    _patch_comment(canonical["id"], new_body, repo, runner, timeout)
     others = []
     for row in stickies:
         if row["id"] == canonical["id"]:
@@ -370,6 +540,27 @@ def _verify_clear(organ: str, pr: int, repo: str, runner: Callable,
     return True
 
 
+def _settled_state(organ: str, body: str, pr: int, repo: str,
+                   runner: Callable, timeout: int):
+    r"""L'etat voulu est-il **deja** celui du commentaire collant ?
+
+    Lecture **seule** : aucun verrou pris, aucun corps reecrit. Un run qui
+    n'a rien a dire ne touche donc pas au commentaire -- pas de bruit
+    d'edition, et pas de fenetre ouverte pour un ecrivain concurrent.
+
+    Renvoie ``(etat_atteint, id_du_commentaire_collant)``.
+    """
+    comments = list_comments(pr, repo, runner, timeout)
+    cid = find_sticky_id(comments)
+    if cid is None:
+        return False, None
+    sections = parse_sections(_body_of(comments, cid))
+    want = (body or "").strip()
+    if not want:
+        return organ not in sections, cid
+    return sections.get(organ, "") == want, cid
+
+
 # --------------------------------------------------------------------------
 # Operations
 # --------------------------------------------------------------------------
@@ -382,6 +573,11 @@ def _upsert_attempt(organ: str, body: str, pr: int, repo: str, runner: Callable,
     sections = parse_sections(existing_body)
     sections[organ] = (body or "").strip()
     new_body = render(sections)
+    # Le verrou est **conserve** dans le corps ecrit : l'ecriture se fait
+    # sous verrou, et le perdre ici le rendrait caduc en cours d'ecriture.
+    lock_line = _lock_line(existing_body)
+    if lock_line:
+        new_body = _with_lock(new_body, lock_line)
     if cid is not None and new_body == existing_body:
         return {"action": "unchanged", "comment_id": cid}
     # --- relecture juste avant l'ecriture --------------------------------
@@ -401,6 +597,9 @@ def _upsert_attempt(organ: str, body: str, pr: int, repo: str, runner: Callable,
         sections = parse_sections(existing_body)
         sections[organ] = (body or "").strip()
         new_body = render(sections)
+        lock_line = _lock_line(existing_body)
+        if lock_line:
+            new_body = _with_lock(new_body, lock_line)
         if cid is not None and new_body == existing_body:
             return {"action": "unchanged", "comment_id": cid}
     if cid is not None:
@@ -422,6 +621,9 @@ def _clear_attempt(organ: str, pr: int, repo: str, runner: Callable,
         return {"action": "unchanged", "comment_id": cid}
     del sections[organ]
     new_body = render(sections)
+    lock_line = _lock_line(existing_body)
+    if lock_line:
+        new_body = _with_lock(new_body, lock_line)
     # Meme fenetre que pour l'upsert : on relit avant d'ecrire, et on
     # reapplique le retrait sur le corps courant plutot que d'effacer la
     # section qu'un autre ecrivain y aurait ajoutee entre-temps.
@@ -436,6 +638,9 @@ def _clear_attempt(organ: str, pr: int, repo: str, runner: Callable,
             return {"action": "unchanged", "comment_id": cid}
         del sections[organ]
         new_body = render(sections)
+        lock_line = _lock_line(existing_body)
+        if lock_line:
+            new_body = _with_lock(new_body, lock_line)
     if cid is None:
         return {"action": "silent", "comment_id": None}
     return _patch_comment(cid, new_body, repo, runner, timeout)
@@ -445,7 +650,8 @@ def upsert_section(organ: str, body: str, pr: int, repo: str = DEFAULT_REPO,
                    runner: Optional[Callable] = None,
                    timeout: int = DEFAULT_TIMEOUT,
                    attempts: int = MAX_ATTEMPTS,
-                   sleep: Optional[Callable] = None) -> dict:
+                   sleep: Optional[Callable] = None,
+                   owner: Optional[str] = None) -> dict:
     r"""Ecrit (ou reecrit) la section d'un organe dans le commentaire unique.
 
     L'ecriture est **verifiee** : apres chaque tour, l'etat est relu ; s'il
@@ -472,56 +678,92 @@ def upsert_section(organ: str, body: str, pr: int, repo: str = DEFAULT_REPO,
     **apres** la derniere relecture. La portee de la certification est donc
     explicitement **notre section**, a l'instant de la derniere relecture --
     pas « toutes les sections », et pas « pour toujours ».
+
+    **Verrou d'ecriture.** La fenetre residuelle est fermee par une
+    exclusion mutuelle : l'ecriture se fait **sous verrou**, pose dans le
+    corps du commentaire collant (:func:`_acquire_lock`). Un ecrivain
+    concurrent qui trouve le verrou pose **attend** au lieu d'ecraser ;
+    c'est lui qui ecrivait le dernier qui gagne, et l'autre reprend au
+    tour suivant sur un corps frais. Le verrou a une duree de vie : un
+    ecrivain mort laisse un verrou perime, que le suivant vole.
     """
     _validate_organ(organ)
     if runner is None:  # pragma: no cover - trivial default
         runner = _default_runner
     if sleep is None:
         sleep = _sleep
-    for attempt in range(1, max(1, attempts) + 1):
-        out = _upsert_attempt(organ, body, pr, repo, runner, timeout)
+    # --- etat deja voulu ? (lecture seule) --------------------------------
+    # Rien a ecrire -> pas de verrou, pas de reecriture : le commentaire
+    # n'est pas touche (le corps reste byte-identique, pas de bruit
+    # d'edition).
+    settled, cid = _settled_state(organ, body, pr, repo, runner, timeout)
+    if settled:
+        out = {"action": "unchanged", "comment_id": cid}
         merged = merge_duplicates(pr, repo, runner, timeout)
         if merged.get("action") == "merged":
             out = dict(out)
             out["merged"] = merged.get("merged", [])
         if _verify_upsert(organ, body, pr, repo, runner, timeout):
-            # --- relecture de stabilisation ------------------------------
-            # On relit une fois de plus apres un court delai : une ecriture
-            # concurrencee tombee DANS la fenetre est detectee ici, et le
-            # rejeu la remerge sur le corps courant.
-            sleep(_settle_delay())
+            out["verified"] = True
+            return out
+        # l'etat a bouge entre-temps : on passe par le chemin verrouille
+    if owner is None:
+        owner = _owner_id()
+    lock_cid = _acquire_lock(pr, repo, runner, timeout, owner, sleep)
+    try:
+        for attempt in range(1, max(1, attempts) + 1):
+            out = _upsert_attempt(organ, body, pr, repo, runner, timeout)
+            merged = merge_duplicates(pr, repo, runner, timeout)
+            if merged.get("action") == "merged":
+                out = dict(out)
+                out["merged"] = merged.get("merged", [])
             if _verify_upsert(organ, body, pr, repo, runner, timeout):
-                out["verified"] = True
-                return out
+                # --- relecture de stabilisation ------------------------------
+                # On relit une fois de plus apres un court delai : une ecriture
+                # concurrencee tombee DANS la fenetre est detectee ici, et le
+                # rejeu la remerge sur le corps courant.
+                sleep(_settle_delay())
+                if _verify_upsert(organ, body, pr, repo, runner, timeout):
+                    out["verified"] = True
+                    return out
+                if attempt < attempts:
+                    sleep(_jitter_delay())
+                continue
             if attempt < attempts:
                 sleep(_jitter_delay())
-            continue
-        if attempt < attempts:
-            sleep(_jitter_delay())
-    raise RuntimeError(
-        f"section {organ!r} non constatee apres {attempts} tentative(s) "
-        f"(ecriture concurrente ?) -- succes refuse")
+        raise RuntimeError(
+            f"section {organ!r} non constatee apres {attempts} tentative(s) "
+            f"(ecriture concurrente ?) -- succes refuse")
+    finally:
+        if lock_cid is not None:
+            _release_lock(pr, repo, runner, timeout, lock_cid, owner)
 
 
 def clear_section(organ: str, pr: int, repo: str = DEFAULT_REPO,
                   runner: Optional[Callable] = None,
                   timeout: int = DEFAULT_TIMEOUT,
                   attempts: int = MAX_ATTEMPTS,
-                  sleep: Optional[Callable] = None) -> dict:
+                  sleep: Optional[Callable] = None,
+                  owner: Optional[str] = None) -> dict:
     r"""Retire la section d'un organe qui redevient vert.
 
     Le commentaire n'est **jamais supprime** : il est reecrit en place avec
     l'etat « plus aucun avertissement consultatif » (#15372 : pas
     d'effacement d'historique). Comme l'ecriture, le retrait est **verifie**
     (la section doit avoir disparu) et rejoue en cas de conflit concurrent.
+
+    Le retrait se fait **sous verrou** comme l'ecriture : sans exclusion
+    mutuelle, deux retraits concurrents peuvent se masquer l'un l'autre.
     """
     _validate_organ(organ)
     if runner is None:  # pragma: no cover - trivial default
         runner = _default_runner
     if sleep is None:
         sleep = _sleep
-    for attempt in range(1, max(1, attempts) + 1):
-        out = _clear_attempt(organ, pr, repo, runner, timeout)
+    # Rien a retirer -> pas de verrou, pas de reecriture.
+    settled, cid = _settled_state(organ, "", pr, repo, runner, timeout)
+    if settled and cid is not None:
+        out = {"action": "unchanged", "comment_id": cid}
         merged = merge_duplicates(pr, repo, runner, timeout)
         if merged.get("action") == "merged":
             out = dict(out)
@@ -529,11 +771,27 @@ def clear_section(organ: str, pr: int, repo: str = DEFAULT_REPO,
         if _verify_clear(organ, pr, repo, runner, timeout):
             out["verified"] = True
             return out
-        if attempt < attempts:
-            sleep(_jitter_delay())
-    raise RuntimeError(
-        f"retrait de la section {organ!r} non constate apres {attempts} "
-        f"tentative(s) (ecriture concurrente ?) -- succes refuse")
+    if owner is None:
+        owner = _owner_id()
+    lock_cid = _acquire_lock(pr, repo, runner, timeout, owner, sleep)
+    try:
+        for attempt in range(1, max(1, attempts) + 1):
+            out = _clear_attempt(organ, pr, repo, runner, timeout)
+            merged = merge_duplicates(pr, repo, runner, timeout)
+            if merged.get("action") == "merged":
+                out = dict(out)
+                out["merged"] = merged.get("merged", [])
+            if _verify_clear(organ, pr, repo, runner, timeout):
+                out["verified"] = True
+                return out
+            if attempt < attempts:
+                sleep(_jitter_delay())
+        raise RuntimeError(
+            f"retrait de la section {organ!r} non constate apres {attempts} "
+            f"tentative(s) (ecriture concurrente ?) -- succes refuse")
+    finally:
+        if lock_cid is not None:
+            _release_lock(pr, repo, runner, timeout, lock_cid, owner)
 
 
 def _validate_organ(organ: str) -> None:

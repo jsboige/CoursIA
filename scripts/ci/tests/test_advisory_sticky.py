@@ -500,3 +500,139 @@ def test_une_ecriture_concurrente_qui_atterrit_apres_notre_verification_est_repr
         "notre section doit avoir ete reecrite apres le clobber concurrent")
     assert sections.get("organ-b") == "avertissement B", (
         "la section de l'autre ecrivain ne doit pas disparaitre")
+
+
+# --------------------------------------------------------------------------
+# Verrou d'ecriture (residu de l'adjoint, 2026-11-04)
+# --------------------------------------------------------------------------
+
+def test_un_ecrivain_concurrent_attend_le_verrou_au_lieu_d_ecraser():
+    """Le **residu** signale par l'adjoint (`myia-po-2025:CoursIA-2`, le
+    2026-11-04) : `B.relecture < A.PATCH < A.verify < B.PATCH` -> les deux
+    ecrivains se croient verifies, et la section de A a disparu.
+
+    La relecture d'**avant** ecriture ne le voit pas (elle est anterieure
+    au PATCH de B) et la fenetre de stabilisation non plus (B ecrit apres la
+    derniere relecture).
+
+    Ce qui ferme le residu : le **verrou d'ecriture**. B trouve le verrou
+    pose par A, il **attend** -- il n'ecrit pas pendant la fenetre de A.
+    C'est la difference mesuree : sans verrou, B ecrit pendant que A
+    verifie ; avec verrou, B attend que A ait fini (verifie compris), puis
+    ecrit sur le corps courant, qui porte la section de A.
+    """
+    store = SharedStore([bot_comment(7, a_s.render({"initial": "etat initial"}))])
+    runner = FakeRunner(store=store)
+    other = FakeRunner(store=store)
+    state = {"b_done": False}
+
+    def sleep_a(_seconds):
+        """Le delai de stabilisation de A : c'est la que B arrive."""
+        if state["b_done"]:
+            return
+        state["b_done"] = True
+
+        def b_wait(_s):
+            # Premier appel = B attend le verrou : son ecriture n'est pas
+            # encore passee, et le verrou porte toujours le nom de A.
+            if "during_wait" not in state:
+                body = next(c["body"] for c in runner.comments
+                            if a_s.MARKER in c["body"])
+                state["during_wait"] = a_s.parse_sections(body)
+                state["lock_during_wait"] = a_s._lock_holder(body)
+                # A relache : B peut ecrire.
+                a_s._release_lock(123, a_s.DEFAULT_REPO, runner, 15, 7,
+                                  "writer-A")
+
+        a_s.upsert_section(
+            "organ-b", "avertissement B", 123, runner=other,
+            sleep=b_wait, owner="writer-B")
+
+    out = a_s.upsert_section("organ-a", "avertissement A", 123, runner=runner,
+                              sleep=sleep_a, owner="writer-A")
+    assert state["b_done"] is True, "B doit avoir tente son ecriture"
+    assert state.get("during_wait") is not None, (
+        "B doit avoir ATTENDU le verrou : sans attente, B ecrit pendant la "
+        "fenetre de A -- c'est exactement le residu de l'adjoint")
+    assert "organ-b" not in state["during_wait"], (
+        "B ne doit pas ecrire pendant la fenetre de A")
+    assert state["lock_during_wait"] is not None
+    assert state["lock_during_wait"][0] == "writer-A", (
+        "le verrou doit etre celui de A pendant que B attend")
+    assert out["verified"] is True
+    sections = a_s.parse_sections(
+        next(c["body"] for c in runner.comments if a_s.MARKER in c["body"]))
+    assert sections.get("organ-a") == "avertissement A", (
+        "notre section doit avoir survecu a l'ecriture concurrente")
+    assert sections.get("organ-b") == "avertissement B", (
+        "la section de l'autre ecrivain ne doit pas disparaitre")
+    assert sections.get("initial") == "etat initial"
+
+
+def test_un_verrou_tenu_par_un_autre_refuse_l_ecriture_au_bout_de_l_attente():
+    """Le contention n'est pas un echec silencieux : on attend, puis on
+    **refuse** franchement. Le corps du commentaire n'est pas touche."""
+    body = a_s._with_lock(
+        a_s.render({"organ-a": "A"}),
+        f"<!-- {a_s.LOCK_MARKER} owner=writer-A ts=1000.0 -->")
+    runner = FakeRunner(comments=[bot_comment(7, body)])
+    ticks = iter(range(0, 100000))
+    with pytest.raises(RuntimeError):
+        a_s._acquire_lock(123, a_s.DEFAULT_REPO, runner, 15, "writer-B",
+                          lambda _s: None, clock=lambda: 1000.0,
+                          monotonic=lambda: next(ticks))
+    assert runner.comments[0]["body"] == body, (
+        "le verrou de l'autre ecrivain ne doit pas etre vole ni ecrase")
+
+
+def test_un_verrou_perime_est_vole():
+    """Un ecrivain mort laisse un verrou perime : le suivant le vole au
+    lieu d'attendre indefiniment."""
+    body = a_s._with_lock(
+        a_s.render({"organ-a": "A"}),
+        f"<!-- {a_s.LOCK_MARKER} owner=writer-A ts=1000.0 -->")
+    runner = FakeRunner(comments=[bot_comment(7, body)])
+    cid = a_s._acquire_lock(
+        123, a_s.DEFAULT_REPO, runner, 15, "writer-B", lambda _s: None,
+        clock=lambda: 1000.0 + a_s.LOCK_TTL_SECONDS + 1,
+        monotonic=lambda: 0.0)
+    assert cid == 7
+    holder = a_s._lock_holder(runner.comments[0]["body"])
+    assert holder is not None and holder[0] == "writer-B"
+
+
+def test_le_verrou_est_relache_a_la_fin_de_l_ecriture():
+    """Le verrou est une ligne de travail, pas un artefact : il ne doit pas
+    rester dans le corps du commentaire."""
+    runner = FakeRunner(comments=[bot_comment(7, a_s.render({"organ-a": "vieux"}))])
+    a_s.upsert_section("organ-a", "neuf", 123, runner=runner,
+                        sleep=lambda _s: None, owner="writer-A")
+    body = runner.comments[0]["body"]
+    assert a_s._lock_line(body) is None, "le verrou doit etre relache"
+    assert "neuf" in body
+
+
+def test_un_run_sans_nouveaute_ne_touche_pas_le_commentaire():
+    """Le succes ne parle pas, et son repeat ne **reecrit pas** : un corps
+    deja dans l'etat voulu ne declenche aucune ecriture (pas de bruit
+    d'edition)."""
+    body = a_s.render({"organ-a": "stable"})
+    runner = FakeRunner(comments=[bot_comment(7, body)])
+    out = a_s.upsert_section("organ-a", "stable", 123, runner=runner,
+                              sleep=lambda _s: None, owner="writer-A")
+    assert out["action"] == "unchanged"
+    assert out["verified"] is True
+    assert runner.comments[0]["body"] == body, "le corps doit rester identique"
+    assert not any("PATCH" in c for c in runner.calls), (
+        "aucune ecriture ne doit partir quand rien ne change")
+
+
+def test_le_verrou_ne_touche_pas_aux_sections_des_autres():
+    """Le corps ecrit sous verrou porte TOUJOURS les sections des autres
+    ecrivains : le verrou ne les efface pas."""
+    runner = FakeRunner(comments=[
+        bot_comment(7, a_s.render({"organ-a": "A", "organ-b": "B"}))])
+    a_s.upsert_section("organ-c", "C", 123, runner=runner,
+                        sleep=lambda _s: None, owner="writer-A")
+    sections = a_s.parse_sections(runner.comments[0]["body"])
+    assert sections == {"organ-a": "A", "organ-b": "B", "organ-c": "C"}
