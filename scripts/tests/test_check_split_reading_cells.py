@@ -2251,11 +2251,21 @@ def test_carveout_en_tete_credite_par_metadata():
     assert is_exercise_cell(cells[1], cells, 1) is False
 
 
-def test_carveout_code_avant_titre_ne_rattache_pas():
-    """NEGATIF : une cellule de CODE interrompt la remontee vers l'en-tete.
+from check_split_reading_cells import (  # noqa: E402
+    _governing_header,
+    _section_header,
+)
 
-    Le lien de section est rompu : on ne rattache pas une cellule a un titre
-    qui precede une autre section de code.
+
+def test_carveout_code_avant_titre_ne_rattache_pas():
+    """REQUALIFIE (#23397) : deux regles cohabitent, aux perimetres clairs.
+
+    - Regle de LIEN (`_governing_header`), intacte : une cellule de code
+      ROMP le lien -- une cellule placee apres la deuxieme cellule de code
+      d'une section n'est rattachee a AUCUN titre qui la precede.
+    - Regle de SECTION (`_section_header`), perimetre du carve-out : une
+      cellule de code n'interrompt PAS la remontee -- la deuxieme cellule
+      de code d'un exemple CREDITE est blanchie comme la premiere.
     """
     cells = [
         _credited_example_header(),
@@ -2263,7 +2273,68 @@ def test_carveout_code_avant_titre_ne_rattache_pas():
         code("print('autre section')"),
         _student_solution_verbatim(),
     ]
-    assert is_exercise_cell(cells[3], cells, 3) is True
+    # Regle de lien : intacte -- le code rompt le lien, la cellule 3
+    # n'est rattachee a aucun titre.
+    assert _governing_header(cells, 3) is None
+    # Regle de section : la section reste ouverte jusqu'au prochain TITRE
+    # -- l'en-tete credite commande les deux cellules de code de l'exemple.
+    assert _section_header(cells, 3) is cells[0]
+    assert is_exercise_cell(cells[3], cells, 3) is False
+
+
+def test_carveout_section_multi_code_credite_nest_pas_signale():
+    """POSITIF (#23397) : un exemple CREDITE multi-code, bout en bout.
+
+    La lecture posee apres la DEUXIEME cellule de code de l'exemple n'est
+    pas signalee : les deux cellules de code sont sous l'en-tete credite
+    (une cellule de code intermediaire ne ferme pas la section). Echee sous
+    l'ancienne regle de lien : la deuxieme cellule etait hors carve-out et
+    la lecture etait signalee EXERCISE_READING (le faux positif mesure sur
+    le corpus : 15 cellules suivies d'une lecture).
+    """
+    base = nb(
+        md("### Exercice 1 - Un premier passage\n\nUn enonce."),
+        _stub_exercise(),
+    )
+    head = nb(
+        md("### Exercice 1 - Un premier passage\n\nUn enonce."),
+        _stub_exercise(),
+        _credited_example_header(),
+        _student_solution_verbatim(),
+        code("print('deuxieme code de l'exemple')"),
+        _student_solution_verbatim(),
+        md("### Lecture du resultat : egalite sur les classements\n\n"
+           + "Les deux collections contiennent les memes points."),
+    )
+    findings = detect_added_readings(head, base)
+    assert [f["type"] for f in findings] == [], findings
+
+
+def test_carveout_section_sans_credit_reste_exercice():
+    """NEGATIF (#23397) : la regle de section SANS credit n'est pas un
+    carve-out.
+
+    La meme forme multi-code sous un `### Exemple` SANS attribution : la
+    remontee est elargie de la meme facon, mais l'en-tete ne dit rien du
+    role du code -- la deuxieme cellule de code reste classee « exercice »
+    et la lecture posee apres elle est signalee.
+    """
+    base = nb(
+        md("### Exercice 1 - Un premier passage\n\nUn enonce."),
+        _stub_exercise(),
+    )
+    head = nb(
+        md("### Exercice 1 - Un premier passage\n\nUn enonce."),
+        _stub_exercise(),
+        md("### Exemple guide 3 - Comparer deux modeles\n\nSans attribution."),
+        _student_solution_verbatim(),
+        code("print('deuxieme code')"),
+        _student_solution_verbatim(),
+        md("### Lecture du resultat : egalite sur les classements\n\n"
+           + "Les deux collections contiennent les memes points."),
+    )
+    findings = detect_added_readings(head, base)
+    assert [f["type"] for f in findings] == ["EXERCISE_READING"], findings
 
 
 # --- Titres de TRANSITION de fin de carnet (CLOSING_NAV_TITLE_RE) -------------

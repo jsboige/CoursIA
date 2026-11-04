@@ -460,6 +460,28 @@ def _governing_header(cells: list[dict], idx: int) -> dict | None:
     return None
 
 
+def _section_header(cells: list[dict], idx: int) -> dict | None:
+    """En-tete markdown de la SECTION qui contient la cellule `idx`.
+
+    Regle de SECTION : une cellule de CODE n'interrompt PAS la remontee --
+    le premier TITRE markdown trouve commande toute la section, combien
+    que soient les cellules de code entre le titre et la cellule. Elle
+    cohabite avec `_governing_header` (regle de LIEN, une cellule de code
+    rompt le lien), qui reste la regle du lien generique -- y compris son
+    miroir dans `count_exercises.py`. (#23397)
+    """
+    for j in range(idx - 1, -1, -1):
+        cell = cells[j]
+        if cell.get("cell_type") != "markdown":
+            continue
+        src = cell_source(cell).strip()
+        if not src:
+            continue
+        if src.split("\n", 1)[0].lstrip().startswith("#"):
+            return cell
+    return None
+
+
 def is_credited_example_code(cells: list[dict], idx: int) -> bool:
     """Vrai si la cellule de code `idx` est le code d'un EXEMPLE GUIDE CREDITE.
 
@@ -477,24 +499,25 @@ def is_credited_example_code(cells: list[dict], idx: int) -> bool:
     sous `### Exercice N` il reste un stub. L'ATTRIBUTION est exigee : un
     simple `### Exemple` sans credit ne dit rien du role du code.
 
-    LIMITE ASSUMEE -- le lien de section s'arrete a la PREMIERE cellule de
-    code (`_governing_header`), donc un exemple credite qui porte plusieurs
-    cellules de code n'est blanchi que sur la premiere ; les suivantes
-    restent classees « exercice ». La limite est codifiee par
-    `test_carveout_code_avant_titre_ne_rattache_pas`, et l'elargir changerait
-    cette semantique (une cellule de code sans titre ouvre une nouvelle
-    section : sans cela, un exercice pose apres un code quelconque serait
-    blanchi).
+    Regle de SECTION (#23397) : la commande se lit par `_section_header` --
+    le premier TITRE markdown au-dessus de la cellule, les cellules de code
+    intermediaires n'interrompant PAS la remontee. Un exemple credite qui
+    porte plusieurs cellules de code est blanchi sur TOUTES, dans la limite
+    de sa section : un NOUVEAU titre markdown (exemple : l'exercice qui suit
+    l'exemple) ferme la section, et le code sous ce titre redevient
+    classifiable « exercice » -- l'elargissement ne blanchit donc jamais un
+    exercice pose apres un code quelconque, qui ne partage pas l'en-tete
+    credite.
 
-    Mesure du 2026-10-29 sur le depot (151 en-tetes credites) : 133 sections
-    portent une seule cellule de code, 15 en portent deux, 3 en portent trois
-    -- soit 18 sections hors du carve-out. Aucune ne produit le faux positif :
-    sur ces 18 sections, aucune cellule non blanchie n'est classee « exercice »
-    par `is_exercise_cell` en etant suivie d'une lecture. La limite est donc
-    REELLE EN FORME et SANS INSTANCE mesuree : la documenter suffit, l'elargir
-    serait un changement de semantique non motive par une mesure.
+    Mesure du 2026-11-04 sur le depot (1 751 carnets, 22 575 cellules de
+    code, 168 en-tetes credites, 18 sections multi-code) : la regle de
+    section blanchit 189 cellules contre 168 sous la regle de lien --
+    strictement superset, 21 cellules gagnees, aucune perdue ; 15 de ces
+    21 sont suivies d'une lecture (le cas ou le faux positif EXERCISE_READING
+    se produisait). Le role du code se lit par SECTION, pas par lien : c'est
+    ce que la mesure porte.
     """
-    header = _governing_header(cells, idx)
+    header = _section_header(cells, idx)
     return header is not None and is_credited_example_header(header)
 
 
