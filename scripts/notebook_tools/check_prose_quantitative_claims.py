@@ -294,6 +294,17 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
             "resume en une ligne d'index."
         ),
     ),
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/scripts/README.md",
+        motif=re.compile(r"la v1 du gun, 36 cellules fausses"),
+        raison=(
+            "« 36 cellules » = population d'une transcription FABRIQUEE du canon "
+            "de Gosper, citee comme temoin d'echec du self-check d'identite. Le "
+            "nombre appartient au recit de l'incident (la v1 fausse), pas a un "
+            "etat du depot : il ne derive pas avec CoursIA, il ne doit pas etre "
+            "mis a jour."
+        ),
+    ),
 )
 
 # ----------------------------------------------------------------------------

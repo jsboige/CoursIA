@@ -81,7 +81,7 @@ def test_artifact_exemptions_are_motivated_and_point_at_real_files():
     raison doit etre une phrase, pas un mot -- c'est elle qui rend l'arbitrage
     relisible sans reconstituer le fil de la PR."""
     repo_root = Path(__file__).resolve().parents[3]
-    assert cqc.ARTIFACT_EXEMPTIONS, "allowlist vide : #23111 attend les 4 occurrences Lean"
+    assert cqc.ARTIFACT_EXEMPTIONS, "allowlist vide : #23111 attend les occurrences Lean"
     for exemption in cqc.ARTIFACT_EXEMPTIONS:
         assert (repo_root / exemption.path).is_file(), (
             f"chemin d'exemption introuvable : {exemption.path!r}"
@@ -116,14 +116,21 @@ def test_artifact_exemptions_are_motivated_and_point_at_real_files():
             "reproduction réelle du dépôt piné `plby/HopfProblem` (248 818 lignes "
             "compilées en 1154 s, 0 sorry/0 axiom)",
         ),
+        (
+            "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/scripts/README.md",
+            "fabriquée : la v1 du gun, 36 cellules fausses, passait le check de règle) ;",
+        ),
     ],
 )
-def test_artifact_exemptions_cover_the_four_lean_occurrences(path, line):
-    """Les quatre faux positifs de SENS nommes par #23111 ne sont plus signales.
+def test_artifact_exemptions_cover_the_named_lean_occurrences(path, line):
+    """Les faux positifs de SENS nommes par #23111 ne sont plus signales.
 
     « cellules vivantes » / « cellules » d'un canon du Jeu de la Vie comptent
     des cellules de l'automate ; « 248 818 lignes » mesure un run sur un depot
-    externe pine. Supprimer le nombre reecrirait le propos."""
+    externe pine ; les « 36 cellules » de `conway_lean/scripts/README.md » sont
+    la population d'une transcription FABRIQUEE du canon, citee comme temoin
+    d'echec du self-check — un nombre du recit de l'incident, pas un etat du
+    depot. Supprimer ces nombres reecrirait le propos."""
     assert cqc._findings_in_text(line, path, {"artifact"}) == []
 
 
@@ -141,6 +148,24 @@ def test_artifact_exemption_is_a_span_not_a_file_blanket():
     # …et un compte de cellules ordinaire ailleurs dans le MEME fichier aussi.
     out = cqc._findings_in_text("Le README annonce 36 cellules de code.", path, {"artifact"})
     assert [snippet for _loc, _klass, snippet in out] == ["36 cellules"]
+
+
+def test_artifact_exemption_on_incident_narrative_is_a_span_not_a_blanket():
+    """Temoin positif du 5e faux positif (#23111) : dans le MEME fichier
+    `conway_lean/scripts/README.md`, le nombre du recit d'incident est exempte
+    mais un vrai compte de carnet reste flague.
+
+    Sans ce temoin, l'exemption pourrait se transformer en couperet par fichier
+    sans qu'aucun test ne rougisse."""
+    path = "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/scripts/README.md"
+    exempte = "fabriquée : la v1 du gun, 36 cellules fausses, passait le check de règle) ;"
+    assert cqc._findings_in_text(exempte, path, {"artifact"}) == []
+    out = cqc._findings_in_text(
+        "fabriquée : la v1 du gun, 36 cellules fausses — le carnet fait 19 cellules",
+        path,
+        {"artifact"},
+    )
+    assert [snippet for _loc, _klass, snippet in out] == ["19 cellules"]
 
 
 def test_artifact_exemption_does_not_leak_across_files():
