@@ -114,6 +114,17 @@ def _jitter_delay() -> float:
     return random.uniform(*RETRY_JITTER)
 
 
+#: Delai de stabilisation : le temps laisse a un ecrivain concurrent pour
+#: ecrire **entre** notre ecriture et notre relecture de controle. See
+#: `upsert_section` pour ce que cette fenetre ferme, et ce qu'elle ne ferme
+#: pas.
+SETTLE_DELAY = (0.5, 1.5)
+
+
+def _settle_delay() -> float:
+    return random.uniform(*SETTLE_DELAY)
+
+
 # --------------------------------------------------------------------------
 # Corps du commentaire
 # --------------------------------------------------------------------------
@@ -324,11 +335,19 @@ def merge_duplicates(pr: int, repo: str = DEFAULT_REPO,
 
 def _verify_upsert(organ: str, body: str, pr: int, repo: str,
                     runner: Callable, timeout: int) -> bool:
-    r"""L'ecriture est-elle **constatee** dans l'etat attendu ?
+    r"""L'ecriture de **notre** section est-elle **constatee** ?
 
-    On relit le commentaire canonique : la section doit y porter exactement
-    le corps ecrit. Une section **absente** apres un POST concurrent est un
-    echec d'ecriture, pas un succes.
+    On relit le commentaire canonique : **notre** section doit y porter
+    exactement le corps ecrit. Une section **absente** apres un POST
+    concurrent est un echec d'ecriture, pas un succes.
+
+    **Portee : une seule section.** La verification porte sur l'organe
+    ecrivain -- elle ne certifie **pas** que les sections des autres
+    ecrivains sont intactes. Une section ecrasée entre-temps par un
+    tiers n'est pas detectable d'ici (l'ecrivain concurrent l'a vue, lui ;
+    c'est lui qui peut la restaurer). L'annonce doit le dire tel quel :
+    certifier « toutes les sections » serait une affirmation que le code ne
+    fait pas.
     """
     want = (body or "").strip()
     comments = list_comments(pr, repo, runner, timeout)
@@ -434,6 +453,25 @@ def upsert_section(organ: str, body: str, pr: int, repo: str = DEFAULT_REPO,
     doublon cree en parallele), on **retente** avec un delai aleatoire, au
     plus ``attempts`` fois. A defaut de verification, l'echec est remonte :
     un succes ne se rend pas sur une ecriture non constatee.
+
+    **Fenetre de stabilisation.** La relecture certifie l'etat **a l'instant
+    de la relecture**. Un ecrivain concurrent peut ecrire juste apres, et
+    ecraser notre section -- sans pouvoir la restaurer (il ne l'a jamais
+    vue). L'ecriture conditionnelle, qui fermerait la fenetre, n'est pas
+    disponible : l'API des commentaires la refuse (mesure du 2026-11-04,
+    `PATCH .../issues/comments/<id>` avec `If-Match` -> HTTP 400
+    « Conditional request headers are not allowed in unsafe requests unless
+    supported by the endpoint »).
+
+    On relit donc **une seconde fois, apres un delai de stabilisation** : si
+    notre section a disparu entre-temps, c'est qu'un ecrivain concurrent
+    nous a ecrase -- on ne certifie pas, on rejoue (et le rejeu remerge sur
+    le corps courant, donc les deux sections se retrouvent).
+
+    Ce que la fenetre ne ferme pas : une ecriture concurrente qui tombe
+    **apres** la derniere relecture. La portee de la certification est donc
+    explicitement **notre section**, a l'instant de la derniere relecture --
+    pas « toutes les sections », et pas « pour toujours ».
     """
     _validate_organ(organ)
     if runner is None:  # pragma: no cover - trivial default
@@ -447,8 +485,17 @@ def upsert_section(organ: str, body: str, pr: int, repo: str = DEFAULT_REPO,
             out = dict(out)
             out["merged"] = merged.get("merged", [])
         if _verify_upsert(organ, body, pr, repo, runner, timeout):
-            out["verified"] = True
-            return out
+            # --- relecture de stabilisation ------------------------------
+            # On relit une fois de plus apres un court delai : une ecriture
+            # concurrencee tombee DANS la fenetre est detectee ici, et le
+            # rejeu la remerge sur le corps courant.
+            sleep(_settle_delay())
+            if _verify_upsert(organ, body, pr, repo, runner, timeout):
+                out["verified"] = True
+                return out
+            if attempt < attempts:
+                sleep(_jitter_delay())
+            continue
         if attempt < attempts:
             sleep(_jitter_delay())
     raise RuntimeError(

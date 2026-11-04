@@ -447,3 +447,56 @@ def test_le_retrait_n_efface_pas_la_section_ajoutee_par_un_autre():
     assert sections.get("organ-b") == "avertissement B", (
         "la section de l'autre ecrivain ne doit pas disparaitre")
     assert sections.get("initial") == "etat initial"
+
+
+def test_une_ecriture_concurrente_qui_atterrit_apres_notre_verification_est_reprise():
+    """Le **residu** signale par l'adjoint (2026-11-04) : le second
+    ecrivain ecrase notre section **apres** notre premiere verification.
+
+    Entrelencement mesure par l'adjoint : `B.relecture < A.PATCH <
+    A.verify < B.PATCH` -> les deux ecrivains se croient verifies, et la
+    section de A a disparu. La relecture d'**avant** ecriture ne le voit
+    pas (elle est anterieure au PATCH de B) : elle rattrape l'entre-deux
+    lectures, pas l'apres-relecture.
+
+    La **fenetre de stabilisation** le voit : apres une premiere
+    verification, on relit une fois de plus. Si notre section a disparu,
+    c'est qu'un ecrivain concurrent nous a ecrase -- on ne certifie pas, on
+    rejoue, et le rejeu remerge les DEUX sections sur le corps courant.
+
+    Ce que la fenetre ne ferme pas (et que le corps documente) : une
+    ecriture concurrente tombee **apres** la derniere relecture. L'ecriture
+    conditionnelle, qui la fermerait, est refusee par l'API (mesure du
+    2026-11-04 : HTTP 400 « Conditional request headers are not allowed in
+    unsafe requests unless supported by the endpoint »).
+    """
+    store = SharedStore()
+    other = FakeRunner(store=store, post_id=4242)
+    runner = FakeRunner(store=store)
+    # B ecrit sa section d'abord.
+    other(["gh", "api", "--method", "POST",
+           "repos/jsboige/CoursIA/issues/123/comments",
+           "-f", f"body={a_s.render({'organ-b': 'avertissement B'})}"])
+    # ... puis, au moment de notre delai de stabilisation (donc APRES notre
+    # premiere verification), B ecrase notre section : son ecriture part
+    # d'un corps qui ne contient pas la notre.
+    state = {"clobbered": False}
+
+    def clobber(_seconds):
+        if state["clobbered"]:
+            return
+        state["clobbered"] = True
+        other(["gh", "api", "--method", "PATCH",
+               "repos/jsboige/CoursIA/issues/123/comments/4242",
+               "-f", f"body={a_s.render({'organ-b': 'avertissement B'})}"])
+
+    out = a_s.upsert_section("organ-a", "avertissement A", 123, runner=runner,
+                              sleep=clobber)
+    assert state["clobbered"] is True, "le clobber concurrent doit avoir eu lieu"
+    assert out["verified"] is True
+    sections = a_s.parse_sections(
+        next(c["body"] for c in runner.comments if a_s.MARKER in c["body"]))
+    assert sections.get("organ-a") == "avertissement A", (
+        "notre section doit avoir ete reecrite apres le clobber concurrent")
+    assert sections.get("organ-b") == "avertissement B", (
+        "la section de l'autre ecrivain ne doit pas disparaitre")
