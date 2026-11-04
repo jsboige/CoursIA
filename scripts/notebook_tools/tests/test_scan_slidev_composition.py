@@ -330,6 +330,10 @@ def test_controle_positif_warning_when_baseline_omitted():
             "stale_streaks": [],
             "canvas_w": 980, "canvas_h": 552,
             "BORNE": "ADVISORY",
+            # trio environnement de polices — ajoute au bloc report par #24171,
+            # il faut le fournir au namespace sinon l'exec() du bloc lève NameError
+            "FONT_DEPENDENCY": "dep-polices",
+            "font_env": {}, "font_signature": lambda e: "sig",
             "ctrl_positif_ok": None, "ctrl_positif_msg": None,
             "n_total": 0, "n_hors": 0, "n_chev": 0, "n_eteints": 0, "n_rec": 0, "n_occ": 0,
         }
