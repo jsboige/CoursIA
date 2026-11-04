@@ -149,20 +149,26 @@ noncomputable def exceptionalDirectImageAdjunction (f : C ⥤ D)
     exceptionalDirectImage (H := H) f ⊣ pullbackPresheaf (H := H) f :=
   f.op.lanAdjunction H
 
--- **Reminder: this adjunction lives at the presheaf level.** The left adjoint
+-- **Reminder : this adjunction lives at the presheaf level.** The left adjoint
 -- is the left Kan extension along `f.op`, the right adjoint the precomposition
 -- by `f.op` (= `f^*`), as the instantiation `(whiskeringLeft Cᵒᵖ Dᵒᵖ H).obj f.op`.
 --
--- Neither `adjunction_left_eq_lan` nor `adjunction_right_eq_pullback` is
--- stated, for one and the same reason: Mathlib's `Adjunction` structure carries
--- no `.left`/`.right` projection (cf `Mathlib/CategoryTheory/Adjunction/Basic.lean`,
+-- The lemma `adjunction_left_eq_lan` (the `.left` projection on the adjunction)
+-- is not stated : Mathlib's `Adjunction` structure carries no `.left`/`.right`
+-- projection (cf `Mathlib/CategoryTheory/Adjunction/Basic.lean`,
 -- `structure Adjunction (F : C ⥤ D) (G : D ⥤ C) where unit counit ...` —
--- the functors are **arguments** of the type, not fields). Both identities are
--- instead **carried in the type** of `exceptionalDirectImageAdjunction` above
--- (`exceptionalDirectImage (H := H) f ⊣ pullbackPresheaf (H := H) f`), hence
--- checked when the definition itself elaborates. That is strictly stronger than
--- an `@[simp]`: nothing is lost, the signature already demands what the lemmas
--- would have asserted.
+-- the functors are **arguments** of the type, not fields). The identity
+-- "left adjoint = `lan`" is on the contrary carried **in the type** of
+-- `exceptionalDirectImageAdjunction f` (its left component is precisely
+-- `f.op.lan`), which is strictly stronger than an `@[simp]`.
+
+-- **Symmetric, same conclusion.** `adjunction_right_eq_pullback` is not
+-- stated either, and for the exact reason that kills `.left` : `.right` is
+-- not a field of `Adjunction` either. The identity "right adjoint =
+-- `pullbackPresheaf`" is carried **in the type** of
+-- `exceptionalDirectImageAdjunction` above (`... ⊣ pullbackPresheaf (H := H) f`),
+-- hence checked when the definition itself elaborates. Nothing is lost :
+-- what the lemma would have asserted, the signature already demands.
 
 /-!
 ## 4. The ceiling: presheaf level, not sheaf-theoretic
