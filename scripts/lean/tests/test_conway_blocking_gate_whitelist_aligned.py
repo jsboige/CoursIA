@@ -81,6 +81,8 @@ def _run_audit() -> dict:
         cwd=str(REPO),
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         timeout=60,
     )
     assert result.returncode == 0, f"audit failed: {result.stderr}"
@@ -107,6 +109,31 @@ def test_audit_script_runs_clean():
     assert "reachable_count" in summary
     assert "default_count" in summary
     assert "fossil" in summary
+
+
+def test_audit_sees_a_populated_lake():
+    """La garde doit voir la cible, sinon elle est verte sans rien mesurer.
+
+    La grandeur qui rend ``_reconcile`` capable de distinguer un module local
+    d'un fossile est ``local_modules_size``. Un ``--project-path`` par defaut
+    perime la met a **zero sans rien faire rougir** : ``fossil_count`` reste a
+    0, ``reachable`` et ``default`` restent peuples, et l'axe #8782 disparait
+    en silence -- c'est mot pour mot le « vert hors-cible » que le docstring de
+    l'audit denonce. Mesure du 2026-11-02 sur le chemin perime :
+    ``local_modules_size=0`` et ``fossil_count=0`` ; sur le chemin corrige :
+    ``97`` et ``0``. C'est donc bien ce seul compteur qui discrimine -- la
+    cloture, elle, reste a 2 dans les deux cas et ne sert de rien ici.
+
+    Instancie par la descente du lake sous ``Lean/GOL/`` (#23164) : sans cette
+    assertion, ``test_fossil_count_is_zero`` reste vert sur un lake introuvable.
+    """
+    summary = _run_audit()
+    assert summary["local_modules_size"] > 0, (
+        "l'audit ne voit aucun module local (local_modules_size=0) : son "
+        "--project-path par defaut ne pointe plus sur le lake. Avec un "
+        "ensemble vide, aucun nom de l'allow-list ne peut etre reconnu comme "
+        "module local -- l'audit #8782 perd son axe et rend un vert creux."
+    )
 
 
 def test_fossil_count_is_zero():

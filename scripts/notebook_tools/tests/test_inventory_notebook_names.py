@@ -283,6 +283,49 @@ def test_inventory_is_identical_across_revisions_of_the_same_notebook():
         shutil.rmtree(repo, ignore_errors=True)
 
 
+def test_json_output_is_utf8_even_when_pipe_is_cp1252():
+    """#23175 -- `--json` pipe est de l'UTF-8, meme sous page cp1252.
+
+    Le registre anti-entropie consomme cet instrument via subprocess
+    (encoding="utf-8", strict). Sous Windows, un stdout pipe herite de la
+    page de code locale (cp1252) : sans reconfigure, le premier accent
+    d'un chemin casse le decodeur cote consommateur -> INSTRUMENT
+    ILLEGIBLE (mesure 2026-11-02 : byte 0xe9 en position 192169).
+
+    PYTHONIOENCODING=cp1252 force la page du pipe sur TOUTE plateforme :
+    le temoin mord partout, pas seulement sur les sieges Windows.
+    """
+    repo = tempfile.mkdtemp(prefix="inv-utf8-")
+    try:
+        _git(repo, "init", "-q")
+        _git(repo, "config", "user.email", "test@example.invalid")
+        _git(repo, "config", "user.name", "test")
+        d = os.path.join(repo, "MyIA.AI.Notebooks", "GameTheory")
+        os.makedirs(d)
+        # Nom avec accent : c'est lui qui produisait le byte cp1252 dans
+        # le JSON emis.
+        with open(os.path.join(d, "GT-01-Théorie-Python.ipynb"),
+                  "w", encoding="utf-8") as f:
+            f.write(_notebook_json())
+        _git(repo, "add", "-A")
+        _git(repo, "commit", "-qm", "accent")
+        env = dict(os.environ, PYTHONIOENCODING="cp1252")
+        # bytes bruts : on decode nous-memes, comme le consommateur strict.
+        r = subprocess.run(
+            [sys.executable,
+             os.path.join(REPO_ROOT,
+                          "scripts/notebook_tools/inventory_notebook_names.py"),
+             "--base", "HEAD", "--json"],
+            cwd=repo, capture_output=True, env=env)
+        assert r.returncode == 0, r.stderr.decode("utf-8", "replace")
+        brut = r.stdout.decode("utf-8")  # UnicodeDecodeError avant correctif
+        inv = json.loads(brut)
+        assert "é" in brut, "l'accent du chemin a disparu du JSON emis"
+        assert inv["by_classification"], "JSON sans contenu"
+    finally:
+        shutil.rmtree(repo, ignore_errors=True)
+
+
 if __name__ == "__main__":
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     ko = 0
