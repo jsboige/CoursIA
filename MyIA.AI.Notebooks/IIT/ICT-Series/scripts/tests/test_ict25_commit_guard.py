@@ -1,0 +1,225 @@
+"""Test du contrat de la garde de commit ICT-25 (prevol + surveillance de run).
+
+Ce que ce test prouve
+---------------------
+  1. `commit_status` lit la marge **et** le plafond de commit du siege, et le
+     plafond n'est jamais inferieur a la marge disponible.
+  2. `CommitStatus.describe()` dit le plafond quand il est mesurable et le dit
+     absent quand il ne l'est pas -- la telemetrie ne fabrique pas un chiffre.
+  3. `CommitWatch.maybe_sample` n'echantillonne qu'aux steps de la periode.
+  4. Il conserve la marge **minimale** observee sur toute la duree du run.
+  5. Il leve `CommitGuardAbort` sous le plancher de run -- la garde de prevol
+     seule ne protegeait pas un bras ne pendant une heure creuse (#24674).
+  6. Il ne coupe pas a la valeur exacte du plancher (comparaison stricte : un
+     plancher doit se lire « sous », pas « sous ou egal », sinon la valeur
+     nommee dans l'aide n'est pas la valeur respectee).
+  7. Une mesure impossible ne coupe jamais le run et n'avertit **qu'une fois**
+     (marshaler un avertissement par step noierait le journal du trainer).
+  8. Le plancher de run reste sous le seuil de demarrage : sinon tout run sain
+     avorte a sa premiere mesure, et la garde devient une panne.
+  9. `ict25_arms.py` branche effectivement la garde : import du module,
+     callback passe au trainer, options de CLI, et champs de telemetrie dans
+     l'artefact.
+
+Le test n'a **aucune dependance lourde** (ni torch, ni transformers) : il
+tourne partout, y compris en CI sans GPU. Il est executable par pytest et
+directement (`python test_ict25_commit_guard.py`).
+
+Issue : #24674 (suite de #24180).
+"""
+import sys
+from pathlib import Path
+
+SCRIPTS = Path(__file__).resolve().parents[1]
+if str(SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS))
+
+from ict25_commit_guard import (  # noqa: E402
+    DEFAULT_MIN_RUN_HEADROOM_GO,
+    DEFAULT_MIN_START_HEADROOM_GO,
+    CommitGuardAbort,
+    CommitStatus,
+    CommitWatch,
+    commit_status,
+)
+
+GO = 1024 ** 3
+
+
+def _stub_status(*avail_go, limit_go=80.0):
+    """Fabrique un status_fn qui rend les valeurs donnees, dans l'ordre."""
+    valeurs = list(avail_go)
+    appels = {"n": 0}
+
+    def _fn():
+        appels["n"] += 1
+        if not valeurs:
+            return None
+        valeur = valeurs.pop(0)
+        if valeur is None:
+            return None
+        plafond = None if limit_go is None else int(limit_go * GO)
+        return CommitStatus(int(valeur * GO), plafond)
+
+    _fn.appels = appels
+    return _fn
+
+
+def test_status_measurable_on_this_platform():
+    statut = commit_status()
+    if sys.platform == "win32":
+        # Sur Windows la mesure est toujours disponible : un None signale une
+        # structure MEMORYSTATUSEX mal dimensionnee (GlobalMemoryStatusEx rend
+        # alors ERROR_INVALID_PARAMETER 87), pas une limite de la plateforme.
+        # Ce defaut a ete introduit puis attrape ici le 2026-11-04 : la garde
+        # se declarait « non mesurable » sur un siege ou elle mesure tres bien.
+        assert statut is not None, "GlobalMemoryStatusEx n'a rien rendu sur win32"
+    if statut is None:
+        print("  (plateforme sans mesure de commit : contrat teste sur stubs)")
+        return
+    assert statut.avail_bytes > 0, f"marge nulle : {statut}"
+    if statut.limit_bytes is not None:
+        assert statut.limit_bytes >= statut.avail_bytes, (
+            f"plafond {statut.limit_bytes} < marge {statut.avail_bytes}"
+        )
+
+
+def test_describe_with_and_without_limit():
+    avec = CommitStatus(int(4.2 * GO), int(79.6 * GO))
+    texte = avec.describe()
+    assert "4.2 Go" in texte and "79.6 Go" in texte, texte
+    assert "94.7" in texte or "94.8" in texte, f"pourcentage attendu ~94,7 : {texte}"
+
+    sans = CommitStatus(int(7.5 * GO), None)
+    texte = sans.describe()
+    assert "7.5 Go" in texte and "plafond non mesurable" in texte, texte
+    assert sans.used_pct is None
+
+
+def test_watch_ignores_off_period_steps():
+    fn = _stub_status(9.0)
+    watch = CommitWatch(min_run_headroom_go=4.0, every_steps=5, status_fn=fn,
+                        log=lambda m: None)
+    assert watch.maybe_sample(1) is None
+    assert watch.maybe_sample(4) is None
+    assert fn.appels["n"] == 0, "la garde a mesure hors periode"
+    statut = watch.maybe_sample(5)
+    assert statut is not None and fn.appels["n"] == 1
+    assert watch.samples == 1
+
+
+def test_watch_tracks_min_over_samples():
+    fn = _stub_status(18.0, 5.5, 12.0)
+    watch = CommitWatch(min_run_headroom_go=4.0, every_steps=1, status_fn=fn,
+                        log=lambda m: None)
+    for step in (1, 2, 3):
+        watch.maybe_sample(step)
+    assert watch.samples == 3
+    assert abs(watch.min_avail_gb - 5.5) < 0.01, watch.min_avail_gb
+
+
+def test_watch_aborts_below_floor():
+    fn = _stub_status(9.0, 3.2)
+    messages = []
+    watch = CommitWatch(min_run_headroom_go=4.0, every_steps=1, status_fn=fn,
+                        log=messages.append)
+    watch.maybe_sample(1)
+    leve = False
+    try:
+        watch.maybe_sample(2)
+    except CommitGuardAbort as exc:
+        leve = True
+        texte = str(exc)
+    assert leve, "la garde n'a pas leve sous le plancher"
+    assert "3.2 Go" in texte and "4.0 Go" in texte, texte
+    assert watch.abort_reason is not None
+    assert watch.summary()["aborted"] is True
+    assert any("ARRET DE LA GARDE" in m for m in messages), messages
+
+
+def test_watch_does_not_abort_at_exact_floor():
+    fn = _stub_status(4.0)
+    watch = CommitWatch(min_run_headroom_go=4.0, every_steps=1, status_fn=fn,
+                        log=lambda m: None)
+    statut = watch.maybe_sample(1)
+    assert statut is not None, "la garde a coupe a la valeur exacte du plancher"
+    assert watch.summary()["aborted"] is False
+
+
+def test_watch_unmeasurable_warns_once_and_never_aborts():
+    fn = _stub_status(None, None, None)
+    messages = []
+    watch = CommitWatch(min_run_headroom_go=4.0, every_steps=1, status_fn=fn,
+                        log=messages.append)
+    for step in (1, 2, 3):
+        assert watch.maybe_sample(step) is None
+    assert watch.samples == 0
+    assert watch.min_avail_gb is None
+    avertissements = [m for m in messages if "non mesurable" in m]
+    assert len(avertissements) == 1, messages
+    assert watch.summary()["aborted"] is False
+
+
+def test_summary_shape():
+    watch = CommitWatch(min_run_headroom_go=6.0, every_steps=10,
+                        status_fn=_stub_status(7.0), log=lambda m: None)
+    watch.maybe_sample(10)
+    resume = watch.summary()
+    for cle in ("samples", "min_avail_go", "min_run_headroom_go", "every_steps",
+                "aborted", "abort_reason"):
+        assert cle in resume, f"cle manquante dans le resume : {cle}"
+    assert resume["samples"] == 1
+    assert resume["min_run_headroom_go"] == 6.0
+    assert resume["every_steps"] == 10
+
+
+def test_every_steps_must_be_positive():
+    leve = False
+    try:
+        CommitWatch(every_steps=0)
+    except ValueError:
+        leve = True
+    assert leve, "une periode nulle doit etre refusee"
+
+
+def test_run_floor_below_start_threshold():
+    assert 0 < DEFAULT_MIN_RUN_HEADROOM_GO < DEFAULT_MIN_START_HEADROOM_GO, (
+        f"plancher de run {DEFAULT_MIN_RUN_HEADROOM_GO} Go vs seuil de "
+        f"demarrage {DEFAULT_MIN_START_HEADROOM_GO} Go"
+    )
+
+
+def test_ict25_arms_wires_the_guard():
+    source = (SCRIPTS / "ict25_arms.py").read_text(encoding="utf-8")
+    preuves = {
+        "import du module pur": "from ict25_commit_guard import",
+        "callback passe au trainer": "callbacks=[_CommitGuardCallback(watch)]",
+        "option de plancher de run": "--min-run-headroom-go",
+        "option de periode": "--guard-every-steps",
+        "telemetrie de run dans l'artefact": '"commit_guard":',
+        "plafond dans l'artefact": '"commit_limit_go":',
+        "marge minimale par graine": '"commit_headroom_min_go":',
+        "sortie explicite sur arret": "except CommitGuardAbort as exc:",
+    }
+    manquants = [nom for nom, motif in preuves.items() if motif not in source]
+    assert not manquants, f"branchement absent de ict25_arms.py : {manquants}"
+
+
+def main():
+    echecs = 0
+    for nom, fonction in sorted(globals().items()):
+        if nom.startswith("test_") and callable(fonction):
+            try:
+                fonction()
+            except Exception as exc:  # noqa: BLE001
+                echecs += 1
+                print(f"ECHEC {nom}: {type(exc).__name__}: {exc}")
+            else:
+                print(f"ok    {nom}")
+    print(f"\n{len([n for n in globals() if n.startswith('test_')]) - echecs} "
+          f"test(s) vert(s), {echecs} echec(s)")
+    return 1 if echecs else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
