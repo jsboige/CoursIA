@@ -20,9 +20,15 @@ Reads the OPEN issue pool (``gh issue list --state open``) and groups the
 issues by **family key**. A family key is one of:
 
   1. ``organ:<basename>`` -- an organ of THIS repository (a ``*.py`` file that
-     exists under ``scripts/``) cited in the title or the body;
+     exists under ``scripts/``) named in the title, else cited in the body;
   2. ``title:<skeleton>`` -- the *gabarit* of the title: issue numbers, digits,
      backticked code and quoted segments removed.
+
+Every issue has exactly ONE key (``primary_key``): the families are a
+**partition** of the pool, not a cover. Without that, an issue citing three
+organs was counted in three families and its "host" was whichever group
+scored highest -- on the measured pool, that made an Origami notebook issue
+the host of a nav-chain family.
 
 The series (``MyIA.AI.Notebooks/<name>/``) is deliberately NOT a family key:
 it is far too coarse -- 66 open issues cite ``SymbolicAI``, and grouping them
@@ -30,15 +36,20 @@ would call the whole series a "family". The series is kept as a **supporting
 signal** (it counts among the keys two issues share) and as a tie-break, never
 as a family on its own.
 
+An issue labelled ``candidate-delivered`` is **not** a family member: it is
+already attested as delivered and awaits a closure. It is reported apart, as a
+closure candidate.
+
 For each family with more than one open issue, the detector names ONE **host**
 (the issue of the family that keeps the family) and reports the others as
 **recurrences** -- each with the one line that should be folded into the host's
 body. The host is, in order:
 
-  1. the oldest issue that ``issue_containers.looks_container`` recognises as a
+  1. the issue whose TITLE names the family (the issue IS about that organ);
+  2. the oldest issue that ``issue_containers.looks_container`` recognises as a
      container (an ``[Audit #N]`` partition, an EPIC, a task list naming other
      issues) -- a container is exactly the place where a family gathers;
-  2. otherwise the oldest issue of the group.
+  3. otherwise the oldest issue of the group.
 
 The detector proposes; it never writes, never closes, never labels.
 
@@ -278,6 +289,38 @@ def family_keys(issue: Issue, organs: set[str]) -> set[str]:
     return keys
 
 
+def primary_key(issue: Issue, organs: set[str]) -> str | None:
+    """The ONE family key of an issue -- the family it belongs to.
+
+    A family must be a **partition** of the pool, not a cover: an issue that
+    cites three organs belongs to exactly ONE family, otherwise the
+    consolidation table counts it three times and its "host" is whichever
+    group happened to score highest -- which, on the measured pool, made an
+    Origami notebook issue the host of a nav-chain family.
+
+    The key is chosen by how strong the signal is, not by the first match:
+
+      1. an organ named in the **title** (the issue IS about that organ);
+      2. an organ cited in the body (the issue touches it);
+      3. the gabarit of the title (a burst of issues with the same shape).
+    """
+    title = issue.title or ""
+    cited: list[str] = []
+    for path in _SCRIPT_RE.findall(issue.text):
+        base = path.rsplit("/", 1)[-1]
+        if base in organs and base not in cited:
+            cited.append(base)
+    for base in cited:
+        if base.lower() in title.lower():
+            return f"organ:{base}"
+    if cited:
+        return f"organ:{cited[0]}"
+    skeleton = title_skeleton(title)
+    if len(skeleton) >= _MIN_SKELETON_CHARS:
+        return f"title:{skeleton}"
+    return None
+
+
 def supporting_keys(issue: Issue) -> set[str]:
     """The supporting signals: the notebook series the issue names.
 
@@ -303,15 +346,74 @@ def _names_family(issue: Issue, kind: str, detail: str) -> bool:
     return True  # a title gabarit is, by construction, the same for all its members
 
 
-def _host_score(issue: Issue, key: str) -> int:
-    """How much an issue looks like THE issue of a family (the one that keeps it).
+def _cites_other_issues(issue: Issue, count: int = 2) -> bool:
+    """True when the issue ENUMERATES other issues in its body.
 
-    The oldest issue of a group is not automatically its host: an EPIC that
-    merely CITES an organ in its body would otherwise become the host of every
-    issue about that organ. The host is the issue whose TITLE is about the
-    family; a container whose title carries a family marker comes next; the
-    oldest issue is the last resort.
+    This is the strongest "I am the issue of my family" signal there is: an
+    issue that names its siblings already gathers them. On the measured pool,
+    #22983 ("Tapis : refondre le tirage ... **sept issues de rustines**")
+    names the seven issues of its family and states that it will close them
+    when the refonte lands -- it IS the family issue, although its title does
+    not name the organ.
     """
+    return _cited_issue_count(issue) >= count
+
+
+def _cited_issue_count(issue: Issue) -> int:
+    """How many OTHER issues the body of this issue names."""
+    cited = {int(n) for n in re.findall(r"#(\d+)", issue.body or "")}
+    cited.discard(issue.number)
+    return len(cited)
+
+
+def _gathered_siblings(issue: Issue, group_numbers: set[int]) -> int:
+    """How many SIBLINGS of the family this issue names in its body.
+
+    Only the siblings count. An issue that cites the issue which happens to
+    be its host is not gathering its family -- it is pointing at it. The
+    measure that matters is the one that says "this issue already lists its
+    family": on the measured pool, #22983 ("Tapis : refondre le tirage ...
+    sept issues de rustines") names the seven issues of its family and
+    promises to close them when the refonte lands. It IS the family issue,
+    although its title does not name the organ.
+    """
+    cited = {int(n) for n in re.findall(r"#(\d+)", issue.body or "")}
+    return len((cited & group_numbers) - {issue.number})
+
+
+def _host_rank(issue: Issue, key: str, group_numbers: set[int]) -> tuple:
+    """The ranking of the candidates to HOST a family -- most significant first.
+
+    The order is lexicographic, not additive: an additive score let a weak
+    signal (a body that happens to mention two issues) outweigh the strong
+    one (the issue that enumerates its family). Measured on the pool, the
+    additive score made #24516 host the tape family, while #22983 -- the
+    issue that literally names the seven rustines and promises to close them
+    -- was only a member.
+
+    1. the number of SIBLINGS the candidate names (an issue that gathers its
+       family IS the family issue);
+    2. the candidate whose TITLE names the organ;
+    3. the title gabarit match;
+    4. the shared container predicate;
+    5. the oldest.
+    """
+    kind, _, detail = key.partition(":")
+    title = (issue.title or "").lower()
+    names_organ = 1 if (kind == "organ" and detail.lower() in title) else 0
+    gabarit = 1 if (kind == "title" and title_skeleton(issue.title) == detail) else 0
+    container = 1 if _is_container(issue) else 0
+    # The threshold matters: an issue that names ONE sibling is pointing at
+    # it, not gathering its family. Two named siblings is the signal.
+    gathered = _gathered_siblings(issue, group_numbers)
+    if gathered < 2:
+        gathered = 0
+    return (-gathered, -names_organ, -gabarit, -container,
+            issue.createdAt or "", issue.number)
+
+
+def _host_score(issue: Issue, key: str) -> int:
+    """A readable score for the report (the ranking itself is lexicographic)."""
     kind, _, detail = key.partition(":")
     title = (issue.title or "").lower()
     score = 0
@@ -319,11 +421,10 @@ def _host_score(issue: Issue, key: str) -> int:
         score += 4
     elif kind == "title" and title_skeleton(issue.title) == detail:
         score += 4
+    if _cites_other_issues(issue):
+        score += 3
     if _is_container(issue):
-        if _AUDIT_MARKER_RE.search(issue.title or "") or _EPIC_WORD_RE.search(issue.title or ""):
-            score += 3
-        else:
-            score += 1
+        score += 1
     return score
 
 
@@ -333,7 +434,12 @@ def detect(
     window_days: int = 14,
     now: datetime | None = None,
 ) -> list[Recurrence]:
-    """Report every open issue that belongs to an already-open family."""
+    """Report every open issue that belongs to an already-open family.
+
+    The grouping is a **partition**: every issue has ONE primary family key,
+    so a family never overlaps another one and the host of a family is the
+    host of that family, not of some other group the issue happens to touch.
+    """
     now = now or _now()
     horizon = now - timedelta(days=window_days)
 
@@ -344,19 +450,20 @@ def detect(
         keys = family_keys(issue, organs)
         keys_per_issue[issue.number] = keys
         support_per_issue[issue.number] = supporting_keys(issue)
-        for key in keys:
-            by_key[key].append(issue)
+        if "candidate-delivered" in (issue.labels or []):
+            continue  # delivered: a closure candidate, not a family member
+        primary = primary_key(issue, organs)
+        if primary:
+            by_key[primary].append(issue)
 
     # Host per group: the issue that is ABOUT the family, else the oldest.
     host_of_group: dict[str, Issue] = {}
     for key, group in by_key.items():
-        host_of_group[key] = min(
-            group,
-            key=lambda i: (-_host_score(i, key), i.createdAt or "", i.number),
-        )
+        numbers = {i.number for i in group}
+        host_of_group[key] = min(group, key=lambda i: _host_rank(i, key, numbers))
 
     # A recurrence is a RECENT issue whose host is a DIFFERENT, older issue.
-    candidates: dict[tuple[int, int], Recurrence] = {}
+    recurrences: list[Recurrence] = []
     for key, group in by_key.items():
         host = host_of_group[key]
         for issue in group:
@@ -367,7 +474,7 @@ def detect(
             kind, _, detail = key.partition(":")
             shared = (len(keys_per_issue[issue.number] & keys_per_issue[host.number])
                       + len(support_per_issue[issue.number] & support_per_issue[host.number]))
-            rec = Recurrence(
+            recurrences.append(Recurrence(
                 issue=issue.number,
                 host=host.number,
                 signal=kind,
@@ -378,44 +485,37 @@ def detect(
                 group_size=len(by_key[key]),
                 title=issue.title,
                 one_line=f"#{issue.number} — {issue.title}",
-            )
-            pair = (issue.number, host.number)
-            previous = candidates.get(pair)
-            if previous is None or (rec.host_score, rec.shared) > (previous.host_score, previous.shared):
-                candidates[pair] = rec
-            elif previous is not None and (rec.host_score, rec.shared) == (previous.host_score, previous.shared):
-                # Deterministic tie-break: title gabarit > organ.
-                order = {"title": 0, "organ": 1}
-                if order[kind] < order[previous.signal]:
-                    candidates[pair] = rec
-
-    # One entry per recurrence issue: keep the host that is most clearly the
-    # family issue, then the one sharing the most keys.
-    best: dict[int, Recurrence] = {}
-    for rec in candidates.values():
-        previous = best.get(rec.issue)
-        if previous is None or (rec.host_score, rec.shared) > (previous.host_score, previous.shared):
-            best[rec.issue] = rec
-    return sorted(best.values(), key=lambda r: (r.host, r.issue))
+            ))
+    return sorted(recurrences, key=lambda r: (r.host, r.issue))
 
 
 def family_table(issues: list[Issue], organs: set[str]) -> list[dict]:
     """The consolidation table: one row per family, with its open members.
 
     This is the shape the coordinator asked for ("l'issue de famille retenue +
-    les issues absorbables + le motif"): the host, the keys that gather the
-    family, and every OPEN issue that shares one of them.
+    les issues absorbables + le motif"): the host, the key that gathers the
+    family, and every OPEN issue that shares it.
+
+    Two properties make the table usable:
+
+      - the families are **disjoint** (an issue belongs to one family);
+      - an issue labelled ``candidate-delivered`` is **not** a member: it is
+        already attested as delivered and awaits a closure -- folding it into
+        another issue would destroy the delivery proof. It is reported apart,
+        as a closure candidate.
     """
     by_key: dict[str, list[Issue]] = defaultdict(list)
     for issue in issues:
-        for key in family_keys(issue, organs):
-            by_key[key].append(issue)
+        if "candidate-delivered" in (issue.labels or []):
+            continue  # delivered: a closure candidate, not a family member
+        primary = primary_key(issue, organs)
+        if primary:
+            by_key[primary].append(issue)
 
     host_of_group: dict[str, Issue] = {}
     for key, group in by_key.items():
-        host_of_group[key] = min(
-            group, key=lambda i: (-_host_score(i, key), i.createdAt or "", i.number)
-        )
+        numbers = {i.number for i in group}
+        host_of_group[key] = min(group, key=lambda i: _host_rank(i, key, numbers))
 
     table: dict[int, dict] = {}
     for key, group in by_key.items():
@@ -423,10 +523,9 @@ def family_table(issues: list[Issue], organs: set[str]) -> list[dict]:
         row = table.setdefault(host.number, {
             "host": host.number,
             "host_title": host.title,
-            "keys": set(),
+            "key": key,
             "members": {},
         })
-        row["keys"].add(key)
         for issue in group:
             if issue.number != host.number:
                 row["members"][issue.number] = issue.title
@@ -436,13 +535,26 @@ def family_table(issues: list[Issue], organs: set[str]) -> list[dict]:
         out.append({
             "host": number,
             "host_title": row["host_title"],
-            "keys": sorted(row["keys"]),
+            "key": row["key"],
             "n_open": len(row["members"]) + 1,
             "members": [
                 {"issue": n, "title": t} for n, t in sorted(row["members"].items())
             ],
         })
     return sorted(out, key=lambda r: (-r["n_open"], r["host"]))
+
+
+def delivered_candidates(issues: list[Issue]) -> list[dict]:
+    """The open issues the repo already attests as delivered.
+
+    They are not duplication candidates: the work is done and the issue
+    awaits a closure, which belongs to the coordinator, not to a fold-back.
+    """
+    out = []
+    for issue in issues:
+        if "candidate-delivered" in (issue.labels or []):
+            out.append({"issue": issue.number, "title": issue.title})
+    return sorted(out, key=lambda r: r["issue"])
 
 
 def _gh_issue_list(repo: str, limit: int) -> list[Issue]:
@@ -521,6 +633,7 @@ def main(argv: list[str] | None = None) -> int:
         "n_hosts": len({r.host for r in recurrences}),
         "recurrences": [r.as_dict() for r in recurrences],
         "families": family_table(issues, organs),
+        "delivered_candidates": delivered_candidates(issues),
     }
 
     if args.self_test:

@@ -35,6 +35,8 @@ Issue = _mod.Issue
 detect = _mod.detect
 title_skeleton = _mod.title_skeleton
 organ_inventory = _mod.organ_inventory
+family_table = _mod.family_table
+delivered_candidates = _mod.delivered_candidates
 main = _mod.main
 KNOWN_POSITIVE_CONTROL = _mod.KNOWN_POSITIVE_CONTROL
 
@@ -42,8 +44,10 @@ KNOWN_POSITIVE_CONTROL = _mod.KNOWN_POSITIVE_CONTROL
 NOW = _mod.datetime(2026, 11, 4, 12, 0, tzinfo=_mod.timezone.utc)
 
 
-def _issue(number: int, title: str, body: str = "", created: str = "2026-11-02T10:00:00Z") -> Issue:
-    return Issue(number=number, title=title, body=body, createdAt=created)
+def _issue(number: int, title: str, body: str = "", created: str = "2026-11-02T10:00:00Z",
+           labels: list | None = None) -> Issue:
+    return Issue(number=number, title=title, body=body, createdAt=created,
+                 labels=list(labels or []))
 
 
 class TestFamilyKeys(unittest.TestCase):
@@ -173,6 +177,50 @@ class TestHostSelection(unittest.TestCase):
         result = detect(issues, {"check_a.py"}, now=NOW)
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].host, 300)
+
+
+class TestPartition(unittest.TestCase):
+    """The families must be a PARTITION of the pool, not a cover.
+
+    Measured on the real pool (2026-11-04): an issue citing several organs
+    landed in several families at once, and the "host" of a family could be an
+    unrelated issue -- an Origami notebook issue became the host of a
+    nav-chain family. The consolidation table was then unusable as a plan.
+    """
+
+    def test_an_issue_belongs_to_exactly_one_family(self):
+        issues = [
+            _issue(100, "check_a.py : le cas de reference", body="check_a.py"),
+            _issue(101, "check_b.py : un autre organe", body="check_b.py"),
+            _issue(102, "check_a.py et check_b.py dans le meme corps",
+                   body="check_a.py check_b.py"),
+        ]
+        table = family_table(issues, {"check_a.py", "check_b.py"})
+        seen = []
+        for row in table:
+            seen.extend(m["issue"] for m in row["members"])
+            seen.append(row["host"])
+        self.assertEqual(sorted(seen), [100, 101, 102],
+                         "chaque issue doit apparaitre dans une seule famille")
+        self.assertEqual(len(seen), len(set(seen)),
+                         "aucune issue ne doit apparaitre deux fois")
+
+    def test_a_delivered_issue_is_not_a_family_member(self):
+        """``candidate-delivered`` = the work is done, the issue awaits a closure.
+
+        Folding it into another issue would destroy the delivery proof: it is
+        a closure candidate, not a duplication.
+        """
+        issues = [
+            _issue(100, "check_a.py : le cas de reference", body="check_a.py"),
+            _issue(101, "check_a.py : deja livre", body="check_a.py",
+                   labels=["candidate-delivered"]),
+        ]
+        table = family_table(issues, {"check_a.py"})
+        members = [m["issue"] for row in table for m in row["members"]]
+        self.assertNotIn(101, members)
+        delivered = delivered_candidates(issues)
+        self.assertEqual([d["issue"] for d in delivered], [101])
 
 
 class TestWindow(unittest.TestCase):
