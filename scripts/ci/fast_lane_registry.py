@@ -3286,6 +3286,7 @@ TRANCHE32: list[Guard] = [
         paths=[
             "scripts/notebook_tools/twin_pairs.d/**",
             "scripts/notebook_tools/check_twin_index_collisions.py",
+            "scripts/notebook_tools/twin_open_claims.py",
             "scripts/ci/fast_lane.py",
             "scripts/ci/fast_lane_registry.py",
         ],

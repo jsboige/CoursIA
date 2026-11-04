@@ -203,6 +203,8 @@ flowchart TD
 - MacroCell round-trip verified by `#eval` and `native_decide` theorem
 - HashlifeMemo: memoization layer for pillar witnesses, `9^k` worst case reduced to tractable
 
+**Human-review act to be signed**: when the human review is carried out, it will take the form `Review by <name, affiliation> — date <YYYY-MM-DD> — scope <whole lake / module> — checks: structure / main proofs / i18n FR-EN — overall verdict` and will be inserted into this README. The first expected act covers the quantum pilot — `Conway/CHSH.lean` (classical CHSH inequality, bound 2) and `Conway/CHSHQuantum.lean` (quantum violation, Tsirelson bound 2√2) — before any extension to the rest of the lake (context and arbitration for this pilot-first scope: see the #13106 issue thread). Grid **#13106 criterion 2** is satisfied by the first signed act; no partial act is recorded silently, and the present section remains honest until the act is written.
+
 ## References
 
 Foundational sources for the results formalized across the three phases. Each entry maps to a module of this workspace.
