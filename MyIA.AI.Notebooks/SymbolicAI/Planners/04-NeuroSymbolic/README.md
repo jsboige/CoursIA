@@ -26,7 +26,7 @@ Un README de série se lit à plusieurs vitesses : le parcours principal par les
 |---|---|---|---|---|
 | 10 | [Planners-10-LLM-Planning](Planners-10-LLM-Planning.ipynb) | Le LLM comme planificateur direct : état, actions et prompt, puis les variantes de raisonnement — Chain-of-Thought, et Tree-of-Thought qui retient ici un plan sur les 3 branches explorées. Traduction langage naturel → PDDL, validation du domaine généré en 4 étapes, plan repair, et le LLM employé comme **heuristique** plutôt que comme solveur | Découverte | [Palier 10b](#approfondissements-découverte) : le LLM comme réducteur d'espace |
 | 11 | [Planners-11-Unified-Planning](Planners-11-Unified-Planning.ipynb) | L'interface `unified-planning` : un problème décrit une fois (types, fluents, actions), résolu par plusieurs moteurs. Sur le même problème, `pyperplan` rend un plan de 6 actions en 0,008 s là où `fast-downward` rend le même plan en 0,294 s. Actions duratives, fluents numériques et coûts (version optimisante face à la version satisfaisante), export et import PDDL | Découverte | [Partie 3 — Avancée](../03-Advanced/README.md) : les paradigmes que ces moteurs implémentent |
-| 12 | [Planners-12-LOOP](Planners-12-LOOP.ipynb) | *Learning to Plan* (framework LOOP) : encoder un état PDDL, réseaux de politique et de valeur, boucle d'entraînement — la perte passe de 14,02 à 2,12 sur 50 époques — puis mesure de coverage sur cinq domaines IPC, 85,8 % en moyenne contre 93,1 % pour Fast Downward. Encodage par graphe (GNN) et fonctions de noyau (KRCL) en complément | Découverte | [Partie 2 — Classique](../02-Classical/README.md) : les heuristiques que l'on cherche ici à apprendre |
+| 12 | [Planners-12-LOOP](Planners-12-LOOP.ipynb) | *Learning to Plan* (framework LOOP) : encoder un état PDDL, réseaux de politique et de valeur, boucle d'entraînement — la perte passe de 14,02 à 2,12 sur 50 époques — puis un banc jouet mesuré à l'exécution, où l'imitation apprise couvre 60,0 % de 15 instances inédites contre 33,3 % pour une politique aléatoire et 100 % pour le BFS exact. Encodage par graphe (GNN) et fonctions de noyau (KRCL) en complément | Découverte | [Partie 2 — Classique](../02-Classical/README.md) : les heuristiques que l'on cherche ici à apprendre |
 
 Cette partie ne porte pas de jumeau C# : les quatre carnets sont en Python, et deux d'entre eux (10, 10b) interrogent un service LLM externe plutôt qu'une bibliothèque locale.
 
@@ -35,7 +35,7 @@ Cette partie ne porte pas de jumeau C# : les quatre carnets sont en Python, et d
 1. **Conduire** un LLM sur une tâche de planification — prompt direct, chaîne de raisonnement, arbre de pensée — et lire ses échecs plutôt que son éloquence ;
 2. **Traduire** un énoncé en domaine et problème PDDL, puis **valider** le résultat avant de s'y fier ;
 3. **Abstraire** un problème avec `unified-planning` pour porter le même modèle d'un solveur à l'autre et comparer les moteurs à modèle constant ;
-4. **Entraîner** une politique ou une heuristique (LOOP) et mesurer sa coverage contre un planificateur classique, domaine par domaine ;
+4. **Entraîner** une politique ou une heuristique (LOOP) et mesurer sa coverage contre un planificateur classique, sur des instances inédites ;
 5. **Décider** où placer le LLM — solveur, heuristique, ou simple réducteur d'espace — en fonction de ce que la mesure montre.
 
 ## Approfondissements (Découverte)
