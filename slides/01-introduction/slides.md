@@ -724,6 +724,8 @@ Trois niveaux de representation des etats, du plus simple au plus expressif :
   - La representation des etats (atomique, factorisee, structuree) conditionne les capacités
 
 ---
+layout: dense
+---
 
 # Plan du cours
 
@@ -740,6 +742,8 @@ Trois niveaux de representation des etats, du plus simple au plus expressif :
 
 Le plan du cours est ancré sur le corpus `MyIA.AI.Notebooks/` : chaque chapitre de la 2ᵉ partie ouvre sur une famille de notebooks de travaux pratiques. Le chapitre 2 (Résolution de problèmes) s'appuie sur la famille **Search** (exploration informée, CSP, Sudoku) ; le chapitre 3 (Logique) sur **SymbolicAI** (Z3 pour SMT, Tweety pour l'argumentation, Lean 4 pour la preuve, smart-contracts) ; le chapitre 4 (Probabilités) sur **Probas/Infer** (Infer.NET pour les modèles graphiques) ; le chapitre 5 (Jeux) sur **GameTheory** (OpenSpiel pour les équilibres et l'apprentissage par renforcement multi-agents) ; le chapitre 6 (Apprentissage) sur **ML** (ML.NET pour les pipelines C# et Python) ; le chapitre 7 (NLP) sur **GenAI/Texte** (intégrations OpenAI, Anthropic, Semantic Kernel). Les TP de chaque chapitre pointent vers les notebooks d'« Entrée » listés dans la slide suivante — c'est par eux que l'étudiant prend le corpus en main.
 
+---
+layout: dense
 ---
 
 # Pour aller plus loin : Notebooks

@@ -497,13 +497,16 @@ lemma augCone_dual_iff (v : Finset N → ℝ) (f : ((Option N) → ℝ) →L[ℝ
     simp only [map_sum, map_smul, smul_eq_mul]
     exact Finset.sum_nonneg (fun S _ => mul_nonneg (hw S) (hgen S))
 
-/-! ## Witness decoding — sign condition
+/-! ## Values in generator coordinates (prerequisite of the witness decoding)
 
-The separating functional `f` from `hyperplane_separation_point` (applied to a point
-`balancedUnit (v(N)+t) ∉ augCone v`) must be decoded into the Core witness
-`x : N → ℝ`. The natural candidate is `x i := f (Pi.single (some i) 1) / (-f (Pi.single none 1))`,
-well-defined once we know `f (Pi.single none 1) < 0`. This sign is the first
-load-bearing decoding step. -/
+The standard-basis generator `phiAugCont v (Pi.single S 1)` is the object that
+carries the witness decoding: `augCone_dual_iff` reads a separating functional
+`f` on its value at those generators. Its coordinates are `1` at `some i`
+exactly when `i ∈ S` (coalition incidence) and `v S` at `none` (coalition
+value). These two facts generalize the grand-coalition special case used in
+`separatingFunctional_none_neg` to an arbitrary coalition `S`; they are the
+prerequisite of the witness-decoding lemma `exists_preimputation_strict`
+(separator `f` ⟹ pre-imputation `x i := f (base-some i) / (-f (base-none))`). -/
 
 /-- `some i` coordinate of the `S`-generator: the incidence indicator `1` if
     `i ∈ S`, else `0`. Generalizes the grand-coalition special case to any `S`. -/
@@ -612,6 +615,14 @@ lemma gen_apply_linear (v : Finset N → ℝ) (S : Finset N)
     f (phiAugCont v (Pi.single S 1)) =
       ∑ i ∈ S, f (Pi.single (some i) 1) + v S * f (Pi.single none 1) := by
   rw [gen_decomp, map_add, map_sum, map_smul, smul_eq_mul]
+
+/-! ## Witness decoding — sign condition
+
+The separating functional `f` from `hyperplane_separation_point` (applied to a point
+`balancedUnit (v(N)+t) ∉ augCone v`) must be decoded into the Core witness
+`x : N → ℝ`. The natural candidate is `x i := f (Pi.single (some i) 1) / (-f (Pi.single none 1))`,
+well-defined once we know `f (Pi.single none 1) < 0`. This sign is the first
+load-bearing decoding step. -/
 
 /-- **Decoding sign condition** — the separating functional `f` satisfies
     `f (Pi.single none 1) < 0`. Proof: `0 ≤ f` on the grand-coalition generator
