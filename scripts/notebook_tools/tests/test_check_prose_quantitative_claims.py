@@ -101,15 +101,15 @@ def test_artifact_exemptions_are_motivated_and_point_at_real_files():
     "path, line",
     [
         (
-            "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/README.md",
+            "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/README.md",
             "  - Gosper Glider Gun (36 cellules vivantes, période 30) parsé et vérifié",
         ),
         (
-            "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/README.md",
+            "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/README.md",
             "- Pulsar (48 cellules) et pentadecathlon (p15) sont à la limite",
         ),
         (
-            "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/README.en.md",
+            "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/README.en.md",
             "- Pulsar (48 cells) and pentadecathlon (p15) are borderline but pass `native_decide`",
         ),
         (
@@ -134,7 +134,7 @@ def test_artifact_exemption_is_a_span_not_a_file_blanket():
     Un vrai compteur de carnet sur la MEME ligne reste flague : c'est ce qui
     distingue une exemption motivee d'un couperet par fichier, qui avalerait en
     silence un compte ajoute plus tard."""
-    path = "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/README.md"
+    path = "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/README.md"
     out = cqc._findings_in_text(
         "- Pulsar (48 cellules) et le carnet fait 87 cellules de code", path, {"artifact"}
     )
@@ -157,7 +157,7 @@ def test_artifact_exemption_uses_the_file_part_of_a_notebook_location():
     """Une cellule de carnet porte une location « <fichier> MD[<i>] » : la
     partie fichier suffit a apparier l'exemption, et le finding restitution
     garde la location complete."""
-    path = "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/README.md"
+    path = "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/README.md"
     out = cqc._findings_in_text("Pulsar (48 cellules)", f"{path} MD[3]", {"artifact"})
     assert out == []
     out = cqc._findings_in_text("Le carnet fait 87 cellules", f"{path} MD[3]", {"artifact"})
