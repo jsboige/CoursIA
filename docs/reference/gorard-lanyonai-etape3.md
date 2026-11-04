@@ -263,7 +263,13 @@ et ne demontre pas**.
 
 ### 7.5 Ce que cela change pour la serie
 
-1. **Precondition 2 de #24439 : satisfaite** par cette section.
+1. **Precondition 2 de #24439 : satisfaite au sens etroit**. « Theoremes
+   relativistes de la famille amont » s'entend ici des theoremes de
+   `GeneralRelativisticMaxwell` — au §1, le seul depot du corpus a se nommer
+   relativiste, et celui dont les preuves portent les variables de jauge 3+1
+   mesurees au §7 (lapse `alpha`, shift `beta`). La lecture large — inventaire
+   de la famille amont entiere, `BurgersEquation` compris — ne serait **pas**
+   satisfaite par cette seule section ; le §7.6 la tient ouverte.
 2. Le carnet de mesure (precondition 3) ne peut ecrire que des faits **sur la
    transcription**. En particulier il n'ecrit pas « hyperbolicite prouvee » : sur
    ce corpus, l'enonce qui porte ce nom est un existential tautologique, et
