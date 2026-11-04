@@ -142,6 +142,12 @@ _SCRIPT_RE = re.compile(r"\b([A-Za-z0-9_][A-Za-z0-9_./-]*\.py)\b")
 _AUDIT_MARKER_RE = re.compile(r"^\s*\[audit\s+#\d+\]", re.IGNORECASE)
 _EPIC_WORD_RE = re.compile(r"\bepic\b", re.IGNORECASE)
 
+#: The repository's convention for "this issue is ABOUT an organ": a title
+#: that OPENS with "Organe" ("Organe #22910 : ..."). It is the naming used by
+#: the false-positive families themselves. The word must open the title: a
+#: title that merely mentions an organ in passing is not about it.
+_ORGANE_WORD_RE = re.compile(r"^\s*organe\b", re.IGNORECASE)
+
 #: Fragments removed from a title before comparing the gabarits.
 _TITLE_NOISE_RES = (
     (re.compile(r"`[^`]*`"), " "),          # backticked code / paths
@@ -212,16 +218,20 @@ class Recurrence:
 
     @property
     def confidence(self) -> str:
-        """``forte`` when the fold-back is obvious, ``faible`` when it is a candidate.
+        """``forte`` = consolidation candidate ; ``faible`` = the organ is USED.
 
         ``forte`` needs BOTH: a host that is about the family (its title names
-        the organ) AND a recurrence that is visibly about that family (its
-        title names it too, or the two issues share two keys). Otherwise the
-        group only shares a CITATION -- an EPIC that mentions an organ is not
-        a member of the organ's family -- and the pair is a candidate to
-        triage, not a fold-back to perform.
+        the organ, or it gathers the family) AND a recurrence that is ABOUT
+        that family (its title names it, or points at a member of it).
+
+        ``faible`` is the large majority of the measured pool, and it is NOT a
+        queue of fold-backs: the issue cites the organ in its body because
+        the organ MEASURES its work. Every per-series finishing job cites
+        ``check_series_finish.py``; every per-series kernel convergence cites
+        ``check_kernel_drift.py``. Those are distinct, legitimate work items
+        -- folding them into one another would destroy real work.
         """
-        if self.host_score >= 4 and (self.names_family or self.shared >= 2):
+        if self.host_score >= 4 and self.names_family:
             return "forte"
         return "faible"
 
@@ -334,16 +344,38 @@ def _is_container(issue: Issue) -> bool:
     return looks_container(issue.title, issue.labels, issue.body)
 
 
-def _names_family(issue: Issue, kind: str, detail: str) -> bool:
-    """True when the issue's TITLE names the family (not merely its body).
+def _names_family(issue: Issue, kind: str, detail: str,
+                  group_numbers: set[int] | None = None) -> bool:
+    """True when the issue is ABOUT the family -- not merely USING it.
 
-    An EPIC that mentions an organ in its body is NOT about that organ: its
-    fold-back into the organ's family issue would be wrong.
+    This is the distinction that decides whether a fold-back is legitimate:
+
+      - an issue **about** an organ (its title names it) is a duplicate of
+        the organ's family issue -- the case Q162 b targets;
+      - an issue that merely **uses** the organ as a measuring tool is
+        distinct work: the finishing job of the series ``NLP`` cites
+        ``check_series_finish.py`` because the organ MEASURES it, and
+        folding it into another series' job would destroy real work.
+
+    The title names the family when it carries the organ's basename (with or
+    without the ``.py``), or when it points at a member of the family -- the
+    repo's own convention ``Organe #22910 : ...`` is exactly that.
     """
     title = (issue.title or "").lower()
-    if kind == "organ":
-        return detail.lower() in title
-    return True  # a title gabarit is, by construction, the same for all its members
+    if kind == "title":
+        return True  # a title gabarit is, by construction, the same for all its members
+    stem = detail[:-3] if detail.endswith(".py") else detail
+    if stem.lower() in title or detail.lower() in title:
+        return True
+    # The repository's own convention for "this issue is ABOUT an organ":
+    # a title that carries the word "Organe" (e.g. "Organe #22910 : ...").
+    if _ORGANE_WORD_RE.search(issue.title or ""):
+        return True
+    if group_numbers:
+        cited = {int(n) for n in re.findall(r"#(\d+)", issue.title or "")}
+        if cited & group_numbers:
+            return True
+    return False
 
 
 def _cites_other_issues(issue: Issue, count: int = 2) -> bool:
@@ -400,7 +432,11 @@ def _host_rank(issue: Issue, key: str, group_numbers: set[int]) -> tuple:
     """
     kind, _, detail = key.partition(":")
     title = (issue.title or "").lower()
-    names_organ = 1 if (kind == "organ" and detail.lower() in title) else 0
+    names_organ = 1 if (kind == "organ" and (
+        detail.lower() in title
+        or (detail[:-3] if detail.endswith(".py") else detail).lower() in title
+        or _ORGANE_WORD_RE.search(issue.title or "")
+    )) else 0
     gabarit = 1 if (kind == "title" and title_skeleton(issue.title) == detail) else 0
     container = 1 if _is_container(issue) else 0
     # The threshold matters: an issue that names ONE sibling is pointing at
@@ -412,17 +448,19 @@ def _host_rank(issue: Issue, key: str, group_numbers: set[int]) -> tuple:
             issue.createdAt or "", issue.number)
 
 
-def _host_score(issue: Issue, key: str) -> int:
-    """A readable score for the report (the ranking itself is lexicographic)."""
+def _host_score(issue: Issue, key: str, group_numbers: set[int] | None = None) -> int:
+    """Is this issue ABOUT the family? (the ranking itself is lexicographic)
+
+    The score answers one question -- "does this issue look like the issue of
+    its family?" -- and the confidence rule reads it. It must therefore use
+    the SAME criterion as the host selection: the title names the organ (or
+    opens with the repository's "Organe ..." convention, or points at a
+    member of the family), or the title is the family's gabarit.
+    """
     kind, _, detail = key.partition(":")
-    title = (issue.title or "").lower()
     score = 0
-    if kind == "organ" and detail.lower() in title:
+    if _names_family(issue, kind, detail, group_numbers):
         score += 4
-    elif kind == "title" and title_skeleton(issue.title) == detail:
-        score += 4
-    if _cites_other_issues(issue):
-        score += 3
     if _is_container(issue):
         score += 1
     return score
@@ -480,8 +518,8 @@ def detect(
                 signal=kind,
                 detail=detail,
                 shared=shared,
-                host_score=_host_score(host, key),
-                names_family=_names_family(issue, kind, detail),
+                host_score=_host_score(host, key, numbers),
+                names_family=_names_family(issue, kind, detail, numbers),
                 group_size=len(by_key[key]),
                 title=issue.title,
                 one_line=f"#{issue.number} — {issue.title}",
