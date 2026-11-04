@@ -19,7 +19,7 @@ appears exactly twice, so a literal withdrawal (without renumbering) kills
 exactly two labels, which must then empty the interval `[1, numEdges]` — that
 is, be the two largest. The negative certificate
 `no_fourDistinct_certificate_unknots_11n102` (#20017) and the provenance
-measurement of #18611 (138,623 states, the 11 original crossings present in
+measurement of #18611 (138 623 states, the 11 original crossings present in
 every reached state) measure exactly this closure.
 
 ## What this module delivers
@@ -56,7 +56,7 @@ every reached state) measure exactly this closure.
   then still to be established), or a **relabelling step inside the connected
   relation** — the latter touches `ReidemeisterStep`, hence `Invariant.lean`,
   and belongs to a coordinator arbitration, not to a lane edit;
-- the equivalence `canon l = canon l' <-> exists injective renaming`: **closed**.
+- the equivalence `canon l = canon l' ↔ ∃ renommage injectif`: **closed**.
   The **invariance** half (`canon (mapC σ l) = canon l` for injective `σ`) is
   proved in section 7 (`canon_map_eq`); the **extraction** of the renaming from
   the `canon` equality is proved in section 16 (`canon_extraction`: a renaming
@@ -2214,7 +2214,7 @@ private theorem labelsOf_mapC (π : Nat → Nat) (l : List PDCrossing) :
 /-- **Extraction.** The equality `canon l = canon l'` produces a renaming `π` of
     the labels which is a **bijection** from `labelsOf l` onto `labelsOf l'`,
     and which sends `l` onto `l'`. This is the "extraction" half of the bridge
-    `canon l = canon l' <-> exists label bijection`. -/
+    `canon l = canon l' ↔ ∃ bijection d'étiquettes`. -/
 private theorem canon_extraction {l l' : List PDCrossing} (h : canon l = canon l') :
     ∃ π : Nat → Nat,
       (∀ x, x ∈ labelsOf l → π x ∈ labelsOf l') ∧
@@ -2410,12 +2410,12 @@ What is delivered here, in this order:
 
 1. `AnyEquiv` — the **missing relation** of the language (two diagrams
    equivalent up to renaming), its equivalence laws, and its characterisation
-   `exists injective pi, mapC pi l = l'` (a direct consequence of
+   `∃ π injectif, mapC π l = l'` (a direct consequence of
    `canon_rename_iff`, section 17);
 2. `kinkAnyWitness` / `kinkAnyTarget` — an **authentic** `_any` withdrawal
    whose kink carries `e2 = 1`, that is a **small** label: exactly what the
    connected freshness forbids. The withdrawal is certified by the kernel
-   (`verifyKinkDownAny ... = true`);
+   (`verifyKinkDownAny … = true`);
 3. `no_verifyR1Fwd_from_witness` — **no** target satisfies `verifyR1Fwd` on
    this witness. The reason is arithmetic and **independent of the renaming**:
    the connected freshness requires `K.e2 = d.numEdges + 1`, hence
