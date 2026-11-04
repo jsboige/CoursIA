@@ -14,7 +14,7 @@ Le registre des axes distillables de la série vit dans
 | [Orleans/](Orleans/README.md) | 4 carnets : grains acteurs stateful pour les workloads IA, silo co-hosté par un AppHost, persistance Redis, cluster |
 | [CopilotSDK/](CopilotSDK/README.md) | Le SDK GitHub Copilot piloté depuis C# en streaming, endpoints typés + projet compagnon `CopilotAgent.App/` |
 | [Scrutor/](Scrutor/README.md) | Des endpoints de minimal API découverts par convention (`Scan()`) + lab `ScrutorLab/` |
-| [01-EFCore-Requetes-Compilees.ipynb](01-EFCore-Requetes-Compilees.ipynb) | EF Core : le compilateur comme garde-fou jusque dans les requêtes (`EF.CompileQuery` mesuré 2,78×, `ToQueryString()`, `FromSqlInterpolated`) — binding sans projet compagnon, à la racine du hub |
+| [01-EFCore-Requetes-Compilees.ipynb](01-EFCore-Requetes-Compilees.ipynb) | EF Core : le compilateur comme garde-fou jusque dans les requêtes (`EF.CompileQuery` mesuré 2,93×, `ToQueryString()`, `FromSqlInterpolated`) — binding sans projet compagnon, à la racine du hub |
 
 ## Rangement
 
