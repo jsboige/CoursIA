@@ -10,7 +10,7 @@ Cette page est regeneree par `scripts/lean/lean_material_map.py`. Une table reco
 
 | Lac | Modules | Miroirs | CI | Gate axiomes | Site = consommateur | Doublons declares | Naissance |
 |---|---|---|---|---|---|---|---|
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean` | 100 | 98 | declare | hors matrice | 1 hors site (4 carnets) | - | - |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean` | 100 | 98 | declare | couverte | 1 hors site (4 carnets) | - | 2026-11-04 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean` | 57 | 41 | declare | couverte | 1 hors site (9 carnets) | 0 / 2 | 2026-11-04 |
 | `MyIA.AI.Notebooks/GameTheory/game_theory_lean` | 39 | 25 | declare | couverte | ok (3) | 1 / 3 | 2026-10-17 |
 | `MyIA.AI.Notebooks/Search/discrepancy_lean` | 33 | 25 | declare | couverte | ok (1) | - | 2026-10-17 |
