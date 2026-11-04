@@ -12,7 +12,7 @@ Ce module explore les modèles de génération vidéo de pointe : HunyuanVideo, 
 |-------------|--------|
 | Kernel | Python 3 |
 | Durée estimée | ~6-8h |
-| GPU requis | 16-24GB |
+| GPU requis | 10-24GB selon le carnet (voir le tableau ci-dessous) |
 
 > Le décompte canonique des notebooks de la série réside dans `CATALOG-STATUS.json` du dépôt, pas dans cette page.
 
@@ -38,7 +38,7 @@ docker-compose up -d
 Accès : http://localhost:8188
 
 ### GPU Requirements
-- **Minimum** : 16 GB VRAM pour le carnet 02-2 (LTX Video) — pic mesuré 14.1 GB (RTX 4090, 704x480, 25 frames, bf16) ; sous 16 GB, la cellule de chargement du carnet bascule en offload CPU
+- **Minimum** : 10 GB VRAM pour 02-3 (Wan) et 02-4 (SVD) ; **16 GB pour le carnet 02-2** (LTX Video), pic mesuré 14.1 GB (RTX 4090, 704x480, 25 frames, bf16) — sous 16 GB, la cellule de chargement du carnet bascule en offload CPU
 - **Recommandé** : 10-12 GB VRAM (SVD, Wan Video), 16-24 GB dès que 02-2 est au programme
 - **Optimal** : 18+ GB VRAM (HunyuanVideo, CogVideoX-2b)
 
