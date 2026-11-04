@@ -211,13 +211,15 @@ REGISTRE: tuple[Entree, ...] = (
         # l'instrument aura sept jours : la reference sera alors relue
         # dans le commentaire publie, avec l'identite a cote de la valeur.
         # TROISIEME rebasage (2026-11-02, correctif UTF-8 #23175) : le
-        # correctif a de nouveau touche l'instrument LUI-MEME (735ada5ba),
-        # meme raison que le second -- l'identite portee par la reference
-        # (6144b71eb) n'etait plus celle de l'instrument courant, et la
-        # comparaison serait tombee sur « reference transverse refusee ».
+        # correctif a de nouveau touche l'instrument LUI-MEME, meme raison
+        # que le second -- l'identite portee par la reference (6144b71eb)
+        # n'etait plus celle de l'instrument courant, et la comparaison
+        # serait tombee sur « reference transverse refusee ».
         # Correctif d'encodage seul, sans effet sur le classement : la
-        # valeur est 39 avant et apres sur le meme arbre aligne. Ce point
-        # rejoint desormais la serie (cf `historique`).
+        # valeur est 39 avant et apres sur le meme arbre aligne. Il ne
+        # produit donc pas un point de serie distinct : sa mesure est celle
+        # du 2026-10-31 (39, instrument 6144b71eb), et le sha de branche
+        # qu'il declarait n'est pas un ancetre de `main` (cf `historique`).
         #
         # QUATRIEME rebasage (2026-11-05, #24678) -- et le premier qui
         # change la GRANDEUR, pas seulement l'instrument :
@@ -273,24 +275,21 @@ REGISTRE: tuple[Entree, ...] = (
                                   "@d818b008b5558d9a755c81d3d05e29ac23a9f823")),
             # La reference precedente (39), mesuree le 2026-10-31 sur
             # l'arbre aligne a f798021d4 avec l'instrument 6144b71eb.
-            # Point de mesure reel : le correctif UTF-8 (735ada5ba) ne
-            # change pas la valeur sur le meme arbre -- 39 avant et apres.
+            # Point de mesure reel : le correctif UTF-8 ne change pas la
+            # valeur sur le meme arbre -- 39 avant et apres.
+            #
+            # Le 3e rebasage (2026-11-02) ne fait donc PAS un point de plus :
+            # meme valeur, meme instrument. Le sha de branche qu'il declarait
+            # (735ada5ba) n'est pas un ancetre de `main` -- mesure du
+            # 2026-11-05, `compare/735ada5ba...main` rend « diverged » -- et
+            # le declarer dans la serie rejouerait exactement le defaut que ce
+            # correctif retire : une identite de branche, morte au squash.
             Reference(39.0, "2026-10-31",
                       "issue #23175, reference rebasee precedente (arbre "
                       "aligne a f798021d4, instrument 6144b71eb)",
                       instrument=("scripts/notebook_tools/"
                                   "inventory_notebook_names.py"
                                   "@6144b71ebfcd588d5347e16e7d2ba984dd6af2e5")),
-            # La reference du 3e rebasage (39), produite par l'instrument
-            # d'avant le correctif de la lettre d'accretion. Elle devient un
-            # point de la serie : c'est une mesure reelle, pas une valeur
-            # recopiee.
-            Reference(39.0, "2026-11-02",
-                      "issue #23175, reference rebasee precedente "
-                      "(instrument 735ada5ba, fusionne en 30c90b42b6b)",
-                      instrument=("scripts/notebook_tools/"
-                                  "inventory_notebook_names.py"
-                                  "@735ada5ba11cd900dee9649c71fedb38fd6fe52c")),
             # Mesure du 2026-11-05 sur l'arbre 536cf434700, AVANT le
             # correctif de la lettre d'accretion : 40. C'est le point qui
             # documente la croissance de l'arbre depuis 39 (et non une
