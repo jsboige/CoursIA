@@ -6,6 +6,15 @@
 # STATIQUES. Les 12 jobs HYBRIDES (#22461), eux, sont bornes par la PR
 # qui a introduit ce cliquet -- la forme hybride n'a AUCUNE tolerance.
 # Retirer une ligne des que son job est borne.
+#
+# 2026-11-04 (#23349, tranche 1) : retirees les trois cles dont le job est
+# desormais borne -- lean-conway.yml:target-coverage (360 min),
+# lean-i18n-drift.yml:i18n-drift (5 min), validation-matrix.yml:validate
+# (10 min). Une cle laissee sur un job borne n'est pas inerte : elle compte
+# le job comme « baseline » et absorbe silencieusement toute regression qui
+# retirerait sa borne. lean-formal-logic.yml:target-coverage reste : le
+# fichier n'existe plus, la cle ne couvre donc aucun site vivant, et la
+# laisser ne peut masquer aucune borne.
 bare-cross-dir-load-gate.yml:bare-cross-dir-load
 base-not-main-advisory.yml:signal
 candidate-delivered-advisory.yml:sweep
@@ -23,9 +32,7 @@ exercises-advisory.yml:exercises-advisory
 fabricated-output-gate.yml:fabricated-output
 grain-orphans-sweep.yml:sweep
 lane-claim-epic-wide-advisory.yml:sweep
-lean-conway.yml:target-coverage
 lean-formal-logic.yml:target-coverage
-lean-i18n-drift.yml:i18n-drift
 lean-visibility-advisory.yml:lean-visibility-advisory
 live-read-freshness.yml:freshness
 machine-dep-timing-advisory.yml:machine-dep-timing
@@ -53,5 +60,4 @@ stale-base-warning.yml:check-base-age
 translation-hot-drift-advisory.yml:advisory
 twin-parity-cron.yml:twin-parity-cron
 twin-parity-drift-audit.yml:drift-audit
-validation-matrix.yml:validate
 variation-light-genre.yml:check-light-genre-signals
