@@ -151,7 +151,6 @@
       "sorry-baseline": "0",
       "sorry-filter-mode": "real",
       "axiom-target-modules": "*",
-      "axiom-allow-axioms": "arrow_impossibility",
       "paths": [
         "MyIA.AI.Notebooks/GameTheory/lean_game_defs/**.lean",
         "MyIA.AI.Notebooks/GameTheory/lean_game_defs/lakefile.toml",
@@ -325,15 +324,15 @@
     },
     {
       "lake": "hecke",
-      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean",
+      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/hecke_lean",
       "display-name": "hecke_lean",
       "sorry-baseline": "0",
       "sorry-filter-mode": "real",
       "axiom-target-modules": "*",
       "paths": [
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/**.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/lakefile.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/lean-toolchain"
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/hecke_lean/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/hecke_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/hecke_lean/lean-toolchain"
       ]
     },
     {
@@ -420,6 +419,21 @@
         "MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lakefile.lean",
         "MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lean-toolchain",
         "MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lake-manifest.json"
+      ]
+    },
+    {
+      "lake": "mimo",
+      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean",
+      "display-name": "mimo_lean",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "axiom-target-modules": "*",
+      "axiom-include-i18n-siblings": "true",
+      "paths": [
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/lean-toolchain",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/lake-manifest.json"
       ]
     },
     {

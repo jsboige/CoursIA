@@ -541,6 +541,33 @@ Tweety/
 
 > **Note** : les dossiers `libs/`, `jdk-17-portable/`, `ext_tools/` et `resources/` sont des répertoires d'exécution (non suivis par Git, téléchargés automatiquement par `Tweety-01-Setup-Python.ipynb` ou `scripts/download_tweety_tools.py`). L'ancien dossier `templates student/` n'existe plus dans cette partition. `scripts/` contient 5 scripts `.py` au premier niveau (`download_tweety_tools.py`, `verify_all_tweety.py`, `validate_syntax.py`, `sat_calibration.py`, `sat_comparison_demo.py`), 4 tests `test_*.py` et un `README.md`, plus un sous-dossier `_archive/` (qui contient `reorganize_tweety.py`, déplacé depuis le premier niveau — plus de doublon). Le dossier `_output/` n'est pas présent dans cette partition (les traces Papermill ne sont pas conservées). Audit §E whole-file gate 2026-07-15, re-audit 2026-08-15, re-audit fichier-entier 2026-09-25 (comptes de notebooks, cellules et durées re-mesurés sur disque — périmètre et résidus déclarés dans l'entrée de changelog).
 
+### Carnets qui importent `tweety_init`
+
+Les carnets listés ci-dessous importent le module d'initialisation `tweety_init` (JVM JPype) au lieu de dérouler eux-mêmes la configuration de la JVM :
+
+| Carnet | Cellule | Import |
+|---|---|---|
+| `Tweety-02d-FOL-Lab-Lean-Python.ipynb` | 2 | `from tweety_init import init_tweety` |
+| `Tweety-02e-Preuves-Hilbert-Gentzen-Lean-Python.ipynb` | 2 | `from tweety_init import init_tweety` |
+| `Tweety-03b-Modal-Lab-Lean-Python.ipynb` | 2 | `from tweety_init import init_tweety` |
+| `Tweety-07a-Extended-Frameworks-Python.ipynb` | 1 | `from tweety_init import init_tweety, EXTERNAL_TOOLS, get_tool_path, print_tools_summary` |
+| `Tweety-10-MLN-Python.ipynb` | 1 | `from tweety_init import init_tweety` |
+| `Tweety-11-Causal-Python.ipynb` | 4 | `from tweety_init import init_tweety` |
+
+Les autres carnets Python de la série configurent la JVM eux-mêmes, dans une cellule de code dédiée — c'est le cas de `Tweety-09-Preferences-Python.ipynb` (cellule 1, « Initialisation JVM Tweety + Outils Externes »). Bilan mesuré sur les 18 carnets `Tweety-*-Python.ipynb` de la série : **6** importent `tweety_init` (tableau ci-dessus), **11** configurent la JVM en ligne, et `Tweety-05d-Stable-Synthesis-Lean-Python.ipynb` n'utilise pas la JVM.
+
+> **À maintenir** : toute addition de carnet qui importe `tweety_init` doit être reportée dans ce tableau. La liste se remesure par recherche de la chaîne `from tweety_init import` dans les cellules de **code** des carnets de la série (les occurrences en prose ne comptent pas).
+
+Pour re-mesurer après l'ajout d'un carnet :
+
+```python
+import glob, nbformat
+for p in sorted(glob.glob("Tweety-*-Python.ipynb")):
+    nb = nbformat.reads(open(p, encoding="utf-8").read(), as_version=4)
+    if any(c.cell_type == "code" and "tweety_init" in (c.source or "") for c in nb.cells):
+        print(p)
+```
+
 ## Outils Externes
 
 ### Script de téléchargement automatisé
