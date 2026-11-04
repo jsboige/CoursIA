@@ -387,8 +387,21 @@ def detect_regimes_hmm(
         CAUTION (#21054): ``"viterbi"`` (default, backward compatible) is
         retrospective — the label at t depends on observations after t
         via the end-backtracking, so it must not feed a walk-forward or
-        live signal. Use ``decode_mode="filter"`` when labels are
-        consumed as a known-at-t signal feature.
+        live signal. ``decode_mode="filter"`` removes that
+        backtracking, but it does **not** make the labels known-at-t:
+        the Baum-Welch fit estimates mu/sig/A/pi on the **whole window
+        passed in**, so those parameters see the future and past labels
+        move when the window grows. Measured on the built dataset
+        builder's own probe (issue #21054, 2026-11-04): decoding the
+        same 400-day prefix with a 400-point fit vs an 800-point fit
+        leaves 162/400 states identical — i.e. the parameters, not the
+        decode, carry the remaining dependence.
+
+        The known-at-t contract therefore requires the fit to happen
+        **inside each fold** (sliding fit). ``build_dataset_v2`` records
+        this honestly in its manifest as
+        ``regime_hmm_decode_forward_only`` plus a ``lookahead_note``;
+        do not grant a stronger guarantee here than the builder does.
 
     Returns
     -------

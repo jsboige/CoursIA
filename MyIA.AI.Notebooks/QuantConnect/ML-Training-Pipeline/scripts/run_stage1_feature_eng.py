@@ -69,8 +69,12 @@ def compute_hmm_features_single(coin_prices: pd.Series, n_states: int = 3) -> pd
     Features: regime label (one-hot), regime duration proxy.
     """
     # CAUTION (#21054): default HMM decode is Viterbi = retrospective
-    # (label at t depends on observations after t); pass
-    # decode_mode="filter" when these features feed a walk-forward signal.
+    # (label at t depends on observations after t). decode_mode="filter"
+    # removes the backtracking but is NOT a known-at-t guarantee either:
+    # the Baum-Welch fit still sees the whole window passed in, so these
+    # features are retrospective whichever decode is used. Feeding them to
+    # a walk-forward or live signal needs a per-fold refit, not just the
+    # filter flag.
     result = detect_regimes_hmm(coin_prices, n_states=n_states)
     features = pd.DataFrame(index=coin_prices.index)
 
