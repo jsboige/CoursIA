@@ -568,6 +568,14 @@ _BOT_ONLY_PREFIX_MARKERS: tuple[str, ...] = (
     # les autres formes de #18637 : un humain qui recopie le marqueur perime
     # toujours le dossier.
     "<!-- coursia:advisory-sticky -->",
+    # #15511 : le commentaire RENVOI d'un doublon fusionne (marqueur
+    # principal retire, contenu porte par le canonique). Il n'est jamais
+    # supprime -- il vit dans le fil, donc il compte comme une row et
+    # perimerait le dossier s'il n'etait pas reconnu. Meme contrat que le
+    # marqueur principal : prefixe en TETE de corps + AUTEUR
+    # `github-actions[bot]` (un tiers qui recopie le marqueur perime quand
+    # meme le dossier).
+    "<!-- coursia:advisory-sticky:forwarded -->",
 )
 
 

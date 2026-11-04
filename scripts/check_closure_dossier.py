@@ -151,6 +151,10 @@ _NEUTRAL_PREFIXES = (
     # organe) -- reecrit en place a chaque run, donc neutre pour la
     # posteriorite d'un dossier.
     "<!-- coursia:advisory-sticky -->",
+    # #15511 : le commentaire RENVOI d'un doublon fusionne (marqueur
+    # principal retire, contenu porte par le canonique) -- jamais supprime,
+    # donc lui aussi neutre pour la posteriorite d'un dossier.
+    "<!-- coursia:advisory-sticky:forwarded -->",
 )
 
 
