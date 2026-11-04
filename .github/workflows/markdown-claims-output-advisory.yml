@@ -171,6 +171,12 @@ jobs:
       # succes serait le defaut que ce detecteur existe pour eviter.
       - name: Publish (or retract) the markdown-claims advisory section
         if: github.event_name == 'pull_request'
+        # #24441 : la publication d'une section advisory ne doit JAMAIS
+        # rougir le check -- une erreur d'API (quota, 5xx, PR fermee entre
+        # temps) ou un refus de verrou sous contention degrade en section
+        # non ecrite, pas en job rouge. Meme contrat que
+        # `notebook-outputs-required.yml` (revue Hermes, 2026-11-04).
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR: ${{ github.event.pull_request.number }}
@@ -243,6 +249,9 @@ jobs:
 
       - name: Publish (or retract) the stale-claim advisory section
         if: github.event_name == 'pull_request'
+        # #24441 : meme contrat que ci-dessus -- la publication ne rougit
+        # jamais le check.
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR: ${{ github.event.pull_request.number }}
@@ -307,6 +316,9 @@ jobs:
 
       - name: Publish (or retract) the factual-mislabel advisory section
         if: github.event_name == 'pull_request'
+        # #24441 : meme contrat que ci-dessus -- la publication ne rougit
+        # jamais le check.
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR: ${{ github.event.pull_request.number }}

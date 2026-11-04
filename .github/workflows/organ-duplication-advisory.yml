@@ -132,6 +132,12 @@ jobs:
       # detectee restent publies : aucun d'eux n'est un succes.
       - name: Publish (or retract) the organ-duplication advisory section
         if: github.event_name == 'pull_request'
+        # #24441 : la publication d'une section advisory ne doit JAMAIS
+        # rougir le check -- une erreur d'API (quota, 5xx, PR fermee entre
+        # temps) ou un refus de verrou sous contention degrade en section
+        # non ecrite, pas en job rouge. Meme contrat que
+        # `notebook-outputs-required.yml` (revue Hermes, 2026-11-04).
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR: ${{ github.event.pull_request.number }}
