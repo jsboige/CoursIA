@@ -565,6 +565,13 @@ def main():
 
     inv = build_inventory(a.base, baseline=a.baseline)
     if a.json:
+        # RFC 8259 : le JSON est de l'UTF-8, meme sous Windows. Pipe,
+        # stdout herite de la page de code locale (cp1252) et le premier
+        # accent casse le consommateur qui decode proprement (registre
+        # anti-entropie : UnicodeDecodeError -> INSTRUMENT ILLEGIBLE).
+        # Force uniquement l'emission machine, pas la sortie humaine.
+        if hasattr(sys.stdout, "reconfigure"):
+            sys.stdout.reconfigure(encoding="utf-8")
         sys.stdout.write(json.dumps(inv, indent=2, sort_keys=True, ensure_ascii=False))
         sys.stdout.write("\n")
     else:
