@@ -553,7 +553,7 @@ def test_real_grothendieck_godement_pairs_are_not_half_done():
     ``Godement*_en`` mirrors are OK-CONSUMER siblings whose module docstring is
     translated; the HALF-DONE hit came from the shared licence header alone.
     They must no longer be reported."""
-    groth = (REPO_ROOT / "MyIA.AI.Notebooks" / "SymbolicAI" / "Lean"
+    groth = (REPO_ROOT / "MyIA.AI.Notebooks" / "SymbolicAI" / "Lean" / "GROTH"
              / "grothendieck_lean" / "Grothendieck")
     names = ["Godement", "GodementAcyclicity", "GodementCanonicalDiff",
              "GodementComplex", "GodementExactness", "GodementFunctor",
