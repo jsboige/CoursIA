@@ -40,6 +40,7 @@ Pour la pédagogie Lean (notebooks étudiants), voir [`MyIA.AI.Notebooks/Symboli
 |---|---|
 | [origami-reconnaissance.md](origami-reconnaissance.md) | Pli 1, sub-grains 3 (sources tierces, conformité) et 4 (emplacement) — reconnaissance préalable. |
 | [origami-pli1-mesures.md](origami-pli1-mesures.md) | Pli 1, sub-grain 1 — journal du build **hors CI** de l'enveloppe `differential_lean` : les trois petites fermetures, le témoin `#print axioms`, temps, mémoire et pièges de mesure (relevé du 2026-10-08). |
+| [origami-pli2-note-conception.md](origami-pli2-note-conception.md) | Pli 2 — note de conception du carnet `Lean-42` : la conjecture de Poincaré lue comme un problème de taille de preuve (la brièveté des tactiques contre la clôture d'imports qu'elle mobilise), le graphe construit par le carnet plutôt que recopié, le témoin de visite `PoincareChain.lean` FR/EN, et ce que le carnet ne prétend pas faire. |
 | [darksnail/pli2-lake-enveloppe-verdict.md](darksnail/pli2-lake-enveloppe-verdict.md) | Pli 2, DarkSnail (EPIC #21310) — reconstruction du lake d'enveloppe `OcclusionTriad` et verdict first-hand `INSUFFICISANT_BLOQUANT` : le code reference des modules absents du depot upstream, donc la badge « 0 sorry » n'est pas falsifiable. Recommandation : arret du Pli 2 et pivot `so(M)`. |
 
 ## Toolchain

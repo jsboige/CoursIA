@@ -59,7 +59,7 @@ La chaîne que le carnet suit est **Moise → flot de Ricci avec chirurgie → e
 
 ### 2.7 La preuve de l'énoncé, lue dans son module
 
-Le module de l'énoncé ne fait pas que déclarer : il **prouve**. Mesure au 2026-10-30 : le module fait 23 lignes, le bloc du théorème en fait 11 énoncé compris, et il en reste **5 après `:= by`**. C'est la meilleure pièce pédagogique du Pli 2, et elle dit que la chaîne n'est pas celle qu'un titre de section laisse croire.
+Le module de l'énoncé ne fait pas que déclarer : il **prouve**. Le module tient en quelques lignes, le bloc du théorème en occupe l'essentiel, et il ne reste qu'une poignée de tactiques après `:= by` — les comptes exacts sont dans les sorties du carnet, pas recopiés ici. C'est la meilleure pièce pédagogique du Pli 2, et elle dit que la chaîne n'est pas celle qu'un titre de section laisse croire.
 
 ```lean
 theorem poincare_conjecture
@@ -97,7 +97,7 @@ Le Pli 1 avait mesuré trois clôtures ([`differential_lean/README.md`](../../My
 
 ### 2.6 Réserve de mesure, écrite pour ne pas la masquer
 
-Le body de [#23499](https://github.com/jsboige/CoursIA/issues/23499) cite **14 197 modules** pour la clôture de l'énoncé. Ce relevé en compte **14 196**. L'écart d'une unité vient très probablement du **module racine** (`DifferentialGeometry`) : l'énoncé ne l'importe pas, et l'inclure dans la clôture est une convention, pas une mesure. Le chiffre publié par le carnet sera celui **de ses propres sorties**, et la convention retenue y sera écrite.
+Le body de [#23499](https://github.com/jsboige/CoursIA/issues/23499) cite pour la clôture de l'énoncé un total supérieur **d'un module** à celui de ce relevé. L'écart d'une unité vient très probablement du **module racine** (`DifferentialGeometry`) : l'énoncé ne l'importe pas, et l'inclure dans la clôture est une convention, pas une mesure. Le chiffre publié par le carnet sera celui **de ses propres sorties**, et la convention retenue y sera écrite.
 
 ## 3. Inventaire des modules et théorèmes exposés
 
@@ -128,7 +128,7 @@ Un fait de lecture qui mérite d'être dit ici : `smoothPoincareConjecture_holds
 | Lemme de Morse | `Topology/Morse/ExtremumChart` (clôture 47 / 23 522) | Déjà **témoin** au Pli 1 ; son carnet propre est une marche à part entière (source de la décomposition en anses) |
 | Cohomologie de de Rham | `Tensor/Exterior/Cochain` (33 / 13 432) | Déjà témoin au Pli 1 ; mérite son carnet (complexe, tiré en arrière) |
 | Bonnet–Myers | `Geometry/Comparison/BonnetMyers/Diameter` (383 / 181 252) | Déjà témoin au Pli 1 ; c'est l'invariant de compacité que la non-collapse utilise |
-| Principe du maximum | `Analysis/Parabolic/MaximumPrinciple/…` (83 fichiers du thème) | Le carnet du maximum porte **une famille** entière, pas une marche du carnet Poincaré |
+| Principe du maximum | `Analysis/Parabolic/MaximumPrinciple/…` (le thème entier) | Le carnet du maximum porte **une famille** entière, pas une marche du carnet Poincaré |
 | Monotonie de Perelman | `historyReducedVolumeMonotone` et la famille `…Surgery` | C'est l'outil de non-extinction ; il demande le volume réduit, donc un carnet à lui seul |
 
 ### 3.3 Ce qui reste au Pli 4
@@ -165,7 +165,7 @@ Trois exercices ferment le carnet, sans erreur volontaire (C.1) et mesurant chac
 
 **Correction de méthode, écrite ici parce qu'elle informe le lecteur.** Un premier jet de cette note proposait `Lean-38` en affirmant que le plus grand numéro était `Lean-37`. Les deux affirmations étaient fausses : `Lean-38-Capstone-Geometry-Lean-Python.ipynb` existe, et la série va jusqu'à `Lean-41`. Le numéro avait été déduit d'un `ls` partiel et d'un souvenir, pas d'un inventaire. C'est exactement le mode d'erreur que la règle de mesure en continu vise : un numéro se lit dans un relevé complet de la série, jamais dans une liste tronquée.
 
-`Lean-38` porte sur la **géométrie du triangle** (« l'escalier d'entrée : de la figure au noyau ») : le voisinage est thématique mais le sujet est distinct — 3-variétés, flot de Ricci et graphe d'imports d'un paquet de 17 555 modules, contre un triangle et quatre méthodes. `Lean-38` sert en revanche de **gabarit de structure** : même escalier, même place des exercices.
+`Lean-38` porte sur la **géométrie du triangle** (« l'escalier d'entrée : de la figure au noyau ») : le voisinage est thématique mais le sujet est distinct — 3-variétés, flot de Ricci et graphe d'imports d'un paquet amont volumineux, contre un triangle et quatre méthodes. `Lean-38` sert en revanche de **gabarit de structure** : même escalier, même place des exercices.
 
 Le titre proposé suit la forme des carnets voisins : `Lean-42-Poincare-Conjecture-Lean.ipynb`.
 
