@@ -69,8 +69,11 @@ def IsLogConcaveOnRR (f : ℝ → ℝ) : Prop :=
   ConvexOn ℝ (univ : Set ℝ) fun t => -Real.log (f t)
 
 /-- Convexité de `t ↦ t²/2` sur `ℝ`. L'identité clef sous `a + b = 1` :
-`a x² + b y² − (a x + b y)² = a b (x − y)² ≥ 0`. Aucun lemme de convexité du
-carré n'existe au pin (audit du 2026-10-07) — la preuve est autonome. -/
+`a x² + b y² − (a x + b y)² = a b (x − y)² ≥ 0`. Mathlib porte la convexité
+du carré au pin du lake (`520045ab14`) : `Even.convexOn_pow`
+(`Mathlib.Analysis.Convex.Mul:161`) et `convexOn_univ_norm`
+(`Mathlib.Analysis.Normed.Module.Convex:53`). La preuve reste autonome pour
+exposer l'identité scalaire clef, non par absence de lemme. -/
 theorem convexOn_half_sq : ConvexOn ℝ (univ : Set ℝ) fun t => (1 / 2) * t ^ 2 :=
   ⟨convex_univ, by
     intros
