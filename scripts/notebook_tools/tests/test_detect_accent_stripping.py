@@ -435,3 +435,46 @@ class TestWalkerDelegatesToNotebookWalk:
             f"#8858 parity failed: normal={n_normal} nested-under-_archive={n_nested} "
             "(expected equal, non-zero)"
         )
+
+class Test21277SecondFournee:
+    """#21277, deuxieme fournee -- temoins des formes promues dans `ACCENT_PAIRS`.
+
+    Critere d'entree (cf corps de la PR) : la graphie desaccentuee n'est pas un
+    mot francais valide, aucun usage en prose anglaise n'a ete mesure sur le
+    depot, et la forme accentuee est unique. Le temoin NEGATIF (prose anglaise)
+    est porte par la meme table : une forme promue doit rester inconnue du
+    detecteur quand elle n'est pas du francais -- c'est pour cela que les
+    formes a double lecture restent dans `CONTEXTUAL_PAIRS` et n'apparaissent
+    PAS ici.
+    """
+
+    PROMUES = [
+        "vehicules", "encodee", "ordonnee", "durees", "defaire", "demarrage",
+        "informativite", "heritent", "inadmissibilite", "sequencement",
+        "recursivite", "notee", "selectionnee", "essayee", "specialites",
+        "legerete",
+    ]
+
+    def test_promoted_forms_are_detected(self, tmp_path):
+        # Temoin positif : chaque forme promue, dans une phrase francaise qui
+        # porte aussi la forme accentuee jumelle (controle positif interne du
+        # detecteur), est vue.
+        for form in self.PROMUES:
+            acc = ACCENT_PAIRS[form]
+            nb = _write_nb(tmp_path / f"{form}.ipynb",
+                           [_md(f"Le document cite {form} puis {acc}.")])
+            assert main([str(nb), "--check"]) == 1, form
+
+    def test_promoted_forms_present_in_dictionary(self):
+        for form in self.PROMUES:
+            assert form in ACCENT_PAIRS, form
+
+    def test_contextual_forms_stay_out_of_detection_table(self):
+        # Les 38 formes de la fournee contextuelle ne doivent PAS entrer dans la
+        # table de detection : le detecteur les signalerait dans un carnet
+        # anglais qui les traverse (`std::cout`, citations, noms propres).
+        import restore_accents_canonical as rac
+        for form in ("etat", "etats", "cout", "couts", "predicats",
+                     "problemes", "complexite", "qualite", "duree"):
+            assert form in rac.CONTEXTUAL_PAIRS, form
+            assert form not in ACCENT_PAIRS, form
