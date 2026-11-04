@@ -48,6 +48,25 @@ def _workspace_relative(rel: str) -> Path | None:
         return None
     return _WORKSPACE_ROOT.joinpath(*rel.split("/"))
 
+
+def _claudish_machine_tag() -> str:
+    """Tag d'attribution envoye a claudish dans ``X-Claudish-Machine``.
+
+    ``CLAUDISH_MACHINE_TAG`` l'emporte. Sinon le tag ne se derive que d'un nom
+    d'hote de la flotte (``myia-ai-01`` -> ``ai-01-prover``) : dans un conteneur,
+    ``platform.node()`` rend un identifiant qui change a chaque recreation et se
+    lirait comme une machine reelle. Hors flotte, le tag vaut ``unknown-prover``,
+    visible dans les comptes de claudish.
+    """
+    explicit = os.getenv("CLAUDISH_MACHINE_TAG", "").strip()
+    if explicit:
+        return explicit
+    node = platform.node().lower()
+    if node.startswith("myia-"):
+        return node.removeprefix("myia-") + "-prover"
+    return "unknown-prover"
+
+
 PROVIDERS = {
     "zai": {
         "base_url": os.getenv("ZAI_BASE_URL", "https://api.z.ai/api/coding/paas/v4"),
@@ -109,11 +128,7 @@ PROVIDERS = {
     "claudish": {
         "base_url": os.getenv("CLAUDISH_BASE_URL", ""),
         "api_key": os.getenv("CLAUDISH_PROXY_KEY", ""),
-        "headers": {
-            "X-Claudish-Machine": os.getenv(
-                "CLAUDISH_MACHINE_TAG",
-                platform.node().lower().removeprefix("myia-") + "-prover"),
-        },
+        "headers": {"X-Claudish-Machine": _claudish_machine_tag()},
         "models": {
             "reasoning": os.getenv("CLAUDISH_CHAT_MODEL_ID", "zai@glm-5.3"),
             "fast": os.getenv("CLAUDISH_FAST_MODEL_ID", "zai@glm-5.3"),
