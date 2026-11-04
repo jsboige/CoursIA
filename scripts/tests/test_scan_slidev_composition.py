@@ -251,6 +251,67 @@ class TestEnvironnementPolices:
         autre["line_height_normal_stack_px"] = 24.0
         assert ssc.font_signature(autre) != ssc.font_signature(FONT_ENV)
 
+    def test_signature_change_quand_le_canal_monospace_change(self):
+        """#24495 reparation : le canal monospace (code/pre) entre dans la
+        signature. Deux rendus texte-IDENTIQUES mais dont la police monospace
+        RESOLUE differe (le bloc pre change de hauteur) doivent produire deux
+        signatures distinctes — c'est precisement l'aveugle que le
+        verificateur a rejoue : signature `233aacc...` stable alors que
+        `pre` passait de 133 a 126 px (hors canvas -> dedans)."""
+        base = dict(FONT_ENV)
+        base["monospace"] = {
+            "declared_stack": "monospace",
+            "sampled_element": "PRE",
+            "font_size": "16px",
+            "line_height": "normal",
+            "families": [
+                {"name": "Consolas", "width_px": 210.5, "resolved": True,
+                 "generic": False, "probe_ok": True},
+            ],
+            "line_height_normal_stack_px": 18.9,
+            "line_height_real_px": 24.0,
+        }
+        autre = dict(base)
+        # meme canal texte, police monospace resolue + hauteur de ligne
+        # intrinque differentes (le bloc pre n'a plus la meme hauteur).
+        autre["monospace"] = {
+            "declared_stack": "'Courier New', monospace",
+            "sampled_element": "PRE",
+            "font_size": "16px",
+            "line_height": "normal",
+            "families": [
+                {"name": "Courier New", "width_px": 198.2, "resolved": True,
+                 "generic": False, "probe_ok": True},
+            ],
+            "line_height_normal_stack_px": 17.4,
+            "line_height_real_px": 21.0,
+        }
+        assert ssc.font_signature(base) != ssc.font_signature(autre), (
+            "texte identique / monospace different -> signatures distinctes"
+        )
+
+    def test_signature_distingue_slide_avec_et_sans_code(self):
+        """Une slide SANS bloc code/pre (monospace = None) ne doit pas
+        collider avec une slide identique en texte mais portant un bloc
+        code/pre : la presence du canal change l'empreinte."""
+        sans_code = dict(FONT_ENV)  # pas de cle 'monospace' -> None
+        avec_code = dict(FONT_ENV)
+        avec_code["monospace"] = {
+            "declared_stack": "monospace",
+            "sampled_element": "PRE",
+            "font_size": "16px",
+            "line_height": "normal",
+            "families": [
+                {"name": "Consolas", "width_px": 210.5, "resolved": True,
+                 "generic": False, "probe_ok": True},
+            ],
+            "line_height_normal_stack_px": 18.9,
+            "line_height_real_px": 24.0,
+        }
+        assert ssc.font_signature(sans_code) != ssc.font_signature(avec_code), (
+            "presence du canal code/pre change la signature"
+        )
+
     def test_signature_indisponible_sur_erreur_ou_absence(self):
         assert ssc.font_signature({}) == "indisponible"
         assert ssc.font_signature({"error": "sonde casse"}) == "indisponible"
