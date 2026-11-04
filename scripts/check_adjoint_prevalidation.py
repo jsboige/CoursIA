@@ -560,6 +560,22 @@ _BOT_ONLY_PREFIX_MARKERS: tuple[str, ...] = (
     "## Golden-Set Execution (H.7 P3)",  # notebook-execution-required.yml, resume cosmetique
     "## Notebook PR Validation: ",  # notebook-execution-required.yml, resume cosmetique
     "## Notebook outputs-required (H.4 schema): ",  # notebook-outputs-required.yml, PATCH en place
+    # #15511 : le commentaire COLLANT unique des advisory (une section par
+    # organe) est reecrit en place a chaque run -- comme les formes ci-dessus,
+    # sa reecriture ne doit pas perimer un dossier de prevalidation. Le
+    # prefixe est exige en TETE de corps (l'organe ecrit le marqueur en
+    # premiere ligne), et l'AUTEUR `github-actions[bot]` est exige comme pour
+    # les autres formes de #18637 : un humain qui recopie le marqueur perime
+    # toujours le dossier.
+    "<!-- coursia:advisory-sticky -->",
+    # #15511 : le commentaire RENVOI d'un doublon fusionne (marqueur
+    # principal retire, contenu porte par le canonique). Il n'est jamais
+    # supprime -- il vit dans le fil, donc il compte comme une row et
+    # perimerait le dossier s'il n'etait pas reconnu. Meme contrat que le
+    # marqueur principal : prefixe en TETE de corps + AUTEUR
+    # `github-actions[bot]` (un tiers qui recopie le marqueur perime quand
+    # meme le dossier).
+    "<!-- coursia:advisory-sticky:forwarded -->",
 )
 
 
