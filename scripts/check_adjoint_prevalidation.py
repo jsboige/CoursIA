@@ -1072,6 +1072,14 @@ class StackEntry:
     # commit d'auteur, et un ancetre de `ref` quand un update-branch a
     # prepende une fusion content-free depuis `main`.
     author_ref: str = ""
+    # #23100 -- noms de branches lus dans la meme enumeration que `number`
+    # (aucun appel supplementaire). `head_name` = headRefName de la PR,
+    # `base_name` = base.ref. Portent l'exemption « partenaire enfant » de
+    # `_stack_partners` : vides (entrees construites hors enumeration, tests),
+    # l'exemption est INERTE et la porte garde son comportement d'avant --
+    # une mesure absente ne fabrique ni refus ni pass.
+    head_name: str = ""
+    base_name: str = ""
 
 
 def _git(args: list[str], check: bool = True) -> subprocess.CompletedProcess:
@@ -1303,12 +1311,23 @@ def build_stack_index() -> tuple[dict[int, StackEntry] | None, list[str]]:
         return None, [STACK_UNAVAILABLE_SHALLOW]
 
     try:
-        numbers = [
-            int(line) for line in gh_lines([
+        # #23100 -- l'enumeration rend AUSSI headRefName et base.ref, dans
+        # le meme appel (aucun cout supplementaire) : c'est ce qui permet a
+        # `_stack_partners` de reconnaitre le partenaire ENFANT de la cible
+        # (sa base est la tete de la cible) et de ne pas bloquer le bas
+        # d'une vraie pile. Une ligne malformee ne casse pas la passe :
+        # l'entree garde des noms vides et l'exemption reste inerte.
+        rows = [
+            json.loads(line) for line in gh_lines([
                 "api", "--paginate", f"repos/{REPO}/pulls?state=open&per_page=100",
-                "--jq", ".[].number",
+                "--jq", ".[] | [.number, .head.ref, .base.ref]",
             ])
         ]
+        numbers = [int(row[0]) for row in rows]
+        names = {
+            int(row[0]): (row[1] if len(row) > 1 else "", row[2] if len(row) > 2 else "")
+            for row in rows
+        }
     except Exception as exc:  # noqa: BLE001 -- mesure impossible, pas un crash
         return None, [f"enumeration des PR ouvertes impossible : {exc}"]
     fetched, incidents = _fetch_pr_heads(numbers)
@@ -1324,7 +1343,10 @@ def build_stack_index() -> tuple[dict[int, StackEntry] | None, list[str]]:
         # le seul ajout de la passe : sans lui, un rafraichissement
         # content-free (update-branch sans conflit) fait sortir la
         # base de la pile de l'ordre lineaire.
-        return p, StackEntry(p, ref, commits, subjects, _author_ref(ref))
+        head_name, base_name = names.get(p, ("", ""))
+        return p, StackEntry(
+            p, ref, commits, subjects, _author_ref(ref), head_name, base_name
+        )
 
     # #22938 : les mesures par PR sont INDEPENDANTES (git en lecture seule)
     # et coutent ~0,44 s chacune : mesure du 2026-10-29, ~165 s pour les 376
@@ -1457,12 +1479,53 @@ def _stack_partners(target: int, index: dict[int, StackEntry]) -> list[int]:
             ["merge-base", "--is-ancestor", entry.author_ref, other.author_ref], check=False
         ).returncode == 0:
             continue
+        # #23100 -- l'enfant retarde de la cible. Le partenaire a pour BASE
+        # la tete de la cible (ou la tete d'un descendant de la cible : la
+        # chaine suit les liens base -> head a travers l'index, des piles de
+        # trois existent -- instance fondatrice #19548 -> #19556 -> #19567).
+        # La cible est alors le BAS d'une vraie pile : la merger d'abord est
+        # l'ordre correct, l'enfant retombera par update-branch -- aucun
+        # « sommet de pile perime » a signaler. La fausse instance qui a
+        # fonde l'issue : #22811 basee sur la tete de #22741, enfant retarde
+        # (le parent a avance apres le fork), et la porte bloquait le seul
+        # merge executable de la paire. Noms absents (entrees construites
+        # hors enumeration) : l'exemption est inerte, comportement d'avant.
+        if _is_stack_descendant(other, entry, index):
+            continue
         if not [
             s for s in (_subjects_of(other) - mine) if not _is_stack_noise(s)
         ]:
             continue
         partners.append(number)
     return partners
+
+
+def _is_stack_descendant(
+    other: StackEntry, entry: StackEntry, index: dict[int, StackEntry]
+) -> bool:
+    """``other`` a-t-il pour base la tete de ``entry`` ou d'un de ses descendants ?
+
+    Suit les liens ``base_name`` -> ``head_name`` de l'index (un graphe de
+    piles, sans appel git) : chaque pas remonte d'une PR a celle qu'elle
+    etend. Le filtre d'arret est le nom de tete de ``entry`` ; un cycle de
+    noms (donnees incoherentes) s'eteint par la borne de visites.
+    """
+    if not other.base_name or not entry.head_name:
+        return False
+    by_head: dict[str, StackEntry] = {
+        e.head_name: e for e in index.values() if e.head_name
+    }
+    seen: set[str] = set()
+    current = other
+    while current.base_name and current.base_name not in seen:
+        if current.base_name == entry.head_name:
+            return True
+        seen.add(current.base_name)
+        parent = by_head.get(current.base_name)
+        if parent is None:
+            return False
+        current = parent
+    return False
 
 
 def stack_reasons(target: int, index: dict[int, StackEntry]) -> list[str]:
@@ -1476,6 +1539,9 @@ def stack_reasons(target: int, index: dict[int, StackEntry]) -> list[str]:
       merger ``target`` d'abord est l'ordre correct -- aucune raison, et c'est
       le controle negatif qui distingue la porte d'un simple « deux PRs se
       ressemblent » ;
+    - **partenaire enfant** (#23100) : ``p`` a pour base la tete de ``target``
+      ou celle d'un de ses descendants -- ``target`` est le bas d'une vraie
+      pile, la merger d'abord est l'ordre correct, aucune raison ;
     - **sommet de pile** : ``p`` porte des corrections que ``target`` n'a pas.
       Merger ``target`` d'abord ferait atterrir sur `main` la version
       anterieure.
