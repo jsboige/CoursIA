@@ -789,6 +789,10 @@ class TacticTools:
         self._sorry_ctx = sorry_context
         self._imports = imports
         self._trace = trace
+        # #24469: set by VerifyExecutor when a proof is verified AND persisted,
+        # read by the session supervisor if its reasoning deadline cancels the
+        # workflow before it drains (provers._deadline_keeps_latched_proof).
+        self.proof_latched: bool = False
         self._best_content: Optional[str] = None
         self._best_sorry_count: int = 999
         self._original_sorry_count: int = 999
