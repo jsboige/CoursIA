@@ -335,6 +335,15 @@ def classify(
                       (the default) means "not consulted" and preserves the
                       pre-#14307 behaviour, so existing callers are unaffected.
 
+    Contract -- ``issue["comments"]`` must carry the THREAD of the issue.
+    The attestation branch reads it (and only it): a payload fetched
+    without its comments therefore sees no living attestation, and the
+    issue falls back to the reference heuristic. This is not a bug today
+    (``main`` loads the comments), but it was an IMPLICIT contract: it is
+    written down here, and pinned by
+    ``test_sans_commentaires_pas_d_attestation_voyait`` (review Hermes,
+    2026-11-03, note de suivi).
+
     Returns:
         ``(verdict, detail)`` where verdict is one of:
         ``"epic"``         -- excluded (EPIC by title/label)

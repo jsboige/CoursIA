@@ -137,6 +137,13 @@ ATTESTATION_MARKER_RE = re.compile(
 
 # Le marqueur de CONTENEUR du tapis : le meme jeu de formes. Alias, pas copie
 # (une seule definition, deux organes).
+#
+# Note de suivi de la revue Hermes (2026-11-03) : sur une UMBRELLA,
+# `[INFO] candidate-delivered` dit « le CONTENEUR est livre », et le labeler
+# classe alors par la branche `container` (exclusion ahead, testee) -- les
+# deux noms pointeront donc toujours la meme regex, et les scinder
+# casseraient la parite verifiee par test. Le comment est la, pour le
+# lecteur futur qui aurait l'idee de les separer.
 CONTAINER_DELIVERY_MARKER_RE = ATTESTATION_MARKER_RE
 
 # La clause `paths:` d'une livraison de GRAIN (semantique v2 du claim,
