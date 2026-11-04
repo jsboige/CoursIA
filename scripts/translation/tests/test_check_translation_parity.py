@@ -806,7 +806,11 @@ def test_is_scannable_matches_on_relative_parts_only(tmp_path):
 #   classe que #19996/#20392 : la paire arrivee avec son carnet sans
 #   mettre a jour cette ligne a la livraison rougit pair_count_declared
 #   (#21391) sur la PR.
-EXPECTED_PAIR_COUNT = 21
+# 2026-11-04 (tranche T4 FT-06, axe E de #4208) : +1 paire --
+#   FT-06-Vision-Language-LoRA-Python_en, dernier carnet de la serie
+#   FineTuning sans jumeau EN. Les six autres paires de la serie
+#   (FT-00c, FT-01 a FT-05) etaient deja comptees dans les 21.
+EXPECTED_PAIR_COUNT = 22
 
 
 def _collect_parity_failures(repo_root: Path,
