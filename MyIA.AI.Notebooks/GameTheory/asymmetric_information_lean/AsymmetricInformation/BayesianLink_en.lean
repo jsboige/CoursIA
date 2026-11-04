@@ -44,7 +44,7 @@ def bridgeGame (π : AsymmetricInformation.Lemons.Prior)
       -- no-trade: no flow for p1
       0
   u2 := fun _ _ _ a2 =>
-    -- p2 (seller): first-tranche simplification — accept = +1, refuse = 0.
+    -- p2 (seller): simplification of the 1st tranche — accept = +1, refuse = 0.
     match a2.val with
     | 0 => 1
     | _ => 0
