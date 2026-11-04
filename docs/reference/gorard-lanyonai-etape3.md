@@ -37,7 +37,7 @@ Recherche de `lean-toolchain`, `lakefile.lean`, `lakefile.toml` et
 `leanprover/lean4:v4.33.0` ; la version sous laquelle ces preuves compilent n'est
 donc declaree nulle part, et ne se deduit pas du depot.
 
-| Depot | fichiers | `.lean` | `.c`/`.h` | `lean-toolchain` | `lakefile` |
+| Depot | entrees | `.lean` | `.c`/`.h` | `lean-toolchain` | `lakefile` |
 |---|---|---|---|---|---|
 | `BurgersEquation` | 92 | 21 | 21 | absent | absent |
 | `AdvectionDiffusion` | 92 | 21 | 21 | absent | absent |
@@ -47,6 +47,11 @@ donc declaree nulle part, et ne se deduit pas du depot.
 | `IdealMHD` | 31 | 6 | 6 | absent | absent |
 | `ElectrostaticVlasov` | 32 | 6 | 6 | absent | absent |
 | `LanyonScripts` | 10 | 0 | 0 | absent | absent |
+
+La colonne `entrees` compte les blobs **et** les repertoires (`git ls-tree -r
+-t`) : mesuree sur `GeneralRelativisticMaxwell`, 28 fichiers + 4 repertoires
+(`specifications/`, `implementations/`, `proofs/`, `screencaps/`) = 32. Les
+colonnes suivantes comptent des fichiers uniquement.
 
 La forme est strictement la meme partout : `specifications/`,
 `implementations/` (C), `proofs/` (fichiers Lean 4 isoles), `screencaps/`.
@@ -150,9 +155,11 @@ famille amont est fait et ecrit »). La partition reste **non faite** pour
 
 Mesure prise sur un clone a la tete `b13da44d9e93` (inchangee depuis le
 2026-07-27, comme le releve le §1), six fichiers `proofs/*.lean`. Instrument :
-pour chaque declaration `theorem`/`lemma`, l'ensemble des tetes de tactique de sa
-preuve, range en classe de fermeture. Aucune compilation n'a ete lancee ; tout se
-lit sur l'arbre clone.
+pour chaque declaration `theorem`/`lemma`, l'ensemble des tetes de tactique de
+**resolution** de sa preuve, range en classe de fermeture ; les liaisons `let`
+locales (3 344 lignes sur le corpus) sont exclues des classes — elles lient des
+expressions sans fermer de but —, `have` est garde. Aucune compilation n'a ete
+lancee ; tout se lit sur l'arbre clone.
 
 ### 7.1 Les nombres annonces par l'amont, recoupes
 
@@ -174,39 +181,55 @@ avec le fichier de specification » ; la cause est plus simple, et elle est mesu
 
 ### 7.2 Repartition des 156 declarations par classe de fermeture
 
-| Classe | Declarations | Part |
+Chaque propriete tombe sous **une seule et meme classe** pour l'ensemble de ses
+declarations (x dans les six fichiers, y dans quatre, z dans deux).
+
+| Classe (ensemble exact des tetes) | Proprietes | Declarations |
 |---|---|---|
-| `constructor` + `ring_nf` + `simp` | 48 | 31 % |
-| `constructor` + `field_simp` + `ring_nf` | 36 | 23 % |
-| structurelle seule (`constructor` / `exact` / `rfl`) | 24 | 15 % |
-| `norm_num` seule | 12 | 8 % |
-| `ring_nf` seule | 12 | 8 % |
-| `constructor` + `exact` + `field_simp` + `rfl` | 12 | 8 % |
-| `constructor` + `field_simp` + `ring_nf` + `simp` | 12 | 8 % |
+| `constructor` + `ring_nf` + `simp` | reconstructions gauche/droite (4 noms), `WaveJumpCondition` | 60 |
+| `constructor` + `field_simp` + `ring_nf` + `simp` | fluctuations gauche/droite, `WaveConsistency` | 36 |
+| `constructor` + `refine` | `Hyperbolicity` | 12 |
+| `constructor` + `simp` | `WaveStability` | 12 |
+| `constructor` + `norm_num` + `simp` | `DiffusiveFluxConsistency` | 12 |
+| `constructor` + `field_simp` + `split_ifs` + `linarith` + `ring_nf` + `simp` | `ReconstructionSymmetric` | 12 |
+| `change` + `constructor` + `dsimp` + `exact` + `field_simp` + `have` + `rfl` + `ring` + `rw` + `simp` + `simpa` | `FluxConservative` | 12 |
 
-Aucune autre classe. L'union des tactiques employees sur les 156 preuves est
-**{`constructor`, `exact`, `rfl`, `simp`, `ring_nf`, `field_simp`, `norm_num`}** :
-trois de charpente et quatre de normalisation algebrique. Zero `induction`, zero
-`linarith`/`nlinarith`, zero `positivity`, zero `decide`.
+Aucune autre classe. Parts derivables des effectifs : 60/156 = 38,5 %, 36/156 =
+23,1 %, chaque classe de 12 = 7,7 %. L'union des tetes de tactique employees sur
+les 156 preuves est **{`constructor`, `refine`, `exact`, `rfl`, `have`,
+`change`, `rw`, `dsimp`, `simp`, `simpa`, `ring_nf`, `ring`, `field_simp`,
+`norm_num`, `split_ifs`, `linarith`}** — seize tetes : cinq de charpente ou de
+liaison, cinq de reecriture, six de normalisation algebrique ou d'inegalites
+lineaires. Zero `induction`, zero `nlinarith`, zero `positivity`, zero `decide`,
+zero `native_decide`, zero `omega`.
 
-Consequence mesurable : **aucune preuve du corpus ne fait d'analyse de cas sur un
-objet du domaine, ni ne raisonne sur une inegalite qui ne soit pas une identite
-algebrique.** Ce qui est etabli, c'est la coherence interne d'une transcription de
-formules de flux ecrites en `Real`.
+Consequence mesurable, qualifiee : l'analyse de cas existe, mais sous une forme
+minoritaire et conditionnelle — `split_ifs` sur des conditions `if`, et
+`linarith` sur des inegalites lineaires, tous deux confines aux 12 declarations
+de `ReconstructionSymmetric` (7,7 % du corpus). Zero `induction` : aucune preuve
+ne raisonne par recursion ni par cas **sur un objet du domaine**. Pour les 144
+autres declarations, ce qui est etabli est la coherence interne d'une
+transcription de formules de flux ecrites en `Real`.
 
 ### 7.3 Ce que les treize noms de propriete etablissent
 
-Le corpus est **13 proprietes x 3 directions (x, y, z) x 2 familles** (Maxwell,
-Maxwell parfaitement hyperbolique) = 13 x 6 x 2 = 156 declarations.
+Le corpus est **13 proprietes, chacune reprisee sur chaque direction que couvre
+chaque fichier** : x dans les six fichiers, y dans quatre (les 2d et 3d), z dans
+deux (les 3d) — soit 13 x (6 + 4 + 2) = 156 declarations, a raison de 13, 26 et
+39 theoremes par fichier, le tout en deux familles (Maxwell, Maxwell parfaitement
+hyperbolique).
 
 Deux enonces sont vides, et ce sont les deux dont le nom promet le plus :
 
-- **`xHyperbolicity`** enonce `∃ r_i : Real, r_i = (…).lambda_i` pour i = 1..10,
-  ferme par dix `refine ⟨_, rfl⟩`. Il etablit que ces dix champs existent comme
-  reels — ce que leur type `Real` disait deja. Il ne dit rien du caractere reel,
-  distinct ou physique des vitesses caracteristiques. C'est le meme defaut que
-  celui releve au §4 sur `BurgersEquation`.
-- **`xWaveStability`** enonce `|mu_i| ≥ |lambda_i|`, ferme par `simp`. Mesure :
+- **`xHyperbolicity`** enonce `∃ r_i : Real, r_i = (…).lambda_i` pour i = 1..10
+  (1..12 dans la famille parfaitement hyperbolique), ferme par `constructor` puis
+  dix — douze dans l'autre famille — `refine ⟨_, rfl⟩`. Il etablit que ces champs
+  existent comme reels — ce que leur type `Real` disait deja. Il ne dit rien du
+  caractere reel, distinct ou physique des vitesses caracteristiques. C'est le
+  meme defaut que celui releve au §4 sur `BurgersEquation`.
+- **`xWaveStability`** enonce `|mu_i| ≥ |lambda_i|`, ferme par `constructor` puis
+  une serie de `simp [xWaveSpeedExprs, xFluxJacobianEigenExprs]` (la classe
+  `constructor` + `simp` du §7.2). Mesure :
   **les deux definitions sont identiques terme a terme dans les six fichiers** —
   `xWaveSpeedExprs` et `xFluxJacobianEigenExprs` portent les memes expressions
   (`mu1..4 = lambda1..4 = -αc - β_x` en double, puis `αc - β_x` en double ;
@@ -215,7 +238,10 @@ Deux enonces sont vides, et ce sont les deux dont le nom promet le plus :
 
 Les onze autres enonces portent sur des formules non triviales — familles d'ondes,
 flux diffusif, fluctuations et reconstructions gauche/droite, conditions de saut —
-et se ferment par `field_simp` puis `ring_nf`. Ce sont de vraies chaines
+et se ferment par des chaines de normalisation algebrique : `ring_nf` + `simp`
+pour cinq d'entre eux, `field_simp` + `ring_nf` + `simp` pour trois, `norm_num`
+pour un, `split_ifs` + `linarith` pour un, et une chaine mixte (`change`, `rw`,
+`exact`, `simpa`, `ring`) pour `FluxConservative`. Ce sont de vraies chaines
 algebriques, conformes a ce qu'une verification de consistance ou de
 conservativite demande, **a condition de dire qu'elles portent sur la
 transcription et non sur le schema**.
@@ -224,10 +250,16 @@ transcription et non sur le schema**.
 
 `xFluxConservative` prend en arguments `Speed1Nondegenerate` et
 `Speed2Nondegenerate`. Mesure : **aucune declaration du corpus ne conclut l'une de
-ces deux hypotheses** — 60 occurrences, toutes en position d'hypothese (deux par
-fichier en arguments, le reste en usage dans les preuves). La conservativite du
-flux est donc etablie **sous une condition que le depot suppose et ne demontre
-pas**.
+ces deux hypotheses** — 36 occurrences des deux noms, toutes en position
+d'hypothese ou d'usage : `Speed1Nondegenerate` 12 fois, en argument des douze
+declarations ; `Speed2Nondegenerate` 24 fois, douze en arguments et douze en
+reutilisation `simpa [maxSpeed, xSpeedFamilyExprs] using Speed2Nondegenerate`
+dans les preuves. Les 24 autres occurrences du fragment `Nondegenerate` (60 au
+total sur le corpus) sont une hypothese **locale** `have speedNondegenerate :
+maxSpeed ≠ 0`, posee puis passee a `field_simp` a l'interieur des preuves de
+`xFluxConservative` — jamais une conclusion de declaration non plus. La
+conservativite du flux est donc etablie **sous une condition que le depot suppose
+et ne demontre pas**.
 
 ### 7.5 Ce que cela change pour la serie
 
