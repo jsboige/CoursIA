@@ -18,6 +18,15 @@ hidden. The organ therefore excludes the pair ONLY when the EN side drops
 nothing the FR side carries.
 
 These tests cover both sides of that contract.
+
+They also pin the two decisions taken on the structural review of #24591:
+
+* the comparison is computed LAZILY -- a pair excluded as a plain mirror
+  header never pays for a comparison whose result is thrown away;
+* the `sibling` branch is evaluated BEFORE the plain mirror-header
+  exclusion, so a body carrying BOTH declarations and dropping a FR token
+  is reported instead of being silently excluded (the exclusion must never
+  hide a real loss).
 """
 from __future__ import annotations
 
@@ -27,6 +36,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
+import check_i18n_token_fidelity as org  # noqa: E402
 from check_i18n_token_fidelity import (  # noqa: E402
     HARD,
     compare_files,
@@ -49,6 +59,18 @@ EN_BODY_METADATA_ONLY = (
 )
 EN_BODY_DROPS_A_TOKEN = (
     "/- EN sibling of `Bar.lean` (FR-first canonical).\n"
+    "  The theorem `foo` rests on some assertions. -/\n"
+)
+# The classic mirror-header form (`English mirror of`): excluded by design,
+# and it must not pay for a comparison.
+EN_BODY_PLAIN_MIRROR = (
+    "/- English mirror of `Bar.lean` (FR-first canonical).\n"
+    "  Ratified 2026-07-04, issue #4980. -/\n"
+)
+# A body carrying BOTH declarations, and dropping the FR number.
+EN_BODY_HYBRID_DROPS_A_TOKEN = (
+    "/- EN sibling of `Bar.lean` (FR-first canonical).\n"
+    "  English mirror of `Bar.lean`.\n"
     "  The theorem `foo` rests on some assertions. -/\n"
 )
 THEOREM = "theorem foo : True := trivial\n"
@@ -80,6 +102,47 @@ def test_a_sibling_header_that_drops_a_fr_token_is_still_compared(tmp_path):
     `7` on the way. The loss is a real one and must still be reported.
     """
     fr, en = _write_pair(tmp_path, EN_BODY_DROPS_A_TOKEN)
+    report = compare_files(fr, en)
+    assert report["pairs_excluded"] == 0, report
+    assert report["pairs_compared"] == 1, report
+    hard = [f for f in report["findings"] if f["severity"] == HARD]
+    fr_side = [f["token"] for f in hard if f["side"] == "FR"]
+    assert fr_side == ["7"], hard
+
+
+def test_a_plain_mirror_header_is_excluded_without_comparing(tmp_path,
+                                                            monkeypatch):
+    """Cost: a pair excluded as a plain mirror header pays for NO
+    comparison at all (review of #24591, yellow 1).
+
+    The comparison used to be computed before the exclusion test and thrown
+    away right after -- doubling the work on every excluded header of the
+    `--all` corpus (188 pairs out of 9541, measured on the repository).
+    """
+    calls: list[tuple[str, str]] = []
+    original = org.compare_bodies
+
+    def counting(fr_body, en_body, decls=None, is_module=False):
+        calls.append((fr_body, en_body))
+        return original(fr_body, en_body, decls, is_module=is_module)
+
+    monkeypatch.setattr(org, "compare_bodies", counting)
+    fr, en = _write_pair(tmp_path, EN_BODY_PLAIN_MIRROR)
+    report = compare_files(fr, en)
+    assert report["pairs_excluded"] == 1, report
+    assert report["pairs_compared"] == 0, report
+    assert calls == [], calls
+
+
+def test_a_hybrid_body_that_drops_a_fr_token_is_still_compared(tmp_path):
+    """Precedence: the `sibling` branch is evaluated FIRST (review of
+    #24591, yellow 2).
+
+    A body carrying BOTH declarations (`EN sibling of` AND `English mirror
+    of`) and dropping the FR number is reported, not silently excluded: the
+    exclusion must never hide a real loss.
+    """
+    fr, en = _write_pair(tmp_path, EN_BODY_HYBRID_DROPS_A_TOKEN)
     report = compare_files(fr, en)
     assert report["pairs_excluded"] == 0, report
     assert report["pairs_compared"] == 1, report

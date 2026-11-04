@@ -784,21 +784,38 @@ def compare_files(fr_path: Path, en_path: Path) -> dict:
             sibling = False
             pair_excluded = False
             if fr_body and en_body:
-                findings = compare_bodies(fr_body, en_body, decls,
-                                          is_module=is_module)
-                # A `EN sibling of `X`` header is a mirror header too, but
-                # only when it drops NOTHING the FR side carries: a header
-                # that also translates the FR summary and loses a token
-                # holds a real loss, and stays compared.
                 sibling = declares_sibling_mirror(fr_body, en_body)
-                if sibling and drops_fr_token(findings):
-                    compared += 1
-                elif is_header or sibling:
-                    excluded += 1
-                    findings = []
-                    pair_excluded = True
+                # The findings are needed only when the pair is COMPARED, or
+                # to decide whether a `sibling` header drops a FR token. A
+                # plain mirror header (excluded by design) never needs them:
+                # computing them for every excluded header doubled the work
+                # over the whole `--all` corpus (188 excluded pairs out of
+                # 9541, measured on the repository; review of #24591).
+                if sibling or not is_header:
+                    findings = compare_bodies(fr_body, en_body, decls,
+                                              is_module=is_module)
+                    # A `EN sibling of `X`` header is a mirror header too, but
+                    # only when it drops NOTHING the FR side carries: a
+                    # header that also translates the FR summary and loses a
+                    # token holds a real loss, and stays compared.
+                    # The sibling branch is evaluated FIRST, so a body
+                    # carrying BOTH declarations and dropping a FR token is
+                    # reported rather than excluded: the exclusion must
+                    # never hide a real loss (review of #24591).
+                    if sibling and drops_fr_token(findings):
+                        compared += 1
+                    elif is_header or sibling:
+                        excluded += 1
+                        findings = []
+                        pair_excluded = True
+                    else:
+                        compared += 1
                 else:
-                    compared += 1
+                    # Plain mirror header: excluded by design, no comparison
+                    # performed.
+                    findings = []
+                    excluded += 1
+                    pair_excluded = True
             else:
                 findings = []
             pair = {
