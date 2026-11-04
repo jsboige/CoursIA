@@ -40,7 +40,7 @@ Usage (local)::
 
     python scripts/lean/audit_conway_blocking_gate_whitelist.py
     python scripts/lean/audit_conway_blocking_gate_whitelist.py --workflow .github/workflows/lean-conway.yml
-    python scripts/lean/audit_conway_blocking_gate_whitelist.py --project-path MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean
+    python scripts/lean/audit_conway_blocking_gate_whitelist.py --project-path MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean
 
 Empirical output (c.8133, post-#9512 merge, base=475677a92, wsl Ubuntu
 v4.31.0-rc1): 19/19 hitelist entries are unreachable from the gate's target
@@ -64,7 +64,7 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
 DEFAULT_WORKFLOW = REPO / ".github" / "workflows" / "lean-conway.yml"
-DEFAULT_PROJECT_PATH = REPO / "MyIA.AI.Notebooks" / "SymbolicAI" / "Lean" / "conway_lean"
+DEFAULT_PROJECT_PATH = REPO / "MyIA.AI.Notebooks" / "SymbolicAI" / "Lean" / "GOL" / "conway_lean"
 
 
 def _parse_gate_block(workflow_text: str) -> tuple[list[str], list[str], str]:

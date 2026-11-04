@@ -4,26 +4,37 @@ Alexandre Grothendieck (1928-2014).
 
 Phase 2 extension (#2159, Epic #2162).
 
-Part 1 (CategoryAndSites.lean) introduces sieves, the three axioms,
-and the complete lattice on Sieve X. This module records the basic
+Part 1 (`CategoryAndSites.lean`) introduces sieves, the three axioms,
+and the complete lattice `Sieve X`. This module records the basic
 identities of pullback along morphisms:
 
-  - Pullback along the identity is the identity (pullback_id).
-  - Pullback composes contravariantly (pullback_pullback).
-  - Pullback of the bottom sieve is bottom (pullback_bot).
-  - Pullback is monotone in the sieve (pullback_monotone).
-  - Pullback preserves ⊓ (pullback_inf, in Part 8 SieveOps.lean).
-  - Pullback preserves ⋃, the finite join (pullback_union).
-  - Pullback preserves indexed suprema, iSup (pullback_imap).
-  - Pullback preserves indexed infima, iInf (pullback_iinf).
-  - Pullback distributes `Sieve.ofObjects` across the target (pullback_ofObjects).
-  - `f ∈ S` iff `Sieve.pullback f S = ⊤` (mem_iff_pullback_eq_top).
+  - Pullback along the identity is the identity (`pullback_id`).
+  - Pullback composes contravariantly (`pullback_pullback`).
+  - Pullback of the bottom sieve is bottom (`pullback_bot`).
+  - Pullback is monotone in the sieve (`pullback_monotone`).
+  - Pullback preserves ⊓ (`pullback_inf`, in Part 8 `SieveOps.lean`).
+  - Pullback preserves ⋃, the finite join (`pullback_union`).
+  - Pullback preserves indexed suprema, iSup (`pullback_imap`).
+  - Pullback preserves indexed infima, iInf (`pullback_iinf`).
+  - Pullback distributes `Sieve.ofObjects` across the target (`pullback_ofObjects`).
+  - `f ∈ S` iff `Sieve.pullback f S = ⊤` (`mem_iff_pullback_eq_top`).
 
-These complete the picture started by Part 5 calibration P2
-(pullback_top in Calibration.lean), and pave the way for Phase 3
+These complete the picture started by the calibration P2
+(`pullback_top` in `Calibration.lean`), and pave the way for Phase 3
 work on sieve generation and sheafification.
 
 Epic #1646, Phase 2 (#2159). All `sorry`s eliminated at creation.
+
+### i18n — convention #4980 ratified 2026-07-04
+
+This module is paired with its French canonical counterpart in the sibling
+file `SieveLattice.lean` (sibling pair model, see PR #6154 for the pilot
+on `Utility.lean`). Theorem statements, lemma names, Lean tactics
+(`:= by`, `rfl`, `exact`, etc.) and Mathlib references stay in English
+(Mathlib 4, standard tactic DSL). Only the **docstrings `/-- ... -/`** and
+**comments `-- ...`** differ between the two files. Anti-§D byte-identity
+guaranteed: the namespace body is preserved bit-for-bit (statements and
+proofs byte-identical between `SieveLattice.lean` and `SieveLattice_en.lean`).
 -/
 
 import Mathlib.CategoryTheory.Sites.Grothendieck
