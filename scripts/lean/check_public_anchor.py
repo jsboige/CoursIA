@@ -45,7 +45,7 @@ advisory : un UNANCHORED rapporte merite d'etre regarde.
 ## Usage
 
     python scripts/lean/check_public_anchor.py <fichier.lean> [...]
-    python scripts/lean/check_public_anchor.py --lake MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean
+    python scripts/lean/check_public_anchor.py --lake MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean
     python scripts/lean/check_public_anchor.py --lake <dir> --json
     python scripts/lean/check_public_anchor.py --lake <dir> --fail-on-unanchored
 

@@ -47,7 +47,7 @@ Usage
     python scripts/lean/count_code_sorry.py
 
     # Single lake:
-    python scripts/lean/count_code_sorry.py --lake MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean
+    python scripts/lean/count_code_sorry.py --lake MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean
 
     # Machine-readable JSON (for CI / PR-body generation):
     python scripts/lean/count_code_sorry.py --json
@@ -73,7 +73,7 @@ from pathlib import Path
 # --------------------------------------------------------------------------- #
 
 # Directories that are NOT own lakes -- third-party / vendored / fixtures.
-# Must match the i18n #4980 out-of-scope list (code-style.md).
+# Must match the i18n #4980 out-of-scope list (lean-i18n.md).
 EXCLUDE_DIR_PARTS = (
     ".lake",            # Mathlib + build artifacts
     ".mathlib-cache",   # shared Mathlib store, at the REPO ROOT (not under a lake)
