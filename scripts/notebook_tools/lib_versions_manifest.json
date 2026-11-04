@@ -59,7 +59,7 @@
     {
       "id": "dotNetRDF",
       "ecosystem": "nuget",
-      "canonical": "3.4.1",
+      "canonical": "3.5.2",
       "canonical_source": "manifest",
       "divergences": []
     },

@@ -3,17 +3,32 @@
 This library formalizes key results in social choice theory in Lean 4.
 It is derived from multiple open-source projects and academic work.
 
-> **⚑ Tombstone documentaire — la notice suit les sources, elle ne décrit plus rien ici.**
+> **⚑ Cette notice vit désormais à côté du code qu'elle couvre.**
 > Depuis la PR [#6058](https://github.com/jsboige/CoursIA/pull/6058) (EPIC
 > [#4365](https://github.com/jsboige/CoursIA/issues/4365), 2026-07-11), les sept modules
 > (`Basic`, `Framework`, `Arrow`, `Sen`, `Voting`, `MechanismDesign`, `SortedListCounting`)
-> ont été absorbés **byte-identique** dans
-> [`game_theory_lean/SocialChoice/`](../game_theory_lean/SocialChoice/), qui est le home
-> canonique. Ce répertoire ne contient plus aucun `.lean`.
+> ont été absorbés **byte-identique** dans ce répertoire. La notice les a suivis le
+> 2026-11-02 (#24183, T1) ; son ancien emplacement `social_choice_lean/` n'en garde qu'un
+> pointeur d'une ligne, qui disparaîtra avec le reste du dossier en T3.
 >
-> **L'attribution ci-dessous reste due, et elle s'applique au home canonique.** La provenance et
-> les obligations de licence voyagent avec le code, pas avec le dossier qui le contenait : c'est
-> pourquoi cette notice est conservée plutôt que supprimée avec les sources.
+> **Depuis le 2026-11-02 (#24183, T1), deux formalisations indépendantes d'Arrow et de Sen
+> coexistent, et le rôle de chacune est explicite :**
+>
+> - [`lean_game_defs/SocialChoice.lean`](../../lean_game_defs/SocialChoice.lean) est la
+>   **maison canonique** : cœur Lean seul, zéro dépendance, écrite intégralement par CoursIA
+>   (tous les commits sont de `jsboige`, étages 1 à 5 du 2026-10-28 au 2026-11-01). Son
+>   en-tête la dit « inspirée de » `asouther4/lean-social-choice` : inspiration, pas
+>   portage — la mesure de reprise du présent fichier porte sur **les modules de ce
+>   répertoire**, elle n'a pas été refaite sur cette formalisation-là.
+> - [`Arrow.lean`](Arrow.lean) et [`Sen.lean`](Sen.lean) de ce répertoire sont la **preuve
+>   alternative déclarée** : fondées sur Mathlib, plus générales (types arbitraires, agenda
+>   local), et pour `Arrow.lean` un portage mesuré d'`arrows_theorem.lean` (19 noms sur 29).
+>   Elles ne sont ni retirées ni dépréciées : elles enseignent une autre stratégie de preuve
+>   sur les mêmes énoncés.
+>
+> **L'attribution ci-dessous reste due, et elle s'applique aux deux formalisations.** La
+> provenance et les obligations de licence voyagent avec le code, pas avec le dossier qui le
+> contenait : c'est pourquoi cette notice est conservée plutôt que supprimée avec les sources.
 
 ## Original Sources
 
@@ -89,6 +104,13 @@ En résumé : `Basic` et `Arrow` sont un portage Lean 4 des fichiers `basic.lean
 `arrows_theorem.lean` de l'amont ; `Sen`, le vote (électeur médian, Split Cycle, Banks), les
 mécanismes (Vickrey, VCG) et le comptage sont des **ajouts CoursIA**.
 
+**`Sen` n'est donc pas un portage** : l'amont n'a pas de `Sen` à porter (0 nom repris sur 4
+déclarations), et la licence de l'amont ne départage par conséquent **rien** entre les deux
+formalisations de Sen — celle de ce répertoire et celle de `lean_game_defs/SocialChoice.lean`,
+toutes deux écrites par CoursIA. Les deux énoncés d'Arrow, eux, sont indépendants dans leur
+forme et leur stratégie de preuve (voir la comparaison au README de `lean_game_defs`) ; seule
+celle de ce répertoire est un portage mesuré.
+
 ## Academic References
 
 Ces références nomment les **auteurs des théorèmes**, pas les auteurs du code amont — le code
@@ -108,7 +130,7 @@ This project depends on **Mathlib**, the Lean 4 mathematical library:
 ## Lean Toolchain
 
 Valeurs du port initial. Le pin effectif est celui du home canonique
-([`game_theory_lean/lean-toolchain`](../game_theory_lean/lean-toolchain)) : ce répertoire n'a plus
+([`game_theory_lean/lean-toolchain`](../lean-toolchain)) : ce répertoire n'a plus
 de `lean-toolchain` depuis l'absorption.
 
 - **Lean**: v4.28.0-rc1+
