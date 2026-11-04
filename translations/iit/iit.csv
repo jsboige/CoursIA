@@ -22249,7 +22249,7 @@ Deux régimes nets : les **oscillateurs** (blinker, pulsar) présentent une popu
 Le Jeu de la Vie est le seul des trois à offrir des **trajectoires longues d'objets transporteurs** — et le seul dont le moteur de calcul est **prouvé correct dans le régime non-vacuous** (`evolveHashlifeFastAtN_correct_uncond`, sans hypothèse, Lean 4). Le théorème historique `hashlife_correct` (même fichier) reste vrai techniquement, mais par vacuité dès que le saut s'exerce — il n'établit rien dans le régime où le moteur est réellement utilisé.",,,,,,,,f183400b2e475418,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Life-SubstratCertifie.ipynb,39ca7247,markdown,fr,78b6716d0817ebc8,"## 5. Le pont Lean — ce que `evolveHashlifeFastAtN_correct_uncond` garantit, et où `hashlife_correct` s'arrête
 
-La track `conway_lean` (`MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/`) formalise l'algorithme **Hashlife** de Gosper — évaluation par quadtree mémoïsé avec sauts temporels $2^k$. Le théorème central, dans `Conway/Life/HashlifeCorrectness.lean` (déclaration `evolveHashlifeFastAtN_correct_uncond`, cherchable par son nom) :
+La track `conway_lean` (`MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/`) formalise l'algorithme **Hashlife** de Gosper — évaluation par quadtree mémoïsé avec sauts temporels $2^k$. Le théorème central, dans `Conway/Life/HashlifeCorrectness.lean` (déclaration `evolveHashlifeFastAtN_correct_uncond`, cherchable par son nom) :
 
 > **`evolveHashlifeFastAtN_correct_uncond`** — pour toute grille `g` et tout horizon `n`, sans hypothèse supplémentaire, l'évaluation Hashlife (variante `evolveHashlifeFastAtN` à moteur décorrélé, introduite par #11161) et la simulation naïve pas-à-pas produisent **le même film** : `evolveHashlifeFastAtN n g = evolve n g`.
 
@@ -22271,7 +22271,7 @@ def _racine_depot(depart):
 
 
 racine = _racine_depot(Path.cwd().resolve())
-lake = racine / ""MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean"" if racine else None
+lake = racine / ""MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean"" if racine else None
 fichier = lake / ""Conway/Life/HashlifeCorrectness.lean"" if lake else None
 
 if fichier is None or not fichier.exists():
