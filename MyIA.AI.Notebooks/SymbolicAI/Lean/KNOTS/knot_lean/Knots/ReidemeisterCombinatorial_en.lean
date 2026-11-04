@@ -41,10 +41,10 @@ module** (status corrected 2026-10-09, #18611). The planned route was: exhibit a
 `unknotDiagram`, and seal the implication with `verifyMoves_sound` — **proved
 on this module** by the prover passes (#19890/#20000; see the status block
 below). Two measurements nonetheless contradict the route: (a) the bounded
-search of #18611 (excursions ≤ +2 crossings, diagrams ≤ 13 crossings; 138,623
+search of #18611 (excursions ≤ +2 crossings, diagrams ≤ 13 crossings; 138 623
 states explored from the 67 n-changed diagrams) reaches `unknotDiagram` from
-none of them, and `min_crossings` stays at 11 for each; (b) the conditioned
-floor theorem (`Knots.ReidemeisterMoves` §8) shows that a sequence all of whose
+none of them, and `min_crossings` stays at 11 for each; (b) the
+conditioned floor theorem (`Knots.ReidemeisterMoves` §8) shows that a sequence all of whose
 moves preserve `allFourDistinct` cannot decrease the crossing count — a
 certificate for 11n102 would therefore have to leave that class along the way.
 The organ remains necessary to state the contract; it is not enough to honour
@@ -945,10 +945,11 @@ a knot (fold left). This is the « `indices` witness » of
 `unknottingWitness` seals the typical usage: « for a knot to have unknotting
 number ≤ n, exhibit a length-n crossing-change sequence and a
 ReidemeisterEquiv sequence between its image and `unknotDiagram` ». This is
-the contract that `unknotting_11n102_upper` (Lidman:81) is meant to honour — the
-structure exists, no instance is supplied: #18611 measured that a bounded search
-(diagrams ≤ 13 crossings, 138,623 states) does not reach `unknotDiagram` from the
-11n102 class, and this module does not supply the witness.
+the contract that `unknotting_11n102_upper` (Lidman:81) is meant to honour —
+the structure exists, no instance is supplied: #18611 measured that a bounded
+search (diagrams ≤ 13 crossings, 138 623 states) does not reach
+`unknotDiagram` from the 11n102 class, and this module does not supply the
+witness.
 -/
 
 /-- Sequentially applies a list of crossing changes. -/
@@ -970,6 +971,8 @@ structure UnknottingWitness (k : Knot) (n : Nat) where
 The module only depends on `Knots.Reidemeister` and `Knots.Invariant` — not
 on `Knots.ReidemeisterInvariance` (which would import `Knots.Conway` and
 spin the lake needlessly for passes that only attack the combinatorial side).
+The `_en` sibling carries the English translation of the docstrings, byte-identical
+body (i18n convention EPIC #4980).
 
 Wired in as of 2026-10-15: `Knots.lean` imports
 `Knots.ReidemeisterCombinatorial` (and `Knots_en.lean` its `_en` mirror).
