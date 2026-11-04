@@ -806,7 +806,9 @@ def test_is_scannable_matches_on_relative_parts_only(tmp_path):
 #   classe que #19996/#20392 : la paire arrivee avec son carnet sans
 #   mettre a jour cette ligne a la livraison rougit pair_count_declared
 #   (#21391) sur la PR.
-EXPECTED_PAIR_COUNT = 21
+# 2026-11-04 (tranche axe E de #1650) : la paire Crypto-MultiCanal/research
+#   FR/_en est ajoutee par cette branche ; l'arbre porte 21 + 1 = 22.
+EXPECTED_PAIR_COUNT = 22
 
 
 def _collect_parity_failures(repo_root: Path,
