@@ -57,6 +57,13 @@ on:
 permissions:
   contents: read
 
+# Partage du pool `ubuntu-latest` avec roo-extensions (proposition du 03/11,
+# dashboard global) : sur une PR, un run depasse par un push plus recent rend
+# sa place au lieu de garder la file. Sur `push` (main), rien n'est annule.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   assert:
     name: Composition vs RAM VM
