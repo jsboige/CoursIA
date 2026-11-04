@@ -1285,3 +1285,68 @@ def test_l_instrument_reel_rend_encore_une_valeur():
     valeur, erreur, _ = aer.mesurer(variante)
     assert erreur == "", f"l instrument reel ne rend plus de valeur : {erreur}"
     assert valeur is not None and valeur >= 0
+
+
+# ---------------------------------------------------------------------------
+# Comparabilite par SOURCE, pas par sha (#24678)
+# ---------------------------------------------------------------------------
+#
+# L'egalite des shas est un proxy de « meme instrument » qui se casse a
+# chaque fusion en squash : la reference declaree avec le sha de sa branche
+# n'est plus jamais comparable une fois mergee. Mesure du 2026-11-05 sur
+# `main` : `padding-nommage` rendait `INSTRUMENT ILLEGIBLE` alors que
+# l'instrument n'avait pas change de contenu, et le test du registre restait
+# vert parce qu'il recopiait la meme identite que la donnee (faux vert).
+
+def test_instrument_inchange_compare_la_source_pas_le_sha(monkeypatch):
+    """Deux shas differents, meme contenu de script => meme instrument."""
+    monkeypatch.setattr(aer, "_blob_du_script",
+                        lambda identite: {"a@1": "blob-x", "a@2": "blob-x",
+                                          "a@3": "blob-y"}.get(identite, ""))
+    assert aer.instrument_inchange("a@2", "a@1") is True
+    assert aer.instrument_inchange("a@3", "a@1") is False
+    # Aucune presomption : un blob illisible ne rend pas « comparable ».
+    assert aer.instrument_inchange("a@9", "a@1") is False
+    assert aer.instrument_inchange("", "a@1") is False
+
+
+def test_reference_comparable_par_la_fin_du_jour_de_la_reference(monkeypatch):
+    """Le sha de branche disparu apres fusion est retrouve par la DATE.
+
+    Troisieme voie de `reference_comparable` : l'instrument tel qu'il etait
+    dans `main` a la fin du jour de la reference.
+    """
+    reference = aer.Reference(26.0, "2026-11-05", "test", instrument="a@branche")
+    monkeypatch.setattr(aer, "_blob_du_script", lambda identite: "")
+    monkeypatch.setattr(aer, "identite_instrument_a",
+                        lambda commande, au: "a@fusion")
+    monkeypatch.setattr(aer, "instrument_inchange",
+                        lambda identite, ref: identite == "a@fusion")
+    assert aer.reference_comparable(("python", "x.py"), "a@fusion", reference) is True
+    assert aer.reference_comparable(("python", "x.py"), "a@autre", reference) is False
+
+
+def test_un_instrument_modifie_dans_l_arbre_de_travail_est_d_identite_inconnue(monkeypatch):
+    """Le sha vient de `origin/main`, mais le code qui TOURNE est l'arbre de
+    travail : un script modifie non commite n'est pas ce sha. Le declarer
+    identique a fabrique un `AVANCE` 39 -> 26 le 2026-11-05 (#24678)."""
+    def faux_run(cmd, timeout=600):
+        if "log" in cmd:
+            return 0, "deadbeef\n", ""
+        if "status" in cmd:
+            return 0, " M scripts/notebook_tools/inventory_notebook_names.py\n", ""
+        return 1, "", ""
+    monkeypatch.setattr(aer, "_run", faux_run)
+    assert aer.identite_instrument(
+        ("python", "scripts/notebook_tools/inventory_notebook_names.py")) == ""
+
+    def propre(cmd, timeout=600):
+        if "log" in cmd:
+            return 0, "deadbeef\n", ""
+        if "status" in cmd:
+            return 0, "", ""
+        return 1, "", ""
+    monkeypatch.setattr(aer, "_run", propre)
+    assert aer.identite_instrument(
+        ("python", "scripts/notebook_tools/inventory_notebook_names.py")) == (
+            "scripts/notebook_tools/inventory_notebook_names.py@deadbeef")

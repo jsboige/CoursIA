@@ -417,6 +417,16 @@ def _identite(commande, au: str | None) -> str:
         code, out, _ = _run(cmd)
         sha = out.strip()
         if code == 0 and sha:
+            # L'identite doit decrire le code qui TOURNE. Un script modifie
+            # dans l'arbre de travail n'est pas le script du sha : le
+            # declarer identique fabrique un verdict sur une mesure que
+            # personne ne peut reproduire depuis le depot. Mesure du
+            # 2026-11-05 (#24678) : instrument edite non commite => le
+            # registre rendait `AVANCE` 39 -> 26, un progres fabrique par
+            # l'edition elle-meme. Sale = identite inconnue, donc refus.
+            statut, modifs, _ = _run(("git", "status", "--porcelain", "--", script))
+            if statut == 0 and modifs.strip():
+                return ""
             return f"{script}@{sha}"
     return ""
 
@@ -429,6 +439,70 @@ def comparables(identite: str, identite_reference: str) -> bool:
     permet pas de comparer, donc elle ne vaut pas comparaison.
     """
     return bool(identite) and bool(identite_reference) and identite == identite_reference
+
+
+def _blob_du_script(identite: str) -> str:
+    """Blob du script nomme par une identite `<script>@<sha>`, ou "".
+
+    C'est le CONTENU de l'instrument, pas son sha : deux fusions differentes
+    qui posent le meme contenu designent le meme instrument.
+    """
+    if "@" not in identite:
+        return ""
+    script, sha = identite.rsplit("@", 1)
+    if not script or not sha:
+        return ""
+    code, out, _ = _run(("git", "rev-parse", "%s:%s" % (sha, script)))
+    return out.strip() if code == 0 else ""
+
+
+def instrument_inchange(identite: str, identite_reference: str) -> bool:
+    """Les deux identites designent-elles le MEME instrument (meme source) ?
+
+    L'egalite des shas est un PROXY de « meme instrument », et ce proxy se
+    casse a chaque fusion : une PR mergee en squash laisse sur `main` un sha
+    different de celui de sa branche, donc une reference qui declare le sha
+    de la branche n'est plus jamais comparable une fois mergee. C'est ce qui
+    a rendu `padding-nommage` `INSTRUMENT ILLEGIBLE` sur `main` (mesure du
+    2026-11-05, #24678) apres trois rebasages successifs -- et ce qui a fait
+    passer le controle pour vert, la constante de test recopiant la meme
+    identite que le registre.
+
+    La grandeur qui compte est le contenu du script. Aucune presomption :
+    un blob introuvable des deux cotes ne rend pas `True`.
+    """
+    if not identite or not identite_reference:
+        return False
+    blob_reference = _blob_du_script(identite_reference)
+    blob_courant = _blob_du_script(identite)
+    return bool(blob_reference) and blob_reference == blob_courant
+
+
+def reference_comparable(commande, identite: str, ref: "Reference") -> bool:
+    """La reference est-elle comparable a la mesure du jour ?
+
+    Trois voies, de la plus stricte a la plus toleree, aucune n'etant une
+    presomption :
+
+      1. egalite des identites -- le meme sha, donc le meme instrument ;
+      2. MEME SOURCE du script (`instrument_inchange`) : une fusion en
+         squash reecrit le sha sans changer le contenu ;
+      3. identite derivee a la FIN du jour de la reference (l'instrument tel
+         qu'il etait dans `main` ce jour-la) : couvre le sha de branche dont
+         l'objet n'existe plus dans le clone apres la fusion.
+
+    Deux shas introuvables ne rendent jamais `True`.
+    """
+    if comparables(identite, ref.instrument):
+        return True
+    if instrument_inchange(identite, ref.instrument):
+        return True
+    if ref.mesure_le:
+        derivee = identite_instrument_a(commande, ref.mesure_le + "T23:59:59")
+        if derivee and (comparables(identite, derivee)
+                        or instrument_inchange(identite, derivee)):
+            return True
+    return False
 
 
 # ---------------------------------------------------------------------------
@@ -1375,7 +1449,7 @@ def mesurer_tout(registre: tuple[Entree, ...] = REGISTRE,
             # conditions decrirait un melange de deux arbres.
             non_comparable = f"mesure refusee : {motif_alignement}"
             ref = None
-        elif ref is not None and not comparables(identite, ref.instrument):
+        elif ref is not None and not reference_comparable(entree.commande, identite, ref):
             # La reference vient d'une publication qui n'a pas ete mesuree
             # par l'instrument courant : la comparer fabriquerait un verdict
             # qui ne dit rien du depot. Elle est refusee, et le motif est
@@ -1387,7 +1461,7 @@ def mesurer_tout(registre: tuple[Entree, ...] = REGISTRE,
                 f"l instrument courant est `{identite or 'instrument d identite inconnue'}`")
             ref = None
         if ref is None and aligne and entree.reference is not None:
-            if comparables(identite, entree.reference.instrument):
+            if reference_comparable(entree.commande, identite, entree.reference):
                 ref = entree.reference
                 origine_reference = "rebase"
             elif not non_comparable:
