@@ -216,11 +216,32 @@ REGISTRE: tuple[Entree, ...] = (
         # (6144b71eb) n'etait plus celle de l'instrument courant, et la
         # comparaison serait tombee sur « reference transverse refusee ».
         # Correctif d'encodage seul, sans effet sur le classement : la
-        # valeur est 39 avant et apres sur le meme arbre aligne.
-        reference=Reference(39.0, "2026-11-02", "issue #23175",
+        # valeur est 39 avant et apres sur le meme arbre aligne. Ce point
+        # rejoint desormais la serie (cf `historique`).
+        #
+        # QUATRIEME rebasage (2026-11-05, #24678) -- et le premier qui
+        # change la GRANDEUR, pas seulement l'instrument :
+        # `_index_zero_padded` lit la lettre d'accretion, donc 14 carnets
+        # zero-pades (`03b_`, `09e_`, `01b-`) sortent du bucket `ambigu`.
+        # Comparer 26 a 39 fabriquerait un AVANCE qui ne dit rien du depot :
+        # exactement ce que la doctrine de ce module interdit, et ce qui a
+        # produit le verdict « AVANCE » fabrique de #23193. L'entree repart
+        # donc d'une reference NEUVE, comme le demande le critere 2 de
+        # l'issue. Le point d'avant le correctif reste dans la serie
+        # (`historique`, valeur 40).
+        #
+        # L'instrument declare est le commit de branche du correctif
+        # (687bb25856a) : il ne survivra pas au squash, et c'est prevu --
+        # `instrument_inchange` compare la SOURCE du script, et
+        # `reference_comparable` retombe sur l'identite derivee a la fin du
+        # jour de la reference. C'est ce qui manquait aux trois rebasages
+        # precedents, chacun n'ayant tenu que jusqu'a la fusion suivante.
+        reference=Reference(26.0, "2026-11-05",
+                            "issue #24678, mesure du 2026-11-05 sur "
+                            "l'arbre 536cf434700",
                             instrument=("scripts/notebook_tools/"
                                         "inventory_notebook_names.py"
-                                        "@735ada5ba11cd900dee9649c71fedb38fd6fe52c")),
+                                        "@687bb25856abdae7a4b5053e609e23493f97c59c")),
         # Les points anterieurs de la serie, avec leur SOURCE et
         # l'IDENTITE de l'instrument qui les a produits. L'identite
         # declaree est celle du PRODUISANT : c'est elle qui fait le
@@ -260,6 +281,26 @@ REGISTRE: tuple[Entree, ...] = (
                       instrument=("scripts/notebook_tools/"
                                   "inventory_notebook_names.py"
                                   "@6144b71ebfcd588d5347e16e7d2ba984dd6af2e5")),
+            # La reference du 3e rebasage (39), produite par l'instrument
+            # d'avant le correctif de la lettre d'accretion. Elle devient un
+            # point de la serie : c'est une mesure reelle, pas une valeur
+            # recopiee.
+            Reference(39.0, "2026-11-02",
+                      "issue #23175, reference rebasee precedente "
+                      "(instrument 735ada5ba, fusionne en 30c90b42b6b)",
+                      instrument=("scripts/notebook_tools/"
+                                  "inventory_notebook_names.py"
+                                  "@735ada5ba11cd900dee9649c71fedb38fd6fe52c")),
+            # Mesure du 2026-11-05 sur l'arbre 536cf434700, AVANT le
+            # correctif de la lettre d'accretion : 40. C'est le point qui
+            # documente la croissance de l'arbre depuis 39 (et non une
+            # derive de l'instrument). Identite resolvable sur `main`.
+            Reference(40.0, "2026-11-05",
+                      "issue #24678, mesure du 2026-11-05 sur l'arbre "
+                      "536cf434700, avant le correctif",
+                      instrument=("scripts/notebook_tools/"
+                                  "inventory_notebook_names.py"
+                                  "@30c90b42b6b19ead9d2872495cba9547d6bf1c58")),
         ),
         note="`ambigu` = nom non parsé ou kernel non verifie.",
         # L'instrument prend sa LISTE de carnets dans `origin/main` et lit
@@ -408,7 +449,13 @@ def _identite(commande, au: str | None) -> str:
     script = _script_de_la_commande(commande)
     if not script:
         return "git:" + " ".join(str(m) for m in commande)
-    for ref in ("origin/main", "HEAD"):
+    # HEAD d'abord : c'est le code qui TOURNE. `origin/main` ne decrit le
+    # script execute que si le checkout est sur la branche par defaut, ce
+    # qui n'est vrai ni sur une branche de PR, ni sur un clone en retard
+    # (le clone principal de ce depot l'est de plus de mille commits). Une
+    # identite qui nomme un autre fichier que celui qui tourne est une
+    # identite fausse, meme quand les deux se ressemblent aujourd'hui.
+    for ref in ("HEAD", "origin/main"):
         if au:
             cmd = ("git", "log", "-1", "--format=%H", f"--before={au}",
                    ref, "--", script)

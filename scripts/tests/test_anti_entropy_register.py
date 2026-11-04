@@ -62,10 +62,18 @@ PADDING_REFERENCE = 776.0
 # lui-meme, et l'ecart 38 -> 39 vient de l'ARBRE, pas de l'instrument --
 # mesure sur le meme arbre, l'ancien instrument (d818b008b) rend 39 lui
 # aussi.
-PADDING_REFERENCE_REBASE = 39.0
-# L'identite de l'instrument au moment du rebasage. Troisieme rebasage
-# (2026-11-02) : le correctif UTF-8 a touche l'instrument -- valeur
-# inchangee (39) sur le meme arbre, l'encodage ne classe pas les carnets.
+# Quatrieme rebasage (2026-11-05, #24678) : la GRANDEUR change, pas
+# seulement l'instrument -- `_index_zero_padded` lit la lettre d'accretion,
+# donc 14 carnets zero-pades sortent du bucket `ambigu` (40 -> 26, mesure
+# sur l'arbre 536cf434700). La reference ne se compare donc PAS aux points
+# precedents (39, 40) : ils restent dans `historique`, avec l'identite de
+# l'instrument qui les a produits.
+PADDING_REFERENCE_REBASE = 26.0
+# Fixture de sha pour les tests qui simulent `git log` : ce n'est plus une
+# identite attendue du registre (c'etait le faux vert de #24678 -- la
+# constante de test et la donnee etaient la meme chaine, donc le test ne
+# pouvait pas voir la derive de sha qui a rendu l'entree `INSTRUMENT
+# ILLEGIBLE` sur `main`).
 INSTRUMENT_PADDING = ("scripts/notebook_tools/inventory_notebook_names.py"
                        "@735ada5ba11cd900dee9649c71fedb38fd6fe52c")
 
@@ -384,12 +392,19 @@ def test_la_reference_du_padding_est_celle_de_l_issue():
     `comparables`), et c'est ce qui produisait le verdict « AVANCE »
     fabrique sur l'entree « padding et nommage »."""
     e = entree("padding-nommage")
-    assert e.reference.source == "issue #23175"
-    assert e.reference.mesure_le == "2026-11-02"
+    assert e.reference.source.startswith("issue #24678")
+    assert e.reference.mesure_le == "2026-11-05"
     assert e.reference.valeur == PADDING_REFERENCE_REBASE
-    assert e.reference.instrument == INSTRUMENT_PADDING
-    # Et la reference rebasee est comparable a l'instrument courant.
-    assert aer.comparables(INSTRUMENT_PADDING, e.reference.instrument)
+    # Le 4e rebasage change la grandeur : les points d'avant le correctif
+    # restent dans la serie, ils ne servent plus de reference.
+    assert e.reference.valeur not in {39.0, 40.0}
+    assert {r.valeur for r in e.historique} >= {39.0, 40.0}
+    # Et la reference rebasee est comparable a l'instrument courant : par le
+    # sha, par la SOURCE du script ou par la date -- quel que soit le chemin
+    # que la fusion laissera (une fusion en squash reecrit le sha sans
+    # toucher au contenu, c'est le cas qui rendait la comparaison morte).
+    assert aer.reference_comparable(
+        e.commande, aer.identite_instrument(e.commande), e.reference)
 
 
 def test_le_cliquet_lit_l_etat_des_verdicts():
