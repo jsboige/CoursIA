@@ -361,7 +361,9 @@ layout: default
 ---
 
 
-# Règles d'infrence
+# Règles d'inférence
+
+<div class="dense-list">
 
 ## Modus Ponens
 
@@ -388,6 +390,7 @@ layout: default
 
 - NON(NON P) equivaut a P
 
+</div>
 
 <img src="./images/img_011.png" style="position:absolute; top:50px; right:10px; width:380px;" alt="Equivalences logiques" />
 

@@ -40,7 +40,7 @@ bibliothèque déclarée n'est plus nommée par la carte (contrôle CI :
 
 Note : `SymbolicAI/Lean/examples/llm_assisted_proof.lean` (2 sorry) est un exemple pédagogique, pas du code de production. `asymmetric_information_lean` porte 2 *naive* sorry (prose/docstrings) pour 0 vrai sorry de code.
 
-**Série hommage Conway déplacée** : `conway_lean/` (hommage Conway — Doomsday, FRACTRAN, Look-and-Say, Nim, Angel) a été déplacé vers [`SymbolicAI/Lean/conway_lean/`](../SymbolicAI/Lean/conway_lean/) car il formalise des résultats Conway moins connus (pas du contenu game-théorique en soi). Les cibles de calibration du prover définies dans `agent_tests/prover/config.py` suivent le nouveau chemin.
+**Série hommage Conway déplacée** : `conway_lean/` (hommage Conway — Doomsday, FRACTRAN, Look-and-Say, Nim, Angel) a été déplacé vers [`SymbolicAI/Lean/GOL/conway_lean/`](../SymbolicAI/Lean/GOL/conway_lean/) car il formalise des résultats Conway moins connus (pas du contenu game-théorique en soi). Les cibles de calibration du prover définies dans `agent_tests/prover/config.py` suivent le nouveau chemin.
 
 **Calibration déplacée** : `calibration_lean/` a été déplacé vers [`SymbolicAI/Lean/calibration_lean/`](../SymbolicAI/Lean/calibration_lean/) (issue #1764) car c'est un composant de harnais prover, pas du contenu game-théorique.
 
@@ -200,7 +200,9 @@ Folk (`folk_theorem_discounted`) porte 1 sorry stretch, toléré au titre de #48
 
 ### 8. lean_game_defs_ext
 
-**Objectif** : jeux bayésiens & design de mécanismes — véracité Vickrey, équilibre bayésien de Nash, enchères, réputation, jeu fictif, regret. Extension de `lean_game_defs` (définitions partagées), sans Mathlib.
+**Objectif** : jeux bayésiens & design de mécanismes — véracité Vickrey, équilibre bayésien de Nash, enchères, réputation, jeu fictif, regret. Extension thématique de `lean_game_defs`, sans dépendance de lake (l'ext vendore ses propres définitions), sans Mathlib.
+
+**Séparation par design + condition de réveil** : la base (définitions introductives) et l'ext (preuve, vendore ses propres defs) restent **tenus séparés par design** ; leur seul nom commun, `externalRegret` (signatures distinctes Float/Int), est une **collision dormante** (aucun consommateur n'importe les deux). **Le premier carnet ou lake qui importera les deux lakes renomme d'abord `externalRegret` côté ext (`bayesianExternalRegret`)** — décision ai-01 2026-11-02 (c2756, mesure 0/242 Bayesian + 1/39 Regret, i.e. symboles de l'ext déjà présents dans la base : 0 sur 242 Bayesian, 1 sur 39 Regret — le seul `externalRegret`).
 
 **Toolchain** : v4.33.0 | **Dépendances** : Lean core (sans Mathlib)
 
@@ -309,7 +311,7 @@ Folk (`folk_theorem_discounted`) porte 1 sorry stretch, toléré au titre de #48
 | SocialChoice/social_choice_lean_peters | EN COURS | 0 sorry. Tour de Peters (référence, `94a4c650`, Mathlib `520045ab`, v4.32.1) **plus** six libs de preuve du core d'approbation BGP 2026 (`Approval*`, plan #17988) — ces dernières sont une cible de preuve, pas seulement une référence ; le théorème de non-vacuité du core reste à livrer (cf. §Cibles de preuve restantes). |
 | conway_cgt_lean | N/A | Tour de référence (v4.31.0-rc2, suit l'amont). |
 
-Les cibles de calibration Conway (Doomsday / FRACTRAN / Look-and-Say / Nim / Angel) vivent dans `SymbolicAI/Lean/conway_lean/` et sont toujours consommées par `agent_tests/prover/config.py` (co-évolution du harnais prover #1453).
+Les cibles de calibration Conway (Doomsday / FRACTRAN / Look-and-Say / Nim / Angel) vivent dans `SymbolicAI/Lean/GOL/conway_lean/` et sont toujours consommées par `agent_tests/prover/config.py` (co-évolution du harnais prover #1453).
 
 ---
 

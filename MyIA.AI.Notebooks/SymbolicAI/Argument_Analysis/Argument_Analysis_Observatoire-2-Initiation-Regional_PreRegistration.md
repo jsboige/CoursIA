@@ -1,6 +1,6 @@
 # Argument_Analysis_Observatoire-2-Initiation-Regional_PreRegistration
 
-**Statut** : document de pré-inscription pour le Cas 2 de l'Observatoire des formes relationnelles (#13303), suite du Cas 1 (#16410 — Bumble Opening Moves global, DiD temporel). Ce document **n'effectue aucune mesure** ; il engage le protocole décrit dans [`Argument_Analysis_RelationalForms_Protocol.md`](Argument_Analysis_RelationalForms_Protocol.md) §3 (pré-inscription datée, asymétrie des hypothèses, réfutation explicite).
+**Statut** : document de pré-inscription pour le Cas 2 de l'Observatoire des formes relationnelles (#13303), suite du Cas 1 (#16410 — application de rencontre, DiD temporel). Ce document **n'effectue aucune mesure** ; il engage le protocole décrit dans [`Argument_Analysis_RelationalForms_Protocol.md`](Argument_Analysis_RelationalForms_Protocol.md) §3 (pré-inscription datée, asymétrie des hypothèses, réfutation explicite).
 
 **Barreau déclaré** : quasi-expérimental (DiD imparfait), avec passage obligatoire par les trois réserves DiD décrites en §3.1 ci-dessous.
 
@@ -11,6 +11,8 @@
 - analyse et verdict final (grain séparé) ;
 - sélection des 2-3 cas datables parmi les candidats (grain séparé, citera celui-ci) ;
 - **aucun nom d'entreprise n'est engagé dans ce document** : la candidate retenue est désignée par son type de rupture régionale, pas par un opérateur identifié (cf. §2.2 et §4.2).
+
+**Édition de forme postérieure à la pré-inscription** : les désignations de la plateforme ci-dessus ont été rendues génériques afin de satisfaire la clause « hors périmètre » ci-dessus ; il s'agit d'une édition de forme strictement postérieure à la pré-inscription — prédictions, hypothèses et design inchangés, et le SHA de pré-inscription reste `6e523ae070bd`.
 
 ---
 
@@ -48,7 +50,7 @@ Conformément à la consigne de l'observatoire (aucun nom d'entreprise dans le g
 
 Trois alternatives ont été écartées **avant** l'écriture de la pré-inscription :
 
-1. **Bumble Opening Moves (régional)** : le Cas 1 a déjà utilisé la plateforme en mode global, et le Cas 1 n'a pas formellement séparé les régions (le split chronologique est temporel, pas régional). Le Cas 2 sur la même plateforme mais avec un split régional apporterait de l'information, mais la dépendance au Cas 1 affaiblit la portée du barreau quasi-expérimental : les deux cas partageraient la même plateforme, et un critique pourrait arguer que les deux effets sont colinéaires. **Rejeté pour diversification**.
+1. **la plateforme du Cas 1 (#16410) (régional)** : le Cas 1 a déjà utilisé la plateforme en mode global, et le Cas 1 n'a pas formellement séparé les régions (le split chronologique est temporel, pas régional). Le Cas 2 sur la même plateforme mais avec un split régional apporterait de l'information, mais la dépendance au Cas 1 affaiblit la portée du barreau quasi-expérimental : les deux cas partageraient la même plateforme, et un critique pourrait arguer que les deux effets sont colinéaires. **Rejeté pour diversification**.
 2. **Modification d'API d'un réseau social (régional)** : la signature « régional » existe (règles de contenu par juridiction), mais l'effet sur les **formes relationnelles** est médiat (le réseau social n'est pas une plateforme de mise en relation, son design n'engage pas la relation d'entrée). Le Cas 2 doit porter sur les **formes relationnelles** (humour / désir / attachement, cf. sister issues #12680/#12682/#12683), pas sur les formes éditoriales. **Rejeté pour distance au protocole**.
 3. **Pricing différencié (régional)** : la signature existe, et la modification est datable, mais le mécanisme modifié (tarification) n'a pas de signature dans `Dated_Graphs` (l'instrument mesure des relations argumentatives, pas des paiements). **Rejeté pour absence de mesure dans l'outillage**.
 
@@ -140,7 +142,7 @@ D'autres modifications datées peuvent survenir dans la fenêtre de 18 mois : ca
 - [`Argument_Analysis_RelationalForms_Protocol.md`](Argument_Analysis_RelationalForms_Protocol.md) — protocole de l'EPIC #13303, dont ce document applique §3.
 - [`../../Probas/DecisionTheory/Causal-Bridges/CausalBridges-07-Quasi-Experimental.ipynb`](../../Probas/DecisionTheory/Causal-Bridges/CausalBridges-07-Quasi-Experimental.ipynb) — outillage DiD livré, MERGED, lien vérifiable.
 - #13303 (EPIC parent Observatoire), #12680/#12682/#12683 (sister issues humour / désir / attachement).
-- #16410 — Cas 1, Bumble Opening Moves, DiD temporel.
+- #16410 — Cas 1, application de rencontre, DiD temporel.
 - #13310 — instrument `Dated_Graphs`.
 - #18873 — fragilité héritée du plancher de bruit (minimum de la distribution, Exercice 2 non exécuté) — **le Cas 2 refuse explicitement de reproduire cette omission**.
 - #10961 CE1 — référence du verdict `INCONCLUSIVE` (pas de fallback `linear`).

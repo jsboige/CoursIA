@@ -63,9 +63,11 @@ PADDING_REFERENCE = 776.0
 # mesure sur le meme arbre, l'ancien instrument (d818b008b) rend 39 lui
 # aussi.
 PADDING_REFERENCE_REBASE = 39.0
-# L'identite de l'instrument au moment du rebasage.
+# L'identite de l'instrument au moment du rebasage. Troisieme rebasage
+# (2026-11-02) : le correctif UTF-8 a touche l'instrument -- valeur
+# inchangee (39) sur le meme arbre, l'encodage ne classe pas les carnets.
 INSTRUMENT_PADDING = ("scripts/notebook_tools/inventory_notebook_names.py"
-                       "@6144b71ebfcd588d5347e16e7d2ba984dd6af2e5")
+                       "@735ada5ba11cd900dee9649c71fedb38fd6fe52c")
 
 
 def entree(cle="padding-nommage", sens="descend", cible=0.0):
@@ -383,7 +385,7 @@ def test_la_reference_du_padding_est_celle_de_l_issue():
     fabrique sur l'entree « padding et nommage »."""
     e = entree("padding-nommage")
     assert e.reference.source == "issue #23175"
-    assert e.reference.mesure_le == "2026-10-31"
+    assert e.reference.mesure_le == "2026-11-02"
     assert e.reference.valeur == PADDING_REFERENCE_REBASE
     assert e.reference.instrument == INSTRUMENT_PADDING
     # Et la reference rebasee est comparable a l'instrument courant.
@@ -771,7 +773,7 @@ def test_l_identite_de_l_instrument_suit_le_sha_du_script(monkeypatch):
     quand l'instrument change."""
     def faux_run(cmd, timeout=600):
         if "log" in cmd and "inventory_notebook_names.py" in " ".join(cmd):
-            return 0, "6144b71ebfcd588d5347e16e7d2ba984dd6af2e5\n", ""
+            return 0, INSTRUMENT_PADDING.rsplit("@", 1)[1] + "\n", ""
         return 1, "", ""
     monkeypatch.setattr(aer, "_run", faux_run)
     identite = aer.identite_instrument(

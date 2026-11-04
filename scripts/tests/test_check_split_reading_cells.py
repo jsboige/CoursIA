@@ -2264,3 +2264,231 @@ def test_carveout_code_avant_titre_ne_rattache_pas():
         _student_solution_verbatim(),
     ]
     assert is_exercise_cell(cells[3], cells, 3) is True
+
+
+# --- Titres de TRANSITION de fin de carnet (CLOSING_NAV_TITLE_RE) -------------
+#
+# Surface mesuree sur la PR #24303 : la cellule de CLOTURE d'un carnet
+# (`## Prochaines etapes` + liens de navigation vers le carnet suivant) ajoutee
+# juste apres le stub du dernier exercice etait signalee EXERCISE_READING.
+# La regle « l'etudiant ne verra pas la lecture tant qu'il n'a pas complete »
+# ne s'applique pas a une cellule de NAVIGATION : elle ne commente aucune
+# sortie, et la navigation de fin de carnet doit rester visible meme si
+# l'exercice n'est pas fait.
+#
+# Les controles sont doubles : POSITIFS (la transition n'est pas signalee) et
+# NEGATIFS (une lecture reste signalee, une PHRASE qui commence par le mot-cle
+# n'est pas blanchie par raccourci).
+
+
+def test_titre_prochaines_etapes_apres_exercice_n_est_pas_signale():
+    """POSITIF : `## Prochaines etapes` apres un exercice n'est pas une lecture."""
+    base = nb(
+        _stub_exercise(),
+    )
+    head = nb(
+        _stub_exercise(),
+        md("## Prochaines etapes\n\nLe notebook suivant explore les "
+           "dialogues argumentatifs multi-agents avec le module `agents.dialogues`.\n\n"
+           "***\n\n**Navigation** : [Index](README.md) | [Suivant >>](Tweety-08-Python.ipynb)"),
+    )
+    assert detect_added_readings(head, base) == []
+
+
+def test_titre_next_steps_apres_exercice_n_est_pas_signale():
+    """POSITIF : le jumeau `_en` (`## Next steps`) suit la meme regle."""
+    base = nb(
+        _stub_exercise(),
+    )
+    head = nb(
+        _stub_exercise(),
+        md("## Next steps\n\nThe next notebook explores multi-agent argumentation "
+           "dialogues with the `agents.dialogues` module."),
+    )
+    assert detect_added_readings(head, base) == []
+
+
+def test_titre_navigation_apres_exercice_n_est_pas_signale():
+    """POSITIF : `## Navigation` (section de liens) apres un exercice."""
+    base = nb(
+        _stub_exercise(),
+    )
+    head = nb(
+        _stub_exercise(),
+        md("## Navigation\n\n- [Precedent](Notebook-03-Python.ipynb) — le coeur du moteur\n"
+           "- [Index](README.md)"),
+    )
+    assert detect_added_readings(head, base) == []
+
+
+def test_titre_liens_apres_exercice_n_est_pas_signale():
+    """POSITIF : `## Liens` (liste de references vers les autres carnets)."""
+    base = nb(
+        _stub_exercise(),
+    )
+    head = nb(
+        _stub_exercise(),
+        md("## Liens\n\n- [MGS-1 Introduction](MGS-01-Introduction.ipynb) — le moteur autonome\n"
+           "- [MGS-2 Composition](MGS-02-Composition.ipynb) — les primitives"),
+    )
+    assert detect_added_readings(head, base) == []
+
+
+def test_titre_numerote_prochaines_etapes_n_est_pas_signale():
+    """POSITIF : la numerotation de section (`### 7.3 Prochaines etapes`) est tolerated."""
+    base = nb(
+        _stub_exercise(),
+    )
+    head = nb(
+        _stub_exercise(),
+        md("### 7.3 Prochaines etapes\n\nLe chapitre suivant traite du cout des "
+           "operations de mutation sur les automates."),
+    )
+    assert detect_added_readings(head, base) == []
+
+
+def test_phrase_commencant_par_navigation_reste_signalee():
+    """NEGATIF : `## Navigation dans un graphe RDF` n'est PAS une transition.
+
+    L'exemption est fondee sur un ANCRAGE COMPLET du titre : une section qui
+    commence par le mot-cle mais qui parle d'autre chose reste une lecture.
+    """
+    base = nb(
+        _stub_exercise(),
+    )
+    head = nb(
+        _stub_exercise(),
+        md("## Navigation dans un graphe RDF\n\nLe parcours du graphe part de la "
+           "source et suit les aretes ; chaque saut ajoute un fait au contexte."),
+    )
+    findings = detect_added_readings(head, base)
+    assert len(findings) == 1
+    assert findings[0]["type"] == "EXERCISE_READING"
+
+
+def test_lecture_apres_exercice_reste_signalee():
+    """NEGATIF (garde-fou de non-regression) : une vraie lecture reste signalee.
+
+    L'extension des titres de transition ne doit pas affaiblir la regle
+    « l'etudiant ne verra pas la lecture tant qu'il n'a pas complete ».
+    """
+    base = nb(
+        _todo_stub_unexec(),
+    )
+    head = nb(
+        _todo_stub_unexec(),
+        md("### Lecture du resultat\nSortie attendue : le rang de chaque argument "
+           "une fois le classement probabiliste applique."),
+    )
+    findings = detect_added_readings(head, base)
+    assert len(findings) == 1
+    assert findings[0]["type"] == "EXERCISE_READING"
+
+
+def test_resume_apres_exercice_reste_signale():
+    """NEGATIF : `## Resume` n'est PAS dans la famille des transitions.
+
+    Un recapitulatif peut etre un contenu que l'etudiant doit lire APRES
+    l'exercice : il reste signale (perimetre volontairement laisse a
+    l'arbitrage du coordinateur).
+    """
+    base = nb(
+        _stub_exercise(),
+    )
+    head = nb(
+        _stub_exercise(),
+        md("## Resume\n\nLe classement probabiliste combine la force des arguments "
+           "et la coherence du debat ; les deux termes se compensent."),
+    )
+    findings = detect_added_readings(head, base)
+    assert len(findings) == 1
+    assert findings[0]["type"] == "EXERCISE_READING"
+
+
+# =============================================================================
+# Carve-out prose de transition (#24164)
+# =============================================================================
+#
+# Instance mesuree : PR #23840, `App-3-NurseScheduling.ipynb`, 10 SECOND_READING
+# sur des cellules qui ANNONCENT le code suivant. 2 separateurs `***` devant un
+# titre de section, 8 libelles d'etape en gras. L'organe punissait le geste qu'il
+# prescrit (poser la lecture demandee par « une sortie = une lecture »).
+
+from check_split_reading_cells import is_step_transition  # noqa: E402
+
+
+def test_transition_separateur_devant_titre():
+    """POSITIF : `***` puis `## 2. ...` decore un titre, ce n'est pas une lecture."""
+    assert is_step_transition(md("***\n\n## 2. Formulation du probleme")) is True
+    assert is_step_transition(md("---\n\n### 3. Resultats")) is True
+    assert is_step_transition(md("***")) is True
+
+
+def test_transition_libelle_etape_en_gras():
+    """POSITIF : les 8 formes mesurees sur #23840."""
+    for label in (
+        "**Etape 2 : contrainte de couverture (C1)**",
+        "**Étape 3 : contrainte d'unicite (C2)**",
+        "**Step 4: objective (C3)**",
+        "**Partie 2 -- distribution de la charge**",
+    ):
+        assert is_step_transition(md(label)) is True, label
+
+
+def test_transition_negative_separateur_suivi_de_prose():
+    """NEGATIF : un `***` qui separe deux paragraphes reste de la prose."""
+    assert is_step_transition(
+        md("***\n\nLa distribution de la charge est desormais asimmee.")
+    ) is False
+
+
+def test_transition_negative_lecture_titree_reste_lecture():
+    """NEGATIF : une lecture titree n'est jamais une transition, gras ou pas."""
+    assert is_step_transition(
+        md("### Lecture du resultat\n\n**Etape 2 : contrainte (C1)**")
+    ) is False
+
+
+def test_transition_negative_citation_de_sortie():
+    """NEGATIF : un libelle d'etape qui cite une sortie commente le precedent."""
+    assert is_step_transition(
+        md("**Etape 2 : contrainte (C1)**\n\nComme le montre la sortie, 4.14 min.")
+    ) is False
+
+
+def test_transition_negative_interpretation_dissimulee():
+    """NEGATIF : un titre d'interpretation dans le corps disqualifie le carve-out."""
+    assert is_step_transition(
+        md("**Etape 2 : contrainte (C1)**\n\n### Lecture du resultat\n\nOn observe 2 noeuds.")
+    ) is False
+
+
+def test_transition_negative_prose_grassee_quelconque():
+    """NEGATIF (borne) : un gras qui n'est pas un libelle d'etape reste du texte.
+
+    Le carve-out est volontairement etroit (#24164, option 2) : etendre a tout
+    gras ferait d'un `**Resultat**` arbitraire un titre.
+    """
+    assert is_step_transition(md("**Remarque importante sur ce modele**")) is False
+
+
+def test_transition_n_inflate_pas_le_compte_de_la_sortie_precedente():
+    """BOUT EN BOUT : la transition n'est pas comptee comme lecture.
+
+    Sans le carve-out, la cellule `***`+titre gonflait le compte de la sortie
+    `print(1)` de 1 a 2, et la lecture legitime ajoutee ensuite etait tiree en
+    SECOND_READING -- exactement le symptome de #23840.
+    """
+    base = nb(
+        _exec("print(1)"),
+        md("### Lecture du resultat\n\nUne seule lecture."),
+    )
+    head = nb(
+        _exec("print(1)"),
+        md("***\n\n## 2. Formulation du probleme"),
+        md("### Lecture du resultat\n\nUne seule lecture."),
+        _exec("print(2)"),
+        md("### Lecture du resultat : la contrainte C1\n\nDeux noeuds couverts."),
+    )
+    findings = detect_added_readings(head, base)
+    assert findings == [], [f["type"] for f in findings]
