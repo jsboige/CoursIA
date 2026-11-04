@@ -364,7 +364,8 @@ def test_distance_structurelle_dag_exact_vaut_zero():
     )
     d = ddo.distance_structurelle(exact)
     assert d["shd"] == 0
-    assert d["squelette"] == "5/5"
+    assert d["squelette"] == 5, "le compte du squelette est un entier"
+    assert d["squelette_texte"] == "5/5", "la forme textuelle est portee a part"
     assert d["orientees_correctes"] == 5
     assert d["inverses"] == []
     assert d["parasites"] == []
@@ -391,7 +392,8 @@ def test_baseline_ordre_chaine_vaut_moins_que_lingam_gaussien():
     assert res.methode == "BASELINE_ORDRE"
     assert len(res.aretes_orientees) == 4
     assert d["shd"] == 1
-    assert d["squelette"] == "4/5"
+    assert d["squelette"] == 4
+    assert d["squelette_texte"] == "4/5"
     assert d["manquantes"] == [("C", "Y")]
     assert d["parasites"] == []
 
@@ -539,5 +541,11 @@ def test_notebook_cellules_baselines_consomment_lorgane():
         )
         assert "def baseline_ordre" not in src, (
             "les baselines ne doivent pas être redéfinies dans le notebook"
+        )
+        assert "def baseline_aleatoire" not in src, (
+            "la baseline aléatoire ne doit pas être redéfinie dans le notebook"
+        )
+        assert "def tableau_classement" not in src, (
+            "le tableau de classement ne doit pas être redéfini dans le notebook"
         )
 

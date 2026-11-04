@@ -553,6 +553,7 @@ def comparer_au_dag_vrai(
     Dict avec cles :
         ``squelette_trouvees`` -- "k/K" aretes vraies presentes (orientees
         ou non) ;
+        ``squelette_trouvees_nb`` -- le meme compte en entier (K trouvees) ;
         ``oriente_comme_vrai`` -- arets orientees dans le bon sens ;
         ``oriente_inverse`` -- aretes orientees a l'envers du DAG vrai ;
         ``non_orientees_parmi_vraies`` -- vraies arets laissees ambigues ;
@@ -580,6 +581,7 @@ def comparer_au_dag_vrai(
     manquantes = sorted(vraies_skel - squelette_detecte)
     return {
         "squelette_trouvees": f"{len(vraies_skel) - len(manquantes)}/{len(vraies_skel)}",
+        "squelette_trouvees_nb": len(vraies_skel) - len(manquantes),
         "oriente_comme_vrai": oriente_comme_vrai,
         "oriente_inverse": inversees,
         "non_orientees_parmi_vraies": non_or_vraies,
@@ -623,8 +625,14 @@ def distance_structurelle(
 
     Return
     ------
-    Dict avec cles ``shd``, ``squelette``, ``orientees_correctes``,
-    ``inverses``, ``ambigues``, ``parasites``, ``manquantes``.
+    Dict avec cles ``shd``, ``squelette``, ``squelette_texte``,
+    ``orientees_correctes``, ``inverses``, ``ambigues``, ``parasites``,
+    ``manquantes``.
+
+    ``squelette`` est un **entier** (nombre d'aretes vraies du squelette
+    trouvees) ; la forme textuelle ``"k/K"`` est portee par la cle
+    ``squelette_texte``. Le dict ne melange donc plus des entiers et une
+    chaine : tout consommateur peut faire ``d["squelette"] - 0``.
     """
     comp = comparer_au_dag_vrai(resultat, aretes_vraies)
     shd = (
@@ -635,7 +643,8 @@ def distance_structurelle(
     )
     return {
         "shd": shd,
-        "squelette": comp["squelette_trouvees"],
+        "squelette": comp["squelette_trouvees_nb"],
+        "squelette_texte": comp["squelette_trouvees"],
         "orientees_correctes": len(comp["oriente_comme_vrai"]),
         "inverses": list(comp["oriente_inverse"]),
         "ambigues": list(comp["non_orientees_parmi_vraies"]),
@@ -799,7 +808,7 @@ def tableau_classement(
     for nom, d in lignes:
         n_aretes = len(resultats[nom].aretes_orientees)
         corps.append(
-            f"{nom:38s} {d['shd']:4d} {n_aretes:7d} {d['squelette']:>10s} "
+            f"{nom:38s} {d['shd']:4d} {n_aretes:7d} {d['squelette_texte']:>10s} "
             f"{d['orientees_correctes']:10d} {len(d['inverses']):9d} "
             f"{len(d['parasites']):10d} {len(d['manquantes']):11d}")
     blocs = []
