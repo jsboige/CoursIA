@@ -128,8 +128,8 @@ catalogue), pas pour le cœur éditorial.
 > des primaires Bootstrap, affordance des CTA) sur une charte synthétique
 > (Maison Valmont) et montre que le smoke test est aveugle aux trois classes
 > de défauts visuels. *Le gate « la page est servie » ne certifie pas « le
-> rendu est conforme ».* C'est la classe visuelle du motif « la sonde ment »
-> documenté pour la classe système dans
+> rendu est conforme ».* C'est une instance de la **classe 2** du motif « la
+> sonde ment » — *la sonde qui mesure le contenant* — documentée dans
 > [`verification-verte-systeme-casse.md`](../../../../../docs/reference/verification-verte-systeme-casse.md).
 
 > **Notebook compagnon (série « par son API »).**

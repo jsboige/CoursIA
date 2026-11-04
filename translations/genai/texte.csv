@@ -8263,7 +8263,7 @@ Le **prompt engineering** est l'art de formuler des instructions efficaces pour 
 | Self-refine | Avancee | Code, textes critiques, haute qualite |
 
 > **Documentation officielle** : [OpenAI Prompt Engineering Guide](https://platform.openai.com/docs/guides/prompt-engineering)",,,,,,,,34ca5e961dcf2acd,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb,7b9f43da,code,fr,a24b0b0e03b64735,"# Verification des dependances (import guards)
+MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb,7b9f43da,code,fr,e638feace13dca50,"# Verification des dependances (import guards)
 try:
     from openai import OpenAI
     openai_AVAILABLE = True
@@ -8310,12 +8310,149 @@ for _ in range(10):
         break
     current_path = current_path.parent
 if not env_loaded:
-    print(""WARNING: .env non trouve, utilisation variables environnement"")
+    print(""Aucun .env trouve : la cle vient de l'environnement ou des Secrets Colab."")
 
-# Recupere la cle d'API
-api_key = os.getenv(""OPENAI_API_KEY"")
-if not api_key:
-    raise ValueError(""Cle API introuvable. Verifie ton fichier .env."")
+# --- Un seul point de resolution de la cle ---------------------------------
+# Ordre de resolution : **par fournisseur d'abord**, puis par source dans le
+# fournisseur -- la cle OpenAI (environnement, puis Secret Colab), puis la cle
+# OpenRouter (environnement, puis Secret Colab), qui implique son adresse de
+# base et un modele ouvert sur cette cle.
+#
+# L'organe de la serie est GenAI/shared/helpers/genai_helpers.py : meme
+# contrat, memes messages d'aide. Un carnet telecharge seul dans Colab ne
+# l'a pas sous la main, donc un repli autonome reprend ce contrat ci-dessous.
+# Les deux doivent choisir le MEME fournisseur quand ils sont tous deux
+# installes : c'est l'ordre par fournisseur (et non par emplacement) qui
+# l'assure. La parite est verifiee hors reseau par
+# shared/helpers/tests/test_colab_config_contract.py.
+AIDE_CLE = """"""Aucune cle d'API n'a ete trouvee.
+
+En local (Jupyter, VS Code) :
+  1. copiez MyIA.AI.Notebooks/GenAI/.env.example en .env, dans le dossier du
+     carnet ou dans un dossier parent ;
+  2. remplacez-y la valeur de OPENAI_API_KEY par la cle fournie en cours ;
+  3. relancez la cellule.
+
+Sous Google Colab, il n'y a pas de fichier .env : utilisez les Secrets du
+carnet (icone cle dans la barre de gauche) :
+  1. ajoutez un secret nomme OPENAI_API_KEY -- ou OPENROUTER_API_KEY si la cle
+     qui vous a ete remise est une cle OpenRouter ;
+  2. basculez l'interrupteur « Acces au notebook » sur ON ;
+  3. relancez la cellule, sans redemarrer la session.
+
+Ne collez jamais une cle dans une cellule : le carnet partirait avec elle dans
+un commit, et le depot est public.""""""
+
+
+def _lire_secret_colab(nom):
+    """"""Lit un Secret de notebook Colab ; None hors Colab ou si absent.""""""
+    try:
+        from google.colab import userdata
+    except Exception:
+        return None
+    try:
+        valeur = userdata.get(nom)
+    except Exception:
+        return None
+    return valeur.strip() if isinstance(valeur, str) and valeur.strip() else None
+
+
+def _resoudre_config_autonome():
+    """"""Repli autonome du carnet seul : meme contrat que l'organe de la serie.
+
+    Appele quand l'organe n'est pas importable (carnet telecharge seul) ou
+    quand il echoue. Les valeurs par defaut sont des NOMS de modeles, jamais
+    des cles : la cle du module reste celle de l'environnement ou du Secret.
+    """"""
+    adresse_openrouter = ""https://openrouter.ai/api/v1""
+
+    def _lire(nom):
+        """"""Une cle, par fournisseur : l'environnement d'abord, puis le Secret
+        Colab. Meme ordre que `_read_key` de l'organe.""""""
+        valeur = os.getenv(nom)
+        if valeur and valeur.strip():
+            return valeur.strip(), ""env:%s"" % nom
+        valeur = _lire_secret_colab(nom)
+        if valeur:
+            return valeur, ""colab:%s"" % nom
+        return None, None
+
+    # Par fournisseur, puis par source : la cle OpenAI (env, puis Colab)
+    # avant la cle OpenRouter (env, puis Colab). Un ordre par emplacement
+    # choisirait un fournisseur different selon que l'organe soit importe.
+    cle, source = _lire(""OPENAI_API_KEY"")
+    if not cle:
+        cle, source = _lire(""OPENROUTER_API_KEY"")
+    if not cle:
+        raise ValueError(AIDE_CLE)
+    adresse = os.getenv(""OPENAI_BASE_URL"")
+    if adresse:
+        fournisseur = ""openrouter"" if ""openrouter"" in adresse.lower() else ""openai""
+    elif source.endswith(""OPENROUTER_API_KEY""):
+        adresse, fournisseur = adresse_openrouter, ""openrouter""
+    else:
+        fournisseur = ""openai""
+    if fournisseur == ""openrouter"":
+        modele = os.getenv(""OPENAI_MODEL"") or ""qwen/qwen3.8-flash""
+        raisonnement = os.getenv(""OPENAI_REASONING_MODEL"") or ""deepseek/deepseek-v4.1-flash""
+    else:
+        modele = os.getenv(""OPENAI_MODEL"") or ""gpt-5-mini""
+        raisonnement = os.getenv(""OPENAI_REASONING_MODEL"") or ""gpt-5.6-sol""
+    return {
+        ""api_key"": cle,
+        ""base_url"": adresse,
+        ""model"": modele,
+        ""reasoning_model"": raisonnement,
+        ""provider"": fournisseur,
+        ""key_source"": source,
+    }
+
+
+# L'organe de la serie d'abord : il porte deja ce contrat.
+for _base in [Path.cwd(), *Path.cwd().parents]:
+    if (_base / ""shared"" / ""helpers"" / ""genai_helpers.py"").exists():
+        if str(_base / ""shared"" / ""helpers"") not in sys.path:
+            sys.path.insert(0, str(_base / ""shared"" / ""helpers""))
+        break
+
+config = None
+organe = ""repli autonome du carnet""
+try:
+    from genai_helpers import resolve_openai_config, apply_openai_environment
+except Exception:
+    resolve_openai_config = None
+    apply_openai_environment = None
+
+if resolve_openai_config is not None:
+    try:
+        _cfg = resolve_openai_config(required=True)
+        apply_openai_environment(_cfg)
+        config = {
+            ""api_key"": _cfg.api_key,
+            ""base_url"": _cfg.base_url,
+            ""model"": _cfg.model,
+            ""reasoning_model"": _cfg.reasoning_model,
+            ""provider"": _cfg.provider,
+            ""key_source"": _cfg.key_source,
+        }
+        organe = ""genai_helpers (GenAI/shared/helpers)""
+    except Exception as exc:
+        if type(exc).__name__ == ""MissingApiKeyError"":
+            raise
+        organe = ""repli autonome du carnet (organe indisponible : %s)"" % type(exc).__name__
+
+if config is None:
+    config = _resoudre_config_autonome()
+    os.environ.setdefault(""OPENAI_API_KEY"", config[""api_key""])
+    if config[""base_url""]:
+        os.environ.setdefault(""OPENAI_BASE_URL"", config[""base_url""])
+    os.environ.setdefault(""OPENAI_MODEL"", config[""model""])
+    os.environ.setdefault(""OPENAI_REASONING_MODEL"", config[""reasoning_model""])
+
+api_key = config[""api_key""]
+print(""Configuration : %s | fournisseur : %s | source de la cle : %s""
+      % (organe, config[""provider""], config[""key_source""]))
+print(""Modele par defaut : %s"" % config[""model""])
 
 # Mode batch pour execution non-interactive (Papermill, tests automatises)
 def is_interactive():
@@ -8331,10 +8468,23 @@ def is_interactive():
         return False
 
 BATCH_MODE = os.getenv(""BATCH_MODE"", ""false"").lower() == ""true"" or not is_interactive()
-print(f""Mode: {'BATCH' if BATCH_MODE else 'INTERACTIF'}"")",,,,,,,,a24b0b0e03b64735,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb,09a87bf8,markdown,fr,61463de4c21275b6,"## Configuration de l'environnement
+print(f""Mode: {'BATCH' if BATCH_MODE else 'INTERACTIF'}"")",,,,,,,,e638feace13dca50,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb,09a87bf8,markdown,fr,c40126c390dc37e5,"## Configuration de l'environnement
 
 Avant de commencer les expérimentations, nous devons configurer l'accès à l'API OpenAI et gérer les modes d'exécution.
+
+### Où se trouve la clé ?
+
+La clé se cherche toujours au même endroit, dans cet ordre : la variable d'environnement `OPENAI_API_KEY`, puis un **Secret Colab** (`google.colab.userdata`), puis la clé `OPENROUTER_API_KEY` remise en cours — celle-ci est une clé **OpenRouter**, et le carnet bascule alors sur l'adresse OpenRouter avec un modèle ouvert (`qwen/qwen3.8-flash`).
+
+| Où vous travaillez | Comment faire |
+|---|---|
+| **Local** (Jupyter, VS Code) | copiez `MyIA.AI.Notebooks/GenAI/.env.example` en `.env` (dans le dossier du carnet ou dans un dossier parent) et remplacez `OPENAI_API_KEY` par la clé du cours |
+| **Google Colab** | pas de `.env` : icône clé → *Secrets* → ajoutez `OPENAI_API_KEY` (ou `OPENROUTER_API_KEY`), **basculez « Accès au notebook » sur ON**, puis relancez la cellule |
+
+La cellule de configuration affiche la source de la clé qu'elle a retenue (`env:…`, `colab:…`) et le fournisseur choisi — **jamais la clé elle-même**. Si aucune clé n'est trouvée, le message d'erreur donne la marche à suivre dans les deux cas.
+
+**Attention :** ne collez jamais une clé dans une cellule — le carnet partirait avec elle dans un commit, et le dépôt est public.
 
 ### Mode batch vs mode interactif
 
@@ -8343,8 +8493,8 @@ Le notebook supporte deux modes d'exécution :
 - **Mode interactif** : Pour l'apprentissage, avec saisie utilisateur et expérimentation libre
 - **Mode batch** : Pour l'exécution automatisée (Papermill, tests, CI/CD), sans interaction
 
-La détection est automatique, mais vous pouvez forcer le mode batch via la variable d'environnement `BATCH_MODE=true` dans le fichier `.env`.",,,,,,,,61463de4c21275b6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb,5abdf011,markdown,fr,2521f4630286f60f,"### Initialisation du client OpenAI
+La détection est automatique, mais vous pouvez forcer le mode batch via la variable d'environnement `BATCH_MODE=true` dans le fichier `.env`.",,,,,,,,c40126c390dc37e5,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb,5abdf011,markdown,fr,5dfe567a324507ac,"### Initialisation du client OpenAI
 
 Le client OpenAI moderne (>=1.0.0) utilise une API orientée objet :
 
@@ -8354,11 +8504,11 @@ response = client.chat.completions.create(...)
 ```
 
 **Paramètres importants** :
-- `model` : Le modèle à utiliser (gpt-5-mini, o4-mini, etc.)
+- `model` : Le modèle à utiliser (gpt-5-mini pour le chat, gpt-5.6-sol pour le raisonnement, etc.)
 - `max_tokens` : Longueur maximale de la réponse (évite les réponses trop longues et coûteuses)
 - `temperature` : Contrôle la créativité (0.0 = déterministe, 2.0 = très créatif)
 
-Par défaut, nous utilisons `gpt-5-mini` configuré dans le fichier `.env`.",,,,,,,,2521f4630286f60f,,,,,,,,,,,,,,,
+Par défaut, le carnet utilise le modèle **résolu par la configuration** : `gpt-5-mini` en local, ou un modèle ouvert (`qwen/qwen3.8-flash`) si la clé du cours est une clé OpenRouter.",,,,,,,,5dfe567a324507ac,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb,1830e31c,markdown,fr,461c2b7c41ff363d,"## Partie 1 : Zero-shot Prompting
 
 Le **zero-shot prompting** est la technique la plus directe : on pose une question sans fournir d'exemples préalables.
@@ -8371,24 +8521,28 @@ Le **zero-shot prompting** est la technique la plus directe : on pose une questi
 - Budget tokens limité
 
 Testons avec une demande simple : générer des idées de recettes végétariennes.",,,,,,,,461c2b7c41ff363d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb,ddcaa015,code,fr,159a8b833ef90673,"# ============================
+MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb,ddcaa015,code,fr,24865d35db2403a3,"# ============================
 # Cellule 3 : Client OpenAI
 # ============================
 
 import openai
 from openai import OpenAI
 
-# Charger le modèle depuis .env ou utiliser gpt-5-mini par défaut
-DEFAULT_MODEL = os.getenv(""OPENAI_MODEL"", ""gpt-5-mini"")
+# Modele par defaut : celui resolu par la configuration (variable
+# d'environnement, Secret Colab, ou cle OpenRouter du module).
+DEFAULT_MODEL = config[""model""]
 MODEL_NAME = DEFAULT_MODEL
 
-# Instanciation du client
+# Instanciation du client. base_url vaut None en local (adresse OpenAI) et
+# l'adresse OpenRouter quand la cle du module est une cle OpenRouter.
 client = OpenAI(
-    api_key=api_key,
+    api_key=config[""api_key""],
+    base_url=config[""base_url""],
 )
 
 print(""Client OpenAI initialisé avec succès !"")
-print(f""Modèle par défaut: {MODEL_NAME}"")",,,,,,,,159a8b833ef90673,,,,,,,,,,,,,,,
+print(f""Modèle par défaut: {MODEL_NAME}"")
+print(f""Fournisseur: {config['provider']}"")",,,,,,,,24865d35db2403a3,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb,94oe4gyr61r,markdown,fr,51cc4c1ef5b5b053,"Le client OpenAI étant initialisé, un correctif de compatibilité Pydantic 2.x est appliqué avant tout appel à l'API. Ce patch corrige un comportement de `model_dump()` qui provoque des erreurs dans certaines versions de la bibliothèque.",,,,,,,,51cc4c1ef5b5b053,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb,1f2da5ad,code,fr,f2b8c397f7ca2839,"# === WORKAROUND: Pydantic 2.x by_alias bug ===
 # Ce patch corrige le problème ""TypeError: argument 'by_alias': 'NoneType' object cannot be converted to 'PyBool'""
@@ -8674,9 +8828,11 @@ La cellule suivante introduit un mécanisme de **mémoire de conversation** esse
 - Tronquer les messages anciens
 - Résumer l'historique périodiquement
 - Utiliser des techniques de compression (embeddings, résumés automatiques)",,,,,,,,11fe11f8276a7155,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb,c6d2c7b0,markdown,fr,eda5a2990b0e6e4a,"## Partie 6 : Modèles de raisonnement (2025)
+MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb,c6d2c7b0,markdown,fr,d4dcfbd4698fd906,"## Partie 6 : Modèles de raisonnement (2025)
 
-Les **modèles de raisonnement** (reasoning models) comme `o4-mini` et `o1` représentent une évolution majeure des LLMs.
+Les **modèles de raisonnement** (reasoning models) comme `gpt-5.6-sol` représentent une évolution majeure des LLMs.
+
+> **Choix du modèle et fin de vie.** Un identifiant de modèle n'est pas éternel : OpenAI a retiré `o4-mini` et `o1`, et l'API répond désormais `404 model_not_found` — le modèle « reasoning » de démonstration dans ce carnet est donc `gpt-5.6-sol`. Un appel qui s'appuie sur un modèle déprécié n'échoue jamais franchement : il faut le vérifier (`GET /v1/models`) avant de l'écrire dans une démonstration.
 
 ### Différence fondamentale
 
@@ -8701,7 +8857,7 @@ Les modèles de raisonnement n'utilisent plus le rôle `system`. Le rôle `devel
 
 ### Comparaison pratique
 
-Testons le même problème avec un modèle chat (gpt-5-mini) et un modèle de raisonnement (o4-mini).",,,,,,,,eda5a2990b0e6e4a,,,,,,,,,,,,,,,
+Testons le même problème avec un modèle chat (gpt-5-mini) et un modèle de raisonnement (gpt-5.6-sol).",,,,,,,,d4dcfbd4698fd906,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb,12d1544b,code,fr,a9bedee0f375f811,"# ============================
 # Cellule 7 : Chain-of-thought
 # ============================
@@ -9158,13 +9314,13 @@ current_messages = [
 - **Court terme** : Garder tout l'historique (comme ici)
 - **Long terme** : Tronquer les messages anciens ou résumer périodiquement
 - **Tokens** : Attention au coût - chaque tour envoie TOUT l'historique à l'API",,,,,,,,0fc5707181ac7132,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb,35585119,markdown,fr,ec56443aca813f9a,"## Prompting pour Modèles de Raisonnement (2025)
+MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb,35585119,markdown,fr,d9442da71e033a79,"## Prompting pour Modèles de Raisonnement (2025)
 
-Les modèles de raisonnement (o4-mini, o1) représentent une évolution majeure. Contrairement aux modèles de chat, ils prennent le temps de ""réfléchir"" avant de répondre.
+Les modèles de raisonnement (gpt-5.6-sol) représentent une évolution majeure. Contrairement aux modèles de chat, ils prennent le temps de ""réfléchir"" avant de répondre.
 
 ### Différences clés avec les modèles chat
 
-| Aspect | Modèles Chat (gpt-5-mini) | Modèles Raisonnement (o4-mini) |
+| Aspect | Modèles Chat (gpt-5-mini) | Modèles Raisonnement (gpt-5.6-sol) |
 |--------|----------------------|-------------------------------|
 | Temps de réponse | Rapide | Plus lent (réflexion) |
 | Prompts | Détaillés, structurés | **Simples et directs** |
@@ -9182,8 +9338,8 @@ Les modèles raisonnants sont capables de :
 - Demander des clarifications si nécessaire
 
 **Éviter** : ""Analyse ce problème en détaillant chaque étape de ton raisonnement...""
-**Préférer** : ""Résous ce problème.""",,,,,,,,ec56443aca813f9a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb,fbc4a0e1,code,fr,fb50faabcfff6114,"# ============================
+**Préférer** : ""Résous ce problème.""",,,,,,,,d9442da71e033a79,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb,fbc4a0e1,code,fr,0d71e36ff90271de,"# ============================
 # Cellule : Comparaison Chat vs Reasoning
 # ============================
 
@@ -9208,12 +9364,13 @@ response_chat = client.chat.completions.create(
 print(f""Temps: {time.time() - start:.2f}s"")
 print(response_chat.choices[0].message.content[:3000] + ""..."")
 
-# Test avec o4-mini (reasoning model) - si disponible
-print(""\n=== o4-mini (Reasoning Model) ==="")
+# Test avec un modele de raisonnement vivant (serie 5.6)
+REASONING_MODEL = os.getenv(""OPENAI_REASONING_MODEL"", ""gpt-5.6-sol"")
+print(f""\n=== {REASONING_MODEL} (Reasoning Model) ==="")
 try:
     start = time.time()
     response_reason = client.chat.completions.create(
-        model=""o4-mini"",
+        model=REASONING_MODEL,
         messages=[
             {""role"": ""developer"", ""content"": ""Formatting re-enabled""},
             {""role"": ""user"", ""content"": probleme_complexe}
@@ -9223,24 +9380,26 @@ try:
     print(f""Temps: {time.time() - start:.2f}s"")
     print(response_reason.choices[0].message.content[:3000] + ""..."")
 except Exception as e:
-    print(f""o4-mini non disponible: {type(e).__name__}"")
-    print(""Les modeles de raisonnement necessitent un acces specifique."")",,,,,,,,fb50faabcfff6114,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb,629e7835,markdown,fr,3c4e05f2b6f2085e,"### Analyse des résultats : Chat vs Reasoning
+    print(f""Appel en echec sur {REASONING_MODEL} : {type(e).__name__} : {e}"")
+    print(""Le detail de l'erreur ci-dessus dit pourquoi : un modele deprecie"")
+    print(""(o4-mini, o1) renvoie 404, une cle absente renvoie 401, un quota epuise 429."")
+",,,,,,,,0d71e36ff90271de,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb,629e7835,markdown,fr,ed26bca7a8b1e8b8,"### Analyse des résultats : Chat vs Reasoning
 
 **Observations (mesurées sur cette exécution)** :
 
 1. **Temps de réponse** :
-   - Chat (gpt-5-mini) : **9,73 s**
-   - Reasoning (o4-mini) : **4,24 s**
-   - *Contrairement à l'intuition, le modèle de raisonnement est ici plus rapide — et c'est même lui qui produit la sortie la plus longue (étapes annotées rive par rive). La latence ne se lit donc pas dans la longueur de la réponse seule : la charge des serveurs et le modèle comptent aussi. Le ralentissement caractéristique des modèles de raisonnement apparaît sur des problèmes difficiles, où ils consacrent de nombreux tokens à une délibération interne — pas sur un puzzle classique déjà maîtrisé.*
+   - Chat (gpt-5-mini) : **8,06 s**
+   - Reasoning (gpt-5.6-sol, `reasoning_effort=""medium""`) : **2,16 s**
+   - *Sur ce puzzle classique, l'appel « raisonnement » a répondu plus vite que l'appel chat. La latence ne se lit donc pas dans l'étiquette du modèle : elle dépend du problème, du budget de raisonnement et de la charge des serveurs. Le surcoût typique des modèles de raisonnement se voit sur des problèmes où la délibération interne est longue, pas sur un puzzle déjà maîtrisé. Une seule exécution donne un ordre de grandeur, pas une loi.*
 
 2. **Qualité de la solution** :
-   - Chat : Solution optimale (les 7 traversées), formulation compacte (liste numérotée)
-   - Reasoning : Solution optimale également, formulation détaillée (état des rives annoté à chaque étape)
+   - Chat : solution optimale (les 7 traversées), formulation exposée — une ligne numérotée par étape, avec une justification
+   - Reasoning : solution optimale également (les 7 traversées), formulation plus compacte, étapes dont les éléments décisifs sont mis en valeur
 
-3. **Robustesse** :
-   - Chat : Peut parfois donner des solutions incorrectes sur des variantes complexes
-   - Reasoning : Vérifie sa solution avant de répondre, taux d'erreur plus faible
+3. **Ce que cette exécution ne prouve pas** :
+   - Sur une tâche aussi connue, les deux appels trouvent la solution optimale : l'écart de qualité n'est pas visible ici
+   - Un taux d'erreur plus faible pour les modèles de raisonnement supposerait une mesure répétée sur des variantes (plusieurs exécutions, comparaison des erreurs), pas une exécution unique — c'est un protocole à part entière
 
 ### Quand utiliser les modèles de raisonnement ?
 
@@ -9249,13 +9408,13 @@ MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb,629e7835,markdown,fr,3c
 - Tâches simples et courantes
 - Budget temps/coût limité
 
-**Préférer Reasoning** (o4-mini, o1) :
+**Préférer Reasoning** (gpt-5.6-sol) :
 - Mathématiques avancées
 - Problèmes de logique complexes
 - Code critique nécessitant validation
 - Analyse approfondie
 
-**Note** : Les modèles de raisonnement sont plus coûteux en tokens et en temps, mais offrent une qualité supérieure pour les tâches complexes.",,,,,,,,3c4e05f2b6f2085e,,,,,,,,,,,,,,,
+**Note** : `reasoning_effort` arbitre entre tokens de délibération et latence — `low` répond vite, `high` approfondit la réflexion. Sur une tâche dure, ce surcoût se paie en tokens et en temps ; sur une tâche déjà maîtrisée, il peut répondre plus vite que l'appel chat, comme ici.",,,,,,,,ed26bca7a8b1e8b8,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb,zesyf308uqp,markdown,fr,42d64b5f946d1c97,"***
 
 ## EXEMPLE CORRIGÉ - Prompts en Cascade pour Génération Créative

@@ -63,6 +63,37 @@ public sealed class GtpClient : IDisposable
         return ReadResponse(prefix);
     }
 
+    /// <summary>
+    /// Demande un coup au moteur (<c>genmove B</c> / <c>genmove W</c>) et le rend
+    /// type : intersection, passe ou abandon. Une reponse <c>?</c> est nommee avec
+    /// la commande exacte ; un contenu vide ou multi-lignes aussi — <c>genmove</c>
+    /// rend un seul mot, tout le reste est une panne de protocole.
+    /// </summary>
+    /// <param name="color">Couleur qui doit jouer : noir ou blanc, jamais le vide.</param>
+    /// <param name="boardSize">Taille du plateau, pour valider l'intersection rendue.</param>
+    /// <param name="id">Identifiant GTP optionnel.</param>
+    public GtpMove GenMove(GoColor color, int boardSize, int? id = null)
+    {
+        if (color == GoColor.Empty)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(color), color, "le vide ne joue pas");
+        }
+
+        string command = $"genmove {(color == GoColor.Black ? "B" : "W")}";
+        GtpResponse response = Send(command, id);
+        response.EnsureSuccess(command);
+
+        string content = response.Content.Trim();
+        if (content.Length == 0 || content.Contains('\n') || content.Contains(' '))
+        {
+            throw new GtpException(
+                $"reponse genmove inattendue a « {command} » : « {response.Content} » — attendu un sommet, pass ou resign");
+        }
+
+        return GtpCoordinate.ParseGenMove(content, boardSize);
+    }
+
     private GtpResponse ReadResponse(string command)
     {
         string? header = ReadLineOrTimeout(command);

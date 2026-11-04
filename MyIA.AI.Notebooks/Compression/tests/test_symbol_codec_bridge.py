@@ -42,6 +42,29 @@ def test_the_codec_functions_come_from_the_notebook(toy_lengths):
     assert bridge.huffman.__module__ != __name__
 
 
+def test_load_functions_serves_another_notebook_of_the_series():
+    """`load_functions` rend une fonction d'un AUTRE carnet, sans recopie.
+
+    Le cas d'usage reel est le carnet MDL : une autre serie a besoin de sa
+    convention de cout de modele et ne doit pas recopier la formule. Le
+    chargement est le meme que pour le carnet 02 -- analyse AST, definitions
+    seules.
+    """
+    carnet = Path(__file__).resolve().parents[1] / "Compression-06-MDL-Kolmogorov-Python.ipynb"
+    cout_modele = bridge.load_functions({"cout_modele"}, carnet)["cout_modele"]
+    # 8 bits d'en-tete + (k-1) longueurs a b bits : la formule du carnet MDL.
+    assert cout_modele(4, 4) == 8 + 3 * 4
+    assert cout_modele(2, 1) == 8 + 1
+    assert "load_functions" in bridge.__all__
+
+
+def test_load_functions_fails_explicitly_on_a_missing_name():
+    """Aucun substitut silencieux : une fonction absente leve."""
+    carnet = Path(__file__).resolve().parents[1] / "Compression-06-MDL-Kolmogorov-Python.ipynb"
+    with pytest.raises(RuntimeError):
+        bridge.load_functions({"fonction_qui_n_existe_pas"}, carnet)
+
+
 def test_two_distinct_symbols_of_equal_weight_get_distinct_words():
     """Item 6 : deux symboles distincts de poids egal restent discernables."""
     weights = {0: 5, 1: 5, 2: 5, 3: 5}

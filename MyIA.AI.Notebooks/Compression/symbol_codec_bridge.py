@@ -87,6 +87,18 @@ def _load(names: set[str], path: Path = NOTEBOOK) -> dict[str, Any]:
     return {name: namespace[name] for name in names}
 
 
+def load_functions(names: set[str], path: Path) -> dict[str, Any]:
+    """Charge des fonctions nommees depuis n'importe quel carnet de la serie.
+
+    `_load` sait deja le faire ; il etait simplement lie au carnet 02. Une
+    autre serie qui veut la convention de cout de ce carnet-ci (MDL) ou d'un
+    carnet de la serie ne doit pas recopier la formule : elle importe la
+    fonction. Le chargement reste le meme : analyse AST, seules les
+    definitions sont evaluees, une fonction disparue leve.
+    """
+    return _load(set(names), Path(path))
+
+
 _FUNCTIONS = _load({"huffman", "code_canonique", "table_decodage",
                     "encoder", "decoder"})
 
@@ -207,6 +219,7 @@ __all__ = [
     "is_prefix_free",
     "lean_demo_canon_words",
     "lean_demo_lengths",
+    "load_functions",
     "symbol_order",
     "table_decodage",
 ]

@@ -56,6 +56,115 @@ def _safe_lwsc(self, *a, **k):
 
 ssl.SSLContext._load_windows_store_certs = _safe_lwsc
 
+# === Garde de prevol memoire (#24180) ======================================
+# Le harnais QLoRA 4-bit + GRPO tire ~11 Go de commit par bras ; sur un siege
+# dont la baseline approche deja le plafond (vmmemWSL + MCP), le run monte
+# seul a ~99,8 % de commit et tue la machine (autopsie 02/11, 7e vague sur
+# myia-po-2027, Event 2004). La garde mesure la marge AVANT tout import
+# lourd -- sinon elle consomme la marge qu'elle mesure -- et refuse de
+# demarrer sous le seuil.
+#
+# Calibration du seuil (Maintenance 02/11, csv commit-pressure 20261102) :
+# le siege mort avait deja 85,3 % de commit AVANT le bras, soit ~14 Go de
+# marge -- un seuil a 12 Go LAISSAIT PASSER ce bras. La mort est venue de
+# l'empreinte du bras (~11 Go) + la croissance CI concurrente (~8-10 Go)
+# sur la marge restante : le defaut exige donc bras + burst, ~20 Go. Un
+# siege leger peut baisser via --min-commit-headroom-go.
+
+DEFAULT_MIN_COMMIT_HEADROOM_GO = 20.0
+_HEADROOM_MEASURED_GO = None
+
+
+def _commit_headroom_bytes():
+    """Marge de commit disponible en octets (None si non mesurable).
+
+    Windows : ``ullAvailPageFile`` de GlobalMemoryStatusEx (commit disponible,
+    pas seulement RAM physique). Linux : MemAvailable + SwapFree de
+    /proc/meminfo.
+    """
+    if sys.platform == "win32":
+        import ctypes
+
+        class _MemoryStatusEx(ctypes.Structure):
+            _fields_ = [
+                ("dwLength", ctypes.c_ulong),
+                ("dwMemoryLoad", ctypes.c_ulong),
+                ("ullTotalPhys", ctypes.c_ulonglong),
+                ("ullAvailPhys", ctypes.c_ulonglong),
+                ("ullTotalPageFile", ctypes.c_ulonglong),
+                ("ullAvailPageFile", ctypes.c_ulonglong),
+                ("ullTotalVirtual", ctypes.c_ulonglong),
+                ("ullAvailVirtual", ctypes.c_ulonglong),
+                ("ullAvailExtendedVirtual", ctypes.c_ulonglong),
+            ]
+
+        status = _MemoryStatusEx()
+        status.dwLength = ctypes.sizeof(_MemoryStatusEx)
+        if ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(status)):
+            return status.ullAvailPageFile
+        return None
+    marge = 0
+    lu = False
+    try:
+        with open("/proc/meminfo", encoding="ascii") as fh:
+            for ligne in fh:
+                if ligne.startswith(("MemAvailable:", "SwapFree:")):
+                    marge += int(ligne.split()[1]) * 1024
+                    lu = True
+    except OSError:
+        return None
+    return marge if lu else None
+
+
+def _preflight_headroom(argv):
+    """Refuse de demarrer si la marge de commit est sous le seuil.
+
+    Pre-scan leger de ``--min-commit-headroom-go`` depuis argv : l'argparse
+    complet vit dans ``main()``, apres les imports lourds, donc trop tard.
+    """
+    global _HEADROOM_MEASURED_GO
+    seuil = DEFAULT_MIN_COMMIT_HEADROOM_GO
+    if "--min-commit-headroom-go" in argv:
+        i = argv.index("--min-commit-headroom-go")
+        if i + 1 < len(argv):
+            try:
+                seuil = float(argv[i + 1])
+            except ValueError:
+                pass  # l'argparse de main() donnera l'erreur canonique
+    elif "--min-commit-headroom-go=" in " ".join(argv):
+        for morceau in argv:
+            if morceau.startswith("--min-commit-headroom-go="):
+                try:
+                    seuil = float(morceau.split("=", 1)[1])
+                except ValueError:
+                    pass
+    marge = _commit_headroom_bytes()
+    if marge is None:
+        print("[ict25_arms] garde memoire: marge de commit non mesurable sur ce "
+              "systeme, verification sautee", file=sys.stderr, flush=True)
+        return
+    _HEADROOM_MEASURED_GO = round(marge / (1024 ** 3), 2)
+    if marge / (1024 ** 3) < seuil:
+        import socket
+
+        siege = socket.gethostname()
+        sys.exit(
+            f"[ict25_arms] REFUS DE DEMARRAGE: marge de commit disponible "
+            f"{_HEADROOM_MEASURED_GO:.1f} Go < seuil {seuil:.1f} Go sur {siege}. "
+            "Le bras tire ~11 Go de commit (QLoRA 4-bit + GRPO) et la CI "
+            "concurrente (~8-10 Go de burst) mangerait le reste. "
+            "Router ce bras vers un GPU de flotte avec de la marge, "
+            "ou liberer de la memoire avant de relancer. Seuil surchargeable "
+            "par --min-commit-headroom-go."
+        )
+    print(f"[ict25_arms] garde memoire: marge de commit "
+          f"{_HEADROOM_MEASURED_GO:.1f} Go >= seuil {seuil:.1f} Go, "
+          "demarrage autorise", flush=True)
+
+
+if __name__ == "__main__" and "-h" not in sys.argv and "--help" not in sys.argv:
+    _preflight_headroom(sys.argv[1:])
+
 import numpy as np  # noqa: E402
 import torch  # noqa: E402
 import datasets  # noqa: E402
@@ -196,6 +305,23 @@ ARM_CONFIGS = {
         reward="n_signal",
     ),
 }
+
+
+def _system_prompt_kind(prompt: str) -> str:
+    """Etiquette de regime du system prompt, telle qu'enregistree dans les metriques."""
+    return ("NEUTRAL" if prompt == SYSTEM_NEUTRAL
+            else "PERMITTED" if prompt == SYSTEM_PERMITTED
+            else "INFORMED" if prompt == SYSTEM_INFORMED
+            else "EMPTY")
+
+
+def _signal_kind(signal: str) -> str:
+    """Etiquette de regime du few-shot, telle qu'enregistree dans les metriques."""
+    return ("FEWSHOT_NEUTRAL" if signal == FEWSHOT_NEUTRAL
+            else "FEWSHOT_SIGNAL_ON" if signal == FEWSHOT_SIGNAL_ON
+            else "SIGNAL_W" if signal == SIGNAL_W
+            else "SIGNAL_S" if signal == SIGNAL_S
+            else "OTHER")
 
 
 # === Helpers (verbatim cell[17] d'ICT-25) ===
@@ -406,19 +532,12 @@ def run_seed(arm: str, seed: int, steps: int, model_name: str = MODEL, gpu: int 
         "learning_rate": cfg_arm["learning_rate"],
         "num_generations": cfg_arm["num_generations"],
         "max_completion_length": max_completion_length,
-        "system_prompt_kind": (
-            "NEUTRAL" if cfg_arm["system_prompt"] == SYSTEM_NEUTRAL
-            else "PERMITTED" if cfg_arm["system_prompt"] == SYSTEM_PERMITTED
-            else "INFORMED" if cfg_arm["system_prompt"] == SYSTEM_INFORMED
-            else "EMPTY"
-        ),
-        "signal_kind": (
-            "FEWSHOT_NEUTRAL" if cfg_arm["signal"] == FEWSHOT_NEUTRAL
-            else "FEWSHOT_SIGNAL_ON" if cfg_arm["signal"] == FEWSHOT_SIGNAL_ON
-            else "SIGNAL_W" if cfg_arm["signal"] == SIGNAL_W
-            else "SIGNAL_S" if cfg_arm["signal"] == SIGNAL_S
-            else "OTHER"
-        ),
+        "system_prompt_kind": _system_prompt_kind(cfg_arm["system_prompt"]),
+        "signal_kind": _signal_kind(cfg_arm["signal"]),
+        # Nom du facteur de recompense (#22133, review #23087) : sans ce champ,
+        # un changement de formule a arm/seed/steps/cap constants reste
+        # invisible a la reprise -- c'est exactement la classe du defaut du 21/10.
+        "reward": cfg_arm["reward"],
     }
 
     del trainer, model
@@ -427,6 +546,119 @@ def run_seed(arm: str, seed: int, steps: int, model_name: str = MODEL, gpu: int 
         torch.cuda.empty_cache()
 
     return {"metrics": metrics, **record_windows(records, max_records)}
+
+
+# === Reprise sur disque (#22133) ===
+
+def _seed_entry_matches(entry, arm, seed, steps, max_completion_length):
+    """True si l'entree per_seed provient du meme protocole que l'invocation courante.
+
+    La comparaison porte sur les champs de regime des metriques (bras, seed,
+    steps, budget de completion, lr, generations, kind de system_prompt et de
+    signal, nom du facteur de recompense) : un ecart quelconque force le
+    re-entrainement de la graine -- la reprise ne doit jamais melanger deux
+    regimes dans un meme agrege (defaut mesure sur ict25_N_120steps.json du
+    21/10, `length_bonus` d'un autre regime servi comme baseline).
+
+    Les cles de regime sont **comparees** a la configuration du bras, pas
+    seulement testees en presence (review #23087, point 1) : un artefact produit
+    en `lr=1e-5` etait repris par une invocation `lr=1e-6` du meme bras, et
+    l'agrege melangeait deux regimes en silence.
+    """
+    m = entry.get("metrics") or {}
+    ref = {"arm": arm, "seed": seed, "steps": steps,
+           "max_completion_length": max_completion_length}
+    if any(m.get(k) != v for k, v in ref.items()):
+        return False
+    cfg_arm = ARM_CONFIGS.get(arm) or {}
+    expected = {
+        "learning_rate": cfg_arm.get("learning_rate"),
+        "num_generations": cfg_arm.get("num_generations"),
+        "system_prompt_kind": _system_prompt_kind(cfg_arm.get("system_prompt")),
+        "signal_kind": _signal_kind(cfg_arm.get("signal")),
+    }
+    if any(m.get(k) is None for k in expected):
+        return False
+    if any(m.get(k) != v for k, v in expected.items()):
+        return False
+    # `reward` est absent des artefacts produits avant le 2026-10-29. Son absence
+    # ne force pas un re-entrainement -- une graine deja entrainee reste valide,
+    # et invalider 11 h de run pour un champ nouveau serait un cout sans gain --
+    # mais des qu'il est present, l'ecart ferme la reprise.
+    reward_kind = cfg_arm.get("reward")
+    if m.get("reward") is not None and reward_kind is not None:
+        return m["reward"] == reward_kind
+    return True
+
+
+def _load_resumable_seed(seed_path, arm, seed, steps, max_completion_length):
+    """Charge une entree per_seed existante si son protocole correspond, sinon None."""
+    if not seed_path.exists():
+        return None
+    try:
+        a = json.loads(seed_path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        print(f"[ict25_arms] reprise: {seed_path.name} illisible ({exc}), "
+              f"re-entrainement", flush=True)
+        return None
+    for entry in a.get("per_seed", []):
+        if _seed_entry_matches(entry, arm, seed, steps, max_completion_length):
+            return entry
+    print(f"[ict25_arms] reprise: {seed_path.name} d'un protocole different, "
+          f"re-entrainement", flush=True)
+    return None
+
+
+def _write_artifact(out_path, args, seeds, all_metrics, resumed_seeds):
+    """Ecrit un artefact agrege (schema inchange + champ additive resumed_seeds).
+
+    Le bloc `provenance` n'est pas produit par ce script : il est **preserve**
+    quand le fichier cible en porte deja un (lecture-avant-ecriture). Sans cela,
+    toute reecriture de l'agregat -- y compris une invocation qui ne fait que
+    reprendre les graines depuis le disque -- l'effacait sans aucun signal
+    (review #23087, point 2).
+    """
+    preserved_provenance = None
+    if out_path.exists():
+        try:
+            previous = json.loads(out_path.read_text(encoding="utf-8"))
+            if isinstance(previous, dict) and isinstance(previous.get("provenance"), dict):
+                preserved_provenance = previous["provenance"]
+        except Exception as exc:
+            print(f"[ict25_arms] provenance: {out_path.name} illisible ({exc}), "
+                  f"bloc non preserve", file=sys.stderr)
+    artifact = {
+        "schema": 1,
+        "script": "ict25_arms.py",
+        "arm": args.arm,
+        "model": args.model,
+        **protocol_block(
+            max_completion_length=args.max_completion_length,
+            seeds=seeds,
+            steps=args.steps,
+        ),
+        "gpu": args.gpu,
+        "git_commit": subprocess.check_output(
+            ["git", "-C", str(Path(__file__).resolve().parents[2]),
+             "rev-parse", "HEAD"], text=True, encoding="utf-8", errors="replace"
+        ).strip()[:12],
+        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "commit_headroom_go": _HEADROOM_MEASURED_GO,
+        "resumed_seeds": resumed_seeds,
+        "per_seed": all_metrics,
+    }
+    if preserved_provenance is not None:
+        artifact["provenance"] = preserved_provenance
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(out_path, "w", encoding="utf-8") as f:
+        json.dump(artifact, f, ensure_ascii=False, indent=2)
+    size_kb = out_path.stat().st_size / 1024
+    print(f"\n[ict25_arms] artefact ecrit: {out_path} ({size_kb:.1f} Ko)", flush=True)
+    if preserved_provenance is not None:
+        print(f"[ict25_arms] provenance preservee: {out_path.name}", flush=True)
+    if size_kb > 512:
+        print(f"[ict25_arms] WARNING: artefact > 512 Ko (results-artifact-policy)",
+              file=sys.stderr)
 
 
 # === CLI ===
@@ -448,43 +680,37 @@ def main(argv=None):
     p.add_argument("--max-completion-length", type=int, default=DEFAULT_MAX_COMPLETION_LENGTH,
                    help="Budget de completion du run, passe a GRPOConfig et recopie dans "
                         f"l'artefact (#21998, defaut {DEFAULT_MAX_COMPLETION_LENGTH})")
+    p.add_argument("--min-commit-headroom-go", type=float,
+                   default=DEFAULT_MIN_COMMIT_HEADROOM_GO,
+                   help="Marge de commit minimale (Go) exigee au prevol, mesuree avant "
+                        "tout import lourd (#24180, defaut "
+                        f"{DEFAULT_MIN_COMMIT_HEADROOM_GO})")
     args = p.parse_args(argv)
 
     seeds = [int(s.strip()) for s in args.seeds.split(",") if s.strip()]
+    out_path = Path(args.out)
     all_metrics = []
+    resumed_seeds = []
     for seed in seeds:
         print(f"\n[ict25_arms] === arm={args.arm} seed={seed} steps={args.steps} ===", flush=True)
-        out = run_seed(args.arm, seed, args.steps, args.model, args.gpu,
-                       max_records=args.max_records,
-                       max_completion_length=args.max_completion_length)
-        all_metrics.append(out)
-        print(f"[ict25_arms]   metrics: {out['metrics']}", flush=True)
+        seed_path = out_path.with_name(f"{out_path.stem}_seed{seed}{out_path.suffix}")
+        entry = _load_resumable_seed(seed_path, args.arm, seed, args.steps,
+                                     args.max_completion_length)
+        if entry is not None:
+            print(f"[ict25_arms] reprise: seed {seed} charge depuis {seed_path.name} "
+                  f"(protocole identique), GPU non sollicite", flush=True)
+            resumed_seeds.append(seed)
+        else:
+            entry = run_seed(args.arm, seed, args.steps, args.model, args.gpu,
+                             max_records=args.max_records,
+                             max_completion_length=args.max_completion_length)
+            # Ecriture mono-graine immediate : une interruption ne fait perdre
+            # que la graine en cours, jamais les precedentes.
+            _write_artifact(seed_path, args, [seed], [entry], [])
+        all_metrics.append(entry)
+        print(f"[ict25_arms]   metrics: {entry['metrics']}", flush=True)
 
-    artifact = {
-        "schema": 1,
-        "script": "ict25_arms.py",
-        "arm": args.arm,
-        "model": args.model,
-        **protocol_block(
-            max_completion_length=args.max_completion_length,
-            seeds=seeds,
-            steps=args.steps,
-        ),
-        "gpu": args.gpu,
-        "git_commit": subprocess.check_output(
-            ["git", "-C", str(Path(__file__).resolve().parents[2]),
-             "rev-parse", "HEAD"], text=True, encoding="utf-8", errors="replace"
-        ).strip()[:12],
-        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "per_seed": all_metrics,
-    }
-    Path(args.out).parent.mkdir(parents=True, exist_ok=True)
-    with open(args.out, "w", encoding="utf-8") as f:
-        json.dump(artifact, f, ensure_ascii=False, indent=2)
-    size_kb = Path(args.out).stat().st_size / 1024
-    print(f"\n[ict25_arms] artefact ecrit: {args.out} ({size_kb:.1f} Ko)")
-    if size_kb > 512:
-        print(f"[ict25_arms] WARNING: artefact > 512 Ko (results-artifact-policy)", file=sys.stderr)
+    _write_artifact(out_path, args, seeds, all_metrics, resumed_seeds)
     return 0
 
 

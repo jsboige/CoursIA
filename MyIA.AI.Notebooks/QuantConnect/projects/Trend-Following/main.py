@@ -6,9 +6,14 @@ from datetime import datetime
 
 class TrendFollowingAQR(QCAlgorithm):
     """
-    Trend Following Multi-Asset v7 (BEST)
+    Trend Following Multi-Asset v7
     ======================================
-    v7: Sharpe 0.577, CAGR 11.52%, MaxDD 15.3% (safe haven + mom tilt) BEST
+    Measured (current code, fenêtre codée 2015-01-01 -> 2024-12-31, 2516 séances négociées (3653 jours calendaires), mode strategy): Sharpe 0.362, CAGR 7.294%, MaxDD 15.000%.
+    Source : QC Cloud, dossier #23315 (2026-10-29), projet de référence 20286-TF-baseline (2516 séances négociées, 451 ordres).
+
+    Iteration results (historique des iterations de conception, mesurees sous des
+    conditions anterieures ; non reproduites par le code actuel, refactors #21420/#22869/#22923) :
+    v7: Sharpe 0.577, CAGR 11.52%, MaxDD 15.3% (safe haven + mom tilt) < best de l'iteration
     v8: Sharpe 0.566, CAGR 10.38%, MaxDD 16.5% (regime + risk parity - worse)
     v9: Sharpe 0.535, CAGR 10.29%, MaxDD 14.6% (regime only - worse)
 
@@ -127,13 +132,23 @@ class TrendFollowingAQR(QCAlgorithm):
             close = self.securities[self.symbols[ticker]].close
             if close <= sma_val:
                 continue
-            hist_6m = self.history(self.symbols[ticker], self.mom_lookback_6m + 5, Resolution.DAILY)
+            # Fenetre double (#20286) : sur une demi-seance, history() rend moins
+            # de barres que demandees et la garde ecarte le titre. On demande le
+            # double puis on re-slice sur la fenetre d'origine : la garde porte
+            # sur la fenetre reellement utilisee, son verdict ne change pas.
+            hist_6m = self.history(self.symbols[ticker], 2 * (self.mom_lookback_6m + 5), Resolution.DAILY)
+            hist_6m = hist_6m.iloc[-(self.mom_lookback_6m + 5):]
             if len(hist_6m) < self.mom_lookback_6m * 0.8:
                 continue
             ret_6m = hist_6m["close"].iloc[-1] / hist_6m["close"].iloc[-self.mom_lookback_6m] - 1
             if ret_6m <= 0:
                 continue
-            hist_12m = self.history(self.symbols[ticker], self.mom_lookback_12m + 5, Resolution.DAILY)
+            # Fenetre double (#20286) : sur une demi-seance, history() rend moins
+            # de barres que demandees et la garde ecarte le titre. On demande le
+            # double puis on re-slice sur la fenetre d'origine : la garde porte
+            # sur la fenetre reellement utilisee, son verdict ne change pas.
+            hist_12m = self.history(self.symbols[ticker], 2 * (self.mom_lookback_12m + 5), Resolution.DAILY)
+            hist_12m = hist_12m.iloc[-(self.mom_lookback_12m + 5):]
             if len(hist_12m) < self.mom_lookback_12m * 0.8:
                 ret_12m = ret_6m
             else:

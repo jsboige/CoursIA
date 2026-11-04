@@ -99,11 +99,11 @@ Si le gap reste sous 0.30 sur bit3 family, c'est un signal que la borne FBT satu
 - C.2 : artefact `results/hoffman_interface_toy_n16_results.json` commite
 - C.3 : scope strict ; pas de modification cellules ICT existantes
 - H.1 : 18+ tests pytest verts (test_hoffman_interface_toy_n16.py)
-- bibliography-hygiene : PDF Prakash et al. 2017 archive GDrive (deja fait case 11)
+- bibliography-hygiene : préprint Prakash et al. (30 juillet 2017) archivé au gisement le 2026-10-25 — la mention antérieure « déjà fait case 11 » était inexacte, le fichier était absent du gisement
 
 ## Crédits / Suite
 
-- **Source primaire** : Prakash, Stephens, Hoffman, Singh & Fields (2017), arXiv:1505.04322
+- **Source primaire** : Prakash, Stephens, Hoffman, Singh & Fields (2021), *Acta Biotheoretica* 69(3) : 319-341, doi:10.1007/s10441-020-09400-0 (§4 du préprint du 30 juillet 2017, archivé au gisement)
 - **Antécedent direct** : Case 11 (PR #14535, N=4) + Case 12 (PR #14544, N=8)
 - **Issue tracker** : #8182 (Veille & distillation TOE ↔ conscience)
 - **EPIC parent** : ICT (#4588)

@@ -145,6 +145,22 @@ def unknot : Knot where
 
 Nombre de croisements 3, trois croisements positifs (trefoil a main droite).
 Code PD issu de KnotInfo : [[1,4,2,5],[3,6,4,1],[5,2,6,3]]
+
+Pont catastrophe (volet G.α.2 du plan #19333) : la cubique cuspidale
+`y² = x³` — courbe de bifurcation `4a³ + 27b² = 0` de la fronce de Thom —
+porte la même signature 3 (trois croisements, trois lobes du trèfle torique
+`2φ = 3θ`). La forme vérifiée du pont vit dans `AlexanderTrivial` :
+`alexander_trefoil_roots_primitive_sixth` établit que les racines de
+l'Alexander `t² − t + 1` sont exactement les racines sixièmes primitives de
+l'unité ; le rejeu Python est dans `IIT/ICT-Series/ICT-23`
+(`ict/catastrophe.py`).
+
+Structure première (volet E.1) : le trèfle est le nœud torique (2, 3) —
+fermeture de la tresse `σ₁³` à deux brins. Une structure de groupe (le
+groupe de tresses) avant d'être un objet de nœuds : la classification des
+groupes finis (abelien fini = produit de cycliques ; cf. *Classifying
+Groups*, Sheydvasser, 05/08/2026) rappelle le cadre dont le groupe de
+tresses est un exemplaire non abélien.
 -/
 def trefoilDiagram : KnotDiagram where
   crossings := [

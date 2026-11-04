@@ -1,5 +1,5 @@
 /-
-# Hommage Grothendieck — Monodromie : la première marche du cercle épointé
+# Hommage Grothendieck — Monodromie : la première marche du plan épointé
 
 Copyright (c) 2026 CoursIA. Tous droits réservés.
 Distribué sous licence Apache 2.0 comme décrit dans le fichier LICENSE.

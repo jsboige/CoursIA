@@ -162,6 +162,8 @@ Le répertoire `examples/` contient des projets validés avec des backtests posi
 | **CSharp-BTC-EMA-Cross** | 19050970 | Crossover EMA BTC classique (18/23) |
 | **CSharp-CTG-Momentum** | 19225388 | « Stocks on the Move » (Clenow) — Momentum ranking |
 
+Les instructions de backtest des variantes optimisées (URLs des projets Cloud, noms des runs, paramètres et Sharpe attendus — BTC-MACD-ADX, ETF-Pairs-Trading, Sector-Momentum) vivent dans [`BACKTEST_INSTRUCTIONS.md`](BACKTEST_INSTRUCTIONS.md), à la racine du cours partenaire.
+
 ---
 
 ## Kit de Transition — Stratégies ML & Framework

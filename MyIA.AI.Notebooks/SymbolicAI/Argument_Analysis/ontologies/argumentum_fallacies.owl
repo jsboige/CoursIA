@@ -13677,14 +13677,14 @@
   <AnnotationAssertion>
     <AnnotationProperty IRI="http://www.w3.org/2004/02/skos/core#example" />
     <IRI>https://www.argumentum.games/argumentum_fallacies.owl#noTrueScotsman</IRI>
-    <Literal xml:lang="fr">- Tous les Écossais sont roux. - Angus est écossais mais il n’est pas roux. - Ce n’est donc pas un vrai Écossais.</Literal>
+    <Literal xml:lang="fr">— Tous les Écossais sont roux. — Angus est écossais mais il n’est pas roux. — Ce n’est donc pas un vrai Écossais.</Literal>
   </AnnotationAssertion>
   <AnnotationAssertion>
     <AnnotationProperty IRI="http://www.w3.org/2004/02/skos/core#example" />
     <IRI>https://www.argumentum.games/argumentum_fallacies.owl#noTrueScotsman</IRI>
-    <Literal xml:lang="en">- All Scots are redheads.
-- Angus is Scots but isn't a redhead.
-- Then he isn't a true Scotsman.</Literal>
+    <Literal xml:lang="en">— All Scots are redheads.
+— Angus is Scots but isn't a redhead.
+— Then he isn't a true Scotsman.</Literal>
   </AnnotationAssertion>
   <AnnotationAssertion>
     <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#seeAlso" />
@@ -14704,8 +14704,7 @@
   <AnnotationAssertion>
     <AnnotationProperty IRI="http://www.w3.org/2004/02/skos/core#definition" />
     <IRI>https://www.argumentum.games/argumentum_fallacies.owl#appealToModesty</IRI>
-    <Literal xml:lang="en">Deterring any contradiction of an argument by calling the former immodest in front of an autority supporting the latter.
-</Literal>
+    <Literal xml:lang="en">Deterring any contradiction of an argument by calling the former immodest in front of an autority supporting the latter.</Literal>
   </AnnotationAssertion>
   <AnnotationAssertion>
     <AnnotationProperty IRI="http://www.w3.org/2004/02/skos/core#example" />
@@ -16060,8 +16059,7 @@
   <AnnotationAssertion>
     <AnnotationProperty IRI="http://www.w3.org/2004/02/skos/core#definition" />
     <IRI>https://www.argumentum.games/argumentum_fallacies.owl#appealToAncientWisdom</IRI>
-    <Literal xml:lang="en">Granting value to an argument because it comes from the alledged wisdom of ancient times.
-</Literal>
+    <Literal xml:lang="en">Granting value to an argument because it comes from the alledged wisdom of ancient times.</Literal>
   </AnnotationAssertion>
   <AnnotationAssertion>
     <AnnotationProperty IRI="http://www.w3.org/2004/02/skos/core#example" />
@@ -19257,8 +19255,7 @@ https://utminers.utep.edu/omwilliamson/ENGL1311/fallacies.htm</Literal>
   <AnnotationAssertion>
     <AnnotationProperty IRI="http://www.w3.org/2004/02/skos/core#definition" />
     <IRI>https://www.argumentum.games/argumentum_fallacies.owl#appealToAnger</IRI>
-    <Literal xml:lang="en">Accusing one's opponent of being angry or holding their beliefs for anger-related reasons, which purportedly disproves their argument or diminishes its weight.
-</Literal>
+    <Literal xml:lang="en">Accusing one's opponent of being angry or holding their beliefs for anger-related reasons, which purportedly disproves their argument or diminishes its weight.</Literal>
   </AnnotationAssertion>
   <AnnotationAssertion>
     <AnnotationProperty IRI="http://www.w3.org/2004/02/skos/core#example" />
@@ -20713,8 +20710,7 @@ https://utminers.utep.edu/omwilliamson/ENGL1311/fallacies.htm</Literal>
   <AnnotationAssertion>
     <AnnotationProperty IRI="http://www.w3.org/2004/02/skos/core#definition" />
     <IRI>https://www.argumentum.games/argumentum_fallacies.owl#clichéThinking</IRI>
-    <Literal xml:lang="en">Using as evidence a well-known wise saying, as if that is proven, or as if it has no exceptions.
-</Literal>
+    <Literal xml:lang="en">Using as evidence a well-known wise saying, as if that is proven, or as if it has no exceptions.</Literal>
   </AnnotationAssertion>
   <AnnotationAssertion>
     <AnnotationProperty IRI="http://www.w3.org/2004/02/skos/core#example" />
@@ -21219,16 +21215,12 @@ https://utminers.utep.edu/omwilliamson/ENGL1311/fallacies.htm</Literal>
   <AnnotationAssertion>
     <AnnotationProperty IRI="http://www.w3.org/2004/02/skos/core#definition" />
     <IRI>https://www.argumentum.games/argumentum_fallacies.owl#academese</IRI>
-    <Literal xml:lang="fr">Vous utilisez un langage formel, spécialisé et souvent complexe, typique
-du milieu académique, qui peut rendre votre discours inaccessibles aux
-non-initiés.</Literal>
+    <Literal xml:lang="fr">Vous utilisez un langage formel, spécialisé et souvent complexe, typique du milieu académique, qui peut rendre votre discours inaccessible aux non-initiés.</Literal>
   </AnnotationAssertion>
   <AnnotationAssertion>
     <AnnotationProperty IRI="http://www.w3.org/2004/02/skos/core#definition" />
     <IRI>https://www.argumentum.games/argumentum_fallacies.owl#academese</IRI>
-    <Literal xml:lang="en">Employing a formal, specialized, and often complex language typical of
-academic settings, which can make one's speech inaccessible to the
-uninitiated.</Literal>
+    <Literal xml:lang="en">Employing a formal, specialized, and often complex language typical of academic settings, which can make one's speech inaccessible to the uninitiated.</Literal>
   </AnnotationAssertion>
   <AnnotationAssertion>
     <AnnotationProperty IRI="http://www.w3.org/2004/02/skos/core#example" />
@@ -35644,8 +35636,7 @@ https://utminers.utep.edu/omwilliamson/ENGL1311/fallacies.htm</Literal>
   <AnnotationAssertion>
     <AnnotationProperty IRI="http://www.w3.org/2004/02/skos/core#definition" />
     <IRI>https://www.argumentum.games/argumentum_fallacies.owl#inducedHypocrisy</IRI>
-    <Literal xml:lang="en">Highlighting someone's dissonance between their actions and discourse in order to make them change.
-</Literal>
+    <Literal xml:lang="en">Highlighting someone's dissonance between their actions and discourse in order to make them change.</Literal>
   </AnnotationAssertion>
   <AnnotationAssertion>
     <AnnotationProperty IRI="http://www.w3.org/2004/02/skos/core#example" />
@@ -37425,16 +37416,12 @@ https://utminers.utep.edu/omwilliamson/ENGL1311/fallacies.htm</Literal>
   <AnnotationAssertion>
     <AnnotationProperty IRI="http://www.w3.org/2004/02/skos/core#example" />
     <IRI>https://www.argumentum.games/argumentum_fallacies.owl#spreading</IRI>
-    <Literal xml:lang="fr">Mon adversaire devrait maintenant répondre à mes arguments sur diverses politiques économiques, sociales et environnementales,
-couvrant les implications à court et à long terme, les impacts sur les personnes vulnérables
-populations, considérations géopolitiques et aspects juridiques et éthiques.</Literal>
+    <Literal xml:lang="fr">Mon adversaire devrait maintenant répondre à mes arguments sur diverses politiques économiques, sociales et environnementales, en tenant compte des implications à court et à long terme, des effets sur les populations vulnérables, des considérations géopolitiques ainsi que des aspects juridiques et éthiques.</Literal>
   </AnnotationAssertion>
   <AnnotationAssertion>
     <AnnotationProperty IRI="http://www.w3.org/2004/02/skos/core#example" />
     <IRI>https://www.argumentum.games/argumentum_fallacies.owl#spreading</IRI>
-    <Literal xml:lang="en">My opponent should now answer my arguments about various economic, social, and environmental policies,
-covering implications in the short and long term, impacts on vulnerable
-populations, geopolitical considerations, and legal and ethical aspects.</Literal>
+    <Literal xml:lang="en">My opponent should now answer my arguments about various economic, social, and environmental policies, covering implications in the short and long term, impacts on vulnerable populations, geopolitical considerations, and legal and ethical aspects.</Literal>
   </AnnotationAssertion>
   <AnnotationAssertion>
     <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#seeAlso" />
@@ -37594,8 +37581,7 @@ populations, geopolitical considerations, and legal and ethical aspects.</Litera
   <AnnotationAssertion>
     <AnnotationProperty IRI="http://www.w3.org/2004/02/skos/core#definition" />
     <IRI>https://www.argumentum.games/argumentum_fallacies.owl#harassment</IRI>
-    <Literal xml:lang="en">Repeatedly behaving in ways which undermine a person's psychology, in order to make her more compliant.
-</Literal>
+    <Literal xml:lang="en">Repeatedly behaving in ways which undermine a person's psychology, in order to make her more compliant.</Literal>
   </AnnotationAssertion>
   <AnnotationAssertion>
     <AnnotationProperty IRI="http://www.w3.org/2004/02/skos/core#example" />
@@ -45852,7 +45838,7 @@ populations, geopolitical considerations, and legal and ethical aspects.</Litera
   <AnnotationAssertion>
     <AnnotationProperty IRI="http://www.w3.org/2004/02/skos/core#definition" />
     <IRI>https://www.argumentum.games/argumentum_fallacies.owl#fallacyOfComposition</IRI>
-    <Literal xml:lang="en">Atrributing properties of the parts of a set to the whole set.</Literal>
+    <Literal xml:lang="en">Attributing properties of the parts of a set to the whole set.</Literal>
   </AnnotationAssertion>
   <AnnotationAssertion>
     <AnnotationProperty IRI="http://www.w3.org/2004/02/skos/core#example" />
@@ -46027,7 +46013,7 @@ populations, geopolitical considerations, and legal and ethical aspects.</Litera
   <AnnotationAssertion>
     <AnnotationProperty IRI="http://www.w3.org/2004/02/skos/core#definition" />
     <IRI>https://www.argumentum.games/argumentum_fallacies.owl#divisionFallacy</IRI>
-    <Literal xml:lang="en">Attributing properties of a whole set to each of its individual part.</Literal>
+    <Literal xml:lang="en">Attributing properties of a whole set to each of its individual parts.</Literal>
   </AnnotationAssertion>
   <AnnotationAssertion>
     <AnnotationProperty IRI="http://www.w3.org/2004/02/skos/core#example" />
@@ -46372,8 +46358,7 @@ populations, geopolitical considerations, and legal and ethical aspects.</Litera
   <AnnotationAssertion>
     <AnnotationProperty IRI="http://www.w3.org/2004/02/skos/core#definition" />
     <IRI>https://www.argumentum.games/argumentum_fallacies.owl#greedyReductionism</IRI>
-    <Literal xml:lang="en">Attempting to explain a thing in terms of what it reduces to but failing to consider the complexity of the issue, thus oversimplifying.
-</Literal>
+    <Literal xml:lang="en">Attempting to explain a thing in terms of what it reduces to but failing to consider the complexity of the issue, thus oversimplifying.</Literal>
   </AnnotationAssertion>
   <AnnotationAssertion>
     <AnnotationProperty IRI="http://www.w3.org/2004/02/skos/core#example" />
@@ -48033,8 +48018,7 @@ populations, geopolitical considerations, and legal and ethical aspects.</Litera
   <AnnotationAssertion>
     <AnnotationProperty IRI="http://www.w3.org/2004/02/skos/core#definition" />
     <IRI>https://www.argumentum.games/argumentum_fallacies.owl#argumentOfTheBeard</IRI>
-    <Literal xml:lang="en">Denying the possibility of an opposite state by arguing that there is no decisive boundary between the two states.
-</Literal>
+    <Literal xml:lang="en">Denying the possibility of an opposite state by arguing that there is no decisive boundary between the two states.</Literal>
   </AnnotationAssertion>
   <AnnotationAssertion>
     <AnnotationProperty IRI="http://www.w3.org/2004/02/skos/core#example" />
@@ -48784,7 +48768,7 @@ populations, geopolitical considerations, and legal and ethical aspects.</Litera
   <AnnotationAssertion>
     <AnnotationProperty IRI="http://www.w3.org/2004/02/skos/core#example" />
     <IRI>https://www.argumentum.games/argumentum_fallacies.owl#goldenMeanFallacy</IRI>
-    <Literal xml:lang="en">You prefer Monday and I Wednesday: let's meetup on Tuesday.</Literal>
+    <Literal xml:lang="en">You prefer Monday and I Wednesday: let's meet up on Tuesday.</Literal>
   </AnnotationAssertion>
   <AnnotationAssertion>
     <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#seeAlso" />
@@ -54815,7 +54799,7 @@ populations, geopolitical considerations, and legal and ethical aspects.</Litera
   <AnnotationAssertion>
     <AnnotationProperty IRI="http://www.w3.org/2004/02/skos/core#prefLabel" />
     <IRI>https://www.argumentum.games/argumentum_fallacies.owl#selfRefutingIdea</IRI>
-    <Literal xml:lang="fr">Concept volé</Literal>
+    <Literal xml:lang="fr">Idée autoréfutante</Literal>
   </AnnotationAssertion>
   <AnnotationAssertion>
     <AnnotationProperty IRI="http://www.w3.org/2004/02/skos/core#prefLabel" />
@@ -54825,12 +54809,12 @@ populations, geopolitical considerations, and legal and ethical aspects.</Litera
   <AnnotationAssertion>
     <AnnotationProperty IRI="http://www.w3.org/2004/02/skos/core#definition" />
     <IRI>https://www.argumentum.games/argumentum_fallacies.owl#selfRefutingIdea</IRI>
-    <Literal xml:lang="fr">Vous niez un concept tout en continuant à l’utiliser dans votre raisonnement.</Literal>
+    <Literal xml:lang="fr">Vous avancez une affirmation qui se réfute elle-même : si elle était vraie, elle serait fausse.</Literal>
   </AnnotationAssertion>
   <AnnotationAssertion>
     <AnnotationProperty IRI="http://www.w3.org/2004/02/skos/core#definition" />
     <IRI>https://www.argumentum.games/argumentum_fallacies.owl#selfRefutingIdea</IRI>
-    <Literal xml:lang="en">Denying a concept while continuing to use it in the reasoning.</Literal>
+    <Literal xml:lang="en">Putting forward a claim that refutes itself: if it were true, it would be false.</Literal>
   </AnnotationAssertion>
   <AnnotationAssertion>
     <AnnotationProperty IRI="http://www.w3.org/2004/02/skos/core#example" />
@@ -55116,7 +55100,7 @@ populations, geopolitical considerations, and legal and ethical aspects.</Litera
   <AnnotationAssertion>
     <AnnotationProperty IRI="http://www.w3.org/2004/02/skos/core#definition" />
     <IRI>https://www.argumentum.games/argumentum_fallacies.owl#syllogisticFallacy</IRI>
-    <Literal xml:lang="en">Using a syllogism, or 3-step (major premise - minor premise - conclusion) argument in a faulty way.</Literal>
+    <Literal xml:lang="en">Using a syllogism, or 3-step (major premise – minor premise – conclusion) argument in a faulty way.</Literal>
   </AnnotationAssertion>
   <AnnotationAssertion>
     <AnnotationProperty IRI="http://www.w3.org/2004/02/skos/core#example" />
@@ -56306,8 +56290,7 @@ populations, geopolitical considerations, and legal and ethical aspects.</Litera
   <AnnotationAssertion>
     <AnnotationProperty IRI="http://www.w3.org/2004/02/skos/core#definition" />
     <IRI>https://www.argumentum.games/argumentum_fallacies.owl#incongruity</IRI>
-    <Literal xml:lang="en">Arguing on the basis of concepts whose definitions are either too broad or too narrow.
-</Literal>
+    <Literal xml:lang="en">Arguing on the basis of concepts whose definitions are either too broad or too narrow.</Literal>
   </AnnotationAssertion>
   <AnnotationAssertion>
     <AnnotationProperty IRI="http://www.w3.org/2004/02/skos/core#example" />
@@ -64415,8 +64398,8 @@ populations, geopolitical considerations, and legal and ethical aspects.</Litera
   <AnnotationAssertion>
     <AnnotationProperty IRI="http://www.w3.org/2004/02/skos/core#example" />
     <IRI>https://www.argumentum.games/argumentum_fallacies.owl#contextomy</IRI>
-    <Literal xml:lang="en">- You said you found this movie dazzling.
-- Dazzling in its stupidity!</Literal>
+    <Literal xml:lang="en">— You said you found this movie dazzling.
+— Dazzling in its stupidity!</Literal>
   </AnnotationAssertion>
   <AnnotationAssertion>
     <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#seeAlso" />
@@ -74395,8 +74378,7 @@ populations, geopolitical considerations, and legal and ethical aspects.</Litera
   <AnnotationAssertion>
     <AnnotationProperty IRI="http://www.w3.org/2004/02/skos/core#definition" />
     <IRI>https://www.argumentum.games/argumentum_fallacies.owl#extrinsicIncentivesBias</IRI>
-    <Literal xml:lang="fr">Vous sous-estimez l’impact des récompenses externes sur votre propre motivation et comportement.
-</Literal>
+    <Literal xml:lang="fr">Vous sous-estimez l’impact des récompenses externes sur votre propre motivation et comportement.</Literal>
   </AnnotationAssertion>
   <AnnotationAssertion>
     <AnnotationProperty IRI="http://www.w3.org/2004/02/skos/core#definition" />
@@ -84928,9 +84910,7 @@ populations, geopolitical considerations, and legal and ethical aspects.</Litera
   <AnnotationAssertion>
     <AnnotationProperty IRI="http://www.w3.org/2004/02/skos/core#definition" />
     <IRI>https://www.argumentum.games/argumentum_fallacies.owl#spreading</IRI>
-    <Literal xml:lang="en">Speaking extremely fast to present as many arguments as possible in the
-least amount of time, making it hard for the opponent to respond to all
-points.</Literal>
+    <Literal xml:lang="en">Speaking extremely fast to present as many arguments as possible in the least amount of time, making it hard for the opponent to respond to all points.</Literal>
   </AnnotationAssertion>
   <AnnotationAssertion>
     <AnnotationProperty IRI="http://www.w3.org/2004/02/skos/core#example" />
@@ -84940,9 +84920,7 @@ points.</Literal>
   <AnnotationAssertion>
     <AnnotationProperty IRI="http://www.w3.org/2004/02/skos/core#example" />
     <IRI>https://www.argumentum.games/argumentum_fallacies.owl#spreading</IRI>
-    <Literal xml:lang="en">My opponent should now answer my arguments about various economic, social, and environmental policies,
-covering implications in the short and long term, impacts on vulnerable
-populations, geopolitical considerations, and legal and ethical aspects.</Literal>
+    <Literal xml:lang="en">My opponent should now answer my arguments about various economic, social, and environmental policies, covering implications in the short and long term, impacts on vulnerable populations, geopolitical considerations, and legal and ethical aspects.</Literal>
   </AnnotationAssertion>
   <AnnotationAssertion>
     <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#seeAlso" />
@@ -85977,8 +85955,7 @@ populations, geopolitical considerations, and legal and ethical aspects.</Litera
   <AnnotationAssertion>
     <AnnotationProperty IRI="http://www.w3.org/2004/02/skos/core#definition" />
     <IRI>https://www.argumentum.games/argumentum_fallacies.owl#deadCatStrategy</IRI>
-    <Literal xml:lang="en">Intentionally diverting attention from significant issues by creating a shocking scandal or controversy.
-</Literal>
+    <Literal xml:lang="en">Intentionally diverting attention from significant issues by creating a shocking scandal or controversy.</Literal>
   </AnnotationAssertion>
   <AnnotationAssertion>
     <AnnotationProperty IRI="http://www.w3.org/2004/02/skos/core#example" />
@@ -88493,7 +88470,7 @@ populations, geopolitical considerations, and legal and ethical aspects.</Litera
   <AnnotationAssertion>
     <AnnotationProperty IRI="http://www.w3.org/2004/02/skos/core#definition" />
     <IRI>https://www.argumentum.games/argumentum_fallacies.owl#tuQuoque</IRI>
-    <Literal xml:lang="en">Discrediting the opponent's position by asserting the opponent's failure to act consistently in accordance with that position</Literal>
+    <Literal xml:lang="en">Discrediting the opponent's position by asserting the opponent's failure to act consistently in accordance with that position.</Literal>
   </AnnotationAssertion>
   <AnnotationAssertion>
     <AnnotationProperty IRI="http://www.w3.org/2004/02/skos/core#example" />

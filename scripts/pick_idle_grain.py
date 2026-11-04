@@ -214,6 +214,7 @@ renouveler la poignee apres l'avoir consommee, jamais a justifier un arret.
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
 import copy
 import datetime as dt
 import hashlib
@@ -225,6 +226,7 @@ import random
 import re
 import subprocess
 import sys
+import threading
 import time
 import tempfile
 import unicodedata
@@ -370,118 +372,251 @@ _CONTAINER_DELIVERY_MARKER_RE = re.compile(
     re.IGNORECASE | re.MULTILINE,
 )
 
-# #20351 : `[RELEASED]` + « acceptance deja couverte » = LIVRAISON pour le
-# tapis. Le marqueur `[RELEASED]` a deux sens dans la flotte : soit une lane
-# rend la main sur un item qu'elle n'a pas livre (barriere reelle -> l'item
-# DOIT rester servi), soit elle rend la main en constatant que l'acceptance
-# est deja couverte par un travail livre (l'item ne doit PLUS remonter).
-# La sonde pleine ne lisait que `[INFO] candidate-delivered` : un item clot par
-# la seconde forme gardait une « derniere visite » ancienne et revenait en
-# tete du tapis indefiniment (11 tetes de tapis mortes mesurees le 2026-10-11
-# par myia-po-2027:CoursIA).
+# --- Dossier de cloture : un signal de livraison TERMINAL --------------------
 #
-# On ne reconnait donc QUE la forme couverte : l'en-tete `[RELEASED]` et le
-# motif de couverture doivent etre sur la MEME ligne (le protocole ecrit
-# `[RELEASED] lane <machine:workspace> -- <motif>`), et le motif doit etre
-# AFFIRMATIF -- « acceptance deja couverte » et non « l'acceptance n'est pas
-# couverte, on rend la main », qui est l'autre cas (barriere) et doit rester
-# servi. La negation est donc cherchee explicitement, et non par un mot
-# generique comme « pas » : une ligne « acceptance deja couverte, pas de
-# travail restant » est une couverture, pas une negation.
-_RELEASED_HEADER_RE = re.compile(r"^\s*(?:#{1,6}\s*)?\[RELEASED\](?=\s|:|$)")
-# Les motifs sont compares sur une ligne NORMALISEE (accents retires) : la
-# flotte ecrit indifféremment « deja couverte », « déjà couverte », « rien a
-# reparer », « rien à réparer ». Un motif ecrit en ASCII matcherait la
-# forme accentuee, l'inverse non -- la normalisation est donc faite sur la
-# ligne, pas sur le motif.
+# Le dossier `[CLOSURE PREFLIGHT]` est l'ORGANE canonique de cloture du depot
+# (`scripts/check_closure_dossier.py`) : c'est lui qui dit « cette issue est
+# resolue, elle n'a plus de grain a servir ». Le tapis, lui, ne connaissait que
+# la grammaire des marqueurs (`[INFO] candidate-delivered`, `[DELIVERED] lane`),
+# et ces marqueurs sont PERISSABLES : pour une issue `consolidation`, #22500
+# les fait expirer au-dela de 48 h.
 #
-# Le motif est ANCRE sur l'ACCEPTANCE de l'item (« acceptance deja couverte »,
-# « l'acceptance est couverte », « acceptance deja livree ») : c'est la forme
-# canonique que la flotte a employee sur la cohorte du dispatch central
-# (#20351), et c'est la seule dont le sens est de niveau ITEM. Les formes
-# « deja livre » / « deja couvert » sans « acceptance » ont ete ecartees sur
-# mesure : sur les 512 issues ouvertes, elles ne matchaient que des
-# livraisons de SOUS-GRAIN (« la Tranche A est deja livree », « le carnet 03
-# est deja livre », « grain deja livre ») -- les ecarter aurait retire du
-# tapis des items encore actionnables (FLEAU, le faux positif d'un detecteur
-# se mesure par ses faux NEGATIFS). Les formes « rien a reparer » /
-# « aucun travail restant » restent, Completees par la garde de perimetre
-# ci-dessous.
-_COVERAGE_MOTIF_RE = re.compile(
-    r"(?:"
-    r"acceptance\s+(?:\w+\s+){0,2}(?:couvert\w*|satisfaite|livr\w+)"
-    r"|scope\s+couvert\w*"
-    r"|rien\s+a\s+repar\w+"
-    r"|aucun\s+travail\s+restant"
-    r"|aucune\s+tranche\s+restante"
-    r"|plus\s+rien\s+a\s+faire"
-    r")",
-    re.IGNORECASE,
+# Mesure du 2026-11-02 (#19253, label `consolidation`) : le marqueur du
+# 30/10 16:49Z a expire le 01/11 16:49Z, et le tapis a resservi l'issue
+# TROIS fois dans la journee alors que son dossier de cloture CLOSE datait du
+# 02/11 08:29Z. Le dossier etait la ; le tapis ne le voyait pas.
+#
+# Le dossier est donc reconnu comme un signal TERMINAL : il n'expire pas, et
+# la regle des 48 h ne peut pas le neutraliser.
+#
+# L'ANNONCE de cloture (`Fermeture sur dossier `[CLOSURE PREFLIGHT]`
+# (verdict CLOSE, ...)`) est la meme decision, ecrite en prose par l'adjoint
+# juste apres le dossier : elle est reconnue aussi, sinon le DERNIER
+# commentaire du fil redevenirait le seul point lu et le dossier serait
+# invisible.
+_CLOSURE_ANNOUNCEMENT_RE = re.compile(
+    r"^\s*(?:#{1,6}\s*)?Fermeture sur dossier\b[^\n]*?\bverdict\s+CLOSE\b",
+    re.IGNORECASE | re.MULTILINE,
 )
-_COVERAGE_NEGATED_RE = re.compile(
-    r"(?:pas|non|jamais)\s+(?:couvert\w*|satisfaite|livr\w+)",
-    re.IGNORECASE,
-)
-# « pour cette lane » : une couverture rapportee a une lane n'est pas une
-# couverture de l'item -- les autres lanes peuvent encore le servir. Mesure :
-# #18767 (« aucune tranche restante POUR CETTE LANE ») garde 4 sous-modules a
-# couvrir ; le traiter comme livre aurait ecarte un item actionnable.
-_LANE_SCOPED_RE = re.compile(r"cette\s+(?:lane|equipe)", re.IGNORECASE)
-# Un substantif de SOUS-ITEM dans la meme clause que le motif : la couverture
-# porte alors sur une tranche, un carnet, un grain -- pas sur l'item.
-_SCOPE_NOUN_RE = re.compile(
-    r"\b(?:tranche|carnet|grain|sous-grain|sous-issue|notebook|pli|palier|"
-    r"lot|portion|partie|etape|exercice|bloc|audit|fichier|script|cellule)\b",
-    re.IGNORECASE,
-)
-# Separateurs de clause : la garde de perimetre et la garde de scope de lane
-# ne regardent que la clause qui porte le motif.
-_CLAUSE_BOUNDARY_RE = re.compile(r"[:;,.—–]")
 
 
-def _strip_accents(text: str) -> str:
-    """Minuscules sans accents : « déjà » -> « deja », « à » -> « a »."""
-    decomposed = unicodedata.normalize("NFKD", text or "")
-    return "".join(c for c in decomposed if not unicodedata.combining(c)).lower()
+def _closure_dossier_verdict(body: str) -> str | None:
+    """Verdict d'un dossier `[CLOSURE PREFLIGHT]`, ou ``None``.
 
+    REUTILISE L'ORGANE canonique (`scripts/check_closure_dossier.py`), jamais
+    une copie de sa grammaire : le dossier a ses propres champs obligatoires,
+    ses regles de forme, et un gate (`check_closure_dossier.py rc=0`) qui le
+    valide. Un dossier qui ne parse PAS (champ manquant, ligne malformee,
+    marqueur fermant absent) n'est PAS un signal : il est ignore (fail-OPEN),
+    plutot que devine.
 
-def _clause_window(text: str, start: int, end: int) -> tuple[str, str]:
-    """(avant, apres) la clause qui contient `[start, end)`, sans les bornes."""
-    head = text[:start]
-    tail = text[end:]
-    head_bounds = list(_CLAUSE_BOUNDARY_RE.finditer(head))
-    tail_bounds = list(_CLAUSE_BOUNDARY_RE.finditer(tail))
-    clause_head = head[head_bounds[-1].end():] if head_bounds else head
-    clause_tail = tail[:tail_bounds[0].start()] if tail_bounds else tail
-    return clause_head, clause_tail
-
-
-def _released_covers_acceptance(body: str) -> bool:
-    """Une ligne porte-t-elle `[RELEASED]` ET un motif d'acceptance couverte ?
-
-    Fonction pure, testable sans reseau : c'est le seul point de la
-    correction qui decide d'un nouveau verdict.
-
-    Trois gardes font écran, dans cet ordre :
-    1. la negation (« l'acceptance n'est pas couverte ») ;
-    2. le perimetre de SOUS-ITEM (« la Tranche A est deja livree ») ;
-    3. le scope de LANE (« aucune tranche restante pour cette lane »).
+    Import tardif : l'organe n'est charge que si un corps contient la
+    marqueur d'ouverture -- le tapis ne paie pas l'import pour un pool
+    entierement depourvu de dossier.
     """
-    for raw_line in (body or "").splitlines():
-        if not _RELEASED_HEADER_RE.match(raw_line):
+    if not body or "[CLOSURE PREFLIGHT]" not in body:
+        return None
+    try:
+        from check_closure_dossier import parse_dossier
+    except Exception:  # noqa: BLE001 - organe absent -> pas de signal
+        return None
+    try:
+        dossier, errors = parse_dossier(body, 0, "", "")
+    except Exception:  # noqa: BLE001 - parseur en faute -> pas de signal
+        return None
+    if dossier is None or errors:
+        return None
+    return (dossier.fields.get("verdict") or "").strip().upper()
+
+
+def _closure_announced_close(body: str) -> bool:
+    """L'annonce de cloture (`Fermeture sur dossier ... verdict CLOSE`)."""
+    return bool(_CLOSURE_ANNOUNCEMENT_RE.search(body or ""))
+
+
+# --- REOUVERTURE : la decision de cloture peut etre REPRISE ------------------
+#
+# Un dossier `[CLOSURE PREFLIGHT]` de verdict CLOSE est TERMINAL : il n'a pas
+# d'age, donc la regle des 48 h (#22500) ne peut pas l'expirer. C'est le
+# comportement voulu, mesure sur #19253 (#24172, #24173).
+#
+# Mais une decision de cloture prise sur une issue que le USER rouvre ensuite
+# n'est plus la decision finale : le user dit « ce n'est pas regle ». Or le
+# tapis ne lit que le FIL (des commentaires) : il voit le dossier, il ne voit
+# pas l'ETAT de l'issue (fermee, puis rouverte). Une issue rouverte apres son
+# dossier CLOSE, sans `[NOT-DELIVERED]`, resterait donc ecartee du tapis POUR
+# TOUJOURS -- le dossier etait la, la reouverture aussi, et le tapis ne
+# regardait que le fil (#24250).
+#
+# Le predicat est « une REOUVERTURE posterieure a la decision de cloture », et
+# NON « une annonce de fermeture presente ET issue ouverte » : ce second
+# predicat ressortirait toute issue livree et non closee -- c'est-a-dire la
+# majorite du pool ecarte par le filtre de livraison -- et le filtre
+# s'effondrerait.
+#
+# Cout : UNE lecture REST du TIMELINE de l'issue, et UNIQUEMENT pour les
+# candidats qui portent une decision de cloture (rares). Le bucket REST est
+# distinct du bucket GraphQL (#17038). Un marqueur ordinaire ne declenche
+# rien : il expire a 48 h de toute facon.
+_REOPEN_CACHE: dict[int, list[str]] = {}
+
+_ISO_Z_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$")
+
+
+def _parse_iso(value):
+    """Horodatage ISO lu en UTC ; `None` s'il est illisible.
+
+    Meme convention que `_visit_age_hours` : le suffixe `Z` devient un offset
+    explicite, et un horodatage naif est relu en UTC.
+    """
+    if not isinstance(value, str) or not value.strip():
+        return None
+    text = value.strip()
+    if text.endswith("Z"):
+        text = text[:-1] + "+00:00"
+    try:
+        when = dt.datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    if when.tzinfo is None:
+        return when.replace(tzinfo=dt.timezone.utc)
+    return when
+
+
+def _iso_after(later, earlier) -> bool:
+    """`later` est-il posterieur a `earlier` ? (illisible -> faux)"""
+    a = _parse_iso(later)
+    b = _parse_iso(earlier)
+    if a is None or b is None:
+        return False
+    return a > b
+
+
+def _reopen_events(issue_number: int) -> list[str]:
+    """Horodatages des evenements `reopened` de l'issue.
+
+    Lecture REST du TIMELINE (`repos/.../issues/N/timeline`) : c'est le seul
+    endroit ou l'etat de l'issue -- fermee, puis rouverte -- est visible ; le
+    fil (commentaires) ne le porte pas.
+
+    Liste VIDE si la lecture echoue : fail-OPEN, la decision de cloture garde
+    alors sa terminalite. Le resultat est memorise par issue : la lecture
+    n'est faite qu'une fois par passe, meme quand les trois surfaces la
+    consultent.
+
+    Seules les chaines strictement ISO (`...Z`) sont retenues : une sortie de
+    `gh` inattendue ne doit pas pouvoir fabriquer une reouverture.
+    """
+    cached = _REOPEN_CACHE.get(issue_number)
+    if cached is not None:
+        return cached
+    events: list[str] = []
+    try:
+        out = subprocess.run(
+            ["gh", "api", "--paginate",
+             "repos/%s/issues/%d/timeline?per_page=100" % (REPO, issue_number),
+             "--jq", '.[] | select(.event == "reopened") | .created_at'],
+            capture_output=True, text=True, encoding="utf-8", check=True,
+            timeout=_clamp_timeout(20),
+        ).stdout
+        events = [line.strip() for line in out.splitlines()
+                  if _ISO_Z_RE.match(line.strip())]
+    except Exception:  # noqa: BLE001 - lecture best-effort : fail-OPEN
+        events = []
+    _REOPEN_CACHE[issue_number] = events
+    return events
+
+
+def _closure_stamp(comments) -> str | None:
+    """Horodatage de la DERNIERE decision de cloture portee par le fil.
+
+    Une decision de cloture = un dossier `[CLOSURE PREFLIGHT]` de verdict
+    CLOSE, ou son annonce en prose (`Fermeture sur dossier ... verdict
+    CLOSE`) : les deux sont la meme decision, ecrite par l'adjoint.
+    """
+    if not isinstance(comments, list):
+        return None
+    stamp = None
+    for c in comments:
+        if not isinstance(c, dict):
             continue
-        line = _strip_accents(raw_line)
-        if _COVERAGE_NEGATED_RE.search(line):
+        body = c.get("body") or ""
+        if not isinstance(body, str):
             continue
-        for match in _COVERAGE_MOTIF_RE.finditer(line):
-            clause_head, clause_tail = _clause_window(
-                line, match.start(), match.end())
-            if _SCOPE_NOUN_RE.search(clause_head):
-                continue
-            if _LANE_SCOPED_RE.search(clause_tail):
-                continue
-            return True
-    return False
+        if (_closure_dossier_verdict(body) == "CLOSE"
+                or _closure_announced_close(body)):
+            stamp = c.get("createdAt")
+    return stamp
+
+
+def _last_event_stamp(comments) -> str | None:
+    """Horodatage du DERNIER evenement de livraison du fil.
+
+    Mêmes grammaires que le reducteur d'evenement : une retractation, un
+    dossier de cloture, un marqueur de livraison, un marqueur RECENT. Sert a
+    savoir si une reouverture est le dernier evenement du fil -- auquel cas
+    elle l'emporte sur les marqueurs qui la precedent.
+    """
+    if not isinstance(comments, list):
+        return None
+    stamp = None
+    for c in comments:
+        if not isinstance(c, dict):
+            continue
+        body = c.get("body") or ""
+        if not isinstance(body, str):
+            continue
+        created = c.get("createdAt")
+        if (_DELIVERED_MARKER_REVOKED_RE.search(body)
+                or _closure_dossier_verdict(body) == "CLOSE"
+                or _DELIVERED_MARKER_RE.search(body)
+                or _released_covers_acceptance(body)
+                or _RECENT_DELIVERY_MARKER_RE.search(body)):
+            stamp = created
+    return stamp
+
+
+def _delivery_voided_by_reopen(issue_number: int, comments) -> bool:
+    """La decision de cloture de cette issue a-t-elle ete REPRISE ?
+
+    Vrai si le fil porte une decision de cloture ET qu'une REOUVERTURE lui est
+    posterieure -- et qu'aucune decision plus recente ne la rearme.
+
+    Les trois surfaces qui ecartent un candidat (sonde RECENTE, sonde PLEINE,
+    reducteur d'evenement) appellent CE predicat : elles ne peuvent pas
+    diverger sur un fil qui change entre deux lectures.
+    """
+    stamp = _closure_stamp(comments)
+    if not stamp:
+        return False
+    reopen = None
+    for ts in _reopen_events(issue_number):
+        if _iso_after(ts, stamp):
+            reopen = ts if reopen is None or _iso_after(ts, reopen) else reopen
+    if reopen is None:
+        return False
+    last_event = _last_event_stamp(comments)
+    return last_event is None or _iso_after(reopen, last_event)
+
+
+# #20351 : le predicat « [RELEASED] + acceptance deja couverte » vit desormais
+# dans `released_covers`, module SANS dependance -- le balayage CI
+# `candidate-delivered-advisory` ne met dans son sparse-checkout que quatre
+# fichiers et ne peut pas importer le present module (#23762, panne du 29/10
+# au 01/11 : ModuleNotFoundError). Reexporte ici pour la sonde pleine du
+# tapis (`_delivered_state`) et pour `scripts/tests/test_pick_released_signal.py`,
+# qui continuent d'importer ces noms depuis pick_idle_grain.
+from released_covers import (  # noqa: E402
+    _CLAUSE_BOUNDARY_RE,
+    _COVERAGE_MOTIF_RE,
+    _COVERAGE_NEGATED_RE,
+    _LANE_SCOPED_RE,
+    _RELEASED_HEADER_RE,
+    _SCOPE_NOUN_RE,
+    _clause_window,
+    _released_covers_acceptance,
+    _strip_accents,
+)
 
 
 def _issue_comment_bodies_rest(issue_number: int) -> list[str] | None:
@@ -548,6 +683,13 @@ def _delivered_state(comment_bodies: list[str]) -> bool:
         if _DELIVERED_MARKER_REVOKED_RE.search(body or ""):
             delivered = False
         elif _DELIVERED_MARKER_RE.search(body or ""):
+            delivered = True
+        elif _closure_dossier_verdict(body or "") == "CLOSE":
+            # Dossier de cloture CLOSE : l'issue est RESOLUE au sens du
+            # depot. C'est un evenement d'arming comme les autres -- une
+            # retractation posterieure le desarme, un marqueur plus recent le
+            # rearme -- mais il n'EXPIRE PAS (la terminalite est portee par
+            # `_delivery_event_from_comments`, qui rend `stamp=None`).
             delivered = True
         elif _released_covers_acceptance(body or ""):
             # #20351 : `[RELEASED]` + « acceptance deja couverte » est une
@@ -1082,7 +1224,10 @@ def _rest_pages(path: str, *, max_pages: int,
         out = subprocess.run(
             ["gh", "api", f"{path}{sep}per_page={POOL_REST_PAGE}&page={page}"],
             capture_output=True, text=True, encoding="utf-8", check=True,
-            timeout=timeout,
+            # #23090 : une page REST de plus coute un `gh api` ; sans ce clamp,
+            # la boucle payait le defaut (120 s) par page -- 600 s pour cinq
+            # pages sous un budget de 120 s.
+            timeout=_clamp_timeout(timeout),
         ).stdout
         chunk = json.loads(out)
         if not isinstance(chunk, list) or not chunk:
@@ -1143,7 +1288,10 @@ def fetch_pool(
             out = subprocess.run(
                 command,
                 capture_output=True, text=True, encoding="utf-8", check=True,
-                timeout=120,
+                # #23090 : la lecture du pool est la part dominante du run
+                # (258-648 s mesurees, #22500) ; elle lisait son defaut de
+                # 120 s sans consulter le mur.
+                timeout=_clamp_timeout(120),
             ).stdout
             return json.loads(out)
         except Exception as exc:  # noqa: BLE001 - on TENTE l'autre transport
@@ -1243,7 +1391,7 @@ def fetch_pool(
     for it in raw:
         labels = [lb["name"] for lb in it.get("labels", [])]
         title = it["title"]
-        is_umbrella = "EPIC" in labels or title.upper().lstrip("[").startswith("EPIC")
+        is_umbrella = is_umbrella_classification(title, labels)
         body = it.get("body") or ""
         # #13972 : le genre que l'AUTEUR de l'issue a declare dans le body
         # (`Grain: TIER/GENRE -- lane ...`) prime sur l'inference du titre.
@@ -1580,8 +1728,12 @@ _RECENT_DELIVERY_MARKER_RE = re.compile(
 # (`--belt-time-budget 90`, 78 s restants a l'entree de la boucle) : le run
 # rendait la main au-dela de 200 s, et quatre runs consecutifs ont expire en
 # 124 sans jamais servir de grain. L'echeance est publiee ici, et les deux
-# sondes lentes la lisent pour CLAMPER leur propre timeout : la boucle ne
-# peut plus depasser le mur de plus d'un timeout de sonde.
+# sondes lentes la lisent pour CLAMPER leur propre timeout : une sonde ne
+# peut plus depasser le mur de plus d'un timeout -- PAR APPEL, pas par phase.
+# Le plancher de 0,5 s de `_clamp_timeout` fait payer 0,5 s a chaque appel
+# emis APRES l'echeance (repli unitaire de `check_claims` hors fenetre,
+# boucle de selection), donc la borne par phase est « n_appels restants
+# x 0,5 s », pas « n_sondes x 0 » (#23340 point 3).
 _BELT_DEADLINE: list[float | None] = [None]
 
 
@@ -1656,11 +1808,45 @@ def _publish_phase_deadline(seconds: float | None) -> tuple:
                          getattr(nits, "_NITS_PASS_DEADLINE", None))
     if not seconds or float(seconds) <= 0:
         return (previous_belt, nits, previous_nits)
-    _BELT_DEADLINE[0] = time.monotonic() + float(seconds)
+    candidate = time.monotonic() + float(seconds)
+    # #23090 : une phase ne peut que RETRECIR le mur du run, jamais l'etendre.
+    # Sans ce `min`, chaque phase armee pendant un `--belt` repousserait
+    # l'echeance du run -- `red_backlog` a `--red-budget 300` rendrait 300 s
+    # de sursis a un run dont le budget est deja largement entame.
+    existing = _BELT_DEADLINE[0]
+    _BELT_DEADLINE[0] = candidate if existing is None else min(existing, candidate)
     if previous_nits is not None and previous_nits[0] is not None:
         nits.NITS_PASS_BUDGET_S = float(seconds)
         nits._NITS_PASS_DEADLINE = None  # la passe commence ici (cf. docstring)
     return (previous_belt, nits, previous_nits)
+
+
+def _arm_belt_run_clock(seconds: float | None) -> float | None:
+    """Arme l'echeance du RUN `--belt` et rend son origine.
+
+    #23090 -- l'echeance etait publiee dans la branche `--belt`, donc APRES
+    `fetch_pool` (chargement du pool : 258-648 s mesures sur ai-01, #22500),
+    apres l'ardoise de lane et apres la file de reparation. Une lane qui passe
+    `--belt-time-budget 900` croyait borner son run ; elle bornait ses deux
+    derniers tiers. Mesure sur ce siege (po-2025, clone superficiel) : un run
+    de cycle rend la main apres **plus de 40 min**, ou pas du tout.
+
+    Armer tot ne suffit pas seul : les phases d'amont publient leur propre
+    echeance via `_publish_phase_deadline`, qui ne peut desormais que
+    RETRECIR la fenetre (cf. le `min` qu'elle pose) -- sinon une phase armee
+    a `--red-budget 300` repousserait le mur du run a chaque appel.
+    """
+    t0 = time.monotonic()
+    # Sans budget : None explicite, comme la branche `--belt` d'avant. Ecrire
+    # None plutot que « ne pas toucher » evite qu'une echeance laissee par un
+    # appel precedent dans le meme process borne un run qui n'en a pas demande.
+    _BELT_DEADLINE[0] = t0 + float(seconds) if seconds and float(seconds) > 0 else None
+    return t0
+
+
+def _disarm_belt_run_clock() -> None:
+    """Retire l'echeance du run (#23090) : aucune fuite hors du run."""
+    _BELT_DEADLINE[0] = None
 
 
 def _restore_phase_deadline(token: tuple) -> None:
@@ -1715,6 +1901,29 @@ CLAIMS_OPEN_PRS_SNAPSHOT_TTL_S = 120
 B0_PAYLOAD_MAX_BYTES = 65536
 B0_ENTRY_MAX_BYTES = 1048576
 B0_SNAPSHOT_MAX_BYTES = 4194304
+#: Largeur du fan-out de la passe nits (#21882). Mesure du 2026-10-31 : la
+#: passe coute ~7 appels `gh` SERIES par PR (~0,75 s chacun, le demarrage de
+#: process Windows domine) -- 62 s pour 6 PRs, 211 s pour les 41 PRs d'une
+#: lane chargee. Le mur de temps du tapis (#21436) clampe alors la boucle et
+#: les candidats servis au-dela ne sont plus verifies. Le cout est LINEAIRE en
+#: nombre de PRs de la lane et les PRs sont independantes entre elles : un
+#: pool de threads borne les ramene sous le mur. 6 par defaut : assez pour
+#: diviser le cout par ~5-6, pas assez pour jouer avec le rate limit `gh`
+#: (l'organe garde par ailleurs son budget de passe `NITS_PASS_BUDGET_S`).
+#: Pilotable comme lui : `NITS_PASS_WORKERS=1` force le chemin serie.
+NITS_PASS_WORKERS = max(1, int(os.environ.get("NITS_PASS_WORKERS", "6")))
+
+#: #21882 -- largeur du decoupage parallele de la phase claims du tapis. Le
+#: mode batch de ``check_lane_claim`` coute ~1,06 s/numero en serie (mesure
+#: 01/11, n=48 -> 62,5 s, taux marginal) : a ``--grains 50`` la fenetre de
+#: service porte 300 numeros et la phase claims seule depasse 300 s, la ou
+#: le mur du tapis attend un tirage complet sous la meme borne. Chaque
+#: tranche est UN subprocess batch independant, memes replis historiques.
+#: Pilotable : ``BELT_CLAIMS_WORKERS=1`` force le chemin serie d'avant.
+BELT_CLAIMS_WORKERS = max(1, int(os.environ.get("BELT_CLAIMS_WORKERS", "6")))
+#: En dessous de ce cardinal, l'overhead du subprocess domine le gain du
+#: decoupage : pas de tranches, comportement d'avant #21882 conserve.
+BELT_CLAIMS_SLICE_MIN = 24
 
 
 def _gh_snapshot_module():
@@ -1849,6 +2058,33 @@ def _open_prs_from_snapshot() -> list[dict] | None:
     return copy.deepcopy(prs)
 
 
+#: Etat du patch `gh_json` sous fan-out parallel (#21882). L'attribut de
+#: module est PARTAGE par tous les threads : l'ancien enter/exit qui
+#: patchait/restaurait directement faisait router les appels de l'organe
+#: (thread B) par le cache de la PR du thread A -- payloads d'une autre PR,
+#: invalidation par un fingerprint etranger. On installe donc UNE fonction
+#: de dispatch, comptee en references : chaque thread retrouve son cache
+#: par la pile TLS, et le `gh_json` d'origine n'est restaure qu'au retour
+#: a profondeur zero (semantique exacte du chemin serie, y compris pour un
+#: test qui patcherait `gh_json` lui-meme avant nous).
+_B0_TLS = threading.local()
+_B0_INSTALL = {"depth": 0, "original": None}
+_B0_INSTALL_LOCK = threading.Lock()
+
+
+def _b0_thread_dispatch(args):
+    stack = getattr(_B0_TLS, "stack", None)
+    if stack:
+        return stack[-1]._cached_call(args)
+    original = _B0_INSTALL["original"]
+    if original is not None:
+        # Thread sans pile active (hors passe nits) pendant qu'une passe
+        # tourne ailleurs : passer par le vrai `gh_json`, pas par le notre.
+        return original(args)
+    raise RuntimeError(
+        "dispatch gh_json appele hors install -- pile TLS vide et original absent")
+
+
 class _B0TransportCache:
     """Sert le transport de l'organe B.0 depuis l'instantane (#22630).
 
@@ -1866,6 +2102,12 @@ class _B0TransportCache:
     Le `with` restaure `gh_json` dans tous les cas ; `store()` n'ecrit que si
     au moins un appel a reellement abouti. La passe suivante reessaie donc
     exactement comme avant.
+
+    Thread-safe (#21882) : le patch de `gh_json` est un dispatch compté en
+    references (cf `_B0_INSTALL`), et chaque thread empile SON cache en TLS.
+    En entree imbriquee, le cache interieur appelle le `gh_json` d'ORIGINE
+    sur ses misses (pas le cache englobant) : pas de detournement de payloads
+    d'autrui, pas de recursion.
     """
 
     def __init__(self, module, n: int, fingerprint: str | None):
@@ -1883,12 +2125,34 @@ class _B0TransportCache:
         self.payloads = cached if isinstance(cached, dict) else {}
         self._original = getattr(self.module, "gh_json", None)
         if self._original is not None:
-            self.module.gh_json = self._cached_call
+            with _B0_INSTALL_LOCK:
+                if _B0_INSTALL["depth"] == 0:
+                    _B0_INSTALL["original"] = self._original
+                    self.module.gh_json = _b0_thread_dispatch
+                else:
+                    # Deja installe : `module.gh_json` est NOTRE dispatch --
+                    # l'appeler sur miss ferait une recursion. Brancher sur
+                    # le vrai original, capture au premier install.
+                    self._original = _B0_INSTALL["original"]
+                _B0_INSTALL["depth"] += 1
+            stack = getattr(_B0_TLS, "stack", None)
+            if stack is None:
+                stack = []
+                _B0_TLS.stack = stack
+            stack.append(self)
         return self
 
     def __exit__(self, *exc_info) -> bool:
         if self._original is not None:
-            self.module.gh_json = self._original
+            stack = getattr(_B0_TLS, "stack", None)
+            if stack and stack[-1] is self:
+                stack.pop()
+            with _B0_INSTALL_LOCK:
+                _B0_INSTALL["depth"] -= 1
+                if _B0_INSTALL["depth"] <= 0:
+                    self.module.gh_json = _B0_INSTALL["original"]
+                    _B0_INSTALL["original"] = None
+                    _B0_INSTALL["depth"] = 0
         return False
 
     def _cached_call(self, args):
@@ -2058,9 +2322,30 @@ def _snapshot_comments(issue_number: int) -> list[dict] | None:
 #: d'une passe precedente.
 _BELT_SNAPSHOT: dict | None = None
 
+#: Numeros dont les commentaires ont ete lus par la phase reseau de la
+#: passe courante (#22983). La boucle du tapis ne rafraichit alors PLUS :
+#: la lecture est faite une seule fois, avant le calcul des stamps, et la
+#: boucle est une fonction pure de l'instantane.
+_BELT_PRIMED_WINDOW: set[int] = set()
+
 
 def _belt_snapshot_prime(repo: str, numbers: list[int]) -> None:
-    """Rafraichit UNE FOIS l'instantane pour les candidats tires (#22630)."""
+    """Rafraichit UNE FOIS l'instantane pour les candidats tires (#22630, #22983).
+
+    #22983 -- ce priming est la **phase reseau** du tirage. Apres lui, le
+    tirage lui-meme ne doit plus emettre aucun appel GitHub : chaque sonde
+    (marqueur de livraison, verification de claim) lit l'instantane.
+
+    La lecture est un **balayage incremental** (`scripts/coordination/
+    gh_snapshot.ensure_comments`) : un seul appel balaie les commentaires
+    modifies depuis la derniere lecture, et les issues non couvertes sont
+    lues une par une. La voie historique (`gh_snapshot.refresh`, deux
+    appels par issue : metadonnees + commentaires) faisait 140 a 348
+    appels pour la fenetre du tapis -- mesure du 2026-10-27 sur ce siege :
+    294 s de tapis, dont 221 s dans la seule boucle de service, parce que
+    les candidats hors fenetre de priming (70) retombaient sur le reseau a
+    chaque sonde.
+    """
     global _BELT_SNAPSHOT
     _BELT_SNAPSHOT = None
     if "PYTEST_CURRENT_TEST" in os.environ:
@@ -2072,7 +2357,19 @@ def _belt_snapshot_prime(repo: str, numbers: list[int]) -> None:
         return
     try:
         gh_snapshot = _gh_snapshot_module()
-        _BELT_SNAPSHOT = gh_snapshot.refresh(repo, issue_numbers=numbers)
+        try:
+            with gh_snapshot.snapshot_lock(repo):
+                snapshot = gh_snapshot.load_snapshot(repo)
+                snapshot, _calls, _stats = gh_snapshot.ensure_comments(
+                    repo, numbers, snapshot)
+                gh_snapshot.save_snapshot(repo, snapshot)
+        except gh_snapshot.SnapshotLockTimeout:
+            # Une autre lane de la machine rafraichit : on consomme SON
+            # instantane plutot que de le concurrencer. La lecture reste
+            # correcte (les entrees fraiches sont servies), la performance
+            # est celle de la lane qui a paye le rafraichissement.
+            snapshot = gh_snapshot.load_snapshot(repo)
+        _BELT_SNAPSHOT = snapshot
     except Exception as exc:  # noqa: BLE001 - l'instantane est un confort, pas un gate
         print(f"[22630] instantane indisponible ({type(exc).__name__}) -- "
               f"les sondes gardent leur transport historique", file=sys.stderr)
@@ -2124,11 +2421,21 @@ def has_recent_delivery_marker(issue_number: int) -> bool | None:
     recentes servies par le tapis -- cette fonction les aurait
     ecartes avant l'epuisement du budget de la sonde pleine.
     """
-    body = _last_comment_body(issue_number)
-    if body is None:
+    last = _last_comment(issue_number)
+    if last is None:
         return None
+    body = last.get("body") or ""
+    if not isinstance(body, str):
+        body = ""
     if not body:
         return False
+    # #24250 -- une decision de cloture REPRISE par une reouverture du user
+    # n'ecarte plus rien. La lecture du timeline n'est faite que dans ce cas
+    # (le dossier est rare) : un marqueur ordinaire ne coute rien de plus.
+    if (_closure_dossier_verdict(body) == "CLOSE"
+            or _closure_announced_close(body)):
+        if _delivery_voided_by_reopen(issue_number, [last]):
+            return False
     # Deux grammaires, un seul verdict : les en-tetes de cloture ci-dessus,
     # PLUS le marqueur de livraison `[INFO] candidate-delivered` (mesure
     # 2026-10-17 : une issue rendue au coordinateur par ce marqueur et
@@ -2139,23 +2446,25 @@ def has_recent_delivery_marker(issue_number: int) -> bool | None:
     # ce que ce filtre attrape, la sonde pleine l'aurait ecarte aussi -- il
     # n'introduit aucun verdict nouveau, il avance le meme.
     return bool(_RECENT_DELIVERY_MARKER_RE.search(body)
-                or _DELIVERED_MARKER_RE.search(body))
+                or _DELIVERED_MARKER_RE.search(body)
+                or _closure_dossier_verdict(body) == "CLOSE"
+                or _closure_announced_close(body))
 
 
-def _last_comment_body(issue_number: int) -> str | None:
-    """Le corps du DERNIER commentaire d'une issue, en 1 requete.
+def _last_comment(issue_number: int) -> dict | None:
+    """Le DERNIER commentaire d'une issue (dictionnaire), en 1 requete.
 
     TRI-ETAT :
     - ``None``  : la lecture a echoue (reseau, 403, payload illisible) --
       fail-OPEN, l'appelant le dit ;
-    - ``""``    : il n'y a pas de dernier commentaire exploitable (aucun
-      commentaire, payload inattendu, corps non textuel) ;
-    - le corps  : celui du dernier commentaire (ordre chronologique de
-      l'API `gh issue view --json comments`).
+    - ``{}``    : il n'y a pas de dernier commentaire exploitable (aucun
+      commentaire, payload inattendu) ;
+    - le dict   : celui du dernier commentaire (ordre chronologique de
+      l'API `gh issue view --json comments`), corps et horodatage.
 
-    Facteurise pour que le filtre « marqueur recent » et le filtre
-    « marqueur de CONTENEUR » lisent le meme octet : deux lectures du meme
-    fil ne peuvent pas diverger sur un fil qui change entre les deux.
+    L'horodatage est HERE parce que la regle de la reouverture (#24250) doit
+    dater la decision de cloture : le corps seul ne permet pas de dire si la
+    reouverture lui est posterieure.
 
     #22630 -- l'instantane local rend les memes commentaires, sans requete :
     la lecture passe par `_snapshot_comments` quand l'instantane de la passe
@@ -2179,13 +2488,38 @@ def _last_comment_body(issue_number: int) -> str | None:
         except Exception:  # noqa: BLE001 - payload illisible = pas de signal
             return None
         if not isinstance(payload, dict):
-            return ""
+            return {}
         comments = payload.get("comments") or []
     if not isinstance(comments, list) or not comments:
-        return ""
+        return {}
     last = comments[-1]
     if not isinstance(last, dict):
-        return ""
+        return {}
+    return last
+
+
+def _last_comment_body(issue_number: int) -> str | None:
+    """Le corps du DERNIER commentaire d'une issue, en 1 requete.
+
+    TRI-ETAT :
+    - ``None``  : la lecture a echoue (reseau, 403, payload illisible) --
+      fail-OPEN, l'appelant le dit ;
+    - ``""``    : il n'y a pas de dernier commentaire exploitable (aucun
+      commentaire, payload inattendu, corps non textuel) ;
+    - le corps  : celui du dernier commentaire (ordre chronologique de
+      l'API `gh issue view --json comments`).
+
+    Facteurise pour que le filtre « marqueur recent » et le filtre
+    « marqueur de CONTENEUR » lisent le meme octet : deux lectures du meme
+    fil ne peuvent pas diverger sur un fil qui change entre les deux.
+
+    #22630 -- l'instantane local rend les memes commentaires, sans requete :
+    la lecture passe par `_snapshot_comments` quand l'instantane de la passe
+    est disponible, et retombe sur la requete historique sinon.
+    """
+    last = _last_comment(issue_number)
+    if last is None:
+        return None
     body = last.get("body") or ""
     if not isinstance(body, str):
         return ""
@@ -2274,6 +2608,14 @@ def delivery_event(issue_number: int) -> tuple[bool, bool, str | None] | None:
     cette fonction ne decide pas de la livraison, elle en donne l'HEURE,
     que la regle des 48 h consomme.
     """
+    # #22983 -- l'instantane local rend les memes commentaires, sans
+    # requete : la lecture passe par `_snapshot_comments` quand l'instantane
+    # de la passe est disponible, et retombe sur la requete historique
+    # sinon. Le REDUCTEUR est le meme dans les deux cas (`_delivery_event_from_comments`),
+    # donc les deux voies ne peuvent pas diverger.
+    snapshot_comments = _snapshot_comments(issue_number)
+    if snapshot_comments is not None:
+        return _delivery_event_from_comments(snapshot_comments, issue_number)
     try:
         out = subprocess.run(
             ["gh", "issue", "view", str(issue_number), "--repo", REPO,
@@ -2287,10 +2629,32 @@ def delivery_event(issue_number: int) -> tuple[bool, bool, str | None] | None:
     if not isinstance(payload, dict):
         return (False, False, None)
     comments = payload.get("comments") or []
+    return _delivery_event_from_comments(comments, issue_number)
+
+
+def _delivery_event_from_comments(
+        comments: list | None,
+        issue_number: int | None = None) -> tuple[bool, bool, str | None]:
+    """Reducteur de l'evenement de livraison, depuis la liste de commentaires.
+
+    Factorise pour que l'instantane et la lecture historique rendent le
+    **meme** verdict : une seule implementation des trois grammaires.
+
+    `issue_number` active la regle de la REOUVERTURE (#24250) : sans lui, le
+    reducteur est une fonction pure des commentaires (les tests l'appellent
+    ainsi). Avec lui, une decision de cloture reprise par une reouverture du
+    user VOIDE le signal de livraison : l'issue redevient servable.
+    """
     if not isinstance(comments, list) or not comments:
+        return (False, False, None)
+    if (issue_number is not None
+            and _delivery_voided_by_reopen(issue_number, comments)):
+        # La decision de cloture a ete reprise : le signal de livraison est
+        # VOID. Ni RECENT, ni etat, ni heure -- l'issue redevient servable.
         return (False, False, None)
     state = False
     stamp = None
+    closed = False
     for c in comments:
         if not isinstance(c, dict):
             continue
@@ -2300,6 +2664,16 @@ def delivery_event(issue_number: int) -> tuple[bool, bool, str | None] | None:
         created = c.get("createdAt")
         if _DELIVERED_MARKER_REVOKED_RE.search(body):
             state, stamp = False, None
+            closed = False
+        elif _closure_dossier_verdict(body) == "CLOSE":
+            # Dossier de cloture CLOSE : signal TERMINAL. `stamp` reste
+            # `None` -> `_visit_age_hours(None)` rend `None` -> la regle des
+            # 48 h (#22500) ne peut pas l'expirer, et la consolidation
+            # cloturee reste ecartee du tapis au-dela de 48 h. C'est
+            # exactement le trou mesure sur #19253 (marqueur du 30/10
+            # expire, dossier CLOSE du 02/11 invisible).
+            state, stamp = True, None
+            closed = True
         elif (_DELIVERED_MARKER_RE.search(body)
               or _released_covers_acceptance(body)):
             state, stamp = True, created
@@ -2312,8 +2686,36 @@ def delivery_event(issue_number: int) -> tuple[bool, bool, str | None] | None:
     if not isinstance(last_body, str):
         last_body = ""
     recent = bool(_RECENT_DELIVERY_MARKER_RE.search(last_body)
-                  or _DELIVERED_MARKER_RE.search(last_body))
+                  or _DELIVERED_MARKER_RE.search(last_body)
+                  or closed
+                  or _closure_dossier_verdict(last_body) == "CLOSE"
+                  or _closure_announced_close(last_body))
+    if closed and state:
+        # La terminalite PRIME sur l'heure : un dossier CLOSE n'expire pas,
+        # meme si un marqueur plus recent a reecrit `stamp`.
+        stamp = None
     return (recent, state, stamp)
+
+
+def _delivered_state_with_reopen(comments, issue_number: int) -> bool:
+    """Etat de livraison d'un fil de commentaires, reouverture comprise.
+
+    Meme chronologie que `_delivered_state` (le marqueur est un ETAT, chaque
+    corps est un evenement), PLUS la regle de la REOUVERTURE (#24250) : une
+    decision de cloture reprise par une reouverture du user VOIDE le signal
+    de livraison -- l'issue redevient servable.
+
+    Le repli REST (bucket GraphQL tombe) ne donne que des CORPS, sans
+    horodatage : il passe par `_delivered_state` seul, la reouverture n'y est
+    pas lue, et le signal est conserve (comportement anterieur).
+    """
+    state = _delivered_state([(c.get("body") or "") if isinstance(c, dict)
+                              else "" for c in comments])
+    if not state:
+        return False
+    if _delivery_voided_by_reopen(issue_number, comments):
+        return False
+    return True
 
 
 def has_delivered_signal(issue_number: int,
@@ -2345,8 +2747,7 @@ def has_delivered_signal(issue_number: int,
     # #22630 -- l'instantane local rend les memes commentaires, sans requete.
     snapshot_comments = _snapshot_comments(issue_number)
     if snapshot_comments is not None:
-        return _delivered_state([(c.get("body") or "") if isinstance(c, dict)
-                                 else "" for c in snapshot_comments])
+        return _delivered_state_with_reopen(snapshot_comments, issue_number)
     try:
         out = subprocess.run(
             ["gh", "issue", "view", str(issue_number), "--repo", REPO,
@@ -2363,7 +2764,8 @@ def has_delivered_signal(issue_number: int,
         # repli que `_has_delivered_marker`, par le meme helper : une seule
         # implementation du repli, un seul point a corriger. Reste TRI-ETAT --
         # `None` si la lecture REST echoue aussi, jamais une exclusion
-        # fabriquee.
+        # fabriquee. Le repli ne donne que des CORPS : la reouverture
+        # (#24250) n'y est pas lue, le signal est conserve.
         bodies = _issue_comment_bodies_rest(issue_number)
         if bodies is None:
             return None
@@ -2375,8 +2777,7 @@ def has_delivered_signal(issue_number: int,
     # candidat sur un faux positif. La voie ponderee et le tapis
     # partagent cette seule grammaire -- et depuis la retractation, le meme
     # parcours ordonne que `_has_delivered_marker`.
-    return _delivered_state([(c.get("body") or "") if isinstance(c, dict)
-                             else "" for c in comments])
+    return _delivered_state_with_reopen(comments, issue_number)
 
 
 def delivered_probe_inert(issue_number: int, lane: str | None = None) -> bool:
@@ -2437,8 +2838,12 @@ def merged_pr_signal(issue_number: int, lane: str | None = None):
 
     TRI-ETAT, meme doctrine que ``has_delivered_signal`` et
     ``open_cover_signal`` :
-    - ``True`` : au moins une PR MERGED cite `#N` et `mergedAt` est dans
-      les 90 derniers jours (jour UTC) ;
+    - ``str`` : au moins une PR MERGED cite `#N`, `mergedAt` est dans les
+      90 derniers jours (jour UTC), et la valeur rendue est ce `mergedAt`
+      ISO-8601 le plus recent. La DATE est rendue, pas un simple `True`,
+      parce que la surface « PR MERGEE » n'est pas terminale : un
+      `[NOT-DELIVERED]` poste APRES cette fusion la revoque (#22987), et
+      cette comparaison a besoin de l'instant de fusion ;
     - ``False`` : aucune PR MERGED ne cite `#N`, OU toutes les PRs
       MERGEes qui la citent datent de plus de 90 jours ;
     - ``None`` : la requete a echoue (reseau, 403, payload illisible) --
@@ -2466,6 +2871,7 @@ def merged_pr_signal(issue_number: int, lane: str | None = None):
     anchor = re.compile(rf"#{issue_number}\b")
     now = dt.datetime.now(dt.timezone.utc)
     window = dt.timedelta(days=MERGED_PR_WINDOW_DAYS)
+    newest = None
     for pr in prs:
         if pr.get("state") != "MERGED":
             continue
@@ -2482,9 +2888,88 @@ def merged_pr_signal(issue_number: int, lane: str | None = None):
             merged_dt = dt.datetime.fromisoformat(merged_at.replace("Z", "+00:00"))
         except ValueError:
             continue
-        if (now - merged_dt) <= window:
-            return True
+        if (now - merged_dt) <= window and (newest is None or merged_dt > newest[0]):
+            newest = (merged_dt, merged_at)
+    if newest is None:
+        return False
+    return newest[1]
+
+
+def revocation_probe_inert(issue_number: int, lane: str | None = None,
+                           merged_at: str | None = None) -> bool:
+    """Sonde inerte de revocation : aucune revocation, aucun appel reseau."""
     return False
+
+
+def revoked_after_merge_signal(issue_number: int, lane: str | None = None,
+                               merged_at: str | None = None) -> bool | None:
+    """Un `[NOT-DELIVERED]` posterieur a la fusion annule-t-il le signal ? (#22987)
+
+    La surface « PR MERGEE <90j » etait la seule des trois a ne pas se
+    retracter. Le label est retire par un sweep, le marqueur de commentaire se
+    desarme par `_delivered_state` -- mais une PR fusionnee withholdait le
+    candidat **pour toujours**, meme quand le coordinateur avait ecrit apres
+    coup que le critere n'etait pas atteint. Cas fondateur : #15002, trois
+    `[NOT-DELIVERED]` (dernier 2026-10-25T12:44:47Z, « WER 0,521 contre 0,097
+    de reference, verdict NO BEATS ») sous un signal « PR MERGEE » plus ancien.
+    Le grain ne revenait jamais sur le tapis, contrairement a ce que la
+    revocation annoncait.
+
+    TRI-ETAT, meme doctrine que les autres sondes :
+    - ``True`` : une forme de retractation (`_DELIVERED_MARKER_REVOKED_RE`,
+      la grammaire en tete de ligne -- une mention en prose ne retracte
+      rien) est posterieure a `merged_at` ;
+    - ``False`` : aucune retractation posterieure (les anterieures ne
+      revoquent rien : c'est le controle negatif de l'issue) ;
+    - ``None`` : instant de fusion inconnu, ou lecture impossible. On ne
+      fabrique jamais une revocation sur une page blanche.
+
+    C'est un **fail-CLOSED** assume, a l'inverse du fail-OPEN des sondes de
+    claim : ici l'echec de lecture n'ouvre pas le grain, il conserve le
+    signal existant. L'asymetrie est deliberee -- une PR fusionnee est un
+    fait observe, et servir un grain deja livre brule le cycle d'une lane.
+    """
+    if not isinstance(merged_at, str):
+        return None
+    try:
+        merged_dt = dt.datetime.fromisoformat(merged_at.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    comments = _snapshot_comments(issue_number)
+    if comments is None:
+        try:
+            out = subprocess.run(
+                ["gh", "issue", "view", str(issue_number), "--repo", REPO,
+                 "--json", "comments"],
+                capture_output=True, text=True, encoding="utf-8", check=True,
+                timeout=30,
+            ).stdout
+            comments = (json.loads(out) or {}).get("comments") or []
+        except Exception:  # noqa: BLE001 - sonde best-effort ; l'echec est DIT
+            return None
+    if not isinstance(comments, list):
+        return None
+    # Le repli REST ne rend que des CORPS, sans horodatage : il ne permet pas
+    # la comparaison a l'instant de fusion, donc il ne revoque pas. Le
+    # desaccord est assume et documente plutot que comble par une supposition.
+    newest_revocation = None
+    for comment in comments:
+        if not isinstance(comment, dict):
+            continue
+        body = comment.get("body") or ""
+        created = comment.get("createdAt")
+        if not isinstance(body, str) or not isinstance(created, str):
+            continue
+        if not _DELIVERED_MARKER_REVOKED_RE.search(body):
+            continue
+        try:
+            created_dt = dt.datetime.fromisoformat(created.replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        if created_dt > merged_dt and (newest_revocation is None
+                                       or created_dt > newest_revocation):
+            newest_revocation = created_dt
+    return newest_revocation is not None
 
 
 def delivered_signal_reason(
@@ -2493,6 +2978,7 @@ def delivered_signal_reason(
     probe=None,
     failures: list[int] | None = None,
     merged_pr_probe=None,
+    revocation_probe=None,
     skip_marker: bool = False,
     skip_merged_pr: bool = False,
 ) -> str | None:
@@ -2524,6 +3010,8 @@ def delivered_signal_reason(
         probe = delivered_probe_inert
     if merged_pr_probe is None:
         merged_pr_probe = merged_pr_probe_inert
+    if revocation_probe is None:
+        revocation_probe = revocation_probe_inert
     labels = {str(label).casefold() for label in item.get("labels") or []}
     if DELIVERED_LABEL in labels:
         return (
@@ -2583,6 +3071,17 @@ def delivered_signal_reason(
             failures.append(item["number"])
         return None
     if merged:
+        # #22987 -- la surface « PR MERGEE » n'est pas terminale. Un
+        # `[NOT-DELIVERED]` poste apres la fusion la revoque, exactement
+        # comme il revoque deja un marqueur de commentaire dans
+        # `_delivered_state`. `merged` porte l'instant de fusion quand la
+        # sonde nominale repond ; une sonde injectee qui rend `True` (tests
+        # existants) n'en porte pas, et la revocation n'est alors pas
+        # evaluee -- comportement anterieur preserve.
+        revoked = (revocation_probe(item["number"], lane, merged)
+                   if isinstance(merged, str) else False)
+        if revoked is True:
+            return None
         return (
             "SIGNAL LIVRAISON (PR MERGEE <" + str(MERGED_PR_WINDOW_DAYS) +
             "j) : une PR MERGEE recente cite cette issue, la livraison est "
@@ -3851,6 +4350,15 @@ def _summarize_claim_from_batch(json_payload: dict, n: int) -> tuple[str, str]:
     if code == "IMPLICIT":
         return CLAIM_CODE_IMPLICIT, human
     if code == "ERROR":
+        # #23098 -- un `ERROR` qui **nomme** son bloquant n'est pas un
+        # verdict muet : l'organe a repondu, et sa reponse dit qu'une
+        # autre lane tient le grain. Le fail-open (servable par defaut)
+        # ne couvre que la classe reellement muette -- refuseroit un grain
+        # faute d'avoir pu le verifier. Ici il a ete verifie, et la
+        # reponse est negative : le grain est bloque.
+        if res.get("blocker_named"):
+            return (CLAIM_CODE_BLOCKED,
+                    "bloquant nomme par l'organe : " + human)
         return CLAIM_CODE_ERROR, human
     return CLAIM_CODE_ERROR, f"(batch: code {code} inconnu)"
 
@@ -3915,7 +4423,12 @@ def _claims_in_process(
         buf_err = io.StringIO()
         with contextlib.redirect_stdout(buf_out), \
                 contextlib.redirect_stderr(buf_err):
-            issue_payload = clc._gh_issue_comments(str(n))
+            # #22983 -- l'instantane sert le payload quand il le peut ;
+            # sinon on retombe sur la lecture reseau (meme contrat que le
+            # mode batch de `check_issues_batch`).
+            issue_payload = clc._snapshot_issue_payload(str(n))
+            if issue_payload is None:
+                issue_payload = clc._gh_issue_comments(str(n))
             rc = clc._run_check(
                 issue_payload, lane, stale_threshold=48.0,
                 my_paths=None, check_open_pr_paths=True,
@@ -3933,6 +4446,139 @@ def _claims_in_process(
         except Exception as exc:  # noqa: BLE001 - neutre : le snapshot est un cache
             print(f"[22630] desinstallation du snapshot en echec "
                   f"({type(exc).__name__}) -- ignoree", file=sys.stderr)
+
+
+def _check_claims_one_batch(numbers: list[int], lane: str,
+                            env: dict) -> dict[int, tuple[str, str]]:
+    """Un transport batch de ``check_claims`` pour UNE liste de numeros.
+
+    Corps extrait tel quel de ``check_claims`` (#21882) pour etre appelable
+    par tranche : un seul subprocess ``check_lane_claim`` positionnel (mode
+    batch), repli ``_one_by_one`` sur echec de batch ou sortie illisible,
+    fail-OPEN sur timeout (``CLAIM_CODE_UNCHECKED``) et sur exception
+    (``CLAIM_CODE_ERROR``). Sans etat partage : deux appels concurrents ne
+    se touchent pas, c'est ce qui autorise le decoupage parallele.
+    """
+    verdicts: dict[int, tuple[str, str]] = {}
+
+    def _one_by_one() -> None:
+        # Chemin legacy : un subprocess.run par issue. La sortie mono-issue
+        # de check_lane_claim (un JSON, puis la phrase de verdict) est lue
+        # par `_summarize_claim`, pas par `json.loads`.
+        for n in numbers:
+            try:
+                rr = _run_bounded(
+                    [sys.executable, "scripts/check_lane_claim.py",
+                     "--lane", lane, str(n)],
+                    timeout=_clamp_timeout(60), env=env,
+                )
+                verdicts[n] = _summarize_claim(
+                    rr.stdout or rr.stderr or "", rr.returncode)
+            except Exception as exc:  # noqa: BLE001
+                verdicts[n] = (
+                    CLAIM_CODE_ERROR,
+                    f"(check indisponible: {type(exc).__name__})")
+
+    try:
+        # 1 seul subprocess.run avec N numeros positionnels (mode
+        # batch de check_lane_claim). La sortie est un JSON
+        # `{results: {N: {code, human, exit, duration, ...}},
+        # total_wall, phases}` -- voir `_summarize_claim_from_batch`
+        # pour le remappage.
+        #
+        # Un seul numero n'active PAS le mode batch (check_lane_claim ne
+        # le prend qu'a partir de 2 issues) : la sortie est alors le JSON
+        # mono-issue suivi de la phrase « CLEAR: ... », que `json.loads`
+        # rejette (`Extra data`). C'est le cas de chaque verification au
+        # fil de l'eau du tapis (`check_claims([n])`) : mesure du
+        # 2026-10-20, 30 issues tirees sur 50 rendues en ERROR, donc
+        # servies sans que leur claim soit lu.
+        cmd = [sys.executable, "scripts/check_lane_claim.py",
+               "--lane", lane]
+        cmd.extend(str(n) for n in numbers)
+        r = None
+        if len(numbers) > 1:
+            # #21436 : `_run_bounded` et non `subprocess.run` -- sur
+            # Windows, ce dernier joint des threads lecteurs qui ne
+            # rendent jamais la main quand un descendant garde le pipe
+            # (mesure du 24/10 : claims geles de t=3,7 s a 280 s, budget
+            # de 90 s). Aucun pipe ici, donc l'echeance est une borne.
+            r = _run_bounded(
+                cmd,
+                # 60s + N * 1s en budget ; le tapis consomme
+                # generalement 5-15 numeros, donc ~75 s max. Au-dela,
+                # on retombe sur le chemin legacy (N subprocess.run)
+                # cycle suivant -- c'est preferable a un tapis gele.
+                # #21436 : clampe par le mur de temps du tapis quand il
+                # en publie un (`_clamp_timeout`), sinon inchange.
+                timeout=_clamp_timeout(60 + 10 * len(numbers)),
+                env=env,
+            )
+        if r is None or r.returncode != 0:
+            # Un seul numero, ou batch en echec (probable:
+            # check_lane_claim pre-v3, ou gh down) : chemin legacy,
+            # N subprocess.run par issue.
+            _one_by_one()
+        else:
+            try:
+                payload = json.loads(r.stdout)
+            except json.JSONDecodeError:
+                # Sortie batch illisible : on relit issue par issue
+                # plutot que de rendre ERROR, qui laisse servir le
+                # grain sans claim lu.
+                _one_by_one()
+            else:
+                for n in numbers:
+                    verdicts[n] = _summarize_claim_from_batch(payload, n)
+    except subprocess.TimeoutExpired:
+        # Le batch a timeout (rare ; depasse 60+10N secondes). On
+        # delivre un verdict UNCHECKED pour les numeros non encore
+        # vus, le tapis pioche ailleurs.
+        for n in numbers:
+            if n not in verdicts:
+                verdicts[n] = (CLAIM_CODE_UNCHECKED,
+                               f"batch timeout (>{60 + 10 * len(numbers)}s)")
+    except Exception as exc:  # noqa: BLE001 - diagnostic best-effort
+        for n in numbers:
+            verdicts[n] = (CLAIM_CODE_ERROR,
+                           f"(check indisponible: {type(exc).__name__})")
+    return verdicts
+
+
+def _check_claims_sliced(numbers: list[int], lane: str,
+                         env: dict) -> dict[int, tuple[str, str]]:
+    """#21882 -- ``check_claims`` par tranches batch paralleles bornees.
+
+    Le taux marginal mesure du transport batch est ~1,06 s/numero : la
+    fenetre de service a ``--grains 50`` (300 numeros) ne tient pas en
+    serie sous le mur du tapis. Chaque tranche est un appel complet de
+    ``_check_claims_one_batch`` (memes replis, meme fail-OPEN) ; une
+    tranche qui leve malgre tout rend ``CLAIM_CODE_ERROR`` pour SES
+    numeros seulement -- les autres tranches ne sont pas penalisees. La
+    reunion conserve l'ordre d'entree. La largeur est
+    ``BELT_CLAIMS_WORKERS`` (6 par defaut, 1 = chemin serie d'avant).
+    """
+    k = min(BELT_CLAIMS_WORKERS, len(numbers))
+    size = -(-len(numbers) // k)
+    slices = [numbers[i:i + size] for i in range(0, len(numbers), size)]
+    t0 = time.monotonic()
+    merged: dict[int, tuple[str, str]] = {}
+    with concurrent.futures.ThreadPoolExecutor(max_workers=k) as ex:
+        futures = {ex.submit(_check_claims_one_batch, s, lane, env): s
+                   for s in slices}
+        for fut in concurrent.futures.as_completed(futures):
+            chunk = futures[fut]
+            try:
+                merged.update(fut.result())
+            except Exception as exc:  # noqa: BLE001 - fail-OPEN par tranche
+                for n in chunk:
+                    merged[n] = (CLAIM_CODE_ERROR,
+                                 f"(check indisponible: {type(exc).__name__})")
+    print(f"[21882] claims: {len(slices)} tranches de <= {size} numeros, "
+          f"wall {time.monotonic() - t0:.1f}s "
+          f"(BELT_CLAIMS_WORKERS={BELT_CLAIMS_WORKERS})",
+          file=sys.stderr, flush=True)
+    return {n: merged[n] for n in numbers if n in merged}
 
 
 def check_claims(numbers: list[int], lane: str) -> dict[int, tuple[str, str]]:
@@ -3956,8 +4602,14 @@ def check_claims(numbers: list[int], lane: str) -> dict[int, tuple[str, str]]:
     check_lane_claim sort un JSON `{results, total_wall, phases}` sur
     stdout et timestamp les phases sur stderr. Cout : O(1) subprocess
     au lieu de O(N).
+
+    #21882 -- au-dela de ``BELT_CLAIMS_SLICE_MIN`` numeros, le batch est
+    decoupe en ``BELT_CLAIMS_WORKERS`` tranches paralleles (meme binaire,
+    memes replis) : le taux marginal du transport (~1,06 s/numero mesure)
+    rendait la fenetre de service de ``--grains 50`` (300 numeros) plus
+    longue que le mur du tapis entier.
     """
-    verdicts = {}
+    verdicts: dict[int, tuple[str, str]] = {}
     if not numbers:
         return verdicts
     # #19643 -- 1 fetch partage. Si le fetch echoue, on n'exporte pas
@@ -3972,30 +4624,12 @@ def check_claims(numbers: list[int], lane: str) -> dict[int, tuple[str, str]]:
         # est dans un test ou un process qui l'avait posee.
         env.pop("CHECK_LANE_CLAIM_OPEN_PRS_JSON", None)
 
-    def _one_by_one() -> None:
-        # Chemin legacy : un subprocess.run par issue. La sortie mono-issue
-        # de check_lane_claim (un JSON, puis la phrase de verdict) est lue
-        # par `_summarize_claim`, pas par `json.loads`.
-        for n in numbers:
-            try:
-                rr = _run_bounded(
-                    [sys.executable, "scripts/check_lane_claim.py",
-                     "--lane", lane, str(n)],
-                    timeout=_clamp_timeout(60), env=env,
-                )
-                verdicts[n] = _summarize_claim(
-                    rr.stdout or rr.stderr or "", rr.returncode)
-            except Exception as exc:  # noqa: BLE001
-                verdicts[n] = (
-                    CLAIM_CODE_ERROR,
-                    f"(check indisponible: {type(exc).__name__})")
-
     try:
         # #22630 -- voie EN PROCESSUS (instantane local), PRIORITAIRE quand
         # le cache de passe est actif. Elle rend le meme verdict sans une
         # lecture GitHub par candidat. Son absence (cache non active, module
-        # absent, instantane illisible, exception) retombe sur le chemin
-        # historique ci-dessous, inchange.
+        # absent, instantane illisible, exception) retombe sur le transport
+        # ci-dessous, inchange.
         #
         # Le cache n'est active QUE par `main()` (`_activate_pass_snapshot`,
         # cf. le bloc #22630) : un appel direct historique (tests, autres
@@ -4003,74 +4637,27 @@ def check_claims(numbers: list[int], lane: str) -> dict[int, tuple[str, str]]:
         # qu'il simule. Sans cette condition, la voie en processus
         # court-circuite ce seam ET rafraichit l'instantane par de vrais
         # appels `gh api` sur un simple appel de `check_claims`.
-        in_process = None
-        if _pass_snapshot_enabled():
+        # #21882 -- la voie en processus est SERIE sur les payloads qu'elle
+        # doit hydrater : ~1 s/numero mesure (l'hydratation de la fenetre de
+        # service, 300 numeros a --grains 50, a pris 295 s toute seule,
+        # alors que le mur du tapis est a 240 s). On ne la garde que SOUS le
+        # seuil de decoupage, son regime rentable ; au-dela, les tranches
+        # paralleles la remplacent.
+        if _pass_snapshot_enabled() and not (
+                BELT_CLAIMS_WORKERS > 1
+                and len(numbers) >= BELT_CLAIMS_SLICE_MIN):
             in_process = _claims_in_process(numbers, lane, cache_path)
-        if in_process is not None:
-            return in_process
-        # 1 seul subprocess.run avec N numeros positionnels (mode
-        # batch de check_lane_claim). La sortie est un JSON
-        # `{results: {N: {code, human, exit, duration, ...}},
-        # total_wall, phases}` -- voir `_summarize_claim_from_batch`
-        # pour le remappage.
-        #
-        # Un seul numero n'active PAS le mode batch (check_lane_claim ne
-        # le prend qu'a partir de 2 issues) : la sortie est alors le JSON
-        # mono-issue suivi de la phrase « CLEAR: ... », que `json.loads`
-        # rejette (`Extra data`). C'est le cas de chaque verification au
-        # fil de l'eau du tapis (`check_claims([n])`) : mesure du
-        # 2026-10-20, 30 issues tirees sur 50 rendues en ERROR, donc
-        # servies sans que leur claim soit lu.
-        cmd = [sys.executable, "scripts/check_lane_claim.py",
-               "--lane", lane]
-        cmd.extend(str(n) for n in numbers)
-        try:
-            r = None
-            if len(numbers) > 1:
-                # #21436 : `_run_bounded` et non `subprocess.run` -- sur
-                # Windows, ce dernier joint des threads lecteurs qui ne
-                # rendent jamais la main quand un descendant garde le pipe
-                # (mesure du 24/10 : claims geles de t=3,7 s a 280 s, budget
-                # de 90 s). Aucun pipe ici, donc l'echeance est une borne.
-                r = _run_bounded(
-                    cmd,
-                    # 60s + N * 1s en budget ; le tapis consomme
-                    # generalement 5-15 numeros, donc ~75 s max. Au-dela,
-                    # on retombe sur le chemin legacy (N subprocess.run)
-                    # cycle suivant -- c'est preferable a un tapis gele.
-                    # #21436 : clampe par le mur de temps du tapis quand il
-                    # en publie un (`_clamp_timeout`), sinon inchange.
-                    timeout=_clamp_timeout(60 + 10 * len(numbers)),
-                    env=env,
-                )
-            if r is None or r.returncode != 0:
-                # Un seul numero, ou batch en echec (probable:
-                # check_lane_claim pre-v3, ou gh down) : chemin legacy,
-                # N subprocess.run par issue.
-                _one_by_one()
-            else:
-                try:
-                    payload = json.loads(r.stdout)
-                except json.JSONDecodeError:
-                    # Sortie batch illisible : on relit issue par issue
-                    # plutot que de rendre ERROR, qui laisse servir le
-                    # grain sans claim lu.
-                    _one_by_one()
-                else:
-                    for n in numbers:
-                        verdicts[n] = _summarize_claim_from_batch(payload, n)
-        except subprocess.TimeoutExpired:
-            # Le batch a timeout (rare ; depasse 60+10N secondes). On
-            # delivre un verdict UNCHECKED pour les numeros non encore
-            # vus, le tapis pioche ailleurs.
-            for n in numbers:
-                if n not in verdicts:
-                    verdicts[n] = (CLAIM_CODE_UNCHECKED,
-                                   f"batch timeout (>{60 + 10 * len(numbers)}s)")
-        except Exception as exc:  # noqa: BLE001 - diagnostic best-effort
-            for n in numbers:
-                verdicts[n] = (CLAIM_CODE_ERROR,
-                               f"(check indisponible: {type(exc).__name__})")
+            if in_process is not None:
+                return in_process
+        # #21882 -- au-dela de BELT_CLAIMS_SLICE_MIN numeros, le transport
+        # batch serie ne tient pas sous le mur du tapis (~1,06 s/numero
+        # mesure, fenetre de service 300 numeros a --grains 50) : tranches
+        # paralleles bornees. En dessous, et avec BELT_CLAIMS_WORKERS=1,
+        # le chemin d'avant -- un seul appel batch complet.
+        if BELT_CLAIMS_WORKERS > 1 and len(numbers) >= BELT_CLAIMS_SLICE_MIN:
+            verdicts = _check_claims_sliced(numbers, lane, env)
+        else:
+            verdicts = _check_claims_one_batch(numbers, lane, env)
     finally:
         # Nettoyer le tempfile, qu'il ait ete utile ou pas.
         if cache_path is not None:
@@ -4123,6 +4710,33 @@ def _claim_reader_module():
     import check_lane_claim as clc  # noqa: PLC0415 - import tardif assume
     _CLC_MODULE = clc
     return clc
+
+
+def is_umbrella_classification(title: str, labels: list[str]) -> bool:
+    """Cette issue est-elle une UMBRELLA (conteneur) ou un GRAIN ?
+
+    La classification est celle du **LECTEUR** (`check_lane_claim.py`), pas
+    une seconde copie : les deux organes doivent parler la meme langue.
+    Une divergence classait une TRANCHE en umbrella dans l'un et en grain
+    dans l'autre -- et le filtre de livraison (`[DELIVERED]`) ne s'applique
+    qu'au GRAIN, donc une tranche livree restait servable (mesure du
+    27/10 sur #21435, revue ai-01 du meme jour).
+
+    Repli : si le module LECTEUR n'est pas importable, on garde la
+    classification d'avant (titre `EPIC` sans parent nomme) plutot que de
+    faire echouer le tirage.
+    """
+    try:
+        clc = _claim_reader_module()
+    except Exception:  # noqa: BLE001 - le repli ci-dessous est plus sur
+        return ("EPIC" in labels
+                or title.upper().lstrip("[").startswith("EPIC"))
+    try:
+        return bool(clc._is_umbrella_issue(
+            {"title": title, "labels": [{"name": n} for n in labels]}))
+    except Exception:  # noqa: BLE001 - repli : le tirage ne doit pas tomber
+        return ("EPIC" in labels
+                or title.upper().lstrip("[").startswith("EPIC"))
 
 
 def _complete_open_prs() -> list[dict]:
@@ -4233,7 +4847,8 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
                    delivery=None, delivered_probe=None, delivered_state=None,
                    fallback_by_class=None, continuity_state=None,
                    cover_probe=None, long_visits=None,
-                   merged_pr_probe=None, gpu_probe=None):
+                   merged_pr_probe=None, revocation_probe=None,
+                   gpu_probe=None):
     """Tire, puis REMPLACE tout candidat qu une autre lane tient deja.
 
     Trois raisons de remplacer plutot que d annoter :
@@ -4316,6 +4931,17 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
             return DELIVERED_SIGNAL_UNPROBED
         budget[0] -= 1
         return (merged_pr_probe or merged_pr_probe_inert)(number, lane_name)
+
+    def _counted_revocation_probe(number, lane_name, merged_at):
+        # #22987 -- quatrieme lecture de la famille, MEME budget. Elle n'est
+        # atteinte que sur un candidat deja retenu par la surface « PR
+        # MERGEE » : le cout se paie sur les positifs, jamais sur le pool.
+        if budget[0] <= 0:
+            state["budget_hit"] = True
+            return DELIVERED_SIGNAL_UNPROBED
+        budget[0] -= 1
+        return (revocation_probe
+                or revocation_probe_inert)(number, lane_name, merged_at)
 
     for cls, want, prev in urnes:
         primary = list(by_class[cls])
@@ -4428,7 +5054,7 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
                         # fail-OPEN (le candidat est conserve).
                         reason = delivered_signal_reason(
                             c, args.lane, _counted_probe, failures,
-                            _counted_merged_pr_probe)
+                            _counted_merged_pr_probe, _counted_revocation_probe)
                         if reason is not None:
                             conflicts.append((c, "LIVRAISON : " + reason + (
                                 " Candidat remplace dans la meme urne.")))
@@ -4753,6 +5379,11 @@ _ORGAN_BANNER_RE = re.compile(r"Organes bloquants en echec\s*:\s*([a-z_ ]+?)\s*(
 _PR_STATE_FRAGMENT = """
   p%(n)d: pullRequest(number:%(n)d) {
     number mergeable
+    # #22362 : depot d'origine != depot de base (fork, PR etudiante). Lu ici
+    # parce que c'est le seul endroit ou les deux transports de
+    # `fetch_open_prs` convergent sur une forme commune, et parce que
+    # `blocking_causes` a deja paye cette requete quand on en a besoin.
+    isCrossRepository
     reviews(last:40) { nodes { state submittedAt author { login } body } }
     commits(last:1) { nodes { commit { statusCheckRollup {
       state   # #12830 : SUCCESS/FAILURE/PENDING/NEUTRAL au niveau rollup, pour le 3e etat file-saturation
@@ -6142,8 +6773,7 @@ def unaddressed_review_points(numbers: list[int]) -> dict[int, int]:
     if not numbers:
         return {}
     out: dict[int, int] = {}
-    for n in numbers:
-        info = _nits_blocking_entries(n)
+    for n, info in _nits_blocking_entries_many(numbers).items():
         if info is None:
             continue
         if info["blocking"]:
@@ -6215,6 +6845,42 @@ def _nits_blocking_entries(n: int) -> dict | None:
     return projected
 
 
+def _nits_blocking_entries_many(numbers: list[int]) -> dict[int, dict | None]:
+    """Fan-out borne de `_nits_blocking_entries` sur une liste de PRs (#21882).
+
+    Les PRs sont independantes entre elles et le cout par PR est domine par
+    ~7 appels `gh` SERIES (demarrage de process) : la passe est LINEAIRE en
+    nombre de PRs de la lane (62 s pour 6, 211 s pour 41) et fait exploser
+    le mur de temps du tapis (#21436). Un pool de threads borne par
+    `NITS_PASS_WORKERS` ramene le mur sous controle sans toucher a l'organe
+    B.0 lui-meme (merge-critique) ni a son budget de passe.
+
+    Semantique identique au chemin serie :
+    - ordre : `pool.map` rend les resultats dans l'ordre d'entree, la dict
+      de sortie preserve cet ordre comme la boucle for d'origine ;
+    - exceptions : une TypeError/AttributeError de contrat (#15139) se
+      propage depuis l'iteration, exactement comme la boucle serie qui
+      s'arretait a la PR fautive ; seul ecart, les PRs deja en vol peuvent
+      finir d'ecrire leur cache -- des evaluations legitimes, pas une panne
+      persistee ;
+    - repli serie : `NITS_PASS_WORKERS=1` ou une seule PR retire le pool.
+
+    Surete des partages sous GIL : `_repair_cached_result`/
+    `_repair_store_result` sont des lectures/ecritures dict par cle (les
+    threads ne partagent jamais le meme numero), et le patch `gh_json` de
+    l'organe est servi par le dispatch TLS compte en references
+    (`_B0TransportCache`) -- chaque thread route par SON cache.
+    """
+    if len(numbers) <= 1 or NITS_PASS_WORKERS <= 1:
+        return {n: _nits_blocking_entries(n) for n in numbers}
+    out: dict[int, dict | None] = {}
+    with concurrent.futures.ThreadPoolExecutor(
+            max_workers=min(NITS_PASS_WORKERS, len(numbers))) as pool:
+        for n, info in zip(numbers, pool.map(_nits_blocking_entries, numbers)):
+            out[n] = info
+    return out
+
+
 def unaddressed_review_points_detail(numbers: list[int]) -> dict[int, dict]:
     """Variante enrichie de `unaddressed_review_points` pour la file de reparation (#16926).
 
@@ -6237,8 +6903,7 @@ def unaddressed_review_points_detail(numbers: list[int]) -> dict[int, dict]:
     out: dict[int, dict] = {}
     numbers_with_points: list[int] = []
     voice_numbers: list[int] = []
-    for n in numbers:
-        info = _nits_blocking_entries(n)
+    for n, info in _nits_blocking_entries_many(numbers).items():
         if info is None:
             continue
         if info["blocking"]:
@@ -6321,6 +6986,84 @@ def is_out_of_fleet_pr(pr: dict) -> bool:
     return head_ref.startswith("claude/") and "Hors flotte" in (pr.get("body") or "")
 
 
+# #22362 — PRs CROSS-REPOSITORY (fork) exclues de la file d'orphelines. Une
+# contribution publique — TP etudiant, ~95 forks, cf student-pr-reviews.md — a
+# pour forme NORMALE un body sans le moindre marqueur de lane : le gate de tag
+# le dit par construction (variation_tag_required.py, regle 4 de sa docstring :
+# « Forks are excluded ... the workflow does this before invoking us; we never
+# see a fork body »), et le workflow applique cette exemption en amont sur
+# `head.repo.fork` (variation-tag-guard.yml). L'absence de tag y est donc la
+# forme attendue, pas un defaut a reparer : la presenter comme telle, c'est
+# inventer une imputabilite et envoyer une lane sur une PR qui n'appartient a
+# aucune. Mesure fondatrice : #22362 (auteur `snakechoc`, tete
+# `snakechoc/CoursIA` -> base `jsboige/CoursIA`), seule PR listee sous ce
+# paragraphe le 2026-10-26.
+# Le predicat est le champ GitHub `isCrossRepository` — deja lu tel quel par
+# `scripts/ci/update_stale_pr_branches.py:608` et
+# `scripts/ci/sweep_stale_pr_branches.py:142` — et non un second critere
+# invente ici. Il se lit sur le noeud `pullRequest` (`_PR_STATE_FRAGMENT`),
+# deja paye par `unattributed_blocked_prs`.
+def is_cross_repository_pr(state: dict | None) -> bool:
+    """Vrai si la PR vient d'un depot d'origine different (fork, PR etudiante).
+
+    Champ absent (forme partielle, mock ancien) -> `False` : le garde garde sa
+    capacite sur une donnee manquante. L'inverse — traiter l'inconnu comme un
+    fork — retirerait de la file de vraies PRs du depot a reparer, c'est-a-dire
+    le sens dangereux.
+    """
+    return bool((state or {}).get("isCrossRepository"))
+
+
+# #23732 — PRs de TP ETUDIANTE relayer par l'enseignant, exclues de la file
+# d'orphelines. Ce sont les MEMES contributions que le cas fork ci-dessus,
+# prises par l'autre bout du meme probleme : le groupe n'a pas reussi a ouvrir
+# de PR depuis son fork, l'enseignant a donc pousse le carnet LUI-MEME dans
+# `jsboige/CoursIA`. `isCrossRepository` vaut alors `False`, et la PR retombe
+# dans la file d'orphelines -- mesuree le 2026-10-31 avec #22969 et #22991,
+# deux rendus relayes dont le corps dit « Comme pour toute PR de TP, le tag
+# Grain et les checklists internes ne s'appliquent pas » (student-pr-reviews.md).
+# Les lister comme « tag manquant a reparer » inventerait une imputabilite et
+# attribuerait un travail etudiant a une lane de la flotte.
+# Le predicat est la DECLARATION en tete de corps, pas une heuristique sur le
+# contenu : la PREMIERE LIGNE NON VIDE contient `PR de TP`. Restreindre a la
+# premiere ligne est ce qui ferme le sens dangereux -- une PR de lane qui
+# mentionne un TP plus bas dans son corps (etude pedagogique, revue, lien vers
+# un rendu) reste dans la file. Un refus de matcher coute une PR mal routee ;
+# un faux positif retirerait une vraie PR de flotte de la file de reparation.
+STUDENT_TP_DECLARATION_RE = re.compile(r"^PR\s+de\s+TP\b", re.IGNORECASE)
+# Bruit de tete : decoration markdown AVANT la declaration. Un seul caractere
+# ne suffit pas -- une liste ordonnee (`1.`), une case a cocher (`- [ ]`) et un
+# `+` de puce sont trois jetons distincts qui se composent (`1. [ ] PR de TP`).
+# La revue Hermes du 2026-10-31 nommait exactement cette classe : « la
+# couverture des marqueurs de liste dans le bruit de tete -- une classe de faux
+# negatifs latente ». Le strip est donc une BOUCLE de jetons, pas un `lstrip`
+# de caracteres : `lstrip` ne sait pas enjamber `1.` ni `[ ]`, et rendait la
+# declaration invisible des qu'elle etait mise en liste. Le `backtick` ferme la
+# derniere forme nommee par la revue (code span : `` `PR de TP` etudiante ``).
+STUDENT_TP_LEAD_TOKEN_RE = re.compile(r"^(?:>+|[-*+_]|\(?\d+[.)]|\[[ xX]\]|`+)\s*")
+
+
+def _strip_lead_decoration(line: str) -> str:
+    """Retire les jetons de tete markdown, repetes (`> - [ ] PR de TP`)."""
+    for _ in range(16):  # borne : une ligne de bruit n'est pas une boucle
+        stripped = STUDENT_TP_LEAD_TOKEN_RE.sub("", line, count=1)
+        if stripped == line:
+            break
+        line = stripped.lstrip()
+    return line
+
+
+def is_student_tp_pr(pr: dict) -> bool:
+    """Vrai si la PR se declare en tete de corps comme un rendu de TP etudiant."""
+    body = pr.get("body") or ""
+    for raw in body.splitlines():
+        line = _strip_lead_decoration(raw.strip())
+        if not line:
+            continue
+        return bool(STUDENT_TP_DECLARATION_RE.match(line))
+    return False
+
+
 def unattributed_blocked_prs(prs: list[dict] | None = None) -> list[dict]:
     """PRs ouvertes bloquees sans tag `Grain:` lisible, AVEC leur route.
 
@@ -6346,6 +7089,20 @@ def unattributed_blocked_prs(prs: list[dict] | None = None) -> list[dict]:
     depuis l'exterieur du cluster, et le gate `tag_required` les exempte deja
     (#17715) — router l'une d'elles rejouerait la contradiction que #17713
     ferme.
+
+    Les PRs CROSS-REPOSITORY (fork, contribution publique ou TP etudiant,
+    #22362) sont exclues pour la meme raison, portee par le MEME organe : le
+    gate `variation_tag_required.py` ne lit jamais un body de fork (regle 4 de
+    sa docstring), donc l'absence de tag y est la forme normale. Les lister
+    comme « tag manquant a reparer » inventerait une imputabilite ; ce constat
+    n'appartient a aucune lane.
+
+    Les PRs de TP ETUDIANTE relayees par l'enseignant (#23732) sont exclues
+    pour la MEME raison, et c'est le meme cas que le fork vu par l'autre bout :
+    le groupe n'a pas pu ouvrir de PR depuis son fork, l'enseignant a pousse le
+    carnet dans le depot, et `isCrossRepository` ne les distingue donc plus.
+    Leur corps se declare en tete (`PR de TP`), et `student-pr-reviews.md`
+    dispense ces rendus du tag `Grain:` comme des checklists internes.
     """
     if prs is None:
         prs = fetch_open_prs()
@@ -6353,12 +7110,15 @@ def unattributed_blocked_prs(prs: list[dict] | None = None) -> list[dict]:
                 if not pr.get("isDraft")
                 and parse_grain_tag(pr.get("body") or "") is None
                 and not is_automation_vehicle(pr)
-                and not is_out_of_fleet_pr(pr)]
+                and not is_out_of_fleet_pr(pr)
+                and not is_student_tp_pr(pr)]
     untagged_states = fetch_pr_states([pr["number"] for pr in untagged]) if untagged else {}
     out = []
     for pr in untagged:
         state = untagged_states.get(pr["number"])
         if state is None or not blocking_causes(state):
+            continue
+        if is_cross_repository_pr(state):
             continue
         out.append({"number": pr["number"], "title": pr["title"],
                     "author": ((pr.get("author") or {}).get("login")) or "inconnu",
@@ -6699,7 +7459,20 @@ def red_backlog(lane: str, threshold_hours: float,
                                for name, nums in sorted(base_undecided.items())],
             # #14567 : quand un agregateur n'a pas pu etre tranche, le dire --
             # sinon l'absence d'imputation se lirait comme une acquittement.
-            "base_unresolved": [{"check": name, "prs": sorted(nums)}
+            #
+            # Revue `myia-po-2023` (30/10) : la sortie ne distinguait pas les
+            # PRs **de la lane** des PRs **etrangeres** dans le meme
+            # agregateur, et annoncait pour les deux « le rouge RESTE a la
+            # lane ». La phrase ne vaut que pour les premieres : une lane qui
+            # lisait six numeros etrangers (chacun avec le tag d'une autre
+            # lane) est alle chercher un defaut d'attribution inexistant.
+            # La decoupe est faite ici, ou le tag de lane de chaque PR est
+            # connu (`lane_by`), pas au moment de l'affichage.
+            "base_unresolved": [{"check": name, "prs": sorted(nums),
+                                 "prs_lane": sorted(n for n in nums
+                                                   if lane_by.get(n) == lane),
+                                 "prs_foreign": sorted(n for n in nums
+                                                      if lane_by.get(n) != lane)}
                                 for name, nums in sorted(unresolved_by_name.items())],
             # #15910 : les agregateurs rouges par DWELL. Ni un defaut a
             # reparer, ni un rouge impute a la base : un minuteur qu'aucune
@@ -6741,10 +7514,28 @@ def print_base_inherited(backlog: dict) -> None:
     # pas pu etre lu ne corrobore RIEN -- le rouge reste a la lane, seul cote
     # qui peut le reparer ; le taire ferait de l'echec de mesure une acquittement.
     for item in unresolved:
-        prs = ", ".join(f"#{n}" for n in item["prs"][:6])
-        print(f"  - {item['check']} : organe non lisible sur {prs} -- pas pu")
-        print(f"    trancher, le rouge RESTE a la lane (relancer le run ou lire")
-        print(f"    l'annotation du check-run avant d'invoquer la base).")
+        check = item["check"]
+        # Revue `myia-po-2023` (30/10) : les deux lots sont separes. Un rouge
+        # non lisible **de la lane** reste a la lane (seul cote qui peut le
+        # reparer) ; un rouge non lisible **d'une autre lane** ne lui est pas
+        # imputable, et le dire evite d'envoyer la lane chercher un defaut
+        # dans une PR qui n'est pas la sienne.
+        lane_prs = item.get("prs_lane")
+        foreign_prs = item.get("prs_foreign")
+        if lane_prs is None:
+            # Entree produite ailleurs (retro-compatibilite) : pas de decoupe.
+            lane_prs, foreign_prs = item.get("prs") or [], []
+        if lane_prs:
+            prs = ", ".join(f"#{n}" for n in lane_prs[:6])
+            print(f"  - {check} : organe non lisible sur {prs} -- pas pu")
+            print(f"    trancher, le rouge RESTE a la lane (relancer le run ou lire")
+            print(f"    l'annotation du check-run avant d'invoquer la base).")
+        if foreign_prs:
+            prs = ", ".join(f"#{n}" for n in foreign_prs[:6])
+            print(f"  - {check} : organe non lisible sur {prs} -- ces PRs sont")
+            print(f"    d'AUTRES lanes : ce rouge n'est pas imputable a votre lane,")
+            print(f"    la mesure est a refaire par la lane porteuse. Ne pas y")
+            print(f"    chercher un defaut de vos PRs.")
     print()
 
 
@@ -7020,6 +7811,24 @@ def belt_visit_stamp(it: dict) -> str | None:
 CONSOLIDATION_TAG = "consolidation"
 CONSOLIDATION_LAG_H = 48
 UMBRELLA_VISIT_CAP_DAYS = 7
+# #21067 correctif 1 -- le plafond de VISITES (#22500, ci-dessus) regarde un
+# claim ou une sous-issue ; il ne voit pas les LIVRAISONS. Une lane qui
+# enchaine les sous-grains d'un meme EPIC sans repasser par le tapis ne pose
+# ni claim sur l'EPIC ni sous-issue : elle passe d'un carnet au suivant, et le
+# tapis la ressert. Mesure de l'issue (fenetre 2026-10-02 -> 2026-10-16) :
+# #16334 a recu 43 marqueurs en 14 j, dont 11 carnets issus d'un enchainement.
+# Le plafond K compte les PRs MERGEES de la lane qui citent l'EPIC ; K=2 est
+# le cap de veine que les lanes appliquent deja a la main (variation-protocol,
+# `vein_cap`). 0 desactive le garde (kill switch), et le tapis NOMME toujours
+# ce qu'il ecarte -- un plafond silencieux se lirait comme une famine.
+EPIC_LANE_DELIVERY_CAP_DEFAULT = 2
+# Les PRs de ce depot citent leur issue en trois familles (git-workflow.md :
+# `Closes #N` ferme, `See #N` / `Part of #N` lient sans fermer, `Refs` tolere
+# en heritage). La forme est celle des corps reels, pas une grammaire ideale :
+# un `#N` nu n'est PAS pris (il nommerait une PR ou un fil voisin, et
+# gonflerait le compte d'un EPIC que la lane n'a pas servi).
+_DELIVERY_CITED_RE = re.compile(
+    r"(?i)\b(?:part\s+of|closes?|fixed|fixes?|resolves?|see|refs?)\s*:?\s*#(\d+)")
 # Hermes 2026-10-25T13:55Z (#22504) : le motif d'origine `\bconsolidations?\b`
 # attrapait le MOT, pas le travail -- mesure sur le pool reel, 17 items
 # classes dont 4 ou « consolidation » nomme le SUJET d'un conteneur (#22500
@@ -7194,6 +8003,116 @@ def umbrella_visit_cause(it: dict, *, now=None) -> str | None:
             f"suivant.")
 
 
+def epic_lane_delivery_counts(
+    prs: list[dict] | None,
+    lane: str,
+    *,
+    now: dt.datetime | None = None,
+    days: int | None = None,
+) -> dict[int, int]:
+    """``{numero d'issue: livraisons de `lane`}`` sur la fenetre de `days` jours.
+
+    Une livraison = une PR **mergee** dont le tag de lane (`parse_grain_tag`,
+    l'extracteur PARTAGE avec variation-tag-guard) nomme `lane`, qui cite
+    l'issue par `Closes` / `See` / `Part of` / `Refs`. L'attribution suit le
+    TAG, jamais `--author` : le compte GitHub est partage sur ce depot.
+
+    Fonction PURE (aucune requete) : elle lit le corpus que
+    `fetch_lane_record_prs` a deja paye pour l'ardoise de lane. Un corpus
+    absent rend un dict vide -- l'appelant doit alors laisser le garde
+    INACTIF (fail-OPEN) plutot que de lire « aucune livraison » la ou rien
+    n'a ete mesure.
+    """
+    moment = now or NOW
+    # `LANE_RECORD_WINDOW_DAYS` est declare plus bas dans le module (bloc de
+    # l'ardoise de lane) : la valeur se resout a l'APPEL, pas a l'import --
+    # un defaut d'argument la lirait avant sa definition.
+    window = LANE_RECORD_WINDOW_DAYS if days is None else days
+    cutoff = moment - dt.timedelta(days=window)
+    counts: dict[int, int] = {}
+    for pr in prs or []:
+        tag = parse_grain_tag(pr.get("body") or "")
+        if not tag or tag.get("lane") != lane:
+            continue
+        raw = pr.get("mergedAt") or ""
+        try:
+            merged = dt.datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        if merged < cutoff:
+            continue
+        # UNE livraison = UNE PR. Un corps qui cite l'EPIC deux fois
+        # ("Part of #16334" en tete, "Closes #16334" en pied) ne compte
+        # qu'UNE fois : compter par occurrence faisait/refuser la lane
+        # apres une seule livraison reelle des que K=2 (famine
+        # fabriquee -- le module de tests interdit precisement ce
+        # refus sur une mesure gonflee).
+        cited = {int(x) for x in _DELIVERY_CITED_RE.findall(pr.get("body") or "")}
+        for n in cited:
+            counts[n] = counts.get(n, 0) + 1
+    return counts
+
+
+def epic_lane_delivery_cause(
+    it: dict,
+    deliveries: dict[int, int] | None,
+    cap: int,
+    lane: str | None,
+) -> str | None:
+    """#21067 correctif 1 -- EPIC deja livre `cap` fois par CETTE lane.
+
+    Rend la cause de refus quand l'item est une umbrella (hors classe
+    `consolidation`, dont c'est le travail de revenir) et que la lane y a
+    livre au moins `cap` grains sur la fenetre. ``None`` sinon : `cap <= 0`
+    desactive le garde, `deliveries` absent ou `lane` absente le laisse
+    inactif (fail-OPEN -- jamais un refus sur une mesure qu'on n'a pas).
+
+    Le refus porte sur la LANE, pas sur l'EPIC : les autres lanes le voient
+    toujours. C'est la difference avec le plafond de visites (#22500), qui
+    est global pendant 7 jours.
+    """
+    if cap <= 0 or not lane or not deliveries:
+        return None
+    if it.get("klass") != "umbrella" or is_consolidation(it):
+        return None
+    count = int(deliveries.get(it["number"], 0))
+    if count < cap:
+        return None
+    return (f"PLAFOND LIVRAISONS EPIC (#21067) : {count} livraison(s) de "
+            f"{lane} sur {LANE_RECORD_WINDOW_DAYS} j (>= {cap}) -- le tapis "
+            f"rend la tete suivante a cette lane ; l'EPIC reste tirable par "
+            f"les autres.")
+
+
+def epic_delivery_cap_state(
+    lane_record: dict | None,
+    lane: str | None,
+) -> tuple[str, dict[int, int]]:
+    """#21067 correctif 2 -- l'etat du plafond, en TROIS cas et non deux.
+
+    ``epic_deliveries == {}`` veut dire deux choses opposees qu'un booleen
+    confondait :
+
+    - ``measured``   : la lecture de l'ardoise a abouti et la lane n'a livre
+      aucun EPIC sur la fenetre. Le garde EST evalue ; il n'ecarte rien.
+      Publier « non mesurees » ici etait faux, et ``active: false`` dans le
+      JSON faisait lire un garde inactif la ou il avait tourne.
+    - ``unmeasured`` : la lecture a echoue. Le garde doit rester inactif --
+      fail-OPEN, jamais un refus sur une absence de mesure.
+    - ``not-applicable`` : pas de lane. Le plafond est par lane ; sans lane
+      il n'a pas d'objet.
+
+    Le discriminant existe deja dans l'ardoise elle-meme
+    (``lane_record["measured"] = error is None``) : le plafond le lisait
+    simplement en moins.
+    """
+    if not lane or lane_record is None:
+        return "not-applicable", {}
+    if not lane_record.get("measured"):
+        return "unmeasured", {}
+    return "measured", dict(lane_record.get("epic_deliveries") or {})
+
+
 def apply_child_visits(pool: list[dict], targets: list[dict]) -> dict[int, str]:
     """Pose ``last_child_stamp`` sur ``targets`` : creer une sous-issue visite le parent.
 
@@ -7323,6 +8242,32 @@ def _claim_stamp_from_comments(comments: list[dict]) -> str | None:
     cs = [c for c in comments if isinstance(c, dict)]
     stamps = [s for s in (claim_visit_stamp(cs), delivered_info_stamp(cs)) if s]
     return max(stamps) if stamps else None
+
+
+def _claim_stamps_from_snapshot(
+    numbers: list[int],
+) -> tuple[dict[int, str | None], list[int]]:
+    """Stamps de visite servis par l'instantane local, et numeros non servis.
+
+    #22983 -- le tapis ne doit plus interroger GitHub pour savoir QUAND une
+    issue a ete visitee : l'instantane porte deja les commentaires, et la
+    reduction (`_claim_stamp_from_comments`) est la MEME que la voie reseau
+    applique. Un numero **non servi** (absent de l'instantane, ou entree
+    perimee) est rendu a part : l'appelant le passe au transport historique
+    plutot que de fabriquer un « pas de marqueur ».
+
+    Rend `(stamps, non_servis)`. Un stamp `None` est une **mesure** (aucun
+    marqueur de visite dans ce fil), l'absence de la cle est un **non-dit**.
+    """
+    served: dict[int, str | None] = {}
+    missing: list[int] = []
+    for n in numbers:
+        comments = _snapshot_comments(n)
+        if comments is None:
+            missing.append(n)
+            continue
+        served[n] = _claim_stamp_from_comments(comments)
+    return served, missing
 
 
 def validate_picks_live(
@@ -7515,7 +8460,7 @@ def fetch_latest_claim_stamps_bulk(
         r = subprocess.run(
             ["gh", "api", "graphql", "-f", f"query={query}"],
             capture_output=True, text=True, encoding="utf-8",
-            check=True, timeout=30,
+            check=True, timeout=_clamp_timeout(30),  # #23090 : stamps bulk
         )
         try:
             data = json.loads(r.stdout)
@@ -7647,6 +8592,8 @@ def belt_filter(
     admitted: list[dict],
     args,
     urns: set[str] | None = None,
+    epic_deliveries: dict[int, int] | None = None,
+    drops: list[tuple[dict, str]] | None = None,
 ) -> list[dict]:
     """Filtre le pool admissible pour le mode --belt.
 
@@ -7689,6 +8636,18 @@ def belt_filter(
         urn = item.get("klass") or "grain"
         if urn not in selected_urns_set:
             return False
+        # #21067 correctif 1 : l'EPIC deja livre `cap` fois par cette lane
+        # sort du tirage POUR ELLE (les autres lanes le voient). Applique
+        # apres les autres filtres pour que le rapport nomme une cause qui
+        # aurait vraiment ete servie.
+        cause = epic_lane_delivery_cause(
+            item, epic_deliveries,
+            getattr(args, "epic_delivery_cap", 0) or 0,
+            getattr(args, "lane", None))
+        if cause:
+            if drops is not None:
+                drops.append((item, cause))
+            return False
         return True
 
     return [it for it in admitted if _keep(it)]
@@ -7697,6 +8656,9 @@ def belt_filter(
 def draw_belt(
     admitted: list[dict],
     args,
+    *,
+    epic_deliveries: dict[int, int] | None = None,
+    drops: list[tuple[dict, str]] | None = None,
 ) -> list[dict]:
     """Mode --belt : trie le pool admissible et tire `args.grains` candidats.
 
@@ -7709,6 +8671,7 @@ def draw_belt(
     2. labels requis / exclus
     3. bornes d'age / idle
     4. urnes (memes que la voie ponderee)
+    5. plafond de livraisons EPIC (#21067), quand la mesure est fournie
 
     Les claims tenes par une autre lane ne sont pas elimines ici -- c'est
     le caller (`main`) qui les passe par `check_claims` sur la fenetre et
@@ -7720,8 +8683,15 @@ def draw_belt(
     quand la voie ponderee rendrait vide ou biaise vers le recent. Un DWELL
     ou un avis de zone ne vide pas la sortie : il figure en rappel dans la
     banniere texte, pas dans le predicat de selection.
+
+    `epic_deliveries` / `drops` : transmis a `belt_filter` pour que ce point
+    d'entree ne puisse pas contourner le plafond #21067. Aucun appelant ne
+    l'utilise aujourd'hui (mesure du 2026-10-29 : `draw_belt` n'est appele
+    nulle part hors d'un docstring de test) ; les parametres existent pour
+    que le prochain le fasse sans rouvrir le trou.
     """
-    filtered = belt_filter(admitted, args)
+    filtered = belt_filter(admitted, args, epic_deliveries=epic_deliveries,
+                           drops=drops)
     filtered.sort(key=belt_sort_key)
     return filtered[:args.grains]
 
@@ -8107,6 +9077,7 @@ def consume_board(
     urns: set[str] | None = None,
     lane: str | None = None,
     live_check: bool = True,
+    epic_deliveries: dict[int, int] | None = None,
 ) -> tuple[list[dict], dict]:
     """Retient les candidats d'un instantane, avec UN controle vivant.
 
@@ -8119,11 +9090,20 @@ def consume_board(
     Un candidat retenu tenu par une autre lane rend ``picks == []`` : le caller
     bascule alors sur le calcul local, qui est le comportement d'aujourd'hui --
     jamais une regression.
+
+    `epic_deliveries` : livraisons par EPIC de CETTE lane, pour que le plafond
+    #21067 s'applique ICI aussi (il ne l'etait que sur le calcul local --
+    ce chemin pouvait servir a une lane un EPIC qu'elle avait deja livre).
+    ``None`` = mesure absente : le plafond reste inactif, jamais un refus sur
+    une absence de mesure.
     """
     items = [board_item_decode(c) for c in (snapshot.get("items") or [])]
     withheld = {w.get("n") for w in (snapshot.get("withheld") or [])
                 if isinstance(w, dict)}
-    eligible = belt_filter(items, args, urns=urns)
+    epic_drops: list[tuple[dict, str]] = []
+    eligible = belt_filter(items, args, urns=urns,
+                            epic_deliveries=epic_deliveries,
+                            drops=epic_drops)
     eligible = [it for it in eligible if it["number"] not in withheld]
     eligible.sort(key=belt_sort_key)
     meta = {
@@ -8132,6 +9112,22 @@ def consume_board(
         "withheld_skipped": len(withheld),
         "retained": eligible[0]["number"] if eligible else None,
         "live_check": None,
+        # #21067 correctif 1 : ce que le plafond de livraisons a ecarte SUR
+        # CE CHEMIN. Nomme, jamais silencieux -- un plafond muet se lit
+        # comme une famine du pool.
+        # Correctif 3 : `state` dit POURQUOI, pas seulement si. Le chemin
+        # consommateur ne peut pas mesurer les livraisons de la lane sans
+        # payer le corpus de PRs mergees (`fetch_lane_record_prs`, 7,5 s /
+        # 3,7 Mo mesures) que l'acceptance #20053 interdit ici -- un seul
+        # controle vivant, aucun fetch de pool. L'etat est donc `unmeasured`
+        # et la sortie le dit ; un appelant qui A la mesure la passe.
+        "epic_delivery_cap": {
+            "state": ("measured" if epic_deliveries is not None
+                      else "unmeasured"),
+            "applied": epic_deliveries is not None,
+            "dropped": [{"number": it["number"], "title": it["title"],
+                         "cause": cause} for it, cause in epic_drops],
+        },
         "reason": "ok",
     }
     if not eligible:
@@ -8188,6 +9184,13 @@ def print_board_consumer(snapshot: dict, picks: list[dict], meta: dict,
               f"-- {live['human']}")
     print("   garde rouge NON evalue sur ce chemin (--board-export) : "
           "un rouge propre reste a traiter avant ce grain.")
+    cap = meta.get("epic_delivery_cap") or {}
+    if cap.get("dropped"):
+        print("   plafond de livraisons EPIC ecarte sur ce chemin : "
+              + ", ".join(f"#{d['number']}" for d in cap["dropped"][:6]))
+    elif not cap.get("applied"):
+        print("   plafond de livraisons EPIC NON evalue sur ce chemin "
+              "(mesure absente) : le garde reste inactif, il ne refuse pas.")
     if meta.get("reason") != "ok":
         print(f"   repli : {meta['reason']}")
     print()
@@ -8647,7 +9650,7 @@ def fetch_lane_record_prs(
         out = subprocess.run(
             command,
             capture_output=True, text=True, encoding="utf-8", errors="replace",
-            check=True, timeout=60,
+            check=True, timeout=_clamp_timeout(60),  # #23090 : ardoise pre-tapis
         ).stdout
         return json.loads(out)
 
@@ -8742,6 +9745,12 @@ def lane_delivery_record(lane: str, prs: list[dict] | None, *,
         "truncated": bool(truncated),
         "windows": buckets,
         "undated": undated,
+        # #21067 correctif 1 : les livraisons par EPIC, lues sur le MEME
+        # corpus (aucune requete de plus). Vide quand la mesure a echoue --
+        # le garde du tapis reste alors inactif, il ne refuse jamais sur une
+        # absence de mesure.
+        "epic_deliveries": ({} if error is not None
+                            else epic_lane_delivery_counts(prs, lane, now=now)),
     }
 
 
@@ -8945,9 +9954,24 @@ def delivery_event_probe_inert(number):
     return (False, False, None)
 
 
+def belt_service_window(args, pool_size: int) -> int:
+    """La fenetre que la boucle de service va parcourir (#22983).
+
+    La boucle (`belt_pick_with_replacements`) s'arrete a `max_iters`
+    positions. La fenetre des CLAIMS doit la COUVRIR : sinon chaque
+    candidat au-dela de la fenetre de claims declenche une verification
+    unitaire -- un sous-processus par candidat, ~1,5 s chacun (mesure du
+    27/10 : 166 s de boucle pour 126 candidats hors fenetre, soit la
+    totalite du temps du tapis).
+    """
+    return max(0, min(int(args.grains) * 5 + 50, int(pool_size)))
+
+
 def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
-                                delivered_probe=None, claims_probe=None,
+                                delivered_probe=None, cover_probe=None,
+                                claims_probe=None,
                                 merged_pr_probe=None,
+                                revocation_probe=None,
                                 recent_marker_probe=None,
                                 snapshot_prime=None,
                                 container_marker_probe=None,
@@ -9001,7 +10025,8 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     illisibles], "budget_hit": bool, "claim_unread": [numeros servis sur une
     lecture de claim en echec], "container_unread": [numeros servis sur une
     lecture du DERNIER COMMENTAIRE en echec], "marker_unread": [numeros servis
-    sur une lecture du marqueur RECENT en echec], "time_budget_hit": bool}``.
+    sur une lecture du marqueur RECENT en echec], "cover_failures": [numeros
+    dont la sonde de couverture a echoue], "time_budget_hit": bool}``.
     ``claim_unread``
     est le pendant du ``failures`` de livraison : deux lectures qui n'ont pas
     ABOUTI, servies quand meme (fail-OPEN) et rapportees a la lane (#20265).
@@ -9016,6 +10041,13 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     rapport (mesure #17528, 2026-10-26 : le picker a signale `403` sur deux
     candidats du meme run, et l'echec de la SONDE n'etait nomme nulle part).
 
+    ``prime_truncated`` (#21436, 2026-10-30) compte les issues de tete que le
+    mur de temps a fait **ecarter du priming** : l'instantane n'est pas un
+    gate, la boucle reprend avec le reste de son budget, mais la troncature
+    est rapportee au lieu d'etre tu (meme doctrine que ``claim_unread``). La
+    cle est absente quand le priming est alle au bout -- un ``0`` et une cle
+    manquante ne disent pas la meme chose.
+
     ``time_budget_s`` (#21436) est un mur de temps sur la BOUCLE : passe
     l'echeance, plus aucune sonde n'est emise (claims hors fenetre, filtre
     recent, sondes de livraison), les candidats restants sont servis en
@@ -9027,7 +10059,7 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     budget = [int(probe_budget)]
     state = {"failures": [], "budget_hit": False, "recent_filtered": 0,
              "claim_unread": [], "container_unread": [], "marker_unread": [],
-             "time_budget_hit": False}
+             "cover_failures": [], "time_budget_hit": False}
     # #22630 -- l'instantane local est rafraichi UNE FOIS pour les candidats
     # de la fenetre : toutes les sondes de commentaires (filtre recent et
     # sonde pleine de livraison) le lisent ensuite sans requete GitHub par
@@ -9041,14 +10073,6 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     # etait donc TOUJOURS fausse en production -- le cache n'etait jamais
     # amorce, alors que les sondes le consultaient. C'est l'injection du
     # prime, et elle seule, qui decide du reseau.
-    prime = (belt_snapshot_prime_inert if snapshot_prime is None
-             else snapshot_prime)
-    prime(REPO, [int(it.get("number", 0))
-                 for it in (belt_pool or [])[:70] if it.get("number")])
-    # Le pool et l'enumeration des PRs ouvertes ont ete lus AVANT cette
-    # fonction : on persiste ici, sinon leurs entrees de la passe
-    # disparaitraient au retour (le flush de `red_backlog` est deja passe).
-    _flush_repair_snapshot()
     # #21436 — `probe_budget` borne le NOMBRE de sondes de livraison. Il ne
     # borne ni leur DUREE, ni les deux surfaces que la boucle paie par
     # candidat hors fenetre : `claims_probe` (un `check_claims` unitaire) et
@@ -9060,9 +10084,64 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     # Mur de temps pose ICI, sur la boucle entiere : l'echeance est absolue
     # (`monotonic`), donc le caller peut lui passer le RESTE d'un budget de
     # run, pas une duree par appel.
+    #
+    # #21436 (2026-10-30) — le priming s'executait AVANT l'installation de
+    # `deadline`, donc sans jamais lire le mur, alors qu'il est la PREMIERE
+    # depense reseau de la boucle : un `gh api` par issue de tete, en serie
+    # (`_belt_snapshot_prime` -> `refresh` -> `ensure_issue_payloads`).
+    # Mesure sur ce siege, quatre executions consecutives : la phase
+    # `pick_with_replacements start` s'ouvre a t=35 s en annonçant « 205 s
+    # restants », puis plus aucune ligne, run tue a 240 s sans avoir servi un
+    # seul grain. Le budget etait calcule puis ignore.
     deadline = None
     if time_budget_s is not None:
         deadline = time.monotonic() + max(0.0, float(time_budget_s))
+    prime = (belt_snapshot_prime_inert if snapshot_prime is None
+             else snapshot_prime)
+    # #22983 -- la fenetre de priming est la fenetre que la boucle va
+    # parcoursser (`max_iters`), pas 70 positions en dur. Les candidats
+    # AU-DELA de 70 n'etaient pas dans l'instantane : chaque sonde les
+    # relisait sur le reseau (un `gh issue view` par candidat), et la
+    # boucle de service payait 221 s sur 294 s de tapis (mesure du
+    # 2026-10-27, ce siege, pool de 546 candidates).
+    max_iters = belt_service_window(args, len(belt_pool))
+    # #22983 -- la phase reseau est faite UNE FOIS, par `main`, avant le
+    # calcul des stamps. La boucle ne rafraichit que si la fenetre qu'elle
+    # va parcoursser n'est pas deja servie (un appel direct a la boucle, sans
+    # `main`, n'a pas de phase reseau : elle fait la sienne).
+    wanted = [int(it.get("number", 0))
+              for it in (belt_pool or [])[:max_iters] if it.get("number")]
+    # #21436 (2026-10-30) — Deux bornes, et le comportement d'un appel SANS
+    # budget est inchange : (1) le priming ne consomme que la MOITIE du
+    # reste -- l'instantane est un confort dont la boucle doit pouvoir se
+    # passer (`_belt_snapshot_prime` le dit deja) ; un priming qui mange tout
+    # le mur reproduirait le defaut sous une autre forme, en rapportant
+    # l'echeance au lieu de servir ; (2) il avance par tranches et relit
+    # l'echeance entre deux, donc il s'arrete au mur et non au bout de la
+    # fenetre -- et le nombre d'issues laissees de cote est rapporte, jamais
+    # tu.
+    PRIME_SLICE = 8
+    already_primed = set(wanted).issubset(
+        globals().get("_BELT_PRIMED_WINDOW") or set())
+    if already_primed:
+        # #22983 -- `main` a deja fait la phase reseau pour cette fenetre
+        # (une seule passe, pas deux) : la boucle n'en refait pas une.
+        pass
+    elif deadline is None:
+        prime(REPO, wanted)
+    else:
+        prime_deadline = time.monotonic() + max(
+            0.0, (deadline - time.monotonic()) / 2.0)
+        for start in range(0, len(wanted), PRIME_SLICE):
+            if time.monotonic() >= prime_deadline:
+                state["prime_truncated"] = len(wanted) - start
+                break
+            prime(REPO, wanted[start:start + PRIME_SLICE])
+    # Le pool et l'enumeration des PRs ouvertes ont ete lus AVANT cette
+    # fonction : on persiste ici, sinon leurs entrees de la passe
+    # disparaitraient au retour (le flush de `red_backlog` est deja passe).
+    _flush_repair_snapshot()
+
     # #21436 -- publie l'echeance pour les sondes LENTES (`check_claims`,
     # `has_recent_delivery_marker`) : elles lisent `_clamp_timeout` pour ne
     # jamais courir au-dela du mur. Restauree en sortie de boucle (try/finally
@@ -9072,286 +10151,361 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     _previous_belt_deadline = _BELT_DEADLINE[0]
     _BELT_DEADLINE[0] = deadline
 
-    def expired():
-        """Echeance atteinte ? Le drapeau se pose une fois, et il est lu par
-        TOUTES les surfaces couteuses de la boucle -- y compris celles qui ne
-        consomment pas `probe_budget`."""
-        if deadline is None:
-            return False
-        if time.monotonic() < deadline:
-            return False
-        state["time_budget_hit"] = True
-        return True
+    try:
 
-    # Le budget enrobe TOUTE sonde, injectee ou reelle : un test qui fournit
-    # sa sonde doit voir le plafond s'appliquer aussi -- sinon la borne de
-    # cout ne serait testable qu'avec le reseau reel.
-    user_probe = delivered_probe or delivered_probe_inert
-    user_merged_pr_probe = merged_pr_probe or merged_pr_probe_inert
-    user_recent_marker_probe = (recent_marker_probe
-                                or recent_marker_probe_inert)
-    user_container_marker_probe = (container_marker_probe
-                                   or container_marker_probe_inert)
-    user_delivery_event_probe = (delivery_event_probe
-                                  or delivery_event_probe_inert)
+        def expired():
+            """Echeance atteinte ? Le drapeau se pose une fois, et il est lu par
+            TOUTES les surfaces couteuses de la boucle -- y compris celles qui ne
+            consomment pas `probe_budget`."""
+            if deadline is None:
+                return False
+            if time.monotonic() < deadline:
+                return False
+            state["time_budget_hit"] = True
+            return True
 
-    def counted_probe(number, lane_name):
-        # L'echeance passe AVANT le plafond de sondes : les deux produisent le
-        # meme fail-OPEN, mais elles ne disent pas la meme chose a la lane
-        # (`time_budget_hit` = mur de temps, `budget_hit` = plafond de cout).
-        if expired() or budget[0] <= 0:
-            state["budget_hit"] = state["budget_hit"] or budget[0] <= 0
-            return DELIVERED_SIGNAL_UNPROBED
-        budget[0] -= 1
-        return user_probe(number, lane_name)
+        # Le budget enrobe TOUTE sonde, injectee ou reelle : un test qui fournit
+        # sa sonde doit voir le plafond s'appliquer aussi -- sinon la borne de
+        # cout ne serait testable qu'avec le reseau reel.
+        user_probe = delivered_probe or delivered_probe_inert
+        user_cover_probe = cover_probe or open_cover_inert
+        user_merged_pr_probe = merged_pr_probe or merged_pr_probe_inert
+        user_revocation_probe = revocation_probe or revocation_probe_inert
+        user_recent_marker_probe = (recent_marker_probe
+                                    or recent_marker_probe_inert)
+        user_container_marker_probe = (container_marker_probe
+                                       or container_marker_probe_inert)
+        user_delivery_event_probe = (delivery_event_probe
+                                      or delivery_event_probe_inert)
 
-    def counted_merged_pr_probe(number, lane_name):
-        if expired() or budget[0] <= 0:
-            state["budget_hit"] = state["budget_hit"] or budget[0] <= 0
-            return DELIVERED_SIGNAL_UNPROBED
-        budget[0] -= 1
-        return user_merged_pr_probe(number, lane_name)
+        def counted_probe(number, lane_name):
+            # L'echeance passe AVANT le plafond de sondes : les deux produisent le
+            # meme fail-OPEN, mais elles ne disent pas la meme chose a la lane
+            # (`time_budget_hit` = mur de temps, `budget_hit` = plafond de cout).
+            if expired() or budget[0] <= 0:
+                state["budget_hit"] = state["budget_hit"] or budget[0] <= 0
+                return DELIVERED_SIGNAL_UNPROBED
+            budget[0] -= 1
+            return user_probe(number, lane_name)
 
-    if claims_probe is None:
-        def claims_probe(numbers):
-            return check_claims(numbers, args.lane)
+        def counted_merged_pr_probe(number, lane_name):
+            if expired() or budget[0] <= 0:
+                state["budget_hit"] = state["budget_hit"] or budget[0] <= 0
+                return DELIVERED_SIGNAL_UNPROBED
+            budget[0] -= 1
+            return user_merged_pr_probe(number, lane_name)
 
-    belt_picks: list[dict] = []
-    belt_withheld: list[tuple[dict, str]] = []
-    # Garde-fou : on n'itère pas plus loin que la fenetre + un certain
-    # quota au cas ou le pool est entierement BLOQUE. Sans plafond, un
-    # tapis sans service appellerait `check_claims` indefiniment.
-    # max_iters = min(grains * 5 + 50, len(belt_pool)) borne l'explosion.
-    max_iters = min(args.grains * 5 + 50, len(belt_pool))
-    for i, it in enumerate(belt_pool):
-        if i >= max_iters:
-            break
-        if len(belt_picks) >= args.grains:
-            break
-        n = it["number"]
-        if n in belt_claims:
-            code, human = belt_claims[n]
-        elif expired():
-            # #21436 — echeance atteinte : la verification au fil de l'eau est
-            # precisement ce que le mur doit arreter, un `claim_claims` par
-            # candidat etant la surface que `probe_budget` ne compte pas. Le
-            # candidat part avec un claim INCONNU, que `claim_unread` rapporte
-            # deja (#20265) : c'est le meme fail-OPEN qu'une sonde ratee, dit
-            # a la lane au lieu d'etre silencieux.
-            code, human = CLAIM_CODE_UNCHECKED, "(budget de temps epuise)"
-            belt_claims[n] = (code, human)
-        else:
-            # Verification au fil de l'eau : on n'a pas regarde plus
-            # loin que `belt_check_window` initialement ; un item hors
-            # fenetre qui n'est pas dans `belt_claims` doit etre verifie
-            # ICI, sinon le tapis le sert sans l'avoir jamais teste -- le
-            # bug fondateur du 6e CHANGES_REQUESTED.
-            extra = claims_probe([n])
-            code, human = extra.get(n, (CLAIM_CODE_ERROR, "(no check)"))
-            belt_claims[n] = (code, human)
-        if code == CLAIM_CODE_BLOCKED:
-            belt_withheld.append((it, human))
-            continue
-        # #22500 -- plafond hebdomadaire d'un EPIC hors consolidation. Le
-        # tapis ne peut pas empecher une lane de CREER un sous-grain ; il
-        # peut refuser de lui reproposer le meme EPIC tant qu'un sous-grain
-        # y a ete cree ou claimé dans la semaine. Quand le pool porte deja
-        # des sous-grains ouverts de cet EPIC, ils sont nommes : « passe au
-        # candidat suivant » sans dire lequel revient a laisser la lane
-        # re-decouvrir ce que l'organe savait.
-        epic_cause = umbrella_visit_cause(it)
-        if epic_cause is not None:
-            siblings = [p for p in belt_pool
-                        if p is not it and it["number"] in parent_refs(p)][:2]
-            if siblings:
-                names = ", ".join(f"#{p.get('number')}" for p in siblings)
-                epic_cause += f" Sous-grains ouverts : {names}."
-            belt_withheld.append((it, epic_cause))
-            continue
-        # Sonde de livraison (#19390) : la voie ponderee ecartait et
-        # remplacait les candidats marques [INFO] candidate-delivered,
-        # le tapis les servait comme grains neufs -- chaque lane qui
-        # tirait une issue livree refaisait la verification puis
-        # reposait le marqueur (mesure 06/10 : #15974 et #16048, deux
-        # marqueurs chacune, servies a deux reprises). Portee : l'urne
-        # grain SEULE, comme la voie ponderee -- l'urne delivered sert
-        # precisement ces issues aux lanes habilitees (#15069). Pour
-        # l'urne umbrella, le LABEL `candidate-delivered` ne dit rien
-        # (il est pose mecaniquement par le workflow advisory des qu'une
-        # PR d'arc merge -- une umbrella ACCUMULE des PRs, ce marqueur
-        # n'y est donc pas un verdict de fermeture) ; en revanche le
-        # MARQUEUR DE CONTENEUR pose dans un commentaire, lui, l'est
-        # (cf. la branche umbrella ci-dessous).
-        if it.get("klass") == "grain" and not args.include_delivered:
-            # #19768 (perimetre restant, NOT-DELIVERED du 12/10) : filtre
-            # RECENT du tapis -- le meme que l'urne grain (draw_unclaimed),
-            # absent de cette boucle au merge de #19770. Mesure po-2023 du
-            # 10-09 : les 5 candidats servis non prenables du tapis
-            # portaient TOUS un marqueur identifiable ; le budget de sonde
-            # pleine eteint, chaque candidat au-dela etait servi SANS
-            # lecture (fail-OPEN). Le filtre recent coute 1 requete HORS
-            # budget et ecarte la cloture marquee AVANT la sonde pleine ;
-            # lecture en echec (None) = fail-OPEN, la sonde pleine suit.
-            #
-            # #22500 point 1 -- pour une CONSOLIDATION, ce filtre est remplace
-            # par la lecture qui rend l'HEURE du dernier evenement de
-            # cloture. Une consolidation est un chantier multi-tranches : une
-            # lane qui en livre UNE poste `[DELIVERED]` (continue.md P1,
-            # « rendre la main »), et le tapis lisait ce marqueur comme une
-            # livraison COMPLETE -- l'issue restait ouverte ET invisible.
-            # Mesure du 2026-10-26 sur les 48 issues ouvertes label
-            # `consolidation` : 10 consolidations bornees ecartees par un
-            # marqueur de plus de 48 h, dont #20381 (Dynamics, citee par le
-            # user depuis le 23/10).
-            #
-            # Meme grammaire, meme commentaire lu, une requete de moins : la
-            # lecture d'evenement remplace le filtre recent pour cette classe.
-            # Le marqueur n'ecarte plus au-dela de 48 h ; la surface
-            # « commentaire » de la sonde pleine est neutralisee elle aussi
-            # (`skip_marker`), le LABEL reste intact (il continue d'ecarter,
-            # quel que soit l'age), et la surface « PR MERGEE » est
-            # neutralisee seulement quand la derniere livraison par PR est
-            # deja connue et depasse 48 h (`skip_merged_pr`) : une
-            # consolidation accumule les PRs, et une tranche mergee depuis
-            # plus de 48 h ne dit plus « la consolidation est finie ».
-            marker_expired = False
-            merged_pr_expired = False
-            if is_consolidation(it):
-                # #22500 -- la surface « PR MERGEE » cesse elle aussi
-                # d'ecarter la consolidation au-dela de 48 h : le timestamp
-                # de la derniere livraison par PR est DEJA calcule en amont
-                # (`last_delivery_stamp`, corpus `fetch_merged` partage) --
-                # le reutiliser evite une requete `gh` supplementaire.
-                # Age inconnu (aucune livraison dans la fenetre, ou corpus
-                # indisponible) -> la sonde garde son comportement anterieur.
-                delivery_age_h = _visit_age_hours(
-                    it.get("last_delivery_stamp"), NOW)
-                merged_pr_expired = bool(
-                    delivery_age_h is not None
-                    and delivery_age_h >= CONSOLIDATION_LAG_H)
-                # Le mur de temps est atteint : la sonde n'est pas lue (elle
-                # coute) et rien n'est neutralise -- fail-OPEN explicite.
-                # Le TUPLE est forme ici : un `False` nu n'est pas
-                # decomposable en trois. Mesure du 26/10 : le tapis levait
-                # `TypeError: cannot unpack non-iterable bool object`
-                # des que le budget de temps etait epuise -- donc des que
-                # la boucle de service demarrait, et le tirage entier
-                # rendait zero grain (aucune consolidation servie).
-                verdict = ((False, False, None) if expired()
-                           else user_delivery_event_probe(n))
-                if verdict is None:
-                    # Lecture en echec : fail-OPEN, rien n'est neutralise --
-                    # mais l'echec est PUBLIE (mesure #17528, 2026-10-26 :
-                    # un `None` indistinguable d'un « pas de marqueur » est
-                    # ce qui a laisse le tapis resservir des conteneurs
-                    # livres).
-                    state.setdefault("marker_unread", []).append(n)
-                    verdict = (False, False, None)
-                recent_flag, delivered_flag, stamp = verdict
-                age_h = _visit_age_hours(stamp, NOW)
-                marker_expired = bool(
-                    delivered_flag
-                    and age_h is not None
-                    and age_h >= CONSOLIDATION_LAG_H)
+        def counted_revocation_probe(number, lane_name, merged_at):
+            # #22987 -- meme budget, meme echeance, meme fail-CLOSED que la
+            # sonde qu'elle prolonge : atteinte seulement sur un candidat
+            # deja retenu par « PR MERGEE ».
+            if expired() or budget[0] <= 0:
+                state["budget_hit"] = state["budget_hit"] or budget[0] <= 0
+                return DELIVERED_SIGNAL_UNPROBED
+            budget[0] -= 1
+            return user_revocation_probe(number, lane_name, merged_at)
+
+        def counted_cover_probe(number):
+            # #16589 etait cable sur la seule voie PONDEREE : le tapis rendait
+            # donc des candidats dont une PR ouverte porte deja le travail, et
+            # la lane recevait un `ACTION REQUISE` sur une issue deja servie
+            # (mesure du 2026-10-27 : `open_cover_signal_complete(22374)` rend
+            # 'PR #22515' sur 389 PRs ouvertes enumerees, et le tapis a quand
+            # meme servi #22374). Meme doctrine que la voie ponderee : la sonde
+            # de couverture partage le MEME budget que la sonde de livraison,
+            # avec le meme fail-OPEN dit a la lane.
+            if expired() or budget[0] <= 0:
+                state["budget_hit"] = state["budget_hit"] or budget[0] <= 0
+                return DELIVERED_SIGNAL_UNPROBED
+            budget[0] -= 1
+            return user_cover_probe(number)
+
+        if claims_probe is None:
+            def claims_probe(numbers):
+                return check_claims(numbers, args.lane)
+
+        belt_picks: list[dict] = []
+        belt_withheld: list[tuple[dict, str]] = []
+        # Garde-fou : on n'itère pas plus loin que la fenetre + un certain
+        # quota au cas ou le pool est entierement BLOQUE. Sans plafond, un
+        # tapis sans service appellerait `check_claims` indefiniment.
+        # `max_iters` est calcule plus haut (#22983 : la fenetre de priming
+        # doit couvrir celle que la boucle parcours).
+        for i, it in enumerate(belt_pool):
+            if i >= max_iters:
+                break
+            if len(belt_picks) >= args.grains:
+                break
+            n = it["number"]
+            if n in belt_claims:
+                code, human = belt_claims[n]
+            elif expired():
+                # #21436 — echeance atteinte : la verification au fil de l'eau est
+                # precisement ce que le mur doit arreter, un `claim_claims` par
+                # candidat etant la surface que `probe_budget` ne compte pas. Le
+                # candidat part avec un claim INCONNU, que `claim_unread` rapporte
+                # deja (#20265) : c'est le meme fail-OPEN qu'une sonde ratee, dit
+                # a la lane au lieu d'etre silencieux.
+                code, human = CLAIM_CODE_UNCHECKED, "(budget de temps epuise)"
+                belt_claims[n] = (code, human)
             else:
-                recent_flag = (False if expired()
-                               else user_recent_marker_probe(n))
-                if recent_flag is None:
-                    # Meme traitement que ci-dessus : le fail-OPEN reste
-                    # assume, le SILENCE ne l'est pas. La sonde du marqueur
-                    # RECENT et celle du marqueur de CONTENEUR lisent le
-                    # meme fil : un echec de l'une predit l'echec de l'autre,
-                    # et les deux verdicts doivent etre distincts dans la
-                    # sortie (conteneur livre / non livre).
-                    state.setdefault("marker_unread", []).append(n)
-            if recent_flag is True and not marker_expired:
-                state["recent_filtered"] += 1
-                belt_withheld.append(
-                    (it,
-                     ("LIVRAISON (recent) : marqueur de cloture sur le "
-                      "dernier commentaire ([DELIVERED] / "
-                      "[FROZEN] / [INFO] candidate-delivered). "
-                      "Candidat remplace hors budget de sonde.")))
+                # Verification au fil de l'eau : on n'a pas regarde plus
+                # loin que `belt_check_window` initialement ; un item hors
+                # fenetre qui n'est pas dans `belt_claims` doit etre verifie
+                # ICI, sinon le tapis le sert sans l'avoir jamais teste -- le
+                # bug fondateur du 6e CHANGES_REQUESTED.
+                extra = claims_probe([n])
+                code, human = extra.get(n, (CLAIM_CODE_ERROR, "(no check)"))
+                belt_claims[n] = (code, human)
+            if code == CLAIM_CODE_BLOCKED:
+                belt_withheld.append((it, human))
                 continue
-            reason = delivered_signal_reason(
-                it, args.lane, counted_probe, state["failures"],
-                counted_merged_pr_probe, skip_marker=marker_expired,
-                skip_merged_pr=merged_pr_expired)
-            if reason is not None:
-                belt_withheld.append(
-                    (it, "LIVRAISON : " + reason
-                     + " Candidat remplace dans la meme urne."))
+            # #22500 -- plafond hebdomadaire d'un EPIC hors consolidation. Le
+            # tapis ne peut pas empecher une lane de CREER un sous-grain ; il
+            # peut refuser de lui reproposer le meme EPIC tant qu'un sous-grain
+            # y a ete cree ou claimé dans la semaine. Quand le pool porte deja
+            # des sous-grains ouverts de cet EPIC, ils sont nommes : « passe au
+            # candidat suivant » sans dire lequel revient a laisser la lane
+            # re-decouvrir ce que l'organe savait.
+            epic_cause = umbrella_visit_cause(it)
+            if epic_cause is not None:
+                siblings = [p for p in belt_pool
+                            if p is not it and it["number"] in parent_refs(p)][:2]
+                if siblings:
+                    names = ", ".join(f"#{p.get('number')}" for p in siblings)
+                    epic_cause += f" Sous-grains ouverts : {names}."
+                belt_withheld.append((it, epic_cause))
                 continue
-        elif it.get("klass") == "umbrella" and not args.include_delivered:
-            # Umbrella livree : le MARQUEUR DE CONTENEUR pose dans le dernier
-            # commentaire (`[INFO] candidate-delivered`) dit « plus rien a
-            # faire DEDANS ». C'est un MARQUEUR DE COMMENTAIRE, pose par une
-            # lane apres avoir mesure le conteneur -- et il se distingue du
-            # LABEL `candidate-delivered`, que le workflow advisory pose
-            # mecaniquement des qu'une PR d'arc merge : sur une umbrella qui
-            # accumule des PRs, ce label n'est PAS un verdict de fermeture et
-            # n'ecarte donc rien ici.
-            #
-            # Mesure du 2026-10-26 (#17528) : le meme EPIC a ete servi
-            # quatre fois en cinq jours (21/10, 22/10, 25/10 x2) et quatre
-            # lanes y ont repose le meme marqueur -- le tapis le resservait
-            # malgre le marqueur, parce que le filtre de livraison ne
-            # s'appliquait qu'a l'urne `grain`. La lecture est HORS budget de
-            # sonde (1 requete, comme le filtre recent) et reste fail-OPEN :
-            # une lecture en echec laisse l'umbrella servable.
-            recent = False if expired() else user_container_marker_probe(n)
-            if recent is None:
-                # La lecture a ECHOUE (reseau, 403, payload illisible) : l'etat
-                # de livraison du CONTENEUR est INCONNU, pas « libre ». Le
-                # fail-OPEN reste assume (le candidat est servi -- on ne refuse
-                # pas un grain faute d'avoir pu lire un commentaire), mais le
-                # SILENCE ne l'est pas : le numero est reporte, exactement
-                # comme `claim_unread` le fait pour le claim (#20265).
-                # Mesure #17528 (2026-10-26) : le conteneur portait un
-                # marqueur `[INFO] candidate-delivered` et la LECTURE a echoue
-                # -- le tapis a resservi un conteneur deja livre, et rien dans
-                # la sortie ne distinguait ce cas d'un conteneur libre.
-                state.setdefault("container_unread", []).append(n)
-            if recent is True:
-                state["recent_filtered"] += 1
-                belt_withheld.append(
-                    (it,
-                     ("LIVRAISON (conteneur) : le dernier commentaire "
-                      "porte le marqueur `[INFO] candidate-delivered` -- "
-                      "l'umbrella est livree, plus rien a faire dedans. "
-                      "Reservee au coordinateur/adjoint (urne `delivered`, "
-                      "#15069). Candidat remplace hors budget de sonde.")))
+            # Sonde de livraison (#19390) : la voie ponderee ecartait et
+            # remplacait les candidats marques [INFO] candidate-delivered,
+            # le tapis les servait comme grains neufs -- chaque lane qui
+            # tirait une issue livree refaisait la verification puis
+            # reposait le marqueur (mesure 06/10 : #15974 et #16048, deux
+            # marqueurs chacune, servies a deux reprises). Portee : l'urne
+            # grain SEULE, comme la voie ponderee -- l'urne delivered sert
+            # precisement ces issues aux lanes habilitees (#15069). Pour
+            # l'urne umbrella, le LABEL `candidate-delivered` ne dit rien
+            # (il est pose mecaniquement par le workflow advisory des qu'une
+            # PR d'arc merge -- une umbrella ACCUMULE des PRs, ce marqueur
+            # n'y est donc pas un verdict de fermeture) ; en revanche le
+            # MARQUEUR DE CONTENEUR pose dans un commentaire, lui, l'est
+            # (cf. la branche umbrella ci-dessous).
+            if it.get("klass") == "grain" and not args.include_delivered:
+                # #19768 (perimetre restant, NOT-DELIVERED du 12/10) : filtre
+                # RECENT du tapis -- le meme que l'urne grain (draw_unclaimed),
+                # absent de cette boucle au merge de #19770. Mesure po-2023 du
+                # 10-09 : les 5 candidats servis non prenables du tapis
+                # portaient TOUS un marqueur identifiable ; le budget de sonde
+                # pleine eteint, chaque candidat au-dela etait servi SANS
+                # lecture (fail-OPEN). Le filtre recent coute 1 requete HORS
+                # budget et ecarte la cloture marquee AVANT la sonde pleine ;
+                # lecture en echec (None) = fail-OPEN, la sonde pleine suit.
+                #
+                # #22500 point 1 -- pour une CONSOLIDATION, ce filtre est remplace
+                # par la lecture qui rend l'HEURE du dernier evenement de
+                # cloture. Une consolidation est un chantier multi-tranches : une
+                # lane qui en livre UNE poste `[DELIVERED]` (continue.md P1,
+                # « rendre la main »), et le tapis lisait ce marqueur comme une
+                # livraison COMPLETE -- l'issue restait ouverte ET invisible.
+                # Mesure du 2026-10-26 sur les 48 issues ouvertes label
+                # `consolidation` : 10 consolidations bornees ecartees par un
+                # marqueur de plus de 48 h, dont #20381 (Dynamics, citee par le
+                # user depuis le 23/10).
+                #
+                # Meme grammaire, meme commentaire lu, une requete de moins : la
+                # lecture d'evenement remplace le filtre recent pour cette classe.
+                # Le marqueur n'ecarte plus au-dela de 48 h ; la surface
+                # « commentaire » de la sonde pleine est neutralisee elle aussi
+                # (`skip_marker`), le LABEL reste intact (il continue d'ecarter,
+                # quel que soit l'age), et la surface « PR MERGEE » est
+                # neutralisee seulement quand la derniere livraison par PR est
+                # deja connue et depasse 48 h (`skip_merged_pr`) : une
+                # consolidation accumule les PRs, et une tranche mergee depuis
+                # plus de 48 h ne dit plus « la consolidation est finie ».
+                marker_expired = False
+                merged_pr_expired = False
+                # `True` quand l'evenement de livraison est un DOSSIER DE
+                # CLOTURE CLOSE : la sonde rend alors `stamp=None` (aucune
+                # heure), donc la regle des 48 h ne peut pas l'expirer. La
+                # surface est NOMMEE dans la sortie, sinon le retrait du
+                # candidat serait lu comme un simple marqueur perime.
+                terminal_closure = False
+                if is_consolidation(it):
+                    # #22500 -- la surface « PR MERGEE » cesse elle aussi
+                    # d'ecarter la consolidation au-dela de 48 h : le timestamp
+                    # de la derniere livraison par PR est DEJA calcule en amont
+                    # (`last_delivery_stamp`, corpus `fetch_merged` partage) --
+                    # le reutiliser evite une requete `gh` supplementaire.
+                    # Age inconnu (aucune livraison dans la fenetre, ou corpus
+                    # indisponible) -> la sonde garde son comportement anterieur.
+                    delivery_age_h = _visit_age_hours(
+                        it.get("last_delivery_stamp"), NOW)
+                    merged_pr_expired = bool(
+                        delivery_age_h is not None
+                        and delivery_age_h >= CONSOLIDATION_LAG_H)
+                    # Le mur de temps est atteint : la sonde n'est pas lue (elle
+                    # coute) et rien n'est neutralise -- fail-OPEN explicite.
+                    # Le TUPLE est forme ici : un `False` nu n'est pas
+                    # decomposable en trois. Mesure du 26/10 : le tapis levait
+                    # `TypeError: cannot unpack non-iterable bool object`
+                    # des que le budget de temps etait epuise -- donc des que
+                    # la boucle de service demarrait, et le tirage entier
+                    # rendait zero grain (aucune consolidation servie).
+                    # #22983 -- meme exigence, mesure de nouveau cote cette
+                    # branche : le mur de temps atteint rend un triplet VIDE,
+                    # pas un booleen (le destructureur plus bas,
+                    # `recent_flag, delivered_flag, stamp = verdict`, leve
+                    # `TypeError` sur un scalaire). Mesure du 27/10 : le tapis
+                    # a CRASSE quand la phase des claims avait consomme tout le
+                    # budget (fenetre de service portee a 150 numeros).
+                    verdict = ((False, False, None) if expired()
+                               else user_delivery_event_probe(n))
+                    if verdict is None:
+                        # Lecture en echec : fail-OPEN, rien n'est neutralise --
+                        # mais l'echec est PUBLIE (mesure #17528, 2026-10-26 :
+                        # un `None` indistinguable d'un « pas de marqueur » est
+                        # ce qui a laisse le tapis resservir des conteneurs
+                        # livres).
+                        state.setdefault("marker_unread", []).append(n)
+                        verdict = (False, False, None)
+                    recent_flag, delivered_flag, stamp = verdict
+                    # Un dossier de cloture CLOSE est TERMINAL : il rend
+                    # `stamp=None`, donc `_visit_age_hours` rend `None` et la
+                    # regle des 48 h (#22500) ne peut pas l'expirer. Mesure
+                    # #19253 : le marqueur du 30/10 a expire et la
+                    # consolidation a ete resservie trois fois dans la
+                    # journee, alors que son dossier CLOSE datait du 02/11.
+                    terminal_closure = bool(delivered_flag and stamp is None)
+                    age_h = _visit_age_hours(stamp, NOW)
+                    marker_expired = bool(
+                        delivered_flag
+                        and age_h is not None
+                        and age_h >= CONSOLIDATION_LAG_H)
+                else:
+                    recent_flag = (False if expired()
+                                   else user_recent_marker_probe(n))
+                    if recent_flag is None:
+                        # Meme traitement que ci-dessus : le fail-OPEN reste
+                        # assume, le SILENCE ne l'est pas. La sonde du marqueur
+                        # RECENT et celle du marqueur de CONTENEUR lisent le
+                        # meme fil : un echec de l'une predit l'echec de l'autre,
+                        # et les deux verdicts doivent etre distincts dans la
+                        # sortie (conteneur livre / non livre).
+                        state.setdefault("marker_unread", []).append(n)
+                if recent_flag is True and not marker_expired:
+                    state["recent_filtered"] += 1
+                    belt_withheld.append(
+                        (it,
+                         ("LIVRAISON (dossier de cloture CLOSE) : le dossier "
+                          "`[CLOSURE PREFLIGHT]` de cette issue porte un "
+                          "verdict CLOSE -- elle est resolue, aucun grain a "
+                          "servir. Signal terminal : la regle des 48 h ne "
+                          "l'expire pas. Candidat remplace hors budget de "
+                          "sonde." if terminal_closure else
+                          "LIVRAISON (recent) : marqueur de cloture sur le "
+                          "dernier commentaire ([DELIVERED] / "
+                          "[FROZEN] / [INFO] candidate-delivered). "
+                          "Candidat remplace hors budget de sonde.")))
+                    continue
+                reason = delivered_signal_reason(
+                    it, args.lane, counted_probe, state["failures"],
+                    counted_merged_pr_probe, counted_revocation_probe,
+                    skip_marker=marker_expired,
+                    skip_merged_pr=merged_pr_expired)
+                if reason is not None:
+                    belt_withheld.append(
+                        (it, "LIVRAISON : " + reason
+                         + " Candidat remplace dans la meme urne."))
+                    continue
+                # #16589/#21757 : la sonde de PR couvrante vient APRES le filtre
+                # de livraison -- un travail deja livre prime sur un travail en
+                # cours -- et seulement sur les candidats SURVIVANTS. Sans cet
+                # appel, le tapis sert une issue dont une PR ouverte porte deja
+                # le travail : la voie ponderee l'ecartait, le tapis non.
+                cover = open_cover_reason(
+                    it, counted_cover_probe,
+                    state.setdefault("cover_failures", []))
+                if cover is not None:
+                    belt_withheld.append(
+                        (it, "EN COURS : " + cover
+                         + " Candidat remplace dans la meme urne."))
+                    continue
+            elif it.get("klass") == "umbrella" and not args.include_delivered:
+                # Umbrella livree : le MARQUEUR DE CONTENEUR pose dans le dernier
+                # commentaire (`[INFO] candidate-delivered`) dit « plus rien a
+                # faire DEDANS ». C'est un MARQUEUR DE COMMENTAIRE, pose par une
+                # lane apres avoir mesure le conteneur -- et il se distingue du
+                # LABEL `candidate-delivered`, que le workflow advisory pose
+                # mecaniquement des qu'une PR d'arc merge : sur une umbrella qui
+                # accumule des PRs, ce label n'est PAS un verdict de fermeture et
+                # n'ecarte donc rien ici.
+                #
+                # Mesure du 2026-10-26 (#17528) : le meme EPIC a ete servi
+                # quatre fois en cinq jours (21/10, 22/10, 25/10 x2) et quatre
+                # lanes y ont repose le meme marqueur -- le tapis le resservait
+                # malgre le marqueur, parce que le filtre de livraison ne
+                # s'appliquait qu'a l'urne `grain`. La lecture est HORS budget de
+                # sonde (1 requete, comme le filtre recent) et reste fail-OPEN :
+                # une lecture en echec laisse l'umbrella servable.
+                recent = False if expired() else user_container_marker_probe(n)
+                if recent is None:
+                    # La lecture a ECHOUE (reseau, 403, payload illisible) : l'etat
+                    # de livraison du CONTENEUR est INCONNU, pas « libre ». Le
+                    # fail-OPEN reste assume (le candidat est servi -- on ne refuse
+                    # pas un grain faute d'avoir pu lire un commentaire), mais le
+                    # SILENCE ne l'est pas : le numero est reporte, exactement
+                    # comme `claim_unread` le fait pour le claim (#20265).
+                    # Mesure #17528 (2026-10-26) : le conteneur portait un
+                    # marqueur `[INFO] candidate-delivered` et la LECTURE a echoue
+                    # -- le tapis a resservi un conteneur deja livre, et rien dans
+                    # la sortie ne distinguait ce cas d'un conteneur libre.
+                    state.setdefault("container_unread", []).append(n)
+                if recent is True:
+                    state["recent_filtered"] += 1
+                    belt_withheld.append(
+                        (it,
+                         ("LIVRAISON (conteneur) : le dernier commentaire "
+                          "porte le marqueur `[INFO] candidate-delivered` -- "
+                          "l'umbrella est livree, plus rien a faire dedans. "
+                          "Reservee au coordinateur/adjoint (urne `delivered`, "
+                          "#15069). Candidat remplace hors budget de sonde.")))
+                    continue
+            # FREE, FREE_STALE, OWNED_BY_ME, ERROR -- servable.
+            # ERROR (check indisponible, parse rate...) est servable par
+            # defaut : on ne peut pas refuser un grain faute d'avoir pu
+            # verifier son claim, ce serait introduire un faux BLOQUE.
+            # Le fail-OPEN est assume, le SILENCE ne l'est pas (#20265) : un
+            # candidat servi sur une lecture en echec part avec un statut de
+            # claim INCONNU, et rien ne le distinguait d'un claim verifie libre.
+            # Le signal de livraison annoncait deja sa lecture ratee ; le claim
+            # le fait ici, au moment ou le candidat est retenu.
+            if args.lane and code in (CLAIM_CODE_ERROR, CLAIM_CODE_UNCHECKED):
+                state["claim_unread"].append(n)
+            # Gate GPU (#22747) : meme verdict, meme fail-CLOSED sur cible
+            # resolue, meme motif nomme que sur la voie ponderee -- le tapis est
+            # le chemin que le `/continue` emprunte (`--belt`), c'etait donc la
+            # ou le defaut aurait ete le plus visible. Sans cible declaree, le
+            # grain est servi et le fait est rapporte dans `etat` (revue #22939
+            # point 1 : ecarter tout le genre retirait 41 grains sans proteger
+            # un seul device).
+            gpu_cause = gpu_gate_reason(
+                it, args, gpu_probe,
+                state.setdefault("gpu_target_unresolved", []))
+            if gpu_cause is not None:
+                belt_withheld.append((it, "GPU : " + gpu_cause))
                 continue
-        # FREE, FREE_STALE, OWNED_BY_ME, ERROR -- servable.
-        # ERROR (check indisponible, parse rate...) est servable par
-        # defaut : on ne peut pas refuser un grain faute d'avoir pu
-        # verifier son claim, ce serait introduire un faux BLOQUE.
-        # Le fail-OPEN est assume, le SILENCE ne l'est pas (#20265) : un
-        # candidat servi sur une lecture en echec part avec un statut de
-        # claim INCONNU, et rien ne le distinguait d'un claim verifie libre.
-        # Le signal de livraison annoncait deja sa lecture ratee ; le claim
-        # le fait ici, au moment ou le candidat est retenu.
-        if args.lane and code in (CLAIM_CODE_ERROR, CLAIM_CODE_UNCHECKED):
-            state["claim_unread"].append(n)
-        # Gate GPU (#22747) : meme verdict, meme fail-CLOSED sur cible
-        # resolue, meme motif nomme que sur la voie ponderee -- le tapis est
-        # le chemin que le `/continue` emprunte (`--belt`), c'etait donc la
-        # ou le defaut aurait ete le plus visible. Sans cible declaree, le
-        # grain est servi et le fait est rapporte dans `etat` (revue #22939
-        # point 1 : ecarter tout le genre retirait 41 grains sans proteger
-        # un seul device).
-        gpu_cause = gpu_gate_reason(
-            it, args, gpu_probe,
-            state.setdefault("gpu_target_unresolved", []))
-        if gpu_cause is not None:
-            belt_withheld.append((it, "GPU : " + gpu_cause))
-            continue
-        belt_picks.append(it)
-    # #21436 -- l'echeance du tapis ne survit pas a la boucle : les appels
-    # directs a `check_claims` / `has_recent_delivery_marker` (tests, usages
-    # hors tapis) retrouvent leur timeout plein.
-    _BELT_DEADLINE[0] = _previous_belt_deadline
-    return belt_picks, belt_withheld, state
+            belt_picks.append(it)
+        return belt_picks, belt_withheld, state
+
+
+    finally:
+        # #21436 -- l'echeance du tapis ne survit pas a la boucle : les appels
+        # directs a `check_claims` / `has_recent_delivery_marker` (tests, usages
+        # hors tapis) retrouvent leur timeout plein. En finally, pas en fin de
+        # boucle : une exception levee entre l'armement et la sortie laisserait
+        # sinon le mur pose pour le reste du process -- et c'est precisement le
+        # cas in-process que les tests exercent (#23340 point 2).
+        _BELT_DEADLINE[0] = _previous_belt_deadline
 
 
 def creation_budget_gate(pool: list[dict]) -> dict[int, str]:
@@ -9550,6 +10704,14 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--dwell-hours", type=float, default=DWELL_HOURS_DEFAULT,
                     help="delai avant qu'une issue neuve soit consommable "
                          f"(defaut {DWELL_HOURS_DEFAULT:.0f} h ; 0 desactive le garde)")
+    ap.add_argument("--epic-delivery-cap", type=int,
+                    default=EPIC_LANE_DELIVERY_CAP_DEFAULT, metavar="K",
+                    help="#21067 correctif 1 : une umbrella sur laquelle cette "
+                         "lane a livre K grains (PRs mergees citant l'EPIC) sur "
+                         f"{LANE_RECORD_WINDOW_DAYS} j sort du tirage POUR ELLE "
+                         f"(defaut {EPIC_LANE_DELIVERY_CAP_DEFAULT} ; 0 "
+                         "desactive le garde). Les autres lanes la voient "
+                         "toujours, et le tapis nomme ce qu'il ecarte.")
     ap.add_argument("--delivery-boost-max", type=float, default=0.0,
                     help="#15491 Phase 1 : plafond du facteur d'age de derniere "
                          "livraison des umbrellas (defaut 0 = inactif, kill "
@@ -9822,6 +10984,17 @@ def main(argv: list[str] | None = None) -> int:
               "a reporter sur l'issue.")
         return 1
 
+    # #23090 -- le mur du tapis est arme ICI, avant la premiere phase chere du
+    # run, et pas dans la branche `--belt` trois cents lignes plus bas. Ce qu'il
+    # doit couvrir : l'export du tableau (sondes `live_check`), l'ardoise de
+    # lane, la file de reparation, `fetch_pool` et les stamps bulk, la fenetre
+    # de claims, la boucle. Armer dans la branche publiait l'echeance une fois
+    # le budget deja depense par ces phases d'amont (mesure dans le docstring
+    # de `_arm_belt_run_clock`).
+    _belt_t0 = None
+    if args.belt:
+        _belt_t0 = _arm_belt_run_clock(args.belt_time_budget)
+
     # #20053 consommateur : court-circuit AVANT tout fetch de pool. C'est tout
     # l'objet du chemin -- une tete lue sur un instantane frais coute un
     # processus local, pas les 258 s de sondes mesurees dans l'issue. Le garde
@@ -9849,6 +11022,8 @@ def main(argv: list[str] | None = None) -> int:
             if picks:
                 print_board_consumer(snapshot, picks, board_meta,
                                      age_min=age_min, as_json=args.json)
+                if args.belt:
+                    _disarm_belt_run_clock()
                 return 0
             print(f"(tableau du tapis sans candidat retenu : "
                   f"{board_meta.get('reason')} -- calcul local)",
@@ -9995,6 +11170,8 @@ def main(argv: list[str] | None = None) -> int:
         else:
             print(unmeasured)
             print()
+        if args.belt:
+            _disarm_belt_run_clock()  # #23090 : pas de fuite hors du run
         return RC_POOL_UNMEASURED
     visits, visits_err = fetch_visits(
         cache=payload_cache,
@@ -10161,32 +11338,69 @@ def main(argv: list[str] | None = None) -> int:
             metrics = belt_report_metrics(pool, closed_7d=None)
             print_belt_report(metrics,
                               elapsed_s=_time_pass.monotonic() - _pass_t0)
+            _disarm_belt_run_clock()  # #23090 : pas de fuite hors du run
             return 0
         # Phases tapees sur stderr au fil de l'eau (cf review ai-01
         # 5571014393, CHANGES_REQUESTED v2). Permettent a un run
         # interrompu par timeout de dire ou il en etait.
-        import time as _time_belt
-        _belt_t0 = _time_belt.monotonic()
-        # #21436 -- l'echeance du run entier, publiee AVANT la fenetre de
-        # claims. Le mur ne couvrait que la boucle de selection : la phase de
-        # claims demarre plus haut, et `check_claims` y paie un subprocess de
-        # 60 s + 10 s par numero -- mesure du 24/10 : `belt claims start: 8
-        # numeros` puis 275 s de silence, budget de 90 s. Une lane qui pose un
-        # budget attend une borne sur SON RUN, pas sur les deux tiers de son
-        # run. Les sondes lisent `_clamp_timeout` : le dernier appel entame
-        # avant l'echeance ne peut plus courir au-dela.
-        if args.belt_time_budget and args.belt_time_budget > 0:
-            _BELT_DEADLINE[0] = _belt_t0 + args.belt_time_budget
-        else:
-            _BELT_DEADLINE[0] = None
+        # L'horloge du run est celle de `main`, pas un module reimporte : garder
+        # `import time as _time_belt` a cote d'un `_belt_t0` pris sur `time`
+        # melangeait deux horloges des que l'une est substituee (les tests
+        # remplacent `pig.time`), et les `[t=...]` comme le reste-a-courir de
+        # la boucle se lisaient alors sur une echelle differente de l'origine.
+        _time_belt = time
+        # #23090 -- l'echeance du run n'est PAS reposee ici : elle a ete armee
+        # avant `fetch_pool` (cf. `_arm_belt_run_clock`), et la remettre a
+        # `now + budget` a l'entree du tapis rendrait au run les phases d'amont
+        # deja depensees -- le mur repartirait a zero une fois entame.
+        # `_belt_t0` est donc l'origine du RUN, ce qui rend les horodatages
+        # `[t=...]` plus honnetes : ils datent du debut du travail, pas de la
+        # fin des sondes de pool.
+        # #21436 reste vrai : le mur doit couvrir la fenetre de claims, qui est
+        # payee plus haut -- il la couvre desormais avec l'avance restante.
+        if _belt_t0 is None:  # main() non cable : comportement d'avant
+            _belt_t0 = _time_belt.monotonic()
+            if args.belt_time_budget and args.belt_time_budget > 0:
+                _BELT_DEADLINE[0] = _belt_t0 + args.belt_time_budget
         def _belt_phase(name: str) -> None:
             print(f"[t={_time_belt.monotonic() - _belt_t0:.2f}s] belt {name}",
                   file=sys.stderr, flush=True)
         _belt_phase(f"start: grains={args.grains} lane={args.lane}")
-        belt_pool = belt_filter(admitted, args, urns=selected_urns)
+        # #21067 correctif 1 : les livraisons par EPIC de CETTE lane, lues
+        # sur le corpus de l'ardoise deja paye. Sans ardoise (pas de lane,
+        # ou mesure en echec) le garde reste inactif et le dit -- jamais un
+        # refus sur une absence de mesure.
+        # Correctif 2 : `epic_delivery_cap_state` separe « mesure a ZERO »
+        # de « pas mesure ». Les deux rendent un dict vide, et les confondre
+        # publiait « non mesurees » sur une mesure qui avait abouti.
+        _epic_cap_state, _epic_deliveries = epic_delivery_cap_state(
+            lane_record, args.lane)
+        _epic_drops: list[tuple[dict, str]] = []
+        if _epic_cap_state == "unmeasured":
+            _belt_phase("plafond livraisons EPIC: INACTIF (mesure de la lane "
+                        "en echec -- aucun refus sur une absence de mesure)")
+        elif _epic_cap_state == "not-applicable":
+            _belt_phase("plafond livraisons EPIC: INACTIF (pas de lane -- le "
+                        "plafond est par lane)")
+        elif not _epic_deliveries:
+            _belt_phase("plafond livraisons EPIC: MESURE, aucune livraison de "
+                        "la lane sur la fenetre (rien a ecarter)")
+        else:
+            _belt_phase(f"plafond livraisons EPIC: MESURE, "
+                        f"{sum(_epic_deliveries.values())} livraison(s) sur "
+                        f"{len(_epic_deliveries)} EPIC(s)")
+        belt_pool = belt_filter(admitted, args, urns=selected_urns,
+                                epic_deliveries=_epic_deliveries,
+                                drops=_epic_drops)
         belt_pool.sort(key=belt_sort_key)
         _belt_phase(f"pool charge: {len(belt_pool)} candidates "
                     f"(apres belt_filter)")
+        if _epic_drops:
+            _belt_phase("plafond livraisons EPIC: "
+                        + ", ".join(f"#{it['number']} ({cause.split('(')[0].strip()})"
+                                    for it, cause in _epic_drops[:6])
+                        + (f" (+{len(_epic_drops) - 6})"
+                           if len(_epic_drops) > 6 else ""))
         # Verification des claims tenes par une autre lane : on regarde
         # plus large que `args.grains` pour tolerer un remplacement si
         # la tete de file est tenue. Cout borne : au plus `grains + 4`
@@ -10210,12 +11424,43 @@ def main(argv: list[str] | None = None) -> int:
             # (chemin d'avant patch, lent mais fonctionnel) et on marque le
             # fait en banniere. Cf memo c.1113 §4.
             bulk_targets = [it["number"] for it in belt_pool[:belt_check_window * 3 + 12]]
-            bulk_stamps, bulk_err = fetch_latest_claim_stamps_bulk(
-                bulk_targets,
-                cache=payload_cache,
-                cache_mode=effective_cache_mode,
-                cache_status=cache_status,
-            )
+            # #22983 -- PHASE RESEAU, avant tout calcul de la boucle : les
+            # commentaires de la fenetre que le tapis va parcoursser sont
+            # lus UNE FOIS. Apres ce point, la boucle (sondes de livraison,
+            # verifications de claim, stamps de visite) lit l'instantane et
+            # n'emet plus aucun appel GitHub. La boucle refait l'appel par
+            # elle-meme (`prime`), mais il ne coute alors qu'un balayage : le
+            # second passage trouve les entrees fraiches.
+            primed_window = [
+                int(it.get("number", 0)) for it in belt_pool
+                if it.get("number")][:belt_service_window(
+                    args, len(belt_pool))]
+            _belt_snapshot_prime(REPO, primed_window)
+            global _BELT_PRIMED_WINDOW
+            # #22983 -- la fenetre PRIMEE, et rien de plus : un numero hors
+            # fenetre n'a pas ete lu, il ne doit pas se dire servi. La garde
+            # de la boucle (`wanted` ⊆ `_BELT_PRIMED_WINDOW`) repose sur la
+            # fenetre de service, donc la declaration doit etre exacte.
+            _BELT_PRIMED_WINDOW = set(primed_window)
+            # #22983 -- les stamps viennent de l'instantane quand il sert
+            # la cible : c'est la meme reduction que la voie reseau
+            # (`_claim_stamp_from_comments`), sans appel GitHub. Seuls les
+            # numeros NON SERVIS passent par le bulk GraphQL.
+            snapshot_stamps, stamp_missing = _claim_stamps_from_snapshot(
+                bulk_targets)
+            bulk_stamps: dict[int, str | None] = dict(snapshot_stamps)
+            bulk_err = None
+            if stamp_missing:
+                net_stamps, bulk_err = fetch_latest_claim_stamps_bulk(
+                    stamp_missing,
+                    cache=payload_cache,
+                    cache_mode=effective_cache_mode,
+                    cache_status=cache_status,
+                )
+                bulk_stamps.update(net_stamps)
+            _belt_phase(f"stamps: {len(bulk_stamps)} servis "
+                        f"({len(snapshot_stamps)} par l'instantane, "
+                        f"{len(stamp_missing)} par le reseau)")
             if bulk_stamps:
                 # Closure qui sert les stamps depuis la map ; les numeros
                 # absents de la map (issue inconnue, rate-limit, ...) tombent
@@ -10256,9 +11501,16 @@ def main(argv: list[str] | None = None) -> int:
                 settle_belt_head(belt_pool, belt_check_window, latest_claim_stamp,
                                  max_probes=belt_check_window * 3 + 12)
                 _belt_phase("settle_belt_head fait: chemin unitaire (bulk absent)")
-        belt_check_nums = [it["number"] for it in belt_pool[:belt_check_window]]
+        # #22983 -- la fenetre des CLAIMS couvre la fenetre que la boucle de
+        # service va parcourir (`belt_service_window`), pas seulement la
+        # tete. La boucle ne declenche alors AUCUNE verification unitaire :
+        # chaque candidat hors tete a deja son verdict, servi par
+        # l'instantane (une passe, pas une par candidat).
+        belt_claim_window = min(belt_service_window(args, len(belt_pool)),
+                                len(belt_pool))
+        belt_check_nums = [it["number"] for it in belt_pool[:belt_claim_window]]
         _belt_phase(f"claims start: {len(belt_check_nums)} numeros "
-                    f"(fenetre belt_check_window={belt_check_window})")
+                    f"(fenetre de service={belt_claim_window})")
         belt_claims = check_claims(belt_check_nums, args.lane)
         _belt_phase(f"claims faits: {len(belt_claims)} verdicts")
         # Boucle de service extraite (#19390) : claims + sonde de livraison
@@ -10290,7 +11542,10 @@ def main(argv: list[str] | None = None) -> int:
             belt_pick_with_replacements(belt_pool, belt_claims, args,
                                         belt_probe_budget(belt_check_window),
                                         delivered_probe=has_delivered_signal,
+                                        cover_probe=cover_probe,
                                         merged_pr_probe=merged_pr_signal,
+                                        revocation_probe=(
+                                            revoked_after_merge_signal),
                                         recent_marker_probe=(
                                             has_recent_delivery_marker),
                                         snapshot_prime=_belt_snapshot_prime,
@@ -10410,6 +11665,15 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"!! signal de livraison NON LU sur {numbers} : le tirage")
                 print("   est MAINTENU et ces candidats CONSERVES -- une lecture")
                 print("   qui n'a pas ABOUTI n'est PAS une absence de signal.")
+            belt_cover_failures = belt_pick_state.get("cover_failures") or []
+            if belt_cover_failures:
+                numbers = ", ".join(f"#{n}"
+                                    for n in sorted(set(belt_cover_failures)))
+                print(f"!! sonde de couverture NON LUE sur {numbers} : la")
+                print("   recherche de PR couvrante n'a pas abouti (reseau, 403,")
+                print("   payload illisible). Le tirage est MAINTENU et ces")
+                print("   candidats CONSERVES -- une lecture qui n'a pas ABOUTI")
+                print("   n'est PAS une absence de PR couvrante.")
             # #20265 : meme doctrine pour le claim, juxtaposee a la ligne
             # ci-dessus -- les deux lectures ratees se lisent ensemble.
             print_claim_unread_report(belt_pick_state.get("claim_unread"),
@@ -10500,6 +11764,23 @@ def main(argv: list[str] | None = None) -> int:
                 } for it in belt_picks},
                 "withheld": [{"number": it["number"], "title": it["title"],
                               "cause": c} for it, c in belt_withheld],
+                # #21067 correctif 1 : ce que le plafond de livraisons a
+                # ecarte POUR CETTE LANE (les autres lanes le voient). Nomme,
+                # jamais silencieux -- un plafond muet se lit comme une
+                # famine du pool.
+                "epic_delivery_cap": {
+                    "cap": args.epic_delivery_cap,
+                    # Correctif 2 : `state` porte le troisieme cas que le
+                    # booleen `active` ecrasait. `active: false` sur une
+                    # mesure a zero faisait lire un garde inactif la ou il
+                    # avait tourne ; `active` reste pour les consommateurs
+                    # existants et vaut « le garde a pu s'appliquer ».
+                    "state": _epic_cap_state,
+                    "active": _epic_cap_state == "measured",
+                    "dropped": [{"number": it["number"],
+                                 "title": it["title"],
+                                 "cause": c} for it, c in _epic_drops],
+                },
                 # Volet livraison du tapis (#19390) : les trois etats ont
                 # trois messages distincts (ecarte / lecture en echec /
                 # non sonde), fail-OPEN sur les deux derniers -- meme
@@ -10517,6 +11798,8 @@ def main(argv: list[str] | None = None) -> int:
                     "recent_filtered": belt_pick_state.get(
                         "recent_filtered", 0),
                     "unread": sorted(set(belt_delivered_failures)),
+                    "cover_probes_failed": sorted(
+                        set(belt_pick_state.get("cover_failures") or [])),
                     "budget_hit": belt_probe_budget_hit[0],
                     # #21436 : le mur de temps est un plafond DISTINCT du
                     # plafond de sondes -- les confondre ferait lire « cout

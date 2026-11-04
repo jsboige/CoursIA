@@ -143,6 +143,17 @@ def _create_comment(
         cid = json.loads(proc.stdout).get("id")
     except (json.JSONDecodeError, AttributeError):
         cid = None
+    if cid is None:
+        # Le defaut de #22758, transpose : un verdict de succes ne se rend pas
+        # sur l'absence d'erreur, il se rend sur la constatation de l'ecriture.
+        # Sans identifiant, le commentaire cree n'est ni adressable ni
+        # verifiable -- et le prochain passage, qui retrouve le commentaire par
+        # son marqueur, ne peut pas distinguer « cree » de « rien ecrit ».
+        raise RuntimeError(
+            "gh api POST comment: reponse sans identifiant de commentaire "
+            f"({(proc.stdout or '').strip()[:200] or '<vide>'}) -- ecriture "
+            "non constatee, verdict de succes refuse"
+        )
     return {"action": "created", "comment_id": cid}
 
 

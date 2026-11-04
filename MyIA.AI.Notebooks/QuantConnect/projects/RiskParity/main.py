@@ -5,18 +5,20 @@ from AlgorithmImports import *
 
 class RiskParity(QCAlgorithm):
     """
-    Risk Parity v4: Trend Filter + Rank-based Risk Parity + BND (BEST)
+    Risk Parity v4: Trend Filter + Rank-based Risk Parity + BND
     ==================================================================
-    Best variant: Sharpe 0.515, CAGR 10.04%, MaxDD 20.1%
+    Measured (current code, fenêtre codée 2015-01-01 -> 2024-12-31, 2516 séances négociées (3653 jours calendaires), mode strategy): Sharpe 0.360, CAGR 7.294%, MaxDD 18.400%.
+    Source : QC Cloud, dossier #23315 (2026-10-29), projet de référence 20286-RP-baseline (2516 séances négociées, 438 ordres).
 
     Combines inverse-volatility weighting with trend filtering.
     BND safe haven when <2 assets trending.
 
-    Iteration results:
+    Iteration results (historique des iterations de conception, mesurees sous des
+    conditions anterieures ; non reproduites par le code actuel, refactors #21420/#22869/#22923) :
     v1: Sharpe 0.395, CAGR 7.84%, MaxDD 20.9% (baseline risk parity)
     v2: Sharpe 0.436, CAGR 8.64%, MaxDD 20.7% (+ trend filter + BND)
     v3: Sharpe 0.480, CAGR 9.26%, MaxDD 19.8% (+ momentum tilt)
-    v4: Sharpe 0.515, CAGR 10.04%, MaxDD 20.1% (+ rank-based RP) <-- BEST
+    v4: Sharpe 0.515, CAGR 10.04%, MaxDD 20.1% (+ rank-based RP) < best de l'iteration
     v5: Sharpe 0.488, CAGR 10.03%, MaxDD 17.1% (equal RP - worse Sharpe)
 
     Reference: Asness/Frazzini 2012, Bridgewater Risk Parity
@@ -147,7 +149,12 @@ class RiskParity(QCAlgorithm):
             close = self.securities[sym].close
             if close <= ind.current.value:
                 continue
-            hist = self.history(sym, self.MOM_LOOKBACK + 5, Resolution.DAILY)
+            # Fenetre double (#20286) : sur une demi-seance, history() rend moins
+            # de barres que demandees et la garde ecarte le titre. On demande le
+            # double puis on re-slice sur la fenetre d'origine : la garde porte
+            # sur la fenetre reellement utilisee, son verdict ne change pas.
+            hist = self.history(sym, 2 * (self.MOM_LOOKBACK + 5), Resolution.DAILY)
+            hist = hist.iloc[-(self.MOM_LOOKBACK + 5):]
             if len(hist) < self.MOM_LOOKBACK * 0.8:
                 continue
             ret_12m = hist["close"].iloc[-1] / hist["close"].iloc[-self.MOM_LOOKBACK] - 1

@@ -41,6 +41,18 @@ itére le pas **à tous les degrés** et assemble le résultat en un objet
 5. `toGodement_comp_godementCanonicalD` : le début du complexe augmenté —
    `μ ≫ d⁰ = 0`, réénoncé de la Partie 89 dans les notations itérées.
 
+## La fonctorialité en `F` (Partie 96)
+
+`godementCanonicalComplexMap` : pour un morphisme de préfaisceaux `η : F ⟶ G`,
+le morphisme de complexes canoniques — la frontière nommée par la Partie 95
+(la Partie 92 avait posé l'objet, pas l'action sur les morphismes). La
+récurrence porte l'état complet du carré (morphisme de `Arrow` : les deux
+verticales et leur commutation), car `cokernel.map` exige la verticale
+droite **en donnée** — la récurrence naïve est circulaire. L'identité est
+respectée (`godementCanonicalComplexMap_id`). **Non posé** : la composition
+(frontière nommée, avec la suite exacte longue, pour la fonctorialité de la
+cohomologie de Godement).
+
 ## Ce que cette Partie pose vs. ce qu'elle laisse ouvert
 
 **Posé** : la récursion `d^{n+1} = godementStep dⁿ` à tous les degrés, la
@@ -305,5 +317,188 @@ theorem isFlasque_godementCanonicalComplex
   | 0 => exact isFlasque_godementPresheaf F
   | 1 => exact isFlasque_godementPresheaf (cokernel (toGodement F))
   | (n + 2) => exact isFlasque_godementPresheaf (cokernel (godementCanonicalD F n))
+
+/-! ### Partie 96 : la fonctorialité en `F` du complexe canonique
+
+La Partie 92 a posé le complexe canonique comme **objet** ; la Partie 95
+(cohomologie de Godement) a nommé la frontière manquante : l'action sur les
+morphismes. Pour un morphisme de préfaisceaux `η : F ⟶ G`, on construit le
+morphisme de complexes
+`godementCanonicalComplexMap η : godementCanonicalComplex F ⟶ godementCanonicalComplex G`,
+et l'on prouve qu'il respecte l'identité.
+
+La difficulté n'est pas la commutation mais la **définition** : la flèche de
+degré `n + 2` est `C⁰` d'une flèche de conoyaux `coker dⁿ_F ⟶ coker dⁿ_G`
+construite par `cokernel.map`, qui exige **en donnée** la flèche verticale
+droite — c'est-à-dire la flèche de degré `n + 1`, celle-là même que l'on est
+en train de définir. La récurrence naïve est circulaire. On la brise en
+portant l'**état complet du carré** : le morphisme de flèches
+`godementDChain F n ⟶ godementDChain G n` dans la catégorie `Arrow`,
+c'est-à-dire le couple des deux verticales `f n`, `f (n + 1)` **et** la
+commutation du carré de degré `n` — le carré de degré `n + 1` s'en déduit
+sans aucune autoréférence, la verticale droite devenant la verticale gauche
+du suivant. Le lemme générique `godementStep_map` factorise le même calcul
+pour le carré de base (l'unité, par `toGodement_naturality`) et pour chacun
+des carrés itérés.
+
+**Non posé** — frontière nommée : la composition
+(`godementCanonicalComplexMap_comp`) ; c'est elle, avec la suite exacte
+longue (brique 3 de la Partie 95), qui donnera la fonctorialité de la
+cohomologie de Godement. -/
+
+/-- **La naturalité du pas canonique en le carré** : un carré commutatif de
+préfaisceaux, de flèches horizontales `u` et `u'`, induit un carré commutatif
+de pas canoniques — la verticale droite du carré de conoyaux étant
+`cokernel.map`. Ce lemme générique couvre le carré de base de la
+fonctorialité (`u` l'unité de Godement, verticales `α` et `C⁰α`,
+commutation `toGodement_naturality`) et chacun des carrés itérés
+(`u = dⁿ`, verticales `f n` et `f (n + 1)`). -/
+theorem godementStep_map {A B A' B' : X.Presheaf AddCommGrpCat.{u}}
+    (u : A ⟶ B) (u' : A' ⟶ B') (α : A ⟶ A') (β : B ⟶ B') (w : u ≫ β = α ≫ u') :
+    godementStep u ≫ godementMapHom (cokernel.map u u' α β w) = β ≫ godementStep u' := by
+  have hzero : u ≫ (β ≫ cokernel.π u') = 0 := by
+    rw [← Category.assoc, w, Category.assoc, cokernel.condition, comp_zero]
+  have hπ : cokernel.π u ≫ cokernel.map u u' α β w = β ≫ cokernel.π u' :=
+    cokernel.π_desc u (β ≫ cokernel.π u') hzero
+  calc godementStep u ≫ godementMapHom (cokernel.map u u' α β w)
+      = (cokernel.π u ≫ toGodement (cokernel u)) ≫
+          godementMapHom (cokernel.map u u' α β w) := rfl
+    _ = cokernel.π u ≫ (toGodement (cokernel u) ≫
+          godementMapHom (cokernel.map u u' α β w)) := by rw [Category.assoc]
+    _ = cokernel.π u ≫ (cokernel.map u u' α β w ≫ toGodement (cokernel u')) := by
+          rw [toGodement_naturality]
+    _ = (cokernel.π u ≫ cokernel.map u u' α β w) ≫ toGodement (cokernel u') := by
+          rw [← Category.assoc]
+    _ = (β ≫ cokernel.π u') ≫ toGodement (cokernel u') := by rw [hπ]
+    _ = β ≫ godementStep u' := by rw [Category.assoc, godementStep]
+
+/-- **Le carré identité du conoyau** : une flèche de conoyaux `cokernel.map`
+dont les verticales sont des identités (à équation près) est l'identité.
+Les équations `hα`, `hβ` sont substituées dans le témoin de commutation par
+`subst`, ce qui évite toute réécriture dépendante dans le terme. -/
+theorem cokernel_map_self_id {A B : X.Presheaf AddCommGrpCat.{u}} (u : A ⟶ B)
+    (α : A ⟶ A) (β : B ⟶ B) (w : u ≫ β = α ≫ u) (hα : α = 𝟙 A) (hβ : β = 𝟙 B) :
+    cokernel.map u u α β w = 𝟙 (cokernel u) := by
+  subst hα
+  subst hβ
+  exact cokernel.map_id u (𝟙 A) w
+
+/-- **L'état de la récurrence fonctorielle** : le morphisme de flèches de
+degré `n`, portant la verticale gauche `f n`, la verticale droite `f (n + 1)`
+et la commutation du carré de degré `n`. La verticale droite du carré de
+degré `n` est la verticale gauche du carré de degré `n + 1` : le successeur
+s'obtient en passant au conoyau par `cokernel.map`, la nouvelle verticale
+droite étant alors `C⁰` de la flèche de conoyaux — **sans autoréférence**,
+la donnée du carré courant suffit à construire le suivant. Le carré de base
+est le carré de l'unité (verticales `η` et `C⁰η`, commutation
+`toGodement_naturality`). -/
+noncomputable def godementDChainMap (F G : X.Presheaf AddCommGrpCat.{u}) (η : F ⟶ G) :
+    ∀ n, godementDChain F n ⟶ godementDChain G n
+  | 0 =>
+      Arrow.homMk (godementMapHom η)
+        (godementMapHom (cokernel.map (toGodement F) (toGodement G) η (godementMapHom η)
+            (toGodement_naturality η)))
+        ((godementStep_map (toGodement F) (toGodement G) η (godementMapHom η)
+            (toGodement_naturality η)).symm)
+  | n + 1 =>
+      Arrow.homMk (godementDChainMap F G η n).right
+        (godementMapHom (cokernel.map (godementCanonicalD F n) (godementCanonicalD G n)
+            (godementDChainMap F G η n).left (godementDChainMap F G η n).right
+            (godementDChainMap F G η n).w.symm))
+        ((godementStep_map (godementCanonicalD F n) (godementCanonicalD G n)
+            (godementDChainMap F G η n).left (godementDChainMap F G η n).right
+            (godementDChainMap F G η n).w.symm).symm)
+
+theorem godementDChainMap_zero_right (F G : X.Presheaf AddCommGrpCat.{u}) (η : F ⟶ G) :
+    (godementDChainMap F G η 0).right =
+      godementMapHom (cokernel.map (toGodement F) (toGodement G) η (godementMapHom η)
+        (toGodement_naturality η)) :=
+  rfl
+
+theorem godementDChainMap_succ_right (F G : X.Presheaf AddCommGrpCat.{u}) (η : F ⟶ G)
+    (n : ℕ) :
+    (godementDChainMap F G η (n + 1)).right =
+      godementMapHom (cokernel.map (godementCanonicalD F n) (godementCanonicalD G n)
+        (godementDChainMap F G η n).left (godementDChainMap F G η n).right
+        (godementDChainMap F G η n).w.symm) :=
+  rfl
+
+/-- **La flèche de degré `n` du morphisme de complexes canoniques** :
+la composante gauche du morphisme de flèches de degré `n`. -/
+noncomputable def godementCanonicalMap (F G : X.Presheaf AddCommGrpCat.{u}) (η : F ⟶ G)
+    (n : ℕ) : godementCanonicalObj F n ⟶ godementCanonicalObj G n :=
+  (godementDChainMap F G η n).left
+
+@[simp]
+theorem godementCanonicalMap_zero (F G : X.Presheaf AddCommGrpCat.{u}) (η : F ⟶ G) :
+    godementCanonicalMap F G η 0 = godementMapHom η :=
+  rfl
+
+/-- **La commutation du carré de degré `n`** : la flèche de degré `n` suivie
+de la différentielle de `G` égale la différentielle de `F` suivie de la
+flèche de degré `n + 1` — le carré porté par l'état de récurrence, dans
+l'orientation qu'exige l'assemblage `CochainComplex.ofHom`. -/
+theorem godementCanonicalD_map (F G : X.Presheaf AddCommGrpCat.{u}) (η : F ⟶ G)
+    (n : ℕ) :
+    godementCanonicalMap F G η n ≫ godementCanonicalD G n =
+      godementCanonicalD F n ≫ godementCanonicalMap F G η (n + 1) :=
+  (godementDChainMap F G η n).w
+
+/-- **La fonctorialité en `F` du complexe canonique** : un morphisme de
+préfaisceaux `η : F ⟶ G` induit un morphisme de complexes de cochaînes
+`godementCanonicalComplex F ⟶ godementCanonicalComplex G` — flèche de degré
+`n` la `godementCanonicalMap` ci-dessus, commutation celle de
+`godementCanonicalD_map`. La frontière nommée par la Partie 95 est fermée :
+la Partie 92 avait posé l'objet, le voici doté de son action sur les
+morphismes [God58, Chap. II §4.1]. -/
+noncomputable def godementCanonicalComplexMap (F G : X.Presheaf AddCommGrpCat.{u})
+    (η : F ⟶ G) :
+    godementCanonicalComplex F ⟶ godementCanonicalComplex G :=
+  CochainComplex.ofHom (fun n => (godementDChainMap F G η n).left)
+    (fun n => by
+      show godementCanonicalMap F G η n ≫ (godementCanonicalComplex G).d n (n + 1) =
+        (godementCanonicalComplex F).d n (n + 1) ≫ godementCanonicalMap F G η (n + 1)
+      rw [godementCanonicalComplex_d, godementCanonicalComplex_d]
+      exact godementCanonicalD_map F G η n)
+
+@[simp]
+theorem godementCanonicalComplexMap_f (F G : X.Presheaf AddCommGrpCat.{u}) (η : F ⟶ G)
+    (n : ℕ) :
+    (godementCanonicalComplexMap F G η).f n = godementCanonicalMap F G η n :=
+  rfl
+
+/-- **La fonctorialité respecte l'identité, flèche de degré par flèche de
+degré** : la récurrence porte les deux verticales, et l'hypothèse
+d'induction aussi — c'est elle qui permet d'appliquer le carré identité du
+conoyau à chaque étage, sans réécriture dépendante dans le terme. -/
+theorem godementCanonicalMap_id (F : X.Presheaf AddCommGrpCat.{u}) :
+    ∀ n, godementCanonicalMap F F (𝟙 F) n = 𝟙 (godementCanonicalObj F n) := by
+  intro n
+  have key : ∀ m, (godementDChainMap F F (𝟙 F) m).left = 𝟙 (godementCanonicalObj F m) ∧
+      (godementDChainMap F F (𝟙 F) m).right = 𝟙 (godementCanonicalObj F (m + 1)) := by
+    intro m
+    induction m with
+    | zero =>
+        refine ⟨godementMapHom_id F, ?_⟩
+        rw [godementDChainMap_zero_right, congrArg godementMapHom
+          (cokernel_map_self_id (toGodement F) (𝟙 F) (godementMapHom (𝟙 F))
+            (toGodement_naturality (𝟙 F)) rfl (godementMapHom_id F)), godementMapHom_id]
+        rfl
+    | succ m ih =>
+        refine ⟨ih.2, ?_⟩
+        rw [godementDChainMap_succ_right, congrArg godementMapHom
+          (cokernel_map_self_id (godementCanonicalD F m) (godementDChainMap F F (𝟙 F) m).left
+            (godementDChainMap F F (𝟙 F) m).right (godementDChainMap F F (𝟙 F) m).w.symm
+            ih.1 ih.2), godementMapHom_id]
+        rfl
+  exact (key n).1
+
+/-- **Le morphisme de complexes induit par l'identité est l'identité** :
+composante par composante, `godementCanonicalComplexMap (𝟙 F) = 𝟙`. -/
+theorem godementCanonicalComplexMap_id (F : X.Presheaf AddCommGrpCat.{u}) :
+    godementCanonicalComplexMap F F (𝟙 F) = 𝟙 (godementCanonicalComplex F) := by
+  ext n
+  rw [godementCanonicalComplexMap_f, godementCanonicalMap_id, HomologicalComplex.id_f]
+  rfl
 
 end Grothendieck

@@ -8,6 +8,11 @@ class VolTargetMomentum(QCAlgorithm):
     """
     VolTarget-Momentum v5: Wider leverage range + 15% target
     ===========================================================
+    Measured (current code, fenêtre codée 2015-01-01 -> 2025-01-01, 2516 séances négociées (3654 jours calendaires), mode strategy): Sharpe 0.441, CAGR 10.131%, MaxDD 20.800%.
+    Source : QC Cloud, dossier #23315 (2026-10-29), projet de référence 20286-VTM-baseline (2516 séances négociées, 488 ordres).
+
+    Iteration results (historique des iterations de conception, mesurees sous des
+    conditions anterieures ; non reproduites par le code actuel, refactors #21420/#22869/#22923) :
     v1: Sharpe 0.550, CAGR 11.14%, MaxDD 15.1% (norm cancelled vol scalar)
     v2: Sharpe 0.614, CAGR 13.58%, MaxDD 17.9% (no norm, vol_target=15%)
     v3: Sharpe 0.585, CAGR 12.34%, MaxDD 16.6% (vol_target=12% - worse)
@@ -150,11 +155,13 @@ class VolTargetMomentum(QCAlgorithm):
             # Fenetre double (#20286) : sur une demi-seance, history() rend moins
             # de barres que demandees et le ticker est ecarte de la ponderation
             # de volatilite. On demande le double puis on re-slice sur la fenetre
-            # d'origine : la vol annualisee est inchangee hors demi-seance.
+            # d'origine : la vol annualisee est inchangee hors demi-seance. Comme
+            # dans rebalance(), la garde porte sur la fenetre reellement utilisee
+            # (#21471 : re-slice puis garde, l'ordre canonique des autres sites).
             hist = self.history(sym, 2 * (self.vol_lookback + 5), Resolution.DAILY)
+            hist = hist.iloc[-(self.vol_lookback + 5):]
             if len(hist) < self.vol_lookback * 0.8:
                 continue
-            hist = hist.iloc[-(self.vol_lookback + 5):]
             returns = hist["close"].pct_change().dropna().tail(self.vol_lookback)
             if len(returns) < 10:
                 continue
@@ -181,11 +188,21 @@ class VolTargetMomentum(QCAlgorithm):
             close = self.securities[sym].close
             if close <= ind.current.value:
                 continue
-            hist_12m = self.history(sym, self.lookback_12m + 5, Resolution.DAILY)
+            # Fenetre double (#20286) : sur une demi-seance, history() rend moins
+            # de barres que demandees et la garde ecarte le titre. On demande le
+            # double puis on re-slice sur la fenetre d'origine : la garde porte
+            # sur la fenetre reellement utilisee, son verdict ne change pas.
+            hist_12m = self.history(sym, 2 * (self.lookback_12m + 5), Resolution.DAILY)
+            hist_12m = hist_12m.iloc[-(self.lookback_12m + 5):]
             if len(hist_12m) < self.lookback_12m * 0.8:
                 continue
             ret_12m = hist_12m["close"].iloc[-1] / hist_12m["close"].iloc[-self.lookback_12m] - 1
-            hist_6m = self.history(sym, self.lookback_6m + 5, Resolution.DAILY)
+            # Fenetre double (#20286) : sur une demi-seance, history() rend moins
+            # de barres que demandees et la garde ecarte le titre. On demande le
+            # double puis on re-slice sur la fenetre d'origine : la garde porte
+            # sur la fenetre reellement utilisee, son verdict ne change pas.
+            hist_6m = self.history(sym, 2 * (self.lookback_6m + 5), Resolution.DAILY)
+            hist_6m = hist_6m.iloc[-(self.lookback_6m + 5):]
             if len(hist_6m) < self.lookback_6m * 0.8:
                 continue
             ret_6m = hist_6m["close"].iloc[-1] / hist_6m["close"].iloc[-self.lookback_6m] - 1

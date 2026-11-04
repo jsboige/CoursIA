@@ -182,6 +182,56 @@ def test_scan_cell_ignores_legit_section():
     assert scan_cell("### Indices\n\n1. Principe\n2. Objectif\n3. Indices") == []
 
 
+# ---------------------------------------------------------------------------
+# Fence-awareness (#23306)
+#
+# Un `# Etape 1 : ...` dans un bloc de code est un COMMENTAIRE PYTHON, pas un
+# titre mal rendu. Sans cette garde, `--apply` sur le corpus reecrivait 130
+# commentaires de code dans 15 carnets en prose backtickee -- mesure du
+# 2026-10-29, sur les 141 occurrences que le fixer comptait : 130 etaient dans
+# une fence. Les controles ci-dessous sont les faux positifs que la garde doit
+# produire, et le dernier verifie qu'elle ne deborde pas sur la prose qui SUIT
+# un bloc ferme.
+# ---------------------------------------------------------------------------
+
+def test_scan_cell_ignores_marker_inside_a_fence():
+    src = "Squelette :\n\n```python\n# Etape 1 : ouvrir le fichier\n```"
+    assert scan_cell(src) == []
+
+
+def test_scan_cell_ignores_marker_in_an_unclosed_fence():
+    # CommonMark : une fence non fermee court jusqu'a la fin du document.
+    assert scan_cell("```\n# Indice : calculez X") == []
+
+
+def test_scan_cell_ignores_marker_in_a_tilde_fence():
+    assert scan_cell("~~~\n# Indice : calculez X\n~~~") == []
+
+
+def test_scan_cell_ignores_container_marker_inside_a_fence():
+    src = "```python\n- # Indice : calculez X\n```"
+    assert scan_cell(src) == []
+
+
+def test_scan_cell_sees_a_defect_after_a_closed_fence():
+    # Controle inverse : la garde ne doit pas rendre le fixer aveugle a la prose
+    # qui suit un bloc ferme. C'est le faux negatif que produirait une garde
+    # « une fence vue = plus rien apres ».
+    src = "```python\nx = 1\n```\n\n# Indice : calculez X"
+    hits = scan_cell(src)
+    assert len(hits) == 1
+    assert hits[0][1] == "# Indice : calculez X"
+
+
+def test_process_apply_leaves_a_fenced_scaffold_byte_identical(tmp_path):
+    src = "Squelette :\n\n```python\n# Etape 1 : ouvrir le fichier\n# Etape 2 : lire\n```"
+    path = _write(tmp_path, _nb([_md(src)]))
+    before = path.read_bytes()
+    n, _rep = process(path, apply=True)
+    assert n == 0
+    assert path.read_bytes() == before
+
+
 def _nb(cells: list[dict]) -> dict:
     return {
         "cells": cells,

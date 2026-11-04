@@ -140,5 +140,31 @@
   },
   "lecture": "l'entrainement NeRF tient a 52,7 % de l'etage 8 Go ; l'evaluation par comptage de points du volet evaluatif monte a 94,5 % -- presque la marge du run 0,8 B GRPO+QLoRA (95,7 %). L'etage pionnier defriche l'entrainement NeRF, mais pas son evaluation dense ; le pic n'est pas dans la boucle d'entrainement, il est dans la cellule d'evaluation (3,4 Go de plus en ~20 s, pour 15 s de cellule)",
   "reserve": "les deux mesures (3D-01 et 3D-02) ont ete faites sur le meme siege et la meme carte, mais avec deux versions de torch differentes (2.8.0+cu126 pour 3D-01, 2.14.1+cu126 pour 3D-02) ; l'ecart de version n'est pas isole comme facteur du pic VRAM"
+ },
+ "provenance": {
+  "trace": "scripts/results/3d_enveloppe_8go/traces/vram-3d02.csv",
+  "trace_sha256": "81407a7191be24fcae8371c68f63edd500c4021d21cc2c296e443a4a1302e30e",
+  "trace_bytes": 11656,
+  "trace_samples": 242,
+  "trace_span_s": 1225.9,
+  "journal": "scripts/results/3d_enveloppe_8go/traces/3d02-enveloppe.log",
+  "journal_sha256": "3e62a2013be2416b0f2aa52b89efd5fa9926a900309676eb4b7e760816eb8ccd",
+  "run_started_at": "2026-10-21T01:17:41.53+02:00",
+  "run_finished_at": "2026-10-21T01:38:09.29+02:00",
+  "probe_command": "non archivee. Le fichier de trace etablit son propre format : en-tete `horodatage,utilisation_gpu,memoire_mib,temp_gpu_c`, horodatages ISO-8601 a sept decimales de fraction et decalage `+02:00` (forme .NET, donc boucle PowerShell probable : inference de format, pas un fait verifie). L'instrument du depot probe_15099_vram_sampler.py n'est pas le producteur (JSONL, champs anglais).",
+  "sample_period_s_declared": 5,
+  "sample_period_s_observed_median": 5.09,
+  "field_map": {
+   "peak_mib": "trace indice 240 (t=1220.8 s), 7740 Mio ; la montee est deja a 7736 des l'indice 238 (t=1211 s)",
+   "idle_mib": "trace indice 2 (t=10 s) et journal `GPU avant`, 428 Mio ; la serie descend ensuite a 425 (indice 4) et finit a 427 (indice 241)",
+   "profil_par_phase_mib[0].plateau_mib": "echantillon reel de la phase 1 (indices 26, 29 et 49) ; la statistique du palier est mediane 2993, mode 2989 sur les indices 7-58 (2 984-3 018)",
+   "profil_par_phase_mib[1].plateau_mib": "echantillon reel de la phase 2 (indices 184 a t=936 s et 231 a t=1175 s) ; maximum de la phase 4228 (indice 235), mediane et mode 4202 sur 179 echantillons (indices 59-237)",
+   "profil_par_phase_mib[2].plateau_mib": "trace indice 240 (t=1220.8 s), maximum de la phase 3 et de tout le run",
+   "temp_max_c": "maximum de la colonne temp_gpu_c sur les 242 echantillons",
+   "util_max_pct": "maximum de la colonne utilisation_gpu sur les 242 echantillons"
+  },
+  "arbitrage_4228_4217": "4228 et 4217 sont deux lignes reelles de la trace, a des instants differents : 4217 aux indices 184 (t=936 s) et 231 (t=1175 s), 4228 a l'indice 235 (t=1195 s), maximum du palier. Le palier lui-meme vaut 4202 Mio (mediane et mode, 179 echantillons). L'ecart de 11 Mio est donc tranche : deux echantillons d'une queue montante, ni l'un ni l'autre etant la statistique du palier. Valeurs conservees telles quelles (#22110 ne demande pas de reecriture) ; lecture : plateau_mib designe un echantillon, pas le plateau.",
+  "rederive": "python scripts/audit/check_vram_envelope_rederivable.py",
+  "notes": "Provenance ajoutee le 2026-10-24 (myia-ai-01:CoursIA-2, #22110). Aucune valeur de mesure n'est modifiee. Details et ruptures de phase mesurees (t=300,4 s et t=1210,6 s) : scripts/results/3d_enveloppe_8go/traces/README.md."
  }
 }

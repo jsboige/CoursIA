@@ -38,14 +38,23 @@ require mathlib from git
 
 @[default_target]
 lean_lib «Perceptron» where
-  globs := #[.submodules `Perceptron, `Perceptron_en]
+  -- `.submodules `Perceptron` ne couvre que Perceptron.*, pas le module
+  -- racine `Perceptron.lean` : sans le glob nu, `lake build` ne produit jamais
+  -- Perceptron.olean. Le gate d'axiomes (#22519, `target-modules: "*"`)
+  -- enumere tout `*.lean` du projet et echoue faute d'olean a inspecter.
+  -- Meme lecon que `GradientFlow` plus bas, ou le glob nu est deja pose.
+  globs := #[.submodules `Perceptron, `Perceptron, `Perceptron_en]
 
 /-- Module `PacLearning` — théorie PAC (Valiant 1984), sample complexity classe finie.
 Frère de `Perceptron` dans le lake ML généraliste `learning_theory_lean` (cf
 `decision_theory_lean` qui mutualise Gittins + Utility + Coherence). Voir #4293. -/
 @[default_target]
 lean_lib «PacLearning» where
-  globs := #[.submodules `PacLearning, `PacLearning_en]
+  -- Meme lecon que `Perceptron` ci-dessus et `GradientFlow` plus bas :
+  -- `.submodules` ne couvre pas le module racine, donc sans le glob nu
+  -- PacLearning.olean n'existe pas et le gate d'axiomes (#22519) n'a rien
+  -- a inspecter pour ce module.
+  globs := #[.submodules `PacLearning, `PacLearning, `PacLearning_en]
 
 /-- Module `GradientFlow` — digestion #13106 (forme formalisation) :
 évanouissement du gradient `c ^ n` dans une pile plain vs survie `(1-c) ^ n`

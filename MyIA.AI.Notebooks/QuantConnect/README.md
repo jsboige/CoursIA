@@ -1,3 +1,7 @@
+---
+pagetitle: "QuantConnect AI Trading - Série Éducative CoursIA"
+---
+
 # QuantConnect AI Trading - Série Éducative CoursIA
 
 <!-- CATALOG-STATUS
@@ -322,6 +326,7 @@ Le dossier **partner-course-quant-trading/** contient des exemples de recherche 
 
 ```
 partner-course-quant-trading/
+├── BACKTEST_INSTRUCTIONS.md  # Instructions backtests des stratégies optimisées (URLs Cloud, noms de runs, Sharpe attendus)
 ├── examples/           # Projets d'exemples du professeur
 ├── kit-transitoire/    # 3 stratégies ML/Framework progressives (RandomForest, XGBoost, Framework Composite)
 ├── scripts/            # Scripts utilitaires du cours

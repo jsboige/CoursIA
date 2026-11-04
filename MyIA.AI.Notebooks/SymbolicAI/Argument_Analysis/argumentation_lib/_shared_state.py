@@ -25,6 +25,8 @@ from dataclasses import dataclass, field, asdict
 from typing import Dict, List, Any, Optional, cast
 import logging
 
+from argumentation_lib._verdict import is_state_key_argument
+
 # Logger spécifique pour l'état
 state_logger = logging.getLogger("RhetoricalAnalysisState")
 # Assurer qu'un handler de base est présent si non configuré globalement tôt
@@ -301,10 +303,84 @@ class RhetoricalAnalysisState:
         )
 
     def add_identified_arguments(self, arguments: List[str]) -> None:
-        """Ajoute une liste d'arguments identifiés."""
+        """Ajoute une liste d'arguments identifiés.
+
+        Garde d'écriture (#18395, défaut de sortie) : l'agent appelle parfois
+        le tool bulk avec un **objet** au lieu d'une liste de formulations. Dans
+        ce cas, l'itération sur la valeur parcourt ses **clés** — et les clés
+        de l'état (`analysis_state`, `arguments`, …) étaient alors enregistrées
+        comme descriptions d'arguments. C'est la source des entrées
+        ``arg_1 = "analysis_state"`` / ``arg_2 = "arguments"`` que le
+        validateur refuse ensuite (check 1b, `ARGUMENTS_STATE_KEY`).
+
+        Deux corrections, dans le meme geste que le parsing souple des
+        sophismes (`_FALLACY_*_KEYS`) :
+          1. un objet est lu comme un couple (clé, valeur) et la **valeur**
+             devient la description — jamais la clé ;
+          2. une formulation qui est une clé d'état interne est **refusée à
+             l'écriture** (elle ne peut pas être un argument).
+
+        Le refus est loggue : une purge ulterieure (reprise ciblée) ne fait
+        qu'effacer le symptome, la cause est ici.
+        """
         state_logger.info(f"Ajout de {len(arguments)} arguments identifiés...")
-        for arg_desc in arguments:
+        for arg_desc in self._argument_descriptions(arguments):
+            if is_state_key_argument(None, arg_desc):
+                state_logger.warning(
+                    "Argument refusé à l'écriture : la formulation est une clé "
+                    f"de l'état interne ({arg_desc!r})."
+                )
+                continue
             self.add_argument(arg_desc)
+
+    @classmethod
+    def _argument_descriptions(cls, arguments: Any) -> List[str]:
+        """Normalise la valeur reçue par le tool bulk en liste de formulations.
+
+        L'agent peut envoyer une liste de chaînes (cas nominal), ou un objet
+        dont chaque valeur est une formulation (l'agent renvoie alors
+        ``{"analysis_state": ..., "arguments": ...}`` : la valeur est la
+        formulation, la clé est un nom de champ). Une clé d'état comme
+        description est refusée plus bas.
+        """
+        if isinstance(arguments, dict):
+            values = list(arguments.values())
+        elif isinstance(arguments, (list, tuple)):
+            values = list(arguments)
+        else:
+            values = [arguments]
+        descriptions: List[str] = []
+        for value in values:
+            if isinstance(value, str):
+                text = value.strip()
+            elif isinstance(value, dict):
+                text = str(cls._argument_field(value)).strip()
+            else:
+                text = str(value).strip()
+            if text:
+                descriptions.append(text)
+        return descriptions
+
+    # Cles tolerees pour lire la formulation dans un objet (meme contrat que
+    # les sophismes, qui tolèrent "nom"/"type"/"explication"/...).
+    _ARGUMENT_TEXT_KEYS = (
+        "texte",
+        "text",
+        "argument",
+        "description",
+        "formulation",
+        "phrase",
+        "contenu",
+    )
+
+    @classmethod
+    def _argument_field(cls, data: Dict[str, Any]) -> Any:
+        """Première valeur non vide parmi les clés tolérées, sinon la valeur."""
+        for key in cls._ARGUMENT_TEXT_KEYS:
+            value = data.get(key)
+            if value is not None and str(value).strip() != "":
+                return value
+        return next(iter(data.values()), "")
 
     # Contrats de clés tolérés pour add_identified_fallacies (defaut #18395) :
     # l'agent LLM appelle le tool bulk avec des clés libres — gpt-4o-mini

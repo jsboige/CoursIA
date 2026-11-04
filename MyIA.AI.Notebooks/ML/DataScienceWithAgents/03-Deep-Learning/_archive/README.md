@@ -1,4 +1,4 @@
-# `_archive/` — carnets retirés de la série 03-DeepLearning
+# `_archive/` — carnets retirés de la série 03-Deep-Learning
 
 Les carnets de ce dossier ne sont **ni rendus, ni maintenus, ni ré-exécutés**. Leur contenu a été absorbé par un carnet vivant de la série. Ils sont conservés **tels quels**, à titre de provenance : on peut encore les ouvrir pour vérifier ce qui était publié à une date donnée, mais ce ne sont plus des supports de cours.
 
@@ -9,6 +9,7 @@ Convention appliquée : [`docs/reference/_archive-convention.md`](../../../../..
 | Carnet | Verdict | Remplacé par | Verdict consigné dans |
 |---|---|---|---|
 | `3.9d-Compression-Distillation-from-scratch.ipynb` | `ABSORBED` — la distillation était enseignée deux fois dans la série : [3.7](../3.7-Distillation-Maitre-Eleve.ipynb) portait déjà la KD et la vérification du facteur `T²`, 3.9d portait le terrain canonique de la compression (ResNet-20 maître / ResNet-8 élève sur CIFAR-10) | [3.7-Distillation-Maitre-Eleve.ipynb](../3.7-Distillation-Maitre-Eleve.ipynb) — terrain, loss, hints FitNets, balayage de température et exercices absorbés ; les acquis propres à 3.7 (facteur `T²` vérifié sur le gradient, calibration ECE, taille et latence, articulation quantification / distillation / KL-RLHF) y sont conservés | PR « #22395 étape 2 », consigne user du 2026-10-25 (fusion des deux carnets, un seul enseignement de la KD) |
+| `3.9f-Compression-Pruning-SOTA.ipynb` | `FUSÉ` (2026-10-25) — contenu intégralement préservé, rien supprimé | [3.9e-Compression-SOTA.ipynb](../3.9e-Compression-SOTA.ipynb) — **Part B** (élagage `torch.nn.utils.prune`), même terrain ResNet-20 / CIFAR-10, mêmes instruments | #22395 étape 3 (plan 8 → 5), PR de la lane `myia-po-2024:CoursIA-2` |
 
 ## Disposition par section — `3.9d`
 
@@ -49,6 +50,10 @@ Chaque cellule de l'archive a une destination nommée dans le carnet qui la remp
 - les axes **taille sérialisée et latence** dans le tableau de compression (§8) ;
 - l'articulation **quantification / distillation / KL de régularisation RLHF** (§9) ;
 - les exercices **dosage α** et **mauvais maître** (exercices 1 et 5).
+
+## Disposition — 3.9f (fusion dans 3.9e)
+
+**Mode de fusion.** 3.9f n'est pas un dead-end : son contenu — le paysage de l'élagage, « la main » (magnitude pruning en dix lignes), `prune.l1_unstructured`, local vs global, structuré, taille/vitesse et les trois exercices — est repris **verbatim** dans la **Part B** du carnet fusionné `3.9e-Compression-SOTA.ipynb`, avec un seul entraînement de ResNet-20 partagé (preamble commun) et une ré-exécution complète. Le carnet est archivé ici comme **preuve de préservation**, pas supprimé. Le volet quantization de l'ancien 3.9e est la **Part A** du même carnet fusionné (l'ancien `3.9e-Compression-Quantization-SOTA.ipynb` est supprimé, son contenu étant intégralement porté par le nouveau `3.9e-Compression-SOTA.ipynb`).
 
 ## Vérification
 

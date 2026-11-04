@@ -35,6 +35,22 @@ if [ -z "$REPO_DIR" ]; then
   done
 fi
 [ -n "$REPO_DIR" ] || { echo "repo introuvable : ni /mnt/d/Dev/CoursIA ni /mnt/d/CoursIA -- definir COURSIA_REPO_DIR" >&2; exit 1; }
+# Le superviseur est lance par un CHEMIN ABSOLU, jamais relatif. Le
+# predicat per-checkout (#21527) reconnait un superviseur par la forme
+# "$REPO_DIR/scripts/ci/docker/linux-runner/supervise.sh <mode>" de sa
+# cmdline : un argv relatif (`./scripts/...`) porte un chemin qui ne
+# contient pas REPO_DIR, donc le predicat ne voit pas le superviseur
+# qu'il a lui-meme lance -- faux negatif, et purge a tort de la
+# sentinelle alors que le superviseur est vivant. Un argv relatif est de
+# plus indiscernable entre deux checkouts, ce que le predicat refuse par
+# construction : le chemin absolu est la seule forme admise.
+#
+# La definition qui fait foi est `SUPERVISE_SH` (plus bas) : elle porte le
+# meme chemin par defaut et ajoute deux choses -- une surcharge par
+# `COURSIA_SUPERVISE_SH` (epingler le superviseur devient un geste de
+# configuration) et une garde de lisibilite. Une surcharge doit rester
+# ABSOLUE, pour la raison ci-dessus : un chemin relatif rendrait le
+# predicat aveugle au superviseur que le wrapper a lui-meme lance.
 MASTER_ENV="${COURSIA_MASTER_ENV:-$REPO_DIR/.secrets/master.env}"
 ARG="${1:-12}"
 
@@ -101,8 +117,37 @@ fi
 # Les deux formes ne divergent que sur (runner vivant, waiters mort) -- soit
 # exactement le wedge observe sur cette jambe le 2026-09-07, resolu a la main.
 # Un futur `supervise.sh lean` prendra son propre predicat, pour la meme raison.
+#
+# LE PREDICAT EST PER-CHECKOUT, PAS PER-MACHINE (#21527).
+# `pgrep -f 'supervise\.sh waiters'` reconnait TOUT superviseur de la machine,
+# y compris ceux d'un autre checkout : un orphelin de test (etat sous /tmp,
+# 6-11 h, lance depuis un autre worktree) bloquait le purge et laissait le
+# service en failed, pool a zero. Le predicat par-checkout voit seulement le
+# superviseur de CE depot. Le chemin du superviseur est resolu par le noyau
+# (un shebang execute un script relatif avec son chemin ABSOLU dans argv), donc
+# la cmdline porte bien $REPO_DIR.
 if [ -e "$COURSIA_RUNNER_STATE_DIR/stop" ]; then
-  if pgrep -f 'supervise\.sh waiters' >/dev/null 2>&1; then
+  # Predicat PER-CHECKOUT (#21527) : le superviseur d'un AUTRE checkout
+  # (orphelin de test d'un autre worktree) ne doit pas bloquer le purge
+  # de CETTE sentinelle -- il bloquait le service en failed, pool a zero.
+  #
+  # L'organe est lu par `bash`, pas execute : son bit executable est 100644
+  # dans l'index, donc le noyau ne le rend pas executable sur un checkout
+  # Linux natif ; un exec refuse rendrait le predicat FAUX -- il repondrait
+  # « aucun superviseur vivant » et purgerait a tort.
+  #
+  # Repli CONSERVATEUR : si l'organe n'est pas lisible (depot perime sur la
+  # machine, ou wrapper deploye avant la mise a jour du checkout), on
+  # retombe sur le predicat per-machine : le repli peut REFUSER un purge
+  # a tort, jamais PURGER a tort.
+  HELPER="$REPO_DIR/scripts/ci/docker/linux-runner/persist/supervisor_live_for.sh"
+  SUPERVISOR_ALIVE=0
+  if [ -r "$HELPER" ]; then
+    if bash "$HELPER" "$REPO_DIR" waiters >/dev/null 2>&1; then SUPERVISOR_ALIVE=1; fi
+  else
+    if pgrep -f 'supervise\.sh waiters' >/dev/null 2>&1; then SUPERVISOR_ALIVE=1; fi
+  fi
+  if [ "$SUPERVISOR_ALIVE" -eq 1 ]; then
     echo "sentinelle presente ET superviseur vivant -- arret en cours, on n'interfere pas" >&2
     exit 1
   fi

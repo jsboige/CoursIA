@@ -23,11 +23,11 @@ a HARNESS CALIBRATION ladder for the prover co-evolution Epic (#1453):
 All `sorry`s have been eliminated (Epic #1453, #1651).
 -/
 
-import Conway.Doomsday
+import Conway.Doomsday_en
 
 namespace Conway_en
 
-open Conway
+open Conway_en
 
 /-- CALIBRATION (decide): 2000 is a leap year (divisible by 400). -/
 theorem isLeapYear_2000 : isLeapYear 2000 = true := by

@@ -14,7 +14,6 @@ name: Notebook Execution Required
 
 on:
   pull_request:
-    branches: [main]
     types: [opened, synchronize, edited, reopened]
     paths:
       - '**.ipynb'
@@ -72,7 +71,13 @@ jobs:
     # 16 slots sur 18 ont ete tenus pendant des heures le 15/10. La borne vaut
     # ~3x la duree mesuree (0-1 min sur les 8 derniers succes), plus la marge
     # d'un clone froid.
-    timeout-minutes: 5
+    # 2026-11-02 (#22937) : cette marge « clone froid » etait sous-estimee.
+    # La duree de 0-1 min etait mesuree sur le parc local (clone chaud) ; sur
+    # le repli ubuntu-latest, le checkout fetch-depth: 0 du depot de 14 911
+    # fichiers coute ~5 min a lui seul (mesure voisine : 286 s sur 300 dans
+    # notebook-kernel-drift-guard, run 41378044015) : 6 cancellations / 30
+    # derniers runs de ce workflow. 15 min couvre le clone froid heberge.
+    timeout-minutes: 15
     outputs:
       notebooks: ${{ steps.detect.outputs.notebooks }}
       has_notebooks: ${{ steps.detect.outputs.has_notebooks }}

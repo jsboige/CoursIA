@@ -19,3 +19,26 @@ autre = code du générateur.
 Les chemins sont paramétrables (`-RepoRoot`/`--repo-root`, et ainsi de
 suite) pour qu'une tâche planifiée puisse pointer le `.secrets` du clone
 principal depuis un worktree. `--help` liste les options du wrapper POSIX.
+
+## Contrôle aller-retour : deux régimes, deux significations
+
+`generate_teacher_corpus.py` valide chaque texte généré par un contrôle
+aller-retour : le modèle doit retrouver le nœud cible parmi des distracteurs.
+La mesure deux-taux du 2026-10-23
+([docs/transients/2026-10-23-17578-hard-distractors-measurement.md](../../docs/transients/2026-10-23-17578-hard-distractors-measurement.md),
+`--split val --limit 40 --votes 3 --seed 7`) sépare ce que chaque régime
+mesure — et ce qu'il ne mesure pas :
+
+| Régime | Taux mesuré | Ce qu'il établit |
+|---|---:|---|
+| Distracteurs aléatoires (tirage par défaut) | 87,5 % (35/40) | le texte est plus proche de son nœud que de 5 nœuds pris au hasard — c'est tout |
+| Distracteurs difficiles (`--hard-distractors`) | 47,5 % (19/40) | face aux pairs frères / parent / enfants / homonymes (`build_hard_peers`), le nœud n'est reconnu qu'une fois sur deux |
+
+L'écart (40 points, McNemar exact p ≈ 1,4 × 10⁻⁴) est systématique par
+famille : aucun des deux régimes ne se substitue à l'autre. Le tirage
+aléatoire n'attrape un nœud difficile qu'avec ~2,8 % de chances par paire —
+un score aléatoire élevé ne dit donc **rien** de la capacité du corpus à
+séparer les nœuds fins de la taxonomie : la discrimination fine n'est pas
+acquise au niveau de granularité visé. Toute évaluation de granularité doit
+passer par `--hard-distractors` ; durcir le contrôle par défaut pour tout le
+corpus reste un arbitrage ouvert (#17578).

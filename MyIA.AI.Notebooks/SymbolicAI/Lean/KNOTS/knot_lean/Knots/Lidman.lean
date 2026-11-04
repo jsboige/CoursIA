@@ -41,6 +41,7 @@ import Knots.Basic
 import Knots.Invariant
 import Knots.Conway
 import Knots.ReidemeisterMoves
+import Knots.ReidemeisterAny
 
 /-
   Convention i18n (EPIC #4980, décision user 2026-07-04) : ce fichier est **FR canonique**,
@@ -1192,5 +1193,62 @@ theorem no_fourDistinct_certificate_unknots_11n102 (indices : List Nat)
   refine movesConnects_not_unknot_of_allFourDistinct ?_ h hall
   rw [foldl_changeCrossingAt_crossings_length]
   decide
+
+/-! ## 6. Corollaire `_any` — la route sans motif terminal est fermée (#22359)
+
+Application du plancher conditionné de la langue étendue (section 27 de
+`ReidemeisterAny.lean`) au témoin 11n102 : les onze croisements sont
+four-distincts (section 5), ce qui est strictement plus fort que l'invariant
+`noTerminalMotif` de la chaîne `_any` — ni kink terminal, ni paire de bigon
+terminale. Le corollaire `movesConnectsAny_not_zero_of_noTerminalMotif` ferme
+alors toute route `movesConnectsAny` dont les sources maintiennent
+l'invariant : elle ne peut pas rejoindre le diagramme trivial (zéro
+croisements).
+
+**Portée exacte, sans surestimation** — la même que le théorème 5 : la route
+qui **maintient** l'hypothèse pas à pas est fermée, pas l'existence d'un
+téoin d'unknotting. L'hypothèse par maillon interdit de fait tout pas
+R1/R2 (un pas montant crée son motif sur la cible, qui devient la source du
+maillon suivant ; un pas descendant exige son motif sur sa source), la route
+couverte est donc de fait une route R3-only — et R3 conserve le compte. -/
+
+/-- La four-distinctness du dernier croisement interdit le kink terminal :
+    `e3 ≠ e4` est la dernière des six inégalités. -/
+theorem allFourDistinct_last_not_kink {d : KnotDiagram}
+    (hall : allFourDistinct d) :
+    ∀ K, d.crossings.getLast? = some K → K.e3 ≠ K.e4 := by
+  intro K hK
+  exact (hall K (List.mem_of_getLast? hK)).2.2.2.2.2
+
+/-- La four-distinctness interdit la paire de bigon terminale : le dernier
+    croisement porte `e2 ≠ e3`, la silhouette du bigon exige `e2 = e3`. Les
+    autres conditions de la paire n'interviennent pas. -/
+theorem allFourDistinct_not_bigon {d : KnotDiagram}
+    (hall : allFourDistinct d) :
+    ¬ ∃ K₁ K₂, d.crossings.dropLast.getLast? = some K₁ ∧
+        d.crossings.getLast? = some K₂ ∧
+        K₂.e2 = K₂.e3 ∧ K₁.e2 = K₁.e3 ∧ K₁.e1 = K₂.e1 := by
+  rintro ⟨K₁, K₂, _, h2, hK₂, _, _⟩
+  exact (hall K₂ (List.mem_of_getLast? h2)).2.2.2.1 hK₂
+
+/-- Le témoin 11n102 est sans motif terminal : ses croisements sont
+    four-distincts (section 5), strictement plus fort. -/
+theorem knot_11n102_noTerminalMotif :
+    AnyMoves.noTerminalMotif knot_11n102_diagram := by
+  unfold AnyMoves.noTerminalMotif
+  exact ⟨allFourDistinct_last_not_kink knot_11n102_allFourDistinct,
+    allFourDistinct_not_bigon knot_11n102_allFourDistinct⟩
+
+/-- **Version `_any` du théorème du plancher conditionné.** Aucun certificat
+    de la langue étendue dont les sources restent sans motif terminal ne
+    relie 11n102 au diagramme trivial. La longueur de départ (onze, par
+    `decide` sur le littéral) minore celle d'arrivée (zéro) : contradiction. -/
+theorem no_noTerminalMotif_certificate_unknots_11n102
+    {ms : List AnyMoves.AnyMove}
+    (h : AnyMoves.movesConnectsAny ms knot_11n102_diagram unknotDiagram)
+    (hall : ∀ m ∈ ms, AnyMoves.noTerminalMotif m.source) :
+    False :=
+  AnyMoves.movesConnectsAny_not_zero_of_noTerminalMotif
+    (by unfold knot_11n102_diagram; decide) rfl h hall
 
 end Knots

@@ -86,6 +86,21 @@ on:
           ``strict-orphan-check: true``.
         type: string
         default: ""
+      build-threads:
+        description: >-
+          #23247: elaboration parallelism cap, applied as the `LEAN_NUM_THREADS`
+          environment variable. Empty = historical behavior, unchanged for every
+          caller that does not set it. Set "1" on a lake whose PARALLEL elaboration
+          sum exceeds the runner RAM ceiling (ubuntu-latest: 16 GB for 4 vCPU).
+          This toolchain's `lake` exposes NO -j/--jobs flag: measured, "unknown
+          short option -j" in CI run 40857014456 and "unknown long option --jobs"
+          locally -- the env var is the available lever, and its serialization
+          effect is measured in-repo (#14821, run 35175031202, lean-knot.yml:148).
+          Distinct from #9840 (a SINGLE module over the ceiling, fixed by splitting
+          it): here every module fits alone, it is the co-elaboration that kills.
+        type: string
+        required: false
+        default: ""
 
 # A reusable workflow cannot request more than its caller grants. #8951 gave the
 # callers (lean-conway.yml, lean-knot.yml) `permissions: {contents: read}`, which
@@ -192,7 +207,12 @@ jobs:
         # 2026-06-14 pipefail invariant below are unchanged.
         (
           # On failure, surface the error lines the `tail` window loses (See #8915).
-          if lake -R build 2>&1 | tee "$RUNNER_TEMP/lake.log" | tail -10; then
+          # #23247 : borne de parallelisme optionnelle, posee en LEAN_NUM_THREADS.
+          # Sans l'input, THREADS_ENV est vide et la commande est byte-identique
+          # a l'historique.
+          THREADS_ENV=""
+          if [ -n "${{ inputs.build-threads }}" ]; then THREADS_ENV="LEAN_NUM_THREADS=${{ inputs.build-threads }}"; fi
+          if env $THREADS_ENV lake -R build 2>&1 | tee "$RUNNER_TEMP/lake.log" | tail -10; then
             :
           else
             rc=$?

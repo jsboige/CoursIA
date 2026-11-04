@@ -123,6 +123,14 @@ Les règles R1-R6 interdisent l'idle ; les workers l'ont contournée en inventan
 
 Cette liste est **indicative, jamais l'autorité** : un worker peut toujours inventer un nouveau synonyme. L'autorité est le **test de résultat** de R7 (`.claude/rules/proactive-coordination.md`) — *ai-je sorti un grain de substance du pool et l'ai-je transformé en PR ?* — qui couvre tous les synonymes présents et futurs.
 
+**Trois évasions mortes** (développées ici ; R7 les nomme en une phrase) :
+
+- **« Pas ma famille »** — FAUX : famille = préférence de **reporting**, pas frontière. **Seules deux vraies barrières** : (a) **GPU-only** ; (b) **vision-only** (→ lanes MiniMax/ai-01). Le reste est piochable partout.
+- **« Tout ce qui reste est gated »** — un *gate* qualifie une **prochaine action**, pas une issue entière : énumérer chaque issue ouverte + son gate précis ; si UNE a un sous-grain exécutable (doc, notebook CPU, audit, test), **le prendre**.
+- **« Les micro-fixes suffisent »** — non : nettoyage/tooling/doc plafonnés, jamais le plat principal ; le plancher exige un **DEEP de CONTENU** chaque cycle, le MED et le META venant au-delà (tiers et genres : [variation-protocol.md](../../.claude/rules/variation-protocol.md)).
+
+**Mécanisme never-empty** (ordre strict, inversé le 2026-08-20 ; déporté de R7). (1) **Tirer** — `pick_idle_grain.py`, au démarrage du cycle, systématiquement. (2) Un **steering nommé** du coordinateur (deep-queue, DM `[DISPATCH→inbox]`) **s'ajoute** au tirage quand il est déjà là : le brûler dans l'ordre, ne pas attendre entre items, `[CLAIMED]` avant chaque. Son absence ne se constate pas. (3) Ni tirage exploitable ni steering → le pool global reste la source : « rien à faire » demeure **structurellement impossible** tant que `gh issue list` renvoie >0. La deep-queue est un **bootstrap éphémère**, jamais la condition du travail.
+
 ## Incident fondateur R5/R7 — le silo qui se termine en ASK (2026-07-01, po-2025)
 
 Séquence constatée : le worker audite la tranche README de **sa seule famille**, la trouve cohérente, puis poste un `[ASK coordinator]` pour un grain frais — alors que `gh issue list --state open` offrait des dizaines de grains exécutables cross-lane (#3360 bug RL Python, #4039 gittins bi-track, #3968/#2876 cross-famille, entrées ML.Net manquantes).
@@ -183,13 +191,21 @@ Mesure du 2026-08-20 sur les 140 ouvertes : **91 avaient bougé dans les 24 h**,
 
 ## Umbrella #11900 — récits mesurés et sémantique complète de l'organe
 
-Déporté depuis la règle (tranche #15204, 2026-10-06 ; source : lignes 36, 40, 54-58 de `.claude/rules/proactive-coordination.md` avant déport). La règle garde la prescription HARD, les trois surfaces et la commande de l'organe.
+Déporté depuis la règle (tranche #15204, 2026-10-06 ; source : lignes 36, 40, 54-58 de `.claude/rules/proactive-coordination.md` avant déport ; complété le 2026-10-30 par la ligne 3 de la phase 3 de #11554 : les trois surfaces, « ce que l'organe ne dit pas » et la réparation d'un body périmé ont suivi). La règle garde la prescription HARD et la commande de l'organe ; les trois surfaces y restent nommées.
 
 **Deux récits fondateurs.** (a) Deux tirages consécutifs ont remonté deux EPICs entièrement actionnables dont le paragraphe bloquant avait survécu à sa propre résolution (PR déjà mergée ; décision déjà prise par le user le jour même). (b) #2874 et #7357 : les deux conditions bloquantes étaient levées depuis **68 j et 31 j** (tableau complet : [picker-delaisse-detail.md](picker-delaisse-detail.md)).
+
+**Trois surfaces mentent vite, et deux sont décidables mécaniquement** (déportées de la règle, où elles restent nommées sans leur développement) :
+
+1. **un numéro de contenu** (`#N`) → l'organe résout son type et son état. Une EPIC dont **tous** les enfants cités sont CLOSED n'a plus rien à piocher : le picker a offert un **conteneur**, pas un grain ;
+2. **un chemin de fichier** → vérifié contre l'arbre de travail (`find`, **jamais** `ls` : un `ls` sur un chemin périmé rend vide, et « rien trouvé » y est indiscernable de « pas regardé ») ;
+3. **une demande de décision** → **non automatisable** : `gh issue view N --json comments`, la réponse est souvent le premier commentaire.
 
 **Sémantique complète de `check_umbrella_freshness.py`.** `SATURATED` (tous les enfants cités sont fermés) est le **seul** verdict qui prend la sortie **1** — c'est la seule lecture non ambiguë. Un chemin cité introuvable sort en **avertissement**, jamais en rouge : il a pu légitimement déménager. `UNRESOLVED` (aucun enfant cité) reste **advisory** et renvoie à la surface 3 (la demande de décision, non automatisable).
 
 **Résiduel `INTRINSIC` sous `FRESH` (mesure du 2026-09-15).** Les 8 `sorry` distincts de `knot_lean`, que #1453 désigne comme « le grain DEEP de cet EPIC », portent chacun, dans le fichier, l'annotation qui les déclare hors d'atteinte (`decades` away / *not in Mathlib*). Une EPIC `FRESH` peut n'avoir que du résiduel de ce type : la lecture du contenu reste due au-delà du verdict de l'organe.
+
+**Réparation d'un body périmé** (protocole déporté de la règle, qui le garde en une phrase) : préfixer d'un bloc `> Etat mesure au <date>` (« ce que le body dit » / « ce qui est mesuré », préconditions et leur état, ce qu'une lane peut faire), **conserver l'historique intact en dessous**, écrire la **portée** de ce qui n'a pas été vérifié. Jamais de réécriture en place : le lecteur suivant doit voir ce qui a changé.
 
 ## L721 — stale-tracker guard (leçon complète)
 

@@ -278,6 +278,15 @@ class Starvation:
     budget_unread: list[tuple[str, int, float]] = field(default_factory=list)
     in_progress_unread: int = 0
     listing_failed: set[str] = field(default_factory=set)
+    # Runs ecartes PAR LE FILTRE DE CHEMIN (jamais lus, jamais comptes) :
+    # ils ne peuvent pas porter un job du label mesure. Le compte est une
+    # information, pas une borne -- rien n'a ete perdu, ces runs n'etaient
+    # pas concernes.
+    skipped_other_workflow: int = 0
+    # Runs dont le `path` est absent : ils sont LUS (une expression sans
+    # chemin ne peut pas etre ecartee sans risque de cacher une
+    # affamescence), et comptes a part.
+    unknown_path_reads: int = 0
 
     @property
     def complete(self) -> bool:
@@ -421,6 +430,26 @@ def _collect_window(
     return out
 
 
+def _path_scope(run: dict, local_paths: set[str] | None) -> str:
+    """Le run peut-il porter un job du label mesure ?
+
+    ``local_paths`` a `None` = aucun filtre (comportement d'avant : tous les
+    runs sont lus). Sinon, seul un run dont le ``run.path`` figure dans la
+    liste est lu : les runs des workflows qui ne peuvent PAS porter un job
+    du label consomment alors AUCUNE lecture du budget.
+
+    Un ``path`` absent rend le run **INCONNU** : il est lu. Ecarter un run
+    sans chemin serait une perte de visibilite silencieuse sur une
+    affamescence locale -- le piege exact que ce filtre combat.
+    """
+    if local_paths is None:
+        return "all"
+    path = run.get("path")
+    if not isinstance(path, str) or not path:
+        return "unknown"
+    return "in" if path in local_paths else "out"
+
+
 def fetch_starvation(
     repo: str,
     label: str,
@@ -430,6 +459,7 @@ def fetch_starvation(
     workflow: str | None = None,
     job_read_budget: int = DEFAULT_JOB_READ_BUDGET,
     in_progress_sample: int = DEFAULT_IN_PROGRESS_SAMPLE,
+    local_paths: set[str] | None = None,
 ) -> Starvation:
     """Classe les jobs du label : affames (queued > seuil) et en cours.
 
@@ -526,10 +556,19 @@ def fetch_starvation(
         if age <= starve_minutes:
             result.skipped_young += 1
             continue
+        scope = _path_scope(run, local_paths)
+        if scope == "out":
+            # Run d'un workflow qui ne peut pas porter un job du label :
+            # ecarte SANS lecture -- il ne consomme pas le budget, et son
+            # exclusion ne retire rien a la mesure.
+            result.skipped_other_workflow += 1
+            continue
         if result.job_reads >= job_read_budget:
             result.budget_unread.append(
                 (run.get("name", "?"), run.get("run_number", 0), age))
             continue
+        if scope == "unknown":
+            result.unknown_path_reads += 1
         absorb(run, "queued", created)
 
     # --- Passe 2 : in_progress. Le predicat n'a besoin que de l'EXISTENCE d'un
@@ -538,9 +577,21 @@ def fetch_starvation(
     # plus ancien. Au-dela de l'echantillon, on ne lit plus (#22215).
     in_progress_runs = _collect_window(repo, "in_progress", window_max_minutes,
                                        now, workflow, result, seen_runs)
+    # Meme filtre qu'en passe 1 : l'echantillon de runs en cours doit porter
+    # sur des runs qui PEUVENT porter un job du label, sinon il est consomme
+    # par des runs sans rapport et la lecture locale se tronque aussi.
+    scoped_in_progress: list[dict] = []
+    for run in in_progress_runs:
+        scope = _path_scope(run, local_paths)
+        if scope == "out":
+            result.skipped_other_workflow += 1
+            continue
+        if scope == "unknown":
+            result.unknown_path_reads += 1
+        scoped_in_progress.append(run)
     sample = min(max(in_progress_sample, 0),
                  max(job_read_budget - result.job_reads, 0))
-    for idx, run in enumerate(in_progress_runs):
+    for idx, run in enumerate(scoped_in_progress):
         created = _parse_iso(run.get("created_at"))
         if created is None:
             continue

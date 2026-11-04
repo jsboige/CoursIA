@@ -1,0 +1,24 @@
+name: 'Heal the warm work tree'
+description: >
+  Soin de l'arbre chaud, insere AVANT le `actions/checkout` a sparse-checkout
+  des workflows du pool persistant (#23287). Extrait de 14 occurrences
+  byte-identiques reparties sur 12 workflows : une correction demandait jusqu'ici
+  douze editions synchrones, sans aucun controle detectant une treizieme copie
+  divergente.
+
+  Pourquoi une reference DISTANTE et non `uses: ./...` : l'appel tourne avant
+  `actions/checkout`, donc `.github/actions/` n'est pas encore dans l'espace de
+  travail -- absent sur un pool froid, porteur de l'arbre du job precedent sur un
+  pool chaud. Une action locale est structurellement impossible a cet endroit.
+
+  Le corps du bloc vit dans `heal_worktree.sh`, extrait des workflows sans
+  reecriture (`19b2163f6cc3`) : ce qui change est l'endroit ou il vit, pas ce
+  qu'il fait. Le controle positif local est
+  `scripts/tests/test_heal_worktree_action.py`.
+
+runs:
+  using: composite
+  steps:
+    - name: Restore the warm work tree before the sparse checkout
+      shell: bash
+      run: bash "${{ github.action_path }}/heal_worktree.sh"

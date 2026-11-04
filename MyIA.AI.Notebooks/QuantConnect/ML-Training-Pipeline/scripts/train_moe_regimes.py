@@ -430,6 +430,21 @@ def train_moe_regimes_walk_forward(
         dir_acc = float(np.mean((oos_preds > 0) == (y_test > 0)))
         mse = float(np.mean((oos_preds - y_test) ** 2))
 
+        # Per-observation squared errors (full precision): the paired series
+        # that lets two runs differing only by regime_decode be compared with
+        # a Diebold-Mariano test on a precision loss (#21054 case 4, regle C).
+        oos_sq_errors = ((oos_preds - y_test) ** 2).tolist()
+
+        # Biais OOS signe (demande de changements ai-01 sur #23171, point 3).
+        # mean(e) = mean(pred - y) est la composante directionnelle de la perte
+        # que le MSE seul ne separe pas : un bras peut "gagner" au DM en
+        # precision tout en portant un biais plus fort. Le signe n'est pas
+        # reconstituable depuis oos_sq_errors, d'ou les scalaires ci-dessous.
+        # `sign_bias` place le MoE dans le meme espace que la baseline majorite
+        # (qui predit une CLASSE, pas une valeur) : sign(pred) - sign(y).
+        signed_bias = float(np.mean(oos_preds - y_test))
+        sign_bias = float(np.mean(np.sign(oos_preds) - np.sign(y_test)))
+
         fold_results.append({
             "fold": fold,
             "train_end": train_end,
@@ -440,6 +455,12 @@ def train_moe_regimes_walk_forward(
             "expert_regimes": list(experts.keys()),
             "expert_stats": expert_stats,
             "regime_pred_counts": regime_pred_counts,
+            "oos_sq_errors": oos_sq_errors,
+            "mean_target": round(float(np.mean(y_test)), 10),
+            "mean_pred": round(float(np.mean(oos_preds)), 10),
+            "signed_bias": round(signed_bias, 10),
+            "sign_bias": round(sign_bias, 10),
+            "sign_target_mean": round(float(np.mean(np.sign(y_test))), 10),
         })
 
         log.info(
@@ -476,14 +497,33 @@ def train_moe_regimes_pipeline(
     end: str = "2025-01-01",
     output_dir: str | None = None,
     raw_data: pd.DataFrame | None = None,
+    regime_decode: str = "viterbi",
+    regime_lookback: int = 400,
+    regime_n_states: int = 3,
 ) -> dict:
     """Run full MoE-DL training pipeline.
 
     Returns dict with walk-forward results, baseline comparison, config.
+
+    ``regime_decode`` selects the HMM label decode (``regime_method="hmm"``
+    only): "viterbi" (default, retrospective -- the label at t depends on
+    observations after t) or "filter" (forward-only, causal). The default is
+    unchanged so existing datasets/results stay reproducible (#21054 case 4,
+    same opt-in pattern as build_dataset_v2 -- #22557).
+
+    ``regime_lookback``/``regime_n_states`` expose the detector window and
+    state count. CAUTION: the default ``lookback=400`` means the detector
+    labels only the LAST 400 days and pads the rest with state 0 -- on a
+    multi-year walk-forward most folds then train and route on padding
+    (measured on SPY 2015-2024: 83% of labels are padding). Pass
+    ``regime_lookback >= len(series)`` to label the full span.
     """
     import torch
 
     np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
     t0 = time.time()
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -511,11 +551,19 @@ def train_moe_regimes_pipeline(
     log.info(f"Sequences: {len(X)} samples, shape={X.shape}")
 
     # Regime detection on aligned price series
-    # CAUTION (#21054): default HMM decode is Viterbi = retrospective;
-    # for regime-routed MoE evaluated walk-forward, decode_mode="filter"
-    # (via method="hmm" kwargs) gives causal labels.
+    # #21054 case 4: the labels are decoded in ONE pass over the full series,
+    # so with regime_method="hmm" the default Viterbi decode leaks future
+    # observations into BOTH the expert training slices and the test-slice
+    # routing. regime_decode="filter" (forward-only) makes every label a
+    # function of observations up to t only.
     aligned_prices = raw["Close"].iloc[lookback:lookback + len(y)]
-    regime_series = detect_regimes(aligned_prices, method=regime_method)
+    if regime_method == "hmm":
+        regime_series = detect_regimes(
+            aligned_prices, method=regime_method, decode_mode=regime_decode,
+            lookback=regime_lookback, n_states=regime_n_states,
+        )
+    else:
+        regime_series = detect_regimes(aligned_prices, method=regime_method)
 
     # Align regime labels to sequences (trim first seq_len labels)
     regime_labels = regime_series.iloc[-len(y):].values
@@ -557,6 +605,19 @@ def train_moe_regimes_pipeline(
         "symbol": symbol,
         "expert_type": expert_type,
         "regime_method": regime_method,
+        "regime_decode": regime_decode if regime_method == "hmm" else "n/a",
+        "regime_decode_causal": (
+            regime_decode == "filter" if regime_method == "hmm" else True
+        ),
+        "regime_lookback": regime_lookback if regime_method == "hmm" else None,
+        "regime_n_states": regime_n_states if regime_method == "hmm" else None,
+        "lookahead_note": (
+            "HMM labels decoded one-pass over the full series; viterbi is "
+            "retrospective (label at t sees observations after t), filter is "
+            "forward-only/causal (#21054)."
+            if regime_method == "hmm" else
+            "price-based regime labels are causal by construction."
+        ),
         "device": device,
         "data_hash": data_hash[:12],
         "n_folds": len(wf_results),
@@ -656,6 +717,7 @@ def run_multiseed(
         "per_seed_diraccs": [r["moe_mean_diracc"] for r in all_results],
         "expert_type": kwargs.get("expert_type", "lstm"),
         "regime_method": kwargs.get("regime_method", "price"),
+        "regime_decode": kwargs.get("regime_decode", "viterbi"),
         "symbol": kwargs.get("symbol", "SPY"),
     }
 
@@ -707,6 +769,26 @@ def main():
         "--regime-method", default="price", choices=["price", "hmm"],
         help="Regime detection method",
     )
+    parser.add_argument(
+        "--regime-decode", default="viterbi", choices=["viterbi", "filter"],
+        help=(
+            "HMM label decode (regime-method=hmm only): 'viterbi' = "
+            "retrospective (default, reproducibility of existing results), "
+            "'filter' = forward-only causal decode (#21054)."
+        ),
+    )
+    parser.add_argument(
+        "--regime-lookback", type=int, default=400,
+        help=(
+            "HMM detector window in days (regime-method=hmm only). Default "
+            "400 labels only the last 400 days (rest padded with state 0); "
+            "pass >= series length to label the full span (#21054 case 4)."
+        ),
+    )
+    parser.add_argument(
+        "--regime-n-states", type=int, default=3,
+        help="HMM state count (regime-method=hmm only).",
+    )
     parser.add_argument("--hidden-size", type=int, default=128)
     parser.add_argument("--num-layers", type=int, default=2)
     parser.add_argument("--nhead", type=int, default=4, help="Transformer heads")
@@ -745,6 +827,9 @@ def main():
         symbol=args.symbol,
         data_dir=args.data_dir,
         regime_method=args.regime_method,
+        regime_decode=args.regime_decode,
+        regime_lookback=args.regime_lookback,
+        regime_n_states=args.regime_n_states,
         expert_type=args.expert,
         hidden_size=args.hidden_size,
         num_layers=args.num_layers,

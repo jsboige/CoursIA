@@ -99,6 +99,12 @@ def extract_paths(body: str) -> list[str]:
         candidate = match.group(1)
         if "*" in candidate or "{" in candidate:
             continue
+        # Citation abregee (`docs/archive/.../phase-12a/scripts/`) : le corps
+        # tronque volontairement le chemin, il n'y a rien a confronter a
+        # l'arbre. Le compter comme absent serait un deuxieme faux positif de
+        # la meme famille que celui du prefixe de serie (#10643).
+        if "..." in candidate:
+            continue
         if not candidate.endswith("/") and not EXT_RE.search(candidate):
             continue
         if candidate not in found:
@@ -171,7 +177,8 @@ def declares_parent(child_body: str, parent_number: int) -> bool:
 
 def classify(refs: list[dict], missing_paths: list[str],
              child_flags: dict[int, bool | None] | None = None,
-             child_directions: dict[int, str] | None = None) -> dict:
+             child_directions: dict[int, str] | None = None,
+             path_hints: dict[str, str] | None = None) -> dict:
     """Apply the verdict rules. Pure: the caller supplies measured states.
 
     `child_flags` maps the number of an OPEN referenced issue to the measured
@@ -187,12 +194,20 @@ def classify(refs: list[dict], missing_paths: list[str],
     parent). Les deux sont des filiations reelles : le rapport ne doit pas
     pretendre que la reference est un enfant quand c'est l'inverse qui est
     mesure (revue Hermes sur #21792, cas #20233).
+
+    `path_hints` (optionnel) fait passer un chemin absent de « introuvable » a
+    « introuvable ici, present sous <candidat> » (#24286). Il ne change AUCUNE
+    regle de presence : `missing_paths` reste calcule par `resolve_cited_path`,
+    dont l'arbitrage est fige par test. Sans hints, le message est celui
+    d'avant, a l'octet.
     """
     issues = [r for r in refs if r["kind"] == "issue"]
     open_issues = [r for r in issues if r["state"] == "OPEN"]
 
     warnings = [
         f"cited path not found in the working tree: {path}"
+        + (f" -- present sous {path_hints[path]}"
+           if path_hints and path in path_hints else "")
         for path in missing_paths
     ]
 
@@ -332,20 +347,127 @@ def _gh_json(args: list[str]) -> dict | None:
         return None
 
 
+#: Racine des series de carnets, prefixe implicite des chemins cites par les
+#: corps d'EPIC (`GameTheory/...` y designe `MyIA.AI.Notebooks/GameTheory/...`).
+NOTEBOOKS_SUBDIR = "MyIA.AI.Notebooks"
+
+
+def resolve_cited_path(path: str, repo_root: Path) -> Path:
+    """Resout un chemin cite comme les corps d'EPIC l'ecrivent reellement.
+
+    Un corps cite une serie en forme **serie-relative** bien plus souvent qu'en
+    forme repo-relative : `GameTheory/scripts/setup_lean4_kernel.ps1` pour
+    `MyIA.AI.Notebooks/GameTheory/scripts/setup_lean4_kernel.ps1`. Resoudre
+    depuis la seule racine du depot rend alors un fichier **vivant** comme
+    absent : mesure du 2026-10-29 sur #10643, **6 faux « path not found » sur
+    10 avertissements**, dont une lane a tire un constat publie « 3 chemins
+    cites n'existent plus » alors que les trois etaient des artefacts de
+    prefixe (les trois vraies absences etaient ailleurs : deux carnets
+    renumerotes et un script supprime).
+
+    La forme repo-relative **gagne** quand elle existe, pour qu'un chemin qui
+    vit reellement a la racine ne soit jamais prefixe a tort.
+
+    Ce choix a un **revers assume** : une citation qui visait la racine, dont
+    le fichier a ete supprime alors qu'un **homonyme** survit sous les series,
+    est declaree presente -- et symetriquement, une citation vouee aux series
+    peut etre satisfaite par un homonyme a la racine. Le cout est une
+    **sous-declaration d'avertissement**, jamais un faux rouge :
+    `missing_paths` n'alimente que `warnings`, le code de sortie restant
+    reserve a `SATURATED`. L'arbitrage est fige par
+    `test_missing_paths_accepts_a_series_homonym_when_the_root_path_is_gone`.
+
+    Meme regle que `scripts/notebook_tools/extract_readme_figures.py` ->
+    `resolve_repo_path` (organ-first : ce helper est un module CLI qui importe
+    nbformat/PIL ; la regle de trois lignes est redite ici plutot que de tirer
+    ses dependances dans une garde CI).
+    """
+    stripped = path.rstrip("/")
+    direct = repo_root / stripped
+    if direct.exists():
+        return direct
+    prefixed = repo_root / NOTEBOOKS_SUBDIR / stripped
+    if prefixed.exists():
+        return prefixed
+    return direct
+
+
 def missing_paths(cited: list[str], repo_root: Path) -> list[str]:
     absent: list[str] = []
     for path in cited:
-        target = repo_root / path.rstrip("/")
-        if not target.exists():
+        if not resolve_cited_path(path, repo_root).exists():
             absent.append(path)
     return absent
+
+
+def resolution_hints(absent: list[str], repo_root: Path) -> dict[str, str]:
+    """Pour chaque chemin absent, un candidat REELLEMENT suivi par git.
+
+    Un umbrella cite souvent ses chemins **relativement a la racine de sa
+    sous-serie** : `#19309` cite `ict/active_inference.py`, qui vit sous
+    `MyIA.AI.Notebooks/IIT/ICT-Series/`. `resolve_cited_path` ne tente que la
+    racine du depot puis `NOTEBOOKS_SUBDIR`, donc ce troisieme cas rend
+    « not found » sur un fichier present (#24286).
+
+    Ce helper ne touche PAS la regle de presence -- l'arbitrage de
+    `resolve_cited_path` reste fige par test. Il rend seulement le message
+    **actionnable** en nommant le fichier trouve par suffixe. Best-effort :
+    toute panne de git rend un dict vide, et l'avertissement reste celui
+    d'avant.
+    """
+    if not absent:
+        return {}
+    try:
+        completed = subprocess.run(
+            ["git", "-C", str(repo_root), "ls-files"],
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            timeout=60, check=False,
+        )
+    except (OSError, subprocess.SubprocessError):  # noqa: BLE001 - best-effort
+        return {}
+    if completed.returncode != 0:
+        return {}
+    tracked = [
+        line.strip().replace("\\", "/")
+        for line in completed.stdout.splitlines()
+        if line.strip()
+    ]
+    hints: dict[str, str] = {}
+    for path in absent:
+        needle = "/" + path.rstrip("/").replace("\\", "/")
+        matches = sorted(item for item in tracked if item.endswith(needle))
+        if matches:
+            hints[path] = matches[0]
+    return hints
 
 
 def assess(number: int, repo_root: Path, repo: str) -> dict:
     payload = _gh_json(["api", f"repos/{repo}/issues/{number}"])
     if payload is None:
-        return {"number": number, "verdict": "unknown", "warning":
-                "gh unavailable or request failed", "refs": [], "warnings": []}
+        # Meme FORME que la sortie nominale : un consommateur ne doit pas
+        # avoir a connaitre deux contrats. Mesure #23406 (2026-10-30) :
+        # cette branche rendait cinq cles la ou `render_text` en lisait deux
+        # de plus (`title`, `reason`) -- l'organe mourait sur un KeyError au
+        # moment precis ou son verdict advisory manquait le plus (quota REST
+        # partage epuise, lecture en echec).
+        return {
+            "number": number,
+            "title": "",
+            "verdict": "unknown",
+            "reason": (
+                "la lecture GitHub a echoue (reseau, 403, payload illisible) "
+                "-- etat de l'umbrella INCONNU, ni « libre » : ce n'est ni un "
+                "SATURATED mesure ni un UNRESOLVED metier"
+            ),
+            "warning": "gh unavailable or request failed",
+            "refs": [],
+            "warnings": [],
+            "child_issues": 0,
+            "child_open": 0,
+            "child_flags": {},
+            "child_directions": {},
+            "cited_paths": [],
+        }
 
     body = payload.get("body") or ""
     numbers = extract_refs(body, number)
@@ -383,8 +505,10 @@ def assess(number: int, repo_root: Path, repo: str) -> dict:
         child_flags[ref["number"]] = by_child or by_umbrella
 
     cited = extract_paths(body)
-    result = classify(refs, missing_paths(cited, repo_root), child_flags,
-                      child_directions)
+    absent = missing_paths(cited, repo_root)
+    result = classify(refs, absent, child_flags,
+                      child_directions,
+                      path_hints=resolution_hints(absent, repo_root))
     result["number"] = number
     result["title"] = payload.get("title") or ""
     result["refs"] = refs
@@ -395,8 +519,15 @@ def assess(number: int, repo_root: Path, repo: str) -> dict:
 
 
 def render_text(result: dict) -> str:
-    lines = [f"#{result['number']}  {result['title']}"]
-    lines.append(f"  verdict: {result['verdict']} -- {result['reason']}")
+    # Lecture DEFENSIVE : un chemin de retour qui oublie une cle ne doit pas
+    # tuer le rendu. Mesure #23406 (2026-10-30) : la branche « lecture en
+    # echec » omettait `title` et `reason`, et `main()` imprimait le rendu
+    # AVANT d'emettre l'avertissement qu'il portait -- l'organe se taisait
+    # exactement quand il devait parler.
+    lines = [f"#{result.get('number', '?')}  {result.get('title') or ''}".rstrip()]
+    lines.append(
+        f"  verdict: {result.get('verdict', '?')} -- "
+        f"{result.get('reason') or ''}".rstrip())
     flags = result.get("child_flags") or {}
     directions = result.get("child_directions") or {}
     for ref in result.get("refs", []):

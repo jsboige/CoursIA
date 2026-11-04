@@ -97,14 +97,13 @@ slides/
     render_deck.py           # Capture Playwright slide-par-slide (1440x900, headless)
     extract_animations.py    # Extracteur d'animations PPTX -> JSON (reconstruit v-click Slidev)
     slide_inventory.py       # Inventaire batch de presentations etudiantes (.pptx/.pdf/.odp)
-  analysis/                  # Rapports audits visuels cross-deck
   XX-nom-du-deck/
     slides.md                # Source Slidev (livrable principal, commite)
     images/                  # Images referencees par slides.md (commite)
     pptx-reference/          # Renders PNG du PPTX d'origine pour audit visuel (commite)
-    analysis/                # Audits PPTX<->Slidev, mapping, vision compare
-      mapping-YYYYMMDD.md
-      visual-audit-deckNN.md
+    analysis/                # Sortie des audits (mapping, visual-audit) :
+                             # regeneree a la demande par slide-analyzer, non
+                             # commitee (vague 2026-04/05 retiree, #11508 L6)
     public/                  # Assets statiques Slidev (optionnel)
 ```
 
@@ -189,7 +188,7 @@ Images pleine-largeur : layout `image-overlay` avec texte par-dessus, **JAMAIS**
 
 **Cause amont**, ni Slidev ni le theme : depuis `magic-string` **1.4.3** (publiee le 2026-10-05), `@unocss/transformer-directives` reecrit en double, en fin de fichier, les declarations qu'il a inserees quand le fichier contient aussi une regle vide a nettoyer (unocss/unocss#5373, correctif propose #5375 ; cote Slidev slidevjs/slidev#2768).
 
-**Reparation** : l'override `"magic-string@^1": "1.4.2"` dans `slides/package.json`. Le contournement anterieur (`build.cssMinify: false` dans un `vite.config.ts` du theme, #19981) a ete retire avec le fichier : il desactivait la minification de tout le site construit pour masquer une dependance fautive. A retirer quand une version d'UnoCSS portant le correctif de #5375 sera publiee et tiree par Slidev (suivi dans #20051).
+**Reparation** : le correctif amont unocss/unocss#5375 (`overwrite()` au lieu de `update()`) est paru dans UnoCSS **66.11.0** (publiee le 2026-10-12), tiree par le lockfile depuis le retrait de l'override -- `magic-string` resout de nouveau en 1.4.3 sans casser le build. Historique des parades : `build.cssMinify: false` dans un `vite.config.ts` du theme (#19981, retire avec le fichier : il desactivait la minification de tout le site construit pour masquer une dependance fautive), puis l'override `"magic-string@^1": "1.4.2"` dans `slides/package.json` (#20060), retire quand le correctif est arrive (suivi dans #20051). Le defect revient si une version d'UnoCSS anterieure a 66.11.0 reentre dans l'arbre : symptome et tickets ci-dessus.
 
 **Ou vit un `vite.config.*`** : Slidev ne lit un `vite.config.*` que dans ses **racines** (le theme, les addons, la racine du deck) -- un `slides/vite.config.ts` serait **ignore**. Une configuration destinee aux 19 decks vit donc dans le theme (`theme-ia101/`), jamais a la racine de `slides/`.
 

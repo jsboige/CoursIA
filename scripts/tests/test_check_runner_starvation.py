@@ -691,6 +691,109 @@ def test_evaluate_wires_host_loss_warnings():
     assert any("POOL LOSS" in w and "ai-01-wsl" in w for w in v.warnings)
 
 
+# --- RESOLUTION DU CONFLIT (main <- PR #23148) --------------------------
+# Les deux sides sont ADDITIFS : le side PR porte le « FILTRE DE CHEMIN
+# (#22937 phase A) », le side main porte la « PORTE DE MESURE (#22937) ».
+# Aucun nom de niveau module en collision (LOCAL_PATH / HOSTED_PATH /
+# _path_run d'un cote, 8 tests de l'autre) -> l'union conservee, rien
+# masque.
+# --- FILTRE DE CHEMIN (#22937 phase A) ------------------------------------
+#
+# La lecture locale du controleur de debordement ne doit pas consommer son
+# budget de lectures sur des runs qui ne peuvent pas porter un job du label
+# : sous saturation de l'offre hebergee, ce sont justement les runs anciens
+# de la file, tous en attente d'`ubuntu-latest` (mesure du coordinateur,
+# 2026-10-28 16:55Z : 67 run(s) non lu(s), budget 120 atteint).
+
+LOCAL_PATH = ".github/workflows/guard-local.yml"
+HOSTED_PATH = ".github/workflows/guard-heberge.yml"
+
+
+def _path_run(rid: int, path: str | None, created: datetime) -> dict:
+    row = {"id": rid, "name": "Guard", "run_number": rid,
+           "created_at": created.isoformat()}
+    if path is not None:
+        row["path"] = path
+    return row
+
+
+def test_les_runs_hors_perimetre_ne_consomment_pas_le_budget(monkeypatch):
+    now = datetime(2026, 10, 28, 16, 55, tzinfo=timezone.utc)
+    created = now - timedelta(minutes=63)
+    job_reads: list[str] = []
+
+    def fake_gh(args: list[str], token: str | None = None, stats=None):
+        if "status=queued" in args[0]:
+            # Une seule page : au-dela, la liste est vide (le listing est
+            # pagine, le fake ne doit pas repeter la meme page 20 fois).
+            if args[0].endswith("page=1"):
+                return {"workflow_runs": [
+                    _path_run(2000 + i, HOSTED_PATH, created) for i in range(250)]}
+            return {"workflow_runs": []}
+        if "status=in_progress" in args[0]:
+            return {"workflow_runs": []}
+        if "/jobs" in args[0]:
+            job_reads.append(args[0])
+            return {"jobs": []}
+        return None
+
+    monkeypatch.setattr(rs, "_gh_json", fake_gh)
+    st = rs.fetch_starvation("jsboige/CoursIA", "coursia-linux", 15.0, now=now,
+                             job_read_budget=120, local_paths={LOCAL_PATH})
+    assert st.job_reads == 0
+    assert st.truncated is False
+    assert st.skipped_other_workflow == 250
+    assert job_reads == []
+
+
+def test_un_run_sans_path_est_lu_malgre_le_filtre(monkeypatch):
+    """Un `path` absent ne doit JAMAIS pouvoir cacher une affamescence : le
+    run est lu et compte a part."""
+    now = datetime(2026, 10, 28, 16, 55, tzinfo=timezone.utc)
+    created = now - timedelta(minutes=63)
+
+    def fake_gh(args: list[str], token: str | None = None, stats=None):
+        if "status=queued" in args[0]:
+            return {"workflow_runs": [_path_run(3001, None, created)]}
+        if "status=in_progress" in args[0]:
+            return {"workflow_runs": []}
+        if "/jobs" in args[0]:
+            return {"jobs": [
+                {"name": "guard-on-label", "status": "queued",
+                 "labels": ["self-hosted", "coursia-linux"],
+                 "created_at": created.isoformat()}]}
+        return None
+
+    monkeypatch.setattr(rs, "_gh_json", fake_gh)
+    st = rs.fetch_starvation("jsboige/CoursIA", "coursia-linux", 15.0, now=now,
+                             job_read_budget=120, local_paths={LOCAL_PATH})
+    assert st.job_reads == 1
+    assert st.unknown_path_reads == 1
+    assert len(st.starved) == 1
+
+
+def test_le_filtre_laisse_passer_le_job_local_du_perimetre(monkeypatch):
+    now = datetime(2026, 10, 28, 16, 55, tzinfo=timezone.utc)
+    created = now - timedelta(minutes=63)
+
+    def fake_gh(args: list[str], token: str | None = None, stats=None):
+        if "status=queued" in args[0]:
+            return {"workflow_runs": [_path_run(3002, LOCAL_PATH, created)]}
+        if "status=in_progress" in args[0]:
+            return {"workflow_runs": []}
+        if "/jobs" in args[0]:
+            return {"jobs": [
+                {"name": "guard-on-label", "status": "queued",
+                 "labels": ["self-hosted", "coursia-linux"],
+                 "created_at": created.isoformat()}]}
+        return None
+
+    monkeypatch.setattr(rs, "_gh_json", fake_gh)
+    st = rs.fetch_starvation("jsboige/CoursIA", "coursia-linux", 15.0, now=now,
+                             job_read_budget=120, local_paths={LOCAL_PATH})
+    assert st.skipped_other_workflow == 0
+    assert len(st.starved) == 1
+    assert st.starved[0].run_path == LOCAL_PATH
 # --- PORTE DE MESURE (#22937) ----------------------------------------------
 # Le heartbeat workflow_run declenche sur CHAQUE fin d'ancre (721 fins/24 h
 # mesurees -> 60 runs/h pour la paire d'advisories -> ~480 appels API/h sur

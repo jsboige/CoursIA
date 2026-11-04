@@ -26,6 +26,7 @@ from argumentation_lib._paths import (
     get_ontology_dir,
     get_data_dir,
     get_ext_tools_dir,
+    get_local_ext_tools_dir,
     ensure_output_dirs,
 )
 
@@ -59,9 +60,17 @@ from argumentation_lib._shared_state import (
 # -- State Manager Plugin (Semantic Kernel @kernel_function wrapper) --
 # Heavy import — requires semantic_kernel.  Use lazy pattern.
 def get_state_manager_plugin():
-    """Lazy import to avoid requiring semantic_kernel at package import."""
-    from argumentation_lib._state_manager_plugin import StateManagerPlugin
-    return StateManagerPlugin
+    """Lazy import to avoid requiring semantic_kernel at package import.
+
+    Retourne la version GARDEE du plugin (`GuardedStateManagerPlugin`,
+    #22981) : `log_query_result` n'accepte que les verdicts reellement emis
+    par le solveur propositionnel. La classe verbatim
+    `StateManagerPlugin` reste accessible pour qui veut le comportement
+    non garde (aucun usage dans le depot hors tests).
+    """
+    from argumentation_lib._guarded_state import GuardedStateManagerPlugin
+
+    return GuardedStateManagerPlugin
 
 # -- Reporting (no-op shims) --
 from argumentation_lib._reporting_noop import (
@@ -118,11 +127,26 @@ def get_delegating_selection_strategy():
 def get_taxonomy_sophism_detector():
     """Lazy import for the TaxonomySophismDetector.
 
-    Note: This module depends on `InformalAnalysisPlugin` from EPITA-IS upstream,
-    which is NOT vendored in this tranche (Semantic-Kernel coupled, 891 lines).
-    Instantiation will fail at runtime until Volet B etape 4 ports the SK shim.
-    The class symbol itself is import-safe (analysis only).
+    Historique (mesure 2026-10-31, issue #10355) : ce module levait
+    ``ModuleNotFoundError`` en deux couches empilées -- l'import relatif
+    litteral ``from .informal_definitions import ...`` du détecteur vendé
+    (le sibling sur disque s'appelle ``_informal_definitions.py``), puis les
+    imports ``argumentation_analysis.*`` de ce sibling (package amont absent
+    de l'arbre). **Résolu par #23633 (Volet B étape 4)** : cet accesseur
+    installe d'abord le shim runtime
+    (:func:`argumentation_lib._epita_vendor_shim.install_informal_runtime_shim`)
+    qui registre les 3 helpers amont vendés byte-identiques
+    (``_file_loaders``/``_taxonomy_loader``/``_epita_paths``, commit épinglé
+    a8025f60) sous leurs noms amont + les alias siblings ``prompts`` et
+    ``informal_definitions``.
+
+    Prérequis mesuré : ``semantic_kernel`` au niveau module (requis par le
+    corps de ``_informal_definitions``) -- absent => l'erreur remonte
+    honnêtement (comportement CI sans requirements de série ; localement,
+    règle F : installer).
     """
+    from argumentation_lib._epita_vendor_shim import install_informal_runtime_shim
+    install_informal_runtime_shim()
     from argumentation_lib._taxonomy_sophism_detector import (
         TaxonomySophismDetector,
         create_unified_detector,
@@ -142,18 +166,19 @@ def get_informal_definitions_symbols():
         (InformalAnalysisPlugin, IdentifiedFallacy, FallacyAnalysisResult,
          setup_informal_kernel, INFORMAL_AGENT_INSTRUCTIONS)
 
-    Note (G.9 honest caveat): the upstream module imports
-    `semantic_kernel`, `pandas`, `pydantic`, `requests` and three
-    EPITA-internal helpers (`load_csv_file`, `get_taxonomy_path`,
-    `DATA_DIR`) that are NOT vendored in `argumentation_lib/`. Even the
-    module-level `import` will raise `ModuleNotFoundError:
-    No module named 'argumentation_analysis'` today -- this lazy
-    accessor exists for completeness with C184's accessor pattern, but
-    C185 realizes it does not bypass the top-level imports. Runtime
-    usability awaits Volet B etape 4 (TweetyBridge shim JPype).
-    The verbatim copy is preserved here for the future shim that will
-    re-export its public symbols.
+    Note (G.9, historique avant #23633) : le module amont importe
+    `semantic_kernel`, `pandas`, `pydantic`, `requests` et trois helpers
+    internes EPITA (`load_csv_file`, `get_taxonomy_path`, `DATA_DIR`)
+    absents de `argumentation_lib/` -- l'import levait
+    `ModuleNotFoundError: No module named 'argumentation_analysis'`.
+    **Résolu par #23633 (Volet B étape 4)** : cet accesseur installe le
+    shim runtime (`install_informal_runtime_shim`), qui vendé les 3
+    helpers au commit épinglé a8025f60 (NOTICE-EPITA) et les registre
+    sous leurs noms amont + l'alias sibling `prompts`. Seul
+    `semantic_kernel` reste un prérequis d'environnement (règle F).
     """
+    from argumentation_lib._epita_vendor_shim import install_informal_runtime_shim
+    install_informal_runtime_shim()
     from argumentation_lib._informal_definitions import (
         InformalAnalysisPlugin,
         IdentifiedFallacy,
@@ -192,6 +217,35 @@ def get_pl_handler_symbol():
     """
     from argumentation_lib._pl_handler import PLHandler
     return PLHandler
+
+
+# -- Solveur propositionnel expose aux agents (#22981) --
+def get_pl_reasoner_symbol():
+    """Lazy import du plugin de solveur propositionnel (Tweety, via JPype).
+
+    Différence avec `get_pl_handler_symbol` : cet accessor est
+    OPERATIONNEL. `PLHandler` vient de l'amont et n'est pas importable dans
+    ce checkout ; `_pl_reasoner.PLReasonerPlugin` expose en revanche le VRAI
+    solveur (`SimplePlReasoner`, déjà utilisé par
+    `Argumentation-05-Formal-Verification-Python.ipynb`) sous forme de plugin
+    Semantic Kernel — c'est le seul chemin d'obtention d'un verdict de
+    moteur dans la phase formelle (#22981).
+    """
+    from argumentation_lib._pl_reasoner import PLReasonerPlugin
+
+    return PLReasonerPlugin
+
+
+def get_verdict_registry_symbol():
+    """Lazy import du registre des verdicts moteur (#22981).
+
+    Le registre est ce qui distingue un verdict REELLEMENT emis par le
+    solveur d'une phrase libre : la garde de `log_query_result` n'accepte
+    que les verdicts qu'il contient.
+    """
+    from argumentation_lib._pl_verdict import VerdictRegistry, registry_for
+
+    return VerdictRegistry, registry_for
 
 
 # -- FOL Handler (JPype singleton, SK-coupled upstream, prover9_runner dep) --
@@ -522,7 +576,7 @@ __all__ = [
     # paths
     "LIB_DIR", "ARGUMENT_ANALYSIS_DIR", "SYMBOLIC_AI_DIR",
     "get_tweety_jar_dir", "get_ontology_dir", "get_data_dir",
-    "get_ext_tools_dir", "ensure_output_dirs",
+    "get_ext_tools_dir", "get_local_ext_tools_dir", "ensure_output_dirs",
     # jvm
     "initialize_jvm", "is_jvm_started", "shutdown_jvm",
     # state
@@ -533,6 +587,8 @@ __all__ = [
     "get_taxonomy_sophism_detector",
     "get_informal_definitions_symbols",
     "get_pl_handler_symbol",
+    "get_pl_reasoner_symbol",
+    "get_verdict_registry_symbol",
     "get_fol_handler_symbol",
     "get_modal_handler_symbol",
     "get_adf_handler_symbol",

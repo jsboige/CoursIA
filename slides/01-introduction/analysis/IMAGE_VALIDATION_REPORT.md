@@ -1,5 +1,12 @@
 # Rapport de Validation des Images - Deck 01-Introduction
 
+> **Instantané historique (2026-03-25), conservé comme artefact assumé de la migration.**
+> Ce rapport fige l'état de la comparaison PPTX/Slidev au 2026-03-25 ; ses « Actions
+> immédiates » sont celles de cette date, pas un état ouvert. Le deck a évolué depuis :
+> 38 images dans `public/images` au 2026-10-28 (trous `img_025`/`img_026`,
+> `img_040.png` toujours présent). L'état de référence est le deck lui-même ;
+> ce document se lit comme le journal de la migration (classe assumée, cf #9535 item 2).
+
 **Date**: 2026-03-25
 **Méthode**: Comparaison automatisée des noms de fichiers
 
