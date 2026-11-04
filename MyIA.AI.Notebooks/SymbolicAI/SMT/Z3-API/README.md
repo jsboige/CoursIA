@@ -38,8 +38,8 @@ L'API z3-py expose l'intégralité du solveur Z3 en Python — `Solver`, `Optimi
 | Z3-13 | §3.13.2 Unsat core (p. 90), Ch. 3 Equations | UNSAT cores, `assert_and_track` |
 | Z3-13b | §3.13.2 Unsat core (p. 90), Ch. 3 Equations | MUS (Minimal Unsatisfiable Subset) |
 | Z3-14 | §5.1 Integer overflow (p. 132), Ch. 5 Verification | Bit-vectors, overflow, `ULT`/`UGE` |
-| Z3-15 | (mapping à confirmer en R2, cf. « Ouvrages-ancrage ») | Nested arrays 2D, carré magique |
-| Z3-16 | (mapping à confirmer en R2, cf. « Ouvrages-ancrage ») | Optimize, plan hebdomadaire |
+| Z3-15 | Ch. 12 Latin squares (p. 346) + §12.4 Magic/Latin square of Knut Vik design (p. 361), Ch. 8 §8.1 Sudoku (p. 205) | Nested arrays 2D, carré magique |
+| Z3-16 | Ch. 14 §14.5 Assignment problem (p. 397) + §14.8 Packing students into a dorm (p. 405), Ch. 22 §22.8 Job Shop Scheduling/Problem (p. 633) | Optimize, plan hebdomadaire |
 | Z3-17 | §3.13 Recalculating micro-spreadsheet (p. 88), Ch. 3 | Array theory général, `Select`/`Store` |
 | Z3-18 | §8.1 Sudoku (p. 205), Ch. 8 | Sudoku modes `Array` vs `Constants` |
 
@@ -239,22 +239,23 @@ La série manipule un vocabulaire précis (SMT, tactiques, MaxSAT, théories) h�
 
 ## Ouvrages-ancrage
 
-Issue de référence : #19278. L'ouvrage-ancrage de la série est le Yurichev décrit en tête de fichier (section « Ouvrage de référence », avec l'index chapitré série ↔ livre) — la présente section y renvoie et n'en duplique pas l'entrée. La copie archivée (`G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf`) a été lue le 27/10/2026 sur ses 666 pages : les folios de l'index ci-dessus sont ancrés firsthand sur cette lecture.
+Issue de référence : #19278. L'ouvrage-ancrage de la série est le Yurichev décrit en tête de fichier (section « Ouvrage de référence », avec l'index chapitré série ↔ livre) — la présente section y renvoie et n'en duplique pas l'entrée. La copie archivée (`G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf`) a été lue le 27/10/2026 sur ses 666 pages : les folios de l'index ci-dessus sont ancrés firsthand sur cette lecture. Les lignes encore « à confirmer » — index `Z3-15`/`Z3-16` et mapping des carnets `Z3-Linq2Z3` — ont été confirmées par une nouvelle lecture de la **même copie** (PyMuPDF 1.27.2.3) : folio = index PDF − 2, numéro de section relevé sur la page elle-même, jamais dans le sommaire imprimé (les deux pagination divergent).
 
-### Mapping carnet ↔ livre (mapping de l'issue #19278 pour les carnets Z3-Linq2Z3 ; confirmation due à la tranche R2)
+### Mapping carnet ↔ livre (mapping de l'issue #19278 pour les carnets Z3-Linq2Z3 ; confirmé par lecture effective du PDF)
 
-Confirmation due à la **tranche R2 de #19278** : lecture effective des chapitres Yurichev correspondants contre les carnets `Z3-Linq2Z3`.
+Confirmation de la **tranche R2 de #19278** : lecture effective, carnet par carnet, des chapitres Yurichev correspondants contre les carnets `Z3-Linq2Z3`. La colonne « Vérification » porte la section et le folio relevés sur la page de l'ouvrage archivé.
 
-| Thème du livre | Notebook porteur | Vérification |
-|----------------|------------------|--------------|
-| Solver API, theories, modèles | série Z3-API entière | OK (la série entière relève du livre ; pas d'inventaire chapitre-par-chapitre) |
-| Array theory, Nested arrays | `Z3-Linq2Z3/04_Array_Theory`, `05_Nested_Arrays_2D` | à_confirmer (R2) |
-| Cryptarithmetic | `Z3-Linq2Z3/13_Cryptarithmetic_SMT` | à_confirmer (R2) |
-| MaxSAT / Optimize | `Z3-Linq2Z3/14_Optimize_MaxSAT` | à_confirmer (R2) |
-| Bit-vectors, overflow | `Z3-Linq2Z3/15_BitVectors_Overflow` | à_confirmer (R2) |
-| UNSAT cores | `Z3-Linq2Z3/17_UnsatCores` | à_confirmer (R2) |
-| Einstein's riddle & puzzles | `Z3-Linq2Z3/18_Einsteins_Riddle`, `02_Sudoku_Theorem_vs_Array` | à_confirmer (R2) |
-| Real arithmetic | `Z3-Linq2Z3/16_RealArithmetic` | à_confirmer (R2) |
+| Thème du livre | Notebook porteur | Section Yurichev (folio imprimé) | Vérification |
+|----------------|------------------|-----------------------------|--------------|
+| Solver API, theories, modèles | série Z3-API entière | Ch. 1 Introduction (p. 11), Ch. 2 Basics (p. 14) | OK (la série entière relève du livre ; pas d'inventaire chapitre-par-chapitre) |
+| Array theory, Nested arrays | `Z3-Linq2Z3/04_Array_Theory`, `05_Nested_Arrays_2D` | Ch. 8 §8.1 Sudoku (p. 205) + §8.1.2 Simple sudoku in SMT using functions and array (p. 212), Ch. 12 Latin squares (p. 346) + §12.4 Magic/Latin square of Knut Vik design (p. 361) | OK (section et folio relevés sur la page de l'ouvrage archivé) |
+| Cryptarithmetic | `Z3-Linq2Z3/13_Cryptarithmetic_SMT` | Ch. 8 §8.10 Alphametics (p. 276) | OK (section et folio relevés sur la page de l'ouvrage archivé) |
+| MaxSAT / Optimize | `Z3-Linq2Z3/14_Optimize_MaxSAT` | Ch. 14 MaxSAT/MaxSMT (p. 383), Ch. 10 Knapsack problems (p. 332) | OK (section et folio relevés sur la page de l'ouvrage archivé) |
+| Bit-vectors, overflow | `Z3-Linq2Z3/15_BitVectors_Overflow` | Ch. 5 §5.1 Integer overflow (p. 132) | OK (section et folio relevés sur la page de l'ouvrage archivé) |
+| UNSAT cores | `Z3-Linq2Z3/17_UnsatCores` | Ch. 3 §3.13.2 Unsat core (p. 90) + §3.13.3 Stress test (p. 92) | OK (section et folio relevés sur la page de l'ouvrage archivé) |
+| Einstein's riddle & puzzles | `Z3-Linq2Z3/18_Einsteins_Riddle`, `02_Sudoku_Theorem_vs_Array` | Ch. 8 §8.2 Zebra puzzle (p. 232) + §8.1 Sudoku (p. 205) | OK (section et folio relevés sur la page de l'ouvrage archivé) |
+| Real arithmetic | `Z3-Linq2Z3/16_RealArithmetic` | Ch. 4 Proofs (p. 106) | OK (section et folio relevés sur la page de l'ouvrage archivé) |
+| Expression rewriting (extension du DSL) | `Z3-Linq2Z3/20_Theorem_Rewriters` | Ch. 4 §4.5 Simplifying long and messy expressions using Z3 (p. 113) | OK (section et folio relevés sur la page de l'ouvrage archivé) |
 
 ## FAQ / Troubleshooting
 
