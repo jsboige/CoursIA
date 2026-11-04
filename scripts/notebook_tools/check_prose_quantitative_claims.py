@@ -295,7 +295,7 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
         ),
     ),
     ArtifactExemption(
-        path="MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/scripts/README.md",
+        path="MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/scripts/README.md",
         motif=re.compile(r"la v1 du gun, 36 cellules fausses"),
         raison=(
             "« 36 cellules » = population d'une transcription FABRIQUEE du canon "
