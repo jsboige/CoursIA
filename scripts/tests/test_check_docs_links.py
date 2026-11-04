@@ -162,7 +162,7 @@ class TestScratchSkip:
     def test_tmp_is_gitignored(self):
         """The skip list and `.gitignore` must agree on `.tmp/`.
 
-        `.tmp/` is ignored by the `*.tmp` glob (`.gitignore` line 89), not by a
+        `.tmp/` is ignored by the `*.tmp` glob (see `.gitignore`), not by a
         literal `.tmp/` line: a DIRECTORY named `.tmp` ends in `.tmp` and
         matches. Asserting git's own verdict rather than a spelling keeps the
         test honest if the pattern is ever rewritten.
@@ -175,7 +175,7 @@ class TestScratchSkip:
             ".tmp/ is no longer gitignored -- the skip would mask real content"
         )
 
-    def test_dot_tmp_file_at_root_still_scanned(self):
+    def test_dot_tmp_named_file_still_scanned(self):
         """Only the `.tmp` DIRECTORY is skipped -- not names merely containing it."""
         p = REPO_ROOT / "docs" / "notes.tmp.md"
         assert _should_skip(p) is False
