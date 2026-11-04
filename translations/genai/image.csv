@@ -23815,3 +23815,200 @@ conclusion_ex9 = None  # TODO etudiant : que faut-il exiger d'un critere de zone
 
 print(""Exercice a completer"")
 ",,,,,,,,178b799a2acd0593,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,19756c25,markdown,fr,0aedf25bd4bd780b,"## Comparaison directe : le modèle compare lui-même les deux images
+
+*Exemple guidé ajouté après la présentation de la contribution #23305, qui reste intacte : il reprend son comparateur d'images et le mesure contre une autre façon de faire.*
+
+L'exemple précédent compare **deux textes**. Le modèle ne voit qu'**une** des deux images au moment où il conclut : le troisième appel reçoit les deux analyses en prose, et seulement l'image B jointe. Tout ce que la description de l'image A a omis, déformé ou inventé passe donc dans la comparaison sans contrôle possible, et les deux images ne sont pas traitées de la même façon.
+
+Les modèles de vision acceptent **plusieurs images dans un même message** : un tableau de parties `image_url` dans `content`. Le modèle regarde alors les deux images lui-même, et il n'y a plus de description intermédiaire où l'information se perd.
+
+**Points clés** :
+- **Vérifier, ne pas supposer** : la cellule commence par un appel réel et échoue avec un message explicite si le modèle refuse deux images. Un modèle multimodal annoncé n'est pas un modèle multimodal mesuré.
+- **La mesure qui tranche** est structurelle : combien d'images l'appel de comparaison reçoit-il réellement ? La voie « descriptions » en joint **une**, la voie directe **deux**.
+- Les deux voies reçoivent **la même consigne de comparaison** ; ce qui change est ce qu'elles ont sous les yeux, pas ce qu'on leur demande.
+- Le nombre d'appels, les tokens d'entrée et le temps sont relevés pour les deux voies, sur la même paire d'images.
+- Le modèle bon marché de la liste du module suffit : la comparaison directe est **un** appel, pas trois.
+","## Direct comparison: the model compares the two images itself
+
+*Guided example added after the presentation of contribution #23305, which remains intact: it reuses its image comparator and measures it against another way of doing things.*
+
+The previous example compares **two texts**. The model sees only **one** of the two images when it concludes: the third call receives both analyses in prose, and only image B attached. Everything that the description of image A omitted, distorted or invented therefore enters the comparison with no possible check, and the two images are not treated the same way.
+
+Vision models accept **several images in a single message**: an array of `image_url` parts in `content`. The model then looks at both images itself, and there is no longer an intermediate description where information gets lost.
+
+**Key points**:
+- **Verify, do not assume**: the cell starts with a real call and fails with an explicit message if the model refuses two images. An advertised multimodal model is not a measured multimodal model.
+- **The measurement that settles it** is structural: how many images does the comparison call actually receive? The ""descriptions"" path attaches **one**, the direct path **two**.
+- Both paths receive **the same comparison instruction**; what changes is what they have in front of them, not what they are asked.
+- The number of calls, input tokens and time are recorded for both paths, on the same pair of images.
+- The cheap model from the module's list is enough: direct comparison is **one** call, not three.",,,,,,,0aedf25bd4bd780b,3a53feadc9a76fcd,,,,,,,0aedf25bd4bd780b,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,9e5172e1,code,fr,e58d895e02e93630,"# Exemple guide : le modele compare lui-meme -- un seul appel, les deux images
+# Mesure face a la version ""descriptions"" de l'exemple precedent.
+import time
+
+
+def appel_vision(parts_images, prompt, max_tokens_appel=None):
+    """"""Un appel de vision brut : renvoie le texte, l'usage et la duree.
+
+    Les quatre appels de la comparaison passent par cette meme fonction, donc
+    par des requetes identiques en tout point sauf le contenu joint : c'est ce
+    qui rend la mesure comparable d'une voie a l'autre.
+    """"""
+    payload = {
+        ""model"": model_name,
+        ""messages"": [{
+            ""role"": ""user"",
+            ""content"": [{""type"": ""text"", ""text"": prompt}] + parts_images,
+        }],
+        ""max_tokens"": max_tokens_appel or max_tokens,
+        ""temperature"": temperature,
+        ""top_p"": top_p,
+    }
+    debut = time.time()
+    response = requests.post(f""{api_base_url}/chat/completions"", headers=headers,
+                             json=payload, timeout=120)
+    duree = round(time.time() - debut, 1)
+    if response.status_code != 200:
+        try:
+            message = response.json().get(""error"", {}).get(""message"", """")
+        except ValueError:
+            message = """"
+        return {""ok"": False, ""erreur"": message or f""HTTP {response.status_code}"",
+                ""parts_images"": len(parts_images), ""secondes"": duree, ""usage"": {}}
+    data = response.json()
+    return {""ok"": True,
+            ""texte"": data[""choices""][0][""message""][""content""],
+            ""usage"": data.get(""usage"", {}),
+            ""parts_images"": len(parts_images),
+            ""secondes"": duree}
+
+
+def bilan(appels, appel_comparaison):
+    """"""Agrege ce qui est comparable entre les deux voies.""""""
+    return {
+        ""appels"": len(appels),
+        ""images_vues_a_la_comparaison"": appel_comparaison[""parts_images""],
+        ""tokens_entree"": sum(int(a[""usage""].get(""prompt_tokens"") or 0) for a in appels),
+        ""tokens_sortie"": sum(int(a[""usage""].get(""completion_tokens"") or 0) for a in appels),
+        ""secondes"": round(sum(a[""secondes""] for a in appels), 1),
+    }
+
+
+def comparer_par_descriptions(url_a, url_b, prompt_analyse, prompt_comparaison):
+    """"""Voie de l'exemple precedent : deux descriptions en texte, puis un croisement.""""""
+    image_a_part = prepare_image_for_gpt5(url_a)
+    image_b_part = prepare_image_for_gpt5(url_b)
+    analyses = {}
+    appels = []
+    for cle, part in ((""a"", image_a_part), (""b"", image_b_part)):
+        r = appel_vision([part], prompt_analyse)
+        appels.append(r)
+        if not r[""ok""]:
+            raise RuntimeError(f""analyse de l'image {cle.upper()} : {r['erreur']}"")
+        analyses[cle] = r[""texte""]
+    prompt = (f""{prompt_comparaison}\n\n""
+              f""Analyse de l'image A :\n\""\""\""{analyses['a']}\""\""\""\n\n""
+              f""Analyse de l'image B (image jointe) :\n\""\""\""{analyses['b']}\""\""\"""")
+    # Une seule image est jointe ici : c'est l'asymetrie que l'on mesure.
+    croisement = appel_vision([image_b_part], prompt)
+    appels.append(croisement)
+    if not croisement[""ok""]:
+        raise RuntimeError(f""croisement : {croisement['erreur']}"")
+    return croisement[""texte""], bilan(appels, croisement)
+
+
+def comparer_directement(urls, prompt_comparaison):
+    """"""Voie directe : toutes les images dans un seul message, aucune prose intermediaire.""""""
+    parts_images = [prepare_image_for_gpt5(u) for u in urls]
+    comparaison = appel_vision(parts_images, prompt_comparaison)
+    if not comparaison[""ok""]:
+        raise RuntimeError(f""comparaison directe : {comparaison['erreur']}"")
+    return comparaison[""texte""], bilan([comparaison], comparaison)
+
+
+# --- 1. Verifier l'acceptation du multi-images, avant de s'en servir ---------
+_parts_test = [prepare_image_for_gpt5(image_a), prepare_image_for_gpt5(image_b)]
+_sonde = appel_vision(_parts_test, ""Combien d'images distingues-tu ? Reponds par un chiffre."",
+                      max_tokens_appel=16)
+_MULTI_IMAGES_OK = _sonde[""ok""]
+if _MULTI_IMAGES_OK:
+    print(f""Multi-images accepte par {model_name} : {_sonde['parts_images']} images dans un message"")
+else:
+    print(f""Multi-images REFUSE par {model_name} : {_sonde['erreur']}"")
+    print(""Les cellules suivantes ne peuvent pas s'executer : le modele ne lit qu'une image par message."")
+
+# --- 2. La meme consigne de comparaison pour les deux voies ------------------
+prompt_comparaison = f""""""Tu compares les images jointes pour des étudiants. Réponds en {language}.
+**Ce que montre chaque image** : une puce par image, avec un détail précis (compte les éléments quand c'est possible)
+**Ce que la seconde ajoute à la première** : 2 puces
+**Verdict** : laquelle introduit le domaine à des étudiants, en 2 lignes""""""
+
+if _MULTI_IMAGES_OK:
+    verdict_descriptions, cout_descriptions = comparer_par_descriptions(
+        image_a, image_b, prompt_analyse, prompt_comparaison)
+    verdict_direct, cout_direct = comparer_directement(
+        [image_a, image_b], prompt_comparaison)
+
+    print(""\nVoie 'descriptions' (exemple precedent) :"", cout_descriptions)
+    print(""Voie directe (images jointes)            :"", cout_direct)
+    gain_calls = cout_descriptions[""appels""] - cout_direct[""appels""]
+    print(f""\nAppels economises : {gain_calls}  |  ""
+          f""images vues a la comparaison : {cout_descriptions['images_vues_a_la_comparaison']} ""
+          f""-> {cout_direct['images_vues_a_la_comparaison']}"")
+
+    print(""\n"" + ""="" * 30 + "" VOIE DESCRIPTIONS "" + ""="" * 30)
+    print(verdict_descriptions)
+    print(""\n"" + ""="" * 30 + "" VOIE DIRECTE "" + ""="" * 30)
+    print(verdict_direct)
+else:
+    verdict_descriptions, verdict_direct = None, None
+    cout_descriptions, cout_direct = None, None
+    print(""Comparaison sautee : le modele ne lit qu'une image par message."")
+",,,,,,,,e58d895e02e93630,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,9a42930a,markdown,fr,cee72a190c05e164,"### Lecture du résultat — ce que la comparaison directe change, et ce qu'elle ne change pas
+
+L'acceptation du multi-images a été **mesurée** avant usage : `openai/gpt-5` répond correctement à un message portant deux parties `image_url`. Le reste de la cellule s'appuie sur cette mesure, pas sur la réputation du modèle.
+
+Les deux voies, sur la même paire d'images et avec la même consigne de comparaison :
+
+| | voie « descriptions » | voie directe |
+|---|---|---|
+| appels | 3 | **1** |
+| images vues à la comparaison | 1 | **2** |
+| tokens d'entrée | 1 738 | **925** |
+| tokens de sortie | 3 402 | **1 371** |
+| durée | 31,8 s | **13,4 s** |
+
+Trois lectures, dans l'ordre de ce qui est solide :
+
+1. **La mesure qui tranche est structurelle, pas qualitative.** Le croisement de la voie « descriptions » reçoit **une** image : tout ce qu'il affirme sur l'image A vient d'un texte, sans recours possible. La voie directe en reçoit deux. Aucune formulation de prompt ne corrige cette asymétrie — c'est le montage qui la crée.
+2. **La voie texte paie deux fois.** Elle produit deux descriptions complètes (d'où les 3 402 tokens de sortie), puis les relit dans un troisième appel. La voie directe n'écrit qu'une réponse : moins d'appels, moins de tokens dans les deux sens, et ici trois fois moins de temps.
+3. **Ce que la voie directe voit et que le texte manque** : elle **compte** — « au moins 7 sommets enneigés » sur l'image A. Aucune des deux descriptions ne l'avait produit ; la voie texte ne pouvait donc pas le relayer. Un compte se lit sur les pixels, pas dans un résumé.
+
+Et une lecture inverse, pour ne pas surinterpréter : **les deux verdicts choisissent la même image** (la carte, B). La comparaison directe ne promet pas un meilleur verdict — elle supprime un intermédiaire où l'information peut se perdre, et l'asymétrie entre les deux images. Ce qui reste fragile dans la voie texte est ailleurs : les nombres qu'elle relaie (22 anciennes régions, 96 départements) viennent d'une seule description, et rien dans la chaîne ne les contredit ; la voie directe les lit sur la carte.
+
+Coût de la section : cinq appels de vision sur le modèle bon marché de la liste du module — la sonde d'acceptation, les trois appels de la voie texte, l'appel de la voie directe.
+","### Reading the result — what direct comparison changes, and what it does not change
+
+Acceptance of multi-image input was **measured** before use: `openai/gpt-5` answers correctly to a message carrying two `image_url` parts. The rest of the cell rests on that measurement, not on the model's reputation.
+
+Both paths, on the same pair of images and with the same comparison instruction:
+
+| | ""descriptions"" path | direct path |
+|---|---|---|
+| calls | 3 | **1** |
+| images seen at comparison | 1 | **2** |
+| input tokens | 1,738 | **925** |
+| output tokens | 3,402 | **1,371** |
+| duration | 31.8 s | **13.4 s** |
+
+Three readings, in order of what is solid:
+
+1. **The measurement that settles it is structural, not qualitative.** The ""descriptions"" cross-check receives **one** image: everything it asserts about image A comes from a text, with no recourse. The direct path receives two. No prompt wording corrects that asymmetry — the setup creates it.
+2. **The text path pays twice.** It produces two complete descriptions (hence the 3,402 output tokens), then rereads them in a third call. The direct path writes only one answer: fewer calls, fewer tokens in both directions, and here three times less time.
+3. **What the direct path sees and the text misses**: it **counts** — at least 7 snow-capped peaks on image A. Neither description had produced it; the text path therefore could not relay it. A count is read on the pixels, not in a summary.
+
+And a counter-reading, so as not to overinterpret: **both verdicts choose the same image** (the map, B). Direct comparison does not promise a better verdict — it removes an intermediary where information can get lost, and the asymmetry between the two images. What remains fragile in the text path lies elsewhere: the numbers it relays (22 former regions, 96 departments) come from a single description, and nothing in the chain contradicts them; the direct path reads them on the map.
+
+Cost of the section: five vision calls on the cheap model from the module's list — the acceptance probe, the three calls of the text path, the call of the direct path.",,,,,,,cee72a190c05e164,e15e478d74e70d6e,,,,,,,cee72a190c05e164,,,,,,,
