@@ -459,14 +459,34 @@ def _cli(argv: list[str] | None = None) -> int:
         print(f"epic_body_staleness: {exc}", file=sys.stderr)
         return 1
 
-    json.dump(
+    text = json.dumps(
         build_payload(epics, merged_prs),
-        sys.stdout,
         ensure_ascii=False,
         indent=2 if args.pretty else None,
     )
-    print()
+    _write_stdout_utf8(text + "\n")
     return 0
+
+
+def _write_stdout_utf8(text: str) -> None:
+    """Ecrit le rapport en UTF-8 sur stdout, quel que soit l'encodage de la console.
+
+    ``json.dump(..., sys.stdout, ensure_ascii=False)`` passe par l'encodage de la
+    console : sous Windows en cp1252, un seul titre d'EPIC portant un caractere
+    hors cp1252 (U+21C4, U+2192, emoji) leve ``UnicodeEncodeError`` et le rapport
+    entier est perdu, y compris les entrees encodables. Mesure du 2026-11-04 :
+    premier run tronque a 1980 octets sur 59 findings, donc 2 findings visibles
+    sur 59. On ecrit les octets directement pour que le resultat ne dépende plus
+    de la console de la lane qui mesure.
+    """
+    data = text.encode("utf-8")
+    buffer = getattr(sys.stdout, "buffer", None)
+    if buffer is not None:
+        buffer.write(data)
+        buffer.flush()
+    else:  # stdout remplace par un objet sans buffer (capture de test)
+        sys.stdout.write(text)
+        sys.stdout.flush()
 
 
 if __name__ == "__main__":

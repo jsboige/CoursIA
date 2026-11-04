@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import importlib.util
+import io
 import json
 import sys
 from pathlib import Path
@@ -417,6 +418,43 @@ def test_cli_prints_json_and_never_writes(monkeypatch, capsys):
     assert _MODULE._cli(["--repo", "example/repo", "--pretty"]) == 0
     payload = json.loads(capsys.readouterr().out)
     assert payload["corpus"]["open_epics_examined"] == 1
+
+
+class _Cp1252Console:
+    """Console Windows cp1252 : `.write` echoue sur un caractere hors cp1252."""
+
+    def __init__(self) -> None:
+        self.buffer = io.BytesIO()
+
+    def write(self, text: str) -> int:
+        text.encode("cp1252")  # leve UnicodeEncodeError comme la vraie console
+        return len(text)
+
+    def flush(self) -> None:  # noqa: D401 - interface TextIO minimale
+        return None
+
+
+def test_cli_survives_a_title_outside_the_console_codepage(monkeypatch):
+    """Regression #13906 : un titre hors cp1252 faisait perdre le rapport entier.
+
+    Mesure du 2026-11-04 : `json.dump(..., sys.stdout)` levait UnicodeEncodeError
+    au premier titre portant U+21C4 et le fichier redirige restait tronque a
+    1980 octets, soit 2 findings visibles sur 59. Le rapport doit desormais
+    sortir en UTF-8 sans dependre de PYTHONIOENCODING.
+    """
+    epic = Epic(42, "[EPIC] Compression ⇄ quantisation", "## Objectif\nConstruire la flotte.")
+    pr = _pr(101, "See #42")
+    monkeypatch.setattr(_MODULE, "list_open_epics", lambda repo: [epic])
+    monkeypatch.setattr(_MODULE, "list_merged_prs", lambda repo, limit: [pr])
+    console = _Cp1252Console()
+    monkeypatch.setattr(sys, "stdout", console)
+
+    assert _MODULE._cli(["--repo", "example/repo"]) == 0
+
+    raw = console.buffer.getvalue().decode("utf-8")
+    payload = json.loads(raw)
+    assert payload["corpus"]["open_epics_examined"] == 1
+    assert "⇄" in raw
 
 
 def test_cli_reports_read_failure(monkeypatch, capsys):
