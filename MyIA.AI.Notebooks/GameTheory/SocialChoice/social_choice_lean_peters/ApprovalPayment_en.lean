@@ -12,10 +12,10 @@
   1. **Quotas** — `hareQuota` (n/k) and `droopQuota` (n/(k+1)), with
      ordering lemmas (`droopQuota_le_hareQuota`) and positivity.
   2. **Payment system** (faithful to Def 3.2 of the paper) — each voter
-     has a unit budget, pays `payment v c` for each approved winner `c`,
+     has a budget of 1, pays `payment v c` for each approved winner `c`,
      keeps the `reserve v`, and each winner receives at most `q`. The
      lemma `paymentSystem_trivial` witnesses non-emptiness
-     (`P(W) ≠ ∅`, remark under Def 3.2, for `q ≥ 0`).
+     (`P(W) ≠ ∅`, remark of the paper, for `q ≥ 0`).
      This system is DISTINCT from the zero-sum `PaymentFunction` of
      Tranche 1, which models the payments of the objective function;
      here payments certify stability.
