@@ -27,9 +27,9 @@ prouvée en Lean — en gardant chaque barreau exécutable : un carnet, un moteu
 | GOL-08b | [GOL-08b-Certificat-Translateur-Lean](GOL-08b-Certificat-Translateur-Lean.ipynb) | Le variant `-b` annoncé par GOL-08 : témoin, impossibilité et frontière de famille en théorèmes du lake (`Conway.Life.Translateur`) | `lean4-wsl` |
 | GOL-09 | [GOL-09-Perplexite-Structurelle-Hashlife](GOL-09-Perplexite-Structurelle-Hashlife.ipynb) | Capstone perplexité T12 : la taille comprimée des trajectoires et le coût en temps (exposant α HashLife) comme mesures | `python3` |
 
-Les voisins hors sous-série : [Lean-16a](../Lean-16a-Conway-Man-and-Work.ipynb)
+Les voisins hors sous-série : [Lean-16a](../Lean-16-Conway-Man-and-Work-Lean-Python.ipynb)
 (l'homme et l'œuvre, en amont), [Lean-16b](../Lean-16b-Conway-FRACTRAN-Lean-Native.ipynb)
-(FRACTRAN) et [Lean-16c](../Lean-16c-Conway-Free-Will-Theorem.ipynb) (libre arbitre),
+(FRACTRAN) et [Lean-16c](../Lean-13e-Conway-Free-Will-Theorem-Lean-Python.ipynb) (libre arbitre),
 puis [Lean-17](../Lean-17-Conway-Bridge-to-Knots-Python.ipynb) (pont vers les nœuds).
 Côté GameTheory, la série GT-20 (chemin minimal) précède GOL-08 :
 [GameTheory-20](../../../GameTheory/GameTheory-20-Chemin-Minimal-Robinson-Goforth-Python.ipynb).
