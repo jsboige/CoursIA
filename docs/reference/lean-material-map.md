@@ -10,7 +10,7 @@ Cette page est regeneree par `scripts/lean/lean_material_map.py`. Une table reco
 
 | Lac | Modules | Miroirs | CI | Gate axiomes | Site = consommateur | Doublons declares | Naissance |
 |---|---|---|---|---|---|---|---|
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean` | 100 | 98 | declare | couverte | ok (4) | - | 2026-10-17 |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean` | 100 | 98 | declare | hors matrice | 1 hors site (4 carnets) | - | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean` | 57 | 41 | declare | couverte | 1 hors site (9 carnets) | 0 / 2 | 2026-11-04 |
 | `MyIA.AI.Notebooks/GameTheory/game_theory_lean` | 39 | 25 | declare | couverte | ok (3) | 1 / 3 | 2026-10-17 |
 | `MyIA.AI.Notebooks/Search/discrepancy_lean` | 33 | 25 | declare | couverte | ok (1) | - | 2026-10-17 |
@@ -96,8 +96,9 @@ Traces par git, mais dans aucun dossier portant un `lakefile` : ils ne sont cons
 
 La doctrine demande qu'un lac vive dans le dossier de la (sous-)serie dont les carnets l'importent. La consommation se mesure sur le seul signal objectif disponible sans build : une ligne `import <Module>` d'un carnet, ou `<Module>` est un fichier `.lean` du lac. Les imports de paquets (`Mathlib`, `Batteries`) ne rattachent un carnet a aucun lac -- sans cette restriction, tout carnet Lean consommerait tous les lacs. Un carnet est « au site » quand il vit sous le dossier du lac, « hors site » sinon.
 
-30 lacs sur 39 sont consommes, dont 7 depuis un dossier hors site. Ce n'est pas un defaut en soi : c'est le fait que R1 rend arbitrable, et que la ligne nomme.
+30 lacs sur 39 sont consommes, dont 8 depuis un dossier hors site. Ce n'est pas un defaut en soi : c'est le fait que R1 rend arbitrable, et que la ligne nomme.
 
+- `MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean` — 4 carnets, hors site : `MyIA.AI.Notebooks/SymbolicAI/Lean`
 - `MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean` — 9 carnets, hors site : `MyIA.AI.Notebooks/SymbolicAI/Lean`
 - `MyIA.AI.Notebooks/ML/learning_theory_lean` — 5 carnets, hors site : `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning`
 - `MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean` — 4 carnets, hors site : `MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE`
