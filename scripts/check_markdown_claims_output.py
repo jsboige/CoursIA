@@ -1315,19 +1315,33 @@ def _fuzzy_present(norm: str, out_text: str) -> bool:
       (a) prefix-of-output: '1.3' matches '1.3B' for magnitude (followed by
           non-digit). A prefix followed by a digit is NOT matched here --
           '1.32 Go' is reached through clause (b), as a rounding, not as a
-          magnitude prefix.
+          magnitude prefix. A prefix SHORTER than the claim ('1.7' for the
+          claim '1.75') is matched only for a zero-padded claim ('2.40'
+          against '2.4' is the same number).
       (b) rounded value: '0.24' matches '0.2385' (the claim is the output
           number rounded to the claim's own precision), anywhere in the
           output -- not only at its start.
       (c) magnitude-prefix against comma-stripped output: '3.1' matches
           '3,145,728' (output has 3,145,728 = 3.1M, claim is the magnitude
-          prefix when thousand separators are stripped).
+          prefix when thousand separators are stripped). A claim that
+          TRUNCATES an output number ('1.75' against '1.7565', which rounds
+          to 1.76) is REFUSED here -- see `_has_truncation_conflict` and
+          CoursIA #22910.
     The minimum norm length is 3 chars (so '7' / '5' are skipped).
     """
     if len(norm) < 3:
         return False
     # Clause (a): prefix is present in the output, followed by non-digit.
+    # A prefix SHORTER than the claim means the output carries a COARSER
+    # number than the claim ('1.7' for the claim '1.75'): the claim then
+    # asserts a precision the output does not have, and the coarser output
+    # cannot support it -- clause (b) refuses it for the same reason
+    # ('1.7' never satisfies '1.75'). The one legitimate case is a claim
+    # padded with zeros ('2.40' against '2.4' is the same number), so a
+    # partial prefix is accepted only when the dropped tail is all zeros.
     for cut in range(len(norm), 2, -1):
+        if cut < len(norm) and norm[cut:].strip("0"):
+            continue
         prefix = norm[:cut]
         pos = 0
         while True:
@@ -1350,11 +1364,24 @@ def _fuzzy_present(norm: str, out_text: str) -> bool:
     # separators are stripped (output "3,145,728" -> "3145728", norm
     # "3.1" -- treat the dot in the norm as a marker; we re-anchor the
     # norm against the output by matching the leading digits before the
-    # dot). Gated by len(norm) >= 4 OR the output containing a comma
-    # (large-number signal: 3.1M magnitude against 3,145,728). The
-    # comma-gate distinguishes '3.1' vs '3,145,728' (magnitude) from
-    # '1.3' vs '1.32' (precision -- no comma, no magnitude match).
-    if "." in norm and len(norm) >= 3 and ("," in out_text or len(norm) >= 4):
+    # dot). The COMMA is the signal that the output is a grouped large
+    # number (3.1M magnitude against 3,145,728), so the clause is gated on
+    # it alone. The former second gate -- len(norm) >= 4 -- extended this
+    # case to ANY comma-less output for a claim of four characters or more:
+    # the digit run of the output then contains the claim's digits as the
+    # prefix of a DIFFERENT number, which is what accepted the neighbouring
+    # value '1.75' against '1.7565' and '2.40' against '2.4067'
+    # (CoursIA #22910).
+    #
+    # #22910 -- the gate alone is not enough: an output that happens to
+    # carry a comma somewhere (a grouped integer in a results table) would
+    # re-enable the digit run for a comma-less value. The veto below refuses
+    # the TRUNCATION case whatever the commas: a value the prose has
+    # truncated ('1.75' where the output prints 1.7565, which rounds to
+    # 1.76) is a precision the output contradicts.
+    if "." in norm and len(norm) >= 3 and "," in out_text:
+        if _has_truncation_conflict(norm, out_text):
+            return False
         head, tail = norm.split(".", 1)
         digit_run = re.sub(r"[^0-9]", "", out_text)
         combined = head + tail  # e.g. "3.1" -> "31"
@@ -1366,6 +1393,46 @@ def _fuzzy_present(norm: str, out_text: str) -> bool:
             # digit_run (8+ trailing) so the magnitude is bounded.
             if tail_len <= 12:
                 return True
+    return False
+
+
+def _has_truncation_conflict(norm: str, out_text: str) -> bool:
+    """True when an output number carries the claim's digits as a STRICT
+    prefix without the claim rounding to it ('1.75' against '1.7565').
+
+    The magnitude clause (c) matches the claim's digits anywhere in the
+    output's digit run, so a value the prose has TRUNCATED is silently
+    accepted: the output prints 1.7565 (which rounds to 1.76) and the prose
+    asserts 1.75. The claim is then a precision the output contradicts, and
+    the organ must not treat it as supported (CoursIA #22910).
+
+    Only comma-free decimal tokens are examined: a grouped integer
+    ('3,145,728') is a magnitude context, not a precision conflict -- it is
+    the very case clause (c) exists to serve. The integer part must have the
+    same number of digits as the claim's, so that '17.56' is not read as a
+    truncation of '1.75'.
+    """
+    if "." not in norm:
+        return False
+    claim_int, _, claim_frac = norm.partition(".")
+    claim_digits = claim_int + claim_frac
+    if not claim_digits.isdigit():
+        return False
+    for match in _DECIMAL_TOKEN_RE.finditer(out_text):
+        token = match.group(0)
+        if "," in token:
+            continue
+        int_part, _, frac_part = token.partition(".")
+        if len(int_part) != len(claim_int):
+            continue
+        digits = int_part + frac_part
+        if len(digits) <= len(claim_digits) or not digits.startswith(claim_digits):
+            continue
+        # A truncation candidate -- unless the claim rounds to that number
+        # ('2.40' against '2.400' is the same number, '1.75' against
+        # '1.7465' is the genuine rounding handled by clause (b)).
+        if not _rounds_to_claim(norm, token):
+            return True
     return False
 
 

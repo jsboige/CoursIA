@@ -333,6 +333,72 @@ class TestFuzzyPresent:
         assert not _fuzzy_present("7", "0.2385")
 
 
+class TestIssue22910Table:
+    """The five rows of the #22910 table, turned into tests.
+
+    The table measured `_fuzzy_present` and `_rounds_to_claim` on five
+    (claim, output) pairs: three were false positives (a neighbouring or a
+    coarser value accepted), one was a genuine rounding, and the last was a
+    negative witness.
+
+    The fix: clause (c) now opens on the comma signal alone (the thousands
+    separator), and clause (a) no longer accepts a prefix shorter than the
+    claim unless the dropped tail is zeros ('2.40' against '2.4' is the same
+    number).
+
+    Measured note: the second row of the table did not come from clause (c)
+    but from clause (a) -- the prefix '1.7' occurs in the output '1.7' with
+    nothing after it, which clause (a) accepted. Measured here, not assumed.
+    """
+
+    def test_neighbour_value_not_matched(self):
+        """Row 1: '1.75' against '1.7565' -- the neighbouring value (1.7565
+        rounds to 1.76) does not support the claim."""
+        assert not _fuzzy_present("1.75", "1.7565")
+        assert not _rounds_to_claim("1.75", "1.7565")
+
+    def test_coarser_output_not_matched(self):
+        """Row 2: '1.75' against '1.7' -- an output coarser than the claim
+        cannot support it."""
+        assert not _fuzzy_present("1.75", "1.7")
+        assert not _rounds_to_claim("1.75", "1.7")
+
+    def test_neighbour_value_two_decimals_not_matched(self):
+        """Row 3: '2.40' against '2.4067' -- same family as row 1, on a
+        two-decimal claim."""
+        assert not _fuzzy_present("2.40", "2.4067")
+        assert not _rounds_to_claim("2.40", "2.4067")
+
+    def test_genuine_rounding_still_matched(self):
+        """Row 4: the genuine rounding -- '1.75' is the two-decimal
+        rounding of '1.7465' quoted from a results table."""
+        assert _fuzzy_present("1.75", "SA  1.7465  12.8907  17.2632")
+        assert _rounds_to_claim("1.75", "SA  1.7465  12.8907  17.2632")
+
+    def test_negative_witness_still_refused(self):
+        """Row 5: the negative witness -- '9.9999' must not be found in an
+        output that contains '1.7565'."""
+        assert not _fuzzy_present("9.9999", "SA  1.7565  12.8907")
+        assert not _rounds_to_claim("9.9999", "SA  1.7565  12.8907")
+
+    def test_zero_padded_claim_still_matched(self):
+        """Non-regression: a claim padded with zeros is the same number
+        ('2.40' == '2.4')."""
+        assert _fuzzy_present("2.40", "2.4 Go")
+
+    def test_magnitude_with_thousands_separator_still_matched(self):
+        """Non-regression: clause (c) keeps its legitimate case -- a
+        magnitude against a large number grouped by commas."""
+        assert _fuzzy_present("3.1", "3,145,728")
+
+    def test_truncation_refused_even_when_output_carries_a_comma(self):
+        """Robustness of the veto: a comma elsewhere in the output (a
+        grouped integer in a results table) must not re-enable the digit
+        run for a comma-less value that the prose has TRUNCATED."""
+        assert not _fuzzy_present("1.75", "SA  1,024 rows  1.7565  12.8907")
+        assert not _rounds_to_claim("1.75", "SA  1,024 rows  1.7565  12.8907")
+
+
 class TestRoundsToClaim:
     """Bounds of the rounding predicate itself (clause b), both directions."""
 
