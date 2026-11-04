@@ -568,6 +568,10 @@ class DelayedLabelRunner(FakeRunner):
         super().__init__(store=store)
         self.other_cycle = other_cycle
         self._injected = False
+        # Etat de A **au moment exact de l'injection** : sert a prouver
+        # que l'injection a lieu APRES les deux verifications de A
+        # (le `inject_at=2` du reproducteur de l'adjoint).
+        self.a_verified_at_injection = None
 
     def __call__(self, cmd, **kwargs):
         method = ""
@@ -576,11 +580,12 @@ class DelayedLabelRunner(FakeRunner):
         if (method == "" and any("/labels" in c for c in cmd)
                 and not self._injected):
             self._injected = True
-            # l'instantane capture AVANT le cycle de A : identifiants
+            # l'instantane capture AVENT le cycle de A : identifiants
             # compris (l'ordre d'arbitrage est l'identifiant serveur).
             snapshot = self.store.label_rows()
             # A termine integralement avant que B ne lise les etiquettes.
-            self.other_cycle()
+            res = self.other_cycle()
+            self.a_verified_at_injection = bool(res and res.get("verified"))
             # B recoit son ancien instantane.
             return FakeProc(json.dumps([snapshot]), 0)
         if (method == "PATCH" and any("/comments/" in c for c in cmd)
@@ -590,7 +595,8 @@ class DelayedLabelRunner(FakeRunner):
             # alors juste avant le PATCH de B -- c'est ce PATCH, qui porte
             # un corps perime, qui effacait la section de A.
             self._injected = True
-            self.other_cycle()
+            res = self.other_cycle()
+            self.a_verified_at_injection = bool(res and res.get("verified"))
         return super().__call__(cmd, **kwargs)
 
 
@@ -604,20 +610,31 @@ def test_le_scheduling_de_l_adjoint_preserve_la_section_de_a():
     croient `verified: true`. Sur le verrou **par etiquette du PR**, B ne
     peut ecrire qu'une fois le verrou d'A libere, et il ecrit alors sur le
     corps courant -- la section de A survit.
+
+    **Correspondance avec le reproducteur de l'adjoint (`inject_at=2`) :
+    A perd sa section APRES ses deux verifications, et le delai de
+    stabilisation ne refuse pas l'etat perime.** L'assertion
+    `a_verified_at_injection` etablit exactement ce point : au moment ou
+    l'ecriture concurrente est injectee, A a **deja** rendu
+    `verified: true`. Le delai ne sert donc a rien contre ce scheduling --
+    seule l'**atomicite de l'acquisition** le ferme.
     """
     store = SharedStore([bot_comment(7, a_s.render({"initial": "etat initial"}))])
     a_runner = FakeRunner(store=store)
 
     def a_cycle():
-        a_s.upsert_section("organ-a", "avertissement A", 123,
-                           runner=a_runner, sleep=lambda _s: None,
-                           owner="writer-A")
+        return a_s.upsert_section("organ-a", "avertissement A", 123,
+                                  runner=a_runner, sleep=lambda _s: None,
+                                  owner="writer-A")
 
     b_runner = DelayedLabelRunner(a_cycle, store)
     out_b = a_s.upsert_section("organ-b", "avertissement B", 123,
                                 runner=b_runner, sleep=lambda _s: None,
                                 owner="writer-B")
     assert out_b["verified"] is True
+    assert b_runner.a_verified_at_injection is True, (
+        "l'injection doit avoir lieu APRES les deux verifications de A "
+        "(reproducteur `inject_at=2` de l'adjoint)")
     sections = a_s.parse_sections(store.comments[0]["body"])
     assert sections.get("organ-a") == "avertissement A", (
         "la section de A doit survivre a l'ecriture de B")
