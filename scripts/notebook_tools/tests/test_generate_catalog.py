@@ -2259,6 +2259,20 @@ class TestGenerateMarkdownReport:
             in report
         )
 
+    def test_pagetitle_frontmatter_first(self, tmp_path):
+        """Browser-tab title: Quarto titles the page from frontmatter pagetitle.
+
+        Without it the rendered catalog page is titled by its file slug
+        ("course_catalog.generated", measured 03/11 on #10921 criterion 5).
+        The frontmatter must open the file so Quarto parses it, and carry a
+        human title, not the slug.
+        """
+        report = generate_markdown_report(
+            [_catalog_entry("ML/nb-a.ipynb")], repo_root=tmp_path
+        )
+        assert report.startswith('---\npagetitle: "CoursIA Notebook Catalog"\n---\n')
+        assert "course_catalog.generated" not in report.splitlines()[1]
+
 
 # --- scan_all_notebooks : compte des exclusions par motif (#15606 point 2) ---
 
