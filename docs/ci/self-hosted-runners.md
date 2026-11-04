@@ -550,19 +550,21 @@ Docker relance le conteneur à chaque démarrage du daemon (donc de la distro) ;
 
 La primitive de routage est le **jeu de labels dédié** : `DEDICATED_LABEL_SETS` dans `scripts/ci/check_self_hosted_runner_policy.py` porte un jeu par pool, et c'est le label distinct qui garantit le routage — jamais une convention de nommage.
 
-**La règle jumelle, mesurée le 2026-11-04 : un pool qui sort de la flotte sort de la liste d'autorisation.** `DEDICATED_LABEL_SETS` est une liste de jeux **servis**, pas une liste de jeux deseinés : y laisser un pool éteint ouvre un trou *fail-open* — le garde certifie un routage qu'aucun runner ne peut prendre, et le job attend en file d'attente indéfiniment. Le retrait s'oppose donc à l'oubli : le jeu retiré est conservé, renommé, dans `RETIRED_LABEL_SETS`, et un test interdit sa ré-admission silencieuse.
+**La règle jumelle, mesurée le 2026-11-04 : un pool qui sort de la flotte sort de la liste d'autorisation.** `DEDICATED_LABEL_SETS` est une liste de jeux **servis**, pas une liste de jeux **planifiés** : y laisser un pool éteint ouvre un trou *fail-open* — le garde certifie un routage qu'aucun runner ne peut prendre, et le job attend en file d'attente indéfiniment. Le retrait s'oppose donc à l'oubli : le jeu retiré est conservé, renommé, dans `RETIRED_LABEL_SETS`, et un test interdit sa ré-admission silencieuse.
 
-### Inventaire des pools (mesuré sur `main`, octobre 2026 ; re-mesuré le 2026-11-04)
+### Inventaire des pools (mesuré sur `main`, octobre 2026 ; re-mesuré les 2026-11-04 et 2026-11-05)
 
 | Pool | Jeu de labels | Support | Rôle |
 |---|---|---|---|
 | `coursia-fast-guards` | `REQUIRED_LABELS` | hôte Windows | gardes Windows (po-2024) |
 | `coursia-linux` | `LINUX_RUNNER_LABELS` | conteneur, image minimale + python/gh/jq | gardes PR pure-Python |
 | `coursia-waiter` | `WAITER_LABELS` | label distinct sans slot de travail | laisser un gate **attendre** sans consommer de CPU (arbitrage ai-01 2026-09-02 : « attendre ne coûte pas de CPU ») |
-| `coursia-lean` | `RETIRED_LEAN_RUNNER_LABELS` — **retiré**, pool éteint | conteneur, image `Dockerfile.lean` (elan + toolchain), `.lake` tenu chaud dans le volume par slot | scans et builds Lean ; **pool éteint** — extinction mesurée le 2026-10-23 par la sonde du dépôt, confirmée le 2026-11-04 (48 runners, **zéro** porteur de `coursia-lean`) ; les jambes Lean sont passées à `[self-hosted, coursia-ephemeral, coursia-linux]` |
+| `coursia-lean` | `RETIRED_LEAN_RUNNER_LABELS` — **retiré**, pool éteint | conteneur, image `Dockerfile.lean` (elan + toolchain), `.lake` tenu chaud dans le volume par slot | scans et builds Lean ; **pool éteint** — extinction mesurée le 2026-10-23 par la sonde du dépôt, confirmée le 2026-11-04 (48 runners) et re-mesurée le 2026-11-05 (49 runners) — **zéro** porteur de `coursia-lean` dans les deux mesures ; les jambes Lean sont passées à `[self-hosted, coursia-ephemeral, coursia-linux]` |
 | `coursia-persistent` | jeu **non autorisé** par le garde | conteneur, slots persist de po-2024 | 7 slots **enregistrés mais offline** à la mesure du 2026-11-04 ; leur jeu de labels n'est pas dans `DEDICATED_LABEL_SETS`, donc aucun workflow ne peut y router ; ils portent `coursia-ephemeral` alors que leur spécification versionnée (`scripts/ci/docker/linux-runner/persist/po-2024/create-persist-slots.sh`) impose l'inverse (« un slot persist porte `coursia-persistent` et **NE porte PAS** `coursia-ephemeral` ») — arbitrage de composition de flotte, pas de lane |
 
 Les pools `coursia-docs` (quarto/pandoc) et `coursia-browser` (npm + navigateurs Playwright) restent des **candidats non livrés** : leur déploiement touche le conteneur runner porté par po-2024 — l'infra d'un autre workspace se demande au workspace qui la porte, elle ne s'applique pas depuis l'extérieur.
+
+**Le tiroir ne s'arrête pas au garde.** La jambe Lean reste portée par deux autres organes, et l'écart est intentionnel plutôt qu'un oubli : le budget mémoire (`scripts/ci/assert_memory_budget.py`, jambe `lean : 1 x 6.0 GiB`) et l'épinglage d'image (`check_runner_version_pin.py` → `supervise.sh:LEAN_IMAGE`) conservent la jambe Lean jusqu'à sa ré-admission ou son démontage explicite. Tant que les slots existent sur le parc, la CI ne peut pas prétendre que le coût Lean a disparu ; le garde dit seulement que le **routage** vers le pool éteint est refusé. Le retrait du jeu de labels et la ré-admission du pool sont deux gestes distincts : le premier est fait, le second attend la mesure du parc.
 
 ### La gate mémoire de la migration des builds Lean
 

@@ -413,6 +413,12 @@ def test_retired_label_sets_are_not_authorised():
     # Non-regression: a retired set must never re-enter the authorisation
     # list without a fresh measurement of the fleet. This is the assertion
     # that keeps the removal from being undone by a later edit.
+    #
+    # Non-vacuity: the loop below is vacuous when RETIRED_LABEL_SETS is
+    # empty -- emptying the tuple loses the very knowledge the removal
+    # preserves, and the test would still pass on that one-character edit.
+    # The membership assertion is what makes it fail.
+    assert policy.RETIRED_LEAN_RUNNER_LABELS in policy.RETIRED_LABEL_SETS
     for retired in policy.RETIRED_LABEL_SETS:
         assert retired not in policy.DEDICATED_LABEL_SETS
     assert policy.RETIRED_LEAN_RUNNER_LABELS not in policy.DEDICATED_LABEL_SETS

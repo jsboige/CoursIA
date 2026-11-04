@@ -1865,13 +1865,33 @@ def scan_workflows(
                     "runner groups are unavailable for this personal-account repository",
                 ))
 
+            # Un jeu retire est refuse pour une raison qui lui est propre :
+            # le dire evite d envoyer le developpeur vers un autre pool
+            # ("missing: coursia-fast-guards") alors que le vrai motif est
+            # l'extinction du pool vise.
+            retired_set = next(
+                (retired for retired in RETIRED_LABEL_SETS if set(labels) == retired),
+                None,
+            )
             if any(set(labels) == allowed for allowed in DEDICATED_LABEL_SETS):
                 missing: list[str] = []
                 unexpected: list[str] = []
+            elif retired_set is not None:
+                missing = []
+                unexpected = []
             else:
                 missing = sorted(REQUIRED_LABELS - labels)
                 unexpected = sorted(labels - REQUIRED_LABELS)
-            if missing or unexpected:
+            if retired_set is not None:
+                violations.append(Violation(
+                    path.name,
+                    str(job_name),
+                    "RUNNER_LABELS",
+                    "retired pool -- this label set is out of service "
+                    "(cf. RETIRED_LABEL_SETS); re-admission requires a fresh "
+                    "measurement of the fleet, not an edit of this guard",
+                ))
+            elif missing or unexpected:
                 detail = []
                 if missing:
                     detail.append(f"missing: {', '.join(missing)}")
