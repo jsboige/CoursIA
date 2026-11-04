@@ -193,7 +193,14 @@ jobs:
     timeout-minutes: 10
 
     steps:
+      # #22469 : meme constat que pour l'observateur de starvation -- `scripts/check_pr_perimeter.py`
+      # confronte les assertions d'une PR a la liste de fichiers servie par l'API (`gh pr view`,
+      # `gh pr diff`), sans lire l'arbre local (aucun `open`, `Path`, ni import local). Le
+      # checkout pesait 33 % de la duree de ce job. Sparse sur `scripts/`, sans historique.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          sparse-checkout: scripts
 
       - uses: actions/setup-python@v5
         with:

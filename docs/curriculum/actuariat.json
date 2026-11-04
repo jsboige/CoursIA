@@ -49,7 +49,7 @@
       ],
       "notebooks": [
         "GameTheory/GameTheory-15-CooperativeGames-Python.ipynb",
-        "GameTheory/GameTheory-15f-Shapley-Groupes-Python.ipynb",
+        "GameTheory/GameTheory-15d-Shapley-Groupes-Python.ipynb",
         "GameTheory/GameTheory-17b-Asymmetric-Information-Python.ipynb"
       ]
     }
