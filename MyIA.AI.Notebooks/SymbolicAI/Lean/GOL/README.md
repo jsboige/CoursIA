@@ -29,7 +29,7 @@ prouvée en Lean — en gardant chaque barreau exécutable : un carnet, un moteu
 
 Les voisins hors sous-série : [Lean-16](../Lean-16-Conway-Man-and-Work-Lean-Python.ipynb)
 (l'homme et l'œuvre, en amont), [Lean-16b](../Lean-16b-Conway-FRACTRAN-Lean-Native.ipynb)
-(FRACTRAN) et [Lean-16c](../Lean-13e-Conway-Free-Will-Theorem-Lean-Python.ipynb) (libre arbitre),
+(FRACTRAN) et [Lean-13e](../Lean-13e-Conway-Free-Will-Theorem-Lean-Python.ipynb) (libre arbitre),
 puis [Lean-17](../Lean-17-Conway-Bridge-to-Knots-Python.ipynb) (pont vers les nœuds).
 Côté GameTheory, la série GT-20 (chemin minimal) précède GOL-08 :
 [GameTheory-20](../../../GameTheory/GameTheory-20-Chemin-Minimal-Robinson-Goforth-Python.ipynb).
