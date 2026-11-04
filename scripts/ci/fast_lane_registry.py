@@ -3504,3 +3504,63 @@ TRANCHE36: list[Guard] = [
         warn_rc=(2,),            # 2 = base injoignable : UNKNOWN, pas un rouge
     ),
 ]
+
+
+# ---------------------------------------------------------------------------
+# Garde de source unique du PCM par poches (#20188, critere 2).
+#
+# Le modele de construction de portefeuille par poches a existe en neuf copies
+# sous `MyIA.AI.Notebooks/QuantConnect/`, en six variantes, et le correctif
+# `additive` (#19740) n'etait present que dans trois d'entre elles : un
+# correctif pose sur une copie ne se propageait pas, et rien ne le signalait.
+#
+# L'extraction a ete livree (#21134) : `projects/SharedPCM/pouches_pcm.py` est
+# la source canonique, importee par les composites. Deux copies subsistent, et
+# chacune a une raison qui ne se corrige pas par un copier-coller : le kit
+# pedagogique `03-Framework-Composite` est autonome (le code est copie par
+# l'apprenant, sans bibliotheque QC attachee), et `TrendWeatherPointInTime`
+# est une candidate gelee du registre de l'ombre (entree `tw-pit`, code rejoue
+# au SHA gele) que #20188 interdit de toucher.
+#
+# La garde ne pretend donc pas supprimer ces copies : elle refuse qu'une
+# **nouvelle** copie apparaisse sans declaration, et qu'une copie **declaree**
+# soit modifiee sans re-declaration. Les declarations vivent dans
+# `scripts/quantconnect/pcm_single_source.json` (le manifeste), qui porte la
+# source canonique, les copies declarees et la raison de chacune.
+#
+# Pourquoi la voie rapide et pas un workflow dedie : un workflow
+# `pull_request` auto-heberge doit etre enregistre dans l'allowlist de
+# `check_self_hosted_runner_policy.py`, et le cliquet refuse `ubuntu-latest`
+# sur une PR. La voie rapide emet le check-run sous son nom canonique
+# (`absorbed=True`), donc avec une conclusion REELLE, sans payer un second
+# clone du depot.
+#
+# Le manifeste figure dans `paths` : une revision qui change les declarations
+# doit rejouer la garde, sinon une declaration perimee passerait sans temoin
+# (lecon #11685/#12817). Idem pour le corps de tests, qui porte le controle
+# positif exige par #20188 : une copie volontairement modifiee fait rougir.
+#
+# rc=2 = manifeste illisible ou organe absent : c'est un **defaut du depot**,
+# pas un incident d'entree comme le base injoignable d'un garde de delta. La
+# garde le declare donc en rouge : un manifeste casse est une garde debranchee.
+# ---------------------------------------------------------------------------
+TRANCHE38: list[Guard] = [
+    Guard(
+        name="pcm-single-source-guard",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            # Toute definition nouvelle de la famille du PCM par poches est
+            # declencheuse : le motif `/**/` couvre ici la racine comme les
+            # sous-repertoires (semantique GitHub, cf path_matches).
+            "MyIA.AI.Notebooks/QuantConnect/**/*.py",
+            "scripts/quantconnect/check_pcm_single_source.py",
+            "scripts/quantconnect/pcm_single_source.json",
+            "scripts/quantconnect/tests/test_check_pcm_single_source.py",
+        ],
+        argv=[
+            "python", "scripts/quantconnect/check_pcm_single_source.py",
+        ],
+        blocking=True,
+        absorbed=True,
+    ),
+]
