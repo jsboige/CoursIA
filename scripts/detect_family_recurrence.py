@@ -136,11 +136,22 @@ _SERIES_RE = re.compile(r"MyIA\.AI\.Notebooks/([A-Za-z0-9_.-]+)")
 #: A python file cited as ``path/to/name.py`` -- the organ reference.
 _SCRIPT_RE = re.compile(r"\b([A-Za-z0-9_][A-Za-z0-9_./-]*\.py)\b")
 
-#: ``[Audit #17073]`` prefix, ``partition`` word, ``epic`` word -- the
-#: container markers of the shared predicate (mirrors issue_containers, which
-#: stays the single source of truth for the DECISION).
+#: ``[Audit #N]`` prefix -- the marker that makes an issue a PARTITION of
+#: the audit campaign. The partitions are excluded from the title families
+#: **by this marker**, not by the accident of their title template: 21 of
+#: the 29 open partitions share the label ``Serie X -- partition Hermes``,
+#: so a template-based exclusion would one day group two living pieces of
+#: the same campaign. The DECISION itself stays in ``issue_containers``
+#: (shared predicate); this marker is the local reading of it.
 _AUDIT_MARKER_RE = re.compile(r"^\s*\[audit\s+#\d+\]", re.IGNORECASE)
-_EPIC_WORD_RE = re.compile(r"\bepic\b", re.IGNORECASE)
+
+#: An issue that DECLARES its parent in its preamble ("Part of #N",
+#: "parent: #N", "Recurrence de #N"). The number is the filiation the
+#: author claims -- folding the issue into another host would destroy it.
+_DECLARED_PARENT_RE = re.compile(
+    r"(?:part\s+of|parent|r[e\u00e9]currence\s+de|filiation\s+de)\s*:?\s*\**\s*#(\d+)",
+    re.IGNORECASE,
+)
 
 #: The repository's convention for "this issue is ABOUT an organ": a title
 #: that OPENS with "Organe" ("Organe #22910 : ..."). It is the naming used by
@@ -215,6 +226,7 @@ class Recurrence:
     group_size: int        # how many OPEN issues share the family key
     title: str
     one_line: str
+    declared_parent: int | None = None
 
     @property
     def confidence(self) -> str:
@@ -232,6 +244,12 @@ class Recurrence:
         -- folding them into one another would destroy real work.
         """
         if self.host_score >= 4 and self.names_family:
+            # §3 : une filiation DECLAREE et differente de l'hote n'est pas
+            # une violation : c'est un arbitrage humain. La protection ne
+            # touche que la voie forte -- une recurrence « faible » (l'organe
+            # est seulement utilise) reste « faible ».
+            if self.declared_parent is not None and self.declared_parent != self.host:
+                return "a_arbitrer"
             return "forte"
         return "faible"
 
@@ -246,6 +264,7 @@ class Recurrence:
             "names_family": self.names_family,
             "group_size": self.group_size,
             "confidence": self.confidence,
+            "declared_parent": self.declared_parent,
             "title": self.title,
             "one_line": self.one_line,
         }
@@ -293,6 +312,8 @@ def family_keys(issue: Issue, organs: set[str]) -> set[str]:
         base = path.rsplit("/", 1)[-1]
         if base in organs:
             keys.add(f"organ:{base}")
+    if _is_audit_partition(issue):
+        return keys  # a partition is a living piece of the campaign, not a title family
     skeleton = title_skeleton(issue.title)
     if len(skeleton) >= _MIN_SKELETON_CHARS:
         keys.add(f"title:{skeleton}")
@@ -325,6 +346,8 @@ def primary_key(issue: Issue, organs: set[str]) -> str | None:
             return f"organ:{base}"
     if cited:
         return f"organ:{cited[0]}"
+    if _is_audit_partition(issue):
+        return None  # §2 : no title family for a partition, by MARKER
     skeleton = title_skeleton(title)
     if len(skeleton) >= _MIN_SKELETON_CHARS:
         return f"title:{skeleton}"
@@ -342,6 +365,33 @@ def supporting_keys(issue: Issue) -> set[str]:
 
 def _is_container(issue: Issue) -> bool:
     return looks_container(issue.title, issue.labels, issue.body)
+
+
+def _is_audit_partition(issue: Issue) -> bool:
+    """True when the issue is a PARTITION of an audit campaign.
+
+    The exclusion is by MARKER (``[Audit #N]``), never by the title template:
+    the partitions of a same serie share their label (``partition Hermes``),
+    and a template-based exclusion would group two living pieces of the
+    same campaign.
+    """
+    return bool(_AUDIT_MARKER_RE.match(issue.title or ""))
+
+
+def declared_parent(issue: Issue) -> int | None:
+    """The parent the issue DECLARES in its preamble, if any.
+
+    "Part of #N", "parent: #N", "Recurrence de #N" -- an explicit filiation.
+    A fold-back into another host would DESTROY that filiation, so the
+    recurrence is reported apart ("a_arbitrer") instead of being counted as
+    a violation.
+    """
+    head = (issue.body or "")[:1200]
+    match = _DECLARED_PARENT_RE.search(head)
+    if not match:
+        return None
+    number = int(match.group(1))
+    return None if number == issue.number else number
 
 
 def _names_family(issue: Issue, kind: str, detail: str,
@@ -376,19 +426,6 @@ def _names_family(issue: Issue, kind: str, detail: str,
         if cited & group_numbers:
             return True
     return False
-
-
-def _cites_other_issues(issue: Issue, count: int = 2) -> bool:
-    """True when the issue ENUMERATES other issues in its body.
-
-    This is the strongest "I am the issue of my family" signal there is: an
-    issue that names its siblings already gathers them. On the measured pool,
-    #22983 ("Tapis : refondre le tirage ... **sept issues de rustines**")
-    names the seven issues of its family and states that it will close them
-    when the refonte lands -- it IS the family issue, although its title does
-    not name the organ.
-    """
-    return _cited_issue_count(issue) >= count
 
 
 def _cited_issue_count(issue: Issue) -> int:
@@ -512,6 +549,11 @@ def detect(
             kind, _, detail = key.partition(":")
             shared = (len(keys_per_issue[issue.number] & keys_per_issue[host.number])
                       + len(support_per_issue[issue.number] & support_per_issue[host.number]))
+            # §3 : un parent DECLARE et different de l'hote n'est pas une
+            # violation : c'est une filiation a arbitrer. Le parent peut etre
+            # ferme (les deux cites par la revue le sont) : l'arbitrage reste
+            # humain, l'organe ne dit pas « violation ».
+            declared = declared_parent(issue)
             recurrences.append(Recurrence(
                 issue=issue.number,
                 host=host.number,
@@ -523,6 +565,7 @@ def detect(
                 group_size=len(by_key[key]),
                 title=issue.title,
                 one_line=f"#{issue.number} — {issue.title}",
+                declared_parent=declared,
             ))
     return sorted(recurrences, key=lambda r: (r.host, r.issue))
 
@@ -595,6 +638,38 @@ def delivered_candidates(issues: list[Issue]) -> list[dict]:
     return sorted(out, key=lambda r: r["issue"])
 
 
+def _open_issue_total(repo: str) -> int | None:
+    """The EXACT number of open issues of the repository (None if unknown).
+
+    ``search/issues`` gives the server-side total; it is the denominator the
+    report must publish, so that a truncated pool can never be read as the
+    population.
+    """
+    raw = subprocess.run(
+        ["gh", "api", "-X", "GET", "search/issues",
+         "-f", f"q=repo:{repo} is:issue is:open", "--jq", ".total_count"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    if raw.returncode != 0:
+        return None
+    try:
+        return int((raw.stdout or "").strip())
+    except ValueError:
+        return None
+
+
+def _pool_status(n_read: int, total: int | None) -> tuple[int | None, bool | None]:
+    """(dropped, pool_complete) for a pool of ``n_read`` over ``total`` open.
+
+    ``pool_complete`` is False as soon as ONE issue was left out: a truncated
+    pool must never read as the population.
+    """
+    if total is None:
+        return None, None
+    dropped = max(0, total - n_read)
+    return dropped, dropped == 0
+
+
 def _gh_issue_list(repo: str, limit: int) -> list[Issue]:
     raw = subprocess.run(
         ["gh", "issue", "list", "--repo", repo, "--state", "open",
@@ -643,7 +718,12 @@ def _pour_control(issues: list[Issue], repo: str) -> list[Issue]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--repo", default="jsboige/CoursIA")
-    parser.add_argument("--limit", type=int, default=400)
+    parser.add_argument(
+        "--limit", type=int, default=None,
+        help="plafond de lecture ; par defaut le pool ENTIER (compte exact "
+             "des issues ouvertes). Un plafond explicite tronque le pool : "
+             "il est alors imprime sur stderr et publie dans le rapport.",
+    )
     parser.add_argument("--window-days", type=int, default=14)
     parser.add_argument("--from-file", default=None,
                         help="lit le pool depuis un JSON capture (mode hors-ligne)")
@@ -652,25 +732,40 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--json", action="store_true", help="sortie JSON seule sur stdout")
     args = parser.parse_args(argv)
 
+    total: int | None = None
     if args.from_file:
         raw = json.loads(Path(args.from_file).read_text(encoding="utf-8"))
         issues = [Issue.from_gh_dict(d) for d in raw]
     else:
-        issues = _gh_issue_list(args.repo, args.limit)
+        total = _open_issue_total(args.repo)
+        # §1 : the pool is read WHOLE by default ; an explicit --limit caps
+        # it, and the cap is then visible in the report and on stderr.
+        limit = args.limit if args.limit is not None else (total or 1000)
+        issues = _gh_issue_list(args.repo, limit)
+    dropped, pool_complete = _pool_status(len(issues), total)
 
     organs = organ_inventory()
     recurrences = detect(issues, organs, window_days=args.window_days)
 
+    families = family_table(issues, organs)
     report = {
         "n_issues": len(issues),
+        "n_open_total": total,
+        "dropped": dropped,
+        "pool_complete": pool_complete,
         "n_organs": len(organs),
         "window_days": args.window_days,
         "n_recurrences": len(recurrences),
         "n_recurrences_fortes": sum(1 for r in recurrences if r.confidence == "forte"),
         "n_recurrences_faibles": sum(1 for r in recurrences if r.confidence == "faible"),
+        "n_recurrences_a_arbitrer": sum(1 for r in recurrences
+                                        if r.confidence == "a_arbitrer"),
         "n_hosts": len({r.host for r in recurrences}),
+        "n_families": len(families),
+        "n_covered": sum(row["n_open"] for row in families),
+        "n_families_ge3": sum(1 for row in families if row["n_open"] >= 3),
         "recurrences": [r.as_dict() for r in recurrences],
-        "families": family_table(issues, organs),
+        "families": families,
         "delivered_candidates": delivered_candidates(issues),
     }
 
@@ -695,6 +790,8 @@ def main(argv: list[str] | None = None) -> int:
         report["n_hosts"] = len({r.host for r in recurrences})
         report["n_recurrences_fortes"] = sum(1 for r in recurrences if r.confidence == "forte")
         report["n_recurrences_faibles"] = sum(1 for r in recurrences if r.confidence == "faible")
+        report["n_recurrences_a_arbitrer"] = sum(1 for r in recurrences
+                                                if r.confidence == "a_arbitrer")
         report["recurrences"] = [r.as_dict() for r in recurrences]
         print(json.dumps(report, ensure_ascii=False, indent=2))
         if not ok:
@@ -703,13 +800,17 @@ def main(argv: list[str] | None = None) -> int:
             return 2
         return 0
 
-    if args.json:
-        print(json.dumps(report, ensure_ascii=False, indent=2))
-    else:
-        print(json.dumps(report, ensure_ascii=False, indent=2))
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+    if not args.json:
+        # §1 : une pool tronquee doit se voir sur stderr, a chaque run.
+        if dropped:
+            print(f"[WARN] pool tronque : {report['n_issues']} issue(s) lue(s) sur "
+                  f"{total} ouverte(s) -- {dropped} non lue(s) ; les compteurs ne sont "
+                  f"pas exhaustifs", file=sys.stderr)
         print(f"\n{len(recurrences)} recurrence(s) sur {report['n_issues']} issues ouvertes "
               f"({report['n_hosts']} famille(s) d'hote) — "
-              f"{report['n_recurrences_fortes']} forte(s), {report['n_recurrences_faibles']} faible(s)",
+              f"{report['n_recurrences_fortes']} forte(s), {report['n_recurrences_faibles']} faible(s), "
+              f"{report['n_recurrences_a_arbitrer']} a arbitrer",
               file=sys.stderr)
         for rec in recurrences:
             print(f"  #{rec.issue} -> #{rec.host}  [{rec.signal}:{rec.detail}] "

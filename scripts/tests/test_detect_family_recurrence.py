@@ -100,6 +100,84 @@ class TestFamilyKeys(unittest.TestCase):
         ]
         self.assertEqual(detect(issues, set(), now=NOW), [])
 
+    def test_audit_partitions_with_the_SAME_label_are_not_a_family(self):
+        """The property, not the spelling: two partitions of the same label.
+
+        21 of the 29 open partitions carry the label ``partition Hermes``;
+        the exclusion must be by MARKER, not by the accident of the title
+        template (the old test only checked ``Hermes`` != ``Loki``).
+        """
+        issues = [
+            _issue(300, "[Audit #17073] Serie Lean — partition Hermes",
+                   body="travail de la partition", created="2026-11-02T10:00:00Z"),
+            _issue(301, "[Audit #17073] Serie Lean — partition Hermes",
+                   body="travail de la partition", created="2026-11-03T10:00:00Z"),
+            _issue(302, "[Audit #17107] Serie Lean — partition Hermes",
+                   body="autre partition, meme libelle", created="2026-11-03T10:00:00Z"),
+        ]
+        self.assertEqual(detect(issues, set(), now=NOW), [])
+
+    def test_an_issue_declaring_another_parent_is_to_arbitrer(self):
+        """A declared filiation is not a violation: it is reported apart.
+
+        Folding an issue that declares ``Part of #N`` into another host would
+        DESTROY that filiation -- the organ must say ``a_arbitrer``.
+        """
+        issues = [
+            _issue(100, "check_a.py : le cas de reference", body="check_a.py",
+                   created="2026-10-30T10:00:00Z"),
+            _issue(101, "check_a.py : faux positif", body="check_a.py\n\nPart of #102",
+                   created="2026-11-02T10:00:00Z"),
+            _issue(102, "une autre issue ouverte, sans famille", body="rien ici",
+                   created="2026-10-30T10:00:00Z"),
+        ]
+        result = detect(issues, {"check_a.py"}, window_days=14, now=NOW)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].declared_parent, 102)
+        self.assertEqual(result[0].confidence, "a_arbitrer")
+        # un parent declare QUI EST l'hote n'est pas une divergence
+        issues[1].body = "check_a.py\n\nPart of #100"
+        result = detect(issues, {"check_a.py"}, window_days=14, now=NOW)
+        self.assertEqual(result[0].confidence, "forte")
+
+    def test_a_declared_parent_protects_even_when_closed(self):
+        """A declared filiation protects, even if the parent is closed.
+
+        The two parents the review cited (#11435, #15369) are CLOSED: the
+        organ must not count those recurrences as violations -- the verdict
+        there is a human arbitration.
+        """
+        issues = [
+            _issue(100, "check_a.py : le cas de reference", body="check_a.py",
+                   created="2026-10-30T10:00:00Z"),
+            _issue(101, "check_a.py : faux positif", body="check_a.py\n\nPart of #999",
+                   created="2026-11-02T10:00:00Z"),
+        ]
+        result = detect(issues, {"check_a.py"}, window_days=14, now=NOW)
+        self.assertEqual(result[0].declared_parent, 999)
+        self.assertEqual(result[0].confidence, "a_arbitrer")
+
+    def test_an_issue_without_a_declared_parent_stays_a_violation(self):
+        """No declared parent = the issue is the orphan the rule targets."""
+        issues = [
+            _issue(100, "check_a.py : le cas de reference", body="check_a.py",
+                   created="2026-10-30T10:00:00Z"),
+            _issue(101, "check_a.py : faux positif", body="check_a.py",
+                   created="2026-11-02T10:00:00Z"),
+        ]
+        result = detect(issues, {"check_a.py"}, window_days=14, now=NOW)
+        self.assertEqual(result[0].confidence, "forte")
+
+    def test_a_truncated_pool_is_reported_as_incomplete(self):
+        """A pool that leaves issues out must not read as the population."""
+        dropped, complete = _mod._pool_status(400, 596)
+        self.assertEqual(dropped, 196)
+        self.assertFalse(complete)
+        dropped, complete = _mod._pool_status(596, 596)
+        self.assertEqual(dropped, 0)
+        self.assertTrue(complete)
+        self.assertEqual(_mod._pool_status(10, None), (None, None))
+
     def test_unrelated_issues_are_not_a_family(self):
         issues = [
             _issue(1, "Un probleme de physique"),
