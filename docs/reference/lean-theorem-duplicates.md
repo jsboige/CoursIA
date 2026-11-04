@@ -12,8 +12,8 @@ Ce tableau est un **signal**, pas un verdict : retirer, fusionner ou deplacer un
 
 | Nom A | Lac A | Nom B | Lac B | Docstring | Termes |
 |---|---|---|---|---|---|
-| `arrow` | `MyIA.AI.Notebooks/GameTheory/game_theory_lean` | `arrow_impossibility` | `MyIA.AI.Notebooks/GameTheory/lean_game_defs` | 0.29 | `arrow` |
-| `sen_impossibility` | `MyIA.AI.Notebooks/GameTheory/game_theory_lean` | `sen_impossibility` | `MyIA.AI.Notebooks/GameTheory/lean_game_defs` | 0.20 | `sen` |
+| `arrow` | `MyIA.AI.Notebooks/GameTheory/game_theory_lean` | `arrow_impossibility` | `MyIA.AI.Notebooks/GameTheory/lean_game_defs` | 0.27 | `arrow` |
+| `sen_impossibility` | `MyIA.AI.Notebooks/GameTheory/game_theory_lean` | `sen_impossibility` | `MyIA.AI.Notebooks/GameTheory/lean_game_defs` | 0.29 | `sen` |
 
 ### Paires faibles — terme de nom commun, docstrings eloignees
 
@@ -36,8 +36,8 @@ Ces paires partagent un terme rare mais ne decrivent pas clairement le meme resu
 
 Detail des paires (fichier et ligne) :
 
-- **1.00** -- `arrow` (MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice/Arrow.lean:691) et `arrow_impossibility` (MyIA.AI.Notebooks/GameTheory/lean_game_defs/SocialChoice.lean:894) -- nom 1.00 / docstring 0.29 / enonce 0.08 / termes arrow
-- **1.00** -- `sen_impossibility` (MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice/Sen.lean:71) et `sen_impossibility` (MyIA.AI.Notebooks/GameTheory/lean_game_defs/SocialChoice.lean:986) -- nom 1.00 / docstring 0.20 / enonce 0.09 / termes sen
+- **1.00** -- `arrow` (MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice/Arrow.lean:696) et `arrow_impossibility` (MyIA.AI.Notebooks/GameTheory/lean_game_defs/SocialChoice.lean:899) -- nom 1.00 / docstring 0.27 / enonce 0.08 / termes arrow
+- **1.00** -- `sen_impossibility` (MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice/Sen.lean:77) et `sen_impossibility` (MyIA.AI.Notebooks/GameTheory/lean_game_defs/SocialChoice.lean:996) -- nom 1.00 / docstring 0.29 / enonce 0.09 / termes sen
 - **1.00** -- `fairBot_fairBot_cooperation` (MyIA.AI.Notebooks/GameTheory/game_theory_lean/ProgramGames/FairBot.lean:205) et `fairBot_self_cooperation` (MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/FormalLogic/FairBotLoeb.lean:97) -- nom 1.00 / docstring 0.09 / enonce 0.00 / termes cooperation
 - **1.00** -- `fairBot_fairBot_cooperation` (MyIA.AI.Notebooks/GameTheory/game_theory_lean/ProgramGames/FairBot.lean:205) et `fairBot_mutual_cooperation` (MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/FormalLogic/FairBotLoeb.lean:105) -- nom 1.00 / docstring 0.09 / enonce 0.00 / termes cooperation
 - **1.00** -- `fairBot_fairBot_cooperation` (MyIA.AI.Notebooks/GameTheory/game_theory_lean/ProgramGames/FairBot.lean:205) et `pa_fairBot_self_cooperation` (MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/FormalLogic/FairBotLoeb.lean:175) -- nom 1.00 / docstring 0.09 / enonce 0.00 / termes cooperation
