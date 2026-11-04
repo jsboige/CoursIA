@@ -126,7 +126,7 @@ def test_un_UNFROZEN_ne_leve_pas_un_gel_du_body(monkeypatch):
     """Le degel d'un gel de body, c'est le **retrait de la ligne** : un
     commentaire `[UNFROZEN]` ne fait pas foi (grammaire du 2026-11-03)."""
     _install(monkeypatch,
-             [{"body": "[UNFROZEN] gel leve -- ai-01"},
+             [{"body": "[UNFROZEN] gel leve -- lane myia-ai-01:CoursIA"},
               {"body": "[RELEASED] lane myia-po-2024:CoursIA"}],
              body="[FROZEN] accord de coordination -- ai-01")
     assert pig.has_recent_delivery_marker(19309) is True
@@ -224,7 +224,7 @@ def test_un_UNFROZEN_posterieur_ferme_un_gel_pose_en_commentaire(monkeypatch):
     eternel (criteres d'acceptation de #24516)."""
     _install(monkeypatch, [
         {"body": "[FROZEN] accord de coordination -- ai-01"},
-        {"body": "[UNFROZEN] gel leve -- ai-01"},
+        {"body": "[UNFROZEN] gel leve -- lane myia-ai-01:CoursIA"},
         {"body": "[RELEASED] lane myia-po-2024:CoursIA"},
     ])
     assert pig.has_recent_delivery_marker(19309) is False
@@ -235,7 +235,7 @@ def test_un_gel_pose_en_commentaire_plus_recent_qu_un_UNFROZEN_gele(
     """Le fil se lit dans l'ordre : le dernier etat gagne."""
     _install(monkeypatch, [
         {"body": "[FROZEN] accord de coordination -- ai-01"},
-        {"body": "[UNFROZEN] gel leve -- ai-01"},
+        {"body": "[UNFROZEN] gel leve -- lane myia-ai-01:CoursIA"},
         {"body": "[FROZEN] accord de coordination -- ai-01"},
     ])
     assert pig.has_recent_delivery_marker(19309) is True
@@ -243,9 +243,52 @@ def test_un_gel_pose_en_commentaire_plus_recent_qu_un_UNFROZEN_gele(
 
 def test_un_gel_du_body_prime_sur_un_UNFROZEN_du_fil(monkeypatch):
     _install(monkeypatch,
-             [{"body": "[UNFROZEN] gel leve -- ai-01"}],
+             [{"body": "[UNFROZEN] gel leve -- lane myia-ai-01:CoursIA"}],
              body="[FROZEN] accord de coordination -- ai-01")
     assert pig.has_recent_delivery_marker(19309) is True
+
+
+# --- (B') l'AUTORITE du degel : la lane declaree, pas l'auteur GitHub -------
+
+def test_un_UNFROZEN_d_une_lane_tierce_ne_leve_pas_le_gel(monkeypatch):
+    """Temoin NEGATIF exige par le coordinateur (dispatch c2764, point 2).
+
+    Le login GitHub est **partage** (`jsboige`) : l'auteur du commentaire ne
+    prouve rien. L'autorite se lit dans la lane DECLAREE dans le marqueur,
+    et seules deux lanes sont habilitees (coordinateur, adjoint
+    titulaire). Un `[UNFROZEN]` d'une lane tierce ne leve donc rien.
+    """
+    _install(monkeypatch, [
+        {"body": "[FROZEN] accord de coordination -- ai-01"},
+        {"body": "[UNFROZEN] gel leve -- lane myia-po-2027:CoursIA"},
+        {"body": "[RELEASED] lane myia-po-2024:CoursIA"},
+    ])
+    assert pig.has_recent_delivery_marker(19309) is True
+
+
+def test_un_UNFROZEN_sans_lane_declaree_ne_leve_pas_le_gel(monkeypatch):
+    """Fail-closed : sans lane declaree, personne n'est habilite."""
+    _install(monkeypatch, [
+        {"body": "[FROZEN] accord de coordination -- ai-01"},
+        {"body": "[UNFROZEN] gel leve -- ai-01"},
+    ])
+    assert pig.has_recent_delivery_marker(19309) is True
+
+
+@pytest.mark.parametrize("lane", sorted(pig.FROZEN_UNFROZEN_LANES))
+def test_l_adjoint_titulaire_ferme_bien_un_gel_de_commentaire(monkeypatch, lane):
+    """Les deux lanes habilitees ferment le gel (controle positif du filtre)."""
+    _install(monkeypatch, [
+        {"body": "[FROZEN] accord de coordination -- ai-01"},
+        {"body": f"[UNFROZEN] gel leve -- lane {lane}"},
+    ])
+    assert pig.has_recent_delivery_marker(19309) is False
+
+
+def test_la_lane_habilitee_est_celle_du_delivered_urn(monkeypatch):
+    """Le filtre d'autorite suit le meme modele que l'urne `delivered`
+    (dispatch c2764) : les deux listes portent les memes lanes."""
+    assert pig.FROZEN_UNFROZEN_LANES == pig.DELIVERED_URN_LANES
 
 
 # --- (C) ce qui ne change pas ----------------------------------------------

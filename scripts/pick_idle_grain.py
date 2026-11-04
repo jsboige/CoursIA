@@ -1757,6 +1757,37 @@ _UNFROZEN_HEADER_RE = re.compile(
     re.MULTILINE,
 )
 
+#: Lanes habilitees a **fermer** un gel pose en COMMENTAIRE (regle B).
+#:
+#: Meme modele que `DELIVERED_URN_LANES` : le login GitHub est **partage**
+#: (`jsboige`), donc l'autorite ne peut pas se lire dans l'AUTEUR du
+#: commentaire -- elle se lit dans la LANE DECLAREE dans le marqueur. Un
+#: tiers qui ecrit `[UNFROZEN]` sous le login partage ne leve rien.
+#:
+#: Coordinateur, 2026-11-04 (dispatch c2764, point 2).
+FROZEN_UNFROZEN_LANES = frozenset({
+    "myia-ai-01:CoursIA",       # coordinateur
+    "myia-po-2025:CoursIA-2",   # adjoint titulaire
+})
+
+#: La lane declaree dans un marqueur : `lane <machine>:<workspace>`.
+_LANE_IN_MARKER_RE = re.compile(
+    r"\blane\s+([A-Za-z0-9_.-]+:[A-Za-z0-9_.-]+)",
+    re.IGNORECASE,
+)
+
+
+def _declared_lane(text: str) -> str | None:
+    """La lane declaree dans un marqueur (``lane <machine>:<workspace>``)."""
+    match = _LANE_IN_MARKER_RE.search(text)
+    return match.group(1) if match else None
+
+
+def unfrozen_allowed(lane: str | None) -> bool:
+    """Cette lane a-t-elle le droit de fermer un gel de commentaire ?"""
+    return lane in FROZEN_UNFROZEN_LANES
+
+
 #: Code **documente** un marqueur, il ne le **pose** pas. Un corps qui
 #: explique la grammaire en recopiant la ligne canonique dans une fence
 #: gelerait l'issue qui le decrit -- c'est le meme defaut que le corps qui
@@ -2612,7 +2643,14 @@ def _issue_is_frozen(issue_body: str | None,
         if _UNFROZEN_HEADER_RE.search(text):
             # Un degel posterieur efface le gel anterieur : le fil se lit
             # dans l'ordre, et le dernier etat gagne.
-            frozen = False
+            #
+            # **Mais seul un degel d'une lane habilitee le fait** (dispatch
+            # c2764, 2026-11-04) : le login GitHub est partage, donc
+            # l'autorite se lit dans la lane DECLAREE dans le marqueur. Un
+            # `[UNFROZEN]` sans lane declaree, ou d'une lane tierce, ne
+            # leve rien -- fail-closed.
+            if unfrozen_allowed(_declared_lane(text)):
+                frozen = False
             continue
         if _FROZEN_HEADER_RE.search(text):
             frozen = True
