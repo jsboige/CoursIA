@@ -392,13 +392,13 @@ Post-c.390 PR #5840 (entry #003 SymbolicLearning audit axe-2), pivot vers substa
 | DecInfer-08-Sequential | 32 | 14 | 14/14 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (dynamic decision processes backward induction) | **SOTA-OK** |
 | **DecInfer-09-Lean-Gittins** | 25 | 10 | 10/10 | 0 | 0 | **lean4-wsl** | **Lean 4 formel** (Gittins index preuves partielles) | **SOTA-OK** |
 | DecInfer-10-Thompson-Sampling | 28 | 12 | 12/12 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (Beta-Bernoulli Thompson sampling bayésien) | **SOTA-OK** |
-| DecPyMC-1-Utility-Foundations | 28 | 12 | 12/12 | 0 | 0 | python3 | PyMC + ArviZ (utility curves posteriors) | **SOTA-OK** |
-| DecPyMC-2-Utility-Money | 60 | 28 | 28/28 | 0 | 0 | python3 | PyMC + ArviZ (CARA/CRRA Savage/Friedman) | **SOTA-OK** |
-| DecPyMC-3-Multi-Attribute | 50 | 25 | 25/25 | 0 | 0 | python3 | PyMC + ArviZ (multi-attribute utility theory posteriors) | **SOTA-OK** |
-| DecPyMC-4-Decision-Networks | 32 | 14 | 14/14 | 0 | 0 | python3 | PyMC + ArviZ (influence diagrams) | **SOTA-OK** |
-| DecPyMC-5-Value-Information | 65 | 29 | 29/29 | 0 | 0 | python3 | PyMC + ArviZ (EVPI/EVSI computation) | **SOTA-OK** |
-| DecPyMC-6-Expert-Systems | 48 | 22 | 22/22 | 0 | 0 | python3 | PyMC + ArviZ (expert fusion pondération bayésienne) | **SOTA-OK** |
-| DecPyMC-7-Sequential | 50 | 23 | 23/23 | 0 | 0 | python3 | PyMC + ArviZ (sequential decision, Bellman-style) | **SOTA-OK** |
+| DecPyMC-01-Utility-Foundations | 28 | 12 | 12/12 | 0 | 0 | python3 | PyMC + ArviZ (utility curves posteriors) | **SOTA-OK** |
+| DecPyMC-02-Utility-Money | 60 | 28 | 28/28 | 0 | 0 | python3 | PyMC + ArviZ (CARA/CRRA Savage/Friedman) | **SOTA-OK** |
+| DecPyMC-03-Multi-Attribute | 50 | 25 | 25/25 | 0 | 0 | python3 | PyMC + ArviZ (multi-attribute utility theory posteriors) | **SOTA-OK** |
+| DecPyMC-04-Decision-Networks | 32 | 14 | 14/14 | 0 | 0 | python3 | PyMC + ArviZ (influence diagrams) | **SOTA-OK** |
+| DecPyMC-05-Value-Information | 65 | 29 | 29/29 | 0 | 0 | python3 | PyMC + ArviZ (EVPI/EVSI computation) | **SOTA-OK** |
+| DecPyMC-06-Expert-Systems | 48 | 22 | 22/22 | 0 | 0 | python3 | PyMC + ArviZ (expert fusion pondération bayésienne) | **SOTA-OK** |
+| DecPyMC-07-Sequential | 50 | 23 | 23/23 | 0 | 0 | python3 | PyMC + ArviZ (sequential decision, Bellman-style) | **SOTA-OK** |
 | Do-Calculus-Bridge | 22 | 10 | 10/10 | 0 | 0 | coursia-ml-training | **dowhy** (Microsoft) + **Do-Calculus** Pearl (backdoor/front-door) | **SOTA-OK** |
 
 **Total** : 18/18 EXEC_PROVED · 315 cellules code remplies · 0 erreur runtime · 0 violation C.1 réelle.
@@ -423,14 +423,14 @@ Post-c.390 PR #5840 (entry #003 SymbolicLearning audit axe-2), pivot vers substa
 
 Chaque notebook pose un problème de **théorie de la décision** avancé qui exerce la capacité distinctive du moteur :
 
-- **DecInfer-01/DecPyMC-1** : Utility foundations (axiomes von Neumann–Morgenstern) — courbes d'utilité, concavité/convexité, certainty equivalent
+- **DecInfer-01/DecPyMC-01** : Utility foundations (axiomes von Neumann–Morgenstern) — courbes d'utilité, concavité/convexité, certainty equivalent
 - **DecInfer-02/DecInfer-09** : Lean 4 formel (preuve sound représentation vNM + Gittins index) — fondation mathématique
-- **DecInfer-03/DecPyMC-2** : Utility of money — Saint-Petersbourg paradoxe, Friedman-Savage, Arrow-Pratt RRA, CARA/CRRA
-- **DecInfer-04/DecPyMC-3** : Multi-attribute utility (MAUT) — pondérations additives, dominance stochastique
-- **DecInfer-05/DecPyMC-4** : Decision networks (influence diagrams) — backward induction sur DAG décision/chance/valeur
-- **DecInfer-06/DecPyMC-5** : Value of information (EVPI) — Expected Value of Perfect Information, EVSI
-- **DecInfer-07/DecPyMC-6** : Expert systems — fusion de jugements experts par pondération bayésienne de précision
-- **DecInfer-08/DecPyMC-7** : Sequential decisions — dynamic programming, Bellman-style backward induction
+- **DecInfer-03/DecPyMC-02** : Utility of money — Saint-Petersbourg paradoxe, Friedman-Savage, Arrow-Pratt RRA, CARA/CRRA
+- **DecInfer-04/DecPyMC-03** : Multi-attribute utility (MAUT) — pondérations additives, dominance stochastique
+- **DecInfer-05/DecPyMC-04** : Decision networks (influence diagrams) — backward induction sur DAG décision/chance/valeur
+- **DecInfer-06/DecPyMC-05** : Value of information (EVPI) — Expected Value of Perfect Information, EVSI
+- **DecInfer-07/DecPyMC-06** : Expert systems — fusion de jugements experts par pondération bayésienne de précision
+- **DecInfer-08/DecPyMC-07** : Sequential decisions — dynamic programming, Bellman-style backward induction
 - **DecInfer-10** : Thompson Sampling — bandits manchots bayésiens (Beta-Bernoulli conjugué, posterior updating)
 - **Do-Calculus-Bridge** : dowhy (Microsoft) + backdoor adjustment — causal inference Pearl
 

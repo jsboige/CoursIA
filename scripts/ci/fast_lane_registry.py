@@ -822,6 +822,7 @@ TRANCHE1: list[Guard] = [
             "MyIA.AI.Notebooks/GenAI/FineTuning/**",
             "MyIA.AI.Notebooks/IIT/**",
             "MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/**",
+            "MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/**",
             "MyIA.AI.Notebooks/Probas/Infer/**",
             "MyIA.AI.Notebooks/Probas/PyMC/**",
             "MyIA.AI.Notebooks/Search/Part1-Foundations/**",
@@ -3300,6 +3301,69 @@ TRANCHE32: list[Guard] = [
 ]
 
 # ---------------------------------------------------------------------------
+# TRANCHE 35 -- denominateur de serie dans l'en-tete d'un carnet (#23678/#23738).
+#
+# Le champ `**Notebook** : 6f/13` porte l'effectif de la serie, une donnee
+# DERIVEE dont la source de verite est le catalogue genere : il est perime par
+# construction des qu'un carnet est ajoute a la racine. Mesure du 2026-10-31 sur
+# la serie RL : 18 carnets le declaraient, tous faux, et l'accretion de `RL-06f`
+# en a perime 14 d'un coup sans qu'aucun signal ne tire. L'organe existe depuis
+# le corpus de #23739 mais rien ne l'executait -- un organe que rien n'execute
+# ne garde rien.
+#
+# ADVISORY (`blocking=False`) : c'est la forme qui n'exige aucun sign-off
+# (`CLAUDE.md` section A reserve le sign-off aux ajouts normatifs et aux
+# changements de registre de gates ; un advisory publie un verdict sans jamais
+# tenir le merge). La bascule en bloquant reste un geste trace a part, qui
+# appartient au coordinateur.
+#
+# Mesure prerable au cablage (demande NanoClaw 2 de la revue de #23739) :
+# `check_series_denominator.py MyIA.AI.Notebooks --json` rend **0 constat** sur
+# l'arbre entier a la tete de `main` du 2026-11-01, controle independamment par
+# `grep -E '\*\*Notebook(\*\*)? *: *[0-9]+[a-z]? */ *[0-9]+'` -> 0 fichier.
+# Le garde nait donc vert : aucun rouge heritee ne tombe sur une PR innocente.
+#
+# Forme : iter par carnet modifie (`--check` n'existe pas dans l'organe, il
+# prend des chemins positionnels -- `{changed_paths}` substitue un fichier a la
+# fois). Un carnet modifie qui declare encore un denominateur remonte sur la PR.
+#
+# `pre_argv` : le detecteur prouve qu'il tire avant de rendre un vert (#11685).
+# `absorbed=True` : meme convention que TRANCHE11/13/22/32.
+#
+# Numero : `TRANCHE37`, pas `TRANCHE35`. Deux tranches se sont disputé le nom
+# `TRANCHE35` -- celle-ci (advisory de denominateur, #23678, #23951) et la
+# garde d'encodage (#23021, #24037). La seconde affectation ecrase la premiere
+# en Python : le registre portait une garde **muette**, celle de #23678 ne
+# tournait pas (incident #19374). `TRANCHE35` reste a la garde d'encodage, qui
+# avait deja ete evacuee en amont ; `TRANCHE36` est reserve a la PR #24063
+# (garde des chemins machine), en vol sur une autre lane -- d'ou `TRANCHE37`.
+# ---------------------------------------------------------------------------
+TRANCHE37: list[Guard] = [
+    Guard(
+        name="Series-denominator advisory (denominateur d'en-tete, #23678)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "scripts/notebook_tools/check_series_denominator.py",
+            "scripts/tests/test_check_series_denominator.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        iterate_paths=["MyIA.AI.Notebooks/**/*.ipynb"],
+        pre_argv=[
+            "python", "scripts/tests/test_check_series_denominator.py",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_series_denominator.py",
+            "{changed_paths}",
+        ],
+        blocking=False,
+        iterates_paths=True,
+        absorbed=True,
+    ),
+]
+
+# ---------------------------------------------------------------------------
 # Critere 3 de l'EPIC #13504, en organe (tranche du 2026-11-01).
 #
 # `scripts/ci/check_site_links.py` couvre la direction README -> carnet (un
@@ -3384,5 +3448,59 @@ TRANCHE35: list[Guard] = [
         diff_bounded=True,       # lignes ajoutees seulement : main ne peut pas heriter
         absorbed=True,
         warn_rc=(2,),
+    ),
+]
+
+# Renumerote TRANCHE35 -> TRANCHE36 le 2026-11-01 (#3436) : `main` avait affecte
+# TRANCHE35 a la garde d'encodage (#23021) pendant que cette branche lui
+# affectait le garde des chemins machine ; meme precedent que TRANCHE31 ->
+# TRANCHE32 (c2740, 2026-10-31).
+
+# TRANCHE36 -- chemins machine dans metadata.papermill (#3436, delta borne)
+#
+# Le hook `scrub-papermill-paths` de `.pre-commit-config.yaml` est la premiere
+# ligne, et il fonctionne : mesure du 2026-11-01 sur une sonde Windows, `--scan`
+# detecte 2 chemins absolus, `--apply` les ramene aux basenames. Mais un hook
+# client se contourne par construction (`--no-verify`, `SKIP`, tout commit hors
+# hooks git), et QUATRE fuites ont atterri le meme jour (#23914, #23917,
+# #23943, #23958) avant d'etre reparees apres coup. Aucun organe CI ne les
+# voyait : les checks lisent les sorties, pas `metadata.papermill`.
+#
+# DELTA et pas absolu : `main` porte 22 carnets / 42 chemins absolus
+# (`scrub_papermill_paths.py --scan-all`, meme jour). Un gate absolu rougirait
+# toute PR touchant un de ces carnets pour une raison sans rapport -- le piege
+# que `pip_leak_delta.py` documente (#6314). Le stock herite ne rougit
+# personne ; une introduction, si.
+#
+# Durci post-review NanoClaw (2026-11-01) : le delta porte sur les VALEURS
+# (une substitution C:\old -> D:\new rougit a compte constant), le predicat
+# est insensible a la casse et couvre racines POSIX, UNC et lecteur minuscule,
+# et un renommage pur d'un carnet du stock fuyard reste vert (git diff -M).
+#
+# Controles du detecteur, rejoues : positif sur la fuite reelle de #23958 avant
+# scrub (`--base-ref 3b199d3d8d --head-ref 8e54b1335` : 0 -> 2 chemins, rc=1),
+# negatif sur `main` (rc=0) et negatif apres le scrub de la meme PR
+# (`2639f9214de`, rc=0). Bout en bout par `fast_lane.py --only` : success sur
+# une branche propre, failure sur un commit jetable portant les deux chemins.
+# ---------------------------------------------------------------------------
+TRANCHE36: list[Guard] = [
+    Guard(
+        name="papermill machine paths (delta vs base)",
+        source=FAST_LANE_NATIVE,
+        paths=NOTEBOOK_GLOBS + [
+            "scripts/ci/check_papermill_machine_paths.py",
+            "scripts/notebook_tools/scrub_papermill_paths.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python", "scripts/ci/check_papermill_machine_paths.py",
+            "--base-ref", "{base_ref}",
+        ],
+        blocking=True,
+        needs_base=True,
+        diff_bounded=True,
+        absorbed=True,
+        warn_rc=(2,),            # 2 = base injoignable : UNKNOWN, pas un rouge
     ),
 ]
