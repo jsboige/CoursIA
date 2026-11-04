@@ -33,6 +33,18 @@ garde : c'est le cas `DECLARATION_STALE` du corps de tests
 arbre temporaire où une copie déclarée diffère de son empreinte et exige un
 verdict rouge. Le cas nominal (arbre du dépôt) doit rester vert.
 
+**Angle mort connu — le nom de classe est la signature.** La garde
+reconnaît la famille par le **nom** de la classe (`MultiStrategy*PCM`) :
+aucune analyse du corps ne rattache une classe à la famille. Une copie
+renommée (`PouchesPCM`, ou n'importe quel nom qui ne se termine pas par
+`PCM`) échappe donc au filtre, et une classe légitime hors famille
+(`MultiStrategyOrchestrator`) est hors périmètre par construction — les
+deux cas sont le même mécanisme. Un angle mort documenté n'est pas un
+angle mort : une copie de la famille qui change de nom doit être déclarée
+dans le manifeste, pas laissée au silence de la garde. Le cas mesuré :
+un nom de classe constant est ce que la garantie « refuse qu'une nouvelle
+copie apparaisse » recouvre.
+
 **Empreinte.** `sha256` du texte normalisé (fins de ligne ramenées à `\n`),
 afin que l'empreinte soit la même sur un checkout Windows (`core.autocrlf`)
 et sur un checkout Linux.
