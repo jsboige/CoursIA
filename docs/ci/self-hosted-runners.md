@@ -550,14 +550,17 @@ Docker relance le conteneur à chaque démarrage du daemon (donc de la distro) ;
 
 La primitive de routage est le **jeu de labels dédié** : `DEDICATED_LABEL_SETS` dans `scripts/ci/check_self_hosted_runner_policy.py` porte un jeu par pool, et c'est le label distinct qui garantit le routage — jamais une convention de nommage.
 
-### Inventaire des pools (mesuré sur `main`, octobre 2026)
+**La règle jumelle, mesurée le 2026-11-04 : un pool qui sort de la flotte sort de la liste d'autorisation.** `DEDICATED_LABEL_SETS` est une liste de jeux **servis**, pas une liste de jeux deseinés : y laisser un pool éteint ouvre un trou *fail-open* — le garde certifie un routage qu'aucun runner ne peut prendre, et le job attend en file d'attente indéfiniment. Le retrait s'oppose donc à l'oubli : le jeu retiré est conservé, renommé, dans `RETIRED_LABEL_SETS`, et un test interdit sa ré-admission silencieuse.
+
+### Inventaire des pools (mesuré sur `main`, octobre 2026 ; re-mesuré le 2026-11-04)
 
 | Pool | Jeu de labels | Support | Rôle |
 |---|---|---|---|
 | `coursia-fast-guards` | `REQUIRED_LABELS` | hôte Windows | gardes Windows (po-2024) |
 | `coursia-linux` | `LINUX_RUNNER_LABELS` | conteneur, image minimale + python/gh/jq | gardes PR pure-Python |
 | `coursia-waiter` | `WAITER_LABELS` | label distinct sans slot de travail | laisser un gate **attendre** sans consommer de CPU (arbitrage ai-01 2026-09-02 : « attendre ne coûte pas de CPU ») |
-| `coursia-lean` | `LEAN_RUNNER_LABELS` | conteneur, image `Dockerfile.lean` (elan + toolchain), `.lake` tenu chaud dans le volume par slot | scans et builds Lean ; un slot lean ne porte **jamais** `coursia-linux` |
+| `coursia-lean` | `RETIRED_LEAN_RUNNER_LABELS` — **retiré**, pool éteint | conteneur, image `Dockerfile.lean` (elan + toolchain), `.lake` tenu chaud dans le volume par slot | scans et builds Lean ; **pool éteint** — extinction mesurée le 2026-10-23 par la sonde du dépôt, confirmée le 2026-11-04 (48 runners, **zéro** porteur de `coursia-lean`) ; les jambes Lean sont passées à `[self-hosted, coursia-ephemeral, coursia-linux]` |
+| `coursia-persistent` | jeu **non autorisé** par le garde | conteneur, slots persist de po-2024 | 7 slots **enregistrés mais offline** à la mesure du 2026-11-04 ; leur jeu de labels n'est pas dans `DEDICATED_LABEL_SETS`, donc aucun workflow ne peut y router ; ils portent `coursia-ephemeral` alors que leur spécification versionnée (`scripts/ci/docker/linux-runner/persist/po-2024/create-persist-slots.sh`) impose l'inverse (« un slot persist porte `coursia-persistent` et **NE porte PAS** `coursia-ephemeral` ») — arbitrage de composition de flotte, pas de lane |
 
 Les pools `coursia-docs` (quarto/pandoc) et `coursia-browser` (npm + navigateurs Playwright) restent des **candidats non livrés** : leur déploiement touche le conteneur runner porté par po-2024 — l'infra d'un autre workspace se demande au workspace qui la porte, elle ne s'applique pas depuis l'extérieur.
 
@@ -569,7 +572,8 @@ La ligne de migration qui déplace le coût réel est le `runs-on` de `lean-buil
 
 1. un nouveau jeu de labels dans `DEDICATED_LABEL_SETS` ;
 2. une image dédiée — jamais un ajout à l'image commune ;
-3. l'entrée correspondante dans `scripts/tests/test_check_self_hosted_runner_policy.py`.
+3. l'entrée correspondante dans `scripts/tests/test_check_self_hosted_runner_policy.py` ;
+4. **la mesure du parc** : `gh api repos/jsboige/CoursIA/actions/runners` rend les runners **en service** et leurs jeux de labels — c'est cette mesure, et non la présence du jeu dans la liste, qui dit si un routage est servi. Le symétrique est obligatoire : quand un pool s'éteint, son jeu sort de `DEDICATED_LABEL_SETS` et passe dans `RETIRED_LABEL_SETS` (constante conservée, test de non-ré-admission à l'appui), faute de quoi le garde certifie une file d'attente éternelle.
 
 ## Tranches suivantes, activation partielle
 
