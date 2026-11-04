@@ -414,7 +414,7 @@ Search/search_lean
 Sudoku/sudoku_lean
 SymbolicAI/Lean/calibration_lean
 SymbolicAI/Lean/GOL/conway_lean
-SymbolicAI/Lean/grothendieck_lean
+SymbolicAI/Lean/GROTH/grothendieck_lean
 SymbolicAI/Lean/KNOTS/knot_lean
 SymbolicAI/Lean/mathlib_examples
 SymbolicAI/Lean/sensitivity_lean
