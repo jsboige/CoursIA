@@ -11,7 +11,7 @@ Cette page est regeneree par `scripts/lean/lean_material_map.py`. Une table reco
 | Lac | Modules | Miroirs | CI | Gate axiomes | Naissance |
 |---|---|---|---|---|---|
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean` | 100 | 98 | declare | couverte | 2026-05-31 |
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean` | 57 | 41 | declare | couverte | 2026-05-28 |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean` | 57 | 41 | declare | hors matrice | - |
 | `MyIA.AI.Notebooks/GameTheory/game_theory_lean` | 39 | 25 | declare | couverte | 2026-07-10 |
 | `MyIA.AI.Notebooks/Search/discrepancy_lean` | 33 | 25 | declare | couverte | 2026-08-25 |
 | `MyIA.AI.Notebooks/ML/learning_theory_lean` | 32 | 30 | declare | couverte | 2026-06-25 |
