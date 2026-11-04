@@ -55,3 +55,25 @@
  *    rendues ici — 0.82em, interligne 1.22, marge d'item 0.02em, marge de
  *    H2 0.3em. La garder en double faisait naître une deuxième définition
  *    de la même classe, divergente des autres decks. */
+
+/* 6. Slide « Exploration locale d'espaces continus » : quatre sections H2,
+ *    trois niveaux de sous-listes et un bloc Corpus de quatre liens ne
+ *    tenaient pas sous la compression générale — le corps dépassait le bas
+ *    de page et recouvrait le pied de page du thème (mesuré au rendu PNG,
+ *    scan_slidev_overflow : diapo 48/88, ink_ratio 0.0138, seul signalement
+ *    du deck). La diapo d'origine (PPTX, slide 51) porte bien tout ce
+ *    contenu sur une seule page : la découper casserait l'alignement 1:1
+ *    avec la référence, donc on resserre au lieu de scinder. Aucun contenu
+ *    retiré : .dense-list--tight récupère la marge des H2 que la classe
+ *    générique laisse à 0.3em, .corpus-note ramène le bloc de sources à un
+ *    interligne de note. */
+.dense-list--tight h2 {
+  margin-top: 0.15em;
+  margin-bottom: 0.05em;
+}
+.corpus-note {
+  display: block;
+  font-size: 0.62em;
+  line-height: 1.2;
+  margin-top: 0.2em;
+}
