@@ -120,7 +120,15 @@ def test_dossier_close_reste_terminal():
 # --- 3. le filtre RECENT --------------------------------------------------
 
 def _recent(body, monkeypatch):
-    monkeypatch.setattr(pig, "_last_comment", lambda _n: _comment(body))
+    """Le filtre RECENT lit le FIL par `_issue_comments` (#24523 : le gel vit
+    dans le corps de l'issue et le balayage porte tout le fil, pas la queue).
+
+    Le seam patche est donc `_issue_comments` -- l'ancien seam
+    (`_last_comment`) ne porte plus le filtre apres ce refactor.
+    """
+    monkeypatch.setattr(pig, "_issue_comments",
+                        lambda _n: ([_comment(body)], ""))
+    monkeypatch.setattr(pig, "_issue_body", lambda _n: None)
     monkeypatch.setattr(pig, "_reopen_events", lambda _n: [])
     return pig.has_recent_delivery_marker(17900)
 
