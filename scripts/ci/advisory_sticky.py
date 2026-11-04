@@ -107,27 +107,37 @@ MAX_ATTEMPTS = 3
 RETRY_JITTER = (0.4, 1.6)
 
 # --------------------------------------------------------------------------
-# Verrou d'ecriture
+# Verrou d'ecriture -- une ETIQUETTE du PR
 # --------------------------------------------------------------------------
-# Le contrat tient par trois mecaniques **sans verrou externe** (adjoint
-# `myia-po-2025:CoursIA-2`, contre-exemple du 2026-11-04 :
-# `B.relecture < A.PATCH < A.verify < B.PATCH` -> les deux ecrivains se
-# croient verifies et la section de A a disparu). La relecture
-# d'**avant** ecriture rattrape l'entre-deux lectures ; la relecture de
-# **stabilisation** rattrape l'ecriture tombee pendant le delai ; ce qui
-# reste est l'ecriture tombee **apres la derniere relecture** -- une
-# fenetre qu'aucune relecture ne ferme, parce que l'API refuse l'ecriture
-# conditionnelle (mesure du 2026-11-04 : `If-Match` -> HTTP 400).
-#
-# Le verrou ferme cette fenetre : l'ecriture elle-meme se fait sous un
-# verrou, pose **dans le corps du commentaire collant**. Deux ecrivains ne
-# peuvent plus s'entrelacer, donc plus s'ecraser mutuellement.
+# Le verrou porte par le **corps** du commentaire ne fermait pas la
+# fenetre. L'adjoint (`myia-po-2025:CoursIA-2`, contre-exemple du
+# 2026-11-04) a montre que lire -> PATCH du corps entier -> relire son
+# proprietaire n'est pas une acquisition **atomique** : un ecrivain dont la
+# lecture precede la prise de l'autre peut ecraser une section deja
+# verifiee, et les deux se croient verifies. Une relecture supplementaire ne
+# ferme pas cette classe de course : l'API refuse l'ecriture conditionnelle
+# (mesure du 2026-11-04 : `If-Match` -> HTTP 400), et l'API des reactions
+# est **idempotente** (mesure du 2026-11-04 : un second POST renvoie la
+# reaction existante en 200, pas 422) -- elle ne peut donc pas servir de
+# test-and-set.
 #:
-#: Le verrou est une **ligne HTML** : invisible au rendu du commentaire,
-#: mais lisible par l'API. Il porte son proprietaire et son horodatage --
-#: un ecrivain mort laisse un verrou perime, que le suivant peut voler
-#: apres le delai de vie.
-LOCK_MARKER = "coursia:advisory-lock"
+#: Le verrou est desormais **une etiquette du PR** :
+#:
+#: * l'ajout d'une etiquette est un **ajout a un ensemble**, atomique cote
+#:   serveur, la ou un PATCH de corps ne l'est pas ; l'ensemble ne
+#:   s'ecrase pas -- deux ecrivains y ajoutent chacun la leur ;
+#: * l'arbitrage se lit dans l'ensemble : parmi les verrous vivants, le plus
+#:   ancien gagne, les egalites etant tranchees par le proprietaire -- les
+#:   deux concurrents eligent donc le **meme** gagnant ;
+#: * ce n'est **ni un commentaire** (le declencheur `issue_comment` ne tire
+#:   pas) **ni une etiquette de gates** (aucun workflow du depot ne se
+#:   declenche sur `labeled`) ;
+#: * les workflows qui publient ont deja `issues: write` : aucun droit
+#:   nouveau, aucune surface d'ecriture elargie.
+#:
+#: Un ecrivain mort laisse son etiquette : au-dela du TTL elle est
+#: **perimee**, le suivant la retire (nettoyage) et prend la main.
+LOCK_LABEL_PREFIX = "coursia-advisory-lock-"
 
 #: Duree de vie d'un verrou (secondes). Au-dela, le verrou est considere
 #: perime : l'ecrivain qui le detient est presume mort.
@@ -136,12 +146,6 @@ LOCK_TTL_SECONDS = 45.0
 #: Duree maximale d'attente d'un verrou (secondes). Au-dela, l'ecriture
 #: est **refusee** : on ne certifie pas une ecriture sous contention.
 LOCK_WAIT_SECONDS = 60.0
-
-_LOCK_LINE_RE = re.compile(
-    r"^[ \t]*<!--[ \t]*" + re.escape(LOCK_MARKER) +
-    r"[ \t]+owner=(?P<owner>\S+)[ \t]+ts=(?P<ts>[0-9.]+)[ \t]*-->[ \t]*\n?",
-    re.M,
-)
 
 
 def _default_runner(cmd, **kwargs):  # pragma: no cover - trivial default
@@ -170,40 +174,83 @@ def _settle_delay() -> float:
 
 
 # --------------------------------------------------------------------------
-# Verrou d'ecriture -- helpers de corps
+# Verrou d'ecriture -- helpers d'etiquettes
 # --------------------------------------------------------------------------
 
-def _lock_line(body: str) -> Optional[str]:
-    r"""La ligne de verrou portee par un corps, ou ``None``."""
-    m = _LOCK_LINE_RE.search(body or "")
-    return m.group(0).strip() if m else None
+def _lock_label(ts: float, owner: str) -> str:
+    r"""Nom de l'etiquette de verrou : horodatage (ms) + proprietaire.
+
+    Le nom porte l'horodatage : c'est lui qui permet de juger un verrou
+    **perime** (ecrivain mort) sans lire le corps du commentaire.
+    """
+    return f"{LOCK_LABEL_PREFIX}{int(ts * 1000)}-{owner}"
 
 
-def _lock_holder(body: str):
-    r"""``(proprietaire, horodatage)`` du verrou present, ou ``None``."""
-    m = _LOCK_LINE_RE.search(body or "")
-    if not m:
+def _parse_lock_label(name: str):
+    r"""``(horodatage, proprietaire)`` d'une etiquette de verrou, ou ``None``."""
+    if not name or not name.startswith(LOCK_LABEL_PREFIX):
         return None
+    rest = name[len(LOCK_LABEL_PREFIX):]
+    ts, _, owner = rest.partition("-")
     try:
-        return m.group("owner"), float(m.group("ts"))
-    except (TypeError, ValueError):
+        return float(ts) / 1000.0, owner
+    except ValueError:
         return None
 
 
-def _strip_lock(body: str) -> str:
-    r"""Corps sans sa ligne de verrou."""
-    return _LOCK_LINE_RE.sub("", body or "")
+def _list_labels(pr: int, repo: str, runner: Callable, timeout: int) -> list:
+    r"""Noms des etiquettes du PR (une PR est une issue pour l'API)."""
+    proc = runner(
+        ["gh", "api", "--paginate", "--slurp",
+         f"repos/{repo}/issues/{pr}/labels"],
+        capture_output=True, text=True, timeout=timeout,
+    )
+    if getattr(proc, "returncode", 1) != 0:
+        raise RuntimeError(f"gh api labels failed: {proc.stderr.strip()}")
+    data = json.loads(proc.stdout)
+    if not isinstance(data, list):
+        raise RuntimeError(
+            f"gh api labels: forme inattendue ({type(data).__name__})")
+    names = []
+    for page in data:
+        for row in page:
+            if isinstance(row, dict) and row.get("name"):
+                names.append(row["name"])
+            elif isinstance(row, str):
+                names.append(row)
+    return names
 
 
-def _with_lock(body: str, lock_line: str) -> str:
-    r"""Corps portant une ligne de verrou (une seule, la derniere posee)."""
-    base = _strip_lock(body or "").rstrip("\n")
-    return base + "\n" + lock_line.strip() + "\n"
+def _add_label(pr: int, repo: str, runner: Callable, timeout: int,
+               name: str) -> None:
+    r"""Ajoute une etiquette au PR -- **ajout a un ensemble**, atomique."""
+    proc = runner(
+        ["gh", "api", "--method", "POST",
+         f"repos/{repo}/issues/{pr}/labels",
+         "-f", f"labels[]={name}"],
+        capture_output=True, text=True, timeout=timeout,
+    )
+    if getattr(proc, "returncode", 1) != 0:
+        raise RuntimeError(
+            f"gh api POST label {name!r} failed: {proc.stderr.strip()}")
+
+
+def _remove_label(pr: int, repo: str, runner: Callable, timeout: int,
+                  name: str) -> None:
+    r"""Retire une etiquette du PR."""
+    proc = runner(
+        ["gh", "api", "--method", "DELETE",
+         f"repos/{repo}/issues/{pr}/labels/{name}"],
+        capture_output=True, text=True, timeout=timeout,
+    )
+    if getattr(proc, "returncode", 1) != 0:
+        raise RuntimeError(
+            f"gh api DELETE label {name!r} failed: {proc.stderr.strip()}")
 
 
 def _owner_id() -> str:
     r"""Identite d'un ecrivain : unique par processus et par tentative."""
-    return "%d-%s" % (os.getpid(), uuid.uuid4().hex[:8])
+    return f"{uuid.uuid4().hex[:8]}{os.getpid() % 1000}"
 
 
 # --------------------------------------------------------------------------
@@ -379,22 +426,24 @@ def _acquire_lock(pr: int, repo: str, runner: Callable, timeout: int,
                   owner: str, sleep: Callable,
                   clock: Callable = time.time,
                   monotonic: Callable = time.monotonic):
-    r"""Prend le verrou d'ecriture du commentaire collant.
+    r"""Prend le verrou d'ecriture -- **une etiquette du PR**.
 
-    Le verrou est une ligne HTML **dans le corps** du commentaire collant :
-    invisible au rendu, lisible par l'API. Il porte son proprietaire et son
-    horodatage, donc un ecrivain mort laisse un verrou **perime** que le
-    suivant peut voler apres :data:`LOCK_TTL_SECONDS`.
+    Le verrou est un **ajout a un ensemble** (les etiquettes du PR) : la
+    prise est atomique cote serveur, la ou un PATCH de corps ne l'est pas.
+    Un PATCH de corps n'est jamais conditionnel (mesure du 2026-11-04 :
+    `If-Match` -> HTTP 400) ; l'etiquette, elle, s'ajoute.
 
-    L'ecriture sous verrou est ce qui ferme la fenetre du residu signale
-    par l'adjoint (contre-exemple du 2026-11-04 : `B.relecture < A.PATCH <
-    A.verify < B.PATCH`). Sans exclusion mutuelle, deux ecrivains se
-    croient verifies et la section de l'un disparait ; avec elle, le second
-    **attend** au lieu d'ecraser.
+    L'arbitrage se lit dans l'ensemble : parmi les verrous **vivants** (age
+    < :data:`LOCK_TTL_SECONDS`), le plus ancien gagne -- le couple
+    ``(horodatage, proprietaire)``, l'egalite etant tranchee par le
+    proprietaire, donc les deux concurrents eligent le **meme** gagnant.
+    Un ecrivain mort laisse son etiquette : au-dela du TTL elle est
+    **perimee**, elle est retiree (nettoyage) et le suivant prend la main.
 
-    Renvoie l'id du commentaire verrouille, ou ``None`` s'il n'existe pas
-    encore : le premier ecrivain le cree, il n'y a alors rien a verrouiller
-    (et le cas des deux commentaires collants naissants est traite par
+    Renvoie le **jeton** du verrou (le nom de l'etiquette), ou ``None`` si
+    le PR ne porte encore aucun commentaire collant : le premier ecrivain
+    le cree, il n'y a alors rien a verrouiller (et le cas des deux
+    commentaires collants naissants est traite par
     :func:`merge_duplicates`).
     """
     deadline = monotonic() + LOCK_WAIT_SECONDS
@@ -403,37 +452,50 @@ def _acquire_lock(pr: int, repo: str, runner: Callable, timeout: int,
         cid = find_sticky_id(comments)
         if cid is None:
             return None
-        body = _body_of(comments, cid)
-        held = _lock_holder(body)
         now = clock()
-        if (held is not None and held[0] != owner
-                and (now - held[1]) < LOCK_TTL_SECONDS):
+        live = []
+        for name in _list_labels(pr, repo, runner, timeout):
+            parsed = _parse_lock_label(name)
+            if parsed is None:
+                continue
+            ts, holder = parsed
+            if now - ts >= LOCK_TTL_SECONDS:
+                # ecrivain presume mort : on retire le verrou perime
+                _remove_label(pr, repo, runner, timeout, name)
+                continue
+            live.append(((ts, holder), name))
+        live.sort()
+        if live and live[0][0] < (now, owner):
+            # un ecrivain tient le verrou : on attend, on n'ecrit pas
             if monotonic() > deadline:
                 raise RuntimeError(
                     f"verrou du commentaire collant {pr} tenu par "
-                    f"{held[0]!r} depuis {now - held[1]:.1f}s -- ecriture "
-                    f"refusee (pas de succes sur une ecriture non "
-                    f"exclusive)")
+                    f"{live[0][0][1]!r} -- ecriture refusee (pas de succes "
+                    f"sur une ecriture non exclusive)")
             sleep(_jitter_delay())
             continue
-        # Relecture juste avant d'ecrire : le corps peut avoir bouge entre
-        # notre lecture et maintenant, et ecrire une version perimee
-        # effacerait la section d'un autre ecrivain.
-        comments = list_comments(pr, repo, runner, timeout)
-        fresh_cid = find_sticky_id(comments)
-        if fresh_cid != cid:
-            continue
-        fresh_body = _body_of(comments, cid)
-        line = f"<!-- {LOCK_MARKER} owner={owner} ts={now:.3f} -->"
-        _patch_comment(cid, _with_lock(fresh_body, line), repo, runner, timeout)
-        # On relit : le verrou est-il a nous ? Un autre peut l'avoir pris
-        # entre notre lecture et notre PATCH -- dans ce cas on reboucle.
-        comments = list_comments(pr, repo, runner, timeout)
-        if find_sticky_id(comments) != cid:
-            return None
-        mine = _lock_holder(_body_of(comments, cid))
-        if mine is not None and mine[0] == owner:
-            return cid
+        # --- tentative : on ajoute notre etiquette, puis on arbitre -------
+        mine = _lock_label(now, owner)
+        _add_label(pr, repo, runner, timeout, mine)
+        # Relecture : deux ecrivains peuvent avoir ajoute en meme temps.
+        # Le plus ancien gagne ; celui qui perd retire son etiquette.
+        after = []
+        for name in _list_labels(pr, repo, runner, timeout):
+            parsed = _parse_lock_label(name)
+            if parsed is None:
+                continue
+            ts, holder = parsed
+            if now - ts >= LOCK_TTL_SECONDS:
+                continue
+            after.append(((ts, holder), name))
+        after.sort()
+        if after and after[0][1] == mine:
+            return mine
+        # on a perdu l'arbitrage : on retire notre etiquette, on reboucle
+        try:
+            _remove_label(pr, repo, runner, timeout, mine)
+        except RuntimeError:
+            pass
         if monotonic() > deadline:
             raise RuntimeError(
                 f"verrou du commentaire collant {pr} pris par un autre "
@@ -442,24 +504,27 @@ def _acquire_lock(pr: int, repo: str, runner: Callable, timeout: int,
 
 
 def _release_lock(pr: int, repo: str, runner: Callable, timeout: int,
-                  cid: int, owner: str) -> bool:
-    r"""Relache le verrou -- **seulement** s'il est encore le notre.
+                  token: Optional[str]) -> bool:
+    r"""Relache le verrou -- en retirant **notre** etiquette.
 
     Un verrou vole (perime puis repris par un autre) n'est pas relache :
-    ce n'est pas le nôtre.
+    ce n'est pas le notre. L'echec du retrait n'est pas fatal : l'etiquette
+    perimee sera retiree par l'ecrivain suivant.
     """
-    comments = list_comments(pr, repo, runner, timeout)
-    body = _body_of(comments, cid)
-    mine = _lock_holder(body)
-    if mine is None or mine[0] != owner:
+    if not token:
         return False
-    _patch_comment(cid, _strip_lock(body), repo, runner, timeout)
+    try:
+        _remove_label(pr, repo, runner, timeout, token)
+    except RuntimeError:
+        return False
     return True
 
 
 def merge_duplicates(pr: int, repo: str = DEFAULT_REPO,
                      runner: Optional[Callable] = None,
-                     timeout: int = DEFAULT_TIMEOUT) -> dict:
+                     timeout: int = DEFAULT_TIMEOUT,
+                     token: Optional[str] = None,
+                     sleep: Optional[Callable] = None) -> dict:
     r"""Fusionne les commentaires collants en doublon dans l'**id max**.
 
     Deux workflows en parallele peuvent chacun creer un commentaire : le PR
@@ -467,40 +532,58 @@ def merge_duplicates(pr: int, repo: str = DEFAULT_REPO,
     sections sont reunies dans le commentaire d'**id max** (canonique), et les
     autres sont reecrits en une ligne de **renvoi** — **rien n'est supprime**,
     et le PR n'en porte plus qu'un collant.
+
+    La fusion **ecrit** : elle se fait donc sous le meme verrou que
+    l'ecriture. Un jeton deja acquis (l'appelant tient deja le verrou) est
+    reutilise ; sinon la fusion prend le verrou elle-meme -- sans quoi deux
+    fusions concurrentes s'ecraseraient.
     """
     if runner is None:  # pragma: no cover - trivial default
         runner = _default_runner
+    if sleep is None:
+        sleep = _sleep
     comments = list_comments(pr, repo, runner, timeout)
     stickies = sticky_comments(comments)
     if len(stickies) <= 1:
         return {"action": "noop",
                 "comment_id": stickies[0]["id"] if stickies else None,
                 "merged": []}
-    canonical = stickies[-1]
-    canonical_body = canonical.get("body") or ""
-    merged = parse_sections(canonical_body)
-    for row in stickies:
-        if row["id"] == canonical["id"]:
-            continue
-        for name, text in parse_sections(row.get("body") or "").items():
-            # Le canonique gagne en cas de conflit : son contenu est le plus
-            # recent ; le doublon n'apporte que ce qui manque.
-            merged.setdefault(name, text)
-    # Le verrou du canonique est **conserve** : la fusion se fait sous
-    # verrou, et le rendre ici casserait l'exclusion mutuelle en cours.
-    new_body = render(merged)
-    lock_line = _lock_line(canonical_body)
-    if lock_line:
-        new_body = _with_lock(new_body, lock_line)
-    _patch_comment(canonical["id"], new_body, repo, runner, timeout)
-    others = []
-    for row in stickies:
-        if row["id"] == canonical["id"]:
-            continue
-        _patch_comment(row["id"], forward_body(canonical["id"]), repo, runner,
-                       timeout)
-        others.append(row["id"])
-    return {"action": "merged", "comment_id": canonical["id"], "merged": others}
+    held = token
+    if held is None:
+        held = _acquire_lock(pr, repo, runner, timeout, _owner_id(), sleep)
+    try:
+        # Relecture sous verrou : l'etat a pu bouger entre la detection du
+        # doublon et la prise du verrou.
+        comments = list_comments(pr, repo, runner, timeout)
+        stickies = sticky_comments(comments)
+        if len(stickies) <= 1:
+            return {"action": "noop",
+                    "comment_id": stickies[0]["id"] if stickies else None,
+                    "merged": []}
+        canonical = stickies[-1]
+        canonical_body = canonical.get("body") or ""
+        merged = parse_sections(canonical_body)
+        for row in stickies:
+            if row["id"] == canonical["id"]:
+                continue
+            for name, text in parse_sections(row.get("body") or "").items():
+                # Le canonique gagne en cas de conflit : son contenu est le
+                # plus recent ; le doublon n'apporte que ce qui manque.
+                merged.setdefault(name, text)
+        new_body = render(merged)
+        _patch_comment(canonical["id"], new_body, repo, runner, timeout)
+        others = []
+        for row in stickies:
+            if row["id"] == canonical["id"]:
+                continue
+            _patch_comment(row["id"], forward_body(canonical["id"]), repo, runner,
+                           timeout)
+            others.append(row["id"])
+        return {"action": "merged", "comment_id": canonical["id"],
+                "merged": others}
+    finally:
+        if token is None and held is not None:
+            _release_lock(pr, repo, runner, timeout, held)
 
 
 def _verify_upsert(organ: str, body: str, pr: int, repo: str,
@@ -573,11 +656,6 @@ def _upsert_attempt(organ: str, body: str, pr: int, repo: str, runner: Callable,
     sections = parse_sections(existing_body)
     sections[organ] = (body or "").strip()
     new_body = render(sections)
-    # Le verrou est **conserve** dans le corps ecrit : l'ecriture se fait
-    # sous verrou, et le perdre ici le rendrait caduc en cours d'ecriture.
-    lock_line = _lock_line(existing_body)
-    if lock_line:
-        new_body = _with_lock(new_body, lock_line)
     if cid is not None and new_body == existing_body:
         return {"action": "unchanged", "comment_id": cid}
     # --- relecture juste avant l'ecriture --------------------------------
@@ -597,9 +675,6 @@ def _upsert_attempt(organ: str, body: str, pr: int, repo: str, runner: Callable,
         sections = parse_sections(existing_body)
         sections[organ] = (body or "").strip()
         new_body = render(sections)
-        lock_line = _lock_line(existing_body)
-        if lock_line:
-            new_body = _with_lock(new_body, lock_line)
         if cid is not None and new_body == existing_body:
             return {"action": "unchanged", "comment_id": cid}
     if cid is not None:
@@ -621,9 +696,6 @@ def _clear_attempt(organ: str, pr: int, repo: str, runner: Callable,
         return {"action": "unchanged", "comment_id": cid}
     del sections[organ]
     new_body = render(sections)
-    lock_line = _lock_line(existing_body)
-    if lock_line:
-        new_body = _with_lock(new_body, lock_line)
     # Meme fenetre que pour l'upsert : on relit avant d'ecrire, et on
     # reapplique le retrait sur le corps courant plutot que d'effacer la
     # section qu'un autre ecrivain y aurait ajoutee entre-temps.
@@ -638,9 +710,6 @@ def _clear_attempt(organ: str, pr: int, repo: str, runner: Callable,
             return {"action": "unchanged", "comment_id": cid}
         del sections[organ]
         new_body = render(sections)
-        lock_line = _lock_line(existing_body)
-        if lock_line:
-            new_body = _with_lock(new_body, lock_line)
     if cid is None:
         return {"action": "silent", "comment_id": None}
     return _patch_comment(cid, new_body, repo, runner, timeout)
@@ -680,12 +749,14 @@ def upsert_section(organ: str, body: str, pr: int, repo: str = DEFAULT_REPO,
     pas « toutes les sections », et pas « pour toujours ».
 
     **Verrou d'ecriture.** La fenetre residuelle est fermee par une
-    exclusion mutuelle : l'ecriture se fait **sous verrou**, pose dans le
-    corps du commentaire collant (:func:`_acquire_lock`). Un ecrivain
-    concurrent qui trouve le verrou pose **attend** au lieu d'ecraser ;
-    c'est lui qui ecrivait le dernier qui gagne, et l'autre reprend au
-    tour suivant sur un corps frais. Le verrou a une duree de vie : un
-    ecrivain mort laisse un verrou perime, que le suivant vole.
+    **exclusion mutuelle reelle** : l'ecriture se fait sous un verrou
+    **externe au commentaire** -- une etiquette du PR (:func:`_acquire_lock`),
+    dont l'ajout est atomique cote serveur, la ou un PATCH de corps ne
+    l'est pas. Un ecrivain concurrent qui trouve le verrou **attend** au
+    lieu d'ecraser ; il reprend au tour suivant sur un corps frais, une
+    fois le verrou libere. Le verrou a une duree de vie : un ecrivain mort
+    laisse une etiquette, que le suivant retire (verrou perime) et
+    remplace.
     """
     _validate_organ(organ)
     if runner is None:  # pragma: no cover - trivial default
@@ -709,11 +780,11 @@ def upsert_section(organ: str, body: str, pr: int, repo: str = DEFAULT_REPO,
         # l'etat a bouge entre-temps : on passe par le chemin verrouille
     if owner is None:
         owner = _owner_id()
-    lock_cid = _acquire_lock(pr, repo, runner, timeout, owner, sleep)
+    lock_token = _acquire_lock(pr, repo, runner, timeout, owner, sleep)
     try:
         for attempt in range(1, max(1, attempts) + 1):
             out = _upsert_attempt(organ, body, pr, repo, runner, timeout)
-            merged = merge_duplicates(pr, repo, runner, timeout)
+            merged = merge_duplicates(pr, repo, runner, timeout, token=lock_token)
             if merged.get("action") == "merged":
                 out = dict(out)
                 out["merged"] = merged.get("merged", [])
@@ -735,8 +806,8 @@ def upsert_section(organ: str, body: str, pr: int, repo: str = DEFAULT_REPO,
             f"section {organ!r} non constatee apres {attempts} tentative(s) "
             f"(ecriture concurrente ?) -- succes refuse")
     finally:
-        if lock_cid is not None:
-            _release_lock(pr, repo, runner, timeout, lock_cid, owner)
+        if lock_token is not None:
+            _release_lock(pr, repo, runner, timeout, lock_token)
 
 
 def clear_section(organ: str, pr: int, repo: str = DEFAULT_REPO,
@@ -773,11 +844,11 @@ def clear_section(organ: str, pr: int, repo: str = DEFAULT_REPO,
             return out
     if owner is None:
         owner = _owner_id()
-    lock_cid = _acquire_lock(pr, repo, runner, timeout, owner, sleep)
+    lock_token = _acquire_lock(pr, repo, runner, timeout, owner, sleep)
     try:
         for attempt in range(1, max(1, attempts) + 1):
             out = _clear_attempt(organ, pr, repo, runner, timeout)
-            merged = merge_duplicates(pr, repo, runner, timeout)
+            merged = merge_duplicates(pr, repo, runner, timeout, token=lock_token)
             if merged.get("action") == "merged":
                 out = dict(out)
                 out["merged"] = merged.get("merged", [])
@@ -790,8 +861,8 @@ def clear_section(organ: str, pr: int, repo: str = DEFAULT_REPO,
             f"retrait de la section {organ!r} non constate apres {attempts} "
             f"tentative(s) (ecriture concurrente ?) -- succes refuse")
     finally:
-        if lock_cid is not None:
-            _release_lock(pr, repo, runner, timeout, lock_cid, owner)
+        if lock_token is not None:
+            _release_lock(pr, repo, runner, timeout, lock_token)
 
 
 def _validate_organ(organ: str) -> None:

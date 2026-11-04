@@ -35,10 +35,12 @@ class FakeProc:
 
 class SharedStore:
     """Etat partage par deux runners : deux ecrivains concurrents ecrivent
-    dans le meme fil de commentaires."""
+    dans le meme fil de commentaires et sur le meme jeu d'etiquettes (le
+    verrou d'ecriture est une etiquette du PR)."""
 
-    def __init__(self, comments=None):
+    def __init__(self, comments=None, labels=None):
         self.comments = list(comments or [])
+        self.labels = list(labels or [])
 
 
 class FakeRunner:
@@ -49,6 +51,7 @@ class FakeRunner:
         self.store = store
         self.comments = (store.comments if store is not None
                          else list(comments or []))
+        self.labels = (store.labels if store is not None else [])
         self.post_id = post_id
 
     def __call__(self, cmd, **kwargs):
@@ -56,6 +59,22 @@ class FakeRunner:
         method = ""
         if "--method" in cmd:
             method = cmd[cmd.index("--method") + 1]
+        # --- etiquettes : le verrou d'ecriture -----------------------------
+        if any("/labels" in c for c in cmd):
+            if method == "POST":
+                name = cmd[cmd.index("-f") + 1].split("=", 1)[1]
+                if name not in self.labels:
+                    self.labels.append(name)
+                return FakeProc(json.dumps([{"name": n}
+                                            for n in self.labels]), 0)
+            if method == "DELETE":
+                name = next(c for c in cmd
+                            if "/labels/" in c).split("/labels/", 1)[1]
+                if name in self.labels:
+                    self.labels.remove(name)
+                return FakeProc("", 0)
+            # GET : `--paginate --slurp` rend une liste de pages
+            return FakeProc(json.dumps([[{"name": n} for n in self.labels]]), 0)
         if method == "PATCH":
             body = cmd[cmd.index("-f") + 1].split("=", 1)[1]
             target = next(e for e in cmd if "/comments/" in e).split("/")[-1]
@@ -503,23 +522,83 @@ def test_une_ecriture_concurrente_qui_atterrit_apres_notre_verification_est_repr
 
 
 # --------------------------------------------------------------------------
-# Verrou d'ecriture (residu de l'adjoint, 2026-11-04)
+# Verrou d'ecriture -- etiquette du PR (2026-11-04)
 # --------------------------------------------------------------------------
 
+class DelayedLabelRunner(FakeRunner):
+    """Runner B : sa lecture des etiquettes rend l'instantane capture
+    **avant** que A n'ait termine son cycle.
+
+    C'est le scheduling de l'adjoint (`myia-po-2025:CoursIA-2`, le
+    2026-11-04) : `B.relecture < A.PATCH < A.verify < B.PATCH`.
+    """
+
+    def __init__(self, other_cycle, store):
+        super().__init__(store=store)
+        self.other_cycle = other_cycle
+        self._injected = False
+
+    def __call__(self, cmd, **kwargs):
+        method = ""
+        if "--method" in cmd:
+            method = cmd[cmd.index("--method") + 1]
+        if (method == "" and any("/labels" in c for c in cmd)
+                and not self._injected):
+            self._injected = True
+            snapshot = list(self.labels)
+            # A termine integralement avant que B ne lise les etiquettes.
+            self.other_cycle()
+            # B recoit son ancien instantane.
+            return FakeProc(json.dumps([[{"name": n} for n in snapshot]]), 0)
+        if (method == "PATCH" and any("/comments/" in c for c in cmd)
+                and not self._injected):
+            # Repli : le mecanisme lu les commentaires et non les
+            # etiquettes (verrou **dans le corps**). L'injection se fait
+            # alors juste avant le PATCH de B -- c'est ce PATCH, qui porte
+            # un corps perime, qui effacait la section de A.
+            self._injected = True
+            self.other_cycle()
+        return super().__call__(cmd, **kwargs)
+
+
+def test_le_scheduling_de_l_adjoint_preserve_la_section_de_a():
+    """Le scheduling exact signale par l'adjoint le 2026-11-04 : B lit,
+    A execute `upsert_section` integralement (prise de verrou, ecriture,
+    deux verifications, liberation), puis B prend le verrou et ecrit.
+
+    Sur le verrou **dans le corps du commentaire**, B ecrivait un corps
+    perime : la section de A disparaissait, et les deux ecrivains se
+    croient `verified: true`. Sur le verrou **par etiquette du PR**, B ne
+    peut ecrire qu'une fois le verrou d'A libere, et il ecrit alors sur le
+    corps courant -- la section de A survit.
+    """
+    store = SharedStore([bot_comment(7, a_s.render({"initial": "etat initial"}))])
+    a_runner = FakeRunner(store=store)
+
+    def a_cycle():
+        a_s.upsert_section("organ-a", "avertissement A", 123,
+                           runner=a_runner, sleep=lambda _s: None,
+                           owner="writer-A")
+
+    b_runner = DelayedLabelRunner(a_cycle, store)
+    out_b = a_s.upsert_section("organ-b", "avertissement B", 123,
+                                runner=b_runner, sleep=lambda _s: None,
+                                owner="writer-B")
+    assert out_b["verified"] is True
+    sections = a_s.parse_sections(store.comments[0]["body"])
+    assert sections.get("organ-a") == "avertissement A", (
+        "la section de A doit survivre a l'ecriture de B")
+    assert sections.get("organ-b") == "avertissement B"
+    assert sections.get("initial") == "etat initial"
+    assert not store.labels, "le verrou doit etre relache"
+
+
 def test_un_ecrivain_concurrent_attend_le_verrou_au_lieu_d_ecraser():
-    """Le **residu** signale par l'adjoint (`myia-po-2025:CoursIA-2`, le
-    2026-11-04) : `B.relecture < A.PATCH < A.verify < B.PATCH` -> les deux
-    ecrivains se croient verifies, et la section de A a disparu.
+    """Un ecrivain concurrent **attend** le verrou : il n'ecrit pas pendant
+    la fenetre de l'autre.
 
-    La relecture d'**avant** ecriture ne le voit pas (elle est anterieure
-    au PATCH de B) et la fenetre de stabilisation non plus (B ecrit apres la
-    derniere relecture).
-
-    Ce qui ferme le residu : le **verrou d'ecriture**. B trouve le verrou
-    pose par A, il **attend** -- il n'ecrit pas pendant la fenetre de A.
-    C'est la difference mesuree : sans verrou, B ecrit pendant que A
-    verifie ; avec verrou, B attend que A ait fini (verifie compris), puis
-    ecrit sur le corps courant, qui porte la section de A.
+    Le verrou est une **etiquette du PR** : l'ajout est atomique cote
+    serveur, l'arbitrage se lit dans l'ensemble (le plus ancien gagne).
     """
     store = SharedStore([bot_comment(7, a_s.render({"initial": "etat initial"}))])
     runner = FakeRunner(store=store)
@@ -533,16 +612,15 @@ def test_un_ecrivain_concurrent_attend_le_verrou_au_lieu_d_ecraser():
         state["b_done"] = True
 
         def b_wait(_s):
-            # Premier appel = B attend le verrou : son ecriture n'est pas
-            # encore passee, et le verrou porte toujours le nom de A.
+            # B attend : l'etiquette de A est vivante, donc B n'ecrit pas.
             if "during_wait" not in state:
                 body = next(c["body"] for c in runner.comments
                             if a_s.MARKER in c["body"])
                 state["during_wait"] = a_s.parse_sections(body)
-                state["lock_during_wait"] = a_s._lock_holder(body)
+                state["locks_during_wait"] = list(store.labels)
                 # A relache : B peut ecrire.
-                a_s._release_lock(123, a_s.DEFAULT_REPO, runner, 15, 7,
-                                  "writer-A")
+                for name in list(store.labels):
+                    a_s._remove_label(123, a_s.DEFAULT_REPO, runner, 15, name)
 
         a_s.upsert_section(
             "organ-b", "avertissement B", 123, runner=other,
@@ -551,14 +629,10 @@ def test_un_ecrivain_concurrent_attend_le_verrou_au_lieu_d_ecraser():
     out = a_s.upsert_section("organ-a", "avertissement A", 123, runner=runner,
                               sleep=sleep_a, owner="writer-A")
     assert state["b_done"] is True, "B doit avoir tente son ecriture"
-    assert state.get("during_wait") is not None, (
-        "B doit avoir ATTENDU le verrou : sans attente, B ecrit pendant la "
-        "fenetre de A -- c'est exactement le residu de l'adjoint")
     assert "organ-b" not in state["during_wait"], (
         "B ne doit pas ecrire pendant la fenetre de A")
-    assert state["lock_during_wait"] is not None
-    assert state["lock_during_wait"][0] == "writer-A", (
-        "le verrou doit etre celui de A pendant que B attend")
+    assert state["locks_during_wait"], (
+        "le verrou de A doit etre vivant pendant que B attend")
     assert out["verified"] is True
     sections = a_s.parse_sections(
         next(c["body"] for c in runner.comments if a_s.MARKER in c["body"]))
@@ -572,43 +646,44 @@ def test_un_ecrivain_concurrent_attend_le_verrou_au_lieu_d_ecraser():
 def test_un_verrou_tenu_par_un_autre_refuse_l_ecriture_au_bout_de_l_attente():
     """Le contention n'est pas un echec silencieux : on attend, puis on
     **refuse** franchement. Le corps du commentaire n'est pas touche."""
-    body = a_s._with_lock(
-        a_s.render({"organ-a": "A"}),
-        f"<!-- {a_s.LOCK_MARKER} owner=writer-A ts=1000.0 -->")
-    runner = FakeRunner(comments=[bot_comment(7, body)])
+    body = a_s.render({"organ-a": "A"})
+    store = SharedStore([bot_comment(7, body)],
+                         labels=[a_s._lock_label(1000.0, "writer-A")])
+    runner = FakeRunner(store=store)
     ticks = iter(range(0, 100000))
     with pytest.raises(RuntimeError):
         a_s._acquire_lock(123, a_s.DEFAULT_REPO, runner, 15, "writer-B",
-                          lambda _s: None, clock=lambda: 1000.0,
+                          lambda _s: None, clock=lambda: 1000.1,
                           monotonic=lambda: next(ticks))
-    assert runner.comments[0]["body"] == body, (
+    assert store.comments[0]["body"] == body, (
         "le verrou de l'autre ecrivain ne doit pas etre vole ni ecrase")
 
 
 def test_un_verrou_perime_est_vole():
-    """Un ecrivain mort laisse un verrou perime : le suivant le vole au
-    lieu d'attendre indefiniment."""
-    body = a_s._with_lock(
-        a_s.render({"organ-a": "A"}),
-        f"<!-- {a_s.LOCK_MARKER} owner=writer-A ts=1000.0 -->")
-    runner = FakeRunner(comments=[bot_comment(7, body)])
-    cid = a_s._acquire_lock(
+    """Un ecrivain mort laisse son etiquette : au-dela du TTL elle est
+    perimee -- le suivant la retire et prend la main."""
+    store = SharedStore([bot_comment(7, a_s.render({"organ-a": "A"}))],
+                         labels=[a_s._lock_label(1000.0, "writer-A")])
+    runner = FakeRunner(store=store)
+    token = a_s._acquire_lock(
         123, a_s.DEFAULT_REPO, runner, 15, "writer-B", lambda _s: None,
         clock=lambda: 1000.0 + a_s.LOCK_TTL_SECONDS + 1,
         monotonic=lambda: 0.0)
-    assert cid == 7
-    holder = a_s._lock_holder(runner.comments[0]["body"])
-    assert holder is not None and holder[0] == "writer-B"
+    assert token, "le verrou doit etre pris"
+    assert a_s._lock_label(1000.0, "writer-A") not in store.labels, (
+        "le verrou perime doit etre retire")
+    assert token in store.labels
 
 
 def test_le_verrou_est_relache_a_la_fin_de_l_ecriture():
-    """Le verrou est une ligne de travail, pas un artefact : il ne doit pas
-    rester dans le corps du commentaire."""
-    runner = FakeRunner(comments=[bot_comment(7, a_s.render({"organ-a": "vieux"}))])
+    """Le verrou est une ligne de travail, pas un artefact : l'etiquette
+    doit etre retiree, et le corps ne doit porter aucune ligne de verrou."""
+    store = SharedStore([bot_comment(7, a_s.render({"organ-a": "vieux"}))])
+    runner = FakeRunner(store=store)
     a_s.upsert_section("organ-a", "neuf", 123, runner=runner,
                         sleep=lambda _s: None, owner="writer-A")
-    body = runner.comments[0]["body"]
-    assert a_s._lock_line(body) is None, "le verrou doit etre relache"
+    body = store.comments[0]["body"]
+    assert not store.labels, "le verrou doit etre relache"
     assert "neuf" in body
 
 
