@@ -1,3 +1,7 @@
+---
+pagetitle: "CaseStudies - Études de cas interdisciplinaires"
+---
+
 # CaseStudies - Études de cas interdisciplinaires
 
 <!-- CATALOG-STATUS
