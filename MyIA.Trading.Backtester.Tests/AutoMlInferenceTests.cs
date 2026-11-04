@@ -7,7 +7,7 @@ using Xunit;
 namespace MyIA.Trading.Backtester.Tests
 {
     /// <summary>
-    /// Replique du mini-test d'integration du cadrage E2 (docs/reference/backtester-e2-cadrage.md, 2.2) :
+    /// Replique du mini-test d'integration du cadrage E2 (docs/transients/2026-08-23-backtester-e2-cadrage.md, 2.2) :
     /// l'usage AutoML reel du port (InferColumns) + entrainement lineaire (SdcaMaximumEntropy)
     /// sur un CSV inline separable, assert MicroAccuracy > 0.9.
     ///

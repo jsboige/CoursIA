@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI-Lean
-pedagogical_count: 144
-breakdown: Lean=144
-maturity: BETA=130, DRAFT=11, ALPHA=3
+pedagogical_count: 159
+breakdown: Lean=159
+maturity: BETA=141, DRAFT=15, ALPHA=3
 -->
 
 [← SemanticWeb](../SemanticWeb/README.md) | [↑ SymbolicAI](../README.md) | [Planners →](../Planners/README.md)
@@ -200,7 +200,7 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 |---|----------|---------|-------|
 | 37 | [Lean-37-Capstone-Serre100](Lean-37-Capstone-Serre100.ipynb) | **Capstone (escalier)** vers la sous-série [Serre 100](Serre100/README.md) — née du centenaire de Jean-Pierre Serre (EPIC #16334) : le geste de *distillation* (un énoncé de Serre rendu calculable) et son diptyque **mesure** (carnet, kernel `python3`) / **preuve** (lake [`serre100_lean/`](Serre100/serre100_lean/), kernel `lean4-wsl`) ; table de routage des huit carnets, citation du lake par ses déclarations réelles (cinq modules FR + miroirs `_en` : `trace_eg_moins_somme_caractere`, `ombreZeta_eq_zero`, `round_trip_domain`, `orthogonaliteLignesS3`, `member_iff_outer`…), et **surface de la sous-série mesurée** plutôt que déclarée — kernel `python3`, exécuté sans erreur, 3 exercices | 20 min |
 | 38 | [Lean-38-Capstone-Geometry-Lean-Python](Lean-38-Capstone-Geometry-Lean-Python.ipynb) | **Capstone (escalier)** vers la sous-série [Geometry](Geometry/README.md) (EPIC #18601) : le fil rouge du milieu de l'hypoténuse monté par cinq marches de garantie croissante — figure numérique, identité symbolique `sympy`, témoin négatif (triangle non rectangle), lecture du lake companion [`geometry_lean/`](Geometry/geometry_lean/) comme un consommateur (fichier réel, pas une copie), audit des axiomes interdits (`sorry`, `native_decide` : 0) — la réponse incarnée à la position 05 du programme gradué ([#17544](https://github.com/jsboige/CoursIA/issues/17544)) : que garantit « prouvé par Gröbner » ? Kernel `python3`, exécuté sans erreur, 3 exercices | 15 min |
-| 39 | [Lean-39-Capstone-GOL](Lean-39-Capstone-GOL.ipynb) | **Capstone (escalier)** vers la sous-série [GOL](GOL/README.md) (réorg #20204, filière Conway de l'EPIC #1647) : l'échelle des témoins du Jeu de la Vie — règle, mémoire (canons), calcul (translateur, Hashlife) — survolée en une marche ; **surface de la sous-série mesurée** plutôt que déclarée : 9 carnets, 3 kernels (les trois `lean4-wsl` sans importation Python — leurs cellules illisibles par `ast` sont du Lean —, deux `python3-lean`, quatre `python3`), lake [`conway_lean/`](conway_lean/) lu par ses fichiers réels (modules `.lean` FR et miroirs `_en` dans `Conway/Life/`, moteur `scripts/hashlife.py`, patterns RLE dont `gemini.rle`) ; 3 exercices sur le moteur du lake (périodes, canon Gosper, concordance du README) | 15 min |
+| 39 | [Lean-39-Capstone-GOL](Lean-39-Capstone-GOL.ipynb) | **Capstone (escalier)** vers la sous-série [GOL](GOL/README.md) (réorg #20204, filière Conway de l'EPIC #1647) : l'échelle des témoins du Jeu de la Vie — règle, mémoire (canons), calcul (translateur, Hashlife) — survolée en une marche ; **surface de la sous-série mesurée** plutôt que déclarée : 10 carnets, 3 kernels (les quatre `lean4-wsl` sans importation Python — leurs cellules illisibles par `ast` sont du Lean —, deux `python3-lean`, quatre `python3`), lake [`conway_lean/`](GOL/conway_lean/) lu par ses fichiers réels (modules `.lean` FR et miroirs `_en` dans `Conway/Life/`, moteur `scripts/hashlife.py`, patterns RLE dont `gemini.rle`) ; 3 exercices sur le moteur du lake (périodes, canon Gosper, concordance du README) | 15 min |
 | 40 | [Lean-40-Capstone-Langlands-Python](Lean-40-Capstone-Langlands-Python.ipynb) | **Capstone (escalier)** vers la sous-série [Langlands](Langlands/README.md) (EPIC #17969) : la relation de Hecke sur les coefficients de Δ montée par six marches de garantie croissante — table de Ramanujan exacte par convolution entière (13 valeurs publiées, concordance 13/13), identité τ(pn) + p¹¹τ(n/p) = τ(p)τ(n) vérifiée sur 9 cas (p = 2, 3, 5), témoin négatif (la suite perturbée τ+n la viole 9 fois sur 9), lecture du lac [`hecke_lean`](Langlands/hecke_lean/) comme un consommateur (définition `coeffHeckeT`, preuve de `coeffHeckeT_of_dvd`, audit `sorry`/`native_decide` : 0), et le pont Moonshine (j = E₄³/Δ recalculé, 196884 = 1 + 196883) — kernel `python3`, exécuté sans erreur, 3 exercices | 25 min |
 | 41 | [Lean-41-Capstone-MIMO-Python](Lean-41-Capstone-MIMO-Python.ipynb) | **Capstone (escalier)** vers la sous-série [MIMO](MIMO/README.md) (EPIC #17545) : la détection MIMO par flips de coordonnées, le budget de descente et sa digestion — table de routage des quatre carnets (MIMO-01 à MIMO-04), citation du lac [`mimo_lean/`](mimo_lean/README.md) par ses modules réels (`Descent`, `Objective`, `Lmmse`, `Converse`, `Bridge`, `NormTails` + miroirs `_en`, baseline 0 sorry en code-only mesurée par l'organe canonique `count_code_sorry.py` — champ `distinct_code_sorry`), prérequis d'entrée (Lean 1-6 pour le formel, NumPy seul pour la digestion), **surface de la sous-série mesurée plutôt que déclarée** — kernel `python3`, exécuté sans erreur, 3 exercices | 25 min |
 
@@ -240,7 +240,7 @@ A l'issue de la série, vous saurez :
 
 - **Séparer exposition et vérification d'un résultat formel profond** : relire les chaînes Euler/BKM et les deux adaptateurs Navier–Stokes sans confondre leur portée mathématique avec l'acceptation mécanique, puis re-dériver un verdict fail-closed depuis huit termes indépendants — identité, dépendances, toolchain, confinement, axiomes, intégrité et deux gates exacts. Notebook 31.
 
-Pour l'état formel détaillé des modules support (preuves résolues vs `sorry` résiduels), voir [LEAN_INVENTORY.md](../../GameTheory/LEAN_INVENTORY.md), le [README du projet conway_lean](conway_lean/README.md), et le [README du projet grothendieck_lean](grothendieck_lean/README.md).
+Pour l'état formel détaillé des modules support (preuves résolues vs `sorry` résiduels), voir [LEAN_INVENTORY.md](../../GameTheory/LEAN_INVENTORY.md), le [README du projet conway_lean](GOL/conway_lean/README.md), et le [README du projet grothendieck_lean](grothendieck_lean/README.md).
 
 ## Statut de maturité
 
@@ -553,6 +553,7 @@ Lean/
 │   ├── GOL-05-Pattern-Tour.ipynb          # Tournée des motifs du lake conway_lean (lean4-wsl)
 │   ├── GOL-06-Translateur-Life.ipynb      # Le barreau 3 : Life machine universelle (python3-lean)
 │   ├── GOL-07-Hashlife-Correctness.ipynb  # La correction de Hashlife comme théorème (lean4-wsl)
+│   ├── conway_lean/                       # Lake Conway (0 sorry, Lake build), descendu sous GOL/ (See #23164)
 │   └── README.md
 ├── Langlands/                     # Sous-série formes modulaires et ponts (EPIC #17969) : [README](Langlands/README.md)
 │   ├── 01-formes-modulaires-sl2z-hecke.ipynb
@@ -586,7 +587,6 @@ Lean/
 ├── scripts/                       # Helpers de maintenance de la série ([README](scripts/README.md), _archive/)
 ├── sensitivity_lean/               # Théorème de sensibilité (Huang 2019) + algèbre TPR (companions Lean-12/12b/12c) - 0 sorry 0 axiome, Lake build natif (jonction Mathlib)
 ├── finiteness_lean/                # Finitude des dérivées de Brzozowski (companion Lean-14) - 0 sorry, Lake build
-├── conway_lean/                    # Conway tribute workspace (0 sorry, Lake build)
 ├── grothendieck_lean/              # Grothendieck tribute workspace (0 sorry, Lake build)
 ├── knot_lean/                      # Knot theory workspace (théorie des nœuds, companion Lean-17a/b, sorries résiduels documentés, Lake build)
 ├── calibration_lean/               # Cibles de calibration du prouveur multi-agents (Epic #1453, P1-P5) - 0 sorry, Lake build
@@ -758,7 +758,7 @@ Lean 4 signale `type mismatch` quand le type attendu et le type fourni ne coïnc
 **Non** dans les cellules d'exercice (stub pour l'étudiant). **Oui** dans le code de production (preuves formelles). La convention CoursIA :
 
 - Cellules d'exercice : `sorry` = placeholder étudiant, normal et attendu.
-- Preuves certifiées (ex: `conway_lean/`, `grothendieck_lean/`, `game_theory_lean/`) : `sorry` = axiome implicite = trou dans la chaîne de certification. Le compteur `grep -c sorry` est suivi par les agents du dépôt.
+- Preuves certifiées (ex: `GOL/conway_lean/`, `grothendieck_lean/`, `game_theory_lean/`) : `sorry` = axiome implicite = trou dans la chaîne de certification. Le compteur `grep -c sorry` est suivi par les agents du dépôt.
 
 Voir [LEAN_INVENTORY.md](../../GameTheory/LEAN_INVENTORY.md) pour l'état détaillé des preuves par module.
 

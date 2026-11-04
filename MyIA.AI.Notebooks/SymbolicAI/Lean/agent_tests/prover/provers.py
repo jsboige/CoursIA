@@ -396,6 +396,19 @@ def _guard_baseline_sorry_count(demo: dict, original_sorry_count: int) -> int:
     return int(pre_stub) if pre_stub is not None else original_sorry_count
 
 
+def _deadline_keeps_latched_proof(tactic_tools) -> bool:
+    """#24469: on a reasoning-deadline cancel, keep a proof already latched.
+
+    VerifyExecutor latches ``tactic_tools.proof_latched`` only after
+    ``verify_sorry_replacement`` succeeded with ``persist_on_success`` (real
+    module rebuild) or the in-place latch confirmed a build. The success gate
+    still requires ``final_build_ok`` from the mandatory final verify, and the
+    statement-mutation guard still runs: the latch cannot turn an unverified
+    edit into a success, it only stops the deadline from erasing a real one.
+    """
+    return bool(getattr(tactic_tools, "proof_latched", False))
+
+
 def _stmt_mutation_guard(final_sorry: int, original_sorry_count: int,
                          final_build_ok: bool, proof_found: bool,
                          verified_tactic_count: int) -> bool:
@@ -1229,7 +1242,9 @@ class MultiAgentSorryProver:
             # (compile-level): here the agent loop burned the whole reasoning
             # budget without converging on an edit.
             state.reasoning_budget_exceeded = True
-            proof_found = False
+            proof_found = _deadline_keeps_latched_proof(tactic_tools)
+            if proof_found:
+                print("  Verified proof was latched before the deadline -- kept (#24469)")
         except Exception as e:
             print(f"  Workflow error: {e}")
         finally:
