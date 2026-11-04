@@ -96,6 +96,17 @@ _EN_SUFFIX = re.compile(r"\b(\w+)_en\b")
 # typographic choice, the reference is the same).
 _CODE_SPAN = re.compile(r"`([^`]{1,600})`")
 
+# A FENCED code block inside a comment ("```" ... "```"): a snippet quoted in
+# the prose. It is CODE, not a backticked reference, and it must be cut out
+# before the backticks are paired -- a fence carries THREE backticks, so the
+# naive pairing consumed the closing fence's first backtick and left two
+# stray ones to swallow the prose that follows the fence. Measured on the
+# repository (head d038396730): the stray backticks turned arbitrary prose
+# into "code spans" and DROPPED the inline reference that followed the fence
+# -- 130+ HARD findings on `Knots/Invariant_en.lean` alone, every one of them
+# an artefact of the pairing, not a translation gap.
+_FENCE_BLOCK = re.compile(r"```[^\n]*\n(.*?)(?:```|\Z)", re.S)
+
 # A numeric group: a digit run possibly made of several parts separated by a
 # decimal/thousand/date separator (``2026-10-27``, ``27/10/2026``, ``1.5``).
 _NUMBER_GROUP = re.compile(r"\d+(?:[.,/\-]\d+)*")
@@ -356,16 +367,55 @@ def _file_stem(span: str) -> str | None:
     return collapse_en(base)
 
 
-def code_spans(body: str) -> list[str]:
-    """The backticked literals of ``body`` (order preserved).
+def split_fenced(body: str) -> tuple[str, list[str]]:
+    """Split ``body`` into its prose and the contents of its fenced blocks.
 
-    The internal whitespace of a span is normalized: a translation may wrap
-    a long reference over several lines, which changes the wrapping but not
+    A fenced block is CODE quoted in the prose. It is cut out before the
+    backticks are paired, because a fence carries three of them: the naive
+    pairing consumed the closing fence's first backtick, left two stray
+    ones, and swallowed the prose that follows the fence into a bogus
+    "code span" while dropping the inline reference that followed it.
+
+    Returns the prose (the fences replaced by a space) and the list of the
+    fenced contents, in order.
+    """
+    fences: list[str] = []
+
+    def _take(match: re.Match) -> str:
+        fences.append(match.group(1))
+        return " "
+
+    return _FENCE_BLOCK.sub(_take, body), fences
+
+
+def prose_only(body: str) -> str:
+    """``body`` without its code: neither its fenced blocks nor its spans.
+
+    This is the text whose NUMBERS and technical identifiers are prose --
+    a number inside a quoted snippet is code, and it is compared with the
+    snippet itself (see ``code_spans``).
+    """
+    prose, _ = split_fenced(body)
+    return _CODE_SPAN.sub(" ", prose)
+
+
+def code_spans(body: str) -> list[str]:
+    """The code references of ``body`` (order preserved).
+
+    Two kinds: the backticked literals of the prose, and the contents of
+    the fenced blocks (a quoted snippet IS a reference to code). The
+    internal whitespace of a span is normalized: a translation may wrap a
+    long reference over several lines, which changes the wrapping but not
     the reference.
     """
+    prose, fences = split_fenced(body)
     out: list[str] = []
-    for m in _CODE_SPAN.finditer(body):
+    for m in _CODE_SPAN.finditer(prose):
         span = " ".join(m.group(1).split())
+        if span:
+            out.append(span)
+    for fence in fences:
+        span = " ".join(fence.split())
         if span:
             out.append(span)
     return out
@@ -385,7 +435,7 @@ def number_parts(body: str) -> list[str]:
     the decimal made ``1.5`` and ``5.1`` compare equal, because the parts
     of both are ``{1, 5}`` (measured, review of #24148).
     """
-    stripped = _CODE_SPAN.sub(" ", body)
+    stripped = prose_only(body)
     parts: list[str] = []
     for m in _NUMBER_GROUP.finditer(stripped):
         raw = m.group(0)
@@ -411,7 +461,7 @@ def date_groups(body: str) -> list[list[str]]:
     #24148).
     """
     out: list[list[str]] = []
-    stripped = _CODE_SPAN.sub(" ", body)
+    stripped = prose_only(body)
     for m in _DATE_GROUP.finditer(stripped):
         pieces = [p.strip() for p in re.split(r"[.,/\-]", m.group(0)) if p.strip()]
         if len(pieces) >= 2 and any(len(p) == 4 for p in pieces):
@@ -473,7 +523,7 @@ def number_is_carried_elsewhere(part: str, other_body: str,
     value = int(part)
     words = _NUMBER_WORDS.get(value)
     if words and any(
-        re.search(r"\b%s\b" % re.escape(w), other_body, re.IGNORECASE)
+        re.search(r"\b%s\b" % re.escape(w), prose_only(other_body), re.IGNORECASE)
         for w in words
     ):
         return True
@@ -490,7 +540,7 @@ def number_is_carried_elsewhere(part: str, other_body: str,
 
 def technical_identifiers(body: str) -> set[str]:
     """The technical identifiers mentioned in ``body`` outside code spans."""
-    stripped = _CODE_SPAN.sub(" ", body)
+    stripped = prose_only(body)
     out: set[str] = set()
     for m in _WORD.finditer(stripped):
         word = m.group(0)

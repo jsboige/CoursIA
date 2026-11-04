@@ -29,6 +29,7 @@ from check_i18n_token_fidelity import (  # noqa: E402
     number_parts,
     scan_comments,
     span_is_decl_ref,
+    technical_identifiers,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -87,6 +88,59 @@ def test_code_spans_normalize_wrapped_spans():
 def test_code_spans_ignore_numbers_outside_backticks():
     body = "l'arc 11 et `arcPartition`"
     assert code_spans(body) == ["arcPartition"]
+
+
+# --- fenced code blocks ----------------------------------------------------
+#
+# A fence carries THREE backticks. The naive pairing consumed the closing
+# fence's first backtick and left two stray ones, which swallowed the prose
+# that follows the fence into a bogus "code span" and DROPPED the inline
+# reference that followed it. Measured on the repository (head d038396730):
+# 135 spurious HARD findings, 130 of them on `Knots/Invariant_en.lean` alone.
+
+def test_code_spans_survive_a_fenced_block():
+    body = (
+        "avant `inlineRef`\n"
+        "```\n"
+        "theorem foo : True := trivial\n"
+        "```\n"
+        "apres `otherRef`\n"
+    )
+    spans = code_spans(body)
+    assert "inlineRef" in spans
+    assert "otherRef" in spans
+    # the prose after the fence is prose, not a code reference
+    assert not any("apres" in s for s in spans)
+
+
+def test_a_fenced_block_is_compared_as_one_reference():
+    body = "```\ntheorem foo : True := trivial\n```\n"
+    assert code_spans(body) == ["theorem foo : True := trivial"]
+
+
+def test_a_fenced_block_is_not_prose():
+    body = "```\nvalue = 42\n```\nle texte\n"
+    assert number_parts(body) == []
+    assert "value" not in technical_identifiers(body)
+
+
+def test_a_fenced_block_does_not_shift_the_following_reference():
+    fr = ("avant `alphaRef`\n```\ntheorem foo : True := trivial\n```\n"
+          "apres `betaRef`\n")
+    en = ("before `alphaRef`\n```\ntheorem foo : True := trivial\n```\n"
+          "after `betaRef`\n")
+    findings = compare_bodies(fr, en, {"foo"})
+    assert not [f for f in findings if f["severity"] == HARD]
+
+
+def test_the_fence_fix_does_not_blind_the_organ():
+    # control: a genuine loss after a fence is still reported as HARD.
+    fr = ("avant `alphaRef`\n```\ntheorem foo : True := trivial\n```\n"
+          "apres `betaRef`\n")
+    en = ("before `alphaRef`\n```\ntheorem foo : True := trivial\n```\n"
+          "after the text\n")
+    findings = compare_bodies(fr, en, {"betaRef"})
+    assert [f["token"] for f in findings if f["severity"] == HARD] == ["betaRef"]
 
 
 def test_number_parts_split_a_date_but_keep_a_decimal():
@@ -444,6 +498,26 @@ def test_arcpartition_sibling_is_token_faithful():
     report = compare_files(fr, en)
     hard = [f for f in report["findings"] if f["severity"] == HARD]
     assert hard == [], hard
+
+
+def test_the_knots_invariant_pair_keeps_only_its_genuine_divergences():
+    """Regression control on the pair that carried the stray-backtick class.
+
+    `Knots/Invariant.lean` quotes several Lean snippets in fenced blocks.
+    Before the fence-aware extraction, the pairing published 152 HARD
+    findings on this pair, 130 of them fragments of prose captured as
+    "code spans". After the fix the pair keeps 22 HARD findings, each one
+    a real divergence (a reference the mirror spells differently, a comment
+    the mirror does not carry). The bound is a guard, not a target: the
+    count may go DOWN as the mirror is corrected, never back UP.
+    """
+    fr = KNOTS / "Invariant.lean"
+    en = KNOTS / "Invariant_en.lean"
+    if not fr.exists() or not en.exists():
+        return
+    report = compare_files(fr, en)
+    hard = [f for f in report["findings"] if f["severity"] == HARD]
+    assert len(hard) <= 30, (len(hard), hard[:3])
 
 
 if __name__ == "__main__":
