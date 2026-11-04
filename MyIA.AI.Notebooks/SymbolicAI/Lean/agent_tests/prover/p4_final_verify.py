@@ -238,3 +238,126 @@ def _pristine_type_probe(decl_name: str) -> str:
     original can look identical, and where instance arguments are hidden.
     """
     return f"set_option pp.all true in\n#check @{decl_name}\n"
+
+
+# Text-failure markers of a ``#check`` that produced no type. Kept narrow on
+# purpose: a warning ("declaration uses 'sorry'") does not invalidate the
+# printed type, an error does. Reading the marker anywhere in the output is
+# conservative -- a blocker on a false negative is cheaper than a pass on a
+# failed elaboration.
+_CHECK_FAILURE_MARKERS = (
+    "error:",
+    "unknown identifier",
+    "unknown constant",
+    "unknown declaration",
+    "failed to synthesize",
+)
+
+
+def _elaborated_type_text(output: str, decl_name: str):
+    """Return the printed type from a ``#check`` output, or ``None``.
+
+    ``None`` means "no type came out" -- an empty output, a Lean error, or a
+    line that does not carry ``decl : ...``. It never means "the same type":
+    a caller that reads ``None`` as equality would turn a failed elaboration
+    into a pass, which is the one direction this control must not fail in.
+    """
+    if not output:
+        return None
+    lowered = output.lower()
+    for marker in _CHECK_FAILURE_MARKERS:
+        if marker in lowered:
+            return None
+    normalised = _normalise_lean_text(output)
+    pattern = r"(?<![\w.'])@?" + re.escape(decl_name) + r"\s*:\s*"
+    match = re.search(pattern, normalised)
+    if match is None:
+        return None
+    return normalised[match.end() :]
+
+
+def _pristine_type_elaboration_decision(
+    original_output: str, current_output: str, decl_name: str
+) -> dict:
+    """Compare the two elaborated types printed for ``decl_name``.
+
+    Statuses: ``"SAME_TYPE"``, ``"TYPE_DRIFTED"``, ``"ELABORATION_ERROR"``.
+    The comparison is on the ``pp.all`` text: instance arguments, universe
+    levels and implicit binders are all in it, so two types that differ only
+    by an implicit argument or by the instance they picked are reported as
+    drifted -- which is the point.
+    """
+    original_type = _elaborated_type_text(original_output, decl_name)
+    current_type = _elaborated_type_text(current_output, decl_name)
+    if original_type is None or current_type is None:
+        failed_side = "original" if original_type is None else "current"
+        return {
+            "status": "ELABORATION_ERROR",
+            "decl": decl_name,
+            "side": failed_side,
+            "original_type": original_type,
+            "current_type": current_type,
+        }
+    if original_type == current_type:
+        return {
+            "status": "SAME_TYPE",
+            "decl": decl_name,
+            "side": None,
+            "original_type": original_type,
+            "current_type": current_type,
+        }
+    return {
+        "status": "TYPE_DRIFTED",
+        "decl": decl_name,
+        "side": None,
+        "original_type": original_type,
+        "current_type": current_type,
+    }
+
+
+def _pristine_type_check(
+    original_content: str,
+    current_content: str,
+    decl_name: str,
+    elaborate,
+) -> dict:
+    """Full control: text-first, elaboration only when the text drifted.
+
+    ``elaborate(probe, content)`` must run the probe against ``content`` and
+    return the raw Lean output. It is injected rather than imported so this
+    module stays stdlib-only and the decision logic is unit-testable without
+    a toolchain.
+
+    Returns the decision with ``elaborated`` telling the caller which path
+    produced the verdict -- a ``SAME_TYPE`` reached without elaboration and
+    one reached through it are both valid, but they cost differently and the
+    report should be able to say which was paid.
+    """
+    decision = _pristine_type_decision(original_content, current_content, decl_name)
+    if decision["status"] == "UNCHANGED":
+        return {
+            "status": "SAME_TYPE",
+            "decl": decl_name,
+            "side": None,
+            "elaborated": False,
+            "original_type": None,
+            "current_type": None,
+        }
+    if decision["status"] == "MISSING":
+        return {
+            "status": "MISSING",
+            "decl": decl_name,
+            "side": decision["side"],
+            "elaborated": False,
+            "original_type": None,
+            "current_type": None,
+        }
+    probe = decision["probe"]
+    verdict = _pristine_type_elaboration_decision(
+        elaborate(probe, original_content),
+        elaborate(probe, current_content),
+        decl_name,
+    )
+    verdict["elaborated"] = True
+    verdict["text_decision"] = decision
+    return verdict
