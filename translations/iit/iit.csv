@@ -22249,7 +22249,7 @@ Deux régimes nets : les **oscillateurs** (blinker, pulsar) présentent une popu
 Le Jeu de la Vie est le seul des trois à offrir des **trajectoires longues d'objets transporteurs** — et le seul dont le moteur de calcul est **prouvé correct dans le régime non-vacuous** (`evolveHashlifeFastAtN_correct_uncond`, sans hypothèse, Lean 4). Le théorème historique `hashlife_correct` (même fichier) reste vrai techniquement, mais par vacuité dès que le saut s'exerce — il n'établit rien dans le régime où le moteur est réellement utilisé.",,,,,,,,f183400b2e475418,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Life-SubstratCertifie.ipynb,39ca7247,markdown,fr,78b6716d0817ebc8,"## 5. Le pont Lean — ce que `evolveHashlifeFastAtN_correct_uncond` garantit, et où `hashlife_correct` s'arrête
 
-La track `conway_lean` (`MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/`) formalise l'algorithme **Hashlife** de Gosper — évaluation par quadtree mémoïsé avec sauts temporels $2^k$. Le théorème central, dans `Conway/Life/HashlifeCorrectness.lean` (déclaration `evolveHashlifeFastAtN_correct_uncond`, cherchable par son nom) :
+La track `conway_lean` (`MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/`) formalise l'algorithme **Hashlife** de Gosper — évaluation par quadtree mémoïsé avec sauts temporels $2^k$. Le théorème central, dans `Conway/Life/HashlifeCorrectness.lean` (déclaration `evolveHashlifeFastAtN_correct_uncond`, cherchable par son nom) :
 
 > **`evolveHashlifeFastAtN_correct_uncond`** — pour toute grille `g` et tout horizon `n`, sans hypothèse supplémentaire, l'évaluation Hashlife (variante `evolveHashlifeFastAtN` à moteur décorrélé, introduite par #11161) et la simulation naïve pas-à-pas produisent **le même film** : `evolveHashlifeFastAtN n g = evolve n g`.
 
@@ -22271,7 +22271,7 @@ def _racine_depot(depart):
 
 
 racine = _racine_depot(Path.cwd().resolve())
-lake = racine / ""MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean"" if racine else None
+lake = racine / ""MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean"" if racine else None
 fichier = lake / ""Conway/Life/HashlifeCorrectness.lean"" if lake else None
 
 if fichier is None or not fichier.exists():
@@ -38095,15 +38095,17 @@ VOCABS = {
 for nom, V in VOCABS.items():
     print(f""{nom:32s} |V| = {len(V)} operateurs"")
 ",,,,,,,,964a19217f36b6ad,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe5-AttributionCausale.ipynb,6cad3b10,markdown,fr,d1ee387e4f75185a,"### Mesure du forward-search budget $B$
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe5-AttributionCausale.ipynb,6cad3b10,markdown,fr,b9bf076630575241,"### Mesure du forward-search budget $B$
 
 Pour chaque vocabulaire, on lance un BFS depuis `INITIAL` avec budget $B = 2$ expansions. On rapporte :
 
 - $|F_B(\text{INITIAL})|$ : nombre d'etats atteignables.
 - `but_atteint` : 1 si au moins un etat de $F_B(\text{INITIAL})$ satisfait $\text{BUT}$ (test par etat : $\exists e \in F_B, \text{BUT} \subseteq e$), 0 sinon.
 
-On fait varier la **graine** de la position initiale alternative (l'initial est fixe, mais on mesure aussi le forward-search depuis 30 positions alternatives pour avoir un panel).",,,,,,,,d1ee387e4f75185a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe5-AttributionCausale.ipynb,94153637,code,fr,a108c3f7ced695dc,"def forward_reachable(ops: List[Operateur], initial: FrozenSet[str],
+On fait varier la **graine** de la position initiale alternative (l'initial est fixe, mais on mesure aussi le forward-search depuis 30 positions alternatives pour avoir un panel).
+
+Le **budget** est lui aussi balaye ($B = 2, 3, 4$). La cellule mesure alors le delta $|F_B|$ entre le vocabulaire avec `discard` et le meme sans, pour le meme jeu de 30 graines, puis le budget a partir duquel le but entre dans $F_B$. C'est ce balayage qui expose l'effet du `discard`, inerte a $B = 2$ (cf. Lecture 2) : sans lui, l'inertie se lit comme une propriete du `discard` alors qu'elle n'est qu'une propriete du budget.",,,,,,,,b9bf076630575241,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe5-AttributionCausale.ipynb,94153637,code,fr,871169159f785593,"def forward_reachable(ops: List[Operateur], initial: FrozenSet[str],
                       budget: int) -> set:
     """"""BFS budget-stricted : ensemble des etats atteignables en <= budget expansions.""""""
     visited = {initial}
@@ -38171,7 +38173,33 @@ panneaux = {nom: mesurer_vocabulaire(V, SEEDS, budget=BUDGET)
 for nom, panneau in panneaux.items():
     taille_moy = np.mean([o[""taille_F""] for o in panneau])
     taux_but = np.mean([o[""but_atteint""] for o in panneau])
-    print(f""{nom:20s} |F|_moyen = {taille_moy:6.2f}  taux_but = {taux_but:.3f}"")",,,,,,,,a108c3f7ced695dc,,,,,,,,,,,,,,,
+    print(f""{nom:20s} |F|_moyen = {taille_moy:6.2f}  taux_but = {taux_but:.3f}"")
+
+# Balayage du budget : le discard est inerte a B = 2, son effet n'apparait
+# qu'a la troisieme expansion (cf. Lecture 2). On mesure le delta graine par
+# graine entre le vocabulaire avec discard et le meme sans, a budget croissant.
+print()
+print(""Balayage du budget B -- delta |F|(+discard) - |F|(sans discard) :"")
+for B in (2, 3, 4):
+    deltas = []
+    for s in SEEDS:
+        init = position_initiale(s)
+        sans = forward_reachable(VOCABS[""A_t""], init, budget=B)
+        avec = forward_reachable(VOCABS[""A_t +discard""], init, budget=B)
+        deltas.append(len(avec) - len(sans))
+    nz = sum(1 for d in deltas if d != 0)
+    print(f""  B = {B} : delta moyen = {np.mean(deltas):+.3f}  ""
+          f""graines non nulles = {nz}/{len(SEEDS)}  delta max = {max(deltas)}"")
+
+# A quel budget le but entre-t-il dans F ? Fixe la lecture du delta ci-dessus.
+print()
+print(""Budget d'entree du but dans F (vocabulaire A_t) :"")
+for B in (1, 2, 3):
+    cnt = sum(1 for s in SEEDS
+              if any(BUT <= e
+                     for e in forward_reachable(VOCABS[""A_t""],
+                                                position_initiale(s), budget=B)))
+    print(f""  B = {B} : {cnt}/{len(SEEDS)} graines atteignent le but"")",,,,,,,,871169159f785593,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe5-AttributionCausale.ipynb,4991e094,code,fr,250adea980a4530a,"# Construction du panel experimental (X, Z, Y) pour chaque seed.
 # X = 1 si le vocab contient teleport (= +raft)
 # Z = 1 si le vocab contient discard (= +discard)
@@ -41266,14 +41294,15 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe5-AttributionCausale.ipynb,ad80374b,m
 La cellule de construction affiche les tailles brutes des quatre vocabulaires : `A_t` = 25 operateurs (deplacements entre cases adjacentes du grillage 3x3, plus `pickup-key`), `A_t +discard` = 26, `A_t1 (+teleport)` = 26, `A_t1 (+teleport) +discard` = 27. Chaque ajout est une addition STRIPS minimale (pre, add, del) : `teleport-diag` quitte (0,0) pour (2,2) en un pas, `discard-key` retire `holding-key` sans add -- un etat-piege.
 
 La lecture a retenir : la **taille ne discrimine pas** les deux ajouts (26 contre 26) -- c'est la structure des preconditions qui jouera. Le panel experimental (cellule 9) separe teleport (X) de discard (Z) par mots-cles dans les noms, pas par la taille. Le protocole de Greffe 2 est imite, jamais re-derive : la relaxation STRIPS consommee est celle de `ict.causal_attribution`, la construction des operateurs est locale au notebook.",,,,,,,,f4229ff9c1c1c844,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe5-AttributionCausale.ipynb,6b69656a,markdown,fr,e9e63ef48456c28b,"## Lecture 2 -- Budget B = 2 : le teleport elargit (+48 %), le discard reste inerte
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe5-AttributionCausale.ipynb,6b69656a,markdown,fr,320eac3a6374a5bb,"## Lecture 2 -- Budget B = 2 : le teleport elargit (+48 %), le discard reste inerte
 
 A budget B = 2, le pattern de Greffe 2 est reconstitue de maniere discriminante : `A_t` a un |F| moyen de **6.23** et `A_t1 (+teleport)` de **9.23** -- delta +3.00, soit +48 % d'etats atteignables. Le `teleport-diag` ouvre la diagonale en une expansion, ce que les quatre directions ne font pas en deux pas depuis l'initial.
 
 Le `taux_but` est **binaire par graine** : 1 si au moins un etat de `F_2` de cette graine satisfait le but (`holding-key`), 0 sinon (ce n'est pas la proportion d'etats de `F_2` qui contiennent le but -- l'ancien test d'inclusion porte sur l'union des etats et rendait 0 partout). Sa moyenne sur les 30 graines : **7/30 = 0.233, identique sur les quatre vocabulaires** -- les 7 graines qui reussissent sans `teleport` sont exactement celles qui reussissent avec, et le `discard` n'y change rien. L'outcome binaire est donc **plat sur tout le design 2x2** : sous Y = taux de but, ATE naif = backdoor = 0 et le confondant de l'exercice 2 n'aurait plus de biais a corriger. C'est pourquoi la cellule suivante prend `Y = |F_B|` comme outcome continu, le taux de but comme signal auxiliaire.
 
-Le `discard`, lui, est **inerte sur |F|** a B = 2 (6.23 sans et 6.23 avec) -- non par circularite mais par budget : sa precondition est de tenir la cle, et les etats `holding-key` n'apparaissent eux-memes qu'a la deuxieme expansion (l'agent part de (0,0) et le `pickup-key` exige la case (1,0)) ; les 7 graines qui atteignent le but a B = 2 tiennent donc bien la cle, mais la branche du `discard` (l'objet lache) serait une troisieme expansion, hors budget.
-",,,,,,,,e9e63ef48456c28b,,,,,,,,,,,,,,,
+Le `discard`, lui, est **inerte sur |F|** a B = 2 : 6.23 sans et 6.23 avec, delta nul sur les 30 graines. Le balayage du budget montre que cette inertie est **une propriete du budget, pas du `discard`** : le delta moyen passe de **+0.000** a B = 2 a **+0.233** a B = 3 (7 graines sur 30 non nulles, delta max 1) puis **+0.933** a B = 4 (7 graines sur 30, delta max 4). Le second releve donne la raison : le but n'entre dans $F$ qu'a la deuxieme expansion (0 graine sur 30 a B = 1, 7 sur 30 a B = 2), donc les 7 graines qui atteignent le but a B = 2 tiennent bien la cle -- mais la branche qui lache l'objet est une expansion de plus, et son etat d'arrivee tombe hors budget.
+
+Le signe du delta merite d'etre dit, parce qu'il contredit l'intuition du plan : a budget suffisant le `discard` **ajoute** des etats atteignables (delta positif), parce que c'est un operateur de plus, et non un operateur qui retire. Il n'elargit pas pour autant l'atteignabilite du but, dont le taux reste a 0.233 sur les quatre vocabulaires. C'est cette dissociation -- plus d'etats, meme taux de but -- qui laisse l'instrument `discard` sans effet mesurable a B = 2, d'ou le `NON_IDENTIFIABLE` de la Lecture 5.",,,,,,,,320eac3a6374a5bb,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe5-AttributionCausale.ipynb,fde413a5,markdown,fr,dbfd386ae081e086,"## Lecture 3 -- Un design orthogonal : 120 observations, 30 par cellule
 
 Le panel empile les quatre vocabulaires sur les 30 graines : N = **120** observations, P(X = 1) = 0.500 et P(Z = 1) = 0.500, et le cross-tab l'affiche sans ambiguite : (Z = 0, X = 0) = 30, (Z = 0, X = 1) = 30, (Z = 1, X = 0) = 30, (Z = 1, X = 1) = 30 -- chaque cellule du design contient exactement 30 observations, aucun cas vide.

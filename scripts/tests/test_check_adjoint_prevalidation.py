@@ -1163,6 +1163,48 @@ def test_copied_marker_by_other_author_still_expires_the_dossier():
         assert any("discussion changed after dossier" in e for e in errors), login
 
 
+# --- #15511 : le commentaire RENVOI d'un doublon fusionne -------------------
+#
+# Le marqueur principal est retire du doublon, qui devient un renvoi vers le
+# collant canonique. Il n'est JAMAIS supprime (#15372) : il vit donc dans le
+# fil, et sans exemption il compte comme une row etrangere -- le dossier
+# perimerait a la fusion de deux commentaires collants, pour une cause qui
+# ne touche pas au fond de la PR.
+
+FORWARD_BODY = (
+    "<!-- coursia:advisory-sticky:forwarded -->\n\n"
+    "*Ce commentaire a ete fusionne dans le commentaire collant canonique "
+    "(id 4242) : ses sections y sont integrees. Rien n'est efface.*\n"
+)
+
+
+def test_forwarded_sticky_comment_does_not_expire_the_dossier():
+    """Le renvoi d'un doublon fusionne est neutre : meme contrat que le
+    marqueur principal (prefixe en tete + AUTEUR `github-actions[bot]`)."""
+    base = _stamped_snapshot("")
+    base["comments"].pop()
+    snapshot = _stamped_snapshot(_dossier_for(base))
+    forward = _comment(FORWARD_BODY, login="github-actions[bot]")
+    forward["createdAt"] = T1
+    snapshot["comments"].append(forward)
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+
+
+def test_forwarded_marker_copied_by_a_human_still_expires_the_dossier():
+    """Controle negatif : l'AUTEUR compte, pas le texte seul. Un tiers qui
+    recopie le marqueur de renvoi perime le dossier."""
+    for login in ("clusterManager-Myia", "myia-po-2023", "jsboige-bot-impersonator"):
+        base = _stamped_snapshot("")
+        base["comments"].pop()
+        snapshot = _stamped_snapshot(_dossier_for(base))
+        copied = _comment(FORWARD_BODY, login=login)
+        copied["createdAt"] = T1
+        snapshot["comments"].append(copied)
+        errors = _errors(snapshot)
+        assert any("discussion changed after dossier" in e for e in errors), login
+
+
 def test_shared_login_lift_does_not_expire_dossier():
     """#16883 CN4-bis: a coordinator lift posted under SHARED_GITHUB_LOGIN
     (the merged-account mandate, every lane signs ``jsboige``) is
