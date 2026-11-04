@@ -42,9 +42,9 @@ réduit la question aux premiers `p ∈ {2, …, 306}` : pour chacun, il faut un
 idéal premier `P` au-dessus de `p` tel que `⌊M K⌋₊ < p ^ f` (où `f` est le
 degré d'inertie) **ou** `P` principal.
 
-1. **`p = 3`** (lemme `isPrincipal_of_liesOver_three`) : le corps `F₂₇ =
-   AdjoinRoot (X³ - X - 1)` sur `ZMod 3` fournit le morphisme `⸜ K → F₂₇`
-   envoyant `ζ₁₃` sur une racine de `X³ - X - 1` ; son noyau est
+1. **`p = 3`** (lemme `isPrincipal_of_liesOver_three`) : le corps `F27 =
+   AdjoinRoot (X³ - X - 1)` sur `ZMod 3` fournit le morphisme de `⸜ K`
+   vers `F27` envoyant `ζ₁₃` sur une racine de `X³ - X - 1` ; son noyau est
    `span {α}` avec `α = 1 + ζ - ζ³`, via l'identité `α * β = 3` et un
    argument galoisien (`exists_smul_eq_of_isGaloisGroup`) ;
 2. **`p ∈ {13, 53, 79, 131, 157}`** : le certificat générique
