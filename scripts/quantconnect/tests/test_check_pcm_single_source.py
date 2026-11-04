@@ -180,3 +180,114 @@ def test_copies_decltrees_bien_declarees(relative):
     assert relative in declared
     assert declared[relative]["reason"].strip()
     assert declared[relative]["sha256"] == normalized_sha256(REPO_ROOT / relative)
+
+
+# --- Contournements mesures par le contre-audit (sondes A / B / C) ---------
+#
+# La discrimination qui manquait : une sous-classe du canonique n'est une
+# specialisation legitime que si elle delegue la reconstruction a super().
+# Une sous-classe qui la REDEFINIT sans super() remplace la reconstruction —
+# c'est le mode de defaillance #19740 (variante sans le correctif `additive`)
+# que la PR pretend fermer.
+
+
+SPEC_REDEFINE_NO_SUPER = """from AlgorithmImports import *
+
+
+class MultiStrategyPCM(MultiStrategyPouchesPCM):
+    \"\"\"Variante sans delegation : reecrit la reconstruction, ne delegue pas.\"\"\"
+
+    def determine_target_percent(self, active_insights):
+        # reconstruction locale, sans super() : c'est une copie.
+        return {i: 1.0 for i in active_insights}
+"""
+
+SPEC_WITH_SUPER = """from AlgorithmImports import *
+
+
+class CappedPouchesPCM(MultiStrategyPouchesPCM):
+    \"\"\"Specialisation legitime : delegue la reconstruction a super().\"\"\"
+
+    def determine_target_percent(self, active_insights):
+        targets = super().determine_target_percent(active_insights)
+        return {k: min(v, 0.25) for k, v in targets.items()}
+"""
+
+
+def test_specialisation_sans_super_est_une_copie(tmp_path):
+    """SONDE A : une sous-classe du canonique qui redéfinit la methode
+    canonique SANS super() remplace la reconstruction — la garde la signale."""
+    root, manifest = _tree(tmp_path)
+    _write(
+        root,
+        f"{QC_ROOT}/projects/SneakySpecial/portfolio_construction.py",
+        SPEC_REDEFINE_NO_SUPER,
+    )
+    report = analyse(root, manifest)
+    assert report["verdict"] == "FAIL", report
+    assert "UNDECLARED_COPY" in _codes(report)
+    # le detail doit nommer la discrimination (redefinition sans super)
+    details = [
+        f["detail"]
+        for f in report["findings"]
+        if f["code"] == "UNDECLARED_COPY"
+    ]
+    assert any("super()" in d for d in details), details
+
+
+def test_specialisation_avec_super_n_est_pas_une_copie(tmp_path):
+    """Discrimination inverse : une sous-classe qui redéfinit la methode MAIS
+    delegue a super() est une specialisation legitime — la garde reste verte."""
+    root, manifest = _tree(tmp_path)
+    _write(
+        root,
+        f"{QC_ROOT}/projects/LegitSpecial/portfolio_construction.py",
+        SPEC_WITH_SUPER,
+    )
+    report = analyse(root, manifest)
+    assert report["verdict"] == "OK", report
+    assert report["findings"] == []
+
+
+def test_definition_sans_parentheses_est_signalee(tmp_path):
+    """SONDE C : `class MultiStrategyPCM:` (sans parentheses) est bien une
+    definition de la famille — l'obligation de `\\s*\\(` la masquait."""
+    root, manifest = _tree(tmp_path)
+    _write(
+        root,
+        f"{QC_ROOT}/projects/NoParens/portfolio_construction.py",
+        "class MultiStrategyPCM:\n    pass\n",
+    )
+    report = analyse(root, manifest)
+    assert report["verdict"] == "FAIL", report
+    assert "UNDECLARED_COPY" in _codes(report)
+
+
+# --- §2 : les empreintes sont publiées et re-declarables --------------------
+
+
+def test_json_porte_les_empreintes_pleines(tmp_path):
+    """Le rapport JSON porte l'empreinte declaree ET actuelle, en entier (64
+    hex) — pas seulement le diff tronque a 12 caracteres du message de finding."""
+    root, manifest = _tree(tmp_path)
+    report = analyse(root, manifest)
+    assert CANONICAL_REL in report["hashes"]
+    canon = report["hashes"][CANONICAL_REL]
+    assert canon["declared"] == _digest(CANONICAL_SRC)
+    assert canon["actual"] == _digest(CANONICAL_SRC)
+    assert len(canon["actual"]) == 64
+    assert report["hashes"][COPY_REL]["actual"] == _digest(COPY_SRC)
+
+
+def test_print_hashes_publie_les_empreintes_pleines(tmp_path, capsys):
+    """--print-hashes affiche l'empreinte normalisee complete, copiable dans
+    le manifeste — la cle qui rend CANONICAL_DRIFT / DECLARATION_STALE
+    re-declarables (avant, aucune empreinte n'etait publiee)."""
+    root, manifest = _tree(tmp_path)
+    from check_pcm_single_source import main
+
+    rc = main(["--root", str(root), "--manifest", str(manifest), "--print-hashes"])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert _digest(CANONICAL_SRC) in out
+    assert _digest(COPY_SRC) in out

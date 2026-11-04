@@ -41,11 +41,13 @@ Usage :
     python scripts/quantconnect/check_pcm_single_source.py
     python scripts/quantconnect/check_pcm_single_source.py --json
     python scripts/quantconnect/check_pcm_single_source.py --root <checkout>
+    python scripts/quantconnect/check_pcm_single_source.py --print-hashes
 """
 
 from __future__ import annotations
 
 import argparse
+import ast
 import hashlib
 import json
 import re
@@ -56,10 +58,22 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_MANIFEST = REPO_ROOT / "scripts" / "quantconnect" / "pcm_single_source.json"
 SCAN_SUBTREE = "MyIA.AI.Notebooks/QuantConnect"
 
+CANONICAL_CLASS = "MultiStrategyPouchesPCM"
+# Methode canonique dont la specialisation legitime appelle super() : une
+# sous-classe qui la redefinit SANS deleguer est une copie, pas une
+# specialisation (le mode de defaillance #19740 : une variante sans le
+# correctif `additive` reapparaît). La seule chaine des bases ne permettait
+# pas cette discrimination (contournement « sonde A » du contre-audit).
+TARGET_METHOD = "determine_target_percent"
+
 # Famille du PCM par poches : le nom de classe suffit a designer le modele.
 # `RiskParityPCM`, `MeanVariancePCM` ou `CappedPouchesPCM` sont d'autres
 # modeles (ou une specialisation du canonique) : ils ne sont pas concernes.
-CLASS_RE = re.compile(r"^class\s+(MultiStrategy\w*PCM)\s*\(([^)]*)\)", re.MULTILINE)
+# Les parentheses sont optionnelles : `class MultiStrategyPCM:` (sans base)
+# est bien une definition de la famille — l'obligation de `\s*\(` la masquait.
+CLASS_RE = re.compile(
+    r"^class\s+(MultiStrategy\w*PCM)\s*(?:\(([^)]*)\))?", re.MULTILINE
+)
 
 # Codes de verdict : `blocking` = la garde rougit, `info` = signale sans
 # bloquer (les carnets de reference recopient le code a copier).
@@ -84,19 +98,78 @@ def normalized_sha256(path: Path) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
+def _class_flags(node: ast.ClassDef) -> tuple[list[str], bool, bool]:
+    """Noms des bases d'une classe + redéfinit TARGET_METHOD + appelle super().TARGET_METHOD ?"""
+    base_names: list[str] = []
+    for base in node.bases:
+        if isinstance(base, ast.Name):
+            base_names.append(base.id)
+        elif isinstance(base, ast.Attribute):
+            base_names.append(base.attr)
+    redefines = False
+    calls_super = False
+    for stmt in node.body:
+        if (
+            isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef))
+            and stmt.name == TARGET_METHOD
+        ):
+            redefines = True
+            for sub in ast.walk(stmt):
+                if (
+                    isinstance(sub, ast.Call)
+                    and isinstance(sub.func, ast.Attribute)
+                    and sub.func.attr == TARGET_METHOD
+                ):
+                    calls_super = True
+    return base_names, redefines, calls_super
+
+
 def find_definitions(path: Path) -> list[dict]:
-    """Classes de la famille definies dans un fichier .py."""
+    """Classes de la famille definies dans un fichier .py.
+
+    L'AST porte la discrimination que le regex ne pouvait pas : une sous-classe
+    du canonique qui redéfinit `determine_target_percent` **sans** `super()`
+    remplace la reconstruction canonique — c'est une copie, pas une
+    specialisation. Le regex ne sert plus que de repli quand le fichier ne se
+    parse pas.
+    """
     text = path.read_text(encoding="utf-8", errors="replace")
+    try:
+        tree = ast.parse(text)
+    except (SyntaxError, ValueError):
+        tree = None
+    if tree is not None:
+        found = []
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ClassDef) and re.match(
+                r"MultiStrategy\w*PCM$", node.name
+            ):
+                base_names, redefines, calls_super = _class_flags(node)
+                inherits = (
+                    node.name != CANONICAL_CLASS
+                    and CANONICAL_CLASS in base_names
+                )
+                is_copy = inherits and redefines and not calls_super
+                found.append(
+                    {
+                        "class": node.name,
+                        "line": node.lineno,
+                        "inherits_canonical": inherits and not is_copy,
+                        "redefines_target_without_super": is_copy,
+                    }
+                )
+        return found
     found = []
     for match in CLASS_RE.finditer(text):
         name = match.group(1)
-        bases = match.group(2)
+        bases = match.group(2) or ""
         found.append(
             {
                 "class": name,
                 "line": text[: match.start()].count("\n") + 1,
-                "inherits_canonical": name != "MultiStrategyPouchesPCM"
-                and "MultiStrategyPouchesPCM" in bases,
+                "inherits_canonical": name != CANONICAL_CLASS
+                and CANONICAL_CLASS in bases,
+                "redefines_target_without_super": False,
             }
         )
     return found
@@ -143,6 +216,12 @@ def scan_notebook_copies(root: Path) -> list[str]:
 
 def analyse(root: Path, manifest_path: Path) -> dict:
     findings = []
+    # Empreintes pleines (declaree + actuelle) : la « cle » qui permet de
+    # re-declarer un manifeste — le message de finding est tronque a 12
+    # caracteres, seul le rapport JSON / --print-hashes porte l'empreinte
+    # complete (contournement « sonde §2 » : CANONICAL_DRIFT / DECLARATION_STALE
+    # etaient inlevables, aucune empreinte n'etait publiee).
+    hashes = {}
     try:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     except (OSError, ValueError) as exc:
@@ -188,6 +267,10 @@ def analyse(root: Path, manifest_path: Path) -> dict:
                 }
             )
         digest = normalized_sha256(canonical_path)
+        hashes[canonical_rel] = {
+            "declared": canonical.get("sha256"),
+            "actual": digest,
+        }
         if canonical.get("sha256") and digest != canonical["sha256"]:
             findings.append(
                 {
@@ -223,6 +306,10 @@ def analyse(root: Path, manifest_path: Path) -> dict:
             )
             continue
         digest = normalized_sha256(path)
+        hashes[rel] = {
+            "declared": entry.get("sha256"),
+            "actual": digest,
+        }
         if entry.get("sha256") and digest != entry["sha256"]:
             findings.append(
                 {
@@ -250,14 +337,25 @@ def analyse(root: Path, manifest_path: Path) -> dict:
         if rel == canonical_rel or rel in declared:
             continue
         if site.get("inherits_canonical"):
-            # Une specialisation du canonique n'est pas une copie.
+            # Une specialisation legitime du canonique n'est pas une copie :
+            # elle delegue la reconstruction a super() (cf _class_flags).
             continue
+        if site.get("redefines_target_without_super"):
+            detail = (
+                "class %s (ligne %d) — specialisation du canonique qui redéfinit "
+                "%s sans super() : c'est une copie, declarer la copie ou deleguer"
+                % (site["class"], site["line"], TARGET_METHOD)
+            )
+        else:
+            detail = (
+                "class %s (ligne %d) — declarer la copie ou importer le canonique"
+                % (site["class"], site["line"])
+            )
         findings.append(
             {
                 "code": "UNDECLARED_COPY",
                 "path": rel,
-                "detail": "class %s (ligne %d) — declarer la copie ou importer le canonique"
-                % (site["class"], site["line"]),
+                "detail": detail,
             }
         )
 
@@ -268,6 +366,7 @@ def analyse(root: Path, manifest_path: Path) -> dict:
         "canonical": canonical_rel,
         "declared_copies": sorted(declared),
         "notebook_copies": notebook_copies,
+        "hashes": hashes,
     }
 
 
@@ -284,10 +383,35 @@ def main(argv: list[str] | None = None) -> int:
         help="manifeste des declarations",
     )
     parser.add_argument("--json", action="store_true", help="sortie structuree")
+    parser.add_argument(
+        "--print-hashes",
+        action="store_true",
+        help="afficher les empreintes normalisees (pleines) du canonique et des "
+        "copies declarees, pour re-declaration du manifeste",
+    )
     args = parser.parse_args(argv)
 
     root = Path(args.root).resolve()
     manifest_path = Path(args.manifest).resolve()
+
+    if args.print_hashes:
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            print("manifeste illisible : %s" % exc, file=sys.stderr)
+            return 2
+        rels = [manifest.get("canonical", {}).get("path", "")]
+        rels += [entry["path"] for entry in manifest.get("declared_copies", [])]
+        for rel in rels:
+            if not rel:
+                continue
+            path = root / rel
+            if path.is_file():
+                print("%s  %s" % (rel, normalized_sha256(path)))
+            else:
+                print("%s  (absent du checkout)" % rel)
+        return 0
+
     report = analyse(root, manifest_path)
 
     if args.json:

@@ -22,15 +22,5 @@
       "reason": "Variante anterieure au correctif `additive` (#19740) : le modele n'a pas de parametre `additive` et lit `active_insights`, qui ne porte qu'une insight par symbole. Le correctif n'y est pas reporte parce que la candidate est gelee dans le registre de l'ombre et que #20188 interdit que l'extraction la touche.",
       "pinned_by": "registre de l'ombre, entree `tw-pit` (gelee le 2026-10-06, code rejoue au SHA gele)"
     }
-  ],
-  "excluded": [
-    {
-      "pattern": "**/*.ipynb",
-      "reason": "Les carnets de reference recopient le code a recopier : une occurrence dans un carnet n'est pas une copie de production. Ces occurrences sont comptees par la garde et restituees en sortie JSON, sans bloquer."
-    },
-    {
-      "pattern": "**/CappedPouchesPCM, **/RiskParityPCM, **/MeanVariancePCM",
-      "reason": "Autres modeles, ou specialisation du canonique : `CappedPouchesPCM` herite de `MultiStrategyPouchesPCM` (ce n'est pas une copie, c'est une sous-classe)."
-    }
   ]
 }

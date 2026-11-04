@@ -3539,6 +3539,9 @@ TRANCHE36: list[Guard] = [
 # doit rejouer la garde, sinon une declaration perimee passerait sans temoin
 # (lecon #11685/#12817). Idem pour le corps de tests, qui porte le controle
 # positif exige par #20188 : une copie volontairement modifiee fait rougir.
+# Les deux fichiers de l'organe lui-meme figurent aussi dans `paths` (le
+# registre et le moteur) : une revision qui etend ou retrecit la portee de la
+# garde doit la rejouer — les gardes natifs voisins font de meme.
 #
 # rc=2 = manifeste illisible ou organe absent : c'est un **defaut du depot**,
 # pas un incident d'entree comme le base injoignable d'un garde de delta. La
@@ -3556,6 +3559,10 @@ TRANCHE38: list[Guard] = [
             "scripts/quantconnect/check_pcm_single_source.py",
             "scripts/quantconnect/pcm_single_source.json",
             "scripts/quantconnect/tests/test_check_pcm_single_source.py",
+            # L'organe lui-meme : une revision qui change sa portee doit la
+            # rejouer (les 21 gardes natifs voisins declarent la meme paire).
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
         ],
         argv=[
             "python", "scripts/quantconnect/check_pcm_single_source.py",
