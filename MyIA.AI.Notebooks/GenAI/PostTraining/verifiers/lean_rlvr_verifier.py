@@ -21,11 +21,14 @@ Tier-2 = quelques secondes par rollout (elaboration Lean core, pas de Mathlib) :
 ce module est le COMPOSANT verificateur, CPU. L'entraînement GPU RLVR qui le
 consomme vit dans PT-11 (#10317) / PT-12 (#10508).
 
-Recette d'execution (rule F — vrai outil, pas de contournement) ::
-
-    export PATH="$HOME/.elan/bin:$PATH"     # elan requis (elan 4.x verifie)
-    # un projet lake minimal (lakefile.toml + lean-toolchain) est cree
-    # automatiquement comme cwd ; chaque rollout nourrit un theoreme via stdin.
+Execution (rule F — vrai outil, pas de contournement) : chaque rollout est
+confie a l'organe canonique ``scripts/lean/lean_exec.py`` (See #15666, case
+1/7 de l'epic) via le client partage ``lean_notebook_utils._organ_run`` —
+admission machine-wide, budget, kill-tree, backend epingle par lake. Un
+projet lake minimal (lakefile.toml + lean-toolchain) est cree automatiquement
+comme cwd ; chaque rollout nourrit un theoreme via ``lake env lean --stdin``.
+elan reste requis (elan 4.x verifie), natif ou WSL selon l'epinglage de
+l'organe pour le squelette.
 
 Exemple ::
 
@@ -41,12 +44,74 @@ from __future__ import annotations
 import os
 import re
 import subprocess
+import tempfile
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable
 
 __all__ = ["LeanRLVRVerifier", "RLVRResult"]
+
+# --- Client partage de l'organe confine (#15666, case 1/7) ------------------
+#
+# Charge LAZILY par chemin direct, meme discipline que lean_server.py (#8722) :
+# aucun import de package au chargement du module, le client ne pese qu'au
+# premier rollout reel. La serie SymbolicAI/Lean possede le client
+# (organ-first : on l'invoque, on ne le reimplante pas).
+_lean_nbu = None
+_LEAN_NOTEBOOK_UTILS_PATH = (
+    Path(__file__).resolve().parents[3]
+    / "SymbolicAI" / "Lean" / "lean_notebook_utils.py"
+)
+
+
+def _get_lean_client():
+    """Return le module client ``lean_notebook_utils``, charge au 1er usage."""
+    global _lean_nbu
+    if _lean_nbu is None:
+        import importlib.util as ilu
+
+        spec = ilu.spec_from_file_location(
+            "_lean_nbu_client", _LEAN_NOTEBOOK_UTILS_PATH)
+        mod = ilu.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        _lean_nbu = mod
+    return _lean_nbu
+
+
+def _find_lean_exec() -> Path:
+    """Localise l'organe canonique ``scripts/lean/lean_exec.py``.
+
+    Marche des parents depuis ce fichier (verifiers/ -> PostTraining -> GenAI
+    -> ... -> racine du depot), meme strategie que lean_server.py.
+    """
+    current = Path(__file__).resolve().parent
+    for _ in range(14):
+        candidate = current / "scripts" / "lean" / "lean_exec.py"
+        if candidate.exists():
+            return candidate.resolve()
+        current = current.parent
+        if current == current.parent:
+            break
+    raise FileNotFoundError(
+        "scripts/lean/lean_exec.py introuvable — organe d'execution confine "
+        "requis par LeanRLVRVerifier (See #15666)"
+    )
+
+
+def _organ_run(project_path: str, cmd_args: list, timeout: float,
+               stdin_file: str | None = None) -> tuple:
+    """Confie ``cmd_args`` a l'organe confine (See #15666, case 1/7).
+
+    Le payload decrit ce que L'ORGANE lancera (admission machine-wide, budget,
+    kill-tree, backend epingle) — ce fichier ne spawn aucun processus lake.
+    Contrat du client partage : ``(rc_enfant, out, err)``, -1 = timeout, -2 =
+    organe refuse/injoignable (raison dans err).
+    """
+    return _get_lean_client()._organ_run(
+        project_path, cmd_args, timeout,
+        stdin_file=stdin_file, organ=_find_lean_exec(),
+    )
 
 # --- Oracle de reward hacking (enumeree par lean-axiom.yml, corpus #10289) ---
 #
@@ -178,19 +243,53 @@ class LeanRLVRVerifier:
     # -- execution -------------------------------------------------------------
 
     def _run_lean(self, source: str) -> str:
-        """Execute ``lake env lean --stdin`` sur une source, retourne la sortie."""
-        env = os.environ.copy()
-        env["PATH"] = self._elan_bin + os.pathsep + env.get("PATH", "")
-        proc = subprocess.run(
-            ["lake", "env", "lean", "--stdin"],
-            cwd=str(self.project_dir),
-            input=source,
-            capture_output=True,
-            text=True, encoding="utf-8", errors="replace",
-            timeout=self.timeout,
-            env=env,
-        )
-        return proc.stdout + "\n" + proc.stderr
+        """Execute ``lake env lean --stdin`` sur une source, retourne la sortie.
+
+        Migration #15666 (case 1/7) : le lancement est confie a l'organe
+        confine via le client partage (``_organ_run``) — admission
+        machine-wide, budget, kill-tree, backend epingle par lake. La source
+        passe par un fichier branche sur l'entree standard de l'enfant confine
+        (capacite stdin de l'organe, meme mecanisme que ``check_axioms`` de
+        lean_server.py).
+
+        Timeout organe -> ``subprocess.TimeoutExpired``, contrat historique de
+        ``reward()``. Refus organe (cap sature, telemetrie illisible, backend
+        indisponible) -> ``RuntimeError`` visible : une panne d'infrastructure
+        n'est JAMAIS un reward 0.0 — ce serait enseigner a la politique qu'une
+        preuve valide ne vaut rien (empoisonnement du gradient, #10289).
+        """
+        snippet_f = tempfile.NamedTemporaryFile(
+            "w", delete=False, suffix=".lean", encoding="utf-8")
+        snippet_f.write(source)
+        snippet_f.close()
+        try:
+            # Backend natif : l'organe herite de l'environ de CE processus (le
+            # client n'a pas de pass-through d'env), donc elan doit etre visible
+            # ici pour l'etre la-bas. Mutation scopee, restauree ; sous WSL le
+            # shell de login voit deja ~/.elan/bin (mesure po-2026, lean_exec.py).
+            old_path = os.environ.get("PATH", "")
+            if self._elan_bin not in old_path:
+                os.environ["PATH"] = self._elan_bin + os.pathsep + old_path
+            try:
+                rc, out, err = _organ_run(
+                    str(self.project_dir), ["lake", "env", "lean", "--stdin"],
+                    self.timeout, stdin_file=snippet_f.name,
+                )
+            finally:
+                os.environ["PATH"] = old_path
+        finally:
+            try:
+                Path(snippet_f.name).unlink()
+            except OSError:
+                pass
+        if rc == -1:
+            raise subprocess.TimeoutExpired(
+                cmd="lake env lean --stdin", timeout=self.timeout)
+        if rc == -2:
+            raise RuntimeError(
+                f"lean_exec refused rollout: {err or '(no reason)'} (See #15666)"
+            )
+        return out + "\n" + err
 
     # -- API publique ----------------------------------------------------------
 

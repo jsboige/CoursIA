@@ -15,15 +15,39 @@ Ces tests materialisent l'acceptance du verificateur Tier-2 :
 from __future__ import annotations
 
 import shutil
+import subprocess
+from pathlib import Path
 
 import pytest
 
 from verifiers.lean_rlvr_verifier import LeanRLVRVerifier, RLVRResult
 
-# Skip global si elan/lake absent du runner (on n'invente pas un faux moteur).
-elan_available = shutil.which("lake") is not None or shutil.which("lean") is not None
+
+def _lean_reachable() -> bool:
+    """Lean est-il executable via l'organe confine (natif ou WSL) ?
+
+    Migration #15666 : le lancement passe par l'organe — lake n'a plus besoin
+    d'etre sur le PATH Windows, un backend WSL suffit. La sonde WSL (bornee
+    10 s, meme forme que ``lean_exec.wsl_backend_available``) ne tourne que si
+    la sonde native echoue.
+    """
+    if shutil.which("lake") is not None or shutil.which("lean") is not None:
+        return True
+    try:
+        out = subprocess.run(
+            ["wsl", "--", "bash", "-lc", "command -v lake"],
+            capture_output=True, timeout=10,
+        )
+        return out.returncode == 0 and bool(out.stdout.strip())
+    except (OSError, subprocess.SubprocessError):
+        return False
+
+
+# Skip global si elan/lake injoignable (on n'invente pas un faux moteur).
+lean_available = _lean_reachable()
 skip_no_lean = pytest.mark.skipif(
-    not elan_available, reason="elan/lake absent — regle F : installer, ne pas contourner"
+    not lean_available,
+    reason="lean/lake injoignable (natif ou WSL) — regle F : installer, ne pas contourner",
 )
 
 
@@ -147,3 +171,51 @@ def test_timeout_returns_zero(verifier, monkeypatch):
     assert r.reward == 0.0
     assert r.compiles is False
     assert "timeout" in r.hack_flags
+
+
+def test_rollout_routes_through_the_organ(monkeypatch, tmp_path):
+    """Chaque rollout est CONFIE a l'organe confine, pas spawn ici (#15666).
+
+    Test structurel (aucun Lean requis) : le payload passe au client partage
+    est ``lake env lean --stdin`` avec la source en fichier stdin, le cwd est
+    le projet squelette, et le timeout traverse — plus AUCUN subprocess lake
+    direct dans ce module (garde ``check_lake_direct_invocation.py``).
+    """
+    import verifiers.lean_rlvr_verifier as vrf
+
+    captured = {}
+
+    def _fake_organ_run(project_path, cmd_args, timeout, stdin_file=None):
+        captured["project"] = project_path
+        captured["cmd"] = list(cmd_args)
+        captured["timeout"] = timeout
+        captured["stdin"] = Path(stdin_file).read_text(encoding="utf-8")
+        return 0, "ok", ""
+
+    monkeypatch.setattr(vrf, "_organ_run", _fake_organ_run)
+    v = vrf.LeanRLVRVerifier(project_dir=tmp_path, timeout=7.0)
+    raw = v._run_lean("theorem t : True := by trivial\n")
+    assert raw == "ok\n"
+    assert captured["cmd"] == ["lake", "env", "lean", "--stdin"]
+    assert captured["stdin"] == "theorem t : True := by trivial\n"
+    assert captured["timeout"] == 7.0
+    assert captured["project"] == str(v.project_dir)
+
+
+def test_organ_refusal_is_visible_not_reward_zero(monkeypatch, tmp_path):
+    """Un refus d'admission organe (cap, telemetrie...) n'est pas un reward 0.
+
+    Reward 0.0 sur une panne d'infrastructure enseignerait a la politique
+    qu'une preuve valide ne vaut rien (empoisonnement du gradient, #10289) :
+    le refus doit rester un echec VISIBLE, jamais un verdict de preuve.
+    """
+    import verifiers.lean_rlvr_verifier as vrf
+
+    def _refused(project_path, cmd_args, timeout, stdin_file=None):
+        return (-2, "",
+                "machine-wide cap 8: native population 8 + requested budget 2 > cap")
+
+    monkeypatch.setattr(vrf, "_organ_run", _refused)
+    v = vrf.LeanRLVRVerifier(project_dir=tmp_path, timeout=5.0)
+    with pytest.raises(RuntimeError, match="lean_exec refused"):
+        v.reward("1 + 1 = 2", "by rfl")
