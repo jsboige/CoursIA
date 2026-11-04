@@ -210,10 +210,17 @@ REGISTRE: tuple[Entree, ...] = (
         # 2026-11-07, quand une publication portant l'identite de
         # l'instrument aura sept jours : la reference sera alors relue
         # dans le commentaire publie, avec l'identite a cote de la valeur.
-        reference=Reference(39.0, "2026-10-31", "issue #23175",
+        # TROISIEME rebasage (2026-11-02, correctif UTF-8 #23175) : le
+        # correctif a de nouveau touche l'instrument LUI-MEME (735ada5ba),
+        # meme raison que le second -- l'identite portee par la reference
+        # (6144b71eb) n'etait plus celle de l'instrument courant, et la
+        # comparaison serait tombee sur « reference transverse refusee ».
+        # Correctif d'encodage seul, sans effet sur le classement : la
+        # valeur est 39 avant et apres sur le meme arbre aligne.
+        reference=Reference(39.0, "2026-11-02", "issue #23175",
                             instrument=("scripts/notebook_tools/"
                                         "inventory_notebook_names.py"
-                                        "@6144b71ebfcd588d5347e16e7d2ba984dd6af2e5")),
+                                        "@735ada5ba11cd900dee9649c71fedb38fd6fe52c")),
         # Les points anterieurs de la serie, avec leur SOURCE et
         # l'IDENTITE de l'instrument qui les a produits. L'identite
         # declaree est celle du PRODUISANT : c'est elle qui fait le
@@ -243,6 +250,16 @@ REGISTRE: tuple[Entree, ...] = (
                       instrument=("scripts/notebook_tools/"
                                   "inventory_notebook_names.py"
                                   "@d818b008b5558d9a755c81d3d05e29ac23a9f823")),
+            # La reference precedente (39), mesuree le 2026-10-31 sur
+            # l'arbre aligne a f798021d4 avec l'instrument 6144b71eb.
+            # Point de mesure reel : le correctif UTF-8 (735ada5ba) ne
+            # change pas la valeur sur le meme arbre -- 39 avant et apres.
+            Reference(39.0, "2026-10-31",
+                      "issue #23175, reference rebasee precedente (arbre "
+                      "aligne a f798021d4, instrument 6144b71eb)",
+                      instrument=("scripts/notebook_tools/"
+                                  "inventory_notebook_names.py"
+                                  "@6144b71ebfcd588d5347e16e7d2ba984dd6af2e5")),
         ),
         note="`ambigu` = nom non parsé ou kernel non verifie.",
         # L'instrument prend sa LISTE de carnets dans `origin/main` et lit
