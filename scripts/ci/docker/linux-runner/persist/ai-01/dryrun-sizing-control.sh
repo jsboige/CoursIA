@@ -981,7 +981,6 @@ if [ -n "$OVERRIDE_DORMANT" ]; then
 fi
 say "  surcharge : aucune valeur proposee n'est fournie par un drop-in en vigueur"
 say "              (attribution mesuree sur la configuration effective de la section 1)."
-say "              (attribution mesuree sur la configuration effective de la section 1)."
 
 # Le drop-in propose porte exactement trois directives. Si la cible vivante en
 # porte d'autres, l'ecrire A LA PLACE les perdrait en silence. Les reconduire
