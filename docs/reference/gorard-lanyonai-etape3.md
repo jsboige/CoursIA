@@ -49,7 +49,7 @@ donc declaree nulle part, et ne se deduit pas du depot.
 | `LanyonScripts` | 10 | 0 | 0 | absent | absent |
 
 La colonne `entrees` compte les blobs **et** les repertoires (`git ls-tree -r
--t`) : mesuree sur `GeneralRelativisticMaxwell`, 28 fichiers + 4 repertoires
+-t`) : mesuree sur `GeneralRelativisticMaxwell`, 28 blobs + 4 repertoires
 (`specifications/`, `implementations/`, `proofs/`, `screencaps/`) = 32. Les
 colonnes suivantes comptent des fichiers uniquement.
 
@@ -157,7 +157,7 @@ Mesure prise sur un clone a la tete `b13da44d9e93` (inchangee depuis le
 2026-07-27, comme le releve le §1), six fichiers `proofs/*.lean`. Instrument :
 pour chaque declaration `theorem`/`lemma`, l'ensemble des tetes de tactique de
 **resolution** de sa preuve, range en classe de fermeture ; les liaisons `let`
-locales (3 344 lignes sur le corpus) sont exclues des classes — elles lient des
+locales, omnipresentes sur le corpus, sont exclues des classes — elles lient des
 expressions sans fermer de but —, `have` est garde. Aucune compilation n'a ete
 lancee ; tout se lit sur l'arbre clone.
 
