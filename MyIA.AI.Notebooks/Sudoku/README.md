@@ -1,3 +1,7 @@
+---
+pagetitle: "Sudoku - Résolution par Différentes Approches Algorithmiques"
+---
+
 # Sudoku - Résolution par Différentes Approches Algorithmiques
 
 <!-- CATALOG-STATUS
