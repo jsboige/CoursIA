@@ -40,7 +40,9 @@ Resync 2026-11-03 (bump de pin #24499)
 ----------------------------------------
 
 Le gitlink du sous-module est passé à **a3ab8720d0bee75312be6b6242ca31e052d6003e**
-(bump #24499, 8 commits devant `d257443df`). La taxonomie des vertus de l'amont
+(bump #24499, **85 commits devant `d257443df`** — l'écart de 8 commits est celui
+entre ce pin et la cible du bump `a57a5ec7c792`, qui porte le même blob de
+vertus). La taxonomie des vertus de l'amont
 porte le blob **`acc473937250cdfcf2c3f5f8e1792081750d1357`** à ce pin (contre
 `74c0bcc12e7c` à `d257443df`) : la copie en place était donc en retard depuis le
 bump #23749 (`a88947e5` → `9038690`), premier pin à porter `acc47393`.
