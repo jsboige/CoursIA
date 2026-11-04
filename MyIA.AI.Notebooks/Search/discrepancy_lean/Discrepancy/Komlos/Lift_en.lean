@@ -282,8 +282,8 @@ lemma sum_smul_snoc {d : ℕ} {ι : Type*} (s : Finset ι)
       simp only [Fin.snoc_castSucc, Finset.sum_apply, Pi.smul_apply]
 
 /-- **Commutation of the transport with the embedding**: `toReal ∘ liftUp
-= snoc ∘ (toReal × height)` — the spatial part is transported by `toReal`
-(k2.3), the `Bool` height becomes the real `{0, 1}`.
+= snoc ∘ (toReal × b)` — the spatial part is transported by `toReal`
+(k2.3), the `Bool` height (written `b`) becomes the real `{0, 1}`.
 
 This closes the square with `toRealProd` (k2.4): the transported image of
 the pushed support in `Fin (d+1) → ℝ` is the `(y.1, height y.2)` reading
