@@ -265,7 +265,8 @@ Une preuve complète de `gittins_optimality` requiert :
 3. Une **récurrence sur l'horizon de planification**, et
 4. Une **espérance formelle** sur la distribution de récompense.
 
-Mathlib (v4.31.0-rc1) n'a **aucune formalisation de MDP, de bandit ou d'équation de
+Dans la version de Mathlib alors utilisée (`v4.31.0-rc1`, aujourd'hui `v4.33.0`), il n'y avait
+**aucune formalisation de MDP, de bandit ou d'équation de
 Bellman**, ni d'API d'espérance mesurée-théorique adaptée ici. Une preuve complète exigerait un volume
 de définitions support de niveau recherche, au-delà
 d'une seule PR. Le théorème est donc **énoncé** (avec l'énoncé précis préservé dans
