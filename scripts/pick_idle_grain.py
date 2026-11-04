@@ -2550,6 +2550,29 @@ def has_recent_delivery_marker(issue_number: int) -> bool | None:
     return verdict
 
 
+def _last_state_comment(comments: list[dict]) -> dict:
+    """Le dernier commentaire PORTEUR D'ETAT -- un `[RELEASED]` de queue est saute.
+
+    Un `[RELEASED]` n'est ni une cloture ni une reouverture (#21721) : le
+    laisser occuper la place du dernier commentaire MASQUE le `[DELIVERED]`
+    qu'il suit. Le saut ne porte pas sur l'en-tete seul -- un corps qui porte
+    plus bas un marqueur d'etat EST un evenement.
+    """
+    for comment in reversed(comments):
+        if not isinstance(comment, dict):
+            continue
+        body = comment.get("body")
+        if isinstance(body, str) and _RELEASED_HEADER_RE.search(body):
+            plain = _strip_code(body)
+            if not (_RECENT_DELIVERY_MARKER_RE.search(plain)
+                    or _DELIVERED_MARKER_RE.search(plain)
+                    or _closure_dossier_verdict(body) == "CLOSE"
+                    or _closure_announced_close(body)):
+                continue
+        return comment
+    return {}
+
+
 def _recent_marker_verdict(issue_number: int) -> bool | None:
     """Le detail de `has_recent_delivery_marker` (meme verdict, meme cout).
 
@@ -2570,9 +2593,7 @@ def _recent_marker_verdict(issue_number: int) -> bool | None:
     if _issue_is_frozen(body_of_issue, comments) is not None:
         return True
 
-    last = comments[-1] if comments else {}
-    if not isinstance(last, dict):
-        last = {}
+    last = _last_state_comment(comments)
     body = last.get("body") or ""
     if not isinstance(body, str):
         body = ""

@@ -3301,3 +3301,41 @@ def test_belt_deadline_skips_marker_filter_on_prose_close_announcement(
     assert [p["number"] for p in picks] == [30311]
     assert withheld == []
     assert state["time_budget_hit"] is True
+
+
+def test_un_RELEASED_de_queue_ne_masque_plus_le_DELIVERED_quil_suit(monkeypatch):
+    """#24590 -- la position du dernier commentaire n'est pas un etat.
+
+    Le `[DELIVERED]` est bien dans le fil, suivi d'un `[RELEASED]` de la meme
+    lane sur une barriere. Lire `comments[-1]` rendait « pas de marqueur » :
+    l'item repartait en tete du tapis comme s'il n'avait jamais ete rendu.
+    """
+    delivered = {"body": "[INFO] candidate-delivered -- livree, PR #24000",
+                 "createdAt": "2026-11-04T08:00:00Z"}
+    released = {"body": "[RELEASED] lane myia-po-2024:CoursIA -- barriere reelle",
+                "createdAt": "2026-11-04T09:00:00Z"}
+    monkeypatch.setattr(pig, "_issue_comments", lambda n: ([delivered, released], ""))
+    monkeypatch.setattr(pig, "_issue_body", lambda n: "")
+    assert pig.has_recent_delivery_marker(24590) is True
+
+
+def test_un_fil_sans_marqueur_reste_servable_malgre_les_RELEASED(monkeypatch):
+    """Controle negatif du saut : un fil qui ne porte QUE des `[RELEASED]` ne
+    declare aucune cloture -- le saut ne doit pas fabriquer un marqueur."""
+    released = {"body": "[RELEASED] lane myia-po-2024:CoursIA -- barriere reelle",
+                "createdAt": "2026-11-04T09:00:00Z"}
+    monkeypatch.setattr(pig, "_issue_comments", lambda n: ([released], ""))
+    monkeypatch.setattr(pig, "_issue_body", lambda n: "")
+    assert pig.has_recent_delivery_marker(24590) is False
+
+
+def test_un_RELEASED_qui_porte_un_marqueur_plus_bas_nest_pas_saute(monkeypatch):
+    """Le saut porte sur l'en-tete SEUL : un corps qui commence par
+    `[RELEASED]` et porte plus bas un marqueur d'etat EST un evenement, et le
+    sauter rendrait cette declaration invisible."""
+    mixed = {"body": ("[RELEASED] lane myia-po-2024:CoursIA\n\n"
+                      "[INFO] candidate-delivered -- livree, PR #24000"),
+             "createdAt": "2026-11-04T09:00:00Z"}
+    monkeypatch.setattr(pig, "_issue_comments", lambda n: ([mixed], ""))
+    monkeypatch.setattr(pig, "_issue_body", lambda n: "")
+    assert pig.has_recent_delivery_marker(24590) is True
