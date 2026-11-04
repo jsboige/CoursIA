@@ -335,3 +335,217 @@ def test_notebook_cellule_pc_consomme_lorgane():
     assert "alpha=0.01" in src, (
         "le notebook motive alpha=0.01 pour PC (v-structure robuste 20/20)"
     )
+
+
+# ---------------------------------------------------------------------------
+# (i) Metrique d'erreur commune et baselines triviales
+# ---------------------------------------------------------------------------
+# Ces tests couvrent l'apport de l'issue #24301 : un contre-resultat
+# (LiNGAM faux sous bruit gaussien) n'est lisible que compare a des
+# baselines triviales mesurees sur la MEME metrique (SHD).
+#
+# Les valeurs attendues sont celles mesurees par probe_baselines.py sur
+# ce monde (n=2000) :
+#   baseline "ordre chronologique" (chaine)  SHD 1  (4/5 de squelette)
+#   baseline "ordre inverse" (chaine)         SHD 5  (4 inverses + 1 manquante)
+#   baseline "DAG complet"                    SHD 5  (5 parasites)
+#   tirage aleatoire (DAG complet, 200)       SHD min 5, moyenne 7.5
+#   LiNGAM seed=42 sur bruit GAUSSIEN         SHD 4  (3 correctes, 2 inverses, 2 parasites)
+#   LiNGAM seed=42 sur bruit NON gaussien     SHD 0  (DAG exact)
+
+
+def test_distance_structurelle_dag_exact_vaut_zero():
+    """Le DAG vrai lui-meme a un SHD de 0 : la metrique est bien calibration."""
+    exact = ddo.ResultatDecouverte(
+        methode="TEST",
+        aretes_orientees=sorted(ddo.ARETES_DAG_VRAI),
+        aretes_non_orientees=[],
+        ordre_causal=list(ddo.ORDRE_COLONNES),
+    )
+    d = ddo.distance_structurelle(exact)
+    assert d["shd"] == 0
+    assert d["squelette"] == 5, "le compte du squelette est un entier"
+    assert d["squelette_texte"] == "5/5", "la forme textuelle est portee a part"
+    assert d["orientees_correctes"] == 5
+    assert d["inverses"] == []
+    assert d["parasites"] == []
+    assert d["manquantes"] == []
+
+
+def test_distance_structurelle_compte_chaque_categorie_une_fois():
+    """SHD = inverses + ambigues + parasites + manquantes (chacune une fois)."""
+    df_g = ddo.generer_donnees_decouverte(seed=42)
+    res = ddo.executer_lingam(df_g)
+    d = ddo.distance_structurelle(res)
+    total = (len(d["inverses"]) + len(d["ambigues"])
+             + len(d["parasites"]) + len(d["manquantes"]))
+    assert d["shd"] == total, (
+        f"SHD {d['shd']} incoherent avec les categories {total}"
+    )
+    assert d["shd"] == 4, f"SHD mesure de LiNGAM gaussien seed=42 attendu 4, recu {d['shd']}"
+
+
+def test_baseline_ordre_chaine_vaut_moins_que_lingam_gaussien():
+    """La baseline "ordre chronologique" (chaine) : SHD 1, il manque (C, Y)."""
+    res = ddo.baseline_ordre(ddo.ORDRE_COLONNES)
+    d = ddo.distance_structurelle(res)
+    assert res.methode == "BASELINE_ORDRE"
+    assert len(res.aretes_orientees) == 4
+    assert d["shd"] == 1
+    assert d["squelette"] == 4
+    assert d["squelette_texte"] == "4/5"
+    assert d["manquantes"] == [("C", "Y")]
+    assert d["parasites"] == []
+
+
+def test_baseline_ordre_inverse_compte_les_inversions():
+    """La chaine inverse : 4 aretes a l'envers + 1 vraie arete manquante."""
+    res = ddo.baseline_ordre(list(reversed(ddo.ORDRE_COLONNES)))
+    d = ddo.distance_structurelle(res)
+    assert d["shd"] == 5
+    assert len(d["inverses"]) == 4
+    assert len(d["manquantes"]) == 1
+    assert d["parasites"] == []
+
+
+def test_baseline_ordre_complet_rend_le_dag_complet():
+    """Le DAG complet : 10 aretes, dont 5 parasites -> SHD 5."""
+    res = ddo.baseline_ordre(ddo.ORDRE_COLONNES, complet=True)
+    d = ddo.distance_structurelle(res)
+    assert len(res.aretes_orientees) == 10
+    assert d["shd"] == 5
+    assert len(d["parasites"]) == 5
+    assert d["manquantes"] == []
+    assert d["inverses"] == []
+
+
+def test_baseline_aleatoire_est_reproductible():
+    """Meme seed -> meme suite de tirages (RandomState locale)."""
+    a = ddo.baseline_aleatoire(n_tirages=10, seed=0)
+    b = ddo.baseline_aleatoire(n_tirages=10, seed=0)
+    assert [r.aretes_orientees for r in a] == [r.aretes_orientees for r in b]
+
+
+def test_baseline_aleatoire_ne_peut_pas_faire_mieux_que_le_complet():
+    """Un DAG complet tire au sort porte 10 aretes : SHD >= 5 toujours.
+
+    Borne deterministe (pas une mesure de moyenne) : sur 5 noeuds, un
+    graphe complet contient 10 aretes ; le pire cas est 10/5 vraies
+    presentes -> 0 parasite et 0 manquante... mais il faut qu'il contienne
+    les 5 vraies, ce qui donne SHD 5 (les 5 autres sont parasites). Le
+    minimum atteignable est donc 5.
+    """
+    tirages = ddo.baseline_aleatoire(n_tirages=30, seed=0, complet=True)
+    shds = [ddo.distance_structurelle(t)["shd"] for t in tirages]
+    assert min(shds) >= 5, f"SHD {min(shds)} sous la borne 5"
+    assert all(t.methode == "BASELINE_ALEATOIRE" for t in tirages)
+
+
+def test_classer_par_shd_est_trie_et_deterministe():
+    """Le classement est trie par SHD croissant, et l'egalite est Alphabetique."""
+    cands = {
+        "DAG complet": ddo.baseline_ordre(ddo.ORDRE_COLONNES, complet=True),
+        "ordre chronologique (chaine)": ddo.baseline_ordre(ddo.ORDRE_COLONNES),
+        "ordre inverse (chaine)": ddo.baseline_ordre(list(reversed(ddo.ORDRE_COLONNES))),
+    }
+    classement = ddo.classer_par_shd(cands)
+    shds = [d["shd"] for _, d in classement]
+    assert shds == sorted(shds)
+    assert classement[0][0] == "ordre chronologique (chaine)", (
+        f"la baseline triviale doit venir en tete du classement, "
+        f"recu {classement[0][0]}"
+    )
+    # egalite -> ordre alphabetique (determinisme)
+    classement2 = ddo.classer_par_shd(dict(reversed(list(cands.items()))))
+    assert [n for n, _ in classement] == [n for n, _ in classement2]
+
+
+def test_classer_par_shd_lingam_non_gaussien_devance_tout():
+    """Regime TENU : LiNGAM est exact (SHD 0) et passe devant toutes les baselines."""
+    df_ng = ddo.generer_donnees_decouverte(bruit="non_gaussien", seed=42)
+    cands = {
+        "LiNGAM (seed=42)": ddo.executer_lingam(df_ng),
+        "ordre chronologique (chaine)": ddo.baseline_ordre(ddo.ORDRE_COLONNES),
+        "ordre inverse (chaine)": ddo.baseline_ordre(list(reversed(ddo.ORDRE_COLONNES))),
+        "DAG complet": ddo.baseline_ordre(ddo.ORDRE_COLONNES, complet=True),
+    }
+    classement = ddo.classer_par_shd(cands)
+    assert classement[0][0] == "LiNGAM (seed=42)"
+    assert classement[0][1]["shd"] == 0
+    assert classement[1][1]["shd"] >= 1
+
+
+def test_classer_par_shd_baseline_triviale_devance_lingam_gaussien():
+    """Regime VIOLE : la baseline triviale passe devant LiNGAM.
+
+    C'est le resultat central de l'issue #24301 : le contre-resultat de
+    la section 6 n'est pas « le moteur est inutile » mais « le moteur
+    est moins bon qu'une hypothese qu'un praticien pose sans regarder les
+    donnees ».
+    """
+    df_g = ddo.generer_donnees_decouverte(seed=42)
+    cands = {
+        "LiNGAM (seed=42)": ddo.executer_lingam(df_g),
+        "ordre chronologique (chaine)": ddo.baseline_ordre(ddo.ORDRE_COLONNES),
+    }
+    classement = ddo.classer_par_shd(cands)
+    assert classement[0][0] == "ordre chronologique (chaine)", (
+        f"la baseline triviale doit devancer LiNGAM en regime viole, "
+        f"classement = {[(n, d['shd']) for n, d in classement]}"
+    )
+    assert classement[0][1]["shd"] == 1
+    assert classement[1][1]["shd"] == 4
+
+
+def test_tableau_classement_contient_entete_et_methodes():
+    """Le tableau rendu est lisible : entete, une ligne par methode, SHD trie."""
+    cands = {
+        "LiNGAM (seed=42)": ddo.executer_lingam(ddo.generer_donnees_decouverte(seed=42)),
+        "ordre chronologique (chaine)": ddo.baseline_ordre(ddo.ORDRE_COLONNES),
+    }
+    txt = ddo.tableau_classement(cands, titre="REGIME 1 -- test")
+    assert txt.startswith("REGIME 1 -- test")
+    assert "SHD" in txt and "aretes" in txt and "parasites" in txt
+    assert "LiNGAM (seed=42)" in txt
+    assert "ordre chronologique (chaine)" in txt
+    lignes = [l for l in txt.splitlines() if l.startswith("LiNGAM")
+              or l.startswith("ordre chronologique")]
+    assert len(lignes) == 2
+    # colonnes a largeur fixe : le nom occupe 38 caracteres, puis un espace,
+    # puis le SHD sur 4 caracteres (le nom contient des espaces -- un split()
+    # serait trompeur)
+    assert lignes[0][:38].strip() == "ordre chronologique (chaine)"
+    assert lignes[0][39:43].strip() == "1"
+    assert lignes[1][:38].strip() == "LiNGAM (seed=42)"
+    assert lignes[1][39:43].strip() == "4"
+
+
+def test_notebook_cellules_baselines_consomment_lorgane():
+    """Anti-derive : les cellules de baselines du notebook consomment l'organe.
+
+    Le notebook ne redéfinit ni la metrique (SHD) ni les baselines : il
+    appelle les fonctions canoniques du module.
+    """
+    for marqueur in ("ddo.baseline_ordre", "ddo.distance_structurelle",
+                     "ddo.tableau_classement"):
+        src = _cellule_contenant(NB_PATH, marqueur)
+        assert marqueur in src
+    # le notebook ne redéfinit pas la métrique localement
+    nb = json.load(open(NB_PATH, encoding="utf-8"))
+    for cell in nb["cells"]:
+        if cell["cell_type"] != "code":
+            continue
+        src = "".join(cell["source"])
+        assert "def distance_structurelle" not in src, (
+            "la métrique SHD ne doit pas être redéfinie dans le notebook"
+        )
+        assert "def baseline_ordre" not in src, (
+            "les baselines ne doivent pas être redéfinies dans le notebook"
+        )
+        assert "def baseline_aleatoire" not in src, (
+            "la baseline aléatoire ne doit pas être redéfinie dans le notebook"
+        )
+        assert "def tableau_classement" not in src, (
+            "le tableau de classement ne doit pas être redéfini dans le notebook"
+        )
+
