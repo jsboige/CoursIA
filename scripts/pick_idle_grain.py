@@ -2897,8 +2897,12 @@ def merged_pr_signal(issue_number: int, lane: str | None = None):
 
     TRI-ETAT, meme doctrine que ``has_delivered_signal`` et
     ``open_cover_signal`` :
-    - ``True`` : au moins une PR MERGED cite `#N` et `mergedAt` est dans
-      les 90 derniers jours (jour UTC) ;
+    - ``str`` : au moins une PR MERGED cite `#N`, `mergedAt` est dans les
+      90 derniers jours (jour UTC), et la valeur rendue est ce `mergedAt`
+      ISO-8601 le plus recent. La DATE est rendue, pas un simple `True`,
+      parce que la surface « PR MERGEE » n'est pas terminale : un
+      `[NOT-DELIVERED]` poste APRES cette fusion la revoque (#22987), et
+      cette comparaison a besoin de l'instant de fusion ;
     - ``False`` : aucune PR MERGED ne cite `#N`, OU toutes les PRs
       MERGEes qui la citent datent de plus de 90 jours ;
     - ``None`` : la requete a echoue (reseau, 403, payload illisible) --
@@ -2925,6 +2929,7 @@ def merged_pr_signal(issue_number: int, lane: str | None = None):
         return None
     now = dt.datetime.now(dt.timezone.utc)
     window = dt.timedelta(days=MERGED_PR_WINDOW_DAYS)
+    newest = None
     for pr in prs:
         if pr.get("state") != "MERGED":
             continue
@@ -2943,9 +2948,88 @@ def merged_pr_signal(issue_number: int, lane: str | None = None):
             merged_dt = dt.datetime.fromisoformat(merged_at.replace("Z", "+00:00"))
         except ValueError:
             continue
-        if (now - merged_dt) <= window:
-            return True
+        if (now - merged_dt) <= window and (newest is None or merged_dt > newest[0]):
+            newest = (merged_dt, merged_at)
+    if newest is None:
+        return False
+    return newest[1]
+
+
+def revocation_probe_inert(issue_number: int, lane: str | None = None,
+                           merged_at: str | None = None) -> bool:
+    """Sonde inerte de revocation : aucune revocation, aucun appel reseau."""
     return False
+
+
+def revoked_after_merge_signal(issue_number: int, lane: str | None = None,
+                               merged_at: str | None = None) -> bool | None:
+    """Un `[NOT-DELIVERED]` posterieur a la fusion annule-t-il le signal ? (#22987)
+
+    La surface « PR MERGEE <90j » etait la seule des trois a ne pas se
+    retracter. Le label est retire par un sweep, le marqueur de commentaire se
+    desarme par `_delivered_state` -- mais une PR fusionnee withholdait le
+    candidat **pour toujours**, meme quand le coordinateur avait ecrit apres
+    coup que le critere n'etait pas atteint. Cas fondateur : #15002, trois
+    `[NOT-DELIVERED]` (dernier 2026-10-25T12:44:47Z, « WER 0,521 contre 0,097
+    de reference, verdict NO BEATS ») sous un signal « PR MERGEE » plus ancien.
+    Le grain ne revenait jamais sur le tapis, contrairement a ce que la
+    revocation annoncait.
+
+    TRI-ETAT, meme doctrine que les autres sondes :
+    - ``True`` : une forme de retractation (`_DELIVERED_MARKER_REVOKED_RE`,
+      la grammaire en tete de ligne -- une mention en prose ne retracte
+      rien) est posterieure a `merged_at` ;
+    - ``False`` : aucune retractation posterieure (les anterieures ne
+      revoquent rien : c'est le controle negatif de l'issue) ;
+    - ``None`` : instant de fusion inconnu, ou lecture impossible. On ne
+      fabrique jamais une revocation sur une page blanche.
+
+    C'est un **fail-CLOSED** assume, a l'inverse du fail-OPEN des sondes de
+    claim : ici l'echec de lecture n'ouvre pas le grain, il conserve le
+    signal existant. L'asymetrie est deliberee -- une PR fusionnee est un
+    fait observe, et servir un grain deja livre brule le cycle d'une lane.
+    """
+    if not isinstance(merged_at, str):
+        return None
+    try:
+        merged_dt = dt.datetime.fromisoformat(merged_at.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    comments = _snapshot_comments(issue_number)
+    if comments is None:
+        try:
+            out = subprocess.run(
+                ["gh", "issue", "view", str(issue_number), "--repo", REPO,
+                 "--json", "comments"],
+                capture_output=True, text=True, encoding="utf-8", check=True,
+                timeout=30,
+            ).stdout
+            comments = (json.loads(out) or {}).get("comments") or []
+        except Exception:  # noqa: BLE001 - sonde best-effort ; l'echec est DIT
+            return None
+    if not isinstance(comments, list):
+        return None
+    # Le repli REST ne rend que des CORPS, sans horodatage : il ne permet pas
+    # la comparaison a l'instant de fusion, donc il ne revoque pas. Le
+    # desaccord est assume et documente plutot que comble par une supposition.
+    newest_revocation = None
+    for comment in comments:
+        if not isinstance(comment, dict):
+            continue
+        body = comment.get("body") or ""
+        created = comment.get("createdAt")
+        if not isinstance(body, str) or not isinstance(created, str):
+            continue
+        if not _DELIVERED_MARKER_REVOKED_RE.search(body):
+            continue
+        try:
+            created_dt = dt.datetime.fromisoformat(created.replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        if created_dt > merged_dt and (newest_revocation is None
+                                       or created_dt > newest_revocation):
+            newest_revocation = created_dt
+    return newest_revocation is not None
 
 
 def delivered_signal_reason(
@@ -2954,6 +3038,7 @@ def delivered_signal_reason(
     probe=None,
     failures: list[int] | None = None,
     merged_pr_probe=None,
+    revocation_probe=None,
     skip_marker: bool = False,
     skip_merged_pr: bool = False,
 ) -> str | None:
@@ -2985,6 +3070,8 @@ def delivered_signal_reason(
         probe = delivered_probe_inert
     if merged_pr_probe is None:
         merged_pr_probe = merged_pr_probe_inert
+    if revocation_probe is None:
+        revocation_probe = revocation_probe_inert
     labels = {str(label).casefold() for label in item.get("labels") or []}
     if DELIVERED_LABEL in labels:
         return (
@@ -3044,6 +3131,17 @@ def delivered_signal_reason(
             failures.append(item["number"])
         return None
     if merged:
+        # #22987 -- la surface « PR MERGEE » n'est pas terminale. Un
+        # `[NOT-DELIVERED]` poste apres la fusion la revoque, exactement
+        # comme il revoque deja un marqueur de commentaire dans
+        # `_delivered_state`. `merged` porte l'instant de fusion quand la
+        # sonde nominale repond ; une sonde injectee qui rend `True` (tests
+        # existants) n'en porte pas, et la revocation n'est alors pas
+        # evaluee -- comportement anterieur preserve.
+        revoked = (revocation_probe(item["number"], lane, merged)
+                   if isinstance(merged, str) else False)
+        if revoked is True:
+            return None
         return (
             "SIGNAL LIVRAISON (PR MERGEE <" + str(MERGED_PR_WINDOW_DAYS) +
             "j) : une PR MERGEE recente cite cette issue, la livraison est "
@@ -4809,7 +4907,8 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
                    delivery=None, delivered_probe=None, delivered_state=None,
                    fallback_by_class=None, continuity_state=None,
                    cover_probe=None, long_visits=None,
-                   merged_pr_probe=None, gpu_probe=None):
+                   merged_pr_probe=None, revocation_probe=None,
+                   gpu_probe=None):
     """Tire, puis REMPLACE tout candidat qu une autre lane tient deja.
 
     Trois raisons de remplacer plutot que d annoter :
@@ -4892,6 +4991,17 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
             return DELIVERED_SIGNAL_UNPROBED
         budget[0] -= 1
         return (merged_pr_probe or merged_pr_probe_inert)(number, lane_name)
+
+    def _counted_revocation_probe(number, lane_name, merged_at):
+        # #22987 -- quatrieme lecture de la famille, MEME budget. Elle n'est
+        # atteinte que sur un candidat deja retenu par la surface « PR
+        # MERGEE » : le cout se paie sur les positifs, jamais sur le pool.
+        if budget[0] <= 0:
+            state["budget_hit"] = True
+            return DELIVERED_SIGNAL_UNPROBED
+        budget[0] -= 1
+        return (revocation_probe
+                or revocation_probe_inert)(number, lane_name, merged_at)
 
     for cls, want, prev in urnes:
         primary = list(by_class[cls])
@@ -5004,7 +5114,7 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
                         # fail-OPEN (le candidat est conserve).
                         reason = delivered_signal_reason(
                             c, args.lane, _counted_probe, failures,
-                            _counted_merged_pr_probe)
+                            _counted_merged_pr_probe, _counted_revocation_probe)
                         if reason is not None:
                             conflicts.append((c, "LIVRAISON : " + reason + (
                                 " Candidat remplace dans la meme urne.")))
@@ -9921,6 +10031,7 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                                 delivered_probe=None, cover_probe=None,
                                 claims_probe=None,
                                 merged_pr_probe=None,
+                                revocation_probe=None,
                                 recent_marker_probe=None,
                                 snapshot_prime=None,
                                 container_marker_probe=None,
@@ -10119,6 +10230,7 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
         user_probe = delivered_probe or delivered_probe_inert
         user_cover_probe = cover_probe or open_cover_inert
         user_merged_pr_probe = merged_pr_probe or merged_pr_probe_inert
+        user_revocation_probe = revocation_probe or revocation_probe_inert
         user_recent_marker_probe = (recent_marker_probe
                                     or recent_marker_probe_inert)
         user_container_marker_probe = (container_marker_probe
@@ -10142,6 +10254,16 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                 return DELIVERED_SIGNAL_UNPROBED
             budget[0] -= 1
             return user_merged_pr_probe(number, lane_name)
+
+        def counted_revocation_probe(number, lane_name, merged_at):
+            # #22987 -- meme budget, meme echeance, meme fail-CLOSED que la
+            # sonde qu'elle prolonge : atteinte seulement sur un candidat
+            # deja retenu par « PR MERGEE ».
+            if expired() or budget[0] <= 0:
+                state["budget_hit"] = state["budget_hit"] or budget[0] <= 0
+                return DELIVERED_SIGNAL_UNPROBED
+            budget[0] -= 1
+            return user_revocation_probe(number, lane_name, merged_at)
 
         def counted_cover_probe(number):
             # #16589 etait cable sur la seule voie PONDEREE : le tapis rendait
@@ -10347,7 +10469,8 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                     continue
                 reason = delivered_signal_reason(
                     it, args.lane, counted_probe, state["failures"],
-                    counted_merged_pr_probe, skip_marker=marker_expired,
+                    counted_merged_pr_probe, counted_revocation_probe,
+                    skip_marker=marker_expired,
                     skip_merged_pr=merged_pr_expired)
                 if reason is not None:
                     belt_withheld.append(
@@ -11481,6 +11604,8 @@ def main(argv: list[str] | None = None) -> int:
                                         delivered_probe=has_delivered_signal,
                                         cover_probe=cover_probe,
                                         merged_pr_probe=merged_pr_signal,
+                                        revocation_probe=(
+                                            revoked_after_merge_signal),
                                         recent_marker_probe=(
                                             has_recent_delivery_marker),
                                         snapshot_prime=_belt_snapshot_prime,
