@@ -30,6 +30,21 @@ Ce que le module est, et ce qu'il n'est pas
 * `collisions_by_ordinal` -- pur : les (paire, ordinal) revendiques par deux
   PRs ou plus.
 
+La couverture de la lecture, et son defaut mesure
+--------------------------------------------------
+Lire les PRs ouvertes suppose de les **TOUTES** lire : une revendication
+hors lecture est une revendication **invisible**, donc un VERT faux. La
+premiere version lisait `gh pr list --limit 200` -- un plafond **fige**.
+
+Mesure fondatrice (2026-11-04, `jsboige/CoursIA`) : le parc comptait **241**
+PRs ouvertes, et la PR **#24340** se situait au **rang 204** -- donc dans le
+lot. Sa revendication d'ordinal (`search-03-informed` / `0027`) n'était pas
+lue par la couche OPEN-PR de la porte : le verdict OPEN-PR ne la voyait pas.
+
+Le plafond est donc **derive du compte exact** des PRs ouvertes (API search),
+et une lecture **tronquee** leve `GhError` au lieu de rendre un resultat
+partiel : « je n'ai pas pu tout lire » n'est pas « c'est propre ».
+
 Ce module NE decide pas si une PR peut merger : il produit la MATIERE. La
 porte (`check_twin_index_collisions.py --open-claims`) en tire le verdict, et
 c'est elle qui reste l'organe unique du verdict.
@@ -167,19 +182,58 @@ def repo_slug(cwd: Path | None = None) -> str:
     return out
 
 
-def open_prs_touching_registry(slug: str, *, limit: int = 200,
+def open_pr_total(slug: str, *, cwd: Path | None = None) -> int:
+    """Nombre EXACT de PRs ouvertes du depot.
+
+    L'API search rend `total_count` : c'est le nombre reel, independamment de
+    toute pagination. C'est la mesure qui remplace le plafond fige de 200
+    (mesure : 241 PRs ouvertes au 2026-11-04, #24340 au rang 204 -> invisible
+    pour la couche OPEN-PR).
+    """
+    raw = _gh(["api",
+               "search/issues?q=repo:%s+type:pr+state:open&per_page=1" % slug],
+              cwd=cwd)
+    try:
+        payload = json.loads(raw)
+    except (json.JSONDecodeError, ValueError) as exc:
+        raise GhError("l'API search n'a pas rendu du JSON : %s" % exc) from exc
+    total = (payload or {}).get("total_count")
+    if not isinstance(total, int) or total < 0:
+        raise GhError("l'API search n'a pas rendu de total_count : %r" % total)
+    return total
+
+
+def open_prs_touching_registry(slug: str, *, limit: int | None = None,
                                cwd: Path | None = None) -> list[int]:
     """Numeros des PRs ouvertes dont les fichiers touchent le registre twin.
 
     Le filtre se fait sur les CHEMINS (deja connus de `gh pr list`), donc une
     seule requete suffit pour ecarter la quasi-totalite du parc.
+
+    **Le plafond de lecture n'est jamais fige** : il vaut le compte EXACT des
+    PRs ouvertes (`open_pr_total`), de sorte qu'aucune revendication ne
+    puisse disparaitre dans un lot tronque. Une liste rendue plus courte que
+    le compte est une lecture **incomplete** : elle leve `GhError` (fail-
+    closed) plutot que de rendre un resultat partiel -- sauf si un second
+    compte montre que l'ecart vient d'une fermeture survenue entre les deux
+    appels.
     """
+    total = open_pr_total(slug, cwd=cwd)
+    eff = total if limit is None else max(int(limit), total)
     raw = _gh(["pr", "list", "--repo", slug, "--state", "open",
-               "--json", "number,files", "--limit", str(limit)], cwd=cwd)
+               "--json", "number,files", "--limit", str(eff)], cwd=cwd)
     try:
         rows = json.loads(raw)
     except (json.JSONDecodeError, ValueError) as exc:
         raise GhError("gh pr list n'a pas rendu du JSON : %s" % exc) from exc
+    if len(rows or []) < total:
+        # soit une PR s'est fermee entre les deux appels, soit la liste est
+        # tronquee : le second compte tranche.
+        total_after = open_pr_total(slug, cwd=cwd)
+        if len(rows or []) < total_after:
+            raise GhError(
+                "liste des PRs ouvertes tronquee : %d lue(s) pour %d ouverte(s)"
+                % (len(rows or []), total_after))
     out: list[int] = []
     for row in rows or []:
         paths = [str((f or {}).get("path") or "")
@@ -208,7 +262,7 @@ def pr_new_claims(slug: str, number: int, *, cwd: Path | None = None
 
 
 def collect_open_claims(slug: str, *, cwd: Path | None = None,
-                         limit: int = 200) -> dict:
+                         limit: int | None = None) -> dict:
     """Les ordinals revendiques par chaque PR ouverte qui touche le registre.
 
     Rend `{"prs": {num: [claims]}}`. Une PR dont la lecture echoue est
