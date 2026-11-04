@@ -93,6 +93,7 @@ jobs:
               echo "::notice::[heal-worktree] reset --hard effectue -- le job precedent avait laisse un etat sale (${first_dirty}) -- ${untracked} entree(s) non suivie(s) laissee(s) en place -- le retrecissement sparse passe (#22722)"
             fi
           fi
+      - name: Checkout (sparse, garde-partial)
       # Tranche 2/2 de #12383 (tranche 1/2 = #12810 sur translation-guard) :
       # ce garde tire sur CHAQUE pull_request sans filtre paths: et clone en
       # fetch-depth: 0. Son travail est :
@@ -103,7 +104,6 @@ jobs:
       # materialise : `MyIA.AI.Notebooks/` (chemin du diff) +
       # `scripts/notebook_tools/` (le scan et ses imports diagnose_broken /
       # forensic_scan).
-      - name: Checkout (sparse, garde-partial)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
