@@ -433,6 +433,31 @@ def list_merged_prs(repo: str, limit: int) -> list[MergedPullRequest]:
     )[:limit]
 
 
+def _emit_utf8(text: str) -> None:
+    """Ecrit `text` sur stdout en UTF-8, quel que soit le codepage de la console.
+
+    Les titres d'EPIC du depot portent des caracteres hors cp1252 (U+21C4 par
+    exemple). Sur une console Windows cp1252, un `json.dump(..., sys.stdout)`
+    leve alors UnicodeEncodeError et le rapport entier est perdu, y compris
+    pour les EPIC dont le titre est encodable.
+    """
+    stream = sys.stdout
+    reconfigure = getattr(stream, "reconfigure", None)
+    if reconfigure is not None:
+        try:
+            reconfigure(encoding="utf-8")
+        except (ValueError, OSError):
+            # Flux deja detache ou non reconfigurable : on tente l'ecriture,
+            # le repli ASCII ci-dessous prendra le relais si besoin.
+            pass
+    try:
+        stream.write(text)
+    except UnicodeEncodeError:
+        # Dernier recours : ne jamais perdre le rapport pour un caractere.
+        stream.write(text.encode("ascii", "backslashreplace").decode("ascii"))
+    stream.flush()
+
+
 def _cli(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--repo", default=None)
@@ -459,13 +484,13 @@ def _cli(argv: list[str] | None = None) -> int:
         print(f"epic_body_staleness: {exc}", file=sys.stderr)
         return 1
 
-    json.dump(
-        build_payload(epics, merged_prs),
-        sys.stdout,
+    payload = build_payload(epics, merged_prs)
+    rendered = json.dumps(
+        payload,
         ensure_ascii=False,
         indent=2 if args.pretty else None,
     )
-    print()
+    _emit_utf8(rendered + "\n")
     return 0
 
 

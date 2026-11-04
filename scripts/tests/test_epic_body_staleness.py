@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import importlib.util
+import io
 import json
 import sys
 from pathlib import Path
@@ -417,6 +418,28 @@ def test_cli_prints_json_and_never_writes(monkeypatch, capsys):
     assert _MODULE._cli(["--repo", "example/repo", "--pretty"]) == 0
     payload = json.loads(capsys.readouterr().out)
     assert payload["corpus"]["open_epics_examined"] == 1
+
+
+def test_cli_writes_utf8_even_on_a_cp1252_stdout(monkeypatch):
+    """Regression: un titre d'EPIC hors cp1252 faisait perdre le rapport entier.
+
+    Sur une console Windows cp1252, `json.dump(..., sys.stdout)` levait
+    UnicodeEncodeError sur U+21C4 et n'ecrivait rien du tout -- pas meme les
+    EPIC dont le titre etait encodable.
+    """
+    epic = Epic(42, "[EPIC] chaine ⇄ collision", "")
+    pr = _pr(101, "See #42")
+    monkeypatch.setattr(_MODULE, "list_open_epics", lambda repo: [epic])
+    monkeypatch.setattr(_MODULE, "list_merged_prs", lambda repo, limit: [pr])
+
+    raw = io.BytesIO()
+    console = io.TextIOWrapper(raw, encoding="cp1252", newline="")
+    monkeypatch.setattr(_MODULE.sys, "stdout", console)
+
+    assert _MODULE._cli(["--repo", "example/repo"]) == 0
+    payload = json.loads(raw.getvalue().decode("utf-8"))
+    assert payload["finding_count"] == 1
+    assert "⇄" in payload["findings"][0]["title"]
 
 
 def test_cli_reports_read_failure(monkeypatch, capsys):
