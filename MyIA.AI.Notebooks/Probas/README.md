@@ -1,3 +1,7 @@
+---
+pagetitle: "Probas - Programmation Probabiliste"
+---
+
 # Probas - Programmation Probabiliste
 
 <!-- CATALOG-STATUS
