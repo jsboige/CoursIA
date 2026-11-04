@@ -56,6 +56,7 @@ jobs:
               echo "::notice::[heal-worktree] reset --hard effectue -- le job precedent avait laisse un etat sale (${first_dirty}) -- ${untracked} entree(s) non suivie(s) laissee(s) en place -- le retrecissement sparse passe (#22722)"
             fi
           fi
+      - uses: actions/checkout@v4
       # Ce garde ne lit AUCUN contenu de fichier : `git rev-list --count` et
       # `git show -s --format=%ct` n'interrogent que le graphe de commits
       # (`-s` supprime le diff). Un `fetch-depth: 0` nu transfere pourtant les
@@ -73,7 +74,6 @@ jobs:
       # Mesure attendue, a lire dans la duree de l'etape « Set up job » /
       # checkout de ce workflow avant et apres : c'est la seule facon de la
       # constater, elle ne se reproduit pas en local. See #11835.
-      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           filter: blob:none

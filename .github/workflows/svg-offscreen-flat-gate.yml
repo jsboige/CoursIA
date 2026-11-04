@@ -94,12 +94,12 @@ jobs:
               echo "::notice::[heal-worktree] reset --hard effectue -- le job precedent avait laisse un etat sale (${first_dirty}) -- ${untracked} entree(s) non suivie(s) laissee(s) en place -- le retrecissement sparse passe (#22722)"
             fi
           fi
+      - name: Checkout
       # Tranche 2/2 de #12384 (clone partiel, suite c.518 tranche 1/2 #12884
       # sur regression-guard). Mêmes exigences : graphe complet pour le
       # `git diff 3-dot` + matérialisation minimale de l'arbre. Filtre
       # paths: `MyIA.AI.Notebooks/**/*.ipynb` + le détecteur + ce workflow
       # -> on ne matérialise que `MyIA.AI.Notebooks/` et `scripts/`.
-      - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0

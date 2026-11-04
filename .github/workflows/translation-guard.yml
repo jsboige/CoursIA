@@ -107,6 +107,7 @@ jobs:
               echo "::notice::[heal-worktree] reset --hard effectue -- le job precedent avait laisse un etat sale (${first_dirty}) -- ${untracked} entree(s) non suivie(s) laissee(s) en place -- le retrecissement sparse passe (#22722)"
             fi
           fi
+      - name: "Checkout base (sparse-checkout + filter: blob:none, tranche 1 issue 12690)"
       # Tranche 1 de #12690 : ce workflow n'interroge QUE le graphe de commits
       # et des NOMS de chemins (`git diff --name-only`, `git cat-file -e` pour
       # verifier l'existence d'un blob sans le lire, `git fetch origin main`).
@@ -126,7 +127,6 @@ jobs:
       #                                                materialise par le
       #                                                sparse-checkout.
       # See #11843 (pattern), #12690 (goulot narrow structurel).
-      - name: "Checkout base (sparse-checkout + filter: blob:none, tranche 1 issue 12690)"
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
