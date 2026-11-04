@@ -71,13 +71,76 @@ def test_canonical_table_tronquee(tmp_path):
 
 
 def test_table_complete_propre(tmp_path):
-    """Table et listing de meme longueur : rien a signaler."""
+    """Table, listing ET total annonce d'accord : rien a signaler."""
     rc, out = _run(
-        [_table([f"{i:02d}" for i in range(1, 16)]), _code(LISTING_15)],
+        [_table([f"{i:02d}" for i in range(1, 16)], "## 2. Les 15 carnets"),
+         _code(LISTING_15)],
         tmp_path,
     )
     assert rc == 0
     assert out["findings"] == []
+
+
+def test_annonce_non_tenue_par_le_listing(tmp_path):
+    """Classe INVERSE : table reparee a 15, prose restee a « huit ».
+
+    Mesure de la review #24557 (reserve 4) : la table et le stream sont
+    d'accord, et le total annonce ne l'est pas. Sans ce cas, le nombre
+    capture par `ANNONCE_RE` n'etait compare a rien et le carnet sortait vert.
+    """
+    rc, out = _run(
+        [_table([f"{i:02d}" for i in range(1, 16)], "## 2. Les huit carnets"),
+         _code(LISTING_15)],
+        tmp_path,
+    )
+    assert rc == 1
+    assert len(out["findings"]) == 1
+    f = out["findings"][0]
+    assert f["kind"] == "annonce"
+    assert f["annonce"] == 8
+    assert len(f["identifiants_stream"]) == 15
+
+
+def test_annonce_d_une_selection_n_est_pas_un_total(tmp_path):
+    """« trois carnets choisis » decrit la selection, pas le listing."""
+    rc, out = _run(
+        [_table(["03", "07", "11"], "trois carnets choisis"), _code(LISTING_15)],
+        tmp_path,
+    )
+    assert rc == 0
+    assert out["findings"] == []
+
+
+def test_carnet_illisible_n_est_pas_vert(tmp_path):
+    """Un carnet non-UTF8 ou corrompu n'est pas un carnet propre (#24557 R1/R2)."""
+    p = tmp_path / "casse.ipynb"
+    p.write_bytes(b'{"cells": [ this is not json')
+    r = subprocess.run(
+        [sys.executable, str(SCRIPT), "--json", str(p)],
+        capture_output=True, text=True, encoding="utf-8",
+    )
+    assert r.returncode == 1, "un carnet illisible ne doit jamais rendre rc=0"
+    out = json.loads(r.stdout)
+    assert out["findings"] == []
+    assert out["non_lus"] == 1
+
+
+def test_carnet_latin1_accentue_n_est_pas_une_accusation(tmp_path):
+    """Un encodage non-UTF8 est un NON-LU, pas un finding de troncature."""
+    p = tmp_path / "latin1.ipynb"
+    p.write_bytes(
+        '{"cells": [{"cell_type": "markdown", "metadata": {}, '
+        '"source": ["r\\u00e9sum\\u00e9"]}], "metadata": {}, "nbformat": 4, '
+        '"nbformat_minor": 5}'.encode("utf-8").replace(b"\\u00e9", b"\xe9")
+    )
+    r = subprocess.run(
+        [sys.executable, str(SCRIPT), "--json", str(p)],
+        capture_output=True, text=True, encoding="utf-8",
+    )
+    assert r.returncode == 1
+    out = json.loads(r.stdout)
+    assert out["findings"] == []
+    assert out["non_lus"] == 1
 
 
 def test_sous_ensemble_non_prefixe_non_signe(tmp_path):

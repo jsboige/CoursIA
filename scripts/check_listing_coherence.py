@@ -20,7 +20,22 @@ Trois conditions, toutes requises, pour un finding :
    sous-ensemble arbitraire (« les 3 plus longs ») ne forme pas un prefixe
    et n'est pas signalee.
 
-Sortie : rc=0 propre, rc=1 au moins un finding, rc=2 erreur d'usage.
+Sortie : rc=0 propre, rc=1 au moins un finding **ou au moins un carnet
+illisible**, rc=2 erreur d'usage. Un carnet qu'on n'a pas pu lire n'est pas
+un carnet propre : il rend rc=1 et le compte des non-lus voyage dans le
+rapport JSON (`non_lus`), pour qu'un « 0 finding » ne puisse pas se lire
+comme une couverture complete (#23394, reserve 1).
+
+BORNES DE L'ORGANE -- a lire avant de prendre un `0` pour une couverture :
+`STREAM_ID_RE` fixe la largeur de l'identifiant a deux chiffres, donc une
+serie a trois chiffres (`001-...`) n'est pas vue du tout ; une table PLUS
+LONGUE que le stream (serie qui a retreci) n'est pas signalee ; un prefixe
+troue par un identifiant absent du listing (`01`..`07` + `99`) ne forme pas
+un prefixe contigu et reste muet. Ces trois-la sont coherents avec le
+discriminant annonce, ce ne sont pas des defauts -- mais un `0` sur 1750
+carnets ne dit pas « aucun tableau tronque existe », il dit « aucun tableau
+tronque de cette forme-la ».
+
 Advisory par construction (patron #11435) -- jamais bloquant seul.
 
 MESURE CORPUS : a relever au corps de la PR (taux de faux positifs lu a la
@@ -56,7 +71,8 @@ _MOTS = "|".join(sorted(MOTS_NOMBRES, key=len, reverse=True))
 # devant un substantif pluriel. Le pluriel est exige : « un carnet » ne fixe
 # pas un total.
 ANNONCE_RE = re.compile(
-    r"\b(?:" + _MOTS + r"|\d{1,3})\s+(?:carnets?|notebooks?|modules?|fichiers?|fiches?|le[cç]ons?)\b",
+    r"\b(?P<total>" + _MOTS + r"|\d{1,3})\s+"
+    r"(?:carnets?|notebooks?|modules?|fichiers?|fiches?|le[cç]ons?)\b",
     re.IGNORECASE,
 )
 
@@ -116,11 +132,31 @@ def _prefixe_tronque(table: list[str], stream: list[str]) -> list[str] | None:
     return stream[len(table):]
 
 
+def _annonce(cellule: dict) -> int | None:
+    """Total annonce par la prose de la cellule, ou None s'il n'y en a pas.
+
+    Le nombre capture n'etait lu par personne : `ANNONCE_RE` ne servait que
+    de booleen, donc une prose qui annonce « huit carnets » au-dessus d'une
+    table de 15 restait muette une fois la table reparee (#23394, reserve 4).
+    """
+    m = ANNONCE_RE.search(_source(cellule))
+    if not m:
+        return None
+    brut = m.group("total").strip().lower()
+    if brut.isdigit():
+        return int(brut)
+    return MOTS_NOMBRES.get(brut)
+
+
 def scan_notebook(path: Path) -> list[dict]:
     """Findings d'un notebook, sous forme de dictionnaires serialisables."""
     try:
         nb = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        # UnicodeDecodeError n'herite pas de JSONDecodeError : un carnet
+        # latin-1/UTF-16 non attrape sortait en traceback + rc=1, c'est-a-dire
+        # avec le code du FINDING -- une accusation de troncature sur un
+        # carnet qui n'a jamais ete lu (#23394, reserve 2).
         return [{"notebook": str(path), "erreur": str(exc)}]
     cellules = nb.get("cells", [])
     listings: list[tuple[int, list[str]]] = []
@@ -134,8 +170,8 @@ def scan_notebook(path: Path) -> list[dict]:
     for i, cellule in enumerate(cellules):
         if cellule.get("cell_type") != "markdown":
             continue
-        source = _source(cellule)
-        if not ANNONCE_RE.search(source):
+        annonce = _annonce(cellule)
+        if annonce is None:
             continue
         table, vu_tableau = _ids_tableau(cellule)
         if not vu_tableau or len(table) < 2:
@@ -151,9 +187,24 @@ def scan_notebook(path: Path) -> list[dict]:
                 "notebook": str(path),
                 "cell_markdown": i,
                 "cell_code": j,
+                "kind": "prefixe",
                 "identifiants_table": table,
                 "identifiants_stream": stream,
                 "manquants": manquants,
+            })
+        elif table == stream and annonce != len(stream):
+            # Classe INVERSE de la fondatrice : la table a ete reparee, la
+            # prose ne l'a pas ete. Restreinte a `table == stream` -- sur un
+            # sous-ensemble assume (« les trois plus longs »), le nombre
+            # annonce decrit la selection, pas le listing, et n'a rien a
+            # comparer (#23394, reserve 4).
+            findings.append({
+                "notebook": str(path),
+                "cell_markdown": i,
+                "cell_code": j,
+                "kind": "annonce",
+                "annonce": annonce,
+                "identifiants_stream": stream,
             })
     return findings
 
@@ -198,10 +249,21 @@ def main(argv: list[str] | None = None) -> int:
     vrais = [f for f in findings if "erreur" not in f]
 
     if args.json:
-        print(json.dumps({"carnets": len(cibles), "findings": vrais, "erreurs": erreurs},
-                         ensure_ascii=False, indent=2))
+        print(json.dumps({
+            "carnets": len(cibles),
+            "findings": vrais,
+            "erreurs": erreurs,
+            "non_lus": len(erreurs),
+        }, ensure_ascii=False, indent=2))
     else:
         for f in vrais:
+            if f.get("kind") == "annonce":
+                print(
+                    f"{f['notebook']} : la prose (cellule {f['cell_markdown']}) annonce "
+                    f"{f['annonce']} elements, le listing (cellule {f['cell_code']}) en "
+                    f"porte {len(f['identifiants_stream'])}"
+                )
+                continue
             print(
                 f"{f['notebook']} : table (cellule {f['cell_markdown']}) tronquee a "
                 f"{len(f['identifiants_table'])} identifiants sur les "
@@ -210,9 +272,13 @@ def main(argv: list[str] | None = None) -> int:
             )
         for e in erreurs:
             print(f"{e['notebook']} : illisible -- {e['erreur']}", file=sys.stderr)
-        print(f"[listing-coherence] carnets={len(cibles)} findings={len(vrais)}")
+        print(f"[listing-coherence] carnets={len(cibles)} findings={len(vrais)} "
+              f"non_lus={len(erreurs)}")
 
-    return 1 if vrais else 0
+    # Un carnet illisible n'est pas un carnet propre : rc=1, jamais 0. Sinon
+    # le commentaire vert dit « aucun tableau tronque » alors qu'un carnet
+    # n'a jamais ete ouvert (#23394, reserve 1).
+    return 1 if (vrais or erreurs) else 0
 
 
 if __name__ == "__main__":
