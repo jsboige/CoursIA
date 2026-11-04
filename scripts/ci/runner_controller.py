@@ -192,7 +192,7 @@ def _vbs_escape(text: str) -> str:
     return text.replace('"', '""')
 
 
-def task_launcher(profile: Profile) -> str:
+def task_launcher(profile: Profile, command: str | None = None) -> str:
     """Le lanceur `wscript.exe` qui masque la fenetre du tick.
 
     `<Command>wscript.exe</Command>` seul ne suffit pas : `pwsh.exe` lance
@@ -201,22 +201,30 @@ def task_launcher(profile: Profile) -> str:
     est absent » — d'ou 60 fenetres par heure sur l'ecran de la session ouverte
     (mesure lane Maintenance, 2026-11-04). `WScript.Shell.Run` avec le second
     argument a `0` demande au systeme une fenetre masquee ; le troisieme a
-    `False` rend la main sans attendre la fin du tick, que le Planificateur
-    borne lui-meme (`ExecutionTimeLimit`).
+    `True` attend la fin du tick et rend son code de sortie, propage par
+    `WScript.Quit rc` (detail au commentaire du corps ci-dessous, review #24707).
 
     Le corps execute est exactement `task_action` : la seule difference avec
     l'ancienne action est l'enveloppe, pas le travail.
     """
-    command = (
-        "pwsh.exe -NoProfile -NonInteractive -WindowStyle Hidden "
-        f'-Command "{task_action(profile)}"'
-    )
+    if command is None:
+        command = (
+            "pwsh.exe -NoProfile -NonInteractive -WindowStyle Hidden "
+            f'-Command "{task_action(profile)}"'
+        )
+    # Troisieme argument a True + WScript.Quit rc : sans cela (False, forme
+    # initiale de cette PR, review #24707) le code retour du controleur ne
+    # remonte jamais -- LastTaskResult vaut 0 quel que soit le sort du tick --
+    # et la tache se terminant aussitot, MultipleInstancesPolicy=IgnoreNew ne
+    # protege plus contre les ticks qui se chevauchent. Meme forme que
+    # install_merge_ready_task.py et install_overflow_trigger_task.py.
     return (
         "Option Explicit\n"
-        "Dim shell\n"
+        "Dim shell, rc\n"
         'Set shell = CreateObject("WScript.Shell")\n'
-        f'shell.Run "{_vbs_escape(command)}", 0, False\n'
+        f'rc = shell.Run("{_vbs_escape(command)}", 0, True)\n'
         "Set shell = Nothing\n"
+        "WScript.Quit rc\n"
     )
 
 
