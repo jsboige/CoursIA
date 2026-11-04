@@ -2730,6 +2730,32 @@ _MISLABEL_TRAILER = (
     "`python scripts/check_factual_mislabel.py --help`."
 )
 
+_LISTING_OK = (
+    "✅ No truncated listing detected in the notebooks this PR changed "
+    "(markdown identifier tables checked against the numbered listing a "
+    "nearby code cell's stream prints)."
+)
+_LISTING_ABSTAIN = (
+    "⚠️ Listing-coherence detector abstained (merge-base introuvable, "
+    "shallow fetch or unanchored branch)."
+)
+_LISTING_WARN = (
+    "⚠️ Listing-coherence review needed: a markdown table announces a total "
+    "but lists only a CONTIGUOUS PREFIX of the identifiers a nearby code "
+    "cell's stream prints — the signature of a table left behind when the "
+    "series grew. Advisory, NOT a merge gate — triage against the JSON "
+    "artifact."
+)
+_LISTING_TRAILER = (
+    "Scope = notebooks CHANGED in this PR, not the whole corpus. The "
+    "`listing-coherence-report` run artifact holds the structured JSON.\n"
+    "Rationale: this compares identifier SETS, not counts — a count "
+    "comparison cannot see a table truncated from `08` while the stream "
+    "lists up to `15`. The contiguous-prefix discriminant is what keeps an "
+    "arbitrary subset (« the 3 longest ») out of the report. See "
+    "`python scripts/check_listing_coherence.py --help`."
+)
+
 _ORGAN_CLEAN = (
     "No organ-duplication: no added def/class collides with another series "
     "organ API (scripts/audit/organ_api_index.yaml)."
@@ -2801,6 +2827,13 @@ def _body_factual_mislabel(rc: int, payload: str, ctx: dict) -> str:
     sentence = {"ok": _MISLABEL_OK, "abstain": _MISLABEL_ABSTAIN}.get(
         state, _MISLABEL_WARN)
     return f"{_with_note(sentence, ctx)}\n\n{_MISLABEL_TRAILER}"
+
+
+def _body_listing_coherence(rc: int, payload: str, ctx: dict) -> str:
+    state = _exit_state(rc, ctx)
+    sentence = {"ok": _LISTING_OK, "abstain": _LISTING_ABSTAIN}.get(
+        state, _LISTING_WARN)
+    return f"{_with_note(sentence, ctx)}\n\n{_LISTING_TRAILER}"
 
 
 def _organ_status(payload: str) -> str:
@@ -2895,6 +2928,8 @@ TRANCHE33: list[Guard] = [
             "scripts/tests/test_check_stale_claims.py",
             "scripts/check_factual_mislabel.py",
             "scripts/tests/test_check_factual_mislabel.py",
+            "scripts/check_listing_coherence.py",
+            "scripts/tests/test_check_listing_coherence.py",
             ".github/workflows/markdown-claims-output-advisory.yml",
         ],
         # Le verdict de ces gardes est leur commentaire : `argv` reste vide et
@@ -2936,6 +2971,18 @@ TRANCHE33: list[Guard] = [
                 body=_body_factual_mislabel,
                 artifact_name="factual-mislabel-report",
                 artifact_file="factual-mislabel.json",
+                paths=["MyIA.AI.Notebooks/**/*.ipynb"],
+                max_paths=50,
+            ),
+            Commenter(
+                header="listing-coherence-advisory",
+                argv=[
+                    "python", "scripts/check_listing_coherence.py",
+                    "--json", "{changed_paths}",
+                ],
+                body=_body_listing_coherence,
+                artifact_name="listing-coherence-report",
+                artifact_file="listing-coherence.json",
                 paths=["MyIA.AI.Notebooks/**/*.ipynb"],
                 max_paths=50,
             ),
