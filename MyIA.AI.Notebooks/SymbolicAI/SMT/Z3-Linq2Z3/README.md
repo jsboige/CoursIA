@@ -315,6 +315,8 @@ Issue de référence : #19278. Cette série s'ancre principalement sur un livre-
 | Real arithmetic | `16_RealArithmetic` | Ch. 4 Proofs (p. 106) | OK (section et folio relevés sur la page de l'ouvrage archivé) |
 | Expression rewriting (extension du DSL) | `20_Theorem_Rewriters` | Ch. 4 §4.5 Simplifying long and messy expressions using Z3 (p. 113) | OK (section et folio relevés sur la page de l'ouvrage archivé) |
 
+**Portée du mapping.** Il relie chaque carnet à la section de l'ouvrage qui traite le même sujet — il n'affirme pas que le carnet reprend l'**instance** de l'ouvrage. Sur les trois carnets dont l'instance a été confrontée ligne à ligne : `13_Cryptarithmetic_SMT` reprend bien l'alphamétique du livre (§8.10, p. 276 — `SEND + MORE = MONEY`, mêmes lettres et même équation) ; `02_Sudoku_Theorem_vs_Array` et `18_Einsteins_Riddle` en reprennent le **cadre d'encodage** (§8.1.2, p. 212 ; §8.2, p. 232), mais résolvent des instances qui leur sont propres — la grille du livre (§8.1, p. 205) est le « world's hardest sudoku » à 23 indices, et le puzzle du livre a pour réponse que le Japonais possède le zèbre.
+
 ## FAQ / Troubleshooting
 
 | Problème | Solution |

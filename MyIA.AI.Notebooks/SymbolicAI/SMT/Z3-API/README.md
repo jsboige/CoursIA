@@ -239,7 +239,7 @@ La série manipule un vocabulaire précis (SMT, tactiques, MaxSAT, théories) h�
 
 ## Ouvrages-ancrage
 
-Issue de référence : #19278. L'ouvrage-ancrage de la série est le Yurichev décrit en tête de fichier (section « Ouvrage de référence », avec l'index chapitré série ↔ livre) — la présente section y renvoie et n'en duplique pas l'entrée. La copie archivée (`G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf`) a été lue le 27/10/2026 sur ses 666 pages : les folios de l'index ci-dessus sont ancrés firsthand sur cette lecture. Les lignes encore « à confirmer » — index `Z3-15`/`Z3-16` et mapping des carnets `Z3-Linq2Z3` — ont été confirmées par une nouvelle lecture de la **même copie** (PyMuPDF 1.27.2.3) : folio = index PDF − 2, numéro de section relevé sur la page elle-même, jamais dans le sommaire imprimé (les deux pagination divergent).
+Issue de référence : #19278. L'ouvrage-ancrage de la série est le Yurichev décrit en tête de fichier (section « Ouvrage de référence », avec l'index chapitré série ↔ livre) — la présente section y renvoie et n'en duplique pas l'entrée. La copie archivée (`G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\2023 - SAT_SMT_by_example.pdf`) a été lue le 27/10/2026 sur ses 666 pages : les folios de l'index ci-dessus sont ancrés firsthand sur cette lecture. Les lignes encore « à confirmer » — index `Z3-15`/`Z3-16` et mapping des carnets `Z3-Linq2Z3` — ont été confirmées par une nouvelle lecture de la **même copie** (PyMuPDF 1.27.2.3) : folio = index PDF − 1, numéro de section relevé sur la page elle-même, jamais dans le sommaire imprimé (les deux pagination divergent).
 
 ### Mapping carnet ↔ livre (mapping de l'issue #19278 pour les carnets Z3-Linq2Z3 ; confirmé par lecture effective du PDF)
 
@@ -256,6 +256,8 @@ Confirmation de la **tranche R2 de #19278** : lecture effective, carnet par carn
 | Einstein's riddle & puzzles | `Z3-Linq2Z3/18_Einsteins_Riddle`, `02_Sudoku_Theorem_vs_Array` | Ch. 8 §8.2 Zebra puzzle (p. 232) + §8.1 Sudoku (p. 205) | OK (section et folio relevés sur la page de l'ouvrage archivé) |
 | Real arithmetic | `Z3-Linq2Z3/16_RealArithmetic` | Ch. 4 Proofs (p. 106) | OK (section et folio relevés sur la page de l'ouvrage archivé) |
 | Expression rewriting (extension du DSL) | `Z3-Linq2Z3/20_Theorem_Rewriters` | Ch. 4 §4.5 Simplifying long and messy expressions using Z3 (p. 113) | OK (section et folio relevés sur la page de l'ouvrage archivé) |
+
+**Portée du mapping.** Il relie chaque carnet à la section de l'ouvrage qui traite le même sujet — il n'affirme pas que le carnet reprend l'**instance** de l'ouvrage. Sur les trois carnets dont l'instance a été confrontée ligne à ligne : `13_Cryptarithmetic_SMT` reprend bien l'alphamétique du livre (§8.10, p. 276 — `SEND + MORE = MONEY`, mêmes lettres et même équation) ; `02_Sudoku_Theorem_vs_Array` et `18_Einsteins_Riddle` en reprennent le **cadre d'encodage** (§8.1.2, p. 212 ; §8.2, p. 232), mais résolvent des instances qui leur sont propres — la grille du livre (§8.1, p. 205) est le « world's hardest sudoku » à 23 indices, et le puzzle du livre a pour réponse que le Japonais possède le zèbre.
 
 ## FAQ / Troubleshooting
 
