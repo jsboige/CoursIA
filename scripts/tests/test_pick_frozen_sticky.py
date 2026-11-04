@@ -148,6 +148,60 @@ def test_un_body_qui_PARLE_du_gel_ne_gele_pas(monkeypatch):
     assert pig.has_recent_delivery_marker(24516) is False
 
 
+def test_un_body_qui_DOCUMENTE_le_gel_dans_une_fence_ne_gele_pas(monkeypatch):
+    """Le code **documente** un marqueur, il ne le **pose** pas.
+
+    Un corps qui recopie la ligne canonique dans une fence l'illustrerait
+    -- la ligne est alors en debut de ligne, et la regle A la prendrait
+    pour un gel. C'est le meme defaut que le corps qui *parle* du gel, par
+    un autre chemin. Mesure : revue Hermes du 2026-11-03 sur #24523
+    (angle mort de documentation signale, non bloquant).
+    """
+    body = ("La grammaire du gel est la suivante :\n\n"
+            "```\n"
+            "[FROZEN] accord de coordination -- ai-01\n"
+            "```\n\n"
+            "Une fois la ligne posee, le degel consiste a la retirer.\n")
+    _install(monkeypatch,
+             [{"body": "[RELEASED] lane myia-po-2024:CoursIA"}],
+             body=body)
+    assert pig.has_recent_delivery_marker(24516) is False
+    assert pig._issue_is_frozen(body, []) is None
+
+
+def test_un_commentaire_qui_cite_le_gel_dans_une_fence_ne_gele_pas(monkeypatch):
+    """Meme regle pour le filet de commentaires (regle B) : une fence qui
+    recopie la ligne canonique ne gele pas l'item."""
+    comment = ("Je rapelle la forme :\n\n"
+               "```\n"
+               "[FROZEN] accord de coordination -- ai-01\n"
+               "```\n")
+    _install(monkeypatch, [{"body": comment}])
+    assert pig.has_recent_delivery_marker(24516) is False
+
+
+def test_le_code_span_inline_ne_pose_pas_le_gel(monkeypatch):
+    """Un code-span inline (`` `[FROZEN] ...` ``) non plus : meme raison."""
+    body = "La forme est `[FROZEN] accord de coordination -- ai-01`."
+    _install(monkeypatch,
+             [{"body": "[RELEASED] lane myia-po-2024:CoursIA"}],
+             body=body)
+    assert pig.has_recent_delivery_marker(24516) is False
+
+
+def test_un_gel_reel_pose_en_commentaire_gele_toujours_avec_des_fences_ailleurs(
+        monkeypatch):
+    """Controle : le tri des fences ne doit pas rendre le filtre laxiste.
+    Un vrai gel (en tete de ligne, hors fence) gele toujours l'item."""
+    _install(monkeypatch, [
+        {"body": "Un commentaire qui montre la forme :\n\n```\n[FROZEN] x -- y\n```\n"},
+        {"body": "[FROZEN] accord de coordination -- ai-01"},
+    ])
+    assert pig.has_recent_delivery_marker(19309) is True
+    assert pig._issue_is_frozen("Corps neutre.", [
+        {"body": "[FROZEN] accord de coordination -- ai-01"}]) == "comment"
+
+
 # --- (B) le filet des gels poses en commentaire ----------------------------
 
 def test_un_gel_pose_en_commentaire_enterre_par_un_RELEASED_gele_encore(
