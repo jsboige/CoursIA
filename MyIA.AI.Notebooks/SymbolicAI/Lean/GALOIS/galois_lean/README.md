@@ -27,7 +27,7 @@ Le `lean_lib Galois` porte ``globs := #[`Galois.*]`` comme `@[default_target]`, 
 - **Mathlib** : `db584cd6d46c92f209a44c0f1c829460d327499d` (v4.33.0), en accord entre `lakefile.lean:10-11` et `lake-manifest.json` — les deux fichiers qui font foi. Les revs `d568c8c` (pin v4.31.0-rc1) et du bump 4.32.1 sont **historiques** ; aucun ne décrit l'état courant.
 - **Sorry** : **0** (mode `real`, comptage Lean-aware) — 0 `sorry` tactique, 0 `native_decide`, 0 `axiom` déclaré
 - **Axiomes** : `#print axioms Sporadic.card_M23` / `simple_M23` → `{propext, Classical.choice, Quot.sound}` = whitelist §B
-- **Build** : CI `lean-galois.yml` sur `main` — dernier run **SUCCESS** au 2026-10-31T18:36:51Z sur `88edc37b4d`, donc **au pin v4.33.0** (le lake y était déjà migré par `26f6bc44ee`). Le chiffre de 1324 jobs reste **historique** : il date du pin v4.31.0-rc1 et n'a pas été re-mesuré depuis.
+- **Build** : matrice `lean-ci-matrix.yml` (job `galois_lean`) depuis la suppression du wrapper `lean-galois.yml` (`145808a50d`, #23011 — #13751 item 4). Dernier run **SUCCESS** connu : 2026-10-31T18:36:51Z sur `88edc37b4d`, au pin v4.33.0 (le lake y était déjà migré par `26f6bc44ee`) — c'était le **dernier run du wrapper**, avant la migration du 2026-11-01 ; aucun fichier du lake n'a changé sur `main` depuis, le job matrice n'a donc pas encore tourné sur ce lake (`git log 145808a50d..origin/main -- …/galois_lean/` est vide). Le chiffre de 1324 jobs reste **historique** : il date du pin v4.31.0-rc1 et n'a pas été re-mesuré depuis.
 - **Dépendances** : Mathlib 4 uniquement — 8 imports, dont 7 `Mathlib.GroupTheory.*` et `Mathlib.Algebra.Group.Subgroup.Finite` (`M23Lean4Web.lean:32-39`)
 
 ## Pourquoi réutiliser l'amont plutôt que réécrire
