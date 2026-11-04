@@ -88,7 +88,7 @@ Le moteur `backtest_portfolio` du carnet applique les poids cibles aux rendement
 **H1 — Static vs Risk Parity vs Tactical.** Trois schémas sur les cinq actifs de la baseline : poids Dalio fixes, parité de risque par volatilité inverse sur 60 jours, et overlay SMA200 (le poids d'un actif passé sous sa moyenne à 200 jours est réduit de moitié, la part retirée reste en cash) :
 
 <p align="center">
-  <img src="assets/readme/aw-h1-parity.png" alt="Dual-panel « H1: Static vs Risk Parity vs Tactical » — panel haut = valeur normalisée 2015-2026 : Static Dalio S=0,691 DD=-23,37 % en bleu, qui finit le plus haut vers 1,85 ; Risk Parity 60 j S=0,718 DD=-18,43 % en orange et Tactical SMA200 S=0,744 DD=-15,47 % en vert, qui finissent tous deux vers 1,70 — Tactical a le meilleur Sharpe et le drawdown le plus faible. Panel bas = drawdowns superposés, creux le plus profond fin 2022 pour les trois, vers -23 % pour Static Dalio." width="420"/><br>
+  <img src="assets/readme/aw-h1-parity.png" alt="Dual-panel « H1: Static vs Risk Parity vs Tactical » — panel haut = valeur normalisée 2015-2026 : Static Dalio S=0,691 DD=-23,37 % en bleu, qui finit le plus haut (CAGR 5,71 %) ; Risk Parity 60 j S=0,718 DD=-18,43 % en orange et Tactical SMA200 S=0,744 DD=-15,47 % en vert, qui finissent tous deux plus bas (CAGR 4,92 % et 4,89 %) — Tactical a le meilleur Sharpe et le drawdown le plus faible. Panel bas = drawdowns superposés, creux le plus profond fin 2022 pour les trois, vers -23 % pour Static Dalio." width="420"/><br>
   <em>H1 — Static vs Risk Parity vs Tactical.</em>
 </p>
 
@@ -141,7 +141,7 @@ AllWeather/
 - les autres mois, contrôle de dérive au même moment : rebalancement si le poids d'un actif s'écarte de plus de 3 points de sa cible ;
 - paramètre QC `brokerage` : par défaut, un modèle de courtage sur compte sur marge (frais et règles d'ordre) ; `none` le désactive.
 
-La parité de risque (volatilité inverse sur 60 jours) et l'overlay tactique SMA200 n'existent que dans [`research.ipynb`](research.ipynb) (H1, H4). Aucune version de `main.py` versionnée dans le dépôt ne les implémente : la première est déjà la v5.0. La docstring cite des versions antérieures (v2.0 « Gold Heavy + SMA50% », v2.2 « SMA25% ») comme historique de conception seulement.
+La parité de risque (volatilité inverse sur 60 jours) et l'overlay tactique SMA200 ne vivent plus que dans [`research.ipynb`](research.ipynb) (H1, H4). Ils ont existé dans `main.py` : la version du 2026-02-02 (commit `4fe6218498`, allocation Dalio 30/40/15/7,5/7,5) portait les classes `RiskParityAllWeather` et `TacticalAllWeather`. Elles disparaissent le 2026-03-04 (`df4178cce7`), et la parité de risque devient le lendemain le projet séparé [`RiskParity`](../RiskParity/) (`4d26fccdff`). Ces commits ne sont pas des ancêtres de la branche `main` actuelle, où l'historique de ce fichier commence le 2026-09-27 : on les lit avec `git log --all`. La docstring cite des versions antérieures (v2.0 « Gold Heavy + SMA50% », v2.2 « SMA25% ») comme historique de conception seulement.
 
 ## Configuration
 
@@ -160,7 +160,7 @@ self.rebalance_threshold = 0.03
 
 ## Philosophie
 
-L'All-Weather est conçu pour performer dans 4 environnements :
+L'All-Weather de Dalio (la baseline v1.0) est conçu pour performer dans 4 environnements :
 
 | Environnement | Actifs performants |
 |---------------|-------------------|
@@ -174,7 +174,7 @@ contre l'inflation à l'or seul et ajoute XLP comme actif défensif.
 
 ## Risques
 
-- **Sous-performance en bull market**: Trop de bonds dilue les gains
+- **Sous-performance en bull market**: 60 % du portefeuille hors actions (IEF et GLD) dilue les gains quand les actions montent
 - **Sensibilité aux taux**: Bonds souffrent quand les taux montent
 - **Corrélations instables**: En crise, tout peut baisser ensemble
 - **Commodities roll yield**: le contango érode le rendement des contrats à terme sur matières premières ; le risque porte sur DBC de la baseline v1.0, la v5.0 n'en détient pas
