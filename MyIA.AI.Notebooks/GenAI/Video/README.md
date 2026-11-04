@@ -70,10 +70,18 @@ On ne peut pas créer ce qu'on ne comprend pas. Ce niveau pose les bases techniq
 | Notebook | Contenu | Service | VRAM |
 |----------|---------|---------|------|
 | [01-1-Video-Operations-Basics](01-Foundation/01-1-Video-Operations-Basics.ipynb) | moviepy, ffmpeg, decord, codecs | Local | 0 |
+| [01-1b-Video-Slideshow-Bonus](01-Foundation/01-1b-Video-Slideshow-Bonus.ipynb) | *Bonus* — slideshow : frames PIL centrées, assemblage imageio à `fps` choisi | Local | 0 |
 | [01-2-GPT-5-Video-Understanding](01-Foundation/01-2-GPT-5-Video-Understanding.ipynb) | GPT-5 vidéo, scènes, Q&A | OpenAI API | 0 |
 | [01-3-Qwen-VL-Video-Analysis](01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb) | Qwen2.5-VL 7B local, grounding | Local GPU | ~18 GB |
 | [01-4-Video-Enhancement-ESRGAN](01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb) | Real-ESRGAN, RIFE interpolation | Local GPU | ~4 GB |
 | [01-5-AnimateDiff-Introduction](01-Foundation/01-5-AnimateDiff-Introduction.ipynb) | AnimateDiff, text-to-video basique | Local GPU | ~12 GB |
+
+**01-1b — quand le lire, quand le sauter.** Le bonus est une accrétion optionnelle détachée de la conclusion de
+[01-1](01-Foundation/01-1-Video-Operations-Basics.ipynb) : le challenge du slideshow y a trouvé un espace de travail,
+avec des exemples guidés — dont ceux crédités au Groupe G15 (PR #21040) — et des exercices neufs. On le lit quand on veut
+mettre les mains dans les primitives de 01-1 sans rouvrir le carnet principal : centrer un texte sur sa boîte englobante
+réelle dans une frame PIL, puis assembler les frames avec `imageio` à un `fps` qui fixe la durée. On le saute quand on suit
+le fil compréhension → génération : il n'ajoute aucune API au-delà de 01-1, sa valeur est l'entraînement, pas la découverte.
 
 ### 02-Advanced - Générer du mouvement à partir de texte ou d'images
 

@@ -138,7 +138,12 @@ def MinimalLiberalism {I A : Type} (swf : SocialWelfareFunction I A) : Prop :=
    condition, `SenLiberalism` (two distinct individuals, two crossing pairs).
    `dictatorship_minimally_liberal` shows why: a dictatorship satisfies
    `MinimalLiberalism`, so Pareto and minimal liberalism are compatible under
-   that definition. -/
+   that definition.
+
+   Declared alternative proof: `game_theory_lean/SocialChoice/Sen_en.lean`
+   states the paradox counter-existentially (`∃ prof, ¬∃ best`) under
+   `minimal_liberal`, a strictly weaker notion than `SenLiberalism` — it does
+   not require the two pairs to cross. -/
 
 /-!
 ## Utility Representations
@@ -894,7 +899,12 @@ set of alternatives has three elements.
 
 The hypothesis `nI ≥ 2` is the one of the historical statement, kept for fidelity
 to the literature; the proof below holds for any `nI`, hence the `_hI` name of
-the parameter. -/
+the parameter.
+
+**Declared alternative proof.** `game_theory_lean/SocialChoice/Arrow_en.lean`
+establishes the same theorem by the pivot method (Geanakoplos), over arbitrary
+types and a local agenda (`Finset σ`); the comparison of the two lives in this
+module's README. -/
 theorem arrow_impossibility {nI nA : Nat}
     (_hI : nI ≥ 2)
     (hA : nA ≥ 3)
