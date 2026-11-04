@@ -573,6 +573,27 @@ CANONICAL_LANGUAGE_TRANSITIONS_SCOPED = {
         "canon de la serie 02-ML-Cours par re-execution (#23292, voie 1) ; "
         "sorties re-executees sous un kernelspec du meme nom mesure a "
         "3.13.14 (le venv canon de flotte est a 3.13.15)",
+    # NLP-01 et NLP-02 sont, avec NLP-04 (3.12.13, converge par la PR
+    # ouverte #24457), les derniers carnets de la serie NLP sous kernel
+    # NOMME hors canon -- hors du census #23384 (kernel python3
+    # uniquement), leur convergence exige une entree scopee nominative,
+    # comme ML-06 pour ML.Net. Le canon de la serie NLP est 3.13 (03 et
+    # 05-11 sous kernel python3 a 3.13.x, mesure main 2026-11-03) ; 01
+    # et 02 portent 3.11.15/3.11.16. Le kernelspec reste partage par
+    # une trentaine de carnets hors serie qui ne declarent pas 3.13 :
+    # l'entree reste nominative (reserve de revue #22979).
+    ("MyIA.AI.Notebooks/NLP/01_TAL_Du_Mot_Aux_Dependances.ipynb",
+     "coursia-ml-training", "3.11", "3.13"):
+        "Python 3.11 -> 3.13 sous `coursia-ml-training` : convergence vers le "
+        "canon de la serie NLP, dont les carnets 03 et 05-11 tournent deja "
+        "sous kernel python3 a 3.13.x ; re-execution sous le venv canon "
+        "python3 3.13.16 (#23384)",
+    ("MyIA.AI.Notebooks/NLP/02_NGrammes_Modeles_De_Langue.ipynb",
+     "coursia-ml-training", "3.11", "3.13"):
+        "Python 3.11 -> 3.13 sous `coursia-ml-training` : convergence vers le "
+        "canon de la serie NLP, dont les carnets 03 et 05-11 tournent deja "
+        "sous kernel python3 a 3.13.x ; re-execution sous le venv canon "
+        "python3 3.13.16 (#23384)",
 }
 
 
