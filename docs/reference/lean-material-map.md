@@ -10,46 +10,46 @@ Cette page est regeneree par `scripts/lean/lean_material_map.py`. Une table reco
 
 | Lac | Modules | Miroirs | CI | Gate axiomes | Naissance |
 |---|---|---|---|---|---|
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean` | 100 | 98 | declare | couverte | 2026-07-01 |
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean` | 57 | 41 | declare | couverte | 2026-11-02 |
-| `MyIA.AI.Notebooks/GameTheory/game_theory_lean` | 39 | 25 | declare | couverte | 2026-07-10 |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean` | 100 | 98 | declare | couverte | 2026-11-04 |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean` | 57 | 41 | declare | couverte | 2026-11-04 |
+| `MyIA.AI.Notebooks/GameTheory/game_theory_lean` | 41 | 25 | declare | couverte | 2026-07-10 |
 | `MyIA.AI.Notebooks/Search/discrepancy_lean` | 33 | 25 | declare | couverte | 2026-08-25 |
-| `MyIA.AI.Notebooks/ML/learning_theory_lean` | 32 | 30 | declare | couverte | 2026-07-01 |
+| `MyIA.AI.Notebooks/ML/learning_theory_lean` | 32 | 30 | declare | couverte | 2026-06-25 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean` | 25 | 24 | declare | couverte | 2026-10-08 |
 | `MyIA.AI.Notebooks/Compression/Compression_lean` | 15 | 2 | declare | couverte | 2026-10-12 |
-| `MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext` | 15 | 14 | declare | couverte | 2026-07-01 |
+| `MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext` | 15 | 14 | declare | couverte | 2026-06-10 |
 | `MyIA.AI.Notebooks/Probas/DecisionTheory/decision_theory_lean` | 14 | 13 | declare | couverte | 2026-10-02 |
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean` | 12 | 10 | declare | couverte | 2026-07-01 |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean` | 12 | 10 | declare | couverte | 2026-05-15 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean` | 11 | 0 | declare | couverte | 2026-09-21 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/hecke_lean` | 9 | 8 | declare | couverte | 2026-11-02 |
 | `MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean` | 8 | 7 | declare | couverte | 2026-09-06 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean` | 8 | 0 | declare | couverte | 2026-09-11 |
-| `MyIA.AI.Notebooks/SymbolicAI/Tweety/argumentation_lean` | 8 | 6 | declare | couverte | 2026-07-01 |
+| `MyIA.AI.Notebooks/SymbolicAI/Tweety/argumentation_lean` | 8 | 6 | declare | couverte | 2026-06-24 |
 | `MyIA.AI.Notebooks/GameTheory/assignment_lean` | 7 | 6 | declare | couverte | 2026-08-23 |
 | `MyIA.AI.Notebooks/Search/search_lean` | 7 | 6 | declare | couverte | 2026-07-09 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/geometry_lean` | 7 | 0 | declare | couverte | 2026-10-04 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean` | 7 | 6 | declare | couverte | 2026-09-19 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean` | 7 | 6 | declare | couverte | 2026-08-15 |
 | `MyIA.AI.Notebooks/GameTheory/asymmetric_information_lean` | 6 | 6 | declare | couverte | 2026-08-26 |
-| `MyIA.AI.Notebooks/GameTheory/lean_game_defs` | 6 | 6 | declare | couverte | 2026-07-01 |
-| `MyIA.AI.Notebooks/QuantConnect/kelly_lean` | 6 | 5 | declare | couverte | 2026-07-01 |
-| `MyIA.AI.Notebooks/Sudoku/sudoku_lean` | 6 | 5 | declare | couverte | 2026-07-01 |
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean` | 6 | 5 | declare | couverte | 2026-07-01 |
+| `MyIA.AI.Notebooks/GameTheory/lean_game_defs` | 6 | 6 | declare | couverte | 2026-06-10 |
+| `MyIA.AI.Notebooks/QuantConnect/kelly_lean` | 6 | 5 | declare | couverte | 2026-06-24 |
+| `MyIA.AI.Notebooks/Sudoku/sudoku_lean` | 6 | 5 | declare | couverte | 2026-06-24 |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean` | 6 | 5 | declare | couverte | 2026-05-29 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/formal_groups_lean` | 6 | 5 | declare | couverte | 2026-09-06 |
-| `MyIA.AI.Notebooks/GameTheory/minimax_lean` | 5 | 4 | declare | couverte | 2026-07-01 |
+| `MyIA.AI.Notebooks/GameTheory/minimax_lean` | 5 | 4 | declare | couverte | 2026-06-24 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/galois_lean` | 5 | 2 | declare | couverte | 2026-10-31 |
-| `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean` | 5 | 4 | declare | couverte | 2026-07-01 |
+| `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean` | 5 | 4 | declare | couverte | 2026-06-24 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/kls_lean` | 4 | 0 | hors CI | hors matrice | 2026-10-08 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200/riemann200_lean` | 4 | 0 | declare | couverte | 2026-10-18 |
-| `MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean` | 4 | 3 | declare | couverte | 2026-07-01 |
+| `MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean` | 4 | 3 | declare | couverte | 2026-06-24 |
 | `MyIA.AI.Notebooks/IIT/iit_lean` | 3 | 1 | declare | couverte | 2026-10-24 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/differential_lean` | 3 | 2 | hors CI | hors matrice | 2026-10-07 |
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/finiteness_lean` | 3 | 1 | declare | couverte | 2026-07-01 |
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples` | 3 | 1 | declare | sans gate | 2026-07-01 |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/finiteness_lean` | 3 | 1 | declare | couverte | 2026-06-15 |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples` | 3 | 1 | declare | sans gate | 2026-01-29 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/torchlean_lean` | 3 | 0 | hors CI | hors matrice | 2026-10-22 |
-| `MyIA.AI.Notebooks/GameTheory/conway_cgt_lean` | 2 | 1 | declare | sans gate | 2026-07-01 |
+| `MyIA.AI.Notebooks/GameTheory/conway_cgt_lean` | 2 | 1 | declare | sans gate | 2026-06-05 |
 | `MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters` | 0 | 0 | declare | vendu | 2026-10-05 |
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/session_state/reference_docs/stable_marriage/upstream` | 0 | 0 | hors CI | vendu | 2026-07-01 |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/session_state/reference_docs/stable_marriage/upstream` | 0 | 0 | hors CI | vendu | 2026-05-16 |
 | `docs/lean/darksnail/build-evidence-2026-10-31` | 0 | 0 | hors CI | hors matrice | 2026-10-31 |
 
 ## Ce que la carte etablit
@@ -58,7 +58,7 @@ Cette page est regeneree par `scripts/lean/lean_material_map.py`. Une table reco
 
 ### Reconciliation
 
-501 modules + 378 miroirs attribues a un lac + 11 fichiers hors lac + 26 fichiers ecartes (dossier vendu, ou extension `.lean` portee par un fichier qui n'est pas du Lean) = 916 fichiers `.lean` traces, soit la population entiere de `git ls-files '*.lean'`. Un fichier qui n'apparait dans aucune de ces quatre colonnes a ete perdu en route : c'est le defaut que cette reconciliation rend visible.
+503 modules + 378 miroirs attribues a un lac + 11 fichiers hors lac + 26 fichiers ecartes (dossier vendu, ou extension `.lean` portee par un fichier qui n'est pas du Lean) = 918 fichiers `.lean` traces, soit la population entiere de `git ls-files '*.lean'`. Un fichier qui n'apparait dans aucune de ces quatre colonnes a ete perdu en route : c'est le defaut que cette reconciliation rend visible.
 
 ### Lacs hors CI
 

@@ -252,6 +252,19 @@ except ImportError:
     except ImportError:
         tirage_journal = None  # type: ignore[assignment]
 
+# Geste 6 #24373 : le parcage des EPICs Origami dont le pli suivant n'est pas
+# deplie. Import best-effort, comme `tirage_journal` : un environnement sans
+# le module fait tourner le tapis SANS parcage (fail-OPEN), jamais l'inverse.
+try:
+    import origami_parking
+except ImportError:
+    try:
+        sys.path.insert(0, os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "coordination"))
+        import origami_parking
+    except ImportError:
+        origami_parking = None  # type: ignore[assignment]
+
 REPO = "jsboige/CoursIA"
 
 # c.1115 voie 1 (msg-20260912T165428-k6rbfc, ai-01 spec) : klass `delivered`
@@ -1393,6 +1406,10 @@ def fetch_pool(
         title = it["title"]
         is_umbrella = is_umbrella_classification(title, labels)
         body = it.get("body") or ""
+        # #24516 -- le corps est aussi la source qui fait foi pour le GEL
+        # (regle A) : on le met en cache ici, pour que le filtre de gel le
+        # lise sans requete (le pool le paie deja).
+        _POOL_BODIES[it["number"]] = body
         # #13972 : le genre que l'AUTEUR de l'issue a declare dans le body
         # (`Grain: TIER/GENRE -- lane ...`) prime sur l'inference du titre.
         # Mesure du 2026-09-01 (lane ai-01) : `infer_genre` declarait
@@ -1719,6 +1736,120 @@ _RECENT_DELIVERY_MARKER_RE = re.compile(
     r"^\s*(?:#{1,6}\s*)?\[(?:DELIVERED|FROZEN)\](?=\s|:|$)",
     re.MULTILINE,
 )
+
+# --- GEL (#24516) -- la grammaire tranchee par le coordinateur le 2026-11-03 ---
+#
+# Un gel est une **decision**, pas une propriete de position. Deux sources,
+# dans cet ordre d'autorite :
+#
+#   * **(A) le BODY fait foi** : le gel vit dans le corps de l'issue, sur une
+#     ligne canonique `[FROZEN] <motif court> -- <autorite>`. Le degel
+#     consiste a **RETIRER cette ligne** : c'est un geste du coordinateur,
+#     visible, et il ne laisse aucun etat cache derriere lui. Aucun
+#     commentaire ne leve un gel de body.
+#   * **(B) le FIL est le filet** des gels deja poses en commentaire : un
+#     en-tete `[FROZEN]` dans N'IMPORTE QUEL commentaire du fil -- et non
+#     seulement le dernier -- gele l'item. C'est une passerelle : ces gels
+#     migrent vers le body.
+#
+# Un `[RELEASED]` ne leve **aucun** gel : c'est un acquiescement de lane
+# (« je confirme la barriere »), pas la levee d'une decision du coordinateur.
+# C'est exactement le defaut mesure sur #19309 (43 commentaires, 37
+# `[RELEASED]` pour un seul gel) : le filtre lisait l'acquiescement comme
+# une reouverture.
+_FROZEN_HEADER_RE = re.compile(
+    r"^\s*(?:#{1,6}\s*)?\[FROZEN\](?=\s|:|$)",
+    re.MULTILINE,
+)
+
+#: Trace de degel. Sur un gel de BODY elle ne fait **pas** foi (seul le
+#: retrait de la ligne du body leve ce gel). Sur un gel pose en COMMENTAIRE
+#: elle est la seule sortie : sans elle, le filet serait un gel eternel.
+_UNFROZEN_HEADER_RE = re.compile(
+    r"^\s*(?:#{1,6}\s*)?\[UNFROZEN\](?=\s|:|$)",
+    re.MULTILINE,
+)
+
+#: Lanes habilitees a **fermer** un gel pose en COMMENTAIRE (regle B).
+#:
+#: Meme modele que `DELIVERED_URN_LANES` : le login GitHub est **partage**
+#: (`jsboige`), donc l'autorite ne peut pas se lire dans l'AUTEUR du
+#: commentaire -- elle se lit dans la LANE DECLAREE dans le marqueur. Un
+#: tiers qui ecrit `[UNFROZEN]` sous le login partage ne leve rien.
+#:
+#: Coordinateur, 2026-11-04 (dispatch c2764, point 2).
+FROZEN_UNFROZEN_LANES = frozenset({
+    "myia-ai-01:CoursIA",       # coordinateur
+    "myia-po-2025:CoursIA-2",   # adjoint titulaire
+})
+
+#: La lane declaree dans un marqueur : `lane <machine>:<workspace>`.
+_LANE_IN_MARKER_RE = re.compile(
+    r"\blane\s+([A-Za-z0-9_.-]+:[A-Za-z0-9_.-]+)",
+    re.IGNORECASE,
+)
+
+
+def _declared_lane(text: str) -> str | None:
+    """La lane declaree dans un marqueur (``lane <machine>:<workspace>``)."""
+    match = _LANE_IN_MARKER_RE.search(text)
+    return match.group(1) if match else None
+
+
+def unfrozen_allowed(lane: str | None) -> bool:
+    """Cette lane a-t-elle le droit de fermer un gel de commentaire ?"""
+    return lane in FROZEN_UNFROZEN_LANES
+
+
+#: Code **documente** un marqueur, il ne le **pose** pas. Un corps qui
+#: explique la grammaire en recopiant la ligne canonique dans une fence
+#: gelerait l'issue qui le decrit -- c'est le meme defaut que le corps qui
+#: *parle* du gel en prose, et la regle A l'evite deja ("la ligne canonique
+#: commence la ligne"). La fence est le deuxieme chemin par lequel la
+#: ligne canonique peut se trouver en tete de ligne.
+#:
+#: Le tri des fences avant test des marqueurs est un invariant deja present
+#: dans le foyer : le garde jumelle `pr-negation-autoclose.yml`
+#: (roo-extensions, #3626) stripe fences et code-spans avant de tester ses
+#: marqueurs, pour exactement cette raison. Mesure : revue Hermes du
+#: 2026-11-03 sur #24523 (angle mort de documentation signale, non
+#: bloquant).
+_FENCE_OPEN_RE = re.compile(r"^ {0,3}(`{3,}|~{3,})")
+_INLINE_CODE_RE = re.compile(r"`{1,3}[^`\n]+`{1,3}")
+
+
+def _strip_code(text: str) -> str:
+    """Retire les blocs de code (fences) et les code-spans inline.
+
+    Le contenu retire est remplace par des lignes vides : la structure de
+    lignes est conservee (le debut de ligne reste le debut de ligne), ce
+    qui laisse le test des marqueurs **strictement** plus strict, jamais
+    plus laxiste.
+    """
+    if not text:
+        return text
+    out: list[str] = []
+    fence_char: str | None = None
+    fence_len = 0
+    for line in text.splitlines():
+        match = _FENCE_OPEN_RE.match(line)
+        if fence_char is None:
+            if match:
+                marker = match.group(1)
+                fence_char = marker[0]
+                fence_len = len(marker)
+                out.append("")
+                continue
+            out.append(line)
+        else:
+            # La fence se ferme sur un marqueur du MEME caractere, au moins
+            # aussi long que celui d'ouverture (CommonMark).
+            if match and match.group(1)[0] == fence_char and len(match.group(1)) >= fence_len:
+                fence_char = None
+                fence_len = 0
+            out.append("")
+    stripped = "\n".join(out)
+    return _INLINE_CODE_RE.sub(" ", stripped)
 
 # #21436 (suite de #22057) -- le mur de temps du tapis n'etait verifie
 # qu'ENTRE deux sondes : une sonde DEMARREE juste avant l'echeance consommait encore tout
@@ -2394,15 +2525,25 @@ def belt_snapshot_prime_inert(repo: str, numbers: list[int]) -> None:
 
 
 def has_recent_delivery_marker(issue_number: int) -> bool | None:
-    """Le DERNIER commentaire porte-t-il un marqueur de cloture recent ?
+    """Le DERNIER commentaire PORTEUR D'ETAT porte-t-il un marqueur de cloture ?
+
+    La lecture ne porte pas sur `comments[-1]` brut mais sur le dernier
+    commentaire qui porte un etat (`_last_state_comment`) : un `[RELEASED]`
+    de queue dont le corps ne porte aucun marqueur d'etat est saute, parce
+    qu'il MASQUERAIT le `[DELIVERED]` qu'il suit (#24590). Le contrat ecrit
+    suit donc le code.
 
     TRI-ETAT (cf. `has_delivered_signal`) :
-    - ``True``  : le dernier commentaire a un en-tete `[DELIVERED]` ou
-      `[FROZEN]`, ou porte un marqueur de livraison
+    - ``True``  : l'item est **GEL** (regle A : le BODY porte la ligne
+      `[FROZEN] ...` ; regle B : un en-tete `[FROZEN]` dans le FIL), ou le
+      dernier commentaire a un en-tete `[DELIVERED]` ou `[FROZEN]`, ou porte
+      un marqueur de livraison
       ``[INFO] candidate-delivered`` (grammaire `_DELIVERED_MARKER_RE`).
       Le candidat doit etre ecarte SANS
       appeler la sonde pleine -- c'est le filtre bon marche de #19768 ;
-    - ``False`` : aucun marqueur de cloture dans le dernier commentaire.
+    - ``False`` : aucun marqueur de cloture dans le dernier commentaire
+      porteur d'etat -- les `[RELEASED]` de queue sans marqueur d'etat ne
+      sont pas lus (`_last_state_comment`).
       L'appelant peut proceder a la sonde pleine. C'est le cas d'un
       en-tete `[RELEASED]` : une main rendue sur une barriere reelle
       laisse l'item SERVABLE (#21721), et une main rendue parce que le
@@ -2410,7 +2551,12 @@ def has_recent_delivery_marker(issue_number: int) -> bool | None:
     - ``None``  : la lecture a echoue (reseau, 403, payload illisible).
       Fail-OPEN : l'appelant procede a la sonde pleine en le disant.
 
-    Cout : **1 requete** `gh issue view --json comments`, identique a
+    Le corps de l'issue n'est pas un parametre : il est lu dans le cache
+    du pool (`_POOL_BODIES`), que la lecture du pool remplit deja. C'est
+    la source qui fait foi pour le gel (regle A) ; a defaut, il est lu
+    dans la meme requete que les commentaires.
+
+    Cout : **1 requete** `gh issue view --json body,comments`, identique a
     `has_delivered_signal`, mais **HORS budget** (`DELIVERED_SIGNAL_MAX_PROBES`
     reste intact). Pourquoi separer : la sonde pleine peut etre
     epuisee par un pool charge, et le marqueur recent etant
@@ -2421,9 +2567,54 @@ def has_recent_delivery_marker(issue_number: int) -> bool | None:
     recentes servies par le tapis -- cette fonction les aurait
     ecartes avant l'epuisement du budget de la sonde pleine.
     """
-    last = _last_comment(issue_number)
-    if last is None:
+    verdict = _recent_marker_verdict(issue_number)
+    return verdict
+
+
+def _last_state_comment(comments: list[dict]) -> dict:
+    """Le dernier commentaire PORTEUR D'ETAT -- un `[RELEASED]` de queue est saute.
+
+    Un `[RELEASED]` n'est ni une cloture ni une reouverture (#21721) : le
+    laisser occuper la place du dernier commentaire MASQUE le `[DELIVERED]`
+    qu'il suit. Le saut ne porte pas sur l'en-tete seul -- un corps qui porte
+    plus bas un marqueur d'etat EST un evenement.
+    """
+    for comment in reversed(comments):
+        if not isinstance(comment, dict):
+            continue
+        body = comment.get("body")
+        if isinstance(body, str) and _RELEASED_HEADER_RE.search(body):
+            plain = _strip_code(body)
+            if not (_RECENT_DELIVERY_MARKER_RE.search(plain)
+                    or _DELIVERED_MARKER_RE.search(plain)
+                    or _closure_dossier_verdict(body) == "CLOSE"
+                    or _closure_announced_close(body)):
+                continue
+        return comment
+    return {}
+
+
+def _recent_marker_verdict(issue_number: int) -> bool | None:
+    """Le detail de `has_recent_delivery_marker` (meme verdict, meme cout).
+
+    Separer les deux permet de garder `has_recent_delivery_marker` comme le
+    **seam** stable : c'est elle que les tests et les autres organes
+    patchent. Le detail lit le corps de l'issue dans le cache du pool
+    (`_POOL_BODIES`) -- le pool le porte deja, donc **aucune requete de
+    plus** -- et le filet des commentaires dans la requete qu'il fait de
+    toute facon.
+    """
+    comments, fetched_body = _issue_comments(issue_number)
+    if comments is None:
         return None
+    body_of_issue = _issue_body(issue_number)
+    if body_of_issue is None:
+        body_of_issue = fetched_body
+
+    if _issue_is_frozen(body_of_issue, comments) is not None:
+        return True
+
+    last = _last_state_comment(comments)
     body = last.get("body") or ""
     if not isinstance(body, str):
         body = ""
@@ -2445,82 +2636,171 @@ def has_recent_delivery_marker(issue_number: int) -> bool | None:
     # (`_DELIVERED_MARKER_RE`, lookahead anti-`-revoked`/`-partial`) : tout
     # ce que ce filtre attrape, la sonde pleine l'aurait ecarte aussi -- il
     # n'introduit aucun verdict nouveau, il avance le meme.
-    return bool(_RECENT_DELIVERY_MARKER_RE.search(body)
-                or _DELIVERED_MARKER_RE.search(body)
+    # Le code **documente** un marqueur, il ne le **pose** pas : une fence
+    # qui recopie la ligne canonique ne clot rien (mesure : revue Hermes
+    # du 2026-11-03 sur #24523).
+    body_plain = _strip_code(body)
+    return bool(_RECENT_DELIVERY_MARKER_RE.search(body_plain)
+                or _DELIVERED_MARKER_RE.search(body_plain)
                 or _closure_dossier_verdict(body) == "CLOSE"
                 or _closure_announced_close(body))
 
 
-def _last_comment(issue_number: int) -> dict | None:
-    """Le DERNIER commentaire d'une issue (dictionnaire), en 1 requete.
+def _issue_is_frozen(issue_body: str | None,
+                     comments: list[dict] | None) -> str | None:
+    """L'item est-il GEL ? Renvoie la SOURCE du gel, ou None.
+
+    - ``"body"``    -- regle A : le corps de l'issue porte la ligne
+      `[FROZEN] <motif court> -- <autorite>`. C'est la forme qui fait foi :
+      le degel consiste a retirer la ligne, et rien d'autre (ni un
+      `[RELEASED]`, ni un `[UNFROZEN]`) ne leve un gel de body.
+    - ``"comment"`` -- regle B : un en-tete `[FROZEN]` dans le FIL, quelle
+      que soit sa position (c'est le filet des gels deja poses en
+      commentaire, en attendant leur migration vers le body). Un `[UNFROZEN]`
+      posterieur ferme ce gel : c'est sa seule sortie, sinon le filet
+      serait un gel eternel.
+
+    Le gel est evalue **avant** la reouverture du user (#24250) : un gel est
+    une decision explicite du coordinateur, et une reouverture du user ne
+    la leve pas. La sortie reste simple : retirer la ligne du body.
+
+    Le corps est lu **en ligne**, jamais dans la prose : un corps qui
+    *parle* d'un gel (`Un [FROZEN] du coordinateur...`) n'en porte pas.
+    """
+    if isinstance(issue_body, str) and _FROZEN_HEADER_RE.search(_strip_code(issue_body)):
+        return "body"
+    if not comments:
+        return None
+    frozen = False
+    for comment in comments:
+        if not isinstance(comment, dict):
+            continue
+        text = comment.get("body") or ""
+        if not isinstance(text, str) or not text:
+            continue
+        # Le code **documente** un marqueur, il ne le pose pas : une fence
+        # qui recopie la ligne canonique ne gele rien (mesure : revue
+        # Hermes du 2026-11-03 sur #24523).
+        text = _strip_code(text)
+        if _UNFROZEN_HEADER_RE.search(text):
+            # Un degel posterieur efface le gel anterieur : le fil se lit
+            # dans l'ordre, et le dernier etat gagne.
+            #
+            # **Mais seul un degel d'une lane habilitee le fait** (dispatch
+            # c2764, 2026-11-04) : le login GitHub est partage, donc
+            # l'autorite se lit dans la lane DECLAREE dans le marqueur. Un
+            # `[UNFROZEN]` sans lane declaree, ou d'une lane tierce, ne
+            # leve rien -- fail-closed.
+            if unfrozen_allowed(_declared_lane(text)):
+                frozen = False
+            continue
+        if _FROZEN_HEADER_RE.search(text):
+            frozen = True
+    return "comment" if frozen else None
+
+
+#: Corps des issues du pool, indexes par numero. Rempli par la lecture du
+#: pool (`fetch_pool`), qui porte deja le body de chaque issue : c'est ce
+#: qui permet au filtre de gel de lire la regle A (le gel vit dans le body)
+#: **sans requete** -- la regle du compteur de requetes par candidat.
+#: Remplace le parametre `issue_body` : `has_recent_delivery_marker` reste
+#: le seam stable (une seule positional), patche par les tests et les
+#: autres organes.
+_POOL_BODIES: dict[int, str] = {}
+
+
+def _issue_body(issue_number: int) -> str | None:
+    """Le corps de l'issue, d'apres le cache du pool (None si absent)."""
+    return _POOL_BODIES.get(issue_number)
+
+
+def _issue_comments(issue_number: int) -> tuple[list[dict] | None, str | None]:
+    """TOUS les commentaires d'une issue ET son corps, en 1 requete.
 
     TRI-ETAT :
-    - ``None``  : la lecture a echoue (reseau, 403, payload illisible) --
-      fail-OPEN, l'appelant le dit ;
-    - ``{}``    : il n'y a pas de dernier commentaire exploitable (aucun
+    - ``(None, None)`` : la lecture a echoue (reseau, 403, payload
+      illisible) -- fail-OPEN, l'appelant le dit ;
+    - ``([], "")``     : l'issue n'a aucun commentaire exploitable (aucun
       commentaire, payload inattendu) ;
-    - le dict   : celui du dernier commentaire (ordre chronologique de
-      l'API `gh issue view --json comments`), corps et horodatage.
+    - ``(liste, corps)`` : les commentaires (ordre chronologique de l'API
+      `gh issue view --json body,comments`) et le corps de l'issue.
 
-    L'horodatage est HERE parce que la regle de la reouverture (#24250) doit
-    dater la decision de cloture : le corps seul ne permet pas de dire si la
-    reouverture lui est posterieure.
+    Pourquoi tout le fil et pas seulement la queue : un gel pose en
+    commentaire peut etre enterre par n'importe quel commentaire
+    posterieur (#24516, mesure sur #19309 : 37 `[RELEASED]` pour un seul
+    `[FROZEN]`). La requete ramene deja le fil entier -- la lecture n'en
+    gardait que la queue -- donc le balayer **ne coute aucune requete de
+    plus**.
+
+    Pourquoi le corps : le gel vit dans le **body** (regle A de la
+    grammaire du coordinateur, 2026-11-03). Il est demande DANS LA MEME
+    requete, donc le compte de requetes par candidat ne bouge pas.
 
     #22630 -- l'instantane local rend les memes commentaires, sans requete :
     la lecture passe par `_snapshot_comments` quand l'instantane de la passe
-    est disponible, et retombe sur la requete historique sinon.
+    est disponible, et retombe sur la requete historique sinon. L'instantane
+    ne porte pas le corps : le corps vient alors de l'appelant (le pool le
+    porte deja).
     """
     snapshot_comments = _snapshot_comments(issue_number)
     if snapshot_comments is not None:
-        comments = snapshot_comments
-    else:
-        try:
-            out = subprocess.run(
-                ["gh", "issue", "view", str(issue_number), "--repo", REPO,
-                 "--json", "comments"],
-                capture_output=True, text=True, encoding="utf-8", check=True,
-                timeout=_clamp_timeout(30),
-            ).stdout
-        except Exception:  # noqa: BLE001 - lecture best-effort, l'echec est DIT
-            return None
-        try:
-            payload = json.loads(out)
-        except Exception:  # noqa: BLE001 - payload illisible = pas de signal
-            return None
-        if not isinstance(payload, dict):
-            return {}
-        comments = payload.get("comments") or []
-    if not isinstance(comments, list) or not comments:
-        return {}
-    last = comments[-1]
-    if not isinstance(last, dict):
-        return {}
-    return last
+        return snapshot_comments, None
+    try:
+        out = subprocess.run(
+            ["gh", "issue", "view", str(issue_number), "--repo", REPO,
+             "--json", "body,comments"],
+            capture_output=True, text=True, encoding="utf-8", check=True,
+            timeout=_clamp_timeout(30),
+        ).stdout
+    except Exception:  # noqa: BLE001 - lecture best-effort, l'echec est DIT
+        return None, None
+    try:
+        payload = json.loads(out)
+    except Exception:  # noqa: BLE001 - payload illisible = pas de signal
+        return None, None
+    if not isinstance(payload, dict):
+        return [], ""
+    comments = payload.get("comments") or []
+    if not isinstance(comments, list):
+        comments = []
+    body = payload.get("body") or ""
+    if not isinstance(body, str):
+        body = ""
+    return comments, body
 
 
 def _last_comment_body(issue_number: int) -> str | None:
-    """Le corps du DERNIER commentaire d'une issue, en 1 requete.
+    """Le corps du DERNIER commentaire PORTEUR D'ETAT, en 1 requete.
 
     TRI-ETAT :
     - ``None``  : la lecture a echoue (reseau, 403, payload illisible) --
       fail-OPEN, l'appelant le dit ;
     - ``""``    : il n'y a pas de dernier commentaire exploitable (aucun
       commentaire, payload inattendu, corps non textuel) ;
-    - le corps  : celui du dernier commentaire (ordre chronologique de
-      l'API `gh issue view --json comments`).
+    - le corps  : celui du dernier commentaire porteur d'etat (ordre
+      chronologique de l'API `gh issue view --json comments`).
 
     Facteurise pour que le filtre « marqueur recent » et le filtre
     « marqueur de CONTENEUR » lisent le meme octet : deux lectures du meme
     fil ne peuvent pas diverger sur un fil qui change entre les deux.
 
+    #24590 -- l'octet partage est celui de `_last_state_comment`, pas celui
+    de `comments[-1]` : un `[RELEASED]` de queue sans marqueur d'etat est
+    saute par les DEUX filtres. Sans ca, la sonde conteneur restait exposee
+    a la meme cecite que la sonde de livraison : un `[RELEASED]` posterieur
+    masquait le `[INFO] candidate-delivered` qu'il suit, et l'umbrella
+    redevenait servable alors que le conteneur etait clos.
+
     #22630 -- l'instantane local rend les memes commentaires, sans requete :
     la lecture passe par `_snapshot_comments` quand l'instantane de la passe
     est disponible, et retombe sur la requete historique sinon.
     """
-    last = _last_comment(issue_number)
-    if last is None:
+    comments, _body = _issue_comments(issue_number)
+    if comments is None:
         return None
-    body = last.get("body") or ""
+    if not comments:
+        return ""
+    body = _last_state_comment(comments).get("body") or ""
     if not isinstance(body, str):
         return ""
     return body
@@ -4247,6 +4527,14 @@ CLAIM_CODE_BLOCKED = "BLOCKED"
 CLAIM_CODE_IMPLICIT = "IMPLICIT"
 CLAIM_CODE_UNCHECKED = "UNCHECKED"
 CLAIM_CODE_ERROR = "ERROR"
+# #23500 (remede 1, copie jumeale livree en roo-extensions PR #4472) -- le
+# verdict FREE mesure l'ABSENCE DE CLAIM, pas l'absence d'activite. La phrase
+# « libre » se lit « personne ne travaille dessus », alors que le contrat
+# (lane-claim-protocol, section « Prémisse d'identité ») ne garantit que «
+# personne ne l'a réservé ». Le libellé rend ce que le tirage mesure.
+# Seule la phrase humaine change : les codes machine et la surface JSON
+# ne bougent pas.
+CLAIM_HUMAN_FREE = "aucun claim (activite non mesuree)"
 
 
 def _summarize_claim(out: str, returncode: int) -> tuple[str, str]:
@@ -4294,8 +4582,9 @@ def _summarize_claim(out: str, returncode: int) -> tuple[str, str]:
             stale = data.get("stale_claims") or []
             if stale:
                 return (CLAIM_CODE_FREE_STALE,
-                        f"libre (claim perime : {', '.join(map(str, stale))})")
-            return CLAIM_CODE_FREE, "libre"
+                        f"aucun claim actif (claim perime : "
+                        f"{', '.join(map(str, stale))})")
+            return CLAIM_CODE_FREE, CLAIM_HUMAN_FREE
     first = out.strip().splitlines()
     if first:
         return CLAIM_CODE_ERROR, first[0][:60]
@@ -4344,7 +4633,7 @@ def _summarize_claim_from_batch(json_payload: dict, n: int) -> tuple[str, str]:
     code = res.get("code", "ERROR")
     human = res.get("human", code) or code
     if code == "FREE":
-        return CLAIM_CODE_FREE, "libre"
+        return CLAIM_CODE_FREE, CLAIM_HUMAN_FREE
     if code == "BLOCKED":
         return CLAIM_CODE_BLOCKED, human
     if code == "IMPLICIT":
@@ -5044,7 +5333,8 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
                             conflicts.append((c, "LIVRAISON (recent) : "
                                 "marqueur de cloture sur le dernier "
                                 "commentaire ([DELIVERED] / [FROZEN] "
-                                "/ [INFO] candidate-delivered)."
+                                "/ [INFO] candidate-delivered), ou GEL "
+                                "de l'item (body ou fil)."
                                 " Candidat remplace dans "
                                 "la meme urne, hors budget de sonde."))
                             continue
@@ -8696,6 +8986,57 @@ def draw_belt(
     return filtered[:args.grains]
 
 
+def _origami_parking_state(pool: list[dict]) -> tuple[dict[int, str], dict]:
+    """Verdicts de parcage des EPICs Origami dont le pli suivant n'est pas deplie (#24373).
+
+    Rend ``(parked, state)`` : ``parked`` mappe le numero d'un EPIC parque a
+    la raison de son parcage ; ``state`` porte la mesure brute (pour le JSON
+    et le tableau du coordinateur).
+
+    **Fail-OPEN.** Module absent, mesure en echec, aucune mesure : rien
+    n'est parque, et ``state`` nomme l'echec. Un parcage applique sur une
+    absence de mesure supprimerait un grain du tapis -- le pire des deux
+    sens.
+
+    La lecture de « pli livre » passe par le corpus de PRs mergees que le
+    tapis a deja paye (``last_delivery_stamp`` du pool) : **zero appel
+    reseau** pour la livraison. L'organe ne fait que la recherche des
+    sous-issues et la lecture des commentaires (deux appels).
+    """
+    state: dict = {"active": False, "measured": False, "parked": [],
+                   "reason": "module indisponible"}
+    if origami_parking is None:
+        return {}, state
+    by_number = {int(it["number"]): it for it in pool}
+
+    def _delivered(number: int) -> bool:
+        # Le pool est la liste des issues OUVERTES : une sous-issue ouverte
+        # s'y trouve, avec son stamp de livraison s'il y en a une. Pas de
+        # stamp = pas de livraison tracee dans le corpus (fenetre de 90 j).
+        return bool((by_number.get(int(number)) or {}).get("last_delivery_stamp"))
+
+    try:
+        verdicts = origami_parking.measure(pool, delivered_probe=_delivered)
+    except Exception as exc:  # noqa: BLE001 - un garde ne doit pas casser le tirage
+        state["reason"] = f"mesure en echec ({type(exc).__name__})"
+        return {}, state
+    parked = {int(v["epic"]): v.get("reason") or ""
+              for v in verdicts if v.get("parked")}
+    state.update({
+        "active": True,
+        "measured": True,
+        "epics": len(verdicts),
+        "parked": sorted(parked),
+        "details": [{"epic": int(v["epic"]), "parked": bool(v.get("parked")),
+                     "reason": v.get("reason"),
+                     "next_pli": v.get("next_pli"),
+                     "title": v.get("title")}
+                    for v in verdicts],
+        "reason": "mesure faite",
+    })
+    return parked, state
+
+
 def belt_report_metrics(
     pool: list[dict],
     closed_7d: int | None,
@@ -10183,7 +10524,7 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
 
             Le mur de temps (`expired`) borne le RESEAU ; il ne borne pas une
             lecture locale. Les deux filtres de marqueur (recent, conteneur)
-            lisent `_last_comment`, qui sert depuis l'instantane de la passe
+            lisent `_last_state_comment`, qui sert depuis l'instantane de la passe
             quand il le peut (#22630). Les sauter au motif de l'echeance sert
             donc un candidat dont la cloture etait CONNUE.
 
@@ -11442,6 +11783,30 @@ def main(argv: list[str] | None = None) -> int:
         belt_pool = belt_filter(admitted, args, urns=selected_urns,
                                 epic_deliveries=_epic_deliveries,
                                 drops=_epic_drops)
+        # #24373 -- parcage des EPICs Origami dont le pli suivant n'est pas
+        # deplie. Le depliage est un geste du COORDINATEUR : aucune lane
+        # worker ne peut le lever, donc le tapis qui les ressertait epuisait
+        # des cycles en `[RELEASED]` (34 sur #19309, 31 depuis le 27/10).
+        # L'EPIC parque n'est plus servi aux lanes, et apparait dans la
+        # rubrique « Origami en attente de depliage » du tableau du
+        # coordinateur (`belt_queues.py board`).
+        # Le geste est fail-OPEN : sans mesure, rien n'est parque.
+        _origami_parked, _origami_state = _origami_parking_state(pool)
+        if _origami_parked:
+            for it in belt_pool:
+                verdict = _origami_parked.get(int(it["number"]))
+                if verdict is None:
+                    continue
+                _origami_state.setdefault("dropped", []).append(
+                    {"number": int(it["number"]), "title": it.get("title"),
+                     "cause": f"PARCAGE ORIGAMI (#24373) : {verdict}"})
+            belt_pool = [it for it in belt_pool
+                         if int(it["number"]) not in _origami_parked]
+            _belt_phase(f"parcage origami: {len(_origami_parked)} EPIC(s) "
+                        f"parque(s) -- " + ", ".join(
+                            f"#{n}" for n in sorted(_origami_parked)[:8])
+                        + (f" (+{len(_origami_parked) - 8})"
+                           if len(_origami_parked) > 8 else ""))
         belt_pool.sort(key=belt_sort_key)
         _belt_phase(f"pool charge: {len(belt_pool)} candidates "
                     f"(apres belt_filter)")
@@ -11821,6 +12186,11 @@ def main(argv: list[str] | None = None) -> int:
                                 for n, c in belt_dropped_validate],
                 },
                 "picks": belt_picks,
+                # #24373 : les EPICs Origami parques (le pli suivant n'est pas
+                # deplie -- geste reserve au coordinateur). Ils ne sont pas
+                # servis aux lanes ; le tableau du coordinateur les affiche
+                # dans « Origami en attente de depliage ».
+                "origami_parking": _origami_state,
                 "claims": {str(it["number"]): {
                     "code": (belt_claims.get(it["number"],
                                               (CLAIM_CODE_ERROR, "(no check)"))[0]),
