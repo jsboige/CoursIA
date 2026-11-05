@@ -1393,6 +1393,10 @@ def fetch_pool(
         title = it["title"]
         is_umbrella = is_umbrella_classification(title, labels)
         body = it.get("body") or ""
+        # #24516 -- le corps est aussi la source qui fait foi pour le GEL
+        # (regle A) : on le met en cache ici, pour que le filtre de gel le
+        # lise sans requete (le pool le paie deja).
+        _POOL_BODIES[it["number"]] = body
         # #13972 : le genre que l'AUTEUR de l'issue a declare dans le body
         # (`Grain: TIER/GENRE -- lane ...`) prime sur l'inference du titre.
         # Mesure du 2026-09-01 (lane ai-01) : `infer_genre` declarait
@@ -1719,6 +1723,120 @@ _RECENT_DELIVERY_MARKER_RE = re.compile(
     r"^\s*(?:#{1,6}\s*)?\[(?:DELIVERED|FROZEN)\](?=\s|:|$)",
     re.MULTILINE,
 )
+
+# --- GEL (#24516) -- la grammaire tranchee par le coordinateur le 2026-11-03 ---
+#
+# Un gel est une **decision**, pas une propriete de position. Deux sources,
+# dans cet ordre d'autorite :
+#
+#   * **(A) le BODY fait foi** : le gel vit dans le corps de l'issue, sur une
+#     ligne canonique `[FROZEN] <motif court> -- <autorite>`. Le degel
+#     consiste a **RETIRER cette ligne** : c'est un geste du coordinateur,
+#     visible, et il ne laisse aucun etat cache derriere lui. Aucun
+#     commentaire ne leve un gel de body.
+#   * **(B) le FIL est le filet** des gels deja poses en commentaire : un
+#     en-tete `[FROZEN]` dans N'IMPORTE QUEL commentaire du fil -- et non
+#     seulement le dernier -- gele l'item. C'est une passerelle : ces gels
+#     migrent vers le body.
+#
+# Un `[RELEASED]` ne leve **aucun** gel : c'est un acquiescement de lane
+# (« je confirme la barriere »), pas la levee d'une decision du coordinateur.
+# C'est exactement le defaut mesure sur #19309 (43 commentaires, 37
+# `[RELEASED]` pour un seul gel) : le filtre lisait l'acquiescement comme
+# une reouverture.
+_FROZEN_HEADER_RE = re.compile(
+    r"^\s*(?:#{1,6}\s*)?\[FROZEN\](?=\s|:|$)",
+    re.MULTILINE,
+)
+
+#: Trace de degel. Sur un gel de BODY elle ne fait **pas** foi (seul le
+#: retrait de la ligne du body leve ce gel). Sur un gel pose en COMMENTAIRE
+#: elle est la seule sortie : sans elle, le filet serait un gel eternel.
+_UNFROZEN_HEADER_RE = re.compile(
+    r"^\s*(?:#{1,6}\s*)?\[UNFROZEN\](?=\s|:|$)",
+    re.MULTILINE,
+)
+
+#: Lanes habilitees a **fermer** un gel pose en COMMENTAIRE (regle B).
+#:
+#: Meme modele que `DELIVERED_URN_LANES` : le login GitHub est **partage**
+#: (`jsboige`), donc l'autorite ne peut pas se lire dans l'AUTEUR du
+#: commentaire -- elle se lit dans la LANE DECLAREE dans le marqueur. Un
+#: tiers qui ecrit `[UNFROZEN]` sous le login partage ne leve rien.
+#:
+#: Coordinateur, 2026-11-04 (dispatch c2764, point 2).
+FROZEN_UNFROZEN_LANES = frozenset({
+    "myia-ai-01:CoursIA",       # coordinateur
+    "myia-po-2025:CoursIA-2",   # adjoint titulaire
+})
+
+#: La lane declaree dans un marqueur : `lane <machine>:<workspace>`.
+_LANE_IN_MARKER_RE = re.compile(
+    r"\blane\s+([A-Za-z0-9_.-]+:[A-Za-z0-9_.-]+)",
+    re.IGNORECASE,
+)
+
+
+def _declared_lane(text: str) -> str | None:
+    """La lane declaree dans un marqueur (``lane <machine>:<workspace>``)."""
+    match = _LANE_IN_MARKER_RE.search(text)
+    return match.group(1) if match else None
+
+
+def unfrozen_allowed(lane: str | None) -> bool:
+    """Cette lane a-t-elle le droit de fermer un gel de commentaire ?"""
+    return lane in FROZEN_UNFROZEN_LANES
+
+
+#: Code **documente** un marqueur, il ne le **pose** pas. Un corps qui
+#: explique la grammaire en recopiant la ligne canonique dans une fence
+#: gelerait l'issue qui le decrit -- c'est le meme defaut que le corps qui
+#: *parle* du gel en prose, et la regle A l'evite deja ("la ligne canonique
+#: commence la ligne"). La fence est le deuxieme chemin par lequel la
+#: ligne canonique peut se trouver en tete de ligne.
+#:
+#: Le tri des fences avant test des marqueurs est un invariant deja present
+#: dans le foyer : le garde jumelle `pr-negation-autoclose.yml`
+#: (roo-extensions, #3626) stripe fences et code-spans avant de tester ses
+#: marqueurs, pour exactement cette raison. Mesure : revue Hermes du
+#: 2026-11-03 sur #24523 (angle mort de documentation signale, non
+#: bloquant).
+_FENCE_OPEN_RE = re.compile(r"^ {0,3}(`{3,}|~{3,})")
+_INLINE_CODE_RE = re.compile(r"`{1,3}[^`\n]+`{1,3}")
+
+
+def _strip_code(text: str) -> str:
+    """Retire les blocs de code (fences) et les code-spans inline.
+
+    Le contenu retire est remplace par des lignes vides : la structure de
+    lignes est conservee (le debut de ligne reste le debut de ligne), ce
+    qui laisse le test des marqueurs **strictement** plus strict, jamais
+    plus laxiste.
+    """
+    if not text:
+        return text
+    out: list[str] = []
+    fence_char: str | None = None
+    fence_len = 0
+    for line in text.splitlines():
+        match = _FENCE_OPEN_RE.match(line)
+        if fence_char is None:
+            if match:
+                marker = match.group(1)
+                fence_char = marker[0]
+                fence_len = len(marker)
+                out.append("")
+                continue
+            out.append(line)
+        else:
+            # La fence se ferme sur un marqueur du MEME caractere, au moins
+            # aussi long que celui d'ouverture (CommonMark).
+            if match and match.group(1)[0] == fence_char and len(match.group(1)) >= fence_len:
+                fence_char = None
+                fence_len = 0
+            out.append("")
+    stripped = "\n".join(out)
+    return _INLINE_CODE_RE.sub(" ", stripped)
 
 # #21436 (suite de #22057) -- le mur de temps du tapis n'etait verifie
 # qu'ENTRE deux sondes : une sonde DEMARREE juste avant l'echeance consommait encore tout
@@ -2397,8 +2515,10 @@ def has_recent_delivery_marker(issue_number: int) -> bool | None:
     """Le DERNIER commentaire porte-t-il un marqueur de cloture recent ?
 
     TRI-ETAT (cf. `has_delivered_signal`) :
-    - ``True``  : le dernier commentaire a un en-tete `[DELIVERED]` ou
-      `[FROZEN]`, ou porte un marqueur de livraison
+    - ``True``  : l'item est **GEL** (regle A : le BODY porte la ligne
+      `[FROZEN] ...` ; regle B : un en-tete `[FROZEN]` dans le FIL), ou le
+      dernier commentaire a un en-tete `[DELIVERED]` ou `[FROZEN]`, ou porte
+      un marqueur de livraison
       ``[INFO] candidate-delivered`` (grammaire `_DELIVERED_MARKER_RE`).
       Le candidat doit etre ecarte SANS
       appeler la sonde pleine -- c'est le filtre bon marche de #19768 ;
@@ -2410,7 +2530,12 @@ def has_recent_delivery_marker(issue_number: int) -> bool | None:
     - ``None``  : la lecture a echoue (reseau, 403, payload illisible).
       Fail-OPEN : l'appelant procede a la sonde pleine en le disant.
 
-    Cout : **1 requete** `gh issue view --json comments`, identique a
+    Le corps de l'issue n'est pas un parametre : il est lu dans le cache
+    du pool (`_POOL_BODIES`), que la lecture du pool remplit deja. C'est
+    la source qui fait foi pour le gel (regle A) ; a defaut, il est lu
+    dans la meme requete que les commentaires.
+
+    Cout : **1 requete** `gh issue view --json body,comments`, identique a
     `has_delivered_signal`, mais **HORS budget** (`DELIVERED_SIGNAL_MAX_PROBES`
     reste intact). Pourquoi separer : la sonde pleine peut etre
     epuisee par un pool charge, et le marqueur recent etant
@@ -2421,9 +2546,33 @@ def has_recent_delivery_marker(issue_number: int) -> bool | None:
     recentes servies par le tapis -- cette fonction les aurait
     ecartes avant l'epuisement du budget de la sonde pleine.
     """
-    last = _last_comment(issue_number)
-    if last is None:
+    verdict = _recent_marker_verdict(issue_number)
+    return verdict
+
+
+def _recent_marker_verdict(issue_number: int) -> bool | None:
+    """Le detail de `has_recent_delivery_marker` (meme verdict, meme cout).
+
+    Separer les deux permet de garder `has_recent_delivery_marker` comme le
+    **seam** stable : c'est elle que les tests et les autres organes
+    patchent. Le detail lit le corps de l'issue dans le cache du pool
+    (`_POOL_BODIES`) -- le pool le porte deja, donc **aucune requete de
+    plus** -- et le filet des commentaires dans la requete qu'il fait de
+    toute facon.
+    """
+    comments, fetched_body = _issue_comments(issue_number)
+    if comments is None:
         return None
+    body_of_issue = _issue_body(issue_number)
+    if body_of_issue is None:
+        body_of_issue = fetched_body
+
+    if _issue_is_frozen(body_of_issue, comments) is not None:
+        return True
+
+    last = comments[-1] if comments else {}
+    if not isinstance(last, dict):
+        last = {}
     body = last.get("body") or ""
     if not isinstance(body, str):
         body = ""
@@ -2445,10 +2594,137 @@ def has_recent_delivery_marker(issue_number: int) -> bool | None:
     # (`_DELIVERED_MARKER_RE`, lookahead anti-`-revoked`/`-partial`) : tout
     # ce que ce filtre attrape, la sonde pleine l'aurait ecarte aussi -- il
     # n'introduit aucun verdict nouveau, il avance le meme.
-    return bool(_RECENT_DELIVERY_MARKER_RE.search(body)
-                or _DELIVERED_MARKER_RE.search(body)
+    # Le code **documente** un marqueur, il ne le **pose** pas : une fence
+    # qui recopie la ligne canonique ne clot rien (mesure : revue Hermes
+    # du 2026-11-03 sur #24523).
+    body_plain = _strip_code(body)
+    return bool(_RECENT_DELIVERY_MARKER_RE.search(body_plain)
+                or _DELIVERED_MARKER_RE.search(body_plain)
                 or _closure_dossier_verdict(body) == "CLOSE"
                 or _closure_announced_close(body))
+
+
+def _issue_is_frozen(issue_body: str | None,
+                     comments: list[dict] | None) -> str | None:
+    """L'item est-il GEL ? Renvoie la SOURCE du gel, ou None.
+
+    - ``"body"``    -- regle A : le corps de l'issue porte la ligne
+      `[FROZEN] <motif court> -- <autorite>`. C'est la forme qui fait foi :
+      le degel consiste a retirer la ligne, et rien d'autre (ni un
+      `[RELEASED]`, ni un `[UNFROZEN]`) ne leve un gel de body.
+    - ``"comment"`` -- regle B : un en-tete `[FROZEN]` dans le FIL, quelle
+      que soit sa position (c'est le filet des gels deja poses en
+      commentaire, en attendant leur migration vers le body). Un `[UNFROZEN]`
+      posterieur ferme ce gel : c'est sa seule sortie, sinon le filet
+      serait un gel eternel.
+
+    Le gel est evalue **avant** la reouverture du user (#24250) : un gel est
+    une decision explicite du coordinateur, et une reouverture du user ne
+    la leve pas. La sortie reste simple : retirer la ligne du body.
+
+    Le corps est lu **en ligne**, jamais dans la prose : un corps qui
+    *parle* d'un gel (`Un [FROZEN] du coordinateur...`) n'en porte pas.
+    """
+    if isinstance(issue_body, str) and _FROZEN_HEADER_RE.search(_strip_code(issue_body)):
+        return "body"
+    if not comments:
+        return None
+    frozen = False
+    for comment in comments:
+        if not isinstance(comment, dict):
+            continue
+        text = comment.get("body") or ""
+        if not isinstance(text, str) or not text:
+            continue
+        # Le code **documente** un marqueur, il ne le pose pas : une fence
+        # qui recopie la ligne canonique ne gele rien (mesure : revue
+        # Hermes du 2026-11-03 sur #24523).
+        text = _strip_code(text)
+        if _UNFROZEN_HEADER_RE.search(text):
+            # Un degel posterieur efface le gel anterieur : le fil se lit
+            # dans l'ordre, et le dernier etat gagne.
+            #
+            # **Mais seul un degel d'une lane habilitee le fait** (dispatch
+            # c2764, 2026-11-04) : le login GitHub est partage, donc
+            # l'autorite se lit dans la lane DECLAREE dans le marqueur. Un
+            # `[UNFROZEN]` sans lane declaree, ou d'une lane tierce, ne
+            # leve rien -- fail-closed.
+            if unfrozen_allowed(_declared_lane(text)):
+                frozen = False
+            continue
+        if _FROZEN_HEADER_RE.search(text):
+            frozen = True
+    return "comment" if frozen else None
+
+
+#: Corps des issues du pool, indexes par numero. Rempli par la lecture du
+#: pool (`fetch_pool`), qui porte deja le body de chaque issue : c'est ce
+#: qui permet au filtre de gel de lire la regle A (le gel vit dans le body)
+#: **sans requete** -- la regle du compteur de requetes par candidat.
+#: Remplace le parametre `issue_body` : `has_recent_delivery_marker` reste
+#: le seam stable (une seule positional), patche par les tests et les
+#: autres organes.
+_POOL_BODIES: dict[int, str] = {}
+
+
+def _issue_body(issue_number: int) -> str | None:
+    """Le corps de l'issue, d'apres le cache du pool (None si absent)."""
+    return _POOL_BODIES.get(issue_number)
+
+
+def _issue_comments(issue_number: int) -> tuple[list[dict] | None, str | None]:
+    """TOUS les commentaires d'une issue ET son corps, en 1 requete.
+
+    TRI-ETAT :
+    - ``(None, None)`` : la lecture a echoue (reseau, 403, payload
+      illisible) -- fail-OPEN, l'appelant le dit ;
+    - ``([], "")``     : l'issue n'a aucun commentaire exploitable (aucun
+      commentaire, payload inattendu) ;
+    - ``(liste, corps)`` : les commentaires (ordre chronologique de l'API
+      `gh issue view --json body,comments`) et le corps de l'issue.
+
+    Pourquoi tout le fil et pas seulement la queue : un gel pose en
+    commentaire peut etre enterre par n'importe quel commentaire
+    posterieur (#24516, mesure sur #19309 : 37 `[RELEASED]` pour un seul
+    `[FROZEN]`). La requete ramene deja le fil entier -- `_last_comment` n'en
+    gardait que la queue -- donc le balayer **ne coute aucune requete de
+    plus**.
+
+    Pourquoi le corps : le gel vit dans le **body** (regle A de la
+    grammaire du coordinateur, 2026-11-03). Il est demande DANS LA MEME
+    requete, donc le compte de requetes par candidat ne bouge pas.
+
+    #22630 -- l'instantane local rend les memes commentaires, sans requete :
+    la lecture passe par `_snapshot_comments` quand l'instantane de la passe
+    est disponible, et retombe sur la requete historique sinon. L'instantane
+    ne porte pas le corps : le corps vient alors de l'appelant (le pool le
+    porte deja).
+    """
+    snapshot_comments = _snapshot_comments(issue_number)
+    if snapshot_comments is not None:
+        return snapshot_comments, None
+    try:
+        out = subprocess.run(
+            ["gh", "issue", "view", str(issue_number), "--repo", REPO,
+             "--json", "body,comments"],
+            capture_output=True, text=True, encoding="utf-8", check=True,
+            timeout=_clamp_timeout(30),
+        ).stdout
+    except Exception:  # noqa: BLE001 - lecture best-effort, l'echec est DIT
+        return None, None
+    try:
+        payload = json.loads(out)
+    except Exception:  # noqa: BLE001 - payload illisible = pas de signal
+        return None, None
+    if not isinstance(payload, dict):
+        return [], ""
+    comments = payload.get("comments") or []
+    if not isinstance(comments, list):
+        comments = []
+    body = payload.get("body") or ""
+    if not isinstance(body, str):
+        body = ""
+    return comments, body
 
 
 def _last_comment(issue_number: int) -> dict | None:
@@ -2465,32 +2741,11 @@ def _last_comment(issue_number: int) -> dict | None:
     L'horodatage est HERE parce que la regle de la reouverture (#24250) doit
     dater la decision de cloture : le corps seul ne permet pas de dire si la
     reouverture lui est posterieure.
-
-    #22630 -- l'instantane local rend les memes commentaires, sans requete :
-    la lecture passe par `_snapshot_comments` quand l'instantane de la passe
-    est disponible, et retombe sur la requete historique sinon.
     """
-    snapshot_comments = _snapshot_comments(issue_number)
-    if snapshot_comments is not None:
-        comments = snapshot_comments
-    else:
-        try:
-            out = subprocess.run(
-                ["gh", "issue", "view", str(issue_number), "--repo", REPO,
-                 "--json", "comments"],
-                capture_output=True, text=True, encoding="utf-8", check=True,
-                timeout=_clamp_timeout(30),
-            ).stdout
-        except Exception:  # noqa: BLE001 - lecture best-effort, l'echec est DIT
-            return None
-        try:
-            payload = json.loads(out)
-        except Exception:  # noqa: BLE001 - payload illisible = pas de signal
-            return None
-        if not isinstance(payload, dict):
-            return {}
-        comments = payload.get("comments") or []
-    if not isinstance(comments, list) or not comments:
+    comments, _body = _issue_comments(issue_number)
+    if comments is None:
+        return None
+    if not comments:
         return {}
     last = comments[-1]
     if not isinstance(last, dict):
@@ -4247,6 +4502,14 @@ CLAIM_CODE_BLOCKED = "BLOCKED"
 CLAIM_CODE_IMPLICIT = "IMPLICIT"
 CLAIM_CODE_UNCHECKED = "UNCHECKED"
 CLAIM_CODE_ERROR = "ERROR"
+# #23500 (remede 1, copie jumeale livree en roo-extensions PR #4472) -- le
+# verdict FREE mesure l'ABSENCE DE CLAIM, pas l'absence d'activite. La phrase
+# « libre » se lit « personne ne travaille dessus », alors que le contrat
+# (lane-claim-protocol, section « Prémisse d'identité ») ne garantit que «
+# personne ne l'a réservé ». Le libellé rend ce que le tirage mesure.
+# Seule la phrase humaine change : les codes machine et la surface JSON
+# ne bougent pas.
+CLAIM_HUMAN_FREE = "aucun claim (activite non mesuree)"
 
 
 def _summarize_claim(out: str, returncode: int) -> tuple[str, str]:
@@ -4294,8 +4557,9 @@ def _summarize_claim(out: str, returncode: int) -> tuple[str, str]:
             stale = data.get("stale_claims") or []
             if stale:
                 return (CLAIM_CODE_FREE_STALE,
-                        f"libre (claim perime : {', '.join(map(str, stale))})")
-            return CLAIM_CODE_FREE, "libre"
+                        f"aucun claim actif (claim perime : "
+                        f"{', '.join(map(str, stale))})")
+            return CLAIM_CODE_FREE, CLAIM_HUMAN_FREE
     first = out.strip().splitlines()
     if first:
         return CLAIM_CODE_ERROR, first[0][:60]
@@ -4344,7 +4608,7 @@ def _summarize_claim_from_batch(json_payload: dict, n: int) -> tuple[str, str]:
     code = res.get("code", "ERROR")
     human = res.get("human", code) or code
     if code == "FREE":
-        return CLAIM_CODE_FREE, "libre"
+        return CLAIM_CODE_FREE, CLAIM_HUMAN_FREE
     if code == "BLOCKED":
         return CLAIM_CODE_BLOCKED, human
     if code == "IMPLICIT":
@@ -5044,7 +5308,8 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
                             conflicts.append((c, "LIVRAISON (recent) : "
                                 "marqueur de cloture sur le dernier "
                                 "commentaire ([DELIVERED] / [FROZEN] "
-                                "/ [INFO] candidate-delivered)."
+                                "/ [INFO] candidate-delivered), ou GEL "
+                                "de l'item (body ou fil)."
                                 " Candidat remplace dans "
                                 "la meme urne, hors budget de sonde."))
                             continue
@@ -10178,6 +10443,54 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
         user_delivery_event_probe = (delivery_event_probe
                                       or delivery_event_probe_inert)
 
+        def marker_read_is_local(number):
+            """La lecture du marqueur de `number` resterait-elle LOCALE ?
+
+            Le mur de temps (`expired`) borne le RESEAU ; il ne borne pas une
+            lecture locale. Les deux filtres de marqueur (recent, conteneur)
+            lisent `_last_comment`, qui sert depuis l'instantane de la passe
+            quand il le peut (#22630). Les sauter au motif de l'echeance sert
+            donc un candidat dont la cloture etait CONNUE.
+
+            Mesure du 2026-11-03 (draw `32e6c570269a`, lane
+            `myia-po-2027:CoursIA`) : le tapis a servi 4 candidats sur 4
+            portant chacun un marqueur de livraison dans leur dernier
+            commentaire, avec un `ACTION REQUISE` « poser [CLAIMED] sur
+            #19694 » -- alors que l'instantane avait servi 36 stamps sur 36
+            SANS une seule requete et que `time_budget_hit` etait vrai. Le
+            cout du filtre n'etait pas le reseau : c'etait le mur.
+
+            Le predicat est lu sur la MEME surface que la sonde
+            (`_snapshot_comments`), donc il ne peut pas promettre une lecture
+            locale que la sonde ne ferait pas : hors instantané, la garde
+            `expired()` reste entiere et le fail-OPEN reste celui d'avant.
+
+            RESERVE #24505 (review Hermes, reproduite par execution) :
+            « instantané présent » ne suffit pas. Un corps de DOSSIER DE
+            CLOTURE (verdict CLOSE, ou annonce en prose) déclenche dans
+            `has_recent_delivery_marker` l'appel `_delivery_voided_by_reopen`
+            -> `_reopen_events` -> une requete REST du TIMELINE, tiree
+            APRES le mur. Le predicat rend donc faux pour cette classe de
+            corps : le fail-OPEN historique (sauter le filtre, le dire)
+            reprend, au lieu d'une requete reseau non budgetee. Les corps
+            ordinaires (`[DELIVERED]`, `[FROZEN]`, `[INFO]
+            candidate-delivered`, `[RELEASED]`) restent 100 % locaux --
+            c'est exactement la classe que la mesure fondatrice couvrait.
+            """
+            comments = _snapshot_comments(number)
+            if comments is None:
+                return False
+            if not isinstance(comments, list) or not comments:
+                return True
+            last = comments[-1]
+            body = (last or {}).get("body") if isinstance(last, dict) else None
+            if not isinstance(body, str):
+                return True
+            # Un dossier de cloture rallume le reseau (regle de reouverture
+            # #24250) : il ne compte pas comme une lecture locale.
+            return not (_closure_dossier_verdict(body) == "CLOSE"
+                        or _closure_announced_close(body))
+
         def counted_probe(number, lane_name):
             # L'echeance passe AVANT le plafond de sondes : les deux produisent le
             # meme fail-OPEN, mais elles ne disent pas la meme chose a la lane
@@ -10382,8 +10695,9 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                         and age_h is not None
                         and age_h >= CONSOLIDATION_LAG_H)
                 else:
-                    recent_flag = (False if expired()
-                                   else user_recent_marker_probe(n))
+                    recent_flag = (
+                        False if (expired() and not marker_read_is_local(n))
+                        else user_recent_marker_probe(n))
                     if recent_flag is None:
                         # Meme traitement que ci-dessus : le fail-OPEN reste
                         # assume, le SILENCE ne l'est pas. La sonde du marqueur
@@ -10447,7 +10761,8 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                 # s'appliquait qu'a l'urne `grain`. La lecture est HORS budget de
                 # sonde (1 requete, comme le filtre recent) et reste fail-OPEN :
                 # une lecture en echec laisse l'umbrella servable.
-                recent = False if expired() else user_container_marker_probe(n)
+                recent = (False if (expired() and not marker_read_is_local(n))
+                          else user_container_marker_probe(n))
                 if recent is None:
                     # La lecture a ECHOUE (reseau, 403, payload illisible) : l'etat
                     # de livraison du CONTENEUR est INCONNU, pas « libre ». Le
@@ -11710,6 +12025,21 @@ def main(argv: list[str] | None = None) -> int:
                 top = belt_picks[0]
                 print(f"   ACTION REQUISE : poser [CLAIMED] lane {args.lane} sur "
                       f"#{top['number']} avant edition -- cf lane-claim-protocol.")
+                if belt_time_budget_hit[0]:
+                    # Une tete servie au-dela du mur n'est pas verifiee : la
+                    # ligne ci-dessus est une INJONCTION, elle doit donc dire
+                    # a cote d'elle que son objet n'a pas ete lu. Mesure du
+                    # 2026-11-03 : le tirage au mur a servi 4 candidats sur 4
+                    # portant un marqueur de livraison, et la lane recevait
+                    # « poser [CLAIMED] sur #19694 » sans reserve.
+                    print("   CANDIDAT NON VERIFIE (#21436) : le mur de temps a")
+                    print("   ete atteint avant ses lectures de livraison et de")
+                    print("   claim. Lire le dernier commentaire AVANT de claimer.")
+                    print("   Les lectures restees LOCALES apres le mur : le")
+                    print("   dernier commentaire en instantane, sauf dossier de")
+                    print("   cloture (qui rallume la regle de reouverture, donc")
+                    print("   du reseau) -- pour lui, le filtre est saute et le")
+                    print("   silence est rapporte. Les sondes RESEAU s'arretent.")
             # #17038 (residu du 2026-10-09) -- contrat de verdict : un pick
             # dont le claim est ERROR n'est PAS un candidat libre, c'est un
             # candidat NON MESURE. Le servir reste le comportement (le tapis
