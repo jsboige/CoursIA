@@ -13,6 +13,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 
@@ -147,19 +149,28 @@ class TestUtf8Emission:
     ``MyIA.AI.Notebooks/RL`` : octet 0xe0 en position 241, rapport entier perdu.
     """
 
-    def test_redirected_stdout_is_utf8_decodable(self, tmp_path):
+    @pytest.mark.parametrize("extra", [["--json"], []], ids=["json", "humain"])
+    def test_redirected_stdout_is_utf8_decodable(self, tmp_path, extra):
+        """Les DEUX branches d'emission (``--json`` et humaine) doivent survivre
+        a un stdout cp1252 redirige -- le mutant qui reveindrait la branche humaine
+        a ``print()`` est tue par la variante ``extra == []``."""
         import io
         p = _write(tmp_path, "accent.ipynb", [("markdown", "l'EPIC #12205 là où le pli passe.")])
         raw = io.BytesIO()
         wrapper = io.TextIOWrapper(raw, encoding="cp1252")
         original, sys.stdout = sys.stdout, wrapper
         try:
-            assert mod.main([str(p), "--json"]) == 1
+            assert mod.main([str(p)] + extra) == 1
             wrapper.flush()
         finally:
             sys.stdout = original
         text = raw.getvalue().decode("utf-8")
-        assert json.loads(text)["n_notebooks_flagged"] == 1
+        if "--json" in extra:
+            assert json.loads(text)["n_notebooks_flagged"] == 1
+        else:
+            # Branche humaine : l'accent du snippet doit sortir en octets UTF-8
+            # reels, pas en cp1252 (0xe0) ni en echappement backslashreplace.
+            assert "là où" in text
 
     def test_stream_without_reconfigure_falls_back_to_ascii(self, tmp_path):
         p = _write(tmp_path, "accent2.ipynb", [("markdown", "l'EPIC #12205 là où le pli passe.")])

@@ -139,7 +139,13 @@ def _emit_utf8(text, indent=None):
         except ValueError:
             stream.write(text.encode("ascii", "backslashreplace").decode("ascii"))
         else:
-            stream.write(json.dumps(payload, ensure_ascii=True, indent=indent))
+            reserialized = json.dumps(payload, ensure_ascii=True, indent=indent)
+            # Symetrie avec la voie primaire : conserver le saut de ligne final
+            # du texte d'origine, pour que le fichier produit ne depende pas de
+            # l'encodage du flux (repli : pas de "\\n" final sinon).
+            if text.endswith("\n"):
+                reserialized += "\n"
+            stream.write(reserialized)
     stream.flush()
 
 
