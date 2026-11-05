@@ -26,12 +26,12 @@
 
   ### i18n — convention #4980 (ratified 2026-07-04)
 
-  This file is the **French canonical**. The English mirror is the sibling
-  file `FreeWillTheorem_en.lean` (`namespace Conway_en > namespace FreeWillTheorem_en`,
-  `open Conway_en`, `open Conway.KochenSpecker`, `import Conway.KochenSpecker`)
+  This file is the **English mirror** of the French canonical
+  `FreeWillTheorem.lean` (`namespace Conway_en > namespace FreeWillTheorem_en`,
+  `open Conway_en`, `open KochenSpecker_en`, `import Conway.KochenSpecker_en`)
   — sibling pair V2 nested model (cf `code-style.md` §Lean i18n and the analogue
   `Conway/Fractran` c.451 Pattern A, `Conway/LookAndSay` c.457, `Conway/Nim` c.518).
-  Docstrings in French here; the body (signatures, defs, proofs) stays
+  Docstrings in English here; the body (signatures, defs, proofs) stays
   byte-identical between the two files. No inline bilingual block (option B
   rejected, ratified 2026-07-04).
 
