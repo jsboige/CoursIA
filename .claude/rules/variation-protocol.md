@@ -26,7 +26,7 @@ Le guard ([`variation-tag-guard.yml`](../../.github/workflows/variation-tag-guar
 | **MED** | Étend de la substance existante **avec ré-exécution/vérification**, et **change quelque chose** (pas « 0 trouvé ») | enrichissement + ré-exec · audit borné dont le finding **change une décision** · exercice ajouté + exécuté · refactor avec tests verts · audit README fichier-entier corrigeant un drift structurel |
 | **LIGHT** | **« Pourrais-je en générer une douzaine en scannant l'instance suivante ? »** → si oui : LIGHT, quel que soit le label | guard-tranche · path-fix · doc-resync · ledger append · accent/leak/FP · propagation de marqueur |
 
-Le litmus LIGHT est le **cœur anti-gaming** : guards, resyncs, ledger-entries, accents le passent tous.
+Le litmus LIGHT est le **cœur anti-gaming** ([détail §7](../../docs/reference/variation-protocol-detail.md)).
 
 ### GENRE — énumération CLOSE
 
@@ -39,7 +39,7 @@ Le litmus LIGHT est le **cœur anti-gaming** : guards, resyncs, ledger-entries, 
 | **CONTENU** | `lean` · `qc` · `training` · `genai` · `notebook-python` · `notebook-dotnet` · `notebook-lean` · `slides` · `research-code` | une capacité, une preuve, un résultat, du matériel pédagogique — ce que le dépôt existe pour offrir |
 | **META** | `guard` · `tooling` · `ledger` · `docs` · `readme` · `test` · `refactor` | l'outillage, les garde-fous et la prose *autour* du contenu — nécessaire, jamais suffisant |
 
-Un genre META n'est pas inférieur — un guard qui rougit au bon moment vaut mieux qu'un notebook de plus — mais une flotte qui ne produit que du META construit un atelier sans rien y fabriquer (mesure fondatrice : [détail §11](../../docs/reference/variation-protocol-detail.md)).
+Un genre META n'est pas inférieur, mais une flotte qui ne produit que du META construit un atelier sans rien y fabriquer ([détail §11](../../docs/reference/variation-protocol-detail.md)).
 
 **`slides` reste CONTENU** quand le grain écrit ou enrichit le contenu du deck (12 slides de cours neuves = CONTENU, pas `docs`) ; un grain slides qui fait autre chose garde son genre de type de travail — `guard` pour un gate CI de build Slidev, `refactor` pour un script, `tooling` pour un convertisseur.
 
@@ -61,9 +61,9 @@ Un genre hors liste est un **alias** que le merge-gate normalise : pas une viola
 
 ## 2. Les trois gates durs
 
-- **G-VAR-1 — Plat principal DEEP, dans un genre de CONTENU.** La PR-plancher du cycle (R1 de proactive-coordination) **DOIT** être DEEP **et** porter un genre de la classe CONTENU. **Une LIGHT ne satisfait JAMAIS le plancher ; un genre META non plus, quel que soit son tier ; un MED non plus.** Le MED et le META restent **bienvenus au-delà** du plancher (sous budget G-VAR-2 pour leurs composantes LIGHT) : ce qui est exigé, c'est qu'**au moins un** grain DEEP de contenu porte le cycle. Le pool global porte toujours du DEEP de contenu : la monoculture vient du choix du plus facile *disponible*, pas d'une absence de substance.
+- **G-VAR-1 — Plat principal DEEP, dans un genre de CONTENU.** La PR-plancher du cycle (R1 de proactive-coordination) **DOIT** être DEEP **et** porter un genre de la classe CONTENU. **Une LIGHT ne satisfait JAMAIS le plancher ; un genre META non plus, quel que soit son tier ; un MED non plus.** Le MED et le META restent **bienvenus au-delà** du plancher (sous budget G-VAR-2 pour leurs composantes LIGHT) : ce qui est exigé, c'est qu'**au moins un** grain DEEP de contenu porte le cycle ([détail §12.3](../../docs/reference/variation-protocol-detail.md)).
 
-  **Consolider est du DEEP, et la priorité se règle au tapis (mandat user 2026-10-25).** Une consolidation de série (ligne DEEP du tableau des tiers) déclare le genre des carnets qu'elle réorganise (`notebook-python`, `notebook-lean`...), comme un REPAIR hérite du genre de la PR réparée : ce qui arrive sur `main` est une série de carnets. Un nouveau carnet reste DEEP, mais son tier ne le rend pas prioritaire : les issues de consolidation reviennent en tête du tapis plusieurs fois par semaine, un EPIC qui étend une série au plus une fois ([proactive-coordination.md](proactive-coordination.md) règle 5, issue #22500, organe en PR #22504). Verbatim et mesure : [détail §14](../../docs/reference/variation-protocol-detail.md).
+  **Consolider est du DEEP, et la priorité se règle au tapis (mandat user 2026-10-25).** Une consolidation de série (ligne DEEP du tableau des tiers) déclare le genre des carnets qu'elle réorganise (`notebook-python`, `notebook-lean`...), comme un REPAIR hérite du genre de la PR réparée : ce qui arrive sur `main` est une série de carnets. Un nouveau carnet reste DEEP, mais son tier ne le rend pas prioritaire : les issues de consolidation reviennent en tête du tapis plusieurs fois par semaine, un EPIC qui étend une série au plus une fois. Verbatim, mesure et provenance : [détail §14](../../docs/reference/variation-protocol-detail.md).
 
   **Durcissement #15793 (2026-09-12)** : le plancher est **DEEP** (pas « DEEP **ou MED** ») — motif + contre-poids anti-inflation (`TIER-INFLATION`) : [détail §12](../../docs/reference/variation-protocol-detail.md). Le litmus DEEP reste objectif ; le durcissement se paie en **lecture de tags par ai-01**, jamais en confiance.
 
@@ -79,7 +79,7 @@ Un genre hors liste est un **alias** que le merge-gate normalise : pas une viola
 
 ## 3. Merge-gate coordinateur (ai-01) — les dents (HARD)
 
-Le protocole ne mord que si `ai-01` cesse de merger passivement. À chaque passe, pour chaque PR, **lire le tag** et croiser avec les grains récents de la lane :
+À chaque passe, pour chaque PR, **lire le tag** et croiser avec les grains récents de la lane ([détail §15](../../docs/reference/variation-protocol-detail.md)) :
 
 | Constat | Action |
 |---|---|
@@ -90,15 +90,13 @@ Le protocole ne mord que si `ai-01` cesse de merger passivement. À chaque passe
 | Tag mal dérivé (tier sur-coté, genre pris sur la famille, alias/composé) | **re-qualifier le tag soi-même**, puis traiter selon le tag corrigé |
 | `lane` absente | **HOLD** jusqu'à déclaration — un grain sans lane est **structurellement incomptable** |
 
-**Le tag déclaré n'est pas auto-exécutoire** : il rend le grain auditable, il ne le définit pas. Merger sans lire le tag laisse le protocole s'auto-certifier.
-
 **Ne jamais tenir une LIGHT plus d'une journée** : un hold prolongé fait réécrire le même travail par une autre lane. Passé 24 h : merger, ou fermer **en nommant le remplaçant**.
 
 Le HOLD est **attaché à la candidate**, jamais à la cadence de sa lane. Il ne sanctionne jamais l'idle ([coordinator-discipline.md](coordinator-discipline.md) R0/R4) et ne bloque jamais un nouveau grain **DEEP de contenu** : toujours accompagné d'un grain nommé du pool, en **double canal** (DM inbox + `[DISPATCH→inbox]` dashboard). HOLD sans remplacement, ou HOLD pour réduire les dispatchs, = échec coordinateur.
 
 ## 4. Provisionnement d'exception — ce qui lie ai-01 (HARD)
 
-Le provisionnement est une **exception nommée** : le coordinateur provisionne **quand il a une raison nommée** (sécheresse mesurée, dette de batch-close, veine à équilibrer), pas par quota de lane ni à chaque cycle — un quota par lane à tous les cycles rendrait le steering structurellement toujours premier sur le tirage, ce que la règle 5 de [proactive-coordination.md](proactive-coordination.md) interdit (cause racine et corollaires mesurés : [détail §9](../../docs/reference/variation-protocol-detail.md)). Quand il provisionne, `ai-01` :
+Le provisionnement est une **exception nommée** : le coordinateur provisionne **quand il a une raison nommée** (sécheresse mesurée, dette de batch-close, veine à équilibrer), pas par quota de lane ni à chaque cycle (cause racine et corollaires mesurés : [détail §9](../../docs/reference/variation-protocol-detail.md)). Quand il provisionne, `ai-01` :
 
 0. **Le tirage est la voie par défaut** : une lane sans steering **tire** et n'attend rien. Un steering nommé s'ajoute au tirage quand il est déjà là (mécanisme never-empty, règle 7) — et doit être le plus équilibré possible : un steering qui répète le genre du cycle précédent fait pire que le tirage.
 1. **Provisionne sur sa raison nommée**, **groundé firsthand** (`gh issue view`), varié en genre d'une lane à l'autre.
@@ -107,7 +105,7 @@ Le provisionnement est une **exception nommée** : le coordinateur provisionne *
 4. **Varie la loterie** — le coordinateur applique G-VAR-3 à son propre dispatch.
 5. **Dissocie admission et production** : les candidates en HOLD, `DWELL`, review ou attente de merge ne diminuent jamais le provisionnement dû. La queue d'admission se résorbe par une piste de digestion parallèle ; elle n'applique aucune backpressure globale aux producteurs.
 
-Sous-provisionner puis merger la monoculture qui en résulte est **le** manquement que ce protocole corrige ; ralentir la production pour accommoder la digestion en est un autre (justification : [détail §9](../../docs/reference/variation-protocol-detail.md)).
+Sous-provisionner puis merger la monoculture qui en résulte est **le** manquement que ce protocole corrige ([détail §9](../../docs/reference/variation-protocol-detail.md)).
 
 ## 5. Auto-détection
 

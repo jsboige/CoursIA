@@ -253,3 +253,53 @@ Sign-off : mandat user direct du 2026-10-25 (CLAUDE.md §A, « un mandat user di
 - [`.claude/rules/proactive-coordination.md`](../../.claude/rules/proactive-coordination.md) — R1, R5, R6/R7
 - [`.claude/rules/coordinator-discipline.md`](../../.claude/rules/coordinator-discipline.md) — R4 (jamais sanctionner l'idle), R5 (steer qui ATTEINT/VRAI/DÉCIDE)
 - [`docs/reference/proactive-coordination-detail.md`](proactive-coordination-detail.md) — backlog, sources, anti-patterns
+
+## § Levier B — rationales déportés de `.claude/rules/variation-protocol.md`
+
+La règle `variation-protocol.md` est **auto-chargée** à chaque session ; ce
+fichier ne l'est pas. Le déplacement ci-dessous est donc un gain de contexte
+systémique. Aucun bloc déplacé n'est réécrit : le texte des blocs est celui
+qui a quitté la règle.
+
+| Ligne de la règle (base `7a558e4d7ce8`) | Bloc déplacé |
+|---|---|
+| L29 | litmus LIGHT : le cœur anti-gaming |
+| L42 | un genre META n'est pas inférieur |
+| L64 | le pool global porte toujours du DEEP de contenu |
+| L66 | provenance de la priorité « consolidation en tête du tapis » |
+| L82 | le protocole ne mord que si `ai-01` cesse de merger passivement |
+| L93 | le tag déclaré n'est pas auto-exécutoire |
+| L101 | pourquoi pas un quota par lane à tous les cycles |
+| L110 | le manquement que le protocole corrige |
+
+### L29 — litmus LIGHT : le cœur anti-gaming
+
+Le litmus LIGHT est le **cœur anti-gaming** : guards, resyncs, ledger-entries, accents le passent tous.
+
+### L42 — un genre META n'est pas inférieur
+
+Un genre META n'est pas inférieur — un guard qui rougit au bon moment vaut mieux qu'un notebook de plus — mais une flotte qui ne produit que du META construit un atelier sans rien y fabriquer.
+
+### L64 — le pool global porte toujours du DEEP de contenu
+
+Le pool global porte toujours du DEEP de contenu : la monoculture vient du choix du plus facile *disponible*, pas d'une absence de substance.
+
+### L66 — provenance de la priorité « consolidation en tête du tapis »
+
+Les issues de consolidation reviennent en tête du tapis plusieurs fois par semaine, un EPIC qui étend une série au plus une fois — règle 5 de [proactive-coordination.md](../../.claude/rules/proactive-coordination.md), issue #22500, organe en PR #22504.
+
+### L82 — le protocole ne mord que si `ai-01` cesse de merger passivement
+
+Le protocole ne mord que si `ai-01` cesse de merger passivement.
+
+### L93 — le tag déclaré n'est pas auto-exécutoire
+
+**Le tag déclaré n'est pas auto-exécutoire** : il rend le grain auditable, il ne le définit pas. Merger sans lire le tag laisse le protocole s'auto-certifier.
+
+### L101 — pourquoi pas un quota par lane à tous les cycles
+
+Un quota par lane à tous les cycles rendrait le steering structurellement toujours premier sur le tirage, ce que la règle 5 de [proactive-coordination.md](../../.claude/rules/proactive-coordination.md) interdit.
+
+### L110 — le manquement que le protocole corrige
+
+Sous-provisionner puis merger la monoculture qui en résulte est **le** manquement que ce protocole corrige ; ralentir la production pour accommoder la digestion en est un autre.
