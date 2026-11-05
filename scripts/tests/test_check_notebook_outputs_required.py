@@ -63,15 +63,29 @@ def _write_nb(path: Path, nb: dict) -> None:
     path.write_text(json.dumps(nb), encoding="utf-8")
 
 
-def _stacked_repo(tmp_path: Path) -> Path:
+def _stacked_repo(tmp_path: Path, repair_on_main: bool = False) -> Path:
     """Depot jetable : PR empilee dont la base a bouge depuis le fork.
 
-        A (fork) -- B (main ajoute theirs.ipynb DEFECTUEUX)  <- origin/main
+        A (fork) -- B (main change un carnet)  <- origin/main
           \\
            C (branche pr modifie mine.ipynb, reste propre)  <- HEAD
 
-    La forme en deux points entre origin/main (B) et HEAD (C) liste les
+    Par defaut (repair_on_main=False), B AJOUTE theirs.ipynb defectueux :
+    la forme en deux points entre origin/main (B) et HEAD (C) liste les
     DEUX carnets ; la forme en trois points (A..C) ne rend que mine.ipynb.
+    Mais theirs.ipynb n'existe pas dans le worktree au HEAD de la PR : le
+    filtre d'existence de ``pr_diff_files`` (#14901) le retire des DEUX
+    perimetres -- ce temoin ne mord pas sur le scan, il ne documente que
+    la difference git (review Hermes 05/11, #24725).
+
+    Avec repair_on_main=True, la classe d'imputation REELLE de #10403 :
+    le defaut est present AU POINT DE FORK dans shared.ipynb, main le
+    REPARE apres le fork, la branche PR n'y touche pas. shared.ipynb
+    existe dans le worktree au HEAD (le filtre d'existence ne peut pas le
+    masquer) et y porte encore le defaut : la forme en deux points
+    l'inclut dans le perimetre et la garde ROUGIT la PR sur un defaut que
+    main a deja repare. Ce temoin est discriminant pour le mutant
+    deux-points -- c'est lui qui fait survivre ou mourir la regression.
     """
     repo = tmp_path / "repo"
     repo.mkdir()
@@ -84,18 +98,25 @@ def _stacked_repo(tmp_path: Path) -> Path:
         subprocess.run(
             ["git", "config", key, val], cwd=str(repo), check=True,
         )
-    # A -- point de fork : un seul carnet, propre.
+    # A -- point de fork : mine.ipynb propre ; en mode repair, shared.ipynb
+    # defectueux existe deja des le fork (les deux branches le portent).
     _write_nb(repo / "mine.ipynb", CLEAN_NB)
+    if repair_on_main:
+        _write_nb(repo / "shared.ipynb", DEFECTIVE_NB)
     subprocess.run(["git", "add", "."], cwd=str(repo), check=True)
     subprocess.run(
         ["git", "commit", "-m", "A: fork point", "-q"], cwd=str(repo), check=True,
     )
     subprocess.run(["git", "branch", "pr"], cwd=str(repo), check=True)
-    # B -- main avance APRES le fork : ajoute le carnet defectueux.
-    _write_nb(repo / "theirs.ipynb", DEFECTIVE_NB)
+    # B -- main avance APRES le fork : ajoute le carnet defectueux, ou
+    # repare celui qui l'etait deja au fork.
+    if repair_on_main:
+        _write_nb(repo / "shared.ipynb", CLEAN_NB)
+    else:
+        _write_nb(repo / "theirs.ipynb", DEFECTIVE_NB)
     subprocess.run(["git", "add", "."], cwd=str(repo), check=True)
     subprocess.run(
-        ["git", "commit", "-m", "B: main adds defective notebook", "-q"],
+        ["git", "commit", "-m", "B: main moves on", "-q"],
         cwd=str(repo), check=True,
     )
     subprocess.run(
@@ -194,3 +215,82 @@ def test_main_probe_failure_exits_two_non_evalue(
     err = capsys.readouterr().err
     assert rc == 2
     assert "non evalue" in err.lower(), f"message attendu dans stderr : {err!r}"
+
+
+def test_pr_diff_excludes_file_repaired_on_main(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Temoir DISCRIMINANT du mutant deux-points (reserve Hermes #24725).
+
+    Le temoin committe (theirs.ipynb cree cote main) est masque par le
+    filtre d'existence sous les DEUX formes : le mutant ... -> .. y survit.
+    Ici le defaut existe AU FORK dans shared.ipynb, main le repare, et le
+    fichier EXISTE au worktree de la PR -- le filtre d'existence ne peut
+    pas le masquer. Une regression vers deux points l'inclurait dans le
+    perimetre, et cette assertion rougirait.
+    """
+    repo = _stacked_repo(tmp_path, repair_on_main=True)
+    # Sanite du temoin : shared existe au worktree au HEAD, y porte ENCORE
+    # le defaut (la branche n'a pas pris la reparation de main), et main
+    # l'a bien repare.
+    shared = repo / "shared.ipynb"
+    assert shared.exists(), (
+        "le temoin exige un fichier present au worktree (sinon le filtre "
+        "d'existence le masque, et le mutant survit)"
+    )
+    assert mod.scan_notebook(shared), (
+        "shared.ipynb doit porter le defaut au HEAD de la PR (defaut herite "
+        "du fork, non repare cote branche)"
+    )
+    blob = subprocess.run(
+        ["git", "show", "origin/main:shared.ipynb"],
+        cwd=str(repo), capture_output=True, check=True,
+        encoding="utf-8", errors="replace",
+    ).stdout
+    scratch = tmp_path / "shared_from_main.ipynb"
+    scratch.write_text(blob, encoding="utf-8")
+    assert not mod.scan_notebook(scratch), (
+        "origin/main doit avoir REPARE shared.ipynb (sinon ce n'est pas la "
+        "classe d'imputation #10403)"
+    )
+    assert not mod.scan_notebook(repo / "mine.ipynb")
+
+    monkeypatch.setattr(mod, "REPO_ROOT", repo)
+    got = mod.pr_diff_files("origin/main", "HEAD")
+    assert got is not None
+    assert [p.name for p in got] == ["mine.ipynb"], (
+        f"le perimetre doit exclure le carnet repare par main : "
+        f"{[p.name for p in got]!r}"
+    )
+
+    # Contre-factuel : la forme en deux points voit les DEUX carnets, et
+    # shared existe au worktree -- le filtre d'existence ne le retire PAS
+    # du perimetre deux-points. C'est ce qui rend ce temoin discriminant
+    # la ou celui de theirs.ipynb ne l'etait pas.
+    two_point = subprocess.run(
+        ["git", "diff", "--name-only", "origin/main", "HEAD"],
+        cwd=str(repo), capture_output=True, text=True, check=True,
+        encoding="utf-8", errors="replace",
+    ).stdout
+    assert "shared.ipynb" in two_point and "mine.ipynb" in two_point, (
+        f"la forme en deux points doit voir les deux carnets : {two_point!r}"
+    )
+
+
+def test_main_stacked_repaired_on_main_green(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture,
+) -> None:
+    """La garde reste VERTE sur la classe d'imputation reelle #10403.
+
+    Sous le mutant deux-points, shared.ipynb (defectueux au worktree,
+    repare sur main) entrerait dans le perimetre et ce test ROUGIRAIT :
+    c'est la morsure sur le scan que le temoin committe n'avait pas."""
+    repo = _stacked_repo(tmp_path, repair_on_main=True)
+    monkeypatch.setattr(mod, "REPO_ROOT", repo)
+    rc = mod.main(["--pr-diff", "origin/main", "HEAD"])
+    out = capsys.readouterr()
+    assert rc == 0, (
+        f"le defaut de shared.ipynb est celui de main, pas de la PR : "
+        f"out={out.out!r} err={out.err!r}"
+    )
+    assert "shared.ipynb" not in out.out
