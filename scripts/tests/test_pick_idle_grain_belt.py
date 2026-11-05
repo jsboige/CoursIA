@@ -302,6 +302,40 @@ def test_summarize_claim_machine_codes():
     assert code == pig.CLAIM_CODE_ERROR
 
 
+def test_summarize_claim_free_names_what_was_measured():
+    """#23500 -- le libellé FREE nomme ce que le tirage mesure.
+
+    Un candidat sans claim n'est PAS « libre » (qui se lit « personne ne
+    travaille dessus ») : seule l'absence de claim est mesurée. Le code
+    machine FREE ne change pas ; seule la phrase humaine doit cesser de
+    prétendre à l'absence d'activité. Le mot « libre » disparaît du
+    libellé FREE (et du FREE_STALE, qui partageait l'abus tout en nommant
+    le claim périmé qu'il mesure).
+    """
+    free_json = ('{"blocking_lanes": [], "my_active_claim": false,'
+                '"stale_claims": []}')
+    code, human = pig._summarize_claim(free_json + "\n", 0)
+    assert code == pig.CLAIM_CODE_FREE
+    assert human == pig.CLAIM_HUMAN_FREE
+    assert "libre" not in human
+
+    # FREE_STALE : l'abus « libre » était partagé ; le claim périmé reste
+    # nommé (c'est un fait mesuré), l'absence d'activité ne l'est pas.
+    stale_json = ('{"blocking_lanes": [], "my_active_claim": false,'
+                  '"stale_claims": [42]}')
+    code, human = pig._summarize_claim(stale_json + "\n", 0)
+    assert code == pig.CLAIM_CODE_FREE_STALE
+    assert "libre" not in human
+    assert "42" in human
+
+    # Jambée batch (#19643) : même libellé, même absence de « libre ».
+    batch = {"results": {"42": {"code": "FREE", "human": "x"}}}
+    code, human = pig._summarize_claim_from_batch(batch, 42)
+    assert code == pig.CLAIM_CODE_FREE
+    assert human == pig.CLAIM_HUMAN_FREE
+    assert "libre" not in human
+
+
 def test_belt_head_of_queue_free_surfaces_as_pick_one(monkeypatch):
     """Le scenario fondateur du steer coordinateur : la tete de file est
     ``libre``, le tapis DOIT la sortir en pick #1 (et pas les positions 9+
