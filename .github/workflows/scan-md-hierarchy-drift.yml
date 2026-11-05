@@ -179,7 +179,13 @@ jobs:
         with:
           python-version: '3.11'
       - name: Blocking drift check (HINT-AS-HEADING only)
+        # Hardening injection (DM ai-01 05/11) : l'input dispatch base_ref ne
+        # s'interpole JAMAIS dans run: -- il passe par env: et le shell lit la
+        # variable (guidance GitHub script-injection ; dispatch-only donc risque
+        # faible, mais la forme canonique est gratuite).
+        env:
+          INPUT_BASE_REF: ${{ github.event.inputs.base_ref }}
         run: |
-          BASE="${{ github.event.inputs.base_ref || 'origin/main' }}"
+          BASE="${INPUT_BASE_REF:-origin/main}"
           python scripts/notebook_tools/scan_md_hierarchy.py MyIA.AI.Notebooks/ \
             --baseline --diff --fail-kinds HINT-AS-HEADING --base-ref "$BASE"
