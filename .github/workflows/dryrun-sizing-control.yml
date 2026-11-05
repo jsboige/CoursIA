@@ -40,6 +40,11 @@ on:
       # re-mesurer ni retirer ce qu'il a pose, et son verdict survit a sa cause.
       - '.github/workflows/dryrun-sizing-control.yml'
   workflow_dispatch:
+    inputs:
+      repeat:
+        description: "Nombre de passes consecutives de la suite (enquete de flakiness, #23051 point 3). Chaque passe garde sa sortie dans un groupe de log distinct."
+        required: false
+        default: "1"
 
 permissions:
   contents: read
@@ -88,37 +93,67 @@ jobs:
           echo "Les deux scripts parsent."
 
       - name: Suite de controle (fixtures, aucune machine reelle)
+        env:
+          REPEAT_PASSES: ${{ inputs.repeat || 1 }}
         run: |
           # `set -e` est volontairement ABSENT : il faut lire le code de retour
-          # de la suite pour distinguer une assertion cassee d'un abandon du
-          # harnais. `pipefail` n'a pas d'objet ici (aucun pipe).
+          # de chaque passe pour distinguer une assertion cassee d'un abandon
+          # du harnais. `pipefail` n'a pas d'objet ici (aucun pipe).
           set -uo pipefail
 
           SUITE=scripts/ci/docker/linux-runner/persist/ai-01/test-dryrun-sizing-control.sh
 
-          # TMPDIR POSIX explicite. La suite sonde elle-meme que ses faux
-          # gagnent sur PATH et ABANDONNE (rc=2) sinon -- avec un TMPDIR en
-          # forme Windows, `command -v systemctl` resout le VRAI binaire et la
-          # suite appellerait le vrai `chown`. On ne devine pas la forme de
-          # TMPDIR (un proxy) : la suite mesure l'effet, et on lui donne le
-          # repertoire canonique.
-          TMPDIR=/tmp bash "$SUITE"
-          rc=$?
+          # TMPDIR POSIX explicite (chaque passe). La suite sonde elle-meme que
+          # ses faux gagnent sur PATH et ABANDONNE (rc=2) sinon -- avec un
+          # TMPDIR en forme Windows, `command -v systemctl` resout le VRAI
+          # binaire et la suite appellerait le vrai `chown`. On ne devine pas
+          # la forme de TMPDIR (un proxy) : la suite mesure l'effet, et on lui
+          # donne le repertoire canonique.
 
-          case "$rc" in
-            0)
-              echo "::notice::Suite verte -- les refus attendus et les succes attendus sont tous tenus."
-              ;;
-            1)
-              echo "::error::ASSERTION CASSEE. Le dry-run de dimensionnement ne tient plus son contrat : voir le detail 'KO' ci-dessus. La suite A mesure, et elle a trouve une regression."
-              exit 1
-              ;;
-            2)
-              echo "::error::ABANDON DU HARNAIS. L'isolation a echoue (faux binaires non prioritaires sur PATH, ou script sous test introuvable) : la suite n'a RIEN mesure. Ni conformite ni non-conformite ne sont etablies -- ne pas lire ce rouge comme une regression de la configuration."
-              exit 1
-              ;;
-            *)
-              echo "::error::Code de retour inattendu ($rc) -- verdict indetermine, ne pas conclure."
-              exit 1
-              ;;
-          esac
+          # Enquete de flakiness (#23051 point 3) : la suite a rendu un echec
+          # non localise 1 fois sur 6 sur ai-01. Un dispatch peut desormais
+          # rejouer N passes consecutives (workflow_dispatch, input `repeat`) ;
+          # chaque passe garde sa sortie dans son groupe de log, et le job est
+          # rouge si AU MOINS UNE passe echoue -- N passes dont une seule rouge
+          # restent un echec, jamais une moyenne.
+          # L input transite par env, jamais par interpolation directe dans le
+          # run : un dispatcher ne doit pas pouvoir injecter du shell.
+          N="${REPEAT_PASSES:-1}"
+          case "$N" in ''|*[!0-9]*|0) N=1 ;; esac
+          FAILS=0
+
+          # stdin epingle par passe, en plus de la fermeture que la suite
+          # fait elle-meme : le runner maintient un stdin ouvert, et le
+          # cablage de l appelant ne doit jamais etre une entree du harnais
+          # (cf #23051 point 3 -- la suite sautait des cas quand son stdin
+          # heritait d un canal ouvert).
+          i=0
+          while [ "$i" -lt "$N" ]; do
+            i=$((i + 1))
+            echo "::group::Passe $i/$N"
+            TMPDIR=/tmp bash "$SUITE" </dev/null
+            rc=$?
+            echo "::endgroup::"
+            case "$rc" in
+              0)
+                echo "::notice::Passe $i/$N verte -- les refus attendus et les succes attendus sont tous tenus."
+                ;;
+              1)
+                echo "::error::Passe $i/$N : ASSERTION CASSEE. Le dry-run de dimensionnement ne tient plus son contrat : voir le detail 'KO' ci-dessus. La suite A mesure, et elle a trouve une regression."
+                FAILS=$((FAILS + 1))
+                ;;
+              2)
+                echo "::error::Passe $i/$N : ABANDON DU HARNAIS. L'isolation a echoue (faux binaires non prioritaires sur PATH, ou script sous test introuvable) : la suite n'a RIEN mesure. Ni conformite ni non-conformite ne sont etablies -- ne pas lire ce rouge comme une regression de la configuration."
+                FAILS=$((FAILS + 1))
+                ;;
+              *)
+                echo "::error::Passe $i/$N : code de retour inattendu ($rc) -- verdict indetermine, ne pas conclure."
+                FAILS=$((FAILS + 1))
+                ;;
+            esac
+          done
+
+          if [ "$FAILS" -ne 0 ]; then
+            echo "::error::$FAILS passe(s) en echec sur $N."
+            exit 1
+          fi
