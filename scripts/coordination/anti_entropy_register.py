@@ -210,10 +210,17 @@ REGISTRE: tuple[Entree, ...] = (
         # 2026-11-07, quand une publication portant l'identite de
         # l'instrument aura sept jours : la reference sera alors relue
         # dans le commentaire publie, avec l'identite a cote de la valeur.
-        reference=Reference(39.0, "2026-10-31", "issue #23175",
+        # TROISIEME rebasage (2026-11-02, correctif UTF-8 #23175) : le
+        # correctif a de nouveau touche l'instrument LUI-MEME (735ada5ba),
+        # meme raison que le second -- l'identite portee par la reference
+        # (6144b71eb) n'etait plus celle de l'instrument courant, et la
+        # comparaison serait tombee sur « reference transverse refusee ».
+        # Correctif d'encodage seul, sans effet sur le classement : la
+        # valeur est 39 avant et apres sur le meme arbre aligne.
+        reference=Reference(39.0, "2026-11-02", "issue #23175",
                             instrument=("scripts/notebook_tools/"
                                         "inventory_notebook_names.py"
-                                        "@6144b71ebfcd588d5347e16e7d2ba984dd6af2e5")),
+                                        "@735ada5ba11cd900dee9649c71fedb38fd6fe52c")),
         # Les points anterieurs de la serie, avec leur SOURCE et
         # l'IDENTITE de l'instrument qui les a produits. L'identite
         # declaree est celle du PRODUISANT : c'est elle qui fait le
@@ -243,6 +250,16 @@ REGISTRE: tuple[Entree, ...] = (
                       instrument=("scripts/notebook_tools/"
                                   "inventory_notebook_names.py"
                                   "@d818b008b5558d9a755c81d3d05e29ac23a9f823")),
+            # La reference precedente (39), mesuree le 2026-10-31 sur
+            # l'arbre aligne a f798021d4 avec l'instrument 6144b71eb.
+            # Point de mesure reel : le correctif UTF-8 (735ada5ba) ne
+            # change pas la valeur sur le meme arbre -- 39 avant et apres.
+            Reference(39.0, "2026-10-31",
+                      "issue #23175, reference rebasee precedente (arbre "
+                      "aligne a f798021d4, instrument 6144b71eb)",
+                      instrument=("scripts/notebook_tools/"
+                                  "inventory_notebook_names.py"
+                                  "@6144b71ebfcd588d5347e16e7d2ba984dd6af2e5")),
         ),
         note="`ambigu` = nom non parsé ou kernel non verifie.",
         # L'instrument prend sa LISTE de carnets dans `origin/main` et lit
@@ -368,21 +385,54 @@ def identite_instrument_a(commande, au: str) -> str:
     Sans elle, la serie historique disparaitrait — et avec elle, la seule
     comparaison qui dise si le chantier recule.
 
-    La resolution est au JOUR, par `git log --before=<date>`. Attention :
-    git interprete une date SANS heure avec l'HEURE COURANTE du moment
-    ou la commande est lancee (son `approxidate` remplit les champs
-    d'heure manquants par l'heure de l'horloge). L'identite derivee d'un
-    jour passe depend donc de l'heure a laquelle on interroge le depot :
-    le meme jour rend une identite differente apres le passage d'un
-    commit de ce jour-la. C'est pourquoi l'identite DECLAREE d'un point
-    — celle de l'instrument qui l'a produit — est verifiee contre
-    l'identite derivee par un rapport d'ANCETRE et non d'egalite :
-    l'instrument peut avoir evolue depuis la mesure, et c'est alors
-    l'ecart qui doit rester visible. Une identite declaree qui n'est
-    ni l'identite derivee ni un de ses ancetres — ou qui porte un
-    autre script — est un mensonge, et c'est ce que le controle refuse.
+    La resolution est au JOUR, par `git log --before=<date>`, la date
+    etant remplacee par la FIN de ce jour (`_borne_de`) : un jour se
+    resout a sa fin, jamais a l'heure de l'horloge — git interprete
+    une date SANS heure avec l'HEURE COURANTE du moment ou la commande
+    est lancee (son `approxidate` remplit les champs d'heure manquants
+    par l'heure de l'horloge), et une identite derivee qui bouge avec
+    l'heure n'est pas une identite.
+
+    L'identite DECLAREE d'un point — celle de l'instrument qui l'a
+    produit — est verifiee contre l'identite derivee par un rapport
+    d'ANCETRE et non d'egalite : l'instrument peut avoir evolue depuis
+    la mesure (le point a ete produit par une version anterieure de
+    celle qui existe en fin de jour), et c'est alors l'ecart qui doit
+    rester visible. Une identite declaree qui n'est ni l'identite
+    derivee ni un de ses ancetres — ou qui porte un autre script —
+    est un mensonge, et c'est ce que le controle refuse.
     """
     return _identite(commande, au)
+
+
+#: Une date SANS heure (`2026-10-31`) designe un JOUR, pas un instant.
+_DATE_SEULE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+
+def _borne_de(au: str) -> str:
+    """La borne haute d'un jour : la FIN de ce jour.
+
+    `git log --before=2026-10-31` lit la date SANS heure avec l'HEURE
+    COURANTE de l'horloge : l'identite derivee d'un jour passe depend
+    donc de l'heure a laquelle on interroge le depot, et le meme jour
+    rend une identite differente apres le passage d'un commit de ce
+    jour-la. Un point declare par un instrument modifie PLUS TARD dans
+    la journee se retrouvait alors posterieur a l'identite derivee, et
+    le controle d'ANCETRE le lisait comme un mensonge -- alors que la
+    mesure etait exacte. C'est ce que le job `Scripts Tests (CPU)`
+    mesurait le 05/11 (CI a 01:27Z) : un point du 2026-10-31 declare par
+    l'instrument de 05:18, compare a une identite derivee du 30/10.
+
+    Resoudre le jour a sa FIN rend l'identite derivee STABLE : c'est la
+    derniere version de l'instrument qui a existe CE JOUR-LA, donc celle
+    qui a pu produire le point -- et l'identite declaree en est toujours
+    l'egalite ou un ancetre. Une date qui porte DEJA une heure n'est pas
+    touchee : l'appelant a demande un instant, pas un jour.
+    """
+    au = str(au).strip()
+    if _DATE_SEULE.match(au):
+        return au + " 23:59:59"
+    return au
 
 
 def _identite(commande, au: str | None) -> str:
@@ -393,7 +443,8 @@ def _identite(commande, au: str | None) -> str:
         return "git:" + " ".join(str(m) for m in commande)
     for ref in ("origin/main", "HEAD"):
         if au:
-            cmd = ("git", "log", "-1", "--format=%H", f"--before={au}",
+            cmd = ("git", "log", "-1", "--format=%H",
+                   f"--before={_borne_de(au)}",
                    ref, "--", script)
         else:
             cmd = ("git", "log", "-1", "--format=%H", ref, "--", script)

@@ -262,19 +262,19 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 68 | [ICT-48 — Origami Wolfram, pli 2 : quatre classes, six…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-48-WolframClasses-ThermoSignature-Python.ipynb) | BETA | Oui |
 | 69 | [ICT-49 — Machines de Gödel : l'auto-amélioration…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-49-MachinesDeGoedel-Python.ipynb) | BETA | Oui |
 | 70 | [ICT-50 -- Origami Wolfram pli 2 : la regle 30 comme…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-50-WolframRule30Aleatoire-Rule110Universelle-Python.ipynb) | BETA | Oui |
-| 71 | [ICT — Annexe : la contextualité du zoo de proxys est un…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Annexe-ProxyContextuality.ipynb) | BETA | Oui |
-| 72 | [ICT — Substrat argumentation : trajectoires de croyance…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-BeliefTrajectories.ipynb) | BETA | Oui |
+| 71 | [ICT — Annexe : la contextualité du zoo de proxys est un…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Annexe-ProxyContextuality-Python.ipynb) | BETA | Oui |
+| 72 | [ICT — Substrat argumentation : trajectoires de croyance…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-BeliefTrajectories-Python.ipynb) | BETA | Oui |
 | 73 | [ICT — Argumentation et croyances : le capstone du…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-Capstone-Python.ipynb) | BETA | Oui |
-| 74 | [Argumentation strate 6 — Acceptabilité QBF :…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-QBFAcceptance.ipynb) | BETA | Oui |
-| 75 | [ICT — Substrat argumentation : maintenance de la…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-TruthMaintenance.ipynb) | BETA | Oui |
-| 76 | [ICT -- Dissociation F2 Dehaene : le self-model…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-DehaeneF2-SelfReport.ipynb) | BETA | Oui |
-| 77 | [Boucle auto-referentielle p_hat (case 2 / Epic #9533)](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference.ipynb) | BETA | Oui |
-| 78 | [ICT -- Dissociation saillance / pregnance (case s ⟂ π)](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-SaillancePregnance.ipynb) | BETA | Oui |
-| 79 | [ICT-Greffe4 — Le vote argumenté sur chaîne : fermer la…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe4-VoteOnChain.ipynb) | BETA | Oui |
-| 80 | [ICT-Life — Substrat de calibration certifié : le Jeu de…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Life-SubstratCertifie.ipynb) | BETA | Oui |
-| 81 | [ICT-MUH — Le texte où Tegmark cite Schmidhuber :…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-MUH-FibreTegmark.ipynb) | BETA | Oui |
-| 82 | [Tete-a-tete SAE <-> J-space -- les deux lentilles du…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete.ipynb) | BETA | Non |
-| 83 | [ICT-Synthèse — un seul appareil de mesure, cinq…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Synthese-CrossSubstrat.ipynb) | BETA | Non |
+| 74 | [Argumentation strate 6 — Acceptabilité QBF :…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-QBFAcceptance-Python.ipynb) | BETA | Oui |
+| 75 | [ICT — Substrat argumentation : maintenance de la…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-TruthMaintenance-Python.ipynb) | BETA | Oui |
+| 76 | [ICT -- Dissociation F2 Dehaene : le self-model…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-DehaeneF2-SelfReport-Python.ipynb) | BETA | Oui |
+| 77 | [Boucle auto-referentielle p_hat (case 2 / Epic #9533)](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb) | BETA | Oui |
+| 78 | [ICT -- Dissociation saillance / pregnance (case s ⟂ π)](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipynb) | BETA | Oui |
+| 79 | [ICT-Greffe4 — Le vote argumenté sur chaîne : fermer la…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe4-VoteOnChain-Python.ipynb) | BETA | Oui |
+| 80 | [ICT-Life — Substrat de calibration certifié : le Jeu de…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Life-SubstratCertifie-Python.ipynb) | BETA | Oui |
+| 81 | [ICT-MUH — Le texte où Tegmark cite Schmidhuber :…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-MUH-FibreTegmark-Python.ipynb) | BETA | Oui |
+| 82 | [Tete-a-tete SAE <-> J-space -- les deux lentilles du…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete-Python.ipynb) | BETA | Non |
+| 83 | [ICT-Synthèse — un seul appareil de mesure, cinq…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Synthese-CrossSubstrat-Python.ipynb) | BETA | Non |
 
 ## Probas (3 notebooks)
 
@@ -288,7 +288,7 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
-| 1 | [Marches aléatoires : le retour — de Pólya (1921) au «…](../../MyIA.AI.Notebooks/Probas/Applications/Marches/Marches-01-Retour-Polya-Watson-Python.ipynb) | BETA | Oui |
+| 1 | [Marches aléatoires : le retour — de Pólya (1921) au «…](../../MyIA.AI.Notebooks/Probas/Applications/Marches-01-Retour-Polya-Watson-Python.ipynb) | BETA | Oui |
 | 2 | [Percolation supercritique : le géant au-dessus du seuil](../../MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-01-Supercritique-Python.ipynb) | ALPHA | Oui |
 | 3 | [Percolation-02-Lean — le noyau fini de percolation,…](../../MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-02-Lean.ipynb) | BETA | Oui |
 | 4 | [Percolation au point critique : exposants finis et loi…](../../MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-03-Critique-Python.ipynb) | BETA | Oui |
@@ -333,13 +333,13 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 27 | [DecInfer-08b-Preuves formelles — Indice de Gittins](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08b-Lean-Gittins.ipynb) | BETA | Oui |
 | 28 | [DecInfer-10-Thompson-Sampling : Bandits bayesiens par…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb) | BETA | Oui |
 | 29 | [DecPyMC-08 : Capstone — la sous-série Actuariat](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-08-Actuariat-Capstone.ipynb) | BETA | Oui |
-| 30 | [DecPyMC-1-Utility-Foundations : Axiomes et Fondements](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-1-Utility-Foundations.ipynb) | BETA | Oui |
-| 31 | [DecPyMC-2-Utility-Money : Utilite de l'Argent et…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-2-Utility-Money.ipynb) | BETA | Oui |
-| 32 | [DecPyMC-3-Multi-Attribute : Utilite Multi-Attributs](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-3-Multi-Attribute.ipynb) | BETA | Oui |
-| 33 | [DecPyMC-4-Decision-Networks : Réseaux de Decision](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-4-Decision-Networks.ipynb) | BETA | Oui |
-| 34 | [DecPyMC-5-Valeur de l'Information](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-5-Value-Information.ipynb) | ALPHA | Oui |
-| 35 | [DecPyMC-6-Systèmes Experts et Decisions Robustes](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-6-Expert-Systems.ipynb) | BETA | Oui |
-| 36 | [DecPyMC-7-MDPs, Bandits et POMDPs](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-7-Sequential.ipynb) | BETA | Oui |
+| 30 | [DecPyMC-01-Utility-Foundations : Axiomes et Fondements](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-01-Utility-Foundations.ipynb) | BETA | Oui |
+| 31 | [DecPyMC-02-Utility-Money : Utilite de l'Argent et…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-02-Utility-Money.ipynb) | BETA | Oui |
+| 32 | [DecPyMC-03-Multi-Attribute : Utilite Multi-Attributs](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-03-Multi-Attribute.ipynb) | BETA | Oui |
+| 33 | [DecPyMC-04-Decision-Networks : Réseaux de Decision](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-04-Decision-Networks.ipynb) | BETA | Oui |
+| 34 | [DecPyMC-05-Valeur de l'Information](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-05-Value-Information.ipynb) | ALPHA | Oui |
+| 35 | [DecPyMC-06-Systèmes Experts et Decisions Robustes](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-06-Expert-Systems.ipynb) | BETA | Oui |
+| 36 | [DecPyMC-07-MDPs, Bandits et POMDPs](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-07-Sequential.ipynb) | BETA | Oui |
 | 37 | [Règles de décision : EDT, CDT, CCDT et la lignée UDT](../../MyIA.AI.Notebooks/Probas/DecisionTheory/Regles-De-Decision/ReglesDeDecision-01-EDT-CDT-CCDT-UDT.ipynb) | BETA | Oui |
 
 ## Probas/Infer (21 notebooks)
