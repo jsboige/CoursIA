@@ -168,3 +168,24 @@ def test_signature_accepts_optional_max_retries():
 
     sig = inspect.signature(cfg.create_client)
     assert sig.parameters["max_retries"].default is None
+
+
+# Tag d'attribution claudish (review Hermes #24540, reserve 2) : il ne se derive
+# que d'un nom d'hote de la flotte ; un identifiant de conteneur n'en est pas un.
+
+def test_claudish_tag_explicit_env_wins(monkeypatch):
+    monkeypatch.setenv("CLAUDISH_MACHINE_TAG", "po-2025-prover")
+    monkeypatch.setattr(cfg.platform, "node", lambda: "MYIA-AI-01")
+    assert cfg._claudish_machine_tag() == "po-2025-prover"
+
+
+def test_claudish_tag_from_fleet_hostname(monkeypatch):
+    monkeypatch.delenv("CLAUDISH_MACHINE_TAG", raising=False)
+    monkeypatch.setattr(cfg.platform, "node", lambda: "MYIA-AI-01")
+    assert cfg._claudish_machine_tag() == "ai-01-prover"
+
+
+def test_claudish_tag_container_id_is_unknown(monkeypatch):
+    monkeypatch.delenv("CLAUDISH_MACHINE_TAG", raising=False)
+    monkeypatch.setattr(cfg.platform, "node", lambda: "db7210b0aa61")
+    assert cfg._claudish_machine_tag() == "unknown-prover"

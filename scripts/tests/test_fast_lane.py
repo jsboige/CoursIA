@@ -2171,6 +2171,11 @@ _TRANCHE33_PATHS = {
         "scripts/tests/test_check_stale_claims.py",
         "scripts/check_factual_mislabel.py",
         "scripts/tests/test_check_factual_mislabel.py",
+        # #23394 : le quatrieme detecteur frere vit dans le meme job, donc son
+        # propre code et ses tests elargissent le perimetre du garde -- epingle
+        # ici pour que l'elargissement reste confronte au declencheur.
+        "scripts/check_listing_coherence.py",
+        "scripts/tests/test_check_listing_coherence.py",
         ".github/workflows/markdown-claims-output-advisory.yml",
     ],
     "Organ-duplication advisory (non-blocking)": [
@@ -2380,7 +2385,12 @@ def test_abstention_sans_merge_base_ne_lance_pas_le_detecteur(monkeypatch):
                         lambda repo, pr, header, body, dry: bodies.append(body))
     rc, _, failures = fast_lane.run_effects(guard, ctx, dry_run=True)
     assert rc == 0 and not failures
-    assert len(bodies) == 3, "un sticky par detecteur, meme en abstention"
+    # #23394 : quatre detecteurs de prose partagent ce job depuis l'arrivee de
+    # `listing-coherence`. L'assertion porte sur le NOMBRE DE DETECTEURS, pas
+    # sur un 4 litteral : elle se lit contre le registre.
+    assert len(bodies) == len(guard.commenters), (
+        "un sticky par detecteur, meme en abstention")
+    assert len(bodies) == 4, "les quatre detecteurs de prose de la tranche 1b"
     for body in bodies:
         assert "abstained" in body, f"corps d'abstention attendu, vu {body[:60]!r}"
 

@@ -101,11 +101,35 @@ MODELS: dict[str, dict[str, str]] = {
 }
 
 
+def hf_hub_dir() -> Path:
+    """Racine du cache HF, variable d'environnement d'abord.
+
+    Le chemin par defaut (`~/.cache/huggingface/hub`) n'est PAS une constante :
+    les sieges de la flotte positionnent `HF_HOME` (ex. `D:/hf-cache/huggingface`)
+    ou `HF_HUB_CACHE`. Le chemin code en dur levait alors "aucun snapshot HF
+    pour ... (lancer hf download)" alors que le cache etait plein -- le run se
+    bloquait sur un telechargement qui n'avait rien a telecharger, et le
+    message invitait a un contournement (re-telecharger) au lieu d'un
+    diagnostic (le cache etait ailleurs). On respecte donc l'environnement,
+    avec le chemin par defaut en repli.
+    """
+    explicit = os.environ.get("HF_HUB_CACHE")
+    if explicit:
+        return Path(explicit)
+    home = os.environ.get("HF_HOME")
+    if home:
+        return Path(home) / "hub"
+    return Path.home() / ".cache" / "huggingface" / "hub"
+
+
 def find_hf_snapshot(glob_pattern: str) -> Path:
-    hub = Path.home() / ".cache" / "huggingface" / "hub"
+    hub = hf_hub_dir()
     matches = sorted(hub.glob(glob_pattern))
     if not matches:
-        raise FileNotFoundError(f"aucun snapshot HF pour {glob_pattern} (lancer hf download)")
+        raise FileNotFoundError(
+            f"aucun snapshot HF pour {glob_pattern} dans {hub} "
+            "(HF_HOME / HF_HUB_CACHE pointent-ils sur le cache qui porte les poids ?)"
+        )
     return matches[-1]
 
 
@@ -433,6 +457,131 @@ DATASETS: dict[str, dict[str, Any]] = {
 # ---------------------------------------------------------------------------
 
 
+def grad_norm_carries(g: float) -> bool:
+    """Une observation `grad_norm` porte-t-elle un gradient ?
+
+    `grad_norm` est une NORME de gradient : sa valeur legitime est finie et
+    >= 0. Le predicat historique est `g > 0`, qui vaut DEJA False pour un
+    `nan` (IEEE-754 : toute comparaison avec NaN est False) et pour une
+    valeur negative. Le comportement etait donc correct, mais IMPLICITE --
+    il est ecrit ici pour etre fige par le selftest.
+
+    - finie et > 0  : le pas a porte un gradient (vivant).
+    - == 0          : aucun gradient porte (signature de la graine 42).
+    - negative      : mesure invalide -- une norme ne peut pas etre negative.
+    - `nan`         : divergence silencieuse -- ni vivante, ni inexploitable
+                      ; elle compte comme une observation (elle a ete tracee)
+                      mais jamais comme porteuse.
+    - `+inf`        : debordement de la norme -> invalide, pas un signal.
+    """
+    return math.isfinite(g) and g > 0.0
+
+
+def no_signal_verdict(grad_norms: list[float], threshold: int) -> dict[str, Any]:
+    """Verdict pur : le run a-t-il porte un gradient dans les `threshold` premiers pas ?
+
+    Temoin : `grad_norm`. Mesure sur le bras 8B de #15293 (4 graines, regie
+    ai-01 du 2026-10-26) : la graine 42 est nee morte -- `grad_norm` = 0,0
+    exact sur ses 12 premieres etapes tracees -- et la graine 7 s'est eteinte
+    en cours de run (3 etapes vivantes dans les 20 premieres, 0 dans les 20
+    dernieres). Dans les deux cas le PRE-EVAL etait normal (reward 0,05,
+    longueur 1 033) : rien ne l'annoncait avant le premier pas. Un `rc=0` ne
+    dit rien du signal ; c'est cette mesure qui departage « run termine » de
+    « run qui a porte un gradient ».
+
+    Fonction pure du tableau de `grad_norm` observe : le meme code sert au
+    callback (arret en cours de run) et au controle a posteriori (verdict
+    dans l'artefact), et se teste sans GPU (mode selftest).
+
+    - `threshold <= 0`  : garde desactivee, protocole inchange.
+    - moins de `threshold` observations : pas assez de preuves, on ne decide pas.
+    - aucune observation porteuse : ABANDON (le run ne portera rien).
+
+    Une observation est PORTEUSE si elle est finie et strictement positive
+    (`grad_norm_carries`). Un `nan` (divergence silencieuse), une valeur
+    negative ou un `+inf` sont des mesures INVALIDES : ils comptent comme
+    observations (ils ont ete traces) mais jamais comme porteuses -- donc un
+    run dont les N premieres mesures sont toutes invalides est abandonne
+    lui aussi, avec la raison `grad_norm_invalid_on_first_steps`.
+    """
+    observed = [float(g) for g in grad_norms if g is not None]
+    alive = [g for g in observed if grad_norm_carries(g)]
+    invalid = [g for g in observed if not grad_norm_carries(g) and g != 0.0]
+    verdict: dict[str, Any] = {
+        "threshold": threshold,
+        "steps_observed": len(observed),
+        "steps_alive": len(alive),
+        "steps_invalid": len(invalid),
+        "abort": False,
+        "reason": "",
+    }
+    if threshold <= 0:
+        verdict["reason"] = "disabled"
+    elif len(observed) < threshold:
+        verdict["reason"] = "not_enough_observations"
+    elif not alive:
+        verdict["abort"] = True
+        verdict["reason"] = ("grad_norm_invalid_on_first_steps" if invalid
+                             else "grad_norm_zero_on_first_steps")
+    else:
+        verdict["reason"] = "signal_alive"
+    return verdict
+
+
+def build_no_signal_guard(threshold: int) -> Any:
+    """Callback transformers qui abandonne l'entrainement quand aucun gradient
+    n'a porte sur les `threshold` premiers pas.
+
+    Option 2 de la decision de protocole demandee par la regie ai-01 sur
+    #15293 (« une garde d'entree sur les premiers pas : seule la mesure
+    permet de distinguer une graine morte d'une graine sous pression de
+    budget ») — c'est un ajout a l'outillage, donc une PR, pas un geste de
+    regie. Mesure d'economie : sur la graine 42, la garde aurait arrete le
+    run en quelques minutes au lieu de 6 h 30 de GPU, pour un resultat
+    equivalent (zero gradient porte).
+
+    L'arret passe par `control.should_training_stop` : arret PROPRE, sans
+    exception -- le run se termine normalement, l'artefact est ecrit, et il
+    porte le verdict (les runs arretes n'ont pas de post-eval, ils sont
+    exclus du calcul des deltas par mode_summarize).
+    """
+    from transformers import TrainerCallback
+
+    class _NoSignalGuard(TrainerCallback):
+        def __init__(self) -> None:
+            self.grad_norms: list[float] = []
+            # avant tout log : la garde est armee mais n'a rien observe
+            # ("disabled" serait faux ici -- la garde l'est des que threshold > 0).
+            self.verdict: dict[str, Any] = {
+                "threshold": threshold, "abort": False,
+                "reason": "disabled" if threshold <= 0 else "not_enough_observations",
+                "steps_observed": 0, "steps_alive": 0}
+
+        def on_log(self, args: Any, state: Any, control: Any,
+                   logs: dict[str, Any] | None = None, **kwargs: Any) -> Any:
+            logs = logs or {}
+            g = logs.get("grad_norm")
+            if g is None:
+                # pas de grad_norm dans ce log : ce pas ne dit rien du signal
+                return control
+            try:
+                value = float(g)
+            except (TypeError, ValueError):
+                # mesure illisible : on ne leve pas le callback -- une exception
+                # ici tuerait un run de 6 h 30 de GPU pour un probleme de log.
+                # La mesure est traitee comme invalide, donc comme non
+                # porteuse ; un run dont toutes les mesures sont illisibles est
+                # abandonne avec la raison "invalid".
+                value = float("nan")
+            self.grad_norms.append(value)
+            self.verdict = no_signal_verdict(self.grad_norms, threshold)
+            if self.verdict["abort"]:
+                control.should_training_stop = True
+            return control
+
+    return _NoSignalGuard()
+
+
 def build_trainer(
     model_key: str, seed: int, steps: int, train_rows: list[dict[str, Any]],
     reward_fn: Any = dapo_reward, dataset_key: str = "dapo",
@@ -611,9 +760,128 @@ def mode_selftest() -> int:
         print(f"FAIL: xlam_match({t!r}) vs {g!r} -> {got}")
     n_xlam = len(xlam_cases) - len(xlam_fails)
 
-    total_ok, total = n_match + n_xlam, len(cases) + len(xlam_cases)
-    print(f"selftest: {total_ok}/{total} pass (dapo {n_match}/{len(cases)}, xlam {n_xlam}/{len(xlam_cases)})")
-    return 1 if (fails or xlam_fails) else 0
+    # Garde d'entree (#15293) : la decision est une FONCTION PURE, elle se
+    # teste sans GPU -- c'est ce qui permet de la valider en CI et de la
+    # documenter sans dependre d'un run de 6 h 30 de GPU pour un resultat
+    # qu'on sait deja : zero gradient porte.
+    guard_cases: list[tuple[list[float], int, bool, str]] = [
+        # (grad_norms observes, threshold, abort attendu, raison attendue)
+        ([0.0, 0.0, 0.0], 3, True, "grad_norm_zero_on_first_steps"),
+        ([0.0, 0.0, 1.4], 3, False, "signal_alive"),
+        ([0.0, 0.0], 3, False, "not_enough_observations"),
+        ([0.0, 0.0, 0.0], 0, False, "disabled"),
+        ([], 3, False, "not_enough_observations"),
+        ([0.0, 0.7, 0.0], 3, False, "signal_alive"),
+        # un `nan` (divergence silencieuse) n'est PAS porteur, mais compte
+        # comme observation : N mesures invalides -> abandon, raison
+        # "invalid" -- la raison "zero" serait un motif faux.
+        ([float("nan"), float("nan"), float("nan")], 3, True,
+         "grad_norm_invalid_on_first_steps"),
+        # une valeur negative est une mesure invalide (une norme n'est pas
+        # negative) : meme traitement qu'un `nan`.
+        ([-1.0, -1.0, -1.0], 3, True, "grad_norm_invalid_on_first_steps"),
+        # un `nan` melange a un gradient porteur : le pas a porte, on
+        # n'abandonne pas.
+        ([1.4, float("nan"), 0.0], 3, False, "signal_alive"),
+        # un `nan` ne comble pas le seuil : c'est UNE observation, pas plus.
+        ([float("nan"), 0.0], 3, False, "not_enough_observations"),
+    ]
+    guard_fails = []
+    for norms, thr, want_abort, want_reason in guard_cases:
+        v = no_signal_verdict(norms, thr)
+        if v["abort"] != want_abort or v["reason"] != want_reason:
+            guard_fails.append((norms, thr, v))
+            print(f"FAIL: no_signal_verdict({norms}, {thr}) -> {v} "
+                  f"(attendu abort={want_abort}, reason={want_reason})")
+    n_guard = len(guard_cases) - len(guard_fails)
+
+    # Le cache HF n'est pas a l'emplacement par defaut sur tous les sieges :
+    # la resolution doit suivre HF_HOME / HF_HUB_CACHE, sinon le harness
+    # leve "aucun snapshot HF" sur un cache plein.
+    hub_fails = []
+    saved_env = {k: os.environ.get(k) for k in ("HF_HOME", "HF_HUB_CACHE")}
+    try:
+        os.environ.pop("HF_HUB_CACHE", None)
+        os.environ["HF_HOME"] = "D:/hf-cache/huggingface"
+        if hf_hub_dir() != Path("D:/hf-cache/huggingface/hub"):
+            hub_fails.append("HF_HOME")
+            print(f"FAIL: hf_hub_dir() avec HF_HOME -> {hf_hub_dir()}")
+        os.environ["HF_HUB_CACHE"] = "D:/hf-cache/huggingface/hub"
+        if hf_hub_dir() != Path("D:/hf-cache/huggingface/hub"):
+            hub_fails.append("HF_HUB_CACHE")
+            print(f"FAIL: hf_hub_dir() avec HF_HUB_CACHE -> {hf_hub_dir()}")
+    finally:
+        for k, v in saved_env.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
+
+    # Le CABLAGE du callback : la decision pure est testee ci-dessus, mais
+    # l'arret doit aussi se declencher dans le protocole de transformers
+    # (`control.should_training_stop`). Verifie sur un faux control.
+    wire_fails = []
+    wire_total = 0
+    wire_skipped = False
+    try:
+        class _Ctrl:
+            should_training_stop = False
+
+        guard = build_no_signal_guard(2)
+        ctrl = _Ctrl()
+        for _ in range(3):
+            guard.on_log(None, None, ctrl, logs={"grad_norm": 0.0})
+        wire_total += 1
+        if not ctrl.should_training_stop:
+            wire_fails.append("should_training_stop")
+            print("FAIL: le callback n'a pas arme should_training_stop")
+
+        # un grad_norm > 0 ne doit PAS armer l'arret (pas de faux positif)
+        guard_live = build_no_signal_guard(2)
+        ctrl_live = _Ctrl()
+        guard_live.on_log(None, None, ctrl_live, logs={"grad_norm": 0.0})
+        guard_live.on_log(None, None, ctrl_live, logs={"grad_norm": 1.2})
+        wire_total += 1
+        if ctrl_live.should_training_stop:
+            wire_fails.append("faux_positif")
+            print("FAIL: arret arme sur un run qui porte un gradient")
+
+        # un log sans grad_norm n'est pas une observation de gradient
+        guard_silent = build_no_signal_guard(2)
+        ctrl_silent = _Ctrl()
+        guard_silent.on_log(None, None, ctrl_silent, logs={"loss": 0.0})
+        wire_total += 1
+        if guard_silent.verdict["steps_observed"] != 0 or ctrl_silent.should_training_stop:
+            wire_fails.append("log_sans_grad_norm")
+            print("FAIL: un log sans grad_norm a ete compte comme observation")
+
+        # un `nan` (divergence silencieuse) doit armer l'arret : il ne porte
+        # rien, donc N mesures invalides -> abandon propre.
+        guard_nan = build_no_signal_guard(2)
+        ctrl_nan = _Ctrl()
+        guard_nan.on_log(None, None, ctrl_nan, logs={"grad_norm": float("nan")})
+        guard_nan.on_log(None, None, ctrl_nan, logs={"grad_norm": float("nan")})
+        wire_total += 1
+        if not ctrl_nan.should_training_stop:
+            wire_fails.append("nan")
+            print("FAIL: arret non arme sur un grad_norm nan (divergence)")
+    except ImportError as exc:
+        wire_skipped = True
+        print(f"selftest: cablage du callback NON teste ({exc}) -- transformers absent")
+
+    total_ok = n_match + n_xlam + n_guard + (2 - len(hub_fails))
+    total = len(cases) + len(xlam_cases) + len(guard_cases) + 2
+    if not wire_skipped:
+        # le cablage compte dans le total : sinon la ligne "25/25" et le
+        # "(câblage 3/3)" se contredisent et obligent a une addition mentale.
+        total_ok += wire_total - len(wire_fails)
+        total += wire_total
+    wire_line = ("câblage NON teste" if wire_skipped
+                 else f"câblage {wire_total - len(wire_fails)}/{wire_total}")
+    print(f"selftest: {total_ok}/{total} pass (dapo {n_match}/{len(cases)}, "
+          f"xlam {n_xlam}/{len(xlam_cases)}, garde {n_guard}/{len(guard_cases)}, "
+          f"cache-hf {2 - len(hub_fails)}/2, {wire_line})")
+    return 1 if (fails or xlam_fails or guard_fails or hub_fails or wire_fails) else 0
 
 
 def mode_baseline(model_key: str, dataset_key: str) -> dict[str, Any]:
@@ -663,7 +931,8 @@ def mode_baseline(model_key: str, dataset_key: str) -> dict[str, Any]:
 
 
 def mode_run(model_key: str, seed: int, steps: int, smoke: bool = False,
-             dataset_key: str = "dapo") -> dict[str, Any]:
+             dataset_key: str = "dapo",
+             no_signal_threshold: int = 0) -> dict[str, Any]:
     ds = DATASETS[dataset_key]
     # Self-describing : le budget est la variable du diagnostic de troncature
     # (#15294), il doit etre lisible dans run.log a cote de clipped_ratio.
@@ -672,19 +941,51 @@ def mode_run(model_key: str, seed: int, steps: int, smoke: bool = False,
     t0 = time.time()
     trainer, model_path = build_trainer(model_key, seed, steps, train_rows,
                                         reward_fn=ds["reward"], dataset_key=dataset_key)
+    if no_signal_threshold > 0:
+        # Garde d'entree : si AUCUN des `no_signal_threshold` premiers pas ne
+        # porte de gradient, le run s'arrete (option 2 de la decision de
+        # protocole de la regie ai-01 sur #15293). Desactive par defaut, donc
+        # le protocole des runs deja mesures reste inchange.
+        trainer.add_callback(build_no_signal_guard(no_signal_threshold))
+        print(f"[{model_key} seed{seed}] garde no-signal active sur "
+              f"{no_signal_threshold} premiers pas")
 
     pre = evaluate(trainer, eval_rows, seed, match_fn=ds["match"])
     print(f"[{model_key} seed{seed}] pre-eval: {pre}")
 
     trainer.train()
 
-    post = evaluate(trainer, eval_rows, seed, match_fn=ds["match"])
-    print(f"[{model_key} seed{seed}] post-eval: {post}")
+    # Verdict du garde, recalcule sur l'historique COMPLET du trainer : c'est
+    # la meme fonction pure que celle du callback, appliquee a toutes les
+    # observations (le callback peut s'etre arrete avant la fin).
+    observed = [e["grad_norm"] for e in trainer.state.log_history
+                if e.get("grad_norm") is not None]
+    verdict = no_signal_verdict(observed, no_signal_threshold)
+    aborted = bool(verdict["abort"])
+    verdict["grad_norms"] = [round(float(g), 6) for g in observed]
+
+    if aborted:
+        # Run mort : aucun post-eval (le GPU est encore plus precieux que la
+        # mesure), et l'artefact porte le verdict. mode_summarize exclut ces
+        # runs des deltas -- un run sans signal ne doit pas entrer dans une
+        # moyenne d'eval, sous peine de la fausser.
+        post = None
+        print(f"[{model_key} seed{seed}] ARRET no-signal : "
+              f"{verdict['steps_observed']} pas observes, "
+              f"{verdict['steps_alive']} pas porteurs de gradient "
+              f"(aucun post-eval mesure)")
+    else:
+        post = evaluate(trainer, eval_rows, seed, match_fn=ds["match"])
+        print(f"[{model_key} seed{seed}] post-eval: {post}")
 
     run_dir = RUNS_ROOT / f"{model_key}_{dataset_key}_seed{seed}"
     adapter_dir = run_dir / "adapter"
-    trainer.model.save_pretrained(str(adapter_dir))
-    trainer.processing_class.save_pretrained(str(adapter_dir))
+    if not aborted:
+        # Un run arrete par la garde n'a rien a sauver : l'adapter d'un run qui
+        # n'a porte aucun gradient n'a aucune valeur (et l'ecriture coute du
+        # temps machine). Les runs complets, eux, le sauvent comme avant.
+        trainer.model.save_pretrained(str(adapter_dir))
+        trainer.processing_class.save_pretrained(str(adapter_dir))
 
     log_history = [
         {k: v for k, v in entry.items() if not k.startswith("_")}
@@ -704,6 +1005,11 @@ def mode_run(model_key: str, seed: int, steps: int, smoke: bool = False,
         "model_path": str(model_path),
         "pre_eval": pre,
         "post_eval": post,
+        # Verdict de la garde d'entree : `aborted` distingue un run qui a
+        # porte un gradient d'un run termine sans signal (le `rc=0` seul ne
+        # dit rien du signal -- cf no_signal_verdict).
+        "aborted": aborted,
+        "no_signal_guard": verdict,
         "log_history": log_history,
         "wallclock_s": round(time.time() - t0, 1),
     }
@@ -733,11 +1039,30 @@ def mode_summarize(dataset_key: str = "dapo") -> int:
         print("aucun run trouve dans", results_dir)
         return 1
     loaded = [json.loads(p.read_text(encoding="utf-8")) for p in runs]
+    # Un run arrete par la garde d'entree n'a pas de post-eval : il porte ZERO
+    # signal (aucun gradient n'a passe sur les premiers pas) et n'a donc rien
+    # a dire sur l'eval. L'inclure dans les deltas fausserait la moyenne --
+    # on le liste a part, et on ne calcule que sur les runs scores.
+    # Un run sans post-eval mais SANS le drapeau `aborted` (run interrompu pour
+    # une autre raison) reste distingue : il n'a pas ete arrete par la garde.
+    aborted_runs = [r for r in loaded if r.get("aborted") is True]
+    incomplete_runs = [r for r in loaded
+                       if r.get("post_eval") is None and r.get("aborted") is not True]
+    scored = [r for r in loaded if r.get("post_eval") is not None]
     by_model: dict[str, list[dict[str, Any]]] = {}
-    for r in loaded:
+    for r in scored:
         by_model.setdefault(r["model_key"], []).append(r)
 
     summary: dict[str, Any] = {"runs": [r["model_key"] + f"_seed{r['seed']}" for r in loaded],
+                               "aborted_runs": [
+                                   {"model_key": r["model_key"], "seed": r["seed"],
+                                    "reason": (r.get("no_signal_guard") or {}).get("reason", ""),
+                                    "steps_observed": (r.get("no_signal_guard") or {}).get("steps_observed", 0),
+                                    "steps_alive": (r.get("no_signal_guard") or {}).get("steps_alive", 0)}
+                                   for r in aborted_runs],
+                               "runs_sans_post_eval": [
+                                   {"model_key": r["model_key"], "seed": r["seed"]}
+                                   for r in incomplete_runs],
                                "per_model": {}, "verdict": None}
     fig, axes = plt.subplots(1, 2, figsize=(12, 4.5))
     # Le trainer nomme la serie d'apres la fn de reward : dapo/gsm8k loggent
@@ -776,7 +1101,7 @@ def mode_summarize(dataset_key: str = "dapo") -> int:
 
     if len(summary["per_model"]) >= 2:
         def curves_healthy(model_key: str) -> bool:
-            rl = [r for r in loaded if r["model_key"] == model_key]
+            rl = [r for r in scored if r["model_key"] == model_key]
             improved = all(r["post_eval"]["reward_mean"] > r["pre_eval"]["reward_mean"] for r in rl)
             def seg(vals):
                 n = len(vals)
@@ -855,6 +1180,17 @@ def main() -> int:
              "pilote clipped_ratio (fraction de completions tronquees) et, via "
              "mask_truncated_completions, la part du loss qui survit",
     )
+    ap.add_argument(
+        "--abort-if-no-signal",
+        type=int,
+        default=0,
+        help="garde d'entree : abandonner l'entrainement si AUCUN des N premiers "
+             "pas n'a porte de gradient (grad_norm > 0). 0 = desactive, protocole "
+             "inchange. Option 2 de la decision de protocole (#15293) : une graine "
+             "nee morte coute des heures de GPU sans rien produire -- sur la graine "
+             "42 du bras 8B, la garde aurait arrete le run en quelques minutes au "
+             "lieu de 6 h 30.",
+    )
     args = ap.parse_args()
 
     global MAX_COMPLETION
@@ -884,7 +1220,8 @@ def main() -> int:
         EVAL_N_PROMPTS, TRAIN_POOL = 8, 16
     RUNS_ROOT.mkdir(parents=True, exist_ok=True)
     mode_run(args.model, args.seed, steps, smoke=args.mode == "smoke",
-             dataset_key=args.dataset)
+             dataset_key=args.dataset,
+             no_signal_threshold=args.abort_if_no_signal)
     return 0
 
 
