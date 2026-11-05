@@ -678,7 +678,13 @@ def _write_artifact(out_path, args, seeds, all_metrics, resumed_seeds):
         "commit_headroom_go": _HEADROOM_MEASURED_GO,
         "commit_limit_go": _COMMIT_LIMIT_GO,
         "commit_guard": (None if _COMMIT_WATCH is None
-                         else _COMMIT_WATCH.summary()),
+                         else {**_COMMIT_WATCH.summary(),
+                               # Le global est reassigne a chaque run_seed : dans
+                               # un artefact multi-graines ce bloc decrit la
+                               # DERNIERE graine, et il le dit au lieu de se
+                               # laisser lire comme un resume du lot (review
+                               # #24711, point 3).
+                               "scope": "derniere graine du lot"}),
         "resumed_seeds": resumed_seeds,
         "per_seed": all_metrics,
     }
@@ -697,6 +703,33 @@ def _write_artifact(out_path, args, seeds, all_metrics, resumed_seeds):
 
 
 # === CLI ===
+
+def _write_abort_trace(seed_path, seed, exc):
+    """Trace d'arret de la garde, distincte de l'artefact.
+
+    Le bloc ``commit_guard`` de l'artefact decrit un run COMPLETE : l'arret
+    sort avant toute ecriture d'artefact, donc sans cette trace la marge
+    observee a la mort d'un bras ne survivait que sur stderr (review #24711,
+    point 3). Le fichier porte un nom ``*_abort.json`` qui ne se confond pas
+    avec un artefact -- un lecteur d'artefacts ne le lira jamais comme un run.
+    """
+    trace_path = seed_path.with_name(seed_path.stem + "_abort.json")
+    charge = {
+        "event": "commit_guard_abort",
+        "seed": seed,
+        "reason": str(exc),
+        "commit_guard": (None if _COMMIT_WATCH is None
+                         else _COMMIT_WATCH.summary()),
+        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    }
+    out_path_parent = seed_path.parent
+    out_path_parent.mkdir(parents=True, exist_ok=True)
+    with open(trace_path, "w", encoding="utf-8") as f:
+        json.dump(charge, f, ensure_ascii=False, indent=2)
+    print(f"[ict25_arms] trace d'arret ecrite: {trace_path.name} "
+          "(fichier temoin, pas un artefact)", flush=True)
+    return trace_path
+
 
 def main(argv=None):
     p = argparse.ArgumentParser(description="ICT-25 arm runner (voie 5 refactor)")
@@ -732,6 +765,17 @@ def main(argv=None):
                    help="Periode d'echantillonnage de la marge de commit, en steps du "
                         f"trainer (#24674, defaut {DEFAULT_GUARD_EVERY_STEPS})")
     args = p.parse_args(argv)
+    if args.min_run_headroom_go >= args.min_commit_headroom_go:
+        # Un plancher de run au-dessus du seuil de demarrage ferait passer le
+        # prevol puis avorter au premier echantillon : la garde se retourne
+        # contre elle-meme pour une option incoherente, et le message d'arret
+        # ne le dirait pas. Refus avant tout import lourd, message explicite
+        # (review #24711, point 4).
+        p.error(
+            f"--min-run-headroom-go ({args.min_run_headroom_go} Go) doit rester "
+            f"sous --min-commit-headroom-go ({args.min_commit_headroom_go} Go) : "
+            "sinon un run sain passe le prevol puis avorte a sa premiere mesure"
+        )
 
     seeds = [int(s.strip()) for s in args.seeds.split(",") if s.strip()]
     out_path = Path(args.out)
@@ -757,7 +801,9 @@ def main(argv=None):
                 # Sortie volontaire, pas un incident : le bras a consomme la
                 # marge du siege, il la rend en mourant proprement. Aucun
                 # artefact n'est ecrit pour cette graine -- un artefact partiel
-                # se lirait comme un run complet.
+                # se lirait comme un run complet. La trace d'arret separatee
+                # porte le temoin de la garde (review #24711, point 3).
+                _write_abort_trace(seed_path, seed, exc)
                 sys.exit(
                     f"[ict25_arms] ARRET DE LA GARDE (seed {seed}): {exc}. "
                     "Le bras rend sa memoire en sortant ; aucun artefact n'est "

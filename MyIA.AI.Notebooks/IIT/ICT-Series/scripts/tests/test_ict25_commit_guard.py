@@ -19,7 +19,10 @@ Ce que ce test prouve
      avorte a sa premiere mesure, et la garde devient une panne.
   9. `ict25_arms.py` branche effectivement la garde : import du module,
      callback passe au trainer, options de CLI, et champs de telemetrie dans
-     l'artefact.
+     l'artefact -- plus le refus des planchers incoherents et la trace d'arret
+     (review #24711, points 3-4).
+ 10. Sous Linux la grandeur lue est le commit (``CommitLimit``/``Committed_AS``),
+     pas la memoire recuperable ; sans comptabilite de commit, repli assume.
 
 Le test n'a **aucune dependance lourde** (ni torch, ni transformers) : il
 tourne partout, y compris en CI sans GPU. Il est executable par pytest et
@@ -94,6 +97,16 @@ def test_describe_with_and_without_limit():
     texte = sans.describe()
     assert "7.5 Go" in texte and "plafond non mesurable" in texte, texte
     assert sans.used_pct is None
+
+
+def test_describe_with_zero_limit_does_not_raise():
+    # limite = 0 : pas un plafond, mais limit_gb vaut alors 0.0 (pas None) --
+    # l'ancien ``is None`` formatat used_pct=None avec :.1f => TypeError au
+    # moment precis ou la garde doit parler (review #24711, point 2).
+    plafond_nul = CommitStatus(int(4.2 * GO), 0)
+    assert plafond_nul.used_pct is None
+    texte = plafond_nul.describe()
+    assert "4.2 Go" in texte and "plafond non mesurable" in texte, texte
 
 
 def test_watch_ignores_off_period_steps():
@@ -189,6 +202,46 @@ def test_run_floor_below_start_threshold():
     )
 
 
+def test_linux_status_reads_commit_accounting():
+    # Sur Linux, la grandeur du contrat est le COMMIT (CommitLimit /
+    # Committed_AS), pas la memoire recuperable -- l'ancienne lecture
+    # (MemAvailable + SwapFree) aurait ete plus genereuse que le contrat
+    # calibre sur le CSV commit-pressure de po-2027 (review #24711, point 1).
+    from ict25_commit_guard import _linux_status_from_text
+
+    meminfo_commit = (
+        "MemTotal:       32613564 kB\n"
+        "MemFree:        12000000 kB\n"
+        "MemAvailable:   20000000 kB\n"
+        "SwapTotal:       8388604 kB\n"
+        "SwapFree:        8000000 kB\n"
+        "CommitLimit:    41000772 kB\n"
+        "Committed_AS:   33423360 kB\n"
+    )
+    statut = _linux_status_from_text(meminfo_commit)
+    assert statut is not None
+    attendu_avail = (41000772 - 33423360) * 1024
+    assert statut.avail_bytes == attendu_avail, (
+        f"avail {statut.avail_bytes} != CommitLimit - Committed_AS ({attendu_avail})"
+    )
+    assert statut.limit_bytes == 41000772 * 1024
+
+    # Noyau sans comptabilite de commit : repli par memoire disponible,
+    # grandeur differente, assumee.
+    meminfo_sans_commit = (
+        "MemTotal:       32613564 kB\n"
+        "MemAvailable:   20000000 kB\n"
+        "SwapTotal:       8388604 kB\n"
+        "SwapFree:        8000000 kB\n"
+    )
+    statut = _linux_status_from_text(meminfo_sans_commit)
+    assert statut is not None
+    assert statut.avail_bytes == (20000000 + 8000000) * 1024
+    assert statut.limit_bytes == (32613564 + 8388604) * 1024
+
+    assert _linux_status_from_text("MemTotal: 1 kB\n") is None
+
+
 def test_ict25_arms_wires_the_guard():
     source = (SCRIPTS / "ict25_arms.py").read_text(encoding="utf-8")
     preuves = {
@@ -200,6 +253,9 @@ def test_ict25_arms_wires_the_guard():
         "plafond dans l'artefact": '"commit_limit_go":',
         "marge minimale par graine": '"commit_headroom_min_go":',
         "sortie explicite sur arret": "except CommitGuardAbort as exc:",
+        "refus de planchers incoherents": "min_run_headroom_go >= args.min_commit_headroom_go",
+        "trace d'arret ecrite sur abort": "_write_abort_trace(seed_path, seed, exc)",
+        "portee du bloc commit_guard dite": '"scope": "derniere graine du lot"',
     }
     manquants = [nom for nom, motif in preuves.items() if motif not in source]
     assert not manquants, f"branchement absent de ict25_arms.py : {manquants}"

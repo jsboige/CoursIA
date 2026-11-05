@@ -86,7 +86,11 @@ class CommitStatus:
         return round(100.0 * (1.0 - self.avail_bytes / self.limit_bytes), 1)
 
     def describe(self) -> str:
-        if self.limit_gb is None:
+        # ``not`` et pas ``is None`` : ``limit_bytes=0`` donne ``limit_gb=0.0``,
+        # qui n'est pas None mais n'est pas un plafond non plus -- formater
+        # ``used_pct`` (None) avec ``:.1f`` levait TypeError precisement au
+        # moment ou la garde doit parler (review #24711, point 2).
+        if not self.limit_gb:
             return f"{self.avail_gb:.1f} Go disponibles (plafond non mesurable)"
         return (f"{self.avail_gb:.1f} Go disponibles sur {self.limit_gb:.1f} Go "
                 f"({self.used_pct:.1f} % utilises)")
@@ -125,24 +129,59 @@ def _windows_status() -> CommitStatus | None:
     return CommitStatus(int(status.ullAvailPageFile), plafond)
 
 
-def _linux_status() -> CommitStatus | None:
-    """Marge et plafond de commit Linux (/proc/meminfo)."""
+def _linux_status_from_text(text: str) -> CommitStatus | None:
+    """Statut de commit depuis le contenu de ``/proc/meminfo``.
+
+    Lit ``CommitLimit`` / ``Committed_AS`` -- la comptabilite du commit du
+    noyau, la meme grandeur que ``ullTotalPageFile`` / ``ullAvailPageFile``
+    sous Windows. La lecture precedente (``MemAvailable`` + ``SwapFree``)
+    mesurait la memoire recuperable, pas le commit : ``MemAvailable`` inclut
+    le cache, donc la garde aurait ete plus genereuse que son contrat calibre
+    sur le CSV commit-pressure de po-2027 (review #24711, point 1).
+
+    Repli : un noyau sans comptabilite de commit (rare) retombe sur
+    l'estimation par memoire disponible -- grandeur differente, plus
+    permissive, assumee comme telle plutot que maquillee en commit.
+    """
+    valeurs: dict[str, list[str]] = {}
+    for ligne in text.splitlines():
+        cle, sep, reste = ligne.partition(":")
+        if sep:
+            valeurs[cle] = reste.split()
+    if "CommitLimit" in valeurs and "Committed_AS" in valeurs:
+        try:
+            limite = int(valeurs["CommitLimit"][0]) * 1024
+            engage = int(valeurs["Committed_AS"][0]) * 1024
+        except (IndexError, ValueError):
+            return None
+        return CommitStatus(max(limite - engage, 0), limite or None)
     disponible = 0
     total = 0
     lu = False
-    try:
-        with open("/proc/meminfo", encoding="ascii") as fh:
-            for ligne in fh:
-                if ligne.startswith(("MemAvailable:", "SwapFree:")):
-                    disponible += int(ligne.split()[1]) * 1024
-                    lu = True
-                elif ligne.startswith(("MemTotal:", "SwapTotal:")):
-                    total += int(ligne.split()[1]) * 1024
-    except OSError:
-        return None
+    for cle in ("MemAvailable", "SwapFree", "MemTotal", "SwapTotal"):
+        if cle not in valeurs:
+            continue
+        try:
+            valeur = int(valeurs[cle][0]) * 1024
+        except (IndexError, ValueError):
+            continue
+        if cle in ("MemAvailable", "SwapFree"):
+            disponible += valeur
+            lu = True
+        else:
+            total += valeur
     if not lu:
         return None
     return CommitStatus(disponible, total or None)
+
+
+def _linux_status() -> CommitStatus | None:
+    """Marge et plafond de commit Linux (/proc/meminfo)."""
+    try:
+        with open("/proc/meminfo", encoding="ascii") as fh:
+            return _linux_status_from_text(fh.read())
+    except OSError:
+        return None
 
 
 def commit_status() -> CommitStatus | None:
