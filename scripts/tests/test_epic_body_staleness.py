@@ -442,6 +442,45 @@ def test_cli_writes_utf8_even_on_a_cp1252_stdout(monkeypatch):
     assert "⇄" in payload["findings"][0]["title"]
 
 
+class _StreamSansReconfigure:
+    """Flux cp1252 sans ``reconfigure`` : force le repli ASCII de ``_emit_utf8``."""
+
+    def __init__(self) -> None:
+        self._raw = io.BytesIO()
+
+    @property
+    def encoding(self) -> str:
+        return "cp1252"
+
+    def write(self, text: str) -> int:
+        data = text.encode("cp1252")  # strict : leve comme une vraie console
+        self._raw.write(data)
+        return len(data)
+
+    def flush(self) -> None:
+        pass
+
+    def ascii_text(self) -> str:
+        return self._raw.getvalue().decode("ascii")
+
+
+def test_ascii_fallback_stays_valid_json_for_an_astral_title(monkeypatch):
+    """Regression (repli de #24622) : un emoji astral cassait l'echappement.
+
+    Le repli encodait le texte rendu en ``backslashreplace``, qui produit
+    ``\\U0001f9ed`` pour un caractere astral -- pas un echappement JSON
+    valide (``\\uXXXX``, 4 chiffres). Le repli devait alors un document
+    indechiffrable, exactement ce qu'il existait pour eviter.
+    """
+    stream = _StreamSansReconfigure()
+    monkeypatch.setattr(_MODULE.sys, "stdout", stream)
+
+    _MODULE._emit_utf8(json.dumps({"title": "constellation 🧭 07"}, ensure_ascii=False))
+
+    payload = json.loads(stream.ascii_text())
+    assert payload["title"] == "constellation 🧭 07"
+
+
 def test_cli_reports_read_failure(monkeypatch, capsys):
     def fail(_repo):
         raise RuntimeError("GitHub unavailable")

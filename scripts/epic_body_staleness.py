@@ -433,7 +433,7 @@ def list_merged_prs(repo: str, limit: int) -> list[MergedPullRequest]:
     )[:limit]
 
 
-def _emit_utf8(text: str) -> None:
+def _emit_utf8(text: str, indent: int | None = None) -> None:
     """Ecrit `text` sur stdout en UTF-8, quel que soit le codepage de la console.
 
     Les titres d'EPIC du depot portent des caracteres hors cp1252 (U+21C4 par
@@ -454,7 +454,14 @@ def _emit_utf8(text: str) -> None:
         stream.write(text)
     except UnicodeEncodeError:
         # Dernier recours : ne jamais perdre le rapport pour un caractere.
-        stream.write(text.encode("ascii", "backslashreplace").decode("ascii"))
+        # On re-serialise en JSON ASCII plutot qu'echapper le texte deja rendu :
+        # backslashreplace produisait \U0001f9ed pour un caractere astral
+        # (emoji de titre, mesure : U+1F9ED dans le corpus du 2026-11-05), et
+        # \Uxxxxxxxx n'est PAS un echappement JSON valide (\uXXXX, 4 chiffres)
+        # -- le repli cassait lui-meme le contrat qu'il gardait.
+        stream.write(
+            json.dumps(json.loads(text), ensure_ascii=True, indent=indent)
+        )
     stream.flush()
 
 
@@ -485,12 +492,13 @@ def _cli(argv: list[str] | None = None) -> int:
         return 1
 
     payload = build_payload(epics, merged_prs)
+    indent = 2 if args.pretty else None
     rendered = json.dumps(
         payload,
         ensure_ascii=False,
-        indent=2 if args.pretty else None,
+        indent=indent,
     )
-    _emit_utf8(rendered + "\n")
+    _emit_utf8(rendered + "\n", indent)
     return 0
 
 
