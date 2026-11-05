@@ -5,8 +5,12 @@
     "minicpm5_seed42",
     "minicpm5_seed7",
     "qwen35_seed0",
-    "qwen35_seed1"
+    "qwen35_seed1",
+    "qwen35_seed42",
+    "qwen35_seed7"
   ],
+  "aborted_runs": [],
+  "runs_sans_post_eval": [],
   "per_model": {
     "minicpm5": {
       "label": "MiniCPM5-2B",
@@ -24,14 +28,16 @@
     },
     "qwen35": {
       "label": "Qwen3.5-0.8B",
-      "n_seeds": 2,
-      "pre_mean": 0.1875,
-      "post_mean": 0.4375,
-      "delta_mean": 0.24999999999999997,
-      "delta_std": 0.18749999999999997,
+      "n_seeds": 4,
+      "pre_mean": 0.19999999999999998,
+      "post_mean": 0.515625,
+      "delta_mean": 0.315625,
+      "delta_std": 0.16591954940572856,
       "deltas": [
         0.0625,
-        0.43749999999999994
+        0.43749999999999994,
+        0.27499999999999997,
+        0.48750000000000004
       ]
     }
   },
