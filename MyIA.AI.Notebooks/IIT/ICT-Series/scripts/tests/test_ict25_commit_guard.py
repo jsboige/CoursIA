@@ -21,8 +21,10 @@ Ce que ce test prouve
      callback passe au trainer, options de CLI, et champs de telemetrie dans
      l'artefact -- plus le refus des planchers incoherents et la trace d'arret
      (review #24711, points 3-4).
- 10. Sous Linux la grandeur lue est le commit (``CommitLimit``/``Committed_AS``),
-     pas la memoire recuperable ; sans comptabilite de commit, repli assume.
+ 10. Sous Linux la grandeur lue suit le mode ``vm.overcommit_memory`` : le
+     commit (``CommitLimit``/``Committed_AS``) en mode strict 2, seul mode ou le
+     noyau l'applique ; la memoire disponible (``MemAvailable``+``SwapFree``)
+     en modes 0, 1 ou inconnu -- cas mesure sur les runners d'ai-01 (#24800).
 
 Le test n'a **aucune dependance lourde** (ni torch, ni transformers) : il
 tourne partout, y compris en CI sans GPU. Il est executable par pytest et
@@ -203,10 +205,9 @@ def test_run_floor_below_start_threshold():
 
 
 def test_linux_status_reads_commit_accounting():
-    # Sur Linux, la grandeur du contrat est le COMMIT (CommitLimit /
-    # Committed_AS), pas la memoire recuperable -- l'ancienne lecture
-    # (MemAvailable + SwapFree) aurait ete plus genereuse que le contrat
-    # calibre sur le CSV commit-pressure de po-2027 (review #24711, point 1).
+    # En mode strict (vm.overcommit_memory=2), la grandeur du contrat est le
+    # COMMIT (CommitLimit / Committed_AS), que le noyau applique : la meme que
+    # sous Windows (review #24711, point 1).
     from ict25_commit_guard import _linux_status_from_text
 
     meminfo_commit = (
@@ -218,7 +219,7 @@ def test_linux_status_reads_commit_accounting():
         "CommitLimit:    41000772 kB\n"
         "Committed_AS:   33423360 kB\n"
     )
-    statut = _linux_status_from_text(meminfo_commit)
+    statut = _linux_status_from_text(meminfo_commit, overcommit_mode=2)
     assert statut is not None
     attendu_avail = (41000772 - 33423360) * 1024
     assert statut.avail_bytes == attendu_avail, (
@@ -234,12 +235,43 @@ def test_linux_status_reads_commit_accounting():
         "SwapTotal:       8388604 kB\n"
         "SwapFree:        8000000 kB\n"
     )
-    statut = _linux_status_from_text(meminfo_sans_commit)
+    statut = _linux_status_from_text(meminfo_sans_commit, overcommit_mode=2)
     assert statut is not None
     assert statut.avail_bytes == (20000000 + 8000000) * 1024
     assert statut.limit_bytes == (32613564 + 8388604) * 1024
 
     assert _linux_status_from_text("MemTotal: 1 kB\n") is None
+
+
+def test_linux_status_ignores_unenforced_commit_limit():
+    # Hors mode strict, CommitLimit n'est applique par personne : Committed_AS
+    # le depasse sans qu'aucune allocation n'echoue. Valeurs mesurees le 05/11
+    # sur la VM WSL des runners d'ai-01 (vm.overcommit_memory=1) : la lecture
+    # par le commit rendait 0 octet de marge et rougissait main (#24800), alors
+    # que 64,8 Gio de memoire restaient disponibles.
+    from ict25_commit_guard import _linux_status_from_text
+
+    meminfo_ai01 = (
+        "MemTotal:       131901476 kB\n"
+        "MemAvailable:   67974788 kB\n"
+        "SwapTotal:      33554432 kB\n"
+        "SwapFree:       17893596 kB\n"
+        "CommitLimit:    99505168 kB\n"
+        "Committed_AS:   112841676 kB\n"
+    )
+    attendu = (67974788 + 17893596) * 1024
+    plafond = (131901476 + 33554432) * 1024
+    for mode in (0, 1, None):
+        statut = _linux_status_from_text(meminfo_ai01, overcommit_mode=mode)
+        assert statut is not None, f"mode {mode} : aucune mesure"
+        assert statut.avail_bytes == attendu, (
+            f"mode {mode} : avail {statut.avail_bytes} != MemAvailable + "
+            f"SwapFree ({attendu})"
+        )
+        assert statut.limit_bytes == plafond, f"mode {mode} : plafond"
+    # Temoin : le meme texte en mode strict rend bien la marge de commit nulle.
+    strict = _linux_status_from_text(meminfo_ai01, overcommit_mode=2)
+    assert strict is not None and strict.avail_bytes == 0, strict
 
 
 def test_ict25_arms_wires_the_guard():
