@@ -12,7 +12,7 @@ Cette page est regeneree par `scripts/lean/lean_material_map.py`. Une table reco
 |---|---|---|---|---|---|
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean` | 100 | 98 | declare | couverte | 2026-11-04 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean` | 57 | 41 | declare | couverte | 2026-11-04 |
-| `MyIA.AI.Notebooks/GameTheory/game_theory_lean` | 39 | 25 | declare | couverte | 2026-07-10 |
+| `MyIA.AI.Notebooks/GameTheory/game_theory_lean` | 41 | 25 | declare | couverte | 2026-07-10 |
 | `MyIA.AI.Notebooks/Search/discrepancy_lean` | 33 | 25 | declare | couverte | 2026-08-25 |
 | `MyIA.AI.Notebooks/ML/learning_theory_lean` | 32 | 30 | declare | couverte | 2026-06-25 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean` | 25 | 24 | declare | couverte | 2026-10-08 |
@@ -58,7 +58,7 @@ Cette page est regeneree par `scripts/lean/lean_material_map.py`. Une table reco
 
 ### Reconciliation
 
-501 modules + 378 miroirs attribues a un lac + 11 fichiers hors lac + 26 fichiers ecartes (dossier vendu, ou extension `.lean` portee par un fichier qui n'est pas du Lean) = 916 fichiers `.lean` traces, soit la population entiere de `git ls-files '*.lean'`. Un fichier qui n'apparait dans aucune de ces quatre colonnes a ete perdu en route : c'est le defaut que cette reconciliation rend visible.
+503 modules + 378 miroirs attribues a un lac + 11 fichiers hors lac + 26 fichiers ecartes (dossier vendu, ou extension `.lean` portee par un fichier qui n'est pas du Lean) = 918 fichiers `.lean` traces, soit la population entiere de `git ls-files '*.lean'`. Un fichier qui n'apparait dans aucune de ces quatre colonnes a ete perdu en route : c'est le defaut que cette reconciliation rend visible.
 
 ### Lacs hors CI
 
