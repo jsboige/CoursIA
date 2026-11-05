@@ -21,7 +21,7 @@ bibliothèque déclarée n'est plus nommée par la carte (contrôle CI :
 
 | Répertoire | Toolchain | sorry (production) | Modules | Statut |
 |-----------|-----------|--------------------|---------|--------|
-| `game_theory_lean` | v4.33.0 | 1 (stretch Folk, #4880) | StableMarriage + CooperativeGames + SocialChoice + RepeatedGames + Swaps + Abstraction + ProgramGames + StackelbergBilevel (61 `.lean` FR+EN) | COMPLET (EPIC #4365) |
+| `game_theory_lean` | v4.33.0 | 1 (stretch Folk, #4880) | StableMarriage + CooperativeGames + SocialChoice + RepeatedGames + Swaps + Abstraction + ProgramGames + StackelbergBilevel + CongestionGames (`.lean` FR+EN) | COMPLET (EPIC #4365) |
 | `lean_game_defs` | v4.33.0 | 0 | 12 (6 FR + 6 `_en`) | COMPLET (defs partagés) |
 | `lean_game_defs_ext` | v4.33.0 | 0 | Bayesian/* 24 (12 FR + 12 `_en`) + 2 umbrellas | COMPLET |
 | `minimax_lean` | v4.33.0 | 0 | ZeroSum + Concavity + SionApplication (+ `_en`) | COMPLET |
@@ -60,6 +60,12 @@ jusqu'à la re-derivation du 2026-10-29 (#21765) : `Abstraction` (grain #12204, 
 `ProgramGames` (grain #15176, EPIC #15062 « Math for AI Safety ») et `StackelbergBilevel`
 (grain #21221). Les trois sont `@[default_target]` : `lake build` les compile.
 
+Une quatrième, `CongestionGames` (grain #24423, critère 4 de #21927), est arrivée après cette
+re-derivation et n'était pas carte non plus. C'est elle que `check_lean_inventory.py` a signalée
+le 2026-11-05 sur `main` — la dérive est réelle, elle vient de l'ordre des merges, pas d'un
+parser : le gate a fait son travail en rougissant `Scripts Tests (CPU)` sur toutes les PRs
+ouvertes. Elle est également `@[default_target]`.
+
 **Objectif** : formaliser le curriculum GameTheory — jeux coopératifs (Shapley, cœur), mariage stable de Gale-Shapley, choix social (Arrow, Sen, électeur médian), jeux répétés (théorème folk), chemins d'échange sur jeux ordinaux 2×2, dette d'exploitabilité et abstraction, équilibre en programmes borné, jeu de Stackelberg.
 
 **Toolchain** : v4.33.0 | **Dépendances** : Mathlib4
@@ -74,6 +80,7 @@ jusqu'à la re-derivation du 2026-10-29 (#21765) : `Abstraction` (grain #12204, 
 | `Abstraction/` (1 FR, sans jumeau `_en`) | 0 | dette d'exploitabilité d'un duel 2×2 à coefficients entiers (`dette`, `encadrement`, `dette_nonneg`, `selle_dette_nulle`) ; contre-exemple certifié `raffinement_aggrave_la_dette` — raffiner une abstraction peut aggraver la dette retransportée (grain #12204) |
 | `ProgramGames/` (3 FR + 3 `_en`) | 0 | équilibre en programmes borné (Barasz et al. 2014, arXiv:1401.5577 ; Critch 2016, arXiv:1602.04184) : noyau L1 `outcome_probeBot_probeBot` / `programNash_probeBot_probeBot` / `probeBot_unexploitable_in_family` / `probeBot_exploited_by_exploiterBot` ; agents à budget explicite (`Bounded.lean`) ; FairBot par le théorème de Löb (`FairBot.lean`, `fairBot_fairBot_cooperation`) (grain #15176) |
 | `StackelbergBilevel/` (1 FR, sans jumeau `_en`) | 0 | duopole de Stackelberg en rationnels (demande linéaire, coûts marginaux constants) : réaction de Cournot et point fixe (`cournot_reaction_fixed_point`), forme close du suiveur (`stackelberg_follower_eq_reaction`), avantage du premier entrant (`first_mover_advantage_at_default`) (grain #21221) |
+| `CongestionGames/` (1 FR, sans jumeau `_en`) | 0 | prix de l'anarchie d'un jeu de congestion atomique linéaire, entier sur `Nat` : potentiel de Rosenthal doublé `Φ' = Σ a_e · x_e · (x_e + 1)` et chaîne `C ≤ Φ' ≤ 2C` via `x² ≤ x(x+1) ≤ 2x²`. Théorèmes-phare `potential_exchange` (d'où vient le facteur 2 : il est exact sur les déviations unilatérales), `minPotential_isNash`, `cost_minPotential_le_two` ; deux témoins par `decide` — ratio exactement 2, et `15/7 > 2` (la borne couvre l'équilibre potentiel-minimal, pas tous les équilibres ; le `5/2` de Christodoulou–Koutsoupias 2005 est hors scope). Compagnon Lean du carnet `GameTheory-04h-Routing-PriceOfAnarchy` (Python, non atomique 4/3) (grain #24423, critère 4 de #21927) |
 
 **Compilation** : `lake build` — SUCCESS. CI : `lean-ci-matrix.yml` (clé `gametheory`, qui couvre aussi `SocialChoice/`).
 
