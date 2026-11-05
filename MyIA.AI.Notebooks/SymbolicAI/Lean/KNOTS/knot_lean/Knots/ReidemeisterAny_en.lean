@@ -6,20 +6,20 @@ Issue #22359 (parent Epic #1453, designated successor of #18611 whose organ is
 delivered by #22240). Tranche 1 of the multi-cycle grain: **the language** and
 its verifiers, the R1/R2/R3 embedding of the existing language, kernel witnesses,
 and the bounded decision frame. The witness search / extended negative
-certificate on the 11n102 corpus (Python replica, bounds <= 13 crossings,
-excursions <= +2) is the next tranche, not this file.
+certificate on the 11n102 corpus (Python replica, bounds ≤ 13 crossings,
+excursions ≤ +2) is the next tranche, not this file.
 
 ## Founding observation (measured, cf #22359)
 
 The connected language of `Knots.ReidemeisterMoves` is **append-only with
-fresh labels at the tail**: every descending move removes a kink `<a, b, c, c>`
+fresh labels at the tail**: every descending move removes a kink `⟨a, b, c, c⟩`
 whose labels `b`, `c` are exactly the two largest of the diagram. This is not
 an added hypothesis, it is a **consequence of the `wf` parity**: each label
 appears exactly twice, so a literal withdrawal (without renumbering) kills
 exactly two labels, which must then empty the interval `[1, numEdges]` — that
 is, be the two largest. The negative certificate
 `no_fourDistinct_certificate_unknots_11n102` (#20017) and the provenance
-measurement of #18611 (138,623 states, the 11 original crossings present in
+measurement of #18611 (138 623 states, the 11 original crossings present in
 every reached state) measure exactly this closure.
 
 ## What this module delivers
@@ -37,7 +37,7 @@ every reached state) measure exactly this closure.
 4. the **R1/R2/R3 embedding**: every R1, R2 or R3 step accepted by the old
    verifier is accepted by the new one (a theorem, not a measurement);
 5. **kernel witnesses**: a genuine non-fresh `_any` descent (dying labels
-   {2, 3} != the two largest {3, 4}, compaction 4 -> 2), the descents to
+   {2, 3} ≠ the two largest {3, 4}, compaction 4 → 2), the descents to
    the empty diagram (degenerate kink on the R1 side, a pair of terminal
    bigons on the R2 side), and the historical R1 pair passing
    through the new language;
@@ -46,7 +46,7 @@ every reached state) measure exactly this closure.
 
 ## Declared residuals (next tranches of the grain, not blind spots)
 
-- **`_any` -> `ReidemeisterEquiv` soundness**: an `_any` withdrawal is an
+- **`_any` → `ReidemeisterEquiv` soundness**: an `_any` withdrawal is an
   R1/R2 up to renaming; sealing it requires "renaming preserves the knot
   type". Tranche 12 delivers the missing relation (`AnyEquiv`, section 18) and
   **bounds** the bridge instead of promising it: the route "choose or rename
@@ -56,7 +56,7 @@ every reached state) measure exactly this closure.
   then still to be established), or a **relabelling step inside the connected
   relation** — the latter touches `ReidemeisterStep`, hence `Invariant.lean`,
   and belongs to a coordinator arbitration, not to a lane edit;
-- the equivalence `canon l = canon l' <-> exists injective renaming`: **closed**.
+- the equivalence `canon l = canon l' ↔ ∃ renommage injectif`: **closed**.
   The **invariance** half (`canon (mapC σ l) = canon l` for injective `σ`) is
   proved in section 7 (`canon_map_eq`); the **extraction** of the renaming from
   the `canon` equality is proved in section 16 (`canon_extraction`: a renaming
@@ -101,7 +101,7 @@ section 7, converse residual, see the header); the kernel only consumes the
 equality.
 -/
 
-/-- Label -> canonical number association: already-seen number, or
+/-- Label → canonical number association: already-seen number, or
     `size + 1` on first appearance. -/
 private def canonLabel (seen : List (Nat × Nat)) (x : Nat) :
     Nat × List (Nat × Nat) :=
@@ -152,7 +152,7 @@ private def subLabel (c : PDCrossing) (x y : Nat) : PDCrossing :=
   ⟨if c.e1 = x then y else c.e1, if c.e2 = x then y else c.e2,
     if c.e3 = x then y else c.e3, if c.e4 = x then y else c.e4⟩
 
-/-- Double replacement in one pass: `x₁ -> y₁` and `x₂ -> y₂` (R2). A single
+/-- Double replacement in one pass: `x₁ → y₁` and `x₂ → y₂` (R2). A single
     pass so as not to rewrite the result of the first replacement. -/
 private def subLabel2 (c : PDCrossing) (x₁ y₁ x₂ y₂ : Nat) : PDCrossing :=
   ⟨sub1 c.e1, sub1 c.e2, sub1 c.e3, sub1 c.e4⟩
@@ -161,7 +161,7 @@ where
 
 /-- Bool verifier of the `_any` withdrawal of a terminal kink: silhouette
     `K.e3 = K.e4` alone (the label freshness of `verifyR1Fwd` is LIFTED),
-    length `+1`, merge `K.e2 -> K.e1` in one rewritten slot, comparison of the
+    length `+1`, merge `K.e2 → K.e1` in one rewritten slot, comparison of the
     rest to the target **up to renaming** (`canon`). The "rest empty" case
     covers the descent of a single crossing to the degenerate diagram. -/
 def verifyKinkDownAny (D d : KnotDiagram) : Bool :=
@@ -179,7 +179,7 @@ def verifyKinkDownAny (D d : KnotDiagram) : Bool :=
 
 /-- Bool verifier of the `_any` withdrawal of a pair of terminal bigons:
     silhouettes `e2 = e3` on both terminal crossings, common arc
-    `K₁.e1 = K₂.e1`, length `+2`, double merge `o₁ -> a` / `o₂ -> a`
+    `K₁.e1 = K₂.e1`, length `+2`, double merge `o₁ → a` / `o₂ → a`
     (where `a = K₂.e1`, `o₁ = K₁.e4`, `o₂ = K₂.e4`) in one rewritten slot,
     rest compared up to renaming. -/
 def verifyBigonDownAny (D d : KnotDiagram) : Bool :=
@@ -278,7 +278,7 @@ private theorem slot_merge {v w a b : Nat}
   · rw [hb', if_pos rfl, hwa]
 
 /-- The labels of a diagram crossing lie in `d.edges`
-    (membership feeds the `<= numEdges` bound of the plumbing). -/
+    (membership feeds the `≤ numEdges` bound of the plumbing). -/
 private theorem mem_edges_of_mem_crossings {d : KnotDiagram}
     {c : PDCrossing} (hc : c ∈ d.crossings) :
     c.e1 ∈ d.edges ∧ c.e2 ∈ d.edges ∧ c.e3 ∈ d.edges ∧ c.e4 ∈ d.edges := by
@@ -334,7 +334,7 @@ private theorem set_self_mem {l : List PDCrossing} {i : Nat}
 /-- **R1 embedding**: every step accepted by `verifyR1Fwd` (small `d`, large
     `D`) is an accepted `_any` withdrawal. The proof unfolds the old
     verifier, records the silhouette (a consequence of the freshness
-    equalities), and shows that the merge `K.e2 -> K.e1` exactly undoes the
+    equalities), and shows that the merge `K.e2 → K.e1` exactly undoes the
     `isRenameOf` renaming — the rewritten rest is literally the small
     diagram, hence `canon`-equal to itself. -/
 theorem verifyR1Fwd_implies_verifyKinkDownAny {d D : KnotDiagram}
@@ -530,7 +530,7 @@ embedding in action.
 -/
 
 /-- **Non-fresh `_any` witness**: the large diagram carries the terminal kink
-    `<1,2,3,3>`; its withdrawal merges arc `2` into arc `1` and kills labels
+    `⟨1,2,3,3⟩`; its withdrawal merges arc `2` into arc `1` and kills labels
     `{2, 3}` — which are NOT the two largest (`{3, 4}`): the surviving target
     carries label `4`, renumbered `2` by the `canon` comparison. This step is
     REFUSED by the connected language (freshness recovered by `wf`) and
@@ -553,7 +553,7 @@ theorem movesConnectsAny_witness_nonFresh :
   unfold movesConnectsAny
   decide
 
-/-- **Descent to the empty diagram**: the single crossing `<1,1,2,2>` is a
+/-- **Descent to the empty diagram**: the single crossing `⟨1,1,2,2⟩` is a
     degenerate kink (silhouette `e3 = e4`, trivial merge `a = b`), its
     withdrawal leaves the void — the verifier's "rest empty" case. -/
 theorem verifyKinkDownAny_witness_empty :
@@ -562,8 +562,8 @@ theorem verifyKinkDownAny_witness_empty :
       { crossings := [], numEdges := 0 } := by
   decide
 
-/-- **R2 `_any` witness**: the pair of terminal bigons `<1,2,2,4>` /
-    `<1,3,3,4>` (twin arcs `2` and `3`, shared entry `1` and exit `4`)
+/-- **R2 `_any` witness**: the pair of terminal bigons `⟨1,2,2,4⟩` /
+    `⟨1,3,3,4⟩` (twin arcs `2` and `3`, shared entry `1` and exit `4`)
     withdraws entirely — target the empty diagram, the verifier's "rest
     empty" case. The `r2Any` surface exercised on a literal, symmetric to
     the degenerate kink above. -/
@@ -596,8 +596,8 @@ theorem verifyR1_witness_passes_any :
 The enumeration `allDiagrams n` (#22240) provides the universe; the `_any`
 moves define the graph; reachability is decidable by neighbourhood closure
 bounded by the size of the universe. The kernel only evaluates this frame at
-small bounds; the effective search at the bounds of the 11n102 corpus (<= 13
-crossings, excursions <= +2) goes through the Python replica — tranche 2 of
+small bounds; the effective search at the bounds of the 11n102 corpus (≤ 13
+crossings, excursions ≤ +2) goes through the Python replica — tranche 2 of
 the grain, cf #20017 for the precedent.
 -/
 
@@ -624,7 +624,7 @@ def anyBoundedConnects (n : Nat) (d₁ d₂ : KnotDiagram) : Bool :=
   (anyClosure n ((allDiagrams n).length + 1) [d₁]).contains d₂
 
 /-- The frame executes: in the universe `allDiagrams 1`, the degenerate kink
-    `<1,1,2,2>` reaches the empty diagram — the descent of the §5 witness
+    `⟨1,1,2,2⟩` reaches the empty diagram — the descent of the §5 witness
     inside the enumeration, decided by the kernel. -/
 theorem demo_anyBoundedConnects_empty :
     anyBoundedConnects 1
@@ -647,7 +647,7 @@ bridge:
 
 * `canon_map_eq` — renaming by an **injection** does not change the canonical
   form: the first-appearance rank does not depend on the label's name, only on
-  the order of appearance. This is the direction soundness (`_any` ->
+  the order of appearance. This is the direction soundness (`_any` →
   `ReidemeisterEquiv`) consumes: the certificate carried by the verifier is
   stable under renaming.
 
@@ -2214,7 +2214,7 @@ private theorem labelsOf_mapC (π : Nat → Nat) (l : List PDCrossing) :
 /-- **Extraction.** The equality `canon l = canon l'` produces a renaming `π` of
     the labels which is a **bijection** from `labelsOf l` onto `labelsOf l'`,
     and which sends `l` onto `l'`. This is the "extraction" half of the bridge
-    `canon l = canon l' <-> exists label bijection`. -/
+    `canon l = canon l' ↔ ∃ bijection d'étiquettes`. -/
 private theorem canon_extraction {l l' : List PDCrossing} (h : canon l = canon l') :
     ∃ π : Nat → Nat,
       (∀ x, x ∈ labelsOf l → π x ∈ labelsOf l') ∧
@@ -2395,7 +2395,7 @@ theorem canon_rename_iff {l l' : List PDCrossing} :
 
 /-! ## 18. Equivalence up to renaming, and the bound of the announced bridge (tranche 12)
 
-The residual declared at the head of the module is the **`_any` ->
+The residual declared at the head of the module is the **`_any` →
 `ReidemeisterEquiv` soundness**. The route recorded in the grain plan was:
 "on canonical forms, `canon` kills the renaming, and the dying labels of the
 kink are fresh there". **That premise is false — and it is refuted by the
@@ -2410,17 +2410,17 @@ What is delivered here, in this order:
 
 1. `AnyEquiv` — the **missing relation** of the language (two diagrams
    equivalent up to renaming), its equivalence laws, and its characterisation
-   `exists injective pi, mapC pi l = l'` (a direct consequence of
+   `∃ π injectif, mapC π l = l'` (a direct consequence of
    `canon_rename_iff`, section 17);
 2. `kinkAnyWitness` / `kinkAnyTarget` — an **authentic** `_any` withdrawal
    whose kink carries `e2 = 1`, that is a **small** label: exactly what the
    connected freshness forbids. The withdrawal is certified by the kernel
-   (`verifyKinkDownAny ... = true`);
+   (`verifyKinkDownAny … = true`);
 3. `no_verifyR1Fwd_from_witness` — **no** target satisfies `verifyR1Fwd` on
    this witness. The reason is arithmetic and **independent of the renaming**:
    the connected freshness requires `K.e2 = d.numEdges + 1`, hence
    `d.numEdges = 0` here; the cardinality clause requires
-   `D.numEdges = d.numEdges + 2`, hence `D.numEdges = 2` — but it is `4`. The
+   `D.numEdges = d.numEdges + 2`, hence `D.numEdges = 2` — but `D.numEdges = 4`. The
    two clauses cannot hold at once, whatever `d` is.
 
 **What this changes, and where it is decided.** The bridge cannot be "choose
@@ -2475,11 +2475,11 @@ theorem anyEquiv_iff_rename {d d' : KnotDiagram} :
 /-- Witness: two well-formed crossings (each label from `1` to `4` appears
     exactly twice), the last of them being a kink `⟨3, 1, 4, 4⟩`. Its arc
     `e2 = 1` is **small**: the `_any` withdrawal kills the labels `{1, 3}` by
-    fusing `1 -> 3`, whereas the connected freshness would require them to be
+    fusing `1 → 3`, whereas the connected freshness would require them to be
     the two largest. -/
 def kinkAnyWitness : KnotDiagram := ⟨[⟨1, 2, 3, 2⟩, ⟨3, 1, 4, 4⟩], 4⟩
 
-/-- Target of the withdrawal: the fusion `1 -> 3` rewrites the slot `e1` of
+/-- Target of the withdrawal: the fusion `1 → 3` rewrites the slot `e1` of
     the first crossing into `⟨3, 2, 3, 2⟩`, whose canonical form is
     `⟨1, 2, 1, 2⟩` — hence the compaction `numEdges = 2` (the dying labels
     `{1, 3}` leave `{2, 4}`, renumbered `{1, 2}`). -/
@@ -2545,19 +2545,19 @@ The setup is the one of tranche 12, applied to the **renamed** pair on both
 sides:
 
 - the witness `kinkAnyWitness` and its target `kinkAnyTarget` (section 18);
-- the renaming `pi` applied to the **four slots** of each crossing
+- the renaming `π` applied to the **four slots** of each crossing
   (`mapC`, section 16), `numEdges` **unchanged** (`renameDiagram` below).
 
 What changes is the *freshness* clause: the connected verifier requires
-`K.e2 = d.numEdges + 1`, and the renamed kink carries `K.e2 = pi 1`. The
+`K.e2 = d.numEdges + 1`, and the renamed kink carries `K.e2 = π 1`. The
 renamed target keeps its two edges (`d.numEdges = 2`), so freshness
-requires `pi 1 = 3`.
+requires `π 1 = 3`.
 
 Well-formedness requires the opposite: every edge label of a well-formed
-diagram is **at most** `numEdges` (`wf_edge_le` below), hence `pi 1 <= 2`.
+diagram is **at most** `numEdges` (`wf_edge_le` below), hence `π 1 ≤ 2`.
 
-The two are incompatible -- for **every** `pi`, and without even assuming
-`pi` injective. The bridge "rename the large diagram as well" is therefore
+The two are incompatible -- for **every** `π`, and without even assuming
+`π` injective. The bridge "rename the large diagram as well" is therefore
 **impossible**, and the residual of the grain is reduced to **one** closure:
 give the connected relation a relabelling step -- a choice that touches
 `ReidemeisterStep` and `Invariant.lean`, and which therefore falls under
@@ -2570,11 +2570,11 @@ What this section delivers:
 2. `no_verifyR1Fwd_renamed_pair` -- **no** renaming makes the
    witness/target pair acceptable to the connected verifier;
 3. `renamed_target_wf_identity` -- **non-vacuity control**: the renaming is
-   not to blame (the renamed target is well formed for `pi = id`); the
+   not to blame (the renamed target is well formed for `π = id`); the
    obstruction is the **freshness**, not well-formedness.
 -/
 
-/-- Renaming of a diagram: `pi` applied to the four slots of each crossing
+/-- Renaming of a diagram: `π` applied to the four slots of each crossing
     (`mapC`, section 16). `numEdges` is **unchanged**: the renaming bears on
     the *labels*, not on the size of the diagram. -/
 private def renameDiagram (π : Nat → Nat) (d : KnotDiagram) : KnotDiagram :=
@@ -2592,7 +2592,7 @@ private theorem renameDiagram_kinkAnyWitness (π : Nat → Nat) :
   simp [renameDiagram, kinkAnyWitness, mapC]
 
 /-- The kink of the renamed witness is indeed the last crossing: it is the
-    one carrying the fresh arc `e2 = pi 1`. -/
+    one carrying the fresh arc `e2 = π 1`. -/
 private theorem renamedWitness_kink (π : Nat → Nat) :
     (renameDiagram π kinkAnyWitness).crossings.getLast? = some ⟨π 3, π 1, π 4, π 4⟩ := by
   rw [renameDiagram_kinkAnyWitness π]
@@ -2620,15 +2620,15 @@ theorem wf_edge_le {d : KnotDiagram} (hwf : d.wf = true) {a : Nat} (ha : a ∈ d
 
 /-- **Renaming the large diagram as well does not save the bridge.**
 
-    For **every** renaming `pi` -- injective or not -- the pair (renamed
+    For **every** renaming `π` -- injective or not -- the pair (renamed
     target, renamed witness) is refused by the connected verifier.
 
     The two bounds are incompatible:
 
     - the freshness clause requires `K.e2 = d.numEdges + 1`, that is
-      `pi 1 = 2 + 1 = 3` (the renamed kink carries `e2 = pi 1`, and the
+      `π 1 = 2 + 1 = 3` (the renamed kink carries `e2 = π 1`, and the
       renamed target keeps `numEdges = 2`);
-    - well-formedness requires `pi 1 <= 2` (`wf_edge_le`: every edge label
+    - well-formedness requires `π 1 ≤ 2` (`wf_edge_le`: every edge label
       is at most `numEdges`).
 
     The obstruction is therefore **arithmetic**, as in tranche 12, but
@@ -2646,7 +2646,7 @@ theorem no_verifyR1Fwd_renamed_pair (π : Nat → Nat) :
     simp only [Bool.and_eq_true] at htrue
     -- htrue : ((wf target ∧ wf witness) ∧ decide cardinality) ∧ (decide freshness ∧ surgery)
     have hA := htrue.1.1.1
-    -- freshness of the renamed kink: `pi 1 = d.numEdges + 1 = 2 + 1`
+    -- freshness of the renamed kink: `π 1 = d.numEdges + 1 = 2 + 1`
     have hfresh : π 1 = 2 + 1 := (of_decide_eq_true htrue.2.1).1
     -- well-formedness of the renamed target: every edge label is at most
     -- `numEdges = 2`
@@ -2655,7 +2655,7 @@ theorem no_verifyR1Fwd_renamed_pair (π : Nat → Nat) :
     have hle : π 1 ≤ 2 := wf_edge_le hA hmem
     omega
 
-/-- **Non-vacuity control**: the renaming is not to blame. For `pi = id`, the
+/-- **Non-vacuity control**: the renaming is not to blame. For `π = id`, the
     renamed target is **well formed** (`wf = true`) and its edge label `1`
     is indeed bounded by `numEdges = 2` -- it is therefore the freshness
     clause, and not well-formedness, that refuses the renamed pair. -/

@@ -63,9 +63,11 @@ PADDING_REFERENCE = 776.0
 # mesure sur le meme arbre, l'ancien instrument (d818b008b) rend 39 lui
 # aussi.
 PADDING_REFERENCE_REBASE = 39.0
-# L'identite de l'instrument au moment du rebasage.
+# L'identite de l'instrument au moment du rebasage. Troisieme rebasage
+# (2026-11-02) : le correctif UTF-8 a touche l'instrument -- valeur
+# inchangee (39) sur le meme arbre, l'encodage ne classe pas les carnets.
 INSTRUMENT_PADDING = ("scripts/notebook_tools/inventory_notebook_names.py"
-                       "@6144b71ebfcd588d5347e16e7d2ba984dd6af2e5")
+                       "@735ada5ba11cd900dee9649c71fedb38fd6fe52c")
 
 
 def entree(cle="padding-nommage", sens="descend", cible=0.0):
@@ -383,7 +385,7 @@ def test_la_reference_du_padding_est_celle_de_l_issue():
     fabrique sur l'entree « padding et nommage »."""
     e = entree("padding-nommage")
     assert e.reference.source == "issue #23175"
-    assert e.reference.mesure_le == "2026-10-31"
+    assert e.reference.mesure_le == "2026-11-02"
     assert e.reference.valeur == PADDING_REFERENCE_REBASE
     assert e.reference.instrument == INSTRUMENT_PADDING
     # Et la reference rebasee est comparable a l'instrument courant.
@@ -771,7 +773,7 @@ def test_l_identite_de_l_instrument_suit_le_sha_du_script(monkeypatch):
     quand l'instrument change."""
     def faux_run(cmd, timeout=600):
         if "log" in cmd and "inventory_notebook_names.py" in " ".join(cmd):
-            return 0, "6144b71ebfcd588d5347e16e7d2ba984dd6af2e5\n", ""
+            return 0, INSTRUMENT_PADDING.rsplit("@", 1)[1] + "\n", ""
         return 1, "", ""
     monkeypatch.setattr(aer, "_run", faux_run)
     identite = aer.identite_instrument(
@@ -1175,14 +1177,14 @@ def test_l_identite_derivee_a_la_date_est_celle_des_points_declares():
     l'instrument : celle qui l'a produit, ou l'une de ses ancetres.
 
     L'EGALITE stricte avec l'identite derivee a la date du point ne peut
-    pas etre exigee : git resout une date sans heure avec l'heure
-    COURANTE de l'horloge (cf le docstring de `identite_instrument_a`),
-    donc l'identite derivee d'un jour passe avance au fil des heures,
-    alors que l'identite declaree designe le PRODUISANT. Ce qui doit
-    etre vrai, c'est que l'identite declaree est un ancetre de l'identite
-    derivee — ou l'identite derivee elle-meme. Une identite declaree qui
-    n'est pas un ancetre, ou qui porte un autre script, est un mensonge :
-    c'est ce que le controle refuse.
+    pas etre exigee : le jour se resout a sa FIN (`_borne_de`), donc
+    l'identite derivee est la derniere version de l'instrument qui
+    existait CE JOUR-LA, alors que l'identite declaree designe le
+    PRODUISANT, qui peut etre plus ancien. Ce qui doit etre vrai, c'est
+    que l'identite declaree est un ancetre de l'identite derivee — ou
+    l'identite derivee elle-meme. Une identite declaree qui n'est pas
+    un ancetre, ou qui porte un autre script, est un mensonge : c'est ce
+    que le controle refuse.
 
     Le test est ignore sur un clone superficiel : l'historique de
     l'instrument n'y existe pas, et une identite non etablie ne prouve
@@ -1202,6 +1204,62 @@ def test_l_identite_derivee_a_la_date_est_celle_des_points_declares():
         assert sha_declare == sha_derive or _ancetre_de(sha_declare, sha_derive), (
             f"l identite declaree ({h.instrument}) n'est ni l'identite "
             f"derivee au {h.mesure_le} ({derivee}) ni un ancetre de celle-ci")
+
+
+def test_la_borne_du_jour_est_ecrite_a_la_fin_du_jour(monkeypatch):
+    """Un jour se resout a sa FIN, jamais a l'heure de l'horloge.
+
+    `git log --before=2026-10-31` lit la date SANS heure avec l'heure
+    COURANTE du moment ou la commande est lancee : l'identite derivee
+    d'un jour passe bougeait donc avec l'heure du jour. Un point declare
+    par un instrument modifie PLUS TARD dans la journee se retrouvait
+    alors posterieur a l'identite derivee, et le controle d'ANCETRE le
+    lisait comme un mensonge -- alors que la mesure etait exacte. C'est
+    ce que le job `Scripts Tests (CPU)` mesurait le 05/11 (CI a 01:27Z)
+    sur le point du 2026-10-31 declare par l'instrument de 05:18.
+
+    Le temoin est sur la COMMANDE, pas sur l'horloge : la borne porte
+    la fin du jour. Le controle NEGATIF est le code d'avant -- il
+    ecrivait `--before=2026-10-31` -- que ce temoin refuse.
+    """
+    captures = []
+
+    def faux_run(cmd, timeout=600):
+        captures.append(tuple(str(a) for a in cmd))
+        return 1, "", ""
+
+    monkeypatch.setattr(aer, "_run", faux_run)
+    aer.identite_instrument_a(("python", "scripts/notebook_tools/o.py"),
+                              "2026-10-31")
+    bornes = [a for c in captures for a in c if a.startswith("--before=")]
+    assert bornes, "aucune borne --before= dans la commande git de l'organe"
+    assert bornes[0] == "--before=2026-10-31 23:59:59"
+
+
+def test_une_date_qui_porte_deja_une_heure_n_est_pas_elargie():
+    """L'appelant qui demande un INSTANT garde son instant."""
+    assert aer._borne_de("2026-10-31") == "2026-10-31 23:59:59"
+    assert aer._borne_de("2026-10-31T12:00:00Z") == "2026-10-31T12:00:00Z"
+
+
+def test_l_identite_du_jour_vaut_la_version_de_la_fin_de_ce_jour():
+    """L'identite derivee d'un jour vaut l'instrument de la FIN de ce jour.
+
+    La borne est ecrite PAR LE TEST, avec la fin du jour : le resultat
+    ne depend donc pas de l'heure a laquelle le test tourne. Sur un
+    clone superficiel, l'historique n'existe pas : le test s'ignore,
+    comme le test voisin.
+    """
+    e = _entree_padding()
+    script = "scripts/notebook_tools/inventory_notebook_names.py"
+    code, out, _ = aer._run(("git", "log", "-1", "--format=%H",
+                             "--before=2026-10-31 23:59:59",
+                             "origin/main", "--", script))
+    if code != 0 or not out.strip():
+        pytest.skip("historique de l'instrument indisponible "
+                    "(clone superficiel)")
+    derivee = aer.identite_instrument_a(e.commande, "2026-10-31")
+    assert derivee == f"{script}@{out.strip()}"
 
 
 def test_le_commentaire_publie_la_serie(monkeypatch):
