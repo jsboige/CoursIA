@@ -95,9 +95,9 @@ se réduit à `cosh(t/2)`, et le lemme de Mathlib `cosh x ≤ exp(x²/2)` donne 
 
 C'est le seul cas où la borne générale se ferme élégamment (la MGF est symétrique en `t`,
 le max en `μ` est atteint en `1/2`). La borne générale `μ·exp(t(1−μ)) + (1−μ)·exp(−tμ)
-≤ exp(t²/8)` pour `μ ∈ [0,1]` arbitraire est documentée OPEN (voir docstring module) :
-elle requiert la route variationnelle (Pinsker) ou la seconde-dérivée (cgf tilté), lourdes
-hors du cadre Measure. -/
+≤ exp(t²/8)` pour `μ ∈ [0,1]` arbitraire est prouvée par la méthode de l'écart dans `bernoulli_mgf_le` ci-dessous
+(la route variationnelle (Pinsker) ou la seconde-dérivée (cgf tilté) restent
+lourdes hors du cadre Measure). -/
 theorem bernoulli_mgf_half_le (t : ℝ) :
     (1 : ℝ) / 2 * Real.exp (t * ((1 : ℝ) / 2)) + (1 : ℝ) / 2 * Real.exp (-(t * ((1 : ℝ) / 2))) ≤
       Real.exp (t ^ 2 / 8) := by
@@ -112,7 +112,7 @@ theorem bernoulli_mgf_half_le (t : ℝ) :
 
 /-! ## Brique 2b/5-étape2 — dérivée du log-MGF (moyenne tiltée) et borne analytique
 
-Ingrédient analytique de la borne générale `bernoulli_mgf_le` (encore OPEN). On
+Ingrédient analytique de la borne générale `bernoulli_mgf_le` (prouvée ci-dessous). On
 établit la structure dérivée du **log-MGF non-centré** `φ(t) = log((1−μ) + μ·exp t)` :
 
   φ'(t) = q(t) := μ·exp t / ((1−μ) + μ·exp t)   (« moyenne tiltée », ∈ [0,1] pour μ ∈ [0,1])
@@ -121,7 +121,8 @@ Ingrédient analytique de la borne générale `bernoulli_mgf_le` (encore OPEN). 
 La borne `φ'' ≤ 1/4` est le **cœur analytique** de Hoeffding (toute la difficulté de la
 concentration réside là : la variance d'une v.a. bornée dans [0,1] est ≤ (plage/2)² = 1/4).
 La borne finale `MGF ≤ exp(t²/8)` suit par convexité/Taylor (K(t) := φ(t) − tμ a K(0)=K'(0)=0
-et K'' = φ'' ≤ 1/4 ⟹ K(t) ≤ t²/8) — étape documentée OPEN (reste le pas Taylor/convexité).
+et K'' = φ'' ≤ 1/4 ⟹ K(t) ≤ t²/8) — prouvée via la méthode de l'écart dans
+`bernoulli_mgf_le` (le pas Taylor/convexité reste non formalisé).
 -/
 
 /-- **Positivité du dénominateur du log-MGF** : pour `μ ∈ [0,1]` et tout `t`,
@@ -195,7 +196,7 @@ theorem bernoulli_tilted_mean_deriv (μ t : ℝ) (hμ : 0 ≤ μ) (hμ2 : μ ≤
     Hoeffding. La borne `x·(1−x) ≤ 1/4` est **inconditionnelle** (vraie ∀ `x ∈ ℝ`, via la
     complétion du carré `(x − 1/2)² ≥ 0`), donc s'applique à `x = q(t)` sans hypothèse de
     domaine. C'est l'ingrédient exact qui, combiné à Taylor/convexité (`K(t) = φ(t) − tμ`
-    avec `K(0) = K'(0) = 0`), donne la borne finale `MGF ≤ exp(t²/8)` (étape OPEN). -/
+    avec `K(0) = K'(0) = 0`), donne la borne finale `MGF ≤ exp(t²/8)` (prouvée dans `bernoulli_mgf_le`). -/
 theorem bernoulli_logmgf_second_deriv_le (μ t : ℝ) (hμ : 0 ≤ μ) (hμ2 : μ ≤ 1) :
     deriv (fun s => μ * Real.exp s / ((1 - μ) + μ * Real.exp s)) t ≤ 1 / 4 := by
   rw [bernoulli_tilted_mean_deriv μ t hμ hμ2]

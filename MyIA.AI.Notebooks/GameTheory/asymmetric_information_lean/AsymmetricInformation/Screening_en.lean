@@ -64,9 +64,12 @@ def expectedProfit (c : Contract) (r : RiskProfile) (q : RiskType) : Int :=
 def breakEvenType (c : Contract) (r : RiskProfile) (q : RiskType) : Prop :=
   expectedProfit c r q = 0
 
-/-- Global expected profit of a contract on the full profile.
-    Convention: sum (not average) so the linear arithmetic in `omega`
-    works without Mathlib division handling. -/
+/-- Global expected profit of a contract on the full profile **summed**
+    over the 2 types (no division). The **sum** lies in the linear domain of
+    `omega`, hence comparable via closed `Int` arithmetic with no
+    divisibility hypothesis. An **averaged** variant can be added if
+    needed, but the average (`Int` division by 2) leaves the linear
+    domain and would block `omega`. -/
 def globalExpectedProfit (c : Contract) (r : RiskProfile) : Int :=
   expectedProfit c r .high + expectedProfit c r .low
 
@@ -148,8 +151,9 @@ theorem cream_skim_breaks_nash
     omega
   -- Unfold `globalExpectedProfit` on both sides of `hle` and combine
   -- with `hPosOff` and `hNegSum`; `omega` closes the contradiction
-  -- `0 < ... ≤ ... ≤ -1`. The `simpa [globalExpectedProfit, expectedProfit]
-  -- using` transformation unfolds both sides of `hle` and `hPosOff`
+  -- `0 < ... ≤ ... ≤ -1`. The
+  -- `simpa [globalExpectedProfit, expectedProfit] using` transformation unfolds both
+  -- sides of `hle` and `hPosOff`
   -- to render them linear in `Int`, usable by `omega`.
   have hle' : (c'.premium * 100 - r.pHigh * c'.coverage) +
                 (c'.premium * 100 - r.pLow * c'.coverage) ≤

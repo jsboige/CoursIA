@@ -997,7 +997,12 @@ pairs cross.
 The auxiliary profile is explicit — `i` has `z ≻ x ≻ y`, `j` has `y ≻ z ≻ x`,
 everyone else `z ≻ y ≻ x` — and it remains transitive for each of them. The two
 private decisions give `x ≻s y` and `y ≻s z`, Pareto gives `z ≻s x`, and
-social transitivity yields `x ≻s z` against `z ≻s x`. -/
+social transitivity yields `x ≻s z` against `z ≻s x`.
+
+**Declared alternative proof.** `game_theory_lean/SocialChoice/Sen.lean`
+establishes the paradox in counter-existential form (`¬ prof, ¬∃ best`), with
+`minimal_liberal` — a strictly weaker notion than `SenLiberalism`: it does not
+require the two pairs to cross. -/
 theorem sen_impossibility {I A : Type} [DecidableEq I] [DecidableEq A]
     (swf : SocialWelfareFunction I A) (h_pareto : WeakPareto swf) :
     ¬ SenLiberalism swf := by

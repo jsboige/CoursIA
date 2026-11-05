@@ -138,8 +138,8 @@ theorem add_def (a b : Nimber) :
     a + b = sInf {x | (∃ a' < a, a' + b = x) ∨ ∃ b' < b, a + b' = x}ᶜ
 ```
 -/
-#check @Nimber.add_def
-#check @Nimber.exists_of_lt_add
+#check @Nimber.add_def          -- Definition of nim addition via mex
+#check @Nimber.exists_of_lt_add -- Converse: every smaller value is reached
 
 /-! ### Nimber Field
 
