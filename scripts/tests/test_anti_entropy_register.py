@@ -1194,12 +1194,22 @@ def test_l_identite_derivee_a_la_date_est_celle_des_points_declares():
     L'EGALITE stricte avec l'identite derivee a la date du point ne peut
     pas etre exigee : git resout une date sans heure avec l'heure
     COURANTE de l'horloge (cf le docstring de `identite_instrument_a`),
-    donc l'identite derivee d'un jour passe avance au fil des heures,
     alors que l'identite declaree designe le PRODUISANT. Ce qui doit
     etre vrai, c'est que l'identite declaree est un ancetre de l'identite
     derivee — ou l'identite derivee elle-meme. Une identite declaree qui
     n'est pas un ancetre, ou qui porte un autre script, est un mensonge :
     c'est ce que le controle refuse.
+
+    La derivation est epinglee a la FIN du jour du point (`T23:59:59`), la
+    meme convention que `reference_comparable`. Sans cette epingle, git
+    remplit l'heure manquante avec celle de l'horloge : une serie dont
+    deux points tombent le meme jour a des heures differentes passait le
+    matin et echouait le soir, sur le meme arbre et sans qu'aucune donnee
+    ait bouge. Mesure : au 2026-10-31 la serie porte 38 (instrument
+    `d818b008`, 20:42 la veille) puis 39 (instrument `6144b71e`, 05:18) ;
+    derivee a `01:00` elle rend `d818b008`, donc 39 n'a plus d'ancetre et
+    le controle rougit a tort. Epinglee a `23:59:59`, elle rend
+    `6144b71e` et chaque point retrouve son producteur.
 
     Le test est ignore sur un clone superficiel : l'historique de
     l'instrument n'y existe pas, et une identite non etablie ne prouve
@@ -1207,7 +1217,7 @@ def test_l_identite_derivee_a_la_date_est_celle_des_points_declares():
     """
     e = _entree_padding()
     for h in e.historique:
-        derivee = aer.identite_instrument_a(e.commande, h.mesure_le)
+        derivee = aer.identite_instrument_a(e.commande, h.mesure_le + "T23:59:59")
         if not derivee:
             pytest.skip("historique de l'instrument indisponible "
                         "(clone superficiel)")
