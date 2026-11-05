@@ -1311,28 +1311,39 @@ def build_stack_index() -> tuple[dict[int, StackEntry] | None, list[str]]:
         return None, [STACK_UNAVAILABLE_SHALLOW]
 
     try:
-        # #23100 -- l'enumeration rend AUSSI headRefName et base.ref, dans
-        # le meme appel (aucun cout supplementaire) : c'est ce qui permet a
-        # `_stack_partners` de reconnaitre le partenaire ENFANT de la cible
-        # (sa base est la tete de la cible) et de ne pas bloquer le bas
-        # d'une vraie pile. Une ligne malformee ne casse pas la passe :
-        # l'entree garde des noms vides et l'exemption reste inerte.
-        rows = [
-            json.loads(line) for line in gh_lines([
-                "api", "--paginate", f"repos/{REPO}/pulls?state=open&per_page=100",
-                "--jq", ".[] | [.number, .head.ref, .base.ref]",
-            ])
-        ]
-        numbers = [int(row[0]) for row in rows]
-        names = {
-            int(row[0]): (row[1] if len(row) > 1 else "", row[2] if len(row) > 2 else "")
-            for row in rows
-        }
+        lines = list(gh_lines([
+            "api", "--paginate", f"repos/{REPO}/pulls?state=open&per_page=100",
+            "--jq", ".[] | [.number, .head.ref, .base.ref]",
+        ]))
     except Exception as exc:  # noqa: BLE001 -- mesure impossible, pas un crash
         return None, [f"enumeration des PR ouvertes impossible : {exc}"]
+    # #23100 -- l'enumeration rend AUSSI headRefName et base.ref, dans le meme
+    # appel (aucun cout supplementaire) : c'est ce qui permet a `_stack_partners`
+    # de reconnaitre le partenaire ENFANT de la cible (sa base est la tete de la
+    # cible) et de ne pas bloquer le bas d'une vraie pile. Une ligne COURTE
+    # (champ absent, `[3]`) degrade en noms vides et l'exemption reste inerte.
+    # #23100 (reserve NanoClaw 2026-11-05) -- une ligne MALFORMEE (non-JSON :
+    # warning gh interleave, troncature) ne peut garder ni son numero ni ses
+    # noms, tout est dans le JSON : l'entree sort de la passe -- ni porte ni
+    # exemption pour cette PR seule. Le `json.loads` vivait avant sous le seul
+    # try ci-dessus : une ligne bruitee eteignait la porte STACK pour TOUTES
+    # les PRs du cycle. La degradation est desormais PAR LIGNE, et l'incident
+    # se DIT sans fabriquer de refus (fail-open, convention du docstring).
+    numbers: list[int] = []
+    names: dict[int, tuple[str, str]] = {}
+    malformed: list[str] = []
+    for line in lines:
+        try:
+            row = json.loads(line)
+            p = int(row[0])
+        except Exception as exc:  # noqa: BLE001 -- ligne isolee, pas la passe
+            malformed.append(f"ligne d'enumeration ignoree ({exc}) : {line[:60]!r}")
+            continue
+        numbers.append(p)
+        names[p] = (row[1] if len(row) > 1 else "", row[2] if len(row) > 2 else "")
     fetched, incidents = _fetch_pr_heads(numbers)
     if incidents:
-        return None, incidents
+        return None, malformed + incidents
     index: dict[int, StackEntry] = {}
 
     def _entry(p: int) -> tuple[int, StackEntry]:
@@ -1357,7 +1368,26 @@ def build_stack_index() -> tuple[dict[int, StackEntry] | None, list[str]]:
         for p, entry in pool.map(_entry, fetched):
             index[p] = entry
     _prune_stack_refs(fetched)
-    return index, []
+    # #23100 (reserve NanoClaw 2026-11-05) -- deux entrees de meme `head_name`
+    # (branche recreee apres renommage, fork duplique) s'ecrasent
+    # silencieusement dans le `by_head` de `_is_stack_descendant`, et le
+    # gagnant depend de l'ordre (parallele) de l'index : l'incident rend la
+    # collision OBSERVABLE, il ne change pas le verdict.
+    first_owner: dict[str, int] = {}
+    collisions: list[str] = []
+    for p in sorted(index):
+        head = index[p].head_name
+        if not head:
+            continue
+        if head in first_owner:
+            collisions.append(
+                f"head_name '{head}' porte par #{first_owner[head]} et #{p} : "
+                "collision dans les remontees de pile, le gagnant depend de "
+                "l'ordre de l'index"
+            )
+        else:
+            first_owner[head] = p
+    return index, malformed + collisions
 
 
 def _subjects_of(entry: StackEntry) -> set[str]:

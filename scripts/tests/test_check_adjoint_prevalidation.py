@@ -3840,6 +3840,60 @@ def test_stack_index_builds_the_same_entries_in_parallel(monkeypatch):
     assert index[3].head_name == "" and index[3].base_name == ""
 
 
+def test_stack_index_degrades_a_malformed_line_without_killing_the_pass(monkeypatch):
+    """#23100 (reserve NanoClaw 2026-11-05) : ligne non-JSON = une PR sort de
+    la passe, pas la porte entiere.
+
+    Avant : le ``json.loads`` vivait sous le seul ``try`` de l'enumeration --
+    une ligne bruitee (warning gh interleve, troncature) rendait l'index
+    ``None`` et eteignait la porte STACK pour TOUTES les PRs du cycle. Apres :
+    la PR de la ligne fautive sort de la passe (ni porte ni exemption pour
+    elle seule), les autres gardent porte ET exemption, et l'incident se dit
+    sans fabriquer de refus.
+    """
+    monkeypatch.setattr(mod, "gh_lines", lambda args: [
+        '[1, "feature/a", "main"]',
+        "warning: request timed out, retrying",  # ligne malformee
+        '[2, "feature/b", "feature/a"]',
+    ])
+    monkeypatch.setattr(mod, "_fetch_pr_heads", lambda numbers: (list(numbers), []))
+    monkeypatch.setattr(
+        mod, "_git",
+        lambda args, check=True: subprocess.CompletedProcess(args, 0, "", ""),
+    )
+    monkeypatch.setattr(mod, "_base_history_truncated", lambda: False)
+    index, incidents = mod.build_stack_index()
+    assert sorted(index) == [1, 2]
+    assert index[2].base_name == "feature/a"  # exemption preservee pour les valides
+    assert len(incidents) == 1
+    assert "ligne d'enumeration ignoree" in incidents[0]
+
+
+def test_stack_index_reports_head_name_collision_as_incident(monkeypatch):
+    """#23100 (reserve NanoClaw 2026-11-05) : deux entrees de meme ``head_name``
+    s'ecrasent silencieusement dans le ``by_head`` de ``_is_stack_descendant``.
+
+    L'incident rend la collision OBSERVABLE (les deux numeros cites) ; le
+    verdict ne change pas -- le gagnant des remontees depend de l'ordre
+    parallele de l'index, exactement comme avant l'incident.
+    """
+    monkeypatch.setattr(mod, "gh_lines", lambda args: [
+        '[1, "feature/a", "main"]',
+        '[2, "feature/a", "main"]',  # head_name duplique
+    ])
+    monkeypatch.setattr(mod, "_fetch_pr_heads", lambda numbers: (list(numbers), []))
+    monkeypatch.setattr(
+        mod, "_git",
+        lambda args, check=True: subprocess.CompletedProcess(args, 0, "", ""),
+    )
+    monkeypatch.setattr(mod, "_base_history_truncated", lambda: False)
+    index, incidents = mod.build_stack_index()
+    assert sorted(index) == [1, 2]
+    assert len(incidents) == 1
+    assert "feature/a" in incidents[0]
+    assert "#1" in incidents[0] and "#2" in incidents[0]
+
+
 def test_default_stack_index_builds_once_under_concurrency(monkeypatch):
     """#22938 : la lecture en parallele ne construit pas huit index.
 
