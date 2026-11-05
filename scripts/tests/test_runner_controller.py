@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import dataclasses
 import importlib.util
 import json
 import os
@@ -178,22 +179,113 @@ def test_task_xml_is_well_formed(prof):
     ET.fromstring(ctl.task_xml(prof))
 
 
-def test_task_xml_escaping_roundtrips_to_the_real_command(prof):
-    """L'echappement doit etre reversible : apres parsing, l'operateur d'appel et
-    la ligne de commande sont litteraux. Un echappement de trop casserait la
-    commande sans casser le XML -- l'autre moitie du meme defaut."""
-    args = task_arguments(prof)
-    assert "& '" in args
+def test_task_xml_escaping_roundtrips_to_the_launcher_path(prof, tmp_path):
+    """L'echappement doit rester reversible apres le deplacement du corps vers le
+    VBS : le chemin du lanceur part desormais dans `Arguments`, et un `&` dans la
+    racine des runners est licite sur Windows. Un echappement de trop casserait
+    le chemin sans casser le XML -- l'autre moitie du meme defaut (#20174)."""
+    dotted = dataclasses.replace(prof, root=tmp_path / "a&b" / "fast-guards")
+    args = task_arguments(dotted)
+    assert "a&b" in args
     assert "&amp;" not in args
-    assert "ensure --profile test-fast-guards --apply" in args
 
 
-def test_task_xml_has_a_single_interpreter_wrapper(prof):
-    """`<Command>` porte deja pwsh.exe : un second enrobage empilait deux
-    `pwsh.exe -Command "..."` avec des guillemets imbriques non echappes."""
+def test_task_xml_runs_a_hidden_launcher_not_an_interpreter(prof):
+    """Temoin negatif du defaut #24706 : la tache se repete toutes les 60 s sans
+    condition « utilisateur absent ». Un `pwsh.exe` declare comme `<Command>`
+    ouvre donc une console a chaque tick (60 par heure). L'action doit passer par
+    `wscript.exe`, qui ne cree aucune fenetre."""
+    root = ET.fromstring(ctl.task_xml(prof))
+    command = root.find(".//{" + TASK_NS + "}Command").text
+    assert command == "wscript.exe"
     args = task_arguments(prof)
     assert "pwsh.exe" not in args
-    assert args.count('"') == 2  # les seuls guillemets : ceux de -Command "..."
+    assert args.startswith("//B //Nologo ")  # //B : pas de boite de dialogue WSH
+    assert args.endswith('"') and args.count('"') == 2  # uniquement autour du chemin
+
+
+def test_task_launcher_hides_the_window_and_waits_for_the_real_command(prof):
+    """Le lanceur porte le `0` (fenetre masquee), le MEME corps que l'ancienne
+    action, et attend la fin du tick en propagant son code de sortie (review
+    #24707 : `False` rendait la main aussitot -- succes muet sur echec du
+    controleur, et ticks qui se chevauchent malgre IgnoreNew)."""
+    text = ctl.task_launcher(prof)
+    assert 'CreateObject("WScript.Shell")' in text
+    assert ', 0, True)' in text  # 0 = masque, True = attendre la fin
+    assert "WScript.Quit rc" in text
+    assert "pwsh.exe -NoProfile -NonInteractive -WindowStyle Hidden" in text
+    assert "ensure --profile test-fast-guards --apply" in text
+    assert "runner_pwd.txt" in text
+    assert "controller.log" in text
+
+
+def test_task_launcher_is_a_well_formed_vbs_literal(prof):
+    """Le corps PowerShell est enveloppe de guillemets : non doubles en VBScript,
+    la chaine se termine au premier `"` interne et le lanceur casse en silence
+    (WScript ne rend pas d'erreur a la tache)."""
+    text = ctl.task_launcher(prof)
+    run_line = next(line for line in text.splitlines() if "shell.Run(" in line)
+    body = run_line.split("shell.Run(", 1)[1].rsplit(")", 1)[0]
+    assert body.count('"') % 2 == 0  # litteral ferme
+    assert '-Command ""' in body  # guillemets doubles a l'interieur du litteral
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="cscript n'existe que sur Windows")
+def test_task_launcher_propagates_the_child_exit_code(prof, tmp_path):
+    """Review #24707 : un lanceur reellement lance doit rendre le code de sortie
+    du script enfant -- l'echec d'un tick doit se VOIR dans LastTaskResult, pas
+    se fondre dans un succes muet. Execute le generateur, pas une copie : seule
+    l'artifact produit prouve que `Run(..., True)` + `WScript.Quit rc` portent
+    le rc jusqu'a la sortie cscript."""
+    launcher = tmp_path / ctl.TASK_LAUNCHER_NAME
+    for child_rc in (3, 0):  # echec d'abord (l'exigence), succes en temoin
+        launcher.write_text(
+            ctl.task_launcher(
+                prof,
+                command=(
+                    "pwsh.exe -NoProfile -NonInteractive -Command "
+                    f'"exit {child_rc}"'
+                ),
+            ),
+            encoding="ascii",
+        )
+        completed = subprocess.run(
+            ["cscript", "//B", "//Nologo", str(launcher)],
+            capture_output=True, text=True, encoding="utf-8",
+            errors="replace", timeout=120,
+        )
+        assert completed.returncode == child_rc, (
+            f"enfant exit {child_rc} -> cscript rend {completed.returncode} "
+            f"(stdout={completed.stdout!r}, stderr={completed.stderr!r})"
+        )
+
+
+def test_task_launcher_path_is_derived_from_the_profile(prof, tmp_path):
+    """Un chemin code en dur deplacerait le defaut sur une autre machine, et le
+    controle de non-regression cesserait de couvrir l'installation reelle."""
+    path = ctl.task_launcher_path(prof)
+    assert path == prof.root.parent / "launchers" / ctl.TASK_LAUNCHER_NAME
+    other = dataclasses.replace(prof, root=tmp_path / "elsewhere" / "fast-guards")
+    assert ctl.task_launcher_path(other) != path
+    assert prof.root.parent.as_posix() in path.as_posix()
+
+
+def test_task_install_writes_the_launcher_the_xml_points_at(prof, monkeypatch):
+    """Le VBS est ecrit par le generateur, pas pose a la main : c'est ce qui fait
+    survivre le durcissement a la reinstalation, alors qu'un durcissement de la
+    tache est annule au `schtasks /Create /F` suivant (mesure 2026-11-04)."""
+    monkeypatch.setattr(ctl, "_is_elevated", lambda: True)
+    fake = FakeRun()
+    result = ctl.apply_task_install(prof, fake)
+    launcher = Path(result["launcher"])
+    assert launcher == ctl.task_launcher_path(prof)
+    assert launcher.read_text(encoding="ascii") == ctl.task_launcher(prof)
+    # L'XML passe a schtasks porte bien le chemin du VBS ecrit juste avant.
+    xml_calls = argv_of(fake, "controller-task.xml")
+    assert xml_calls
+    installed = Path(xml_calls[0][0][5]).read_text(encoding="utf-16")
+    assert "<Command>wscript.exe</Command>" in installed
+    assert str(launcher) in installed
 
 
 def test_task_xml_malformed_is_caught_before_elevation(prof, monkeypatch):
