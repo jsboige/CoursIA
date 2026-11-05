@@ -285,7 +285,7 @@ non reconstruite) ; le verdict courant est celui-ci.
 
 ## Mesure sur la fenetre de l'article 18049 (QC Cloud, 2026-11-05, #24311)
 
-L'article QC research 18049 (Derek Melchin, septembre 2024) reprend la
+L'article QC research 18049 (Derek Melchin) reprend la
 decision de la baseline et publie, de janvier 2017 a septembre 2024, un
 Sharpe de 0.794 contre 0.564 pour SPY detenu. Protocole, controle de
 reproduction et predictions ecrits dans #24311 avant le premier backtest.
