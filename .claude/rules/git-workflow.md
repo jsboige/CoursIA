@@ -129,3 +129,5 @@ python scripts/ci/install_prune_task.py --install --dry-run  # afficher argv sch
 **L677-L4 ★★** — le **body de PR se génère HORS worktree** : scratchpad `<scratchpad-dir>/c<NNN>_pr_body.md` + `gh pr create --body-file <scratchpad-path>`. Jamais un `PR_BODY.md` / `BODY.md` **dans** le worktree, qu'un `git add .` stagerait et qu'un rebase ou amend ramènerait dans un commit de code. Vérifier `git status` avant tout `git add .` : pas de `*.md` orphelin de body dans les fichiers tracés.
 
 Autres leçons ancrées (L721 stale-tracker, L740 cron 7 j, L898 collision cross-lane) : [proactive-coordination.md](proactive-coordination.md) §Leçons ancrées.
+
+**Provenance** : fragments déportés = lignes de la base `7a558e4d7ce8` — [détail §Levier B](../../docs/reference/git-workflow-detail.md).

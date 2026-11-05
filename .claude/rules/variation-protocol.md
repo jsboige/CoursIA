@@ -4,6 +4,8 @@ S'applique à **tous les workers** (`po-*`) **et au coordinateur `ai-01`**. Sour
 
 **Détail (justifications mesurées, incidents fondateurs, verbatims)** : [docs/reference/variation-protocol-detail.md](../../docs/reference/variation-protocol-detail.md).
 
+**Provenance** : fragments déportés = lignes de la base `7a558e4d7ce8` — [détail §Levier B](../../docs/reference/variation-protocol-detail.md).
+
 ## 1. Le tag de grain (HARD)
 
 Tout `[CLAIMED]` **et** tout body de PR portent en **première ligne** :
