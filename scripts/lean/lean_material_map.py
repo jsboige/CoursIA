@@ -258,7 +258,7 @@ def _git_birth(lakefile: str) -> str:
     return lines[0] if lines else ""
 
 
-def _birth(lake: str, lakefile: str) -> str:
+def _birth(lake: str, lakefile: str, pinned: dict[str, str] | None = None) -> str:
     """Date (AAAA-MM-JJ) de naissance du lac ; vide si inconnue.
 
     L'epingle committée prime sur git : sans elle, la colonne dependrait de
@@ -266,9 +266,15 @@ def _birth(lake: str, lakefile: str) -> str:
     pouvaient rendre deux pages differentes (issue #24538). Un lac nouveau
     n'est pas epingle : il retombe sur git jusqu'a ce que son epingle soit
     ajoutee, geste explicite et visible en revue.
+
+    ``pinned`` est injectable : ``collect()`` charge la table une fois pour
+    tous les lacs (deux lectures par lac sinon, une par lakefile) ; les
+    appels directs conservent le chargement implicite -- c'est aussi ce qui
+    garde les tests libres de monkeypatcher ``BIRTHS`` sans cache interpose.
     """
-    pinned = _pinned_births().get(lake.replace("\\", "/").rstrip("/"))
-    return pinned or _git_birth(lakefile)
+    if pinned is None:
+        pinned = _pinned_births()
+    return pinned.get(lake.replace("\\", "/").rstrip("/")) or _git_birth(lakefile)
 
 
 def _owner_of(path: str, lake_dirs: list[str]) -> str | None:
@@ -416,6 +422,7 @@ def collect(with_sorry: bool = False) -> dict:
     matrix = set(coverage.get("matrix_lakes") or [])
     ungated = set(coverage.get("matrix_lakes_without_gate") or [])
     sorry = _sorry_by_lake() if with_sorry else {}
+    pinned = _pinned_births()  # une seule lecture pour tous les lacs
 
     by_lake: dict[str, dict] = {}
     for lakefile in lakefiles:
@@ -435,7 +442,7 @@ def collect(with_sorry: bool = False) -> dict:
         )
         # Un lac peut porter deux lakefiles (lean + toml) : la naissance est la
         # plus ancienne des deux, c'est celle du lac.
-        born = _birth(lake, lakefile)
+        born = _birth(lake, lakefile, pinned)
         if born and (not entry["birth"] or born < entry["birth"]):
             entry["birth"] = born
 

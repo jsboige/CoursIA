@@ -37,7 +37,7 @@ def _load_module():
 
 mod = _load_module()
 
-LAC_EPINGLE = "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean"
+LAC_EPINGLE = "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean"
 LAKEFILE = LAC_EPINGLE + "/lakefile.lean"
 LAC_INCONNU = "MyIA.AI.Notebooks/Series/unknown_lean"
 
@@ -113,8 +113,16 @@ def test_chaque_lac_de_la_page_porte_une_epingle():
     epingles = mod._pinned_births()
     manquantes = sorted(set(page) - set(epingles))
     orphelines = sorted(set(epingles) - set(page))
-    assert not manquantes, f"lacs sans epingle : {manquantes}"
-    assert not orphelines, f"epingles sans lac dans la page : {orphelines}"
+    assert not manquantes, (
+        f"lacs sans epingle : {manquantes} -- ajouter l'entree dans lean_births.json"
+        " ; si le lac vient d'etre renomme, rekeyer l'ancienne entree (meme date,"
+        " nouveau chemin)"
+    )
+    assert not orphelines, (
+        f"epingles sans lac dans la page : {orphelines} -- un renommage de lac a"
+        " probablement laisse une cle sur l'ancien chemin : rekeyer vers le chemin"
+        " actuel en conservant la date"
+    )
 
 
 def test_les_epingles_valent_la_colonne_de_la_page():
