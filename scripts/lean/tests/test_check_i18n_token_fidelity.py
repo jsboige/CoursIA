@@ -326,6 +326,19 @@ def test_i18n_convention_block_is_recognized():
         "le lemme `arcPartition` fait le lien")
 
 
+def test_i18n_convention_block_plain_heading_is_recognized():
+    # The sibling-pair convention is also written as a plain heading, without
+    # the `### ` marker: 45 `_en.lean` files open on it (e.g.
+    # GameTheory/SocialChoice/{Framework,Basic}_en.lean). Its metadata numbers
+    # (dates, `#4980`, commit shas) were compared against the FR canonical
+    # header and reported as HARD losses that no translation could fix.
+    assert is_i18n_convention_block(
+        "Convention i18n : fichier EN sibling -- preserve le verbatim\n"
+        "Convention i18n Lean ratifiee par ai-01 (2026-07-04, issue #4980)")
+    assert is_i18n_convention_block(
+        "English sibling of `Conway.lean` per the i18n convention EPIC #4980")
+
+
 def test_best_shift_aligns_a_constant_offset():
     fr = {0, 10, 20}
     en = {2, 12, 22}

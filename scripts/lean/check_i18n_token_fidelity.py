@@ -119,7 +119,7 @@ _MIRROR_DECLARATION = re.compile(r"\b(?:mirror\s+of|miroir\s+de)\b", re.I)
 # metadata about the file, not translatable content: the EN mirror owes it
 # nothing, so it is excluded from the comparison (a false "loss" / "orphan"
 # otherwise, control Conway/Doomsday.lean, review of #24148).
-_I18N_CONVENTION = re.compile(r"###\s*i18n\b", re.I)
+_I18N_CONVENTION = re.compile(r"###\s*i18n\b|(?:convention\s+i18n|i18n\s+convention)\b", re.I)
 
 
 def is_i18n_convention_block(body: str) -> bool:
