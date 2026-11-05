@@ -193,6 +193,19 @@ def _derive_result_kind(result, final_sorry: int, original_sorry: int) -> str:
     # coordinator to change model/provider (tool-calling capability), NOT more
     # iterations. Legacy-safe: field absent -> falsy -> no_progress.
     if isinstance(result, dict) and result.get("freeze_loop"):
+        # Cycle-29 split (#1453, po-2025 measure 2026-11-04, DEMO 45 spans
+        # 13:44Z): a yield with ZERO tactic submissions is not a proof
+        # failure — the model never attempted one. The final verdict must
+        # distinguish "never tried" from "tried and froze": for no_attempt
+        # the lever is model/provider (tool-calling capability), for a
+        # freeze AFTER real attempts more iterations can still pay (the
+        # agent demonstrably tool-calls). Today the latch guarantees
+        # attempts==0 on this path (the yield requires an empty
+        # tactic_history), so attempts>0 is the defensive branch kept for
+        # future freeze sources. Legacy-safe: attempts absent -> falsy ->
+        # no_attempt, which is what the latch produced anyway.
+        if not result.get("attempts"):
+            return "no_attempt"
         return "freeze_loop"
     return "no_progress"
 
