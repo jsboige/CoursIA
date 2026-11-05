@@ -4,7 +4,7 @@ Shared Lean 4 type definitions used by multiple GameTheory Lean projects. A **se
 
 ## Status
 
-- **Type:** Standalone Lake project (`lakefile.toml`, `lean-toolchain` pinned `v4.32.1`, `lake-manifest.json`)
+- **Type:** Standalone Lake project (`lakefile.toml`, `lean-toolchain` pinned `v4.33.0`, `lake-manifest.json`)
 - **Files:** see catalogue (FR + `_en` siblings, EPIC #4980 Pattern A)
 - **`sorry` count:** 0 (definitions only, no proofs)
 - **Mathlib dependency:** None — all files use core Lean 4 only
