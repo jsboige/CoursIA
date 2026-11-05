@@ -612,21 +612,24 @@ Le notebook lève la tautologie par un contraste à deux points de départ :
 
 ### Formalisations Lean
 
-La série aligne simulation numérique et preuve formelle : les notebooks motivent (Lemke-Howson, Axelrod, Gale-Shapley), les lakes prouvent. L'inventaire complet (toolchains, statut de build, `sorry` résiduels) est tenu dans [LEAN_INVENTORY.md](LEAN_INVENTORY.md) ; la table ci-dessous ne sert qu'à retrouver, pour chaque lake, les notebooks qui l'enseignent ou le consomment.
+La série aligne simulation numérique et preuve formelle : les notebooks motivent (Lemke-Howson, Axelrod, Gale-Shapley), les lakes prouvent. L'inventaire complet (toolchains, statut de build, `sorry` résiduels) est tenu dans [LEAN_INVENTORY.md](LEAN_INVENTORY.md). La table ci-dessous donne, pour chaque lake, ce qu'il prouve, les carnets qui l'enseignent ou le consomment, et **la raison de sa séparation** : depuis la doctrine R1-R4 de [#4362](https://github.com/jsboige/CoursIA/issues/4362), un lake ne se fusionne plus pour gagner du disque ni des jobs de CI, il se sépare pour une raison qu'on peut lire.
 
-| Lake | Ce qu'il prouve | Notebooks |
-|------|-----------------|-----------|
-| `game_theory_lean` (module SocialChoice) | Impossibilité d'Arrow, caractérisation de Sen | SocialChoice 01b |
-| `game_theory_lean` (module CooperativeGames) | Bondareva-Shapley sans `sorry` (#3954), Core non vide sous équilibrage | 15, 15b |
-| `game_theory_lean` (module StableMarriage) | Gale-Shapley : existence et optimalité côté proposant | 15b, 16 |
-| `game_theory_lean` (module RepeatedGames) | Grim trigger certifié sans `sorry` (#4880) ; le Folk Theorem complet reste ouvert (`Folk.lean`) | 06b, 06c |
-| `game_theory_lean` (module Swaps) | Certificat du plus court chemin de swaps | 03b |
-| `minimax_lean` | Théorème minimax de von Neumann, via Sion | 05b |
-| `lean_game_defs`, `lean_game_defs_ext` | Types de jeux partagés ; Vickrey sans `sorry` | 02b, 08b, 11b, 17d |
-| `conway_cgt_lean` | Visite de la théorie des jeux combinatoires de Conway (`vihdzp/combinatorial-games`) | 08d |
-| `assignment_lean` | Dualité faible et optimalité à gap nul de Kuhn-Munkres (#12598) | 23, 23b |
-| `asymmetric_information_lean` | Akerlof (seuil de pooling exact), Spence, Rothschild-Stiglitz, Wilson-Miyazaki | 17b, 17c, 17d |
-| `SocialChoice/social_choice_lean_peters` | Lake de référence externe (D. Peters, MIT) : Gibbard-Satterthwaite, Split Cycle et d'autres règles | SocialChoice 01b, 07 |
+| Lake | Ce qu'il prouve | Carnets | Pourquoi il est séparé |
+|------|-----------------|---------|------------------------|
+| `game_theory_lean` (module SocialChoice) | Impossibilité d'Arrow, caractérisation de Sen | SocialChoice 01b | **R1** — le site suit les carnets : son consommateur est la sous-série `SocialChoice/`, vers laquelle il descend (T3 de #24183) |
+| `game_theory_lean` (module CooperativeGames) | Bondareva-Shapley sans `sorry` (#3954), Core non vide sous équilibrage | 15, 15b | Mathlib (`Finset`, cône dual) ; tous ses carnets vivent à la racine de la série, aucune sous-série ne le réclame |
+| `game_theory_lean` (module StableMarriage) | Gale-Shapley : existence et optimalité côté proposant | 15b, SocialChoice 02 | Mathlib ; consommé depuis la racine **et** depuis `SocialChoice/02`, aucun site unique ne s'impose |
+| `game_theory_lean` (module RepeatedGames) | Grim trigger certifié sans `sorry` (#4880) ; le Folk Theorem complet reste ouvert (`Folk.lean`) | 06b, 06c | couplage d'import : `ProgramGames` importe `RepeatedGames.Stage`, les deux modules ne descendent pas l'un sans l'autre |
+| `game_theory_lean` (module ProgramGames) | Équilibre en programmes bornés (L1), puis FairBot par le théorème de Löb (L2) | 06f, 06g, 06k | même couplage d'import vers `RepeatedGames.Stage` |
+| `game_theory_lean` (module Swaps) | Certificat du plus court chemin de swaps | 03b | sans Mathlib (calcul fini) : `lake build Swaps` ne compile aucune dépendance |
+| `game_theory_lean` (module Abstraction) | Contre-exemple certifié au « raffiner ne peut qu'améliorer » : la dette retransportée augmente | 03e, 19 | sans Mathlib ; 19 l'importe et fait élaborer `raffinement_aggrave_la_dette` par le compilateur, 03e en lit la source et la mire en Python — le module n'est plus orphelin (#20380, clos) |
+| `game_theory_lean` (module StackelbergBilevel) | Forme close du duopole de Stackelberg et best-response du suiveur, adossés aux valeurs pytest | — | dernière cohorte `lean_lib` du package, Mathlib ; aucun carnet ne le consomme encore — c'est le seul lake de la carte qu'aucun carnet n'enseigne ; le package l'importe (`GameTheory.lean:25`) et le declare en `lean_lib`, mais rien ne l'execute |
+| `minimax_lean` | Théorème minimax de von Neumann, via Sion | 05b | tenu hors du hub par la clause anti-god-lake de #4365 ; Mathlib (Sion) |
+| `lean_game_defs`, `lean_game_defs_ext` | Types de jeux partagés ; Vickrey sans `sorry` | 02b, 08b, 11b, 17d | couche introductive sans Mathlib et extension de preuve auto-contenue, mesurées disjointes (T2 de #24183) |
+| `conway_cgt_lean` | Visite de la théorie des jeux combinatoires de Conway (`vihdzp/combinatorial-games`) | 08d | toolchain divergente (`v4.33.0-rc1`) et amont vendorisé — INTRINSIC |
+| `assignment_lean` | Dualité faible et optimalité à gap nul de Kuhn-Munkres (#12598) | Coalitions 04, 05 | né après la clôture de #4365 ; Mathlib |
+| `asymmetric_information_lean` | Akerlof (seuil de pooling exact), Spence, Rothschild-Stiglitz, Wilson-Miyazaki | 17b, 17c, 17d | sans Mathlib ; consomme `lean_game_defs_ext` |
+| `SocialChoice/social_choice_lean_peters` | Lake de référence externe (D. Peters, MIT) : Gibbard-Satterthwaite, Split Cycle et d'autres règles | SocialChoice 01b, 07 | toolchain divergente (`v4.32.1`) et amont externe — INTRINSIC (#7081) |
 
 Les anciens lakes autonomes du choix social, des jeux coopératifs, du mariage stable et des jeux répétés ont été absorbés dans `game_theory_lean` (#4365). `repeated_games_lean/` a été retirée du disque (coquille sans module, #4362) ; `social_choice_lean/` ne reste que comme coquille documentaire. Au niveau du dépôt, voir le [hub SymbolicAI/Lean](../SymbolicAI/Lean/README.md) et la feuille de route Lean ([#4038](https://github.com/jsboige/CoursIA/issues/4038)).
 
