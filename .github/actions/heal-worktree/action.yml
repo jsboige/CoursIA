@@ -13,8 +13,12 @@ description: >
 
   Le corps du bloc vit dans `heal_worktree.sh`, extrait des workflows sans
   reecriture (`19b2163f6cc3`) : ce qui change est l'endroit ou il vit, pas ce
-  qu'il fait. Le controle positif local est
-  `scripts/tests/test_heal_worktree_action.py`.
+  qu'il fait. Les copies inline que portent encore les workflows sont
+  regenerees depuis ce script par
+  `scripts/ci/sync_heal_worktree_copies.py` (#23512) : modifier le script
+  source puis lancer le generateur met les copies a jour -- une edition, une
+  commande, au lieu d'une edition synchrone par workflow. Le controle positif
+  local est `scripts/tests/test_heal_worktree_action.py`.
 
 runs:
   using: composite
