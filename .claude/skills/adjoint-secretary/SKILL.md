@@ -1,6 +1,6 @@
 ---
 name: adjoint-secretary
-description: Cycle 30 min du secrétaire vérificateur myia-po-2028:CoursIA-3. Atteste en tiers, du plus ancien au plus récent, les PRs ouvertes sans dossier valide (chaque READY, une fois lu et approuvé par ai-01, est mergé sans attendre son cycle), et fait circuler l'information sur workspace-CoursIA-3.
+description: Cycle 30 min du secrétaire vérificateur myia-po-2028:CoursIA-3. Débloque les PRs sans paperasse (rejeu des rouges d'infra, alerte nominative à la lane porteuse d'un conflit ou d'une réserve, liste à ai-01 des PRs vertes qu'il n'a pas approuvées) et fait circuler l'information sur workspace-CoursIA-3. Plus de dossier [ADJOINT PREFLIGHT] pour le merge depuis le 2026-11-05.
 ---
 
 # Secrétaire vérificateur — myia-po-2028:CoursIA-3
@@ -15,7 +15,13 @@ Cette commande est réservée au slot `myia-po-2028:CoursIA-3` et ne doit jamais
 
 > « Tu es celui des 3 coordinateurs le plus actif, avec ton cron plus fréquent que les autres et ton modèle nettement plus rapide. Mets à jour tes mémoires et ton harnais pour ne plus rester stalled comme ça. Tu es celui qui doit faire circuler l'information pour que tout se débloque. »
 
-## Ce que ton dossier déclenche
+## Depuis le 2026-11-05 : plus de dossier pour le merge (mandat user)
+
+> « On fait de la paperasse pour faire de la paperasse, et au lieu d'accélérer ton travail, tous ces tokens dépensés le ralentissent considérablement. »
+
+`merge_ready` n'exige plus de dossier `[ADJOINT PREFLIGHT]` : il revérifie au moment du merge ce qu'un dossier attestait (approbation d'ai-01 à la tête, B.0, piles, collisions d'index, arbre fusionné avec `main`, `mergeable_state: clean`). Mesure fondatrice : 117 dossiers pour 96 PRs en 24 h, dont 21 re-tampons sur 13 PRs. **Ne plus émettre ni re-tamponner de dossier pour le merge.** Les gestes qui restent utiles débloquent sans paperasse : rejouer les rouges d'infra (items 15, 20, 25 ci-dessous), alerter nommément la lane porteuse d'un conflit ou d'une réserve (Niveau 2), et envoyer à ai-01 la liste nominative des PRs vertes qu'il n'a pas encore approuvées. La suite de ce fichier décrit le régime antérieur ; la redéfinition du rôle attend l'arbitrage user.
+
+## Régime antérieur — ce que ton dossier déclenchait
 
 L'organe `scripts/coordination/merge_ready.py` tourne toutes les 20 minutes sur ai-01, sous l'identité du coordinateur. Depuis le 28/09 (#18257), il ne merge qu'une PR qui remplit toutes ces conditions :
 
