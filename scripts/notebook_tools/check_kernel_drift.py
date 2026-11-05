@@ -544,6 +544,20 @@ CANONICAL_LANGUAGE_TRANSITIONS_SCOPED = {
         "sont converges par #23379 (ML-04b #23382, ML-09 #23388, ML-07 "
         "#23389, ML-05 #23424) ; ML-06 est le dernier hors canon, tous "
         "kernels confondus (#23426)",
+    # 04_PCFG_CYK est le seul carnet de la serie NLP sous kernel NOMME :
+    # hors du census #23384 (kernel python3 uniquement), sa convergence
+    # exige sa propre entree scopee, comme ML-06 pour ML.Net. Le canon de
+    # la serie NLP est 3.13 (03 et 05-11 sous kernel python3 a 3.13.x,
+    # mesure main 2026-11-03) ; seuls 01-02 (3.11.x) et 04 (3.12.13)
+    # restent sous ``coursia-ml-training``. Le kernelspec reste partage
+    # par une trentaine de carnets hors serie qui ne declarent pas 3.13 :
+    # l'entree reste nominative (reserve de revue #22979).
+    ("MyIA.AI.Notebooks/NLP/04_PCFG_CYK_Parsing.ipynb",
+     "coursia-ml-training", "3.12", "3.13"):
+        "Python 3.12 -> 3.13 sous `coursia-ml-training` : convergence vers le "
+        "canon de la serie NLP, dont les carnets 03 et 05-11 tournent deja "
+        "sous kernel python3 a 3.13.x ; re-execution sous le venv canon "
+        "python3 3.13.16 (#23384)",
     # 2.9d est le premier des deux derniers carnets de la serie restes a
     # 3.10.19. Sa convergence est la voie 1 de #23292 (re-execution sous le
     # venv canon `coursia-ml-training`, mesure a 3.13.15) : elle evite une
