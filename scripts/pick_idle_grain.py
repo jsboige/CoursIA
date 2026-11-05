@@ -2823,6 +2823,54 @@ def has_recent_container_delivery_marker(issue_number: int) -> bool | None:
     return bool(_CONTAINER_DELIVERY_MARKER_RE.search(body))
 
 
+def issue_is_frozen_marker(issue_number: int) -> bool | None:
+    """L'item est-il GEL ? (regle A : le body ; regle B : le fil)
+
+    LECTURE **LOCALE** : le corps vient du cache du pool (`_POOL_BODIES`,
+    que la lecture du pool remplit deja) et le fil de l'instantane de la
+    passe (`_snapshot_comments`). **Aucune requete reseau** : le tapis
+    n'ouvre pas une surface reseau pour lire un gel.
+
+    TRI-ETAT :
+    - ``True``  : l'item est gele ;
+    - ``False`` : l'item n'est pas gele, et les DEUX surfaces ont ete lues ;
+    - ``None``  : lecture incomplete (le corps ou le fil manque) -- fail-OPEN,
+      l'appelant le dit dans sa sortie.
+
+    Pourquoi une lecture a part : le gel est une **decision du
+    coordinateur**, et les filtres de livraison du tapis lisent le
+    **dernier** commentaire -- `has_recent_delivery_marker` (urne grain) et
+    `has_recent_container_delivery_marker` (urne umbrella). Le second ne
+    consulte meme pas le fil entier : il lit le marqueur de CONTENEUR dans
+    le dernier commentaire. Aucun des deux ne dit « l'item est GEL ».
+
+    Mesure : #19309, une umbrella Origami gelee par ai-01 le 03/11 a
+    07:50Z, suivie de **37** `[RELEASED]` de lanes -- un gel enterre par un
+    commentaire posterieur, et l'EPIC resservi 2 h 18 apres le gel, puis
+    encore le 05/11 (7 corroborations de lanes). Le gel est **collant**
+    (grammaire du coordinateur du 2026-11-03, PR #24523) : un `[RELEASED]`
+    est un acquiescement de lane, pas la levee d'une decision -- seul un
+    `[UNFROZEN]` d'une lane habilitee le ferme.
+
+    La regle A (le corps) et la regle B (le fil) sont evaluees separement :
+    si l'une des deux surfaces n'a pas pu etre lue, le verdict n'est pas
+    « pas gele » mais **inconnu** (`None`), parce qu'un gel non lu est
+    exactement le defaut qu'on veut supprimer.
+    """
+    body = _issue_body(issue_number)
+    comments = _snapshot_comments(issue_number)
+    if body is None and comments is None:
+        return None
+    source = _issue_is_frozen(body, comments or [])
+    if source is not None:
+        return True
+    if body is None or comments is None:
+        # Une surface n'a pas ete lue : la regle A ou la regle B n'a pas pu
+        # etre evaluee -> fail-OPEN, dit par l'appelant.
+        return None
+    return False
+
+
 # #22500 point 1 -- l'HEURE du dernier evenement de cloture.
 #
 # Le filtre recent (`has_recent_delivery_marker`) et la sonde pleine
@@ -4066,6 +4114,34 @@ def print_marker_unread_report(unread, lane: str | None = None) -> None:
     print("   candidat peut PORTER un marqueur de cloture (`[DELIVERED]` / "
           "`[FROZEN]` /")
     print("   `[INFO] candidate-delivered`) : verifier avant d'editer.")
+
+
+def print_frozen_unread_report(unread, lane: str | None = None) -> None:
+    """Rend compte des etats de GEL NON LUS (#24516).
+
+    Quatrieme pendant : la lecture du gel est **locale** (corps du pool +
+    instantane de la passe), donc elle ne rate pas sur le reseau -- mais elle
+    peut etre **incomplete** : si le corps de l'issue n'est pas dans le cache
+    du pool, ou si le fil n'est pas dans l'instantane, l'etat du gel est
+    INCONNU. « Inconnu » n'est pas « pas gele » : le fail-OPEN laisse le
+    candidat servable, et le silence serait le meme defaut que celui qu'on
+    corrige -- un gel non lu, jamais signale.
+
+    Mesure : #19309, une umbrella gelee par ai-01 le 03/11 et resservie par
+    le tapis -- le filtre de conteneur ne lisait que le dernier commentaire,
+    et le gel y etait enterre par 46 `[RELEASED]`.
+    """
+    numbers = sorted(set(unread or []))
+    if not numbers:
+        return
+    joined = ", ".join(f"#{num}" for num in numbers)
+    print(f"!! etat de GEL NON LU sur {joined} "
+          f"({len(numbers)} candidat(s)) : le corps ou le fil n'a pas pu etre lu")
+    print("   (instantane absente ou perimee, corps absent du cache du "
+          "pool). Le tirage est")
+    print("   MAINTENU (fail-OPEN assume) -- mais le candidat peut PORTER un "
+          "gel `[FROZEN]` :")
+    print("   verifier avant d'editer.")
 
 
 def print_belt_budget_report(budget_hit: bool) -> None:
@@ -10204,6 +10280,21 @@ def container_marker_probe_inert(number):
     # (Ecrire `return None` ici ajouterait un finding RET501 au fichier.)
 
 
+def frozen_probe_inert(number):
+    """Defaut inerte de la lecture du GEL dans la boucle du tapis (#24516).
+
+    Meme contrat que `recent_marker_probe_inert` : un test qui n'injecte pas
+    de sonde ne sort jamais sur le reseau. Ici ``None`` signifierait
+    « lecture en echec » (fail-OPEN) ; le defaut inerte ne mesure rien, donc
+    il ne doit pas etre confondu avec une lecture ratee : il rend ``False``
+    (« aucun gel constate »), et la boucle n'ecarte rien.
+
+    Doctrine #19913 : le defaut d'une sonde est **inerte**, il n'est pas
+    « la vraie sonde ».
+    """
+    return False
+
+
 def delivery_event_probe_inert(number):
     """Defaut inerte de la lecture d'evenement de livraison (#22500 point 1).
 
@@ -10241,6 +10332,7 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                                 snapshot_prime=None,
                                 container_marker_probe=None,
                                 delivery_event_probe=None,
+                                frozen_probe=None,
                                 time_budget_s=None,
                                 gpu_probe=None):
     """La boucle de service du tapis : claims, livraison, remplacement.
@@ -10278,6 +10370,13 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     elle seule permet de distinguer « livree a l'instant » de « livree il y a
     plus de 48 h, donc DUE a nouveau ». Elle remplace le filtre recent pour
     les consolidations (meme grammaire, meme lecture, une de moins).
+
+    ``frozen_probe`` (tests) remplace la lecture du **GEL** (#24516) : le
+    gel est une decision du COORDINATEUR, et aucun des filtres de livraison
+    ci-dessus ne le dit (ils lisent le dernier commentaire). La lecture est
+    **locale** (corps du pool + instantane de la passe) : elle ne coute
+    aucune requete, et le mur de temps ne la saute pas -- meme doctrine que
+    `marker_read_is_local`. Son defaut est inerte (`frozen_probe_inert`).
 
     Defauts INERTES (doctrine ``delivered_probe_inert`` / #19913) : un test
     qui appelle cette boucle sans injecter ses sondes n'emet AUCUNE requete
@@ -10324,7 +10423,8 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     budget = [int(probe_budget)]
     state = {"failures": [], "budget_hit": False, "recent_filtered": 0,
              "claim_unread": [], "container_unread": [], "marker_unread": [],
-             "cover_failures": [], "time_budget_hit": False}
+             "cover_failures": [], "time_budget_hit": False,
+             "frozen_filtered": 0, "frozen_unread": []}
     # #22630 -- l'instantane local est rafraichi UNE FOIS pour les candidats
     # de la fenetre : toutes les sondes de commentaires (filtre recent et
     # sonde pleine de livraison) le lisent ensuite sans requete GitHub par
@@ -10442,6 +10542,7 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                                        or container_marker_probe_inert)
         user_delivery_event_probe = (delivery_event_probe
                                       or delivery_event_probe_inert)
+        user_frozen_probe = frozen_probe or frozen_probe_inert
 
         def marker_read_is_local(number):
             """La lecture du marqueur de `number` resterait-elle LOCALE ?
@@ -10572,6 +10673,36 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                 belt_claims[n] = (code, human)
             if code == CLAIM_CODE_BLOCKED:
                 belt_withheld.append((it, human))
+                continue
+            # #24516 (05/11) -- le GEL est une decision du COORDINATEUR, et
+            # aucun des filtres de livraison ci-dessous ne la lit : ils lisent
+            # le DERNIER commentaire (marqueur de conteneur sur une umbrella,
+            # evenement de cloture sur une consolidation). Le gel est
+            # COLLANT (grammaire du 2026-11-03, PR #24523) : un `[RELEASED]`
+            # posterieur est un acquiescement de lane, pas une levee.
+            # Mesure : #19309, une umbrella gelee le 03/11 a 07:50Z, suivie de
+            # 37 `[RELEASED]`, resservie 2 h 18 apres le gel puis encore le
+            # 05/11 (7 corroborations de lanes).
+            #
+            # La lecture est LOCALE (corps du pool + instantane de la passe) :
+            # elle ne coute aucune requete, et le mur de temps ne la saute
+            # pas -- meme doctrine que `marker_read_is_local` (le mur borne
+            # le reseau, il ne borne pas une lecture locale).
+            frozen = user_frozen_probe(n)
+            if frozen is None:
+                # Lecture incomplete : l'etat du gel est INCONNU, pas « libre ».
+                # Le fail-OPEN est assume (le candidat reste servable), mais il
+                # est PUBLIE -- un gel non lu ne doit pas etre muet.
+                state.setdefault("frozen_unread", []).append(n)
+            elif frozen is True:
+                state["frozen_filtered"] = state.get("frozen_filtered", 0) + 1
+                belt_withheld.append(
+                    (it,
+                     ("GEL : l'item porte un gel du coordinateur ([FROZEN]) -- "
+                      "il ne doit pas etre servi par le tapis. Le gel est "
+                      "collant : un commentaire posterieur ne suffit pas a "
+                      "lever ce gel (seul un [UNFROZEN] d'une lane habilitee "
+                      "le ferme). Candidat remplace dans la meme urne.")))
                 continue
             # #22500 -- plafond hebdomadaire d'un EPIC hors consolidation. Le
             # tapis ne peut pas empecher une lane de CREER un sous-grain ; il
@@ -11867,6 +11998,7 @@ def main(argv: list[str] | None = None) -> int:
                                         container_marker_probe=(
                                             has_recent_container_delivery_marker),
                                         delivery_event_probe=delivery_event,
+                                        frozen_probe=issue_is_frozen_marker,
                                         time_budget_s=belt_time_remaining,
                                         gpu_probe=gpu_gate_probe))
         _belt_phase(f"pick_with_replacements fait: "
@@ -12004,6 +12136,10 @@ def main(argv: list[str] | None = None) -> int:
             # `None` etait indiscernable d'un « pas de marqueur ».
             print_marker_unread_report(
                 belt_pick_state.get("marker_unread"), args.lane)
+            # #24516 : meme doctrine pour la lecture du GEL -- un gel non lu
+            # ne doit pas etre muet.
+            print_frozen_unread_report(
+                belt_pick_state.get("frozen_unread"), args.lane)
             print_belt_budget_report(belt_probe_budget_hit[0])
             if belt_time_budget_hit[0]:
                 print("   Mur de temps du tapis atteint (#21436) : la boucle a")
@@ -12170,6 +12306,18 @@ def main(argv: list[str] | None = None) -> int:
                         "marker_unread") or [])),
                     "container_unread": sorted(set(belt_pick_state.get(
                         "container_unread") or [])),
+                },
+                # Volet GEL (#24516) : le gel est une decision du
+                # coordinateur, et aucun des filtres de livraison ne la
+                # lisait (une umbrella gelee etait servie). `withheld`
+                # nomme les items ecartees par ce filtre, `unread` ceux dont
+                # l'etat de gel n'a pas pu etre lu (fail-OPEN assume, dit).
+                "frozen_signal": {
+                    "withheld": [it["number"] for it, c in belt_withheld
+                                 if c.startswith("GEL : ")],
+                    "filtered": belt_pick_state.get("frozen_filtered", 0),
+                    "unread": sorted(set(belt_pick_state.get(
+                        "frozen_unread") or [])),
                 },
                 # Volet bulk GraphQL (#19643, ai-01 review 5568273366) :
                 # `fallback_count` est le nombre de numeros absents de

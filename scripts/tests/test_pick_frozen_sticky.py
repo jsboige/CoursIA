@@ -341,3 +341,274 @@ def test_le_corps_du_pool_permet_de_lire_le_gel_sans_requete(monkeypatch):
                     body="[FROZEN] accord de coordination -- ai-01")
     assert pig.has_recent_delivery_marker(19309) is True
     assert fake.calls == 1
+
+
+# --- (D) la BOUCLE DU TAPIS : le gel doit etre lu par le tapis --------------
+#
+# La grammaire ci-dessus etait deja implementee (PR #24523) etait lue par
+# `has_recent_delivery_marker` -- mais ce filtre ne sert que l'urne GRAIN.
+# La boucle de service (`belt_pick_with_replacements`) a ses propres
+# filtres : sur une UMBRELLA elle lit le marqueur de CONTENEUR (le dernier
+# commentaire), sur une CONSOLIDATION l'evenement de cloture. Aucun des
+# deux ne consulte le gel -- et #19309, une umbrella, etait servie malgre
+# son gel (mesure du 05/11 : 7 corroborations de lanes).
+#
+# Ces tests sont donc au niveau de la BOUCLE, pas de la sonde.
+
+
+def _belt_item(number, klass="umbrella"):
+    return {
+        "number": number,
+        "klass": klass,
+        "age": 100,
+        "idle": 10,
+        "genre": "docs",
+        "labels": [],
+        "title": f"issue #{number}",
+        "created_at": "2026-01-01T00:00:00Z",
+        "last_delivery_stamp": None,
+    }
+
+
+def _belt_args(grains=2):
+    import types
+    return types.SimpleNamespace(
+        grains=grains, include_delivered=False,
+        lane="myia-po-2027:CoursIA-2")
+
+
+#: Les commentaires vus par la boucle, DECLARES par le test.
+#:
+#: La boucle du tapis relit l'instantane **du disque de la machine**, qui
+#: porte le fil REEL des issues -- c'est ainsi que la mesure a trouve le
+#: `[FROZEN]` du vrai #19309. Un test ne doit pas dependre de cet etat :
+#: la fixture `_lecture_locale_controlee` remplace la lecture par ce dict.
+_COMMENTAIRES: dict = {}
+
+
+def _run_belt(monkeypatch, pool, frozen_probe=None):
+    """Fait tourner la boucle de service avec des sondes injectees.
+
+    Toutes les sondes de livraison sont explicitement injectees a `False`
+    : ce qui est mesure ici, c'est le filtre du GEL, pas les marqueurs de
+    cloture (couverts par leurs propres suites).
+    """
+    claims = {it["number"]: (pig.CLAIM_CODE_FREE, "libre") for it in pool}
+    return pig.belt_pick_with_replacements(
+        pool, claims, _belt_args(), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        recent_marker_probe=lambda n: False,
+        container_marker_probe=lambda n: False,
+        delivery_event_probe=lambda n: (False, False, None),
+        cover_probe=lambda n: None,
+        frozen_probe=(frozen_probe if frozen_probe is not None
+                      else pig.issue_is_frozen_marker))
+
+
+@pytest.fixture(autouse=True)
+def _lecture_locale_controlee(monkeypatch):
+    """La lecture locale est remplacee par un dict DECLARE par le test.
+
+    La boucle du tapis relit l'instantane du disque de la machine, qui porte
+    le fil REEL des issues : sans cette neutralisation, un test dependant du
+    disque passerait sur une machine et echouerait sur une autre (et la
+    mesure ci-dessus -- le `[FROZEN]` du vrai #19309 -- a ete trouvee par
+    ce chemin)."""
+    _COMMENTAIRES.clear()
+    monkeypatch.setattr(pig, "_snapshot_comments",
+                        lambda n: _COMMENTAIRES.get(n))
+    monkeypatch.setattr(pig, "_PASS_SNAPSHOT", {})
+    monkeypatch.setattr(pig, "_BELT_SNAPSHOT", None)
+    yield
+    _COMMENTAIRES.clear()
+
+
+def test_le_tapis_ecarte_une_umbrella_gelee_par_le_body(monkeypatch):
+    """LE CAS MESURE (#19309) : une umbrella gelee par une ligne `[FROZEN]`
+    dans son body etait **servie** par le tapis, parce que le filtre de
+    conteneur ne lit que le dernier commentaire."""
+    monkeypatch.setattr(pig.subprocess, "run",
+                        lambda *a, **k: pytest.fail("lecture reseau inattendue"))
+    pig._POOL_BODIES[19309] = ("[FROZEN] accord de coordination -- ai-01\n\n"
+                               "Suite au gel.\n")
+    pool = [_belt_item(19309), _belt_item(19001)]
+    picks, withheld, state = _run_belt(monkeypatch, pool)
+    assert 19309 not in [p["number"] for p in picks], (
+        "une umbrella gelee ne doit pas etre servie")
+    causes = {w[0]["number"]: w[1] for w in withheld}
+    assert causes[19309].startswith("GEL")
+    assert state["frozen_filtered"] == 1
+
+
+def test_le_tapis_ecarte_une_umbrella_gelee_par_un_commentaire_enterre(
+        monkeypatch):
+    """Meme cas, regle B : le gel est un commentaire du FIL, enterre par un
+    `[RELEASED]` posterieur. La lecture passe par l'instantane local de la
+    passe -- aucune requete."""
+    monkeypatch.setattr(pig.subprocess, "run",
+                        lambda *a, **k: pytest.fail("lecture reseau inattendue"))
+    pig._POOL_BODIES[19309] = "Corps neutre, aucun gel."
+    _COMMENTAIRES[19309] = [
+        {"body": "Une discussion sans marqueur"},
+        {"body": "[FROZEN] accord de coordination -- ai-01"},
+        {"body": "[RELEASED] lane myia-po-2024:CoursIA"},
+    ]
+    pool = [_belt_item(19309), _belt_item(19001)]
+    picks, withheld, state = _run_belt(monkeypatch, pool)
+    assert 19309 not in [p["number"] for p in picks]
+    causes = {w[0]["number"]: w[1] for w in withheld}
+    assert causes[19309].startswith("GEL")
+
+
+def test_une_umbrella_sans_gel_reste_servable(monkeypatch):
+    """Controle NEGATIF : #21721 preserve. Une umbrella sans gel, dont le
+    dernier commentaire est un `[RELEASED]`, reste servable -- le filtre
+    du gel ne peut pas devenir un filtre de plus."""
+    monkeypatch.setattr(pig.subprocess, "run",
+                        lambda *a, **k: pytest.fail("lecture reseau inattendue"))
+    pig._POOL_BODIES[19309] = "Corps neutre, aucun gel."
+    _COMMENTAIRES[19309] = [
+        {"body": "Une discussion sans marqueur"},
+        {"body": "[RELEASED] lane myia-po-2024:CoursIA"},
+    ]
+    pool = [_belt_item(19309), _belt_item(19001)]
+    picks, withheld, state = _run_belt(monkeypatch, pool)
+    assert [p["number"] for p in picks] == [19309, 19001]
+    assert state["frozen_filtered"] == 0
+
+
+def test_un_body_qui_PARLE_du_gel_ne_gele_pas_le_tapis(monkeypatch):
+    """Controle NEGATIF : le corps de CETTE ISSUE (#24516) *parle* d'un gel.
+    S'il etait pris pour un gel, l'issue qui decrit le defaut gelerait
+    elle-meme -- et le tapis se viderait de ses grains."""
+    monkeypatch.setattr(pig.subprocess, "run",
+                        lambda *a, **k: pytest.fail("lecture reseau inattendue"))
+    pig._POOL_BODIES[24516] = (
+        "Un `[FROZEN]` du coordinateur est un etat durable, mais le filtre "
+        "du tapis le lit comme une propriete de position.\n\n"
+        "1. dans `has_recent_delivery_marker`, balayer tous les "
+        "commentaires ;\n")
+    pool = [_belt_item(24516), _belt_item(19001)]
+    picks, withheld, state = _run_belt(monkeypatch, pool)
+    assert [p["number"] for p in picks] == [24516, 19001]
+    assert state["frozen_filtered"] == 0
+
+
+def test_un_UNFROZEN_posterieur_rend_l_umbrella_servable(monkeypatch):
+    """Controle NEGATIF (le plus important) : sans cette sortie, le remede
+    serait un gel EERNEL. Un `[UNFROZEN]` d'une lane habilitee ferme le gel
+    de commentaire, et l'umbrella redevient servable."""
+    monkeypatch.setattr(pig.subprocess, "run",
+                        lambda *a, **k: pytest.fail("lecture reseau inattendue"))
+    pig._POOL_BODIES[19309] = "Corps neutre, aucun gel."
+    _COMMENTAIRES[19309] = [
+        {"body": "[FROZEN] accord de coordination -- ai-01"},
+        {"body": "[UNFROZEN] gel leve -- lane myia-ai-01:CoursIA"},
+        {"body": "[RELEASED] lane myia-po-2024:CoursIA"},
+    ]
+    pool = [_belt_item(19309), _belt_item(19001)]
+    picks, withheld, state = _run_belt(monkeypatch, pool)
+    assert [p["number"] for p in picks] == [19309, 19001]
+    assert state["frozen_filtered"] == 0
+
+
+def test_une_lecture_du_gel_incomplete_ne_bloque_pas_le_candidat(monkeypatch):
+    """« je n'ai pas pu lire » n'est pas « c'est conforme » : le candidat
+    reste servable (fail-OPEN), et l'echec est PUBLIE dans `frozen_unread`."""
+    monkeypatch.setattr(pig.subprocess, "run",
+                        lambda *a, **k: pytest.fail("lecture reseau inattendue"))
+    # Ni corps dans le cache du pool, ni instantane : l'etat du gel est
+    # INCONNU.
+    pool = [_belt_item(19309), _belt_item(19001)]
+    picks, withheld, state = _run_belt(monkeypatch, pool)
+    assert [p["number"] for p in picks] == [19309, 19001]
+    assert 19309 in state["frozen_unread"]
+
+
+def test_le_tapis_ecarte_un_grain_gele_autant_que_l_umbrella(monkeypatch):
+    """Le filtre du gel vaut pour TOUTES les classes : un grain gele est
+    ecarte lui aussi (le filtre recent le fait deja par un autre chemin,
+    mais le tapis doit dire « GEL », pas « LIVRAISON »)."""
+    monkeypatch.setattr(pig.subprocess, "run",
+                        lambda *a, **k: pytest.fail("lecture reseau inattendue"))
+    pig._POOL_BODIES[19001] = "[FROZEN] accord de coordination -- ai-01"
+    pool = [_belt_item(19001, klass="grain"), _belt_item(19002)]
+    picks, withheld, state = _run_belt(monkeypatch, pool)
+    assert 19001 not in [p["number"] for p in picks]
+    causes = {w[0]["number"]: w[1] for w in withheld}
+    assert causes[19001].startswith("GEL")
+
+
+# --- (E) la LECTURE du gel : son tri-etat -----------------------------------
+
+def test_la_lecture_du_gel_trouve_le_gel_dans_le_body_seul():
+    """Regle A seule : le corps porte la ligne canonique, le fil n'est pas
+    disponible. Le verdict reste DECISIF -- un gel lu est un gel."""
+    pig._POOL_BODIES[19309] = "[FROZEN] accord de coordination -- ai-01"
+    assert pig.issue_is_frozen_marker(19309) is True
+
+
+def test_la_lecture_du_gel_trouve_le_gel_dans_le_fil_seul():
+    """Regle B seule : le gel est un commentaire du fil, le corps est
+    neutre et disponible."""
+    pig._POOL_BODIES[19309] = "Corps neutre."
+    _COMMENTAIRES[19309] = [
+        {"body": "[FROZEN] accord de coordination -- ai-01"},
+        {"body": "[RELEASED] lane myia-po-2024:CoursIA"},
+    ]
+    assert pig.issue_is_frozen_marker(19309) is True
+
+
+def test_la_lecture_du_gel_rend_faux_si_les_deux_surfaces_sont_lues():
+    """Les deux surfaces lues, aucun gel : le verdict est DEFINITIF."""
+    pig._POOL_BODIES[19309] = "Corps neutre."
+    _COMMENTAIRES[19309] = [{"body": "[RELEASED] lane myia-po-2024:CoursIA"}]
+    assert pig.issue_is_frozen_marker(19309) is False
+
+
+def test_la_lecture_du_gel_rend_inconnu_quand_une_surface_manque():
+    """Une surface non lue ne vaut pas « pas gele » : le verdict est
+    INCONNU (`None`), et l'appelant le fail-OPEN en le disant."""
+    pig._POOL_BODIES[19309] = "Corps neutre."
+    # pas de commentaires declares -> la regle B n'a pas pu etre evaluee
+    assert pig.issue_is_frozen_marker(19309) is None
+    pig._POOL_BODIES.clear()
+    _COMMENTAIRES[19309] = [{"body": "Une discussion"}]
+    # pas de corps dans le cache du pool -> la regle A n'a pas pu etre
+    # evaluee
+    assert pig.issue_is_frozen_marker(19309) is None
+
+
+def test_la_lecture_du_gel_ne_coute_aucune_requete(monkeypatch):
+    """La lecture est LOCALE : corps du pool + fil de l'instantane. Aucune
+    requete `gh` n'est emise, meme quand le gel est dans le corps."""
+    monkeypatch.setattr(pig.subprocess, "run",
+                        lambda *a, **k: pytest.fail("lecture reseau inattendue"))
+    pig._POOL_BODIES[19309] = "[FROZEN] accord de coordination -- ai-01"
+    assert pig.issue_is_frozen_marker(19309) is True
+
+
+def test_le_rapport_du_gel_non_lu_se_dit(capsys):
+    """Un gel non lu ne doit pas etre muet : le rapport nomme les numeros
+    concernes (doctrine des trois autres lectures non lues)."""
+    pig.print_frozen_unread_report([19309, 19309, 19001],
+                                   "myia-po-2027:CoursIA-2")
+    out = capsys.readouterr().out
+    assert "GEL NON LU" in out
+    assert "#19309" in out and "#19001" in out
+    # Rien a dire quand aucun candidat n'est concerne.
+    pig.print_frozen_unread_report([], None)
+    assert capsys.readouterr().out == ""
+
+
+def test_le_compteur_du_gel_est_dans_l_etat_de_la_boucle(monkeypatch):
+    """L'etat de la boucle porte les deux compteurs du filtre : ce qui a
+    ete ecarte (`frozen_filtered`) et ce qui n'a pas pu etre lu
+    (`frozen_unread`)."""
+    pig._POOL_BODIES[19309] = "[FROZEN] accord de coordination -- ai-01"
+    pool = [_belt_item(19309), _belt_item(19001)]
+    picks, withheld, state = _run_belt(monkeypatch, pool)
+    assert state["frozen_filtered"] == 1
+    assert state["frozen_unread"] == [19001]
+    assert 19309 not in [p["number"] for p in picks]
