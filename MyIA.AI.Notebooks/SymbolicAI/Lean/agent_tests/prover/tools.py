@@ -2350,7 +2350,38 @@ class TacticTools:
         subdir = Path(self._filepath).parent.name
         filename = Path(self._filepath).name
         relative_path = f"{subdir}/{filename}"
-        result = verifier.verify_project_file(relative_path, force=True)
+        # Cycle-29 (#1453, founder case DEMO 45 local 2026-11-04 13:44Z):
+        # compile() always passed force=True, defeating the verifier's
+        # content-hash cache — a frozen TacticAgent called compile() 4x
+        # between guard escalations with the target file unchanged between
+        # calls, paying a full Mathlib rebuild (~600 s) each time for a
+        # verdict that was never consumed. The cache key IS the content
+        # hash, so re-compiling identical content is provably the same
+        # verdict. Keep the FIRST compile of new content forced (external
+        # changes before the run; a forced build also refreshes the
+        # #18432 wall-clock-timeout marker), then serve repeats from the
+        # cache. A timed-out previous verdict is never re-served: a timeout
+        # is load-dependent, not content-deterministic.
+        _target_sha: Optional[str] = None
+        try:
+            _target_sha = hashlib.sha256(
+                Path(self._filepath).read_bytes()
+            ).hexdigest()
+        except OSError:
+            _target_sha = None
+        _content_unchanged = (
+            _target_sha is not None
+            and getattr(self, "_last_compile_sha", None) == _target_sha
+            and not getattr(self, "_last_compile_timed_out", False)
+        )
+        result = verifier.verify_project_file(
+            relative_path, force=not _content_unchanged
+        )
+        if _target_sha is not None:
+            self._last_compile_sha = _target_sha
+            self._last_compile_timed_out = bool(
+                result.get("wall_clock_timeout", False)
+            )
 
         duration = time.time() - start
         raw_output = result.get("raw_output", "")
