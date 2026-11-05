@@ -252,6 +252,19 @@ except ImportError:
     except ImportError:
         tirage_journal = None  # type: ignore[assignment]
 
+# Geste 6 #24373 : le parcage des EPICs Origami dont le pli suivant n'est pas
+# deplie. Import best-effort, comme `tirage_journal` : un environnement sans
+# le module fait tourner le tapis SANS parcage (fail-OPEN), jamais l'inverse.
+try:
+    import origami_parking
+except ImportError:
+    try:
+        sys.path.insert(0, os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "coordination"))
+        import origami_parking
+    except ImportError:
+        origami_parking = None  # type: ignore[assignment]
+
 REPO = "jsboige/CoursIA"
 
 # c.1115 voie 1 (msg-20260912T165428-k6rbfc, ai-01 spec) : klass `delivered`
@@ -8961,6 +8974,57 @@ def draw_belt(
     return filtered[:args.grains]
 
 
+def _origami_parking_state(pool: list[dict]) -> tuple[dict[int, str], dict]:
+    """Verdicts de parcage des EPICs Origami dont le pli suivant n'est pas deplie (#24373).
+
+    Rend ``(parked, state)`` : ``parked`` mappe le numero d'un EPIC parque a
+    la raison de son parcage ; ``state`` porte la mesure brute (pour le JSON
+    et le tableau du coordinateur).
+
+    **Fail-OPEN.** Module absent, mesure en echec, aucune mesure : rien
+    n'est parque, et ``state`` nomme l'echec. Un parcage applique sur une
+    absence de mesure supprimerait un grain du tapis -- le pire des deux
+    sens.
+
+    La lecture de « pli livre » passe par le corpus de PRs mergees que le
+    tapis a deja paye (``last_delivery_stamp`` du pool) : **zero appel
+    reseau** pour la livraison. L'organe ne fait que la recherche des
+    sous-issues et la lecture des commentaires (deux appels).
+    """
+    state: dict = {"active": False, "measured": False, "parked": [],
+                   "reason": "module indisponible"}
+    if origami_parking is None:
+        return {}, state
+    by_number = {int(it["number"]): it for it in pool}
+
+    def _delivered(number: int) -> bool:
+        # Le pool est la liste des issues OUVERTES : une sous-issue ouverte
+        # s'y trouve, avec son stamp de livraison s'il y en a une. Pas de
+        # stamp = pas de livraison tracee dans le corpus (fenetre de 90 j).
+        return bool((by_number.get(int(number)) or {}).get("last_delivery_stamp"))
+
+    try:
+        verdicts = origami_parking.measure(pool, delivered_probe=_delivered)
+    except Exception as exc:  # noqa: BLE001 - un garde ne doit pas casser le tirage
+        state["reason"] = f"mesure en echec ({type(exc).__name__})"
+        return {}, state
+    parked = {int(v["epic"]): v.get("reason") or ""
+              for v in verdicts if v.get("parked")}
+    state.update({
+        "active": True,
+        "measured": True,
+        "epics": len(verdicts),
+        "parked": sorted(parked),
+        "details": [{"epic": int(v["epic"]), "parked": bool(v.get("parked")),
+                     "reason": v.get("reason"),
+                     "next_pli": v.get("next_pli"),
+                     "title": v.get("title")}
+                    for v in verdicts],
+        "reason": "mesure faite",
+    })
+    return parked, state
+
+
 def belt_report_metrics(
     pool: list[dict],
     closed_7d: int | None,
@@ -11707,6 +11771,30 @@ def main(argv: list[str] | None = None) -> int:
         belt_pool = belt_filter(admitted, args, urns=selected_urns,
                                 epic_deliveries=_epic_deliveries,
                                 drops=_epic_drops)
+        # #24373 -- parcage des EPICs Origami dont le pli suivant n'est pas
+        # deplie. Le depliage est un geste du COORDINATEUR : aucune lane
+        # worker ne peut le lever, donc le tapis qui les ressertait epuisait
+        # des cycles en `[RELEASED]` (34 sur #19309, 31 depuis le 27/10).
+        # L'EPIC parque n'est plus servi aux lanes, et apparait dans la
+        # rubrique « Origami en attente de depliage » du tableau du
+        # coordinateur (`belt_queues.py board`).
+        # Le geste est fail-OPEN : sans mesure, rien n'est parque.
+        _origami_parked, _origami_state = _origami_parking_state(pool)
+        if _origami_parked:
+            for it in belt_pool:
+                verdict = _origami_parked.get(int(it["number"]))
+                if verdict is None:
+                    continue
+                _origami_state.setdefault("dropped", []).append(
+                    {"number": int(it["number"]), "title": it.get("title"),
+                     "cause": f"PARCAGE ORIGAMI (#24373) : {verdict}"})
+            belt_pool = [it for it in belt_pool
+                         if int(it["number"]) not in _origami_parked]
+            _belt_phase(f"parcage origami: {len(_origami_parked)} EPIC(s) "
+                        f"parque(s) -- " + ", ".join(
+                            f"#{n}" for n in sorted(_origami_parked)[:8])
+                        + (f" (+{len(_origami_parked) - 8})"
+                           if len(_origami_parked) > 8 else ""))
         belt_pool.sort(key=belt_sort_key)
         _belt_phase(f"pool charge: {len(belt_pool)} candidates "
                     f"(apres belt_filter)")
@@ -12086,6 +12174,11 @@ def main(argv: list[str] | None = None) -> int:
                                 for n, c in belt_dropped_validate],
                 },
                 "picks": belt_picks,
+                # #24373 : les EPICs Origami parques (le pli suivant n'est pas
+                # deplie -- geste reserve au coordinateur). Ils ne sont pas
+                # servis aux lanes ; le tableau du coordinateur les affiche
+                # dans « Origami en attente de depliage ».
+                "origami_parking": _origami_state,
                 "claims": {str(it["number"]): {
                     "code": (belt_claims.get(it["number"],
                                               (CLAIM_CODE_ERROR, "(no check)"))[0]),
