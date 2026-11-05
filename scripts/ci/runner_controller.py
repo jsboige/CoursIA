@@ -198,6 +198,18 @@ def task_action(profile: Profile, command: list[str] | None = None) -> str:
         f"$ErrorActionPreference='Continue';"
         f"$out = & {call} 2>&1 | Out-String;"
         f"$code = $LASTEXITCODE;"
+        # FILET, pas correction d'un defaut reproduit : un executable
+        # introuvable ne met PAS `$LASTEXITCODE` a jour (la commande n'a
+        # jamais demarre -> `$LASTEXITCODE` reste `$null`, et `exit $null`
+        # rendrait 0). Mesure sur les DEUX moteurs du poste (pwsh 7 et
+        # Windows PowerShell 5.1) : l'exception « commande introuvable »
+        # est toutefois TERMINANTE pour le `try` du corps -- elle est donc
+        # attrapee par le `catch` ci-dessous, qui ecrit la raison dans le
+        # journal et rend deja 1. Le rc ne ment donc pas aujourd'hui ; la
+        # garde le garantit meme si cette exception devenait non
+        # terminante. Le temoin qui verrouille le comportement mesure est
+        # dans scripts/tests/test_runner_controller.py.
+        f"if ($null -eq $code) {{ $code = 1 }};"
         f"$ErrorActionPreference='Stop';"
         f"[IO.File]::AppendAllText($log, $out);"
         f"if ($code -ne 0) {{ exit $code }}"

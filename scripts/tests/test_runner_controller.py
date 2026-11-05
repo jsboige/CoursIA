@@ -248,6 +248,9 @@ def test_task_action_redirige_tout_le_flux_vers_le_journal(prof):
     assert "[IO.File]::AppendAllText($log," in body
     assert "$out = & " in body and "2>&1 | Out-String" in body
     assert "$code = $LASTEXITCODE;" in body
+    # un executable introuvable ne met pas `$LASTEXITCODE` a jour : `$null`
+    # ne doit pas pouvoir passer pour un succes (`exit $null` rend 0)
+    assert "if ($null -eq $code)" in body
     assert "exit $code" in body
     # le chemin d'echec ecrit la raison, puis rend un code non nul
     assert "} catch {" in body
@@ -297,3 +300,35 @@ def test_le_code_retour_de_l_organe_traverse_le_corps(prof):
     log = prof.root.parent / "logs" / "controller.log"
     assert completed.returncode == 3, "le code retour de l'organe doit traverser"
     assert "sortie organe" in log.read_text(encoding="utf-8")
+
+
+@pytest.mark.skipif(not (WINDOWS and PWSH), reason="pwsh absent (poste Windows requis)")
+def test_un_executable_introuvable_ne_rend_pas_un_code_nul(prof):
+    """Un executable introuvable rend 1, et le journal nomme la cause.
+
+    Mesure sur les deux moteurs du poste (pwsh 7 et Windows PowerShell 5.1) :
+    l'exception « commande introuvable » est **terminante** pour le `try` du
+    corps -- elle est donc attrapee par le `catch`, qui ecrit la raison dans
+    le journal et rend 1. Le rc ne ment donc pas sur ce chemin.
+
+    Ce temoin verrouille ce comportement, et non pas une correction : le
+    controle negatif (garde du corps retiree) le laisse VERT, parce que le
+    `catch` couvre deja le cas. Il deviendrait ROUGE le jour ou l'exception
+    cesserait d'etre terminante -- le `$LASTEXITCODE` resterait `$null`,
+    `exit $null` rendrait 0, et le journal serait vide.
+    """
+    secrets = prof.root.parent / "secrets" / "runner_pwd.txt"
+    secrets.parent.mkdir(parents=True, exist_ok=True)
+    secrets.write_text("mot-de-passe\n", encoding="utf-8")
+    absent = prof.root.parent / "absent" / "command_inexistante.exe"
+    body = ctl.task_action(prof, command=[str(absent)])
+    completed = subprocess.run(
+        [PWSH, "-NoProfile", "-NonInteractive", "-Command", body],
+        capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=300,
+    )
+    log = prof.root.parent / "logs" / "controller.log"
+    assert completed.returncode == 1, "un executable introuvable ne doit pas rendre 0"
+    assert log.is_file(), "le journal doit porter la raison de l'echec"
+    text = log.read_text(encoding="utf-8")
+    assert text.strip(), "le journal ne doit pas etre vide"
+    assert "command_inexistante" in text, "le journal doit nommer la commande absente"
