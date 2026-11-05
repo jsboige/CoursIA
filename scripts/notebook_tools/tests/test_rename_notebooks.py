@@ -394,6 +394,46 @@ class TestRenameDocumentationLine(unittest.TestCase):
             after = p.read_text(encoding="utf-8")
             self.assertIn("Precedent : DecInfer-01b-Lean-ExpectedUtility", after)
 
+    def test_preserved_occurrence_does_not_count_as_a_replacement(self):
+        # Le compte rendu est celui des remplacements EFFECTUES : une
+        # occurrence gardee par le contexte de documentation est un match de
+        # `subn` sans ecriture (reserve NanoClaw sur la review de #24819).
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            p = _write(repo, "docs/PARITY-INVENTORY.md",
+                       "DecInfer-02-Lean-ExpectedUtility -> "
+                       "DecInfer-01b-Lean-ExpectedUtility\n"
+                       "Precedent : DecInfer-02-Lean-ExpectedUtility\n")
+            forms = [rn.ref_forms(
+                "MyIA.AI.Notebooks/DecInfer/DecInfer-02-Lean-ExpectedUtility.ipynb",
+                "MyIA.AI.Notebooks/DecInfer/DecInfer-01b-Lean-ExpectedUtility.ipynb")]
+            self.assertEqual(rn.rewrite_file(p, forms), 1)
+            after = p.read_text(encoding="utf-8")
+            self.assertIn("DecInfer-02-Lean-ExpectedUtility -> "
+                          "DecInfer-01b-Lean-ExpectedUtility", after)
+            self.assertIn("Precedent : DecInfer-01b-Lean-ExpectedUtility", after)
+
+    @unittest.expectedFailure
+    def test_dossier_mention_in_prose_is_the_known_limit(self):
+        # LIMITE CONNUE, marquee `expectedFailure` et non figee : sans
+        # separateur, une mention du DOSSIER en prose reste indistinguable
+        # d'un referent de fichier et est recoiffee. Le jour ou un index des
+        # dossiers du corpus permet de la proteger, ce test passe au vert
+        # inattendu et signale qu'il faut le retourner. Le cas mesure (chemin
+        # CSV, avec slash) est couvert par TestDossierComponentNotRewritten.
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            body = ("le dossier DecInfer-02-Lean-ExpectedUtility "
+                    "contient trois carnets\n")
+            p = _write(repo, "docs/nav.md", body)
+            forms = [rn.ref_forms(
+                "MyIA.AI.Notebooks/DecInfer/DecInfer-02-Lean-ExpectedUtility.ipynb",
+                "MyIA.AI.Notebooks/DecInfer/DecInfer-01b-Lean-ExpectedUtility.ipynb")]
+            # Comportement ATTENDU (aujourd'hui faux) : la mention du dossier
+            # n'est pas un referent de fichier et ne doit pas etre reecrite.
+            self.assertEqual(rn.rewrite_file(p, forms), 0)
+            self.assertEqual(p.read_text(encoding="utf-8"), body)
+
 
 class TestCodeCellNeverRewritten(unittest.TestCase):
     """Defaut 6 : une reference dans une CELLULE DE CODE avait ete reecrite,

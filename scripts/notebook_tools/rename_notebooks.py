@@ -513,6 +513,15 @@ def build_patterns(forms_list: list[RefForms]) -> list[tuple[RefForms, re.Patter
             # sur iit.csv dont 0 chemin valide apres coup). Les formes qui
             # portent l'extension (.ipynb) gardent la frontiere large : elles
             # ne peuvent pas designer un dossier.
+            #
+            # LIMITE CONNUE (reserve NanoClaw, review de #24819) : la garde
+            # repose sur le separateur. Une mention du dossier en PROSE, sans
+            # slash final (« le dossier ICT-12-ValenceFieldsAndAnimats
+            # contient... »), reste recoiffee alors que le dossier garde son
+            # nom. Departerager demanderait un index des dossiers du corpus,
+            # que ``rewrite_file`` ne recoit pas (il ne voit qu'un fichier et
+            # des formes). Le cas mesure etait un chemin CSV, attrape par le
+            # lookahead ; le cas prose n'a jamais ete observe dans le corpus.
             right = (r"(?![\w/-])" if not old.lower().endswith(".ipynb")
                      else r"(?![\w-])")
             pat = re.compile(r"(?<![\w-])" + re.escape(old) + right)
@@ -955,26 +964,37 @@ _RENAME_DOC_CONTEXT = re.compile(
 )
 
 
-def _doc_preserving_repl(new: str, source: str) -> "callable":
+def _doc_preserving_repl(new: str, source: str,
+                         applied: list[int]) -> "callable":
     """Fonction de remplacement qui garde la forme ancienne lorsqu'elle est
-    suivie d'un contexte de documentation de renommage."""
+    suivie d'un contexte de documentation de renommage.
+
+    ``applied`` recoit le compte des remplacements REELLEMENT ecrits : une
+    occurrence preservee est un match de ``subn`` comme un autre, et
+    l'incrementer ferait annoncer a ``rewrite_file`` des remplacements qui
+    n'ont pas eu lieu (reserve NanoClaw sur la review de #24819).
+    """
     def _repl(m: re.Match) -> str:
         if _RENAME_DOC_CONTEXT.match(source, m.end()):
             return m.group(0)
+        applied[0] += 1
         return new
     return _repl
 
 
 def rewrite_file(p: Path, forms_list: list[RefForms]) -> int:
     """Reecrit AU TEXTE un fichier dont toutes les occurrences sont en surfaces
-    autorisees. Rend le nombre de remplacements effectues. Leve SystemExit si
-    la garde structurelle echoue -- dans ce cas rien n'est ecrit."""
+    autorisees. Rend le nombre de remplacements REELLEMENT effectues -- les
+    occurrences preservees par le contexte de documentation (``X -> Y``) sont
+    des matchs sans ecriture et ne comptent donc pas. Leve SystemExit si la
+    garde structurelle echoue ; dans ce cas rien n'est ecrit."""
     raw = p.read_text(encoding="utf-8")
     edited = raw
     total = 0
     for _f, pat, _old, new in build_patterns(forms_list):
-        edited, k = pat.subn(_doc_preserving_repl(new, edited), edited)
-        total += k
+        applied = [0]
+        edited = pat.sub(_doc_preserving_repl(new, edited, applied), edited)
+        total += applied[0]
     if total == 0 or edited == raw:
         return 0
     if p.name.lower().endswith(".ipynb"):
