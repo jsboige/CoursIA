@@ -173,7 +173,13 @@ class ScriptedRunner:
         auto_tree: str | None = None,
         base_search: dict[str, list[dict]] | None = None,
         base_search_rc: int = 0,
+        # Etape 5quinquies : tests d'integrite sur l'arbre fusionne. Vert par
+        # defaut, pour que les tests historiques gardent leur chemin nominal.
+        combined_rc: int = 0,
+        combined_stdout: str = '{"verdict": "GREEN", "failed": []}',
     ):
+        self.combined_rc = combined_rc
+        self.combined_stdout = combined_stdout
         self.token = token
         self.token_rc = token_rc
         self.prs = list(prs)
@@ -295,6 +301,8 @@ class ScriptedRunner:
             return mr.RunResult(self.claims_rc, self.claims_stdout, "")
         if len(c) > 1 and "check_slot_reservation.py" in c[1]:
             return mr.RunResult(self.slot_rc, self.slot_stdout, "")
+        if len(c) > 1 and "premerge_combined_check.py" in c[1]:
+            return mr.RunResult(self.combined_rc, self.combined_stdout, "")
         raise AssertionError("commande non scriptee : " + " ".join(c))
 
     def sleep(self, seconds: float) -> None:
@@ -1947,3 +1955,69 @@ def test_stacked_on_main_self_reference_is_explicit(tmp_path):
     # Aucun appel supplementaire : la PR courante est deja chargee.
     pr_view_calls = [c[3] for c in runner.cmds() if c[:3] == ["gh", "pr", "view"]]
     assert pr_view_calls == ["123"], pr_view_calls
+
+
+# --- 5quinquies : tests d'integrite sur l'arbre fusionne (2026-11-05) ----------
+
+
+def _combined_calls(runner):
+    return [c for c in runner.cmds()
+            if len(c) > 1 and "premerge_combined_check.py" in c[1]]
+
+
+def test_combined_green_merges_and_judges_the_gated_head(tmp_path):
+    runner = ScriptedRunner(views={123: default_view()})
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[0]["verdict"] == "would-merge", lines[0]
+    calls = _combined_calls(runner)
+    assert len(calls) == 1
+    assert calls[0][calls[0].index("--pr") + 1] == "123"
+    assert calls[0][calls[0].index("--head") + 1] == HEAD
+
+
+def test_combined_red_skips_and_names_the_first_red_test(tmp_path):
+    stdout = json.dumps({"verdict": "RED",
+                         "failed": ["scripts/x/test_a.py::test_u", "b::c"]})
+    runner = ScriptedRunner(views={123: default_view()}, combined_rc=1,
+                            combined_stdout=stdout)
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert lines[-1]["verdict"] == "skipped"
+    assert lines[-1]["reason"] == "combined-tree-red:scripts/x/test_a.py::test_u"
+    assert not any(c[:3] == ["gh", "pr", "merge"] for c in runner.cmds())
+
+
+def test_combined_conflict_skips(tmp_path):
+    runner = ScriptedRunner(views={123: default_view()}, combined_rc=1,
+                            combined_stdout='{"verdict": "CONFLICT"}')
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert lines[-1]["reason"] == "combined-tree-conflict"
+
+
+def test_combined_unreadable_is_fail_closed(tmp_path):
+    runner = ScriptedRunner(views={123: default_view()}, combined_rc=2,
+                            combined_stdout='{"verdict": "UNREADABLE", "reason": "timeout"}')
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert lines[-1]["reason"] == "combined-tree-unreadable:timeout"
+    assert not any(c[:3] == ["gh", "pr", "merge"] for c in runner.cmds())
+
+
+def test_combined_garbage_output_is_fail_closed(tmp_path):
+    runner = ScriptedRunner(views={123: default_view()}, combined_rc=0,
+                            combined_stdout="pas du json")
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert lines[-1]["reason"] == "combined-tree-unreadable:rc-0"
+
+
+def test_combined_is_not_paid_by_a_pr_the_gate_refuses(tmp_path):
+    runner = ScriptedRunner(views={123: default_view()}, gate_rc=1)
+    run_organ(tmp_path, runner)
+    assert _combined_calls(runner) == []
+
+
+def test_combined_operator_rollback_env(tmp_path, monkeypatch):
+    monkeypatch.setenv("MERGE_READY_COMBINED_CHECK", "0")
+    runner = ScriptedRunner(views={123: default_view()}, combined_rc=1,
+                            combined_stdout='{"verdict": "RED", "failed": ["a::b"]}')
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[0]["verdict"] == "would-merge"
+    assert _combined_calls(runner) == []
