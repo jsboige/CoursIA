@@ -91,8 +91,8 @@ theorem present_value_constant {γ r : ℝ} (hγ₁ : 0 < γ) (hγ₂ : γ < 1) 
     the goal to `1/(1-γ₁) ≤ 1/(1-γ₂)`. Since `γ₁ ≤ γ₂` we have
     `1-γ₂ ≤ 1-γ₁`, and both denominators are positive (`γ₂ < 1`), so
     `one_div_le_one_div_of_le` closes the goal. This sidesteps the missing
-    `tsum_le_tsum` on `ℝ` (not available in Mathlib v4.30.0-rc2 for bare `ℝ`
-    series) by exploiting the closed form. -/
+    `tsum_le_tsum` on `ℝ` (not available in the version then in use, Mathlib
+    v4.30.0-rc2, for bare `ℝ` series) by exploiting the closed form. -/
 theorem discount_monotone {γ₁ γ₂ : ℝ} (h₁ : 0 ≤ γ₁) (h₂ : γ₁ ≤ γ₂) (h₃ : γ₂ < 1) :
     ∑' n : ℕ, γ₁ ^ n ≤ ∑' n : ℕ, γ₂ ^ n := by
   have hγ₁_lt : γ₁ < 1 := lt_of_le_of_lt h₂ h₃
