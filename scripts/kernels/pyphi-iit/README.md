@@ -17,7 +17,7 @@ L'env conda `pyphi` (Python 3.9) est l'env canonique pour les 4 carnets de la st
 | `ICT-01-PhiTrajectories-Python` | Python 3.9.25 (PyPhi) |
 | `ICT-05-CausalEmergence-Python` | Python 3.9.25 (PyPhi) |
 | `ICT-18-ArrowOfTimeReversibilization-Python` | Python 3.9.25 (PyPhi) |
-| `ICT-Synthese-CrossSubstrat` | Python 3.9.25 (PyPhi) |
+| `ICT-Synthese-CrossSubstrat-Python` | Python 3.9.25 (PyPhi) |
 
 (Source : `scripts/notebook_tools/notebook_env_census.py` sur `MyIA.AI.Notebooks/IIT/ICT-Series/`, 2026-10-06, mesure 77 carnets.)
 

@@ -160,6 +160,11 @@ class ScriptedRunner:
         fetch_rc: int = 0,
         twin_rc: int = 0,
         twin_stdout: str = "",
+        # Revendications d'ordinal des PRs ouvertes (organe
+        # twin_open_claims.py) : 0 = liste vide, 1 = liste portee par
+        # claims_stdout, 2 = API illisible (fail-closed).
+        claims_rc: int = 0,
+        claims_stdout: str = '{"claims": []}',
         # Issue #20774 : organe slot-reservation-guard en mode en ligne, au merge.
         # 0 = clear, 1 = collision, 2 = unreadable. Cf. SLOT_DOCUMENTED_RC.
         slot_rc: int = 0,
@@ -189,6 +194,8 @@ class ScriptedRunner:
         # Vide par defaut (les tests historiques ``twin-index-collision``
         # n'attendent pas de classification).
         self.twin_stdout = twin_stdout
+        self.claims_rc = claims_rc
+        self.claims_stdout = claims_stdout
         # #20774 : organe slot-reservation-guard, mode en ligne. Meme
         # convention que twin_rc/twin_stdout.
         self.slot_rc = slot_rc
@@ -284,6 +291,8 @@ class ScriptedRunner:
             return mr.RunResult(self.fetch_rc, "", "")
         if len(c) > 1 and "check_twin_index_collisions.py" in c[1]:
             return mr.RunResult(self.twin_rc, self.twin_stdout, "")
+        if len(c) > 1 and "twin_open_claims.py" in c[1]:
+            return mr.RunResult(self.claims_rc, self.claims_stdout, "")
         if len(c) > 1 and "check_slot_reservation.py" in c[1]:
             return mr.RunResult(self.slot_rc, self.slot_stdout, "")
         raise AssertionError("commande non scriptee : " + " ".join(c))
@@ -1101,6 +1110,97 @@ def test_twin_organ_unreadable_is_fail_closed(tmp_path):
     rc, lines, _ = run_organ(tmp_path, runner)
     assert lines[0]["verdict"] == "skipped"
     assert lines[0]["reason"] == "twin-collision-unreadable:rc=2"
+
+
+def test_twin_organ_is_called_with_the_merged_judgment(tmp_path):
+    """L'organe est appele en mode `--merged` : c'est l'arbre de fusion qui
+    repond a « `main` sera-t-il rouge apres ce merge ? » (mesure du
+    2026-11-03 : #23832 et #24010 ont alloue les memes ordinals et sont
+    passees tous les deux)."""
+    view = default_view(files=(TWIN_FILE,))
+    runner = ScriptedRunner(views={123: view}, twin_rc=0)
+    run_organ(tmp_path, runner)
+    twin = [c for c in runner.cmds()
+            if len(c) > 1 and "check_twin_index_collisions.py" in c[1]]
+    assert len(twin) == 1
+    assert "--merged" in twin[0]
+
+
+def test_twin_collision_introduite_par_le_merge_skips(tmp_path):
+    """Un doublon que le MERGE introduit (et qu'aucune revision ne porte
+    isolement) doit faire sauter le merge : c'est exactement le cas que le
+    seul jugement base+tete laissait passer."""
+    payload = json.dumps({
+        "cross_ref": [],
+        "merged_reasons": [{
+            "pair": "search-05-geneticalgorithms",
+            "index": "0024",
+            "names": ["0024-a.yaml", "0024-b.yaml"],
+            "added": ["0024-b.yaml"],
+            "gist": "renumeroter par `git mv` PUR",
+        }],
+        "merged_unreadable": None,
+    })
+    view = default_view(files=(TWIN_FILE,))
+    runner = ScriptedRunner(views={123: view}, twin_rc=1, twin_stdout=payload)
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[0]["verdict"] == "skipped"
+    assert lines[0]["reason"].startswith("twin-collision-on-merge:")
+    assert "search-05-geneticalgorithms/0024" in lines[0]["reason"]
+
+
+def test_twin_arbre_de_fusion_illisible_is_fail_closed(tmp_path):
+    """« je n'ai pas pu lire » n'est pas « c'est propre » : l'arbre de fusion
+    illisible (merge en conflit) fait sauter le merge, meme quand le jugement
+    classique ne bloque rien (rc 0)."""
+    payload = json.dumps({
+        "cross_ref": [],
+        "merged_reasons": [],
+        "merged_unreadable": "merge-tree --write-tree : conflit",
+    })
+    view = default_view(files=(TWIN_FILE,))
+    runner = ScriptedRunner(views={123: view}, twin_rc=0, twin_stdout=payload)
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[0]["verdict"] == "skipped"
+    assert lines[0]["reason"] == "twin-collision-unreadable:merged"
+
+
+def test_twin_collision_avec_une_pr_ouverte_skips(tmp_path):
+    """Un ordinal revendique par une PR CONCURRENTE encore ouverte doit faire
+    sauter le merge : ni le jugement base+tete ni l'arbre de fusion ne le
+    voient (les deux ne portent que des revisions mergees), et la collision
+    n'apparaitrait qu'apres le second merge -- en rouge fleet-wide (mesure du
+    2026-11-04 : 5 collisions de ce type etaient vivantes entre PRs
+    ouvertes)."""
+    payload = json.dumps({
+        "cross_ref": [],
+        "merged_reasons": [],
+        "merged_unreadable": None,
+        "open_pr_reasons": [{
+            "pair": "csp-6-hybridization",
+            "index": "0024",
+            "names": ["0024-a.yaml", "0024-b.yaml"],
+            "prs": [123, 999],
+            "gist": "renumeroter par `git mv` PUR",
+        }],
+    })
+    view = default_view(files=(TWIN_FILE,))
+    runner = ScriptedRunner(views={123: view}, twin_rc=1, twin_stdout=payload)
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[0]["verdict"] == "skipped"
+    assert lines[0]["reason"].startswith("twin-collision-open-pr:")
+    assert "csp-6-hybridization/0024" in lines[0]["reason"]
+
+
+def test_twin_revendications_illisibles_is_fail_closed(tmp_path):
+    """« je n'ai pas pu lire » n'est pas « c'est propre » : l'API des PRs
+    ouvertes illisible fait sauter le merge, comme le fetch de l'arbre de
+    fusion."""
+    view = default_view(files=(TWIN_FILE,))
+    runner = ScriptedRunner(views={123: view}, claims_rc=2)
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[0]["verdict"] == "skipped"
+    assert lines[0]["reason"] == "twin-collision-unreadable:open-claims"
 
 
 def test_twin_fetch_failure_is_fail_closed(tmp_path):

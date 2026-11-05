@@ -4,7 +4,7 @@ Définitions de types partagées en Lean 4, utilisées par plusieurs projets Lea
 
 ## Statut
 
-- **Type** : Projet Lake autonome (`lakefile.toml`, `lean-toolchain` pinné `v4.32.1`, `lake-manifest.json`)
+- **Type** : Projet Lake autonome (`lakefile.toml`, `lean-toolchain` pinné `v4.33.0`, `lake-manifest.json`)
 - **Fichiers** : voir catalogue (FR + siblings `_en`, EPIC #4980 Pattern A)
 - **Compte de `sorry`** : 0 (définitions uniquement, pas de preuves)
 - **Dépendance Mathlib** : aucune — tous les fichiers utilisent le cœur de Lean 4 uniquement

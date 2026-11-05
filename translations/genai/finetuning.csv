@@ -7231,21 +7231,21 @@ print(f""{'from scratch r=4 (FT-00a)':<30}{FT00A_LORA_ACC:>11.4f}{FT00A_LORA_PAR
 print(f""{'full 2 couches (FT-00a)':<30}{FT00A_FULL_ACC:>11.4f}{FT00A_FULL_PARAMS:>13}""
       f""{'7.6':>7}s{'2':>5}{'aucun':>25}"")
 print(""="" * 100)",,,,,,,,40afac9f825c66da,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-00c-LoRA-SOTA-Comparison-Python.ipynb,cell-17,markdown,fr,18e9499b2ea8ff56,"### Lecture du résultat : pourquoi le from scratch, quand le SOTA
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-00c-LoRA-SOTA-Comparison-Python.ipynb,cell-17,markdown,fr,247dba98459dcaab,"### Lecture du résultat : pourquoi le from scratch, quand le SOTA
 
 - **Exactitude** : les trois adaptations (peft, from scratch, full) récupèrent le même ordre de grandeur. Le full fine-tuning des mêmes couches reste devant — 6,5× plus de paramètres libres achètent quelques points.
 - **Budget** : `peft` et le from scratch libèrent **exactement** les mêmes 3 752 paramètres (11 % du réseau) — la librairie n'ajoute rien au budget, elle le garantit.
 - **LOC** : des lignes à écrire, tester et maintenir — c'est le coût de fabrication contre le coût d'abstraction.
-- **Temps** : 28,9 s mesurées ici (CPU) contre 7,9 s committées pour le from scratch (GPU) — les deux runs ne partagent ni device ni build : ce rapport ne mesure **pas** un surcoût `peft`. L'adaptateur ajoute certes par couche ciblée des noyaux supplémentaires (ici `lora_A` conv 3×3 + `lora_B` conv 1×1) et une indirection de module, mais cet effet est invisible sur cette paire de runs ; sur un LLM, il est de toute façon noyé dans le coût du forward du backbone.
+- **Temps** : le run CPU mesuré ici est plusieurs fois plus lent que les 7,9 s committées pour le from scratch (GPU) — la cellule de mesure en imprime la valeur exacte ; les deux runs ne partagent ni device ni build, ce rapport ne mesure donc **pas** un surcoût `peft`. L'adaptateur ajoute certes par couche ciblée des noyaux supplémentaires (ici `lora_A` conv 3×3 + `lora_B` conv 1×1) et une indirection de module, mais cet effet est invisible sur cette paire de runs ; sur un LLM, il est de toute façon noyé dans le coût du forward du backbone.
 - **Écosystème** : c'est la vraie ligne de fracture. L'adaptateur `peft` est un **artefact portable** (section 5) : quelques kilo-octets sérialisables, rechargeables sur toute copie de la base, fusionnables — et compatibles avec `transformers.Trainer`, `accelerate`, l'export. La classe maison de FT-00a n'a aucun de ces rails.
 - Le from scratch reste irremplaçable pour **comprendre et déboguer** : quand un adaptateur `peft` se comporte mal (rang trop petit, `alpha` mal calibré), le diagnostic exige de savoir ce qui vit sous la config.","### Reading the result: why from scratch, when SOTA
 
 - **Accuracy**: the three adaptations (peft, from scratch, full) recover the same order of magnitude. The full fine-tuning of the same layers stays ahead — 6.5x more free parameters buy a few points.
 - **Budget**: `peft` and the from-scratch version free **exactly** the same 3,752 parameters (11% of the network) — the library adds nothing to the budget, it guarantees it.
 - **LOC**: lines to write, test and maintain — that is the manufacturing cost versus the abstraction cost.
-- **Time**: 28.9 s measured here (CPU) against 7.9 s committed for the from-scratch version (GPU) — the two runs share neither device nor build: this ratio does **not** measure a `peft` overhead. The adapter does add, per targeted layer, extra kernels (here `lora_A` 3x3 conv + `lora_B` 1x1 conv) and a module indirection, but this effect is invisible on this pair of runs; on an LLM it is anyway drowned in the cost of the backbone's forward.
+- **Time**: the CPU run measured here is several times slower than the 7.9 s committed for the from-scratch version (GPU) — the measurement cell prints the exact value; the two runs share neither device nor build, so this ratio does **not** measure a `peft` overhead. The adapter does add, per targeted layer, extra kernels (here `lora_A` 3x3 conv + `lora_B` 1x1 conv) and a module indirection, but this effect is invisible on this pair of runs; on an LLM it is anyway drowned in the cost of the backbone's forward.
 - **Ecosystem**: that is the real dividing line. The `peft` adapter is a **portable artifact** (section 5): a few serializable kilobytes, reloadable on any copy of the base, mergeable — and compatible with `transformers.Trainer`, `accelerate`, export. FT-00a's home-made class has none of these rails.
-- From scratch remains irreplaceable for **understanding and debugging**: when a `peft` adapter misbehaves (rank too small, miscalibrated `alpha`), the diagnosis requires knowing what lives under the config.",,,,,,,18e9499b2ea8ff56,1cff3ed7b6683511,,,,,,,,,,,,,,
+- From scratch remains irreplaceable for **understanding and debugging**: when a `peft` adapter misbehaves (rank too small, miscalibrated `alpha`), the diagnosis requires knowing what lives under the config.",,,,,,,247dba98459dcaab,7c2260dd171e56e7,,,,,,,247dba98459dcaab,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-00c-LoRA-SOTA-Comparison-Python.ipynb,cell-18,markdown,fr,1c2f3f6d2fbaa215,"## 5. L'écosystème : `save_pretrained`, `PeftModel.from_pretrained`, `merge_and_unload`
 
 Trois gestes industriels que la classe maison de FT-00a n'offre pas :
@@ -7752,3 +7752,661 @@ is stable — early minimum, climb afterwards — a fixed budget of fifteen epoc
 optimal for every draw. The only rule that adapts to the draw is a stopping criterion:
 measure the retained perplexity at every epoch and stop when it no longer improves. This
 is exactly what exercise 2 builds.",,,,,,,27392cca5572d0b9,3e42a356a36f2384,,,,,,,27392cca5572d0b9,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb,e8428cff,markdown,fr,2b5256410d872908,"# FT-06 : LoRA vision-langage — fine-tune du décodeur de Qwen3.5-0.8B
+**Navigation** : [Index](README.md) | [<< 05 — Fusion et routage](FT-05-ModelMerging-Routing-Python.ipynb)
+
+**Version anglaise** : [FT-06 — LoRA vision-langage (en)](FT-06-Vision-Language-LoRA-Python_en.ipynb)
+
+**Objectif** : adapter un modèle vision-langage (VLM) avec LoRA/QLoRA en ciblant exclusivement son décodeur de langage. La tâche est volontairement bornée — décrire une image synthétique contenant une forme colorée selon un contrat de sortie strict — pour que l'effet du fine-tuning soit **mesurable** : nous comparons le modèle de base et le modèle adapté sur une métrique de conformité de format et sur la justesse champ par champ, sur des images jamais vues à l'entraînement.
+
+**Prérequis** :
+- FT-01 (panorama du fine-tuning, LoRA sur GPT-2)
+- FT-02 (quantization 4-bit NF4, QLoRA)
+- FT-03 (SFT instruction-following, boucle entraînement/évaluation)
+- Notions de PyTorch et Transformers
+
+**Plan du notebook** :
+1. Modèles vision-langage et Qwen3.5-0.8B
+2. La tâche image→texte bornée : contrat de sortie et dataset synthétique
+3. Mesure de référence du modèle de base
+4. LoRA ciblé sur le décodeur
+5. Entraînement QLoRA
+6. Évaluation comparative : base vs LoRA
+7. Pourquoi le décodeur seulement ?
+8. Nettoyage de la mémoire GPU
+9. Exercices
+10. Résumé
+
+**Matériel requis** : GPU — le run de référence (RTX 3070 Laptop, 8,6 Go) n'a jamais dépassé **1,5 Go de VRAM allouée** (832 Mo au chargement 4-bit, 1452 Mo après entraînement, cf sections 1 et 5) : une carte modeste suffit, la marge absorbant les pointes transitoires d'allocation.
+
+**Durée estimée** : 45-60 minutes
+
+**Parcours** : nous chargeons d'abord le modèle multimodal et son processor (section 1), construisons un dataset d'images synthétiques entièrement déterministe — dessinées par PIL, donc reproductibles au pixel près sans aucun téléchargement de données (section 2), mesurons le modèle de base sur un contrat qu'il n'a jamais vu (section 3), greffons des adaptateurs LoRA sur les seules couches du décodeur (section 4), entraînons (section 5), puis comparons chiffres en main base contre LoRA sur les mêmes images held-out (section 6). La section 7 justifie le choix « décodeur seulement » ; trois exercices prolongent : une forme nouvelle, un champ de contrat en plus, et le ciblage de la vision elle-même.","# FT-06: Vision-language LoRA — fine-tuning the decoder of Qwen3.5-0.8B
+**Navigation**: [Index](README.md) | [<< 05 — Fusion and routing](FT-05-ModelMerging-Routing-Python.ipynb)
+
+**French version**: [FT-06 — LoRA vision-langage](FT-06-Vision-Language-LoRA-Python.ipynb)
+
+**Objective**: adapt a vision-language model (VLM) with LoRA/QLoRA by targeting exclusively its language decoder. The task is deliberately bounded — describing a synthetic image containing a colored shape according to a strict output contract — so that the effect of fine-tuning is **measurable**: we compare the base model and the adapted model on a format-compliance metric and on field-by-field correctness, on images never seen during training.
+
+**Prerequisites**:
+- FT-01 (fine-tuning overview, LoRA on GPT-2)
+- FT-02 (4-bit NF4 quantization, QLoRA)
+- FT-03 (SFT instruction-following, training/evaluation loop)
+- Familiarity with PyTorch and Transformers
+
+**Notebook outline**:
+1. Vision-language models and Qwen3.5-0.8B
+2. The bounded image→text task: output contract and synthetic dataset
+3. Baseline measurement of the base model
+4. LoRA targeted at the decoder
+5. QLoRA training
+6. Comparative evaluation: base vs LoRA
+7. Why the decoder only?
+8. Cleaning up GPU memory
+9. Exercises
+10. Summary
+
+**Required hardware**: GPU — the reference run (RTX 3070 Laptop, 8.6 GB) never exceeded **1.5 GB of allocated VRAM** (832 MB when loading in 4-bit, 1452 MB after training, see sections 1 and 5): a modest card is enough, with the margin absorbing transient allocation spikes.
+
+**Estimated duration**: 45–60 minutes
+
+**Path**: we first load the multimodal model and its processor (section 1), build a fully deterministic synthetic image dataset — drawn with PIL, therefore reproducible to the exact pixel without any data download (section 2), measure the base model on a contract it has never seen (section 3), graft LoRA adapters onto only the decoder layers (section 4), train (section 5), then compare base versus LoRA with numbers in hand on the same held-out images (section 6). Section 7 justifies the “decoder only” choice; three exercises extend it: a new shape, an additional contract field, and targeting vision itself.",,,,,,,2b5256410d872908,ea2309b11c9a3cf4,,,,,,,2b5256410d872908,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb,15bf4e35,code,fr,52f7cb04710e14fb,"import warnings
+
+# Filtres poses AVANT les autres imports (issue #11725) : ils evitent que les
+# avertissements de dependances (barres de progression, cache HuggingFace)
+# n'encombrent — et ne fuient — dans les sorties du notebook.
+warnings.filterwarnings(""ignore"", message=""IProgress not found.*"")
+warnings.filterwarnings(""ignore"", message=""Unable to fetch remote file.*"")
+warnings.filterwarnings(""ignore"", message=""Could not find a config file.*"")
+
+import os
+import gc
+import json
+import time
+import random
+
+import torch
+from PIL import Image, ImageDraw
+
+# Reproducibilite : graine fixee pour le dataset synthetique et les tirages PyTorch
+SEED = 42
+random.seed(SEED)
+torch.manual_seed(SEED)
+
+print(f""PyTorch {torch.__version__}"")
+print(f""CUDA : {torch.cuda.is_available()}"")
+if torch.cuda.is_available():
+    print(f""GPU : {torch.cuda.get_device_name(0)}"")
+    props = torch.cuda.get_device_properties(0)
+    print(f""VRAM : {props.total_memory / 1e9:.1f} Go"")",,,,,,,,52f7cb04710e14fb,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb,7a5c904d,markdown,fr,a0b9640c376ebd30,"## 1. Modèles vision-langage et Qwen3.5-0.8B
+
+Un modèle **vision-langage** (VLM) juxtapose deux organes : une **tour de vision** — un ViT qui découpe l'image en patchs et les encode en vecteurs — et un **décodeur de langage** qui génère du texte en s'appuyant sur ces vecteurs comme contexte. Entre les deux, un **merger** projette les patchs visuels dans l'espace d'embedding du décodeur : après lui, une image n'est plus qu'une séquence de « tokens visuels » parmi les tokens textuels.
+
+Qwen3.5-0.8B illustre en miniature deux tendances des architectures récentes :
+
+- **Hybridation de l'attention** : toutes les couches du décodeur ne sont pas identiques. Les couches d'**attention linéaire** (Gated DeltaNet, module `linear_attn`) ont un coût mémoire constant en longueur de séquence ; les autres gardent l'**attention complète** (softmax classique, modules `q_proj`/`k_proj`/`v_proj`/`o_proj`). Les tokens d'image, nombreux, rendent ce compromis précieux.
+- **Multimodalité native** : le checkpoint embarque tour de vision ET décodeur ; la classe `AutoModelForImageTextToText` charge l'ensemble (`Qwen3_5ForConditionalGeneration` en interne).
+
+Nous le chargeons comme en FT-02/FT-03 : corps quantifié 4-bit NF4 (QLoRA), calculs en bfloat16, double quantization des constantes. La différence nouvelle est le **processor** : pour un VLM, il fait deux travaux à la fois — il tokenise le texte ET prépare les pixels (redimensionnement, normalisation, découpage en patchs). Une image ne passe jamais directement dans le modèle : elle passe par le processor, qui produit les `pixel_values` et insère dans la séquence le nombre exact de tokens visuels correspondant à l'image.
+
+Le point d'API à retenir : le texte donné au processor doit contenir le marqueur d'image `<|vision_start|><|image_pad|><|vision_end|>`. Le processor remplace ensuite `<|image_pad|>` par autant de tokens d'image que l'image compte de patchs — oublier ce marqueur, c'est soumettre une image que le modèle ne regardera jamais.","## 1. Vision-language models and Qwen3.5-0.8B
+
+A **vision-language** model (VLM) juxtaposes two organs: a **vision tower** — a ViT that splits the image into patches and encodes them as vectors — and a **language decoder** that generates text using these vectors as context. Between the two, a **merger** projects the visual patches into the decoder's embedding space: after it, an image is nothing more than a sequence of “visual tokens” among the text tokens.
+
+Qwen3.5-0.8B illustrates, in miniature, two trends in recent architectures:
+
+- **Attention hybridization**: not all layers of the decoder are identical. **Linear attention** layers (Gated DeltaNet, `linear_attn` module) have a memory cost that is constant with respect to sequence length; the others retain **full attention** (classic softmax, `q_proj`/`k_proj`/`v_proj`/`o_proj` modules). The numerous image tokens make this trade-off valuable.
+- **Native multimodality**: the checkpoint embeds both the vision tower AND the decoder; the `AutoModelForImageTextToText` class loads the whole thing (`Qwen3_5ForConditionalGeneration` internally).
+
+We load it as in FT-02/FT-03: 4-bit NF4 quantized body (QLoRA), computations in bfloat16, double quantization of constants. The new difference is the **processor**: for a VLM, it does two jobs at once — it tokenizes the text AND prepares the pixels (resizing, normalization, splitting into patches). An image never goes directly into the model: it goes through the processor, which produces the `pixel_values` and inserts into the sequence the exact number of visual tokens corresponding to the image.
+
+The API point to remember: the text given to the processor must contain the image marker `<|vision_start|><|image_pad|><|vision_end|>`. The processor then replaces `<|image_pad|>` with as many image tokens as the image has patches — forgetting this marker means submitting an image that the model will never look at.",,,,,,,a0b9640c376ebd30,8ff581ac27318312,,,,,,,a0b9640c376ebd30,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb,b6d072fd,code,fr,b64d9fce0741268b,"# Charger le modele vision-langage Qwen3.5-0.8B en 4-bit (QLoRA, comme FT-02/FT-03)
+from transformers import (
+    AutoModelForImageTextToText,
+    AutoTokenizer,
+    AutoProcessor,
+    BitsAndBytesConfig,
+)
+
+MODEL_NAME = ""Qwen/Qwen3.5-0.8B""
+
+bnb_config = BitsAndBytesConfig(
+    load_in_4bit=True,
+    bnb_4bit_quant_type=""nf4"",
+    bnb_4bit_compute_dtype=torch.bfloat16,
+    bnb_4bit_use_double_quant=True,
+)
+
+print(f""Chargement de {MODEL_NAME} en 4-bit NF4..."")
+tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+if tokenizer.pad_token is None:
+    tokenizer.pad_token = tokenizer.eos_token
+tokenizer.padding_side = ""right""
+
+# transformers 5.15 : la validation de docstring du module qwen3_vl imprime des
+# [ERROR] via un print inconditionnel (pas un warning, non filtrable) qui embarque
+# le chemin d'installation du venv -- on redirige stdout le temps de cet import (#11725).
+import contextlib, io
+with contextlib.redirect_stdout(io.StringIO()):
+    processor = AutoProcessor.from_pretrained(MODEL_NAME)
+# le processor embarque sa propre instance du tokenizer : memes regles de padding
+if processor.tokenizer.pad_token is None:
+    processor.tokenizer.pad_token = processor.tokenizer.eos_token
+processor.tokenizer.padding_side = ""right""
+
+model_base = AutoModelForImageTextToText.from_pretrained(
+    MODEL_NAME,
+    quantization_config=bnb_config,
+    device_map=""auto"",
+)
+
+nb_params = sum(p.numel() for p in model_base.parameters())
+print(f""Modele charge. Parametres : {nb_params:,}"")
+print(f""Tour de vision presente : {hasattr(model_base, 'model') and hasattr(model_base.model, 'visual')}"")
+if torch.cuda.is_available():
+    print(f""VRAM utilisee : {torch.cuda.memory_allocated() / 1e6:.0f} Mo"")",,,,,,,,b64d9fce0741268b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb,cb6e8e37,markdown,fr,75afdd39c3cd09a3,"**Lecture du chargement.** La sortie affiche **555 419 712** paramètres (`sum(p.numel())` sur le modèle chargé), tour de vision et décodeur réunis, le corps étant stocké en 4-bit pour **832 Mo** de VRAM. À garder en tête : la section 4 comptera **860 260 416** paramètres « all params » via PEFT sur ce même modèle greffé — les deux dénombrements coexistent dans ce run sans que leur écart soit élucidé par les sorties elles-mêmes (un candidat d'explication — les couches 4-bit comptent leurs poids au poids de *stockage* — reste une hypothèse à vérifier, également évoquée à la section 4). Deux points de contrôle : la ligne « tour de vision présente : True » confirme que `AutoModelForImageTextToText` a bien instancié l'architecture multimodale complète (et non le seul décodeur `ForCausalLM`, qui existe aussi pour ce checkpoint) ; la VRAM mesurée juste après chargement donne la référence à partir de laquelle les sections suivantes (adaptateurs, entraînement, génération) seront comparées. Le processor, lui, ne consomme pas de VRAM — mais c'est lui qui fixe combien de tokens une image « coûtera » dans la séquence, donc indirectement la longueur des lots d'entraînement.
+","**Reading the loading.** The output shows **555,419,712** parameters (`sum(p.numel())` on the loaded model), vision tower and decoder combined, with the body stored in 4-bit for **832 MB** of VRAM. Keep in mind: section 4 will count **860,260,416** “all params” parameters via PEFT on this same grafted model — the two counts coexist in this run without their discrepancy being clarified by the outputs themselves (one candidate explanation — the 4-bit layers count their weights by *storage* weight — remains a hypothesis to be verified, also mentioned in section 4). Two checkpoints: the line “Tour de vision presente : True” (printed by the cell in French, reproduced verbatim) confirms that `AutoModelForImageTextToText` did indeed instantiate the complete multimodal architecture (and not only the `ForCausalLM` decoder, which also exists for this checkpoint); the VRAM measured immediately after loading provides the reference against which the following sections (adapters, training, generation) will be compared. The processor itself consumes no VRAM — but it is what determines how many tokens an image will “cost” in the sequence, and therefore indirectly the length of the training batches.",,,,,,,75afdd39c3cd09a3,0a82c96f61f589fd,,,,,,,75afdd39c3cd09a3,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb,3e3fe624,markdown,fr,fe8e3250c4d55f10,"## 2. La tâche image→texte bornée : contrat de sortie et dataset synthétique
+
+La question pédagogique du notebook est étroite, et volontairement telle : **que faut-il modifier dans un VLM pour qu'il honore un format de sortie arbitraire sur une tâche visuelle simple ?** La réponse explorée ici : pas la vision — le décodeur.
+
+La tâche : chaque image 128×128 contient exactement **une forme colorée** sur fond blanc. Le modèle doit répondre selon le contrat strict :
+
+```
+### Assistant: [IMG] forme=<disque|carre|triangle> couleur=<rouge|vert|bleu|jaune> [FIN]
+```
+
+Trois formes, quatre couleurs — **12 combinaisons** possibles. Nous générons :
+
+- **24 images d'entraînement** (2 par combinaison), avec un léger jitter de taille et de position pour éviter qu'une disposition d'image précise n'apparaisse deux fois à l'identique ;
+- **6 images de test held-out** — des combinaisons tirées parmi les 12, jamais vues à l'entraînement, dessinées avec un autre grain aléatoire. C'est cette séparation qui donnera son sens à l'évaluation : mesurer la **généralisation** du contrat, pas sa mémorisation image par image.
+
+Deux choix de conception à noter. D'abord, le dataset est **synthétique et déterministe** : dessiné par PIL avec un générateur aléatoire local (`random.Random(graine)`), il se reproduit au pixel près d'une session à l'autre — pas de téléchargement de données, pas de variation cachée, la graine suffit. Ensuite, le jitter est **borné** (positions dans une zone centrale, tailles dans un intervalle) : la tâche reste visuellement triviale pour la tour de vision. C'est délibéré — nous voulons que tout écart de mesure soit attribuable au contrat de langage, pas à la difficulté perceptive.","## 2. The bounded image→text task: output contract and synthetic dataset
+
+The pedagogical question of the notebook is narrow, and deliberately so: **what needs to be changed in a VLM for it to honor an arbitrary output format on a simple visual task?** The answer explored here: not the vision — the decoder.
+
+The task: each 128×128 image contains exactly **one colored shape** on a white background. The model must answer according to the strict contract:
+
+```
+### Assistant: [IMG] forme=<disque|carre|triangle> couleur=<rouge|vert|bleu|jaune> [FIN]
+```
+
+Three shapes, four colors — **12 possible combinations**. We generate:
+
+- **24 training images** (2 per combination), with slight size and position jitter to prevent a precise image layout from appearing twice identically;
+- **6 held-out test images** — combinations drawn from among the 12, never seen during training, drawn with another random grain. It is this split that will give meaning to the evaluation: measuring the **generalization** of the contract, not its image-by-image memorization.
+
+Two design choices are worth noting. First, the dataset is **synthetic and deterministic**: drawn by PIL with a local random generator (`random.Random(graine)`), it reproduces pixel-perfectly from one session to the next — no data download, no hidden variation, the seed is enough. Second, the jitter is **bounded** (positions in a central area, sizes within an interval): the task remains visually trivial for the vision tower. This is deliberate — we want any measurement discrepancy to be attributable to the language contract, not to perceptual difficulty.",,,,,,,fe8e3250c4d55f10,de8fb4978812331c,,,,,,,fe8e3250c4d55f10,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb,b8f49ba3,code,fr,2a7a1ef75321f862,"# Dataset synthetique — une forme coloree par image 128x128, dessinee par PIL
+
+FORMES = [""disque"", ""carre"", ""triangle""]
+COULEURS = {
+    ""rouge"": (214, 40, 40),
+    ""vert"": (40, 160, 60),
+    ""bleu"": (40, 70, 214),
+    ""jaune"": (230, 210, 40),
+}
+FOND = (250, 250, 250)
+TAILLE_IMAGE = 128
+
+def dessiner_forme(forme, couleur_rgb, taille, cx, cy):
+    """"""Dessine une forme centree en (cx, cy) sur un canvas blanc 128x128.""""""
+    image = Image.new(""RGB"", (TAILLE_IMAGE, TAILLE_IMAGE), FOND)
+    dessin = ImageDraw.Draw(image)
+    demi = taille // 2
+    if forme == ""disque"":
+        dessin.ellipse([cx - demi, cy - demi, cx + demi, cy + demi], fill=couleur_rgb)
+    elif forme == ""carre"":
+        dessin.rectangle([cx - demi, cy - demi, cx + demi, cy + demi], fill=couleur_rgb)
+    elif forme == ""triangle"":
+        sommets = [(cx, cy - demi), (cx - demi, cy + demi), (cx + demi, cy + demi)]
+        dessin.polygon(sommets, fill=couleur_rgb)
+    return image
+
+def generer_ensemble(nb_par_combinaison, graine):
+    """"""Genere les 12 combinaisons forme x couleur, avec jitter borne, de facon deterministe.
+
+    Le generateur random.Random local ne touche pas l'etat aleatoire global :
+    deux appels avec la meme graine produisent les memes images au pixel pres.
+    """"""
+    gen = random.Random(graine)
+    exemples = []
+    for forme in FORMES:
+        for couleur in COULEURS:
+            for _ in range(nb_par_combinaison):
+                taille = gen.randint(28, 44)
+                cx = gen.randint(48, 80)
+                cy = gen.randint(48, 80)
+                image = dessiner_forme(forme, COULEURS[couleur], taille, cx, cy)
+                exemples.append({""image"": image, ""forme"": forme, ""couleur"": couleur})
+    gen.shuffle(exemples)
+    return exemples
+
+train_brut = generer_ensemble(nb_par_combinaison=2, graine=SEED)             # 12 x 2 = 24
+candidats_test = generer_ensemble(nb_par_combinaison=1, graine=SEED + 1000)  # 12 candidats
+test_exemples = candidats_test[::2]                                          # 6 held-out
+
+print(f""Train : {len(train_brut)} images ({len(FORMES)} formes x {len(COULEURS)} couleurs x 2)"")
+print(f""Test held-out : {len(test_exemples)} images"")
+print(""\nCombinaisons de test :"")
+for ex in test_exemples:
+    print(f""  {ex['forme']:<10} {ex['couleur']}"")",,,,,,,,2a7a1ef75321f862,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb,2ee112dc,markdown,fr,5f595b62b42e0d63,"**Lecture du dataset.** La sortie confirme la structure voulue : 24 images d'entraînement couvrant uniformément les 12 combinaisons (2 chacune), et 6 images de test listées avec leur étiquette. Vérifiez dans la liste que les combinaisons de test recouvrent plusieurs formes **et** plusieurs couleurs — 3 disques, 2 carrés, 1 triangle sur 4 couleurs distinctes : c'est la condition pour que l'accuracy par champ (section 3) puisse distinguer un modèle qui devine toujours « disque » d'un modèle qui regarde vraiment l'image. Remarquez aussi ce que le jitter ne fait **pas** : il varie taille et position dans des bornes étroites, donc deux images d'une même combinaison diffèrent, mais restent perceptivement identiques — l'apprentissage portera sur l'association forme/couleur, pas sur la mémorisation de pixels exacts.
+","**Reading the dataset.** The output confirms the intended structure: 24 training images uniformly covering the 12 combinations (2 each), and 6 test images listed with their label. Check in the list that the test combinations cover several shapes **and** several colors — 3 disks, 2 squares, 1 triangle over 4 distinct colors: this is the condition for the per-field accuracy (section 3) to be able to distinguish a model that always guesses “disk” from a model that truly looks at the image. Also note what the jitter does **not** do: it varies size and position within narrow bounds, so two images of the same combination differ, but remain perceptually identical — learning will focus on the shape/color association, not on memorizing exact pixels.",,,,,,,5f595b62b42e0d63,b078c573eb92cba7,,,,,,,5f595b62b42e0d63,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb,f270bd9c,code,fr,198786ec5090f8fb,"# Le contrat de sortie : paire (prompt multimodal, reponse attendue)
+PROMPT_MODELE = (
+    ""### Human: <|vision_start|><|image_pad|><|vision_end|> Decrivez l'image.\n### Assistant:""
+)
+
+def construire_reponse(forme, couleur):
+    """"""La reponse attendue : le contrat de format que le LoRA doit installer.""""""
+    return f""[IMG] forme={forme} couleur={couleur} [FIN]""
+
+train_exemples = [
+    {
+        ""image"": ex[""image""],
+        ""texte"": f""{PROMPT_MODELE} {construire_reponse(ex['forme'], ex['couleur'])}"",
+    }
+    for ex in train_brut
+]
+
+print(""Exemple complet (placeholder d'image non encore expande) :"")
+print(""-"" * 60)
+print(train_exemples[0][""texte""])
+print(""-"" * 60)
+
+# Longueur de la part texte : le placeholder compte pour 1 jeton ici,
+# le processor l'expandra au moment du lot
+tailles = [len(processor.tokenizer(t[""texte""])[""input_ids""]) for t in train_exemples]
+print(f""\n{len(train_exemples)} paires formatees"")
+print(f""Longueur texte : min {min(tailles)}, max {max(tailles)}, moy {sum(tailles) / len(tailles):.0f} jetons"")",,,,,,,,198786ec5090f8fb,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb,d74b8845,markdown,fr,69360e6378a5e684,"**Lecture du formatage.** L'exemple affiché montre le squelette complet d'un exemple d'entraînement : le prompt `### Human:` contient le **marqueur d'image** encadré de `<|vision_start|>`/`<|vision_end|>` suivi de la consigne, et la cible après `### Assistant:` porte le contrat `[IMG] forme=… couleur=… [FIN]`. Les longueurs affichées — 29 à 31 tokens, moyenne 30 — ne couvrent que la part **textuelle** : au moment où le processor prépare un lot, le marqueur `<|image_pad|>` sera remplacé par le nombre exact de tokens visuels de l'image (les patchs après fusion), allongeant d'autant la séquence réelle. C'est pour cela qu'un VLM « consomme » tant de contexte pour si peu de mots : la part visuelle domine la séquence effective (mesurée à la section 5). Comme en FT-03, ce format (`### Human:` / `### Assistant:`) est un contrat entre entraînement et inférence — identique des deux côtés.
+","**Reading the formatting.** The example shown presents the complete skeleton of a training example: the prompt `### Human:` contains the **image marker** enclosed by `<|vision_start|>`/`<|vision_end|>` followed by the instruction, and the target after `### Assistant:` carries the contract `[IMG] forme=… couleur=… [FIN]`. The displayed lengths — 29 to 31 tokens, average 30 — cover only the **textual** part: when the processor prepares a batch, the marker `<|image_pad|>` will be replaced by the exact number of visual tokens from the image (the patches after merging), lengthening the actual sequence by that much. This is why a VLM “consumes” so much context for so few words: the visual part dominates the effective sequence (measured in section 5). As in FT-03, this format (`### Human:` / `### Assistant:`) is a contract between training and inference — identical on both sides.",,,,,,,69360e6378a5e684,2f2634fa2ab93c28,,,,,,,69360e6378a5e684,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb,73fd963b,markdown,fr,029b7afe98270301,"## 3. Mesure de référence du modèle de base
+
+Avant tout fine-tuning, il faut un **point de comparaison honnête**. Nous soumettons au modèle de base les 6 images held-out avec exactement le prompt qui servira à l'entraînement, puis nous mesurons trois indicateurs :
+
+- **`respecte_format`** — la conformité au contrat : la réponse commence par `[IMG]` et contient `[FIN]`. C'est la métrique centrale du notebook : elle mesure un *comportement de langage* (suivre un format), pas une connaissance.
+- **`accuracy_forme`** — le champ `forme=` extrait de la réponse est-il le bon ?
+- **`accuracy_couleur`** — le champ `couleur=` est-il le bon ?
+
+L'extraction est volontairement fruste (découpage sur les espaces, lecture des préfixes `forme=`/`couleur=`) : si le modèle n'émet pas les champs, l'extraction rend `None` et le champ est compté faux — aucune indulgence. Ce protocole étant écrit **une fois** et appliqué tel quel aux deux modèles (section 6), la comparaison base vs LoRA ne dépend d'aucun réglage caché.
+
+Que prédire pour un modèle de base ? Rien ne l'a jamais exposé à ce contrat arbitraire : il continuera vraisemblablement le prompt en prose libre, ou recyclera des formats vus au pré-entraînement. La mesure dira précisément à quelle distance il est du contrat — c'est cette distance que le LoRA devra combler.","## 3. Baseline Measurement of the Base Model
+
+Before any fine-tuning, we need an **honest point of comparison**. We submit the 6 held-out images to the base model with exactly the prompt that will be used for training, then we measure three indicators:
+
+- **`respecte_format`** — compliance with the contract: the response starts with `[IMG]` and contains `[FIN]`. This is the notebook’s central metric: it measures a *language behavior* (following a format), not knowledge.
+- **`accuracy_forme`** — is the `forme=` field extracted from the response correct?
+- **`accuracy_couleur`** — is the `couleur=` field correct?
+
+The extraction is deliberately crude (splitting on spaces, reading the `forme=`/`couleur=` prefixes): if the model does not emit the fields, extraction returns `None` and the field is counted as wrong — no leniency. Since this protocol is written **once** and applied exactly as-is to both models (section 6), the base vs LoRA comparison does not depend on any hidden setting.
+
+What should we predict for a base model? Nothing has ever exposed it to this arbitrary contract: it will likely continue the prompt in free-form prose, or recycle formats seen during pre-training. The measurement will say precisely how far it is from the contract — this is the distance the LoRA will need to close.",,,,,,,029b7afe98270301,7b1e07426340d0f4,,,,,,,029b7afe98270301,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb,31c7602a,code,fr,4228867277a3da91,"# Fonctions d'evaluation : generation multimodale + metriques de conformite
+
+def generer_vlm(model, image, prompt, max_new_tokens=40):
+    """"""Genere la suite du prompt pour une image donnee (decodage glouton, deterministe).""""""
+    entrees = processor(text=prompt, images=image, return_tensors=""pt"").to(model.device)
+    with torch.no_grad():
+        sortie = model.generate(
+            **entrees,
+            max_new_tokens=max_new_tokens,
+            do_sample=False,
+            pad_token_id=processor.tokenizer.pad_token_id,
+        )
+    return processor.tokenizer.decode(
+        sortie[0][entrees[""input_ids""].shape[1]:],
+        skip_special_tokens=True,
+    ).strip()
+
+def extraire_champs(texte):
+    """"""Extrait les valeurs des champs forme=... et couleur=... (None si absents).""""""
+    forme, couleur = None, None
+    for mot in texte.split():
+        if mot.startswith(""forme=""):
+            forme = mot.split(""="", 1)[1]
+        elif mot.startswith(""couleur=""):
+            couleur = mot.split(""="", 1)[1]
+    return forme, couleur
+
+def respecte_format(texte):
+    """"""Conformite au contrat : demarre par [IMG] et contient [FIN].""""""
+    return texte.startswith(""[IMG]"") and ""[FIN]"" in texte
+
+def evaluer_modele(model, exemples, nom=""modele""):
+    """"""Soumet chaque image au modele, mesure conformite et justesse champ par champ.""""""
+    lignes = []
+    for ex in exemples:
+        sortie = generer_vlm(model, ex[""image""], PROMPT_MODELE)
+        forme_pred, couleur_pred = extraire_champs(sortie)
+        lignes.append({
+            ""verite"": f""{ex['forme']}/{ex['couleur']}"",
+            ""sortie"": sortie,
+            ""respecte"": respecte_format(sortie),
+            ""forme_ok"": forme_pred == ex[""forme""],
+            ""couleur_ok"": couleur_pred == ex[""couleur""],
+        })
+    n = len(lignes)
+    metriques = {
+        ""respecte_format"": sum(l[""respecte""] for l in lignes) / n,
+        ""accuracy_forme"": sum(l[""forme_ok""] for l in lignes) / n,
+        ""accuracy_couleur"": sum(l[""couleur_ok""] for l in lignes) / n,
+    }
+    print(f""--- Evaluation : {nom} ({n} images held-out) ---"")
+    print(f""{'Verite':<18}{'Conforme':<10}{'Forme':<7}{'Couleur':<9}Sortie (60 car.)"")
+    for l in lignes:
+        extrait = l[""sortie""][:60].replace(""\n"", "" "")
+        print(f""{l['verite']:<18}{str(l['respecte']):<10}{str(l['forme_ok']):<7}{str(l['couleur_ok']):<9}{extrait}"")
+    print(f""\nConformite de format : {metriques['respecte_format']:.2f}"")
+    print(f""Accuracy forme       : {metriques['accuracy_forme']:.2f}"")
+    print(f""Accuracy couleur     : {metriques['accuracy_couleur']:.2f}"")
+    return metriques, lignes",,,,,,,,4228867277a3da91,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb,37488562,markdown,fr,e8f24fcfdedcb277,"### 3a. Passage du modèle de base sur les images held-out
+
+Chaque image est soumise seule (batch de 1, décodage glouton pour que la mesure soit reproductible). La table affiche la vérité terrain, les trois verdicts booléens et un extrait de la sortie brute — lisez l'extrait avant les métriques : c'est lui qui montre *comment* le modèle échoue (prose libre ? champs déformés ? boucle ?), les nombres ne donnent que l'amplitude.","### 3a. Running the Base Model on the Held-Out Images
+
+Each image is submitted individually (batch of 1, greedy decoding so that the measurement is reproducible). The table shows the ground truth, the three Boolean verdicts, and an excerpt from the raw output — read the excerpt before the metrics: it is what shows *how* the model fails (free-form prose? distorted fields? loop?), while the numbers only give the magnitude.",,,,,,,e8f24fcfdedcb277,35c338ef4a275fdc,,,,,,,e8f24fcfdedcb277,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb,697b9a3a,code,fr,a4ee7c3e8ee634eb,"# Mesure de reference : modele de base (avant tout fine-tuning)
+metriques_base, lignes_base = evaluer_modele(model_base, test_exemples, nom=""modele de base"")",,,,,,,,a4ee7c3e8ee634eb,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb,bd4855c6,markdown,fr,66c128333c723d77,"**Lecture de la mesure de référence.** Conformité **0.00**, accuracy forme **0.00**, accuracy couleur **0.00** — le plancher, comme attendu. Mais lisez les extraits bruts : c'est le résultat le plus instructif du notebook. Le modèle de base **voit les images** — sur les trois extraits assez longs pour atteindre la description (« un cercle bleu pur », « un cercle rouge centré », « un triangle vert simple »), la prose porte la bonne forme ET la bonne couleur ; les trois autres extraits sont tronqués à 60 caractères avant la description, la table seule ne permet pas de trancher « à chaque fois ». Le régime d'échec n'est donc **pas** perceptuel : la tour de vision fonctionne, le décodeur sait nommer ce qu'il voit. Ce qui manque est uniquement le **contrat** — aucun `forme=…`, aucun `[IMG]`, aucune balise. La colonne Couleur affiche 0.00 alors que la couleur est correcte en prose : la métrique ne récompense que le champ formaté, pas la connaissance. C'est précisément ce que le LoRA sur le décodeur va installer, sans toucher à la vision.
+","**Reading the reference measurement.** Compliance **0.00**, shape accuracy **0.00**, color accuracy **0.00** — the floor, as expected. But read the raw excerpts: this is the notebook’s most instructive result. The base model **sees the images** — on the three excerpts long enough to reach the description (output preserved verbatim, in French: “un cercle bleu pur”, “un cercle rouge centré”, “un triangle vert simple”), the prose contains the correct shape AND the correct color; the other three excerpts are truncated at 60 characters before the description, so the table alone does not allow us to decide “every time.” The failure regime is therefore **not** perceptual: the vision tower works, the decoder knows how to name what it sees. What is missing is only the **contract** — no `forme=…`, no `[IMG]`, no tag. The Color column shows 0.00 even though the color is correct in prose: the metric rewards only the formatted field, not the knowledge. This is precisely what the LoRA on the decoder will install, without touching vision.",,,,,,,66c128333c723d77,360461ba8187410c,,,,,,,66c128333c723d77,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb,970339dd,markdown,fr,395e8d5c14f2f7c5,"## 4. LoRA ciblé sur le décodeur
+
+Le choix structurant du notebook : nous adaptons **exclusivement le décodeur de langage**. La `LoraConfig` ci-dessous cible trois familles de modules, toutes côté langage :
+
+| Famille | Modules | Rôle |
+|---|---|---|
+| Attention complète | `q_proj`, `k_proj`, `v_proj`, `o_proj` | couches softmax du décodeur hybride |
+| Attention linéaire | `linear_attn.out_proj` | couches Gated DeltaNet (coût constant en longueur) |
+| MLP | `gate_proj`, `up_proj`, `down_proj` | projections feed-forward de chaque couche |
+
+C'est la même liste que FT-03, adaptée à l'architecture hybride de Qwen3.5 : le rang r=16 fixe la capacité des adaptateurs, `lora_alpha=32` leur échelle (ratio 2:1 usuel), le dropout 0,05 régularise un entraînement court. La tour de vision, elle, reste **gelée** — le pourquoi fait l'objet de la section 7 ; l'extension (cibler aussi le merger visuel) est l'exercice 3.
+
+Comme en FT-03, `prepare_model_for_kbit_training` prépare le corps 4-bit à recevoir des gradients (gel fin, normes en float32, cache désactivé pour le gradient checkpointing), puis `get_peft_model` greffe les adaptateurs. La sortie de `print_trainable_parameters()` est le chiffre à retenir : la part de paramètres réellement entraînés dans le modèle multimodal complet.","## 4. LoRA Targeted on the Decoder
+
+The structuring choice of the notebook: we adapt **exclusively the language decoder**. The `LoraConfig` below targets three families of modules, all on the language side:
+
+| Family | Modules | Role |
+|---|---|---|
+| Full attention | `q_proj`, `k_proj`, `v_proj`, `o_proj` | softmax layers of the hybrid decoder |
+| Linear attention | `linear_attn.out_proj` | Gated DeltaNet layers (constant cost in length) |
+| MLP | `gate_proj`, `up_proj`, `down_proj` | feed-forward projections of each layer |
+
+This is the same list as FT-03, adapted to Qwen3.5’s hybrid architecture: the rank r=16 sets the capacity of the adapters, `lora_alpha=32` their scale (the usual 2:1 ratio), and the 0.05 dropout regularizes a short training run. The vision tower, meanwhile, remains **frozen** — the reason why is covered in section 7; the extension (also targeting the visual merger) is exercise 3.
+
+As in FT-03, `prepare_model_for_kbit_training` prepares the 4-bit body to receive gradients (fine-grained freezing, norms in float32, cache disabled for gradient checkpointing), then `get_peft_model` grafts on the adapters. The output of `print_trainable_parameters()` is the figure to remember: the share of parameters actually trained in the complete multimodal model.",,,,,,,395e8d5c14f2f7c5,9de5ae6c7ad1521a,,,,,,,395e8d5c14f2f7c5,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb,4b27ca19,code,fr,170953378f92e9f8,"# LoRA sur le decodeur : preparer le corps 4-bit puis greffer les adaptateurs
+from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training, TaskType
+
+model_base = prepare_model_for_kbit_training(model_base)
+
+lora_config = LoraConfig(
+    task_type=TaskType.CAUSAL_LM,
+    r=16,                    # rang des matrices LoRA
+    lora_alpha=32,           # facteur d'echelle (ratio 2:1 usuel)
+    lora_dropout=0.05,       # regularisation pour un entrainement court
+    target_modules=[
+        ""q_proj"", ""k_proj"", ""v_proj"", ""o_proj"",   # attention complete
+        ""linear_attn.out_proj"",                   # attention lineaire (Gated DeltaNet)
+        ""gate_proj"", ""up_proj"", ""down_proj"",      # MLP
+    ],
+    bias=""none"",
+)
+
+model_sft = get_peft_model(model_base, lora_config)
+model_sft.print_trainable_parameters()
+
+if torch.cuda.is_available():
+    print(f""\nVRAM avant entrainement : {torch.cuda.memory_allocated() / 1e6:.0f} Mo"")",,,,,,,,170953378f92e9f8,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb,70eefad6,markdown,fr,6219b14491afff44,"**Lecture de la configuration LoRA.** `print_trainable_parameters()` affiche **7 274 496** paramètres entraînables sur **860 260 416** au total — **0,8456 %**. À titre de comparaison, FT-03 reporte exactement les mêmes nombres ; **les deux outputs ne montrent aucune croissance**, et **LoRA cible les modules nommés ci-dessous** (le périmètre exact de la composition du dénominateur total — décodeur + éventuelles autres composantes du modèle — n'est pas établi par cette seule comparaison). La cible LoRA — `q/k/v/o_proj`, `linear_attn.out_proj`, `gate/up/down_proj` — est strictement côté langage ; `peft` n'ajoute aucune matrice d'adaptateur sur `model.visual.*` dans cette configuration. La VRAM avant entraînement (**1385 Mo**) donne le point de départ mémoire : les adaptateurs et leurs états d'optimiseur s'ajouteront à elle, mais le corps 4-bit ne bougera pas — c'est l'économie QLoRA. Vérifiez enfin dans la sortie de PEFT les modules réellement ciblés : `q/k/v/o_proj` pour l'attention complète, `linear_attn.out_proj` pour l'attention linéaire, `gate/up/down_proj` pour les MLP — les deux familles d'attention de l'architecture hybride Qwen3.5.","**Reading the LoRA configuration.** `print_trainable_parameters()` displays **7,274,496** trainable parameters out of **860,260,416** in total — **0.8456%**. For comparison, FT-03 reports exactly the same numbers; **the two outputs show no growth**, and **LoRA targets the modules named below** (the exact scope of the composition of the total denominator — decoder + any other model components — cannot be established from this comparison alone). The LoRA target — `q/k/v/o_proj`, `linear_attn.out_proj`, `gate/up/down_proj` — is strictly on the language side; `peft` does not add any adapter matrix on `model.visual.*` in this configuration. The VRAM before training (**1385 MB**) gives the memory starting point: the adapters and their optimizer states will be added to it, but the 4-bit body will not move — that is the QLoRA efficiency. The modules actually targeted are the ones declared in the `LoraConfig` above — `q/k/v/o_proj` for full attention, `linear_attn.out_proj` for linear attention, `gate/up/down_proj` for the MLPs, the two attention families of the hybrid Qwen3.5 architecture — and `print_trainable_parameters()` does not list them: it only prints the three counts above.",,,,,,,6219b14491afff44,a388767b95084770,,,,,,,6219b14491afff44,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb,5bb15163,markdown,fr,69af3eafde7a055a,"## 5. Entraînement QLoRA
+
+Le pipeline reprend la mécanique du FT-03 avec une différence de taille : **le collator doit passer par le processor**, car chaque exemple mêle une image et du texte. C'est lui qui, lot par lot, tokenise les textes, prépare les pixels, remplace le marqueur `<|image_pad|>` par le nombre exact de tokens visuels, padde à la longueur du lot — et fabrique les `labels` : les positions de padding sont masquées à −100 (hors loss), ainsi que les tokens d'image eux-mêmes (le modèle n'a pas à apprendre à *émettre* des tokens visuels, seulement la réponse texte).
+
+**Hyperparamètres clés** :
+- `per_device_train_batch_size=1` + `gradient_accumulation_steps=8` — les séquences contiennent les tokens d'image : le batch effectif de 8 est reconstitué par accumulation pour garder un micro-lot minuscule (le pic VRAM du run reste sous 1,5 Go)
+- `num_train_epochs=5` — 24 exemples × 5 époques ≈ 15 pas d'optimisation, un budget délibérément minuscule
+- `learning_rate=2e-4` — taux standard LoRA, ~100× celui d'un pré-entraînement, sûr car seuls les adaptateurs bougent
+- `warmup_steps=3` — l'échauffement se compte en pas (transformers 5.x a retiré `warmup_ratio`)
+- `bf16=True` + `gradient_checkpointing=True` — précision large et activations recalculées : le duo qui fait tenir l'entraînement d'un VLM sur une carte consumer","## 5. QLoRA Training
+
+The pipeline follows the mechanics of FT-03 with one major difference: **the collator must go through the processor**, because each example mixes an image and text. It is the processor that, batch by batch, tokenizes the texts, prepares the pixels, replaces the `<|image_pad|>` marker with the exact number of visual tokens, pads to the batch length — and creates the `labels`: padding positions are masked to −100 (excluded from the loss), as are the image tokens themselves (the model does not have to learn to *emit* visual tokens, only the text response).
+
+**Key hyperparameters**:
+- `per_device_train_batch_size=1` + `gradient_accumulation_steps=8` — the sequences contain image tokens: the effective batch size of 8 is reconstructed by accumulation to keep a tiny micro-batch (the run’s VRAM peak stays below 1.5 GB)
+- `num_train_epochs=5` — 24 examples × 5 epochs ≈ 15 optimization steps, a deliberately tiny budget
+- `learning_rate=2e-4` — standard LoRA rate, ~100× that of pretraining, safe because only the adapters move
+- `warmup_steps=3` — warmup is counted in steps (transformers 5.x removed `warmup_ratio`)
+- `bf16=True` + `gradient_checkpointing=True` — wide precision and recomputed activations: the combination that makes training a VLM fit on a consumer card",,,,,,,69af3eafde7a055a,01944811d205fc6f,,,,,,,69af3eafde7a055a,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb,462d4a9f,code,fr,e7f4cfca1e0377a4,"# Dataset HuggingFace + collator multimodal (le processor traite chaque lot image+texte)
+from datasets import Dataset
+from transformers import TrainingArguments, Trainer
+
+train_dataset = Dataset.from_list(train_exemples)
+print(f""Dataset pret : {len(train_dataset)} exemples, colonnes : {train_dataset.column_names}"")
+
+def collate_fn(exemples):
+    """"""Applique le processor aux (image, texte) du lot et fabrique les labels masques.""""""
+    lots = processor(
+        text=[e[""texte""] for e in exemples],
+        images=[e[""image""] for e in exemples],
+        padding=True,
+        return_tensors=""pt"",
+    )
+    labels = lots[""input_ids""].clone()
+    # padding hors loss...
+    labels[labels == processor.tokenizer.pad_token_id] = -100
+    # ...et jetons d'image hors loss : le modele apprend la reponse, pas les tokens visuels
+    labels[labels == processor.image_token_id] = -100
+    lots[""labels""] = labels
+    return lots
+
+# Verifier le collator sur un mini-lot de 2 exemples
+apercu = collate_fn([train_exemples[0], train_exemples[1]])
+print(f""Forme input_ids du lot : {apercu['input_ids'].shape}"")
+print(f""Positions hors loss (labels == -100) : {(apercu['labels'] == -100).sum().item()} jetons"")",,,,,,,,e7f4cfca1e0377a4,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb,2deda1c0,markdown,fr,ff1379e27e064f8f,"**Lecture de la préparation.** Le mini-lot affiche une vraie longueur de **94 tokens** pour 2 exemples — comparez aux longueurs purement textuelles de la section 2 (29-31 tokens par exemple) : l'écart, ce sont les tokens visuels insérés par le processor à la place du marqueur `<|image_pad|>` — **64 tokens visuels par image** (les deux textes de ce lot font 31 tokens : 31 − 1 marqueur + 64 visuels = 94). Les **128 positions masquées** (labels à −100) sont exactement les tokens d'image des deux exemples (2 × 64) — les deux textes étant de même longueur, ce lot ne compte aucun padding d'alignement : la loss ne portera que sur le texte utile — le modèle n'apprend ni à émettre des tokens visuels, ni à prédire le padding. Le `Dataset.from_list` stocke les images PIL (encodage Arrow) et les restitue en objets image au tirage — le collator est le seul endroit où le processor intervient pendant l'entraînement.
+","**Reading the preparation.** The mini-batch shows a true length of **94 tokens** for 2 examples — compare this with the purely textual lengths from section 2 (29-31 tokens per example): the difference is the visual tokens inserted by the processor in place of the `<|image_pad|>` marker — **64 visual tokens per image** (the two texts in this batch are 31 tokens: 31 − 1 marker + 64 visual tokens = 94). The **128 masked positions** (labels at −100) are exactly the image tokens of the two examples (2 × 64) — since the two texts are the same length, this batch has no alignment padding: the loss will apply only to the useful text — the model learns neither to emit visual tokens nor to predict padding. `Dataset.from_list` stores the PIL images (Arrow encoding) and returns them as image objects when sampled — the collator is the only place where the processor is involved during training.",,,,,,,ff1379e27e064f8f,d7ea454994c74b98,,,,,,,ff1379e27e064f8f,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb,b9e7c78f,code,fr,f701059201865c2d,"# Entrainement QLoRA du decodeur
+training_args = TrainingArguments(
+    output_dir=""./results_ft06"",
+    num_train_epochs=5,
+    per_device_train_batch_size=1,
+    gradient_accumulation_steps=8,
+    learning_rate=2e-4,
+    weight_decay=0.01,
+    warmup_steps=3,              # transformers 5.x : warmup_steps, plus warmup_ratio
+    logging_steps=5,
+    save_strategy=""epoch"",
+    report_to=""none"",
+    bf16=True,
+    gradient_checkpointing=True,
+    remove_unused_columns=False,
+)
+
+trainer = Trainer(
+    model=model_sft,
+    args=training_args,
+    train_dataset=train_dataset,
+    data_collator=collate_fn,
+)
+
+print(""Debut de l'entrainement QLoRA (24 exemples, 5 epoques)..."")
+debut = time.time()
+resultat_entrainement = trainer.train()
+duree = time.time() - debut
+
+print(f""\nEntrainement termine en {duree:.1f}s ({duree / 60:.1f} min)"")
+print(f""Perte finale : {resultat_entrainement.training_loss:.4f}"")
+if torch.cuda.is_available():
+    print(f""VRAM apres entrainement : {torch.cuda.memory_allocated() / 1e6:.0f} Mo"")",,,,,,,,f701059201865c2d,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb,178e0560,markdown,fr,b7dc0c60c984a1b1,"**Lecture de l'entraînement.** Trois mesures sortent de cette cellule. La **durée** : **308.4 s (5.1 min)** pour 24 exemples × 5 époques ≈ 15 pas d'optimisation, chacun cumulant 8 micro-lots. La **loss finale : 1.7677** — le contrat est court et répétitif, la descente est nette dès les premiers pas ; mais la leçon du FT-03 reste entière : une loss basse sur un mini-dataset mesure la mémorisation locale, pas la généralisation, et ne dit **rien** de la conformité sur les images held-out. La **VRAM : 1452 Mo** après entraînement (contre 1385 avant) — l'écart de ~67 Mo est de l'ordre de ce qu'attendent 7,3 M paramètres d'adaptateurs avec leurs états d'optimiseur et leurs gradients. Le verdict utile se lira à la section 6, sur des images jamais vues.
+","**Reading the training.** Three metrics come out of this cell. The **duration**: **308.4 s (5.1 min)** for 24 examples × 5 epochs ≈ 15 optimization steps, each accumulating 8 micro-batches. The **final loss: 1.7677** — the contract is short and repetitive, and the descent is clear from the first steps; but the lesson from FT-03 still fully applies: a low loss on a mini-dataset measures local memorization, not generalization, and says **nothing** about compliance on held-out images. The **VRAM: 1452 MB** after training (versus 1385 before) — the ~67 MB difference is on the order of what is expected for 7.3 M adapter parameters with their optimizer states and gradients. The useful verdict will be read in section 6, on never-before-seen images.",,,,,,,b7dc0c60c984a1b1,d2e4e344719ede10,,,,,,,b7dc0c60c984a1b1,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb,0aa71270,markdown,fr,bbaa5aea414b7bbb,"## 6. Évaluation comparative : base vs LoRA
+
+Le moment de vérité : nous reprenons **à l'identique** le protocole de la section 3 — mêmes 6 images held-out, même prompt, même fonction d'évaluation, même décodage glouton — sur le modèle affiné. Le tableau croise les trois métriques mesurées avant entraînement (stockées dans `metriques_base`) avec leurs valeurs après entraînement, et affiche le delta signé ; deux sorties brutes côte à côte montrent le changement de régime textuel. Rien n'est reconstruit à la main : chaque nombre du tableau vient des variables mesurées dans les cellules précédentes.","## 6. Comparative evaluation: base vs LoRA
+
+The moment of truth: we repeat **exactly** the protocol from section 3 — the same 6 held-out images, the same prompt, the same evaluation function, the same greedy decoding — on the fine-tuned model. The table compares the three metrics measured before training (stored in `metriques_base`) with their values after training, and displays the signed delta; two raw outputs side by side show the change in textual regime. Nothing is reconstructed by hand: every number in the table comes from the variables measured in the previous cells.",,,,,,,bbaa5aea414b7bbb,054da11c561f515c,,,,,,,bbaa5aea414b7bbb,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb,10e57086,code,fr,f8a713bbe776e6a4,"# Evaluation comparative : modele de base vs modele LoRA (memes images, meme protocole)
+model_sft.eval()
+metriques_lora, lignes_lora = evaluer_modele(model_sft, test_exemples, nom=""modele LoRA"")
+
+print()
+print(""="" * 66)
+print(""COMPARATIF : MODELE DE BASE vs MODELE LORA (6 images held-out)"")
+print(""="" * 66)
+print(f""{'Metrique':<22}{'Base':>12}{'LoRA':>12}{'Delta':>12}"")
+print(""-"" * 66)
+for cle in (""respecte_format"", ""accuracy_forme"", ""accuracy_couleur""):
+    delta = metriques_lora[cle] - metriques_base[cle]
+    print(f""{cle:<22}{metriques_base[cle]:>12.2f}{metriques_lora[cle]:>12.2f}{delta:>+12.2f}"")
+
+print(""\nSorties brutes cote a cote (2 premieres images) :"")
+for i in range(min(2, len(lignes_lora))):
+    print(f""\nImage {i + 1} — verite : {lignes_lora[i]['verite']}"")
+    print(f""  Base : {lignes_base[i]['sortie'][:110]}"")
+    print(f""  LoRA : {lignes_lora[i]['sortie'][:110]}"")",,,,,,,,f8a713bbe776e6a4,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb,baeb40a1,markdown,fr,3e0b94031e44d155,"**Lecture du comparatif.** Le tableau parle de lui-même : conformité **0.00 → 1.00**, accuracy forme **0.00 → 1.00**, accuracy couleur **0.00 → 1.00** — 6/6 images held-out parfaitement décrites, forme et couleur exactes, contrat respecté de bout en bout. Trois choses à remarquer. (1) **Conformité et justesse montent ensemble** : le cas redouté (conformité maximale, accuracy médiocre — le squelette appris sans lire l'image) n'a pas eu lieu ; la loss a bien forcé le contenu des champs. (2) **La vision gelée a suffi** : la tour de vision et le merger, intouchés, extrayaient déjà les bons traits (la section 3 le montrait en prose) — le LoRA a seulement appris au décodeur à les *lire* dans le format du contrat. (3) **La généralisation est réelle** : les 6 images de test ne sont pas dans les 24 d'entraînement (jitter de position/taille différent) — le contrat transfère à des pixels jamais vus, comme le format balise du FT-03 transférait à des reformulations.
+","**Reading the comparison.** The table speaks for itself: compliance **0.00 → 1.00**, shape accuracy **0.00 → 1.00**, color accuracy **0.00 → 1.00** — 6/6 held-out images perfectly described, shape and color correct, contract respected from start to finish. Three things to note. (1) **Compliance and correctness rise together**: the feared case (maximum compliance, mediocre accuracy — the learned skeleton without reading the image) did not occur; the loss did force the contents of the fields. (2) **Frozen vision was sufficient**: the vision tower and the merger, untouched, were already extracting the right features (section 3 showed this in prose) — LoRA only taught the decoder to *read* them in the contract format. (3) **Generalization is real**: the 6 test images are not in the 24 training images (different position/size jitter) — the contract transfers to never-before-seen pixels, just as the tag format from FT-03 transferred to reformulations.",,,,,,,3e0b94031e44d155,abea07167d14804c,,,,,,,3e0b94031e44d155,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb,7e301b82,markdown,fr,6b185f3817fdc1eb,"## 7. Pourquoi le décodeur seulement ?
+
+La question mérite sa section, car elle généralise au-delà de ce TP : **où faut-il placer ses adaptateurs quand on fine-tune un VLM ?** Notre réponse ici — le décodeur — tient en trois arguments.
+
+**1. Le comportement à installer est un comportement de langage.** Le contrat `[IMG] forme=… couleur=… [FIN]` n'exige rien de nouveau côté perception : distinguer un disque rouge d'un carré bleu est une tâche que la tour de vision, gelée, résout déjà largement. Ce qui manque au modèle, c'est la **mise en forme** : émettre les délimiteurs, les noms de champs, l'ordre, la fermeture `[FIN]`. Or tout cela vit dans le décodeur — c'est lui qui produit la séquence de tokens. Adapter les projections d'attention et de MLP du décodeur donne à LoRA exactement les degrés de liberté qu'il faut pour réorganiser le langage de sortie.
+
+**2. Geler la vision préserve un extracteur de traits déjà compétent.** La tour de vision a été pré-entraînée sur des millions d'images ; la recalibrer sur 24 images synthétiques de formes primaires serait au mieux inutile, au pire destructeur — le sur-apprentissage d'un extracteur massif sur un dataset minuscule est la recette classique de la dégradation. Le gel est ici une protection.
+
+**3. Le budget suit la décision.** Chaque module ciblé ajoute ses matrices LoRA (rang × dimensions). Cibler le décodeur seul garde l'empreinte et l'entraînement dans un budget modeste (≤ 1,5 Go de VRAM mesurés dans ce run) ; ajouter la vision grossit les adaptateurs pour un gain qui, sur une tâche aussi simple perceptuellement, doit être démontré plutôt que présumé.
+
+La frontière n'est pas dogmatique pour autant : quand la tâche exige une discrimination visuelle que le merger encode mal (nuances fines, positions, relations spatiales), cibler les projections visuelles — le merger `model.visual.merger` (`linear_fc1`, `linear_fc2`) — devient l'extension naturelle. C'est précisément l'exercice 3 : mesurer ce que ce ciblage ajoute (ou non) en paramètres et en métriques.","## 7. Why the decoder only?
+
+The question deserves its own section, because it generalizes beyond this practical: **where should adapters be placed when fine-tuning a VLM?** Our answer here — the decoder — rests on three arguments.
+
+**1. The behavior to install is a language behavior.** The contract `[IMG] forme=… couleur=… [FIN]` does not require anything new on the perception side: distinguishing a red disk from a blue square is a task that the frozen vision tower already largely solves. What the model lacks is the **formatting**: emitting the delimiters, the field names, the order, the closing `[FIN]`. All of that lives in the decoder — it is the component that produces the token sequence. Adapting the decoder’s attention and MLP projections gives LoRA exactly the degrees of freedom needed to reorganize the output language.
+
+**2. Freezing vision preserves an already competent feature extractor.** The vision tower was pre-trained on millions of images; recalibrating it on 24 synthetic images of primary shapes would be useless at best, destructive at worst — overfitting a massive extractor on a tiny dataset is the classic recipe for degradation. Freezing is a safeguard here.
+
+**3. The budget follows the decision.** Each targeted module adds its LoRA matrices (rank × dimensions). Targeting only the decoder keeps the footprint and training within a modest budget (≤ 1.5 GB of VRAM measured in this run); adding vision enlarges the adapters for a gain that, on such a perceptually simple task, must be demonstrated rather than assumed.
+
+The boundary is not dogmatic, however: when the task requires visual discrimination that the merger encodes poorly (subtle shades, positions, spatial relations), targeting the visual projections — the merger `model.visual.merger` (`linear_fc1`, `linear_fc2`) — becomes the natural extension. This is precisely exercise 3: measuring what this targeting adds (or does not add) in parameters and metrics.",,,,,,,6b185f3817fdc1eb,c0845ed471da9e11,,,,,,,6b185f3817fdc1eb,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb,b1a9e21e,markdown,fr,dd1d21275dc6d4f9,"## 8. Nettoyage de la mémoire GPU
+
+Nous libérons le modèle et ses adaptateurs avant la section exercices — l'exercice 3 recharge un modèle frais, et libérer avant de recharger évite de cumuler deux copies et leurs caches d'allocation. La mesure avant/après quantifie ce que pèsent corps 4-bit + adaptateurs + cache d'allocation.","## 8. Cleaning GPU Memory
+
+We free the model and its adapters before the exercises section — exercise 3 reloads a fresh model, and freeing before reloading avoids accumulating two copies and their allocation caches. The before/after measurement quantifies the footprint of the 4-bit body + adapters + allocation cache.",,,,,,,dd1d21275dc6d4f9,eaf559b6f871889e,,,,,,,dd1d21275dc6d4f9,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb,9e8ac1c5,code,fr,427c4377e5656019,"# Liberation de la memoire GPU
+if torch.cuda.is_available():
+    vram_avant = torch.cuda.memory_allocated() / 1e6
+del model_sft, model_base, trainer
+gc.collect()
+torch.cuda.empty_cache()
+if torch.cuda.is_available():
+    vram_apres = torch.cuda.memory_allocated() / 1e6
+    print(f""VRAM liberee : {vram_avant - vram_apres:.0f} Mo (residuel : {vram_apres:.0f} Mo)"")
+print(""Memoire GPU liberee."")",,,,,,,,427c4377e5656019,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb,c185bf19,markdown,fr,804edd54a5c4c9ab,"## 9. Exercices
+
+Les trois exercices prolongent chacun un fil du notebook : (1) la **richesse du contrat** — une forme nouvelle exige-t-elle plus de données pour la même conformité ? ; (2) l'**élargissement du contrat** — un champ `position=` teste si le modèle lit l'image, pas seulement le format ; (3) le **périmètre du LoRA** — cibler aussi la vision et mesurer ce que ça change vraiment. Chaque exercice réutilise les cellules précédentes ; rechargez un modèle frais comme en section 1 si vous avez exécuté le nettoyage de la section 8.","## 9. Exercises
+
+The three exercises each extend one thread from the notebook: (1) the **richness of the contract** — does a new form require more data for the same compliance?; (2) the **broadening of the contract** — a `position=` field tests whether the model reads the image, not just the format; (3) the **scope of LoRA** — also target vision and measure what that really changes. Each exercise reuses the previous cells; reload a fresh model as in section 1 if you ran the cleanup from section 8.",,,,,,,804edd54a5c4c9ab,58cae6ef0c64666c,,,,,,,804edd54a5c4c9ab,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb,3639571b,markdown,fr,9634de9e074cc78c,"### Exercice 1 : une quatrième forme — l'étoile
+
+Ajoutez une forme `etoile` au dataset (10 sommets en alternant rayon externe et rayon interne pour `ImageDraw.polygon`), régénérez entraînement et test, réentraînez avec les mêmes hyperparamètres, mesurez à nouveau la conformité.
+
+**Questions** : avec combien d'exemples par combinaison la conformité maximale était-elle atteinte à 3 formes — et ce nombre suffit-il à 4 formes ? La conformité au format reste-t-elle acquise plus vite que la justesse du nouveau champ ?","### Exercise 1: a fourth shape — the star
+
+Add a shape `etoile` to the dataset (10 vertices alternating outer radius and inner radius for `ImageDraw.polygon`), regenerate training and test, retrain with the same hyperparameters, measure compliance again.
+
+**Questions**: with how many examples per combination was maximum compliance reached with 3 shapes — and is this number sufficient for 4 shapes? Is format compliance still acquired faster than the accuracy of the new field?",,,,,,,9634de9e074cc78c,dc8957af4a699747,,,,,,,9634de9e074cc78c,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb,7201431f,code,fr,eca03227ba292fa5,"# Exercice 1 : ajouter la forme ""etoile"" au dataset et re-entrainer
+# TODO etudiant : completez dessiner_etoile, regenerez le dataset avec 4 formes,
+# relancez les cellules des sections 2 a 6, puis relevez la conformite obtenue.
+
+def dessiner_etoile(cx, cy, rayon_ext, rayon_int):
+    """"""Retourne les 10 sommets d'une etoile centree en (cx, cy).""""""
+    # Indice : bouclez sur 10 sommets en alternant rayon_ext et rayon_int,
+    # angle progressant de pi/5 par sommet (depart en haut : -pi/2),
+    # puis dessinez la liste avec draw.polygon(...) dans dessiner_forme.
+    pass
+
+FORMES_ETENDUES = [""disque"", ""carre"", ""triangle""]  # TODO etudiant : ajoutez ""etoile""
+
+exemples_par_combinaison = None  # TODO etudiant : combien d'exemples pour la conformite ?
+
+print(""Exercice a completer : etoile dessinee, dataset regenere, conformite relevee"")",,,,,,,,eca03227ba292fa5,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb,d4ab824b,markdown,fr,25d0282e2c9139a3,"### Exercice 2 : étendre le contrat au champ position
+
+Générez des formes positionnées dans la moitié haute ou basse de l'image, étendez la réponse attendue en `[IMG] forme=… couleur=… position=<haut|bas> [FIN]`, ajoutez `accuracy_position` à l'évaluation (même motif que `accuracy_forme`), réentraînez et comparez.
+
+**Question** : la conformité du nouveau champ vient-elle aussi vite que celle du format — et l'accuracy position du modèle LoRA rejoint-elle celle des autres champs, ou la localisation spatiale résiste-t-elle davantage ?","### Exercise 2: Extend the contract to the position field
+
+Generate shapes positioned in the upper or lower half of the image, extend the expected response to `[IMG] forme=… couleur=… position=<haut|bas> [FIN]`, add `accuracy_position` to the evaluation (same pattern as `accuracy_forme`), retrain, and compare.
+
+**Question**: Does compliance with the new field come as quickly as compliance with the format — and does the LoRA model’s position accuracy catch up with that of the other fields, or does spatial localization prove more resistant?",,,,,,,25d0282e2c9139a3,5c1568ecfcdf17a4,,,,,,,25d0282e2c9139a3,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb,8ff2b1f5,code,fr,88b9a3c77057fb4c,"# Exercice 2 : etendre le contrat au champ position=<haut|bas>
+# TODO etudiant : binarisez cy (cy < 64 -> ""haut"", sinon ""bas"") dans generer_ensemble,
+# etendez construire_reponse(), ajoutez accuracy_position a evaluer_modele()
+# (meme motif que accuracy_forme) ; re-entrainez et comparez avant/apres.
+
+resultats_position = {
+    ""accuracy_position_base"": None,  # TODO etudiant : mesure apres re-evaluation du modele de base
+    ""accuracy_position_lora"": None,  # TODO etudiant : mesure apres re-entrainement
+}
+
+# Indice : position et couleur varient independamment — verifiez que vos images
+# de test couvrent les deux positions, sinon l'accuracy position ne mesurera rien.
+print(""Exercice a completer : contrat etendu, metrique ajoutee, comparaison faite"")",,,,,,,,88b9a3c77057fb4c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb,182b4585,markdown,fr,d27d140845049047,"### Exercice 3 : cibler aussi la vision — le merger dans target_modules
+
+Rechargez un modèle 4-bit frais et construisez une `LoraConfig` identique à celle de la section 4 **plus** les modules du merger visuel (`visual.merger.linear_fc1`, `visual.merger.linear_fc2`). Comparez trois choses avec le run décodeur-seul : le nombre de paramètres entraînables (`print_trainable_parameters`), la VRAM d'entraînement, et les métriques finales sur les mêmes 6 images.
+
+**Question** : sur une tâche où la vision était déjà compétente, le surcoût de paramètres achète-t-il un gain de conformité ou d'accuracy mesurable — ou le décodeur seul était-il déjà le bon périmètre ?","### Exercise 3: also target vision — the merger in target_modules
+
+Reload a fresh 4-bit model and build a `LoraConfig` identical to the one in section 4 **plus** the visual merger modules (`visual.merger.linear_fc1`, `visual.merger.linear_fc2`). Compare three things with the decoder-only run: the number of trainable parameters (`print_trainable_parameters`), training VRAM, and the final metrics on the same 6 images.
+
+**Question**: on a task where vision was already competent, does the parameter overhead buy a measurable gain in compliance or accuracy — or was the decoder alone already the right scope?",,,,,,,d27d140845049047,f237ea8abaf941be,,,,,,,d27d140845049047,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb,7dd8ef55,code,fr,b8009d3504611838,"# Exercice 3 : cibler aussi la vision — ajouter visual.merger aux target_modules
+# TODO etudiant : rechargez un modele 4-bit frais, construisez la LoraConfig avec
+# les modules du merger en plus, re-entrainez, comparez params / VRAM / metriques.
+
+config_vision = None  # TODO etudiant : LoraConfig identique + [""visual.merger.linear_fc1"", ""visual.merger.linear_fc2""]
+
+# Indice : apres la section 8 le GPU est libre — rechargez comme en section 1
+# (meme BitsAndBytesConfig), puis prepare_model_for_kbit_training, get_peft_model,
+# et relevez print_trainable_parameters() et les trois metriques held-out.
+print(""Exercice a completer : run decoder+vision livre et compare au run decoder-seul"")",,,,,,,,b8009d3504611838,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb,20e30c25,markdown,fr,49c8ea3038c4e880,"## 10. Résumé du FT-06
+
+| Concept | Détail |
+|---|---|
+| **Modèle vision-langage** | Tour de vision (ViT) + merger + décodeur — chargé via `AutoModelForImageTextToText` (555 M params), préparé via `AutoProcessor` |
+| **Tâche bornée** | 12 combinaisons forme × couleur sur images PIL déterministes — 24 train / 6 held-out |
+| **Contrat de sortie** | `[IMG] forme=… couleur=… [FIN]` — un comportement de langage, mesurable |
+| **Métriques** | `respecte_format` (conformité), `accuracy_forme`, `accuracy_couleur` — même protocole avant/après |
+| **LoRA décodeur-seul** | 7,3 M paramètres (0,85 %) sur attention hybride + MLP ; tour de vision et merger gelés |
+| **Entraînement QLoRA** | Corps 4-bit NF4, bf16, gradient checkpointing — 308.4 s (5.1 min), loss 1.7677, VRAM ≤ 1452 Mo |
+| **Résultat** | Conformité **0.00 → 1.00**, forme **0.00 → 1.00**, couleur **0.00 → 1.00** sur 6 held-out — le base *voyait* déjà (prose juste sur les extraits visibles) mais ignorait le contrat |
+
+**Bilan du TP** : le modèle de base décrivait les images en prose juste — les trois extraits lisibles de la section 3 (« un cercle bleu pur », « un cercle rouge centré », « un triangle vert simple ») portent forme et couleur exactes — la défaillance était purement contractuelle, pas perceptuelle. En gelant la vision et en adaptant 0,85 % des paramètres du décodeur, le LoRA a installé le contrat **et** la lecture structurée des traits visuels : 6/6 images jamais vues décrites exactement au format. La leçon architecturale : quand la tâche est un *comportement de langage* conditionné par la perception, adapter le décodeur suffit — la perception pré-entraînée est déjà bonne.
+
+**Prochaines étapes** : les exercices étendent le contrat (4e forme, champ position) puis testent la frontière de cette conclusion (cibler aussi le merger — l'exercice 3 mesure ce que la vision adaptée ajoute quand elle a déjà tout ce qu'il faut).
+","## 10. Summary of FT-06
+
+| Concept | Detail |
+|---|---|
+| **Vision-language model** | Vision tower (ViT) + merger + decoder — loaded via `AutoModelForImageTextToText` (555 M params), prepared via `AutoProcessor` |
+| **Bounded task** | 12 shape × color combinations on deterministic PIL images — 24 train / 6 held-out |
+| **Output contract** | `[IMG] forme=… couleur=… [FIN]` — a measurable language behavior |
+| **Metrics** | `respecte_format` (compliance), `accuracy_forme`, `accuracy_couleur` — same protocol before/after |
+| **Decoder-only LoRA** | 7.3 M parameters (0.85%) on hybrid attention + MLP; vision tower and merger frozen |
+| **QLoRA training** | 4-bit NF4 body, bf16, gradient checkpointing — 308.4 s (5.1 min), loss 1.7677, VRAM ≤ 1452 MB |
+| **Result** | Compliance **0.00 → 1.00**, shape **0.00 → 1.00**, color **0.00 → 1.00** on 6 held-out — the base model already *saw* (correct prose on the visible excerpts) but ignored the contract |
+
+**TP takeaway**: the base model described the images in correct prose — the three readable excerpts from section 3 (quoted verbatim, in French: “un cercle bleu pur”, “un cercle rouge centré”, “un triangle vert simple”) contain the exact shape and color — the failure was purely contractual, not perceptual. By freezing vision and adapting 0.85% of the decoder parameters, LoRA installed the contract **and** the structured reading of visual features: 6/6 never-before-seen images described exactly in the required format. The architectural lesson: when the task is a perception-conditioned *language behavior*, adapting the decoder is enough — the pretrained perception is already good.
+
+**Next steps**: the exercises extend the contract (4th shape, position field), then test the boundary of this conclusion (also target the merger — exercise 3 measures what adapted vision adds when it already has everything it needs).",,,,,,,49c8ea3038c4e880,d0b69f9ec7829e9b,,,,,,,49c8ea3038c4e880,,,,,,,
