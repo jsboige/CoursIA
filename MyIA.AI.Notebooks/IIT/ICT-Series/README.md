@@ -78,6 +78,19 @@ python -m pytest                        # les deux (découverte récursive pytes
 
 Les **traces pré-extraites** (fixtures `.npz` dans `traces/`) supportent les notebooks GPU-free de la strate 5 (SAE/J-Lens couche 16, contrôle vs entraîné) : ils lisent ces fixtures plutôt que d'invoquer un LLM à l'exécution.
 
+## Sous-séries — les marches descendues hors de l'escalier
+
+Quand un palier de consolidation regroupe plusieurs carnets autour d'un même sujet, ils descendent dans une **sous-série**, et cette sous-série porte un nom. La convention est `ICT-<NN>-<Sujet>/` : `<NN>` est le numéro que porte **aujourd'hui** le carnet de tête dans la série principale — celui que le lecteur voit sur la marche de l'escalier — et `<Sujet>` reprend le sujet de ce carnet de tête, sans le suffixe `-Python`. Un numéro nu n'est pas un nom de répertoire : il sert d'index dans un ledger progressif, jamais de substitut au sujet qu'on redescend ([#22949](https://github.com/jsboige/CoursIA/issues/22949)). Toute sous-série future naît nommée.
+
+Chaque marche ci-dessous descend vers le carnet de tête de sa sous-série ; en retour, la convention est que chaque sous-série remonte vers cette page depuis son dernier carnet. Trois des quatre la tiennent déjà (12e, 14b, 19b) ; ICT-15 est la dernière à ne pas l'avoir posée — sa navigation est interne (15l → 15j), sans lien vers ce README.
+
+| Sous-série | Ce qu'on y redescend | Carnets |
+|---|---|---|
+| [`ICT-12-ValenceFieldsAndAnimats/`](ICT-12-ValenceFieldsAndAnimats/ICT-12-ValenceFieldsAndAnimats-Python.ipynb) | Champs de valence et animats — les rôles de la scène actantielle de Thom cessent d'être des correspondances nommées et deviennent des grandeurs mesurées, puis apprises, incarnées, inhibées, et enfin valorisées par l'information | ICT-12, 12b, 12c, 12d, 12e |
+| [`ICT-14-FreeEnergySurprise/`](ICT-14-FreeEnergySurprise/ICT-14-FreeEnergySurprise-Python.ipynb) | Énergie libre, surprise et inférence active — la jambe représentationnelle de la strate 4, de la surprise passive au contrôle actif par l'*expected free energy* | ICT-14, 14b |
+| [`ICT-15-IntegratedComplexity/`](ICT-15-IntegratedComplexity/ICT-15-IntegratedComplexity-Python.ipynb) | La convergence Φ/F/K sur le banc cross-substrat, puis ses obstructions : sensibilité, méta-proxy, cochaîne de Čech, nerf simplicial, recollement des macrocells | ICT-15, puis 15b à 15l |
+| [`ICT-19-EnjeuBattery/`](ICT-19-EnjeuBattery/ICT-19-EnjeuBattery-Python.ipynb) | La batterie de l'ENJEU — le banc qui met les scalaires fondateurs à l'épreuve d'un enjeu, puis son raffinement en espace de champ | ICT-19, 19b |
+
 ## Notebooks
 
 ### Strate 1 — le tri auto-organisé (transparent et calculable)
