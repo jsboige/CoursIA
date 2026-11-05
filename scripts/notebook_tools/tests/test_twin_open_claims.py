@@ -218,9 +218,10 @@ def test_la_porte_en_cli_refuse_le_verdict_open_pr(tmp_path):
 # --- 5. la couverture de la lecture -----------------------------------------
 #
 # Mesure fondatrice (2026-11-04) : le parc comptait 241 PRs ouvertes et
-# #24340 se situait au rang 204 -- donc dans le lot du plafond `--limit 200`.
-# Sa revendication d'ordinal n'etait pas lue, et la couche OPEN-PR de la
-# porte rendait un VERT. Un plafond fige est un plafond qui expire en silence.
+# #24340 se situait au rang 204 -- soit **hors** du lot du plafond
+# `--limit 200`. Sa revendication d'ordinal n'etait pas lue, et la couche
+# OPEN-PR de la porte rendait un VERT. Un plafond fige est un plafond qui
+# expire en silence.
 
 
 def _stub_gh(monkeypatch, *, counts, rows):
@@ -228,6 +229,10 @@ def _stub_gh(monkeypatch, *, counts, rows):
 
     `counts` : la suite des `total_count` rendues par l'API search ;
     `rows`   : la liste rendue par `gh pr list`.
+
+    Le stub honore `--limit` comme le fait `gh pr list` : c'est ce qui rend
+    le scenario de l'index en retard fidele -- sans cela, le stub rendrait
+    plus de lignes que demandees et la troncature ne se produirait jamais.
     """
     calls = []
     state = {"i": 0}
@@ -238,7 +243,8 @@ def _stub_gh(monkeypatch, *, counts, rows):
             idx = min(state["i"], len(counts) - 1)
             state["i"] += 1
             return json.dumps({"total_count": counts[idx]})
-        return json.dumps(rows)
+        limit = int(args[args.index("--limit") + 1])
+        return json.dumps(rows[:limit])
 
     monkeypatch.setattr(toc, "_gh", fake)
     return calls
@@ -262,11 +268,11 @@ def _limit_of(calls):
 
 
 def test_le_plafond_de_lecture_vient_du_compte_exact_des_prs_ouvertes(monkeypatch):
-    """Le plafond vaut le parc mesure, pas une constante : 241 PRs ouvertes
-    imposent 241, pas 200."""
+    """Le plafond vaut le parc mesure **plus la marge**, pas une constante :
+    241 PRs ouvertes imposent 241 + la marge, pas 200."""
     calls = _stub_gh(monkeypatch, counts=[241], rows=_pr_rows(range(1, 242)))
     toc.open_prs_touching_registry("jsboige/CoursIA")
-    assert _limit_of(calls) == 241
+    assert _limit_of(calls) == 241 + toc.READ_MARGIN
 
 
 def test_un_plafond_explicite_ne_petit_jamais_la_lecture(monkeypatch):
@@ -274,7 +280,7 @@ def test_un_plafond_explicite_ne_petit_jamais_la_lecture(monkeypatch):
     peut pas re-introduire la troncature qu'on vient de supprimer."""
     calls = _stub_gh(monkeypatch, counts=[241], rows=_pr_rows(range(1, 242)))
     toc.open_prs_touching_registry("jsboige/CoursIA", limit=10)
-    assert _limit_of(calls) == 241
+    assert _limit_of(calls) == 241 + toc.READ_MARGIN
 
 
 def test_une_liste_tronquee_leve_une_erreur_au_lieu_de_rendre_un_vert(monkeypatch):
@@ -301,3 +307,23 @@ def test_une_revendication_au_dela_de_l_ancien_plafond_est_vue(monkeypatch):
                              "status": "added"}]}
     _stub_gh(monkeypatch, counts=[241], rows=rows)
     assert toc.open_prs_touching_registry("jsboige/CoursIA") == [99999]
+
+
+def test_un_index_en_retard_ne_peut_pas_trancher_sans_erreur(monkeypatch):
+    """L'index de la recherche peut sous-compter : c'est le lot plein qui tranche.
+
+    Scenario : l'index rend `total_count = 241` alors que le parc reel en
+    compte 291 (des PRs ouvertes apres la derniere indexation). Sous un
+    plafond calcule sur ce compte (`--limit 241`), `gh pr list` rend les 241
+    PRs **les plus recentes** et les plus anciennes disparaissent -- c'est la
+    PR #24340 au rang 204 qui etait invisible. Aucun ecart ne se voyait :
+    `len(rows) == total`, donc aucune erreur n'etait levee.
+
+    Avec la marge, on demande `total + READ_MARGIN` : le lot revient **plein**,
+    et un lot plein prouve la troncature, quel que soit le compte de l'index.
+    """
+    eff = 241 + toc.READ_MARGIN
+    _stub_gh(monkeypatch, counts=[241], rows=_pr_rows(range(1, eff + 1)))
+    with pytest.raises(toc.GhError) as exc:
+        toc.open_prs_touching_registry("jsboige/CoursIA")
+    assert "tronquee" in str(exc.value)
