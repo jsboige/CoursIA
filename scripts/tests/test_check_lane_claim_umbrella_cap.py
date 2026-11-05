@@ -217,10 +217,50 @@ def test_claim_on_the_epic_itself_is_capped(capsys):
     assert rc == 1
     data = report(capsys)
     assert data["epic_visit_cap"].startswith(CAUSE_PREFIX)
-    assert "claim pose sur l'EPIC il y a 3.0 j" in data["epic_visit_cap"]
+    # #22687 constat 1 : la cause NOMME le marqueur retenu au lieu du mot
+    # generique « claim », qui affirmait une prise sur tout marqueur -- y
+    # compris un `[RELEASED]` (cf le test dedie plus bas).
+    assert "prise sur l'EPIC il y a 3.0 j" in data["epic_visit_cap"]
     assert data["epic_visit_cap_epic"] == SERRE100
     # L'EPIC est N lui-meme : sa charge est deja lue, aucun parent a chercher.
     assert loaders.parent_calls == []
+
+
+def test_released_marker_on_the_epic_is_named_not_called_a_claim(capsys):
+    """#22687 constat 1 -- la cause nomme ce que la lane a FAIT.
+
+    Mesure fondatrice : sur #16334 le marqueur retenu etait un `[RELEASED]`,
+    et la cause annoncait « claim pose sur l'EPIC ». Une lane qui lit ca rend
+    la main une seconde fois (ou croit qu'une autre lane tient l'EPIC) pour
+    une visite qui est en realite un rendu. La date seule ne distingue pas
+    une prise d'un rendu : le marqueur, si.
+    """
+    payload = epic(comments=[comment(
+        "[RELEASED] lane myia-ai-01:CoursIA-2 -- tranche rendue", iso(days=3))])
+    rc = run(payload, Loaders(pool=[]))
+    assert rc == 1
+    cause = report(capsys)["epic_visit_cap"]
+    assert cause.startswith(CAUSE_PREFIX)
+    assert "rendu de main sur l'EPIC il y a 3.0 j" in cause
+    assert "claim" not in cause
+
+
+def test_every_marker_the_organ_reads_has_its_own_word(capsys):
+    """Aucun marqueur de l'organe ne retombe sur le mot generique.
+
+    `CANCELLED` est lu par `_KEYWORDS` : il doit donc avoir sa traduction,
+    comme le `[RELEASED]` ci-dessus. Un code absent du dictionnaire est un
+    trou, pas un repli acceptable -- cf `marker_label` pour les codes que
+    l'organe ne produit pas.
+    """
+    payload = epic(comments=[comment(
+        "[CANCELLED] lane myia-ai-01:CoursIA-2 -- tranche abandonnee",
+        iso(days=3))])
+    rc = run(payload, Loaders(pool=[]))
+    assert rc == 1
+    cause = report(capsys)["epic_visit_cap"]
+    assert "annulation sur l'EPIC il y a 3.0 j" in cause
+    assert "claim" not in cause
 
 
 def test_claim_older_than_the_window_does_not_block(capsys):

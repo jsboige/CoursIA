@@ -160,10 +160,36 @@ def test_un_claim_sur_l_epic_compte_comme_une_visite():
     """C'est le geste mesure du 25/10 : quatre lanes ont claimé le meme EPIC
     le meme jour. Le plafond doit voir le claim, pas seulement la creation
     d'une sous-issue."""
+    epic = _item(3001, klass="umbrella", last_claim_stamp=_iso(6),
+                 last_claim_marker="CLAIMED")
+    cause = pig.umbrella_visit_cause(epic, now=NOW)
+    assert cause is not None
+    assert "prise sur l'EPIC" in cause
+
+
+def test_un_rendu_de_main_sur_l_epic_se_nomme_et_ne_se_lit_pas_comme_une_prise():
+    """#22687 constat 1 : la cause dit ce que la lane a FAIT.
+
+    Sur #16334 le marqueur retenu etait un `[RELEASED]` du 26/10 et la cause
+    annoncait « claim pose sur l'EPIC ». Une lane qui lit ca rend la main une
+    seconde fois pour une visite qui est un rendu : le message coute un tour.
+    """
+    epic = _item(3001, klass="umbrella", last_claim_stamp=_iso(6),
+                 last_claim_marker="RELEASED")
+    cause = pig.umbrella_visit_cause(epic, now=NOW)
+    assert cause is not None
+    assert "rendu de main sur l'EPIC" in cause
+    assert "claim" not in cause
+
+
+def test_un_marqueur_non_transporte_ne_se_traduit_pas_en_prise():
+    """Chemins qui ne portent que la date (sonde unitaire de repli) : la cause
+    dit « marqueur de lane ». Le repli n'est jamais le mot que #22687 retire."""
     epic = _item(3001, klass="umbrella", last_claim_stamp=_iso(6))
     cause = pig.umbrella_visit_cause(epic, now=NOW)
     assert cause is not None
-    assert "claim pose sur l'EPIC" in cause
+    assert "marqueur de lane sur l'EPIC" in cause
+    assert "claim" not in cause
 
 
 def test_epic_de_consolidation_est_exempt():
