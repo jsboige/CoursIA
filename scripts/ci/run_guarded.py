@@ -43,7 +43,7 @@ la garde GPU existante (``Win32_PerfFormattedData_PerfOS_Memory``), parce
 qu'une sonde differente peut rendre un chiffre propre, plausible et
 permissif. Hors Windows, l'instrument n'existe pas (l'equivalent Linux est un
 cgroup, pas un compteur) : la garde est alors declaree NON APPLICABLE et ne
-refuse pas -- un refus systematique y blockerait tout lancement.
+refuse pas -- un refus systematique y bloquerait tout lancement.
 
 Garde d'admission -- projection de l'engagement (#23531, #23546). Le seuil
 ci-dessus compare un etat **avant** engagement a une valeur qui ne dit rien
@@ -52,7 +52,10 @@ de ce que le job va engager ensuite : a 89,9 % de charge, un job plafonne a
 commit touche alors le vLLM de flotte (GPU 0/1) autant que le job -- c'est
 precisement le service que la regie cherche a ne pas deranger. L'admission
 compare donc aussi la **projection** : charge courante + plafond de commit
-du job, rapporte au plafond de commit de l'hote, refuse au-dela de 100 %.
+du job, rapportee au plafond de commit de l'hote. Elle est refusee au-dela du
+**meme seuil de sante** que l'etat d'avant (``--max-commit-charge-pct``) :
+100 % du plafond de commit, c'est la famine meme -- et le vLLM de flotte
+(GPU 0/1) n'a alors aucune marge.
 La lecture est UNIQUE (pourcentage, engagement courant et plafond sont lus
 dans le meme instant) : deux sondes successives pourraient voir deux etats
 differents, et la projection ne serait plus un etat coherent de la machine.
@@ -782,6 +785,13 @@ def main(argv=None):
     #     sa limite de commit -- et une famine de commit touche le vLLM de
     #     flotte (GPU 0/1) autant que le job. La projection est donc ce que
     #     l'admission doit dire, pas seulement la charge courante.
+    #
+    #     Elle est bornee par le MEME seuil de sante que l'etat d'avant
+    #     (``--max-commit-charge-pct``), pas par 100 % du plafond de commit :
+    #     100 %, c'est la famine elle-meme, et le vLLM de flotte n'a aucune
+    #     marge a ce point. Avec un plafond de commit de 399,8 GiB et un job
+    #     de 48 GiB, la projection franchit 90 % des 78,0 % de charge
+    #     courante -- donc bien avant le seuil de l'etat d'avant.
     if args.max_commit_charge_pct > 0:
         reading = _commit_charge()
         if reading is None and os.name != "nt":
@@ -831,20 +841,24 @@ def main(argv=None):
                          f"{charge} % (plafond {limit / GiB:.1f} GiB).")
             else:
                 projected = 100.0 * (committed + engagement) / limit
-                if projected > 100.0:
+                if projected > args.max_commit_charge_pct:
                     _say(fh, f"REFUS : projection de charge de commit "
-                             f"{projected:.1f} % > 100 % -- l'hote est engage a "
-                             f"{charge} % ({committed / GiB:.1f} GiB) et le job "
-                             f"peut encore engager {engagement / GiB:.1f} GiB, "
-                             f"pour un plafond de commit de "
-                             f"{limit / GiB:.1f} GiB. Rien n'est lance : une "
-                             f"famine de commit toucherait le vLLM de flotte "
-                             f"(GPU 0/1) autant que le job.")
+                             f"{projected:.1f} % > "
+                             f"{args.max_commit_charge_pct} % -- l'hote est "
+                             f"engage a {charge} % ({committed / GiB:.1f} GiB) "
+                             f"et le job peut encore engager "
+                             f"{engagement / GiB:.1f} GiB, pour un plafond de "
+                             f"commit de {limit / GiB:.1f} GiB. Rien n'est "
+                             f"lance : l'etat APRES engagement depasse le meme "
+                             f"seuil de sante que l'etat d'avant, et le vLLM "
+                             f"de flotte (GPU 0/1) n'a aucune marge si l'hote "
+                             f"sature son plafond de commit.")
                     close_logs()
                     return RC_REFUSED
                 _say(fh, f"admission : charge de commit {charge} % <= "
                          f"{args.max_commit_charge_pct} % et projection "
-                         f"{projected:.1f} % <= 100 % apres engagement de "
+                         f"{projected:.1f} % <= {args.max_commit_charge_pct} % "
+                         f"apres engagement de "
                          f"{engagement / GiB:.1f} GiB (plafond de commit "
                          f"{limit / GiB:.1f} GiB) -- demarrage autorise")
 

@@ -162,6 +162,13 @@ def test_garde_de_charge_de_commit_illisible_refuse(guarded, tmp_path, monkeypat
 # plafond de 400 GiB passe le seuil de 90 %, mais son job de 48 GiB porterait
 # l'hote a 101 % -- donc refus.
 #
+# La projection est bornee par le MEME seuil de sante que l'etat d'avant
+# (``--max-commit-charge-pct``), pas par 100 % du plafond de commit : 100 %,
+# c'est la famine de commit meme, et le vLLM de flotte (GPU 0/1) n'a alors
+# aucune marge. Le cas limite est donc celui ou l'etat AVANT passe et l'etat
+# APRES franchit le seuil : 80 % de charge + 48 GiB sur un plafond de
+# 399,8 GiB donnent 92 % de projection -> refus.
+#
 # La lecture est simulee (monkeypatch de `_commit_charge`) : aucun sous-processus
 # PowerShell, aucune mesure reelle de la machine dans les assertions.
 
@@ -173,7 +180,12 @@ def _lecture(pct, committed_gib, limit_gib):
 
 def test_projection_au_dela_du_plafond_refuse_le_lancement(guarded, tmp_path,
                                                             monkeypatch):
-    """L'hote passe le seuil, mais pas avec l'engagement du job."""
+    """L'hote passe le seuil, mais pas avec l'engagement du job.
+
+    La projection est bornee par le meme seuil de sante que l'etat d'avant
+    (90 %), pas par 100 % du plafond de commit : ici 404 > 400 %, donc refus
+    au double titre.
+    """
     monkeypatch.setattr(
         guarded, "_commit_charge",
         lambda: _lecture(89, 356.0, 400.0))   # 356 + 48 = 404 > 400
@@ -195,10 +207,14 @@ def test_projection_au_dela_du_plafond_refuse_le_lancement(guarded, tmp_path,
 
 
 def test_projection_sous_le_plafond_laisse_passer(guarded, tmp_path, monkeypatch):
-    """Temoin : a 78 % de charge, un job de 48 GiB laisse 90 % de projection."""
+    """Temoin : a 78 % de charge, un job de 48 GiB laisse 89,5 % de projection.
+
+    C'est le cas limite favorable : sur un plafond de 400 GiB, la projection
+    franchit le seuil de sante (90 %) a partir de 80 % de charge courante.
+    """
     monkeypatch.setattr(
         guarded, "_commit_charge",
-        lambda: _lecture(78, 310.0, 400.0))   # 310 + 48 = 358 < 400
+        lambda: _lecture(78, 310.0, 400.0))   # 310 + 48 = 358 -> 89,5 %
     log = tmp_path / "projection_ok.log"
     rc = guarded.main([
         "--limit-gib", "8", "--reserve-gib", "1",
@@ -211,6 +227,36 @@ def test_projection_sous_le_plafond_laisse_passer(guarded, tmp_path, monkeypatch
     assert rc == 0, f"rc {rc} attendu (0 = admis), journal :\n{journal}"
     assert "TRIVIAL_OK" in journal, journal
     assert "projection" in journal.lower(), journal
+
+
+def test_projection_au_dela_du_seuil_de_sante_refuse_le_lancement(
+        guarded, tmp_path, monkeypatch):
+    """Point limite : 80 % de charge + 48 GiB sur 399,8 GiB -> 92 % -> refus.
+
+    C'est le cas que la revue nomme : l'etat AVANT engagement (80 %) passe le
+    seuil de 90 %, l'etat APRES engagement (92 %) le franchit. Borne par 100 %
+    du plafond de commit, ce cas etait ADMIS -- et 100 % du plafond, c'est la
+    famine de commit qui affamerait le vLLM de flotte (GPU 0/1) autant que le
+    job. Mesure sur le plafond reel de `myia-ai-01` (399,8 GiB).
+    """
+    monkeypatch.setattr(
+        guarded, "_commit_charge",
+        lambda: _lecture(80, 319.84, 399.8))   # 319,84 + 48 = 367,84 -> 92,0 %
+    log = tmp_path / "projection_limite.log"
+    rc = guarded.main([
+        "--limit-gib", "8", "--reserve-gib", "1",
+        "--max-commit-charge-pct", "90",
+        "--job-memory-limit-gib", "48",
+        "--log", str(log),
+        "--", sys.executable, "-c", TRIVIAL_CHILD,
+    ])
+    journal = log.read_text(encoding="utf-8")
+    assert rc == 5, f"rc {rc} attendu (5 = refus), journal :\n{journal}"
+    assert "projection" in journal.lower(), journal
+    assert "TRIVIAL_OK" not in journal, "rien ne doit avoir ete lance"
+    # Le refus doit nommer la projection refusee et le plafond mesure.
+    assert "92.0" in journal, journal
+    assert "399.8" in journal, journal
 
 
 def test_le_seuil_de_charge_reste_un_predicat_independant(guarded, tmp_path,
