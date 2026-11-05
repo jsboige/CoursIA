@@ -57,7 +57,7 @@ Garde-fous d'honnetete (5) — a reporter dans le notebook
    vs vocabulaire de desembedding, voir `ict.jlens_traces` et garde-fou #1 du
    tete-a-tete). **Depuis Track S**, le depot fait tourner les DEUX appareils
    sur le meme substrat (Qwen3.5-9B-Base couche 16) et les confronte
-   (`ICT-SAE-JLens-TeteATete.ipynb`, 31 cellules, 11/11 code executees) :
+   (`ICT-SAE-JLens-TeteATete-Python.ipynb`, 31 cellules, 11/11 code executees) :
    la correlation **faible** est un resultat, pas un echec -- Pearson
    concentration Gini top-50 sur T=2699 positions est +0.0846 (TRAINED) vs
    +0.0164 (CONTROL), delta +0.0683 dans le sens attendu (l'ablation degrade
