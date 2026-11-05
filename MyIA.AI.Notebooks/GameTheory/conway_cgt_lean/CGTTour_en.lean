@@ -111,13 +111,13 @@ The surreals carry full field operations:
 Every dyadic rational embeds into the surreals via `Dyadic.toIGame`.
 The dyadic surreals are precisely those with finite birthday.
 -/
-#check @Dyadic.toIGame
+#check @Dyadic.toIGame      -- Embedding of dyadic rationals into IGame
 
 /-! ### Ordinal Embedding
 
 Every ordinal embeds into the surreals via `NatOrdinal.toSurreal`.
 -/
-#check @NatOrdinal.toSurreal
+#check @NatOrdinal.toSurreal  -- NatOrdinal ↪o Surreal
 
 /-! ## 3. Nimbers
 
