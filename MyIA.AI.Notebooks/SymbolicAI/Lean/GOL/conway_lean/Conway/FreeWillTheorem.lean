@@ -30,7 +30,7 @@
 
   Ce fichier est le **canonique français**. Le miroir anglais est le fichier
   frère `FreeWillTheorem_en.lean` (`namespace Conway_en > namespace FreeWillTheorem_en`,
-  `open Conway_en`, `open Conway.KochenSpecker`, `import Conway.KochenSpecker`)
+  `open Conway_en`, `open KochenSpecker_en`, `import Conway.KochenSpecker_en`)
   — modèle sibling pair V2 nested (cf `code-style.md` §Lean i18n et l'analogue
   `Conway/Fractran` c.451 Pattern A, `Conway/LookAndSay` c.457, `Conway/Nim` c.518).
   Docstrings en français ici ; le corps (signatures, defs, proofs) reste
