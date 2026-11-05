@@ -62,6 +62,16 @@ qui fait tourner l'entrainement sous `scripts/ci/run_guarded.py` :
   aussi (fail-CLOSED) ; **le seuil est porte par le lanceur** —
   `run_guarded.py` appele seul n'active pas la garde, son
   `--max-commit-charge-pct` valant 0 par defaut (desactive) ;
+- **garde d'admission conjointe** : le seuil de 90 % compare un etat **avant**
+  engagement, or le job engage jusqu'a 48 Go — la garde projette donc aussi la
+  charge **apres** engagement et refuse au-dela du **meme seuil de sante** que
+  l'etat d'avant : 100 % du plafond de commit, c'est la famine meme, et le
+  vLLM de flotte (GPU 0/1) n'y a aucune marge (#23531, #23546). Sur ai-01
+  (plafond mesure : 399,8 GiB), la projection refuse des **78,0 %** de charge,
+  soit bien plus tot que le seuil. Sans
+  `--job-memory-limit-gib`, l'engagement est sans borne, la projection est
+  indemontrable et le lanceur refuse (fail-CLOSED), sauf
+  `--allow-unbounded-commit` assume explicitement ;
 - **exclusion N=1** : un seul entrainement CoursIA a la fois sur la machine
   (verrou exclusif) ;
 - **anti-orphelin** : le superviseur tient le Job Object, donc l'entrainement
