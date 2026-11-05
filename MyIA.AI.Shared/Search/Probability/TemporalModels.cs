@@ -110,6 +110,12 @@ public sealed class HiddenMarkovModel
     /// Messages arriere <c>b_{k+1:t}</c> pour <c>k = 0..t</c> : le message d'indice
     /// <c>t</c> est uniforme (rien apres la derniere observation).
     /// </summary>
+    /// <remarks>
+    /// Contrairement au manuel AIMA, qui garde le message arriere non normalise,
+    /// chaque message est normalise ici : le produit <c>f * b</c> du lissage reste
+    /// exact (la normalisation finale l'absorbe), mais la vraisemblance
+    /// <c>P(e_{k+1:t} | X_k)</c> n'est pas reconstructible depuis ces messages.
+    /// </remarks>
     public double[][] BackwardMessages(IReadOnlyList<int> evidence)
     {
         ArgumentNullException.ThrowIfNull(evidence);
