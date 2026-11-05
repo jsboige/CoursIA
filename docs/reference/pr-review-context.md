@@ -258,7 +258,7 @@ Les rouges périmés restent dans la liste : **12/160 PRs mesurées**, dont les 
 
 ### L44 — le coût d'une PR se paie par PR, pas par ligne (Q162 b)
 
-Mesure du 2026-11-03 sur **2 075 PRs** : 8 commentaires et reviews en moyenne pour un diff de 4 lignes, contre 15 pour plus de 1 000 lignes. Le saucissonnage coûte plus cher que le travail.
+Mesure du 2026-11-03 sur **2 075 PRs** : 8 commentaires et reviews en moyenne pour un diff de quelques lignes, contre 15 pour un diff de grande taille. Le saucissonnage coûte plus cher que le travail.
 
 ### L60 — pourquoi la whitelist des axiomes interdit les wildcards
 
@@ -288,7 +288,7 @@ Un verdict `CAUSE_DOCUMENTED_ONLY` sur une cause réparable par la flotte, même
 
 Périmètre des statistiques visées par la règle : total de notebooks, comptes par langage ou par sous-dossier, comptes de cellules, bandeaux « N notebooks ».
 
-Arbitrage user 2026-09-24 (#17029 revertée) ; mandat user du 2026-08-04 (#9377) ; durcissement du check-run `prose-counts` par #17636 puis #17645 (bloquant sur les lignes ajoutées). Le cas de la liste laissée périmée 100 lignes plus bas est dans la section « E — #5345 Probas » ci-dessus.
+Arbitrage user 2026-09-24 (#17029 revertée) ; mandat user du 2026-08-04 (#9377) ; durcissement du check-run `prose-counts` par #17636 puis #17645 (bloquant sur les lignes ajoutées). Le cas de la liste laissée périmée plus bas est dans la section « E — #5345 Probas » ci-dessus.
 
 ### L112 — un verdict `INTRINSIC` se vérifie à la source (#21121)
 
