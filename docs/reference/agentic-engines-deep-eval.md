@@ -450,7 +450,7 @@ Le point 5 demande trois choses : ce qui existe déjà, la dette de migration, e
 
 | Moteur | Présence dans le dépôt | Mesure |
 |---|---|---|
-| **Semantic Kernel** | série pédagogique **bi-langage**, C# concentrée | `GenAI/SemanticKernel/` — 22 carnets : 17 Python et 5 `.net-csharp` (mesuré au 2026-11-04, §5.4). La partie C# est concentrée sur la sous-série `semantic-fleet` (4 carnets) ; la couche agents (`01` à `13`) est **Python seule** |
+| **Semantic Kernel** | série pédagogique **bi-langage**, C# concentrée | `GenAI/SemanticKernel/` — 23 carnets (18 Python, 5 `.net-csharp`) selon `COURSE_CATALOG.generated.json` au head (mesuré, §5.4). La partie C# (5 carnets) inclut les 2 du préfixe `Semantic-fleet-*` ; la couche agents (`01` à `11`) est **Python seule** |
 | **Google ADK** | série pédagogique dédiée (Python) + organe d'orchestration réutilisable | `ML/DataScienceWithAgents/Track2-GoogleADK/` (14 carnets), plus `utils/adk_runtime.py` (`build_agent`, `run_agent_turn`) et `utils/adk_orchestrator.py` (contrat C4) — réutilisés tels quels par le pilote P3 |
 | **Microsoft Agent Framework** | **aucune série pédagogique** — présent uniquement dans les pilotes d'évaluation de ce chantier | `grep` sur `agent-framework`/`Microsoft.Agents.AI` dans les `.ipynb` ne retourne que les pilotes ; MAF n'apparaît que dans `eval-pilots/` |
 | **semantic-fleet** | sous-module épinglé | `MyIntelligenceAgency/semantic-fleet`, branche `stable-from-v0343` (`.gitmodules`) — infrastructure de flotte SK, hors série pédagogique |
@@ -489,7 +489,7 @@ Ce qui subsiste, et qui fait la valeur d'un enseignement multi-moteurs :
 **Réserve d'honnêteté — une seule « couverture C# », pas deux.** Le §2.7 mesure la **couverture d'API C#** (quels types un moteur expose-t-il réellement en C# ?). Cette section parle de **série pédagogique C#** (qu'y a-t-il à enseigner ?). Les deux mots se ressemblent, ne mesurent pas la même chose, et les confondre avait produit une affirmation fausse. La réserve se formule donc ainsi :
 
 - **couverture d'API C#** : SK expose le modèle historique seul ; MAF expose les cinq topologies, le checkpoint et l'OTel ; ADK n'a **aucune distribution C#** (mesuré : aucun paquet NuGet — §2.7 et §5.5) ;
-- **série pédagogique C#** : le dépôt n'en compte qu'une, celle de SK — 5 carnets `.net-csharp` sur les 22 de `GenAI/SemanticKernel/` (mesuré, §5.4). Track2-GoogleADK est intégralement Python, et MAF n'a rien.
+- **série pédagogique C#** : le dépôt n'en compte qu'une, celle de SK — 5 carnets `.net-csharp` sur les 23 de `GenAI/SemanticKernel/` (mesuré, §5.4). Track2-GoogleADK est intégralement Python, et MAF n'a rien.
 
 Un cours bi-langage ne peut donc pas être symétrique sur les trois moteurs ; c'est une borne à déclarer, pas à masquer. Le verdict par critère (quel moteur pour quel usage) reste au point 6, réservé à ai-01 + user.
 
@@ -572,7 +572,7 @@ Sources des dates : API PyPI (`https://pypi.org/pypi/<paquet>/json`, date de pub
 | **Long run avec reprise** | le prover Lean (`…/SymbolicAI/Lean/agent_tests/prover/`) tourne sur `agent_framework` | le moteur doit savoir **reprendre** un run interrompu |
 | **Traces** | `…/agent_tests/prover/baselines/traces/*.spans.jsonl` — des milliers de spans déjà produites | il faut un **format de trace** stable et lisible par un tiers |
 | **Comptage de tokens** | `Track2-GoogleADK/Day5-DS-Star/Lab12d-Token-Usage.ipynb` ; note du carnet : « Jusqu'à la trace 1, ADK produisait bien `usage_metadata` sur ses events » | il faut un compte **fiable et détaillé**, pas approximatif |
-| **Série pédagogique bilingue C#/Python** | SK : 22 carnets (17 Python, 5 `.net-csharp`) ; ADK : 14 carnets Python ; MAF : **0** | il faut une **offre existante** ou l'accepter comme un coût de création |
+| **Série pédagogique bilingue C#/Python** | SK : 23 carnets (18 Python, 5 `.net-csharp`) ; ADK : 14 carnets Python ; MAF : **0** | il faut une **offre existante** ou l'accepter comme un coût de création |
 | **Endpoint local** (vLLM, claudish) | `Track2-GoogleADK/utils/adk_runtime.py` (`LiteLlm`, `api_base`) ; pilotes SK/MAF (`AsyncOpenAI(base_url=…)`, `base_url=…`) | le branchement doit passer par une **API compatible OpenAI** |
 
 Deux découverts en mesurant cet inventaire, et qu'aucun tableau précédent ne portait :
