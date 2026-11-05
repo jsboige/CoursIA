@@ -234,6 +234,18 @@ TOOL_FAILURE_PATTERNS = (
     # Le motif est epingle au marqueur en MAJUSCULES, SANS IGNORECASE : c'est
     # un marqueur machine, et la forme francaise accentuee
     # (`generation non executee` dans une prose) ne doit pas le declencher.
+    #
+    # ECART ASSUME ET TRACE (#24780, critere 5) : la forme francaise GENERALE
+    # `<service> indisponible` n'est PAS couverte par ce motif. Mesure : le
+    # mot `indisponible` apparait dans 125 carnets du depot, dont des replis
+    # declares legitimes (`non configuree`, `non disponible`) qui ne doivent
+    # pas devenir du bruit -- la rendre bloquante transformerait une
+    # famille de replis assumes en rouge de flotte. Le motif couvre donc la
+    # forme BANNERE (marqueur en majuscules, une par cellule), pas la forme
+    # MOT (n'importe quelle prose ou sortie qui cite un service indisponible).
+    # La forme a couvrir est tracee et assumee ici ; la voie complementaire --
+    # un jeton porte par le carnet lui-meme -- est suivie cote carnet dans
+    # #24786.
     re.compile(r"GENERATION NON EXECUTEE"),
 )
 
