@@ -356,7 +356,7 @@ cost:
 ```
 
 ```yaml
-# DecInfer-02-Lean-ExpectedUtility.ipynb (Probas/DecisionTheory/DecInfer)
+# DecInfer-01b-Lean-ExpectedUtility.ipynb (Probas/DecisionTheory/DecInfer)
 cost:
   api_usd_est: 0.0
   api_provider: none

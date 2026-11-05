@@ -1309,7 +1309,7 @@ layout: section
 <img src="./images/img_064.png" class="max-h-[190px] w-full object-contain" alt="Grille 3x3 de navigation avec flèches de politique, cases +1/-1, piège, et inégalité sur R(s)" />
 </div>
 
-<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-05-Decision-Networks.ipynb">DecInfer-05-Decision-Networks.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-06-Value-Information.ipynb">DecInfer-06-Value-Information.ipynb</a>.</p>
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-04-Decision-Networks.ipynb">DecInfer-04-Decision-Networks.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-05-Value-Information.ipynb">DecInfer-05-Value-Information.ipynb</a>.</p>
 ---
 
 

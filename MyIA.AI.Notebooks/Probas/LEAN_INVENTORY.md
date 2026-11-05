@@ -27,8 +27,8 @@ pédagogique. Historique : 5 sorry à la création, déchargés à **2** (baseli
 `lean-ci-matrix.yml` (clé `decisiontheory`) real-mode baseline 2). Les libs `Utility` et `Coherence` sont
 **0 sorry**.
 
-² Deux notebooks câblés sous `Probas/DecisionTheory/DecInfer/` : **DecInfer-02**
-(Lean Expected Utility) et **DecInfer-08b** (Lean Gittins — preuves en cellules Lean).
+² Deux notebooks câblés sous `Probas/DecisionTheory/DecInfer/` : **DecInfer-01b**
+(Lean Expected Utility) et **DecInfer-07b** (Lean Gittins — preuves en cellules Lean).
 La série Infer « Decision » (.NET Interactive) reste le companion conceptuel
 utilité/décision.
 
