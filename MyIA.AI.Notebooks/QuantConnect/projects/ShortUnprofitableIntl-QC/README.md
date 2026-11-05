@@ -73,4 +73,14 @@ Propriétés du code :
 - **Filtre de rentabilité : question ouverte.** L'écart `strategy` − `all` est positif mais minime, +0,43 % par an (p de Holm 1,0), avec une corrélation de 0,93.
 - **Ce que reproduit la mesure** : un rendement d'environ 3 % par an à bêta quasi nul, qui ne rémunère pas le risque mieux que les références. Le coût d'emprunt n'étant pas modélisé, la mesure est favorable à la stratégie.
 
+**Sous-période postérieure à la publication.** Calculée sur la trace `shadow` déjà produite, sans nouveau backtest. La coupure est le numéro de mars 2015 de la RFS (vol. 28, n° 3), où paraît l'article de Hou, Xue et Zhang : 2015-03-02 → 2026-07-31, 2872 séances. L'article QC n° 21634 est postérieur à la fin de la trace, aucune séance ne le suit. La sous-période est donc hors échantillon pour la source académique, pas pour l'article QC, dont elle reste dans la fenêtre.
+
+| Bras (trace, taux sans risque nul) | CAGR | Sharpe | Perte max. |
+|---|---|---|---|
+| `strategy`, LBTYB exclu | 2,24 % | 0,44 | 13,2 % |
+| `spy` | 13,53 % | 0,81 | 33,7 % |
+| `6040` | 8,89 % | 0,84 | 21,6 % |
+
+Le verdict ne change pas. L'écart de Sharpe n'est pas significatif (p de Holm 1,0 contre les deux références). Le rendement moyen reste inférieur, −11,9 % par an contre `spy` et −6,8 % contre `6040`, mais l'écart n'est plus significatif après correction (p de Holm 0,094 et 0,24). Les trois pertes max. tombent après mars 2015 : ce sont celles de la fenêtre entière.
+
 Le détail des tests est sur #24228.
