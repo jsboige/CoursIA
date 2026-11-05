@@ -2525,7 +2525,13 @@ def belt_snapshot_prime_inert(repo: str, numbers: list[int]) -> None:
 
 
 def has_recent_delivery_marker(issue_number: int) -> bool | None:
-    """Le DERNIER commentaire porte-t-il un marqueur de cloture recent ?
+    """Le DERNIER commentaire PORTEUR D'ETAT porte-t-il un marqueur de cloture ?
+
+    La lecture ne porte pas sur `comments[-1]` brut mais sur le dernier
+    commentaire qui porte un etat (`_last_state_comment`) : un `[RELEASED]`
+    de queue dont le corps ne porte aucun marqueur d'etat est saute, parce
+    qu'il MASQUERAIT le `[DELIVERED]` qu'il suit (#24590). Le contrat ecrit
+    suit donc le code.
 
     TRI-ETAT (cf. `has_delivered_signal`) :
     - ``True``  : l'item est **GEL** (regle A : le BODY porte la ligne
@@ -2535,7 +2541,9 @@ def has_recent_delivery_marker(issue_number: int) -> bool | None:
       ``[INFO] candidate-delivered`` (grammaire `_DELIVERED_MARKER_RE`).
       Le candidat doit etre ecarte SANS
       appeler la sonde pleine -- c'est le filtre bon marche de #19768 ;
-    - ``False`` : aucun marqueur de cloture dans le dernier commentaire.
+    - ``False`` : aucun marqueur de cloture dans le dernier commentaire
+      porteur d'etat -- les `[RELEASED]` de queue sans marqueur d'etat ne
+      sont pas lus (`_last_state_comment`).
       L'appelant peut proceder a la sonde pleine. C'est le cas d'un
       en-tete `[RELEASED]` : une main rendue sur une barriere reelle
       laisse l'item SERVABLE (#21721), et une main rendue parce que le
@@ -2563,6 +2571,29 @@ def has_recent_delivery_marker(issue_number: int) -> bool | None:
     return verdict
 
 
+def _last_state_comment(comments: list[dict]) -> dict:
+    """Le dernier commentaire PORTEUR D'ETAT -- un `[RELEASED]` de queue est saute.
+
+    Un `[RELEASED]` n'est ni une cloture ni une reouverture (#21721) : le
+    laisser occuper la place du dernier commentaire MASQUE le `[DELIVERED]`
+    qu'il suit. Le saut ne porte pas sur l'en-tete seul -- un corps qui porte
+    plus bas un marqueur d'etat EST un evenement.
+    """
+    for comment in reversed(comments):
+        if not isinstance(comment, dict):
+            continue
+        body = comment.get("body")
+        if isinstance(body, str) and _RELEASED_HEADER_RE.search(body):
+            plain = _strip_code(body)
+            if not (_RECENT_DELIVERY_MARKER_RE.search(plain)
+                    or _DELIVERED_MARKER_RE.search(plain)
+                    or _closure_dossier_verdict(body) == "CLOSE"
+                    or _closure_announced_close(body)):
+                continue
+        return comment
+    return {}
+
+
 def _recent_marker_verdict(issue_number: int) -> bool | None:
     """Le detail de `has_recent_delivery_marker` (meme verdict, meme cout).
 
@@ -2583,9 +2614,7 @@ def _recent_marker_verdict(issue_number: int) -> bool | None:
     if _issue_is_frozen(body_of_issue, comments) is not None:
         return True
 
-    last = comments[-1] if comments else {}
-    if not isinstance(last, dict):
-        last = {}
+    last = _last_state_comment(comments)
     body = last.get("body") or ""
     if not isinstance(body, str):
         body = ""
@@ -2699,7 +2728,7 @@ def _issue_comments(issue_number: int) -> tuple[list[dict] | None, str | None]:
     Pourquoi tout le fil et pas seulement la queue : un gel pose en
     commentaire peut etre enterre par n'importe quel commentaire
     posterieur (#24516, mesure sur #19309 : 37 `[RELEASED]` pour un seul
-    `[FROZEN]`). La requete ramene deja le fil entier -- `_last_comment` n'en
+    `[FROZEN]`). La requete ramene deja le fil entier -- la lecture n'en
     gardait que la queue -- donc le balayer **ne coute aucune requete de
     plus**.
 
@@ -2740,55 +2769,38 @@ def _issue_comments(issue_number: int) -> tuple[list[dict] | None, str | None]:
     return comments, body
 
 
-def _last_comment(issue_number: int) -> dict | None:
-    """Le DERNIER commentaire d'une issue (dictionnaire), en 1 requete.
-
-    TRI-ETAT :
-    - ``None``  : la lecture a echoue (reseau, 403, payload illisible) --
-      fail-OPEN, l'appelant le dit ;
-    - ``{}``    : il n'y a pas de dernier commentaire exploitable (aucun
-      commentaire, payload inattendu) ;
-    - le dict   : celui du dernier commentaire (ordre chronologique de
-      l'API `gh issue view --json comments`), corps et horodatage.
-
-    L'horodatage est HERE parce que la regle de la reouverture (#24250) doit
-    dater la decision de cloture : le corps seul ne permet pas de dire si la
-    reouverture lui est posterieure.
-    """
-    comments, _body = _issue_comments(issue_number)
-    if comments is None:
-        return None
-    if not comments:
-        return {}
-    last = comments[-1]
-    if not isinstance(last, dict):
-        return {}
-    return last
-
-
 def _last_comment_body(issue_number: int) -> str | None:
-    """Le corps du DERNIER commentaire d'une issue, en 1 requete.
+    """Le corps du DERNIER commentaire PORTEUR D'ETAT, en 1 requete.
 
     TRI-ETAT :
     - ``None``  : la lecture a echoue (reseau, 403, payload illisible) --
       fail-OPEN, l'appelant le dit ;
     - ``""``    : il n'y a pas de dernier commentaire exploitable (aucun
       commentaire, payload inattendu, corps non textuel) ;
-    - le corps  : celui du dernier commentaire (ordre chronologique de
-      l'API `gh issue view --json comments`).
+    - le corps  : celui du dernier commentaire porteur d'etat (ordre
+      chronologique de l'API `gh issue view --json comments`).
 
     Facteurise pour que le filtre « marqueur recent » et le filtre
     « marqueur de CONTENEUR » lisent le meme octet : deux lectures du meme
     fil ne peuvent pas diverger sur un fil qui change entre les deux.
 
+    #24590 -- l'octet partage est celui de `_last_state_comment`, pas celui
+    de `comments[-1]` : un `[RELEASED]` de queue sans marqueur d'etat est
+    saute par les DEUX filtres. Sans ca, la sonde conteneur restait exposee
+    a la meme cecite que la sonde de livraison : un `[RELEASED]` posterieur
+    masquait le `[INFO] candidate-delivered` qu'il suit, et l'umbrella
+    redevenait servable alors que le conteneur etait clos.
+
     #22630 -- l'instantane local rend les memes commentaires, sans requete :
     la lecture passe par `_snapshot_comments` quand l'instantane de la passe
     est disponible, et retombe sur la requete historique sinon.
     """
-    last = _last_comment(issue_number)
-    if last is None:
+    comments, _body = _issue_comments(issue_number)
+    if comments is None:
         return None
-    body = last.get("body") or ""
+    if not comments:
+        return ""
+    body = _last_state_comment(comments).get("body") or ""
     if not isinstance(body, str):
         return ""
     return body
@@ -10512,7 +10524,7 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
 
             Le mur de temps (`expired`) borne le RESEAU ; il ne borne pas une
             lecture locale. Les deux filtres de marqueur (recent, conteneur)
-            lisent `_last_comment`, qui sert depuis l'instantane de la passe
+            lisent `_last_state_comment`, qui sert depuis l'instantane de la passe
             quand il le peut (#22630). Les sauter au motif de l'echeance sert
             donc un candidat dont la cloture etait CONNUE.
 
