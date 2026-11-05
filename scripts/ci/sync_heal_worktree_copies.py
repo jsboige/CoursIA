@@ -107,14 +107,23 @@ def sync_text(text: str, body: list[str]) -> tuple[str, int]:
 
 
 def sync_file(path: Path, body: list[str]) -> int:
-    """Regenere un workflow. Rend le nombre d'occurrences reecrites."""
+    """Regenere un workflow. Rend le nombre d'occurrences reecrites.
+
+    Le texte est **normalise avant** la synchronisation. Sans cela, le
+    generateur est un no-op silencieux sur un checkout CRLF -- c'est-a-dire
+    sur tous les postes Windows de la flotte (`core.autocrlf=true`) : le
+    fichier porte `run: |\r\n`, que `STEP_RE` (qui exige `\n`) ne
+    reconnait pas, donc `_blocks()` rend 0 occurrence, rien n'est ecrit, et
+    `main()` annonce pourtant « regenere ».
+
+    Les fins de ligne du fichier sont rendues a l'ecriture : le generateur
+    ne touche qu'au corps du bloc.
+    """
     raw = path.read_bytes()
-    text = raw.decode("utf-8")
+    newline = "\r\n" if b"\r\n" in raw else "\n"
+    text = raw.decode("utf-8").replace("\r\n", "\n")
     new_text, count = sync_text(text, body)
     if count and new_text != text:
-        # les fins de ligne du fichier sont preservees telles quelles : le
-        # generateur ne touche qu'au corps du bloc
-        newline = "\r\n" if b"\r\n" in raw else "\n"
         if newline == "\r\n":
             new_text = new_text.replace("\r\n", "\n").replace("\n", "\r\n")
         path.write_bytes(new_text.encode("utf-8"))
@@ -155,10 +164,15 @@ def main(argv: list[str] | None = None) -> int:
         print("[heal-worktree] DESYNC : %d workflow(s) a regenerer (mode --check : rien n'a ete ecrit)"
               % len(changed))
         return 1
-    for name, _count in changed:
+    for name, count in changed:
         path = WORKFLOWS / name
-        sync_file(path, body)
-        print("[heal-worktree] %s : regenere" % name)
+        written = sync_file(path, body)
+        if written != count:
+            raise Desync(
+                "%s : %d bloc(s) detecte(s) mais %d ecrit(s) -- le generateur a "
+                "echoue en silence, rien n'a ete regenere" % (name, count, written)
+            )
+        print("[heal-worktree] %s : regenere (%d bloc(s) ecrit(s))" % (name, written))
     return 0
 
 

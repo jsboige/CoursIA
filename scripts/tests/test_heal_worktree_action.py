@@ -344,3 +344,69 @@ def test_le_generateur_repare_une_copie_divergente():
     encore, count2 = module.sync_text(regenere, body)
     assert count2 == 0
     assert encore == regenere
+
+
+def test_le_generateur_repare_une_copie_crlf(tmp_path):
+    """Un checkout CRLF n'est plus un no-op silencieux du generateur.
+
+    Controle POSITIF : le chemin d'ecriture (`sync_file`) repare une copie
+    CRLF alteree, et les fins de ligne CRLF sont preservees a l'ecriture.
+
+    Controle NEGATIF : ce test est rouge sur une tete ou `sync_file` ne
+    normalise pas le texte avant la synchronisation (mesure sur ai-01 :
+    `STEP_RE` exige `run: |\n`, le fichier CRLF porte `run: |\r\n`, donc
+    `_blocks()` rend 0 et rien n'est ecrit). C'est donc la preuve que le
+    chemin d'ecriture -- et non seulement `sync_text` -- est exerce.
+    """
+    module = _load_generator()
+    body = module.script_body()
+    source = (WORKFLOWS / "adjacency-stale-sweep.yml").read_text(encoding="utf-8")
+
+    altere = source.replace("reset --hard --quiet", "reset --hard --quiet ; exit 0", 1)
+    assert altere != source, "la fixture n'a pas reellement ete alteree"
+
+    cible = tmp_path / "copie-crlf.yml"
+    cible.write_bytes(altere.replace("\n", "\r\n").encode("utf-8"))
+
+    count = module.sync_file(cible, body)
+
+    assert count == 1, (
+        "le generateur n'a pas vu la derive d'une copie CRLF : `sync_file` "
+        "normalise-t-il le texte avant la synchronisation ?"
+    )
+    brut = cible.read_bytes()
+    assert b"\r\n" in brut, "les fins de ligne CRLF n'ont pas ete preservees"
+    assert b"\n" not in brut.replace(b"\r\n", b""), (
+        "une fin de ligne LF s'est glisee dans un fichier CRLF"
+    )
+    # le bloc est revenu a l'identique du script source, une fois les fins de
+    # ligne normalisees
+    relu = brut.decode("utf-8").replace("\r\n", "\n")
+    assert relu == source, "la copie CRLF regeneree n'est pas revenue a l'identique"
+
+
+def test_main_signale_un_ecart_entre_le_compte_detecte_et_le_compte_ecrit(
+    tmp_path, monkeypatch
+):
+    """`main()` ne peut plus annoncer « regenere » quand rien n'a ete ecrit.
+
+    Le desync silencieux (compte detecte != compte ecrit) est une erreur, pas
+    une reussite : la sortie doit etre non nulle, pour que la commande ne
+    passe jamais pour une regeneration reussie.
+    """
+    module = _load_generator()
+    body = module.script_body()
+    source = (WORKFLOWS / "adjacency-stale-sweep.yml").read_text(encoding="utf-8")
+
+    altere = source.replace("reset --hard --quiet", "reset --hard --quiet ; exit 0", 1)
+    assert altere != source, "la fixture n'a pas reellement ete alteree"
+
+    pool = tmp_path / "workflows"
+    pool.mkdir()
+    (pool / "copie.yml").write_text(altere, encoding="utf-8", newline="\n")
+    monkeypatch.setattr(module, "WORKFLOWS", pool)
+    # on simule un generateur qui n'ecrit rien : l'ecart doit etre signale
+    monkeypatch.setattr(module, "sync_file", lambda path, body: 0)
+
+    with pytest.raises(module.Desync):
+        module.main([])
