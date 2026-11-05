@@ -314,6 +314,31 @@ def test_the_mirror_header_is_recognized_by_the_bodies():
     )
 
 
+def test_the_sibling_and_companion_headers_are_recognized():
+    # "sibling of" / "companion to" name the canonical .lean file; the EN body
+    # declares the mirror, the FR body does not -> the pair is a metadata
+    # header (review of #24143: examples/*, differential_lean/*).
+    assert is_mirror_metadata_header(
+        "le lemme `arcPartition`",
+        "English sibling of `basic_logic.lean` (i18n #4980): docstrings",
+    )
+    assert is_mirror_metadata_header(
+        "le lemme `arcPartition`",
+        "English companion to `DifferentialTour.lean` (FR canonical) "
+        "per the i18n #4980 sibling-pair convention",
+    )
+
+
+def test_a_bare_sibling_tag_is_not_a_mirror_declaration():
+    # Control negative: the "(EN sibling)" tag on a title line names no .lean
+    # file, so it is too weak to single out a metadata header; the comparison
+    # stays meaningful (the broadened marker must not over-trigger).
+    assert not is_mirror_metadata_header(
+        "le lemme `arcPartition`",
+        "Lean Examples - Basic Logic (EN sibling)",
+    )
+
+
 def test_i18n_convention_block_is_recognized():
     # Control Conway/Doomsday.lean (review of #24148): a `### i18n` convention
     # note documents the sibling-pair convention (here an option-A exception);

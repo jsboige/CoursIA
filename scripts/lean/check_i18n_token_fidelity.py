@@ -122,12 +122,18 @@ _NUMBER_GROUP = re.compile(r"\d+(?:[.,/\-]\d+)*")
 # date.
 _DATE_GROUP = re.compile(r"\d+(?:\s*[.,/\-]\s*\d+)*")
 
-# The mirror declaration of an EN header: it says it is the mirror of a
-# canonical file. Such a comment has no FR counterpart BY DESIGN -- the FR
-# file carries its own (translated) docstring at the same code position --
-# so comparing them would report every metadata token of one side as the
-# loss of the other. This is the marker that tells the two apart.
-_MIRROR_DECLARATION = re.compile(r"\b(?:mirror\s+of|miroir\s+de)\b", re.I)
+# The mirror declaration of an EN header: it says it is the mirror/sibling/
+# companion of a canonical file. Such a comment has no FR counterpart BY
+# DESIGN -- the FR file carries its own (translated) docstring at the same
+# code position -- so comparing them would report every metadata token of
+# one side as the loss of the other. This is the marker that tells the two
+# apart. "sibling of" / "companion to" are recognized only when they name a
+# .lean file: a bare "sibling" (e.g. the "(EN sibling)" tag on the title
+# line) is too weak to single out a metadata header.
+_MIRROR_DECLARATION = re.compile(
+    r"\b(?:mirror\s+of|miroir\s+de)\b"
+    r"|\b(?:sibling|companion)\s+(?:of|to)\s+[`\"']?[A-Za-z0-9_./\\-]*\.lean",
+    re.I)
 
 # A `### i18n` convention note: a comment (or a section of one) that documents
 # the sibling-pair convention itself -- e.g. an option-A bilingual-inline
