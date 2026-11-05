@@ -113,6 +113,14 @@ SKIP_DIRS = {
     ".mypy_cache", ".pytest_cache", ".ruff_cache",
     "custom_nodes",  # Third-party ComfyUI plugins, not ours to fix
     "_site",  # Quarto build artifact -- gitignored, not source
+    # Agent scratch (fleet rule: throwaway artefacts live in the workspace's
+    # gitignored `.tmp/`). Same defect class as `_site`: not source, gitignored,
+    # hence never checked out in CI. Measured on 2026-11-03 -- the README sweep
+    # below is repo-wide, so three scratch worktrees under `.tmp/` supplied 29
+    # of the 31 "broken links" the organ reported locally, against 2 real ones
+    # (#24410). A verdict that depends on what a lane happens to have scratched
+    # is not a verdict, and it buries the real defects in noise.
+    ".tmp",
 }
 
 # Baseline file location
