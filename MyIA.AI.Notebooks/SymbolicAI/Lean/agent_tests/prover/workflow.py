@@ -998,6 +998,18 @@ class VerifyExecutor(Executor):
     No LLM call needed to run `lake env lean`.
     """
 
+    def _latch_proof_for_supervisor(self) -> None:
+        """#24469: record a verified, persisted proof on the shared TacticTools.
+
+        ``yield_output`` does not stop the workflow at once: in the smoke of
+        2026-11-03 a TacticAgent compile was still running 22 s after
+        ``PROOF FOUND``, the supervisor's reasoning deadline fired at its next
+        poll, cancelled the workflow and reset ``proof_found`` -- the run came
+        back FAILED with sorry 1 -> 0 on disk. The latch survives the cancel.
+        """
+        if self._tactic_tools is not None:
+            self._tactic_tools.proof_latched = True
+
     def __init__(self, sorry_context: SorryContext, imports: str,
                  trace: TraceLogger = None, kb: Optional[ProofKnowledgeBase] = None,
                  escalation_threshold: int = 5, has_director: bool = False,
@@ -1262,6 +1274,7 @@ class VerifyExecutor(Executor):
                 _latch_effective = max(_latch_now, _latch_build_warn)
                 if _latch_build.get("success") and _latch_effective < _latch_orig:
                     msg.proof_found = True
+                    self._latch_proof_for_supervisor()
                     self._consecutive_build_fails = 0
                     self._consecutive_sorry_rejections = 0
                     self._consecutive_noprogress = 0
@@ -1306,6 +1319,7 @@ class VerifyExecutor(Executor):
 
         if result["success"]:
             msg.proof_found = True
+            self._latch_proof_for_supervisor()
             self._consecutive_build_fails = 0
             self._consecutive_sorry_rejections = 0
             self._consecutive_noprogress = 0  # P1: real progress

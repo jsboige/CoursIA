@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-10-31
+> REFERENCE — vivante — dernière révision 2026-11-04
 
 # Registre des revues scientifiques — `scientific_reviewed_by`
 
@@ -632,61 +632,61 @@ fera se périmer dès que le code de la série bougera.
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-Annexe-ProxyContextuality.ipynb
+- notebook_path: IIT/ICT-Series/ICT-Annexe-ProxyContextuality-Python.ipynb
   confidence: research
   reviewed_code_sha: bced15d39e457a7d9b67b79c2919bc255760202145795c5fdc31326796339622
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-Argumentation-BeliefTrajectories.ipynb
+- notebook_path: IIT/ICT-Series/ICT-Argumentation-BeliefTrajectories-Python.ipynb
   confidence: research
   reviewed_code_sha: 276b875f9daaaba7d32edc0d159586a7fc1fae79e0df0f6ff9d1c131e71cad04
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-Dissociation-PhatSelfReference.ipynb
+- notebook_path: IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb
   confidence: research
   reviewed_code_sha: f3217c1a39de4952490d31779116c66a52fed1cabeb967eb13623761e0c4b918
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-Dissociation-SaillancePregnance.ipynb
+- notebook_path: IIT/ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipynb
   confidence: research
   reviewed_code_sha: 717102fc0849f9d5bea93677e1c231d24aa9558ff606770b175a8affcd587477
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-Greffe2-EspaceAtteignable.ipynb
+- notebook_path: IIT/ICT-Series/ICT-Greffe2-EspaceAtteignable-Python.ipynb
   confidence: research
   reviewed_code_sha: 78dcd615d49bea6ab90a23683f323117bb95d127c922b45f1366b4d448f15cb3
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-Greffe4-VoteOnChain.ipynb
+- notebook_path: IIT/ICT-Series/ICT-Greffe4-VoteOnChain-Python.ipynb
   confidence: research
   reviewed_code_sha: ea3e139e4c64d512b596e189ca259587939842eb40f912608bb825e45d703ac5
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-Greffe5-AttributionCausale.ipynb
+- notebook_path: IIT/ICT-Series/ICT-Greffe5-AttributionCausale-Python.ipynb
   confidence: research
-  reviewed_code_sha: 161cf134c9f70cb8710bbc49336c0cf11efa298c6d0ed787f3da4c31437fbc63
+  reviewed_code_sha: 316644e7f7c2d407b70feaad4962d091025bbbb46279356e1aeab705d7926073
   review_date: "2026-10-22"
   evidence_pr: "#14831"
-  notes: "Recherche active — appréciation posée au sign-off du schéma. Ancre ré-actualisée après le correctif du test du but et de l'outcome Y (#20886) : l'appréciation porte sur la méthode, pas sur l'implémentation corrigée. L'ancre désigne le code effectivement livré, retenu par l'arbitrage de #20886 (voie a, Y = |F_B|, PR #21502) ; le carnet de cette PR est identique à celui de main."
-- notebook_path: IIT/ICT-Series/ICT-Life-SubstratCertifie.ipynb
+  notes: "Recherche active — appréciation posée au sign-off du schéma. Ancre ré-actualisée après le correctif du test du but et de l'outcome Y (#20886) : l'appréciation porte sur la méthode, pas sur l'implémentation corrigée. L'ancre désigne le code effectivement livré, retenu par l'arbitrage de #20886 (voie a, Y = |F_B|, PR #21502) ; le carnet de cette PR est identique à celui de main. Ancre ré-actualisée une seconde fois le 2026-11-04 (#24497) après le merge de #22543 (594a6127e8, 2026-10-30), qui a modifié les cellules de code 8, 9 et 10 : la date de revue reste celle de l'appréciation de méthode, l'ancre désigne le code de main au 2026-11-04 (empreinte de contenu des cellules code, sorties et markdown exclus)."
+- notebook_path: IIT/ICT-Series/ICT-Life-SubstratCertifie-Python.ipynb
   confidence: research
   reviewed_code_sha: 7fb220ae9e5e5a4cbfa098e570695ad6fcc5e1b52d8b45babf791ae7c8257d98
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-SAE-JLens-TeteATete.ipynb
+- notebook_path: IIT/ICT-Series/ICT-SAE-JLens-TeteATete-Python.ipynb
   confidence: research
   reviewed_code_sha: cfd3b01f84cc4e455e1ff9faea8260eae4a01fad436b9fa11678f86f3ce7317f
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-Synthese-CrossSubstrat.ipynb
+- notebook_path: IIT/ICT-Series/ICT-Synthese-CrossSubstrat-Python.ipynb
   confidence: research
   reviewed_code_sha: 4e7ec8a6a2239772be4441840efca20dc4bd212dfeb39051419d8c853d5fb884
   review_date: "2026-09-21"

@@ -20,7 +20,7 @@ Chaque régime se définit par une question opératoire et un cas concret déjà
 
 > **Question.** *Qu'est-ce qui reste constant d'un substrat à l'autre ?* Qu'est-ce qui survit au changement de matériau — du tri auto-organisé à la réaction-diffusion, d'Axelrod à un LLM ?
 
-L'invariant n'est pas un nombre : c'est ce qui *se recolle* quand on change d'ouverture. En langue grothendieckienne, ce sont les sections globales — `H⁰`, le cran où le local se globalise sans reste. Le dépôt possède l'instrument qui les calcule : le module [`SheafCohomology`](../../MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/SheafCohomology/Basic.lean) du lake `grothendieck_lean` (`H0_equiv_global_sections`, [Mayer-Vietoris](../../MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/SheafCohomology/MayerVietoris.lean) exact, zéro `sorry` de production).
+L'invariant n'est pas un nombre : c'est ce qui *se recolle* quand on change d'ouverture. En langue grothendieckienne, ce sont les sections globales — `H⁰`, le cran où le local se globalise sans reste. Le dépôt possède l'instrument qui les calcule : le module [`SheafCohomology`](../../MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/SheafCohomology/Basic.lean) du lake `grothendieck_lean` (`H0_equiv_global_sections`, [Mayer-Vietoris](../../MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/SheafCohomology/MayerVietoris.lean) exact, zéro `sorry` de production).
 
 **Cas concret instrumenté.** [ICT-01-PhiTrajectories-Python](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-01-PhiTrajectories-Python.ipynb) : $\Phi$ comme invariant mesuré cross-substrat, suivi le long d'un attracteur. La trajectoire de $\Phi$ est ce qu'on cherche à transporter d'un substrat à l'autre — la *photographie IIT mise en mouvement*. Ce régime demande : *existe-t-il, à travers les substrats, une grandeur dont la trajectoire se recolle ?* La réponse honnête de la série est **non** — et ce non est précisément ce qui fait basculer dans le régime 3 (obstruction).
 
@@ -61,7 +61,7 @@ Les trois régimes se soutiennent d'un triptyque qui traverse la série :
 
 | Régime | Père théorique | Geste | Point d'ancrage dépôt |
 |---|---|---|---|
-| Invariants | **Grothendieck** (recollement) | Le local qui se globalise sans reste | [`SheafCohomology`](../../MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/SheafCohomology/Basic.lean), `H⁰` |
+| Invariants | **Grothendieck** (recollement) | Le local qui se globalise sans reste | [`SheafCohomology`](../../MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/SheafCohomology/Basic.lean), `H⁰` |
 | Dissociations | **Schmidhuber** (compression / grokking) | Deux proxys se séparent quand l'un comprime mieux que l'autre | [ICT-17b-Grokking](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb) |
 | Obstructions | **Thom** (catastrophe) + **Grothendieck** (cohomologie) | Le refus du recollement comme structure informative | Arrow, Kochen-Specker, scalaire falsifié |
 
@@ -148,7 +148,7 @@ Cette synthèse ne lance aucun nouveau dispatch. Elle éclaire deux chantiers d�
 
 - Série ICT : [`MyIA.AI.Notebooks/IIT/ICT-Series/`](../../MyIA.AI.Notebooks/IIT/ICT-Series/) ([Epic #4588](https://github.com/jsboige/CoursIA/issues/4588)) — strate 5 « scalaire universel falsifié ».
 - Doc companion obstruction/recollement : [`docs/cadrage/grothendieckian-lens.md`](../cadrage/grothendieckian-lens.md) ([#7299](https://github.com/jsboige/CoursIA/issues/7299)).
-- Langage cohomologique formalisé : [`grothendieck_lean/Grothendieck/SheafCohomology/`](../../MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/SheafCohomology/Basic.lean) (0 `sorry` de production).
+- Langage cohomologique formalisé : [`grothendieck_lean/Grothendieck/SheafCohomology/`](../../MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/SheafCohomology/Basic.lean) (0 `sorry` de production).
 - Dissociations instrumentées : [ICT-15b](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15b-SensitivityCanonicity-Python.ipynb) ([#7288](https://github.com/jsboige/CoursIA/issues/7288)), [ICT-18b](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18b-ReversibilityBudget-Python.ipynb) ([#7287](https://github.com/jsboige/CoursIA/issues/7287)).
 - Obstructions érigées en impossibilité : [`social_choice_lean`](../../MyIA.AI.Notebooks/GameTheory/social_choice_lean/) (Arrow), [#7290](https://github.com/jsboige/CoursIA/issues/7290) (Kochen-Specker).
 - Test de contextualité (possibiliste, CSP) + garde anti-analogie-décorative : [`ict/proxy_contextuality.py`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ict/proxy_contextuality.py), 47 tests dont l'insatisfiabilité prouvée à la main de la boîte PR ([#7290](https://github.com/jsboige/CoursIA/issues/7290)).

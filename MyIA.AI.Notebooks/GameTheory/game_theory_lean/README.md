@@ -15,8 +15,8 @@ en un seul package multi-`lean_lib` aligné sur le modèle éprouvé de
 ## Statut
 
 - **Type** : Projet Lake multi-module (multi `lean_lib`, racine agrégée)
-- **Toolchain** : `leanprover/lean4:v4.32.1` (cf `lean-toolchain`)
-- **Mathlib** : `v4.32.1` (cf `lake-manifest.json`)
+- **Toolchain** : `leanprover/lean4:v4.33.0` (cf `lean-toolchain`)
+- **Mathlib** : commit `db584cd6d46c` (cf `lake-manifest.json`)
 - **Compte de `sorry`** : 2 (1 dans `RepeatedGames/Folk.lean` + son
   sibling `_en` ; théorème **STRETCH** `folk_theorem_discounted` — Folk
   theorem en jeux répétés actualisés, preuve Fudenberg-Maskin 1986 sur
@@ -69,7 +69,7 @@ package «game_theory_lean» where
     ⟨`autoImplicit, true⟩
   ]
   require mathlib from git
-    "https://github.com/leanprover-community/mathlib4.git" @ "v4.32.1"
+    "https://github.com/leanprover-community/mathlib4.git" @ "db584cd6d46c92f209a44c0f1c829460d327499d"
 
   @[default_target]
   lean_lib StableMarriage where
