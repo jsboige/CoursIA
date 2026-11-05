@@ -3,18 +3,24 @@
   =============================
 
   English mirror of `StableMarriage/Definitions.lean` (FR-first canonical).
-  Convention i18n Lean ratifiée par ai-01 (2026-07-04, #4980 comment-4881909354) :
-  fichiers `.lean` distincts FR + EN siblings dans le même lake, les deux compilent.
-  Drift-CI detectable : contenu non-docstring byte-identique entre siblings.
-  Namespace sibling : `StableMarriage_en` (le FR canonique reste `StableMarriage`).
-  Convention observée dans `GaleShapley_en.lean` / `Lattice_en.lean` :
-  les imports intra-lake restent sur les fichiers FR canoniques
-  (e.g. `import StableMarriage.Definitions`), seul `namespace StableMarriage`
-  est renommé en `namespace StableMarriage_en`.
-  Pas une traduction destructive : manual translation FR-first-from-origin
-  (pas d'historique EN pré-Option A pour ce fichier) ; code tactique Lean
-  byte-identique préservé verbatim, prose (header + sections + docstrings)
-  traduite. Pattern identique c.238.2/#5362 (RepeatedGames), c.238.3/#5363
+  Fundamental types and definitions for the stable marriage problem.
+  We model n men and n women (both via `Fin n`), each equipped with a strict
+  preference order over the opposite set.
+
+  A matching is a bijection between men and women.
+  A matching is stable if and only if no blocking pair exists.
+
+  i18n convention (cf #4980): headers, sections, docstrings and intra-proof
+  comments are in English in this mirror; Lean symbol names, lemma statements
+  and tactics are preserved in English (Mathlib compatibility).
+  Convention observed in `GaleShapley_en.lean` / `Lattice_en.lean`:
+  intra-lake imports stay on the FR canonical files
+  (e.g. `import StableMarriage.Definitions`); only `namespace StableMarriage`
+  is renamed to `namespace StableMarriage_en`.
+  Not a destructive translation: manual translation FR-first-from-origin
+  (no pre-Option A EN history for this file); Lean tactic code
+  byte-identical, preserved verbatim; prose (header + sections + docstrings)
+  translated. Same pattern as c.238.2/#5362 (RepeatedGames), c.238.3/#5363
   (Minimax), c.238.4/#5419 (Shapley).
 
   See #4980. Part of #4208 (axe E).
