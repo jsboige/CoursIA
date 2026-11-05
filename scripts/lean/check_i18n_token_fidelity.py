@@ -24,7 +24,7 @@ This checker measures it, comment by comment:
   ``ALLCAPS``) -- a translation may legitimately rephrase such a mention, so
   these are ADVISORY.
 
-Five mechanisms keep the measure from drowning in false positives:
+Six mechanisms keep the measure from drowning in false positives:
 
 * the ``_en`` anti-collision suffix is collapsed **symmetrically** on both
   sides (the convention's two validated variants name the same entity ``Foo``
@@ -50,6 +50,11 @@ Five mechanisms keep the measure from drowning in false positives:
   the other side carries a full date too. The mere presence of a year
   somewhere in the body excuses nothing: that exemption hid 29 findings of
   the repository, among them plain arc counts.
+* an **OK-CONSUMER** sibling is excluded wholesale, on the verdict of the
+  sibling organ (``check_i18n_siblings.check_pair``): when the ``_en`` file
+  ``import``s its FR canonical and reuses the declarations, the FR
+  per-declaration docstrings have no EN counterpart by design, and comparing
+  them would publish a false HARD finding for each one.
 
 Every file reports its **coverage**: how many comment pairs were compared, how
 many were excluded as headers, how many were repaired by alignment, and how
@@ -83,6 +88,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from check_i18n_siblings import (  # noqa: E402
+    check_pair,
     find_en_files,
     fr_sibling,
 )
@@ -737,6 +743,31 @@ def compare_files(fr_path: Path, en_path: Path) -> dict:
     """Compare the FR canonical and its EN mirror; return a pair report."""
     fr_src = fr_path.read_text(encoding="utf-8", errors="replace")
     en_src = en_path.read_text(encoding="utf-8", errors="replace")
+
+    # OK-CONSUMER sibling: the EN file ``import``s the FR module and reuses its
+    # declarations instead of redeclaring them, so the FR canonical's
+    # per-declaration docstrings have **no EN counterpart by design**. Paired
+    # positionally, the organ would report every one of them as a loss -- a
+    # wall of HARD findings that is an artefact of the shape, not a translation
+    # gap. The sibling organ (``check_i18n_siblings.check_pair``) already
+    # classifies exactly this shape as ``"OK-CONSUMER"``; we reuse that verdict
+    # (single source of truth) and skip the comparison for such a pair.
+    if check_pair(fr_path, en_path)[0] == "OK-CONSUMER":
+        return {
+            "fr": str(fr_path),
+            "en": str(en_path),
+            "ok_consumer": True,
+            "fr_comments": 0,
+            "en_comments": 0,
+            "anchor_shift": 0,
+            "pairs_repaired": 0,
+            "pairs_compared": 0,
+            "pairs_excluded": 0,
+            "pairs": [],
+            "unpaired": [],
+            "findings": [],
+        }
+
     fr_comments = scan_comments(fr_src)
     en_comments = scan_comments(en_src)
     decls = declaration_names(fr_src) | declaration_names(en_src)

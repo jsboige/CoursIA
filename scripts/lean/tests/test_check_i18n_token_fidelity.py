@@ -339,6 +339,57 @@ def test_a_bare_sibling_tag_is_not_a_mirror_declaration():
     )
 
 
+def test_ok_consumer_sibling_is_excluded_wholesale(tmp_path):
+    # OK-CONSUMER sibling: the EN file imports the FR canonical and reuses its
+    # declarations (the proven Lattice shape). The FR per-declaration docstrings
+    # then have no EN counterpart by design, so comparing them positionally
+    # would publish a false HARD finding for each. The exclusion reuses the
+    # sibling organ's "OK-CONSUMER" verdict (check_i18n_siblings.check_pair)
+    # and skips the comparison: the report is flagged and carries no findings.
+    fr = tmp_path / "Lattice.lean"
+    en = tmp_path / "Lattice_en.lean"
+    fr.write_text(
+        "namespace StableMarriage\n"
+        "def joinSpouse (x : Nat) : Nat := x + 1\n"
+        "def meetSpouse (x : Nat) : Nat := x - 1\n"
+        "theorem join_comm (x : Nat) : joinSpouse x = joinSpouse x := rfl\n"
+        "end StableMarriage\n",
+        encoding="utf-8",
+    )
+    en.write_text(
+        "import StableMarriage.Lattice\n"
+        "namespace StableMarriage_en\n"
+        "open StableMarriage\n"
+        "theorem join_comm (x : Nat) : joinSpouse x = joinSpouse x := rfl\n"
+        "end StableMarriage_en\n",
+        encoding="utf-8",
+    )
+    rep = compare_files(fr, en)
+    assert rep["ok_consumer"] is True
+    assert rep["findings"] == []
+
+
+def test_redeclaring_en_is_not_ok_consumer(tmp_path):
+    # Control: an EN mirror that redeclares (no import of the FR module) is
+    # DRIFT, not OK-CONSUMER, so the comparison runs and the flag is not set.
+    fr = tmp_path / "Cone.lean"
+    en = tmp_path / "Cone_en.lean"
+    fr.write_text(
+        "namespace Cone\n"
+        "def a (x : Nat) : Nat := x + 1\n"
+        "end Cone\n",
+        encoding="utf-8",
+    )
+    en.write_text(
+        "namespace Cone_en\n"
+        "def a (x : Nat) : Nat := x + 2\n"
+        "end Cone_en\n",
+        encoding="utf-8",
+    )
+    rep = compare_files(fr, en)
+    assert rep.get("ok_consumer") is not True
+
+
 def test_i18n_convention_block_is_recognized():
     # Control Conway/Doomsday.lean (review of #24148): a `### i18n` convention
     # note documents the sibling-pair convention (here an option-A exception);
