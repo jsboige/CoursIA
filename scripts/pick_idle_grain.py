@@ -252,6 +252,19 @@ except ImportError:
     except ImportError:
         tirage_journal = None  # type: ignore[assignment]
 
+# Geste 6 #24373 : le parcage des EPICs Origami dont le pli suivant n'est pas
+# deplie. Import best-effort, comme `tirage_journal` : un environnement sans
+# le module fait tourner le tapis SANS parcage (fail-OPEN), jamais l'inverse.
+try:
+    import origami_parking
+except ImportError:
+    try:
+        sys.path.insert(0, os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "coordination"))
+        import origami_parking
+    except ImportError:
+        origami_parking = None  # type: ignore[assignment]
+
 REPO = "jsboige/CoursIA"
 
 # c.1115 voie 1 (msg-20260912T165428-k6rbfc, ai-01 spec) : klass `delivered`
@@ -2512,7 +2525,13 @@ def belt_snapshot_prime_inert(repo: str, numbers: list[int]) -> None:
 
 
 def has_recent_delivery_marker(issue_number: int) -> bool | None:
-    """Le DERNIER commentaire porte-t-il un marqueur de cloture recent ?
+    """Le DERNIER commentaire PORTEUR D'ETAT porte-t-il un marqueur de cloture ?
+
+    La lecture ne porte pas sur `comments[-1]` brut mais sur le dernier
+    commentaire qui porte un etat (`_last_state_comment`) : un `[RELEASED]`
+    de queue dont le corps ne porte aucun marqueur d'etat est saute, parce
+    qu'il MASQUERAIT le `[DELIVERED]` qu'il suit (#24590). Le contrat ecrit
+    suit donc le code.
 
     TRI-ETAT (cf. `has_delivered_signal`) :
     - ``True``  : l'item est **GEL** (regle A : le BODY porte la ligne
@@ -2522,7 +2541,9 @@ def has_recent_delivery_marker(issue_number: int) -> bool | None:
       ``[INFO] candidate-delivered`` (grammaire `_DELIVERED_MARKER_RE`).
       Le candidat doit etre ecarte SANS
       appeler la sonde pleine -- c'est le filtre bon marche de #19768 ;
-    - ``False`` : aucun marqueur de cloture dans le dernier commentaire.
+    - ``False`` : aucun marqueur de cloture dans le dernier commentaire
+      porteur d'etat -- les `[RELEASED]` de queue sans marqueur d'etat ne
+      sont pas lus (`_last_state_comment`).
       L'appelant peut proceder a la sonde pleine. C'est le cas d'un
       en-tete `[RELEASED]` : une main rendue sur une barriere reelle
       laisse l'item SERVABLE (#21721), et une main rendue parce que le
@@ -2550,6 +2571,29 @@ def has_recent_delivery_marker(issue_number: int) -> bool | None:
     return verdict
 
 
+def _last_state_comment(comments: list[dict]) -> dict:
+    """Le dernier commentaire PORTEUR D'ETAT -- un `[RELEASED]` de queue est saute.
+
+    Un `[RELEASED]` n'est ni une cloture ni une reouverture (#21721) : le
+    laisser occuper la place du dernier commentaire MASQUE le `[DELIVERED]`
+    qu'il suit. Le saut ne porte pas sur l'en-tete seul -- un corps qui porte
+    plus bas un marqueur d'etat EST un evenement.
+    """
+    for comment in reversed(comments):
+        if not isinstance(comment, dict):
+            continue
+        body = comment.get("body")
+        if isinstance(body, str) and _RELEASED_HEADER_RE.search(body):
+            plain = _strip_code(body)
+            if not (_RECENT_DELIVERY_MARKER_RE.search(plain)
+                    or _DELIVERED_MARKER_RE.search(plain)
+                    or _closure_dossier_verdict(body) == "CLOSE"
+                    or _closure_announced_close(body)):
+                continue
+        return comment
+    return {}
+
+
 def _recent_marker_verdict(issue_number: int) -> bool | None:
     """Le detail de `has_recent_delivery_marker` (meme verdict, meme cout).
 
@@ -2570,9 +2614,7 @@ def _recent_marker_verdict(issue_number: int) -> bool | None:
     if _issue_is_frozen(body_of_issue, comments) is not None:
         return True
 
-    last = comments[-1] if comments else {}
-    if not isinstance(last, dict):
-        last = {}
+    last = _last_state_comment(comments)
     body = last.get("body") or ""
     if not isinstance(body, str):
         body = ""
@@ -2686,7 +2728,7 @@ def _issue_comments(issue_number: int) -> tuple[list[dict] | None, str | None]:
     Pourquoi tout le fil et pas seulement la queue : un gel pose en
     commentaire peut etre enterre par n'importe quel commentaire
     posterieur (#24516, mesure sur #19309 : 37 `[RELEASED]` pour un seul
-    `[FROZEN]`). La requete ramene deja le fil entier -- `_last_comment` n'en
+    `[FROZEN]`). La requete ramene deja le fil entier -- la lecture n'en
     gardait que la queue -- donc le balayer **ne coute aucune requete de
     plus**.
 
@@ -2727,55 +2769,38 @@ def _issue_comments(issue_number: int) -> tuple[list[dict] | None, str | None]:
     return comments, body
 
 
-def _last_comment(issue_number: int) -> dict | None:
-    """Le DERNIER commentaire d'une issue (dictionnaire), en 1 requete.
-
-    TRI-ETAT :
-    - ``None``  : la lecture a echoue (reseau, 403, payload illisible) --
-      fail-OPEN, l'appelant le dit ;
-    - ``{}``    : il n'y a pas de dernier commentaire exploitable (aucun
-      commentaire, payload inattendu) ;
-    - le dict   : celui du dernier commentaire (ordre chronologique de
-      l'API `gh issue view --json comments`), corps et horodatage.
-
-    L'horodatage est HERE parce que la regle de la reouverture (#24250) doit
-    dater la decision de cloture : le corps seul ne permet pas de dire si la
-    reouverture lui est posterieure.
-    """
-    comments, _body = _issue_comments(issue_number)
-    if comments is None:
-        return None
-    if not comments:
-        return {}
-    last = comments[-1]
-    if not isinstance(last, dict):
-        return {}
-    return last
-
-
 def _last_comment_body(issue_number: int) -> str | None:
-    """Le corps du DERNIER commentaire d'une issue, en 1 requete.
+    """Le corps du DERNIER commentaire PORTEUR D'ETAT, en 1 requete.
 
     TRI-ETAT :
     - ``None``  : la lecture a echoue (reseau, 403, payload illisible) --
       fail-OPEN, l'appelant le dit ;
     - ``""``    : il n'y a pas de dernier commentaire exploitable (aucun
       commentaire, payload inattendu, corps non textuel) ;
-    - le corps  : celui du dernier commentaire (ordre chronologique de
-      l'API `gh issue view --json comments`).
+    - le corps  : celui du dernier commentaire porteur d'etat (ordre
+      chronologique de l'API `gh issue view --json comments`).
 
     Facteurise pour que le filtre « marqueur recent » et le filtre
     « marqueur de CONTENEUR » lisent le meme octet : deux lectures du meme
     fil ne peuvent pas diverger sur un fil qui change entre les deux.
 
+    #24590 -- l'octet partage est celui de `_last_state_comment`, pas celui
+    de `comments[-1]` : un `[RELEASED]` de queue sans marqueur d'etat est
+    saute par les DEUX filtres. Sans ca, la sonde conteneur restait exposee
+    a la meme cecite que la sonde de livraison : un `[RELEASED]` posterieur
+    masquait le `[INFO] candidate-delivered` qu'il suit, et l'umbrella
+    redevenait servable alors que le conteneur etait clos.
+
     #22630 -- l'instantane local rend les memes commentaires, sans requete :
     la lecture passe par `_snapshot_comments` quand l'instantane de la passe
     est disponible, et retombe sur la requete historique sinon.
     """
-    last = _last_comment(issue_number)
-    if last is None:
+    comments, _body = _issue_comments(issue_number)
+    if comments is None:
         return None
-    body = last.get("body") or ""
+    if not comments:
+        return ""
+    body = _last_state_comment(comments).get("body") or ""
     if not isinstance(body, str):
         return ""
     return body
@@ -4502,6 +4527,14 @@ CLAIM_CODE_BLOCKED = "BLOCKED"
 CLAIM_CODE_IMPLICIT = "IMPLICIT"
 CLAIM_CODE_UNCHECKED = "UNCHECKED"
 CLAIM_CODE_ERROR = "ERROR"
+# #23500 (remede 1, copie jumeale livree en roo-extensions PR #4472) -- le
+# verdict FREE mesure l'ABSENCE DE CLAIM, pas l'absence d'activite. La phrase
+# « libre » se lit « personne ne travaille dessus », alors que le contrat
+# (lane-claim-protocol, section « Prémisse d'identité ») ne garantit que «
+# personne ne l'a réservé ». Le libellé rend ce que le tirage mesure.
+# Seule la phrase humaine change : les codes machine et la surface JSON
+# ne bougent pas.
+CLAIM_HUMAN_FREE = "aucun claim (activite non mesuree)"
 
 
 def _summarize_claim(out: str, returncode: int) -> tuple[str, str]:
@@ -4549,8 +4582,9 @@ def _summarize_claim(out: str, returncode: int) -> tuple[str, str]:
             stale = data.get("stale_claims") or []
             if stale:
                 return (CLAIM_CODE_FREE_STALE,
-                        f"libre (claim perime : {', '.join(map(str, stale))})")
-            return CLAIM_CODE_FREE, "libre"
+                        f"aucun claim actif (claim perime : "
+                        f"{', '.join(map(str, stale))})")
+            return CLAIM_CODE_FREE, CLAIM_HUMAN_FREE
     first = out.strip().splitlines()
     if first:
         return CLAIM_CODE_ERROR, first[0][:60]
@@ -4599,7 +4633,7 @@ def _summarize_claim_from_batch(json_payload: dict, n: int) -> tuple[str, str]:
     code = res.get("code", "ERROR")
     human = res.get("human", code) or code
     if code == "FREE":
-        return CLAIM_CODE_FREE, "libre"
+        return CLAIM_CODE_FREE, CLAIM_HUMAN_FREE
     if code == "BLOCKED":
         return CLAIM_CODE_BLOCKED, human
     if code == "IMPLICIT":
@@ -8952,6 +8986,57 @@ def draw_belt(
     return filtered[:args.grains]
 
 
+def _origami_parking_state(pool: list[dict]) -> tuple[dict[int, str], dict]:
+    """Verdicts de parcage des EPICs Origami dont le pli suivant n'est pas deplie (#24373).
+
+    Rend ``(parked, state)`` : ``parked`` mappe le numero d'un EPIC parque a
+    la raison de son parcage ; ``state`` porte la mesure brute (pour le JSON
+    et le tableau du coordinateur).
+
+    **Fail-OPEN.** Module absent, mesure en echec, aucune mesure : rien
+    n'est parque, et ``state`` nomme l'echec. Un parcage applique sur une
+    absence de mesure supprimerait un grain du tapis -- le pire des deux
+    sens.
+
+    La lecture de « pli livre » passe par le corpus de PRs mergees que le
+    tapis a deja paye (``last_delivery_stamp`` du pool) : **zero appel
+    reseau** pour la livraison. L'organe ne fait que la recherche des
+    sous-issues et la lecture des commentaires (deux appels).
+    """
+    state: dict = {"active": False, "measured": False, "parked": [],
+                   "reason": "module indisponible"}
+    if origami_parking is None:
+        return {}, state
+    by_number = {int(it["number"]): it for it in pool}
+
+    def _delivered(number: int) -> bool:
+        # Le pool est la liste des issues OUVERTES : une sous-issue ouverte
+        # s'y trouve, avec son stamp de livraison s'il y en a une. Pas de
+        # stamp = pas de livraison tracee dans le corpus (fenetre de 90 j).
+        return bool((by_number.get(int(number)) or {}).get("last_delivery_stamp"))
+
+    try:
+        verdicts = origami_parking.measure(pool, delivered_probe=_delivered)
+    except Exception as exc:  # noqa: BLE001 - un garde ne doit pas casser le tirage
+        state["reason"] = f"mesure en echec ({type(exc).__name__})"
+        return {}, state
+    parked = {int(v["epic"]): v.get("reason") or ""
+              for v in verdicts if v.get("parked")}
+    state.update({
+        "active": True,
+        "measured": True,
+        "epics": len(verdicts),
+        "parked": sorted(parked),
+        "details": [{"epic": int(v["epic"]), "parked": bool(v.get("parked")),
+                     "reason": v.get("reason"),
+                     "next_pli": v.get("next_pli"),
+                     "title": v.get("title")}
+                    for v in verdicts],
+        "reason": "mesure faite",
+    })
+    return parked, state
+
+
 def belt_report_metrics(
     pool: list[dict],
     closed_7d: int | None,
@@ -10439,7 +10524,7 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
 
             Le mur de temps (`expired`) borne le RESEAU ; il ne borne pas une
             lecture locale. Les deux filtres de marqueur (recent, conteneur)
-            lisent `_last_comment`, qui sert depuis l'instantane de la passe
+            lisent `_last_state_comment`, qui sert depuis l'instantane de la passe
             quand il le peut (#22630). Les sauter au motif de l'echeance sert
             donc un candidat dont la cloture etait CONNUE.
 
@@ -11698,6 +11783,30 @@ def main(argv: list[str] | None = None) -> int:
         belt_pool = belt_filter(admitted, args, urns=selected_urns,
                                 epic_deliveries=_epic_deliveries,
                                 drops=_epic_drops)
+        # #24373 -- parcage des EPICs Origami dont le pli suivant n'est pas
+        # deplie. Le depliage est un geste du COORDINATEUR : aucune lane
+        # worker ne peut le lever, donc le tapis qui les ressertait epuisait
+        # des cycles en `[RELEASED]` (34 sur #19309, 31 depuis le 27/10).
+        # L'EPIC parque n'est plus servi aux lanes, et apparait dans la
+        # rubrique « Origami en attente de depliage » du tableau du
+        # coordinateur (`belt_queues.py board`).
+        # Le geste est fail-OPEN : sans mesure, rien n'est parque.
+        _origami_parked, _origami_state = _origami_parking_state(pool)
+        if _origami_parked:
+            for it in belt_pool:
+                verdict = _origami_parked.get(int(it["number"]))
+                if verdict is None:
+                    continue
+                _origami_state.setdefault("dropped", []).append(
+                    {"number": int(it["number"]), "title": it.get("title"),
+                     "cause": f"PARCAGE ORIGAMI (#24373) : {verdict}"})
+            belt_pool = [it for it in belt_pool
+                         if int(it["number"]) not in _origami_parked]
+            _belt_phase(f"parcage origami: {len(_origami_parked)} EPIC(s) "
+                        f"parque(s) -- " + ", ".join(
+                            f"#{n}" for n in sorted(_origami_parked)[:8])
+                        + (f" (+{len(_origami_parked) - 8})"
+                           if len(_origami_parked) > 8 else ""))
         belt_pool.sort(key=belt_sort_key)
         _belt_phase(f"pool charge: {len(belt_pool)} candidates "
                     f"(apres belt_filter)")
@@ -12077,6 +12186,11 @@ def main(argv: list[str] | None = None) -> int:
                                 for n, c in belt_dropped_validate],
                 },
                 "picks": belt_picks,
+                # #24373 : les EPICs Origami parques (le pli suivant n'est pas
+                # deplie -- geste reserve au coordinateur). Ils ne sont pas
+                # servis aux lanes ; le tableau du coordinateur les affiche
+                # dans « Origami en attente de depliage ».
+                "origami_parking": _origami_state,
                 "claims": {str(it["number"]): {
                     "code": (belt_claims.get(it["number"],
                                               (CLAIM_CODE_ERROR, "(no check)"))[0]),

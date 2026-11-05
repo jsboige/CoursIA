@@ -75,6 +75,15 @@ nommee :
    PR par PR, contre le ``main`` du moment, donc apres les merges deja
    faits dans ce run. Collision -> skip ; fetch ou organe illisible ->
    skip fail-closed ;
+5quinquies. organe ``premerge_combined_check.py --pr <N> --head <tete>``
+   exit 0 : les tests d'integrite du depot (registres, inventaires,
+   index) joues sur l'ARBRE FUSIONNE ``main`` du moment + tete. Mesure du
+   2026-11-05 : ``main`` rouge ~18 h sur 30, chaque episode ouvert par une
+   PR verte a sa propre tete et rouge une fois combinee a ce qui avait ete
+   merge entretemps. Rouge -> ``combined-tree-red:<test>`` ; conflit ->
+   ``combined-tree-conflict`` ; illisible -> ``combined-tree-unreadable``
+   (fail-closed). ~1 min par PR qui atteint cette etape. Retrait
+   operateur : ``MERGE_READY_COMBINED_CHECK=0`` ;
 6. REST ``repos/jsboige/CoursIA/pulls/<N>`` : ``mergeable_state`` ==
    ``clean`` (jusqu'a 12 relectures a 10 s d'intervalle pendant ``unknown`` --
    apres un merge les PRs soeurs passent ``unknown``), et ``head.sha``
@@ -198,6 +207,9 @@ TWIN_REGISTRY_PREFIX = "scripts/notebook_tools/twin_pairs.d/"
 SLOT_PATH = SCRIPTS_DIR / "notebook_tools" / "check_slot_reservation.py"
 SLOT_NOTEBOOK_PREFIX = "MyIA.AI.Notebooks/"
 SLOT_RESERVATIONS_PATH = SCRIPTS_DIR / "notebook_tools" / "slot_reservations.json"
+# Etape 5quinquies : tests d'integrite joues sur l'arbre fusionne (2026-11-05).
+COMBINED_PATH = SCRIPTS_DIR / "coordination" / "premerge_combined_check.py"
+COMBINED_DISABLE_ENV = "MERGE_READY_COMBINED_CHECK"
 REPO_ROOT = SCRIPTS_DIR.parent
 
 # Parapluies et branches de campagne GELES par un veto user, exemption des
@@ -1170,6 +1182,44 @@ def find_stacked_parents(body: str | None) -> list[int]:
     return list(seen)
 
 
+def combined_tree_reason(
+    runner: Runner, pr: int, head: str, gh_env: dict[str, str]
+) -> str | None:
+    """Etape 5quinquies : les tests d'integrite passent-ils sur ``main`` + tete ?
+
+    ``None`` si l'organe rend GREEN (exit 0). Sinon un motif de skip :
+    ``combined-tree-red:<premier test rouge>``, ``combined-tree-conflict``, ou
+    ``combined-tree-unreadable:<etape>`` -- « je n'ai pas pu jouer les
+    tests » n'est pas « ils passent ». ``MERGE_READY_COMBINED_CHECK=0``
+    retire l'etape (rollback operateur, jamais un reglage de lane).
+    """
+    if os.environ.get(COMBINED_DISABLE_ENV, "1").strip() == "0":
+        return None
+    res = runner.run(
+        [sys.executable, str(COMBINED_PATH), "--pr", str(pr), "--head", head,
+         "--json"],
+        env=gh_env,
+    )
+    payload: dict = {}
+    lines = (res.stdout or "").strip().splitlines()
+    if lines:
+        try:
+            parsed = json.loads(lines[-1])
+            if isinstance(parsed, dict):
+                payload = parsed
+        except ValueError:
+            payload = {}
+    verdict = payload.get("verdict")
+    if res.returncode == 0 and verdict == "GREEN":
+        return None
+    if res.returncode == 1 and verdict == "CONFLICT":
+        return "combined-tree-conflict"
+    if res.returncode == 1 and verdict == "RED":
+        failed = payload.get("failed") or []
+        return f"combined-tree-red:{failed[0] if failed else 'unnamed'}"
+    return f"combined-tree-unreadable:{payload.get('reason') or 'rc-' + str(res.returncode)}"
+
+
 def stacked_parent_state(
     runner: Runner, parent_pr: int, gh_env: dict[str, str]
 ) -> str:
@@ -1406,6 +1456,12 @@ def evaluate_pr(
         pstate = stacked_parent_state(runner, parent, gh_env)
         if pstate != "MERGED":
             return skip(f"stacked-on-main:{parent}:{pstate}")
+    # 5quinquies. tests d'integrite sur l'arbre fusionne main + tete. Place
+    # apres tous les controles bon marche (il coute ~1 min) et avant le REST,
+    # qui reste le dernier pour garder la fenetre de course courte.
+    reason = combined_tree_reason(runner, pr, gate_head, gh_env)
+    if reason is not None:
+        return skip(reason)
     # 6. REST : mergeable + tete.
     state, live_head = mergeable_state_and_head(runner, pr, gh_env)
     if state != "clean":
