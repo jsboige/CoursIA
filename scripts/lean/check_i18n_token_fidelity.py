@@ -147,11 +147,31 @@ _MIRROR_DECLARATION = re.compile(
 # metadata about the file, not translatable content: the EN mirror owes it
 # nothing, so it is excluded from the comparison (a false "loss" / "orphan"
 # otherwise, control Conway/Doomsday.lean, review of #24148).
-_I18N_CONVENTION = re.compile(r"###\s*i18n\b|(?:convention\s+i18n|i18n\s+convention)\b", re.I)
+#
+# Position-restricted (NanoClaw review of #24765): the plain-spelling phrase
+# must HEAD a line -- the labeled note form (`Convention i18n (EPIC #4980,
+# ...) : ...`, `i18n convention (EPIC #4980, ...): this root ...`) that 45+
+# `_en.lean` files open on. A translatable prose line that merely MENTIONS the
+# convention mid-sentence (`... docstrings traduites -- convention i18n #4980
+# pattern A.`) no longer exempts the whole comment: under the old any-position
+# motif it would silence a comment it never intended to classify. The `###`
+# marker form stays any-position: a marked section header is explicit metadata.
+_I18N_CONVENTION = re.compile(
+    r"###\s*i18n\b"                                   # marked section header
+    r"|^[^\S\n]*(?:--|/-!)?[^\S\n]*"                  # label form, heading a line
+    r"(?:convention\s+i18n|i18n\s+convention)\b"
+    r"|(?:convention\s+i18n|i18n\s+convention)\b[^\n]{0,20}?#4980",  # citation
+    re.I | re.MULTILINE,
+)
 
 
 def is_i18n_convention_block(body: str) -> bool:
-    """True when ``body`` is, or embeds, a `### i18n` convention note."""
+    """True when ``body`` is, or embeds, a `### i18n` convention note.
+
+    The plain-spelling phrase counts only in heading position (it starts a
+    line of the comment); a mid-prose mention of the convention does not
+    exempt the comment from the comparison.
+    """
     return bool(_I18N_CONVENTION.search(body))
 
 

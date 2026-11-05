@@ -415,6 +415,29 @@ def test_i18n_convention_block_plain_heading_is_recognized():
         "English sibling of `Conway.lean` per the i18n convention EPIC #4980")
 
 
+def test_a_bare_prose_mention_of_the_convention_does_not_exempt_the_comment():
+    # NanoClaw review of #24765, point 3: under the original any-position
+    # motif, translatable prose that merely MENTIONED the convention silenced
+    # the whole comment it lived in. The exemption classifies a note ABOUT the
+    # convention, not every sentence citing its name: the plain spelling must
+    # head a line or carry the EPIC citation, otherwise the comment is
+    # compared like any other translatable prose.
+    assert not is_i18n_convention_block(
+        "Aucun `sorry`. Ce fichier suit la convention i18n du depot.")
+    assert not is_i18n_convention_block(
+        "The module follows the i18n convention used across the series.")
+    # The two metadata shapes the corpus actually writes stay exempt: the
+    # citation form (control ApprovalPayment.lean:56, Containment.lean:6,
+    # ReidemeisterCombinatorial.lean:52 and :976) ...
+    assert is_i18n_convention_block(
+        "Aucun `sorry`. Convention i18n #4980 : ce fichier porte le namespace")
+    assert is_i18n_convention_block(
+        "corps byte-identique (convention i18n EPIC #4980).")
+    # ... and the `###` title that names it (control KochenSpecker.lean:78).
+    assert is_i18n_convention_block(
+        "### Hommage MathOverflow + Mathlib i18n convention #4980")
+
+
 def test_best_shift_aligns_a_constant_offset():
     fr = {0, 10, 20}
     en = {2, 12, 22}
