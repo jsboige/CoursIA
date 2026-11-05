@@ -23,11 +23,9 @@ We use the same coordinate convention as `Conway.Life`:
 So at the top level a node `node nw ne sw se` of level `n+1` covers a
 region of size `2^(n+1) x 2^(n+1)` partitioned as:
 
-```
-nw | ne
----+---
-sw | se
-```
+    nw | ne
+    ---+---
+    sw | se
 
 where each quadrant is `2^n x 2^n`. If the whole region has its
 top-left corner at `(row0, col0)`, then:
@@ -37,8 +35,8 @@ top-left corner at `(row0, col0)`, then:
 - `sw` covers `[row0 + 2^n,     row0 + 2^(n+1))      x [col0,           col0 + 2^n)`
 - `se` covers `[row0 + 2^n,     row0 + 2^(n+1))      x [col0 + 2^n,    col0 + 2^(n+1))`
 
-This module is fully proven (no gaps). It only provides the data
-structure and conversions. The Hashlife algorithm lives in
+This module is fully proven (no gaps): it only provides the data structure
+and conversions. The Hashlife algorithm lives in
 `Conway.Life.Hashlife`.
 -/
 
@@ -169,8 +167,8 @@ namespace MacroCell
     recursion, kernel-reducible):
     `ceilLog2 k = if k ≤ 1 then 0 else Nat.log 2 (k-1) + 1`. Same function
     (values unchanged, cf `ceilLog2_spec`), but now decidable. Firsthand
-    diagnosis: `ceilLog2 6 = 3` goes through under `decide` after the rewrite (it
-    failed before, even with `maxRecDepth 1000000`, even on 1 step). -/
+    diagnosis: `ceilLog2 6 = 3` goes through under `decide` after the rewrite
+    (it failed before, even with `maxRecDepth 1000000`, even on 1 step). -/
 def ceilLog2 (k : Nat) : Nat :=
   if k ≤ 1 then 0 else Nat.log 2 (k - 1) + 1
 
