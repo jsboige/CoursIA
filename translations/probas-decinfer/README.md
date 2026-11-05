@@ -4,13 +4,13 @@
 
 ## Couvert
 
-| Fichier | Série | Notebooks | Cellules |
-|---------|-------|-----------|----------|
-| [`probas_decinfer.csv`](probas_decinfer.csv) | `MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/` | 8 (non-Lean) | 383 (246 markdown + 137 code, 21 colonnes) |
+| Fichier                                          | Série                                                    | Notebooks     | Cellules                                            |
+|--------------------------------------------------|----------------------------------------------------------|---------------|-----------------------------------------------------|
+| [`probas_decinfer.csv`](probas_decinfer.csv)     | `MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/`      | 8 (non-Lean)  | 401 (263 markdown + 138 code, 21 colonnes)          |
 
 La série couvre la théorie de la décision avec Infer.NET :
 
-- **DecInfer-1-Utility-Foundations** — fondements de l'utilité, rationalité, axiomes von Neumann–Morgenstern.
+- **DecInfer-01-Utility-Foundations** — fondements de l'utilité, rationalité, axiomes von Neumann–Morgenstern.
 - **DecInfer-02-Utility-Money** — utilité de la richesse, aversion au risque, fonction d'utilité CRRA.
 - **DecInfer-03-Multi-Attribute** — utilité multi-attributs, pondération, trade-offs.
 - **DecInfer-04-Decision-Networks** — réseaux de décision (influence diagrams), valeur de l'information structurelle.
@@ -26,7 +26,7 @@ La série couvre la théorie de la décision avec Infer.NET :
 ```bash
 # Depuis la racine du dépôt :
 python scripts/translation/extract_cells_to_csv.py \
-    MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb \
+    MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-01-Utility-Foundations.ipynb \
     MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-02-Utility-Money.ipynb \
     MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-03-Multi-Attribute.ipynb \
     MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-04-Decision-Networks.ipynb \
