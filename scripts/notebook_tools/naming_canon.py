@@ -103,7 +103,8 @@ INDEX_RE = re.compile(r"^(\d+(?:[.\-]\d+)*)([a-z]?)(?![.\-]\d)[._\-\s]", re.I)
 
 # Numero d'un notebook a prefixe de serie alphabetique : `Prefixe-NN` (+ lettre
 # d'accretion). Le `(?!\d)` distingue le premier chiffre d'un numero a deux
-# chiffres (`GameTheory-26` : le `6` suit le `2`, pas de coupure) du chiffre
+# chiffres (`GameTheory-22` : le second `2` suit le premier, pas de coupure)
+# du chiffre
 # unique (`GameTheory-3a` : le `a` suit le `3`, coupure).
 SERIES_NUM_RE = re.compile(r"^(?P<prefix>[A-Za-z][A-Za-z0-9]*)-(?P<num>\d+)(?P<accr>[a-z])?(?!\d)")
 

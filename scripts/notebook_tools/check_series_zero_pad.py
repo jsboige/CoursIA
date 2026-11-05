@@ -1,6 +1,6 @@
 """Garde de convention zero-pad d'une serie de notebooks (#11840, #12586, #15489).
 
-Une serie qui a tranche sa numerotation a deux chiffres (GameTheory : 01..26,
+Une serie qui a tranche sa numerotation a deux chiffres (GameTheory : 01..22,
 side-tracks en lettres 03a/08d) doit y rester. Six side-tracks au chiffre
 unique sont arrives sur main ENTRE la review et le merge de la tranche 1
 (#12241) : un invariant verifie a l'instant t n'est pas une propriete du
@@ -11,7 +11,7 @@ Le motif vise exactement le chiffre unique : un premier chiffre NON suivi
 d'un second chiffre. Les formes valides ne matchent pas :
 
     GameTheory-03a-...  (zero-pade, le 0 est suivi de 3)
-    GameTheory-26-...   (deux chiffres)
+    GameTheory-22-...   (deux chiffres)
     GameTheory-04c-...  (deux chiffres + lettre de side-track)
 
 PORTEE : REGISTRE EXPLICITE, JAMAIS UN DEFAUT (#15489, defaut 5)
@@ -98,8 +98,8 @@ def violations(series_dir: Path, prefix: str = "GameTheory") -> list[dict]:
     """Fichiers de la serie dont le numero n'est PAS zero-pade.
 
     Le chiffre unique se lit dans le numero rendu par le parseur du canon
-    (#15489) : ``GameTheory-3a`` livre ``number="3"`` (un chiffre), ``GameTheory-26``
-    livre ``"26"``, ``GameTheory-04c`` livre ``"04"``. La regle porte sur la
+    (#15489) : ``GameTheory-3a`` livre ``number="3"`` (un chiffre), ``GameTheory-22``
+    livre ``"22"``, ``GameTheory-04c`` livre ``"04"``. La regle porte sur la
     LONGUEUR du numero et non sur un motif du nom complet -- un motif local
     re-encode la grammaire du canon, et deux encodages divergent au premier cas
     limite (c'est ce que #15489 corrige).

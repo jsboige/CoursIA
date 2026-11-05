@@ -1,7 +1,7 @@
 """Tests du garde zero-pad serie (#12586).
 
 Les cas sont construits sur les formes REELLES de la serie GameTheory :
-zero-pades valides (03a, 08d, 26), chiffre unique invalide (3a, 8d, 8-).
+zero-pades valides (03a, 08d, 22), chiffre unique invalide (3a, 8d, 8-).
 Le lookahead est la piece delicate -- chaque forme a son test.
 
 Deuxieme volet (#15489, defaut 5) : la PORTEE du garde est une liste explicite
@@ -42,7 +42,7 @@ def series(tmp_path: Path) -> Path:
 
 def test_serie_propre_passe(series: Path):
     for name in ["GameTheory-01-Setup-Python.ipynb", "GameTheory-03a-X.ipynb",
-                 "GameTheory-08d-Y.lean", "GameTheory-26-Z.ipynb"]:
+                 "GameTheory-08d-Y.lean", "GameTheory-22-Z.ipynb"]:
         (series / name).write_text("x", encoding="utf-8")
     assert violations(series) == []
 
