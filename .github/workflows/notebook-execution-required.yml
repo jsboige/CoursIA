@@ -22,12 +22,21 @@ on:
       - 'scripts/notebook_tools/golden_set.yml'
       - 'scripts/notebook_tools/golden_set.lock.txt'
       - 'scripts/notebook_tools/notebook_tools.py'
+      # La cle de verdict (#22468) couvre l'executeur et le manifeste : un
+      # changement de l'un ou de l'autre doit re-etablir le verdict.
+      - 'scripts/ci/golden_set_verdict_key.py'
       - '.github/workflows/notebook-execution-required.yml'
   push:
     branches: [main]
     paths:
       - 'scripts/notebook_tools/golden_set.yml'
       - 'scripts/notebook_tools/golden_set.lock.txt'
+      # `main` est le producteur du cache de verdict : c'est depuis lui que
+      # les PRs restaurent. Ses entrees doivent donc suivre les memes entrees
+      # que la cle, sinon un changement d'executeur sur `main` laisserait un
+      # verdict perime disponible pour toutes les PRs.
+      - 'scripts/notebook_tools/notebook_tools.py'
+      - 'scripts/ci/golden_set_verdict_key.py'
   workflow_dispatch:
     inputs:
       notebook_paths:
@@ -296,17 +305,138 @@ jobs:
         with:
           python-version: '3.12'
 
+      # Reutilisation du verdict (#22468, tranche 1 ; levier 6 de #22461).
+      # Mesure de #22468 : 19 runs sur 21 rejouaient la suite alors qu'aucune
+      # entree du verdict n'avait bouge. La cle couvre le manifeste, le
+      # lockfile, l'executeur, la version de Python et le contenu octet pour
+      # octet de chaque carnet -- tout ce qui peut changer le verdict, et rien
+      # d'autre (le YAML du workflow en est exclu, il bouge pour des raisons
+      # qui ne l'affectent pas ; sa version est consignee dans la provenance).
+      # Script stdlib-only : il tourne AVANT l'installation du lockfile, ce qui
+      # est tout l'interet -- un verdict reutilise ne paie pas l'installation.
+      - name: Compute golden-set verdict key
+        id: verdict
+        run: |
+          python scripts/ci/golden_set_verdict_key.py --out "${RUNNER_TEMP}/golden_verdict_key.json"
+          # Heredoc plutot que `python -c` multi-ligne : un `-c` indente par le
+          # YAML meurt en IndentationError (mesure en local avant commit).
+          python - <<'PY'
+          import json
+          import os
+
+          path = os.path.join(os.environ["RUNNER_TEMP"], "golden_verdict_key.json")
+          with open(path, encoding="utf-8") as fh:
+              data = json.load(fh)
+          comp = data["components"]
+
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
+              out.write("key=%s\n" % data["key"])
+              out.write("notebooks=%d\n" % comp["notebook_count"])
+
+          lines = [
+              "### Golden-set verdict key",
+              "",
+              "| Entree | Empreinte |",
+              "|---|---|",
+              "| cle de verdict | `%s` |" % data["key"],
+              "| manifeste | `%s` |" % comp["manifest_sha256"][:16],
+              "| lockfile | `%s` |" % comp["lockfile_sha256"][:16],
+              "| executeur | `%s` |" % comp["implementation_sha256"][:16],
+              "| carnets | %d |" % comp["notebook_count"],
+              "| python | %s |" % comp["python_version"],
+          ]
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as out:
+              out.write("\n".join(lines) + "\n")
+          PY
+
+      # RESTORE SEUL, sans `restore-keys` : un prefixe ramenerait le verdict
+      # d'une AUTRE cle, c'est-a-dire exactement ce que cette tranche refuse.
+      # Cloisonnement par branche (propriete d'actions/cache) : `main` et la
+      # branche de la PR lisent le cache de `main` ; deux PR tierces ne
+      # partagent rien. L'issue esperait un partage entre PRs -- c'est la
+      # limite a ecrire, pas un contournement a bricoler.
+      - name: Restore reused golden-set verdict
+        id: reuse
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/golden_verdict
+          key: golden-set-verdict-v1-${{ steps.verdict.outputs.key }}
+
       - name: Install pinned golden-set lockfile
+        if: steps.reuse.outputs.cache-hit != 'true'
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r scripts/notebook_tools/golden_set.lock.txt
 
       - name: Execute golden-set (Papermill)
+        if: steps.reuse.outputs.cache-hit != 'true'
         run: |
           python scripts/notebook_tools/notebook_tools.py golden-set --json > /tmp/golden_set_result.json
           cat /tmp/golden_set_result.json
           # The subcommand exits non-zero if any notebook fails (red CI).
           python -c "import json,sys; r=json.load(open('/tmp/golden_set_result.json')); sys.exit(0 if r['passed'] else 1)"
+          mkdir -p "${RUNNER_TEMP}/golden_verdict"
+          cp /tmp/golden_set_result.json "${RUNNER_TEMP}/golden_verdict/golden_set_result.json"
+
+      # Un verdict restaure est une PREUVE qu'on reutilise, pas une permission
+      # qu'on suppose : on le relit et on refuse s'il n'est pas vert. Seul un
+      # run vert a pu ecrire ce cache (garde du step de sauvegarde), mais la
+      # verification est ici aussi -- une entree abimee doit rougir, jamais
+      # passer pour une suite reussie.
+      - name: Reuse cached golden-set verdict
+        if: steps.reuse.outputs.cache-hit == 'true'
+        run: |
+          cp "${RUNNER_TEMP}/golden_verdict/golden_set_result.json" /tmp/golden_set_result.json
+          cat /tmp/golden_set_result.json
+          python - <<'PY'
+          import json
+          import sys
+
+          with open("/tmp/golden_set_result.json", encoding="utf-8") as fh:
+              result = json.load(fh)
+          print(
+              "verdict reutilise : passed=%r, %s/%s carnets"
+              % (result.get("passed"), result.get("success_count"), result.get("total"))
+          )
+          sys.exit(0 if result.get("passed") is True else 1)
+          PY
+
+      - name: Record golden-set verdict provenance
+        if: success() && steps.reuse.outputs.cache-hit != 'true'
+        env:
+          VERDICT_KEY: ${{ steps.verdict.outputs.key }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+
+          # Ecrit A COTE du verdict : c'est ce fichier que le prochain run
+          # restaurera pour citer l'execution d'origine dans son resume.
+          path = os.path.join(os.environ["RUNNER_TEMP"], "golden_verdict", "provenance.json")
+          payload = {
+              "key": os.environ["VERDICT_KEY"],
+              "run_id": os.environ["GITHUB_RUN_ID"],
+              "sha": os.environ["GITHUB_SHA"],
+              "ref": os.environ["GITHUB_REF"],
+          }
+          with open(path, "w", encoding="utf-8") as fh:
+              json.dump(payload, fh, indent=2)
+          with open(path, encoding="utf-8") as fh:
+              print(fh.read())
+          PY
+
+      # SAVE conditionne au succes : un verdict ROUGE mis en cache empoisonnerait
+      # sa cle, et toute execution ulterieure rejouerait un echec deja repare.
+      # Le cache est ecrit par `main` ET par les branches de PR, contrairement a
+      # `lake-*` (#19658) : la retenue de #19658 porte sur des archives de
+      # ~650 Mo et des caches pip de ~66 Mo ; ici l'artefact est un JSON de
+      # quelques kilo-octets, sans effet mesurable sur le quota du store.
+      - name: Save golden-set verdict (green only)
+        if: success() && steps.reuse.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/golden_verdict
+          key: golden-set-verdict-v1-${{ steps.verdict.outputs.key }}
 
       - name: Post golden-set summary
         if: always()
@@ -314,11 +444,27 @@ jobs:
         with:
           script: |
             const fs = require('fs');
+            const reused = '${{ steps.reuse.outputs.cache-hit }}' === 'true';
+            const key = '${{ steps.verdict.outputs.key }}';
             let body = '## Golden-Set Execution (H.7 P3)\n\n';
             try {
               const r = JSON.parse(fs.readFileSync('/tmp/golden_set_result.json', 'utf8'));
               const icon = r.passed ? '✅' : '❌';
               body += `${icon} **${r.success_count}/${r.total}** notebooks passed (certified reproducible)\n\n`;
+              // Provenance : un verdict reutilise doit dire DE QUEL run il vient,
+              // sinon le vert affiche ici serait indiscernable d'une execution.
+              if (reused) {
+                let prov = null;
+                try {
+                  prov = JSON.parse(fs.readFileSync(`${process.env.RUNNER_TEMP}/golden_verdict/provenance.json`, 'utf8'));
+                } catch (e) { prov = null; }
+                const origin = prov
+                  ? `run [\`${prov.run_id}\`](../actions/runs/${prov.run_id}) sur \`${prov.ref}\` (\`${String(prov.sha).slice(0, 12)}\`)`
+                  : 'run d\'origine non consigne';
+                body += `Verdict **reutilise** pour la cle \`${key}\` — ${origin} ; aucune execution ce tour.\n\n`;
+              } else {
+                body += `Verdict **calcule** ce tour (cle \`${key}\`) — aucune entree de cache ne correspondait.\n\n`;
+              }
               body += `| Notebook | Status | Time |\n|-----------|--------|------|\n`;
               for (const n of r.notebooks) {
                 const s = n.success ? '✅' : '❌';
