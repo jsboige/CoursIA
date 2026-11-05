@@ -6,7 +6,7 @@
 
 | Fichier                                          | Série                                                    | Notebooks     | Cellules                                            |
 |--------------------------------------------------|----------------------------------------------------------|---------------|-----------------------------------------------------|
-| [`probas_decinfer.csv`](probas_decinfer.csv)     | `MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/`      | 8 (non-Lean)  | 401 (263 markdown + 138 code, 21 colonnes)          |
+| [`probas_decinfer.csv`](probas_decinfer.csv)     | `MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/`      | 8 (non-Lean)  | toutes les cellules couvertes (markdown + code)     |
 
 La série couvre la théorie de la décision avec Infer.NET :
 
