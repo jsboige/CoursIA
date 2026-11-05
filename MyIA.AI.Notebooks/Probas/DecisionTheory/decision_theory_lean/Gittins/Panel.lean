@@ -10,19 +10,23 @@ import Gittins.Discount
 Terrains d'entraînement du programme prover (EPIC #1453, dispatch c2770 du
 2026-11-04) : des théorèmes qu'on s'était interdit d'ajouter, posés ici comme
 cibles fraîches avec un `sorry` **documenté** dans la preuve — jamais dans
-l'énoncé (leçon #24705 : un énoncé honnête d'abord). Chacun a été **vérifié
-absent de Mathlib au pin** (`db584cd6d46c`, mesuré par grep de l'arbre Mathlib
-vendored dans `.lake/packages/mathlib/`) avant la pose du `sorry`, afin que la
-difficulté affichée soit réelle et non un déguisement de lemme existant.
+l'énoncé (leçon #24705 : un énoncé honnête d'abord). Chacun a été **sondé dans
+Lean au pin** (`db584cd6d46c` : `#check` des candidats, `exact?`/`apply?` sur
+l'énoncé — jamais par grep : un nom généré par `to_additive`, un `alias` ou un
+`@[simps]` est invisible au grep) avant la pose du `sorry`. Leçon fondatrice de
+la review c.5778073186 : un premier passage par grep avait affirmé à tort que
+`tsum_le_tsum` n'existait pas sur ℝ — l'additif `Summable.tsum_le_tsum` de
+`Multipliable.tprod_le_tprod` (`InfiniteSum/Order.lean:131`) y existe et porte
+`gcongr`.
 
 Gradient de difficulté (le même vocabulaire P1/P2/P3 que le sous-track
-CALIBRATION) :
+CALIBRATION), **reclassé honnêtement après sondage Lean** :
 
-| Terrain | Classe | Vérification Mathlib au pin |
+| Terrain | Classe (mesurée) | Sondage Lean au pin |
 |---|---|---|
-| `panel_quarter_partial_sum` | P1 — calcul concret | énoncé sur une définition du lake (`geometricPartialSum`), donc hors d'atteinte de Mathlib par construction |
-| `panel_constant_stream_monotone` | P2 — chaîne de réécriture | `tsum_le_tsum` n'existe au pin que sur ℝ≥0/ℝ≥0∞ (`InfiniteSum/ENNReal.lean:115`) — **pas sur ℝ brut** ; la voie directe point-à-point est fermée, la forme fermée (`present_value_constant`) est la route |
-| `panel_partial_sums_tendsto` | P3 — pont List→tsum | `HasSum.tendsto_sum_nat` existe au pin (usages compilés dans `InfiniteSum/Ring.lean:281`) et sert d'**étape finale** ; la difficulté est le pont `List.foldl` → `∑ k ∈ Finset.range n`, qui est local au lake |
+| `panel_quarter_partial_sum` | P1 — calcul concret | `exact?` échoue (définition locale du lake) ; la forme fermée `geometricPartialSum_closed` + `norm_num` clôt — vérifié en sondage |
+| `panel_constant_stream_monotone` | P2 — **bas de classe : la voie directe existe** | `Summable.tsum_le_tsum` existe au pin sur ℝ (nom généré par `to_additive`, invisible au grep) ; `exact?` ne clôt pas d'un coup, mais la preuve complète fait 3 lignes (`summable_geometric_of_lt_one` + point-à-point `mul_le_mul_of_nonneg_left`) — établie en sondage |
+| `panel_partial_sums_tendsto` | P3 — composition de limites | le lake a déjà la forme fermée `geometricPartialSum_closed` et `geometric_series_converges` ; Mathlib a `tendsto_pow_atTop_nhds_zero_of_lt_one` (sondé au pin) ; `exact?` échoue sur l'énoncé (déf locale) — la difficulté est la **composition** (réécriture par forme fermée puis algèbre des limites), pas un lemme manquant |
 
 La baseline `sorry-baseline` de `scripts/lean/ci_lakes.json` passe de 2 à 5
 dans la même PR (le gate exige l'égalité exacte, échec bidirectionnel).
@@ -42,35 +46,42 @@ une exécution de la définition (`geometricPartialSum`) suivie d'un calcul
 numérique exact (`norm_num`). C'est l'analogue décision-théorie des cibles
 concrètes du sous-track CALIBRATION (`isWinningNim_345`, `lookAndSay_4`).
 
-Vérification d'absence Mathlib (pin `db584cd6d46c`) : l'énoncé parle de
-`geometricPartialSum`, une définition du lake — aucune entité Mathlib ne peut
-l'énoncer ; le `grep -r "geometricPartialSum"` sur l'arbre vendored rend 0
-hit. La difficulté P1 est donc honnête : déplier la définition locale puis
-calculer, sans lemme externe qui court-circuite. -/
+Sondage Lean au pin (`db584cd6d46c`) : l'énoncé parle de `geometricPartialSum`,
+une définition du lake — hors d'atteinte de Mathlib par construction. `exact?`
+échoue sur l'énoncé (déf locale) ; la route vérifiée en sondage est la forme
+fermée du lake `geometricPartialSum_closed` puis `norm_num`. -/
 theorem panel_quarter_partial_sum : geometricPartialSum (1 / 4) 3 = 21 / 16 := by
   sorry
 
-/-- **Terrain P2 — chaîne de réécriture** (programme prover #1453, dispatch c2770).
+/-- **Terrain P2 — monotonie d'un flux constant, reclassée bas de classe**
+(programme prover #1453, dispatch c2770 ; reclassement après review
+c.5778073186).
 
 Monotonie de la valeur actualisée d'un flux constant : si `μ₁ ≤ μ₀` (avec
 `0 ≤ μ₁`, `0 < γ < 1`), alors `∑' γⁿ·μ₁ ≤ ∑' γⁿ·μ₀`. C'est le geste
 d'arbitrage élémentaire d'un bandit à moyennes connues : la valeur du flux du
 meilleur bras domine celle du flux dominé.
 
-Vérification d'absence Mathlib (pin `db584cd6d46c`) : la voie courte
-point-à-point `tsum_le_tsum` n'existe au pin **que sur ℝ≥0/ℝ≥0∞**
-(`InfiniteSum/ENNReal.lean:115`, `protected`, namespace `ENNReal`) — mesuré
-par `grep -rn "theorem tsum_le_tsum" Mathlib/` : 1 hit, aucun sur ℝ. La route
-passe donc par la forme fermée : réécrire chaque membre par
-`present_value_constant` (`Gittins.Discount`), puis comparer `μ₁/(1-γ) ≤
-μ₀/(1-γ)` avec `one_minus_gamma_pos` comme condition de signe. Quelques
-tactiques, plusieurs lemmes à trouver : P2. -/
+Sondage Lean au pin (`db584cd6d46c`) — corrige l'ancien docstring, dont
+l'affirmation d'absence était un **artefact de grep** : la voie directe
+point-à-point **existe**. `Summable.tsum_le_tsum` (l'additif `to_additive` de
+`Multipliable.tprod_le_tprod`, `InfiniteSum/Order.lean:131` — le nom n'apparaît
+jamais tel quel dans la source, d'où l'invisibilité au grep) s'applique à tout
+monoïde additif topologique ordonné à topologie fermée, ℝ compris. `exact?`
+ne clôt pas l'énoncé d'un coup (il faut fournir les deux sommabilités), mais
+la preuve complète fait trois lignes, établie en sondage :
+`Summable.tsum_le_tsum` + `summable_geometric_of_lt_one hγ₁.le hγ₂` (sondé :
+`0 ≤ r → r < 1 → Summable fun n => r ^ n`) composé par `Summable.mul_right`,
+plus le point-à-point `mul_le_mul_of_nonneg_left h (pow_nonneg hγ₁.le n)`.
+Classe réelle : P2 bas — le terrain garde sa valeur d'étalon « preuve
+triviale à atteindre », il n'est plus un objectif de difficulté. -/
 theorem panel_constant_stream_monotone {γ μ₁ μ₀ : ℝ} (hγ₁ : 0 < γ) (hγ₂ : γ < 1)
     (hμ₁ : 0 ≤ μ₁) (h : μ₁ ≤ μ₀) :
     ∑' n : ℕ, γ ^ n * μ₁ ≤ ∑' n : ℕ, γ ^ n * μ₀ := by
   sorry
 
-/-- **Terrain P3 — pont List→tsum** (programme prover #1453, dispatch c2770).
+/-- **Terrain P3 — composition de limites** (programme prover #1453, dispatch
+c2770 ; description réalignée après review c.5778073186).
 
 Convergence des sommes partielles actualisées vers leur somme totale : les
 sommes partielles `geometricPartialSum γ n · μ` (définies par un `List.foldl`
@@ -78,15 +89,18 @@ sur `List.range`) tendent vers `∑' γᵏ·μ` quand `n → ∞`, pour `0 < γ 
 C'est la pièce analytique qui relie la définition *finie* du lake à la
 théorie *infinie* de `Gittins.Discount`.
 
-Vérification de présence/absence Mathlib (pin `db584cd6d46c`) :
-`HasSum.tendsto_sum_nat` **existe** au pin (usages compilés dans
-`InfiniteSum/Ring.lean:281,286`) mais ne s'applique qu'aux sommes
-`∑ k ∈ Finset.range n` — pas à notre `List.foldl`. La difficulté du terrain
-est le **pont** `geometricPartialSum γ n = ∑ k ∈ Finset.range n, γ ^ k`
-(induction sur `n`, `List.foldl` ↔ `Finset.sum`), puis l'extraction d'un
-`HasSum` depuis `geometric_series_converges` (`Summable.hasSum`), et la
-multiplication par la constante `μ` (`Tendsto.mul_const` / continuité). Le
-lemme Mathlib sert d'étape finale, pas de preuve : P3 par composition. -/
+Sondage Lean au pin (`db584cd6d46c`) : `exact?` échoue sur l'énoncé
+(définition locale du lake dans le but) — honnête à citer. La route naturelle
+ne passe **pas** par le pont `List.foldl ↔ Finset.sum` que l'ancien docstring
+presentait comme le cœur : le lake possède déjà la forme fermée
+`geometricPartialSum_closed` (`γ ≠ 1 → geometricPartialSum γ n = (1 − γⁿ)/(1 −
+γ)`, `Gittins/Discount.lean`) et `geometric_series_converges` (`∑' γⁿ =
+1/(1−γ)`), et Mathlib possède `tendsto_pow_atTop_nhds_zero_of_lt_one`
+(`0 ≤ r → r < 1 → Tendsto (r ^ n) atTop (nhds 0)`, sondé au pin). La
+difficulté réelle est la **composition** : réécrire chaque somme partielle par
+la forme fermée, faire tendre `γⁿ → 0` par le lemme sondé, pousser la limite à
+travers la division et la multiplication par `μ` (algèbre des limites), puis
+identifier la limite à `∑' γᵏ·μ` via `geometric_series_converges`. -/
 theorem panel_partial_sums_tendsto {γ μ : ℝ} (hγ₁ : 0 < γ) (hγ₂ : γ < 1) :
     Tendsto (fun n => geometricPartialSum γ n * μ) atTop (nhds (∑' k : ℕ, γ ^ k * μ)) := by
   sorry
