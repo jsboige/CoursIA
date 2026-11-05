@@ -33,6 +33,15 @@ The organ runs in TWO modes (review of #22527, squash-merge convention):
               HEAD checkout, not the merge ref: on the merge ref every touched
               doc's last commit is the merge commit, dated at CI time.
 
+              ``GIT_LOG_FAILED`` **replaces** the ``GIT_DIFF_FAILED`` code this
+              organ used to publish on the same path: the touched-doc list is
+              now read by ``git log``, so it is a failing ``git log`` that is
+              reported. The published finding code changes with it -- a
+              consumer filtering on ``GIT_DIFF_FAILED`` would stop seeing it.
+              The sibling organ ``check_docs_transients_lane.py`` reads a
+              ``git diff`` of its own and keeps publishing its own
+              ``GIT_DIFF_FAILED``.
+
               Two properties of that range are load-bearing:
 
               - the range is measured against the **PR's base**, not against
