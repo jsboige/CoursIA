@@ -446,6 +446,35 @@ def test_compare_files_excludes_an_unpaired_i18n_block(tmp_path=None):
     assert "une note propre au fichier FR" in unpaired_bodies
 
 
+# --- fenced code blocks ---------------------------------------------------
+
+def test_a_fenced_block_does_not_swallow_the_prose_after_it():
+    """A fence carries an ODD number of backticks: the scanner must not pair
+    its closing backtick with the next opening one and read the prose in
+    between as a code span.  Measured: 130 HARD findings on a mirror pair
+    that is faithful (review of #24143, ``Knots/Invariant``)."""
+    body = (
+        "Intro\n"
+        "```\n"
+        "theorem bar : True := trivial\n"
+        "```\n"
+        "Le lemme `bar` existe et vaut 3.\n"
+    )
+    assert code_spans(body) == ["bar"]
+
+
+def test_a_divergence_after_a_fenced_block_is_still_reported():
+    """Dropping the fenced block must not blind the comparison to the prose
+    that follows it."""
+    findings = compare_bodies(
+        "```\ntheorem bar : True := trivial\n```\nle compte est 22 aretes",
+        "```\ntheorem bar : True := trivial\n```\nthe set has edges",
+        set(),
+    )
+    hard = [f for f in findings if f["severity"] == HARD]
+    assert [f["token"] for f in hard] == ["22"]
+
+
 # --- the repository itself ------------------------------------------------
 
 def test_arcpartition_sibling_is_token_faithful():

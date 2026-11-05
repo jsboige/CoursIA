@@ -96,6 +96,22 @@ _EN_SUFFIX = re.compile(r"\b(\w+)_en\b")
 # typographic choice, the reference is the same).
 _CODE_SPAN = re.compile(r"`([^`]{1,600})`")
 
+# A fenced code block (``` ... ```) inside a comment. The fence carries an
+# ODD number of backticks, so the inline scanner above pairs its closing
+# fence with the NEXT opening one and swallows the prose in between: on a
+# faithful mirror pair this manufactured 130 HARD findings (measured, review
+# of #24143 -- ``Knots/Invariant``). A fenced block is CODE, not prose: the
+# Lean code it carries is bound by the byte-identity contract of
+# ``check_i18n_siblings``, and its comments are translated on purpose (five
+# mirror pairs translate the comment inside the fence). It is therefore
+# removed from the prose comparison.
+_FENCED_BLOCK = re.compile(r"```.*?```", re.S)
+
+
+def prose_only(body: str) -> str:
+    """``body`` without its fenced code blocks."""
+    return _FENCED_BLOCK.sub(" ", body)
+
 # A numeric group: a digit run possibly made of several parts separated by a
 # decimal/thousand/date separator (``2026-10-27``, ``27/10/2026``, ``1.5``).
 _NUMBER_GROUP = re.compile(r"\d+(?:[.,/\-]\d+)*")
@@ -364,7 +380,7 @@ def code_spans(body: str) -> list[str]:
     the reference.
     """
     out: list[str] = []
-    for m in _CODE_SPAN.finditer(body):
+    for m in _CODE_SPAN.finditer(prose_only(body)):
         span = " ".join(m.group(1).split())
         if span:
             out.append(span)
@@ -385,7 +401,7 @@ def number_parts(body: str) -> list[str]:
     the decimal made ``1.5`` and ``5.1`` compare equal, because the parts
     of both are ``{1, 5}`` (measured, review of #24148).
     """
-    stripped = _CODE_SPAN.sub(" ", body)
+    stripped = _CODE_SPAN.sub(" ", prose_only(body))
     parts: list[str] = []
     for m in _NUMBER_GROUP.finditer(stripped):
         raw = m.group(0)
@@ -411,7 +427,7 @@ def date_groups(body: str) -> list[list[str]]:
     #24148).
     """
     out: list[list[str]] = []
-    stripped = _CODE_SPAN.sub(" ", body)
+    stripped = _CODE_SPAN.sub(" ", prose_only(body))
     for m in _DATE_GROUP.finditer(stripped):
         pieces = [p.strip() for p in re.split(r"[.,/\-]", m.group(0)) if p.strip()]
         if len(pieces) >= 2 and any(len(p) == 4 for p in pieces):
@@ -490,7 +506,7 @@ def number_is_carried_elsewhere(part: str, other_body: str,
 
 def technical_identifiers(body: str) -> set[str]:
     """The technical identifiers mentioned in ``body`` outside code spans."""
-    stripped = _CODE_SPAN.sub(" ", body)
+    stripped = _CODE_SPAN.sub(" ", prose_only(body))
     out: set[str] = set()
     for m in _WORD.finditer(stripped):
         word = m.group(0)
