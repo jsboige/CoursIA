@@ -29,7 +29,7 @@ docstrings and comments differ.
 Epic #1646, Phase 2 (#2159). No `sorry` introduced.
 -/
 
-import Grothendieck.StalkSeparated
+import Grothendieck.StalkSeparated_en
 import Mathlib.Topology.Sheaves.SheafCondition.UniqueGluing
 
 universe u
@@ -37,6 +37,7 @@ universe u
 namespace Grothendieck.StalkGluing_en
 
 open CategoryTheory Opposite TopCat TopologicalSpace TopologicalSpace.Opens
+open Grothendieck.StalkSeparated_en
 
 section Contenu
 

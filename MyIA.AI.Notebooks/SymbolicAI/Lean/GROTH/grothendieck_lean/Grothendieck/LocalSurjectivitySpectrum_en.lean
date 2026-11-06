@@ -41,12 +41,13 @@ names remain identical; only docstrings and comments differ.
 Epic #1646, Phase 2 (#2159). No `sorry` introduced.
 -/
 
-import Grothendieck.TopologyLattice
+import Grothendieck.TopologyLattice_en
 import Mathlib.CategoryTheory.Sites.LocallySurjective
 
 namespace Grothendieck_en
 
 open CategoryTheory CategoryTheory.GrothendieckTopology Opposite
+open Grothendieck.TopologyLattice_en
 
 universe u v w
 

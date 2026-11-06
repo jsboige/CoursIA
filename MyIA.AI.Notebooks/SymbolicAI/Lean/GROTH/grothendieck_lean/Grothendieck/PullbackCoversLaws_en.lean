@@ -60,11 +60,12 @@ preservation).
 -/
 
 import Mathlib.CategoryTheory.Sites.Grothendieck
-import Grothendieck.CoversArrow
+import Grothendieck.CoversArrow_en
 
 namespace Grothendieck.PullbackCoversLaws_en
 
 open CategoryTheory
+open Grothendieck.CoversArrow_en
 
 /-!
 ## Section 1 : unit of pullback
@@ -152,6 +153,6 @@ theorem covers_pullback_generate {C : Type*} [Category C] {X Y Z : C}
     J.Covers (Sieve.generate (R.pullbackArrows f)) g ↔
       J.Covers (Sieve.generate R) (g ≫ f) := by
   rw [Sieve.pullbackArrows_comm]
-  exact Grothendieck.CoversArrow.covers_comp_iff J (Sieve.generate R) f g
+  exact Grothendieck.CoversArrow_en.covers_comp_iff J (Sieve.generate R) f g
 
 end Grothendieck.PullbackCoversLaws_en

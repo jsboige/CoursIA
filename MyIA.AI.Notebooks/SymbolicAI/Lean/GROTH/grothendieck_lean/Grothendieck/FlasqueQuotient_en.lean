@@ -51,8 +51,8 @@ This Part closes both ends:
   82 (`epi_of_shortExact_of_isFlasqueSieves`), the restrictions of `X₂`
   from the return bridge above.
 -/
-import Grothendieck.Flasque
-import Grothendieck.FlasqueExact
+import Grothendieck.Flasque_en
+import Grothendieck.FlasqueExact_en
 import Mathlib.Topology.Sheaves.Flasque
 import Mathlib.Topology.Sheaves.SheafCondition.Sites
 
@@ -61,6 +61,8 @@ universe u v
 namespace Grothendieck.FlasqueQuotient_en
 
 open CategoryTheory TopCat TopCat.Presheaf TopologicalSpace Opposite
+open Grothendieck.Flasque_en
+open Grothendieck.FlasqueExact_en
 
 set_option maxHeartbeats 800000
 

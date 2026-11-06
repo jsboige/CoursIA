@@ -2,7 +2,7 @@
 Copyright (c) 2026 CoursIA. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
-import Grothendieck.Godement
+import Grothendieck.Godement_en
 
 /-!
 # Functoriality of the Godement sheaf: `C⁰` is an endofunctor
@@ -52,6 +52,7 @@ byte-identical between `GodementFunctor.lean` and `GodementFunctor_en.lean`).
 universe u
 
 open CategoryTheory Category Limits TopCat TopologicalSpace Opposite
+open Grothendieck.Godement_en
 
 namespace Grothendieck.GodementFunctor_en
 

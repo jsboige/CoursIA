@@ -45,12 +45,13 @@ docstrings and comments differ.
 Epic #1646, Phase 2 (#2159). No `sorry` introduced.
 -/
 
-import Grothendieck.Spaces
+import Grothendieck.Spaces_en
 import Mathlib.Topology.Sheaves.Stalks
 
 namespace Grothendieck.Stalks_en
 
 open CategoryTheory TopologicalSpace
+open Grothendieck_en
 
 universe u
 

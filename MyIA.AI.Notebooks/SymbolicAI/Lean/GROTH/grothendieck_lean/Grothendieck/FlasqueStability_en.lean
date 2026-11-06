@@ -92,12 +92,14 @@ Epic #1646, Phase 2 (#2159). All `sorry`s eliminated at creation.
 import Mathlib.CategoryTheory.Sites.IsSheafFor
 import Mathlib.CategoryTheory.Sites.SheafOfTypes
 import Mathlib.CategoryTheory.Limits.FunctorCategory.Shapes.Products
-import Grothendieck.Flasque
-import Grothendieck.SheafCohomology.Basic
+import Grothendieck.Flasque_en
+import Grothendieck.SheafCohomology.Basic_en
 
 namespace Grothendieck.FlasqueStability_en
 
 open CategoryTheory CategoryTheory.Limits Opposite
+open Grothendieck.Flasque_en
+open Grothendieck.SheafCohomology_en
 
 universe u v
 
