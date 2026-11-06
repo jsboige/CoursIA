@@ -822,6 +822,7 @@ TRANCHE1: list[Guard] = [
             "MyIA.AI.Notebooks/GenAI/FineTuning/**",
             "MyIA.AI.Notebooks/IIT/**",
             "MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/**",
+            "MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/**",
             "MyIA.AI.Notebooks/Probas/Infer/**",
             "MyIA.AI.Notebooks/Probas/PyMC/**",
             "MyIA.AI.Notebooks/Search/Part1-Foundations/**",
@@ -1537,6 +1538,10 @@ TRANCHE10: list[Guard] = [
         blocking=True,
         needs_base=True,
         absorbed=True,
+        # #23068 : un perimetre PR non evaluable (sonde git en echec, rc 2)
+        # emet en NEUTRAL "incident du garde" -- pas un rouge bloquant qui
+        # accuserait la PR, pas un vert silencieux non plus.
+        warn_rc=(2,),
     ),
 ]
 
@@ -2729,6 +2734,62 @@ _MISLABEL_TRAILER = (
     "`python scripts/check_factual_mislabel.py --help`."
 )
 
+_LISTING_OK = (
+    "✅ No truncated listing detected in the notebooks this PR changed "
+    "(markdown identifier tables checked against the numbered listing a "
+    "nearby code cell's stream prints)."
+)
+_LISTING_ABSTAIN = (
+    "⚠️ Listing-coherence detector abstained (merge-base introuvable, "
+    "shallow fetch or unanchored branch)."
+)
+_LISTING_WARN = (
+    "⚠️ Listing-coherence review needed: a markdown table announces a total "
+    "but lists only a CONTIGUOUS PREFIX of the identifiers a nearby code "
+    "cell's stream prints — the signature of a table left behind when the "
+    "series grew. Advisory, NOT a merge gate — triage against the JSON "
+    "artifact."
+)
+_LISTING_FATAL = (
+    "⚠️ Listing-coherence n'a PAS conclu : le detecteur a rendu un code "
+    "d'erreur d'usage (entree illisible ou chemin absent), pas un constat sur "
+    "cette PR. Ne lire ni comme un vert ni comme une troncature — voir le log "
+    "du job."
+)
+_LISTING_UNREAD = (
+    "{n} carnet(s) n'ont pas pu etre lus (JSON corrompu ou encodage non "
+    "UTF-8) : les findings ne portent que sur les carnets lus."
+)
+_LISTING_OK_UNREAD = (
+    "⚠️ Listing-coherence PARTIEL : aucun tableau tronque sur les carnets "
+    "lus, mais {n} carnet(s) n'ont pas pu etre lus (JSON corrompu ou encodage "
+    "non UTF-8) — le vert n'est pas rendu."
+)
+_LISTING_TRAILER = (
+    "Scope = notebooks CHANGED in this PR, not the whole corpus. The "
+    "`listing-coherence-report` run artifact holds the structured JSON.\n"
+    "Rationale: this compares identifier SETS, not counts — a count "
+    "comparison cannot see a table truncated from `08` while the stream "
+    "lists up to `15`. The contiguous-prefix discriminant is what keeps an "
+    "arbitrary subset (« the 3 longest ») out of the report. See "
+    "`python scripts/check_listing_coherence.py --help`."
+)
+
+# Echec d'usage (rc=2) des trois detecteurs de prose freres : ni un constat,
+# ni un quitus. Voir `_exit_state` (#23394, reserve 3).
+_CLAIMS_FATAL = (
+    "⚠️ Markdown-claims n'a PAS conclu : le detecteur a rendu un code "
+    "d'erreur d'usage, pas un constat sur cette PR. Voir le log du job."
+)
+_STALE_FATAL = (
+    "⚠️ Stale-claim n'a PAS conclu : le detecteur a rendu un code d'erreur "
+    "d'usage, pas un constat sur cette PR. Voir le log du job."
+)
+_MISLABEL_FATAL = (
+    "⚠️ Factual-mislabel n'a PAS conclu : le detecteur a rendu un code "
+    "d'erreur d'usage, pas un constat sur cette PR. Voir le log du job."
+)
+
 _ORGAN_CLEAN = (
     "No organ-duplication: no added def/class collides with another series "
     "organ API (scripts/audit/organ_api_index.yaml)."
@@ -2770,7 +2831,7 @@ def _with_note(sentence: str, ctx: dict) -> str:
     return f"{sentence} {note}".strip() if note else sentence
 
 
-def _exit_state(rc: int, ctx: dict) -> str:
+def _exit_state(rc: int, ctx: dict, fatal_rc: tuple[int, ...] = (2,)) -> str:
     # L'abstention des trois detecteurs de prose porte sur le MERGE-BASE, pas
     # sur `base_sha` : c'est lui qui manque sur une branche non ancree, et
     # c'est lui que les workflows sources testent avant de lancer le
@@ -2778,28 +2839,65 @@ def _exit_state(rc: int, ctx: dict) -> str:
     # distinguables).
     if not ctx.get("merge_base"):
         return "abstain"
+    # `rc=2` est l'erreur d'USAGE des quatre detecteurs de cette famille
+    # (entree illisible, chemin absent) : la rendre « warn » postait une
+    # accusation de troncature sur un lot que l'organe n'avait pas pu lire,
+    # et un `rc=2` suffisait a la provoquer (#23394, reserve 3 -- defaut
+    # herite des trois freres, corrige ici sur les quatre).
+    if rc in fatal_rc:
+        return "fatal"
     return "ok" if rc == 0 else "warn"
 
 
 def _body_claims_output(rc: int, payload: str, ctx: dict) -> str:
     state = _exit_state(rc, ctx)
-    sentence = {"ok": _CLAIMS_OK, "abstain": _CLAIMS_ABSTAIN}.get(
-        state, _CLAIMS_WARN)
+    sentence = {"ok": _CLAIMS_OK, "abstain": _CLAIMS_ABSTAIN,
+                "fatal": _CLAIMS_FATAL}.get(state, _CLAIMS_WARN)
     return f"{_with_note(sentence, ctx)}\n\n{_CLAIMS_TRAILER}"
 
 
 def _body_stale_claim(rc: int, payload: str, ctx: dict) -> str:
     state = _exit_state(rc, ctx)
-    sentence = {"ok": _STALE_OK, "abstain": _STALE_ABSTAIN}.get(
-        state, _STALE_WARN)
+    sentence = {"ok": _STALE_OK, "abstain": _STALE_ABSTAIN,
+                "fatal": _STALE_FATAL}.get(state, _STALE_WARN)
     return f"{_with_note(sentence, ctx)}\n\n{_STALE_TRAILER}"
 
 
 def _body_factual_mislabel(rc: int, payload: str, ctx: dict) -> str:
     state = _exit_state(rc, ctx)
-    sentence = {"ok": _MISLABEL_OK, "abstain": _MISLABEL_ABSTAIN}.get(
-        state, _MISLABEL_WARN)
+    sentence = {"ok": _MISLABEL_OK, "abstain": _MISLABEL_ABSTAIN,
+                "fatal": _MISLABEL_FATAL}.get(state, _MISLABEL_WARN)
     return f"{_with_note(sentence, ctx)}\n\n{_MISLABEL_TRAILER}"
+
+
+def _payload_count(payload: str, key: str) -> int:
+    """Compte entier d'un rapport JSON, 0 si le rapport est illisible.
+
+    Un rapport qu'on ne sait pas lire ne doit pas se lire comme un zero :
+    l'appelant ne s'en sert que pour AJOUTER une phrase d'incompletude.
+    """
+    try:
+        data = json.loads(payload)
+    except (ValueError, TypeError):
+        return 0
+    valeur = data.get(key) if isinstance(data, dict) else None
+    return valeur if isinstance(valeur, int) else 0
+
+
+def _body_listing_coherence(rc: int, payload: str, ctx: dict) -> str:
+    state = _exit_state(rc, ctx)
+    sentence = {"ok": _LISTING_OK, "abstain": _LISTING_ABSTAIN,
+                "fatal": _LISTING_FATAL}.get(state, _LISTING_WARN)
+    # `non_lus` porte les carnets que le detecteur n'a pas pu ouvrir : sans
+    # cette phrase, un carnet illisible sortait en vert « aucun tableau
+    # tronque » alors qu'il n'avait jamais ete lu (#23394, reserve 1).
+    non_lus = _payload_count(payload, "non_lus")
+    if non_lus and state != "abstain":
+        if state == "ok":
+            sentence = _LISTING_OK_UNREAD.format(n=non_lus)
+        else:
+            sentence = f"{sentence} {_LISTING_UNREAD.format(n=non_lus)}"
+    return f"{_with_note(sentence, ctx)}\n\n{_LISTING_TRAILER}"
 
 
 def _organ_status(payload: str) -> str:
@@ -2894,6 +2992,8 @@ TRANCHE33: list[Guard] = [
             "scripts/tests/test_check_stale_claims.py",
             "scripts/check_factual_mislabel.py",
             "scripts/tests/test_check_factual_mislabel.py",
+            "scripts/check_listing_coherence.py",
+            "scripts/tests/test_check_listing_coherence.py",
             ".github/workflows/markdown-claims-output-advisory.yml",
         ],
         # Le verdict de ces gardes est leur commentaire : `argv` reste vide et
@@ -2935,6 +3035,18 @@ TRANCHE33: list[Guard] = [
                 body=_body_factual_mislabel,
                 artifact_name="factual-mislabel-report",
                 artifact_file="factual-mislabel.json",
+                paths=["MyIA.AI.Notebooks/**/*.ipynb"],
+                max_paths=50,
+            ),
+            Commenter(
+                header="listing-coherence-advisory",
+                argv=[
+                    "python", "scripts/check_listing_coherence.py",
+                    "--json", "{changed_paths}",
+                ],
+                body=_body_listing_coherence,
+                artifact_name="listing-coherence-report",
+                artifact_file="listing-coherence.json",
                 paths=["MyIA.AI.Notebooks/**/*.ipynb"],
                 max_paths=50,
             ),
@@ -3285,6 +3397,7 @@ TRANCHE32: list[Guard] = [
         paths=[
             "scripts/notebook_tools/twin_pairs.d/**",
             "scripts/notebook_tools/check_twin_index_collisions.py",
+            "scripts/notebook_tools/twin_open_claims.py",
             "scripts/ci/fast_lane.py",
             "scripts/ci/fast_lane_registry.py",
         ],
@@ -3296,6 +3409,69 @@ TRANCHE32: list[Guard] = [
         absorbed=True,
         needs_base=True,
         warn_rc=(2,),
+    ),
+]
+
+# ---------------------------------------------------------------------------
+# TRANCHE 35 -- denominateur de serie dans l'en-tete d'un carnet (#23678/#23738).
+#
+# Le champ `**Notebook** : 6f/13` porte l'effectif de la serie, une donnee
+# DERIVEE dont la source de verite est le catalogue genere : il est perime par
+# construction des qu'un carnet est ajoute a la racine. Mesure du 2026-10-31 sur
+# la serie RL : 18 carnets le declaraient, tous faux, et l'accretion de `RL-06f`
+# en a perime 14 d'un coup sans qu'aucun signal ne tire. L'organe existe depuis
+# le corpus de #23739 mais rien ne l'executait -- un organe que rien n'execute
+# ne garde rien.
+#
+# ADVISORY (`blocking=False`) : c'est la forme qui n'exige aucun sign-off
+# (`CLAUDE.md` section A reserve le sign-off aux ajouts normatifs et aux
+# changements de registre de gates ; un advisory publie un verdict sans jamais
+# tenir le merge). La bascule en bloquant reste un geste trace a part, qui
+# appartient au coordinateur.
+#
+# Mesure prerable au cablage (demande NanoClaw 2 de la revue de #23739) :
+# `check_series_denominator.py MyIA.AI.Notebooks --json` rend **0 constat** sur
+# l'arbre entier a la tete de `main` du 2026-11-01, controle independamment par
+# `grep -E '\*\*Notebook(\*\*)? *: *[0-9]+[a-z]? */ *[0-9]+'` -> 0 fichier.
+# Le garde nait donc vert : aucun rouge heritee ne tombe sur une PR innocente.
+#
+# Forme : iter par carnet modifie (`--check` n'existe pas dans l'organe, il
+# prend des chemins positionnels -- `{changed_paths}` substitue un fichier a la
+# fois). Un carnet modifie qui declare encore un denominateur remonte sur la PR.
+#
+# `pre_argv` : le detecteur prouve qu'il tire avant de rendre un vert (#11685).
+# `absorbed=True` : meme convention que TRANCHE11/13/22/32.
+#
+# Numero : `TRANCHE37`, pas `TRANCHE35`. Deux tranches se sont disputé le nom
+# `TRANCHE35` -- celle-ci (advisory de denominateur, #23678, #23951) et la
+# garde d'encodage (#23021, #24037). La seconde affectation ecrase la premiere
+# en Python : le registre portait une garde **muette**, celle de #23678 ne
+# tournait pas (incident #19374). `TRANCHE35` reste a la garde d'encodage, qui
+# avait deja ete evacuee en amont ; `TRANCHE36` est reserve a la PR #24063
+# (garde des chemins machine), en vol sur une autre lane -- d'ou `TRANCHE37`.
+# ---------------------------------------------------------------------------
+TRANCHE37: list[Guard] = [
+    Guard(
+        name="Series-denominator advisory (denominateur d'en-tete, #23678)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "scripts/notebook_tools/check_series_denominator.py",
+            "scripts/tests/test_check_series_denominator.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        iterate_paths=["MyIA.AI.Notebooks/**/*.ipynb"],
+        pre_argv=[
+            "python", "scripts/tests/test_check_series_denominator.py",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_series_denominator.py",
+            "{changed_paths}",
+        ],
+        blocking=False,
+        iterates_paths=True,
+        absorbed=True,
     ),
 ]
 
@@ -3337,5 +3513,156 @@ TRANCHE34: list[Guard] = [
         needs_base=True,
         absorbed=True,
         warn_rc=(2,),
+    ),
+]
+
+# ---------------------------------------------------------------------------
+# Garde d'encodage, critere 3 de #23021 (tranche du 2026-11-01).
+#
+# L'organe `scripts/notebook_tools/check_encoding_corruption.py` a ete livre par
+# #23024/#23036 avec DEUX formes : une verification pleine (`<chemins>`, cablee
+# en hook pre-commit sur les carnets stages) et une garde de DELTA
+# (`--base <ref>`, artefacts sur les LIGNES AJOUTEES des carnets changes). Sa
+# docstring annoncait la seconde comme « garde CI bloquante » -- mais mesure du
+# 2026-11-01 : aucun workflow, aucun job, aucune entree de ce registre ne
+# l'invoquait. Une capacite annoncee que rien n'invoque est une garde
+# debranchee, et le hook pre-commit est contournable (`--no-verify`, poste sans
+# `pre-commit install`) : la classe n'etait donc tenue que sur les postes
+# equipes. Cette tranche branche la forme de delta qui manquait.
+#
+# Pourquoi un delta et pas un scan global : le stock de `main` au 2026-11-01
+# mesure **0 artefact** sur les deux carnets repares (controle positif passe :
+# la prose francaise correcte est bien presente, la mesure ne rend pas 0 pour
+# cause de fichier absent). Le stock est donc propre et ne rougit personne ;
+# seule une PR qui REINTRODUIT la corruption sur une ligne ajoutee rougit. Un
+# scan global aurait le meme verdict aujourd'hui mais ferait payer a chaque PR
+# notebook le cout du corpus entier.
+#
+# L'organe apparait dans `paths` : une PR qui change le detecteur doit voir le
+# garde se declencher, sinon un detecteur casse passerait sans temoin (lecon
+# #11685/#12817, meme motif que `pip-leak-guard`).
+#
+# rc=2 = incident d'entree (git diff en echec), donc `warn_rc` : un incident
+# n'est ni une faute de la PR ni un quitus (precedent #17941 / TRANCHE34).
+# ---------------------------------------------------------------------------
+TRANCHE35: list[Guard] = [
+    Guard(
+        name="encoding-corruption-guard",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**/*.ipynb",
+            "scripts/notebook_tools/check_encoding_corruption.py",
+        ],
+        argv=["python", "scripts/notebook_tools/check_encoding_corruption.py",
+              "--base", "{base_ref}"],
+        blocking=True,           # BLOQUANT : critere 3 de #23021, en delta
+        needs_base=True,
+        diff_bounded=True,       # lignes ajoutees seulement : main ne peut pas heriter
+        absorbed=True,
+        warn_rc=(2,),
+    ),
+]
+
+# Renumerote TRANCHE35 -> TRANCHE36 le 2026-11-01 (#3436) : `main` avait affecte
+# TRANCHE35 a la garde d'encodage (#23021) pendant que cette branche lui
+# affectait le garde des chemins machine ; meme precedent que TRANCHE31 ->
+# TRANCHE32 (c2740, 2026-10-31).
+
+# TRANCHE36 -- chemins machine dans metadata.papermill (#3436, delta borne)
+#
+# Le hook `scrub-papermill-paths` de `.pre-commit-config.yaml` est la premiere
+# ligne, et il fonctionne : mesure du 2026-11-01 sur une sonde Windows, `--scan`
+# detecte 2 chemins absolus, `--apply` les ramene aux basenames. Mais un hook
+# client se contourne par construction (`--no-verify`, `SKIP`, tout commit hors
+# hooks git), et QUATRE fuites ont atterri le meme jour (#23914, #23917,
+# #23943, #23958) avant d'etre reparees apres coup. Aucun organe CI ne les
+# voyait : les checks lisent les sorties, pas `metadata.papermill`.
+#
+# DELTA et pas absolu : `main` porte 22 carnets / 42 chemins absolus
+# (`scrub_papermill_paths.py --scan-all`, meme jour). Un gate absolu rougirait
+# toute PR touchant un de ces carnets pour une raison sans rapport -- le piege
+# que `pip_leak_delta.py` documente (#6314). Le stock herite ne rougit
+# personne ; une introduction, si.
+#
+# Durci post-review NanoClaw (2026-11-01) : le delta porte sur les VALEURS
+# (une substitution C:\old -> D:\new rougit a compte constant), le predicat
+# est insensible a la casse et couvre racines POSIX, UNC et lecteur minuscule,
+# et un renommage pur d'un carnet du stock fuyard reste vert (git diff -M).
+#
+# Controles du detecteur, rejoues : positif sur la fuite reelle de #23958 avant
+# scrub (`--base-ref 3b199d3d8d --head-ref 8e54b1335` : 0 -> 2 chemins, rc=1),
+# negatif sur `main` (rc=0) et negatif apres le scrub de la meme PR
+# (`2639f9214de`, rc=0). Bout en bout par `fast_lane.py --only` : success sur
+# une branche propre, failure sur un commit jetable portant les deux chemins.
+# ---------------------------------------------------------------------------
+TRANCHE36: list[Guard] = [
+    Guard(
+        name="papermill machine paths (delta vs base)",
+        source=FAST_LANE_NATIVE,
+        paths=NOTEBOOK_GLOBS + [
+            "scripts/ci/check_papermill_machine_paths.py",
+            "scripts/notebook_tools/scrub_papermill_paths.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python", "scripts/ci/check_papermill_machine_paths.py",
+            "--base-ref", "{base_ref}",
+        ],
+        blocking=True,
+        needs_base=True,
+        diff_bounded=True,
+        absorbed=True,
+        warn_rc=(2,),            # 2 = base injoignable : UNKNOWN, pas un rouge
+    ),
+]
+
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 38 (#22012, bascule graduelle option 4, sign-off user 2026-11-02) --
+# premiere bascule ADVISORY -> BLOQUANT du scanner md-hierarchy : la classe
+# HINT-AS-HEADING seule devient verrou, les autres classes (H1-DEEP,
+# MULTI-H1, HEADING-IN-LIST, COLLAPSED-MARKDOWN) restent advisory via le
+# commenter absorbe (always-on-guards.yml). Le scanner porte le routage de
+# sortie (--fail-kinds -> rc=4 ; rc=2 reste advisory) et le sucre --base-ref
+# qui compose --name-status + --reference-base (#12735 / #13315) : le drift
+# mesure est imputable au diff de la PR, jamais a la derive heritee de main.
+# La classe etait a zero corpus au re-seed (PR #22222, Supermodularite absent
+# de la baseline) ; ce garde l y maintient.
+#
+# Le nom du garde ET le `name:` du workflow source ne portent PAS le marqueur
+# "advisory" : pr_gate.py rule 6 lit les deux et jugerait sinon le rouge
+# non-bloquant, lui oterait ses dents.
+#
+# `pre_argv` : la suite 8 tests (test_scan_md_hierarchy_fail_kinds.py) est le
+# controle par faux negatif du critere d'acceptance 3 de #22012 -- injecter
+# un indice-en-titre -> rouge (rc=4) ; le corriger en gras -> vert.
+#
+# Numero : TRANCHE38. TRANCHE36 est reserve a la PR #24063 (garde des chemins
+# machine), en vol sur une autre lane (cf note numero TRANCHE37).
+# ---------------------------------------------------------------------------
+TRANCHE38: list[Guard] = [
+    Guard(
+        name="MD hierarchy HINT-AS-HEADING (base vs PR, bloquant)",
+        source="scan-md-hierarchy-drift.yml",
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "scripts/notebook_tools/scan_md_hierarchy.py",
+            "scripts/notebook_tools/md_hierarchy_baseline.json",
+        ],
+        pre_argv=[
+            "python", "-m", "pytest", "-q",
+            "scripts/tests/test_scan_md_hierarchy_fail_kinds.py",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/scan_md_hierarchy.py",
+            "MyIA.AI.Notebooks/", "--baseline", "--diff",
+            "--fail-kinds", "HINT-AS-HEADING",
+            "--base-ref", "{base_ref}",
+        ],
+        blocking=True,
+        needs_base=True,
+        absorbed=True,
     ),
 ]

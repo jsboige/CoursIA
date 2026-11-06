@@ -16,11 +16,16 @@ import Mathlib.Tactic
   Namespace: `RepeatedGames_en` (anti-collision with `RepeatedGames` of
   the FR canonical `Stage.lean`). External access:
   `RepeatedGames_en.PDAction`, `RepeatedGames_en.PrisonersDilemma`, etc.
-  No external module imports this EN sibling; the FR-canonical modules
-  (Discounting, GrimTrigger, Folk) reference `RepeatedGames.PrisonersDilemma`
-  via `open RepeatedGames` (the FR namespace), and the higher-level EN
-  siblings (Discounting_en, GrimTrigger_en) likewise reference the FR
-  base types. This Stage_en is the autonomous EN mirror of the foundation.
+  Import rule for this series: every higher-level EN module imports
+  `RepeatedGames.Stage_en` and works inside `namespace RepeatedGames_en`,
+  resolving the base types through `open RepeatedGames_en`, never through
+  the FR namespace. The current roster of those modules is the
+  `## Structure` section of `RepeatedGames_en.lean`; it is deliberately not
+  restated here, so adding a sibling means updating one place, not two.
+  The FR-canonical modules (Discounting, GrimTrigger, Folk) stay inside
+  `namespace RepeatedGames` and reference the base types directly, and no
+  FR module crosses into the EN namespace. This Stage_en is the autonomous
+  EN mirror of the foundation.
 
   Methodological note: manual translation of the FR canonical (no historical
   pre-Option-A EN source to recover; FR-first file since origin).

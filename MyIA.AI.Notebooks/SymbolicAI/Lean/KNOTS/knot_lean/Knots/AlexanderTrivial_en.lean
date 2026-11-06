@@ -15,9 +15,9 @@
   - the signed variant (`alexanderEntryNeg`, `alexanderEntrySigned`,
     `alexanderPolynomialSigned`) and its 4-crossing class divergence
     diagnosis;
-  - the two Dehn proofs: `conway_trivial_alexander` (minor in -t^6
+  - the two Dehn proofs: `conway_trivial_alexander` (minor in −t⁶
     for 11n34: deterministic Gauss elimination plus one composite step
-    at the k=8 corner) and `KT_trivial_alexander` (t^5 for 11n42:
+    at the k=8 corner) and `KT_trivial_alexander` (t⁵ for 11n42:
     integral transvections of the minor).
 
   Digestion of the non-trivial `set_option`s (plan #18397, level 3):
@@ -32,10 +32,11 @@
   pair inherited from `Conway`/`Conway_en`: docstrings and comments
   translated, byte-identity of signatures, statements and tactics.
 
-  Origin: Conway_en.lean l.50-2471 (2422 lines), reference commit
+  Origin: Conway.lean l.39-2458 (2420 lines), reference commit
   origin/main 1cef8a55024. No reformatting, no tactic modified.
   After this slice, `Knots/Conway_en.lean` is reduced to the Option A
-  plan aggregator stub. -/
+  plan aggregator stub. The EN text was moved from Conway_en.lean
+  l.50-2471 (2422 lines). -/
 
 import Knots.Basic_en
 import Knots.Mutation_en
@@ -175,7 +176,7 @@ theorem det_three_aux (A : Matrix (Fin 3) (Fin 3) (Polynomial ℤ)) :
 under the designated normalization (minor without first row nor last
 column).
 
-It is also the polynomial of the **(2, 3) torus knot**: `t² − t + 1` reads
+It is also the polynomial of the **torus knot** `(2, 3)`: `t² − t + 1` reads
 `(t³ + 1)/(t + 1)`, and its roots are the **primitive** 6th roots of unity.
 The hidden-phenomena article (Michael & Kenta, 2026-10-03,
 https://hidden-phenomena.com/articles/trefoil) identifies this knot with the
@@ -2567,10 +2568,10 @@ Prior measurement (Python probe, engine validated against the proven
 values −t⁶/11n34 and t⁵/11n42, cf.
 `python-sweep-probe-validate-against-proven-value`): among the 96
 well-formed non-trivial mutants of the construction (4 rotations × 24
-boundary re-attachments), exactly **one** carries a trivial minor —
-(r13, (8 11)(13 22)) below. The mutant is not the 11n42 census code (no
-(ρ, perm, σ) superposes them): a second drawing of the same isotopy type,
-documented gap.
+re-attachments of the 4 boundary points), exactly **one** carries a
+trivial minor — (r13, (8 11)(13 22)) below. The mutant is not the 11n42
+census code (no (ρ, perm, σ) superposes them): a second drawing of the
+same isotopy type, documented gap.
 -/
 
 /-- The re-attachment involution realizing the sphere mutation Conway →
@@ -2591,6 +2592,41 @@ theorem conwayMutant_eq_sphereMutate :
     conwayMutantDiagram.crossings =
       sphereMutate conwayKnotDiagram.crossings 5 11 KleinRot.r13 conwayJunctionSwap := by
   rfl
+
+/-- The re-attachment `conwayJunctionSwap` is an involution (two disjoint
+transpositions, 8↔11 and 13↔22): it is an element of the Klein group on the
+four boundary points — the re-attachment condition required by
+`AreMutantDiagrams`. -/
+theorem conwayJunctionSwap_involutive :
+    ∀ e, conwayJunctionSwap (conwayJunctionSwap e) = e := by
+  intro e
+  by_cases h8 : e = 8
+  · subst h8; rfl
+  by_cases h11 : e = 11
+  · subst h11; rfl
+  by_cases h13 : e = 13
+  · subst h13; rfl
+  by_cases h22 : e = 22
+  · subst h22; rfl
+  · simp [conwayJunctionSwap, h8, h11, h13, h22]
+
+/-- **Depth-0 witness (C, M)** under the amended mutation definition
+(link 8, 2bis): the pair (Conway, sphere mutant) satisfies
+`AreMutantDiagrams` with no gadget at all — the single sphere mutation of the
+census (window [5, 11), rotation r13, re-attachment `conwayJunctionSwap`)
+realizes it. This is the witness the bare-window notion did not provide
+(measured obstruction of link 7, #2874 c.6258386829). -/
+theorem areMutantDiagrams_conway_conwayMutant :
+    AreMutantDiagrams conwayKnotDiagram conwayMutantDiagram :=
+  ⟨5, 11, KleinRot.r13, conwayJunctionSwap, conwayJunctionSwap_involutive,
+    conwayMutant_eq_sphereMutate.symm⟩
+
+/-- Knot-level corollary of the depth-0 witness: the Conway knot and its
+sphere mutant are mutants in the sense of `AreMutants`. -/
+theorem areMutants_conway_conwayMutant :
+    AreMutants conwayKnot ⟨conwayMutantDiagram⟩ :=
+  ⟨conwayKnotDiagram, conwayMutantDiagram, ReidemeisterEquiv.refl _,
+    ReidemeisterEquiv.refl _, areMutantDiagrams_conway_conwayMutant⟩
 
 /-- Intermediate matrix 0 of the Gauss elimination of the mutant (generated). -/
 noncomputable def conwayMutantM0 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![

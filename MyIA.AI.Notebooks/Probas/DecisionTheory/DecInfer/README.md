@@ -8,6 +8,24 @@ Arc autonome de **théorie de la décision bayésienne** en Infer.NET : les note
 
 **Stack** : Infer.NET (.NET 9.0 + dotnet-interactive), EP/VMP par défaut. Les notebooks companions (2, 2b, 8b) utilisent le **kernel Lean 4** (WSL) et le lake [`decision_theory_lean`](../decision_theory_lean/).
 
+> **Paires jumelles (Infer.NET ↔ PyMC, théorie de la décision)** — déclaration de maintenance (issue #24197, section C) : `DecInfer/` et `DecPyMC/` enseignent le *même plan* — 7 étapes communes — sur *deux moteurs* (message passing compilé vs échantillonnage MCMC) ; ce ne sont pas des doublons. Un changement pédagogique commun (une étape ajoutée, retirée ou renvoyée de l'une à l'autre) se porte **dans les deux** : si tu modifies l'une, vérifie l'autre.
+
+**Paire symétrique, sans canonique** : les deux arcs ont le même statut — aucun n'est le port de l'autre, et chacun porte des carnets que l'autre n'a pas. La déclaration porte donc sur l'**invariant de maintenance** ci-dessus et sur les exceptions ci-dessous, pas sur une hiérarchie.
+
+**Le plan commun, et ses numéros divergents** — le titre fait foi, pas le numéro :
+
+| Étape | `DecInfer` | `DecPyMC` |
+|---|---|---|
+| Fondements axiomatiques (VNM) | `01-Utility-Foundations` | `01-Utility-Foundations` |
+| Utilité de l'argent, aversion au risque | `03-Utility-Money` | `02-Utility-Money` |
+| Utilité multi-attributs | `04-Multi-Attribute` | `03-Multi-Attribute` |
+| Réseaux de décision | `05-Decision-Networks` | `04-Decision-Networks` |
+| Valeur de l'information | `06-Value-Information` | `05-Value-Information` |
+| Systèmes experts, décisions robustes | `07-Expert-Systems` | `06-Expert-Systems` |
+| MDPs, bandits, POMDPs | `08-Sequential` (+ `10-Thompson-Sampling`) | `07-Sequential` |
+
+**Sans jumeau de l'autre côté** : côté Infer, les trois companions formels Lean 4 — `02-Lean-ExpectedUtility`, `02b-Lean-Coherence`, `08b-Lean-Gittins` — n'ont pas d'équivalent Python, et l'étape « MDPs, bandits, POMDPs » y est **découpée** en `08` + `10`. Côté PyMC, `08-Actuariat-Capstone` ouvre la sous-série [`Actuariat/`](../Actuariat/README.md) (T1-T5) et n'a pas de jumeau Infer.
+
 ## Pourquoi un arc autonome
 
 Jusqu'à la restructuration de la série, la théorie de la décision était imbriquée dans le corpus bayésien Infer, ce qui masquait la **dualité des deux fils** : *modéliser l'incertitude* (inférence bayésienne) vs *décider face à l'incertitude* (théorie de la décision). L'extraction dans [`DecisionTheory/DecInfer/`](./) rend ces deux arcs **physiquement indépendants** tout en préservant le continuum pédagogique (le fil décision s'appuie sur les posteriors du corpus bayésien). Le lake [`decision_theory_lean`](../decision_theory_lean/), à la **racine de la série Probas**, reste visible des deux pistes (Infer.NET et PyMC).
@@ -81,7 +99,7 @@ La concavité de la fonction d'utilité — fondement de l'aversion au risque et
 
 ![Trois fonctions d'utilité fondamentales sur trois panneaux côte-à-côte : racine carrée U(x)=√x (concave), logarithme U(x)=ln(x) (concave), et linéaire U(x)=x (neutre au risque, en référence) — montrant l'utilité marginale décroissante : les deux courbes concaves s'aplatissent quand la richesse x augmente, tandis que la linéaire reste constante.](../../assets/readme/probas-utility-functions.png)
 
-*Figure reprise de la racine Probas (MANIFEST c.491 audit G.1, 1/1 ACCURATE). Source originale : [`DecPyMC-2-Utility-Money.ipynb`](../../DecisionTheory/DecPyMC/DecPyMC-2-Utility-Money.ipynb), cellule 10 « Démonstration numérique : utilité marginale décroissante ». Voir aussi le [README racine Probas § De la distribution à l'utilité](../../README.md#de-la-distribution-à-lutilité--pourquoi-la-courbe-est-concave) pour le cadrage théorique (Pratt 1964, Arrow 1965).*
+*Figure reprise de la racine Probas (MANIFEST c.491 audit G.1, 1/1 ACCURATE). Source originale : [`DecPyMC-02-Utility-Money.ipynb`](../../DecisionTheory/DecPyMC/DecPyMC-02-Utility-Money.ipynb), cellule 10 « Démonstration numérique : utilité marginale décroissante ». Voir aussi le [README racine Probas § De la distribution à l'utilité](../../README.md#de-la-distribution-à-lutilité--pourquoi-la-courbe-est-concave) pour le cadrage théorique (Pratt 1964, Arrow 1965).*
 
 ### DecInfer-04 : Utilité multi-attributs
 
@@ -132,7 +150,7 @@ Applications : A/B testing adaptatif, recommandation en ligne, essais cliniques 
 | Série | Lien | Relation |
 | --- | --- | --- |
 | [Corpus bayésien Infer](../../Infer/README.md) | Posteriors (Beta, gaussianes) | Le posterior est l'input de la politique de décision |
-| [PyMC](../DecPyMC/README.md) | DecPyMC-1 à DecPyMC-7 | Même arc décision en Python/NUTS (Thompson MCMC, diagnostics ArviZ) |
+| [PyMC](../DecPyMC/README.md) | DecPyMC-01 à DecPyMC-07 | Même arc décision en Python/NUTS (Thompson MCMC, diagnostics ArviZ) |
 | [Lake `decision_theory_lean`](../decision_theory_lean/) | Companions 2, 2b, 8b | Preuves formelles Lean 4 (vNM, de Finetti, Gittins) |
 | [GameTheory](../../../GameTheory/README.md) | Décision sous incertitude | Miroir : adversaire rationnel vs processus stochastique |
 | [RL](../../../RL/README.md) | MDPs (DecInfer-08) | L'agent apprend la politique par interaction |

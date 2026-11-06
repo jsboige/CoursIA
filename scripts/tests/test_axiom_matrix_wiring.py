@@ -188,3 +188,84 @@ def test_guard_double_trigger_allowlist_is_empty():
     sys.path.insert(0, str(REPO / "scripts/ci"))
     import check_lake_matrix_paths
     assert check_lake_matrix_paths.KNOWN_DOUBLE_TRIGGERS == set()
+
+
+# --- #22453 : la porte d'axiomes doit voir les freres i18n `_en` -------
+
+def test_knot_gate_opts_in_the_i18n_siblings():
+    """knot_lean's axiom gate must opt in explicitly -- via its manifest
+    entry since the matrix migration (#13751) deleted lean-knot.yml.
+
+    The `'*'` derivation enumerates every module `lake build` compiles; the
+    FR-only filter then drops the `_en` siblings. Measured locally, without
+    Lean: 48 modules discovered on knot_lean, 24 inspected, 751 declarations
+    carried by the 24 excluded siblings. conway and mimo already pass
+    `include-i18n-siblings: "true"`; knot did not (#22453). The wrapper pin
+    moved to the manifest at migration: the matrix step interpolates
+    `matrix.axiom-include-i18n-siblings || 'false'` -- a dropped key would
+    silently re-exclude the 24 siblings."""
+    entry = next(e for e in _manifest()["lakes"] if e["lake"] == "knot")
+    assert entry["axiom-target-modules"] == "*"
+    assert entry["axiom-include-i18n-siblings"] == "true", (
+        "knot_lean garde ses 24 freres `_en` hors de la porte d'axiomes")
+    # Les 8 sorries reconnus (distinct_code_sorry mesure) sont rapportes
+    # has_sorry, non gates : fail-on-sorry false, exact contrat du wrapper.
+    assert entry["axiom-fail-on-sorry"] == "false"
+    assert entry["sorry-baseline"] == "8"
+
+
+def test_knot_historical_wrapper_is_gone():
+    """lean-knot.yml was knot_lean's PRE-migration gate. With knot in the
+    manifest it is a DOUBLE trigger (wrapper + matrix leg build the lake
+    twice). The migration contract: a manifest lake keeps no wrapper
+    (#17336, #17374)."""
+    assert not (REPO / ".github/workflows/lean-knot.yml").exists(), (
+        "le wrapper historique de knot_lean est revenu -- double build")
+
+
+def test_composites_trigger_on_the_axiom_step_program():
+    """The axiom step IS the gate's program (extracted from the reusable
+    workflow in #17336). It was missing from the composites' `on.paths`
+    while `lean_server.py` and `check_target_coverage.py` were listed: a
+    change to the rule could ship without the gate ever running on it --
+    the #8712 lesson applied one layer down (#22453). lean-knot.yml left
+    this loop at its matrix migration (#13751): the dispatcher's own
+    self-cover (test_axiom_gate_files_are_self_covered) carries the rule
+    for matrix lakes."""
+    for wf in ("lean-conway",):
+        doc = yaml.safe_load(
+            (REPO / f".github/workflows/{wf}.yml").read_text(encoding="utf-8"))
+        on = doc.get("on") or doc.get(True)
+        for event in ("push", "pull_request"):
+            assert "scripts/lean/axiom_check_step.py" in on[event]["paths"], (
+                f"{wf}: le programme de la porte ne declenche pas la porte "
+                f"(on.paths[{event}])")
+
+
+def test_the_i18n_surface_is_derived_from_the_single_filter():
+    """The gate must not carry a second copy of the `_en` rule: the
+    excluded surface is the set difference of the SAME call to
+    `filter_i18n_siblings`, and the step prints it (#22453)."""
+    src = (REPO / "scripts/lean/axiom_check_step.py").read_text(encoding="utf-8")
+    assert "filter_i18n_siblings" in src
+    assert "i18n siblings (_en)" in src, (
+        "la porte ne dit plus quelle surface i18n elle a inspectee")
+    assert src.count("endswith(\"_en\")") == 0, (
+        "une seconde copie du predicat `_en` est apparue dans la porte")
+
+
+def test_the_filter_splits_the_bilingual_surface_of_a_real_lake():
+    """Property, not snapshot: on a lake that HAS `_en` siblings, the
+    filter keeps the FR modules and excludes exactly the siblings. A
+    snapshot of counts would rot on every module added."""
+    sys.path.insert(0, str(REPO / "scripts" / "lean"))
+    from check_target_coverage import discover_modules, filter_i18n_siblings
+    project = REPO / "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean"
+    discovered = set(discover_modules(project, None))
+    kept = set(filter_i18n_siblings(discovered))
+    excluded = discovered - kept
+    assert excluded, "knot_lean n'a plus de freres `_en` -- la mesure change"
+    for mod in excluded:
+        assert any(part.endswith("_en") for part in mod.split(".")), mod
+    for mod in kept:
+        assert not any(part.endswith("_en") for part in mod.split(".")), mod

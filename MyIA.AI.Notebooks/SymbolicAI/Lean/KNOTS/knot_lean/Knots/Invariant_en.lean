@@ -1,5 +1,5 @@
 /-
-  Knots.Invariant — Knot invariants (3-colorability, crossing number)
+  Knots.Invariant — Knot invariants (tricolorability, crossing number)
   ====================================================================
 
   Knot invariants distinguish knots. This file scaffolds:
@@ -538,8 +538,8 @@ theorem triColorConditionAt_newKink {d₁ d₂ : KnotDiagram}
       (d₁.numEdges + 2) he_lo he_hi
   -- Closure (resolved c.987): `simp only [triColorConditionAt]` unfolds the
   -- condition WITHOUT unfolding `colorAtNat` (not marked `@[simp]`), so the `_hcol`
-  -- match the un-unfolded form — this was the c.986 pitfall (the mixed
-  -- `simp only [triColorConditionAt, hcol*]` unfolded `colorAtNat` before the hcol match).
+  -- match the un-unfolded form — this was the c.986 pitfall (the mixed `simp only`
+  -- `triColorConditionAt, hcol*` unfolded `colorAtNat` before the hcol match).
   -- After the 2 `simp only`, the 4 slots reduce to `d₁.colorAtNat coloring₁ a`:
   -- continuity `c2=c4` → `True`, Fox left `(=a ∧ =a)` → `True ∧ True`, Fox
   -- right `(≠a ∧ …)` remains as an opaque `TriColor ≠` atom. The residual is thus
@@ -739,7 +739,7 @@ theorem tricolorable_forward_r1 {d₁ d₂ : KnotDiagram}
 `numEdges + 4`), the other removes them. The ASCENDING arm (d₂ = d₁ ++ [c₁, c₂])
 admits a complete and simple forward transfer: under `wf`, every old label
 already appears exactly 2× in `d₁.edges` (clause b) and exactly 2× in
-`d₂.edges` — and `d₂.edges = d₁.edges ++ (labels of c₁, c₂)` — so the appended
+`d₂.edges` — and `d₂.edges = d₁.edges` ++ (labels of c₁, c₂) — so the appended
 crossings use ONLY the 4 fresh labels `{n+1..n+4}`. The witness: all 4 fresh
 edges receive `TriColor.red`; each appended crossing then reads
 `(red, red, red, red)` — bounds by wf (a), continuity `red = red`, Fox
@@ -1049,10 +1049,9 @@ theorem r2_append_only_wall :
 -- `Reidemeister2` — was false for the append-only constructor. This counterexample
 -- has been **removed** (Stage 2, #2874): re-anchoring `r2`/`r3` onto the
 -- **connected** relations (`Reidemeister2Connected`/`Reidemeister3Connected`) closes
--- the door on the free moves, the master is proven (§2-Ω), and
--- `not_tricolorable_invariant_current` becomes false by construction. The wall
--- `r2_append_only_wall` (below) remains valid: it speaks of the FREE move, not of
--- the `ReidemeisterEquiv` closure.
+-- the door on the free moves, the master is proven (§2-Ω), and `not_tricolorable_invariant_current`
+-- becomes false by construction. The wall `r2_append_only_wall` (below) remains
+-- valid: it speaks of the FREE move, not of the `ReidemeisterEquiv` closure.
 -- theorem not_tricolorable_invariant_current : ⊥  -- removed: see comment above.
 
 /-! ### R2 cure foundation — cardinality is the only obstruction
@@ -2111,7 +2110,7 @@ theorem unknot_not_tricolorable : ¬ Knot.isTricolorable unknot := by
 
 /-! ## 4b. The figure-eight is NOT tricolorable
 
-The figure-eight (4_1) has 4 crossings and determinant 5, so it is NOT
+The figure-eight (4₁) has 4 crossings and determinant 5, so it is NOT
 3-colorable in the Fox sense. Under **Path B** (the `c₂ = c₄` over-strand
 continuity conjunct), this is the canonical distinguishing witness: the earlier
 permissive model admitted a spurious tricoloring `(0,0,0,1,0,0,1,2)` (README
@@ -2861,8 +2860,8 @@ theorem Reidemeister1Connected.tricolorable_backward {d₁ d₂ : KnotDiagram}
       · -- All-distinct kink mode: VACUOUS (cycle #11211). The kink
         -- `C = ⟨a, b, c, c⟩` has `e3 = e4 = c`: over-strand continuity
         -- (`c2 = c4`, Path B conjunct) reads `col₂(b) = col₂(c)` = `c3`,
-        -- while the all-distinct Fox mode requires `c2 ≠ c3`. An R1
-        -- self-crossing is only Fox-colourable in all-equal mode — no
+        -- while the all-distinct Fox mode requires `c2 ≠ c3`. An
+        -- R1 self-crossing is only Fox-colourable in all-equal mode — no
         -- `IsTricolorable d₂` witness reaches this branch. The earlier
         -- col₂→col₁ lifts (projective / single-swap / σ∘col₂, withdrawn
         -- register) were searching for an inhabitant of an empty branch;
@@ -3597,9 +3596,9 @@ theorem trefoil_not_unknot : ¬ KnotEquiv trefoil unknot := by
   intro h
   -- trefoil ≈ unknot ⇒ trefoil tricolorable ↔ unknot tricolorable (invariant).
   -- trefoil IS tricolorable, unknot IS NOT ⇒ contradiction.
-  -- `tricolorable_invariant` is now proven, so the corollary composes it with
-  -- the two pieces (`trefoil_tricolorable`, `unknot_not_tricolorable`), both
-  -- proven under the real Fox condition.
+  -- The sketch left as `sorry` now type-checks: `tricolorable_invariant`
+  -- is proven, and the two pieces (`trefoil_tricolorable`, `unknot_not_tricolorable`) are
+  -- proven under the real Fox condition, so the corollary composes them.
   --
   -- The `Knot`-level wrappers (`KnotEquiv`, `Knot.isTricolorable`) are opaque
   -- `def`s that delta-reduce on demand to the `KnotDiagram` level

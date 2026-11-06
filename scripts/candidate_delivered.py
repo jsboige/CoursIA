@@ -3,9 +3,14 @@
 
 #10466 diagnosed why the pool ``gh issue list --state open`` is saturated with
 work that is already delivered but not closed: delivery PRs write ``See #N``
-(semantics "partial contribution") even when they fully resolve the issue, so
-GitHub does not close it. The issue stays in the pool, the next worker reads it
-as available, and re-picks it in duplicate. The cost is paid -- measured
+-- the marker of a PARTIAL tranche per git-workflow.md -- even when the tranche
+in fact fully resolves the issue, so GitHub does not close it. Since #23762 the
+marker family is split (see ``_closing_marker_re``): only the CLOSING forms
+(``Closes``/``Fixes``/``Resolves``) are evidence of a complete delivery; the
+partial forms (``See``, ``Part of``, ``Refs``) classify as ``partial`` and never
+earn the label -- a tranche is not a delivery. The issue stays in the pool, the
+next worker reads it as available, and re-picks it in duplicate. The cost is
+paid -- measured
 firsthand on #9568 (delivered 2026-08-06 by #9589, then TWO post-delivery
 ``[CLAIMED]`` landed on it, one +4 days after the merge, dispatching a sister
 lane to redo work that no longer existed).
@@ -129,8 +134,20 @@ from typing import Iterable
 import issue_containers
 # The coverage predicate is imported, not re-implemented: `[RELEASED]` means
 # two different things and the picker is the organ that already tells them
-# apart (see the block above `_is_protocol_attestation`).
-from pick_idle_grain import _released_covers_acceptance
+# apart (see the block above `_is_protocol_attestation`). It lives in
+# `released_covers`, a dependency-free module, because this file runs in CI
+# from a sparse-checkout that cannot host `pick_idle_grain` (#23762).
+from released_covers import _released_covers_acceptance
+# #24461 -- la grammaire de l'etat de livraison est source UNIQUE, dans
+# `delivery_grammar`, lue par le tapis (`pick_idle_grain.py`) comme par ce
+# poseur de label. Sans ce partage, l'attestation d'une lane armait l'etat
+# du tapis et JAMAIS le label -- et le tapis, qui paie sa lecture issue par
+# issue, laissait passer l'issue quand son budget de sondes etait epuise.
+from delivery_grammar import (  # noqa: E402
+    ATTESTED,
+    REVOKED,
+    attestation_state,
+)
 
 LABEL_DEFAULT = "candidate-delivered"
 LABEL_COLOR = "5319e7"  # purple -- "delivered, awaiting close triage"
@@ -155,9 +172,35 @@ def is_epic(title: str, labels: Iterable[str]) -> bool:
 # dispatch #N", or a `feature/N-...` branch name is context, not a claim.
 def _delivery_marker_re(number: int) -> "re.Pattern[str]":
     return re.compile(
-        r"\b(?:see|part\s+of|closes|fixes|refs|references?)\b\s*:?\s*#%d\b" % number,
+        r"\b(?:see|part\s+of|refs|references?"
+        r"|close[sd]?|fix(?:es|ed)?|resolve[sd]?)\b\s*:?\s*#%d\b" % number,
         re.IGNORECASE,
     )
+
+
+# #23762: the marker family splits in two, and only the CLOSING class
+# (`Closes`/`Fixes`/`Resolves`) is evidence of a complete delivery.
+# `See #N` / `Part of #N` are the repo's markers for a PARTIAL contribution
+# (git-workflow.md): a merged tranche followed by silence -- the lane moved on,
+# the rest waits its turn in the belt -- produces exactly the "merged + silent"
+# shape that used to earn the label. Measured by the secretariat (c228,
+# 2026-10-31): `Part of #22178` on #22202 is a reference to its umbrella, not a
+# delivery, and that marker is the mechanism behind the false positive.
+def _closing_marker_re(number: int) -> re.Pattern[str]:
+    return re.compile(
+        rf"\b(?:close[sd]?|fix(?:es|ed)?|resolve[sd]?)\b\s*:?\s*#{number}\b",
+        re.IGNORECASE,
+    )
+
+
+def closing_marker(body: str, number: int) -> bool:
+    """True iff ``body`` claims a COMPLETE delivery of issue ``number``.
+
+    Same adjacency rule as :func:`delivery_marker` (the marker directly before
+    the number), restricted to the closing keywords. A body that carries only
+    a partial marker is a delivered tranche, not a delivered issue.
+    """
+    return bool(_closing_marker_re(number).search(body or ""))
 
 
 def delivery_marker(body: str, number: int) -> bool:
@@ -186,18 +229,22 @@ def _is_bot(actor: str) -> bool:
 
 # Which protocol comments count as ATTESTATIONS -- i.e. do not break the
 # silence precondition -- is NOT a decision this module gets to make alone.
-# `pick_idle_grain.py` already draws that line on the same markers, and a
-# second, independently written rule diverged from it on the very first real
-# comment (measured 2026-10-27, Hermes review of this PR): `[RELEASED]` has
-# TWO senses -- a lane hands the item back on a real barrier, or it reports
-# the acceptance as already covered. The picker separates them with
-# ``_released_covers_acceptance``; this module now IMPORTS that predicate
+# The picker already draws that line on the same markers, and a second,
+# independently written rule diverged from it on the very first real comment
+# (measured 2026-10-27, Hermes review of this PR): `[RELEASED]` has TWO
+# senses -- a lane hands the item back on a real barrier, or it reports the
+# acceptance as already covered. `released_covers.py` (ex-pick_idle_grain)
+# separates them with ``_released_covers_acceptance``; this module IMPORTS
+# that predicate
 # instead of re-deriving it, so the label decision and the belt decision
 # cannot disagree on the same comment (class #17956, the same argument the
 # ``issue_containers`` branch below invokes for itself).
 #
 #   `[INFO] candidate-delivered`         attestation -- the label's own idiom
-#   `[DELIVERED] lane ... -- PR #N`      attestation -- closes the item
+#   `[DELIVERED] lane ... -- PR #N`      attestation for the BELT (it closes the
+#                                        item on the tapis); it does **not**
+#                                        arm the LABEL -- #24461, cf.
+#                                        `delivery_grammar.attestation_state`
 #   `[RELEASED] lane ... -- <coverage>`  attestation -- delivered, per picker
 #   `[RELEASED] lane ... -- <barrier>`   ACTIVITY -- nothing was delivered;
 #                                        the item becomes servable again
@@ -288,6 +335,15 @@ def classify(
                       (the default) means "not consulted" and preserves the
                       pre-#14307 behaviour, so existing callers are unaffected.
 
+    Contract -- ``issue["comments"]`` must carry the THREAD of the issue.
+    The attestation branch reads it (and only it): a payload fetched
+    without its comments therefore sees no living attestation, and the
+    issue falls back to the reference heuristic. This is not a bug today
+    (``main`` loads the comments), but it was an IMPLICIT contract: it is
+    written down here, and pinned by
+    ``test_sans_commentaires_pas_d_attestation_voyait`` (review Hermes,
+    2026-11-03, note de suivi).
+
     Returns:
         ``(verdict, detail)`` where verdict is one of:
         ``"epic"``         -- excluded (EPIC by title/label)
@@ -299,8 +355,27 @@ def classify(
                               references it only contextually (no delivery
                               marker in its body, #15060)
         ``"in_flight"``    -- an OPEN PR references it: work in progress (#11100)
+        ``"partial"``      -- a merged PR declares a PARTIAL contribution
+                              (`See`/`Part of`/`Refs`) and none carries a
+                              closing keyword (`Closes`/`Fixes`/`Resolves`):
+                              a tranche is not a delivery (#23762)
         ``"active"``       -- a comment landed after the latest merge
         ``"candidate"``    -- delivered + silent: pose the label
+        ``"attested"``     -- the thread carries a LIVING attestation:
+                              the `[INFO] candidate-delivered` forms, or
+                              `[RELEASED] ... acceptance deja couverte`.
+                              Grammaire **ETROITE** : la forme
+                              `[DELIVERED] lane X -- PR #N` et le dossier
+                              `[CLOSURE PREFLIGHT]` de verdict CLOSE
+                              n'arment **pas** le label (cf.
+                              `delivery_grammar.attestation_state`, qui
+                              exclut la premiere et que le labeler
+                              interroge avec `dossier=False`) : pose the
+                              label (#24461)
+        ``"attestation_revoked"`` -- the thread carries a RETRACTED
+                              attestation (`[NOT-DELIVERED]` /
+                              `[INFO] candidate-delivered-revoked`): remove
+                              the label, and let no other path arm it (#24461)
     """
     title = issue.get("title", "")
     labels = issue.get("labels", []) or []
@@ -325,6 +400,40 @@ def classify(
         who = retraction.get("actor") or "unknown"
         when = retraction.get("created_at") or "?"
         return ("retracted", f"label removed by {who} on {when}; verdict stands")
+
+    # #24461 -- l'ATTESTATION d'une lane arme le LABEL, et une RETRACTATION
+    # le retire. L'etat du fil se lit avec la MEME grammaire que le tapis
+    # (`delivery_grammar`, source unique) : une attestation VIVANTE dit
+    # « les criteres sont couverts, rend la main », une retractation dit
+    # « ce n'est pas livre ».
+    #
+    # Pourquoi cela change la donne : le tapis ecarte deja ces issues, mais
+    # il le fait par une SONDE par issue, donc par un budget de sondes --
+    # epuise, la sonde rend fail-OPEN et l'issue est servie comme un grain
+    # neuf (mesure #24461 : 37 des 120 grains servis portaient un marqueur
+    # vivant, contre 1 issue sur 165 portant le label). Le LABEL, lui, est
+    # dans le payload du pool : il rend l'exclusion gratuite.
+    #
+    # La branche se place APRES la retraction humaine (un verdict humain
+    #prime sur tout, #14307) et AVANT l'heuristique de references : une
+    # attestation vivante EST une livraison, et une retraction doit
+    # empecher l'heuristique de re-armer un label que le fil a retire.
+    # `dossier=False` : l'organe qui parse le dossier `[CLOSURE PREFLIGHT]`
+    # n'est pas dans le sparse-checkout de ce cron (#23762), donc le poser
+    # ici armerait le label en local et pas en CI -- deux comportements pour
+    # le meme depot. Le dossier reste le signal de l'adjoint, et le tapis
+    # (qui tourne sur le depot complet) continue de le lire.
+    attestation = attestation_state(
+        [c.get("body") or "" for c in (issue.get("comments") or [])],
+        dossier=False)
+    if attestation == ATTESTED:
+        return ("attested",
+                "attestation de livraison vivante dans le fil "
+                "(meme grammaire que le tapis)")
+    if attestation == REVOKED:
+        return ("attestation_revoked",
+                "retractation de l'attestation dans le fil "
+                "([NOT-DELIVERED] / candidate-delivered-revoked)")
 
     # #11100: an OPEN PR referencing the issue is work in flight -- the
     # multi-phase rollout shape (e.g. #10984, referenced by open #10986 plus
@@ -385,6 +494,17 @@ def classify(
         return ("no_delivery",
                 f"merged PR(s) {prs} mention the issue only contextually "
                 f"(no See/Part of/Closes/Fixes marker in their body) -- not a delivery")
+
+    # #23762: declared -- but only as TRANCHES. A partial marker is the repo's
+    # spelling for a contribution of one tranche, and silence after it is the
+    # belt's normal state (the next tranche waits its turn), not proof that the
+    # issue is done. Only a closing keyword claims the issue as a whole.
+    if not any(closing_marker(r.get("body") or "", target) for r in declared):
+        prs = ", ".join(f"#{r['pr_number']}" for r in declared)
+        return ("partial",
+                (f"merged PR(s) {prs} declare a PARTIAL contribution "
+                 f"(See/Part of/Refs, no Closes/Fixes/Resolves) -- "
+                 f"a tranche is not a delivery"))
 
     # ISO 8601 timestamps sort lexicographically; string max is correct.
     # #17759 mecanisme B: the comments the protocol PRESCRIBES to attest a
@@ -723,7 +843,8 @@ def main(argv: list[str] | None = None) -> int:
     issues = _rotate_window(list_open_issues(repo), args.offset, args.limit)
 
     counts = {"candidate": 0, "active": 0, "in_flight": 0, "no_delivery": 0,
-              "epic": 0, "retracted": 0}
+              "epic": 0, "retracted": 0, "attested": 0, "attestation_revoked": 0,
+              "container": 0}
     title_only_issues = 0
     print(f"[candidate-delivered] repo={repo} mode={'dry-run' if args.dry_run else 'apply'} "
           f"open_issues={len(issues)} label={args.label}")
@@ -760,6 +881,23 @@ def main(argv: list[str] | None = None) -> int:
             if not labeled:
                 apply_label(repo, number, args.label, args.dry_run)
             print(f"  #{number:<6} CANDIDATE  {why}")
+        elif verdict == "attested":
+            # #24461 -- une attestation VIVANTE arme le label. Le label est
+            # ce que le tapis lit sans payer une sonde par issue.
+            if not labeled:
+                apply_label(repo, number, args.label, args.dry_run)
+                print(f"  #{number:<6} ATTESTED  {why}  (label pose)")
+            else:
+                print(f"  #{number:<6} ATTESTED  {why}")
+        elif verdict == "attestation_revoked":
+            # Une attestation RETIRACEE : le label s'en va, et l'heuristique
+            # de references ne peut pas le rearmer (la branche a ete prise
+            # avant elle).
+            if labeled:
+                remove_label(repo, number, args.label, args.dry_run)
+                print(f"  #{number:<6} revoked   {why}  (label retracted)")
+            else:
+                print(f"  #{number:<6} revoked   {why}")
         elif verdict == "active":
             if labeled:  # became active again -- retract the label (idempotent)
                 remove_label(repo, number, args.label, args.dry_run)
@@ -772,6 +910,15 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"  #{number:<6} in_flight  {why}  (label retracted)")
             else:
                 print(f"  #{number:<6} in_flight  {why}")
+        elif verdict == "partial":
+            # #23762: a tranche-only delivery no longer earns the label. A
+            # label posed under the old merged+silent predicate is retracted
+            # by the sweep itself -- hysteresis, not a verdict (#14307).
+            if labeled:
+                remove_label(repo, number, args.label, args.dry_run)
+                print(f"  #{number:<6} partial    {why}  (label retracted)")
+            else:
+                print(f"  #{number:<6} partial    {why}")
         elif verdict == "retracted":
             if labeled:  # re-posed over a human verdict -- restore the verdict
                 remove_label(repo, number, args.label, args.dry_run)

@@ -35,7 +35,8 @@
   Origine : Conway.lean l.39-2458 (2420 lignes), commit de référence
   origin/main 1cef8a55024. Aucun reformatage, aucune tactique modifiée.
   Après cette tranche, `Knots/Conway.lean` est réduit au stub
-  aggregator du plan Option A. -/
+  aggregator du plan Option A. Le texte EN a été déplacé depuis
+  Conway_en.lean l.50-2471 (2422 lignes). -/
 
 import Knots.Basic
 import Knots.Mutation
@@ -302,13 +303,13 @@ normalisation désignée (mineur sans première ligne ni dernière colonne), la
 fonction rend t³ − 2·t² + 2·t sur le code planaire canonique (#17595).
 
 Remarque d'honnêteté : cette valeur n'est PAS le polynôme d'Alexander
-classique de 4_1 (qui vaut t² − 3·t + 1 à un facteur unité près) ; le
-théorème mesure la valeur réellement produite par la fonction désignée sur
-un câblage à 4 croisements qui forme une boucle unique. Le trèfle
-(t² − t + 1) et le déterminant |P(−1)| = 5 = det(4_1) sont bien
-reproduits, mais la forme du polynôme diverge du classique — la matrice
-non signée traite les deux croisements négatifs du code planaire comme
-positifs. La divergence est formalisée ci-dessous
+classique de 4_1 (qui vaut ±t² ∓ 3·t ± 1, soit t² − 3·t + 1 à un facteur
+unité près) ; le théorème mesure la valeur réellement produite par la
+fonction désignée sur un câblage à 4 croisements qui forme une boucle
+unique. Le trèfle (t² − t + 1) et le déterminant |P(−1)| = 5 = det(4_1)
+sont bien reproduits, mais la forme du polynôme diverge du classique — la
+matrice non signée traite les deux croisements négatifs du code planaire
+comme positifs. La divergence est formalisée ci-dessous
 (`alexander_figureEight_not_classical` : pas une unité) et réparée par la
 variante signée (`alexander_figureEight_signed` : le classique exact).
 -/
@@ -2588,6 +2589,41 @@ theorem conwayMutant_eq_sphereMutate :
     conwayMutantDiagram.crossings =
       sphereMutate conwayKnotDiagram.crossings 5 11 KleinRot.r13 conwayJunctionSwap := by
   rfl
+
+/-- Le recollement `conwayJunctionSwap` est une involution (deux
+transpositions disjointes, 8↔11 et 13↔22) : c'est un élément du groupe de
+Klein sur les quatre points de bord — la condition de recollement exigée par
+`AreMutantDiagrams`. -/
+theorem conwayJunctionSwap_involutive :
+    ∀ e, conwayJunctionSwap (conwayJunctionSwap e) = e := by
+  intro e
+  by_cases h8 : e = 8
+  · subst h8; rfl
+  by_cases h11 : e = 11
+  · subst h11; rfl
+  by_cases h13 : e = 13
+  · subst h13; rfl
+  by_cases h22 : e = 22
+  · subst h22; rfl
+  · simp [conwayJunctionSwap, h8, h11, h13, h22]
+
+/-- **Témoin de profondeur 0 (C, M)** sous la définition de mutation amendée
+(maillon 8, 2bis) : la paire (Conway, mutant de sphère) satisfait
+`AreMutantDiagrams` sans aucun gadget — l'unique mutation de sphère du census
+(fenêtre [5, 11), rotation r13, recollement `conwayJunctionSwap`) la réalise.
+C'est le témoin que la notion fenêtre-nue ne fournissait pas (obstruction
+mesurée du maillon 7, #2874 c.6258386829). -/
+theorem areMutantDiagrams_conway_conwayMutant :
+    AreMutantDiagrams conwayKnotDiagram conwayMutantDiagram :=
+  ⟨5, 11, KleinRot.r13, conwayJunctionSwap, conwayJunctionSwap_involutive,
+    conwayMutant_eq_sphereMutate.symm⟩
+
+/-- Corollaire nœuds du témoin de profondeur 0 : le nœud de Conway et son
+mutant de sphère sont mutants au sens de `AreMutants`. -/
+theorem areMutants_conway_conwayMutant :
+    AreMutants conwayKnot ⟨conwayMutantDiagram⟩ :=
+  ⟨conwayKnotDiagram, conwayMutantDiagram, ReidemeisterEquiv.refl _,
+    ReidemeisterEquiv.refl _, areMutantDiagrams_conway_conwayMutant⟩
 
 /-- Matrice intermediaire 0 de l'elimination de Gauss du mutant (genere). -/
 noncomputable def conwayMutantM0 : Matrix (Fin 10) (Fin 10) (Polynomial ℤ) := Matrix.of ![

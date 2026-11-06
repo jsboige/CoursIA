@@ -258,6 +258,37 @@ def classify_creation_cost(git_meta_entry: dict | None) -> dict:
 # publier un catalogue faux en concluant `success`.
 GIT_LOG_TIMEOUT_SECONDS = 180
 
+# Detection de renommages : EXACTEMENT identique au contenu.
+#
+# Le checkout de `catalog-cron.yml` est un clone PARTIEL (`actions/checkout@v4`
+# avec `filter: blob:none`) : le contenu des blobs est absent du runner et
+# recupere a la demande depuis le remote promisor. Or la detection de
+# renommages par defaut compare le CONTENU des blobs (similarite) -- la passe
+# `git log --name-only` devenait donc une commande liee au RESEAU, chaque blob
+# candidat etant recupere sur le fil. Le cout suivait la bande passante du
+# runner, pas son CPU, son disque ni son overlayfs : d'ou le facteur 50 mesure
+# entre runners (3,6 s -> 149 s) et le depassement de la borne de 180 s du
+# 2026-11-02 (#24230).
+#
+# Mesure du 2026-11-02, meme conteneur, meme overlayfs, meme disque, reseau
+# injoignable :
+#   defaut        -> rc=128 en 44 s ("fatal: could not fetch <sha> from promisor remote")
+#   -M100%       -> rc=0  en  2 s
+#   --no-renames -> rc=0  en  2 s
+# Cote clone local, `GIT_NO_LAZY_FETCH=1` : defaut 6 s / -M100% 1 s / --no-renames 2 s.
+#
+# `-M100%` garde la detection de renommages mais la restreint aux renommages
+# EXACTS (OID de blob identique), que les objets d'arbre repondent sans aucun
+# contenu de blob : la commande est donc hors-ligne et deterministe.
+#
+# Le choix de la variante est fait sur la SEMANTIQUE PUBLIEE, pas sur la
+# vitesse : comparees a travers le parseur de production sur les 1746 carnets
+# suivis, les deux variantes sans renommages different du comportement
+# actuel sur 10 carnets (`--no-renames`) et sur 5 (famille `--diff-filter=AM`),
+# la ou `-M100%` n'en differt qu'UN -- et cette difference est une
+# CORRECTION (voir le body de la PR).
+GIT_LOG_RENAME_FLAG = "-M100%"
+
 # Restreindre l'historique aux notebooks : c'est le seul sous-arbre que le
 # parser ci-dessous retient, et 40 % de la sortie de `git log` n'en releve pas.
 # Equivalence verifiee en passant les deux sorties par ce meme parser
@@ -353,7 +384,8 @@ def build_git_metadata() -> dict[str, dict]:
     try:
         result = subprocess.run(
             [
-                "git", "log", "--name-only", "--format=COMMIT:%H|%ai|%ae|%s",
+                "git", "log", GIT_LOG_RENAME_FLAG,
+                "--name-only", "--format=COMMIT:%H|%ai|%ae|%s",
                 "--", GIT_LOG_PATHSPEC,
             ],
             capture_output=True, text=True, encoding="utf-8", errors="replace",
@@ -446,11 +478,14 @@ def get_head_sha() -> str:
     """
     try:
         result = subprocess.run(
-            ["git", "rev-parse", "--short", "HEAD"],
+            ["git", "rev-parse", "--short=7", "HEAD"],
             capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=str(REPO_ROOT), timeout=10,
         )
         if result.returncode == 0:
-            return result.stdout.strip()
+            # Largeur epinglee a 7 (#24860), miroir de forensic_scan.get_last_commit_sha :
+            # sans epinglage, l'abrege suit la taille du depot (9 puis 10 puis 9 mesures)
+            # et classify_reproducibility() compare deux resolutions independantes.
+            return result.stdout.strip()[:7]
     except (subprocess.TimeoutExpired, FileNotFoundError):
         pass
     return ""
@@ -1045,6 +1080,19 @@ _FORENSIC_CATEGORY_REPRO = {
 }
 
 
+def _sha_prefix_equal(a: str, b: str) -> bool:
+    """Egalite d'abreges SHA robuste a la largeur (#24860).
+
+    L'historique du champ `last_success_sha` porte des largeurs 9 et 10 issues
+    d'abreges non epingles ; les producteurs sont desormais epingles a 7
+    (forensic_scan.get_last_commit_sha, get_head_sha). Deux abreges designent
+    le meme commit ssi leur prefixe commun -- d'au moins 7 caracteres -- est
+    identique ; une valeur trop courte ne suffit pas a attester.
+    """
+    n = min(len(a), len(b))
+    return n >= 7 and a[:n].lower() == b[:n].lower()
+
+
 def classify_reproducibility(
     forensic_category: str | None,
     *,
@@ -1062,8 +1110,10 @@ def classify_reproducibility(
     if not forensic_category:
         return "UNTESTED"
     base = _FORENSIC_CATEGORY_REPRO.get(forensic_category, "UNTESTED")
-    # Pas de promotion EXECUTED -> REPRODUCED sans coherence SHA
-    if base == "EXECUTED" and last_success_sha and head_sha and last_success_sha == head_sha and executed_at:
+    # Pas de promotion EXECUTED -> REPRODUCED sans coherence SHA.
+    # Comparaison normalisee en prefixe (#24860) : l'attestation ne depend plus
+    # de la largeur d'abrege (historique 9/10 vs epingle 7).
+    if base == "EXECUTED" and last_success_sha and head_sha and _sha_prefix_equal(last_success_sha, head_sha) and executed_at:
         return "REPRODUCED"
     return base
 
@@ -2033,6 +2083,15 @@ def generate_markdown_report(entries: list[dict], repo_root: Path | None = None)
         maturity_counts[m] = maturity_counts.get(m, 0) + 1
 
     lines = [
+        # Quarto takes the browser-tab title from frontmatter pagetitle;
+        # without it the rendered page is titled by its file slug
+        # ("course_catalog.generated", measured 03/11 on #10921 criterion 5).
+        # The README pages get theirs from hand-written frontmatter (#24259);
+        # this file is generated, so the generator owns its title.
+        "---",
+        "pagetitle: \"CoursIA Notebook Catalog\"",
+        "---",
+        "",
         # Page-scoped responsive guard: the 8-column notebook tables are wider
         # than a ~400px viewport; without this rule the PAGE itself scrolls
         # horizontally on mobile (measured: 904px scrollWidth at 400px). The
