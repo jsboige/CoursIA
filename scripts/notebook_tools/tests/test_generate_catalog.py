@@ -2017,9 +2017,71 @@ class TestClassifyReproducibility:
             head_sha="abc1234",
         ) == "REPRODUCED"
 
+    def test_reproduced_despite_width_mismatch_same_commit(self):
+        # #24860 : largeur historique 9 vs abrege epingle 7, meme commit ->
+        # prefixe commun suffisant, l'attestation REPRODUCED survit au
+        # changement de largeur (cas mesure SW-14, meme commit 1a4df1971).
+        assert classify_reproducibility(
+            "A_ALL_EXEC_OK",
+            last_success_sha="1a4df1971",
+            executed_at="2026-09-01T00:00:00Z",
+            head_sha="1a4df19",
+        ) == "REPRODUCED"
+
+    def test_width_mismatch_different_commit_not_reproduced(self):
+        # Un caractere de difference SOUS le prefixe commun : commits distincts,
+        # la normalisation ne fabrique pas d'attestation.
+        assert classify_reproducibility(
+            "A_ALL_EXEC_OK",
+            last_success_sha="1a4df1971",
+            executed_at="2026-09-01T00:00:00Z",
+            head_sha="1a4df1a",
+        ) == "EXECUTED"
+
+    def test_too_short_prefix_not_reproduced(self):
+        # Moins de 7 caracteres de prefixe commun : pas d'attestation.
+        assert classify_reproducibility(
+            "A_ALL_EXEC_OK",
+            last_success_sha="1a4df",
+            executed_at="2026-09-01T00:00:00Z",
+            head_sha="1a4df",
+        ) == "EXECUTED"
+
     def test_partial_exec_is_static_ok(self):
         assert classify_reproducibility("B_PARTIAL_EXEC") == "STATIC_OK"
         assert classify_reproducibility("NO_CODE") == "STATIC_OK"
+
+
+class TestShaAbbrevWidthPinned:
+    """#24860 : abrege epingle a 7 des deux cotes + comparaison normalisee.
+
+    Les largeurs 9/10 mesurees dans l'historique du catalogue venaient d'abreges
+    non epingles (`%h` seul, `--short` seul) : le champ dependait de la taille du
+    depot et de la config du runner.
+    """
+
+    def test_get_head_sha_returns_seven_chars(self):
+        from generate_catalog import get_head_sha
+        sha = get_head_sha()
+        assert sha != ""
+        assert len(sha) == 7
+        int(sha, 16)  # hexadecimal valide
+
+    def test_get_last_commit_sha_returns_seven_chars(self):
+        from forensic_scan import get_last_commit_sha
+        repo_root = Path(__file__).resolve().parents[3]
+        target = repo_root / "scripts" / "notebook_tools" / "forensic_scan.py"
+        sha = get_last_commit_sha(target, repo_root)
+        assert sha is not None
+        assert len(sha) == 7
+        int(sha, 16)
+
+    def test_sha_prefix_equal_semantics(self):
+        from generate_catalog import _sha_prefix_equal
+        assert _sha_prefix_equal("1a4df19", "1a4df1971")
+        assert _sha_prefix_equal("1a4df1971", "1a4df19")
+        assert not _sha_prefix_equal("1a4df1", "1a4df1")  # prefixe commun < 7
+        assert not _sha_prefix_equal("1a4df19", "1a4df1a")
 
 
 # --- generate_markdown_report (#15490) ---
@@ -2259,6 +2321,20 @@ class TestGenerateMarkdownReport:
             in report
         )
 
+    def test_pagetitle_frontmatter_first(self, tmp_path):
+        """Browser-tab title: Quarto titles the page from frontmatter pagetitle.
+
+        Without it the rendered catalog page is titled by its file slug
+        ("course_catalog.generated", measured 03/11 on #10921 criterion 5).
+        The frontmatter must open the file so Quarto parses it, and carry a
+        human title, not the slug.
+        """
+        report = generate_markdown_report(
+            [_catalog_entry("ML/nb-a.ipynb")], repo_root=tmp_path
+        )
+        assert report.startswith('---\npagetitle: "CoursIA Notebook Catalog"\n---\n')
+        assert "course_catalog.generated" not in report.splitlines()[1]
+
 
 # --- scan_all_notebooks : compte des exclusions par motif (#15606 point 2) ---
 
@@ -2488,6 +2564,147 @@ class TestBuildGitMetadataLoud:
         assert meta["Serie/n.ipynb"]["first_commit"] == "2026-09-01"
         assert meta["Serie/m.ipynb"]["revisions"] == 1
         assert meta["Serie/m.ipynb"]["authors"] == 1
+
+
+# --- build_git_metadata : la passe ne doit dependre d'aucun blob (#24230) ---
+
+
+class TestBuildGitMetadataOfflinePartialClone:
+    """La passe de metadonnees ne doit pas exiger le CONTENU des blobs.
+
+    Le checkout de `catalog-cron.yml` est un clone partiel (`filter: blob:none`)
+    : le contenu des blobs est absent du runner. La detection de renommages par
+    defaut compare le contenu des blobs (similarite), donc la passe
+    `git log --name-only` allait chercher chaque blob candidat sur le RESEAU --
+    d'ou le cout variable d'un runner a l'autre et le depassement de la borne
+    de 180 s du 2026-11-02 (#24230). `-M100%` restreint la detection aux
+    renommages EXACTS (OID identique), que les objets d'arbre repondent sans
+    contenu : la passe redevient hors-ligne et deterministe.
+
+    Ces tests verifient la propriete, pas la constante : le controle est un
+    clone PARTIEL reel, clone sans reseau (`GIT_NO_LAZY_FETCH=1`), ou la forme
+    par defaut echoue (rc != 0) tandis que la forme de production reussit.
+    """
+
+    @staticmethod
+    def _git(args, cwd=None, env=None):
+        return subprocess.run(
+            ["git"] + args, cwd=cwd, env=env,
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+        )
+
+    def test_passe_reussit_sur_un_clone_partiel_ou_la_forme_par_defaut_echoue(self, tmp_path, monkeypatch):
+        import generate_catalog as gc
+
+        src = tmp_path / "src"
+        (src / "MyIA.AI.Notebooks" / "Serie").mkdir(parents=True)
+        self._git(["init", "-q"], cwd=src)
+        self._git(["config", "user.email", "test@example.org"], cwd=src)
+        self._git(["config", "user.name", "Test"], cwd=src)
+        # Sans cela, le serveur local refuse le filtre et rend un clone COMPLET :
+        # le test ne reproduirait plus rien.
+        self._git(["config", "uploadpack.allowfilter", "true"], cwd=src)
+        self._git(["config", "uploadpack.allowanysha1inwant", "true"], cwd=src)
+
+        # Un carnet renomme ET modifie de facon SIMILAIRE (meme taille, deux
+        # caracteres changes) : c'est la condition pour que git compare
+        # effectivement le contenu des deux blobs. Un renommage dont le contenu
+        # change beaucoup est ecarte par l'heuristique de taille, sans jamais
+        # lire un blob -- le controle serait alors muet.
+        ancien = src / "MyIA.AI.Notebooks" / "Serie" / "ancien.ipynb"
+        corps = (
+            '{"cells": [{"cell_type": "code", "source": ["import math\\n'
+            'x = math.pi\\ny = math.e\\nz = math.tau\\nw = math.inf"], '
+            '"metadata": {}, "outputs": [], "execution_count": 1}], '
+            '"metadata": {}, "nbformat": 4, "nbformat_minor": 5}\n'
+        )
+        ancien.write_text(corps, encoding="utf-8")
+        self._git(["add", "-A"], cwd=src)
+        self._git(["commit", "-q", "-m", "feat: carnet initial"], cwd=src)
+        self._git(["mv", "MyIA.AI.Notebooks/Serie/ancien.ipynb",
+                   "MyIA.AI.Notebooks/Serie/neuf.ipynb"], cwd=src)
+        (src / "MyIA.AI.Notebooks" / "Serie" / "neuf.ipynb").write_text(
+            corps.replace("math.pi", "math.tau").replace("math.inf", "math.gamma"),
+            encoding="utf-8")
+        self._git(["add", "-A"], cwd=src)
+        self._git(["commit", "-q", "-m", "feat: renomme et complete"], cwd=src)
+
+        # Clone PARTIEL : le contenu des blobs n'est pas present.
+        dst = tmp_path / "partial"
+        clone = self._git(["clone", "-q", "--filter=blob:none", "--no-checkout",
+                           f"file://{src.as_posix()}", str(dst)])
+        assert clone.returncode == 0, clone.stderr
+        filtre = self._git(["config", "remote.origin.partialclonefilter"], cwd=dst)
+        assert filtre.stdout.strip() == "blob:none", (
+            "le clone n'est pas partiel : le test ne reproduirait plus rien"
+        )
+
+        # Le remote promisor devient INJOIGNABLE : c'est l'etat du runner du
+        # 2026-11-02, ou la recuperation du blob manquant est un echec DUR.
+        # (`GIT_NO_LAZY_FETCH=1` ne conviendrait pas : git saute alors le
+        # fetch en silence, degrade la sortie et ne reproduit pas l'echec.)
+        injoignable = self._git(["remote", "set-url", "origin",
+                                 "file:///nonexistent-repo-24230/repo.git"], cwd=dst)
+        assert injoignable.returncode == 0, injoignable.stderr
+
+        # CONTROLE : la forme par defaut echoue -- exactement l'echec du
+        # runner. Un detecteur se valide par son faux negatif : si cette forme
+        # reussissait, le test ne prouverait rien.
+        defaut = self._git(["log", "--name-only", "--format=COMMIT:%H",
+                            "--", "MyIA.AI.Notebooks"], cwd=dst)
+        assert defaut.returncode != 0, (
+            "la forme par defaut devrait echouer sans contenu de blob ; "
+            "le controle ne prouve plus rien"
+        )
+
+        # La forme de production, elle, passe : meme clone, meme remote
+        # injoignable, memes objets manquants.
+        reussi = self._git(["log", gc.GIT_LOG_RENAME_FLAG, "--name-only",
+                            "--format=COMMIT:%H", "--", "MyIA.AI.Notebooks"],
+                           cwd=dst)
+        assert reussi.returncode == 0, reussi.stderr
+
+        monkeypatch.setattr(gc, "REPO_ROOT", dst)
+        meta = gc.build_git_metadata()
+
+        assert meta, "la passe doit dater les carnets du clone partiel"
+        assert set(meta) == {"Serie/ancien.ipynb", "Serie/neuf.ipynb"}
+        # Le renommage n'est pas exact (le contenu a change) : `-M100%` le
+        # rend donc explicite -- une suppression ET un ajout, chacun compte.
+        assert meta["Serie/neuf.ipynb"]["revisions"] == 1
+        assert meta["Serie/ancien.ipynb"]["revisions"] == 2
+
+    def test_le_plafond_bruyant_de_14831_est_conserve(self):
+        """La correction du reseau ne doit pas debrayer la garde de #14831.
+
+        #14831 a rendu l'echec BRUYANT (lever) la ou le script rendait `{}` en
+        silence et publiait un catalogue vert et faux. Une passe devenue
+        silencieuse -- ou un plafond devenu muet -- rouvrirait exactement ce
+        defaut : le garde-fou reste, au meme niveau.
+        """
+        import generate_catalog as gc
+
+        with patch("generate_catalog.subprocess.run") as mock_run:
+            mock_run.return_value = SimpleNamespace(returncode=0, stdout="", stderr="")
+            gc.build_git_metadata()
+
+        # `build_git_metadata` lance aussi `git rev-parse` (frontieres de
+        # greffe) : on cible l'appel `git log`, pas le dernier appel.
+        logs = [c for c in mock_run.call_args_list
+                if c.args and c.args[0][:2] == ["git", "log"]]
+        assert len(logs) == 1, f"un seul 'git log' attendu, trouve {len(logs)}"
+        argv = logs[0].args[0]
+        assert gc.GIT_LOG_RENAME_FLAG in argv
+        assert "--name-only" in argv
+        assert logs[0].kwargs["timeout"] == gc.GIT_LOG_TIMEOUT_SECONDS
+
+        with patch("generate_catalog.subprocess.run") as mock_run:
+            mock_run.side_effect = subprocess.TimeoutExpired(
+                cmd="git log", timeout=gc.GIT_LOG_TIMEOUT_SECONDS,
+            )
+            with pytest.raises(gc.GitMetadataUnavailable) as exc:
+                gc.build_git_metadata()
+        assert str(gc.GIT_LOG_TIMEOUT_SECONDS) in str(exc.value)
 
 
 if __name__ == "__main__":

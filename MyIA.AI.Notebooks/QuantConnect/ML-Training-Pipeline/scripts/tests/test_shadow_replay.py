@@ -262,12 +262,22 @@ def _sessions(start: str, n: int) -> list[str]:
     return [str(d) for d in np.busday_offset(start, np.arange(n), roll="forward")]
 
 
-def _chart(days: list[str], equity, fees: float = 0.0012, turnover: float = 1.6) -> dict:
+def _calendar_sessions(start: str, n: int) -> list[str]:
+    # Jours calendaires consecutifs -- une candidate crypto cote 7/7 et peut geler un
+    # samedi, jour qu'aucun `np.busday_offset` ne produit (revue Hermes #24288 : les
+    # fixtures en jours ouvrés ne peuvent PAS pinner l'ancrage calendaire du garde).
+    d0 = dt.date.fromisoformat(start)
+    return [str(d0 + dt.timedelta(days=i)) for i in range(n)]
+
+
+def _chart(days: list[str], equity, fees: float = 0.0012, turnover: float = 1.6,
+           shift: int = 0) -> dict:
     """Chart `shadow` as the candidate contract plots it: equity in e0..e4 in turn, cumulative
-    costs at every close."""
+    costs at every close. `shift` décale le cycle d'un cran constant (cas
+    `btc-voltarget-base`, #24153, où le premier point tombe dans e1)."""
     series = {f"e{k}": {"values": []} for k in range(5)}
     for i, (d, v) in enumerate(zip(days, equity)):
-        series[f"e{i % 5}"]["values"].append([_close_ts(d), float(v)])
+        series[f"e{(i + shift) % 5}"]["values"].append([_close_ts(d), float(v)])
     n = len(days)
     series["fees"] = {"values": [{"x": _close_ts(d), "y": fees * (i + 1) / n}
                                  for i, d in enumerate(days)]}
@@ -399,6 +409,83 @@ def test_qc_daily_equity_refuses_series_gap():
     chart["series"]["e3"]["values"] = []        # a hole inside the cycle
     with pytest.raises(ValueError, match="contiguous prefix"):
         qc_daily_equity(chart)
+
+
+def test_qc_daily_equity_admits_a_constant_shift_anchored_on_the_window():
+    # Cas btc-voltarget-base (#24153) : la candidate incremente son compteur avant le
+    # modulo, donc la premiere seance tombe dans e1 et le cycle est decale d'un cran sans
+    # qu'aucun point ne manque. Admis parce que le premier point EST la premiere seance de
+    # la fenetre : rien n'a pu etre perdu avant lui.
+    days = _sessions("2025-10-01", 7)
+    equity = _equity(7)
+    dates, values = qc_daily_equity(_chart(days, equity, shift=1), window_start=days[0])
+    assert dates == days
+    assert values == pytest.approx(list(equity))
+
+
+def test_qc_daily_equity_refuses_a_shift_not_anchored_on_the_window():
+    # Meme decalage, mais le premier point tombe le deuxieme jour de la fenetre : la
+    # premiere seance a disparu avant le premier point, et le decalage ne l'explique pas.
+    days = _sessions("2025-10-01", 7)
+    chart = _chart(days[1:], _equity(6), shift=1)
+    with pytest.raises(ValueError, match="not the first session of the window"):
+        qc_daily_equity(chart, window_start=days[0])
+
+
+def test_qc_daily_equity_refuses_a_shift_without_window_start():
+    # Appel direct sans fenetre (`league_correlation`) : le cycle doit partir de e0,
+    # faute de reference pour distinguer un decalage d'un point perdu -> fail-CLOSED.
+    days = _sessions("2025-10-01", 7)
+    with pytest.raises(ValueError, match="starts at e1"):
+        qc_daily_equity(_chart(days, _equity(7), shift=1))
+
+
+def test_qc_daily_equity_accepts_a_saturday_freeze_shifted_cycle():
+    # Le cas REEL de #24153 : `btc-voltarget-base` a gele le samedi 2026-10-17 (Bitfinex
+    # cote 7/7) et le cycle part de e1. Un ancrage en jours ouvrés roulerait la premiere
+    # seance au lundi 19 et refuserait sous un autre message le cas meme que le garde
+    # doit admettre. En jours calendaires : premiere seance = date de gel -> admis.
+    days = _calendar_sessions("2026-10-17", 6)  # samedi -> jeudi
+    assert dt.date.fromisoformat(days[0]).weekday() == 5  # samedi, pinné
+    dates, _ = qc_daily_equity(_chart(days, _equity(6), shift=1),
+                               window_start=days[0])
+    assert dates == days
+
+
+def test_qc_daily_equity_refuses_a_lost_first_session_on_calendar_days():
+    # Contre-epreuve sur les memes jours calendaires : la premiere seance (samedi) est
+    # reellement perdue -- le premier point tombe au dimanche. Refuse, alors que
+    # l'ancrage en jours ouvrés l'admettait (samedi roule au lundi = lundi observe).
+    days = _calendar_sessions("2026-10-17", 6)
+    with pytest.raises(ValueError, match="not the first session of the window"):
+        qc_daily_equity(_chart(days[1:], _equity(5), shift=1),
+                        window_start=days[0])
+
+
+def test_ingest_qc_accepts_the_btc_voltarget_shift():
+    # Le passage lui-meme : `ingest_qc` ancre le decalage sur la date de gel du plan, et la
+    # ligne produite couvre la fenetre entiere. Candidate gelee le premier jour des
+    # seances, comme dans le cas reel (`frozen_on` = premiere seance de la fenetre).
+    days = _sessions("2025-11-10", 5)
+    candidate = _frozen(id="qc-shift", kind="qc", sha=SHA, frozen_on=days[0],
+                        entrypoint="qcproj:4242", params={"weight": 0.6})[0]
+    plan = _qc_plan(candidate, pass_date=days[-1])
+    row = ingest_qc(candidate, plan, _backtest(plan),
+                    _chart(days, _equity(5), shift=1))
+    assert row["period_end"] == days[-1]
+    assert row["n_days"] == 4
+
+
+def test_ingest_qc_refuses_a_shifted_chart_whose_first_session_is_missing():
+    # Contre-epreuve au niveau du passage : decale ET ampute de sa premiere seance, le
+    # graphique ne passe pas, meme avec la fenetre du plan.
+    days = _sessions("2025-11-10", 5)
+    candidate = _frozen(id="qc-shift", kind="qc", sha=SHA, frozen_on=days[0],
+                        entrypoint="qcproj:4242", params={"weight": 0.6})[0]
+    plan = _qc_plan(candidate, pass_date=days[-1])
+    with pytest.raises(ValueError, match="not the first session of the window"):
+        ingest_qc(candidate, plan, _backtest(plan),
+                  _chart(days[1:], _equity(4), shift=1))
 
 
 def test_ingest_qc_accepts_short_window_ending_near_the_pass_date():
