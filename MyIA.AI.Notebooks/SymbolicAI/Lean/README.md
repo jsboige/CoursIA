@@ -224,11 +224,11 @@ A l'issue de la série, vous saurez :
 
 - **Lire le langage grothendieckien** dans Mathlib 4 : catégories et foncteurs, cribles et topologies de Grothendieck, faisceaux, schémas et sites, morphismes étales/lisses — comme entrée vers la géométrie algébrique formalisée. Notebook 15.
 
-- **Situer l'oeuvre de Conway** dans sa largeur : des nombres surréels au Monstrous Moonshine, du réseau de Leech au théorème du libre arbitre, en exécutant les premières noix formalisées (Doomsday, Look-and-Say, Nim, Angel, Life) directement depuis le projet conway_lean (0 sorry). Notebook 16a.
+- **Situer l'oeuvre de Conway** dans sa largeur : des nombres surréels au Monstrous Moonshine, du réseau de Leech au théorème du libre arbitre, en exécutant les premières noix formalisées (Doomsday, Look-and-Say, Nim, Angel, Life) directement depuis le projet conway_lean (0 sorry). Notebook 16.
 
-- **Explorer les noix de Conway** en Lean 4 : Game of Life as Computation, Doomsday, FRACTRAN, Look-and-Say, Nim, Angel — port formel de résultats combinatoires iconiques. Notebooks Lean-16a, GOL-01, GOL-02, GOL-03 et Lean-16b.
+- **Explorer les noix de Conway** en Lean 4 : Game of Life as Computation, Doomsday, FRACTRAN, Look-and-Say, Nim, Angel — port formel de résultats combinatoires iconiques. Notebooks Lean-16, GOL-01, GOL-02, GOL-03 et Lean-16b.
 
-- **Comprendre le théorème du libre arbitre** (Conway-Kochen) : les axiomes SPIN/TWIN/MIN, l'argument en deux temps qui réduit le cas à deux particules au théorème de Kochen-Specker (Notebook 13), et la lecture honnête de sa portée (ce qu'il dit et ne dit pas) — adossé à `FreeWillTheorem.lean` (0 sorry). Notebook Lean-16c.
+- **Comprendre le théorème du libre arbitre** (Conway-Kochen) : les axiomes SPIN/TWIN/MIN, l'argument en deux temps qui réduit le cas à deux particules au théorème de Kochen-Specker (Notebook 13), et la lecture honnête de sa portée (ce qu'il dit et ne dit pas) — adossé à `FreeWillTheorem.lean` (0 sorry). Notebook Lean-13e.
 
 - **Franchir un barreau de l'échelle vérifier→construire** : reconnaître une source périodique Life (période, transitoire, cadence d'émission mesurées sur le canon de Gosper), chercher à en générer une dans un budget borné (zéro calibré par contrôle positif), et certifier la périodicité du noyau par un prédicat `Grid` évalué sur horizon fini — l'écart structurel entre vérificateur et constructeur. Notebook GOL-04.
 
