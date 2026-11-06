@@ -193,6 +193,15 @@ from frozen_campaigns import (  # noqa: E402,F401
 # reel s'ecrit ``VERDICT: <token>`` dans le CORPS de la voix. Importe, jamais
 # recopie -- une regex locale divergerait en silence du canon qui gouverne le
 # triage du pool.
+# Le format de l'attestation de `lake build` local (#24989) vit dans
+# scripts/lean/ : l'organe qui l'ECRIT (attest_local_build.py) et la garde
+# qui la LIT ne doivent pas pouvoir diverger en silence. Un seul lecteur du
+# format, meme discipline que grain_tag et merge_dwell. Le repertoire est
+# ajoute AVANT scripts/ci pour que scripts/ci reste en priorite de resolution.
+LEAN_DIR = SCRIPTS_DIR / "lean"
+if str(LEAN_DIR) not in sys.path:
+    sys.path.insert(0, str(LEAN_DIR))
+
 CI_DIR = SCRIPTS_DIR / "ci"
 if str(CI_DIR) not in sys.path:
     sys.path.insert(0, str(CI_DIR))
@@ -203,6 +212,9 @@ import pool_review_verdicts as review_canon  # noqa: E402
 # pour que « la lecture du coordinateur couvre-t-elle encore cette tete ? » et
 # « depuis quand le contenu n'a-t-il pas bouge ? » ne divergent jamais.
 import merge_dwell  # noqa: E402
+# Le format de l'attestation de build Lean local (#24989) : un seul lecteur,
+# partage avec l'organe qui ecrit l'attestation.
+import lean_build_attestation  # noqa: E402
 
 REPO = "jsboige/CoursIA"
 COORDINATOR_USER = "myia-ai-01"
@@ -724,6 +736,65 @@ def coordinator_approval_reason(
     return "coordinator-approval-stale"
 
 
+def lean_build_attestation_reason(
+    view: dict, head: str, runner: Runner, gh_env: dict[str, str]
+) -> str | None:
+    """Etape 2bis (#24989) : ``None`` si la PR n'exige pas d'attestation Lean,
+    ou si elle en porte une qui couvre la tete courante.
+
+    La regle HARD `lean-merge-discipline.md` §1 exige un ``lake build``
+    **local** par ai-01 avant tout merge d'une PR qui touche du Lean : le
+    vert de la CI ne le remplace pas (incident #866, revert #885). Depuis le
+    retrait du dossier (2026-11-05), l'APPROVE du coordinateur est la seule
+    porte -- la regle ne tenait plus que par sa vigilance.
+
+    Detection : le diff contient-il un fichier Lean (``.lean``,
+    ``lakefile.*``, ``lean-toolchain``, ``lake-manifest.json``) ? Une PR qui
+    n'en contient pas n'est pas concernee : le controle ne coute alors rien.
+
+    Preuve exigee : un commentaire d'attestation pose par ``myia-ai-01``
+    (l'organe `scripts/lean/attest_local_build.py` le produit ; une lane ne
+    s'atteste pas elle-meme). La couverture de tete suit la MEME regle que
+    l'APPROVE : l'attestation vaut a la tete exacte, ou sur une tete qui n'en
+    differe que par des rafraichissements de base PROUVES content-free. Un
+    commit de contenu posterior la perime.
+
+    Motifs : ``lean:no-local-build-attestation`` (aucune attestation, ou
+    attestation perimee) et ``lean:local-build-attestation-unverifiable``
+    (preuve illisible : base absente, ou chaine de commits illisible).
+    """
+    touched = lean_build_attestation.lean_paths(
+        str((row or {}).get("path") or "") for row in (view.get("files") or [])
+    )
+    if not touched:
+        return None
+    attestation = lean_build_attestation.attestation_from_comments(
+        view.get("comments") or []
+    )
+    if attestation is None:
+        return "lean:no-local-build-attestation"
+    attested = str(attestation.get("sha") or "")
+    if attested == head:
+        return None
+    base = str(view.get("baseRefOid") or "")
+    if not base:
+        return "lean:local-build-attestation-unverifiable:no-base"
+    fetch = _dwell_fetch(runner, gh_env)
+    run_git = _dwell_git(runner)
+    try:
+        current = merge_dwell.last_authoritative_sha(
+            REPO, head, base, fetch=fetch, run_git=run_git
+        )
+        read = merge_dwell.last_authoritative_sha(
+            REPO, attested, base, fetch=fetch, run_git=run_git
+        )
+    except merge_dwell.DwellError:
+        return "lean:local-build-attestation-unverifiable"
+    if current == read:
+        return None
+    return "lean:no-local-build-attestation"
+
+
 def run_nits(runner: Runner, pr: int, gh_env: dict[str, str]) -> int:
     """Etape 4 : organe B.0. Retourne son rc (0 = clear), hors contrat -> arret."""
     res = runner.run([sys.executable, str(NITS_PATH), str(pr)], env=gh_env)
@@ -1242,6 +1313,15 @@ def evaluate_pr(
     reason = frozen_umbrella_exclusion(
         view.get("title"), view.get("body"), view.get("headRefName")
     )
+    if reason is not None:
+        return skip(reason)
+    # 2bis. garde Lean (#24989) : une PR qui touche du Lean exige une
+    # attestation de `lake build` local posee par le coordinateur et
+    # couvrant la tete (regle HARD `lean-merge-discipline.md` §1). Placee
+    # AVANT 2ter : une PR sans attestation n'attend pas sa relecture, elle
+    # est bloquee pour un AUTRE motif -- la porter en disposition
+    # ``review-ready`` serait un mensonge.
+    reason = lean_build_attestation_reason(view, view_head, runner, gh_env)
     if reason is not None:
         return skip(reason)
     # 2ter. approbation du coordinateur (Q67) : une PR non lue ne paie pas
