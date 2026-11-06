@@ -4230,6 +4230,46 @@ def print_marker_unread_report(unread, lane: str | None = None) -> None:
     print("   `[INFO] candidate-delivered`) : verifier avant d'editer.")
 
 
+def print_frozen_unread_report(unread, lane: str | None = None) -> None:
+    """Rend compte des etats de GEL NON LUS (#24516).
+
+    Quatrieme pendant de `print_claim_unread_report`,
+    `print_container_unread_report` et `print_marker_unread_report` : la
+    sonde de GEL (`has_frozen_marker`) rend `None` sur echec de lecture --
+    et ce `None` est **indistinguable d'un « pas de gel »** pour
+    l'operateur qui lit la sortie.
+
+    Le gel est un veto TRANSVERSAL : il ecarte le candidat de TOUTES les
+    classes. Un gel non lu laisse donc passer un candidat que le gel aurait
+    ecarte -- c'est le fail-OPEN le plus costly du tapis, parce que l'item
+    est alors servi par une lane qui ne sait pas qu'il est gele.
+
+    Ce que la sonde lit : le corps de l'issue (regle A) et le fil (regle B).
+    L'echec de lecture vient soit du reseau (403, payload illisible), soit
+    d'une surface absente du cache local (corps non porte par le pool, fil
+    hors de l'instantane de la passe).
+
+    Meme doctrine que les trois autres rapports : le fail-OPEN est assume
+    (le tirage est maintenu), mais le **silence** ne l'est pas. Ce rapport
+    existe aussi pour une raison de COHERENCE : sur `main`, l'etat de gel
+    non lu etait publie dans le JSON (`frozen_signal.unread`) sans jamais
+    etre dit en texte -- alors que les cinq lectures voisines ont chacune
+    leur rapport `!! ... NON LU`.
+    """
+    numbers = sorted(set(unread or []))
+    if not numbers:
+        return
+    joined = ", ".join(f"#{num}" for num in numbers)
+    print(f"!! etat de GEL NON LU sur {joined} "
+          f"({len(numbers)} candidat(s)) : le gel n'a pas pu etre lu")
+    print("   (reseau, 403, payload illisible, ou surface absente du cache "
+          "local). Le tirage est")
+    print("   MAINTENU (fail-OPEN assume) -- mais le candidat peut PORTER un "
+          "gel du coordinateur")
+    print("   (`[FROZEN]` dans le corps ou dans le fil) : verifier avant "
+          "d'editer.")
+
+
 def print_belt_budget_report(budget_hit: bool) -> None:
     """Rend compte de l'epuisement du budget de sondes de livraison (#19969).
 
@@ -12353,6 +12393,13 @@ def main(argv: list[str] | None = None) -> int:
             # `None` etait indiscernable d'un « pas de marqueur ».
             print_marker_unread_report(
                 belt_pick_state.get("marker_unread"), args.lane)
+            # #24516 : meme doctrine pour la SONDE DE GEL. Le gel est un veto
+            # transversal : un gel non lu laisse passer un candidat que le
+            # gel aurait ecarte, et l'operateur n'apprendait l'echec que par
+            # le JSON (`frozen_signal.unread`) -- jamais en texte, alors que
+            # les quatre lectures voisines ont chacune leur rapport.
+            print_frozen_unread_report(
+                belt_pick_state.get("frozen_unread"), args.lane)
             print_belt_budget_report(belt_probe_budget_hit[0])
             if belt_time_budget_hit[0]:
                 print("   Mur de temps du tapis atteint (#21436) : la boucle a")
@@ -13050,6 +13097,11 @@ def main(argv: list[str] | None = None) -> int:
     # taisait.
     print_claim_unread_report((delivered_state or {}).get("claim_unread"),
                               args.lane)
+    # #24516 : meme doctrine pour le gel, sur le chemin `delivered` aussi --
+    # la sonde de gel y est cablee (elle y produit `frozen_unread`), mais
+    # l'echec de lecture n'etait dit par aucun rapport texte.
+    print_frozen_unread_report((delivered_state or {}).get("frozen_unread"),
+                               args.lane)
     print_empty_draw_notice(withheld, picks, args.include_delivered)
     print()
     print_unattributed_blocked(backlog)
