@@ -1538,6 +1538,10 @@ TRANCHE10: list[Guard] = [
         blocking=True,
         needs_base=True,
         absorbed=True,
+        # #23068 : un perimetre PR non evaluable (sonde git en echec, rc 2)
+        # emet en NEUTRAL "incident du garde" -- pas un rouge bloquant qui
+        # accuserait la PR, pas un vert silencieux non plus.
+        warn_rc=(2,),
     ),
 ]
 
@@ -2730,6 +2734,62 @@ _MISLABEL_TRAILER = (
     "`python scripts/check_factual_mislabel.py --help`."
 )
 
+_LISTING_OK = (
+    "✅ No truncated listing detected in the notebooks this PR changed "
+    "(markdown identifier tables checked against the numbered listing a "
+    "nearby code cell's stream prints)."
+)
+_LISTING_ABSTAIN = (
+    "⚠️ Listing-coherence detector abstained (merge-base introuvable, "
+    "shallow fetch or unanchored branch)."
+)
+_LISTING_WARN = (
+    "⚠️ Listing-coherence review needed: a markdown table announces a total "
+    "but lists only a CONTIGUOUS PREFIX of the identifiers a nearby code "
+    "cell's stream prints — the signature of a table left behind when the "
+    "series grew. Advisory, NOT a merge gate — triage against the JSON "
+    "artifact."
+)
+_LISTING_FATAL = (
+    "⚠️ Listing-coherence n'a PAS conclu : le detecteur a rendu un code "
+    "d'erreur d'usage (entree illisible ou chemin absent), pas un constat sur "
+    "cette PR. Ne lire ni comme un vert ni comme une troncature — voir le log "
+    "du job."
+)
+_LISTING_UNREAD = (
+    "{n} carnet(s) n'ont pas pu etre lus (JSON corrompu ou encodage non "
+    "UTF-8) : les findings ne portent que sur les carnets lus."
+)
+_LISTING_OK_UNREAD = (
+    "⚠️ Listing-coherence PARTIEL : aucun tableau tronque sur les carnets "
+    "lus, mais {n} carnet(s) n'ont pas pu etre lus (JSON corrompu ou encodage "
+    "non UTF-8) — le vert n'est pas rendu."
+)
+_LISTING_TRAILER = (
+    "Scope = notebooks CHANGED in this PR, not the whole corpus. The "
+    "`listing-coherence-report` run artifact holds the structured JSON.\n"
+    "Rationale: this compares identifier SETS, not counts — a count "
+    "comparison cannot see a table truncated from `08` while the stream "
+    "lists up to `15`. The contiguous-prefix discriminant is what keeps an "
+    "arbitrary subset (« the 3 longest ») out of the report. See "
+    "`python scripts/check_listing_coherence.py --help`."
+)
+
+# Echec d'usage (rc=2) des trois detecteurs de prose freres : ni un constat,
+# ni un quitus. Voir `_exit_state` (#23394, reserve 3).
+_CLAIMS_FATAL = (
+    "⚠️ Markdown-claims n'a PAS conclu : le detecteur a rendu un code "
+    "d'erreur d'usage, pas un constat sur cette PR. Voir le log du job."
+)
+_STALE_FATAL = (
+    "⚠️ Stale-claim n'a PAS conclu : le detecteur a rendu un code d'erreur "
+    "d'usage, pas un constat sur cette PR. Voir le log du job."
+)
+_MISLABEL_FATAL = (
+    "⚠️ Factual-mislabel n'a PAS conclu : le detecteur a rendu un code "
+    "d'erreur d'usage, pas un constat sur cette PR. Voir le log du job."
+)
+
 _ORGAN_CLEAN = (
     "No organ-duplication: no added def/class collides with another series "
     "organ API (scripts/audit/organ_api_index.yaml)."
@@ -2771,7 +2831,7 @@ def _with_note(sentence: str, ctx: dict) -> str:
     return f"{sentence} {note}".strip() if note else sentence
 
 
-def _exit_state(rc: int, ctx: dict) -> str:
+def _exit_state(rc: int, ctx: dict, fatal_rc: tuple[int, ...] = (2,)) -> str:
     # L'abstention des trois detecteurs de prose porte sur le MERGE-BASE, pas
     # sur `base_sha` : c'est lui qui manque sur une branche non ancree, et
     # c'est lui que les workflows sources testent avant de lancer le
@@ -2779,28 +2839,65 @@ def _exit_state(rc: int, ctx: dict) -> str:
     # distinguables).
     if not ctx.get("merge_base"):
         return "abstain"
+    # `rc=2` est l'erreur d'USAGE des quatre detecteurs de cette famille
+    # (entree illisible, chemin absent) : la rendre « warn » postait une
+    # accusation de troncature sur un lot que l'organe n'avait pas pu lire,
+    # et un `rc=2` suffisait a la provoquer (#23394, reserve 3 -- defaut
+    # herite des trois freres, corrige ici sur les quatre).
+    if rc in fatal_rc:
+        return "fatal"
     return "ok" if rc == 0 else "warn"
 
 
 def _body_claims_output(rc: int, payload: str, ctx: dict) -> str:
     state = _exit_state(rc, ctx)
-    sentence = {"ok": _CLAIMS_OK, "abstain": _CLAIMS_ABSTAIN}.get(
-        state, _CLAIMS_WARN)
+    sentence = {"ok": _CLAIMS_OK, "abstain": _CLAIMS_ABSTAIN,
+                "fatal": _CLAIMS_FATAL}.get(state, _CLAIMS_WARN)
     return f"{_with_note(sentence, ctx)}\n\n{_CLAIMS_TRAILER}"
 
 
 def _body_stale_claim(rc: int, payload: str, ctx: dict) -> str:
     state = _exit_state(rc, ctx)
-    sentence = {"ok": _STALE_OK, "abstain": _STALE_ABSTAIN}.get(
-        state, _STALE_WARN)
+    sentence = {"ok": _STALE_OK, "abstain": _STALE_ABSTAIN,
+                "fatal": _STALE_FATAL}.get(state, _STALE_WARN)
     return f"{_with_note(sentence, ctx)}\n\n{_STALE_TRAILER}"
 
 
 def _body_factual_mislabel(rc: int, payload: str, ctx: dict) -> str:
     state = _exit_state(rc, ctx)
-    sentence = {"ok": _MISLABEL_OK, "abstain": _MISLABEL_ABSTAIN}.get(
-        state, _MISLABEL_WARN)
+    sentence = {"ok": _MISLABEL_OK, "abstain": _MISLABEL_ABSTAIN,
+                "fatal": _MISLABEL_FATAL}.get(state, _MISLABEL_WARN)
     return f"{_with_note(sentence, ctx)}\n\n{_MISLABEL_TRAILER}"
+
+
+def _payload_count(payload: str, key: str) -> int:
+    """Compte entier d'un rapport JSON, 0 si le rapport est illisible.
+
+    Un rapport qu'on ne sait pas lire ne doit pas se lire comme un zero :
+    l'appelant ne s'en sert que pour AJOUTER une phrase d'incompletude.
+    """
+    try:
+        data = json.loads(payload)
+    except (ValueError, TypeError):
+        return 0
+    valeur = data.get(key) if isinstance(data, dict) else None
+    return valeur if isinstance(valeur, int) else 0
+
+
+def _body_listing_coherence(rc: int, payload: str, ctx: dict) -> str:
+    state = _exit_state(rc, ctx)
+    sentence = {"ok": _LISTING_OK, "abstain": _LISTING_ABSTAIN,
+                "fatal": _LISTING_FATAL}.get(state, _LISTING_WARN)
+    # `non_lus` porte les carnets que le detecteur n'a pas pu ouvrir : sans
+    # cette phrase, un carnet illisible sortait en vert « aucun tableau
+    # tronque » alors qu'il n'avait jamais ete lu (#23394, reserve 1).
+    non_lus = _payload_count(payload, "non_lus")
+    if non_lus and state != "abstain":
+        if state == "ok":
+            sentence = _LISTING_OK_UNREAD.format(n=non_lus)
+        else:
+            sentence = f"{sentence} {_LISTING_UNREAD.format(n=non_lus)}"
+    return f"{_with_note(sentence, ctx)}\n\n{_LISTING_TRAILER}"
 
 
 def _organ_status(payload: str) -> str:
@@ -2895,6 +2992,8 @@ TRANCHE33: list[Guard] = [
             "scripts/tests/test_check_stale_claims.py",
             "scripts/check_factual_mislabel.py",
             "scripts/tests/test_check_factual_mislabel.py",
+            "scripts/check_listing_coherence.py",
+            "scripts/tests/test_check_listing_coherence.py",
             ".github/workflows/markdown-claims-output-advisory.yml",
         ],
         # Le verdict de ces gardes est leur commentaire : `argv` reste vide et
@@ -2936,6 +3035,18 @@ TRANCHE33: list[Guard] = [
                 body=_body_factual_mislabel,
                 artifact_name="factual-mislabel-report",
                 artifact_file="factual-mislabel.json",
+                paths=["MyIA.AI.Notebooks/**/*.ipynb"],
+                max_paths=50,
+            ),
+            Commenter(
+                header="listing-coherence-advisory",
+                argv=[
+                    "python", "scripts/check_listing_coherence.py",
+                    "--json", "{changed_paths}",
+                ],
+                body=_body_listing_coherence,
+                artifact_name="listing-coherence-report",
+                artifact_file="listing-coherence.json",
                 paths=["MyIA.AI.Notebooks/**/*.ipynb"],
                 max_paths=50,
             ),
@@ -3503,5 +3614,101 @@ TRANCHE36: list[Guard] = [
         diff_bounded=True,
         absorbed=True,
         warn_rc=(2,),            # 2 = base injoignable : UNKNOWN, pas un rouge
+    ),
+]
+
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 38 (#22012, bascule graduelle option 4, sign-off user 2026-11-02) --
+# premiere bascule ADVISORY -> BLOQUANT du scanner md-hierarchy : la classe
+# HINT-AS-HEADING seule devient verrou, les autres classes (H1-DEEP,
+# MULTI-H1, HEADING-IN-LIST, COLLAPSED-MARKDOWN) restent advisory via le
+# commenter absorbe (always-on-guards.yml). Le scanner porte le routage de
+# sortie (--fail-kinds -> rc=4 ; rc=2 reste advisory) et le sucre --base-ref
+# qui compose --name-status + --reference-base (#12735 / #13315) : le drift
+# mesure est imputable au diff de la PR, jamais a la derive heritee de main.
+# La classe etait a zero corpus au re-seed (PR #22222, Supermodularite absent
+# de la baseline) ; ce garde l y maintient.
+#
+# Le nom du garde ET le `name:` du workflow source ne portent PAS le marqueur
+# "advisory" : pr_gate.py rule 6 lit les deux et jugerait sinon le rouge
+# non-bloquant, lui oterait ses dents.
+#
+# `pre_argv` : la suite 8 tests (test_scan_md_hierarchy_fail_kinds.py) est le
+# controle par faux negatif du critere d'acceptance 3 de #22012 -- injecter
+# un indice-en-titre -> rouge (rc=4) ; le corriger en gras -> vert.
+#
+# Numero : TRANCHE38. TRANCHE36 est reserve a la PR #24063 (garde des chemins
+# machine), en vol sur une autre lane (cf note numero TRANCHE37).
+# ---------------------------------------------------------------------------
+TRANCHE38: list[Guard] = [
+    Guard(
+        name="MD hierarchy HINT-AS-HEADING (base vs PR, bloquant)",
+        source="scan-md-hierarchy-drift.yml",
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "scripts/notebook_tools/scan_md_hierarchy.py",
+            "scripts/notebook_tools/md_hierarchy_baseline.json",
+        ],
+        pre_argv=[
+            "python", "-m", "pytest", "-q",
+            "scripts/tests/test_scan_md_hierarchy_fail_kinds.py",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/scan_md_hierarchy.py",
+            "MyIA.AI.Notebooks/", "--baseline", "--diff",
+            "--fail-kinds", "HINT-AS-HEADING",
+            "--base-ref", "{base_ref}",
+        ],
+        blocking=True,
+        needs_base=True,
+        absorbed=True,
+    ),
+]
+
+
+# TRANCHE 39 (#22209, garde bloquant) -- absorption du Cell-order gate (Epic
+# #3240, workflow cell-order-gate.yml). Mesure du 2026-11-06 : >= 800 runs /
+# 7 jours (plafond de pagination atteint, borne inferieure), chacun un
+# checkout `fetch-depth: 0` du depot 2,1 Go pour quelques secondes de scan
+# par carnet -- le SLOT de runner, pas la minute-CPU, est la ressource rare
+# (constat fondateur #14057). Semantique conservée EXACTE :
+#   - REGRESSION seule : HIGH findings presents dans la tete et absents de
+#     la base ; le residu #3240 des carnets legacy ne bloque pas (Epic ouverte) ;
+#   - nouveau carnet (blob absent de la base) = base vide = chaque HIGH compte
+#     (semantique NONE de la boucle d'origine, portee par --base-ref) ;
+#   - fichiers supprimes par la PR : le moteur filtre les chemins inexistants
+#     avant l'iteration, meme skip que `[ -f "$nb" ] || continue`.
+# Le detecteur gagne `--base-ref <ref>` (la voie rapide fournit
+# `{base_ref}` = origin/<branche>, la boucle d'origine faisait
+# `git show "$BASE:$nb"`) ; `--base/--head` (chemins) reste pour la
+# re-mesure manuelle `workflow_dispatch` et les tests unitaires.
+# `pre_argv` : la suite pytest du scanner est le controle par faux negatif
+# (lecon #11685/#12817 -- un detecteur qui ne prouve pas qu'il tire est
+# indiscernable d'un detecteur debranche).
+TRANCHE39: list[Guard] = [
+    Guard(
+        name="No cell-ordering regression in changed notebooks",
+        source="cell-order-gate.yml",
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "scripts/notebook_tools/scan_cell_ordering.py",
+            "scripts/notebook_tools/cell_order_ci.py",
+        ],
+        pre_argv=[
+            "python", "-m", "pytest", "-q",
+            "scripts/notebook_tools/tests/test_scan_cell_ordering.py",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/cell_order_ci.py",
+            "--base-ref", "{base_ref}",
+            "--head", "{changed_paths}",
+        ],
+        blocking=True,
+        needs_base=True,
+        iterates_paths=True,
+        iterate_paths=["MyIA.AI.Notebooks/**/*.ipynb"],
+        absorbed=True,
     ),
 ]

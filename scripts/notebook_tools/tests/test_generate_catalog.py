@@ -2017,9 +2017,71 @@ class TestClassifyReproducibility:
             head_sha="abc1234",
         ) == "REPRODUCED"
 
+    def test_reproduced_despite_width_mismatch_same_commit(self):
+        # #24860 : largeur historique 9 vs abrege epingle 7, meme commit ->
+        # prefixe commun suffisant, l'attestation REPRODUCED survit au
+        # changement de largeur (cas mesure SW-14, meme commit 1a4df1971).
+        assert classify_reproducibility(
+            "A_ALL_EXEC_OK",
+            last_success_sha="1a4df1971",
+            executed_at="2026-09-01T00:00:00Z",
+            head_sha="1a4df19",
+        ) == "REPRODUCED"
+
+    def test_width_mismatch_different_commit_not_reproduced(self):
+        # Un caractere de difference SOUS le prefixe commun : commits distincts,
+        # la normalisation ne fabrique pas d'attestation.
+        assert classify_reproducibility(
+            "A_ALL_EXEC_OK",
+            last_success_sha="1a4df1971",
+            executed_at="2026-09-01T00:00:00Z",
+            head_sha="1a4df1a",
+        ) == "EXECUTED"
+
+    def test_too_short_prefix_not_reproduced(self):
+        # Moins de 7 caracteres de prefixe commun : pas d'attestation.
+        assert classify_reproducibility(
+            "A_ALL_EXEC_OK",
+            last_success_sha="1a4df",
+            executed_at="2026-09-01T00:00:00Z",
+            head_sha="1a4df",
+        ) == "EXECUTED"
+
     def test_partial_exec_is_static_ok(self):
         assert classify_reproducibility("B_PARTIAL_EXEC") == "STATIC_OK"
         assert classify_reproducibility("NO_CODE") == "STATIC_OK"
+
+
+class TestShaAbbrevWidthPinned:
+    """#24860 : abrege epingle a 7 des deux cotes + comparaison normalisee.
+
+    Les largeurs 9/10 mesurees dans l'historique du catalogue venaient d'abreges
+    non epingles (`%h` seul, `--short` seul) : le champ dependait de la taille du
+    depot et de la config du runner.
+    """
+
+    def test_get_head_sha_returns_seven_chars(self):
+        from generate_catalog import get_head_sha
+        sha = get_head_sha()
+        assert sha != ""
+        assert len(sha) == 7
+        int(sha, 16)  # hexadecimal valide
+
+    def test_get_last_commit_sha_returns_seven_chars(self):
+        from forensic_scan import get_last_commit_sha
+        repo_root = Path(__file__).resolve().parents[3]
+        target = repo_root / "scripts" / "notebook_tools" / "forensic_scan.py"
+        sha = get_last_commit_sha(target, repo_root)
+        assert sha is not None
+        assert len(sha) == 7
+        int(sha, 16)
+
+    def test_sha_prefix_equal_semantics(self):
+        from generate_catalog import _sha_prefix_equal
+        assert _sha_prefix_equal("1a4df19", "1a4df1971")
+        assert _sha_prefix_equal("1a4df1971", "1a4df19")
+        assert not _sha_prefix_equal("1a4df1", "1a4df1")  # prefixe commun < 7
+        assert not _sha_prefix_equal("1a4df19", "1a4df1a")
 
 
 # --- generate_markdown_report (#15490) ---

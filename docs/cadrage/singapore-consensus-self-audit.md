@@ -1,12 +1,18 @@
-# Audit du cluster CoursIA selon les 10 principes du Singapore Consensus
+# CoursIA face aux dix principes du Singapore Consensus — position publique gagée sur artefacts
 
-> Issue [#16757](https://github.com/jsboige/CoursIA/issues/16757) — Epic [#16741](https://github.com/jsboige/CoursIA/issues/16741), arc B « ouverte, responsable, prouvable, explicable ». Doc de cadrage + audit réel du harnais. Livrée par la lane `myia-po-2023:CoursIA`.
+> Issue [#16757](https://github.com/jsboige/CoursIA/issues/16757) — Epic [#16741](https://github.com/jsboige/CoursIA/issues/16741), arc B « ouverte, responsable, prouvable, explicable ». Position recadrée selon l'arbitrage #17525 (documents épistémiques de cadrage, `docs/cadrage/`) ; le recadrage explicite est exigé par le `[CLOSURE PREFLIGHT]` du 04/11.
+
+## Ce que ce document est — et ce qu'il n'est pas
+
+Ce document est la **position publique du dépôt CoursIA** face aux dix principes de gestion du risque agentique du *Singapore Consensus*. « Publique » : elle engage le dépôt vis-à-vis de sa communauté interlocutrice (la recherche en sûreté de l'IA), elle ne rapporte pas une journée de travail interne. « Gagée sur artefacts » : chaque prise de position est adossée à un artefact vérifiable du dépôt — règle citée par fichier, garde CI nommée, incident numéroté — jamais à une intention déclarée.
+
+**Le fonctionnement du cluster se répond ailleurs.** Comment le cluster tourne au quotidien — qui merge, quelles PR, quels incidents, quelle lane a fait quoi — vit dans les règles auto-chargées (`.claude/rules/`), la documentation de référence (`docs/reference/`), les dashboards et les fils d'issues. Le sujet ici n'est pas ce fonctionnement : c'est **ce que le dépôt engage** face à chaque principe, et **les artefacts qui tiennent cet engagement**. Que la matière ait été observée de première main (le texte initial a été écrit depuis une lane worker, au fil d'une PR réelle) fonde la crédibilité du gage — c'est la provenance des preuves, pas le sujet du texte.
 
 ## Source et méthode
 
 - **Grille source** : R11 — *The 2026 Singapore Consensus on Global AI Safety Research Priorities* (Casper et al., [arXiv:2608.14611](https://arxiv.org/abs/2608.14611)), **companion report on agentic risk management**, principes P1-P10 (pages 67-90 du companion). PDF local : `G:\Mon Drive\MyIA\IA\Bibliographie IA\XAI\2026 - Casper et al - ...pdf`, sha8 `134E9DA8` (vérifié).
-- **Sujet de l'audit** : le cluster CoursIA tel qu'il tourne — coordinateur `ai-01`, workers `po-2023` à `po-2027`, lanes `machine × workspace`, dashboards RooSync, organes CI GitHub, règles `.claude/rules/` auto-chargées.
-- **Ancrage** : chaque principe est confronté au harnais **réel** — règles citées par fichier, incidents documentés par numéro, pratiques vécues (cet audit est écrit depuis une lane worker, le jour même où la PR #16846 a traversé preflight, guards, DWELL et re-runs : la matière est firsthand).
+- **Périmètre des artefacts** : le harnais du dépôt tel qu'il existe — coordinateur `ai-01`, workers `po-*`, lanes `machine × workspace`, dashboards RooSync, organes CI GitHub, règles `.claude/rules/` auto-chargées.
+- **Méthode** : chaque principe est confronté aux artefacts réels — règles citées par fichier, incidents documentés par numéro, gardes CI nommées — et reçoit un état.
 - **États** : **RENFORCE** (pratique en place, preuve citée) · **PARTIEL** (pratique existante mais lacunaire) · **MANQUANT**.
 
 ## Récapitulatif
