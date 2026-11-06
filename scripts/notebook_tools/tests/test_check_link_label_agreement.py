@@ -144,6 +144,24 @@ def test_self_test_still_passes():
     assert organ.self_test() == 0
 
 
+def test_reclass_resolves_sibling_target_against_source_path():
+    """#23684: the real Dynamics-03 link carries only its target basename."""
+    src = "[GameTheory-06c](Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb)"
+    path = (
+        "MyIA.AI.Notebooks/GameTheory/Dynamics/"
+        "Dynamics-03-Sympathie-vs-Engagement-Python.ipynb"
+    )
+    findings = organ.check_text(src, path)
+    assert len(findings) == 1
+    assert findings[0]["says"] == "gametheory-6c"
+    assert findings[0]["points_to"] == "dynamics-1"
+
+    assert organ.check_text(
+        "[GameTheory-01](Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb)",
+        path,
+    ) == []
+
+
 def test_unreadable_path_is_reported_not_fatal(tmp_path, monkeypatch):
     """WinError 1920 must not abort the sweep.
 

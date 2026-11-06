@@ -68,6 +68,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
@@ -456,6 +457,410 @@ def pins_from_file(notebook_path: Path, manifest: Manifest) -> list[Pin]:
     except (OSError, json.JSONDecodeError):
         return []
     return pins_from_payload(payload, manifest)
+
+
+# ---------------------------------------------------------------------------
+# Binaires charges depuis un chemin (#23103)
+# ---------------------------------------------------------------------------
+#
+# L'organe lit les epinglages (`#r "nuget: X, v"`, `pip install x==v`) et les
+# motifs de provisionnement du manifeste. Il ne voyait pas le cas ou un carnet
+# charge un binaire depuis un **chemin** : `#r "./libs/Tweety.jar"`,
+# `#load "../scripts/setup.csx"`, `%classpath add jar`, `Add-Type -Path`,
+# `clr.AddReference(".../X.dll")`, ou `pip install ./dist/x.whl`.
+#
+# L'artefact vit alors hors du depot -- ou dans un dossier ignore par git -- et
+# la re-execution n'est pas reproductible depuis un clone. `#load` charge aussi
+# des sources (`./Init.csx`) : meme defaut de reproductibilite, et l'organe les
+# nomme « fichier source » plutot que « binaire ». C'est le cas
+# declencheur de l'organe (#23047) : couvert jusqu'ici par un motif **declare
+# au manifeste**, donc seulement pour les motifs connus.
+#
+# Trois classements, un seul est un defaut :
+#   - **sous-module** : legitime (#23103, cas a). Le binaire se produit dans un
+#     depot du cluster dont le pointeur est epingle dans le parent -- c'est le
+#     cas des DLL `MetaGeneticSharp`, et le signaler serait un faux positif
+#     permanent ;
+#   - **versionne** : legitime (#23103, point 1, « artefact versionne dans le
+#     depot »). Un fichier suivi par git est present apres un clone ;
+#   - **hors depot** ou **non versionne** : la re-execution n'est pas
+#     reproductible. Le constat tombe, sauf mecanisme de reproduction declare
+#     dans le carnet -- une URL qui nomme l'artefact **et** une empreinte
+#     (#23103, point 3).
+
+# Formes de chargement portant un chemin. Le motif ne decide pas qu'un
+# argument est un chemin : un identifiant de paquet (`nuget: IKVM, 8.15.0`) ou
+# un nom d'assembly nu (`System.Text.Json`) traverse les memes formes. C'est
+# `_looks_like_a_path` qui tranche.
+_BINARY_LOAD_FORMS: tuple[tuple[str, re.Pattern], ...] = (
+    ("#r", re.compile(r'#r\s+"(?!nuget:)([^"]+)"', re.IGNORECASE)),
+    ("#load", re.compile(r'#load\s+"([^"]+)"', re.IGNORECASE)),
+    (
+        "%classpath",
+        re.compile(r"%classpath\s+add\s+(?:jar|dll)\s+[\"']?([^\s\"';]+)", re.IGNORECASE),
+    ),
+    (
+        "Add-Type",
+        re.compile(
+            r"Add-Type\s+-(?:Path|LiteralPath)\s+[\"']?([^\s\"';]+)", re.IGNORECASE
+        ),
+    ),
+    (
+        "clr.AddReference",
+        re.compile(r"clr\.AddReference\s*\(\s*[\"']([^\"']+)[\"']", re.IGNORECASE),
+    ),
+    (
+        "Assembly.Load",
+        re.compile(
+            r"(?:Assembly\.Load(?:File|From)|AssemblyName\.GetAssemblyName)"
+            r"\s*\(\s*@?[\"']([^\"']+)[\"']",
+            re.IGNORECASE,
+        ),
+    ),
+    (
+        "pip-fichier",
+        re.compile(
+            r"^\s*(?:[%!$]\s*)?"
+            + _PIP_INSTALL
+            + r"\s+(?:--?\S+\s+)*[\"']?([^\s\"']+\.(?:whl|tar\.gz|zip))\b",
+            re.IGNORECASE,
+        ),
+    ),
+)
+
+# Extensions qui font d'un argument nu un chemin sans separateur
+# (`#r "Tweety.jar"`). Un argument sans separateur ni extension est un nom
+# d'assembly, pas un fichier.
+_BINARY_EXTENSIONS = (".dll", ".exe", ".jar", ".so", ".dylib", ".whl", ".nupkg")
+
+# Extensions de source. `#load` charge aussi des fichiers source (`./Init.csx`) :
+# la non-reproductibilite est la meme, mais le motif ne doit pas annoncer un
+# binaire la ou le lecteur execute un fichier C#.
+_SOURCE_EXTENSIONS = (".cs", ".csx", ".fs", ".fsx", ".py", ".lean", ".jl")
+
+# Chemins ancres : POSIX (`/opt/...`), Windows (`C:/...`) et UNC (`//srv/...`).
+# Backslashes normalises en `/` avant le test, donc `C:\...` ne s'ecrit pas.
+_ABSOLUTE_PATH_RE = re.compile(r"^(?:/|[A-Za-z]:/|//)")
+
+# Prefixes qui designent un dossier utilisateur ou temporaire : ils ne peuvent
+# pas resoudre dans le depot, et l'organe ne cherche pas a les developper.
+_HOME_PREFIX_RE = re.compile(
+    r"^(?:~|\$HOME|\$\{HOME\}|\$env:"
+    r"|%(?:USERPROFILE|HOMEPATH|APPDATA|LOCALAPPDATA|TEMP|TMP|USERNAME)%)",
+    re.IGNORECASE,
+)
+
+# Mecanisme de reproduction declare dans le carnet (#23103, point 3).
+_URL_RE = re.compile(r"https?://[^\s\"'<>)\]`]+", re.IGNORECASE)
+_CHECKSUM_RE = re.compile(
+    r"sha-?256|sha256|Get-FileHash|hashlib\.(?:sha256|sha1|md5)|--checksum",
+    re.IGNORECASE,
+)
+
+_SUBMODULE_CACHE: dict[str, list[str]] = {}
+
+
+def _looks_like_a_path(value: str) -> bool:
+    """L'argument est-il un chemin, ou un nom d'assembly ?
+
+    `#r "System.Text.Json"` reference une assembly par son nom : ce n'est pas
+    un chargement depuis un chemin, et l'organe n'a rien a en dire.
+    `#r "./libs/Tweety.jar"` en est un.
+    """
+    text = value.strip()
+    if not text:
+        return False
+    if "/" in text or "\\" in text:
+        return True
+    return text.lower().endswith(_BINARY_EXTENSIONS)
+
+
+def _artifact_label(name: str) -> str:
+    """Nomme l'artefact charge : « fichier source » ou « binaire ».
+
+    `#load` charge les deux (`./Init.csx` autant que `./lib.dll`). Le constat
+    reste le meme -- le chemin n'est pas reproductible -- mais annoncer « le
+    binaire » pour un fichier C# serait faux dans le rapport.
+    """
+    return "fichier source" if name.lower().endswith(_SOURCE_EXTENSIONS) else "binaire"
+
+
+def _is_under(root: Path, candidate: Path) -> bool:
+    """`candidate` est-il sous `root` ?
+
+    Comparaison de chaines normalisees : `Path.is_relative_to` compare les
+    composants a la casse pres, et `D:/dev` contre `d:/dev` rendrait un faux
+    « hors depot » sur Windows.
+    """
+    root_text = os.path.normcase(str(root)).replace("\\", "/").rstrip("/")
+    candidate_text = os.path.normcase(str(candidate)).replace("\\", "/").rstrip("/")
+    return candidate_text == root_text or candidate_text.startswith(root_text + "/")
+
+
+def _under_child(relative: str, roots: list[str]) -> str | None:
+    """Racine dont `relative` est un descendant (comparaison par segment)."""
+    for root in roots:
+        if relative == root or relative.startswith(root + "/"):
+            return root
+    return None
+
+
+def submodule_paths(repo_root: Path) -> list[str]:
+    """Chemins des sous-modules declares dans `.gitmodules`, caches par depot.
+
+    Un binaire produit par un sous-module est legitime (#23103, cas a) : il se
+    commite dedans, se pousse, puis le pointeur parent est bumpe. Le signaler
+    rendrait un faux positif permanent sur les DLL des sous-modules.
+    """
+    key = str(repo_root)
+    cached = _SUBMODULE_CACHE.get(key)
+    if cached is not None:
+        return cached
+    code, out, _err = _git(
+        repo_root, ["config", "-f", ".gitmodules", "--get-regexp", r"^submodule\..*\.path$"]
+    )
+    paths: list[str] = []
+    if code == 0:
+        for line in out.splitlines():
+            parts = line.split(None, 1)
+            if len(parts) == 2 and parts[1].strip():
+                paths.append(parts[1].strip().replace("\\", "/").strip("/"))
+    _SUBMODULE_CACHE[key] = paths
+    return paths
+
+
+def _classify_path(
+    raw: str, notebook_dir: Path, repo_root: Path
+) -> tuple[str, str, str]:
+    """Classe un chemin : (`hors-depot` | `depot`, resolu, relatif au depot).
+
+    Un chemin relatif se resout depuis le **dossier du carnet**, pas depuis la
+    racine du depot : c'est la resolution que fait le lecteur, et un `../..`
+    qui sort du depot est exactement le cas que l'organe doit voir. Les chemins
+    ancres et ceux qui passent par un dossier utilisateur sont classes sans
+    resolution -- ils ne peuvent pas tomber dans le depot.
+    """
+    text = raw.strip().strip("\"'").replace("\\", "/")
+    if not text:
+        return "hors-depot", "", ""
+    if _HOME_PREFIX_RE.match(text):
+        return "hors-depot", text, ""
+    if _ABSOLUTE_PATH_RE.match(text):
+        candidate = Path(text)
+    else:
+        candidate = notebook_dir / text
+    try:
+        resolved = candidate.resolve()
+    except OSError:
+        resolved = candidate
+    if _is_under(repo_root, resolved):
+        return "depot", resolved.as_posix(), resolved.relative_to(repo_root).as_posix()
+    return "hors-depot", resolved.as_posix(), ""
+
+
+def _tracked_paths(repo_root: Path, relatives: list[str]) -> set[str]:
+    """Sous-ensemble de `relatives` suivi par git.
+
+    Un fichier suivi est present apres un clone : c'est le cas legitime
+    « artefact versionne dans le depot » (#23103, point 1). Un echec de git ne
+    rend pas « rien n'est suivi » -- il rend l'ensemble vide, qui ne peut que
+    produire des constats, jamais en eteindre un.
+    """
+    if not relatives:
+        return set()
+    code, out, _err = _git(repo_root, ["ls-files", "--"] + relatives)
+    if code != 0:
+        return set()
+    return {line.strip().replace("\\", "/") for line in out.splitlines() if line.strip()}
+
+
+def _declared_reproduction(payload: dict) -> dict[str, bool]:
+    """Artefacts nommes par une URL declaree, avec empreinte PAR ARTEFACT.
+
+    Le mecanisme de reproduction (#23103, point 3) est « URL + version +
+    checksum ». Le nom de l'artefact est la queue de l'URL ; la version vient
+    de l'URL elle-meme (`.../1.28/x.jar`) ou de la ligne qui la porte.
+
+    L'empreinte est portee par l'artefact, pas par le carnet (reserve Hermes,
+    #24520) : elle doit apparaitre dans LA cellule qui declare l'URL de
+    l'artefact -- une empreinte declaree ailleurs dans le carnet ne leve pas
+    le constat d'un artefact different.
+    """
+    declarations: dict[str, bool] = {}
+    for cell in payload.get("cells", []) or []:
+        if (cell.get("cell_type") or "") not in ("code", "markdown"):
+            continue
+        text = _cell_text(cell)
+        has_checksum = bool(_CHECKSUM_RE.search(text))
+        for match in _URL_RE.finditer(text):
+            url = match.group(0).rstrip(".,;:")
+            tail = url.rsplit("/", 1)[-1].split("?", 1)[0].split("#", 1)[0]
+            if tail:
+                declarations[tail] = declarations.get(tail, False) or has_checksum
+    return declarations
+
+
+@dataclass
+class LoadedBinary:
+    """Un chargement de binaire portant un chemin, et son classement."""
+
+    path: str
+    resolved: str
+    relative: str
+    form: str
+    scope: str
+    cell: int
+    line_no: int
+    line: str
+
+
+def binary_loads(
+    notebook: str, payload: dict, repo_root: Path
+) -> list[LoadedBinary]:
+    """Releve et classe les chargements de binaires d'un carnet (#23103).
+
+    Le balayage porte sur les seules cellules **code** : une forme de
+    chargement ecrite en markdown est de la prose qui la cite, pas une ligne
+    que le lecteur execute -- c'est la meme restriction que pour les
+    declarations d'installation (`_declaration_lines`).
+    """
+    candidates: list[tuple[str, str, int, int, str]] = []
+    for cell_index, cell in enumerate(payload.get("cells", []) or []):
+        if (cell.get("cell_type") or "") != "code":
+            continue
+        text = _cell_text(cell)
+        for line_number, line in enumerate(text.splitlines(), start=1):
+            for form, pattern in _BINARY_LOAD_FORMS:
+                for match in pattern.finditer(line):
+                    raw = match.group(1)
+                    if not _looks_like_a_path(raw):
+                        continue
+                    candidates.append((raw, form, cell_index, line_number, line.strip()))
+    if not candidates:
+        return []
+
+    notebook_dir = (repo_root / notebook).parent
+    submodules = submodule_paths(repo_root)
+    loads: list[LoadedBinary] = []
+    for raw, form, cell_index, line_number, line in candidates:
+        scope, resolved, relative = _classify_path(raw, notebook_dir, repo_root)
+        loads.append(
+            LoadedBinary(
+                path=raw,
+                resolved=resolved,
+                relative=relative,
+                form=form,
+                scope=scope,
+                cell=cell_index,
+                line_no=line_number,
+                line=line,
+            )
+        )
+
+    # Un fichier dans le depot peut etre versionne (legitime) ou ignore par
+    # git (absent apres un clone) : la distinction demande git, donc une seule
+    # passe pour tous les chemins internes du carnet.
+    in_repo = sorted({load.relative for load in loads if load.scope == "depot"})
+    tracked = _tracked_paths(repo_root, in_repo)
+    for load in loads:
+        if load.scope != "depot":
+            continue
+        if _under_child(load.relative, submodules):
+            load.scope = "sous-module"
+        elif load.relative in tracked:
+            load.scope = "versionne"
+        else:
+            load.scope = "non-versionne"
+    return loads
+
+
+def binary_findings(
+    notebook: str, payload: dict, repo_root: Path
+) -> list[dict]:
+    """Constats sur les binaires charges depuis un chemin (#23103)."""
+    loads = binary_loads(notebook, payload, repo_root)
+    if not loads:
+        return []
+    declared_names = _declared_reproduction(payload)
+    findings: list[dict] = []
+    seen: set[tuple] = set()
+    for load in loads:
+        if load.scope in ("sous-module", "versionne"):
+            continue
+        name = load.resolved.rsplit("/", 1)[-1] or load.path
+        declared = name in declared_names
+        has_checksum = declared_names.get(name, False)
+        if declared and has_checksum:
+            # Mecanisme de reproduction declare : rien a signaler.
+            continue
+        if load.scope == "hors-depot":
+            kind = "binary_hors_depot" if not declared else "binary_sans_empreinte"
+            reason = (
+                f"chargement depuis `{load.resolved}` par `{load.form}` : hors du "
+                f"depot, le {_artifact_label(name)} n'existe pas apres un clone et la "
+                "re-execution n'est pas reproductible ; aucun sous-module ne le porte, "
+                "et le carnet ne declare ni URL ni empreinte de l'artefact"
+                if not declared
+                else (
+                    f"chargement depuis `{load.resolved}` par `{load.form}` : un "
+                    f"telechargement de `{name}` est declare, mais sans empreinte "
+                    "-- la version obtenue peut changer sans que rien ne le signale"
+                )
+            )
+        else:
+            kind = "binary_non_versionne" if not declared else "binary_sans_empreinte"
+            reason = (
+                f"chargement depuis `{load.relative}` par `{load.form}` : le "
+                f"{_artifact_label(name)} est dans le depot mais ignore par git, donc "
+                "absent apres un clone ; versionner l'artefact, ou declarer URL + empreinte"
+                if not declared
+                else (
+                    f"chargement depuis `{load.relative}` par `{load.form}` : un "
+                    f"telechargement de `{name}` est declare, mais sans empreinte"
+                )
+            )
+        key = (kind, load.resolved or load.path, load.form)
+        if key in seen:
+            continue
+        seen.add(key)
+        findings.append(
+            {
+                "notebook": notebook,
+                "library": name,
+                "kind": kind,
+                "version": "",
+                "canonical": "",
+                "cell": load.cell,
+                "line": load.line,
+                "reason": reason,
+                "path": load.resolved or load.path,
+                "form": load.form,
+            }
+        )
+    return findings
+
+
+def delta_binary_findings(
+    notebook: str, base_payload: dict | None, head_payload: dict, repo_root: Path
+) -> list[dict]:
+    """Constat binaire **introduit** par la PR (#23103).
+
+    Un chemin non reproductible deja present dans la base n'est pas impute a la
+    PR : c'est l'etat du carnet, il se lit au recensement (`--census`), pas au
+    diff -- meme regle que `delta_mention_findings`. Seul un chargement ajoute
+    (ou deplace vers un autre artefact) tombe ici, et la PR qui l'ajoute est
+    bien celle qui doit le declarer.
+    """
+    head = binary_findings(notebook, head_payload, repo_root)
+    if not head or base_payload is None:
+        return head
+    base_keys = {
+        (item["path"], item["form"])
+        for item in binary_findings(notebook, base_payload, repo_root)
+    }
+    return [
+        item for item in head if (item["path"], item["form"]) not in base_keys
+    ]
 
 
 def _allowlisted(
@@ -936,6 +1341,7 @@ def run_census(repo_root: Path, manifest: Manifest) -> dict:
     dispersion: dict[str, dict[str, list[str]]] = {}
     floating: dict[str, list[str]] = {}
     unreadable: list[str] = []
+    binaries: list[dict] = []
     for notebook in tracked_notebooks(repo_root):
         relative = _relative_to_repo(notebook, repo_root)
         payload = payload_from_file(notebook)
@@ -946,6 +1352,10 @@ def run_census(repo_root: Path, manifest: Manifest) -> dict:
             # epinglage » de « carnet illisible » (relecture #23079, point 3).
             unreadable.append(relative)
             continue
+        # Chargements de binaires depuis un chemin (#23103) : le recensement
+        # est le seul endroit ou la mesure porte sur TOUT le corpus, et c'est
+        # cette mesure que l'issue demande.
+        binaries.extend(binary_findings(relative, payload, repo_root))
         for pin in pins_from_payload(payload, manifest):
             if pin.ecosystem == "provisioning":
                 continue
@@ -1020,6 +1430,7 @@ def run_census(repo_root: Path, manifest: Manifest) -> dict:
         "libraries": table,
         "phantom_divergences": phantoms,
         "unreadable_notebooks": sorted(unreadable),
+        "binary_findings": binaries,
     }
 
 
@@ -1067,6 +1478,31 @@ def render_census(report: dict) -> str:
         for phantom in report["phantom_divergences"]:
             lines.append(
                 f"| {phantom['library']} | {phantom['version']} | {phantom['decision']} |"
+            )
+        lines.append("")
+    binary_findings_list = report.get("binary_findings") or []
+    if binary_findings_list:
+        lines.append("## Binaires charges depuis un chemin non reproductible")
+        lines.append("")
+        lines.append(
+            "Un chargement depuis un chemin hors du depot, ou depuis un dossier "
+            "ignore par git, n'est pas reproductible depuis un clone : le "
+            "binaire manque a la re-execution. Un binaire porte par un "
+            "sous-module ou versionne dans le depot n'est pas signale."
+        )
+        lines.append("")
+        lines.append("| carnet | artefact | constat | cellule |")
+        lines.append("|---|---|---|---|")
+        for finding in binary_findings_list:
+            lines.append(
+                f"| {finding['notebook']} | {finding['library']} "
+                f"| {finding['kind']} | {finding['cell']} |"
+            )
+        lines.append("")
+        for finding in binary_findings_list:
+            lines.append(
+                f"- `{finding['notebook']}` / {finding['library']} : "
+                f"{finding['reason']}"
             )
         lines.append("")
     if report["errors"]:
@@ -1219,6 +1655,10 @@ def main(argv: list[str] | None = None) -> int:
                 return 2
             pins = pins_from_payload(payload, manifest)
             findings.extend(state_findings(relative, pins, manifest, canonicals))
+            # Le chargement hors depot est signale sur l'ETAT : son dommage se
+            # produit a l'execution, pas a l'edition (meme regle que le
+            # provisionnement etranger).
+            findings.extend(binary_findings(relative, payload, repo_root))
             if not args.no_mentions:
                 findings.extend(
                     mention_findings(relative, payload, manifest, canonicals)
@@ -1249,6 +1689,9 @@ def main(argv: list[str] | None = None) -> int:
                 return 2
             head_pins = pins_from_payload(head_payload, manifest)
             if args.state:
+                # Relecture d'etat : le constat porte sur le carnet, pas sur un
+                # delta -- un binaire absent du clone l'est deja dans la base.
+                findings.extend(binary_findings(relative, head_payload, repo_root))
                 findings.extend(
                     state_findings(relative, head_pins, manifest, canonicals)
                 )
@@ -1274,6 +1717,11 @@ def main(argv: list[str] | None = None) -> int:
                 findings.extend(
                     delta_findings(
                         relative, base_pins, head_pins, manifest, canonicals
+                    )
+                )
+                findings.extend(
+                    delta_binary_findings(
+                        relative, base_payload, head_payload, repo_root
                     )
                 )
                 if not args.no_mentions and head_payload is not None:

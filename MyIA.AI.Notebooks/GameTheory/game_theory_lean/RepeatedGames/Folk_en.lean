@@ -16,14 +16,14 @@ import Mathlib.Topology.Basic
   ===================================
 
   English mirror of `RepeatedGames/Folk.lean` (FR-first canonical).
-  Convention i18n Lean ratifiée par ai-01 (2026-07-04, #4980 comment-4881909354) :
+  Convention i18n Lean ratified by ai-01 (2026-07-04, #4980 comment-4881909354):
   distinct `.lean` files FR + EN siblings in the same lake, both compile.
   Drift-CI detectable: non-docstring content byte-identical between siblings.
 
-  Note méthodologique : traduction manuelle du FR canonique (pas de source
-  EN historique pré-Option A à recover, fichier FR-first depuis origin).
+  Methodological note: manual translation of the FR canonical (no historical
+  pre-Option-A EN source to recover; FR-first file since origin).
 
-  Namespace sibling : `RepeatedGames_en` (the FR canonical stays
+  Namespace sibling: `RepeatedGames_en` (the FR canonical stays
   `RepeatedGames`). Shared types `PrisonersDilemma`, `PDAction` are defined
   in `Stage_en.lean` under `namespace RepeatedGames_en` and consumed via
   `import RepeatedGames.Stage_en`; every higher-level EN sibling of this

@@ -252,6 +252,19 @@ except ImportError:
     except ImportError:
         tirage_journal = None  # type: ignore[assignment]
 
+# Geste 6 #24373 : le parcage des EPICs Origami dont le pli suivant n'est pas
+# deplie. Import best-effort, comme `tirage_journal` : un environnement sans
+# le module fait tourner le tapis SANS parcage (fail-OPEN), jamais l'inverse.
+try:
+    import origami_parking
+except ImportError:
+    try:
+        sys.path.insert(0, os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "coordination"))
+        import origami_parking
+    except ImportError:
+        origami_parking = None  # type: ignore[assignment]
+
 REPO = "jsboige/CoursIA"
 
 # c.1115 voie 1 (msg-20260912T165428-k6rbfc, ai-01 spec) : klass `delivered`
@@ -1595,6 +1608,11 @@ URN_NAMES = {"grain", "umbrella", "delivered"}
 DELIVERED_URN_LANES = frozenset({
     "myia-ai-01:CoursIA",       # coordinateur
     "myia-po-2025:CoursIA-2",   # adjoint (preflight #13605, #13883)
+    # Secretariat (Q167 b, mandat user 2026-09-07 valide le 2026-11-05,
+    # issue #24884) : le secretaire ferme les issues livrees. Il ne leve
+    # PAS le gel d'une EPIC -- voir `FROZEN_UNFROZEN_LANES` plus bas, qui
+    # reste un sous-ensemble de cette liste.
+    "myia-po-2028:CoursIA-3",
 })
 
 
@@ -1765,6 +1783,12 @@ _UNFROZEN_HEADER_RE = re.compile(
 #: tiers qui ecrit `[UNFROZEN]` sous le login partage ne leve rien.
 #:
 #: Coordinateur, 2026-11-04 (dispatch c2764, point 2).
+#:
+#: L'autorite de **lever un gel** est un **sous-ensemble** de l'autorite de
+#: **fermer une issue livree** (`DELIVERED_URN_LANES`) : on peut fermer ce
+#: que l'on peut aussi bloquer, pas l'inverse. Le secretaire
+#: (`myia-po-2028:CoursIA-3`, Q167 b) ferme ; le gel d'une EPIC reste au
+#: coordinateur (#24884, point 3).
 FROZEN_UNFROZEN_LANES = frozenset({
     "myia-ai-01:CoursIA",       # coordinateur
     "myia-po-2025:CoursIA-2",   # adjoint titulaire
@@ -2512,7 +2536,13 @@ def belt_snapshot_prime_inert(repo: str, numbers: list[int]) -> None:
 
 
 def has_recent_delivery_marker(issue_number: int) -> bool | None:
-    """Le DERNIER commentaire porte-t-il un marqueur de cloture recent ?
+    """Le DERNIER commentaire PORTEUR D'ETAT porte-t-il un marqueur de cloture ?
+
+    La lecture ne porte pas sur `comments[-1]` brut mais sur le dernier
+    commentaire qui porte un etat (`_last_state_comment`) : un `[RELEASED]`
+    de queue dont le corps ne porte aucun marqueur d'etat est saute, parce
+    qu'il MASQUERAIT le `[DELIVERED]` qu'il suit (#24590). Le contrat ecrit
+    suit donc le code.
 
     TRI-ETAT (cf. `has_delivered_signal`) :
     - ``True``  : l'item est **GEL** (regle A : le BODY porte la ligne
@@ -2522,7 +2552,9 @@ def has_recent_delivery_marker(issue_number: int) -> bool | None:
       ``[INFO] candidate-delivered`` (grammaire `_DELIVERED_MARKER_RE`).
       Le candidat doit etre ecarte SANS
       appeler la sonde pleine -- c'est le filtre bon marche de #19768 ;
-    - ``False`` : aucun marqueur de cloture dans le dernier commentaire.
+    - ``False`` : aucun marqueur de cloture dans le dernier commentaire
+      porteur d'etat -- les `[RELEASED]` de queue sans marqueur d'etat ne
+      sont pas lus (`_last_state_comment`).
       L'appelant peut proceder a la sonde pleine. C'est le cas d'un
       en-tete `[RELEASED]` : une main rendue sur une barriere reelle
       laisse l'item SERVABLE (#21721), et une main rendue parce que le
@@ -2550,6 +2582,29 @@ def has_recent_delivery_marker(issue_number: int) -> bool | None:
     return verdict
 
 
+def _last_state_comment(comments: list[dict]) -> dict:
+    """Le dernier commentaire PORTEUR D'ETAT -- un `[RELEASED]` de queue est saute.
+
+    Un `[RELEASED]` n'est ni une cloture ni une reouverture (#21721) : le
+    laisser occuper la place du dernier commentaire MASQUE le `[DELIVERED]`
+    qu'il suit. Le saut ne porte pas sur l'en-tete seul -- un corps qui porte
+    plus bas un marqueur d'etat EST un evenement.
+    """
+    for comment in reversed(comments):
+        if not isinstance(comment, dict):
+            continue
+        body = comment.get("body")
+        if isinstance(body, str) and _RELEASED_HEADER_RE.search(body):
+            plain = _strip_code(body)
+            if not (_RECENT_DELIVERY_MARKER_RE.search(plain)
+                    or _DELIVERED_MARKER_RE.search(plain)
+                    or _closure_dossier_verdict(body) == "CLOSE"
+                    or _closure_announced_close(body)):
+                continue
+        return comment
+    return {}
+
+
 def _recent_marker_verdict(issue_number: int) -> bool | None:
     """Le detail de `has_recent_delivery_marker` (meme verdict, meme cout).
 
@@ -2570,9 +2625,7 @@ def _recent_marker_verdict(issue_number: int) -> bool | None:
     if _issue_is_frozen(body_of_issue, comments) is not None:
         return True
 
-    last = comments[-1] if comments else {}
-    if not isinstance(last, dict):
-        last = {}
+    last = _last_state_comment(comments)
     body = last.get("body") or ""
     if not isinstance(body, str):
         body = ""
@@ -2686,7 +2739,7 @@ def _issue_comments(issue_number: int) -> tuple[list[dict] | None, str | None]:
     Pourquoi tout le fil et pas seulement la queue : un gel pose en
     commentaire peut etre enterre par n'importe quel commentaire
     posterieur (#24516, mesure sur #19309 : 37 `[RELEASED]` pour un seul
-    `[FROZEN]`). La requete ramene deja le fil entier -- `_last_comment` n'en
+    `[FROZEN]`). La requete ramene deja le fil entier -- la lecture n'en
     gardait que la queue -- donc le balayer **ne coute aucune requete de
     plus**.
 
@@ -2727,55 +2780,98 @@ def _issue_comments(issue_number: int) -> tuple[list[dict] | None, str | None]:
     return comments, body
 
 
-def _last_comment(issue_number: int) -> dict | None:
-    """Le DERNIER commentaire d'une issue (dictionnaire), en 1 requete.
+def has_frozen_marker(issue_number: int) -> str | None:
+    """L'item est-il GEL ? Renvoie la SOURCE du gel, ou l'absence de gel.
 
     TRI-ETAT :
-    - ``None``  : la lecture a echoue (reseau, 403, payload illisible) --
-      fail-OPEN, l'appelant le dit ;
-    - ``{}``    : il n'y a pas de dernier commentaire exploitable (aucun
-      commentaire, payload inattendu) ;
-    - le dict   : celui du dernier commentaire (ordre chronologique de
-      l'API `gh issue view --json comments`), corps et horodatage.
+    - ``"body"``    -- regle A : le corps porte la ligne `[FROZEN] ...` ;
+    - ``"comment"`` -- regle B : un en-tete `[FROZEN]` dans le fil ;
+    - ``False``     -- l'item n'est pas gel ;
+    - ``None``      -- la LECTURE a echoue (fail-OPEN).
 
-    L'horodatage est HERE parce que la regle de la reouverture (#24250) doit
-    dater la decision de cloture : le corps seul ne permet pas de dire si la
-    reouverture lui est posterieure.
+    **Ce que cette fonction ne fait PAS** : lire les marqueurs de
+    LIVRAISON. Ni ceux de l'item, ni -- pour une umbrella -- ceux de ses
+    enfants. C'est la separation demandee sur #19309 : le gel est un veto
+    de la classe, la livraison est un fait propre a l'item. Un parapluie
+    n'herite pas de la livraison de ses enfants.
+
+    Pourquoi une fonction distincte de `has_recent_delivery_marker` : celle-ci
+    confond les deux notions (elle rend `True` pour un item gel comme pour un
+    item livre), et elle n'etait cablee que sur l'urne `grain`. Le gel d'une
+    umbrella n'etait donc jamais consulte -- #19309, gelee par le body et par
+    le fil, servie 7 fois par jour comme tete du tapis.
+
+    Cout : la MEME lecture que `has_recent_delivery_marker` (une requete,
+    ou ZERO quand l'instantane de la passe sert le fil), et le corps vient
+    du cache du pool (`_POOL_BODIES`), que le pool paie deja.
     """
-    comments, _body = _issue_comments(issue_number)
+    comments, fetched_body = _issue_comments(issue_number)
     if comments is None:
+        # Lecture en echec : fail-OPEN. L'appelant distingue « pas gele »
+        # de « non mesure » par ce tri-etat.
         return None
-    if not comments:
-        return {}
-    last = comments[-1]
-    if not isinstance(last, dict):
-        return {}
-    return last
+    body_of_issue = _issue_body(issue_number)
+    if body_of_issue is None:
+        body_of_issue = fetched_body
+    return _issue_is_frozen(body_of_issue, comments) or False
+
+
+def gel_cause_text(gel: str | None) -> str | None:
+    """Le fragment de cause que le GEL ajoute a un refus (#19309).
+
+    - ``"body"`` / ``"comment"`` : l'item est gele, la cause le dit ;
+    - ``False``                  : rien a ajouter ;
+    - ``None``                   : la lecture a echoue -- fail-OPEN, mais
+      DIT (un gel non mesure n'est pas un item libre de gel).
+
+    Utilise par le mode `--admissible`, qui rendait `ADMISSIBLE` sur un item
+    gele : le gel est un veto transversal, l'urne de la question doit donc
+    le voir aussi.
+    """
+    if gel is False:
+        return None
+    if gel is None:
+        return ("GEL NON MESURE : la lecture du gel a echoue -- fail-OPEN "
+                "assume, l'item n'est pas ecarte pour autant")
+    return (f"GEL ({gel}) : l'item est gele. Regle A = ligne `[FROZEN] ...` "
+            f"dans le corps ; regle B = en-tete `[FROZEN]` dans le fil. Le "
+            f"degel consiste a retirer la ligne du corps, ou a poster "
+            f"`[UNFROZEN]` depuis une lane habilitee. Un `[RELEASED]` ne "
+            f"leve pas un gel.")
 
 
 def _last_comment_body(issue_number: int) -> str | None:
-    """Le corps du DERNIER commentaire d'une issue, en 1 requete.
+    """Le corps du DERNIER commentaire PORTEUR D'ETAT, en 1 requete.
 
     TRI-ETAT :
     - ``None``  : la lecture a echoue (reseau, 403, payload illisible) --
       fail-OPEN, l'appelant le dit ;
     - ``""``    : il n'y a pas de dernier commentaire exploitable (aucun
       commentaire, payload inattendu, corps non textuel) ;
-    - le corps  : celui du dernier commentaire (ordre chronologique de
-      l'API `gh issue view --json comments`).
+    - le corps  : celui du dernier commentaire porteur d'etat (ordre
+      chronologique de l'API `gh issue view --json comments`).
 
     Facteurise pour que le filtre « marqueur recent » et le filtre
     « marqueur de CONTENEUR » lisent le meme octet : deux lectures du meme
     fil ne peuvent pas diverger sur un fil qui change entre les deux.
 
+    #24590 -- l'octet partage est celui de `_last_state_comment`, pas celui
+    de `comments[-1]` : un `[RELEASED]` de queue sans marqueur d'etat est
+    saute par les DEUX filtres. Sans ca, la sonde conteneur restait exposee
+    a la meme cecite que la sonde de livraison : un `[RELEASED]` posterieur
+    masquait le `[INFO] candidate-delivered` qu'il suit, et l'umbrella
+    redevenait servable alors que le conteneur etait clos.
+
     #22630 -- l'instantane local rend les memes commentaires, sans requete :
     la lecture passe par `_snapshot_comments` quand l'instantane de la passe
     est disponible, et retombe sur la requete historique sinon.
     """
-    last = _last_comment(issue_number)
-    if last is None:
+    comments, _body = _issue_comments(issue_number)
+    if comments is None:
         return None
-    body = last.get("body") or ""
+    if not comments:
+        return ""
+    body = _last_state_comment(comments).get("body") or ""
     if not isinstance(body, str):
         return ""
     return body
@@ -3088,6 +3184,65 @@ def merged_pr_probe_inert(issue_number: int, lane: str | None = None):
     return None
 
 
+# Un `#N` dans un corps de PR n'est pas toujours une citation de `#N`. La
+# surface « PR MERGEE » lit le corps entier, donc un bilan qui ENUMERE des
+# numeros d'issues retenait le candidat comme livre. Mesure #24418 sur le
+# pool du 2026-11-03 : 4 candidats `withheld` par cette surface, dont 1
+# (#18763) n'apparaissait que dans des listes -- PR #19232, deux lignes de
+# la forme « …, #18671, #18763, #18770) » et « #18423 #18430 #18434 … ».
+# Le cout n'est pas proportionnel au taux : une issue jamais livree reste
+# invisible a chaque tirage tant que la PR de bilan est dans la fenetre.
+#
+# Deux formes sont distinguees, dans cet ordre :
+#   - CITATION : une forme de liaison precede l'ancre -- `type(scope,#N)`
+#     (`Add(ci,#21978)`, `fix(genai,#21097)`) ou un mot-cle (`Closes`,
+#     `Fixes`, `Resolves`, `See`, `Part of`, `Refs`, `Suite de`) ;
+#   - ENUMERATION : sinon, quand la ligne porte au moins
+#     `_ENUMERATION_MIN_ANCHORS` ancres `#digits`. C'est la signature d'une
+#     liste, pas d'une revendication de livraison.
+# Une seule citation suffit a retenir la PR : les trois autres candidats
+# mesures (#21978, #21221, #21097) sont restes `withheld` a l'identique.
+_ANCHOR_LINKING_PREFIX_RE = re.compile(
+    r"(?:"
+    r"\w+\([^)\n]*,\s*"
+    r"|"
+    r"(?:clos(?:es?|ed)|fix(?:es|ed)?|r[eé]sout|resolv(?:es|ed)?"
+    r"|see|voir|part\s+of|refs?|suite\s+de)\s*:?\s*"
+    r")\s*$",
+    re.IGNORECASE)
+_ENUMERATION_MIN_ANCHORS = 4
+_ANY_ANCHOR_RE = re.compile(r"#\d+\b")
+
+
+def anchor_is_citation(text: str, issue_number: int) -> bool:
+    """Au moins une occurrence de `#N` est-elle une citation, pas une liste ?
+
+    Rend ``False`` quand TOUTES les occurrences sont des enumerations de
+    prose : c'est le cas mesure en #24418, ou une PR de bilan cite des
+    dizaines de numeros d'issues sans en livrer aucune. Rend ``True`` des
+    qu'une occurrence porte une forme de liaison, ou se trouve sur une ligne
+    qui ne ressemble pas a une liste (< 4 ancres).
+
+    La voie par defaut est ``True`` -- une ligne courte qui cite `#N` sans
+    mot-cle reste une citation. Le filtre ne retire que la forme dont la
+    signature est sans ambiguite (liste), pour ne pas transformer une
+    livraison reelle en candidat re-servi.
+    """
+    anchor = re.compile(rf"#{issue_number}\b")
+    for line in text.split("\n"):
+        if not anchor.search(line):
+            continue
+        if len(_ANY_ANCHOR_RE.findall(line)) < _ENUMERATION_MIN_ANCHORS:
+            # Ligne courte : une citation, quelle que soit la forme.
+            return True
+        # Ligne de liste : seule une occurrence explicitement liee compte.
+        for match in anchor.finditer(line):
+            prefix = line[max(0, match.start() - 60):match.start()]
+            if _ANCHOR_LINKING_PREFIX_RE.search(prefix):
+                return True
+    return False
+
+
 def merged_pr_signal(issue_number: int, lane: str | None = None):
     """Une PR MERGEE citant `#N` est-elle dans la fenetre de 90 jours ?
 
@@ -3123,15 +3278,16 @@ def merged_pr_signal(issue_number: int, lane: str | None = None):
         return None
     if not isinstance(prs, list):
         return None
-    anchor = re.compile(rf"#{issue_number}\b")
     now = dt.datetime.now(dt.timezone.utc)
     window = dt.timedelta(days=MERGED_PR_WINDOW_DAYS)
     newest = None
     for pr in prs:
         if pr.get("state") != "MERGED":
             continue
-        if not anchor.search((pr.get("title") or "") + "\n" +
-                             (pr.get("body") or "")):
+        # #24418 : `anchor.search` retenait une enumeration de prose comme
+        # une livraison. La citation est desormais exigeante sur la forme.
+        if not anchor_is_citation((pr.get("title") or "") + "\n" +
+                                 (pr.get("body") or ""), issue_number):
             continue
         merged_at = pr.get("mergedAt")
         if not merged_at:
@@ -3856,6 +4012,23 @@ def print_delivered_resolved_lines(withheld: list, indent: str = "") -> None:
               f"{_delivered_resolved_short_cause(cause)}")
 
 
+def print_frozen_resolved_lines(withheld: list, indent: str = "") -> None:
+    """Une ligne `ECARTE (gel): #N -- <source>` par candidat gele (#19309).
+
+    Distincte de `print_delivered_resolved_lines` : le gel n'est pas une
+    livraison. Un candidat gele est ecarte par un VETO du coordinateur, et
+    la sortie doit le dire -- sinon la lane lit une liste de candidats
+    servis et ne voit pas pourquoi celui-ci manque.
+    """
+    for it, cause in withheld:
+        if not cause.startswith("GEL ("):
+            continue
+        source = cause[len("GEL ("):].split(")")[0]
+        print(f"{indent}ECARTE (gel): #{it['number']} -- regle {source} "
+              f"(degel : retirer la ligne `[FROZEN]` du corps, ou poster "
+              f"`[UNFROZEN]` depuis une lane habilitee)")
+
+
 def print_delivered_signal_report(
     withheld: list,
     state: dict,
@@ -4068,6 +4241,46 @@ def print_marker_unread_report(unread, lane: str | None = None) -> None:
     print("   `[INFO] candidate-delivered`) : verifier avant d'editer.")
 
 
+def print_frozen_unread_report(unread, lane: str | None = None) -> None:
+    """Rend compte des etats de GEL NON LUS (#24516).
+
+    Quatrieme pendant de `print_claim_unread_report`,
+    `print_container_unread_report` et `print_marker_unread_report` : la
+    sonde de GEL (`has_frozen_marker`) rend `None` sur echec de lecture --
+    et ce `None` est **indistinguable d'un « pas de gel »** pour
+    l'operateur qui lit la sortie.
+
+    Le gel est un veto TRANSVERSAL : il ecarte le candidat de TOUTES les
+    classes. Un gel non lu laisse donc passer un candidat que le gel aurait
+    ecarte -- c'est le fail-OPEN le plus costly du tapis, parce que l'item
+    est alors servi par une lane qui ne sait pas qu'il est gele.
+
+    Ce que la sonde lit : le corps de l'issue (regle A) et le fil (regle B).
+    L'echec de lecture vient soit du reseau (403, payload illisible), soit
+    d'une surface absente du cache local (corps non porte par le pool, fil
+    hors de l'instantane de la passe).
+
+    Meme doctrine que les trois autres rapports : le fail-OPEN est assume
+    (le tirage est maintenu), mais le **silence** ne l'est pas. Ce rapport
+    existe aussi pour une raison de COHERENCE : sur `main`, l'etat de gel
+    non lu etait publie dans le JSON (`frozen_signal.unread`) sans jamais
+    etre dit en texte -- alors que les cinq lectures voisines ont chacune
+    leur rapport `!! ... NON LU`.
+    """
+    numbers = sorted(set(unread or []))
+    if not numbers:
+        return
+    joined = ", ".join(f"#{num}" for num in numbers)
+    print(f"!! etat de GEL NON LU sur {joined} "
+          f"({len(numbers)} candidat(s)) : le gel n'a pas pu etre lu")
+    print("   (reseau, 403, payload illisible, ou surface absente du cache "
+          "local). Le tirage est")
+    print("   MAINTENU (fail-OPEN assume) -- mais le candidat peut PORTER un "
+          "gel du coordinateur")
+    print("   (`[FROZEN]` dans le corps ou dans le fil) : verifier avant "
+          "d'editer.")
+
+
 def print_belt_budget_report(budget_hit: bool) -> None:
     """Rend compte de l'epuisement du budget de sondes de livraison (#19969).
 
@@ -4124,6 +4337,9 @@ def print_empty_draw_notice(withheld: list, picks: list,
             for _, cause in withheld):
         print("   Une partie a deja ete livree ou est couverte par une PR")
         print("   ouverte ; elle ne doit pas etre reproduite.")
+    if any(cause.startswith("GEL (") for _, cause in withheld):
+        print("   Un candidat est GEL (veto du coordinateur) : il ne peut pas")
+        print("   etre servi tant que le gel n'est pas leve.")
     print("   Claims, livraisons et urnes autorisees restent proteges. Enchainer")
     print("   immediatement sur la deep-queue ou le fallback global de la lane.")
     print("   Une poignee locale epuisee ne termine jamais la session.")
@@ -5112,7 +5328,7 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
                    fallback_by_class=None, continuity_state=None,
                    cover_probe=None, long_visits=None,
                    merged_pr_probe=None, revocation_probe=None,
-                   gpu_probe=None):
+                   gpu_probe=None, frozen_probe=None):
     """Tire, puis REMPLACE tout candidat qu une autre lane tient deja.
 
     Trois raisons de remplacer plutot que d annoter :
@@ -5153,6 +5369,11 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
     recent_filtered = state.setdefault("recent_filtered", 0)
     # Les numeros servis sur une lecture de claim EN ECHEC (#20265).
     claim_unread = state.setdefault("claim_unread", [])
+    # #19309 -- le GEL est transversal : il s'applique a toutes les classes,
+    # la ou les filtres de livraison restent classes (une umbrella n'herite
+    # pas de la livraison de ses enfants).
+    frozen_unread = state.setdefault("frozen_unread", [])
+    user_frozen_probe = frozen_probe or frozen_probe_inert
     # Une lecture de claim n'est SIGNALABLE que si elle a ete TENTEE : le
     # repli `ERROR` couvre aussi le controle jamais demande.
     check_claims_ran = bool(args.check_claims and args.lane)
@@ -5282,6 +5503,29 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
                             "grain sans marqueur -- le prendre produirait la "
                             "collision du #14259. Candidat remplace dans la "
                             "meme urne (#14300).")))
+                        continue
+                    # #19309 -- porte de GEL, avant les filtres de classe.
+                    # Le gel est une decision explicite du coordinateur : il
+                    # vaut pour TOUTES les classes (grain, umbrella,
+                    # delivered) et ne se contourne ni par `--include-delivered`
+                    # ni par le fait que l'item soit un parapluie. Ce qu'il ne
+                    # fait PAS : heriter des marqueurs de livraison des
+                    # enfants d'un parapluie -- c'est le role de la sonde
+                    # de CONTENEUR, pas du gel.
+                    gel = user_frozen_probe(c["number"])
+                    if gel is None:
+                        frozen_unread.append(c["number"])
+                    elif gel:
+                        state["frozen_filtered"] = state.get(
+                            "frozen_filtered", 0) + 1
+                        conflicts.append((c, (
+                            f"GEL ({gel}) : l'item est gele. Regle A = ligne "
+                            f"`[FROZEN] ...` dans le corps ; regle B = "
+                            f"en-tete `[FROZEN]` dans le fil. Le degel "
+                            f"consiste a retirer la ligne du corps, ou a poster "
+                            f"`[UNFROZEN]` depuis une lane habilitee. Un "
+                            f"`[RELEASED]` ne leve pas un gel. Candidat "
+                            f"remplace dans la meme urne.")))
                         continue
                     if cls == "grain" and not include_delivered:
                         # #19768 : filtre RECENT d'abord, AVANT la sonde
@@ -8961,6 +9205,57 @@ def draw_belt(
     return filtered[:args.grains]
 
 
+def _origami_parking_state(pool: list[dict]) -> tuple[dict[int, str], dict]:
+    """Verdicts de parcage des EPICs Origami dont le pli suivant n'est pas deplie (#24373).
+
+    Rend ``(parked, state)`` : ``parked`` mappe le numero d'un EPIC parque a
+    la raison de son parcage ; ``state`` porte la mesure brute (pour le JSON
+    et le tableau du coordinateur).
+
+    **Fail-OPEN.** Module absent, mesure en echec, aucune mesure : rien
+    n'est parque, et ``state`` nomme l'echec. Un parcage applique sur une
+    absence de mesure supprimerait un grain du tapis -- le pire des deux
+    sens.
+
+    La lecture de « pli livre » passe par le corpus de PRs mergees que le
+    tapis a deja paye (``last_delivery_stamp`` du pool) : **zero appel
+    reseau** pour la livraison. L'organe ne fait que la recherche des
+    sous-issues et la lecture des commentaires (deux appels).
+    """
+    state: dict = {"active": False, "measured": False, "parked": [],
+                   "reason": "module indisponible"}
+    if origami_parking is None:
+        return {}, state
+    by_number = {int(it["number"]): it for it in pool}
+
+    def _delivered(number: int) -> bool:
+        # Le pool est la liste des issues OUVERTES : une sous-issue ouverte
+        # s'y trouve, avec son stamp de livraison s'il y en a une. Pas de
+        # stamp = pas de livraison tracee dans le corpus (fenetre de 90 j).
+        return bool((by_number.get(int(number)) or {}).get("last_delivery_stamp"))
+
+    try:
+        verdicts = origami_parking.measure(pool, delivered_probe=_delivered)
+    except Exception as exc:  # noqa: BLE001 - un garde ne doit pas casser le tirage
+        state["reason"] = f"mesure en echec ({type(exc).__name__})"
+        return {}, state
+    parked = {int(v["epic"]): v.get("reason") or ""
+              for v in verdicts if v.get("parked")}
+    state.update({
+        "active": True,
+        "measured": True,
+        "epics": len(verdicts),
+        "parked": sorted(parked),
+        "details": [{"epic": int(v["epic"]), "parked": bool(v.get("parked")),
+                     "reason": v.get("reason"),
+                     "next_pli": v.get("next_pli"),
+                     "title": v.get("title")}
+                    for v in verdicts],
+        "reason": "mesure faite",
+    })
+    return parked, state
+
+
 def belt_report_metrics(
     pool: list[dict],
     closed_7d: int | None,
@@ -10204,6 +10499,21 @@ def container_marker_probe_inert(number):
     # (Ecrire `return None` ici ajouterait un finding RET501 au fichier.)
 
 
+def frozen_probe_inert(number):
+    """Defaut inerte de la sonde de GEL (doctrine #19913).
+
+    Rend ``False`` = « aucun gel releve » : la boucle applique ses filtres
+    habituels, sans neutraliser aucune surface. Un test qui n'injecte pas
+    de sonde ne sort jamais sur le reseau.
+
+    Le retour n'est PAS ``None`` : ici ``None`` signifierait « lecture en
+    echec », et l'appelant le traiterait en fail-OPEN *signale*. Un defaut
+    inerte n'a pas d'echec a signaler : il n'a rien mesure (meme contrat que
+    `delivery_event_probe_inert`).
+    """
+    return False
+
+
 def delivery_event_probe_inert(number):
     """Defaut inerte de la lecture d'evenement de livraison (#22500 point 1).
 
@@ -10242,7 +10552,8 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                                 container_marker_probe=None,
                                 delivery_event_probe=None,
                                 time_budget_s=None,
-                                gpu_probe=None):
+                                gpu_probe=None,
+                                frozen_probe=None):
     """La boucle de service du tapis : claims, livraison, remplacement.
 
     Extraite de ``main`` (#19390) pour etre testable sans harnais complet :
@@ -10278,6 +10589,16 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     elle seule permet de distinguer « livree a l'instant » de « livree il y a
     plus de 48 h, donc DUE a nouveau ». Elle remplace le filtre recent pour
     les consolidations (meme grammaire, meme lecture, une de moins).
+
+    ``frozen_probe`` (tests) remplace la lecture du GEL (#19309). Elle est
+    **distincte** de `recent_marker_probe` sur deux points qui sont le
+    fond du defaut corrige : (a) elle ne lit QUE le gel -- ni le marqueur de
+    livraison de l'item, ni celui de ses enfants -- donc une umbrella n'herite
+    pas de la livraison de ses enfants ; (b) elle vaut pour TOUTES les
+    classes (`grain`, `umbrella`, `delivered`), la ou le filtre recent
+    n'etait cable que sur l'urne `grain`. Elle rend la SOURCE du gel
+    (``"body"`` / ``"comment"``), ``False`` si l'item n'est pas gele, ``None``
+    si la lecture a echoue (fail-OPEN signale, `frozen_unread`).
 
     Defauts INERTES (doctrine ``delivered_probe_inert`` / #19913) : un test
     qui appelle cette boucle sans injecter ses sondes n'emet AUCUNE requete
@@ -10324,7 +10645,8 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     budget = [int(probe_budget)]
     state = {"failures": [], "budget_hit": False, "recent_filtered": 0,
              "claim_unread": [], "container_unread": [], "marker_unread": [],
-             "cover_failures": [], "time_budget_hit": False}
+             "cover_failures": [], "time_budget_hit": False,
+             "frozen_unread": [], "frozen_filtered": 0}
     # #22630 -- l'instantane local est rafraichi UNE FOIS pour les candidats
     # de la fenetre : toutes les sondes de commentaires (filtre recent et
     # sonde pleine de livraison) le lisent ensuite sans requete GitHub par
@@ -10442,13 +10764,16 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                                        or container_marker_probe_inert)
         user_delivery_event_probe = (delivery_event_probe
                                       or delivery_event_probe_inert)
+        # #19309 -- la sonde de GEL est distincte de la sonde de LIVRAISON :
+        # elle ne lit que le gel, et elle vaut pour toutes les classes.
+        user_frozen_probe = frozen_probe or frozen_probe_inert
 
         def marker_read_is_local(number):
             """La lecture du marqueur de `number` resterait-elle LOCALE ?
 
             Le mur de temps (`expired`) borne le RESEAU ; il ne borne pas une
             lecture locale. Les deux filtres de marqueur (recent, conteneur)
-            lisent `_last_comment`, qui sert depuis l'instantane de la passe
+            lisent `_last_state_comment`, qui sert depuis l'instantane de la passe
             quand il le peut (#22630). Les sauter au motif de l'echeance sert
             donc un candidat dont la cloture etait CONNUE.
 
@@ -10572,6 +10897,36 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                 belt_claims[n] = (code, human)
             if code == CLAIM_CODE_BLOCKED:
                 belt_withheld.append((it, human))
+                continue
+            # #19309 -- le GEL est un VETO transversal, pas un veto de classe.
+            # Il passe AVANT le plafond EPIC et avant les filtres de
+            # livraison, parce que le gel est une decision explicite du
+            # coordinateur : un candidat gel doit dire « GEL », jamais
+            # « PLAFOND EPIC » ni « LIVRAISON », et ne doit surtout pas
+            # revenir au tirage suivant.
+            #
+            # Le gel s'applique a TOUTES les classes (grain, umbrella,
+            # delivered) : la regle A vit dans le corps, la regle B dans le
+            # fil, et ni l'une ni l'autre ne depend de la classe. Ce que
+            # cette porte ne fait PAS -- contrairement au filtre de
+            # livraison -- c'est heriter des marqueurs de livraison des
+            # ENFANTS d'un parapluie : un EPIC n'est pas livre parce que ses
+            # sous-grains le sont.
+            gel = user_frozen_probe(n)
+            if gel is None:
+                # Lecture en echec : fail-OPEN, mais DIT (meme doctrine que
+                # `claim_unread` / `marker_unread` -- le silence n'est pas
+                # un fail-OPEN, c'est un trou).
+                state["frozen_unread"].append(n)
+            elif gel:
+                state["frozen_filtered"] += 1
+                belt_withheld.append((it, (
+                    f"GEL ({gel}) : l'item est gele. Regle A = ligne "
+                    f"`[FROZEN] ...` dans le corps ; regle B = en-tete "
+                    f"`[FROZEN]` dans le fil. Le degel consiste a retirer la "
+                    f"ligne du corps, ou a poster `[UNFROZEN]` depuis une lane "
+                    f"habilitee. Un `[RELEASED]` ne leve pas un gel. "
+                    f"Candidat remplace dans la meme urne.")))
                 continue
             # #22500 -- plafond hebdomadaire d'un EPIC hors consolidation. Le
             # tapis ne peut pas empecher une lane de CREER un sous-grain ; il
@@ -11204,6 +11559,15 @@ def main(argv: list[str] | None = None) -> int:
     )
     delivered_state: dict = {"failures": [], "budget_hit": False,
                               "recent_filtered": 0}
+    # Sonde de GEL (#19309) : meme commutateur d'inertie sous pytest que les
+    # deux sondes ci-dessus. Le gel est un veto transversal -- toutes
+    # classes -- et il est distinct de la sonde de livraison : un parapluie
+    # n'herite pas des marqueurs de livraison de ses enfants.
+    frozen_probe = (
+        frozen_probe_inert
+        if "PYTEST_CURRENT_TEST" in os.environ and args.cache_dir is None
+        else has_frozen_marker
+    )
 
     # Capacite dimensionnee pour le cache PAR TRANCHE (#19236) : la fenetre du
     # tapis (90 j) couvre ~30 tranches de 3 j, qui s'ajoutent aux entrees
@@ -11281,6 +11645,13 @@ def main(argv: list[str] | None = None) -> int:
                   "(fermee, ou au-dela de la limite de la requete).")
             return 1
         cause = admissibility(hit, balance, issue_to_family, args.dwell_hours)
+        # #19309 -- le mode `--admissible` ne passait par AUCUN des filtres de
+        # gel : il rendait `ADMISSIBLE` sur une issue gelee. Le gel est un
+        # veto transversal, donc cette urine le voit aussi -- et la sortie le
+        # dit, plutot que de laisser lire un `ADMISSIBLE` muet.
+        gel_text = gel_cause_text(frozen_probe(hit["number"]))
+        if gel_text:
+            cause = (cause + " " + gel_text) if cause else gel_text
         if series_err:
             if (cache_status.get("series") or {}).get("status") == "stale":
                 print(f"(saturation FRAICHE NON MESUREE : {series_err} -- "
@@ -11707,6 +12078,30 @@ def main(argv: list[str] | None = None) -> int:
         belt_pool = belt_filter(admitted, args, urns=selected_urns,
                                 epic_deliveries=_epic_deliveries,
                                 drops=_epic_drops)
+        # #24373 -- parcage des EPICs Origami dont le pli suivant n'est pas
+        # deplie. Le depliage est un geste du COORDINATEUR : aucune lane
+        # worker ne peut le lever, donc le tapis qui les ressertait epuisait
+        # des cycles en `[RELEASED]` (34 sur #19309, 31 depuis le 27/10).
+        # L'EPIC parque n'est plus servi aux lanes, et apparait dans la
+        # rubrique « Origami en attente de depliage » du tableau du
+        # coordinateur (`belt_queues.py board`).
+        # Le geste est fail-OPEN : sans mesure, rien n'est parque.
+        _origami_parked, _origami_state = _origami_parking_state(pool)
+        if _origami_parked:
+            for it in belt_pool:
+                verdict = _origami_parked.get(int(it["number"]))
+                if verdict is None:
+                    continue
+                _origami_state.setdefault("dropped", []).append(
+                    {"number": int(it["number"]), "title": it.get("title"),
+                     "cause": f"PARCAGE ORIGAMI (#24373) : {verdict}"})
+            belt_pool = [it for it in belt_pool
+                         if int(it["number"]) not in _origami_parked]
+            _belt_phase(f"parcage origami: {len(_origami_parked)} EPIC(s) "
+                        f"parque(s) -- " + ", ".join(
+                            f"#{n}" for n in sorted(_origami_parked)[:8])
+                        + (f" (+{len(_origami_parked) - 8})"
+                           if len(_origami_parked) > 8 else ""))
         belt_pool.sort(key=belt_sort_key)
         _belt_phase(f"pool charge: {len(belt_pool)} candidates "
                     f"(apres belt_filter)")
@@ -11868,7 +12263,8 @@ def main(argv: list[str] | None = None) -> int:
                                             has_recent_container_delivery_marker),
                                         delivery_event_probe=delivery_event,
                                         time_budget_s=belt_time_remaining,
-                                        gpu_probe=gpu_gate_probe))
+                                        gpu_probe=gpu_gate_probe,
+                                        frozen_probe=frozen_probe))
         _belt_phase(f"pick_with_replacements fait: "
                     f"{len(belt_picks)} retenu(s), {len(belt_withheld)} witheld")
         belt_delivered_failures = belt_pick_state["failures"]
@@ -11950,6 +12346,10 @@ def main(argv: list[str] | None = None) -> int:
             # #19907 acceptance 2 : une ligne par candidat ecarte pour
             # livraison, avant les agregats -- chaque ecart se lit seul.
             print_delivered_resolved_lines(belt_withheld, indent="   ")
+            # #19309 : le gel a sa ligne a lui -- c'est un VETO du
+            # coordinateur, pas une livraison, et la lane doit voir POURQUOI
+            # le candidat manque.
+            print_frozen_resolved_lines(belt_withheld, indent="   ")
             # #19768 : le filtre recent a sa ligne a lui, HORS budget -- ne
             # pas le fondre dans « Signal de livraison », la distinction est
             # la mesure (un candidat ecarte hors budget n'a pas consomme de
@@ -12004,6 +12404,13 @@ def main(argv: list[str] | None = None) -> int:
             # `None` etait indiscernable d'un « pas de marqueur ».
             print_marker_unread_report(
                 belt_pick_state.get("marker_unread"), args.lane)
+            # #24516 : meme doctrine pour la SONDE DE GEL. Le gel est un veto
+            # transversal : un gel non lu laisse passer un candidat que le
+            # gel aurait ecarte, et l'operateur n'apprendait l'echec que par
+            # le JSON (`frozen_signal.unread`) -- jamais en texte, alors que
+            # les quatre lectures voisines ont chacune leur rapport.
+            print_frozen_unread_report(
+                belt_pick_state.get("frozen_unread"), args.lane)
             print_belt_budget_report(belt_probe_budget_hit[0])
             if belt_time_budget_hit[0]:
                 print("   Mur de temps du tapis atteint (#21436) : la boucle a")
@@ -12086,6 +12493,11 @@ def main(argv: list[str] | None = None) -> int:
                                 for n, c in belt_dropped_validate],
                 },
                 "picks": belt_picks,
+                # #24373 : les EPICs Origami parques (le pli suivant n'est pas
+                # deplie -- geste reserve au coordinateur). Ils ne sont pas
+                # servis aux lanes ; le tableau du coordinateur les affiche
+                # dans « Origami en attente de depliage ».
+                "origami_parking": _origami_state,
                 "claims": {str(it["number"]): {
                     "code": (belt_claims.get(it["number"],
                                               (CLAIM_CODE_ERROR, "(no check)"))[0]),
@@ -12170,6 +12582,19 @@ def main(argv: list[str] | None = None) -> int:
                         "marker_unread") or [])),
                     "container_unread": sorted(set(belt_pick_state.get(
                         "container_unread") or [])),
+                },
+                # Volet GEL (#19309) : le gel est un veto transversal, et son
+                # propre volet est separe des marqueurs de livraison -- un
+                # parapluie n'herite pas de la livraison de ses enfants, mais
+                # il herite de son PROPRE gel. `withheld` = candidats ecartes
+                # par la porte de gel, `unread` = lectures ratees (fail-OPEN
+                # signale).
+                "frozen_signal": {
+                    "withheld": [it["number"] for it, c in belt_withheld
+                                 if c.startswith("GEL (")],
+                    "filtered": belt_pick_state.get("frozen_filtered", 0),
+                    "unread": sorted(set(belt_pick_state.get(
+                        "frozen_unread") or [])),
                 },
                 # Volet bulk GraphQL (#19643, ai-01 review 5568273366) :
                 # `fallback_count` est le nombre de numeros absents de
@@ -12371,7 +12796,8 @@ def main(argv: list[str] | None = None) -> int:
         fallback_by_class=fallback_by_class,
         continuity_state=continuity,
         long_visits=long_visits,
-        gpu_probe=gpu_gate_probe)
+        gpu_probe=gpu_gate_probe,
+        frozen_probe=frozen_probe)
     withheld.extend(claim_conflicts)
     delivery = recent_delivery(picks)
     # Geste 5 #18203 : consigner la volee ponderee. L'urne journalisee est
@@ -12466,6 +12892,15 @@ def main(argv: list[str] | None = None) -> int:
                     "gpu_target_unresolved") or [],
                 "withheld": [it["number"] for it, c in withheld
                              if c.startswith("GPU : ")],
+            },
+            # Volet GEL (#19309) : distinct du volet livraison -- le gel est
+            # un veto transversal, la livraison reste un fait de classe.
+            "frozen_signal": {
+                "withheld": [it["number"] for it, c in withheld
+                             if c.startswith("GEL (")],
+                "filtered": delivered_state.get("frozen_filtered", 0),
+                "unread": sorted(set(delivered_state.get("frozen_unread")
+                                     or [])),
             },
             "red_backlog": backlog,
             "substance_drought": drought,
@@ -12615,6 +13050,8 @@ def main(argv: list[str] | None = None) -> int:
     # AVANT les picks servis -- le tableau ci-dessous reste la vue de
     # tirage, les lignes ECARTE sont la vue d'exclusion.
     print_delivered_resolved_lines(withheld)
+    # #19309 : le gel a sa ligne a lui (veto du coordinateur, pas livraison).
+    print_frozen_resolved_lines(withheld)
     header = (f"{'urne':<10} {'issue':<8} {'age':>5} {'inact':>6} {'vus':>4}  "
               f"{'genre':<16} {'p':>5}  titre")
     print(header)
@@ -12671,6 +13108,11 @@ def main(argv: list[str] | None = None) -> int:
     # taisait.
     print_claim_unread_report((delivered_state or {}).get("claim_unread"),
                               args.lane)
+    # #24516 : meme doctrine pour le gel, sur le chemin `delivered` aussi --
+    # la sonde de gel y est cablee (elle y produit `frozen_unread`), mais
+    # l'echec de lecture n'etait dit par aucun rapport texte.
+    print_frozen_unread_report((delivered_state or {}).get("frozen_unread"),
+                               args.lane)
     print_empty_draw_notice(withheld, picks, args.include_delivered)
     print()
     print_unattributed_blocked(backlog)

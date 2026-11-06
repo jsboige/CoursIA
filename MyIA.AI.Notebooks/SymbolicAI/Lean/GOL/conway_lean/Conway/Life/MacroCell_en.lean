@@ -23,11 +23,9 @@ We use the same coordinate convention as `Conway.Life`:
 So at the top level a node `node nw ne sw se` of level `n+1` covers a
 region of size `2^(n+1) x 2^(n+1)` partitioned as:
 
-```
-nw | ne
----+---
-sw | se
-```
+    nw | ne
+    ---+---
+    sw | se
 
 where each quadrant is `2^n x 2^n`. If the whole region has its
 top-left corner at `(row0, col0)`, then:
@@ -37,8 +35,8 @@ top-left corner at `(row0, col0)`, then:
 - `sw` covers `[row0 + 2^n,     row0 + 2^(n+1))      x [col0,           col0 + 2^n)`
 - `se` covers `[row0 + 2^n,     row0 + 2^(n+1))      x [col0 + 2^n,    col0 + 2^(n+1))`
 
-This module is fully proven (no gaps). It only provides the data
-structure and conversions. The Hashlife algorithm lives in
+This module is fully proven (no gaps): it only provides the data structure
+and conversions. The Hashlife algorithm lives in
 `Conway.Life.Hashlife`.
 -/
 
@@ -159,15 +157,18 @@ namespace MacroCell
 
 /-- Smallest `n` such that `2 ^ n >= k`.
 
-    Previously defined by well-founded recursion on `(k + 2 + 1) / 2`, which the
-    kernel reducer cannot unfold: that opacity was the *sole* obstruction behind
-    the `native_decide` uses downstream (the `Int` coordinates of `Computation.lean`
-    were a symptom, not an intrinsic necessity). Reformulated via `Nat.log 2`
-    (Mathlib structural recursion, kernel-reducible):
+    Implementation note (#8869, c.847): the previous recursion
+    `| k + 2 => 1 + ceilLog2 ((k + 2 + 1) / 2)` was **WellFounded** (the argument
+    `(k+2+1)/2` is not structurally smaller), hence **opaque to the kernel
+    reducer** — `decide` could not evaluate it, blocking `gridFrame lvl` and then
+    the whole `buildFromGrid`/`toGrid`/`evolveHashlife` chain (the 14 coherence
+    theorems of `Computation.lean` were `native_decide` by symptom, not by
+    intrinsic necessity). Reformulated via `Nat.log 2` (Mathlib structural
+    recursion, kernel-reducible):
     `ceilLog2 k = if k ≤ 1 then 0 else Nat.log 2 (k-1) + 1`. Same function
-    (values unchanged, cf `ceilLog2_spec`), now decidable. Firsthand diagnosis:
-    `ceilLog2 6 = 3` goes through under `decide` after the rewrite (it failed
-    before, even with `maxRecDepth 1000000`, even on a single step). -/
+    (values unchanged, cf `ceilLog2_spec`), but now decidable. Firsthand
+    diagnosis: `ceilLog2 6 = 3` goes through under `decide` after the rewrite
+    (it failed before, even with `maxRecDepth 1000000`, even on 1 step). -/
 def ceilLog2 (k : Nat) : Nat :=
   if k ≤ 1 then 0 else Nat.log 2 (k - 1) + 1
 

@@ -467,6 +467,24 @@
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py"
       ]
+    },
+    {
+      "lake": "knot",
+      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean",
+      "display-name": "knot_lean",
+      "sorry-baseline": "8",
+      "sorry-filter-mode": "real",
+      "axiom-target-modules": "*",
+      "axiom-fail-on-sorry": "false",
+      "axiom-include-i18n-siblings": "true",
+      "paths": [
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/lean-toolchain",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/lake-manifest.json",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py"
+      ]
     }
   ]
 }
