@@ -8,6 +8,8 @@ S'applique à **tous les reviewers**, humains et bots (clusterManager-Myia, jsbo
 
 **Contexte, incidents fondateurs, workflow ai-01, anti-patterns détaillés** : [docs/reference/pr-review-context.md](../../docs/reference/pr-review-context.md).
 
+**Provenance** : fragments déportés = lignes de la base `36c27857ad109` — [détail §Levier B](../../docs/reference/pr-review-context.md).
+
 ## Émission du verdict — un point qui tient le merge porte un marqueur (HARD, #14682)
 
 Toute review (bot ou humaine) formulant **un point tenant le merge** porte un **marqueur reconnu** : préfixe de verdict (`[Hermes] COMMENT_WITH_CONCERNS`, `CHANGES_REQUESTED`) ou glyphe de sévérité (🟡, 🔴). L'organe B.0 (`scripts/check_unaddressed_nits.py`, `CONCERN_MARKERS`) ne lit **que** ces marqueurs : une réserve bloquante posée en prose libre **sans** marqueur lui est invisible et rend `rc=0`. **Ne pas élargir** le filet à des mots de prose : il sur-accuse d'un facteur 5 (mesure #14682) — le contrat est côté émission, pas côté filet. Instance #14658 + scan 80 PRs : [pr-review-context.md](../../docs/reference/pr-review-context.md).
