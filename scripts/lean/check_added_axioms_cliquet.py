@@ -83,10 +83,9 @@ Usage
     python scripts/lean/check_added_axioms_cliquet.py --json
 
 Exit codes:
-    0  -- no anchor added, or anchors only inside ``example`` (no action),
-          or every named-declaration anchor is declared in the body
-    1  -- at least one anchor added inside a named declaration and not
-          declared in the body (rouge)
+    0  -- no anchor added, or every added anchor (named declaration,
+          ``example`` or top-level line alike, #21387) is declared in the body
+    1  -- at least one added anchor not declared in the body (rouge)
     2  -- invocation error (bad SHA, no lean files in scope)
 
 Module usage:
@@ -297,7 +296,9 @@ def _git_diff_added_lines(base: str, head: str, path: Path, repo_root: Path | No
 
 # ``example`` and anonymous ``instance`` are declarations that produce no
 # named constant in the Lean environment. The cliquet flags anchors inside
-# them with ``in_example=True`` and they do NOT cause a non-zero exit.
+# them with ``in_example=True`` -- a REPORTING field: since the declarative
+# cliquet (#21387) these anchors follow the same rule as named ones and DO
+# cause a non-zero exit unless their own declaration is in the body.
 NAMELESS_KINDS = {"example", "instance"}
 
 
