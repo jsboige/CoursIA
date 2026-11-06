@@ -521,6 +521,16 @@ on:
 permissions:
   contents: read
 
+# Partage du pool `ubuntu-latest` avec roo-extensions (proposition du 03/11,
+# dashboard global) : sur une PR, un run depasse par un push plus recent rend
+# sa place au lieu de garder la file. Sur `push` (main), le groupe porte le SHA :
+# chaque commit a son propre groupe, rien n'est annule ni mis en attente.
+# Ce workflow ecoute aussi `edited` : une edition du titre ou du body annule le run
+# en cours de la PR et le relance au meme SHA.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   # Detection : quels lakes du manifeste sont touches par l'evenement.
   # Les fichiers changes viennent de l'API REST (pull_request : fichiers

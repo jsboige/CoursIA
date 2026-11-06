@@ -201,3 +201,16 @@ MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/data/acic2016/LICENSE tex
 # portent des CR (traces SemanticKernel, 97 octets au total) ne sont pas
 # concernes, donc cette regle ne les renormalise pas au passage.
 MyIA.AI.Notebooks/**/datasets/*.txt text eol=lf
+
+# Preuve de rendu #22286 (`docs/captures/22286/`) : deux fichiers, deux formes,
+# deux regles explicites.
+#   - `README.md` est un markdown : LF, comme les autres `.md` de `docs/` (le
+#     blob herite etait en CRLF pur, 101/101 lignes). Meme motif que
+#     `MyIA.AI.Notebooks/**/datasets/*.txt` ci-dessus : sans regle, le premier
+#     outil qui reecrit le fichier sur Windows produit un diff plein-fichier.
+#   - `manifest.json` est produit par `slides/_tools/build_capture_manifest.py`,
+#     qui l'ecrit en CRLF pour rester identique au blob herite ; `-text`
+#     interdit toute conversion, donc une regeneration ne fait pas bouger les
+#     1 136 lignes du manifeste.
+docs/captures/22286/README.md text eol=lf
+docs/captures/22286/manifest.json -text
