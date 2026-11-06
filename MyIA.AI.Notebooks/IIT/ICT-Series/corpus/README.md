@@ -86,4 +86,4 @@ un dashboard (cf. règle secrets-hygiene).
   Jean de La Fontaine — transcription modernisée (ſ→s, accents) de l'édition
   Barbin 1678 relue sur Wikisource (`Fables de La Fontaine (éd. Barbin)/1/…`,
   texte validé). Domaine public. Codage AF expert des deux spécimens :
-  notebook `ICT-Argumentation-BeliefTrajectories.ipynb` §8bis/§8ter.
+  notebook `ICT-Argumentation-BeliefTrajectories-Python.ipynb` §8bis/§8ter.
