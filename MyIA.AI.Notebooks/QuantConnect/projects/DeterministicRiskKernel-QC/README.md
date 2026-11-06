@@ -63,9 +63,33 @@ LEAN retrouve l'ordre du carnet sur ce chemin :
 - l'exposition à 90 % seule ne fait presque rien : c'est le contrôle à exposition égale ;
 - le coupe-circuit n'apporte rien sur ce chemin : sans lui, le CAGR et le drawdown sont tous deux meilleurs.
 
-Le CAGR de LEAN dépasse celui du carnet à liquidités nulles de 0,5 à 0,6 point pour les deux variantes à stops. Trois causes possibles, **non mesurées séparément** : le stop n'est pas actif le jour de l'entrée (444 et 453 stops dans LEAN, contre 466 et 481 dans le carnet), le coupe-circuit part un jour plus tard, et il coupe six fois au lieu de quatre.
-
 **Aucun verdict ici.** Ces chiffres portent sur un seul chemin d'entrées. Le verdict du carnet (BEATS sur le drawdown) repose sur l'ablation à 50 graines d'entrées aléatoires, que ce projet ne rejoue pas. Ce projet dit seulement qu'un moteur d'exécution indépendant, sur d'autres données, reproduit les lectures du carnet sur le chemin momentum.
+
+### D'où vient l'écart de CAGR entre LEAN et le carnet
+
+Le CAGR de LEAN dépasse celui du carnet à liquidités nulles de 0,5 à 0,6 point pour les deux variantes à stops. `mesure_ecart_carnet.py` rejoue le moteur du carnet et lui ajoute, une par une, les deux différences d'exécution de LEAN décrites plus bas (même fenêtre, liquidités à 0 %, Sharpe à taux nul, données yfinance du 2026-11-06) :
+
+| Variante | Réglage du moteur du carnet | CAGR | Sharpe | Drawdown max | Stops | Coupures |
+|---|---|---|---|---|---|---|
+| Noyau sans coupe-circuit | carnet | +7,13 % | 0,78 | −13,4 % | 466 | — |
+| | pas de stop le jour où la ligne est ouverte | +7,27 % | 0,79 | −13,6 % | 462 | — |
+| | pas de stop le jour d'un ordre sur la ligne | +7,77 % | 0,83 | −12,8 % | 448 | — |
+| | *backtest LEAN* | *+7,71 %* | *0,83* | *−13,0 %* | *444* | — |
+| Noyau complet | carnet | +6,83 % | 0,75 | −14,2 % | 481 | 4 |
+| | coupe-circuit le lendemain | +6,78 % | 0,75 | −13,8 % | 482 | 4 |
+| | pas de stop le jour d'un ordre sur la ligne | +7,03 % | 0,76 | −17,2 % | 462 | 5 |
+| | les deux réglages | +7,26 % | 0,78 | −16,5 % | 457 | 6 |
+| | *backtest LEAN* | *+7,35 %* | *0,79* | *−15,7 %* | *453* | *6* |
+
+Ce que la table montre :
+
+- **la cause principale est l'absence de stop le jour de chaque ordre.** `main.py` annule le stop d'une ligne avant tout ordre `MarketOnOpen` sur elle, et le repose à l'exécution. La ligne n'a donc pas de stop le jour de son ouverture, ni le jour d'un rebalancement qui la redimensionne. Les lignes redimensionnées pèsent le plus : les seules ouvertures font +0,14 point de CAGR, tous les ordres +0,64 point (noyau sans coupe-circuit) ;
+- **le coupe-circuit au lendemain, seul, ne change presque rien** (−0,05 point de CAGR), mais il interagit avec le réglage des stops ;
+- **les six coupures au lieu de quatre ne sont pas une troisième cause.** Le moteur du carnet les retrouve avec les deux réglages, sur les séances du 2020-03-09, du 2020-03-12, du 2025-04-03, du 2026-01-30, du 2026-03-03 et du 2026-06-05 ;
+- **le gain de CAGR se paie en drawdown pour le noyau complet** : −16,5 % avec les deux réglages, contre −14,2 % dans le carnet ;
+- **l'écart résiduel au backtest LEAN** est de −0,06 point de CAGR (noyau sans coupe-circuit) et −0,09 point (noyau complet). Les données et les quantités entières de LEAN en sont des causes possibles, non mesurées.
+
+Garder le stop actif sur une ligne redimensionnée, en modifiant la quantité du ticket au lieu de l'annuler, rapprocherait LEAN du carnet. Ce n'est pas fait dans ce projet.
 
 ## Écarts déclarés au carnet
 
@@ -74,7 +98,7 @@ Les données journalières de LEAN imposent des écarts que le carnet n'a pas :
 | Point | Carnet QC-Py-45 | Ce projet |
 |---|---|---|
 | Liquidités | rendement de BIL | 0 % |
-| Stop | actif dès l'ouverture de la position | posé à l'exécution de l'ordre d'entrée, donc actif à partir de la séance suivante |
+| Stop | actif tous les jours où la position est détenue, y compris le jour d'un ordre | annulé avant chaque ordre sur la ligne et reposé à son exécution, au même niveau : pas de stop le jour où la ligne est ouverte, ni le jour où un rebalancement la redimensionne. Effet mesuré plus haut |
 | Coupe-circuit | liquidation à la clôture de la séance à −3 %, retour à l'ouverture suivante | séance connue à la clôture, liquidation `MarketOnOpen` le lendemain, retour le surlendemain |
 | Compte | sans emprunt par construction | compte sur marge par défaut. La variante sans noyau emprunte un peu : liquidités minimales négatives, exposition maximale 1,05. Cause probable, non mesurée : les ordres sont dimensionnés sur la clôture de la veille et exécutés à l'ouverture, frais en plus, sans réserve sous les 10 % par position |
 | Plafond de groupe | mesuré après rebalancement | tenu au rebalancement. Le poids de groupe mesuré chaque jour monte jusqu'à 0,4198 par dérive des prix entre deux rebalancements |
@@ -109,6 +133,7 @@ Le framework reste un outil parmi d'autres, pas un passage obligé : le noyau ti
 ## Fichiers
 
 - `main.py` : l'algorithme, un seul fichier.
+- `mesure_ecart_carnet.py` : copie déclarée du moteur du carnet QC-Py-45, avec deux réglages qui rejouent les écarts d'exécution de LEAN ; produit la table de décomposition ci-dessus. Lancer : `python mesure_ecart_carnet.py` (numpy, pandas, yfinance).
 
 ## Liens
 
