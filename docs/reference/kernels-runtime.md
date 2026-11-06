@@ -222,7 +222,7 @@ Les **4 notebooks de la strate Φ** — ceux dont les outputs **committés** vie
 | `ICT-01-PhiTrajectories-Python` | 10 · 4 → 4 | aucune dérive | aucun | 0 `exec_count` nul, 0 erreur | — |
 | `ICT-05-CausalEmergence-Python` | 10 · 0 → 0 | aucune dérive | aucun | 0 / 0 | 12 s |
 | `ICT-18-ArrowOfTimeReversibilization-Python` | 14 · 1 → 1 | aucune dérive | aucun | 0 / 0 | 7 s |
-| `ICT-Synthese-CrossSubstrat` | 14 · 1 → 1 | aucune dérive | aucun | 0 / 0 | 55 s |
+| `ICT-Synthese-CrossSubstrat-Python` | 14 · 1 → 1 | aucune dérive | aucun | 0 / 0 | 55 s |
 
 Et le garde lui-même, sur l'état **commité** : `OK: 0 kernel-drift regression across **4** changed notebooks`.
 
@@ -649,6 +649,15 @@ conda env list
 # WSL
 wsl -l -v
 ```
+
+**Un kernelspec enregistré peut survivre à son interpréteur.** Un `argv[0]` qui pointe sous un répertoire temporaire (scratchpad de session, `%TEMP%`) donne un noyau qui fonctionne le jour de son enregistrement puis meurt au premier nettoyage — et le symptôme (carnet qui échoue sur un chemin absent) est éloigné de la cause. Le détecteur, à lancer sur un poste et non en CI (le défaut vit dans la config utilisateur, pas dans le dépôt) :
+
+```bash
+python scripts/notebook_tools/check_kernelspec_temp_paths.py          # rc 0 propre, 1 offenders, 2 incident
+python scripts/notebook_tools/check_kernelspec_temp_paths.py --json    # sortie machine
+```
+
+Il ne mesure que les `argv[0]` **absolus** : les commandes nues (`dotnet`, `wsl`, `python`) se résolvent par `PATH` et ne vivent sous aucun temporaire. `--check-exists` ajoute les interpréteurs absents, `MISSING_INTERPRETER` n'étant jamais confondu avec `TEMP_ROOT` (deux causes, deux remèdes).
 
 ## Si un kernel manque
 

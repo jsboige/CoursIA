@@ -98,7 +98,7 @@ Il est donc **descriptif sur la licence** (architecture + raisonnement de confor
 | Notebook | Contenu | Service | VRAM |
 |----------|---------|---------|------|
 | [02-1-HunyuanVideo-Generation](02-Advanced/02-1-HunyuanVideo-Generation.ipynb) | HunyuanVideo, quantization 24GB | Local GPU | ~18 GB |
-| [02-2-LTX-Video-Lightweight](02-Advanced/02-2-LTX-Video-Lightweight.ipynb) | LTX-Video, génération rapide | Local GPU | ~8 GB |
+| [02-2-LTX-Video-Lightweight](02-Advanced/02-2-LTX-Video-Lightweight.ipynb) | LTX-Video, génération rapide | Local GPU | 16 GB (pic mesuré : 14.1 GB) |
 | [02-3-Wan-Video-Generation](02-Advanced/02-3-Wan-Video-Generation.ipynb) | Wan 2.1/2.2, prompts FR/EN | Local GPU | ~10 GB |
 | [02-4-SVD-Image-to-Video](02-Advanced/02-4-SVD-Image-to-Video.ipynb) | Stable Video Diffusion, animation | Local GPU | ~10 GB |
 | [02-5-LTX2-Audiovisual](02-Advanced/02-5-LTX2-Audiovisual.ipynb) | LTX-2 (Lightricks 22B), vidéo + audio conjoint | Local GPU | ~16-24 GB |
@@ -198,7 +198,7 @@ flowchart TD
 | **Real-ESRGAN / RIFE** | 01-4 | GPU ~4 GB VRAM |
 | **AnimateDiff** | 01-5 | GPU ~12 GB VRAM |
 | **HunyuanVideo** | 02-1 | GPU ~18 GB VRAM |
-| **LTX-Video** | 02-2 | GPU ~8 GB VRAM |
+| **LTX-Video** | 02-2 | GPU ~16 GB VRAM (pic mesuré : 14.1 GB) |
 | **Wan 2.1/2.2** | 02-3 | GPU ~10 GB VRAM |
 | **SVD** | 02-4 | GPU ~10 GB VRAM |
 | **LTX-2 (Lightricks)** | 02-5 | GPU ~14-24 GB VRAM (GGUF Q4 / fp8-cast) |
@@ -224,7 +224,7 @@ HunyuanVideo (notebook [02-1](02-Advanced/02-1-HunyuanVideo-Generation.ipynb)) e
 
 - Utiliser la quantization intégrée au notebook pour réduire à ~18 GB.
 - Générer des clips courts (2-3 secondes) plutôt que des séquences longues.
-- Si votre GPU a 12 GB ou moins, utiliser **LTX-Video** (notebook [02-2](02-Advanced/02-2-LTX-Video-Lightweight.ipynb), ~8 GB) ou **Wan** (notebook [02-3](02-Advanced/02-3-Wan-Video-Generation.ipynb), ~10 GB) comme alternatives légères.
+- Si votre GPU a 12 GB ou moins, utiliser **Wan** (notebook [02-3](02-Advanced/02-3-Wan-Video-Generation.ipynb), ~10 GB) comme alternative légère. **LTX-Video** ([02-2](02-Advanced/02-2-LTX-Video-Lightweight.ipynb)) n'entre pas dans cette catégorie : son pic mesuré est de 14.1 GB et sa cellule de chargement bascule en offload CPU sous 16 GB.
 - Fermer tous les autres processus GPU avant la génération (`nvidia-smi` pour vérifier).
 
 ### FFmpeg non trouvé ou erreurs de codec
@@ -253,7 +253,7 @@ ffmpeg_path = imageio_ffmpeg.get_ffmpeg_exe()
 | **Coût** | $0.10-1.00/vidéo | Gratuit (local) | Gratuit (local) | Gratuit (local) |
 | **Qualité** | Excellente | Haute | Bonne | Correcte |
 | **Durée max** | 20s | 5-10s | 5-10s | 3-5s |
-| **VRAM** | 0 (API) | ~18-24 GB | ~10 GB | ~8 GB |
+| **VRAM** | 0 (API) | ~18-24 GB | ~10 GB | ~16 GB (pic mesuré : 14.1 GB) |
 | **Latence** | 30s-2min | 1-5min | 30s-2min | 10-30s |
 
 Pour du prototypage ou des résultats rapides, Sora 2 (notebook [04-3](04-Applications/04-3-Sora-API-Cloud-Video.ipynb)) est idéal. Pour un contrôle fin, une production répétitive, ou des données sensibles, les modèles locaux sont indispensables.

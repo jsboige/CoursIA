@@ -36,7 +36,7 @@ Ce répertoire est l'**archive** des formalisations mathématiques de la théori
 |-------------|--------|
 | Théorèmes/Lemmas | voir catalogue (0 sorry, modules absorbés) |
 | sorry restants | 0 |
-| Toolchain | `leanprover/lean4:v4.31.0-rc1` |
+| Toolchain | celle du home canonique, [`game_theory_lean/`](../game_theory_lean/) — `leanprover/lean4:v4.33.0` |
 | Dépendances | Mathlib4, Lake |
 
 **Statut formel** : les **sept** modules (Basic, Framework, Arrow, Sen, Voting,
@@ -315,7 +315,7 @@ résultats fondateurs de la théorie du choix social : le **théorème d'impossi
 d'Arrow**, le **paradoxe libéral de Sen**, la **théorie du vote** (Condorcet, électeur
 médian, Split Cycle) et la **véridicité de l'enchère de Vickrey** (théorie des mécanismes).
 Tous les modules sont FORMAL-CERTIFIED et recompilables via `lake build SocialChoice` dans le home
-canonique [`game_theory_lean/`](../game_theory_lean/) (toolchain `v4.31.0-rc1`).
+canonique [`game_theory_lean/`](../game_theory_lean/) (toolchain `v4.33.0`).
 
 ### Ce qui est prouvé
 

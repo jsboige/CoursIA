@@ -1,0 +1,257 @@
+# Conway Lean
+
+Formalisation en Lean 4 des jeux et algorithmes mathématiques de John Conway.
+
+*Les trois facettes de l'œuvre de Conway, chacune un Epic formel distinct — des
+algorithmes classiques au calcul universel du Jeu de la Vie, jusqu'au fondement
+quantique du Free Will Theorem :*
+
+```mermaid
+flowchart LR
+    P1["Phase 1 — Algorithmes classiques<br/>Doomsday · FRACTRAN · Look-and-Say<br/>Nim · Angel · Collatz  <i>(0 sorry, native_decide)</i>"]
+    P2["Phase 2 — Jeu de la Vie<br/>MacroCell quadtree → Hashlife<br/>→ HashlifeCorrectness (P1-P5)"]
+    P3["Phase 3 — Free Will Theorem<br/>Kochen-Specker 18-vecteurs (Cabello)<br/>→ SPIN + TWIN + MIN  <i>(0 sorry)</i>"]
+
+    P1 -->|"Epic #1151 COMPLETE"| P2
+    P2 -->|"calcul universel →"| P3
+```
+
+## Statut
+
+- **Toolchain** : `leanprover/lean4:v4.33.0` à la tête courante (cf `lean-toolchain`, qui fait foi ; migration v4.32.1 → v4.33.0 posée par `d0111fbd79`, #16341). Historique : `v4.31.0-rc1` → v4.32.0 (#11307) → v4.32.1 (#11325, cf #11256), puis v4.33.0.
+
+- **Compte de sorry** : **1 distinct** au sens `count_code_sorry.py` (code-level, FR canonique — décompte post-split #9883/#9884 ; `HashlifeCorrectness.lean`, plus le socle `HashlifeCorrectness/Foundation.lean`, reste la cible prover unique, recherche-HOLD). **P4 : 0 sorry** (pas inductif double-nine PROUVÉ post-split — `p4_succ_membership` sorry-free, consommé par `hashlifeResult_central_correct` via `p4_ext_bridge`) + **P5 grand-n : 1 distinct sorry** (`hashlife_correct_margin` `HashlifeMarginFragment.lean` L158/sorry L167 — l'agrégateur `p5_large_n_jumpN` L6749 est prouvé sorry-free depuis la re-signature b3', 2026-08-15). Le `grep` brut sur-compte (~23 hits dans le seul agrégateur) via la prose des docstrings ; décompte canonique code-level via strip des docstrings `/- … -/` + commentaires `--`. Les anciens comptes « 8 sorry / P4 : 5 / P5 : 3 » et les line numbers `L2893-3706` ci-dessous datent du **monolithe pré-split** et sont **obsolètes** — les évolutions c.95/c.1035/b3' ont depuis modifié le fichier post-split.
+
+  Voir § « État honnête du verrou HashlifeCorrectness » pour la déclaration-par-déclaration post-split. **Audit N1 (PR #5853, ai-01 2026-07-09)** : le frame sub-claim initial (`BoxAssezGrand` ∩ `n ≥ jumpSize`) est **vacuous sur grilles non vides** (`p5_large_n_hyps_unsat` : padding 2 de `gridFrame` ∧ `lvl ≥ 3` ⇒ `n ≤ 2 ∧ js ≥ 8`) — c'est pourquoi `hashlife_correct` (agrégateur L6373) est prouvé via `p5_inductive_step` mais reste *vacuous* au régime grand-n, et pourquoi l'énoncé N-aware `hashlife_correctN` + le jump `p5_large_n_jumpN` (le genuine P5.2, alors open sorry — clos depuis b3' 2026-08-15) ont été posés. **Design gate ai-01 (#3846, 2026-07-10)** : redesigner `gridFrame` pour padding dépendant de `n`, porter l'état `(off, mc)` à travers la boucle de `evolveHashlifeFastAux` sans re-framing intermédiaire, restater l'invariant « marge ≥ n restant, préservé par jump ». La dette de preuve (#3846) reste la cible du BG-prover et du redesign architectural coordonné.
+
+- **Build** : CI `lean-conway.yml` sur `main` — dernier run **SUCCESS** au 2026-11-04T08:39:14Z, sur `9c4c35fc36` (le commit qui a descendu le lake vers `GOL/`), donc **au pin v4.33.0**.
+
+- **Dépendances** : Mathlib4 — pin `v4.33.0` (`lakefile.lean:16`), rev `db584cd6d46c92f209a44c0f1c829460d327499d` au `lake-manifest.json`. Sans le `@ "v4.33.0"` explicite, lake résoudrait la require sur `master` et émettrait un `manifest out of date` à chaque build (cf commentaire `lakefile.lean:10-14`).
+
+- **Couverture i18n (EPIC #4980)** : **32 paires FR/EN** OK au checker canonique `check_i18n_siblings.py` (32/32 byte-identiques). Sans sibling `_en`, par design : la machinerie prover EN-first recherche — `HashlifeCorrectness.lean`, `HashlifeCorrectness/Foundation.lean`, `Walls/{NE,NW,SE,SW}.lean`, `JumpCapture.lean`. Phase 1 : **10/10** ; Phase 2 : **tous les modules listés** + satellites (`AdversarialBattery`, `DecideProbe`, `Novelty`, `PatternTour`, `HashlifeMarginFragment`, …) ; Phase 3 : **2/2**. Rollout complet (c.290-#6439 + cycles c.421-c.423 merged).
+
+## Modules
+
+### Phase 1 — Algorithmes classiques (Epic #1151, COMPLETE)
+
+| Fichier | `_en` | sorry | Description |
+|---------|-------|-------|-------------|
+| `Conway/Doomsday.lean` | `Doomsday_en.lean` | 0 | Algorithme Doomsday (calcul du jour de la semaine) |
+| `Conway/DoomsdayLemmas.lean` | `DoomsdayLemmas_en.lean` | 0 | Lemmes pour l'algorithme Doomsday |
+| `Conway/Fractran.lean` | `Fractran_en.lean` | 0 | Langage de programmation FRACTRAN |
+| `Conway/FractranLemmas.lean` | `FractranLemmas_en.lean` | 0 | Lemmes pour FRACTRAN (step/run : halt vide, 0-run, applicabilité `num/1`, trace concrète `{3/2}` 2→3) |
+| `Conway/LookAndSay.lean` | `LookAndSay_en.lean` | 0 | Suite Look-and-Say |
+| `Conway/LookAndSayLemmas.lean` | `LookAndSayLemmas_en.lean` | 0 | Lemmes pour la suite Look-and-Say |
+| `Conway/Nim.lean` | `Nim_en.lean` | 0 | Théorie des jeux de Nim |
+| `Conway/Angel.lean` | `Angel_en.lean` | 0 | Problème de l'ange (Angel problem) |
+| `Conway/CollatzLike.lean` | `CollatzLike_en.lean` | 0 | Fonctions de type Collatz et indécidabilité (`native_decide`) |
+| `Conway/MathlibMap.lean` | `MathlibMap_en.lean` | 0 | Satellite de cartographie Mathlib pinned (`54f98fd6`) — ce que Mathlib fournit pour l'œuvre de Conway |
+
+### Phase 2 — Jeu de la Vie (Epic #1647, EN COURS)
+
+| Fichier | `_en` | sorry | Description |
+|---------|-------|-------|-------------|
+| `Conway/Life.lean` | `Life_en.lean` (root) | 0 | Règles B3/S23, opérations sur grille, step/evolve, preuves `native_decide` |
+| `Conway/Life/Spaceships.lean` | `Spaceships_en.lean` | 0 | LWSS/MWSS/HWSS (période 4, déplacement (0,2)), 3 preuves `native_decide` |
+| `Conway/Life/Oscillators.lean` | `Oscillators_en.lean` | 0 | 5 still-lifes + pulsar (p3) + pentadecathlon (p15), 7 `native_decide` |
+| `Conway/Life/RLE.lean` | `RLE_en.lean` | 0 | Parseur de motifs RLE + glider/LWSS/pulsar/Gosper gun, 8 preuves `native_decide` |
+| `Conway/Life/MacroCell.lean` | `MacroCell_en.lean` | 0 | Type quadtree MacroCell + round-trip `toGrid`/`buildFromGrid` + prédicat `wf` |
+| `Conway/Life/Hashlife.lean` | `Hashlife_en.lean` | 0 | `step4x4` + `hashlifeResult` récursif + `padCenter2` + `hashlifeJump` + `evolveHashlifeFast` |
+| `Conway/Life/LightCone.lean` | `LightCone_en.lean` | 0 | Satellite géométrique light-cone — lemmes sorry-free sur `manhattan`/`lightCone` pontant `HashlifeCorrectness` |
+| `Conway/Life/ConeGeometry.lean` | `ConeGeometry_en.lean` | 0 | Géométrie du cône — faits purs de treillis (Mathlib uniquement) |
+| `Conway/Life/GridCanonical.lean` | `GridCanonical_en.lean` | 0 | Formes canoniques `sortDedup`, unicité lexicographique, égalité de grille via forme canonique |
+| `Conway/Life/Computation.lean` | `Computation_en.lean` | 0 | Cross-validation Hashlife (6 + 6 fast), still-life eater1 (1), composition de planeurs (5) |
+| `Conway/Life/HashlifeMemo.lean` | `HashlifeMemo_en.lean` | 0 | Hashlife mémoïsé pour témoins des piliers communautaires (OTCA 35K, UnitCell 4096, Gemini 33M) |
+| `Conway/Life/HashlifeMarginDemo.lean` | `HashlifeMarginDemo_en.lean` | 0 | Démo exécutable P5 redesign (#3846) — n-aware framing margin autour de `MacroCell`/`HashlifeCorrectness` |
+| `Conway/Life/Pillars.lean` | `Pillars_en.lean` (c.417) | 0 | Scaffolding du théorème community-witness (4 piliers) |
+| `Conway/Life/HashlifeCorrectness.lean` | — | 0 | Correction bornée `hashlife_correct` (prouvée mais vacuous au grand-n) ; cible du prouveur (Epic #1453, #2162). **P4 PROUVÉ sorry-free post-split #9883/#9884** et **P5.2 `p5_large_n_jumpN` PROUVÉ sorry-free** (L6749, re-signé b3' trajectory-capture 2026-08-15 ; `hashlife_correctN` L6808 réduite c.95 à `p5_small_n_fallback` + `p5_large_n_jumpN`). 0 sorry dans ce fichier — l'unique dette du lake vit dans `HashlifeMarginFragment.lean`. Les anciens items P4 `p4_nw_supercell_agree`/`p4_nw_membership_arm` et les lignes L2893-3706 datent du monolithe pré-split — **obsolètes**. |
+| `Conway/Life/HashlifeMarginFragment.lean` | `HashlifeMarginFragment_en.lean` | 1 | L'**unique dette distincte** du lake : `hashlife_correct_margin` (L158, `sorry` L167, verdict INTRINSIC documenté — assemblage borné P4/P5 via `supportInMargin`, chaîne offset-matching `p4_nw_overlap_wall`) |
+
+### Phase 3 — Free Will Theorem (Epic #1651, COMPLETE)
+
+| Fichier | `_en` | sorry | Description |
+|---------|-------|-------|-------------|
+| `Conway/KochenSpecker.lean` | `KochenSpecker_en.lean` | 0 | Preuve Cabello à 18 vecteurs du KS (argument de parité) |
+| `Conway/FreeWillTheorem.lean` | `FreeWillTheorem_en.lean` | 0 | Conway-Kochen FWT (SPIN + TWIN + MIN) |
+
+## Résultats clés
+
+### Algorithmes classiques (Phase 1)
+
+- Correction de l'algorithme Doomsday
+- Formalisation du calcul FRACTRAN
+- Propriétés de la suite Look-and-Say
+- Stratégie optimale du jeu de Nim
+- Formalisation du problème de l'ange
+- Indécidabilité de type Collatz (`native_decide` sur instances finies)
+
+### Jeu de la Vie (Phase 2)
+
+- **Encodage Grid/List** : `Grid = List (Int × Int)` avec prédicats `Bool`, preuves `native_decide`
+
+- **Parseur RLE** : parseur complet du format Run Length Encoded avec correction prouvée
+
+  - 4 théorèmes de parse réussi, 2 égalités de round-trip, 2 théorèmes de comptage de cellules
+
+  - Gosper Glider Gun (36 cellules vivantes, période 30) parsé et vérifié
+
+- **Vaisseaux (Spaceships)** : LWSS, MWSS, HWSS avec preuves de déplacement en période 4
+
+- **Oscillateurs** : Blinker (p2), toad (p2), beacon (p2), pulsar (p3), pentadecathlon (p15)
+
+- **Bien-formation MacroCell** : prédicat `MacroCell.wf` (PR #2795), les constructeurs côté grille produisent des cellules bien formées
+
+- **Formes canoniques de grille** : les sorties de `sortDedup` sont triées lexicographiquement et uniques (PR #2797)
+
+- **Hashlife** : MacroCell quadtree + algorithme hashlife récursif avec accélération exponentielle
+
+  - `step4x4` : cas de base niveau 2 (B3/S23 direct)
+
+  - `hashlifeResult` : récursif niveau k vers niveau (k-1), `2^(k-2)` générations
+
+  - `padCenter2` : padding centré correct (+2 niveaux, copie unique)
+
+  - `hashlifeJump` + `evolveHashlifeFast` : API à accélération exponentielle
+
+  - Cross-validé contre la référence basée sur des listes sur 12 motifs (6 + 6 fast path)
+
+  - Eater 1 (fishhook) still-life prouvé par `native_decide`
+
+  - Théorèmes de composition de planeurs multi-périodes
+
+- **Hashlife mémoïsé** : témoins des piliers communautaires (OTCA 35K gen, UnitCell 4096 gen, Gemini 33M gen)
+
+- **HashlifeCorrectness** : correction bornée `hashlife_correct`, décomposée en P1-P5
+
+  - **P1-P3 prouvés** (cas de base `k=0` via `2^16 native_decide`, PR #2810)
+
+  - **Pas inductif P4 — PROUVÉ sorry-free post-split #9883/#9884** (0 sorry) : le scaffolding décompose le pas inductif en sous-lemmes tous sorry-free dans `Foundation.lean` — `p4_double_nine_shape` (existence structurelle des neuf quadrants d'une cellule double-nine), `p4_wave1_ih` et `p4_wave2_ih` (propagation du `centralCorrect` par l'hypothèse d'induction sur les deux vagues), `p4_ext_bridge` (réduction au biconditional pointwise-membership), `p4_succ_membership` (la membership iff elle-même, sorry-free). Sont également sorry-free les ingrédients additifs clos cycles 145-160 : `evolve_add` (S1), `evolve_half_step` (demi-pas `2^k`, #4555), `centralCorrect_mem_shift` (gate G2 offset-généralisé, #4812), `evolve_cone_agree` (gate de composition de localité radius-doubling, #4892). Le placeholder P4.4 `p4_half_steps_compose` (`: True`) a été **supprimé** (N2-bis : sa composition pure-evolve est exactement `evolve_add` + `evolve_half_step`). L'agrégateur consomme le tout : `hashlifeResult_central_correct` applique `p4_ext_bridge c (k+1) (p4_succ_membership …)` à son cas `k → k+1`.
+
+  - **Grand-n P5 — 1 sorry résiduel (distinct)** : `p5_small_n_fallback` **PROUVÉ** (PR #2984, L6168) ; `evolve_dead_of_cone_dead` (contrapositive P5.2, #4574) **prouvé sorry-free** ; `p5_inductive_step` (colle P5.3, L6323) **PROUVÉ** par c.310 PR #5998 via vacuous-arm split ; `p5_large_n_jump` (fixed-frame, L6274) **prouvé sorry-free** post-split. **P5.2 est clos** : `p5_large_n_jumpN` (L6749 — le genuine jump `evolveHashlifeFast n g = evolve n g`) est prouvé sorry-free depuis la re-signature b3' (2026-08-15, hypothèse de **capture de trajectoire** non-tautologique `jumpCaptured`, cf. `JumpCapture.lean`), et `hashlife_correctN` (L6808) en est réduite (c.95) à `p5_small_n_fallback` + `p5_large_n_jumpN`. Reste **1 théorème `sorry`** : `hashlife_correct_margin` (`HashlifeMarginFragment.lean` L158, sorry L167 — INTRINSIC, assemblage borné via `supportInMargin` + chaîne `p4_nw_overlap_wall`). Cas de base `n=0` prouvé (`hashlife_correct_base_zero` #2898, `evolveHashlifeFastAux_zero_n` #2901).
+
+### Kochen-Specker + Free Will Theorem (Phase 3, PROUVÉ)
+
+Le module `KochenSpecker.lean` formalise la preuve à 18 vecteurs de Cabello,
+Estebaranz et Garcia-Alcaine (1996). C'est le noyau combinatoire du Free Will
+Theorem de Conway-Kochen (2006/2009, Epic #1651).
+
+Le module `FreeWillTheorem.lean` prouve le Free Will Theorem complet à partir
+de trois axiomes physiquement motivés (SPIN, TWIN, MIN), en se réduisant à la
+contradiction de Kochen-Specker.
+
+**Panthéon** :
+
+- Kochen & Specker (1967) — preuve originale à 117 vecteurs
+- Cabello, Estebaranz, Garcia-Alcaine (1996) — preuve serrée à 18 vecteurs
+- Conway & Kochen (2006) — preuve à 33 vecteurs + Free Will Theorem
+- Peres (1991), Mermin (1993) — simplifications et pédagogie
+
+## Conclusion
+
+Ce workspace formalise en Lean 4 trois facettes de l'oeuvre de John Conway, des algorithmes classiques (Phase 1) au calcul universel du Jeu de la Vie (Phase 2) jusqu'au fondement quantique (Phase 3, Free Will Theorem). Le fil conducteur est la **certitude formelle** : chaque résultat est un théorème prouvé, pas une simulation.
+
+### Ce que ce formalisme démontre
+
+- **Les algorithmes classiques** (Doomsday, FRACTRAN, Look-and-Say, Nim, Angel, Collatz) sont prouvés sur leurs instances finies via `native_decide` ou par arguments combinatoires directs (`decide`, `omega`, parité pour Kochen-Specker). Aucun `sorry`.
+- **Le Jeu de la Vie comme moteur de calcul** : règles B3/S23, vaisseaux (LWSS/MWSS/HWSS), oscillateurs (blinker, pulsar p3, pentadecathlon p15), et la méthode Hashlife à accélération exponentielle. La cross-validation sur 12 patterns + eater1 + compositions de planeurs confirme que l'implémentation rapide `evolveHashlifeFast` agree avec la référence `evolve` sur tous les cas testés.
+- **Le Free Will Theorem** (Conway-Kochen 2006/2009) est prouvé depuis les trois axiomes physiques SPIN + TWIN + MIN, en se réduisant à la contradiction 18-vecteurs de Kochen-Specker (Cabello et al. 1996). Phase 3 COMPLETE, sorry-free.
+
+### État honnête du verrou HashlifeCorrectness
+
+Le théorème central `hashlife_correct` (borné par l'hypothèse de padding `BoxAssezGrand`) est **prouvé** (agrégateur L6373, via `exact p5_inductive_step n g h`), mais son hypothèse `BoxAssezGrand g n` est structuralement *capped* à `n ≤ 2` sur grilles non vides (`p5_large_n_hyps_unsat`) : il est donc **vacuous au régime grand-n** où le jump Hashlife s'exerce réellement. Le socle est solide — cas de base `k=0` prouvé (`2^16 native_decide`), cas de base `n=0` prouvé, P1/P2/P3 (padding, light-cone, locality) prouvés, `p5_small_n_fallback` prouvé, `p5_inductive_step` (colle P5.3) prouvé par c.310 PR #5998 via vacuous-arm split, **le pas inductif P4 PROUVÉ sorry-free post-split** (`p4_double_nine_shape`, `p4_wave1_ih`, `p4_wave2_ih`, `p4_ext_bridge` sorry-free dans `Foundation.lean` ; `p4_succ_membership` sorry-free, consommé par `hashlifeResult_central_correct` via `p4_ext_bridge`), ainsi que les ingrédients additifs clos cycles 145-160 (`evolve_add`, `evolve_half_step`, `centralCorrect_mem_shift`, `evolve_cone_agree`) et la contrapositive P5.2 (`evolve_dead_of_cone_dead`), et le jump grand-n P5.2 lui-même (`p5_large_n_jumpN`, b3') — mais le **verrou margin** (`hashlife_correct_margin`) reste **research-level**. **Déclaration-par-déclaration du sorry résiduel unique** (code-level, post-split #9883/#9884 ; les anciens items P4 `p4_nw_supercell_agree`/`p4_nw_membership_arm` et les line numbers `L2893-3706` datent du monolithe pré-split et n'existent plus) :
+
+- **P4 — pas inductif double-nine** : **0 sorry (PROUVÉ post-split)**. Le scaffolding (`p4_double_nine_shape` structurel, `p4_wave1_ih`/`p4_wave2_ih` application IH, `p4_ext_bridge` réduction au biconditional, `p4_succ_membership` membership iff) est entièrement sorry-free dans `Foundation.lean` + l'agrégateur. Le placeholder `p4_half_steps_compose` (P4.4) a été supprimé (composition pure-evolve déjà close via `evolve_add`+`evolve_half_step`).
+- **P5 grand-n** (1 sorry résiduel) : **P5.2 est clos** — `p5_large_n_jumpN` (L6749, le genuine jump `evolveHashlifeFast n g = evolve n g`) est prouvé sorry-free depuis b3' (re-signature 2026-08-15 : l'ancienne hypothèse `BoxAssezGrandN` était tautologique — `box_assez_grandN_trivial`, c.1035 — remplacée par la capture de trajectoire `jumpCaptured`, non-tautologique et munie de témoins `jumpCaptured_block`/`jumpCaptured_glider`). Reste `hashlife_correct_margin` (`HashlifeMarginFragment.lean` L158, sorry L167, INTRINSIC — l'assemblage borné P4/P5 via `supportInMargin`, cœur de recherche ouvert). `hashlife_correctN` (L6808) est prouvée par réduction c.95 à `p5_small_n_fallback` (L6168) + `p5_large_n_jumpN` ; `p5_large_n_jump` (L6274) est l'ancien énoncé fixed-frame, prouvé.
+
+**Prochaine étape concrète** : `hashlife_correct_margin` (`HashlifeMarginFragment.lean` L167) est l'unique cible restante — l'assemblage borné P4/P5 via `supportInMargin`, qui chaîne l'offset-matching `p4_nw_overlap_wall` (`Walls/NW.lean`). **Ce chaînon n'est plus le point ouvert** : `Walls/NW.lean` porte **0 `sorry` code-level** (mesuré par `scripts/lean/count_code_sorry.py` ; ses 26 occurrences brutes du mot — champ `naive_sorry`, à ne pas confondre avec les 23 **lignes** que rend `grep -c` — sont de la prose), `p4_nw_overlap_wall` étant prouvé dans sa forme bornée c.92/c.93 (hypothèse de fenêtre `hp`, quantificateur boîte-Chebyshev, 8 hypothèses `hn*_l`/`hn*_w`) — la forme LIBRE pré-c.92 restant réfutée par quatre contre-exemples machine-checkés conservés en garde-fous. L'obligation résiduelle est `hashlife_correct_margin` elle-même. Le jump lui-même est clos : P5.2 `p5_large_n_jumpN` (L6749) est prouvé (b3') via `hashlifeResult_central_correct` + la capture de trajectoire (`hashlifeJump_correct_of_captured` dans `JumpCapture.lean` exige `jumpCaptured c = true` — le clip `restrictGridTo` transparent sous capture, i.e. le light-cone reste dans la fenêtre centrale, condition de containment `window_cheb_cone_in_domain` dans `ConeGeometry`). C'est le live BG-prover target (`agent_tests/prover/`) ; la composition light-cone multi-vagues résiste à l'automatisation tactique courante.
+
+*La pyramide de correction `hashlife_correct` : le socle prouvé (cas de base, P1-P3,
+`p5_small_n_fallback`) porte le théorème, et le pas inductif P4 double-nine est
+désormais **prouvé sorry-free post-split** (#9883/#9884) ; le jump grand-n P5.2
+(`p5_large_n_jumpN`) est **clos** (b3'), la cible research-level résiduelle
+est le verrou margin `hashlife_correct_margin` (INTRINSIC), et `hashlife_correct` lui-même est prouvé
+mais vacuous au régime grand-n (son hypothèse `BoxAssezGrand g n` est capped à `n ≤ 2`) :*
+
+```mermaid
+flowchart TD
+    BASE["Cas de base  <b>prouvés</b><br/>k=0 (2¹⁶ native_decide) · n=0"]
+    P1["P1 — Padding<br/>box_assez_grand · natCeilLog2  <b>✓</b>"]
+    P2["P2 — Light-cone<br/>step_light_cone  <b>✓</b>"]
+    P3["P3 — Localité<br/>aliveNext_local · step_local  <b>✓</b>"]
+    P5S["P5 petit-n<br/>p5_small_n_fallback  <b>✓</b> (#2984)"]
+    P4["P4 — Pas inductif double-nine  <b>✓ PROUVÉ (post-split)</b><br/>0 sorry · p4_double_nine_shape + p4_wave1_ih + p4_wave2_ih + p4_ext_bridge + p4_succ_membership tous sorry-free<br/><i>scaffolding sorry-free dans Foundation.lean ; p4_succ_membership consommé par hashlifeResult_central_correct via p4_ext_bridge ; p4_half_steps_compose supprimé (subsumé evolve_add/evolve_half_step)</i>"]
+    P5["P5 — Grand-n jump  <b>⚠ 1 sorry résiduel (le verrou margin)</b><br/>P5.2 p5_large_n_jumpN <b>PROUVÉ</b> (b3' L6749, capture de trajectoire)<br/>1 sorry · hashlife_correct_margin [L167, INTRINSIC]<br/><i>p5_small_n_fallback + evolve_dead_of_cone_dead + p5_inductive_step (c.310 #5998) + p5_large_n_jump + p5_large_n_jumpN + hashlife_correctN (c.95) prouvés sorry-free ; hashlife_correct prouvé mais vacuous au grand-n (BoxAssezGrand capped n≤2)</i>"]
+    GOAL["hashlife_correct  <b>prouvé (vacuous au grand-n)</b> · hashlife_correct_margin = live target (INTRINSIC)"]
+
+    BASE --> P1 --> P2 --> P3 --> GOAL
+    P5S -.-> GOAL
+    P4 -.->|"P4 clos"| P5 -.->|"verrou BG-prover"| GOAL
+```
+
+### Leçons méthodologiques
+
+- **`List (Int × Int)` + prédicats `Bool` + `native_decide`** est l'encodage qui passe pour les grilles ; l'encodage `Finset` est bloqué par `Quot.lift`/`Eq.rec`.
+- **Le concept "intractable" cache souvent un énoncé faux** : la même intuition que pour la percée Lattice (7→0) s'applique — le contre-exemple certifié `p4_unrestricted_counterexample` montre qu'une forme d'énoncé non restreinte est fausse, orientant vers la bonne hypothèse `MacroCell.wf`.
+- **Les ingrédients additifs sorry-free** (préservation level/wf, arithmétique `box_assez_grand`) se sont accumulés derrière le verrou P4 et sont **déployés** — le pas inductif P4 est désormais prouvé post-split, et ils alimentent `hashlifeResult_central_correct`. La même dynamique s'applique désormais derrière le verrou margin (`hashlife_correct_margin`), le jump P5.2 étant clos.
+
+### Prochaines étapes
+
+1. **BG-prover sur le verrou margin** : attaquer `hashlife_correct_margin` (`HashlifeMarginFragment.lean` L167, verdict INTRINSIC) via le harness multi-agent (`agent_tests/prover/`) — le chaînon `p4_nw_overlap_wall` (`Walls/NW.lean`) est **prouvé** (forme bornée c.92/c.93, 0 `sorry` code-level) ; ce qui reste ouvert est son assemblage en `hashlife_correct_margin` via `supportInMargin`. P5.2 (`p5_large_n_jumpN`, prouvé b3' via `hashlifeResult_central_correct` + `window_cheb_cone_in_domain`) étant clos, c'est la cible research-level vivante.
+2. **Chaîne margin** : `hashlife_correct_margin` consomme la chaîne offset-matching `p4_nw_overlap_wall` (`Walls/NW.lean`), **prouvée** — le cœur de recherche restant est l'assemblage borné P4/P5 via `supportInMargin`, pas le mur.
+3. **Extension des témoins** : ajouter des motifs HashlifeMemo supplémentaires (community pillars) pour renforcer le socle `native_decide`.
+
+## Notes
+
+- Partie de la série Lean GameTheory
+- Notebook compagnon : `GOL/GOL-01-Regles-Vie-Lean.ipynb`
+- Lien croisé : Epic #1647 Conway Phase 2 (Life-as-Computation)
+- Lien croisé : Epic #1651 Conway Phase 3 (Free Will Theorem)
+- Lien croisé : Epic #2162 Conway depth (HashlifeCorrectness P4/P5)
+
+## Conception de Conway.Life
+
+- **`List (Int × Int)` + prédicats `Bool` + `native_decide`** = fonctionne de façon fiable
+- **`Finset (Int × Int)` + decide/native_decide** = BLOQUÉ (`Quot.lift`, `Eq.rec`)
+- Pulsar (48 cellules) et pentadecathlon (p15) sont à la limite mais passent `native_decide`
+- Hashlife : def partielle (sans preuve de terminaison) avec décomposition récursive MacroCell
+- `evolveHashlifeFast` : accélération exponentielle via `padCenter2` + `hashlifeResult`, validé par `native_decide`
+- Round-trip MacroCell vérifié par `#eval` et théorème `native_decide`
+- HashlifeMemo : couche de mémoïsation pour les témoins des piliers, `9^k` pire cas réduit à tractable
+
+**Acte de revue humaine à signer** : lorsque la revue humaine sera effectuée, elle prendra la forme `Revue par <nom, affiliation> — date <YYYY-MM-DD> — scope <lake entier / module> — vérifications : structure / preuves principales / i18n FR-EN — verdict global` et sera insérée dans ce README. Le premier acte attendu porte sur le pilote quantique — `Conway/CHSH.lean` (inégalité CHSH classique, borne 2) et `Conway/CHSHQuantum.lean` (violation quantique, borne de Tsirelson 2√2) — avant toute extension au reste du lake (contexte et arbitrage de ce pilote d'abord : voir le fil de l'issue #13106). La grille **#13106 critère 2** est satisfaite par le premier acte signé ; aucun acte partiel n'est consigné en silence, et la présente section reste honnête tant que l'acte n'est pas posé.
+
+## Références
+
+Sources fondatrices des résultats formalisés à travers les trois phases. Chaque entrée correspond à un module de ce workspace.
+
+- **Conway, J. H.** *On Numbers and Games* (ONAG). Academic Press, 1976; 2nd ed., A K Peters, 2001. — Le cadre plus large de Conway pour les jeux combinatoires (contexte des jeux ci-dessous).
+
+- **Bouton, C. L.** "Nim, A Game with a Complete Mathematical Theory." *Annals of Mathematics*, 2nd ser., 3(1-4) (1901-1902): 35-39. — Analyse fondatrice de Nim (`Nim.lean`).
+
+- **Conway, J. H.** "The Weird and Wonderful Chemistry of Audioactive Decay." *Eureka* 46 (1986): 5-16. — La suite Look-and-Say (`LookAndSay.lean`).
+
+- **Conway, J. H.** "FRACTRAN: A Simple Universal Programming Language for Arithmetic." In *Open Problems in Communication and Computation* (Cover & Gopinath, eds.), Springer, 1987. — FRACTRAN (`Fractran.lean`).
+
+- **Conway, J. H.** "The Angel Problem." In *Games of No Chance*, MSRI Publications 29, Cambridge University Press, 1996. — Le problème Angel vs Devil (`Angel.lean`).
+
+- Algorithme **Doomsday** de Conway pour le calcul du jour de la semaine — la méthode d'ancrage calendrier formalisée dans `Doomsday.lean`.
+
+- La conjecture de **Collatz** (3n+1), Lothar Collatz (1937) — instances bornées traitées via `native_decide` (`CollatzLike.lean`).
+
+- **Gardner, M.** "The Fantastic Combinations of John Conway's New Solitaire Game 'Life'." *Scientific American* 223(4) (October 1970): 120-123. — Première présentation publique du Jeu de la Vie (`Life.lean`).
+
+- **Rokicki, T.** "An Algorithm for Compressing Space and Time." *Dr. Dobb's Journal* (2006). — L'algorithme Hashlife (`Life/Hashlife.lean`).
+
+- **Rendell, P.** "A Universal Turing Machine in Conway's Game of Life." In *Collision-Based Computing* (Adamatzky, ed.), Springer, 2002. — La Vie comme calcul universel (`Life/Computation.lean`).
+
+- **Kochen, S.; Specker, E. P.** "The Problem of Hidden Variables in Quantum Mechanics." *Journal of Mathematics and Mechanics* 17(1) (1967): 59-81. — Le théorème original à 117 vecteurs (`KochenSpecker.lean`).
+
+- **Cabello, A.; Estebaranz, J. M.; Garcia-Alcaine, G.** "Bell-Kochen-Specker Theorem: A Proof with 18 Vectors." *Physics Letters A* 212 (1996). — La preuve serrée à 18 vecteurs formalisée dans `KochenSpecker.lean`.
+
+- **Conway, J. H.; Kochen, S.** "The Free Will Theorem." *Foundations of Physics* 36(10) (2006): 1443-1473. — FWT depuis les axiomes SPIN, TWIN et MIN (`FreeWillTheorem.lean`).
+
+- **Conway, J. H.; Kochen, S.** "The Strong Free Will Theorem." *Notices of the American Mathematical Society* 56(2) (2009): 226-232.
+
+- **Peres, A.** "Two Simple Proofs of the Kochen-Specker Theorem." *Journal of Physics A* 24(4) (1991): L175-L178.
+
+- **Mermin, N. D.** "Hidden Variables and the Two Theorems of John Bell." *Reviews of Modern Physics* 65(3) (1993): 803-815.
