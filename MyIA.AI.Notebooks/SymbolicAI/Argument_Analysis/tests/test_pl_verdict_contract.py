@@ -11,6 +11,8 @@
 #   - `GuardedStateManagerPlugin.log_query_result` : refus d'une phrase libre
 #   - `PLReasonerPlugin.pl_query` : le SEUL chemin d'obtention d'un verdict
 #   - integration : le VRAI solveur Tweety (marquee, sautee sans les jars)
+#   - regression #23671 : un belief set de taille reelle (~22 atomes) rend
+#     un verdict, pas un OOM JVM muet (SimplePlReasoner enumere les mondes)
 #
 # semantic_kernel n'est pas une dependance dure de la shim : on installe le
 # meme mock minimal que `test_state_manager_plugin.py`.
@@ -363,3 +365,63 @@ def test_real_tweety_solver_in_subprocess():
     assert "NOTWET=" + REJECTED + ":" in proc.stdout, proc.stdout
     assert "GUARD=FUNC_ERROR" not in proc.stdout, proc.stdout
     assert "GUARD=qlog" in proc.stdout, proc.stdout
+
+
+_SOLVER_PROBE_BIG = r"""
+import sys
+
+sys.path.insert(0, sys.argv[1])
+
+from argumentation_lib import UnifiedAnalysisState
+from argumentation_lib._pl_reasoner import PLReasonerPlugin
+
+state = UnifiedAnalysisState("texte")
+plugin = PLReasonerPlugin(state)
+
+# #23671 : belief set de la taille des traductions reelles du carnet
+# (~2 douzaines d'atomes) -- celui qui tuait SimplePlReasoner en
+# java.lang.OutOfMemoryError: Java heap space (mesure 2026-11-06).
+n = 22
+atoms = [f"claim_{i}" for i in range(n)]
+formulas = [atoms[0]]
+for i in range(n - 1):
+    formulas.append(f"{atoms[i]} => {atoms[i+1]}")
+bs_id = state.add_belief_set("Propositional", "\n".join(formulas))
+last = plugin.pl_query(bs_id, atoms[-1])
+neg = plugin.pl_query(bs_id, f"!{atoms[0]}")
+print("LAST=" + last)
+print("NEG=" + neg)
+"""
+
+
+@pytest.mark.skipif(
+    not _tweety_jars_present(),
+    reason="jars Tweety absents : provisionner via "
+    "Tweety/scripts/download_tweety_tools.py --jars --jdk",
+)
+def test_real_solver_survives_realistic_belief_set_size():
+    """Regression #23671 : ~22 atomes => verdict moteur, pas d'OOM muet.
+
+    Le raisonner initial (`SimplePlReasoner`, enumeration des mondes en
+    2^n) mourait en OOM JVM sur cette taille de belief set (celle des
+    traductions reelles du carnet) ; `SatReasoner` (SAT4j) doit rendre un
+    verdict sur le meme ensemble : ACCEPTED sur le bout de la chaine,
+    REJECTED sur la negation de la premisse, aucun FUNC_ERROR.
+    """
+    import subprocess
+
+    proc = subprocess.run(
+        [sys.executable, "-c", _SOLVER_PROBE_BIG, _ARGUMENT_ANALYSIS_DIR],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=600,
+    )
+    assert proc.returncode == 0, (
+        f"le solveur a echoue (rc={proc.returncode})\n"
+        f"stdout:\n{proc.stdout[-2000:]}\nstderr:\n{proc.stderr[-2000:]}"
+    )
+    assert "FUNC_ERROR" not in proc.stdout, proc.stdout
+    assert "LAST=" + ACCEPTED + ":" in proc.stdout, proc.stdout
+    assert "NEG=" + REJECTED + ":" in proc.stdout, proc.stdout

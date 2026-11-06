@@ -11,11 +11,26 @@
 # rejette ensuite (`QUERIES_NOT_MEANINGFUL`).
 #
 # Ce module branche l'organe REEL de la serie : le solveur propositionnel
-# Tweety (`SimplePlReasoner`), deja utilise par
-# `Argumentation-05-Formal-Verification-Python.ipynb` via la JVM JPype. Le
-# LLM designe ce qui merite d'etre verifie ; le solveur decide. Aucune
-# simulation : si la JVM ou les jars manquent, l'appel echoue bruyamment
-# (mode degrade interdit dans cette serie, mandat EPITA #2137).
+# Tweety via la JVM JPype (deja utilise par
+# `Argumentation-05-Formal-Verification-Python.ipynb`). Le LLM designe ce
+# qui merite d'etre verifie ; le solveur decide. Aucune simulation : si la
+# JVM ou les jars manquent, l'appel echoue bruyamment (mode degrade interdit
+# dans cette serie, mandat EPITA #2137).
+#
+# Incident #23671 (mesure du 2026-11-06, run OpenAI gpt-5.6-luna) : sur un
+# belief set reel de 15 formules (traduction d'un debat par le LLM), le
+# raisonner initial `SimplePlReasoner` meurt en
+# `java.lang.OutOfMemoryError: Java heap space` : il ENUMERE les mondes
+# (2^n interpretations materialisees en memoire) avant de decider. L'agent
+# appelait bien `pl_query` ; le plugin retournait
+# `FUNC_ERROR: echec du moteur PL`, donc jamais `ACCEPTED`/`REJECTED` --
+# la phase formelle paraissait muette (QUERIES_NONE / QUERIES_NOT_MEANINGFUL
+# selon la cible LLM). L'engine passe au `SatReasoner` de Tweety
+# (Tseitin->CNF->SAT4j embarque dans `libs/org.ow2.sat4j.core-2.3.5.jar`,
+# espace polynomial) -- deja l'organe documente de cette serie par
+# `_pl_handler.py` (Sat4jRunner : "linear -- distinct from
+# SimplePlReasoner (model enumeration, 2^n, OOM-prone)"). Mesure comparative
+# graduee des deux raisonners dans le body de la PR.
 
 from __future__ import annotations
 
@@ -71,14 +86,21 @@ def split_formulas(content: str) -> List[str]:
 
 
 class TweetyPLEngine:
-    """Moteur propositionnel reel : `SimplePlReasoner` de Tweety (JVM).
+    """Moteur propositionnel reel : `SatReasoner` de Tweety (JVM, SAT4j).
 
     L'engine est volontairement separe du plugin : le plugin porte le
     contrat (resolution du belief set, format du verdict, enregistrement
     dans le registre), l'engine porte l'appel au solveur.
+
+    Choix du raisonner (#23671) : `SatReasoner` decide par SAT
+    (Tseitin->CNF->SAT4j, espace polynomial) ; `SimplePlReasoner` enumere
+    les mondes (2^n interpretations en memoire) et meurt en OOM JVM sur
+    les belief sets reels de la serie (~2 douzaines d'atomes). Les deux
+    rendent le meme verdict sur les petits ensembles ; seul le premier
+    survit aux gros.
     """
 
-    name = "tweety-simple-pl-reasoner"
+    name = "tweety-sat4j-pl-reasoner"
 
     def __init__(self) -> None:
         self._parser = None
@@ -124,7 +146,7 @@ class TweetyPLEngine:
                 "org.tweetyproject.logics.pl.syntax.PlBeliefSet"
             )
             self._reasoner = jclass(
-                "org.tweetyproject.logics.pl.reasoner.SimplePlReasoner"
+                "org.tweetyproject.logics.pl.reasoner.SatReasoner"
             )()
         except Exception as exc:  # pragma: no cover - classpath incomplet
             raise EngineUnavailableError(
@@ -189,7 +211,7 @@ class PLReasonerPlugin:
     # -- kernel function ----------------------------------------------------
     @kernel_function(
         description=(
-            "Interroge le VRAI solveur propositionnel (Tweety SimplePlReasoner) "
+            "Interroge le VRAI solveur propositionnel (Tweety SatReasoner, SAT4j) "
             "sur un belief set et une formule. Parametres: belief_set_id "
             "(identifiant renvoye par add_belief_set), query (formule "
             "propositionnelle). Renvoie un verdict `ACCEPTED: ...` (la "
