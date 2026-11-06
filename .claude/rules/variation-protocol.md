@@ -81,7 +81,7 @@ Un genre hors liste est un **alias** que le merge-gate normalise : pas une viola
 
 ## 3. Merge-gate coordinateur (ai-01) — les dents (HARD)
 
-À chaque passe, pour chaque PR, **lire le tag** et croiser avec les grains récents de la lane ([détail §15](../../docs/reference/variation-protocol-detail.md)) :
+À chaque passe, pour chaque PR, **lire le tag** et croiser avec les grains récents de la lane ([détail §1](../../docs/reference/variation-protocol-detail.md)) :
 
 | Constat | Action |
 |---|---|
@@ -91,6 +91,8 @@ Un genre hors liste est un **alias** que le merge-gate normalise : pas une viola
 | Plancher tenu par un **MED** ou un genre **META**, même tagué DEEP (G-VAR-1) | le cycle n'a pas de plancher : merger la PR si elle est bonne, **et** nommer dans le même geste le grain DEEP de contenu qui portera le cycle suivant. Ne **pas** HOLD une PR META saine — c'est le **provisionnement** qui a manqué (§4) |
 | Tag mal dérivé (tier sur-coté, genre pris sur la famille, alias/composé) | **re-qualifier le tag soi-même**, puis traiter selon le tag corrigé |
 | `lane` absente | **HOLD** jusqu'à déclaration — un grain sans lane est **structurellement incomptable** |
+
+**Le tag déclaré n'est pas auto-exécutoire** : il rend le grain auditable, il ne le définit pas. Merger sans lire le tag laisse le protocole s'auto-certifier.
 
 **Ne jamais tenir une LIGHT plus d'une journée** : un hold prolongé fait réécrire le même travail par une autre lane. Passé 24 h : merger, ou fermer **en nommant le remplaçant**.
 
@@ -107,7 +109,7 @@ Le provisionnement est une **exception nommée** : le coordinateur provisionne *
 4. **Varie la loterie** — le coordinateur applique G-VAR-3 à son propre dispatch.
 5. **Dissocie admission et production** : les candidates en HOLD, `DWELL`, review ou attente de merge ne diminuent jamais le provisionnement dû. La queue d'admission se résorbe par une piste de digestion parallèle ; elle n'applique aucune backpressure globale aux producteurs.
 
-Sous-provisionner puis merger la monoculture qui en résulte est **le** manquement que ce protocole corrige ([détail §9](../../docs/reference/variation-protocol-detail.md)).
+Sous-provisionner puis merger la monoculture qui en résulte est **le** manquement que ce protocole corrige ; ralentir la production pour accommoder la digestion en est un autre (justification : [détail §9](../../docs/reference/variation-protocol-detail.md)).
 
 ## 5. Auto-détection
 
