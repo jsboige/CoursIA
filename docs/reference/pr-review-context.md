@@ -164,7 +164,7 @@ Les **symboles** sont cités plutôt que des numéros de ligne : un numéro de l
 
 ### B.1 — pourquoi pas `grep -c sorry` (mesure 2026-08-14)
 
-Sur les 21 lakes : **484 faux `sorry` pour 21 réels (23×)** — `grep -c sorry` compte la prose (docstrings, `-- commentaires`, feuilles de route). **9 lakes à 0 réel** affichent des comptes naïfs positifs ; ex. `grothendieck_lean` : 68 naïfs, 0 réel — un reviewer appliquant `grep` à la lettre exigerait la justification de 68 `sorry` qui n'existent pas. L'instrument : `python scripts/lean/count_code_sorry.py --json`, champ `distinct_code_sorry` (la même mesure que le gate CI `sorry-filter-mode: real` de `lean-axiom.yml`).
+Sur les 21 lakes : **484 faux `sorry` pour 21 réels (23×)** — `grep -c sorry` compte la prose (docstrings, `-- commentaires`, feuilles de route). **9 lakes à 0 réel** affichent des comptes naïfs positifs ; ex. `grothendieck_lean` : 68 naïfs, 0 réel — un reviewer appliquant `grep` à la lettre exigerait la justification de 68 `sorry` qui n'existent pas. L'instrument : `python scripts/lean/count_code_sorry.py --json`, champ `distinct_code_sorry` (la même mesure que le gate CI `sorry-filter-mode: real` de `lean-axiom.yml`). Le gate CI mesure déjà juste (`sorry-filter-mode: real`) : c'est le texte de la règle qui pointait le mauvais instrument — un reviewer qui voit `sorry-filter-mode: real` inconnu n'a pas à soupçonner l'organe.
 
 ### D.6 — récurrences du ratchet `Output-failure`
 
