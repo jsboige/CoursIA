@@ -27,9 +27,11 @@ d'autre : cet outil ne remplace aucun des quatre, il comble leur angle mort comm
 Ce que l'outil signale
 ----------------------
 Uniquement le cas non ambigu : le libelle contient un identifiant de notebook
-**de la meme famille** que la cible, et il **differe**. Un libelle en prose
-(« voir le notebook sur les faisceaux ») ne declenche rien : l'absence
-d'identifiant n'est pas un desaccord.
+dont l'ordinal ou le suffixe differe de la cible. La famille peut differer
+apres un reclass (#23684) : `GameTheory-6c` -> `Dynamics-01` est signale, mais
+`GameTheory-01` -> `Dynamics-01` reste muet. Un libelle en prose (« voir le
+notebook sur les faisceaux ») ne declenche rien : l'absence d'identifiant
+n'est pas un desaccord.
 
 Usage
 -----
@@ -90,10 +92,31 @@ def target_id(filename: str):
     return (m.group("pre").lower(), int(m.group("num")), (m.group("let") or "").lower())
 
 
-def labels_in_text(text: str, prefix: str):
-    """Identifiants de la meme famille cites dans le libelle."""
-    pat = re.compile(rf"\b{re.escape(prefix)}[-_](\d{{1,3}})([a-z])?\b", re.I)
-    return [(int(n), (l or "").lower()) for n, l in pat.findall(text)]
+def labels_in_text(text: str, prefix: str = ""):
+    """Identifiants cites dans le libelle, toutes familles confondues (#23684).
+
+    La famille seule ne peut pas discriminer un reclass : chercher les seuls
+    identifiants de la famille de la cible rendait `GameTheory-6c` invisible
+    derriere une cible `Dynamics-01`. On compare donc ordinal et suffixe, pas
+    le nom de famille. ``prefix`` reste accepte pour compatibilite d'API.
+    """
+    pat = re.compile(r"\b(?P<prefix>[A-Za-z][A-Za-z0-9]*)[-_](?P<num>\d{1,3})(?P<let>[a-z])?(?=[-_]\w|\b)", re.I)
+    return [(m.group("prefix").lower(), int(m.group("num")),
+             (m.group("let") or "").lower()) for m in pat.finditer(text)]
+
+
+def target_family_parts(source_path: str, target: str) -> set[str]:
+    """Familles parentes de la cible, resolue contre le document source.
+
+    Les liens entre carnets voisins portent souvent seulement un basename : les
+    dossiers de la cible absents du href viennent alors du chemin du source.
+    Un href deja relatif au depot reste utilisable depuis ``<self-test>``.
+    """
+    target_path = Path(target)
+    resolved = target_path if target_path.is_absolute() else (
+        Path(source_path).parent / target_path)
+    return {part.lower() for part in resolved.parts[:-1]
+            if part not in (".", "..")}
 
 
 def check_text(source: str, path: str):
@@ -103,16 +126,46 @@ def check_text(source: str, path: str):
         if not tid:
             continue
         prefix, tnum, tlet = tid
-        for lnum, llet in labels_in_text(label, prefix):
-            if (lnum, llet) != (tnum, tlet):
+        for lprefix, lnum, llet in labels_in_text(label, prefix):
+            if (lnum, llet) != (tnum, tlet) and lprefix == prefix:
                 out.append({
                     "file": path,
                     "label": label.strip()[:80],
                     "target": target,
-                    "says": f"{prefix}-{lnum}{llet}",
+                    "says": f"{lprefix}-{lnum}{llet}",
                     "points_to": f"{prefix}-{tnum}{tlet}",
                 })
                 break
+
+        # Reclass (#23684) : l'ancien identifiant n'est signale que s'il est
+        # ENTIER, seul dans le libelle (ponctuation/whitespace admis). C'est
+        # precisement la forme d'un titre repris par extract_title. Un
+        # basename recopie ou une glose ne rougit pas : le controle de masse
+        # a mesure 160 faux positifs sans cette restriction. Les references
+        # historiques hors chemin de la cible restent muettes ; celles qui
+        # subsistent dans ce chemin (Lean-17 -> KNOTS, Lean-21 -> MIMO, etc.)
+        # sont les desaccords residuels exposes par le scan. La famille
+        # ancienne doit etre un dossier parent de la cible et l'ordinal doit
+        # differer.
+        stripped = label.strip().strip("`*_ <>[]()")
+        m = re.fullmatch(
+            r"(?P<prefix>[A-Za-z][A-Za-z0-9]*)[-_](?P<num>\d{1,3})(?P<let>[a-z])?\b",
+            stripped, re.I)
+        if not m:
+            continue
+        lprefix = m.group("prefix").lower()
+        lnum = int(m.group("num"))
+        llet = (m.group("let") or "").lower()
+        if lprefix == prefix or lprefix not in target_family_parts(path, target):
+            continue
+        if (lnum, llet) != (tnum, tlet):
+            out.append({
+                "file": path,
+                "label": label.strip()[:80],
+                "target": target,
+                "says": f"{lprefix}-{lnum}{llet}",
+                "points_to": f"{prefix}-{tnum}{tlet}",
+            })
     return out
 
 
@@ -172,6 +225,29 @@ SELF_TEST_CASES = [
     ("[Lean-16](../Lean/Lean-16e-Something.ipynb)", 1, "lettre perdue au libelle -- doit ROUGIR"),
     ("[GameTheory-03e](GameTheory-03e-Chambers.ipynb)", 0, "accretion coherente -- doit passer"),
     ("[voir Search-9](Search-11c-Advanced.ipynb)", 1, "numero different -- doit ROUGIR"),
+    ("[GameTheory-6c](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-CSharp.ipynb)", 1,
+     "#23684 reclass et ordinal different -- doit ROUGIR"),
+    ("[GameTheory-01](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-CSharp.ipynb)", 0,
+     "#23684 famille differente mais ordinal correct -- controle negatif"),
+    ("[02-5 LTX-2](02-5-LTX-Video.ipynb)", 0,
+     "glose de modele dans le titre -- controle negatif"),
+    ("[Lean-17a](KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb)", 0,
+     "reference historique hors familles de la cible -- controle negatif"),
+    ("[Argumentation-08d-Restitution-3-Actes-Python](Argumentation-08d-Restitution-3-Actes-Python.ipynb)", 0,
+     "section numerotee du basename -- controle negatif"),
+    ("[ANALYSE-06](ANALYSE-06b-Noyau.ipynb)", 1,
+     "suffixe de noyau different -- non-regression"),
+]
+
+# Chemin source explicite : un href frere n'a aucun dossier, ses familles se
+# derivent donc du document qui le contient. C'est le temoin reel Dynamics-03.
+SELF_TEST_PATH_CASES = [
+    ("MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-03-Sympathie-vs-Engagement-Python.ipynb",
+     "[GameTheory-06c](Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb)", 1,
+     "#23684 lien frere resolu contre le chemin source -- doit ROUGIR"),
+    ("MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-03-Sympathie-vs-Engagement-Python.ipynb",
+     "[GameTheory-01](Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb)", 0,
+     "#23684 lien frere ordinal correct -- controle negatif"),
 ]
 
 
@@ -179,6 +255,12 @@ def self_test() -> int:
     ok = True
     for src, expected, title in SELF_TEST_CASES:
         got = len(check_text(src, "<self-test>"))
+        status = "OK " if got == expected else "ECHEC"
+        if got != expected:
+            ok = False
+        print(f"  [{status}] attendu={expected} obtenu={got}  {title}")
+    for path, src, expected, title in SELF_TEST_PATH_CASES:
+        got = len(check_text(src, path))
         status = "OK " if got == expected else "ECHEC"
         if got != expected:
             ok = False
