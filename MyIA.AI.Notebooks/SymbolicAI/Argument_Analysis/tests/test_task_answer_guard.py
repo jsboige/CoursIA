@@ -31,8 +31,40 @@ _ARG_ANALYSIS_DIR = os.path.dirname(_TESTS_DIR)
 if _ARG_ANALYSIS_DIR not in sys.path:
     sys.path.insert(0, _ARG_ANALYSIS_DIR)
 
-from argumentation_lib._guarded_state import GuardedStateManagerPlugin
-from argumentation_lib._shared_state import RhetoricalAnalysisState
+
+def _install_sk_mock() -> None:
+    """Mock semantic_kernel si absent (helper des voisins, #24974).
+
+    `_guarded_state` importe `semantic_kernel.functions.kernel_function` au
+    niveau module : sans SK installe, l'import du fichier seul echoue. Meme
+    strategie que `test_pl_verdict_contract.py:32-54`.
+    """
+    if "semantic_kernel" in sys.modules:
+        return
+
+    from types import ModuleType
+
+    sk = ModuleType("semantic_kernel")
+    functions = ModuleType("semantic_kernel.functions")
+
+    def kernel_function(*args, **kwargs):
+        def decorator(func):
+            return func
+
+        if args and callable(args[0]) and not kwargs:
+            return args[0]
+        return decorator
+
+    functions.kernel_function = kernel_function
+    sk.functions = functions
+    sys.modules["semantic_kernel"] = sk
+    sys.modules["semantic_kernel.functions"] = functions
+
+
+_install_sk_mock()
+
+from argumentation_lib._guarded_state import GuardedStateManagerPlugin  # noqa: E402
+from argumentation_lib._shared_state import RhetoricalAnalysisState  # noqa: E402
 
 
 def _guarded() -> tuple[GuardedStateManagerPlugin, RhetoricalAnalysisState]:
